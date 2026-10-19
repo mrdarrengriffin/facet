@@ -19,7 +19,8 @@
     "build": "pnpm -r --workspace-concurrency=1 build",
     "lint": "prettier --check .",
     "format": "prettier --write .",
-    "typecheck": "pnpm -r typecheck"
+    "typecheck": "pnpm -r typecheck",
+    "readme:assets": "node scripts/readme-assets.mjs"
   },
   "devDependencies": {
     "prettier": "^3.6.2",
