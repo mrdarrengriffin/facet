@@ -12,27 +12,28 @@
 </p>
 
 <p align="center">
-  <a href="https://mrdarrengriffin.github.io/facet/demo/"><img alt="Demo" src=".github/assets/pill-demo-dark.png#gh-dark-mode-only" height="36"><img alt="Demo" src=".github/assets/pill-demo-light.png#gh-light-mode-only" height="36"></a> &nbsp;
-  <a href="https://mrdarrengriffin.github.io/facet/components/"><img alt="Components" src=".github/assets/pill-components-dark.png#gh-dark-mode-only" height="36"><img alt="Components" src=".github/assets/pill-components-light.png#gh-light-mode-only" height="36"></a> &nbsp;
-  <a href="https://mrdarrengriffin.github.io/facet/docs/"><img alt="Docs" src=".github/assets/pill-docs-dark.png#gh-dark-mode-only" height="36"><img alt="Docs" src=".github/assets/pill-docs-light.png#gh-light-mode-only" height="36"></a> &nbsp;
-  <a href="https://mrdarrengriffin.github.io/facet/docs/roadmap/"><img alt="Roadmap" src=".github/assets/pill-roadmap-dark.png#gh-dark-mode-only" height="36"><img alt="Roadmap" src=".github/assets/pill-roadmap-light.png#gh-light-mode-only" height="36"></a>
+  <a href="https://mrdarrengriffin.github.io/facet/demo/"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/pill-demo-dark.png"><img alt="Demo" src=".github/assets/pill-demo-light.png" height="36"></picture></a> &nbsp;
+  <a href="https://mrdarrengriffin.github.io/facet/components/"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/pill-components-dark.png"><img alt="Components" src=".github/assets/pill-components-light.png" height="36"></picture></a> &nbsp;
+  <a href="https://mrdarrengriffin.github.io/facet/docs/"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/pill-docs-dark.png"><img alt="Docs" src=".github/assets/pill-docs-light.png" height="36"></picture></a> &nbsp;
+  <a href="https://mrdarrengriffin.github.io/facet/docs/roadmap/"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/pill-roadmap-dark.png"><img alt="Roadmap" src=".github/assets/pill-roadmap-light.png" height="36"></picture></a>
 </p>
 
 <br>
 
 <p align="center">
-  <a href="https://mrdarrengriffin.github.io/facet/demo/"><img alt="The Facet screens with demo data: Home, Agents, Media, Light, Clock, GitHub, Energy, Weather, Lightning and Timer" src=".github/assets/screens-dark.png#gh-dark-mode-only"><img alt="The Facet screens with demo data: Home, Agents, Media, Light, Clock, GitHub, Energy, Weather, Lightning and Timer" src=".github/assets/screens-light.png#gh-light-mode-only"></a>
+  <a href="https://mrdarrengriffin.github.io/facet/demo/"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/screens-dark.png"><img alt="The Facet screens with demo data: Home, Agents, Media, Light, Clock, GitHub, Energy, Weather, Lightning and Timer" src=".github/assets/screens-light.png"></picture></a>
 </p>
 
 <p align="center"><sub>Every screen running on the mock house from <code>@facet/demo-data</code>. Docs and design system: <a href="https://mrdarrengriffin.github.io/facet/">mrdarrengriffin.github.io/facet</a></sub></p>
 
 <br>
 
-> **Status: early, work in progress.** The design tokens, icons, components, screens and UI
-> sounds are in place and you can try them all in the browser: the
-> [demo](https://mrdarrengriffin.github.io/facet/demo/) runs a whole panel on a mock house and
-> the [UI explorer](https://mrdarrengriffin.github.io/facet/components/) has every component.
-> There's no firmware or Home Assistant adapter yet. Expect things to move around before 1.0.
+> **Everything here is a work in progress.** The design system is being worked on actively, new
+> screens are still being made and existing ones change as they get used on a real panel, so expect
+> things to move around. You can already try it all in the browser: the
+> [demo](https://mrdarrengriffin.github.io/facet/demo/) runs a whole panel on a mock house and the
+> [UI explorer](https://mrdarrengriffin.github.io/facet/components/) has every component. Firmware
+> and the Home Assistant adapter are still to come.
 
 ## <picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/icon-light-dark.svg"><source media="(prefers-color-scheme: light)" srcset=".github/assets/icon-light-light.svg"><img alt="" src=".github/assets/icon-light-light.svg" width="20" height="20"></picture>&nbsp; The idea
 
@@ -60,60 +61,60 @@ data it reads and how to set it up.
 <table>
 <tr>
 <td width="50%" valign="top">
-<a href="https://mrdarrengriffin.github.io/facet/docs/screens/home/"><img alt="Home screen" src=".github/assets/screen-home-dark.png#gh-dark-mode-only" width="200" height="200"><img alt="Home screen" src=".github/assets/screen-home-light.png#gh-light-mode-only" width="200" height="200"></a>
+<a href="https://mrdarrengriffin.github.io/facet/docs/screens/home/"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/screen-home-dark.png"><img alt="Home screen" src=".github/assets/screen-home-light.png" width="200" height="200"></picture></a>
 <p><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/icon-home-dark.svg"><source media="(prefers-color-scheme: light)" srcset=".github/assets/icon-home-light.svg"><img alt="" src=".github/assets/icon-home-light.svg" width="20" height="20"></picture>&nbsp; <a href="https://mrdarrengriffin.github.io/facet/docs/screens/home/"><b>Home</b></a><br>
 The room's cards: one value and one line each, four to a view.</p>
 </td>
 <td width="50%" valign="top">
-<a href="https://mrdarrengriffin.github.io/facet/docs/screens/agents/"><img alt="Agents screen" src=".github/assets/screen-agents-dark.png#gh-dark-mode-only" width="200" height="200"><img alt="Agents screen" src=".github/assets/screen-agents-light.png#gh-light-mode-only" width="200" height="200"></a>
+<a href="https://mrdarrengriffin.github.io/facet/docs/screens/agents/"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/screen-agents-dark.png"><img alt="Agents screen" src=".github/assets/screen-agents-light.png" width="200" height="200"></picture></a>
 <p><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/icon-agents-dark.svg"><source media="(prefers-color-scheme: light)" srcset=".github/assets/icon-agents-light.svg"><img alt="" src=".github/assets/icon-agents-light.svg" width="20" height="20"></picture>&nbsp; <a href="https://mrdarrengriffin.github.io/facet/docs/screens/agents/"><b>Agents</b></a><br>
 Background jobs and assistants as tiles with a mascot, sorted by what needs you.</p>
 </td>
 </tr>
 <tr>
 <td width="50%" valign="top">
-<a href="https://mrdarrengriffin.github.io/facet/docs/screens/media/"><img alt="Media screen" src=".github/assets/screen-media-dark.png#gh-dark-mode-only" width="200" height="200"><img alt="Media screen" src=".github/assets/screen-media-light.png#gh-light-mode-only" width="200" height="200"></a>
+<a href="https://mrdarrengriffin.github.io/facet/docs/screens/media/"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/screen-media-dark.png"><img alt="Media screen" src=".github/assets/screen-media-light.png" width="200" height="200"></picture></a>
 <p><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/icon-media-dark.svg"><source media="(prefers-color-scheme: light)" srcset=".github/assets/icon-media-light.svg"><img alt="" src=".github/assets/icon-media-light.svg" width="20" height="20"></picture>&nbsp; <a href="https://mrdarrengriffin.github.io/facet/docs/screens/media/"><b>Media</b></a><br>
 Now playing on a spinning disc, with transport controls, live volume and a speaker picker.</p>
 </td>
 <td width="50%" valign="top">
-<a href="https://mrdarrengriffin.github.io/facet/docs/screens/light/"><img alt="Light screen" src=".github/assets/screen-light-dark.png#gh-dark-mode-only" width="200" height="200"><img alt="Light screen" src=".github/assets/screen-light-light.png#gh-light-mode-only" width="200" height="200"></a>
+<a href="https://mrdarrengriffin.github.io/facet/docs/screens/light/"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/screen-light-dark.png"><img alt="Light screen" src=".github/assets/screen-light-light.png" width="200" height="200"></picture></a>
 <p><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/icon-light-dark.svg"><source media="(prefers-color-scheme: light)" srcset=".github/assets/icon-light-light.svg"><img alt="" src=".github/assets/icon-light-light.svg" width="20" height="20"></picture>&nbsp; <a href="https://mrdarrengriffin.github.io/facet/docs/screens/light/"><b>Light</b></a><br>
 One light on a dial: drag the ring for brightness, tap the button to switch it.</p>
 </td>
 </tr>
 <tr>
 <td width="50%" valign="top">
-<a href="https://mrdarrengriffin.github.io/facet/docs/screens/clock/"><img alt="Clock screen" src=".github/assets/screen-clock-dark.png#gh-dark-mode-only" width="200" height="200"><img alt="Clock screen" src=".github/assets/screen-clock-light.png#gh-light-mode-only" width="200" height="200"></a>
+<a href="https://mrdarrengriffin.github.io/facet/docs/screens/clock/"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/screen-clock-dark.png"><img alt="Clock screen" src=".github/assets/screen-clock-light.png" width="200" height="200"></picture></a>
 <p><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/icon-clock-dark.svg"><source media="(prefers-color-scheme: light)" srcset=".github/assets/icon-clock-light.svg"><img alt="" src=".github/assets/icon-clock-light.svg" width="20" height="20"></picture>&nbsp; <a href="https://mrdarrengriffin.github.io/facet/docs/screens/clock/"><b>Clock</b></a><br>
 The time as the one hero on the screen, in several faces. Also the idle screen.</p>
 </td>
 <td width="50%" valign="top">
-<a href="https://mrdarrengriffin.github.io/facet/docs/screens/github/"><img alt="GitHub screen" src=".github/assets/screen-github-dark.png#gh-dark-mode-only" width="200" height="200"><img alt="GitHub screen" src=".github/assets/screen-github-light.png#gh-light-mode-only" width="200" height="200"></a>
+<a href="https://mrdarrengriffin.github.io/facet/docs/screens/github/"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/screen-github-dark.png"><img alt="GitHub screen" src=".github/assets/screen-github-light.png" width="200" height="200"></picture></a>
 <p><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/icon-github-dark.svg"><source media="(prefers-color-scheme: light)" srcset=".github/assets/icon-github-light.svg"><img alt="" src=".github/assets/icon-github-light.svg" width="20" height="20"></picture>&nbsp; <a href="https://mrdarrengriffin.github.io/facet/docs/screens/github/"><b>GitHub</b></a><br>
 Pull requests that need you, your own open ones, and a QR code to carry on on your phone.</p>
 </td>
 </tr>
 <tr>
 <td width="50%" valign="top">
-<a href="https://mrdarrengriffin.github.io/facet/docs/screens/energy/"><img alt="Energy screen" src=".github/assets/screen-energy-dark.png#gh-dark-mode-only" width="200" height="200"><img alt="Energy screen" src=".github/assets/screen-energy-light.png#gh-light-mode-only" width="200" height="200"></a>
+<a href="https://mrdarrengriffin.github.io/facet/docs/screens/energy/"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/screen-energy-dark.png"><img alt="Energy screen" src=".github/assets/screen-energy-light.png" width="200" height="200"></picture></a>
 <p><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/icon-energy-dark.svg"><source media="(prefers-color-scheme: light)" srcset=".github/assets/icon-energy-light.svg"><img alt="" src=".github/assets/icon-energy-light.svg" width="20" height="20"></picture>&nbsp; <a href="https://mrdarrengriffin.github.io/facet/docs/screens/energy/"><b>Energy</b></a><br>
 Today's cost so far, the price band you're in, and today's half-hours by price.</p>
 </td>
 <td width="50%" valign="top">
-<a href="https://mrdarrengriffin.github.io/facet/docs/screens/weather/"><img alt="Weather screen" src=".github/assets/screen-weather-dark.png#gh-dark-mode-only" width="200" height="200"><img alt="Weather screen" src=".github/assets/screen-weather-light.png#gh-light-mode-only" width="200" height="200"></a>
+<a href="https://mrdarrengriffin.github.io/facet/docs/screens/weather/"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/screen-weather-dark.png"><img alt="Weather screen" src=".github/assets/screen-weather-light.png" width="200" height="200"></picture></a>
 <p><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/icon-weather-dark.svg"><source media="(prefers-color-scheme: light)" srcset=".github/assets/icon-weather-light.svg"><img alt="" src=".github/assets/icon-weather-light.svg" width="20" height="20"></picture>&nbsp; <a href="https://mrdarrengriffin.github.io/facet/docs/screens/weather/"><b>Weather</b></a><br>
 The temperature, one line, rain in the next hour, and the next eight hours. Five days behind a tap.</p>
 </td>
 </tr>
 <tr>
 <td width="50%" valign="top">
-<a href="https://mrdarrengriffin.github.io/facet/docs/screens/lightning/"><img alt="Lightning screen" src=".github/assets/screen-lightning-dark.png#gh-dark-mode-only" width="200" height="200"><img alt="Lightning screen" src=".github/assets/screen-lightning-light.png#gh-light-mode-only" width="200" height="200"></a>
+<a href="https://mrdarrengriffin.github.io/facet/docs/screens/lightning/"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/screen-lightning-dark.png"><img alt="Lightning screen" src=".github/assets/screen-lightning-light.png" width="200" height="200"></picture></a>
 <p><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/icon-lightning-dark.svg"><source media="(prefers-color-scheme: light)" srcset=".github/assets/icon-lightning-light.svg"><img alt="" src=".github/assets/icon-lightning-light.svg" width="20" height="20"></picture>&nbsp; <a href="https://mrdarrengriffin.github.io/facet/docs/screens/lightning/"><b>Lightning</b></a><br>
 The nearest strike, the trend and a radar of the last hour.</p>
 </td>
 <td width="50%" valign="top">
-<a href="https://mrdarrengriffin.github.io/facet/docs/screens/timer/"><img alt="Timer screen" src=".github/assets/screen-timer-dark.png#gh-dark-mode-only" width="200" height="200"><img alt="Timer screen" src=".github/assets/screen-timer-light.png#gh-light-mode-only" width="200" height="200"></a>
+<a href="https://mrdarrengriffin.github.io/facet/docs/screens/timer/"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/screen-timer-dark.png"><img alt="Timer screen" src=".github/assets/screen-timer-light.png" width="200" height="200"></picture></a>
 <p><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/icon-timer-dark.svg"><source media="(prefers-color-scheme: light)" srcset=".github/assets/icon-timer-light.svg"><img alt="" src=".github/assets/icon-timer-light.svg" width="20" height="20"></picture>&nbsp; <a href="https://mrdarrengriffin.github.io/facet/docs/screens/timer/"><b>Timer</b></a><br>
 A running timer as the hero, with one-tap presets when nothing is running.</p>
 </td>
@@ -129,7 +130,7 @@ One hero per screen in a large light weight, everything else quiet, and orange o
 matters right now.
 
 <p align="center">
-  <a href="https://mrdarrengriffin.github.io/facet/design-system/"><img alt="Facet type and colours: the time in the light display style, a headline, body text, a caps label and ten colour swatches" src=".github/assets/palette-dark.png#gh-dark-mode-only" width="920"><img alt="Facet type and colours: the time in the light display style, a headline, body text, a caps label and ten colour swatches" src=".github/assets/palette-light.png#gh-light-mode-only" width="920"></a>
+  <a href="https://mrdarrengriffin.github.io/facet/design-system/"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/palette-dark.png"><img alt="Facet type and colours: the time in the light display style, a headline, body text, a caps label and ten colour swatches" src=".github/assets/palette-light.png" width="920"></picture></a>
 </p>
 
 ## Repository layout
