@@ -10,9 +10,12 @@ import type {
   MediaPlayback,
   MediaState,
   Strike,
+  MoonData,
+  MoonPhase,
   Timer,
   WeatherData,
 } from '@facet/ui';
+import { moonData, moonFrac, SYNODIC } from '@facet/ui';
 import * as D from './data.js';
 
 const iso = (t: number) => new Date(t).toISOString();
@@ -191,4 +194,48 @@ export function lightningWith(now: number, scene: LightningScene): LightningData
   const trend: LightningData['trend'] =
     scene === 'overhead' ? { state: 'steady', kmh: 0 } : { state: 'approaching', kmh: 46 };
   return D.summariseStrikes(now, strikes, trend);
+}
+
+// ---------------------------------------------------------------- moon
+/** A moon to show: `phase` jumps to the next time the moon is in that phase (`live` = now), `days` moves on from
+ *  there, `south` mirrors the glyph. */
+export interface MoonScene {
+  phase?: 'live' | MoonPhase;
+  days?: number;
+  south?: boolean;
+}
+const PHASE_FRAC: Record<MoonPhase, number> = {
+  new_moon: 0,
+  waxing_crescent: 0.125,
+  first_quarter: 0.25,
+  waxing_gibbous: 0.375,
+  full_moon: 0.5,
+  waning_gibbous: 0.625,
+  last_quarter: 0.75,
+  waning_crescent: 0.875,
+};
+/**
+ * The moon for a scene, told as if it were now: worked out for the shifted moment, then every time moved back by the
+ * same amount, so "full on Fri" and the rise and set times read naturally.
+ */
+export function moonWith(now: number, s: MoonScene = {}): MoonData {
+  const DAY = 86_400_000;
+  let shift = (s.days ?? 0) * DAY;
+  if (s.phase && s.phase !== 'live') {
+    const ahead = (PHASE_FRAC[s.phase] - moonFrac(now) + 1) % 1;
+    shift += ahead * SYNODIC * DAY;
+  }
+  const m = moonData(now + shift, D.PLACE_AT);
+  const back = (t?: string | null) => (t ? iso(Date.parse(t) - shift) : t);
+  return {
+    ...m,
+    next_new: back(m.next_new)!,
+    next_full: back(m.next_full)!,
+    upcoming: m.upcoming?.map((p) => ({ ...p, t: back(p.t)! })),
+    rise: back(m.rise),
+    set: back(m.set),
+    next_rise: back(m.next_rise),
+    next_set: back(m.next_set),
+    south: !!s.south,
+  };
 }

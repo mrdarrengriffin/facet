@@ -20,7 +20,13 @@ import {
   type Store,
 } from '@facet/ui';
 import * as D from './data.js';
-import { energyWith, lightningWith, type LightningScene } from './scenes.js';
+import {
+  energyWith,
+  lightningWith,
+  moonWith,
+  type LightningScene,
+  type MoonScene,
+} from './scenes.js';
 
 export * from './data.js';
 export * from './scenes.js';
@@ -42,6 +48,8 @@ export interface LiveScene {
   lightning?: LightningScene;
   /** Force the current price band; `live` (default) follows the clock. */
   band?: Band | 'live';
+  /** Show another moon (phase, days ahead, hemisphere); default = tonight's. */
+  moon?: MoonScene;
 }
 
 export interface MockHouse {
@@ -187,12 +195,13 @@ export function createMockHouse(o: MockHouseOptions = {}): MockHouse {
   const scene: Required<LiveScene> = {
     lightning: o.quietSky ? 'quiet' : 'live',
     band: 'live',
+    moon: {},
   };
   let watts = 420;
   const liveParts = (now: number): Partial<PanelData> => ({
     energy: scene.band === 'live' ? D.energy(now, watts) : energyWith(now, scene.band, watts),
     lightning: lightningWith(now, scene.lightning),
-    moon: moonData(now, D.PLACE_AT),
+    moon: moonWith(now, scene.moon),
   });
   const setScene = (s: LiveScene) => {
     Object.assign(scene, s);

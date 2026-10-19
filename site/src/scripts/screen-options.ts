@@ -12,6 +12,7 @@ import {
   TRACKS,
   weatherWith,
   type LightningScene,
+  type MoonScene,
   type MockHouse,
   type RainScene,
   type TimerScene,
@@ -81,6 +82,18 @@ const LIGHTNING: LightningScene[] = ['live', 'quiet', 'distant', 'near', 'overhe
 const CONDITIONS = Object.keys(WX_TEXT);
 const RAIN: RainScene[] = ['later', 'dry', 'soon', 'now'];
 const TIMER: TimerScene[] = ['running', 'done', 'none'];
+// 'tonight' = the real moon; the rest jump to the next time the moon is in that phase
+const MOON_PHASES = [
+  'tonight',
+  'new moon',
+  'waxing crescent',
+  'first quarter',
+  'waxing gibbous',
+  'full moon',
+  'waning gibbous',
+  'last quarter',
+  'waning crescent',
+];
 
 const media = (p: Props, ctx: ScreenOptionsContext) =>
   ctx.house.store.patch({
@@ -190,6 +203,23 @@ export const screenOptions: Record<string, ScreenOptions> = {
   lightning: {
     controls: [sel('sky', 'Storm', LIGHTNING)],
     apply: (_k, p, ctx) => sky(p, ctx),
+  },
+  moon: {
+    controls: [
+      sel('phase', 'Phase', MOON_PHASES),
+      range('days', 'Days ahead', 0, 29, 0),
+      tog('south', 'Southern hemisphere', false),
+    ],
+    apply: (_k, p, ctx) =>
+      ctx.house.setScene({
+        moon: {
+          phase: (p.phase === 'tonight'
+            ? 'live'
+            : String(p.phase).replace(' ', '_')) as MoonScene['phase'],
+          days: Number(p.days),
+          south: !!p.south,
+        } as MoonScene,
+      }),
   },
   timer: {
     controls: [sel('state', 'Timer', TIMER), range('minutes', 'Length (min)', 1, 60, 12)],
