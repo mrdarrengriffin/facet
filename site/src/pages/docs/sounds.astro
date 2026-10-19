@@ -1,5 +1,6 @@
 ---
 import { Code } from 'astro:components';
+import '@facet/ui/styles.css';
 import { DEFAULT_PACK, PACKS, SOUND_LABELS } from '@facet/sounds';
 import { sound } from '@facet/tokens';
 import Docs from '../../layouts/Docs.astro';
@@ -9,6 +10,7 @@ import { soundEvents, soundsIntro } from '../../lib/sounds';
 
 const headings = [
   { depth: 2, slug: 'try-them', text: 'Try them' },
+  { depth: 2, slug: 'play-with-the-ui', text: 'Play with the UI' },
   { depth: 2, slug: 'events', text: 'The ten sounds' },
   { depth: 2, slug: 'packs', text: 'The six packs' },
   { depth: 2, slug: 'choosing-a-pack', text: 'Choosing a pack' },
@@ -126,6 +128,37 @@ for (const id of SOUND_IDS) {
     <p class="snd__hint">
       Tap a pack's name to hear all ten of its sounds in a row. The grid scrolls sideways on narrow
       screens.
+    </p>
+  </div>
+
+  <h2 id="play-with-the-ui">Play with the UI</h2>
+  <p>
+    The same sounds on real components. Pick a pack, then tap, drag and toggle: the hooks from{' '}
+    <code>installSoundHooks()</code> play them, the same way they do on a panel. They follow the site's
+    sound switch, which starts on for this page.
+  </p>
+
+  <div class="snd-play" data-play>
+    <div class="snd-play__bar">
+      <div class="snd-play__packs" role="radiogroup" aria-label="Pack">
+        {
+          PACKS.map((p) => (
+            <button type="button" class="snd-play__pack" role="radio" data-play-pack={p.id}>
+              {p.name}
+            </button>
+          ))
+        }
+      </div>
+      <button type="button" class="snd-play__switch" data-play-sound aria-pressed="true">
+        <span class="snd-play__dot" aria-hidden="true"></span><span data-play-sound-label
+          >Sound on</span
+        >
+      </button>
+    </div>
+    <div class="snd-play__stage f-sound-scope" data-play-stage></div>
+    <p class="snd__hint">
+      Taps on buttons, toggles and rows, ticks on the slider and the dial, an error on the disabled
+      button and a chime when a toast arrives.
     </p>
   </div>
 
@@ -267,6 +300,117 @@ for (const id of SOUND_IDS) {
 </Docs>
 
 <style>
+  /* Play with the UI: real components, the hooks play the sounds */
+  .snd-play {
+    margin: 24px 0 8px;
+    border: 1px solid var(--facet-color-line);
+    border-radius: 16px;
+    background: var(--facet-color-surface);
+    overflow: hidden;
+  }
+  .snd-play__bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--facet-color-line);
+  }
+  .snd-play__packs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .snd-play__pack,
+  .snd-play__switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--facet-color-text-mute);
+    font: 500 12px/1 var(--mono);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  .snd-play__pack[aria-checked='true'] {
+    background: var(--facet-color-bg);
+    color: var(--facet-color-text);
+  }
+  .snd-play__dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--facet-color-text-mute);
+  }
+  .snd-play__switch[aria-pressed='true'] {
+    color: var(--facet-color-text);
+  }
+  .snd-play__switch[aria-pressed='true'] .snd-play__dot {
+    background: var(--facet-color-accent);
+  }
+  .snd-play__stage {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+    gap: 32px;
+    padding: 32px;
+    background: var(--facet-color-bg);
+    color: var(--facet-color-text);
+  }
+  :global(.snd-play__group) {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 0;
+  }
+  :global(.snd-play__label) {
+    color: var(--facet-color-text-mute);
+    font: 500 12px/1 var(--mono);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  :global(.snd-play__row) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 16px;
+    max-width: 100%;
+  }
+  :global(.snd-play__vp) {
+    position: relative;
+    overflow: hidden;
+    max-width: 100%;
+  }
+  :global(.snd-play__frame) {
+    position: absolute;
+    left: 0;
+    top: 0;
+  }
+  :global(.snd-play__toasts) {
+    position: relative;
+    width: 720px;
+    height: 400px;
+    border: 1px solid var(--facet-color-line);
+    border-radius: 24px;
+    overflow: hidden;
+  }
+  :global(.snd-play__toast-btn) {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 48px;
+    display: flex;
+    justify-content: center;
+  }
+  .snd-play .snd__hint {
+    padding: 12px 16px;
+    margin: 0;
+  }
+
   .snd {
     margin: 24px 0 8px;
     border: 1px solid var(--facet-color-line);
@@ -439,14 +583,18 @@ for (const id of SOUND_IDS) {
 
 <script>
   import { play, setVolume, SOUND_IDS, type SoundId } from '@facet/sounds';
+  import * as S from '@facet/sounds';
+  import * as F from '@facet/ui';
+  import { TOASTS } from '@facet/demo-data';
   import {
+    fitFrame,
     getSitePack,
     initSounds,
     onSitePackChange,
     setSitePack,
   } from '../../scripts/facet-runtime';
 
-  initSounds();
+  initSounds({ defaultOn: true }); // this page is about sound: on unless the visitor turned it off
   const root = document.querySelector<HTMLElement>('[data-sounds]')!;
   const volume = root.querySelector<HTMLInputElement>('[data-volume]')!;
   setVolume(Number(volume.value) / 100);
@@ -521,4 +669,104 @@ for (const id of SOUND_IDS) {
     });
   onSitePackChange(syncUse);
   syncUse();
+
+  // ---------------------------------------------------------------- Play with the UI
+  {
+    const box = document.querySelector<HTMLElement>('[data-play]')!;
+    const stage = box.querySelector<HTMLElement>('[data-play-stage]')!;
+    const group = (label: string, ...kids: Node[]) =>
+      F.h(
+        'div',
+        { class: 'snd-play__group' },
+        F.h('span', { class: 'snd-play__label' }, label),
+        F.h('div', { class: 'snd-play__row' }, ...kids),
+      );
+    // big 720-geometry parts sit in a scaled frame (the dial and slider read their real size)
+    const scaled = (w: number, hgt: number, k: number, child: Node) => {
+      const frame = F.h(
+        'div',
+        { class: 'snd-play__frame', style: { width: `${w}px`, height: `${hgt}px` } },
+        child,
+      );
+      const vp = F.h(
+        'div',
+        { class: 'snd-play__vp', style: { width: `${w * k}px`, height: `${hgt * k}px` } },
+        frame,
+      );
+      requestAnimationFrame(() => fitFrame(vp, frame, w, hgt, k));
+      return vp;
+    };
+
+    let playing = false;
+    const play = F.iconButton({
+      style: 'play',
+      icon: 'play',
+      title: 'Play / pause',
+      onTap: () => {
+        playing = !playing;
+        F.setGlyph(play, playing ? 'pause' : 'play');
+        F.setState(play, playing ? 'active' : 'default');
+      },
+    });
+    const cb = F.checkbox({ state: 'open', label: 'Water the plants', onChange: () => {} }); // toggles itself
+    const layer = F.toastLayer({ position: 'top', onShow: () => void S.play('notify') });
+    let ti = 0;
+    const toastFrame = F.h(
+      'div',
+      { class: 'snd-play__toasts' },
+      F.h(
+        'div',
+        { class: 'snd-play__toast-btn' },
+        F.button({
+          kind: 'secondary',
+          text: 'Send a toast',
+          onTap: () => layer.push(TOASTS[ti++ % TOASTS.length]!),
+        }),
+      ),
+      layer,
+    );
+
+    stage.append(
+      group(
+        'Buttons',
+        F.button({ kind: 'primary', text: 'Start', onTap: () => {} }),
+        F.button({ kind: 'secondary', text: 'Cancel', onTap: () => {} }),
+        F.button({ kind: 'outline', text: 'Disabled', state: 'disabled' }),
+      ),
+      group(
+        'Media',
+        F.iconButton({ style: 'round', icon: 'prev', title: 'Previous', onTap: () => {} }),
+        play,
+        F.iconButton({ style: 'round', icon: 'next', title: 'Next', onTap: () => {} }),
+      ),
+      group('Slider', F.slider({ width: 320, value: 42 })),
+      group('Checkbox', cb),
+      group('Light dial', scaled(560, 560, 0.5, F.dial({ value: 64, on: true }))),
+      group('Toasts', scaled(720, 400, 0.5, toastFrame)),
+    );
+
+    // pack: the site's pack (same as "Use on this site" above)
+    const chips = [...box.querySelectorAll<HTMLButtonElement>('[data-play-pack]')];
+    const showPack = (id: string) =>
+      chips.forEach((c) => c.setAttribute('aria-checked', String(c.dataset.playPack === id)));
+    chips.forEach((c) =>
+      c.addEventListener('click', () => {
+        setSitePack(c.dataset.playPack!);
+        showPack(c.dataset.playPack!);
+        void S.play('tap', { always: true });
+      }),
+    );
+    showPack(getSitePack());
+    onSitePackChange(showPack);
+
+    const sw = box.querySelector<HTMLButtonElement>('[data-play-sound]')!;
+    const swLabel = sw.querySelector<HTMLElement>('[data-play-sound-label]')!;
+    const showSound = () => {
+      sw.setAttribute('aria-pressed', String(S.settings.enabled));
+      swLabel.textContent = S.settings.enabled ? 'Sound on' : 'Sound off';
+    };
+    sw.addEventListener('click', () => S.setEnabled(!S.settings.enabled));
+    S.onSettingsChange(showSound);
+    showSound();
+  }
 </script>
