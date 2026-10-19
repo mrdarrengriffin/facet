@@ -11,7 +11,7 @@ import { isDay, type Screen, type ScreenContext, type ScreenOptions } from './co
 export function weatherScreen(ctx: ScreenContext, o: ScreenOptions = {}): Screen {
   const temp = fit8(text('display', 'fs-w-temp', '--°'));
   const ic = weatherIcon('partly-day', { size: 144, animated: true, stroke: 3 });
-  const cond = text('headline', 'fs-w-cond', '--');
+  const cond = text('headline', 'fs-w-cond', 'Loading');
   const line = text('body', 'fs-w-line', '');
   const rainDot = statusDot('idle');
   const rain = text('body', 'fs-w-rain', '');
@@ -87,7 +87,8 @@ export function weatherScreen(ctx: ScreenContext, o: ScreenOptions = {}): Screen
     content(dayRows),
   );
   daysView.hidden = true;
-  let last: WeatherData | null | undefined;
+  let last: WeatherData | null | undefined,
+    wasLoading = true;
   const render = (d: WeatherData | null | undefined) => {
     const c = d?.current;
     if (!c) {
@@ -130,7 +131,9 @@ export function weatherScreen(ctx: ScreenContext, o: ScreenOptions = {}): Screen
     el: page('fs-weather', sumView, daysView),
     update(s) {
       setText(place, s.place ?? '');
-      if (s.weather === last) return;
+      // a missing value re-renders once loading runs out ("Loading" -> "No data")
+      if (s.weather === last && (s.weather || wasLoading === ctx.store.loading())) return;
+      wasLoading = ctx.store.loading();
       last = s.weather;
       render(s.weather);
     },

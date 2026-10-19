@@ -8,13 +8,13 @@ import { at, CH, CW, content, header, layout, moreRow, page, subView, text } fro
 import { nowIndex } from '../previews.js';
 import { h } from '../dom.js';
 import type { Band, EnergyData, EnergyDay } from '../types.js';
-import type { Screen, ScreenContext, ScreenOptions } from './common.js';
+import { missing, type Screen, type ScreenContext, type ScreenOptions } from './common.js';
 
-export function energyScreen(_ctx: ScreenContext, o: ScreenOptions = {}): Screen {
+export function energyScreen(ctx: ScreenContext, o: ScreenOptions = {}): Screen {
   const H = layout['chart-h'];
   const lbl = text('label', 'fs-e-label', 'today so far');
   const big = fit8(text('hero', 'fs-e-big', '£--'));
-  const line1 = text('body', 'fs-e-line', 'no data');
+  const line1 = text('body', 'fs-e-line', 'loading');
   const rateDot = statusDot('idle');
   const rateTxt = text('body', 'fs-e-rate', '');
   const now = fit8(text('label', 'fs-e-now', ''));
@@ -46,7 +46,7 @@ export function energyScreen(_ctx: ScreenContext, o: ScreenOptions = {}): Screen
   // the week: pairs per day (the week before dashed, this week solid), today last
   const wkLbl = text('label', 'fs-e-label', 'this week');
   const wkBig = fit8(text('hero', 'fs-e-big', '£--'));
-  const wkLine = text('body', 'fs-e-line', 'no data');
+  const wkLine = text('body', 'fs-e-line', 'loading');
   let wkLeg = legend([]);
   const wkLegBox = at(0, 184, CW, 32, h('div', { class: 'fs-e-legend' }, wkLeg));
   const wkBars = barChart({
@@ -82,6 +82,7 @@ export function energyScreen(_ctx: ScreenContext, o: ScreenOptions = {}): Screen
   const el = page('fs-energy', sumView, weekView);
   let d: EnergyData | null | undefined = null,
     last: EnergyData | null | undefined,
+    wasLoading = true,
     sel = -1,
     wkSel = -1,
     shown = false;
@@ -126,7 +127,9 @@ export function energyScreen(_ctx: ScreenContext, o: ScreenOptions = {}): Screen
       kwh === null
         ? d?.error
           ? `offline · ${d.error}`
-          : 'no data'
+          : d
+            ? 'no data'
+            : missing(ctx.store)
         : `${kwh.toFixed(1)} kWh${delta === null ? '' : ` · ${Math.abs(delta)}% ${delta <= 0 ? 'less' : 'more'} a day than the week before`}`;
     const nl = legend([
       { c: 'text-dim', text: 'this week' },
@@ -176,7 +179,7 @@ export function energyScreen(_ctx: ScreenContext, o: ScreenOptions = {}): Screen
       ? `${t.kwh?.toFixed(1) ?? '--'} kWh${delta === null ? '' : ` · ${Math.abs(delta)}% ${delta <= 0 ? 'less' : 'more'} than yesterday by now`}`
       : d?.error
         ? `offline · ${d.error}`
-        : 'no data';
+        : missing(ctx.store);
     const r = d?.rate,
       band = (r?.band ?? 'normal') as Band;
     rateDot.dataset.tone = band === 'peak' ? 'working' : band === 'cheap' ? 'info' : 'idle';
@@ -205,7 +208,9 @@ export function energyScreen(_ctx: ScreenContext, o: ScreenOptions = {}): Screen
   return {
     el,
     update(s) {
-      if (s.energy === last) return;
+      // a missing value re-renders once loading runs out ("loading" -> "no data")
+      if (s.energy === last && (s.energy || wasLoading === ctx.store.loading())) return;
+      wasLoading = ctx.store.loading();
       last = d = s.energy;
       render();
     },
