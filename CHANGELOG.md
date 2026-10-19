@@ -37,6 +37,9 @@ All notable changes to Facet are written down here. The format is loosely based 
 
 ### Changed
 
+- Idle: after `idleAfter` (default 60 s) the device shows the clock and dims to
+  `idleBrightness` (default 0.7); the next touch goes to Home. A toast wakes the dimmed screen.
+  The demo uses the default minute.
 - `createButton` is replaced by `button()` and the rest of the component set.
 - Colour tokens follow the panel names: `line-strong` is now `line-hi`, `info` is now `blue`.
 

@@ -1,5 +1,7 @@
 // The device: every screen in one 720 × 720 frame, with navigation (tap a Home card to open its screen, Back returns
 // Home), a toast layer over everything, and an idle clock after a while without a touch. Screens switch instantly.
+// Idle rule (shared with the firmware): after `idleAfter` without a touch, the clock without its header and the screen
+// dimmed to `idleBrightness`; the next touch goes to Home and does nothing else.
 import { toast as TOAST } from '@facet/tokens';
 import { h } from './dom.js';
 import { hhmm } from './format.js';
@@ -118,6 +120,8 @@ export interface DeviceOptions {
   onToast?: (t: ToastData) => void;
   /** Show the idle clock after this many ms without a touch; 0 = never. Default 60 s. */
   idleAfter?: number;
+  /** Screen brightness while idle, 0.1 to 1 (the device dims its backlight; here a CSS filter). Default 0.7. */
+  idleBrightness?: number;
   /** Media screen: what sits in the hero slot. Default `disc`. */
   mediaVisual?: MediaVisualId;
   /** Face of the idle clock. Default `ring`. */
@@ -160,12 +164,18 @@ export function createDevice(ctx: ScreenContext, o: DeviceOptions = {}) {
     to.el.hidden = false;
     cur = id;
     frame.dataset.page = id;
+    if (id === 'idle') frame.dataset.dimmed = '';
+    else delete frame.dataset.dimmed;
     to.enter?.();
     o.onNavigate?.(id);
   }
 
-  // idle: after a while without a touch, the clock; the next touch wakes it back to Home
+  // idle: after a while without a touch, the clock, dimmed; the next touch goes back to Home
   const idleAfter = o.idleAfter ?? 60_000;
+  frame.style.setProperty(
+    '--f-idle-brightness',
+    String(Math.min(1, Math.max(0.1, o.idleBrightness ?? 0.7))),
+  );
   let idleTimer: ReturnType<typeof setTimeout> | undefined;
   const arm = () => {
     clearTimeout(idleTimer);
@@ -197,7 +207,12 @@ export function createDevice(ctx: ScreenContext, o: DeviceOptions = {}) {
     go,
     /** Show the idle clock now. */
     sleep: () => go('idle'),
-    toast: (t: ToastData, opts?: { onAction?: () => void }) => toasts.push(t, opts),
+    /** Show a toast; it also wakes a dimmed screen to full brightness (it stays on the idle clock). */
+    toast: (t: ToastData, opts?: { onAction?: () => void }) => {
+      delete frame.dataset.dimmed;
+      arm();
+      return toasts.push(t, opts);
+    },
     toasts,
     get current() {
       return cur;

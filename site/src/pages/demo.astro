@@ -22,8 +22,8 @@ const jump = screenDocs.filter((s) => s.slug !== 'toasts');
       <h1>Facet on a mock house</h1>
       <p class="lede">
         The real screens at panel size (720 × 720, scaled down on small screens), running on
-        fictional data. Tap a card to open its screen, use Back to return. Leave it alone for 30
-        seconds and it falls asleep to a clock; tap to wake it.
+        fictional data. Tap a card to open its screen, use Back to return. Leave it alone for a
+        minute and it dims to a clock; tap anywhere to go back to Home.
       </p>
     </header>
 
@@ -114,7 +114,6 @@ const jump = screenDocs.filter((s) => s.slug !== 'toasts');
   );
   const visual = new URLSearchParams(location.search).get('visual'); // ?visual=cassette|cd|vinyl|reel
   const device = createDevice(house, {
-    idleAfter: 30_000,
     mediaVisual: isMediaVisual(visual) ? visual : 'disc',
     onToast: () => void play('notify'),
     onNavigate: (id) => (now.textContent = id === 'idle' ? 'Idle clock' : (names[id] ?? id)),

@@ -16,6 +16,11 @@
   touch-action: none;
   -webkit-tap-highlight-color: transparent;
 }
+.f-device[data-dimmed] {
+  /* the idle backlight: a real panel dims its LEDs, the browser dims the frame */
+  filter: brightness(var(--f-idle-brightness, 0.7));
+  transition: filter 250ms;
+}
 .f-screen *,
 .f-sound-scope * {
   box-sizing: border-box;
