@@ -1,0 +1,63 @@
+---
+import '@fontsource/inter/300.css';
+import '@fontsource/inter/400.css';
+import '@fontsource/inter/500.css';
+import '@fontsource/inter/600.css';
+import '@fontsource/jetbrains-mono/400.css';
+import '@fontsource/jetbrains-mono/500.css';
+import '@facet/tokens/tokens.css';
+import '../styles/global.css';
+import Header from '../components/Header.astro';
+import Search from '../components/Search.astro';
+import { url } from '../lib/nav';
+
+interface Props {
+  title: string;
+  description: string;
+  hasSidebar?: boolean;
+}
+
+const { title, description, hasSidebar = false } = Astro.props;
+const pageTitle = title === 'Facet' ? 'Facet' : `${title} · Facet`;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{pageTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" href={url('/favicon.svg')} type="image/svg+xml" />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:type" content="website" />
+    <meta name="color-scheme" content="dark light" />
+    <script is:inline>
+      // Set the theme before first paint so there's no flash.
+      (() => {
+        let theme = null;
+        try {
+          theme = localStorage.getItem('facet-theme');
+        } catch {}
+        if (theme !== 'dark' && theme !== 'light') {
+          theme = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+        }
+        document.documentElement.dataset.facetTheme = theme;
+      })();
+    </script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <Header hasSidebar={hasSidebar} />
+    <slot />
+    <Search />
+    <script>
+      import { initTheme } from '../scripts/theme';
+      initTheme();
+    </script>
+  </body>
+</html>

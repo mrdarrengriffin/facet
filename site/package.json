@@ -1,0 +1,27 @@
+{
+  "name": "@facet/site",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Facet docs and design system site.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "typecheck": "astro check"
+  },
+  "dependencies": {
+    "@astrojs/markdown-remark": "^7.3.3",
+    "@facet/tokens": "workspace:*",
+    "@facet/ui": "workspace:*",
+    "@fontsource/inter": "^5.3.0",
+    "@fontsource/jetbrains-mono": "^5.3.0",
+    "astro": "^7.4.1",
+    "github-slugger": "^2.0.0"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.11",
+    "typescript": "^5.9.3"
+  }
+}

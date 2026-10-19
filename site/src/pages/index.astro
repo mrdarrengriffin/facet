@@ -1,0 +1,66 @@
+---
+import Base from '../layouts/Base.astro';
+import Logo from '../components/Logo.astro';
+import { url } from '../lib/nav';
+
+const description =
+  'Wall panel UI for Home Assistant. One design system that runs on ESP32 touch panels (ESPHome + LVGL) and in the browser on a Pi or tablet.';
+
+const features = [
+  {
+    label: 'Context',
+    title: 'A screen for every room',
+    text: "Each panel shows what matters in its room right now: the music that's playing, a kitchen timer, the washing machine, the next thing in the calendar.",
+  },
+  {
+    label: 'Glanceable',
+    title: 'Readable from across the room',
+    text: 'Big touch targets, one action per card, and nothing to configure on the device itself.',
+  },
+  {
+    label: 'One system',
+    title: 'ESP32 panels and browsers',
+    text: 'The same tokens and components on an ESPHome panel and on a Pi or tablet, so every screen in the house feels the same.',
+  },
+  {
+    label: 'Open source',
+    title: 'MIT licensed',
+    text: 'Built in the open. Ideas, issues and feedback are welcome on GitHub.',
+  },
+];
+---
+
+<Base title="Facet" description={description}>
+  <main id="main" class="home">
+    <section class="hero">
+      <div class="hero__mark"><Logo size={96} /></div>
+      <p class="facet-label">Early preview · v0.1.0</p>
+      <h1 class="hero__title">Facet</h1>
+      <p class="hero__lede">{description}</p>
+      <div class="hero__actions">
+        <a class="button button--primary" href={url('/docs/getting-started/')}>Getting started</a>
+        <a class="button button--secondary" href={url('/design-system/')}>Design system</a>
+      </div>
+    </section>
+
+    <section class="callout callout--warn" aria-label="Project status">
+      <span class="dot" aria-hidden="true"></span>
+      <p>
+        <strong>Work in progress.</strong> This is the first skeleton: a starter set of design tokens,
+        one example component and these docs. Nothing is ready to install yet.
+      </p>
+    </section>
+
+    <section class="features">
+      {
+        features.map((feature) => (
+          <article class="feature">
+            <p class="facet-label">{feature.label}</p>
+            <h2>{feature.title}</h2>
+            <p>{feature.text}</p>
+          </article>
+        ))
+      }
+    </section>
+  </main>
+</Base>

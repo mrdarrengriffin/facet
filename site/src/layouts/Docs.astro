@@ -1,0 +1,106 @@
+---
+import type { MarkdownHeading } from 'astro';
+import type { CollectionEntry } from 'astro:content';
+import Base from './Base.astro';
+import { docHref, getSidebar, getSortedDocs } from '../lib/nav';
+
+interface Props {
+  entry: CollectionEntry<'docs'>;
+  headings: MarkdownHeading[];
+}
+
+const { entry, headings } = Astro.props;
+const { title, description } = entry.data;
+const current = docHref(entry);
+
+const sidebar = await getSidebar();
+const docs = await getSortedDocs();
+const index = docs.findIndex((doc) => doc.id === entry.id);
+const prev = index > 0 ? docs[index - 1] : undefined;
+const next = index < docs.length - 1 ? docs[index + 1] : undefined;
+
+const toc = headings.filter((heading) => heading.depth === 2 || heading.depth === 3);
+const editUrl = `https://github.com/mrdarrengriffin/facet/edit/main/site/${entry.filePath}`;
+---
+
+<Base title={title} description={description} hasSidebar>
+  <div class="docs">
+    <aside class="sidebar" id="sidebar" data-sidebar>
+      <nav aria-label="Docs">
+        {
+          sidebar.map((group) => (
+            <section class="sidebar__group">
+              <h2 class="facet-label">{group.label}</h2>
+              <ul>
+                {group.links.map((link) => (
+                  <li>
+                    <a href={link.href} aria-current={link.href === current ? 'page' : undefined}>
+                      {link.label}
+                      {link.badge && <span class="badge">{link.badge}</span>}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))
+        }
+      </nav>
+    </aside>
+    <div class="sidebar-backdrop" data-nav-close></div>
+
+    <main class="docs__main" id="main">
+      <article class="prose">
+        <p class="facet-label">{entry.data.group}</p>
+        <h1>{title}</h1>
+        <p class="lede">{description}</p>
+        <slot />
+      </article>
+
+      <footer class="docs__footer">
+        <a class="edit-link" href={editUrl}>Edit this page on GitHub</a>
+        <nav class="pager" aria-label="Previous and next pages">
+          {
+            prev ? (
+              <a class="pager__link" href={docHref(prev)} rel="prev">
+                <span class="facet-label">Previous</span>
+                <span>{prev.data.title}</span>
+              </a>
+            ) : (
+              <span />
+            )
+          }
+          {
+            next && (
+              <a class="pager__link pager__link--next" href={docHref(next)} rel="next">
+                <span class="facet-label">Next</span>
+                <span>{next.data.title}</span>
+              </a>
+            )
+          }
+        </nav>
+      </footer>
+    </main>
+
+    {
+      toc.length > 0 && (
+        <aside class="toc" aria-label="On this page">
+          <h2 class="facet-label">On this page</h2>
+          <ul>
+            {toc.map((heading) => (
+              <li class={`toc__item toc__item--${heading.depth}`}>
+                <a href={`#${heading.slug}`} data-toc-link>
+                  {heading.text}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </aside>
+      )
+    }
+  </div>
+
+  <script>
+    import { initDocsNav } from '../scripts/docs-nav';
+    initDocsNav();
+  </script>
+</Base>

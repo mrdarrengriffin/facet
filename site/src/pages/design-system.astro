@@ -1,0 +1,186 @@
+---
+import Base from '../layouts/Base.astro';
+import { color, font, motion, radius, space, type, type ThemeName } from '@facet/tokens';
+import '@facet/ui/styles.css';
+
+const themes: ThemeName[] = ['dark', 'light'];
+const colors = Object.entries(color);
+const typeStyles = Object.entries(type);
+const sample: Record<string, string> = {
+  display: '21:47',
+  hero: '3',
+  value: '18°',
+  headline: 'Now playing',
+  title: 'Living room lights',
+  body: 'Dry for the next hour',
+  label: 'Kitchen · timer',
+};
+
+const fontStack = (name: keyof typeof font) => `'${font[name].family}', ${font[name].fallback}`;
+---
+
+<Base
+  title="Design system"
+  description="The Facet design tokens and components, rendered from @facet/tokens and @facet/ui."
+>
+  <main id="main" class="page page--wide ds">
+    <header class="ds__intro">
+      <p class="facet-label">Design system · starter set</p>
+      <h1>Design system</h1>
+      <p class="lede">
+        Everything on this page is rendered from <code>@facet/tokens</code> and <code
+          >@facet/ui</code
+        >. These are starter tokens; the full set will replace them.
+      </p>
+    </header>
+
+    <section class="ds__section" aria-labelledby="colour">
+      <h2 id="colour">Colour</h2>
+      <p>Every colour has a dark and a light value. Dark is the default on panels.</p>
+      <div class="swatches">
+        {
+          colors.map(([name, value]) => (
+            <div class="swatch">
+              <div class="swatch__chips">
+                {themes.map((theme) => (
+                  <div
+                    class="swatch__chip"
+                    style={`background:${value[theme]}`}
+                    title={`${theme}: ${value[theme]}`}
+                  />
+                ))}
+              </div>
+              <div class="swatch__meta">
+                <code>{name}</code>
+                <span class="swatch__values">
+                  {value.dark} · {value.light}
+                </span>
+                <span class="swatch__use">{value.use}</span>
+              </div>
+            </div>
+          ))
+        }
+      </div>
+    </section>
+
+    <section class="ds__section" aria-labelledby="type">
+      <h2 id="type">Type</h2>
+      <p>
+        {font.sans.family} for words and numbers, {font.mono.family} for labels. One large, light hero
+        per screen; everything else stays quiet. Sizes are at the 720 x 720 reference panel.
+      </p>
+      <div class="type-scale">
+        {
+          typeStyles.map(([name, style]) => (
+            <div class="type-row">
+              <div class="type-row__meta">
+                <code>{name}</code>
+                <span>
+                  {style.size}/{style.weight} · {font[style.font].family}
+                </span>
+              </div>
+              <div
+                class="type-row__sample"
+                style={[
+                  `font-family:${fontStack(style.font)}`,
+                  `font-size:min(${style.size}px, ${(style.size / 6).toFixed(1)}vw + 12px)`,
+                  `font-weight:${style.weight}`,
+                  `line-height:${style.lineHeight}`,
+                  `letter-spacing:${style.letterSpacing}px`,
+                  `text-transform:${style.uppercase ? 'uppercase' : 'none'}`,
+                ].join(';')}
+              >
+                {sample[name] ?? name}
+              </div>
+            </div>
+          ))
+        }
+      </div>
+    </section>
+
+    <section class="ds__section" aria-labelledby="space">
+      <h2 id="space">Spacing</h2>
+      <p>An 8 px grid, with 4 px for tight spots.</p>
+      <div class="space-scale">
+        {
+          Object.entries(space).map(([name, value]) => (
+            <div class="space-row">
+              <code>space.{name}</code>
+              <span class="space-row__value">{value}px</span>
+              <span class="space-row__bar" style={`width:${value * 4}px`} />
+            </div>
+          ))
+        }
+      </div>
+    </section>
+
+    <section class="ds__section" aria-labelledby="radius">
+      <h2 id="radius">Radius</h2>
+      <div class="radius-scale">
+        {
+          Object.entries(radius).map(([name, value]) => (
+            <div class="radius-item">
+              <div class="radius-item__box" style={`border-radius:${Math.min(value, 48)}px`} />
+              <code>{name}</code>
+              <span>{value}px</span>
+            </div>
+          ))
+        }
+      </div>
+    </section>
+
+    <section class="ds__section" aria-labelledby="motion">
+      <h2 id="motion">Motion</h2>
+      <p>Animate opacity and transform on small things only, so it works on the panels too.</p>
+      <div class="motion-grid">
+        {
+          Object.entries(motion.duration).map(([name, value]) => (
+            <div class="motion-item">
+              <code>duration.{name}</code>
+              <span>{value} ms</span>
+            </div>
+          ))
+        }
+        {
+          Object.entries(motion.easing).map(([name, value]) => (
+            <div class="motion-item">
+              <code>easing.{name}</code>
+              <span>{value}</span>
+            </div>
+          ))
+        }
+      </div>
+    </section>
+
+    <section class="ds__section" aria-labelledby="components">
+      <h2 id="components">Components</h2>
+      <p>
+        <code>createButton()</code> from <code>@facet/ui</code>, rendered in both themes. Plain
+        TypeScript, no framework.
+      </p>
+      <div class="demo-panels">
+        {
+          themes.map((theme) => (
+            <div class="demo-panel" data-facet-theme={theme}>
+              <p class="demo-panel__label">{theme}</p>
+              <div class="demo-panel__buttons" data-button-demo />
+            </div>
+          ))
+        }
+      </div>
+    </section>
+  </main>
+</Base>
+
+<script>
+  import { createButton } from '@facet/ui';
+
+  for (const container of document.querySelectorAll('[data-button-demo]')) {
+    container.append(
+      createButton({ label: 'Start' }),
+      createButton({ label: 'Cancel', variant: 'secondary' }),
+      createButton({ label: 'Skip', variant: 'ghost' }),
+      createButton({ label: 'Off', disabled: true }),
+    );
+  }
+</script>

@@ -1,0 +1,22 @@
+---
+import Base from '../layouts/Base.astro';
+import { url } from '../lib/nav';
+
+interface Props {
+  title: string;
+  description: string;
+}
+const { title, description } = Astro.props;
+---
+
+<Base title={title} description={description}>
+  <main id="main" class="page coming-soon">
+    <p class="facet-label">Coming soon</p>
+    <h1>{title}</h1>
+    <p class="lede">{description}</p>
+    <slot />
+    <p>
+      <a class="button button--secondary" href={url('/docs/roadmap/')}>See the roadmap</a>
+    </p>
+  </main>
+</Base>
