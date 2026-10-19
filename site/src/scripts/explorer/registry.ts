@@ -45,6 +45,11 @@ export interface Entry {
   size?: [number, number];
   /** Re-render on a timer (live clocks). */
   live?: boolean;
+  /**
+   * Whether the component makes a sound. Leave it out: the explorer works it out from what the sound hooks pick up
+   * (see `hasSound` in @facet/sounds). Set it only for a component that plays sounds itself, or to hide the switch.
+   */
+  sound?: boolean;
 }
 
 const TONES = ['ok', 'warn', 'error', 'working', 'info', 'idle'] as const;

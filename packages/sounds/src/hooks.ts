@@ -17,6 +17,20 @@ export interface SoundHookOptions {
 }
 
 const MOVE_PX = 8;
+/** Elements a tap plays a sound for (Open, Back, Toggle, Tap, or Error when disabled). */
+const LIVE = '.live';
+/** Elements whose drag plays Slider tick. */
+const DRAG = '.f-dial-arc, .f-slider';
+/** Pressing a disabled button plays Error. */
+const DISABLED = 'button:disabled';
+
+/**
+ * Everything the hooks make a sound for. `hasSound(el)` says whether anything inside `el` would make a sound, e.g.
+ * to show a sound switch only next to components that use it.
+ */
+export const SOUND_SELECTOR = `${LIVE}, ${DRAG}, ${DISABLED}`;
+export const hasSound = (root: Element): boolean =>
+  root.matches(SOUND_SELECTOR) || root.querySelector(SOUND_SELECTOR) !== null;
 
 /** Install the hooks on a document (or any element). Returns a function that removes them. */
 export function installSoundHooks(
@@ -43,9 +57,9 @@ export function installSoundHooks(
     downAt = { x: pe.clientX, y: pe.clientY };
     moved = false;
     const t = pe.target as Element;
-    if (t.closest?.(SCOPE) && t.closest('button:disabled')) void play('error');
+    if (t.closest?.(SCOPE) && t.closest(DISABLED)) void play('error');
     // remember where a dial or slider was, so a tap on the track ticks once
-    const el = t.closest?.('.f-dial-arc, .f-slider');
+    const el = t.closest?.(DRAG);
     const v = el ? valueOf(el) : null;
     if (el && v != null) last.set(el, Math.round(v / stepOf(el)));
   };
@@ -63,8 +77,8 @@ export function installSoundHooks(
     const wasMoved = moved;
     downAt = null;
     moved = false;
-    if (wasMoved && !t.closest('.f-dial-arc, .f-slider')) return; // a scroll or drag, not a tap
-    const el = t.closest('.live');
+    if (wasMoved && !t.closest(DRAG)) return; // a scroll or drag, not a tap
+    const el = t.closest(LIVE);
     if (!el) return;
     if ((el as HTMLElement).dataset.state === 'disabled') return void play('error');
     if (el.matches('.f-back, [data-snd="back"]')) return void play('back');
@@ -83,7 +97,7 @@ export function installSoundHooks(
   const onDrag = (e: Event) => {
     const pe = e as PointerEvent;
     if (pe.type === 'pointermove' && !pe.buttons) return;
-    const el = (pe.target as Element).closest?.('.f-dial-arc, .f-slider');
+    const el = (pe.target as Element).closest?.(DRAG);
     if (!el || !el.closest(SCOPE)) return;
     const v = valueOf(el);
     if (v == null || Number.isNaN(v)) return;

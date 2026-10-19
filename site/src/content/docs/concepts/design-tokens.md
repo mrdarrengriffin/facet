@@ -28,7 +28,7 @@ the web and into ESPHome YAML (substitutions, fonts and LVGL styles) for the pan
 | `radius`     | `card`, `chip`, `button`, `round`               |                                                          |
 | `motion`     | `duration.dial-sweep`, `easing.ease-out`        | Each easing has its CSS curve and its LVGL path          |
 | `toast`      | `position`, `max`, `life`, `swipe`              |                                                          |
-| `sound`      | `chosen`, `loudnessDb`, `peakDb`                | The UI sound set in use and how sounds are normalised    |
+| `sound`      | `pack`, `loudnessDb`, `peakDb`                  | The default sound pack and how sounds are normalised     |
 
 ## Using them
 

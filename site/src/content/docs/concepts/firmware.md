@@ -26,7 +26,8 @@ split into:
 | `examples/`   | Ready-to-flash configurations combining a board with the packages    |
 
 The theme package will be generated from `@facet/tokens`, so the panels always match the web
-version.
+version. UI sounds are rendered from the same packs as the web and embedded as PCM files; see
+[Sounds](/docs/sounds/#on-a-panel).
 
 ## Installing
 

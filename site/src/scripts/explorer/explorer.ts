@@ -3,7 +3,7 @@
  * and its variants. The stage follows the site theme unless overridden; sounds can be switched on.
  */
 import { tickClocks } from '@facet/ui';
-import { fitFrame, initSounds, initThemeOverride } from '../facet-runtime';
+import { fitFrame, initSounds, initThemeOverride, soundToggleFor } from '../facet-runtime';
 import { entries, type Control, type Entry, type Props } from './registry';
 
 type Destroyable = (HTMLElement | SVGElement) & { destroy?: () => void };
@@ -34,6 +34,8 @@ export function initExplorer(root: HTMLElement): void {
   const variantsBox = $<HTMLElement>(root, '[data-ex-variants]');
   const variantsSection = $<HTMLElement>(root, '[data-ex-variants-section]');
   initThemeOverride(root, $<HTMLElement>(root, '[data-ex-themed]'));
+  // the sound switch shows only for components that make a sound (only the stage is inside the sound scope)
+  const soundCheck = soundToggleFor(root, stage);
 
   // ---- sidebar
   const groups = [...new Set(entries.map((e) => e.group))];
@@ -89,6 +91,7 @@ export function initExplorer(root: HTMLElement): void {
     } else stage.append(el('div', { class: 'ex-center' }, node as Node));
     code.textContent = current.code(props);
     stage.classList.toggle('is-big', !!size);
+    soundCheck(current.sound);
   }
 
   function renderControls() {

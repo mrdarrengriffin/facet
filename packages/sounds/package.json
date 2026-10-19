@@ -1,7 +1,7 @@
 {
   "name": "@facet/sounds",
   "version": "0.1.0",
-  "description": "Facet UI sounds: procedural Web Audio sounds in versioned sets, and hooks that play them on real taps.",
+  "description": "Facet UI sounds: procedural Web Audio sounds in six named packs, and hooks that play them on real taps.",
   "license": "MIT",
   "author": "Darren Griffin",
   "type": "module",

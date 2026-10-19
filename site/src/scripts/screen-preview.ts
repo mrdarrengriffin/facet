@@ -1,6 +1,6 @@
 import { createMockHouse, TOASTS } from '@facet/demo-data';
 import { mountScreen, toastLayer, type ClockFace, type ScreenId } from '@facet/ui';
-import { fitFrame, initSounds, initThemeOverride } from './facet-runtime';
+import { fitFrame, initSounds, initThemeOverride, soundToggleFor } from './facet-runtime';
 
 /** Mount every `[data-preview]` on the page. */
 export function initScreenPreviews(): void {
@@ -42,5 +42,6 @@ export function initScreenPreviews(): void {
     }
     fitFrame(viewport, frame);
     initThemeOverride(root, frame);
+    soundToggleFor(root, frame);
   }
 }

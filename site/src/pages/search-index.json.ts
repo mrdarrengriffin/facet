@@ -2,6 +2,8 @@ import type { APIRoute } from 'astro';
 import { getSortedDocs, screenHref, url } from '../lib/nav';
 import { screenDocs } from '../lib/screens';
 import { buildRecords } from '../lib/search-index';
+import { PACKS, SOUND_LABELS } from '@facet/sounds';
+import { soundEvents, soundsIntro } from '../lib/sounds';
 
 // Built once at build time. The client search in src/scripts/search.ts loads it on first use.
 export const GET: APIRoute = async () => {
@@ -35,7 +37,37 @@ export const GET: APIRoute = async () => {
       url: `${href}#configuration`,
     });
   }
+  const sounds = url('/docs/sounds/');
   records.push(
+    { title: 'Sounds', heading: '', text: soundsIntro, url: sounds },
+    {
+      title: 'Sounds',
+      heading: 'The ten sounds',
+      text: strip(
+        soundEvents
+          .map((e) => `${SOUND_LABELS[e.id]} (${e.id}): ${e.meaning} ${e.trigger}`)
+          .join(' '),
+      ),
+      url: `${sounds}#events`,
+    },
+    {
+      title: 'Sounds',
+      heading: 'The six packs',
+      text: PACKS.map((p) => `${p.name} (${p.id}, ${p.engine} engine): ${p.about}`).join(' '),
+      url: `${sounds}#packs`,
+    },
+    {
+      title: 'Sounds',
+      heading: 'Choosing a pack',
+      text: 'setPack, play with a pack option, the sound.pack design token, PACKS, getPack, settings.pack.',
+      url: `${sounds}#choosing-a-pack`,
+    },
+    {
+      title: 'Sounds',
+      heading: 'On a panel',
+      text: 'Firmware plays the sounds pre-rendered: render() and wav() give mono 16-bit PCM WAV files at 16 kHz, decoded into memory at boot and played over I2S.',
+      url: `${sounds}#on-a-panel`,
+    },
     {
       title: 'Components',
       heading: '',

@@ -30,6 +30,11 @@ export function docHref(entry: CollectionEntry<'docs'>): string {
 
 export const screenHref = (slug: string) => url(`/docs/screens/${slug}/`);
 
+/** Docs pages written as Astro pages (they run code live), added to a docs group after its Markdown pages. */
+const extraDocs: Record<string, NavLink[]> = {
+  Concepts: [{ label: 'Sounds', href: url('/docs/sounds/') }],
+};
+
 /** Pages outside the docs collection that also appear in the sidebar. */
 const explore: NavGroup = {
   label: 'Explore',
@@ -61,7 +66,8 @@ export async function getSidebar(): Promise<NavGroup[]> {
     label,
     links: docs
       .filter((doc) => doc.data.group === label)
-      .map((doc) => ({ label: doc.data.title, href: docHref(doc) })),
+      .map((doc): NavLink => ({ label: doc.data.title, href: docHref(doc) }))
+      .concat(extraDocs[label] ?? []),
   });
   return [byGroup('Start here'), byGroup('Concepts'), screens, explore, byGroup('Project')].filter(
     (g) => g.links.length > 0,

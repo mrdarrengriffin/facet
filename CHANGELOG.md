@@ -16,8 +16,10 @@ All notable changes to Facet are written down here. The format is loosely based 
 - `@facet/ui`: every component and screen as plain TypeScript factories. Screens read a small
   observable store and call actions. Screens: Home, Agents, Media, Light, Clock (five faces),
   GitHub, Energy, Weather, Lightning and Timer, plus toasts and an idle clock.
-- `@facet/sounds`: procedural UI sounds (v1, Crisp & mechanical by default) and hooks that
-  play them on real taps only.
+- `@facet/sounds`: procedural UI sounds in six named packs (Keycap by default, plus Halo,
+  Arcade, Graphite, Crystal and Felt), chosen with `setPack()`, and hooks that play them on
+  real taps only.
+- Site: a Sounds page (`/docs/sounds/`) with every sound in every pack playable live.
 - `@facet/demo-data`: a fictional mock house.
 - Site: a UI explorer (`/components/`), a full demo (`/demo/`), a docs page with a live
   preview for every screen, and the new Facet mark, favicons, web manifest and social card.

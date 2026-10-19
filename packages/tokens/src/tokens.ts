@@ -101,7 +101,7 @@ export const toast = strip(data.toast) as {
   sound: string;
 };
 export const sound = strip(data.sound) as {
-  chosen: string;
+  pack: string;
   peakDb: number;
   loudnessDb: number;
   fadeMs: number;

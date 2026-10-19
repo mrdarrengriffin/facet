@@ -1,0 +1,524 @@
+---
+import { Code } from 'astro:components';
+import { DEFAULT_PACK, PACKS, SOUND_LABELS } from '@facet/sounds';
+import { sound } from '@facet/tokens';
+import Docs from '../../layouts/Docs.astro';
+import { url } from '../../lib/nav';
+import { inlineMarkdown } from '../../lib/inline';
+import { soundEvents, soundsIntro } from '../../lib/sounds';
+
+const headings = [
+  { depth: 2, slug: 'try-them', text: 'Try them' },
+  { depth: 2, slug: 'events', text: 'The ten sounds' },
+  { depth: 2, slug: 'packs', text: 'The six packs' },
+  { depth: 2, slug: 'choosing-a-pack', text: 'Choosing a pack' },
+  { depth: 2, slug: 'how-they-are-made', text: 'How they are made' },
+  { depth: 2, slug: 'on-a-panel', text: 'On a panel' },
+];
+const themes = { light: 'github-light', dark: 'github-dark' } as const;
+const engineLabel = { basic: 'Basic engine', modal: 'Modal engine' } as const;
+
+const usage = `import { installSoundHooks, play, setEnabled, setPack, unlockOnGesture } from '@facet/sounds';
+
+unlockOnGesture(); // browsers only allow audio after a user gesture
+installSoundHooks(); // taps, toggles, back and slider ticks inside .f-screen
+setPack('felt'); // any pack id: ${PACKS.map((p) => p.id).join(', ')}
+setEnabled(true); // sounds are off until you turn them on
+
+play('confirm'); // a sound from the current pack
+play('notify', { pack: 'crystal', always: true }); // another pack, even while sounds are off`;
+
+const tokenUsage = `// packages/tokens/src/tokens.json
+"sound": {
+  "pack": "${sound.pack}",
+  "loudnessDb": ${sound.loudnessDb},
+  "peakDb": ${sound.peakDb},
+  "fadeMs": ${sound.fadeMs}
+}`;
+
+const exportUsage = `import { PACKS, SOUND_IDS, render, soundParams, wav } from '@facet/sounds';
+
+// One WAV per sound: mono, 16-bit PCM, 16 kHz
+for (const id of SOUND_IDS) {
+  const { data, sr } = await render(soundParams('keycap', id), 16000);
+  const file = wav(data, sr); // a Blob, e.g. download it or write it to disk
+}`;
+---
+
+<Docs
+  title="Sounds"
+  description="Ten UI sounds in six packs, made live with Web Audio. Play every one of them here."
+  group="Concepts"
+  current={url('/docs/sounds/')}
+  headings={headings}
+  source="site/src/pages/docs/sounds.astro"
+  wide
+>
+  <p>{soundsIntro}</p>
+  <p>
+    Sounds are off by default and only play on real taps: a press that moved or scrolled stays
+    silent. They come from <code>@facet/sounds</code>, and the same numbers render the audio a panel
+    plays, so what you hear here is what the wall hears.
+  </p>
+
+  <h2 id="try-them">Try them</h2>
+  <p>
+    Each button plays one sound from one pack. These always play, whatever the site's sound switch
+    says. Slider tick plays a short sweep so you can hear the pitch follow the value.
+  </p>
+
+  <div class="snd" data-sounds>
+    <div class="snd__bar">
+      <label class="snd__volume">
+        <span class="facet-label">Volume</span>
+        <input type="range" min="0" max="100" value="70" data-volume aria-label="Volume" />
+      </label>
+      <button class="chip-button" type="button" data-stop-all>Stop</button>
+    </div>
+    <div class="snd__scroll">
+      <table class="snd__grid">
+        <thead>
+          <tr>
+            <th scope="col"><span class="visually-hidden">Sound</span></th>
+            {
+              PACKS.map((p) => (
+                <th scope="col">
+                  <button
+                    type="button"
+                    class="snd__pack"
+                    data-play-pack={p.id}
+                    aria-label={`Play every ${p.name} sound`}
+                  >
+                    {p.name}
+                  </button>
+                </th>
+              ))
+            }
+          </tr>
+        </thead>
+        <tbody>
+          {
+            soundEvents.map((e) => (
+              <tr>
+                <th scope="row">{SOUND_LABELS[e.id]}</th>
+                {PACKS.map((p) => (
+                  <td>
+                    <button
+                      type="button"
+                      class="snd__play"
+                      data-pack={p.id}
+                      data-sound={e.id}
+                      aria-label={`${p.name}: ${SOUND_LABELS[e.id]}`}
+                      title={p.sounds[e.id]?.use}
+                    >
+                      <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
+                        <path d="M8 5.5v13l10.5-6.5z" fill="currentColor" />
+                      </svg>
+                    </button>
+                  </td>
+                ))}
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+    <p class="snd__hint">
+      Tap a pack's name to hear all ten of its sounds in a row. The grid scrolls sideways on narrow
+      screens.
+    </p>
+  </div>
+
+  <h2 id="events">The ten sounds</h2>
+  <p>
+    Each sound stands for one kind of moment, in every pack. The hooks in{' '}
+    <code>installSoundHooks()</code> play the interaction sounds for you; the rest are yours to play when
+    something happens.
+  </p>
+  <table>
+    <thead>
+      <tr>
+        <th>Sound</th>
+        <th>What it means</th>
+        <th>What plays it</th>
+      </tr>
+    </thead>
+    <tbody>
+      {
+        soundEvents.map((e) => (
+          <tr>
+            <td>
+              <code>{e.id}</code>
+            </td>
+            <td>{e.meaning}</td>
+            <td set:html={inlineMarkdown(e.trigger)} />
+          </tr>
+        ))
+      }
+    </tbody>
+  </table>
+
+  <h2 id="packs">The six packs</h2>
+  <p>
+    A pack voices all ten sounds with one character. The first three use the basic engine, the other
+    three the modal engine (see <a href="#how-they-are-made">how they are made</a>). In the modal
+    packs the chimes share one key, so Confirm, Timer done and Notify sound like one instrument.
+  </p>
+  <div class="snd-packs">
+    {
+      PACKS.map((p) => (
+        <section class="snd-pack" aria-labelledby={`pack-${p.id}`}>
+          <div class="snd-pack__head">
+            <h3 id={`pack-${p.id}`}>{p.name}</h3>
+            {p.id === DEFAULT_PACK && <span class="badge">Default</span>}
+          </div>
+          <p class="snd-pack__meta">
+            <code>{`'${p.id}'`}</code> · {engineLabel[p.engine]}
+          </p>
+          <p>{p.about}</p>
+          <div class="snd-pack__actions">
+            <button class="chip-button" type="button" data-sample={p.id}>
+              Play a sample
+            </button>
+            <button class="chip-button" type="button" data-use-pack={p.id} aria-pressed="false">
+              Use on this site
+            </button>
+          </div>
+        </section>
+      ))
+    }
+  </div>
+  <p>
+    "Use on this site" switches the sounds of the <a href={url('/demo/')}>demo</a>, the{' '}
+    <a href={url('/components/')}>components</a> and the screen previews in this browser.
+  </p>
+
+  <h2 id="choosing-a-pack">Choosing a pack</h2>
+  <p>
+    Pick a pack by its id with <code>setPack()</code>. Names work too, in any case, so{' '}
+    <code>setPack('Felt')</code> is fine. An unknown name is ignored and makes{' '}
+    <code>setPack</code> return <code>false</code>. To play one sound from another pack without
+    switching, pass <code>pack</code> to <code>play()</code>.
+  </p>
+  <Code code={usage} lang="ts" themes={themes} defaultColor={false} />
+  <p>
+    The default pack is a design token, <code>sound.pack</code>, next to the loudness every sound is
+    normalised to:
+  </p>
+  <Code code={tokenUsage} lang="json" themes={themes} defaultColor={false} />
+  <p>
+    <code>PACKS</code> lists every pack (id, name, engine, character and the parameters of each sound),{
+      ' '
+    }
+    <code>getPack(id)</code> looks one up and <code>settings.pack</code> is the one in use.
+  </p>
+
+  <h2 id="how-they-are-made">How they are made</h2>
+  <p>
+    Every sound is one flat set of numbers (<code>SoundParams</code>): pitch, notes, envelope,
+    brightness and level, plus a few values for its engine. A pack sets shared values once, and each
+    sound adds its own. The numbers are rendered into a buffer with an{' '}
+    <code>OfflineAudioContext</code>, then cleaned up (DC offset removed, short edge fades) and
+    loudness-aligned to <code>{sound.loudnessDb}</code> dB with peaks capped at{' '}
+    <code>{sound.peakDb}</code> dB, so a 20 ms click and a one-second chime feel equally loud.
+  </p>
+  <ul>
+    <li>
+      <strong>Basic engine</strong> (Keycap, Halo, Arcade): oscillators with partials (sine, triangle,
+      square or pulse), a burst of filtered noise for the click, and a short feedback echo.
+    </li>
+    <li>
+      <strong>Modal engine</strong> (Graphite, Crystal, Felt): a 1-2 ms noise strike excites a few damped
+      sine modes. Their ratios decide the material (wood, glass or felt), and a few milliseconds of early
+      reflections stand in for a room.
+    </li>
+  </ul>
+  <p>
+    All six packs and their numbers live in one file,{' '}
+    <a href="https://github.com/mrdarrengriffin/facet/blob/main/packages/sounds/src/packs.json"
+      ><code>packs.json</code></a
+    >. Change a value there and the sound changes everywhere.
+  </p>
+
+  <h2 id="on-a-panel">On a panel</h2>
+  <p>
+    A microcontroller can't run Web Audio, so panel firmware plays the same sounds pre-rendered.{
+      ' '
+    }
+    <code>render()</code> and <code>wav()</code> turn each sound of a pack into mono, 16-bit PCM, usually
+    at 16 kHz (the token <code>sound.sampleRates</code> lists the rates in use):
+  </p>
+  <Code code={exportUsage} lang="ts" themes={themes} defaultColor={false} />
+  <ul>
+    <li>
+      The firmware embeds the ten files of one pack and decodes them into memory at boot, so a press
+      never waits for storage.
+    </li>
+    <li>
+      Sounds go out over I2S in small blocks, which keeps the time from touch to sound to a couple
+      of frames. A new sound cuts off the one still playing.
+    </li>
+    <li>
+      The firmware follows the same rules as the hooks: sounds on real presses only, never for a
+      scroll, slider ticks per detent, and one switch to turn them all off.
+    </li>
+    <li>Switching pack on a panel means flashing the ten files of the other pack.</li>
+  </ul>
+</Docs>
+
+<style>
+  .snd {
+    margin: 24px 0 8px;
+    border: 1px solid var(--facet-color-line);
+    border-radius: 16px;
+    background: var(--facet-color-surface);
+    overflow: hidden;
+  }
+  .snd__bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--facet-color-line);
+  }
+  .snd__volume {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .snd__volume input {
+    width: 140px;
+    accent-color: var(--facet-color-accent);
+  }
+  .snd__scroll {
+    overflow-x: auto;
+  }
+  .snd__grid {
+    display: table;
+    width: 100%;
+    margin: 0;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+  .snd__grid th,
+  .snd__grid td {
+    padding: 6px 4px;
+    border-bottom: 1px solid var(--facet-color-line);
+    text-align: center;
+    vertical-align: middle;
+  }
+  .snd__grid tbody tr:last-child > * {
+    border-bottom: 0;
+  }
+  .snd__grid tbody th {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    padding-left: 16px;
+    padding-right: 8px;
+    background: var(--facet-color-surface);
+    text-align: left;
+    white-space: nowrap;
+    font-family: var(--sans);
+    font-size: 14px;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--facet-color-text);
+  }
+  .snd__grid thead th:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: var(--facet-color-surface);
+  }
+  .snd__pack {
+    padding: 6px 8px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--facet-color-text-mute);
+    font: 500 12px/1 var(--mono);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  .snd__pack:hover {
+    color: var(--facet-color-text);
+    background: var(--facet-color-surface-press);
+  }
+  .snd__play {
+    display: inline-grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: 1px solid var(--facet-color-line);
+    border-radius: 999px;
+    background: var(--facet-color-bg);
+    color: var(--facet-color-text-dim);
+    cursor: pointer;
+    transition:
+      background var(--facet-duration-fade) var(--facet-easing-ease-out),
+      color var(--facet-duration-fade) var(--facet-easing-ease-out);
+  }
+  .snd__play:hover {
+    border-color: var(--facet-color-line-hi);
+    color: var(--facet-color-text);
+  }
+  .snd__play.is-playing,
+  .snd__pack.is-playing {
+    border-color: var(--facet-color-accent);
+    background: var(--accent-tint);
+    color: var(--facet-color-accent-text);
+  }
+  .snd__hint {
+    margin: 0;
+    padding: 10px 16px 12px;
+    border-top: 1px solid var(--facet-color-line);
+    color: var(--facet-color-text-mute);
+    font-size: 14px;
+  }
+  .snd-packs {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+    gap: 16px;
+    margin: 24px 0;
+  }
+  .snd-pack {
+    display: flex;
+    flex-direction: column;
+    padding: 18px 20px;
+    border: 1px solid var(--facet-color-line);
+    border-radius: 16px;
+    background: var(--facet-color-surface);
+  }
+  .snd-pack__head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .snd-pack__head .badge {
+    margin-left: 0;
+    background: var(--accent-tint);
+    color: var(--facet-color-accent-text);
+  }
+  .snd-pack h3 {
+    margin: 0;
+  }
+  .snd-pack p {
+    margin: 0 0 12px;
+    font-size: 15px;
+  }
+  .snd-pack .snd-pack__meta {
+    margin: 4px 0 10px;
+    color: var(--facet-color-text-mute);
+    font-size: 13px;
+  }
+  .snd-pack__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: auto;
+  }
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .snd__play {
+      transition: none;
+    }
+  }
+</style>
+
+<script>
+  import { play, setVolume, SOUND_IDS, type SoundId } from '@facet/sounds';
+  import {
+    getSitePack,
+    initSounds,
+    onSitePackChange,
+    setSitePack,
+  } from '../../scripts/facet-runtime';
+
+  initSounds();
+  const root = document.querySelector<HTMLElement>('[data-sounds]')!;
+  const volume = root.querySelector<HTMLInputElement>('[data-volume]')!;
+  setVolume(Number(volume.value) / 100);
+  volume.addEventListener('input', () => setVolume(Number(volume.value) / 100));
+
+  // one run at a time: a new run (or Stop) cancels the queued sounds of the previous one
+  let run = 0;
+  const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+  const flash = (el: Element | null, ms = 220) => {
+    if (!el) return;
+    el.classList.add('is-playing');
+    setTimeout(() => el.classList.remove('is-playing'), ms);
+  };
+  const cell = (pack: string, id: SoundId) =>
+    root.querySelector(`[data-pack="${pack}"][data-sound="${id}"]`);
+
+  async function playOne(pack: string, id: SoundId, token: number) {
+    flash(cell(pack, id), id === 'slider-tick' ? 520 : 260);
+    if (id !== 'slider-tick') return void play(id, { pack, always: true });
+    // a short sweep: the pitch follows the value
+    for (const value of [10, 25, 40, 55, 70, 85, 100]) {
+      if (token !== run) return;
+      void play('slider-tick', { pack, value, always: true });
+      await wait(70);
+    }
+  }
+  const gapAfter: Partial<Record<SoundId, number>> = {
+    'slider-tick': 200,
+    confirm: 750,
+    'timer-done': 1300,
+    notify: 900,
+  };
+  async function playSeq(pack: string, ids: readonly SoundId[]) {
+    const token = ++run;
+    for (const id of ids) {
+      if (token !== run) return;
+      await playOne(pack, id, token);
+      await wait(gapAfter[id] ?? 420);
+    }
+  }
+
+  root.addEventListener('click', (e) => {
+    const t = e.target as Element;
+    const b = t.closest<HTMLButtonElement>('[data-sound]');
+    if (b) return void playOne(b.dataset.pack!, b.dataset.sound as SoundId, ++run);
+    const head = t.closest<HTMLButtonElement>('[data-play-pack]');
+    if (head) {
+      flash(head, 1200);
+      return void playSeq(head.dataset.playPack!, SOUND_IDS);
+    }
+    if (t.closest('[data-stop-all]')) run++;
+  });
+
+  for (const b of document.querySelectorAll<HTMLButtonElement>('[data-sample]'))
+    b.addEventListener('click', () =>
+      playSeq(b.dataset.sample!, ['tap', 'toggle-on', 'toggle-off', 'open', 'confirm']),
+    );
+
+  const useButtons = [...document.querySelectorAll<HTMLButtonElement>('[data-use-pack]')];
+  const syncUse = () => {
+    const current = getSitePack();
+    for (const b of useButtons) {
+      const on = b.dataset.usePack === current;
+      b.setAttribute('aria-pressed', String(on));
+      b.textContent = on ? 'Used on this site' : 'Use on this site';
+    }
+  };
+  for (const b of useButtons)
+    b.addEventListener('click', () => {
+      setSitePack(b.dataset.usePack!);
+      void play('confirm', { pack: b.dataset.usePack!, always: true });
+    });
+  onSitePackChange(syncUse);
+  syncUse();
+</script>

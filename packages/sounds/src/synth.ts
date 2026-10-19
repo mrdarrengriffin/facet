@@ -4,13 +4,21 @@
  * what plays live and what you'd export to WAV for a panel, so what you hear in the browser is what the firmware gets.
  */
 import { sound as SOUND } from '@facet/tokens';
-import v1 from './versions/v1.json' with { type: 'json' };
+import data from './packs.json' with { type: 'json' };
 
 export type Wave = 'sine' | 'triangle' | 'square' | 'sawtooth' | 'pulse';
 export type NoiseType = 'bandpass' | 'highpass' | 'lowpass';
+/**
+ * `basic`: oscillators with partials, filtered noise and a feedback echo.
+ * `modal`: a short noise strike that excites a few damped sine modes (a wood, glass or felt body), plus a few
+ * milliseconds of early reflections.
+ */
+export type Engine = 'basic' | 'modal';
 
+/** Everything one sound is made of. Each engine reads the shared values plus its own. */
 export interface SoundParams {
-  /** Hz, the first note. */
+  engine: Engine;
+  /** Hz, the first note (modal: the body's fundamental). */
   freq: number;
   /** Semitone offsets of each note, e.g. "0 7" (a fifth up) or "7 0" (falling). */
   notes: string;
@@ -23,7 +31,7 @@ export interface SoundParams {
   pitchTime: number;
   /** Seconds. */
   attack: number;
-  /** Seconds: the exponential time constant after the attack. */
+  /** Seconds: the exponential time constant after the attack (modal: of the first mode). */
   decay: number;
   /** Seconds: total length (hard end with a short fade). */
   length: number;
@@ -33,20 +41,36 @@ export interface SoundParams {
   gain: number;
   /** Semitones across the 0-100 value range (slider ticks follow the value); 0 = fixed pitch. */
   track: number;
+  /** Basic: oscillator wave. */
   wave: Wave;
-  /** Pulse wave duty cycle. */
+  /** Basic: pulse wave duty cycle. */
   duty: number;
-  /** "ratio:gain" partials, e.g. "1:1 2.76:0.2". */
+  /** Basic: "ratio:gain" partials, e.g. "1:1 2.76:0.2". */
   partials: string;
-  /** Filtered noise level, type, centre, Q and decay (seconds). */
+  /** Basic: filtered noise level, type, centre, Q and decay (seconds). */
   noise: number;
   noiseType: NoiseType;
   noiseFreq: number;
   noiseQ: number;
   noiseDecay: number;
-  /** Feedback echo level and delay (seconds). */
+  /** Basic: feedback echo level and delay (seconds). */
   echo: number;
   echoTime: number;
+  /** Modal: "ratio:gain:decayMul" per mode, e.g. "1:1:1 1.58:0.45:0.55". Inharmonic ratios sound like wood or glass. */
+  modes: string;
+  /** Modal: level of the strike (a band-passed noise burst). */
+  exNoise: number;
+  /** Modal: Hz, centre of the strike's band. */
+  exFreq: number;
+  exQ: number;
+  /** Modal: seconds, the strike's time constant (1-4 ms). */
+  exDecay: number;
+  /** Modal: the strike's band starts at exFreq × exDrop and falls to exFreq. */
+  exDrop: number;
+  /** Modal: early reflections level (a few milliseconds, not reverb). */
+  room: number;
+  /** Modal: reflection time scale (1 = 3 / 7 / 12 / 17 ms). */
+  roomSize: number;
 }
 
 export const SOUND_IDS = [
@@ -75,47 +99,38 @@ export const SOUND_LABELS: Record<SoundId, string> = {
   notify: 'Notify',
 };
 
-export interface Flavour {
+/** A named set of the ten sounds, all made by one engine. */
+export interface SoundPack {
+  /** Lower-case id, e.g. "keycap". */
+  id: string;
+  /** Display name, e.g. "Keycap". */
   name: string;
+  engine: Engine;
+  /** One or two sentences on how the pack sounds. */
   about: string;
+  /** Values shared by every sound in the pack. */
+  defaults: Partial<SoundParams>;
+  /** Each sound's own values, plus a short note on what it sounds like (`use`). */
   sounds: Record<SoundId, Partial<SoundParams> & { use?: string }>;
 }
-export interface SoundVersion {
-  version: string;
-  name: string;
-  date: string;
-  engine: 'basic';
-  about: string;
-  defaults: Partial<SoundParams>;
-  flavours: Record<string, Flavour>;
-}
 
-/** Sound sets, one file per round. A new round is a new file; old ones are never changed. */
-export const VERSIONS: SoundVersion[] = [v1 as unknown as SoundVersion];
+/** Every pack: Keycap, Halo, Arcade (basic engine), Graphite, Crystal, Felt (modal engine). */
+export const PACKS: readonly SoundPack[] = (data as unknown as { packs: SoundPack[] }).packs;
+export type PackId = 'keycap' | 'halo' | 'arcade' | 'graphite' | 'crystal' | 'felt';
+export const PACK_IDS: readonly string[] = PACKS.map((p) => p.id);
 
-/** Flavour key = "<version>.<flavour>", e.g. "v1.crisp". */
-export const FLAVOUR_KEYS = VERSIONS.flatMap((v) =>
-  Object.keys(v.flavours).map((f) => `${v.version}.${f}`),
-);
+/** The pack in use unless you pick another: tokens `sound.pack` (Keycap). */
+export const DEFAULT_PACK: string = PACK_IDS.includes(SOUND.pack) ? SOUND.pack : PACK_IDS[0]!;
 
-/** The set in use: tokens `sound.chosen` (v1 · Crisp & mechanical). */
-export const DEFAULT_FLAVOUR = FLAVOUR_KEYS.includes(SOUND.chosen)
-  ? SOUND.chosen
-  : FLAVOUR_KEYS[0]!;
-
-function split(key: string) {
-  const [v, f] = key.split('.');
-  const ver = VERSIONS.find((x) => x.version === v) ?? VERSIONS[VERSIONS.length - 1]!;
-  return { ver, f: f ?? '' };
-}
-export const flavourOf = (key: string): Flavour | undefined => {
-  const { ver, f } = split(key);
-  return ver.flavours[f];
+/** Look a pack up by id (case-insensitive). Unknown ids return undefined. */
+export const getPack = (id: string): SoundPack | undefined => {
+  const k = id.trim().toLowerCase();
+  return PACKS.find((p) => p.id === k);
 };
-export const flavourName = (key: string) =>
-  `${split(key).ver.version} · ${flavourOf(key)?.name ?? key}`;
+const packOrDefault = (id: string) => getPack(id) ?? getPack(DEFAULT_PACK)!;
 
 const BASE: SoundParams = {
+  engine: 'basic',
   wave: 'sine',
   duty: 0.25,
   freq: 880,
@@ -138,16 +153,24 @@ const BASE: SoundParams = {
   echoTime: 0.08,
   gain: 1,
   track: 0,
+  modes: '1:1:1',
+  exNoise: 0.4,
+  exFreq: 3000,
+  exQ: 1.2,
+  exDecay: 0.0012,
+  exDrop: 1.5,
+  room: 0.1,
+  roomSize: 1,
 };
 
-/** The full parameters of one sound in a flavour (engine defaults + version defaults + the sound). */
-export function soundParams(key: string, id: SoundId): SoundParams {
-  const { ver, f } = split(key);
-  const { use: _use, ...p } = ver.flavours[f]?.sounds[id] ?? {};
-  return { ...BASE, ...ver.defaults, ...p };
+/** The full parameters of one sound in a pack (engine defaults + pack defaults + the sound's own values). */
+export function soundParams(pack: string, id: SoundId): SoundParams {
+  const p = packOrDefault(pack);
+  const { use: _use, ...own } = p.sounds[id] ?? {};
+  return { ...BASE, ...p.defaults, ...own, engine: p.engine };
 }
-/** What a sound is for, from the version file. */
-export const soundUse = (key: string, id: SoundId) => flavourOf(key)?.sounds[id]?.use ?? '';
+/** A short note on what a sound in a pack sounds like. */
+export const soundUse = (pack: string, id: SoundId) => getPack(pack)?.sounds[id]?.use ?? '';
 
 const parseList = (s: string) =>
   String(s)
@@ -187,7 +210,109 @@ function pulseWave(ctx: BaseAudioContext, duty: number) {
   return ctx.createPeriodicWave(real, imag);
 }
 
-/** Oscillators with partials, filtered noise and a feedback echo. */
+/**
+ * Modal engine: per note, a short band-passed noise strike (its band falls from exFreq × exDrop to exFreq) excites a
+ * few damped sine modes (ratio:gain:decayMul), all through a gentle low-pass, plus a few ms of early reflections.
+ */
+function buildModal(ctx: BaseAudioContext, p: SoundParams, rate = 1): AudioNode {
+  const sr = ctx.sampleRate;
+  const nyq = sr / 2 - 100;
+  const out = ctx.createGain();
+  const lp = ctx.createBiquadFilter();
+  lp.type = 'lowpass';
+  lp.frequency.value = Math.min(p.cutoff, nyq);
+  lp.Q.value = 0.5;
+  lp.connect(out);
+  if (p.room > 0) {
+    const damp = ctx.createBiquadFilter();
+    damp.type = 'lowpass';
+    damp.frequency.value = Math.min(3500, nyq);
+    damp.connect(out);
+    for (const [s, g] of [
+      [0.0031, 0.5],
+      [0.0073, 0.35],
+      [0.0119, 0.25],
+      [0.0173, 0.15],
+    ] as const) {
+      const d = ctx.createDelay(0.2);
+      const dg = ctx.createGain();
+      d.delayTime.value = s * p.roomSize;
+      dg.gain.value = g * p.room;
+      lp.connect(d);
+      d.connect(dg);
+      dg.connect(damp);
+    }
+  }
+  const notes = parseList(p.notes);
+  const modes = String(p.modes)
+    .trim()
+    .split(/[\s,]+/)
+    .filter(Boolean)
+    .map((x) => {
+      const [r = 0, g, dm] = x.split(':').map(Number);
+      return [
+        r,
+        Number.isFinite(g) ? (g as number) : 1,
+        Number.isFinite(dm) ? (dm as number) : 1,
+      ] as [number, number, number];
+    })
+    .filter(([r]) => r > 0 && Number.isFinite(r));
+  const end = p.length;
+  const rand = rng(4321);
+  (notes.length ? notes : [0]).forEach((semi, i) => {
+    const t = i * p.gap;
+    if (t >= end) return;
+    const lvl = Math.pow(p.fall, i);
+    const f0 = p.freq * rate * Math.pow(2, semi / 12);
+    for (const [r, g, dm] of modes.length ? modes : [[1, 1, 1] as [number, number, number]]) {
+      const f = f0 * r;
+      if (f >= nyq) continue;
+      const o = ctx.createOscillator();
+      o.type = 'sine';
+      o.frequency.setValueAtTime(Math.min(nyq, f * p.pitchFrom), t);
+      if (p.pitchFrom !== 1)
+        o.frequency.exponentialRampToValueAtTime(f, t + Math.max(0.001, p.pitchTime));
+      const env = ctx.createGain();
+      env.gain.setValueAtTime(0, t);
+      env.gain.linearRampToValueAtTime(g * lvl, t + p.attack);
+      env.gain.setTargetAtTime(0, t + p.attack, Math.max(0.0005, p.decay * dm));
+      o.connect(env);
+      env.connect(lp);
+      o.start(t);
+      o.stop(end);
+    }
+    if (p.exNoise > 0) {
+      const len = Math.max(1, Math.ceil(Math.min(end - t, p.exDecay * 10 + 0.002) * sr));
+      const buf = ctx.createBuffer(1, len, sr);
+      const ch = buf.getChannelData(0);
+      for (let j = 0; j < len; j++) ch[j] = rand() * 2 - 1;
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      const bf = ctx.createBiquadFilter();
+      bf.type = 'bandpass';
+      bf.Q.value = p.exQ;
+      const fx = Math.min(p.exFreq * rate, nyq);
+      bf.frequency.setValueAtTime(Math.min(fx * p.exDrop, nyq), t);
+      if (p.exDrop !== 1)
+        bf.frequency.exponentialRampToValueAtTime(fx, t + Math.max(0.0005, p.exDecay * 3));
+      const ng = ctx.createGain();
+      const at = Math.min(p.attack, 0.0008);
+      ng.gain.setValueAtTime(0, t);
+      ng.gain.linearRampToValueAtTime(
+        p.exNoise * lvl * Math.sqrt(Math.max(1, p.exQ)) * 1.5,
+        t + at,
+      );
+      ng.gain.setTargetAtTime(0, t + at, Math.max(0.0002, p.exDecay));
+      src.connect(bf);
+      bf.connect(ng);
+      ng.connect(lp);
+      src.start(t);
+    }
+  });
+  return out;
+}
+
+/** Basic engine: oscillators with partials, filtered noise and a feedback echo. */
 function build(ctx: BaseAudioContext, p: SoundParams, rate = 1): AudioNode {
   const sr = ctx.sampleRate;
   const nyq = sr / 2 - 100;
@@ -384,7 +509,7 @@ export async function render(
 ): Promise<{ data: Float32Array; sr: number; gainDb: number }> {
   const len = Math.max(1, Math.round(p.length * sr));
   const ctx = new OfflineAudioContext(1, len, sr);
-  build(ctx, p, rate).connect(ctx.destination);
+  (p.engine === 'modal' ? buildModal : build)(ctx, p, rate).connect(ctx.destination);
   const buf = await ctx.startRendering();
   const data = new Float32Array(buf.getChannelData(0));
   const gainDb = finish(data, sr, p);

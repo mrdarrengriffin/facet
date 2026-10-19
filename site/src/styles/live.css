@@ -48,6 +48,9 @@
   cursor: pointer;
   white-space: nowrap;
 }
+.chip-button[hidden] {
+  display: none;
+}
 .chip-button {
   border: 1px solid var(--facet-color-line);
   background: var(--facet-color-surface);
