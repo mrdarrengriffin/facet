@@ -75,7 +75,14 @@ const editUrl = `https://github.com/mrdarrengriffin/facet/edit/main/${source}`;
       </article>
 
       <footer class="docs__footer">
-        <a class="edit-link" href={editUrl}>Edit this page on GitHub</a>
+        <div class="docs__meta">
+          <a class="edit-link" href={editUrl}>Edit this page on GitHub</a>
+          <span class="support-link">
+            Enjoying Facet? Support it on
+            <a href="https://buymeacoffee.com/mrdarrengriffin">Buy Me a Coffee</a> or
+            <a href="https://ko-fi.com/mrdarrengriffin">Ko-fi</a>
+          </span>
+        </div>
         <nav class="pager" aria-label="Previous and next pages">
           {
             prev ? (

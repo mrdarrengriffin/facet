@@ -186,6 +186,12 @@ ESPHome-based smart home control panel. It's a lovely project and well worth a l
 you want a panel you can set up today: [jtenniswood.github.io/espcontrol](https://jtenniswood.github.io/espcontrol/).
 Facet isn't affiliated with it.
 
+## Support
+
+Facet is free and built in my spare time, with a lot of help from Claude. If it's useful to you,
+a coffee helps cover the tokens: [Buy Me a Coffee](https://buymeacoffee.com/mrdarrengriffin) ·
+[Ko-fi](https://ko-fi.com/mrdarrengriffin).
+
 ## Contributing
 
 Ideas and issues are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) and the
