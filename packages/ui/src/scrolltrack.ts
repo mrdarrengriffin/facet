@@ -1,4 +1,4 @@
-// Scroll track: a 4 px bar in the margin to the right of a scrollable area (.f-scroll), the area's height; the thumb
+// Scroll track: a 4 px bar on the right edge of a scrollable area (.f-scroll, inside its padding), the area's height; the thumb
 // shows how much is in view and where. Hidden when nothing scrolls. On the panel this is a styled LVGL scrollbar.
 import { h } from './dom.js';
 
@@ -12,11 +12,25 @@ export function addScrollTracks(root: HTMLElement): void {
     sc.after(track);
     const sync = () => {
       const { scrollTop: t, scrollHeight: sh, clientHeight: ch } = sc;
-      track.hidden = !ch || sh <= ch + 1;
-      if (track.hidden) return;
-      // centred in the margin between the area's right edge and the page's right edge (32 px on v3 screens)
+      if (ch && !sc.classList.contains('f-has-track'))
+        // full-width positioned children (at(0, y, CW, ...)) narrow by the gutter too while the track shows
+        for (const c of sc.children)
+          if (
+            c instanceof HTMLElement &&
+            c.classList.contains('f-abs') &&
+            c.offsetLeft === 0 &&
+            c.offsetWidth >= sc.clientWidth
+          )
+            c.classList.add('f-full');
+      const on = !!ch && sh > ch + 1;
+      track.hidden = !on;
+      // the track lives inside the area: it reserves one gutter on the right (4 px bar + 12 px gap), so the margin
+      // to the screen edge stays the same as on the left
+      sc.classList.toggle('f-has-track', on);
+      if (!on) return;
+      // flush with the area's right edge
       Object.assign(track.style, {
-        left: `${Math.round((sc.offsetLeft + sc.offsetWidth + ((sc.offsetParent as HTMLElement | null) ?? sc).clientWidth) / 2) - 2}px`,
+        left: `${sc.offsetLeft + sc.offsetWidth - 4}px`,
         top: `${sc.offsetTop}px`,
         height: `${ch}px`,
       });

@@ -52,7 +52,14 @@
 .fs-snap {
   scroll-snap-type: y mandatory;
 }
-/* scroll track (scrolltrack.ts): 4 px in the margin right of every scrollable area; thumb = what's in view */
+/* scroll track (scrolltrack.ts): 4 px on the right edge of a scrollable area, which then reserves one gutter (16) */
+.f-scroll.f-has-track {
+  box-sizing: border-box;
+  padding-right: var(--facet-layout-gutter);
+}
+.f-scroll.f-has-track > .f-full {
+  width: calc(100% - var(--facet-layout-gutter)) !important;
+}
 .f-track {
   position: absolute;
   width: 4px;
@@ -73,7 +80,7 @@
 .fs-card {
   position: relative;
   flex: none;
-  width: var(--facet-layout-card-w);
+  width: calc((100% - var(--facet-layout-gutter)) / 2); /* 320, 312 beside a scroll track */
   height: var(--facet-layout-card-h);
   scroll-snap-align: start;
   border: var(--facet-stroke-hair) solid var(--facet-color-line);
@@ -201,7 +208,7 @@
 .fs-tile {
   position: relative;
   flex: none;
-  width: var(--facet-layout-tile-w);
+  width: calc((100% - 2 * var(--facet-layout-gutter)) / 3); /* 208, 202.67 beside a scroll track */
   height: var(--facet-layout-tile-h);
   border: var(--facet-stroke-hair) solid var(--facet-color-line);
   border-radius: var(--facet-radius-tile);
