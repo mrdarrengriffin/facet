@@ -1,0 +1,30 @@
+{
+  "name": "@facet/sounds",
+  "version": "0.1.0",
+  "description": "Facet UI sounds: procedural Web Audio sounds in versioned sets, and hooks that play them on real taps.",
+  "license": "MIT",
+  "author": "Darren Griffin",
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@facet/tokens": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}

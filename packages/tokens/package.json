@@ -1,7 +1,7 @@
 {
   "name": "@facet/tokens",
   "version": "0.1.0",
-  "description": "Design tokens for Facet: colour, type, space, radius and motion.",
+  "description": "Design tokens for Facet: colour, type, layout, motion and sound, as typed objects, CSS variables and ESPHome YAML.",
   "license": "MIT",
   "author": "Darren Griffin",
   "type": "module",
@@ -13,7 +13,9 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
-    "./tokens.css": "./dist/tokens.css"
+    "./tokens.css": "./dist/tokens.css",
+    "./tokens.json": "./dist/tokens.json",
+    "./esphome/tokens.yaml": "./dist/esphome/tokens.yaml"
   },
   "files": [
     "dist"

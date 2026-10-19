@@ -1,0 +1,35 @@
+{
+  "name": "@facet/icons",
+  "version": "0.1.0",
+  "description": "Facet icons: master SVGs on a 24 grid, a manifest, and weather icons drawn in code.",
+  "license": "MIT",
+  "author": "Darren Griffin",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./weather.css": "./weather.css",
+    "./manifest.json": "./manifest.json",
+    "./svg/*": "./svg/*"
+  },
+  "files": [
+    "dist",
+    "svg",
+    "manifest.json",
+    "weather.css"
+  ],
+  "sideEffects": [
+    "*.css"
+  ],
+  "scripts": {
+    "build": "node scripts/build-glyphs.mjs && tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}

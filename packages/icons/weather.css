@@ -1,0 +1,174 @@
+/* Weather icon motion (src/weather.ts). Transform and opacity only, on a few small parts. Load @facet/tokens/tokens.css first. */
+.fwx {
+  display: block;
+  flex: none;
+  overflow: visible;
+  --fwx-mask: var(--facet-color-bg);
+}
+.fs-card .fwx,
+.fwx-on-surface .fwx {
+  --fwx-mask: var(--facet-color-surface);
+}
+.fwx * {
+  transform-box: view-box;
+}
+
+.fwx.is-anim .fwx-rays {
+  animation: fwx-spin 24s linear infinite;
+}
+.fwx.is-anim .fwx-cloud-front {
+  animation: fwx-drift 6s var(--facet-easing-ease-in-out) infinite alternate;
+}
+.fwx.is-anim .fwx-cloud-back {
+  animation: fwx-drift-b 8s var(--facet-easing-ease-in-out) infinite alternate;
+}
+.fwx.is-anim .fwx-drop {
+  animation: fwx-fall 1.1s linear infinite;
+  animation-delay: calc(var(--i) * -0.37s);
+}
+.fwx.is-anim[data-fwx='rain-heavy'] .fwx-drop {
+  animation-duration: 0.7s;
+  animation-delay: calc(var(--i) * -0.29s);
+}
+.fwx.is-anim .fwx-flake {
+  animation: fwx-snow 3s linear infinite;
+  animation-delay: calc(var(--i) * -0.6s);
+}
+.fwx.is-anim .fwx-hail {
+  animation: fwx-hail 0.9s var(--facet-easing-ease-out) infinite;
+  animation-delay: calc(var(--i) * -0.3s);
+}
+.fwx.is-anim .fwx-bolt {
+  animation: fwx-flash 4s linear infinite;
+}
+.fwx.is-anim .fwx-fog {
+  animation: fwx-slide 4s var(--facet-easing-ease-in-out) infinite alternate;
+  animation-delay: calc(var(--i) * -1.3s);
+}
+.fwx.is-anim .fwx-wind {
+  animation: fwx-slide 3s var(--facet-easing-ease-in-out) infinite alternate;
+  animation-delay: calc(var(--i) * -1s);
+}
+.fwx.is-anim .fwx-star {
+  animation: fwx-twinkle 3.2s var(--facet-easing-ease-in-out) infinite;
+  animation-delay: calc(var(--i) * -1.1s);
+}
+
+@keyframes fwx-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes fwx-drift {
+  from {
+    transform: translateX(-1px);
+  }
+  to {
+    transform: translateX(1.5px);
+  }
+}
+@keyframes fwx-drift-b {
+  from {
+    transform: translateX(1px);
+  }
+  to {
+    transform: translateX(-1.5px);
+  }
+}
+@keyframes fwx-fall {
+  0% {
+    transform: translateY(-3px);
+    opacity: 0;
+  }
+  25% {
+    opacity: 1;
+  }
+  75% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(5px);
+    opacity: 0;
+  }
+}
+@keyframes fwx-snow {
+  0% {
+    transform: translate(0, -3px);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  50% {
+    transform: translate(1px, 1px);
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-1px, 4px);
+    opacity: 0;
+  }
+}
+@keyframes fwx-hail {
+  0% {
+    transform: translateY(-4px);
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  70% {
+    transform: translateY(2px);
+  }
+  85% {
+    transform: translateY(0.5px);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(2px);
+    opacity: 0;
+  }
+}
+@keyframes fwx-flash {
+  0%,
+  80% {
+    opacity: 0.35;
+  }
+  82% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 0.35;
+  }
+  88% {
+    opacity: 1;
+  }
+  96%,
+  100% {
+    opacity: 0.35;
+  }
+}
+@keyframes fwx-slide {
+  from {
+    transform: translateX(-2px);
+  }
+  to {
+    transform: translateX(2px);
+  }
+}
+@keyframes fwx-twinkle {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fwx.is-anim * {
+    animation: none !important;
+  }
+}

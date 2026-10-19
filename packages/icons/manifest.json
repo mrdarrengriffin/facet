@@ -1,0 +1,570 @@
+{
+  "$comment": "Every Facet icon: its master SVG, group, grid (24 = UI, 48 = weather), keyline, and the pixel sizes the screens use (the alpha-mask images a firmware build needs). Weather icons are drawn in code (src/weather.ts); svg/weather/ holds their static masters. animated_parts = the parts that move (weather.css).",
+  "grid": {
+    "ui": {
+      "size": 24,
+      "stroke": 2,
+      "padding": 2,
+      "keylines": {
+        "circle": "r 10",
+        "square": "18",
+        "portrait": "16x20",
+        "landscape": "20x16"
+      }
+    },
+    "weather": {
+      "size": 48,
+      "stroke": "2 (3 at 96+)"
+    }
+  },
+  "icons": [
+    {
+      "name": "back",
+      "file": "svg/back.svg",
+      "group": "navigation",
+      "grid": 24,
+      "keyline": "landscape",
+      "sizes_used": [32],
+      "where": "back button (glyph-square)"
+    },
+    {
+      "name": "chevron",
+      "file": "svg/chevron.svg",
+      "group": "navigation",
+      "grid": 24,
+      "keyline": "portrait",
+      "sizes_used": [24],
+      "where": "rows and \"more\" rows"
+    },
+    {
+      "name": "chevron-down",
+      "file": "svg/chevron-down.svg",
+      "group": "navigation",
+      "grid": 24,
+      "keyline": "landscape",
+      "sizes_used": [16],
+      "where": "speaker button"
+    },
+    {
+      "name": "close",
+      "file": "svg/close.svg",
+      "group": "navigation",
+      "grid": 24,
+      "keyline": "square",
+      "sizes_used": [32],
+      "where": "bottom sheet close button"
+    },
+    {
+      "name": "plus",
+      "file": "svg/plus.svg",
+      "group": "navigation",
+      "grid": 24,
+      "keyline": "square",
+      "sizes_used": [32],
+      "where": "icon buttons"
+    },
+    {
+      "name": "minus",
+      "file": "svg/minus.svg",
+      "group": "navigation",
+      "grid": 24,
+      "keyline": "square",
+      "sizes_used": [],
+      "where": "component library"
+    },
+    {
+      "name": "check",
+      "file": "svg/check.svg",
+      "group": "navigation",
+      "grid": 24,
+      "keyline": "square",
+      "sizes_used": [32],
+      "where": "toast"
+    },
+    {
+      "name": "play",
+      "file": "svg/play.svg",
+      "group": "media",
+      "grid": 24,
+      "keyline": "portrait",
+      "sizes_used": [48, 32],
+      "where": "play button (glyph-play) · toast"
+    },
+    {
+      "name": "pause",
+      "file": "svg/pause.svg",
+      "group": "media",
+      "grid": 24,
+      "keyline": "portrait",
+      "sizes_used": [48],
+      "where": "play button active"
+    },
+    {
+      "name": "next",
+      "file": "svg/next.svg",
+      "group": "media",
+      "grid": 24,
+      "keyline": "landscape",
+      "sizes_used": [32],
+      "where": "round icon button (glyph-round)"
+    },
+    {
+      "name": "prev",
+      "file": "svg/prev.svg",
+      "group": "media",
+      "grid": 24,
+      "keyline": "landscape",
+      "sizes_used": [32],
+      "where": "round icon button"
+    },
+    {
+      "name": "volume",
+      "file": "svg/volume.svg",
+      "group": "media",
+      "grid": 24,
+      "keyline": "landscape",
+      "sizes_used": [],
+      "where": "component library"
+    },
+    {
+      "name": "speaker",
+      "file": "svg/speaker.svg",
+      "group": "media",
+      "grid": 24,
+      "keyline": "portrait",
+      "sizes_used": [16, 24],
+      "where": "speaker button 16 · picker rows 24"
+    },
+    {
+      "name": "speakers",
+      "file": "svg/speakers.svg",
+      "group": "media",
+      "grid": 24,
+      "keyline": "landscape",
+      "sizes_used": [24],
+      "where": "picker rows"
+    },
+    {
+      "name": "tv",
+      "file": "svg/tv.svg",
+      "group": "media",
+      "grid": 24,
+      "keyline": "landscape",
+      "sizes_used": [24],
+      "where": "picker rows"
+    },
+    {
+      "name": "stream",
+      "file": "svg/stream.svg",
+      "group": "media",
+      "grid": 24,
+      "keyline": "circle",
+      "sizes_used": [24],
+      "where": "picker rows"
+    },
+    {
+      "name": "auto",
+      "file": "svg/auto.svg",
+      "group": "media",
+      "grid": 24,
+      "keyline": "square",
+      "sizes_used": [24],
+      "where": "picker rows"
+    },
+    {
+      "name": "power",
+      "file": "svg/power.svg",
+      "group": "home",
+      "grid": 24,
+      "keyline": "circle",
+      "sizes_used": [],
+      "where": "component library"
+    },
+    {
+      "name": "bulb",
+      "file": "svg/bulb.svg",
+      "group": "home",
+      "grid": 24,
+      "keyline": "portrait",
+      "sizes_used": [],
+      "where": "component library"
+    },
+    {
+      "name": "timer",
+      "file": "svg/timer.svg",
+      "group": "status",
+      "grid": 24,
+      "keyline": "circle",
+      "sizes_used": [32],
+      "where": ""
+    },
+    {
+      "name": "washer",
+      "file": "svg/washer.svg",
+      "group": "status",
+      "grid": 24,
+      "keyline": "portrait",
+      "sizes_used": [32],
+      "where": ""
+    },
+    {
+      "name": "vacuum",
+      "file": "svg/vacuum.svg",
+      "group": "status",
+      "grid": 24,
+      "keyline": "circle",
+      "sizes_used": [32],
+      "where": ""
+    },
+    {
+      "name": "bolt",
+      "file": "svg/bolt.svg",
+      "group": "status",
+      "grid": 24,
+      "keyline": "portrait",
+      "sizes_used": [32],
+      "where": ""
+    },
+    {
+      "name": "agent",
+      "file": "svg/agent.svg",
+      "group": "status",
+      "grid": 24,
+      "keyline": "landscape",
+      "sizes_used": [32],
+      "where": ""
+    },
+    {
+      "name": "bell",
+      "file": "svg/bell.svg",
+      "group": "status",
+      "grid": 24,
+      "keyline": "portrait",
+      "sizes_used": [32],
+      "where": ""
+    },
+    {
+      "name": "person",
+      "file": "svg/person.svg",
+      "group": "status",
+      "grid": 24,
+      "keyline": "portrait",
+      "sizes_used": [32],
+      "where": ""
+    },
+    {
+      "name": "done",
+      "file": "svg/done.svg",
+      "group": "status",
+      "grid": 24,
+      "keyline": "circle",
+      "sizes_used": [48, 32],
+      "where": "empty state 48 · toast 32"
+    },
+    {
+      "name": "alert",
+      "file": "svg/alert.svg",
+      "group": "status",
+      "grid": 24,
+      "keyline": "landscape",
+      "sizes_used": [48, 32],
+      "where": "empty state 48 · toast 32"
+    },
+    {
+      "name": "pr",
+      "file": "svg/pr.svg",
+      "group": "github",
+      "grid": 24,
+      "keyline": "square",
+      "sizes_used": [48, 32],
+      "where": "empty state 48 · toast 32 (pull requests)"
+    },
+    {
+      "name": "review",
+      "file": "svg/review.svg",
+      "group": "github",
+      "grid": 24,
+      "keyline": "landscape",
+      "sizes_used": [],
+      "where": "component library"
+    },
+    {
+      "name": "clear-day",
+      "file": "svg/weather/clear-day.svg",
+      "group": "weather",
+      "grid": 48,
+      "keyline": "circle",
+      "sizes_used": [32, 40, 48, 72, 144],
+      "where": "card 72, hero 144, hourly 32, days 48",
+      "animated_parts": ["wx-rays"]
+    },
+    {
+      "name": "clear-night",
+      "file": "svg/weather/clear-night.svg",
+      "group": "weather",
+      "grid": 48,
+      "keyline": "circle",
+      "sizes_used": [32, 40, 48, 72, 144],
+      "where": "card 72, hero 144, hourly 32, days 48",
+      "animated_parts": ["wx-star"]
+    },
+    {
+      "name": "partly-day",
+      "file": "svg/weather/partly-day.svg",
+      "group": "weather",
+      "grid": 48,
+      "keyline": "circle",
+      "sizes_used": [32, 40, 48, 72, 144],
+      "where": "card 72, hero 144, hourly 32, days 48",
+      "animated_parts": ["wx-rays", "wx-cloud-front"]
+    },
+    {
+      "name": "partly-night",
+      "file": "svg/weather/partly-night.svg",
+      "group": "weather",
+      "grid": 48,
+      "keyline": "circle",
+      "sizes_used": [32, 40, 48, 72, 144],
+      "where": "card 72, hero 144, hourly 32, days 48",
+      "animated_parts": ["wx-star", "wx-cloud-front"]
+    },
+    {
+      "name": "cloudy",
+      "file": "svg/weather/cloudy.svg",
+      "group": "weather",
+      "grid": 48,
+      "keyline": "circle",
+      "sizes_used": [32, 40, 48, 72, 144],
+      "where": "card 72, hero 144, hourly 32, days 48",
+      "animated_parts": ["wx-cloud-back", "wx-cloud-front"]
+    },
+    {
+      "name": "fog",
+      "file": "svg/weather/fog.svg",
+      "group": "weather",
+      "grid": 48,
+      "keyline": "circle",
+      "sizes_used": [32, 40, 48, 72, 144],
+      "where": "card 72, hero 144, hourly 32, days 48",
+      "animated_parts": ["wx-fog"]
+    },
+    {
+      "name": "rain-light",
+      "file": "svg/weather/rain-light.svg",
+      "group": "weather",
+      "grid": 48,
+      "keyline": "circle",
+      "sizes_used": [32, 40, 48, 72, 144],
+      "where": "card 72, hero 144, hourly 32, days 48",
+      "animated_parts": ["wx-cloud-front", "wx-drop"]
+    },
+    {
+      "name": "rain-heavy",
+      "file": "svg/weather/rain-heavy.svg",
+      "group": "weather",
+      "grid": 48,
+      "keyline": "circle",
+      "sizes_used": [32, 40, 48, 72, 144],
+      "where": "card 72, hero 144, hourly 32, days 48",
+      "animated_parts": ["wx-cloud-front", "wx-drop"]
+    },
+    {
+      "name": "showers-day",
+      "file": "svg/weather/showers-day.svg",
+      "group": "weather",
+      "grid": 48,
+      "keyline": "circle",
+      "sizes_used": [32, 40, 48, 72, 144],
+      "where": "card 72, hero 144, hourly 32, days 48",
+      "animated_parts": ["wx-rays", "wx-cloud-front", "wx-drop"]
+    },
+    {
+      "name": "showers-night",
+      "file": "svg/weather/showers-night.svg",
+      "group": "weather",
+      "grid": 48,
+      "keyline": "circle",
+      "sizes_used": [32, 40, 48, 72, 144],
+      "where": "card 72, hero 144, hourly 32, days 48",
+      "animated_parts": ["wx-cloud-front", "wx-drop"]
+    },
+    {
+      "name": "snow",
+      "file": "svg/weather/snow.svg",
+      "group": "weather",
+      "grid": 48,
+      "keyline": "circle",
+      "sizes_used": [32, 40, 48, 72, 144],
+      "where": "card 72, hero 144, hourly 32, days 48",
+      "animated_parts": ["wx-cloud-front", "wx-flake"]
+    },
+    {
+      "name": "sleet",
+      "file": "svg/weather/sleet.svg",
+      "group": "weather",
+      "grid": 48,
+      "keyline": "circle",
+      "sizes_used": [32, 40, 48, 72, 144],
+      "where": "card 72, hero 144, hourly 32, days 48",
+      "animated_parts": ["wx-cloud-front", "wx-drop", "wx-flake"]
+    },
+    {
+      "name": "thunder",
+      "file": "svg/weather/thunder.svg",
+      "group": "weather",
+      "grid": 48,
+      "keyline": "circle",
+      "sizes_used": [32, 40, 48, 72, 144],
+      "where": "card 72, hero 144, hourly 32, days 48",
+      "animated_parts": ["wx-cloud-front", "wx-bolt"]
+    },
+    {
+      "name": "thunder-rain",
+      "file": "svg/weather/thunder-rain.svg",
+      "group": "weather",
+      "grid": 48,
+      "keyline": "circle",
+      "sizes_used": [32, 40, 48, 72, 144],
+      "where": "card 72, hero 144, hourly 32, days 48",
+      "animated_parts": ["wx-cloud-front", "wx-bolt", "wx-drop"]
+    },
+    {
+      "name": "hail",
+      "file": "svg/weather/hail.svg",
+      "group": "weather",
+      "grid": 48,
+      "keyline": "circle",
+      "sizes_used": [32, 40, 48, 72, 144],
+      "where": "card 72, hero 144, hourly 32, days 48",
+      "animated_parts": ["wx-cloud-front", "wx-hail"]
+    },
+    {
+      "name": "wind",
+      "file": "svg/weather/wind.svg",
+      "group": "weather",
+      "grid": 48,
+      "keyline": "circle",
+      "sizes_used": [32, 40, 48, 72, 144],
+      "where": "card 72, hero 144, hourly 32, days 48",
+      "animated_parts": ["wx-wind"]
+    },
+    {
+      "name": "exceptional",
+      "file": "svg/weather/exceptional.svg",
+      "group": "weather",
+      "grid": 48,
+      "keyline": "circle",
+      "sizes_used": [32, 40, 48, 72, 144],
+      "where": "card 72, hero 144, hourly 32, days 48",
+      "animated_parts": []
+    },
+    {
+      "name": "screen-agents",
+      "file": "svg/screens/agents.svg",
+      "group": "screens",
+      "grid": 24,
+      "keyline": "square",
+      "sizes_used": [24, 32],
+      "where": "the agents screen: docs, Home cards and screen headers"
+    },
+    {
+      "name": "screen-clock",
+      "file": "svg/screens/clock.svg",
+      "group": "screens",
+      "grid": 24,
+      "keyline": "square",
+      "sizes_used": [24, 32],
+      "where": "the clock screen: docs, Home cards and screen headers"
+    },
+    {
+      "name": "screen-energy",
+      "file": "svg/screens/energy.svg",
+      "group": "screens",
+      "grid": 24,
+      "keyline": "square",
+      "sizes_used": [24, 32],
+      "where": "the energy screen: docs, Home cards and screen headers"
+    },
+    {
+      "name": "screen-github",
+      "file": "svg/screens/github.svg",
+      "group": "screens",
+      "grid": 24,
+      "keyline": "square",
+      "sizes_used": [24, 32],
+      "where": "the github screen: docs, Home cards and screen headers"
+    },
+    {
+      "name": "screen-home",
+      "file": "svg/screens/home.svg",
+      "group": "screens",
+      "grid": 24,
+      "keyline": "square",
+      "sizes_used": [24, 32],
+      "where": "the home screen: docs, Home cards and screen headers"
+    },
+    {
+      "name": "screen-light",
+      "file": "svg/screens/light.svg",
+      "group": "screens",
+      "grid": 24,
+      "keyline": "square",
+      "sizes_used": [24, 32],
+      "where": "the light screen: docs, Home cards and screen headers"
+    },
+    {
+      "name": "screen-lightning",
+      "file": "svg/screens/lightning.svg",
+      "group": "screens",
+      "grid": 24,
+      "keyline": "square",
+      "sizes_used": [24, 32],
+      "where": "the lightning screen: docs, Home cards and screen headers"
+    },
+    {
+      "name": "screen-media",
+      "file": "svg/screens/media.svg",
+      "group": "screens",
+      "grid": 24,
+      "keyline": "square",
+      "sizes_used": [24, 32],
+      "where": "the media screen: docs, Home cards and screen headers"
+    },
+    {
+      "name": "screen-settings",
+      "file": "svg/screens/settings.svg",
+      "group": "screens",
+      "grid": 24,
+      "keyline": "square",
+      "sizes_used": [24, 32],
+      "where": "the settings screen: docs, Home cards and screen headers"
+    },
+    {
+      "name": "screen-timer",
+      "file": "svg/screens/timer.svg",
+      "group": "screens",
+      "grid": 24,
+      "keyline": "square",
+      "sizes_used": [24, 32],
+      "where": "the timer screen: docs, Home cards and screen headers"
+    },
+    {
+      "name": "screen-toasts",
+      "file": "svg/screens/toasts.svg",
+      "group": "screens",
+      "grid": 24,
+      "keyline": "square",
+      "sizes_used": [24, 32],
+      "where": "the toasts screen: docs, Home cards and screen headers"
+    },
+    {
+      "name": "screen-weather",
+      "file": "svg/screens/weather.svg",
+      "group": "screens",
+      "grid": 24,
+      "keyline": "square",
+      "sizes_used": [24, 32],
+      "where": "the weather screen: docs, Home cards and screen headers"
+    }
+  ]
+}

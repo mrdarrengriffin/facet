@@ -1,172 +1,162 @@
 /**
  * Facet design tokens.
  *
- * This is a starter set: enough to build the docs site and the first components. The full
- * token set (worked out on real hardware) will replace it, so expect names and values to
- * change before 1.0.
+ * `tokens.json` is the single source of truth. This module re-exports it with types, plus a few derived values
+ * (the screen layout box) that components use instead of literal numbers.
  */
+import data from './tokens.json' with { type: 'json' };
 
 export type ThemeName = 'dark' | 'light';
+export const themes: readonly ThemeName[] = ['dark', 'light'];
 
 /** A colour with a value for each theme. */
 export interface ThemedColor {
   dark: string;
   light: string;
-  /** What the colour is for. Shown on the design system page. */
+  /** What the colour is for. */
   use: string;
 }
 
-export const color = {
-  bg: { dark: '#000000', light: '#F4F2EE', use: 'Canvas' },
-  surface: { dark: '#0A0B0E', light: '#FFFFFF', use: 'Cards, tiles, secondary buttons' },
-  'surface-press': { dark: '#15171C', light: '#E9E6E0', use: 'Pressed surface' },
-  line: { dark: '#22262D', light: '#DDD9D2', use: 'Hairline outlines and dividers' },
-  'line-strong': { dark: '#3A404A', light: '#B9B4AB', use: 'Active outlines, ticks' },
-  text: { dark: '#F2F1EE', light: '#16181C', use: 'Primary text' },
-  'text-dim': { dark: '#8A919B', light: '#5C636D', use: 'Secondary text' },
-  'text-mute': { dark: '#565C66', light: '#9A9FA6', use: 'Meta text, disabled' },
-  accent: { dark: '#E8542A', light: '#E8542A', use: 'Signature orange: fills, rings, markers' },
-  'accent-press': { dark: '#C2441F', light: '#C2441F', use: 'Pressed accent' },
-  'accent-text': { dark: '#E8542A', light: '#B8401A', use: 'Accent used for text and icons' },
-  'on-accent': { dark: '#0A0B0E', light: '#16181C', use: 'Text on the accent' },
-  info: { dark: '#9CC3E6', light: '#2F6A9E', use: 'Secondary accent' },
-  ok: { dark: '#5DBE7E', light: '#2E8A50', use: 'Status: fine' },
-  warn: { dark: '#E8B33A', light: '#9A6B00', use: 'Status: needs attention' },
-  error: { dark: '#E5484D', light: '#C9302C', use: 'Status: something is wrong' },
-} as const satisfies Record<string, ThemedColor>;
+export interface FontMetrics {
+  unitsPerEm: number;
+  ascender: number;
+  descender: number;
+  capHeight: number;
+  xHeight: number;
+}
 
-export type ColorToken = keyof typeof color;
-
-export const font = {
-  sans: { family: 'Inter', fallback: 'system-ui, sans-serif' },
-  mono: { family: 'JetBrains Mono', fallback: 'ui-monospace, monospace' },
-} as const;
-
-export type FontToken = keyof typeof font;
+export interface FontToken {
+  family: string;
+  fallback: string;
+  metrics: FontMetrics;
+}
 
 export interface TypeStyle {
-  font: FontToken;
+  font: 'sans' | 'mono';
   /** Font size in px. */
   size: number;
   weight: number;
   lineHeight: number;
+  /** Line box in px (a multiple of 8). Text is centred on its cap height inside it. */
+  box?: number;
   /** Letter spacing in px. */
   letterSpacing: number;
-  uppercase: boolean;
+  case: 'none' | 'upper';
   use: string;
+  /** Font id on the firmware side. */
+  lvgl: string;
+  /** Clock digits only: digit cell width, colon cell width and colon lift, in em. */
+  digit?: number;
+  colon?: number;
+  colonY?: number;
 }
 
-/**
- * Type scale. One large, light hero per screen; everything else stays quiet. Sizes are in px
- * at the reference panel size (720 x 720).
- */
-export const type = {
-  display: {
-    font: 'sans',
-    size: 144,
-    weight: 200,
-    lineHeight: 1,
-    letterSpacing: -2,
-    uppercase: false,
-    use: 'The hero of a full screen: time, temperature',
-  },
-  hero: {
-    font: 'sans',
-    size: 96,
-    weight: 200,
-    lineHeight: 1,
-    letterSpacing: -1,
-    uppercase: false,
-    use: 'Big numbers on a screen',
-  },
-  value: {
-    font: 'sans',
-    size: 64,
-    weight: 200,
-    lineHeight: 1,
-    letterSpacing: -1,
-    uppercase: false,
-    use: 'The one value on a card',
-  },
-  headline: {
-    font: 'sans',
-    size: 40,
-    weight: 300,
-    lineHeight: 1.2,
-    letterSpacing: 0,
-    uppercase: false,
-    use: 'Track title, weather condition',
-  },
-  title: {
-    font: 'sans',
-    size: 28,
-    weight: 400,
-    lineHeight: 1.25,
-    letterSpacing: 0,
-    uppercase: false,
-    use: 'Row and card titles',
-  },
-  body: {
-    font: 'sans',
-    size: 22,
-    weight: 400,
-    lineHeight: 1.3,
-    letterSpacing: 0,
-    uppercase: false,
-    use: 'Secondary lines',
-  },
-  label: {
-    font: 'mono',
-    size: 18,
-    weight: 500,
-    lineHeight: 1,
-    letterSpacing: 2,
-    uppercase: true,
-    use: 'Labels, chips, buttons: the smallest text',
-  },
-} as const satisfies Record<string, TypeStyle>;
+export interface Easing {
+  css: string;
+  lvgl: string;
+}
 
+const strip = <T extends object>(o: T) =>
+  Object.fromEntries(Object.entries(o).filter(([k]) => !k.startsWith('$'))) as Omit<T, '$comment'>;
+
+export const screen = data.screen;
+export const color = strip(data.color) as Record<
+  keyof Omit<typeof data.color, '$comment'>,
+  ThemedColor
+>;
+export type ColorToken = keyof typeof color;
+
+export const font = { sans: data.font.sans, mono: data.font.mono } as Record<
+  'sans' | 'mono',
+  FontToken
+>;
+
+/** The screen type scale: display 144, hero 96, value 64, headline 40, title 28, body 22, label 18. */
+export const screenType = strip(data.screenType) as Record<
+  keyof Omit<typeof data.screenType, '$comment'>,
+  TypeStyle
+>;
+export type ScreenTypeToken = keyof typeof screenType;
+
+/** The component type scale: the smaller text inside components (lists, chips, the dial, clocks). */
+export const type = strip(data.type) as Record<keyof Omit<typeof data.type, '$comment'>, TypeStyle>;
 export type TypeToken = keyof typeof type;
 
-/** Spacing in px, on an 8 px grid (with 4 for tight spots). */
-export const space = {
-  '1': 4,
-  '2': 8,
-  '3': 16,
-  '4': 24,
-  '5': 32,
-  '6': 48,
-  '7': 64,
+export const space = data.space;
+export const radius = data.radius;
+export const stroke = data.stroke;
+export const size = data.size;
+export const opacity = data.opacity;
+export const motion = data.motion as {
+  duration: Record<keyof typeof data.motion.duration, number>;
+  easing: Record<keyof typeof data.motion.easing, Easing>;
+  transition: { default: 'instant' };
+};
+export const toast = strip(data.toast) as {
+  position: 'top' | 'bottom';
+  max: number;
+  life: number;
+  'life-urgent': number;
+  swipe: number;
+  sound: string;
+};
+export const sound = strip(data.sound) as {
+  chosen: string;
+  peakDb: number;
+  loudnessDb: number;
+  fadeMs: number;
+  sampleRates: number[];
+};
+
+/**
+ * Screen layout. Every x / y / w / h is a multiple of 8. One inset (32) on all four sides, a 48 px header row at
+ * y 32, and the content box from y 112 to the bottom inset.
+ */
+const L = strip(data.layout);
+export const layout = {
+  ...L,
+  grid: 8,
+  /** Content box (x, y, w, h) below the header. */
+  contentX: L.inset,
+  contentY: L.top,
+  contentW: data.screen.width - 2 * L.inset,
+  contentH: data.screen.height - L.inset - L.top,
+};
+
+/**
+ * The compact frame used by overlays and dense views (toasts, bottom sheets, list and detail views): a 16 px inset
+ * and an 80 px header band, content from y 96.
+ */
+const IN = data.space.screen;
+const TOP = data.size['header-h'] + data.space.gutter;
+export const frame = {
+  inset: IN,
+  gutter: data.space.gutter,
+  headerH: data.size['header-h'],
+  top: TOP,
+  width: data.screen.width - 2 * IN,
+  right: data.screen.width - IN,
+  bottom: data.screen.height - IN,
+  height: data.screen.height - IN - TOP,
+  cx: data.screen.width / 2,
+  cy: (TOP + data.screen.height - IN) / 2,
+};
+
+export const tokens = {
+  screen,
+  color,
+  font,
+  screenType,
+  type,
+  layout,
+  frame,
+  space,
+  radius,
+  stroke,
+  size,
+  opacity,
+  motion,
+  toast,
+  sound,
 } as const;
-
-export type SpaceToken = keyof typeof space;
-
-/** Corner radius in px. */
-export const radius = {
-  none: 0,
-  sm: 4,
-  md: 8,
-  lg: 16,
-  pill: 999,
-} as const;
-
-export type RadiusToken = keyof typeof radius;
-
-/** Motion. Keep animation to moving or fading small things, so it also works on the panels. */
-export const motion = {
-  duration: {
-    instant: 0,
-    fast: 120,
-    base: 200,
-    slow: 320,
-  },
-  easing: {
-    standard: 'cubic-bezier(0.2, 0, 0, 1)',
-    out: 'cubic-bezier(0, 0, 0, 1)',
-    in: 'cubic-bezier(0.3, 0, 1, 1)',
-  },
-} as const;
-
-export const tokens = { color, font, type, space, radius, motion } as const;
-
 export type Tokens = typeof tokens;

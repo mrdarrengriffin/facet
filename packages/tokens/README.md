@@ -1,35 +1,24 @@
 # @facet/tokens
 
-Design tokens for Facet: colour (dark and light), type, spacing, radius and motion.
+Design tokens for Facet: colour (dark and light), two type scales, the screen layout, sizes,
+spacing, radius, motion, toasts and sound. Everything comes from one file,
+[`src/tokens.json`](src/tokens.json).
 
-> This is a **starter set**. It's enough to build the docs site and the first components. The
-> full token set will replace it, and names may change before 1.0.
+## Outputs
 
-## Usage
+| Import                              | What                                                                                |
+| ----------------------------------- | ----------------------------------------------------------------------------------- |
+| `@facet/tokens`                     | Typed objects: `color`, `screenType`, `type`, `layout`, `size`, ...                 |
+| `@facet/tokens/tokens.css`          | CSS custom properties (`--facet-color-*`, ...) and type classes (`.fst-*`, `.ft-*`) |
+| `@facet/tokens/tokens.json`         | The source file                                                                     |
+| `@facet/tokens/esphome/tokens.yaml` | ESPHome substitutions, fonts and LVGL style definitions                             |
 
 ```ts
-import { color, type, space } from '@facet/tokens';
+import { color, layout } from '@facet/tokens';
 
 color.accent.dark; // '#E8542A'
-type.title.size; // 28
-space['3']; // 16
+layout.inset; // 32
 ```
 
-Or use the generated CSS custom properties:
-
-```css
-@import '@facet/tokens/tokens.css';
-
-.card {
-  background: var(--facet-color-surface);
-  padding: var(--facet-space-4);
-  border-radius: var(--facet-radius-md);
-}
-```
-
-Dark is the default. Light follows `prefers-color-scheme`, and either theme can be forced with
-`data-facet-theme="dark"` or `data-facet-theme="light"` on any element.
-
-## Build
-
-`pnpm build` compiles the TypeScript to `dist/` and writes `dist/tokens.css`.
+Dark is the default theme; light follows the system, and `data-facet-theme="dark|light"` on
+any element forces one for that element and everything inside it.

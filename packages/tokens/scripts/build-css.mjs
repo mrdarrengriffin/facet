@@ -1,8 +1,9 @@
-// Writes dist/tokens.css from the compiled tokens. Runs after `tsc` in `pnpm build`.
+// Writes dist/tokens.css and dist/esphome/tokens.yaml from the compiled tokens. Runs after `tsc` in `pnpm build`.
 import { mkdir, writeFile } from 'node:fs/promises';
-import { toCss } from '../dist/index.js';
+import { toCss, toEsphome } from '../dist/index.js';
 
-const out = new URL('../dist/tokens.css', import.meta.url);
-await mkdir(new URL('.', out), { recursive: true });
-await writeFile(out, toCss());
-console.log('Wrote dist/tokens.css');
+const dist = new URL('../dist/', import.meta.url);
+await mkdir(new URL('esphome/', dist), { recursive: true });
+await writeFile(new URL('tokens.css', dist), toCss());
+await writeFile(new URL('esphome/tokens.yaml', dist), toEsphome());
+console.log('Wrote dist/tokens.css and dist/esphome/tokens.yaml');

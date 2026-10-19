@@ -3,3 +3,5 @@ dist/
 node_modules/
 pnpm-lock.yaml
 CHANGELOG.md
+packages/icons/src/glyphs.ts
+packages/icons/src/screen-glyphs.ts
