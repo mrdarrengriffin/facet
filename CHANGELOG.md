@@ -27,6 +27,12 @@ All notable changes to Facet are written down here. The format is loosely based 
 - Energy: "Last 7 days" opens a week view: the week's cost as the hero, use per day against
   the week before, and a pair of bars for each day (tap one to read it). `EnergyData` gains
   `days` (daily totals, today last).
+- Moon: a Moon screen (the moon drawn from its phase as the hero, one line under it, and a
+  details view with how much is lit, the age, moonrise and moonset, the next full and new moon
+  and the next four phases) and a Moon card on Home. `moonIcon(frac)` in `@facet/icons` draws
+  the phase on the weather grid; `moonData(now, { lat, lon })` in `@facet/ui` works it all out
+  on the device (phase times to about a minute, rise and set to a few minutes). New colour
+  tokens `moon-lit`, `moon-dark`, `moon-edge`; `PanelData` gains `moon`.
 - Site: a Sounds page (`/docs/sounds/`) with every sound in every pack playable live.
 - Screen pages: options under each live preview change the mock house's data (playing or
   paused, brightness, timer state, pull requests, price band, weather, storm, agents per mood,

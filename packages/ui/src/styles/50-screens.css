@@ -727,3 +727,40 @@
 .fs-content > .f-abs > .fs-t-mid {
   display: flex;
 }
+
+/* ---------- Moon ---------- */
+.fs-moon-hero {
+  display: block;
+}
+.fs-moon-line {
+  display: flex;
+  justify-content: center;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.fs-moon-name {
+  color: var(--facet-color-text);
+}
+.fs-moon-rest {
+  color: var(--facet-color-text-dim);
+  white-space: pre;
+}
+.fs-mn {
+  display: flex !important;
+}
+.fs-mn-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--facet-space-2);
+}
+.fs-mn-col > .fmoon {
+  margin-bottom: var(--facet-space-2);
+}
+.fs-mn-k {
+  color: var(--facet-color-text-mute);
+  white-space: nowrap;
+}
+.fs-mn-d {
+  color: var(--facet-color-text);
+}

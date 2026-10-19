@@ -1,6 +1,6 @@
 /**
  * A mock house for demos, docs and tests: fictional rooms, speakers, weather, an energy tariff with price bands,
- * pull requests, a passing thunderstorm, agents, timers and toasts. It fills a Facet store and implements the panel
+ * pull requests, a passing thunderstorm, the real moon, agents, timers and toasts. It fills a Facet store and implements the panel
  * actions, so the screens behave as they would on a real house: play and pause, change the volume, dim the light,
  * start a timer.
  *
@@ -11,7 +11,14 @@
  * document.body.append(createDevice(house).el);
  * ```
  */
-import { createStore, type Band, type PanelActions, type PanelData, type Store } from '@facet/ui';
+import {
+  createStore,
+  moonData,
+  type Band,
+  type PanelActions,
+  type PanelData,
+  type Store,
+} from '@facet/ui';
 import * as D from './data.js';
 import { energyWith, lightningWith, type LightningScene } from './scenes.js';
 
@@ -76,6 +83,7 @@ export function mockState(now = Date.now(), o: MockHouseOptions = {}): PanelData
     energy: D.energy(now),
     github: D.github(now),
     lightning: D.lightning(now, o.quietSky),
+    moon: moonData(now, D.PLACE_AT),
     timers: timer > 0 ? [{ label: 'Bread', endsAt: now + timer * 1000, total: 12 * 60 }] : [],
     nextEvent: D.nextEvent(now),
   };
@@ -184,6 +192,7 @@ export function createMockHouse(o: MockHouseOptions = {}): MockHouse {
   const liveParts = (now: number): Partial<PanelData> => ({
     energy: scene.band === 'live' ? D.energy(now, watts) : energyWith(now, scene.band, watts),
     lightning: lightningWith(now, scene.lightning),
+    moon: moonData(now, D.PLACE_AT),
   });
   const setScene = (s: LiveScene) => {
     Object.assign(scene, s);

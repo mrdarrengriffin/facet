@@ -19,6 +19,7 @@ import { lightScreen } from './screens/light.js';
 import { lightningScreen } from './screens/lightning.js';
 import { mediaScreen } from './screens/media.js';
 import type { MediaVisualId } from './media-visuals/index.js';
+import { moonScreen } from './screens/moon.js';
 import { timerScreen } from './screens/timer.js';
 import { weatherScreen } from './screens/weather.js';
 
@@ -33,6 +34,7 @@ export const SCREEN_IDS: ScreenId[] = [
   'energy',
   'weather',
   'lightning',
+  'moon',
   'timer',
 ];
 
@@ -67,6 +69,8 @@ export function createScreen(
       return weatherScreen(ctx, o);
     case 'lightning':
       return lightningScreen(ctx, o);
+    case 'moon':
+      return moonScreen(ctx, o);
     case 'timer':
       return timerScreen(ctx, o);
   }

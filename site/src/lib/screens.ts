@@ -413,6 +413,47 @@ const lightning = lightningScreen(ctx);`,
     ],
   },
   {
+    slug: 'moon',
+    preview: 'moon',
+    icon: 'moon',
+    title: 'Moon',
+    description:
+      'The moon tonight, drawn from its phase, and one line: the phase, how much is lit, the next full or new moon.',
+    intro: [
+      'The Moon screen is one picture and one line. The hero is the moon itself, drawn from the phase: the lit part grows from the right while it waxes (mirrored south of the equator).',
+      'Under it: "Waxing gibbous · 78% · full on Fri". Details opens the numbers: how much is lit, the age, the next moonrise and moonset, the next full and new moon, and the next four phases.',
+      'Everything is worked out on the device, no API: `moonData(now, { lat, lon })` gives phase times to about a minute and rise and set times to a few minutes.',
+    ],
+    shows: [
+      'The moon (384), centred. The lit part is one shape: a half circle and half an ellipse.',
+      'One line (28 px): the phase name, then how much is lit and when the next full or new moon is, dimmed.',
+      'Details: six stats (lit, age, the next moonrise and moonset, next full, next new) and the next four phases with 48 px glyphs.',
+    ],
+    usage: `import { moonData, moonScreen } from '@facet/ui';
+
+store.patch({ moon: moonData(Date.now(), { lat: 52.2, lon: -1.2 }) });
+const moon = moonScreen(ctx);`,
+    data: `interface MoonData {
+  phase: MoonPhase;     // Home Assistant's moon states: 'new_moon' … 'waning_crescent'
+  frac: number;         // 0-1 through the month: 0 new, 0.25 first quarter, 0.5 full
+  illumination: number; // 0-100
+  age: number;          // days since the new moon
+  next_new: string;
+  next_full: string;
+  upcoming?: { phase: 'new_moon' | 'first_quarter' | 'full_moon' | 'last_quarter'; t: string }[];
+  rise?: string | null; // today's moonrise, null when it doesn't rise today
+  set?: string | null;
+  next_rise?: string | null; // the next ones from now, for the details view
+  next_set?: string | null;
+  south?: boolean;      // mirror the glyph
+}`,
+    config: [
+      "Call `moonData` from your adapter every few minutes. Home Assistant's `moon` sensor only gives the phase name, so the rest comes from the calculation.",
+      'Without a location there are no rise and set times, and the glyph assumes the northern hemisphere.',
+      'The glyph on its own: `moonIcon(frac, { size })` from @facet/icons.',
+    ],
+  },
+  {
     slug: 'timer',
     preview: 'timer',
     icon: 'timer',

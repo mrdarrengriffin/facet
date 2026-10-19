@@ -459,6 +459,16 @@
       "animated_parts": []
     },
     {
+      "name": "moon-phase",
+      "file": "src/moon.ts",
+      "group": "moon",
+      "grid": 48,
+      "keyline": "circle",
+      "sizes_used": [48, 72, 384],
+      "where": "drawn in code from the phase (moonIcon): next phases 48, card 72, Moon hero 384",
+      "animated_parts": []
+    },
+    {
       "name": "screen-agents",
       "file": "svg/screens/agents.svg",
       "group": "screens",
@@ -520,6 +530,15 @@
       "keyline": "square",
       "sizes_used": [24, 32],
       "where": "the lightning screen: docs, Home cards and screen headers"
+    },
+    {
+      "name": "screen-moon",
+      "file": "svg/screens/moon.svg",
+      "group": "screens",
+      "grid": 24,
+      "keyline": "circle",
+      "sizes_used": [24, 32],
+      "where": "the moon screen: docs, Home cards and screen headers"
     },
     {
       "name": "screen-media",

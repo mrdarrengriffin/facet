@@ -40,7 +40,7 @@ weather.set({ value: '13°', sub: 'rain within the hour' });
 | Group        | Components                                                                                |
 | ------------ | ----------------------------------------------------------------------------------------- |
 | Atoms        | `label`, `statusDot`, `statusChip`, `cornerTicks`, `focusRing`, `mascotMood`              |
-| Icons        | `icon`, `screenIcon`, `weatherIcon` (from `@facet/icons`)                                 |
+| Icons        | `icon`, `screenIcon`, `weatherIcon`, `moonIcon` (from `@facet/icons`)                     |
 | Buttons      | `button` (four kinds × four states), `iconButton` (play, round, square), `backButton`     |
 | Controls     | `slider`, `dial`, `arc`, `disc`, `tickRing`                                               |
 | Screen parts | `header`, `card`, `tile`, `heroBlock`, `row`, `moreRow`, `stat`, card previews            |
@@ -50,6 +50,7 @@ weather.set({ value: '13°', sub: 'rain within the hour' });
 | Charts       | `barChart`, `rateStrip`, `sparkline`, `bigNumber`, `deltaChip`, `donut`, `legend`, `axis` |
 | Clock        | `timeText`, `dateLine`, `clockHero`, `clockRing`, `clockAnalogue`, `clockContext`         |
 | Radar        | `lightningRadar`                                                                          |
+| Moon         | `moonData`, `moonTimes`, `moonLine` (worked out locally, no API)                          |
 
 ## Built for LVGL too
 

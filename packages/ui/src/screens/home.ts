@@ -1,7 +1,7 @@
 // Home: the room's cards, two by two (320 × 280), four per view; the grid scrolls a row at a time. Each card shows
 // one value and one line, and lights its dot when it matters (something needs you, music playing, peak price, a
 // nearby strike). The Timer card comes first and only shows while a timer is running.
-import { weatherIcon, wxIcon, WX_TEXT } from '@facet/icons';
+import { moonIcon, weatherIcon, wxIcon, WX_TEXT } from '@facet/icons';
 import { BAND_NAME } from '../charts.js';
 import { countdown } from '../clocks.js';
 import { hhmm, clean, deg, money } from '../format.js';
@@ -19,10 +19,20 @@ import {
 import { lightningSummary } from '../radar.js';
 import { h } from '../dom.js';
 import type { PanelData } from '../types.js';
+import { moonLine } from './moon.js';
 import { isDay, missing, speakerName, type Screen, type ScreenContext } from './common.js';
 
 export type CardId =
-  'timer' | 'agents' | 'media' | 'light' | 'clock' | 'github' | 'energy' | 'weather' | 'lightning';
+  | 'timer'
+  | 'agents'
+  | 'media'
+  | 'light'
+  | 'clock'
+  | 'github'
+  | 'energy'
+  | 'weather'
+  | 'lightning'
+  | 'moon';
 export const CARD_IDS: CardId[] = [
   'timer',
   'agents',
@@ -33,12 +43,13 @@ export const CARD_IDS: CardId[] = [
   'energy',
   'weather',
   'lightning',
+  'moon',
 ];
 
 export interface HomeOptions {
   /** Called when a card is tapped. Leave it out and the cards don't navigate. */
   open?: (id: CardId) => void;
-  /** Which cards, in order. Default: all nine (Timer only while one runs). */
+  /** Which cards, in order. Default: all ten (Timer only while one runs). */
   cards?: CardId[];
 }
 
@@ -49,6 +60,7 @@ export function homeScreen(ctx: ScreenContext, o: HomeOptions = {}): Screen {
   const pWeather = weatherIcon('partly-day', { size: 72, animated: true });
   const pLightning = previewLightning();
   const pTimer = previewTimer();
+  const pMoon = moonIcon(0.25, { size: 72 });
   const cards = {
     timer: card({
       label: 'Timer',
@@ -121,6 +133,14 @@ export function homeScreen(ctx: ScreenContext, o: HomeOptions = {}): Screen {
       value: '--',
       sub: 'loading',
       onTap: go('lightning'),
+    }),
+    moon: card({
+      label: 'Moon',
+      icon: 'moon',
+      preview: pMoon,
+      value: '--',
+      sub: 'loading',
+      onTap: go('moon'),
     }),
   };
   const ids = o.cards ?? CARD_IDS;
@@ -233,6 +253,13 @@ export function homeScreen(ctx: ScreenContext, o: HomeOptions = {}): Screen {
         });
       } else cards.weather.set({ value: '--°', sub: missing(ctx.store) });
       setLightning(s.lightning);
+      // moon
+      const mo = s.moon;
+      if (mo) {
+        pMoon.set(mo.frac, { south: mo.south });
+        const l = moonLine(mo);
+        cards.moon.set({ value: `${Math.round(mo.illumination)}%`, sub: l.name.toLowerCase() });
+      } else cards.moon.set({ value: '--', sub: missing(ctx.store) });
       setTimer();
     },
     tick(now) {

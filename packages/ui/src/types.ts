@@ -241,6 +241,47 @@ export interface LightningData {
   error?: string;
 }
 
+// ---------------------------------------------------------------- moon
+/** Moon phases, using Home Assistant's `moon` sensor states. */
+export type MoonPhase =
+  | 'new_moon'
+  | 'waxing_crescent'
+  | 'first_quarter'
+  | 'waxing_gibbous'
+  | 'full_moon'
+  | 'waning_gibbous'
+  | 'last_quarter'
+  | 'waning_crescent';
+
+/** A principal phase and when it happens. */
+export interface MoonPhaseEvent {
+  phase: 'new_moon' | 'first_quarter' | 'full_moon' | 'last_quarter';
+  t: string;
+}
+
+/** The moon now. `moonData(now, { lat, lon })` works all of it out locally. */
+export interface MoonData {
+  phase: MoonPhase;
+  /** How far through the month, 0-1: 0 new, 0.25 first quarter, 0.5 full, 0.75 last quarter. Draws the glyph. */
+  frac: number;
+  /** Lit part of the disc, 0-100. */
+  illumination: number;
+  /** Days since the last new moon. */
+  age: number;
+  next_new: string;
+  next_full: string;
+  /** The next four principal phases. */
+  upcoming?: MoonPhaseEvent[];
+  /** Today's moonrise and moonset (local day); null when it doesn't rise or set today, or there's no location. */
+  rise?: string | null;
+  set?: string | null;
+  /** The next moonrise and moonset from now (within two days). */
+  next_rise?: string | null;
+  next_set?: string | null;
+  /** Southern hemisphere: the glyph's lit side is mirrored. */
+  south?: boolean;
+}
+
 // ---------------------------------------------------------------- the whole panel
 /** Everything the screens read. Every key is optional: a screen shows a quiet empty state for missing data. */
 export interface PanelData {
@@ -259,6 +300,7 @@ export interface PanelData {
   energy?: EnergyData | null;
   github?: GithubData | null;
   lightning?: LightningData | null;
+  moon?: MoonData | null;
   timers?: Timer[];
   nextEvent?: CalendarEvent | null;
 }

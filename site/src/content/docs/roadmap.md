@@ -24,6 +24,7 @@ Ticked items are done, the ones with an orange dot are in progress.
 - [x] Cards, tiles, rows, chips, lists and pickers
 - [x] Toasts and the toast layer
 - [x] Charts, clocks and the lightning radar
+- [x] The moon phase glyph and the moon calculation (`moonIcon`, `moonData`)
 - [x] Checkboxes
 - [ ] One component description that renders to the web and to LVGL
 
@@ -31,6 +32,7 @@ Ticked items are done, the ones with an orange dot are in progress.
 
 - [x] Home, Agents, Media, Light and Clock
 - [x] GitHub, Energy, Weather, Lightning and Timer
+- [x] Moon: the phase drawn as the hero, worked out on the device (no API)
 - [x] Toasts over any screen and an idle clock
 - [~] Context cards: room profiles that decide which cards show and in what order
 - [ ] Ambient screens with generative animation

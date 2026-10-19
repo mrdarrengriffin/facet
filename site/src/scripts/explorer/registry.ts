@@ -6,6 +6,7 @@ import { createMockHouse, energy, lightning, TOASTS, TRACKS } from '@facet/demo-
 import {
   iconNames,
   icon,
+  moonIcon,
   screenIcon,
   screenIconNames,
   weatherIcon,
@@ -262,6 +263,45 @@ export const entries: Entry[] = [
       WX_ICONS.map((id) => ({
         label: WX_LABEL[id],
         el: weatherIcon(id, { size: 48, animated: true }),
+      })),
+  },
+  {
+    id: 'moon-icon',
+    name: 'Moon phase',
+    group: 'Icons',
+    description:
+      'The moon drawn from its phase on the weather grid: the dark disc, the lit part as one shape (a half circle and half an ellipse) and a 2 px outline.',
+    controls: [
+      rng('day', 'Day of the month', 0, 29, 10, 1),
+      rng('size', 'Size', 32, 384, 144, 16),
+      tog('south', 'Southern hemisphere', false),
+    ],
+    render: (p) => moonIcon(Number(p.day) / F.SYNODIC, { size: Number(p.size), south: !!p.south }),
+    code: (p) =>
+      imp(['moonIcon'], '@facet/icons') +
+      `// frac = 0-1 through the month (moonData().frac)\n` +
+      call('moonIcon', [
+        Number((Number(p.day) / F.SYNODIC).toFixed(3)),
+        { size: p.size, south: p.south },
+      ]),
+    variants: () =>
+      [0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875].map((frac, i) => ({
+        label:
+          F.MOON_PHASE_TEXT[
+            (
+              [
+                'new_moon',
+                'waxing_crescent',
+                'first_quarter',
+                'waxing_gibbous',
+                'full_moon',
+                'waning_gibbous',
+                'last_quarter',
+                'waning_crescent',
+              ] as const
+            )[i]!
+          ],
+        el: moonIcon(frac, { size: 48 }),
       })),
   },
   // ---------------------------------------------------------------- buttons
@@ -687,6 +727,47 @@ export const entries: Entry[] = [
     },
     code: (p) =>
       imp(['stat']) + `const trend = stat('${p.label}');\ntrend.set('${p.value}', '${p.tone}');`,
+  },
+  {
+    id: 'moon-facts',
+    name: 'Moon facts',
+    group: 'Screen parts',
+    description:
+      'What moonData() works out, without an API: the one line, how much is lit, the age, moonrise and moonset, the next full and new moon.',
+    controls: [rng('ahead', 'Days ahead', 0, 29, 0, 1)],
+    render: (p) => {
+      const now = Date.now() + Number(p.ahead) * 86_400_000;
+      const m = F.moonData(now, { lat: 52.2, lon: -1.2 });
+      const l = F.moonLine(m, now);
+      const st = (k: string, v: string) => {
+        const x = F.stat(k);
+        x.set(v, 'text' as Tone);
+        return F.h('div', { style: { width: '240px' } }, x);
+      };
+      const t = (iso?: string | null) => (iso ? F.hm(iso) : '--');
+      return F.h(
+        'div',
+        {
+          class: 'fs',
+          style: { display: 'grid', gridTemplateColumns: '240px 240px', gap: '32px 16px' },
+        },
+        F.h(
+          'div',
+          { style: { gridColumn: '1 / 3', display: 'flex', alignItems: 'center', gap: '16px' } },
+          moonIcon(m.frac, { size: 48 }),
+          F.h('span', { class: 'fst-title' }, `${l.name} · ${l.rest}`),
+        ),
+        st('lit', `${Math.round(m.illumination)}%`),
+        st('age', `${m.age.toFixed(1)} days`),
+        st('moonrise', m.next_rise ? `${F.moonDay(m.next_rise, now)} · ${t(m.next_rise)}` : '--'),
+        st('moonset', m.next_set ? `${F.moonDay(m.next_set, now)} · ${t(m.next_set)}` : '--'),
+        st('next full', `${F.moonDay(m.next_full, now)} · ${F.hm(m.next_full)}`),
+        st('next new', `${F.moonDay(m.next_new, now)} · ${F.hm(m.next_new)}`),
+      );
+    },
+    code: () =>
+      imp(['moonData', 'moonLine']) +
+      "const moon = moonData(Date.now(), { lat: 52.2, lon: -1.2 });\nconst { name, rest } = moonLine(moon); // 'Waxing gibbous', '78% · full on Fri'",
   },
   {
     id: 'previews',

@@ -11,6 +11,7 @@ import { svg } from './svg.js';
 export { glyphs, type Glyph, type IconName };
 export { svg };
 export * from './weather.js';
+export * from './moon.js';
 
 /** Every UI icon name, sorted. */
 export const iconNames = Object.keys(glyphs).sort() as IconName[];

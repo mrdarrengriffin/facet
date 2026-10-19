@@ -30,6 +30,8 @@ const startOfDay = (now: number) => {
 
 export const ROOM = 'Study';
 export const PLACE = 'Larkfield';
+/** Where Larkfield is, for the moon's rise and set (a made-up spot in middle England). */
+export const PLACE_AT = { lat: 52.2, lon: -1.2 };
 export const LIGHT_NAME = 'Desk lamp';
 
 // ---------------------------------------------------------------- agents
