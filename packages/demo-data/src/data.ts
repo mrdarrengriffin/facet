@@ -312,7 +312,7 @@ export function github(now: number): GithubData {
 
 // ---------------------------------------------------------------- lightning: a storm passing from the west
 const DIRS = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
-const dirOf = (az: number) => DIRS[Math.floor((((az % 360) + 360 + 22.5) % 360) / 45) % 8]!;
+export const dirOf = (az: number) => DIRS[Math.floor((((az % 360) + 360 + 22.5) % 360) / 45) % 8]!;
 
 /** A synthetic storm: a cell that crosses the area once an hour, from the west at about 50 km/h. */
 export function lightning(now: number, quiet = false): LightningData {
@@ -350,10 +350,22 @@ export function lightning(now: number, quiet = false): LightningData {
     });
   }
   strikes.sort((a, b) => b.t - a.t);
+  const approaching = (now % HOUR) / HOUR < 0.55;
+  return summariseStrikes(now, strikes, {
+    state: approaching ? 'approaching' : 'receding',
+    kmh: approaching ? 48 : -44,
+  });
+}
+
+/** Counts, nearest strike and storm flag for a list of strikes (newest first). */
+export function summariseStrikes(
+  now: number,
+  strikes: Strike[],
+  trend: LightningData['trend'],
+): LightningData {
   const within = (m: number) => strikes.filter((s) => now - s.t < m * 60_000);
   const m15 = within(15);
   const near = m15.reduce<Strike | null>((a, s) => (!a || s.d < a.d ? s : a), null);
-  const approaching = (now % HOUR) / HOUR < 0.55;
   return {
     radius: 100,
     strikes,
@@ -365,7 +377,7 @@ export function lightning(now: number, quiet = false): LightningData {
     },
     nearest: near ? { d: near.d, az: near.az, dir: dirOf(near.az), t: near.t } : null,
     last: strikes[0]?.t ?? null,
-    trend: { state: approaching ? 'approaching' : 'receding', kmh: approaching ? 48 : -44 },
+    trend,
     storm: m15.length > 10,
   };
 }

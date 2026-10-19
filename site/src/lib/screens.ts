@@ -221,7 +221,7 @@ const clock = clockScreen(ctx, {
   timers?: { label: string; endsAt: number; total: number }[];
 }`,
     config: [
-      'Faces: `orbit`, `hero`, `ring`, `analogue`, `context`. Pick one with the buttons above the preview.',
+      'Faces: `orbit`, `hero`, `ring`, `analogue`, `context`. Pick one, and the font, format and date style, in the options under the preview.',
       'Font `mono` (default) or `inter`, format `24h` (default) or `12h`, date `short` ("MON 19 OCT") or `long` ("Monday 19 October").',
       'Seconds move with one small rotating or scaling element per clock, re-synced to the wall clock every second.',
     ],
@@ -442,7 +442,7 @@ interface PanelData {
     ],
     shows: [
       'Toasts of 688 × 96 entering from the top, under the header (or from the bottom).',
-      'Use the buttons above the preview to send some.',
+      'Use the buttons under the preview to send some.',
     ],
     usage: `import { createDevice } from '@facet/ui';
 

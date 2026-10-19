@@ -4,7 +4,8 @@
  */
 import { tickClocks } from '@facet/ui';
 import { fitFrame, initSounds, initThemeOverride, soundToggleFor } from '../facet-runtime';
-import { entries, type Control, type Entry, type Props } from './registry';
+import { controlEl } from '../controls';
+import { entries, type Entry, type Props } from './registry';
 
 type Destroyable = (HTMLElement | SVGElement) & { destroy?: () => void };
 
@@ -98,49 +99,18 @@ export function initExplorer(root: HTMLElement): void {
     controls.replaceChildren();
     if (!current.controls.length)
       controls.append(el('p', { class: 'ex-none' }, 'No props to change.'));
-    for (const c of current.controls) controls.append(controlEl(c));
-  }
-
-  function controlEl(c: Control): HTMLElement {
-    const id = `ex-${current.id}-${c.key}`;
-    const wrap = el('div', { class: `ex-control ex-control--${c.type}` });
-    const lbl = el('label', { for: id }, c.label);
-    const set = (v: string | number | boolean) => {
-      props[c.key] = v;
-      renderStage();
-    };
-    if (c.type === 'select') {
-      const s = el('select', { id });
-      for (const o of c.options) s.append(el('option', { value: o }, o));
-      s.value = String(props[c.key]);
-      s.addEventListener('change', () => set(s.value));
-      wrap.append(lbl, s);
-    } else if (c.type === 'text') {
-      const i = el('input', { id, type: 'text', value: String(props[c.key]) });
-      i.addEventListener('input', () => set(i.value));
-      wrap.append(lbl, i);
-    } else if (c.type === 'range') {
-      const out = el('output', { for: id }, String(props[c.key]));
-      const i = el('input', {
-        id,
-        type: 'range',
-        min: String(c.min),
-        max: String(c.max),
-        step: String(c.step ?? 1),
-        value: String(props[c.key]),
-      });
-      i.addEventListener('input', () => {
-        out.textContent = i.value;
-        set(Number(i.value));
-      });
-      wrap.append(el('div', { class: 'ex-control__row' }, lbl, out), i);
-    } else {
-      const i = el('input', { id, type: 'checkbox' });
-      i.checked = !!props[c.key];
-      i.addEventListener('change', () => set(i.checked));
-      wrap.append(el('div', { class: 'ex-control__row ex-control__row--toggle' }, i, lbl));
-    }
-    return wrap;
+    for (const c of current.controls)
+      controls.append(
+        controlEl(
+          c,
+          props[c.key]!,
+          (v) => {
+            props[c.key] = v;
+            renderStage();
+          },
+          `ex-${current.id}`,
+        ),
+      );
   }
 
   function renderVariants() {

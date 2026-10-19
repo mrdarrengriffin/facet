@@ -11,10 +11,12 @@
  * document.body.append(createDevice(house).el);
  * ```
  */
-import { createStore, type PanelActions, type PanelData, type Store } from '@facet/ui';
+import { createStore, type Band, type PanelActions, type PanelData, type Store } from '@facet/ui';
 import * as D from './data.js';
+import { energyWith, lightningWith, type LightningScene } from './scenes.js';
 
 export * from './data.js';
+export * from './scenes.js';
 
 export interface MockHouseOptions {
   /** Keep things moving: track progress, live power, the storm. Default true. */
@@ -27,9 +29,19 @@ export interface MockHouseOptions {
   timer?: number;
 }
 
+/** Parts of the house that keep changing on their own: pin them to a scene and the live updates follow it. */
+export interface LiveScene {
+  /** `live` (default) = the storm crossing once an hour. */
+  lightning?: LightningScene;
+  /** Force the current price band; `live` (default) follows the clock. */
+  band?: Band | 'live';
+}
+
 export interface MockHouse {
   store: Store<PanelData>;
   actions: Required<PanelActions>;
+  /** Pin the live parts (lightning, price band) to a scene. Applies now and on every live update. */
+  setScene(scene: LiveScene): void;
   /** Stop the live updates. */
   destroy(): void;
 }
@@ -162,16 +174,27 @@ export function createMockHouse(o: MockHouseOptions = {}): MockHouse {
     },
     cancelTimer: () => store.patch({ timers: [] }),
   };
+  const scene: Required<LiveScene> = {
+    lightning: o.quietSky ? 'quiet' : 'live',
+    band: 'live',
+  };
+  let watts = 420;
+  const liveParts = (now: number): Partial<PanelData> => ({
+    energy: scene.band === 'live' ? D.energy(now, watts) : energyWith(now, scene.band, watts),
+    lightning: lightningWith(now, scene.lightning),
+  });
+  const setScene = (s: LiveScene) => {
+    Object.assign(scene, s);
+    store.patch(liveParts(Date.now()));
+  };
   const timers: ReturnType<typeof setInterval>[] = [];
   if (o.live !== false) {
     // live power wobble + a fresh storm snapshot every few seconds
     timers.push(
       setInterval(() => {
         const now = Date.now();
-        store.patch({
-          energy: D.energy(now, Math.round(380 + 140 * Math.abs(Math.sin(now / 9000)))),
-          lightning: D.lightning(now, o.quietSky),
-        });
+        watts = Math.round(380 + 140 * Math.abs(Math.sin(now / 9000)));
+        store.patch(liveParts(now));
       }, 4000),
     );
     // next track when one ends
@@ -182,5 +205,5 @@ export function createMockHouse(o: MockHouseOptions = {}): MockHouse {
       }, 1000),
     );
   }
-  return { store, actions, destroy: () => timers.forEach(clearInterval) };
+  return { store, actions, setScene, destroy: () => timers.forEach(clearInterval) };
 }

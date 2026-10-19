@@ -5,8 +5,6 @@ import '@facet/icons/weather.css';
 import '@facet/ui/styles.css';
 import ThemeSwitch from './ThemeSwitch.astro';
 import SoundToggle from './SoundToggle.astro';
-import { TOASTS } from '@facet/demo-data';
-import { CLOCK_FACES } from '@facet/ui';
 
 interface Props {
   /** Screen id, or `toasts` for the toast layer over Home. */
@@ -23,40 +21,20 @@ const { screen, title } = Astro.props;
     <SoundToggle />
     <ThemeSwitch />
   </div>
-  {
-    screen === 'clock' && (
-      <div class="preview__bar preview__bar--options" role="group" aria-label="Clock face">
-        {CLOCK_FACES.map((f, i) => (
-          <button
-            type="button"
-            class="chip-button"
-            data-face={f.id}
-            aria-pressed={i === 0 ? 'true' : 'false'}
-            title={f.what}
-          >
-            {f.name}
-          </button>
-        ))}
-      </div>
-    )
-  }
-  {
-    screen === 'toasts' && (
-      <div class="preview__bar preview__bar--options" role="group" aria-label="Send a toast">
-        {TOASTS.map((t) => (
-          <button type="button" class="chip-button" data-toast={t.key}>
-            {t.name}
-          </button>
-        ))}
-      </div>
-    )
-  }
   <div class="preview__viewport" data-viewport>
     <div class="preview__frame" data-frame aria-label={`${title} screen, live`}></div>
   </div>
+  <section class="preview__options" data-options hidden aria-label={`${title} options`}>
+    <div class="preview__options-head">
+      <p class="facet-label">Try it</p>
+      <button class="chip-button" type="button" data-reset>Reset</button>
+    </div>
+    <div class="preview__fields" data-fields></div>
+    <div class="preview__buttons" data-buttons role="group" aria-label="Send a toast" hidden></div>
+  </section>
   <figcaption class="preview__caption">
     Running on the mock house from <code>@facet/demo-data</code>. Tap, drag and scroll as you would
-    on a panel.
+    on a panel, or change the data with the options above.
   </figcaption>
 </figure>
 

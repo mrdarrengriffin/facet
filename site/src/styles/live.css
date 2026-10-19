@@ -104,6 +104,41 @@
 .preview__frame > .f-screen {
   margin: 0;
 }
+.preview__options {
+  padding: 14px 16px 16px;
+  border-top: 1px solid var(--facet-color-line);
+}
+.preview__options[hidden] {
+  display: none;
+}
+.preview__options-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.preview__options-head p {
+  margin: 0;
+}
+.preview__fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr));
+  gap: 14px 20px;
+}
+.preview__fields .ex-control select,
+.preview__fields .ex-control input[type='range'] {
+  width: 100%;
+  min-width: 0;
+}
+.preview__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+.preview__buttons[hidden] {
+  display: none;
+}
 .preview__caption {
   padding: 10px 14px;
   border-top: 1px solid var(--facet-color-line);

@@ -16,21 +16,8 @@ import {
 import * as F from '@facet/ui';
 import type { Tone } from '@facet/ui';
 
-export type Control =
-  | { key: string; label: string; type: 'select'; options: readonly string[]; value: string }
-  | { key: string; label: string; type: 'text'; value: string }
-  | {
-      key: string;
-      label: string;
-      type: 'range';
-      min: number;
-      max: number;
-      step?: number;
-      value: number;
-    }
-  | { key: string; label: string; type: 'toggle'; value: boolean };
-
-export type Props = Record<string, string | number | boolean>;
+import type { Control, Props } from '../controls';
+export type { Control, Props };
 
 export interface Entry {
   id: string;

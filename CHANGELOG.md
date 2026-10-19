@@ -20,6 +20,11 @@ All notable changes to Facet are written down here. The format is loosely based 
   Arcade, Graphite, Crystal and Felt), chosen with `setPack()`, and hooks that play them on
   real taps only.
 - Site: a Sounds page (`/docs/sounds/`) with every sound in every pack playable live.
+- Screen pages: options under each live preview change the mock house's data (playing or
+  paused, brightness, timer state, pull requests, price band, weather, storm, agents per mood,
+  clock face, toasts). `@facet/demo-data` gains scene helpers (`mediaWith`, `agentsWith`,
+  `timersWith`, `githubWith`, `energyWith`, `weatherWith`, `lightningWith`) and
+  `house.setScene()` for the parts that update live.
 - `@facet/demo-data`: a fictional mock house.
 - Site: a UI explorer (`/components/`), a full demo (`/demo/`), a docs page with a live
   preview for every screen, and the new Facet mark, favicons, web manifest and social card.
