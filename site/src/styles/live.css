@@ -334,6 +334,10 @@
   color: var(--facet-color-text);
   overflow: auto;
 }
+/* the mascot animates outside its box (z's, bounces): let it, the card clips */
+.ex-variant__cell:has(.f-mascot) {
+  overflow: visible;
+}
 .ex-variant figcaption {
   padding: 6px 10px;
   color: var(--facet-color-text-mute);
