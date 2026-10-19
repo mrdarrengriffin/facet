@@ -1,0 +1,586 @@
+/* Screens (screens/*.ts, layout.ts). Geometry from --facet-layout-*, type from .fst-*. Calm: neutrals, hairlines,
+   the accent only for the one thing that matters. */
+
+/* header: one 48 row at y 32, inset 32 */
+.fs-header {
+  position: absolute;
+  left: var(--facet-layout-inset);
+  right: var(--facet-layout-inset);
+  top: var(--facet-layout-inset);
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: var(--facet-layout-gutter);
+  height: var(--facet-layout-row);
+}
+.fs-header > .f-fitbox,
+.fs-header > .fs-hclock {
+  height: var(--facet-layout-row);
+  line-height: var(--facet-layout-row);
+}
+.fs-hlabel {
+  color: var(--facet-color-text-dim);
+}
+.fs-hclock {
+  width: 72px;
+  text-align: right;
+  color: var(--facet-color-text-dim);
+  white-space: nowrap;
+} /* HH:MM caps 18 + tracking = 64 */
+.fs-header .f-spk .f-spk-name {
+  font: 500 18px/16px var(--facet-font-mono);
+  letter-spacing: 2px;
+} /* 16 box, glyphs centred */
+.fs-dim {
+  color: var(--facet-color-text-mute);
+  white-space: nowrap;
+}
+
+.fs-content > .f-abs > span {
+  display: block;
+}
+.p3 [data-tone='dim'] {
+  color: var(--facet-color-text-dim);
+}
+
+/* ---------- Home cards: 320 x 280, 2 x 2 per view ---------- */
+.fs-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--facet-layout-gutter);
+}
+.fs-snap {
+  scroll-snap-type: y mandatory;
+}
+.fs-card {
+  position: relative;
+  flex: none;
+  width: var(--facet-layout-card-w);
+  height: var(--facet-layout-card-h);
+  scroll-snap-align: start;
+  border: var(--facet-stroke-hair) solid var(--facet-color-line);
+  border-radius: var(--facet-radius-card);
+  background: var(--facet-color-surface);
+  cursor: pointer;
+  transition:
+    background-color var(--facet-duration-press) var(--facet-easing-ease-out),
+    border-color var(--facet-duration-press) var(--facet-easing-ease-out);
+}
+.fs-card.live:active {
+  background: var(--facet-color-surface-press);
+  border-color: var(--facet-color-line-hi);
+}
+.fs-card > * {
+  position: absolute;
+}
+/* children count from the outer edge (LVGL): pad 24 - hair */
+.fs-clabel {
+  left: 23px;
+  top: 23px;
+  display: flex;
+  align-items: center;
+  gap: var(--facet-space-2);
+  height: 24px;
+  color: var(--facet-color-text-dim);
+}
+.fs-clabel > .f-dot {
+  display: none;
+}
+.fs-card.is-accent .fs-clabel > .f-dot {
+  display: block;
+}
+.fs-cicon {
+  color: var(--facet-color-text-dim);
+}
+.fs-cprev {
+  right: 23px;
+  top: 23px;
+  width: var(--facet-size-preview);
+  height: var(--facet-size-preview);
+}
+.fs-cval {
+  left: 23px;
+  right: 23px;
+  bottom: 87px;
+  height: 64px;
+  color: var(--facet-color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fs-ctext {
+  left: 23px;
+  right: 23px;
+  bottom: 87px;
+  height: 80px;
+  display: flex;
+  align-items: flex-end;
+} /* bottom-aligned like the values */
+.fs-ctext > span {
+  color: var(--facet-color-text);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+.fs-card:not([data-mode='text']) .fs-ctext,
+.fs-card[data-mode='text'] .fs-cval {
+  display: none;
+}
+.fs-csub {
+  left: 23px;
+  right: 23px;
+  bottom: 23px;
+  height: 32px;
+  color: var(--facet-color-text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fs-card.is-accent .fs-cval {
+  color: var(--facet-color-accent-text);
+}
+
+/* ---------- hero block (number + label/line) ---------- */
+.fs-hero {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--facet-layout-gutter);
+  height: 96px;
+}
+.fs-hero-n {
+  color: var(--facet-color-text);
+  flex: none;
+}
+.fs-hero.is-accent .fs-hero-n {
+  color: var(--facet-color-accent-text);
+}
+.fs-hero-t {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: var(--facet-space-2);
+  padding-top: 16px;
+  min-width: 0;
+}
+.fs-hero-l {
+  color: var(--facet-color-text);
+}
+.fs-hero-s {
+  color: var(--facet-color-text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---------- Agents tiles: 3 across, 208 x 208 ---------- */
+.fs-tiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--facet-layout-gutter);
+}
+.fs-tile {
+  position: relative;
+  flex: none;
+  width: var(--facet-layout-tile-w);
+  height: var(--facet-layout-tile-h);
+  border: var(--facet-stroke-hair) solid var(--facet-color-line);
+  border-radius: var(--facet-radius-tile);
+  background: var(--facet-color-surface);
+}
+.fs-tile > * {
+  position: absolute;
+}
+.fs-tile > .f-mascot {
+  left: 23px;
+  top: 23px;
+}
+.fs-tile-title {
+  left: 23px;
+  right: 23px;
+  bottom: 63px;
+  height: 64px;
+  color: var(--facet-color-text);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+.fs-tile-status {
+  left: 23px;
+  right: 23px;
+  bottom: 23px;
+  height: 24px;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  white-space: nowrap;
+}
+.fs-ts-k {
+  color: var(--facet-color-text-mute);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fs-ts-v {
+  color: var(--facet-color-text-mute);
+  flex: none;
+}
+.fs-tile--needs .fs-ts-k {
+  color: var(--facet-color-warn);
+}
+.fs-tile--working .fs-ts-k {
+  color: var(--facet-color-accent-text);
+}
+
+/* ---------- rows (hairline-separated, not boxed) ---------- */
+.fs-rows {
+  display: flex;
+  flex-direction: column;
+}
+.fs-row {
+  position: relative;
+  height: var(--facet-layout-pr-row-h);
+  padding-top: 24px;
+  border-top: var(--facet-stroke-hair) solid var(--facet-color-line);
+}
+.fs-row.live,
+.fs-more.live {
+  cursor: pointer;
+}
+.fs-row.live:active,
+.fs-more.live:active {
+  background: var(--facet-color-surface-press);
+}
+.fs-row-top {
+  display: flex;
+  align-items: center;
+  height: 24px;
+  margin-top: -1px;
+  gap: var(--facet-layout-gutter);
+}
+.fs-row-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--facet-color-text-mute);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fs-row-title {
+  margin-top: var(--facet-space-2);
+  height: 40px;
+  color: var(--facet-color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fs-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--facet-space-2);
+  color: var(--tone-text);
+  white-space: nowrap;
+  flex: none;
+}
+.fs-more {
+  display: flex;
+  align-items: flex-start;
+  padding-top: 23px; /* hair + 23 = the label at 24, like the rows */
+  gap: var(--facet-layout-gutter);
+  height: var(--facet-layout-more-row-h);
+  border-top: var(--facet-stroke-hair) solid var(--facet-color-line);
+  color: var(--facet-color-text-dim);
+}
+.fs-more > .f-icon {
+  color: var(--facet-color-text-mute);
+}
+
+/* ---------- stats / lines ---------- */
+.fs-stat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--facet-space-2);
+}
+.fs-stat-k {
+  color: var(--facet-color-text-mute);
+}
+.fs-stat-v {
+  color: var(--facet-color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fs-stat-v[data-tone='dim'] {
+  color: var(--facet-color-text-dim);
+}
+.fs-stat-v[data-tone='warn'] {
+  color: var(--facet-color-warn);
+}
+.fs-stat-v[data-tone='ok'] {
+  color: var(--facet-color-ok);
+}
+.fs-line {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 32px;
+  color: var(--facet-color-text-dim);
+  white-space: nowrap;
+}
+.fs-line > .f-dot {
+  flex: none;
+}
+
+/* ---------- Media ---------- */
+.fs-fm-col {
+  display: flex !important;
+  flex-direction: column;
+  gap: var(--facet-space-2);
+  height: 100%;
+  padding-top: 64px;
+} /* 64 + 24 + 8 + 48 + 8 + 32 = the disc's middle */
+.fs-fm-state {
+  color: var(--facet-color-text-mute);
+}
+.fs-fm-state[data-tone='working'] {
+  color: var(--facet-color-accent-text);
+}
+.fs-fm-title {
+  color: var(--facet-color-text);
+  max-height: 96px;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+.fs-fm-artist {
+  color: var(--facet-color-text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fs-fm-ctl {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 48px;
+  height: 96px;
+}
+.fs-vol {
+  display: flex !important;
+  align-items: center;
+  gap: var(--facet-layout-gutter);
+  height: 48px;
+}
+.fs-vol-k,
+.fs-vol-v {
+  flex: none;
+  width: 72px;
+  height: 48px;
+  line-height: 48px;
+  color: var(--facet-color-text-mute);
+}
+.fs-vol-v {
+  text-align: right;
+  color: var(--facet-color-text-dim);
+}
+
+/* ---------- Energy ---------- */
+.fs-e-label {
+  color: var(--facet-color-text-mute);
+  white-space: nowrap;
+}
+.fs-e-big {
+  color: var(--facet-color-text);
+}
+.fs-e-line {
+  color: var(--facet-color-text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fs-header > .fs-e-now,
+.fs-header > .fs-dim {
+  color: var(--facet-color-text-dim);
+  white-space: nowrap;
+  height: var(--facet-layout-row);
+  line-height: var(--facet-layout-row);
+}
+.p3 .fs-axis {
+  font: 500 18px/24px var(--facet-font-mono);
+  letter-spacing: 2px;
+  height: 24px;
+  color: var(--facet-color-text-mute);
+}
+
+/* ---------- Weather ---------- */
+.fs-w-temp {
+  color: var(--facet-color-text);
+}
+.fs-w-cond {
+  color: var(--facet-color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fs-w-line {
+  color: var(--facet-color-text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fs-w-hours {
+  display: flex !important;
+}
+.fs-w-col {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  text-align: center;
+  gap: var(--facet-space-2);
+}
+.fs-w-hic {
+  margin: 0 auto;
+}
+.fs-w-col > * {
+  flex: none;
+}
+.fs-w-hr {
+  color: var(--facet-color-text-mute);
+}
+.fs-w-hr.is-now {
+  color: var(--facet-color-text);
+}
+.fs-w-hic {
+  display: block;
+  width: 32px;
+  height: 32px;
+}
+.fs-w-ht {
+  color: var(--facet-color-text-dim);
+}
+.fs-days {
+  display: flex;
+  flex-direction: column;
+}
+.fs-day {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  height: var(--facet-layout-day-row-h);
+  border-top: var(--facet-stroke-hair) solid var(--facet-color-line);
+}
+.fs-day:first-child {
+  border-top: 0;
+}
+.fs-d-name {
+  width: 160px;
+  color: var(--facet-color-text);
+}
+.fs-d-ic {
+  display: block;
+  width: 48px;
+  height: 48px;
+  flex: none;
+}
+.fs-d-cond {
+  color: var(--facet-color-text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.fs-d-lo {
+  width: 48px;
+  text-align: right;
+  color: var(--facet-color-text-mute);
+  flex: none;
+}
+.fs-d-hi {
+  width: 56px;
+  text-align: right;
+  color: var(--facet-color-text);
+  flex: none;
+}
+
+/* ---------- Lightning ---------- */
+.fs-lx-n {
+  color: var(--facet-color-text);
+}
+.fs-lx-n.is-word {
+  font-size: 64px;
+}
+.fs-lightning.is-near .fs-lx-n {
+  color: var(--facet-color-accent-text);
+}
+.fs-lx-u {
+  color: var(--facet-color-text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fs-tile-status .fst-label {
+  letter-spacing: 1px;
+}
+
+.f-lx-rlbl,
+.f-lx-cmp {
+  line-height: 24px;
+}
+
+/* ---------- Clock ---------- */
+.fs-clock-face {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+.fs-clock-time {
+  color: var(--facet-color-text);
+}
+.fs-clock-date {
+  color: var(--facet-color-text-dim);
+}
+.fs-clock-wx {
+  color: var(--facet-color-blue);
+}
+
+/* ---------- Timer ---------- */
+.fs-t-mid {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+}
+.fs-t-label {
+  color: var(--facet-color-text-mute);
+}
+.fs-t-left {
+  color: var(--facet-color-text);
+  font-variant-numeric: tabular-nums;
+}
+.fs-t-sub {
+  color: var(--facet-color-text-dim);
+}
+.fs-timer.is-done .fs-t-label {
+  color: var(--facet-color-accent-text);
+}
+.fs-t-btns {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+}
+.fs-t-btns[hidden] {
+  display: none;
+}
+.fs-content > .f-abs > .fs-t-btns,
+.fs-content > .f-abs > .fs-t-mid {
+  display: flex;
+}

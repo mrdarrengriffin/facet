@@ -1,0 +1,1192 @@
+/* Facet component styles. Load @facet/tokens/tokens.css first.
+   Panel-safe subset only: solid fills, 1-2 px borders, radius, opacity, flex, padding and gap, transforms. No
+   shadows, blur, backdrop filters or gradients. Colours are token variables only, so every rule works in both
+   themes. 8 px grid: every box size, padding, gap and offset is a multiple of 8; 1 px borders sit inside their box
+   (padding = token - hairline). */
+.f-screen {
+  position: relative;
+  width: 720px;
+  height: 720px;
+  overflow: hidden;
+  background: var(--facet-color-bg);
+  color: var(--facet-color-text);
+  font-family: var(--facet-font-sans);
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.f-screen *,
+.f-sound-scope * {
+  box-sizing: border-box;
+}
+.f-grow {
+  flex: 1 1 auto;
+}
+.f-label {
+  display: inline-block;
+  white-space: nowrap;
+}
+.f-fitbox {
+  display: inline-block;
+  white-space: nowrap;
+  flex: none;
+  text-align: left;
+}
+.f-fit {
+  display: inline-block;
+  white-space: nowrap;
+}
+.f-icon {
+  display: block;
+  flex: none;
+}
+
+/* ---------- atoms ---------- */
+.f-ring {
+  position: absolute;
+  inset: calc(
+    -1 * var(--ring-o) - var(--facet-stroke-hair)
+  ); /* from the border box (owners have a 1 px border) */
+  border: var(--facet-stroke-focus) solid var(--facet-color-accent);
+  border-radius: calc(var(--ring-r) + var(--ring-o));
+  pointer-events: none;
+  display: none;
+}
+.f-ticks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  display: none;
+}
+.f-btn > .f-ticks {
+  inset: calc(-1 * var(--facet-stroke-hair));
+} /* on the border box (LVGL: children count from the outer edge) */
+.f-ticks i {
+  position: absolute;
+  width: var(--tick-l);
+  height: var(--tick-l);
+  border: 0 solid var(--facet-color-accent);
+}
+.f-ticks .tl {
+  top: 0;
+  left: 0;
+  border-top-width: var(--tick-t);
+  border-left-width: var(--tick-t);
+}
+.f-ticks .tr {
+  top: 0;
+  right: 0;
+  border-top-width: var(--tick-t);
+  border-right-width: var(--tick-t);
+}
+.f-ticks .bl {
+  bottom: 0;
+  left: 0;
+  border-bottom-width: var(--tick-t);
+  border-left-width: var(--tick-t);
+}
+.f-ticks .br {
+  bottom: 0;
+  right: 0;
+  border-bottom-width: var(--tick-t);
+  border-right-width: var(--tick-t);
+}
+.f-ticks.show {
+  display: block;
+}
+
+[data-tone] {
+  --tone: var(--facet-color-text-dim);
+  --tone-text: var(--facet-color-text-dim);
+}
+[data-tone='ok'] {
+  --tone: var(--facet-color-ok);
+  --tone-text: var(--facet-color-ok);
+}
+[data-tone='warn'] {
+  --tone: var(--facet-color-warn);
+  --tone-text: var(--facet-color-warn);
+}
+[data-tone='error'] {
+  --tone: var(--facet-color-error);
+  --tone-text: var(--facet-color-error);
+}
+[data-tone='working'] {
+  --tone: var(--facet-color-accent);
+  --tone-text: var(--facet-color-accent-text);
+}
+[data-tone='info'] {
+  --tone: var(--facet-color-blue);
+  --tone-text: var(--facet-color-blue);
+}
+[data-tone='idle'] {
+  --tone: var(--facet-color-text-mute);
+  --tone-text: var(--facet-color-text-mute);
+}
+.f-dot {
+  display: inline-block;
+  flex: none;
+  width: var(--facet-size-dot);
+  height: var(--facet-size-dot);
+  border-radius: var(--facet-radius-round);
+  background: var(--tone);
+}
+.f-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--facet-space-2);
+  height: var(--facet-size-chip-h);
+  padding: 0 var(--facet-space-2);
+  border-radius: var(--facet-radius-chip);
+  /* = LVGL bg_color tone + bg_opa 14 % */
+  background: color-mix(
+    in srgb,
+    var(--tone) calc(var(--facet-opacity-chip-bg) * 100%),
+    transparent
+  );
+  color: var(--tone-text);
+  white-space: nowrap;
+}
+.f-mascot {
+  position: relative;
+  display: block;
+  flex: none;
+  width: var(--facet-size-mascot-w);
+  height: var(--facet-size-mascot-h);
+  border-radius: var(--facet-radius-icon);
+}
+/* eyes = artwork inside the 32x24 box (not on the grid) */
+.f-mascot i {
+  position: absolute;
+  top: 8px;
+  width: 4px;
+  height: 5px;
+  border-radius: 1px;
+  background: var(--facet-color-bg);
+}
+.f-mascot i:first-child {
+  left: 9px;
+}
+.f-mascot i:last-child {
+  left: 19px;
+}
+
+/* ---------- text buttons ---------- */
+.f-btn {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: var(--facet-size-button-gap);
+  height: var(--facet-size-button-h);
+  padding: 0 calc(var(--facet-size-button-pad-x) - var(--facet-stroke-hair)); /* 1 px border inside the box: label at pad-x */
+  border: var(--facet-stroke-hair) solid var(--bd, transparent);
+  border-radius: var(--facet-radius-button);
+  background: var(--bg, transparent);
+  color: var(--fg);
+  cursor: pointer;
+  transition:
+    background-color var(--facet-duration-press) var(--facet-easing-ease-out),
+    border-color var(--facet-duration-press) var(--facet-easing-ease-out),
+    color var(--facet-duration-press) var(--facet-easing-ease-out);
+}
+.f-btn > .f-btn-label.f-label {
+  line-height: 30px;
+  padding-top: 2px;
+} /* 32 box, centred in 64 = on the grid; glyphs 1 px low = optical centring of JetBrains Mono caps */
+.f-btn--fixed > .f-btn-label {
+  flex: 1 1 auto;
+  text-align: center;
+}
+.f-btn[data-state='disabled'] {
+  cursor: default;
+}
+.f-btn--primary {
+  --bg: var(--facet-color-accent);
+  --fg: var(--facet-color-on-accent);
+}
+.f-btn--primary[data-state='pressed'],
+.f-btn--primary.live:not([data-state='disabled']):active {
+  --bg: var(--facet-color-accent-press);
+}
+.f-btn--primary[data-state='active'] .f-ring {
+  display: block;
+}
+.f-btn--primary[data-state='disabled'] {
+  --bg: var(--facet-color-accent-dim);
+  --fg: var(--facet-color-text-mute);
+}
+
+.f-btn--secondary {
+  --bg: var(--facet-color-surface);
+  --bd: var(--facet-color-line);
+  --fg: var(--facet-color-text);
+}
+.f-btn--secondary[data-state='pressed'],
+.f-btn--secondary.live:not([data-state='disabled']):active {
+  --bg: var(--facet-color-surface-press);
+  --bd: var(--facet-color-line-hi);
+}
+.f-btn--secondary[data-state='active'] {
+  --bd: var(--facet-color-line-hi);
+}
+.f-btn--secondary[data-state='active'] .f-ticks {
+  display: block;
+}
+.f-btn--secondary[data-state='disabled'] {
+  --fg: var(--facet-color-text-mute);
+}
+
+.f-btn--outline {
+  --bd: var(--facet-color-accent);
+  --fg: var(--facet-color-accent-text);
+}
+.f-btn--outline[data-state='pressed'],
+.f-btn--outline.live:not([data-state='disabled']):active {
+  --bg: var(--facet-color-accent-dim);
+}
+.f-btn--outline[data-state='active'] {
+  --bg: var(--facet-color-accent);
+  --bd: var(--facet-color-accent);
+  --fg: var(--facet-color-on-accent);
+}
+.f-btn--outline[data-state='disabled'] {
+  --bd: var(--facet-color-accent-dim);
+  --fg: var(--facet-color-accent-dim);
+}
+
+.f-btn--ghost {
+  --fg: var(--facet-color-text-dim);
+}
+.f-btn--ghost[data-state='pressed'],
+.f-btn--ghost.live:not([data-state='disabled']):active {
+  --bg: var(--facet-color-surface-press);
+  --fg: var(--facet-color-text);
+}
+.f-btn--ghost[data-state='active'] {
+  --fg: var(--facet-color-accent-text);
+}
+.f-btn--ghost[data-state='disabled'] {
+  --fg: var(--facet-color-text-mute);
+}
+.f-underline {
+  position: absolute;
+  left: 50%;
+  bottom: var(--facet-space-2);
+  width: 32px;
+  height: 2px;
+  margin-left: -16px;
+  background: var(--facet-color-accent);
+  display: none;
+}
+.f-btn--ghost[data-state='active'] .f-underline {
+  display: block;
+}
+
+/* ---------- icon buttons ---------- */
+.f-ibtn {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: var(--facet-stroke-hair) solid var(--bd, transparent);
+  background: var(--bg, transparent);
+  color: var(--fg);
+  cursor: pointer;
+  transition:
+    background-color var(--facet-duration-press) var(--facet-easing-ease-out),
+    border-color var(--facet-duration-press) var(--facet-easing-ease-out),
+    color var(--facet-duration-press) var(--facet-easing-ease-out);
+}
+.f-ibtn--play {
+  width: var(--facet-size-icon-play);
+  height: var(--facet-size-icon-play);
+  border-radius: var(--facet-radius-round);
+  --bg: var(--facet-color-accent);
+  --fg: var(--facet-color-on-accent);
+}
+.f-ibtn--round {
+  width: var(--facet-size-icon-round);
+  height: var(--facet-size-icon-round);
+  border-radius: var(--facet-radius-round);
+}
+.f-ibtn--square {
+  width: var(--facet-size-icon-square);
+  height: var(--facet-size-icon-square);
+  border-radius: var(--facet-radius-square);
+}
+.f-ibtn--round,
+.f-ibtn--square {
+  --bg: var(--facet-color-surface);
+  --bd: var(--facet-color-line);
+  --fg: var(--facet-color-text);
+}
+.f-ibtn--play[data-state='pressed'],
+.f-ibtn--play.live:not([data-state='disabled']):active {
+  --bg: var(--facet-color-accent-press);
+}
+.f-ibtn--play[data-state='active'] .f-ring {
+  display: block;
+}
+.f-ibtn--play[data-state='disabled'] {
+  --bg: var(--facet-color-accent-dim);
+  --fg: var(--facet-color-text-mute);
+}
+.f-ibtn--round[data-state='pressed'],
+.f-ibtn--square[data-state='pressed'],
+.f-ibtn--round.live:not([data-state='disabled']):active,
+.f-ibtn--square.live:not([data-state='disabled']):active,
+.f-back.live:not([data-state='disabled']):active .f-ibtn {
+  --bg: var(--facet-color-surface-press);
+  --bd: var(--facet-color-line-hi);
+}
+.f-ibtn--round[data-state='active'] {
+  --bd: var(--facet-color-line-hi);
+  --fg: var(--facet-color-accent-text);
+}
+.f-ibtn--square[data-state='active'] {
+  --fg: var(--facet-color-accent-text);
+}
+.f-ibtn--round[data-state='disabled'],
+.f-ibtn--square[data-state='disabled'] {
+  --fg: var(--facet-color-text-mute);
+  cursor: default;
+}
+
+/* ---------- back button (icon button + label) ---------- */
+.f-back {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--facet-size-back-gap);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--facet-color-text-dim);
+  cursor: pointer;
+}
+.f-back[data-state='disabled'] {
+  color: var(--facet-color-text-mute);
+  cursor: default;
+}
+
+/* ---------- slider ---------- */
+.f-slider {
+  position: relative;
+  height: 48px;
+  cursor: pointer;
+}
+.f-slider-track {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 22px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--facet-color-line-hi);
+  overflow: hidden;
+}
+.f-slider-ind {
+  display: block;
+  height: 100%;
+  background: var(--facet-color-blue);
+}
+.f-slider-knob {
+  position: absolute;
+  top: 12px;
+  width: 24px;
+  height: 24px;
+  margin-left: -12px;
+  border-radius: var(--facet-radius-round);
+  background: var(--facet-color-accent);
+}
+
+/* ---------- ticks / arcs (SVG here = lv_scale / lv_arc on the panel) ---------- */
+.f-ticksvg,
+.f-arc {
+  display: block;
+  overflow: visible;
+}
+.f-ticklabel {
+  fill: var(--facet-color-text-mute);
+  font-family: var(--facet-font-mono);
+}
+
+/* ---------- dial (a dial-scale square; geometry in components.ts dial(), the screen centres it in the content) ---------- */
+.f-dial {
+  position: relative;
+}
+.f-dial-scale {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+.f-dial-arc {
+  position: absolute;
+  border-radius: var(--facet-radius-round);
+  cursor: pointer;
+}
+.f-dial-cap,
+.f-dial-value,
+.f-dial-unit,
+.f-dial-toggle {
+  position: absolute;
+  display: block;
+  text-align: center;
+  pointer-events: none;
+}
+.f-dial-cap {
+  color: var(--facet-color-text-dim);
+}
+.f-dial-unit {
+  color: var(--facet-color-text-mute);
+}
+.f-dial-toggle {
+  pointer-events: auto;
+  z-index: 2;
+}
+
+/* ---------- media disc (sizes from tokens via components.ts disc()) ---------- */
+.f-disc {
+  position: relative;
+}
+.f-disc-dots,
+.f-disc-prog,
+.f-disc-face {
+  position: absolute;
+}
+.f-disc-dots {
+  inset: 0;
+}
+.f-disc-face {
+  border-radius: var(--facet-radius-round);
+  background: var(--facet-color-disc);
+  border: var(--facet-stroke-hair) solid var(--facet-color-line);
+}
+.f-disc-face > i {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: var(--facet-radius-round);
+}
+.f-disc-groove {
+  border: var(--facet-stroke-hair) solid var(--facet-color-groove);
+}
+.f-disc-spot {
+  width: 64px;
+  height: 64px;
+  background: var(--facet-color-accent);
+}
+.f-disc-hole {
+  position: absolute;
+  left: var(--hole, 24px);
+  top: var(--hole, 24px);
+  width: 16px;
+  height: 16px;
+  border-radius: var(--facet-radius-round);
+  background: var(--facet-color-bg);
+}
+.f-disc-face > .f-disc-orbit {
+  width: 0;
+  height: 0;
+  animation: f-spin var(--facet-duration-disc-marker) linear infinite;
+  animation-play-state: paused;
+}
+.f-disc.is-playing .f-disc-orbit {
+  animation-play-state: running;
+}
+.f-disc-marker {
+  position: absolute;
+  left: -5px;
+  top: -101px;
+  width: 10px;
+  height: 10px;
+  border-radius: var(--facet-radius-round);
+  background: var(--facet-color-blue);
+}
+@keyframes f-spin {
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+@keyframes f-spin-rev {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+@keyframes f-spin-plain {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---------- clock family (clocks.ts) ---------- */
+.f-center {
+  display: flex;
+  justify-content: center;
+}
+.f-time {
+  display: inline-flex;
+  align-items: baseline;
+  white-space: nowrap;
+  color: var(--facet-color-text);
+}
+.f-digits {
+  display: inline-flex;
+  align-items: baseline;
+}
+/* fixed-width digit cells = tabular figures without OpenType (one LVGL label per cell, same width) */
+.f-dg {
+  display: inline-flex;
+  justify-content: center;
+  width: var(--dg);
+}
+/* Inter / Mono colons rest on the baseline: raise them onto the figures' centre (token colonY, em) */
+.f-colon {
+  display: inline-flex;
+  justify-content: center;
+  width: var(--colon);
+  position: relative;
+  top: var(--colon-y);
+} /* flex centres the glyph even when it is wider than the cell (Mono) */
+.f-ampm {
+  margin-left: var(--facet-space-3);
+  color: var(--facet-color-text-dim);
+}
+.f-time--compact .f-ampm {
+  margin-left: var(--facet-space-1);
+}
+.f-dateline {
+  display: block;
+  white-space: nowrap;
+}
+.f-orbit {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  will-change: transform;
+}
+.f-orbit-dot {
+  position: absolute;
+  border-radius: var(--facet-radius-round);
+}
+.f-secbar {
+  position: relative;
+  display: block;
+  height: var(--facet-stroke-edge);
+  background: var(--facet-color-line);
+  overflow: hidden;
+}
+.f-secbar-ind {
+  position: absolute;
+  inset: 0;
+  background: var(--facet-color-accent);
+  transform-origin: left center;
+  will-change: transform;
+}
+.f-numeral {
+  transform: translate(-50%, -50%);
+  color: var(--facet-color-text-dim);
+  white-space: nowrap;
+}
+.f-hands {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+}
+.f-hand {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+}
+.f-hand--step {
+  transition: transform var(--facet-duration-clock-hand) var(--facet-easing-ease-out);
+}
+.f-hand:not(.f-hand--step) {
+  will-change: transform;
+}
+.f-hand-bar {
+  position: absolute;
+  border-radius: var(--facet-radius-round);
+}
+.f-hand-tip {
+  position: absolute;
+  left: -5px;
+  width: 10px;
+  height: 10px;
+  border-radius: var(--facet-radius-round);
+  background: var(--facet-color-accent);
+}
+.f-hand-cap {
+  position: absolute;
+  left: -7px;
+  top: -7px;
+  width: 14px;
+  height: 14px;
+  border-radius: var(--facet-radius-round);
+  background: var(--facet-color-bg);
+  border: var(--facet-stroke-edge) solid var(--facet-color-accent);
+}
+
+/* context slots */
+.f-slots {
+  display: flex;
+  flex-direction: column;
+}
+.f-slot {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--facet-space-5);
+  height: var(--facet-size-clock-slot-h);
+  padding: 0 var(--facet-space-2);
+  border-top: var(--facet-stroke-hair) solid var(--facet-color-line);
+}
+.f-slot:last-child {
+  border-bottom: var(--facet-stroke-hair) solid var(--facet-color-line);
+}
+.f-slot-main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--facet-space-2);
+  min-width: 0;
+  max-width: 400px;
+}
+.f-slot-label {
+  color: var(--facet-color-text-mute);
+}
+.f-slot-value {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--facet-color-text);
+}
+.f-slot-meta {
+  color: var(--facet-color-text-dim);
+  white-space: nowrap;
+}
+.f-slot-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: var(--facet-stroke-edge);
+  background: var(--facet-color-accent);
+  transform-origin: left center;
+  transition: transform var(--facet-duration-clock-progress) linear;
+}
+.f-slot-bar[hidden],
+.f-chip[hidden] {
+  display: none;
+}
+
+/* ---------- lists: count badge, section header, list row, PR row, check row, empty state, QR (GitHub screen) ---------- */
+.f-badge {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--facet-size-badge-h);
+  height: var(--facet-size-badge-h);
+  padding: 0 var(--facet-space-2);
+  border-radius: var(--facet-radius-round);
+  background: color-mix(
+    in srgb,
+    var(--tone) calc(var(--facet-opacity-chip-bg) * 100%),
+    transparent
+  );
+  color: var(--tone-text);
+}
+.f-badge-text {
+  min-width: 16px;
+  text-align: center;
+} /* badge = 8 + text box (min 16, fit8) + 8: the text box stays on the grid */
+.f-section {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--facet-space-gutter);
+  height: var(--facet-size-section-h);
+}
+.f-section-title {
+  color: var(--facet-color-text-dim);
+}
+.f-section-meta {
+  color: var(--facet-color-text-mute);
+}
+.f-row {
+  position: relative;
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  width: 100%;
+  padding: calc(var(--facet-size-row-pad) - var(--facet-stroke-hair));
+  border: var(--facet-stroke-hair) solid var(--facet-color-line);
+  border-radius: var(--facet-radius-card);
+  background: var(--facet-color-surface);
+  transition:
+    background-color var(--facet-duration-press) var(--facet-easing-ease-out),
+    border-color var(--facet-duration-press) var(--facet-easing-ease-out);
+}
+.f-row.live {
+  cursor: pointer;
+}
+.f-row[data-state='pressed'],
+.f-row.live:active {
+  border-color: var(--facet-color-accent);
+  background: var(--facet-color-surface-press);
+}
+.f-row > * {
+  flex-shrink: 0;
+}
+.f-prrow-meta {
+  display: flex;
+  gap: var(--facet-space-2);
+  height: 16px;
+  color: var(--facet-color-text-dim);
+  white-space: nowrap;
+}
+.f-prrow-repo {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 480px;
+}
+.f-prrow-num {
+  color: var(--facet-color-text-mute);
+}
+.f-prrow-age {
+  color: var(--facet-color-text-mute);
+}
+/* title: max 2 lines (2 x 24 box), ellipsis; LVGL: label LONG_DOT with height 48 */
+.f-prrow-title,
+.f-clamp {
+  margin-top: var(--facet-space-2);
+  height: 48px;
+  overflow: hidden;
+  color: var(--facet-color-text);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.f-chips {
+  display: flex;
+  gap: var(--facet-space-2);
+  height: var(--facet-size-chip-h);
+  margin-top: var(--facet-space-2);
+  overflow: hidden;
+}
+.f-check {
+  display: flex;
+  align-items: center;
+  gap: var(--facet-space-2);
+  height: var(--facet-size-check-row-h);
+  min-width: 0;
+}
+.f-check-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--facet-color-text);
+}
+.f-check-state {
+  flex: none;
+  width: 64px;
+  text-align: right;
+  color: var(--tone-text);
+}
+.f-empty {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  height: 136px;
+  padding: calc(var(--facet-space-gutter) - var(--facet-stroke-hair));
+  border: var(--facet-stroke-hair) solid var(--facet-color-line);
+  border-radius: var(--facet-radius-card);
+}
+.f-empty > span {
+  flex: none;
+}
+.f-empty-icon {
+  display: block;
+  width: var(--facet-size-empty-icon);
+  height: var(--facet-size-empty-icon);
+  color: var(--tone-text);
+}
+.f-empty-title,
+.f-empty-body {
+  width: 100%;
+  text-align: center;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+} /* full-width boxes: on the grid */
+.f-empty-title {
+  margin-top: var(--facet-space-2);
+  color: var(--facet-color-text);
+}
+.f-empty-body {
+  margin-top: var(--facet-space-2);
+  color: var(--facet-color-text-dim);
+}
+.f-qr {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  width: var(--facet-size-qr-block-w);
+  padding: var(--facet-space-gutter);
+  border-radius: var(--facet-radius-card);
+  background: var(--facet-color-qr-bg);
+}
+.f-qr-code {
+  display: block;
+  flex: none;
+}
+.f-qr-code svg {
+  display: block;
+}
+.f-qr-cap {
+  width: 100%;
+  margin-top: var(--facet-space-2);
+  text-align: center;
+  color: var(--facet-color-qr-fg);
+  white-space: nowrap;
+}
+
+/* GitHub screen: sub-views (list / detail) inside one page; detail text blocks */
+.f-stack {
+  display: flex;
+  flex-direction: column;
+}
+.f-sub {
+  position: absolute;
+  inset: 0;
+}
+.f-sub[hidden] {
+  display: none;
+}
+.f-clamp--title {
+  margin-top: 0;
+  height: 80px;
+}
+.f-dmeta {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--facet-color-text-dim);
+}
+.f-dbody {
+  height: 120px;
+  overflow: hidden;
+  color: var(--facet-color-text-dim);
+  white-space: pre-line;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 5;
+  line-clamp: 5;
+}
+.f-checks {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: var(--facet-space-gutter);
+  margin-top: var(--facet-space-2);
+}
+
+/* ---------- toasts (global layer over any screen; components.ts toastLayer) ---------- */
+.f-toasts {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
+}
+.f-toast {
+  position: absolute;
+  left: var(--facet-space-screen);
+  width: calc(100% - 2 * var(--facet-space-screen));
+  height: var(--facet-size-toast-h);
+  display: flex;
+  align-items: center;
+  gap: var(--facet-space-gutter);
+  padding: calc(var(--facet-space-gutter) - var(--facet-stroke-hair));
+  border: var(--facet-stroke-hair) solid var(--facet-color-line-hi);
+  border-radius: var(--facet-radius-card);
+  background: var(--facet-color-surface);
+  pointer-events: auto;
+  cursor: pointer;
+  overflow: hidden;
+  touch-action: none;
+  transition: top var(--facet-duration-toast-in) var(--facet-easing-ease-out);
+}
+.f-toast-icon {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--facet-size-toast-icon);
+  height: var(--facet-size-toast-icon);
+  border-radius: var(--facet-radius-button);
+  color: var(--tone-text);
+  background: color-mix(
+    in srgb,
+    var(--tone) calc(var(--facet-opacity-chip-bg) * 100%),
+    transparent
+  );
+}
+.f-toast-text {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: var(--facet-space-2);
+  min-width: 0;
+}
+.f-toast-title,
+.f-toast-body {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.f-toast-title {
+  color: var(--facet-color-text);
+}
+.f-toast-body {
+  color: var(--facet-color-text-dim);
+}
+.f-toast-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: var(--facet-stroke-edge);
+  background: var(--tone);
+  transform-origin: left center;
+}
+
+/* ---------- screen-level layout helpers ---------- */
+.f-abs {
+  position: absolute;
+}
+.f-scroll {
+  overflow-y: auto;
+  scrollbar-width: none;
+  touch-action: pan-y;
+} /* = LVGL scrollable container, no scrollbar */
+.f-page {
+  position: absolute;
+  inset: 0;
+}
+.f-page[hidden] {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .f-screen * {
+    animation-duration: 0s !important;
+  }
+}
+
+/* ---------- pickers: radio, picker row, bottom sheet, speaker button ---------- */
+.f-radio {
+  position: relative;
+  display: block;
+  flex: none;
+  width: var(--facet-size-radio);
+  height: var(--facet-size-radio);
+  border: var(--facet-stroke-edge) solid var(--facet-color-line-hi);
+  border-radius: var(--facet-radius-round);
+}
+.f-radio > i {
+  position: absolute;
+  left: 6px;
+  top: 6px;
+  width: var(--facet-size-dot);
+  height: var(--facet-size-dot);
+  border-radius: var(--facet-radius-round);
+  background: var(--facet-color-accent);
+  display: none;
+} /* 2 border + 6 = 8: on the grid */
+.f-radio[data-on='true'] {
+  border-color: var(--facet-color-accent);
+}
+.f-radio[data-on='true'] > i {
+  display: block;
+}
+.f-row.f-prow {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--facet-space-gutter);
+}
+.f-row.f-prow[data-selected='true'] {
+  border-color: var(--facet-color-accent);
+}
+.f-prow-icon {
+  display: block;
+  flex: none;
+  width: var(--facet-size-icon);
+  height: var(--facet-size-icon);
+  color: var(--tone-text);
+}
+.f-prow-icon[data-tone='dim'] {
+  color: var(--facet-color-text-dim);
+}
+.f-prow-icon > svg {
+  display: block;
+}
+.f-prow-text {
+  display: flex;
+  flex: 1 1 auto !important;
+  flex-direction: column;
+  min-width: 0;
+}
+.f-prow-name,
+.f-prow-status {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.f-prow-name {
+  color: var(--facet-color-text);
+}
+.f-prow-status {
+  color: var(--facet-color-text-dim);
+}
+.f-bsheet {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+}
+.f-bsheet[hidden] {
+  display: none;
+}
+.f-bsheet-scrim {
+  position: absolute;
+  inset: 0;
+  background: color-mix(
+    in srgb,
+    var(--facet-color-bg) calc(var(--facet-opacity-scrim) * 100%),
+    transparent
+  );
+}
+.f-bsheet-panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: var(--facet-size-sheet-top);
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--facet-space-gutter);
+  padding: calc(var(--facet-space-screen) - var(--facet-stroke-hair)) var(--facet-space-screen)
+    var(--facet-space-screen);
+  border-top: var(--facet-stroke-hair) solid var(--facet-color-line-hi);
+  border-radius: var(--facet-radius-ring) var(--facet-radius-ring) 0 0;
+  background: var(--facet-color-bg);
+}
+.f-bsheet-head {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--facet-space-gutter);
+  height: var(--facet-size-back);
+}
+.f-bsheet-head > .f-fitbox.f-fitbox {
+  height: var(--facet-size-back);
+  line-height: var(--facet-size-back);
+}
+.f-bsheet-title {
+  color: var(--facet-color-text-dim);
+}
+.f-bsheet-list {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: var(--facet-space-2);
+  min-height: 0;
+}
+.f-spk {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--facet-space-2);
+  height: var(--facet-size-speaker-btn-h);
+  padding: 0 calc(var(--facet-space-screen) - var(--facet-stroke-hair));
+  border: var(--facet-stroke-hair) solid var(--facet-color-line);
+  border-radius: var(--facet-radius-button);
+  background: var(--facet-color-surface);
+  color: var(--facet-color-text);
+  cursor: pointer;
+  font: inherit;
+  transition:
+    background-color var(--facet-duration-press) var(--facet-easing-ease-out),
+    border-color var(--facet-duration-press) var(--facet-easing-ease-out);
+}
+.f-spk.live:active,
+.f-spk[data-state='pressed'] {
+  background: var(--facet-color-surface-press);
+  border-color: var(--facet-color-line-hi);
+}
+.f-spk-icon {
+  display: block;
+  width: var(--facet-size-speaker-btn-icon);
+  height: var(--facet-size-speaker-btn-icon);
+  color: var(--tone-text);
+}
+.f-spk-icon[data-tone='dim'] {
+  color: var(--facet-color-text-dim);
+}
+.f-spk-icon > svg,
+.f-spk-chev {
+  display: block;
+  flex: none;
+}
+.f-spk-chev {
+  color: var(--facet-color-text-dim);
+}
+.f-spk-name > .f-fit {
+  display: inline-block;
+  max-width: var(--facet-size-speaker-btn-max);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  vertical-align: top;
+}
+
+/* the dial's caption and unit (screen type: label caps / body) */
+.f-dial-cap {
+  font: 500 18px/16px var(--facet-font-mono);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--facet-color-text-mute);
+}
+.f-dial-unit {
+  font: 400 22px/24px var(--facet-font-sans);
+  color: var(--facet-color-text-mute);
+}
+.f-dial-value {
+  color: var(--facet-color-text);
+}
+.f-icon {
+  display: block;
+  flex: none;
+}

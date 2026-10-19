@@ -1,0 +1,107 @@
+/* Lightning radar (radar.ts). */
+.f-lx-ring {
+  stroke: var(--facet-color-line-hi);
+  stroke-width: 1;
+}
+.f-lx-ring--alert {
+  stroke: var(--facet-color-accent-dim);
+  stroke-width: 2;
+}
+.f-lx-tick {
+  stroke: var(--facet-color-line-hi);
+  stroke-width: 2;
+}
+.f-lx-tick--major {
+  stroke: var(--facet-color-steel);
+}
+.f-lx-rlbl {
+  color: var(--facet-color-text-mute);
+  line-height: 16px;
+  white-space: nowrap;
+}
+.f-lx-cmp {
+  color: var(--facet-color-text-dim);
+  line-height: 16px;
+}
+.f-lx-home {
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  border: 2px solid var(--facet-color-blue);
+  background: var(--facet-color-bg);
+}
+.f-lx-home::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 3px;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--facet-color-blue);
+}
+.f-lx-near[hidden] {
+  display: none;
+}
+.f-lx-radar {
+  position: relative;
+}
+
+/* strikes: 8 px dots coloured by age (data-age 0 < 1 min, 1 < 5, 2 < 15, 3 < 60) */
+.f-lx-dot {
+  display: block;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--facet-color-steel);
+  opacity: 0.5;
+}
+.f-lx-dot[data-age='0'] {
+  background: var(--facet-color-text);
+  opacity: 1;
+  box-sizing: border-box;
+  border: 2px solid var(--facet-color-accent);
+}
+.f-lx-dot[data-age='1'] {
+  background: var(--facet-color-accent);
+  opacity: 1;
+}
+.f-lx-dot[data-age='2'] {
+  background: var(--facet-color-accent);
+  opacity: 0.5;
+}
+.f-lx-dot[data-age='3'] {
+  background: var(--facet-color-steel);
+  opacity: 0.45;
+}
+.f-lx-near {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  border: 1px solid var(--facet-color-accent-text);
+}
+.f-lx-flash {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  border: 2px solid var(--facet-color-accent);
+  box-sizing: border-box;
+}
+
+/* Home card preview: 4 px dots */
+.f-lx-mini {
+  width: 4px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--facet-color-steel);
+  opacity: 0.5;
+}
+.f-lx-mini[data-age='0'],
+.f-lx-mini[data-age='1'] {
+  background: var(--facet-color-accent);
+  opacity: 1;
+}
+.f-lx-mini[data-age='2'] {
+  background: var(--facet-color-accent);
+  opacity: 0.55;
+}

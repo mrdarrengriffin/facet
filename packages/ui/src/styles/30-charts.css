@@ -1,0 +1,111 @@
+/* Charts (charts.ts): solid token fills, 1-2 px lines, transform and opacity motion on marks only. */
+.fch-bars,
+.fch-spark,
+.fch-strip,
+.fch-donut {
+  display: block;
+  flex: none;
+  overflow: visible;
+}
+.fch-bar {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+}
+.fch-bar.is-sel {
+  fill: var(--facet-color-text);
+}
+.fch-bar--ghost.is-sel {
+  stroke: var(--facet-color-text);
+}
+.fch-hit {
+  cursor: pointer;
+}
+
+.fch-big {
+  display: flex;
+  flex-direction: column;
+  flex: none;
+}
+.fch-big-l {
+  display: block;
+  height: 16px;
+  line-height: 16px;
+  color: var(--facet-color-text-mute);
+}
+.fch-big-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  height: 72px;
+  margin-top: 8px;
+  white-space: nowrap;
+}
+.fch-big-v {
+  color: var(--facet-color-text);
+  line-height: 72px;
+  font-variant-numeric: tabular-nums;
+}
+.fch-big-u {
+  color: var(--facet-color-text-dim);
+}
+
+.fch-axis {
+  position: relative;
+  height: 16px;
+  line-height: 16px;
+  color: var(--facet-color-text-mute);
+}
+.fch-tick {
+  position: absolute;
+  top: 0;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+.fch-tick--start {
+  transform: none;
+}
+.fch-tick--end {
+  transform: translateX(-100%);
+}
+
+.fch-legend {
+  display: flex;
+  gap: 16px;
+  height: 16px;
+  line-height: 16px;
+  align-items: center;
+  color: var(--facet-color-text-dim);
+  white-space: nowrap;
+}
+.fch-leg {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.fch-sw {
+  display: inline-block;
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--sw);
+}
+.fch-sw--ghost {
+  background: transparent;
+  border: 1px dashed var(--sw);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fch-bar,
+  .fch-arc {
+    animation: none !important;
+  }
+}
+.fch-leg.f-fitbox {
+  display: inline-block;
+}
+.fch-leg > .f-fit {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}

@@ -1,0 +1,58 @@
+/* Checkbox (checkbox.ts). Also loaded on its own as @facet/ui/checkbox.css (the docs site's task lists).
+   The box is centred on the first line, which for Inter is also the cap height's centre: its ascender and descender
+   sit symmetrically around the caps, so the same optical rule as the panel text boxes needs no extra offset. */
+.f-checkbox {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: var(--facet-color-text);
+}
+.f-checkbox.live {
+  cursor: pointer;
+}
+.f-checkbox-box {
+  position: relative;
+  flex: none;
+  box-sizing: border-box;
+  width: 20px;
+  height: 20px;
+  margin-top: calc((1lh - 20px) / 2);
+  border: 2px solid var(--facet-color-text-dim);
+  border-radius: 6px;
+  color: var(--facet-color-on-accent);
+}
+.f-checkbox-box svg {
+  position: absolute;
+  left: -2px;
+  top: -2px;
+  display: none;
+  stroke: currentColor;
+}
+.f-checkbox[data-state='done'] .f-checkbox-box {
+  border-color: var(--facet-color-accent);
+  background: var(--facet-color-accent);
+}
+.f-checkbox[data-state='done'] .f-checkbox-box svg {
+  display: block;
+}
+.f-checkbox[data-state='doing'] .f-checkbox-box {
+  border-color: var(--facet-color-accent);
+}
+.f-checkbox[data-state='doing'] .f-checkbox-box::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--facet-color-accent);
+}
+.f-checkbox[data-state='done'] .f-checkbox-label {
+  color: var(--facet-color-text-dim);
+}
+.f-checkbox:focus-visible {
+  outline: 2px solid var(--facet-color-accent);
+  outline-offset: 4px;
+  border-radius: 8px;
+}

@@ -1,26 +1,29 @@
 # @facet/ui
 
-Facet components, written in plain TypeScript. No UI framework: each component is a function
-that returns a DOM element.
-
-> Early days. There's one example component so far, to set the pattern.
-
-## Usage
+Facet components and screens, written in plain TypeScript. No UI framework: each component is
+a function that returns a DOM element, and components that change have a `set()` method.
 
 ```ts
 import '@facet/tokens/tokens.css';
+import '@facet/icons/weather.css';
 import '@facet/ui/styles.css';
-import { createButton } from '@facet/ui';
+import { button, createDevice, createStore } from '@facet/ui';
 
-document.body.append(
-  createButton({ label: 'Start', onPress: () => console.log('pressed') }),
-  createButton({ label: 'Cancel', variant: 'secondary' }),
-);
+document.body.append(button({ kind: 'primary', text: 'Start', onTap: () => start() }));
 ```
 
-## Writing components
+Screens read a store (`createStore`) and call actions, so they work the same on a mock house,
+in a test or on real data:
 
-- A component is a `create<Name>(options)` function that returns an `HTMLElement`.
-- Styles go in `src/styles.css` and only use token variables (`var(--facet-...)`).
-- Stay within what LVGL can draw: flat fills, 1 px outlines, rounded corners, and animation on
-  opacity and transform only. Each web component should have a firmware twin later.
+```ts
+const store = createStore({ room: 'Kitchen', light: { on: true, brightness: 60 } });
+const device = createDevice({ store, actions: { lightBrightness: (pct) => setLight(pct) } });
+document.body.append(device.el);
+```
+
+- `createDevice()`: every screen, navigation, toasts and the idle clock.
+- `mountScreen(id, ctx)`: one screen in its own frame, without a back button.
+- `homeScreen()`, `mediaScreen()`, `lightScreen()`, ...: the screens on their own.
+
+The data shapes are exported as types (`PanelData`, `MediaState`, `WeatherData`, ...). Try
+everything in the [UI explorer](https://mrdarrengriffin.github.io/facet/components/).

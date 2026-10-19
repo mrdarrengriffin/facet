@@ -1,0 +1,642 @@
+/* The mascot (mascot.ts). A 32 × 24 body; every moving part is a few px. */
+.fm-mascot {
+  position: relative;
+  display: block;
+  flex: none;
+  width: var(--facet-size-mascot-w);
+  height: var(--facet-size-mascot-h);
+  background: none !important;
+  overflow: visible;
+}
+.fm-mascot b {
+  position: absolute;
+  display: block;
+}
+.fm-hop,
+.fm-body {
+  inset: 0;
+}
+.fm-body {
+  border-radius: var(--facet-radius-icon);
+  background: var(--fm-c);
+  transform-origin: 50% 100%;
+}
+.fm-eyes {
+  inset: 0;
+}
+.fm-eye {
+  top: 8px;
+  width: 4px;
+  height: 5px;
+  border-radius: 1px;
+  background: var(--facet-color-bg);
+  transform-origin: 50% 50%;
+}
+.fm-on-surface .fm-eye {
+  background: var(--facet-color-bg);
+}
+.fm-eye.fm-l {
+  left: 9px;
+}
+.fm-eye.fm-r {
+  left: 19px;
+}
+.fm-brow {
+  top: 4px;
+  width: 6px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--facet-color-bg);
+  opacity: 0;
+}
+.fm-brow.fm-l {
+  left: 8px;
+}
+.fm-brow.fm-r {
+  left: 18px;
+}
+.fm-fx {
+  inset: 0;
+  pointer-events: none;
+}
+.fm-fx > b {
+  opacity: 0;
+}
+
+/* ---- idle: slow blink + an occasional glance */
+.fm-mascot[data-mood='idle'] .fm-eye {
+  animation: fm-blink 5.2s linear infinite;
+  animation-delay: var(--fm-off);
+}
+.fm-mascot[data-mood='idle'] .fm-eyes {
+  animation: fm-glance 11s var(--facet-easing-ease-in-out) infinite;
+  animation-delay: var(--fm-off);
+}
+
+/* ---- working: focused squint, low inward brows, 1 px bob, orbiting dot */
+.fm-mascot[data-mood='working'][data-work='a'] .fm-eye {
+  top: 9px;
+  height: 3px;
+}
+.fm-mascot[data-mood='working'][data-work='a'] .fm-brow {
+  opacity: 0;
+}
+.fm-mascot[data-mood='working'][data-work='a'] .fm-brow.fm-l {
+  transform: rotate(12deg);
+}
+.fm-mascot[data-mood='working'][data-work='a'] .fm-brow.fm-r {
+  transform: rotate(-12deg);
+}
+.fm-mascot[data-mood='working'][data-work='a'] .fm-body {
+  animation: fm-bob 1.4s var(--facet-easing-ease-in-out) infinite alternate;
+  animation-delay: var(--fm-off);
+}
+.fm-orbit {
+  left: 30px;
+  top: 2px;
+  width: 0;
+  height: 0;
+}
+.fm-orbit > b {
+  left: -1.5px;
+  top: -7.5px;
+  width: 3px;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--fm-c);
+}
+.fm-mascot[data-mood='working'][data-work='a'] .fm-orbit {
+  opacity: 0;
+}
+
+/* ---- done: happy arches + hop on arrival */
+.fm-mascot[data-mood='done'] .fm-eye {
+  top: 9px;
+  left: 8px;
+  width: 6px;
+  height: 4px;
+  background: none;
+  border: 2px solid var(--facet-color-bg);
+  border-bottom: 0;
+  border-radius: 3px 3px 0 0;
+}
+.fm-mascot[data-mood='done'] .fm-eye.fm-r {
+  left: 18px;
+}
+.fm-mascot.is-hop[data-mood='done'] .fm-hop {
+  animation: fm-hop 720ms var(--facet-easing-ease-out) 1;
+}
+
+/* ---- needs you: wide eyes, raised brows, a tilt, orange "!" */
+.fm-mascot[data-mood='needs'] .fm-eye {
+  top: 7px;
+  left: 8px;
+  width: 5px;
+  height: 7px;
+  border-radius: 2px;
+}
+.fm-mascot[data-mood='needs'] .fm-eye.fm-r {
+  left: 19px;
+}
+.fm-mascot[data-mood='needs'] .fm-brow {
+  opacity: 1;
+  top: 3px;
+}
+.fm-mascot[data-mood='needs'] .fm-brow.fm-l {
+  transform: rotate(-10deg);
+}
+.fm-mascot[data-mood='needs'] .fm-brow.fm-r {
+  transform: rotate(10deg);
+}
+.fm-mascot[data-mood='needs'] .fm-body {
+  animation: fm-alert 3s var(--facet-easing-ease-in-out) infinite;
+}
+.fm-bang {
+  left: 34px;
+  top: -6px;
+  width: 2px;
+  height: 11px;
+}
+.fm-bang > b:first-child {
+  left: 0;
+  top: 0;
+  width: 2px;
+  height: 7px;
+  border-radius: 1px;
+  background: var(--facet-color-accent);
+}
+.fm-bang > b:last-child {
+  left: 0;
+  top: 9px;
+  width: 2px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--facet-color-accent);
+}
+.fm-mascot[data-mood='needs'] .fm-bang {
+  opacity: 1;
+  animation: fm-bang 3s var(--facet-easing-ease-in-out) infinite;
+}
+
+/* ---- error: droopy half-closed eyes, sad brows (inner ends up), slumps 1 px */
+.fm-mascot[data-mood='error'] .fm-eye {
+  top: 11px;
+  height: 3px;
+  border-radius: 0 0 2px 2px;
+}
+.fm-mascot[data-mood='error'] .fm-brow {
+  opacity: 1;
+  top: 7px;
+}
+.fm-mascot[data-mood='error'] .fm-brow.fm-l {
+  transform: rotate(-16deg);
+}
+.fm-mascot[data-mood='error'] .fm-brow.fm-r {
+  transform: rotate(16deg);
+}
+.fm-mascot[data-mood='error'] .fm-body {
+  transform: translateY(1px) rotate(4deg);
+}
+.fm-mascot[data-mood='error'] .fm-eyes {
+  animation: fm-sigh 4.5s var(--facet-easing-ease-in-out) infinite;
+}
+
+/* ---- working B · Typing: eyes down at the keyboard line, keystroke bob (2 steps), blinking cursor block */
+.fm-mascot[data-mood='working'][data-work='b'] .fm-eye {
+  top: 12px;
+  height: 3px;
+}
+.fm-mascot[data-mood='working'][data-work='b'] .fm-eyes {
+  transform: translateY(1px);
+}
+.fm-mascot[data-mood='working'][data-work='b'] .fm-body {
+  animation: fm-key 0.9s steps(1, end) infinite;
+  animation-delay: var(--fm-off);
+}
+.fm-kb {
+  left: 4px;
+  top: 27px;
+  width: 26px;
+  height: 4px;
+}
+.fm-kb-line {
+  left: 0;
+  top: 1px;
+  width: 20px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--facet-color-text-mute);
+}
+.fm-kb-cur {
+  left: 22px;
+  top: 0;
+  width: 3px;
+  height: 4px;
+  background: var(--fm-c);
+}
+.fm-mascot[data-mood='working'][data-work='b'] .fm-kb {
+  opacity: 1;
+}
+.fm-mascot[data-mood='working'][data-work='b'] .fm-kb-cur {
+  animation: fm-cursor 1s steps(1, end) infinite;
+}
+.fm-mascot[data-mood='working'][data-work='b'] .fm-kb-line {
+  animation: fm-type 2.7s steps(9, end) infinite;
+  transform-origin: left center;
+}
+
+/* ---- working C · Reading: eyes scan left -> right (1.2 s per line, quick return), blink every ~5 s, 3 progress dots */
+.fm-mascot[data-mood='working'][data-work='c'] .fm-eye {
+  top: 9px;
+  width: 3px;
+  height: 4px;
+}
+.fm-mascot[data-mood='working'][data-work='c'] .fm-eyes {
+  animation: fm-scan 1.4s linear infinite;
+}
+.fm-mascot[data-mood='working'][data-work='c'] .fm-eye.fm-l {
+  animation: fm-blink 5.2s linear infinite;
+  animation-delay: var(--fm-off);
+}
+.fm-mascot[data-mood='working'][data-work='c'] .fm-eye.fm-r {
+  animation: fm-blink 5.2s linear infinite;
+  animation-delay: var(--fm-off);
+}
+.fm-prog {
+  left: 9px;
+  top: 28px;
+  width: 14px;
+  height: 2px;
+}
+.fm-prog > b {
+  top: 0;
+  width: 2px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--fm-c);
+  opacity: 0.25;
+  animation: fm-prog 2.4s linear infinite;
+}
+.fm-prog > b:nth-child(1) {
+  left: 0;
+}
+.fm-prog > b:nth-child(2) {
+  left: 6px;
+  animation-delay: 0.8s;
+}
+.fm-prog > b:nth-child(3) {
+  left: 12px;
+  animation-delay: 1.6s;
+}
+.fm-mascot[data-mood='working'][data-work='c'] .fm-prog {
+  opacity: 1;
+}
+
+/* ---- working D · Thinking: eyes up + to the side, right brow raised, "..." pulsing above-right */
+.fm-mascot[data-mood='working'][data-work='d'] .fm-eye {
+  top: 7px;
+  width: 4px;
+  height: 4px;
+  border-radius: 2px;
+}
+.fm-mascot[data-mood='working'][data-work='d'] .fm-eyes {
+  transform: translate(2px, -1px);
+}
+.fm-mascot[data-mood='working'][data-work='d'] .fm-brow.fm-r {
+  opacity: 1;
+  top: 2px;
+  transform: rotate(-14deg);
+}
+.fm-think {
+  left: 26px;
+  top: -9px;
+  width: 14px;
+  height: 4px;
+}
+.fm-think > b {
+  top: 0;
+  width: 3px;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--facet-color-text-dim);
+  animation: fm-dots 1.5s var(--facet-easing-ease-in-out) infinite;
+}
+.fm-think > b:nth-child(1) {
+  left: 0;
+}
+.fm-think > b:nth-child(2) {
+  left: 5px;
+  animation-delay: 0.2s;
+}
+.fm-think > b:nth-child(3) {
+  left: 10px;
+  animation-delay: 0.4s;
+}
+.fm-mascot[data-mood='working'][data-work='d'] .fm-think {
+  opacity: 1;
+}
+.fm-mascot[data-mood='working'][data-work='d'] .fm-body {
+  animation: fm-ponder 5s var(--facet-easing-ease-in-out) infinite;
+}
+
+/* ---- working E · Builder: determined (flat low brows, squint), a 9 px gear turning beside the head */
+.fm-mascot[data-mood='working'][data-work='e'] .fm-eye {
+  top: 10px;
+  height: 3px;
+}
+.fm-mascot[data-mood='working'][data-work='e'] .fm-brow {
+  opacity: 1;
+  top: 6px;
+}
+.fm-mascot[data-mood='working'][data-work='e'] .fm-body {
+  animation: fm-bob 0.7s var(--facet-easing-ease-in-out) infinite alternate;
+}
+.fm-gear {
+  left: 33px;
+  top: -3px;
+  width: 9px;
+  height: 9px;
+}
+.fm-gear > b:nth-child(1) {
+  left: 1.5px;
+  top: 1.5px;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  border: 2px solid var(--fm-c);
+  box-sizing: border-box;
+}
+.fm-gear > b:nth-child(2) {
+  left: 3.5px;
+  top: 0;
+  width: 2px;
+  height: 9px;
+  border-radius: 1px;
+  background: var(--fm-c);
+}
+.fm-gear > b:nth-child(3) {
+  left: 0;
+  top: 3.5px;
+  width: 9px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--fm-c);
+}
+.fm-mascot[data-mood='working'][data-work='e'] .fm-gear {
+  opacity: 1;
+  animation: fm-orbit 2.4s linear infinite;
+}
+
+/* ---- sleeping: closed eyes, slow breathing, three "z" rising up-right */
+.fm-mascot[data-mood='sleeping'] .fm-eye {
+  top: 11px;
+  left: 8px;
+  width: 5px;
+  height: 2px;
+  border-radius: 1px;
+}
+.fm-mascot[data-mood='sleeping'] .fm-eye.fm-r {
+  left: 19px;
+}
+.fm-mascot[data-mood='sleeping'] .fm-body {
+  animation: fm-breathe 4.4s var(--facet-easing-ease-in-out) infinite;
+  animation-delay: var(--fm-off);
+}
+/* z glyphs: 3-segment 2 px polylines, 6 / 8 / 10 px, start at the head's top-right corner, each rises (+8, -12) with
+   drift, fade in 15 %, out from 65 %, 3 s loop, staggered 1 s (one z always on screen) */
+.fm-z {
+  left: 27px;
+  top: 5px;
+  width: 0;
+  height: 0;
+}
+.fm-mascot[data-mood='sleeping'] .fm-z {
+  opacity: 1;
+}
+.fm-zz {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  display: block;
+  overflow: visible;
+  color: var(--facet-color-text-dim);
+  opacity: 0;
+  transform-origin: 0 100%;
+  animation: fm-zz 3.6s var(--facet-easing-ease-out) infinite;
+}
+.fm-zz1 {
+  animation-delay: 0s;
+}
+.fm-zz2 {
+  animation-delay: 1.2s;
+}
+.fm-zz3 {
+  animation-delay: 2.4s;
+}
+
+@keyframes fm-blink {
+  0%,
+  94%,
+  100% {
+    transform: scaleY(1);
+  }
+  96% {
+    transform: scaleY(0.2);
+  }
+}
+@keyframes fm-glance {
+  0%,
+  30% {
+    transform: translateX(0);
+  }
+  34%,
+  46% {
+    transform: translateX(-2px);
+  }
+  50%,
+  62% {
+    transform: translateX(2px);
+  }
+  66%,
+  100% {
+    transform: translateX(0);
+  }
+}
+@keyframes fm-bob {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-1px);
+  }
+}
+@keyframes fm-orbit {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes fm-hop {
+  0% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-5px);
+  }
+  55% {
+    transform: translateY(0);
+  }
+  72% {
+    transform: translateY(-2px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+@keyframes fm-alert {
+  0%,
+  70%,
+  100% {
+    transform: rotate(-6deg);
+  }
+  76% {
+    transform: rotate(-2deg) translateY(-1px);
+  }
+  82% {
+    transform: rotate(-8deg);
+  }
+  88% {
+    transform: rotate(-5deg);
+  }
+}
+@keyframes fm-bang {
+  0%,
+  60%,
+  100% {
+    opacity: 1;
+  }
+  70% {
+    opacity: 0.3;
+  }
+  80% {
+    opacity: 1;
+  }
+}
+@keyframes fm-sigh {
+  0%,
+  80%,
+  100% {
+    transform: translateY(0);
+  }
+  88% {
+    transform: translateY(1px);
+  }
+}
+@keyframes fm-breathe {
+  0%,
+  100% {
+    transform: scale(1, 1);
+  }
+  50% {
+    transform: scale(1.04, 0.95);
+  }
+}
+@keyframes fm-zz {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.5);
+  }
+  15% {
+    opacity: 0.95;
+  }
+  60% {
+    opacity: 0.9;
+    transform: translate(4px, -6px) scale(0.8) rotate(-6deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(8px, -11px) scale(1) rotate(4deg);
+  }
+}
+@keyframes fm-key {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  15% {
+    transform: translateY(1px);
+  }
+  30% {
+    transform: translateY(0);
+  }
+  55% {
+    transform: translateY(1px);
+  }
+  70% {
+    transform: translateY(0);
+  }
+}
+@keyframes fm-cursor {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes fm-type {
+  0% {
+    transform: scaleX(0.1);
+  }
+  100% {
+    transform: scaleX(1);
+  }
+}
+@keyframes fm-scan {
+  0% {
+    transform: translateX(-2px);
+  }
+  80% {
+    transform: translateX(2px);
+  }
+  100% {
+    transform: translateX(-2px);
+  }
+}
+@keyframes fm-prog {
+  0%,
+  30% {
+    opacity: 1;
+  }
+  31%,
+  100% {
+    opacity: 0.25;
+  }
+}
+@keyframes fm-dots {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: translateY(0);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-1px);
+  }
+}
+@keyframes fm-ponder {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(-3deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fm-mascot * {
+    animation: none !important;
+  }
+}
