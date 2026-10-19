@@ -2,6 +2,7 @@
 import '@facet/icons/weather.css';
 import '@facet/ui/styles.css';
 import { screenIconSvg } from '@facet/icons';
+import { devices } from '@facet/tokens';
 import { TOASTS } from '@facet/demo-data';
 import Base from '../layouts/Base.astro';
 import ThemeSwitch from '../components/panel/ThemeSwitch.astro';
@@ -38,6 +39,31 @@ const jump = screenDocs.filter((s) => s.slug !== 'toasts');
       </div>
 
       <aside class="demo__panel">
+        <section>
+          <h2 class="facet-label">Device</h2>
+          <div class="demo__buttons">
+            {
+              Object.entries(devices).map(([id, d]) => (
+                <button
+                  type="button"
+                  class="chip-button"
+                  data-device={id}
+                  disabled={d.status === 'planned'}
+                  title={`${d.w} × ${d.h} px, ${d.inches} inch, ${d.density} · ${d.status}`}
+                >
+                  {d.w} × {d.h}
+                </button>
+              ))
+            }
+          </div>
+          <p class="demo__hint" data-device-note></p>
+          <div class="demo__row">
+            <div class="seg" role="group" aria-label="Preview size">
+              <button type="button" data-px="physical" aria-pressed="true">Physical size</button>
+              <button type="button" data-px="1" aria-pressed="false">1:1 pixels</button>
+            </div>
+          </div>
+        </section>
         <section>
           <h2 class="facet-label">Look</h2>
           <div class="demo__row">
@@ -111,6 +137,7 @@ const jump = screenDocs.filter((s) => s.slug !== 'toasts');
   import { createMockHouse, TOASTS } from '@facet/demo-data';
   import { createDevice, isMediaVisual, type ScreenId } from '@facet/ui';
   import { play, setEnabled, setPack, setVolume } from '@facet/sounds';
+  import { devices, DEFAULT_DEVICE, type DeviceId } from '@facet/tokens';
   import { fitFrame, initSounds, initThemeOverride } from '../scripts/facet-runtime';
   import { screenDocs } from '../lib/screens';
 
@@ -122,7 +149,13 @@ const jump = screenDocs.filter((s) => s.slug !== 'toasts');
     screenDocs.map((s) => [s.slug, s.title]),
   );
   const visual = new URLSearchParams(location.search).get('visual'); // ?visual=disc|cassette|vinyl|reel (default cd)
+  // ?device=<id> picks the screen (size + density); ?px=1 shows it 1:1 instead of at the reference panel's size
+  const q = new URLSearchParams(location.search);
+  const devId = (q.get('device') ?? DEFAULT_DEVICE) as DeviceId;
+  const dev = devices[devId] ?? devices[DEFAULT_DEVICE]!;
+  const onePx = q.get('px') === '1';
   const device = createDevice(house, {
+    device: devId,
     mediaVisual: isMediaVisual(visual) ? visual : 'cd',
     onToast: () => void play('notify'),
     onNavigate: (id) => (now.textContent = id === 'idle' ? 'Idle clock' : (names[id] ?? id)),
@@ -140,7 +173,29 @@ const jump = screenDocs.filter((s) => s.slug !== 'toasts');
   });
   const frame = root.querySelector<HTMLElement>('[data-frame]')!;
   frame.append(device.el);
-  fitFrame(root.querySelector<HTMLElement>('[data-viewport]')!, frame);
+  frame.style.width = `${dev.w}px`;
+  frame.style.height = `${dev.h}px`;
+  // physical size: a 4 inch 480 panel shows as big as the 4 inch 720 one (1.5x zoom)
+  const zoom = onePx
+    ? 1
+    : devices[DEFAULT_DEVICE]!.w / devices[DEFAULT_DEVICE]!.inches / (dev.w / dev.inches);
+  fitFrame(root.querySelector<HTMLElement>('[data-viewport]')!, frame, dev.w, dev.h, zoom);
+  root.querySelector('[data-device-note]')!.textContent =
+    `${dev.name}: ${dev.w} × ${dev.h} px, ${dev.inches} inch, density ${dev.density}` +
+    (dev.status === 'reference' ? '' : ` · ${dev.status}`);
+  const nav = (k: string, v: string | null) => {
+    if (v === null) q.delete(k);
+    else q.set(k, v);
+    location.search = q.toString();
+  };
+  for (const b of root.querySelectorAll<HTMLButtonElement>('[data-device]')) {
+    b.setAttribute('aria-pressed', String(b.dataset.device === devId));
+    b.addEventListener('click', () => nav('device', b.dataset.device!));
+  }
+  for (const b of root.querySelectorAll<HTMLButtonElement>('[data-px]')) {
+    b.setAttribute('aria-pressed', String((b.dataset.px === '1') === onePx));
+    b.addEventListener('click', () => nav('px', b.dataset.px === '1' ? '1' : null));
+  }
   initThemeOverride(root, frame);
 
   for (const b of root.querySelectorAll<HTMLButtonElement>('[data-toast]')) {

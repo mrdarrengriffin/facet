@@ -5,8 +5,8 @@
    (padding = token - hairline). */
 .f-screen {
   position: relative;
-  width: 720px;
-  height: 720px;
+  width: var(--facet-screen-w);
+  height: var(--facet-screen-h);
   overflow: hidden;
   background: var(--facet-color-bg);
   color: var(--facet-color-text);
@@ -319,6 +319,18 @@
   height: var(--facet-size-icon-round);
   border-radius: var(--facet-radius-round);
 }
+.f-ibtn--play > .f-icon {
+  width: var(--facet-size-glyph-play);
+  height: var(--facet-size-glyph-play);
+}
+.f-ibtn--round > .f-icon {
+  width: var(--facet-size-glyph-round);
+  height: var(--facet-size-glyph-round);
+}
+.f-ibtn--square > .f-icon {
+  width: var(--facet-size-glyph-square);
+  height: var(--facet-size-glyph-square);
+}
 .f-ibtn--square {
   width: var(--facet-size-icon-square);
   height: var(--facet-size-icon-square);
@@ -383,7 +395,7 @@
 /* ---------- slider ---------- */
 .f-slider {
   position: relative;
-  height: 48px;
+  height: var(--facet-size-slider-h);
   cursor: pointer;
   user-select: none;
   -webkit-user-select: none;
@@ -393,7 +405,7 @@
   position: absolute;
   left: 0;
   right: 0;
-  top: 22px;
+  top: calc(var(--facet-size-slider-h) / 2 - 2px);
   height: 4px;
   border-radius: 2px;
   background: var(--facet-color-line-hi);
@@ -406,10 +418,10 @@
 }
 .f-slider-knob {
   position: absolute;
-  top: 12px;
-  width: 24px;
-  height: 24px;
-  margin-left: -12px;
+  top: calc((var(--facet-size-slider-h) - var(--facet-size-slider-knob)) / 2);
+  width: var(--facet-size-slider-knob);
+  height: var(--facet-size-slider-knob);
+  margin-left: calc(var(--facet-size-slider-knob) / -2);
   border-radius: var(--facet-radius-round);
   background: var(--facet-color-accent);
 }

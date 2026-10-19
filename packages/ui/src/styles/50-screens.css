@@ -22,14 +22,14 @@
   color: var(--facet-color-text-dim);
 }
 .fs-hclock {
-  width: 72px;
+  width: var(--facet-layout-clock-w);
   text-align: right;
   color: var(--facet-color-text-dim);
   white-space: nowrap;
 } /* HH:MM caps 18 + tracking = 64 */
 .fs-header .f-spk .f-spk-name {
-  font: 500 18px/16px var(--facet-font-mono);
-  letter-spacing: 2px;
+  font: 500 var(--facet-size-speaker-btn-font) / 16px var(--facet-font-mono);
+  letter-spacing: calc(var(--facet-scale) * 2px);
 } /* 16 box, glyphs centred */
 .fs-dim {
   color: var(--facet-color-text-mute);
@@ -101,14 +101,18 @@
 .fs-card > * {
   position: absolute;
 }
+.fs-card {
+  --_p: calc(var(--facet-layout-card-pad) - var(--facet-stroke-hair));
+  --_vb: calc(var(--facet-layout-card-value-bottom) - var(--facet-stroke-hair));
+}
 /* children count from the outer edge (LVGL): pad 24 - hair */
 .fs-clabel {
-  left: 23px;
-  top: 23px;
+  left: var(--_p);
+  top: var(--_p);
   display: flex;
   align-items: center;
   gap: var(--facet-space-2);
-  height: 24px;
+  height: var(--facet-fst-label-box);
   color: var(--facet-color-text-dim);
 }
 .fs-clabel > .f-dot {
@@ -118,29 +122,34 @@
   display: block;
 }
 .fs-cicon {
+  width: var(--facet-size-icon);
+  height: var(--facet-size-icon);
   color: var(--facet-color-text-dim);
 }
 .fs-cprev {
-  right: 23px;
-  top: 23px;
+  right: var(--_p);
+  top: var(--_p);
   width: var(--facet-size-preview);
   height: var(--facet-size-preview);
 }
+.fs-cprev > * {
+  zoom: var(--facet-scale); /* the 72 px artwork, drawn smaller at lower densities */
+}
 .fs-cval {
-  left: 23px;
-  right: 23px;
-  bottom: 87px;
-  height: 64px;
+  left: var(--_p);
+  right: var(--_p);
+  bottom: var(--_vb);
+  height: var(--facet-fst-value-box);
   color: var(--facet-color-text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .fs-ctext {
-  left: 23px;
-  right: 23px;
-  bottom: 87px;
-  height: 80px;
+  left: var(--_p);
+  right: var(--_p);
+  bottom: var(--_vb);
+  height: calc(2 * var(--facet-fst-title-box));
   display: flex;
   align-items: flex-end;
 } /* bottom-aligned like the values */
@@ -157,10 +166,10 @@
   display: none;
 }
 .fs-csub {
-  left: 23px;
-  right: 23px;
-  bottom: 23px;
-  height: 32px;
+  left: var(--_p);
+  right: var(--_p);
+  bottom: var(--_p);
+  height: var(--facet-fst-body-box);
   color: var(--facet-color-text-dim);
   white-space: nowrap;
   overflow: hidden;
@@ -362,7 +371,7 @@
   text-overflow: ellipsis;
 }
 .fs-d-title {
-  max-height: 96px;
+  max-height: calc(2 * var(--facet-fst-headline-box));
   overflow: hidden;
   color: var(--facet-color-text);
   display: -webkit-box;
@@ -474,7 +483,7 @@
   flex-direction: column;
   gap: var(--facet-space-2);
   height: 100%;
-  padding-top: 64px;
+  padding-top: var(--facet-layout-m-col-top);
 } /* 64 + 24 + 8 + 48 + 8 + 32 = the disc's middle */
 .fs-m-state {
   color: var(--facet-color-text-mute);
@@ -501,21 +510,21 @@
   display: flex !important;
   align-items: center;
   justify-content: center;
-  gap: 48px;
-  height: 96px;
+  gap: var(--facet-layout-m-ctl-gap);
+  height: var(--facet-layout-m-ctl-h);
 }
 .fs-vol {
   display: flex !important;
   align-items: center;
   gap: var(--facet-layout-gutter);
-  height: 48px;
+  height: var(--facet-layout-m-vol-h);
 }
 .fs-vol-k,
 .fs-vol-v {
   flex: none;
-  width: 72px;
-  height: 48px;
-  line-height: 48px;
+  width: var(--facet-layout-m-vol-label-w);
+  height: var(--facet-layout-m-vol-h);
+  line-height: var(--facet-layout-m-vol-h);
   color: var(--facet-color-text-mute);
 }
 .fs-vol-v {

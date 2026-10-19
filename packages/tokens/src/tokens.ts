@@ -134,6 +134,74 @@ export const layout = {
   contentH: data.screen.height - L.inset - L.top,
 };
 
+/** A density: px per dp. The reference (1.5x) is the base table; others override what changes. */
+export type DensityId = '1x' | '1.5x';
+export interface DensityTable {
+  scale: number;
+  grid: number;
+  screenType?: Partial<Record<ScreenTypeToken, Partial<TypeStyle>>>;
+  layout?: Partial<Record<keyof typeof L, number>>;
+  size?: Partial<Record<keyof typeof data.size, number>>;
+}
+export const density = strip(data.density) as unknown as { reference: DensityId } & Record<
+  DensityId,
+  DensityTable
+>;
+
+export type SizeClassId = 'square' | 'tall' | 'wide' | 'large';
+export const sizeClass = strip(data.sizeClass) as Record<
+  SizeClassId,
+  { min: [number, number]; homeCols: number; use: string }
+>;
+
+export interface Device {
+  name: string;
+  /** Screen size in px. */
+  w: number;
+  h: number;
+  /** Diagonal in inches. */
+  inches: number;
+  density: DensityId;
+  class: SizeClassId;
+  status: string;
+}
+export const devices = strip(data.devices) as Record<string, Device>;
+export type DeviceId = keyof typeof devices;
+export const DEFAULT_DEVICE: DeviceId = 'waveshare-p4-86';
+
+/** The screen type scale at a density (the reference scale with that density's overrides). */
+export function screenTypeAt(d: DensityId): Record<ScreenTypeToken, TypeStyle> {
+  const o = density[d].screenType ?? {};
+  return Object.fromEntries(
+    Object.entries(screenType).map(([k, v]) => [k, { ...v, ...o[k as ScreenTypeToken] }]),
+  ) as Record<ScreenTypeToken, TypeStyle>;
+}
+
+/** Sizes at a density. */
+export function sizeAt(d: DensityId): typeof data.size {
+  return { ...data.size, ...density[d].size };
+}
+
+/** Screen layout for a device: its density's table plus the content box worked out from its pixel size. */
+export function geometry(id: DeviceId = DEFAULT_DEVICE) {
+  const dev = devices[id] ?? devices[DEFAULT_DEVICE]!;
+  const g = { ...L, ...density[dev.density].layout } as typeof L;
+  return {
+    ...g,
+    grid: density[dev.density].grid,
+    scale: density[dev.density].scale,
+    density: dev.density,
+    sizeClass: dev.class,
+    screenW: dev.w,
+    screenH: dev.h,
+    contentX: g.inset,
+    contentY: g.top,
+    contentW: dev.w - 2 * g.inset,
+    contentH: dev.h - g.inset - g.top,
+  };
+}
+export type Geometry = ReturnType<typeof geometry>;
+
 /**
  * The compact frame used by overlays and dense views (toasts, bottom sheets, list and detail views): a 16 px inset
  * and an 80 px header band, content from y 96.
@@ -161,6 +229,9 @@ export const tokens = {
   type,
   layout,
   frame,
+  devices,
+  density,
+  sizeClass,
   space,
   radius,
   stroke,

@@ -3,6 +3,7 @@
 .f-mv-layer {
   position: absolute;
   inset: 0;
+  zoom: var(--facet-scale); /* visuals are drawn at the reference size */
   pointer-events: none;
   overflow: hidden;
 }

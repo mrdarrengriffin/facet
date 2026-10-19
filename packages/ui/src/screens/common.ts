@@ -1,12 +1,18 @@
 // Shared types and helpers for the screens.
 import type { Store } from '../store.js';
+import { geometry, type DeviceId } from '@facet/tokens';
 import type { MediaState, PanelActions, PanelData, Player, WeatherData } from '../types.js';
 
 /** What every screen gets: the store it reads and the actions it can call. */
 export interface ScreenContext {
   store: Store<PanelData>;
   actions?: PanelActions;
+  /** The screen it draws on (size + density). Default the reference panel, 720 × 720. */
+  device?: DeviceId;
 }
+
+/** The geometry for the context's device. */
+export const geo = (ctx: ScreenContext) => geometry(ctx.device);
 
 /** A screen: its element plus lifecycle hooks the device (or a preview) calls. */
 export interface Screen {

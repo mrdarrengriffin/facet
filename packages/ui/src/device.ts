@@ -7,7 +7,7 @@
 // Settings: Home's gear opens the Settings screen. `data.settings` (from @facet/settings) styles the frame (theme,
 // accent, text size) and, when a value changes, sets the transition, toast position, idle time, brightness and face.
 import type { Values } from '@facet/settings';
-import { motion, toast as TOAST, type TransitionId } from '@facet/tokens';
+import { devices, motion, toast as TOAST, type DeviceId, type TransitionId } from '@facet/tokens';
 import { h } from './dom.js';
 import { hhmm } from './format.js';
 import { startTicker } from './store.js';
@@ -106,6 +106,14 @@ export function createScreen(
   }
 }
 
+/** Put a device's size and density on a frame (the tokens' CSS follows them). */
+function setDevice(frame: HTMLElement, id?: DeviceId) {
+  const d = id ? devices[id] : undefined;
+  if (!d) return;
+  frame.dataset.facetDevice = id;
+  frame.dataset.facetDensity = d.density;
+}
+
 /** Run a screen's clocks: the header time and anything with `data-clock` gets the time once a second. */
 function tickClocks(root: HTMLElement, now: Date) {
   root
@@ -115,6 +123,8 @@ function tickClocks(root: HTMLElement, now: Date) {
 
 export interface PreviewOptions {
   onBack?: () => void;
+  /** The screen to draw for (size + density, from `devices` in @facet/tokens). Default the 720 × 720 reference. */
+  device?: DeviceId;
   clock?: ClockOptions;
   /** Media screen: what sits in the hero slot. Default `disc`. */
   mediaVisual?: MediaVisualId;
@@ -126,6 +136,8 @@ export interface PreviewOptions {
  */
 export function mountScreen(id: ScreenId, ctx: ScreenContext, o: PreviewOptions = {}) {
   const frame = h('div', { class: 'f-screen', 'data-screen': id });
+  setDevice(frame, o.device);
+  if (o.device) ctx = { ...ctx, device: o.device };
   const scr = createScreen(id, ctx, o);
   frame.append(scr.el);
   const unsub = ctx.store.subscribe((s) => {
@@ -149,6 +161,8 @@ export function mountScreen(id: ScreenId, ctx: ScreenContext, o: PreviewOptions 
 }
 
 export interface DeviceOptions {
+  /** The screen to draw for (size + density, from `devices` in @facet/tokens). Default the 720 × 720 reference. */
+  device?: DeviceId;
   /** Screen to start on. Default `home`. */
   start?: ScreenId;
   /** Home cards, in order. */
@@ -174,6 +188,8 @@ export interface DeviceOptions {
 /** The whole panel: every screen, navigation, toasts and the idle clock. */
 export function createDevice(ctx: ScreenContext, o: DeviceOptions = {}) {
   const frame = h('div', { class: 'f-screen f-device' });
+  setDevice(frame, o.device);
+  if (o.device) ctx = { ...ctx, device: o.device };
   const pages = new Map<ScreenId | 'idle', Screen>();
   const back = () => go('home');
   for (const id of SCREEN_IDS)

@@ -1,15 +1,20 @@
 import {
   color,
+  density,
+  devices,
   font,
   layout,
   motion,
   opacity,
   radius,
+  screen,
   screenType,
   size,
   space,
   stroke,
   type,
+  screenTypeAt,
+  type DensityId,
   type ThemeName,
   type TypeStyle,
 } from './tokens.js';
@@ -52,7 +57,49 @@ function staticVars(): string[] {
     ...vars('duration', motion.duration, (n) => `${n}ms`),
     ...Object.entries(motion.easing).map(([k, v]) => `${cssVar('easing', k)}: ${v.css};`),
     ...vars('opacity', opacity, (n) => String(n)),
+    ...boxVars(screenType),
+    `--${PREFIX}-scale: 1;`,
+    `--${PREFIX}-screen-w: ${screen.width}px;`,
+    `--${PREFIX}-screen-h: ${screen.height}px;`,
   ];
+}
+
+/** `--facet-fst-<role>-box`: each screen type role's line box, for geometry that stacks text. */
+function boxVars(styles: Record<string, TypeStyle>): string[] {
+  return Object.entries(styles)
+    .filter(([, s]) => s.box)
+    .map(([k, s]) => `${cssVar('fst', k + '-box')}: ${s.box}px;`);
+}
+
+/** A density's overrides: its layout / size vars and its screen type scale, under `[data-facet-density]`. */
+function densityBlocks(): string[] {
+  return (Object.keys(density) as (DensityId | 'reference')[])
+    .filter((d): d is DensityId => d !== 'reference' && d !== density.reference)
+    .flatMap((d) => {
+      const t = density[d];
+      const sel = `[data-facet-density="${d}"]`;
+      const st = screenTypeAt(d);
+      return [
+        block(sel, [
+          `--${PREFIX}-scale: ${t.scale};`,
+          ...vars('layout', (t.layout ?? {}) as Record<string, number>),
+          ...vars('size', (t.size ?? {}) as Record<string, number>),
+          ...boxVars(st),
+        ]),
+        // :where() keeps the specificity of the plain class, so component CSS that sets a line height still wins
+        ...typeClasses('fst', st).map((c) => `:where(${sel}) ${c}`),
+      ];
+    });
+}
+
+/** `[data-facet-device="<id>"]`: the device's screen size. */
+function deviceBlocks(): string[] {
+  return Object.entries(devices).map(([id, d]) =>
+    block(`[data-facet-device="${id}"]`, [
+      `--${PREFIX}-screen-w: ${d.w}px;`,
+      `--${PREFIX}-screen-h: ${d.h}px;`,
+    ]),
+  );
 }
 
 /** One class per type style. Styles with a `box` use it as the line height, so text boxes sit on the 8 px grid. */
@@ -91,6 +138,8 @@ export function toCss(): string {
     block('[data-facet-theme="light"]', colorVars('light')),
     ...typeClasses('fst', screenType),
     ...typeClasses('ft', type),
+    ...deviceBlocks(),
+    ...densityBlocks(),
     '',
   ].join('\n\n');
 }

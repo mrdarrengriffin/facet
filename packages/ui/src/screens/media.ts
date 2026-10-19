@@ -6,11 +6,12 @@ import { iconButton, setGlyph } from '../buttons.js';
 import { disc, slider } from '../controls.js';
 import { h } from '../dom.js';
 import { clean } from '../format.js';
-import { at, CW, content, header, layout, page, text } from '../layout.js';
+import { at, content, header, page, text } from '../layout.js';
 import { mediaVisualSlot, type MediaVisualId } from '../media-visuals/index.js';
 import { bottomSheet, pickerRow, speakerButton } from '../pickers.js';
 import type { PanelActions, PanelData } from '../types.js';
 import {
+  geo,
   mediaPos,
   playerIcon,
   playerStatus,
@@ -59,7 +60,9 @@ export type MediaScreen = Screen & { setVisual(id: MediaVisualId): void };
 
 export function mediaScreen(ctx: ScreenContext, o: MediaOptions = {}): MediaScreen {
   const A = ctx.actions;
-  const D = layout.disc;
+  const G = geo(ctx);
+  const D = G.disc,
+    CW = G.contentW;
   const sheet = bottomSheet({ title: 'speaker' });
   const choose = (mode: 'auto' | 'manual', id?: string) => {
     sheet.close();
@@ -134,7 +137,7 @@ export function mediaScreen(ctx: ScreenContext, o: MediaOptions = {}): MediaScre
   const vc = volumeControl(A);
   const vLab = text('label', 'fs-vol-v', '--');
   const vol = slider({
-    width: CW - 2 * 72 - 2 * 16,
+    width: CW - 2 * G['m-vol-label-w'] - 2 * G.gutter,
     value: 0,
     onSweep: (v) => (vLab.textContent = String(v)),
     onInput: (v) => {
@@ -150,13 +153,13 @@ export function mediaScreen(ctx: ScreenContext, o: MediaOptions = {}): MediaScre
     header({ label: 'Media', onBack: o.onBack, right: [spk], clock: false }),
     content(
       at(0, 0, D, D, d),
-      at(D + 32, 0, CW - D - 32, D, col),
-      at(0, 320, CW, 96, controls),
+      at(D + G['m-gap'], 0, CW - D - G['m-gap'], D, col),
+      at(0, G['m-ctl-y'], CW, G['m-ctl-h'], controls),
       at(
         0,
-        464,
+        G['m-vol-y'],
         CW,
-        48,
+        G['m-vol-h'],
         h('div', { class: 'fs-vol' }, text('label', 'fs-vol-k', 'vol'), vol, vLab),
       ),
     ),

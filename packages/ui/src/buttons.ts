@@ -66,6 +66,14 @@ export interface IconButtonProps {
 }
 
 /** Icon button: Play 96 (orange; active shows pause and a focus ring), Round 80, Square 48. */
+/** The play button's ring, from the size vars so it follows the screen's density. */
+function playRing() {
+  const r = focusRing(ISTYLE.play.ring, ISTYLE.play.radius);
+  r.style.setProperty('--ring-o', 'var(--facet-size-focus-offset-play)');
+  r.style.setProperty('--ring-r', 'calc(var(--facet-size-icon-play) / 2)');
+  return r;
+}
+
 export function iconButton(o: IconButtonProps) {
   const st = ISTYLE[o.style];
   const glyph = o.style === 'play' && o.state === 'active' && o.icon === 'play' ? 'pause' : o.icon;
@@ -77,7 +85,7 @@ export function iconButton(o: IconButtonProps) {
       'aria-label': o.as ? undefined : (o.title ?? o.icon),
     },
     icon(glyph, st.glyph),
-    o.style === 'play' ? focusRing(st.ring, st.radius) : null,
+    o.style === 'play' ? playRing() : null,
   ) as HTMLElement;
   if (o.as) el.dataset.state = o.state ?? 'default';
   else setState(live(el, o.onTap), o.state ?? 'default');

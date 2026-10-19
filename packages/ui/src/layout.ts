@@ -48,7 +48,13 @@ export const content = (...kids: (Node | null)[]) =>
     'div',
     {
       class: 'f-abs f-content f-scroll fs-content',
-      style: { left: `${G.inset}px`, top: `${G.top}px`, width: `${CW}px`, height: `${CH}px` },
+      // from the tokens' CSS vars, so the same screen fits any device (data-facet-device / data-facet-density)
+      style: {
+        left: 'var(--facet-layout-inset)',
+        top: 'var(--facet-layout-top)',
+        width: 'calc(var(--facet-screen-w) - 2 * var(--facet-layout-inset))',
+        height: 'calc(var(--facet-screen-h) - var(--facet-layout-inset) - var(--facet-layout-top))',
+      },
     },
     ...kids,
   );
