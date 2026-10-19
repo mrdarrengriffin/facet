@@ -3,9 +3,9 @@ import { defineConfig } from 'astro/config';
 import { unified } from '@astrojs/markdown-remark';
 import { rehypeBaseLinks } from './src/plugins/rehype-base-links.mjs';
 
-// Served from GitHub Pages under /Facet/ (Pages paths are case-sensitive and follow the repo name). If the site moves to its own domain, change `site`
+// Served from GitHub Pages under /facet/ (Pages paths are case-sensitive and follow the repo name). If the site moves to its own domain, change `site`
 // and set `base` to '/'.
-const base = '/Facet';
+const base = '/facet';
 
 export default defineConfig({
   site: 'https://mrdarrengriffin.github.io',
