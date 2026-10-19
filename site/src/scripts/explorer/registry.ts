@@ -868,7 +868,8 @@ export const entries: Entry[] = [
     id: 'picker-row',
     name: 'Picker row',
     group: 'Pickers',
-    description: 'A 72 px row for choosing one option: icon, name, status and a radio.',
+    description:
+      'A 96 px row for choosing one option, hairline on top: icon, name over a caps status, and a radio.',
     controls: [
       sel('icon', 'Icon', ['speaker', 'speakers', 'tv', 'stream', 'auto'], 'speaker'),
       txt('name', 'Name', 'Kitchen speaker'),
@@ -876,11 +877,11 @@ export const entries: Entry[] = [
       sel('tone', 'Tone', ['dim', 'working']),
       tog('selected', 'Selected', false),
     ],
-    size: [688, 72],
+    size: [656, 96],
     render: (p) =>
       F.h(
         'div',
-        { style: { width: '688px' } },
+        { style: { width: '656px' } },
         F.pickerRow({
           icon: String(p.icon),
           name: String(p.name),
@@ -998,7 +999,7 @@ export const entries: Entry[] = [
       txt('body', 'Body', 'Your 9 min timer has finished.'),
       txt('action', 'Action', ''),
     ],
-    size: [720, 128],
+    size: [720, 152],
     render: (p) => {
       const t = F.toast(
         {
@@ -1011,7 +1012,7 @@ export const entries: Entry[] = [
         { static: true },
       );
       t.style.top = '16px';
-      return framed(720, 128, t);
+      return framed(720, 152, t);
     },
     code: (p) =>
       call('device.toast', {
@@ -1025,7 +1026,7 @@ export const entries: Entry[] = [
       TOASTS.slice(0, 5).map((t) => {
         const el = F.toast(t, { static: true });
         el.style.top = '16px';
-        return { label: t.name, el: framed(720, 128, el) };
+        return { label: t.name, el: framed(720, 152, el) };
       }),
   },
   {

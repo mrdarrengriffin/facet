@@ -1,7 +1,7 @@
 // Pickers: radio, picker row, bottom sheet and the speaker button (the Media screen's speaker picker).
 import { icon } from '@facet/icons';
-import { motion, size as Z } from '@facet/tokens';
-import { fit8, label, live, setState, setText } from './atoms.js';
+import { layout as G, motion, size as Z } from '@facet/tokens';
+import { fit8, live, setState, setText } from './atoms.js';
 import { iconButton } from './buttons.js';
 import { h } from './dom.js';
 import { listRow } from './lists.js';
@@ -21,25 +21,29 @@ export interface PickerRowProps {
   icon: string;
   name: string;
   status: string;
-  /** Colours the icon, e.g. `working` while a speaker plays. */
+  /** Colours the icon and the status, e.g. `working` while a speaker plays. */
   tone?: Tone;
   selected?: boolean;
   onTap?: (e: Event) => void;
 }
 
-/** A 72 px picker row: icon, name over status, and a radio. Selected = orange border. */
+/**
+ * A 96 px picker row, hairline on top (no box): a 32 px icon, the name (screen title, 40 box) over the status (caps
+ * label, 24 box), and a radio. `tone` colours the icon and the status (`working` = playing). Selected = radio on.
+ */
 export function pickerRow(o: PickerRowProps) {
-  const ic = h(
+  const IS = G['sheet-icon'];
+  const ic = h('span', { class: 'f-prow-icon', 'data-tone': o.tone ?? 'dim' }, icon(o.icon, IS));
+  const name = h('span', { class: 'f-prow-name fst-title' }, o.name);
+  const status = h(
     'span',
-    { class: 'f-prow-icon', 'data-tone': o.tone ?? 'dim' },
-    icon(o.icon, Z.icon),
+    { class: 'f-prow-status fst-label', 'data-tone': o.tone ?? 'dim' },
+    o.status,
   );
-  const name = h('span', { class: 'f-prow-name ft-tile' }, o.name);
-  const status = h('span', { class: 'f-prow-status ft-meta' }, o.status);
   const r = radio(!!o.selected);
   const el = listRow({
     cls: 'f-prow',
-    height: Z['sheet-row-h'],
+    height: G['sheet-row-h'],
     onTap: o.onTap,
     kids: [ic, h('span', { class: 'f-prow-text' }, name, status), r],
   });
@@ -48,9 +52,12 @@ export function pickerRow(o: PickerRowProps) {
     set(st: { name?: string; status?: string; tone?: Tone; selected?: boolean; icon?: string }) {
       if (st.name !== undefined) name.textContent = st.name;
       if (st.status !== undefined) status.textContent = st.status;
-      if (st.tone) ic.dataset.tone = st.tone;
+      if (st.tone) {
+        ic.dataset.tone = st.tone;
+        status.dataset.tone = st.tone;
+      }
       if (st.icon && ic.firstElementChild?.getAttribute('data-icon') !== st.icon)
-        ic.replaceChildren(icon(st.icon, Z.icon));
+        ic.replaceChildren(icon(st.icon, IS));
       if (st.selected !== undefined) {
         r.set(st.selected);
         el.dataset.selected = String(st.selected);
@@ -60,14 +67,15 @@ export function pickerRow(o: PickerRowProps) {
 }
 
 /**
- * A bottom sheet over a screen: a scrim (tap to close) and a panel from y 96 to the bottom, with a caps title, a
- * Close button and a scrolling list (`sheet.list`). Opens with a 16 px rise and fade.
+ * A bottom sheet over a screen: a scrim (tap to close) and a panel from y 96 to the bottom (inset 32), with a 48 px
+ * head row (caps label + Close) at y 128, then 16, then a scrolling list (`sheet.list`) from y 192. Opens with a 16 px
+ * rise and fade.
  */
 export function bottomSheet(o: { title: string; onClose?: () => void }) {
   const D = motion.duration,
     ease = motion.easing['ease-out'].css;
   const list = h('div', { class: 'f-bsheet-list f-scroll' });
-  const ttl = fit8(label(o.title, 'caps-sm', 'f-bsheet-title'));
+  const ttl = fit8(h('span', { class: 'fst-label f-bsheet-title' }, o.title));
   const close = iconButton({
     style: 'square',
     icon: 'close',

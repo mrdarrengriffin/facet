@@ -245,12 +245,12 @@ const clock = clockScreen(ctx, {
       'Pull requests that need you, your own open ones, and a QR code to carry on on your phone.',
     intro: [
       'The GitHub screen answers one question: does anything need me? The hero is the count of pull requests waiting on you (review requests and assignments), with the top three below it.',
-      '"All pull requests" opens the full list in two sections, and any row opens the detail view: branch, author, size, chips for review and CI, the first lines of the description, the checks, and a QR code to open it on your phone.',
+      '"All pull requests" opens the full list in two sections, and any row opens the detail view: branch, title, author and size, a status line for review and CI, the first lines of the description, the checks, and a QR code to open it on your phone.',
     ],
     shows: [
       'Summary: the hero, then three hairline rows (repo · number · age, a status on the right, the title) and a "more" row.',
-      'List: Needs you and Your PRs, each with a count badge, as 144 px rows with chips.',
-      'Detail: title, meta, chips, description, QR block and up to 14 checks. Back steps out one level at a time.',
+      'List: Need you and Your PRs, each under a caps section label with its count (a dot when something needs you), as the same 112 px hairline rows.',
+      'Detail: a 400 px left column (repo and branches, a two-line title, author and size, status dots, three lines of description), the QR block on the right, and up to 10 checks in two columns, failing first. Back steps out one level at a time.',
     ],
     usage: `import { githubScreen } from '@facet/ui';
 
@@ -451,7 +451,7 @@ interface PanelData {
       'A thin bar along the bottom shows how long it has left (six seconds by default) and pauses while you press. Tap a toast to dismiss it, or swipe it sideways.',
     ],
     shows: [
-      'Toasts of 688 × 96 entering from the top, under the header (or from the bottom).',
+      'Toasts of 656 × 120 at the screen inset, entering from the top just under the header (or from the bottom).',
       'Use the buttons under the preview to send some.',
     ],
     usage: `import { createDevice } from '@facet/ui';

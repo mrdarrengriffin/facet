@@ -4,7 +4,7 @@
  * The output is meant to be included as an ESPHome package (`packages: { tokens: !include tokens.yaml }`):
  *
  * - `substitutions`: `c_<colour>` (dark) and `cl_<colour>` (light) as `0xRRGGBB`, plus `r_` radius, `w_` stroke,
- *   `z_` size, `s_` space, `d_` duration and `o_` opacity values.
+ *   `z_` size, `s_` space, `l_` screen layout, `d_` duration and `o_` opacity values.
  * - `font`: one entry per firmware font id used by the two type scales (Inter and JetBrains Mono via Google Fonts).
  * - `lvgl.style_definitions`: text styles, buttons (kind × state), icon buttons, card, tile, chip and focus ring.
  *
@@ -12,6 +12,7 @@
  */
 import {
   color,
+  layout,
   motion,
   opacity,
   radius,
@@ -52,6 +53,7 @@ export function toEsphome(options: EsphomeOptions = {}): string {
     ['w', stroke],
     ['z', size],
     ['s', space],
+    ['l', layout],
   ];
   for (const [pre, group] of groups)
     for (const [k, v] of Object.entries(group)) out.push(`  ${pre}_${ident(k)}: ${q(v)}`);

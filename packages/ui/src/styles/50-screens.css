@@ -325,6 +325,113 @@
   color: var(--facet-color-text-mute);
 }
 
+/* ---------- GitHub list + PR detail (screens/github.ts) ---------- */
+/* list: a section label (24) with a dot when it matters, 16, the rows; 48 to the next section */
+.fs-sec {
+  display: flex;
+  align-items: center;
+  gap: var(--facet-space-2);
+  height: 24px;
+  margin-bottom: var(--facet-layout-section-gap);
+  color: var(--facet-color-text-mute);
+}
+.fs-sec.is-accent {
+  color: var(--facet-color-text);
+}
+.fs-sec > .f-dot {
+  display: none;
+}
+.fs-sec.is-accent > .f-dot {
+  display: block;
+}
+.fs-sec + .fs-rows,
+.fs-sec + .fs-empty {
+  margin-bottom: var(--facet-layout-group);
+}
+.fs-empty {
+  height: 32px;
+  color: var(--facet-color-text-dim);
+  white-space: nowrap;
+}
+/* detail: left column pr-col-w, QR block at the right edge, checks 2 x 5 rows of check-row-h */
+.fs-d-meta,
+.fs-d-checks-k {
+  color: var(--facet-color-text-mute);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fs-d-title {
+  max-height: 96px;
+  overflow: hidden;
+  color: var(--facet-color-text);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+} /* 2 lines of the 48 box */
+.fs-d-by {
+  color: var(--facet-color-text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fs-d-status {
+  display: flex;
+  align-items: center;
+  gap: var(--facet-space-7);
+  height: 24px;
+  overflow: hidden;
+}
+.fs-d-body {
+  max-height: 96px;
+  overflow: hidden;
+  color: var(--facet-color-text-dim);
+  white-space: pre-line;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+}
+.fs-d-checks-hd {
+  display: flex;
+  align-items: center;
+  gap: var(--facet-layout-gutter);
+  height: 24px;
+}
+.fs-d-more {
+  flex: none;
+  margin-left: auto;
+  color: var(--facet-color-text-mute);
+}
+.fs-checks {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: var(--facet-layout-gutter);
+}
+.fs-check {
+  display: flex;
+  align-items: center;
+  gap: var(--facet-layout-gutter);
+  height: var(--facet-layout-check-row-h);
+  min-width: 0;
+}
+.fs-check > .fst-body {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--facet-color-text-dim);
+}
+.fs-check[data-tone='error'] > .fst-body {
+  color: var(--facet-color-text);
+}
+.fs-github .f-qr-cap {
+  font: 500 18px/16px var(--facet-font-mono);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+} /* label caps in the QR block's 16 box */
+
 /* ---------- stats / lines ---------- */
 .fs-stat {
   display: flex;

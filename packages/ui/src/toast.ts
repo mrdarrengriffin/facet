@@ -1,6 +1,6 @@
 // Toasts: a message over any screen, and the layer that stacks them.
 import { icon } from '@facet/icons';
-import { frame, motion, screen, size as Z, toast as T } from '@facet/tokens';
+import { layout as G, motion, screen, toast as T } from '@facet/tokens';
 import { live } from './atoms.js';
 import { button } from './buttons.js';
 import { h } from './dom.js';
@@ -22,8 +22,9 @@ export interface ToastData {
 export type DismissReason = 'tap' | 'swipe' | 'timeout' | 'action';
 
 /**
- * A 688 × 96 toast: a 48 px icon in a tone-tinted square, a title and a body line, an optional Secondary action
- * button, and a 2 px timer bar along the bottom that shrinks over the toast's life (paused while pressed).
+ * A 656 × 120 toast (padding 24): a 48 px icon in a tone-tinted square, a title (screen title, 40 box) over a body line
+ * (screen body, 32 box), an optional Secondary action button, and a 2 px timer bar along the bottom that shrinks over
+ * the toast's life (paused while pressed).
  * Tap to dismiss, swipe sideways 64 px to dismiss. `static` = no timer (for documentation).
  */
 export function toast(
@@ -50,8 +51,8 @@ export function toast(
     h(
       'span',
       { class: 'f-toast-text' },
-      h('span', { class: 'f-toast-title ft-tile' }, t.title),
-      h('span', { class: 'f-toast-body ft-meta' }, t.body ?? ''),
+      h('span', { class: 'f-toast-title fst-title' }, t.title),
+      h('span', { class: 'f-toast-body fst-body' }, t.body ?? ''),
     ),
     act,
     bar,
@@ -117,17 +118,18 @@ export function toast(
 
 /**
  * The toast layer: covers the screen (only the toasts take pointer events) and stacks up to `toast.max` (2), newest
- * nearest the edge they enter from. `top` = the first at y 96, under the header; `bottom` = the first ends at y 704.
+ * nearest the edge they enter from, 16 apart. `top` = the first at y 96, just under the header; `bottom` = the
+ * first ends at y 688 (the bottom inset).
  * Toasts slide 16 px in and fade; a third pushes the oldest out.
  */
 export function toastLayer(
   o: { position?: 'top' | 'bottom'; onShow?: (t: ToastData) => void } = {},
 ) {
   const D = motion.duration,
-    TH = Z['toast-h'],
-    GUT = frame.gutter;
-  const top0 = frame.top;
-  const bottom0 = screen.height - frame.inset - TH;
+    TH = G['toast-h'],
+    GUT = G.gutter;
+  const top0 = G['toast-top'];
+  const bottom0 = screen.height - G.inset - TH;
   let pos: 'top' | 'bottom' = o.position ?? T.position;
   const el = h('div', { class: 'f-toasts' });
   const shown: HTMLElement[] = []; // newest first

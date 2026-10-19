@@ -42,6 +42,12 @@ All notable changes to Facet are written down here. The format is loosely based 
   The demo uses the default minute.
 - `createButton` is replaced by `button()` and the rest of the component set.
 - Colour tokens follow the panel names: `line-strong` is now `line-hi`, `info` is now `blue`.
+- GitHub list and PR detail, toasts and the speaker sheet follow the screen layout: the list
+  uses section labels and the same hairline rows as the summary; the detail has a 400 px text
+  column, the QR block on the right and up to 10 checks in two columns; toasts are 656 × 120
+  at the screen inset; picker rows are 96 px hairline rows under a 48 px sheet head. New
+  `layout` tokens (`pr-col-w`, `check-row-h`, `section-gap`, `toast-*`, `sheet-*`); the
+  ESPHome YAML now carries the layout as `l_*` substitutions.
 
 ### Fixed
 
