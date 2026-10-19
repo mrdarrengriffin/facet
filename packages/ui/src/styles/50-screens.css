@@ -551,6 +551,13 @@
   color: var(--facet-color-text-mute);
 }
 
+/* the week view's legend reads like the rate line: body type, 32 high */
+.fs-e-legend > .fch-legend {
+  font: 400 22px/32px var(--facet-font-sans);
+  height: 32px;
+  gap: 32px;
+}
+
 /* ---------- Weather ---------- */
 .fs-w-temp {
   color: var(--facet-color-text);

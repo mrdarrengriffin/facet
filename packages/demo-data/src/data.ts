@@ -16,6 +16,12 @@ import type {
 
 const HOUR = 3600_000;
 const iso = (t: number) => new Date(t).toISOString();
+/** Local `YYYY-MM-DD` of the day `add` days from `t`. */
+const ymd = (t: number, add = 0) => {
+  const d = new Date(t);
+  d.setDate(d.getDate() + add);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
 const startOfDay = (now: number) => {
   const d = new Date(now);
   d.setHours(0, 0, 0, 0);
@@ -225,6 +231,12 @@ export function energy(now: number, watts = 420): EnergyData {
     },
     power: { w: watts },
     yesterday_to_now: Math.round(kwh * 1.12 * 10) / 10,
+    days: Array.from({ length: 14 }, (_, k) => {
+      const i = 13 - k;
+      if (i === 0) return { date: ymd(day0), kwh: Math.round(kwh * 10) / 10, cost };
+      const dk = 15.4 + 3.2 * Math.abs(Math.sin(i * 1.7)) + (i > 7 ? 1.1 : 0); // the week before used a bit more
+      return { date: ymd(day0, -i), kwh: Math.round(dk * 10) / 10, cost: dk * 0.21 + 0.48 };
+    }),
   };
 }
 

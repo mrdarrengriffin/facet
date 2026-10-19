@@ -24,6 +24,9 @@ All notable changes to Facet are written down here. The format is loosely based 
   `motion.transition.rise`; the demo has a switch for it.
 - Home: a Timer card, first in the grid, shown only while a timer is running (time left, a
   ring that empties, the end time). Tap it for the Timer screen.
+- Energy: "Last 7 days" opens a week view: the week's cost as the hero, use per day against
+  the week before, and a pair of bars for each day (tap one to read it). `EnergyData` gains
+  `days` (daily totals, today last).
 - Site: a Sounds page (`/docs/sounds/`) with every sound in every pack playable live.
 - Screen pages: options under each live preview change the mock house's data (playing or
   paused, brightness, timer state, pull requests, price band, weather, storm, agents per mood,

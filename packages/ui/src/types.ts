@@ -159,7 +159,16 @@ export interface EnergyData {
   power?: { w: number | null } | null;
   /** Use by this time yesterday, for the comparison line. */
   yesterday_to_now?: number | null;
+  /** Daily totals, oldest first, today last (partial). 14 days = this week and the week before. */
+  days?: EnergyDay[];
   error?: string;
+}
+
+export interface EnergyDay {
+  /** Local date, `YYYY-MM-DD`. */
+  date: string;
+  kwh: number | null;
+  cost: number | null;
 }
 
 // ---------------------------------------------------------------- GitHub

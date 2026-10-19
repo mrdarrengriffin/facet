@@ -299,10 +299,12 @@ interface GithubData {
     preview: 'energy',
     icon: 'energy',
     title: 'Energy',
-    description: "Today's cost so far, the price band you're in, and today's half-hours by price.",
+    description:
+      "Today's cost so far, the price band you're in, and today's half-hours by price. The last 7 days behind a tap.",
     intro: [
       "The Energy screen leads with what you've spent today and keeps the rest to one line each: how much you've used against this time yesterday, and the current price with when it changes.",
       "One chart shows today's half-hours, coloured by price band (cheap blue, normal grey, peak orange), with a strip of the bands below and an hour axis. Tap a bar to read it.",
+      '"Last 7 days" opens the week: its cost as the hero, use per day against the week before, and a pair of bars for each day (the week before dashed, this week solid, today last). Tap a bar to read that day.',
     ],
     shows: [
       "The label (or the tapped half-hour's reading), the hero in pounds (96 px), the use line and the rate line with a band dot.",
@@ -323,10 +325,12 @@ interface EnergyData {
   rate?: { now: number | null; band: Band | null; until: string | null; next: number | null; next_band: Band | null };
   power?: { w: number | null } | null;
   yesterday_to_now?: number | null;
+  days?: { date: string; kwh: number | null; cost: number | null }[]; // oldest first, today last
   error?: string;
 }`,
     config: [
       "Slots are half-hours from midnight; slots that haven't happened yet have `kwh: null` and draw empty.",
+      '`days` = daily totals for the last 14 days with today last (partial). The week view compares the average per complete day, so gaps and a part-day today stay fair; a week before with missing days says how many it has.',
       'Prices are shown in pounds and pence for now. Band colours always come with a label, never colour alone.',
     ],
   },
