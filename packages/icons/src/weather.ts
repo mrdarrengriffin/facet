@@ -231,7 +231,7 @@ const flake = (x: number, y: number, i: number) =>
 const hailstone = (x: number, y: number, i: number) =>
   s('circle', { class: 'fwx-hail', cx: x, cy: y, r: 2, ...ST('blue'), style: { '--i': i } });
 const bolt = () =>
-  s('polyline', { class: 'fwx-bolt', points: '27,32 22,39.5 26.5,39.5 22.5,46', ...ST('accent') });
+  s('polyline', { class: 'fwx-bolt', points: '27,31 22,37 26,37 22,43', ...ST('accent') });
 const line = (cls: string, x1: number, y: number, x2: number, c: string, i: number) =>
   s('line', { class: cls, x1, y1: y, x2, y2: y, ...ST(c), style: { '--i': i } });
 
@@ -243,17 +243,17 @@ function body(id: WxIcon): SVGElement[] {
     case 'clear-night':
       return [moon(23, 25, 11), star(35, 12, 0), star(39, 21, 1), star(31, 6, 2)];
     case 'partly-day':
-      return [sun(17, 17, 6, 9.5, 13), front(4, 2)];
+      return [sun(17, 17, 6, 9.5, 12), front(3, 2)];
     case 'partly-night':
-      return [moon(16, 16, 7.5), star(32, 8, 0), star(38, 15, 1), front(4, 2)];
+      return [moon(16, 16, 7.5), star(32, 8, 0), star(38, 15, 1), front(3, 2)];
     case 'cloudy':
       return [cloud('fwx-cloud-back', 'text-dim', 7, -7, 0.72), front(-2, 1)];
     case 'fog':
       return [
         cloud('fwx-cloud-back', 'text-dim', 0, -6, 0.9, false),
-        line('fwx-fog', 8, 34, 34, 'text-dim', 0),
-        line('fwx-fog', 14, 39, 40, 'text-dim', 1),
-        line('fwx-fog', 10, 44, 30, 'text-dim', 2),
+        line('fwx-fog', 8, 33, 34, 'text-dim', 0),
+        line('fwx-fog', 14, 38, 40, 'text-dim', 1),
+        line('fwx-fog', 10, 43, 30, 'text-dim', 2),
       ];
     case 'rain-light':
       return [front(0, -5), drop(18, 34, 0), drop(26, 36, 1), drop(34, 34, 2)];
@@ -267,24 +267,24 @@ function body(id: WxIcon): SVGElement[] {
         drop(38, 33, 4, 8),
       ];
     case 'showers-day':
-      return [sun(15, 14, 5, 8, 11), front(4, -3), drop(22, 36, 0), drop(31, 36, 1)];
+      return [sun(15, 15, 5, 7.5, 10), front(3, -3), drop(22, 36, 0), drop(31, 36, 1)];
     case 'showers-night':
-      return [moon(14, 13, 6.5), front(4, -3), drop(22, 36, 0), drop(31, 36, 1)];
+      return [moon(14, 13, 6.5), front(3, -3), drop(22, 36, 0), drop(31, 36, 1)];
     case 'snow':
       return [
         front(0, -5),
         flake(17, 36, 0),
         flake(25, 39, 1),
         flake(33, 36, 2),
-        flake(21, 44, 3),
-        flake(30, 44, 4),
+        flake(21, 42, 3),
+        flake(30, 42, 4),
       ];
     case 'sleet':
-      return [front(0, -5), drop(17, 34, 0), flake(25, 38, 1), drop(33, 34, 2), flake(29, 44, 3)];
+      return [front(0, -5), drop(17, 34, 0), flake(25, 38, 1), drop(33, 34, 2), flake(29, 42, 3)];
     case 'thunder':
       return [front(0, -6), bolt()];
     case 'thunder-rain':
-      return [front(0, -6), bolt(), drop(15, 33, 0), drop(35, 33, 1), drop(32, 40, 2)];
+      return [front(0, -6), bolt(), drop(15, 33, 0), drop(35, 33, 1), drop(32, 38, 2)];
     case 'hail':
       return [front(0, -5), hailstone(17, 37, 0), hailstone(25, 41, 1), hailstone(33, 37, 2)];
     case 'wind':

@@ -42,6 +42,7 @@ const explore: NavGroup = {
     { label: 'Components', href: url('/components/') },
     { label: 'Demo', href: url('/demo/') },
     { label: 'Design system', href: url('/design-system/') },
+    { label: 'Icons', href: url('/design-system/icons/') },
     { label: 'Install', href: url('/install/'), badge: 'Soon' },
   ],
 };

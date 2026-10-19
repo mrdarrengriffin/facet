@@ -1,0 +1,392 @@
+---
+import Base from '../../layouts/Base.astro';
+import '@facet/ui/styles.css';
+import { glyphs, OPTICAL_STROKE, screenIconNames, screenIconSvg, WX_ICONS } from '@facet/icons';
+import manifest from '@facet/icons/manifest.json';
+import { url } from '../../lib/nav';
+
+const KEYLINES: Record<string, [number, number]> = {
+  circle: [20, 20],
+  square: [18, 18],
+  portrait: [16, 20],
+  landscape: [20, 16],
+  glyph: [16, 16],
+};
+const keylineNote: Record<string, string> = {
+  circle: 'Ø 20: round things (power, done, the vacuum).',
+  square: '18 × 18: square things and every screen icon.',
+  portrait: '16 × 20: tall things (speaker, washer, bulb, bolt).',
+  landscape: '20 × 16: wide things (tv, volume, the eye).',
+  glyph:
+    '16 × 16: marks, not objects (arrows, chevrons, close, plus, minus, check, media transport).',
+};
+
+/** The grid underlay (live area, unit grid, centre lines) and the keyline on top, as SVG strings on the 24 grid. */
+const under = () => {
+  let d = '';
+  for (let i = 1; i < 24; i++) d += `M${i} 0V24M0 ${i}H24`;
+  return `<path class="ig-pad" fill-rule="evenodd" d="M0 0H24V24H0Z M2 2V22H22V2Z"/><path class="ig-grid" d="${d}"/><path class="ig-axis" d="M12 0V24M0 12H24M0 0L24 24M24 0L0 24"/>`;
+};
+const keyline = (k: string) => {
+  const [w, h] = KEYLINES[k] ?? KEYLINES.square;
+  return k === 'circle'
+    ? `<circle class="ig-kl" cx="12" cy="12" r="10"/>`
+    : `<rect class="ig-kl" x="${12 - w / 2}" y="${12 - h / 2}" width="${w}" height="${h}" rx="1"/>`;
+};
+const uiIcons = manifest.icons
+  .filter((i) => i.grid === 24 && !i.name.startsWith('screen-'))
+  .map((i) => ({ ...i, glyph: glyphs[i.name as keyof typeof glyphs] }))
+  .filter((i) => i.glyph);
+const keylineOf = (name: string) =>
+  manifest.icons.find((i) => i.name === `screen-${name}`)?.keyline ?? 'square';
+const glyphSvg = (g: { d: string; stroke: boolean }, size = 24, sw = 2) =>
+  g.stroke
+    ? `<path d="${g.d}" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round"/>`
+    : `<path d="${g.d}" fill="currentColor"/>`;
+const sizes = OPTICAL_STROKE.map(([px, stroke]) => ({ px, stroke, units: (stroke * 24) / px }));
+const sizeDemo = ['speaker', 'timer', 'done', 'back', 'play'] as const;
+---
+
+<Base
+  title="Icons"
+  description="The rules behind Facet's icons: grid, keylines, stroke, corners, optical sizes, accent, naming and export."
+>
+  <main id="main" class="page page--wide ds ig">
+    <header class="ds__intro">
+      <p class="facet-label"><a href={url('/design-system/')}>Design system</a></p>
+      <h1>Icons</h1>
+      <p class="lede">
+        Three sets, one set of rules: {uiIcons.length} UI icons, {screenIconNames.length} screen icons
+        and {WX_ICONS.length} weather icons. Every icon on this page is drawn over its grid, so you can
+        see where it sits.
+      </p>
+    </header>
+
+    <section class="ds__section" aria-labelledby="grid">
+      <h2 id="grid">Grid and live area</h2>
+      <p>
+        Icons are drawn on a <b>24 × 24</b> grid, where one unit is one pixel at 24 px. The <b
+          >live area</b
+        > is the middle 20 × 20: 2 units of padding all round (red), measured to the outer edge of the
+        stroke. Nothing crosses it. Weather icons use a <b>48 × 48</b> grid with the same rules doubled
+        (padding 4, live area 40).
+      </p>
+    </section>
+
+    <section class="ds__section" aria-labelledby="keylines">
+      <h2 id="keylines">Keylines</h2>
+      <p>
+        Every icon is drawn to one of five keylines (blue), named in its SVG as <code
+          >data-keyline</code
+        >. A shape reaches its keyline on at least one axis (±1) and never passes it by more than 2
+        (a stand, a crown). Marks sit inside the 16 × 16 glyph box with their long side between 14
+        and 16. Icons are centred, unless the shape has an optical centre (the play triangle sits
+        1.5 to the right).
+      </p>
+      <div class="ig-keylines">
+        {
+          Object.keys(KEYLINES).map((k) => (
+            <figure class="ig-cell">
+              <svg
+                class="ig-box"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+                set:html={under() + keyline(k)}
+              />
+              <figcaption>
+                <code>{k}</code>
+                <span>{keylineNote[k]}</span>
+              </figcaption>
+            </figure>
+          ))
+        }
+      </div>
+    </section>
+
+    <section class="ds__section" aria-labelledby="stroke">
+      <h2 id="stroke">Stroke, corners and fill</h2>
+      <ul class="ig-rules">
+        <li>
+          <b>Stroke 2</b>, round caps and round joins, in <code>currentColor</code> so an icon takes the
+          colour of the text around it.
+        </li>
+        <li>
+          <b>Whole units for straight lines.</b> A horizontal or vertical stroke sits on a whole number
+          (never x.5), so its 2 px land on two whole pixels at 24 and stay sharp.
+        </li>
+        <li>
+          <b>Corners:</b> radius 2 on the path by default (an outer radius of 3), 1 for shapes under 10
+          units, 4 for a shape that is meant to look soft. Sharp only where the point is the meaning:
+          arrows, play, the bolt.
+        </li>
+        <li>
+          <b>Stroke, not fill.</b> Only media transport (play, pause, next, previous) is filled, plus
+          dots. A dot in a UI icon is a zero-length stroke (Ø 2); in a screen icon a filled circle of
+          r 1.5 (a detail inside a shape) or r 2 (a knob or an end point).
+        </li>
+        <li>
+          <b>One dim level:</b> opacity 0.4 for a secondary part, like the toast behind the toast or the
+          outer ring of the radar.
+        </li>
+      </ul>
+    </section>
+
+    <section class="ds__section" aria-labelledby="sizes">
+      <h2 id="sizes">Optical sizes</h2>
+      <p>
+        Each icon has one master, drawn for 24 px. Scaled up as it is, the stroke would get heavy at
+        48 and thin at 16, so the stroke follows its own table instead. <code>icon(name, size)</code
+        > applies it, using <code>opticalStroke(size)</code> (linear in between); the firmware's images
+        are rendered the same way. Weather icons keep a 2 px stroke up to 72 px and use 3 px from 96.
+      </p>
+      <div class="ig-sizes">
+        {
+          sizes.map((s) => (
+            <div class="ig-size">
+              <div class="ig-size__icons">
+                {sizeDemo.map((n) => (
+                  <svg
+                    viewBox="0 0 24 24"
+                    width={s.px}
+                    height={s.px}
+                    aria-hidden="true"
+                    set:html={glyphSvg(glyphs[n], s.px, s.units)}
+                  />
+                ))}
+              </div>
+              <code>{s.px} px</code>
+              <span>stroke {s.stroke} px</span>
+            </div>
+          ))
+        }
+      </div>
+    </section>
+
+    <section class="ds__section" aria-labelledby="accent">
+      <h2 id="accent">Colour and the accent</h2>
+      <ul class="ig-rules">
+        <li>
+          <b>UI icons are one colour.</b> No accent: they are recoloured wherever they are used (and on
+          a panel, at runtime).
+        </li>
+        <li>
+          <b>Screen icons have exactly one accent part</b> (at most two elements, like an arc and its
+          knob): the thing that screen is about. Everything else is <code>currentColor</code>.
+        </li>
+        <li>
+          <b>Weather:</b> accent for the sun, the bolt and warnings, blue for water, the dim text colour
+          for the cloud behind and for fog, the text colour for the cloud in front.
+        </li>
+      </ul>
+    </section>
+
+    <section class="ds__section" aria-labelledby="naming">
+      <h2 id="naming">Naming</h2>
+      <p>
+        Kebab-case. Things are nouns (<code>speaker</code>, <code>washer</code>), actions are verbs
+        (<code>play</code>,
+        <code>close</code>), a direction is a suffix (<code>chevron-down</code>). Screen icons are
+        named after their screen (<code>screen-weather</code> in the manifest, <code
+          >screenIcon('weather')</code
+        > in code). Weather icons are named by condition, with <code>-day</code> or <code
+          >-night</code
+        > when it matters (<code>partly-night</code>).
+      </p>
+    </section>
+
+    <section class="ds__section" aria-labelledby="export">
+      <h2 id="export">Export</h2>
+      <ul class="ig-rules">
+        <li>
+          <b>Masters:</b> one SVG per icon in <code>packages/icons/svg/</code> (screen icons in <code
+            >svg/screens/</code
+          >). <code>pnpm build</code> turns them into <code>glyphs.ts</code> and <code
+            >screen-glyphs.ts</code
+          >, which
+          <code>icon()</code> and <code>screenIcon()</code> render inline.
+        </li>
+        <li>
+          <b>Weather</b> icons are drawn in code (<code>weatherIcon()</code>) so their parts can
+          move; <code>svg/weather/</code> holds static masters.
+        </li>
+        <li>
+          <b>Firmware:</b> each UI icon becomes a white alpha-mask image at every size the manifest lists,
+          recoloured on the panel. A screen icon becomes two masks (base and accent). Weather icons are
+          drawn as layers so they can still animate.
+        </li>
+      </ul>
+    </section>
+
+    <section class="ds__section" aria-labelledby="all">
+      <h2 id="all">Every icon</h2>
+      <p>Each icon over the live area, the unit grid and its keyline.</p>
+      <h3>UI icons</h3>
+      <div class="ig-all">
+        {
+          uiIcons.map((i) => (
+            <figure class="ig-cell">
+              <svg
+                class="ig-box"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+                set:html={under() + glyphSvg(i.glyph) + keyline(i.keyline)}
+              />
+              <figcaption>
+                <code>{i.name}</code>
+                <span>{i.keyline}</span>
+              </figcaption>
+            </figure>
+          ))
+        }
+      </div>
+      <h3>Screen icons</h3>
+      <div class="ig-all">
+        {
+          screenIconNames.map((n) => (
+            <figure class="ig-cell">
+              <svg
+                class="ig-box"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+                set:html={
+                  under() +
+                  screenIconSvg(n, 24)
+                    .replace(/^<svg[^>]*>/, '')
+                    .replace(/<\/svg>$/, '') +
+                  keyline(keylineOf(n))
+                }
+              />
+              <figcaption>
+                <code>{n}</code>
+                <span>{keylineOf(n)}</span>
+              </figcaption>
+            </figure>
+          ))
+        }
+      </div>
+      <h3>Weather icons</h3>
+      <div class="ig-all">
+        {
+          WX_ICONS.map((id) => (
+            <figure class="ig-cell">
+              <div class="ig-wx" data-wx={id}>
+                <svg
+                  class="ig-box"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                  set:html={under() + keyline('circle')}
+                />
+              </div>
+              <figcaption>
+                <code>{id}</code>
+                <span>48 grid</span>
+              </figcaption>
+            </figure>
+          ))
+        }
+      </div>
+    </section>
+  </main>
+</Base>
+
+<script>
+  import { weatherIcon, type WxIcon } from '@facet/icons';
+  import '@facet/icons/weather.css';
+  document.querySelectorAll<HTMLElement>('.ig-wx').forEach((el) => {
+    const ic = weatherIcon(el.dataset.wx as WxIcon, { size: 48, stroke: 6 });
+    ic.classList.add('ig-wxicon');
+    el.append(ic);
+  });
+</script>
+
+<style>
+  .ig-rules {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 72ch;
+    padding-left: 20px;
+  }
+  .ig-keylines,
+  .ig-all {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(144px, 1fr));
+    gap: 20px;
+  }
+  .ig-cell {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .ig-cell figcaption {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 13px;
+    color: var(--facet-color-text-dim);
+  }
+  .ig-cell figcaption code {
+    color: var(--facet-color-text);
+  }
+  .ig-box,
+  .ig-wx {
+    width: 144px;
+    height: 144px;
+    border-radius: 12px;
+    background: var(--facet-color-surface);
+    color: var(--facet-color-text);
+  }
+  .ig-wx {
+    position: relative;
+    --wx-mask: var(--facet-color-surface);
+  }
+  .ig-wx :global(svg) {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+  .ig-box :global(.ig-pad) {
+    fill: #ff3b30;
+    fill-opacity: 0.1;
+  }
+  .ig-box :global(.ig-grid) {
+    fill: none;
+    stroke: var(--facet-color-line);
+    stroke-width: 0.04;
+  }
+  .ig-box :global(.ig-axis) {
+    fill: none;
+    stroke: var(--facet-color-line-hi);
+    stroke-width: 0.04;
+    stroke-dasharray: 0.3 0.3;
+  }
+  .ig-box :global(.ig-kl) {
+    fill: none;
+    stroke: #3fb8ff;
+    stroke-width: 0.12;
+    stroke-opacity: 0.85;
+  }
+  .ig-sizes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+  }
+  .ig-size {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 16px;
+    border-radius: 12px;
+    background: var(--facet-color-surface);
+    color: var(--facet-color-text);
+    font-size: 13px;
+  }
+  .ig-size__icons {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 48px;
+  }
+</style>

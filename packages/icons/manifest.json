@@ -9,8 +9,16 @@
         "circle": "r 10",
         "square": "18",
         "portrait": "16x20",
-        "landscape": "20x16"
-      }
+        "landscape": "20x16",
+        "glyph": "16 (marks: arrows, chevrons, close/plus/minus/check, media transport)"
+      },
+      "optical_stroke_px": {
+        "16": 1.5,
+        "24": 2,
+        "32": 2.5,
+        "48": 3
+      },
+      "rules": "Facet icon rules: packages/icons/README.md (Facet) / apps/hub/src/panel/README.md \"Icons\" (lab)"
     },
     "weather": {
       "size": 48,
@@ -23,7 +31,7 @@
       "file": "svg/back.svg",
       "group": "navigation",
       "grid": 24,
-      "keyline": "landscape",
+      "keyline": "glyph",
       "sizes_used": [32],
       "where": "back button (glyph-square)"
     },
@@ -32,7 +40,7 @@
       "file": "svg/chevron.svg",
       "group": "navigation",
       "grid": 24,
-      "keyline": "portrait",
+      "keyline": "glyph",
       "sizes_used": [24],
       "where": "rows and \"more\" rows"
     },
@@ -41,7 +49,7 @@
       "file": "svg/chevron-down.svg",
       "group": "navigation",
       "grid": 24,
-      "keyline": "landscape",
+      "keyline": "glyph",
       "sizes_used": [16],
       "where": "speaker button"
     },
@@ -50,7 +58,7 @@
       "file": "svg/close.svg",
       "group": "navigation",
       "grid": 24,
-      "keyline": "square",
+      "keyline": "glyph",
       "sizes_used": [32],
       "where": "bottom sheet close button"
     },
@@ -59,7 +67,7 @@
       "file": "svg/plus.svg",
       "group": "navigation",
       "grid": 24,
-      "keyline": "square",
+      "keyline": "glyph",
       "sizes_used": [32],
       "where": "icon buttons"
     },
@@ -68,7 +76,7 @@
       "file": "svg/minus.svg",
       "group": "navigation",
       "grid": 24,
-      "keyline": "square",
+      "keyline": "glyph",
       "sizes_used": [],
       "where": "component library"
     },
@@ -77,7 +85,7 @@
       "file": "svg/check.svg",
       "group": "navigation",
       "grid": 24,
-      "keyline": "square",
+      "keyline": "glyph",
       "sizes_used": [32],
       "where": "toast"
     },
@@ -86,7 +94,7 @@
       "file": "svg/play.svg",
       "group": "media",
       "grid": 24,
-      "keyline": "portrait",
+      "keyline": "glyph",
       "sizes_used": [48, 32],
       "where": "play button (glyph-play) · toast"
     },
@@ -95,7 +103,7 @@
       "file": "svg/pause.svg",
       "group": "media",
       "grid": 24,
-      "keyline": "portrait",
+      "keyline": "glyph",
       "sizes_used": [48],
       "where": "play button active"
     },
@@ -104,7 +112,7 @@
       "file": "svg/next.svg",
       "group": "media",
       "grid": 24,
-      "keyline": "landscape",
+      "keyline": "glyph",
       "sizes_used": [32],
       "where": "round icon button (glyph-round)"
     },
@@ -113,7 +121,7 @@
       "file": "svg/prev.svg",
       "group": "media",
       "grid": 24,
-      "keyline": "landscape",
+      "keyline": "glyph",
       "sizes_used": [32],
       "where": "round icon button"
     },
@@ -194,7 +202,7 @@
       "file": "svg/timer.svg",
       "group": "status",
       "grid": 24,
-      "keyline": "circle",
+      "keyline": "portrait",
       "sizes_used": [32],
       "where": ""
     },
