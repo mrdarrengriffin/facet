@@ -2,7 +2,7 @@
 
 Wall panel UI for Home Assistant. One design system that runs on ESP32 touch panels (ESPHome + LVGL) and in the browser on a Pi or tablet.
 
-**Docs and design system:** https://mrdarrengriffin.github.io/facet/
+**Docs and design system:** https://mrdarrengriffin.github.io/Facet/
 
 > **Status: early, work in progress.** This is the first skeleton of the project. The design
 > tokens here are a small starter set, the component library has one example component, and
@@ -42,7 +42,7 @@ You'll need Node 22 or newer and [pnpm](https://pnpm.io/).
 
 ```sh
 pnpm install
-pnpm dev         # docs site on http://localhost:4321/facet/
+pnpm dev         # docs site on http://localhost:4321/Facet/
 pnpm build       # build every package and the site
 pnpm typecheck   # type-check every package
 pnpm lint        # check formatting
@@ -58,7 +58,7 @@ Facet is a single version for now (`0.1.0`) with a hand-written [CHANGELOG](CHAN
 
 ## Site
 
-The site is deployed to GitHub Pages from `main` and served under `/facet/`. It may move to its
+The site is deployed to GitHub Pages from `main` and served under `/Facet/` (GitHub Pages paths follow the repository name, capital F included). It may move to its
 own domain later, at which point the Astro `site` and `base` settings in `site/astro.config.mjs`
 will change.
 

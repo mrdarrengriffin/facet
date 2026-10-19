@@ -36,7 +36,7 @@ pnpm install
 pnpm dev
 ```
 
-That builds the packages and starts this docs site at `http://localhost:4321/facet/`.
+That builds the packages and starts this docs site at `http://localhost:4321/Facet/`.
 
 Other commands, run from the repository root:
 
