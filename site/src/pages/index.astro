@@ -1,67 +1,363 @@
 ---
+import '@facet/icons/weather.css';
+import '@facet/ui/styles.css';
+import { screenIconSvg } from '@facet/icons';
 import Base from '../layouts/Base.astro';
-import Logo from '../components/Logo.astro';
-import { url } from '../lib/nav';
+import { screenHref, url } from '../lib/nav';
+import { screenDocs } from '../lib/screens';
 
 const description =
-  'Wall panel UI for Home Assistant. One design system that runs on ESP32 touch panels (ESPHome + LVGL) and in the browser on a Pi or tablet.';
+  'Wall panel UI for Home Assistant. One design system for ESP32 touch panels (ESPHome and LVGL) and for a browser on a Pi or tablet.';
 
-const features = [
+// the toast layer isn't a screen of its own: leave it out of the strip
+const screens = screenDocs.filter((s) => s.preview !== 'toasts');
+
+const parts = [
   {
-    label: 'Context',
-    title: 'A screen for every room',
-    text: "Each panel shows what matters in its room right now: the music that's playing, a kitchen timer, the washing machine, the next thing in the calendar.",
+    title: 'Design tokens',
+    text: 'Colour, type, layout, motion and sound as named values in one file, built for CSS and for ESPHome.',
+    href: url('/design-system/'),
+    link: 'See the tokens',
   },
   {
-    label: 'Glanceable',
-    title: 'Readable from across the room',
-    text: 'Big touch targets, one action per card, and nothing to configure on the device itself.',
+    title: 'Components',
+    text: 'Buttons, dials, cards, charts, clocks and the rest, each one live with its props and code.',
+    href: url('/components/'),
+    link: 'Open the explorer',
   },
   {
-    label: 'One system',
-    title: 'ESP32 panels and browsers',
-    text: 'The same tokens and components on an ESPHome panel and on a Pi or tablet, so every screen in the house feels the same.',
+    title: 'Sounds',
+    text: 'Ten short UI sounds in six packs, made with Web Audio and rendered for the panels.',
+    href: url('/docs/sounds/'),
+    link: 'Listen to them',
   },
   {
-    label: 'Open source',
-    title: 'MIT licensed',
-    text: 'Built in the open. Ideas, issues and feedback are welcome on GitHub.',
+    title: 'Firmware',
+    text: 'ESPHome and LVGL builds for ESP32 panels, starting with a 4-inch square wall panel.',
+    href: url('/docs/concepts/firmware/'),
+    link: 'Read the plan',
+    soon: true,
   },
 ];
 ---
 
 <Base title="Facet" description={description}>
-  <main id="main" class="home">
-    <section class="hero">
-      <div class="hero__mark"><Logo size={96} /></div>
-      <p class="facet-label">Early preview · v0.1.0</p>
-      <h1 class="hero__title">Facet</h1>
-      <p class="hero__lede">{description}</p>
-      <div class="hero__actions">
-        <a class="button button--primary" href={url('/docs/getting-started/')}>Getting started</a>
-        <a class="button button--secondary" href={url('/demo/')}>Try the demo</a>
-        <a class="button button--secondary" href={url('/components/')}>Components</a>
+  <main id="main" class="landing">
+    <section class="landing__hero">
+      <div class="landing__intro">
+        <h1 class="landing__title">Facet</h1>
+        <p class="landing__lede">{description}</p>
+        <div class="landing__actions">
+          <a class="button button--primary" href={url('/demo/')}>Try the demo</a>
+          <a class="button button--secondary" href={url('/components/')}>Browse components</a>
+        </div>
+        <p class="landing__docs">
+          New here? Start with <a href={url('/docs/getting-started/')}>Getting started</a>.
+        </p>
       </div>
+
+      <figure class="landing__device" data-hero>
+        <div class="landing__bezel">
+          <div class="landing__viewport" data-viewport>
+            <div class="landing__frame" data-frame aria-label="A Facet panel, live"></div>
+          </div>
+        </div>
+        <figcaption>Live, on a made-up house. Tap around.</figcaption>
+      </figure>
     </section>
 
-    <section class="callout callout--warn" aria-label="Project status">
+    <section class="callout callout--warn landing__status" aria-label="Project status">
       <span class="dot" aria-hidden="true"></span>
       <p>
-        <strong>Work in progress.</strong> The design system, components and screens are here to try in
-        the browser. There's no firmware or Home Assistant adapter to install yet.
+        <strong>Early days.</strong> The design system, components and screens work in the browser. Firmware
+        and the Home Assistant adapter are still to come; the{' '}
+        <a href={url('/docs/roadmap/')}>roadmap</a> has the detail.
       </p>
     </section>
 
-    <section class="features">
-      {
-        features.map((feature) => (
-          <article class="feature">
-            <p class="facet-label">{feature.label}</p>
-            <h2>{feature.title}</h2>
-            <p>{feature.text}</p>
-          </article>
-        ))
-      }
+    <section class="landing__section" aria-labelledby="screens-title">
+      <div class="landing__head">
+        <h2 id="screens-title">Screens</h2>
+        <p>One job per screen. Each has a page with a live preview you can play with.</p>
+      </div>
+      <ul class="shots">
+        {
+          screens.map((s) => (
+            <li>
+              <a class="shot" href={screenHref(s.slug)}>
+                <span class="shot__viewport" data-shot={s.preview}>
+                  <span class="shot__frame" data-frame inert />
+                </span>
+                <span class="shot__name">
+                  <span class="shot__icon" set:html={screenIconSvg(s.icon, 16)} />
+                  {s.title}
+                </span>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+
+    <section class="landing__section" aria-labelledby="parts-title">
+      <div class="landing__head">
+        <h2 id="parts-title">What's in it</h2>
+      </div>
+      <ul class="parts">
+        {
+          parts.map((p) => (
+            <li class="part">
+              <h3>
+                {p.title}
+                {p.soon && <span class="badge">Soon</span>}
+              </h3>
+              <p>{p.text}</p>
+              <a href={p.href}>{p.link}</a>
+            </li>
+          ))
+        }
+      </ul>
     </section>
   </main>
 </Base>
+
+<style>
+  .landing {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 0 24px 96px;
+  }
+
+  /* hero: text on the left, the device on the right; stacked on narrow screens */
+  .landing__hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 480px);
+    gap: 64px;
+    align-items: center;
+    padding: 80px 0 64px;
+  }
+  .landing__title {
+    margin: 0 0 16px;
+    font-size: clamp(56px, 9vw, 96px);
+    font-weight: 300;
+    line-height: 1;
+    letter-spacing: -0.04em;
+  }
+  .landing__lede {
+    max-width: 520px;
+    margin: 0;
+    color: var(--facet-color-text-dim);
+    font-size: clamp(18px, 2.2vw, 20px);
+    line-height: 1.5;
+  }
+  .landing__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 40px;
+  }
+  .landing__docs {
+    margin: 24px 0 0;
+    color: var(--facet-color-text-mute);
+    font-size: 15px;
+  }
+
+  .landing__device {
+    margin: 0;
+  }
+  .landing__bezel {
+    padding: 16px;
+    border: 1px solid var(--facet-color-line);
+    border-radius: 32px;
+    background: var(--facet-color-surface);
+  }
+  .landing__viewport {
+    position: relative;
+    overflow: hidden;
+    border-radius: 16px;
+    background: var(--facet-color-bg);
+  }
+  .landing__frame {
+    width: 720px;
+    height: 720px;
+  }
+  .landing__frame :global(.f-screen) {
+    margin: 0;
+  }
+  .landing__device figcaption {
+    margin-top: 16px;
+    color: var(--facet-color-text-mute);
+    font-size: 14px;
+    text-align: center;
+  }
+
+  .landing__status {
+    max-width: 720px;
+  }
+
+  .landing__section {
+    margin-top: 96px;
+  }
+  .landing__head {
+    margin-bottom: 32px;
+  }
+  .landing__head h2 {
+    margin: 0;
+    font-size: 32px;
+    font-weight: 400;
+    letter-spacing: -0.02em;
+  }
+  .landing__head p {
+    margin: 8px 0 0;
+    color: var(--facet-color-text-dim);
+  }
+
+  /* screens: small live previews, five across */
+  .shots {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 32px 24px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .shot {
+    display: block;
+    color: var(--facet-color-text-dim);
+    text-decoration: none;
+  }
+  .shot__viewport {
+    position: relative;
+    display: block;
+    width: 100%;
+    overflow: hidden;
+    aspect-ratio: 1;
+    border: 1px solid var(--facet-color-line);
+    border-radius: 16px;
+    background: var(--facet-color-bg);
+    transition: border-color var(--facet-duration-fade) var(--facet-easing-ease-out);
+  }
+  .shot__frame {
+    display: block;
+    width: 720px;
+    height: 720px;
+    pointer-events: none;
+  }
+  .shot__frame :global(.f-screen) {
+    margin: 0;
+  }
+  .shot__name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    font-size: 15px;
+  }
+  .shot__icon {
+    display: inline-flex;
+    color: var(--facet-color-text-mute);
+  }
+  .shot:hover .shot__viewport {
+    border-color: var(--facet-color-line-hi);
+  }
+  .shot:hover .shot__name {
+    color: var(--facet-color-text);
+  }
+
+  /* what's in it: plain rows, no cards */
+  .parts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 48px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .part {
+    padding: 24px 0 32px;
+    border-top: 1px solid var(--facet-color-line);
+  }
+  .part h3 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 8px;
+    font-size: 20px;
+    font-weight: 500;
+  }
+  .part h3 .badge {
+    margin-left: 0;
+  }
+  .part p {
+    margin: 0 0 12px;
+    color: var(--facet-color-text-dim);
+  }
+
+  @media (max-width: 960px) {
+    .landing__hero {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 48px;
+      padding-top: 56px;
+    }
+    .landing__device {
+      max-width: 480px;
+    }
+    .shots {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+  @media (max-width: 640px) {
+    .landing {
+      padding: 0 var(--gutter) 64px;
+    }
+    .landing__bezel {
+      padding: 8px;
+      border-radius: 24px;
+    }
+    .landing__section {
+      margin-top: 64px;
+    }
+    .shots {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 24px 16px;
+    }
+    .parts {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .shot__viewport {
+      transition: none;
+    }
+  }
+</style>
+
+<script>
+  import { createMockHouse } from '@facet/demo-data';
+  import { createDevice, mountScreen, type ScreenId } from '@facet/ui';
+  import { fitFrame } from '../scripts/facet-runtime';
+
+  // the hero: the whole panel, with navigation; no idle clock, so it stays where the visitor left it
+  const hero = document.querySelector<HTMLElement>('[data-hero]')!;
+  const device = createDevice(createMockHouse(), { idleAfter: 0 });
+  const frame = hero.querySelector<HTMLElement>('[data-frame]')!;
+  frame.append(device.el);
+  fitFrame(hero.querySelector<HTMLElement>('[data-viewport]')!, frame);
+
+  // the strip: one shared house, each screen mounted when it scrolls into view
+  const house = createMockHouse();
+  const seen = new IntersectionObserver(
+    (entries) => {
+      for (const e of entries) {
+        if (!e.isIntersecting) continue;
+        const vp = e.target as HTMLElement;
+        seen.unobserve(vp);
+        const f = vp.querySelector<HTMLElement>('[data-frame]')!;
+        f.append(mountScreen(vp.dataset.shot as ScreenId, house).el);
+        fitFrame(vp, f);
+      }
+    },
+    { rootMargin: '200px' },
+  );
+  for (const vp of document.querySelectorAll<HTMLElement>('[data-shot]')) seen.observe(vp);
+</script>
