@@ -12,6 +12,12 @@ Wall panel UI for Home Assistant. One design system that runs on ESP32 touch pan
 
 **Docs and design system:** https://mrdarrengriffin.github.io/facet/
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset=".github/assets/screens-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset=".github/assets/screens-light.png">
+  <img alt="The Facet screens with demo data: Home, Agents, Media, Light, Clock, GitHub, Energy, Weather, Lightning and Timer" src=".github/assets/screens-light.png">
+</picture>
+
 > **Status: early, work in progress.** The design tokens, icons, components, screens and UI
 > sounds are in place and you can try them all in the browser: the
 > [demo](https://mrdarrengriffin.github.io/facet/demo/) runs a whole panel on a mock house and
