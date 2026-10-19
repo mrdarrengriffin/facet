@@ -44,7 +44,10 @@ Ticked items are done, the ones with an orange dot are in progress.
 
 ## Boards
 
-- [~] Waveshare ESP32-P4 86 panel (4", 720 × 720)
+The first target is the Waveshare panel; the Guition one comes second.
+
+- [~] **First:** Waveshare ESP32-P4 86 panel (4", 720 × 720)
+- [ ] **Second:** Guition 4" panel (480 × 480), which needs the smaller size class
 - [ ] A full-screen web build for a Pi or tablet
 - [ ] More panels and sizes
 
