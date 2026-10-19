@@ -334,20 +334,20 @@
 }
 
 /* ---------- Media ---------- */
-.fs-fm-col {
+.fs-m-col {
   display: flex !important;
   flex-direction: column;
   gap: var(--facet-space-2);
   height: 100%;
   padding-top: 64px;
 } /* 64 + 24 + 8 + 48 + 8 + 32 = the disc's middle */
-.fs-fm-state {
+.fs-m-state {
   color: var(--facet-color-text-mute);
 }
-.fs-fm-state[data-tone='working'] {
+.fs-m-state[data-tone='working'] {
   color: var(--facet-color-accent-text);
 }
-.fs-fm-title {
+.fs-m-title {
   color: var(--facet-color-text);
   max-height: 96px;
   overflow: hidden;
@@ -356,13 +356,13 @@
   -webkit-line-clamp: 2;
   line-clamp: 2;
 }
-.fs-fm-artist {
+.fs-m-artist {
   color: var(--facet-color-text-dim);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.fs-fm-ctl {
+.fs-m-ctl {
   display: flex !important;
   align-items: center;
   justify-content: center;
