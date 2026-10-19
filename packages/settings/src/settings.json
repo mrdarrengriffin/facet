@@ -1,0 +1,282 @@
+{
+  "$comment": "Facet personalisation settings: the one schema behind the on-panel Settings screen, the panel's Home Assistant entities (ESPHome template selects/numbers/switches), the ESPHome web_server page and the docs playground controls. Option labels are the exact option strings Home Assistant shows. esphome.id keeps the firmware's existing entity ids so Home Assistant entity ids never change.",
+  "version": 1,
+  "groups": [
+    { "id": "look", "label": "Look" },
+    { "id": "sound", "label": "Sound" },
+    { "id": "idle", "label": "Clock and idle" },
+    { "id": "behaviour", "label": "Behaviour" }
+  ],
+  "settings": [
+    {
+      "id": "theme",
+      "group": "look",
+      "label": "Theme",
+      "kind": "select",
+      "control": "segmented",
+      "default": "auto",
+      "options": [
+        { "id": "auto", "label": "Auto", "hint": "light while the sun is up" },
+        { "id": "light", "label": "Light" },
+        { "id": "dark", "label": "Dark" }
+      ],
+      "esphome": { "id": "theme_select", "name": "Theme", "icon": "mdi:theme-light-dark" }
+    },
+    {
+      "id": "accent",
+      "group": "look",
+      "label": "Accent",
+      "kind": "select",
+      "control": "swatches",
+      "default": "ember",
+      "about": "The one colour for what matters: playing, needs you, the hero ring. Every set passes contrast in both themes: fill 3:1 against the canvas and cards, accent text 4.5:1, label on accent 4.5:1.",
+      "options": [
+        {
+          "id": "ember",
+          "label": "Ember",
+          "colors": {
+            "dark": {
+              "accent": "#E8542A",
+              "accent-press": "#C2441F",
+              "accent-dim": "#5A2414",
+              "accent-text": "#E8542A",
+              "on-accent": "#0A0B0E"
+            },
+            "light": {
+              "accent": "#E8542A",
+              "accent-press": "#C2441F",
+              "accent-dim": "#F5CDBF",
+              "accent-text": "#B8401A",
+              "on-accent": "#16181C"
+            }
+          }
+        },
+        {
+          "id": "rose",
+          "label": "Rose",
+          "colors": {
+            "dark": {
+              "accent": "#EC6A94",
+              "accent-press": "#C6597C",
+              "accent-dim": "#5A2838",
+              "accent-text": "#EC6A94",
+              "on-accent": "#0A0B0E"
+            },
+            "light": {
+              "accent": "#E0507F",
+              "accent-press": "#BC436B",
+              "accent-dim": "#EEC1CD",
+              "accent-text": "#B23560",
+              "on-accent": "#16181C"
+            }
+          }
+        },
+        {
+          "id": "violet",
+          "label": "Violet",
+          "colors": {
+            "dark": {
+              "accent": "#A68BF5",
+              "accent-press": "#8B75CE",
+              "accent-dim": "#3F355D",
+              "accent-text": "#A68BF5",
+              "on-accent": "#0A0B0E"
+            },
+            "light": {
+              "accent": "#8A6BEB",
+              "accent-press": "#745AC5",
+              "accent-dim": "#D4C9ED",
+              "accent-text": "#6544C9",
+              "on-accent": "#16181C"
+            }
+          }
+        },
+        {
+          "id": "teal",
+          "label": "Teal",
+          "colors": {
+            "dark": {
+              "accent": "#2DBBAE",
+              "accent-press": "#269D92",
+              "accent-dim": "#114742",
+              "accent-text": "#2DBBAE",
+              "on-accent": "#0A0B0E"
+            },
+            "light": {
+              "accent": "#1A9488",
+              "accent-press": "#167C72",
+              "accent-dim": "#B4D8D2",
+              "accent-text": "#14766D",
+              "on-accent": "#0A0B0E"
+            }
+          }
+        },
+        {
+          "id": "mono",
+          "label": "Mono",
+          "colors": {
+            "dark": {
+              "accent": "#F2F1EE",
+              "accent-press": "#CBCAC8",
+              "accent-dim": "#5C5C5A",
+              "accent-text": "#F2F1EE",
+              "on-accent": "#0A0B0E"
+            },
+            "light": {
+              "accent": "#16181C",
+              "accent-press": "#3A3D44",
+              "accent-dim": "#B1B1AF",
+              "accent-text": "#16181C",
+              "on-accent": "#FFFFFF"
+            }
+          }
+        }
+      ],
+      "esphome": { "id": "accent_select", "name": "Accent", "icon": "mdi:palette-outline" }
+    },
+    {
+      "id": "textSize",
+      "group": "look",
+      "label": "Text size",
+      "kind": "select",
+      "control": "segmented",
+      "default": "standard",
+      "about": "Large sets the small text roles one step bigger inside the same line boxes, so nothing on a screen moves.",
+      "options": [
+        { "id": "standard", "label": "Standard" },
+        { "id": "large", "label": "Large", "type": { "title": 32, "body": 26, "label": 22 } }
+      ],
+      "esphome": { "id": "text_size_select", "name": "Text size", "icon": "mdi:format-size" }
+    },
+    {
+      "id": "sounds",
+      "group": "sound",
+      "label": "UI sounds",
+      "kind": "switch",
+      "control": "toggle",
+      "default": true,
+      "esphome": { "id": "ui_sounds", "name": "UI sounds", "icon": "mdi:volume-source" }
+    },
+    {
+      "id": "soundPack",
+      "group": "sound",
+      "label": "Sound pack",
+      "kind": "select",
+      "control": "sheet",
+      "default": "keycap",
+      "options": [
+        { "id": "keycap", "label": "Keycap", "hint": "short tactile clicks" },
+        { "id": "halo", "label": "Halo", "hint": "soft bell tones" },
+        { "id": "arcade", "label": "Arcade", "hint": "retro chiptune" },
+        { "id": "graphite", "label": "Graphite", "hint": "dry, precise thocks" },
+        { "id": "crystal", "label": "Crystal", "hint": "light glass tones" },
+        { "id": "felt", "label": "Felt", "hint": "warm, muffled wood" }
+      ],
+      "esphome": {
+        "id": "sound_pack_select",
+        "name": "Sound pack",
+        "icon": "mdi:music-box-multiple-outline"
+      }
+    },
+    {
+      "id": "volume",
+      "group": "sound",
+      "label": "Volume",
+      "kind": "number",
+      "control": "slider",
+      "default": 80,
+      "min": 0,
+      "max": 100,
+      "step": 5,
+      "unit": "%",
+      "esphome": { "id": "ui_volume", "name": "Volume", "icon": "mdi:volume-high" }
+    },
+    {
+      "id": "clockFace",
+      "group": "idle",
+      "label": "Clock face",
+      "kind": "select",
+      "control": "sheet",
+      "default": "ring",
+      "options": [
+        { "id": "hero", "label": "Hero", "hint": "big digits" },
+        { "id": "ring", "label": "Ring", "hint": "digits in a seconds ring" },
+        { "id": "analogue", "label": "Analogue", "hint": "hands and ticks" },
+        { "id": "context", "label": "Clock + context", "hint": "weather, next event, timers" }
+      ],
+      "esphome": { "id": "face_select", "name": "Clock face", "icon": "mdi:clock-outline" }
+    },
+    {
+      "id": "idleAfter",
+      "group": "idle",
+      "label": "Clock after",
+      "kind": "number",
+      "control": "presets",
+      "default": 60,
+      "min": 0,
+      "max": 3600,
+      "step": 5,
+      "unit": "s",
+      "presets": [0, 30, 60, 120, 300, 900],
+      "zero": "Never",
+      "about": "No touch for this long: the clock shows, without its header, dimmed to the idle brightness. A touch goes back to Home.",
+      "esphome": { "id": "idle_after_s", "name": "Clock after", "icon": "mdi:clock-start" }
+    },
+    {
+      "id": "idleBrightness",
+      "group": "idle",
+      "label": "Idle brightness",
+      "kind": "number",
+      "control": "slider",
+      "default": 70,
+      "min": 10,
+      "max": 100,
+      "step": 5,
+      "unit": "%",
+      "esphome": { "id": "idle_brightness", "name": "Idle brightness", "icon": "mdi:brightness-6" }
+    },
+    {
+      "id": "screenOff",
+      "group": "idle",
+      "label": "Screen off after",
+      "kind": "number",
+      "control": "presets",
+      "default": 0,
+      "min": 0,
+      "max": 240,
+      "step": 1,
+      "unit": "min",
+      "presets": [0, 15, 30, 60, 120, 240],
+      "zero": "Never",
+      "esphome": { "id": "screen_off_min", "name": "Screen off after", "icon": "mdi:monitor-off" }
+    },
+    {
+      "id": "transition",
+      "group": "behaviour",
+      "label": "Transition",
+      "kind": "select",
+      "control": "segmented",
+      "default": "rise",
+      "boardDefault": true,
+      "about": "Content rise fades each new screen's rows in. Boards that can't keep up default to Instant.",
+      "options": [
+        { "id": "instant", "label": "Instant" },
+        { "id": "rise", "label": "Content rise" }
+      ],
+      "esphome": { "id": "transition_select", "name": "Transition", "icon": "mdi:transition" }
+    },
+    {
+      "id": "toastPosition",
+      "group": "behaviour",
+      "label": "Toast position",
+      "kind": "select",
+      "control": "segmented",
+      "default": "top",
+      "options": [
+        { "id": "top", "label": "Top" },
+        { "id": "bottom", "label": "Bottom" }
+      ],
+      "esphome": { "id": "toast_position", "name": "Toast position", "icon": "mdi:dock-top" }
+    }
+  ]
+}

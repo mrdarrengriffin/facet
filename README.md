@@ -141,6 +141,7 @@ packages/
   icons/      @facet/icons: master SVG icons, screen icons, weather icons, manifest
   ui/         @facet/ui: components and screens in plain TypeScript (no UI framework)
   sounds/     @facet/sounds: procedural UI sounds and the hooks that play them
+  settings/   @facet/settings: one personalisation schema for the Settings screen, HA entities and docs
   demo-data/  @facet/demo-data: a fictional mock house for demos, docs and tests
 brand/        The Facet mark, logo, app icons and social card
 firmware/     ESPHome configuration for ESP32 touch panels (planned)

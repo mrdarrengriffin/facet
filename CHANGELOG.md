@@ -8,6 +8,11 @@ All notable changes to Facet are written down here. The format is loosely based 
 
 ### Added
 
+- `@facet/settings`: one schema for every personalisation setting (theme, accent, text
+  size, UI sounds, sound pack, volume, clock face, idle, transition, toast position). The
+  build checks it (accent contrast in both themes, defaults, sound packs) and writes the
+  ESPHome entities plus web_server groups, so the panel, Home Assistant and the docs share
+  one list. Five accent sets: Ember (default), Rose, Violet, Teal and Mono.
 - The full token set in `@facet/tokens`: colours, a screen type scale and a component type
   scale, the 8 px screen layout, sizes, motion, toasts and sound settings, from one
   `tokens.json`. The build also writes ESPHome YAML (substitutions, fonts, LVGL styles).
