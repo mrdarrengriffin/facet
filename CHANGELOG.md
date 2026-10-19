@@ -19,6 +19,9 @@ All notable changes to Facet are written down here. The format is loosely based 
 - `@facet/sounds`: procedural UI sounds in six named packs (Keycap by default, plus Halo,
   Arcade, Graphite, Crystal and Felt), chosen with `setPack()`, and hooks that play them on
   real taps only.
+- Screen transition option: `createDevice({ transition })`, `rise` (default) fades the new
+  screen's rows in from 8 px below, header first, or `instant` for slower devices. Timings in
+  `motion.transition.rise`; the demo has a switch for it.
 - Home: a Timer card, first in the grid, shown only while a timer is running (time left, a
   ring that empties, the end time). Tap it for the Timer screen.
 - Site: a Sounds page (`/docs/sounds/`) with every sound in every pack playable live.

@@ -87,10 +87,21 @@ export const radius = data.radius;
 export const stroke = data.stroke;
 export const size = data.size;
 export const opacity = data.opacity;
-export const motion = data.motion as {
+/** Screen transitions: `instant` swaps, `rise` fades the new screen's rows in. */
+export type TransitionId = 'instant' | 'rise';
+export const motion = data.motion as unknown as {
   duration: Record<keyof typeof data.motion.duration, number>;
   easing: Record<keyof typeof data.motion.easing, Easing>;
-  transition: { default: 'instant' };
+  transition: {
+    default: TransitionId;
+    rise: {
+      duration: number;
+      stagger: number;
+      offset: number;
+      easing: keyof typeof data.motion.easing;
+      'max-blocks': number;
+    };
+  };
 };
 export const toast = strip(data.toast) as {
   position: 'top' | 'bottom';

@@ -1,8 +1,10 @@
 // The device: every screen in one 720 × 720 frame, with navigation (tap a Home card to open its screen, Back returns
-// Home), a toast layer over everything, and an idle clock after a while without a touch. Screens switch instantly.
+// Home), a toast layer over everything, and an idle clock after a while without a touch.
+// Transition (shared with the firmware): `rise` (default, `motion.transition`) fades the new screen's rows in, header
+// first, from 8 px below (above when going Home); `instant` just swaps. The idle clock always fades in.
 // Idle rule (shared with the firmware): after `idleAfter` without a touch, the clock without its header and the screen
 // dimmed to `idleBrightness`; the next touch goes to Home and does nothing else.
-import { toast as TOAST } from '@facet/tokens';
+import { motion, toast as TOAST, type TransitionId } from '@facet/tokens';
 import { h } from './dom.js';
 import { hhmm } from './format.js';
 import { startTicker } from './store.js';
@@ -126,6 +128,8 @@ export interface DeviceOptions {
   mediaVisual?: MediaVisualId;
   /** Face of the idle clock. Default `ring`. */
   idleFace?: ClockOptions['face'];
+  /** Screen transition. Default `motion.transition.default` (rise); use `instant` on slow devices. */
+  transition?: TransitionId;
   /** Called after every navigation. */
   onNavigate?: (id: ScreenId | 'idle') => void;
 }
@@ -155,8 +159,48 @@ export function createDevice(ctx: ScreenContext, o: DeviceOptions = {}) {
   pages.get(cur)!.el.hidden = false;
   frame.dataset.page = cur;
 
+  let transition: TransitionId = o.transition ?? motion.transition.default;
+  let rising: Animation[] = [];
+  /** Content rise: the page's blocks grouped into rows by their top, header first, each row a step later. */
+  function rise(page: HTMLElement, dy: number) {
+    const r = motion.transition.rise;
+    const hd = page.querySelector<HTMLElement>(':scope > .fs-header');
+    const blocks: HTMLElement[] = [];
+    for (const c of Array.from(page.children) as HTMLElement[]) {
+      if (c === hd || c.hidden || c.classList.contains('f-track')) continue;
+      if (c.classList.contains('fs-content') && c.children.length > 1)
+        blocks.push(...(Array.from(c.children) as HTMLElement[]));
+      else blocks.push(c);
+    }
+    const byTop = new Map<number, HTMLElement[]>();
+    for (const b of blocks) {
+      const t = Math.round(b.getBoundingClientRect().top);
+      (byTop.get(t) ?? byTop.set(t, []).get(t)!).push(b);
+    }
+    const rows = [...byTop.entries()].sort((a, b) => a[0] - b[0]).map((e) => e[1]);
+    if (hd) rows.unshift([hd]);
+    rising = rows.flatMap((row, i) =>
+      row.map((b) =>
+        b.animate(
+          [
+            { opacity: 0, transform: `translateY(${dy}px)` },
+            { opacity: 1, transform: 'none' },
+          ],
+          {
+            duration: r.duration,
+            delay: Math.min(i, r['max-blocks'] - 1) * r.stagger,
+            easing: motion.easing[r.easing].css,
+            fill: 'backwards',
+          },
+        ),
+      ),
+    );
+  }
+
   function go(id: ScreenId | 'idle') {
     if (id === cur) return;
+    rising.forEach((a) => a.finish());
+    rising = [];
     const from = pages.get(cur)!,
       to = pages.get(id)!;
     from.leave?.();
@@ -167,6 +211,8 @@ export function createDevice(ctx: ScreenContext, o: DeviceOptions = {}) {
     if (id === 'idle') frame.dataset.dimmed = '';
     else delete frame.dataset.dimmed;
     to.enter?.();
+    if (transition === 'rise' && id !== 'idle')
+      rise(to.el, id === 'home' ? -motion.transition.rise.offset : motion.transition.rise.offset);
     o.onNavigate?.(id);
   }
 
@@ -214,6 +260,13 @@ export function createDevice(ctx: ScreenContext, o: DeviceOptions = {}) {
       return toasts.push(t, opts);
     },
     toasts,
+    /** Change the screen transition. */
+    setTransition(t: TransitionId) {
+      transition = t;
+    },
+    get transition() {
+      return transition;
+    },
     get current() {
       return cur;
     },

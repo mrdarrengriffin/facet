@@ -65,6 +65,15 @@ const jump = screenDocs.filter((s) => s.slug !== 'toasts');
           </div>
         </section>
         <section>
+          <h2 class="facet-label">Screen transition</h2>
+          <div class="demo__row">
+            <div class="seg" role="group" aria-label="Screen transition">
+              <button type="button" data-tx="rise" aria-pressed="true">Content rise</button>
+              <button type="button" data-tx="instant" aria-pressed="false">Instant</button>
+            </div>
+          </div>
+        </section>
+        <section>
           <h2 class="facet-label">Go to</h2>
           <div class="demo__buttons">
             <button type="button" class="chip-button" data-go="home"
@@ -140,6 +149,13 @@ const jump = screenDocs.filter((s) => s.slug !== 'toasts');
     b.addEventListener('click', () => {
       device.toasts.setPosition(b.dataset.toastPos as 'top' | 'bottom');
       for (const o of root.querySelectorAll('[data-toast-pos]'))
+        o.setAttribute('aria-pressed', String(o === b));
+    });
+  }
+  for (const b of root.querySelectorAll<HTMLButtonElement>('[data-tx]')) {
+    b.addEventListener('click', () => {
+      device.setTransition(b.dataset.tx as 'rise' | 'instant');
+      for (const o of root.querySelectorAll('[data-tx]'))
         o.setAttribute('aria-pressed', String(o === b));
     });
   }
