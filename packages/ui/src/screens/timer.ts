@@ -74,7 +74,10 @@ export function timerScreen(ctx: ScreenContext, o: TimerOptions = {}): Screen {
   return {
     el,
     update(s) {
-      t = s.timers?.[0];
+      const next = s.timers?.[0];
+      // a timer that ran out stays as "done" until the next one; one that vanishes early was cancelled
+      if (next) t = next;
+      else if (t && t.endsAt > Date.now()) t = undefined;
       render();
     },
     tick() {

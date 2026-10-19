@@ -39,7 +39,7 @@
 .fs-content > .f-abs > span {
   display: block;
 }
-.p3 [data-tone='dim'] {
+.fs [data-tone='dim'] {
   color: var(--facet-color-text-dim);
 }
 
@@ -434,7 +434,7 @@
   height: var(--facet-layout-row);
   line-height: var(--facet-layout-row);
 }
-.p3 .fs-axis {
+.fs .fs-axis {
   font: 500 18px/24px var(--facet-font-mono);
   letter-spacing: 2px;
   height: 24px;
@@ -502,6 +502,7 @@
   border-top: 0;
 }
 .fs-d-name {
+  flex: none;
   width: 160px;
   color: var(--facet-color-text);
 }
