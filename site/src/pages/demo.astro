@@ -106,7 +106,7 @@ const jump = screenDocs.filter((s) => s.slug !== 'toasts');
   import { screenDocs } from '../lib/screens';
 
   const root = document.querySelector<HTMLElement>('[data-demo]')!;
-  initSounds();
+  initSounds({ defaultOn: true, volume: 0.5 }); // demo: sound on by default at 50 %
   const house = createMockHouse();
   const now = root.querySelector('[data-now]')!;
   const names: Record<string, string> = Object.fromEntries(

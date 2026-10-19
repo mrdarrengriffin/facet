@@ -7,6 +7,7 @@ import {
   onSettingsChange,
   settings,
   setEnabled,
+  setVolume,
   unlockOnGesture,
 } from '@facet/sounds';
 
@@ -14,16 +15,23 @@ const SOUND_KEY = 'facet-sounds';
 let soundsReady = false;
 
 /** Install the sound hooks once per page and restore the on/off choice. */
-export function initSounds(): void {
+/**
+ * Wires the site's sound toggle. `defaultOn` turns sounds on when the visitor hasn't chosen yet (the demo does this;
+ * an explicit "off" from the toggle is always respected). `volume` is the master volume, 0-1.
+ */
+export function initSounds(opts: { defaultOn?: boolean; volume?: number } = {}): void {
   if (soundsReady) return;
   soundsReady = true;
+  if (opts.volume !== undefined) setVolume(opts.volume);
   unlockOnGesture();
   installSoundHooks(document, { scope: '.f-screen, .f-sound-scope' });
+  let saved: string | null = null;
   try {
-    if (localStorage.getItem(SOUND_KEY) === 'on') setEnabled(true);
+    saved = localStorage.getItem(SOUND_KEY);
   } catch {
-    // storage blocked: sounds just start off
+    // storage blocked: fall back to the default
   }
+  if (saved === 'on' || (saved === null && opts.defaultOn)) setEnabled(true);
   const sync = () => {
     for (const b of document.querySelectorAll<HTMLButtonElement>('[data-sound-toggle]')) {
       b.setAttribute('aria-pressed', String(settings.enabled));
