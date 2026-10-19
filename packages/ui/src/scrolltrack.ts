@@ -14,9 +14,9 @@ export function addScrollTracks(root: HTMLElement): void {
       const { scrollTop: t, scrollHeight: sh, clientHeight: ch } = sc;
       track.hidden = !ch || sh <= ch + 1;
       if (track.hidden) return;
-      // centred in the 32 px gap between the area's right edge and the screen edge
+      // centred in the margin between the area's right edge and the page's right edge (32 px on v3 screens)
       Object.assign(track.style, {
-        left: `${sc.offsetLeft + sc.offsetWidth + 14}px`,
+        left: `${Math.round((sc.offsetLeft + sc.offsetWidth + ((sc.offsetParent as HTMLElement | null) ?? sc).clientWidth) / 2) - 2}px`,
         top: `${sc.offsetTop}px`,
         height: `${ch}px`,
       });
