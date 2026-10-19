@@ -1,0 +1,29 @@
+{
+  "name": "facet",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Wall panel UI for Home Assistant.",
+  "license": "MIT",
+  "author": "Darren Griffin",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mrdarrengriffin/facet.git"
+  },
+  "type": "module",
+  "packageManager": "pnpm@10.34.7",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "pnpm --filter './packages/*' build && pnpm --filter @facet/site dev",
+    "build": "pnpm -r --workspace-concurrency=1 build",
+    "lint": "prettier --check .",
+    "format": "prettier --write .",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "devDependencies": {
+    "prettier": "^3.6.2",
+    "prettier-plugin-astro": "^0.14.1",
+    "typescript": "^5.9.3"
+  }
+}
