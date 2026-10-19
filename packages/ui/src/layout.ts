@@ -2,6 +2,7 @@
 // else quiet; inset 32 on every side; rows separated by hairlines rather than boxes; the accent only for the one thing
 // that matters. Geometry comes from `layout` in @facet/tokens, type from the screen scale (`.fst-*`).
 import { icon, screenIcon } from '@facet/icons';
+import { addScrollTracks } from './scrolltrack.js';
 import { layout as G } from '@facet/tokens';
 import { fit8, live, setText, statusDot } from './atoms.js';
 import { backButton } from './buttons.js';
@@ -53,8 +54,11 @@ export const content = (...kids: (Node | null)[]) =>
   );
 
 /** A page (one screen), and a sub-view inside a page. */
-export const page = (cls: string, ...kids: (Node | null)[]) =>
-  h('div', { class: `f-page fs ${cls}` }, ...kids);
+export const page = (cls: string, ...kids: (Node | null)[]) => {
+  const el = h('div', { class: `f-page fs ${cls}` }, ...kids);
+  addScrollTracks(el); // every scrollable area gets a track in the margin
+  return el;
+};
 export const subView = (...kids: (Node | null)[]) => h('div', { class: 'f-sub' }, ...kids);
 
 export interface HeaderProps {

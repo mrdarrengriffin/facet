@@ -52,6 +52,24 @@
 .fs-snap {
   scroll-snap-type: y mandatory;
 }
+/* scroll track (scrolltrack.ts): 4 px in the margin right of every scrollable area; thumb = what's in view */
+.f-track {
+  position: absolute;
+  width: 4px;
+  border-radius: 2px;
+  background: var(--facet-color-line);
+  pointer-events: none;
+}
+.f-track[hidden] {
+  display: none;
+}
+.f-track-thumb {
+  position: absolute;
+  left: 0;
+  width: 4px;
+  border-radius: 2px;
+  background: var(--facet-color-text-mute);
+}
 .fs-card {
   position: relative;
   flex: none;
