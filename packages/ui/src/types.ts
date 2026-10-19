@@ -13,6 +13,9 @@ export interface MediaState {
   state: MediaPlayback;
   title?: string | null;
   artist?: string | null;
+  /** Cover art: an image URL or a data URI. The Media screen's CD and vinyl show it, and the cassette label takes
+   *  its colours. */
+  art?: string | null;
   /** Track length in seconds. */
   duration?: number | null;
   /** Position in seconds, as of `positionAt`. */

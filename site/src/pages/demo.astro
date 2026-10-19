@@ -100,7 +100,7 @@ const jump = screenDocs.filter((s) => s.slug !== 'toasts');
 
 <script>
   import { createMockHouse, TOASTS } from '@facet/demo-data';
-  import { createDevice, type ScreenId } from '@facet/ui';
+  import { createDevice, isMediaVisual, type ScreenId } from '@facet/ui';
   import { play } from '@facet/sounds';
   import { fitFrame, initSounds, initThemeOverride } from '../scripts/facet-runtime';
   import { screenDocs } from '../lib/screens';
@@ -112,8 +112,10 @@ const jump = screenDocs.filter((s) => s.slug !== 'toasts');
   const names: Record<string, string> = Object.fromEntries(
     screenDocs.map((s) => [s.slug, s.title]),
   );
+  const visual = new URLSearchParams(location.search).get('visual'); // ?visual=cassette|cd|vinyl|reel
   const device = createDevice(house, {
     idleAfter: 30_000,
+    mediaVisual: isMediaVisual(visual) ? visual : 'disc',
     onToast: () => void play('notify'),
     onNavigate: (id) => (now.textContent = id === 'idle' ? 'Idle clock' : (names[id] ?? id)),
   });

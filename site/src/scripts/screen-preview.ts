@@ -1,5 +1,13 @@
 import { createMockHouse, TOASTS } from '@facet/demo-data';
-import { mountScreen, toastLayer, type ClockFace, type ClockProps, type ScreenId } from '@facet/ui';
+import {
+  mountScreen,
+  toastLayer,
+  type ClockFace,
+  type ClockProps,
+  type MediaScreen,
+  type MediaVisualId,
+  type ScreenId,
+} from '@facet/ui';
 import { controlEl, type Props } from './controls';
 import { fitFrame, initSounds, initThemeOverride, soundToggleFor } from './facet-runtime';
 import { screenOptions, type ScreenOptionsContext } from './screen-options';
@@ -18,11 +26,15 @@ export function initScreenPreviews(): void {
     let current: ReturnType<typeof mountScreen> | null = null;
     let layer: ReturnType<typeof toastLayer> | null = null;
     let clock: { face?: ClockFace; props?: Partial<ClockProps> } | undefined;
+    let mediaVisual: MediaVisualId = 'disc';
 
     const mount = () => {
       current?.destroy();
       current?.el.remove();
-      current = mountScreen(id === 'toasts' ? 'home' : (id as ScreenId), house, { clock });
+      current = mountScreen(id === 'toasts' ? 'home' : (id as ScreenId), house, {
+        clock,
+        mediaVisual,
+      });
       if (layer) current.el.append(layer);
       frame.replaceChildren(current.el);
     };
@@ -41,6 +53,10 @@ export function initScreenPreviews(): void {
           },
         };
         mount();
+      },
+      mediaVisual(v) {
+        mediaVisual = v;
+        (current?.screen as MediaScreen | undefined)?.setVisual?.(v);
       },
       toasts: layer ?? undefined,
     };
@@ -85,6 +101,7 @@ export function initScreenPreviews(): void {
         house.destroy();
         house = createMockHouse();
         clock = undefined;
+        mediaVisual = 'disc';
         layer?.clear();
         layer?.setPosition('top');
         mount();

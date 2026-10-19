@@ -1,11 +1,13 @@
 // Media: the disc (256) with the track beside it, then the controls and a live volume slider. The header's speaker
-// button opens a sheet to pick where media goes: Auto (follow whatever is playing) or one player.
+// button opens a sheet to pick where media goes: Auto (follow whatever is playing) or one player. In place of the disc
+// the screen can show a cassette, CD, vinyl LP or reel-to-reel deck (`visual`, see media-visuals/).
 import { setState } from '../atoms.js';
 import { iconButton, setGlyph } from '../buttons.js';
 import { disc, slider } from '../controls.js';
 import { h } from '../dom.js';
 import { clean } from '../format.js';
 import { at, CW, content, header, layout, page, text } from '../layout.js';
+import { mediaVisualSlot, type MediaVisualId } from '../media-visuals/index.js';
 import { bottomSheet, pickerRow, speakerButton } from '../pickers.js';
 import type { PanelActions, PanelData } from '../types.js';
 import {
@@ -48,7 +50,14 @@ export function volumeControl(actions?: PanelActions) {
   };
 }
 
-export function mediaScreen(ctx: ScreenContext, o: ScreenOptions = {}): Screen {
+export interface MediaOptions extends ScreenOptions {
+  /** What sits in the hero slot. Default `disc`. */
+  visual?: MediaVisualId;
+}
+
+export type MediaScreen = Screen & { setVisual(id: MediaVisualId): void };
+
+export function mediaScreen(ctx: ScreenContext, o: MediaOptions = {}): MediaScreen {
   const A = ctx.actions;
   const D = layout.disc;
   const sheet = bottomSheet({ title: 'speaker' });
@@ -100,6 +109,7 @@ export function mediaScreen(ctx: ScreenContext, o: ScreenOptions = {}): Screen {
     },
   });
   const d = disc({ progress: 0, playing: false, size: D });
+  const mv = mediaVisualSlot(d, o.visual); // the disc, or a visual in its place that runs off the left edge
   const state = text('label', 'fs-m-state', 'idle');
   const title = h('div', { class: 'fst-headline fs-m-title' }, 'Nothing playing');
   const artist = text('body', 'fs-m-artist', '');
@@ -136,6 +146,7 @@ export function mediaScreen(ctx: ScreenContext, o: ScreenOptions = {}): Screen {
   const col = h('div', { class: 'fs-m-col' }, state, title, artist);
   const el = page(
     'fs-media',
+    mv.layer,
     header({ label: 'Media', onBack: o.onBack, right: [spk], clock: false }),
     content(
       at(0, 0, D, D, d),
@@ -154,6 +165,10 @@ export function mediaScreen(ctx: ScreenContext, o: ScreenOptions = {}): Screen {
   let st = ctx.store.get();
   return {
     el,
+    setVisual: (id) => mv.setVisual(id),
+    enter() {
+      mv.enter();
+    },
     leave() {
       sheet.close(true);
     },
@@ -175,9 +190,11 @@ export function mediaScreen(ctx: ScreenContext, o: ScreenOptions = {}): Screen {
       artist.textContent = clean(m?.artist);
       if (!vol.dragging && vc.free() && m?.volume != null) vol.sweep(Math.round(m.volume * 100));
       d.set({ progress: mediaPos(m).frac * 100, playing });
+      mv.set(m);
     },
     tick() {
       d.set({ progress: mediaPos(st.media).frac * 100, playing: st.media?.state === 'playing' });
+      mv.tick();
     },
   };
 }

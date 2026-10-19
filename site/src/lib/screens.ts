@@ -106,26 +106,34 @@ interface PanelData {
     intro: [
       "The Media screen shows what's playing and where. The disc's orange arc is the track's progress and a small blue marker circles it while it plays.",
       'The speaker button in the header opens a sheet to choose where the controls go: Auto follows whatever is playing, or pick one speaker, group, TV or streaming account.',
+      'Instead of the disc, the screen can show a cassette, a CD, a vinyl record or a reel-to-reel deck. Each one is drawn to the real thing\'s size (a C60 cassette, a 120 mm CD, a 12" LP, 7" reels) and turns at its real speed while the track plays: the cassette and reel spools wind the tape across as the track goes on, the CD and record turn with the cover art on them, and the tonearm moves in towards the label. The cassette label gets its colour stripes from the cover. Pick one under Visual below.',
     ],
     shows: [
       'The disc (256) with the state, the title (40 px, up to two lines) and the artist beside it.',
       'Previous, Play/Pause (96, orange; shows pause and a ring while playing) and Next.',
       'The volume slider. It sends changes while you drag (at most every 200 ms, never the same value twice) and sweeps smoothly when the volume changes elsewhere.',
+      "With a visual picked: the visual in the disc's place (right edge at x 288, 256 tall), running off the left edge of the screen. The cassette sits 16 px lower than the others.",
     ],
     usage: `import { mediaScreen } from '@facet/ui';
 
-const media = mediaScreen({
-  store,
-  actions: {
-    mediaPlayPause: () => ha.call('media_player', 'media_play_pause'),
-    mediaVolume: (v) => ha.call('media_player', 'volume_set', { volume_level: v / 100 }),
-    setMediaTarget: (mode, id) => saveTarget(mode, id),
+const media = mediaScreen(
+  {
+    store,
+    actions: {
+      mediaPlayPause: () => ha.call('media_player', 'media_play_pause'),
+      mediaVolume: (v) => ha.call('media_player', 'volume_set', { volume_level: v / 100 }),
+      setMediaTarget: (mode, id) => saveTarget(mode, id),
+    },
   },
-});`,
+  { visual: 'cassette' }, // 'disc' (default), 'cassette', 'cd', 'vinyl' or 'reel'
+);
+
+media.setVisual('vinyl'); // swap it later`,
     data: `interface MediaState {
   state: 'playing' | 'paused' | 'idle' | 'off' | 'unavailable';
   title?: string | null;
   artist?: string | null;
+  art?: string | null;        // cover art URL or data URI
   duration?: number | null;   // seconds
   position?: number | null;   // seconds, as of positionAt
   positionAt?: number | null; // ms since the epoch
@@ -151,6 +159,8 @@ interface PanelData {
     config: [
       'Actions: `mediaPlayPause`, `mediaNext`, `mediaPrevious`, `mediaVolume(0-100)` and `setMediaTarget(mode, id?)`. Update the store when the player reports back; the screen reflects the store, so optimistic updates belong in the adapter.',
       'While playing, the position moves on from `position` at `positionAt`, so the adapter only needs to report it when it changes.',
+      "`art` can be any image URL. To read the cassette's colours from it, the image has to come from the same origin or allow CORS; otherwise the stripes use the accent, blue, warn and steel colours. The mock house has a small made-up cover for each track.",
+      'With reduced motion on, nothing spins; the tape and the tonearm still follow the track.',
     ],
   },
   {

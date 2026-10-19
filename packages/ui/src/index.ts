@@ -25,7 +25,13 @@ export * from './format.js';
 export * from './screens/common.js';
 export { homeScreen, CARD_IDS, type CardId, type HomeOptions } from './screens/home.js';
 export { agentsScreen } from './screens/agents.js';
-export { mediaScreen, volumeControl } from './screens/media.js';
+export {
+  mediaScreen,
+  volumeControl,
+  type MediaOptions,
+  type MediaScreen,
+} from './screens/media.js';
+export * from './media-visuals/index.js';
 export { lightScreen } from './screens/light.js';
 export { clockScreen, type ClockOptions } from './screens/clock.js';
 export { githubScreen, githubSummary, chipsFor } from './screens/github.js';

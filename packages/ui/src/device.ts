@@ -14,6 +14,7 @@ import { homeScreen, type CardId } from './screens/home.js';
 import { lightScreen } from './screens/light.js';
 import { lightningScreen } from './screens/lightning.js';
 import { mediaScreen } from './screens/media.js';
+import type { MediaVisualId } from './media-visuals/index.js';
 import { timerScreen } from './screens/timer.js';
 import { weatherScreen } from './screens/weather.js';
 
@@ -35,7 +36,13 @@ export const SCREEN_IDS: ScreenId[] = [
 export function createScreen(
   id: ScreenId,
   ctx: ScreenContext,
-  o: { onBack?: () => void; open?: (id: CardId) => void; clock?: ClockOptions } = {},
+  o: {
+    onBack?: () => void;
+    open?: (id: CardId) => void;
+    clock?: ClockOptions;
+    /** Media screen: what sits in the hero slot. */
+    mediaVisual?: MediaVisualId;
+  } = {},
 ): Screen {
   switch (id) {
     case 'home':
@@ -43,7 +50,7 @@ export function createScreen(
     case 'agents':
       return agentsScreen(ctx, o);
     case 'media':
-      return mediaScreen(ctx, o);
+      return mediaScreen(ctx, { onBack: o.onBack, visual: o.mediaVisual });
     case 'light':
       return lightScreen(ctx, o);
     case 'clock':
@@ -71,6 +78,8 @@ function tickClocks(root: HTMLElement, now: Date) {
 export interface PreviewOptions {
   onBack?: () => void;
   clock?: ClockOptions;
+  /** Media screen: what sits in the hero slot. Default `disc`. */
+  mediaVisual?: MediaVisualId;
 }
 
 /**
@@ -109,6 +118,8 @@ export interface DeviceOptions {
   onToast?: (t: ToastData) => void;
   /** Show the idle clock after this many ms without a touch; 0 = never. Default 60 s. */
   idleAfter?: number;
+  /** Media screen: what sits in the hero slot. Default `disc`. */
+  mediaVisual?: MediaVisualId;
   /** Face of the idle clock. Default `ring`. */
   idleFace?: ClockOptions['face'];
   /** Called after every navigation. */
@@ -123,7 +134,11 @@ export function createDevice(ctx: ScreenContext, o: DeviceOptions = {}) {
   for (const id of SCREEN_IDS)
     pages.set(
       id,
-      createScreen(id, ctx, { onBack: id === 'home' ? undefined : back, open: (c) => go(c) }),
+      createScreen(id, ctx, {
+        onBack: id === 'home' ? undefined : back,
+        open: (c) => go(c),
+        mediaVisual: o.mediaVisual,
+      }),
     );
   pages.set('idle', clockScreen(ctx, { face: o.idleFace ?? 'ring', bare: true }));
   for (const p of pages.values()) {

@@ -44,12 +44,68 @@ export interface Track {
   title: string;
   artist: string;
   duration: number;
+  /** Cover art (an SVG data URI): simple shapes, made for the mock house. */
+  art: string;
 }
+
+/** A 300 × 300 SVG as a data URI. */
+const cover = (body: string) =>
+  'data:image/svg+xml;utf8,' +
+  encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width="300" height="300">${body}</svg>`,
+  );
+
+/** Covers for the mock tracks: abstract shapes, one palette each. */
+export const COVERS = {
+  // three lanterns rising over a dark field
+  lanterns: cover(
+    '<rect width="300" height="300" fill="#1B2440"/>' +
+      '<rect y="210" width="300" height="90" fill="#10162A"/>' +
+      '<circle cx="86" cy="150" r="34" fill="#F2A541"/>' +
+      '<circle cx="172" cy="96" r="24" fill="#E8542A"/>' +
+      '<circle cx="232" cy="164" r="16" fill="#F6D27A"/>' +
+      '<rect x="84" y="184" width="4" height="26" fill="#F2A541"/>',
+  ),
+  // a compass needle pointing up through cold bands
+  north: cover(
+    '<rect width="300" height="300" fill="#DCE6EE"/>' +
+      '<rect y="0" width="300" height="100" fill="#9CC3E6"/>' +
+      '<rect y="100" width="300" height="40" fill="#5C8DB8"/>' +
+      '<path d="M150 40 L190 230 L150 200 L110 230 Z" fill="#1F3B57"/>' +
+      '<path d="M150 40 L150 200 L110 230 Z" fill="#E8542A"/>',
+  ),
+  // sea and sand in stripes, with a low sun
+  tide: cover(
+    '<rect width="300" height="300" fill="#0F3D3E"/>' +
+      '<circle cx="210" cy="120" r="56" fill="#E6C27A"/>' +
+      '<rect y="150" width="300" height="150" fill="#14595B"/>' +
+      '<rect y="186" width="300" height="10" fill="#4FA3A0"/>' +
+      '<rect y="214" width="300" height="8" fill="#4FA3A0"/>' +
+      '<rect y="238" width="300" height="6" fill="#4FA3A0"/>' +
+      '<rect y="262" width="300" height="38" fill="#D8C8A8"/>',
+  ),
+  // two windows in a warm wall
+  room: cover(
+    '<rect width="300" height="300" fill="#E9DCC6"/>' +
+      '<rect x="48" y="64" width="88" height="128" fill="#3E5C76"/>' +
+      '<rect x="164" y="64" width="88" height="128" fill="#3E5C76"/>' +
+      '<rect x="48" y="124" width="88" height="6" fill="#E9DCC6"/>' +
+      '<rect x="164" y="124" width="88" height="6" fill="#E9DCC6"/>' +
+      '<rect y="232" width="300" height="68" fill="#B5543C"/>' +
+      '<circle cx="224" cy="104" r="14" fill="#F2C14E"/>',
+  ),
+};
+
 export const TRACKS: Track[] = [
-  { title: 'Paper Lanterns', artist: 'The Quiet Hours', duration: 214 },
-  { title: 'Northbound', artist: 'Marlow & Finch', duration: 187 },
-  { title: 'Low Tide Static', artist: 'Juniper Signal', duration: 243 },
-  { title: 'A Room With Two Windows', artist: 'Odette Vale', duration: 198 },
+  { title: 'Paper Lanterns', artist: 'The Quiet Hours', duration: 214, art: COVERS.lanterns },
+  { title: 'Northbound', artist: 'Marlow & Finch', duration: 187, art: COVERS.north },
+  { title: 'Low Tide Static', artist: 'Juniper Signal', duration: 243, art: COVERS.tide },
+  {
+    title: 'A Room With Two Windows',
+    artist: 'Odette Vale',
+    duration: 198,
+    art: COVERS.room,
+  },
 ];
 export const PLAYERS: Player[] = [
   { id: 'study', name: 'Study speaker', state: 'playing', kind: 'speaker' },

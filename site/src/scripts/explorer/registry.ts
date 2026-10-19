@@ -2,7 +2,7 @@
  * The UI explorer's catalogue: every component, its controls (props), how to render it, the code to create it, and
  * a grid of variants. Everything here builds real @facet/ui components on mock data.
  */
-import { createMockHouse, energy, lightning, TOASTS } from '@facet/demo-data';
+import { createMockHouse, energy, lightning, TOASTS, TRACKS } from '@facet/demo-data';
 import {
   iconNames,
   icon,
@@ -437,6 +437,64 @@ export const entries: Entry[] = [
     code: (p) =>
       imp(['disc']) +
       call('disc', { progress: p.progress, playing: p.playing, size: Number(p.size) }),
+  },
+  {
+    id: 'media-visual',
+    name: 'Media visuals',
+    group: 'Controls',
+    description:
+      "A cassette, CD, vinyl record or reel-to-reel deck for the Media screen, drawn to the real sizes. They turn at the real speeds while playing, and the tape or tonearm follows the track's progress. Shown whole here; on the screen they run off the left edge.",
+    controls: [
+      sel(
+        'visual',
+        'Visual',
+        F.MEDIA_VISUALS.filter((v) => v.id !== 'disc').map((v) => v.id),
+      ),
+      rng('progress', 'Progress', 0, 100, 38),
+      tog('playing', 'Playing', true),
+      sel(
+        'track',
+        'Cover',
+        TRACKS.map((t) => t.title),
+      ),
+    ],
+    render: (p) => {
+      const t = TRACKS.find((x) => x.title === p.track) ?? TRACKS[0]!;
+      return F.mediaVisual({
+        visual: p.visual as F.MediaVisualProps['visual'],
+        progress: Number(p.progress),
+        playing: !!p.playing,
+        title: t.title,
+        artist: t.artist,
+        art: t.art,
+      });
+    },
+    code: (p) =>
+      imp(['mediaVisual']) +
+      call('mediaVisual', {
+        visual: p.visual,
+        progress: p.progress,
+        playing: p.playing,
+        title: TRACKS.find((x) => x.title === p.track)?.title,
+        art: 'cover.jpg',
+      }) +
+      `\n\n// on the Media screen\nmediaScreen(ctx, { visual: '${p.visual}' });`,
+    variants: () =>
+      F.MEDIA_VISUALS.filter((v) => v.id !== 'disc').map((v, i) => {
+        const t = TRACKS[i % TRACKS.length]!;
+        return {
+          label: v.name,
+          el: F.mediaVisual({
+            visual: v.id as F.MediaVisualProps['visual'],
+            progress: 30 + i * 15,
+            playing: true,
+            title: t.title,
+            artist: t.artist,
+            art: t.art,
+          }),
+        };
+      }),
+    size: [480, 336],
   },
   {
     id: 'tick-ring',

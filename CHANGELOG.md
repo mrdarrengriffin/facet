@@ -26,6 +26,10 @@ All notable changes to Facet are written down here. The format is loosely based 
   `timersWith`, `githubWith`, `energyWith`, `weatherWith`, `lightningWith`) and
   `house.setScene()` for the parts that update live.
 - `@facet/demo-data`: a fictional mock house.
+- Media visuals: the Media screen can show a cassette, CD, vinyl record or reel-to-reel deck
+  in place of the disc (`mediaScreen(ctx, { visual })`, `setVisual()`), drawn to the real
+  sizes and turning at the real speeds. Also on their own as `mediaVisual()`. `MediaState`
+  gains `art`, the mock tracks have made-up covers, and the screen page has a Visual option.
 - Site: a UI explorer (`/components/`), a full demo (`/demo/`), a docs page with a live
   preview for every screen, and the new Facet mark, favicons, web manifest and social card.
 

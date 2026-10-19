@@ -33,6 +33,7 @@ export function mediaWith(now: number, o: MediaScene = {}): MediaState {
     state: o.state ?? 'playing',
     title: idle ? null : t.title,
     artist: idle ? null : t.artist,
+    art: idle ? null : t.art,
     duration: idle ? null : t.duration,
     position: idle ? null : 74,
     positionAt: now,

@@ -19,9 +19,11 @@ import {
 import { WX_TEXT } from '@facet/icons';
 import {
   CLOCK_FACES,
+  MEDIA_VISUALS,
   type Band,
   type ClockFace,
   type MediaPlayback,
+  type MediaVisualId,
   type ToastData,
 } from '@facet/ui';
 import type { Control, Props } from './controls';
@@ -30,6 +32,8 @@ export interface ScreenOptionsContext {
   house: MockHouse;
   /** Mount the screen again with other screen options (the Clock face and style). */
   remount(o: { face?: ClockFace; font?: string; format?: string; date?: string }): void;
+  /** Swap what sits in the Media screen's hero slot (the disc or a visual). */
+  mediaVisual(id: MediaVisualId): void;
   /** The toast layer, on the Toasts preview. */
   toasts?: { push(t: ToastData): void; setPosition(p: 'top' | 'bottom'): void };
 }
@@ -71,6 +75,7 @@ const tog = (key: string, label: string, value: boolean): Control => ({
 
 const MEDIA_STATES = ['playing', 'paused', 'idle'] as const;
 const TRACK_TITLES = TRACKS.map((t) => t.title);
+const VISUAL_NAMES = MEDIA_VISUALS.map((v) => v.name);
 const BANDS = ['live', 'cheap', 'normal', 'peak'] as const;
 const LIGHTNING: LightningScene[] = ['live', 'quiet', 'distant', 'near', 'overhead'];
 const CONDITIONS = Object.keys(WX_TEXT);
@@ -129,8 +134,13 @@ export const screenOptions: Record<string, ScreenOptions> = {
       sel('state', 'State', MEDIA_STATES),
       sel('track', 'Track', TRACK_TITLES),
       range('volume', 'Volume', 0, 100, 42),
+      sel('visual', 'Visual', VISUAL_NAMES),
     ],
-    apply: (_k, p, ctx) => media(p, ctx),
+    apply(key, p, ctx) {
+      if (key === 'visual')
+        ctx.mediaVisual(MEDIA_VISUALS.find((v) => v.name === p.visual)?.id ?? 'disc');
+      else media(p, ctx);
+    },
   },
   light: {
     controls: [tog('on', 'On', true), range('brightness', 'Brightness', 1, 100, 64)],

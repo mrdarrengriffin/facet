@@ -1,0 +1,287 @@
+/* Media visuals (media-visuals/): cassette, CD, vinyl, reel-to-reel. Colours from --facet-color-mv-* (both themes).
+   The SVGs use a mm viewBox, so strokes are in mm (1 mm is 0.85 to 4 px depending on the visual). */
+.f-mv-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.f-mv {
+  position: absolute;
+}
+.f-mv-box {
+  position: relative;
+  overflow: visible;
+}
+.f-mv-svg {
+  display: block;
+  overflow: visible;
+}
+.f-mv-rot {
+  will-change: transform;
+}
+
+/* ---- cassette */
+.f-mv-shell {
+  fill: var(--facet-color-mv-shell);
+  stroke: var(--facet-color-mv-shell-edge);
+  stroke-width: 0.35;
+}
+.f-mv-shell-rim {
+  fill: none;
+  stroke: var(--facet-color-mv-shell-edge);
+  stroke-width: 0.25;
+  opacity: 0.7;
+}
+.f-mv-shell-2 {
+  fill: var(--facet-color-mv-shell-2);
+  stroke: var(--facet-color-mv-shell-edge);
+  stroke-width: 0.3;
+}
+.f-mv-paper {
+  fill: var(--facet-color-mv-paper);
+}
+.f-mv-stripe {
+  fill: var(--facet-color-mv-paper);
+}
+.f-mv-rule {
+  stroke: var(--facet-color-mv-ink);
+  stroke-width: 0.18;
+  opacity: 0.35;
+}
+.f-mv-ink {
+  fill: var(--facet-color-mv-ink);
+  font-family: var(--facet-font-mono);
+  font-weight: 500;
+  letter-spacing: 0.35px;
+}
+.f-mv-ink-1 {
+  font-size: 3.34px;
+} /* about 13 px on the screen */
+.f-mv-ink-2 {
+  font-size: 2.6px;
+  opacity: 0.75;
+}
+.f-mv-ink-c {
+  font-size: 2.6px;
+  opacity: 0.55;
+}
+.f-mv-side {
+  font-size: 6px;
+  font-weight: 600;
+}
+.f-mv-win {
+  fill: var(--facet-color-mv-window);
+}
+.f-mv-win-edge {
+  fill: none;
+  stroke: var(--facet-color-mv-shell-edge);
+  stroke-width: 0.45;
+}
+.f-mv-pack {
+  fill: var(--facet-color-mv-tape);
+}
+.f-mv-pack-sheen {
+  fill: none;
+  stroke: var(--facet-color-mv-tape-hi);
+  stroke-width: 0.5;
+  opacity: 0.7;
+}
+.f-mv-hub {
+  fill: var(--facet-color-mv-hub);
+}
+.f-mv-hub-ring {
+  fill: none;
+  stroke: var(--facet-color-mv-window);
+  stroke-width: 0.3;
+  opacity: 0.35;
+}
+.f-mv-glare {
+  fill: var(--facet-color-mv-glare);
+  opacity: 0.07;
+}
+.f-mv-gap {
+  fill: var(--facet-color-mv-gap);
+}
+.f-mv-tape-edge {
+  fill: var(--facet-color-mv-tape-hi);
+}
+.f-mv-screw {
+  fill: var(--facet-color-mv-screw);
+  stroke: var(--facet-color-mv-shell-edge);
+  stroke-width: 0.2;
+}
+.f-mv-screw-x {
+  stroke: var(--facet-color-mv-gap);
+  stroke-width: 0.45;
+  stroke-linecap: round;
+}
+
+/* ---- CD */
+.f-mv-cd-clear {
+  fill: var(--facet-color-mv-clear);
+}
+.f-mv-cd-mirror {
+  fill: var(--facet-color-mv-mirror);
+}
+.f-mv-cd-clamp {
+  fill: var(--facet-color-mv-clear-2);
+}
+.f-mv-cd-stack {
+  fill: none;
+  stroke: var(--facet-color-mv-clear-2);
+  stroke-width: 0.7;
+}
+.f-mv-cd-edge {
+  fill: none;
+  stroke: var(--facet-color-mv-mirror);
+  stroke-width: 0.25;
+}
+.f-mv-cd-rim {
+  fill: none;
+  stroke: var(--facet-color-mv-clear-2);
+  stroke-width: 0.3;
+}
+.f-mv-cd-mark {
+  stroke: var(--facet-color-mv-clear-2);
+  stroke-width: 0.5;
+}
+/* iridescent sheen: a conic gradient here; on the panel one pre-rendered image. It doesn't turn with the disc. */
+.f-mv-cd-sheen {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0.22;
+  background: conic-gradient(
+    from 200deg,
+    transparent 0deg,
+    var(--facet-color-mv-iri-a) 22deg,
+    var(--facet-color-mv-iri-b) 44deg,
+    transparent 70deg,
+    transparent 180deg,
+    var(--facet-color-mv-iri-c) 204deg,
+    var(--facet-color-mv-iri-a) 226deg,
+    transparent 252deg
+  );
+  -webkit-mask: radial-gradient(circle, transparent var(--in), #000 calc(var(--in) + 1px));
+  mask: radial-gradient(circle, transparent var(--in), #000 calc(var(--in) + 1px));
+}
+
+/* ---- vinyl */
+.f-mv-vinyl {
+  fill: var(--facet-color-mv-vinyl);
+}
+.f-mv-vinyl-edge {
+  fill: var(--facet-color-mv-vinyl-edge);
+}
+.f-mv-vinyl-gloss {
+  fill: var(--facet-color-mv-vinyl-gloss);
+}
+.f-mv-grooves circle {
+  fill: none;
+  stroke: var(--facet-color-mv-groove);
+  stroke-width: 0.32;
+}
+.f-mv-band {
+  fill: none;
+  stroke: var(--facet-color-mv-vinyl-gloss);
+  stroke-width: 1.1;
+}
+.f-mv-lock {
+  fill: none;
+  stroke: var(--facet-color-mv-groove);
+  stroke-width: 0.5;
+}
+.f-mv-label-bg {
+  fill: var(--facet-color-mv-paper);
+}
+.f-mv-label-edge {
+  fill: none;
+  stroke: var(--facet-color-mv-vinyl);
+  stroke-width: 0.5;
+  opacity: 0.6;
+}
+.f-mv-spindle {
+  fill: var(--facet-color-mv-metal);
+}
+.f-mv-vinyl-sheen {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0.16;
+  background: conic-gradient(
+    from 300deg,
+    transparent 0deg,
+    var(--facet-color-mv-glare) 18deg,
+    transparent 40deg,
+    transparent 180deg,
+    var(--facet-color-mv-glare) 198deg,
+    transparent 220deg
+  );
+  -webkit-mask: radial-gradient(circle, transparent var(--in), #000 calc(var(--in) + 1px));
+  mask: radial-gradient(circle, transparent var(--in), #000 calc(var(--in) + 1px));
+}
+.f-mv-arm-base {
+  fill: var(--facet-color-mv-deck);
+  stroke: var(--facet-color-mv-shell-edge);
+  stroke-width: 0.8;
+}
+.f-mv-arm-bearing {
+  fill: var(--facet-color-mv-metal);
+}
+.f-mv-arm {
+  stroke: var(--facet-color-mv-metal);
+  stroke-linecap: round;
+  fill: none;
+}
+.f-mv-weight {
+  fill: var(--facet-color-mv-metal-2);
+}
+.f-mv-headshell {
+  fill: var(--facet-color-mv-metal-2);
+}
+.f-mv-cart {
+  fill: var(--facet-color-mv-gap);
+}
+.f-mv-post {
+  fill: var(--facet-color-mv-metal-2);
+}
+
+/* ---- reel-to-reel */
+.f-mv-reel {
+  fill: var(--facet-color-mv-reel);
+  stroke: var(--facet-color-mv-shell-edge);
+  stroke-width: 0.5;
+}
+.f-mv-reel-rim {
+  fill: none;
+  stroke: var(--facet-color-mv-shell-edge);
+  stroke-width: 0.6;
+  opacity: 0.8;
+}
+.f-mv-reel-hub {
+  fill: none;
+  stroke: var(--facet-color-mv-shell-edge);
+  stroke-width: 0.6;
+  opacity: 0.7;
+}
+.f-mv-reel-key {
+  fill: var(--facet-color-mv-reel);
+}
+.f-mv-tape-line {
+  fill: none;
+  stroke: var(--facet-color-mv-tape-hi);
+  stroke-linejoin: round;
+}
+.f-mv-metal {
+  fill: var(--facet-color-mv-metal);
+}
+.f-mv-rubber {
+  fill: var(--facet-color-mv-gap);
+}
+.f-mv-deck {
+  fill: var(--facet-color-mv-deck);
+  stroke: var(--facet-color-mv-shell-edge);
+  stroke-width: 0.6;
+}
