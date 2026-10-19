@@ -101,6 +101,7 @@ export function slider(o: SliderProps) {
     return Math.round(Math.min(100, Math.max(0, ((e.clientX - r.left) / r.width) * 100)));
   };
   el.addEventListener('pointerdown', (e) => {
+    e.preventDefault(); // no text selection or native drag (a page selection over the slider would cancel the drag)
     dragging = true;
     el.setPointerCapture(e.pointerId);
     value = fromEvent(e);
@@ -379,6 +380,7 @@ export function dial(o: DialProps) {
   hit.addEventListener('pointerdown', (e) => {
     const p = fromEvent(e);
     if (p.dist < 150) return; // the centre stays free for the value and the ON/OFF button
+    e.preventDefault(); // no text selection or native drag, as on the slider
     dragging = true;
     hit.setPointerCapture(e.pointerId);
     value = p.v;

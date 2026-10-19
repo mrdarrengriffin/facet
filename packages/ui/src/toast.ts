@@ -80,6 +80,7 @@ export function toast(
     down = false;
   el.addEventListener('pointerdown', (e) => {
     if ((e.target as Element).closest('.f-btn')) return;
+    e.preventDefault(); // no text selection or native drag while swiping
     down = true;
     x0 = e.clientX;
     dx = 0;

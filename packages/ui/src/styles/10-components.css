@@ -380,6 +380,9 @@
   position: relative;
   height: 48px;
   cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
 }
 .f-slider-track {
   position: absolute;
@@ -420,6 +423,8 @@
 /* ---------- dial (a dial-scale square; geometry in components.ts dial(), the screen centres it in the content) ---------- */
 .f-dial {
   position: relative;
+  user-select: none;
+  -webkit-user-select: none;
 }
 .f-dial-scale {
   position: absolute;
@@ -430,6 +435,7 @@
   position: absolute;
   border-radius: var(--facet-radius-round);
   cursor: pointer;
+  touch-action: none;
 }
 .f-dial-cap,
 .f-dial-value,

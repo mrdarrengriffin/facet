@@ -19,6 +19,8 @@ All notable changes to Facet are written down here. The format is loosely based 
 - `@facet/sounds`: procedural UI sounds in six named packs (Keycap by default, plus Halo,
   Arcade, Graphite, Crystal and Felt), chosen with `setPack()`, and hooks that play them on
   real taps only.
+- Home: a Timer card, first in the grid, shown only while a timer is running (time left, a
+  ring that empties, the end time). Tap it for the Timer screen.
 - Site: a Sounds page (`/docs/sounds/`) with every sound in every pack playable live.
 - Screen pages: options under each live preview change the mock house's data (playing or
   paused, brightness, timer state, pull requests, price band, weather, storm, agents per mood,
@@ -37,6 +39,11 @@ All notable changes to Facet are written down here. The format is loosely based 
 
 - `createButton` is replaced by `button()` and the rest of the component set.
 - Colour tokens follow the panel names: `line-strong` is now `line-hi`, `info` is now `blue`.
+
+### Fixed
+
+- The slider, light dial and toast swipe no longer get stuck when the page has a text
+  selection over them (the browser started a native drag and cancelled the pointer).
 
 ## [0.1.0] - 2026-10-19
 
