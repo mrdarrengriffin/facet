@@ -51,7 +51,7 @@ export function volumeControl(actions?: PanelActions) {
 }
 
 export interface MediaOptions extends ScreenOptions {
-  /** What sits in the hero slot. Default `disc`. */
+  /** What sits in the hero slot. Default `cd`. */
   visual?: MediaVisualId;
 }
 

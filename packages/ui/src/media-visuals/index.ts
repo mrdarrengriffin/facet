@@ -185,7 +185,7 @@ export function mediaVisual(p: MediaVisualProps): MediaVisualElement {
  * visual in a layer over the whole page (the visual runs off the screen's left edge, so it can't live in the content
  * box). Put `layer` first in the page so the header and controls sit on top.
  */
-export function mediaVisualSlot(disc: HTMLElement, visual: MediaVisualId = 'disc') {
+export function mediaVisualSlot(disc: HTMLElement, visual: MediaVisualId = 'cd') {
   const layer = h('div', { class: 'f-mv-layer', 'aria-hidden': 'true' });
   const made: Partial<Record<VisualId, Visual>> = {};
   let media: MediaState | null | undefined,

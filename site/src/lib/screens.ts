@@ -125,7 +125,7 @@ const media = mediaScreen(
       setMediaTarget: (mode, id) => saveTarget(mode, id),
     },
   },
-  { visual: 'cassette' }, // 'disc' (default), 'cassette', 'cd', 'vinyl' or 'reel'
+  { visual: 'cassette' }, // 'cd' (default), 'disc', 'cassette', 'vinyl' or 'reel'
 );
 
 media.setVisual('vinyl'); // swap it later`,
