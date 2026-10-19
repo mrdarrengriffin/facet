@@ -1,0 +1,70 @@
+---
+import '@facet/icons/weather.css';
+import '@facet/ui/styles.css';
+import Base from '../layouts/Base.astro';
+import ThemeSwitch from '../components/panel/ThemeSwitch.astro';
+import SoundToggle from '../components/panel/SoundToggle.astro';
+---
+
+<Base
+  title="Components"
+  description="Every Facet component, live: change its props, switch the theme, copy the code to create it."
+  hasSidebar
+>
+  <div class="explorer" data-explorer>
+    <aside class="sidebar explorer__sidebar" id="sidebar" data-sidebar>
+      <label class="explorer__filter">
+        <span class="sr-only">Filter components</span>
+        <input type="search" placeholder="Filter components" data-ex-filter />
+      </label>
+      <nav aria-label="Components" data-ex-list></nav>
+    </aside>
+    <div class="sidebar-backdrop" data-nav-close></div>
+
+    <main class="explorer__main" id="main">
+      <header class="explorer__head">
+        <p class="facet-label" data-ex-group></p>
+        <h1 data-ex-title>Components</h1>
+        <p class="lede" data-ex-desc></p>
+      </header>
+
+      <section class="explorer__workbench">
+        <div class="explorer__preview">
+          <div class="preview__bar">
+            <span class="facet-label">Preview</span>
+            <span class="preview__spacer"></span>
+            <SoundToggle />
+            <ThemeSwitch />
+          </div>
+          <div class="explorer__themed" data-ex-themed>
+            <div class="explorer__stage f-sound-scope" data-ex-stage></div>
+          </div>
+        </div>
+        <div class="explorer__controls">
+          <h2 class="facet-label">Props</h2>
+          <div class="explorer__fields" data-ex-controls></div>
+        </div>
+      </section>
+
+      <section class="explorer__code">
+        <div class="explorer__code-head">
+          <h2 class="facet-label">Code</h2>
+          <button class="chip-button" type="button" data-ex-copy>Copy</button>
+        </div>
+        <pre><code data-ex-code /></pre>
+      </section>
+
+      <section class="explorer__variants" data-ex-variants-section>
+        <h2 class="facet-label">Variants</h2>
+        <div class="explorer__variant-grid explorer__themed-variants" data-ex-variants></div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    import { initExplorer } from '../scripts/explorer/explorer';
+    import { initDocsNav } from '../scripts/docs-nav';
+    initDocsNav();
+    initExplorer(document.querySelector<HTMLElement>('[data-explorer]')!);
+  </script>
+</Base>

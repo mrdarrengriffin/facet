@@ -1,13 +1,148 @@
 ---
-import ComingSoon from '../components/ComingSoon.astro';
+import '@facet/icons/weather.css';
+import '@facet/ui/styles.css';
+import { screenIconSvg } from '@facet/icons';
+import { TOASTS } from '@facet/demo-data';
+import Base from '../layouts/Base.astro';
+import ThemeSwitch from '../components/panel/ThemeSwitch.astro';
+import SoundToggle from '../components/panel/SoundToggle.astro';
+import { screenDocs } from '../lib/screens';
+import { url } from '../lib/nav';
+
+const jump = screenDocs.filter((s) => s.slug !== 'toasts');
 ---
 
-<ComingSoon
+<Base
   title="Demo"
-  description="A full panel running in your browser on mock data, so you can try Facet without any hardware."
+  description="A full Facet panel running in your browser on a mock house: tap a card, go back, get a toast, let it fall asleep."
 >
-  <p>
-    It'll show the same screens a wall panel would, with fake lights, music and timers to play with.
-    It's not built yet.
-  </p>
-</ComingSoon>
+  <main id="main" class="page page--wide demo" data-demo>
+    <header class="demo__intro">
+      <p class="facet-label">Demo</p>
+      <h1>Facet on a mock house</h1>
+      <p class="lede">
+        The real screens at panel size (720 × 720, scaled down on small screens), running on
+        fictional data. Tap a card to open its screen, use Back to return. Leave it alone for 30
+        seconds and it falls asleep to a clock; tap to wake it.
+      </p>
+    </header>
+
+    <div class="demo__layout">
+      <div class="demo__device">
+        <div class="demo__bezel">
+          <div class="preview__viewport demo__viewport" data-viewport>
+            <div class="preview__frame" data-frame aria-label="Facet panel, live"></div>
+          </div>
+        </div>
+        <p class="demo__now">Showing <span data-now>Home</span></p>
+      </div>
+
+      <aside class="demo__panel">
+        <section>
+          <h2 class="facet-label">Look</h2>
+          <div class="demo__row">
+            <ThemeSwitch />
+            <SoundToggle />
+          </div>
+        </section>
+        <section>
+          <h2 class="facet-label">Simulate an event</h2>
+          <div class="demo__buttons">
+            {
+              TOASTS.map((t) => (
+                <button type="button" class="chip-button" data-toast={t.key}>
+                  {t.name}
+                </button>
+              ))
+            }
+          </div>
+          <div class="demo__row">
+            <span class="demo__hint">Toasts enter from</span>
+            <div class="seg" role="group" aria-label="Toast position">
+              <button type="button" data-toast-pos="top" aria-pressed="true">Top</button>
+              <button type="button" data-toast-pos="bottom" aria-pressed="false">Bottom</button>
+            </div>
+          </div>
+        </section>
+        <section>
+          <h2 class="facet-label">Go to</h2>
+          <div class="demo__buttons">
+            <button type="button" class="chip-button" data-go="home"
+              ><span set:html={screenIconSvg('home', 16)} />Home</button
+            >
+            {
+              jump
+                .filter((s) => s.slug !== 'home')
+                .map((s) => (
+                  <button type="button" class="chip-button" data-go={s.slug}>
+                    <span set:html={screenIconSvg(s.icon, 16)} />
+                    {s.title}
+                  </button>
+                ))
+            }
+            <button type="button" class="chip-button" data-sleep>Sleep now</button>
+          </div>
+        </section>
+        <section class="demo__about">
+          <h2 class="facet-label">About the data</h2>
+          <p>
+            Everything comes from <code>@facet/demo-data</code>: a fictional study with a desk lamp,
+            a few speakers, a three-band energy tariff, some pull requests and a storm that crosses
+            the area once an hour. Each screen has its own page in the <a
+              href={url('/docs/screens/home/')}>docs</a
+            >.
+          </p>
+        </section>
+      </aside>
+    </div>
+  </main>
+</Base>
+
+<script>
+  import { createMockHouse, TOASTS } from '@facet/demo-data';
+  import { createDevice, type ScreenId } from '@facet/ui';
+  import { play } from '@facet/sounds';
+  import { fitFrame, initSounds, initThemeOverride } from '../scripts/facet-runtime';
+  import { screenDocs } from '../lib/screens';
+
+  const root = document.querySelector<HTMLElement>('[data-demo]')!;
+  initSounds();
+  const house = createMockHouse();
+  const now = root.querySelector('[data-now]')!;
+  const names: Record<string, string> = Object.fromEntries(
+    screenDocs.map((s) => [s.slug, s.title]),
+  );
+  const device = createDevice(house, {
+    idleAfter: 30_000,
+    onToast: () => void play('notify'),
+    onNavigate: (id) => (now.textContent = id === 'idle' ? 'Idle clock' : (names[id] ?? id)),
+  });
+  const frame = root.querySelector<HTMLElement>('[data-frame]')!;
+  frame.append(device.el);
+  fitFrame(root.querySelector<HTMLElement>('[data-viewport]')!, frame);
+  initThemeOverride(root, frame);
+
+  for (const b of root.querySelectorAll<HTMLButtonElement>('[data-toast]')) {
+    b.addEventListener('click', () => {
+      const t = TOASTS.find((x) => x.key === b.dataset.toast)!;
+      device.toast(t, {
+        onAction: () =>
+          t.key === 'lightning'
+            ? device.go('lightning')
+            : t.key === 'agent'
+              ? device.go('agents')
+              : undefined,
+      });
+    });
+  }
+  for (const b of root.querySelectorAll<HTMLButtonElement>('[data-toast-pos]')) {
+    b.addEventListener('click', () => {
+      device.toasts.setPosition(b.dataset.toastPos as 'top' | 'bottom');
+      for (const o of root.querySelectorAll('[data-toast-pos]'))
+        o.setAttribute('aria-pressed', String(o === b));
+    });
+  }
+  for (const b of root.querySelectorAll<HTMLButtonElement>('[data-go]'))
+    b.addEventListener('click', () => device.go(b.dataset.go as ScreenId));
+  root.querySelector('[data-sleep]')!.addEventListener('click', () => device.sleep());
+</script>

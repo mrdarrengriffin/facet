@@ -1,40 +1,55 @@
 ---
 import type { MarkdownHeading } from 'astro';
-import type { CollectionEntry } from 'astro:content';
+import { screenIconSvg } from '@facet/icons';
 import Base from './Base.astro';
-import { docHref, getSidebar, getSortedDocs } from '../lib/nav';
+import { getReadingOrder, getSidebar } from '../lib/nav';
 
 interface Props {
-  entry: CollectionEntry<'docs'>;
+  title: string;
+  description: string;
+  /** Sidebar group shown above the title. */
+  group: string;
+  /** This page's URL (to highlight it in the sidebar). */
+  current: string;
   headings: MarkdownHeading[];
+  /** Path of the source file in the repository, for the edit link. */
+  source: string;
+  /** Screen icon shown next to the title. */
+  icon?: string;
+  /** Wider content column (for pages with live previews). */
+  wide?: boolean;
 }
 
-const { entry, headings } = Astro.props;
-const { title, description } = entry.data;
-const current = docHref(entry);
+const { title, description, group, current, headings, source, icon, wide = false } = Astro.props;
 
 const sidebar = await getSidebar();
-const docs = await getSortedDocs();
-const index = docs.findIndex((doc) => doc.id === entry.id);
-const prev = index > 0 ? docs[index - 1] : undefined;
-const next = index < docs.length - 1 ? docs[index + 1] : undefined;
+const order = await getReadingOrder();
+const index = order.findIndex((p) => p.href === current);
+const prev = index > 0 ? order[index - 1] : undefined;
+const next = index >= 0 && index < order.length - 1 ? order[index + 1] : undefined;
 
-const toc = headings.filter((heading) => heading.depth === 2 || heading.depth === 3);
-const editUrl = `https://github.com/mrdarrengriffin/facet/edit/main/site/${entry.filePath}`;
+// task-list headings carry a "done/total" count: keep it out of the table of contents
+const toc = headings
+  .filter((heading) => heading.depth === 2 || heading.depth === 3)
+  .map((heading) => ({ ...heading, text: heading.text.replace(/\d+\/\d+$/, '') }));
+const editUrl = `https://github.com/mrdarrengriffin/facet/edit/main/${source}`;
 ---
 
 <Base title={title} description={description} hasSidebar>
-  <div class="docs">
+  <div class:list={['docs', { 'docs--wide': wide }]}>
     <aside class="sidebar" id="sidebar" data-sidebar>
       <nav aria-label="Docs">
         {
-          sidebar.map((group) => (
+          sidebar.map((g) => (
             <section class="sidebar__group">
-              <h2 class="facet-label">{group.label}</h2>
+              <h2 class="facet-label">{g.label}</h2>
               <ul>
-                {group.links.map((link) => (
+                {g.links.map((link) => (
                   <li>
                     <a href={link.href} aria-current={link.href === current ? 'page' : undefined}>
+                      {link.icon && (
+                        <span class="sidebar__icon" set:html={screenIconSvg(link.icon, 18)} />
+                      )}
                       {link.label}
                       {link.badge && <span class="badge">{link.badge}</span>}
                     </a>
@@ -50,8 +65,11 @@ const editUrl = `https://github.com/mrdarrengriffin/facet/edit/main/site/${entry
 
     <main class="docs__main" id="main">
       <article class="prose">
-        <p class="facet-label">{entry.data.group}</p>
-        <h1>{title}</h1>
+        <p class="facet-label">{group}</p>
+        <h1 class:list={{ 'title--icon': !!icon }}>
+          {icon && <span class="title__icon" set:html={screenIconSvg(icon, 32)} />}
+          {title}
+        </h1>
         <p class="lede">{description}</p>
         <slot />
       </article>
@@ -61,9 +79,9 @@ const editUrl = `https://github.com/mrdarrengriffin/facet/edit/main/site/${entry
         <nav class="pager" aria-label="Previous and next pages">
           {
             prev ? (
-              <a class="pager__link" href={docHref(prev)} rel="prev">
+              <a class="pager__link" href={prev.href} rel="prev">
                 <span class="facet-label">Previous</span>
-                <span>{prev.data.title}</span>
+                <span>{prev.label}</span>
               </a>
             ) : (
               <span />
@@ -71,9 +89,9 @@ const editUrl = `https://github.com/mrdarrengriffin/facet/edit/main/site/${entry
           }
           {
             next && (
-              <a class="pager__link pager__link--next" href={docHref(next)} rel="next">
+              <a class="pager__link pager__link--next" href={next.href} rel="next">
                 <span class="facet-label">Next</span>
-                <span>{next.data.title}</span>
+                <span>{next.label}</span>
               </a>
             )
           }

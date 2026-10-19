@@ -6,6 +6,27 @@ All notable changes to Facet are written down here. The format is loosely based 
 
 ## [Unreleased]
 
+### Added
+
+- The full token set in `@facet/tokens`: colours, a screen type scale and a component type
+  scale, the 8 px screen layout, sizes, motion, toasts and sound settings, from one
+  `tokens.json`. The build also writes ESPHome YAML (substitutions, fonts, LVGL styles).
+- `@facet/icons`: 30 UI icons as master SVGs, 12 screen icons, 17 animated weather icons and
+  a manifest.
+- `@facet/ui`: every component and screen as plain TypeScript factories. Screens read a small
+  observable store and call actions. Screens: Home, Agents, Media, Light, Clock (five faces),
+  GitHub, Energy, Weather, Lightning and Timer, plus toasts and an idle clock.
+- `@facet/sounds`: procedural UI sounds (v1, Crisp & mechanical by default) and hooks that
+  play them on real taps only.
+- `@facet/demo-data`: a fictional mock house.
+- Site: a UI explorer (`/components/`), a full demo (`/demo/`), a docs page with a live
+  preview for every screen, and the new Facet mark, favicons, web manifest and social card.
+
+### Changed
+
+- `createButton` is replaced by `button()` and the rest of the component set.
+- Colour tokens follow the panel names: `line-strong` is now `line-hi`, `info` is now `blue`.
+
 ## [0.1.0] - 2026-10-19
 
 ### Added

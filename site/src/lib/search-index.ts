@@ -60,7 +60,7 @@ export async function buildRecords(entry: CollectionEntry<'docs'>): Promise<Sear
       const rendered = headings[headingIndex++];
       if (rendered && rendered.depth <= 3) {
         flush();
-        current = { heading: rendered.text, slug: rendered.slug };
+        current = { heading: rendered.text.replace(/\d+\/\d+$/, ''), slug: rendered.slug };
         continue;
       }
     }

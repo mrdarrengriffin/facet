@@ -1,6 +1,7 @@
 import { getCollection, type CollectionEntry } from 'astro:content';
 
 import { groups } from './groups';
+import { screenDocs } from './screens';
 
 export { groups };
 
@@ -8,6 +9,8 @@ export interface NavLink {
   label: string;
   href: string;
   badge?: string;
+  /** Screen icon name, shown before the label. */
+  icon?: string;
 }
 
 export interface NavGroup {
@@ -25,14 +28,22 @@ export function docHref(entry: CollectionEntry<'docs'>): string {
   return url(`/docs/${entry.id}/`);
 }
 
+export const screenHref = (slug: string) => url(`/docs/screens/${slug}/`);
+
 /** Pages outside the docs collection that also appear in the sidebar. */
 const explore: NavGroup = {
   label: 'Explore',
   links: [
+    { label: 'Components', href: url('/components/') },
+    { label: 'Demo', href: url('/demo/') },
     { label: 'Design system', href: url('/design-system/') },
-    { label: 'Demo', href: url('/demo/'), badge: 'Soon' },
     { label: 'Install', href: url('/install/'), badge: 'Soon' },
   ],
+};
+
+const screens: NavGroup = {
+  label: 'Screens',
+  links: screenDocs.map((s) => ({ label: s.title, href: screenHref(s.slug), icon: s.icon })),
 };
 
 export async function getSortedDocs(): Promise<CollectionEntry<'docs'>[]> {
@@ -46,13 +57,19 @@ export async function getSortedDocs(): Promise<CollectionEntry<'docs'>[]> {
 
 export async function getSidebar(): Promise<NavGroup[]> {
   const docs = await getSortedDocs();
-  const sidebar: NavGroup[] = groups.map((label) => ({
+  const byGroup = (label: string): NavGroup => ({
     label,
     links: docs
       .filter((doc) => doc.data.group === label)
       .map((doc) => ({ label: doc.data.title, href: docHref(doc) })),
-  }));
-  // Explore sits after the concepts, before the project pages.
-  sidebar.splice(2, 0, explore);
-  return sidebar.filter((group) => group.links.length > 0);
+  });
+  return [byGroup('Start here'), byGroup('Concepts'), screens, explore, byGroup('Project')].filter(
+    (g) => g.links.length > 0,
+  );
+}
+
+/** Every page in reading order, for the previous / next links at the bottom of a page. */
+export async function getReadingOrder(): Promise<{ label: string; href: string }[]> {
+  const sidebar = await getSidebar();
+  return sidebar.filter((g) => g.label !== 'Explore').flatMap((g) => g.links);
 }

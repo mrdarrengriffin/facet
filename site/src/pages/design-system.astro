@@ -1,36 +1,80 @@
 ---
 import Base from '../layouts/Base.astro';
-import { color, font, motion, radius, space, type, type ThemeName } from '@facet/tokens';
+import {
+  color,
+  font,
+  layout,
+  motion,
+  radius,
+  screenType,
+  space,
+  type,
+  type ThemeName,
+  type TypeStyle,
+} from '@facet/tokens';
 import '@facet/ui/styles.css';
+import { url } from '../lib/nav';
 
 const themes: ThemeName[] = ['dark', 'light'];
 const colors = Object.entries(color);
-const typeStyles = Object.entries(type);
-const sample: Record<string, string> = {
+const screenSample: Record<string, string> = {
   display: '21:47',
   hero: '3',
   value: '18°',
-  headline: 'Now playing',
-  title: 'Living room lights',
+  headline: 'Paper Lanterns',
+  title: 'Add a quiet hours schedule',
   body: 'Dry for the next hour',
-  label: 'Kitchen · timer',
+  label: 'Study · 21:47',
 };
-
+const typeSample: Record<string, string> = {
+  title: 'Desk lamp',
+  'card-title': 'Weather',
+  tile: 'Photo backup',
+  body: 'Uses the solar noon from the table.',
+  label: 'Start',
+  'label-sm': 'Back',
+  meta: 'done · 4h ago',
+  'meta-sm': 'updated 2m',
+  'caps-sm': 'ci pass',
+  subtitle: 'The Quiet Hours',
+  date: 'Mon 19 Oct',
+  weather: 'Partly cloudy · 14°',
+  number: '8.69',
+};
+const shownTypes = Object.entries(type).filter(
+  ([name]) => !name.startsWith('clock') && name !== 'date-long' && name !== 'display',
+);
 const fontStack = (name: keyof typeof font) => `'${font[name].family}', ${font[name].fallback}`;
+const styleOf = (s: TypeStyle) =>
+  [
+    `font-family:${fontStack(s.font)}`,
+    `font-size:min(${s.size}px, ${(s.size / 6).toFixed(1)}vw + 12px)`,
+    `font-weight:${s.weight}`,
+    `line-height:${s.box ? 1.1 : s.lineHeight}`,
+    `letter-spacing:${s.letterSpacing}px`,
+    `text-transform:${s.case === 'upper' ? 'uppercase' : 'none'}`,
+  ].join(';');
+const spacing = Object.entries(space).filter(([, v]) => v > 0);
+const layoutRows = [
+  ['inset', layout.inset, 'every side of every screen'],
+  ['gutter', layout.gutter, 'inside a group'],
+  ['group', layout.group, 'between groups'],
+  ['row', layout.row, 'the header row, at y 32'],
+  ['top', layout.top, 'where content starts'],
+] as const;
 ---
 
 <Base
   title="Design system"
-  description="The Facet design tokens and components, rendered from @facet/tokens and @facet/ui."
+  description="The Facet design tokens: colour, type, layout, spacing, radius and motion, rendered from @facet/tokens."
 >
   <main id="main" class="page page--wide ds">
     <header class="ds__intro">
-      <p class="facet-label">Design system · starter set</p>
+      <p class="facet-label">Design system</p>
       <h1>Design system</h1>
       <p class="lede">
-        Everything on this page is rendered from <code>@facet/tokens</code> and <code
-          >@facet/ui</code
-        >. These are starter tokens; the full set will replace them.
+        Everything on this page is rendered from <code>@facet/tokens</code>: the same numbers the
+        web components and the panel firmware use.
       </p>
     </header>
 
@@ -66,32 +110,71 @@ const fontStack = (name: keyof typeof font) => `'${font[name].family}', ${font[n
     <section class="ds__section" aria-labelledby="type">
       <h2 id="type">Type</h2>
       <p>
-        {font.sans.family} for words and numbers, {font.mono.family} for labels. One large, light hero
-        per screen; everything else stays quiet. Sizes are at the 720 x 720 reference panel.
+        {font.sans.family} for words and numbers, {font.mono.family} for labels. Each screen has one hero
+        in a large, light weight; everything else stays quiet, and hierarchy comes from colour rather
+        than size. Sizes are at the 720 × 720 reference panel. Every style has a line box that's a multiple
+        of 8, so text sits on the grid.
+      </p>
+      <h3>Screen scale</h3>
+      <p>Classes <code>.fst-&lt;role&gt;</code>.</p>
+      <div class="type-scale">
+        {
+          Object.entries(screenType).map(([name, style]) => (
+            <div class="type-row">
+              <div class="type-row__meta">
+                <code>{name}</code>
+                <span>
+                  {style.size}/{style.weight} · {font[style.font].family} · box {style.box}
+                </span>
+              </div>
+              <div class="type-row__sample" style={styleOf(style)}>
+                {screenSample[name] ?? name}
+              </div>
+            </div>
+          ))
+        }
+      </div>
+      <h3>Component scale</h3>
+      <p>
+        Smaller text used inside components: lists, chips, the dial, clocks. Classes <code
+          >.ft-&lt;name&gt;</code
+        >.
       </p>
       <div class="type-scale">
         {
-          typeStyles.map(([name, style]) => (
+          shownTypes.map(([name, style]) => (
             <div class="type-row">
               <div class="type-row__meta">
                 <code>{name}</code>
                 <span>
                   {style.size}/{style.weight} · {font[style.font].family}
+                  {style.box ? ` · box ${style.box}` : ''}
                 </span>
               </div>
-              <div
-                class="type-row__sample"
-                style={[
-                  `font-family:${fontStack(style.font)}`,
-                  `font-size:min(${style.size}px, ${(style.size / 6).toFixed(1)}vw + 12px)`,
-                  `font-weight:${style.weight}`,
-                  `line-height:${style.lineHeight}`,
-                  `letter-spacing:${style.letterSpacing}px`,
-                  `text-transform:${style.uppercase ? 'uppercase' : 'none'}`,
-                ].join(';')}
-              >
-                {sample[name] ?? name}
+              <div class="type-row__sample" style={styleOf(style)}>
+                {typeSample[name] ?? name}
               </div>
+            </div>
+          ))
+        }
+      </div>
+    </section>
+
+    <section class="ds__section" aria-labelledby="layout">
+      <h2 id="layout">Layout</h2>
+      <p>
+        An 8 px grid: every x, y, width and height on a screen is a multiple of 8. One inset on all
+        four sides, more space between groups than inside them, and rows separated by hairlines
+        rather than boxes.
+      </p>
+      <div class="space-scale">
+        {
+          layoutRows.map(([name, value, what]) => (
+            <div class="space-row">
+              <code>layout.{name}</code>
+              <span class="space-row__value">{value}px</span>
+              <span class="space-row__bar" style={`width:${Math.min(value * 2, 240)}px`} />
+              <span class="space-row__what">{what}</span>
             </div>
           ))
         }
@@ -100,10 +183,10 @@ const fontStack = (name: keyof typeof font) => `'${font[name].family}', ${font[n
 
     <section class="ds__section" aria-labelledby="space">
       <h2 id="space">Spacing</h2>
-      <p>An 8 px grid, with 4 px for tight spots.</p>
+      <p>Spacing steps inside components.</p>
       <div class="space-scale">
         {
-          Object.entries(space).map(([name, value]) => (
+          spacing.map(([name, value]) => (
             <div class="space-row">
               <code>space.{name}</code>
               <span class="space-row__value">{value}px</span>
@@ -134,18 +217,20 @@ const fontStack = (name: keyof typeof font) => `'${font[name].family}', ${font[n
       <p>Animate opacity and transform on small things only, so it works on the panels too.</p>
       <div class="motion-grid">
         {
-          Object.entries(motion.duration).map(([name, value]) => (
-            <div class="motion-item">
-              <code>duration.{name}</code>
-              <span>{value} ms</span>
-            </div>
-          ))
+          Object.entries(motion.duration)
+            .filter(([, v]) => v <= 1000)
+            .map(([name, value]) => (
+              <div class="motion-item">
+                <code>duration.{name}</code>
+                <span>{value} ms</span>
+              </div>
+            ))
         }
         {
           Object.entries(motion.easing).map(([name, value]) => (
             <div class="motion-item">
               <code>easing.{name}</code>
-              <span>{value}</span>
+              <span>{value.css}</span>
             </div>
           ))
         }
@@ -155,32 +240,11 @@ const fontStack = (name: keyof typeof font) => `'${font[name].family}', ${font[n
     <section class="ds__section" aria-labelledby="components">
       <h2 id="components">Components</h2>
       <p>
-        <code>createButton()</code> from <code>@facet/ui</code>, rendered in both themes. Plain
-        TypeScript, no framework.
+        Every component and screen is in <code>@facet/ui</code>, plain TypeScript with no framework.
+        Try them live, with controls for their props, in the <a href={url('/components/')}
+          >UI explorer</a
+        >, or see the whole thing running in the <a href={url('/demo/')}>demo</a>.
       </p>
-      <div class="demo-panels">
-        {
-          themes.map((theme) => (
-            <div class="demo-panel" data-facet-theme={theme}>
-              <p class="demo-panel__label">{theme}</p>
-              <div class="demo-panel__buttons" data-button-demo />
-            </div>
-          ))
-        }
-      </div>
     </section>
   </main>
 </Base>
-
-<script>
-  import { createButton } from '@facet/ui';
-
-  for (const container of document.querySelectorAll('[data-button-demo]')) {
-    container.append(
-      createButton({ label: 'Start' }),
-      createButton({ label: 'Cancel', variant: 'secondary' }),
-      createButton({ label: 'Skip', variant: 'ghost' }),
-      createButton({ label: 'Off', disabled: true }),
-    );
-  }
-</script>

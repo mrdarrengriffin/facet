@@ -1,0 +1,56 @@
+---
+import { Code } from 'astro:components';
+import Docs from '../../../layouts/Docs.astro';
+import ScreenPreview from '../../../components/panel/ScreenPreview.astro';
+import { screenDocs, type ScreenDoc } from '../../../lib/screens';
+import { screenHref } from '../../../lib/nav';
+import { inlineMarkdown } from '../../../lib/inline';
+
+export function getStaticPaths() {
+  return screenDocs.map((doc) => ({ params: { slug: doc.slug }, props: { doc } }));
+}
+
+const { doc } = Astro.props as { doc: ScreenDoc };
+const headings = [
+  { depth: 2, slug: 'what-it-shows', text: 'What it shows' },
+  { depth: 2, slug: 'using-it', text: 'Using it' },
+  { depth: 2, slug: 'data', text: 'Data' },
+  { depth: 2, slug: 'configuration', text: 'Configuration' },
+];
+const themes = { light: 'github-light', dark: 'github-dark' } as const;
+---
+
+<Docs
+  title={doc.title}
+  description={doc.description}
+  group="Screens"
+  current={screenHref(doc.slug)}
+  headings={headings}
+  source="site/src/lib/screens.ts"
+  icon={doc.icon}
+  wide
+>
+  {doc.intro.map((p) => <p set:html={inlineMarkdown(p)} />)}
+
+  <ScreenPreview screen={doc.preview} title={doc.title} />
+
+  <h2 id="what-it-shows">What it shows</h2>
+  <ul>
+    {doc.shows.map((s) => <li set:html={inlineMarkdown(s)} />)}
+  </ul>
+
+  <h2 id="using-it">Using it</h2>
+  <Code code={doc.usage} lang="ts" themes={themes} defaultColor={false} />
+
+  <h2 id="data">Data</h2>
+  <p>
+    The screen reads these from the store (all types are exported from <code>@facet/ui</code>).
+    Anything missing shows a quiet empty state.
+  </p>
+  <Code code={doc.data} lang="ts" themes={themes} defaultColor={false} />
+
+  <h2 id="configuration">Configuration</h2>
+  <ul>
+    {doc.config.map((s) => <li set:html={inlineMarkdown(s)} />)}
+  </ul>
+</Docs>

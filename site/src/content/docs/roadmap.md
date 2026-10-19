@@ -1,35 +1,62 @@
 ---
 title: Roadmap
-description: Where Facet is headed, roughly in order.
+description: Where Facet is headed, area by area.
 group: Project
 order: 1
 ---
 
 A rough plan, not a promise. Things will shift as the hardware and the design teach us more.
+Ticked items are done, the ones with an orange dot are in progress.
 
-## Now: the foundations
+## Design system
 
-- [x] Project skeleton, CI and this site
-- [x] Starter design tokens and a first component
-- [ ] Move over the full token set (colour, type, layout grid, motion, sound)
-- [ ] Core components: buttons, cards, tiles, sliders, dials, chips, toasts
+- [x] The full token set: colour, two type scales, layout grid, motion, toasts, sound
+- [x] One `tokens.json` for the web and the panels
+- [x] Icons: master SVGs, screen icons and animated weather icons
+- [x] Procedural UI sounds
+- [x] The Facet mark, favicons and social card
+- [ ] Size classes for other screens: 480 × 480, 800 × 480, 1024 × 600, portrait
 
-## Next: the first panel
+## Components
 
-- [ ] Firmware for the Waveshare ESP32-P4 86 panel (ESPHome + LVGL)
-- [ ] Generate the ESPHome theme from `@facet/tokens`
-- [ ] First screens: clock, now playing, lights, timers, weather
-- [ ] Context cards: room profiles that decide which cards show and in what order
+- [x] Buttons, icon buttons and the back button
+- [x] Dial, slider, arc and the media disc
+- [x] Cards, tiles, rows, chips, lists and pickers
+- [x] Toasts and the toast layer
+- [x] Charts, clocks and the lightning radar
+- [x] Checkboxes
+- [ ] One component description that renders to the web and to LVGL
 
-## Then: the web version and the demo
+## Screens
 
-- [ ] A full-screen web build for a Pi or tablet
-- [ ] A live demo on this site running on mock data
-- [ ] An interactive design system playground (props, themes, sizes)
-
-## Later
-
-- [ ] Browser-based installer for flashing panels over USB
-- [ ] Size classes for other screens: 480 x 480, 800 x 480, 1024 x 600, portrait
-- [ ] One screen description that renders both to the web and to LVGL
+- [x] Home, Agents, Media, Light and Clock
+- [x] GitHub, Energy, Weather, Lightning and Timer
+- [x] Toasts over any screen and an idle clock
+- [~] Context cards: room profiles that decide which cards show and in what order
 - [ ] Ambient screens with generative animation
+
+## Firmware
+
+- [x] Generate the ESPHome theme from `@facet/tokens`
+- [~] Firmware for the first panel (ESPHome + LVGL)
+- [ ] Build the screens in LVGL from the same layouts
+- [ ] A Home Assistant adapter for the store and actions
+
+## Boards
+
+- [~] Waveshare ESP32-P4 86 panel (4", 720 × 720)
+- [ ] A full-screen web build for a Pi or tablet
+- [ ] More panels and sizes
+
+## Docs and site
+
+- [x] Docs, search and the design system page
+- [x] A live demo running on mock data
+- [x] A UI explorer with controls for every component
+- [x] A page with a live preview for every screen
+- [ ] Size classes in the explorer and the demo
+
+## Install wizard
+
+- [ ] Flash a panel from the browser over USB
+- [ ] Set up Wi-Fi and Home Assistant from the same page
