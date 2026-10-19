@@ -549,6 +549,15 @@
       "where": "the moon screen: docs, Home cards and screen headers"
     },
     {
+      "name": "screen-print",
+      "file": "svg/screens/print.svg",
+      "group": "screens",
+      "grid": 24,
+      "keyline": "square",
+      "sizes_used": [24, 32],
+      "where": "the 3D print screen: docs and screen headers"
+    },
+    {
       "name": "screen-media",
       "file": "svg/screens/media.svg",
       "group": "screens",

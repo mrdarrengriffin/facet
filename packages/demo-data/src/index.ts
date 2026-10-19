@@ -1,6 +1,6 @@
 /**
  * A mock house for demos, docs and tests: fictional rooms, speakers, weather, an energy tariff with price bands,
- * pull requests, a passing thunderstorm, the real moon, agents, timers and toasts. It fills a Facet store and implements the panel
+ * pull requests, a passing thunderstorm, the real moon, a 3D print, agents, timers and toasts. It fills a Facet store and implements the panel
  * actions, so the screens behave as they would on a real house: play and pause, change the volume, dim the light,
  * start a timer.
  *
@@ -20,6 +20,7 @@ import {
   type Store,
 } from '@facet/ui';
 import * as D from './data.js';
+import { printWith } from './print.js';
 import {
   energyWith,
   lightningWith,
@@ -30,6 +31,7 @@ import {
 
 export * from './data.js';
 export * from './scenes.js';
+export * from './print.js';
 
 export interface MockHouseOptions {
   /** Keep things moving: track progress, live power, the storm. Default true. */
@@ -92,6 +94,7 @@ export function mockState(now = Date.now(), o: MockHouseOptions = {}): PanelData
     github: D.github(now),
     lightning: D.lightning(now, o.quietSky),
     moon: moonData(now, D.PLACE_AT),
+    print: printWith(now),
     timers: timer > 0 ? [{ label: 'Bread', endsAt: now + timer * 1000, total: 12 * 60 }] : [],
     nextEvent: D.nextEvent(now),
   };

@@ -20,10 +20,11 @@ import { lightningScreen } from './screens/lightning.js';
 import { mediaScreen } from './screens/media.js';
 import type { MediaVisualId } from './media-visuals/index.js';
 import { moonScreen } from './screens/moon.js';
+import { printScreen } from './screens/print.js';
 import { timerScreen } from './screens/timer.js';
 import { weatherScreen } from './screens/weather.js';
 
-export type ScreenId = 'home' | CardId | 'timer';
+export type ScreenId = 'home' | CardId | 'timer' | 'print';
 export const SCREEN_IDS: ScreenId[] = [
   'home',
   'agents',
@@ -36,6 +37,7 @@ export const SCREEN_IDS: ScreenId[] = [
   'lightning',
   'moon',
   'timer',
+  'print',
 ];
 
 /** Build one screen by id. `onBack` shows the back button; leave it out for a standalone preview. */
@@ -73,6 +75,8 @@ export function createScreen(
       return moonScreen(ctx, o);
     case 'timer':
       return timerScreen(ctx, o);
+    case 'print':
+      return printScreen(ctx, o);
   }
 }
 

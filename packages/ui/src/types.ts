@@ -2,6 +2,7 @@
  * The data Facet's screens show. Everything comes in through these shapes, so the UI never needs to know where it came
  * from: a Home Assistant adapter, a mock house, a test. Times are ISO strings unless they say otherwise.
  */
+import type { Grid } from './print3d/grid.js';
 
 /** Status colours. `dim` = secondary text, no status. */
 export type Tone = 'ok' | 'warn' | 'error' | 'working' | 'info' | 'idle' | 'dim';
@@ -301,8 +302,28 @@ export interface PanelData {
   github?: GithubData | null;
   lightning?: LightningData | null;
   moon?: MoonData | null;
+  print?: PrintData | null;
   timers?: Timer[];
   nextEvent?: CalendarEvent | null;
+}
+
+/** A 3D print in progress (a Bambu printer through Home Assistant's bambu_lab integration, or anything similar). */
+export interface PrintData {
+  status: 'printing' | 'paused' | 'preparing' | 'done' | 'failed' | 'idle';
+  /** What the printer is doing while preparing ("auto bed levelling"). */
+  stage?: string | null;
+  task?: string | null;
+  layer: number;
+  layers: number;
+  /** The printer's own %, shown as the hero (it matches the printer's app). */
+  progress: number;
+  remainingMin?: number | null;
+  /** Unix seconds. */
+  endTs?: number | null;
+  /** The filament colour ("#RRGGBB"), for `solid: 'filament'`. */
+  filament?: string | null;
+  /** The model: `fromGcode` / `fromStl` / `fromShape` from @facet/ui. Null = no model yet (the screen shows text only). */
+  model?: Grid | null;
 }
 
 /** What the screens can ask for. An adapter implements these (and updates the store when things change). */

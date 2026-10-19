@@ -8,6 +8,12 @@ All notable changes to Facet are written down here. The format is loosely based 
 
 ### Added
 
+- 3D print: a 3D print screen. The model sits in an isometric view and fills up from the bed
+  as the layers go: printed part solid in flat tones, the newest four layers in the accent, the
+  rest a ghost. The hero is the printer's own %. The model is a voxel grid built from sliced
+  gcode (`fromGcode`), an STL (`fromStl`) or a shape function (`fromShape`) and drawn in
+  software (`render`), so a server can send the same frames to a device. `PanelData` gains
+  `print`; the mock house prints a lighthouse; new screen icon `print`.
 - `@facet/settings`: one schema for every personalisation setting (theme, accent, text
   size, UI sounds, sound pack, volume, clock face, idle, transition, toast position). The
   build checks it (accent contrast in both themes, defaults, sound packs) and writes the

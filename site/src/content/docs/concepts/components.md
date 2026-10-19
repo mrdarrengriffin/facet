@@ -51,6 +51,7 @@ weather.set({ value: '13°', sub: 'rain within the hour' });
 | Clock        | `timeText`, `dateLine`, `clockHero`, `clockRing`, `clockAnalogue`, `clockContext`         |
 | Radar        | `lightningRadar`                                                                          |
 | Moon         | `moonData`, `moonTimes`, `moonLine` (worked out locally, no API)                          |
+| 3D print     | `fromGcode`, `fromStl`, `fromShape`, `render`, `palette` (voxel model, software render)   |
 
 ## Built for LVGL too
 

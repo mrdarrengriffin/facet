@@ -7,6 +7,7 @@ import {
   agentsWith,
   githubWith,
   mediaWith,
+  printWith,
   timersWith,
   TOASTS,
   TRACKS,
@@ -14,6 +15,7 @@ import {
   type LightningScene,
   type MoonScene,
   type MockHouse,
+  type PrintScene,
   type RainScene,
   type TimerScene,
 } from '@facet/demo-data';
@@ -226,6 +228,16 @@ export const screenOptions: Record<string, ScreenOptions> = {
     apply: (_k, p, ctx) =>
       ctx.house.store.patch({
         timers: timersWith(Date.now(), p.state as TimerScene, Number(p.minutes)),
+      }),
+  },
+  print: {
+    controls: [
+      sel('state', 'Printer', ['printing', 'paused', 'preparing', 'done', 'none']),
+      range('progress', 'Progress (%)', 0, 100, 45),
+    ],
+    apply: (_k, p, ctx) =>
+      ctx.house.store.patch({
+        print: printWith(Date.now(), p.state as PrintScene, Number(p.progress) / 100),
       }),
   },
   toasts: {

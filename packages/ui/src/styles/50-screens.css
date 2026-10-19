@@ -764,3 +764,35 @@
 .fs-mn-d {
   color: var(--facet-color-text);
 }
+
+/* ---------- 3D print ---------- */
+.fs-print-model {
+  display: block;
+  width: 656px;
+  height: 408px;
+}
+.fs-print-hero {
+  color: var(--facet-color-text);
+  font-variant-numeric: tabular-nums;
+}
+.fs-print-hero.is-word {
+  font-size: 64px;
+}
+.fs-print-label {
+  color: var(--facet-color-text-mute);
+  white-space: nowrap;
+}
+.fs-print-title {
+  color: var(--facet-color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fs-print-body {
+  color: var(--facet-color-text-dim);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.fs-print.is-paused .fs-print-label {
+  color: var(--facet-color-warn);
+}

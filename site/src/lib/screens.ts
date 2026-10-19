@@ -485,6 +485,46 @@ interface PanelData {
     ],
   },
   {
+    slug: 'print',
+    preview: 'print',
+    icon: 'print',
+    title: '3D print',
+    description:
+      'The print in an isometric view, filling up from the bed: printed part solid, the newest layers in orange, the rest a ghost.',
+    intro: [
+      'A glanceable "how far is it" from across the room. The model sits in an isometric view: what is printed is solid, the last few layers wear the accent, and what is still to come is a ghost you can see the print through.',
+      "The fill cuts at the current layer, so the picture is what is physically on the plate. The big number is the printer's own %, so it agrees with the printer and its app.",
+      "The model is drawn in software from a voxel grid, so it works for any source: sliced gcode (Bambu printers send a `.gcode.3mf` with no mesh in it, only gcode), an STL, or a shape function. A device that can't draw it gets the same picture as frames rendered on a server.",
+    ],
+    shows: [
+      'The model (656 × 408), fitted so it never moves while it fills. Flat tones per face direction; the accent marks the newest layers.',
+      'The hero (96 px, light): the % while printing, a word otherwise (Done, Idle).',
+      'On the right: status and finish time, the job name, then the layer and the time left.',
+    ],
+    usage: `import { fromGcode, printScreen } from '@facet/ui';
+
+const model = fromGcode(await (await fetch(gcodeUrl)).text(), { name: 'Lighthouse' });
+store.patch({ print: { status: 'printing', task: 'Lighthouse', layer: 214, layers: 300, progress: 62, model } });
+const print = printScreen(ctx, { shade: 'faces', solid: 'neutral', hot: 4 });`,
+    data: `interface PrintData {
+  status: 'printing' | 'paused' | 'preparing' | 'done' | 'failed' | 'idle';
+  stage?: string | null;      // while preparing: "heating the bed"
+  task?: string | null;
+  layer: number;              // the fill cuts here
+  layers: number;
+  progress: number;           // the printer's own %, the hero
+  remainingMin?: number | null;
+  endTs?: number | null;      // unix seconds
+  filament?: string | null;   // "#RRGGBB", for solid: 'filament'
+  model?: Grid | null;        // fromGcode / fromStl / fromShape
+}`,
+    config: [
+      "Home Assistant's bambu_lab integration gives `current_layer`, `total_layer_count`, `print_progress`, `remaining_time` and `end_time`, and saves each print's gcode under `/config/www/media/ha-bambulab/<serial>/prints/cache/` (served at `/local/`). Build the grid once per print and cache it.",
+      'Options: `shade` (`faces`, the default, or `smooth`), `solid` (`neutral`, `steel` or `filament`) and `hot` (layers in the accent, default 4).',
+      "Rendering a frame takes about 150 ms. To show it on a device that can't, call `render(grid, …)` on a server and send the image each time the layer changes.",
+    ],
+  },
+  {
     slug: 'toasts',
     preview: 'toasts',
     icon: 'toasts',
