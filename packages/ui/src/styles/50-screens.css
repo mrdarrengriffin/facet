@@ -580,7 +580,7 @@
 .fs-t-btns[hidden] {
   display: none;
 }
-.fs-content > .f-abs > .fs-t-btns,
+.fs-content > .f-abs > .fs-t-btns:not([hidden]),
 .fs-content > .f-abs > .fs-t-mid {
   display: flex;
 }
