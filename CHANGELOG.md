@@ -47,6 +47,8 @@ All notable changes to Facet are written down here. The format is loosely based 
   `idleBrightness` (default 0.7); the next touch goes to Home. A toast wakes the dimmed screen.
   The demo uses the default minute.
 - `createButton` is replaced by `button()` and the rest of the component set.
+- Empty states: data that hasn't arrived reads "loading" for the first 10 s after the store
+  is made (`LOADING_MS`, `store.loading()`, `missing(store)`), then "no data".
 - Colour tokens follow the panel names: `line-strong` is now `line-hi`, `info` is now `blue`.
 - GitHub list and PR detail, toasts and the speaker sheet follow the screen layout: the list
   uses section labels and the same hairline rows as the summary; the detail has a 400 px text

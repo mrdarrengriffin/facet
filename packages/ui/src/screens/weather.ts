@@ -8,7 +8,7 @@ import { at, CH, CW, content, header, layout, moreRow, page, subView, text } fro
 import type { WeatherData } from '../types.js';
 import { isDay, type Screen, type ScreenContext, type ScreenOptions } from './common.js';
 
-export function weatherScreen(_ctx: ScreenContext, o: ScreenOptions = {}): Screen {
+export function weatherScreen(ctx: ScreenContext, o: ScreenOptions = {}): Screen {
   const temp = fit8(text('display', 'fs-w-temp', '--°'));
   const ic = weatherIcon('partly-day', { size: 144, animated: true, stroke: 3 });
   const cond = text('headline', 'fs-w-cond', '--');
@@ -91,7 +91,7 @@ export function weatherScreen(_ctx: ScreenContext, o: ScreenOptions = {}): Scree
   const render = (d: WeatherData | null | undefined) => {
     const c = d?.current;
     if (!c) {
-      cond.textContent = d?.error ? 'Offline' : 'No data';
+      cond.textContent = d?.error ? 'Offline' : ctx.store.loading() ? 'Loading' : 'No data';
       return;
     }
     ic.set(wxIcon(c.condition, isDay(d)));

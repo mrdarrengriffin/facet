@@ -5,7 +5,7 @@ import { ago } from '../format.js';
 import { at, CH, CW, content, header, layout, page, stat, text } from '../layout.js';
 import { lightningRadar } from '../radar.js';
 import type { LightningData, Tone } from '../types.js';
-import type { Screen, ScreenContext, ScreenOptions } from './common.js';
+import { missing, type Screen, type ScreenContext, type ScreenOptions } from './common.js';
 
 export function lightningScreen(ctx: ScreenContext, o: ScreenOptions = {}): Screen {
   const R = layout.radar;
@@ -37,7 +37,11 @@ export function lightningScreen(ctx: ScreenContext, o: ScreenOptions = {}): Scre
     const n = d?.nearest;
     setText(nNum, n ? String(n.d) : d ? 'Quiet' : '--');
     nNum.classList.toggle('is-word', !n);
-    nUnit.textContent = n ? `km ${n.dir}` : d ? `nothing within ${d.radius} km` : 'no data';
+    nUnit.textContent = n
+      ? `km ${n.dir}`
+      : d
+        ? `nothing within ${d.radius} km`
+        : missing(ctx.store);
     el.classList.toggle('is-near', !!n && n.d <= 25);
     sCount.set(
       d ? `${d.counts.m15} strike${d.counts.m15 === 1 ? '' : 's'}` : '--',

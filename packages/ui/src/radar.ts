@@ -17,12 +17,15 @@ const ageClass = (t: number, now: number) => {
 };
 
 /** One line for a Home card or chip: quiet unless there were strikes in the last 15 minutes. */
-export function lightningSummary(d: LightningData | null | undefined): {
+export function lightningSummary(
+  d: LightningData | null | undefined,
+  loading = false,
+): {
   status: string;
   tone: Tone;
   active: boolean;
 } {
-  if (!d) return { status: 'loading', tone: 'dim', active: false };
+  if (!d) return { status: loading ? 'loading' : 'no data', tone: 'dim', active: false };
   if (d.error && !d.strikes.length) return { status: 'offline', tone: 'error', active: false };
   const n = d.nearest;
   if (!n)

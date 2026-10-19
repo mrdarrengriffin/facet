@@ -17,12 +17,19 @@ export interface Store<T> {
   patch(partial: Partial<T>): void;
   /** Called after every change, and once straight away. Returns an unsubscribe function. */
   subscribe(fn: (state: T) => void): () => void;
+  /** True for the first {@link LOADING_MS} after the store was made: missing data then reads "loading", later "no data". */
+  loading(): boolean;
 }
+
+/** How long after boot missing data counts as still loading. The store emits once when it runs out. */
+export const LOADING_MS = 10_000;
 
 export function createStore<T extends object>(initial: T): Store<T> {
   let state = initial;
   const subs = new Set<(s: T) => void>();
   const emit = () => subs.forEach((fn) => fn(state));
+  const born = Date.now();
+  setTimeout(emit, LOADING_MS);
   return {
     get: () => state,
     set(next) {
@@ -38,6 +45,7 @@ export function createStore<T extends object>(initial: T): Store<T> {
       fn(state);
       return () => subs.delete(fn);
     },
+    loading: () => Date.now() - born < LOADING_MS,
   };
 }
 

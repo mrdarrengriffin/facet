@@ -19,7 +19,7 @@ import {
 import { lightningSummary } from '../radar.js';
 import { h } from '../dom.js';
 import type { PanelData } from '../types.js';
-import { isDay, speakerName, type Screen, type ScreenContext } from './common.js';
+import { isDay, missing, speakerName, type Screen, type ScreenContext } from './common.js';
 
 export type CardId =
   'timer' | 'agents' | 'media' | 'light' | 'clock' | 'github' | 'energy' | 'weather' | 'lightning';
@@ -140,7 +140,11 @@ export function homeScreen(ctx: ScreenContext, o: HomeOptions = {}): Screen {
             sub: `${n.dir} · ${d!.counts.m15} in 15 min`,
             accent: lightningSummary(d).active,
           }
-        : { value: 'Quiet', sub: d ? `nothing within ${d.radius} km` : 'no data', accent: false },
+        : {
+            value: 'Quiet',
+            sub: d ? `nothing within ${d.radius} km` : missing(ctx.store),
+            accent: false,
+          },
     );
   };
 
@@ -206,7 +210,7 @@ export function homeScreen(ctx: ScreenContext, o: HomeOptions = {}): Screen {
             : `nothing to review · ${g.counts.mine} open`,
           accent: g.counts.needs > 0,
         });
-      else cards.github.set({ value: '--', sub: g?.error ? 'offline' : 'no data' });
+      else cards.github.set({ value: '--', sub: g?.error ? 'offline' : missing(ctx.store) });
       // energy
       const e = s.energy;
       pEnergy.set(e);
@@ -217,7 +221,7 @@ export function homeScreen(ctx: ScreenContext, o: HomeOptions = {}): Screen {
           sub: `${e.today.kwh?.toFixed(1) ?? '--'} kWh · ${BAND_NAME[band]} now`,
           accent: band === 'peak',
         });
-      } else cards.energy.set({ value: '£--', sub: e?.error ? 'offline' : 'no data' });
+      } else cards.energy.set({ value: '£--', sub: e?.error ? 'offline' : missing(ctx.store) });
       // weather
       const c = s.weather?.current;
       if (c) {
@@ -227,7 +231,7 @@ export function homeScreen(ctx: ScreenContext, o: HomeOptions = {}): Screen {
           value: deg(c.temp),
           sub: rain ? 'rain within the hour' : (WX_TEXT[c.condition] ?? c.condition),
         });
-      } else cards.weather.set({ value: '--°', sub: 'no data' });
+      } else cards.weather.set({ value: '--°', sub: missing(ctx.store) });
       setLightning(s.lightning);
       setTimer();
     },

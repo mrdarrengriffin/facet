@@ -31,6 +31,9 @@ export function bindScreen(screen: Screen, store: Store<PanelData>): () => void 
   return store.subscribe((s) => screen.update?.(s));
 }
 
+/** Wording for data that hasn't arrived: "loading" just after boot, "no data" once the store's grace period is over. */
+export const missing = (store: Store<PanelData>) => (store.loading() ? 'loading' : 'no data');
+
 /** "Kitchen speaker" → "Kitchen". */
 export const speakerName = (n?: string | null) => (n ? n.replace(/\s+speaker$/i, '') || n : '');
 

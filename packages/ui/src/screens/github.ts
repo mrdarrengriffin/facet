@@ -19,7 +19,7 @@ import {
 } from '../layout.js';
 import { qrBlock, type ChipKind } from '../lists.js';
 import type { GithubData, PullRequest, Tone } from '../types.js';
-import type { Screen, ScreenContext, ScreenOptions } from './common.js';
+import { missing, type Screen, type ScreenContext, type ScreenOptions } from './common.js';
 
 const ciChip = (ci: PullRequest['ci']): ChipKind | null =>
   ci === 'pass' ? 'ci-pass' : ci === 'fail' ? 'ci-fail' : ci === 'pending' ? 'ci-pending' : null;
@@ -39,12 +39,15 @@ export function chipsFor(p: PullRequest, kind: 'needs' | 'mine'): ChipKind[] {
 }
 
 /** One line for a Home card: "3 to review · 2 open". */
-export function githubSummary(g?: GithubData | null): {
+export function githubSummary(
+  g?: GithubData | null,
+  loading = false,
+): {
   status: string;
   tone: Tone;
   active: boolean;
 } {
-  if (!g) return { status: 'no data', tone: 'dim', active: false };
+  if (!g) return { status: loading ? 'loading' : 'no data', tone: 'dim', active: false };
   if (!g.needs && g.error) return { status: 'offline', tone: 'error', active: false };
   const n = g.counts.needs;
   return {
@@ -244,6 +247,7 @@ export function githubScreen(
       g?.error,
       g?.needs?.length,
       g?.mine?.length,
+      ctx.store.loading(),
       Math.floor(now / 60000),
     ]);
     if (key === sig) return;
@@ -251,13 +255,13 @@ export function githubScreen(
     if (!g?.needs) {
       hero.set({
         n: '--',
-        label: g?.error ? 'github offline' : 'no data',
+        label: g?.error ? 'github offline' : missing(ctx.store),
         line: g?.error?.slice(0, 40) ?? '',
         accent: false,
       });
       rows.replaceChildren();
       more.hidden = true;
-      needsHd.set(g?.error ? 'github offline' : 'no data');
+      needsHd.set(g?.error ? 'github offline' : missing(ctx.store));
       needsBox.replaceChildren(empty(g?.error ? g.error.slice(0, 60) : 'Waiting for GitHub'));
       mineHd.hidden = true;
       mineBox.replaceChildren();
