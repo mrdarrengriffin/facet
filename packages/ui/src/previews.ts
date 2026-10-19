@@ -81,6 +81,24 @@ export function previewClock() {
   );
 }
 
+/** A ring that empties as the timer runs, with a dot at its centre. `set(pct left)`. */
+export function previewTimer(v = 100) {
+  const a = arc({
+    size: 68,
+    start: 270,
+    end: 269,
+    track: { w: 2, c: 'line' },
+    ind: { w: 5, c: 'accent' },
+    value: v,
+  });
+  a.classList.add('f-abs');
+  a.style.left = '2px';
+  a.style.top = '2px';
+  return Object.assign(h('span', null, a, circle(32, 32, 8, { background: c('blue') })), {
+    set: (x: number) => a.set(x),
+  });
+}
+
 /** Two commits and a branch merging into an orange dot. */
 export function previewGithub() {
   return h(

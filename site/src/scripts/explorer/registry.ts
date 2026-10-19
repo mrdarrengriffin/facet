@@ -704,6 +704,7 @@ export const entries: Entry[] = [
         'previewGithub',
         'previewEnergy',
         'previewLightning',
+        'previewTimer',
       ]) + 'const art = previewDial(64);',
   },
   // ---------------------------------------------------------------- lists
@@ -1358,5 +1359,6 @@ function previewSet() {
     F.previewGithub(),
     e,
     l,
+    F.previewTimer(65),
   ].map((el) => F.h('span', { class: 'ex-prev' }, el));
 }

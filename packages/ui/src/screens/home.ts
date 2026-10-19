@@ -1,8 +1,9 @@
 // Home: the room's cards, two by two (320 × 280), four per view; the grid scrolls a row at a time. Each card shows
 // one value and one line, and lights its dot when it matters (something needs you, music playing, peak price, a
-// nearby strike).
+// nearby strike). The Timer card comes first and only shows while a timer is running.
 import { weatherIcon, wxIcon, WX_TEXT } from '@facet/icons';
 import { BAND_NAME } from '../charts.js';
+import { countdown } from '../clocks.js';
 import { hhmm, clean, deg, money } from '../format.js';
 import { card, content, header, page } from '../layout.js';
 import {
@@ -13,6 +14,7 @@ import {
   previewGithub,
   previewLightning,
   previewMedia,
+  previewTimer,
 } from '../previews.js';
 import { lightningSummary } from '../radar.js';
 import { h } from '../dom.js';
@@ -20,8 +22,9 @@ import type { PanelData } from '../types.js';
 import { isDay, speakerName, type Screen, type ScreenContext } from './common.js';
 
 export type CardId =
-  'agents' | 'media' | 'light' | 'clock' | 'github' | 'energy' | 'weather' | 'lightning';
+  'timer' | 'agents' | 'media' | 'light' | 'clock' | 'github' | 'energy' | 'weather' | 'lightning';
 export const CARD_IDS: CardId[] = [
+  'timer',
   'agents',
   'media',
   'light',
@@ -35,7 +38,7 @@ export const CARD_IDS: CardId[] = [
 export interface HomeOptions {
   /** Called when a card is tapped. Leave it out and the cards don't navigate. */
   open?: (id: CardId) => void;
-  /** Which cards, in order. Default: all eight. */
+  /** Which cards, in order. Default: all nine (Timer only while one runs). */
   cards?: CardId[];
 }
 
@@ -45,7 +48,16 @@ export function homeScreen(ctx: ScreenContext, o: HomeOptions = {}): Screen {
   const pEnergy = previewEnergy();
   const pWeather = weatherIcon('partly-day', { size: 72, animated: true });
   const pLightning = previewLightning();
+  const pTimer = previewTimer();
   const cards = {
+    timer: card({
+      label: 'Timer',
+      icon: 'timer',
+      preview: pTimer,
+      value: '0:00',
+      sub: '',
+      onTap: go('timer'),
+    }),
     agents: card({
       label: 'Agents',
       icon: 'agents',
@@ -132,6 +144,25 @@ export function homeScreen(ctx: ScreenContext, o: HomeOptions = {}): Screen {
     );
   };
 
+  // the first running timer; hidden when none is (the "done" toast covers the end)
+  const setTimer = (now = Date.now()) => {
+    const t = st.timers?.find((x) => x.endsAt > now);
+    cards.timer.hidden = !t;
+    if (!t) return;
+    const left = (t.endsAt - now) / 1000;
+    const ends = new Date(t.endsAt).toLocaleTimeString('en-GB', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+    cards.timer.set({
+      value: countdown(left),
+      sub: `${t.label.toLowerCase()} · ends ${ends}`,
+      accent: true,
+    });
+    pTimer.set((left / t.total) * 100);
+  };
+  setTimer();
+
   return {
     el,
     update(s) {
@@ -198,6 +229,7 @@ export function homeScreen(ctx: ScreenContext, o: HomeOptions = {}): Screen {
         });
       } else cards.weather.set({ value: '--°', sub: 'no data' });
       setLightning(s.lightning);
+      setTimer();
     },
     tick(now) {
       const c = st.weather?.current;
@@ -206,6 +238,7 @@ export function homeScreen(ctx: ScreenContext, o: HomeOptions = {}): Screen {
         sub: c ? `${(WX_TEXT[c.condition] ?? c.condition).toLowerCase()} · ${deg(c.temp)}` : '',
       });
       setLightning(st.lightning);
+      setTimer(now.getTime());
     },
   };
 }

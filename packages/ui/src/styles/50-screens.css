@@ -91,6 +91,9 @@
     background-color var(--facet-duration-press) var(--facet-easing-ease-out),
     border-color var(--facet-duration-press) var(--facet-easing-ease-out);
 }
+.fs-card[hidden] {
+  display: none;
+}
 .fs-card.live:active {
   background: var(--facet-color-surface-press);
   border-color: var(--facet-color-line-hi);
