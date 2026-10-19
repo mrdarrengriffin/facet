@@ -38,7 +38,7 @@ export function checkbox(o: CheckboxProps = {}) {
   const el = h(
     'span',
     {
-      class: 'f-checkbox',
+      class: text ? 'f-checkbox fst-body' : 'f-checkbox', // the box centres on the label's line (1lh)
       role: 'checkbox',
       tabindex: o.onChange ? 0 : undefined,
       'aria-readonly': o.onChange ? undefined : 'true',
