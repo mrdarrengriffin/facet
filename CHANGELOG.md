@@ -40,6 +40,10 @@ All notable changes to Facet are written down here. The format is loosely based 
   `PanelData` gains `calendar` (`CalendarData`, `AgendaEvent`, `Calendar`), `PanelActions`
   gains `setCalendar`; new components `agendaRow` and `previewCalendar`; new screen icon
   `calendar`. The mock house has a family, work and school calendar, with the bins hidden.
+- Calendar month view: Agenda | Month in the Calendar header. Six weeks of day cells with a
+  dot per event, Today, previous / next month, tap a day for its events. `PanelData` gains
+  `calendarMonth` (`CalendarMonth`), `PanelActions` gains `loadCalendarMonth`; new components
+  `monthView` and `monthCell`. The mock house fills any month with a weekly routine.
 - Switch: the simplest screen and a Home card. One big round button with the state inside is the hero and the
   control: filled accent when on, an outline when off, dim when unavailable. Tap to flip (shown at once, held 3 s
   while the device answers); underneath, the power draw while on and how long it has been in that state.

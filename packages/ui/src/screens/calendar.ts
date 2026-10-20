@@ -1,13 +1,17 @@
 // Calendar: the agenda. The hero is the next event: when it starts as the big number ("16:50", "Now" while it runs,
 // else the day), its title and one quiet line. Below it, the days: a caps day label ("Today · Tue 20 Oct") and a 64 px
 // row per event (time, the calendar's dot, the title). Finished events go dim. With `actions.setCalendar`, the header
-// gets an "N calendars" button that opens a sheet to show or hide each calendar.
+// gets a calendars button (icon + how many are on) that opens a sheet to show or hide each calendar. Agenda | Month in
+// the header switches to the month view (calendar-month.ts); `view` / `month` pick where it starts.
 import { h } from '../dom.js';
 import { fit8, live, setText, statusDot } from '../atoms.js';
 import { checkbox } from '../checkbox.js';
 import { hhmm } from '../format.js';
 import { at, CW, content, header, page, text } from '../layout.js';
 import { bottomSheet } from '../pickers.js';
+import { screenIcon } from '@facet/icons';
+import { segmented } from '../settings.js';
+import { monthView } from './calendar-month.js';
 import type { AgendaEvent, Calendar, CalendarData } from '../types.js';
 import { missing, type Screen, type ScreenContext, type ScreenOptions } from './common.js';
 
@@ -126,7 +130,15 @@ export function previewCalendar(size = 72) {
 }
 
 // ---------------------------------------------------------------- the screen
-export function calendarScreen(ctx: ScreenContext, o: ScreenOptions = {}): Screen {
+export type CalendarView = 'agenda' | 'month';
+export interface CalendarOptions extends ScreenOptions {
+  /** Which view it opens on. Default `agenda`. */
+  view?: CalendarView;
+  /** The month view's first month (YYYY-MM). Default this month. */
+  month?: string;
+}
+
+export function calendarScreen(ctx: ScreenContext, o: CalendarOptions = {}): Screen {
   // hero = the heroBlock layout with the title in title type (not caps)
   const hN = fit8(text('hero', 'fs-hero-n', '--')),
     hTitle = text('title', 'fs-cal-htitle', ''),
@@ -149,13 +161,18 @@ export function calendarScreen(ctx: ScreenContext, o: ScreenOptions = {}): Scree
 
   const setCal = ctx.actions?.setCalendar;
   const sheet = bottomSheet({ title: 'calendars' });
+  const fCount = text('label', '', '--');
   const fBtn = setCal
-    ? fit8(
-        h(
-          'button',
-          { class: 'fst-label fs-cal-fbtn', type: 'button', 'data-snd': 'open' },
-          'calendars',
-        ),
+    ? h(
+        'button',
+        {
+          class: 'fs-cal-fbtn fs-cal-fbtn--icon',
+          type: 'button',
+          'data-snd': 'open',
+          'aria-label': 'Calendars',
+        },
+        screenIcon('calendar', 24),
+        fCount,
       )
     : null;
   if (fBtn) live(fBtn, () => sheet.open());
@@ -186,7 +203,7 @@ export function calendarScreen(ctx: ScreenContext, o: ScreenOptions = {}): Scree
     lastMin = Math.floor(now / 60_000);
     const colour = Object.fromEntries((d?.calendars ?? []).map((c) => [c.id, c.colour]));
     const nOn = d?.calendars.filter((c) => c.on).length ?? 0;
-    if (fBtn) setText(fBtn, `${nOn} calendar${nOn === 1 ? '' : 's'}`);
+    fCount.textContent = d ? String(nOn) : '--';
     const counts: Record<string, number> = {};
     for (const e of d?.events ?? [])
       if (e.calendar) counts[e.calendar] = (counts[e.calendar] ?? 0) + 1;
@@ -252,22 +269,51 @@ export function calendarScreen(ctx: ScreenContext, o: ScreenOptions = {}): Scree
       days.replaceChildren(text('body', 'fs-empty', 'Nothing on the calendars that are on.'));
   };
 
+  // ---- views: Agenda (hero + days) | Month
+  let view: CalendarView = o.view ?? 'agenda';
+  const month = monthView({ load: ctx.actions?.loadCalendarMonth, month: o.month });
+  const agendaBox = content(at(0, 0, CW, 96, heroEl), at(0, 96 + 48, CW, null, days));
+  const monthBox = content(month);
+  monthBox.classList.remove('f-scroll'); // the grid fits
+  const seg = segmented({
+    options: [
+      { id: 'agenda', label: 'Agenda' },
+      { id: 'month', label: 'Month' },
+    ],
+    value: view,
+    onPick: (v) => setView(v as CalendarView),
+  });
+  seg.classList.add('fs-cal-seg');
+  const setView = (v: CalendarView) => {
+    view = v;
+    seg.set(v);
+    agendaBox.hidden = v !== 'agenda';
+    monthBox.hidden = v !== 'month';
+    if (v === 'month') month.show();
+    else month.close();
+  };
+  setView(view);
+
   return {
     el: page(
       'fs-cal',
-      header({ label: 'Calendar', onBack: o.onBack, right: fBtn ? [fBtn] : [] }),
-      content(at(0, 0, CW, 96, heroEl), at(0, 96 + 48, CW, null, days)),
+      header({ label: 'Calendar', onBack: o.onBack, right: fBtn ? [seg, fBtn] : [seg] }),
+      agendaBox,
+      monthBox,
       sheet,
+      month.sheet,
     ),
     update(s) {
       d = s.calendar;
       render();
+      month.update(s.calendar, s.calendarMonth);
     },
     tick(now) {
       if (Math.floor(now.getTime() / 60_000) !== lastMin) render(now.getTime());
     },
     leave() {
       sheet.close(true);
+      month.close();
     },
   };
 }

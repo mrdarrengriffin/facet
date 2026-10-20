@@ -59,7 +59,18 @@ export {
   agendaRow,
   previewCalendar,
   isRunning,
+  type CalendarOptions,
+  type CalendarView,
 } from './screens/calendar.js';
+export {
+  monthView,
+  monthCell,
+  eventsByDay,
+  monthGridStart,
+  monthId,
+  addMonths,
+  type MonthCellProps,
+} from './screens/calendar-month.js';
 export { printScreen, type PrintOptions } from './screens/print.js';
 export * from './print3d/grid.js';
 export * from './print3d/render.js';

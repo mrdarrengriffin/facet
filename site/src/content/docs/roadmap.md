@@ -39,7 +39,7 @@ Ticked items are done, the ones with an orange dot are in progress.
 - [ ] Thermostat on the firmware
 - [x] Blinds and curtains: the window drawn per kind (roller, Venetian with tilt, curtains), drag to a position
 - [ ] Blinds and curtains on the firmware
-- [x] Calendar: the next event as the hero, then two weeks of days; calendars shown or hidden from a sheet
+- [x] Calendar: the next event as the hero, then two weeks of days, a month view; calendars shown or hidden from a sheet
 - [ ] Calendar on the firmware
 - [x] Switch: one big button for anything with an on and an off, power and time underneath
 - [ ] Switch on the firmware

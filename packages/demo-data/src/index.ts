@@ -230,7 +230,17 @@ export function createMockHouse(o: MockHouseOptions = {}): MockHouse {
       );
       if (on) off.delete(id);
       else off.add(id);
-      store.patch({ calendar: D.calendar(Date.now(), off) });
+      const m = store.get().calendarMonth?.month;
+      store.patch({
+        calendar: D.calendar(Date.now(), off),
+        ...(m ? { calendarMonth: D.calendarMonth(Date.now(), m, off) } : {}),
+      });
+    },
+    loadCalendarMonth(month) {
+      const off = new Set(
+        (store.get().calendar?.calendars ?? D.CALENDARS).filter((c) => !c.on).map((c) => c.id),
+      );
+      store.patch({ calendarMonth: D.calendarMonth(Date.now(), month, off) });
     },
     // the thermostat answers like a real one: a new set point in auto drops to heat (a manual override)
     climateTarget: (target) =>

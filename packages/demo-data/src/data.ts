@@ -3,6 +3,7 @@ import type {
   Agent,
   Band,
   CalendarData,
+  CalendarMonth,
   CalendarEvent,
   EnergyData,
   EnergySlot,
@@ -148,8 +149,9 @@ export const CALENDARS = [
   { id: 'bins', name: 'Bins', colour: 'text', on: false },
 ];
 
-/** Two weeks of the mock house's agenda, from today's midnight. `off` = calendar ids hidden. */
-export function calendar(now: number, off?: Set<string>): CalendarData {
+/** The mock house's agenda for `days` days from `from` days after today (default: two weeks from today's midnight).
+ *  The next two weeks tell a story; outside them a weekly routine fills the days. `off` = calendar ids hidden. */
+export function calendar(now: number, off?: Set<string>, from = 0, days = 14): CalendarData {
   const d0 = startOfDay(now);
   const day = (n: number) => new Date(d0 + n * 24 * HOUR + 2 * HOUR).toISOString().slice(0, 10); // + 2 h: DST-safe
   const at = (
@@ -177,7 +179,26 @@ export function calendar(now: number, off?: Set<string>): CalendarData {
   const next = nextEvent(now);
   const calendars = CALENDARS.map((c) => (off ? { ...c, on: !off.has(c.id) } : c));
   const on = new Set(calendars.filter((c) => c.on).map((c) => c.id));
-  const events = [
+  // the routine, for days outside the story's two weeks (n = days from today)
+  const routine = (n: number) => {
+    const wd = new Date(d0 + n * 24 * HOUR + 2 * HOUR).getDay(),
+      week = Math.floor((n + 400 * 7) / 7);
+    return [
+      wd >= 1 && wd <= 5 ? at(n, 8.5, 0.5, 'School run', 'school') : null,
+      wd === 1 ? at(n, 10, 1, 'Team planning', 'work') : null,
+      wd === 3 ? at(n, 18, 1, 'Swimming lessons', 'family', 'Leisure centre') : null,
+      wd === 4 && week % 2 === 0 ? at(n, 19.5, 1.5, 'Book club', 'family') : null,
+      wd === 5 && week % 2 === 1 ? allDay(n, 1, 'Recycling out', 'bins') : null,
+      wd === 6 && week % 3 === 0 ? at(n, 10, 2, 'Football', 'family', 'Larkfield park') : null,
+      new Date(d0 + n * 24 * HOUR + 2 * HOUR).getDate() === 28
+        ? allDay(n, 1, 'Pay day', 'work')
+        : null,
+    ].filter((e) => e !== null);
+  };
+  const outside = Array.from({ length: days }, (_, i) => from + i)
+    .filter((n) => n < 0 || n > 13)
+    .flatMap(routine);
+  const story = [
     at(0, 8.5, 0.5, 'School run', 'school'),
     { ...next, calendar: 'family', location: 'Larkfield studio' },
     at(1, 10, 1, 'Team planning', 'work'),
@@ -190,12 +211,30 @@ export function calendar(now: number, off?: Set<string>): CalendarData {
     allDay(9, 1, 'Recycling out', 'bins'),
     at(11, 9, 1, 'Boiler service', 'family'),
     allDay(12, 5, 'Half term', 'holidays'),
-  ]
+  ];
+  const lo = d0 + from * 24 * HOUR - 2 * HOUR,
+    hi = d0 + (from + days) * 24 * HOUR + 2 * HOUR;
+  const events = [...story, ...outside]
     .filter((e) => on.has(e.calendar))
+    .filter(
+      (e) =>
+        Date.parse(e.end.length === 10 ? `${e.end}T00:00:00` : e.end) > lo &&
+        Date.parse(e.start.length === 10 ? `${e.start}T00:00:00` : e.start) < hi,
+    )
     .sort(
       (a, b) => Date.parse(a.start) - Date.parse(b.start) || Number(b.allDay) - Number(a.allDay),
     );
-  return { at: iso(now), days: 14, calendars, events };
+  return { at: iso(now), days, calendars, events };
+}
+
+/** The month view's six weeks for `month` (YYYY-MM): from the Monday on or before the 1st, 42 days. */
+export function calendarMonth(now: number, month: string, off?: Set<string>): CalendarMonth {
+  const [y, m] = month.split('-').map(Number);
+  const first = new Date(y!, m! - 1, 1);
+  const start = new Date(y!, m! - 1, 1 - ((first.getDay() + 6) % 7));
+  const from = Math.round((start.getTime() - startOfDay(now)) / (24 * HOUR));
+  const ymd = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-${String(start.getDate()).padStart(2, '0')}`;
+  return { ...calendar(now, off, from, 42), month, start: ymd };
 }
 
 // ---------------------------------------------------------------- weather

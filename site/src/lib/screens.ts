@@ -602,11 +602,13 @@ const moon = moonScreen(ctx);`,
       'The Calendar screen answers "what\'s next?" from across the room. The hero is the next event: when it starts as the big number ("16:50" today, "Now" while it runs, otherwise the day), with its title and one quiet line.',
       'Below it, the days. Each has a caps label ("Today · Tue 20 Oct") and a row per event: the time, the calendar\'s dot and the title. Finished events go dim, and an event that lasts several days shows on each of them.',
       'With a `setCalendar` action, the header gets an "N calendars" button. It opens a sheet where each calendar can be shown or hidden, so the bin collections or a work calendar can stay off the wall.',
+      "Agenda | Month in the header switches to a month grid: six weeks of day cells, each with a dot per event in its calendar's colour. Tap a day for its events; the arrows move a month at a time and Today comes back.",
     ],
     shows: [
       'The hero (96): the start time, "Now" or the day, in the accent while the event is on or starts within 15 minutes; the title (28) over one line: until when, where, which calendar.',
       "The days, 32 apart: a caps day label, then 64 px rows (time 112, the calendar's 8 px dot, the title on one line).",
       'The Home card: a little calendar page with today\'s date, the next event\'s title, and "in 25 min · 16:50", "today 16:50" or "now · until 17:50".',
+      'Month view: a month bar (title, Today, previous / next), the weekday row, then 6 × 7 cells of 80 × 72. Today\'s number sits in an accent disc; up to three dots, or two and "+N"; other months are mute.',
     ],
     usage: `import { calendarScreen } from '@facet/ui';
 
@@ -631,6 +633,7 @@ interface AgendaEvent {
     config: [
       "Home Assistant: call `calendar.get_events` on each calendar that's on (today's midnight, 14 days), and keep the on/off choices wherever your adapter keeps settings.",
       "Sort all-day events first within a day. The screen picks the hero itself: the running or next timed event, or an all-day one from tomorrow on, so a holiday doesn't hide the day's appointments.",
+      "Month view: implement `loadCalendarMonth(month)` and patch `calendarMonth` with that month's six weeks (`CalendarMonth`: `month`, `start` = the Monday on or before the 1st, 42 days of events). Without it the month view shows only what `calendar` covers.",
     ],
   },
   {

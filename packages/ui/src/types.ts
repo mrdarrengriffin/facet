@@ -113,6 +113,14 @@ export interface CalendarData {
   error?: string;
 }
 
+/** The Calendar screen's month view: the six weeks shown for `month` (from the Monday before the 1st, 42 days). */
+export interface CalendarMonth extends CalendarData {
+  /** YYYY-MM */
+  month: string;
+  /** The grid's first day, a Monday (YYYY-MM-DD). */
+  start: string;
+}
+
 // ---------------------------------------------------------------- weather
 /** Weather conditions, using Home Assistant's names. */
 export type WeatherCondition =
@@ -338,6 +346,8 @@ export interface PanelData {
   timers?: Timer[];
   nextEvent?: CalendarEvent | null;
   calendar?: CalendarData | null;
+  /** The month the Calendar's month view asked for (`loadCalendarMonth`). */
+  calendarMonth?: CalendarMonth | null;
   /** Personalisation settings (`@facet/settings` ids → values); a setting left out = its default. The device applies
    *  the ones that are set (theme, accent, text size, idle, transition, toasts) and the Settings screen shows them. */
   settings?: Partial<Values> | null;
@@ -452,6 +462,9 @@ export interface PanelActions {
   cancelTimer?(): void;
   /** Show or hide a calendar's events on the Calendar screen. Leave it out and the screen has no calendar filter. */
   setCalendar?(id: string, on: boolean): void;
+  /** The month view moved to `month` (YYYY-MM): put its events in `calendarMonth`. Without it, the month view shows what
+   *  `calendar` has. */
+  loadCalendarMonth?(month: string): void;
   /** Thermostat set point (`climate.set_temperature`). */
   climateTarget?(target: number): void;
   /** `climate.set_hvac_mode`. */

@@ -1327,3 +1327,101 @@
   height: 40px;
   margin-bottom: 16px;
 }
+
+/* Calendar header: Agenda | Month + the calendars button (icon + count) */
+.fs-cal-seg {
+  margin-right: 16px;
+}
+.fs-cal-fbtn--icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+/* Calendar month view: bar 48, weekday row 24 at 64, 6 × 7 cells of 80 × 72 (16 across, 8 down) from 104 */
+.fs-calm-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 48px;
+}
+.fs-calm-bar > .fs-cal-fbtn {
+  margin-right: 0;
+}
+.fs-calm-title {
+  height: 40px;
+  color: var(--facet-color-text);
+  white-space: nowrap;
+}
+.fs-calm-prev .f-icon,
+.fs-calm-prev svg {
+  transform: rotate(180deg);
+}
+.fs-calm-wk,
+.fs-calm-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 80px);
+  column-gap: 16px;
+}
+.fs-calm-wk {
+  color: var(--facet-color-text-mute);
+}
+.fs-calm-wk > span {
+  display: block;
+  height: 24px;
+  text-align: center;
+}
+.fs-calm-grid {
+  grid-auto-rows: 72px;
+  row-gap: 8px;
+}
+.fs-calm-grid[data-state='loading'] .fs-calm-dots {
+  visibility: hidden;
+}
+.fs-calm-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding-top: 4px;
+  border-radius: var(--facet-radius-square);
+}
+.fs-calm-cell[role='button'] {
+  cursor: pointer;
+}
+.fs-calm-cell[role='button']:active,
+.fs-calm-cell.is-sel {
+  background: var(--facet-color-surface);
+}
+.fs-calm-n {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  color: var(--facet-color-text);
+}
+.fs-calm-cell.is-out .fs-calm-n {
+  color: var(--facet-color-text-mute);
+}
+.fs-calm-cell.is-out .fs-calm-dots {
+  opacity: 0.4;
+}
+.fs-calm-cell.is-today .fs-calm-n {
+  background: var(--facet-color-accent);
+  color: var(--facet-color-on-accent);
+}
+.fs-calm-dots {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 16px;
+}
+.fs-calm-more {
+  height: 16px;
+  line-height: 16px;
+  color: var(--facet-color-text-mute);
+}
+.fs-calm-none {
+  padding-top: 16px;
+}
