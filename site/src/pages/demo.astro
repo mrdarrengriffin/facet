@@ -110,7 +110,7 @@ const jump = screenDocs.filter((s) => s.slug !== 'toasts');
 <script>
   import { createMockHouse, TOASTS } from '@facet/demo-data';
   import { createDevice, isMediaVisual, type ScreenId } from '@facet/ui';
-  import { play } from '@facet/sounds';
+  import { play, setEnabled, setPack, setVolume } from '@facet/sounds';
   import { fitFrame, initSounds, initThemeOverride } from '../scripts/facet-runtime';
   import { screenDocs } from '../lib/screens';
 
@@ -126,6 +126,17 @@ const jump = screenDocs.filter((s) => s.slug !== 'toasts');
     mediaVisual: isMediaVisual(visual) ? visual : 'cd',
     onToast: () => void play('notify'),
     onNavigate: (id) => (now.textContent = id === 'idle' ? 'Idle clock' : (names[id] ?? id)),
+  });
+  // the Settings screen's sound settings: the device leaves sounds to the host
+  const heard: Record<string, unknown> = {};
+  house.store.subscribe(({ settings: st }) => {
+    for (const [id, v] of Object.entries(st ?? {})) {
+      if (heard[id] === v) continue;
+      heard[id] = v;
+      if (id === 'sounds') setEnabled(!!v);
+      else if (id === 'soundPack' && setPack(String(v))) play('confirm');
+      else if (id === 'volume') setVolume(Number(v) / 100);
+    }
   });
   const frame = root.querySelector<HTMLElement>('[data-frame]')!;
   frame.append(device.el);

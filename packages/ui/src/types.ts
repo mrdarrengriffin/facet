@@ -2,6 +2,7 @@
  * The data Facet's screens show. Everything comes in through these shapes, so the UI never needs to know where it came
  * from: a Home Assistant adapter, a mock house, a test. Times are ISO strings unless they say otherwise.
  */
+import type { Values, Value } from '@facet/settings';
 import type { Grid } from './print3d/grid.js';
 
 /** Status colours. `dim` = secondary text, no status. */
@@ -337,6 +338,9 @@ export interface PanelData {
   timers?: Timer[];
   nextEvent?: CalendarEvent | null;
   calendar?: CalendarData | null;
+  /** Personalisation settings (`@facet/settings` ids → values); a setting left out = its default. The device applies
+   *  the ones that are set (theme, accent, text size, idle, transition, toasts) and the Settings screen shows them. */
+  settings?: Partial<Values> | null;
 }
 
 /** A 3D print in progress (a Bambu printer through Home Assistant's bambu_lab integration, or anything similar). */
@@ -462,4 +466,6 @@ export interface PanelActions {
   coverCommand?(id: string, command: 'open' | 'close' | 'stop'): void;
   /** Turn the switch on or off (`homeassistant.turn_on` / `turn_off`). */
   switchSet?(on: boolean): void;
+  /** Change a personalisation setting (an `@facet/settings` id; the value is already valid for it). */
+  setSetting?(id: string, value: Value): void;
 }

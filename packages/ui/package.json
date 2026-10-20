@@ -27,6 +27,7 @@
   },
   "dependencies": {
     "@facet/icons": "workspace:*",
+    "@facet/settings": "workspace:*",
     "@facet/tokens": "workspace:*"
   },
   "devDependencies": {

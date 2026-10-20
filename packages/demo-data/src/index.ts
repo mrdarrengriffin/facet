@@ -281,6 +281,8 @@ export function createMockHouse(o: MockHouseOptions = {}): MockHouse {
         });
       }, 600);
     },
+    // the house's settings start empty (every setting at its default, the page's own theme); a change is kept
+    setSetting: (id, value) => store.patch({ settings: { ...store.get().settings, [id]: value } }),
   };
   const scene: Required<LiveScene> = {
     lightning: o.quietSky ? 'quiet' : 'live',

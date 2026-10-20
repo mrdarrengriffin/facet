@@ -61,6 +61,9 @@ importers:
       '@facet/icons':
         specifier: workspace:*
         version: link:../icons
+      '@facet/settings':
+        specifier: workspace:*
+        version: link:../settings
       '@facet/tokens':
         specifier: workspace:*
         version: link:../tokens

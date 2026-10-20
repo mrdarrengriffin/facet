@@ -2,7 +2,8 @@
 // one value and one line, and lights its dot when it matters (something needs you, music playing, peak price, a
 // nearby strike). The Timer card comes first while a timer runs; otherwise it sits after Clock as "No timer",
 // so a timer can always be started.
-import { moonIcon, weatherIcon, wxIcon, WX_TEXT } from '@facet/icons';
+import { moonIcon, screenIcon, weatherIcon, wxIcon, WX_TEXT } from '@facet/icons';
+import { iconButton } from '../buttons.js';
 import { BAND_NAME } from '../charts.js';
 import { countdown } from '../clocks.js';
 import { hhmm, clean, deg, money } from '../format.js';
@@ -72,6 +73,16 @@ export interface HomeOptions {
   open?: (id: CardId) => void;
   /** Which cards, in order. Default: all of them (Timer moves to the front while one runs). */
   cards?: CardId[];
+  /** Called by the Settings button in the header. Leave it out and there's no button. */
+  openSettings?: () => void;
+}
+
+/** Home's Settings button: 48 square with the settings screen icon, left of the time. */
+export function settingsButton(onTap: () => void) {
+  const b = iconButton({ style: 'square', icon: 'auto', title: 'Settings', onTap });
+  b.querySelector('.f-icon')?.replaceWith(screenIcon('settings', 24));
+  b.dataset.snd = 'open';
+  return b;
 }
 
 export function homeScreen(ctx: ScreenContext, o: HomeOptions = {}): Screen {
@@ -204,7 +215,10 @@ export function homeScreen(ctx: ScreenContext, o: HomeOptions = {}): Screen {
   const list = h('div', { class: 'fs-cards' }, ...ids.map((id) => cards[id]));
   const grid = content(list);
   grid.classList.add('fs-snap');
-  const hd = header({ label: 'Home' });
+  const hd = header({
+    label: 'Home',
+    right: o.openSettings ? [settingsButton(o.openSettings)] : [],
+  });
   const el = page('fs-home', hd, grid);
   let st: PanelData = ctx.store.get();
 

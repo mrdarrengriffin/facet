@@ -8,6 +8,14 @@ All notable changes to Facet are written down here. The format is loosely based 
 
 ### Added
 
+- Settings: a Settings screen, opened from a new Settings button in Home's header. Every personalisation
+  setting in four groups, built from `@facet/settings`: segmented controls, accent swatches, a switch, sliders
+  and bottom sheets for packs, faces and presets. `PanelData` gains `settings`, `PanelActions` gains
+  `setSetting`; new components `segmented`, `toggleSwitch`, `accentSwatches`, `settingsButton` and
+  `applySettings`. The device (and `mountScreen`) apply theme, accent and text size to their frame, and
+  transition, toast position, idle time, idle brightness and clock face when they change. Accent sets and
+  Large text are generated into `styles.css` from the schema (`data-facet-accent`, `data-facet-text`).
+  `@facet/ui` now depends on `@facet/settings`. The demo passes the sound settings on to `@facet/sounds`.
 - Blinds and curtains: a covers screen and Home card. The window is the hero, drawn for the kind of
   cover: a roller blind drops its fabric, a Venetian blind lowers slats that tilt, curtains part from
   the middle. Drag it to a position (down on a blind, sideways on curtains), Open / Stop / Close

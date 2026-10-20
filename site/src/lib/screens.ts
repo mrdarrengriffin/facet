@@ -35,7 +35,7 @@ export const screenDocs: ScreenDoc[] = [
       'A card lights its small orange dot when it matters right now: someone needs you, music is playing, the price is at its peak, lightning is close. Everything else stays quiet.',
     ],
     shows: [
-      'The header: the room name on the left, the time on the right. No back button.',
+      'The header: the room name on the left, the Settings button and the time on the right. No back button.',
       'Cards of 320 × 280: a screen icon and caps label, a 72 px preview top right, one value (64 px, light) or a two-line text (28 px), and a line of body text.',
       "Tapping a card opens its screen. In this preview the cards are pressable but don't navigate; try the full demo for that.",
     ],
@@ -702,6 +702,51 @@ const print = printScreen(ctx, { shade: 'faces', solid: 'neutral', hot: 4 });`,
       "Home Assistant's bambu_lab integration gives `current_layer`, `total_layer_count`, `print_progress`, `remaining_time` and `end_time`, and saves each print's gcode under `/config/www/media/ha-bambulab/<serial>/prints/cache/` (served at `/local/`). Build the grid once per print and cache it.",
       'Options: `shade` (`faces`, the default, or `smooth`), `solid` (`neutral`, `steel` or `filament`) and `hot` (layers in the accent, default 4).',
       "Rendering a frame takes about 150 ms. To show it on a device that can't, call `render(grid, …)` on a server and send the image each time the layer changes.",
+    ],
+  },
+  {
+    slug: 'settings',
+    preview: 'settings',
+    icon: 'settings',
+    title: 'Settings',
+    description:
+      'Every personalisation setting on one scrolling list, built from the @facet/settings schema: theme, accent, text size, sounds, the idle clock and how screens move.',
+    intro: [
+      "Settings opens from the Settings button in Home's header. It is one calm list in four groups (Look, Sound, Clock and idle, Behaviour) with a hairline between rows: the setting's name on the left, its control on the right.",
+      "Nothing here is written by hand. The screen is built from `@facet/settings`, the same schema that makes the panel's Home Assistant entities and the ESPHome web page, so a setting added there shows up everywhere at once.",
+      'A change shows straight away and holds for three seconds while the device answers; after that the store wins. The look settings apply to the whole device at once: try Accent or Text size in the preview.',
+    ],
+    shows: [
+      'The header "Settings" with the back button.',
+      'Per group a caps label, then rows of 96: up to three options as a segmented control (Theme, Text size, Transition, Toasts), the five accent swatches, an 80 × 48 switch (UI sounds).',
+      'Choices with more options (Sound pack, Clock face) and one-tap presets (Clock after, Screen off) show the value with a chevron and open a bottom sheet with radio rows. The sound pack sheet stays open so the next pack can be heard straight away.',
+      'Sliders (Volume, Idle brightness) take a row of 144: the name and value on top, the slider across the full width under it.',
+    ],
+    usage: `import { settingsScreen, createDevice } from '@facet/ui';
+
+// on its own
+const settings = settingsScreen({
+  store,
+  actions: { setSetting: (id, value) => store.patch({ settings: { ...store.get().settings, [id]: value } }) },
+});
+
+// or in a device: Home's header gets the Settings button, and the device applies the settings it reads
+const device = createDevice({ store, actions });`,
+    data: `// ids and values from @facet/settings; a setting left out = its default
+type Values = Record<string, string | number | boolean>;
+
+interface PanelData {
+  settings?: Partial<Values> | null;
+}
+
+interface PanelActions {
+  setSetting?(id: string, value: string | number | boolean): void;
+}`,
+    config: [
+      'The device applies the look to its frame: `data-facet-theme` for Light or Dark (Auto leaves it to the page), `data-facet-accent` (the accent set swaps `--facet-color-accent*` with `light-dark()`, so it follows the theme) and `data-facet-text` (Large makes the title, body and label roles one step bigger in the same line boxes). `applySettings(el, values)` does the same for any element.',
+      'Behaviour settings (transition, toast position, clock after, idle brightness, clock face) apply when their value changes, so `createDevice` options hold until the store sets them.',
+      'Sounds (UI sounds, sound pack, volume) belong to the host: pass them on to `@facet/sounds` (`setEnabled`, `setPack`, `setVolume`) in your `setSetting`.',
+      'On a panel the values are its own Home Assistant entities (`toEsphome()` in `@facet/settings`); in the mock house they start empty and every change is kept.',
     ],
   },
   {

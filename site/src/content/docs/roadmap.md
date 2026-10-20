@@ -43,6 +43,8 @@ Ticked items are done, the ones with an orange dot are in progress.
 - [ ] Calendar on the firmware
 - [x] Switch: one big button for anything with an on and an off, power and time underneath
 - [ ] Switch on the firmware
+- [x] Settings: theme, accent, text size, sounds, idle and behaviour, from one schema (`@facet/settings`)
+- [ ] Settings on the firmware (accent, text size and sound pack)
 - [x] Toasts over any screen and an idle clock
 - [~] Context cards: room profiles that decide which cards show and in what order
 - [ ] Ambient screens with generative animation

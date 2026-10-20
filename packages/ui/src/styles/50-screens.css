@@ -1268,3 +1268,52 @@
   border-radius: 2px;
   background: var(--facet-color-accent);
 }
+
+/* ---------- Settings (screens/settings.ts): groups 48 apart, hairline rows 96, slider rows 144 ---------- */
+.fs-set-group + .fs-set-group {
+  margin-top: var(--facet-layout-group);
+}
+.fs-set-glabel {
+  display: block;
+  height: 24px;
+  margin-bottom: 8px;
+  color: var(--facet-color-text-mute);
+}
+.fs-set {
+  display: flex;
+  align-items: center;
+  gap: var(--facet-layout-gutter);
+  height: var(--facet-layout-sheet-row-h);
+  border-top: var(--facet-stroke-hair) solid var(--facet-color-line);
+  box-sizing: border-box;
+}
+.fs-set.live {
+  cursor: pointer;
+}
+.fs-set.live:active {
+  background: var(--facet-color-surface-press);
+}
+.fs-set-title {
+  color: var(--facet-color-text);
+  white-space: nowrap;
+}
+.fs-set-val {
+  color: var(--facet-color-text-dim);
+  white-space: nowrap;
+}
+.fs-set-chev {
+  display: inline-flex;
+  color: var(--facet-color-text-mute);
+}
+/* slider row 144: 24 + title 40 + 16 + slider 48 + 16 */
+.fs-set--slider {
+  display: block;
+  height: 144px;
+  padding-top: 24px;
+}
+.fs-set-top {
+  display: flex;
+  align-items: center;
+  height: 40px;
+  margin-bottom: 16px;
+}

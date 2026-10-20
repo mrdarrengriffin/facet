@@ -1249,3 +1249,90 @@
     transition: none;
   }
 }
+
+/* ---------- settings controls (settings.ts) ---------- */
+/* segmented: 48 tall, hairline outline, segments padded 24 */
+.f-seg {
+  display: flex;
+  height: 48px;
+  border: var(--facet-stroke-hair) solid var(--facet-color-line);
+  border-radius: var(--facet-radius-button);
+  overflow: hidden;
+}
+.f-seg-b {
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  border: 0;
+  background: transparent;
+  color: var(--facet-color-text-dim);
+  cursor: pointer;
+  font: inherit;
+}
+.f-seg-b + .f-seg-b {
+  border-left: var(--facet-stroke-hair) solid var(--facet-color-line);
+}
+.f-seg-b[aria-checked='true'] {
+  background: var(--facet-color-surface-press);
+  color: var(--facet-color-text);
+  outline: var(--facet-stroke-hair) solid var(--facet-color-line-hi);
+  outline-offset: calc(-1 * var(--facet-stroke-hair));
+}
+.f-seg-b:active {
+  background: var(--facet-color-surface-press);
+}
+/* switch 80 x 48, knob 32 */
+.f-toggle {
+  position: relative;
+  flex: none;
+  width: 80px;
+  height: 48px;
+  border: 0;
+  border-radius: 24px;
+  background: var(--facet-color-line);
+  cursor: pointer;
+  transition: background-color var(--facet-duration-press) var(--facet-easing-ease-out);
+}
+.f-toggle > i {
+  position: absolute;
+  left: 8px;
+  top: 8px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--facet-color-text-dim);
+  transition: transform var(--facet-duration-press) var(--facet-easing-ease-out);
+}
+.f-toggle[aria-checked='true'] {
+  background: var(--facet-color-accent);
+}
+.f-toggle[aria-checked='true'] > i {
+  transform: translateX(32px);
+  background: var(--facet-color-on-accent);
+}
+/* accent swatches: 48 targets, 32 dots, 8 apart (5 x 48 + 4 x 8 = 272) */
+.f-sws {
+  display: flex;
+  gap: 8px;
+}
+.f-sw {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+.f-sw > i {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+}
+.f-sw[aria-checked='true'] {
+  border-color: var(--facet-color-text);
+}

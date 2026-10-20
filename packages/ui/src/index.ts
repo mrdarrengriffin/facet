@@ -24,7 +24,15 @@ export * from './types.js';
 export * from './format.js';
 export * from './moon.js';
 export * from './screens/common.js';
-export { homeScreen, CARD_IDS, type CardId, type HomeOptions } from './screens/home.js';
+export {
+  homeScreen,
+  settingsButton,
+  CARD_IDS,
+  type CardId,
+  type HomeOptions,
+} from './screens/home.js';
+export { settingsScreen } from './screens/settings.js';
+export * from './settings.js';
 export { agentsScreen } from './screens/agents.js';
 export {
   mediaScreen,

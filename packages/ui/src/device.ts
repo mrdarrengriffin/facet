@@ -4,10 +4,14 @@
 // first, from 8 px below (above when going Home); `instant` just swaps. The idle clock always fades in.
 // Idle rule (shared with the firmware): after `idleAfter` without a touch, the clock without its header and the screen
 // dimmed to `idleBrightness`; the next touch goes to Home and does nothing else.
+// Settings: Home's gear opens the Settings screen. `data.settings` (from @facet/settings) styles the frame (theme,
+// accent, text size) and, when a value changes, sets the transition, toast position, idle time, brightness and face.
+import type { Values } from '@facet/settings';
 import { motion, toast as TOAST, type TransitionId } from '@facet/tokens';
 import { h } from './dom.js';
 import { hhmm } from './format.js';
 import { startTicker } from './store.js';
+import { applySettings } from './settings.js';
 import { toastLayer, type ToastData } from './toast.js';
 import { agentsScreen } from './screens/agents.js';
 import { calendarScreen } from './screens/calendar.js';
@@ -22,13 +26,14 @@ import { mediaScreen } from './screens/media.js';
 import type { MediaVisualId } from './media-visuals/index.js';
 import { moonScreen } from './screens/moon.js';
 import { printScreen } from './screens/print.js';
+import { settingsScreen } from './screens/settings.js';
 import { switchScreen } from './screens/switch.js';
 import { thermostatScreen } from './screens/thermostat.js';
 import { coversScreen } from './screens/covers.js';
 import { timerScreen } from './screens/timer.js';
 import { weatherScreen } from './screens/weather.js';
 
-export type ScreenId = 'home' | CardId | 'timer' | 'print';
+export type ScreenId = 'home' | CardId | 'timer' | 'print' | 'settings';
 export const SCREEN_IDS: ScreenId[] = [
   'home',
   'agents',
@@ -46,6 +51,7 @@ export const SCREEN_IDS: ScreenId[] = [
   'calendar',
   'timer',
   'print',
+  'settings',
 ];
 
 /** Build one screen by id. `onBack` shows the back button; leave it out for a standalone preview. */
@@ -55,6 +61,8 @@ export function createScreen(
   o: {
     onBack?: () => void;
     open?: (id: CardId) => void;
+    /** Home: show the Settings button, which calls this. */
+    openSettings?: () => void;
     clock?: ClockOptions;
     /** Media screen: what sits in the hero slot. */
     mediaVisual?: MediaVisualId;
@@ -62,7 +70,7 @@ export function createScreen(
 ): Screen {
   switch (id) {
     case 'home':
-      return homeScreen(ctx, { open: o.open });
+      return homeScreen(ctx, { open: o.open, openSettings: o.openSettings });
     case 'agents':
       return agentsScreen(ctx, o);
     case 'media':
@@ -93,6 +101,8 @@ export function createScreen(
       return timerScreen(ctx, o);
     case 'print':
       return printScreen(ctx, o);
+    case 'settings':
+      return settingsScreen(ctx, o);
   }
 }
 
@@ -118,7 +128,10 @@ export function mountScreen(id: ScreenId, ctx: ScreenContext, o: PreviewOptions 
   const frame = h('div', { class: 'f-screen', 'data-screen': id });
   const scr = createScreen(id, ctx, o);
   frame.append(scr.el);
-  const unsub = ctx.store.subscribe((s) => scr.update?.(s));
+  const unsub = ctx.store.subscribe((s) => {
+    applySettings(frame, s.settings); // the look settings (theme, accent, text size) show in a preview too
+    scr.update?.(s);
+  });
   const stop = startTicker((now) => {
     scr.tick?.(now);
     tickClocks(frame, now);
@@ -169,13 +182,28 @@ export function createDevice(ctx: ScreenContext, o: DeviceOptions = {}) {
       createScreen(id, ctx, {
         onBack: id === 'home' ? undefined : back,
         open: (c) => go(c),
+        openSettings: () => go('settings'),
         mediaVisual: o.mediaVisual,
       }),
     );
-  pages.set('idle', clockScreen(ctx, { face: o.idleFace ?? 'ring', bare: true }));
+  let idleFace = o.idleFace ?? 'ring';
+  pages.set('idle', clockScreen(ctx, { face: idleFace, bare: true }));
   for (const p of pages.values()) {
     p.el.hidden = true;
     frame.append(p.el);
+  }
+  /** A new idle clock face: rebuild the idle page in place. */
+  function setIdleFace(face: NonNullable<ClockOptions['face']>) {
+    if (face === idleFace) return;
+    idleFace = face;
+    const old = pages.get('idle')!;
+    const next = clockScreen(ctx, { face, bare: true });
+    next.el.hidden = old.el.hidden;
+    old.leave?.();
+    old.el.replaceWith(next.el);
+    pages.set('idle', next);
+    next.update?.(ctx.store.get());
+    if (cur === 'idle') next.enter?.();
   }
   const toasts = toastLayer({ position: o.toastPosition ?? TOAST.position, onShow: o.onToast });
   frame.append(toasts);
@@ -241,11 +269,10 @@ export function createDevice(ctx: ScreenContext, o: DeviceOptions = {}) {
   }
 
   // idle: after a while without a touch, the clock, dimmed; the next touch goes back to Home
-  const idleAfter = o.idleAfter ?? 60_000;
-  frame.style.setProperty(
-    '--f-idle-brightness',
-    String(Math.min(1, Math.max(0.1, o.idleBrightness ?? 0.7))),
-  );
+  let idleAfter = o.idleAfter ?? 60_000;
+  const setIdleBrightness = (b: number) =>
+    frame.style.setProperty('--f-idle-brightness', String(Math.min(1, Math.max(0.1, b))));
+  setIdleBrightness(o.idleBrightness ?? 0.7);
   let idleTimer: ReturnType<typeof setTimeout> | undefined;
   const arm = () => {
     clearTimeout(idleTimer);
@@ -265,7 +292,30 @@ export function createDevice(ctx: ScreenContext, o: DeviceOptions = {}) {
   );
   arm();
 
-  const unsub = ctx.store.subscribe((s) => pages.forEach((p) => p.update?.(s)));
+  // personalisation settings from the store: the look on the frame; behaviour only when a value changes, so the
+  // options above (and setTransition) hold until the store says otherwise
+  const applied: Partial<Values> = {};
+  function applyStoreSettings(st: Partial<Values>) {
+    applySettings(frame, st);
+    const changed = (id: string) => {
+      if (!(id in st) || st[id] === applied[id]) return false;
+      applied[id] = st[id];
+      return true;
+    };
+    if (changed('transition')) transition = st.transition as TransitionId;
+    if (changed('toastPosition')) toasts.setPosition(st.toastPosition as 'top' | 'bottom');
+    if (changed('idleAfter')) {
+      idleAfter = Number(st.idleAfter) * 1000;
+      arm();
+    }
+    if (changed('idleBrightness')) setIdleBrightness(Number(st.idleBrightness) / 100);
+    if (changed('clockFace')) setIdleFace(st.clockFace as NonNullable<ClockOptions['face']>);
+  }
+
+  const unsub = ctx.store.subscribe((s) => {
+    applyStoreSettings(s.settings ?? {});
+    pages.forEach((p) => p.update?.(s));
+  });
   const stop = startTicker((now) => {
     pages.forEach((p) => p.tick?.(now));
     tickClocks(frame, now);
