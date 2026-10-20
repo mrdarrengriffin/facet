@@ -1293,6 +1293,15 @@
 .f-seg-b:active {
   background: var(--facet-color-surface-press);
 }
+/* end segments follow the box's inner corner, so the picked outline isn't cut off */
+.f-seg-b:first-child {
+  border-top-left-radius: calc(var(--facet-radius-button) - var(--facet-stroke-hair));
+  border-bottom-left-radius: calc(var(--facet-radius-button) - var(--facet-stroke-hair));
+}
+.f-seg-b:last-child {
+  border-top-right-radius: calc(var(--facet-radius-button) - var(--facet-stroke-hair));
+  border-bottom-right-radius: calc(var(--facet-radius-button) - var(--facet-stroke-hair));
+}
 /* switch 80 x 48, knob 32 */
 .f-toggle {
   position: relative;
