@@ -1,6 +1,6 @@
 /**
  * A mock house for demos, docs and tests: fictional rooms, speakers, weather, an energy tariff with price bands,
- * pull requests, a passing thunderstorm, the real moon, a 3D print, a thermostat, agents, timers and toasts. It fills a Facet store and implements the panel
+ * pull requests, a passing thunderstorm, the real moon, a 3D print, a thermostat, a switch, agents, timers and toasts. It fills a Facet store and implements the panel
  * actions, so the screens behave as they would on a real house: play and pause, change the volume, dim the light,
  * start a timer.
  *
@@ -22,6 +22,7 @@ import {
 } from '@facet/ui';
 import * as D from './data.js';
 import { printWith } from './print.js';
+import { switchWatts, switchWith } from './switch.js';
 import { thermostatStep, thermostatWith, withAction } from './thermostat.js';
 import {
   energyWith,
@@ -35,6 +36,7 @@ export * from './data.js';
 export * from './scenes.js';
 export * from './print.js';
 export * from './thermostat.js';
+export * from './switch.js';
 
 export interface MockHouseOptions {
   /** Keep things moving: track progress, live power, the storm. Default true. */
@@ -99,6 +101,7 @@ export function mockState(now = Date.now(), o: MockHouseOptions = {}): PanelData
     moon: moonData(now, D.PLACE_AT),
     print: printWith(now),
     thermostat: thermostatWith(now),
+    switch: switchWith(now),
     timers: timer > 0 ? [{ label: 'Bread', endsAt: now + timer * 1000, total: 12 * 60 }] : [],
     nextEvent: D.nextEvent(now),
     calendar: D.calendar(now),
@@ -227,6 +230,22 @@ export function createMockHouse(o: MockHouseOptions = {}): MockHouse {
         mode: t.mode === 'off' ? 'heat' : t.mode,
         target: { home: 20.5, away: 15, eco: 17, boost: 23 }[preset] ?? t.target ?? 19,
       })),
+    // a smart plug takes a moment to answer, like a real one
+    switchSet: (on) => {
+      setTimeout(() => {
+        const sw = store.get().switch;
+        if (!sw || sw.on === null || sw.on === on) return;
+        const now = Date.now();
+        store.patch({
+          switch: {
+            ...sw,
+            on,
+            power: on ? switchWatts(now) : 0.4,
+            changedAt: new Date(now).toISOString(),
+          },
+        });
+      }, 600);
+    },
   };
   const scene: Required<LiveScene> = {
     lightning: o.quietSky ? 'quiet' : 'live',
@@ -251,6 +270,8 @@ export function createMockHouse(o: MockHouseOptions = {}): MockHouse {
         const now = Date.now();
         watts = Math.round(380 + 140 * Math.abs(Math.sin(now / 9000)));
         store.patch(liveParts(now));
+        const sw = store.get().switch;
+        if (sw?.on) store.patch({ switch: { ...sw, power: switchWatts(now) } });
       }, 4000),
     );
     // the room warms up and cools down, a step a minute

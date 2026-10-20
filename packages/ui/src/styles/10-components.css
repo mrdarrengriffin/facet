@@ -1184,3 +1184,68 @@
   display: block;
   flex: none;
 }
+
+/* ---------- big switch (bigSwitch(): one round button, icon + state inside) ---------- */
+.f-bswitch {
+  --bg: var(--facet-color-surface);
+  --bd: var(--facet-color-line-hi);
+  --fg: var(--facet-color-text-dim);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--facet-layout-gutter);
+  padding: 0;
+  border: 2px solid var(--bd);
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform var(--facet-duration-press) var(--facet-easing-ease-out),
+    background-color var(--facet-duration-fade) var(--facet-easing-ease-out),
+    border-color var(--facet-duration-fade) var(--facet-easing-ease-out),
+    color var(--facet-duration-fade) var(--facet-easing-ease-out);
+}
+.f-bsw-icon {
+  display: block;
+  width: 48px;
+  height: 48px;
+}
+.f-bsw-icon > svg {
+  display: block;
+}
+.f-bsw-word {
+  display: block;
+  font-variant-numeric: tabular-nums;
+}
+.f-bswitch[data-state='on'] {
+  --bg: var(--facet-color-accent);
+  --bd: var(--facet-color-accent);
+  --fg: var(--facet-color-on-accent);
+}
+.f-bswitch.live[data-state='off']:active {
+  --bg: var(--facet-color-surface-press);
+}
+.f-bswitch.live[data-state='on']:active {
+  --bg: var(--facet-color-accent-press);
+  --bd: var(--facet-color-accent-press);
+}
+.f-bswitch.live:not([data-state='disabled']):active {
+  transform: scale(0.97);
+}
+.f-bswitch[data-state='disabled'] {
+  --bd: var(--facet-color-line);
+  --fg: var(--facet-color-text-mute);
+  cursor: default;
+}
+@media (prefers-reduced-motion: reduce) {
+  .f-bswitch {
+    transition: none;
+  }
+}

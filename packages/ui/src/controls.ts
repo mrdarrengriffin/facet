@@ -1,6 +1,7 @@
 // Controls: value sweeps, slider, tick ring, arc, the light dial and the media disc. SVG is only used for what an
 // LVGL panel draws natively (arcs and scale ticks); angles follow LVGL (0° = 3 o'clock, clockwise).
 import { motion, screenType, size as Z, type as TYPE } from '@facet/tokens';
+import { icon } from '@facet/icons';
 import { button } from './buttons.js';
 import { arcPath, h, polar, reducedMotion, s } from './dom.js';
 
@@ -665,4 +666,53 @@ export function disc(o: { progress: number; playing: boolean; size?: number }) {
       el.classList.toggle('is-playing', st.playing);
     },
   });
+}
+
+// ---------------------------------------------------------------- big switch
+export interface BigSwitchProps {
+  /** Diameter. Default `size.switch-btn` (384). */
+  size?: number;
+  /** A UI icon above the state, e.g. `power` or `bulb`. Default `power`. */
+  icon?: string;
+  /** On, off, or null = unavailable (disabled, "--"). */
+  on?: boolean | null;
+  onTap?: () => void;
+}
+
+/**
+ * One round button that is the whole control: the icon and the state ("On" / "Off", screen hero) inside. Off = an
+ * outlined surface, on = filled accent, unavailable = dim and disabled. `set({ on, icon })`.
+ */
+export function bigSwitch(o: BigSwitchProps = {}) {
+  const D = o.size ?? Z['switch-btn'];
+  const ic = h('span', { class: 'f-bsw-icon' });
+  const word = h('span', { class: 'fst-hero f-bsw-word' }, '--');
+  const el = h(
+    'button',
+    {
+      type: 'button',
+      class: 'f-bswitch live',
+      style: { width: `${D}px`, height: `${D}px` },
+      onclick: () => {
+        if (el.dataset.state !== 'disabled') o.onTap?.();
+      },
+    },
+    ic,
+    word,
+  ) as HTMLButtonElement & { set(st: { on?: boolean | null; icon?: string }): void };
+  let shownIcon = '';
+  el.set = (st) => {
+    const name = st.icon ?? o.icon ?? 'power';
+    if (name !== shownIcon) {
+      shownIcon = name;
+      ic.replaceChildren(icon(name, 48));
+    }
+    const on = st.on ?? null;
+    el.dataset.state = on === null ? 'disabled' : on ? 'on' : 'off';
+    el.setAttribute('aria-pressed', String(!!on));
+    el.disabled = on === null;
+    word.textContent = on === null ? '--' : on ? 'On' : 'Off';
+  };
+  el.set({ on: o.on ?? null });
+  return el;
 }

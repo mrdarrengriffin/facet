@@ -14,6 +14,11 @@ All notable changes to Facet are written down here. The format is loosely based 
   `PanelData` gains `calendar` (`CalendarData`, `AgendaEvent`, `Calendar`), `PanelActions`
   gains `setCalendar`; new components `agendaRow` and `previewCalendar`; new screen icon
   `calendar`. The mock house has a family, work and school calendar, with the bins hidden.
+- Switch: the simplest screen and a Home card. One big round button with the state inside is the hero and the
+  control: filled accent when on, an outline when off, dim when unavailable. Tap to flip (shown at once, held 3 s
+  while the device answers); underneath, the power draw while on and how long it has been in that state.
+  `PanelData` gains `switch`, `PanelActions` gains `switchSet`; new component `bigSwitch`, Home preview
+  `previewSwitch`, token `switch-btn`, screen icon `switch`. The mock house has a dehumidifier on a smart plug.
 - Thermostat: a thermostat screen and Home card. The room temperature is the hero inside a ring
   with the set point as the knob; the arc between them glows orange while it heats (blue while
   cooling). Drag or − / + to change it, up to three mode buttons and a presets sheet underneath,

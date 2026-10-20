@@ -68,6 +68,30 @@ export function previewDial(v = 0) {
   });
 }
 
+/** A toggle: a pill with its knob, filled accent while on. `set(on)`; null = unavailable (dim, no knob). */
+export function previewSwitch(on: boolean | null = null) {
+  const pill = P({
+    left: '2px',
+    top: '18px',
+    width: '68px',
+    height: '36px',
+    borderRadius: '999px',
+    boxSizing: 'border-box',
+  });
+  const knob = circle(8, 24, 24, { transition: 'transform 150ms ease-out' });
+  const el = Object.assign(h('span', null, pill, knob), {
+    set(v: boolean | null) {
+      pill.style.background = v ? c('accent') : 'transparent';
+      pill.style.border = `2px solid ${v ? c('accent') : v === false ? c('line-hi') : c('line')}`;
+      knob.style.background = v ? c('on-accent') : c('steel');
+      knob.style.transform = v ? 'translateX(32px)' : 'none';
+      knob.style.visibility = v === null ? 'hidden' : 'visible';
+    },
+  });
+  el.set(on);
+  return el;
+}
+
 /** Rings with orbiting dots. */
 export function previewClock() {
   return h(

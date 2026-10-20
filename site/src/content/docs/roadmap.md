@@ -39,6 +39,8 @@ Ticked items are done, the ones with an orange dot are in progress.
 - [ ] Thermostat on the firmware
 - [x] Calendar: the next event as the hero, then two weeks of days; calendars shown or hidden from a sheet
 - [ ] Calendar on the firmware
+- [x] Switch: one big button for anything with an on and an off, power and time underneath
+- [ ] Switch on the firmware
 - [x] Toasts over any screen and an idle clock
 - [~] Context cards: room profiles that decide which cards show and in what order
 - [ ] Ambient screens with generative animation

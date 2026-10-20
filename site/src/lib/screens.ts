@@ -250,6 +250,46 @@ const thermostat = thermostatScreen({
     ],
   },
   {
+    slug: 'switch',
+    preview: 'switch',
+    icon: 'switch',
+    title: 'Switch',
+    description:
+      'The simplest screen: one big round button with the state inside. Tap to flip it; the power draw and how long it has been on underneath.',
+    intro: [
+      'One thing, on or off: a smart plug, a fan, a light without a dimmer, a helper. The button is the hero and the control at once, so the state reads from across the room: filled orange when on, an outline when off.',
+      'Tap anywhere on it. The new state shows straight away and holds for three seconds while the device answers, with "turning on" as the line until it does; if it still disagrees after that, the device wins.',
+      'Because it needs nothing but an on and an off, it works as the fallback screen for any entity that has no screen of its own.',
+    ],
+    shows: [
+      'The header with the name of the thing it switches.',
+      'The button (384, round): its icon (power, or a bulb for a light) and the state in the hero type.',
+      'One quiet line: the power draw while on, if it measures it, and how long it has been in this state ("212 W · for 2 h 14 min").',
+      'Unavailable: the button dims, shows "--" and does nothing.',
+    ],
+    usage: `import { switchScreen } from '@facet/ui';
+
+const plug = switchScreen({
+  store,
+  actions: {
+    switchSet: (on) => ha.call('homeassistant', on ? 'turn_on' : 'turn_off', { entity_id: 'switch.dehumidifier' }),
+  },
+});`,
+    data: `interface SwitchData {
+  name?: string | null;          // header, e.g. "Dehumidifier"
+  kind?: 'switch' | 'plug' | 'light' | 'fan' | null; // the icon
+  on: boolean | null;            // state; null = unavailable
+  power?: number | null;         // W, from the plug's power sensor
+  changedAt?: string | null;     // last_changed
+}`,
+    config: [
+      "`on` is the entity's state (`on` / `off`; `unavailable` or `unknown` = null). `homeassistant.turn_on` / `turn_off` work for every domain that has them, so one action covers switches, lights, fans and input booleans.",
+      "`power` is optional and usually a separate sensor (a smart plug's `sensor.*_power`). Leave it out and the line only says how long.",
+      'The button size is the smaller of the `switch-btn` token (384) and what the content box leaves, so it fits smaller screens without its own layout.',
+      'The mock house has a dehumidifier on a smart plug in the study, about 210 W while it runs, that takes 0.6 s to answer.',
+    ],
+  },
+  {
     slug: 'clock',
     preview: 'clock',
     icon: 'clock',

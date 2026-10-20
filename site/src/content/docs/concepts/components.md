@@ -42,7 +42,7 @@ weather.set({ value: '13°', sub: 'rain within the hour' });
 | Atoms        | `label`, `statusDot`, `statusChip`, `cornerTicks`, `focusRing`, `mascotMood`              |
 | Icons        | `icon`, `screenIcon`, `weatherIcon`, `moonIcon` (from `@facet/icons`)                     |
 | Buttons      | `button` (four kinds × four states), `iconButton` (play, round, square), `backButton`     |
-| Controls     | `slider`, `dial`, `thermostatDial`, `arc`, `disc`, `tickRing`                             |
+| Controls     | `slider`, `dial`, `thermostatDial`, `bigSwitch`, `arc`, `disc`, `tickRing`                |
 | Screen parts | `header`, `card`, `tile`, `heroBlock`, `row`, `moreRow`, `stat`, card previews            |
 | Lists        | `countBadge`, `sectionHeader`, `stateChip`, `prRow`, `checkRow`, `emptyState`, `qrBlock`  |
 | Pickers      | `radio`, `pickerRow`, `speakerButton`, `bottomSheet`                                      |

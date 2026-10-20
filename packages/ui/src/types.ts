@@ -331,6 +331,7 @@ export interface PanelData {
   moon?: MoonData | null;
   print?: PrintData | null;
   thermostat?: ThermostatData | null;
+  switch?: SwitchData | null;
   timers?: Timer[];
   nextEvent?: CalendarEvent | null;
   calendar?: CalendarData | null;
@@ -383,6 +384,22 @@ export interface ThermostatData {
   next?: { at: string; target: number } | null;
 }
 
+/** What a switch is: decides the icon. */
+export type SwitchKind = 'switch' | 'plug' | 'light' | 'fan';
+
+/** Anything with an on and an off (a Home Assistant `switch`, `light`, `fan`, `input_boolean` ...). */
+export interface SwitchData {
+  /** What it powers ("Dehumidifier"). */
+  name?: string | null;
+  kind?: SwitchKind | null;
+  /** On or off; null = unavailable. */
+  on: boolean | null;
+  /** Power draw in W, if it measures it (a smart plug's power sensor). */
+  power?: number | null;
+  /** When it last changed (`last_changed`). */
+  changedAt?: string | null;
+}
+
 /** What the screens can ask for. An adapter implements these (and updates the store when things change). */
 export interface PanelActions {
   mediaPlayPause?(): void;
@@ -408,4 +425,6 @@ export interface PanelActions {
   climateMode?(mode: HvacMode): void;
   /** `climate.set_preset_mode`. */
   climatePreset?(preset: string): void;
+  /** Turn the switch on or off (`homeassistant.turn_on` / `turn_off`). */
+  switchSet?(on: boolean): void;
 }

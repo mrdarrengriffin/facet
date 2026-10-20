@@ -10,6 +10,7 @@ import {
   previewAgents,
   previewClock,
   previewDial,
+  previewSwitch,
   previewEnergy,
   previewGithub,
   previewLightning,
@@ -28,6 +29,7 @@ import {
   nextAgendaEvent,
   previewCalendar,
 } from './calendar.js';
+import { switchLine } from './switch.js';
 import { tempText, thermostatSummary } from './thermostat.js';
 import { isDay, missing, speakerName, type Screen, type ScreenContext } from './common.js';
 
@@ -37,6 +39,7 @@ export type CardId =
   | 'media'
   | 'light'
   | 'thermostat'
+  | 'switch'
   | 'clock'
   | 'github'
   | 'energy'
@@ -51,6 +54,7 @@ export const CARD_IDS: CardId[] = [
   'media',
   'light',
   'thermostat',
+  'switch',
   'clock',
   'github',
   'energy',
@@ -62,7 +66,7 @@ export const CARD_IDS: CardId[] = [
 export interface HomeOptions {
   /** Called when a card is tapped. Leave it out and the cards don't navigate. */
   open?: (id: CardId) => void;
-  /** Which cards, in order. Default: all twelve (Timer only while one runs). */
+  /** Which cards, in order. Default: all thirteen (Timer only while one runs). */
   cards?: CardId[];
 }
 
@@ -76,6 +80,7 @@ export function homeScreen(ctx: ScreenContext, o: HomeOptions = {}): Screen {
   const pMoon = moonIcon(0.25, { size: 72 });
   const pThermo = previewDial();
   const pCal = previewCalendar();
+  const pSwitch = previewSwitch();
   const cards = {
     calendar: card({
       label: 'Calendar',
@@ -124,6 +129,14 @@ export function homeScreen(ctx: ScreenContext, o: HomeOptions = {}): Screen {
       value: '--°',
       sub: 'loading',
       onTap: go('thermostat'),
+    }),
+    switch: card({
+      label: 'Switch',
+      icon: 'switch',
+      preview: pSwitch,
+      value: '--',
+      sub: 'loading',
+      onTap: go('switch'),
     }),
     clock: card({
       label: 'Clock',
@@ -294,6 +307,16 @@ export function homeScreen(ctx: ScreenContext, o: HomeOptions = {}): Screen {
             : ((th.target - th.min) / (th.max - th.min)) * 100,
         );
       } else cards.thermostat.set({ value: '--°', sub: missing(ctx.store) });
+      // switch
+      const sw = s.switch;
+      if (sw)
+        cards.switch.set({
+          value: sw.on === null ? '--' : sw.on ? 'On' : 'Off',
+          sub: switchLine(sw) || (sw.name ?? ''),
+          accent: !!sw.on,
+        });
+      else cards.switch.set({ value: '--', sub: missing(ctx.store) });
+      pSwitch.set(sw?.on ?? null);
       // GitHub
       const g = s.github;
       if (g?.counts)

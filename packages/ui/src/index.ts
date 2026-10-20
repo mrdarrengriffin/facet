@@ -62,4 +62,5 @@ export {
   presetText,
   HVAC_TEXT,
 } from './screens/thermostat.js';
+export { switchScreen, switchLine, sinceText, wattText } from './screens/switch.js';
 export * from './device.js';

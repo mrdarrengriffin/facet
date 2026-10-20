@@ -567,6 +567,15 @@
       "where": "the thermostat screen: docs, Home cards and screen headers"
     },
     {
+      "name": "screen-switch",
+      "file": "svg/screens/switch.svg",
+      "group": "screens",
+      "grid": 24,
+      "keyline": "landscape",
+      "sizes_used": [24, 32],
+      "where": "the switch screen: docs, Home cards and screen headers"
+    },
+    {
       "name": "screen-print",
       "file": "svg/screens/print.svg",
       "group": "screens",

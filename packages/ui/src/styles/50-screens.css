@@ -991,3 +991,15 @@
 .fs-calt-n {
   color: var(--facet-color-text);
 }
+
+/* ---------- Switch ---------- */
+.fs-sw-line {
+  display: block;
+  text-align: center;
+  white-space: nowrap;
+  color: var(--facet-color-text-dim);
+  font-variant-numeric: tabular-nums;
+}
+.fs-switch[data-on=''] .fs-sw-line {
+  color: var(--facet-color-text-mute);
+}

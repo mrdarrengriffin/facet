@@ -8,6 +8,7 @@ import {
   githubWith,
   mediaWith,
   printWith,
+  switchWith,
   thermostatWith,
   timersWith,
   TOASTS,
@@ -18,6 +19,7 @@ import {
   type MockHouse,
   type PrintScene,
   type RainScene,
+  type SwitchScene,
   type ThermostatScene,
   type TimerScene,
 } from '@facet/demo-data';
@@ -243,6 +245,25 @@ export const screenOptions: Record<string, ScreenOptions> = {
           p.state === 'none'
             ? null
             : thermostatWith(Date.now(), p.state as ThermostatScene, Number(p.current)),
+      }),
+  },
+  switch: {
+    controls: [
+      sel('state', 'Switch', ['on', 'off', 'unavailable', 'none']),
+      sel('kind', 'Kind', ['plug', 'light', 'switch']),
+      range('minutes', 'In this state (min)', 0, 3000, 134, 1),
+    ],
+    apply: (_k, p, ctx) =>
+      ctx.house.store.patch({
+        switch:
+          p.state === 'none'
+            ? null
+            : switchWith(
+                Date.now(),
+                p.state as SwitchScene,
+                Number(p.minutes),
+                p.kind as 'plug' | 'light' | 'switch',
+              ),
       }),
   },
   print: {
