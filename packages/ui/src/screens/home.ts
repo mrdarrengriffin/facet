@@ -20,6 +20,14 @@ import { lightningSummary } from '../radar.js';
 import { h } from '../dom.js';
 import type { PanelData } from '../types.js';
 import { moonLine } from './moon.js';
+import {
+  calCardLine,
+  CAL_SOON,
+  calMs,
+  isRunning,
+  nextAgendaEvent,
+  previewCalendar,
+} from './calendar.js';
 import { tempText, thermostatSummary } from './thermostat.js';
 import { isDay, missing, speakerName, type Screen, type ScreenContext } from './common.js';
 
@@ -34,9 +42,11 @@ export type CardId =
   | 'energy'
   | 'weather'
   | 'lightning'
-  | 'moon';
+  | 'moon'
+  | 'calendar';
 export const CARD_IDS: CardId[] = [
   'timer',
+  'calendar',
   'agents',
   'media',
   'light',
@@ -52,7 +62,7 @@ export const CARD_IDS: CardId[] = [
 export interface HomeOptions {
   /** Called when a card is tapped. Leave it out and the cards don't navigate. */
   open?: (id: CardId) => void;
-  /** Which cards, in order. Default: all eleven (Timer only while one runs). */
+  /** Which cards, in order. Default: all twelve (Timer only while one runs). */
   cards?: CardId[];
 }
 
@@ -65,7 +75,16 @@ export function homeScreen(ctx: ScreenContext, o: HomeOptions = {}): Screen {
   const pTimer = previewTimer();
   const pMoon = moonIcon(0.25, { size: 72 });
   const pThermo = previewDial();
+  const pCal = previewCalendar();
   const cards = {
+    calendar: card({
+      label: 'Calendar',
+      icon: 'calendar',
+      preview: pCal,
+      text: 'Loading',
+      sub: '',
+      onTap: go('calendar'),
+    }),
     timer: card({
       label: 'Timer',
       icon: 'timer',
@@ -162,6 +181,31 @@ export function homeScreen(ctx: ScreenContext, o: HomeOptions = {}): Screen {
   const el = page('fs-home', hd, grid);
   let st: PanelData = ctx.store.get();
 
+  // calendar: the next event's title, "in 25 min · 16:50"; the dot while it's on or starting within 15 min
+  let calMin = -1;
+  const setCalendar = (now = Date.now()) => {
+    calMin = Math.floor(now / 60_000);
+    pCal.set(now);
+    const d = st.calendar,
+      e = nextAgendaEvent(d, now);
+    if (!e)
+      return cards.calendar.set({
+        text: d
+          ? d.error
+            ? 'Offline'
+            : 'Nothing coming up'
+          : missing(ctx.store) === 'loading'
+            ? 'Loading'
+            : 'No data',
+        sub: d && !d.error ? `next ${d.days} days` : '',
+        accent: false,
+      });
+    cards.calendar.set({
+      text: e.summary,
+      sub: calCardLine(e, now),
+      accent: isRunning(e, now) || calMs(e, 'start') - now <= CAL_SOON,
+    });
+  };
   const setLightning = (d: PanelData['lightning']) => {
     pLightning.set(d);
     const n = d?.nearest;
@@ -290,6 +334,7 @@ export function homeScreen(ctx: ScreenContext, o: HomeOptions = {}): Screen {
         const l = moonLine(mo);
         cards.moon.set({ value: `${Math.round(mo.illumination)}%`, sub: l.name.toLowerCase() });
       } else cards.moon.set({ value: '--', sub: missing(ctx.store) });
+      setCalendar();
       setTimer();
     },
     tick(now) {
@@ -300,6 +345,7 @@ export function homeScreen(ctx: ScreenContext, o: HomeOptions = {}): Screen {
       });
       setLightning(st.lightning);
       setTimer(now.getTime());
+      if (Math.floor(now.getTime() / 60_000) !== calMin) setCalendar(now.getTime());
     },
   };
 }

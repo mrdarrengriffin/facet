@@ -503,6 +503,48 @@ const moon = moonScreen(ctx);`,
     ],
   },
   {
+    slug: 'calendar',
+    preview: 'calendar',
+    icon: 'calendar',
+    title: 'Calendar',
+    description:
+      'The agenda for the next two weeks: the next event as the hero, then the days, each with its events.',
+    intro: [
+      'The Calendar screen answers "what\'s next?" from across the room. The hero is the next event: when it starts as the big number ("16:50" today, "Now" while it runs, otherwise the day), with its title and one quiet line.',
+      'Below it, the days. Each has a caps label ("Today · Tue 20 Oct") and a row per event: the time, the calendar\'s dot and the title. Finished events go dim, and an event that lasts several days shows on each of them.',
+      'With a `setCalendar` action, the header gets an "N calendars" button. It opens a sheet where each calendar can be shown or hidden, so the bin collections or a work calendar can stay off the wall.',
+    ],
+    shows: [
+      'The hero (96): the start time, "Now" or the day, in the accent while the event is on or starts within 15 minutes; the title (28) over one line: until when, where, which calendar.',
+      "The days, 32 apart: a caps day label, then 64 px rows (time 112, the calendar's 8 px dot, the title on one line).",
+      'The Home card: a little calendar page with today\'s date, the next event\'s title, and "in 25 min · 16:50", "today 16:50" or "now · until 17:50".',
+    ],
+    usage: `import { calendarScreen } from '@facet/ui';
+
+store.patch({ calendar: { at, days: 14, calendars, events } });
+const calendar = calendarScreen({ store, actions: { setCalendar: (id, on) => save(id, on) } });`,
+    data: `interface CalendarData {
+  at: string;
+  days: number;             // how far ahead the events go
+  calendars: { id: string; name: string; on: boolean; colour?: string }[]; // colour = a colour token name
+  events: AgendaEvent[];    // from the calendars that are on, from today's midnight, by start
+  error?: string;
+}
+
+interface AgendaEvent {
+  summary: string;
+  start: string;            // ISO date-time, or YYYY-MM-DD for all-day events
+  end: string;              // all-day: the day after the last day
+  allDay: boolean;
+  calendar?: string;        // the calendar's id
+  location?: string;
+}`,
+    config: [
+      "Home Assistant: call `calendar.get_events` on each calendar that's on (today's midnight, 14 days), and keep the on/off choices wherever your adapter keeps settings.",
+      "Sort all-day events first within a day. The screen picks the hero itself: the running or next timed event, or an all-day one from tomorrow on, so a holiday doesn't hide the day's appointments.",
+    ],
+  },
+  {
     slug: 'timer',
     preview: 'timer',
     icon: 'timer',

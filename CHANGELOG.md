@@ -8,6 +8,12 @@ All notable changes to Facet are written down here. The format is loosely based 
 
 ### Added
 
+- Calendar: a calendar screen and Home card. The hero is the next event (the start time, "Now"
+  while it runs, or the day), then two weeks of days, each with a row per event: time, the
+  calendar's dot and the title. An "N calendars" sheet shows or hides each calendar.
+  `PanelData` gains `calendar` (`CalendarData`, `AgendaEvent`, `Calendar`), `PanelActions`
+  gains `setCalendar`; new components `agendaRow` and `previewCalendar`; new screen icon
+  `calendar`. The mock house has a family, work and school calendar, with the bins hidden.
 - Thermostat: a thermostat screen and Home card. The room temperature is the hero inside a ring
   with the set point as the knob; the arc between them glows orange while it heats (blue while
   cooling). Drag or − / + to change it, up to three mode buttons and a presets sheet underneath,

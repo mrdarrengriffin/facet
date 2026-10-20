@@ -85,6 +85,33 @@ export interface CalendarEvent {
   allDay: boolean;
 }
 
+/** One calendar on the Calendar screen. */
+export interface Calendar {
+  id: string;
+  name: string;
+  /** Whether its events are shown. */
+  on: boolean;
+  /** Its dot colour, a colour token name (`blue`, `ok`, `warn`...). Default `text-dim`. */
+  colour?: string;
+}
+
+/** An event on the agenda: a calendar event plus which calendar it's from. */
+export interface AgendaEvent extends CalendarEvent {
+  /** The calendar's `id`. */
+  calendar?: string;
+  location?: string;
+}
+
+/** The agenda: every event from the calendars that are on, from today's midnight for `days` days, by start. */
+export interface CalendarData {
+  /** When it was fetched. */
+  at: string;
+  days: number;
+  calendars: Calendar[];
+  events: AgendaEvent[];
+  error?: string;
+}
+
 // ---------------------------------------------------------------- weather
 /** Weather conditions, using Home Assistant's names. */
 export type WeatherCondition =
@@ -306,6 +333,7 @@ export interface PanelData {
   thermostat?: ThermostatData | null;
   timers?: Timer[];
   nextEvent?: CalendarEvent | null;
+  calendar?: CalendarData | null;
 }
 
 /** A 3D print in progress (a Bambu printer through Home Assistant's bambu_lab integration, or anything similar). */
@@ -372,6 +400,8 @@ export interface PanelActions {
   /** Add time to the running timer. */
   extendTimer?(seconds: number): void;
   cancelTimer?(): void;
+  /** Show or hide a calendar's events on the Calendar screen. Leave it out and the screen has no calendar filter. */
+  setCalendar?(id: string, on: boolean): void;
   /** Thermostat set point (`climate.set_temperature`). */
   climateTarget?(target: number): void;
   /** `climate.set_hvac_mode`. */

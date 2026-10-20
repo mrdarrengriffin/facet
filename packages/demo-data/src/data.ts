@@ -2,6 +2,7 @@
 import type {
   Agent,
   Band,
+  CalendarData,
   CalendarEvent,
   EnergyData,
   EnergySlot,
@@ -135,6 +136,66 @@ export function nextEvent(now: number): CalendarEvent {
     end: iso(start + 1.5 * HOUR),
     allDay: false,
   };
+}
+
+/** The mock house's calendars: Bins is hidden, like a calendar you'd rather not see on a wall. */
+export const CALENDARS = [
+  { id: 'family', name: 'Family', colour: 'blue', on: true },
+  { id: 'work', name: 'Work', colour: 'ok', on: true },
+  { id: 'school', name: 'School', colour: 'warn', on: true },
+  { id: 'birthdays', name: 'Birthdays', colour: 'steel', on: true },
+  { id: 'holidays', name: 'Holidays', colour: 'text-dim', on: true },
+  { id: 'bins', name: 'Bins', colour: 'text', on: false },
+];
+
+/** Two weeks of the mock house's agenda, from today's midnight. `off` = calendar ids hidden. */
+export function calendar(now: number, off?: Set<string>): CalendarData {
+  const d0 = startOfDay(now);
+  const day = (n: number) => new Date(d0 + n * 24 * HOUR + 2 * HOUR).toISOString().slice(0, 10); // + 2 h: DST-safe
+  const at = (
+    n: number,
+    h: number,
+    len: number,
+    summary: string,
+    cal: string,
+    location?: string,
+  ) => ({
+    summary,
+    start: iso(startOfDay(d0 + n * 24 * HOUR + 2 * HOUR) + h * HOUR),
+    end: iso(startOfDay(d0 + n * 24 * HOUR + 2 * HOUR) + (h + len) * HOUR),
+    allDay: false,
+    calendar: cal,
+    ...(location ? { location } : {}),
+  });
+  const allDay = (n: number, days: number, summary: string, cal: string) => ({
+    summary,
+    start: day(n),
+    end: day(n + days),
+    allDay: true,
+    calendar: cal,
+  });
+  const next = nextEvent(now);
+  const calendars = CALENDARS.map((c) => (off ? { ...c, on: !off.has(c.id) } : c));
+  const on = new Set(calendars.filter((c) => c.on).map((c) => c.id));
+  const events = [
+    at(0, 8.5, 0.5, 'School run', 'school'),
+    { ...next, calendar: 'family', location: 'Larkfield studio' },
+    at(1, 10, 1, 'Team planning', 'work'),
+    at(1, 18, 1, 'Swimming lessons', 'family', 'Leisure centre'),
+    allDay(2, 1, 'Recycling out', 'bins'),
+    allDay(3, 1, "Sam's birthday", 'birthdays'),
+    at(3, 19.5, 1.5, 'Book club', 'family'),
+    allDay(5, 2, 'Weekend away', 'family'),
+    at(8, 18, 1, "Parents' evening", 'school'),
+    allDay(9, 1, 'Recycling out', 'bins'),
+    at(11, 9, 1, 'Boiler service', 'family'),
+    allDay(12, 5, 'Half term', 'holidays'),
+  ]
+    .filter((e) => on.has(e.calendar))
+    .sort(
+      (a, b) => Date.parse(a.start) - Date.parse(b.start) || Number(b.allDay) - Number(a.allDay),
+    );
+  return { at: iso(now), days: 14, calendars, events };
 }
 
 // ---------------------------------------------------------------- weather

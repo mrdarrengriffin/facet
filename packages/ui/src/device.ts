@@ -10,6 +10,7 @@ import { hhmm } from './format.js';
 import { startTicker } from './store.js';
 import { toastLayer, type ToastData } from './toast.js';
 import { agentsScreen } from './screens/agents.js';
+import { calendarScreen } from './screens/calendar.js';
 import { clockScreen, type ClockOptions } from './screens/clock.js';
 import type { Screen, ScreenContext } from './screens/common.js';
 import { energyScreen } from './screens/energy.js';
@@ -38,6 +39,7 @@ export const SCREEN_IDS: ScreenId[] = [
   'weather',
   'lightning',
   'moon',
+  'calendar',
   'timer',
   'print',
 ];
@@ -77,6 +79,8 @@ export function createScreen(
       return lightningScreen(ctx, o);
     case 'moon':
       return moonScreen(ctx, o);
+    case 'calendar':
+      return calendarScreen(ctx, o);
     case 'timer':
       return timerScreen(ctx, o);
     case 'print':

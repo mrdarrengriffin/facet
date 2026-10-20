@@ -101,6 +101,7 @@ export function mockState(now = Date.now(), o: MockHouseOptions = {}): PanelData
     thermostat: thermostatWith(now),
     timers: timer > 0 ? [{ label: 'Bread', endsAt: now + timer * 1000, total: 12 * 60 }] : [],
     nextEvent: D.nextEvent(now),
+    calendar: D.calendar(now),
   };
 }
 
@@ -202,6 +203,14 @@ export function createMockHouse(o: MockHouseOptions = {}): MockHouse {
         });
     },
     cancelTimer: () => store.patch({ timers: [] }),
+    setCalendar(id, on) {
+      const off = new Set(
+        (store.get().calendar?.calendars ?? D.CALENDARS).filter((c) => !c.on).map((c) => c.id),
+      );
+      if (on) off.delete(id);
+      else off.add(id);
+      store.patch({ calendar: D.calendar(Date.now(), off) });
+    },
     // the thermostat answers like a real one: a new set point in auto drops to heat (a manual override)
     climateTarget: (target) =>
       thermo((t) => ({ ...t, target, mode: t.mode === 'auto' ? 'heat' : t.mode, next: null })),

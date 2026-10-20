@@ -37,6 +37,8 @@ Ticked items are done, the ones with an orange dot are in progress.
 - [ ] 3D print on the firmware: frames rendered by a server
 - [x] Thermostat: the room temperature on a heating ring, set point as the knob, modes and presets
 - [ ] Thermostat on the firmware
+- [x] Calendar: the next event as the hero, then two weeks of days; calendars shown or hidden from a sheet
+- [ ] Calendar on the firmware
 - [x] Toasts over any screen and an idle clock
 - [~] Context cards: room profiles that decide which cards show and in what order
 - [ ] Ambient screens with generative animation

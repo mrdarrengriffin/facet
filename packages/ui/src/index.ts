@@ -41,6 +41,17 @@ export { weatherScreen } from './screens/weather.js';
 export { lightningScreen } from './screens/lightning.js';
 export { timerScreen, type TimerOptions } from './screens/timer.js';
 export { moonScreen, moonLine, moonDay } from './screens/moon.js';
+export {
+  calendarScreen,
+  nextAgendaEvent,
+  calWhen,
+  calTime,
+  calCardLine,
+  agendaDays,
+  agendaRow,
+  previewCalendar,
+  isRunning,
+} from './screens/calendar.js';
 export { printScreen, type PrintOptions } from './screens/print.js';
 export * from './print3d/grid.js';
 export * from './print3d/render.js';

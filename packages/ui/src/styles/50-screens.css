@@ -869,3 +869,125 @@
 .fs-th-preset .f-btn[hidden] {
   display: none;
 }
+
+/* ---------- Calendar ---------- */
+.fs-cal-hero .fs-hero-t {
+  padding-top: 8px;
+}
+.fs-cal-htitle {
+  height: 40px;
+  color: var(--facet-color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* days 32 apart: an agenda is a list to scan, denser than the 48 between groups */
+.fs-sec + .fs-cal-rows {
+  margin-bottom: 32px;
+}
+.fs-cal-row {
+  display: flex;
+  align-items: center;
+  gap: var(--facet-layout-gutter);
+  height: 64px;
+  border-top: var(--facet-stroke-hair) solid var(--facet-color-line);
+}
+.fs-cal-time {
+  flex: none;
+  width: 112px;
+  color: var(--facet-color-text-dim);
+  white-space: nowrap;
+}
+.fs-cal-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 40px;
+  color: var(--facet-color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fs-cal-row.is-past .fs-cal-time,
+.fs-cal-row.is-past .fs-cal-title {
+  color: var(--facet-color-text-mute);
+}
+.fs-cal-row.is-past .fs-cal-dot {
+  opacity: 0.4;
+}
+.fs-cal-row.is-now .fs-cal-time {
+  color: var(--facet-color-accent-text);
+}
+.fs-cal-dot {
+  display: block;
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+}
+.fs-cal-fbtn {
+  margin-right: 16px;
+  height: 48px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: var(--facet-radius-button);
+  background: var(--facet-color-surface);
+  color: var(--facet-color-text-dim);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.fs-cal-fbtn:active {
+  background: var(--facet-color-surface-press);
+}
+.fs-cal-srow {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--facet-layout-gutter);
+  height: 96px;
+  border-top: var(--facet-stroke-hair) solid var(--facet-color-line);
+  cursor: pointer;
+}
+.fs-cal-srow:active {
+  background: var(--facet-color-surface-press);
+}
+.fs-cal-srow > .fs-cal-dot {
+  margin: 0 12px;
+}
+.fs-cal-srow > .f-checkbox {
+  flex: none;
+  margin-right: 14px;
+}
+.fs-cal-stext {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+}
+.fs-cal-sname {
+  height: 40px;
+  color: var(--facet-color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fs-cal-sstat {
+  height: 24px;
+  color: var(--facet-color-text-mute);
+}
+/* Home card preview: a desk calendar page */
+.fs-calt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  box-sizing: border-box;
+  border: 2px solid var(--facet-color-line-hi);
+  border-radius: var(--facet-radius-square);
+}
+.fs-calt-k {
+  color: var(--facet-color-text-mute);
+}
+.fs-calt-n {
+  color: var(--facet-color-text);
+}
