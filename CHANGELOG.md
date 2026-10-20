@@ -8,6 +8,12 @@ All notable changes to Facet are written down here. The format is loosely based 
 
 ### Added
 
+- Screen sizes: `devices`, `sizeClass` and `density` in the tokens. A density is pixels per dp (1x about
+  170 ppi, 1.5x about 250 ppi); the 720 × 720 panel is the 1.5x reference and 1x has its own table for
+  480 × 480 screens, with heavier weights and slightly larger small text so it stays crisp. `geometry(device)`,
+  `screenTypeAt` and `sizeAt` read them; the CSS follows `data-facet-device` / `data-facet-density` on the
+  frame, and `createDevice` / `mountScreen` take a `device`. Home, Media and Switch are drawn for 480 × 480 so
+  far; the demo has a Device picker with physical size or 1:1 pixels. Portrait and wide screens are planned.
 - Docs: a Settings page (`/docs/settings/`). Every setting as a control made from `@facet/settings`
   next to a live panel on the mock house (both ways: the panel's own Settings screen moves the page's
   controls), a table of every setting with its default and Home Assistant entity, the accent sets with
