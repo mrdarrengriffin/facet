@@ -37,8 +37,8 @@ export interface Entry {
   render(p: Props): HTMLElement | SVGElement;
   code(p: Props): string;
   variants?(): { label: string; el: HTMLElement | SVGElement }[];
-  /** Natural size, for scaling big components to fit the stage. */
-  size?: [number, number];
+  /** Natural size, for scaling big components to fit the stage (a function when the props change it). */
+  size?: [number, number] | ((p: Props) => [number, number]);
   /** Re-render on a timer (live clocks). */
   live?: boolean;
   /**
@@ -508,14 +508,21 @@ export const entries: Entry[] = [
     ],
     render: (p) => {
       const t = TRACKS.find((x) => x.title === p.track) ?? TRACKS[0]!;
-      return F.mediaVisual({
-        visual: p.visual as F.MediaVisualProps['visual'],
-        progress: Number(p.progress),
-        playing: !!p.playing,
-        title: t.title,
-        artist: t.artist,
-        art: t.art,
-      });
+      // centred in the frame: the visuals aren't all 480 wide
+      const box = document.createElement('div');
+      box.style.cssText =
+        'display: flex; align-items: center; justify-content: center; width: 100%; height: 100%';
+      box.append(
+        F.mediaVisual({
+          visual: p.visual as F.MediaVisualProps['visual'],
+          progress: Number(p.progress),
+          playing: !!p.playing,
+          title: t.title,
+          artist: t.artist,
+          art: t.art,
+        }),
+      );
+      return box;
     },
     code: (p) =>
       imp(['mediaVisual']) +
@@ -1231,7 +1238,7 @@ export const entries: Entry[] = [
       `const days = moonDays(Date.now() - 7 * 86_400_000, ${Math.floor(Number(p.width) / 8)}); // 8 px a day\n` +
       `const r = moonRangeChart({ w: ${p.width}, h: ${p.height}, days, today: 7${p.south ? ', south: true' : ''} });\n` +
       `// r.marks (24 high) above r.chart, r.axis (24) below it`,
-    size: [656, 312],
+    size: (p) => [Number(p.width), Number(p.height) + 80], // marks 24 + 16 + chart + 16 + axis 24
   },
   {
     id: 'rate-strip',

@@ -79,7 +79,7 @@ export function initExplorer(root: HTMLElement): void {
     stage.replaceChildren();
     const node = current.render(props) as Destroyable;
     shown = node;
-    const size = current.size;
+    const size = typeof current.size === 'function' ? current.size(props) : current.size;
     if (size) {
       const frame = el('div', { class: 'ex-frame' });
       frame.style.width = `${size[0]}px`;

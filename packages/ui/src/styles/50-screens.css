@@ -81,7 +81,7 @@
 .fs-card {
   position: relative;
   flex: none;
-  width: calc((100% - var(--facet-layout-gutter)) / 2); /* 320, 312 beside a scroll track */
+  width: var(--facet-layout-card-w);
   height: var(--facet-layout-card-h);
   scroll-snap-align: start;
   border: var(--facet-stroke-hair) solid var(--facet-color-line);
@@ -91,6 +91,9 @@
   transition:
     background-color var(--facet-duration-press) var(--facet-easing-ease-out),
     border-color var(--facet-duration-press) var(--facet-easing-ease-out);
+}
+.fs-cards > .fs-card {
+  width: calc((100% - var(--facet-layout-gutter)) / 2); /* 320, 312 beside a scroll track */
 }
 .fs-card[hidden] {
   display: none;
@@ -1497,13 +1500,16 @@
 .fs-roslot {
   position: relative;
   flex: none;
-  width: calc((100% - var(--facet-layout-gutter)) / 2);
+  width: var(--facet-layout-card-w);
   height: var(--facet-layout-card-h);
   scroll-snap-align: start;
   display: flex;
   flex-direction: column;
   gap: var(--facet-space-2);
   cursor: default;
+}
+.fs-cards > .fs-roslot {
+  width: calc((100% - var(--facet-layout-gutter)) / 2);
 }
 .fs-ro {
   position: relative;
