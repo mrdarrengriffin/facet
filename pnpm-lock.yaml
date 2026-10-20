@@ -83,6 +83,9 @@ importers:
       '@facet/icons':
         specifier: workspace:*
         version: link:../packages/icons
+      '@facet/settings':
+        specifier: workspace:*
+        version: link:../packages/settings
       '@facet/sounds':
         specifier: workspace:*
         version: link:../packages/sounds

@@ -15,6 +15,7 @@
     "@astrojs/markdown-remark": "^7.3.3",
     "@facet/demo-data": "workspace:*",
     "@facet/icons": "workspace:*",
+    "@facet/settings": "workspace:*",
     "@facet/sounds": "workspace:*",
     "@facet/tokens": "workspace:*",
     "@facet/ui": "workspace:*",

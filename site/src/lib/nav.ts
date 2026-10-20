@@ -32,7 +32,10 @@ export const screenHref = (slug: string) => url(`/docs/screens/${slug}/`);
 
 /** Docs pages written as Astro pages (they run code live), added to a docs group after its Markdown pages. */
 const extraDocs: Record<string, NavLink[]> = {
-  Concepts: [{ label: 'Sounds', href: url('/docs/sounds/') }],
+  Concepts: [
+    { label: 'Sounds', href: url('/docs/sounds/') },
+    { label: 'Settings', href: url('/docs/settings/') },
+  ],
 };
 
 /** Pages outside the docs collection that also appear in the sidebar. */

@@ -1,0 +1,724 @@
+---
+import { Code } from 'astro:components';
+import '@facet/icons/weather.css';
+import '@facet/ui/styles.css';
+import {
+  BACKGROUNDS,
+  MIN_CONTRAST,
+  accentColors,
+  contrast,
+  entityId,
+  format,
+  groups,
+  inGroup,
+  setting,
+  settings,
+  toEsphome,
+  type AccentRole,
+  type SelectSetting,
+  type ThemeName,
+} from '@facet/settings';
+import Docs from '../../layouts/Docs.astro';
+import { url } from '../../lib/nav';
+import { inlineMarkdown } from '../../lib/inline';
+
+const headings = [
+  { depth: 2, slug: 'try-them', text: 'Try them' },
+  { depth: 2, slug: 'every-setting', text: 'Every setting' },
+  { depth: 2, slug: 'accents', text: 'Accent sets' },
+  { depth: 2, slug: 'esphome', text: 'ESPHome' },
+  { depth: 2, slug: 'in-code', text: 'In code' },
+  { depth: 2, slug: 'adding-a-setting', text: 'Adding a setting' },
+];
+const themes = { light: 'github-light', dark: 'github-dark' } as const;
+const DEVICE = 'facet_panel'; // example device name for the Home Assistant entity ids
+
+const accent = setting('accent') as SelectSetting;
+const THEMES: ThemeName[] = ['dark', 'light'];
+// one ratio per check: the lowest against what it sits on
+const ratio = (c: Record<AccentRole, string>, role: AccentRole, th: ThemeName) =>
+  Math.min(
+    ...(role === 'on-accent' ? [c.accent] : BACKGROUNDS[th]).map((b) => contrast(c[role], b)),
+  );
+const checks = Object.entries(MIN_CONTRAST) as [AccentRole, number][];
+const CHECK_LABEL: Partial<Record<AccentRole, string>> = {
+  accent: 'Fill',
+  'accent-text': 'Text',
+  'on-accent': 'Label on fill',
+};
+
+const yaml = toEsphome();
+const counts = { select: 0, number: 0, switch: 0 };
+for (const s of settings) counts[s.kind]++;
+const kindLabel = { select: 'select', number: 'number', switch: 'switch' } as const;
+
+const usage = `import { createDevice } from '@facet/ui';
+import { resolve, format, setting, accentColors } from '@facet/settings';
+
+// Your adapter keeps the values (Home Assistant entities, local storage...) and patches the store
+const device = createDevice({ store, actions: {
+  setSetting: (id, value) => store.patch({ settings: { ...store.get().settings, [id]: value } }),
+} });
+
+resolve(saved); // every setting: saved values that are valid, defaults for the rest
+format(setting('idleAfter')!, 300); // '5 min'
+accentColors('teal', 'light').accent; // the fill colour of the Teal set in the light theme`;
+
+const yamlUsage = `packages:
+  settings: !include settings.yaml # @facet/settings/esphome/settings.yaml
+
+select:
+  - id: !extend theme_select # what a setting does stays in the firmware
+    on_value:
+      - script.execute: theme_apply`;
+
+const addJson = `{
+  "id": "nightDim",
+  "group": "idle",
+  "label": "Dim at night",
+  "kind": "switch",
+  "control": "toggle",
+  "default": false,
+  "esphome": { "id": "night_dim_switch", "name": "Dim at night", "icon": "mdi:weather-night" }
+}`;
+---
+
+<Docs
+  title="Settings"
+  description="Every personalisation setting, from one schema: try them on a live panel, check the accent contrast and see the ESPHome YAML they make."
+  group="Concepts"
+  current={url('/docs/settings/')}
+  headings={headings}
+  source="site/src/pages/docs/settings.astro"
+  wide
+>
+  <p>
+    Facet's personalisation settings live in one file, <code>@facet/settings</code>'s{' '}
+    <code>settings.json</code>. The panel's Settings screen, its Home Assistant entities, the
+    ESPHome web page and everything on this page are built from it, so a setting added there shows
+    up everywhere at once and nothing can drift. {settings.length} settings in {groups.length} groups
+    today.
+  </p>
+
+  <h2 id="try-them">Try them</h2>
+  <p>
+    A full panel on the mock house. The controls next to it are made from the schema, and so is the
+    panel's own Settings screen (the cog in Home's header): change a setting in either and both
+    follow. Theme, accent and text size show at once; open a toast to see where it enters.
+  </p>
+
+  <div class="set-play" data-settings>
+    <div class="set-play__device">
+      <div class="set-play__viewport" data-viewport>
+        <div class="set-play__frame" data-frame aria-label="Facet panel, live"></div>
+      </div>
+      <div class="set-play__buttons">
+        <button type="button" class="chip-button" data-go="home">Home</button>
+        <button type="button" class="chip-button" data-go="settings">Settings screen</button>
+        <button type="button" class="chip-button" data-toast>Show a toast</button>
+        <button type="button" class="chip-button" data-sleep>Sleep now</button>
+        <button type="button" class="chip-button" data-reset>Reset to defaults</button>
+      </div>
+    </div>
+
+    <form class="set-play__controls" data-controls aria-label="Settings">
+      {
+        groups.map((g) => (
+          <fieldset class="set-group">
+            <legend class="facet-label">{g.label}</legend>
+            {inGroup(g.id).map((s) => (
+              <div class="set-row" data-setting={s.id} data-kind={s.kind}>
+                <div class="set-row__head">
+                  <span class="set-row__label" id={`set-${s.id}`}>
+                    {s.label}
+                  </span>
+                  <output class="set-row__value" data-value />
+                </div>
+                {s.control === 'segmented' && s.kind === 'select' && (
+                  <div class="seg" role="radiogroup" aria-labelledby={`set-${s.id}`}>
+                    {s.options.map((o) => (
+                      <button type="button" role="radio" data-v={o.id} title={o.hint}>
+                        {o.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {s.control === 'swatches' && s.kind === 'select' && (
+                  <div class="set-sw" role="radiogroup" aria-labelledby={`set-${s.id}`}>
+                    {s.options.map((o) => (
+                      <button
+                        type="button"
+                        role="radio"
+                        data-v={o.id}
+                        aria-label={o.label}
+                        title={o.label}
+                        style={`--dot-dark: ${accentColors(o.id, 'dark').accent}; --dot-light: ${accentColors(o.id, 'light').accent}`}
+                      >
+                        <i />
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {s.control === 'sheet' && s.kind === 'select' && (
+                  <select aria-labelledby={`set-${s.id}`} data-input>
+                    {s.options.map((o) => (
+                      <option value={o.id}>{o.label}</option>
+                    ))}
+                  </select>
+                )}
+                {s.control === 'presets' && s.kind === 'number' && (
+                  <select aria-labelledby={`set-${s.id}`} data-input data-number>
+                    {(s.presets ?? []).map((n) => (
+                      <option value={n}>{format(s, n)}</option>
+                    ))}
+                  </select>
+                )}
+                {s.control === 'slider' && s.kind === 'number' && (
+                  <input
+                    type="range"
+                    min={s.min}
+                    max={s.max}
+                    step={s.step}
+                    aria-labelledby={`set-${s.id}`}
+                    data-input
+                    data-number
+                  />
+                )}
+                {s.control === 'toggle' && s.kind === 'switch' && (
+                  <label class="set-toggle">
+                    <input
+                      type="checkbox"
+                      role="switch"
+                      aria-labelledby={`set-${s.id}`}
+                      data-input
+                    />
+                    <span aria-hidden="true" />
+                  </label>
+                )}
+              </div>
+            ))}
+          </fieldset>
+        ))
+      }
+    </form>
+  </div>
+  <p class="set-hint">
+    The preview dims to the clock after the Clock after time, like a panel does; tap it to wake it.
+    Sounds follow the site's sound switch. Auto theme follows this site's theme.
+  </p>
+
+  <h2 id="every-setting">Every setting</h2>
+  <p>
+    What each one is, its default and the Home Assistant entity it becomes (here for a device named{
+      ' '
+    }
+    <code>{DEVICE}</code>). Option labels are the exact strings Home Assistant shows. Settings
+    marked "per board" take their default from the board's config.
+  </p>
+  <div class="set-table">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Setting</th>
+          <th scope="col">Values</th>
+          <th scope="col">Default</th>
+          <th scope="col">Home Assistant</th>
+        </tr>
+      </thead>
+      <tbody>
+        {
+          groups.map((g) => (
+            <>
+              <tr class="set-table__group">
+                <th colspan="4" scope="colgroup">
+                  {g.label}
+                </th>
+              </tr>
+              {inGroup(g.id).map((s) => (
+                <tr>
+                  <th scope="row">
+                    {s.label}
+                    {s.about && <p class="set-table__about" set:html={inlineMarkdown(s.about)} />}
+                  </th>
+                  <td>
+                    {s.kind === 'select' &&
+                      s.options.map((o, i) => (
+                        <>
+                          {i > 0 && ', '}
+                          {o.label}
+                          {o.hint && <span class="set-table__hint"> ({o.hint})</span>}
+                        </>
+                      ))}
+                    {s.kind === 'number' && (
+                      <>
+                        {format(s, s.min)} to {format(s, s.max)}, step {s.step} {s.unit}
+                        {s.presets && (
+                          <span class="set-table__hint">
+                            {' '}
+                            (offers {s.presets.map((n) => format(s, n)).join(', ')})
+                          </span>
+                        )}
+                      </>
+                    )}
+                    {s.kind === 'switch' && 'On, Off'}
+                  </td>
+                  <td>
+                    {format(s, s.default)}
+                    {s.boardDefault && <span class="set-table__hint"> (per board)</span>}
+                  </td>
+                  <td>
+                    <code>{entityId(s, DEVICE)}</code>
+                  </td>
+                </tr>
+              ))}
+            </>
+          ))
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="accents">Accent sets</h2>
+  <p set:html={inlineMarkdown(accent.about ?? '')} />
+  <p>
+    Each set has five roles per theme: the fill, its pressed and dim shades, accent text and the
+    label on a fill. The build checks every set and fails if one drops below the minimum, so these
+    numbers are always true. Each ratio is the lowest against the canvas and the cards (label on
+    fill: against the fill).
+  </p>
+  <div class="set-table">
+    <table class="set-acc">
+      <thead>
+        <tr>
+          <th scope="col">Set</th>
+          <th scope="col">Theme</th>
+          <th scope="col">Roles</th>
+          {
+            checks.map(([role, min]) => (
+              <th scope="col">
+                {CHECK_LABEL[role]} <span class="set-table__hint">≥ {min}:1</span>
+              </th>
+            ))
+          }
+        </tr>
+      </thead>
+      <tbody>
+        {
+          accent.options.map((o) =>
+            THEMES.map((th, i) => {
+              const c = accentColors(o.id, th);
+              return (
+                <tr class={i ? 'set-acc__second' : undefined}>
+                  {i === 0 && (
+                    <th scope="rowgroup" rowspan={THEMES.length}>
+                      {o.label}
+                    </th>
+                  )}
+                  <td>{th === 'dark' ? 'Dark' : 'Light'}</td>
+                  <td>
+                    <span class={`set-acc__chips set-acc__chips--${th}`}>
+                      {(Object.keys(c) as AccentRole[]).map((r) => (
+                        <span
+                          class="set-acc__chip"
+                          style={`background: ${c[r]}`}
+                          title={`${r} ${c[r]}`}
+                        />
+                      ))}
+                      <span
+                        class="set-acc__sample"
+                        style={`background: ${c.accent}; color: ${c['on-accent']}`}
+                      >
+                        Play
+                      </span>
+                      <span class="set-acc__text" style={`color: ${c['accent-text']}`}>
+                        Needs you
+                      </span>
+                    </span>
+                  </td>
+                  {checks.map(([role, min]) => {
+                    const r = ratio(c, role, th);
+                    return (
+                      <td class="set-acc__ratio" data-pass={r >= min ? 'yes' : 'no'}>
+                        {r.toFixed(1)}:1
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            }),
+          )
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="esphome">ESPHome</h2>
+  <p>
+    <code>@facet/settings/esphome/settings.yaml</code> is generated from the same schema: one template
+    entity per setting ({counts.select}
+    {kindLabel.select}s, {counts.number}
+    {kindLabel.number}s,{' '}
+    {counts.switch}
+    {kindLabel.switch}), all in the config category and restored after a reboot, grouped on the
+    ESPHome web_server page like the groups above. Include it as a package and add what each setting
+    does with <code>!extend</code>:
+  </p>
+  <Code code={yamlUsage} lang="yaml" themes={themes} />
+  <details class="set-yaml">
+    <summary>The generated settings.yaml ({yaml.split('\n').length - 1} lines)</summary>
+    <Code code={yaml} lang="yaml" themes={themes} />
+  </details>
+
+  <h2 id="in-code">In code</h2>
+  <p>
+    The device applies theme, accent and text size to its frame and reacts to the transition, toast
+    position and idle settings when <code>data.settings</code> changes. Sounds are left to the host: this
+    page turns them on and off with <code>@facet/sounds</code>.
+  </p>
+  <Code code={usage} lang="ts" themes={themes} />
+
+  <h2 id="adding-a-setting">Adding a setting</h2>
+  <p>
+    Add an entry to <code>packages/settings/src/settings.json</code> and rebuild. It shows up on the Settings
+    screen, in the ESPHome YAML and on this page with nothing else to write; the build fails if the default
+    isn't valid, an id is used twice or an accent set loses contrast. Keep{' '}
+    <code>esphome.id</code> stable once a panel uses it: Home Assistant automations point at it.
+  </p>
+  <Code code={addJson} lang="json" themes={themes} />
+</Docs>
+
+<script>
+  import { createMockHouse, TOASTS } from '@facet/demo-data';
+  import { createDevice, type ScreenId } from '@facet/ui';
+  import { play, setEnabled, setPack, setVolume } from '@facet/sounds';
+  import { format, resolve, setting, type Value } from '@facet/settings';
+  import { fitFrame, initSounds } from '../../scripts/facet-runtime';
+
+  initSounds();
+  const root = document.querySelector<HTMLElement>('[data-settings]')!;
+  const house = createMockHouse();
+  const device = createDevice(house, { onToast: () => void play('notify') });
+  const frame = root.querySelector<HTMLElement>('[data-frame]')!;
+  frame.append(device.el);
+  fitFrame(root.querySelector<HTMLElement>('[data-viewport]')!, frame);
+
+  const set = (id: string, v: Value) => house.actions.setSetting?.(id, v);
+  const form = root.querySelector<HTMLElement>('[data-controls]')!;
+  const rows = [...form.querySelectorAll<HTMLElement>('[data-setting]')];
+
+  // controls → store
+  for (const row of rows) {
+    const s = setting(row.dataset.setting!)!;
+    for (const b of row.querySelectorAll<HTMLButtonElement>('[data-v]'))
+      b.addEventListener('click', () => set(s.id, b.dataset.v!));
+    const input = row.querySelector<HTMLInputElement | HTMLSelectElement>('[data-input]');
+    if (!input) continue;
+    const read = (): Value =>
+      input instanceof HTMLInputElement && input.type === 'checkbox'
+        ? input.checked
+        : 'number' in input.dataset
+          ? Number(input.value)
+          : input.value;
+    // a slider shows its value while dragging and applies when let go
+    if (input.type === 'range')
+      input.addEventListener('input', () => {
+        row.querySelector('[data-value]')!.textContent = format(s, read());
+      });
+    input.addEventListener('change', () => set(s.id, read()));
+  }
+
+  // store → controls (also when the panel's own Settings screen changes something), and sounds
+  const heard: Record<string, Value> = {};
+  const sync = () => {
+    const v = resolve(house.store.get().settings ?? {});
+    for (const row of rows) {
+      const s = setting(row.dataset.setting!)!;
+      const val = v[s.id]!;
+      row.querySelector('[data-value]')!.textContent = format(s, val);
+      for (const b of row.querySelectorAll<HTMLButtonElement>('[data-v]'))
+        b.setAttribute('aria-checked', String(b.dataset.v === val));
+      const input = row.querySelector<HTMLInputElement | HTMLSelectElement>('[data-input]');
+      if (input instanceof HTMLInputElement && input.type === 'checkbox') input.checked = !!val;
+      else if (input && document.activeElement !== input) input.value = String(val);
+    }
+    for (const id of ['sounds', 'soundPack', 'volume']) {
+      if (id in heard && heard[id] === v[id]) continue;
+      const first = !(id in heard);
+      heard[id] = v[id]!;
+      if (id === 'sounds') setEnabled(!!v[id]);
+      else if (id === 'soundPack' && setPack(String(v[id])) && !first) play('confirm');
+      else if (id === 'volume') setVolume(Number(v[id]) / 100);
+    }
+  };
+  house.store.subscribe(sync);
+  sync();
+
+  for (const b of root.querySelectorAll<HTMLButtonElement>('[data-go]'))
+    b.addEventListener('click', () => device.go(b.dataset.go as ScreenId));
+  let next = 0;
+  root.querySelector('[data-toast]')!.addEventListener('click', () => {
+    device.toast(TOASTS[next++ % TOASTS.length]!);
+  });
+  root.querySelector('[data-sleep]')!.addEventListener('click', () => device.sleep());
+  root
+    .querySelector('[data-reset]')!
+    .addEventListener('click', () => house.store.patch({ settings: {} }));
+</script>
+
+<style>
+  .set-play {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+    gap: 24px;
+    margin: 24px 0 8px;
+    padding: 24px;
+    border: 1px solid var(--facet-color-line);
+    border-radius: 16px;
+    background: var(--facet-color-surface);
+  }
+  @media (max-width: 900px) {
+    .set-play {
+      grid-template-columns: 1fr;
+      padding: 16px;
+    }
+  }
+  .set-play__device {
+    position: sticky;
+    top: 96px;
+    align-self: start;
+    min-width: 0;
+  }
+  @media (max-width: 900px) {
+    .set-play__device {
+      position: static;
+    }
+  }
+  .set-play__viewport {
+    position: relative;
+    overflow: hidden;
+    border-radius: 24px;
+  }
+  .set-play__frame {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 720px;
+    height: 720px;
+  }
+  .set-play__buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 16px;
+  }
+  .set-play__controls {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    min-width: 0;
+  }
+  .set-group {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+  .set-group legend {
+    margin-bottom: 10px;
+    color: var(--facet-color-text-mute);
+  }
+  .set-row {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .set-row__head {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 14px;
+  }
+  .set-row__value {
+    color: var(--facet-color-text-mute);
+    font: 500 12px/20px var(--mono);
+  }
+  .set-row .seg {
+    align-self: flex-start;
+  }
+  .set-row .seg button[aria-checked='true'] {
+    background: var(--facet-color-bg);
+    color: var(--facet-color-text);
+  }
+  .set-row select {
+    max-width: 100%;
+  }
+  .set-row input[type='range'] {
+    width: 100%;
+    accent-color: var(--facet-color-accent);
+  }
+  .set-sw {
+    display: flex;
+    gap: 6px;
+  }
+  .set-sw button {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 2px solid transparent;
+    border-radius: 50%;
+    background: transparent;
+    cursor: pointer;
+  }
+  .set-sw button[aria-checked='true'] {
+    border-color: var(--facet-color-text);
+  }
+  .set-sw i {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--dot-dark);
+  }
+  :global([data-facet-theme='light']) .set-sw i {
+    background: var(--dot-light);
+  }
+  .set-toggle {
+    position: relative;
+    align-self: flex-start;
+    cursor: pointer;
+  }
+  .set-toggle input {
+    position: absolute;
+    opacity: 0;
+    inset: 0;
+    margin: 0;
+    cursor: pointer;
+  }
+  .set-toggle span {
+    display: block;
+    width: 44px;
+    height: 24px;
+    border-radius: 12px;
+    background: var(--facet-color-line);
+    transition: background 0.15s;
+  }
+  .set-toggle span::after {
+    content: '';
+    display: block;
+    width: 18px;
+    height: 18px;
+    margin: 3px;
+    border-radius: 50%;
+    background: var(--facet-color-text);
+    transition: transform 0.15s;
+  }
+  .set-toggle input:checked + span {
+    background: var(--facet-color-accent);
+  }
+  .set-toggle input:checked + span::after {
+    transform: translateX(20px);
+  }
+  .set-toggle input:focus-visible + span {
+    outline: 2px solid var(--facet-color-accent);
+    outline-offset: 2px;
+  }
+  .set-hint {
+    color: var(--facet-color-text-mute);
+    font-size: 14px;
+  }
+
+  .set-table {
+    margin: 16px 0;
+    overflow-x: auto;
+  }
+  .set-table table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+  .set-table th,
+  .set-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--facet-color-line);
+    text-align: left;
+    vertical-align: top;
+  }
+  .set-table thead th {
+    color: var(--facet-color-text-mute);
+    font: 500 12px/1.4 var(--mono);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .set-table__group th {
+    padding-top: 20px;
+    color: var(--facet-color-text-mute);
+    font: 500 12px/1 var(--mono);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .set-table__about {
+    margin: 4px 0 0;
+    max-width: 40ch;
+    color: var(--facet-color-text-mute);
+    font-weight: 400;
+  }
+  .set-table__hint {
+    color: var(--facet-color-text-mute);
+  }
+  .set-table code {
+    white-space: nowrap;
+  }
+  .set-acc__chips {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 8px;
+    border-radius: 10px;
+    white-space: nowrap;
+  }
+  .set-acc__chips--dark {
+    background: #0a0b0e;
+  }
+  .set-acc__chips--light {
+    background: #ffffff;
+    box-shadow: inset 0 0 0 1px var(--facet-color-line);
+  }
+  .set-acc__chip {
+    width: 14px;
+    height: 14px;
+    border-radius: 4px;
+    box-shadow: inset 0 0 0 1px rgb(128 128 128 / 0.35);
+  }
+  .set-acc__second td {
+    padding-top: 0;
+  }
+  .set-acc tbody tr:not(.set-acc__second) > * {
+    border-bottom: 0;
+  }
+  .set-acc__sample {
+    margin-left: 6px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font: 600 11px/1.2 var(--mono);
+    text-transform: uppercase;
+  }
+  .set-acc__text {
+    margin-left: 4px;
+    font: 600 12px/1.2 var(--mono);
+    text-transform: uppercase;
+  }
+  .set-acc__ratio {
+    font-family: var(--mono);
+    white-space: nowrap;
+  }
+  .set-acc__ratio[data-pass='no'] {
+    color: var(--facet-color-error);
+  }
+  .set-yaml summary {
+    cursor: pointer;
+    margin: 12px 0;
+  }
+</style>

@@ -8,6 +8,10 @@ All notable changes to Facet are written down here. The format is loosely based 
 
 ### Added
 
+- Docs: a Settings page (`/docs/settings/`). Every setting as a control made from `@facet/settings`
+  next to a live panel on the mock house (both ways: the panel's own Settings screen moves the page's
+  controls), a table of every setting with its default and Home Assistant entity, the accent sets with
+  their contrast ratios per theme, and the generated ESPHome YAML.
 - Settings: a Settings screen, opened from a new Settings button in Home's header. Every personalisation
   setting in four groups, built from `@facet/settings`: segmented controls, accent swatches, a switch, sliders
   and bottom sheets for packs, faces and presets. `PanelData` gains `settings`, `PanelActions` gains

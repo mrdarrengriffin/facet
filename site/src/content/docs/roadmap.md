@@ -44,6 +44,7 @@ Ticked items are done, the ones with an orange dot are in progress.
 - [x] Switch: one big button for anything with an on and an off, power and time underneath
 - [ ] Switch on the firmware
 - [x] Settings: theme, accent, text size, sounds, idle and behaviour, from one schema (`@facet/settings`)
+- [x] Settings docs page: every setting live on a panel, accent contrast, the ESPHome YAML
 - [ ] Settings on the firmware (accent, text size and sound pack)
 - [x] Toasts over any screen and an idle clock
 - [~] Context cards: room profiles that decide which cards show and in what order
