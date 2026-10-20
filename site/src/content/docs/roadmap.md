@@ -37,6 +37,8 @@ Ticked items are done, the ones with an orange dot are in progress.
 - [ ] 3D print on the firmware: frames rendered by a server
 - [x] Thermostat: the room temperature on a heating ring, set point as the knob, modes and presets
 - [ ] Thermostat on the firmware
+- [x] Blinds and curtains: the window drawn per kind (roller, Venetian with tilt, curtains), drag to a position
+- [ ] Blinds and curtains on the firmware
 - [x] Calendar: the next event as the hero, then two weeks of days; calendars shown or hidden from a sheet
 - [ ] Calendar on the firmware
 - [x] Switch: one big button for anything with an on and an off, power and time underneath

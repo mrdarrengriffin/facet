@@ -331,6 +331,8 @@ export interface PanelData {
   moon?: MoonData | null;
   print?: PrintData | null;
   thermostat?: ThermostatData | null;
+  /** Blinds and curtains, in the order the Covers screen offers them. */
+  covers?: CoverData[] | null;
   switch?: SwitchData | null;
   timers?: Timer[];
   nextEvent?: CalendarEvent | null;
@@ -400,6 +402,33 @@ export interface SwitchData {
   changedAt?: string | null;
 }
 
+/** How a cover is drawn: curtains (two panels part sideways), a roller blind (fabric drops), Venetian (slats tilt). */
+export type CoverKind = 'curtain' | 'roller' | 'venetian';
+
+/** What a cover is doing (a Home Assistant `cover` entity's state). */
+export type CoverState = 'open' | 'closed' | 'opening' | 'closing' | 'unavailable';
+
+/**
+ * A blind or curtain (a Home Assistant `cover` entity). Positions are Home Assistant's: 0 = closed, 100 = open.
+ * Leave `kind` out and it comes from `deviceClass` and `features` (see `coverKind`).
+ */
+export interface CoverData {
+  /** The entity id (what the actions get back). */
+  id: string;
+  /** "Office blind". */
+  name: string;
+  kind?: CoverKind | null;
+  /** `device_class`: curtain, shade, blind, shutter, awning, window ... */
+  deviceClass?: string | null;
+  state: CoverState;
+  /** `current_position`; null when the cover only knows open / closed. */
+  position: number | null;
+  /** `current_tilt_position` (Venetian slats): 0 = shut, 100 = open (flat). */
+  tilt?: number | null;
+  /** `supported_features` bits: 1 open, 2 close, 4 set position, 8 stop, 16/32/64/128 the same for tilt. Default 15. */
+  features?: number;
+}
+
 /** What the screens can ask for. An adapter implements these (and updates the store when things change). */
 export interface PanelActions {
   mediaPlayPause?(): void;
@@ -425,6 +454,12 @@ export interface PanelActions {
   climateMode?(mode: HvacMode): void;
   /** `climate.set_preset_mode`. */
   climatePreset?(preset: string): void;
+  /** `cover.set_cover_position` (0 = closed, 100 = open). */
+  coverPosition?(id: string, position: number): void;
+  /** `cover.set_cover_tilt_position`. */
+  coverTilt?(id: string, tilt: number): void;
+  /** `cover.open_cover` / `close_cover` / `stop_cover`. */
+  coverCommand?(id: string, command: 'open' | 'close' | 'stop'): void;
   /** Turn the switch on or off (`homeassistant.turn_on` / `turn_off`). */
   switchSet?(on: boolean): void;
 }

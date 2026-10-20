@@ -32,6 +32,7 @@ import {
 } from './calendar.js';
 import { switchLine } from './switch.js';
 import { tempText, thermostatSummary } from './thermostat.js';
+import { coverMoving, coverStatus, coverValue, previewCover } from '../covers.js';
 import { isDay, missing, speakerName, type Screen, type ScreenContext } from './common.js';
 
 export type CardId =
@@ -40,6 +41,7 @@ export type CardId =
   | 'media'
   | 'light'
   | 'thermostat'
+  | 'covers'
   | 'switch'
   | 'clock'
   | 'github'
@@ -55,6 +57,7 @@ export const CARD_IDS: CardId[] = [
   'media',
   'light',
   'thermostat',
+  'covers',
   'switch',
   'clock',
   'github',
@@ -80,6 +83,7 @@ export function homeScreen(ctx: ScreenContext, o: HomeOptions = {}): Screen {
   const pTimer = previewTimer();
   const pMoon = moonIcon(0.25, { size: 72 });
   const pThermo = previewDial();
+  const pCover = previewCover();
   const pCal = previewCalendar();
   const pSwitch = previewSwitch();
   const cards = {
@@ -138,6 +142,14 @@ export function homeScreen(ctx: ScreenContext, o: HomeOptions = {}): Screen {
       value: '--',
       sub: 'loading',
       onTap: go('switch'),
+    }),
+    covers: card({
+      label: 'Blinds',
+      icon: 'covers',
+      preview: pCover,
+      value: '--',
+      sub: 'loading',
+      onTap: go('covers'),
     }),
     clock: card({
       label: 'Clock',
@@ -317,6 +329,23 @@ export function homeScreen(ctx: ScreenContext, o: HomeOptions = {}): Screen {
             : ((th.target - th.min) / (th.max - th.min)) * 100,
         );
       } else cards.thermostat.set({ value: '--°', sub: missing(ctx.store) });
+      // blinds and curtains: the first one, plus how many of the rest are open
+      const cv = s.covers ?? [];
+      const c0 = cv[0];
+      if (c0) {
+        const open = cv.filter(
+          (c) => c.state !== 'unavailable' && coverStatus(c) !== 'closed',
+        ).length;
+        cards.covers.set({
+          value: coverValue(c0),
+          sub:
+            cv.length > 1
+              ? `${c0.name.toLowerCase()} · ${open} of ${cv.length} open`
+              : `${c0.name.toLowerCase()} · ${coverStatus(c0)}`,
+          accent: cv.some(coverMoving),
+        });
+        pCover.set(c0.position ?? (c0.state === 'open' ? 100 : 0));
+      } else cards.covers.set({ value: '--', sub: missing(ctx.store) });
       // switch
       const sw = s.switch;
       if (sw)

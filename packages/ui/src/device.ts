@@ -24,6 +24,7 @@ import { moonScreen } from './screens/moon.js';
 import { printScreen } from './screens/print.js';
 import { switchScreen } from './screens/switch.js';
 import { thermostatScreen } from './screens/thermostat.js';
+import { coversScreen } from './screens/covers.js';
 import { timerScreen } from './screens/timer.js';
 import { weatherScreen } from './screens/weather.js';
 
@@ -34,6 +35,7 @@ export const SCREEN_IDS: ScreenId[] = [
   'media',
   'light',
   'thermostat',
+  'covers',
   'switch',
   'clock',
   'github',
@@ -71,6 +73,8 @@ export function createScreen(
       return thermostatScreen(ctx, o);
     case 'switch':
       return switchScreen(ctx, o);
+    case 'covers':
+      return coversScreen(ctx, o);
     case 'clock':
       return clockScreen(ctx, { ...o.clock, onBack: o.onBack });
     case 'github':

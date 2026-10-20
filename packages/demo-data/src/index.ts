@@ -24,6 +24,7 @@ import * as D from './data.js';
 import { printWith } from './print.js';
 import { switchWatts, switchWith } from './switch.js';
 import { thermostatStep, thermostatWith, withAction } from './thermostat.js';
+import { coversStep, coversWith } from './covers.js';
 import {
   energyWith,
   lightningWith,
@@ -36,6 +37,7 @@ export * from './data.js';
 export * from './scenes.js';
 export * from './print.js';
 export * from './thermostat.js';
+export * from './covers.js';
 export * from './switch.js';
 
 export interface MockHouseOptions {
@@ -101,6 +103,7 @@ export function mockState(now = Date.now(), o: MockHouseOptions = {}): PanelData
     moon: moonData(now, D.PLACE_AT),
     print: printWith(now),
     thermostat: thermostatWith(now),
+    covers: coversWith(),
     switch: switchWith(now),
     timers: timer > 0 ? [{ label: 'Bread', endsAt: now + timer * 1000, total: 12 * 60 }] : [],
     nextEvent: D.nextEvent(now),
@@ -154,6 +157,21 @@ export function createMockHouse(o: MockHouseOptions = {}): MockHouse {
   const thermo = (f: (t: ThermostatData) => ThermostatData) => {
     const t = store.get().thermostat;
     if (t) store.patch({ thermostat: withAction(f(t)) });
+  };
+  // cover motors: where each moving cover is heading
+  const goals = new Map<string, number>();
+  let motor: ReturnType<typeof setInterval> | undefined;
+  const moveCover = (id: string, goal: number) => {
+    goals.set(id, goal);
+    if (!motor)
+      motor = setInterval(() => {
+        const cv = store.get().covers;
+        if (cv) store.patch({ covers: coversStep(cv, goals) });
+        if (!goals.size) {
+          clearInterval(motor);
+          motor = undefined;
+        }
+      }, 200);
   };
   const actions: Required<PanelActions> = {
     mediaPlayPause() {
@@ -223,6 +241,23 @@ export function createMockHouse(o: MockHouseOptions = {}): MockHouse {
           ? { ...t, mode, target: null, next: null }
           : { ...t, mode, target: t.target ?? 19, preset: 'none' },
       ),
+    coverPosition: (id, position) => moveCover(id, position),
+    coverTilt: (id, tilt) =>
+      store.patch({
+        covers: (store.get().covers ?? []).map((c) => (c.id === id ? { ...c, tilt } : c)),
+      }),
+    coverCommand(id, command) {
+      if (command === 'open') moveCover(id, 100);
+      else if (command === 'close') moveCover(id, 0);
+      else {
+        goals.delete(id);
+        store.patch({
+          covers: (store.get().covers ?? []).map((c) =>
+            c.id === id ? { ...c, state: (c.position ?? 0) <= 0 ? 'closed' : 'open' } : c,
+          ),
+        });
+      }
+    },
     climatePreset: (preset) =>
       thermo((t) => ({
         ...t,
@@ -289,5 +324,13 @@ export function createMockHouse(o: MockHouseOptions = {}): MockHouse {
       }, 1000),
     );
   }
-  return { store, actions, setScene, destroy: () => timers.forEach(clearInterval) };
+  return {
+    store,
+    actions,
+    setScene,
+    destroy: () => {
+      timers.forEach(clearInterval);
+      clearInterval(motor);
+    },
+  };
 }

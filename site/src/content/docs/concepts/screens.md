@@ -6,7 +6,7 @@ order: 3
 ---
 
 A screen is a full-screen view made from components. Facet has Home, Agents, Media, Light,
-Thermostat, Switch, Clock, GitHub, Energy, Weather, Lightning, Moon, Timer and 3D print, plus toasts that appear over any of them.
+Thermostat, Switch, Blinds, Clock, GitHub, Energy, Weather, Lightning, Moon, Timer and 3D print, plus toasts that appear over any of them.
 Each has its own page under **Screens** in the sidebar, with a live preview.
 
 ## How a screen gets its data

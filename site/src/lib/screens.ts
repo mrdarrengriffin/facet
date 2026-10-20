@@ -290,6 +290,55 @@ const plug = switchScreen({
     ],
   },
   {
+    slug: 'covers',
+    preview: 'covers',
+    icon: 'covers',
+    title: 'Blinds',
+    description:
+      'Blinds and curtains: the window is the hero, drawn for the kind of cover. Drag it to a position; Open, Stop and Close beside it, and a tilt slider for Venetian blinds.',
+    intro: [
+      'The window on the left is the screen. It is drawn for what hangs in it: a roller blind drops its fabric from the rail, a Venetian blind lowers a run of slats, and curtains part from the middle with their pleats bunching up. The accent marks the part you drag: the bottom bar of a blind, the leading edges of the curtains.',
+      'Drag a blind down or up, and curtains sideways. The position goes out when you let go, and for three seconds the screen ignores updates so a slow motor cannot pull the drawing back. While the cover moves, a thin line marks where it is heading.',
+      'Venetian blinds that tilt get a Slats slider: the slats get thinner as they open and close up into a wall as they shut.',
+      'With more than one cover, an "N windows" button in the header opens a sheet to pick one.',
+    ],
+    shows: [
+      "The header with the cover's name, and the windows button when there are several.",
+      'The window (320 × 576): frame, glass and the cover, at its position.',
+      'On the right: the state (closed, opening, 42% open), the position as the hero (96), what kind of cover it is, the Slats slider (Venetian) and Open / Stop / Close.',
+    ],
+    usage: `import { coversScreen } from '@facet/ui';
+
+const blinds = coversScreen({
+  store,
+  actions: {
+    coverPosition: (id, p) => ha.call('cover', 'set_cover_position', { entity_id: id, position: p }),
+    coverTilt: (id, t) => ha.call('cover', 'set_cover_tilt_position', { entity_id: id, tilt_position: t }),
+    coverCommand: (id, c) => ha.call('cover', \`\${c}_cover\`, { entity_id: id }),
+  },
+});`,
+    data: `interface CoverData {
+  id: string;                    // entity_id
+  name: string;                  // friendly_name
+  kind?: 'curtain' | 'roller' | 'venetian' | null; // how to draw it (else from deviceClass / features)
+  deviceClass?: string | null;   // device_class
+  state: 'open' | 'closed' | 'opening' | 'closing' | 'unavailable';
+  position: number | null;       // current_position, 0 = closed
+  tilt?: number | null;          // current_tilt_position
+  features?: number;             // supported_features (default 15)
+}
+
+interface PanelData {
+  covers?: CoverData[] | null;   // in the order the picker lists them
+}`,
+    config: [
+      'Everything maps to Home Assistant `cover` entities. The drawing comes from `device_class`: `curtain` draws curtains, anything that can tilt (feature 128) draws a Venetian blind, everything else (shade, blind, shutter, awning ...) a roller blind. Set `kind` to override it.',
+      'Buttons follow `supported_features`: no Stop button without 8, no dragging without 4 (the drawing then shows fully open or closed from the state).',
+      'The Home card shows the first cover and how many of the rest are open; its dot lights while any of them moves.',
+      'The mock house has a study roller blind, lounge curtains and a kitchen Venetian blind, with motors that move about 5 % a second.',
+    ],
+  },
+  {
     slug: 'clock',
     preview: 'clock',
     icon: 'clock',

@@ -870,6 +870,234 @@
   display: none;
 }
 
+/* ---------- Covers (blinds and curtains) ---------- */
+.f-cover {
+  position: relative;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.f-cover.is-drag {
+  touch-action: none;
+  cursor: ns-resize;
+}
+.f-cover[data-kind='curtain'].is-drag {
+  cursor: ew-resize;
+}
+.f-cover i {
+  position: absolute;
+  display: block;
+}
+.f-cover-frame {
+  position: absolute;
+  inset: 0;
+  border: 2px solid var(--facet-color-line-hi);
+  border-radius: var(--facet-radius-button);
+  background: var(--facet-color-surface);
+}
+.f-cover-glass {
+  position: absolute;
+  inset: calc(var(--cv-pad) - 2px);
+  border-radius: 4px;
+  background: var(--facet-color-disc);
+  overflow: hidden;
+}
+.f-cover-mull-v {
+  left: calc(50% - 1px);
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--facet-color-line);
+}
+.f-cover-mull-h {
+  top: calc(50% - 1px);
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--facet-color-line);
+}
+.f-cover-cover {
+  position: absolute;
+  inset: 0;
+}
+/* roller + Venetian: rail, fabric (or slats), the bottom bar in the accent = the handle */
+.f-cover .f-cover-rail {
+  left: 0;
+  right: 0;
+  top: calc(var(--cv-pad) - 8px);
+  height: 16px;
+  border-radius: 4px;
+  background: var(--facet-color-steel);
+}
+.f-cover-fabric {
+  position: absolute;
+  left: var(--cv-pad);
+  right: var(--cv-pad);
+  top: var(--cv-pad);
+  overflow: hidden;
+  background: var(--facet-color-steel-dim);
+}
+.f-cover .f-cover-bar {
+  left: calc(var(--cv-pad) - 4px);
+  right: calc(var(--cv-pad) - 4px);
+  height: 8px;
+  margin-top: -4px;
+  border-radius: 4px;
+  background: var(--facet-color-accent);
+}
+.f-cover[data-kind='venetian'] .f-cover-fabric {
+  background: transparent;
+}
+.f-cover[data-kind='venetian'] .f-cover-fabric::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 16px;
+  background: var(--facet-color-steel);
+}
+.f-cover .f-cover-slat {
+  left: 0;
+  right: 0;
+  border-radius: 2px;
+  background: var(--facet-color-steel);
+}
+.f-cover .f-cover-cord {
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--facet-color-line-hi);
+}
+.f-cover .f-cover-cord.is-l {
+  left: 25%;
+}
+.f-cover .f-cover-cord.is-r {
+  right: 25%;
+}
+/* curtains: a rod, two panels with pleats, the leading edges in the accent */
+.f-cover .f-cover-rod {
+  left: 0;
+  right: 0;
+  top: calc(var(--cv-pad) - 12px);
+  height: 4px;
+  border-radius: 2px;
+  background: var(--facet-color-line-hi);
+}
+.f-cover-panel {
+  position: absolute;
+  top: calc(var(--cv-pad) - 8px);
+  bottom: calc(var(--cv-pad) - 8px);
+  background: var(--facet-color-steel-dim);
+}
+.f-cover-panel.is-left {
+  left: 0;
+}
+.f-cover-panel.is-right {
+  right: 0;
+}
+.f-cover .f-cover-pleat {
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--facet-color-steel);
+}
+.f-cover .f-cover-edge {
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--facet-color-accent);
+}
+.f-cover-panel.is-left .f-cover-edge {
+  right: 0;
+}
+.f-cover-panel.is-right .f-cover-edge {
+  left: 0;
+}
+/* where a moving cover is heading */
+.f-cover .f-cover-target {
+  left: var(--cv-pad);
+  right: var(--cv-pad);
+  height: 4px;
+  margin-top: -2px;
+  border-radius: 2px;
+  background: var(--facet-color-accent);
+  opacity: 0.5;
+}
+.f-cover[data-kind='curtain'] .f-cover-target {
+  right: auto;
+  top: calc(var(--cv-pad) - 12px);
+  height: 4px;
+  margin-top: 0;
+  background: var(--facet-color-accent);
+}
+.f-cover .f-cover-target[hidden] {
+  display: none;
+}
+.fs-cv-win {
+  position: absolute;
+  inset: 0;
+}
+.fs-cv-cap,
+.fs-cv-val,
+.fs-cv-kind {
+  display: block;
+  white-space: nowrap;
+}
+.fs-cv-cap {
+  color: var(--facet-color-text-mute);
+}
+.fs-covers[data-state='opening'] .fs-cv-cap,
+.fs-covers[data-state='closing'] .fs-cv-cap {
+  color: var(--facet-color-accent);
+}
+.fs-cv-val {
+  color: var(--facet-color-text);
+  font-variant-numeric: tabular-nums;
+}
+.fs-covers[data-state='unavailable'] .fs-cv-val {
+  color: var(--facet-color-text-dim);
+}
+.fs-cv-kind {
+  color: var(--facet-color-text-dim);
+}
+.fs-cv-tilt[hidden],
+.fs-cv-btns[hidden],
+.fs-cv-btns .f-btn[hidden],
+.fs-cv-pick[hidden] {
+  display: none;
+}
+.fs-cv-tcap {
+  color: var(--facet-color-text-mute);
+}
+.fs-cv-tval {
+  float: right;
+  color: var(--facet-color-text-dim);
+  font-variant-numeric: tabular-nums;
+}
+.fs-content > .f-abs > .fs-cv-btns {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.fs-cv-pick {
+  margin-right: 16px;
+  height: 48px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: var(--facet-radius-button);
+  background: var(--facet-color-surface);
+  color: var(--facet-color-text-dim);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.fs-cv-pick:active {
+  background: var(--facet-color-surface-press);
+}
+
 /* ---------- Calendar ---------- */
 .fs-cal-hero .fs-hero-t {
   padding-top: 8px;
@@ -1002,4 +1230,41 @@
 }
 .fs-switch[data-on=''] .fs-sw-line {
   color: var(--facet-color-text-mute);
+}
+
+/* ---------- Covers Home card picture (72 box) ---------- */
+.f-pcover i {
+  position: absolute;
+  display: block;
+}
+.f-pcover-frame {
+  left: 8px;
+  top: 8px;
+  width: 56px;
+  height: 56px;
+  border: 2px solid var(--facet-color-line-hi);
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+.f-pcover-rail {
+  left: 4px;
+  top: 6px;
+  width: 64px;
+  height: 6px;
+  border-radius: 2px;
+  background: var(--facet-color-steel);
+}
+.f-pcover-fabric {
+  left: 12px;
+  top: 10px;
+  width: 48px;
+  background: var(--facet-color-steel-dim);
+}
+.f-pcover-bar {
+  left: 10px;
+  width: 52px;
+  height: 4px;
+  margin-top: -2px;
+  border-radius: 2px;
+  background: var(--facet-color-accent);
 }

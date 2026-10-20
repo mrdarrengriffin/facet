@@ -10,6 +10,7 @@ import {
   printWith,
   switchWith,
   thermostatWith,
+  coversWith,
   timersWith,
   TOASTS,
   TRACKS,
@@ -21,6 +22,7 @@ import {
   type RainScene,
   type SwitchScene,
   type ThermostatScene,
+  type CoverScene,
   type TimerScene,
 } from '@facet/demo-data';
 import { WX_TEXT } from '@facet/icons';
@@ -264,6 +266,29 @@ export const screenOptions: Record<string, ScreenOptions> = {
                 Number(p.minutes),
                 p.kind as 'plug' | 'light' | 'switch',
               ),
+      }),
+  },
+  covers: {
+    controls: [
+      sel('state', 'Covers', [
+        'live',
+        'roller',
+        'curtain',
+        'venetian',
+        'moving',
+        'offline',
+        'none',
+      ]),
+      range('position', 'Position (%)', 0, 100, 60),
+      range('tilt', 'Slats (%)', 0, 100, 60),
+    ],
+    apply: (k, p, ctx) =>
+      ctx.house.store.patch({
+        covers: coversWith(
+          p.state as CoverScene,
+          k === 'state' ? undefined : Number(p.position),
+          k === 'state' ? undefined : Number(p.tilt),
+        ),
       }),
   },
   print: {

@@ -8,6 +8,14 @@ All notable changes to Facet are written down here. The format is loosely based 
 
 ### Added
 
+- Blinds and curtains: a covers screen and Home card. The window is the hero, drawn for the kind of
+  cover: a roller blind drops its fabric, a Venetian blind lowers slats that tilt, curtains part from
+  the middle. Drag it to a position (down on a blind, sideways on curtains), Open / Stop / Close
+  beside it, a Slats slider for Venetian blinds, and an "N windows" sheet when there are several.
+  `PanelData` gains `covers`, `PanelActions` gains `coverPosition` / `coverTilt` / `coverCommand`;
+  new component `coverVisual` (+ `coverKind`, `coverCaps`); new screen icon `covers` and UI icons
+  `roller`, `curtain`, `venetian`. The mock house has a study blind, lounge curtains and a kitchen
+  Venetian blind with motors that take their time.
 - Calendar: a calendar screen and Home card. The hero is the next event (the start time, "Now"
   while it runs, or the day), then two weeks of days, each with a row per event: time, the
   calendar's dot and the title. An "N calendars" sheet shows or hides each calendar.

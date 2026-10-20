@@ -63,4 +63,6 @@ export {
   HVAC_TEXT,
 } from './screens/thermostat.js';
 export { switchScreen, switchLine, sinceText, wattText } from './screens/switch.js';
+export { coversScreen, type CoversOptions } from './screens/covers.js';
+export * from './covers.js';
 export * from './device.js';
