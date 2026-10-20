@@ -2,7 +2,8 @@
 // one value and one line, and lights its dot when it matters (something needs you, music playing, peak price, a
 // nearby strike). The Timer card comes first while a timer runs; otherwise it sits after Clock as "No timer",
 // so a timer can always be started. The Weather card is contextual: a nearby storm takes it over, then rain within
-// the hour, then the moon at night (`weatherState`).
+// the hour, then the moon at night (`weatherState`). `readouts` = the state readouts (`PanelData.readouts`: no box, no
+// screen, tap does nothing), two per card slot, in the card's place.
 import { moonIcon, screenIcon, weatherIcon, wxIcon, WX_TEXT } from '@facet/icons';
 import { iconButton } from '../buttons.js';
 import { BAND_NAME } from '../charts.js';
@@ -34,6 +35,7 @@ import {
 import { switchLine } from './switch.js';
 import { tempText, thermostatSummary } from './thermostat.js';
 import { coverMoving, coverStatus, coverValue, previewCover } from '../covers.js';
+import { readoutFrom, readoutSlot } from '../readouts.js';
 import { isDay, missing, speakerName, type Screen, type ScreenContext } from './common.js';
 
 export type CardId =
@@ -44,6 +46,7 @@ export type CardId =
   | 'thermostat'
   | 'covers'
   | 'switch'
+  | 'readouts'
   | 'clock'
   | 'github'
   | 'energy'
@@ -58,6 +61,7 @@ export const CARD_IDS: CardId[] = [
   'thermostat',
   'covers',
   'switch',
+  'readouts',
   'clock',
   'github',
   'energy',
@@ -198,7 +202,26 @@ export function homeScreen(ctx: ScreenContext, o: HomeOptions = {}): Screen {
     }),
   };
   const ids = o.cards ?? CARD_IDS;
-  const list = h('div', { class: 'fs-cards' }, ...ids.map((id) => cards[id]));
+  // readouts: an anchor in the list; the slots go after it (their number follows the data)
+  const roAnchor = h('span', { hidden: true });
+  let roSlots: ReturnType<typeof readoutSlot>[] = [];
+  const list = h(
+    'div',
+    { class: 'fs-cards' },
+    ...ids.map((id) => (id === 'readouts' ? roAnchor : cards[id])),
+  );
+  const setReadouts = (now = Date.now()) => {
+    const src = ids.includes('readouts') ? (st.readouts ?? []) : [];
+    const n = Math.ceil(src.length / 2);
+    if (n !== roSlots.length) {
+      roSlots.forEach((s) => s.remove());
+      roSlots = Array.from({ length: n }, (_, i) =>
+        readoutSlot(src.slice(i * 2, i * 2 + 2).map((x) => readoutFrom(x, now))),
+      );
+      roAnchor.after(...roSlots);
+    }
+    src.forEach((x, i) => roSlots[Math.floor(i / 2)]!.items[i % 2]!.set(readoutFrom(x, now)));
+  };
   const grid = content(list);
   grid.classList.add('fs-snap');
   const hd = header({
@@ -387,6 +410,7 @@ export function homeScreen(ctx: ScreenContext, o: HomeOptions = {}): Screen {
       setWeather();
       setCalendar();
       setTimer();
+      setReadouts();
     },
     tick(now) {
       const c = st.weather?.current;
@@ -396,7 +420,10 @@ export function homeScreen(ctx: ScreenContext, o: HomeOptions = {}): Screen {
       });
       setWeather(now.getTime());
       setTimer(now.getTime());
-      if (Math.floor(now.getTime() / 60_000) !== calMin) setCalendar(now.getTime());
+      if (Math.floor(now.getTime() / 60_000) !== calMin) {
+        setCalendar(now.getTime());
+        setReadouts(now.getTime());
+      }
     },
   };
 }

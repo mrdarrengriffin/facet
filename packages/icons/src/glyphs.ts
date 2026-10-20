@@ -23,6 +23,8 @@ export const glyphs = {
   'close': { d: 'M6 6 L18 18 M18 6 L6 18', stroke: true, keyline: 'glyph' },
   'curtain': { d: 'M4 3 L20 3 M6 3 L6 21 M10 3 C10 10 9 17 6 21 M18 3 L18 21 M14 3 C14 10 15 17 18 21', stroke: true, keyline: 'portrait' },
   'done': { d: 'M21 12 A9 9 0 1 1 3 12 A9 9 0 1 1 21 12 M8 12.5 L11 15.5 L16.5 9', stroke: true, keyline: 'circle' },
+  'door': { d: 'M6 21 V4 A1 1 0 0 1 7 3 H17 A1 1 0 0 1 18 4 V21 M4 21 H20 M14.5 12 L14.5 12', stroke: true, keyline: 'portrait' },
+  'house': { d: 'M3 10 L12 3 L21 10 V20 A1 1 0 0 1 20 21 H4 A1 1 0 0 1 3 20 Z M9 21 V14 H15 V21', stroke: true, keyline: 'square' },
   'minus': { d: 'M5 12 L19 12', stroke: true, keyline: 'glyph' },
   'next': { d: 'M4 6 L11 12 L4 18 Z M11 6 L18 12 L11 18 Z M18 6 L20 6 L20 18 L18 18 Z', stroke: false, keyline: 'glyph' },
   'pause': { d: 'M6 5 L10 5 L10 19 L6 19 Z M14 5 L18 5 L18 19 L14 19 Z', stroke: false, keyline: 'glyph' },
@@ -37,12 +39,14 @@ export const glyphs = {
   'speaker': { d: 'M8 3 L16 3 A2 2 0 0 1 18 5 L18 19 A2 2 0 0 1 16 21 L8 21 A2 2 0 0 1 6 19 L6 5 A2 2 0 0 1 8 3 Z M15 14.5 A3 3 0 1 1 9 14.5 A3 3 0 1 1 15 14.5 M12 7 L12 7.01', stroke: true, keyline: 'portrait' },
   'speakers': { d: 'M5 4 L10 4 A2 2 0 0 1 12 6 L12 18 A2 2 0 0 1 10 20 L5 20 A2 2 0 0 1 3 18 L3 6 A2 2 0 0 1 5 4 Z M10 14 A2.5 2.5 0 1 1 5 14 A2.5 2.5 0 1 1 10 14 M15 6 L19 6 A2 2 0 0 1 21 8 L21 18 A2 2 0 0 1 19 20 L15 20 M18 10 L18 10.01', stroke: true, keyline: 'landscape' },
   'stream': { d: 'M21 12 A9 9 0 1 1 3 12 A9 9 0 1 1 21 12 M7 9.5 Q12 8 17 10.2 M7.6 12.7 Q12 11.6 16 13.4 M8.2 15.8 Q11.6 15 14.8 16.4', stroke: true, keyline: 'circle' },
+  'thermometer': { d: 'M14 4 V14.54 A4 4 0 1 1 10 14.54 V4 A2 2 0 0 1 14 4 Z', stroke: true, keyline: 'portrait' },
   'timer': { d: 'M19 14 A7 7 0 1 1 5 14 A7 7 0 1 1 19 14 M12 14 L12 10 M10 3 L14 3 M12 3 L12 7', stroke: true, keyline: 'portrait' },
   'tv': { d: 'M5 4 L19 4 A2 2 0 0 1 21 6 L21 14 A2 2 0 0 1 19 16 L5 16 A2 2 0 0 1 3 14 L3 6 A2 2 0 0 1 5 4 Z M8 20 L16 20', stroke: true, keyline: 'landscape' },
   'vacuum': { d: 'M21 12 A9 9 0 1 1 3 12 A9 9 0 1 1 21 12 M9 8 L15 8', stroke: true, keyline: 'circle' },
   'venetian': { d: 'M4 3 L20 3 M5 7 L19 7 M5 11 L19 11 M5 15 L19 15 M5 19 L19 19 M12 3 L12 19', stroke: true, keyline: 'portrait' },
   'volume': { d: 'M3 9 L7 9 L12 5 L12 19 L7 15 L3 15 Z M15.5 9 A4 4 0 0 1 15.5 15 M18.5 6 A9 9 0 0 1 18.5 18', stroke: true, keyline: 'landscape' },
   'washer': { d: 'M7 3 L17 3 A2 2 0 0 1 19 5 L19 19 A2 2 0 0 1 17 21 L7 21 A2 2 0 0 1 5 19 L5 5 A2 2 0 0 1 7 3 Z M16.5 13 A4.5 4.5 0 1 1 7.5 13 A4.5 4.5 0 1 1 16.5 13 M8 6 L10 6', stroke: true, keyline: 'portrait' },
+  'window': { d: 'M5 3 H19 A2 2 0 0 1 21 5 V19 A2 2 0 0 1 19 21 H5 A2 2 0 0 1 3 19 V5 A2 2 0 0 1 5 3 Z M12 3 V21 M3 12 H21', stroke: true, keyline: 'square' },
 } as const satisfies Record<string, Glyph>;
 
 export type IconName = keyof typeof glyphs;

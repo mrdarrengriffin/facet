@@ -13,6 +13,7 @@ export * from './pickers.js';
 export * from './checkbox.js';
 export * from './layout.js';
 export * from './previews.js';
+export * from './readouts.js';
 export * from './mascot.js';
 export * from './charts.js';
 export * from './clocks.js';

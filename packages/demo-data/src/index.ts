@@ -24,6 +24,7 @@ import {
 import * as D from './data.js';
 import { printWith } from './print.js';
 import { switchWatts, switchWith } from './switch.js';
+import { readoutsWith } from './readouts.js';
 import { thermostatStep, thermostatWith, withAction } from './thermostat.js';
 import { coversStep, coversWith } from './covers.js';
 import {
@@ -40,6 +41,7 @@ export * from './print.js';
 export * from './thermostat.js';
 export * from './covers.js';
 export * from './switch.js';
+export * from './readouts.js';
 
 export interface MockHouseOptions {
   /** Keep things moving: track progress, live power, the storm. Default true. */
@@ -107,6 +109,7 @@ export function mockState(now = Date.now(), o: MockHouseOptions = {}): PanelData
     thermostat: thermostatWith(now),
     covers: coversWith(),
     switch: switchWith(now),
+    readouts: readoutsWith(now),
     timers: timer > 0 ? [{ label: 'Bread', endsAt: now + timer * 1000, total: 12 * 60 }] : [],
     nextEvent: D.nextEvent(now),
     calendar: D.calendar(now),

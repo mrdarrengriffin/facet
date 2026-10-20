@@ -359,6 +359,8 @@ export interface PanelData {
   /** Blinds and curtains, in the order the Covers screen offers them. */
   covers?: CoverData[] | null;
   switch?: SwitchData | null;
+  /** State readouts on Home, two per card slot, in order (`readoutFrom`). */
+  readouts?: ReadoutSource[] | null;
   timers?: Timer[];
   nextEvent?: CalendarEvent | null;
   calendar?: CalendarData | null;
@@ -498,3 +500,34 @@ export interface PanelActions {
   /** Change a personalisation setting (an `@facet/settings` id; the value is already valid for it). */
   setSetting?(id: string, value: Value): void;
 }
+
+/** Where a state readout comes from (Home items that report a state and open no screen). */
+export type ReadoutSource =
+  | {
+      kind: 'binary';
+      label: string;
+      /** Home Assistant device class: occupancy, presence, motion, door, garage_door, opening, window, moisture, smoke. */
+      deviceClass: string;
+      /** null = offline. */
+      on: boolean | null;
+      /** When it last changed (ms), for "for 12 min". */
+      since?: number;
+    }
+  | {
+      kind: 'value';
+      label: string;
+      /** null = offline. */
+      value: number | null;
+      unit?: string;
+      /** Out of range (below lo / above hi) reads as a warning. */
+      lo?: number;
+      hi?: number;
+      /** UI icon, default `thermometer`. */
+      icon?: string;
+      since?: number;
+    }
+  | {
+      kind: 'people';
+      label?: string;
+      people: { name: string; home: boolean; since?: number }[];
+    };

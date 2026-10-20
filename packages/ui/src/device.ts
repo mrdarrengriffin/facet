@@ -34,7 +34,8 @@ import { timerScreen } from './screens/timer.js';
 import { weatherScreen, type WeatherView } from './screens/weather.js';
 
 /** `lightning` and `moon` are views of Weather on Home, and still screens of their own. */
-export type ScreenId = 'home' | CardId | 'lightning' | 'moon' | 'timer' | 'print' | 'settings';
+export type ScreenId =
+  'home' | Exclude<CardId, 'readouts'> | 'lightning' | 'moon' | 'timer' | 'print' | 'settings';
 export const SCREEN_IDS: ScreenId[] = [
   'home',
   'agents',
@@ -202,7 +203,7 @@ export function createDevice(ctx: ScreenContext, o: DeviceOptions = {}) {
       id,
       createScreen(id, ctx, {
         onBack: id === 'home' ? undefined : back,
-        open: (c) => go(c),
+        open: (c) => c !== 'readouts' && go(c),
         openSettings: () => go('settings'),
         mediaVisual: o.mediaVisual,
       }),

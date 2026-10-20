@@ -1489,3 +1489,85 @@
 .fs-calm-none {
   padding-top: 16px;
 }
+
+/* ---------- state readouts (readouts.ts): a box is a button, no box is a readout. No fill, no press, no pointer ---------- */
+.fs-roslot {
+  position: relative;
+  flex: none;
+  width: calc((100% - var(--facet-layout-gutter)) / 2);
+  height: var(--facet-layout-card-h);
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  gap: var(--facet-space-2);
+  cursor: default;
+}
+.fs-ro {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 0;
+  box-sizing: border-box;
+  padding: var(--facet-layout-card-pad) var(--facet-layout-card-pad) 0;
+}
+/* one hairline in the gap between the two, inset like the card text */
+.fs-ro + .fs-ro::before {
+  content: '';
+  position: absolute;
+  left: var(--facet-layout-card-pad);
+  right: var(--facet-layout-card-pad);
+  top: calc(var(--facet-space-2) / -2);
+  height: var(--facet-stroke-hair);
+  background: var(--facet-color-line);
+}
+.fs-ro-top {
+  display: flex;
+  align-items: center;
+  gap: var(--facet-space-2);
+  height: var(--facet-fst-label-box);
+  color: var(--facet-color-text-dim);
+}
+.fs-ro-top > .f-dot {
+  display: none;
+}
+.fs-ro-icon {
+  display: inline-flex;
+  flex: none;
+}
+.fs-ro-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.fs-ro-line {
+  display: flex;
+  align-items: baseline;
+  gap: calc(var(--facet-space-2) * 1.5);
+  height: var(--facet-fst-title-box);
+  margin-top: var(--facet-layout-card-pad);
+  white-space: nowrap;
+  overflow: hidden;
+}
+.fs-ro-state {
+  flex: none;
+  color: var(--facet-color-text);
+}
+.fs-ro-detail {
+  color: var(--facet-color-text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.fs-ro[data-tone='accent'] .fs-ro-state {
+  color: var(--facet-color-accent-text);
+}
+.fs-ro[data-tone='accent'] .fs-ro-top > .f-dot {
+  display: block;
+}
+.fs-ro[data-tone='warn'] .fs-ro-state {
+  color: var(--facet-color-warn);
+}
+.fs-ro[data-tone='mute'] .fs-ro-state,
+.fs-ro[data-tone='mute'] .fs-ro-top {
+  color: var(--facet-color-text-mute);
+}

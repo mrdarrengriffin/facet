@@ -2,7 +2,15 @@
  * The UI explorer's catalogue: every component, its controls (props), how to render it, the code to create it, and
  * a grid of variants. Everything here builds real @facet/ui components on mock data.
  */
-import { createMockHouse, energy, lightning, TOASTS, TRACKS } from '@facet/demo-data';
+import {
+  createMockHouse,
+  energy,
+  lightning,
+  readoutSamples,
+  TOASTS,
+  TRACKS,
+} from '@facet/demo-data';
+const readoutNames = () => readoutSamples(Date.now()).map(([k]) => k);
 import {
   iconNames,
   icon,
@@ -625,6 +633,30 @@ export const entries: Entry[] = [
         [p.mode === 'text' ? 'text' : 'value']: p.value,
         sub: p.sub,
       }).replace(' })', ", preview, onTap: () => device.go('weather') })"),
+  },
+  {
+    id: 'readout',
+    name: 'State readout',
+    group: 'Screen parts',
+    description:
+      'Reports a state and opens nothing: someone in a room, a door open, one temperature, who is home. A box is a button, no box is a readout: no fill, no press, no sound, a tap does nothing. Two share a Home card slot.',
+    controls: [
+      sel('first', 'Top', readoutNames(), 'occupancy · on'),
+      sel('second', 'Bottom', ['none', ...readoutNames()], 'door · open'),
+    ],
+    size: [320, 280],
+    render: (p) => {
+      const pick = (n: unknown) => readoutSamples(Date.now()).find(([k]) => k === n)?.[1];
+      const src = [pick(p.first), p.second === 'none' ? undefined : pick(p.second)].filter(
+        (x) => !!x,
+      );
+      const slot = F.readoutSlot(src.map((x) => F.readoutFrom(x!)));
+      slot.style.width = '100%'; // on Home it takes half the grid; here the stage is the slot
+      return slot;
+    },
+    code: () =>
+      imp(['readoutSlot', 'readoutFrom']) +
+      "readoutSlot([\n  readoutFrom({ kind: 'binary', label: 'Study', deviceClass: 'occupancy', on: true, since }),\n  readoutFrom({ kind: 'binary', label: 'Garden door', deviceClass: 'door', on: true, since }),\n]);\n// or on Home: store.patch({ readouts: [...] }) and keep 'readouts' in the cards list",
   },
   {
     id: 'tile',

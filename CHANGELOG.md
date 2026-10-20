@@ -8,6 +8,11 @@ All notable changes to Facet are written down here. The format is loosely based 
 
 ### Added
 
+- State readouts: Home items that report a state and open nothing (someone in a room, a door or window open, one
+  temperature, who is home). A box is a button, no box is a readout: no fill, no press, no sound, a tap does
+  nothing. Two share a card slot. `readout`, `readoutSlot`, `readoutFrom` (wording per device class, "for 12 min",
+  accent / warn / offline), `PanelData.readouts`, the `readouts` item in Home's `cards`, icons `door`, `window`,
+  `thermometer`, `house`; the mock house reports the study, the garden door, the shed and who is home.
 - Weather holds the sun, the moon and lightning. The Weather screen gets a row of view buttons
   (Weather · Sun · Moon · Lightning; Lightning is a bolt that shows the distance in orange while a strike is
   near, and opening Weather during a storm lands on it) and a new Sun view: the next sunrise or sunset, the

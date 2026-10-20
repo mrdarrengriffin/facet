@@ -664,6 +664,42 @@
       "keyline": "square",
       "sizes_used": [24, 32],
       "where": "the weather screen: docs, Home cards and screen headers"
+    },
+    {
+      "name": "door",
+      "file": "svg/door.svg",
+      "group": "status",
+      "grid": 24,
+      "keyline": "portrait",
+      "sizes_used": [24],
+      "where": "state readout 24"
+    },
+    {
+      "name": "window",
+      "file": "svg/window.svg",
+      "group": "status",
+      "grid": 24,
+      "keyline": "square",
+      "sizes_used": [24],
+      "where": "state readout 24"
+    },
+    {
+      "name": "thermometer",
+      "file": "svg/thermometer.svg",
+      "group": "status",
+      "grid": 24,
+      "keyline": "portrait",
+      "sizes_used": [24],
+      "where": "state readout 24"
+    },
+    {
+      "name": "house",
+      "file": "svg/house.svg",
+      "group": "status",
+      "grid": 24,
+      "keyline": "square",
+      "sizes_used": [24],
+      "where": "state readout 24"
     }
   ]
 }

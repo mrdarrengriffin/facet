@@ -34,6 +34,7 @@ export const screenDocs: ScreenDoc[] = [
       "Home is where a panel rests. It shows the room's cards two by two, four to a view, and the grid scrolls one row at a time. Each card says one thing: a value or a short text, with one line under it.",
       'A card lights its small orange dot when it matters right now: someone needs you, music is playing, the price is at its peak, lightning is close. Everything else stays quiet.',
       'The Weather card is contextual: one card for the weather, the moon and lightning. A storm nearby takes it over (the mini radar, "8 km", "NW · 12 strikes in 15 min", in orange), then rain within the hour ("rain in 20 min"), then the moon at night ("clear · waxing gibbous 62%"); in the day it shows the animated weather icon. Try every state with "Weather card" under the preview.',
+      'Some things only report a state: someone in the study, the garden door open, the shed temperature, who is home. These are state readouts, and the rule is simple: a box is a button, no box is a readout. A readout sits straight on the background with no fill, no press, no sound and no chevron, and a tap does nothing. Two share one card slot, split by a hairline, so the grid keeps its rhythm. The state says how long ("Open · for 4 min"); an open door or window gets the orange dot, a value out of range turns amber, an offline sensor goes grey.',
     ],
     shows: [
       'The header: the room name on the left, the Settings button and the time on the right. No back button.',
@@ -58,9 +59,10 @@ const home = homeScreen(ctx, {
   weather?: WeatherData | null;
   lightning?: LightningData | null; // the Weather card's storm state
   moon?: MoonData | null;           // the Weather card's night state
+  readouts?: ReadoutSource[] | null; // state readouts, two per slot
 }`,
     config: [
-      '`cards` picks which cards show and in what order (`timer`, `calendar`, `agents`, `media`, `light`, `thermostat`, `covers`, `switch`, `clock`, `github`, `energy`, `weather`). Four fill one view; more scroll. The Timer card comes first while a timer runs; otherwise it shows \`No timer\` after Clock, so a timer can always be started.',
+      '`cards` picks which cards show and in what order (`timer`, `calendar`, `agents`, `media`, `light`, `thermostat`, `covers`, `switch`, `readouts`, `clock`, `github`, `energy`, `weather`). Four fill one view; more scroll. The Timer card comes first while a timer runs; otherwise it shows \`No timer\` after Clock, so a timer can always be started.',
       'Every key in the data is optional. A card with no data shows a dash and "no data" rather than disappearing, so the layout never jumps.',
     ],
   },
