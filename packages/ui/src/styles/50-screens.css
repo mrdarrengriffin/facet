@@ -221,11 +221,14 @@
 .fs-tile {
   position: relative;
   flex: none;
-  width: calc((100% - 2 * var(--facet-layout-gutter)) / 3); /* 208, 202.67 beside a scroll track */
+  width: var(--facet-layout-tile-w);
   height: var(--facet-layout-tile-h);
   border: var(--facet-stroke-hair) solid var(--facet-color-line);
   border-radius: var(--facet-radius-tile);
   background: var(--facet-color-surface);
+}
+.fs-tiles > .fs-tile {
+  width: calc((100% - 2 * var(--facet-layout-gutter)) / 3); /* 208, 202.67 beside a scroll track */
 }
 .fs-tile > * {
   position: absolute;
