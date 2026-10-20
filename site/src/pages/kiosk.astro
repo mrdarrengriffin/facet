@@ -1,0 +1,93 @@
+---
+import '@fontsource/inter/200.css';
+import '@fontsource/inter/300.css';
+import '@fontsource/inter/400.css';
+import '@fontsource/inter/500.css';
+import '@fontsource/inter/600.css';
+import '@fontsource/jetbrains-mono/200.css';
+import '@fontsource/jetbrains-mono/300.css';
+import '@fontsource/jetbrains-mono/400.css';
+import '@fontsource/jetbrains-mono/500.css';
+import '@fontsource/jetbrains-mono/600.css';
+import '@facet/tokens/tokens.css';
+import '@facet/icons/weather.css';
+import '@facet/ui/styles.css';
+import { url } from '../lib/nav';
+---
+
+<!doctype html>
+<html lang="en" data-facet-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    <meta name="robots" content="noindex" />
+    <title>Facet kiosk</title>
+    <link rel="icon" href={url('/favicon.svg')} type="image/svg+xml" />
+    <style is:global>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        overflow: hidden;
+        background: #000;
+      }
+      [data-frame] {
+        position: absolute;
+        top: 0;
+        left: 0;
+        transform-origin: top left;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- The device alone, filling the screen: for wall displays and other kiosk browsers.
+         ?device=<id> picks the screen size, ?theme=light|dark, ?visual=<media visual>. -->
+    <div data-frame aria-label="Facet panel"></div>
+    <script>
+      import { createMockHouse } from '@facet/demo-data';
+      import { createDevice, isMediaVisual } from '@facet/ui';
+      import { setEnabled, setPack, setVolume } from '@facet/sounds';
+      import { devices, DEFAULT_DEVICE, type DeviceId } from '@facet/tokens';
+      import { initSounds } from '../scripts/facet-runtime';
+
+      const q = new URLSearchParams(location.search);
+      const devId = (q.get('device') ?? DEFAULT_DEVICE) as DeviceId;
+      const dev = devices[devId] ?? devices[DEFAULT_DEVICE]!;
+      const theme = q.get('theme');
+      if (theme === 'light' || theme === 'dark')
+        document.documentElement.dataset.facetTheme = theme;
+      const visual = q.get('visual');
+
+      initSounds({ defaultOn: true, volume: 0.5 });
+      const house = createMockHouse();
+      const device = createDevice(house, {
+        device: devId,
+        mediaVisual: isMediaVisual(visual) ? visual : 'cd',
+      });
+      const heard: Record<string, unknown> = {};
+      house.store.subscribe(({ settings: st }) => {
+        for (const [id, v] of Object.entries(st ?? {})) {
+          if (heard[id] === v) continue;
+          heard[id] = v;
+          if (id === 'sounds') setEnabled(!!v);
+          else if (id === 'soundPack') setPack(String(v));
+          else if (id === 'volume') setVolume(Number(v) / 100);
+        }
+      });
+
+      const frame = document.querySelector<HTMLElement>('[data-frame]')!;
+      frame.append(device.el);
+      frame.style.width = `${dev.w}px`;
+      frame.style.height = `${dev.h}px`;
+      // fill the window, centred, keeping the panel square
+      const fit = () => {
+        const k = Math.min(innerWidth / dev.w, innerHeight / dev.h);
+        const x = (innerWidth - dev.w * k) / 2;
+        const y = (innerHeight - dev.h * k) / 2;
+        frame.style.transform = `translate(${x}px, ${y}px) scale(${k})`;
+      };
+      fit();
+      addEventListener('resize', fit);
+    </script>
+  </body>
+</html>
