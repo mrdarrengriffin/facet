@@ -120,25 +120,26 @@ export function moonRangeChart(o: {
   return { chart, marks, axis, set };
 }
 
-export function moonScreen(ctx: ScreenContext, o: ScreenOptions = {}): Screen {
-  const S = 384;
+/**
+ * The Moon's parts, for the Moon screen and the Weather screen's Moon view: the moon (`size`) centred at `top`, the
+ * line under it and the "details" row (`nodes`, for a content box), and the details and next-75-days sub-views
+ * (`views`, page children; `openDetails()` / `closeDetails()` show and hide them).
+ */
+export function moonParts(
+  ctx: ScreenContext,
+  o: { top: number; size: number; onDetails: () => void; onDetailsBack: () => void },
+) {
+  const S = o.size;
   const hero = moonIcon(0.25, { size: S });
   hero.classList.add('fs-moon-hero');
   const name = text('title', 'fs-moon-name', 'Loading');
   const rest = text('title', 'fs-moon-rest', '');
   const line = h('div', { class: 'fs-moon-line' }, name, rest);
-  const more = moreRow('details', () => {
-    sumView.hidden = true;
-    detView.hidden = false;
-  });
-  const sumView = subView(
-    header({ label: 'Moon', onBack: o.onBack }),
-    content(
-      at((CW - S) / 2, 0, S, S, hero),
-      at(0, S + 32, CW, 40, line),
-      at(0, CH - layout['more-row-h'], CW, layout['more-row-h'], more),
-    ),
-  );
+  const nodes = [
+    at((CW - S) / 2, o.top, S, S, hero),
+    at(0, o.top + S + 32, CW, 40, line),
+    at(0, CH - layout['more-row-h'], CW, layout['more-row-h'], moreRow('details', o.onDetails)),
+  ];
 
   const sLit = stat('lit'),
     sAge = stat('age'),
@@ -168,13 +169,7 @@ export function moonScreen(ctx: ScreenContext, o: ScreenOptions = {}): Screen {
     range.chart.play(6, 360);
   });
   const detView = subView(
-    header({
-      label: 'Moon details',
-      onBack: () => {
-        detView.hidden = true;
-        sumView.hidden = false;
-      },
-    }),
+    header({ label: 'Moon details', onBack: o.onDetailsBack }),
     content(
       at(0, 0, half, 64, sLit),
       at(half + layout.gutter, 0, half, 64, sAge),
@@ -240,9 +235,8 @@ export function moonScreen(ctx: ScreenContext, o: ScreenOptions = {}): Screen {
     range.set(days, BACK, south);
   };
 
-  let m: MoonData | null | undefined;
   const dayTime = (iso: string, now: number) => `${moonDay(iso, now)} · ${hm(iso)}`;
-  const render = (now = Date.now()) => {
+  const render = (m: MoonData | null | undefined, now = Date.now()) => {
     if (!m) {
       name.textContent = missing(ctx.store) === 'loading' ? 'Loading' : 'No data';
       rest.textContent = '';
@@ -262,20 +256,47 @@ export function moonScreen(ctx: ScreenContext, o: ScreenOptions = {}): Screen {
     const up = m.upcoming ?? [];
     next.forEach((c, i) => {
       const p = up[i];
-      c.ic.set(p ? FRAC[p.phase] : 0, { south: m!.south });
+      c.ic.set(p ? FRAC[p.phase] : 0, { south: m.south });
       c.k.textContent = p ? MOON_PHASE_TEXT[p.phase].replace(' moon', '') : '--';
       c.d.textContent = p ? moonDay(p.t, now) : '--';
     });
   };
   return {
-    el: page('fs-moon', sumView, detView, rangeView),
-    update(s) {
-      m = s.moon;
-      render();
+    nodes,
+    views: [detView, rangeView],
+    render,
+    openDetails() {
+      rangeView.hidden = true;
+      detView.hidden = false;
     },
-    leave() {
+    closeDetails() {
       detView.hidden = true;
       rangeView.hidden = true;
+    },
+  };
+}
+
+export function moonScreen(ctx: ScreenContext, o: ScreenOptions = {}): Screen {
+  const parts = moonParts(ctx, {
+    top: 0,
+    size: 384,
+    onDetails: () => {
+      sumView.hidden = true;
+      parts.openDetails();
+    },
+    onDetailsBack: () => {
+      parts.closeDetails();
+      sumView.hidden = false;
+    },
+  });
+  const sumView = subView(header({ label: 'Moon', onBack: o.onBack }), content(...parts.nodes));
+  return {
+    el: page('fs-moon', sumView, ...parts.views),
+    update(s) {
+      parts.render(s.moon);
+    },
+    leave() {
+      parts.closeDetails();
       sumView.hidden = false;
     },
   };

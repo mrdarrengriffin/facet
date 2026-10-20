@@ -154,6 +154,29 @@ export function weatherWith(
   };
 }
 
+/** Home's Weather card states (`weatherState` in @facet/ui), plus `live` = the mock house as it is. */
+export type WeatherCardScene = 'live' | 'day' | 'night' | 'rain' | 'storm' | 'loading' | 'offline';
+/** The weather and the sky that put Home's Weather card (and the Weather screen) in a state. */
+export function weatherCardWith(
+  now: number,
+  scene: WeatherCardScene,
+): { weather: WeatherData | null; lightning: LightningScene } {
+  const sky: LightningScene = scene === 'storm' ? 'near' : scene === 'live' ? 'live' : 'quiet';
+  if (scene === 'live') return { weather: D.weather(now), lightning: sky };
+  if (scene === 'loading') return { weather: null, lightning: sky };
+  if (scene === 'offline') return { weather: { error: 'offline' }, lightning: sky };
+  const cond =
+    scene === 'night'
+      ? 'clear-night'
+      : scene === 'rain'
+        ? 'cloudy'
+        : scene === 'storm'
+          ? 'lightning-rainy'
+          : 'partlycloudy';
+  const w = weatherWith(now, cond, scene === 'rain' ? 'soon' : scene === 'storm' ? 'now' : 'dry');
+  return { weather: { ...w, sun: { ...w.sun!, up: scene !== 'night' } }, lightning: sky };
+}
+
 // ---------------------------------------------------------------- lightning
 /** `live` = the storm that crosses once an hour; the rest hold still. */
 export type LightningScene = 'live' | 'quiet' | 'distant' | 'near' | 'overhead';

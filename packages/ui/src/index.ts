@@ -23,6 +23,7 @@ export * from './store.js';
 export * from './types.js';
 export * from './format.js';
 export * from './moon.js';
+export * from './sun.js';
 export * from './screens/common.js';
 export {
   homeScreen,
@@ -45,10 +46,29 @@ export { lightScreen } from './screens/light.js';
 export { clockScreen, type ClockOptions } from './screens/clock.js';
 export { githubScreen, githubSummary, chipsFor } from './screens/github.js';
 export { energyScreen } from './screens/energy.js';
-export { weatherScreen } from './screens/weather.js';
-export { lightningScreen } from './screens/lightning.js';
+export {
+  weatherScreen,
+  weatherState,
+  weatherCardText,
+  stormNear,
+  rainIn,
+  isDayNow,
+  WEATHER_STATES,
+  WEATHER_VIEWS,
+  type WeatherOptions,
+  type WeatherState,
+  type WeatherView,
+} from './screens/weather.js';
+export { lightningScreen, lightningParts } from './screens/lightning.js';
 export { timerScreen, type TimerOptions } from './screens/timer.js';
-export { moonScreen, moonLine, moonDay, moonRangeChart, MOON_RANGE_BACK } from './screens/moon.js';
+export {
+  moonScreen,
+  moonParts,
+  moonLine,
+  moonDay,
+  moonRangeChart,
+  MOON_RANGE_BACK,
+} from './screens/moon.js';
 export {
   calendarScreen,
   nextAgendaEvent,

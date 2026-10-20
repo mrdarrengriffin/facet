@@ -15,6 +15,7 @@ import type {
   ToastData,
   WeatherData,
 } from '@facet/ui';
+import { sunData } from '@facet/ui';
 
 const HOUR = 3600_000;
 const iso = (t: number) => new Date(t).toISOString();
@@ -238,6 +239,18 @@ export function calendarMonth(now: number, month: string, off?: Set<string>): Ca
 }
 
 // ---------------------------------------------------------------- weather
+/** Sunrise and sunset at the mock house, as Home Assistant's sun.sun has them (the next of each, up or down). */
+export function mockSun(now: number) {
+  const s = sunData(now, PLACE_AT);
+  const rise = Date.parse(s.rise!),
+    set = Date.parse(s.set!);
+  return {
+    next_rising: now < rise ? s.rise! : s.next_rise!,
+    next_setting: iso(now < set ? set : set + 24 * HOUR),
+    up: now >= rise && now < set,
+  };
+}
+
 export function weather(now: number): WeatherData {
   const day0 = startOfDay(now);
   const hourly = Array.from({ length: 12 }, (_, i) => {
@@ -272,11 +285,7 @@ export function weather(now: number): WeatherData {
       unit: '°C',
       wind_unit: 'km/h',
     },
-    sun: {
-      next_rising: iso(day0 + 7 * HOUR + 12 * 60_000),
-      next_setting: iso(day0 + 18 * HOUR + 4 * 60_000),
-      up: true,
-    },
+    sun: mockSun(now),
     next_hour: { steps: [0, 1, 2, 3].map((i) => ({ t: iso(now + i * 15 * 60_000), mm: 0 })) },
     next_rain: { t: hourly[4]!.t, mm: 0.6 },
     hourly,

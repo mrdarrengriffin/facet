@@ -14,6 +14,7 @@ import {
   timersWith,
   TOASTS,
   TRACKS,
+  weatherCardWith,
   weatherWith,
   type LightningScene,
   type MoonScene,
@@ -24,6 +25,7 @@ import {
   type ThermostatScene,
   type CoverScene,
   type TimerScene,
+  type WeatherCardScene,
 } from '@facet/demo-data';
 import { WX_TEXT } from '@facet/icons';
 import {
@@ -89,6 +91,8 @@ const BANDS = ['live', 'cheap', 'normal', 'peak'] as const;
 const LIGHTNING: LightningScene[] = ['live', 'quiet', 'distant', 'near', 'overhead'];
 const CONDITIONS = Object.keys(WX_TEXT);
 const RAIN: RainScene[] = ['later', 'dry', 'soon', 'now'];
+// Home's Weather card: storm > rain within the hour > night (the moon) > day
+const WX_CARD: WeatherCardScene[] = ['live', 'day', 'night', 'rain', 'storm', 'loading', 'offline'];
 const TIMER: TimerScene[] = ['running', 'done', 'none'];
 // 'tonight' = the real moon; the rest jump to the next time the moon is in that phase
 const MOON_PHASES = [
@@ -117,6 +121,11 @@ const band = (p: Props, ctx: ScreenOptionsContext) =>
   ctx.house.setScene({ band: p.band as Band | 'live' });
 const sky = (p: Props, ctx: ScreenOptionsContext) =>
   ctx.house.setScene({ lightning: p.sky as LightningScene });
+const wxCard = (p: Props, ctx: ScreenOptionsContext) => {
+  const s = weatherCardWith(Date.now(), p.wx as WeatherCardScene);
+  ctx.house.setScene({ lightning: s.lightning });
+  ctx.house.store.patch({ weather: s.weather });
+};
 
 export const screenOptions: Record<string, ScreenOptions> = {
   home: {
@@ -124,13 +133,13 @@ export const screenOptions: Record<string, ScreenOptions> = {
       sel('state', 'Music', MEDIA_STATES),
       tog('on', 'Light on', true),
       sel('band', 'Price band', BANDS),
-      sel('sky', 'Lightning', LIGHTNING),
+      sel('wx', 'Weather card', WX_CARD),
     ],
     apply(key, p, ctx) {
       if (key === 'state') media({ ...p, track: TRACK_TITLES[0]!, volume: 42 }, ctx);
       else if (key === 'on') light({ ...p, brightness: 64 }, ctx);
       else if (key === 'band') band(p, ctx);
-      else sky(p, ctx);
+      else wxCard(p, ctx);
     },
   },
   agents: {
@@ -200,13 +209,19 @@ export const screenOptions: Record<string, ScreenOptions> = {
   },
   weather: {
     controls: [
+      sel('wx', 'State', WX_CARD),
       sel('condition', 'Condition', CONDITIONS, 'partlycloudy'),
       sel('rain', 'Rain', RAIN),
+      sel('sky', 'Lightning', LIGHTNING),
     ],
-    apply: (_k, p, ctx) =>
-      ctx.house.store.patch({
-        weather: weatherWith(Date.now(), String(p.condition), p.rain as RainScene),
-      }),
+    apply(key, p, ctx) {
+      if (key === 'wx') wxCard(p, ctx);
+      else if (key === 'sky') sky(p, ctx);
+      else
+        ctx.house.store.patch({
+          weather: weatherWith(Date.now(), String(p.condition), p.rain as RainScene),
+        });
+    },
   },
   lightning: {
     controls: [sel('sky', 'Storm', LIGHTNING)],

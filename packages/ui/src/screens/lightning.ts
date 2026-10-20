@@ -7,7 +7,14 @@ import { lightningRadar } from '../radar.js';
 import type { LightningData, Tone } from '../types.js';
 import { missing, type Screen, type ScreenContext, type ScreenOptions } from './common.js';
 
-export function lightningScreen(ctx: ScreenContext, o: ScreenOptions = {}): Screen {
+/**
+ * The Lightning screen's parts, for the Lightning screen and the Weather screen's Lightning view: the left column from
+ * `top` and the radar beside it (`nodes`, for a content box). `root` gets `is-near` while a strike is within 25 km.
+ */
+export function lightningParts(
+  ctx: ScreenContext,
+  o: { top: number; root: () => HTMLElement | null },
+) {
   const R = layout.radar;
   const radar = lightningRadar({ size: R });
   radar.el.classList.add('fs-radar');
@@ -17,19 +24,18 @@ export function lightningScreen(ctx: ScreenContext, o: ScreenOptions = {}): Scre
   const sCount = stat('last 15 min'),
     sTrend = stat('trend'),
     sLast = stat('last strike');
-  const el = page(
-    'fs-lightning',
-    header({ label: 'Lightning', onBack: o.onBack }),
-    content(
-      at(0, 0, 240, 24, kN),
-      at(0, 32, 240, 96, nNum),
-      at(0, 136, 240, 32, nUnit),
-      at(0, 216, 240, 64, sCount),
-      at(0, 296, 240, 64, sTrend),
-      at(0, 376, 240, 64, sLast),
-      at(CW - R, (CH - R) / 2, R, R, radar.el),
-    ),
-  );
+  // the radar centred in the space below `top`, on the 8 grid
+  const y = o.top,
+    ry = y + Math.floor((CH - y - R) / 16) * 8;
+  const nodes = [
+    at(0, y, 240, 24, kN),
+    at(0, y + 32, 240, 96, nNum),
+    at(0, y + 136, 240, 32, nUnit),
+    at(0, y + 216, 240, 64, sCount),
+    at(0, y + 296, 240, 64, sTrend),
+    at(0, y + 376, 240, 64, sLast),
+    at(CW - R, ry, R, R, radar.el),
+  ];
   let d: LightningData | null | undefined = ctx.store.get().lightning,
     visible = false;
   function render(now = Date.now()) {
@@ -42,7 +48,7 @@ export function lightningScreen(ctx: ScreenContext, o: ScreenOptions = {}): Scre
       : d
         ? `nothing within ${d.radius} km`
         : missing(ctx.store);
-    el.classList.toggle('is-near', !!n && n.d <= 25);
+    o.root()?.classList.toggle('is-near', !!n && n.d <= 25);
     sCount.set(
       d ? `${d.counts.m15} strike${d.counts.m15 === 1 ? '' : 's'}` : '--',
       d?.counts.m15 ? ('text' as Tone) : 'dim',
@@ -55,19 +61,39 @@ export function lightningScreen(ctx: ScreenContext, o: ScreenOptions = {}): Scre
     sLast.set(d?.last ? ago(d.last, now) : 'none', 'dim');
   }
   return {
+    nodes,
+    render,
+    update(x: LightningData | null | undefined) {
+      d = x;
+      render();
+    },
+    show(v: boolean) {
+      visible = v;
+    },
+  };
+}
+
+export function lightningScreen(ctx: ScreenContext, o: ScreenOptions = {}): Screen {
+  let el: HTMLElement | null = null;
+  const parts = lightningParts(ctx, { top: 0, root: () => el });
+  el = page(
+    'fs-lightning',
+    header({ label: 'Lightning', onBack: o.onBack }),
+    content(...parts.nodes),
+  );
+  return {
     el,
     update(s) {
-      d = s.lightning;
-      render();
+      parts.update(s.lightning);
     },
     tick() {
-      render();
+      parts.render();
     },
     enter() {
-      visible = true;
+      parts.show(true);
     },
     leave() {
-      visible = false;
+      parts.show(false);
     },
   };
 }

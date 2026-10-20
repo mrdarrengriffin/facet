@@ -1,7 +1,8 @@
 // Home: the room's cards, two by two (320 × 280), four per view; the grid scrolls a row at a time. Each card shows
 // one value and one line, and lights its dot when it matters (something needs you, music playing, peak price, a
 // nearby strike). The Timer card comes first while a timer runs; otherwise it sits after Clock as "No timer",
-// so a timer can always be started.
+// so a timer can always be started. The Weather card is contextual: a nearby storm takes it over, then rain within
+// the hour, then the moon at night (`weatherState`).
 import { moonIcon, screenIcon, weatherIcon, wxIcon, WX_TEXT } from '@facet/icons';
 import { iconButton } from '../buttons.js';
 import { BAND_NAME } from '../charts.js';
@@ -19,10 +20,9 @@ import {
   previewMedia,
   previewTimer,
 } from '../previews.js';
-import { lightningSummary } from '../radar.js';
 import { h } from '../dom.js';
 import type { PanelData } from '../types.js';
-import { moonLine } from './moon.js';
+import { isDayNow, weatherCardText, weatherState, type WeatherState } from './weather.js';
 import {
   calCardLine,
   CAL_SOON,
@@ -48,8 +48,6 @@ export type CardId =
   | 'github'
   | 'energy'
   | 'weather'
-  | 'lightning'
-  | 'moon'
   | 'calendar';
 export const CARD_IDS: CardId[] = [
   'timer',
@@ -64,8 +62,6 @@ export const CARD_IDS: CardId[] = [
   'github',
   'energy',
   'weather',
-  'lightning',
-  'moon',
 ];
 
 export interface HomeOptions {
@@ -93,6 +89,12 @@ export function homeScreen(ctx: ScreenContext, o: HomeOptions = {}): Screen {
   const pLightning = previewLightning();
   const pTimer = previewTimer();
   const pMoon = moonIcon(0.25, { size: 72 });
+  // the Weather card's three previews in one 72 box; the state shows one
+  const box = (el: Element) => h('span', {}, el);
+  const bWeather = box(pWeather),
+    bMoon = box(pMoon),
+    bLightning = box(pLightning);
+  const pWx = h('span', { class: 'fs-wx-prev' }, bWeather, bMoon, bLightning);
   const pThermo = previewDial();
   const pCover = previewCover();
   const pCal = previewCalendar();
@@ -189,26 +191,10 @@ export function homeScreen(ctx: ScreenContext, o: HomeOptions = {}): Screen {
     weather: card({
       label: 'Weather',
       icon: 'weather',
-      preview: pWeather,
+      preview: pWx,
       value: '--°',
       sub: 'loading',
       onTap: go('weather'),
-    }),
-    lightning: card({
-      label: 'Lightning',
-      icon: 'lightning',
-      preview: pLightning,
-      value: '--',
-      sub: 'loading',
-      onTap: go('lightning'),
-    }),
-    moon: card({
-      label: 'Moon',
-      icon: 'moon',
-      preview: pMoon,
-      value: '--',
-      sub: 'loading',
-      onTap: go('moon'),
     }),
   };
   const ids = o.cards ?? CARD_IDS;
@@ -247,22 +233,28 @@ export function homeScreen(ctx: ScreenContext, o: HomeOptions = {}): Screen {
       accent: isRunning(e, now) || calMs(e, 'start') - now <= CAL_SOON,
     });
   };
-  const setLightning = (d: PanelData['lightning']) => {
-    pLightning.set(d);
-    const n = d?.nearest;
-    cards.lightning.set(
-      n
-        ? {
-            value: `${n.d} km`,
-            sub: `${n.dir} · ${d!.counts.m15} in 15 min`,
-            accent: lightningSummary(d).active,
-          }
-        : {
-            value: 'Quiet',
-            sub: d ? `nothing within ${d.radius} km` : missing(ctx.store),
-            accent: false,
-          },
-    );
+  // weather: storm > rain within the hour > night (the moon) > day; loading / offline
+  const setWeather = (now = Date.now()) => {
+    const ws: WeatherState = weatherState(st, now);
+    cards.weather.dataset.wx = ws;
+    bWeather.hidden = ws === 'storm' || ws === 'night';
+    bMoon.hidden = ws !== 'night';
+    bLightning.hidden = ws !== 'storm';
+    const w = st.weather,
+      c = w?.current;
+    if (ws === 'storm') pLightning.set(st.lightning);
+    else if (ws === 'night') pMoon.set(st.moon?.frac ?? 0.25, { south: st.moon?.south });
+    else if (ws === 'rain')
+      pWeather.set(
+        c && /rain|pour|lightning/.test(c.condition)
+          ? wxIcon(c.condition, isDayNow(w))
+          : isDayNow(w)
+            ? 'showers-day'
+            : 'showers-night',
+      );
+    else if (c) pWeather.set(wxIcon(c.condition, isDayNow(w)));
+    const t = weatherCardText(ws, st, now);
+    cards.weather.set(ws === 'loading' ? { ...t, sub: missing(ctx.store) } : t);
   };
 
   // the first running timer, as the first card; with none running, "No timer" after Clock (tap = Timer screen)
@@ -392,24 +384,7 @@ export function homeScreen(ctx: ScreenContext, o: HomeOptions = {}): Screen {
           accent: band === 'peak',
         });
       } else cards.energy.set({ value: '£--', sub: e?.error ? 'offline' : missing(ctx.store) });
-      // weather
-      const c = s.weather?.current;
-      if (c) {
-        pWeather.set(wxIcon(c.condition, isDay(s.weather)));
-        const rain = s.weather?.next_hour?.steps?.some((x) => x.mm >= 0.1);
-        cards.weather.set({
-          value: deg(c.temp),
-          sub: rain ? 'rain within the hour' : (WX_TEXT[c.condition] ?? c.condition),
-        });
-      } else cards.weather.set({ value: '--°', sub: missing(ctx.store) });
-      setLightning(s.lightning);
-      // moon
-      const mo = s.moon;
-      if (mo) {
-        pMoon.set(mo.frac, { south: mo.south });
-        const l = moonLine(mo);
-        cards.moon.set({ value: `${Math.round(mo.illumination)}%`, sub: l.name.toLowerCase() });
-      } else cards.moon.set({ value: '--', sub: missing(ctx.store) });
+      setWeather();
       setCalendar();
       setTimer();
     },
@@ -419,7 +394,7 @@ export function homeScreen(ctx: ScreenContext, o: HomeOptions = {}): Screen {
         value: hhmm(now),
         sub: c ? `${(WX_TEXT[c.condition] ?? c.condition).toLowerCase()} · ${deg(c.temp)}` : '',
       });
-      setLightning(st.lightning);
+      setWeather(now.getTime());
       setTimer(now.getTime());
       if (Math.floor(now.getTime() / 60_000) !== calMin) setCalendar(now.getTime());
     },

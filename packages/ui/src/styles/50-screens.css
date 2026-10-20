@@ -569,6 +569,49 @@
 }
 
 /* ---------- Weather ---------- */
+/* the view buttons: content-sized; Lightning = a bolt, plus the distance in accent while a strike is near */
+.fs-wx-tabs {
+  display: inline-flex;
+}
+.fs-wx-tabs .f-seg-b {
+  gap: var(--facet-space-2);
+}
+.fs-wx-tabs .f-seg-b.is-alert {
+  color: var(--facet-color-accent-text);
+}
+/* Home's Weather card: one preview of three; loading / offline = none */
+.fs-wx-prev,
+.fs-wx-prev > span {
+  display: block;
+  position: relative;
+  width: 72px;
+  height: 72px;
+}
+.fs-wx-prev > span {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+.fs-wx-prev > span[hidden] {
+  display: none;
+}
+.fs-card[data-wx='loading'] .fs-cprev,
+.fs-card[data-wx='offline'] .fs-cprev {
+  display: none;
+}
+/* Sun view */
+.fs-sun-t {
+  color: var(--facet-color-text);
+}
+.fs-sun-hz {
+  display: block;
+  height: 0;
+  border-top: var(--facet-stroke-hair) solid var(--facet-color-line);
+}
+.fs-sun-r {
+  display: block;
+  text-align: right;
+}
 .fs-w-temp {
   color: var(--facet-color-text);
 }
@@ -774,7 +817,6 @@
 .fs-mn-d {
   color: var(--facet-color-text);
 }
-
 /* next 75 days: glyphs above new and full moons, month names under the 1st */
 .fs-mr-marks,
 .fs-mr-axis {

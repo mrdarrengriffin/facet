@@ -33,6 +33,7 @@ export const screenDocs: ScreenDoc[] = [
     intro: [
       "Home is where a panel rests. It shows the room's cards two by two, four to a view, and the grid scrolls one row at a time. Each card says one thing: a value or a short text, with one line under it.",
       'A card lights its small orange dot when it matters right now: someone needs you, music is playing, the price is at its peak, lightning is close. Everything else stays quiet.',
+      'The Weather card is contextual: one card for the weather, the moon and lightning. A storm nearby takes it over (the mini radar, "8 km", "NW · 12 strikes in 15 min", in orange), then rain within the hour ("rain in 20 min"), then the moon at night ("clear · waxing gibbous 62%"); in the day it shows the animated weather icon. Try every state with "Weather card" under the preview.',
     ],
     shows: [
       'The header: the room name on the left, the Settings button and the time on the right. No back button.',
@@ -55,10 +56,11 @@ const home = homeScreen(ctx, {
   github?: GithubData | null;
   energy?: EnergyData | null;
   weather?: WeatherData | null;
-  lightning?: LightningData | null;
+  lightning?: LightningData | null; // the Weather card's storm state
+  moon?: MoonData | null;           // the Weather card's night state
 }`,
     config: [
-      '`cards` picks which cards show and in what order (`timer`, `agents`, `media`, `light`, `clock`, `github`, `energy`, `weather`, `lightning`). Four fill one view; more scroll. The Timer card comes first while a timer runs; otherwise it shows \`No timer\` after Clock, so a timer can always be started.',
+      '`cards` picks which cards show and in what order (`timer`, `calendar`, `agents`, `media`, `light`, `thermostat`, `covers`, `switch`, `clock`, `github`, `energy`, `weather`). Four fill one view; more scroll. The Timer card comes first while a timer runs; otherwise it shows \`No timer\` after Clock, so a timer can always be started.',
       'Every key in the data is optional. A card with no data shows a dash and "no data" rather than disappearing, so the layout never jumps.',
     ],
   },
@@ -478,19 +480,25 @@ interface EnergyData {
     icon: 'weather',
     title: 'Weather',
     description:
-      'The temperature, one line, rain in the next hour, and the next eight hours. Five days behind a tap.',
+      'The weather, the sun, the moon and lightning in one screen. Home shows one Weather card that changes with what matters now.',
     intro: [
-      "The Weather screen shows the temperature as the hero with an animated icon beside it, the condition, one line (feels like, high and low) and whether it'll rain in the next hour.",
-      'Below is a row of the next eight hours. "Next 5 days" opens a day-by-day view.',
+      'The Weather screen has four views, picked by a row of buttons under the header: Weather · Sun · Moon · Lightning. The Lightning button is only a bolt until a strike is near; then it shows the distance in orange, and opening Weather during a storm lands on Lightning.',
+      'Weather: the temperature as the hero with an animated icon beside it, the condition, one line (feels like, high and low), whether it\'ll rain in the next hour, and a row of the next eight hours. "Next 5 days" opens a day-by-day view.',
+      "Sun: the next sunrise or sunset as the hero with how long until it, the day's arc with the sun on it, the day length, how it changed since yesterday, and first and last light. Worked out on the device with `sunData(now, { lat, lon })`, no API.",
+      'Moon and Lightning are the [Moon](../moon/) and [Lightning](../lightning/) screens as views (both still work as screens of their own).',
+      'Home\'s Weather card is contextual, highest first: a storm nearby (the mini radar and the distance, in orange) > rain within the hour > night (the moon phase) > day (the animated icon). Every state is under "State" below the preview.',
     ],
     shows: [
-      'Temperature (144 px, light) and a 144 px icon that animates: rays turn, clouds drift, rain falls.',
-      'The hourly row: hour, a 32 px icon and the temperature.',
-      'The 5-day view: day, icon, condition with rain, low and high.',
+      'The view buttons (48 tall), then the view from 72 px down.',
+      'Weather: temperature (144 px, light) and a 144 px icon that animates; the hourly row: hour, a 32 px icon and the temperature; the 5-day view: day, icon, condition with rain, low and high.',
+      'Sun: "sunset" over the time (96 px) and "in 2 h 14 min" on the left; the arc (320) with a 24 px sun on it while it is up, the horizon and the rise and set times on the right; four stats under them.',
+      'Moon: the moon (304), the phase line and Details. Lightning: the nearest strike, three stats and the radar (384).',
     ],
-    usage: `import { weatherScreen } from '@facet/ui';
+    usage: `import { moonData, sunData, weatherScreen, weatherState } from '@facet/ui';
 
-const weather = weatherScreen(ctx);`,
+store.patch({ sun: sunData(Date.now(), here), moon: moonData(Date.now(), here) });
+const weather = weatherScreen(ctx, { view: 'weather' }); // or 'sun' | 'moon' | 'lightning'
+weatherState(store.get()); // 'storm' | 'rain' | 'night' | 'day' | 'loading' | 'offline'`,
     data: `interface WeatherData {
   current?: {
     condition: string; // Home Assistant names: sunny, partlycloudy, rainy ...
@@ -510,12 +518,27 @@ const weather = weatherScreen(ctx);`,
   daily?: { t: string; condition: string; hi: number; lo: number | null; precip: number }[];
 }
 
+interface SunData {
+  rise: string | null; // today; null = the sun doesn't rise or set
+  set: string | null;
+  dawn: string | null; // first and last light (sun 6° below the horizon)
+  dusk: string | null;
+  length: number | null; // ms
+  delta: number | null;  // ms vs yesterday
+  next_rise: string | null; // tomorrow's sunrise
+}
+
 interface PanelData {
   weather?: WeatherData | null;
+  sun?: SunData | null;
+  moon?: MoonData | null;           // the Moon view
+  lightning?: LightningData | null; // the Lightning view and the storm state
   place?: string; // shown in the header
 }`,
     config: [
-      "Conditions use Home Assistant's names, so a weather entity's forecast maps across directly. Sunrise and sunset pick day or night icons.",
+      "Conditions use Home Assistant's names, so a weather entity's forecast maps across directly. `sun.up` picks day or night icons and the card's night state.",
+      'A storm = a strike within 25 km, or one closing in (`stormNear`). Rain soon = a 15-minute step of the next hour with 0.1 mm or more (`rainIn`).',
+      'Call `sunData` and `moonData` from your adapter every few minutes; they only need the home location.',
       'The icon animation only moves a few small parts and stops with reduced motion.',
     ],
   },
@@ -528,6 +551,7 @@ interface PanelData {
     intro: [
       'The Lightning screen shows how close a storm is and whether it\'s coming your way. The hero is the nearest strike of the last 15 minutes, or "Quiet".',
       'The radar uses a square-root distance scale, so the near rings (10 and 25 km) get room. New strikes flash, and dots fade from white to orange to grey as they age.',
+      'On Home it is the Lightning view of the [Weather](../weather/) screen: a nearby storm takes over the Weather card and lands Weather on this view. `lightningParts()` builds it into any screen.',
     ],
     shows: [
       'Left: the nearest strike (96 px; orange within 25 km), its direction, and three stats (strikes in the last 15 minutes, the trend, the last strike).',
@@ -561,6 +585,7 @@ const lightning = lightningScreen(ctx);`,
       'The Moon screen is one picture and one line. The hero is the moon itself, drawn from the phase: the lit part grows from the right while it waxes (mirrored south of the equator).',
       'Under it: "Waxing gibbous · 78% · full on Fri". Details opens the numbers: how much is lit, the age, the next moonrise and moonset, the next full and new moon, and the next four phases.',
       'Everything is worked out on the device, no API: `moonData(now, { lat, lon })` gives phase times to about a minute and rise and set times to a few minutes.',
+      'On Home it is the Moon view of the [Weather](../weather/) screen, and the Weather card shows the phase at night. `moonParts()` builds it into any screen.',
     ],
     shows: [
       'The moon (384), centred. The lit part is one shape: a half circle and half an ellipse.',

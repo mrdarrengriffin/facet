@@ -31,9 +31,10 @@ import { switchScreen } from './screens/switch.js';
 import { thermostatScreen } from './screens/thermostat.js';
 import { coversScreen } from './screens/covers.js';
 import { timerScreen } from './screens/timer.js';
-import { weatherScreen } from './screens/weather.js';
+import { weatherScreen, type WeatherView } from './screens/weather.js';
 
-export type ScreenId = 'home' | CardId | 'timer' | 'print' | 'settings';
+/** `lightning` and `moon` are views of Weather on Home, and still screens of their own. */
+export type ScreenId = 'home' | CardId | 'lightning' | 'moon' | 'timer' | 'print' | 'settings';
 export const SCREEN_IDS: ScreenId[] = [
   'home',
   'agents',
@@ -66,6 +67,8 @@ export function createScreen(
     clock?: ClockOptions;
     /** Media screen: what sits in the hero slot. */
     mediaVisual?: MediaVisualId;
+    /** Weather screen: the view it opens on. */
+    weatherView?: WeatherView;
   } = {},
 ): Screen {
   switch (id) {
@@ -90,7 +93,7 @@ export function createScreen(
     case 'energy':
       return energyScreen(ctx, o);
     case 'weather':
-      return weatherScreen(ctx, o);
+      return weatherScreen(ctx, { onBack: o.onBack, view: o.weatherView });
     case 'lightning':
       return lightningScreen(ctx, o);
     case 'moon':
@@ -128,6 +131,8 @@ export interface PreviewOptions {
   clock?: ClockOptions;
   /** Media screen: what sits in the hero slot. Default `disc`. */
   mediaVisual?: MediaVisualId;
+  /** Weather screen: the view it opens on (default Weather, or Lightning during a storm). */
+  weatherView?: WeatherView;
 }
 
 /**

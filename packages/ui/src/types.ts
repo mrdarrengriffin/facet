@@ -319,6 +319,20 @@ export interface MoonData {
   south?: boolean;
 }
 
+/** Today's sun. `sunData(now, { lat, lon })` works it out locally. Times are ISO; null = the sun doesn't rise or set. */
+export interface SunData {
+  rise: string | null;
+  set: string | null;
+  /** First and last light (civil twilight, sun 6° below the horizon). */
+  dawn: string | null;
+  dusk: string | null;
+  /** Day length (ms), and the change since yesterday (ms, negative = shorter). */
+  length: number | null;
+  delta: number | null;
+  /** Tomorrow's sunrise, the next event after sunset. */
+  next_rise: string | null;
+}
+
 // ---------------------------------------------------------------- the whole panel
 /** Everything the screens read. Every key is optional: a screen shows a quiet empty state for missing data. */
 export interface PanelData {
@@ -338,6 +352,8 @@ export interface PanelData {
   github?: GithubData | null;
   lightning?: LightningData | null;
   moon?: MoonData | null;
+  /** Sunrise, sunset and day length for the Weather screen's Sun view. */
+  sun?: SunData | null;
   print?: PrintData | null;
   thermostat?: ThermostatData | null;
   /** Blinds and curtains, in the order the Covers screen offers them. */

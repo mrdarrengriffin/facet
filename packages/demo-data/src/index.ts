@@ -14,6 +14,7 @@
 import {
   createStore,
   moonData,
+  sunData,
   type Band,
   type PanelActions,
   type PanelData,
@@ -101,6 +102,7 @@ export function mockState(now = Date.now(), o: MockHouseOptions = {}): PanelData
     github: D.github(now),
     lightning: D.lightning(now, o.quietSky),
     moon: moonData(now, D.PLACE_AT),
+    sun: sunData(now, D.PLACE_AT),
     print: printWith(now),
     thermostat: thermostatWith(now),
     covers: coversWith(),

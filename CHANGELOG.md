@@ -8,6 +8,14 @@ All notable changes to Facet are written down here. The format is loosely based 
 
 ### Added
 
+- Weather holds the sun, the moon and lightning. The Weather screen gets a row of view buttons
+  (Weather · Sun · Moon · Lightning; Lightning is a bolt that shows the distance in orange while a strike is
+  near, and opening Weather during a storm lands on it) and a new Sun view: the next sunrise or sunset, the
+  day's arc, day length, the change since yesterday, first and last light. `sunData(now, { lat, lon })` works
+  the sun out on the device (`PanelData.sun`). Home's Weather card is contextual (`weatherState`,
+  `weatherCardText`): storm > rain within the hour > night (the moon phase) > day. `moonParts` and
+  `lightningParts` build those screens into others; `weatherScreen` takes `view`, `mountScreen` takes
+  `weatherView`. The mock house's sun follows the real one (`weatherCardWith` sets each card state).
 - Screen sizes: `devices`, `sizeClass` and `density` in the tokens. A density is pixels per dp (1x about
   170 ppi, 1.5x about 250 ppi); the 720 × 720 panel is the 1.5x reference and 1x has its own table for
   480 × 480 screens, with heavier weights and slightly larger small text so it stays crisp. `geometry(device)`,
@@ -108,6 +116,8 @@ All notable changes to Facet are written down here. The format is loosely based 
 
 ### Changed
 
+- Home: the Lightning and Moon cards are gone; the Weather card shows them when they matter. `CardId`
+  no longer has `lightning` or `moon` (both stay screens).
 - Idle: after `idleAfter` (default 60 s) the device shows the clock and dims to
   `idleBrightness` (default 0.7); the next touch goes to Home. A toast wakes the dimmed screen.
   The demo uses the default minute.

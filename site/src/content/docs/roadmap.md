@@ -33,6 +33,8 @@ Ticked items are done, the ones with an orange dot are in progress.
 - [x] Home, Agents, Media, Light and Clock
 - [x] GitHub, Energy, Weather, Lightning and Timer
 - [x] Moon: the phase drawn as the hero, worked out on the device (no API)
+- [x] Weather holds Sun, Moon and Lightning as views; one contextual Weather card on Home (storm > rain > night > day)
+- [ ] Weather views and the contextual card on the firmware
 - [x] 3D print: the model fills up layer by layer, drawn in software (gcode, STL or a shape)
 - [ ] 3D print on the firmware: frames rendered by a server
 - [x] Thermostat: the room temperature on a heating ring, set point as the knob, modes and presets
