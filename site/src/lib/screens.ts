@@ -58,7 +58,7 @@ const home = homeScreen(ctx, {
   lightning?: LightningData | null;
 }`,
     config: [
-      '`cards` picks which cards show and in what order (`timer`, `agents`, `media`, `light`, `clock`, `github`, `energy`, `weather`, `lightning`). Four fill one view; more scroll. The Timer card only shows while a timer is running.',
+      '`cards` picks which cards show and in what order (`timer`, `agents`, `media`, `light`, `clock`, `github`, `energy`, `weather`, `lightning`). Four fill one view; more scroll. The Timer card comes first while a timer runs; otherwise it shows \`No timer\` after Clock, so a timer can always be started.',
       'Every key in the data is optional. A card with no data shows a dash and "no data" rather than disappearing, so the layout never jumps.',
     ],
   },

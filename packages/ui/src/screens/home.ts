@@ -1,6 +1,7 @@
 // Home: the room's cards, two by two (320 × 280), four per view; the grid scrolls a row at a time. Each card shows
 // one value and one line, and lights its dot when it matters (something needs you, music playing, peak price, a
-// nearby strike). The Timer card comes first and only shows while a timer is running.
+// nearby strike). The Timer card comes first while a timer runs; otherwise it sits after Clock as "No timer",
+// so a timer can always be started.
 import { moonIcon, weatherIcon, wxIcon, WX_TEXT } from '@facet/icons';
 import { BAND_NAME } from '../charts.js';
 import { countdown } from '../clocks.js';
@@ -66,7 +67,7 @@ export const CARD_IDS: CardId[] = [
 export interface HomeOptions {
   /** Called when a card is tapped. Leave it out and the cards don't navigate. */
   open?: (id: CardId) => void;
-  /** Which cards, in order. Default: all thirteen (Timer only while one runs). */
+  /** Which cards, in order. Default: all of them (Timer moves to the front while one runs). */
   cards?: CardId[];
 }
 
@@ -94,8 +95,8 @@ export function homeScreen(ctx: ScreenContext, o: HomeOptions = {}): Screen {
       label: 'Timer',
       icon: 'timer',
       preview: pTimer,
-      value: '0:00',
-      sub: '',
+      text: 'No timer',
+      sub: 'tap to start one',
       onTap: go('timer'),
     }),
     agents: card({
@@ -188,7 +189,8 @@ export function homeScreen(ctx: ScreenContext, o: HomeOptions = {}): Screen {
     }),
   };
   const ids = o.cards ?? CARD_IDS;
-  const grid = content(h('div', { class: 'fs-cards' }, ...ids.map((id) => cards[id])));
+  const list = h('div', { class: 'fs-cards' }, ...ids.map((id) => cards[id]));
+  const grid = content(list);
   grid.classList.add('fs-snap');
   const hd = header({ label: 'Home' });
   const el = page('fs-home', hd, grid);
@@ -237,11 +239,19 @@ export function homeScreen(ctx: ScreenContext, o: HomeOptions = {}): Screen {
     );
   };
 
-  // the first running timer; hidden when none is (the "done" toast covers the end)
+  // the first running timer, as the first card; with none running, "No timer" after Clock (tap = Timer screen)
+  const idleAfter = ids.includes('clock') ? cards.clock : null;
   const setTimer = (now = Date.now()) => {
     const t = st.timers?.find((x) => x.endsAt > now);
-    cards.timer.hidden = !t;
-    if (!t) return;
+    if (ids.includes('timer')) {
+      if (t && list.firstChild !== cards.timer) list.prepend(cards.timer);
+      if (!t && idleAfter && idleAfter.nextSibling !== cards.timer) idleAfter.after(cards.timer);
+    }
+    if (!t) {
+      pTimer.set(0);
+      cards.timer.set({ text: 'No timer', sub: 'tap to start one', accent: false });
+      return;
+    }
     const left = (t.endsAt - now) / 1000;
     const ends = new Date(t.endsAt).toLocaleTimeString('en-GB', {
       hour: '2-digit',
