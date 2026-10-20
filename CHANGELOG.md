@@ -8,9 +8,9 @@ All notable changes to Facet are written down here. The format is loosely based 
 
 ### Added
 
-- Overhead: what's flying over the house. The aircraft highest in the sky is the hero (where to look, the route,
+- Overhead: what's flying over the house. The selected aircraft is the hero and the accent, the closest until you tap another (where to look, the route,
   altitude / speed / distance), a sky radar with planes turned to their track, the rest in rows, details on tap, and
-  Now | Radar in the header. An emergency squawk always takes the hero. `overheadScreen`, `skyRadar`, `aircraftHero`,
+  Now | Radar in the header. Tap a plane or a row to select it, the selected one again for details. `overheadScreen`, `skyRadar`, `aircraftHero`,
   `aircraftRow`, `planeGlyph`, `OverheadData` / `Aircraft`, `PanelData.overhead`, a Home card, the `overhead` screen
   icon; the mock house has made-up flights crossing its sky (`skyWith`, scene `overhead`).
 - Settings > Units: Distance (km, miles) and Speed (mph, km/h, knots), `distanceUnit` / `speedUnit`, with

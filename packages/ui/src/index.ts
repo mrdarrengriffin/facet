@@ -102,6 +102,7 @@ export {
   aircraftRow,
   planeGlyph,
   overheadNow,
+  byDistance,
   overheadCardText,
   aircraftStatus,
   lookText,

@@ -1,9 +1,9 @@
-// Overhead: what's flying over the house. The hero is the aircraft highest in the sky, the one you'd see looking up
-// (an emergency squawk always wins): where to look ("high in the NW · 38°", accent from 30° up), the route in
+// Overhead: what's flying over the house. The hero is the selected aircraft, in the accent here and on the radar;
+// with nothing selected, the closest. Tap a plane or a row to select it, the selected one again for its details. Hero: where to look ("high in the NW · 38°", accent from 30° up), the route in
 // headline type ("Catania → Leeds", or the callsign when there's no believable route), airline · flight · type, then
 // three stats (altitude, which reads climbing / descending past ±300 ft/min, speed, distance) and a 208 sky radar on
 // the right. Below: "also up there" (two rows) and "all aircraft". Header Now | Radar: the radar at 576, every
-// aircraft a plane turned to its track, the hero accent, callsigns on the five highest; tap one for its details.
+// aircraft a plane turned to its track, the selected one in the accent, callsigns on the five closest.
 // Distances and speeds follow Settings > Units (units.ts): the circle is 50 km (rings 5/15/30/50) or 30 miles
 // (rings 3/10/20/30).
 import { h, s } from '../dom.js';
@@ -75,9 +75,15 @@ export function aircraftStatus(a: Aircraft): { tone: Tone; text: string } | null
   return null;
 }
 
-/** The moment: emergency > overhead (LOOK_UP+) > up > quiet / offline, and the hero aircraft. */
-export function overheadNow(d: OverheadData | null | undefined) {
-  const top = d?.aircraft[0] ?? null;
+/** Closest first (ground distance from home). */
+export const byDistance = (list: Aircraft[]) => [...list].sort((a, b) => a.km - b.km);
+
+/**
+ * The moment and the aircraft that leads: `pick` (an aircraft's hex) while it's still in the circle, else the
+ * closest. Phase: emergency > overhead (LOOK_UP+) > up, about that aircraft; quiet / offline / missing without one.
+ */
+export function overheadNow(d: OverheadData | null | undefined, pick?: string | null) {
+  const top = d?.aircraft.find((a) => a.hex === pick) ?? byDistance(d?.aircraft ?? [])[0] ?? null;
   const phase: 'emergency' | 'overhead' | 'up' | 'quiet' | 'offline' | 'missing' = !d
     ? 'missing'
     : !top
@@ -145,8 +151,8 @@ export function planeGlyph(size = 24, track = 0) {
 
 /**
  * The sky radar: home in the middle, rings on a √ scale in the distance unit, N/E/S/W, a plane per aircraft turned
- * to its track, the hero in the accent with a ring (an emergency in the error colour). 72 = the Home card preview
- * (two rings, dots), 208 = beside the hero, 576 = the Radar view (ring labels, callsigns on the `labels` highest).
+ * to its track, the selected one (`hero`) in the accent with a ring (an emergency in the error colour). 72 = the Home card preview
+ * (two rings, dots), 208 = beside the hero, 576 = the Radar view (ring labels, callsigns on the `labels` closest + the selected one).
  * `set(aircraft, hero, unit)`.
  */
 export function skyRadar(size: number, o: { labels?: number; onTap?: (a: Aircraft) => void } = {}) {
@@ -219,10 +225,11 @@ export function skyRadar(size: number, o: { labels?: number; onTap?: (a: Aircraf
   return Object.assign(el, {
     set(list: Aircraft[], hero: Aircraft | null, u: DistanceUnit = 'km') {
       drawFrame(u);
+      const near = byDistance(list);
       marks.replaceChildren(
-        ...[...list].reverse().map((a, ri) => {
-          // the hero (first) is painted last, on top
-          const i = list.length - 1 - ri,
+        ...[...near.filter((a) => a !== hero), ...(hero ? [hero] : [])].map((a) => {
+          // the selected one is painted last, on top
+          const i = near.indexOf(a),
             rad = (a.brg * Math.PI) / 180,
             r = rPx(a.km);
           const sz = small ? 8 : glyph,
@@ -241,7 +248,7 @@ export function skyRadar(size: number, o: { labels?: number; onTap?: (a: Aircraf
             small ? h('i', { class: 'fs-oh-dot' }) : planeGlyph(sz, a.track ?? 0),
           );
           if (!small && isHero) m.append(h('i', { class: 'fs-oh-halo' }));
-          if (o.labels && i < o.labels && a.callsign)
+          if (o.labels && (i < o.labels || isHero) && a.callsign)
             m.append(text('label', 'fs-oh-cs', a.callsign));
           if (o.onTap) {
             m.setAttribute('data-snd', 'open');
@@ -323,7 +330,16 @@ export function overheadScreen(ctx: ScreenContext, o: OverheadOptions = {}): Scr
   let st: PanelData = ctx.store.get(),
     view: OverheadView | 'list' | 'detail' = o.view ?? 'now',
     from: OverheadView | 'list' = 'now',
-    picked: string | null = null;
+    picked: string | null = null,
+    sel: string | null = null; // the selected aircraft's hex; null = the closest leads
+  const lead = () => overheadNow(st.overhead, sel).top;
+  // tap an aircraft (a plane on the radar, a row) = select it; the selected one again = its details
+  const select = (a: Aircraft) => {
+    if (a.hex === lead()?.hex) return openAircraft(a);
+    sel = a.hex;
+    if (view === 'list' || view === 'detail') show('now');
+    render();
+  };
   const sec = (t: string) => h('div', { class: 'fs-sec' }, text('label', '', t));
   // Now | Radar: one per header (a node sits in one place), kept in step by show()
   const mkTabs = () =>
@@ -341,7 +357,7 @@ export function overheadScreen(ctx: ScreenContext, o: OverheadOptions = {}): Scr
   // now
   const hero = aircraftHero();
   live(hero, () => {
-    const t = st.overhead?.aircraft[0];
+    const t = lead();
     if (t) openAircraft(t);
   });
   const emptyT = text('headline', 'fs-oh-et', 'Loading'),
@@ -366,7 +382,7 @@ export function overheadScreen(ctx: ScreenContext, o: OverheadOptions = {}): Scr
     content(at(0, 0, CW, 264, hero), emptyBox, at(0, 312, CW, null, alsoHd, also, more)),
   );
   // radar
-  const big = skyRadar(576, { labels: 5, onTap: (a) => openAircraft(a) });
+  const big = skyRadar(576, { labels: 5, onTap: (a) => select(a) });
   const radarView = h(
     'div',
     { class: 'f-sub', hidden: true },
@@ -374,7 +390,7 @@ export function overheadScreen(ctx: ScreenContext, o: OverheadOptions = {}): Scr
     content(at((CW - 576) / 2, 0, 576, 576, big)),
   );
   // list
-  const listHd = sec('highest first'),
+  const listHd = sec('closest first'),
     listRows = h('div', { class: 'fs-rows' });
   const listView = h(
     'div',
@@ -442,7 +458,8 @@ export function overheadScreen(ctx: ScreenContext, o: OverheadOptions = {}): Scr
     const d = st.overhead,
       list = d?.aircraft ?? [],
       u = unitsOf(st).distance,
-      { phase, top } = overheadNow(d);
+      { phase, top } = overheadNow(d, sel),
+      near = byDistance(list);
     const edge = `${OVERHEAD_RANGE[u].rings.at(-1)} ${u}`;
     el.dataset.state = phase;
     stale.hidden = !(d?.error && list.length);
@@ -469,10 +486,15 @@ export function overheadScreen(ctx: ScreenContext, o: OverheadOptions = {}): Scr
       emptyRadar.set([], null, u);
     } else hero.set(top, list, st);
     alsoHd.hidden = more.hidden = list.length < 2;
-    also.replaceChildren(...list.slice(1, 3).map((a) => aircraftRow(a, u, () => openAircraft(a))));
+    also.replaceChildren(
+      ...near
+        .filter((a) => a !== top)
+        .slice(0, 2)
+        .map((a) => aircraftRow(a, u, () => select(a))),
+    );
     more.set(`all aircraft · ${list.length}`);
-    setText(listHd.firstElementChild!, `highest first · within ${edge}`);
-    listRows.replaceChildren(...list.map((a) => aircraftRow(a, u, () => openAircraft(a))));
+    setText(listHd.firstElementChild!, `closest first · within ${edge}`);
+    listRows.replaceChildren(...near.map((a) => aircraftRow(a, u, () => select(a))));
     if (view === 'detail') renderDetail();
   }
 
@@ -485,7 +507,9 @@ export function overheadScreen(ctx: ScreenContext, o: OverheadOptions = {}): Scr
       render();
     },
     enter() {
+      sel = null; // a fresh visit starts on the closest
       show(o.view ?? 'now');
+      render();
     },
   };
 }

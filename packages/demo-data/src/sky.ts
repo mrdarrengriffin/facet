@@ -166,6 +166,6 @@ export function skyWith(now: number, scene: OverheadScene = 'live'): OverheadDat
       squawk: '7700',
       emergency: 'general',
     });
-  list = list.sort((a, b) => Number(!!b.emergency) - Number(!!a.emergency) || b.elev - a.elev);
+  list = list.sort((a, b) => a.km - b.km); // closest first (what the screen leads with)
   return { ...base, aircraft: list };
 }

@@ -33,7 +33,7 @@ import {
   previewCalendar,
 } from './calendar.js';
 import { switchLine } from './switch.js';
-import { overheadCardText, previewOverhead } from './overhead.js';
+import { overheadCardText, overheadNow, previewOverhead } from './overhead.js';
 import { unitsOf } from '../units.js';
 import { tempText, thermostatSummary } from './thermostat.js';
 import { coverMoving, coverStatus, coverValue, previewCover } from '../covers.js';
@@ -424,12 +424,8 @@ export function homeScreen(ctx: ScreenContext, o: HomeOptions = {}): Screen {
       setCalendar();
       setTimer();
       setReadouts();
-      // overhead: the highest aircraft's route, "32,000 ft · 26 km SE"; the dot while one is 30°+ up
-      pOverhead.set(
-        s.overhead?.aircraft ?? [],
-        s.overhead?.aircraft[0] ?? null,
-        unitsOf(s).distance,
-      );
+      // overhead: the closest aircraft's route, "32,000 ft · 26 km SE"; the dot while one is 30°+ up
+      pOverhead.set(s.overhead?.aircraft ?? [], overheadNow(s.overhead).top, unitsOf(s).distance);
       const oh = overheadCardText(s, missing(ctx.store));
       cards.overhead.set({
         text: oh.text,

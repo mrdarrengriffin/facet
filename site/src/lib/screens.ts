@@ -670,11 +670,11 @@ interface AgendaEvent {
     icon: 'overhead',
     title: 'Overhead',
     description:
-      "What's flying over the house: the aircraft highest in the sky as the hero, a sky radar, and the rest in a list.",
+      "What's flying over the house: the selected aircraft (the closest, until you pick another) as the hero, a sky radar, and the rest in a list.",
     intro: [
-      'The Overhead screen answers "what\'s that plane?". The hero is the aircraft highest in the sky, the one you would see looking up: where to look ("high in the NW · 38°", in the accent from 30° up), its route in big type ("Catania → Leeds", or the callsign when there is no believable route), the airline, flight and type, then its altitude, speed and distance.',
+      'The Overhead screen answers "what\'s that plane?". The hero is the selected aircraft, the one in the accent on the radar. Until you pick one it is the closest. It shows where to look ("high in the NW · 38°", in the accent from 30° up), its route in big type ("Catania → Leeds", or the callsign when there is no believable route), the airline, flight and type, then its altitude, speed and distance.',
       'A small sky radar sits beside it: home in the middle, rings on a square-root scale, a plane for each aircraft turned the way it is flying. Below come the next two aircraft and "all aircraft". Tap any of them for the details: aircraft, registration, operator, squawk, heading and vertical speed.',
-      'Now | Radar in the header swaps to the radar at full size, with callsigns on the five highest. An emergency squawk (7700 and friends) always takes the hero, in the error colour.',
+      'Now | Radar in the header swaps to the radar at full size, with callsigns on the five closest. Tap a plane or a row to select it: it becomes the hero and the accent. Tap the selected one again for its details. An emergency squawk (7700 and friends) shows in the error colour.',
       'Distances and speeds follow Settings > Units: the circle is 50 km (rings 5, 15, 30, 50) or 30 miles (rings 3, 10, 20, 30), speeds in mph, km/h or knots.',
     ],
     shows: [
@@ -691,7 +691,7 @@ const overhead = overheadScreen({ store });`,
   at: string;
   radiusKm: number;
   source: string;            // shown in the details
-  aircraft: Aircraft[];      // most interesting first: emergency, then highest (elev)
+  aircraft: Aircraft[];      // any order; the screen sorts by km
   error?: string;
 }
 
@@ -713,7 +713,7 @@ interface Aircraft {
 }`,
     config: [
       'No receiver needed: the community ADS-B feeds (adsb.lol, adsb.fi) answer "everything within N nautical miles of a point" without a key. Your own receiver (readsb / tar1090) gives the same JSON.',
-      "Work out each aircraft's distance, bearing and elevation (atan of altitude over ground distance) from home, drop ground traffic, and sort: emergencies first, then highest.",
+      "Work out each aircraft's distance, bearing and elevation (atan of altitude over ground distance) from home, drop ground traffic. The screen picks the closest itself.",
       'Routes: look the callsign up (adsbdb.com, for one), cache it, and only fill `from` / `to` when the aircraft is roughly on the way between the two airports; schedules go stale.',
       'Fetch while someone is looking, about every 15 seconds; ask for 50 km, or 48 km when Distance is set to miles.',
     ],
