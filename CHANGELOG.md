@@ -8,6 +8,13 @@ All notable changes to Facet are written down here. The format is loosely based 
 
 ### Added
 
+- Overhead: what's flying over the house. The aircraft highest in the sky is the hero (where to look, the route,
+  altitude / speed / distance), a sky radar with planes turned to their track, the rest in rows, details on tap, and
+  Now | Radar in the header. An emergency squawk always takes the hero. `overheadScreen`, `skyRadar`, `aircraftHero`,
+  `aircraftRow`, `planeGlyph`, `OverheadData` / `Aircraft`, `PanelData.overhead`, a Home card, the `overhead` screen
+  icon; the mock house has made-up flights crossing its sky (`skyWith`, scene `overhead`).
+- Settings > Units: Distance (km, miles) and Speed (mph, km/h, knots), `distanceUnit` / `speedUnit`, with
+  `distance`, `speedKt`, `speedKmh` and `unitsOf` in `@facet/ui`. The Overhead screen follows them.
 - State readouts: Home items that report a state and open nothing (someone in a room, a door or window open, one
   temperature, who is home). A box is a button, no box is a readout: no fill, no press, no sound, a tap does
   nothing. Two share a card slot. `readout`, `readoutSlot`, `readoutFrom` (wording per device class, "for 12 min",

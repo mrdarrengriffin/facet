@@ -364,11 +364,71 @@ export interface PanelData {
   timers?: Timer[];
   nextEvent?: CalendarEvent | null;
   calendar?: CalendarData | null;
+  overhead?: OverheadData | null;
   /** The month the Calendar's month view asked for (`loadCalendarMonth`). */
   calendarMonth?: CalendarMonth | null;
   /** Personalisation settings (`@facet/settings` ids → values); a setting left out = its default. The device applies
    *  the ones that are set (theme, accent, text size, idle, transition, toasts) and the Settings screen shows them. */
   settings?: Partial<Values> | null;
+}
+
+// ---------------------------------------------------------------- overhead
+/** An airport on an aircraft's route. */
+export interface Airport {
+  iata: string | null;
+  icao: string;
+  name: string;
+  /** What the screen shows: "Leeds". */
+  city: string;
+}
+
+/** An aircraft in the sky near home (ADS-B, e.g. from a community feed such as adsb.lol, or your own receiver). */
+export interface Aircraft {
+  /** ICAO 24-bit address, lower-case hex. */
+  hex: string;
+  callsign: string | null;
+  /** Registration, e.g. "G-JZHF". */
+  reg: string | null;
+  /** ICAO type designator, e.g. "B738". */
+  type: string | null;
+  /** "Boeing 737-800". */
+  model: string | null;
+  operator: string | null;
+  airline: string | null;
+  /** The flight number people know, e.g. "LS13DK". */
+  flightNo: string | null;
+  /** The route, only when it's believable (a schedule can be stale). */
+  from: Airport | null;
+  to: Airport | null;
+  /** Barometric altitude, feet. */
+  alt: number | null;
+  /** Vertical rate, ft/min (+ climbing). */
+  vs: number | null;
+  /** Ground speed, knots. */
+  gs: number | null;
+  /** Track over the ground, degrees from north. */
+  track: number | null;
+  /** Distance from home along the ground, km. */
+  km: number;
+  /** Bearing from home, degrees from north. */
+  brg: number;
+  /** How high in the sky from home, degrees above the horizon. */
+  elev: number;
+  squawk: string | null;
+  /** An emergency (`general`, `nordo`, `unlawful`, `minfuel`, `lifeguard`...). */
+  emergency: string | null;
+  kind: 'jet' | 'prop' | 'heli' | 'light' | 'other';
+  military: boolean;
+}
+
+/** What's flying overhead: the aircraft within `radiusKm`, the most interesting first (emergency, then highest). */
+export interface OverheadData {
+  at: string;
+  radiusKm: number;
+  /** Where the data came from, e.g. "adsb.lol". */
+  source: string;
+  aircraft: Aircraft[];
+  error?: string;
 }
 
 /** A 3D print in progress (a Bambu printer through Home Assistant's bambu_lab integration, or anything similar). */

@@ -33,6 +33,8 @@ import {
   previewCalendar,
 } from './calendar.js';
 import { switchLine } from './switch.js';
+import { overheadCardText, previewOverhead } from './overhead.js';
+import { unitsOf } from '../units.js';
 import { tempText, thermostatSummary } from './thermostat.js';
 import { coverMoving, coverStatus, coverValue, previewCover } from '../covers.js';
 import { readoutFrom, readoutSlot } from '../readouts.js';
@@ -51,7 +53,8 @@ export type CardId =
   | 'github'
   | 'energy'
   | 'weather'
-  | 'calendar';
+  | 'calendar'
+  | 'overhead';
 export const CARD_IDS: CardId[] = [
   'timer',
   'calendar',
@@ -66,6 +69,7 @@ export const CARD_IDS: CardId[] = [
   'github',
   'energy',
   'weather',
+  'overhead',
 ];
 
 export interface HomeOptions {
@@ -103,6 +107,7 @@ export function homeScreen(ctx: ScreenContext, o: HomeOptions = {}): Screen {
   const pCover = previewCover();
   const pCal = previewCalendar();
   const pSwitch = previewSwitch();
+  const pOverhead = previewOverhead();
   const cards = {
     calendar: card({
       label: 'Calendar',
@@ -191,6 +196,14 @@ export function homeScreen(ctx: ScreenContext, o: HomeOptions = {}): Screen {
       value: '£--',
       sub: 'loading',
       onTap: go('energy'),
+    }),
+    overhead: card({
+      label: 'Overhead',
+      icon: 'overhead',
+      preview: pOverhead,
+      text: 'Loading',
+      sub: '',
+      onTap: go('overhead'),
     }),
     weather: card({
       label: 'Weather',
@@ -411,6 +424,19 @@ export function homeScreen(ctx: ScreenContext, o: HomeOptions = {}): Screen {
       setCalendar();
       setTimer();
       setReadouts();
+      // overhead: the highest aircraft's route, "32,000 ft · 26 km SE"; the dot while one is 30°+ up
+      pOverhead.set(
+        s.overhead?.aircraft ?? [],
+        s.overhead?.aircraft[0] ?? null,
+        unitsOf(s).distance,
+      );
+      const oh = overheadCardText(s, missing(ctx.store));
+      cards.overhead.set({
+        text: oh.text,
+        sub: oh.sub,
+        accent: oh.accent,
+        ...(oh.tone ? { tone: oh.tone } : {}),
+      });
     },
     tick(now) {
       const c = st.weather?.current;

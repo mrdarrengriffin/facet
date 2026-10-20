@@ -5,7 +5,8 @@
     { "id": "look", "label": "Look" },
     { "id": "sound", "label": "Sound" },
     { "id": "idle", "label": "Clock and idle" },
-    { "id": "behaviour", "label": "Behaviour" }
+    { "id": "behaviour", "label": "Behaviour" },
+    { "id": "units", "label": "Units" }
   ],
   "settings": [
     {
@@ -277,6 +278,39 @@
         { "id": "bottom", "label": "Bottom" }
       ],
       "esphome": { "id": "toast_position", "name": "Toast position", "icon": "mdi:dock-top" }
+    },
+    {
+      "id": "distanceUnit",
+      "group": "units",
+      "label": "Distance",
+      "kind": "select",
+      "control": "segmented",
+      "default": "km",
+      "about": "Every distance a screen shows: aircraft overhead, the nearest lightning strike, the Overhead and Lightning radar rings.",
+      "options": [
+        { "id": "km", "label": "km" },
+        { "id": "mi", "label": "Miles" }
+      ],
+      "esphome": {
+        "id": "distance_unit",
+        "name": "Distance unit",
+        "icon": "mdi:map-marker-distance"
+      }
+    },
+    {
+      "id": "speedUnit",
+      "group": "units",
+      "label": "Speed",
+      "kind": "select",
+      "control": "segmented",
+      "default": "mph",
+      "about": "Every speed a screen shows: aircraft overhead, wind, a storm's approach.",
+      "options": [
+        { "id": "mph", "label": "mph" },
+        { "id": "kmh", "label": "km/h" },
+        { "id": "kn", "label": "Knots" }
+      ],
+      "esphome": { "id": "speed_unit", "name": "Speed unit", "icon": "mdi:speedometer" }
     }
   ]
 }

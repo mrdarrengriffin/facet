@@ -31,6 +31,7 @@ import { switchScreen } from './screens/switch.js';
 import { thermostatScreen } from './screens/thermostat.js';
 import { coversScreen } from './screens/covers.js';
 import { timerScreen } from './screens/timer.js';
+import { overheadScreen } from './screens/overhead.js';
 import { weatherScreen, type WeatherView } from './screens/weather.js';
 
 /** `lightning` and `moon` are views of Weather on Home, and still screens of their own. */
@@ -51,6 +52,7 @@ export const SCREEN_IDS: ScreenId[] = [
   'lightning',
   'moon',
   'calendar',
+  'overhead',
   'timer',
   'print',
   'settings',
@@ -101,6 +103,8 @@ export function createScreen(
       return moonScreen(ctx, o);
     case 'calendar':
       return calendarScreen(ctx, o);
+    case 'overhead':
+      return overheadScreen(ctx, o);
     case 'timer':
       return timerScreen(ctx, o);
     case 'print':

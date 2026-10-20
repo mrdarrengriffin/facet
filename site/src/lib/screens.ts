@@ -665,6 +665,60 @@ interface AgendaEvent {
     ],
   },
   {
+    slug: 'overhead',
+    preview: 'overhead',
+    icon: 'overhead',
+    title: 'Overhead',
+    description:
+      "What's flying over the house: the aircraft highest in the sky as the hero, a sky radar, and the rest in a list.",
+    intro: [
+      'The Overhead screen answers "what\'s that plane?". The hero is the aircraft highest in the sky, the one you would see looking up: where to look ("high in the NW · 38°", in the accent from 30° up), its route in big type ("Catania → Leeds", or the callsign when there is no believable route), the airline, flight and type, then its altitude, speed and distance.',
+      'A small sky radar sits beside it: home in the middle, rings on a square-root scale, a plane for each aircraft turned the way it is flying. Below come the next two aircraft and "all aircraft". Tap any of them for the details: aircraft, registration, operator, squawk, heading and vertical speed.',
+      'Now | Radar in the header swaps to the radar at full size, with callsigns on the five highest. An emergency squawk (7700 and friends) always takes the hero, in the error colour.',
+      'Distances and speeds follow Settings > Units: the circle is 50 km (rings 5, 15, 30, 50) or 30 miles (rings 3, 10, 20, 30), speeds in mph, km/h or knots.',
+    ],
+    shows: [
+      'The hero (656 × 264): look line (caps) + status, route (headline 40, two lines), who (body), three stats 144 / 120 / 120 (altitude, which reads climbing or descending past ±300 ft/min; speed; distance + compass), radar 208 on the right.',
+      'Rows (112): "B738 · 32,000 ft · 26 km SE" over the route; emergency, military and helicopters get a status.',
+      'Radar (576): rings 1 px, the edge 2 px, N/E/S/W, planes 32 px (24 at 208), the hero in the accent with a 2 px ring.',
+      'The Home card: the radar at 72 with dots, the route and "32,000 ft · 26 km SE"; while something is 30° up it says "look up" and shows the dot.',
+    ],
+    usage: `import { overheadScreen } from '@facet/ui';
+
+store.patch({ overhead: { at, radiusKm: 50, source: 'adsb.lol', aircraft } });
+const overhead = overheadScreen({ store });`,
+    data: `interface OverheadData {
+  at: string;
+  radiusKm: number;
+  source: string;            // shown in the details
+  aircraft: Aircraft[];      // most interesting first: emergency, then highest (elev)
+  error?: string;
+}
+
+interface Aircraft {
+  hex: string;               // ICAO address
+  callsign: string | null; reg: string | null;
+  type: string | null;       // "B738"
+  model: string | null;      // "Boeing 737-800"
+  operator: string | null; airline: string | null; flightNo: string | null;
+  from: Airport | null; to: Airport | null; // only when the route is believable
+  alt: number | null;        // ft
+  vs: number | null;         // ft/min
+  gs: number | null;         // knots
+  track: number | null;      // degrees
+  km: number; brg: number;   // from home, along the ground
+  elev: number;              // degrees above the horizon from home
+  squawk: string | null; emergency: string | null;
+  kind: 'jet' | 'prop' | 'heli' | 'light' | 'other'; military: boolean;
+}`,
+    config: [
+      'No receiver needed: the community ADS-B feeds (adsb.lol, adsb.fi) answer "everything within N nautical miles of a point" without a key. Your own receiver (readsb / tar1090) gives the same JSON.',
+      "Work out each aircraft's distance, bearing and elevation (atan of altitude over ground distance) from home, drop ground traffic, and sort: emergencies first, then highest.",
+      'Routes: look the callsign up (adsbdb.com, for one), cache it, and only fill `from` / `to` when the aircraft is roughly on the way between the two airports; schedules go stale.',
+      'Fetch while someone is looking, about every 15 seconds; ask for 50 km, or 48 km when Distance is set to miles.',
+    ],
+  },
+  {
     slug: 'timer',
     preview: 'timer',
     icon: 'timer',

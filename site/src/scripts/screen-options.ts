@@ -24,6 +24,7 @@ import {
   type SwitchScene,
   type ThermostatScene,
   type CoverScene,
+  type OverheadScene,
   type TimerScene,
   type WeatherCardScene,
 } from '@facet/demo-data';
@@ -94,6 +95,7 @@ const RAIN: RainScene[] = ['later', 'dry', 'soon', 'now'];
 // Home's Weather card: storm > rain within the hour > night (the moon) > day
 const WX_CARD: WeatherCardScene[] = ['live', 'day', 'night', 'rain', 'storm', 'loading', 'offline'];
 const TIMER: TimerScene[] = ['running', 'done', 'none'];
+const OVERHEAD: OverheadScene[] = ['live', 'overhead', 'emergency', 'quiet'];
 // 'tonight' = the real moon; the rest jump to the next time the moon is in that phase
 const MOON_PHASES = [
   'tonight',
@@ -243,6 +245,22 @@ export const screenOptions: Record<string, ScreenOptions> = {
           south: !!p.south,
         } as MoonScene,
       }),
+  },
+  overhead: {
+    controls: [
+      sel('sky', 'Sky', OVERHEAD),
+      sel('distance', 'Distance', ['km', 'mi']),
+      sel('speed', 'Speed', ['mph', 'kmh', 'kn']),
+    ],
+    apply(key, p, ctx) {
+      if (key === 'sky') ctx.house.setScene({ overhead: p.sky as OverheadScene });
+      // the units are settings (Settings > Units), so they go through the house's setSetting
+      else
+        ctx.house.actions.setSetting(
+          key === 'distance' ? 'distanceUnit' : 'speedUnit',
+          String(p[key]),
+        );
+    },
   },
   timer: {
     controls: [sel('state', 'Timer', TIMER), range('minutes', 'Length (min)', 1, 60, 12)],

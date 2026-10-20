@@ -43,6 +43,9 @@ Ticked items are done, the ones with an orange dot are in progress.
 - [ ] Blinds and curtains on the firmware
 - [x] Calendar: the next event as the hero, then two weeks of days, a month view; calendars shown or hidden from a sheet
 - [ ] Calendar on the firmware
+- [x] Overhead: what's flying over the house, a sky radar, routes; distances and speeds in the chosen units
+- [ ] Overhead on the firmware
+- [~] Units (km / miles, mph / km/h / knots) used everywhere: Overhead done; Lightning and wind next
 - [x] Switch: one big button for anything with an on and an off, power and time underneath
 - [ ] Switch on the firmware
 - [x] Settings: theme, accent, text size, sounds, idle and behaviour, from one schema (`@facet/settings`)

@@ -1574,3 +1574,157 @@
 .fs-ro[data-tone='mute'] .fs-ro-top {
   color: var(--facet-color-text-mute);
 }
+
+/* ---------------------------------------------------------------- overhead */
+/* sky radar: 1-2 px rings, planes = one small rotated image (LVGL: lv_image rotation) */
+.fs-oh-radar {
+  position: relative;
+  flex: none;
+}
+.fs-oh-radar > *,
+.fs-oh-frame > * {
+  position: absolute;
+}
+.fs-oh-frame,
+.fs-oh-marks {
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+}
+.fs-oh-rsvg {
+  left: 0;
+  top: 0;
+}
+.fs-oh-ring {
+  fill: none;
+  stroke: var(--facet-color-line);
+  stroke-width: 1;
+}
+.fs-oh-ring.is-outer {
+  stroke: var(--facet-color-line-hi);
+  stroke-width: 2;
+}
+.fs-oh-cmp {
+  width: 24px;
+  height: 24px;
+  text-align: center;
+  color: var(--facet-color-text-mute);
+}
+.fs-oh-rlbl {
+  color: var(--facet-color-text-mute);
+  white-space: nowrap;
+}
+.fs-oh-home {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--facet-color-text);
+}
+.fs-oh-mark {
+  position: absolute;
+  color: var(--facet-color-text-dim);
+}
+.fs-oh-mark.is-hero {
+  color: var(--facet-color-accent);
+}
+.fs-oh-mark.is-em {
+  color: var(--facet-color-error);
+}
+.fs-oh-plane {
+  display: block;
+  fill: currentColor;
+  transform-origin: 50% 50%;
+}
+.fs-oh-dot {
+  display: block;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: currentColor;
+}
+.fs-oh-halo {
+  position: absolute;
+  inset: -8px;
+  border: 2px solid currentColor;
+  border-radius: 999px;
+}
+.fs-oh-cs {
+  position: absolute;
+  left: 100%;
+  top: 50%;
+  margin: -12px 0 0 8px;
+  height: 24px;
+  color: var(--facet-color-text-dim);
+  white-space: nowrap;
+}
+.fs-oh-mark.is-hero .fs-oh-cs {
+  color: var(--facet-color-text);
+}
+/* hero */
+.fs-oh-hero[hidden],
+.fs-oh-emptybox[hidden],
+.fs-overhead .fs-sec[hidden],
+.fs-overhead .fs-more[hidden],
+.fs-oh-lookrow .fs-status[hidden],
+.fs-oh-stale[hidden] {
+  display: none;
+}
+.fs-oh-lookrow {
+  display: flex;
+  align-items: center;
+  gap: var(--facet-layout-gutter);
+  height: 24px;
+}
+.fs-oh-look {
+  color: var(--facet-color-text-mute);
+  white-space: nowrap;
+}
+.fs-oh-hero.is-accent .fs-oh-look {
+  color: var(--facet-color-accent-text);
+}
+.fs-oh-route {
+  color: var(--facet-color-text);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+.fs-oh-who {
+  display: block;
+  color: var(--facet-color-text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* detail: 3 x 2 facts */
+.fs-oh-facts {
+  display: grid;
+  grid-template-columns: repeat(3, 208px);
+  column-gap: 16px;
+  row-gap: 48px;
+}
+.fs-oh-src {
+  color: var(--facet-color-text-mute);
+  white-space: nowrap;
+}
+/* empty / offline */
+.fs-oh-empty {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.fs-oh-et {
+  color: var(--facet-color-text);
+}
+.fs-oh-es {
+  color: var(--facet-color-text-dim);
+}
+.fs-overhead[data-state='offline'] .fs-oh-et {
+  color: var(--facet-color-error);
+}
+.fs-oh-stale {
+  color: var(--facet-color-warn);
+  white-space: nowrap;
+}

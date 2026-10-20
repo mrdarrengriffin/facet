@@ -1,6 +1,6 @@
 /**
  * A mock house for demos, docs and tests: fictional rooms, speakers, weather, an energy tariff with price bands,
- * pull requests, a passing thunderstorm, the real moon, a 3D print, a thermostat, a switch, agents, timers and toasts. It fills a Facet store and implements the panel
+ * pull requests, a passing thunderstorm, planes overhead, the real moon, a 3D print, a thermostat, a switch, agents, timers and toasts. It fills a Facet store and implements the panel
  * actions, so the screens behave as they would on a real house: play and pause, change the volume, dim the light,
  * start a timer.
  *
@@ -23,6 +23,7 @@ import {
 } from '@facet/ui';
 import * as D from './data.js';
 import { printWith } from './print.js';
+import { skyWith, type OverheadScene } from './sky.js';
 import { switchWatts, switchWith } from './switch.js';
 import { readoutsWith } from './readouts.js';
 import { thermostatStep, thermostatWith, withAction } from './thermostat.js';
@@ -42,6 +43,7 @@ export * from './thermostat.js';
 export * from './covers.js';
 export * from './switch.js';
 export * from './readouts.js';
+export * from './sky.js';
 
 export interface MockHouseOptions {
   /** Keep things moving: track progress, live power, the storm. Default true. */
@@ -62,6 +64,8 @@ export interface LiveScene {
   band?: Band | 'live';
   /** Show another moon (phase, days ahead, hemisphere); default = tonight's. */
   moon?: MoonScene;
+  /** What's flying overhead: `live` (default) = flights crossing the circle. */
+  overhead?: OverheadScene;
 }
 
 export interface MockHouse {
@@ -113,6 +117,7 @@ export function mockState(now = Date.now(), o: MockHouseOptions = {}): PanelData
     timers: timer > 0 ? [{ label: 'Bread', endsAt: now + timer * 1000, total: 12 * 60 }] : [],
     nextEvent: D.nextEvent(now),
     calendar: D.calendar(now),
+    overhead: skyWith(now),
   };
 }
 
@@ -303,12 +308,14 @@ export function createMockHouse(o: MockHouseOptions = {}): MockHouse {
     lightning: o.quietSky ? 'quiet' : 'live',
     band: 'live',
     moon: {},
+    overhead: 'live',
   };
   let watts = 420;
   const liveParts = (now: number): Partial<PanelData> => ({
     energy: scene.band === 'live' ? D.energy(now, watts) : energyWith(now, scene.band, watts),
     lightning: lightningWith(now, scene.lightning),
     moon: moonWith(now, scene.moon),
+    overhead: skyWith(now, scene.overhead),
   });
   const setScene = (s: LiveScene) => {
     Object.assign(scene, s);

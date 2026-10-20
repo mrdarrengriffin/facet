@@ -576,6 +576,15 @@
       "where": "the calendar screen: docs, Home cards and screen headers"
     },
     {
+      "name": "screen-overhead",
+      "file": "svg/screens/overhead.svg",
+      "group": "screens",
+      "grid": 24,
+      "keyline": "portrait",
+      "sizes_used": [24, 32],
+      "where": "the overhead screen: docs, Home cards and screen headers"
+    },
+    {
       "name": "screen-moon",
       "file": "svg/screens/moon.svg",
       "group": "screens",
