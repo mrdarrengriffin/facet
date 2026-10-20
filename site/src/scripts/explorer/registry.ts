@@ -1167,6 +1167,41 @@ export const entries: Entry[] = [
       `const bars = barChart({ w: ${p.width}, h: ${p.height}, bars: slots.map((s) => ({ v: s.kwh, c: BAND_COLOUR[s.band] })) });\nbars.play();`,
   },
   {
+    id: 'moon-range',
+    name: 'Moon by day',
+    group: 'Charts',
+    description:
+      "The Moon screen's long-range chart: one bar per evening, height = how much of the moon is lit. Full moons in accent, past days dimmed, a dotted line on today, a moon above every new and full moon and month names under the 1st. Tap a bar to pick a day.",
+    controls: [
+      rng('width', 'Width', 240, 656, 656, 8),
+      rng('height', 'Height', 120, 360, 240, 8),
+      tog('south', 'Southern hemisphere', false),
+    ],
+    render: (p) => {
+      const w = Number(p.width),
+        back = F.MOON_RANGE_BACK;
+      const r = F.moonRangeChart({
+        w,
+        h: Number(p.height),
+        days: F.moonDays(Date.now() - back * 86_400_000, Math.floor(w / 8)),
+        today: back,
+        south: !!p.south,
+        onTap: () => {},
+      });
+      requestAnimationFrame(() => r.chart.play(6, 360));
+      const el = document.createElement('div');
+      el.style.cssText = `display: flex; flex-direction: column; gap: 16px; width: ${w}px`;
+      el.append(r.marks, r.chart, r.axis);
+      return el;
+    },
+    code: (p) =>
+      imp(['moonDays', 'moonRangeChart']) +
+      `const days = moonDays(Date.now() - 7 * 86_400_000, ${Math.floor(Number(p.width) / 8)}); // 8 px a day\n` +
+      `const r = moonRangeChart({ w: ${p.width}, h: ${p.height}, days, today: 7${p.south ? ', south: true' : ''} });\n` +
+      `// r.marks (24 high) above r.chart, r.axis (24) below it`,
+    size: [656, 312],
+  },
+  {
     id: 'rate-strip',
     name: 'Rate strip',
     group: 'Charts',

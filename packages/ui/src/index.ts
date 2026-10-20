@@ -48,7 +48,7 @@ export { energyScreen } from './screens/energy.js';
 export { weatherScreen } from './screens/weather.js';
 export { lightningScreen } from './screens/lightning.js';
 export { timerScreen, type TimerOptions } from './screens/timer.js';
-export { moonScreen, moonLine, moonDay } from './screens/moon.js';
+export { moonScreen, moonLine, moonDay, moonRangeChart, MOON_RANGE_BACK } from './screens/moon.js';
 export {
   calendarScreen,
   nextAgendaEvent,

@@ -150,6 +150,55 @@ export function moonFrac(ms: number) {
   return norm((moonEcl(d).lon - sunLon(d)) / RAD) / 360;
 }
 
+/** A principal phase that falls in a day of `moonDays`. */
+export type MoonDayEvent = 'new' | 'first' | 'full' | 'last';
+
+/** One local day of the long-range chart: the moon at 21:00 and the principal phase that falls in that day, if any. */
+export interface MoonDay {
+  /** 21:00 local on that day, ms. */
+  t: number;
+  frac: number;
+  /** 0-100, whole per cent. */
+  illumination: number;
+  event: MoonDayEvent | null;
+}
+
+/** `n` local days from the day containing `start`: the evening moon (21:00) and any new, quarter or full moon in it. */
+export function moonDays(start: number, n: number): MoonDay[] {
+  const d0 = new Date(start);
+  d0.setHours(0, 0, 0, 0);
+  const out: MoonDay[] = [];
+  for (let i = 0; i < n; i++) {
+    const a = new Date(d0);
+    a.setDate(d0.getDate() + i);
+    const b = new Date(a);
+    b.setDate(a.getDate() + 1);
+    const eve = new Date(a);
+    eve.setHours(21);
+    const f0 = moonFrac(a.getTime()),
+      f1 = moonFrac(b.getTime()),
+      frac = moonFrac(eve.getTime());
+    const across = (x: number) => f0 < x && f1 >= x;
+    const event: MoonDayEvent | null =
+      f1 < f0
+        ? 'new'
+        : across(0.25)
+          ? 'first'
+          : across(0.5)
+            ? 'full'
+            : across(0.75)
+              ? 'last'
+              : null;
+    out.push({
+      t: eve.getTime(),
+      frac,
+      illumination: Math.round(moonIllumination(frac) * 100),
+      event,
+    });
+  }
+  return out;
+}
+
 /**
  * Moonrise and moonset on the local day containing `ms` (the device's time zone). Either can be null: on some days
  * the moon doesn't rise or doesn't set. Altitude threshold +0.125° (parallax minus refraction and semi-diameter).

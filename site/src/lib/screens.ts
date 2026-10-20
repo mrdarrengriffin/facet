@@ -566,6 +566,7 @@ const lightning = lightningScreen(ctx);`,
       'The moon (384), centred. The lit part is one shape: a half circle and half an ellipse.',
       'One line (28 px): the phase name, then how much is lit and when the next full or new moon is, dimmed.',
       'Details: six stats (lit, age, the next moonrise and moonset, next full, next new) and the next four phases with 48 px glyphs.',
+      'Next 75 days (from details): one bar per evening for 82 days, 7 before today, each as tall as the moon is lit. Full moons in accent, a 24 px moon above every new and full moon, month names under the 1st. The line on top says tonight; tap a bar for that day. `moonRangeChart()` on `moonDays()`.',
     ],
     usage: `import { moonData, moonScreen } from '@facet/ui';
 

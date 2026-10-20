@@ -775,6 +775,28 @@
   color: var(--facet-color-text);
 }
 
+/* next 75 days: glyphs above new and full moons, month names under the 1st */
+.fs-mr-marks,
+.fs-mr-axis {
+  position: relative;
+  height: 24px;
+}
+.fs-mr-mark {
+  position: absolute;
+  top: 0;
+  width: 24px;
+  height: 24px;
+}
+.fs-mr-mark > .fmoon {
+  display: block;
+}
+.fs-mr-tick {
+  position: absolute;
+  top: 0;
+  color: var(--facet-color-text-mute);
+  white-space: nowrap;
+}
+
 /* ---------- 3D print ---------- */
 .fs-print-model {
   display: block;
