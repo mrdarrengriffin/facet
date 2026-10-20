@@ -674,6 +674,8 @@ export interface BigSwitchProps {
   size?: number;
   /** A UI icon above the state, e.g. `power` or `bulb`. Default `power`. */
   icon?: string;
+  /** Icon size. Default 48. */
+  iconSize?: number;
   /** On, off, or null = unavailable (disabled, "--"). */
   on?: boolean | null;
   onTap?: () => void;
@@ -705,7 +707,7 @@ export function bigSwitch(o: BigSwitchProps = {}) {
     const name = st.icon ?? o.icon ?? 'power';
     if (name !== shownIcon) {
       shownIcon = name;
-      ic.replaceChildren(icon(name, 48));
+      ic.replaceChildren(icon(name, o.iconSize ?? 48));
     }
     const on = st.on ?? null;
     el.dataset.state = on === null ? 'disabled' : on ? 'on' : 'off';

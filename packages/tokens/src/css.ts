@@ -64,11 +64,14 @@ function staticVars(): string[] {
   ];
 }
 
-/** `--facet-fst-<role>-box`: each screen type role's line box, for geometry that stacks text. */
+/** `--facet-fst-<role>-box` / `-weight`: each screen type role's line box and weight, for parts that borrow them. */
 function boxVars(styles: Record<string, TypeStyle>): string[] {
   return Object.entries(styles)
     .filter(([, s]) => s.box)
-    .map(([k, s]) => `${cssVar('fst', k + '-box')}: ${s.box}px;`);
+    .flatMap(([k, s]) => [
+      `${cssVar('fst', k + '-box')}: ${s.box}px;`,
+      `${cssVar('fst', k + '-weight')}: ${s.weight};`,
+    ]);
 }
 
 /** A density's overrides: its layout / size vars and its screen type scale, under `[data-facet-density]`. */

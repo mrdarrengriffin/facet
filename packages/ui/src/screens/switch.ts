@@ -5,10 +5,10 @@
 // fallback screen for things without a dedicated one.
 import { bigSwitch } from '../controls.js';
 import { hhmm } from '../format.js';
-import { at, CH, CW, content, header, page, text } from '../layout.js';
-import { size as Z } from '@facet/tokens';
+import { at, content, header, page, text } from '../layout.js';
+import { sizeAt } from '@facet/tokens';
 import type { SwitchData, SwitchKind } from '../types.js';
-import { missing, type Screen, type ScreenContext, type ScreenOptions } from './common.js';
+import { geo, missing, type Screen, type ScreenContext, type ScreenOptions } from './common.js';
 
 const KIND_ICON: Record<SwitchKind, string> = {
   switch: 'power',
@@ -49,10 +49,14 @@ export function switchLine(sw: SwitchData, now = Date.now()) {
 export function switchScreen(ctx: ScreenContext, o: ScreenOptions = {}): Screen {
   const A = ctx.actions;
   // the button fills what's left of the content box after the line under it (384 on the 720 panel)
-  const LINE = 40,
-    GAP = 32;
-  const B = Math.min(Z['switch-btn'], CW, CH - LINE - GAP);
-  const top = Math.floor((CH - B - GAP - LINE) / 2 / 8) * 8;
+  const G = geo(ctx),
+    CW = G.contentW,
+    CH = G.contentH;
+  const snap = (v: number) => Math.round((v * G.scale) / G.grid) * G.grid; // reference px at this density
+  const LINE = snap(40),
+    GAP = snap(32);
+  const B = Math.min(sizeAt(G.density)['switch-btn'], CW, CH - LINE - GAP);
+  const top = Math.floor((CH - B - GAP - LINE) / 2 / G.grid) * G.grid;
   let sw: SwitchData | null | undefined = null;
   let holdUntil = 0,
     held: boolean | null = null;
@@ -60,6 +64,7 @@ export function switchScreen(ctx: ScreenContext, o: ScreenOptions = {}): Screen 
   const shown = () => (Date.now() < holdUntil && held !== null ? held : (sw?.on ?? null));
   const btn = bigSwitch({
     size: B,
+    iconSize: snap(48),
     onTap: () => {
       const on = shown();
       if (on === null) return;

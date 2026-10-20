@@ -28,7 +28,8 @@
   white-space: nowrap;
 } /* HH:MM caps 18 + tracking = 64 */
 .fs-header .f-spk .f-spk-name {
-  font: 500 var(--facet-size-speaker-btn-font) / 16px var(--facet-font-mono);
+  font: var(--facet-fst-label-weight) var(--facet-size-speaker-btn-font) / 16px
+    var(--facet-font-mono);
   letter-spacing: calc(var(--facet-scale) * 2px);
 } /* 16 box, glyphs centred */
 .fs-dim {
