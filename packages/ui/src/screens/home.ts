@@ -20,6 +20,7 @@ import { lightningSummary } from '../radar.js';
 import { h } from '../dom.js';
 import type { PanelData } from '../types.js';
 import { moonLine } from './moon.js';
+import { tempText, thermostatSummary } from './thermostat.js';
 import { isDay, missing, speakerName, type Screen, type ScreenContext } from './common.js';
 
 export type CardId =
@@ -27,6 +28,7 @@ export type CardId =
   | 'agents'
   | 'media'
   | 'light'
+  | 'thermostat'
   | 'clock'
   | 'github'
   | 'energy'
@@ -38,6 +40,7 @@ export const CARD_IDS: CardId[] = [
   'agents',
   'media',
   'light',
+  'thermostat',
   'clock',
   'github',
   'energy',
@@ -49,7 +52,7 @@ export const CARD_IDS: CardId[] = [
 export interface HomeOptions {
   /** Called when a card is tapped. Leave it out and the cards don't navigate. */
   open?: (id: CardId) => void;
-  /** Which cards, in order. Default: all ten (Timer only while one runs). */
+  /** Which cards, in order. Default: all eleven (Timer only while one runs). */
   cards?: CardId[];
 }
 
@@ -61,6 +64,7 @@ export function homeScreen(ctx: ScreenContext, o: HomeOptions = {}): Screen {
   const pLightning = previewLightning();
   const pTimer = previewTimer();
   const pMoon = moonIcon(0.25, { size: 72 });
+  const pThermo = previewDial();
   const cards = {
     timer: card({
       label: 'Timer',
@@ -93,6 +97,14 @@ export function homeScreen(ctx: ScreenContext, o: HomeOptions = {}): Screen {
       value: '--',
       sub: '',
       onTap: go('light'),
+    }),
+    thermostat: card({
+      label: 'Thermostat',
+      icon: 'thermostat',
+      preview: pThermo,
+      value: '--°',
+      sub: 'loading',
+      onTap: go('thermostat'),
     }),
     clock: card({
       label: 'Clock',
@@ -220,6 +232,24 @@ export function homeScreen(ctx: ScreenContext, o: HomeOptions = {}): Screen {
         accent: false,
       });
       pDial.set(on ? v : 0);
+      // thermostat
+      const th = s.thermostat;
+      if (th) {
+        const d = thermostatSummary(th).doing;
+        cards.thermostat.set({
+          value: tempText(th.current),
+          sub:
+            d === 'off'
+              ? 'off'
+              : `${d === 'heating' ? 'heating to' : d === 'cooling' ? 'cooling to' : 'idle · set'} ${tempText(th.target, th.step)}`,
+          accent: d === 'heating' || d === 'cooling',
+        });
+        pThermo.set(
+          th.target === null || th.mode === 'off'
+            ? 0
+            : ((th.target - th.min) / (th.max - th.min)) * 100,
+        );
+      } else cards.thermostat.set({ value: '--°', sub: missing(ctx.store) });
       // GitHub
       const g = s.github;
       if (g?.counts)

@@ -8,6 +8,7 @@ import {
   githubWith,
   mediaWith,
   printWith,
+  thermostatWith,
   timersWith,
   TOASTS,
   TRACKS,
@@ -17,6 +18,7 @@ import {
   type MockHouse,
   type PrintScene,
   type RainScene,
+  type ThermostatScene,
   type TimerScene,
 } from '@facet/demo-data';
 import { WX_TEXT } from '@facet/icons';
@@ -228,6 +230,19 @@ export const screenOptions: Record<string, ScreenOptions> = {
     apply: (_k, p, ctx) =>
       ctx.house.store.patch({
         timers: timersWith(Date.now(), p.state as TimerScene, Number(p.minutes)),
+      }),
+  },
+  thermostat: {
+    controls: [
+      sel('state', 'Thermostat', ['live', 'heating', 'idle', 'eco', 'off', 'none']),
+      range('current', 'Room (°C)', 10, 26, 19.4, 0.1),
+    ],
+    apply: (_k, p, ctx) =>
+      ctx.house.store.patch({
+        thermostat:
+          p.state === 'none'
+            ? null
+            : thermostatWith(Date.now(), p.state as ThermostatScene, Number(p.current)),
       }),
   },
   print: {

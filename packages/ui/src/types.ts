@@ -303,6 +303,7 @@ export interface PanelData {
   lightning?: LightningData | null;
   moon?: MoonData | null;
   print?: PrintData | null;
+  thermostat?: ThermostatData | null;
   timers?: Timer[];
   nextEvent?: CalendarEvent | null;
 }
@@ -326,6 +327,34 @@ export interface PrintData {
   model?: Grid | null;
 }
 
+/** Home Assistant's HVAC modes (`climate` entity `hvac_modes`). */
+export type HvacMode = 'heat' | 'cool' | 'heat_cool' | 'auto' | 'dry' | 'fan_only' | 'off';
+
+/** A thermostat (a Home Assistant `climate` entity). Temperatures in the entity's unit (°C in the examples). */
+export interface ThermostatData {
+  /** The room or zone it controls ("Hallway"). */
+  name?: string | null;
+  /** The measured temperature. */
+  current: number | null;
+  /** The set point. Null in a mode without one (off, fan). */
+  target: number | null;
+  /** The dial's range and step (`min_temp`, `max_temp`, `target_temp_step`). */
+  min: number;
+  max: number;
+  step: number;
+  mode: HvacMode;
+  /** The modes offered, in order. */
+  modes: HvacMode[];
+  /** What it is doing right now (`hvac_action`). */
+  action?: 'heating' | 'cooling' | 'idle' | 'off' | null;
+  preset?: string | null;
+  /** Preset names (`preset_modes`); empty or missing = no presets button. */
+  presets?: string[];
+  humidity?: number | null;
+  /** The schedule's next change, if the thermostat (or a schedule helper) knows it. */
+  next?: { at: string; target: number } | null;
+}
+
 /** What the screens can ask for. An adapter implements these (and updates the store when things change). */
 export interface PanelActions {
   mediaPlayPause?(): void;
@@ -343,4 +372,10 @@ export interface PanelActions {
   /** Add time to the running timer. */
   extendTimer?(seconds: number): void;
   cancelTimer?(): void;
+  /** Thermostat set point (`climate.set_temperature`). */
+  climateTarget?(target: number): void;
+  /** `climate.set_hvac_mode`. */
+  climateMode?(mode: HvacMode): void;
+  /** `climate.set_preset_mode`. */
+  climatePreset?(preset: string): void;
 }

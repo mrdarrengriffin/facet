@@ -549,6 +549,15 @@
       "where": "the moon screen: docs, Home cards and screen headers"
     },
     {
+      "name": "screen-thermostat",
+      "file": "svg/screens/thermostat.svg",
+      "group": "screens",
+      "grid": 24,
+      "keyline": "portrait",
+      "sizes_used": [24, 32],
+      "where": "the thermostat screen: docs, Home cards and screen headers"
+    },
+    {
       "name": "screen-print",
       "file": "svg/screens/print.svg",
       "group": "screens",

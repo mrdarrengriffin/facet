@@ -8,6 +8,13 @@ All notable changes to Facet are written down here. The format is loosely based 
 
 ### Added
 
+- Thermostat: a thermostat screen and Home card. The room temperature is the hero inside a ring
+  with the set point as the knob; the arc between them glows orange while it heats (blue while
+  cooling). Drag or − / + to change it, up to three mode buttons and a presets sheet underneath,
+  and the schedule's next change as the quiet line. `PanelData` gains `thermostat`,
+  `PanelActions` gains `climateTarget` / `climateMode` / `climatePreset`; new component
+  `thermostatDial`; new screen icon `thermostat`. The mock house has a hallway thermostat
+  with a schedule and a room that warms up.
 - 3D print: a 3D print screen. The model sits in an isometric view and fills up from the bed
   as the layers go: printed part solid in flat tones, the newest four layers in the accent, the
   rest a ghost. The hero is the printer's own %. The model is a voxel grid built from sliced

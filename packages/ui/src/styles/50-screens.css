@@ -796,3 +796,76 @@
 .fs-print.is-paused .fs-print-label {
   color: var(--facet-color-warn);
 }
+
+/* ---------- Thermostat ---------- */
+.f-thermo {
+  position: relative;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: pointer;
+}
+.f-thermo-svg {
+  display: block;
+}
+.fs-th-ring {
+  position: absolute;
+  inset: 0;
+}
+.fs-th-mid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.fs-th-mid .f-ibtn {
+  pointer-events: auto;
+}
+.fs-th-mid .f-ibtn[hidden] {
+  display: none;
+}
+.fs-th-cap,
+.fs-th-val,
+.fs-th-set,
+.fs-th-quiet {
+  display: block;
+  text-align: center;
+  white-space: nowrap;
+}
+.fs-th-cap {
+  color: var(--facet-color-text-mute);
+}
+.fs-thermo[data-doing='heating'] .fs-th-cap {
+  color: var(--facet-color-accent);
+}
+.fs-thermo[data-doing='cooling'] .fs-th-cap {
+  color: var(--facet-color-blue);
+}
+.fs-th-val {
+  color: var(--facet-color-text);
+  font-variant-numeric: tabular-nums;
+}
+.fs-thermo[data-doing='off'] .fs-th-val {
+  color: var(--facet-color-text-dim);
+}
+.fs-th-set {
+  color: var(--facet-color-text-dim);
+  font-variant-numeric: tabular-nums;
+}
+.fs-th-quiet {
+  color: var(--facet-color-text-mute);
+}
+.fs-content > .f-abs > .fs-th-modes {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  gap: 8px;
+}
+.fs-content > .f-abs > .fs-th-preset {
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+.fs-th-preset .f-btn[hidden] {
+  display: none;
+}

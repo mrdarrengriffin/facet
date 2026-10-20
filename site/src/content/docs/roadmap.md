@@ -35,6 +35,8 @@ Ticked items are done, the ones with an orange dot are in progress.
 - [x] Moon: the phase drawn as the hero, worked out on the device (no API)
 - [x] 3D print: the model fills up layer by layer, drawn in software (gcode, STL or a shape)
 - [ ] 3D print on the firmware: frames rendered by a server
+- [x] Thermostat: the room temperature on a heating ring, set point as the knob, modes and presets
+- [ ] Thermostat on the firmware
 - [x] Toasts over any screen and an idle clock
 - [~] Context cards: room profiles that decide which cards show and in what order
 - [ ] Ambient screens with generative animation

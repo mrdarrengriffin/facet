@@ -416,6 +416,182 @@ export function dial(o: DialProps) {
   });
 }
 
+// ---------------------------------------------------------------- thermostat dial
+export interface ThermostatDialProps {
+  min: number;
+  max: number;
+  step: number;
+  target: number | null;
+  current: number | null;
+  /** Dragging the ring: every step. */
+  onInput?: (t: number) => void;
+  /** The drag ended. */
+  onChange?: (t: number) => void;
+}
+
+/**
+ * The thermostat ring: a 480 square with a tick a degree (longer every 5), a 416 arc track, the set point as the
+ * knob and the measured temperature as a long tick in the text colour. While it heats, the arc from the measured
+ * temperature up to the set point is orange (cooling: blue, from the set point up). Drag the ring to move the set
+ * point in `step`s; the centre (r < 150) stays free for the screen's text and buttons. Off = no knob.
+ */
+export function thermostatDial(o: ThermostatDialProps) {
+  const START = 135,
+    RANGE = 270;
+  const S = Z['thermo-scale'],
+    A = Z['thermo-arc'],
+    C = S / 2,
+    IW = 6,
+    R = A / 2 - IW / 2;
+  const deg = (t: number) =>
+    START + (RANGE * (Math.min(o.max, Math.max(o.min, t)) - o.min)) / (o.max - o.min);
+  const svg = s('svg', {
+    class: 'f-thermo-svg',
+    width: S,
+    height: S,
+    viewBox: `0 0 ${S} ${S}`,
+    'aria-hidden': 'true',
+  });
+  // a tick a degree, drawn inward from the edge; whole multiples of 5 are majors
+  for (let t = Math.ceil(o.min); t <= o.max; t++) {
+    const maj = t % 5 === 0;
+    const [x1, y1] = polar(C, C, C, deg(t));
+    const [x2, y2] = polar(C, C, C - (maj ? 18 : 10), deg(t));
+    svg.append(
+      s('line', {
+        x1,
+        y1,
+        x2,
+        y2,
+        stroke: `var(--facet-color-${maj ? 'blue' : 'line-hi'})`,
+        'stroke-width': 2,
+      }),
+    );
+  }
+  svg.append(
+    s('path', {
+      d: arcPath(C, C, A / 2 - 1, START, START + RANGE),
+      fill: 'none',
+      stroke: 'var(--facet-color-line)',
+      'stroke-width': 2,
+    }),
+  );
+  const span = s('path', { fill: 'none', 'stroke-width': IW, 'stroke-linecap': 'round' });
+  const now = s('line', {
+    stroke: 'var(--facet-color-text)',
+    'stroke-width': 4,
+    'stroke-linecap': 'round',
+  });
+  const knob = s('circle', {
+    r: 13 - 2,
+    fill: 'var(--facet-color-accent)',
+    stroke: 'var(--facet-color-bg)',
+    'stroke-width': 4,
+  });
+  svg.append(span, now, knob);
+  const el = h('div', { class: 'f-thermo', style: { width: `${S}px`, height: `${S}px` } }, svg);
+
+  let st: { target: number | null; current: number | null; active: 'heat' | 'cool' | null } = {
+    target: o.target,
+    current: o.current,
+    active: null,
+  };
+  // the knob sweeps in whole steps (the sweeper works in integers)
+  const idx = (t: number) => Math.round((t - o.min) / o.step);
+  const val = (i: number) => +(o.min + i * o.step).toFixed(2);
+  let shown = st.target;
+  const draw = () => {
+    const t = shown,
+      c = st.current;
+    knob.style.display = t === null ? 'none' : '';
+    if (t !== null) {
+      const [x, y] = polar(C, C, R, deg(t));
+      knob.setAttribute('cx', String(x));
+      knob.setAttribute('cy', String(y));
+    }
+    now.style.display = c === null ? 'none' : '';
+    if (c !== null) {
+      const [x1, y1] = polar(C, C, C, deg(c));
+      const [x2, y2] = polar(C, C, C - 30, deg(c));
+      Object.entries({ x1, y1, x2, y2 }).forEach(([k, v]) => now.setAttribute(k, String(v)));
+    }
+    const heat = st.active === 'heat' && t !== null && c !== null && t > c;
+    const cool = st.active === 'cool' && t !== null && c !== null && t < c;
+    span.setAttribute(
+      'd',
+      heat ? arcPath(C, C, R, deg(c!), deg(t!)) : cool ? arcPath(C, C, R, deg(t!), deg(c!)) : '',
+    );
+    span.setAttribute('stroke', `var(--facet-color-${heat ? 'accent' : 'blue'})`);
+  };
+  const sw = sweeper(
+    (i) => {
+      shown = val(i);
+      draw();
+    },
+    idx(o.target ?? o.min),
+  );
+  draw();
+
+  let dragging = false,
+    value = o.target ?? o.min;
+  const fromEvent = (e: PointerEvent) => {
+    const r = svg.getBoundingClientRect();
+    const k = r.width / S;
+    const dx = (e.clientX - r.left) / k - C,
+      dy = (e.clientY - r.top) / k - C;
+    let rel = ((Math.atan2(dy, dx) * 180) / Math.PI - START + 720) % 360;
+    if (rel > RANGE) rel = rel > RANGE + (360 - RANGE) / 2 ? 0 : RANGE;
+    return {
+      t: val(Math.round(((rel / RANGE) * (o.max - o.min)) / o.step)),
+      dist: Math.hypot(dx, dy),
+    };
+  };
+  el.addEventListener('pointerdown', (e) => {
+    const p = fromEvent(e);
+    if (p.dist < 150 || st.target === null) return; // the centre stays free; off = nothing to set
+    e.preventDefault();
+    dragging = true;
+    el.setPointerCapture(e.pointerId);
+    value = p.t;
+    sw.jump(idx(value));
+    o.onInput?.(value);
+  });
+  el.addEventListener('pointermove', (e) => {
+    if (!dragging) return;
+    const t = fromEvent(e).t;
+    if (t === value) return;
+    value = t;
+    sw.jump(idx(value));
+    o.onInput?.(value);
+  });
+  const end = () => {
+    if (!dragging) return;
+    dragging = false;
+    o.onChange?.(value);
+  };
+  el.addEventListener('pointerup', end);
+  el.addEventListener('pointercancel', end);
+  return Object.assign(el, {
+    /** New state from elsewhere: the knob sweeps to the set point (`fromMin` = opening the screen). */
+    set(next: typeof st, fromMin = false) {
+      const moved = next.target !== st.target;
+      st = next;
+      if (dragging) return draw();
+      if (next.target === null) {
+        shown = null;
+        return draw();
+      }
+      if (shown === null) shown = next.target;
+      if (moved || fromMin) sw.to(idx(next.target), fromMin ? 0 : idx(shown));
+      else draw();
+      value = next.target;
+    },
+    get dragging() {
+      return dragging;
+    },
+  });
+}
+
 // ---------------------------------------------------------------- media disc
 /**
  * The media disc: a dotted ring (72 dots), an orange progress arc from 12 o'clock, a disc face with two grooves, an

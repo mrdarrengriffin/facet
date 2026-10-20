@@ -1,6 +1,6 @@
 /**
  * A mock house for demos, docs and tests: fictional rooms, speakers, weather, an energy tariff with price bands,
- * pull requests, a passing thunderstorm, the real moon, a 3D print, agents, timers and toasts. It fills a Facet store and implements the panel
+ * pull requests, a passing thunderstorm, the real moon, a 3D print, a thermostat, agents, timers and toasts. It fills a Facet store and implements the panel
  * actions, so the screens behave as they would on a real house: play and pause, change the volume, dim the light,
  * start a timer.
  *
@@ -18,9 +18,11 @@ import {
   type PanelActions,
   type PanelData,
   type Store,
+  type ThermostatData,
 } from '@facet/ui';
 import * as D from './data.js';
 import { printWith } from './print.js';
+import { thermostatStep, thermostatWith, withAction } from './thermostat.js';
 import {
   energyWith,
   lightningWith,
@@ -32,6 +34,7 @@ import {
 export * from './data.js';
 export * from './scenes.js';
 export * from './print.js';
+export * from './thermostat.js';
 
 export interface MockHouseOptions {
   /** Keep things moving: track progress, live power, the storm. Default true. */
@@ -95,6 +98,7 @@ export function mockState(now = Date.now(), o: MockHouseOptions = {}): PanelData
     lightning: D.lightning(now, o.quietSky),
     moon: moonData(now, D.PLACE_AT),
     print: printWith(now),
+    thermostat: thermostatWith(now),
     timers: timer > 0 ? [{ label: 'Bread', endsAt: now + timer * 1000, total: 12 * 60 }] : [],
     nextEvent: D.nextEvent(now),
   };
@@ -142,6 +146,10 @@ export function createMockHouse(o: MockHouseOptions = {}): MockHouse {
       (m.position ?? 0) +
         (m.state === 'playing' && m.positionAt ? (Date.now() - m.positionAt) / 1000 : 0),
     );
+  };
+  const thermo = (f: (t: ThermostatData) => ThermostatData) => {
+    const t = store.get().thermostat;
+    if (t) store.patch({ thermostat: withAction(f(t)) });
   };
   const actions: Required<PanelActions> = {
     mediaPlayPause() {
@@ -194,6 +202,22 @@ export function createMockHouse(o: MockHouseOptions = {}): MockHouse {
         });
     },
     cancelTimer: () => store.patch({ timers: [] }),
+    // the thermostat answers like a real one: a new set point in auto drops to heat (a manual override)
+    climateTarget: (target) =>
+      thermo((t) => ({ ...t, target, mode: t.mode === 'auto' ? 'heat' : t.mode, next: null })),
+    climateMode: (mode) =>
+      thermo((t) =>
+        mode === 'off'
+          ? { ...t, mode, target: null, next: null }
+          : { ...t, mode, target: t.target ?? 19, preset: 'none' },
+      ),
+    climatePreset: (preset) =>
+      thermo((t) => ({
+        ...t,
+        preset,
+        mode: t.mode === 'off' ? 'heat' : t.mode,
+        target: { home: 20.5, away: 15, eco: 17, boost: 23 }[preset] ?? t.target ?? 19,
+      })),
   };
   const scene: Required<LiveScene> = {
     lightning: o.quietSky ? 'quiet' : 'live',
@@ -219,6 +243,13 @@ export function createMockHouse(o: MockHouseOptions = {}): MockHouse {
         watts = Math.round(380 + 140 * Math.abs(Math.sin(now / 9000)));
         store.patch(liveParts(now));
       }, 4000),
+    );
+    // the room warms up and cools down, a step a minute
+    timers.push(
+      setInterval(() => {
+        const t = store.get().thermostat;
+        if (t) store.patch({ thermostat: thermostatStep(t, Date.now()) });
+      }, 60_000),
     );
     // next track when one ends
     timers.push(

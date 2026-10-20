@@ -201,6 +201,55 @@ interface PanelData {
     ],
   },
   {
+    slug: 'thermostat',
+    preview: 'thermostat',
+    icon: 'thermostat',
+    title: 'Thermostat',
+    description:
+      'A heating ring: the room temperature as the hero, the set point as the knob, orange while it heats. Modes and presets underneath.',
+    intro: [
+      'The ring is the whole screen. The big number is how warm the room is now; the knob on the ring is what you asked for; while the boiler runs, the arc between the two glows orange (blue while cooling), so "is it heating?" reads from across the room.',
+      'Drag the ring or tap − / + to change the set point. The change goes out when you let go (− / + wait 800 ms for more taps), and for three seconds the screen ignores updates so a slow thermostat cannot pull the knob back.',
+      'The quiet line in the middle is the schedule\'s next change ("17° from 22:30"), or the preset when there is no schedule.',
+    ],
+    shows: [
+      'The header with the zone name.',
+      'The ring (480): a tick a degree, longer every 5°; the measured temperature as a long tick; the set point as the knob.',
+      'The centre: what it is doing (heating, idle, off), the room temperature (display 144, light), the set point, the next change and − / +.',
+      'Under the ring: up to three mode buttons (the current one marked) and a Presets button that opens a sheet.',
+    ],
+    usage: `import { thermostatScreen } from '@facet/ui';
+
+const thermostat = thermostatScreen({
+  store,
+  actions: {
+    climateTarget: (t) => ha.call('climate', 'set_temperature', { temperature: t }),
+    climateMode: (m) => ha.call('climate', 'set_hvac_mode', { hvac_mode: m }),
+    climatePreset: (p) => ha.call('climate', 'set_preset_mode', { preset_mode: p }),
+  },
+});`,
+    data: `interface ThermostatData {
+  name?: string | null;          // header, e.g. "Hallway"
+  current: number | null;        // current_temperature
+  target: number | null;         // temperature; null when off
+  min: number;                   // min_temp
+  max: number;                   // max_temp
+  step: number;                  // target_temp_step
+  mode: HvacMode;                // hvac_mode
+  modes: HvacMode[];             // hvac_modes (the first three get buttons)
+  action?: 'heating' | 'cooling' | 'idle' | 'off' | null; // hvac_action
+  preset?: string | null;        // preset_mode
+  presets?: string[];            // preset_modes
+  humidity?: number | null;
+  next?: { at: string; target: number } | null; // the schedule's next change
+}`,
+    config: [
+      "Everything maps to a Home Assistant `climate` entity's attributes. `hvac_action` is what lights the arc; without it the ring never glows.",
+      "`next` is optional: few thermostats publish their schedule, so fill it from a schedule helper or the thermostat's own integration when there is one.",
+      'The mock house has a made-up hallway thermostat with a schedule (17° overnight, 20.5° mornings and evenings) and a room that warms 0.1° a minute while it heats.',
+    ],
+  },
+  {
     slug: 'clock',
     preview: 'clock',
     icon: 'clock',

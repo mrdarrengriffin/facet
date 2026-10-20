@@ -21,6 +21,7 @@ import { mediaScreen } from './screens/media.js';
 import type { MediaVisualId } from './media-visuals/index.js';
 import { moonScreen } from './screens/moon.js';
 import { printScreen } from './screens/print.js';
+import { thermostatScreen } from './screens/thermostat.js';
 import { timerScreen } from './screens/timer.js';
 import { weatherScreen } from './screens/weather.js';
 
@@ -30,6 +31,7 @@ export const SCREEN_IDS: ScreenId[] = [
   'agents',
   'media',
   'light',
+  'thermostat',
   'clock',
   'github',
   'energy',
@@ -61,6 +63,8 @@ export function createScreen(
       return mediaScreen(ctx, { onBack: o.onBack, visual: o.mediaVisual });
     case 'light':
       return lightScreen(ctx, o);
+    case 'thermostat':
+      return thermostatScreen(ctx, o);
     case 'clock':
       return clockScreen(ctx, { ...o.clock, onBack: o.onBack });
     case 'github':

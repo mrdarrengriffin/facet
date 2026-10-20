@@ -44,4 +44,11 @@ export { moonScreen, moonLine, moonDay } from './screens/moon.js';
 export { printScreen, type PrintOptions } from './screens/print.js';
 export * from './print3d/grid.js';
 export * from './print3d/render.js';
+export {
+  thermostatScreen,
+  thermostatSummary,
+  tempText,
+  presetText,
+  HVAC_TEXT,
+} from './screens/thermostat.js';
 export * from './device.js';
