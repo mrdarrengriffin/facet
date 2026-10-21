@@ -1,6 +1,7 @@
 // Facet core shared by every host (README.md): the WASM workbench (core/main.cpp) and the device firmware
 // (device/fw_device.h). Themes from the generated token tables, the component registry, and render() = build one
 // component on a screen exactly the way the workbench preview does.
+#include <cmath>
 #include <string>
 #include <vector>
 #include "fw.h"
@@ -75,5 +76,69 @@ const char *render(lv_obj_t *scr, const char *comp, const char *props, bool ligh
   lv_obj_invalidate(scr);
   return "";
 }
+
+// ---- type: the text-box rule (caps centred in the style's line box) ----
+namespace {
+int cap_px(const lv_font_t *f) {  // cap height above the baseline, measured from the font ('H', else '0')
+  lv_font_glyph_dsc_t g;
+  for (uint32_t c : {(uint32_t) 'H', (uint32_t) '0'})
+    if (lv_font_get_glyph_dsc(f, &g, c, 0) && g.box_h > 0) return g.box_h + g.ofs_y;
+  return (int) lroundf(lv_font_get_line_height(f) * 0.6f);
+}
+uint32_t utf8_next(const char *&p) {
+  auto b = (unsigned char) *p++;
+  if (b < 0x80) return b;
+  int n = b >= 0xF0 ? 3 : b >= 0xE0 ? 2 : 1;
+  uint32_t c = b & (0x3F >> n);
+  while (n-- && (*p & 0xC0) == 0x80) c = c << 6 | (*p++ & 0x3F);
+  return c;
+}
+void utf8_put(std::string &o, uint32_t c) {
+  if (c < 0x80) o += (char) c;
+  else if (c < 0x800) { o += (char) (0xC0 | c >> 6); o += (char) (0x80 | (c & 0x3F)); }
+  else if (c < 0x10000) { o += (char) (0xE0 | c >> 12); o += (char) (0x80 | (c >> 6 & 0x3F)); o += (char) (0x80 | (c & 0x3F)); }
+  else { o += (char) (0xF0 | c >> 18); o += (char) (0x80 | (c >> 12 & 0x3F)); o += (char) (0x80 | (c >> 6 & 0x3F)); o += (char) (0x80 | (c & 0x3F)); }
+}
+}  // namespace
+
+std::string cased(ty::Id s, const char *txt) {
+  if (!txt) return "";
+  if (!ty::STYLES[s].upper) return txt;
+  std::string o;
+  for (const char *p = txt; *p;) {
+    uint32_t c = utf8_next(p);
+    if ((c >= 'a' && c <= 'z') || (c >= 0xE0 && c <= 0xFE && c != 0xF7)) c -= 32;  // ASCII + Latin-1 letters
+    else if (c == 0xFF) c = 0x178;
+    utf8_put(o, c);
+  }
+  return o;
+}
+
+void text_style(lv_obj_t *l, ty::Id s) {
+  const ty::Style &st = ty::STYLES[s];
+  const lv_font_t *f = font(s);
+  lv_obj_set_style_text_font(l, f, 0);
+  lv_obj_set_style_text_letter_space(l, st.letter_space, 0);
+  const int lh = lv_font_get_line_height(f), asc = lh - f->base_line;
+  lv_obj_set_style_text_line_space(l, st.box - lh, 0);  // wrapped lines on the box pitch
+  const int off = (int) lroundf((st.box + cap_px(f)) / 2.0f) - asc;  // top of the line box -> caps centred in the box
+  lv_obj_set_style_pad_top(l, off > 0 ? off : 0, 0);
+  lv_obj_set_style_translate_y(l, off < 0 ? off : 0, 0);
+  if (lv_label_get_long_mode(l) != LV_LABEL_LONG_WRAP) lv_obj_set_height(l, st.box);
+}
+
+lv_obj_t *text(lv_obj_t *parent, ty::Id s, const char *txt, lv_color_t c, int wrap_w) {
+  lv_obj_t *l = lv_label_create(parent);
+  if (wrap_w > 0) {
+    lv_label_set_long_mode(l, LV_LABEL_LONG_WRAP);
+    lv_obj_set_width(l, wrap_w);
+  }
+  text_style(l, s);
+  lv_obj_set_style_text_color(l, c, 0);
+  lv_label_set_text(l, cased(s, txt).c_str());
+  return l;
+}
+
+void set_text(lv_obj_t *l, ty::Id s, const char *txt) { lv_label_set_text(l, cased(s, txt).c_str()); }
 
 }  // namespace fw

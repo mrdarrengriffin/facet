@@ -24,9 +24,9 @@ function build(why) {
     if (again) { again = false; build('changed during build'); }
   });
 }
-for (const d of ['components', 'foundations', 'core', 'tokens'])
+for (const d of ['components', 'foundations', 'core', 'tokens', 'tools'])
   watch(join(HERE, d), { recursive: true }, (_e, f) => {
-    if (!f || !/\.(cpp|h|json)$/.test(f)) return;
+    if (!f || !/\.(cpp|h|json|mjs|py|inc)$/.test(f)) return;
     clearTimeout(timer);
     timer = setTimeout(() => build(`${d}/${f}`), 150);
   });

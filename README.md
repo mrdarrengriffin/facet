@@ -67,12 +67,29 @@ a hex. `fw::theme(light, set)` gives any theme (e.g. to show both side by side).
 the panel: the Accent setting, default Ember). The workbench passes it to every render (`fw_render(..., light,
 accent)`, toolbar Accent switch, `?accent=<id>`).
 
+## Type tokens (single source)
+
+`tokens/type.json` holds every type style: `scale` (screen / component), `font` (sans = Inter, mono = JetBrains Mono),
+`weight`, `size`, `box` (line box), `lineHeight`, `letterSpacing`, `case` (`upper` = mono caps), `glyphs` (glyph set),
+`use`, `sample`, and `1x` (the 480 px panels' values). Sizes are **device px**: top level = the 720 px reference (1.5x),
+`1x` = 480 px (Facet's optical pass: thin weights one step heavier, small text one step up; component scale = x 2/3,
+min 12, boxes on 4). Plus `glyphsets` (digits / numeric / ascii / text = GF Latin Core), `numbers` (how numbers and
+units are set) and `tabular` (styles whose digits share one advance). Values = Facet `main` tokens.json `screenType` +
+`type` (the text styles the docs Type page shows; clock digit styles come with the Clock component).
+
+`build.sh` runs `tools/gen_type.mjs` -> `type_gen.h` (`fw::ty::Id` per style, `-` -> `_`: `ty::display`, `ty::c_meta`;
+`fw::ty::STYLES` for this density) and `tools/gen_fonts.py <density>` -> `facet_fonts[_1x].h`: one 4 bpp bitmap font
+per (family, weight, size, tabular) the styles use, with only the union of their glyph sets (skips work when nothing
+changed; editing the JSON rebuilds). Components use `fw::text(parent, ty::body, "...", fw::T->text)` = font, letter
+spacing, case and the text-box rule (height = box, cap height centred in it; `wrap_w` = paragraph on the box pitch),
+`fw::set_text`, `fw::font(ty::x)`; never a size. `fw::font(dp, mono)` = nearest text font for one-offs.
+
 ## Foundations
 
 `foundations/<id>.cpp`, same `FW_COMPONENT` API with section `foundations`. Meta `"layout": "doc"` = a document page:
 one full-width WASM stage per variant (heading + `about` in HTML), `"frame": [w, 0]` = auto height (the stage follows
 its content, `fw_content_h` + `fw_stage_resize`). Status = the .cpp plus `tokens/<id>.json` if present (any untracked
-= WIP; approve = commit both). **Colour** (`foundations/colour.cpp`): every token by group, name + role, the colour in
+= WIP; approve = commit both). **Type** (`foundations/type.cpp`): both scales at true size in their line boxes (hairlines) with spec + use, mono caps beside sans, number styles (units, tabular digits), glyph coverage per set, the fonts of the build with their flash cost (device switch = 720 / 480 build). **Colour** (`foundations/colour.cpp`): every token by group, name + role, the colour in
 its dark and light context with its hex (chips drawn by LVGL in RGB565, as on the panel), the accent sets, contrast
 pairs with WCAG ratios (red = below the pair's min).
 
@@ -93,11 +110,13 @@ notices the new `manifest.json` within a second and re-renders in place (playgro
 | Var | What |
 |---|---|
 | `PANEL_BUILD` | ESPHome build dir of the panel firmware (LVGL tree, `lv_conf.h`, ArduinoJson) |
-| `FW_PANEL` | panel firmware source dir (`include/fonts_gen*.h`, `packages/ui.yaml` for the `LV_*` build flags) |
+| `FW_PANEL` | panel firmware source dir (`packages/ui.yaml` for the `LV_*` build flags) |
+| `FW_FONT_PY` | a Python with the `esphome` package (its FreeType rasteriser + glyph sets, used by `tools/gen_fonts.py`) |
+| `FW_TTF` | dir of the TTFs, named `<Family>@<weight>@False@v1.ttf` (ESPHome's Google Fonts cache; Inter, JetBrains Mono, SIL OFL) |
 | `FW_OUT` | output dir (default `renderer/out`): `<density>/fw.mjs`, `fw.wasm`, `manifest.json` |
 | `FW_CACHE` | object cache (default `renderer/.cache`) |
 
-**TODO:** vendor LVGL, `lv_conf.h` and the generated fonts into this branch so it builds on its own, without a panel
+**TODO:** vendor LVGL, `lv_conf.h` and the TTFs into this branch so it builds on its own, without a panel
 firmware build next to it.
 
 ## Device firmware (Show on device)
@@ -124,10 +143,11 @@ Board YAML (display, touch, Wi-Fi) lives with the host that builds the firmware,
 | `components/*.cpp` | one component per file (the only place new work goes) |
 | `tokens/colour.json`, `tools/gen_colour.mjs` | colour tokens (single source) and their header generator |
 | `foundations/*.cpp` | foundation pages (Colour) |
-| `core/fw.h` | the component API: `FW_COMPONENT`, `fw::T` colours (generated from tokens/colour.json), `fw::px(dp)`, `fw::font(dp, mono)`, `fw::force_state` |
+| `core/fw.h` | the component API: `FW_COMPONENT`, `fw::T` colours (tokens/colour.json), `fw::text(parent, ty::<style>, ...)` / `fw::font(ty::<style>)` (tokens/type.json), `fw::px(dp)`, `fw::force_state` |
 | `core/fw_core.cpp` | themes, registry, `fw::render` (shared by the WASM host and the device firmware) |
 | `core/main.cpp` | host: LVGL + "stages" (one display per canvas), exports `fw_init/meta/stage/stage_free/render/touch/tick/dirty/frame` |
-| `core/fonts.cpp` | the panel's generated Facet fonts per density |
+| `core/fonts.cpp` | this density's generated fonts (`facet_fonts*.h`), style -> font, font report |
+| `tokens/type.json`, `tools/gen_type.mjs`, `tools/gen_fonts.py`, `tools/facet_font.inc` | type tokens (single source), style header generator, font generator, bitmap font runtime |
 | `build.sh`, `watch.mjs` | build and watcher |
 
 Densities: `1.5x` = 720 px panels, `1x` = 480 px panels. Write sizes in dp; `fw::px()` scales.

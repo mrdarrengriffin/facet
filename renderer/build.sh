@@ -4,10 +4,11 @@
 #   ./build.sh            both densities in parallel (1.5x = Waveshare + Shelly 720, 1x = Guition 480)
 #   ./build.sh 1x|1.5x    one
 # Incremental: each .cpp (core/*.cpp, foundations/*.cpp, components/*.cpp) is its own object, recompiled only when it or a header in
-# core/ or the generated colour header (tokens/colour.json) changed; LVGL objects are cached once per lv_conf (cold ~20-60 s, after that a component edit = a few seconds).
+# core/ or a generated token header (tokens/colour.json, tokens/type.json) changed; LVGL objects are cached once per lv_conf (cold ~20-60 s, after that a component edit = a few seconds).
 # Paths (env, or local.env at the repo root, untracked):
 #   PANEL_BUILD  ESPHome build dir of the panel firmware (LVGL tree, lv_conf.h, ArduinoJson)
-#   FW_PANEL     panel firmware source dir (include/fonts_gen*.h, packages/ui.yaml for the LV_* build flags)
+#   FW_PANEL     panel firmware source dir (packages/ui.yaml for the LV_* build flags)
+#   FW_FONT_PY   a Python with the esphome package (font rasteriser, tools/gen_fonts.py); FW_TTF = dir of the TTFs
 #   FW_OUT       output dir (default ./out), FW_CACHE object cache (default ./.cache)
 # TODO: vendor LVGL, lv_conf and the fonts into this branch so it builds on its own.
 set -euo pipefail
@@ -22,7 +23,6 @@ DEN=$1
 PB=${PANEL_BUILD:-$HOME/.esphome-build/waveshare-p4-86-panel}
 L=$PB/managed_components/lvgl__lvgl
 AJ=$PB/managed_components/bblanchon__arduinojson/src
-PI=$FW_PANEL/include   # only for the generated fonts (fonts_gen*.h)
 OPT=${OPT:--O2}
 C=${FW_CACHE:-$HERE/.cache}
 O=$C/obj-$DEN$OPT
@@ -53,15 +53,19 @@ find "$L/src" -name '*.c' | xargs -P"$(nproc)" -I{} sh -c \
 
 # colour tokens: tokens/colour.json -> colour_gen.h (written only when it changes, so an unchanged JSON rebuilds nothing)
 node "$HERE/tools/gen_colour.mjs" "$C/gen/colour_gen.h"
+# type tokens: tokens/type.json -> type_gen.h (styles) + this density's bitmap fonts (only the sizes/glyphs the styles use)
+node "$HERE/tools/gen_type.mjs" "$C/gen/type_gen.h"
+FONTS_H=$C/gen/facet_fonts.h; [ "$DEN" = 1x ] && FONTS_H=$C/gen/facet_fonts_1x.h
+FW_TTF=${FW_TTF:?set FW_TTF (dir of the TTFs) in local.env} "${FW_FONT_PY:?set FW_FONT_PY in local.env}" "$HERE/tools/gen_fonts.py" "$DEN" "$FONTS_H"
 
-# workbench + foundations + components: recompile when the source, a core header or (fonts) the generated font header is newer
-CXX="em++ $FL $VFLAG -std=c++17 -I$HERE/core -I$PI -I$AJ"
+# workbench + foundations + components: recompile when the source, a core header, a token header or (fonts) the font header is newer
+CXX="em++ $FL $VFLAG -std=c++17 -I$HERE/core -I$AJ"
 OBJS=; JOBS=
 for f in "$HERE"/core/*.cpp "$HERE"/foundations/*.cpp "$HERE"/components/*.cpp; do
   [ -f "$f" ] || continue
   o="$O/$(basename "$(dirname "$f")")_$(basename "$f" .cpp).o"
   OBJS="$OBJS $o"
-  dep="$f $HERE/core/*.h $C/gen/colour_gen.h"; [ "$(basename "$f")" = fonts.cpp ] && dep="$dep $PI/fonts_gen.h $PI/fonts_gen_1x.h"
+  dep="$f $HERE/core/*.h $C/gen/colour_gen.h $C/gen/type_gen.h"; [ "$(basename "$f")" = fonts.cpp ] && dep="$dep $FONTS_H"
   stale=0; [ -f "$o" ] || stale=1
   [ $stale = 0 ] && for d in $dep; do [ "$d" -nt "$o" ] && stale=1; done
   if [ $stale = 1 ]; then echo "[$DEN] cc $(basename "$f")"; $CXX -c "$f" -o "$o" & JOBS="$JOBS $!"; fi

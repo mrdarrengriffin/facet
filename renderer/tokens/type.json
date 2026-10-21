@@ -1,0 +1,521 @@
+{
+  "$comment": "Facet type tokens, the single source for the WASM renderer and the panel firmware (tools/gen_type.mjs -> type_gen.h; tools/gen_fonts.py -> one bitmap font per family/weight/size per density). Values are the approved Facet tokens (main: packages/tokens/src/tokens.json screenType + type, density.1x). Sizes, boxes and letter spacing are device px: the top level is the 720 x 720 reference panel (1.5x), \"1x\" = the 480 x 480 panels (optical pass: thin weights one step heavier, small text one step up). dp = px / density.",
+  "families": {
+    "sans": {
+      "family": "Inter",
+      "metrics": {
+        "unitsPerEm": 2048,
+        "ascender": 0.96875,
+        "descender": -0.24121,
+        "capHeight": 0.72754,
+        "xHeight": 0.5459
+      }
+    },
+    "mono": {
+      "family": "JetBrains Mono",
+      "metrics": {
+        "unitsPerEm": 1000,
+        "ascender": 1.02,
+        "descender": -0.3,
+        "capHeight": 0.73,
+        "xHeight": 0.55
+      }
+    }
+  },
+  "densities": {
+    "1.5x": {
+      "device": "720 x 720 (Waveshare ESP32-P4-86, Shelly X1i)",
+      "scale": 1
+    },
+    "1x": {
+      "device": "480 x 480 (Guition ESP32-4848S040)",
+      "scale": 0.6667
+    }
+  },
+  "scales": [
+    {
+      "id": "screen",
+      "label": "Screen scale",
+      "about": "One hero per screen in a large light weight; everything else stays quiet, hierarchy comes from colour rather than size. Every line box is a multiple of 8 (4 at 1x), so text sits on the grid."
+    },
+    {
+      "id": "component",
+      "label": "Component scale",
+      "about": "Smaller text inside components: lists, chips, buttons, headers. At 1x these are the reference sizes x 2/3 (min 12 px), boxes snapped to 4 px."
+    }
+  ],
+  "glyphsets": {
+    "digits": {
+      "about": "digits and what numbers carry",
+      "chars": [
+        "0123456789",
+        ":%-.,°+−"
+      ]
+    },
+    "numeric": {
+      "about": "digits, units and currency",
+      "chars": [
+        "0123456789",
+        ":%-.,°+−£ ",
+        "kmhWV"
+      ]
+    },
+    "ascii": {
+      "about": "printable ASCII + ° £ (short values: 18:56, Off, Quiet, 12 km)",
+      "glyphset": "GF_Latin_Kernel",
+      "chars": [
+        "°£·−"
+      ]
+    },
+    "text": {
+      "about": "Google Fonts Latin Core (UK/EU text)",
+      "glyphset": "GF_Latin_Core",
+      "chars": [
+        "·−→"
+      ]
+    }
+  },
+  "numbers": [
+    {
+      "id": "temperature",
+      "label": "Temperature",
+      "style": "display",
+      "sample": "21.4°",
+      "unit": "inline",
+      "about": "The screen hero: digits, decimal and degree in one style, no space before °."
+    },
+    {
+      "id": "percent",
+      "label": "Percent",
+      "style": "hero",
+      "sample": "60%",
+      "unit": "inline",
+      "about": "% set in the same style, no space."
+    },
+    {
+      "id": "money",
+      "label": "Money",
+      "style": "value",
+      "sample": "£2.42",
+      "unit": "inline",
+      "about": "Home card value: £ prefix, two decimals."
+    },
+    {
+      "id": "distance",
+      "label": "Distance",
+      "style": "value",
+      "sample": "12 km",
+      "unit": "inline",
+      "about": "Word units get a space."
+    },
+    {
+      "id": "dial",
+      "label": "Dial value",
+      "style": "display",
+      "sample": "65",
+      "unit": "%",
+      "unitStyle": "body",
+      "unitColour": "text-mute",
+      "about": "Dial: the value alone in the hero, its unit below in body, text-mute (Facet controls.ts f-dial-unit)."
+    },
+    {
+      "id": "small",
+      "label": "Readout",
+      "style": "c-number",
+      "sample": "8.69",
+      "unit": "inline",
+      "about": "Big numbers on data screens (component number)."
+    }
+  ],
+  "tabular": {
+    "styles": [
+      "display",
+      "hero",
+      "value",
+      "c-number"
+    ],
+    "about": "Digits 0-9 share one advance (the widest digit, glyph centred), like the web tabular-nums, so values do not shift as they change. LVGL bitmap fonts have no OpenType features, so the generator does this."
+  },
+  "styles": {
+    "display": {
+      "scale": "screen",
+      "font": "sans",
+      "weight": 200,
+      "size": 144,
+      "box": 144,
+      "lineHeight": 1,
+      "letterSpacing": -2,
+      "case": "none",
+      "glyphs": "digits",
+      "use": "the hero of a full screen: brightness %, temperature, time",
+      "sample": "21:47",
+      "1x": {
+        "size": 96,
+        "box": 96,
+        "weight": 300,
+        "letterSpacing": -1
+      }
+    },
+    "hero": {
+      "scale": "screen",
+      "font": "sans",
+      "weight": 200,
+      "size": 96,
+      "box": 96,
+      "lineHeight": 1,
+      "letterSpacing": -1,
+      "case": "none",
+      "glyphs": "numeric",
+      "use": "screen hero numbers: PRs that need you, £ today, nearest strike, agents that need you",
+      "sample": "3",
+      "1x": {
+        "size": 64,
+        "box": 64,
+        "weight": 300,
+        "letterSpacing": -1
+      }
+    },
+    "value": {
+      "scale": "screen",
+      "font": "sans",
+      "weight": 200,
+      "size": 64,
+      "box": 64,
+      "lineHeight": 1,
+      "letterSpacing": -1,
+      "case": "none",
+      "glyphs": "ascii",
+      "use": "the one value on a Home card (18:56, 13°, 65%, £2.42)",
+      "sample": "18°",
+      "1x": {
+        "size": 44,
+        "box": 44,
+        "weight": 300,
+        "letterSpacing": -1
+      }
+    },
+    "headline": {
+      "scale": "screen",
+      "font": "sans",
+      "weight": 300,
+      "size": 40,
+      "box": 48,
+      "lineHeight": 1.2,
+      "letterSpacing": 0,
+      "case": "none",
+      "glyphs": "text",
+      "use": "now-playing title, weather condition, quiet-state words (Quiet, All clear)",
+      "sample": "Paper Lanterns",
+      "1x": {
+        "size": 28,
+        "box": 32,
+        "weight": 400,
+        "letterSpacing": 0
+      }
+    },
+    "title": {
+      "scale": "screen",
+      "font": "sans",
+      "weight": 400,
+      "size": 28,
+      "box": 40,
+      "lineHeight": 1.25,
+      "letterSpacing": 0,
+      "case": "none",
+      "glyphs": "text",
+      "use": "row titles (PRs, days, speakers), Home card text values (track), toast title",
+      "sample": "Add a quiet hours schedule",
+      "1x": {
+        "size": 20,
+        "box": 28,
+        "weight": 500,
+        "letterSpacing": 0
+      }
+    },
+    "body": {
+      "scale": "screen",
+      "font": "sans",
+      "weight": 400,
+      "size": 22,
+      "box": 32,
+      "lineHeight": 1.3,
+      "letterSpacing": 0,
+      "case": "none",
+      "glyphs": "text",
+      "use": "secondary lines: 'Dry for the next hour', sub lines, tile titles, artist, toast body",
+      "sample": "Dry for the next hour",
+      "1x": {
+        "size": 16,
+        "box": 20,
+        "weight": 500,
+        "letterSpacing": 0
+      }
+    },
+    "label": {
+      "scale": "screen",
+      "font": "mono",
+      "weight": 500,
+      "size": 18,
+      "box": 24,
+      "lineHeight": 1,
+      "letterSpacing": 2,
+      "case": "upper",
+      "glyphs": "text",
+      "use": "screen labels (header), card labels, section labels, chips, axis + column heads, header time: the smallest text",
+      "sample": "Study · 21:47",
+      "1x": {
+        "size": 13,
+        "box": 16,
+        "weight": 600,
+        "letterSpacing": 1
+      }
+    },
+    "c-number": {
+      "scale": "component",
+      "font": "sans",
+      "weight": 300,
+      "size": 64,
+      "box": 72,
+      "lineHeight": 1,
+      "letterSpacing": 0,
+      "case": "none",
+      "glyphs": "numeric",
+      "use": "big numbers on data screens (energy, weather temp)",
+      "sample": "8.69",
+      "1x": {
+        "size": 43,
+        "box": 48,
+        "weight": 300,
+        "letterSpacing": 0
+      }
+    },
+    "c-title": {
+      "scale": "component",
+      "font": "sans",
+      "weight": 500,
+      "size": 30,
+      "box": 40,
+      "lineHeight": 1.2,
+      "letterSpacing": 0,
+      "case": "none",
+      "glyphs": "text",
+      "use": "card title, track title",
+      "sample": "Desk lamp",
+      "1x": {
+        "size": 20,
+        "box": 28,
+        "weight": 500,
+        "letterSpacing": 0
+      }
+    },
+    "c-card-title": {
+      "scale": "component",
+      "font": "sans",
+      "weight": 600,
+      "size": 30,
+      "box": 40,
+      "lineHeight": 1.2,
+      "letterSpacing": 0,
+      "case": "none",
+      "glyphs": "text",
+      "use": "card and tile titles",
+      "sample": "Weather",
+      "1x": {
+        "size": 20,
+        "box": 28,
+        "weight": 600,
+        "letterSpacing": 0
+      }
+    },
+    "c-tile": {
+      "scale": "component",
+      "font": "sans",
+      "weight": 500,
+      "size": 20,
+      "box": 24,
+      "lineHeight": 1.2,
+      "letterSpacing": 0,
+      "case": "none",
+      "glyphs": "text",
+      "use": "tile title",
+      "sample": "Photo backup",
+      "1x": {
+        "size": 13,
+        "box": 16,
+        "weight": 500,
+        "letterSpacing": 0
+      }
+    },
+    "c-body": {
+      "scale": "component",
+      "font": "sans",
+      "weight": 500,
+      "size": 16,
+      "box": 24,
+      "lineHeight": 1.2,
+      "letterSpacing": 0,
+      "case": "none",
+      "glyphs": "text",
+      "use": "body text",
+      "sample": "Uses the solar noon from the table.",
+      "1x": {
+        "size": 12,
+        "box": 16,
+        "weight": 500,
+        "letterSpacing": 0
+      }
+    },
+    "c-label": {
+      "scale": "component",
+      "font": "mono",
+      "weight": 500,
+      "size": 18,
+      "box": 24,
+      "lineHeight": 1,
+      "letterSpacing": 0,
+      "case": "upper",
+      "glyphs": "text",
+      "use": "button labels",
+      "sample": "Start",
+      "1x": {
+        "size": 12,
+        "box": 16,
+        "weight": 500,
+        "letterSpacing": 0
+      }
+    },
+    "c-label-sm": {
+      "scale": "component",
+      "font": "mono",
+      "weight": 500,
+      "size": 14,
+      "box": 16,
+      "lineHeight": 1,
+      "letterSpacing": 0,
+      "case": "upper",
+      "glyphs": "text",
+      "use": "back button, header title",
+      "sample": "Back",
+      "1x": {
+        "size": 12,
+        "box": 16,
+        "weight": 500,
+        "letterSpacing": 0
+      }
+    },
+    "c-meta": {
+      "scale": "component",
+      "font": "mono",
+      "weight": 400,
+      "size": 14,
+      "box": 16,
+      "lineHeight": 1.2,
+      "letterSpacing": 0,
+      "case": "none",
+      "glyphs": "text",
+      "use": "status lines, header meta",
+      "sample": "done · 4h ago",
+      "1x": {
+        "size": 12,
+        "box": 16,
+        "weight": 400,
+        "letterSpacing": 0
+      }
+    },
+    "c-meta-sm": {
+      "scale": "component",
+      "font": "mono",
+      "weight": 400,
+      "size": 12,
+      "box": 16,
+      "lineHeight": 1.2,
+      "letterSpacing": 0,
+      "case": "none",
+      "glyphs": "text",
+      "use": "small meta",
+      "sample": "updated 2m",
+      "1x": {
+        "size": 12,
+        "box": 16,
+        "weight": 400,
+        "letterSpacing": 0
+      }
+    },
+    "c-caps-sm": {
+      "scale": "component",
+      "font": "mono",
+      "weight": 500,
+      "size": 12,
+      "box": 16,
+      "lineHeight": 1.2,
+      "letterSpacing": 0,
+      "case": "upper",
+      "glyphs": "text",
+      "use": "chips, column heads",
+      "sample": "ci pass",
+      "1x": {
+        "size": 12,
+        "box": 16,
+        "weight": 500,
+        "letterSpacing": 0
+      }
+    },
+    "c-subtitle": {
+      "scale": "component",
+      "font": "mono",
+      "weight": 500,
+      "size": 18,
+      "box": 24,
+      "lineHeight": 1.2,
+      "letterSpacing": 0,
+      "case": "none",
+      "glyphs": "text",
+      "use": "artist line, units",
+      "sample": "The Quiet Hours",
+      "1x": {
+        "size": 12,
+        "box": 16,
+        "weight": 500,
+        "letterSpacing": 0
+      }
+    },
+    "c-date": {
+      "scale": "component",
+      "font": "mono",
+      "weight": 500,
+      "size": 18,
+      "box": 24,
+      "lineHeight": 1.2,
+      "letterSpacing": 3,
+      "case": "upper",
+      "glyphs": "text",
+      "use": "clock date",
+      "sample": "Mon 19 Oct",
+      "1x": {
+        "size": 12,
+        "box": 16,
+        "weight": 500,
+        "letterSpacing": 2
+      }
+    },
+    "c-weather": {
+      "scale": "component",
+      "font": "mono",
+      "weight": 400,
+      "size": 14,
+      "box": 16,
+      "lineHeight": 1.2,
+      "letterSpacing": 2,
+      "case": "upper",
+      "glyphs": "text",
+      "use": "clock weather",
+      "sample": "Partly cloudy · 14°",
+      "1x": {
+        "size": 12,
+        "box": 16,
+        "weight": 400,
+        "letterSpacing": 1
+      }
+    }
+  }
+}

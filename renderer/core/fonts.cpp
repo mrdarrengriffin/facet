@@ -1,34 +1,37 @@
-// The panel's generated Facet fonts for this density ($FW_PANEL/include/fonts_gen*.h, see README),
-// in their own translation unit so a component change never recompiles them. fw::font(dp) = nearest size.
+// Facet fonts for this density, generated from tokens/type.json (tools/gen_fonts.py -> facet_fonts*.h, README "Type
+// tokens"), in their own translation unit so a component change never recompiles them.
 #include <cmath>
 #include "fw.h"
 #ifdef FW_1X
-#include "fonts_gen_1x.h"
+#include "facet_fonts_1x.h"
 #else
-#include "fonts_gen.h"
+#include "facet_fonts.h"
 #endif
-using namespace panel::gen;
 
-namespace {
-struct F { int px; bool mono; FacetFont *f; };
-#ifdef FW_1X
-F all[] = {{12, false, &F_sans_12m}, {13, false, &F_sans_13m}, {16, false, &F_sans_16m}, {17, false, &F_sans_17m},
-           {20, false, &F_sans_20m}, {21, false, &F_sans_21m}, {28, false, &F_sans_28}, {44, false, &F_sans_44l},
-           {64, false, &F_sans_64l}, {96, false, &F_sans_96l}, {12, true, &F_mono_12m}, {13, true, &F_mono_13b},
-           {15, true, &F_mono_15b}};
-#else
-F all[] = {{16, false, &F_sans_16}, {20, false, &F_sans_20}, {22, false, &F_sans_22}, {26, false, &F_sans_26},
-           {28, false, &F_sans_28}, {30, false, &F_sans_30}, {32, false, &F_sans_32}, {40, false, &F_sans_40l},
-           {64, false, &F_sans_64e}, {96, false, &F_sans_96e}, {144, false, &F_sans_144e}, {12, true, &F_mono_12m},
-           {14, true, &F_mono_14}, {18, true, &F_mono_18}, {22, true, &F_mono_22m}, {24, true, &F_mono_24m},
-           {26, true, &F_mono_26l}};
-#endif
-}  // namespace
+const lv_font_t *fw::font(ty::Id s) { return (s >= 0 && s < ty::N) ? gen::STYLE_FONT[s]->get() : LV_FONT_DEFAULT; }
 
+// nearest full-text font in px to `dp` (sans or mono): for quick labels that are not a type style (prefer fw::text)
 const lv_font_t *fw::font(float dp, bool mono) {
   const float want = dp * D;
-  F *best = nullptr;
-  for (auto &f : all)
-    if (f.mono == mono && (!best || std::fabs(f.px - want) < std::fabs(best->px - want))) best = &f;
+  const gen::FontInfo *best = nullptr;
+  for (auto &f : gen::FONTS)
+    if (f.mono == mono && !f.tabular && (!best || std::fabs(f.size - want) < std::fabs(best->size - want))) best = &f;
   return best ? best->f->get() : LV_FONT_DEFAULT;
+}
+
+int fw::n_fonts() { return gen::N_FONTS; }
+int fw::font_bytes() { return gen::FONT_BYTES; }
+fw::FontRef fw::font_ref(int i) {
+  if (i < 0 || i >= gen::N_FONTS) return {};
+  const gen::FontInfo &f = gen::FONTS[i];
+  return {f.id, f.family, f.weight, f.size, f.mono, f.tabular, f.glyphs, f.bytes, f.f->get()};
+}
+int fw::style_font_index(ty::Id s) {
+  for (int i = 0; i < gen::N_FONTS; i++)
+    if (gen::FONTS[i].f == gen::STYLE_FONT[s]) return i;
+  return -1;
+}
+uint32_t fw::font_glyph(int i, int g) {
+  if (i < 0 || i >= gen::N_FONTS || g < 0 || g >= gen::FONTS[i].glyphs) return 0;
+  return gen::FONTS[i].f->glyphs[g].cp;
 }

@@ -10,6 +10,7 @@
 #include "lvgl.h"
 #include "ArduinoJson.h"
 #include "colour_gen.h"  // fw::Theme + fw::tokens:: (generated from tokens/colour.json)
+#include "type_gen.h"    // fw::ty:: styles (generated from tokens/type.json)
 
 namespace fw {
 
@@ -26,8 +27,26 @@ constexpr float D = 1.5f;
 #endif
 inline int px(float dp) { return (int) std::lround(dp * D); }
 
-// nearest Facet font to `dp` (sans, or mono); fonts are the panel's generated sets for this density
+// Type (tokens/type.json, README "Type tokens"): styles fw::ty::display, ty::body, ty::c_meta, ... (- -> _), values in
+// device px for this density (fw::ty::STYLES[s]). Fonts are generated per density with only the glyphs the styles use.
+const lv_font_t *font(ty::Id s);
+inline const ty::Style &style(ty::Id s) { return ty::STYLES[s]; }
+// a label in type style `s`: font, letter spacing, case (upper styles are upper-cased here), height = the style's line
+// box with the cap height centred in it (the Facet text-box rule). wrap_w > 0 = a paragraph wrapped at that width, lines
+// on the box pitch. fw::set_text keeps the style's case.
+lv_obj_t *text(lv_obj_t *parent, ty::Id s, const char *txt, lv_color_t c, int wrap_w = 0);
+void set_text(lv_obj_t *label, ty::Id s, const char *txt);
+void text_style(lv_obj_t *label, ty::Id s);  // apply style s to an existing label (then sets its box)
+std::string cased(ty::Id s, const char *txt);
+// nearest full-text font to `dp` (sans, or mono) for one-off labels outside the type scale; prefer fw::text
 const lv_font_t *font(float dp, bool mono = false);
+// the fonts of this build (Type page: coverage, memory)
+struct FontRef { const char *id = nullptr, *family = nullptr; int weight = 0, size = 0; bool mono = false, tabular = false; int glyphs = 0, bytes = 0; const lv_font_t *font = nullptr; };
+int n_fonts();
+int font_bytes();  // flash: bitmaps + glyph tables of every font
+FontRef font_ref(int i);
+int style_font_index(ty::Id s);
+uint32_t font_glyph(int font, int g);  // g-th code point of a font (sorted), 0 = none
 
 using Props = ArduinoJson::JsonObjectConst;
 using Build = void (*)(lv_obj_t *parent, Props p);

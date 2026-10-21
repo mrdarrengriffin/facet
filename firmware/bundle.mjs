@@ -9,8 +9,9 @@
 // generator), `files` one hash per foundations/components source (an item = its file + core), `glue` the device host
 // code (informational only). The firmware embeds the hashes it
 // was built from (fw_bundle_gen.h, GET /fw/info); same function here and in the hub (it runs --hashes).
-// Fonts: fonts.cpp includes the panel's generated font header ($FW_PANEL/include/fonts_gen*.h, see local.env); the
-// bundle inlines it into fonts.cpp, because ESPHome #includes every header of a component into main.cpp.
+// Fonts: fonts.cpp includes this density's generated font header (tools/gen_fonts.py from tokens/type.json; needs
+// FW_FONT_PY + FW_TTF, see local.env); the bundle inlines it into fonts.cpp, because ESPHome #includes every header of a
+// component into main.cpp.
 // Static registration: ESP-IDF links the app as an archive, so an object nobody references is dropped (and its
 // FW_COMPONENT registrations with it): each copied source gets an `fwlink_<n>()` and fw_bundle_gen.h calls them all.
 import { createHash } from 'node:crypto';
@@ -28,21 +29,18 @@ if (!['1x', '1.5x'].includes(density)) { console.error('--density 1x|1.5x'); pro
 const env = {};
 if (existsSync(join(ROOT, 'local.env')))
   for (const l of readFileSync(join(ROOT, 'local.env'), 'utf8').split('\n')) { const m = l.match(/^([A-Z_]+)=(.*)$/); if (m) env[m[1]] = m[2]; }
-const FW_PANEL = process.env.FW_PANEL ?? env.FW_PANEL;
-if (!FW_PANEL) { console.error('set FW_PANEL (env or local.env)'); process.exit(2); }
-const fontH = join(FW_PANEL, 'include', density === '1x' ? 'fonts_gen_1x.h' : 'fonts_gen.h');
 
 const sha = (...bufs) => { const h = createHash('sha1'); for (const b of bufs) h.update(b); return h.digest('hex').slice(0, 12); };
 const ls = (d, ext) => (existsSync(join(HERE, d)) ? readdirSync(join(HERE, d)).filter((f) => f.endsWith(ext)).sort().map((f) => `${d}/${f}`) : []);
 // core = what every item's pixels depend on (compiled into each item's build); glue = the device-side host code
 // (HTTP, screen setup), reported separately: a glue change does not make an item show old code
-const coreFiles = [...ls('core', '.h'), 'core/fw_core.cpp', 'core/fonts.cpp', ...ls('tokens', '.json'), 'tools/gen_colour.mjs'];
+const coreFiles = [...ls('core', '.h'), 'core/fw_core.cpp', 'core/fonts.cpp', ...ls('tokens', '.json'), 'tools/gen_colour.mjs', 'tools/gen_type.mjs', 'tools/gen_fonts.py', 'tools/facet_font.inc'];
 const glueFiles = ['firmware/fw_device.h', 'firmware/esphome_init.py', 'firmware/bundle.mjs'];  // relative to ROOT
 const srcFiles = [...ls('foundations', '.cpp'), ...ls('components', '.cpp')];
 const read = (rel) => readFileSync(join(HERE, rel));
-const core = sha(...coreFiles.flatMap((f) => [f, '\0', read(f), '\0']), readFileSync(fontH));
+const core = sha(...coreFiles.flatMap((f) => [f, '\0', read(f), '\0']));
 // per-file hashes of the core too, so a host can say WHICH file changed
-const corefiles = { ...Object.fromEntries(coreFiles.map((f) => [f, sha(read(f))])), [`panel:include/${basename(fontH)}`]: sha(readFileSync(fontH)) };
+const corefiles = Object.fromEntries(coreFiles.map((f) => [f, sha(read(f))]));
 const glue = sha(...glueFiles.flatMap((f) => [f, '\0', readFileSync(join(ROOT, f)), '\0']));
 const files = Object.fromEntries(srcFiles.map((f) => [f, sha(read(f))]));
 const ids = {};
@@ -66,11 +64,20 @@ for (const f of ls('core', '.h')) put(basename(f), read(f));
 put('fw_device.h', readFileSync(join(ROOT, 'firmware/fw_device.h')));
 execFileSync('node', [join(HERE, 'tools/gen_colour.mjs'), join(C, 'colour_gen.h')]);  // rewrites only on change
 wrote.add('colour_gen.h');
+execFileSync('node', [join(HERE, 'tools/gen_type.mjs'), join(C, 'type_gen.h')]);
+wrote.add('type_gen.h');
+// this density's fonts (cached next to the WASM build's; the generator skips work when type.json is unchanged)
+const FONT_PY = process.env.FW_FONT_PY ?? env.FW_FONT_PY, FW_TTF = process.env.FW_TTF ?? env.FW_TTF;
+if (!FONT_PY || !FW_TTF) { console.error('set FW_FONT_PY and FW_TTF (env or local.env)'); process.exit(2); }
+const fontDir = join(process.env.FW_CACHE ?? env.FW_CACHE ?? join(HERE, '.cache'), 'gen');
+mkdirSync(fontDir, { recursive: true });
+const fontH = join(fontDir, density === '1x' ? 'facet_fonts_1x.h' : 'facet_fonts.h');
+execFileSync(FONT_PY, [join(HERE, 'tools/gen_fonts.py'), density, fontH], { env: { ...process.env, FW_TTF }, stdio: ['ignore', 'ignore', 'inherit'] });
 put('fw_core.cpp', read('core/fw_core.cpp'));
 // fonts.cpp with this density's font header inlined (and the #ifdef picking it)
-const fonts = read('core/fonts.cpp').toString().replace(/#ifdef FW_1X\n#include "fonts_gen_1x.h"\n#else\n#include "fonts_gen.h"\n#endif\n/,
+const fonts = read('core/fonts.cpp').toString().replace(/#ifdef FW_1X\n#include "facet_fonts_1x.h"\n#else\n#include "facet_fonts.h"\n#endif\n/,
   `// ---- inlined ${basename(fontH)} (firmware/bundle.mjs)\n${readFileSync(fontH, 'utf8').replace('#pragma once', '')}\n// ---- end of ${basename(fontH)}\n`);
-if (fonts.includes('#include "fonts_gen')) { console.error('fonts.cpp: font include not found where expected'); process.exit(1); }
+if (fonts.includes('#include "facet_fonts')) { console.error('fonts.cpp: font include not found where expected'); process.exit(1); }
 const links = [];
 const link = (name, text) => { links.push(name); return `${text}\n// firmware/bundle.mjs: keeps this object (and its registrations) in the link\nextern "C" void ${name}() {}\n`; };
 put('fonts.cpp', link('fwlink_fonts', fonts));
