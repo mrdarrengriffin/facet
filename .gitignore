@@ -1,0 +1,6 @@
+# machine-specific paths for build.sh
+local.env
+# build output + object cache (defaults)
+out/
+.cache/
+node_modules/
