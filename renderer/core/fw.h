@@ -13,6 +13,7 @@
 #include "colour_gen.h"  // fw::Theme + fw::tokens:: (generated from tokens/colour.json)
 #include "type_gen.h"    // fw::ty:: styles (generated from tokens/type.json)
 #include "space_gen.h"   // fw::sp:: lay:: rad:: stroke:: touch:: (generated from tokens/space.json), device px
+#include "icons_gen.h"   // fw::ic:: icon sizes + the icon table (generated from tokens/icons.json)
 
 namespace fw {
 
@@ -56,6 +57,20 @@ int font_bytes();  // flash: bitmaps + glyph tables of every font
 FontRef font_ref(int i);
 int style_font_index(ty::Id s);
 uint32_t font_glyph(int font, int g);  // g-th code point of a font (sorted), 0 = none
+
+// Icons (tokens/icons.json, README "Icons"): pre-rasterised A8 masks at the exact pixel size of each icon size token
+// for this density (never scaled on the device), recoloured here. fw::icon(parent, "plus", ic::icon, T->text) = an
+// ic::PX[size] square box; ink parts take `colour`, a screen icon's accent part T->accent, weather parts their own
+// tokens (text-dim, accent, blue, steel; the cloud stroke = ink). Not in this build (name or size) -> nullptr.
+lv_obj_t *icon(lv_obj_t *parent, const char *name, ic::Size size, lv_color_t colour);
+// recolour an icon's ink parts for a state selector (e.g. LV_STATE_PRESSED), optional transition (press fades)
+void icon_colour(lv_obj_t *icon, lv_color_t colour, lv_style_selector_t sel = 0, const lv_style_transition_dsc_t *tr = nullptr);
+int icon_index(const char *name);          // into ic::ICONS, -1 = unknown
+bool icon_has(int index, ic::Size size);  // is this icon@size in this build (all sizes, or FW_ICONS=used)
+int icon_bytes(int index, ic::Size size); // flash of one icon@size (its masks), 0 = not in this build
+int icons_bytes();                        // flash of every icon in this build (masks + tables)
+int icons_entries();                      // icon x size pairs in this build
+bool icons_used_only();                   // built with FW_ICONS=used
 
 using Props = ArduinoJson::JsonObjectConst;
 using Build = void (*)(lv_obj_t *parent, Props p);

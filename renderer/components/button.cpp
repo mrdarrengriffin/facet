@@ -8,7 +8,7 @@
 // disabled: text-mute label (primary: accent-dim fill + text-dim label; outline: accent-dim border), no press look;
 // a tap plays Error. Every label / icon colour pair is declared in tokens/colour.json contrast.pairs (section
 // "button") and checked in every theme x accent set by tools/contrast.mjs: change a look here -> update the pair.
-// Optional icon before the label (line icon at touch icon size). Width hugs the label rounded up to the grid, or a
+// Optional icon before the label (fw::icon, Icons foundation, at the icon size token). Width hugs the label rounded up to the grid, or a
 // fixed width with the label centred. Tap = fw::emit "tap" + fw::sound "tap" (disabled: "blocked" + "error").
 // Press feedback = colour transitions of PRESS_MS with ease-out (Facet motion.duration.press / easing.ease-out;
 // constants until a Motion foundation exists).
@@ -48,7 +48,7 @@ Kind kind_of(const char *k) {
 }
 
 const lv_style_prop_t TR_PROPS[] = {LV_STYLE_BG_COLOR, LV_STYLE_BG_OPA, LV_STYLE_BORDER_COLOR, LV_STYLE_BORDER_OPA,
-                                    LV_STYLE_TEXT_COLOR, LV_STYLE_LINE_COLOR, LV_STYLE_PROP_INV};
+                                    LV_STYLE_TEXT_COLOR, LV_STYLE_IMAGE_RECOLOR, LV_STYLE_PROP_INV};
 const lv_style_transition_dsc_t *press_tr() {
   static lv_style_transition_dsc_t d;
   static bool ready = false;
@@ -72,54 +72,21 @@ void box_looks(lv_obj_t *b, const Kind &k) {
     lv_obj_set_style_transition(b, press_tr(), SEL[i]);
   }
 }
-// label / icon strokes follow the button's state (STATE_TRICKLE)
-void fg_looks(lv_obj_t *o, const Kind &k, bool line) {
+// the label follows the button's state (STATE_TRICKLE)
+void fg_looks(lv_obj_t *o, const Kind &k) {
   for (int i = 0; i < 5; i++) {
-    if (line) lv_obj_set_style_line_color(o, look(k, i).fg, SEL[i]);
-    else lv_obj_set_style_text_color(o, look(k, i).fg, SEL[i]);
+    lv_obj_set_style_text_color(o, look(k, i).fg, SEL[i]);
     lv_obj_set_style_transition(o, press_tr(), SEL[i]);
   }
 }
 
-// ---- icons: the 3 glyphs this component needs, from the Facet icon masters (packages/icons/svg, 24 grid, round
-// caps). Minimal stand-in until the Icons foundation: polylines drawn with lv_line at touch::icon size.
-struct Glyph { const char *id; int n; const float (*pts)[2]; int npts[2]; };
-const float PLUS[][2] = {{12, 5}, {12, 19}, {5, 12}, {19, 12}};    // M12 5 L12 19 M5 12 L19 12
-const float CLOSE[][2] = {{6, 6}, {18, 18}, {18, 6}, {6, 18}};     // M6 6 L18 18 M18 6 L6 18
-const float CHECK[][2] = {{5, 12.5f}, {10, 17}, {19, 7}};          // M5 12.5 L10 17 L19 7
-const Glyph GLYPHS[] = {{"plus", 2, PLUS, {2, 2}}, {"close", 2, CLOSE, {2, 2}}, {"check", 1, CHECK, {3, 0}}};
-
+// icon before the label: the Facet master at the icon size token (ic::icon = touch icon, 24 at 720, 16 at 480), A8
+// mask from the Icons foundation; its ink follows the label colour in every state (same pairs as the label)
 lv_obj_t *icon(lv_obj_t *parent, const char *id, const Kind &k) {
-  const Glyph *g = nullptr;
-  for (auto &x : GLYPHS)
-    if (!strcmp(x.id, id)) g = &x;
-  if (!g) return nullptr;
-  // point arrays live as long as the module (lv_line keeps the pointer): one table per glyph, density fixed per build
-  static lv_point_precise_t store[3][4];
-  const int gi = (int) (g - GLYPHS);
-  const float s = fw::touch::icon / 24.0f;
-  lv_obj_t *box = lv_obj_create(parent);
-  lv_obj_remove_style_all(box);
-  lv_obj_set_size(box, fw::touch::icon, fw::touch::icon);
-  lv_obj_remove_flag(box, LV_OBJ_FLAG_CLICKABLE);
-  int at = 0;
-  for (int seg = 0; seg < g->n; seg++) {
-    lv_point_precise_t *p = &store[gi][at];
-    for (int i = 0; i < g->npts[seg]; i++)
-      p[i] = {(lv_value_precise_t) std::lround(g->pts[at + i][0] * s), (lv_value_precise_t) std::lround(g->pts[at + i][1] * s)};
-    lv_obj_t *l = lv_line_create(box);
-    lv_obj_remove_style_all(l);
-    lv_line_set_points(l, p, g->npts[seg]);
-    lv_obj_set_style_line_width(l, fw::stroke::edge, 0);  // opticalStroke(24) = 2 px
-    lv_obj_set_style_line_rounded(l, true, 0);
-    lv_obj_remove_flag(l, LV_OBJ_FLAG_CLICKABLE);
-    fg_looks(l, k, true);
-    at += g->npts[seg];
-  }
-  lv_obj_add_flag(box, LV_OBJ_FLAG_STATE_TRICKLE);
-  return box;
+  lv_obj_t *o = fw::icon(parent, id, fw::ic::icon, k.normal.fg);
+  for (int i = 0; o && i < 5; i++) fw::icon_colour(o, look(k, i).fg, SEL[i], press_tr());
+  return o;
 }
-
 // accent mark shown only while active (CHECKED): a corner tick (L of two border sides) or the ghost underline
 lv_obj_t *active_mark(lv_obj_t *b, int w, int h, lv_border_side_t sides) {
   lv_obj_t *o = lv_obj_create(b);
@@ -144,6 +111,7 @@ lv_obj_t *active_mark(lv_obj_t *b, int w, int h, lv_border_side_t sides) {
 
 FW_COMPONENT(button, "Button", "components", R"({
   "frame": [240, 112],
+  "icons": ["plus@icon", "check@icon", "close@icon"],
   "props": [
     {"name": "kind", "type": "select", "options": ["primary", "secondary", "outline", "ghost"], "default": "primary"},
     {"name": "label", "type": "text", "default": "Start"},
@@ -209,7 +177,7 @@ FW_COMPONENT(button, "Button", "components", R"({
   if (strcmp(ic, "none")) icon(b, ic, k);
   lv_obj_t *l = fw::text(b, fw::ty::c_label, txt, k.normal.fg);
   lv_obj_remove_flag(l, LV_OBJ_FLAG_CLICKABLE);
-  fg_looks(l, k, false);
+  fg_looks(l, k);
   if (width > 0) {
     lv_obj_set_flex_grow(l, 1);
     lv_obj_set_style_text_align(l, LV_TEXT_ALIGN_CENTER, 0);

@@ -113,7 +113,12 @@
       {"section": "button", "fg": "accent-text", "bg": ["bg", "surface"], "kind": "text", "use": "ghost · active: label + icon"},
       {"section": "button", "fg": "accent", "bg": ["bg", "surface"], "kind": "ui", "use": "ghost · active: underline"},
       {"section": "button", "fg": "accent-text", "bg": "surface-press", "kind": "text", "use": "ghost · active+pressed: label + icon"},
-      {"section": "button", "fg": "text-mute", "bg": ["bg", "surface"], "kind": "disabled", "use": "ghost · disabled: label + icon"}
+      {"section": "button", "fg": "text-mute", "bg": ["bg", "surface"], "kind": "disabled", "use": "ghost · disabled: label + icon"},
+      {"section": "icons", "fg": "text", "bg": ["bg", "surface"], "kind": "ui", "use": "icon ink (UI icons, screen icon base, weather cloud)"},
+      {"section": "icons", "fg": "accent", "bg": ["bg", "surface"], "kind": "ui", "use": "screen icon accent part, weather sun / bolt / warning, accent-tinted icon"},
+      {"section": "icons", "fg": "text-dim", "bg": ["bg", "surface"], "kind": "ui", "use": "weather: the cloud behind, fog"},
+      {"section": "icons", "fg": "blue", "bg": ["bg", "surface"], "kind": "ui", "use": "weather: rain, snow, hail"},
+      {"section": "icons", "fg": "steel", "bg": ["bg", "surface"], "kind": "ui", "use": "weather: night stars"}
     ]
   },
   "accent": {

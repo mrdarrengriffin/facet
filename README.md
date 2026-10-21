@@ -113,6 +113,36 @@ geometry to the 4 px grid too. Legacy `space.screen` / `space.gutter` (layout v2
 `sp::GRID`, `fw::lay::inset|gutter|group|row|top|card_w|...`, `fw::rad::card|chip|button|...`, `fw::stroke::hair|...`,
 `fw::touch::target|min|back|...`, already device px (never wrap in `px()`); `fw::px(dp)` stays for one-off geometry.
 
+## Icons (single source)
+
+`tokens/icons.json` = every icon the Facet docs define (Facet `main` `packages/icons/manifest.json`), masters copied 1:1
+into `renderer/icons/` (Facet's own, MIT): **73 icons** = 37 UI (`icons/*.svg`, 24 grid, one colour), 19 screen icons
+(`icons/screens/`, base + one accent part), 17 weather (`icons/weather/` static masters, 48 grid, colour layers; the
+animation and the moon phase, drawn in code from the phase, are later work). Each icon lists its `sizes` = **size
+tokens** (`v` = 720 px, `1x` = 480 px, both on the 4 px grid): `small` 16/12, `icon` 24/16 (= `touch.icon`), `glyph`
+32/20, `detail` 40/28, `feature` 48/32, `card` 72/48, `hero` 144/96, mapped from the manifest's `sizes_used` (720 px);
+icons the docs list for the component library only ship at `icon`; plus/check/close add `icon` for the Button.
+`compare` = the Icons page's size-comparison row (the docs' Optical sizes demo: speaker, timer, done, back, play at
+small/icon/glyph/feature; the extra sizes are compare-only).
+
+`tools/gen_icons.mjs` (run by `build.sh` + `firmware/bundle.mjs`; rasteriser = resvg, `cd renderer/tools && npm install`
+once) -> `icons_gen.h` (`fw::ic::Size`, `ic::PX[]` for this density, the icon table, page sections) + per density
+`facet_icons.h` / `facet_icons_1x.h` (included by `core/icons.cpp` only; the bundle inlines it). **Every icon x size is
+rasterised at its exact pixel size, never scaled on the panel** (the old build scaled 24 -> 16 and it turned to
+noise), with Facet's optical stroke (1.5 / 2 / 2.5 / 3 px at 16 / 24 / 32 / 48, linear, clamped; weather 2 px, 3 from
+96). Output = A8 alpha masks cropped to their ink, one per colour layer: each layer is rendered white with every other
+colour black, so a cloud's bg fill hides what is behind it without a bg layer. LVGL draws A8 straight through the
+mask blend with the image recolour (no decode, no cache). **Flash: 720 build 286 KB, 480 build 139 KB** (180 icon x
+size, 298 masks, tables 6 KB). `FW_ICONS=used` (local.env or env) = only the `icon@size` pairs components declare in
+their meta (`"icons": ["plus@icon"]`): Button alone = 3 masks, < 1 KB; the Icons page then shows what the build has.
+
+API (`core/fw.h`): `fw::icon(parent, "name", fw::ic::<size>, colour)` -> an `ic::PX[size]` square box (nullptr when the
+icon@size is not in the build); ink layers take `colour`, a screen icon's accent part `T->accent`, weather layers their
+tokens (text-dim, accent, blue, steel; the cloud stroke = ink). `fw::icon_colour(icon, colour, selector, transition)`
+recolours the ink per state (the Button's pressed / active / disabled looks). Contrast pairs: `colour.json` section
+`icons` (ink, accent, text-dim, blue, steel on bg + surface, kind ui). Page `/wasm/foundations/icons`: size comparison,
+one section per group, every icon, flash per size and kind; playground search / size / accent tint / boxes.
+
 ## Sound (single source)
 
 `tokens/sound.json` = the approved Facet UI sounds, copied 1:1 from `main` (`packages/sounds/src/packs.json`, synth
@@ -132,7 +162,8 @@ one full-width WASM stage per variant (heading + `about` in HTML), `"frame": [w,
 its content, `fw_content_h` + `fw_stage_resize`). Status = the .cpp plus `tokens/<id>.json` if present (any untracked
 = WIP; approve = commit both). **Type** (`foundations/type.cpp`): both scales at true size in their line boxes (hairlines) with spec + use, mono caps beside sans, number styles (units, tabular digits), glyph coverage per set, the fonts of the build with their flash cost (device switch = 720 / 480 build). **Spacing & radius** (`foundations/space.cpp`, id `space`): spacing steps (true-size square + 8x bar), layout tokens (true-size bars + grid), radius samples on surface cards, strokes (line, ring, outlined control), touch targets (hit area tinted around a smaller drawn back button / chip / row), the whole screen at true size (grid minor + major, inset bands, header row, content from `top`, Home 2 columns with card padding); every value also shows the other density. **Colour** (`foundations/colour.cpp`): every token by group, name + role, the colour in
 its dark and light context with its hex (chips drawn by LVGL in RGB565, as on the panel), the accent sets, the contrast
-matrix (summary per accent x theme, all failures, every pair per section; see Contrast test).
+matrix (summary per accent x theme, all failures, every pair per section; see Contrast test). **Icons**
+(`foundations/icons.cpp`): see Icons.
 
 ## Fast loop
 
@@ -190,6 +221,7 @@ Board YAML (display, touch, Wi-Fi) lives with the host that builds the firmware,
 | `core/main.cpp` | host: LVGL + "stages" (one display per canvas), exports `fw_init/meta/stage/stage_free/render/touch/tick/dirty/frame` |
 | `core/fonts.cpp` | this density's generated fonts (`facet_fonts*.h`), style -> font, font report |
 | `tokens/type.json`, `tools/gen_type.mjs`, `tools/gen_fonts.py`, `tools/facet_font.inc` | type tokens (single source), style header generator, font generator, bitmap font runtime |
+| `tokens/icons.json`, `icons/`, `tools/gen_icons.mjs`, `core/icons.cpp` | icons: manifest (single source), SVG masters, A8 mask generator (resvg, `tools/package.json`), `fw::icon` runtime |
 | `build.sh`, `watch.mjs` | build and watcher |
 
 Densities: `1.5x` = 720 px panels, `1x` = 480 px panels. Write sizes in dp; `fw::px()` scales.
@@ -212,7 +244,7 @@ for the future foundation: Button `PRESS_MS = 80` (`motion.duration.press`), `lv
 
 | Id | What |
 |---|---|
-| `button` | Facet text button: kinds primary / secondary / outline / ghost, states default / pressed / active / disabled, optional icon (plus, check, close: lv_line stand-ins from the icon masters until the Icons foundation), hug (label width on the grid) or fixed width. Disabled = `LV_STATE_USER_1` (LVGL sends no events to `LV_STATE_DISABLED`, and a disabled tap must play Error). Children follow the state via `LV_OBJ_FLAG_STATE_TRICKLE`. |
+| `button` | Facet text button: kinds primary / secondary / outline / ghost, states default / pressed / active / disabled, optional icon (plus, check, close: `fw::icon(..., ic::icon, ...)` from the Icons foundation, ink recoloured per state; meta `"icons"` declares them for `FW_ICONS=used`), hug (label width on the grid) or fixed width. Disabled = `LV_STATE_USER_1` (LVGL sends no events to `LV_STATE_DISABLED`, and a disabled tap must play Error). Children follow the state via `LV_OBJ_FLAG_STATE_TRICKLE`. |
 
 ## Add a component
 

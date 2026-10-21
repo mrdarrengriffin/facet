@@ -1,0 +1,8 @@
+{
+  "private": true,
+  "description": "Build tools of the Facet renderer (tools/gen_icons.mjs rasterises the icon masters with resvg).",
+  "type": "module",
+  "dependencies": {
+    "@resvg/resvg-js": "2.6.2"
+  }
+}

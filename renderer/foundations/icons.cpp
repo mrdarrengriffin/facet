@@ -1,0 +1,208 @@
+// Foundations > Icons: tokens/icons.json (via the generated icons_gen.h + this density's A8 masks) drawn by the panel
+// renderer, every icon at every size it ships in, true size. Sections: the size comparison (Facet docs Icons > Optical
+// sizes: the same five icons at each UI size), one per group (UI groups, screen icons, weather), every icon, and the
+// flash the masks cost on this build. Playground: search (name contains), size (one size token or all), accent tint
+// (the ink in accent instead of text; a screen icon's accent part is always accent), boxes (outline each icon's
+// S x S box). Theme + accent set come from the workbench toolbar. Status (WIP/Done) = this file + tokens/icons.json.
+#include <cstdio>
+#include "fw.h"
+
+namespace {
+using namespace fw;
+
+constexpr float W = 480;  // doc page width in dp (= the screen width)
+
+lv_obj_t *box(lv_obj_t *parent) {
+  lv_obj_t *o = lv_obj_create(parent);
+  lv_obj_remove_style_all(o);
+  lv_obj_remove_flag(o, LV_OBJ_FLAG_SCROLLABLE);
+  return o;
+}
+lv_obj_t *column(lv_obj_t *parent, int gap, int w = LV_PCT(100)) {
+  lv_obj_t *c = box(parent);
+  lv_obj_set_size(c, w, LV_SIZE_CONTENT);
+  lv_obj_set_flex_flow(c, LV_FLEX_FLOW_COLUMN);
+  lv_obj_set_style_pad_row(c, gap, 0);
+  return c;
+}
+lv_obj_t *row(lv_obj_t *parent, int gap, lv_flex_align_t cross = LV_FLEX_ALIGN_CENTER) {
+  lv_obj_t *r = box(parent);
+  lv_obj_set_size(r, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+  lv_obj_set_flex_flow(r, LV_FLEX_FLOW_ROW);
+  lv_obj_set_flex_align(r, LV_FLEX_ALIGN_START, cross, cross);
+  lv_obj_set_style_pad_column(r, gap, 0);
+  return r;
+}
+int inner_w() { return px(W) - 2 * sp::s7; }
+lv_obj_t *entry(lv_obj_t *list, int gap = sp::s3) {
+  lv_obj_t *e = column(list, gap);
+  lv_obj_set_style_pad_ver(e, sp::s5, 0);
+  lv_obj_set_style_border_side(e, LV_BORDER_SIDE_BOTTOM, 0);
+  lv_obj_set_style_border_width(e, stroke::hair, 0);
+  lv_obj_set_style_border_color(e, T->line, 0);
+  return e;
+}
+bool is1x() { return D < 1.2f; }
+
+struct Opts {
+  const char *search;
+  int size;  // -1 = every size
+  bool accent, boxes;
+  lv_color_t ink() const { return accent ? T->accent : T->text; }
+};
+
+// one icon at one size: the S x S box (outlined when boxes is on), true size
+lv_obj_t *draw(lv_obj_t *parent, int i, ic::Size s, const Opts &o) {
+  lv_obj_t *ic = icon(parent, ic::ICONS[i].name, s, o.ink());
+  if (ic && o.boxes) {
+    lv_obj_set_style_outline_width(ic, stroke::hair, 0);
+    lv_obj_set_style_outline_color(ic, T->line_hi, 0);
+    lv_obj_set_style_outline_pad(ic, 0, 0);
+  }
+  return ic;
+}
+
+bool matches(int i, const char *group, const Opts &o) {
+  const ic::Info &n = ic::ICONS[i];
+  if (*o.search) return strstr(n.name, o.search) != nullptr;  // a search looks through every group
+  return !group || !strcmp(n.group, group);
+}
+bool ships(int i, int s) { return (ic::ICONS[i].sizes >> s) & 1; }
+
+// a tile: the icon at each size it ships in (bottom-aligned, smallest first), the name, the sizes in px
+bool tile(lv_obj_t *wrap, int i, const Opts &o) {
+  const ic::Info &n = ic::ICONS[i];
+  lv_obj_t *t = column(wrap, sp::s2, LV_SIZE_CONTENT);
+  lv_obj_t *r = row(t, sp::s4, LV_FLEX_ALIGN_END);
+  char sizes[64] = "";
+  int shown = 0;
+  for (int s = 0; s < ic::N_SIZES; s++) {
+    if (!ships(i, s) || (o.size >= 0 && s != o.size)) continue;
+    if (draw(r, i, (ic::Size) s, o)) shown++;
+    char b[12];
+    snprintf(b, sizeof b, "%s%d", *sizes ? " · " : "", ic::PX[s]);
+    strncat(sizes, b, sizeof sizes - strlen(sizes) - 1);
+  }
+  if (!shown) { lv_obj_delete(t); return false; }
+  text(t, ty::c_label, n.name, T->text);
+  text(t, ty::c_meta_sm, sizes, T->text_dim);
+  return true;
+}
+
+// a group (or every icon when group is null) as a wrapping grid of tiles
+void grid(lv_obj_t *l, const char *group, const char *title, const Opts &o) {
+  lv_obj_t *e = entry(l, sp::s5);
+  if (title) text(e, ty::c_caps_sm, title, T->text_dim);
+  lv_obj_t *w = box(e);
+  lv_obj_set_size(w, LV_PCT(100), LV_SIZE_CONTENT);
+  lv_obj_set_flex_flow(w, LV_FLEX_FLOW_ROW_WRAP);
+  lv_obj_set_flex_align(w, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_END, LV_FLEX_ALIGN_START);
+  lv_obj_set_style_pad_column(w, sp::s7, 0);
+  lv_obj_set_style_pad_row(w, sp::s7, 0);
+  int n = 0;
+  for (int i = 0; i < ic::N; i++)
+    if (matches(i, group, o) && tile(w, i, o)) n++;
+  if (!n) { lv_obj_delete(w); text(e, ty::c_meta, *o.search ? "No icon matches the search." : "None in this build.", T->text_dim); }
+}
+
+// the same five icons at every UI size: the optical stroke (1.5 / 2 / 2.5 / 3 px at 16 / 24 / 32 / 48) keeps them
+// one family; at 480 the sizes are 12 / 16 / 20 / 32
+void compare(lv_obj_t *l, const Opts &o) {
+  for (int k = 0; k < ic::N_COMPARE_SIZES; k++) {
+    const ic::Size s = ic::COMPARE_SIZES[k];
+    if (o.size >= 0 && s != o.size) continue;
+    lv_obj_t *e = entry(l, sp::s3);
+    char b[64];
+    const int p = ic::PX[s];
+    const float tb = p <= ic::STROKE_TABLE[0][0] ? ic::STROKE_TABLE[0][1] : p >= ic::STROKE_TABLE[3][0] ? ic::STROKE_TABLE[3][1] : 0;
+    float st = tb;
+    for (int j = 1; !st && j < 4; j++)
+      if (p <= ic::STROKE_TABLE[j][0])
+        st = ic::STROKE_TABLE[j - 1][1] + (ic::STROKE_TABLE[j][1] - ic::STROKE_TABLE[j - 1][1]) * (p - ic::STROKE_TABLE[j - 1][0]) / (ic::STROKE_TABLE[j][0] - ic::STROKE_TABLE[j - 1][0]);
+    snprintf(b, sizeof b, "ic::%s · %d px · stroke %.2g px", ic::SIZE_NAMES[s], p, (double) st);
+    text(e, ty::c_caps_sm, b, T->text);
+    lv_obj_t *r = row(e, sp::s7, LV_FLEX_ALIGN_END);
+    for (int c = 0; c < ic::N_COMPARE; c++) {
+      const int i = icon_index(ic::COMPARE[c]);
+      if (i >= 0 && (!*o.search || strstr(ic::COMPARE[c], o.search))) draw(r, i, s, o);
+    }
+  }
+  lv_obj_t *e = entry(l);
+  text(e, ty::c_meta, "One master per icon, drawn at each size with Facet's optical stroke; every size is its own "
+       "bitmap, never scaled on the panel.", T->text_dim, inner_w());
+}
+
+// flash per size token and per kind, this build
+void memory(lv_obj_t *l) {
+  char b[128];
+  lv_obj_t *e = entry(l, sp::s2);
+  snprintf(b, sizeof b, "%d icon x size bitmaps · %.1f KB flash (%s build%s)", icons_entries(), icons_bytes() / 1024.0,
+           is1x() ? "480" : "720", icons_used_only() ? ", used icons only" : "");
+  text(e, ty::c_caps_sm, b, T->text);
+  text(e, ty::c_meta, "A8 alpha masks cropped to their ink, one per colour layer, tinted by a colour token on the panel.",
+       T->text_dim, inner_w());
+  for (int s = 0; s < ic::N_SIZES; s++) {
+    int n = 0, by = 0;
+    for (int i = 0; i < ic::N; i++)
+      if (icon_has(i, (ic::Size) s)) n++, by += icon_bytes(i, (ic::Size) s);
+    lv_obj_t *x = entry(l, sp::s1);
+    snprintf(b, sizeof b, "ic::%s · %d px (%d at %s)", ic::SIZE_NAMES[s], ic::PX[s], is1x() ? ic::PX_V[s] : ic::PX_1X[s], is1x() ? "720" : "480");
+    text(x, ty::c_caps_sm, b, T->text);
+    snprintf(b, sizeof b, "%d icons · %.1f KB", n, by / 1024.0);
+    text(x, ty::c_meta, b, T->text_dim);
+    text(x, ty::c_meta_sm, ic::SIZE_USE[s], T->text_dim, inner_w());
+  }
+  const char *kinds[] = {"ui", "screen", "weather"};
+  const char *labels[] = {"UI icons (one mask)", "Screen icons (ink + accent)", "Weather icons (one mask per colour)"};
+  for (int k = 0; k < 3; k++) {
+    int n = 0, by = 0;
+    for (int i = 0; i < ic::N; i++) {
+      if (strcmp(ic::ICONS[i].kind, kinds[k])) continue;
+      bool any = false;
+      for (int s = 0; s < ic::N_SIZES; s++)
+        if (icon_has(i, (ic::Size) s)) any = true, by += icon_bytes(i, (ic::Size) s);
+      n += any;
+    }
+    lv_obj_t *x = entry(l, sp::s1);
+    text(x, ty::c_caps_sm, labels[k], T->text);
+    snprintf(b, sizeof b, "%d icons · %.1f KB", n, by / 1024.0);
+    text(x, ty::c_meta, b, T->text_dim);
+  }
+}
+
+int size_of(const char *s) {
+  for (int i = 0; i < ic::N_SIZES; i++)
+    if (!strcmp(ic::SIZE_NAMES[i], s)) return i;
+  return -1;
+}
+}  // namespace
+
+FW_COMPONENT(icons, "Icons", "foundations", R"({
+  "layout": "doc",
+  "frame": [480, 0],
+  "props": [
+    {"name": "section", "type": "select", "options": )" FW_ICON_SECTION_IDS R"(, "default": "compare"},
+    {"name": "search", "type": "text", "default": ""},
+    {"name": "size", "type": "select", "options": )" FW_ICON_SIZE_IDS R"(, "default": "all"},
+    {"name": "accent", "type": "bool", "default": false},
+    {"name": "boxes", "type": "bool", "default": false}
+  ],
+  "variants": )" FW_ICON_SECTIONS R"(
+})") {
+  const char *s = p["section"] | "compare";
+  const Opts o{p["search"] | "", size_of(p["size"] | "all"), p["accent"] | false, p["boxes"] | false};
+  lv_obj_set_flex_align(parent, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
+  lv_obj_t *l = column(parent, 0, px(W));
+  lv_obj_set_style_pad_hor(l, sp::s7, 0);
+  if (!strcmp(s, "memory")) memory(l);
+  else if (*o.search) grid(l, nullptr, nullptr, o);  // a search: one grid across every group
+  else if (!strcmp(s, "compare")) compare(l, o);
+  else if (!strcmp(s, "all")) {
+    for (int g = 0; g < ic::N_GROUPS; g++) grid(l, ic::GROUPS[g].id, ic::GROUPS[g].label, o);
+  } else {
+    const char *label = s;
+    for (int g = 0; g < ic::N_GROUPS; g++)
+      if (!strcmp(ic::GROUPS[g].id, s)) label = ic::GROUPS[g].label;
+    grid(l, s, label, o);
+  }
+}

@@ -34,7 +34,8 @@ const sha = (...bufs) => { const h = createHash('sha1'); for (const b of bufs) h
 const ls = (d, ext) => (existsSync(join(HERE, d)) ? readdirSync(join(HERE, d)).filter((f) => f.endsWith(ext)).sort().map((f) => `${d}/${f}`) : []);
 // core = what every item's pixels depend on (compiled into each item's build); glue = the device-side host code
 // (HTTP, screen setup), reported separately: a glue change does not make an item show old code
-const coreFiles = [...ls('core', '.h'), 'core/fw_core.cpp', 'core/fonts.cpp', ...ls('tokens', '.json'), 'tools/gen_colour.mjs', 'tools/gen_type.mjs', 'tools/gen_space.mjs', 'tools/gen_fonts.py', 'tools/facet_font.inc'];
+const lsr = (d) => (existsSync(join(HERE, d)) ? readdirSync(join(HERE, d), { recursive: true }).filter((f) => f.endsWith('.svg')).sort().map((f) => `${d}/${f}`) : []);
+const coreFiles = [...ls('core', '.h'), 'core/fw_core.cpp', 'core/fonts.cpp', 'core/icons.cpp', ...ls('tokens', '.json'), 'tools/gen_colour.mjs', 'tools/gen_type.mjs', 'tools/gen_space.mjs', 'tools/gen_fonts.py', 'tools/facet_font.inc', 'tools/gen_icons.mjs', ...lsr('icons')];
 const glueFiles = ['firmware/fw_device.h', 'firmware/esphome_init.py', 'firmware/bundle.mjs'];  // relative to ROOT
 const srcFiles = [...ls('foundations', '.cpp'), ...ls('components', '.cpp')];
 const read = (rel) => readFileSync(join(HERE, rel));
@@ -68,6 +69,8 @@ execFileSync('node', [join(HERE, 'tools/gen_type.mjs'), join(C, 'type_gen.h')]);
 wrote.add('type_gen.h');
 execFileSync('node', [join(HERE, 'tools/gen_space.mjs'), join(C, 'space_gen.h')]);
 wrote.add('space_gen.h');
+execFileSync('node', [join(HERE, 'tools/gen_icons.mjs'), '--meta', join(C, 'icons_gen.h')]);
+wrote.add('icons_gen.h');
 // this density's fonts (cached next to the WASM build's; the generator skips work when type.json is unchanged)
 const FONT_PY = process.env.FW_FONT_PY ?? env.FW_FONT_PY, FW_TTF = process.env.FW_TTF ?? env.FW_TTF;
 if (!FONT_PY || !FW_TTF) { console.error('set FW_FONT_PY and FW_TTF (env or local.env)'); process.exit(2); }
@@ -83,6 +86,13 @@ if (fonts.includes('#include "facet_fonts')) { console.error('fonts.cpp: font in
 const links = [];
 const link = (name, text) => { links.push(name); return `${text}\n// firmware/bundle.mjs: keeps this object (and its registrations) in the link\nextern "C" void ${name}() {}\n`; };
 put('fonts.cpp', link('fwlink_fonts', fonts));
+// icons.cpp with this density's A8 masks inlined (tools/gen_icons.mjs; FW_ICONS=used = only what components declare)
+const iconsH = join(fontDir, density === '1x' ? 'facet_icons_1x.h' : 'facet_icons.h');
+execFileSync('node', [join(HERE, 'tools/gen_icons.mjs'), '--data', density, iconsH], { env: { ...process.env, FW_ICONS: process.env.FW_ICONS ?? env.FW_ICONS ?? 'all' }, stdio: ['ignore', 'ignore', 'inherit'] });
+const icons = read('core/icons.cpp').toString().replace(/#ifdef FW_1X\n#include "facet_icons_1x.h"\n#else\n#include "facet_icons.h"\n#endif\n/,
+  `// ---- inlined ${basename(iconsH)} (firmware/bundle.mjs)\n${readFileSync(iconsH, 'utf8').replace('#pragma once', '')}\n// ---- end of ${basename(iconsH)}\n`);
+if (icons.includes('#include "facet_icons')) { console.error('icons.cpp: icon include not found where expected'); process.exit(1); }
+put('icons.cpp', link('fwlink_icons', icons));
 for (const f of srcFiles) {
   const n = `${f.startsWith('foundations') ? 'f' : 'c'}_${basename(f, '.cpp')}`;
   put(`${n}.cpp`, link(`fwlink_${n}`, read(f).toString()));
