@@ -11,13 +11,13 @@
 //   gap          space 9 (32 / 20): value box bottom = card-value-bottom from the card edge (88 / 56, = docs)
 //   sub          type body, one line, text-dim; tone ok / warn / error = that status colour
 // Dot: docs size-dot 8 (720) / 6 (480) -> space 2 (8 / 4) for the 4 px grid.
-// Pressed, Motion press / release colour transitions; the style is an option (Darren round 4), component token
-// colour.json components.card.press (fw::tokens::comp::card_press, default "fill"; a theme may set it later, facet-130),
-// prop "press" overrides it:
-//   fill         card-press fill + line-hi border
+// Pressed, Motion press / release colour transitions; the style is an option (Darren round 4), state token
+// states.json pressed.style (fw::st::PRESS_STYLE, default "fill"; a theme may set it later, facet-130), prop "press"
+// overrides it:
+//   fill         press-tint fill + line-hi border
 //   border       fill stays surface, 1 px accent border
-//   border-fill  card-press fill + 1 px accent border
-// card-press (Darren rounds 4-5) = a very faint, greyed accent tint over the surface, not the docs' grey surface-press:
+//   border-fill  press-tint fill + 1 px accent border
+// press-tint (Darren rounds 4-5) = a very faint, greyed accent tint over the surface, not the docs' grey surface-press:
 // mix token in colour.json: the accent moved halfway to text-mute (components.card.press-desat 0.5), then 5 % over the
 // surface (card.press-tint 0.05). On RGB565 a tint this faint lands on one 5/6-bit step per channel, so opacity alone
 // barely changes it (0.03-0.05 give the same dark-theme ember step); desaturation is what makes it gentler.
@@ -29,13 +29,13 @@
 #include "fw.h"
 
 namespace {
-constexpr lv_state_t ST_OFF = LV_STATE_USER_1;  // unavailable (LVGL sends no events to LV_STATE_DISABLED; see Button)
+constexpr lv_state_t ST_OFF = fw::st::OFF;  // unavailable (LVGL sends no events to LV_STATE_DISABLED; see Button)
 
 const lv_style_prop_t TR_PROPS[] = {LV_STYLE_BG_COLOR, LV_STYLE_BORDER_COLOR, LV_STYLE_PROP_INV};
 const lv_style_transition_dsc_t *tr(bool pressed) {
   static lv_style_transition_dsc_t d[2];
   static bool ready = false;
-  if (!ready) { fw::mo::transition(&d[0], fw::mo::release, TR_PROPS); fw::mo::transition(&d[1], fw::mo::press, TR_PROPS); ready = true; }
+  if (!ready) { fw::st::press_transitions(d, TR_PROPS); ready = true; }  // states.json pressed motion
   return &d[pressed];
 }
 
@@ -88,7 +88,7 @@ FW_COMPONENT(card, "Card", "components", R"({
   const bool accent = !off && (p["accent"] | false);
   const bool text_mode = !strcmp(p["mode"] | "value", "text");
   const fw::Theme &t = *fw::T;
-  const lv_color_t dim = off ? t.text_mute : t.text_dim;
+  const lv_color_t dim = off ? fw::st::unavailable_ink(t) : t.text_dim;
 
   lv_obj_t *c = lv_obj_create(parent);
   lv_obj_remove_style_all(c);
@@ -102,14 +102,11 @@ FW_COMPONENT(card, "Card", "components", R"({
   lv_obj_set_flex_flow(c, LV_FLEX_FLOW_COLUMN);
   // looks: default / pressed / unavailable (USER_1 outranks PRESSED: no press look)
   const lv_style_selector_t SEL[3] = {0, LV_STATE_PRESSED, ST_OFF};
-  const char *press = p["press"] | fw::tokens::comp::card_press;
+  const char *press = p["press"] | fw::st::PRESS_STYLE;
   const bool p_fill = strcmp(press, "border") != 0, p_border = strcmp(press, "fill") != 0;
-  // card-press = mix token (colour.json mixes): accent tint over the surface at components.card.press-tint
-  lv_color_t press_fill = t.surface;
-  for (int i = 0; i < fw::tokens::N_MIXES; i++)
-    if (!strcmp(fw::tokens::MIXES[i].name, "card-press")) press_fill = fw::tokens::mix(fw::tokens::MIXES[i], t);
-  const lv_color_t BG[3] = {t.surface, p_fill ? press_fill : t.surface, t.surface};
-  const lv_color_t BD[3] = {t.line, p_border ? t.accent : t.line_hi, t.line};
+  // states.json pressed roles: tint = mix press-tint (accent tint over the surface at components.card.press-tint)
+  const lv_color_t BG[3] = {t.surface, p_fill ? fw::st::pressed_tint(t) : t.surface, t.surface};
+  const lv_color_t BD[3] = {t.line, p_border ? fw::st::pressed_tint_line(t) : fw::st::pressed_line(t), t.line};
   for (int i = 0; i < 3; i++) {
     lv_obj_set_style_bg_color(c, BG[i], SEL[i]);
     lv_obj_set_style_border_color(c, BD[i], SEL[i]);
@@ -156,8 +153,8 @@ FW_COMPONENT(card, "Card", "components", R"({
       lv_obj_set_height(tx, two);
     }
   } else {
-    lv_obj_t *v = fw::text(c, fw::ty::value, off ? "\xE2\x80\x94" : (p["value"] | ""),
-                           off ? t.text_mute : accent ? t.accent_text : t.text);
+    lv_obj_t *v = fw::text(c, fw::ty::value, off ? fw::st::PLACEHOLDER : (p["value"] | ""),
+                           off ? fw::st::unavailable_ink(t) : accent ? t.accent_text : t.text);
     lv_obj_remove_flag(v, LV_OBJ_FLAG_CLICKABLE);
     lv_label_set_long_mode(v, LV_LABEL_LONG_MODE_DOTS);
     lv_obj_set_width(v, inner);
@@ -167,8 +164,8 @@ FW_COMPONENT(card, "Card", "components", R"({
   lv_obj_t *gap = box(c);
   lv_obj_set_size(gap, 1, fw::sp::s9);  // value box bottom = card-value-bottom (88 / 56) from the card edge
 
-  const char *sub = off ? "Unavailable" : (p["sub"] | "");
-  lv_obj_t *s = fw::text(c, fw::ty::body, sub, off ? t.text_dim : tone(p["tone"] | "dim"));
+  const char *sub = off ? fw::st::UNAVAILABLE_TEXT : (p["sub"] | "");
+  lv_obj_t *s = fw::text(c, fw::ty::body, sub, off ? fw::st::unavailable_note(t) : tone(p["tone"] | "dim"));
   lv_obj_remove_flag(s, LV_OBJ_FLAG_CLICKABLE);
   lv_label_set_long_mode(s, LV_LABEL_LONG_MODE_DOTS);
   lv_obj_set_width(s, inner);
@@ -177,10 +174,11 @@ FW_COMPONENT(card, "Card", "components", R"({
   if (!strcmp(state, "pressed")) lv_obj_add_state(c, LV_STATE_PRESSED);
   if (off) lv_obj_add_state(c, ST_OFF);
 
-  lv_obj_add_event_cb(c, [](lv_event_t *e) {
+  fw::st::on_tap(c, [](lv_event_t *e) {  // blocked on finger down, a real tap on CLICKED (states.json)
+    if (!fw::st::tap_now(e)) return;
     auto *o = (lv_obj_t *) lv_event_get_current_target(e);
     const char *d = lv_label_get_text((lv_obj_t *) lv_event_get_user_data(e));
-    if (lv_obj_has_state(o, ST_OFF)) { fw::emit(o, "blocked", d); fw::sound(o, "error"); }
+    if (lv_obj_has_state(o, ST_OFF)) fw::st::blocked(o, d);
     else { fw::emit(o, "tap", d); fw::sound(o, "open"); }
-  }, LV_EVENT_CLICKED, l);
+  }, l);
 }

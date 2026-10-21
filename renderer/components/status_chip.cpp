@@ -8,7 +8,7 @@
 //   text     the Label component, type caps-sm, colour text. The docs colour the text in the tone; on its own tint the
 //            status colours drop under 4.5:1 in light (ok 3.8, warn 3.8, error 3.8 at 14 %, still 4.2 at 6 %), so the
 //            tone is carried by the dot + fill and the words stay readable
-// Tones = Status dot's: ok / warn / error / working (accent) / info (blue) / idle (text-mute fill, text-dim dot).
+// Tones = Status dot's: ok / warn / error / working (accent) / info (blue) / idle (text-dim fill + dot; text-mute is disabled-only, Darren 2026-10-21).
 // Static: no events, no sound. Contrast pairs: tokens/colour.json section "status_chip".
 #include "fw.h"
 
@@ -20,7 +20,7 @@ lv_color_t fill_of(const char *t) {
   if (!strcmp(t, "error")) return T.error;
   if (!strcmp(t, "working")) return T.accent;
   if (!strcmp(t, "info")) return T.blue;
-  return T.text_mute;  // idle
+  return T.text_dim;  // idle (text-dim: text-mute is for disabled only, Darren 2026-10-21)
 }
 }  // namespace
 

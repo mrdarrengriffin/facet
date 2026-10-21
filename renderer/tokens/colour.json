@@ -67,8 +67,7 @@
   },
   "components": {
     "card": {
-      "press": {"value": "fill", "options": ["fill", "border", "border-fill"], "use": "how a pressed card looks: card-press tint (fill), 1 px accent border (border) or both; a theme may set it later (board facet-130)"},
-      "press-tint": {"value": 0.05, "use": "opacity of the accent tint over the card surface while pressed (mix card-press); a theme may set it later"},
+      "press-tint": {"value": 0.05, "use": "opacity of the accent tint over the card surface while pressed (mix press-tint); a theme may set it later"},
       "press-desat": {"value": 0.5, "use": "how far the accent is moved towards neutral grey (text-mute) before tinting the pressed card (0 = pure accent, 1 = grey); a theme may set it later"}
     },
     "chip": {
@@ -76,7 +75,7 @@
     }
   },
   "mixes": {
-    "card-press": {"tint": "accent", "toward": "text-mute", "desat": "card.press-desat", "over": "surface", "opa": "card.press-tint", "use": "pressed card fill: a faint, greyed accent tint over the surface (Darren 2026-10-21, card rounds 4-5), per theme x accent set"},
+    "press-tint": {"tint": "accent", "toward": "text-mute", "desat": "card.press-desat", "over": "surface", "opa": "card.press-tint", "use": "pressed card fill: a faint, greyed accent tint over the surface (Darren 2026-10-21, card rounds 4-5), per theme x accent set; = the pressed tint role of states.json (Card, List row, section header action; the Card press style lives there too)"},
     "chip-ok": {"tint": "ok", "over": "bg", "opa": "chip.tint", "use": "status chip / count badge fill: tone ok (ok) at chip.tint over the bg"},
     "chip-ok-surface": {"tint": "ok", "over": "surface", "opa": "chip.tint", "use": "status chip / count badge fill: tone ok (ok) at chip.tint over the surface"},
     "chip-warn": {"tint": "warn", "over": "bg", "opa": "chip.tint", "use": "status chip / count badge fill: tone warn (warn) at chip.tint over the bg"},
@@ -87,8 +86,8 @@
     "chip-working-surface": {"tint": "accent", "over": "surface", "opa": "chip.tint", "use": "status chip / count badge fill: tone working (accent) at chip.tint over the surface"},
     "chip-info": {"tint": "blue", "over": "bg", "opa": "chip.tint", "use": "status chip / count badge fill: tone info (blue) at chip.tint over the bg"},
     "chip-info-surface": {"tint": "blue", "over": "surface", "opa": "chip.tint", "use": "status chip / count badge fill: tone info (blue) at chip.tint over the surface"},
-    "chip-idle": {"tint": "text-mute", "over": "bg", "opa": "chip.tint", "use": "status chip / count badge fill: tone idle (text-mute) at chip.tint over the bg"},
-    "chip-idle-surface": {"tint": "text-mute", "over": "surface", "opa": "chip.tint", "use": "status chip / count badge fill: tone idle (text-mute) at chip.tint over the surface"}
+    "chip-idle": {"tint": "text-dim", "over": "bg", "opa": "chip.tint", "use": "status chip / count badge fill: tone idle (text-dim) at chip.tint over the bg"},
+    "chip-idle-surface": {"tint": "text-dim", "over": "surface", "opa": "chip.tint", "use": "status chip / count badge fill: tone idle (text-dim) at chip.tint over the surface"}
   },
   "contrast": {
     "about": "WCAG 2.x AA contrast, tested for EVERY pair below x theme (dark, light) x accent set, on the exact values and on the RGB565 values the panel shows (the worse counts): node renderer/tools/contrast.mjs (build.sh prints the summary). Pairs are declared where colours meet: foundations first, then one block per component (section = the component id); bg may list several backgrounds (a transparent control sits on the canvas or a card). A label pair also covers that control's icon (same colour, stricter threshold).",
@@ -143,7 +142,8 @@
       {"section": "toggle", "fg": "on-accent", "bg": "accent", "kind": "ui", "use": "on: knob on the accent track"},
       {"section": "toggle", "fg": "accent", "bg": ["bg", "surface"], "kind": "ui", "use": "on: accent track against its surroundings"},
       {"section": "toggle", "fg": "line", "bg": ["bg", "surface"], "kind": "decor", "use": "off: line track / off · disabled: 1 px track outline (the knob carries the state)"},
-      {"section": "toggle", "fg": "text-mute", "bg": ["bg", "surface"], "kind": "disabled", "use": "off · disabled: knob in the hollow track"},
+      {"section": "toggle", "fg": "text-dim", "bg": ["bg", "surface"], "kind": "disabled", "use": "off · disabled: knob in the hollow track (every disabled knob text-dim)"},
+      {"section": "toggle", "fg": "text-dim", "bg": ["bg", "surface"], "kind": "text", "use": "unavailable: the word Unavailable in place of the switch"},
       {"section": "toggle", "fg": "text-dim", "bg": "accent-dim", "kind": "disabled", "use": "on · disabled: knob on the accent-dim track"},
       {"section": "toggle", "fg": "accent-dim", "bg": ["bg", "surface"], "kind": "decor", "use": "on · disabled: track against its surroundings (the knob carries the state)"},
       {"section": "icon_button", "fg": "on-accent", "bg": ["accent", "accent-press"], "kind": "ui", "use": "play · default / active (+ pressed): play / pause glyph"},
@@ -172,23 +172,24 @@
       {"section": "slider", "fg": "text-dim", "bg": ["bg", "surface"], "kind": "disabled", "use": "disabled: knob"},
       {"section": "slider", "fg": "text-mute", "bg": ["bg", "surface"], "kind": "disabled", "use": "disabled: fill"},
       {"section": "slider", "fg": "line", "bg": ["bg", "surface"], "kind": "decor", "use": "disabled: track"},
-      {"section": "card", "fg": "text", "bg": ["surface", "card-press"], "kind": "text", "use": "value / two-line text"},
-      {"section": "card", "fg": "text-dim", "bg": ["surface", "card-press"], "kind": "text", "use": "label, screen icon, sub line (also on an unavailable card)"},
-      {"section": "card", "fg": "accent-text", "bg": ["surface", "card-press"], "kind": "text", "use": "accent card: value"},
-      {"section": "card", "fg": "accent", "bg": ["surface", "card-press"], "kind": "ui", "use": "accent card: status dot; screen icon accent part, weather sun"},
-      {"section": "card", "fg": "ok", "bg": ["surface", "card-press"], "kind": "text", "use": "sub line, tone ok"},
-      {"section": "card", "fg": "warn", "bg": ["surface", "card-press"], "kind": "text", "use": "sub line, tone warn"},
-      {"section": "card", "fg": "error", "bg": ["surface", "card-press"], "kind": "text", "use": "sub line, tone error"},
-      {"section": "card", "fg": "blue", "bg": ["surface", "card-press"], "kind": "ui", "use": "preview: weather rain"},
-      {"section": "card", "fg": "steel", "bg": ["surface", "card-press"], "kind": "ui", "use": "preview: weather night stars"},
+      {"section": "slider", "fg": "text-dim", "bg": ["bg", "surface"], "kind": "text", "use": "unavailable: the word Unavailable in place of the track"},
+      {"section": "card", "fg": "text", "bg": ["surface", "press-tint"], "kind": "text", "use": "value / two-line text"},
+      {"section": "card", "fg": "text-dim", "bg": ["surface", "press-tint"], "kind": "text", "use": "label, screen icon, sub line (also on an unavailable card)"},
+      {"section": "card", "fg": "accent-text", "bg": ["surface", "press-tint"], "kind": "text", "use": "accent card: value"},
+      {"section": "card", "fg": "accent", "bg": ["surface", "press-tint"], "kind": "ui", "use": "accent card: status dot; screen icon accent part, weather sun"},
+      {"section": "card", "fg": "ok", "bg": ["surface", "press-tint"], "kind": "text", "use": "sub line, tone ok"},
+      {"section": "card", "fg": "warn", "bg": ["surface", "press-tint"], "kind": "text", "use": "sub line, tone warn"},
+      {"section": "card", "fg": "error", "bg": ["surface", "press-tint"], "kind": "text", "use": "sub line, tone error"},
+      {"section": "card", "fg": "blue", "bg": ["surface", "press-tint"], "kind": "ui", "use": "preview: weather rain"},
+      {"section": "card", "fg": "steel", "bg": ["surface", "press-tint"], "kind": "ui", "use": "preview: weather night stars"},
       {"section": "card", "fg": "text-mute", "bg": "surface", "kind": "disabled", "use": "unavailable: icon, label, value dash"},
       {"section": "card", "fg": "line", "bg": "bg", "kind": "decor", "use": "1 px card border on the canvas"},
       {"section": "card", "fg": "line-hi", "bg": "bg", "kind": "decor", "use": "pressed: 1 px border on the canvas"},
-      {"section": "card", "fg": "accent", "bg": ["surface", "card-press", "bg"], "kind": "ui", "use": "press border / border-fill: 1 px accent border against the card (surface, card-press) and the page"},
-      {"section": "list_row", "fg": "text", "bg": ["bg", "card-press"], "kind": "text", "use": "title"},
-      {"section": "list_row", "fg": "text-dim", "bg": ["bg", "card-press"], "kind": "text", "use": "icon, sub line, trailing value, chevron (also the Unavailable text)"},
-      {"section": "list_row", "fg": "accent", "bg": ["bg", "card-press"], "kind": "ui", "use": "trailing toggle on: accent track against the row (default, and pressed = the Card press fill)"},
-      {"section": "list_row", "fg": "line", "bg": ["bg", "card-press"], "kind": "decor", "use": "hairline divider above each row; trailing toggle off track"},
+      {"section": "card", "fg": "accent", "bg": ["surface", "press-tint", "bg"], "kind": "ui", "use": "press border / border-fill: 1 px accent border against the card (surface, press-tint) and the page"},
+      {"section": "list_row", "fg": "text", "bg": ["bg", "press-tint"], "kind": "text", "use": "title"},
+      {"section": "list_row", "fg": "text-dim", "bg": ["bg", "press-tint"], "kind": "text", "use": "icon, sub line, trailing value, chevron (also the Unavailable text)"},
+      {"section": "list_row", "fg": "accent", "bg": ["bg", "press-tint"], "kind": "ui", "use": "trailing toggle on: accent track against the row (default, and pressed = the Card press fill)"},
+      {"section": "list_row", "fg": "line", "bg": ["bg", "press-tint"], "kind": "decor", "use": "hairline divider above each row; trailing toggle off track"},
       {"section": "list_row", "fg": "text-mute", "bg": "bg", "kind": "disabled", "use": "disabled / unavailable: icon, title, value, chevron"},
       {"section": "dial", "fg": "text", "bg": "bg", "kind": "large", "use": "the value (type display)"},
       {"section": "dial", "fg": "text-dim", "bg": "bg", "kind": "text", "use": "caption, unit, scale numbers, Unavailable"},
@@ -222,7 +223,7 @@
       {"section": "status_chip", "fg": "text-dim", "bg": ["chip-idle", "chip-idle-surface"], "kind": "ui", "use": "chip dot, tone idle"},
       {"section": "count_badge", "fg": "text", "bg": ["chip-ok", "chip-ok-surface", "chip-warn", "chip-warn-surface", "chip-error", "chip-error-surface", "chip-working", "chip-working-surface", "chip-info", "chip-info-surface", "chip-idle", "chip-idle-surface"], "kind": "text", "use": "badge number: text on every tone fill (as the chip)"},
       {"section": "section_header", "fg": "text-dim", "bg": "bg", "kind": "text", "use": "caps title, meta on the right"},
-      {"section": "section_header", "fg": "accent-text", "bg": ["bg", "card-press"], "kind": "text", "use": "action (default / pressed)"},
+      {"section": "section_header", "fg": "accent-text", "bg": ["bg", "press-tint"], "kind": "text", "use": "action (default / pressed)"},
       {"section": "section_header", "fg": "text-mute", "bg": "bg", "kind": "disabled", "use": "disabled action"}
     ]
   },

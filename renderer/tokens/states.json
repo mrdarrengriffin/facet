@@ -1,0 +1,348 @@
+{
+  "$comment": "Facet interaction states, the single source for the WASM build (tools/gen_states.mjs -> states_gen.h, fw::st::). Written down once from what the approved components already do (States round 1, board facet-137): it holds no colour values, only which colour / mix / motion / sound / space token each state uses for each role, so a theme can change the rules later (facet-130) and the generator checks every reference. Colour mix amounts stay in colour.json (components.card.press-tint / press-desat: the contrast test and the Colour page read them there).",
+  "about": "How every interactive part behaves when it is pressed, disabled, unavailable, on or marked: the same colours, motion, sounds and events everywhere, so new components fit without deciding again.",
+  "lvgl": {
+    "pressed": {
+      "state": "LV_STATE_PRESSED",
+      "use": "finger down; LVGL sets it, variants force it"
+    },
+    "on": {
+      "state": "LV_STATE_CHECKED",
+      "use": "on / active (a toggled button, a playing play button)"
+    },
+    "off": {
+      "state": "LV_STATE_USER_1",
+      "use": "disabled AND unavailable: LVGL sends no events to LV_STATE_DISABLED, and a blocked tap must still play error; USER_1 outranks PRESSED, so an off part shows no press look"
+    }
+  },
+  "states": {
+    "rest": {
+      "label": "Rest and tap",
+      "about": "The resting look, and what a real tap does. Sounds and events only on a real tap (LVGL CLICKED: finger down and up on the part; a scroll or a slide off cancels it). The sound says what the tap means. A blocked part answers on finger down instead (see Disabled).",
+      "motion": [],
+      "event": "tap",
+      "sound": "tap",
+      "roles": {},
+      "sounds": {
+        "tap": {
+          "sound": "tap",
+          "use": "a plain action in place (Button, Icon button, a list row without a chevron, a section header action)"
+        },
+        "open": {
+          "sound": "open",
+          "use": "going deeper: a Card, a list row with a chevron"
+        },
+        "back": {
+          "sound": "back",
+          "use": "the Back button (event back)"
+        },
+        "on": {
+          "sound": "toggle-on",
+          "use": "switching on or starting (Toggle, play, the Dial's button): event toggle, detail on / off or play / pause"
+        },
+        "off": {
+          "sound": "toggle-off",
+          "use": "switching off or pausing"
+        },
+        "step": {
+          "sound": "slider-tick",
+          "use": "a Slider or Dial value crossing a step (fw::step_ticks: speed-limited by Motion tick-min, pitch follows the value, the ends play slider-landmark)"
+        }
+      }
+    },
+    "pressed": {
+      "label": "Pressed",
+      "about": "Finger down on something that acts. Three looks, by what is pressed (Darren 2026-10-21): a boxed control on a surface goes grey (surface-press + line-hi), an accent fill goes to accent-press, a big area (Card, List row, header action) gets the faint press tint. Colours only, nothing moves: Motion press into the look, release back out (80 ms ease-out each; reduced motion keeps them, it is colour only). No sound or event on finger down. A Toggle, Slider and Dial have no pressed look: the knob following the finger is the feedback.",
+      "motion": [
+        "press",
+        "release"
+      ],
+      "event": "",
+      "sound": "",
+      "roles": {
+        "surface": {
+          "token": "surface-press",
+          "use": "fill of a boxed control on a surface: Button secondary + ghost, Icon button round + square, Back button"
+        },
+        "line": {
+          "token": "line-hi",
+          "use": "border of a pressed boxed control, and of a Card in the fill press style"
+        },
+        "accent": {
+          "token": "accent-press",
+          "use": "an accent fill pressed: Button primary, Icon button play, Button outline when active"
+        },
+        "outline": {
+          "token": "accent-dim",
+          "use": "fill of a pressed outline Button (its label goes to the pressed ink)"
+        },
+        "ink": {
+          "token": "text",
+          "use": "label of a pressed outline or ghost Button"
+        },
+        "tint": {
+          "mix": "press-tint",
+          "use": "big, unboxed or card-sized tap areas: Card, List row, section header action (a faint greyed accent tint, Darren's Card pick; mix press-tint)"
+        },
+        "tint-line": {
+          "token": "accent",
+          "use": "Card border in the border and border-fill press styles"
+        }
+      },
+      "style": {
+        "value": "fill",
+        "options": [
+          "fill",
+          "border",
+          "border-fill"
+        ],
+        "use": "how a pressed Card shows it: tint fill + line-hi border (fill), surface + accent border (border), or both (border-fill); a theme may set it later (facet-130). Rows and header actions have no border, so they always use the tint fill."
+      }
+    },
+    "disabled": {
+      "label": "Disabled",
+      "about": "The part exists but cannot be used right now (a setting that needs another one first). It keeps its shape and place, drops to the muted colours, shows no press look, hides its focus ring and never moves. Finger down on it emits blocked and plays error at once (every component, Darren 2026-10-21), so it is never silent; letting go does nothing.",
+      "motion": [],
+      "event": "blocked",
+      "sound": "error",
+      "roles": {
+        "ink": {
+          "token": "text-mute",
+          "use": "every label, icon, value, tick and indicator of a disabled part. text-mute is for disabled only (3:1 rule for disabled labels)"
+        },
+        "on-fill": {
+          "token": "text-dim",
+          "use": "a label or glyph on a disabled accent fill (Button primary, Icon button play) and the Toggle knob when on: text-mute fails 3:1 there"
+        },
+        "knob": {
+          "token": "text-dim",
+          "use": "every knob: Toggle (on and off), Slider, Dial (Darren 2026-10-21: one colour for all)"
+        },
+        "accent": {
+          "token": "accent-dim",
+          "use": "an accent fill or border when disabled: Button primary fill, outline border, play fill, Toggle track when on"
+        },
+        "line": {
+          "token": "line",
+          "use": "a track or border that is line-hi at rest: Slider track, the hollow Toggle track when off"
+        }
+      },
+      "moment": "press"
+    },
+    "unavailable": {
+      "label": "Unavailable",
+      "about": "The thing behind the part is gone (a Home Assistant entity that is unavailable). It follows the disabled rule and says so in words where there is room: the control is hidden and the word Unavailable takes its place (Card, List row, Dial, Toggle, Slider); an Icon button has no room for the word, so it keeps its shape in the disabled look. Finger down emits blocked and plays error. Every control that shows a device's state has it (Darren 2026-10-21).",
+      "motion": [],
+      "event": "blocked",
+      "sound": "error",
+      "roles": {
+        "ink": {
+          "token": "text-mute",
+          "use": "icon, title and placeholder value (= disabled ink)"
+        },
+        "note": {
+          "token": "text-dim",
+          "use": "the word Unavailable (type body): information, so readable at 4.5:1, not muted"
+        }
+      },
+      "text": "Unavailable",
+      "placeholder": "—"
+    },
+    "on": {
+      "label": "On and active",
+      "about": "On / active = LV_STATE_CHECKED. A switch turns accent (the Toggle track, the outline Button filling); a mode or tab that is selected keeps its box and gets an accent mark (corner ticks, underline, accent ink, line-hi border, the focus ring). Switching sweeps with Motion toggle (knob, 80 ms; reduced motion = instant) or value (Dial arc, 400 ms), emits toggle (every switch, Darren 2026-10-21) and plays toggle-on / toggle-off.",
+      "motion": [
+        "toggle",
+        "value"
+      ],
+      "event": "toggle",
+      "sound": "toggle-on",
+      "roles": {
+        "fill": {
+          "token": "accent",
+          "use": "Toggle track on, Button outline active fill, Dial indicator"
+        },
+        "label": {
+          "token": "on-accent",
+          "use": "label, glyph or knob on an accent fill"
+        },
+        "ink": {
+          "token": "accent-text",
+          "use": "active label or glyph without a fill: Button ghost, Icon button round + square"
+        },
+        "line": {
+          "token": "line-hi",
+          "use": "active border: Button secondary, Icon button round and square"
+        },
+        "mark": {
+          "token": "accent",
+          "use": "the accent marks: Button secondary corner ticks, ghost underline"
+        }
+      },
+      "off_sound": "toggle-off"
+    },
+    "focus": {
+      "label": "Focus ring",
+      "about": "A 1 px accent ring drawn outside the box at the focus offset. The panels have no keyboard focus, so in Facet the ring marks the active primary: Button primary active and the playing play button. Disabled hides it, even when active. The ring sits outside the component's box, so it is drawn with fw::bleed (never clipped by a parent).",
+      "motion": [],
+      "event": "",
+      "sound": "",
+      "roles": {
+        "ring": {
+          "token": "accent",
+          "use": "the ring colour"
+        }
+      },
+      "ring": {
+        "width": "stroke.focus",
+        "offset": "touch.focus-offset"
+      }
+    }
+  },
+  "rules": [
+    "A box is a button, no box is a readout: anything with a fill or a border acts on a tap; bare text and dots never do (Label, Status dot, Status chip, Count badge send nothing).",
+    "Sound and events only on a real tap (CLICKED). A scroll or a slide off cancels it; finger down is silent, except on a blocked part.",
+    "The sound says what the tap means: tap in place, open going deeper, back going back, toggle-on / toggle-off for switching, ticks for values.",
+    "Pressed changes colour only, never size or place: Motion press in, release out.",
+    "Pressed has three looks: grey (surface-press + line-hi) on boxed controls, accent-press on accent fills, the faint press tint on big areas.",
+    "text-mute is for disabled only. Meta and secondary text use text-dim; so does the idle status tint.",
+    "A blocked tap plays error on finger down: a disabled or unavailable part emits blocked and plays error the moment it is touched, never nothing.",
+    "Disabled and unavailable show no press look, no focus ring and never move. Every knob is text-dim when disabled.",
+    "Every control that shows a device's state has an unavailable state; it says so in words where there is room, the control behind it is hidden.",
+    "On = accent: a switch fills with accent; a selected mode keeps its box and gets an accent mark. Every switch emits toggle.",
+    "Marks outside a box (the focus ring, an overhanging press fill) bleed: fw::bleed lets them draw past every parent, so nothing clips them."
+  ],
+  "audit": {
+    "$comment": "States round 1 audit (2026-10-21): what each approved component does per state, before the refactor. Shown on the page and in the journal.",
+    "columns": [
+      "pressed",
+      "disabled",
+      "unavailable",
+      "on",
+      "tap"
+    ],
+    "rows": [
+      {
+        "c": "Button",
+        "pressed": "primary accent-press; secondary surface-press + line-hi; outline accent-dim fill + text label; ghost surface-press + text",
+        "disabled": "text-mute label; primary accent-dim + text-dim; outline accent-dim border",
+        "unavailable": "-",
+        "on": "primary focus ring; secondary line-hi + corner ticks; outline accent fill; ghost accent-text + underline",
+        "tap": "tap + tap; blocked + error on release"
+      },
+      {
+        "c": "Icon button",
+        "pressed": "play accent-press; round / square surface-press + line-hi",
+        "disabled": "play accent-dim + text-dim glyph, ring hidden; round / square text-mute glyph",
+        "unavailable": "-",
+        "on": "play = pause glyph + focus ring; round line-hi + accent-text; square accent-text only",
+        "tap": "play: toggle play/pause + toggle-on/off; others tap + tap"
+      },
+      {
+        "c": "Back button",
+        "pressed": "= Icon button square",
+        "disabled": "= Icon button square",
+        "unavailable": "-",
+        "on": "-",
+        "tap": "back + back (no detail)"
+      },
+      {
+        "c": "Toggle",
+        "pressed": "none (the knob is the feedback)",
+        "disabled": "off: hollow line track + text-mute knob; on: accent-dim + text-dim knob",
+        "unavailable": "-",
+        "on": "accent track, on-accent knob; Motion toggle",
+        "tap": "tap on/off + toggle-on/off"
+      },
+      {
+        "c": "Slider",
+        "pressed": "none (grab)",
+        "disabled": "line track, text-mute fill, text-dim knob",
+        "unavailable": "-",
+        "on": "-",
+        "tap": "change on release; step ticks; blocked + error on press"
+      },
+      {
+        "c": "Dial",
+        "pressed": "button trickles its press look",
+        "disabled": "text-mute scale, value, arc; text-dim knob; button disabled",
+        "unavailable": "no arc / knob / unit / button; Unavailable (body, text-dim)",
+        "on": "ON outline / OFF secondary; arc sweeps (Motion value)",
+        "tap": "toggle on/off + toggle-on/off; change; blocked + error on press"
+      },
+      {
+        "c": "Card",
+        "pressed": "tint press-tint + line-hi (style fill; border / border-fill = accent border)",
+        "disabled": "-",
+        "unavailable": "text-mute icon, label, em dash; sub Unavailable text-dim; no preview",
+        "on": "accent card = dot + accent-text value (not a state)",
+        "tap": "tap + open"
+      },
+      {
+        "c": "List row",
+        "pressed": "tint press-tint (bg opa fade, no border)",
+        "disabled": "text-mute everything, toggle disabled",
+        "unavailable": "text-mute icon + title, trailing Unavailable text-dim, no sub",
+        "on": "via its Toggle",
+        "tap": "chevron: open; toggle: the Toggle's; else tap"
+      },
+      {
+        "c": "Section header",
+        "pressed": "action: tint press-tint (bg opa fade)",
+        "disabled": "action text-mute",
+        "unavailable": "-",
+        "on": "-",
+        "tap": "action: tap + tap; title / badge / meta static"
+      },
+      {
+        "c": "Label, Status dot / chip, Count badge",
+        "pressed": "static",
+        "disabled": "Label colour disabled = text-mute",
+        "unavailable": "-",
+        "on": "-",
+        "tap": "nothing (readouts)"
+      }
+    ]
+  },
+  "decisions": {
+    "$comment": "Round 1 open questions, all decided by Darren 2026-10-21 (\"I think your suggestions are great here\"): the coordinator's picks.",
+    "items": [
+      {
+        "q": "Pressed has three looks: surface-press (Button secondary / ghost, Icon buttons), accent-press (accent fills) and the press-tint tint (Card, List row, header action). Keep the split (boxed controls grey, big areas tinted), or move the grey ones to the tint too?",
+        "decision": "Keep the split: grey on boxed controls, accent-press on accent fills, the tint on big areas."
+      },
+      {
+        "q": "A blocked drag control (Slider, Dial) plays error on finger down; a blocked tap control on release. Same moment for both?",
+        "decision": "Everything answers on finger down: Button, Icon button, Toggle, Card, List row and header actions moved from release to press."
+      },
+      {
+        "q": "Switch events differ: Toggle emits tap (on / off), play and the Dial emit toggle. One name?",
+        "decision": "toggle everywhere: the Toggle now emits toggle (detail on / off), like play and the Dial."
+      },
+      {
+        "q": "Disabled knobs: the Toggle knob when off is text-mute, the Slider and Dial knobs are text-dim. Same colour?",
+        "decision": "text-dim for every knob: the Toggle off knob moved from text-mute."
+      },
+      {
+        "q": "Active Icon button: round gets a line-hi border + accent glyph, square only the accent glyph. Same for both?",
+        "decision": "Square gets the line-hi border too, like round."
+      },
+      {
+        "q": "Unavailable exists only on Card, List row and Dial. Should Toggle / Slider / Button get it, or is it a row / card level state?",
+        "decision": "Every control that shows a device's state: Toggle and Slider got Unavailable (the word in place of the control), Icon button keeps its shape in the disabled look (no room for the word)."
+      },
+      {
+        "q": "Status chip and Count badge idle tone tint with text-mute (a 14 % fill, not text). Is that fine under \"text-mute is for disabled only\"?",
+        "decision": "Idle uses text-dim: the idle chip / badge tint moved from text-mute."
+      },
+      {
+        "q": "The pressed tint mix is still named press-tint although List row and the section header use it too. Rename to press-tint?",
+        "decision": "Renamed: the mix is press-tint."
+      },
+      {
+        "q": "A Button that is active AND disabled keeps its focus ring (the play Icon button hides it). Hide it on Button too?",
+        "decision": "Hidden: disabled wins over active on every ring."
+      }
+    ]
+  }
+}

@@ -31,7 +31,7 @@ fw::ty::Id type_of(const char *s) {
 lv_color_t colour_of(const char *c) {
   const fw::Theme &t = *fw::T;
   if (!strcmp(c, "text-dim")) return t.text_dim;
-  if (!strcmp(c, "disabled")) return t.text_mute;
+  if (!strcmp(c, "disabled")) return fw::st::disabled_ink(t);  // states.json
   if (!strcmp(c, "accent-text")) return t.accent_text;
   if (!strcmp(c, "blue")) return t.blue;
   if (!strcmp(c, "ok")) return t.ok;

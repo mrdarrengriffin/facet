@@ -9,7 +9,8 @@
 // a tap plays Error. Every label / icon colour pair is declared in tokens/colour.json contrast.pairs (section
 // "button") and checked in every theme x accent set by tools/contrast.mjs: change a look here -> update the pair.
 // Optional icon before the label (fw::icon, Icons foundation, at the icon size token). Width hugs the label rounded up to the grid, or a
-// fixed width with the label centred. Tap = fw::emit "tap" + fw::sound "tap" (disabled: "blocked" + "error").
+// fixed width with the label centred. Tap = fw::emit "tap" + fw::sound "tap" (disabled: "blocked" + "error" on finger down,
+// states.json; the focus ring hides when disabled).
 // Press feedback = the Motion patterns press (into the pressed look) and release (back out), colour transitions from
 // tokens/motion.json (80 ms ease-out each; reduced motion keeps them: colour only, nothing moves).
 #include "fw.h"
@@ -17,30 +18,32 @@
 namespace {
 // "disabled" is drawn with USER_1, not LV_STATE_DISABLED: LVGL sends no events to a disabled object, and Facet
 // plays Error when a disabled button is pressed. USER_1 outranks PRESSED, so a disabled button shows no press look.
-constexpr lv_state_t ST_OFF = LV_STATE_USER_1;
+constexpr lv_state_t ST_OFF = fw::st::OFF;
 
 struct Look { lv_color_t bg; lv_opa_t bg_opa; lv_color_t bd; lv_opa_t bd_opa; lv_color_t fg; };
 struct Kind { Look normal, pressed, active, active_pressed, off; };
 
+// state colours = the roles of tokens/states.json (fw::st::<state>_<role>), resting looks = colour tokens
 Kind kind_of(const char *k) {
+  using namespace fw::st;
   const fw::Theme &t = *fw::T;
   const lv_opa_t C = LV_OPA_COVER, N = LV_OPA_TRANSP;
   if (!strcmp(k, "secondary"))
-    return {{t.surface, C, t.line, C, t.text}, {t.surface_press, C, t.line_hi, C, t.text},
-            {t.surface, C, t.line_hi, C, t.text}, {t.surface_press, C, t.line_hi, C, t.text},
-            {t.surface, C, t.line, C, t.text_mute}};
+    return {{t.surface, C, t.line, C, t.text}, {pressed_surface(t), C, pressed_line(t), C, t.text},
+            {t.surface, C, on_line(t), C, t.text}, {pressed_surface(t), C, on_line(t), C, t.text},
+            {t.surface, C, t.line, C, disabled_ink(t)}};
   if (!strcmp(k, "outline"))
-    return {{t.bg, N, t.accent, C, t.accent_text}, {t.accent_dim, C, t.accent, C, t.text},
-            {t.accent, C, t.accent, C, t.on_accent}, {t.accent_press, C, t.accent_press, C, t.on_accent},
-            {t.bg, N, t.accent_dim, C, t.text_mute}};
+    return {{t.bg, N, t.accent, C, t.accent_text}, {pressed_outline(t), C, t.accent, C, pressed_ink(t)},
+            {on_fill(t), C, on_fill(t), C, on_label(t)}, {pressed_accent(t), C, pressed_accent(t), C, on_label(t)},
+            {t.bg, N, disabled_accent(t), C, disabled_ink(t)}};
   if (!strcmp(k, "ghost"))
-    return {{t.bg, N, t.bg, N, t.text_dim}, {t.surface_press, C, t.bg, N, t.text},
-            {t.bg, N, t.bg, N, t.accent_text}, {t.surface_press, C, t.bg, N, t.accent_text},
-            {t.bg, N, t.bg, N, t.text_mute}};
+    return {{t.bg, N, t.bg, N, t.text_dim}, {pressed_surface(t), C, t.bg, N, pressed_ink(t)},
+            {t.bg, N, t.bg, N, on_ink(t)}, {pressed_surface(t), C, t.bg, N, on_ink(t)},
+            {t.bg, N, t.bg, N, disabled_ink(t)}};
   // primary
-  return {{t.accent, C, t.bg, N, t.on_accent}, {t.accent_press, C, t.bg, N, t.on_accent},
-          {t.accent, C, t.bg, N, t.on_accent}, {t.accent_press, C, t.bg, N, t.on_accent},
-          {t.accent_dim, C, t.bg, N, t.text_dim}};
+  return {{t.accent, C, t.bg, N, t.on_accent}, {pressed_accent(t), C, t.bg, N, t.on_accent},
+          {t.accent, C, t.bg, N, t.on_accent}, {pressed_accent(t), C, t.bg, N, t.on_accent},
+          {disabled_accent(t), C, t.bg, N, disabled_on_fill(t)}};
 }
 
 const lv_style_prop_t TR_PROPS[] = {LV_STYLE_BG_COLOR, LV_STYLE_BG_OPA, LV_STYLE_BORDER_COLOR, LV_STYLE_BORDER_OPA,
@@ -49,7 +52,7 @@ const lv_style_prop_t TR_PROPS[] = {LV_STYLE_BG_COLOR, LV_STYLE_BG_OPA, LV_STYLE
 const lv_style_transition_dsc_t *tr(bool pressed) {
   static lv_style_transition_dsc_t d[2];
   static bool ready = false;
-  if (!ready) { fw::mo::transition(&d[0], fw::mo::release, TR_PROPS); fw::mo::transition(&d[1], fw::mo::press, TR_PROPS); ready = true; }
+  if (!ready) { fw::st::press_transitions(d, TR_PROPS); ready = true; }  // states.json pressed motion
   return &d[pressed];
 }
 
@@ -95,11 +98,11 @@ lv_obj_t *active_mark(lv_obj_t *b, int w, int h, lv_border_side_t sides) {
   if (sides) {
     lv_obj_set_style_border_side(o, sides, 0);
     lv_obj_set_style_border_width(o, fw::stroke::edge, 0);  // btn-tick-thick 2
-    lv_obj_set_style_border_color(o, fw::T->accent, 0);
+    lv_obj_set_style_border_color(o, fw::st::on_mark(*fw::T), 0);
     lv_obj_set_style_border_opa(o, LV_OPA_TRANSP, 0);
     lv_obj_set_style_border_opa(o, LV_OPA_COVER, LV_STATE_CHECKED);
   } else {
-    lv_obj_set_style_bg_color(o, fw::T->accent, 0);
+    lv_obj_set_style_bg_color(o, fw::st::on_mark(*fw::T), 0);
     lv_obj_set_style_bg_opa(o, LV_OPA_TRANSP, 0);
     lv_obj_set_style_bg_opa(o, LV_OPA_COVER, LV_STATE_CHECKED);
   }
@@ -164,12 +167,7 @@ FW_COMPONENT(button, "Button", "components", R"({
   lv_obj_set_flex_flow(b, LV_FLEX_FLOW_ROW);
   lv_obj_set_flex_align(b, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
   box_looks(b, k);
-  if (!strcmp(kn, "primary")) {  // active: focus ring, 1 px accent, focus-offset outside the box
-    lv_obj_set_style_outline_color(b, fw::T->accent, 0);
-    lv_obj_set_style_outline_width(b, 0, 0);
-    lv_obj_set_style_outline_width(b, fw::stroke::focus, LV_STATE_CHECKED);
-    lv_obj_set_style_outline_pad(b, fw::touch::focus_offset - fw::stroke::focus, LV_STATE_CHECKED);
-  }
+  if (!strcmp(kn, "primary")) fw::st::add_focus_ring(b, LV_STATE_CHECKED);  // active: the focus ring (states.json focus)
 
   const char *ic = p["icon"] | "none";
   if (strcmp(ic, "none")) icon(b, ic, k);
@@ -183,6 +181,7 @@ FW_COMPONENT(button, "Button", "components", R"({
     lv_obj_update_layout(l);
     const int w = lv_obj_get_width(l), g = fw::sp::GRID;
     lv_obj_set_width(l, (w + g - 1) / g * g);
+    lv_obj_set_style_text_align(l, LV_TEXT_ALIGN_CENTER, 0);  // the rounding slack splits both sides, not all after the text
   }
 
   // active marks sit on the border box: offsets = the button's padding + border (LVGL children start inside both)
@@ -203,10 +202,11 @@ FW_COMPONENT(button, "Button", "components", R"({
   if (!strcmp(state, "disabled")) lv_obj_add_state(b, ST_OFF);
 
   // a real tap (LVGL drops CLICKED after a scroll, like the docs' "moved > 8 px stays silent")
-  lv_obj_add_event_cb(b, [](lv_event_t *e) {
+  fw::st::on_tap(b, [](lv_event_t *e) {  // blocked on finger down, a real tap on CLICKED (states.json)
+    if (!fw::st::tap_now(e)) return;
     auto *o = (lv_obj_t *) lv_event_get_current_target(e);
     const char *d = lv_label_get_text((lv_obj_t *) lv_event_get_user_data(e));
-    if (lv_obj_has_state(o, ST_OFF)) { fw::emit(o, "blocked", d); fw::sound(o, "error"); }
+    if (lv_obj_has_state(o, ST_OFF)) fw::st::blocked(o, d);
     else { fw::emit(o, "tap", d); fw::sound(o, "tap"); }
-  }, LV_EVENT_CLICKED, l);
+  }, l);
 }

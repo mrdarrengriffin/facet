@@ -6,9 +6,12 @@
 //           ic::feature); a tap toggles active: event "toggle" play / pause + sound toggle-on / toggle-off.
 //   round   lay::ibtn_round (80 / 52) round, surface + 1 px line border, text glyph ic::glyph (32 / 20); pressed =
 //           surface-press + line-hi; active = line-hi border + accent-text glyph
-//   square  lay::ibtn_square (48 / 32 = touch::min) radius rad::square, look as round; active = accent-text glyph only
+//   square  lay::ibtn_square (48 / 32 = touch::min) radius rad::square, look as round (active too: line-hi + accent-text,
+//           Darren 2026-10-21)
 // disabled (USER_1, Button rule): play = accent-dim fill + text-dim glyph (as Button primary; docs text-mute fails
-// 3:1 there), round / square = text-mute glyph; no press look; a tap = "blocked" + sound error.
+// 3:1 there), round / square = text-mute glyph; no press look, no ring; finger down = "blocked" + sound error.
+// Unavailable (states.json): the same disabled look (an icon button has no room for the word), blocked detail
+// "unavailable".
 // Same press / sound / state model as Button: CHECKED = active, Motion press / release colour transitions, sounds only
 // on a real tap (CLICKED). Tap (round / square) = event "tap" (detail = icon) + sound tap.
 // Internal prop `role` (not in the playground): "back" = the Back button (components/back_button.cpp builds this
@@ -17,28 +20,30 @@
 #include "fw.h"
 
 namespace {
-constexpr lv_state_t ST_OFF = LV_STATE_USER_1;  // disabled (LVGL sends no events to LV_STATE_DISABLED; see Button)
+constexpr lv_state_t ST_OFF = fw::st::OFF;  // disabled (LVGL sends no events to LV_STATE_DISABLED; see Button)
 
 struct Look { lv_color_t bg; lv_opa_t bd_opa; lv_color_t bd; lv_color_t fg; };
 struct Style { Look normal, pressed, active, active_pressed, off; };
 
+// state colours = the roles of tokens/states.json (fw::st::<state>_<role>), resting looks = colour tokens
 Style style_of(bool play, bool square) {
+  using namespace fw::st;
   const fw::Theme &t = *fw::T;
   const lv_opa_t C = LV_OPA_COVER, N = LV_OPA_TRANSP;
   if (play)
-    return {{t.accent, N, t.accent, t.on_accent}, {t.accent_press, N, t.accent, t.on_accent},
-            {t.accent, N, t.accent, t.on_accent}, {t.accent_press, N, t.accent, t.on_accent},
-            {t.accent_dim, N, t.accent, t.text_dim}};
-  return {{t.surface, C, t.line, t.text}, {t.surface_press, C, t.line_hi, t.text},
-          {t.surface, C, square ? t.line : t.line_hi, t.accent_text}, {t.surface_press, C, t.line_hi, t.accent_text},
-          {t.surface, C, t.line, t.text_mute}};
+    return {{t.accent, N, t.accent, t.on_accent}, {pressed_accent(t), N, t.accent, t.on_accent},
+            {t.accent, N, t.accent, t.on_accent}, {pressed_accent(t), N, t.accent, t.on_accent},
+            {disabled_accent(t), N, t.accent, disabled_on_fill(t)}};
+  return {{t.surface, C, t.line, t.text}, {pressed_surface(t), C, pressed_line(t), t.text},
+          {t.surface, C, on_line(t), on_ink(t)}, {pressed_surface(t), C, pressed_line(t), on_ink(t)},  // square too (Darren 2026-10-21)
+          {t.surface, C, t.line, disabled_ink(t)}};
 }
 
 const lv_style_prop_t TR_PROPS[] = {LV_STYLE_BG_COLOR, LV_STYLE_BORDER_COLOR, LV_STYLE_IMAGE_RECOLOR, LV_STYLE_PROP_INV};
 const lv_style_transition_dsc_t *tr(bool pressed) {  // LVGL runs the transition of the state being entered
   static lv_style_transition_dsc_t d[2];
   static bool ready = false;
-  if (!ready) { fw::mo::transition(&d[0], fw::mo::release, TR_PROPS); fw::mo::transition(&d[1], fw::mo::press, TR_PROPS); ready = true; }
+  if (!ready) { fw::st::press_transitions(d, TR_PROPS); ready = true; }  // states.json pressed motion
   return &d[pressed];
 }
 const lv_style_selector_t SEL[5] = {0, LV_STATE_PRESSED, LV_STATE_CHECKED, LV_STATE_CHECKED | LV_STATE_PRESSED, ST_OFF};
@@ -65,7 +70,7 @@ FW_COMPONENT(icon_button, "Icon button", "components", R"({
   "props": [
     {"name": "style", "type": "select", "options": ["play", "round", "square"], "default": "round"},
     {"name": "icon", "type": "select", "options": ["next", "prev", "play", "plus", "close", "check", "back"], "default": "next"},
-    {"name": "state", "type": "select", "options": ["default", "pressed", "active", "active-pressed", "disabled"], "default": "default"}
+    {"name": "state", "type": "select", "options": ["default", "pressed", "active", "active-pressed", "disabled", "unavailable"], "default": "default"}
   ],
   "variants": [
     {"label": "play · default", "props": {"style": "play"}},
@@ -84,7 +89,9 @@ FW_COMPONENT(icon_button, "Icon button", "components", R"({
     {"label": "square · active", "props": {"style": "square", "icon": "plus", "state": "active"}},
     {"label": "square · active + pressed", "props": {"style": "square", "icon": "plus", "state": "active-pressed"}},
     {"label": "square · disabled", "props": {"style": "square", "icon": "plus", "state": "disabled"}},
-    {"label": "square · close", "props": {"style": "square", "icon": "close"}}
+    {"label": "square · close", "props": {"style": "square", "icon": "close"}},
+    {"label": "play · unavailable", "props": {"style": "play", "state": "unavailable"}},
+    {"label": "round · unavailable", "props": {"state": "unavailable"}}
   ]
 })") {
   const char *st = p["style"] | "round";
@@ -111,12 +118,8 @@ FW_COMPONENT(icon_button, "Icon button", "components", R"({
     lv_obj_set_style_border_opa(b, l.bd_opa, SEL[i]);
     lv_obj_set_style_transition(b, tr(PRESSED_SEL[i]), SEL[i]);
   }
-  if (play && !back) {  // active: focus ring outside the box (Button primary's ring)
-    lv_obj_set_style_outline_color(b, fw::T->accent, 0);
-    lv_obj_set_style_outline_width(b, 0, 0);
-    lv_obj_set_style_outline_width(b, fw::stroke::focus, LV_STATE_CHECKED);
-    lv_obj_set_style_outline_pad(b, fw::touch::focus_offset - fw::stroke::focus, LV_STATE_CHECKED);
-    lv_obj_set_style_outline_width(b, 0, ST_OFF);
+  if (play && !back) {  // active: the focus ring outside the box (states.json focus, Button primary's ring)
+    fw::st::add_focus_ring(b, LV_STATE_CHECKED);  // hidden when disabled / unavailable (the helper)
   }
 
   // glyph centred; play shows play, active (CHECKED, trickled) swaps to pause by opacity (no rebuild on a tap)
@@ -131,24 +134,26 @@ FW_COMPONENT(icon_button, "Icon button", "components", R"({
   if (!strcmp(state, "pressed")) lv_obj_add_state(b, LV_STATE_PRESSED);
   if (!strcmp(state, "active")) lv_obj_add_state(b, LV_STATE_CHECKED);
   if (!strcmp(state, "active-pressed")) lv_obj_add_state(b, (lv_state_t) (LV_STATE_CHECKED | LV_STATE_PRESSED));
-  if (!strcmp(state, "disabled")) lv_obj_add_state(b, ST_OFF);
+  const bool unavail = !strcmp(state, "unavailable");  // states.json: no room for the word, so the disabled look
+  if (unavail || !strcmp(state, "disabled")) lv_obj_add_state(b, ST_OFF);
 
   auto *d = new Data{back ? R_BACK : play ? R_PLAY : R_TAP, {}};
-  snprintf(d->icon, sizeof d->icon, "%s", play && !back ? "play" : ic);
-  lv_obj_add_event_cb(b, [](lv_event_t *e) {
+  snprintf(d->icon, sizeof d->icon, "%s", unavail ? "unavailable" : play && !back ? "play" : ic);
+  fw::st::on_tap(b, [](lv_event_t *e) {  // blocked on finger down, a real tap on CLICKED (states.json)
+    if (!fw::st::tap_now(e)) return;
     auto *o = (lv_obj_t *) lv_event_get_current_target(e);
     auto *d = (Data *) lv_event_get_user_data(e);
-    if (lv_obj_has_state(o, ST_OFF)) { fw::emit(o, "blocked", d->icon); fw::sound(o, "error"); return; }
+    if (lv_obj_has_state(o, ST_OFF)) { fw::st::blocked(o, d->icon); return; }
     if (d->role == R_BACK) { fw::emit(o, "back"); fw::sound(o, "back"); return; }
     if (d->role == R_PLAY) {
       const bool on = !lv_obj_has_state(o, LV_STATE_CHECKED);
       if (on) lv_obj_add_state(o, LV_STATE_CHECKED); else lv_obj_remove_state(o, LV_STATE_CHECKED);
-      fw::emit(o, "toggle", on ? "play" : "pause");
-      fw::sound(o, on ? "toggle-on" : "toggle-off");
+      fw::emit(o, fw::st::SWITCH_EVENT, on ? "play" : "pause");
+      fw::sound(o, on ? fw::st::ON_SOUND : fw::st::OFF_SOUND);
       return;
     }
     fw::emit(o, "tap", d->icon);
     fw::sound(o, "tap");
-  }, LV_EVENT_CLICKED, d);
+  }, d);
   lv_obj_add_event_cb(b, [](lv_event_t *e) { delete (Data *) lv_event_get_user_data(e); }, LV_EVENT_DELETE, d);
 }

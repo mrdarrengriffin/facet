@@ -39,7 +39,7 @@
 #include "fw.h"
 
 namespace {
-constexpr lv_state_t ST_OFF = LV_STATE_USER_1;
+constexpr lv_state_t ST_OFF = fw::st::OFF;
 constexpr int32_t FP = 256;
 constexpr float START = 135.0f, RANGE = 270.0f;  // degrees, LVGL angles (0 = 3 o'clock, clockwise)
 
@@ -174,7 +174,7 @@ void unquiet(lv_anim_t *a) { of((lv_obj_t *) lv_anim_get_user_data(a))->quiet = 
 // a silent sweep (opening, on / off): the arc and number glide, no step ticks
 void sweep_quiet(lv_obj_t *s, int32_t from, int32_t to) {
   of(s)->quiet = true;
-  fw::animate(s, fw::mo::value, {show, from, to, fw::mo::VALUE, 0, false, unquiet, s});
+  fw::animate(s, fw::st::SWEEP, {show, from, to, fw::mo::VALUE, 0, false, unquiet, s});
 }
 
 void set_on(lv_obj_t *s, bool on) {
@@ -280,8 +280,8 @@ FW_COMPONENT(dial, "Dial", "components", R"({
   tr.major_len = fw::lay::dial_tick_major;
   tr.width = fw::stroke::tick;
   tr.minor_c = t.line_hi;
-  tr.major_c = off ? t.text_mute : t.blue;
-  tr.num_c = off ? t.text_mute : t.text_dim;
+  tr.major_c = off ? fw::st::disabled_ink(t) : t.blue;  // states.json disabled roles
+  tr.num_c = off ? fw::st::disabled_ink(t) : t.text_dim;
   tr.num_gap = fw::sp::s3;
   tick_ring(s, S, tr);
 
@@ -298,10 +298,10 @@ FW_COMPONENT(dial, "Dial", "components", R"({
     lv_obj_set_style_arc_color(a, t.line, LV_PART_MAIN);
     lv_obj_set_style_arc_rounded(a, false, LV_PART_MAIN);
     lv_obj_set_style_arc_width(a, fw::stroke::indicator, LV_PART_INDICATOR);
-    lv_obj_set_style_arc_color(a, off ? t.text_mute : t.accent, LV_PART_INDICATOR);
+    lv_obj_set_style_arc_color(a, off ? fw::st::disabled_ink(t) : fw::st::on_fill(t), LV_PART_INDICATOR);
     lv_obj_set_style_arc_rounded(a, true, LV_PART_INDICATOR);
     lv_obj_set_style_bg_opa(a, LV_OPA_COVER, LV_PART_KNOB);
-    lv_obj_set_style_bg_color(a, off ? t.text_dim : t.accent, LV_PART_KNOB);
+    lv_obj_set_style_bg_color(a, off ? fw::st::disabled_knob(t) : t.accent, LV_PART_KNOB);
     lv_obj_set_style_radius(a, LV_RADIUS_CIRCLE, LV_PART_KNOB);
     lv_obj_set_style_border_width(a, fw::stroke::knob, LV_PART_KNOB);
     lv_obj_set_style_border_color(a, t.bg, LV_PART_KNOB);
@@ -315,18 +315,18 @@ FW_COMPONENT(dial, "Dial", "components", R"({
   lv_obj_set_pos(col, (S - A) / 2, C - val_h / 2 - fw::sp::s7 - cap_h);
   lv_obj_set_flex_flow(col, LV_FLEX_FLOW_COLUMN);
   lv_obj_set_flex_align(col, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-  lv_obj_t *cap = fw::text(col, fw::ty::label, p["caption"] | "Brightness", off ? t.text_mute : t.text_dim);
+  lv_obj_t *cap = fw::text(col, fw::ty::label, p["caption"] | "Brightness", off ? fw::st::disabled_ink(t) : t.text_dim);
   lv_obj_set_height(cap, cap_h);  // the type box (labels default to WRAP, where fw::text leaves the height to content)
   lv_obj_set_style_margin_bottom(cap, fw::sp::s7, 0);
   if (unavail) {
     lv_obj_t *slot = box(col);  // the value slot, holding "Unavailable" on its centre
     lv_obj_set_size(slot, A, val_h);
-    lv_obj_center(fw::text(slot, fw::ty::body, "Unavailable", t.text_dim));
+    lv_obj_center(fw::text(slot, fw::ty::body, fw::st::UNAVAILABLE_TEXT, fw::st::unavailable_note(t)));
   } else {
-    d->val = fw::text(col, fw::ty::display, "0", off ? t.text_mute : t.text);
+    d->val = fw::text(col, fw::ty::display, "0", off ? fw::st::disabled_ink(t) : t.text);
     lv_obj_set_height(d->val, val_h);
     lv_obj_set_style_margin_bottom(d->val, fw::sp::s2, 0);
-    lv_obj_t *unit = fw::text(col, fw::ty::body, p["unit"] | "%", off ? t.text_mute : t.text_dim);
+    lv_obj_t *unit = fw::text(col, fw::ty::body, p["unit"] | "%", off ? fw::st::disabled_ink(t) : t.text_dim);
     lv_obj_set_height(unit, fw::style(fw::ty::body).box);
     lv_obj_set_style_margin_bottom(unit, fw::sp::s9, 0);
     lv_obj_t *hit = box(col);  // the button's hit box: owns the tap, trickles PRESSED into the button
@@ -339,7 +339,7 @@ FW_COMPONENT(dial, "Dial", "components", R"({
       auto *d = of(s);
       const lv_event_code_t code = lv_event_get_code(e);
       if (lv_obj_has_state(s, ST_OFF)) {
-        if (code == LV_EVENT_PRESSED) { fw::emit(s, "blocked", d->on ? "on" : "off"); fw::sound(s, "error"); }
+        if (code == LV_EVENT_PRESSED) fw::st::blocked(s, d->on ? "on" : "off");
         return;
       }
       if (code != LV_EVENT_CLICKED) return;
@@ -347,8 +347,8 @@ FW_COMPONENT(dial, "Dial", "components", R"({
       if (d->on) { if (d->idx) d->last_on = d->idx; }
       else d->idx = d->last_on ? d->last_on : d->n;
       set_on(s, !d->on);
-      fw::emit(s, "toggle", d->on ? "on" : "off");
-      fw::sound(s, d->on ? "toggle-on" : "toggle-off");
+      fw::emit(s, fw::st::SWITCH_EVENT, d->on ? "on" : "off");
+      fw::sound(s, d->on ? fw::st::ON_SOUND : fw::st::OFF_SOUND);
       sweep_quiet(s, d->shown, d->on ? d->idx * FP : 0);
     }, LV_EVENT_ALL, s);
   }
@@ -371,7 +371,7 @@ FW_COMPONENT(dial, "Dial", "components", R"({
     lv_point_t pt = {0, 0};
     if (lv_indev_t *in = lv_indev_active()) lv_indev_get_point(in, &pt);
     if (lv_obj_has_state(s, ST_OFF)) {
-      if (code == LV_EVENT_PRESSED) { fw::emit(s, "blocked", d->arc ? fmt(d, value_of(d, d->idx)).c_str() : "unavailable"); fw::sound(s, "error"); }
+      if (code == LV_EVENT_PRESSED) fw::st::blocked(s, d->arc ? fmt(d, value_of(d, d->idx)).c_str() : "unavailable");
       return;
     }
     if (code == LV_EVENT_PRESSED) {
@@ -394,7 +394,7 @@ FW_COMPONENT(dial, "Dial", "components", R"({
       if (!d->on) { set_on(s, true); fw::emit(s, "toggle", "on"); }  // setting a value switches it on
       d->idx = i;
       if (d->grab) show(s, i * FP);
-      else fw::animate(s, fw::mo::value, {show, d->shown, i * FP, fw::mo::VALUE});
+      else fw::animate(s, fw::st::SWEEP, {show, d->shown, i * FP, fw::mo::VALUE});
     } else if (!d->active) {
       return;
     } else if (code == LV_EVENT_PRESSING) {

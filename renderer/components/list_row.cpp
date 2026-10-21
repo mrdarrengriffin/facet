@@ -18,10 +18,10 @@
 // Playground: trailing "none" with a value typed in shows the value; "on" with trailing none shows a toggle, so every
 // control changes a fresh row; a value kind with no value shows an em dash.
 // Chevron colour: the docs use text-mute; here text-dim, because text-mute is for disabled only (contrast rule).
-// Pressed (Motion press / release): the Card press approach and token: fill = mix card-press (the greyed accent tint
+// Pressed (Motion press / release): the Card press approach and token: fill = mix press-tint (the greyed accent tint
 // Darren picked for Card, over the surface). Tried first: the same tint over the canvas (bg) as its own mix; on RGB565
 // it either vanishes on the dark canvas (#000 + 4-5 % = the same 5/6-bit step) or, strong enough to show, drops the
-// accent toggle track under 3:1 on the light canvas. card-press shows in both and keeps every pair at 0 fails.
+// accent toggle track under 3:1 on the light canvas. press-tint shows in both and keeps every pair at 0 fails.
 // Disabled (Button rule, USER_1): icon, title, value and chevron text-mute, a trailing toggle shows its own disabled
 // look; no press look; a tap emits "blocked" + plays error. Unavailable (Card rule: the entity is gone): icon + title
 // text-mute, the trailing part replaced by "Unavailable" (body, text-dim), no sub; tap = blocked + error too.
@@ -31,7 +31,7 @@
 #include "fw.h"
 
 namespace {
-constexpr lv_state_t ST_OFF = LV_STATE_USER_1;  // disabled / unavailable (LVGL sends no events to LV_STATE_DISABLED)
+constexpr lv_state_t ST_OFF = fw::st::OFF;  // disabled / unavailable (LVGL sends no events to LV_STATE_DISABLED)
 
 enum Kind { K_NONE, K_VALUE, K_CHEVRON, K_VALUE_CHEVRON, K_TOGGLE };
 Kind kind_of(const char *s) {
@@ -52,7 +52,7 @@ const lv_style_prop_t TR_PROPS[] = {LV_STYLE_BG_OPA, LV_STYLE_PROP_INV};
 const lv_style_transition_dsc_t *tr(bool pressed) {
   static lv_style_transition_dsc_t d[2];
   static bool ready = false;
-  if (!ready) { fw::mo::transition(&d[0], fw::mo::release, TR_PROPS); fw::mo::transition(&d[1], fw::mo::press, TR_PROPS); ready = true; }
+  if (!ready) { fw::st::press_transitions(d, TR_PROPS); ready = true; }  // states.json pressed motion
   return &d[pressed];
 }
 
@@ -78,12 +78,6 @@ lv_obj_t *slot(lv_obj_t *parent, int h) {
   return b;
 }
 
-lv_color_t press_fill() {
-  for (int i = 0; i < fw::tokens::N_MIXES; i++)
-    if (!strcmp(fw::tokens::MIXES[i].name, "card-press")) return fw::tokens::mix(fw::tokens::MIXES[i], *fw::T);
-  return fw::T->surface;
-}
-
 struct Spec {
   const char *title, *icon, *sub, *trailing, *value, *state;
   bool on, divider;
@@ -95,7 +89,7 @@ lv_obj_t *row(lv_obj_t *parent, const Spec &s) {
   Kind kind = unavail ? K_NONE : kind_of(s.trailing);
   if (!unavail && kind == K_NONE && s.on) kind = K_TOGGLE;            // playground: on implies a toggle
   else if (!unavail && kind == K_NONE && s.value[0]) kind = K_VALUE;  // a typed value implies a value
-  const lv_color_t ink = off ? t.text_mute : t.text, dim = off ? t.text_mute : t.text_dim;
+  const lv_color_t ink = off ? fw::st::disabled_ink(t) : t.text, dim = off ? fw::st::disabled_ink(t) : t.text_dim;
 
   lv_obj_t *r = lv_obj_create(parent);
   lv_obj_remove_style_all(r);
@@ -108,7 +102,7 @@ lv_obj_t *row(lv_obj_t *parent, const Spec &s) {
     lv_obj_set_style_border_width(r, fw::stroke::hair, 0);
     lv_obj_set_style_border_color(r, t.line, 0);
   }
-  lv_obj_set_style_bg_color(r, press_fill(), 0);
+  lv_obj_set_style_bg_color(r, fw::st::pressed_tint(t), 0);  // states.json pressed tint
   lv_obj_set_style_bg_opa(r, LV_OPA_TRANSP, 0);
   lv_obj_set_style_transition(r, tr(false), 0);
   lv_obj_set_style_bg_opa(r, LV_OPA_COVER, LV_STATE_PRESSED);
@@ -130,7 +124,7 @@ lv_obj_t *row(lv_obj_t *parent, const Spec &s) {
   lv_obj_set_width(ti, LV_PCT(100));
   lv_obj_set_height(ti, fw::style(fw::ty::title).box);  // set_long_mode resets the text-box height
   if (!unavail && s.sub[0]) {
-    lv_obj_t *su = label(col, fw::ty::body, s.sub, off ? t.text_mute : t.text_dim);
+    lv_obj_t *su = label(col, fw::ty::body, s.sub, off ? fw::st::disabled_ink(t) : t.text_dim);
     lv_label_set_long_mode(su, LV_LABEL_LONG_MODE_DOTS);
     lv_obj_set_width(su, LV_PCT(100));
     lv_obj_set_height(su, fw::style(fw::ty::body).box);
@@ -140,8 +134,8 @@ lv_obj_t *row(lv_obj_t *parent, const Spec &s) {
   d->kind = kind;
   d->title = s.title;
   const int body_h = fw::style(fw::ty::body).box;
-  if (unavail) label(slot(r, body_h), fw::ty::body, "Unavailable", t.text_dim);
-  if (kind == K_VALUE || kind == K_VALUE_CHEVRON) label(slot(r, body_h), fw::ty::body, s.value[0] ? s.value : "\xE2\x80\x94", dim);  // empty = em dash
+  if (unavail) label(slot(r, body_h), fw::ty::body, fw::st::UNAVAILABLE_TEXT, fw::st::unavailable_note(t));
+  if (kind == K_VALUE || kind == K_VALUE_CHEVRON) label(slot(r, body_h), fw::ty::body, s.value[0] ? s.value : fw::st::PLACEHOLDER, dim);  // empty = em dash
   if (kind == K_CHEVRON || kind == K_VALUE_CHEVRON) fw::icon(r, "chevron", fw::ic::icon, dim);
   if (kind == K_TOGGLE) {
     if (const fw::Component *tc = fw::find("toggle")) {  // the Toggle component itself, not a copy
@@ -158,14 +152,15 @@ lv_obj_t *row(lv_obj_t *parent, const Spec &s) {
   if (off) lv_obj_add_state(r, ST_OFF);
 
   lv_obj_add_event_cb(r, [](lv_event_t *e) { delete (Row *) lv_event_get_user_data(e); }, LV_EVENT_DELETE, d);
-  lv_obj_add_event_cb(r, [](lv_event_t *e) {
+  fw::st::on_tap(r, [](lv_event_t *e) {  // blocked on finger down, a real tap on CLICKED (states.json)
+    if (!fw::st::tap_now(e)) return;
     auto *o = (lv_obj_t *) lv_event_get_current_target(e);
     auto *d = (Row *) lv_event_get_user_data(e);
-    if (lv_obj_has_state(o, ST_OFF)) { fw::emit(o, "blocked", d->title.c_str()); fw::sound(o, "error"); return; }
+    if (lv_obj_has_state(o, ST_OFF)) { fw::st::blocked(o, d->title.c_str()); return; }
     if (d->toggle) { lv_obj_send_event(d->toggle, LV_EVENT_CLICKED, nullptr); return; }
     fw::emit(o, "tap", d->title.c_str());
     fw::sound(o, d->kind == K_CHEVRON || d->kind == K_VALUE_CHEVRON ? "open" : "tap");
-  }, LV_EVENT_CLICKED, d);
+  }, d);
   return r;
 }
 }  // namespace

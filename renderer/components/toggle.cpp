@@ -8,15 +8,16 @@
 //   off  line track, text-dim knob          on  accent track, on-accent knob, knob moved right by the travel
 // The docs define no pressed look (the knob moving IS the feedback) and no visible label (aria-label only; a labelled
 // row = List row / Settings row, later). Disabled is not in the docs' toggle; it follows Button's disabled rule:
-//   off · disabled  hollow track (1 px line border, no fill), text-mute knob (text-mute on line would be < 3:1)
+//   off · disabled  hollow track (1 px line border, no fill), text-dim knob (every disabled knob, Darren 2026-10-21)
 //   on · disabled   accent-dim track, text-dim knob (= primary Button disabled)
 // Tap: knob slides + track colour fades = Motion pattern "toggle" (press 80 ms, ease-out; reduced motion = instant),
-// emits "tap" (detail = the new state, on / off) and plays toggle-on / toggle-off (docs: data-snd follows the state it goes to);
-// disabled: emits "blocked" and plays error. Contrast pairs: tokens/colour.json section "toggle".
+// emits "toggle" (detail = the new state, on / off; every switch emits toggle, Darren 2026-10-21) and plays toggle-on / toggle-off (docs: data-snd follows the state it goes to);
+// disabled: emits "blocked" and plays error on finger down. Unavailable (states.json): the word "Unavailable" (body,
+// text-dim) in place of the switch, touch::min tall, finger down = blocked + error. Contrast pairs: tokens/colour.json section "toggle".
 #include "fw.h"
 
 namespace {
-constexpr lv_state_t ST_OFF = LV_STATE_USER_1;  // disabled (LVGL sends no events to LV_STATE_DISABLED; see Button)
+constexpr lv_state_t ST_OFF = fw::st::OFF;  // disabled (LVGL sends no events to LV_STATE_DISABLED; see Button)
 
 struct Toggle {
   bool on = false;
@@ -30,8 +31,8 @@ void show(void *o, int32_t v) {
   auto *d = (Toggle *) lv_obj_get_user_data(t);
   lv_obj_t *k = lv_obj_get_child(t, 0);
   const uint8_t m = (uint8_t) LV_CLAMP(0, v, 255);
-  lv_obj_set_style_bg_color(t, lv_color_mix(fw::T->accent, fw::T->line, m), 0);
-  lv_obj_set_style_bg_color(k, lv_color_mix(fw::T->on_accent, fw::T->text_dim, m), 0);
+  lv_obj_set_style_bg_color(t, lv_color_mix(fw::st::on_fill(*fw::T), fw::T->line, m), 0);  // states.json on roles
+  lv_obj_set_style_bg_color(k, lv_color_mix(fw::st::on_label(*fw::T), fw::T->text_dim, m), 0);
   lv_obj_set_style_translate_x(k, d->travel * m / 255, 0);
   d->shown = v;
 }
@@ -41,16 +42,34 @@ FW_COMPONENT(toggle, "Toggle", "components", R"({
   "frame": [160, 96],
   "props": [
     {"name": "on", "type": "bool", "default": false},
-    {"name": "state", "type": "select", "options": ["default", "disabled"], "default": "default"}
+    {"name": "state", "type": "select", "options": ["default", "disabled", "unavailable"], "default": "default"}
   ],
   "variants": [
     {"label": "off", "props": {}},
     {"label": "on", "props": {"on": true}},
     {"label": "off · disabled", "props": {"state": "disabled"}},
-    {"label": "on · disabled", "props": {"on": true, "state": "disabled"}}
+    {"label": "on · disabled", "props": {"on": true, "state": "disabled"}},
+    {"label": "unavailable", "props": {"state": "unavailable"}}
   ]
 })") {
   const bool disabled = !strcmp(p["state"] | "default", "disabled");
+  if (!strcmp(p["state"] | "default", "unavailable")) {  // states.json unavailable: the word in place of the switch
+    lv_obj_t *u = lv_obj_create(parent);
+    lv_obj_remove_style_all(u);
+    lv_obj_add_flag(u, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_remove_flag(u, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_size(u, LV_SIZE_CONTENT, fw::touch::min);
+    lv_obj_t *l = fw::text(u, fw::ty::body, fw::st::UNAVAILABLE_TEXT, fw::st::unavailable_note(*fw::T));
+    lv_obj_remove_flag(l, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_center(l);
+    lv_obj_update_layout(l);
+    lv_obj_set_width(u, (lv_obj_get_width(l) + fw::sp::GRID - 1) / fw::sp::GRID * fw::sp::GRID);  // on the grid
+    lv_obj_add_state(u, ST_OFF);
+    fw::st::on_tap(u, [](lv_event_t *e) {
+      if (fw::st::tap_now(e)) fw::st::blocked((lv_obj_t *) lv_event_get_current_target(e), "unavailable");
+    }, nullptr);
+    return;
+  }
   auto *d = new Toggle;
   d->on = p["on"] | false;
 
@@ -78,26 +97,27 @@ FW_COMPONENT(toggle, "Toggle", "components", R"({
   if (disabled) {
     lv_obj_add_state(t, ST_OFF);
     if (d->on) {
-      lv_obj_set_style_bg_color(t, fw::T->accent_dim, 0);
-      lv_obj_set_style_bg_color(kn, fw::T->text_dim, 0);
+      lv_obj_set_style_bg_color(t, fw::st::disabled_accent(*fw::T), 0);  // states.json disabled roles
+      lv_obj_set_style_bg_color(kn, fw::st::disabled_on_fill(*fw::T), 0);
     } else {  // hollow: the 1 px border sits inside the box, so the knob keeps its place
       lv_obj_set_style_bg_opa(t, LV_OPA_TRANSP, 0);
       lv_obj_set_style_border_width(t, fw::stroke::hair, 0);
-      lv_obj_set_style_border_color(t, fw::T->line, 0);
-      lv_obj_set_style_bg_color(kn, fw::T->text_mute, 0);
+      lv_obj_set_style_border_color(t, fw::st::disabled_line(*fw::T), 0);
+      lv_obj_set_style_bg_color(kn, fw::st::disabled_knob(*fw::T), 0);  // every knob text-dim (Darren 2026-10-21)
       lv_obj_set_pos(kn, in - fw::stroke::hair, in - fw::stroke::hair);  // children start inside the border
     }
   }
 
   lv_obj_add_event_cb(t, [](lv_event_t *e) { delete (Toggle *) lv_event_get_user_data(e); }, LV_EVENT_DELETE, d);
   // a real tap (CLICKED: dropped after a scroll, like Button)
-  lv_obj_add_event_cb(t, [](lv_event_t *e) {
+  fw::st::on_tap(t, [](lv_event_t *e) {  // blocked on finger down, a real tap on CLICKED (states.json)
+    if (!fw::st::tap_now(e)) return;
     auto *o = (lv_obj_t *) lv_event_get_current_target(e);
     auto *d = (Toggle *) lv_obj_get_user_data(o);
-    if (lv_obj_has_state(o, ST_OFF)) { fw::emit(o, "blocked", d->on ? "on" : "off"); fw::sound(o, "error"); return; }
+    if (lv_obj_has_state(o, ST_OFF)) { fw::st::blocked(o, d->on ? "on" : "off"); return; }
     d->on = !d->on;
-    fw::emit(o, "tap", d->on ? "on" : "off");
-    fw::sound(o, d->on ? "toggle-on" : "toggle-off");
-    fw::animate(o, fw::mo::toggle, {show, d->shown, d->on ? 255 : 0, fw::mo::MOVE});
-  }, LV_EVENT_CLICKED, nullptr);
+    fw::emit(o, fw::st::SWITCH_EVENT, d->on ? "on" : "off");
+    fw::sound(o, d->on ? fw::st::ON_SOUND : fw::st::OFF_SOUND);
+    fw::animate(o, fw::st::SWITCH, {show, d->shown, d->on ? 255 : 0, fw::mo::MOVE});
+  }, nullptr);
 }

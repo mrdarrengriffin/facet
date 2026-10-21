@@ -112,6 +112,16 @@ void step_ticks(lv_obj_t *o, int from, int to, int n) {
   }
 }
 
+// bleed (fw.h): overflow visible + ext draw size on o and every ancestor (each object keeps the largest it was asked)
+void bleed(lv_obj_t *o, int px) {
+  for (lv_obj_t *x = o; x; x = lv_obj_get_parent(x)) {
+    lv_obj_add_flag(x, LV_OBJ_FLAG_OVERFLOW_VISIBLE);
+    lv_obj_add_event_cb(x, [](lv_event_t *e) { lv_event_set_ext_draw_size(e, (int32_t) (intptr_t) lv_event_get_user_data(e)); },
+                        LV_EVENT_REFR_EXT_DRAW_SIZE, (void *) (intptr_t) px);
+    lv_obj_refresh_ext_draw_size(x);
+  }
+}
+
 // clean `scr`, make it the Facet screen (bg token, flex column, centred) and build `comp` with `props` on it
 const char *render(lv_obj_t *scr, const char *comp, const char *props, bool light, int accent) {
   const Component *c = find(comp);

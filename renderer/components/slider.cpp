@@ -18,11 +18,13 @@
 // dimmer-like drag ticks on every single step and a fast one thins out (never more ticks than steps); the ends (0 and
 // max) play the stronger slider-landmark and are never dropped.
 // Events: "change" (detail = the new value) on release, when the value differs from the press; "blocked" when disabled.
+// Unavailable (states.json): the same box, track / fill / knob hidden, "Unavailable" (body, text-dim) where the track
+// starts; finger down = blocked + error.
 // Contrast pairs: tokens/colour.json section "slider".
 #include "fw.h"
 
 namespace {
-constexpr lv_state_t ST_OFF = LV_STATE_USER_1;  // disabled (LVGL sends no events to LV_STATE_DISABLED; see Button)
+constexpr lv_state_t ST_OFF = fw::st::OFF;  // disabled (LVGL sends no events to LV_STATE_DISABLED; see Button)
 constexpr int32_t FP = 256;                       // shown position: step index x 256 (sweeps move between steps)
 
 struct Slider {
@@ -79,7 +81,7 @@ FW_COMPONENT(slider, "Slider", "components", R"({
     {"name": "max", "type": "range", "min": 10, "max": 100, "step": 1, "default": 100},
     {"name": "step", "type": "range", "min": 1, "max": 25, "step": 1, "default": 1},
     {"name": "width", "type": "range", "min": 96, "max": 288, "step": 8, "default": 256},
-    {"name": "state", "type": "select", "options": ["default", "disabled"], "default": "default"}
+    {"name": "state", "type": "select", "options": ["default", "disabled", "unavailable"], "default": "default"}
   ],
   "variants": [
     {"label": "min · 0", "props": {"value": 0}},
@@ -87,7 +89,8 @@ FW_COMPONENT(slider, "Slider", "components", R"({
     {"label": "max · 100", "props": {"value": 100}},
     {"label": "step 10 · 40", "props": {"step": 10}},
     {"label": "disabled · 40", "props": {"state": "disabled"}},
-    {"label": "disabled · 0", "props": {"value": 0, "state": "disabled"}}
+    {"label": "disabled · 0", "props": {"value": 0, "state": "disabled"}},
+    {"label": "unavailable", "props": {"state": "unavailable"}}
   ]
 })") {
   const bool disabled = !strcmp(p["state"] | "default", "disabled");
@@ -103,6 +106,23 @@ FW_COMPONENT(slider, "Slider", "components", R"({
   const int tr = fw::sp::s1;      // 4 / 4: the docs track (4 px at both)
   d->knob = h / 2;                // 24 / 16 = docs slider-knob
   d->w = fw::px((float) (p["width"] | 256));
+  if (!strcmp(p["state"] | "default", "unavailable")) {  // states.json unavailable: the word in place of the track
+    delete d;  // same box (rows do not jump), track / fill / knob hidden, the word where the track starts
+    lv_obj_t *u = lv_obj_create(parent);
+    lv_obj_remove_style_all(u);
+    lv_obj_add_flag(u, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_remove_flag(u, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_size(u, fw::px((float) (p["width"] | 256)) + h / 2, h);
+    lv_obj_set_style_pad_left(u, h / 4, 0);  // = the track start (half a knob)
+    lv_obj_t *l = fw::text(u, fw::ty::body, fw::st::UNAVAILABLE_TEXT, fw::st::unavailable_note(*fw::T));
+    lv_obj_remove_flag(l, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_align(l, LV_ALIGN_LEFT_MID, 0, 0);
+    lv_obj_add_state(u, ST_OFF);
+    fw::st::on_tap(u, [](lv_event_t *e) {
+      if (fw::st::tap_now(e)) fw::st::blocked((lv_obj_t *) lv_event_get_current_target(e), "unavailable");
+    }, nullptr);
+    return;
+  }
 
   lv_obj_t *s = lv_obj_create(parent);
   lv_obj_remove_style_all(s);
@@ -118,7 +138,7 @@ FW_COMPONENT(slider, "Slider", "components", R"({
   lv_obj_set_pos(t, d->knob / 2, (h - tr) / 2);
   lv_obj_set_style_radius(t, LV_RADIUS_CIRCLE, 0);
   lv_obj_set_style_bg_opa(t, LV_OPA_COVER, 0);
-  lv_obj_set_style_bg_color(t, disabled ? fw::T->line : fw::T->line_hi, 0);
+  lv_obj_set_style_bg_color(t, disabled ? fw::st::disabled_line(*fw::T) : fw::T->line_hi, 0);
   lv_obj_set_style_clip_corner(t, true, 0);  // the fill keeps the track's round start (docs: overflow hidden)
 
   d->fill = lv_obj_create(t);
@@ -126,7 +146,7 @@ FW_COMPONENT(slider, "Slider", "components", R"({
   lv_obj_remove_flag(d->fill, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
   lv_obj_set_size(d->fill, 0, tr);
   lv_obj_set_style_bg_opa(d->fill, LV_OPA_COVER, 0);
-  lv_obj_set_style_bg_color(d->fill, disabled ? fw::T->text_mute : fw::T->blue, 0);
+  lv_obj_set_style_bg_color(d->fill, disabled ? fw::st::disabled_ink(*fw::T) : fw::T->blue, 0);
 
   d->kn = lv_obj_create(s);
   lv_obj_remove_style_all(d->kn);
@@ -135,7 +155,7 @@ FW_COMPONENT(slider, "Slider", "components", R"({
   lv_obj_set_y(d->kn, (h - d->knob) / 2);
   lv_obj_set_style_radius(d->kn, LV_RADIUS_CIRCLE, 0);
   lv_obj_set_style_bg_opa(d->kn, LV_OPA_COVER, 0);
-  lv_obj_set_style_bg_color(d->kn, disabled ? fw::T->text_dim : fw::T->accent, 0);
+  lv_obj_set_style_bg_color(d->kn, disabled ? fw::st::disabled_knob(*fw::T) : fw::T->accent, 0);
 
   d->shown_idx = d->idx;  // the first draw makes no sound
   show(s, d->idx * FP);
@@ -150,7 +170,7 @@ FW_COMPONENT(slider, "Slider", "components", R"({
     lv_point_t pt = {0, 0};
     if (lv_indev_t *in = lv_indev_active()) lv_indev_get_point(in, &pt);
     if (lv_obj_has_state(s, ST_OFF)) {
-      if (code == LV_EVENT_PRESSED) { fw::emit(s, "blocked", fmt(d, d->idx).c_str()); fw::sound(s, "error"); }
+      if (code == LV_EVENT_PRESSED) fw::st::blocked(s, fmt(d, d->idx).c_str());
       return;
     }
     if (code == LV_EVENT_PRESSED) {
@@ -164,7 +184,7 @@ FW_COMPONENT(slider, "Slider", "components", R"({
       const int i = idx_at(s, pt.x);
       if (d->grab) { stop_sweep(s); d->idx = i; show(s, i * FP); return; }
       d->idx = i;  // tap-to-jump: the value is set now, the knob sweeps there
-      fw::animate(s, fw::mo::value, {show, d->shown, i * FP, fw::mo::VALUE});
+      fw::animate(s, fw::st::SWEEP, {show, d->shown, i * FP, fw::mo::VALUE});
     } else if (code == LV_EVENT_PRESSING) {
       if (!d->grab && !d->moved && std::abs(pt.x - d->press_x) < fw::sp::s2) return;  // still a tap: let the sweep run
       d->moved = true;

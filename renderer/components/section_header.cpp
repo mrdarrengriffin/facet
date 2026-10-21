@@ -8,7 +8,7 @@
 //            here) | action (a text button: caps-sm accent-text, not in the docs atom; the board asked for "count or
 //            action")
 // Action: a hit box section_h tall (= touch min) with space 2 padding, nudged right by that padding (translate) so its
-// text ends on the content edge like the meta does; pressed = Card / List row press: mix card-press fill (Motion press /
+// text ends on the content edge like the meta does; pressed = Card / List row press: mix press-tint fill (Motion press /
 // release), radius rad::chip; disabled (Button rule, USER_1) = text-mute, no press look, tap = "blocked" + error.
 // Tap = a real CLICKED: "tap" (detail = the action text) + sound "tap" (an in-place action such as Clear; a header
 // action that opens a screen could play "open" later). The title, badge and meta are static (no events).
@@ -16,13 +16,13 @@
 #include "fw.h"
 
 namespace {
-constexpr lv_state_t ST_OFF = LV_STATE_USER_1;  // disabled (LVGL sends no events to LV_STATE_DISABLED; see Button)
+constexpr lv_state_t ST_OFF = fw::st::OFF;  // disabled (LVGL sends no events to LV_STATE_DISABLED; see Button)
 
 const lv_style_prop_t TR_PROPS[] = {LV_STYLE_BG_OPA, LV_STYLE_PROP_INV};
 const lv_style_transition_dsc_t *tr(bool pressed) {
   static lv_style_transition_dsc_t d[2];
   static bool ready = false;
-  if (!ready) { fw::mo::transition(&d[0], fw::mo::release, TR_PROPS); fw::mo::transition(&d[1], fw::mo::press, TR_PROPS); ready = true; }
+  if (!ready) { fw::st::press_transitions(d, TR_PROPS); ready = true; }  // states.json pressed motion
   return &d[pressed];
 }
 
@@ -105,13 +105,11 @@ FW_COMPONENT(section_header, "Section header", "components", R"({
     lv_obj_set_size(a, LV_SIZE_CONTENT, fw::lay::section_h);
     lv_obj_set_style_pad_hor(a, fw::sp::s2, 0);
     lv_obj_set_style_translate_x(a, fw::sp::s2, 0);  // text ends on the content edge; the press fill overhangs it
+    fw::bleed(a, fw::sp::s2);  // the overhang draws outside the header box (else LVGL clips the fill's right end)
     lv_obj_set_style_radius(a, fw::rad::chip, 0);
     lv_obj_set_flex_flow(a, LV_FLEX_FLOW_ROW);
     lv_obj_set_flex_align(a, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    lv_color_t press = t.surface;
-    for (int i = 0; i < fw::tokens::N_MIXES; i++)
-      if (!strcmp(fw::tokens::MIXES[i].name, "card-press")) press = fw::tokens::mix(fw::tokens::MIXES[i], t);
-    lv_obj_set_style_bg_color(a, press, 0);
+    lv_obj_set_style_bg_color(a, fw::st::pressed_tint(t), 0);  // states.json pressed tint
     lv_obj_set_style_bg_opa(a, LV_OPA_TRANSP, 0);
     lv_obj_set_style_bg_opa(a, LV_OPA_COVER, LV_STATE_PRESSED);
     lv_obj_set_style_bg_opa(a, LV_OPA_TRANSP, ST_OFF | LV_STATE_PRESSED);
@@ -126,12 +124,13 @@ FW_COMPONENT(section_header, "Section header", "components", R"({
 
     if (!strcmp(state, "pressed")) lv_obj_add_state(a, LV_STATE_PRESSED);
     if (off) lv_obj_add_state(a, ST_OFF);
-    lv_obj_add_event_cb(a, [](lv_event_t *e) {
+    fw::st::on_tap(a, [](lv_event_t *e) {  // blocked on finger down, a real tap on CLICKED (states.json)
+      if (!fw::st::tap_now(e)) return;
       auto *o = (lv_obj_t *) lv_event_get_current_target(e);
       auto *l = (lv_obj_t *) lv_event_get_user_data(e);
       const char *d = l ? lv_label_get_text(l) : "";
-      if (lv_obj_has_state(o, ST_OFF)) { fw::emit(o, "blocked", d); fw::sound(o, "error"); }
+      if (lv_obj_has_state(o, ST_OFF)) fw::st::blocked(o, d);
       else { fw::emit(o, "tap", d); fw::sound(o, "tap"); }
-    }, LV_EVENT_CLICKED, l);
+    }, l);
   }
 }

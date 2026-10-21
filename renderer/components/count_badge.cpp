@@ -20,7 +20,7 @@ lv_color_t fill_of(const char *t) {
   if (!strcmp(t, "error")) return T.error;
   if (!strcmp(t, "working")) return T.accent;
   if (!strcmp(t, "info")) return T.blue;
-  return T.text_mute;  // idle
+  return T.text_dim;  // idle (text-dim: text-mute is for disabled only, Darren 2026-10-21)
 }
 }  // namespace
 

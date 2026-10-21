@@ -148,6 +148,12 @@ void sound(lv_obj_t *obj, const char *id, float pos);
 void step_ticks(lv_obj_t *obj, int from, int to, int n);
 bool tick_landmark(int step, int n);  // 0 and n today; add 50 % etc. in fw_core.cpp LANDMARKS
 
+// Bleed (States, Darren 2026-10-21): let o's marks draw up to `px` outside its box (a focus ring at the focus offset,
+// an overhanging press fill). LVGL clips every child to each ancestor's box, so o and every ancestor up to the screen
+// get LV_OBJ_FLAG_OVERFLOW_VISIBLE AND an ext draw size of at least px (OVERFLOW_VISIBLE alone draws 0 px outside: the
+// clip is the ancestor's box grown by ITS ext draw size). Call once o is in its final parent.
+void bleed(lv_obj_t *o, int px);
+
 // apply a forced state from props ("state": "pressed" | "disabled" | ...) so variants can show it without a touch
 inline void force_state(lv_obj_t *o, Props p) {
   const char *s = p["state"] | "";
@@ -157,6 +163,11 @@ inline void force_state(lv_obj_t *o, Props p) {
 }
 
 }  // namespace fw
+
+// Interaction states (tokens/states.json, README "State tokens"): fw::st::OFF / ON / PRESSED, colour roles per state
+// (fw::st::disabled_ink(t), pressed_tint(t), ...), press / switch motion, blocked() = event + error, add_focus_ring().
+// Components take every state choice from here, never pick a colour token for a state themselves.
+#include "states_gen.h"
 
 // FW_COMPONENT(id, "Name", "components", R"({...meta json...})") { ...build with `parent` and `p`... }
 #define FW_COMPONENT(ID, NAME, SECTION, META)                                    \
