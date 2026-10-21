@@ -1,0 +1,432 @@
+{
+  "$comment": "Facet mascot tokens: the single source for the WASM workbench and the panels (README 'Mascot tokens'). From Facet main packages/ui/src/mascot.ts + styles/20-mascot.css (geometry, moods, keyframes) and tokens.json size mascot-w/h. tools/gen_mascot.mjs -> mascot_gen.h (fw::mas::), runtime core/mascot.cpp (fw::mascot). Values are device px: `v` = the 720 px panels (= the docs CSS px), `1x` = the 480 px panels. Colours and easings are names of colour.json / motion.json tokens, never values.",
+  "grid": {
+    "rule": "The mascot follows the foundations (Darren 2026-10-22: \"I don't mind reworking corners and rules of the mascot to align with the new foundational design principles\"): the body box and everything outside it (\"!\", z, progress dots, the hop) sit on the 4 px grid; corners come from the radius tokens, line widths from the stroke tokens. Inside the body, the eyes and their 1-2 px motions stay whole-pixel artwork: a 4 px grid there would turn every eye into the same 4 x 4 square.",
+    "foundations": [
+      "Body: 32 x 24 / 20 x 16, both on the 4 px grid; corners radius.icon (8 / 4).",
+      "Strokes: brows, the \"!\", progress dots and the z lines are stroke.edge (2 px) wide; the happy arch is stroke.edge at 720, stroke.hair (1 px) at 480 (2 px fills a 4 px arch).",
+      "Round ends: brows, the \"!\" and the dots use radius.round (pill ends); the happy arch and z lines have round caps.",
+      "Grid outside the body: the \"!\" sits a space.1 (4 px) gap right of the body, the dots a space.1 gap under it on an 8 / 4 px pitch, the z starts on the grid at the head's top-right and drifts by grid steps; the hop is 4 px.",
+      "Whole pixels inside the body (grid too coarse there): eye sizes 1-7 px and their corners (1-3 px, below the smallest radius token, 4), eye and brow positions (they keep the docs' spacing), brow length, and the 1-2 px motions (blink, glance, scan, breathe, sigh, twitch, slump).",
+      "Colours: one colour token per mood; eyes + brows = bg; \"!\" accent; z text-dim (contrast pairs section mascot)."
+    ],
+    "changes": [
+      "Body corners 7 (docs) / 5 (firmware) -> radius.icon 8 / 4: the radius tokens, no one-off corner.",
+      "\"!\" at x 34 (2 px from the body) -> 36 / 24 (space.1 gap), stem 7 -> 8, top -6 -> -8 at 720; 480 stem 4, gap 2: on the grid.",
+      "z 7 px glyph, 1.75 px stroke, start (27, 5), drift (+8, -11) -> 8 px glyph, stroke.edge 2 px, start (28, 4), drift (+8, -12) at 720; 480: 4 px glyph, 2 px stroke, start (16, 4), drift (+4, -8).",
+      "Progress dots pitch 6 / 4 -> 8 / 4 (space.2 at 720), row 4 px under the body (28 / 20; was 28 / 19).",
+      "Hop 5 px (docs) -> 4 px at both densities.",
+      "Brows 2 px bars with 1 px corners -> stroke.edge pills (radius.round).",
+      "Happy arch: a partial border (stepped corners) -> an antialiased half ring with round ends.",
+      "Needs / error: no body rotation (the docs tilt 6 / 4 deg): the firmware's twitch and slump instead; a turned body smears its edges and redraws as a layer.",
+      "Each z fades as one layer instead of three strokes blending separately (darker joints while fading)."
+    ],
+    "checked": [
+      "body.w",
+      "body.h",
+      "extras.bang.x",
+      "extras.bang.y",
+      "extras.bang.stem",
+      "extras.z.x",
+      "extras.z.y",
+      "extras.z.size",
+      "extras.dots.y",
+      "extras.dots.pitch",
+      "motion.hop.amp",
+      "motion.z.amp"
+    ]
+  },
+  "body": {
+    "w": { "v": 32, "1x": 20 },
+    "h": { "v": 24, "1x": 16 },
+    "r": { "v": "radius.icon", "1x": "radius.icon" },
+    "about": "The rounded body in the mood colour; it only moves (hop, lift, slump) and gets 1 px shorter (breathe), never turns."
+  },
+  "eye-colour": { "token": "bg", "about": "Eyes and brows are cut-outs in the canvas colour (on a tile too, like the docs)." },
+  "eyes": {
+    "$about": "Left eye per shape (x, y from the body's top-left; w, h; r radius); the right eye at rx (default: mirrored, body.w - x - w). arch = a stroke-wide half ring (lv_arc, round ends: antialiased) whose box is w x w, so its top half is the arch and the round ends make the legs (docs: a 6 x 4 box with a 2 px top + side border, radius 3 3 0 0).",
+    "round": {
+      "label": "Round",
+      "v": { "x": 9, "y": 8, "w": 4, "h": 5, "r": 1 },
+      "1x": { "x": 5, "y": 5, "w": 3, "h": 3, "r": 1 },
+      "use": "idle (awake)"
+    },
+    "reading": {
+      "label": "Reading",
+      "v": { "x": 9, "y": 9, "w": 3, "h": 4, "r": 1, "rx": 19 },
+      "1x": { "x": 6, "y": 6, "w": 2, "h": 3, "r": 1 },
+      "use": "working (reading): smaller, scanning"
+    },
+    "happy": {
+      "label": "Happy arches",
+      "v": { "x": 8, "y": 9, "w": 6, "h": 4, "r": 3, "arch": "stroke.edge" },
+      "1x": { "x": 4, "y": 6, "w": 4, "h": 3, "r": 2, "arch": "stroke.hair" },
+      "use": "done"
+    },
+    "wide": {
+      "label": "Wide",
+      "v": { "x": 8, "y": 7, "w": 5, "h": 7, "r": 2 },
+      "1x": { "x": 5, "y": 5, "w": 3, "h": 5, "r": 1 },
+      "use": "needs you"
+    },
+    "droopy": {
+      "label": "Droopy",
+      "v": { "x": 9, "y": 11, "w": 4, "h": 3, "r": 1 },
+      "1x": { "x": 5, "y": 7, "w": 3, "h": 2, "r": 1 },
+      "use": "error: half closed"
+    },
+    "closed": {
+      "label": "Closed line",
+      "v": { "x": 8, "y": 11, "w": 5, "h": 2, "r": 1 },
+      "1x": { "x": 5, "y": 7, "w": 3, "h": 1, "r": 1 },
+      "use": "sleeping"
+    }
+  },
+  "blink-h": { "v": 1, "1x": 1, "about": "eye height at the closed point of a blink (docs scaleY 0.2 of 5 px)" },
+  "brow": {
+    "v": { "x": 8, "w": 6, "h": "stroke.edge", "r": "radius.round" },
+    "1x": { "x": 5, "w": 4, "h": "stroke.edge", "r": "radius.round" },
+    "about": "A small bar above each eye (left one; the right mirrors it, angle negated), only in some moods. Turned about its centre; y and angle per mood."
+  },
+  "extras": {
+    "bang": {
+      "label": "\"!\"",
+      "colour": "accent",
+      "v": { "x": 36, "y": -8, "w": "stroke.edge", "stem": 8, "gap": 2, "dot": "stroke.edge", "r": "radius.round" },
+      "1x": { "x": 24, "y": -4, "w": "stroke.edge", "stem": 4, "gap": 2, "dot": "stroke.edge", "r": "radius.round" },
+      "about": "needs you: stem + dot above the right shoulder (x, y from the body's top-left)"
+    },
+    "z": {
+      "label": "z z z",
+      "colour": "text-dim",
+      "count": 3,
+      "v": { "x": 28, "y": 4, "size": 8, "stroke": "stroke.edge" },
+      "1x": { "x": 16, "y": 4, "size": 4, "stroke": "stroke.edge" },
+      "about": "sleeping: three z (3-segment polylines, round caps) start at the head's top-right corner (x, y = the z's bottom-left) and rise"
+    },
+    "dots": {
+      "label": "Progress dots",
+      "colour": "mood",
+      "count": 3,
+      "v": { "x": 7, "y": 28, "size": "stroke.edge", "pitch": 8, "r": "radius.round" },
+      "1x": { "x": 5, "y": 20, "size": "stroke.edge", "pitch": 4, "r": "radius.round" },
+      "about": "working (reading): three dots under the body (x = the first dot's left edge, centred on the body), lit one after another"
+    }
+  },
+  "opacity": { "dot-dim": { "value": 0.25, "about": "a progress dot that is not lit (docs 0.25; the mood colour at 25 % over the canvas is 4+ RGB565 steps from it, so it holds on the panels)" } },
+  "moods": {
+    "idle": {
+      "label": "Idle",
+      "colour": "steel",
+      "eyes": "round",
+      "motion": ["blink", "glance"],
+      "what": "slow blink, glances left / right"
+    },
+    "working": {
+      "label": "Working",
+      "colour": "accent",
+      "eyes": "reading",
+      "extras": [
+        "dots"
+      ],
+      "motion": [
+        "scan",
+        "blink",
+        "dots"
+      ],
+      "work": "reading",
+      "what": "calm: eyes scanning left -> right like reading, occasional blink, 3 progress dots"
+    },
+    "done": {
+      "label": "Done",
+      "colour": "steel",
+      "eyes": "happy",
+      "motion": [
+        "hop"
+      ],
+      "what": "happy arches, hop on arrival"
+    },
+    "needs": {
+      "label": "Needs you",
+      "colour": "warn",
+      "eyes": "wide",
+      "brows": {
+        "v": { "y": 3 },
+        "1x": { "y": 2 },
+        "angle": -10
+      },
+      "extras": [
+        "bang"
+      ],
+      "motion": [
+        "tilt"
+      ],
+      "what": "wide eyes, raised brows, tilt, orange \"!\""
+    },
+    "error": {
+      "label": "Error",
+      "colour": "error",
+      "eyes": "droopy",
+      "brows": {
+        "v": { "y": 7 },
+        "1x": { "y": 5 },
+        "angle": -16
+      },
+      "motion": [
+        "sigh"
+      ],
+      "pose": { "y": 1 },
+      "what": "droopy half-closed eyes, sad brows, slumps 1 px"
+    },
+    "sleeping": {
+      "label": "Sleeping",
+      "colour": "text-mute",
+      "eyes": "closed",
+      "extras": [
+        "z"
+      ],
+      "motion": ["breathe", "z"],
+      "what": "closed eyes, slow breathing, three \"z\" rising up-right"
+    }
+  },
+  "work": {
+    "default": "reading",
+    "variants": { "reading": { "label": "C · Reading", "status": "built", "what": "eyes dart left -> right in a steady rhythm, occasional blink, 3 progress dots" }, "focused": { "label": "A · Focused", "status": "later", "what": "soft squint + 1 px bob" }, "typing": { "label": "B · Typing", "status": "later", "what": "eyes down at a keyboard line under the mascot, keystroke bob, blinking cursor block" }, "thinking": { "label": "D · Thinking", "status": "later", "what": "eyes up and to the side, one brow raised, three dots pulsing above" }, "builder": { "label": "E · Builder", "status": "later", "what": "determined flat brows + squint, a small gear turning beside the head" } }
+  },
+  "delay": { "instance-offset": { "ms": 1700, "about": "per-instance phase: the n-th mascot on a view starts its desynced loops n x 1700 ms into the cycle (mod the loop), so blinks and glances of several mascots never line up (1700 is not a divisor of any desynced loop; 5200 blink -> 0, 1.7, 3.4, 5.1, 1.6 s ...). A component may pass its own delay." } },
+  "motion": {
+    "$about": "Each pattern = one loop (or one shot) of keyframes: tracks of [t permille, value] on one part and property; between keys the pattern's easing (like CSS keyframes). Values: x / y / h in art px x amp (per density), rot in degrees, opa 0..1 (or an opacity token name), close 0..1 (eye height from its shape's h down to blink-h, centred). desync = shifted by the instance delay; stagger = each of several parts (z, dots) a further step later. reduced (motion.json reduced modes): still = no loop, the frame at `rest` permille is shown; instant = skipped.",
+    "blink": {
+      "label": "Blink",
+      "ms": 5200,
+      "easing": "linear",
+      "loop": true,
+      "desync": true,
+      "reduced": "still",
+      "rest": 0,
+      "use": "idle, working",
+      "animates": "both eyes close to blink-h and open again (height + y, centred), once per loop",
+      "tracks": [
+        {
+          "part": "eyes",
+          "prop": "close",
+          "keys": [[0, 0], [940, 0], [960, 1], [1000, 0]]
+        }
+      ]
+    },
+    "glance": {
+      "label": "Glance",
+      "ms": 11000,
+      "easing": "ease-in-out",
+      "loop": true,
+      "desync": true,
+      "reduced": "still",
+      "rest": 0,
+      "use": "idle",
+      "animates": "the eyes look left, then right, then back (x of the eye group)",
+      "tracks": [
+        {
+          "part": "face",
+          "prop": "x",
+          "amp": { "v": 2, "1x": 1 },
+          "keys": [[0, 0], [300, 0], [340, -1], [460, -1], [500, 1], [620, 1], [660, 0], [1000, 0]]
+        }
+      ]
+    },
+    "scan": {
+      "label": "Eye scan",
+      "ms": 1400,
+      "easing": "linear",
+      "loop": true,
+      "desync": false,
+      "reduced": "still",
+      "rest": 400,
+      "use": "working (reading)",
+      "animates": "the eyes run left -> right along a line (80 %), then jump back (x of the eye group)",
+      "tracks": [
+        {
+          "part": "face",
+          "prop": "x",
+          "amp": { "v": 2, "1x": 1 },
+          "keys": [[0, -1], [800, 1], [1000, -1]]
+        }
+      ]
+    },
+    "dots": {
+      "label": "Progress dots",
+      "ms": 2400,
+      "easing": "linear",
+      "loop": true,
+      "desync": false,
+      "stagger": 800,
+      "reduced": "still",
+      "rest": 100,
+      "use": "working (reading)",
+      "animates": "each dot is lit for 30 % of the loop, then dims to dot-dim; the three are a third of a loop apart (opacity)",
+      "tracks": [
+        {
+          "part": "dot",
+          "prop": "opa",
+          "keys": [[0, 1], [300, 1], [310, "dot-dim"], [1000, "dot-dim"]]
+        }
+      ]
+    },
+    "bob": {
+      "label": "Bob",
+      "ms": 2800,
+      "easing": "ease-in-out",
+      "loop": true,
+      "desync": true,
+      "reduced": "still",
+      "rest": 0,
+      "use": "working variants A / E (later)",
+      "animates": "the body rises 1 px and settles (y)",
+      "tracks": [
+        {
+          "part": "body",
+          "prop": "y",
+          "amp": { "v": 1, "1x": 1 },
+          "keys": [[0, 0], [500, -1], [1000, 0]]
+        }
+      ]
+    },
+    "breathe": {
+      "label": "Breathe",
+      "ms": 4400,
+      "easing": "ease-in-out",
+      "loop": true,
+      "desync": true,
+      "reduced": "still",
+      "rest": 0,
+      "use": "sleeping",
+      "animates": "the body gets 1 px shorter and back, bottom fixed (height + y)",
+      "tracks": [
+        {
+          "part": "body",
+          "prop": "h",
+          "amp": { "v": 1, "1x": 1 },
+          "keys": [[0, 0], [500, -1], [1000, 0]]
+        }
+      ]
+    },
+    "hop": {
+      "label": "Hop",
+      "ms": 720,
+      "easing": "ease-out",
+      "loop": false,
+      "desync": false,
+      "reduced": "instant",
+      "rest": 0,
+      "use": "done, when it arrives",
+      "animates": "one hop up and a small second bounce (y), once",
+      "tracks": [
+        {
+          "part": "body",
+          "prop": "y",
+          "amp": { "v": 4, "1x": 4 },
+          "keys": [[0, 0], [300, -1], [550, 0], [720, -0.5], [1000, 0]]
+        }
+      ]
+    },
+    "tilt": {
+      "label": "Twitch",
+      "ms": 3000,
+      "easing": "ease-in-out",
+      "loop": true,
+      "desync": false,
+      "reduced": "still",
+      "rest": 0,
+      "use": "needs you",
+      "animates": "every 3 s a little twitch: the body lifts 1 px, then the eyes flick 1 px aside; the \"!\" dims and comes back just before (y, x of the eye group, opacity). The docs tilt the body 6 deg; the approved panel firmware drew it without rotation (a rotated body is a layer redraw and smears its 1 px edges), so this follows the firmware.",
+      "tracks": [
+        {
+          "part": "body",
+          "prop": "y",
+          "amp": { "v": 1, "1x": 1 },
+          "keys": [[0, 0], [700, 0], [760, -1], [820, 0], [1000, 0]]
+        },
+        {
+          "part": "face",
+          "prop": "x",
+          "amp": { "v": 1, "1x": 1 },
+          "keys": [[0, 0], [810, 0], [830, -1], [870, -1], [890, 0], [1000, 0]]
+        },
+        {
+          "part": "bang",
+          "prop": "opa",
+          "keys": [[0, 1], [600, 1], [700, 0.3], [800, 1], [1000, 1]]
+        }
+      ]
+    },
+    "sigh": {
+      "label": "Sigh",
+      "ms": 4500,
+      "easing": "ease-in-out",
+      "loop": true,
+      "desync": false,
+      "reduced": "still",
+      "rest": 0,
+      "use": "error",
+      "animates": "the eyes sink 1 px and come back (y of the eye group)",
+      "tracks": [
+        {
+          "part": "face",
+          "prop": "y",
+          "amp": { "v": 1, "1x": 1 },
+          "keys": [[0, 0], [800, 0], [880, 1], [1000, 0]]
+        }
+      ]
+    },
+    "z": {
+      "label": "z rise",
+      "ms": 3600,
+      "easing": "ease-out",
+      "loop": true,
+      "desync": false,
+      "stagger": 1200,
+      "reduced": "still",
+      "rest": 300,
+      "use": "sleeping",
+      "animates": "each z fades in (15 %), drifts up-right (+8, -12 at 720; +4, -8 at 480) while growing from half to full size, fades out from 60 %; three a third of a loop apart, so one is always up (x, y, its line points, opacity of the whole z as one layer)",
+      "tracks": [
+        {
+          "part": "z",
+          "prop": "opa",
+          "keys": [[0, 0], [150, 0.95], [600, 0.9], [1000, 0]]
+        },
+        {
+          "part": "z",
+          "prop": "x",
+          "amp": { "v": 8, "1x": 4 },
+          "keys": [[0, 0], [600, 0.5], [1000, 1]]
+        },
+        {
+          "part": "z",
+          "prop": "y",
+          "amp": { "v": 12, "1x": 8 },
+          "keys": [[0, 0], [600, -0.5], [1000, -1]]
+        },
+        {
+          "part": "z",
+          "prop": "scale",
+          "keys": [[0, 0.5], [600, 0.8], [1000, 1]]
+        }
+      ]
+    }
+  },
+  "usage": {
+    "where": [
+      "Agents tile: one mascot per agent, in the tile's top-left at the tile padding; its mood comes from the agent (working, needs you, done in the last 2 h, idle = sleeping, error / failed = error).",
+      "Empty states: one mascot above the message, idle or sleeping (nothing to show), error when loading failed.",
+      "Not on Home cards, headers, buttons, toasts or as decoration: the mascot stands for something that works for you, and only there."
+    ],
+    "rules": [
+      "One mascot per view, except the Agents screen, where each tile is one agent.",
+      "The mood is the message: never animate a mascot that says nothing, never add moods, props or flourishes beyond these (character later, board facet-140).",
+      "Colour = the mood's token; a tile may pass its own colour token (same roles), never a hex.",
+      "Several on one view: each gets the instance delay (n x instance-offset) so blinks and glances never line up.",
+      "Reduced motion: every loop stops on its rest frame (the pose still shows the mood, z's stay up), the hop is skipped.",
+      "Panels: every part is a tiny LVGL object; motion changes only x, y, height, opacity and rotation, so each frame redraws a few dozen pixels."
+    ]
+  }
+}

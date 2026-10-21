@@ -4,7 +4,7 @@
 #   ./build.sh            both densities in parallel (1.5x = Waveshare + Shelly 720, 1x = Guition 480)
 #   ./build.sh 1x|1.5x    one
 # Incremental: each .cpp (core/*.cpp, foundations/*.cpp, components/*.cpp) is its own object, recompiled only when it or a header in
-# core/ or a generated token header (tokens/colour.json, tokens/type.json, tokens/space.json, tokens/layout.json, tokens/icons.json, tokens/motion.json, tokens/states.json) changed; LVGL objects are cached once per lv_conf (cold ~20-60 s, after that a component edit = a few seconds).
+# core/ or a generated token header (tokens/colour.json, tokens/type.json, tokens/space.json, tokens/layout.json, tokens/icons.json, tokens/motion.json, tokens/states.json, tokens/mascot.json) changed; LVGL objects are cached once per lv_conf (cold ~20-60 s, after that a component edit = a few seconds).
 # Paths (env, or local.env at the repo root, untracked):
 #   PANEL_BUILD  ESPHome build dir of the panel firmware (LVGL tree, lv_conf.h, ArduinoJson)
 #   FW_PANEL     panel firmware source dir (packages/ui.yaml for the LV_* build flags)
@@ -65,6 +65,8 @@ node "$HERE/tools/gen_layout.mjs" "$C/gen/layout_gen.h"
 node "$HERE/tools/gen_motion.mjs" "$C/gen/motion_gen.h"
 # state tokens: tokens/states.json -> states_gen.h (fw::st:: state bits, colour roles, press / switch motion, events + sounds)
 node "$HERE/tools/gen_states.mjs" "$C/gen/states_gen.h"
+# mascot tokens: tokens/mascot.json -> mascot_gen.h (fw::mas:: geometry per density, moods, motion keyframe tracks)
+node "$HERE/tools/gen_mascot.mjs" "$C/gen/mascot_gen.h"
 # icons: tokens/icons.json + icons/*.svg -> icons_gen.h (table, density-free) + this density's A8 masks (tools/gen_icons.mjs,
 # resvg: `cd tools && npm install` once; FW_ICONS=used in local.env = only the icons components declare)
 node "$HERE/tools/gen_icons.mjs" --meta "$C/gen/icons_gen.h"
@@ -80,7 +82,7 @@ for f in "$HERE"/core/*.cpp "$HERE"/foundations/*.cpp "$HERE"/components/*.cpp; 
   [ -f "$f" ] || continue
   o="$O/$(basename "$(dirname "$f")")_$(basename "$f" .cpp).o"
   OBJS="$OBJS $o"
-  dep="$f $HERE/core/*.h $C/gen/colour_gen.h $C/gen/type_gen.h $C/gen/space_gen.h $C/gen/layout_gen.h $C/gen/icons_gen.h $C/gen/motion_gen.h $C/gen/states_gen.h"; [ "$(basename "$f")" = fonts.cpp ] && dep="$dep $FONTS_H"; [ "$(basename "$f")" = icons.cpp ] && dep="$dep $ICONS_H"
+  dep="$f $HERE/core/*.h $C/gen/colour_gen.h $C/gen/type_gen.h $C/gen/space_gen.h $C/gen/layout_gen.h $C/gen/icons_gen.h $C/gen/motion_gen.h $C/gen/states_gen.h $C/gen/mascot_gen.h"; [ "$(basename "$f")" = fonts.cpp ] && dep="$dep $FONTS_H"; [ "$(basename "$f")" = icons.cpp ] && dep="$dep $ICONS_H"
   stale=0; [ -f "$o" ] || stale=1
   [ $stale = 0 ] && for d in $dep; do [ "$d" -nt "$o" ] && stale=1; done
   if [ $stale = 1 ]; then echo "[$DEN] cc $(basename "$f")"; $CXX -c "$f" -o "$o" & JOBS="$JOBS $!"; fi

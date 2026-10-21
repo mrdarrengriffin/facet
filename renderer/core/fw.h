@@ -16,6 +16,7 @@
 #include "layout_gen.h"  // fw::lay:: screen geometry + fw::lyt:: devices / size classes (generated from tokens/layout.json), device px
 #include "icons_gen.h"   // fw::ic:: icon sizes + the icon table (generated from tokens/icons.json)
 #include "motion_gen.h"  // fw::mo:: durations, easings, patterns (generated from tokens/motion.json)
+#include "mascot_gen.h"  // fw::mas:: mascot geometry, moods, motion tracks (generated from tokens/mascot.json)
 
 namespace fw {
 
@@ -170,6 +171,8 @@ inline void force_state(lv_obj_t *o, Props p) {
 #include "states_gen.h"
 // Atoms: the shared accent marks fw::focus_ring() + fw::corner_ticks() (core/atoms.h, after the state tokens they use)
 #include "atoms.h"
+// The mascot fw::mascot() (core/mascot.h; tokens in mascot_gen.h): moods, parts, keyframe motion
+#include "mascot.h"
 
 // FW_COMPONENT(id, "Name", "components", R"({...meta json...})") { ...build with `parent` and `p`... }
 #define FW_COMPONENT(ID, NAME, SECTION, META)                                    \

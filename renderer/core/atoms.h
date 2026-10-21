@@ -2,6 +2,7 @@
 // component shares for "on / active" (states.json on.mark + focus). Included at the end of fw.h, after states_gen.h.
 // Each has its own workbench page (components/focus_ring.cpp, components/corner_ticks.cpp).
 #pragma once
+#include "fw.h"  // self-contained: ESPHome includes every component header on its own (alphabetical), fw.h includes this one at its end
 
 namespace fw {
 

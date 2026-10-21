@@ -217,6 +217,22 @@ transition stays the content rise with its fade); optimise later. These numbers 
 the expensive parts are the sheet dim fade and the screen rise fade. Candidate fixes: a stepped dim (2-3 opacity
 steps), rise without the fade, or `instant` on 1x boards.
 
+## Mascot tokens (single source, WIP)
+
+`renderer/tokens/mascot.json` (docs `@facet/ui` mascot.ts + 20-mascot.css, cross-checked with the approved panel firmware
+`mascot.h`) -> `tools/gen_mascot.mjs` -> `mascot_gen.h` (`fw::mas::`: `G` = this density's geometry, `GEO_V` / `GEO_1X`,
+`MOODS`, `PATTERNS`, `INSTANCE_OFFSET_MS`) -> runtime `core/mascot.h/.cpp`: `fw::mascot(parent, mas::needs, {colour,
+delay, scale, only})`, `fw::mascot_set()`, `fw::mascot_replay()`. The mascot follows the foundations (Darren
+2026-10-22): body box + everything outside it on the 4 px grid (generator checks `grid.checked`), corners = radius
+tokens, line widths = stroke tokens (refs like `"stroke.edge"` resolved per density from space.json); eyes and their
+1-2 px motions stay whole-px artwork (docs spacing); right eye at `rx`. `grid.changes` = old -> new list (page Tokens). Moods idle / working (reading) / done / needs / error /
+sleeping, colour = a colour token per mood (pairs section `mascot`). Motion = keyframe tracks `[t permille, value]` on
+x / y / height / opacity / close (eye blink) / scale (z points only), eased per segment with a motion.json easing, one
+lv_anim per pattern, values written only when the whole px changes; desynced loops shift by n x `instance-offset`;
+reduced motion = loops on their `rest` frame, hop skipped. No body rotation (smears, layer redraw; like the firmware);
+happy arches = lv_arc; each z fades as one layer (`opa_layered`). Page `/wasm/foundations/mascots` (moods, motion,
+reduced, desync, tokens, usage); bench props `bench: agents | big` for `/fw/perf` (Guition 2026-10-22: agents 3 x 3 = 61.8 fps, render 5.6 ms avg / 13.5 max; big = six at 4x 60 fps, render 9.5 / 23.4; reduced motion = 0 frames).
+
 ## State tokens (single source, WIP)
 
 `tokens/states.json` = the interaction state rules every component reads (board facet-137, States round 1): it names
