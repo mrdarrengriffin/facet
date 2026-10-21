@@ -73,7 +73,10 @@ lv_timer_t *held = nullptr;  // a landmark waiting out the interval
 lv_obj_t *held_obj = nullptr;
 void tick_now(lv_obj_t *o, bool landmark) {
   sound(o, landmark ? "slider-landmark" : "slider-tick");
-  last_tick = lv_tick_get();
+  // ticks only fire on LVGL frames (16 ms): advance by tick-min while dragging so the average rate is 1 / tick-min,
+  // not snapped to every 2nd frame; a pause (> 2 intervals) starts afresh
+  if (ticked && lv_tick_elaps(last_tick) < 2 * mo::ms::tick_min) last_tick += mo::ms::tick_min;
+  else last_tick = lv_tick_get();
   ticked = true;
 }
 }  // namespace

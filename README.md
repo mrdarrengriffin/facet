@@ -307,7 +307,7 @@ scroll); a disabled control plays `error`.
 
 Step ticks (Darren 2026-10-21): every slider / dial / arc calls `fw::step_ticks(obj, from, to, n)` when its SHOWN value
 moves between steps (core `fw_core.cpp`, one limiter per display). Every step counts; a `slider-tick` sound request is
-made only when the last one is at least Motion `tick-min` (20 ms, motion.json timing) ago, so a slow drag ticks every
+made only when the last one is at least Motion `tick-min` (26 ms, motion.json timing; average rate, not snapped to 16 ms frames) ago, so a slow drag ticks every
 step and a fast one thins out (never more ticks than steps). Landmark steps (`LANDMARKS` = the ends, add 0.5 for 50 %)
 request `slider-landmark` (sound.json: the tick a little stronger and lower) and are never dropped: too soon, they wait
 out the interval on a one-shot `lv_timer`. In practice LVGL reads the pointer every ~33 ms, so a fast drag patters at

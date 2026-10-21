@@ -14,7 +14,7 @@
 // track = tap-to-jump: the value is set at once (docs) and the knob sweeps there with the Motion pattern "value" (400 ms
 // ease-out, reduced motion = instant); moving the finger during the sweep stops it and the knob follows the finger.
 // Sound (Darren 2026-10-21): the core step-tick rule (fw::step_ticks): every step the SHOWN value crosses (drag, sweep or
-// jump) counts; a slider-tick plays for it unless the last tick was under Motion "tick-min" (20 ms) ago, so a slow,
+// jump) counts; a slider-tick plays for it unless the last tick was under Motion "tick-min" (26 ms) ago, so a slow,
 // dimmer-like drag ticks on every single step and a fast one thins out (never more ticks than steps); the ends (0 and
 // max) play the stronger slider-landmark and are never dropped.
 // Events: "change" (detail = the new value) on release, when the value differs from the press; "blocked" when disabled.
