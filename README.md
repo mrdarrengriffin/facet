@@ -84,12 +84,35 @@ changed; editing the JSON rebuilds). Components use `fw::text(parent, ty::body, 
 spacing, case and the text-box rule (height = box, cap height centred in it; `wrap_w` = paragraph on the box pitch),
 `fw::set_text`, `fw::font(ty::x)`; never a size. `fw::font(dp, mono)` = nearest text font for one-offs.
 
+## Space tokens (single source)
+
+`tokens/space.json` holds spacing, layout, radius, stroke and touch tokens in **device px**: `v` = the 720 px reference
+(1.5x, 8 px grid) = Facet `main` tokens.json `space` (steps 1-10), `layout` (inset, gutter, group, row, top, card/tile),
+`radius`, `stroke`, `size` (touch targets); `1x` = 480 px (4 px grid). 480 sources per group (`groups[].source1x`):
+layout + touch = the docs `density.1x` table; space, radius and strokes >= 3 = the old firmware rule (x 2/3 rounded,
+strokes 1-2 kept). Legacy `space.screen` / `space.gutter` (layout v2, inset 16) left out: layout v3 `lay::inset` 32.
+`build.sh` (and `firmware/bundle.mjs`) run `tools/gen_space.mjs` -> `space_gen.h`: `fw::sp::s1..s10` + `sp::S[]` +
+`sp::GRID`, `fw::lay::inset|gutter|group|row|top|card_w|...`, `fw::rad::card|chip|button|...`, `fw::stroke::hair|...`,
+`fw::touch::target|min|back|...`, already device px (never wrap in `px()`); `fw::px(dp)` stays for one-off geometry.
+
+## Sound (single source)
+
+`tokens/sound.json` = the approved Facet UI sounds, copied 1:1 from `main` (`packages/sounds/src/packs.json`, synth
+`BASE`, tokens `sound` levels, the docs' meaning lines): `types[]` (10: id, name, `for`, per-variant values + `use`),
+`variants[]` (the 6 packs: keycap default, halo, arcade = basic engine; graphite, crystal, felt = modal), `base`,
+`levels` (peak/loudness/fades, sample rates). One sound = `base` + `variant.defaults` + `types[i].variants[v]`;
+procedural, no samples (nothing to licence). Page `/wasm/foundations/sound` = hub HTML (about hearing, not pixels): a
+compact table like the docs' "Try them" grid (row per type: name, what it's for, a play button per variant column; a
+pack header plays the whole pack), synthesised in the browser with `render()` of `@facet/sounds` (main); status = the JSON
+alone (no .cpp). **Later, not built:** playback on the panels (pre-rendered WAVs / firmware), sound rules (one tick per
+value step on sliders/dials, which control plays which sound, toast sound, sound on/off + volume settings).
+
 ## Foundations
 
 `foundations/<id>.cpp`, same `FW_COMPONENT` API with section `foundations`. Meta `"layout": "doc"` = a document page:
 one full-width WASM stage per variant (heading + `about` in HTML), `"frame": [w, 0]` = auto height (the stage follows
 its content, `fw_content_h` + `fw_stage_resize`). Status = the .cpp plus `tokens/<id>.json` if present (any untracked
-= WIP; approve = commit both). **Type** (`foundations/type.cpp`): both scales at true size in their line boxes (hairlines) with spec + use, mono caps beside sans, number styles (units, tabular digits), glyph coverage per set, the fonts of the build with their flash cost (device switch = 720 / 480 build). **Colour** (`foundations/colour.cpp`): every token by group, name + role, the colour in
+= WIP; approve = commit both). **Type** (`foundations/type.cpp`): both scales at true size in their line boxes (hairlines) with spec + use, mono caps beside sans, number styles (units, tabular digits), glyph coverage per set, the fonts of the build with their flash cost (device switch = 720 / 480 build). **Spacing & radius** (`foundations/space.cpp`, id `space`): spacing steps (true-size square + 8x bar), layout tokens (true-size bars + grid), radius samples on surface cards, strokes (line, ring, outlined control), touch targets (hit area tinted around a smaller drawn back button / chip / row), the whole screen at true size (grid minor + major, inset bands, header row, content from `top`, Home 2 columns with card padding); every value also shows the other density. **Colour** (`foundations/colour.cpp`): every token by group, name + role, the colour in
 its dark and light context with its hex (chips drawn by LVGL in RGB565, as on the panel), the accent sets, contrast
 pairs with WCAG ratios (red = below the pair's min).
 
@@ -142,7 +165,8 @@ Board YAML (display, touch, Wi-Fi) lives with the host that builds the firmware,
 |---|---|
 | `components/*.cpp` | one component per file (the only place new work goes) |
 | `tokens/colour.json`, `tools/gen_colour.mjs` | colour tokens (single source) and their header generator |
-| `foundations/*.cpp` | foundation pages (Colour) |
+| `foundations/*.cpp` | foundation pages (Colour, Type, Spacing & radius) |
+| `tokens/space.json`, `tools/gen_space.mjs` | spacing / layout / radius / stroke / touch tokens (single source) and their header generator |
 | `core/fw.h` | the component API: `FW_COMPONENT`, `fw::T` colours (tokens/colour.json), `fw::text(parent, ty::<style>, ...)` / `fw::font(ty::<style>)` (tokens/type.json), `fw::px(dp)`, `fw::force_state` |
 | `core/fw_core.cpp` | themes, registry, `fw::render` (shared by the WASM host and the device firmware) |
 | `core/main.cpp` | host: LVGL + "stages" (one display per canvas), exports `fw_init/meta/stage/stage_free/render/touch/tick/dirty/frame` |

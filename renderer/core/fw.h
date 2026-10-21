@@ -11,6 +11,7 @@
 #include "ArduinoJson.h"
 #include "colour_gen.h"  // fw::Theme + fw::tokens:: (generated from tokens/colour.json)
 #include "type_gen.h"    // fw::ty:: styles (generated from tokens/type.json)
+#include "space_gen.h"   // fw::sp:: lay:: rad:: stroke:: touch:: (generated from tokens/space.json), device px
 
 namespace fw {
 
@@ -26,6 +27,9 @@ constexpr float D = 1.0f;
 constexpr float D = 1.5f;
 #endif
 inline int px(float dp) { return (int) std::lround(dp * D); }
+// Spacing, layout, radius, strokes, touch targets (tokens/space.json, README "Space tokens"): already device px for
+// this density (fw::sp::s3, fw::lay::inset, fw::rad::button, fw::stroke::hair, fw::touch::min): never wrap them in px().
+// px() stays the dp mapping for one-off geometry the tokens do not cover (page frames, sample sizes).
 
 // Type (tokens/type.json, README "Type tokens"): styles fw::ty::display, ty::body, ty::c_meta, ... (- -> _), values in
 // device px for this density (fw::ty::STYLES[s]). Fonts are generated per density with only the glyphs the styles use.

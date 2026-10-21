@@ -54,7 +54,7 @@ lv_obj_t *row(lv_obj_t *list) {
   lv_obj_set_flex_flow(r, LV_FLEX_FLOW_ROW);
   lv_obj_set_flex_align(r, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
   lv_obj_set_style_border_side(r, LV_BORDER_SIDE_BOTTOM, 0);
-  lv_obj_set_style_border_width(r, 1, 0);
+  lv_obj_set_style_border_width(r, fw::stroke::hair, 0);
   lv_obj_set_style_border_color(r, fw::T->line, 0);
   return r;
 }
@@ -64,8 +64,8 @@ void info(lv_obj_t *r, const char *title, const char *sub, bool mono_title) {
   lv_obj_set_height(c, LV_SIZE_CONTENT);
   lv_obj_set_flex_grow(c, 1);
   lv_obj_set_flex_flow(c, LV_FLEX_FLOW_COLUMN);
-  lv_obj_set_style_pad_right(c, fw::px(8), 0);
-  lv_obj_set_style_pad_row(c, fw::px(2), 0);
+  lv_obj_set_style_pad_right(c, fw::sp::s3, 0);
+  lv_obj_set_style_pad_row(c, fw::sp::s1, 0);
   lv_obj_t *t = label(c, title, mono_title ? 13 : 16, fw::T->text, mono_title);
   lv_obj_set_width(t, LV_PCT(100));
   lv_label_set_long_mode(t, LV_LABEL_LONG_DOT);
@@ -83,17 +83,17 @@ lv_obj_t *cell(lv_obj_t *r, const fw::Theme *th) {
   lv_obj_set_style_bg_opa(c, LV_OPA_COVER, 0);
   lv_obj_set_flex_flow(c, LV_FLEX_FLOW_ROW);
   lv_obj_set_flex_align(c, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-  lv_obj_set_style_pad_hor(c, fw::px(10), 0);
-  lv_obj_set_style_pad_column(c, fw::px(8), 0);
+  lv_obj_set_style_pad_hor(c, fw::sp::s5, 0);
+  lv_obj_set_style_pad_column(c, fw::sp::s3, 0);
   return c;
 }
 lv_obj_t *chip(lv_obj_t *parent, uint32_t v, const fw::Theme *th, float w = 32, float h = 32) {
   lv_obj_t *s = box(parent);
   lv_obj_set_size(s, fw::px(w), fw::px(h));
-  lv_obj_set_style_radius(s, fw::px(8), 0);
+  lv_obj_set_style_radius(s, fw::rad::button, 0);
   lv_obj_set_style_bg_color(s, lv_color_hex(v), 0);
   lv_obj_set_style_bg_opa(s, LV_OPA_COVER, 0);
-  lv_obj_set_style_border_width(s, 1, 0);
+  lv_obj_set_style_border_width(s, fw::stroke::hair, 0);
   lv_obj_set_style_border_color(s, th->line, 0);
   return s;
 }
@@ -142,7 +142,7 @@ void accents(lv_obj_t *l) {
       // the set in use: a fill with its label, accent as text, the dim tone
       lv_obj_t *pill = box(c);
       lv_obj_set_size(pill, fw::px(44), fw::px(28));
-      lv_obj_set_style_radius(pill, fw::px(14), 0);
+      lv_obj_set_style_radius(pill, LV_RADIUS_CIRCLE, 0);  // rad::round
       lv_obj_set_style_bg_color(pill, th->accent, 0);
       lv_obj_set_style_bg_opa(pill, LV_OPA_COVER, 0);
       lv_obj_center(label(pill, "On", 13, th->on_accent));

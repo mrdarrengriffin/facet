@@ -9,7 +9,8 @@
 namespace {
 using namespace fw;
 
-constexpr float W = 480, PAD = 16;
+constexpr float W = 480;  // doc page width in dp; padding and gaps = tokens/space.json
+const int PAD = sp::s7;
 
 lv_obj_t *box(lv_obj_t *parent) {
   lv_obj_t *o = lv_obj_create(parent);
@@ -17,34 +18,34 @@ lv_obj_t *box(lv_obj_t *parent) {
   lv_obj_remove_flag(o, LV_OBJ_FLAG_SCROLLABLE);
   return o;
 }
-lv_obj_t *column(lv_obj_t *parent, float gap, int w = LV_PCT(100)) {
+lv_obj_t *column(lv_obj_t *parent, int gap, int w = LV_PCT(100)) {
   lv_obj_t *c = box(parent);
   lv_obj_set_size(c, w, LV_SIZE_CONTENT);
   lv_obj_set_flex_flow(c, LV_FLEX_FLOW_COLUMN);
-  lv_obj_set_style_pad_row(c, px(gap), 0);
+  lv_obj_set_style_pad_row(c, gap, 0);
   return c;
 }
-lv_obj_t *row(lv_obj_t *parent, float gap) {
+lv_obj_t *row(lv_obj_t *parent, int gap) {
   lv_obj_t *r = box(parent);
   lv_obj_set_size(r, LV_PCT(100), LV_SIZE_CONTENT);
   lv_obj_set_flex_flow(r, LV_FLEX_FLOW_ROW);
   lv_obj_set_flex_align(r, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_END, LV_FLEX_ALIGN_END);
-  lv_obj_set_style_pad_column(r, px(gap), 0);
+  lv_obj_set_style_pad_column(r, gap, 0);
   return r;
 }
 // one entry of a list: hairline under it, padding around
-lv_obj_t *entry(lv_obj_t *list, float gap = 8) {
+lv_obj_t *entry(lv_obj_t *list, int gap = sp::s3) {
   lv_obj_t *e = column(list, gap);
-  lv_obj_set_style_pad_ver(e, px(12), 0);
+  lv_obj_set_style_pad_ver(e, sp::s5, 0);
   lv_obj_set_style_border_side(e, LV_BORDER_SIDE_BOTTOM, 0);
-  lv_obj_set_style_border_width(e, 1, 0);
+  lv_obj_set_style_border_width(e, stroke::hair, 0);
   lv_obj_set_style_border_color(e, T->line, 0);
   return e;
 }
 lv_obj_t *page(lv_obj_t *parent) {
   lv_obj_set_flex_align(parent, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
   lv_obj_t *l = column(parent, 0, px(W));
-  lv_obj_set_style_pad_hor(l, px(PAD), 0);
+  lv_obj_set_style_pad_hor(l, PAD, 0);
   return l;
 }
 // the style's line box drawn as hairlines at its top and bottom, the text inside (caps centred by fw::text)
@@ -53,7 +54,7 @@ lv_obj_t *boxed(lv_obj_t *parent, ty::Id s, const char *txt, lv_color_t c) {
   lv_obj_set_size(b, LV_SIZE_CONTENT, style(s).box);
   lv_obj_add_flag(b, LV_OBJ_FLAG_OVERFLOW_VISIBLE);
   lv_obj_set_style_border_side(b, (lv_border_side_t) (LV_BORDER_SIDE_TOP | LV_BORDER_SIDE_BOTTOM), 0);
-  lv_obj_set_style_border_width(b, 1, 0);
+  lv_obj_set_style_border_width(b, stroke::hair, 0);
   lv_obj_set_style_border_color(b, T->line, 0);
   lv_obj_set_style_border_post(b, true, 0);
   lv_obj_t *l = text(b, s, txt, c);
@@ -69,7 +70,7 @@ void spec_line(lv_obj_t *parent, ty::Id s) {
   text(parent, ty::c_meta, b, T->text_dim);
 }
 void head(lv_obj_t *parent, const char *name, ty::Id spec) {
-  lv_obj_t *r = row(parent, 12);
+  lv_obj_t *r = row(parent, sp::s5);
   lv_obj_set_flex_align(r, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
   text(r, ty::c_caps_sm, name, T->text);
   spec_line(r, spec);
@@ -82,24 +83,24 @@ void scale(lv_obj_t *l, const char *sc, const char *sample, bool accent) {
     lv_obj_t *e = entry(l);
     head(e, style(s).name, s);
     boxed(e, s, *sample ? sample : style(s).sample, accent ? T->accent_text : T->text);
-    text(e, ty::c_meta, style(s).use, T->text_mute, px(W - 2 * PAD));
+    text(e, ty::c_meta, style(s).use, T->text_mute, px(W) - 2 * PAD);
   }
 }
 
 // mono caps beside sans: the same words both ways, then the two together as a card reads
 void pair(lv_obj_t *l, bool accent) {
-  lv_obj_t *e = entry(l, 12);
+  lv_obj_t *e = entry(l, sp::s5);
   text(e, ty::c_caps_sm, "Same words, both families", T->text_dim);
-  lv_obj_t *r = row(e, 24);
+  lv_obj_t *r = row(e, sp::s9);
   boxed(r, ty::label, "Living room", T->text_dim);
   boxed(r, ty::title, "Living room", T->text);
-  e = entry(l, 12);
+  e = entry(l, sp::s5);
   text(e, ty::c_caps_sm, "Together: label, value, line", T->text_dim);
   lv_obj_t *card = column(e, 0, px(220));
   lv_obj_set_style_bg_color(card, T->surface, 0);
   lv_obj_set_style_bg_opa(card, LV_OPA_COVER, 0);
-  lv_obj_set_style_radius(card, px(16), 0);
-  lv_obj_set_style_pad_all(card, px(16), 0);
+  lv_obj_set_style_radius(card, rad::card, 0);
+  lv_obj_set_style_pad_all(card, lay::card_pad, 0);
   text(card, ty::label, "Weather", T->text_dim);
   text(card, ty::value, "18°", accent ? T->accent_text : T->text);
   text(card, ty::body, "Dry for the next hour", T->text_mute);
@@ -113,13 +114,13 @@ void numbers(lv_obj_t *l, bool accent) {
     lv_obj_t *v = column(e, 0, LV_SIZE_CONTENT);
     boxed(v, n.style, n.sample, accent ? T->accent_text : T->text);
     if (n.unit_style >= 0) boxed(v, (ty::Id) n.unit_style, n.unit, T->text_mute);
-    text(e, ty::c_meta, n.about, T->text_mute, px(W - 2 * PAD));
+    text(e, ty::c_meta, n.about, T->text_mute, px(W) - 2 * PAD);
   }
   // tabular digits: the same width whatever the digits
   lv_obj_t *e = entry(l);
   text(e, ty::c_caps_sm, "Tabular digits", T->text);
   for (const char *s : {"11:11", "88:88", "10:47"}) {
-    lv_obj_t *r = row(e, 16);
+    lv_obj_t *r = row(e, sp::s7);
     lv_obj_set_flex_align(r, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_END, LV_FLEX_ALIGN_CENTER);
     lv_obj_t *t = boxed(r, ty::value, s, T->text);
     lv_obj_update_layout(t);
@@ -152,7 +153,7 @@ void glyphs(lv_obj_t *l) {
     char b[200];
     snprintf(b, sizeof b, "%s · %d glyphs", ty::GLYPHSETS[g].id, f.glyphs);
     text(e, ty::c_caps_sm, b, T->text);
-    text(e, ty::c_meta, ty::GLYPHSETS[g].about, T->text_dim, px(W - 2 * PAD));
+    text(e, ty::c_meta, ty::GLYPHSETS[g].about, T->text_dim, px(W) - 2 * PAD);
     std::string all;
     for (int k = 0; k < f.glyphs; k++) {
       uint32_t c = font_glyph(fi, k);
@@ -160,12 +161,12 @@ void glyphs(lv_obj_t *l) {
     }
     lv_obj_t *t = lv_label_create(e);
     lv_label_set_long_mode(t, LV_LABEL_LONG_WRAP);
-    lv_obj_set_width(t, px(W - 2 * PAD));
+    lv_obj_set_width(t, px(W) - 2 * PAD);
     lv_obj_set_style_text_font(t, f.font, 0);
     lv_obj_set_style_text_color(t, T->text, 0);
     lv_label_set_text(t, all.c_str());
     snprintf(b, sizeof b, "shown in %s; styles: %s", f.id, users.c_str());
-    text(e, ty::c_meta, b, T->text_mute, px(W - 2 * PAD));
+    text(e, ty::c_meta, b, T->text_mute, px(W) - 2 * PAD);
   }
 }
 
@@ -180,11 +181,11 @@ void fonts(lv_obj_t *l) {
     std::string users;
     for (int s = 0; s < ty::N; s++)
       if (style_font_index((ty::Id) s) == i) users += (users.empty() ? "" : ", "), users += ty::STYLES[s].name;
-    lv_obj_t *r = entry(l, 2);
+    lv_obj_t *r = entry(l, sp::s1);
     snprintf(b, sizeof b, "%s · %s %d %d px%s · %d glyphs · %.1f KB", f.id, f.family, f.weight, f.size,
              f.tabular ? " tabular" : "", f.glyphs, f.bytes / 1024.0);
     text(r, ty::c_meta, b, T->text);
-    text(r, ty::c_meta, users.c_str(), T->text_mute, px(W - 2 * PAD));
+    text(r, ty::c_meta, users.c_str(), T->text_mute, px(W) - 2 * PAD);
   }
 }
 }  // namespace

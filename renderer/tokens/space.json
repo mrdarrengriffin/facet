@@ -1,0 +1,70 @@
+{
+  "$comment": "Facet spacing, layout, radius, stroke and touch tokens: the single source for the WASM renderer and the panel firmware (tools/gen_space.mjs -> space_gen.h: fw::sp::, fw::lay::, fw::rad::, fw::stroke::, fw::touch::). Values are device px. The top level of each token is the 720 x 720 reference panel (1.5x, 8 px grid) = Facet main packages/tokens/src/tokens.json; \"1x\" = the 480 x 480 panels (4 px grid). 1x source per group in `groups[].source1x`: layout + touch = the docs density.1x table, space + radius + strokes >= 3 = the old firmware rule (reference x 2/3, rounded; strokes 1-2 px kept). dp = px / density.",
+  "grid": { "1.5x": 8, "1x": 4, "about": "Every x, y, width and height on a screen is a multiple of the grid." },
+  "groups": [
+    { "id": "space", "label": "Spacing scale", "source1x": "rule: x 2/3 rounded (no docs 1x table)", "about": "Steps inside components: padding and gaps. Pick the step, never a literal." },
+    { "id": "layout", "label": "Screen layout", "source1x": "docs density.1x layout", "about": "One inset on every side, more space between groups than inside them, rows separated by hairlines rather than boxes." },
+    { "id": "radius", "label": "Radius", "source1x": "rule: x 2/3 rounded (no docs 1x table)", "about": "Cards and tiles are square (rows and surfaces, not bubbles); controls round a little; chips, pills and knobs are fully round." },
+    { "id": "stroke", "label": "Strokes and borders", "source1x": "rule: 1-2 px kept, >= 3 px x 2/3 rounded", "about": "Hairlines separate, edges outline, arcs and indicators carry a value." },
+    { "id": "touch", "label": "Touch targets", "source1x": "docs density.1x size", "about": "Hit areas are at least touch-min on both axes, even when the drawn control is smaller; the standard target is touch." }
+  ],
+  "tokens": {
+    "space": {
+      "1": { "v": 4, "1x": 3 },
+      "2": { "v": 8, "1x": 5 },
+      "3": { "v": 12, "1x": 8 },
+      "4": { "v": 14, "1x": 9 },
+      "5": { "v": 16, "1x": 11 },
+      "6": { "v": 20, "1x": 13 },
+      "7": { "v": 24, "1x": 16 },
+      "8": { "v": 28, "1x": 19 },
+      "9": { "v": 32, "1x": 21 },
+      "10": { "v": 40, "1x": 27 }
+    },
+    "layout": {
+      "inset": { "v": 32, "1x": 20, "use": "every side of every screen; the header row starts at y = inset" },
+      "gutter": { "v": 16, "1x": 12, "use": "between items inside a group (cards, tiles, controls)" },
+      "group": { "v": 48, "1x": 32, "use": "between groups" },
+      "row": { "v": 48, "1x": 32, "use": "the header row height" },
+      "top": { "v": 112, "1x": 72, "use": "where content starts (inset + row + 32)" },
+      "card-w": { "v": 320, "1x": 214, "use": "Home card width (2 columns)" },
+      "card-h": { "v": 280, "1x": 188, "use": "Home card height (2 rows per view)" },
+      "card-pad": { "v": 24, "1x": 16, "use": "padding inside a card" },
+      "tile-w": { "v": 208, "1x": 140, "use": "tile width (3 columns)" },
+      "tile-h": { "v": 208, "1x": 140, "use": "tile height" },
+      "tile-pad": { "v": 24, "1x": 16, "use": "padding inside a tile" }
+    },
+    "radius": {
+      "tile": { "v": 0, "1x": 0, "use": "tiles" },
+      "card": { "v": 0, "1x": 0, "use": "cards and surfaces" },
+      "chip": { "v": 6, "1x": 4, "use": "chips, badges" },
+      "icon": { "v": 7, "1x": 5, "use": "screen icon backgrounds" },
+      "button": { "v": 12, "1x": 8, "use": "buttons" },
+      "square": { "v": 12, "1x": 8, "use": "square icon buttons" },
+      "ring": { "v": 16, "1x": 11, "use": "sheets, toasts (top corners)" },
+      "round": { "v": 999, "1x": 999, "use": "pills, knobs, dots (fully round)" }
+    },
+    "stroke": {
+      "hair": { "v": 1, "1x": 1, "use": "row separators, line boxes" },
+      "focus": { "v": 1, "1x": 1, "use": "focus ring" },
+      "edge": { "v": 2, "1x": 2, "use": "outlined controls" },
+      "tick": { "v": 2, "1x": 2, "use": "scale ticks" },
+      "arc": { "v": 3, "1x": 2, "use": "dial and progress arcs" },
+      "knob": { "v": 4, "1x": 3, "use": "slider and dial knob outline" },
+      "indicator": { "v": 6, "1x": 4, "use": "value indicators, active bars" }
+    },
+    "touch": {
+      "target": { "v": 64, "1x": 44, "use": "standard touch target (buttons, rows)" },
+      "min": { "v": 48, "1x": 32, "use": "smallest hit area on either axis" },
+      "button-h": { "v": 64, "1x": 44, "use": "button height" },
+      "back": { "v": 48, "1x": 32, "use": "back button (drawn square)" },
+      "icon": { "v": 24, "1x": 16, "use": "icon inside a control" },
+      "focus-offset": { "v": 8, "1x": 4, "use": "focus ring offset" }
+    }
+  },
+  "columns": {
+    "about": "Home: 2 columns of card-w with gutter between, inset outside (32 + 320 + 16 + 320 + 32 = 720; 20 + 214 + 12 + 214 + 20 = 480). Tiles: 3 columns of tile-w.",
+    "home": 2,
+    "tiles": 3
+  }
+}

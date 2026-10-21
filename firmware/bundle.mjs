@@ -34,7 +34,7 @@ const sha = (...bufs) => { const h = createHash('sha1'); for (const b of bufs) h
 const ls = (d, ext) => (existsSync(join(HERE, d)) ? readdirSync(join(HERE, d)).filter((f) => f.endsWith(ext)).sort().map((f) => `${d}/${f}`) : []);
 // core = what every item's pixels depend on (compiled into each item's build); glue = the device-side host code
 // (HTTP, screen setup), reported separately: a glue change does not make an item show old code
-const coreFiles = [...ls('core', '.h'), 'core/fw_core.cpp', 'core/fonts.cpp', ...ls('tokens', '.json'), 'tools/gen_colour.mjs', 'tools/gen_type.mjs', 'tools/gen_fonts.py', 'tools/facet_font.inc'];
+const coreFiles = [...ls('core', '.h'), 'core/fw_core.cpp', 'core/fonts.cpp', ...ls('tokens', '.json'), 'tools/gen_colour.mjs', 'tools/gen_type.mjs', 'tools/gen_space.mjs', 'tools/gen_fonts.py', 'tools/facet_font.inc'];
 const glueFiles = ['firmware/fw_device.h', 'firmware/esphome_init.py', 'firmware/bundle.mjs'];  // relative to ROOT
 const srcFiles = [...ls('foundations', '.cpp'), ...ls('components', '.cpp')];
 const read = (rel) => readFileSync(join(HERE, rel));
@@ -66,6 +66,8 @@ execFileSync('node', [join(HERE, 'tools/gen_colour.mjs'), join(C, 'colour_gen.h'
 wrote.add('colour_gen.h');
 execFileSync('node', [join(HERE, 'tools/gen_type.mjs'), join(C, 'type_gen.h')]);
 wrote.add('type_gen.h');
+execFileSync('node', [join(HERE, 'tools/gen_space.mjs'), join(C, 'space_gen.h')]);
+wrote.add('space_gen.h');
 // this density's fonts (cached next to the WASM build's; the generator skips work when type.json is unchanged)
 const FONT_PY = process.env.FW_FONT_PY ?? env.FW_FONT_PY, FW_TTF = process.env.FW_TTF ?? env.FW_TTF;
 if (!FONT_PY || !FW_TTF) { console.error('set FW_FONT_PY and FW_TTF (env or local.env)'); process.exit(2); }
