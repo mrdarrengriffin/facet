@@ -36,6 +36,7 @@ lv_obj_t *build(const char *id, lv_obj_t *parent, ArduinoJson::JsonDocument &pro
 }  // namespace
 
 FW_COMPONENT(section_header, "Section header", "components", R"({
+  "about": "A caption that starts a group of content, with an optional count and a meta text or action on the right.",
   "frame": [480, 96],
   "props": [
     {"name": "title", "type": "text", "default": "Needs you"},

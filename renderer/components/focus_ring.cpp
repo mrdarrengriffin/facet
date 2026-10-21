@@ -9,6 +9,7 @@
 #include "fw.h"
 
 FW_COMPONENT(focus_ring, "Focus ring", "components", R"({
+  "about": "A thin accent outline around a control that is active or selected.",
   "frame": [240, 112],
   "icons": ["play@feature", "pause@feature"],
   "props": [

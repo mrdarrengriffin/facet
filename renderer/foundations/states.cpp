@@ -326,6 +326,7 @@ void decisions(lv_obj_t *l) {
 }  // namespace
 
 FW_COMPONENT(states, "States", "foundations", R"({
+  "about": "How every control looks and behaves when pressed, on, disabled or unavailable, with the event and sound each state makes.",
   "layout": "doc",
   "events": true,
   "frame": [480, 0],

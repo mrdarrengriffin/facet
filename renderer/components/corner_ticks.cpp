@@ -11,6 +11,7 @@
 #include "fw.h"
 
 FW_COMPONENT(corner_ticks, "Corner ticks", "components", R"({
+  "about": "Small accent marks on the corners of a box that show it is active.",
   "frame": [240, 112],
   "props": [
     {"name": "on", "type": "select", "options": ["box", "button"], "default": "box"},

@@ -225,6 +225,7 @@ lv_obj_t *button(lv_obj_t *parent, bool on, bool disabled) {
 }  // namespace
 
 FW_COMPONENT(dial, "Dial", "components", R"({
+  "about": "A large circular control for a value such as brightness or temperature, with an on/off button in the centre.",
   "frame": [384, 384],
   "props": [
     {"name": "value", "type": "range", "min": -20, "max": 200, "step": 0.5, "default": 64},

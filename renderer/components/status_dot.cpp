@@ -25,6 +25,7 @@ void set_opa(void *o, int32_t v) { lv_obj_set_style_opa((lv_obj_t *) o, (lv_opa_
 }  // namespace
 
 FW_COMPONENT(status_dot, "Status dot", "components", R"({
+  "about": "A small coloured dot that shows a state: ok, warning, error, working, info or idle.",
   "frame": [96, 64],
   "props": [
     {"name": "tone", "type": "select", "options": ["ok", "warn", "error", "working", "info", "idle"], "default": "working"},

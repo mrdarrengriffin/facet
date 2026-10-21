@@ -65,6 +65,7 @@ struct Data { Role role; char icon[16]; };
 }  // namespace
 
 FW_COMPONENT(icon_button, "Icon button", "components", R"({
+  "about": "A button that is only an icon: a round play/pause button, or round and square icon buttons.",
   "frame": [160, 128],
   "icons": ["play@feature", "pause@feature", "play@glyph", "next@glyph", "prev@glyph", "plus@glyph", "close@glyph", "check@glyph", "back@glyph"],
   "props": [

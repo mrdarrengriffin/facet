@@ -277,6 +277,7 @@ void failures(lv_obj_t *l) {
 }  // namespace
 
 FW_COMPONENT(colour, "Colour", "foundations", R"({
+  "about": "Every colour token in dark and light, the accent sets, and the contrast checks they all pass.",
   "layout": "doc",
   "frame": [480, 0],
   "props": [{"name": "group", "type": "select", "options": )" FW_COLOUR_GROUP_IDS R"(, "default": "surfaces"}],

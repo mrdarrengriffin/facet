@@ -230,6 +230,7 @@ void touch_page(lv_obj_t *l) {
 }  // namespace
 
 FW_COMPONENT(space, "Spacing & radius", "foundations", R"({
+  "about": "Spacing steps on the 4 px grid, radii, strokes and touch target sizes.",
   "layout": "doc",
   "frame": [480, 0],
   "props": [{"name": "section", "type": "select", "options": )" FW_SPACE_SECTION_IDS R"(, "default": "space"}],

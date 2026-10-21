@@ -12,6 +12,7 @@ static_assert(fw::touch::back == fw::lay::row, "back button must fill the header
 static_assert(fw::touch::back >= fw::touch::min, "back button below the touch minimum");
 
 FW_COMPONENT(back_button, "Back button", "components", R"({
+  "about": "The square back arrow at the start of a screen's header.",
   "frame": [96, 96],
   "icons": ["back@glyph"],
   "props": [

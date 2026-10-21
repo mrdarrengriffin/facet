@@ -74,6 +74,7 @@ std::string fmt(const Slider *d, int i) {
 }  // namespace
 
 FW_COMPONENT(slider, "Slider", "components", R"({
+  "about": "A horizontal control for picking a value in a range by dragging or tapping.",
   "frame": [320, 96],
   "props": [
     {"name": "value", "type": "range", "min": 0, "max": 100, "step": 1, "default": 40},

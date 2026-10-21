@@ -103,6 +103,7 @@ lv_obj_t *underline(lv_obj_t *b, int w, int h) {
 }  // namespace
 
 FW_COMPONENT(button, "Button", "components", R"({
+  "about": "A text button in four kinds (primary, secondary, outline, ghost), with an optional icon.",
   "frame": [240, 112],
   "icons": ["plus@icon", "check@icon", "close@icon"],
   "props": [

@@ -349,6 +349,7 @@ void bench(lv_obj_t *parent, const char *what) {
 }  // namespace
 
 FW_COMPONENT(mascots, "Mascots", "foundations", R"({
+  "about": "Small animated characters that show the mood of a card or screen, with their colours, motion and usage rules.",
   "layout": "doc",
   "frame": [480, 0],
   "props": [

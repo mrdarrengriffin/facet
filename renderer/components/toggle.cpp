@@ -39,6 +39,7 @@ void show(void *o, int32_t v) {
 }  // namespace
 
 FW_COMPONENT(toggle, "Toggle", "components", R"({
+  "about": "An on/off switch.",
   "frame": [160, 96],
   "props": [
     {"name": "on", "type": "bool", "default": false},

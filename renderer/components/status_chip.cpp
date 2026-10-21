@@ -25,6 +25,7 @@ lv_color_t fill_of(const char *t) {
 }  // namespace
 
 FW_COMPONENT(status_chip, "Status chip", "components", R"({
+  "about": "A small tinted pill with a status dot and a short caps label.",
   "frame": [240, 64],
   "props": [
     {"name": "tone", "type": "select", "options": ["ok", "warn", "error", "working", "info", "idle"], "default": "working"},

@@ -608,6 +608,7 @@ mo::Id pattern_of(const char *s) {
 }  // namespace
 
 FW_COMPONENT(motion, "Motion", "foundations", R"({
+  "about": "Durations, easings and the motion patterns components use, including the reduced-motion rule.",
   "layout": "doc",
   "frame": [480, 0],
   "props": [

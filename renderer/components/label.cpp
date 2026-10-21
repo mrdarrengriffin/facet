@@ -42,6 +42,7 @@ lv_color_t colour_of(const char *c) {
 }  // namespace
 
 FW_COMPONENT(label, "Label", "components", R"({
+  "about": "One line of text in a component type style and colour.",
   "frame": [320, 80],
   "props": [
     {"name": "text", "type": "text", "default": ""},

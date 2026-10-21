@@ -195,6 +195,7 @@ void fonts(lv_obj_t *l) {
 }  // namespace
 
 FW_COMPONENT(type, "Type", "foundations", R"({
+  "about": "The type scale: every text style at true size, the two font families and the glyphs each panel size ships.",
   "layout": "doc",
   "frame": [480, 0],
   "props": [{"name": "section", "type": "select", "options": )" FW_TYPE_SECTION_IDS R"(, "default": "screen"},

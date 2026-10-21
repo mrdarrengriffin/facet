@@ -25,6 +25,7 @@ lv_color_t fill_of(const char *t) {
 }  // namespace
 
 FW_COMPONENT(count_badge, "Count badge", "components", R"({
+  "about": "A small round number, such as how many items need attention.",
   "frame": [160, 64],
   "props": [
     {"name": "count", "type": "range", "min": 0, "max": 150, "step": 1, "default": 3},

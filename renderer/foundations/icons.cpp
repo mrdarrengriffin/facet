@@ -178,6 +178,7 @@ int size_of(const char *s) {
 }  // namespace
 
 FW_COMPONENT(icons, "Icons", "foundations", R"({
+  "about": "The icon set, drawn at every size it ships in.",
   "layout": "doc",
   "frame": [480, 0],
   "props": [

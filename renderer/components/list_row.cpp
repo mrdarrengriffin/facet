@@ -166,6 +166,7 @@ lv_obj_t *row(lv_obj_t *parent, const Spec &s) {
 }  // namespace
 
 FW_COMPONENT(list_row, "List row", "components", R"({
+  "about": "A full-width row in a list or settings page, with an optional icon, a title and sub line, and a value, chevron or toggle.",
   "frame": [448, 0],
   "icons": ["bulb@icon", "speaker@icon", "tv@icon", "volume@icon", "power@icon", "house@icon", "chevron@icon"],
   "props": [

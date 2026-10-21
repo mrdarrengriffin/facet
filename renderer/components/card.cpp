@@ -55,6 +55,7 @@ lv_color_t tone(const char *t) {
 }  // namespace
 
 FW_COMPONENT(card, "Card", "components", R"({
+  "about": "A tappable Home card: an icon and label, a value or short text, and a supporting line.",
   "frame": [244, 220],
   "icons": ["screen-weather@icon", "screen-media@icon", "screen-timer@icon", "screen-energy@icon", "screen-light@icon",
             "partly-day@card", "rain-light@card", "clear-night@card"],
