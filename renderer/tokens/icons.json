@@ -90,6 +90,7 @@
     {"name": "screen-timer", "kind": "screen", "group": "screens", "keyline": "square", "file": "screens/timer.svg", "sizes": ["icon", "glyph"], "use": "the timer screen: docs, Home cards and screen headers"},
     {"name": "screen-toasts", "kind": "screen", "group": "screens", "keyline": "square", "file": "screens/toasts.svg", "sizes": ["icon", "glyph"], "use": "the toasts screen: docs, Home cards and screen headers"},
     {"name": "screen-weather", "kind": "screen", "group": "screens", "keyline": "square", "file": "screens/weather.svg", "sizes": ["icon", "glyph"], "use": "the weather screen: docs, Home cards and screen headers"},
+    {"name": "screen-bins", "kind": "screen", "group": "screens", "keyline": "portrait", "file": "screens/bins.svg", "sizes": ["icon", "glyph"], "use": "the bins (collection day) screen: docs, Home cards and screen headers"},
     {"name": "door", "kind": "ui", "group": "status", "keyline": "portrait", "file": "door.svg", "sizes": ["icon"], "use": "state readout 24"},
     {"name": "window", "kind": "ui", "group": "status", "keyline": "square", "file": "window.svg", "sizes": ["icon"], "use": "state readout 24"},
     {"name": "thermometer", "kind": "ui", "group": "status", "keyline": "portrait", "file": "thermometer.svg", "sizes": ["icon"], "use": "state readout 24"},

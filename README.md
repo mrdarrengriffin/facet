@@ -116,9 +116,9 @@ geometry to the 4 px grid too. Legacy `space.screen` / `space.gutter` (layout v2
 ## Icons (single source)
 
 `tokens/icons.json` = every icon the Facet docs define (Facet `main` `packages/icons/manifest.json`), masters copied 1:1
-into `renderer/icons/` (Facet's own, MIT): **73 icons** = 37 UI (`icons/*.svg`, 24 grid, one colour), 19 screen icons
+into `renderer/icons/` (Facet's own, MIT): **74 icons** = 37 UI (`icons/*.svg`, 24 grid, one colour), 20 screen icons
 (`icons/screens/`, base + one accent part), 17 weather (`icons/weather/` static masters, 48 grid, colour layers; the
-animation and the moon phase, drawn in code from the phase, are later work). Each icon lists its `sizes` = **size
+animation and the moon phase, drawn in code from the phase, are later work). `screen-bins` (bin collection screen) is drawn here, not in `main`: handle, lid bar, tapered can, two accent ribs at x 9.75 / 14.25 so at 16 px each rib is one full pixel with a 25 % valley either side (at 12 px they would fuse; screen icons do not ship at 12). Each icon lists its `sizes` = **size
 tokens** (`v` = 720 px, `1x` = 480 px, both on the 4 px grid): `small` 16/12, `icon` 24/16 (= `touch.icon`), `glyph`
 32/20, `detail` 40/28, `feature` 48/32, `card` 72/48, `hero` 144/96, mapped from the manifest's `sizes_used` (720 px);
 icons the docs list for the component library only ship at `icon`; plus/check/close add `icon` for the Button.
@@ -132,8 +132,8 @@ rasterised at its exact pixel size, never scaled on the panel** (the old build s
 noise), with Facet's optical stroke (1.5 / 2 / 2.5 / 3 px at 16 / 24 / 32 / 48, linear, clamped; weather 2 px, 3 from
 96). Output = A8 alpha masks cropped to their ink, one per colour layer: each layer is rendered white with every other
 colour black, so a cloud's bg fill hides what is behind it without a bg layer. LVGL draws A8 straight through the
-mask blend with the image recolour (no decode, no cache). **Flash: 720 build 286 KB, 480 build 139 KB** (180 icon x
-size, 298 masks, tables 6 KB). `FW_ICONS=used` (local.env or env) = only the `icon@size` pairs components declare in
+mask blend with the image recolour (no decode, no cache). **Flash: 720 build 287 KB, 480 build 139 KB** (182 icon x
+size, 302 masks, tables 6 KB). `FW_ICONS=used` (local.env or env) = only the `icon@size` pairs components declare in
 their meta (`"icons": ["plus@icon"]`): Button alone = 3 masks, < 1 KB; the Icons page then shows what the build has.
 
 API (`core/fw.h`): `fw::icon(parent, "name", fw::ic::<size>, colour)` -> an `ic::PX[size]` square box (nullptr when the
