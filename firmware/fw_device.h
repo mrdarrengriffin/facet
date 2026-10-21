@@ -223,6 +223,10 @@ class Handler : public AsyncWebHandler {
 // on_boot (after lvgl + web_server): our own screen, the last request again (or the first component), the handler
 inline void setup() {
   fw::bundle::link_all();
+  // component events + sound requests: logged (TODO: sound playback on the panels; no audio path yet)
+  fw::set_sink([](lv_obj_t *, const char *kind, const char *name, const char *detail) {
+    ESP_LOGI("facet_wb", "%s %s %s", kind, name, detail);
+  });
   lv_display_t *d = lv_display_get_default();
   lv_display_set_theme(d, nullptr);  // clean slate like the WASM host: components style everything themselves
   S.scr = lv_obj_create(nullptr);
@@ -235,7 +239,7 @@ inline void setup() {
     shown = show(req.as<ArduinoJson::JsonObjectConst>(), out.to<ArduinoJson::JsonObject>());
   if (!shown && !fw::reg().empty()) {
     req.clear();
-    req["id"] = fw::find("demo_box") ? "demo_box" : fw::reg()[0].id;
+    req["id"] = fw::find("button") ? "button" : fw::reg()[0].id;
     show(req.as<ArduinoJson::JsonObjectConst>(), out.to<ArduinoJson::JsonObject>());
   }
   ESP_LOGI("facet_wb", "%u components, showing %s", (unsigned) fw::reg().size(), S.shown.c_str());

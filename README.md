@@ -53,7 +53,7 @@ correct at any zoom. The variants grid is always 1:1.
 ## Colour tokens (single source)
 
 `tokens/colour.json` is the only place colours live in this branch: per token `group`, `dark`, `light`, `role`; the
-groups (page sections); `contrast` pairs (fg, bg, min ratio) for the Colour page; `accent` = the accent sets (five
+groups (page sections); `contrast` (kinds + pairs, below); `accent` = the accent sets (five
 roles each: accent, accent-press, accent-dim, accent-text, on-accent, both themes) + the default set. Values are the
 approved Facet tokens (`main`: `packages/tokens/src/tokens.json` color.*, accent sets from
 `packages/settings/src/settings.json` setting `accent`).
@@ -66,6 +66,20 @@ a hex. `fw::theme(light, set)` gives any theme (e.g. to show both side by side).
 **Accent selection:** a theme = dark/light + one accent set; the set replaces the five accent roles in both themes (on
 the panel: the Accent setting, default Ember). The workbench passes it to every render (`fw_render(..., light,
 accent)`, toolbar Accent switch, `?accent=<id>`).
+
+### Contrast test (every variation)
+
+`tokens/colour.json` `contrast.pairs` declares every place two colours meet: `{section, fg, bg, kind, use}` (`bg` may
+be a list: a transparent control sits on the canvas or a card). Foundations first, then one block per component
+(`section` = component id). **A new component (or a changed look) adds/updates its pairs** for every kind x state it
+draws; a label pair covers that control's icon (same colour, stricter threshold). Kinds (WCAG 2.x AA): `text` 4.5,
+`large` 3 (>= 24 px regular / 18.66 px bold at panel px), `ui` 3 (fills, borders, focus rings, icons, state marks),
+`disabled` 3 (Facet rule: WCAG exempts disabled controls, Facet wants them readable), `decor` no requirement (1 px
+outlines/separators, shown for reference). `node renderer/tools/contrast.mjs` tests every pair x theme x accent set on
+the exact values AND the RGB565 values the panel shows (worse counts), lists failures, exit 1 if any (`--all`,
+`--json`, `--summary`); `build.sh` prints the summary line (never fails the build). Colour page sections
+"Contrast: summary / failures / <section>" draw the same matrix in WASM (selected accent = toolbar, dark + light side
+by side, failing rows tinted, ratio red + FAIL).
 
 ## Type tokens (single source)
 
@@ -113,8 +127,8 @@ value step on sliders/dials, which control plays which sound, toast sound, sound
 one full-width WASM stage per variant (heading + `about` in HTML), `"frame": [w, 0]` = auto height (the stage follows
 its content, `fw_content_h` + `fw_stage_resize`). Status = the .cpp plus `tokens/<id>.json` if present (any untracked
 = WIP; approve = commit both). **Type** (`foundations/type.cpp`): both scales at true size in their line boxes (hairlines) with spec + use, mono caps beside sans, number styles (units, tabular digits), glyph coverage per set, the fonts of the build with their flash cost (device switch = 720 / 480 build). **Spacing & radius** (`foundations/space.cpp`, id `space`): spacing steps (true-size square + 8x bar), layout tokens (true-size bars + grid), radius samples on surface cards, strokes (line, ring, outlined control), touch targets (hit area tinted around a smaller drawn back button / chip / row), the whole screen at true size (grid minor + major, inset bands, header row, content from `top`, Home 2 columns with card padding); every value also shows the other density. **Colour** (`foundations/colour.cpp`): every token by group, name + role, the colour in
-its dark and light context with its hex (chips drawn by LVGL in RGB565, as on the panel), the accent sets, contrast
-pairs with WCAG ratios (red = below the pair's min).
+its dark and light context with its hex (chips drawn by LVGL in RGB565, as on the panel), the accent sets, the contrast
+matrix (summary per accent x theme, all failures, every pair per section; see Contrast test).
 
 ## Fast loop
 
@@ -175,6 +189,26 @@ Board YAML (display, touch, Wi-Fi) lives with the host that builds the firmware,
 | `build.sh`, `watch.mjs` | build and watcher |
 
 Densities: `1.5x` = 720 px panels, `1x` = 480 px panels. Write sizes in dp; `fw::px()` scales.
+
+## Events and sound
+
+A component reports what happened, the host decides what to do (`core/fw.h`): `fw::emit(obj, "tap", detail)` = an
+event, `fw::sound(obj, "tap")` = a UI sound request by `tokens/sound.json` type id (tap, error, toggle-on, ...).
+WASM host: queued, drained by the page every frame (`fw_events()` -> `[{stage, kind, name, detail}]`); the workbench
+shows them in the component page's **Events** panel (tap count, newest first, source = Preview or the variant) and
+plays sounds in the browser with the default pack (Sound switch, per browser). Device: logged (`facet_wb` ESP log);
+**TODO** sound playback on the panels. Rule from the docs: sounds only on real taps = LVGL `CLICKED` (dropped after a
+scroll); a disabled control plays `error`.
+
+**Motion TODO** (no Motion foundation yet): components use the Facet `motion` values as named constants, listed here
+for the future foundation: Button `PRESS_MS = 80` (`motion.duration.press`), `lv_anim_path_ease_out`
+(`motion.easing.ease-out`).
+
+## Components
+
+| Id | What |
+|---|---|
+| `button` | Facet text button: kinds primary / secondary / outline / ghost, states default / pressed / active / disabled, optional icon (plus, check, close: lv_line stand-ins from the icon masters until the Icons foundation), hug (label width on the grid) or fixed width. Disabled = `LV_STATE_USER_1` (LVGL sends no events to `LV_STATE_DISABLED`, and a disabled tap must play Error). Children follow the state via `LV_OBJ_FLAG_STATE_TRICKLE`. |
 
 ## Add a component
 

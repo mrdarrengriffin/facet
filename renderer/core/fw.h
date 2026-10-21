@@ -66,6 +66,15 @@ void meta_json(std::string &out);         // [{id,name,section,meta}] as JSON
 // index: the same call the workbench preview and the device firmware make. Returns "" or an error.
 const char *render(lv_obj_t *scr, const char *comp, const char *props, bool light, int accent);
 
+// Events + sound (README "Events and sound"): a component reports what happened to the host, which decides what to
+// do with it. fw::emit(obj, "tap", "primary Start") -> the workbench event log (device: ESP log); fw::sound(obj, "tap")
+// -> the host plays that UI sound id (tokens/sound.json types: tap, error, toggle-on, ...) in the user's pack. The
+// workbench plays it in the browser; the device has no audio yet (TODO: sound playback on the panels, logged for now).
+using Sink = void (*)(lv_obj_t *obj, const char *kind, const char *name, const char *detail);  // kind = "event" | "sound"
+void set_sink(Sink s);
+void emit(lv_obj_t *obj, const char *name, const char *detail = "");
+void sound(lv_obj_t *obj, const char *id);
+
 // apply a forced state from props ("state": "pressed" | "disabled" | ...) so variants can show it without a touch
 inline void force_state(lv_obj_t *o, Props p) {
   const char *s = p["state"] | "";

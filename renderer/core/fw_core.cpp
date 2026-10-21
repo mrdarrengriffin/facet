@@ -57,6 +57,13 @@ void meta_json(std::string &out) {
   serializeJson(doc, out);
 }
 
+namespace {
+Sink sink = nullptr;
+}
+void set_sink(Sink s) { sink = s; }
+void emit(lv_obj_t *o, const char *name, const char *detail) { if (sink) sink(o, "event", name, detail ? detail : ""); }
+void sound(lv_obj_t *o, const char *id) { if (sink) sink(o, "sound", id, ""); }
+
 // clean `scr`, make it the Facet screen (bg token, flex column, centred) and build `comp` with `props` on it
 const char *render(lv_obj_t *scr, const char *comp, const char *props, bool light, int accent) {
   const Component *c = find(comp);

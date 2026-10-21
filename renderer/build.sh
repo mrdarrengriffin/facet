@@ -53,6 +53,8 @@ find "$L/src" -name '*.c' | xargs -P"$(nproc)" -I{} sh -c \
 
 # colour tokens: tokens/colour.json -> colour_gen.h (written only when it changes, so an unchanged JSON rebuilds nothing)
 node "$HERE/tools/gen_colour.mjs" "$C/gen/colour_gen.h"
+# contrast test (tools/contrast.mjs): every declared pair x theme x accent set; reported, never fails the build
+[ "$DEN" = 1x ] || node "$HERE/tools/contrast.mjs" --summary || true
 # type tokens: tokens/type.json -> type_gen.h (styles) + this density's bitmap fonts (only the sizes/glyphs the styles use)
 node "$HERE/tools/gen_type.mjs" "$C/gen/type_gen.h"
 # space tokens: tokens/space.json -> space_gen.h (fw::sp::, fw::lay::, fw::rad::, fw::stroke::, fw::touch::)
@@ -75,7 +77,7 @@ done
 for j in $JOBS; do wait "$j"; done
 # objects of deleted components must not linger in the link: OBJS lists only live sources
 em++ $OPT $LVGL_OBJS $OBJS -sALLOW_MEMORY_GROWTH=1 -sMODULARIZE=1 -sEXPORT_ES6=1 -sENVIRONMENT=web,node \
-  -sEXPORTED_FUNCTIONS='["_fw_init","_fw_meta","_fw_stage","_fw_stage_free","_fw_render","_fw_tokens","_fw_content_h","_fw_stage_resize","_fw_touch","_fw_tick","_fw_dirty","_fw_frame","_malloc","_free"]' \
+  -sEXPORTED_FUNCTIONS='["_fw_init","_fw_meta","_fw_stage","_fw_stage_free","_fw_render","_fw_tokens","_fw_content_h","_fw_stage_resize","_fw_touch","_fw_tick","_fw_dirty","_fw_frame","_fw_events","_malloc","_free"]' \
   -sEXPORTED_RUNTIME_METHODS='["HEAPU8","UTF8ToString","stringToNewUTF8"]' -o "$OUT/fw.mjs"
 S=$(awk "BEGIN{printf \"%.1f\", $(date +%s.%N) - $t0}")
 printf '{"built": "%s", "density": "%s", "opt": "%s", "build_s": %s, "wasm_bytes": %s}\n' "$(date -Is)" "$DEN" "$OPT" "$S" "$(stat -c %s "$OUT/fw.wasm")" > "$OUT/manifest.json"

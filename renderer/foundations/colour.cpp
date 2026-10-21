@@ -1,6 +1,7 @@
 // Foundations > Colour: every colour token (tokens/colour.json via the generated colour_gen.h), drawn by the panel
 // renderer itself (RGB565, as the panel shows it). One section per group: name + role in the page theme, then the
-// colour in its own dark and light context side by side with its hex. Plus the accent sets and contrast pairs.
+// colour in its own dark and light context side by side with its hex. Plus the accent sets and the contrast matrix
+// (every declared pair x theme x accent set, tools/contrast.mjs is the same test on the command line).
 // Status (WIP/Done) = this file + tokens/colour.json in git.
 #include <cstdio>
 #include "fw.h"
@@ -153,27 +154,107 @@ void accents(lv_obj_t *l) {
   }
 }
 
-void pairs(lv_obj_t *l) {
+// ---- contrast (tokens/colour.json contrast.pairs, same maths as tools/contrast.mjs): the worse of the exact
+// token ratio and the RGB565 ratio the panel shows decides
+uint32_t q565(uint32_t c) {
+  uint32_t r = c >> 19 & 31, g = c >> 10 & 63, b = c >> 3 & 31;
+  return (r << 3 | r >> 2) << 16 | (g << 2 | g >> 4) << 8 | (b << 3 | b >> 2);
+}
+float worst(uint32_t fg, uint32_t bg) { return std::fmin(contrast(fg, bg), contrast(q565(fg), q565(bg))); }
+struct Res { uint32_t fg, bg; float k; bool pass; };
+Res test(const Pair &cp, bool light, int set) {
+  Res r{value(index_of(cp.fg), light, set), value(index_of(cp.bg), light, set), 0, false};
+  r.k = worst(r.fg, r.bg);
+  r.pass = r.k >= cp.min - 0.0005f;
+  return r;
+}
+void ratio_text(char *b, size_t n, float k) { snprintf(b, n, k >= 10 ? "%.0f:1" : "%.2f:1", (double) k); }
+
+// one theme cell: the pair drawn in that theme (text kinds = "Aa", graphics = a 2-stroke ring) + ratio / required
+void sample(lv_obj_t *r, const Pair &cp, bool light, int set) {
+  const fw::Theme *th = fw::theme(light, set);
+  const Res res = test(cp, light, set);
+  lv_obj_t *c = cell(r, th);
+  lv_obj_t *s = chip(c, res.bg, th, 44, 32);
+  if (strcmp(KINDS[cp.kind].id, "ui") && strcmp(KINDS[cp.kind].id, "decor")) {
+    lv_obj_center(label(s, "Aa", 16, lv_color_hex(res.fg)));
+  } else {
+    lv_obj_t *o = box(s);
+    lv_obj_set_size(o, fw::px(18), fw::px(18));
+    lv_obj_set_style_radius(o, LV_RADIUS_CIRCLE, 0);
+    lv_obj_set_style_border_width(o, fw::stroke::edge, 0);
+    lv_obj_set_style_border_color(o, lv_color_hex(res.fg), 0);
+    lv_obj_center(o);
+  }
+  lv_obj_t *col = box(c);
+  lv_obj_set_size(col, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+  lv_obj_set_flex_flow(col, LV_FLEX_FLOW_COLUMN);
+  char b[24], m[24];
+  ratio_text(b, sizeof b, res.k);
+  label(col, b, 13, res.pass ? th->text : th->error, true);
+  snprintf(m, sizeof m, res.pass ? "min %.1f" : "FAIL %.1f", (double) cp.min);
+  label(col, m, 11, res.pass ? th->text_dim : th->error, true);
+}
+
+void pair_rows(lv_obj_t *l, const char *section) {
   const int set = fw::T->accent_set;
   for (int p = 0; p < N_CONTRAST; p++) {
     const Pair &cp = CONTRAST[p];
-    int fi = index_of(cp.fg), bi = index_of(cp.bg);
-    if (fi < 0 || bi < 0) continue;
+    if (strcmp(cp.section, section)) continue;
     char sub[96];
-    snprintf(sub, sizeof sub, "%s on %s, min %.1f", cp.fg, cp.bg, (double) cp.min);
+    snprintf(sub, sizeof sub, "%s on %s · %s", cp.fg, cp.bg, KINDS[cp.kind].label);
     lv_obj_t *r = row(l);
-    info(r, cp.label, sub, false);
+    info(r, cp.use, sub, false);
+    const bool bad = !test(cp, false, set).pass || !test(cp, true, set).pass;
+    if (bad) lv_obj_set_style_bg_color(r, fw::T->surface, 0), lv_obj_set_style_bg_opa(r, LV_OPA_COVER, 0);
+    for (int light = 0; light < 2; light++) sample(r, cp, light, set);
+  }
+}
+
+// every theme x accent set: passes / tested
+void summary(lv_obj_t *l) {
+  for (int a = 0; a < N_ACCENTS; a++) {
+    lv_obj_t *r = row(l);
+    char sub[48];
+    snprintf(sub, sizeof sub, "%d pairs per theme", N_CONTRAST);
+    info(r, ACCENTS[a].label, a == fw::T->accent_set ? "selected" : sub, false);
     for (int light = 0; light < 2; light++) {
-      const fw::Theme *th = fw::theme(light, set);
-      uint32_t fg = value(fi, light, set), bg = value(bi, light, set);
+      const fw::Theme *th = fw::theme(light, a);
+      int ok = 0;
+      for (int p = 0; p < N_CONTRAST; p++) ok += test(CONTRAST[p], light, a).pass;
       lv_obj_t *c = cell(r, th);
-      lv_obj_t *s = chip(c, bg, th, 44, 32);
-      lv_obj_center(label(s, "Aa", 16, lv_color_hex(fg)));
-      float k = contrast(fg, bg);
-      char b[16];
-      snprintf(b, sizeof b, k >= 10 ? "%.0f:1" : "%.1f:1", (double) k);
-      label(c, b, 13, k >= cp.min ? th->text : th->error, true);
+      char b[24];
+      snprintf(b, sizeof b, "%d/%d", ok, N_CONTRAST);
+      label(c, b, 13, ok == N_CONTRAST ? th->text : th->error, true);
+      label(c, ok == N_CONTRAST ? "pass" : "FAIL", 11, ok == N_CONTRAST ? th->ok : th->error, true);
     }
+    if (a == fw::T->accent_set) lv_obj_set_style_bg_color(r, fw::T->surface, 0), lv_obj_set_style_bg_opa(r, LV_OPA_COVER, 0);
+  }
+}
+
+// every failing combination, all accents and themes (the sample cell sits in its own theme column)
+void failures(lv_obj_t *l) {
+  int n = 0;
+  for (int a = 0; a < N_ACCENTS; a++)
+    for (int light = 0; light < 2; light++)
+      for (int p = 0; p < N_CONTRAST; p++) {
+        const Pair &cp = CONTRAST[p];
+        if (test(cp, light, a).pass) continue;
+        n++;
+        char sub[112];
+        snprintf(sub, sizeof sub, "%s %s · %s on %s · %s", ACCENTS[a].label, light ? "light" : "dark", cp.fg, cp.bg, KINDS[cp.kind].label);
+        lv_obj_t *r = row(l);
+        info(r, cp.use, sub, false);
+        for (int t = 0; t < 2; t++) {
+          if (t == light) sample(r, cp, light, a);
+          else cell(r, fw::theme(t, a));
+        }
+      }
+  if (!n) {
+    lv_obj_t *r = row(l);
+    char b[64];
+    snprintf(b, sizeof b, "%d combinations, all pass", N_CONTRAST * 2 * N_ACCENTS);
+    info(r, "No failures", b, false);
   }
 }
 }  // namespace
@@ -188,6 +269,8 @@ FW_COMPONENT(colour, "Colour", "foundations", R"({
   lv_obj_set_flex_align(parent, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
   lv_obj_t *l = list(parent);
   if (!strcmp(g, "accents")) accents(l);
-  else if (!strcmp(g, "contrast")) pairs(l);
+  else if (!strcmp(g, "contrast")) summary(l);
+  else if (!strcmp(g, "contrast-fail")) failures(l);
+  else if (!strncmp(g, "contrast-", 9)) pair_rows(l, g + 9);
   else group(l, g);
 }

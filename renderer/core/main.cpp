@@ -9,6 +9,7 @@
 //   fw_touch(id, x, y, down)          pointer on that stage (device pixels)
 //   fw_tick(ms)                       LVGL timers/refresh for all stages
 //   fw_dirty(id) / fw_frame(id)       redrawn since last read? / RGBA pixels (w*h*4)
+//   fw_events() -> JSON               events + sound requests since the last call (fw::emit / fw::sound): [{stage,kind,name,detail}] or ""
 #include <emscripten.h>
 #include <cstdlib>
 #include <string>
@@ -50,12 +51,35 @@ void read(lv_indev_t *i, lv_indev_data_t *data) {
   data->point = s->pos;
   data->state = s->down ? LV_INDEV_STATE_PRESSED : LV_INDEV_STATE_RELEASED;
 }
+// fw::emit / fw::sound -> a queue the page drains every frame (fw_events)
+ArduinoJson::JsonDocument evq;
+std::string evout;
+void on_event(lv_obj_t *obj, const char *kind, const char *name, const char *detail) {
+  lv_display_t *d = obj ? lv_obj_get_display(obj) : nullptr;
+  int id = -1;
+  for (size_t i = 0; i < stages.size(); i++)
+    if (stages[i] && stages[i]->d == d) id = (int) i;
+  if (!evq.is<ArduinoJson::JsonArray>()) evq.to<ArduinoJson::JsonArray>();
+  auto o = evq.as<ArduinoJson::JsonArray>().add<ArduinoJson::JsonObject>();
+  o["stage"] = id;
+  o["kind"] = kind;
+  o["name"] = name;
+  o["detail"] = detail;
+}
 }  // namespace
 
 extern "C" {
 EMSCRIPTEN_KEEPALIVE void fw_init() {
   lv_init();
   lv_tick_set_cb(tick);
+  fw::set_sink(on_event);
+}
+
+EMSCRIPTEN_KEEPALIVE const char *fw_events() {
+  evout.clear();
+  if (evq.is<ArduinoJson::JsonArray>() && evq.as<ArduinoJson::JsonArray>().size()) serializeJson(evq, evout);
+  evq.clear();
+  return evout.c_str();
 }
 
 EMSCRIPTEN_KEEPALIVE const char *fw_meta() {
