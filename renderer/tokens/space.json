@@ -13,7 +13,7 @@
       "1": { "v": 4, "1x": 4 },
       "2": { "v": 8, "1x": 4 },
       "3": { "v": 12, "1x": 8 },
-      "4": { "v": 14, "1x": 8, "grid2": "approved docs value (Facet main space 4 = 14 px at 720): a multiple of 2 only, Darren to decide (12 or 16)" },
+      "4": { "v": 16, "1x": 8, "note": "docs 14 -> 16 (4 px grid, 2026-10-21)" },
       "5": { "v": 16, "1x": 12 },
       "6": { "v": 20, "1x": 12 },
       "7": { "v": 24, "1x": 16 },
@@ -37,7 +37,7 @@
     "radius": {
       "tile": { "v": 0, "1x": 0, "use": "tiles" },
       "card": { "v": 0, "1x": 0, "use": "cards and surfaces" },
-      "chip": { "v": 6, "1x": 4, "use": "chips, badges", "grid2": "approved docs value (Facet main radius chip = 6 px at 720): a multiple of 2 only, Darren to decide (4 or 8)" },
+      "chip": { "v": 8, "1x": 4, "use": "chips, badges", "note": "docs 6 -> 8 (4 px grid, 2026-10-21)" },
       "icon": { "v": 8, "1x": 4, "use": "screen icon backgrounds" },
       "button": { "v": 12, "1x": 8, "use": "buttons" },
       "square": { "v": 12, "1x": 8, "use": "square icon buttons" },
