@@ -3,8 +3,8 @@
 # workbench page.
 #   ./build.sh            both densities in parallel (1.5x = Waveshare + Shelly 720, 1x = Guition 480)
 #   ./build.sh 1x|1.5x    one
-# Incremental: each .cpp (core/*.cpp, components/*.cpp) is its own object, recompiled only when it or a header in
-# core/ changed; LVGL objects are cached once per lv_conf (cold ~20-60 s, after that a component edit = a few seconds).
+# Incremental: each .cpp (core/*.cpp, foundations/*.cpp, components/*.cpp) is its own object, recompiled only when it or a header in
+# core/ or the generated colour header (tokens/colour.json) changed; LVGL objects are cached once per lv_conf (cold ~20-60 s, after that a component edit = a few seconds).
 # Paths (env, or a local.env next to this script, untracked):
 #   PANEL_BUILD  ESPHome build dir of the panel firmware (LVGL tree, lv_conf.h, ArduinoJson)
 #   FW_PANEL     panel firmware source dir (include/fonts_gen*.h, packages/ui.yaml for the LV_* build flags)
@@ -51,14 +51,17 @@ LVGL_OBJS=$(find "$L/src" -name '*.c' | while read -r f; do echo "$C/lvgl$OPT/$(
 find "$L/src" -name '*.c' | xargs -P"$(nproc)" -I{} sh -c \
   'o='"$C/lvgl$OPT"'/$(echo "{} '"$CONF_SUM"'" | md5sum | cut -c1-12).o; [ -f $o ] || { emcc '"$FL"' -c {} -o $o.$$ && mv $o.$$ $o; }'
 
-# workbench + components: recompile when the source, a core header or (fonts) the generated font header is newer
+# colour tokens: tokens/colour.json -> colour_gen.h (written only when it changes, so an unchanged JSON rebuilds nothing)
+node "$HERE/tools/gen_colour.mjs" "$C/gen/colour_gen.h"
+
+# workbench + foundations + components: recompile when the source, a core header or (fonts) the generated font header is newer
 CXX="em++ $FL $VFLAG -std=c++17 -I$HERE/core -I$PI -I$AJ"
 OBJS=; JOBS=
-for f in "$HERE"/core/*.cpp "$HERE"/components/*.cpp; do
+for f in "$HERE"/core/*.cpp "$HERE"/foundations/*.cpp "$HERE"/components/*.cpp; do
   [ -f "$f" ] || continue
   o="$O/$(basename "$(dirname "$f")")_$(basename "$f" .cpp).o"
   OBJS="$OBJS $o"
-  dep="$f $HERE/core/*.h"; [ "$(basename "$f")" = fonts.cpp ] && dep="$dep $PI/fonts_gen.h $PI/fonts_gen_1x.h"
+  dep="$f $HERE/core/*.h $C/gen/colour_gen.h"; [ "$(basename "$f")" = fonts.cpp ] && dep="$dep $PI/fonts_gen.h $PI/fonts_gen_1x.h"
   stale=0; [ -f "$o" ] || stale=1
   [ $stale = 0 ] && for d in $dep; do [ "$d" -nt "$o" ] && stale=1; done
   if [ $stale = 1 ]; then echo "[$DEN] cc $(basename "$f")"; $CXX -c "$f" -o "$o" & JOBS="$JOBS $!"; fi
@@ -66,7 +69,7 @@ done
 for j in $JOBS; do wait "$j"; done
 # objects of deleted components must not linger in the link: OBJS lists only live sources
 em++ $OPT $LVGL_OBJS $OBJS -sALLOW_MEMORY_GROWTH=1 -sMODULARIZE=1 -sEXPORT_ES6=1 -sENVIRONMENT=web,node \
-  -sEXPORTED_FUNCTIONS='["_fw_init","_fw_meta","_fw_stage","_fw_stage_free","_fw_render","_fw_touch","_fw_tick","_fw_dirty","_fw_frame","_malloc","_free"]' \
+  -sEXPORTED_FUNCTIONS='["_fw_init","_fw_meta","_fw_stage","_fw_stage_free","_fw_render","_fw_tokens","_fw_content_h","_fw_stage_resize","_fw_touch","_fw_tick","_fw_dirty","_fw_frame","_malloc","_free"]' \
   -sEXPORTED_RUNTIME_METHODS='["HEAPU8","UTF8ToString","stringToNewUTF8"]' -o "$OUT/fw.mjs"
 S=$(awk "BEGIN{printf \"%.1f\", $(date +%s.%N) - $t0}")
 printf '{"built": "%s", "density": "%s", "opt": "%s", "build_s": %s, "wasm_bytes": %s}\n' "$(date -Is)" "$DEN" "$OPT" "$S" "$(stat -c %s "$OUT/fw.wasm")" > "$OUT/manifest.json"

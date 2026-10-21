@@ -1,21 +1,21 @@
 // Facet WASM workbench: the tiny API a component sees (README.md).
 // A component = one .cpp in ../components/ with one FW_COMPONENT(...) block. Sizes are written in dp (1x) and turned
-// into device pixels with fw::px() (Waveshare/Shelly build = 1.5x, Guition build = 1x). Colours only from fw::T.
+// into device pixels with fw::px() (Waveshare/Shelly build = 1.5x, Guition build = 1x). Colours only from fw::T
+// (tokens/colour.json; never a hex in a component).
 #pragma once
 #include <cmath>
 #include <cstring>
 #include "lvgl.h"
 #include "ArduinoJson.h"
+#include "colour_gen.h"  // fw::Theme + fw::tokens:: (generated from tokens/colour.json)
 
 namespace fw {
 
-// Facet colour tokens (@facet/tokens color.*), both themes
-struct Theme {
-  bool light;
-  lv_color_t bg, surface, surface_press, line, line_hi, text, text_dim, text_mute, accent, accent_press, accent_dim,
-      on_accent, blue, ok, warn, error;
-};
+// Facet colour tokens: generated from tokens/colour.json (build.sh -> colour_gen.h): fw::Theme has one lv_color_t per
+// token (name with - -> _, e.g. T->text_dim), both themes, the five accent roles taken from the selected accent set
 extern const Theme *T;  // the theme of the stage being built
+// any theme (e.g. to show dark and light side by side); accent_set = index into tokens::ACCENTS, <0 = default
+const Theme *theme(bool light, int accent_set = -1);
 
 #ifdef FW_1X
 constexpr float D = 1.0f;

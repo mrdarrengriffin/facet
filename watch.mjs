@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Facet WASM workbench watcher: rebuilds (build.sh, both densities, incremental) when a .cpp/.h in components/ or core/
-// changes; the workbench page polls the build manifest and re-renders by itself. Run: `node watch.mjs`. Ctrl-C to stop.
+// changes, or tokens/*.json (colour tokens -> generated header); the workbench page polls the build manifest and re-renders by itself. Run: `node watch.mjs`. Ctrl-C to stop.
 import { spawn } from 'node:child_process';
 import { watch } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -24,11 +24,11 @@ function build(why) {
     if (again) { again = false; build('changed during build'); }
   });
 }
-for (const d of ['components', 'core'])
+for (const d of ['components', 'foundations', 'core', 'tokens'])
   watch(join(HERE, d), { recursive: true }, (_e, f) => {
-    if (!f || !/\.(cpp|h)$/.test(f)) return;
+    if (!f || !/\.(cpp|h|json)$/.test(f)) return;
     clearTimeout(timer);
     timer = setTimeout(() => build(`${d}/${f}`), 150);
   });
-console.log(`watching ${HERE}/{components,core}`);
+console.log(`watching ${HERE}/{components,foundations,core,tokens}`);
 build('start');

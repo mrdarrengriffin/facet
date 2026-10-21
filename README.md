@@ -34,8 +34,36 @@ the nav footer.
 - **Fit:** the biggest whole-number scale (in screen pixels) that fits the box, or shrink when it does not fit.
 - **2x:** two screen pixels per panel pixel.
 
+**Screen / Component only** (`?view=component`, default Screen): the main preview is one WASM display of the device's real size (720 or 480 px, Facet `bg`) with the component centred on it at true size, so zoom scales the whole screen.
+
 Rendering is nearest-neighbour at every zoom; touch is mapped from the canvas box back to panel pixels, so it is
 correct at any zoom. The variants grid is always 1:1.
+
+## Colour tokens (single source)
+
+`tokens/colour.json` is the only place colours live in this branch: per token `group`, `dark`, `light`, `role`; the
+groups (page sections); `contrast` pairs (fg, bg, min ratio) for the Colour page; `accent` = the accent sets (five
+roles each: accent, accent-press, accent-dim, accent-text, on-accent, both themes) + the default set. Values are the
+approved Facet tokens (`main`: `packages/tokens/src/tokens.json` color.*, accent sets from
+`packages/settings/src/settings.json` setting `accent`).
+
+`build.sh` runs `tools/gen_colour.mjs` -> `$FW_CACHE/gen/colour_gen.h` (rewritten only on change; every object depends
+on it, so editing the JSON rebuilds like a component). It defines `fw::Theme` (one `lv_color_t` per token, `-` -> `_`:
+`fw::T->text_dim`) and `fw::tokens::` tables (COLOURS, GROUPS, ACCENTS, CONTRAST). Components read `fw::T` only, never
+a hex. `fw::theme(light, set)` gives any theme (e.g. to show both side by side).
+
+**Accent selection:** a theme = dark/light + one accent set; the set replaces the five accent roles in both themes (on
+the panel: the Accent setting, default Ember). The workbench passes it to every render (`fw_render(..., light,
+accent)`, toolbar Accent switch, `?accent=<id>`).
+
+## Foundations
+
+`foundations/<id>.cpp`, same `FW_COMPONENT` API with section `foundations`. Meta `"layout": "doc"` = a document page:
+one full-width WASM stage per variant (heading + `about` in HTML), `"frame": [w, 0]` = auto height (the stage follows
+its content, `fw_content_h` + `fw_stage_resize`). Status = the .cpp plus `tokens/<id>.json` if present (any untracked
+= WIP; approve = commit both). **Colour** (`foundations/colour.cpp`): every token by group, name + role, the colour in
+its dark and light context with its hex (chips drawn by LVGL in RGB565, as on the panel), the accent sets, contrast
+pairs with WCAG ratios (red = below the pair's min).
 
 ## Fast loop
 
@@ -43,7 +71,7 @@ correct at any zoom. The variants grid is always 1:1.
 node watch.mjs
 ```
 
-Save a `.cpp`/`.h` in `components/` or `core/` -> incremental rebuild of both densities (a few seconds) -> the page
+Save a `.cpp`/`.h` in `components/`, `foundations/` or `core/`, or `tokens/*.json` -> incremental rebuild of both densities (a few seconds) -> the page
 notices the new `manifest.json` within a second and re-renders in place (playground values kept). One-off build:
 `./build.sh [1.5x|1x]`. First build is slower (LVGL objects, cached).
 
@@ -66,7 +94,9 @@ firmware build next to it.
 | Path | What |
 |---|---|
 | `components/*.cpp` | one component per file (the only place new work goes) |
-| `core/fw.h` | the component API: `FW_COMPONENT`, `fw::T` colours (Facet tokens, both themes), `fw::px(dp)`, `fw::font(dp, mono)`, `fw::force_state` |
+| `tokens/colour.json`, `tools/gen_colour.mjs` | colour tokens (single source) and their header generator |
+| `foundations/*.cpp` | foundation pages (Colour) |
+| `core/fw.h` | the component API: `FW_COMPONENT`, `fw::T` colours (generated from tokens/colour.json), `fw::px(dp)`, `fw::font(dp, mono)`, `fw::force_state` |
 | `core/main.cpp` | host: LVGL + "stages" (one display per canvas), exports `fw_init/meta/stage/stage_free/render/touch/tick/dirty/frame` |
 | `core/fonts.cpp` | the panel's generated Facet fonts per density |
 | `build.sh`, `watch.mjs` | build and watcher |

@@ -16,15 +16,28 @@
 #include "fw.h"
 
 namespace fw {
-static lv_color_t H(uint32_t c) { return lv_color_hex(c); }
-// @facet/tokens color.* (dark, light)
-static const Theme DARK{false, H(0x000000), H(0x0A0B0E), H(0x15171C), H(0x22262D), H(0x3A404A), H(0xF2F1EE), H(0x8A919B),
-                        H(0x565C66), H(0xE8542A), H(0xC2441F), H(0x5A2414), H(0x0A0B0E), H(0x9CC3E6), H(0x5DBE7E),
-                        H(0xE8B33A), H(0xE5484D)};
-static const Theme LIGHT{true, H(0xF4F2EE), H(0xFFFFFF), H(0xE9E6E0), H(0xDDD9D2), H(0xB9B4AB), H(0x16181C), H(0x5C636D),
-                         H(0x9A9FA6), H(0xE8542A), H(0xC2441F), H(0xF5CDBF), H(0x16181C), H(0x2F6A9E), H(0x2E8A50),
-                         H(0x9A6B00), H(0xC9302C)};
-const Theme *T = &DARK;
+// themes from the generated token tables (tokens/colour.json): [accent set][dark, light], built once
+const Theme *theme(bool light, int set) {
+  static Theme th[tokens::N_ACCENTS][2];
+  static bool ready = false;
+  if (!ready) {
+    for (int a = 0; a < tokens::N_ACCENTS; a++)
+      for (int l = 0; l < 2; l++) {
+        Theme &t = th[a][l];
+        t.light = l;
+        t.accent_set = a;
+        for (auto &c : tokens::COLOURS)
+          *reinterpret_cast<lv_color_t *>(reinterpret_cast<char *>(&t) + c.off) = lv_color_hex(l ? c.light : c.dark);
+        for (int r = 0; r < tokens::N_ROLES; r++)
+          *reinterpret_cast<lv_color_t *>(reinterpret_cast<char *>(&t) + tokens::ROLE_OFF[r]) =
+              lv_color_hex(l ? tokens::ACCENTS[a].light[r] : tokens::ACCENTS[a].dark[r]);
+      }
+    ready = true;
+  }
+  if (set < 0 || set >= tokens::N_ACCENTS) set = tokens::ACCENT_DEFAULT;
+  return &th[set][light ? 1 : 0];
+}
+const Theme *T = nullptr;
 static std::vector<Component> &reg() {
   static std::vector<Component> r;
   return r;
@@ -126,7 +139,7 @@ EMSCRIPTEN_KEEPALIVE void fw_stage_free(int id) {
   stages[id] = nullptr;
 }
 
-EMSCRIPTEN_KEEPALIVE const char *fw_render(int id, const char *comp, const char *props, int light) {
+EMSCRIPTEN_KEEPALIVE const char *fw_render(int id, const char *comp, const char *props, int light, int accent) {
   Stage *s = get(id);
   if (!s) return "no such stage";
   const fw::Component *c = nullptr;
@@ -135,7 +148,7 @@ EMSCRIPTEN_KEEPALIVE const char *fw_render(int id, const char *comp, const char 
   if (!c) return "no such component";
   ArduinoJson::JsonDocument doc;
   if (deserializeJson(doc, props && *props ? props : "{}")) return "props: bad JSON";
-  fw::T = light ? &fw::LIGHT : &fw::DARK;
+  fw::T = fw::theme(light, accent);
   lv_display_set_default(s->d);
   lv_obj_t *scr = lv_display_get_screen_active(s->d);
   lv_obj_clean(scr);
@@ -146,8 +159,42 @@ EMSCRIPTEN_KEEPALIVE const char *fw_render(int id, const char *comp, const char 
   lv_obj_set_flex_align(scr, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
   lv_obj_remove_flag(scr, LV_OBJ_FLAG_SCROLLABLE);
   c->build(scr, doc.as<ArduinoJson::JsonObjectConst>());
+  lv_obj_update_layout(scr);
   lv_obj_invalidate(scr);
   return "";
+}
+
+// the colour tokens file (JSON) the build was generated from
+EMSCRIPTEN_KEEPALIVE const char *fw_tokens() { return fw::tokens::JSON; }
+
+// height in device px the last build of stage `id` needs (bottom of its lowest child + the screen's bottom padding):
+// lets the page size an "auto height" stage (meta "frame": [w, 0]) to its content
+EMSCRIPTEN_KEEPALIVE int fw_content_h(int id) {
+  Stage *s = get(id);
+  if (!s) return 0;
+  lv_obj_t *scr = lv_display_get_screen_active(s->d);
+  int32_t y = 0;
+  for (uint32_t i = 0; i < lv_obj_get_child_count(scr); i++) {
+    lv_area_t a;
+    lv_obj_get_coords(lv_obj_get_child(scr, i), &a);
+    if (a.y2 + 1 > y) y = a.y2 + 1;
+  }
+  return y + lv_obj_get_style_pad_bottom(scr, LV_PART_MAIN);
+}
+
+// resize a stage (display + buffers), keeps its id
+EMSCRIPTEN_KEEPALIVE void fw_stage_resize(int id, int w, int h) {
+  Stage *s = get(id);
+  if (!s || (s->w == w && s->h == h)) return;
+  s->w = w;
+  s->h = h;
+  s->rgba.assign((size_t) w * h, 0xFF000000u);
+  size_t n = ((size_t) w * h * 2 + 63) & ~(size_t) 63;
+  uint8_t *nb = (uint8_t *) std::aligned_alloc(64, n);
+  lv_display_set_buffers(s->d, nb, nullptr, n, LV_DISPLAY_RENDER_MODE_PARTIAL);
+  std::free(s->buf);
+  s->buf = nb;
+  lv_display_set_resolution(s->d, w, h);
 }
 
 EMSCRIPTEN_KEEPALIVE void fw_touch(int id, int x, int y, int down) {
