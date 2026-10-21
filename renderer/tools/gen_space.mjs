@@ -24,6 +24,29 @@ for (const g of groups)
     if (!Number.isInteger(v.v) || !Number.isInteger(v['1x'])) die(`${g}.${n}: v and 1x must be integers`);
     rows.push({ g, n, ...v });
   }
+// the grid rule (Darren 2026-10-21: multiples of 4, no odd numbers). Spacing, layout, radius, touch: a multiple of 4 at
+// both densities (minimum 4 when non-zero; radius 0 = square, radius.round = the fully-round sentinel). A 720 value may
+// sit on the 2 px grid only when it carries `grid2` (an approved docs value waiting for Darren); the 480 value never.
+// Strokes: 1 and 2 px hairlines, 3 px and up even.
+const bad = [];
+for (const r of rows) {
+  if (r.g === 'radius' && r.n === 'round') continue;
+  for (const [d, x] of [['720 (v)', r.v], ['480 (1x)', r['1x']]]) {
+    const at = `${r.g}.${r.n} ${d} = ${x}`;
+    if (x < 0) bad.push(`${at}: negative`);
+    else if (r.g === 'stroke') { if (x >= 3 && x % 2) bad.push(`${at}: strokes of 3 px and up must be even`); }
+    else if (x === 0) { if (r.g !== 'radius') bad.push(`${at}: spacing is at least 4 (only a radius may be 0)`); }
+    else if (x % 4 && !(d.startsWith('720') && r.grid2 && x % 2 === 0)) bad.push(`${at}: not a multiple of 4${x % 2 ? ' (odd)' : ''}`);
+  }
+}
+// the screen adds up: 2 Home cards and 3 tiles fill the width exactly at both densities
+const L0 = t.tokens.layout, val = (k, d) => L0[k][d === 480 ? '1x' : 'v'];
+for (const d of [720, 480]) {
+  const cards = 2 * val('inset', d) + 2 * val('card-w', d) + val('gutter', d), tiles = 2 * val('inset', d) + 3 * val('tile-w', d) + 2 * val('gutter', d);
+  if (cards !== d) bad.push(`layout ${d}: 2 x card-w + gutter + 2 x inset = ${cards}, not ${d}`);
+  if (tiles !== d) bad.push(`layout ${d}: 3 x tile-w + 2 x gutter + 2 x inset = ${tiles}, not ${d}`);
+}
+if (bad.length) die(`off the 4 px grid (Darren 2026-10-21: every spacing value a multiple of 4, no odd numbers):\n  ${bad.join('\n  ')}`);
 const steps = Object.keys(t.tokens.space).map(Number).sort((a, b) => a - b);
 steps.forEach((s, i) => { if (s !== i + 1) die('space steps must be 1..N'); });
 

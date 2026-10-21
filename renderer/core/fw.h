@@ -3,6 +3,7 @@
 // into device pixels with fw::px() (Waveshare/Shelly build = 1.5x, Guition build = 1x). Colours only from fw::T
 // (tokens/colour.json; never a hex in a component).
 #pragma once
+#include <algorithm>
 #include <cmath>
 #include <cstring>
 #include <string>
@@ -26,7 +27,11 @@ constexpr float D = 1.0f;
 #else
 constexpr float D = 1.5f;
 #endif
-inline int px(float dp) { return (int) std::lround(dp * D); }
+// snapped to the 4 px grid (Darren 2026-10-21: no odd or off-grid geometry at either density); 0 stays 0, minimum 4
+inline int px(float dp) {
+  const int v = (int) std::lround(dp * D);
+  return v == 0 ? 0 : v > 0 ? std::max(4, (v + 2) / 4 * 4) : -std::max(4, (-v + 2) / 4 * 4);
+}
 // Spacing, layout, radius, strokes, touch targets (tokens/space.json, README "Space tokens"): already device px for
 // this density (fw::sp::s3, fw::lay::inset, fw::rad::button, fw::stroke::hair, fw::touch::min): never wrap them in px().
 // px() stays the dp mapping for one-off geometry the tokens do not cover (page frames, sample sizes).

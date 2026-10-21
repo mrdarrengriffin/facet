@@ -103,8 +103,12 @@ spacing, case and the text-box rule (height = box, cap height centred in it; `wr
 `tokens/space.json` holds spacing, layout, radius, stroke and touch tokens in **device px**: `v` = the 720 px reference
 (1.5x, 8 px grid) = Facet `main` tokens.json `space` (steps 1-10), `layout` (inset, gutter, group, row, top, card/tile),
 `radius`, `stroke`, `size` (touch targets); `1x` = 480 px (4 px grid). 480 sources per group (`groups[].source1x`):
-layout + touch = the docs `density.1x` table; space, radius and strokes >= 3 = the old firmware rule (x 2/3 rounded,
-strokes 1-2 kept). Legacy `space.screen` / `space.gutter` (layout v2, inset 16) left out: layout v3 `lay::inset` 32.
+layout + touch = the docs `density.1x` table; space + radius = x 2/3 snapped to the 4 px grid, strokes 1-2 kept,
+>= 3 px even. **Grid rule (Darren 2026-10-21): every spacing, layout, radius and touch value is a multiple of 4 at both
+densities, no odd numbers**; `gen_space.mjs` fails the build on an off-grid value, on a 720 value only on the 2 px grid
+without a `grid2` reason (approved docs value waiting for Darren: space 4 = 14, radius chip = 6), and when 2 Home cards or
+3 tiles + gutters + insets do not fill the screen exactly (480: 20 + 3 x 136 + 2 x 16 + 20). `fw::px()` snaps one-off
+geometry to the 4 px grid too. Legacy `space.screen` / `space.gutter` (layout v2, inset 16) left out: layout v3 `lay::inset` 32.
 `build.sh` (and `firmware/bundle.mjs`) run `tools/gen_space.mjs` -> `space_gen.h`: `fw::sp::s1..s10` + `sp::S[]` +
 `sp::GRID`, `fw::lay::inset|gutter|group|row|top|card_w|...`, `fw::rad::card|chip|button|...`, `fw::stroke::hair|...`,
 `fw::touch::target|min|back|...`, already device px (never wrap in `px()`); `fw::px(dp)` stays for one-off geometry.
