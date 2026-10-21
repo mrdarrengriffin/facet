@@ -10,15 +10,11 @@
 // "button") and checked in every theme x accent set by tools/contrast.mjs: change a look here -> update the pair.
 // Optional icon before the label (fw::icon, Icons foundation, at the icon size token). Width hugs the label rounded up to the grid, or a
 // fixed width with the label centred. Tap = fw::emit "tap" + fw::sound "tap" (disabled: "blocked" + "error").
-// Press feedback = colour transitions of PRESS_MS with ease-out (Facet motion.duration.press / easing.ease-out;
-// constants until a Motion foundation exists).
+// Press feedback = the Motion patterns press (into the pressed look) and release (back out), colour transitions from
+// tokens/motion.json (80 ms ease-out each; reduced motion keeps them: colour only, nothing moves).
 #include "fw.h"
 
 namespace {
-// Motion (Facet main tokens.json motion): no WASM motion tokens yet -> named constants for the Motion foundation
-constexpr uint32_t PRESS_MS = 80;  // motion.duration.press
-lv_anim_path_cb_t const PRESS_PATH = lv_anim_path_ease_out;  // motion.easing.ease-out
-
 // "disabled" is drawn with USER_1, not LV_STATE_DISABLED: LVGL sends no events to a disabled object, and Facet
 // plays Error when a disabled button is pressed. USER_1 outranks PRESSED, so a disabled button shows no press look.
 constexpr lv_state_t ST_OFF = LV_STATE_USER_1;
@@ -49,15 +45,17 @@ Kind kind_of(const char *k) {
 
 const lv_style_prop_t TR_PROPS[] = {LV_STYLE_BG_COLOR, LV_STYLE_BG_OPA, LV_STYLE_BORDER_COLOR, LV_STYLE_BORDER_OPA,
                                     LV_STYLE_TEXT_COLOR, LV_STYLE_IMAGE_RECOLOR, LV_STYLE_PROP_INV};
-const lv_style_transition_dsc_t *press_tr() {
-  static lv_style_transition_dsc_t d;
+// LVGL runs the transition of the state being entered: pressed looks take press, the others release
+const lv_style_transition_dsc_t *tr(bool pressed) {
+  static lv_style_transition_dsc_t d[2];
   static bool ready = false;
-  if (!ready) { lv_style_transition_dsc_init(&d, TR_PROPS, PRESS_PATH, PRESS_MS, 0, nullptr); ready = true; }
-  return &d;
+  if (!ready) { fw::mo::transition(&d[0], fw::mo::release, TR_PROPS); fw::mo::transition(&d[1], fw::mo::press, TR_PROPS); ready = true; }
+  return &d[pressed];
 }
 
 // the five looks on their selectors (CHECKED = active; CHECKED|PRESSED outranks PRESSED; USER_1 = disabled wins)
 const lv_style_selector_t SEL[5] = {0, LV_STATE_PRESSED, LV_STATE_CHECKED, LV_STATE_CHECKED | LV_STATE_PRESSED, ST_OFF};
+const bool PRESSED_SEL[5] = {false, true, false, true, false};
 const Look &look(const Kind &k, int i) {
   const Look *l[5] = {&k.normal, &k.pressed, &k.active, &k.active_pressed, &k.off};
   return *l[i];
@@ -69,14 +67,14 @@ void box_looks(lv_obj_t *b, const Kind &k) {
     lv_obj_set_style_bg_opa(b, l.bg_opa, SEL[i]);
     lv_obj_set_style_border_color(b, l.bd, SEL[i]);
     lv_obj_set_style_border_opa(b, l.bd_opa, SEL[i]);
-    lv_obj_set_style_transition(b, press_tr(), SEL[i]);
+    lv_obj_set_style_transition(b, tr(PRESSED_SEL[i]), SEL[i]);
   }
 }
 // the label follows the button's state (STATE_TRICKLE)
 void fg_looks(lv_obj_t *o, const Kind &k) {
   for (int i = 0; i < 5; i++) {
     lv_obj_set_style_text_color(o, look(k, i).fg, SEL[i]);
-    lv_obj_set_style_transition(o, press_tr(), SEL[i]);
+    lv_obj_set_style_transition(o, tr(PRESSED_SEL[i]), SEL[i]);
   }
 }
 
@@ -84,7 +82,7 @@ void fg_looks(lv_obj_t *o, const Kind &k) {
 // mask from the Icons foundation; its ink follows the label colour in every state (same pairs as the label)
 lv_obj_t *icon(lv_obj_t *parent, const char *id, const Kind &k) {
   lv_obj_t *o = fw::icon(parent, id, fw::ic::icon, k.normal.fg);
-  for (int i = 0; o && i < 5; i++) fw::icon_colour(o, look(k, i).fg, SEL[i], press_tr());
+  for (int i = 0; o && i < 5; i++) fw::icon_colour(o, look(k, i).fg, SEL[i], tr(PRESSED_SEL[i]));
   return o;
 }
 // accent mark shown only while active (CHECKED): a corner tick (L of two border sides) or the ghost underline

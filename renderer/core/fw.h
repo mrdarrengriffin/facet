@@ -14,6 +14,7 @@
 #include "type_gen.h"    // fw::ty:: styles (generated from tokens/type.json)
 #include "space_gen.h"   // fw::sp:: lay:: rad:: stroke:: touch:: (generated from tokens/space.json), device px
 #include "icons_gen.h"   // fw::ic:: icon sizes + the icon table (generated from tokens/icons.json)
+#include "motion_gen.h"  // fw::mo:: durations, easings, patterns (generated from tokens/motion.json)
 
 namespace fw {
 
@@ -71,6 +72,44 @@ int icon_bytes(int index, ic::Size size); // flash of one icon@size (its masks),
 int icons_bytes();                        // flash of every icon in this build (masks + tables)
 int icons_entries();                      // icon x size pairs in this build
 bool icons_used_only();                   // built with FW_ICONS=used
+
+// Motion (tokens/motion.json, README "Motion tokens"): never a raw duration or easing in a component. Named patterns
+// fw::mo::press, sheet_open, screen, value, ... = duration + easing + offset (device px) + reduced-motion mode
+// (fw::mo::PATTERNS). Reduced motion is one setting per display (device: global; workbench: per stage, set by
+// fw::render from the props key "reduced_motion"): nothing moves, opacity fades stay short, colours stay, loops stop.
+namespace mo {
+inline const Pattern &pat(Id p) { return PATTERNS[p]; }
+inline lv_anim_path_cb_t path(Id p) { return EASINGS[PATTERNS[p].easing].path; }
+bool reduced(const lv_obj_t *o);                // reduced motion for o's display
+void set_reduced(lv_display_t *d, bool on);     // per display (render() sets it for the stage it builds on)
+void set_reduced_default(bool on);              // the panel's setting: every display without its own
+bool reduced_default();
+enum Channel { MOVE, OPA, VALUE };              // what an animation changes: position, opacity, a shown value
+uint32_t duration(const lv_obj_t *o, Id p, Channel ch);  // the pattern's ms for o, 0 = instant (reduced motion)
+// a style transition for a colour pattern (press / release) on the given props (LV_STYLE_PROP_INV terminated); one
+// static descriptor per call site: static lv_style_transition_dsc_t d; mo::transition(&d, mo::press, PROPS);
+void transition(lv_style_transition_dsc_t *d, Id p, const lv_style_prop_t *props);
+}  // namespace mo
+// one animation of obj (the anim's var) with a pattern's duration + easing; reduced motion collapses it (exec(to) now,
+// done called). loop = there and back forever (pulse). Restarts an animation already running on the same obj + exec.
+struct Anim {
+  lv_anim_exec_xcb_t exec;
+  int32_t from, to;
+  mo::Channel ch = mo::MOVE;
+  uint32_t delay = 0;
+  bool loop = false;
+  lv_anim_completed_cb_t done = nullptr;
+  void *user = nullptr;
+};
+void animate(lv_obj_t *o, mo::Id p, const Anim &a);
+// appear (in) / leave: opacity to 100 / 0 % and translate_y from / to dir x the pattern's offset (+1 = below, -1 =
+// above, 0 = in place), from wherever it is now. Reduced: opacity only (pattern mode). done after the opacity anim.
+void appear(lv_obj_t *o, mo::Id p, bool in, int dir = 1, uint32_t delay = 0, lv_anim_completed_cb_t done = nullptr, void *user = nullptr);
+// the screen pattern (Facet "Content rise", = the old lab's): call after cutting to the new screen. items[0] = the
+// header, then the content blocks; blocks are grouped into rows by their top (side by side = one row), each row fades
+// in and rises by the offset, header first, each row a stagger later (max-steps); home = drops in from above (going
+// back Home). Reduced: instant.
+void rise(lv_obj_t *const *items, int n, bool home);
 
 using Props = ArduinoJson::JsonObjectConst;
 using Build = void (*)(lv_obj_t *parent, Props p);

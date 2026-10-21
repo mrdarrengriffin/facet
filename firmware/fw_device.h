@@ -3,6 +3,7 @@
 //   GET  /fw/info   {v, density, core, files, ids, built, board, w, h, shown, heap}   what this firmware was built from
 //   GET  /fw/meta   [{id, name, section, meta}]                                     the registry (same as fw_meta())
 //   POST /fw/show   {id, props?, theme?: dark|light, accent?: <set id>}  -> {ok, error?, ms, heap}
+//   GET  /fw/perf   frame stats while animations run (since boot or the last ?reset=1): fps, frame / render ms
 // Rendering = fw::render() on one screen of our own (the same call the WASM preview makes): the component centred at
 // true size on the Facet bg; content taller than the screen scrolls (doc pages). The last request is kept in flash and
 // shown again after a reboot. Requests run in the httpd task; anything touching LVGL is handed to the main loop (an
@@ -85,6 +86,51 @@ inline bool in_loop(std::function<void()> fn, uint32_t ms = 6000) {
   }
   vSemaphoreDelete(j.done);
   return ok;
+}
+
+// ---------------------------------------------------------------- frame stats (Motion: frame-rate check)
+// Counted only while an LVGL animation runs: each rendered frame's start (interval = frame time) and its render +
+// flush time. Gaps over 100 ms start a new segment (a pause between animations, not a dropped frame). slow = frames
+// that came later than 1.5 refresh periods after the previous one (a missed refresh slot = a dropped frame).
+struct Perf {
+  int64_t start = 0, last = 0, active_us = 0, render_us = 0, render_max = 0, gap_max = 0;
+  uint32_t frames = 0, intervals = 0, slow = 0;
+  bool counting = false;
+};
+inline Perf P;
+inline void perf_reset() { P = Perf{}; }
+inline void perf_event(lv_event_t *e) {
+  const int64_t t = esp_timer_get_time();
+  if (lv_event_get_code(e) == LV_EVENT_RENDER_START) {
+    P.counting = lv_anim_count_running() > 0;
+    if (!P.counting) return;
+    P.start = t;
+    const int64_t gap = P.last ? t - P.last : 0;
+    if (P.last && gap < 100000) {
+      P.intervals++;
+      P.active_us += gap;
+      if (gap > P.gap_max) P.gap_max = gap;
+      const int64_t period = LV_DEF_REFR_PERIOD * 1000;
+      if (gap * 2 > period * 3) P.slow++;
+    }
+    P.last = t;
+    P.frames++;
+  } else if (P.counting) {  // RENDER_READY
+    const int64_t r = t - P.start;
+    P.render_us += r;
+    if (r > P.render_max) P.render_max = r;
+  }
+}
+inline void perf_json(ArduinoJson::JsonObject o) {
+  o["refr_period_ms"] = LV_DEF_REFR_PERIOD;
+  o["frames"] = P.frames;
+  o["fps"] = P.active_us ? lroundf(P.intervals * 1e7f / P.active_us) / 10.f : 0.f;
+  o["frame_ms_avg"] = P.intervals ? lroundf(P.active_us / 100.f / P.intervals) / 10.f : 0.f;
+  o["frame_ms_max"] = lroundf(P.gap_max / 100.f) / 10.f;
+  o["render_ms_avg"] = P.frames ? lroundf(P.render_us / 100.f / P.frames) / 10.f : 0.f;
+  o["render_ms_max"] = lroundf(P.render_max / 100.f) / 10.f;
+  o["slow"] = P.slow;
+  o["active_s"] = lroundf(P.active_us / 1e5f) / 10.f;
 }
 
 // ---------------------------------------------------------------- render
@@ -186,6 +232,11 @@ class Handler : public AsyncWebHandler {
       ArduinoJson::JsonDocument shd;
       if (!deserializeJson(shd, sh)) d["shown"] = shd;
       serializeJson(d, s);
+    } else if (path == "/fw/perf") {
+      ArduinoJson::JsonDocument d;
+      const bool reset = req->hasArg("reset");  // url_to() has no query string
+      in_loop([&] { perf_json(d.to<ArduinoJson::JsonObject>()); if (reset) perf_reset(); }, 2000);
+      serializeJson(d, s);
     } else if (path == "/fw/show" && post) {
       ArduinoJson::JsonDocument body, out;
       if (too_big_ || body_.empty() || deserializeJson(body, body_)) {
@@ -205,7 +256,7 @@ class Handler : public AsyncWebHandler {
       }
     } else {
       code = 404;
-      s = R"({"ok":false,"error":"GET /fw/info, GET /fw/meta, POST /fw/show"})";
+      s = R"({"ok":false,"error":"GET /fw/info, GET /fw/meta, GET /fw/perf[?reset=1], POST /fw/show"})";
     }
     body_.clear();  // a body is only delivered for some content types: never reuse the previous request's
     too_big_ = false;
@@ -229,6 +280,8 @@ inline void setup() {
   });
   lv_display_t *d = lv_display_get_default();
   lv_display_set_theme(d, nullptr);  // clean slate like the WASM host: components style everything themselves
+  lv_display_add_event_cb(d, perf_event, LV_EVENT_RENDER_START, nullptr);  // frame stats (GET /fw/perf)
+  lv_display_add_event_cb(d, perf_event, LV_EVENT_RENDER_READY, nullptr);
   S.scr = lv_obj_create(nullptr);
   lv_screen_load(S.scr);
   S.pref = esphome::global_preferences->make_preference<Saved>(0xFAC37B01u, true);

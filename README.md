@@ -113,6 +113,71 @@ geometry to the 4 px grid too. Legacy `space.screen` / `space.gutter` (layout v2
 `sp::GRID`, `fw::lay::inset|gutter|group|row|top|card_w|...`, `fw::rad::card|chip|button|...`, `fw::stroke::hair|...`,
 `fw::touch::target|min|back|...`, already device px (never wrap in `px()`); `fw::px(dp)` stays for one-off geometry.
 
+## Motion tokens (single source)
+
+`tokens/motion.json` = Facet `main` `tokens.json` `motion` (durations, easings, `transition.rise`) + how `@facet/ui` uses
+them (bottom sheet, toast, screen rise, dial sweep, press / toggle transitions, the `prefers-reduced-motion` rules),
+`opacity.scrim` / `pulse-min`. **20 durations** (groups: interaction, ambient loops, timing), **3 easings** (`linear`,
+`ease-out` = cubic-bezier(0, 0, 0.58, 1), `ease-in-out` = (0.42, 0, 0.58, 1)), **12 patterns** = duration + easing + what
+animates + offset (`v` 720 / `1x` 480 px, on the 4 px grid) + reduced-motion mode: press, release, toggle, fade,
+sheet-open, sheet-close, toast-in, toast-out, screen (the Facet "Content rise", = the old lab's `screens.ts` `T.rise`:
+cut, then blocks grouped into rows by their top (side by side = one row), header first, each row fades in + rises 8 /
+4 px (one grid step) over 160 ms ease-out, 40 ms per row, at most 6 steps; back to Home they drop in from above), value (dial-sweep count-up), clock-hand, pulse.
+`tools/gen_motion.mjs` (build.sh + bundle.mjs) -> `motion_gen.h`: `fw::mo::ms::<duration>`, `fw::mo::ease::<easing>`
+(LVGL path callbacks: an easing naming an LVGL built-in must match that built-in's bezier exactly, the generator checks;
+an easing without `lvgl` gets a generated `lv_cubic_bezier` path function, usable in style transitions too),
+`fw::mo::Id` (`mo::press`, `mo::sheet_open`, ...) + `mo::PATTERNS[]` (ms, easing, offset px for this density, stagger,
+steps, reduced mode) and the Motion page tables. Never a raw duration or easing in a component.
+
+**Reduced motion** (one setting, off by default): nothing moves. Modes per pattern: `keep` (colour / opacity only:
+press, release, fade), `fade` (opacity only, at most `fade` 150 ms: sheets, toasts), `instant` (toggle, screen, value,
+clock-hand), `still` (loops stop on their resting frame: pulse). Runtime (`core/motion.cpp`): per display
+(`mo::set_reduced(display, on)`; `fw::render` sets it from the props key `reduced_motion`, else the panel default
+`mo::set_reduced_default`), `mo::reduced(obj)`, `mo::duration(obj, pattern, channel)` (0 = instant).
+
+API (`core/fw.h`): `mo::transition(&dsc, mo::press, PROPS)` = a style transition for a colour pattern;
+`fw::animate(obj, mo::value, {exec, from, to, mo::VALUE})` = one animation with the pattern's duration + easing,
+collapsed by reduced motion (`loop` = there and back forever); `fw::appear(obj, mo::sheet_open, in, dir)` = opacity +
+translate_y by the pattern's offset from wherever it is now; `fw::rise(rows, n, home)` = the screen pattern. Movement
+is translate only (no transforms that need a layer); opacity via the `opa` style (multiplied into every draw, no layer).
+
+Page `/wasm/foundations/motion` (`foundations/motion.cpp`): easing curves plotted from the very LVGL path callbacks with
+a dot along the curve + a box moving with it (1 s, tap = replay), durations as bars (log scale for ambient; tap = a run
+at the real length), every pattern live on a sample (the real Button for press / release; toggle knob, fading card,
+sheet, toast, screen rise, count-up, clock hand, pulse), a reduced-motion table. Playground: `reduced_motion`, `loop` =
+one pattern at full screen size over and over (the frame-rate bench). Contrast pairs: `colour.json` section `motion`.
+
+**Frame-rate check** on the panels: `POST /fw/show {"id": "motion", "props": {"loop": "<pattern>"}}`, then
+`GET /fw/perf?reset=1`, wait, `GET /fw/perf` (`firmware/fw_device.h`; browser targets: the host's device page reports
+the same stats, e.g. the hub's `GET /api/wasm/perf?target=shelly[&reset=1]`, WASM export `fw_anims()`): frames counted only while an LVGL animation
+runs; `fps`, `frame_ms_avg|max` (start to start), `render_ms_avg|max` (render + flush), `slow` = frames later than 1.5
+refresh periods (a missed slot), `refr_period_ms` (LV_DEF_REFR_PERIOD).
+
+Results 2026-10-21 (full-screen loop, dark, 4 s each; one bench script in the host repo runs all
+three targets). fps / render ms avg (panels: LVGL render + flush; Shelly: WASM tick + render + canvas copy):
+
+| Pattern | Waveshare P4 (720) | Guition (480, 90 deg sw rotation) | Shelly X1i (720, WASM in Webview Kiosk) |
+|---|---|---|---|
+| press / release | 53 / 0.8 | 53 / 2.6 | 38 / 5.2 |
+| toggle | 53 / 0.7 | 52 / 1.6 | 29 / 4.9 |
+| fade | 59 / 4.1 | **39 / 21** | 36 / 12 |
+| sheet open | **32 / 23** | **12 / 89** | **20 / 42** |
+| sheet close | **36 / 24** | **11 / 89** | **20 / 42** |
+| toast in / out | 53-60 / 4 | 51-59 / 10.5 | 36-40 / 9 |
+| screen (content rise) | 53 / 6.6 | **19 / 44** | 37 / 19 |
+| value | 58 / 1.1 | 57 / 3.5 | 39 / 6.2 |
+| clock hand | 60 / 4.6 | 49 / 15 | 43 / 10 |
+| pulse | 53 / 0.4 | 52 / 0.9 | 40 / 4.4 |
+
+Ceilings: the panels' ESPHome loop caps a trivial animation at ~53 fps (refresh 16 ms + loop jitter, ~17 % "slow"
+frames even at 1 ms render); the Shelly's browser path tops out near 40 fps (each repaint copies the whole 720 x 720
+stage to the canvas, ~4-5 ms, plus the WebView's own compositing). Cost = large areas blended at partial opacity each
+frame (the sheet scrim, every row of a screen rise), not movement.
+**Decision (Darren 2026-10-21): keep both fades as designed** (the sheet dims the screen as it opens; the screen
+transition stays the content rise with its fade); optimise later. These numbers are the reference for that work:
+the expensive parts are the sheet dim fade and the screen rise fade. Candidate fixes: a stepped dim (2-3 opacity
+steps), rise without the fade, or `instant` on 1x boards.
+
 ## Icons (single source)
 
 `tokens/icons.json` = every icon the Facet docs define (Facet `main` `packages/icons/manifest.json`), masters copied 1:1
@@ -160,7 +225,8 @@ value step on sliders/dials, which control plays which sound, toast sound, sound
 `foundations/<id>.cpp`, same `FW_COMPONENT` API with section `foundations`. Meta `"layout": "doc"` = a document page:
 one full-width WASM stage per variant (heading + `about` in HTML), `"frame": [w, 0]` = auto height (the stage follows
 its content, `fw_content_h` + `fw_stage_resize`). Status = the .cpp plus `tokens/<id>.json` if present (any untracked
-= WIP; approve = commit both). **Type** (`foundations/type.cpp`): both scales at true size in their line boxes (hairlines) with spec + use, mono caps beside sans, number styles (units, tabular digits), glyph coverage per set, the fonts of the build with their flash cost (device switch = 720 / 480 build). **Spacing & radius** (`foundations/space.cpp`, id `space`): spacing steps (true-size square + 8x bar), layout tokens (true-size bars + grid), radius samples on surface cards, strokes (line, ring, outlined control), touch targets (hit area tinted around a smaller drawn back button / chip / row), the whole screen at true size (grid minor + major, inset bands, header row, content from `top`, Home 2 columns with card padding); every value also shows the other density. **Colour** (`foundations/colour.cpp`): every token by group, name + role, the colour in
+= WIP; approve = commit both; Motion also adds `core/motion.cpp` + `tools/gen_motion.mjs`). **Motion**
+(`foundations/motion.cpp`): see "Motion tokens". **Type** (`foundations/type.cpp`): both scales at true size in their line boxes (hairlines) with spec + use, mono caps beside sans, number styles (units, tabular digits), glyph coverage per set, the fonts of the build with their flash cost (device switch = 720 / 480 build). **Spacing & radius** (`foundations/space.cpp`, id `space`): spacing steps (true-size square + 8x bar), layout tokens (true-size bars + grid), radius samples on surface cards, strokes (line, ring, outlined control), touch targets (hit area tinted around a smaller drawn back button / chip / row), the whole screen at true size (grid minor + major, inset bands, header row, content from `top`, Home 2 columns with card padding); every value also shows the other density. **Colour** (`foundations/colour.cpp`): every token by group, name + role, the colour in
 its dark and light context with its hex (chips drawn by LVGL in RGB565, as on the panel), the accent sets, the contrast
 matrix (summary per accent x theme, all failures, every pair per section; see Contrast test). **Icons**
 (`foundations/icons.cpp`): see Icons.
@@ -199,7 +265,7 @@ workbench sends (the toolbar's **Show on device**). Facet side (this branch, no 
 | Path | What |
 |---|---|
 | `core/fw_core.cpp` | shared by every host: themes, registry, `fw::render(screen, comp, props, light, accent)` (the WASM host calls it too) |
-| `firmware/fw_device.h` | ESPHome glue: own LVGL screen, `GET /fw/info` (build hashes), `GET /fw/meta`, `POST /fw/show {id, props, theme, accent}`; last request kept in flash; tall content scrolls |
+| `firmware/fw_device.h` | ESPHome glue: own LVGL screen, `GET /fw/info` (build hashes), `GET /fw/meta`, `POST /fw/show {id, props, theme, accent}`, `GET /fw/perf[?reset=1]` (frame stats while animations run); last request kept in flash; tall content scrolls |
 | `firmware/esphome_init.py` | the external component `facet_wb` (`board`, `width`, `height`) |
 | `firmware/bundle.mjs` | `--density 1x\|1.5x --out <dir>` writes `<dir>/facet_wb/` (flat, fonts inlined, link keepers); `--hashes` prints the source hashes |
 
@@ -215,6 +281,7 @@ Board YAML (display, touch, Wi-Fi) lives with the host that builds the firmware,
 | `components/*.cpp` | one component per file (the only place new work goes) |
 | `tokens/colour.json`, `tools/gen_colour.mjs` | colour tokens (single source) and their header generator |
 | `foundations/*.cpp` | foundation pages (Colour, Type, Spacing & radius) |
+| `tokens/motion.json`, `tools/gen_motion.mjs`, `core/motion.cpp` | motion tokens (single source), header generator, runtime (reduced motion, animate / appear / rise) |
 | `tokens/space.json`, `tools/gen_space.mjs` | spacing / layout / radius / stroke / touch tokens (single source) and their header generator |
 | `core/fw.h` | the component API: `FW_COMPONENT`, `fw::T` colours (tokens/colour.json), `fw::text(parent, ty::<style>, ...)` / `fw::font(ty::<style>)` (tokens/type.json), `fw::px(dp)`, `fw::force_state` |
 | `core/fw_core.cpp` | themes, registry, `fw::render` (shared by the WASM host and the device firmware) |
@@ -236,9 +303,8 @@ plays sounds in the browser with the default pack (Sound switch, per browser). D
 **TODO** sound playback on the panels. Rule from the docs: sounds only on real taps = LVGL `CLICKED` (dropped after a
 scroll); a disabled control plays `error`.
 
-**Motion TODO** (no Motion foundation yet): components use the Facet `motion` values as named constants, listed here
-for the future foundation: Button `PRESS_MS = 80` (`motion.duration.press`), `lv_anim_path_ease_out`
-(`motion.easing.ease-out`).
+Motion: components take every duration / easing from the Motion tokens (see "Motion tokens"); Button = patterns
+`press` + `release` as style transitions.
 
 ## Components
 

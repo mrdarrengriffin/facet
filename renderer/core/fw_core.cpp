@@ -71,6 +71,8 @@ const char *render(lv_obj_t *scr, const char *comp, const char *props, bool ligh
   ArduinoJson::JsonDocument doc;
   if (deserializeJson(doc, props && *props ? props : "{}")) return "props: bad JSON";
   T = theme(light, accent);
+  // reduced motion for this display: props "reduced_motion" (workbench playground / Show on device), else the panel's
+  mo::set_reduced(lv_obj_get_display(scr), doc["reduced_motion"] | mo::reduced_default());
   lv_obj_clean(scr);
   lv_obj_remove_style_all(scr);
   lv_obj_set_style_bg_color(scr, T->bg, 0);

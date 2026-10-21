@@ -9,6 +9,7 @@
 //   fw_touch(id, x, y, down)          pointer on that stage (device pixels)
 //   fw_tick(ms)                       LVGL timers/refresh for all stages
 //   fw_dirty(id) / fw_frame(id)       redrawn since last read? / RGBA pixels (w*h*4)
+//   fw_anims() -> n                   LVGL animations running (frame stats)
 //   fw_events() -> JSON               events + sound requests since the last call (fw::emit / fw::sound): [{stage,kind,name,detail}] or ""
 #include <emscripten.h>
 #include <cstdlib>
@@ -169,6 +170,8 @@ EMSCRIPTEN_KEEPALIVE void fw_tick(uint32_t ms) {
   now_ms = ms;
   lv_timer_handler();
 }
+// LVGL animations running now (the browser targets' frame stats count frames only while this is > 0, like /fw/perf)
+EMSCRIPTEN_KEEPALIVE int fw_anims() { return lv_anim_count_running(); }
 EMSCRIPTEN_KEEPALIVE int fw_dirty(int id) {
   Stage *s = get(id);
   if (!s || !s->dirty) return 0;

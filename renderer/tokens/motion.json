@@ -1,0 +1,62 @@
+{
+  "$comment": "Facet motion tokens, single source for the WASM workbench and the panels (README 'Motion tokens'). From Facet main packages/tokens/src/tokens.json motion (durations, easings, transition) + how @facet/ui uses them (pickers.ts bottom sheet, toast.ts, device.ts rise, controls.ts dial sweep, 10-components.css press / toggle transitions, prefers-reduced-motion rules). tools/gen_motion.mjs -> motion_gen.h (fw::mo::). Offsets: v = 720 px panels, 1x = 480 (on the 4 px grid). Rule from the docs: animate opacity and transform (position) of small things only, so it holds on the panels.",
+  "groups": [
+    { "id": "ui", "label": "Interaction", "about": "Feedback and transitions people wait on: short, ease-out (fast start, soft landing)." },
+    { "id": "ambient", "label": "Ambient", "about": "Loops and clock motion nobody waits on: long, linear or ease-in-out. Off with reduced motion." },
+    { "id": "timing", "label": "Timing", "about": "How long something stays, not an animation." }
+  ],
+  "durations": {
+    "press": { "ms": 80, "group": "ui", "use": "press and release colour fades, toggle knob" },
+    "toast-out": { "ms": 120, "group": "ui", "use": "toast leaving" },
+    "sheet-out": { "ms": 120, "group": "ui", "use": "bottom sheet closing" },
+    "fade": { "ms": 150, "group": "ui", "use": "appear / disappear, big switch colour" },
+    "toast-in": { "ms": 160, "group": "ui", "use": "toast arriving" },
+    "sheet-in": { "ms": 160, "group": "ui", "use": "bottom sheet opening" },
+    "rise": { "ms": 160, "group": "ui", "use": "screen transition: each row's rise (motion.transition.rise.duration)" },
+    "zoom": { "ms": 220, "group": "ui", "use": "zoomed detail in and out" },
+    "clock-hand": { "ms": 300, "group": "ui", "use": "clock hand moving to a new minute" },
+    "dial-sweep": { "ms": 400, "group": "ui", "use": "value change: a dial or number sweeping to the new value" },
+    "pulse-stagger": { "ms": 350, "group": "ambient", "use": "offset between pulsing tiles" },
+    "clock-tick": { "ms": 1000, "group": "ambient", "use": "seconds tick" },
+    "clock-progress": { "ms": 1000, "group": "ambient", "use": "progress ring step" },
+    "pulse": { "ms": 2200, "group": "ambient", "use": "working pulse (one breath)" },
+    "disc-marker": { "ms": 8000, "group": "ambient", "use": "media disc turn" },
+    "orbit-b": { "ms": 23000, "group": "ambient", "use": "orbit clock, inner ring" },
+    "orbit-c": { "ms": 37000, "group": "ambient", "use": "orbit clock, middle ring" },
+    "orbit-a": { "ms": 60000, "group": "ambient", "use": "orbit clock, outer ring" },
+    "clock-sweep": { "ms": 60000, "group": "ambient", "use": "sweeping seconds hand" },
+    "toast-life": { "ms": 6000, "group": "timing", "use": "a toast stays this long" }
+  },
+  "easings": {
+    "linear": { "bezier": [0, 0, 1, 1], "css": "linear", "lvgl": "lv_anim_path_linear", "use": "loops, clock sweeps, progress" },
+    "ease-out": { "bezier": [0, 0, 0.58, 1], "css": "cubic-bezier(0, 0, 0.58, 1)", "lvgl": "lv_anim_path_ease_out", "use": "everything people trigger: press, sheets, toasts, rise, value sweeps" },
+    "ease-in-out": { "bezier": [0.42, 0, 0.58, 1], "css": "cubic-bezier(0.42, 0, 0.58, 1)", "lvgl": "lv_anim_path_ease_in_out", "use": "ambient loops that go back and forth (pulse, mascot)" }
+  },
+  "opacity": {
+    "scrim": { "value": 0.72, "use": "sheet scrim: bg at this opacity over the screen" },
+    "pulse-min": { "value": 0.35, "use": "pulse: the faintest point of a breath" }
+  },
+  "reduced": {
+    "about": "Reduced motion (one global setting, off by default; per panel). Nothing moves: positions, rotations and value sweeps jump to the end; opacity fades stay, kept short; colour feedback (press) stays as it is; loops stop on their resting frame. From the docs: prefers-reduced-motion stops animations, the dial jumps, nothing spins, the state still follows.",
+    "modes": {
+      "keep": "unchanged (colour or opacity only, nothing moves)",
+      "fade": "opacity only, no movement, at the fade duration or shorter",
+      "instant": "jumps to the end state",
+      "still": "loop off, resting frame"
+    }
+  },
+  "patterns": {
+    "press": { "label": "Press", "duration": "press", "easing": "ease-out", "animates": "fill, border, label and icon colour to the pressed look", "reduced": "keep", "use": "buttons, rows, chips: finger down" },
+    "release": { "label": "Release", "duration": "press", "easing": "ease-out", "animates": "colours back to the resting (or active) look", "reduced": "keep", "use": "finger up, or the press slid off" },
+    "toggle": { "label": "Toggle", "duration": "press", "easing": "ease-out", "animates": "knob slides across, track colour to accent", "reduced": "instant", "use": "switch on / off" },
+    "fade": { "label": "Fade", "duration": "fade", "easing": "ease-out", "animates": "opacity 0 to 1 (out: 1 to 0)", "reduced": "keep", "use": "something appearing or leaving in place: loading to content, a badge" },
+    "sheet-open": { "label": "Sheet open", "duration": "sheet-in", "easing": "ease-out", "animates": "scrim fades in; panel fades in and rises by the offset", "offset": { "v": 16, "1x": 12 }, "reduced": "fade", "use": "bottom sheet (pickers, speaker list)" },
+    "sheet-close": { "label": "Sheet close", "duration": "sheet-out", "easing": "ease-out", "animates": "scrim fades out; panel fades out and drops by the offset", "offset": { "v": 16, "1x": 12 }, "reduced": "fade", "use": "Close, scrim tap, a pick" },
+    "toast-in": { "label": "Toast in", "duration": "toast-in", "easing": "ease-out", "animates": "toast fades in and slides from the screen edge by the offset", "offset": { "v": 16, "1x": 12 }, "reduced": "fade", "use": "a toast arrives (top by default)" },
+    "toast-out": { "label": "Toast out", "duration": "toast-out", "easing": "ease-out", "animates": "toast fades out and slides back to the edge (a swipe: sideways by 160)", "offset": { "v": 16, "1x": 12 }, "reduced": "fade", "use": "timeout (toast-life), tap or swipe" },
+    "screen": { "label": "Screen transition (content rise)", "duration": "rise", "easing": "ease-out", "animates": "cut to the new screen (the old one goes at once), then its blocks, grouped into rows by their top (side by side = one row), fade in and rise by the offset: header first, each row a stagger later, at most max-steps steps (later rows share the last delay), hidden until they start; back to Home they drop in from above", "offset": { "v": 8, "1x": 4 }, "stagger": 40, "max-steps": 6, "reduced": "instant", "use": "open a screen, back to Home (= Facet motion.transition.rise, the old lab's Content rise, Darren's pick facet-6; instant = option for slow boards)" },
+    "value": { "label": "Value change", "duration": "dial-sweep", "easing": "ease-out", "animates": "the shown number and its arc / bar sweep from the old value to the new one", "reduced": "instant", "use": "dials, thermostat, counters, a new reading" },
+    "clock-hand": { "label": "Clock hand", "duration": "clock-hand", "easing": "ease-out", "animates": "the hand turns to the new minute", "reduced": "instant", "use": "analogue clocks" },
+    "pulse": { "label": "Pulse", "duration": "pulse", "easing": "ease-in-out", "animates": "opacity breathes from 100 % to opacity.pulse-min and back, forever", "reduced": "still", "use": "working / live indicators" }
+  }
+}
