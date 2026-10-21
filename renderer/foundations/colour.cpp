@@ -27,6 +27,23 @@ uint32_t value(int i, bool light, int set) {
   if (r >= 0) return light ? ACCENTS[set].light[r] : ACCENTS[set].dark[r];
   return light ? COLOURS[i].light : COLOURS[i].dark;
 }
+// a colour token or a mix token (tokens MIXES: tint over a base at an opacity, = lv_color_mix) by name
+uint32_t value_named(const char *name, bool light, int set) {
+  const int i = index_of(name);
+  if (i >= 0) return value(i, light, set);
+  for (int m = 0; m < N_MIXES; m++)
+    if (!strcmp(MIXES[m].name, name)) {
+      auto mix = [](uint32_t a, uint32_t b, uint32_t o) {  // = lv_color_mix(a, b, o)
+        uint32_t r = 0;
+        for (int sh = 16; sh >= 0; sh -= 8) r |= ((((a >> sh & 255) * o + (b >> sh & 255) * (255 - o)) * 0x8081u) >> 23) << sh;
+        return r;
+      };
+      uint32_t tint = value_named(MIXES[m].tint, light, set);
+      if (MIXES[m].toward[0]) tint = mix(value_named(MIXES[m].toward, light, set), tint, MIXES[m].desat);
+      return mix(tint, value_named(MIXES[m].over, light, set), MIXES[m].opa);
+    }
+  return 0;
+}
 float lum(uint32_t c) {
   auto ch = [](uint32_t v) { float s = v / 255.0f; return s <= 0.03928f ? s / 12.92f : std::pow((s + 0.055f) / 1.055f, 2.4f); };
   return 0.2126f * ch(c >> 16 & 255) + 0.7152f * ch(c >> 8 & 255) + 0.0722f * ch(c & 255);
@@ -163,7 +180,7 @@ uint32_t q565(uint32_t c) {
 float worst(uint32_t fg, uint32_t bg) { return std::fmin(contrast(fg, bg), contrast(q565(fg), q565(bg))); }
 struct Res { uint32_t fg, bg; float k; bool pass; };
 Res test(const Pair &cp, bool light, int set) {
-  Res r{value(index_of(cp.fg), light, set), value(index_of(cp.bg), light, set), 0, false};
+  Res r{value_named(cp.fg, light, set), value_named(cp.bg, light, set), 0, false};
   r.k = worst(r.fg, r.bg);
   r.pass = r.k >= cp.min - 0.0005f;
   return r;

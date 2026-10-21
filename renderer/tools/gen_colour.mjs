@@ -4,7 +4,7 @@
 import { readFileSync, writeFileSync, existsSync, renameSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { pairs as contrastPairs } from './contrast.mjs';
+import { pairs as contrastPairs, mixOpa } from './contrast.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SRC = join(HERE, '..', 'tokens', 'colour.json');
@@ -54,6 +54,29 @@ L.push('};', `constexpr int N_KINDS = ${kinds.length};`);
 L.push('struct Pair { const char *section, *fg, *bg, *use; int kind; float min; };', 'constexpr Pair CONTRAST[] = {');
 for (const p of CP) L.push(`  {${cstr(p.section)}, ${cstr(p.fg)}, ${cstr(p.bg)}, ${cstr(p.use)}, ${kinds.indexOf(p.kind)}, ${Number(p.min).toFixed(2)}f},`);
 L.push('};', `constexpr int N_CONTRAST = ${CP.length};`, '');
+// component tokens (colour.json "components": {<component>: {<key>: {value, options, use}}}) -> fw::tokens::comp::<component>_<key>
+L.push('// component tokens (a theme may set them later): a string value from its options', 'namespace comp {');
+for (const [c, keys] of Object.entries(t.components ?? {}))
+  for (const [k, v] of Object.entries(keys)) {
+    if (v.options && !v.options.includes(v.value)) die(`components.${c}.${k}: "${v.value}" is not one of its options`);
+    const use = String(v.use ?? '').replace(/\n/g, ' ');
+    if (typeof v.value === 'number') L.push(`constexpr float ${field(c)}_${field(k)} = ${v.value}f;  // ${use}`);
+    else L.push(`constexpr const char *${field(c)}_${field(k)} = ${cstr(v.value)};  // ${use}`);
+  }
+L.push('}  // namespace comp', '');
+// mixes (colour.json "mixes"): tint over a base token at a component token's opacity, = lv_color_mix(tint, over, opa)
+L.push('// mix tokens: fw::tokens::mix(MIXES[i], theme) = lv_color_mix(tint, over, opa); contrast pairs may name them', 'struct Mix { const char *name, *tint, *over, *toward, *use; size_t tint_off, over_off, toward_off; uint8_t opa, desat; };  // toward = "" -> no desaturation', 'constexpr Mix MIXES[] = {');
+const mixes = Object.entries(t.mixes ?? {});
+for (const [n, m] of mixes) {
+  if (names.includes(n)) die(`mix ${n} clashes with a colour token`);
+  for (const k of [m.tint, m.over, ...(m.toward ? [m.toward] : [])]) if (!names.includes(k)) die(`mix ${n}: unknown token ${k}`);
+  let o, d = 0; try { o = mixOpa(t, m); if (m.toward) d = mixOpa(t, m, 'desat'); } catch (e) { die(e.message); }
+  const tw = m.toward ?? m.tint;
+  L.push(`  {${cstr(n)}, ${cstr(m.tint)}, ${cstr(m.over)}, ${cstr(m.toward ?? '')}, ${cstr(m.use)}, offsetof(Theme, ${field(m.tint)}), offsetof(Theme, ${field(m.over)}), offsetof(Theme, ${field(tw)}), ${o}, ${d}},`);
+}
+if (!mixes.length) L.push('  {"", "", "", "", "", 0, 0, 0, 0, 0},');
+L.push('};', `constexpr int N_MIXES = ${mixes.length};`);
+L.push('inline lv_color_t mix(const Mix &m, const Theme &t) {', '  auto at = [&](size_t off) { return *(const lv_color_t *) ((const char *) &t + off); };', '  const lv_color_t tint = m.toward[0] ? lv_color_mix(at(m.toward_off), at(m.tint_off), m.desat) : at(m.tint_off);', '  return lv_color_mix(tint, at(m.over_off), m.opa);', '}', '');
 L.push('// accent set ids as a JSON array literal, for component meta: R"(...)" FW_ACCENT_IDS R"(...)"');
 L.push(`#define FW_ACCENT_IDS ${cstr(JSON.stringify(a.sets.map((s) => s.id)))}`);
 L.push('// the Colour page sections (foundations/colour.cpp meta "variants"): one per group, then accent sets, contrast');

@@ -23,8 +23,26 @@ const ratio = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) +
 // RGB565 as LVGL converts (truncate to 5/6/5 bits) and the panel expands (bit replication)
 const to565 = ([r, g, b]) => { const R = r >> 3, G = g >> 2, B = b >> 3; return [(R << 3) | (R >> 2), (G << 2) | (G >> 4), (B << 3) | (B >> 2)]; };
 
+// a mix token (colour.json "mixes"): `tint` (optionally first moved towards `toward` by `desat`) over `over` at the opacity of a component token (components.<c>.<key>,
+// 0..1), mixed exactly like LVGL lv_color_mix(tint, over, opa x 255) so the test sees the drawn colour
+export function mixOpa(t, m, key = 'opa') {
+  const [c, k] = m[key].split('.');
+  const v = t.components?.[c]?.[k]?.value;
+  if (typeof v !== 'number' || v < 0 || v > 1) throw new Error(`contrast: mix ${key} ${m[key]} is not a number 0..1`);
+  return Math.round(v * 255);
+}
+const mixHex = (a, b, mix) => '#' + rgb(a).map((x, i) => ((x * mix + rgb(b)[i] * (255 - mix)) * 0x8081) >>> 23)
+  .map((v) => v.toString(16).padStart(2, '0')).join('').toUpperCase();
+const known = (t, n) => !!t.colours[n] || !!t.mixes?.[n];
+
 // token value in a theme with an accent set (accent roles come from the set)
 export function valueOf(t, name, theme, set) {
+  const m = t.mixes?.[name];
+  if (m) {  // optional desaturation first: the tint moved towards `toward` (a grey) by `desat`, then over the base
+    let tint = valueOf(t, m.tint, theme, set);
+    if (m.toward) tint = mixHex(valueOf(t, m.toward, theme, set), tint, mixOpa(t, m, 'desat'));
+    return mixHex(tint, valueOf(t, m.over, theme, set), mixOpa(t, m));
+  }
   if (t.accent.roles.includes(name)) return set[theme][name];
   const c = t.colours[name];
   if (!c) throw new Error(`contrast: unknown token ${name}`);
@@ -37,7 +55,7 @@ export function pairs(t) {
   const kinds = t.contrast.kinds;
   for (const p of t.contrast.pairs) {
     if (!kinds[p.kind]) throw new Error(`contrast: ${p.use}: unknown kind ${p.kind}`);
-    for (const k of [p.fg, ...[p.bg].flat()]) if (!t.colours[k]) throw new Error(`contrast: ${p.use}: unknown token ${k}`);
+    for (const k of [p.fg, ...[p.bg].flat()]) if (!known(t, k)) throw new Error(`contrast: ${p.use}: unknown token ${k}`);
     for (const bg of [p.bg].flat()) out.push({ section: p.section, fg: p.fg, bg, kind: p.kind, min: kinds[p.kind].min, use: p.use });
   }
   return out;

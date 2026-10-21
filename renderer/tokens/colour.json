@@ -65,6 +65,16 @@
     "mv-deck": {"group": "media", "dark": "#14161A", "light": "#E4E0D9", "role": "deck parts: arm base, head cover"},
     "mv-reel": {"group": "media", "dark": "#2C3038", "light": "#C2C7CE", "role": "reel flanges (plastic)"}
   },
+  "components": {
+    "card": {
+      "press": {"value": "fill", "options": ["fill", "border", "border-fill"], "use": "how a pressed card looks: card-press tint (fill), 1 px accent border (border) or both; a theme may set it later (board facet-130)"},
+      "press-tint": {"value": 0.05, "use": "opacity of the accent tint over the card surface while pressed (mix card-press); a theme may set it later"},
+      "press-desat": {"value": 0.5, "use": "how far the accent is moved towards neutral grey (text-mute) before tinting the pressed card (0 = pure accent, 1 = grey); a theme may set it later"}
+    }
+  },
+  "mixes": {
+    "card-press": {"tint": "accent", "toward": "text-mute", "desat": "card.press-desat", "over": "surface", "opa": "card.press-tint", "use": "pressed card fill: a faint, greyed accent tint over the surface (Darren 2026-10-21, card rounds 4-5), per theme x accent set"}
+  },
   "contrast": {
     "about": "WCAG 2.x AA contrast, tested for EVERY pair below x theme (dark, light) x accent set, on the exact values and on the RGB565 values the panel shows (the worse counts): node renderer/tools/contrast.mjs (build.sh prints the summary). Pairs are declared where colours meet: foundations first, then one block per component (section = the component id); bg may list several backgrounds (a transparent control sits on the canvas or a card). A label pair also covers that control's icon (same colour, stricter threshold).",
     "kinds": {
@@ -139,7 +149,20 @@
       {"section": "slider", "fg": "accent", "bg": "blue", "kind": "decor", "use": "knob over the fill end"},
       {"section": "slider", "fg": "text-dim", "bg": ["bg", "surface"], "kind": "disabled", "use": "disabled: knob"},
       {"section": "slider", "fg": "text-mute", "bg": ["bg", "surface"], "kind": "disabled", "use": "disabled: fill"},
-      {"section": "slider", "fg": "line", "bg": ["bg", "surface"], "kind": "decor", "use": "disabled: track"}
+      {"section": "slider", "fg": "line", "bg": ["bg", "surface"], "kind": "decor", "use": "disabled: track"},
+      {"section": "card", "fg": "text", "bg": ["surface", "card-press"], "kind": "text", "use": "value / two-line text"},
+      {"section": "card", "fg": "text-dim", "bg": ["surface", "card-press"], "kind": "text", "use": "label, screen icon, sub line (also on an unavailable card)"},
+      {"section": "card", "fg": "accent-text", "bg": ["surface", "card-press"], "kind": "text", "use": "accent card: value"},
+      {"section": "card", "fg": "accent", "bg": ["surface", "card-press"], "kind": "ui", "use": "accent card: status dot; screen icon accent part, weather sun"},
+      {"section": "card", "fg": "ok", "bg": ["surface", "card-press"], "kind": "text", "use": "sub line, tone ok"},
+      {"section": "card", "fg": "warn", "bg": ["surface", "card-press"], "kind": "text", "use": "sub line, tone warn"},
+      {"section": "card", "fg": "error", "bg": ["surface", "card-press"], "kind": "text", "use": "sub line, tone error"},
+      {"section": "card", "fg": "blue", "bg": ["surface", "card-press"], "kind": "ui", "use": "preview: weather rain"},
+      {"section": "card", "fg": "steel", "bg": ["surface", "card-press"], "kind": "ui", "use": "preview: weather night stars"},
+      {"section": "card", "fg": "text-mute", "bg": "surface", "kind": "disabled", "use": "unavailable: icon, label, value dash"},
+      {"section": "card", "fg": "line", "bg": "bg", "kind": "decor", "use": "1 px card border on the canvas"},
+      {"section": "card", "fg": "line-hi", "bg": "bg", "kind": "decor", "use": "pressed: 1 px border on the canvas"},
+      {"section": "card", "fg": "accent", "bg": ["surface", "card-press", "bg"], "kind": "ui", "use": "press border / border-fill: 1 px accent border against the card (surface, card-press) and the page"}
     ]
   },
   "accent": {
