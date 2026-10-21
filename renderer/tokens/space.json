@@ -33,7 +33,13 @@
       "tile-w": { "v": 208, "1x": 136, "use": "tile width (3 columns)" },
       "tile-h": { "v": 208, "1x": 136, "use": "tile height" },
       "tile-pad": { "v": 24, "1x": 16, "use": "padding inside a tile" },
-      "list-row-h": { "v": 96, "1x": 64, "use": "List row height (docs layout sheet-row-h: settings, picker and sheet rows); one line or title + sub line" }
+      "list-row-h": { "v": 96, "1x": 64, "use": "List row height (docs layout sheet-row-h: settings, picker and sheet rows); one line or title + sub line" },
+      "dial-scale": { "v": 560, "1x": 376, "use": "Dial: the square of the tick scale (docs size dial-scale 560; 1x = x 2/3 to an 8 px multiple so the centre lands on the grid)" },
+      "dial-arc": { "v": 432, "1x": 288, "use": "Dial: the value arc square, centred in the scale (docs size dial-arc 432; 1x = x 2/3)" },
+      "dial-knob": { "v": 28, "1x": 20, "use": "Dial: knob diameter incl. its canvas ring (docs 26 = 2 x (11 + 4 / 2), onto the 4 px grid)" },
+      "dial-tick": { "v": 12, "1x": 8, "use": "Dial scale: minor tick length, drawn inward from the scale edge (docs 10, onto the grid)" },
+      "dial-tick-major": { "v": 20, "1x": 12, "use": "Dial scale: major (labelled) tick length (docs 18, onto the grid)" },
+      "dial-toggle-w": { "v": 128, "1x": 88, "use": "Dial: width of the centre ON / OFF button (docs size dial-toggle-w 128; 1x 88 keeps it centred on the grid)" }
     },
     "radius": {
       "tile": { "v": 0, "1x": 0, "use": "tiles" },

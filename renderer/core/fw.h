@@ -133,12 +133,17 @@ using Sink = void (*)(lv_obj_t *obj, const char *kind, const char *name, const c
 void set_sink(Sink s);
 void emit(lv_obj_t *obj, const char *name, const char *detail = "");
 void sound(lv_obj_t *obj, const char *id);
+// a pitched sound: pos = where the value sits in its range (0..1), sent as the event detail ("0.420"); the host shifts
+// the pitch by the pack's `track` semitones over the whole range (tokens/sound.json; 0 = not pitched). Step ticks use it.
+void sound(lv_obj_t *obj, const char *id, float pos);
 // Step ticks (Darren 2026-10-21), the one rule for every slider / dial / arc: call when the SHOWN value moves from
 // step `from` to step `to` of `n` steps. Every step crossed counts; an audible "slider-tick" plays for a step only when
 // the last audible tick is at least mo::ms::tick_min (motion.json "tick-min") ago, so a slow drag ticks on every single
 // step and a fast one thins out to a steady patter, never more ticks than steps. A landmark step (ends of the range:
 // tick_landmark()) plays "slider-landmark" instead and is never dropped: too soon after a tick, it waits out the
 // interval (one lv_timer). One limiter for the whole display (one finger at a time).
+// Pitch follows the value (Darren 2026-10-21): every tick and landmark carries its step's place in the range
+// (step / n) as the sound position, so low values tick lower and high values higher (sound.json `track`).
 void step_ticks(lv_obj_t *obj, int from, int to, int n);
 bool tick_landmark(int step, int n);  // 0 and n today; add 50 % etc. in fw_core.cpp LANDMARKS
 

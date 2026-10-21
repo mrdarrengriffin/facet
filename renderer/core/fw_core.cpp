@@ -63,6 +63,11 @@ Sink sink = nullptr;
 void set_sink(Sink s) { sink = s; }
 void emit(lv_obj_t *o, const char *name, const char *detail) { if (sink) sink(o, "event", name, detail ? detail : ""); }
 void sound(lv_obj_t *o, const char *id) { if (sink) sink(o, "sound", id, ""); }
+void sound(lv_obj_t *o, const char *id, float pos) {
+  char b[12];
+  snprintf(b, sizeof b, "%.3f", LV_CLAMP(0.0f, pos, 1.0f));
+  if (sink) sink(o, "sound", id, b);
+}
 
 // step ticks (fw.h): a tick limiter shared by every step control
 namespace {
@@ -71,8 +76,10 @@ uint32_t last_tick = 0;
 bool ticked = false;
 lv_timer_t *held = nullptr;  // a landmark waiting out the interval
 lv_obj_t *held_obj = nullptr;
-void tick_now(lv_obj_t *o, bool landmark) {
-  sound(o, landmark ? "slider-landmark" : "slider-tick");
+float held_pos = 0;
+// pos = the step's place in the range (0..1): the host pitches the tick by it (sound.json `track`, Darren 2026-10-21)
+void tick_now(lv_obj_t *o, bool landmark, float pos) {
+  sound(o, landmark ? "slider-landmark" : "slider-tick", pos);
   // ticks only fire on LVGL frames (16 ms): advance by tick-min while dragging so the average rate is 1 / tick-min,
   // not snapped to every 2nd frame; a pause (> 2 intervals) starts afresh
   if (ticked && lv_tick_elaps(last_tick) < 2 * mo::ms::tick_min) last_tick += mo::ms::tick_min;
@@ -90,15 +97,16 @@ void step_ticks(lv_obj_t *o, int from, int to, int n) {
     s += dir;
     const bool lm = tick_landmark(s, n);
     const uint32_t since = lv_tick_elaps(last_tick);
-    if (!ticked || since >= mo::ms::tick_min) { if (!held) { tick_now(o, lm); continue; } }
+    if (!ticked || since >= mo::ms::tick_min) { if (!held) { tick_now(o, lm, n ? (float) s / n : 0.0f); continue; } }
     if (!lm) continue;  // too soon: this step counts, no sound
     if (held) continue;  // a landmark is already waiting (one per interval)
     held_obj = o;
+    held_pos = n ? (float) s / n : 0.0f;
     held = lv_timer_create([](lv_timer_t *t) {
       lv_obj_t *ho = held_obj;
       held = nullptr;
       lv_timer_delete(t);
-      if (ho && lv_obj_is_valid(ho)) tick_now(ho, true);
+      if (ho && lv_obj_is_valid(ho)) tick_now(ho, true, held_pos);
     }, mo::ms::tick_min - since, nullptr);
     lv_timer_set_repeat_count(held, 1);
   }

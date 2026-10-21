@@ -167,7 +167,16 @@
       {"section": "list_row", "fg": "text-dim", "bg": ["bg", "card-press"], "kind": "text", "use": "icon, sub line, trailing value, chevron (also the Unavailable text)"},
       {"section": "list_row", "fg": "accent", "bg": ["bg", "card-press"], "kind": "ui", "use": "trailing toggle on: accent track against the row (default, and pressed = the Card press fill)"},
       {"section": "list_row", "fg": "line", "bg": ["bg", "card-press"], "kind": "decor", "use": "hairline divider above each row; trailing toggle off track"},
-      {"section": "list_row", "fg": "text-mute", "bg": "bg", "kind": "disabled", "use": "disabled / unavailable: icon, title, value, chevron"}
+      {"section": "list_row", "fg": "text-mute", "bg": "bg", "kind": "disabled", "use": "disabled / unavailable: icon, title, value, chevron"},
+      {"section": "dial", "fg": "text", "bg": "bg", "kind": "large", "use": "the value (type display)"},
+      {"section": "dial", "fg": "text-dim", "bg": "bg", "kind": "text", "use": "caption, unit, scale numbers, Unavailable"},
+      {"section": "dial", "fg": "blue", "bg": "bg", "kind": "ui", "use": "major ticks (the labelled scale steps)"},
+      {"section": "dial", "fg": "line-hi", "bg": "bg", "kind": "decor", "use": "minor ticks (2 px; the majors + numbers carry the scale)"},
+      {"section": "dial", "fg": "line", "bg": "bg", "kind": "decor", "use": "arc track (2 px; the indicator + knob carry the value)"},
+      {"section": "dial", "fg": "accent", "bg": "bg", "kind": "ui", "use": "value arc (indicator) and knob"},
+      {"section": "dial", "fg": "bg", "bg": "accent", "kind": "decor", "use": "knob ring: separates the knob from the arc under it"},
+      {"section": "dial", "fg": "text-mute", "bg": "bg", "kind": "disabled", "use": "disabled / unavailable: value, caption, unit, scale numbers, major ticks, value arc"},
+      {"section": "dial", "fg": "text-dim", "bg": "bg", "kind": "disabled", "use": "disabled: knob"}
     ]
   },
   "accent": {

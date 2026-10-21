@@ -1,5 +1,5 @@
 {
-  "$comment": "Facet UI sounds, single source for the WASM workbench (Foundations > Sound). Procedural, no samples: one sound = base + variant.defaults + types[].variants[<variant>] (minus 'use'), engine from the variant; rendered with Web Audio (OfflineAudioContext), DC/edge-fade cleaned and loudness-aligned per 'levels'. Copied 1:1 from Facet main (packages/sounds/src/packs.json + synth.ts BASE, tokens.json sound, site docs meanings). Types = what a sound is for; variants = the six packs (keycap default).",
+  "$comment": "track = pitch range in semitones over a control's whole value range (0 = not pitched; slider-tick and slider-landmark: the renderer sends each step's position 0..1 as the sound detail, the player shifts the pitch by (pos - 0.5) x track, Darren 2026-10-21). Facet UI sounds, single source for the WASM workbench (Foundations > Sound). Procedural, no samples: one sound = base + variant.defaults + types[].variants[<variant>] (minus 'use'), engine from the variant; rendered with Web Audio (OfflineAudioContext), DC/edge-fade cleaned and loudness-aligned per 'levels'. Copied 1:1 from Facet main (packages/sounds/src/packs.json + synth.ts BASE, tokens.json sound, site docs meanings). Types = what a sound is for; variants = the six packs (keycap default).",
   "default": "keycap",
   "levels": {
     "peakDb": -3,
@@ -838,6 +838,7 @@
       "variants": {
         "keycap": {
           "use": "landmark tick: detent tick (camera dial); pitch follows the value",
+          "track": 12,
           "wave": "triangle",
           "freq": 2550,
           "partials": "1:0.2",
@@ -853,6 +854,7 @@
         },
         "halo": {
           "use": "landmark tick: detent tick while dragging; pitch follows the value",
+          "track": 12,
           "freq": 1779,
           "partials": "1:1 2.76:0.15",
           "attack": 0.0005,
@@ -863,6 +865,7 @@
         },
         "arcade": {
           "use": "landmark tick: detent tick; pitch follows the value",
+          "track": 12,
           "wave": "pulse",
           "duty": 0.5,
           "freq": 1700,
@@ -874,6 +877,7 @@
         },
         "graphite": {
           "use": "landmark tick: detent click, quality rotary encoder; pitch follows the value",
+          "track": 7,
           "freq": 935,
           "modes": "1:1:1 2.4:0.3:0.4",
           "decay": 0.006,
@@ -888,6 +892,7 @@
         },
         "crystal": {
           "use": "landmark tick: tiny crystal detent; pitch follows the value",
+          "track": 7,
           "freq": 1496,
           "modes": "1:1:1 2.32:0.2:0.4",
           "decay": 0.008,
@@ -904,6 +909,7 @@
         },
         "felt": {
           "use": "landmark tick: soft wooden detent; pitch follows the value",
+          "track": 7,
           "freq": 595,
           "modes": "1:1:1 1.47:0.3:0.4",
           "decay": 0.007,
