@@ -25,7 +25,8 @@
     "orbit-c": { "ms": 37000, "group": "ambient", "use": "orbit clock, middle ring" },
     "orbit-a": { "ms": 60000, "group": "ambient", "use": "orbit clock, outer ring" },
     "clock-sweep": { "ms": 60000, "group": "ambient", "use": "sweeping seconds hand" },
-    "toast-life": { "ms": 6000, "group": "timing", "use": "a toast stays this long" }
+    "toast-life": { "ms": 6000, "group": "timing", "use": "a toast stays this long" },
+    "tick-min": { "ms": 20, "group": "timing", "use": "step ticks (slider, dial, arc): audible ticks never closer than this; slow drags tick every step, fast drags thin out (Darren 2026-10-21)" }
   },
   "easings": {
     "linear": { "bezier": [0, 0, 1, 1], "css": "linear", "lvgl": "lv_anim_path_linear", "use": "loops, clock sweeps, progress" },

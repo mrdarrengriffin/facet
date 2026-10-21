@@ -64,6 +64,43 @@ void set_sink(Sink s) { sink = s; }
 void emit(lv_obj_t *o, const char *name, const char *detail) { if (sink) sink(o, "event", name, detail ? detail : ""); }
 void sound(lv_obj_t *o, const char *id) { if (sink) sink(o, "sound", id, ""); }
 
+// step ticks (fw.h): a tick limiter shared by every step control
+namespace {
+constexpr float LANDMARKS[] = {0.0f, 1.0f};  // fractions of the range that are landmark steps (e.g. add 0.5f)
+uint32_t last_tick = 0;
+bool ticked = false;
+lv_timer_t *held = nullptr;  // a landmark waiting out the interval
+lv_obj_t *held_obj = nullptr;
+void tick_now(lv_obj_t *o, bool landmark) {
+  sound(o, landmark ? "slider-landmark" : "slider-tick");
+  last_tick = lv_tick_get();
+  ticked = true;
+}
+}  // namespace
+bool tick_landmark(int step, int n) {
+  for (float f : LANDMARKS) if (step == (int) std::lround(f * n)) return true;
+  return false;
+}
+void step_ticks(lv_obj_t *o, int from, int to, int n) {
+  const int dir = to > from ? 1 : -1;
+  for (int s = from; s != to;) {
+    s += dir;
+    const bool lm = tick_landmark(s, n);
+    const uint32_t since = lv_tick_elaps(last_tick);
+    if (!ticked || since >= mo::ms::tick_min) { if (!held) { tick_now(o, lm); continue; } }
+    if (!lm) continue;  // too soon: this step counts, no sound
+    if (held) continue;  // a landmark is already waiting (one per interval)
+    held_obj = o;
+    held = lv_timer_create([](lv_timer_t *t) {
+      lv_obj_t *ho = held_obj;
+      held = nullptr;
+      lv_timer_delete(t);
+      if (ho && lv_obj_is_valid(ho)) tick_now(ho, true);
+    }, mo::ms::tick_min - since, nullptr);
+    lv_timer_set_repeat_count(held, 1);
+  }
+}
+
 // clean `scr`, make it the Facet screen (bg token, flex column, centred) and build `comp` with `props` on it
 const char *render(lv_obj_t *scr, const char *comp, const char *props, bool light, int accent) {
   const Component *c = find(comp);

@@ -133,6 +133,14 @@ using Sink = void (*)(lv_obj_t *obj, const char *kind, const char *name, const c
 void set_sink(Sink s);
 void emit(lv_obj_t *obj, const char *name, const char *detail = "");
 void sound(lv_obj_t *obj, const char *id);
+// Step ticks (Darren 2026-10-21), the one rule for every slider / dial / arc: call when the SHOWN value moves from
+// step `from` to step `to` of `n` steps. Every step crossed counts; an audible "slider-tick" plays for a step only when
+// the last audible tick is at least mo::ms::tick_min (motion.json "tick-min") ago, so a slow drag ticks on every single
+// step and a fast one thins out to a steady patter, never more ticks than steps. A landmark step (ends of the range:
+// tick_landmark()) plays "slider-landmark" instead and is never dropped: too soon after a tick, it waits out the
+// interval (one lv_timer). One limiter for the whole display (one finger at a time).
+void step_ticks(lv_obj_t *obj, int from, int to, int n);
+bool tick_landmark(int step, int n);  // 0 and n today; add 50 % etc. in fw_core.cpp LANDMARKS
 
 // apply a forced state from props ("state": "pressed" | "disabled" | ...) so variants can show it without a touch
 inline void force_state(lv_obj_t *o, Props p) {

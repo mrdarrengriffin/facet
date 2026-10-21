@@ -832,6 +832,95 @@
       }
     },
     {
+      "id": "slider-landmark",
+      "name": "Slider landmark",
+      "for": "The tick at a landmark step (the ends of the range: 0 and 100 %): the same detent, a little stronger and lower, so you feel where the range stops.",
+      "variants": {
+        "keycap": {
+          "use": "landmark tick: detent tick (camera dial); pitch follows the value",
+          "wave": "triangle",
+          "freq": 2550,
+          "partials": "1:0.2",
+          "attack": 0.0005,
+          "decay": 0.002,
+          "length": 0.0196,
+          "noise": 0.8,
+          "noiseType": "bandpass",
+          "noiseFreq": 5200,
+          "noiseQ": 4,
+          "noiseDecay": 0.0018,
+          "gain": 0.675
+        },
+        "halo": {
+          "use": "landmark tick: detent tick while dragging; pitch follows the value",
+          "freq": 1779,
+          "partials": "1:1 2.76:0.15",
+          "attack": 0.0005,
+          "decay": 0.004,
+          "length": 0.0252,
+          "cutoff": 10000,
+          "gain": 0.6
+        },
+        "arcade": {
+          "use": "landmark tick: detent tick; pitch follows the value",
+          "wave": "pulse",
+          "duty": 0.5,
+          "freq": 1700,
+          "attack": 0.0005,
+          "decay": 0.003,
+          "length": 0.021,
+          "cutoff": 6000,
+          "gain": 0.6
+        },
+        "graphite": {
+          "use": "landmark tick: detent click, quality rotary encoder; pitch follows the value",
+          "freq": 935,
+          "modes": "1:1:1 2.4:0.3:0.4",
+          "decay": 0.006,
+          "attack": 0.0005,
+          "exNoise": 0.6,
+          "exFreq": 4500,
+          "exDecay": 0.0008,
+          "pitchFrom": 1,
+          "room": 0.05,
+          "length": 0.0448,
+          "gain": 0.675
+        },
+        "crystal": {
+          "use": "landmark tick: tiny crystal detent; pitch follows the value",
+          "freq": 1496,
+          "modes": "1:1:1 2.32:0.2:0.4",
+          "decay": 0.008,
+          "attack": 0.0006,
+          "exNoise": 0.2,
+          "exFreq": 6000,
+          "exQ": 2,
+          "exDecay": 0.0006,
+          "pitchFrom": 1,
+          "cutoff": 8000,
+          "room": 0.06,
+          "length": 0.0574,
+          "gain": 0.6
+        },
+        "felt": {
+          "use": "landmark tick: soft wooden detent; pitch follows the value",
+          "freq": 595,
+          "modes": "1:1:1 1.47:0.3:0.4",
+          "decay": 0.007,
+          "attack": 0.0006,
+          "exNoise": 0.45,
+          "exFreq": 2200,
+          "exQ": 1,
+          "exDecay": 0.0012,
+          "pitchFrom": 1,
+          "cutoff": 4000,
+          "room": 0.08,
+          "length": 0.0518,
+          "gain": 0.675
+        }
+      }
+    },
+    {
       "id": "confirm",
       "name": "Confirm",
       "for": "Done or saved: a short, positive two-note chime.",
