@@ -1,0 +1,537 @@
+// Foundations > Layout & devices: tokens/layout.json (via the generated layout_gen.h) drawn by the panel renderer at
+// true size. Sections: the screen overlay (grid, inset, header zone, content area, Home columns; layer chips under the
+// screen toggle each layer), the header zone, groups and rows on a sample screen, overlays (sheet + toast), the devices
+// with their density and size class (to scale in dp), the size classes (sketched at 1/4) and the token table. Values
+// are this build's (device switch = 720 or 480 build); the tables also show the other density. Status (WIP/Done) =
+// this file + tokens/layout.json in git.
+#include <cstdio>
+#include "fw.h"
+
+namespace {
+using namespace fw;
+
+constexpr float W = 480;  // doc page width in dp (= the screen width)
+
+lv_obj_t *box(lv_obj_t *parent) {
+  lv_obj_t *o = lv_obj_create(parent);
+  lv_obj_remove_style_all(o);
+  lv_obj_remove_flag(o, LV_OBJ_FLAG_SCROLLABLE);
+  lv_obj_remove_flag(o, LV_OBJ_FLAG_CLICKABLE);
+  return o;
+}
+lv_obj_t *column(lv_obj_t *parent, int gap, int w = LV_PCT(100)) {
+  lv_obj_t *c = box(parent);
+  lv_obj_set_size(c, w, LV_SIZE_CONTENT);
+  lv_obj_set_flex_flow(c, LV_FLEX_FLOW_COLUMN);
+  lv_obj_set_style_pad_row(c, gap, 0);
+  return c;
+}
+lv_obj_t *row(lv_obj_t *parent, int gap) {
+  lv_obj_t *r = box(parent);
+  lv_obj_set_size(r, LV_PCT(100), LV_SIZE_CONTENT);
+  lv_obj_set_flex_flow(r, LV_FLEX_FLOW_ROW);
+  lv_obj_set_flex_align(r, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+  lv_obj_set_style_pad_column(r, gap, 0);
+  return r;
+}
+void fill(lv_obj_t *o, lv_color_t c) {
+  lv_obj_set_style_bg_color(o, c, 0);
+  lv_obj_set_style_bg_opa(o, LV_OPA_COVER, 0);
+}
+void outline(lv_obj_t *o, lv_color_t c, int w) {
+  lv_obj_set_style_border_width(o, w, 0);
+  lv_obj_set_style_border_color(o, c, 0);
+}
+lv_obj_t *rect(lv_obj_t *parent, int x, int y, int w, int h) {
+  lv_obj_t *o = box(parent);
+  lv_obj_set_pos(o, x, y);
+  lv_obj_set_size(o, w, h);
+  return o;
+}
+lv_obj_t *entry(lv_obj_t *list, int gap = sp::s2) {
+  lv_obj_t *e = column(list, gap);
+  lv_obj_set_style_pad_ver(e, sp::s5, 0);
+  lv_obj_set_style_border_side(e, LV_BORDER_SIDE_BOTTOM, 0);
+  outline(e, T->line, stroke::hair);
+  return e;
+}
+int inner_w() { return px(W) - 2 * sp::s7; }
+lv_obj_t *page(lv_obj_t *parent) {
+  lv_obj_set_flex_align(parent, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
+  lv_obj_t *l = column(parent, 0, px(W));
+  lv_obj_set_style_pad_hor(l, sp::s7, 0);
+  return l;
+}
+bool is1x() { return D < 1.2f; }
+const char *other_den() { return is1x() ? "720" : "480"; }
+const lyt::SizeClass &square() {
+  for (int i = 0; i < lyt::N_CLASSES; i++) if (!strcmp(lyt::CLASSES[i].id, "square")) return lyt::CLASSES[i];
+  return lyt::CLASSES[0];
+}
+// the screen frame every sample starts from: S x S on bg, clipped
+lv_obj_t *screen_box(lv_obj_t *parent) {
+  lv_obj_t *s = box(parent);
+  lv_obj_set_size(s, lay::screen_w, lay::screen_h);
+  fill(s, T->bg);
+  lv_obj_set_style_clip_corner(s, false, 0);
+  return s;
+}
+// a sample header: back, the screen label, the time slot at the right edge (one row at y = inset)
+void legend(lv_obj_t *l, lv_color_t c, bool filled, const char *name, int v, int v1x, const char *use) {
+  lv_obj_t *e = entry(l, sp::s1);
+  lv_obj_t *r = row(e, sp::s4);
+  lv_obj_t *sw = box(r);
+  lv_obj_set_size(sw, sp::s7, sp::s7);
+  if (filled) fill(sw, c);
+  else outline(sw, c, stroke::edge);
+  char b[96];
+  snprintf(b, sizeof b, "%s", name);
+  text(r, ty::c_caps_sm, b, T->text);
+  if (v >= 0) {
+    snprintf(b, sizeof b, "%d px · %d at %s", is1x() ? v1x : v, is1x() ? v : v1x, other_den());
+    text(r, ty::c_meta, b, T->text_dim);
+  }
+  if (use && *use) text(e, ty::c_meta, use, T->text_dim, inner_w());
+}
+const lyt::Token *tok(const char *name) {
+  for (int i = 0; i < lyt::N_TOKENS; i++) if (!strcmp(lyt::TOKENS[i].name, name)) return &lyt::TOKENS[i];
+  return nullptr;
+}
+void legend_tok(lv_obj_t *l, lv_color_t c, bool filled, const char *name) {
+  const lyt::Token *k = tok(name);
+  char n[48];
+  snprintf(n, sizeof n, "lay::%s", name);
+  for (char *p = n; *p; p++) if (*p == '-') *p = '_';
+  if (k) legend(l, c, filled, n, k->v, k->v1x, k->use);
+}
+// ---- Real components (Darren, round 2): every example is built by the approved components' own build functions,
+// called through the registry (fw::find + Component::build, as List row builds Toggle and Dial builds Button); a part
+// that does not exist yet is a plain labelled outline box, never a look-alike.
+using Doc = ArduinoJson::JsonDocument;
+// a labelled outline box for a part that is not a component yet ("sheet: component coming")
+lv_obj_t *coming(lv_obj_t *parent, const char *what, int w, int h) {
+  lv_obj_t *o = box(parent);
+  lv_obj_set_size(o, w, h);
+  outline(o, T->line_hi, stroke::hair);
+  char b[64];
+  snprintf(b, sizeof b, "%s: component coming", what);
+  lv_obj_t *t = text(o, ty::c_meta_sm, b, T->text_dim);
+  lv_obj_align(t, LV_ALIGN_LEFT_MID, sp::s2, 0);
+  return o;
+}
+// build component `id` into parent with props d; returns its root (the last child), or a labelled box if missing
+lv_obj_t *comp(lv_obj_t *parent, const char *id, Doc &d) {
+  const Component *c = find(id);
+  if (!c) return coming(parent, id, px(96), px(32));
+  c->build(parent, d.as<Props>());
+  return lv_obj_get_child(parent, -1);
+}
+// the header: the real Button (ghost, back icon, the screen's label) and the time slot, in one row at y = inset
+lv_obj_t *header(lv_obj_t *s, const char *label) {
+  lv_obj_t *h = rect(s, lay::inset, lay::inset, lay::content_w, lay::row);
+  lv_obj_add_flag(h, LV_OBJ_FLAG_OVERFLOW_VISIBLE);  // the Button is button-h tall: let the overlay show where it lands
+  lv_obj_set_flex_flow(h, LV_FLEX_FLOW_ROW);
+  lv_obj_set_flex_align(h, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+  lv_obj_set_style_pad_column(h, lay::gutter, 0);
+  Doc d;  // the Back button component once it is in the build (round 3, Darren option A); until then the Button
+  d["label"] = label;
+  if (find("back_button")) comp(h, "back_button", d);
+  else {
+    d["kind"] = "ghost";
+    d["icon"] = "back";
+    comp(h, "button", d);
+  }
+  lv_obj_t *g = box(h);
+  lv_obj_set_flex_grow(g, 1);
+  lv_obj_t *t = text(h, ty::label, "21:42", T->text_dim);
+  lv_obj_set_width(t, lay::header_time_w);
+  lv_obj_set_style_text_align(t, LV_TEXT_ALIGN_RIGHT, 0);
+  return h;
+}
+// Home: four real Cards, card-w x card-h, a gutter apart, from y = top (flex wrap; overflow shows past the content)
+lv_obj_t *home_cards(lv_obj_t *s) {
+  lv_obj_t *g = rect(s, lay::inset, lay::top, lay::content_w, LV_SIZE_CONTENT);
+  lv_obj_add_flag(g, LV_OBJ_FLAG_OVERFLOW_VISIBLE);
+  lv_obj_set_flex_flow(g, LV_FLEX_FLOW_ROW_WRAP);
+  lv_obj_set_style_pad_column(g, lay::gutter, 0);
+  lv_obj_set_style_pad_row(g, lay::gutter, 0);
+  struct { const char *label, *icon, *preview, *mode, *value, *text, *sub; } C[] = {
+      {"Weather", "weather", "partly-day", "value", "13°", "", "Dry for the next hour"},
+      {"Media", "media", "none", "text", "", "Paper Lanterns on a Quiet Evening", "Living room"},
+      {"Timer", "timer", "none", "value", "4:12", "", "Pasta"},
+      {"Energy", "energy", "none", "value", "1.2 kW", "", "Today 8.4 kWh"},
+  };
+  for (auto &c : C) {
+    Doc d;
+    d["label"] = c.label, d["icon"] = c.icon, d["preview"] = c.preview, d["mode"] = c.mode;
+    d["value"] = c.value, d["text"] = c.text, d["sub"] = c.sub;
+    comp(g, "card", d);
+  }
+  return g;
+}
+// a real List row (list_row) into a column; rows touch, the hairline on top of each = the divider
+lv_obj_t *list_row(lv_obj_t *col, const char *title, const char *icon, const char *trailing, const char *value, bool on = false) {
+  Doc d;
+  d["title"] = title, d["icon"] = icon, d["trailing"] = trailing, d["value"] = value, d["on"] = on;
+  return comp(col, "list_row", d);
+}
+// token overlays: translucent marks over the real components at an object's screen box (or a given box)
+void mark_box(lv_obj_t *layer, int x, int y, int w, int h, lv_color_t c) {
+  lv_obj_t *o = rect(layer, x, y, w, h);
+  lv_obj_set_style_bg_color(o, c, 0);
+  lv_obj_set_style_bg_opa(o, LV_OPA_50, 0);
+}
+void mark(lv_obj_t *layer, lv_obj_t *s, lv_obj_t *o, lv_color_t c) {
+  lv_area_t a, b;
+  lv_obj_get_coords(o, &a);
+  lv_obj_get_coords(s, &b);
+  mark_box(layer, a.x1 - b.x1, a.y1 - b.y1, lv_area_get_width(&a), lv_area_get_height(&a), c);
+}
+lv_obj_t *spacer(lv_obj_t *col, int h) {
+  lv_obj_t *o = box(col);
+  lv_obj_set_size(o, LV_PCT(100), h);
+  return o;
+}
+void inset_bands(lv_obj_t *L) {
+  const int S = lay::screen_w, in = lay::inset;
+  const int bands[4][4] = {{0, 0, S, in}, {0, S - in, S, in}, {0, in, in, S - 2 * in}, {S - in, in, in, S - 2 * in}};
+  for (auto &b : bands) mark_box(L, b[0], b[1], b[2], b[3], T->accent);
+}
+
+// ---- Screen overlay: the real Home (header Button + Cards) with toggleable token layers on top ----------------------
+enum Layer { GRID, INSET, HEADER, CONTENT, GUTTER, N_LAYERS };
+const char *LAYER_NAMES[N_LAYERS] = {"grid", "inset", "header", "content", "gutter"};
+struct Overlay {
+  lv_obj_t *layer[N_LAYERS];
+  lv_obj_t *chip[N_LAYERS];
+  lv_obj_t *chip_label[N_LAYERS];
+  bool on[N_LAYERS];
+};
+void chip_style(Overlay *o, int i) {
+  lv_obj_t *c = o->chip[i];
+  fill(c, o->on[i] ? T->surface_press : T->bg);
+  outline(c, o->on[i] ? T->line_hi : T->line, stroke::hair);
+  lv_obj_set_style_text_color(o->chip_label[i], o->on[i] ? T->text : T->text_dim, 0);
+  if (o->on[i]) lv_obj_remove_flag(o->layer[i], LV_OBJ_FLAG_HIDDEN);
+  else lv_obj_add_flag(o->layer[i], LV_OBJ_FLAG_HIDDEN);
+}
+void chip_tap(lv_event_t *e) {
+  Overlay *o = (Overlay *) lv_event_get_user_data(e);
+  lv_obj_t *c = (lv_obj_t *) lv_event_get_current_target(e);
+  for (int i = 0; i < N_LAYERS; i++)
+    if (o->chip[i] == c) {
+      o->on[i] = !o->on[i];
+      chip_style(o, i);
+      char b[32];
+      snprintf(b, sizeof b, "%s %s", LAYER_NAMES[i], o->on[i] ? "on" : "off");
+      emit(c, "layer", b);
+      sound(c, o->on[i] ? "toggle-on" : "toggle-off");
+    }
+}
+lv_obj_t *layer(lv_obj_t *s) { return rect(s, 0, 0, lay::screen_w, lay::screen_h); }
+void screen(lv_obj_t *parent) {
+  lv_obj_set_flex_align(parent, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
+  lv_obj_t *col = column(parent, 0, lay::screen_w);
+  lv_obj_t *s = screen_box(col);
+  const int S = lay::screen_w, in = lay::inset;
+  Overlay *o = (Overlay *) lv_malloc(sizeof(Overlay));
+  lv_obj_add_event_cb(col, [](lv_event_t *e) { lv_free(lv_event_get_user_data(e)); }, LV_EVENT_DELETE, o);
+  // the real screen first
+  header(s, "Home");
+  lv_obj_t *cards = home_cards(s);
+  lv_obj_update_layout(s);
+  // token layers on top
+  lv_obj_t *L = o->layer[GRID] = layer(s);
+  const lv_color_t minor = lv_color_mix(T->line, T->bg, LV_OPA_50);
+  for (int i = 1; i * sp::GRID < S; i++) {
+    const bool maj = (i * sp::GRID) % lay::group == 0;
+    fill(rect(L, i * sp::GRID, 0, stroke::hair, S), maj ? T->line : minor);
+    fill(rect(L, 0, i * sp::GRID, S, stroke::hair), maj ? T->line : minor);
+  }
+  inset_bands(o->layer[INSET] = layer(s));
+  L = o->layer[GUTTER] = layer(s);  // the gutters between the cards, measured from the real cards
+  lv_obj_t *c0 = lv_obj_get_child(cards, 0), *c3 = lv_obj_get_child(cards, 3);
+  if (c0 && c3) {
+    lv_area_t a, z, sb;
+    lv_obj_get_coords(c0, &a), lv_obj_get_coords(c3, &z), lv_obj_get_coords(s, &sb);
+    mark_box(L, a.x2 + 1 - sb.x1, a.y1 - sb.y1, lay::gutter, z.y2 - a.y1 + 1, T->steel);
+    mark_box(L, a.x1 - sb.x1, a.y2 + 1 - sb.y1, z.x2 - a.x1 + 1, lay::gutter, T->steel);
+  }
+  L = o->layer[CONTENT] = layer(s);
+  outline(rect(L, in, lay::top, lay::content_w, lay::content_h), T->blue, stroke::edge);
+  L = o->layer[HEADER] = layer(s);
+  outline(rect(L, in, in, lay::content_w, lay::row), T->accent, stroke::edge);
+  mark_box(L, in, in + lay::row, lay::content_w, lay::header_gap, T->blue);
+  // chips under the screen = the legend; each toggles its layer
+  lv_obj_t *cr = row(col, sp::s3);
+  lv_obj_set_flex_flow(cr, LV_FLEX_FLOW_ROW_WRAP);
+  lv_obj_set_style_pad_all(cr, in, 0);
+  lv_obj_set_style_pad_row(cr, sp::s3, 0);
+  const lv_color_t sw[N_LAYERS] = {T->line, T->accent, T->accent, T->blue, T->steel};
+  char b[64];
+  for (int i = 0; i < N_LAYERS; i++) {
+    lv_obj_t *c = o->chip[i] = box(cr);
+    lv_obj_set_size(c, LV_SIZE_CONTENT, touch::min);
+    lv_obj_set_flex_flow(c, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(c, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_style_pad_hor(c, sp::s4, 0);
+    lv_obj_set_style_pad_column(c, sp::s3, 0);
+    lv_obj_set_style_radius(c, rad::chip, 0);
+    lv_obj_t *d = box(c);
+    lv_obj_set_size(d, sp::s5, sp::s5);
+    if (i == CONTENT || i == HEADER) outline(d, sw[i], stroke::edge);
+    else fill(d, sw[i]);
+    switch (i) {
+      case GRID: snprintf(b, sizeof b, "Grid %d", sp::GRID); break;
+      case INSET: snprintf(b, sizeof b, "Inset %d", in); break;
+      case HEADER: snprintf(b, sizeof b, "Header %d + gap %d", lay::row, lay::header_gap); break;
+      case CONTENT: snprintf(b, sizeof b, "Content from %d", lay::top); break;
+      default: snprintf(b, sizeof b, "Gutter %d", lay::gutter); break;
+    }
+    o->chip_label[i] = text(c, ty::c_meta, b, T->text);
+    o->on[i] = true;
+    lv_obj_add_flag(c, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_add_event_cb(c, chip_tap, LV_EVENT_CLICKED, o);
+    chip_style(o, i);
+  }
+}
+
+// ---- Header zone ----------------------------------------------------------------------------------------------------
+void header_zone(lv_obj_t *parent) {
+  lv_obj_set_flex_align(parent, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
+  lv_obj_t *col = column(parent, 0, lay::screen_w);
+  const int S = lay::screen_w, in = lay::inset, H = lay::top + lay::group;
+  lv_obj_t *s = box(col);
+  lv_obj_set_size(s, S, H);
+  fill(s, T->bg);
+  lv_obj_t *h = header(s, "Lights");
+  lv_obj_update_layout(s);
+  // overlays on top of the real header: inset (top + sides), the row, the Button's box, the time slot, gap, top
+  lv_obj_t *L = layer(s);
+  mark_box(L, 0, 0, S, in, T->accent);
+  mark_box(L, 0, in, in, H - in, T->accent);
+  mark_box(L, S - in, in, in, H - in, T->accent);
+  outline(rect(L, in, in, lay::content_w, lay::row), T->accent, stroke::edge);
+  if (lv_obj_t *btn = lv_obj_get_child(h, 0)) {
+    lv_area_t a, sb;
+    lv_obj_get_coords(btn, &a), lv_obj_get_coords(s, &sb);
+    outline(rect(L, a.x1 - sb.x1, a.y1 - sb.y1, lv_area_get_width(&a), lv_area_get_height(&a)), T->steel, stroke::hair);
+  }
+  outline(rect(L, S - in - lay::header_time_w, in, lay::header_time_w, lay::row), T->blue, stroke::hair);
+  mark_box(L, in, in + lay::row, lay::content_w, lay::header_gap, T->blue);
+  fill(rect(L, in, lay::top, lay::content_w, stroke::edge), T->line_hi);
+  lv_obj_t *l = column(col, 0, S);
+  lv_obj_set_style_pad_hor(l, sp::s7, 0);
+  legend(l, T->accent, true, "lay::inset", tok("inset")->v, tok("inset")->v1x, "the header row starts at y = inset, x = inset");
+  legend_tok(l, T->accent, false, "row");
+  legend(l, T->steel, false, "Button (ghost, back icon)", touch::button_h, touch::button_h,
+         "the real Button: its height is touch button-h, so it is centred on the header row and may stand out of it");
+  legend_tok(l, T->blue, false, "header-time-w");
+  legend_tok(l, T->text_dim, false, "gutter");
+  const lyt::Derived *g = nullptr;
+  for (int i = 0; i < lyt::N_DERIVED; i++) if (!strcmp(lyt::DERIVED[i].name, "header_gap")) g = &lyt::DERIVED[i];
+  if (g) legend(l, T->blue, true, "header gap (derived)", g->v, g->v1x, g->how);
+  legend(l, T->line_hi, true, "lay::top", tok("top")->v, tok("top")->v1x, tok("top")->use);
+}
+
+// ---- Groups and rows: a settings screen from real List rows -------------------------------------------------------
+void rhythm(lv_obj_t *parent) {
+  lv_obj_set_flex_align(parent, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
+  lv_obj_t *col = column(parent, 0, lay::screen_w);
+  lv_obj_t *s = screen_box(col);
+  header(s, "Settings");
+  lv_obj_t *c = rect(s, lay::inset, lay::top, lay::content_w, lay::content_h);
+  lv_obj_add_flag(c, LV_OBJ_FLAG_OVERFLOW_VISIBLE);
+  lv_obj_set_flex_flow(c, LV_FLEX_FLOW_COLUMN);
+  const int lab = style(ty::label).box;
+  coming(c, "section header", lay::content_w, lab);
+  lv_obj_t *g1 = spacer(c, lay::section_gap);
+  list_row(c, "Brightness", "bulb", "value-chevron", "80%");
+  list_row(c, "Chime", "speaker", "toggle", "", true);
+  lv_obj_t *gg = spacer(c, lay::group);
+  coming(c, "section header", lay::content_w, lab);
+  lv_obj_t *g2 = spacer(c, lay::section_gap);
+  list_row(c, "Volume", "volume", "value", "40%");
+  list_row(c, "Television", "tv", "chevron", "");
+  coming(c, "more row", lay::content_w, lay::more_row_h);
+  lv_obj_update_layout(s);
+  lv_obj_t *L = layer(s);
+  mark(L, s, gg, T->accent);
+  mark(L, s, g1, T->steel);
+  mark(L, s, g2, T->steel);
+  outline(rect(L, lay::inset, lay::top, lay::content_w, lay::content_h), T->blue, stroke::hair);
+  lv_obj_t *l = column(col, 0, lay::screen_w);
+  lv_obj_set_style_pad_hor(l, sp::s7, 0);
+  legend_tok(l, T->accent, true, "group");
+  legend_tok(l, T->steel, true, "section-gap");
+  legend(l, T->line, false, "List row (real component)", -1, 0,
+         "four real List rows: value + chevron, toggle (the real Toggle inside), value, chevron; rows touch, so each "
+         "row's top hairline is the divider; height lay::list_row_h (space.json)");
+  legend_tok(l, T->line_hi, false, "more-row-h");
+  char b[120];
+  const int used = 2 * lab + 2 * lay::section_gap + 4 * lay::list_row_h + lay::group + lay::more_row_h;
+  snprintf(b, sizeof b, "Section headers and the more row are outline boxes until those components exist. This fills %d of the %d px content height.", used, lay::content_h);
+  lv_obj_t *e = entry(l);
+  text(e, ty::c_meta, b, T->text_dim, inner_w());
+}
+
+// ---- Overlays: sheet + toast positions over the real Home ----------------------------------------------------------
+void overlay(lv_obj_t *parent) {
+  lv_obj_set_flex_align(parent, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
+  lv_obj_t *col = column(parent, sp::s7, lay::screen_w);
+  const int S = lay::screen_w, in = lay::inset;
+  // sheet: from sheet-top, inset on the other sides
+  lv_obj_t *s = screen_box(col);
+  header(s, "Home");
+  home_cards(s);
+  lv_obj_t *sh = coming(s, "sheet", lay::content_w, S - in - lay::sheet_top);
+  lv_obj_set_pos(sh, in, lay::sheet_top);
+  fill(sh, T->bg);
+  outline(sh, T->accent, stroke::edge);
+  // toast: content width, toast-h tall at toast-top; the bottom position ends at the bottom inset
+  lv_obj_t *t2 = screen_box(col);
+  header(t2, "Home");
+  home_cards(t2);
+  for (int k = 0; k < 2; k++) {
+    lv_obj_t *t = coming(t2, k ? "toast (bottom)" : "toast", lay::content_w, lay::toast_h);
+    lv_obj_set_pos(t, in, k ? S - in - lay::toast_h : lay::toast_top);
+    fill(t, T->bg);
+    outline(t, T->accent, stroke::edge);
+    outline(rect(t, lay::toast_pad - stroke::edge, lay::toast_pad - stroke::edge, lay::content_w - 2 * lay::toast_pad, lay::toast_h - 2 * lay::toast_pad), T->blue, stroke::hair);
+  }
+  lv_obj_t *l = column(col, 0, S);
+  lv_obj_set_style_pad_hor(l, sp::s7, 0);
+  legend_tok(l, T->accent, false, "sheet-top");
+  legend_tok(l, T->accent, false, "toast-top");
+  legend_tok(l, T->accent, false, "toast-h");
+  legend_tok(l, T->blue, false, "toast-pad");
+  lv_obj_t *e = entry(l);
+  text(e, ty::c_meta, "Under them: the real header Button and Home Cards. Sheet and toast are outline boxes at their token positions until those components exist.", T->text_dim, inner_w());
+}
+
+// ---- Devices and density ------------------------------------------------------------------------------------------
+bool in_build(const lyt::Device &d) { return !strcmp(d.status, "target") && !strcmp(d.density, is1x() ? "1x" : "1.5x"); }
+void devices(lv_obj_t *l) {
+  const int thumb = px(160);  // the widest device (1280 dp) at 1/8
+  for (int i = 0; i < lyt::N_DEVICES; i++) {
+    const lyt::Device &d = lyt::DEVICES[i];
+    lv_obj_t *e = entry(l, sp::s3);
+    lv_obj_t *r = row(e, sp::s5);
+    lv_obj_set_flex_align(r, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
+    lv_obj_t *tb = box(r);
+    lv_obj_set_size(tb, thumb, LV_SIZE_CONTENT);
+    const int dw = (int) std::lround(d.w / d.d), dh = (int) std::lround(d.h / d.d);
+    lv_obj_t *sc = box(tb);
+    lv_obj_set_size(sc, px(dw / 8.0f), px(dh / 8.0f));
+    if (in_build(d)) fill(sc, T->accent_dim);
+    outline(sc, in_build(d) ? T->accent : T->line_hi, stroke::edge);
+    lv_obj_t *tx = column(r, sp::s1, inner_w() - thumb - sp::s5);
+    text(tx, ty::c_body, d.name, T->text);
+    char b[160];
+    snprintf(b, sizeof b, "%d x %d px · %.1f in · %s · %d x %d dp · %s", d.w, d.h, d.inches, d.density, dw, dh, d.cls);
+    text(tx, ty::c_meta, b, T->text_dim, inner_w() - thumb - sp::s5);
+    if (*d.runs) {
+      snprintf(b, sizeof b, "%s%s%s", d.runs, *d.mount ? " · mount: " : "", d.mount);
+      text(tx, ty::c_meta, b, T->text_dim, inner_w() - thumb - sp::s5);
+    }
+    std::string st = std::string(in_build(d) ? "THIS BUILD · " : "") + d.status + (*d.role ? std::string(" · ") + d.role : "");
+    text(tx, ty::c_caps_sm, st.c_str(), in_build(d) ? T->accent_text : T->text_dim);
+  }
+  for (int i = 0; i < lyt::N_DENSITIES; i++) {
+    const lyt::Density &d = lyt::DENSITIES[i];
+    lv_obj_t *e = entry(l, sp::s1);
+    char b[128];
+    snprintf(b, sizeof b, "density %s · %.1f px per dp · grid %d px", d.id, d.d, d.grid);
+    text(e, ty::c_caps_sm, b, (D > 1.2f) == (d.d > 1.2f) ? T->accent_text : T->text);
+    snprintf(b, sizeof b, "%s", d.role);
+    text(e, ty::c_meta, b, T->text_dim, inner_w());
+    std::string o = std::string("optical pass: ") + d.optical;
+    text(e, ty::c_meta, o.c_str(), T->text_dim, inner_w());
+  }
+}
+
+// ---- Size classes ------------------------------------------------------------------------------------------------
+void classes(lv_obj_t *l) {
+  for (int i = 0; i < lyt::N_CLASSES; i++) {
+    const lyt::SizeClass &c = lyt::CLASSES[i];
+    lv_obj_t *e = entry(l, sp::s3);
+    char b[128];
+    const bool here = !strcmp(c.id, "square");  // every build today is a square panel
+    snprintf(b, sizeof b, "%s · from %d x %d dp · Home %d columns%s", c.id, c.min_w, c.min_h, c.home_cols, here ? " · THIS BUILD" : "");
+    text(e, ty::c_caps_sm, b, here ? T->accent_text : T->text);
+    text(e, ty::c_meta, c.use, T->text_dim, inner_w());
+    // sketch at 1/4 (dp): inset, header row, the Home columns
+    const int w = px(c.min_w / 4.0f), h = px(c.min_h / 4.0f), in = sp::s2, gap = sp::s1, top = sp::s7;
+    lv_obj_t *sk = box(e);
+    lv_obj_set_size(sk, w, h);
+    outline(sk, here ? T->accent : T->line_hi, stroke::edge);
+    fill(rect(sk, in, in, w - 2 * in, sp::s3), T->line);
+    const int cw = (w - 2 * in - (c.home_cols - 1) * gap) / c.home_cols;
+    for (int k = 0; k < c.home_cols; k++) fill(rect(sk, in + k * (cw + gap), top, cw, h - top - in), T->surface_press);
+  }
+}
+
+// ---- Token table --------------------------------------------------------------------------------------------------
+void token_table(lv_obj_t *l) {
+  for (int gi = 0; gi < lyt::N_GROUPS; gi++) {
+    const lyt::Group &g = lyt::GROUPS[gi];
+    lv_obj_t *e = entry(l, sp::s1);
+    text(e, ty::c_title, g.label, T->text);
+    text(e, ty::c_meta, g.about, T->text_dim, inner_w());
+    for (int i = 0; i < lyt::N_TOKENS; i++) {
+      const lyt::Token &k = lyt::TOKENS[i];
+      if (strcmp(k.group, g.id)) continue;
+      lv_obj_t *t = entry(l, sp::s2);
+      char n[48];
+      snprintf(n, sizeof n, "lay::%s", k.name);
+      for (char *p = n; *p; p++) if (*p == '-') *p = '_';
+      lv_obj_t *r = row(t, sp::s5);
+      text(r, ty::c_caps_sm, n, T->text);
+      char b[64];
+      snprintf(b, sizeof b, "%d px · %d at %s", is1x() ? k.v1x : k.v, is1x() ? k.v : k.v1x, other_den());
+      text(r, ty::c_meta, b, T->text_dim);
+      text(t, ty::c_meta, k.use, T->text_dim, inner_w());
+      lv_obj_t *bar = box(t);
+      lv_obj_set_size(bar, std::min(is1x() ? k.v1x : k.v, inner_w()), sp::s2);
+      fill(bar, T->accent_dim);
+    }
+  }
+  lv_obj_t *e = entry(l, sp::s1);
+  text(e, ty::c_title, "Derived", T->text);
+  text(e, ty::c_meta, "Computed by the generator from the tokens and checked on the grid (fw::lay::, read-only).", T->text_dim, inner_w());
+  for (int i = 0; i < lyt::N_DERIVED; i++) {
+    const lyt::Derived &d = lyt::DERIVED[i];
+    lv_obj_t *t = entry(l, sp::s1);
+    lv_obj_t *r = row(t, sp::s5);
+    char b[64];
+    snprintf(b, sizeof b, "lay::%s", d.name);
+    text(r, ty::c_caps_sm, b, T->text);
+    snprintf(b, sizeof b, "%d px · %d at %s", is1x() ? d.v1x : d.v, is1x() ? d.v : d.v1x, other_den());
+    text(r, ty::c_meta, b, T->text_dim);
+    text(t, ty::c_meta, d.how, T->text_dim, inner_w());
+  }
+  e = entry(l, sp::s1);
+  char b[96];
+  snprintf(b, sizeof b, "grid %d px (%d at %s)", sp::GRID, is1x() ? spt::GRID_REF : spt::GRID_1X, other_den());
+  text(e, ty::c_caps_sm, b, T->text);
+  text(e, ty::c_meta, spt::GRID_ABOUT, T->text_dim, inner_w());
+}
+}  // namespace
+
+FW_COMPONENT(layout, "Layout & devices", "foundations", R"({
+  "layout": "doc",
+  "frame": [480, 0],
+  "props": [{"name": "section", "type": "select", "options": )" FW_LAYOUT_SECTION_IDS R"(, "default": "screen"}],
+  "icons": ["back@icon"],
+  "variants": )" FW_LAYOUT_SECTIONS R"(
+})") {
+  const char *s = p["section"] | "screen";
+  if (!strcmp(s, "screen")) return screen(parent);
+  if (!strcmp(s, "header")) return header_zone(parent);
+  if (!strcmp(s, "rhythm")) return rhythm(parent);
+  if (!strcmp(s, "overlay")) return overlay(parent);
+  lv_obj_t *l = page(parent);
+  if (!strcmp(s, "devices")) devices(l);
+  else if (!strcmp(s, "classes")) classes(l);
+  else token_table(l);
+}

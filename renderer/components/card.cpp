@@ -1,6 +1,6 @@
 // Card: the Facet Home card (docs: @facet/ui layout.ts card(), CSS .fs-card). One screen's summary on Home; a tap
 // opens that screen. Fixed size from the layout tokens, two per row:
-//   720: 320 x 280 (card-w x card-h), padding card-pad 24      480: 212 x 188, padding 16
+//   720: 320 x 280 (card-w x card-h), padding card-pad 24      480: 212 x 184, padding 16
 //   surface fill, 1 px line border, radius card (0); children count from the outer edge (pad - hair, = docs)
 // Layout (flex column, nothing hand-placed):
 //   top row      screen icon (icon size, text-dim) + caps label (type label, text-dim) + status dot (accent, only when

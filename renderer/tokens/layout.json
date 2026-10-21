@@ -1,0 +1,238 @@
+{
+  "$comment": "Facet screen geometry, devices, size classes and density: the single source for the WASM renderer and the panel firmware (tools/gen_layout.mjs -> layout_gen.h: fw::lay:: screen geometry in device px for this build, fw::lyt:: the device / size class / density / token tables for the Layout page). Values are device px: `v` = the 720 x 720 reference panel (1.5x), `1x` = the 480 x 480 panels. Source = Facet main packages/tokens/src/tokens.json `layout` + `devices` + `sizeClass` + `density` (1x = the docs density.1x table) and site docs concepts/screens.md. Only general screen geometry lives here: a screen's own layout values (Media m-*, mv-*, GitHub pr-*, Clock clock-*) arrive with that screen; component sizes (card, tile, list row, dial) stay in space.json under fw::lay::. Grid rule (Darren 2026-10-21): every value a multiple of 4 px at both densities; the docs' 8 px layout grid at 720 is kept where the docs had it.",
+  "screen": {
+    "about": "One inset on every side. The header row sits at y = inset; content starts at top and runs to the bottom inset. More space between groups than inside them; rows are separated by hairlines rather than boxes. One hero per screen.",
+    "1.5x": {
+      "w": 720,
+      "h": 720
+    },
+    "1x": {
+      "w": 480,
+      "h": 480
+    }
+  },
+  "groups": [
+    {
+      "id": "screen",
+      "label": "Screen frame",
+      "about": "The frame every screen shares: the inset, where content starts, and the two spacing rhythms (inside a group, between groups)."
+    },
+    {
+      "id": "header",
+      "label": "Header zone",
+      "about": "One row at y = inset across the content width: back button, the screen's label, optional items, the time at the right edge. Items are a gutter apart."
+    },
+    {
+      "id": "rows",
+      "label": "Sections and rows",
+      "about": "A section label sits section-gap above its rows; a list ends with a more row (hairline, caps label, chevron) when it shows only the top items."
+    },
+    {
+      "id": "overlay",
+      "label": "Overlays",
+      "about": "Sheets and toasts sit over the screen. A sheet panel starts at sheet-top with the inset on every side; a toast is the content width, toast-h tall, first at toast-top."
+    }
+  ],
+  "tokens": {
+    "screen": {
+      "inset": {
+        "v": 32,
+        "1x": 20,
+        "use": "every side of every screen; the header row starts at y = inset"
+      },
+      "gutter": {
+        "v": 16,
+        "1x": 16,
+        "use": "between items inside a group (cards, tiles, controls, header items)"
+      },
+      "group": {
+        "v": 48,
+        "1x": 32,
+        "use": "between groups"
+      },
+      "top": {
+        "v": 112,
+        "1x": 72,
+        "use": "where content starts: inset + header row + the header gap"
+      }
+    },
+    "header": {
+      "row": {
+        "v": 48,
+        "1x": 32,
+        "use": "the header row height (= the back button)"
+      },
+      "back-gap": {
+        "v": 16,
+        "1x": 12,
+        "use": "back button icon to its label (docs size back-gap)"
+      },
+      "header-time-w": {
+        "v": 72,
+        "1x": 48,
+        "use": "the time slot at the header's right edge (docs layout clock-w)"
+      }
+    },
+    "rows": {
+      "section-gap": {
+        "v": 16,
+        "1x": 12,
+        "use": "a section label to its rows"
+      },
+      "more-row-h": {
+        "v": 64,
+        "1x": 44,
+        "use": "the more row at the end of a list (hairline, caps label, chevron)"
+      }
+    },
+    "overlay": {
+      "sheet-top": {
+        "v": 96,
+        "1x": 64,
+        "use": "where a sheet panel starts (inset on the other sides)"
+      },
+      "toast-top": {
+        "v": 96,
+        "1x": 64,
+        "use": "the first toast's top (bottom position: ends at the bottom inset)"
+      },
+      "toast-h": {
+        "v": 120,
+        "1x": 80,
+        "use": "toast height (content width)"
+      },
+      "toast-pad": {
+        "v": 24,
+        "1x": 16,
+        "use": "padding inside a toast"
+      }
+    }
+  },
+  "density": {
+    "$comment": "Density = px per dp (dp ~ CSS px): about 250 ppi is 1.5x, about 170 ppi is 1x. The logical size (px / density) picks the size class; the same logical size gets the same layout whatever the pixel count. One WASM / firmware build per density.",
+    "1.5x": {
+      "d": 1.5,
+      "grid": 8,
+      "build": "1.5x",
+      "role": "reference: every token's `v`",
+      "optical": "none"
+    },
+    "1x": {
+      "d": 1,
+      "grid": 4,
+      "build": "1x",
+      "role": "own snapped table (`1x`), not a scaled copy",
+      "optical": "thin weights one step heavier, small text one step up (Darren's V2), so it stays crisp at fewer pixels"
+    }
+  },
+  "sizeClass": {
+    "$comment": "Layout per logical size (dp). A device gets the largest class whose min fits its dp size. Screens choose what they show per class; one hero per screen everywhere.",
+    "square": {
+      "min": [
+        480,
+        480
+      ],
+      "homeCols": 2,
+      "use": "4 inch square panels: today's layout"
+    },
+    "tall": {
+      "min": [
+        480,
+        720
+      ],
+      "homeCols": 2,
+      "use": "portrait: Home shows more rows; screens stack (hero on top, controls at the bottom)"
+    },
+    "wide": {
+      "min": [
+        960,
+        560
+      ],
+      "homeCols": 4,
+      "use": "7 inch landscape: Home 4 x 2; screens get a side column"
+    },
+    "large": {
+      "min": [
+        1280,
+        760
+      ],
+      "homeCols": 4,
+      "use": "10 inch: wide plus a second pane (a screen beside its list)"
+    }
+  },
+  "devices": {
+    "$comment": "Screens Facet targets. status: target = built for today (workbench device switch), planned = layout class defined, no build yet. mount = how the panel is mounted (the firmware rotates in software; a square layout does not change).",
+    "waveshare-p4-86": {
+      "name": "Waveshare ESP32-P4-86",
+      "w": 720,
+      "h": 720,
+      "inches": 4,
+      "density": "1.5x",
+      "class": "square",
+      "status": "target",
+      "role": "reference panel",
+      "runs": "ESPHome firmware, ESP32-P4, LVGL",
+      "mount": "as built"
+    },
+    "guition-4848s040": {
+      "name": "Guition ESP32-4848S040",
+      "w": 480,
+      "h": 480,
+      "inches": 4,
+      "density": "1x",
+      "class": "square",
+      "status": "target",
+      "role": "the 480 panel",
+      "runs": "ESPHome firmware, ESP32-S3, LVGL",
+      "mount": "rotated 90 deg (software rotation)"
+    },
+    "shelly-x1i": {
+      "name": "Shelly Wall Display X1i",
+      "w": 720,
+      "h": 720,
+      "inches": 4,
+      "density": "1.5x",
+      "class": "square",
+      "status": "target",
+      "role": "browser target",
+      "runs": "the 1.5x WASM build in an Android WebView",
+      "mount": "as built"
+    },
+    "portrait-480x800": {
+      "name": "480 x 800 portrait (4.3 to 5 inch)",
+      "w": 480,
+      "h": 800,
+      "inches": 4.3,
+      "density": "1x",
+      "class": "tall",
+      "status": "planned",
+      "role": "",
+      "runs": "",
+      "mount": ""
+    },
+    "wide-1024x600": {
+      "name": "1024 x 600 (7 inch)",
+      "w": 1024,
+      "h": 600,
+      "inches": 7,
+      "density": "1x",
+      "class": "wide",
+      "status": "planned",
+      "role": "",
+      "runs": "",
+      "mount": ""
+    },
+    "wide-1280x800": {
+      "name": "1280 x 800 (10.1 inch)",
+      "w": 1280,
+      "h": 800,
+      "inches": 10.1,
+      "density": "1x",
+      "class": "large",
+      "status": "planned",
+      "role": "",
+      "runs": "",
+      "mount": ""
+    }
+  }
+}

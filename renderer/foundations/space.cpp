@@ -1,8 +1,8 @@
 // Foundations > Spacing & radius: tokens/space.json (via the generated space_gen.h) drawn by the panel renderer at
 // true size. Sections: the spacing scale (true-size step + bar), the screen layout tokens, radius samples on surface
-// cards, stroke widths (line + ring), touch targets (the hit area shown around a smaller drawn control) and the whole
-// screen with its grid, inset, header row, content area and Home columns. Values are this build's (device switch =
-// 720 or 480 build); every row also shows the other density. Status (WIP/Done) = this file + tokens/space.json in git.
+// cards, stroke widths (line + ring) and touch targets (the hit area shown around a smaller drawn control). The whole
+// screen (grid, inset, header, content) is on Layout & devices (foundations/layout.cpp). Values are this build's
+// (device switch = 720 or 480 build); every row also shows the other density. Status (WIP/Done) = this file + tokens/space.json in git.
 #include <cstdio>
 #include "fw.h"
 
@@ -227,83 +227,6 @@ void touch_page(lv_obj_t *l) {
   sample(l, "List row", b);
 }
 
-// the whole screen at true size: grid, inset bands, header row, content area, Home columns
-void screen(lv_obj_t *parent) {
-  const int S = px(W);
-  lv_obj_t *s = box(parent);
-  lv_obj_set_size(s, S, S);
-  fill(s, T->bg);
-  // grid: minor every GRID px, major every 9 / 12 grid steps (72 px at 720 = 48 at 480)
-  const int major = is1x() ? 12 : 9;
-  for (int i = 1; i * sp::GRID < S; i++) {
-    const bool maj = i % major == 0;
-    for (int v = 0; v < 2; v++) {
-      lv_obj_t *g = box(s);
-      if (v) lv_obj_set_pos(g, i * sp::GRID, 0), lv_obj_set_size(g, stroke::hair, S);
-      else lv_obj_set_pos(g, 0, i * sp::GRID), lv_obj_set_size(g, S, stroke::hair);
-      fill(g, T->line, maj ? LV_OPA_80 : LV_OPA_30);
-    }
-  }
-  // inset bands on all four sides
-  const int in = lay::inset;
-  const int bands[4][4] = {{0, 0, S, in}, {0, S - in, S, in}, {0, in, in, S - 2 * in}, {S - in, in, in, S - 2 * in}};
-  for (auto &b : bands) {
-    lv_obj_t *o = box(s);
-    lv_obj_set_pos(o, b[0], b[1]);
-    lv_obj_set_size(o, b[2], b[3]);
-    fill(o, T->accent, LV_OPA_20);
-  }
-  char b[64];
-  auto tag = [&](lv_obj_t *on, const char *t, lv_align_t al, int x, int y) {
-    lv_obj_t *l = text(on, ty::c_meta_sm, t, T->accent_text);
-    lv_obj_align(l, al, x, y);
-  };
-  snprintf(b, sizeof b, "inset %d", in);
-  lv_obj_t *lb = text(s, ty::c_meta_sm, b, T->accent_text);
-  lv_obj_set_pos(lb, in, (in - style(ty::c_meta_sm).box) / 2);
-  // header row
-  lv_obj_t *hdr = box(s);
-  lv_obj_set_pos(hdr, in, in);
-  lv_obj_set_size(hdr, S - 2 * in, lay::row);
-  outline(hdr, T->accent, stroke::hair);
-  lv_obj_t *back = box(hdr);
-  lv_obj_set_size(back, touch::back, touch::back);
-  lv_obj_align(back, LV_ALIGN_LEFT_MID, 0, 0);
-  fill(back, T->surface_press);
-  outline(back, T->line_hi, stroke::hair);
-  lv_obj_set_style_radius(back, rad::square, 0);
-  snprintf(b, sizeof b, "header row %d", lay::row);
-  tag(hdr, b, LV_ALIGN_CENTER, 0, 0);
-  // content area + Home columns (cards card-w x card-h, gutter between)
-  lv_obj_t *ct = box(s);
-  lv_obj_set_pos(ct, in, lay::top);
-  lv_obj_set_size(ct, S - 2 * in, S - in - lay::top);
-  outline(ct, T->accent, stroke::hair);
-  lv_obj_add_flag(ct, LV_OBJ_FLAG_OVERFLOW_VISIBLE);
-  snprintf(b, sizeof b, "top %d", lay::top);
-  lv_obj_t *tl = text(s, ty::c_meta_sm, b, T->accent_text);
-  lv_obj_set_pos(tl, S - in - px(48), lay::top - style(ty::c_meta_sm).box - sp::s1);
-  for (int r = 0; r < 2; r++)
-    for (int c = 0; c < spt::HOME_COLS; c++) {
-      lv_obj_t *card = box(ct);
-      lv_obj_set_pos(card, c * (lay::card_w + lay::gutter), r * (lay::card_h + lay::gutter));
-      lv_obj_set_size(card, lay::card_w, lay::card_h);
-      fill(card, T->surface_press, LV_OPA_80);
-      lv_obj_set_style_radius(card, rad::card, 0);
-      lv_obj_t *pad = box(card);
-      lv_obj_set_pos(pad, lay::card_pad, lay::card_pad);
-      lv_obj_set_size(pad, lay::card_w - 2 * lay::card_pad, lay::card_h - 2 * lay::card_pad);
-      outline(pad, T->line_hi, stroke::hair);
-      if (r || c) continue;
-      snprintf(b, sizeof b, "card %d x %d", lay::card_w, lay::card_h);
-      tag(pad, b, LV_ALIGN_TOP_LEFT, sp::s2, sp::s2);
-      snprintf(b, sizeof b, "pad %d", lay::card_pad);
-      tag(pad, b, LV_ALIGN_BOTTOM_LEFT, sp::s2, -sp::s2);
-    }
-  snprintf(b, sizeof b, "gutter %d", lay::gutter);
-  lv_obj_t *gl = text(ct, ty::c_meta_sm, b, T->accent_text);
-  lv_obj_set_pos(gl, lay::card_w + lay::gutter + sp::s2, lay::card_h + (lay::gutter - style(ty::c_meta_sm).box) / 2);
-}
 }  // namespace
 
 FW_COMPONENT(space, "Spacing & radius", "foundations", R"({
@@ -313,11 +236,6 @@ FW_COMPONENT(space, "Spacing & radius", "foundations", R"({
   "variants": )" FW_SPACE_SECTIONS R"(
 })") {
   const char *s = p["section"] | "space";
-  if (!strcmp(s, "screen")) {
-    lv_obj_set_flex_align(parent, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
-    screen(parent);
-    return;
-  }
   lv_obj_t *l = page(parent);
   if (!strcmp(s, "layout")) layout(l);
   else if (!strcmp(s, "radius")) radius(l);

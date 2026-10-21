@@ -1,0 +1,127 @@
+#!/usr/bin/env node
+// tokens/layout.json -> C++ header: fw::lay:: screen geometry (inset, gutter, group, top, header row, section gap, more
+// row, sheet / toast positions, plus the derived screen_w/h, content_w/h and header_gap) as device px for this density
+// (#ifdef FW_1X), and fw::lyt:: the tables for the Layout page (tokens at both densities, devices, size classes,
+// densities) and its sections. Component sizes (card, tile, list row, dial) stay in space.json, also under fw::lay::.
+// Run by build.sh / firmware/bundle.mjs: `node tools/gen_layout.mjs <out.h>`; writes only when the output changes.
+import { readFileSync, writeFileSync, existsSync, renameSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const HERE = dirname(fileURLToPath(import.meta.url));
+const t = JSON.parse(readFileSync(join(HERE, '..', 'tokens', 'layout.json'), 'utf8'));
+const space = JSON.parse(readFileSync(join(HERE, '..', 'tokens', 'space.json'), 'utf8'));
+const out = process.argv[2];
+if (!out) { console.error('usage: gen_layout.mjs <out.h>'); process.exit(2); }
+const die = (m) => { console.error(`tokens/layout.json: ${m}`); process.exit(1); };
+const cstr = (s) => JSON.stringify(String(s ?? ''));
+const field = (n) => n.replace(/-/g, '_');
+const flt = (x) => `${Number(x).toFixed(4).replace(/0+$/, '0')}f`;
+
+const rows = [];
+for (const g of t.groups) {
+  if (!t.tokens[g.id]) die(`group ${g.id} has no tokens`);
+  for (const [n, v] of Object.entries(t.tokens[g.id])) {
+    if (!/^[a-z0-9][a-z0-9-]*$/.test(n)) die(`${g.id}.${n}: bad name`);
+    if (!Number.isInteger(v.v) || !Number.isInteger(v['1x'])) die(`${g.id}.${n}: v and 1x must be integers`);
+    rows.push({ g: g.id, n, ...v });
+  }
+}
+for (const g of Object.keys(t.tokens)) if (!t.groups.some((x) => x.id === g)) die(`tokens.${g}: not in groups`);
+// one name, one home: fw::lay:: is shared with space.json's layout group (component sizes)
+const spaceLay = new Set(Object.keys(space.tokens.layout ?? {}));
+const seen = new Set();
+for (const r of rows) {
+  if (seen.has(r.n)) die(`${r.n}: defined twice`);
+  if (spaceLay.has(r.n)) die(`${r.n}: also in space.json layout (one home per token)`);
+  seen.add(r.n);
+}
+const V = (n, d) => { const r = rows.find((x) => x.n === n); if (!r) die(`missing token ${n}`); return d === '1x' ? r['1x'] : r.v; };
+
+// the grid rule (Darren 2026-10-21): every value a multiple of 4 at both densities, at least 4
+const bad = [];
+for (const r of rows)
+  for (const [d, x] of [['720 (v)', r.v], ['480 (1x)', r['1x']]])
+    if (x < 4 || x % 4) bad.push(`${r.g}.${r.n} ${d} = ${x}: ${x < 4 ? 'below 4' : 'not a multiple of 4'}${x % 2 ? ' (odd)' : ''}`);
+// the frame adds up at both densities: header row inside the header zone, content area on the grid
+const dens = ['1.5x', '1x'];
+const derived = {};
+for (const d of dens) {
+  const S = t.screen[d];
+  if (!S) die(`screen.${d} missing`);
+  const gap = V('top', d) - V('inset', d) - V('row', d);
+  const cw = S.w - 2 * V('inset', d), ch = S.h - V('inset', d) - V('top', d);
+  if (gap < 4) bad.push(`${d}: top must leave a header gap below the header row (top - inset - row = ${gap})`);
+  for (const [k, x] of [['header gap', gap], ['content width', cw], ['content height', ch], ['screen width', S.w], ['screen height', S.h]])
+    if (x % 4) bad.push(`${d}: ${k} ${x} not a multiple of 4`);
+  if (V('header-time-w', d) + V('row', d) + 2 * V('gutter', d) > cw) bad.push(`${d}: header items do not fit the content width`);
+  if (V('toast-top', d) + V('toast-h', d) > S.h - V('inset', d)) bad.push(`${d}: a toast at toast-top runs past the bottom inset`);
+  derived[d] = { screen_w: S.w, screen_h: S.h, content_w: cw, content_h: ch, header_gap: gap };
+}
+if (bad.length) die(`layout rule:\n  ${bad.join('\n  ')}`);
+
+// densities, size classes, devices: each device's class = the largest class whose min fits its dp size
+const D = Object.entries(t.density).filter(([k]) => !k.startsWith('$'));
+const C = Object.entries(t.sizeClass).filter(([k]) => !k.startsWith('$'));
+const DV = Object.entries(t.devices).filter(([k]) => !k.startsWith('$'));
+for (const [id, d] of D) if (!(d.d > 0) || !Number.isInteger(d.grid) || d.grid % 4) die(`density ${id}: d > 0 and grid a multiple of 4`);
+const fits = (c, w, h) => w >= c.min[0] && h >= c.min[1];
+for (const [id, v] of DV) {
+  const den = t.density[v.density];
+  if (!den) die(`device ${id}: unknown density ${v.density}`);
+  const w = v.w / den.d, h = v.h / den.d;
+  if (!Number.isInteger(w) || !Number.isInteger(h)) die(`device ${id}: ${v.w} x ${v.h} / ${den.d} is not whole dp`);
+  const cls = C.filter(([, c]) => fits(c, w, h)).sort((a, b) => b[1].min[0] * b[1].min[1] - a[1].min[0] * a[1].min[1])[0];
+  if (!cls) die(`device ${id}: ${w} x ${h} dp fits no size class`);
+  if (cls[0] !== v.class) die(`device ${id}: ${w} x ${h} dp is class ${cls[0]}, not ${v.class}`);
+}
+
+const L = ['// GENERATED by tools/gen_layout.mjs from tokens/layout.json: edit the JSON, not this file.', '#pragma once', '', 'namespace fw {'];
+const block = (d) => {
+  const B = ['namespace lay {'];
+  for (const r of rows) B.push(`constexpr int ${field(r.n)} = ${d === '1x' ? r['1x'] : r.v};`);
+  for (const [k, x] of Object.entries(derived[d])) B.push(`constexpr int ${k} = ${x};  // derived`);
+  B.push('}  // namespace lay');
+  return B;
+};
+L.push('#ifdef FW_1X', ...block('1x'), '#else', ...block('1.5x'), '#endif');
+L.push('namespace lyt {  // the Layout page tables: both densities, device px');
+L.push('struct Group { const char *id, *label, *about; };', 'constexpr Group GROUPS[] = {');
+for (const g of t.groups) L.push(`  {${cstr(g.id)}, ${cstr(g.label)}, ${cstr(g.about)}},`);
+L.push('};', `constexpr int N_GROUPS = ${t.groups.length};`);
+L.push('struct Token { const char *group, *name, *use; int v, v1x; };', 'constexpr Token TOKENS[] = {');
+for (const r of rows) L.push(`  {${cstr(r.g)}, ${cstr(r.n)}, ${cstr(r.use)}, ${r.v}, ${r['1x']}},`);
+L.push('};', `constexpr int N_TOKENS = ${rows.length};`);
+L.push('struct Derived { const char *name, *how; int v, v1x; };', 'constexpr Derived DERIVED[] = {');
+const how = { screen_w: 'the screen', screen_h: 'the screen', content_w: 'screen - 2 x inset', content_h: 'screen - top - inset', header_gap: 'top - inset - row' };
+for (const k of Object.keys(derived['1.5x'])) L.push(`  {${cstr(k)}, ${cstr(how[k])}, ${derived['1.5x'][k]}, ${derived['1x'][k]}},`);
+L.push('};', `constexpr int N_DERIVED = ${Object.keys(derived['1.5x']).length};`);
+L.push('struct Density { const char *id; float d; int grid; const char *role, *optical; };', 'constexpr Density DENSITIES[] = {');
+for (const [id, d] of D) L.push(`  {${cstr(id)}, ${flt(d.d)}, ${d.grid}, ${cstr(d.role)}, ${cstr(d.optical)}},`);
+L.push('};', `constexpr int N_DENSITIES = ${D.length};`);
+L.push('struct SizeClass { const char *id; int min_w, min_h, home_cols; const char *use; };', 'constexpr SizeClass CLASSES[] = {');
+for (const [id, c] of C) L.push(`  {${cstr(id)}, ${c.min[0]}, ${c.min[1]}, ${c.homeCols}, ${cstr(c.use)}},`);
+L.push('};', `constexpr int N_CLASSES = ${C.length};`);
+L.push('struct Device { const char *id, *name; int w, h; float inches; const char *density; float d; const char *cls, *status, *role, *runs, *mount; };', 'constexpr Device DEVICES[] = {');
+for (const [id, v] of DV) L.push(`  {${cstr(id)}, ${cstr(v.name)}, ${v.w}, ${v.h}, ${flt(v.inches)}, ${cstr(v.density)}, ${flt(t.density[v.density].d)}, ${cstr(v.class)}, ${cstr(v.status)}, ${cstr(v.role)}, ${cstr(v.runs)}, ${cstr(v.mount)}},`);
+L.push('};', `constexpr int N_DEVICES = ${DV.length};`);
+L.push(`constexpr const char *SCREEN_ABOUT = ${cstr(t.screen.about)};`);
+L.push('}  // namespace lyt');
+const sec = (id, label, about) => ({ label, about, props: { section: id } });
+const doc = [
+  sec('screen', 'Screen overlay', `This build's screen at true size with its layout layers: the ${space.grid['1.5x']} px grid (${space.grid['1x']} at 480), the inset on every side, the header zone, the content area and the Home columns. Tap a layer chip under the screen to hide or show it. ${t.screen.about}`),
+  sec('header', 'Header zone', `${t.groups.find((g) => g.id === 'header').about} Shown at true size across the content width, with the header gap down to where content starts.`),
+  sec('rhythm', 'Groups and rows', `${t.groups.find((g) => g.id === 'rows').about} A sample screen: two groups, a group apart; inside a group, a gutter apart.`),
+  sec('overlay', 'Overlays', t.groups.find((g) => g.id === 'overlay').about),
+  sec('devices', 'Devices and density', `${t.density.$comment} Today's targets first, then the planned sizes; each device drawn to scale in dp.`),
+  sec('classes', 'Size classes', `${t.sizeClass.$comment} Each class sketched at its minimum size (1/4 scale, dp) with its Home columns.`),
+  sec('tokens', 'Token table', 'Every layout token at this build\'s density beside the other, plus the values the frame derives from them. Component sizes (card, tile, list row, dial) are on Spacing & radius.'),
+];
+L.push(`#define FW_LAYOUT_SECTIONS ${cstr(JSON.stringify(doc))}`);
+L.push(`#define FW_LAYOUT_SECTION_IDS ${cstr(JSON.stringify(doc.map((d) => d.props.section)))}`);
+L.push('}  // namespace fw', '');
+const text = L.join('\n');
+if (existsSync(out) && readFileSync(out, 'utf8') === text) process.exit(0);
+writeFileSync(`${out}.${process.pid}`, text);
+renameSync(`${out}.${process.pid}`, out);
+console.log(`gen layout_gen.h (${rows.length} tokens, ${DV.length} devices)`);

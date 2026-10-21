@@ -13,6 +13,7 @@
 #include "colour_gen.h"  // fw::Theme + fw::tokens:: (generated from tokens/colour.json)
 #include "type_gen.h"    // fw::ty:: styles (generated from tokens/type.json)
 #include "space_gen.h"   // fw::sp:: lay:: rad:: stroke:: touch:: (generated from tokens/space.json), device px
+#include "layout_gen.h"  // fw::lay:: screen geometry + fw::lyt:: devices / size classes (generated from tokens/layout.json), device px
 #include "icons_gen.h"   // fw::ic:: icon sizes + the icon table (generated from tokens/icons.json)
 #include "motion_gen.h"  // fw::mo:: durations, easings, patterns (generated from tokens/motion.json)
 

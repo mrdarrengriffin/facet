@@ -70,10 +70,25 @@
       "press": {"value": "fill", "options": ["fill", "border", "border-fill"], "use": "how a pressed card looks: card-press tint (fill), 1 px accent border (border) or both; a theme may set it later (board facet-130)"},
       "press-tint": {"value": 0.05, "use": "opacity of the accent tint over the card surface while pressed (mix card-press); a theme may set it later"},
       "press-desat": {"value": 0.5, "use": "how far the accent is moved towards neutral grey (text-mute) before tinting the pressed card (0 = pure accent, 1 = grey); a theme may set it later"}
+    },
+    "chip": {
+      "tint": {"value": 0.14, "use": "opacity of the tone fill behind a status chip or count badge (docs opacity chip-bg; drawn as bg_opa so it works on the canvas or a card); a theme may set it later"}
     }
   },
   "mixes": {
-    "card-press": {"tint": "accent", "toward": "text-mute", "desat": "card.press-desat", "over": "surface", "opa": "card.press-tint", "use": "pressed card fill: a faint, greyed accent tint over the surface (Darren 2026-10-21, card rounds 4-5), per theme x accent set"}
+    "card-press": {"tint": "accent", "toward": "text-mute", "desat": "card.press-desat", "over": "surface", "opa": "card.press-tint", "use": "pressed card fill: a faint, greyed accent tint over the surface (Darren 2026-10-21, card rounds 4-5), per theme x accent set"},
+    "chip-ok": {"tint": "ok", "over": "bg", "opa": "chip.tint", "use": "status chip / count badge fill: tone ok (ok) at chip.tint over the bg"},
+    "chip-ok-surface": {"tint": "ok", "over": "surface", "opa": "chip.tint", "use": "status chip / count badge fill: tone ok (ok) at chip.tint over the surface"},
+    "chip-warn": {"tint": "warn", "over": "bg", "opa": "chip.tint", "use": "status chip / count badge fill: tone warn (warn) at chip.tint over the bg"},
+    "chip-warn-surface": {"tint": "warn", "over": "surface", "opa": "chip.tint", "use": "status chip / count badge fill: tone warn (warn) at chip.tint over the surface"},
+    "chip-error": {"tint": "error", "over": "bg", "opa": "chip.tint", "use": "status chip / count badge fill: tone error (error) at chip.tint over the bg"},
+    "chip-error-surface": {"tint": "error", "over": "surface", "opa": "chip.tint", "use": "status chip / count badge fill: tone error (error) at chip.tint over the surface"},
+    "chip-working": {"tint": "accent", "over": "bg", "opa": "chip.tint", "use": "status chip / count badge fill: tone working (accent) at chip.tint over the bg"},
+    "chip-working-surface": {"tint": "accent", "over": "surface", "opa": "chip.tint", "use": "status chip / count badge fill: tone working (accent) at chip.tint over the surface"},
+    "chip-info": {"tint": "blue", "over": "bg", "opa": "chip.tint", "use": "status chip / count badge fill: tone info (blue) at chip.tint over the bg"},
+    "chip-info-surface": {"tint": "blue", "over": "surface", "opa": "chip.tint", "use": "status chip / count badge fill: tone info (blue) at chip.tint over the surface"},
+    "chip-idle": {"tint": "text-mute", "over": "bg", "opa": "chip.tint", "use": "status chip / count badge fill: tone idle (text-mute) at chip.tint over the bg"},
+    "chip-idle-surface": {"tint": "text-mute", "over": "surface", "opa": "chip.tint", "use": "status chip / count badge fill: tone idle (text-mute) at chip.tint over the surface"}
   },
   "contrast": {
     "about": "WCAG 2.x AA contrast, tested for EVERY pair below x theme (dark, light) x accent set, on the exact values and on the RGB565 values the panel shows (the worse counts): node renderer/tools/contrast.mjs (build.sh prints the summary). Pairs are declared where colours meet: foundations first, then one block per component (section = the component id); bg may list several backgrounds (a transparent control sits on the canvas or a card). A label pair also covers that control's icon (same colour, stricter threshold).",
@@ -176,7 +191,32 @@
       {"section": "dial", "fg": "accent", "bg": "bg", "kind": "ui", "use": "value arc (indicator) and knob"},
       {"section": "dial", "fg": "bg", "bg": "accent", "kind": "decor", "use": "knob ring: separates the knob from the arc under it"},
       {"section": "dial", "fg": "text-mute", "bg": "bg", "kind": "disabled", "use": "disabled / unavailable: value, caption, unit, scale numbers, major ticks, value arc"},
-      {"section": "dial", "fg": "text-dim", "bg": "bg", "kind": "disabled", "use": "disabled: knob"}
+      {"section": "dial", "fg": "text-dim", "bg": "bg", "kind": "disabled", "use": "disabled: knob"},
+      {"section": "label", "fg": "text", "bg": ["bg", "surface"], "kind": "text", "use": "label in text"},
+      {"section": "label", "fg": "text-dim", "bg": ["bg", "surface"], "kind": "text", "use": "label in text-dim"},
+      {"section": "label", "fg": "accent-text", "bg": ["bg", "surface"], "kind": "text", "use": "label in accent-text"},
+      {"section": "label", "fg": "blue", "bg": ["bg", "surface"], "kind": "text", "use": "label in blue"},
+      {"section": "label", "fg": "ok", "bg": ["bg", "surface"], "kind": "text", "use": "label in ok"},
+      {"section": "label", "fg": "warn", "bg": ["bg", "surface"], "kind": "text", "use": "label in warn"},
+      {"section": "label", "fg": "error", "bg": ["bg", "surface"], "kind": "text", "use": "label in error"},
+      {"section": "label", "fg": "text-mute", "bg": ["bg", "surface"], "kind": "disabled", "use": "label in text-mute (disabled only)"},
+      {"section": "status_dot", "fg": "ok", "bg": ["bg", "surface"], "kind": "ui", "use": "dot, tone ok"},
+      {"section": "status_dot", "fg": "warn", "bg": ["bg", "surface"], "kind": "ui", "use": "dot, tone warn"},
+      {"section": "status_dot", "fg": "error", "bg": ["bg", "surface"], "kind": "ui", "use": "dot, tone error"},
+      {"section": "status_dot", "fg": "accent", "bg": ["bg", "surface"], "kind": "ui", "use": "dot, tone working"},
+      {"section": "status_dot", "fg": "blue", "bg": ["bg", "surface"], "kind": "ui", "use": "dot, tone info"},
+      {"section": "status_dot", "fg": "text-dim", "bg": ["bg", "surface"], "kind": "ui", "use": "dot, tone idle (text-dim: text-mute is for disabled only)"},
+      {"section": "status_chip", "fg": "text", "bg": ["chip-ok", "chip-ok-surface", "chip-warn", "chip-warn-surface", "chip-error", "chip-error-surface", "chip-working", "chip-working-surface", "chip-info", "chip-info-surface", "chip-idle", "chip-idle-surface"], "kind": "text", "use": "chip text: text on every tone fill (the status colours themselves drop under 4.5:1 on any tint of themselves in light, so the tone is carried by the dot + fill)"},
+      {"section": "status_chip", "fg": "ok", "bg": ["chip-ok", "chip-ok-surface"], "kind": "ui", "use": "chip dot, tone ok"},
+      {"section": "status_chip", "fg": "warn", "bg": ["chip-warn", "chip-warn-surface"], "kind": "ui", "use": "chip dot, tone warn"},
+      {"section": "status_chip", "fg": "error", "bg": ["chip-error", "chip-error-surface"], "kind": "ui", "use": "chip dot, tone error"},
+      {"section": "status_chip", "fg": "accent-text", "bg": ["chip-working", "chip-working-surface"], "kind": "ui", "use": "chip dot, tone working: accent-text (the accent fill drops under 3:1 on its own tint in light)"},
+      {"section": "status_chip", "fg": "blue", "bg": ["chip-info", "chip-info-surface"], "kind": "ui", "use": "chip dot, tone info"},
+      {"section": "status_chip", "fg": "text-dim", "bg": ["chip-idle", "chip-idle-surface"], "kind": "ui", "use": "chip dot, tone idle"},
+      {"section": "count_badge", "fg": "text", "bg": ["chip-ok", "chip-ok-surface", "chip-warn", "chip-warn-surface", "chip-error", "chip-error-surface", "chip-working", "chip-working-surface", "chip-info", "chip-info-surface", "chip-idle", "chip-idle-surface"], "kind": "text", "use": "badge number: text on every tone fill (as the chip)"},
+      {"section": "section_header", "fg": "text-dim", "bg": "bg", "kind": "text", "use": "caps title, meta on the right"},
+      {"section": "section_header", "fg": "accent-text", "bg": ["bg", "card-press"], "kind": "text", "use": "action (default / pressed)"},
+      {"section": "section_header", "fg": "text-mute", "bg": "bg", "kind": "disabled", "use": "disabled action"}
     ]
   },
   "accent": {

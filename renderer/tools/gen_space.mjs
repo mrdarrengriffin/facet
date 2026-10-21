@@ -40,7 +40,9 @@ for (const r of rows) {
   }
 }
 // the screen adds up: 2 Home cards and 3 tiles fill the width exactly at both densities
-const L0 = t.tokens.layout, val = (k, d) => L0[k][d === 480 ? '1x' : 'v'];
+// inset + gutter live in tokens/layout.json (screen geometry, gen_layout.mjs) since the Layout foundation
+const LT = JSON.parse(readFileSync(join(HERE, '..', 'tokens', 'layout.json'), 'utf8')).tokens;
+const L0 = { ...Object.assign({}, ...Object.values(LT)), ...t.tokens.layout }, val = (k, d) => L0[k][d === 480 ? '1x' : 'v'];
 for (const d of [720, 480]) {
   const cards = 2 * val('inset', d) + 2 * val('card-w', d) + val('gutter', d), tiles = 2 * val('inset', d) + 3 * val('tile-w', d) + 2 * val('gutter', d);
   if (cards !== d) bad.push(`layout ${d}: 2 x card-w + gutter + 2 x inset = ${cards}, not ${d}`);
@@ -80,8 +82,7 @@ L.push(`constexpr int HOME_COLS = ${t.columns.home}, TILE_COLS = ${t.columns.til
 L.push(`constexpr const char *COLUMNS_ABOUT = ${cstr(t.columns.about)};`);
 L.push('}  // namespace spt');
 const doc = [
-  ...t.groups.map((g) => ({ label: g.label, about: `${g.about} 480 values: ${g.source1x}.`, props: { section: g.id } })),
-  { label: 'Screen inset and grid', about: `The whole screen at true size: the ${t.grid['1.5x']} px grid (${t.grid['1x']} px at 480), the inset, the header row, where content starts and the Home columns. ${t.columns.about}`, props: { section: 'screen' } },
+  ...t.groups.map((g) => ({ label: g.label, about: `${g.about} 480 values: ${g.source1x}.${g.id === 'layout' ? ' Screen geometry (inset, header, content, grid): see Layout.' : ''}`, props: { section: g.id } })),
 ];
 L.push(`#define FW_SPACE_SECTIONS ${cstr(JSON.stringify(doc))}`);
 L.push(`#define FW_SPACE_SECTION_IDS ${cstr(JSON.stringify(doc.map((d) => d.props.section)))}`);
