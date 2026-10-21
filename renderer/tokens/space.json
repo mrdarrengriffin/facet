@@ -32,7 +32,8 @@
       "card-pad": { "v": 24, "1x": 16, "use": "padding inside a card" },
       "tile-w": { "v": 208, "1x": 136, "use": "tile width (3 columns)" },
       "tile-h": { "v": 208, "1x": 136, "use": "tile height" },
-      "tile-pad": { "v": 24, "1x": 16, "use": "padding inside a tile" }
+      "tile-pad": { "v": 24, "1x": 16, "use": "padding inside a tile" },
+      "list-row-h": { "v": 96, "1x": 64, "use": "List row height (docs layout sheet-row-h: settings, picker and sheet rows); one line or title + sub line" }
     },
     "radius": {
       "tile": { "v": 0, "1x": 0, "use": "tiles" },

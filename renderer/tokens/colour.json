@@ -162,7 +162,12 @@
       {"section": "card", "fg": "text-mute", "bg": "surface", "kind": "disabled", "use": "unavailable: icon, label, value dash"},
       {"section": "card", "fg": "line", "bg": "bg", "kind": "decor", "use": "1 px card border on the canvas"},
       {"section": "card", "fg": "line-hi", "bg": "bg", "kind": "decor", "use": "pressed: 1 px border on the canvas"},
-      {"section": "card", "fg": "accent", "bg": ["surface", "card-press", "bg"], "kind": "ui", "use": "press border / border-fill: 1 px accent border against the card (surface, card-press) and the page"}
+      {"section": "card", "fg": "accent", "bg": ["surface", "card-press", "bg"], "kind": "ui", "use": "press border / border-fill: 1 px accent border against the card (surface, card-press) and the page"},
+      {"section": "list_row", "fg": "text", "bg": ["bg", "card-press"], "kind": "text", "use": "title"},
+      {"section": "list_row", "fg": "text-dim", "bg": ["bg", "card-press"], "kind": "text", "use": "icon, sub line, trailing value, chevron (also the Unavailable text)"},
+      {"section": "list_row", "fg": "accent", "bg": ["bg", "card-press"], "kind": "ui", "use": "trailing toggle on: accent track against the row (default, and pressed = the Card press fill)"},
+      {"section": "list_row", "fg": "line", "bg": ["bg", "card-press"], "kind": "decor", "use": "hairline divider above each row; trailing toggle off track"},
+      {"section": "list_row", "fg": "text-mute", "bg": "bg", "kind": "disabled", "use": "disabled / unavailable: icon, title, value, chevron"}
     ]
   },
   "accent": {
