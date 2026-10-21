@@ -154,12 +154,16 @@ void glyphs(lv_obj_t *l) {
     snprintf(b, sizeof b, "%s · %d glyphs", ty::GLYPHSETS[g].id, f.glyphs);
     text(e, ty::c_caps_sm, b, T->text);
     text(e, ty::c_meta, ty::GLYPHSETS[g].about, T->text_dim, px(W) - 2 * PAD);
+    // separate the glyphs with spaces only if the font has one (digits has none: a space would draw a missing-glyph box)
+    lv_font_glyph_dsc_t sp_dsc;
+    const bool has_space = lv_font_get_glyph_dsc(f.font, &sp_dsc, ' ', 0) && !sp_dsc.is_placeholder;
     std::string all;
     for (int k = 0; k < f.glyphs; k++) {
       uint32_t c = font_glyph(fi, k);
-      if (c > ' ') utf8(all, c), all += ' ';
+      if (c > ' ') { utf8(all, c); if (has_space) all += ' '; }
     }
     lv_obj_t *t = lv_label_create(e);
+    if (!has_space) lv_obj_set_style_text_letter_space(t, sp::s4, 0);
     lv_label_set_long_mode(t, LV_LABEL_LONG_WRAP);
     lv_obj_set_width(t, px(W) - 2 * PAD);
     lv_obj_set_style_text_font(t, f.font, 0);
