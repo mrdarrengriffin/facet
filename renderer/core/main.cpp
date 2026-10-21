@@ -148,6 +148,35 @@ EMSCRIPTEN_KEEPALIVE int fw_content_h(int id) {
   return y + lv_obj_get_style_pad_bottom(scr, LV_PART_MAIN);
 }
 
+// every object under stage `id`'s screen (depth first): [{d: depth (1 = the screen's children), x, y, w, h}] in device
+// px, coords as drawn (translate included): the workbench Pixel grid view outlines them (hub src/wasm/pixgrid.ts)
+namespace {
+void rects(lv_obj_t *o, int depth, ArduinoJson::JsonArray arr) {
+  for (uint32_t i = 0; i < lv_obj_get_child_count(o); i++) {
+    lv_obj_t *c = lv_obj_get_child(o, i);
+    if (lv_obj_has_flag(c, LV_OBJ_FLAG_HIDDEN)) continue;
+    lv_area_t a;
+    lv_obj_get_coords(c, &a);
+    auto r = arr.add<ArduinoJson::JsonObject>();
+    r["d"] = depth;
+    r["x"] = a.x1;
+    r["y"] = a.y1;
+    r["w"] = lv_area_get_width(&a);
+    r["h"] = lv_area_get_height(&a);
+    rects(c, depth + 1, arr);
+  }
+}
+}  // namespace
+EMSCRIPTEN_KEEPALIVE const char *fw_rects(int id) {
+  out.clear();
+  Stage *s = get(id);
+  if (!s) return "[]";
+  ArduinoJson::JsonDocument doc;
+  rects(lv_display_get_screen_active(s->d), 1, doc.to<ArduinoJson::JsonArray>());
+  serializeJson(doc, out);
+  return out.c_str();
+}
+
 // resize a stage (display + buffers), keeps its id
 EMSCRIPTEN_KEEPALIVE void fw_stage_resize(int id, int w, int h) {
   Stage *s = get(id);

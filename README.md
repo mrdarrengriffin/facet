@@ -50,6 +50,8 @@ the nav footer.
 Rendering is nearest-neighbour at every zoom; touch is mapped from the canvas box back to panel pixels, so it is
 correct at any zoom. The variants grid is always 1:1.
 
+**Pixel grid** (sidebar Settings, Off / Grid / Grid + boxes, per browser `localStorage wb.pixgrid`; hub `src/wasm/pixgrid.ts`): under the preview, the component magnified nearest-neighbour (crop = its objects + 8 px, origin on the 4 px grid) with a 1 px grid and every 4th line stronger at stage coordinates; hover = x / y, pixel colour and the objects under it; boxes = every LVGL object outlined with x,y w x h (core export `fw_rects(stage)` = `[{d, x, y, w, h}]`, coords as drawn incl. translate) plus a list (size, place in its parent, gaps right / bottom, "off the 4 px grid"). Live while it animates. **Size studies:** meta `"compare": [{density?, label, about, props, on}]` = debug-only props (not variants, not in the playground) shown off + on in the Pixel grid view for that density. None declared now (the Toggle 480 study was removed after Darren picked 56 x 32).
+
 ## Colour tokens (single source)
 
 `tokens/colour.json` is the only place colours live in this branch: per token `group`, `dark`, `light`, `role`; the
@@ -311,6 +313,7 @@ Motion: components take every duration / easing from the Motion tokens (see "Mot
 | Id | What |
 |---|---|
 | `button` | Facet text button: kinds primary / secondary / outline / ghost, states default / pressed / active / disabled, optional icon (plus, check, close: `fw::icon(..., ic::icon, ...)` from the Icons foundation, ink recoloured per state; meta `"icons"` declares them for `FW_ICONS=used`), hug (label width on the grid) or fixed width. Disabled = `LV_STATE_USER_1` (LVGL sends no events to `LV_STATE_DISABLED`, and a disabled tap must play Error). Children follow the state via `LV_OBJ_FLAG_STATE_TRICKLE`. |
+| `toggle` | Facet switch (docs `toggleSwitch()`, `.f-toggle`): off / on x default / disabled (4 variants). Geometry from tokens: height `touch::min`, inset `sp::s2`, knob = height - 2 x inset, width = 2 x knob + 2 x inset (720: 80 x 48, knob 32, = docs; 480: 56 x 32, knob 24, travel 24). Tap = Motion pattern `toggle` (knob slide + track colour via `fw::animate`, reduced = instant), `fw::emit` "tap" detail on/off, sound `toggle-on` / `toggle-off`; disabled (`USER_1`, not in the docs toggle, Button rule) = hollow track + text-mute knob (off) / accent-dim track + text-dim knob (on), tap = "blocked" + `error`. No pressed look, no visible label (docs); labelled row = List row later. Pairs: colour.json section `toggle`. |
 
 ## Add a component
 
