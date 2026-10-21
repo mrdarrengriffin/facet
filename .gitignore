@@ -1,6 +1,7 @@
-# machine-specific paths for build.sh
+# machine-specific paths (renderer/build.sh, firmware/bundle.mjs)
 local.env
 # build output + object cache (defaults)
 out/
 .cache/
 node_modules/
+*.swp

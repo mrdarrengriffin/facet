@@ -5,14 +5,14 @@
 #   ./build.sh 1x|1.5x    one
 # Incremental: each .cpp (core/*.cpp, foundations/*.cpp, components/*.cpp) is its own object, recompiled only when it or a header in
 # core/ or the generated colour header (tokens/colour.json) changed; LVGL objects are cached once per lv_conf (cold ~20-60 s, after that a component edit = a few seconds).
-# Paths (env, or a local.env next to this script, untracked):
+# Paths (env, or local.env at the repo root, untracked):
 #   PANEL_BUILD  ESPHome build dir of the panel firmware (LVGL tree, lv_conf.h, ArduinoJson)
 #   FW_PANEL     panel firmware source dir (include/fonts_gen*.h, packages/ui.yaml for the LV_* build flags)
 #   FW_OUT       output dir (default ./out), FW_CACHE object cache (default ./.cache)
 # TODO: vendor LVGL, lv_conf and the fonts into this branch so it builds on its own.
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd)
-[ -f "$HERE/local.env" ] && . "$HERE/local.env"
+[ -f "$HERE/../local.env" ] && . "$HERE/../local.env"
 : "${FW_PANEL:?set FW_PANEL (panel firmware source dir) in the env or local.env}"
 if [ $# -eq 0 ]; then
   "$0" 1.5x & a=$!; "$0" 1x & b=$!; wait $a; ra=$?; wait $b; rb=$?; exit $(( ra | rb ))

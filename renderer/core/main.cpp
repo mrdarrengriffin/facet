@@ -15,38 +15,6 @@
 #include <vector>
 #include "fw.h"
 
-namespace fw {
-// themes from the generated token tables (tokens/colour.json): [accent set][dark, light], built once
-const Theme *theme(bool light, int set) {
-  static Theme th[tokens::N_ACCENTS][2];
-  static bool ready = false;
-  if (!ready) {
-    for (int a = 0; a < tokens::N_ACCENTS; a++)
-      for (int l = 0; l < 2; l++) {
-        Theme &t = th[a][l];
-        t.light = l;
-        t.accent_set = a;
-        for (auto &c : tokens::COLOURS)
-          *reinterpret_cast<lv_color_t *>(reinterpret_cast<char *>(&t) + c.off) = lv_color_hex(l ? c.light : c.dark);
-        for (int r = 0; r < tokens::N_ROLES; r++)
-          *reinterpret_cast<lv_color_t *>(reinterpret_cast<char *>(&t) + tokens::ROLE_OFF[r]) =
-              lv_color_hex(l ? tokens::ACCENTS[a].light[r] : tokens::ACCENTS[a].dark[r]);
-      }
-    ready = true;
-  }
-  if (set < 0 || set >= tokens::N_ACCENTS) set = tokens::ACCENT_DEFAULT;
-  return &th[set][light ? 1 : 0];
-}
-const Theme *T = nullptr;
-static std::vector<Component> &reg() {
-  static std::vector<Component> r;
-  return r;
-}
-int add(const Component &c) {
-  reg().push_back(c);
-  return (int) reg().size();
-}
-}  // namespace fw
 
 namespace {
 struct Stage {
@@ -91,17 +59,8 @@ EMSCRIPTEN_KEEPALIVE void fw_init() {
 }
 
 EMSCRIPTEN_KEEPALIVE const char *fw_meta() {
-  ArduinoJson::JsonDocument doc;
-  auto arr = doc.to<ArduinoJson::JsonArray>();
-  for (auto &c : fw::reg()) {
-    auto o = arr.add<ArduinoJson::JsonObject>();
-    o["id"] = c.id;
-    o["name"] = c.name;
-    o["section"] = c.section;
-    o["meta"] = ArduinoJson::serialized(c.meta);
-  }
   out.clear();
-  serializeJson(doc, out);
+  fw::meta_json(out);
   return out.c_str();
 }
 
@@ -142,26 +101,8 @@ EMSCRIPTEN_KEEPALIVE void fw_stage_free(int id) {
 EMSCRIPTEN_KEEPALIVE const char *fw_render(int id, const char *comp, const char *props, int light, int accent) {
   Stage *s = get(id);
   if (!s) return "no such stage";
-  const fw::Component *c = nullptr;
-  for (auto &r : fw::reg())
-    if (!strcmp(r.id, comp)) c = &r;
-  if (!c) return "no such component";
-  ArduinoJson::JsonDocument doc;
-  if (deserializeJson(doc, props && *props ? props : "{}")) return "props: bad JSON";
-  fw::T = fw::theme(light, accent);
   lv_display_set_default(s->d);
-  lv_obj_t *scr = lv_display_get_screen_active(s->d);
-  lv_obj_clean(scr);
-  lv_obj_remove_style_all(scr);
-  lv_obj_set_style_bg_color(scr, fw::T->bg, 0);
-  lv_obj_set_style_bg_opa(scr, LV_OPA_COVER, 0);
-  lv_obj_set_flex_flow(scr, LV_FLEX_FLOW_COLUMN);
-  lv_obj_set_flex_align(scr, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-  lv_obj_remove_flag(scr, LV_OBJ_FLAG_SCROLLABLE);
-  c->build(scr, doc.as<ArduinoJson::JsonObjectConst>());
-  lv_obj_update_layout(scr);
-  lv_obj_invalidate(scr);
-  return "";
+  return fw::render(lv_display_get_screen_active(s->d), comp, props, light, accent);
 }
 
 // the colour tokens file (JSON) the build was generated from

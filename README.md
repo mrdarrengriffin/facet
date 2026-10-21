@@ -8,11 +8,22 @@ The page (served by the host app that embeds this build) has a left nav (Foundat
 from what the build registers), and per component a preview, a variants grid, a playground (props -> live re-render),
 Dark/Light and device toggles.
 
+## Repository layout
+
+| Folder | What |
+|---|---|
+| `renderer/` | the C++/LVGL renderer: `core/` (component API, registry, WASM host), `components/`, `foundations/`, `tokens/` (colour source), `tools/` (generators), `build.sh` + `watch.mjs` (WASM build and watcher) |
+| `firmware/` | device side: ESPHome external component `facet_wb` (`fw_device.h`, `esphome_init.py`) and the bundler that packs `renderer/` into it (`bundle.mjs`) |
+| `local.env` | this machine's paths (untracked), read by `renderer/build.sh` and `firmware/bundle.mjs` |
+
+Later, as on `main`: `site/` (Astro docs) and `packages/` (pnpm workspace). All paths below are relative to
+`renderer/` unless they start with `firmware/`.
+
 ## Workflow: WIP -> approved -> one commit per component
 
 - Every component starts as **WIP**: a new `components/<id>.cpp`, untracked.
 - Iterate on it with the watcher running; the page updates on save.
-- When it is approved, commit **that one file** on `wasm` (`git add components/<id>.cpp && git commit`). It then shows
+- When it is approved, commit **that one file** on `wasm` (`git add renderer/components/<id>.cpp && git commit`). It then shows
   as **Done**.
 - Builds always compile every file in `components/` (WIP and Done) into the module; commits are per component file.
 
@@ -68,28 +79,45 @@ pairs with WCAG ratios (red = below the pair's min).
 ## Fast loop
 
 ```
-node watch.mjs
+node renderer/watch.mjs
 ```
 
 Save a `.cpp`/`.h` in `components/`, `foundations/` or `core/`, or `tokens/*.json` -> incremental rebuild of both densities (a few seconds) -> the page
 notices the new `manifest.json` within a second and re-renders in place (playground values kept). One-off build:
-`./build.sh [1.5x|1x]`. First build is slower (LVGL objects, cached).
+`renderer/build.sh [1.5x|1x]`. First build is slower (LVGL objects, cached).
 
 ### Paths (`local.env`, untracked)
 
-`build.sh` reads these from the environment or a `local.env` next to it:
+`renderer/build.sh` and `firmware/bundle.mjs` read these from the environment or `local.env` at the repo root:
 
 | Var | What |
 |---|---|
 | `PANEL_BUILD` | ESPHome build dir of the panel firmware (LVGL tree, `lv_conf.h`, ArduinoJson) |
 | `FW_PANEL` | panel firmware source dir (`include/fonts_gen*.h`, `packages/ui.yaml` for the `LV_*` build flags) |
-| `FW_OUT` | output dir (default `./out`): `<density>/fw.mjs`, `fw.wasm`, `manifest.json` |
-| `FW_CACHE` | object cache (default `./.cache`) |
+| `FW_OUT` | output dir (default `renderer/out`): `<density>/fw.mjs`, `fw.wasm`, `manifest.json` |
+| `FW_CACHE` | object cache (default `renderer/.cache`) |
 
 **TODO:** vendor LVGL, `lv_conf.h` and the generated fonts into this branch so it builds on its own, without a panel
 firmware build next to it.
 
-## Layout
+## Device firmware (Show on device)
+
+The same core + foundations + components also run on real panels, as an ESPHome firmware that shows whatever the
+workbench sends (the toolbar's **Show on device**). Facet side (this branch, no device specifics):
+
+| Path | What |
+|---|---|
+| `core/fw_core.cpp` | shared by every host: themes, registry, `fw::render(screen, comp, props, light, accent)` (the WASM host calls it too) |
+| `firmware/fw_device.h` | ESPHome glue: own LVGL screen, `GET /fw/info` (build hashes), `GET /fw/meta`, `POST /fw/show {id, props, theme, accent}`; last request kept in flash; tall content scrolls |
+| `firmware/esphome_init.py` | the external component `facet_wb` (`board`, `width`, `height`) |
+| `firmware/bundle.mjs` | `--density 1x\|1.5x --out <dir>` writes `<dir>/facet_wb/` (flat, fonts inlined, link keepers); `--hashes` prints the source hashes |
+
+**Rebuild rule:** props, theme, accent and variant are runtime data (no rebuild). New or edited component/foundation
+code, core, tokens or fonts need a firmware build: the device reports the hashes it was built from (`/fw/info`), the
+host compares them with `firmware/bundle.mjs --hashes` (keys relative to `renderer/`) and shows "Needs firmware build" instead of sending stale code.
+Board YAML (display, touch, Wi-Fi) lives with the host that builds the firmware, not here.
+
+## Renderer layout (renderer/)
 
 | Path | What |
 |---|---|
@@ -97,6 +125,7 @@ firmware build next to it.
 | `tokens/colour.json`, `tools/gen_colour.mjs` | colour tokens (single source) and their header generator |
 | `foundations/*.cpp` | foundation pages (Colour) |
 | `core/fw.h` | the component API: `FW_COMPONENT`, `fw::T` colours (generated from tokens/colour.json), `fw::px(dp)`, `fw::font(dp, mono)`, `fw::force_state` |
+| `core/fw_core.cpp` | themes, registry, `fw::render` (shared by the WASM host and the device firmware) |
 | `core/main.cpp` | host: LVGL + "stages" (one display per canvas), exports `fw_init/meta/stage/stage_free/render/touch/tick/dirty/frame` |
 | `core/fonts.cpp` | the panel's generated Facet fonts per density |
 | `build.sh`, `watch.mjs` | build and watcher |

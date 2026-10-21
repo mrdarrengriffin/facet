@@ -5,6 +5,8 @@
 #pragma once
 #include <cmath>
 #include <cstring>
+#include <string>
+#include <vector>
 #include "lvgl.h"
 #include "ArduinoJson.h"
 #include "colour_gen.h"  // fw::Theme + fw::tokens:: (generated from tokens/colour.json)
@@ -34,6 +36,12 @@ struct Component {
   Build build;
 };
 int add(const Component &c);
+std::vector<Component> &reg();            // every registered component (registration order)
+const Component *find(const char *id);    // nullptr = not in this build
+void meta_json(std::string &out);         // [{id,name,section,meta}] as JSON
+// clean `scr` (any LVGL screen) and build component `comp` on it with props JSON, theme light/dark + accent set
+// index: the same call the workbench preview and the device firmware make. Returns "" or an error.
+const char *render(lv_obj_t *scr, const char *comp, const char *props, bool light, int accent);
 
 // apply a forced state from props ("state": "pressed" | "disabled" | ...) so variants can show it without a touch
 inline void force_state(lv_obj_t *o, Props p) {
