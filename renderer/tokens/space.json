@@ -38,7 +38,10 @@
       "dot": { "v": 8, "1x": 4, "use": "Status dot diameter (docs size dot 8; docs 1x 6 is off the grid -> 4, = Card's dot)" },
       "chip-h": { "v": 32, "1x": 24, "use": "Status chip height (docs size chip-h 32; docs 1x 20 -> 24 so the 16 px caps-sm box centres on the grid)" },
       "badge-h": { "v": 32, "1x": 24, "use": "Count badge height = its minimum width (one digit = a circle; docs size badge-h 32, 1x = chip-h)" },
-      "section-h": { "v": 48, "1x": 32, "use": "Section header height (docs size section-h 48; 1x x 2/3); = touch min, so a header action is a full-height target" }
+      "section-h": { "v": 48, "1x": 32, "use": "Section header height (docs size section-h 48; 1x x 2/3); = touch min, so a header action is a full-height target" },
+      "ibtn-play": { "v": 96, "1x": 64, "use": "Icon button play: round accent button diameter (docs size icon-play 96, 1x 64); glyph ic::feature" },
+      "ibtn-round": { "v": 80, "1x": 52, "use": "Icon button round: diameter (docs size icon-round 80, 1x 52); glyph ic::glyph" },
+      "ibtn-square": { "v": 48, "1x": 32, "use": "Icon button square: side (docs size icon-square 48, 1x 32 = touch min); glyph ic::glyph" }
     },
     "radius": {
       "tile": { "v": 0, "1x": 0, "use": "tiles" },
