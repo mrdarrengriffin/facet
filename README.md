@@ -232,8 +232,8 @@ rules in plain words, the round-1 audit and the open questions.
   `pressed_tint(t)` (mix press-tint), `disabled_ink(t)` (text-mute), `disabled_on_fill(t)`, `disabled_knob(t)`,
   `disabled_accent(t)`, `disabled_line(t)`, `unavailable_note(t)`, `on_fill/label/ink/line/mark(t)`, `focus_ring(t)`;
   `PRESS_STYLE`, `BLOCKED_EVENT/SOUND`, `SWITCH_EVENT`, `ON_SOUND/OFF_SOUND`, `UNAVAILABLE_TEXT`, `PLACEHOLDER`,
-  `FOCUS_W/OFFSET`; helpers `st::blocked(obj, detail)` (event + error), `st::press_transitions(d, props)`,
-  `st::add_focus_ring(obj, sel)`; and the page tables. Fails the build on any unknown colour / mix / pattern / sound /
+  `FOCUS_W/OFFSET`; helpers `st::blocked(obj, detail)` (event + error), `st::press_transitions(d, props)`;
+  and the page tables (the ring itself = core atom `fw::focus_ring`, see Components). Fails the build on any unknown colour / mix / pattern / sound /
   space reference, a wrong LVGL state bit or a press style not in its options.
 - Components take every state choice from `fw::st::` (never pick a colour token for a state themselves): Button, Icon
   button, Toggle, Slider, Dial, Card, List row, Section header, Label (`disabled`). The refactor was pixel-identical:
@@ -245,12 +245,12 @@ rules in plain words, the round-1 audit and the open questions.
   the workbench tap counter counts tap + toggle + back); Toggle and Slider got `unavailable` (the word in place of the
   control, same box), Icon button `unavailable` = the disabled look (no room for the word); every disabled knob is
   text-dim; square Icon button active = line-hi border like round; idle chip / badge tint = text-dim; the mix
-  card-press is now `press-tint`; `st::add_focus_ring` hides the ring under OFF (disabled wins over active).
+  card-press is now `press-tint`; the focus ring (now `fw::focus_ring`) hides the ring under OFF (disabled wins over active).
 - **Bleed (core `fw::bleed(obj, px)`):** marks drawn outside a box (the focus ring at the focus offset, the Section header
   action's overhanging press fill) were clipped by the component or the page's sample boxes. `bleed` sets
   `LV_OBJ_FLAG_OVERFLOW_VISIBLE` AND an ext draw size of at least px on the object and every ancestor up to the screen
   (OVERFLOW_VISIBLE alone draws 0 px: LVGL clips children to the parent's box grown by the parent's ext draw size).
-  `st::add_focus_ring` calls it; Section header calls it for the action. Call it once the object is in its final parent.
+  `fw::focus_ring` calls it; Section header calls it for the action. Call it once the object is in its final parent.
 - Watcher race (found here): a source saved WHILE a build compiles it can end up older than its stale object, so the
   next build skips it. If a change "does nothing", `touch` the file once the watcher is idle.
 - Page `/wasm/foundations/states` (`foundations/states.cpp`, id `states`, meta `"events": true` = the Events panel on
@@ -417,6 +417,8 @@ Motion: components take every duration / easing from the Motion tokens (see "Mot
 | `status_chip` | Facet status chip (docs `statusChip(tone, text)`, `.f-chip`): `lay::chip_h` (32 / 24; docs 1x 20 puts the 16 px text box off grid), padding + gap `sp::s2`, radius `rad::chip`, hug; fill = tone at component token `chip.tint` 0.14 (docs opacity chip-bg) as bg_opa (works on canvas or card; mixes `chip-<tone>` + `chip-<tone>-surface` let the contrast test check both); Status dot (`on: chip`) + Label (caps-sm, colour **text**: the docs tone-coloured text fails 4.5:1 on its own tint in light at any tint >= 6 %, so the tone is dot + fill). Optional pulse (passed to the dot). Static. 7 variants. Pairs: section `status_chip`. WIP round 1. |
 | `count_badge` | Facet count badge (docs `countBadge(n, tone)`, `.f-badge`): `lay::badge_h` (32 / 24) tall and at least as wide (one digit = circle), padding `sp::s2`, round, number box >= 16 on the grid (Label, caps-sm, text, centred); fill = Status chip's tint. Counts: 0 = prop `zero` muted (idle tone, shows 0; default) or hide; 1-99 as is; 100+ = `99+`. Default tone idle (docs). Static. 7 variants. Pairs: section `count_badge`. WIP round 1. |
 | `section_header` | Facet section header (docs `sectionHeader({title, count, tone, right})`, `.f-section`): `lay::section_h` (48 / 32) x content width (656 / 440), flex row gap `sp::s5` (16 / 12 = docs gutter both densities): Label title (caps-sm, text-dim), optional Count badge (count / tone / zero), grow, right = none / meta (Label meta, text-dim; docs text-mute) / action (text button, caps-sm accent-text, hit box section_h tall + `sp::s2` padding translated right so the text ends on the content edge; pressed = Card mix `press-tint` fill with Motion press / release, radius chip; disabled = text-mute, USER_1, `blocked` + error; tap = `tap` + sound `tap`). Title, badge, meta static. 8 variants. Pairs: section `section_header`. WIP round 1. |
+| `corner_ticks` | Facet corner ticks atom (docs `cornerTicks(corners, len, thick)`, `.f-ticks`), WIP: core `fw::corner_ticks(obj, Corners::all\|tr_bl, show = st::ON, len = lay::corner_tick, thick = stroke::corner_tick)` in `core/atoms.h` (8 / 4 x 2, `st::on_mark` = accent, on the border box past padding + border; with a `show` state the owner needs `LV_OBJ_FLAG_STATE_TRICKLE`). Button secondary active calls it (all). Pressed (active + pressed) = `st::on_mark_pressed` (accent-text, states.json on.mark-pressed: accent was 2.87-2.99 on the pressed grey in light; Darren 2026-10-21). Cards / tiles: decide with the screens (no ticks on the approved Card for now). Page: plain surface box all / tr-bl (shown while active) + the real Button secondary active / active+pressed / default. Pairs section `corner_ticks`. |
+| `focus_ring` | Facet focus ring atom (docs `focusRing(offset, r)`, `.f-ring`), WIP: core `fw::focus_ring(obj, show = st::ON, offset = st::FOCUS_OFFSET)` in `core/atoms.h` (LVGL outline `stroke::focus` 1 px, pad offset - width, radius follows the owner, hidden under `st::OFF`, `fw::bleed` so nothing clips it); replaces the generated `st::add_focus_ring`. Button primary + Icon button play call it. Page: box at focus-offset / none / space 2 / space 4 / disabled + the real Button primary active, play active, primary active+disabled. Pairs section `focus_ring`. Refactor pixel-identical: 1104 frames (Button 24 + Icon button 19 + Back 3 variants x 720 / 480 x dark / light x default + 5 accent sets) hashed before / after, 0 differ. |
 
 ## Add a component
 

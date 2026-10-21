@@ -119,7 +119,7 @@ FW_COMPONENT(icon_button, "Icon button", "components", R"({
     lv_obj_set_style_transition(b, tr(PRESSED_SEL[i]), SEL[i]);
   }
   if (play && !back) {  // active: the focus ring outside the box (states.json focus, Button primary's ring)
-    fw::st::add_focus_ring(b, LV_STATE_CHECKED);  // hidden when disabled / unavailable (the helper)
+    fw::focus_ring(b);  // the focus ring atom (core/atoms.h): shown while CHECKED, hidden when disabled / unavailable
   }
 
   // glyph centred; play shows play, active (CHECKED, trickled) swaps to pause by opacity (no rebuild on a tap)

@@ -41,7 +41,8 @@
       "section-h": { "v": 48, "1x": 32, "use": "Section header height (docs size section-h 48; 1x x 2/3); = touch min, so a header action is a full-height target" },
       "ibtn-play": { "v": 96, "1x": 64, "use": "Icon button play: round accent button diameter (docs size icon-play 96, 1x 64); glyph ic::feature" },
       "ibtn-round": { "v": 80, "1x": 52, "use": "Icon button round: diameter (docs size icon-round 80, 1x 52); glyph ic::glyph" },
-      "ibtn-square": { "v": 48, "1x": 32, "use": "Icon button square: side (docs size icon-square 48, 1x 32 = touch min); glyph ic::glyph" }
+      "ibtn-square": { "v": 48, "1x": 32, "use": "Icon button square: side (docs size icon-square 48, 1x 32 = touch min); glyph ic::glyph" },
+      "corner-tick": { "v": 8, "1x": 4, "use": "Corner ticks: length of each L (docs btn-tick-len 8; 1x = space 2); fw::corner_ticks default" }
     },
     "radius": {
       "tile": { "v": 0, "1x": 0, "use": "tiles" },
@@ -58,6 +59,7 @@
       "focus": { "v": 1, "1x": 1, "use": "focus ring" },
       "edge": { "v": 2, "1x": 2, "use": "outlined controls" },
       "tick": { "v": 2, "1x": 2, "use": "scale ticks" },
+      "corner-tick": { "v": 2, "1x": 2, "use": "Corner ticks: width of each L (docs btn-tick-thick 2)" },
       "arc": { "v": 4, "1x": 2, "use": "dial and progress arcs" },
       "knob": { "v": 4, "1x": 2, "use": "slider and dial knob outline" },
       "indicator": { "v": 6, "1x": 4, "use": "value indicators, active bars" }

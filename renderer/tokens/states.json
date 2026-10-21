@@ -177,6 +177,10 @@
         "mark": {
           "token": "accent",
           "use": "the accent marks: Button secondary corner ticks, ghost underline"
+        },
+        "mark-pressed": {
+          "token": "accent-text",
+          "use": "corner ticks while their active owner is pressed (on the pressed grey accent drops under 3:1 in light; Darren 2026-10-21)"
         }
       },
       "off_sound": "toggle-off"

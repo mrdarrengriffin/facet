@@ -88,24 +88,16 @@ lv_obj_t *icon(lv_obj_t *parent, const char *id, const Kind &k) {
   for (int i = 0; o && i < 5; i++) fw::icon_colour(o, look(k, i).fg, SEL[i], tr(PRESSED_SEL[i]));
   return o;
 }
-// accent mark shown only while active (CHECKED): a corner tick (L of two border sides) or the ghost underline
-lv_obj_t *active_mark(lv_obj_t *b, int w, int h, lv_border_side_t sides) {
+// the ghost underline, shown only while active (CHECKED); secondary's corner ticks = core atom fw::corner_ticks
+lv_obj_t *underline(lv_obj_t *b, int w, int h) {
   lv_obj_t *o = lv_obj_create(b);
   lv_obj_remove_style_all(o);
   lv_obj_add_flag(o, LV_OBJ_FLAG_IGNORE_LAYOUT);
   lv_obj_remove_flag(o, LV_OBJ_FLAG_CLICKABLE);
   lv_obj_set_size(o, w, h);
-  if (sides) {
-    lv_obj_set_style_border_side(o, sides, 0);
-    lv_obj_set_style_border_width(o, fw::stroke::edge, 0);  // btn-tick-thick 2
-    lv_obj_set_style_border_color(o, fw::st::on_mark(*fw::T), 0);
-    lv_obj_set_style_border_opa(o, LV_OPA_TRANSP, 0);
-    lv_obj_set_style_border_opa(o, LV_OPA_COVER, LV_STATE_CHECKED);
-  } else {
-    lv_obj_set_style_bg_color(o, fw::st::on_mark(*fw::T), 0);
-    lv_obj_set_style_bg_opa(o, LV_OPA_TRANSP, 0);
-    lv_obj_set_style_bg_opa(o, LV_OPA_COVER, LV_STATE_CHECKED);
-  }
+  lv_obj_set_style_bg_color(o, fw::st::on_mark(*fw::T), 0);
+  lv_obj_set_style_bg_opa(o, LV_OPA_TRANSP, 0);
+  lv_obj_set_style_bg_opa(o, LV_OPA_COVER, LV_STATE_CHECKED);
   return o;
 }
 }  // namespace
@@ -167,7 +159,7 @@ FW_COMPONENT(button, "Button", "components", R"({
   lv_obj_set_flex_flow(b, LV_FLEX_FLOW_ROW);
   lv_obj_set_flex_align(b, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
   box_looks(b, k);
-  if (!strcmp(kn, "primary")) fw::st::add_focus_ring(b, LV_STATE_CHECKED);  // active: the focus ring (states.json focus)
+  if (!strcmp(kn, "primary")) fw::focus_ring(b);  // active: the focus ring atom (core/atoms.h, states.json focus)
 
   const char *ic = p["icon"] | "none";
   if (strcmp(ic, "none")) icon(b, ic, k);
@@ -184,16 +176,10 @@ FW_COMPONENT(button, "Button", "components", R"({
     lv_obj_set_style_text_align(l, LV_TEXT_ALIGN_CENTER, 0);  // the rounding slack splits both sides, not all after the text
   }
 
-  // active marks sit on the border box: offsets = the button's padding + border (LVGL children start inside both)
-  const int sl = lv_obj_get_style_space_left(b, LV_PART_MAIN), st = lv_obj_get_style_space_top(b, LV_PART_MAIN);
-  if (!strcmp(kn, "secondary")) {  // corner ticks: btn-tick-len (space 2) x btn-tick-thick (stroke edge)
-    const int t = fw::sp::s2;
-    lv_obj_align(active_mark(b, t, t, (lv_border_side_t) (LV_BORDER_SIDE_TOP | LV_BORDER_SIDE_LEFT)), LV_ALIGN_TOP_LEFT, -sl, -st);
-    lv_obj_align(active_mark(b, t, t, (lv_border_side_t) (LV_BORDER_SIDE_TOP | LV_BORDER_SIDE_RIGHT)), LV_ALIGN_TOP_RIGHT, sl, -st);
-    lv_obj_align(active_mark(b, t, t, (lv_border_side_t) (LV_BORDER_SIDE_BOTTOM | LV_BORDER_SIDE_LEFT)), LV_ALIGN_BOTTOM_LEFT, -sl, st);
-    lv_obj_align(active_mark(b, t, t, (lv_border_side_t) (LV_BORDER_SIDE_BOTTOM | LV_BORDER_SIDE_RIGHT)), LV_ALIGN_BOTTOM_RIGHT, sl, st);
-  } else if (!strcmp(kn, "ghost")) {  // underline: space 9 wide, stroke edge high, space 2 above the padding box bottom
-    lv_obj_align(active_mark(b, fw::sp::s9, fw::stroke::edge, LV_BORDER_SIDE_NONE), LV_ALIGN_BOTTOM_MID, 0, -fw::sp::s2);
+  // active marks: corner ticks atom on the border box (all four, layout corner-tick x stroke corner-tick, shown while CHECKED)
+  if (!strcmp(kn, "secondary")) fw::corner_ticks(b, fw::Corners::all);
+  else if (!strcmp(kn, "ghost")) {  // underline: space 9 wide, stroke edge high, space 2 above the padding box bottom
+    lv_obj_align(underline(b, fw::sp::s9, fw::stroke::edge), LV_ALIGN_BOTTOM_MID, 0, -fw::sp::s2);
   }
 
   if (!strcmp(state, "pressed")) lv_obj_add_state(b, LV_STATE_PRESSED);

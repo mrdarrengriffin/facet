@@ -165,9 +165,11 @@ inline void force_state(lv_obj_t *o, Props p) {
 }  // namespace fw
 
 // Interaction states (tokens/states.json, README "State tokens"): fw::st::OFF / ON / PRESSED, colour roles per state
-// (fw::st::disabled_ink(t), pressed_tint(t), ...), press / switch motion, blocked() = event + error, add_focus_ring().
+// (fw::st::disabled_ink(t), pressed_tint(t), ...), press / switch motion, blocked() = event + error.
 // Components take every state choice from here, never pick a colour token for a state themselves.
 #include "states_gen.h"
+// Atoms: the shared accent marks fw::focus_ring() + fw::corner_ticks() (core/atoms.h, after the state tokens they use)
+#include "atoms.h"
 
 // FW_COMPONENT(id, "Name", "components", R"({...meta json...})") { ...build with `parent` and `p`... }
 #define FW_COMPONENT(ID, NAME, SECTION, META)                                    \

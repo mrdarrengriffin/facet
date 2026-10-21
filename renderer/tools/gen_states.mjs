@@ -3,7 +3,7 @@
 // the LVGL state bits (OFF = disabled + unavailable), the Motion patterns of pressing and switching, a colour role
 // function per state x role (e.g. fw::st::disabled_ink(t) = t.text_mute; pressed_tint(t) = the press-tint mix), the
 // Card press style, the event / sound names (blocked + error, toggle-on / off), the unavailable words, the focus ring
-// (stroke + offset from space.json) and small helpers (blocked(), press_transitions(), add_focus_ring()); plus the tables
+// (stroke + offset from space.json) and small helpers (blocked(), press_transitions(); the ring = fw::focus_ring in core/atoms.h); plus the tables
 // of the States foundation page. states.json names tokens only: every reference is checked against colour.json
 // (colours + mixes), motion.json (patterns), sound.json (types) and space.json, and the build fails on a bad one.
 // Run by build.sh / firmware/bundle.mjs: `node tools/gen_states.mjs <out.h>`; writes only when the output changes.
@@ -83,9 +83,7 @@ L.push('inline void blocked(lv_obj_t *o, const char *detail) { emit(o, BLOCKED_E
 L.push('// the press fades on `props`: d[0] = release (resting looks), d[1] = press (pressed looks); LVGL runs the transition of the state entered');
 L.push('inline void press_transitions(lv_style_transition_dsc_t d[2], const lv_style_prop_t *props) {');
 L.push('  mo::transition(&d[0], PRESS_OUT, props);', '  mo::transition(&d[1], PRESS_IN, props);', '}');
-L.push('// the focus ring on o for selector sel (0 width elsewhere), drawn FOCUS_OFFSET outside the box (fw::bleed: never clipped)');
-L.push('inline void add_focus_ring(lv_obj_t *o, lv_style_selector_t sel) {');
-L.push(`  lv_obj_set_style_outline_color(o, focus_ring(*T), 0);  // ${ringC}`, '  lv_obj_set_style_outline_width(o, 0, 0);', '  lv_obj_set_style_outline_width(o, FOCUS_W, sel);', '  lv_obj_set_style_outline_pad(o, FOCUS_OFFSET - FOCUS_W, sel);', '  lv_obj_set_style_outline_width(o, 0, OFF);  // disabled / unavailable hide it, even when active', '  bleed(o, FOCUS_OFFSET);  // the ring sits outside the box: parents must not clip it', '}');
+// the focus ring itself = core atom fw::focus_ring (core/atoms.h, its own page components/focus_ring.cpp)
 
 // the States page tables
 L.push('// ---- States foundation page tables');
