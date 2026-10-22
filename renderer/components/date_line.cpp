@@ -17,7 +17,8 @@ std::string text_of(const DL *d) {
     int y = 2026, m = 10, dd = 19;
     sscanf(d->fixed.c_str(), "%d-%d-%d", &y, &m, &dd);
     tm.tm_year = y - 1900, tm.tm_mon = m - 1, tm.tm_mday = dd, tm.tm_hour = 12;
-    timegm(&tm);  // fills in the weekday
+    tm.tm_isdst = -1;
+    mktime(&tm);  // fills in the weekday (noon, so the zone never changes the day; timegm is not in ESP-IDF newlib)
   } else {
     const time_t now = time(nullptr);
     localtime_r(&now, &tm);
