@@ -37,6 +37,7 @@ L.push(`    default: return ${colour(Object.values(t.roles)[0].token)};`, '  }',
 L.push(`constexpr int AREA_MIX = ${mixIdx(t.area.mix)}, AREA_MIX_BG = ${mixIdx(t.area['mix-bg'])};  // fw::tokens::MIXES`);
 L.push(`constexpr float AREA_OPA = ${col.components.chart.area.value}f;`, `constexpr const char *AREA_USE = ${cstr(t.area.use)};`, `constexpr const char *AREA_ABOUT = ${cstr(t.area.about)};`);
 L.push(`constexpr int GRID_LINES = ${t['grid-lines']};`);
+L.push(`constexpr float DONUT_GAP_DEG = ${t.donut['gap-deg']};  // degrees between donut parts`);
 // geometry: 4 px grid, strokes 1-2 or even (space.json rule)
 const geo = Object.entries(t.geometry);
 const stroke = new Set(['line', 'line-thin', 'grid', 'dash', 'dash-gap', 'gauge-track', 'gauge-ind']);

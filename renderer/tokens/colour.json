@@ -383,7 +383,15 @@
       {"section": "media_visual", "fg": "mv-vinyl", "bg": "bg", "kind": "decor", "use": "the record against the canvas"},
       {"section": "media_visual", "fg": "mv-groove", "bg": "mv-vinyl", "kind": "decor", "use": "grooves"},
       {"section": "media_visual", "fg": "mv-paper", "bg": "mv-vinyl", "kind": "decor", "use": "LP label"},
-      {"section": "media_visual", "fg": "mv-metal", "bg": "mv-vinyl", "kind": "decor", "use": "tonearm over the record"}
+      {"section": "media_visual", "fg": "mv-metal", "bg": "mv-vinyl", "kind": "decor", "use": "tonearm over the record"},
+      {"section": "rate_strip", "fg": "blue", "bg": ["bg", "surface"], "kind": "ui", "use": "cheap band run"},
+      {"section": "rate_strip", "fg": "band-normal", "bg": ["bg", "surface"], "kind": "ui", "use": "normal band run"},
+      {"section": "rate_strip", "fg": "accent", "bg": ["bg", "surface"], "kind": "ui", "use": "peak band run (the chart highlight)"},
+      {"section": "rate_strip", "fg": "bg", "bg": ["blue", "band-normal", "accent"], "kind": "ui", "use": "the now notch across a run (canvas colour; docs text tick failed 3:1 in dark)"},
+      {"section": "donut", "fg": "blue", "bg": ["bg", "surface"], "kind": "ui", "use": "part 1 (cheap)"},
+      {"section": "donut", "fg": "band-normal", "bg": ["bg", "surface"], "kind": "ui", "use": "part 2 (normal)"},
+      {"section": "donut", "fg": "accent", "bg": ["bg", "surface"], "kind": "ui", "use": "part 3 (peak, the highlight)"},
+      {"section": "donut", "fg": "line", "bg": ["bg", "surface"], "kind": "decor", "use": "the hairline track"}
     ]
   },
   "accent": {

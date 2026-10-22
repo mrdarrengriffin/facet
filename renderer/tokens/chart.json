@@ -176,6 +176,16 @@
       "1x": 4,
       "use": "gauge value arc (= stroke indicator)"
     },
+    "strip-h": {
+      "v": 8,
+      "1x": 8,
+      "use": "rate strip height (docs 8; 8 at 1x too so the bands stay readable)"
+    },
+    "donut-t": {
+      "v": 16,
+      "1x": 12,
+      "use": "donut ring thickness (docs 16)"
+    },
     "legend-sw": {
       "v": 12,
       "1x": 8,
@@ -183,6 +193,10 @@
     }
   },
   "grid-lines": 3,
+  "donut": {
+    "gap-deg": 3,
+    "use": "degrees left empty between two parts of a donut (docs 3)"
+  },
   "motion": {
     "draw": {
       "label": "Line draws in",
