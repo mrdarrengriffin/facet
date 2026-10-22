@@ -72,7 +72,30 @@ Quiet::Quiet() { quiet_n++; }
 Quiet::~Quiet() { quiet_n--; }
 bool quiet() { return quiet_n > 0; }
 void set_sink(Sink s) { sink = s; }
-void emit(lv_obj_t *o, const char *name, const char *detail) { if (sink && !quiet_n) sink(o, "event", name, detail ? detail : ""); }
+// page listeners (fw.h listen): an emit from inside a scope also reaches its listener (a foundation page reacting to
+// the real components on it), not when quiet
+namespace {
+struct Listen { lv_obj_t *scope; Listener cb; void *user; };
+std::vector<Listen> listens;
+}  // namespace
+void listen(lv_obj_t *scope, Listener cb, void *user) {
+  listens.push_back({scope, cb, user});
+  lv_obj_add_event_cb(scope, [](lv_event_t *e) {
+    lv_obj_t *o = (lv_obj_t *) lv_event_get_target(e);
+    listens.erase(std::remove_if(listens.begin(), listens.end(), [o](const Listen &l) { return l.scope == o; }), listens.end());
+  }, LV_EVENT_DELETE, nullptr);
+}
+void notify(lv_obj_t *o, const char *name, const char *detail) {
+  if (quiet_n) return;
+  for (lv_obj_t *a = o; a && !listens.empty(); a = lv_obj_get_parent(a))
+    for (size_t i = 0; i < listens.size(); i++)
+      if (listens[i].scope == a) { const Listen l = listens[i]; l.cb(o, name, detail ? detail : "", l.user); return; }
+}
+void emit(lv_obj_t *o, const char *name, const char *detail) {
+  if (quiet_n) return;
+  if (sink) sink(o, "event", name, detail ? detail : "");
+  notify(o, name, detail);
+}
 void sound(lv_obj_t *o, const char *id) { if (sink && !quiet_n) sink(o, "sound", id, ""); }
 void sound(lv_obj_t *o, const char *id, float pos) {
   char b[12];

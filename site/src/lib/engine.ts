@@ -79,6 +79,7 @@ export class Stage {
   label = '';
   private g: CanvasRenderingContext2D;
   private img: ImageData;
+  private full = true;  // next paint copies the whole stage (new or resized)
   constructor(private e: Engine, public w: number, public h: number) {
     this.id = e.m._fw_stage(w, h);
     const c = this.canvas;
@@ -127,13 +128,30 @@ export class Stage {
     this.w = w; this.h = h;
     this.canvas.width = w; this.canvas.height = h;
     this.img = this.g.createImageData(w, h);
+    this.full = true;
   }
   /** copy the stage to its canvas if LVGL redrew it; true = it did */
   paint(): boolean {
     if (!this.e.m._fw_dirty(this.id)) return false;
-    const p = this.e.m._fw_frame(this.id);
-    this.img.data.set(this.e.m.HEAPU8.subarray(p, p + this.w * this.h * 4));
-    this.g.putImageData(this.img, 0, 0);
+    const p = this.e.m._fw_frame(this.id), H: Uint8Array = this.e.m.HEAPU8, W = this.w;
+    // only the areas LVGL flushed (fw_areas), not the whole stage every frame (a page of animated icons copied
+    // ~3 MB per frame at 720 x 1079); the whole stage after a resize, on an older build or when most of it changed
+    const ap = this.e.m._fw_areas ? (this.e.m._fw_areas(this.id) as number) : 0;
+    const A = ap ? new Int32Array(H.buffer, ap, 1 + 4 * new Int32Array(H.buffer, ap, 1)[0]) : null;
+    let px = 0;
+    if (A) for (let i = 0; i < A[0]; i++) px += (A[3 + 4 * i] - A[1 + 4 * i] + 1) * (A[4 + 4 * i] - A[2 + 4 * i] + 1);
+    if (!A || this.full || px > (W * this.h) / 2) {
+      this.full = false;
+      this.img.data.set(H.subarray(p, p + W * this.h * 4));
+      this.g.putImageData(this.img, 0, 0);
+      return true;
+    }
+    for (let i = 0; i < A[0]; i++) {
+      const x1 = Math.max(0, A[1 + 4 * i]), y1 = Math.max(0, A[2 + 4 * i]), x2 = Math.min(W - 1, A[3 + 4 * i]), y2 = Math.min(this.h - 1, A[4 + 4 * i]);
+      if (x2 < x1 || y2 < y1) continue;
+      for (let y = y1; y <= y2; y++) this.img.data.set(H.subarray(p + (y * W + x1) * 4, p + (y * W + x2 + 1) * 4), (y * W + x1) * 4);
+      this.g.putImageData(this.img, 0, 0, x1, y1, x2 - x1 + 1, y2 - y1 + 1);
+    }
     return true;
   }
   free() { this.e.m._fw_stage_free(this.id); this.e.views.delete(this); this.canvas.remove(); }

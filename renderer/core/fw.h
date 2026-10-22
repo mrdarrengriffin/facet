@@ -74,6 +74,24 @@ int icon_bytes(int index, ic::Size size); // flash of one icon@size (its masks),
 int icons_bytes();                        // flash of every icon in this build (masks + tables)
 int icons_entries();                      // icon x size pairs in this build
 bool icons_used_only();                   // built with FW_ICONS=used
+// Animated weather icons (README "Icons" > "Animated weather"): fw::weather_icon(parent, "rain-light", ic::card,
+// animate) = the same S x S box as fw::icon. animate + not reduced motion + the size has animated parts
+// (icons.json animated) -> the master's parts (motion.json weather keyframes, one lv_anim clock, writes only on whole
+// px / opacity steps); else exactly the static master (fw::icon). behind = the colour under the icon (T->bg, a card's
+// T->surface): a moving cloud's fill is drawn in it so it hides what is behind the cloud. weather_icon_set = in place
+// (same box): another condition swaps the parts, animate on / off; false = not a weather icon box.
+lv_obj_t *weather_icon(lv_obj_t *parent, const char *name, ic::Size size, bool animate, lv_color_t ink, lv_color_t behind);
+bool weather_icon_set(lv_obj_t *wx, const char *name, bool animate);
+bool weather_icon_animated(lv_obj_t *wx);  // currently showing the moving parts (false = the static master)
+const char *weather_icon_name(lv_obj_t *wx);  // the icon a weather icon box shows (nullptr = not one)
+int weather_anim_bytes(int index, ic::Size size);  // flash of the animated parts of one icon@size (0 = none)
+int weather_anim_parts(int index, ic::Size size);  // number of part masks
+// Moon phase glyph (Facet moonIcon, drawn in code, README "Icons" > "Moon phase"): frac 0..1 through the synodic month
+// (0 new, 0.25 first quarter, 0.5 full, 0.75 last quarter); disc moon-dark, lit part moon-lit, outline moon-edge
+// (weather stroke: 2 px, 3 from 96); south = mirrored. A8 masks computed at the exact px on the device (lit part per
+// phase, disc + outline once per size). moon_icon_set = a new phase redrawn in place.
+lv_obj_t *moon_icon(lv_obj_t *parent, float frac, ic::Size size, bool south = false);
+bool moon_icon_set(lv_obj_t *moon, float frac, bool south = false);
 
 // Motion (tokens/motion.json, README "Motion tokens"): never a raw duration or easing in a component. Named patterns
 // fw::mo::press, sheet_open, screen, value, ... = duration + easing + offset (device px) + reduced-motion mode
@@ -167,6 +185,12 @@ int demo_state(lv_obj_t *scr);
 using Sink = void (*)(lv_obj_t *obj, const char *kind, const char *name, const char *detail);  // kind = "event" | "sound"
 void set_sink(Sink s);
 void emit(lv_obj_t *obj, const char *name, const char *detail = "");
+// a page listening to the real components inside `scope` (Icons page: the Animated / Static segmented, the phase
+// slider): every emit from scope or below also calls cb (the nearest scope only; dropped when quiet). Gone with scope.
+using Listener = void (*)(lv_obj_t *from, const char *name, const char *detail, void *user);
+void listen(lv_obj_t *scope, Listener cb, void *user = nullptr);
+// a live value for listeners only (not the event log / host): the Slider's "input" while the shown value moves
+void notify(lv_obj_t *obj, const char *name, const char *detail = "");
 void sound(lv_obj_t *obj, const char *id);
 // a pitched sound: pos = where the value sits in its range (0..1), sent as the event detail ("0.420"); the host shifts
 // the pitch by the pack's `track` semitones over the whole range (tokens/sound.json; 0 = not pitched). Step ticks use it.

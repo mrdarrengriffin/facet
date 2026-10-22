@@ -477,6 +477,27 @@ void sample(Demo *d, int w, int h) {
       hint(f, "loops by itself");
       break;
     }
+    case mo::weather: {  // the real Weather icon component, animated (reduced motion = the static master); a large
+                         // frame (the loop bench) = every weather icon at card size
+      lv_obj_set_flex_flow(f, LV_FLEX_FLOW_ROW_WRAP);
+      lv_obj_set_flex_align(f, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+      lv_obj_set_style_pad_column(f, sp::s5, 0);
+      lv_obj_set_style_pad_row(f, sp::s5, 0);
+      const fw::Component *c = fw::find("weather_icon");
+      if (!c) { hint(f, "weather icon: component coming"); break; }
+      const bool all = h > px(240);
+      static const char *const few[] = {"partly-day", "rain-light", "thunder-rain"};
+      for (int i = 0, n = all ? ic::N : 3; i < n; i++) {
+        const char *name = all ? ic::ICONS[i].name : few[i];
+        if (all && strcmp(ic::ICONS[i].kind, "weather")) continue;
+        ArduinoJson::JsonDocument pd;
+        pd["icon"] = name;
+        pd["size"] = all ? "card" : "feature";
+        c->build(f, pd.as<ArduinoJson::JsonObjectConst>());
+      }
+      if (!all) hint(f, "loops by itself");
+      break;
+    }
     default: break;
   }
 }
@@ -556,6 +577,7 @@ Demo *demo(lv_obj_t *parent, mo::Id p, int w, int h, bool loop) {
   }, LV_EVENT_DELETE, d);
   sample(d, w, h);
   if (p == mo::pulse) play(d);
+  else if (p == mo::weather) {}  // loops by itself (one clock per icon)
   else if (loop) {
     d->loop = lv_timer_create([](lv_timer_t *t) { play((Demo *) lv_timer_get_user_data(t)); }, period(p), d);
   } else if (p != mo::press && p != mo::release)

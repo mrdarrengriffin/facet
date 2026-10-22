@@ -1,10 +1,10 @@
 // Settings screen (docs: Screens > Settings, @facet/ui screens/settings.ts, CSS .fs-set*): the first full screen, every
 // personalisation setting from the ONE schema tokens/settings.json (fw::set::, tools/gen_settings.mjs), so the screen,
 // the panel's Home Assistant entities, the ESPHome page and the docs never drift. Composed only of real components:
-//   header   the Header component (back + "Settings" + time) at (inset, inset)
+//   header   the Header component (back + "Settings" + the screen chrome: the live clock) at (inset, inset)
 //   content  from lay::top to the screen bottom, one scrolling column (bottom padding inset); per schema group:
-//            a Section header (caps title, no badge) then its rows; title to rows = section-gap, rows to the next
-//            title = group (both cut by the header's centring slack, as the Layout foundation does)
+//            its label (docs .fs-set-glabel = the screen type label, caps, as the header's: Darren 2026-10-22, the
+//            component caps-sm was too small) then its rows; label to rows = section-gap, rows to the next label = group
 //   rows     by the setting's control:
 //            segmented / swatches  a List row (title, no trailing, not a tap target) + the Segmented / Accent swatches
 //                                  component appended as its trailing part (docs .fs-set with an inline control)
@@ -315,7 +315,7 @@ std::string meta_json() {
   return std::string(R"({
   "about": "Every personalisation setting of the panel, grouped, from the one settings schema: inline controls, toggles, sliders and pickers in a bottom sheet.",
   "frame": [480, 480],
-  "icons": ["back@glyph", "chevron@icon", "close@glyph", "volume@icon", "power@icon", "check@icon"],
+  "icons": ["back@glyph", "screen-settings@icon", "chevron@icon", "close@glyph", "volume@icon", "power@icon", "check@icon"],
   "props": )") + props + R"J(,
   "variants": [
     {"label": "default values", "props": {}},
@@ -339,7 +339,7 @@ void build_settings(lv_obj_t *parent, fw::Props p) {
   lv_obj_add_event_cb(scr->root, [](lv_event_t *e) { delete (Screen *) lv_event_get_user_data(e); }, LV_EVENT_DELETE, scr);
   for (int i = 0; i < fw::set::N_SETTINGS; i++) scr->values[i] = value_of(fw::set::SETTINGS[i], p);
 
-  Doc hd;
+  Doc hd;  // the Header (+ its screen chrome: the live clock; the settings button is Home's only)
   hd["label"] = "Settings";
   if (lv_obj_t *h = build("header", scr->root, hd)) lv_obj_set_pos(h, fw::lay::inset, fw::lay::inset);
 
@@ -352,17 +352,14 @@ void build_settings(lv_obj_t *parent, fw::Props p) {
   lv_obj_set_style_pad_bottom(c, fw::lay::inset, 0);
   lv_obj_set_flex_flow(c, LV_FLEX_FLOW_COLUMN);
 
-  // section headers are taller than their caps text: cut the gaps by that slack so what shows = the tokens
-  const int slack = fw::find("section_header") ? (fw::lay::section_h - fw::style(fw::ty::c_caps_sm).box) / 2 : 0;
+  // per group: its label (docs .fs-set-glabel: the screen type label, caps, the header's own style; text-dim, docs
+  // text-mute is disabled-only here) at its line box, section-gap above its rows; groups a group apart
   for (int g = 0; g < fw::set::N_GROUPS; g++) {
-    if (g) spacer(c, std::max(0, fw::lay::group - slack));
-    Doc sh;
-    sh["title"] = fw::set::GROUPS[g].label;
-    sh["badge"] = false;
-    sh["right"] = "none";
-    lv_obj_t *h = build("section_header", c, sh);
-    if (h && !g) lv_obj_set_style_margin_top(h, -slack, 0);  // the first title's box starts at the content top
-    spacer(c, std::max(0, fw::lay::section_gap - slack));
+    if (g) spacer(c, fw::lay::group);
+    lv_obj_t *gl = fw::text(c, fw::ty::label, fw::set::GROUPS[g].label, t.text_dim);
+    lv_obj_remove_flag(gl, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_set_height(gl, fw::style(fw::ty::label).box);  // fw::text leaves default labels at content height
+    spacer(c, fw::lay::section_gap);
     for (int i = 0; i < fw::set::N_SETTINGS; i++)
       if (!strcmp(fw::set::SETTINGS[i].group, fw::set::GROUPS[g].id)) row_for(scr, c, fw::set::SETTINGS[i]);
   }

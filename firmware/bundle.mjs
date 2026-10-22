@@ -35,7 +35,7 @@ const ls = (d, ext) => (existsSync(join(HERE, d)) ? readdirSync(join(HERE, d)).f
 // core = what every item's pixels depend on (compiled into each item's build); glue = the device-side host code
 // (HTTP, screen setup), reported separately: a glue change does not make an item show old code
 const lsr = (d) => (existsSync(join(HERE, d)) ? readdirSync(join(HERE, d), { recursive: true }).filter((f) => f.endsWith('.svg')).sort().map((f) => `${d}/${f}`) : []);
-const coreFiles = [...ls('core', '.h'), 'core/fw_core.cpp', 'core/motion.cpp', 'core/atoms.cpp', 'core/states.cpp', 'core/mascot.cpp', 'core/fonts.cpp', 'core/icons.cpp', ...ls('tokens', '.json'), 'tools/gen_colour.mjs', 'tools/gen_type.mjs', 'tools/gen_space.mjs', 'tools/gen_layout.mjs', 'tools/gen_motion.mjs', 'tools/gen_states.mjs', 'tools/gen_mascot.mjs', 'tools/gen_chart.mjs', 'tools/gen_settings.mjs', 'tools/gen_fonts.py', 'tools/facet_font.inc', 'tools/gen_icons.mjs', ...lsr('icons')];
+const coreFiles = [...ls('core', '.h'), 'core/fw_core.cpp', 'core/motion.cpp', 'core/atoms.cpp', 'core/states.cpp', 'core/mascot.cpp', 'core/device.cpp', 'core/fonts.cpp', 'core/icons.cpp', ...ls('tokens', '.json'), 'tools/gen_colour.mjs', 'tools/gen_type.mjs', 'tools/gen_space.mjs', 'tools/gen_layout.mjs', 'tools/gen_motion.mjs', 'tools/gen_states.mjs', 'tools/gen_mascot.mjs', 'tools/gen_chart.mjs', 'tools/gen_settings.mjs', 'tools/gen_fonts.py', 'tools/facet_font.inc', 'tools/gen_icons.mjs', ...lsr('icons')];
 const glueFiles = ['firmware/fw_device.h', 'firmware/esphome_init.py', 'firmware/bundle.mjs'];  // relative to ROOT
 const srcFiles = [...ls('foundations', '.cpp'), ...ls('components', '.cpp'), ...ls('screens', '.cpp')];
 const read = (rel) => readFileSync(join(HERE, rel));
@@ -95,6 +95,7 @@ put('motion.cpp', read('core/motion.cpp'));
 put('atoms.cpp', read('core/atoms.cpp'));
 put('states.cpp', read('core/states.cpp'));
 put('mascot.cpp', read('core/mascot.cpp'));
+put('device.cpp', read('core/device.cpp'));  // the device runtime (screen stack, navigation)
 // fonts.cpp with this density's font header inlined (and the #ifdef picking it)
 const fonts = read('core/fonts.cpp').toString().replace(/#ifdef FW_1X\n#include "facet_fonts_1x.h"\n#else\n#include "facet_fonts.h"\n#endif\n/,
   `// ---- inlined ${basename(fontH)} (firmware/bundle.mjs)\n${readFileSync(fontH, 'utf8').replace('#pragma once', '')}\n// ---- end of ${basename(fontH)}\n`);

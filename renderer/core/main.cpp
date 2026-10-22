@@ -11,6 +11,7 @@
 //   fw_touch(id, x, y, down)          pointer on that stage (device pixels)
 //   fw_tick(ms)                       LVGL timers/refresh for all stages
 //   fw_dirty(id) / fw_frame(id)       redrawn since last read? / RGBA pixels (w*h*4)
+//   fw_areas(id) -> int32 [n, x1, y1, x2, y2...]  areas flushed since the last call (copy only these)
 //   fw_anims() -> n                   LVGL animations running (frame stats)
 //   fw_events() -> JSON               events + sound requests since the last call (fw::emit / fw::sound): [{stage,kind,name,detail}] or ""
 #include <emscripten.h>
@@ -31,6 +32,7 @@ struct Stage {
   uint8_t *buf = nullptr;
   std::vector<uint32_t> rgba;
   bool dirty = false, down = false;
+  std::vector<int32_t> areas;  // areas flushed since the last fw_areas (x1, y1, x2, y2 each): the host copies only these
   lv_point_t pos{};
 };
 std::vector<Stage *> stages;
@@ -50,6 +52,8 @@ void flush(lv_display_t *d, const lv_area_t *a, uint8_t *px) {
       s->rgba[y * s->w + x] = 0xFF000000u | ((b << 3 | b >> 2) << 16) | ((g << 2 | g >> 4) << 8) | (r << 3 | r >> 2);
     }
   s->dirty = true;
+  if (s->areas.size() < 4 * 64) s->areas.insert(s->areas.end(), {a->x1, a->y1, a->x2, a->y2});
+  else s->areas.assign({0, 0, s->w - 1, s->h - 1});  // too many: the whole stage
   lv_display_flush_ready(d);
 }
 void read(lv_indev_t *i, lv_indev_data_t *data) {
@@ -254,6 +258,18 @@ EMSCRIPTEN_KEEPALIVE int fw_dirty(int id) {
   if (!s || !s->dirty) return 0;
   s->dirty = false;
   return 1;
+}
+// the areas flushed since the last call: [n, x1, y1, x2, y2, ...] (int32; the host copies only these to its canvas
+// instead of the whole stage every frame); cleared by the call
+EMSCRIPTEN_KEEPALIVE const int32_t *fw_areas(int id) {
+  static std::vector<int32_t> out;
+  Stage *s = get(id);
+  out.assign(1, 0);
+  if (!s) return out.data();
+  out[0] = (int32_t) s->areas.size() / 4;
+  out.insert(out.end(), s->areas.begin(), s->areas.end());
+  s->areas.clear();
+  return out.data();
 }
 EMSCRIPTEN_KEEPALIVE const uint32_t *fw_frame(int id) {
   Stage *s = get(id);

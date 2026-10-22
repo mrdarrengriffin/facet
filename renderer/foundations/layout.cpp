@@ -78,6 +78,7 @@ lv_obj_t *screen_box(lv_obj_t *parent) {
   lv_obj_set_style_clip_corner(s, false, 0);
   return s;
 }
+void caption(lv_obj_t *e, const std::string &s);
 // a sample header: back, the screen label, the time slot at the right edge (one row at y = inset)
 void legend(lv_obj_t *l, lv_color_t c, bool filled, const char *name, int v, int v1x, const char *use);
 // a plain key line: swatch, name, this build's value of a layout.json token (+ the other screen's), one sentence
@@ -135,6 +136,7 @@ lv_obj_t *header(lv_obj_t *s, const char *label, bool back = true) {
   Doc d;
   d["label"] = label;
   d["back"] = back;
+  d["time"] = "21:42";  // a fixed time on the page (the screens show the live clock)
   if (find("header")) {
     lv_obj_t *h = comp(s, "header", d);
     lv_obj_set_pos(h, lay::inset, lay::inset);
@@ -352,7 +354,7 @@ void header_zone(lv_obj_t *parent) {
   lv_obj_t *l = column(col, 0, S);
   lv_obj_set_style_pad_hor(l, sp::s7, 0);
   key(l, T->accent, true, "Margin", "inset", "The same on every side of every screen; the header row starts at its inner corner.");
-  key(l, T->accent, false, "Header row", "row", "Back button, the screen's name and the time, in one row.");
+  key(l, T->accent, false, "Header row", "row", "Back button, the screen's name, then the settings button and the time, in one row.");
   key(l, T->steel, false, "Back button", "row", "A square as tall as the header row, so it fills the row exactly.");
   key(l, T->blue, false, "Time", "header-time-w", "Always at the right end of the row.");
   key(l, T->text_dim, false, "Back button to name", "back-gap", "");
@@ -361,6 +363,50 @@ void header_zone(lv_obj_t *parent) {
     legend(l, T->blue, true, "Gap under the header", tp->v - in->v - rw->v, tp->v1x - in->v1x - rw->v1x, "");
   }
   key(l, T->line_hi, true, "Content starts", "top", "Measured from the top of the screen: the same on every screen.");
+}
+
+// ---- The clock, always top right: the real Header (which ends with the real Screen chrome) on two screen tops, Home
+// (no back, the settings button before the time: Home only for now, Darren 2026-10-22) and Lights (the time alone),
+// the corner's parts outlined; values from layout.json at this build's size
+void chrome_strip(lv_obj_t *col, const char *label, bool home) {
+  const int S = lay::screen_w, in = lay::inset, H = lay::top;
+  lv_obj_t *s = box(col);
+  lv_obj_set_size(s, S, H);
+  fill(s, T->bg);
+  Doc d;
+  d["label"] = label;
+  d["time"] = "21:42";
+  d["back"] = !home;
+  d["settings"] = home;
+  lv_obj_t *h = comp(s, "header", d);
+  lv_obj_set_pos(h, in, in);
+  lv_obj_update_layout(s);
+  lv_obj_t *L = layer(s);
+  const int w = home ? lay::chrome_w : lay::header_time_w, x0 = S - in - w;
+  outline(rect(L, x0, in, w, lay::row), T->accent, stroke::edge);
+  if (home) {
+    outline(rect(L, x0, in, lay::chrome_btn, lay::row), T->steel, stroke::hair);
+    mark_box(L, x0 + lay::chrome_btn, in, lay::gutter, lay::row, T->steel);
+  }
+  outline(rect(L, S - in - lay::header_time_w, in, lay::header_time_w, lay::row), T->blue, stroke::hair);
+  mark_box(L, S - in, in, in, lay::row, T->accent);
+}
+void chrome_sec(lv_obj_t *parent) {
+  lv_obj_set_flex_align(parent, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
+  lv_obj_t *col = column(parent, sp::s2, lay::screen_w);
+  chrome_strip(col, "Home", true);
+  chrome_strip(col, "Lights", false);
+  lv_obj_t *l = column(col, 0, lay::screen_w);
+  lv_obj_set_style_pad_hor(l, sp::s7, 0);
+  key(l, T->blue, false, "Time", "header-time-w", "On every screen, right-aligned on the margin.");
+  key(l, T->steel, false, "Settings button", "chrome-btn", "On Home, a square as tall as the header row, like the back button; it opens Settings. It may move to other screens later.");
+  key(l, T->steel, true, "Button to time", "gutter", "");
+  {
+    const lyt::Token *b = tok("chrome-btn"), *g = tok("gutter"), *t = tok("header-time-w");
+    legend(l, T->accent, false, "Corner with the button", b->v + g->v + t->v, b->v1x + g->v1x + t->v1x, "");
+  }
+  lv_obj_t *e = entry(l);
+  caption(e, std::string("Home, with the settings button before the time, then any other screen with the time alone. Switch the device in the sidebar to see it at ") + other_den() + ".");
 }
 
 // ---- Groups and rows: a settings screen from real List rows -------------------------------------------------------
@@ -734,12 +780,13 @@ FW_COMPONENT(layout, "Layout & devices", "foundations", R"({
   "layout": "doc",
   "frame": [480, 0],
   "props": [{"name": "section", "type": "select", "options": )" FW_LAYOUT_SECTION_IDS R"(, "default": "screen"}],
-  "icons": ["back@icon"],
+  "icons": ["back@icon", "screen-settings@icon"],
   "variants": )" FW_LAYOUT_SECTIONS R"(
 })") {
   const char *s = p["section"] | "screen";
   if (!strcmp(s, "screen")) return screen(parent);
   if (!strcmp(s, "frame")) return header_zone(parent);
+  if (!strcmp(s, "chrome")) return chrome_sec(parent);
   if (!strcmp(s, "rhythm")) return rhythm(parent);
   if (!strcmp(s, "overlay")) return overlay(parent);
   lv_obj_t *l = page(parent);

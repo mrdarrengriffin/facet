@@ -48,8 +48,13 @@ struct Opts {
   const char *search;
   int size;  // -1 = every size
   bool accent, boxes;
+  bool animated = true;  // weather: the animated icons (Weather icon component) or the static masters
+  float phase = 0.25f;   // moon phase glyph
+
   lv_color_t ink() const { return accent ? T->accent : T->text; }
 };
+
+lv_obj_t *moon(lv_obj_t *parent, float phase, ic::Size s, bool live);  // below (the Moon phase component)
 
 // one icon at one size: the S x S box (outlined when boxes is on), true size
 lv_obj_t *draw(lv_obj_t *parent, int i, ic::Size s, const Opts &o) {
@@ -102,6 +107,16 @@ void grid(lv_obj_t *l, const char *group, const char *title, const Opts &o) {
   int n = 0;
   for (int i = 0; i < ic::N; i++)
     if (matches(i, group, o) && tile(w, i, o)) n++;
+  if (group && !strcmp(group, "weather") && (!*o.search || strstr("moon", o.search))) {  // the moon phase glyph, drawn in code
+    lv_obj_t *t = column(w, sp::s2, LV_SIZE_CONTENT);
+    lv_obj_t *r = row(t, sp::s4, LV_FLEX_ALIGN_END);
+    const ic::Size ms[] = {ic::glyph, ic::detail, ic::feature, ic::card, ic::hero};
+    for (ic::Size s : ms)
+      if (o.size < 0 || o.size == s) moon(r, o.phase, s, true);
+    text(t, ty::c_label, "moon (phase)", T->text);
+    text(t, ty::c_meta_sm, "drawn in code · any size", T->text_dim);
+    n++;
+  }
   if (!n) { lv_obj_delete(w); text(e, ty::c_meta, *o.search ? "No icon matches the search." : "None in this build.", T->text_dim); }
 }
 
@@ -168,12 +183,170 @@ void memory(lv_obj_t *l) {
     snprintf(b, sizeof b, "%d icons · %.1f KB", n, by / 1024.0);
     text(x, ty::c_meta, b, T->text_dim);
   }
+  int an = 0, ab = 0;
+  for (int i = 0; i < ic::N; i++)
+    for (int s = 0; s < ic::N_SIZES; s++)
+      if (weather_anim_parts(i, (ic::Size) s)) an++, ab += weather_anim_bytes(i, (ic::Size) s);
+  lv_obj_t *x = entry(l, sp::s1);
+  text(x, ty::c_caps_sm, "Animated weather (parts, one mask per part and colour)", T->text);
+  snprintf(b, sizeof b, "%d icon x size · %.1f KB", an, ab / 1024.0);
+  text(x, ty::c_meta, b, T->text_dim);
+}
+
+// ---- animated weather + moon phase: the real components (Weather icon, Moon phase) built through the registry
+using Doc = ArduinoJson::JsonDocument;
+lv_obj_t *comp(lv_obj_t *parent, const char *id, Doc &d) {
+  const Component *c = find(id);
+  if (!c) {
+    char b[64];
+    snprintf(b, sizeof b, "%s: component coming", id);
+    return text(parent, ty::c_meta_sm, b, T->text_dim);
+  }
+  c->build(parent, d.as<Props>());
+  return lv_obj_get_child(parent, -1);
+}
+lv_obj_t *weather(lv_obj_t *parent, const char *name, ic::Size s, bool animated, bool card = false) {
+  Doc d;
+  d["icon"] = name;
+  d["size"] = ic::SIZE_NAMES[s];
+  d["animated"] = animated;
+  d["on"] = card ? "card" : "canvas";
+  return comp(parent, "weather_icon", d);
+}
+constexpr lv_obj_flag_t LIVE_MOON = LV_OBJ_FLAG_USER_2;  // follows the playground phase (update path)
+lv_obj_t *moon(lv_obj_t *parent, float phase, ic::Size s, bool live) {
+  Doc d;
+  d["phase"] = phase;
+  d["size"] = ic::SIZE_NAMES[s];
+  lv_obj_t *r = comp(parent, "moon_icon", d);
+  if (live && r) lv_obj_add_flag(r, LIVE_MOON);
+  return r;
+}
+bool is_anim(int s) { return (ic::ANIM_SIZES >> s) & 1; }
+void walk(lv_obj_t *o, bool animated, float phase);
+// the real Segmented / Slider on the page drive the icons in place; a choice there is a viewing setting, not a demo to
+// reset (fw::demo_away false = the host's demo reset skips it)
+void on_choice(lv_obj_t *, const char *name, const char *detail, void *user) {
+  lv_obj_t *l = (lv_obj_t *) user;
+  if (strcmp(name, "change") && strcmp(name, "input")) return;  // the phase follows the drag live (Slider "input")
+  if (!strcmp(detail, "animated") || !strcmp(detail, "static")) walk(l, !strcmp(detail, "animated"), -1);
+  else walk(l, true, (float) atof(detail) / 100.f);
+  demo_away(l, false);
+}
+// Animated weather: every weather icon as the Weather icon component (animated or static = the playground toggle) at
+// the chosen animated size (card by default), then the Home card / Weather hero sizes for one icon, on a card
+void animated(lv_obj_t *l, const Opts &o) {
+  const ic::Size s = o.size >= 0 && is_anim(o.size) ? (ic::Size) o.size : ic::card;
+  lv_obj_t *e = entry(l, sp::s5);
+  char b[96];
+  {
+    Doc d;
+    d["options"] = "Animated, Static";
+    d["selected"] = o.animated ? "animated" : "static";
+    comp(e, "segmented", d);
+    listen(e, on_choice, l);
+  }
+  snprintf(b, sizeof b, "ic::%s · %d px", ic::SIZE_NAMES[s], ic::PX[s]);
+  text(e, ty::c_caps_sm, b, T->text_dim);
+  lv_obj_t *w = box(e);
+  lv_obj_set_size(w, LV_PCT(100), LV_SIZE_CONTENT);
+  lv_obj_set_flex_flow(w, LV_FLEX_FLOW_ROW_WRAP);
+  lv_obj_set_flex_align(w, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_END, LV_FLEX_ALIGN_START);
+  lv_obj_set_style_pad_column(w, sp::s7, 0);
+  lv_obj_set_style_pad_row(w, sp::s7, 0);
+  int n = 0;
+  for (int i = 0; i < ic::N; i++) {
+    if (strcmp(ic::ICONS[i].kind, "weather") || (*o.search && !strstr(ic::ICONS[i].name, o.search)) || !icon_has(i, s)) continue;
+    lv_obj_t *t = column(w, sp::s2, LV_SIZE_CONTENT);
+    weather(t, ic::ICONS[i].name, s, o.animated);
+    text(t, ty::c_label, ic::ICONS[i].name, T->text);
+    snprintf(b, sizeof b, "%d parts · %.1f KB", weather_anim_parts(i, s), weather_anim_bytes(i, s) / 1024.0);
+    text(t, ty::c_meta_sm, b, T->text_dim);
+    n++;
+  }
+  if (!n) { lv_obj_delete(w); text(e, ty::c_meta, "None in this build.", T->text_dim); }
+  lv_obj_t *x = entry(l, sp::s3);
+  text(x, ty::c_caps_sm, "On a card", T->text_dim);
+  lv_obj_t *r = row(x, sp::s5, LV_FLEX_ALIGN_END);
+  weather(r, "partly-day", ic::card, o.animated, true);
+  weather(r, "thunder-rain", ic::card, o.animated, true);
+  weather(r, "rain-heavy", ic::hero, o.animated, true);
+  lv_obj_t *m = entry(l, sp::s2);
+  text(m, ty::c_meta, "Each icon is the static master cut into its parts: the sun's rays turn once every 24 s, clouds "
+       "drift 1-2 units, drops, snow and hail fall and fade, the bolt flashes twice every 4 s, fog and wind lines slide, "
+       "stars twinkle. Timings and curves are Motion tokens (Motion > Patterns > Weather icon). A moving cloud is "
+       "filled with the colour behind it, so it still hides the sun. With reduced motion, or the toggle off, the icon "
+       "is exactly the static master.", T->text_dim, inner_w());
+}
+// Moon phase: the playground phase at every size, then the month in eight steps
+void moons(lv_obj_t *l, const Opts &o) {
+  lv_obj_t *e = entry(l, sp::s5);
+  text(e, ty::c_caps_sm, "Phase (0 new · 50 full · 100 new again)", T->text_dim);
+  {
+    Doc d;
+    d["value"] = (int) lroundf(o.phase * 100);
+    d["min"] = 0;
+    d["max"] = 100;
+    d["step"] = 1;
+    d["width"] = 288;
+    comp(e, "slider", d);
+    listen(e, on_choice, l);
+  }
+  lv_obj_t *r = row(e, sp::s5, LV_FLEX_ALIGN_END);
+  const ic::Size sizes[] = {ic::icon, ic::glyph, ic::feature, ic::card, ic::hero};
+  for (ic::Size s : sizes)
+    if (o.size < 0 || o.size == s) moon(r, o.phase, s, true);
+  lv_obj_t *x = entry(l, sp::s5);
+  text(x, ty::c_caps_sm, "The month", T->text_dim);
+  lv_obj_t *w = row(x, sp::s4, LV_FLEX_ALIGN_END);
+  for (int k = 0; k < 8; k++) moon(w, k / 8.f, ic::feature, false);
+  lv_obj_t *m = entry(l, sp::s2);
+  text(m, ty::c_meta, "Drawn in code from the phase: a dark disc, the lit part (the lit edge plus the shadow line, "
+       "half an ellipse) and the outline at the weather stroke. A new phase redraws only the lit part.", T->text_dim, inner_w());
 }
 
 int size_of(const char *s) {
   for (int i = 0; i < ic::N_SIZES; i++)
     if (!strcmp(ic::SIZE_NAMES[i], s)) return i;
   return -1;
+}
+// the page into its root column l (build and refill)
+std::string sig(Props p) {
+  char b[160];
+  snprintf(b, sizeof b, "%s|%s|%s|%d|%d", p["section"] | "compare", p["search"] | "", p["size"] | "all", (int) (p["accent"] | false), (int) (p["boxes"] | false));
+  return b;
+}
+// animated -> every Weather icon on the page, phase (>= 0) -> every live Moon phase
+void walk(lv_obj_t *o, bool animated, float phase) {
+  for (uint32_t i = 0; i < lv_obj_get_child_count(o); i++) {
+    lv_obj_t *c = lv_obj_get_child(o, (int32_t) i);
+    if (const char *n = weather_icon_name(c)) { if (phase < 0) weather_icon_set(c, n, animated); continue; }
+    if (lv_obj_has_flag(c, LIVE_MOON)) { if (phase >= 0) moon_icon_set(lv_obj_get_child(c, 0), phase); continue; }
+    walk(c, animated, phase);
+  }
+}
+void page(lv_obj_t *l, Props p) {
+  fw::shape(l, sig(p));
+  lv_obj_set_width(l, px(W));
+  lv_obj_set_height(l, LV_SIZE_CONTENT);
+  lv_obj_set_flex_flow(l, LV_FLEX_FLOW_COLUMN);
+  lv_obj_set_style_pad_row(l, 0, 0);
+  lv_obj_set_style_pad_hor(l, sp::s7, 0);
+  const char *s = p["section"] | "compare";
+  const Opts o{p["search"] | "", size_of(p["size"] | "all"), p["accent"] | false, p["boxes"] | false, p["animated"] | true, p["phase"] | 0.25f};
+  if (!strcmp(s, "memory")) memory(l);
+  else if (!strcmp(s, "animated")) animated(l, o);
+  else if (!strcmp(s, "moon")) moons(l, o);
+  else if (*o.search) grid(l, nullptr, nullptr, o);  // a search: one grid across every group
+  else if (!strcmp(s, "compare")) compare(l, o);
+  else if (!strcmp(s, "all")) {
+    for (int g = 0; g < ic::N_GROUPS; g++) grid(l, ic::GROUPS[g].id, ic::GROUPS[g].label, o);
+  } else {
+    const char *label = s;
+    for (int g = 0; g < ic::N_GROUPS; g++)
+      if (!strcmp(ic::GROUPS[g].id, s)) label = ic::GROUPS[g].label;
+    grid(l, s, label, o);
+  }
 }
 }  // namespace
 
@@ -186,24 +359,21 @@ FW_COMPONENT(icons, "Icons", "foundations", R"({
     {"name": "search", "type": "text", "default": ""},
     {"name": "size", "type": "select", "options": )" FW_ICON_SIZE_IDS R"(, "default": "all"},
     {"name": "accent", "type": "bool", "default": false},
-    {"name": "boxes", "type": "bool", "default": false}
+    {"name": "boxes", "type": "bool", "default": false},
+    {"name": "animated", "type": "bool", "default": true},
+    {"name": "phase", "type": "range", "min": 0, "max": 1, "step": 0.01, "default": 0.25}
   ],
   "variants": )" FW_ICON_SECTIONS R"(
 })") {
-  const char *s = p["section"] | "compare";
-  const Opts o{p["search"] | "", size_of(p["size"] | "all"), p["accent"] | false, p["boxes"] | false};
   lv_obj_set_flex_align(parent, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
   lv_obj_t *l = column(parent, 0, px(W));
-  lv_obj_set_style_pad_hor(l, sp::s7, 0);
-  if (!strcmp(s, "memory")) memory(l);
-  else if (*o.search) grid(l, nullptr, nullptr, o);  // a search: one grid across every group
-  else if (!strcmp(s, "compare")) compare(l, o);
-  else if (!strcmp(s, "all")) {
-    for (int g = 0; g < ic::N_GROUPS; g++) grid(l, ic::GROUPS[g].id, ic::GROUPS[g].label, o);
-  } else {
-    const char *label = s;
-    for (int g = 0; g < ic::N_GROUPS; g++)
-      if (!strcmp(ic::GROUPS[g].id, s)) label = ic::GROUPS[g].label;
-    grid(l, s, label, o);
-  }
+  page(l, p);
+}
+
+// Update path: the page again in the same root (the Animated / Static choice and the phase are the real Segmented /
+// Slider on the page, which drive the icons in place through the components' own calls). Silent.
+FW_UPDATE(icons) {
+  fw::refill(root);
+  page(root, p);
+  return true;
 }

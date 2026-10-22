@@ -25,6 +25,17 @@
     "orbit-c": { "ms": 37000, "group": "ambient", "use": "orbit clock, middle ring" },
     "orbit-a": { "ms": 60000, "group": "ambient", "use": "orbit clock, outer ring" },
     "clock-sweep": { "ms": 60000, "group": "ambient", "use": "sweeping seconds hand" },
+    "wx-rays": { "ms": 24000, "group": "ambient", "use": "weather icon: sun rays, one full turn" },
+    "wx-drift": { "ms": 6000, "group": "ambient", "use": "weather icon: front cloud drift, one way (there and back = 2x)" },
+    "wx-drift-back": { "ms": 8000, "group": "ambient", "use": "weather icon: back cloud drift, one way" },
+    "wx-rain": { "ms": 1100, "group": "ambient", "use": "weather icon: one rain drop falling" },
+    "wx-rain-heavy": { "ms": 700, "group": "ambient", "use": "weather icon: one heavy rain drop falling" },
+    "wx-snow": { "ms": 3000, "group": "ambient", "use": "weather icon: one snow flake drifting down" },
+    "wx-hail": { "ms": 900, "group": "ambient", "use": "weather icon: one hailstone falling and bouncing" },
+    "wx-flash": { "ms": 4000, "group": "ambient", "use": "weather icon: lightning, two flashes per cycle" },
+    "wx-fog": { "ms": 4000, "group": "ambient", "use": "weather icon: fog line slide, one way" },
+    "wx-wind": { "ms": 3000, "group": "ambient", "use": "weather icon: wind line slide, one way" },
+    "wx-twinkle": { "ms": 3200, "group": "ambient", "use": "weather icon: star twinkle" },
     "toast-life": { "ms": 6000, "group": "timing", "use": "a toast stays this long" },
     "toast-life-urgent": { "ms": 12000, "group": "timing", "use": "an urgent toast stays this long (someone at the door; layout.json toast life-urgent)" },
     "tick-min": { "ms": 40, "group": "timing", "use": "step ticks (slider, dial, arc): audible ticks never closer than this; slow drags tick every step, fast drags thin out (26 -> 40 ms, Darren 2026-10-22)" },
@@ -61,6 +72,25 @@
     "screen": { "label": "Screen transition (content rise)", "duration": "rise", "easing": "ease-out", "animates": "cut to the new screen (the old one goes at once), then its blocks, grouped into rows by their top (side by side = one row), fade in and rise by the offset: header first, each row a stagger later, at most max-steps steps (later rows share the last delay), hidden until they start; back to Home they drop in from above", "offset": { "v": 8, "1x": 4 }, "stagger": 40, "max-steps": 6, "reduced": "instant", "use": "open a screen, back to Home (= Facet motion.transition.rise, the old lab's Content rise, Darren's pick facet-6; instant = option for slow boards)" },
     "value": { "label": "Value change", "duration": "dial-sweep", "easing": "ease-out", "animates": "the shown number and its arc / bar sweep from the old value to the new one", "reduced": "instant", "use": "dials, thermostat, counters, a new reading" },
     "clock-hand": { "label": "Clock hand", "duration": "clock-hand", "easing": "ease-out", "animates": "the hand turns to the new minute", "reduced": "instant", "use": "analogue clocks" },
-    "pulse": { "label": "Pulse", "duration": "pulse", "easing": "ease-in-out", "animates": "opacity breathes from 100 % to opacity.pulse-min and back, forever", "reduced": "still", "use": "working / live indicators" }
+    "pulse": { "label": "Pulse", "duration": "pulse", "easing": "ease-in-out", "animates": "opacity breathes from 100 % to opacity.pulse-min and back, forever", "reduced": "still", "use": "working / live indicators" },
+    "weather": { "label": "Weather icon", "duration": "wx-rays", "easing": "linear", "animates": "a few small parts of the icon: rays turn, clouds drift 1-2 units, drops / snow / hail fall and fade, the bolt flashes, fog / wind lines slide, stars twinkle (keyframes per part: weather)", "reduced": "still", "use": "weather icons on the Home card and the Weather hero (reduced = the static master)" }
+  },
+  "weather": {
+    "$comment": "Animated weather icons: keyframes per part, from Facet main packages/icons/weather.css 1:1 (transform + opacity on small parts). Applied to the parts tools/gen_icons.mjs cuts from the masters (class fwx-<class>); `icons` = only in these icons (rain-heavy's faster drops). keys: [percent, {x, y (48-grid units), rot (deg), opa (0-1)}]; a prop missing at 0 / 100 % is its rest value (0, opacity 1), like CSS. loop repeat = 0 -> 100 % again, alternate = there and back (each way = the duration). stagger = instance i (the master's --i) starts i x stagger ms further on (CSS negative delay). Runtime (core/icons.cpp fw::weather_icon): one lv_anim clock per icon; a part is written only when its whole-px position, rotation step or opacity step changes (opa-step, rot-px), so a slow drift repaints a few times a second.",
+    "opa-step": { "value": 16, "use": "opacity is written in steps of this (0-255): a star fading over 1.6 s repaints ~15 times, not every frame" },
+    "rot-px": { "value": 1, "use": "the rays turn in steps that move a ray tip this many px (hero 144: ~1 deg, ~14 repaints/s; card 72: ~7/s)" },
+    "parts": {
+      "rays": { "class": "rays", "duration": "wx-rays", "easing": "linear", "loop": "repeat", "stagger": 0, "keys": [[0, { "rot": 0 }], [100, { "rot": 360 }]] },
+      "cloud-front": { "class": "cloud-front", "duration": "wx-drift", "easing": "ease-in-out", "loop": "alternate", "stagger": 0, "keys": [[0, { "x": -1 }], [100, { "x": 1.5 }]] },
+      "cloud-back": { "class": "cloud-back", "duration": "wx-drift-back", "easing": "ease-in-out", "loop": "alternate", "stagger": 0, "keys": [[0, { "x": 1 }], [100, { "x": -1.5 }]] },
+      "drop-heavy": { "class": "drop", "icons": ["rain-heavy"], "duration": "wx-rain-heavy", "easing": "linear", "loop": "repeat", "stagger": 290, "keys": [[0, { "y": -3, "opa": 0 }], [25, { "opa": 1 }], [75, { "opa": 1 }], [100, { "y": 5, "opa": 0 }]] },
+      "drop": { "class": "drop", "duration": "wx-rain", "easing": "linear", "loop": "repeat", "stagger": 370, "keys": [[0, { "y": -3, "opa": 0 }], [25, { "opa": 1 }], [75, { "opa": 1 }], [100, { "y": 5, "opa": 0 }]] },
+      "flake": { "class": "flake", "duration": "wx-snow", "easing": "linear", "loop": "repeat", "stagger": 600, "keys": [[0, { "x": 0, "y": -3, "opa": 0 }], [20, { "opa": 1 }], [50, { "x": 1, "y": 1 }], [80, { "opa": 1 }], [100, { "x": -1, "y": 4, "opa": 0 }]] },
+      "hail": { "class": "hail", "duration": "wx-hail", "easing": "ease-out", "loop": "repeat", "stagger": 300, "keys": [[0, { "y": -4, "opa": 0 }], [30, { "opa": 1 }], [70, { "y": 2 }], [85, { "y": 0.5, "opa": 1 }], [100, { "y": 2, "opa": 0 }]] },
+      "bolt": { "class": "bolt", "duration": "wx-flash", "easing": "linear", "loop": "repeat", "stagger": 0, "keys": [[0, { "opa": 0.35 }], [80, { "opa": 0.35 }], [82, { "opa": 1 }], [85, { "opa": 0.35 }], [88, { "opa": 1 }], [96, { "opa": 0.35 }], [100, { "opa": 0.35 }]] },
+      "fog": { "class": "fog", "duration": "wx-fog", "easing": "ease-in-out", "loop": "alternate", "stagger": 1300, "keys": [[0, { "x": -2 }], [100, { "x": 2 }]] },
+      "wind": { "class": "wind", "duration": "wx-wind", "easing": "ease-in-out", "loop": "alternate", "stagger": 1000, "keys": [[0, { "x": -2 }], [100, { "x": 2 }]] },
+      "star": { "class": "star", "duration": "wx-twinkle", "easing": "ease-in-out", "loop": "repeat", "stagger": 1100, "keys": [[0, { "opa": 1 }], [50, { "opa": 0.25 }], [100, { "opa": 1 }]] }
+    }
   }
 }

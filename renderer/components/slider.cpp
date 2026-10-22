@@ -18,6 +18,8 @@
 // dimmer-like drag ticks on every single step and a fast one thins out (never more ticks than steps); the ends (0 and
 // max) play the stronger slider-landmark and are never dropped.
 // Events: "change" (detail = the new value) on release, when the value differs from the press; "blocked" when disabled.
+// Live: fw::notify "input" (detail = the shown value) on every step the shown value crosses (drag or sweep), for a page
+// listening with fw::listen (Icons page phase); not an event (nothing in the event log).
 // Unavailable (states.json): the same box, track / fill / knob hidden, "Unavailable" (body, text-dim) where the track
 // starts; finger down = blocked + error.
 // Contrast pairs: tokens/colour.json section "slider".
@@ -44,6 +46,7 @@ struct Slider {
 
 Slider *of(lv_obj_t *o) { return (Slider *) lv_obj_get_user_data(o); }
 
+std::string fmt(const Slider *d, int i);
 // draw position v (step index x FP); one tick per step the rounded shown value crosses
 void show(void *o, int32_t v) {
   auto *s = (lv_obj_t *) o;
@@ -54,7 +57,10 @@ void show(void *o, int32_t v) {
   lv_obj_set_x(d->kn, x);  // box x of the knob = track x - knob / 2 + knob / 2
   d->shown = v;
   const int i = (v + FP / 2) / FP;
-  if (i != d->shown_idx && !d->quiet && !lv_obj_has_state(s, ST_OFF)) fw::step_ticks(s, d->shown_idx, i, d->n);
+  if (i != d->shown_idx && !d->quiet && !lv_obj_has_state(s, ST_OFF)) {
+    fw::step_ticks(s, d->shown_idx, i, d->n);
+    fw::notify(s, "input", fmt(d, i).c_str());  // live value while it moves (a page following the drag); not an event
+  }
   d->shown_idx = i;
 }
 

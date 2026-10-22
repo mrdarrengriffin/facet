@@ -107,6 +107,42 @@ const doc = [
 L.push(`#define FW_MOTION_SECTIONS ${cstr(JSON.stringify(doc))}`);
 L.push(`#define FW_MOTION_SECTION_IDS ${cstr(JSON.stringify(doc.map((d) => d.props.section)))}`);
 L.push(`#define FW_MOTION_PATTERN_IDS ${cstr(JSON.stringify(['off', ...pats.map((p) => p.n)]))}`);
+// weather icon parts (motion.json weather): per part one track per animated prop (CSS keyframe semantics: a prop
+// interpolates between the keys that set it; missing at 0 / 100 % = its rest value), times in permille
+const wx = t.weather;
+if (wx) {
+  const PROPS = ['x', 'y', 'rot', 'opa'];
+  const rest = { x: 0, y: 0, rot: 0, opa: 1 };
+  const parts = Object.entries(wx.parts).map(([n, p]) => {
+    name(n, 'weather part');
+    if (!t.durations[p.duration]) die(`weather ${n}: unknown duration ${p.duration}`);
+    if (!t.easings[p.easing]) die(`weather ${n}: unknown easing ${p.easing}`);
+    if (!['repeat', 'alternate'].includes(p.loop)) die(`weather ${n}: loop repeat | alternate`);
+    if (!Number.isInteger(p.stagger) || p.stagger < 0) die(`weather ${n}: stagger = ms`);
+    const tracks = [];
+    for (const pr of PROPS) {
+      const ks = p.keys.filter(([, v]) => pr in v).map(([pc, v]) => [Math.round(pc * 10), v[pr]]);
+      if (!ks.length) continue;
+      if (ks[0][0] !== 0) ks.unshift([0, rest[pr]]);
+      if (ks[ks.length - 1][0] !== 1000) ks.push([1000, rest[pr]]);
+      tracks.push({ pr, ks });
+    }
+    return { n, ...p, ms: t.durations[p.duration].ms, tracks };
+  });
+  L.push('namespace wx {  // weather icon parts (motion.json weather)');
+  L.push(`enum Prop : uint8_t { ${PROPS.map((p) => `P_${p.toUpperCase()}`).join(', ')} };`);
+  L.push('struct Key { uint16_t t; float v; };  // t permille; x / y = 48-grid units, rot = deg, opa = 0..1');
+  L.push('struct Track { Prop prop; uint8_t n; const Key *keys; };');
+  L.push('struct Part { const char *id, *cls; uint32_t ms; Easing easing; bool alternate; uint32_t stagger; uint8_t n_tracks; const Track *tracks; };');
+  parts.forEach((p, i) => p.tracks.forEach((tr, j) => L.push(`inline constexpr Key K${i}_${j}[] = {${tr.ks.map(([a, b]) => `{${a}, ${b}}`).join(', ')}};`)));
+  parts.forEach((p, i) => L.push(`inline constexpr Track T${i}[] = {${p.tracks.map((tr, j) => `{P_${tr.pr.toUpperCase()}, ${tr.ks.length}, K${i}_${j}}`).join(', ')}};`));
+  L.push('inline constexpr Part PARTS[] = {');
+  for (const [i, p] of parts.entries()) L.push(`  {${cstr(p.n)}, ${cstr(p.class)}, ${p.ms}, E_${field(p.easing)}, ${p.loop === 'alternate'}, ${p.stagger}, ${p.tracks.length}, T${i}},`);
+  L.push('};', `constexpr int N_PARTS = ${parts.length};`);
+  L.push(`constexpr int OPA_STEP = ${wx['opa-step'].value};  // ${wx['opa-step'].use}`);
+  L.push(`constexpr int ROT_PX = ${wx['rot-px'].value};  // ${wx['rot-px'].use}`);
+  L.push('}  // namespace wx');
+}
 L.push('}  // namespace fw::mo', '');
 const text = L.join('\n');
 if (existsSync(out) && readFileSync(out, 'utf8') === text) process.exit(0);

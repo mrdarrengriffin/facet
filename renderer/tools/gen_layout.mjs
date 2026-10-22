@@ -56,9 +56,11 @@ for (const d of dens) {
   if (gap < 4) bad.push(`${d}: top must leave a header gap below the header row (top - inset - row = ${gap})`);
   for (const [k, x] of [['header gap', gap], ['content width', cw], ['content height', ch], ['screen width', S.w], ['screen height', S.h]])
     if (x % 4) bad.push(`${d}: ${k} ${x} not a multiple of 4`);
-  if (V('header-time-w', d) + V('row', d) + 2 * V('gutter', d) > cw) bad.push(`${d}: header items do not fit the content width`);
+  const chrome = V('chrome-btn', d) + V('gutter', d) + V('header-time-w', d);
+  if (V('chrome-btn', d) !== V('row', d)) bad.push(`${d}: chrome-btn must be the header row (a square in the row)`);
+  if (V('row', d) + V('back-gap', d) + 2 * V('gutter', d) + chrome > cw) bad.push(`${d}: header items do not fit the content width`);
   if (V('toast-top', d) + V('toast-h', d) > S.h - V('inset', d)) bad.push(`${d}: a toast at toast-top runs past the bottom inset`);
-  derived[d] = { screen_w: S.w, screen_h: S.h, content_w: cw, content_h: ch, header_gap: gap };
+  derived[d] = { screen_w: S.w, screen_h: S.h, content_w: cw, content_h: ch, header_gap: gap, chrome_w: chrome };
 }
 // toast behaviour group (docs tokens.json `toast`): references checked against motion.json / sound.json, distances on the grid
 const TO = t.toast;
@@ -116,7 +118,7 @@ L.push('struct Token { const char *group, *name, *use; int v, v1x; };', 'constex
 for (const r of rows) L.push(`  {${cstr(r.g)}, ${cstr(r.n)}, ${cstr(r.use)}, ${r.v}, ${r['1x']}},`);
 L.push('};', `constexpr int N_TOKENS = ${rows.length};`);
 L.push('struct Derived { const char *name, *how; int v, v1x; };', 'constexpr Derived DERIVED[] = {');
-const how = { screen_w: 'the screen', screen_h: 'the screen', content_w: 'screen - 2 x inset', content_h: 'screen - top - inset', header_gap: 'top - inset - row' };
+const how = { screen_w: 'the screen', screen_h: 'the screen', content_w: 'screen - 2 x inset', content_h: 'screen - top - inset', header_gap: 'top - inset - row', chrome_w: 'settings button + gutter + time slot' };
 for (const k of Object.keys(derived['1.5x'])) L.push(`  {${cstr(k)}, ${cstr(how[k])}, ${derived['1.5x'][k]}, ${derived['1x'][k]}},`);
 L.push('};', `constexpr int N_DERIVED = ${Object.keys(derived['1.5x']).length};`);
 L.push('struct Density { const char *id; float d; int grid; const char *role, *optical; };', 'constexpr Density DENSITIES[] = {');
@@ -143,7 +145,7 @@ const sec = (id, label, about) => ({ label, about, props: { section: id } });
 const rule = (id) => { const s = RS[id] ?? die(`rules.sections: no ${id}`); return sec(id, s.title, s.text); };
 const doc = [
   sec('screen', 'The screen, layer by layer', 'A real Home screen at true size with the layout drawn over it: the grid, the margin around the edge, the header, the content area and the gaps between cards. Tap a chip under the screen to hide or show a layer.'),
-  rule('grid'), rule('sizes'), rule('spacing'), rule('rhythm'), rule('frame'), rule('touch'), rule('corners'), rule('breaks'),
+  rule('grid'), rule('sizes'), rule('spacing'), rule('rhythm'), rule('frame'), rule('chrome'), rule('touch'), rule('corners'), rule('breaks'),
   sec('overlay', 'Sheets and toasts', 'Some things slide in over the screen. A sheet comes up from below and keeps the same margin inside; a toast is as wide as the content and appears just under the header.'),
   sec('devices', 'Devices', "The panels Facet is built for today, and the sizes planned next, each drawn to scale."),
   sec('classes', 'Screen shapes', 'Square, tall, wide and large screens each get their own layout; the same content is arranged to fit. Each shape is sketched with its Home columns.'),

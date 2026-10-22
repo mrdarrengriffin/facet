@@ -20,7 +20,7 @@
     {
       "id": "header",
       "label": "Header zone",
-      "about": "One row at y = inset across the content width: back button, the screen's label, optional items, the time at the right edge. Items are a gutter apart."
+      "about": "One row at y = inset across the content width: back button, the screen's label, optional items, then the screen chrome at the right edge: the time on every screen, with the settings button a gutter before it on Home. Items are a gutter apart."
     },
     {
       "id": "rows",
@@ -71,6 +71,11 @@
         "v": 72,
         "1x": 48,
         "use": "the time slot at the header's right edge (docs layout clock-w)"
+      },
+      "chrome-btn": {
+        "v": 48,
+        "1x": 32,
+        "use": "the settings button of the screen chrome, a gutter left of the time, on Home for now (docs Home settingsButton: 48 square, = the header row)"
       }
     },
     "rows": {
@@ -285,6 +290,11 @@
         "text": "Every screen keeps the same margin on all four sides. The header row sits in that margin with the back button, the screen's name and the time, and content starts at the same height on every screen."
       },
       {
+        "id": "chrome",
+        "title": "The clock, always top right",
+        "text": "Every screen ends its header with the time in the top right corner, so the clock is always in the same place. On Home a small settings button sits just to its left; that button may move to other screens later."
+      },
+      {
         "id": "touch",
         "title": "Big enough to touch",
         "text": "Anything you can tap is at least 48 pixels tall and wide on a 720 screen (32 at 480), about a fingertip; most buttons and rows are bigger. When a control is drawn smaller, its touch area still reaches that size."
@@ -355,7 +365,11 @@
       },
       {
         "id": "header",
-        "size": "lay::content_w x lay::row at (inset, inset); Back button + lay::back_gap; time slot lay::header_time_w"
+        "size": "lay::content_w x lay::row at (inset, inset); Back button + lay::back_gap; the Screen chrome (lay::chrome_w) at the right end"
+      },
+      {
+        "id": "screen_chrome",
+        "size": "lay::header_time_w x lay::row, or with the settings button (Home) lay::chrome_w (derived: chrome-btn + gutter + header-time-w = 136 / 96); settings button lay::chrome_btn (48 / 32) square, icon ic::icon; time slot lay::header_time_w"
       },
       {
         "id": "card",

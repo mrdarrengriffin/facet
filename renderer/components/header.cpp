@@ -9,10 +9,12 @@
 //   label    screen type label (caps, mono), text-dim, one line; grows into the free space and ellipsises before the
 //            right side (docs: fit8 + a grow spacer; LVGL flex never shrinks, so the label is the grow here)
 //   right    optional: the Status chip component (docs explorer "Right chip": working, "2 working"), a gutter apart
-//   time     screen type label, text-dim, lay::header_time_w (72 / 48 = docs clock-w) wide, right-aligned on the
-//            content edge; a gutter from what comes before it
-// Static apart from the Back button, which keeps its own look, press, tap ("back" + sound back) and disabled rules.
-// Contrast pairs: tokens/colour.json section "header" (+ icon_button, status_chip).
+//   chrome   the Screen chrome component (fw::find("screen_chrome")): the time (lay::header_time_w, right-aligned on
+//            the content edge) on every screen; prop settings (bool, default off; on for Home, Darren 2026-10-22) puts
+//            the settings button a gutter before it (lay::chrome_w). Prop time empty = the live clock. A gutter from
+//            what comes before it. Prop clock off = no chrome (docs header clock: false)
+// Static apart from the Back button and the chrome's settings button, which keep its own look, press, tap ("back" + sound back) and disabled rules.
+// Contrast pairs: tokens/colour.json section "header" (+ icon_button, status_chip, screen_chrome).
 #include "fw.h"
 
 static_assert(fw::touch::back == fw::lay::row, "the Back button must fill the header row");
@@ -44,6 +46,10 @@ namespace {
 std::string sig(fw::Props p) {
   return std::string((p["back"] | true) ? "b" : "") + ((p["clock"] | true) ? "c" : "") + ((p["chip"] | false) ? "s" : "");
 }
+void chrome_props(fw::Props p, ArduinoJson::JsonDocument &cp) {
+  cp["time"] = p["time"] | "";
+  cp["settings"] = (p["settings"] | false) ? "button" : "none";  // the settings button: Home only (Darren 2026-10-22)
+}
 void fill(lv_obj_t *h, fw::Props p) {
   lv_obj_remove_style_all(h);
   lv_obj_remove_flag(h, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
@@ -71,37 +77,39 @@ void fill(lv_obj_t *h, fw::Props p) {
     build("status_chip", h, cp);
   }
 
-  if (p["clock"] | true) {
-    lv_obj_t *t = caps(h, p["time"] | "");
-    lv_obj_set_size(t, fw::lay::header_time_w, fw::style(fw::ty::label).box);
-    lv_obj_set_style_text_align(t, LV_TEXT_ALIGN_RIGHT, 0);
+  if (p["clock"] | true) {  // the screen chrome: settings button + time, ending on the content edge
+    ArduinoJson::JsonDocument cp;
+    chrome_props(p, cp);
+    build("screen_chrome", h, cp);
   }
 }
 }  // namespace
 
 FW_COMPONENT(header, "Header", "components", R"({
-  "about": "The row at the top of every screen: a back button, the screen's name, optional items and the time.",
+  "about": "The row at the top of every screen: a back button, the screen's name, optional items, then the time (with the settings button before it on Home).",
   "frame": [480, 80],
-  "icons": ["back@glyph"],
+  "icons": ["back@glyph", "screen-settings@icon"],
   "props": [
     {"name": "label", "type": "text", "default": "Weather"},
     {"name": "back", "type": "bool", "default": true},
     {"name": "clock", "type": "bool", "default": true},
     {"name": "time", "type": "text", "default": "21:42"},
+    {"name": "settings", "type": "bool", "default": false},
     {"name": "chip", "type": "bool", "default": false}
   ],
   "variants": [
     {"label": "back + label + time", "props": {}},
-    {"label": "Home · no back", "props": {"label": "Home", "back": false}},
+    {"label": "Home · no back, settings button", "props": {"label": "Home", "back": false, "settings": true}},
     {"label": "right chip", "props": {"label": "Agents", "chip": true}},
-    {"label": "no time", "props": {"label": "Settings", "clock": false}},
+    {"label": "live clock", "props": {"label": "Lights", "time": ""}},
+    {"label": "no chrome", "props": {"label": "Settings", "clock": false}},
     {"label": "long label", "props": {"label": "Living room ceiling and the sofa lamps", "chip": true}}
   ]
 })") {
   fill(lv_obj_create(parent), p);
 }
 
-// Update path: label and time = new text in place (the label ellipsises in its grown box, the time in its slot);
+// Update path: label and time in place, the settings button on / off by the chrome's own update path (the label ellipsises in its grown box, the time in its slot);
 // back, clock or chip on / off = the row again (fw::refill, snap). Silent.
 FW_UPDATE(header) {
   if (!fw::shape(root, sig(p))) {
@@ -112,6 +120,10 @@ FW_UPDATE(header) {
   lv_obj_t *l = lv_obj_get_child(root, (p["back"] | true) ? 1 : 0);
   if (l) fw::set_text(l, fw::ty::label, p["label"] | "");
   if (p["clock"] | true)
-    if (lv_obj_t *t = lv_obj_get_child(root, -1)) fw::set_text(t, fw::ty::label, p["time"] | "");
+    if (lv_obj_t *c = lv_obj_get_child(root, -1)) {
+      ArduinoJson::JsonDocument cp;
+      chrome_props(p, cp);
+      fw::update_child(fw::find("screen_chrome"), c, cp.as<fw::Props>());
+    }
   return true;
 }

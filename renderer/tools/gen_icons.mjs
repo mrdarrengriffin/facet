@@ -52,7 +52,8 @@ for (const i of t.icons) {
   for (const s of i.sizes) if (!SIZES.includes(s)) die(`${i.name}: size ${s} not in sizes`);
 }
 for (const n of t.compare.icons) if (!names.has(n)) die(`compare: ${n} is not an icon`);
-const ROLES = ['ink', 'accent', 'text-dim', 'blue', 'steel'];  // ink = the caller's colour
+const ROLES = ['ink', 'accent', 'text-dim', 'blue', 'steel', 'occluder'];  // ink = the caller's colour; occluder = an
+// animated weather part's bg fill, drawn in the colour behind the icon (icons.json animated)
 
 // ---- meta header
 if (process.argv[2] === '--meta') {
@@ -75,13 +76,17 @@ if (process.argv[2] === '--meta') {
   L.push(`constexpr const char *COMPARE[] = {${t.compare.icons.map(cstr).join(', ')}};`, `constexpr int N_COMPARE = ${t.compare.icons.length};`);
   L.push(`constexpr Size COMPARE_SIZES[] = {${t.compare.sizes.join(', ')}};`, `constexpr int N_COMPARE_SIZES = ${t.compare.sizes.length};`);
   L.push(`constexpr float STROKE_TABLE[][2] = {${t.stroke.ui.table.map(([a, b]) => `{${a}, ${b}}`).join(', ')}};`);
+  L.push(`constexpr float WX_STROKE = ${t.stroke.weather.px}, WX_STROKE_96 = ${t.stroke.weather.from96};  // weather + moon phase stroke px (from96 at 96 px and up)`);
+  L.push(`constexpr uint16_t ANIM_SIZES = ${(t.animated?.sizes ?? []).reduce((m, s) => m | (1 << SIZES.indexOf(s)), 0)};  // sizes the animated weather parts ship in (icons.json animated)`);
   L.push('}  // namespace ic', '}  // namespace fw');
   // Icons page sections (FW_COMPONENT meta): id list + variants
-  const sections = [['compare', 'Size comparison'], ...t.groups.map((g) => [g.id, g.label]), ['all', 'Every icon'], ['memory', 'Flash']];
+  const sections = [['compare', 'Size comparison'], ...t.groups.map((g) => [g.id, g.label]), ['animated', 'Animated weather'], ['moon', 'Moon phase'], ['all', 'Every icon'], ['memory', 'Flash']];
   L.push(`#define FW_ICON_SECTION_IDS ${cstr(JSON.stringify(sections.map((s) => s[0])))}`);
   L.push(`#define FW_ICON_SECTIONS ${cstr(JSON.stringify(sections.map(([id, label]) => ({ label, props: { section: id } }))))}`);
   L.push(`#define FW_ICON_GROUP_IDS ${cstr(JSON.stringify(['all', ...GROUPS]))}`);
   L.push(`#define FW_ICON_SIZE_IDS ${cstr(JSON.stringify(['all', ...SIZES]))}`);
+  L.push(`#define FW_WEATHER_IDS ${cstr(JSON.stringify(t.icons.filter((i) => i.kind === 'weather').map((i) => i.name)))}`);
+  L.push(`#define FW_WEATHER_SIZE_IDS ${cstr(JSON.stringify(SIZES.filter((s) => t.icons.some((i) => i.kind === 'weather' && i.sizes.includes(s)))))}`);
   write(out, `${L.join('\n')}\n`);
   process.exit(0);
 }
@@ -111,7 +116,7 @@ if (used) {
 // skip the rasterising when nothing it reads changed
 const self = readFileSync(fileURLToPath(import.meta.url));
 const masters = t.icons.map((i) => readFileSync(join(R, 'icons', i.file)));
-const stamp = createHash('sha1').update(self).update(readFileSync(join(R, 'tokens', 'icons.json'))).update(den).update(JSON.stringify([...want].map(([k, v]) => [k, [...v]])));
+const stamp = createHash('sha1').update(self).update(readFileSync(join(R, 'tokens', 'icons.json'))).update(readFileSync(join(R, 'tokens', 'motion.json'))).update(den).update(JSON.stringify([...want].map(([k, v]) => [k, [...v]])));
 for (const m of masters) stamp.update(m);
 const STAMP = stamp.digest('hex').slice(0, 12);
 if (existsSync(out) && readFileSync(out, 'utf8').split('\n', 1)[0].endsWith(STAMP)) process.exit(0);
@@ -176,7 +181,94 @@ t.icons.forEach((ic, ii) => {
     entries.push({ icon: ii, size: SIZES.indexOf(sz), first, n: layers.length - first, px: S });
   }
 });
-const tableBytes = entries.length * 8 + layers.length * 16;
+
+// ---- animated weather parts (icons.json animated, motion.json weather): each master cut into parts = its drawn
+// elements (a group with a motion class, e.g. the rays, is one part; other groups are opened), in document order; each
+// part rasterised ALONE (nothing cut out by a cloud: the cloud's bg fill is its own occluder mask, drawn first in the
+// colour behind the icon), one mask per colour, at the animated sizes. motion = index into fw::mo::wx::PARTS (255 =
+// still), inst = the master's --i, pivot = the rays' transform-origin in px from the mask's top-left.
+const WX = JSON.parse(readFileSync(join(R, 'tokens', 'motion.json'), 'utf8')).weather ?? { parts: {} };
+const WXP = Object.entries(WX.parts);
+const ASIZES = (t.animated?.sizes ?? []);
+for (const s of ASIZES) if (!SIZES.includes(s)) die(`animated: size ${s} not in sizes`);
+const parseSvg = (src) => {  // tiny XML reader for the masters: {tag, attrs (raw string), kids, raw}
+  const root = { tag: '#root', kids: [] }, stack = [root];
+  const re = /<(\/?)([a-zA-Z]+)([^>]*?)(\/?)>/g;
+  let m, last = 0;
+  while ((m = re.exec(src))) {
+    if (m[1]) { const el = stack.pop(); el.raw = src.slice(el.start, m.index + m[0].length); continue; }
+    const el = { tag: m[2], attrs: m[3], kids: [], start: m.index };
+    stack[stack.length - 1].kids.push(el);
+    if (m[4]) el.raw = m[0]; else stack.push(el);
+    last = re.lastIndex;
+  }
+  return root.kids.find((k) => k.tag === 'svg');
+};
+const attr = (el, a) => (el.attrs.match(new RegExp(`(?:^|\\s)${a}="([^"]*)"`)) ?? [])[1];
+const motionOf = (icon, el) => {
+  const cls = (attr(el, 'class') ?? '').split(/\s+/).filter((c) => c.startsWith('fwx-')).map((c) => c.slice(4));
+  let hit = -1;
+  WXP.forEach(([, p], k) => { if (cls.includes(p.class) && (!p.icons || p.icons.includes(icon)) && (hit < 0 || (p.icons && !WXP[hit][1].icons))) hit = k; });
+  return hit;
+};
+const partsOf = (icon, svg) => {
+  const out = [];
+  const walk = (el) => {
+    for (const k of el.kids) {
+      const mo = motionOf(icon, k);
+      if (k.tag === 'g' && mo < 0) { walk(k); continue; }
+      const i = ((attr(k, 'style') ?? '').match(/--i:\s*(\d+)/) ?? [])[1];
+      const o = ((attr(k, 'style') ?? '').match(/transform-origin:\s*([\d.]+)px\s+([\d.]+)px/) ?? []);
+      const lines = k.tag === 'g' ? k.kids.filter((c) => c.tag === 'line').map((c) => ['x1', 'y1', 'x2', 'y2'].map((a) => +attr(c, a))) : [];
+      out.push({ raw: k.raw, motion: mo, inst: i ? +i : 0, pivot: o[1] ? [+o[1], +o[2]] : null, lines });
+    }
+  };
+  walk(svg);
+  return out;
+};
+const alayers = [];  // {role, motion, inst, x, y, w, h, off, px, py}
+const rays = [];  // {part, cx, cy, rin, rout, a0, n, w}: px in the S box
+const aentries = [];  // {icon, size, first, n, px}
+t.icons.forEach((ic, ii) => {
+  if (ic.kind !== 'weather' || !want.get(ic.name)) return;
+  const src = masters[ii].toString().replace(/<!--[\s\S]*?-->/g, '');
+  const svg = parseSvg(src);
+  const head = src.slice(src.indexOf('<svg'), src.indexOf('>', src.indexOf('<svg')) + 1);
+  const parts = partsOf(ic.name, svg);
+  for (const sz of ASIZES) {
+    if (!want.get(ic.name).has(sz)) continue;
+    const S = t.sizes[sz][den === '1x' ? '1x' : 'v'];
+    const first = alayers.length;
+    for (const p of parts) {
+      const cols = [...new Set([...p.raw.matchAll(/var\(--facet-color-([a-z-]+)\)/g)].map((m) => m[1]))];
+      const rs = [];
+      if (cols.includes('bg')) rs.push('occluder');
+      for (const r of ROLES) if (r !== 'occluder' && cols.some((c) => (c === 'text' ? 'ink' : c) === r)) rs.push(r);
+      for (const role of rs) {
+        let el = p.raw;
+        if (role === 'occluder') el = el.replace(/stroke="var\([^)]*\)"/g, 'stroke="none"');
+        const doc = prepare(`${head}${el}</svg>`, 'weather', role === 'occluder' ? 'bg-as-white' : role, S)
+        const img = new Resvg(role === 'occluder' ? doc.replace(/fill="#000000"/g, 'fill="#ffffff"') : doc, { fitTo: { mode: 'width', value: S }, background: 'rgba(0,0,0,0)', shapeRendering: 2, font: { loadSystemFonts: false } }).render();
+        const px = img.pixels;
+        let x0 = S, y0 = S, x1 = -1, y1 = -1;
+        for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) if (px[(y * S + x) * 4] > 0) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); }
+        if (x1 < 0) continue;
+        const off = bytes.length;
+        for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) bytes.push(px[(y * S + x) * 4]);
+        const pv = p.pivot ? [Math.round((p.pivot[0] * S) / 48) - x0, Math.round((p.pivot[1] * S) / 48) - y0] : [0, 0];
+        alayers.push({ role, motion: p.motion < 0 ? 255 : p.motion, inst: p.inst, x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1, off, px: pv[0], py: pv[1] });
+        if (p.pivot && p.lines.length) {  // turning rays: drawn on the device from their geometry (no mask rotation)
+          const [cx, cy] = p.pivot, [x1, y1, x2, y2] = p.lines[0], k = S / 48;
+          const w = S >= 96 ? t.stroke.weather.from96 : t.stroke.weather.px;
+          rays.push({ part: alayers.length - 1, cx: cx * k, cy: cy * k, rin: Math.hypot(x1 - cx, y1 - cy) * k, rout: Math.hypot(x2 - cx, y2 - cy) * k, a0: (Math.atan2(y1 - cy, x1 - cx) * 180) / Math.PI, n: p.lines.length, w });
+        }
+      }
+    }
+    aentries.push({ icon: ii, size: SIZES.indexOf(sz), first, n: alayers.length - first, px: S });
+  }
+});
+const aBytes = alayers.reduce((n, l) => n + l.w * l.h, 0);
+const tableBytes = entries.length * 8 + layers.length * 16 + aentries.length * 8 + alayers.length * 16;
 const L = [`// GENERATED by tools/gen_icons.mjs (${den}${used ? ', FW_ICONS=used' : ''}) from tokens/icons.json + icons/: do not edit. stamp ${STAMP}`, '#pragma once', '#include <cstdint>', 'namespace fw {', 'namespace icd {'];
 L.push(`constexpr bool USED_ONLY = ${used};`);
 L.push('struct Layer { uint8_t role; uint8_t x, y; uint8_t w, h; uint32_t off; };  // A8 rows of w bytes at DATA + off, drawn at (x, y) in the S x S box');
@@ -188,7 +280,20 @@ L.push('};', 'constexpr Layer LAYERS[] = {');
 for (let k = 0; k < layers.length; k += 4) L.push(`  ${layers.slice(k, k + 4).map((l) => `{${ROLES.indexOf(l.role)}, ${l.x}, ${l.y}, ${l.w}, ${l.h}, ${l.off}}`).join(', ')},`);
 L.push('};', 'alignas(4) static const uint8_t DATA[] = {');
 for (let k = 0; k < bytes.length; k += 40) L.push(`  ${bytes.slice(k, k + 40).join(',')},`);
+L.push('};');
+L.push('struct APart { uint8_t role, motion, inst; uint8_t x, y, w, h; int16_t px, py; uint32_t off; };  // animated weather part mask: motion = fw::mo::wx::PARTS index (255 = still), pivot (px, py) from the mask origin');
+L.push(`constexpr int N_AENTRIES = ${aentries.length}, N_APARTS = ${alayers.length}, ANIM_BYTES = ${aBytes};`);
+L.push(`constexpr Entry AENTRIES[${Math.max(1, aentries.length)}] = {`);
+for (const e of aentries) L.push(`  {${e.icon}, ${e.size}, ${e.n}, ${e.first}, ${e.px}},  // ${t.icons[e.icon].name} ${SIZES[e.size]} animated`);
+L.push('};', `constexpr APart APARTS[${Math.max(1, alayers.length)}] = {`);
+for (let k = 0; k < alayers.length; k += 3) L.push(`  ${alayers.slice(k, k + 3).map((l) => `{${ROLES.indexOf(l.role)}, ${l.motion}, ${l.inst}, ${l.x}, ${l.y}, ${l.w}, ${l.h}, ${l.px}, ${l.py}, ${l.off}}`).join(', ')},`);
+L.push('};');
+L.push('// turning sun rays (the rays part of an APART): n round-capped strokes of width w px from rin to rout around (cx, cy),');
+L.push('// the first at a0 deg; drawn on the device at each step of the turn (core/icons.cpp); the APART mask = the rest frame');
+L.push('struct Rays { uint16_t part; float cx, cy, rin, rout, a0; uint8_t n; float w; };');
+L.push(`constexpr int N_RAYS = ${rays.length};`, `constexpr Rays RAYS[${Math.max(1, rays.length)}] = {`);
+for (const r of rays) L.push(`  {${r.part}, ${r.cx.toFixed(3)}f, ${r.cy.toFixed(3)}f, ${r.rin.toFixed(3)}f, ${r.rout.toFixed(3)}f, ${r.a0.toFixed(3)}f, ${r.n}, ${r.w}},`);
 L.push('};', '}  // namespace icd', '}  // namespace fw');
 write(out, `${L.join('\n')}\n`);
 const kb = (n) => `${(n / 1024).toFixed(1)} KB`;
-console.log(`[${den}] icons: ${new Set(entries.map((e) => e.icon)).size} icons, ${entries.length} icon x size, ${layers.length} masks, ${kb(bytes.length + tableBytes)} flash (A8 ${kb(bytes.length)} + tables ${kb(tableBytes)})${used ? ' [used only]' : ''}`);
+console.log(`[${den}] icons: ${new Set(entries.map((e) => e.icon)).size} icons, ${entries.length} icon x size, ${layers.length} masks + ${alayers.length} animated weather part masks (${kb(aBytes)}), ${kb(bytes.length + tableBytes)} flash (A8 ${kb(bytes.length)} + tables ${kb(tableBytes)})${used ? ' [used only]' : ''}`);

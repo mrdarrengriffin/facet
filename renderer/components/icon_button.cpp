@@ -15,7 +15,10 @@
 // Same press / sound / state model as Button: CHECKED = active, Motion press / release colour transitions, sounds only
 // on a real tap (CLICKED). Tap (round / square) = event "tap" (detail = icon) + sound tap.
 // Internal prop `role` (not in the playground): "back" = the Back button (components/back_button.cpp builds this
-// component): side touch::back, event "back" + sound back. Hit area: at least touch::min each way (ext click area when
+// component): side touch::back, event "back" + sound back. "settings" = the Settings button of the screen chrome
+// (components/screen_chrome.cpp): square, side lay::chrome_btn, the screen-settings icon at ic::icon (docs Home
+// settingsButton(): screenIcon('settings', 24) in the 48 square), tap = event "navigate" (detail settings) + sound open;
+// active = "you are in Settings" (the square's active border; the icon keeps its Icons-page look, see glyph()). Hit area: at least touch::min each way (ext click area when
 // the drawn box is smaller; no style is today). Pairs: colour.json contrast section "icon_button".
 #include "fw.h"
 
@@ -53,14 +56,27 @@ const Look &look(const Style &s, int i) {
   return *l[i];
 }
 
+// a multi-part icon (a screen icon's accent part, weather colours): it looks exactly as on the Icons page in every
+// state (Darren 2026-10-22: never a flat recolour). Its own parts keep their colours (fw::icon); the ink follows the
+// button's rest / pressed / disabled ink, but active keeps the resting ink: the active accent-text ink would merge
+// with the accent part into one flat colour, so active shows by the border alone
+bool multi_part(lv_obj_t *icon) {
+  for (uint32_t i = 0; icon && i < lv_obj_get_child_count(icon); i++)
+    if ((uintptr_t) lv_obj_get_user_data(lv_obj_get_child(icon, (int32_t) i)) != fw::ic::R_ink) return true;
+  return false;
+}
 lv_obj_t *glyph(lv_obj_t *b, const char *name, fw::ic::Size size, const Style &s) {
   lv_obj_t *o = fw::icon(b, name, size, s.normal.fg);
-  for (int i = 0; o && i < 5; i++) fw::icon_colour(o, look(s, i).fg, SEL[i], tr(PRESSED_SEL[i]));
+  const bool multi = multi_part(o);
+  for (int i = 0; o && i < 5; i++) {
+    const int k = multi && i == 2 ? 0 : multi && i == 3 ? 1 : i;  // active (+ pressed) -> rest (+ pressed) ink
+    fw::icon_colour(o, look(s, k).fg, SEL[i], tr(PRESSED_SEL[i]));
+  }
   if (o) lv_obj_remove_flag(o, LV_OBJ_FLAG_CLICKABLE);
   return o;
 }
 
-enum Role : uint8_t { R_TAP, R_PLAY, R_BACK };
+enum Role : uint8_t { R_TAP, R_PLAY, R_BACK, R_SETTINGS };
 struct Data { Role role; char icon[16]; };
 }  // namespace
 
@@ -82,19 +98,21 @@ void set_state(lv_obj_t *b, const char *state, bool animate) {
 void data(lv_obj_t *b, fw::Props p) {
   auto *d = (Data *) lv_obj_get_user_data(b);
   if (!d) return;
-  const bool back = !strcmp(p["role"] | "", "back"), play = !strcmp(p["style"] | "round", "play");
-  const char *ic = back ? "back" : (p["icon"] | "next");
-  d->role = back ? R_BACK : play ? R_PLAY : R_TAP;
+  const bool back = !strcmp(p["role"] | "", "back"), set = !strcmp(p["role"] | "", "settings");
+  const bool play = !back && !set && !strcmp(p["style"] | "round", "play");
+  const char *ic = back ? "back" : set ? "settings" : (p["icon"] | "next");
+  d->role = back ? R_BACK : set ? R_SETTINGS : play ? R_PLAY : R_TAP;
   snprintf(d->icon, sizeof d->icon, "%s", !strcmp(p["state"] | "default", "unavailable") ? "unavailable" : play && !back ? "play" : ic);
 }
 void fill(lv_obj_t *b, fw::Props p) {
   const char *st = p["style"] | "round";
   const char *state = p["state"] | "default";
   const char *role = p["role"] | "";
-  const bool play = !strcmp(st, "play"), back = !strcmp(role, "back"), square = back || !strcmp(st, "square");
-  const char *ic = back ? "back" : (p["icon"] | "next");
+  const bool set = !strcmp(role, "settings"), back = !strcmp(role, "back") || set;  // both: the header's squares
+  const bool play = !strcmp(st, "play"), square = back || !strcmp(st, "square");
+  const char *ic = set ? "screen-settings" : back ? "back" : (p["icon"] | "next");
   const Style s = style_of(play && !back, square);
-  const int side = back ? fw::touch::back : play ? fw::lay::ibtn_play : square ? fw::lay::ibtn_square : fw::lay::ibtn_round;
+  const int side = set ? fw::lay::chrome_btn : back ? fw::touch::back : play ? fw::lay::ibtn_play : square ? fw::lay::ibtn_square : fw::lay::ibtn_round;
 
   lv_obj_remove_style_all(b);
   fw::shape(b, sig(p));
@@ -121,8 +139,12 @@ void fill(lv_obj_t *b, fw::Props p) {
     lv_obj_t *pl = glyph(b, "play", fw::ic::feature, s), *pa = glyph(b, "pause", fw::ic::feature, s);
     if (pl) { lv_obj_center(pl); lv_obj_set_style_opa(pl, LV_OPA_TRANSP, LV_STATE_CHECKED); lv_obj_set_style_opa(pl, LV_OPA_COVER, ST_OFF); }
     if (pa) { lv_obj_center(pa); lv_obj_set_style_opa(pa, LV_OPA_TRANSP, 0); lv_obj_set_style_opa(pa, LV_OPA_COVER, LV_STATE_CHECKED); lv_obj_set_style_opa(pa, LV_OPA_TRANSP, ST_OFF); }
-  } else if (lv_obj_t *g = glyph(b, ic, fw::ic::glyph, s)) {
+  } else if (lv_obj_t *g = glyph(b, ic, set ? fw::ic::icon : fw::ic::glyph, s)) {
     lv_obj_center(g);
+    if (multi_part(g)) {  // pressed = the press tint (Card / List row fill): the accent part keeps 3:1 on it
+      lv_obj_set_style_bg_color(b, fw::st::pressed_tint(*fw::T), LV_STATE_PRESSED);
+      lv_obj_set_style_bg_color(b, fw::st::pressed_tint(*fw::T), LV_STATE_CHECKED | LV_STATE_PRESSED);
+    }
   }
 
   set_state(b, state, false);
@@ -173,6 +195,7 @@ FW_COMPONENT(icon_button, "Icon button", "components", R"({
     auto *d = (Data *) lv_event_get_user_data(e);
     if (lv_obj_has_state(o, ST_OFF)) { fw::st::blocked(o, d->icon); return; }
     if (d->role == R_BACK) { fw::emit(o, "back"); fw::sound(o, "back"); return; }
+    if (d->role == R_SETTINGS) { fw::emit(o, "navigate", "settings"); fw::sound(o, "open"); return; }
     if (d->role == R_PLAY) {
       const bool on = !lv_obj_has_state(o, LV_STATE_CHECKED);
       if (on) lv_obj_add_state(o, LV_STATE_CHECKED); else lv_obj_remove_state(o, LV_STATE_CHECKED);

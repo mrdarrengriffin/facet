@@ -65,13 +65,14 @@
    {
     "name": "Charts",
     "group": "Core",
-    "status": "doing"
+    "status": "done",
+    "note": "Series colours, lines/areas/grid, bars and gauges, labels, empty states; scrub pitch follows the line; chart motion on the Motion page"
    },
    {
     "name": "Personalisation settings",
     "group": "Settings",
-    "status": "planned",
-    "note": "Theme, accent, text size, sound pack, idle, units from one list"
+    "status": "done",
+    "note": "Theme, accent, text size, sound pack, idle, units from one list; used by the Settings screen"
    },
    {
     "name": "Units (km/miles, mph/km/h/knots)",
@@ -552,8 +553,8 @@
    {
     "name": "Settings",
     "group": "Core",
-    "status": "planned",
-    "note": "Theme, accent, text size, sounds, idle; next after Home"
+    "status": "done",
+    "note": "First full screen: look, sound, clock/idle, behaviour, units; changes apply live"
    },
    {
     "name": "Clock",
