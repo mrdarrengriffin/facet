@@ -83,7 +83,11 @@ const char *ms_text(uint32_t ms, char *b, size_t n) {
 }
 
 // ---------------------------------------------------------------- easing curves
-struct Curve { int e; lv_obj_t *plot, *dot, *track, *puck; int in; lv_point_precise_t pts[33]; };
+struct Curve { int e; lv_obj_t *plot, *dot, *track, *puck; int in; };
+StrokePt curve_at(float t, void *u) {  // the plotted curve: x = t, y = eased(t) (LVGL's own 1/1024 resolution), y up
+  const Curve *c = (const Curve *) u;
+  return {t * c->in, c->in - eased(c->e, (int32_t) std::lround(t * 1024)) * c->in / 1024.f};
+}
 void curve_dot(void *v, int32_t t) {  // t = time 0..1024 (linear): dot at (t, eased(t))
   auto *c = (Curve *) lv_obj_get_user_data((lv_obj_t *) v);
   const int d = lv_obj_get_width(c->dot);
@@ -127,20 +131,11 @@ void easing(lv_obj_t *l) {
     fill(c->plot, T->surface);
     outline(c->plot, T->line, stroke::hair);
     c->in = P - 2 * stroke::hair;
-    for (int s = 0; s <= 32; s++) c->pts[s] = {(lv_value_precise_t) (s * c->in / 32), (lv_value_precise_t) (c->in - eased(i, s * 32) * c->in / 1024)};
-    lv_obj_t *diag = lv_line_create(c->plot);  // linear reference: the diagonal, hairline
-    lv_point_precise_t *dg = (lv_point_precise_t *) lv_malloc(2 * sizeof(lv_point_precise_t));
-    free_on_delete(diag, dg);
-    dg[0] = {0, (lv_value_precise_t) c->in};
-    dg[1] = {(lv_value_precise_t) c->in, 0};
-    lv_line_set_points(diag, dg, 2);
-    lv_obj_set_style_line_width(diag, stroke::hair, 0);
-    lv_obj_set_style_line_color(diag, T->line, 0);
-    lv_obj_t *ln = lv_line_create(c->plot);
-    lv_line_set_points(ln, c->pts, 33);
-    lv_obj_set_style_line_width(ln, stroke::edge, 0);
-    lv_obj_set_style_line_color(ln, T->accent, 0);
-    lv_obj_set_style_line_rounded(ln, true, 0);
+    // the linear reference (the diagonal, hairline, square ends) and the curve (edge, round caps): stroke atoms
+    const StrokePt dg[2] = {{0, (float) c->in}, {(float) c->in, 0}};
+    stroke_at(c->plot, dg, 2, stroke::hair, T->line, Cap::butt);
+    const std::vector<StrokePt> cp = stroke_sample(curve_at, c);
+    stroke_at(c->plot, cp.data(), (int) cp.size(), stroke::edge, T->accent);
     c->dot = box(c->plot);
     lv_obj_set_size(c->dot, dot, dot);
     lv_obj_set_style_radius(c->dot, LV_RADIUS_CIRCLE, 0);
@@ -235,7 +230,7 @@ struct Demo {
   lv_obj_t *page[2]{};
   int n = 0, nr[2]{}, state = 0;
   int32_t shown = 0, target = 0, travel = 0, size = 0;
-  lv_point_precise_t pts[2]{};
+  StrokePt pts[2]{};  // clock hand: its two ends (mask px)
   lv_timer_t *timer = nullptr, *loop = nullptr;
 };
 void play(Demo *d);
@@ -269,10 +264,17 @@ void set_value(void *o, int32_t v) {
 void set_hand(void *o, int32_t deg10) {
   auto *d = (Demo *) lv_obj_get_user_data((lv_obj_t *) o);
   d->shown = deg10;
-  const float r = d->size / 2.f, len = r - sp::s4, a = (deg10 / 10.f - 90.f) * 3.14159265f / 180.f;
-  d->pts[0] = {(lv_value_precise_t) r, (lv_value_precise_t) r};
-  d->pts[1] = {(lv_value_precise_t) (r + len * cosf(a)), (lv_value_precise_t) (r + len * sinf(a))};
-  lv_line_set_points(d->a, d->pts, 2);
+  const float c = d->size / 2.f - 0.5f, len = d->size / 2.f - sp::s4, a = (deg10 / 10.f - 90.f) * 3.14159265f / 180.f;
+  const StrokePt np[2] = {{c, c}, {c + len * cosf(a), c + len * sinf(a)}};
+  // re-raster the hand (a small mask); redraw only the box around the old and the new hand
+  const float m = stroke::edge / 2.f + 1;
+  float x0 = c, y0 = c, x1 = c, y1 = c;
+  for (const StrokePt &q : {d->pts[1], np[1]}) x0 = std::min(x0, q.x), x1 = std::max(x1, q.x), y0 = std::min(y0, q.y), y1 = std::max(y1, q.y);
+  const lv_area_t dirty = {std::max(0, (int) floorf(x0 - m)), std::max(0, (int) floorf(y0 - m)),
+                           std::min(d->size - 1, (int) ceilf(x1 + m)), std::min(d->size - 1, (int) ceilf(y1 + m))};
+  d->pts[0] = np[0];
+  d->pts[1] = np[1];
+  stroke_redraw(d->a, d->pts, 2, &dirty);
 }
 void toast_out(lv_timer_t *t) {
   auto *d = (Demo *) lv_timer_get_user_data(t);
@@ -451,10 +453,8 @@ void sample(Demo *d, int w, int h) {
       lv_obj_set_style_radius(face, LV_RADIUS_CIRCLE, 0);
       outline(face, T->line_hi, stroke::hair);
       d->size -= 2 * stroke::hair;
-      d->a = lv_line_create(face);
-      lv_obj_set_style_line_width(d->a, stroke::edge, 0);
-      lv_obj_set_style_line_color(d->a, T->accent, 0);
-      lv_obj_set_style_line_rounded(d->a, true, 0);
+      d->pts[0] = d->pts[1] = {d->size / 2.f - 0.5f, d->size / 2.f - 0.5f};
+      d->a = stroke_path(face, d->size, d->size, d->pts, 2, stroke::edge, T->accent);  // the hand: stroke atom, round caps
       lv_obj_set_user_data(d->a, d);
       lv_obj_t *hub = box(face);
       lv_obj_set_size(hub, sp::s2, sp::s2);

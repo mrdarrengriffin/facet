@@ -1,4 +1,4 @@
-// Foundations > Smooth strokes (lab, board facet-145; WIP experiment, nothing else uses it yet): the SAME curves drawn
+// Foundations > Smooth strokes (lab, board facet-145; the atom won: Motion, Dial and the mascot now draw with it): the SAME curves drawn
 // four ways side by side, so Darren can pick how Facet draws curves (Motion easing plots, mascot lines, the vacuum
 // floorplan of facet-144). The old Facet docs drew these as browser SVG (float coordinates, AA joins), so they were
 // smooth there; on LVGL they were 33 integer points through lv_line and look stepped.

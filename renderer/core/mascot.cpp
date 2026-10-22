@@ -14,7 +14,8 @@ struct M;
 struct Play { M *m; uint8_t pat; };
 struct M {
   lv_obj_t *root, *body, *face, *eye[2], *arch[2], *brow[2], *bang[2], *z[Z_COUNT], *dot[DOT_COUNT];
-  lv_point_precise_t zp[Z_COUNT][4];
+  StrokePt zp[4];  // scratch: a z's line points
+  int zm, zay;       // z mask: margin and the anchor's y in it (the anchor's x = zm)
   const Theme *th;
   size_t col;          // override colour token (Theme offset), SIZE_MAX = the mood's (resolved at once: names may not outlive the call)
   Mood mood;
@@ -23,7 +24,7 @@ struct M {
   Play play[N_PATS];
   bool on[N_PATS];
   float val[N_PATS][MAX_TRACKS][3];  // current value per pattern x track x instance (z / dots: up to 3)
-  int32_t last[24];                  // last written whole values (skip unchanged writes)
+  int32_t last[26];                  // last written whole values (skip unchanged writes; 22.. = z mask scale)
   int zx[Z_COUNT], zy[Z_COUNT], zs[Z_COUNT];  // a z's current offset (px) and scale (permille)
 };
 int live = 0;  // mascots alive (the auto instance delay)
@@ -93,16 +94,17 @@ bool changed(M *m, int slot, int32_t v) {
   return true;
 }
 // a z: its glyph (size G.z.size, bottom-left 1 px right of and 1 px above the anchor, like the docs SVG) scaled by
-// zs permille about the anchor (G.z.x, G.z.y), moved by (zx, zy); the line object sits at the glyph's top-left
+// zs permille about the anchor (G.z.x, G.z.y), moved by (zx, zy). The z is a stroke atom with its own small mask (the
+// glyph at full size + the stroke): moving it moves the image, a new scale re-rasters the mask (a few hundred px).
 void z_place(M *m, int i, int zx, int zy, int zs) {
   const int k = m->k, S = G.z.size;
   static const int RX[4] = {0, 1, 0, 1}, RY[4] = {0, 0, 1, 1};  // top bar, diagonal back, bottom bar
-  const float sc = zs / 1000.f * k;
-  const int top = (int) lroundf((1 + S) * sc);  // glyph top above the anchor
-  for (int j = 0; j < 4; j++)
-    m->zp[i][j] = {(lv_value_precise_t) lroundf((1 + RX[j] * S) * sc), (lv_value_precise_t) (top - (int) lroundf((1 + (1 - RY[j]) * S) * sc) + 0)};
-  lv_line_set_points(m->z[i], m->zp[i], 4);
-  lv_obj_set_pos(m->z[i], G.z.x * k + zx, G.z.y * k + zy - top);
+  const float sc = std::min(zs / 1000.f, 1.f) * k;
+  if (changed(m, 22 + i, zs)) {
+    for (int j = 0; j < 4; j++) m->zp[j] = {m->zm + (1 + RX[j] * S) * sc, m->zay - (1 + (1 - RY[j]) * S) * sc};
+    stroke_redraw(m->z[i], m->zp, 4);
+  }
+  lv_obj_set_pos(m->z[i], G.z.x * k + zx - m->zm, G.z.y * k + zy - m->zay);
 }
 void apply(M *m) {
   const MoodDef &md = MOODS[m->mood];
@@ -134,9 +136,8 @@ void apply(M *m) {
     const int zs = (int) lroundf(sum(m, PART_Z, PROP_SCALE, i, 1) * 1000);
     const int zo = (int) lroundf(sum(m, PART_Z, PROP_OPA, i, 1) * 255);
     if (changed(m, 7 + i * 3, zx) | changed(m, 8 + i * 3, zy) | changed(m, 19 + i, zs)) z_place(m, i, zx, zy, zs);
-    // the whole z as one layer: its three strokes composite once (a plain opa would blend each stroke, so the
-    // joints would show darker while it fades)
-    if (changed(m, 9 + i * 3, zo)) lv_obj_set_style_opa_layered(m->z[i], (lv_opa_t) zo, 0);
+    // the whole z is one image (its three strokes max-combined in the mask), so a plain opa fades it evenly
+    if (changed(m, 9 + i * 3, zo)) lv_obj_set_style_opa(m->z[i], (lv_opa_t) zo, 0);
   }
   for (int i = 0; i < DOT_COUNT; i++) {
     const int o = (int) lroundf(sum(m, PART_DOT, PROP_OPA, i, DOT_DIM) * 255);
@@ -197,16 +198,12 @@ void look(M *m) {  // colours, eye shape, brows, extras of the current mood
   for (int s = 0; s < 2; s++) {
     const int x = (s ? e.rx : e.x) * k;
     lv_obj_t *o = m->eye[s], *a = m->arch[s];
-    if (e.arch) {  // happy: a half ring with round ends in a w x w box (antialiased lv_arc), the rect eye hidden
+    if (a) lv_obj_delete(a), m->arch[s] = a = nullptr;
+    if (e.arch) {  // happy: a half ring with round ends in a w x w box (stroke atom, lv_arc geometry), the rect eye hidden
       lv_obj_add_flag(o, LV_OBJ_FLAG_HIDDEN);
-      lv_obj_remove_flag(a, LV_OBJ_FLAG_HIDDEN);
-      lv_obj_set_pos(a, x, e.y * k);
-      lv_obj_set_size(a, e.w * k, e.w * k);
-      lv_obj_set_style_arc_width(a, e.arch * k, 0);
-      lv_obj_set_style_arc_color(a, eye, 0);
+      m->arch[s] = stroke_arc(m->face, x, e.y * k, e.w * k, 180, 360, e.arch * k, eye);
       continue;
     }
-    lv_obj_add_flag(a, LV_OBJ_FLAG_HIDDEN);
     lv_obj_remove_flag(o, LV_OBJ_FLAG_HIDDEN);
     lv_obj_set_pos(o, x, e.y * k);
     lv_obj_set_size(o, e.w * k, e.h * k);
@@ -214,13 +211,14 @@ void look(M *m) {  // colours, eye shape, brows, extras of the current mood
     lv_obj_set_style_bg_color(o, eye, 0);
     lv_obj_set_style_bg_opa(o, LV_OPA_COVER, 0);
   }
-  for (int s = 0; s < 2; s++) {
-    lv_obj_t *b = m->brow[s];
-    if (!md.brows) { lv_obj_add_flag(b, LV_OBJ_FLAG_HIDDEN); continue; }
-    lv_obj_remove_flag(b, LV_OBJ_FLAG_HIDDEN);
-    lv_obj_set_pos(b, s ? (G.body_w - G.brow.x - G.brow.w) * k : G.brow.x * k, G.brow_y[m->mood] * k);
-    lv_obj_set_style_bg_color(b, eye, 0);
-    lv_obj_set_style_transform_rotation(b, (s ? -md.brow_angle : md.brow_angle) * 10, 0);
+  for (int s = 0; s < 2; s++) {  // brows: a pill w x h turned by the mood's angle = a stroke h wide, round caps
+    if (m->brow[s]) lv_obj_delete(m->brow[s]), m->brow[s] = nullptr;
+    if (!md.brows) continue;
+    const float W = G.brow.w * k, H = G.brow.h * k, half = (W - H) / 2;
+    const float cx = (s ? (G.body_w - G.brow.x - G.brow.w) * k : G.brow.x * k) + W / 2 - 0.5f, cy = G.brow_y[m->mood] * k + H / 2 - 0.5f;
+    const float an = (s ? -md.brow_angle : md.brow_angle) * 3.14159265f / 180.f, dx = half * std::cos(an), dy = half * std::sin(an);
+    const StrokePt bp[2] = {{cx - dx, cy - dy}, {cx + dx, cy + dy}};
+    m->brow[s] = stroke_at(m->face, bp, 2, (int) H, eye);
   }
   auto show = [](lv_obj_t *o, bool on) { if (on) lv_obj_remove_flag(o, LV_OBJ_FLAG_HIDDEN); else lv_obj_add_flag(o, LV_OBJ_FLAG_HIDDEN); };
   for (auto *b : m->bang) show(b, md.extras & X_BANG);
@@ -283,26 +281,7 @@ lv_obj_t *mascot(lv_obj_t *parent, Mood mood, const MascotOpts &o) {
   lv_obj_set_style_transform_pivot_x(m->body, G.body_w * k / 2, 0);
   m->face = part(m->body);
   lv_obj_set_size(m->face, G.body_w * k, G.body_h * k);
-  for (auto &b : m->brow) {
-    b = part(m->face);
-    lv_obj_set_size(b, G.brow.w * k, G.brow.h * k);
-    lv_obj_set_style_radius(b, G.brow.r * k, 0);
-    lv_obj_set_style_bg_opa(b, LV_OPA_COVER, 0);
-    lv_obj_set_style_transform_pivot_x(b, G.brow.w * k / 2, 0);
-    lv_obj_set_style_transform_pivot_y(b, G.brow.h * k / 2, 0);
-  }
   for (auto &e : m->eye) e = part(m->face);
-  for (auto &a : m->arch) {  // happy arches: lv_arc, only the background arc drawn (no indicator, no knob)
-    a = lv_arc_create(m->face);
-    lv_obj_remove_style_all(a);
-    lv_obj_remove_flag(a, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
-    lv_obj_add_flag(a, LV_OBJ_FLAG_EVENT_BUBBLE);
-    lv_arc_set_rotation(a, 0);
-    lv_arc_set_bg_angles(a, 180, 360);
-    lv_obj_set_style_arc_rounded(a, true, 0);
-    lv_obj_set_style_arc_opa(a, LV_OPA_COVER, 0);
-    lv_obj_set_style_arc_opa(a, LV_OPA_TRANSP, LV_PART_INDICATOR);
-  }
   const lv_color_t bang = tok(m->th, BANG_OFF), zc = tok(m->th, Z_OFF);
   for (int i = 0; i < 2; i++) {  // "!" stem + dot
     lv_obj_t *b = m->bang[i] = part(m->root);
@@ -312,14 +291,11 @@ lv_obj_t *mascot(lv_obj_t *parent, Mood mood, const MascotOpts &o) {
     lv_obj_set_style_bg_color(b, bang, 0);
     lv_obj_set_style_bg_opa(b, LV_OPA_COVER, 0);
   }
-  const int zw = G.z.stroke * k;
-  for (int i = 0; i < Z_COUNT; i++) {  // z = 3 segments: top bar, diagonal back, bottom bar
-    lv_obj_t *z = m->z[i] = lv_line_create(m->root);
-    lv_obj_remove_flag(z, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
-    lv_obj_add_flag(z, LV_OBJ_FLAG_EVENT_BUBBLE);
-    lv_obj_set_style_line_width(z, zw, 0);
-    lv_obj_set_style_line_color(z, zc, 0);
-    lv_obj_set_style_line_rounded(z, true, 0);
+  const int zw = G.z.stroke * k, zg = (1 + G.z.size) * k;  // z = 3 segments: top bar, diagonal back, bottom bar
+  m->zm = zw / 2 + 2;
+  m->zay = m->zm + zg;
+  for (int i = 0; i < Z_COUNT; i++) {
+    m->z[i] = stroke_path(m->root, zg + 2 * m->zm + 1, m->zay + m->zm + 1, nullptr, 0, zw, zc);
   }
   for (int i = 0; i < DOT_COUNT; i++) {
     lv_obj_t *d = m->dot[i] = part(m->root);

@@ -10,8 +10,9 @@
 //   scale   lay::dial_scale (560 / 376), 51 ticks every 2 % from 135 deg, drawn inward from the edge: minor
 //           lay::dial_tick (12 / 8) line-hi, every 5th = major lay::dial_tick_major (20 / 12) blue with its number
 //           (0, 10 ... 100; type c-meta, text-dim: text-mute is disabled-only) sp::s3 inside it; ticks stroke::tick
-//   arc     lay::dial_arc (432 / 288) centred: lv_arc, track stroke::edge (2) line, indicator stroke::indicator (6 / 4)
-//           accent with round caps, knob lay::dial_knob (28 / 20) accent with a stroke::knob ring in the canvas colour
+//   arc     lay::dial_arc (432 / 288) centred, stroke atoms (fw::stroke_arc, lv_arc geometry): track stroke::edge (2)
+//           line, square ends; indicator stroke::indicator (6 / 4) accent with round caps; an lv_arc on top draws only the
+//           knob lay::dial_knob (28 / 20) accent with a stroke::knob ring in the canvas colour
 //   centre  a flex column: caption (type label, caps, text-dim), sp::s7, value (type display, text, the dial's
 //           centre = the value's centre), sp::s2, unit (type body, text-dim), sp::s9, the button (lay::dial_toggle_w
 //           x touch::button_h: the Button component, outline "ON" / secondary "OFF", docs)
@@ -32,9 +33,11 @@
 // button disabled; any press = "blocked" + error once, nothing moves, no opening sweep. Unavailable (Card rule, the
 // entity is gone): disabled scale, no arc value or knob, the value slot says "Unavailable" (body, text-dim), no unit,
 // no button.
-// Redraw cost per drag frame: lv_arc invalidates only the arc between the old and new angle + the knob; the value label
-// hugs its text, so a new number invalidates just its own box; the tick ring is drawn in one draw event (no objects per
-// tick) and only repaints where those areas cross it.
+// Redraw cost per drag frame: the indicator re-rasters and invalidates only the arc between the old and new angle
+// (fw::stroke_set_arc; measured in Chromium 2026-10-22: avg 0.04 ms at 720, 0.02 ms at 480 per frame, max ~1 ms for a
+// full 0 -> 100 redraw) + the knob; the value label hugs its text, so a new number invalidates just its own box; the
+// tick ring is drawn in one draw event (no objects per tick: one cached stroke-atom mask per tick, ~0.5 KB each) and
+// only repaints where those areas cross it.
 // Contrast pairs: tokens/colour.json section "dial".
 #include "fw.h"
 
@@ -56,6 +59,8 @@ struct TickRing {
   fw::ty::Id num_style = fw::ty::c_meta;
   lv_color_t num_c;
 };
+struct Tick { lv_draw_buf_t *mask; int x, y; bool major; };  // one tick's stroke-atom mask at (x, y) of the ring
+struct Ring { TickRing spec; std::vector<Tick> ticks; };
 
 // "nice" intervals for a range (Darren 2026-10-21, round 2): the label interval is the smallest 1 / 2 / 5 x 10^k that
 // keeps the numbers to at most MAX_LABELS (the docs dial: 0-100 every 10 = 11) so they never crowd; minor ticks split
@@ -74,35 +79,37 @@ int decimals_of(double v) {  // 0, 1 or 2 decimals to show v exactly (steps / in
   return 2;
 }
 
+// the value of tick k and whether it is a major one; its angle in radians
+bool tick_at(const TickRing *r, long k, double *v, float *rad) {
+  const int sub = (int) std::lround(r->major / r->minor);
+  *v = k * r->minor;
+  *rad = (r->start + (float) ((*v - r->lo) / (r->hi - r->lo)) * r->range) * 3.14159265f / 180.0f;
+  return sub > 0 && ((k % sub) + sub) % sub == 0;
+}
+long tick_first(const TickRing *r) { return (long) std::ceil(r->lo / r->minor - 1e-6); }
+long tick_last(const TickRing *r) { return (long) std::floor(r->hi / r->minor + 1e-6); }
+
 void ring_draw(lv_event_t *e) {
   auto *o = (lv_obj_t *) lv_event_get_current_target(e);
-  auto *r = (const TickRing *) lv_event_get_user_data(e);
+  auto *rg = (const Ring *) lv_event_get_user_data(e);
+  const TickRing *r = &rg->spec;
   lv_layer_t *layer = lv_event_get_layer(e);
   lv_area_t a;
   lv_obj_get_coords(o, &a);
   const float cx = (a.x1 + a.x2 + 1) / 2.0f, cy = (a.y1 + a.y2 + 1) / 2.0f, R = lv_area_get_width(&a) / 2.0f;
+  for (const Tick &t : rg->ticks) fw::stroke_draw(layer, t.mask, a.x1 + t.x, a.y1 + t.y, t.major ? r->major_c : r->minor_c);
+  if (!r->numbers) return;
   const lv_font_t *f = fw::font(r->num_style);
   const fw::ty::Style &st = fw::style(r->num_style);
   // visual centre of a digit below the line top (cap height centred, the text-box rule)
   lv_font_glyph_dsc_t g;
   float dig_mid = f->line_height / 2.0f;
   if (lv_font_get_glyph_dsc(f, &g, '0', 0)) dig_mid = (f->line_height - f->base_line) - (g.ofs_y + g.box_h / 2.0f);
-  const int sub = (int) std::lround(r->major / r->minor);
-  const long k0 = (long) std::ceil(r->lo / r->minor - 1e-6), k1 = (long) std::floor(r->hi / r->minor + 1e-6);
-  for (long k = k0; k <= k1; k++) {
-    const double v = k * r->minor;
-    const bool maj = sub > 0 && ((k % sub) + sub) % sub == 0;
-    const float deg = r->start + (float) ((v - r->lo) / (r->hi - r->lo)) * r->range;
-    const float rad = deg * 3.14159265f / 180.0f, c = std::cos(rad), s = std::sin(rad);
-    const int len = maj ? r->major_len : r->minor_len;
-    lv_draw_line_dsc_t ld;
-    lv_draw_line_dsc_init(&ld);
-    ld.color = maj ? r->major_c : r->minor_c;
-    ld.width = r->width;
-    ld.p1.x = cx + c * R; ld.p1.y = cy + s * R;
-    ld.p2.x = cx + c * (R - len); ld.p2.y = cy + s * (R - len);
-    lv_draw_line(layer, &ld);
-    if (!maj || !r->numbers) continue;
+  for (long k = tick_first(r); k <= tick_last(r); k++) {
+    double v;
+    float rad;
+    if (!tick_at(r, k, &v, &rad)) continue;
+    const float c = std::cos(rad), s = std::sin(rad);
     char b[12];
     snprintf(b, sizeof b, "%.*f", r->num_dec, std::fabs(v) < 1e-9 ? 0.0 : v);
     lv_point_t sz;
@@ -126,9 +133,27 @@ lv_obj_t *tick_ring(lv_obj_t *parent, int size, const TickRing &spec) {
   lv_obj_remove_style_all(o);
   lv_obj_remove_flag(o, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
   lv_obj_set_size(o, size, size);
-  auto *r = new TickRing(spec);
-  lv_obj_add_event_cb(o, ring_draw, LV_EVENT_DRAW_MAIN, r);
-  lv_obj_add_event_cb(o, [](lv_event_t *e) { delete (TickRing *) lv_event_get_user_data(e); }, LV_EVENT_DELETE, r);
+  auto *rg = new Ring{spec, {}};
+  // every tick = a stroke atom (radial, square ends like lv_draw_line), rasterised once into its own small mask
+  const float c = size / 2.0f - 0.5f, R = size / 2.0f, m = spec.width / 2.0f + 1;  // centre in pixel-centre coords
+  for (long k = tick_first(&spec); k <= tick_last(&spec); k++) {
+    double v;
+    float rad;
+    const bool maj = tick_at(&spec, k, &v, &rad);
+    const int len = maj ? spec.major_len : spec.minor_len;
+    const float co = std::cos(rad), si = std::sin(rad);
+    fw::StrokePt p[2] = {{c + co * R, c + si * R}, {c + co * (R - len), c + si * (R - len)}};
+    const int x = (int) std::floor(std::min(p[0].x, p[1].x) - m), y = (int) std::floor(std::min(p[0].y, p[1].y) - m);
+    const int w = (int) std::ceil(std::max(p[0].x, p[1].x) + m) - x + 1, h = (int) std::ceil(std::max(p[0].y, p[1].y) + m) - y + 1;
+    for (auto &q : p) q.x -= x, q.y -= y;
+    rg->ticks.push_back({fw::stroke_segments(w, h, p, 1, spec.width, fw::Cap::butt), x, y, maj});
+  }
+  lv_obj_add_event_cb(o, ring_draw, LV_EVENT_DRAW_MAIN, rg);
+  lv_obj_add_event_cb(o, [](lv_event_t *e) {
+    auto *rg = (Ring *) lv_event_get_user_data(e);
+    for (Tick &t : rg->ticks) lv_draw_buf_destroy(t.mask);
+    delete rg;
+  }, LV_EVENT_DELETE, rg);
   return o;
 }
 
@@ -143,7 +168,7 @@ struct Dial {
   int32_t shown = 0;       // drawn position, step index x FP
   int shown_idx = 0, shown_val = -1;  // shown_val = the step index on the label
   lv_point_t press_pt = {0, 0};
-  lv_obj_t *arc = nullptr, *val = nullptr, *btn_on = nullptr, *btn_off = nullptr;
+  lv_obj_t *arc = nullptr, *ind = nullptr, *val = nullptr, *btn_on = nullptr, *btn_off = nullptr;
 };
 
 Dial *of(lv_obj_t *o) { return (Dial *) lv_obj_get_user_data(o); }
@@ -159,7 +184,10 @@ void show(void *o, int32_t v) {
   auto *d = of(s);
   v = LV_CLAMP(0, v, d->n * FP);
   d->shown = v;
-  if (d->arc) lv_arc_set_value(d->arc, v);
+  if (d->arc) lv_arc_set_value(d->arc, v);  // the knob
+  if (d->ind) {  // the value arc: a stroke atom re-rasterised where it moved
+    fw::stroke_set_arc(d->ind, START, START + RANGE * v / (float) (d->n * FP));
+  }
   const int i = (v + FP / 2) / FP;
   if (i != d->shown_val && d->val) {  // only a new number touches the label (its own box)
     lv_label_set_text(d->val, fmt(d, value_of(d, i)).c_str());
@@ -287,6 +315,12 @@ FW_COMPONENT(dial, "Dial", "components", R"({
   tick_ring(s, S, tr);
 
   if (!unavail) {
+    // track + value arc = stroke atoms (lv_arc geometry: drawn inward from the A x A box); the lv_arc on top only
+    // draws the knob (its arcs transparent, widths kept so the knob sits on the indicator's middle line)
+    const int ax = (S - A) / 2;
+    fw::stroke_arc(s, ax, ax, A, START, START + RANGE, fw::stroke::edge, t.line, fw::Cap::butt);
+    d->ind = fw::stroke_arc(s, ax, ax, A, START, START, fw::stroke::indicator,
+                            off ? fw::st::disabled_ink(t) : fw::st::on_fill(t));
     lv_obj_t *a = d->arc = lv_arc_create(s);
     lv_obj_remove_flag(a, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
     lv_obj_set_size(a, A, A);
@@ -296,11 +330,9 @@ FW_COMPONENT(dial, "Dial", "components", R"({
     lv_arc_set_range(a, 0, d->n * FP);
     lv_arc_set_value(a, 0);
     lv_obj_set_style_arc_width(a, fw::stroke::edge, LV_PART_MAIN);
-    lv_obj_set_style_arc_color(a, t.line, LV_PART_MAIN);
-    lv_obj_set_style_arc_rounded(a, false, LV_PART_MAIN);
+    lv_obj_set_style_arc_opa(a, LV_OPA_TRANSP, LV_PART_MAIN);
     lv_obj_set_style_arc_width(a, fw::stroke::indicator, LV_PART_INDICATOR);
-    lv_obj_set_style_arc_color(a, off ? fw::st::disabled_ink(t) : fw::st::on_fill(t), LV_PART_INDICATOR);
-    lv_obj_set_style_arc_rounded(a, true, LV_PART_INDICATOR);
+    lv_obj_set_style_arc_opa(a, LV_OPA_TRANSP, LV_PART_INDICATOR);
     lv_obj_set_style_bg_opa(a, LV_OPA_COVER, LV_PART_KNOB);
     lv_obj_set_style_bg_color(a, off ? fw::st::disabled_knob(t) : t.accent, LV_PART_KNOB);
     lv_obj_set_style_radius(a, LV_RADIUS_CIRCLE, LV_PART_KNOB);
