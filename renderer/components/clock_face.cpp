@@ -302,6 +302,7 @@ void fill(lv_obj_t *root, fw::Props p) {
     lv_obj_center(d->time);
   }
   minute(root, false);
+  d->sec_deg = -1;  // the first seconds() always places the dot / hand (at :00 it would match the 0 it started with)
   seconds(root, 0);
   start(root);
   if (!d->timer) d->timer = lv_timer_create([](lv_timer_t *tm) { minute((lv_obj_t *) lv_timer_get_user_data(tm), true); }, 1000, root);
