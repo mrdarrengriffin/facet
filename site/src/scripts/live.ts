@@ -11,17 +11,20 @@ const ROOT = `${import.meta.env.BASE_URL.replace(/\/?$/, '/')}wasm/`;
 const DEN = { 720: { den: '1.5x', d: 1.5, size: 720 }, 480: { den: '1x', d: 1, size: 480 } } as const;
 
 type Item = { el: HTMLElement; comp: string; props: Record<string, unknown>; label: string; frame: [number, number]; doc: boolean; stage?: Stage; err?: HTMLElement;
+  /** the playground stage (props from the controls, never reset) / a picture only (home strip, components overview) */
+  sandbox?: boolean; still?: boolean;
   /** demo reset: finger down on the canvas, the pending revert, events dropped until (the revert is silent) */
   held?: boolean; timer?: number; muteUntil?: number };
 
 // Demo reset (Darren 2026-10-22): every sample is a demo. After an interaction (any event, or a release) the sample is
 // rebuilt with its original props motion.json "demo-reset" ms after the last one (timer restarts on every event, never
-// while a finger is down); the rebuild is silent (its events / sounds are dropped). Everything on the site reverts:
-// there is no playground page.
+// while a finger is down); the revert takes the update path (the component animates back, silent; renderer README
+// "Update path"), else a silent rebuild (its events / sounds are dropped). Everything on the site reverts except the
+// playground stage, whose control changes take the update path too.
 const RESET_MS = (site as { demoResetMs?: number }).demoResetMs ?? 1800;
 function armReset(it: Item) {
   clearTimeout(it.timer);
-  if (it.held) return;
+  if (it.held || it.sandbox || it.still) return;
   it.timer = window.setTimeout(() => {
     if (it.held || !engine || !it.stage) return;
     it.muteUntil = performance.now() + 250;
@@ -38,7 +41,12 @@ function watchGestures(it: Item, c: HTMLCanvasElement) {
 let engine: Engine | null = null;
 let loading: Promise<Engine> | null = null;
 let loadedFor = 0;
-const look = (p: Prefs) => `${p.theme}/${p.device}/${p.accent}`;
+const look = (p: Prefs) => `${p.theme}/${p.device}/${p.accent}/${[...document.querySelectorAll<HTMLElement>('[data-preview-scope]')].map((x) => x.dataset.previewTheme ?? '').join()}`;
+/** the theme an example is drawn in: its box's preview theme switch (Site / Dark / Light), else the site's */
+function themeOf(it: Item, p: Prefs): 'dark' | 'light' {
+  const t = it.el.closest<HTMLElement>('[data-preview-scope]')?.dataset.previewTheme;
+  return t === 'dark' || t === 'light' ? t : p.theme;
+}
 let lastLook = '';
 let accentSets: { id: string }[] = [];
 const items: Item[] = [];
@@ -70,13 +78,16 @@ async function ensure(p: Prefs): Promise<Engine> {
   return loading;
 }
 
-/** reset = a demo revert: repeat the first render exactly (an auto-height stage measures from its current size, so it
- *  starts again from w x 1 like a fresh stage) */
+/** reset = a demo revert / new playground props: the update path first (in place, animated, silent); else repeat the
+ *  first render exactly (an auto-height stage measures from its current size, so it starts again from w x 1 like a
+ *  fresh stage) */
 function draw(it: Item, e: Engine, p: Prefs, reset = false) {
   const dd = DEN[p.device];
   const w = it.doc ? dd.size : Math.round(it.frame[0] * dd.d);
   const auto = it.frame[1] === 0;
   const h = auto ? 1 : Math.round(it.frame[1] * dd.d);
+  if (reset && it.stage && it.stage.w === w && it.stage.update(it.comp, it.props, themeOf(it, p) === 'light', accentIdx(p)) === ''
+    && (!auto || it.stage.contentH() === it.stage.h)) return;
   if (!it.stage) {
     it.stage = e.stage(w, h);
     it.stage.label = it.label;
@@ -84,11 +95,12 @@ function draw(it: Item, e: Engine, p: Prefs, reset = false) {
     watchGestures(it, it.stage.canvas);
     it.el.querySelector('.live__stage')!.replaceChildren(it.stage.canvas);
   } else if (it.stage.w !== w || it.stage.h !== h && (!auto || reset)) it.stage.resize(w, h);
-  const err = it.stage.render(it.comp, it.props, p.theme === 'light', accentIdx(p), auto, 1);
+  const err = it.stage.render(it.comp, it.props, themeOf(it, p) === 'light', accentIdx(p), auto, 1);
   it.stage.canvas.style.width = `${it.stage.w}px`;
   it.el.style.setProperty('--w', `${it.stage.w}px`);
   it.el.classList.toggle('live--err', !!err);
-  if (err) it.el.querySelector('figcaption')!.textContent = `${it.label}: ${err}`;
+  const cap = it.el.querySelector('figcaption');
+  if (err && cap) cap.textContent = `${it.label}: ${err}`;
 }
 
 async function show(it: Item) {
@@ -139,9 +151,30 @@ export function initLive() {
       label: el.dataset.label ?? '',
       frame: JSON.parse(el.dataset.frame ?? '[240,0]'),
       doc: el.dataset.doc === '1',
+      sandbox: el.dataset.sandbox === '1',
+      still: el.dataset.still === '1',
     };
     items.push(it);
     io.observe(el);
   }
   onPrefs((p) => void redrawAll(p));
+  // preview theme switches (Site / Dark / Light) of each box
+  for (const sw of document.querySelectorAll<HTMLButtonElement>('[data-theme-set]')) {
+    sw.addEventListener('click', () => {
+      const scope = sw.closest<HTMLElement>('[data-preview-scope]');
+      if (!scope) return;
+      const v = sw.dataset.themeSet!;
+      if (v === 'site') delete scope.dataset.previewTheme; else scope.dataset.previewTheme = v;
+      for (const b of scope.querySelectorAll<HTMLButtonElement>('[data-theme-set]')) b.setAttribute('aria-pressed', String(b.dataset.themeSet === v));
+      void redrawAll(getPrefs());
+    });
+  }
+}
+
+/** the playground: new props for a live example (redrawn now, from w x 1 again when its height is automatic) */
+export function setLiveProps(el: HTMLElement, props: Record<string, unknown>) {
+  const it = items.find((i) => i.el === el);
+  if (!it) return;
+  it.props = props;
+  if (engine && it.stage) draw(it, engine, getPrefs(), true);
 }

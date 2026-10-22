@@ -1,0 +1,10 @@
+---
+// A Facet icon from the WASM icon set (renderer/icons masters, inlined by scripts/extract.mjs -> data/icons.json):
+// 24-grid ui + screen icons in currentColor (screen icons keep their accent detail), stroke from the icons.json
+// optical-stroke table at the drawn size, as the renderer rasterises them.
+import { iconSvg } from '../lib/data';
+interface Props { name: string; size?: number; class?: string }
+const { name, size = 24, class: cls = '' } = Astro.props;
+---
+
+<Fragment set:html={iconSvg(name, size, cls)} />

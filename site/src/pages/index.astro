@@ -1,31 +1,546 @@
 ---
+// Home page: the original Facet site's landing layout (main a5df2ac: site/src/pages/index.astro) as a short intro
+// (Darren 2026-10-22): what Facet is, a glimpse of how it's built, then a walk into the docs. Every example is the
+// real WASM component. The old hero ran the whole demo house; screens aren't built yet, so the panel shows the Dial.
+// A longer intro and the idea behind the name come later.
 import Base from '../layouts/Base.astro';
 import Live from '../components/Live.astro';
-import { BASE, COMPONENTS, FOUNDATIONS, defaults, href } from '../lib/data';
-// a few components on the home page, live, with their first variant
-const featured = ['card', 'button', 'toggle', 'slider'].map((id) => COMPONENTS.find((c) => c.id === id)).filter((c) => c !== undefined);
+import { COMPONENTS, FOUNDATIONS, defaults, href } from '../lib/data';
+import { url } from '../lib/nav';
+import previews from '../data/previews.json';
+
+const description =
+  'Wall panel UI for Home Assistant. One design system for ESP32 touch panels (ESPHome and LVGL), shown here by the same renderer the panels run.';
+
+const find = (id: string) => COMPONENTS.find((c) => c.id === id);
+const hero = find('dial');
+// previews rendered by the WASM build at extract time (scripts/extract.mjs 5e): still PNGs, both themes, linking
+// to their pages
+type Shot = { id: string; section: string; label: string; name: string; w: number; h: number };
+const shots = previews.shots as Shot[];
+const shotHref = (sh: Shot) => href({ id: sh.id, section: sh.section });
+const pic = (sh: Shot, theme: string) => url(`/previews/${sh.id}-${theme}.png`);
+const fShots = shots.filter((x) => x.section === 'foundations');
+const cShots = shots.filter((x) => x.section === 'components');
+// a glimpse of the foundations: links to the rest
+const glimpse = ['space', 'motion', 'states', 'icons']
+  .map((id) => FOUNDATIONS.find((f) => f.id === id))
+  .filter((f) => f !== undefined);
+
+const what = [
+  {
+    title: 'For wall panels',
+    text: 'Small square touch screens on the wall, running ESPHome and LVGL. The first two are a 720 × 720 Waveshare ESP32-P4 panel and a 480 × 480 Guition ESP32-S3 panel.',
+  },
+  {
+    title: 'One set of tokens',
+    text: 'Every colour, type style, space, motion and sound is a named token in one set of files. The panels and this site are built from the same files.',
+  },
+  {
+    title: 'One renderer',
+    text: 'Components are C++ on LVGL. The same code is compiled to WebAssembly for this site, so every example here is what a panel draws, pixel for pixel.',
+  },
+];
+
+const steps = [
+  { title: 'Getting started', text: 'What you need and how to put Facet on a panel.', soon: true },
+  { title: 'Design system', text: 'The foundations: colour, type, space, layout, motion, states, icons.', href: url('/foundations/') },
+  { title: 'Components', text: `${COMPONENTS.length} components, each with a playground: change its props, tap it, hear it.`, href: url('/components/') },
+  { title: 'Roadmap and updates', text: "Where it's headed, and how it got here.", href: url('/roadmap/') },
+];
 ---
 
-<Base title="Facet" current="home">
-  <header class="page-head hero">
-    <p class="label">Design system for wall panels</p>
-    <h1>Facet</h1>
-    <!-- Darren's words go here -->
-    <p class="lede placeholder">Intro coming: what Facet is, who it is for and why it looks the way it does.</p>
-    <p>Every example on this site is the real renderer, compiled to WebAssembly: the same C++ and LVGL code the panels run, so what you see here is what the panel draws, pixel for pixel.</p>
-    <p class="actions">
-      <a class="btn btn--primary" href={`${BASE}foundations/`}>Foundations ({FOUNDATIONS.length})</a>
-      <a class="btn" href={`${BASE}components/`}>Components ({COMPONENTS.length})</a>
-    </p>
-  </header>
-  <section>
-    <h2>Live</h2>
-    <div class="grid-live">
-      {featured.map((c) => (
-        <a class="live-link" href={href(c)}>
-          <Live comp={c.id} props={{ ...defaults(c.meta), ...(c.meta.variants?.[0]?.props ?? {}) }} label={c.name} frame={c.meta.frame} />
-        </a>
-      ))}
-    </div>
-  </section>
+<Base title="Facet" description={description}>
+  <main id="main" class="landing">
+    <section class="landing__hero">
+      <div class="landing__intro">
+        <h1 class="landing__title">Facet</h1>
+        <p class="landing__lede">{description}</p>
+        <div class="landing__actions">
+          <a class="button button--primary" href={url('/components/')}>Browse components</a>
+          <a class="button button--secondary" href={url('/foundations/')}>Design system</a>
+        </div>
+        <p class="landing__docs">
+          New here? Start with <a href="#start">where to go next</a>, or see what's coming on the{' '}
+          <a href={url('/roadmap/')}>roadmap</a>.
+        </p>
+      </div>
+
+      {
+        hero && (
+          <figure class="landing__device">
+            <div class="landing__bezel">
+              <div class="landing__viewport">
+                <Live comp={hero.id} props={{ ...defaults(hero.meta), ...(hero.meta.variants?.[0]?.props ?? {}) }} label={hero.name} frame={hero.meta.frame} caption={false} />
+              </div>
+            </div>
+            <figcaption>The {hero.name}, live. Drag it around.</figcaption>
+          </figure>
+        )
+      }
+    </section>
+
+    <section class="callout callout--warn landing__status" aria-label="Project status">
+      <span class="dot" aria-hidden="true"></span>
+      <p>
+        <strong>Everything here is a work in progress.</strong> Facet is being rebuilt from scratch on the panel renderer:
+        foundations and small components first, then screens. Expect things to move around while that happens; the{' '}
+        <a href={url('/updates/')}>updates page</a> shows what changed lately.
+      </p>
+    </section>
+
+    <section class="landing__section" aria-labelledby="what-title">
+      <div class="landing__head">
+        <h2 id="what-title">What Facet is</h2>
+        <blockquote class="landing__definition">
+          <p><strong>facet</strong> <em>noun</em><br />one part of a subject, situation, etc. that has many parts</p>
+          <p class="landing__source"><a href="https://dictionary.cambridge.org/dictionary/english/facet">Cambridge Dictionary</a></p>
+        </blockquote>
+      </div>
+      <ul class="parts parts--3">
+        {
+          what.map((p) => (
+            <li class="part">
+              <h3>{p.title}</h3>
+              <p>{p.text}</p>
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+
+    <section class="landing__section" aria-labelledby="built-title">
+      <div class="landing__head">
+        <h2 id="built-title">How it's built</h2>
+        <p>Foundations first, then components made only from them, then screens made from the components.</p>
+      </div>
+      <ol class="build">
+        <li class="build__step">
+          <h3><span class="build__n">1</span>Foundations</h3>
+          <p>The rules and tokens: every size on a 4 px grid, every colour pair contrast-tested, every sound with a reason.</p>
+          <ul class="previews previews--wide">
+            {fShots.map((sh) => (
+              <li>
+                <a class="preview" href={shotHref(sh)}>
+                  <span class="preview__img">
+                    <img class="for-dark" src={pic(sh, 'dark')} width={sh.w} height={sh.h} alt={`${sh.name}: ${sh.label}`} loading="lazy" />
+                    <img class="for-light" src={pic(sh, 'light')} width={sh.w} height={sh.h} alt={`${sh.name}: ${sh.label}`} loading="lazy" />
+                  </span>
+                  <span class="preview__name">{sh.name}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+          {previews.rules.length > 0 && (
+            <ul class="build__rules">
+              {previews.rules.map((r) => <li>{r}</li>)}
+            </ul>
+          )}
+          <p class="build__links">
+            Also: {glimpse.map((f, i) => <>{i > 0 && ' · '}<a href={href(f)}>{f.name}</a></>)} · <a href={url('/foundations/')}>all of them</a>
+          </p>
+        </li>
+        <li class="build__step">
+          <h3><span class="build__n">2</span>Components</h3>
+          <p>Built only from the foundations, drawn by the panel renderer. Each one has a page with a playground.</p>
+          <ul class="previews">
+            {cShots.map((sh) => (
+              <li>
+                <a class="preview" href={shotHref(sh)}>
+                  <span class="preview__img preview__img--square">
+                    <img class="for-dark" src={pic(sh, 'dark')} width={sh.w} height={sh.h} alt={`${sh.name}: ${sh.label}`} loading="lazy" />
+                    <img class="for-light" src={pic(sh, 'light')} width={sh.w} height={sh.h} alt={`${sh.name}: ${sh.label}`} loading="lazy" />
+                  </span>
+                  <span class="preview__name">{sh.name}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+          <p class="build__links"><a href={url('/components/')}>All {COMPONENTS.length} components</a></p>
+        </li>
+        <li class="build__step">
+          <h3><span class="build__n">3</span>Screens <span class="badge">Soon</span></h3>
+          <p>One job per screen, made from the components and a few shared screen patterns. They come next.</p>
+          <ul class="previews">
+            {['Home', 'Settings', 'Media'].map((n) => (
+              <li>
+                <span class="preview preview--soon">
+                  <span class="preview__img preview__img--square preview__img--empty">{n}: coming</span>
+                  <span class="preview__name">{n}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </li>
+      </ol>
+    </section>
+
+    <section class="landing__section" id="start" aria-labelledby="start-title">
+      <div class="landing__head">
+        <h2 id="start-title">Where to go next</h2>
+      </div>
+      <ol class="parts parts--steps">
+        {
+          steps.map((p, i) => (
+            <li class="part">
+              <h3>
+                <span class="build__n">{i + 1}</span>
+                {p.href ? <a href={p.href}>{p.title}</a> : p.title}
+                {p.soon && <span class="badge">Soon</span>}
+              </h3>
+              <p>{p.text}</p>
+            </li>
+          ))
+        }
+      </ol>
+    </section>
+  </main>
 </Base>
+
+<style>
+  .landing {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 0 24px 96px;
+  }
+
+  /* hero: text on the left, the device on the right; stacked on narrow screens */
+  .landing__hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 480px);
+    gap: 64px;
+    align-items: center;
+    padding: 80px 0 64px;
+  }
+  .landing__title {
+    margin: 0 0 16px;
+    font-size: clamp(56px, 9vw, 96px);
+    font-weight: 300;
+    line-height: 1;
+    letter-spacing: -0.04em;
+  }
+  .landing__lede {
+    max-width: 520px;
+    margin: 0;
+    color: var(--facet-color-text-dim);
+    font-size: clamp(18px, 2.2vw, 20px);
+    line-height: 1.5;
+  }
+  .landing__placeholder {
+    max-width: 520px;
+    margin: 16px 0 0;
+    padding: 12px 16px;
+    border: 1px dashed var(--facet-color-line-hi);
+    border-radius: 12px;
+    color: var(--facet-color-text-dim);
+    font-size: 15px;
+  }
+  .landing__intro-text {
+    max-width: 520px;
+    margin: 16px 0 0;
+    color: var(--facet-color-text-dim);
+  }
+  .landing__definition {
+    max-width: 520px;
+    margin: 16px 0 12px;
+    padding: 14px 20px;
+    border-radius: 12px;
+    background: var(--facet-color-surface);
+  }
+  .landing__definition p {
+    margin: 0;
+    color: var(--facet-color-text);
+  }
+  .landing__definition .landing__source {
+    margin-top: 6px;
+    font-size: 13px;
+  }
+  .landing__source a {
+    color: var(--facet-color-text-dim);
+  }
+  .landing__head > p {
+    max-width: 640px;
+  }
+  .landing__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 40px;
+  }
+  .landing__docs {
+    margin: 24px 0 0;
+    color: var(--facet-color-text-dim);
+    font-size: 15px;
+  }
+
+  .landing__device {
+    margin: 0;
+  }
+  /* nested-radius rule: the screen inside the bezel = bezel radius - (padding + border) */
+  .landing__bezel {
+    --r-outer: 32px;
+    --inset: calc(16px + 1px);
+    padding: 16px;
+    border: 1px solid var(--facet-color-line);
+    border-radius: 32px;
+    background: var(--facet-color-surface);
+  }
+  .landing__viewport {
+    position: relative;
+    box-sizing: border-box;
+    padding: var(--facet-layout-inset-1x);
+    display: grid;
+    place-items: center;
+    aspect-ratio: 1;
+    overflow: hidden;
+    border-radius: max(0px, calc(var(--r-outer) - var(--inset)));
+    background: var(--facet-color-bg-565);
+  }
+  /* the live Dial: its own size, shrunk to fit the screen */
+  .landing__viewport :global(.live),
+  .landing__viewport :global(.live__stage) {
+    display: grid;
+    place-items: center;
+    width: 100%;
+    height: 100%;
+  }
+  .landing__viewport :global(.live__canvas) {
+    width: auto !important;
+    max-width: 100%;
+    max-height: 100%;
+  }
+  .landing__device figcaption {
+    margin-top: 16px;
+    color: var(--facet-color-text-dim);
+    font-size: 14px;
+    text-align: center;
+  }
+
+  .landing__status {
+    max-width: 720px;
+  }
+
+  .landing__section {
+    margin-top: 96px;
+  }
+  .landing__head {
+    margin-bottom: 32px;
+  }
+  .landing__head h2 {
+    margin: 0;
+    font-size: 32px;
+    font-weight: 400;
+    letter-spacing: -0.02em;
+  }
+  .landing__head p {
+    margin: 8px 0 0;
+    color: var(--facet-color-text-dim);
+  }
+
+  /* components: still previews, five across (the old screens strip; .shot styles in site.css) */
+  .landing__section .shots {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  /* what's in it: plain rows, no cards */
+  .parts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 48px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .part {
+    padding: 24px 0 32px;
+    border-top: 1px solid var(--facet-color-line);
+  }
+  .part h3 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 8px;
+    font-size: 20px;
+    font-weight: 500;
+  }
+  .part h3 .badge {
+    margin-left: 0;
+  }
+  .parts--3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .part h3 a {
+    color: var(--facet-color-text);
+    text-decoration: none;
+  }
+  .part h3 a:hover {
+    color: var(--facet-color-accent-text);
+  }
+  .landing__head .landing__placeholder {
+    margin-top: 12px;
+  }
+
+  /* previews: still PNGs from the WASM build, the site theme's version shown */
+  .previews {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 24px 16px;
+    margin: 16px 0;
+    padding: 0;
+    list-style: none;
+  }
+  .previews--wide {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  }
+  .preview {
+    display: block;
+    color: var(--facet-color-text-dim);
+    text-decoration: none;
+  }
+  .preview__img {
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    aspect-ratio: 4 / 3;
+    padding: 12px;
+    border: 1px solid var(--facet-color-line);
+    border-radius: 16px;
+    background: var(--facet-color-bg-565);
+    transition: border-color var(--facet-duration-fade) var(--facet-easing-ease-out);
+  }
+  .previews--wide .preview__img {
+    align-items: start;
+    padding: 0;
+  }
+  .preview__img--square {
+    aspect-ratio: 1;
+  }
+  .preview__img img {
+    display: block;
+    width: auto;
+    max-width: 100%;
+    height: auto;
+    max-height: 100%;
+  }
+  .previews--wide .preview__img img {
+    width: 100%;
+    max-height: none;
+  }
+  .preview__img--empty {
+    border-style: dashed;
+    color: var(--facet-color-text-dim);
+    font-size: 13px;
+  }
+  :global(:root[data-theme='light']) .preview__img .for-dark,
+  :global(:root:not([data-theme='light'])) .preview__img .for-light {
+    display: none;
+  }
+  .preview__name {
+    display: block;
+    margin-top: 10px;
+    font-size: 15px;
+  }
+  a.preview:hover .preview__img {
+    border-color: var(--facet-color-line-hi);
+  }
+  a.preview:hover .preview__name {
+    color: var(--facet-color-text);
+  }
+  .build__rules {
+    max-width: 640px;
+    margin: 0 0 12px;
+    padding-left: 20px;
+    color: var(--facet-color-text-dim);
+    font-size: 15px;
+  }
+  .build__rules li + li {
+    margin-top: 4px;
+  }
+
+  /* how it's built: three numbered steps */
+  .build {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .build__step {
+    padding: 24px 0 32px;
+    border-top: 1px solid var(--facet-color-line);
+  }
+  .build__step h3 {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0 0 8px;
+    font-size: 20px;
+    font-weight: 500;
+  }
+  .build__step h3 .badge {
+    margin-left: 0;
+  }
+  .build__step p {
+    max-width: 640px;
+    margin: 0 0 12px;
+    color: var(--facet-color-text-dim);
+  }
+  .build__links {
+    font-size: 15px;
+  }
+  .build__step .shots {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    margin-top: 16px;
+  }
+  .build__n {
+    display: inline-grid;
+    place-items: center;
+    flex: none;
+    width: 28px;
+    height: 28px;
+    border: 1px solid var(--facet-color-line-hi);
+    border-radius: 999px;
+    color: var(--facet-color-text-dim);
+    font: 500 13px/1 var(--mono);
+  }
+  .part p {
+    margin: 0 0 12px;
+    color: var(--facet-color-text-dim);
+  }
+
+  @media (max-width: 960px) {
+    .landing__hero {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 48px;
+      padding-top: 56px;
+    }
+    .landing__device {
+      max-width: 480px;
+    }
+    .landing__section .shots {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    .parts--3 {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+  @media (max-width: 640px) {
+    .landing {
+      padding: 0 var(--gutter) 64px;
+    }
+    .landing__bezel {
+      --r-outer: 24px;
+      --inset: calc(8px + 1px);
+      padding: 8px;
+      border-radius: 24px;
+    }
+    .landing__section {
+      margin-top: 64px;
+    }
+    .landing__section .shots {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 24px 16px;
+    }
+    .parts {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>

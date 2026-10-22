@@ -1,0 +1,14 @@
+---
+// The Facet mark: a rounded panel with a status dot, a hero bar and a quiet meta line. Inline, in currentColor, so
+// it follows the site theme; the dot uses the accent token.
+import mark from '../assets/logo.svg?raw';
+interface Props {
+  size?: number;
+}
+const { size = 28 } = Astro.props;
+const svg = mark
+  .replace('<svg ', `<svg width="${size}" height="${size}" aria-hidden="true" class="logo-mark" `)
+  .replace('fill="#E8542A"', 'style="fill: var(--facet-color-accent)"');
+---
+
+<Fragment set:html={svg} />

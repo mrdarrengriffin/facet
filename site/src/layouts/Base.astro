@@ -1,21 +1,38 @@
 ---
-// Every page: header (title, search, preview switches), sidebar (generated from the registry), main column.
+// Every page, from the original Facet site (main a5df2ac: site/src/layouts/Base.astro): head (favicons, social card, theme
+// before first paint), header, the search dialog. Colours, type, space and motion = the WASM tokens (data/tokens.css,
+// generated from renderer/tokens/*.json by scripts/extract.mjs; sizes are the old site's own). Prefs (theme, sound, panel size, accent, pack) are
+// one object in localStorage, mirrored on <html data-*> (scripts/prefs.ts).
+import '@fontsource/inter/200.css';
+import '@fontsource/inter/300.css';
 import '@fontsource/inter/400.css';
 import '@fontsource/inter/500.css';
 import '@fontsource/inter/600.css';
 import '@fontsource/jetbrains-mono/400.css';
 import '@fontsource/jetbrains-mono/500.css';
+import '../data/tokens.css';
+import '../styles/global.css';
+import '../styles/live.css';
 import '../styles/site.css';
-import { ACCENTS, ALL, SOUND, BASE, COMPONENTS, FOUNDATIONS, href, SITE, STATUS, themeCss, type Status } from '../lib/data';
+import Header from '../components/Header.astro';
+import Search from '../components/Search.astro';
+import { ACCENTS, BASE, SOUND, TOKENS } from '../lib/data';
 
-interface Props { title: string; description?: string; current?: string }
-const { title, description = 'Facet: a design system for wall panels, drawn by the same renderer the panels run.', current = '' } = Astro.props;
-const groups = [
-  { label: 'Foundations', items: FOUNDATIONS, index: `${BASE}foundations/` },
-  { label: 'Components', items: COMPONENTS, index: `${BASE}components/` },
-];
-const search = ALL.map((e) => ({ n: e.name, d: e.lede, s: e.section, h: href(e) }));
-const keys: Status[] = ['wip', 'done', 'edited'];
+interface Props {
+  title: string;
+  description?: string;
+  hasSidebar?: boolean;
+}
+
+const {
+  title,
+  description = 'Wall panel UI for Home Assistant: one design system for ESP32 touch panels, drawn by the same renderer the panels run.',
+  hasSidebar = false,
+} = Astro.props;
+const pageTitle = title === 'Facet' ? 'Facet' : `${title} · Facet`;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const socialImage = new URL(`${BASE}social-card.png`, Astro.site).href;
+const bg = (TOKENS.colour as { colours: Record<string, { dark: string; light: string }> }).colours.bg;
 ---
 
 <!doctype html>
@@ -23,16 +40,29 @@ const keys: Status[] = ['wip', 'done', 'edited'];
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{title === 'Facet' ? 'Facet' : `${title} · Facet`}</title>
+    <title>{pageTitle}</title>
     <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
     <link rel="icon" href={`${BASE}favicon.svg`} type="image/svg+xml" />
-    <style set:html={themeCss()} />
+    <link rel="icon" href={`${BASE}favicon-32.png`} type="image/png" sizes="32x32" />
+    <link rel="icon" href={`${BASE}favicon-16.png`} type="image/png" sizes="16x16" />
+    <link rel="apple-touch-icon" href={`${BASE}apple-touch-icon.png`} />
+    <link rel="manifest" href={`${BASE}manifest.webmanifest`} />
+    <meta name="theme-color" content={bg.light} media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content={bg.dark} media="(prefers-color-scheme: dark)" />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content={socialImage} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="color-scheme" content="dark light" />
     <script is:inline>
-      // prefs before first paint (no theme flash): stored > system theme; device 720; accent = the default set
+      // prefs before first paint (no theme flash): stored > system theme; panel 720; accent + pack = the defaults
       (function () {
         var r = document.documentElement, p = {};
         try { p = JSON.parse(localStorage.getItem('facet-docs-prefs') || '{}') || {}; } catch (e) {}
-        r.dataset.theme = p.theme || (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+        r.dataset.theme = p.theme === 'light' || p.theme === 'dark' ? p.theme : matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
         r.dataset.device = String(p.device || 720);
         r.dataset.accent = p.accent || r.dataset.accentDefault;
         r.dataset.sound = p.sound === false ? 'off' : 'on';
@@ -41,91 +71,18 @@ const keys: Status[] = ['wip', 'done', 'edited'];
     </script>
   </head>
   <body>
-    <a class="skip" href="#main">Skip to content</a>
-    <header class="top">
-      <a class="brand" href={BASE}><span class="brand__mark" aria-hidden="true"></span>Facet</a>
-      <div class="search" data-search>
-        <input type="search" placeholder="Search" aria-label="Search the docs" autocomplete="off" />
-        <ul class="search__results" role="listbox" hidden></ul>
-        <script type="application/json" set:html={JSON.stringify(search)} />
-      </div>
-      <div class="prefs" role="group" aria-label="Preview settings">
-        <div class="seg" role="group" aria-label="Theme">
-          <button type="button" data-pref="theme" data-value="dark">Dark</button>
-          <button type="button" data-pref="theme" data-value="light">Light</button>
-        </div>
-        <div class="seg" role="group" aria-label="Panel size">
-          <button type="button" data-pref="device" data-value="720" title="720 x 720 panels (1.5x)">720</button>
-          <button type="button" data-pref="device" data-value="480" title="480 x 480 panels (1x)">480</button>
-        </div>
-        <div class="seg" role="group" aria-label="Sound">
-          <button type="button" data-pref="sound" data-value="true" title="Play the components' UI sounds">Sound</button>
-          <button type="button" data-pref="sound" data-value="false" title="No sound">Off</button>
-        </div>
-        <label class="accent">
-          <span class="sr">Sound pack</span>
-          <select data-pref-pack aria-label="Sound pack">
-            {SOUND.variants.map((v) => <option value={v.id} title={v.about}>{v.name}</option>)}
-          </select>
-        </label>
-        <label class="accent">
-          <span class="sr">Accent</span>
-          <select data-pref-accent aria-label="Accent set">
-            {ACCENTS.sets.map((s) => <option value={s.id}>{s.label}</option>)}
-          </select>
-        </label>
-      </div>
-    </header>
-
-    <div class="shell">
-      <details class="nav" open>
-        <summary>Menu</summary>
-        <nav aria-label="Docs">
-          <a class="nav__home" href={BASE} aria-current={current === 'home' ? 'page' : undefined}>Overview</a>
-          {
-            groups.map((g) => (
-              <section>
-                <h2><a href={g.index} aria-current={current === g.index ? 'page' : undefined}>{g.label}</a></h2>
-                <ul>
-                  {g.items.map((e) => (
-                    <li>
-                      <a href={href(e)} aria-current={current === e.id ? 'page' : undefined}>
-                        <span>{e.name}</span>
-                        <span class={`st st--${e.status}`} title={STATUS[e.status].label} />
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            ))
-          }
-          <div class="key">
-            {keys.map((k) => (
-              <span title={STATUS[k].hint}><span class={`st st--${k}`} />{STATUS[k].label}</span>
-            ))}
-          </div>
-        </nav>
-      </details>
-      <script is:inline>
-        // phone: the menu starts closed (desktop keeps it open as the sidebar)
-        if (matchMedia('(max-width: 899px)').matches) document.querySelector('details.nav').open = false;
-      </script>
-      <main id="main">
-        <slot />
-        <footer class="foot">
-          Built from <a href={`${SITE.repo.replace('/blob/', '/tree/')}`}>facet@wasm</a> {SITE.commit} · renderer build {SITE.wasm['1.5x'].built.slice(0, 16).replace('T', ' ')}
-        </footer>
-      </main>
-    </div>
-
+    <a class="skip-link" href="#main">Skip to content</a>
+    <Header hasSidebar={hasSidebar} />
+    <slot />
+    <Search />
     <script>
       import { initPrefs } from '../scripts/prefs';
-      import { initSearch } from '../scripts/search';
       import { initLive } from '../scripts/live';
       import { initSound } from '../scripts/sound';
+      import { initSelects } from '../scripts/fselect';
       initPrefs();
+      initSelects();
       initSound();
-      initSearch();
       initLive();
     </script>
   </body>

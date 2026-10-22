@@ -1,0 +1,18 @@
+---
+// The old site's preview bar as a box of its own (docs pages with live sections): label, sound, theme, panel size.
+// The theme switch applies to every live example in the enclosing [data-preview-scope]. Accent and sound pack are
+// site settings (header).
+import SoundToggle from './SoundToggle.astro';
+import ThemeSwitch from './ThemeSwitch.astro';
+import SizeSwitch from './SizeSwitch.astro';
+---
+
+<div class="preview-box">
+  <div class="preview__bar">
+    <span class="facet-label">Preview</span>
+    <span class="preview__spacer"></span>
+    <SoundToggle />
+    <ThemeSwitch />
+    <SizeSwitch />
+  </div>
+</div>

@@ -1,13 +1,16 @@
 ---
-// One page per registered component, generated from its meta (props, variants, frame), README row, source comment,
-// fw::emit / fw::sound calls and git status (scripts/extract.mjs). Every variant is drawn live by the WASM renderer.
+// One page per registered component, in the original site's UI explorer layout (main a5df2ac: site/src/pages/
+// components.astro): components sidebar with a filter; preview + props playground (the build's meta props drive the
+// live WASM stage); variants; then the reference generated from the source (props, events and sounds, built with). Every example is the real component, drawn by the panel renderer.
 import Base from '../../layouts/Base.astro';
+import ComponentsSidebar from '../../components/ComponentsSidebar.astro';
 import Events from '../../components/Events.astro';
 import Live from '../../components/Live.astro';
-import Source from '../../components/Source.astro';
 import Lede from '../../components/Lede.astro';
-import Status from '../../components/Status.astro';
-import { ALL, COMPONENTS, defaults, href, inline, slug, values, type Entry } from '../../lib/data';
+import SoundToggle from '../../components/SoundToggle.astro';
+import ThemeSwitch from '../../components/ThemeSwitch.astro';
+import SizeSwitch from '../../components/SizeSwitch.astro';
+import { ALL, COMPONENTS, defaults, groupOf, href, slug, values, type Entry } from '../../lib/data';
 
 export function getStaticPaths() {
   return COMPONENTS.map((c) => ({ params: { id: slug(c.id) }, props: { c } }));
@@ -15,97 +18,165 @@ export function getStaticPaths() {
 const { c } = Astro.props as { c: Entry };
 const m = c.meta;
 const base = defaults(m);
-const variants = m.variants?.length ? m.variants : [{ label: 'Default', props: {} }];
+const variants = m.variants?.length ? m.variants : [];
 const uses = c.uses.map((u) => ALL.find((e) => e.id === u)).filter(Boolean) as Entry[];
 const usedBy = COMPONENTS.filter((o) => o.uses.includes(c.id) && o.id !== c.id);
+const label = (n: string) => n.replace(/_/g, ' ').replace(/^./, (x) => x.toUpperCase());
+const fid = (n: string) => `pg-${c.id}-${n}`;
 ---
 
-<Base title={c.name} description={c.lede} current={c.id}>
-  <header class="page-head">
-    <p class="label">Component</p>
-    <h1>{c.name} <Status status={c.status} /></h1>
-    <Lede e={c} />
-    <Source source={c.source} />
-  </header>
+<Base title={c.name} description={c.lede} hasSidebar>
+  <div class="explorer">
+    <ComponentsSidebar current={c.id} />
 
-  <section>
-    <h2 id="variants">Variants</h2>
-    <p class="hint">Drawn live by the panel renderer, pixel for pixel. Use the switches at the top for theme, panel size and accent; tap a preview to try it.</p>
-    <div class="grid-live">
-      {variants.map((v) => <Live comp={c.id} props={{ ...base, ...v.props }} label={v.label} frame={m.frame} />)}
-    </div>
-    {(c.events.length > 0 || c.sounds.length > 0) && <Events />}
-  </section>
+    <main class="explorer__main" id="main">
+      <header class="explorer__head">
+        <p class="facet-label">{groupOf(c.id)}</p>
+        <h1>{c.name}</h1>
+        <Lede e={c} />
+      </header>
 
-  <section>
-    <h2 id="props">Props</h2>
-    {
-      m.props?.length ? (
-        <div class="table">
-          <table>
-            <thead><tr><th>Prop</th><th>Type</th><th>Values</th><th>Default</th></tr></thead>
-            <tbody>
-              {m.props.map((p) => (
-                <tr>
-                  <td><code>{p.name}</code></td>
-                  <td>{p.type}</td>
-                  <td>{values(p)}</td>
-                  <td><code>{JSON.stringify(base[p.name])}</code></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : (
-        <p class="hint">No props.</p>
-      )
-    }
-  </section>
-
-  <section>
-    <h2 id="events">Events and sounds</h2>
-    {
-      c.events.length || c.sounds.length ? (
-        <div class="cols">
-          <div>
-            <h3 class="label">Events</h3>
-            {c.events.length ? <ul class="tags">{c.events.map((e) => <li><code>{e}</code></li>)}</ul> : <p class="hint">None.</p>}
+      <section class="explorer__workbench" data-playground data-preview-scope data-defaults={JSON.stringify(base)}>
+        <div class="explorer__preview">
+          <div class="preview__bar">
+            <span class="facet-label">Preview</span>
+            <span class="preview__spacer"></span>
+            <SoundToggle />
+            <ThemeSwitch />
+            <SizeSwitch />
           </div>
-          <div>
-            <h3 class="label">Sounds</h3>
-            {c.sounds.length ? (
-              <dl class="sounds">
-                {c.sounds.map((s) => (<><dt><code>{s.id}</code> {s.name}</dt><dd>{s.for}</dd></>))}
-              </dl>
-            ) : <p class="hint">None.</p>}
+          <div class="explorer__themed" data-themed>
+            <div class="explorer__stage">
+              <Live comp={c.id} props={base} label={`${c.name} playground`} frame={m.frame} caption={false} sandbox />
+            </div>
           </div>
         </div>
-      ) : (
-        <p class="hint">{uses.length ? <>Static on its own; it reports through what it is built with.</> : <>Static: no events, no sounds.</>}</p>
-      )
-    }
-  </section>
-
-  {
-    (uses.length > 0 || usedBy.length > 0) && (
-      <section>
-        <h2 id="related">Built with</h2>
-        <div class="cols">
-          {uses.length > 0 && <div><h3 class="label">Uses</h3><ul class="tags">{uses.map((u) => <li><a href={href(u)}>{u.name}</a></li>)}</ul></div>}
-          {usedBy.length > 0 && <div><h3 class="label">Used by</h3><ul class="tags">{usedBy.map((u) => <li><a href={href(u)}>{u.name}</a></li>)}</ul></div>}
+        <div class="explorer__controls">
+          <h2 class="facet-label">Props</h2>
+          <div class="explorer__fields">
+            {!m.props?.length && <p class="ex-none">No props to change.</p>}
+            {
+              (m.props ?? []).map((p) =>
+                p.type === 'select' ? (
+                  <div class="ex-control ex-control--select">
+                    <label for={fid(p.name)}>{label(p.name)}</label>
+                    <select id={fid(p.name)} data-prop={p.name} data-kind="select" data-fselect="fselect--field">
+                      {(p.options ?? []).map((o) => <option value={o} selected={o === base[p.name]}>{o}</option>)}
+                    </select>
+                  </div>
+                ) : p.type === 'range' ? (
+                  <div class="ex-control ex-control--range">
+                    <div class="ex-control__row">
+                      <label for={fid(p.name)}>{label(p.name)}</label>
+                      <output for={fid(p.name)}>{String(base[p.name])}</output>
+                    </div>
+                    <input id={fid(p.name)} type="range" min={p.min ?? 0} max={p.max ?? 100} step={p.step ?? 1} value={String(base[p.name])} data-prop={p.name} data-kind="range" />
+                  </div>
+                ) : p.type === 'bool' ? (
+                  <div class="ex-control ex-control--toggle">
+                    <div class="ex-control__row ex-control__row--toggle">
+                      <input id={fid(p.name)} type="checkbox" checked={!!base[p.name]} data-prop={p.name} data-kind="bool" />
+                      <label for={fid(p.name)}>{label(p.name)}</label>
+                    </div>
+                  </div>
+                ) : (
+                  <div class="ex-control ex-control--text">
+                    <label for={fid(p.name)}>{label(p.name)}</label>
+                    <input id={fid(p.name)} type="text" value={String(base[p.name] ?? '')} data-prop={p.name} data-kind="text" />
+                  </div>
+                ),
+              )
+            }
+          </div>
+          {m.props?.length ? <button class="chip-button ex-reset" type="button" data-pg-reset>Reset</button> : null}
         </div>
       </section>
-    )
-  }
+      {(c.events.length > 0 || c.sounds.length > 0) && <Events />}
 
-  <section>
-    <h2 id="notes">Implementation notes</h2>
-    {c.description && <p class="notes" set:html={inline(c.description)} />}
-    {c.notes && (
-      <details class="src-notes">
-        <summary>From the source file</summary>
-        <pre>{c.notes}</pre>
-      </details>
-    )}
-  </section>
+      {
+        variants.length > 0 && (
+          <section class="explorer__variants" data-preview-scope>
+            <h2 class="facet-label">Variants</h2>
+            <div class="explorer__variant-grid">
+              {variants.map((v) => (
+                <figure class="ex-variant">
+                  <div class="ex-variant__cell">
+                    <Live comp={c.id} props={{ ...base, ...v.props }} label={v.label} frame={m.frame} caption={false} />
+                  </div>
+                  <figcaption>{v.label}</figcaption>
+                </figure>
+              ))}
+            </div>
+          </section>
+        )
+      }
+
+      <section class="explorer__ref">
+        <h2 id="props">Props</h2>
+        {
+          m.props?.length ? (
+            <table>
+              <thead><tr><th>Prop</th><th>Type</th><th>Values</th><th>Default</th></tr></thead>
+              <tbody>
+                {m.props.map((p) => (
+                  <tr>
+                    <td><code>{p.name}</code></td>
+                    <td>{p.type}</td>
+                    <td>{values(p)}</td>
+                    <td><code>{JSON.stringify(base[p.name])}</code></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <p class="hint">No props.</p>
+          )
+        }
+
+        <h2 id="events">Events and sounds</h2>
+        {
+          c.events.length || c.sounds.length ? (
+            <div class="cols">
+              <div>
+                <h3 class="facet-label">Events</h3>
+                {c.events.length ? <ul class="tags">{c.events.map((e) => <li><code>{e}</code></li>)}</ul> : <p class="hint">None.</p>}
+              </div>
+              <div>
+                <h3 class="facet-label">Sounds</h3>
+                {c.sounds.length ? (
+                  <dl class="sounds">
+                    {c.sounds.map((s) => (<><dt><code>{s.id}</code> {s.name}</dt><dd>{s.for}</dd></>))}
+                  </dl>
+                ) : <p class="hint">None.</p>}
+              </div>
+            </div>
+          ) : (
+            <p class="hint">{uses.length ? <>Static on its own; it reports through what it is built with.</> : <>Static: no events, no sounds.</>}</p>
+          )
+        }
+
+        {
+          (uses.length > 0 || usedBy.length > 0) && (
+            <>
+              <h2 id="related">Built with</h2>
+              <div class="cols">
+                {uses.length > 0 && <div><h3 class="facet-label">Uses</h3><ul class="tags">{uses.map((u) => <li><a href={href(u)}>{u.name}</a></li>)}</ul></div>}
+                {usedBy.length > 0 && <div><h3 class="facet-label">Used by</h3><ul class="tags">{usedBy.map((u) => <li><a href={href(u)}>{u.name}</a></li>)}</ul></div>}
+              </div>
+            </>
+          )
+        }
+
+        <p class="hint">Source: {c.source.map((s, i) => <>{i > 0 && ' + '}<a href={s.url}>{s.path}</a></>)}</p>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    import { initDocsNav } from '../../scripts/docs-nav';
+    import { initFilter, initPlayground } from '../../scripts/playground';
+    initDocsNav();
+    initFilter();
+    initPlayground();
+  </script>
 </Base>

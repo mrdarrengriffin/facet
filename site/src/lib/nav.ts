@@ -1,0 +1,56 @@
+// Site navigation, in the original Facet site's shape (main a5df2ac: site/src/lib/nav.ts + Header.astro): header links,
+// the docs sidebar groups and the reading order for previous / next. Foundations (the "Design system") and
+// components come from the WASM registry; pages not written yet show as "Soon" (getting started, concepts).
+import { BASE, FOUNDATIONS, href } from './data';
+
+export interface NavLink {
+  label: string;
+  /** no href = a page still to come ("Soon" badge, not a link) */
+  href?: string;
+  badge?: string;
+  /** WASM icon name, shown before the label */
+  icon?: string;
+}
+
+export interface NavGroup {
+  label: string;
+  links: NavLink[];
+}
+
+/** Prefix a site path with the base path. `url('/components/')` -> `/facet-docs/components/`. */
+export function url(path: string): string {
+  return `${BASE.replace(/\/$/, '')}${path.startsWith('/') ? path : `/${path}`}`;
+}
+
+export const headerLinks = [
+  { label: 'Docs', href: url('/roadmap/'), match: [url('/roadmap/'), url('/screens/')] },
+  { label: 'Components', href: url('/components/'), match: [url('/components/')] },
+  { label: 'Design system', href: url('/foundations/'), match: [url('/foundations/')] },
+  { label: 'Updates', href: url('/updates/'), match: [url('/updates/')] },
+];
+
+const soon = (label: string): NavLink => ({ label, badge: 'Soon' });
+
+export function getSidebar(): NavGroup[] {
+  return [
+    { label: 'Start here', links: [soon('Getting started')] },
+    { label: 'Concepts', links: [soon('Design tokens'), soon('Components'), soon('Firmware')] },
+    {
+      label: 'Design system',
+      links: [{ label: 'Overview', href: url('/foundations/') }, ...FOUNDATIONS.map((f) => ({ label: f.name, href: href(f) }))],
+    },
+    { label: 'Screens', links: [{ label: 'Coming later', href: url('/screens/'), icon: 'screen-home' }] },
+    {
+      label: 'Project',
+      links: [
+        { label: 'Roadmap', href: url('/roadmap/') },
+        { label: 'Updates', href: url('/updates/') },
+      ],
+    },
+  ];
+}
+
+/** Every docs page in reading order, for the previous / next links. */
+export function getReadingOrder(): { label: string; href: string }[] {
+  return getSidebar().flatMap((g) => g.links.filter((l): l is NavLink & { href: string } => !!l.href).map((l) => ({ label: l.label === 'Overview' ? 'Design system' : l.label === 'Coming later' ? 'Screens' : l.label, href: l.href })));
+}

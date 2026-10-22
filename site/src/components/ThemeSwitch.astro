@@ -1,0 +1,10 @@
+---
+// The original site's preview theme switch (main: site/src/components/panel/ThemeSwitch.astro): follow the site's
+// theme, or force dark or light for the previews in this box (the closest [data-preview-scope]; scripts/live.ts).
+---
+
+<div class="seg" role="group" aria-label="Preview theme">
+  <button type="button" data-theme-set="site" aria-pressed="true">Site</button>
+  <button type="button" data-theme-set="dark" aria-pressed="false">Dark</button>
+  <button type="button" data-theme-set="light" aria-pressed="false">Light</button>
+</div>

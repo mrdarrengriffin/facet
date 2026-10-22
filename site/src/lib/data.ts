@@ -4,6 +4,8 @@ import foundations from '../data/foundations.json';
 import site from '../data/site.json';
 import tokens from '../data/tokens.json';
 import sound from '../data/sound-packs.json';
+import icons from '../data/icons.json';
+import { COMPONENT_GROUPS } from './groups';
 
 export type Prop = { name: string; type: 'text' | 'select' | 'range' | 'bool'; default?: unknown; options?: string[]; min?: number; max?: number; step?: number };
 export type Variant = { label: string; about?: string; props: Record<string, unknown> };
@@ -50,15 +52,32 @@ export function inline(s: string): string {
   return esc(s).replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
 }
 
-/** colour tokens -> CSS custom properties (both themes, every accent set) */
-export function themeCss(): string {
-  const c = TOKENS.colour as { colours: Record<string, { dark: string; light: string }>; accent: { default: string; roles: string[]; sets: { id: string; dark: Record<string, string>; light: Record<string, string> }[] } };
-  const vars = (t: 'dark' | 'light') => Object.entries(c.colours).map(([k, v]) => `--c-${k}:${v[t]};`).join('');
-  const set = (t: 'dark' | 'light', s: (typeof c.accent.sets)[number]) => Object.entries(s[t]).map(([k, v]) => `--c-${k}:${v};`).join('');
-  let css = `:root{${vars('dark')}color-scheme:dark}:root[data-theme=light]{${vars('light')}color-scheme:light}`;
-  for (const s of c.accent.sets) {
-    css += `:root[data-accent=${s.id}]{${set('dark', s)}}:root[data-theme=light][data-accent=${s.id}]{${set('light', s)}}`;
-  }
-  return css;
-}
 export const ACCENTS = (TOKENS.colour as { accent: { default: string; sets: { id: string; label: string }[] } }).accent;
+
+/** icons.json stroke.ui: px stroke at 16 / 24 / 32 / 48 px, linear in between, clamped; returned in 24-grid units */
+export function opticalStroke(size: number): number {
+  const t = (icons as { stroke: [number, number][] }).stroke;
+  let px = t[t.length - 1][1];
+  for (let i = 0; i < t.length; i++) {
+    if (size <= t[i][0]) { px = i === 0 ? t[0][1] : t[i - 1][1] + ((t[i][1] - t[i - 1][1]) * (size - t[i - 1][0])) / (t[i][0] - t[i - 1][0]); break; }
+  }
+  return Math.round(((px * 24) / size) * 1000) / 1000;
+}
+type Icon = { kind: string; viewBox: string; inner: string };
+/** an icon of the WASM set as inline SVG (ui / screen: currentColor strokes; weather: its own layers) */
+export function iconSvg(name: string, size = 24, cls = ''): string {
+  const i = (icons as { icons: Record<string, Icon> }).icons[name];
+  if (!i) return '';
+  const stroke = i.kind === 'weather' ? '' : ` fill="none" stroke="currentColor" stroke-width="${opticalStroke(size)}" stroke-linecap="round" stroke-linejoin="round"`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${i.viewBox}" width="${size}" height="${size}" aria-hidden="true" class="icon ${cls}"${stroke}>${i.inner}</svg>`;
+}
+
+/** components in sidebar groups (lib/groups.ts order; unknown ids last, under Other) */
+export function componentGroups(): { label: string; items: Entry[] }[] {
+  const known = new Set(COMPONENT_GROUPS.flatMap(([, ids]) => ids));
+  const out = COMPONENT_GROUPS.map(([label, ids]) => ({ label, items: ids.map((id) => COMPONENTS.find((c) => c.id === id)).filter((c): c is Entry => !!c) }));
+  const other = COMPONENTS.filter((c) => !known.has(c.id));
+  if (other.length) out.push({ label: 'Other', items: other });
+  return out.filter((g) => g.items.length);
+}
+export const groupOf = (id: string) => componentGroups().find((g) => g.items.some((c) => c.id === id))?.label ?? 'Components';

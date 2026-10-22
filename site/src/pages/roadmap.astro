@@ -1,0 +1,53 @@
+---
+// Roadmap, after the original site's (main: site/src/content/docs/roadmap.md), for the WASM rebuild. Status comes from
+// src/roadmap.json: a public snapshot of the project's scope list, refreshed by scripts/extract.mjs on the build box.
+import Docs, { type Heading } from '../layouts/Docs.astro';
+import road from '../roadmap.json';
+import { url } from '../lib/nav';
+
+type Row = { name: string; group: string; status: 'done' | 'doing' | 'planned'; note?: string };
+const tables = road.tables as Record<string, Row[]>;
+const sections = [
+  { id: 'design-system', title: 'Design system and platform', rows: tables.foundations ?? [] },
+  { id: 'components', title: 'Components', rows: tables.components ?? [] },
+  { id: 'screens', title: 'Screens', rows: tables.screens ?? [] },
+].map((s) => ({ ...s, groups: [...new Set(s.rows.map((r) => r.group))].map((g) => ({ g, rows: s.rows.filter((r) => r.group === g) })) }));
+const headings: Heading[] = sections.map((s) => ({ depth: 2, slug: s.id, text: s.title }));
+const BADGE: Record<Row['status'], string> = { done: 'Available', doing: 'In progress', planned: 'Planned' };
+const when = new Date(`${road.updated}T12:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+---
+
+<Docs title="Roadmap" description="Where Facet is headed, area by area." group="Project" current={url('/roadmap/')} headings={headings}>
+  <p>
+    A rough plan, not a promise. Foundations and small components first, then the screens, then the firmware side.
+    Ticked items are available, a dash means in progress, an empty box is planned.
+  </p>
+  <p class="hint">Updated {when}. See <a href={url('/updates/')}>Updates</a> for what changed lately.</p>
+  {
+    sections.map((s) => (
+      <>
+        <h2 id={s.id} class="task-heading">
+          {s.title}
+          <span class="task-count">{s.rows.filter((r) => r.status === 'done').length}/{s.rows.length}</span>
+        </h2>
+        {s.groups.map(({ g, rows }) => (
+          <>
+            <h3>{g}</h3>
+            <ul class="task-list">
+              {rows.map((r) => (
+                <li class={`task task--${r.status}`}>
+                  <span class="task__box" role="img" aria-label={r.status === 'done' ? 'Available' : r.status === 'doing' ? 'In progress' : 'Planned'} />
+                  <span class="task__text">
+                    {r.name}
+                    {r.note && <span class="task__note">{r.note}</span>}
+                  </span>
+                  <span class={`status-badge status-badge--${r.status}`}><span class="status-badge__dot" aria-hidden="true" />{BADGE[r.status]}</span>
+                </li>
+              ))}
+            </ul>
+          </>
+        ))}
+      </>
+    ))
+  }
+</Docs>

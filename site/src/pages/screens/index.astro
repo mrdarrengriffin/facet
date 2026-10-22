@@ -1,0 +1,21 @@
+---
+// Screens placeholder: screens come after the components (Darren's build order, 2026-10-21); the original site's
+// screen pages are not ported.
+import Docs from '../../layouts/Docs.astro';
+import { url } from '../../lib/nav';
+---
+
+<Docs
+  title="Screens"
+  description="One job per screen. Each screen will get a page with a live preview, as on the original site."
+  group="Screens"
+  current={url('/screens/')}
+>
+  <div class="callout">
+    <span class="dot" aria-hidden="true"></span>
+    <p>
+      <strong>Coming later.</strong> Screens are built after the components, from the same parts and from
+      screen-level patterns defined for them. Until then, see the <a href={url('/components/')}>components</a>.
+    </p>
+  </div>
+</Docs>

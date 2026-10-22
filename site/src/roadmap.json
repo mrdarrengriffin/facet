@@ -1,0 +1,716 @@
+{
+ "updated": "2026-10-22",
+ "tables": {
+  "foundations": [
+   {
+    "name": "Colour",
+    "group": "Core",
+    "status": "done",
+    "note": "Palette, themes and accent sets; every pairing contrast-tested, zero fails"
+   },
+   {
+    "name": "Type",
+    "group": "Core",
+    "status": "done",
+    "note": "Fonts, screen and component type scales, generated font files"
+   },
+   {
+    "name": "Spacing & radius",
+    "group": "Core",
+    "status": "done",
+    "note": "Every size on the 4 px grid; corner radii and line widths"
+   },
+   {
+    "name": "Layout & devices",
+    "group": "Core",
+    "status": "done",
+    "note": "Screen frame, rows, overlays; the three panels and size classes"
+   },
+   {
+    "name": "Motion",
+    "group": "Core",
+    "status": "done",
+    "note": "Durations, easings, content rise, reduced motion"
+   },
+   {
+    "name": "Sound",
+    "group": "Core",
+    "status": "done",
+    "note": "Rules, what uses what, play-only pitch preview; rules to iterate with the UI"
+   },
+   {
+    "name": "Icons",
+    "group": "Core",
+    "status": "done",
+    "note": "74 icons pre-drawn at exact sizes, incl. screen and weather icons"
+   },
+   {
+    "name": "States",
+    "group": "Core",
+    "status": "done",
+    "note": "One rule set for pressed, disabled, unavailable, on/off, focus"
+   },
+   {
+    "name": "Mascots",
+    "group": "Core",
+    "status": "done",
+    "note": "Agent mascot moods, sizes, colours and motion"
+   },
+   {
+    "name": "Smooth strokes",
+    "group": "Core",
+    "status": "done",
+    "note": "Smooth curves; now used by Motion, the Dial and the mascot"
+   },
+   {
+    "name": "Personalisation settings",
+    "group": "Settings",
+    "status": "planned",
+    "note": "Theme, accent, text size, sound pack, idle, units from one list"
+   },
+   {
+    "name": "Units (km/miles, mph/km/h/knots)",
+    "group": "Settings",
+    "status": "planned",
+    "note": "Distances and speeds follow the chosen units"
+   },
+   {
+    "name": "Tall and wide layouts",
+    "group": "Layout",
+    "status": "planned",
+    "note": "Portrait and widescreen panels (800x480, 1024x600, portrait)"
+   },
+   {
+    "name": "Flexible layouts",
+    "group": "Layout",
+    "status": "planned",
+    "note": "Beyond the plain card grid; evolves later"
+   },
+   {
+    "name": "Theme sets",
+    "group": "Customisation",
+    "status": "planned",
+    "note": "People design their own looks; rules still keep it good-looking"
+   },
+   {
+    "name": "Character and icon motion",
+    "group": "Customisation",
+    "status": "planned",
+    "note": "Icons that morph (play to pause, menu to X); fun, not overdone"
+   },
+   {
+    "name": "Sound on the panels",
+    "group": "Sound",
+    "status": "planned",
+    "note": "Real speaker playback on the Waveshare plus rules for when sounds play"
+   },
+   {
+    "name": "Docs site",
+    "group": "Platform",
+    "status": "doing"
+   },
+   {
+    "name": "Device side: ESPHome + Home Assistant",
+    "group": "Platform",
+    "status": "planned"
+   },
+   {
+    "name": "Install wizard and onboarding",
+    "group": "Platform",
+    "status": "planned"
+   },
+   {
+    "name": "More sounds",
+    "group": "Sound",
+    "status": "planned",
+    "note": "New sound types and packs, later"
+   },
+   {
+    "name": "Mascot design round 2",
+    "group": "Customisation",
+    "status": "planned"
+   }
+  ],
+  "components": [
+   {
+    "name": "Label",
+    "group": "Atoms",
+    "status": "done",
+    "note": "Text in any type style, snapped to the grid"
+   },
+   {
+    "name": "Status dot",
+    "group": "Atoms",
+    "status": "done",
+    "note": "Small coloured dot for state"
+   },
+   {
+    "name": "Status chip",
+    "group": "Atoms",
+    "status": "done",
+    "note": "Small tinted word pill for state"
+   },
+   {
+    "name": "Corner ticks",
+    "group": "Atoms",
+    "status": "done",
+    "note": "Accent corner marks on active items"
+   },
+   {
+    "name": "Focus ring",
+    "group": "Atoms",
+    "status": "done",
+    "note": "Accent ring around the focused item"
+   },
+   {
+    "name": "Smooth stroke",
+    "group": "Atoms",
+    "status": "done",
+    "note": "Shared helper for smooth lines and curves"
+   },
+   {
+    "name": "Mascot",
+    "group": "Atoms",
+    "status": "done",
+    "note": "The little agent character, drawn in each mood"
+   },
+   {
+    "name": "Mascot mood",
+    "group": "Atoms",
+    "status": "planned",
+    "note": "Picks the mascot mood from what an agent is doing"
+   },
+   {
+    "name": "Icon",
+    "group": "Icons",
+    "status": "done",
+    "note": "Draws any icon at its exact size and colour"
+   },
+   {
+    "name": "Screen icon",
+    "group": "Icons",
+    "status": "done"
+   },
+   {
+    "name": "Weather icon",
+    "group": "Icons",
+    "status": "done",
+    "note": "17 weather icons, static only"
+   },
+   {
+    "name": "Animated weather icons",
+    "group": "Icons",
+    "status": "planned"
+   },
+   {
+    "name": "Moon phase glyph",
+    "group": "Icons",
+    "status": "planned",
+    "note": "The moon drawn at its current phase"
+   },
+   {
+    "name": "Button",
+    "group": "Buttons",
+    "status": "done",
+    "note": "Text button in its kinds and states"
+   },
+   {
+    "name": "Icon button",
+    "group": "Buttons",
+    "status": "done",
+    "note": "Play, round and square icon-only buttons"
+   },
+   {
+    "name": "Back button",
+    "group": "Buttons",
+    "status": "done",
+    "note": "Back arrow that fits the header row"
+   },
+   {
+    "name": "Slider",
+    "group": "Controls",
+    "status": "done",
+    "note": "Drag bar with ticking steps and end landmarks"
+   },
+   {
+    "name": "Dial",
+    "group": "Controls",
+    "status": "done",
+    "note": "Round scale with knob, steps, units, on/off"
+   },
+   {
+    "name": "Toggle",
+    "group": "Controls",
+    "status": "done",
+    "note": "On/off switch"
+   },
+   {
+    "name": "Segmented",
+    "group": "Controls",
+    "status": "done",
+    "note": "Pick one of a few options, settings and tabs styles"
+   },
+   {
+    "name": "Thermostat dial",
+    "group": "Controls",
+    "status": "planned",
+    "note": "Room temperature tick, set point knob, heating arc"
+   },
+   {
+    "name": "Big switch",
+    "group": "Controls",
+    "status": "planned",
+    "note": "One big round on/off button for the Switch screen"
+   },
+   {
+    "name": "Cover visual",
+    "group": "Controls",
+    "status": "planned",
+    "note": "Window drawn as roller, Venetian or curtains; drag to set"
+   },
+   {
+    "name": "Arc",
+    "group": "Controls",
+    "status": "planned",
+    "note": "Curved progress or level arc"
+   },
+   {
+    "name": "Media disc",
+    "group": "Controls",
+    "status": "planned",
+    "note": "Spinning disc showing playback state"
+   },
+   {
+    "name": "Media visuals",
+    "group": "Controls",
+    "status": "planned",
+    "note": "Cassette, CD, vinyl with tonearm, reel-to-reel"
+   },
+   {
+    "name": "Tick ring",
+    "group": "Controls",
+    "status": "planned",
+    "note": "Ring of ticks, used by clocks and timers"
+   },
+   {
+    "name": "Checkbox",
+    "group": "Controls",
+    "status": "planned",
+    "note": "Tick box with on, off and mixed"
+   },
+   {
+    "name": "Step marks",
+    "group": "Controls",
+    "status": "planned",
+    "note": "Small dots for each step on stepped sliders, later arcs"
+   },
+   {
+    "name": "Header",
+    "group": "Screen parts",
+    "status": "done",
+    "note": "Screen title bar with back and actions"
+   },
+   {
+    "name": "Home card",
+    "group": "Screen parts",
+    "status": "done",
+    "note": "Home grid card: icon, label, preview, value"
+   },
+   {
+    "name": "Tile",
+    "group": "Screen parts",
+    "status": "done",
+    "note": "Agent tile: mascot, title, status row"
+   },
+   {
+    "name": "Hero block",
+    "group": "Screen parts",
+    "status": "done",
+    "note": "Big number or headline at the top of a screen"
+   },
+   {
+    "name": "List row",
+    "group": "Screen parts",
+    "status": "done",
+    "note": "Hairline row: icon, title, value, chevron or toggle"
+   },
+   {
+    "name": "More row",
+    "group": "Screen parts",
+    "status": "done",
+    "note": "\"See all\" row at the bottom of a list"
+   },
+   {
+    "name": "Stat",
+    "group": "Screen parts",
+    "status": "done",
+    "note": "Small label plus value pair"
+   },
+   {
+    "name": "State readout",
+    "group": "Screen parts",
+    "status": "planned",
+    "note": "Bare state text on Home, no box, not tappable"
+   },
+   {
+    "name": "Moon facts",
+    "group": "Screen parts",
+    "status": "planned",
+    "note": "Moon rise, set, illumination, next full and new"
+   },
+   {
+    "name": "Card previews (Graphics)",
+    "group": "Screen parts",
+    "status": "planned",
+    "note": "Little top-right pictures on Home cards; only weather so far"
+   },
+   {
+    "name": "Scroll track",
+    "group": "Screen parts",
+    "status": "planned",
+    "note": "Thin scroll position bar on long screens"
+   },
+   {
+    "name": "Count badge",
+    "group": "Lists",
+    "status": "done",
+    "note": "Number bubble"
+   },
+   {
+    "name": "Section header",
+    "group": "Lists",
+    "status": "done",
+    "note": "Caps title above a group, optional action"
+   },
+   {
+    "name": "State chip",
+    "group": "Lists",
+    "status": "planned",
+    "note": "Coloured state pill for PRs and checks"
+   },
+   {
+    "name": "Pull request row",
+    "group": "Lists",
+    "status": "planned",
+    "note": "GitHub PR line: repo, number, age, status"
+   },
+   {
+    "name": "Check row",
+    "group": "Lists",
+    "status": "planned",
+    "note": "One CI check with its result"
+   },
+   {
+    "name": "Empty state",
+    "group": "Lists",
+    "status": "planned",
+    "note": "\"Loading\" then \"no data\" message"
+   },
+   {
+    "name": "QR block",
+    "group": "Lists",
+    "status": "planned"
+   },
+   {
+    "name": "Radio",
+    "group": "Pickers",
+    "status": "done",
+    "note": "Single-choice dot"
+   },
+   {
+    "name": "Picker row",
+    "group": "Pickers",
+    "status": "done",
+    "note": "Row that opens a choice and shows the pick"
+   },
+   {
+    "name": "Speaker button",
+    "group": "Pickers",
+    "status": "done",
+    "note": "Choose which speaker plays"
+   },
+   {
+    "name": "Bottom sheet",
+    "group": "Pickers",
+    "status": "done",
+    "note": "Panel that slides up with choices"
+   },
+   {
+    "name": "Accent swatches",
+    "group": "Pickers",
+    "status": "done",
+    "note": "Colour dots to pick the accent; v1, UI to refine later"
+   },
+   {
+    "name": "Toast",
+    "group": "Toasts",
+    "status": "done",
+    "note": "Pop-up message with icon, text, action"
+   },
+   {
+    "name": "Toast layer",
+    "group": "Toasts",
+    "status": "done",
+    "note": "Stacks up to two toasts over any screen"
+   },
+   {
+    "name": "Bar chart",
+    "group": "Charts",
+    "status": "planned",
+    "note": "Bars over time, e.g. energy per half hour"
+   },
+   {
+    "name": "Moon by day",
+    "group": "Charts",
+    "status": "planned",
+    "note": "Moon phase across the next 75 days"
+   },
+   {
+    "name": "Rate strip",
+    "group": "Charts",
+    "status": "planned",
+    "note": "Energy price bands across the day"
+   },
+   {
+    "name": "Sparkline",
+    "group": "Charts",
+    "status": "planned",
+    "note": "Tiny trend line"
+   },
+   {
+    "name": "Big number",
+    "group": "Charts",
+    "status": "planned",
+    "note": "Large figure with unit"
+   },
+   {
+    "name": "Delta chip",
+    "group": "Charts",
+    "status": "planned",
+    "note": "Up/down change versus before"
+   },
+   {
+    "name": "Donut",
+    "group": "Charts",
+    "status": "planned"
+   },
+   {
+    "name": "Legend and axis",
+    "group": "Charts",
+    "status": "planned",
+    "note": "Labels and scales for charts"
+   },
+   {
+    "name": "Time",
+    "group": "Clock",
+    "status": "planned",
+    "note": "Live time text"
+   },
+   {
+    "name": "Date line",
+    "group": "Clock",
+    "status": "planned",
+    "note": "Today's date line"
+   },
+   {
+    "name": "Clock faces",
+    "group": "Clock",
+    "status": "planned",
+    "note": "Hero, ring, analogue and compact clocks"
+   },
+   {
+    "name": "Lightning radar",
+    "group": "Radar",
+    "status": "planned",
+    "note": "Strikes plotted around the house by distance"
+   },
+   {
+    "name": "3D print model",
+    "group": "Visuals",
+    "status": "planned",
+    "note": "Print model filling up layer by layer"
+   },
+   {
+    "name": "Art (big screen pictures)",
+    "group": "Visuals",
+    "status": "planned",
+    "note": "Coloured bins, blinds, lock, printer pictures; built with each screen"
+   }
+  ],
+  "screens": [
+   {
+    "name": "Home",
+    "group": "Core",
+    "status": "planned",
+    "note": "Card grid, contextual weather card, readouts"
+   },
+   {
+    "name": "Settings",
+    "group": "Core",
+    "status": "planned",
+    "note": "Theme, accent, text size, sounds, idle; next after Home"
+   },
+   {
+    "name": "Clock",
+    "group": "Core",
+    "status": "planned",
+    "note": "Idle clock with several faces"
+   },
+   {
+    "name": "Timer",
+    "group": "Core",
+    "status": "planned",
+    "note": "Presets, live countdown; Home card while running"
+   },
+   {
+    "name": "Toasts over any screen",
+    "group": "Core",
+    "status": "planned",
+    "note": "Demo page showing toasts on top of screens"
+   },
+   {
+    "name": "Light",
+    "group": "Home control",
+    "status": "planned",
+    "note": "Brightness dial for a light"
+   },
+   {
+    "name": "Switch",
+    "group": "Home control",
+    "status": "planned",
+    "note": "One big on/off button with power and time"
+   },
+   {
+    "name": "Thermostat",
+    "group": "Home control",
+    "status": "planned",
+    "note": "Heating ring, set point, modes, presets"
+   },
+   {
+    "name": "Blinds and curtains",
+    "group": "Home control",
+    "status": "planned",
+    "note": "Window drawn per kind; drag to a position"
+   },
+   {
+    "name": "Robot vacuum",
+    "group": "Home control",
+    "status": "planned",
+    "note": "Rooms plus a good-looking 3D floorplan map"
+   },
+   {
+    "name": "Door lock",
+    "group": "Home control",
+    "status": "planned",
+    "note": "Locked state, unlock with a confirm step"
+   },
+   {
+    "name": "Washing machine",
+    "group": "Home control",
+    "status": "planned",
+    "note": "Cycle time left, predicted end, done"
+   },
+   {
+    "name": "Coffee machine",
+    "group": "Home control",
+    "status": "planned",
+    "note": "Brew status and progress, maybe start a brew"
+   },
+   {
+    "name": "Plant monitor",
+    "group": "Home control",
+    "status": "planned",
+    "note": "Soil moisture per plant, needs-water state"
+   },
+   {
+    "name": "Security cameras",
+    "group": "Home control",
+    "status": "planned",
+    "note": "Camera grid plus Frigate detections"
+   },
+   {
+    "name": "Media",
+    "group": "Media",
+    "status": "planned",
+    "note": "Now playing with disc/cassette/vinyl visuals, speaker picker; later a full-screen album art view"
+   },
+   {
+    "name": "Weather",
+    "group": "Weather and sky",
+    "status": "planned",
+    "note": "Forecast with Sun, Moon, Lightning views"
+   },
+   {
+    "name": "Moon",
+    "group": "Weather and sky",
+    "status": "planned",
+    "note": "Phase as the hero, worked out on the device"
+   },
+   {
+    "name": "Lightning",
+    "group": "Weather and sky",
+    "status": "planned",
+    "note": "Lightning radar; also a Weather view"
+   },
+   {
+    "name": "Overhead (flights)",
+    "group": "Weather and sky",
+    "status": "planned",
+    "note": "What's flying over the house, sky radar, routes"
+   },
+   {
+    "name": "Calendar",
+    "group": "Info",
+    "status": "planned",
+    "note": "Next event, two weeks of days, month view"
+   },
+   {
+    "name": "Energy",
+    "group": "Info",
+    "status": "planned",
+    "note": "Today's usage and cost, week view"
+   },
+   {
+    "name": "To-do and shopping list",
+    "group": "Info",
+    "status": "planned",
+    "note": "View and tick off HA to-do lists"
+   },
+   {
+    "name": "Map",
+    "group": "Info",
+    "status": "planned",
+    "note": "People and devices on a Facet-styled map; feasibility first"
+   },
+   {
+    "name": "Service status",
+    "group": "Info",
+    "status": "planned",
+    "note": "Netlify, Cloudflare, GitHub status; \"another day\""
+   },
+   {
+    "name": "GitHub",
+    "group": "Work",
+    "status": "planned",
+    "note": "PRs needing you, detail with checks and QR"
+   },
+   {
+    "name": "Agents",
+    "group": "Work",
+    "status": "planned"
+   },
+   {
+    "name": "3D print",
+    "group": "Making",
+    "status": "planned",
+    "note": "Model fills up layer by layer"
+   },
+   {
+    "name": "Sports (live scores)",
+    "group": "Info",
+    "status": "planned",
+    "note": "Live scores, fixtures and results for the teams you follow"
+   }
+  ]
+ }
+}

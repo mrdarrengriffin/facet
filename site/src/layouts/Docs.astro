@@ -1,0 +1,149 @@
+---
+// Docs page layout, from the original Facet site (main: site/src/layouts/Docs.astro): sidebar, article (group label,
+// title, lede), "On this page", source link, previous / next. Foundation and component pages use it with live WASM
+// examples (wide = the 800 px column, room for a 720 px panel canvas).
+import Base from './Base.astro';
+import Icon from '../components/Icon.astro';
+import { getReadingOrder, getSidebar } from '../lib/nav';
+import { SITE } from '../lib/data';
+
+export interface Heading { depth: 2 | 3; slug: string; text: string }
+interface Props {
+  title: string;
+  description: string;
+  /** Sidebar group shown above the title. */
+  group: string;
+  /** This page's URL (to highlight it in the sidebar). */
+  current: string;
+  headings?: Heading[];
+  /** Source files in the repository (wasm branch), for the footer link. */
+  source?: { path: string; url: string }[];
+  /** WASM icon shown next to the title. */
+  icon?: string;
+  /** Wider content column (for pages with live previews). */
+  wide?: boolean;
+}
+
+const { title, description, group, current, headings = [], source = [], icon, wide = false } = Astro.props;
+
+const sidebar = getSidebar();
+const order = getReadingOrder();
+const index = order.findIndex((p) => p.href === current);
+const prev = index > 0 ? order[index - 1] : undefined;
+const next = index >= 0 && index < order.length - 1 ? order[index + 1] : undefined;
+const repo = SITE.repo.replace('/blob/', '/tree/');
+---
+
+<Base title={title} description={description} hasSidebar>
+  <div class:list={['docs', { 'docs--wide': wide }]}>
+    <aside class="sidebar" id="sidebar" data-sidebar>
+      <nav aria-label="Docs">
+        {
+          sidebar.map((g) => (
+            <section class="sidebar__group">
+              <h2 class="facet-label">{g.label}</h2>
+              <ul>
+                {g.links.map((link) => (
+                  <li>
+                    {link.href ? (
+                      <a href={link.href} aria-current={link.href === current ? 'page' : undefined}>
+                        {link.icon && <span class="sidebar__icon"><Icon name={link.icon} size={18} /></span>}
+                        {link.label}
+                        {link.badge && <span class="badge">{link.badge}</span>}
+                      </a>
+                    ) : (
+                      <span class="sidebar__soon">
+                        {link.label}
+                        {link.badge && <span class="badge">{link.badge}</span>}
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))
+        }
+      </nav>
+    </aside>
+    <div class="sidebar-backdrop" data-nav-close></div>
+
+    <main class="docs__main" id="main">
+      <article class="prose">
+        <p class="facet-label">{group}</p>
+        <h1>
+          {icon && <span class="title__icon"><Icon name={icon} size={32} /></span>}
+          {title}
+          <slot name="title-after" />
+        </h1>
+        <slot name="lede"><p class="lede">{description}</p></slot>
+        <slot />
+      </article>
+
+      <footer class="docs__footer">
+        <div class="docs__meta">
+          {
+            source.length > 0 ? (
+              <span>
+                Source:{' '}
+                {source.map((s, i) => (
+                  <>
+                    {i > 0 && ' + '}
+                    <a href={s.url}>{s.path}</a>
+                  </>
+                ))}
+              </span>
+            ) : (
+              <a href={repo}>Facet on GitHub</a>
+            )
+          }
+          <span>
+            Enjoying Facet? Support it on <a href="https://buymeacoffee.com/mrdarrengriffin">Buy Me a Coffee</a> or{' '}
+            <a href="https://ko-fi.com/mrdarrengriffin">Ko-fi</a>
+          </span>
+        </div>
+        <nav class="pager" aria-label="Previous and next pages">
+          {
+            prev ? (
+              <a class="pager__link" href={prev.href} rel="prev">
+                <span class="facet-label">Previous</span>
+                <span>{prev.label}</span>
+              </a>
+            ) : (
+              <span />
+            )
+          }
+          {
+            next && (
+              <a class="pager__link pager__link--next" href={next.href} rel="next">
+                <span class="facet-label">Next</span>
+                <span>{next.label}</span>
+              </a>
+            )
+          }
+        </nav>
+      </footer>
+    </main>
+
+    {
+      headings.length > 0 && (
+        <aside class="toc" aria-label="On this page">
+          <h2 class="facet-label">On this page</h2>
+          <ul>
+            {headings.map((heading) => (
+              <li class={`toc__item toc__item--${heading.depth}`}>
+                <a href={`#${heading.slug}`} data-toc-link>
+                  {heading.text}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </aside>
+      )
+    }
+  </div>
+
+  <script>
+    import { initDocsNav } from '../scripts/docs-nav';
+    initDocsNav();
+  </script>
+</Base>

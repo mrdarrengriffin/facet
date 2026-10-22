@@ -109,6 +109,16 @@ export class Stage {
     }
     return err;
   }
+  /** the update path (renderer README "Update path"): new props for what this stage shows, in place, with the
+   *  component's own animation, silent. "" = applied, "rebuild" = call render() (another component / theme / accent,
+   *  no update path yet, a structural prop; also an older build without fw_update), else an error */
+  update(comp: string, props: Record<string, unknown>, light: boolean, accent = -1): string {
+    const e = this.e;
+    if (!e.m._fw_update) return 'rebuild';
+    return e.withStr(comp, (c) => e.withStr(JSON.stringify(props), (p) => e.str(e.m._fw_update(this.id, c, p, light ? 1 : 0, accent))));
+  }
+  /** the height the shown content needs (auto-height stages: an update that changes it needs a render) */
+  contentH(minH = 1) { return Math.max(minH, 1, this.e.m._fw_content_h(this.id)); }
   resize(w: number, h: number) {
     this.e.m._fw_stage_resize(this.id, w, h);
     this.w = w; this.h = h;

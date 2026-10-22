@@ -1,0 +1,31 @@
+---
+// The components sidebar of the original site's explorer: a filter field and every component in its group; the
+// current one in the accent (scripts/playground.ts initFilter).
+import { componentGroups, href } from '../lib/data';
+interface Props { current?: string }
+const { current } = Astro.props;
+---
+
+<aside class="sidebar explorer__sidebar" id="sidebar" data-sidebar>
+  <label class="explorer__filter">
+    <span class="sr-only">Filter components</span>
+    <input type="search" placeholder="Filter components" data-ex-filter />
+  </label>
+  <nav aria-label="Components">
+    {
+      componentGroups().map((g) => (
+        <section class="sidebar__group" data-ex-group>
+          <h2 class="facet-label">{g.label}</h2>
+          <ul>
+            {g.items.map((c) => (
+              <li data-ex-item={`${c.name} ${g.label} ${c.lede}`.toLowerCase()}>
+                <a href={href(c)} aria-current={c.id === current ? 'page' : undefined}>{c.name}</a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))
+    }
+  </nav>
+</aside>
+<div class="sidebar-backdrop" data-nav-close></div>

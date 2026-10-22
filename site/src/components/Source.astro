@@ -1,9 +1,0 @@
----
-interface Props { source: { path: string; url: string }[] }
-const { source } = Astro.props;
----
-
-<p class="source">
-  Source:
-  {source.map((s, i) => <>{i > 0 && ' + '}<a href={s.url}><code>{s.path}</code></a></>)}
-</p>

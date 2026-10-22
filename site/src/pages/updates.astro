@@ -1,0 +1,60 @@
+---
+// Updates: Facet's story as a timeline on one page, newest first (Darren 2026-10-22): milestones and visible changes,
+// each a title, date + time, a few sentences, an optional picture or before / after pair and links. Entries come from
+// src/content/updates/*.md (format: README there). "On this page" lists them by day.
+import { getCollection, render } from 'astro:content';
+import Docs, { type Heading } from '../layouts/Docs.astro';
+import { url } from '../lib/nav';
+
+const all = (await getCollection('updates')).sort((a, b) =>
+  `${b.data.date} ${b.data.time ?? '00:00'}`.localeCompare(`${a.data.date} ${a.data.time ?? '00:00'}`),
+);
+const entries = await Promise.all(all.map(async (e) => ({ e, Content: (await render(e)).Content })));
+const days = [...new Set(entries.map((x) => x.e.data.date))].map((d) => ({ d, items: entries.filter((x) => x.e.data.date === d) }));
+const dayLabel = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+const shortDay = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+const headings: Heading[] = days.flatMap(({ d, items }) => [
+  { depth: 2 as const, slug: `day-${d}`, text: dayLabel(d) },
+  ...items.map(({ e }) => ({ depth: 3 as const, slug: e.id, text: e.data.title })),
+]);
+const pic = (f: string) => url(`/updates/${f}`);
+const link = (p: string) => (/^https?:/.test(p) ? p : url(`/${p}`));
+---
+
+<Docs title="Updates" description="How Facet came to be and what changed lately, newest first." group="Project" current={url('/updates/')} headings={headings}>
+  {
+    days.map(({ d, items }) => (
+      <section class="updates__day">
+        <h2 id={`day-${d}`} class="updates__date">{dayLabel(d)}</h2>
+        <ol class="progress">
+          {items.map(({ e, Content }) => (
+            <li class={e.data.milestone ? 'progress__entry progress__entry--milestone' : 'progress__entry'}>
+              <p class="facet-label">
+                {e.data.milestone && <span class="progress__mark" aria-hidden="true" />}
+                {shortDay(e.data.date)}{e.data.time && <> · {e.data.time}</>} · {e.data.area}
+              </p>
+              <h3 id={e.id}>{e.data.title}</h3>
+              <Content />
+              {e.data.before && e.data.after && (
+                <div class="progress__shots">
+                  <figure><img src={pic(e.data.before)} alt={`${e.data.alt ?? e.data.title}: before`} loading="lazy" /><figcaption>Before</figcaption></figure>
+                  <figure><img src={pic(e.data.after)} alt={`${e.data.alt ?? e.data.title}: after`} loading="lazy" /><figcaption>After</figcaption></figure>
+                </div>
+              )}
+              {e.data.image && (
+                <div class="progress__shots progress__shots--one">
+                  <figure><img src={pic(e.data.image)} alt={e.data.alt ?? e.data.title} loading="lazy" /></figure>
+                </div>
+              )}
+              {e.data.links.length > 0 && (
+                <p class="progress__links">
+                  {e.data.links.map(([label, path], i) => <>{i > 0 && ' · '}<a href={link(path)}>{label}</a></>)}
+                </p>
+              )}
+            </li>
+          ))}
+        </ol>
+      </section>
+    ))
+  }
+</Docs>

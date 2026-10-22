@@ -1,0 +1,27 @@
+---
+// Header settings (Darren 2026-10-22): a small popover to pick the site accent (the WASM accent sets; the live
+// examples follow it) and the sound pack. Kept per browser with the other prefs (scripts/prefs.ts).
+import { ACCENTS, SOUND } from '../lib/data';
+import Icon from './Icon.astro';
+---
+
+<div class="settings" data-settings>
+  <button class="icon-button" type="button" aria-label="Site settings" aria-haspopup="dialog" aria-expanded="false" aria-controls="site-settings" data-settings-open>
+    <Icon name="screen-settings" size={18} />
+  </button>
+  <div class="settings__panel" id="site-settings" role="dialog" aria-label="Site settings" hidden>
+    <div class="settings__row">
+      <label class="facet-label" for="set-accent">Accent</label>
+      <select id="set-accent" data-pref-accent data-fselect="fselect--field">
+        {ACCENTS.sets.map((s) => <option value={s.id}>{s.label}</option>)}
+      </select>
+    </div>
+    <div class="settings__row">
+      <label class="facet-label" for="set-pack">Sound pack</label>
+      <select id="set-pack" data-pref-pack data-fselect="fselect--field">
+        {SOUND.variants.map((v) => <option value={v.id} title={v.about}>{v.name}</option>)}
+      </select>
+    </div>
+    <p class="settings__hint">The examples on every page follow these. Kept in this browser.</p>
+  </div>
+</div>

@@ -1,28 +1,47 @@
 ---
+// The components overview, in the explorer layout: the filter sidebar and every component as a still picture (drawn
+// by the WASM renderer, not interactive) that opens its page, where people try it.
 import Base from '../../layouts/Base.astro';
+import ComponentsSidebar from '../../components/ComponentsSidebar.astro';
 import Live from '../../components/Live.astro';
-import Lede from '../../components/Lede.astro';
-import Status from '../../components/Status.astro';
-import { BASE, COMPONENTS, defaults, href } from '../../lib/data';
+import { COMPONENTS, componentGroups, defaults, href } from '../../lib/data';
 ---
 
-<Base title="Components" current={`${BASE}components/`}>
-  <header class="page-head">
-    <p class="label">Components</p>
-    <h1>Components</h1>
-    <p class="lede">{COMPONENTS.length} components, each drawn live by the panel renderer. Every page is generated from what the component declares in its source.</p>
-  </header>
-  <ul class="cards">
-    {
-      COMPONENTS.map((c) => (
-        <li class="card">
-          <a href={href(c)}>
-            <Live comp={c.id} props={{ ...defaults(c.meta), ...(c.meta.variants?.[0]?.props ?? {}) }} label={c.name} frame={c.meta.frame} caption={false} />
-            <span class="card__title">{c.name} <Status status={c.status} /></span>
-            <Lede e={c} tag="span" />
-          </a>
-        </li>
-      ))
-    }
-  </ul>
+<Base title="Components" description={`Every Facet component, live: the real renderer the panels run, with a playground for its props.`} hasSidebar>
+  <div class="explorer">
+    <ComponentsSidebar />
+    <main class="explorer__main" id="main">
+      <header class="explorer__head">
+        <p class="facet-label">Components</p>
+        <h1>Components</h1>
+        <p class="lede">{COMPONENTS.length} components, each drawn by the same renderer the panels run. Open one to try it: change its props, tap it, hear it.</p>
+      </header>
+      {
+        componentGroups().map((g) => (
+          <section class="explorer__variants">
+            <h2 class="facet-label">{g.label}</h2>
+            <ul class="shots">
+              {g.items.map((c) => (
+                <li>
+                  <a class="shot" href={href(c)}>
+                    <span class="shot__viewport">
+                      <Live comp={c.id} props={{ ...defaults(c.meta), ...(c.meta.variants?.[0]?.props ?? {}) }} label={c.name} frame={c.meta.frame} caption={false} still />
+                    </span>
+                    <span class="shot__name">{c.name}</span>
+                    <span class="shot__about">{c.lede}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))
+      }
+    </main>
+  </div>
+  <script>
+    import { initDocsNav } from '../../scripts/docs-nav';
+    import { initFilter } from '../../scripts/playground';
+    initDocsNav();
+    initFilter();
+  </script>
 </Base>

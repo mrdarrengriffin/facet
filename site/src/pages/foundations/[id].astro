@@ -1,13 +1,12 @@
 ---
-// One page per registered foundation (meta layout "doc"): each variant is a section, drawn full panel width and
-// auto height by the WASM renderer, with its heading and "about" from the meta.
-import Base from '../../layouts/Base.astro';
+// One page per registered foundation (the "Design system" pages), in the original site's docs layout: each variant
+// is a section, drawn full panel width and auto height by the WASM renderer, with its heading and "about".
+import Docs, { type Heading } from '../../layouts/Docs.astro';
 import Events from '../../components/Events.astro';
 import Live from '../../components/Live.astro';
-import Source from '../../components/Source.astro';
 import Lede from '../../components/Lede.astro';
-import Status from '../../components/Status.astro';
-import { FOUNDATIONS, defaults, slug, type Entry } from '../../lib/data';
+import PreviewBox from '../../components/PreviewBox.astro';
+import { FOUNDATIONS, defaults, href, slug, type Entry } from '../../lib/data';
 
 export function getStaticPaths() {
   return FOUNDATIONS.map((c) => ({ params: { id: slug(c.id) }, props: { c } }));
@@ -16,28 +15,22 @@ const { c } = Astro.props as { c: Entry };
 const m = c.meta;
 const base = defaults(m);
 const secs = (m.variants ?? []).map((v, i) => ({ ...v, anchor: `s${i + 1}-${v.label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}` }));
+const headings: Heading[] = secs.map((s) => ({ depth: 2, slug: s.anchor, text: s.label }));
 ---
 
-<Base title={c.name} description={c.lede} current={c.id}>
-  <header class="page-head">
-    <p class="label">Foundation</p>
-    <h1>{c.name} <Status status={c.status} /></h1>
-    <Lede e={c} />
-    <Source source={c.source} />
-    {secs.length > 1 && (
-      <nav class="toc" aria-label="On this page">
-        {secs.map((s) => <a href={`#${s.anchor}`}>{s.label}</a>)}
-      </nav>
-    )}
-  </header>
-  {m.events && <Events />}
-  {
-    secs.map((s) => (
-      <section class="doc-sec">
-        <h2 id={s.anchor}>{s.label}</h2>
-        {s.about && <p class="about">{s.about}</p>}
-        <Live comp={c.id} props={{ ...base, ...s.props }} label={s.label} frame={[m.frame[0], 0]} doc caption={false} />
-      </section>
-    ))
-  }
-</Base>
+<Docs title={c.name} description={c.lede} group="Design system" current={href(c)} headings={headings} source={c.source} wide>
+  <Lede slot="lede" e={c} />
+  <div data-preview-scope>
+    <PreviewBox />
+    {m.events && <Events />}
+    {
+      secs.map((s) => (
+        <section class="doc-sec">
+          <h2 id={s.anchor}>{s.label}</h2>
+          {s.about && <p>{s.about}</p>}
+          <Live comp={c.id} props={{ ...base, ...s.props }} label={s.label} frame={[m.frame[0], 0]} doc caption={false} />
+        </section>
+      ))
+    }
+  </div>
+</Docs>
