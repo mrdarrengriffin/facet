@@ -1,0 +1,9 @@
+---
+// The page's one-line public description; a subtle "draft" tag while it is a draft (meta "about", Darren rewrites later)
+import type { Entry } from '../lib/data';
+interface Props { e: Entry; tag?: 'p' | 'span' }
+const { e, tag = 'p' } = Astro.props;
+const T = tag;
+---
+
+<T class={tag === 'p' ? 'lede' : 'card__desc'}>{e.lede}{e.ledeKind !== 'about' && <span class="draft" title={e.ledeKind === 'draft' ? 'Draft description: to be rewritten' : 'Taken from the implementation notes: to be written'}>draft</span>}</T>

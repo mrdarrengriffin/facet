@@ -1,0 +1,19 @@
+{
+  "name": "@facet/site-wasm",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Facet docs site (WASM): pages generated from what the renderer registers; every example is the live WASM renderer.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "extract": "node scripts/extract.mjs",
+    "dev": "npm run extract && astro dev",
+    "build": "npm run extract && astro build",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "@fontsource/inter": "5.3.0",
+    "@fontsource/jetbrains-mono": "5.3.0",
+    "astro": "7.4.1"
+  }
+}

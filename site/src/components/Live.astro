@@ -1,0 +1,11 @@
+---
+// One live preview: a stage of the page's shared WASM engine (src/scripts/live.ts), drawn when it scrolls into view.
+// frame = the component's meta frame in dp ([w, 0] = auto height); doc = a full panel-width foundation section.
+interface Props { comp: string; props: Record<string, unknown>; label: string; frame: [number, number]; doc?: boolean; caption?: boolean }
+const { comp, props, label, frame, doc = false, caption = true } = Astro.props;
+---
+
+<figure class:list={['live', { 'live--doc': doc }]} data-live data-comp={comp} data-props={JSON.stringify(props)} data-label={label} data-frame={JSON.stringify(frame)} data-doc={doc ? '1' : '0'}>
+  <div class="live__stage"><span class="live__wait">Loading the renderer</span></div>
+  {caption && <figcaption>{label}</figcaption>}
+</figure>

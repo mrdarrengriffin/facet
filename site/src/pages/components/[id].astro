@@ -1,0 +1,111 @@
+---
+// One page per registered component, generated from its meta (props, variants, frame), README row, source comment,
+// fw::emit / fw::sound calls and git status (scripts/extract.mjs). Every variant is drawn live by the WASM renderer.
+import Base from '../../layouts/Base.astro';
+import Events from '../../components/Events.astro';
+import Live from '../../components/Live.astro';
+import Source from '../../components/Source.astro';
+import Lede from '../../components/Lede.astro';
+import Status from '../../components/Status.astro';
+import { ALL, COMPONENTS, defaults, href, inline, slug, values, type Entry } from '../../lib/data';
+
+export function getStaticPaths() {
+  return COMPONENTS.map((c) => ({ params: { id: slug(c.id) }, props: { c } }));
+}
+const { c } = Astro.props as { c: Entry };
+const m = c.meta;
+const base = defaults(m);
+const variants = m.variants?.length ? m.variants : [{ label: 'Default', props: {} }];
+const uses = c.uses.map((u) => ALL.find((e) => e.id === u)).filter(Boolean) as Entry[];
+const usedBy = COMPONENTS.filter((o) => o.uses.includes(c.id) && o.id !== c.id);
+---
+
+<Base title={c.name} description={c.lede} current={c.id}>
+  <header class="page-head">
+    <p class="label">Component</p>
+    <h1>{c.name} <Status status={c.status} /></h1>
+    <Lede e={c} />
+    <Source source={c.source} />
+  </header>
+
+  <section>
+    <h2 id="variants">Variants</h2>
+    <p class="hint">Drawn live by the panel renderer, pixel for pixel. Use the switches at the top for theme, panel size and accent; tap a preview to try it.</p>
+    <div class="grid-live">
+      {variants.map((v) => <Live comp={c.id} props={{ ...base, ...v.props }} label={v.label} frame={m.frame} />)}
+    </div>
+    {(c.events.length > 0 || c.sounds.length > 0) && <Events />}
+  </section>
+
+  <section>
+    <h2 id="props">Props</h2>
+    {
+      m.props?.length ? (
+        <div class="table">
+          <table>
+            <thead><tr><th>Prop</th><th>Type</th><th>Values</th><th>Default</th></tr></thead>
+            <tbody>
+              {m.props.map((p) => (
+                <tr>
+                  <td><code>{p.name}</code></td>
+                  <td>{p.type}</td>
+                  <td>{values(p)}</td>
+                  <td><code>{JSON.stringify(base[p.name])}</code></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <p class="hint">No props.</p>
+      )
+    }
+  </section>
+
+  <section>
+    <h2 id="events">Events and sounds</h2>
+    {
+      c.events.length || c.sounds.length ? (
+        <div class="cols">
+          <div>
+            <h3 class="label">Events</h3>
+            {c.events.length ? <ul class="tags">{c.events.map((e) => <li><code>{e}</code></li>)}</ul> : <p class="hint">None.</p>}
+          </div>
+          <div>
+            <h3 class="label">Sounds</h3>
+            {c.sounds.length ? (
+              <dl class="sounds">
+                {c.sounds.map((s) => (<><dt><code>{s.id}</code> {s.name}</dt><dd>{s.for}</dd></>))}
+              </dl>
+            ) : <p class="hint">None.</p>}
+          </div>
+        </div>
+      ) : (
+        <p class="hint">{uses.length ? <>Static on its own; it reports through what it is built with.</> : <>Static: no events, no sounds.</>}</p>
+      )
+    }
+  </section>
+
+  {
+    (uses.length > 0 || usedBy.length > 0) && (
+      <section>
+        <h2 id="related">Built with</h2>
+        <div class="cols">
+          {uses.length > 0 && <div><h3 class="label">Uses</h3><ul class="tags">{uses.map((u) => <li><a href={href(u)}>{u.name}</a></li>)}</ul></div>}
+          {usedBy.length > 0 && <div><h3 class="label">Used by</h3><ul class="tags">{usedBy.map((u) => <li><a href={href(u)}>{u.name}</a></li>)}</ul></div>}
+        </div>
+      </section>
+    )
+  }
+
+  <section>
+    <h2 id="notes">Implementation notes</h2>
+    {c.description && <p class="notes" set:html={inline(c.description)} />}
+    {c.notes && (
+      <details class="src-notes">
+        <summary>From the source file</summary>
+        <pre>{c.notes}</pre>
+      </details>
+    )}
+  </section>
+</Base>

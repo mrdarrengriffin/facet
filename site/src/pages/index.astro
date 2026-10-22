@@ -1,0 +1,31 @@
+---
+import Base from '../layouts/Base.astro';
+import Live from '../components/Live.astro';
+import { BASE, COMPONENTS, FOUNDATIONS, defaults, href } from '../lib/data';
+// a few components on the home page, live, with their first variant
+const featured = ['card', 'button', 'toggle', 'slider'].map((id) => COMPONENTS.find((c) => c.id === id)).filter((c) => c !== undefined);
+---
+
+<Base title="Facet" current="home">
+  <header class="page-head hero">
+    <p class="label">Design system for wall panels</p>
+    <h1>Facet</h1>
+    <!-- Darren's words go here -->
+    <p class="lede placeholder">Intro coming: what Facet is, who it is for and why it looks the way it does.</p>
+    <p>Every example on this site is the real renderer, compiled to WebAssembly: the same C++ and LVGL code the panels run, so what you see here is what the panel draws, pixel for pixel.</p>
+    <p class="actions">
+      <a class="btn btn--primary" href={`${BASE}foundations/`}>Foundations ({FOUNDATIONS.length})</a>
+      <a class="btn" href={`${BASE}components/`}>Components ({COMPONENTS.length})</a>
+    </p>
+  </header>
+  <section>
+    <h2>Live</h2>
+    <div class="grid-live">
+      {featured.map((c) => (
+        <a class="live-link" href={href(c)}>
+          <Live comp={c.id} props={{ ...defaults(c.meta), ...(c.meta.variants?.[0]?.props ?? {}) }} label={c.name} frame={c.meta.frame} />
+        </a>
+      ))}
+    </div>
+  </section>
+</Base>

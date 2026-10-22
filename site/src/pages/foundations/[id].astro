@@ -1,0 +1,43 @@
+---
+// One page per registered foundation (meta layout "doc"): each variant is a section, drawn full panel width and
+// auto height by the WASM renderer, with its heading and "about" from the meta.
+import Base from '../../layouts/Base.astro';
+import Events from '../../components/Events.astro';
+import Live from '../../components/Live.astro';
+import Source from '../../components/Source.astro';
+import Lede from '../../components/Lede.astro';
+import Status from '../../components/Status.astro';
+import { FOUNDATIONS, defaults, slug, type Entry } from '../../lib/data';
+
+export function getStaticPaths() {
+  return FOUNDATIONS.map((c) => ({ params: { id: slug(c.id) }, props: { c } }));
+}
+const { c } = Astro.props as { c: Entry };
+const m = c.meta;
+const base = defaults(m);
+const secs = (m.variants ?? []).map((v, i) => ({ ...v, anchor: `s${i + 1}-${v.label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}` }));
+---
+
+<Base title={c.name} description={c.lede} current={c.id}>
+  <header class="page-head">
+    <p class="label">Foundation</p>
+    <h1>{c.name} <Status status={c.status} /></h1>
+    <Lede e={c} />
+    <Source source={c.source} />
+    {secs.length > 1 && (
+      <nav class="toc" aria-label="On this page">
+        {secs.map((s) => <a href={`#${s.anchor}`}>{s.label}</a>)}
+      </nav>
+    )}
+  </header>
+  {m.events && <Events />}
+  {
+    secs.map((s) => (
+      <section class="doc-sec">
+        <h2 id={s.anchor}>{s.label}</h2>
+        {s.about && <p class="about">{s.about}</p>}
+        <Live comp={c.id} props={{ ...base, ...s.props }} label={s.label} frame={[m.frame[0], 0]} doc caption={false} />
+      </section>
+    ))
+  }
+</Base>

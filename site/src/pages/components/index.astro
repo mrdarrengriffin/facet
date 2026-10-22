@@ -1,0 +1,28 @@
+---
+import Base from '../../layouts/Base.astro';
+import Live from '../../components/Live.astro';
+import Lede from '../../components/Lede.astro';
+import Status from '../../components/Status.astro';
+import { BASE, COMPONENTS, defaults, href } from '../../lib/data';
+---
+
+<Base title="Components" current={`${BASE}components/`}>
+  <header class="page-head">
+    <p class="label">Components</p>
+    <h1>Components</h1>
+    <p class="lede">{COMPONENTS.length} components, each drawn live by the panel renderer. Every page is generated from what the component declares in its source.</p>
+  </header>
+  <ul class="cards">
+    {
+      COMPONENTS.map((c) => (
+        <li class="card">
+          <a href={href(c)}>
+            <Live comp={c.id} props={{ ...defaults(c.meta), ...(c.meta.variants?.[0]?.props ?? {}) }} label={c.name} frame={c.meta.frame} caption={false} />
+            <span class="card__title">{c.name} <Status status={c.status} /></span>
+            <Lede e={c} tag="span" />
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+</Base>
