@@ -298,6 +298,7 @@ Sheet *sheet(lv_obj_t *host, fw::Props p) {
   lv_obj_set_user_data(s->ov, s);
   lv_obj_set_size(s->ov, LV_PCT(100), LV_PCT(100));
   lv_obj_set_pos(s->ov, 0, 0);
+  fw::qa::free(s->ov, "overlay: bottom sheet");  // sits over the screen on purpose (tools/audit_screens.mjs skips it)
 
   s->scrim = box(s->ov);
   lv_obj_add_flag(s->scrim, LV_OBJ_FLAG_CLICKABLE);

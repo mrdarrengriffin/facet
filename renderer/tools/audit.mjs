@@ -19,6 +19,9 @@
 //   motion    while it animates (the first 2 s from the build, every 2nd frame): no ink leaves the box; an object
 //             marked fw::qa::circle(obj, ref, cx, cy, r) keeps its centre on that circle (1 px), fw::qa::inside(obj,
 //             ref) stays inside ref
+//   layout    screens only (tools/audit_screens.mjs checkScreen, at the build and after the motion loop): the screen
+//             root's regions don't overlap and nothing escapes its region or the screen; overlays (a bottom sheet,
+//             a toast layer) say so with fw::qa::free(obj, "overlay: <why>")
 // Exceptions: meta "audit": {"skip": {"<check>": "why"}}, or the same on one variant (printed as notes). Failures are errors (exit 1).
 //   node tools/audit.mjs [--den 1x|1.5x|all] [--comp id,id] [--props '{"fades":true}'] [--build <dir>] [--json out.json] [--quiet] [--all-variants]
 // Cache: results per component are kept while the inputs are unchanged (core, tokens, this tool, the component's file
@@ -28,6 +31,7 @@ import { readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs';
 import { dirname, join, resolve, basename } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createHash } from 'node:crypto';
+import { checkScreen } from './audit_screens.mjs';
 
 const HERE = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const ROOT = resolve(HERE, '..');
@@ -46,7 +50,7 @@ const TICK = 16;
 const sha = (s) => createHash('sha1').update(s).digest('hex').slice(0, 12);
 const ls = (d, ext) => (existsSync(join(HERE, d)) ? readdirSync(join(HERE, d)).filter((f) => f.endsWith(ext)).sort().map((f) => join(d, f)) : []);
 const read = (f) => readFileSync(join(HERE, f));
-const coreHash = sha(Buffer.concat([...ls('core', '.h'), ...ls('core', '.cpp'), ...ls('tokens', '.json'), 'tools/audit.mjs'].flatMap((f) => [Buffer.from(f), read(f)])));
+const coreHash = sha(Buffer.concat([...ls('core', '.h'), ...ls('core', '.cpp'), ...ls('tokens', '.json'), 'tools/audit.mjs', 'tools/audit_screens.mjs'].flatMap((f) => [Buffer.from(f), read(f)])));
 const srcOf = {};
 for (const d of ['components', 'screens', 'foundations']) for (const f of ls(d, '.cpp')) srcOf[basename(f, '.cpp')] = f;
 const deps = (id, seen = new Set()) => {
@@ -91,6 +95,10 @@ function runCase(m, den, c, props, light, vskip = {}) {
     if (ch > H) { H = ch; m._fw_stage_resize(A, W, H); }
   }
   const objs = () => JSON.parse(m.UTF8ToString(m._fw_audit(A)));
+  // ---- screens: the layout check (tools/audit_screens.mjs: regions overlap, objects escape) at the build and after
+  // the motion loop (live screens move); overlays opt out with fw::qa::free(obj, "overlay: <why>")
+  const screenErrs = new Set();
+  if (screen) for (const e of checkScreen(objs(), W, H)) screenErrs.add(e);
   const frame = (id) => new Uint32Array(m.HEAPU8.buffer.slice(m._fw_frame(id), m._fw_frame(id) + W * H * 4));
   // ---- motion: the first 2 s from the build, every 2nd frame
   const roots0 = objs().filter((o) => o.p < 0);
@@ -128,6 +136,7 @@ function runCase(m, den, c, props, light, vskip = {}) {
     }
   }
   errs.push(...motionErrs);
+  if (screen) { for (const e of checkScreen(objs(), W, H)) screenErrs.add(e); errs.push(...screenErrs); }
   tick(60);  // settle (1 s more)
   m._fw_refresh(A);  // what timers changed after the last refresh, drawn now (no time passes)
   const os = objs(), roots = os.filter((o) => o.p < 0);

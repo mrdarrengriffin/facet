@@ -138,6 +138,7 @@ Layer *layer(lv_obj_t *host, fw::Props p) {
   lv_obj_set_user_data(L->ov, L);  // the update path finds the layer here (USER_4 marks the overlay)
   lv_obj_set_size(L->ov, LV_PCT(100), LV_PCT(100));
   lv_obj_set_pos(L->ov, 0, 0);
+  fw::qa::free(L->ov, "overlay: toast layer");  // sits over the screen on purpose (tools/audit_screens.mjs skips it)
   lv_obj_add_event_cb(L->ov, [](lv_event_t *e) {
     auto *L = (Layer *) lv_event_get_user_data(e);
     if (L->stagger) lv_timer_delete(L->stagger);
