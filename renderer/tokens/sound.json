@@ -299,7 +299,7 @@
         "title": "Step ticks and pitch",
         "items": [
           "Every step a Slider, Dial or arc crosses counts (steps = range / step). One shared limiter in the core (fw::step_ticks) decides which are heard.",
-          "Audible ticks are at least Motion tick-min apart (26 ms, about 38 a second): a slow, dimmer-like drag ticks on every step, a fast drag thins to a steady patter.",
+          "Audible ticks are at least Motion tick-min apart (40 ms, about 25 a second): a slow, dimmer-like drag ticks on every step, a fast drag thins to a steady patter.",
           "Landmark steps (the ends: 0 and 100 %) play slider-landmark, a little stronger and lower, so you feel where the range stops. The limiter never drops one; it waits out the interval.",
           "Pitch follows the value: linear from pitch.low semitones at the bottom to pitch.high at the top (default -6 / +3). The top sits closer to the middle because high ticks turn shrill. Preview other ranges by ear on the workbench Sound page (play-only); the token itself changes only by a code edit Darren asks for.",
           "Ticks come only from the shown value moving under a finger (a drag, or a tap on the track or ring). A value set from elsewhere moves silently."
