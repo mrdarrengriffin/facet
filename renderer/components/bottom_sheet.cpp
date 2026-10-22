@@ -17,6 +17,8 @@
 // Motion (motion.json): open = pattern sheet-open (160 ms ease-out: scrim fades in to its opacity, the panel fades in
 // and rises by the offset 16 / 12), close = sheet-close (120 ms: scrim out, panel fades and drops); reduced motion =
 // fade only (the patterns' mode). Both run from wherever they are, so a close during the opening turns it round.
+// No fades (fw::mo::fades, the Guition by default): the scrim snaps on / off (off at the end of the close), the panel is
+// opaque and slides up from / down by its own height, translate only; with reduced motion as well: instant.
 // Performance (Guition: the first sheet ran at 12 fps, README "Motion tokens"): every frame of the open / close
 // redraws the whole screen, because the scrim fades over all of it and the panel (most of the screen) fades and
 // moves. Kept small where it can be: the scrim is ONE full-screen rect whose bg_opa animates (no layer, no per-child
@@ -127,7 +129,10 @@ void opened(lv_anim_t *a) { unflatten((Sheet *) lv_anim_get_user_data(a)); }
 void closed(lv_anim_t *a) {
   auto *s = (Sheet *) lv_anim_get_user_data(a);
   unflatten(s);
-  if (!s->open) lv_obj_add_flag(s->ov, LV_OBJ_FLAG_HIDDEN);
+  if (!s->open) {
+    set_bg_opa(s->scrim, LV_OPA_TRANSP);  // no fades: the scrim stayed while the panel dropped, then snaps off
+    lv_obj_add_flag(s->ov, LV_OBJ_FLAG_HIDDEN);
+  }
 }
 
 void open(Sheet *s, int which, bool still = false) {
@@ -140,6 +145,18 @@ void open(Sheet *s, int which, bool still = false) {
     set_bg_opa(s->scrim, scrim_opa());
     lv_obj_set_style_opa(s->panel, LV_OPA_COVER, 0);
     lv_obj_set_style_translate_y(s->panel, 0, 0);
+    return;
+  }
+  if (!fw::mo::fades(s->panel)) {  // no fades (core/fw.h, Guition): the scrim snaps on, the opaque panel slides up
+    lv_anim_delete(s->scrim, set_bg_opa);
+    lv_anim_delete(s->panel, nullptr);
+    set_bg_opa(s->scrim, scrim_opa());
+    lv_obj_set_style_opa(s->panel, LV_OPA_COVER, 0);
+    lv_obj_update_layout(s->panel);
+    const int32_t ty = lv_obj_get_style_translate_y(s->panel, LV_PART_MAIN);
+    fw::Anim m{set_ty, ty ? ty : lv_obj_get_height(s->panel), 0, fw::mo::MOVE};
+    m.done = opened; m.user = s;
+    fw::animate(s->panel, fw::mo::sheet_open, m);
     return;
   }
   if (lv_obj_get_style_opa(s->panel, LV_PART_MAIN) == LV_OPA_TRANSP) set_bg_opa(s->scrim, LV_OPA_TRANSP);
@@ -156,6 +173,14 @@ void open(Sheet *s, int which, bool still = false) {
 void close(Sheet *s) {
   if (!s->open) return;
   s->open = false;
+  if (!fw::mo::fades(s->panel)) {  // no fades: the panel slides down (translate only), the scrim snaps off at the end
+    lv_anim_delete(s->panel, nullptr);
+    lv_obj_set_style_opa(s->panel, LV_OPA_COVER, 0);
+    fw::Anim m{set_ty, lv_obj_get_style_translate_y(s->panel, LV_PART_MAIN), lv_obj_get_height(s->panel), fw::mo::MOVE};
+    m.done = closed; m.user = s;
+    fw::animate(s->panel, fw::mo::sheet_close, m);
+    return;
+  }
   flatten(s);
   fw::animate(s->scrim, fw::mo::sheet_close, {set_bg_opa, lv_obj_get_style_bg_opa(s->scrim, LV_PART_MAIN), LV_OPA_TRANSP, fw::mo::OPA});
   if (s->solid) {

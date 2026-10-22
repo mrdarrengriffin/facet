@@ -4,6 +4,7 @@
 //   GET  /fw/meta   [{id, name, section, meta}]                                     the registry (same as fw_meta())
 //   POST /fw/show   {id, props?, theme?: dark|light, accent?: <set id>}  -> {ok, error?, ms, heap}
 //   GET  /fw/perf   frame stats while animations run (since boot or the last ?reset=1): fps, frame / render ms
+//   POST /fw/bench  a batch of bench cases the panel runs on its own screen (fw_bench.h); GET /fw/bench = the report
 // Probation: while the running OTA image is still ESP_OTA_IMG_PENDING_VERIFY (safe_mode has not confirmed it yet,
 // boot_is_good_after = FW_PROBATION_S), a warn Status chip on the LVGL top layer (over every screen) says
 // "Update settling: don't unplug m:ss"; a reboot then would roll back to the previous image. Gone when confirmed
@@ -13,6 +14,8 @@
 // shown again after a reboot. Requests run in the httpd task; anything touching LVGL is handed to the main loop (an
 // lv_timer drains the job queue) and the request waits for it (6 s cap).
 #pragma once
+#include <algorithm>
+#include <cstring>
 #include <deque>
 #include <functional>
 #include <mutex>
@@ -22,11 +25,14 @@
 #include "esp_heap_caps.h"
 #include "esp_timer.h"
 #include "esp_ota_ops.h"
+#include "esp_system.h"
+#include "esp_attr.h"
 #include "esphome/core/defines.h"
 #include "esphome/core/log.h"
 #include "esphome/core/preferences.h"
 #include "esphome/components/web_server_base/web_server_base.h"
 #include "fw.h"
+#include "device.h"
 #include "fw_bundle_gen.h"
 
 namespace fw::device {
@@ -292,6 +298,9 @@ inline void probation_start() {
   probation_tick(PR.timer);
 }
 
+#define FW_BENCH_FROM_DEVICE
+#include "fw_bench.h"
+
 // ---------------------------------------------------------------- HTTP
 class Handler : public AsyncWebHandler {
  public:
@@ -303,7 +312,7 @@ class Handler : public AsyncWebHandler {
   void handleBody(AsyncWebServerRequest *, uint8_t *data, size_t len, size_t index, size_t total) override {
     if (index == 0) {
       body_.clear();
-      too_big_ = total > 8192;
+      too_big_ = total > 32768;  // a bench batch (fw_bench.h) is ~10 KB
     }
     if (!too_big_) body_.append((const char *) data, len);
   }
@@ -336,11 +345,28 @@ class Handler : public AsyncWebHandler {
       const bool reset = req->hasArg("reset");  // url_to() has no query string
       in_loop([&] { perf_json(d.to<ArduinoJson::JsonObject>()); if (reset) perf_reset(); }, 2000);
       serializeJson(d, s);
+    } else if (path == "/fw/bench" && post) {
+      ArduinoJson::JsonDocument body, out;
+      if (too_big_ || body_.empty() || deserializeJson(body, body_)) {
+        code = 400;
+        s = R"({"ok":false,"error":"body is not JSON"})";
+      } else {
+        std::string e = "the main loop did not answer in time";
+        uint32_t total = 0, eta = 0;
+        in_loop([&] { e = bench::start(body.as<ArduinoJson::JsonObjectConst>(), &total, &eta); }, 3000);
+        if (e.empty()) { code = 200; out["ok"] = true; out["run"] = body["run"]; out["total"] = total; out["eta_s"] = eta; }  // (not 202: ESPHome's web server answers 500)
+        else { code = e == "busy" ? 409 : 400; out["ok"] = false; out["error"] = e; }
+        serializeJson(out, s);
+      }
+    } else if (path == "/fw/bench") {
+      ArduinoJson::JsonDocument d;
+      in_loop([&] { bench::result_json(d.to<ArduinoJson::JsonObject>()); }, 2000);
+      serializeJson(d, s);
     } else if (path == "/fw/show" && post) {
       ArduinoJson::JsonDocument body, out;
       if (too_big_ || body_.empty() || deserializeJson(body, body_)) {
         code = 400;
-        s = too_big_ ? R"({"ok":false,"error":"body over 8 KB"})"
+        s = too_big_ ? R"({"ok":false,"error":"body over 32 KB"})"
                      : "{\"ok\":false,\"error\":\"body is not JSON (send Content-Type: application/json)\"}";
       } else {
         bool ok = false;
@@ -355,7 +381,7 @@ class Handler : public AsyncWebHandler {
       }
     } else {
       code = 404;
-      s = R"({"ok":false,"error":"GET /fw/info, GET /fw/meta, GET /fw/perf[?reset=1], POST /fw/show"})";
+      s = R"({"ok":false,"error":"GET /fw/info, GET /fw/meta, GET /fw/perf[?reset=1], POST /fw/show, POST|GET /fw/bench"})";
     }
     body_.clear();  // a body is only delivered for some content types: never reuse the previous request's
     too_big_ = false;
@@ -387,12 +413,17 @@ inline void setup() {
   Saved sv{};
   ArduinoJson::JsonDocument req, out;
   bool shown = false;
-  if (S.pref.load(&sv) && sv.req[0] && !deserializeJson(req, sv.req, strnlen(sv.req, sizeof sv.req)))
+  // boot safety (2026-10-22: a page that crashes the panel must not come back on every boot): after a crash reset
+  // (panic / watchdog / brownout) the saved page is NOT shown again; the device home is, and it replaces the saved one
+  const esp_reset_reason_t why = esp_reset_reason();
+  const bool crashed = why == ESP_RST_PANIC || why == ESP_RST_INT_WDT || why == ESP_RST_TASK_WDT || why == ESP_RST_WDT || why == ESP_RST_BROWNOUT;
+  if (crashed) ESP_LOGW("facet_wb", "reset reason %d (crash): not showing the saved page, showing the device home", (int) why);
+  if (!crashed && S.pref.load(&sv) && sv.req[0] && !deserializeJson(req, sv.req, strnlen(sv.req, sizeof sv.req)))
     shown = show(req.as<ArduinoJson::JsonObjectConst>(), out.to<ArduinoJson::JsonObject>());
   if (!shown && !fw::reg().empty()) {
     req.clear();
-    req["id"] = fw::find("button") ? "button" : fw::reg()[0].id;
-    show(req.as<ArduinoJson::JsonObjectConst>(), out.to<ArduinoJson::JsonObject>());
+    req["id"] = fw::find("device") ? "device" : fw::find("button") ? "button" : fw::reg()[0].id;
+    if (show(req.as<ArduinoJson::JsonObjectConst>(), out.to<ArduinoJson::JsonObject>()) && crashed) save();
   }
   ESP_LOGI("facet_wb", "%u components, showing %s", (unsigned) fw::reg().size(), S.shown.c_str());
   lv_timer_create(drain, 20, nullptr);

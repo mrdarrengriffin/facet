@@ -104,6 +104,13 @@ bool reduced(const lv_obj_t *o);                // reduced motion for o's displa
 void set_reduced(lv_display_t *d, bool on);     // per display (render() sets it for the stage it builds on)
 void set_reduced_default(bool on);              // the panel's setting: every display without its own
 bool reduced_default();
+// fades (Darren 2026-10-22, Guition): a device-level motion choice. Off = the screen change is instant (no Content
+// rise) and the Bottom sheet's scrim snaps while its panel moves by translate only (no opacity), reduced mode too.
+// Default: off in the 1x build (Guition, 480: large blended areas cost ~90 ms a frame there), on elsewhere; props
+// "fades" (true / false) overrides it per display like reduced_motion (workbench, bench before / after).
+bool fades(const lv_obj_t *o);
+void set_fades(lv_display_t *d, bool on);
+bool fades_default();
 enum Channel { MOVE, OPA, VALUE };              // what an animation changes: position, opacity, a shown value
 uint32_t duration(const lv_obj_t *o, Id p, Channel ch);  // the pattern's ms for o, 0 = instant (reduced motion)
 // a style transition for a colour pattern (press / release) on the given props (LV_STYLE_PROP_INV terminated); one

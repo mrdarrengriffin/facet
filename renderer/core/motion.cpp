@@ -5,17 +5,37 @@
 namespace fw {
 namespace mo {
 namespace {
-struct Flag { const lv_display_t *d; bool on; };
+struct Flag { const lv_display_t *d; bool on; bool fades; };
 Flag flags[16];
 int n_flags = 0;
 bool global = false;
+#ifdef FW_1X
+constexpr bool FADES_DEFAULT = false;  // Guition (core/fw.h fades)
+#else
+constexpr bool FADES_DEFAULT = true;
+#endif
+Flag *flag_of(const lv_display_t *d) {
+  for (int i = 0; i < n_flags; i++)
+    if (flags[i].d == d) return &flags[i];
+  return nullptr;
+}
 }  // namespace
+
+bool fades_default() { return FADES_DEFAULT; }
+void set_fades(lv_display_t *d, bool on) {
+  if (!flag_of(d)) set_reduced(d, global);
+  if (Flag *f = flag_of(d)) f->fades = on;
+}
+bool fades(const lv_obj_t *o) {
+  const Flag *f = flag_of(o ? lv_obj_get_display(o) : nullptr);
+  return f ? f->fades : FADES_DEFAULT;
+}
 
 void set_reduced(lv_display_t *d, bool on) {
   for (int i = 0; i < n_flags; i++)
     if (flags[i].d == d) { flags[i].on = on; return; }
-  if (n_flags < 16) flags[n_flags++] = {d, on};
-  else flags[15] = {d, on};
+  if (n_flags < 16) flags[n_flags++] = {d, on, FADES_DEFAULT};
+  else flags[15] = {d, on, FADES_DEFAULT};
 }
 bool reduced(const lv_obj_t *o) {
   const lv_display_t *d = o ? lv_obj_get_display(o) : nullptr;
@@ -110,7 +130,7 @@ void rise(lv_obj_t *const *items, int n, bool home) {
     blocks.push_back({a.y1 - lv_obj_get_style_translate_y(items[i], LV_PART_MAIN), items[i]});
   }
   std::stable_sort(blocks.begin(), blocks.end(), [](auto &x, auto &y) { return x.first < y.first; });
-  const bool instant = !mo::duration(items[0], mo::screen, mo::OPA);  // reduced motion: instant
+  const bool instant = !mo::duration(items[0], mo::screen, mo::OPA) || !mo::fades(items[0]);  // reduced motion / no fades: instant
   int row = 0;
   auto start = [&](lv_obj_t *r, int i) {
     lv_anim_delete(r, nullptr);

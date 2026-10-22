@@ -36,7 +36,7 @@ const ls = (d, ext) => (existsSync(join(HERE, d)) ? readdirSync(join(HERE, d)).f
 // (HTTP, screen setup), reported separately: a glue change does not make an item show old code
 const lsr = (d) => (existsSync(join(HERE, d)) ? readdirSync(join(HERE, d), { recursive: true }).filter((f) => f.endsWith('.svg')).sort().map((f) => `${d}/${f}`) : []);
 const coreFiles = [...ls('core', '.h'), 'core/fw_core.cpp', 'core/motion.cpp', 'core/atoms.cpp', 'core/states.cpp', 'core/mascot.cpp', 'core/device.cpp', 'core/fonts.cpp', 'core/icons.cpp', ...ls('tokens', '.json'), 'tools/gen_colour.mjs', 'tools/gen_type.mjs', 'tools/gen_space.mjs', 'tools/gen_layout.mjs', 'tools/gen_motion.mjs', 'tools/gen_states.mjs', 'tools/gen_mascot.mjs', 'tools/gen_chart.mjs', 'tools/gen_settings.mjs', 'tools/gen_fonts.py', 'tools/facet_font.inc', 'tools/gen_icons.mjs', ...lsr('icons')];
-const glueFiles = ['firmware/fw_device.h', 'firmware/esphome_init.py', 'firmware/bundle.mjs'];  // relative to ROOT
+const glueFiles = ['firmware/fw_device.h', 'firmware/fw_bench.h', 'firmware/esphome_init.py', 'firmware/bundle.mjs'];  // relative to ROOT
 const srcFiles = [...ls('foundations', '.cpp'), ...ls('components', '.cpp'), ...ls('screens', '.cpp')];
 const read = (rel) => readFileSync(join(HERE, rel));
 const core = sha(...coreFiles.flatMap((f) => [f, '\0', read(f), '\0']));
@@ -63,6 +63,7 @@ const put = (name, text) => {
 put('__init__.py', readFileSync(join(ROOT, 'firmware/esphome_init.py')));
 for (const f of ls('core', '.h')) put(basename(f), read(f));
 put('fw_device.h', readFileSync(join(ROOT, 'firmware/fw_device.h')));
+put('fw_bench.h', readFileSync(join(ROOT, 'firmware/fw_bench.h')));
 execFileSync('node', [join(HERE, 'tools/gen_colour.mjs'), join(C, 'colour_gen.h')]);  // rewrites only on change
 wrote.add('colour_gen.h');
 execFileSync('node', [join(HERE, 'tools/gen_type.mjs'), join(C, 'type_gen.h')]);

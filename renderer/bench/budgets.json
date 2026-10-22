@@ -3,27 +3,67 @@
   "devices": {
     "guition": {
       "name": "Guition 4848S040 (ESP32-S3, 480 x 480, 90 deg sw rotation)",
-      "density": "1x", "w": 480, "h": 480,
+      "density": "1x",
+      "w": 480,
+      "h": 480,
       "loop_cap_fps": 53,
       "budget": {
-        "fps_min": 30,
-        "frame_ms_max": 33,
+        "regression_pct": 10,
+        "regression_min_ms": 0.5,
+        "pacing_ratio": 2,
         "idle_px_per_s": 0,
-        "build_ms_max": 400,
         "heap_kb_max": 512,
-        "objs_max": 400
+        "objs_max": 400,
+        "note": "Darren 2026-10-22: the Guition runs as fast as it can, no absolute fps / frame budget; flagged when it gets worse than the accepted baseline (> 10 %, median of 3 runs) or when frames are uneven (p95 > 2x the average = judder)."
       },
       "anchors": [
-        { "case": "anchor.motion-sheet-open", "device_ms": 89, "source": "/fw/perf 2026-10-21, facet-wasm README Frame-rate check" },
-        { "case": "anchor.motion-fade", "device_ms": 21, "source": "/fw/perf 2026-10-21" },
-        { "case": "anchor.motion-screen", "device_ms": 44, "source": "/fw/perf 2026-10-21" },
-        { "case": "anchor.motion-clock-hand", "device_ms": 15, "source": "/fw/perf 2026-10-21" },
-        { "case": "anchor.mascots-agents", "device_ms": 5.6, "source": "/fw/perf 2026-10-22 (journal 2026-10-22)" }
-      ]
+        {
+          "case": "anchor.motion-sheet-open",
+          "device_ms": 89,
+          "source": "/fw/perf 2026-10-21, facet-wasm README Frame-rate check"
+        },
+        {
+          "case": "anchor.motion-fade",
+          "device_ms": 21,
+          "source": "/fw/perf 2026-10-21"
+        },
+        {
+          "case": "anchor.motion-screen",
+          "device_ms": 44,
+          "source": "/fw/perf 2026-10-21"
+        },
+        {
+          "case": "anchor.motion-clock-hand",
+          "device_ms": 15,
+          "source": "/fw/perf 2026-10-21"
+        },
+        {
+          "case": "anchor.mascots-agents",
+          "device_ms": 5.6,
+          "source": "/fw/perf 2026-10-22 (journal 2026-10-22)"
+        }
+      ],
+      "checks": [
+        "regression",
+        "pacing",
+        "idle",
+        "heap",
+        "objs"
+      ],
+      "measured": {
+        "a": 0.08,
+        "b": 102.56,
+        "n": 22,
+        "at": "2026-10-22",
+        "err_pct_median": 16
+      },
+      "build_factor": 85.57
     },
     "waveshare": {
       "name": "Waveshare ESP32-P4 86 (720 x 720)",
-      "density": "1.5x", "w": 720, "h": 720,
+      "density": "1.5x",
+      "w": 720,
+      "h": 720,
       "loop_cap_fps": 53,
       "budget": {
         "fps_min": 45,
@@ -31,14 +71,47 @@
         "idle_px_per_s": 0,
         "build_ms_max": 250,
         "heap_kb_max": 1536,
-        "objs_max": 400
+        "objs_max": 400,
+        "pacing_ratio": 2
       },
       "anchors": [
-        { "case": "anchor.motion-sheet-open", "device_ms": 23, "source": "/fw/perf 2026-10-21" },
-        { "case": "anchor.motion-fade", "device_ms": 4.1, "source": "/fw/perf 2026-10-21" },
-        { "case": "anchor.motion-screen", "device_ms": 6.6, "source": "/fw/perf 2026-10-21" },
-        { "case": "anchor.motion-clock-hand", "device_ms": 4.6, "source": "/fw/perf 2026-10-21" }
-      ]
+        {
+          "case": "anchor.motion-sheet-open",
+          "device_ms": 23,
+          "source": "/fw/perf 2026-10-21"
+        },
+        {
+          "case": "anchor.motion-fade",
+          "device_ms": 4.1,
+          "source": "/fw/perf 2026-10-21"
+        },
+        {
+          "case": "anchor.motion-screen",
+          "device_ms": 6.6,
+          "source": "/fw/perf 2026-10-21"
+        },
+        {
+          "case": "anchor.motion-clock-hand",
+          "device_ms": 4.6,
+          "source": "/fw/perf 2026-10-21"
+        }
+      ],
+      "checks": [
+        "fps",
+        "frame_ms",
+        "idle",
+        "build",
+        "heap",
+        "objs"
+      ],
+      "measured": {
+        "a": 0.34,
+        "b": 12.58,
+        "n": 24,
+        "at": "2026-10-22",
+        "err_pct_median": 15.13
+      },
+      "build_factor": 10.38
     }
   },
   "rules": {
@@ -47,6 +120,9 @@
     "idle": "a case not marked live must not redraw in its idle window (px per s over idle_px_per_s)",
     "build": "first build + first frame, est (WASM x factor) over build_ms_max",
     "heap": "heap growth for the case (after settle minus the empty stage) over heap_kb_max; WASM malloc, a proxy for LVGL heap on the panel",
-    "objs": "LVGL objects on the display over objs_max"
+    "objs": "LVGL objects on the display over objs_max",
+    "regression": "WASM render ms (median of --repeat runs) over the accepted baseline by more than regression_pct and by more than regression_min_ms on the panel",
+    "pacing": "panel p95 / panel avg over pacing_ratio while it moves (10+ frames): uneven frames read as judder",
+    "checks": "each device lists the checks it applies; the others are still computed and shown"
   }
 }

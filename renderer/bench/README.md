@@ -13,11 +13,14 @@ headless in the WASM build at each panel's size and checked against a budget per
 ## Run
 
 ```
+# WASM estimate (add --repeat 3 for medians, --baseline <run.json> for the regression check, --props '{"fades":true}' to override)
 cd renderer && heavy node tools/bench.mjs [--device guition|waveshare|all] [--case <id|component|prefix|tag:weather>,...]
                                           [--scenario idle|animate|drag|navigate] [--out run.json] [--list] [--quiet]
 ```
 
-The full suite takes about 8 s for both devices (174 results). The host hub's `/wasm/bench` page runs it as well
+On the glass: `node tools/bench.mjs --panel guition --host <ip> --out panel.json` (same cases, about 6 min per panel),
+then `node tools/bench.mjs --calibrate panel.json wasm.json [--write]` (estimate error, and a fit over every case
+written to `budgets.json` `measured` + `build_factor`). The full WASM suite takes about 8 s for both devices (174 results). The host hub's `/wasm/bench` page runs it as well
 (`/api/wasm/bench`) and keeps the history.
 
 ## What the numbers mean
@@ -34,41 +37,45 @@ The full suite takes about 8 s for both devices (174 results). The host hub's `/
 - **Heap** = malloc growth of the case after it settles (WASM, a proxy for the LVGL heap on the panel).
 - **Build ms** = `fw_render` + the first frame in WASM. It isn't mapped to the panels yet (no anchor); `budgets.json`
   `build_factor` turns the flag on once Phase 2 measures it.
+- **Checks per device** (`budgets.json` `checks`). Waveshare = absolute: fps `fps_min`, p95 `frame_ms_max`. Guition (Darren
+  2026-10-22: it runs as fast as it can) = relative: **regression** (WASM ms more than `regression_pct` over the
+  accepted baseline, median of `--repeat 3`; the hub's "Accept as baseline"), **pacing** (panel p95 over `pacing_ratio`
+  x the average while it moves = judder). Every check is computed for both devices and shown; only the listed ones flag.
 - Over budget: fps under `fps_min` while the content wants to move faster, p95 panel ms over `frame_ms_max`, a still
   case (not `live`) redrawing while idle, heap or objects over budget.
 
-## Phase 2: firmware bench endpoint (spec, not built)
+## Phase 2: the panel tests itself (built and flashed 2026-10-22: `firmware/fw_bench.h`)
 
-Goal: the same `suite.json` scenarios run on the Guition and the Waveshare, giving real numbers that replace the
-5 anchors with a fit over every case, and calibrate memory and build time.
+The same `suite.json` cases run on the Guition and the Waveshare, giving the real numbers that calibrate the estimate.
+The host sends **one batch**; the panel runs it on its own screen, one case after another (a static "Bench n/N" Status
+chip on the top layer, changed between cases only), measures itself, keeps the results in RAM and hands back the report
+at the end. Nothing polls the panel while it measures.
 
-**Endpoint (workbench firmware, `firmware/fw_device.h` + a new `firmware/fw_bench.h`):**
+- `POST /fw/bench {run, theme?, timing?, cases: [[case, component, props, scenario, path?, to?], ...]}` returns
+  `200 {ok, run, total, eta_s}` at once (409 while a batch runs, 400 over `FW_BENCH_MAX` = 96 cases; body up to 32 KB;
+  202 would come out as 500 from ESPHome's web server). A state machine on an `lv_timer` in the main loop runs it.
+- `GET /fw/bench` returns `{run, state: idle|running|done|interrupted, done, total, results}` with one row per case:
+  `panel{frames, active_ms, redraw_fps, fps (start to start, wall time), slow, build_ms, render_ms_avg|p95|max, px_avg,
+  px_pct, areas_avg, full_redraws}` + `mem{heap_kb, internal_free_after, psram_free_after, internal_largest,
+  psram_largest, objs}`. `interrupted` = the panel restarted during a batch (RTC memory), so nothing waits forever.
+- Frame window = LVGL `RENDER_START..RENDER_READY` (render + flush, as `/fw/perf`); p95 from a ring of the last 512
+  frames (uint16, 10 us units). Build = `fw::render` to the first frame. Drags play `path` through a second LVGL
+  pointer indev (the same input path as a finger); `navigate` = `fw::dev::go` / `back`.
+- **Never read SPIRAM `largest_free_block` while frames run** (a heap walk, 1.7-2.3 ms with interrupts off, shifts the
+  Guition RGB picture): memory is read between cases only.
+- At the end, the panel shows what it showed before the batch. Boot safety (fw_device.h): after a crash reset, the
+  saved page is not shown again; the device home is.
 
-- `POST /fw/bench {id, props?, theme?, accent?, scenario, settle_ms?, window_ms?, path?, to?}` returns `202
-  {run: n}` at once. The run is a state machine on an `lv_timer` in the main loop, so it never blocks the HTTP task.
-  The body has the same keys as a suite case. Limits: window ≤ 10 s, one run at a time (409 otherwise), 8 KB body.
-- `GET /fw/bench` returns `{run, state: idle|running|done|error, result}`, where `result` has the same keys as a bench.mjs
-  row: `wasm{}` becomes `panel{}`: `frames, active_ms, redraw_fps, render_ms_avg|p95|max, flush_ms_avg, px_avg,
-  px_pct, areas_avg, full_redraws, build_ms`, plus `fps` (start-to-start, real wall time) and `slow` (missed refresh
-  slots, as `/fw/perf`).
-- **Per-frame data without RAM growth:** p95 comes from a 64-bucket log histogram of render µs (or a ring of the last 512
-  frames as uint16 in 10 µs units, 1 KB). px and areas are sums.
-- **Memory:** `heap_caps_get_free_size` + `largest_free_block` for INTERNAL and SPIRAM before the build, after it
-  settles, and at the end of the window. The LVGL object count uses the same walk as `fw_bench_mem`.
-  **Never read SPIRAM `largest_free_block` while frames run** (a heap walk, 1.7-2.3 ms with interrupts off, shifts the
-  Guition RGB picture: Tessera KEPT_PAGES.md): SPIRAM largest block only before the build and after the window.
-- **Build:** `fw::render` to the first `RENDER_READY` in µs (this calibrates `build_factor`).
-- **Input:** a second LVGL pointer indev, "bench", whose read_cb plays the `path` (fractions of the screen) over
-  `drag_ms`, so drags go through the same LVGL input path as a finger. `navigate` calls `fw::dev::go / back`
-  (move `fw_bench_nav` into `core/device.cpp` as `dev::bench_nav` so both hosts share it).
-- **Quiet window:** no ESP_LOG at INFO or above, and no HTTP polling of the panel while a run is going (the host waits
-  `settle + window + 500 ms`, then GETs). The `/fw/perf` counters are left alone.
+**Host:** `bench.mjs --panel guition|waveshare --host <ip>` (or the `/wasm/bench` page, target = the panel) sends the
+batch, sleeps the panel's `eta_s` (~4.5 min for the full suite), then GETs every 10 s until done. Cases the firmware
+does not register, `browser_only` cases and `panel_skip` are listed as skipped. Then `--calibrate panel.json
+headless.json [--write]` reports the estimate error and fits `a, b` over every moving case (`budgets.json` `measured`,
+`build_factor`).
 
-**Host:** `bench.mjs --panel guition|waveshare` takes the panel IP from the hub's `wasm-show` targets, sends each
-case (`POST /fw/bench`, wait, `GET`) and writes a run with `source: "panel"`. A full suite is about 60 cases × ~1.6
-scenarios × ~4 s ≈ 6-7 min per panel. Then `--calibrate` fits `a, b` over every case measured on both sides, writes it to
-`budgets.json` (`measured: {a, b, n, at}`; estimates use it instead of the anchors) and sets `build_factor`. The
-`/wasm/bench` page gets a Panel column (measured) next to the estimate, and calibration shows the residuals.
+**Results 2026-10-22:** the 5 old anchors put a fixed ~6 ms per frame on the Guition that isn't there (median error
++315 %). Fitted on real cases: Guition `panel ms = 0.08 + 102.6 x WASM ms`, Waveshare `0.34 + 12.6 x`. Checked on a
+second, independent batch, the median error is 14 % (Guition) and 18 % (Waveshare), p90 38 % / 57 % (small cases and
+big blends are the outliers).
 
-**Cost / risk:** about 4-6 KB of flash and about 2 KB of RAM on the workbench firmware only, with no effect on
-production screens. Flashing is Darren's call (the Waveshare has been offline since 2026-10-21 18:00).
+**Cost:** workbench firmware only (production screens untouched): the batch and results in RAM (a few KB), a 1 KB frame
+ring, a second pointer indev, one 5 ms lv_timer.

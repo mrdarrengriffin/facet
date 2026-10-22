@@ -268,6 +268,7 @@ const char *render(lv_obj_t *scr, const char *comp, const char *props, bool ligh
   T = theme(light, accent);
   // reduced motion for this display: props "reduced_motion" (workbench playground / Show on device), else the panel's
   mo::set_reduced(lv_obj_get_display(scr), doc["reduced_motion"] | mo::reduced_default());
+  mo::set_fades(lv_obj_get_display(scr), doc["fades"] | mo::fades_default());
   demo_clear(scr);  // (before the clean: the demos' DELETE events find no set)
   lv_obj_clean(scr);
   lv_obj_remove_style_all(scr);
@@ -295,6 +296,7 @@ const char *update(lv_obj_t *scr, const char *comp, const char *props, bool ligh
     return "rebuild";
   T = t;
   mo::set_reduced(lv_obj_get_display(scr), doc["reduced_motion"] | mo::reduced_default());
+  mo::set_fades(lv_obj_get_display(scr), doc["fades"] | mo::fades_default());
   bool ok;
   {
     Quiet q;
