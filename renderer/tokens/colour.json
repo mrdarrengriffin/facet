@@ -291,7 +291,14 @@
       {"section": "toast", "fg": "error", "bg": ["surface"], "kind": "ui", "use": "timer bar, tone error"},
       {"section": "toast", "fg": "accent", "bg": ["surface"], "kind": "ui", "use": "timer bar, tone working"},
       {"section": "toast", "fg": "blue", "bg": ["surface"], "kind": "ui", "use": "timer bar, tone info"},
-      {"section": "toast", "fg": "text-dim", "bg": ["surface"], "kind": "ui", "use": "timer bar, tone idle"}
+      {"section": "toast", "fg": "text-dim", "bg": ["surface"], "kind": "ui", "use": "timer bar, tone idle"},
+      {"section": "segmented", "fg": "text-dim", "bg": ["bg", "surface", "surface-press"], "kind": "text", "use": "label at rest and pressed (caps label)"},
+      {"section": "segmented", "fg": "text", "bg": "surface-press", "kind": "text", "use": "chosen: label on the pressed plate"},
+      {"section": "segmented", "fg": "line-hi", "bg": ["bg", "surface"], "kind": "decor", "use": "chosen: 1 px outline (the plate + label carry the state)"},
+      {"section": "segmented", "fg": "line", "bg": ["bg", "surface"], "kind": "decor", "use": "box border + separators, disabled chosen outline"},
+      {"section": "segmented", "fg": "text-mute", "bg": ["bg", "surface"], "kind": "disabled", "use": "disabled: labels"},
+      {"section": "segmented", "fg": "text-dim", "bg": "surface-press", "kind": "disabled", "use": "disabled: the chosen label on the plate (st::disabled_on_fill; text-mute is 2.7:1 there)"},
+      {"section": "segmented", "fg": "text-dim", "bg": ["bg", "surface"], "kind": "text", "use": "unavailable: the word Unavailable in place of the control"}
     ]
   },
   "accent": {
