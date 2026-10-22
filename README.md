@@ -204,6 +204,10 @@ the same stats, e.g. the hub's `GET /api/wasm/perf?target=shelly[&reset=1]`, WAS
 runs; `fps`, `frame_ms_avg|max` (start to start), `render_ms_avg|max` (render + flush), `slow` = frames later than 1.5
 refresh periods (a missed slot), `refr_period_ms` (LV_DEF_REFR_PERIOD).
 
+**Bench (facet-153, WIP):** every component and screen measured headless against per-device budgets, with the panels'
+numbers estimated from these `/fw/perf` results: `heavy node renderer/tools/bench.mjs`, details and the firmware bench
+spec in `renderer/bench/README.md`; host page `/wasm/bench`.
+
 Results 2026-10-21 (full-screen loop, dark, 4 s each; one bench script in the host repo runs all
 three targets). fps / render ms avg (panels: LVGL render + flush; Shelly: WASM tick + render + canvas copy):
 
@@ -507,13 +511,14 @@ workbench sends (the toolbar's **Show on device**). Facet side (this branch, no 
 | Path | What |
 |---|---|
 | `core/fw_core.cpp` | shared by every host: themes, registry, `fw::render(screen, comp, props, light, accent)` (the WASM host calls it too) |
-| `firmware/fw_device.h` | ESPHome glue: own LVGL screen, `GET /fw/info` (build hashes), `GET /fw/meta`, `POST /fw/show {id, props, theme, accent}`, `GET /fw/perf[?reset=1]` (frame stats while animations run); last request kept in flash; tall content scrolls |
-| `firmware/esphome_init.py` | the external component `facet_wb` (`board`, `width`, `height`) |
+| `firmware/fw_device.h` | ESPHome glue: own LVGL screen, `GET /fw/info` (build hashes), `GET /fw/meta`, `POST /fw/show {id, props, theme, accent}`, `GET /fw/perf[?reset=1]` (frame stats while animations run); last request kept in flash; tall content scrolls; **probation chip**: while the running OTA image is unconfirmed (`ESP_OTA_IMG_PENDING_VERIFY`, before safe_mode's `boot_is_good_after`) a warn Status chip "Update settling: don't unplug m:ss" on the LVGL top layer (over every screen, follows the shown theme/accent), then "Update confirmed" 4 s; `/fw/info` `probation_s` (-1 = confirmed) |
+| `firmware/esphome_init.py` | the external component `facet_wb` (`board`, `width`, `height`, `probation` = safe_mode `boot_is_good_after`, default 180 s) |
 | `firmware/bundle.mjs` | `--density 1x\|1.5x --out <dir>` writes `<dir>/facet_wb/` (flat, fonts inlined, link keepers); `--hashes` prints the source hashes |
 
 **Rebuild rule:** props, theme, accent and variant are runtime data (no rebuild). New or edited component/foundation
 code, core, tokens or fonts need a firmware build: the device reports the hashes it was built from (`/fw/info`), the
 host compares them with `firmware/bundle.mjs --hashes` (keys relative to `renderer/`) and shows "Needs firmware build" instead of sending stale code.
+It also shows after an OTA rollback: a hard reset / power cut inside the 3-minute probation boots the previous image (2026-10-22).
 Board YAML (display, touch, Wi-Fi) lives with the host that builds the firmware, not here.
 
 ## Renderer layout (renderer/)

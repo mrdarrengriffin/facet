@@ -1,0 +1,52 @@
+{
+  "about": "Facet bench budgets per device (facet-153). tools/bench.mjs measures each case in the WASM build at the device's size, then estimates the panel's render ms = WASM render ms x the device's factor. The factor is fitted on every run from the anchors: real /fw/perf numbers measured on the panel for scenarios the bench also runs (median of device ms / WASM ms). Budgets are PROVISIONAL (2026-10-22): calibrate from the panels once the firmware bench endpoint exists (README 'Bench').",
+  "devices": {
+    "guition": {
+      "name": "Guition 4848S040 (ESP32-S3, 480 x 480, 90 deg sw rotation)",
+      "density": "1x", "w": 480, "h": 480,
+      "loop_cap_fps": 53,
+      "budget": {
+        "fps_min": 30,
+        "frame_ms_max": 33,
+        "idle_px_per_s": 0,
+        "build_ms_max": 400,
+        "heap_kb_max": 512,
+        "objs_max": 400
+      },
+      "anchors": [
+        { "case": "anchor.motion-sheet-open", "device_ms": 89, "source": "/fw/perf 2026-10-21, facet-wasm README Frame-rate check" },
+        { "case": "anchor.motion-fade", "device_ms": 21, "source": "/fw/perf 2026-10-21" },
+        { "case": "anchor.motion-screen", "device_ms": 44, "source": "/fw/perf 2026-10-21" },
+        { "case": "anchor.motion-clock-hand", "device_ms": 15, "source": "/fw/perf 2026-10-21" },
+        { "case": "anchor.mascots-agents", "device_ms": 5.6, "source": "/fw/perf 2026-10-22 (journal 2026-10-22)" }
+      ]
+    },
+    "waveshare": {
+      "name": "Waveshare ESP32-P4 86 (720 x 720)",
+      "density": "1.5x", "w": 720, "h": 720,
+      "loop_cap_fps": 53,
+      "budget": {
+        "fps_min": 45,
+        "frame_ms_max": 22,
+        "idle_px_per_s": 0,
+        "build_ms_max": 250,
+        "heap_kb_max": 1536,
+        "objs_max": 400
+      },
+      "anchors": [
+        { "case": "anchor.motion-sheet-open", "device_ms": 23, "source": "/fw/perf 2026-10-21" },
+        { "case": "anchor.motion-fade", "device_ms": 4.1, "source": "/fw/perf 2026-10-21" },
+        { "case": "anchor.motion-screen", "device_ms": 6.6, "source": "/fw/perf 2026-10-21" },
+        { "case": "anchor.motion-clock-hand", "device_ms": 4.6, "source": "/fw/perf 2026-10-21" }
+      ]
+    }
+  },
+  "rules": {
+    "fps": "est fps = min(loop cap, redraw rate, 1000 / est render ms) while the case redraws; over budget when < fps_min",
+    "frame_ms": "est render ms p95 (WASM p95 x factor) over frame_ms_max",
+    "idle": "a case not marked live must not redraw in its idle window (px per s over idle_px_per_s)",
+    "build": "first build + first frame, est (WASM x factor) over build_ms_max",
+    "heap": "heap growth for the case (after settle minus the empty stage) over heap_kb_max; WASM malloc, a proxy for LVGL heap on the panel",
+    "objs": "LVGL objects on the display over objs_max"
+  }
+}
