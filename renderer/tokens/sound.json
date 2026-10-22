@@ -224,11 +224,96 @@
       }
     }
   ],
+  "rules": {
+    "$comment": "How Facet uses sound (Darren 2026-10-22: \"there are rules to why we use stuff and when we use stuff\"). Sections in reading order; each item one rule. Rendered by the workbench Sound page and, later, the docs site. Per-type when / not lines live on each type; which component plays what = sound_usage.json (generated from the code) + the hand lines in `usage`.",
+    "sections": [
+      {
+        "id": "why",
+        "title": "Why sound",
+        "items": [
+          "A wall panel is flat glass: no travel, no click. Sound gives a touch its feel. It says the touch landed and what it did.",
+          "A sound stands for a meaning, not a component: the same moment sounds the same everywhere, so it is learnt once (tap in place, open deeper, back, on / off, ticks for values, error when not possible).",
+          "Character, not noise: short, quiet, a little fun, never over the top and never an alarm. The panel lives in a home and is heard by everyone in the room."
+        ]
+      },
+      {
+        "id": "when",
+        "title": "When a sound plays",
+        "items": [
+          "To answer a person: a real tap (LVGL CLICKED: finger down and up on the part), a value step crossed under the finger, or a touch on a blocked part.",
+          "Two sounds speak for the house instead: notify (a toast arrives) and timer-done (a timer someone set has finished). They are the only sounds nobody touched for.",
+          "One action, one sound: the sound of what the tap means (a Card plays open, never tap + open). A part built from another (a List row with a Toggle, a Header with its Back button) plays the inner part's sound, once.",
+          "The sound follows the result: toggle-on when the thing is now on, playing or started; toggle-off when it is now off, paused or stopped."
+        ]
+      },
+      {
+        "id": "never",
+        "title": "When it must not",
+        "items": [
+          "Finger down on a working part is silent: the press look is the feedback. The sound comes with the tap (CLICKED, on release).",
+          "No sound for a scroll, a swipe that scrolls, or a finger that slides off the part: LVGL drops CLICKED, and the sound goes with it.",
+          "No sound for things nobody touched: Home Assistant updates (a light switched elsewhere, a value arriving), clock ticks, animations, screens building or rebuilding, a screen opening by itself, the Dial's opening sweep, quiet follow-up toasts.",
+          "No tick without a step: a value that did not cross a step is silent, and a drag never ticks more often than it has steps.",
+          "Sound off means silent: one switch turns every UI sound off (workbench sidebar Sound: Off; on a panel one setting). Reduced motion does not change sound."
+        ]
+      },
+      {
+        "id": "blocked",
+        "title": "Blocked and errors",
+        "items": [
+          "A blocked part is never silent: finger down on a disabled or unavailable part emits blocked and plays error at once (fw::st::blocked, every component), once per touch; letting go does nothing.",
+          "A blocked Slider or Dial plays error once on press and never ticks; nothing moves.",
+          "error is a low, muted knock: it says \"not possible\" without scolding. A fault nobody touched (a sensor offline) is a toast, so it plays notify, not error."
+        ]
+      },
+      {
+        "id": "choose",
+        "title": "Which sound",
+        "items": [
+          "Pick by meaning: in place = tap; deeper = open; back or away = back; switching = toggle-on / toggle-off; a value = ticks; done or saved = confirm; not possible = error; something new = notify; a timer ends = timer-done.",
+          "Choosing one option of many (Radio, Picker row, Segmented, an accent swatch) is a tap: it acts in place, nothing is switched.",
+          "Opening a sheet or a screen is open (Card, Tile, More row, a chevron row, the Speaker button); closing it is back (Back button, sheet Close or scrim, a toast dismissed by a tap or swipe).",
+          "A new component reuses these meanings; a new sound type is added only for a moment none of them covers, here first."
+        ]
+      },
+      {
+        "id": "levels",
+        "title": "Loudness and levels",
+        "items": [
+          "Every sound is rendered, cleaned (DC removed, edge fades of levels.fadeMs) and loudness-aligned to levels.loudnessDb with peaks capped at levels.peakDb, so a 20 ms click and a one-second chime feel equally loud. Volume is one master level on top.",
+          "The sound heard most is the shortest: ticks, then tap. Length grows with rarity: ticks < tap < toggles < open / back < confirm / error / notify < timer-done.",
+          "Panels play the same sounds pre-rendered (mono 16-bit PCM at 16 kHz, levels.sampleRates), decoded at boot so a press never waits for storage; a new sound cuts off the one still playing, so sounds never pile up."
+        ]
+      },
+      {
+        "id": "packs",
+        "title": "Packs",
+        "items": [
+          "A pack (variant) voices all ten sounds with one character; the meanings never change between packs. keycap is the default; a panel plays one pack (the workbench sends the pick with Show on device).",
+          "Every pack keeps the same contrasts: open rises and back is its falling mirror; toggle-on is brighter and higher than toggle-off; error is low and muted; timer-done is a friendly phrase, never an alarm; in the modal packs the chimes (confirm, timer-done, notify) share one key.",
+          "Procedural, no samples: one sound = base + the pack defaults + the type's values for that pack, in this one file. Change a number here and it changes everywhere."
+        ]
+      },
+      {
+        "id": "ticks",
+        "title": "Step ticks and pitch",
+        "items": [
+          "Every step a Slider, Dial or arc crosses counts (steps = range / step). One shared limiter in the core (fw::step_ticks) decides which are heard.",
+          "Audible ticks are at least Motion tick-min apart (26 ms, about 38 a second): a slow, dimmer-like drag ticks on every step, a fast drag thins to a steady patter.",
+          "Landmark steps (the ends: 0 and 100 %) play slider-landmark, a little stronger and lower, so you feel where the range stops. The limiter never drops one; it waits out the interval.",
+          "Pitch follows the value: linear from pitch.low semitones at the bottom to pitch.high at the top (default -6 / +3). The top sits closer to the middle because high ticks turn shrill. Preview other ranges by ear on the workbench Sound page (play-only); the token itself changes only by a code edit Darren asks for.",
+          "Ticks come only from the shown value moving under a finger (a drag, or a tap on the track or ring). A value set from elsewhere moves silently."
+        ]
+      }
+    ]
+  },
   "types": [
     {
       "id": "tap",
       "name": "Tap",
       "for": "A plain button press. The quietest, shortest sound, because it is the one you hear most.",
+      "when": "A plain action in place: Button, Icon button (round / square), a List row without a chevron, a Section header action, choosing a Radio, Picker row, Segmented option or accent swatch.",
+      "not": "Not for going deeper or back, switching on / off, or a blocked part. Never on finger down.",
       "variants": {
         "keycap": {
           "use": "button press: key-like click",
@@ -333,6 +418,8 @@
       "id": "open",
       "name": "Open",
       "for": "Going deeper: a card or row opens its screen. Rising, so it reads as \"forward\".",
+      "when": "Going deeper: a Card, Tile, More row, a List row with a chevron, the Speaker button (it opens its sheet).",
+      "not": "Not for something opening by itself (a toast, a timer screen), and not for a tap that acts in place.",
       "variants": {
         "keycap": {
           "use": "card opens: two rising clicks",
@@ -436,6 +523,8 @@
       "id": "back",
       "name": "Back",
       "for": "Going back: the falling mirror of Open.",
+      "when": "Going back or putting away: the Back button, a Bottom sheet's Close or scrim, a Toast dismissed by a tap or swipe.",
+      "not": "Not when something closes by itself (a toast timing out, a sheet the system closes).",
       "variants": {
         "keycap": {
           "use": "back: two falling clicks",
@@ -539,6 +628,8 @@
       "id": "toggle-on",
       "name": "Toggle on",
       "for": "Something switches on or starts. Brighter and a little higher than Toggle off.",
+      "when": "Something is now on, playing or started: Toggle, the Dial's ON / OFF button, Play, a switch row.",
+      "not": "Not for choosing one of many (that is tap), and not when the state changes from elsewhere.",
       "variants": {
         "keycap": {
           "use": "switch on: bright snap-click",
@@ -641,6 +732,8 @@
       "id": "toggle-off",
       "name": "Toggle off",
       "for": "Something switches off or pauses. Duller and lower, so you can tell the two apart.",
+      "when": "Something is now off, paused or stopped: the same parts as Toggle on.",
+      "not": "Not for closing or going back (that is back), and not when the state changes from elsewhere.",
       "variants": {
         "keycap": {
           "use": "switch off: duller thock",
@@ -741,6 +834,8 @@
       "id": "slider-tick",
       "name": "Slider tick",
       "for": "One detent while dragging. Its pitch follows the value, so a sweep rises or falls.",
+      "when": "A Slider or Dial value crossing a step under the finger (drag, or a tap on the track or ring), through fw::step_ticks: speed-limited by tick-min, pitch from sound.json pitch.",
+      "not": "No tick when the value moves by itself (a Home Assistant update, the Dial's opening sweep), when no step was crossed, or on a blocked control (error once instead). Never more ticks than steps.",
       "variants": {
         "keycap": {
           "use": "detent tick (camera dial); pitch follows the value",
@@ -836,6 +931,8 @@
       "id": "slider-landmark",
       "name": "Slider landmark",
       "for": "The tick at a landmark step (the ends of the range: 0 and 100 %): the same detent, a little stronger and lower, so you feel where the range stops.",
+      "when": "In place of slider-tick at a landmark step (the ends, 0 and 100 %) while dragging; never dropped by the limiter.",
+      "not": "Not on release and not when the value is set from elsewhere.",
       "variants": {
         "keycap": {
           "use": "landmark tick: detent tick (camera dial); pitch follows the value",
@@ -931,6 +1028,8 @@
       "id": "confirm",
       "name": "Confirm",
       "for": "Done or saved: a short, positive two-note chime.",
+      "when": "Done or saved: a finished action the person waited for (a setting saved, a scene stored, a step completed). No component plays it yet.",
+      "not": "Not for an ordinary tap (tap) or a switch (toggle-on).",
       "variants": {
         "keycap": {
           "use": "done: click + woody two-tone",
@@ -1037,6 +1136,8 @@
       "id": "timer-done",
       "name": "Timer done",
       "for": "A timer has finished. A friendly phrase, longer than the rest, but never an alarm.",
+      "when": "A timer someone set has finished. The one long sound; plays once.",
+      "not": "Never repeating like an alarm, never for anything ambient.",
       "variants": {
         "keycap": {
           "use": "timer finished: marimba run",
@@ -1146,6 +1247,8 @@
       "id": "error",
       "name": "Error",
       "for": "Not possible: a low, muted knock. Never harsh.",
+      "when": "Not possible: finger down on a disabled or unavailable part (fw::st::blocked, every component), once per touch.",
+      "not": "Not for faults nobody touched (those are toasts: notify). Never harsh, never repeated while the finger stays down.",
       "variants": {
         "keycap": {
           "use": "not possible: low muted thunk",
@@ -1257,6 +1360,8 @@
       "id": "notify",
       "name": "Notify",
       "for": "Something new needs a glance: a calm ping.",
+      "when": "Something new needs a glance: a toast arrives (Toast layer; layout.json toast.sound).",
+      "not": "Not for quiet follow-up toasts, not for every change in the house, one per arrival.",
       "variants": {
         "keycap": {
           "use": "something new: woodblock double knock",
@@ -1361,5 +1466,29 @@
         }
       }
     }
-  ]
+  ],
+  "usage": {
+    "$comment": "Hand-written: when each component plays its sounds (one line per component id). The ids and sounds themselves are generated from the code by tools/gen_sound_usage.mjs (tokens/sound_usage.json), which warns when a line is missing or has no component behind it.",
+    "button": "Tap: tap. Disabled: error on finger down.",
+    "icon_button": "Play: toggle-on when it starts playing, toggle-off when it pauses. Round / square: tap. Back role: back. Disabled / unavailable: error.",
+    "back_button": "The Icon button in its back role: back. Disabled: error.",
+    "header": "Only through its Back button: back.",
+    "toggle": "Tap: toggle-on / toggle-off by the new state. Disabled / unavailable: error.",
+    "slider": "Drag or a tap on the track: step ticks (slider-tick, slider-landmark at the ends, pitched by the value). Disabled / unavailable: error once on press.",
+    "dial": "Drag or a ring tap: step ticks (silent during the opening sweep). ON / OFF button: toggle-on / toggle-off. Disabled / unavailable: error once on press.",
+    "card": "Tap: open. Unavailable: error.",
+    "tile": "Tap: open. Blocked: error.",
+    "more_row": "Tap: open. Disabled: error.",
+    "list_row": "Chevron row: open. Plain row: tap. Toggle row: the Toggle's sounds. Disabled / unavailable: error.",
+    "picker_row": "Through its List row: tap when an option is chosen. Disabled / unavailable: error.",
+    "section_header": "Action: tap. Blocked action: error. Title, badge and meta are silent.",
+    "radio": "Choosing it: tap. Disabled: error.",
+    "segmented": "Choosing an option: tap. Disabled: error.",
+    "accent_swatches": "Choosing a swatch: tap. Disabled: error.",
+    "speaker_button": "Tap: open (it opens the speaker sheet). Unavailable: error.",
+    "bottom_sheet": "Close button or a scrim tap: back. Its rows play their own sounds.",
+    "toast": "Dismissed by a tap or swipe: back. Timing out is silent. Its action Button plays tap.",
+    "toast_layer": "A toast arrives: notify (quiet follow-ups make none).",
+    "layout": "Layout foundation demo: the chime toggle plays toggle-on / toggle-off."
+  }
 }
