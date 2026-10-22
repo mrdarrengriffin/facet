@@ -14,6 +14,7 @@
 //   fw_areas(id) -> int32 [n, x1, y1, x2, y2...]  areas flushed since the last call (copy only these)
 //   fw_anims() -> n                   LVGL animations running (frame stats)
 //   fw_events() -> JSON               events + sound requests since the last call (fw::emit / fw::sound): [{stage,kind,name,detail}] or ""
+//   fw_ha_wants() -> JSON [[e, a]...]  HA pairs the built screens bind (core/ha.h); fw_ha_put(e, a, v) = a value from the host
 //   fw_audit(id) -> JSON              every object of the stage for tools/audit.mjs (core/audit.h, README "Audit")
 //   fw_unclip(id)                     let every object draw outside its box (audit: what differs was clipped)
 #include <emscripten.h>
@@ -22,6 +23,7 @@
 #include <string>
 #include <vector>
 #include "fw.h"
+#include "ha.h"
 // LVGL private (src/core/lv_obj_draw_private.h): the ext draw size an object holds (fw::bleed sets it)
 extern "C" int32_t lv_obj_get_ext_draw_size(const lv_obj_t *obj);
 #include <map>
@@ -96,6 +98,22 @@ EMSCRIPTEN_KEEPALIVE const char *fw_events() {
   evq.clear();
   return evout.c_str();
 }
+
+// Home Assistant data (core/ha.h): the host polls the wanted pairs and puts their values (hub /api/panel/entities)
+EMSCRIPTEN_KEEPALIVE const char *fw_ha_wants() {
+  static std::string out;
+  ArduinoJson::JsonDocument d;
+  ArduinoJson::JsonArray a = d.to<ArduinoJson::JsonArray>();
+  for (const auto &p : fw::ha::wants()) {
+    ArduinoJson::JsonArray x = a.add<ArduinoJson::JsonArray>();
+    x.add(p.first);
+    x.add(p.second);
+  }
+  out.clear();
+  serializeJson(d, out);
+  return out.c_str();
+}
+EMSCRIPTEN_KEEPALIVE void fw_ha_put(const char *e, const char *a, const char *v) { fw::ha::put(e ? e : "", a ? a : "", v ? v : ""); }
 
 EMSCRIPTEN_KEEPALIVE const char *fw_meta() {
   out.clear();

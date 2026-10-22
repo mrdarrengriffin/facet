@@ -4,6 +4,10 @@
 //   GET  /fw/meta   [{id, name, section, meta}]                                     the registry (same as fw_meta())
 //   POST /fw/show   {id, props?, theme?: dark|light, accent?: <set id>}  -> {ok, error?, ms, heap}
 //   GET  /fw/perf   frame stats while animations run (since boot or the last ?reset=1): fps, frame / render ms
+//   GET  /fw/settings  the settings backup {"facet":"settings","version":1,"values":{...}} (core/device.h; no secrets)
+//   POST /fw/settings  {values:{id: value}} (a backup, or a few) -> each through fw::dev::set (HOST): applied, the
+//                      entities follow and keep it (settings.yaml from firmware/settings_yaml.mjs) -> {ok, error?, settings}
+//   GET  /fw/ha     the Home Assistant store (core/ha.h): {wants: [[e, a]...], values: {"e|a": value}, bound: n}
 //   POST /fw/bench  a batch of bench cases the panel runs on its own screen (fw_bench.h); GET /fw/bench = the report
 // Probation: while the running OTA image is still ESP_OTA_IMG_PENDING_VERIFY (safe_mode has not confirmed it yet,
 // boot_is_good_after = FW_PROBATION_S), a warn Status chip on the LVGL top layer (over every screen) says
@@ -33,6 +37,11 @@
 #include "esphome/components/web_server_base/web_server_base.h"
 #include "fw.h"
 #include "device.h"
+#include "settings_gen.h"
+#include "ha.h"
+#ifdef USE_API
+#include "esphome/components/api/api_server.h"
+#endif
 #include "fw_bundle_gen.h"
 
 namespace fw::device {
@@ -188,8 +197,20 @@ inline bool show(ArduinoJson::JsonObjectConst req, ArduinoJson::JsonObject out) 
     serializeJson(req["props"], props);
   }
   const bool light = !strcmp(req["theme"] | "dark", "light");
+  // the panel's own settings win (Darren 2026-10-22: an HA change must show): the request's theme / accent are only
+  // the stage under them (fw::dev::look: Theme auto + no accent chosen yet = the request's), and the Settings screen
+  // shows the panel's values (the request's setting props are dropped)
+  const fw::Theme *look = fw::dev::look(fw::theme(light, accent_index(req["accent"] | "")));
+  if (!strcmp(id, "settings")) {
+    ArduinoJson::JsonDocument pd;
+    if (!deserializeJson(pd, props)) {
+      for (int i = 0; i < fw::set::N_SETTINGS; i++) pd.remove(fw::set::SETTINGS[i].id);
+      props.clear();
+      serializeJson(pd, props);
+    }
+  }
   const int64_t t0 = esp_timer_get_time();
-  const char *e = fw::render(S.scr, id, props.c_str(), light, accent_index(req["accent"] | ""));
+  const char *e = fw::render(S.scr, id, props.c_str(), look->light, look->accent_set);
   if (!*e) fit_scroll();
   out["ok"] = !*e;
   if (*e) out["error"] = e;
@@ -251,7 +272,7 @@ inline void probation_chip(const char *tone, const char *text) {
   }
   lv_obj_clean(PR.box);
   const fw::Theme *old = fw::T;
-  fw::T = fw::theme(S.light, S.accent);
+  fw::T = fw::dev::look(fw::theme(S.light, S.accent));  // as the device shows it (Theme / Accent settings)
   // a solid backing under the 14 % tint so the chip reads over any screen (the tint alone is see-through)
   lv_obj_t *back = lv_obj_create(PR.box);
   lv_obj_remove_style_all(back);
@@ -296,6 +317,99 @@ inline void probation_start() {
   ESP_LOGW("facet_wb", "OTA image on probation: %d s until confirmed; a reboot now rolls back", probation_left());
   PR.timer = lv_timer_create(probation_tick, 500, nullptr);
   probation_tick(PR.timer);
+}
+
+// ---------------------------------------------------------------- settings changed: the shown page follows
+// A setting changed (any source: the screen, HA, POST /fw/settings, the sun for Theme auto). The device runtime restyles
+// itself (core/device.cpp); a page shown on its own (POST /fw/show {"id": "settings"} and the like) is drawn again
+// here: the look changed = render again in the new look, else (a value) the update path (the Settings controls move).
+// Waits for the running animations (the tapped control's slide), at most 600 ms, never inside the tap's own event.
+struct Reshow {
+  lv_timer_t *timer = nullptr;
+  uint32_t at = 0;
+  bool look = false;
+};
+inline Reshow RS;
+inline void reshow_tick(lv_timer_t *t) {
+  if (lv_anim_count_running() > 0 && lv_tick_elaps(RS.at) < 600) return;
+  lv_timer_delete(t);
+  RS.timer = nullptr;
+  ArduinoJson::JsonDocument req, out;
+  if (deserializeJson(req, S.shown) || !req["id"].is<const char *>()) return;
+  const char *id = req["id"];
+  if (!strcmp(id, "device")) return;  // the device runtime did it
+  if (!RS.look) {
+    std::string props = "{}";
+    if (req["props"].is<ArduinoJson::JsonObjectConst>()) { props.clear(); serializeJson(req["props"], props); }
+    const fw::Theme *look = fw::dev::look(fw::theme(S.light, S.accent));
+    if (!strcmp(id, "settings")) {
+      ArduinoJson::JsonDocument pd;
+      deserializeJson(pd, props);
+      for (int i = 0; i < fw::set::N_SETTINGS; i++) pd.remove(fw::set::SETTINGS[i].id);
+      props.clear();
+      serializeJson(pd, props);
+    }
+    if (!*fw::update(S.scr, id, props.c_str(), look->light, look->accent_set)) return;
+  }
+  RS.look = false;
+  show(req.as<ArduinoJson::JsonObjectConst>(), out.to<ArduinoJson::JsonObject>());
+}
+inline void reshow_later(bool look) {
+  RS.look = RS.look || look;
+  RS.at = lv_tick_get();
+  if (!RS.timer) RS.timer = lv_timer_create(reshow_tick, 30, nullptr);
+}
+
+// ---------------------------------------------------------------- Home Assistant (core/ha.h)
+// Every wanted (entity, attribute) pair is subscribed once (HA can't unsubscribe); HA asks for the list when it
+// connects, a pair added while connected is announced to the connected client at once, one pair per message (re-sending
+// the whole list would double every tracker: old panel spec.h subscribe()). Values go straight into the store (cheap:
+// bound components repaint from its lv_timer). Actions (the closed whitelist in ha::act) go out as HA actions; HA
+// runs them only with "Allow the device to perform Home Assistant actions" on in the ESPHome integration.
+inline void ha_subscribe(const std::string &e, const std::string &a) {
+#ifdef USE_API_HOMEASSISTANT_STATES
+  auto *api = esphome::api::global_api_server;
+  if (!api || e.empty()) return;
+  std::function<void(esphome::StringRef)> f = [e, a](esphome::StringRef v) { fw::ha::put(e, a, std::string(v.c_str(), v.size())); };
+  api->subscribe_home_assistant_state(e, a.empty() ? esphome::optional<std::string>() : esphome::optional<std::string>(a), std::move(f));
+  for (auto &c : api->active_clients()) {
+    if (!c->is_authenticated()) continue;
+    esphome::api::SubscribeHomeAssistantStateResponse r;
+    r.entity_id = esphome::StringRef(e);
+    r.attribute = esphome::StringRef(a);
+    r.once = false;
+    (void) c->send_message(r);
+  }
+  ESP_LOGD("facet_wb", "HA subscribe %s%s%s", e.c_str(), a.empty() ? "" : " | ", a.c_str());
+#endif
+}
+inline void ha_action(const char *service, const char *entity, const char *data_json) {
+#ifdef USE_API_HOMEASSISTANT_SERVICES
+  auto *api = esphome::api::global_api_server;
+  if (!api) return;
+  std::vector<std::pair<std::string, std::string>> kv{{"entity_id", entity}};
+  ArduinoJson::JsonDocument d;
+  if (data_json && *data_json && !deserializeJson(d, data_json))
+    for (ArduinoJson::JsonPairConst p : d.as<ArduinoJson::JsonObjectConst>()) {
+      std::string v;
+      if (p.value().is<const char *>()) v = p.value().as<const char *>();
+      else serializeJson(p.value(), v);
+      kv.push_back({p.key().c_str(), v});
+    }
+  const std::string svc = service;
+  esphome::api::HomeassistantActionRequest r;
+  r.service = esphome::StringRef(svc);
+  r.data.init(kv.size());
+  for (auto &x : kv) {
+    auto &m = r.data.emplace_back();
+    m.key = esphome::StringRef(x.first);
+    m.value = esphome::StringRef(x.second);
+  }
+  api->send_homeassistant_action(r);
+  ESP_LOGI("facet_wb", "HA action %s %s %s", service, entity, data_json ? data_json : "");
+#else
+  ESP_LOGW("facet_wb", "HA action %s %s: this build has no homeassistant_services", service, entity);
+#endif
 }
 
 #define FW_BENCH_FROM_DEVICE
@@ -358,6 +472,33 @@ class Handler : public AsyncWebHandler {
         else { code = e == "busy" ? 409 : 400; out["ok"] = false; out["error"] = e; }
         serializeJson(out, s);
       }
+    } else if (path == "/fw/ha") {
+      ArduinoJson::JsonDocument d;
+      in_loop([&] {
+        ArduinoJson::JsonArray w = d["wants"].to<ArduinoJson::JsonArray>();
+        for (const auto &p : fw::ha::wants()) { auto x = w.add<ArduinoJson::JsonArray>(); x.add(p.first); x.add(p.second); }
+        ArduinoJson::JsonObject v = d["values"].to<ArduinoJson::JsonObject>();
+        for (const auto &kv : fw::ha::S().store) v[kv.first.first + (kv.first.second.empty() ? "" : "|" + kv.first.second)] = kv.second;
+        d["bound"] = (int) fw::ha::S().bounds.size();
+      }, 2000);
+      serializeJson(d, s);
+    } else if (path == "/fw/settings") {
+      ArduinoJson::JsonDocument d;
+      std::string e, cur;
+      if (post && (too_big_ || body_.empty())) e = "body is not JSON";
+      else if (!in_loop([&] {
+                 if (post) e = fw::dev::restore(body_.c_str(), fw::dev::HOST);
+                 fw::dev::settings_json(cur);
+               }, 3000))
+        e = "the main loop did not answer in time";
+      if (post) {
+        d["ok"] = e.empty();
+        if (!e.empty()) d["error"] = e;
+        if (!e.empty()) code = 400;
+        ArduinoJson::JsonDocument c;
+        if (!deserializeJson(c, cur)) d["settings"] = c;
+        serializeJson(d, s);
+      } else s = cur.empty() ? R"({"ok":false,"error":"the main loop did not answer in time"})" : cur;
     } else if (path == "/fw/bench") {
       ArduinoJson::JsonDocument d;
       in_loop([&] { bench::result_json(d.to<ArduinoJson::JsonObject>()); }, 2000);
@@ -381,7 +522,7 @@ class Handler : public AsyncWebHandler {
       }
     } else {
       code = 404;
-      s = R"({"ok":false,"error":"GET /fw/info, GET /fw/meta, GET /fw/perf[?reset=1], POST /fw/show, POST|GET /fw/bench"})";
+      s = R"({"ok":false,"error":"GET /fw/info, GET /fw/meta, GET /fw/perf[?reset=1], POST /fw/show, GET|POST /fw/settings, GET /fw/ha, POST|GET /fw/bench"})";
     }
     body_.clear();  // a body is only delivered for some content types: never reuse the previous request's
     too_big_ = false;
@@ -427,6 +568,17 @@ inline void setup() {
   }
   ESP_LOGI("facet_wb", "%u components, showing %s", (unsigned) fw::reg().size(), S.shown.c_str());
   lv_timer_create(drain, 20, nullptr);
+  // settings (core/device.h): the shown page follows every change; the probation chip follows the look
+  fw::dev::observe([](const char *id, const char *, fw::dev::From from) {
+    const bool look = !strcmp(id, "theme") || !strcmp(id, "accent");
+    if (!look && from != fw::dev::SCREEN) reshow_later(false);  // a value from elsewhere: the controls move
+  });
+  fw::ha::on_want(ha_subscribe);  // (the pairs wanted so far too: the Living room's lights, declared at boot)
+  fw::ha::on_act(ha_action);
+  fw::dev::on_look([] {  // theme / accent / the sun: draw the page again in the new look (+ the probation chip)
+    reshow_later(true);
+    PR.shown = -2;
+  });
   probation_start();
   if (auto *ws = esphome::web_server_base::global_web_server_base) ws->add_handler(new Handler());
 }

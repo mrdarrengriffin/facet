@@ -31,7 +31,7 @@ lv_obj_t *build(const char *id, lv_obj_t *parent, Doc &props) {
 
 // the pages Home lists, screens first. Title only on every card (Darren 2026-10-22: "just show the title for now"),
 // no icon, so they all match
-const char *const PAGES[] = {"settings", "colour", "type", "space", "layout", "icons", "motion", "states", "mascots", "chart"};
+const char *const PAGES[] = {"living_room", "settings", "colour", "type", "space", "layout", "icons", "motion", "states", "mascots", "chart"};
 
 const char *META = R"({
   "about": "Placeholder Home: a grid of cards for the screens and workbench pages that exist; each card opens its page. The real Home will be laid out per room.",

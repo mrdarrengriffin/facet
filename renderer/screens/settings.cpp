@@ -14,14 +14,18 @@
 //                                  top (title / body type), the Slider component full width under them; the value
 //                                  follows the knob while it moves
 //   sheet    the Bottom sheet component in overlay mode, the screen's last child (its single overlay root)
-// Values come from the props (one per setting = the playground; missing = the schema default). Theme / Accent here
-// only show the value: the workbench's own theme and accent stay global settings.
-// Sheet rows open the ONE Bottom sheet, moved in place to the setting's options (its `items`); a pick updates the row's value and emits
-// "setting" (detail id=value: the hook the panel / HA side uses); Sound pack stays open after a pick (docs).
+// Values come from the props (one per setting = the playground; missing = the live value, fw::dev::setting). Inside the
+// Device (live) view, Theme / Accent restyle that device; the workbench's own theme and accent stay global settings.
+// Sheet rows open the ONE Bottom sheet, moved in place to the setting's options (its `items`); a pick updates the row's
+// value; Sound pack stays open after a pick (docs). Every control's change (a pick, a Segmented / swatch / toggle /
+// slider) goes through fw::dev::set (core/device.h "settings": the ONE path the screen, HA and the workbench share),
+// which applies it and emits "setting" (detail id=value). Missing props = the panel's live values, so the device
+// runtime builds this screen with {} and a restyle shows what is set; a change from HA moves the controls in place.
 // Update path: a prop change moves every control in place (FW_UPDATE(settings) at the end), no rebuild.
 // Bench: prop sheet = "loop" opens and closes the sheet forever over this screen (the Guition sheet speed test).
 #include "fw.h"
 #include "settings_gen.h"
+#include "device.h"
 
 namespace {
 using Doc = ArduinoJson::JsonDocument;
@@ -64,22 +68,27 @@ const fw::set::Option *option(const fw::set::Setting &s, const char *id) {
     if (!strcmp(s.options[i].id, id)) return &s.options[i];
   return nullptr;
 }
-// the prop as a string (select ids, presets "60"), else the schema default
+// a missing prop = the panel's value now (fw::dev settings: the schema default until one is set)
+const char *live(const fw::set::Setting &s) {
+  const char *v = fw::dev::setting(s.id);
+  return v ? v : s.def;
+}
+// the prop as a string (select ids, presets "60"), else the live value
 std::string str_of(const fw::set::Setting &s, fw::Props p) {
   ArduinoJson::JsonVariantConst v = p[s.id];
   if (v.is<const char *>()) return v.as<const char *>();
   if (v.is<double>()) return num(v.as<double>());
-  return s.def;
+  return live(s);
 }
 double num_of(const fw::set::Setting &s, fw::Props p) {
   ArduinoJson::JsonVariantConst v = p[s.id];
   if (v.is<double>()) return v.as<double>();
   if (v.is<const char *>()) return atof(v.as<const char *>());
-  return atof(s.def);
+  return atof(live(s));
 }
 bool bool_of(const fw::set::Setting &s, fw::Props p) {
   ArduinoJson::JsonVariantConst v = p[s.id];
-  return v.is<bool>() ? v.as<bool>() : !strcmp(s.def, "true");
+  return v.is<bool>() ? v.as<bool>() : !strcmp(live(s), "true");
 }
 std::string lower(std::string t) {
   for (char &c : t) c = (char) tolower((unsigned char) c);
@@ -115,6 +124,35 @@ std::string shown(const fw::set::Setting &s, const std::string &v) {
     return o ? o->label : v;
   }
   return format_number(s, atof(v.c_str()));
+}
+
+// a control in the column changed its value (Segmented / Accent swatches / Slider "change", a toggle row's
+// "toggle"): the setting it belongs to takes it through the ONE set() path (fw::dev::set, device.h "settings"), which
+// keeps it, applies it (theme / accent restyle the device) and emits "setting" id=value. Everything else goes on up
+// to the next listener (the device runtime: the Header's "back"). Slider "input" (live while dragging) is not a value.
+bool inside(lv_obj_t *o, lv_obj_t *in) {
+  for (; o; o = lv_obj_get_parent(o))
+    if (o == in) return true;
+  return false;
+}
+void on_control(lv_obj_t *from, const char *name, const char *detail, void *user) {
+  auto *scr = (Screen *) user;
+  const bool change = !strcmp(name, "change"), flip = !strcmp(name, fw::st::SWITCH_EVENT);
+  if (change || flip)
+    for (int k = 0; k < fw::set::N_SETTINGS; k++) {
+      lv_obj_t *c = scr->ctrl[k];
+      if (!c || !inside(from, c)) continue;
+      const fw::set::Setting &s = fw::set::SETTINGS[k];
+      std::string v = detail;
+      if (flip) v = !strcmp(detail, "on") ? "true" : "false";
+      else if (s.control == fw::set::SEGMENTED)  // Segmented ids = labels lower-cased
+        for (int i = 0; i < s.n_options; i++)
+          if (lower(s.options[i].label) == detail) v = s.options[i].id;
+      scr->values[k] = v;
+      fw::dev::set(s.id, v.c_str(), fw::dev::SCREEN, c);
+      return;
+    }
+  if (lv_obj_t *up = lv_obj_get_parent(scr->root)) fw::notify(up, name, detail);
 }
 
 // the props of setting s's component for value v: ONE place, so a build and the update path can't drift
@@ -213,7 +251,7 @@ void make_sheet(Screen *scr, bool open) {
       ctrl_props(s, v, rp);
       fw::update_child(fw::find("list_row"), scr->sheet_row, rp.as<fw::Props>());
     }
-    fw::emit(scr->sheet, "setting", (std::string(s.id) + "=" + v).c_str());
+    fw::dev::set(s.id, v.c_str(), fw::dev::SCREEN, scr->sheet);  // keeps + applies it, emits "setting" id=value
   }, LV_EVENT_VALUE_CHANGED, scr);
 }
 void open_sheet(Screen *scr, const fw::set::Setting &s, lv_obj_t *row) {
@@ -338,6 +376,7 @@ void build_settings(lv_obj_t *parent, fw::Props p) {
   lv_obj_set_style_bg_opa(scr->root, LV_OPA_COVER, 0);
   lv_obj_add_event_cb(scr->root, [](lv_event_t *e) { delete (Screen *) lv_event_get_user_data(e); }, LV_EVENT_DELETE, scr);
   for (int i = 0; i < fw::set::N_SETTINGS; i++) scr->values[i] = value_of(fw::set::SETTINGS[i], p);
+  fw::listen(scr->root, on_control, scr);
 
   Doc hd;  // the Header (+ its screen chrome: the live clock; the settings button is Home's only)
   hd["label"] = "Settings";
@@ -386,6 +425,7 @@ FW_UPDATE(settings) {
     ctrl_props(s, scr->values[i], d);
     fw::update_child(fw::find(ctrl_id(s)), scr->ctrl[i], d.as<fw::Props>());
   }
+  if (!p["sheet"].is<const char *>()) return true;  // no sheet prop (the device runtime's value moves): the sheet stays
   const char *sheet = p["sheet"] | "closed";
   const bool loop = !strcmp(sheet, "loop"), open = strcmp(sheet, "closed");
   if (loop != scr->loop || !scr->sheet) {

@@ -1,5 +1,7 @@
 // Device runtime: core/device.h (screen stack, navigation, the screen transition). Same file on the panels and in WASM.
+#include <cmath>
 #include "device.h"
+#include "settings_gen.h"
 
 namespace fw {
 namespace dev {
@@ -7,7 +9,10 @@ namespace {
 enum Op : uint8_t { NONE, GO, BACK, HOME };
 struct Device {
   lv_obj_t *root = nullptr, *screen = nullptr;  // screen = the root's one child (rebuilt on every cut)
-  const Theme *theme = nullptr;                 // the theme the device was mounted with (fw::T is global)
+  const Theme *stage = nullptr;                 // the theme the device was mounted with (fw::T is global)
+  const Theme *theme = nullptr;                 // the theme it shows (look(stage): the Theme / Accent settings)
+  lv_timer_t *restyle = nullptr;                // a restyle waiting for the running animations
+  uint32_t restyle_at = 0;
   std::vector<std::string> stack;
   Op op = NONE;
   std::string target;
@@ -36,11 +41,14 @@ lv_obj_t *build_into(lv_obj_t *host, const Component *c, Props p) {
 bool skip(lv_obj_t *o) { return lv_obj_has_flag(o, LV_OBJ_FLAG_HIDDEN) || lv_obj_has_flag(o, LV_OBJ_FLAG_FLOATING); }
 
 // build screen `id` as the device's screen; returns the items for the rise (header first), or false if unknown
+// an id may carry the screen's props: "light?{\"entity\":\"light.x\"}" (one Light screen for every light)
+std::string base_of(const std::string &id) { return id.substr(0, id.find('?')); }
 bool show(Device *d, const std::string &id, std::vector<lv_obj_t *> &items) {
-  const Component *c = find(id.c_str());
+  const Component *c = find(base_of(id).c_str());
   if (!c) return false;
   ArduinoJson::JsonDocument none;
-  none.to<ArduinoJson::JsonObject>();
+  const size_t q = id.find('?');
+  if (q == std::string::npos || deserializeJson(none, id.c_str() + q + 1) || !none.is<ArduinoJson::JsonObject>()) none.to<ArduinoJson::JsonObject>();
   if (d->screen) lv_obj_delete(d->screen);
   d->screen = box(d->root);
   lv_obj_set_size(d->screen, lay::screen_w, lay::screen_h);
@@ -92,7 +100,7 @@ void run(lv_timer_t *t) {
   std::string id;
   bool home_dir = false;
   if (op == GO) {
-    if (!find(d->target.c_str()) || (!d->stack.empty() && d->stack.back() == d->target)) return;
+    if (!find(base_of(d->target).c_str()) || (!d->stack.empty() && d->stack.back() == d->target)) return;
     auto at = std::find(d->stack.begin(), d->stack.end(), d->target);
     home_dir = at != d->stack.end();  // already on the stack: back to it
     if (home_dir) d->stack.erase(at + 1, d->stack.end());
@@ -110,9 +118,10 @@ void run(lv_timer_t *t) {
   if (d->theme) T = d->theme;
   std::vector<lv_obj_t *> items;
   show(d, d->stack.back(), items);
-  if (!items.empty()) rise(items.data(), (int) items.size(), home_dir);
+  const char *tr = setting("transition");
+  if (!items.empty() && !(tr && !strcmp(tr, "instant"))) rise(items.data(), (int) items.size(), home_dir);
   T = was;
-  emit(d->root, "screen", d->stack.back().c_str());  // the host may mirror it (URL, HA); not a tap
+  emit(d->root, "screen", base_of(d->stack.back()).c_str());  // the host may mirror it (URL, HA); not a tap
 }
 void queue(lv_obj_t *in, Op op, const char *id) {
   Device *d = of(in);
@@ -128,25 +137,149 @@ void on_emit(lv_obj_t *from, const char *name, const char *detail, void *) {
   if (!strcmp(name, "navigate")) queue(from, GO, detail);
   else if (!strcmp(name, "back")) queue(from, BACK, nullptr);
 }
+
+// ---- settings (device.h "settings")
+struct Store {
+  std::string v[set::N_SETTINGS];
+  bool given[set::N_SETTINGS] = {};  // set since start (else the schema default; accent then follows the stage)
+  std::vector<Observer> obs;
+  void (*look_hook)() = nullptr;
+  int day = -1;
+  Store() {
+    for (int i = 0; i < set::N_SETTINGS; i++) v[i] = set::SETTINGS[i].def;
+  }
+};
+Store &store() {
+  static Store s;
+  return s;
+}
+int index_of(const char *id) {
+  for (int i = 0; id && i < set::N_SETTINGS; i++)
+    if (!strcmp(set::SETTINGS[i].id, id)) return i;
+  return -1;
+}
+std::string num(double v) {
+  char b[24];
+  snprintf(b, sizeof b, "%g", v);
+  return b;
+}
+bool same_word(const char *a, const char *b) {
+  for (; *a && *b; a++, b++)
+    if (tolower((unsigned char) *a) != tolower((unsigned char) *b)) return false;
+  return !*a && !*b;
+}
+// value -> the stored form, or "" = not valid for s
+std::string normal(const set::Setting &s, const char *value) {
+  if (!value) return "";
+  if (s.kind == set::SELECT) {
+    for (int i = 0; i < s.n_options; i++)
+      if (same_word(s.options[i].id, value) || same_word(s.options[i].label, value)) return s.options[i].id;
+    return "";
+  }
+  if (s.kind == set::SWITCH) {
+    if (same_word(value, "true") || same_word(value, "on") || !strcmp(value, "1")) return "true";
+    if (same_word(value, "false") || same_word(value, "off") || !strcmp(value, "0")) return "false";
+    return "";
+  }
+  char *end = nullptr;
+  const double x = strtod(value, &end);
+  if (end == value || !std::isfinite(x)) return "";
+  const double st = s.step > 0 ? s.step : 1;
+  return num(LV_CLAMP(s.min, s.min + std::lround((x - s.min) / st) * st, s.max));
+}
+// the Settings screen's props: every value (its update path moves the controls; the sheet stays as it is)
+void settings_props(ArduinoJson::JsonDocument &d) {
+  const Store &st = store();
+  for (int i = 0; i < set::N_SETTINGS; i++) {
+    const set::Setting &s = set::SETTINGS[i];
+    if (s.kind == set::SWITCH) d[s.id] = st.v[i] == "true";
+    else if (s.kind == set::NUMBER && s.control == set::SLIDER) d[s.id] = atof(st.v[i].c_str());
+    else d[s.id] = st.v[i];
+  }
+}
+// restyle: the current screen built again with d->theme (no rise), its scrolled column kept where it was. Waits for
+// the running animations (the Segmented / swatch slide that made the change), at most restyle_wait ms.
+constexpr uint32_t restyle_wait = 600;
+void restyle_now(Device *d) {
+  if (d->stack.empty()) return;
+  lv_obj_t *root = d->screen && lv_obj_get_child_count(d->screen) ? lv_obj_get_child(d->screen, 0) : nullptr;
+  int32_t idx = -1, y = 0;
+  for (uint32_t i = 0; root && i < lv_obj_get_child_count(root); i++) {
+    lv_obj_t *k = lv_obj_get_child(root, (int32_t) i);
+    if (lv_obj_has_flag(k, LV_OBJ_FLAG_SCROLLABLE)) { idx = (int32_t) i; y = lv_obj_get_scroll_y(k); break; }
+  }
+  const Theme *was = T;
+  T = d->theme;
+  std::vector<lv_obj_t *> items;
+  show(d, d->stack.back(), items);
+  T = was;
+  root = d->screen && lv_obj_get_child_count(d->screen) ? lv_obj_get_child(d->screen, 0) : nullptr;
+  if (root && idx >= 0 && idx < (int32_t) lv_obj_get_child_count(root) && y > 0) {
+    lv_obj_t *k = lv_obj_get_child(root, idx);
+    lv_obj_update_layout(root);
+    lv_obj_scroll_to_y(k, y, LV_ANIM_OFF);
+  }
+  emit(d->root, "restyle", d->theme->light ? "light" : "dark");
+}
+void restyle_tick(lv_timer_t *t) {
+  auto *d = (Device *) lv_timer_get_user_data(t);
+  if (lv_anim_count_running() > 0 && lv_tick_elaps(d->restyle_at) < restyle_wait) return;
+  lv_timer_delete(t);
+  d->restyle = nullptr;
+  restyle_now(d);
+}
+// every device after a change: its theme, the Settings screen's controls (a change from outside the screen)
+void apply(int k, From from) {
+  const char *id = set::SETTINGS[k].id;
+  const bool look_ = !strcmp(id, "theme") || !strcmp(id, "accent");
+  if (look_ && store().look_hook) store().look_hook();
+  for (Device *d : devices) {
+    if (look_) {
+      const Theme *t = look(d->stage);
+      if (t != d->theme) {
+        d->theme = t;
+        if (!d->restyle) d->restyle = lv_timer_create(restyle_tick, 30, d);
+        d->restyle_at = lv_tick_get();
+        continue;  // the rebuild shows every value anyway
+      }
+    }
+    if (from == SCREEN || d->restyle || d->stack.empty() || d->stack.back() != "settings") continue;
+    lv_obj_t *root = d->screen && lv_obj_get_child_count(d->screen) ? lv_obj_get_child(d->screen, 0) : nullptr;
+    ArduinoJson::JsonDocument p;
+    settings_props(p);
+    const Theme *was = T;
+    T = d->theme;
+    {
+      Quiet q;
+      update_child(find("settings"), root, p.as<Props>());
+    }
+    T = was;
+  }
+}
 }  // namespace
 
 lv_obj_t *mount(lv_obj_t *parent, const char *start) {
   auto *d = new Device;
-  d->theme = T;
+  d->stage = T;
+  d->theme = look(T);
+  const Theme *was = T;
+  T = d->theme;
   d->root = box(parent);
   lv_obj_set_size(d->root, lay::screen_w, lay::screen_h);
   devices.push_back(d);
   lv_obj_add_event_cb(d->root, [](lv_event_t *e) {
     auto *d = (Device *) lv_event_get_user_data(e);
     if (d->timer) lv_timer_delete(d->timer);
+    if (d->restyle) lv_timer_delete(d->restyle);
     devices.erase(std::remove(devices.begin(), devices.end(), d), devices.end());
     delete d;
   }, LV_EVENT_DELETE, d);
   listen(d->root, on_emit);
-  const char *s = start && find(start) ? start : "home";
+  const char *s = start && find(base_of(start).c_str()) ? start : "home";
   d->stack.push_back(s);
   std::vector<lv_obj_t *> items;
   show(d, s, items);  // the first screen cut in (no rise: the panel just shows it)
+  T = was;
   return d->root;
 }
 void go(lv_obj_t *in, const char *id) { queue(in, GO, id); }
@@ -155,6 +288,92 @@ void home(lv_obj_t *in) { queue(in, HOME, nullptr); }
 const char *current(lv_obj_t *in) {
   Device *d = of(in);
   return d && !d->stack.empty() ? d->stack.back().c_str() : "";
+}
+const char *setting(const char *id) {
+  const int k = index_of(id);
+  return k < 0 ? nullptr : store().v[k].c_str();
+}
+const char *set(const char *id, const char *value, From from, lv_obj_t *obj) {
+  const int k = index_of(id);
+  if (k < 0) return "no such setting";
+  const set::Setting &s = set::SETTINGS[k];
+  const std::string v = normal(s, value);
+  if (v.empty()) return "not a valid value";
+  Store &st = store();
+  const bool was_given = st.given[k];
+  st.given[k] = true;
+  if (st.v[k] == v) {
+    if (!was_given && !strcmp(id, "accent")) apply(k, from);  // the default set, now chosen: stop following the stage
+    return "same";
+  }
+  st.v[k] = v;
+  apply(k, from);
+  const std::string detail = std::string(id) + "=" + v;
+  if (obj) emit(obj, "setting", detail.c_str());
+  else
+    for (Device *d : devices) emit(d->root, "setting", detail.c_str());
+  for (Observer cb : std::vector<Observer>(st.obs)) cb(id, st.v[k].c_str(), from);
+  return "";
+}
+const char *set(const char *id, double value, From from) { return set(id, num(value).c_str(), from); }
+const char *option_label(const char *id, const char *value) {
+  const int k = index_of(id);
+  if (k < 0 || !value) return value;
+  const set::Setting &s = set::SETTINGS[k];
+  for (int i = 0; i < s.n_options; i++)
+    if (!strcmp(s.options[i].id, value)) return s.options[i].label;
+  return value;
+}
+void observe(Observer cb) { store().obs.push_back(cb); }
+void on_look(void (*cb)()) { store().look_hook = cb; }
+void settings_json(std::string &out) {
+  ArduinoJson::JsonDocument d;
+  d["facet"] = "settings";
+  d["version"] = 1;
+  ArduinoJson::JsonObject v = d["values"].to<ArduinoJson::JsonObject>();
+  const Store &st = store();
+  for (int i = 0; i < set::N_SETTINGS; i++) {
+    const set::Setting &s = set::SETTINGS[i];
+    if (s.kind == set::SWITCH) v[s.id] = st.v[i] == "true";
+    else if (s.kind == set::NUMBER) v[s.id] = atof(st.v[i].c_str());
+    else v[s.id] = st.v[i];
+  }
+  out.clear();
+  serializeJson(d, out);
+}
+std::string restore(const char *json, From from) {
+  ArduinoJson::JsonDocument d;
+  if (deserializeJson(d, json ? json : "")) return "not JSON";
+  ArduinoJson::JsonObjectConst v = d["values"].is<ArduinoJson::JsonObjectConst>() ? d["values"].as<ArduinoJson::JsonObjectConst>() : d.as<ArduinoJson::JsonObjectConst>();
+  if (v.isNull()) return "no values";
+  std::string err;
+  for (auto kv : v) {
+    std::string val;
+    if (kv.value().is<bool>()) val = kv.value().as<bool>() ? "true" : "false";
+    else if (kv.value().is<double>()) val = num(kv.value().as<double>());
+    else if (kv.value().is<const char *>()) val = kv.value().as<const char *>();
+    const char *e = set(kv.key().c_str(), val.c_str(), from);
+    if (*e && strcmp(e, "same") && err.empty()) err = std::string(kv.key().c_str()) + ": " + e;
+  }
+  return err;
+}
+void set_daylight(int day) {
+  Store &st = store();
+  if (st.day == day) return;
+  st.day = day;
+  apply(index_of("theme"), HOST);
+}
+const Theme *look(const Theme *stage) {
+  const Store &st = store();
+  const std::string &th = st.v[index_of("theme")];
+  const bool stage_light = stage ? stage->light : false;
+  const bool light = th == "light" ? true : th == "dark" ? false : st.day >= 0 ? st.day == 1 : stage_light;
+  const int ka = index_of("accent");
+  int accent = stage ? stage->accent_set : -1;
+  if (st.given[ka])
+    for (int i = 0; i < tokens::N_ACCENTS; i++)
+      if (st.v[ka] == tokens::ACCENTS[i].id) accent = i;
+  return theme(light, accent);
 }
 }  // namespace dev
 }  // namespace fw
