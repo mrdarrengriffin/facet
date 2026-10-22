@@ -46,94 +46,8 @@ constexpr lv_state_t ST_OFF = fw::st::OFF;
 constexpr int32_t FP = 256;
 constexpr float START = 135.0f, RANGE = 270.0f;  // degrees, LVGL angles (0 = 3 o'clock, clockwise)
 
-// ---- tick ring: a ring of ticks + optional numbers, drawn in one draw event. Shaped to move to the core as the
-// shared step-mark helper (facet-129, parked) without changes: everything it draws comes in through this struct.
-struct TickRing {
-  double lo = 0, hi = 100;  // the value range the ring spans (lo at start, hi at start + range)
-  double minor = 2, major = 10;  // tick intervals in value units: ticks on multiples of minor, majors on multiples of major
-  float start = START, range = RANGE;
-  int minor_len = 0, major_len = 0, width = 0;
-  lv_color_t minor_c, major_c;
-  bool numbers = true;      // a number inside every major tick
-  int num_gap = 0, num_dec = 0;  // decimals of the numbers
-  fw::ty::Id num_style = fw::ty::c_meta;
-  lv_color_t num_c;
-};
-
-// "nice" intervals for a range (Darren 2026-10-21, round 2): the label interval is the smallest 1 / 2 / 5 x 10^k that
-// keeps the numbers to at most MAX_LABELS (the docs dial: 0-100 every 10 = 11) so they never crowd; minor ticks split
-// it in 5 (a 2-interval in 4, so minors stay round: 2 -> 0.5). 0-100 gives the docs ring exactly (every 10, minor 2).
-constexpr int MAX_LABELS = 11;
-void nice_intervals(double span, double *major, double *minor) {
-  const double raw = span / (MAX_LABELS - 1), e = std::pow(10.0, std::floor(std::log10(raw)));
-  double m = 10 * e;
-  for (double f : {1.0, 2.0, 5.0}) if (f * e >= raw - 1e-9) { m = f * e; break; }
-  const double lead = m / std::pow(10.0, std::floor(std::log10(m) + 1e-9));
-  *major = m;
-  *minor = m / (std::lround(lead) == 2 ? 4 : 5);
-}
-int decimals_of(double v) {  // 0, 1 or 2 decimals to show v exactly (steps / intervals like 0.5, 0.25)
-  for (int d = 0; d < 2; d++) if (std::fabs(v * std::pow(10.0, d) - std::lround(v * std::pow(10.0, d))) < 1e-6) return d;
-  return 2;
-}
-
-void ring_draw(lv_event_t *e) {
-  auto *o = (lv_obj_t *) lv_event_get_current_target(e);
-  auto *r = (const TickRing *) lv_event_get_user_data(e);
-  lv_layer_t *layer = lv_event_get_layer(e);
-  lv_area_t a;
-  lv_obj_get_coords(o, &a);
-  const float cx = (a.x1 + a.x2 + 1) / 2.0f, cy = (a.y1 + a.y2 + 1) / 2.0f, R = lv_area_get_width(&a) / 2.0f;
-  const lv_font_t *f = fw::font(r->num_style);
-  const fw::ty::Style &st = fw::style(r->num_style);
-  // visual centre of a digit below the line top (cap height centred, the text-box rule)
-  lv_font_glyph_dsc_t g;
-  float dig_mid = f->line_height / 2.0f;
-  if (lv_font_get_glyph_dsc(f, &g, '0', 0)) dig_mid = (f->line_height - f->base_line) - (g.ofs_y + g.box_h / 2.0f);
-  const int sub = (int) std::lround(r->major / r->minor);
-  const long k0 = (long) std::ceil(r->lo / r->minor - 1e-6), k1 = (long) std::floor(r->hi / r->minor + 1e-6);
-  for (long k = k0; k <= k1; k++) {
-    const double v = k * r->minor;
-    const bool maj = sub > 0 && ((k % sub) + sub) % sub == 0;
-    const float deg = r->start + (float) ((v - r->lo) / (r->hi - r->lo)) * r->range;
-    const float rad = deg * 3.14159265f / 180.0f, c = std::cos(rad), s = std::sin(rad);
-    const int len = maj ? r->major_len : r->minor_len;
-    lv_draw_line_dsc_t ld;
-    lv_draw_line_dsc_init(&ld);
-    ld.color = maj ? r->major_c : r->minor_c;
-    ld.width = r->width;
-    ld.p1.x = cx + c * R; ld.p1.y = cy + s * R;
-    ld.p2.x = cx + c * (R - len); ld.p2.y = cy + s * (R - len);
-    lv_draw_line(layer, &ld);
-    if (!maj || !r->numbers) continue;
-    char b[12];
-    snprintf(b, sizeof b, "%.*f", r->num_dec, std::fabs(v) < 1e-9 ? 0.0 : v);
-    lv_point_t sz;
-    lv_text_get_size(&sz, b, f, st.letter_space, 0, LV_COORD_MAX, LV_TEXT_FLAG_NONE);
-    const float nr = R - r->major_len - r->num_gap - st.box / 2.0f;  // the number's box sits num_gap inside the tick
-    const int x = (int) std::lround(cx + c * nr - sz.x / 2.0f), y = (int) std::lround(cy + s * nr - dig_mid);
-    lv_draw_label_dsc_t td;
-    lv_draw_label_dsc_init(&td);
-    td.font = f;
-    td.color = r->num_c;
-    td.letter_space = st.letter_space;
-    td.text = b;
-    td.text_local = 1;
-    lv_area_t ta = {x, y, x + sz.x, y + f->line_height};
-    lv_draw_label(layer, &td, &ta);
-  }
-}
-
-lv_obj_t *tick_ring(lv_obj_t *parent, int size, const TickRing &spec) {
-  lv_obj_t *o = lv_obj_create(parent);
-  lv_obj_remove_style_all(o);
-  lv_obj_remove_flag(o, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
-  lv_obj_set_size(o, size, size);
-  auto *r = new TickRing(spec);
-  lv_obj_add_event_cb(o, ring_draw, LV_EVENT_DRAW_MAIN, r);
-  lv_obj_add_event_cb(o, [](lv_event_t *e) { delete (TickRing *) lv_event_get_user_data(e); }, LV_EVENT_DELETE, r);
-  return o;
-}
+// tick ring, scale intervals, value arc: core "Dials and rings" (atoms.h; moved there from here, facet-129)
+using fw::TickRing;
 
 // ---- the dial
 struct Dial {
@@ -209,7 +123,7 @@ void range_of(fw::Props p, Dial *d) {
   d->min = p["min"] | 0.0;
   d->max = std::max(d->min + d->step, (double) (p["max"] | 100.0));
   d->n = std::max(1, (int) std::ceil((d->max - d->min) / d->step - 1e-6));
-  d->dec = decimals_of(d->step);
+  d->dec = fw::decimals_of(d->step);
 }
 int idx_of(const Dial *d, fw::Props p) {
   const double v = LV_CLAMP(d->min, (double) (p["value"] | 64.0), d->max);
@@ -266,8 +180,9 @@ void fill(lv_obj_t *s, fw::Props p, bool opening) {
   TickRing tr;
   tr.lo = d->min;
   tr.hi = d->max;
-  nice_intervals(d->max - d->min, &tr.major, &tr.minor);
-  tr.num_dec = decimals_of(tr.major);
+  fw::nice_intervals(d->max - d->min, &tr.major, &tr.minor);
+  tr.numbers = true;
+  tr.num_dec = fw::decimals_of(tr.major);
   tr.minor_len = fw::lay::dial_tick;
   tr.major_len = fw::lay::dial_tick_major;
   tr.width = fw::stroke::tick;
@@ -275,29 +190,23 @@ void fill(lv_obj_t *s, fw::Props p, bool opening) {
   tr.major_c = off ? fw::st::disabled_ink(t) : t.blue;  // states.json disabled roles
   tr.num_c = off ? fw::st::disabled_ink(t) : t.text_dim;
   tr.num_gap = fw::sp::s3;
-  tick_ring(s, S, tr);
+  fw::tick_ring(s, S, tr);
 
   if (!unavail) {
-    lv_obj_t *a = d->arc = lv_arc_create(s);
-    lv_obj_remove_flag(a, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
-    lv_obj_set_size(a, A, A);
+    fw::ArcLook k;
+    k.start = START;
+    k.range = RANGE;
+    k.steps = d->n * FP;
+    k.track_w = fw::stroke::edge;
+    k.track_c = t.line;
+    k.ind_w = fw::stroke::indicator;
+    k.ind_c = off ? fw::st::disabled_ink(t) : fw::st::on_fill(t);
+    k.knob = fw::lay::dial_knob;
+    k.knob_c = off ? fw::st::disabled_knob(t) : t.accent;
+    k.knob_ring = fw::stroke::knob;
+    k.knob_ring_c = t.bg;
+    lv_obj_t *a = d->arc = fw::value_arc(s, A, k);
     lv_obj_center(a);
-    lv_arc_set_rotation(a, 0);
-    lv_arc_set_bg_angles(a, (lv_value_precise_t) START, (lv_value_precise_t) (START + RANGE - 360.0f));
-    lv_arc_set_range(a, 0, d->n * FP);
-    lv_arc_set_value(a, 0);
-    lv_obj_set_style_arc_width(a, fw::stroke::edge, LV_PART_MAIN);
-    lv_obj_set_style_arc_color(a, t.line, LV_PART_MAIN);
-    lv_obj_set_style_arc_rounded(a, false, LV_PART_MAIN);
-    lv_obj_set_style_arc_width(a, fw::stroke::indicator, LV_PART_INDICATOR);
-    lv_obj_set_style_arc_color(a, off ? fw::st::disabled_ink(t) : fw::st::on_fill(t), LV_PART_INDICATOR);
-    lv_obj_set_style_arc_rounded(a, true, LV_PART_INDICATOR);
-    lv_obj_set_style_bg_opa(a, LV_OPA_COVER, LV_PART_KNOB);
-    lv_obj_set_style_bg_color(a, off ? fw::st::disabled_knob(t) : t.accent, LV_PART_KNOB);
-    lv_obj_set_style_radius(a, LV_RADIUS_CIRCLE, LV_PART_KNOB);
-    lv_obj_set_style_border_width(a, fw::stroke::knob, LV_PART_KNOB);
-    lv_obj_set_style_border_color(a, t.bg, LV_PART_KNOB);
-    lv_obj_set_style_pad_all(a, (fw::lay::dial_knob - fw::stroke::indicator) / 2, LV_PART_KNOB);
   }
 
   // centre column: caption, value, unit, button; placed so the value's centre is the dial's centre

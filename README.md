@@ -630,6 +630,41 @@ reset (no reset step: the replay plays straight away). `fw::demo_away(obj, away)
 (hub workbench + `site/src/lib/engine.ts`). Charts (Motion page): Line draws in and the same bars growing again stay at
 the preset; new readings, a morph, a new gauge value or another day of bars move away.
 
+## ASan check
+
+`renderer/tools/asan.sh [1x|1.5x] [id '<props>' ...]` compiles the same core, foundations, components and screens
+natively with g++ AddressSanitizer + UBSan and drives them headless (`tools/asan_driver.cpp`): every item with its
+defaults and every variant, both themes, 400 frames, a press / drag / release, two updates, then frees the stage. No
+ids = everything. Exit 0 = no reports. It finds what WASM hides: an out-of-bounds write there silently corrupts the heap,
+on the panels it crashes (the 2026-10-22 clock hand). Needs one `build.sh` first (generated headers); objects cached in
+`$FW_CACHE/asan-<den>`; heavy (about 2 GB, a few minutes cold): run it through the box's job queue. Run it before a
+firmware build and after core or component changes that touch memory (buffers, anims, user data).
+
+## Audit
+
+Every component and screen is checked by `renderer/tools/audit.mjs` (Darren 2026-10-22: "tests against them to make
+sure they align with the pixel grids and there's nothing off about them ... don't clip out of their box ... animations
+follow the right path"). `build.sh` runs it for each density after linking; errors fail the build (the new build is
+still served). Run by hand: `node renderer/tools/audit.mjs [--den 1x|1.5x] [--comp id,id] [--fresh] [--json out.json]`.
+Each component x every variant x dark / light, on its workbench frame (screens: the whole screen):
+
+| Check | What fails |
+|---|---|
+| outside | ink outside the component's box (+ what it bleeds on purpose: `fw::bleed`, ext draw size) |
+| stale | the frame after the animations differs from a full redraw at the same moment (an animation invalidated too little) |
+| clip | the same render with every object allowed to draw outside its box (`fw_unclip`) differs: something was cut off (an ancestor, a custom draw's own box). Kept: scroll containers, `fw::qa::clips(obj, why)` |
+| text | a label's glyphs below its box (LVGL cuts label text there), a CLIP label wider than its box |
+| grid | a drawn box (fill / border) or arc whose place in its parent or size is off the 4 px grid. Allowed: centred in its parent, filling the inside of the parent's border, edge to edge with its own 1-2 px border pushed off both sides (the Bottom sheet's rounded top edge), a 1-2 px hairline on its thin axis, `fw::qa::free(obj, why)` (placed by value / angle; a note) |
+| touch | an object taking touches under `touch::min` with its ext click area |
+| radial | a ring's marks at 12 / 3 / 6 / 9 o'clock off their centre lines by more than 0.5 px (`fw::tick_ring` declares which axes carry a tick: `fw::qa::radial`) |
+| motion | while it animates (2 s from the build): ink leaving the box, an object off its declared path (`fw::qa::circle(obj, ref, cx, cy, r)`, `fw::qa::inside(obj, ref)`) |
+
+Marks (`core/audit.h`) are empty inlines on the panels. A component says only what the audit can't know; exceptions per
+component: meta `"audit": {"skip": {"<check>": "why"}}`, or the same on one variant (printed as notes). Known: the vinyl
+variants of Media visuals skip clip ("vinyl awaiting design round, Darren 2026-10-22"). Results are cached per component
+(`$FW_CACHE/audit-<den>.json`, keyed on core + tokens + the tool + the component's file and the components it builds).
+Rule: no component is shown to Darren until it passes.
+
 ## Components
 
 | Id | What |

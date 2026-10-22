@@ -14,6 +14,8 @@
 //   fw_areas(id) -> int32 [n, x1, y1, x2, y2...]  areas flushed since the last call (copy only these)
 //   fw_anims() -> n                   LVGL animations running (frame stats)
 //   fw_events() -> JSON               events + sound requests since the last call (fw::emit / fw::sound): [{stage,kind,name,detail}] or ""
+//   fw_audit(id) -> JSON              every object of the stage for tools/audit.mjs (core/audit.h, README "Audit")
+//   fw_unclip(id)                     let every object draw outside its box (audit: what differs was clipped)
 #include <emscripten.h>
 #include <cstdint>
 #include <cstdlib>
@@ -22,6 +24,9 @@
 #include "fw.h"
 // LVGL private (src/core/lv_obj_draw_private.h): the ext draw size an object holds (fw::bleed sets it)
 extern "C" int32_t lv_obj_get_ext_draw_size(const lv_obj_t *obj);
+#include <map>
+#include "core/lv_obj_private.h"  // ext_click_pad (audit)
+#include "misc/lv_text_private.h"  // lv_text_encoded_next (audit)
 
 
 namespace {
@@ -274,5 +279,162 @@ EMSCRIPTEN_KEEPALIVE const int32_t *fw_areas(int id) {
 EMSCRIPTEN_KEEPALIVE const uint32_t *fw_frame(int id) {
   Stage *s = get(id);
   return s ? s->rgba.data() : nullptr;
+}
+
+// ---- component audit (core/audit.h, tools/audit.mjs)
+}  // extern "C"
+namespace {
+struct Mark {
+  std::string free_why, clip_why;
+  bool circle = false, inside = false;
+  int axes = 0, depth = 0;
+  lv_obj_t *ref = nullptr;
+  float cx = 0, cy = 0, r = 0;
+};
+std::map<const lv_obj_t *, Mark> marks;
+Mark &mark(lv_obj_t *o) {
+  auto it = marks.find(o);
+  if (it == marks.end()) {
+    lv_obj_add_event_cb(o, [](lv_event_t *e) { marks.erase((const lv_obj_t *) lv_event_get_current_target(e)); }, LV_EVENT_DELETE, nullptr);
+    it = marks.emplace(o, Mark{}).first;
+  }
+  return it->second;
+}
+const char *type_of(const lv_obj_t *o) {
+  if (lv_obj_check_type(o, &lv_label_class)) return "label";
+  if (lv_obj_check_type(o, &lv_image_class)) return "image";
+  if (lv_obj_check_type(o, &lv_arc_class)) return "arc";
+  if (lv_obj_check_type(o, &lv_line_class)) return "line";
+  return "obj";
+}
+bool scrolls(lv_obj_t *o) {
+  return lv_obj_has_flag(o, LV_OBJ_FLAG_SCROLLABLE) && (lv_obj_get_scroll_top(o) > 0 || lv_obj_get_scroll_bottom(o) > 0 ||
+                                                        lv_obj_get_scroll_left(o) > 0 || lv_obj_get_scroll_right(o) > 0);
+}
+// a label's glyph ink that falls below its box (LVGL clips label text at the box bottom): px cut, 0 = none
+int label_cut(lv_obj_t *l, int *right) {
+  *right = 0;
+  const lv_font_t *f = lv_obj_get_style_text_font(l, LV_PART_MAIN);
+  const char *t = lv_label_get_text(l);
+  if (!f || !t || !*t) return 0;
+  lv_area_t a, c;
+  lv_obj_get_coords(l, &a);
+  lv_obj_get_content_coords(l, &c);
+  const int lh = lv_font_get_line_height(f), asc = lh - f->base_line;
+  const int pitch = lh + lv_obj_get_style_text_line_space(l, LV_PART_MAIN);
+  int line = 0, cut = 0;
+  uint32_t i = 0;
+  lv_font_glyph_dsc_t g;
+  while (t[i]) {
+    const uint32_t ch = lv_text_encoded_next(t, &i);
+    if (ch == '\n') { line++; continue; }
+    if (!lv_font_get_glyph_dsc(f, &g, ch, 0) || !g.box_h) continue;
+    const int bottom = c.y1 + line * pitch + asc - g.ofs_y;  // the glyph's lowest ink row + 1
+    cut = LV_MAX(cut, bottom - (LV_MAX(a.y2, c.y2) + 1));  // LVGL cuts at the content box bottom (fw::text_style)
+  }
+  if (lv_label_get_long_mode(l) == LV_LABEL_LONG_MODE_CLIP) {
+    lv_point_t sz;
+    lv_text_get_size(&sz, t, f, lv_obj_get_style_text_letter_space(l, LV_PART_MAIN), 0, LV_COORD_MAX, LV_TEXT_FLAG_NONE);
+    *right = LV_MAX(0, sz.x - lv_area_get_width(&c));
+  }
+  return cut;
+}
+void audit_walk(lv_obj_t *o, int parent, int depth, ArduinoJson::JsonArray arr) {
+  for (uint32_t i = 0; i < lv_obj_get_child_count(o); i++) {
+    lv_obj_t *c = lv_obj_get_child(o, i);
+    if (lv_obj_has_flag(c, LV_OBJ_FLAG_HIDDEN)) continue;
+    lv_area_t a;
+    lv_obj_get_coords(c, &a);
+    ArduinoJson::JsonObject j = arr.add<ArduinoJson::JsonObject>();
+    const int me = (int) arr.size() - 1;
+    j["p"] = parent;
+    j["d"] = depth;
+    j["x"] = a.x1, j["y"] = a.y1, j["w"] = lv_area_get_width(&a), j["h"] = lv_area_get_height(&a);
+    j["t"] = type_of(c);
+    j["ext"] = lv_obj_get_ext_draw_size(c);
+    j["ov"] = lv_obj_has_flag(c, LV_OBJ_FLAG_OVERFLOW_VISIBLE);
+    j["sc"] = scrolls(c);
+    j["cc"] = (bool) lv_obj_get_style_clip_corner(c, LV_PART_MAIN) && lv_obj_get_style_radius(c, LV_PART_MAIN) > 0;
+    j["opa"] = lv_obj_get_style_opa_recursive(c, LV_PART_MAIN);
+    j["clk"] = lv_obj_has_flag(c, LV_OBJ_FLAG_CLICKABLE) && lv_obj_get_event_count(c) > 0;
+    j["pad"] = c->spec_attr ? c->spec_attr->ext_click_pad : 0;
+    j["box"] = lv_obj_get_style_bg_opa(c, LV_PART_MAIN) > LV_OPA_TRANSP || lv_obj_get_style_border_width(c, LV_PART_MAIN) > 0;
+    j["bw"] = lv_obj_get_style_border_width(c, LV_PART_MAIN);
+    if (!strcmp(type_of(c), "label")) {
+      int right = 0;
+      const int cut = label_cut(c, &right);
+      if (cut > 0) j["cut"] = cut;
+      if (right > 0) j["cutr"] = right;
+      j["text"] = lv_label_get_text(c);
+    }
+    auto it = marks.find(c);
+    if (it != marks.end()) {
+      const Mark &m = it->second;
+      if (!m.free_why.empty()) j["free"] = m.free_why;
+      if (!m.clip_why.empty()) j["clips"] = m.clip_why;
+      if (m.axes) { j["axes"] = m.axes; j["depth"] = m.depth; }
+      if (m.circle || m.inside) {
+        lv_area_t ra;
+        lv_obj_t *ref = m.ref;
+        if (ref) lv_obj_get_coords(ref, &ra);
+        ArduinoJson::JsonObject pj = j["path"].to<ArduinoJson::JsonObject>();
+        pj["kind"] = m.circle ? "circle" : "inside";
+        if (m.circle) { pj["cx"] = (ref ? ra.x1 : 0) + m.cx; pj["cy"] = (ref ? ra.y1 : 0) + m.cy; pj["r"] = m.r; }
+        if (ref) { pj["rx"] = ra.x1, pj["ry"] = ra.y1, pj["rw"] = lv_area_get_width(&ra), pj["rh"] = lv_area_get_height(&ra); }
+      }
+    }
+    audit_walk(c, me, depth + 1, arr);
+  }
+}
+void unclip_cb(lv_event_t *e) { lv_event_set_ext_draw_size(e, 2048); }
+void unclip_walk(lv_obj_t *o) {
+  for (uint32_t i = 0; i < lv_obj_get_child_count(o); i++) {
+    lv_obj_t *c = lv_obj_get_child(o, i);
+    auto it = marks.find(c);
+    const bool keep = (it != marks.end() && !it->second.clip_why.empty()) || scrolls(c);
+    if (!keep) {
+      lv_obj_add_flag(c, LV_OBJ_FLAG_OVERFLOW_VISIBLE);
+      lv_obj_add_event_cb(c, unclip_cb, LV_EVENT_REFR_EXT_DRAW_SIZE, nullptr);
+      lv_obj_refresh_ext_draw_size(c);
+      unclip_walk(c);
+    }
+  }
+}
+}  // namespace
+namespace fw::qa {
+void free(lv_obj_t *o, const char *why) { mark(o).free_why = why; }
+void clips(lv_obj_t *o, const char *why) { mark(o).clip_why = why; }
+void circle(lv_obj_t *o, lv_obj_t *ref, float cx, float cy, float r) { Mark &m = mark(o); m.circle = true, m.ref = ref, m.cx = cx, m.cy = cy, m.r = r; }
+void radial(lv_obj_t *o, uint8_t axes, int depth) { Mark &m = mark(o); m.axes = axes, m.depth = depth; }
+void inside(lv_obj_t *o, lv_obj_t *ref) { Mark &m = mark(o); m.inside = true, m.ref = ref ? ref : lv_obj_get_parent(o); }
+}  // namespace fw::qa
+extern "C" {
+EMSCRIPTEN_KEEPALIVE const char *fw_audit(int id) {
+  out.clear();
+  Stage *s = get(id);
+  if (!s) return "[]";
+  ArduinoJson::JsonDocument doc;
+  audit_walk(lv_display_get_screen_active(s->d), -1, 1, doc.to<ArduinoJson::JsonArray>());
+  serializeJson(doc, out);
+  return out.c_str();
+}
+// draw what is pending now, without moving time (audit: a timer that changed something after this tick's refresh)
+EMSCRIPTEN_KEEPALIVE void fw_refresh(int id) {
+  if (Stage *s = get(id)) lv_refr_now(s->d);
+}
+// a full redraw now (audit: what a partial redraw left behind differs from it = stale pixels)
+EMSCRIPTEN_KEEPALIVE void fw_redraw(int id) {
+  Stage *s = get(id);
+  if (!s) return;
+  lv_obj_invalidate(lv_display_get_screen_active(s->d));
+  lv_refr_now(s->d);
+}
+EMSCRIPTEN_KEEPALIVE void fw_unclip(int id) {
+  Stage *s = get(id);
+  if (!s) return;
+  lv_obj_t *scr = lv_display_get_screen_active(s->d);
+  unclip_walk(scr);
+  lv_obj_invalidate(scr);
+  lv_refr_now(s->d);  // now, at the same time: no animation moves between the two frames the audit compares
 }
 }

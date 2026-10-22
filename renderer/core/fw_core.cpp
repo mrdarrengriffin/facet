@@ -355,7 +355,7 @@ void box_self_size(lv_event_t *e) {
   const int box = (int) (intptr_t) lv_event_get_user_data(e);
   const int ls = lv_obj_get_style_text_line_space(l, LV_PART_MAIN);  // box - line height: a line's pitch is the box
   const int n = std::max(1, (int) lroundf((p->y + ls) / (float) box));
-  p->y = n * box - lv_obj_get_style_pad_top(l, LV_PART_MAIN);
+  p->y = n * box - lv_obj_get_style_pad_top(l, LV_PART_MAIN) - lv_obj_get_style_pad_bottom(l, LV_PART_MAIN);
 }
 }  // namespace
 
@@ -368,11 +368,17 @@ void text_style(lv_obj_t *l, ty::Id s) {
   lv_obj_set_style_text_line_space(l, st.box - lh, 0);  // wrapped lines on the box pitch
   const int off = (int) lroundf((st.box + cap_px(f)) / 2.0f) - asc;  // top of the line box -> caps centred in the box
   lv_obj_set_style_pad_top(l, off > 0 ? off : 0, 0);
+  // descenders below the box are drawn (see the end): the content box reaches the line's bottom, never a whole line
+  // further (a DOTS label would fit a second line)
+  lv_obj_set_style_pad_bottom(l, -(std::max(0, (off > 0 ? off : 0) + lh - st.box) + 2), 0);  // + 2: glyphs a pixel past the line
   lv_obj_set_style_translate_y(l, off < 0 ? off : 0, 0);
   lv_obj_remove_event_cb(l, box_self_size);  // restyle: one handler, this style's box
   lv_obj_add_event_cb(l, box_self_size, LV_EVENT_GET_SELF_SIZE, (void *) (intptr_t) st.box);
   lv_obj_refresh_self_size(l);
   if (lv_label_get_long_mode(l) != LV_LABEL_LONG_WRAP) lv_obj_set_height(l, st.box);
+  // descenders (Q, g, the comma) may hang below the box: LVGL cuts label text at the bottom of its content box, so the
+  // content box reaches the bottom of the line (the negative bottom pad above; box_self_size takes it back out, so the box and
+  // the layout stay the style box). 2026-10-22 audit: caps rows ("ALL PULL REQUESTS", "DARK AT NIGHT,") lost 1 px.
 }
 
 lv_obj_t *text(lv_obj_t *parent, ty::Id s, const char *txt, lv_color_t c, int wrap_w) {

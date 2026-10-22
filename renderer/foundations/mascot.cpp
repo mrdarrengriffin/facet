@@ -261,7 +261,7 @@ void tokens_page(lv_obj_t *l) {
     snprintf(b, sizeof b, "reduced %s%s", P.reduced_name, P.stagger ? " · staggered" : "");
     trow(e, P.id, a, b, T->text);
     for (int k = 0; k < P.n_tracks; k++) {
-      static const char *PART[] = {"body", "face", "eyes", "\"!\"", "z", "dot"}, *PROP[] = {"x", "y", "height", "opacity", "rotation", "close"};
+      static const char *PART[] = {"body", "face", "eyes", "\"!\"", "z", "dot"}, *PROP[] = {"x", "y", "height", "opacity", "rotation", "close", "scale"};  // = mas::Prop (ASan 2026-10-22: "scale" was missing, read past the end)
       const mas::Track &tr = P.tracks[k];
       char n[48];
       snprintf(n, sizeof n, "  %s %s", PART[tr.part], PROP[tr.prop]);

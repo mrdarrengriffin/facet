@@ -118,6 +118,8 @@ void fill(lv_obj_t *c, fw::Props p) {
   if (strcmp(ic, "none")) fw::icon(lab, ("screen-" + std::string(ic)).c_str(), fw::ic::icon, dim);
   lv_obj_t *l = fw::text(lab, fw::ty::label, p["label"] | "Weather", dim);
   lv_obj_remove_flag(l, LV_OBJ_FLAG_CLICKABLE);
+  lv_obj_update_layout(l);  // the label box on the grid (Label fit8), so the dot after it lands on the grid (audit)
+  lv_obj_set_width(l, (lv_obj_get_width(l) + fw::sp::GRID - 1) / fw::sp::GRID * fw::sp::GRID);
   // one line at the type box (16 / 24): fw::text sizes every content-height label to whole type boxes
   if (accent) {
     lv_obj_t *dot = box(lab);

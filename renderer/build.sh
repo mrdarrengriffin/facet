@@ -98,3 +98,7 @@ em++ $OPT $LVGL_OBJS $OBJS -sALLOW_MEMORY_GROWTH=1 -sMODULARIZE=1 -sEXPORT_ES6=1
 S=$(awk "BEGIN{printf \"%.1f\", $(date +%s.%N) - $t0}")
 printf '{"built": "%s", "density": "%s", "opt": "%s", "build_s": %s, "wasm_bytes": %s}\n' "$(date -Is)" "$DEN" "$OPT" "$S" "$(stat -c %s "$OUT/fw.wasm")" > "$OUT/manifest.json"
 echo "[$DEN] built in ${S}s"
+# component audit (tools/audit.mjs, README "Audit"; Darren 2026-10-22): clipping, stale pixels, grid, text cut off, touch
+# size, ring symmetry, motion paths, for every component / screen x variant x theme at this density. The new build is
+# already in place (the page still reloads); errors fail the build so they are seen. Cached per component.
+node "$HERE/tools/audit.mjs" --den "$DEN" --quiet --build "${FW_OUT:-$HERE/out}" | sed "s/^/[$DEN] /" ; [ "${PIPESTATUS[0]}" = 0 ] || { echo "[$DEN] audit: errors above"; exit 1; }

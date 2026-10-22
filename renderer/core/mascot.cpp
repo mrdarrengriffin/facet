@@ -34,6 +34,7 @@ lv_obj_t *part(lv_obj_t *parent) {
   lv_obj_remove_style_all(o);
   lv_obj_remove_flag(o, (lv_obj_flag_t) (LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_CLICK_FOCUSABLE));
   lv_obj_add_flag(o, LV_OBJ_FLAG_EVENT_BUBBLE);
+  qa::free(o, "mascot art: whole-px parts placed by mascot.json (its own grid rule, generator-checked)");
   return o;
 }
 lv_color_t tok(const Theme *t, size_t off) { return *(const lv_color_t *) ((const char *) t + off); }

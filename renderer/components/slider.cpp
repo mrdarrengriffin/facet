@@ -131,6 +131,7 @@ void fill(lv_obj_t *s, fw::Props p) {
   lv_obj_set_style_clip_corner(t, true, 0);  // the fill keeps the track's round start (docs: overflow hidden)
 
   d->fill = lv_obj_create(t);
+  fw::qa::free(d->fill, "the fill ends at the value");
   lv_obj_remove_style_all(d->fill);
   lv_obj_remove_flag(d->fill, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
   lv_obj_set_size(d->fill, 0, tr);
@@ -139,6 +140,7 @@ void fill(lv_obj_t *s, fw::Props p) {
   lv_obj_set_style_bg_color(d->fill, fw::st::disabled_ink(*fw::T), ST_OFF);
 
   d->kn = lv_obj_create(s);
+  fw::qa::free(d->kn, "the knob sits on the value");
   lv_obj_remove_style_all(d->kn);
   lv_obj_remove_flag(d->kn, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
   lv_obj_set_size(d->kn, d->knob, d->knob);

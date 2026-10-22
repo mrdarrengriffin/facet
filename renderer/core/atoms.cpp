@@ -245,4 +245,166 @@ void stroke_draw(lv_layer_t *layer, lv_draw_buf_t *m, int x, int y, lv_color_t c
   lv_draw_image(layer, &d, &a);
 }
 
+
+// ---- Dials and rings (atoms.h): moved from the Dial (dial.cpp TickRing, round 2), extended for the other round parts
+void nice_intervals(double span, double *major, double *minor, int max_labels) {
+  const double raw = span / (max_labels - 1), e = std::pow(10.0, std::floor(std::log10(raw)));
+  double m = 10 * e;
+  for (double f : {1.0, 2.0, 5.0}) if (f * e >= raw - 1e-9) { m = f * e; break; }
+  const double lead = m / std::pow(10.0, std::floor(std::log10(m) + 1e-9));
+  *major = m;
+  *minor = m / (std::lround(lead) == 2 ? 4 : 5);
+}
+int decimals_of(double v) {
+  for (int d = 0; d < 2; d++) if (std::fabs(v * std::pow(10.0, d) - std::lround(v * std::pow(10.0, d))) < 1e-6) return d;
+  return 2;
+}
+
+namespace {
+void ring_draw(lv_event_t *e) {
+  auto *o = (lv_obj_t *) lv_event_get_current_target(e);
+  auto *r = (const TickRing *) lv_event_get_user_data(e);
+  lv_layer_t *layer = lv_event_get_layer(e);
+  lv_area_t a;
+  lv_obj_get_coords(o, &a);
+  const float cx = (a.x1 + a.x2 + 1) / 2.0f, cy = (a.y1 + a.y2 + 1) / 2.0f, R = lv_area_get_width(&a) / 2.0f;
+  const lv_font_t *f = font(r->num_style);
+  const ty::Style &st = style(r->num_style);
+  // visual centre of a digit below the line top (cap height centred, the text-box rule)
+  lv_font_glyph_dsc_t g;
+  float dig_mid = f->line_height / 2.0f;
+  if (lv_font_get_glyph_dsc(f, &g, '0', 0)) dig_mid = (f->line_height - f->base_line) - (g.ofs_y + g.box_h / 2.0f);
+  const int sub = r->major > 0 ? (int) std::lround(r->major / r->minor) : 0;
+  const long k0 = (long) std::ceil(r->lo / r->minor - 1e-6), k1 = (long) std::floor(r->hi / r->minor + 1e-6);
+  const long m0 = sub > 0 ? (long) std::ceil(k0 / (double) sub - 1e-9) : 0;  // index of the first major (labels)
+  for (long k = k0; k <= k1; k++) {
+    const double v = k * r->minor;
+    const bool maj = sub > 0 && ((k % sub) + sub) % sub == 0;
+    const float off = (float) ((v - r->lo) / (r->hi - r->lo)) * r->range;
+    if (r->range >= 360.0f && off >= 360.0f - 1e-3f) continue;  // a full turn: the last tick IS the first
+    const float deg = r->start + off;
+    const float rad = deg * 3.14159265f / 180.0f, c = std::cos(rad), s = std::sin(rad);
+    const int len = maj ? r->major_len : r->minor_len;
+    const bool lit = !std::isnan(r->lit) && v <= r->lit + 1e-9;
+    const lv_color_t col = lit ? r->lit_c : maj ? r->major_c : r->minor_c;
+    if (r->dots) {  // a round dot of `width` touching the edge
+      const float dr = R - r->width / 2.0f;
+      lv_draw_rect_dsc_t dd;
+      lv_draw_rect_dsc_init(&dd);
+      dd.bg_color = col;
+      dd.radius = LV_RADIUS_CIRCLE;
+      const int x = (int) std::lround(cx + c * dr - r->width / 2.0f), y = (int) std::lround(cy + s * dr - r->width / 2.0f);
+      lv_area_t da = {x, y, x + r->width - 1, y + r->width - 1};
+      lv_draw_rect(layer, &dd, &da);
+    } else {
+      // LVGL line points are whole numbers (no LV_USE_FLOAT) on the pixel EDGE grid: a horizontal line from x 10 to
+      // 20 covers pixels 10..19, a width-2 line at y 240 covers rows 239..240 (measured, 2026-10-22). The audit bug:
+      // the float ends were assigned to ints, which TRUNCATES (cos 90 deg = -4e-8 put the 6 o'clock tick a pixel off,
+      // and the 3 o'clock tick a pixel short). Now every end is rounded from the edge-grid position, so the four axes
+      // mirror exactly.
+      auto pix = [](float v) { return (int32_t) std::lround(v); };
+      lv_draw_line_dsc_t ld;
+      lv_draw_line_dsc_init(&ld);
+      ld.color = col;
+      ld.width = r->width;
+      // a slanted butt end's corners (and their anti-aliased fringe) reach past its end point: pull the outer end in
+      // so they stay on the circle (the 18 % dial tick put a pixel outside the scale's box, cut off: audit 2026-10-22)
+      const float Ro = std::sqrt(std::max(0.0f, (R - 0.5f) * (R - 0.5f) - r->width * r->width / 4.0f));
+      ld.p1.x = pix(cx + c * Ro); ld.p1.y = pix(cy + s * Ro);
+      ld.p2.x = pix(cx + c * (R - len)); ld.p2.y = pix(cy + s * (R - len));
+      lv_draw_line(layer, &ld);
+    }
+    if (!maj || !r->numbers) continue;
+    char b[16];
+    const long mi = k / sub - m0;
+    if (r->labels) {
+      if (mi < 0 || mi >= r->n_labels || !r->labels[mi] || !*r->labels[mi]) continue;
+      snprintf(b, sizeof b, "%s", r->labels[mi]);
+    } else {
+      snprintf(b, sizeof b, "%.*f", r->num_dec, std::fabs(v) < 1e-9 ? 0.0 : v);
+    }
+    lv_point_t sz;
+    lv_text_get_size(&sz, b, f, st.letter_space, 0, LV_COORD_MAX, LV_TEXT_FLAG_NONE);
+    const float nr = R - r->major_len - r->num_gap - st.box / 2.0f;  // the number's box sits num_gap inside the tick
+    const int x = (int) std::lround(cx + c * nr - sz.x / 2.0f), y = (int) std::lround(cy + s * nr - dig_mid);
+    lv_draw_label_dsc_t td;
+    lv_draw_label_dsc_init(&td);
+    td.font = f;
+    td.color = r->num_c;
+    td.letter_space = st.letter_space;
+    td.text = b;
+    td.text_local = 1;
+    lv_area_t ta = {x, y, x + sz.x, y + f->line_height};
+    lv_draw_label(layer, &td, &ta);
+  }
+}
+}  // namespace
+
+lv_obj_t *tick_ring(lv_obj_t *parent, int size, const TickRing &spec) {
+  lv_obj_t *o = lv_obj_create(parent);
+  lv_obj_remove_style_all(o);
+  lv_obj_remove_flag(o, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
+  lv_obj_set_size(o, size, size);
+  auto *r = new TickRing(spec);
+  lv_obj_set_user_data(o, r);
+  // audit (core/audit.h): which of 12 / 3 / 6 / 9 o'clock carry a tick, so their symmetry is checked on the pixels
+  uint8_t axes = 0;
+  const float AX[4] = {270, 0, 90, 180};
+  for (int k = 0; k < 4; k++) {
+    const float rel = std::fmod(AX[k] - spec.start + 720.0f, 360.0f);
+    if (rel > spec.range + 1e-3f) continue;
+    const double v = spec.lo + rel / spec.range * (spec.hi - spec.lo), q = v / spec.minor;
+    if (std::fabs(q - std::lround(q)) < 1e-4) axes |= 1 << k;
+  }
+  qa::radial(o, axes, std::max(spec.minor_len, spec.major_len) ? std::max(spec.minor_len, spec.major_len) : spec.width);
+  lv_obj_add_event_cb(o, ring_draw, LV_EVENT_DRAW_MAIN, r);
+  lv_obj_add_event_cb(o, [](lv_event_t *e) { delete (TickRing *) lv_event_get_user_data(e); }, LV_EVENT_DELETE, r);
+  return o;
+}
+TickRing *tick_ring_spec(lv_obj_t *ring) { return ring ? (TickRing *) lv_obj_get_user_data(ring) : nullptr; }
+void tick_ring_changed(lv_obj_t *ring) { if (ring) lv_obj_invalidate(ring); }
+
+lv_obj_t *value_arc(lv_obj_t *parent, int d, const ArcLook &k) {
+  lv_obj_t *a = lv_arc_create(parent);
+  lv_obj_remove_flag(a, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
+  lv_obj_set_size(a, d, d);
+  lv_arc_set_rotation(a, 0);
+  const float end = k.start + k.range;
+  lv_arc_set_bg_angles(a, (lv_value_precise_t) k.start, (lv_value_precise_t) (end >= 360.0f ? end - 360.0f : end));
+  lv_arc_set_range(a, 0, k.steps);
+  lv_arc_set_value(a, 0);
+  lv_obj_set_style_arc_width(a, k.track_w, LV_PART_MAIN);
+  lv_obj_set_style_arc_color(a, k.track_c, LV_PART_MAIN);
+  lv_obj_set_style_arc_opa(a, k.track_w ? LV_OPA_COVER : LV_OPA_TRANSP, LV_PART_MAIN);
+  lv_obj_set_style_arc_rounded(a, false, LV_PART_MAIN);
+  lv_obj_set_style_arc_width(a, k.ind_w, LV_PART_INDICATOR);
+  lv_obj_set_style_arc_color(a, k.ind_c, LV_PART_INDICATOR);
+  lv_obj_set_style_arc_rounded(a, k.round, LV_PART_INDICATOR);
+  if (k.knob) {
+    lv_obj_set_style_bg_opa(a, LV_OPA_COVER, LV_PART_KNOB);
+    lv_obj_set_style_bg_color(a, k.knob_c, LV_PART_KNOB);
+    lv_obj_set_style_radius(a, LV_RADIUS_CIRCLE, LV_PART_KNOB);
+    lv_obj_set_style_border_width(a, k.knob_ring, LV_PART_KNOB);
+    lv_obj_set_style_border_color(a, k.knob_ring_c, LV_PART_KNOB);
+    lv_obj_set_style_pad_all(a, (k.knob - k.ind_w) / 2, LV_PART_KNOB);
+  } else {
+    lv_obj_set_style_bg_opa(a, LV_OPA_TRANSP, LV_PART_KNOB);
+    lv_obj_set_style_pad_all(a, 0, LV_PART_KNOB);
+  }
+  return a;
+}
+
+float ring_frac(lv_obj_t *o, lv_point_t pt, float start, float range, float *dist, float held) {
+  lv_area_t a;
+  lv_obj_get_coords(o, &a);
+  const float dx = pt.x - (a.x1 + a.x2 + 1) / 2.0f, dy = pt.y - (a.y1 + a.y2 + 1) / 2.0f;
+  if (dist) *dist = std::sqrt(dx * dx + dy * dy);
+  const float rel = std::fmod(std::atan2(dy, dx) * 180.0f / 3.14159265f - start + 720.0f, 360.0f);
+  float f;
+  if (rel > range) f = held >= 0 ? (held > 0.5f ? 1.0f : 0.0f) : (rel > range + (360.0f - range) / 2 ? 0.0f : 1.0f);
+  else f = rel / range;
+  if (held >= 0 && range < 360.0f && std::fabs(f - held) > 0.5f) f = held > 0.5f ? 1.0f : 0.0f;  // never across the gap
+  return f;
+}
+
 }  // namespace fw

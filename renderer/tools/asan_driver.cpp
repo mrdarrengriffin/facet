@@ -1,0 +1,65 @@
+// Native AddressSanitizer / UBSan driver for the renderer (tools/asan.sh): builds every given item (or, with no
+// arguments, every registered foundation, component and screen with its default props, then each of its variants),
+// runs 400 frames, presses / drags / releases, takes an update with empty props, frees the stage. Any memory error
+// aborts with the sanitizer's report. Usage: fw-asan-<den> [id '<props json>' ...]
+#include <cstdint>
+#include <cstdio>
+#include <string>
+#include "ArduinoJson.h"
+extern "C" {
+void fw_init();
+int fw_stage(int, int);
+const char *fw_render(int, const char *, const char *, int, int);
+void fw_tick(uint32_t);
+const char *fw_meta();
+const char *fw_events();
+void fw_stage_free(int);
+void fw_touch(int, int, int, int);
+const char *fw_update(int, const char *, const char *, int, int);
+}
+static uint32_t t = 0;
+static void tick(int n) { for (int i = 0; i < n; i++) { t += 16; fw_tick(t); fw_events(); } }
+static void run(const char *id, const char *props, int S) {
+  fprintf(stderr, "== %s %s\n", id, props);
+  for (int light = 0; light < 2; light++) {
+    const int st = fw_stage(S, S);
+    const char *e = fw_render(st, id, props, light, 0);
+    if (e && *e) fprintf(stderr, "   render: %s\n", e);
+    tick(400);
+    fw_touch(st, S / 2, S / 4, 1); tick(5);
+    fw_touch(st, S * 3 / 4, S / 2, 1); tick(5);
+    fw_touch(st, S * 3 / 4, S / 2, 0); tick(60);
+    fw_update(st, id, props, light, 0); tick(30);
+    fw_update(st, id, "{}", light, 0); tick(60);
+    fw_stage_free(st);
+  }
+}
+int main(int argc, char **argv) {
+  fw_init();
+#ifdef FW_1X
+  const int S = 480;
+#else
+  const int S = 720;
+#endif
+  if (argc > 1) {
+    for (int a = 1; a + 1 < argc; a += 2) run(argv[a], argv[a + 1], S);
+  } else {
+    ArduinoJson::JsonDocument doc;
+    deserializeJson(doc, fw_meta());
+    for (ArduinoJson::JsonObject c : doc.as<ArduinoJson::JsonArray>()) {
+      const std::string id = c["id"] | "";
+      if (id == "device") continue;
+      run(id.c_str(), "{}", S);
+      ArduinoJson::JsonDocument meta;
+      const char *m = c["meta"] | "";
+      if (c["meta"].is<ArduinoJson::JsonObject>()) meta.set(c["meta"]); else deserializeJson(meta, m);
+      for (ArduinoJson::JsonObject v : meta["variants"].as<ArduinoJson::JsonArray>()) {
+        std::string p;
+        serializeJson(v["props"], p);
+        run(id.c_str(), p.c_str(), S);
+      }
+    }
+  }
+  fprintf(stderr, "asan: done, no reports\n");
+  return 0;
+}

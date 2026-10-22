@@ -211,6 +211,7 @@ void fill(lv_obj_t *o, fw::Props p) {
   const int sl = lv_obj_get_style_space_left(o, LV_PART_MAIN), st = lv_obj_get_style_space_top(o, LV_PART_MAIN);
   t->bar_w = fw::lay::content_w - 2 * fw::stroke::hair;
   t->bar = box(o);
+  fw::qa::free(t->bar, "the timer bar shrinks with the time left");
   lv_obj_add_flag(t->bar, LV_OBJ_FLAG_IGNORE_LAYOUT);
   lv_obj_set_size(t->bar, t->bar_w, fw::stroke::edge);
   lv_obj_set_pos(t->bar, fw::stroke::hair - sl, fw::lay::toast_h - fw::stroke::hair - fw::stroke::edge - st);
