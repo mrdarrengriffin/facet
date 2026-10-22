@@ -261,8 +261,8 @@ void set_value(void *o, int32_t v) {
   set_text(d->a, ty::c_number, b);
   lv_obj_set_width(d->c, std::max(1, (int) (lv_obj_get_content_width(d->b) * v / 100)));
 }
-void set_hand(void *o, int32_t deg10) {
-  auto *d = (Demo *) lv_obj_get_user_data((lv_obj_t *) o);
+void set_hand(void *o, int32_t deg10) {  // o = the hand (stroke image); its Demo is on the face (its parent)
+  auto *d = (Demo *) lv_obj_get_user_data(lv_obj_get_parent((lv_obj_t *) o));
   d->shown = deg10;
   const float c = d->size / 2.f - 0.5f, len = d->size / 2.f - sp::s4, a = (deg10 / 10.f - 90.f) * 3.14159265f / 180.f;
   const StrokePt np[2] = {{c, c}, {c + len * cosf(a), c + len * sinf(a)}};
@@ -455,7 +455,9 @@ void sample(Demo *d, int w, int h) {
       d->size -= 2 * stroke::hair;
       d->pts[0] = d->pts[1] = {d->size / 2.f - 0.5f, d->size / 2.f - 0.5f};
       d->a = stroke_path(face, d->size, d->size, d->pts, 2, stroke::edge, T->accent);  // the hand: stroke atom, round caps
-      lv_obj_set_user_data(d->a, d);
+      // the Demo lives on the FACE: the stroke image's user data is the atom's own state (stroke_of); overwriting it
+      // made stroke_redraw read the Demo as a Stroke (bad draw buffer pointer: panel crash, 2026-10-22, ASan)
+      lv_obj_set_user_data(face, d);
       lv_obj_t *hub = box(face);
       lv_obj_set_size(hub, sp::s2, sp::s2);
       lv_obj_set_style_radius(hub, LV_RADIUS_CIRCLE, 0);
