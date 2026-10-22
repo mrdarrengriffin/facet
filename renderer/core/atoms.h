@@ -21,4 +21,18 @@ enum class Corners { all, tr_bl };
 void corner_ticks(lv_obj_t *o, Corners c = Corners::all, lv_style_selector_t show = st::ON,
                   int len = lay::corner_tick, int thick = stroke::corner_tick);
 
+// Smooth stroke (experiment, board facet-145; WIP, foundations/strokes.cpp compares it): an anti-aliased stroke of
+// `width` px through float points, rasterised once into an A8 coverage mask (1 byte / px, w x h) and shown as an
+// lv_image recoloured with `colour` (a token, like the icons). Analytic: every pixel near a segment gets coverage =
+// clamp(width/2 + 0.5 - distance to the segment), segments combine by max, so joins are seamless and the ends are
+// round caps. Points are in the box's pixel space (pixel centres at integers); keep width/2 + 1 px clear of the edge.
+// LVGL's own lv_line snaps every point to whole pixels (lv_draw_sw_line converts to int even with LV_USE_FLOAT)
+// and draws each segment on its own, hence the kinks and lumps this replaces.
+struct StrokePt { float x, y; };
+lv_obj_t *stroke_path(lv_obj_t *parent, int w, int h, const StrokePt *pts, int n, int width, lv_color_t colour);
+// the same for a curve given as a function of t = 0..1 (sampled at <= 0.75 px steps along its length)
+using StrokeFn = StrokePt (*)(float t, void *user);
+lv_obj_t *stroke_fn(lv_obj_t *parent, int w, int h, StrokeFn f, void *user, int width, lv_color_t colour);
+int stroke_bytes(lv_obj_t *stroke);  // the mask's bytes (memory cost of one stroke)
+
 }  // namespace fw
