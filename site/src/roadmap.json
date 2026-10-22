@@ -206,13 +206,14 @@
    {
     "name": "Animated weather icons",
     "group": "Icons",
-    "status": "planned"
+    "status": "done",
+    "note": "Animated rain, sun, cloud; card size first on the panels"
    },
    {
     "name": "Moon phase glyph",
     "group": "Icons",
-    "status": "planned",
-    "note": "The moon drawn at its current phase"
+    "status": "done",
+    "note": "The moon drawn at its current phase, live slider"
    },
    {
     "name": "Button",
@@ -547,8 +548,8 @@
    {
     "name": "Home",
     "group": "Core",
-    "status": "planned",
-    "note": "Card grid, contextual weather card, readouts"
+    "status": "doing",
+    "note": "Placeholder: title-only card grid; real Home will be per room"
    },
    {
     "name": "Settings",
