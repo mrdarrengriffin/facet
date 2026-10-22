@@ -49,22 +49,22 @@
       "about": "digits and what numbers carry",
       "chars": [
         "0123456789",
-        ":%-.,°+−"
+        ":%-.,°+−—"
       ]
     },
     "numeric": {
       "about": "digits, units and currency",
       "chars": [
         "0123456789",
-        ":%-.,°+−£ ",
+        ":%-.,°+−£— ",
         "kmhWV"
       ]
     },
     "ascii": {
-      "about": "printable ASCII + ° £ (short values: 18:56, Off, Quiet, 12 km)",
+      "about": "printable ASCII + ° £ (short values: 18:56, Off, Quiet, 12 km); — = the states.json unavailable placeholder in every number set",
       "glyphset": "GF_Latin_Kernel",
       "chars": [
-        "°£·−"
+        "°£·−—"
       ]
     },
     "text": {

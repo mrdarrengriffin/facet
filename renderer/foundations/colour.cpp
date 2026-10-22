@@ -68,7 +68,10 @@ lv_obj_t *label(lv_obj_t *parent, const char *text, float dp, lv_color_t c, bool
 }
 lv_obj_t *row(lv_obj_t *list) {
   lv_obj_t *r = box(list);
-  lv_obj_set_size(r, LV_PCT(100), fw::px(ROW));
+  // grows with a wrapped title (2+ lines); the theme cells are LV_PCT(100) high, which LVGL leaves out of the
+  // content height, so they stretch to whatever the title column needs
+  lv_obj_set_size(r, LV_PCT(100), LV_SIZE_CONTENT);
+  lv_obj_set_style_min_height(r, fw::px(ROW), 0);
   lv_obj_set_flex_flow(r, LV_FLEX_FLOW_ROW);
   lv_obj_set_flex_align(r, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
   lv_obj_set_style_border_side(r, LV_BORDER_SIDE_BOTTOM, 0);
@@ -82,6 +85,8 @@ void info(lv_obj_t *r, const char *title, const char *sub, bool mono_title) {
   lv_obj_set_height(c, LV_SIZE_CONTENT);
   lv_obj_set_flex_grow(c, 1);
   lv_obj_set_flex_flow(c, LV_FLEX_FLOW_COLUMN);
+  lv_obj_set_style_pad_left(c, fw::sp::s5, 0);  // same inset as the theme cells' content
+  lv_obj_set_style_pad_ver(c, fw::sp::s2, 0);  // wrapped titles keep clear of the row lines
   lv_obj_set_style_pad_right(c, fw::sp::s3, 0);
   lv_obj_set_style_pad_row(c, fw::sp::s1, 0);
   lv_obj_t *t = label(c, title, mono_title ? 13 : 16, fw::T->text, mono_title);

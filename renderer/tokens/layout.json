@@ -30,7 +30,7 @@
     {
       "id": "overlay",
       "label": "Overlays",
-      "about": "Sheets and toasts sit over the screen. A sheet panel starts at sheet-top with the inset on every side; a toast is the content width, toast-h tall, first at toast-top."
+      "about": "Sheets and toasts sit over the screen. A sheet panel starts at sheet-top and runs to the screen edges, its content inset on every side (head row, then picker rows of sheet-row-h); a toast is the content width, toast-h tall, first at toast-top."
     }
   ],
   "tokens": {
@@ -89,7 +89,12 @@
       "sheet-top": {
         "v": 96,
         "1x": 64,
-        "use": "where a sheet panel starts (inset on the other sides)"
+        "use": "where a sheet panel starts; the panel runs to the screen edges and bottom, its content inset on the other sides (docs .f-bsheet-panel)"
+      },
+      "sheet-row-h": {
+        "v": 96,
+        "1x": 64,
+        "use": "a picker row in a sheet (docs layout sheet-row-h); = space.json list-row-h (the Picker row is a List row; static_assert in picker_row.cpp)"
       },
       "toast-top": {
         "v": 96,
@@ -107,6 +112,17 @@
         "use": "padding inside a toast"
       }
     }
+  },
+  "toast": {
+    "$comment": "Toast behaviour = Facet main tokens.json `toast` group (docs toast.ts toastLayer / toast): where toasts enter, how many show at once, how long they live, how far a swipe must go, and the sound when one arrives. It lives here because it is screen behaviour of an overlay, next to its geometry (overlay toast-top / toast-h / toast-pad); durations stay in motion.json and sounds in sound.json, referenced by id (gen_layout.mjs checks the references). Distances are device px like every layout token (v = 720, 1x = 480, multiples of 4).",
+    "position": { "value": "top", "options": ["top", "bottom"], "use": "where toasts enter: top = the first at toast-top, just under the header; bottom = the first ends at the bottom inset" },
+    "max": { "value": 2, "use": "toasts shown at once; a newer one pushes the oldest out" },
+    "life": { "motion": "toast-life", "use": "how long a toast stays (motion.json duration; the timer bar shrinks over it, paused while pressed)" },
+    "life-urgent": { "motion": "toast-life-urgent", "use": "an urgent toast stays longer (someone at the door; docs life-urgent)" },
+    "swipe": { "v": 64, "1x": 44, "use": "a sideways drag this far dismisses (docs toast.swipe 64; 1x x 2/3 to the grid)" },
+    "swipe-out": { "v": 160, "1x": 108, "use": "a swiped toast leaves sideways this far (docs toastLayer 160; 1x x 2/3 to the grid)" },
+    "tap-slop": { "v": 8, "1x": 8, "use": "a finger that moves less than this is a tap (dismiss), not a drag (docs toast.ts 8)" },
+    "sound": { "sound": "notify", "use": "played when a toast arrives (sound.json type; docs toast.sound)" }
   },
   "density": {
     "$comment": "Density = px per dp (dp ~ CSS px): about 250 ppi is 1.5x, about 170 ppi is 1x. The logical size (px / density) picks the size class; the same logical size gets the same layout whatever the pixel count. One WASM / firmware build per density.",

@@ -126,15 +126,22 @@ lv_obj_t *comp(lv_obj_t *parent, const char *id, Doc &d) {
   c->build(parent, d.as<Props>());
   return lv_obj_get_child(parent, -1);
 }
-// the header: the real Button (ghost, back icon, the screen's label) and the time slot, in one row at y = inset
-lv_obj_t *header(lv_obj_t *s, const char *label) {
+// the header: the real Header component (back button, the screen's label, the time slot), placed at (inset, inset);
+// Home has no back button (docs). Before the Header existed: the Back button, else a ghost Button.
+lv_obj_t *header(lv_obj_t *s, const char *label, bool back = true) {
+  Doc d;
+  d["label"] = label;
+  d["back"] = back;
+  if (find("header")) {
+    lv_obj_t *h = comp(s, "header", d);
+    lv_obj_set_pos(h, lay::inset, lay::inset);
+    return h;
+  }
   lv_obj_t *h = rect(s, lay::inset, lay::inset, lay::content_w, lay::row);
-  lv_obj_add_flag(h, LV_OBJ_FLAG_OVERFLOW_VISIBLE);  // the Button is button-h tall: let the overlay show where it lands
+  lv_obj_add_flag(h, LV_OBJ_FLAG_OVERFLOW_VISIBLE);
   lv_obj_set_flex_flow(h, LV_FLEX_FLOW_ROW);
   lv_obj_set_flex_align(h, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
   lv_obj_set_style_pad_column(h, lay::gutter, 0);
-  Doc d;  // the Back button component once it is in the build (round 3, Darren option A); until then the Button
-  d["label"] = label;
   if (find("back_button")) comp(h, "back_button", d);
   else {
     d["kind"] = "ghost";
@@ -175,6 +182,13 @@ lv_obj_t *list_row(lv_obj_t *col, const char *title, const char *icon, const cha
   d["title"] = title, d["icon"] = icon, d["trailing"] = trailing, d["value"] = value, d["on"] = on;
   return comp(col, "list_row", d);
 }
+// the real Section header (title only: no badge, nothing on the right), else the labelled outline
+lv_obj_t *section(lv_obj_t *col, const char *title) {
+  if (!find("section_header")) return coming(col, "section header", lay::content_w, style(ty::label).box);
+  Doc d;
+  d["title"] = title, d["badge"] = false, d["right"] = "none";
+  return comp(col, "section_header", d);
+}
 // token overlays: translucent marks over the real components at an object's screen box (or a given box)
 void mark_box(lv_obj_t *layer, int x, int y, int w, int h, lv_color_t c) {
   lv_obj_t *o = rect(layer, x, y, w, h);
@@ -198,7 +212,7 @@ void inset_bands(lv_obj_t *L) {
   for (auto &b : bands) mark_box(L, b[0], b[1], b[2], b[3], T->accent);
 }
 
-// ---- Screen overlay: the real Home (header Button + Cards) with toggleable token layers on top ----------------------
+// ---- Screen overlay: the real Home (Header + Cards) with toggleable token layers on top -----------------------------
 enum Layer { GRID, INSET, HEADER, CONTENT, GUTTER, N_LAYERS };
 const char *LAYER_NAMES[N_LAYERS] = {"grid", "inset", "header", "content", "gutter"};
 struct Overlay {
@@ -237,7 +251,7 @@ void screen(lv_obj_t *parent) {
   Overlay *o = (Overlay *) lv_malloc(sizeof(Overlay));
   lv_obj_add_event_cb(col, [](lv_event_t *e) { lv_free(lv_event_get_user_data(e)); }, LV_EVENT_DELETE, o);
   // the real screen first
-  header(s, "Home");
+  header(s, "Home", false);
   lv_obj_t *cards = home_cards(s);
   lv_obj_update_layout(s);
   // token layers on top
@@ -306,7 +320,7 @@ void header_zone(lv_obj_t *parent) {
   fill(s, T->bg);
   lv_obj_t *h = header(s, "Lights");
   lv_obj_update_layout(s);
-  // overlays on top of the real header: inset (top + sides), the row, the Button's box, the time slot, gap, top
+  // overlays on top of the real Header: inset (top + sides), the row, the Back button box, the time slot, gap, top
   lv_obj_t *L = layer(s);
   mark_box(L, 0, 0, S, in, T->accent);
   mark_box(L, 0, in, in, H - in, T->accent);
@@ -324,9 +338,10 @@ void header_zone(lv_obj_t *parent) {
   lv_obj_set_style_pad_hor(l, sp::s7, 0);
   legend(l, T->accent, true, "lay::inset", tok("inset")->v, tok("inset")->v1x, "the header row starts at y = inset, x = inset");
   legend_tok(l, T->accent, false, "row");
-  legend(l, T->steel, false, "Button (ghost, back icon)", touch::button_h, touch::button_h,
-         "the real Button: its height is touch button-h, so it is centred on the header row and may stand out of it");
+  legend(l, T->steel, false, "Back button (real Header component)", tok("row")->v, tok("row")->v1x,
+         "the real Header builds the real Back button: touch back = the header row, so it fills the row exactly");
   legend_tok(l, T->blue, false, "header-time-w");
+  legend_tok(l, T->text_dim, false, "back-gap");
   legend_tok(l, T->text_dim, false, "gutter");
   const lyt::Derived *g = nullptr;
   for (int i = 0; i < lyt::N_DERIVED; i++) if (!strcmp(lyt::DERIVED[i].name, "header_gap")) g = &lyt::DERIVED[i];
@@ -343,22 +358,37 @@ void rhythm(lv_obj_t *parent) {
   lv_obj_t *c = rect(s, lay::inset, lay::top, lay::content_w, lay::content_h);
   lv_obj_add_flag(c, LV_OBJ_FLAG_OVERFLOW_VISIBLE);
   lv_obj_set_flex_flow(c, LV_FLEX_FLOW_COLUMN);
-  const int lab = style(ty::label).box;
-  coming(c, "section header", lay::content_w, lab);
-  lv_obj_t *g1 = spacer(c, lay::section_gap);
+  // the real Section header (section-h tall = touch min, its caps-sm title centred in it): the gaps around it are
+  // cut by its centring slack, so what you SEE stays the tokens: title to rows = section-gap, rows to the next title =
+  // group (best guess, Darren to confirm)
+  const int sh = find("section_header") ? lay::section_h : style(ty::label).box;
+  const int slack = find("section_header") ? (lay::section_h - style(ty::c_caps_sm).box) / 2 : 0;
+  lv_obj_t *h1 = section(c, "Display");
+  lv_obj_set_style_margin_top(h1, -slack, 0);  // the first title's box starts at the content top (its slack bleeds up)
+  spacer(c, std::max(0, lay::section_gap - slack));
   list_row(c, "Brightness", "bulb", "value-chevron", "80%");
-  list_row(c, "Chime", "speaker", "toggle", "", true);
-  lv_obj_t *gg = spacer(c, lay::group);
-  coming(c, "section header", lay::content_w, lab);
-  lv_obj_t *g2 = spacer(c, lay::section_gap);
+  lv_obj_t *r2 = list_row(c, "Chime", "speaker", "toggle", "", true);
+  spacer(c, std::max(0, lay::group - slack));
+  lv_obj_t *h2 = section(c, "Sound");
+  spacer(c, std::max(0, lay::section_gap - slack));
   list_row(c, "Volume", "volume", "value", "40%");
   list_row(c, "Television", "tv", "chevron", "");
-  coming(c, "more row", lay::content_w, lay::more_row_h);
+  {
+    Doc d;
+    d["text"] = "all settings · 12 more";
+    comp(c, "more_row", d);
+  }
   lv_obj_update_layout(s);
   lv_obj_t *L = layer(s);
-  mark(L, s, gg, T->accent);
-  mark(L, s, g1, T->steel);
-  mark(L, s, g2, T->steel);
+  // the visible gaps: title bottom to the first row (section-gap), the last row to the next title (group)
+  lv_area_t sa, a;
+  lv_obj_get_coords(s, &sa);
+  for (lv_obj_t *h : {h1, h2}) {
+    lv_obj_get_coords(h, &a);
+    mark_box(L, lay::inset, a.y2 + 1 - sa.y1 - slack, lay::content_w, lay::section_gap, T->steel);
+  }
+  lv_obj_get_coords(r2, &a);
+  mark_box(L, lay::inset, a.y2 + 1 - sa.y1, lay::content_w, lay::group, T->accent);
   outline(rect(L, lay::inset, lay::top, lay::content_w, lay::content_h), T->blue, stroke::hair);
   lv_obj_t *l = column(col, 0, lay::screen_w);
   lv_obj_set_style_pad_hor(l, sp::s7, 0);
@@ -367,10 +397,10 @@ void rhythm(lv_obj_t *parent) {
   legend(l, T->line, false, "List row (real component)", -1, 0,
          "four real List rows: value + chevron, toggle (the real Toggle inside), value, chevron; rows touch, so each "
          "row's top hairline is the divider; height lay::list_row_h (space.json)");
-  legend_tok(l, T->line_hi, false, "more-row-h");
-  char b[120];
-  const int used = 2 * lab + 2 * lay::section_gap + 4 * lay::list_row_h + lay::group + lay::more_row_h;
-  snprintf(b, sizeof b, "Section headers and the more row are outline boxes until those components exist. This fills %d of the %d px content height.", used, lay::content_h);
+  legend_tok(l, T->line_hi, false, "more-row-h");  // the real More row
+  char b[320];
+  const int used = 2 * sh - slack + 2 * std::max(0, lay::section_gap - slack) + 4 * lay::list_row_h + std::max(0, lay::group - slack) + lay::more_row_h;
+  snprintf(b, sizeof b, "Section headers are the real Section header (%d px, the title centred; the gaps around it are cut by its %d px centring slack so the visible gaps are the tokens); the more row is the real More row. This fills %d of the %d px content height.", sh, slack, used, lay::content_h);
   lv_obj_t *e = entry(l);
   text(e, ty::c_meta, b, T->text_dim, inner_w());
 }
@@ -380,25 +410,46 @@ void overlay(lv_obj_t *parent) {
   lv_obj_set_flex_align(parent, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
   lv_obj_t *col = column(parent, sp::s7, lay::screen_w);
   const int S = lay::screen_w, in = lay::inset;
-  // sheet: from sheet-top, inset on the other sides
+  // sheet: the real Bottom sheet (overlay only, shown open, no animation) over the real Home; panel from sheet-top
+  // to the bottom edge, content inset
   lv_obj_t *s = screen_box(col);
-  header(s, "Home");
+  header(s, "Home", false);
   home_cards(s);
-  lv_obj_t *sh = coming(s, "sheet", lay::content_w, S - in - lay::sheet_top);
-  lv_obj_set_pos(sh, in, lay::sheet_top);
-  fill(sh, T->bg);
-  outline(sh, T->accent, stroke::edge);
-  // toast: content width, toast-h tall at toast-top; the bottom position ends at the bottom inset
-  lv_obj_t *t2 = screen_box(col);
-  header(t2, "Home");
-  home_cards(t2);
-  for (int k = 0; k < 2; k++) {
-    lv_obj_t *t = coming(t2, k ? "toast (bottom)" : "toast", lay::content_w, lay::toast_h);
-    lv_obj_set_pos(t, in, k ? S - in - lay::toast_h : lay::toast_top);
-    fill(t, T->bg);
-    outline(t, T->accent, stroke::edge);
-    outline(rect(t, lay::toast_pad - stroke::edge, lay::toast_pad - stroke::edge, lay::content_w - 2 * lay::toast_pad, lay::toast_h - 2 * lay::toast_pad), T->blue, stroke::hair);
+  if (find("bottom_sheet")) {
+    Doc d;
+    d["overlay"] = true, d["still"] = true, d["list"] = "speakers", d["selected"] = 1;
+    find("bottom_sheet")->build(s, d.as<Props>());
+    lv_obj_t *L = layer(s);  // the sheet-top line, over the sheet
+    mark_box(L, 0, lay::sheet_top, S, stroke::edge, T->accent);
+  } else {
+    lv_obj_t *sh = coming(s, "sheet", lay::content_w, S - in - lay::sheet_top);
+    lv_obj_set_pos(sh, in, lay::sheet_top);
+    fill(sh, T->bg);
+    outline(sh, T->accent, stroke::edge);
   }
+  // toast: the real Toast layer (overlay only, still): one layer per position, so the top toast sits at toast-top and
+  // the bottom one ends at the bottom inset; marks over them: toast-top (accent line), toast-pad (blue content box)
+  lv_obj_t *t2 = screen_box(col);
+  header(t2, "Home", false);
+  home_cards(t2);
+  if (find("toast_layer")) {
+    for (int k = 0; k < 2; k++) {
+      Doc d;
+      d["overlay"] = true, d["still"] = true, d["timer"] = false, d["action"] = false;
+      d["position"] = k ? "bottom" : "top", d["push"] = k ? "info" : "ok";
+      find("toast_layer")->build(t2, d.as<Props>());
+    }
+    lv_obj_t *L = layer(t2);
+    mark_box(L, 0, lay::toast_top, S, stroke::edge, T->accent);
+    outline(rect(L, in + lay::toast_pad, lay::toast_top + lay::toast_pad, lay::content_w - 2 * lay::toast_pad, lay::toast_h - 2 * lay::toast_pad), T->blue, stroke::hair);
+  } else
+    for (int k = 0; k < 2; k++) {
+      lv_obj_t *t = coming(t2, k ? "toast (bottom)" : "toast", lay::content_w, lay::toast_h);
+      lv_obj_set_pos(t, in, k ? S - in - lay::toast_h : lay::toast_top);
+      fill(t, T->bg);
+      outline(t, T->accent, stroke::edge);
+      outline(rect(t, lay::toast_pad - stroke::edge, lay::toast_pad - stroke::edge, lay::content_w - 2 * lay::toast_pad, lay::toast_h - 2 * lay::toast_pad), T->blue, stroke::hair);
+    }
   lv_obj_t *l = column(col, 0, S);
   lv_obj_set_style_pad_hor(l, sp::s7, 0);
   legend_tok(l, T->accent, false, "sheet-top");
@@ -406,7 +457,7 @@ void overlay(lv_obj_t *parent) {
   legend_tok(l, T->accent, false, "toast-h");
   legend_tok(l, T->blue, false, "toast-pad");
   lv_obj_t *e = entry(l);
-  text(e, ty::c_meta, "Under them: the real header Button and Home Cards. Sheet and toast are outline boxes at their token positions until those components exist.", T->text_dim, inner_w());
+  text(e, ty::c_meta, "Under them: the real Header and Home Cards. The sheet is the real Bottom sheet (shown open; the accent line marks sheet-top); the toasts are the real Toast layer, top (the accent line marks toast-top, the blue box the content inside toast-pad) and bottom (it ends at the bottom inset).", T->text_dim, inner_w());
 }
 
 // ---- Devices and density ------------------------------------------------------------------------------------------

@@ -42,7 +42,12 @@
       "ibtn-play": { "v": 96, "1x": 64, "use": "Icon button play: round accent button diameter (docs size icon-play 96, 1x 64); glyph ic::feature" },
       "ibtn-round": { "v": 80, "1x": 52, "use": "Icon button round: diameter (docs size icon-round 80, 1x 52); glyph ic::glyph" },
       "ibtn-square": { "v": 48, "1x": 32, "use": "Icon button square: side (docs size icon-square 48, 1x 32 = touch min); glyph ic::glyph" },
-      "corner-tick": { "v": 8, "1x": 4, "use": "Corner ticks: length of each L (docs btn-tick-len 8; 1x = space 2); fw::corner_ticks default" }
+      "corner-tick": { "v": 8, "1x": 4, "use": "Corner ticks: length of each L (docs btn-tick-len 8; 1x = space 2); fw::corner_ticks default" },
+      "radio": { "v": 24, "1x": 16, "use": "Radio: outer diameter incl. its stroke edge ring (docs size radio 24; docs 1x keeps 24, x 2/3 = 16 like ic::icon so it matches the row icons)" },
+      "radio-dot": { "v": 8, "1x": 8, "use": "Radio: the selected dot (docs size dot 8; docs 1x 6 is off the grid; 8 centres on the grid in 24 and 16)" },
+      "speaker-btn-h": { "v": 48, "1x": 32, "use": "Speaker button height (docs size speaker-btn-h 48, 1x 32 = touch min, fits the header row)" },
+      "speaker-btn-max": { "v": 240, "1x": 160, "use": "Speaker button: widest the name may get before it ellipsises (docs size speaker-btn-max)" },
+      "toast-icon": { "v": 48, "1x": 32, "use": "Toast: the tone-tinted icon square (docs size toast-icon 48, 1x x 2/3), centred in toast-h; glyph icon 32 / 20 centred in it (480: 6 px in, the same open point as the square Icon button: a centred 20 px glyph and a centred square cannot both sit on the 4 px grid in an 80 px toast)" }
     },
     "radius": {
       "tile": { "v": 0, "1x": 0, "use": "tiles" },

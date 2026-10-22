@@ -1,5 +1,6 @@
 {
   "$comment": "track = pitch range in semitones over a control's whole value range (0 = not pitched; slider-tick and slider-landmark: the renderer sends each step's position 0..1 as the sound detail, the player shifts the pitch by (pos - 0.5) x track, Darren 2026-10-21). Facet UI sounds, single source for the WASM workbench (Foundations > Sound). Procedural, no samples: one sound = base + variant.defaults + types[].variants[<variant>] (minus 'use'), engine from the variant; rendered with Web Audio (OfflineAudioContext), DC/edge-fade cleaned and loudness-aligned per 'levels'. Copied 1:1 from Facet main (packages/sounds/src/packs.json + synth.ts BASE, tokens.json sound, site docs meanings). Types = what a sound is for; variants = the six packs (keycap default).",
+  "pitch": { "low": -6, "high": 3, "use": "pitched step ticks (slider, dial, arc; sounds with track > 0): semitones at the bottom / top of the control range, linear in between (Darren 2026-10-22: the top went too high; was the symmetric +-track/2, i.e. +-6 in keycap)" },
   "default": "keycap",
   "levels": {
     "peakDb": -3,

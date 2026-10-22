@@ -129,6 +129,12 @@ space.json's layout group keeps the component sizes (card, tile, list row, dial)
 - **Groups** (device px, `v` = 720, `1x` = 480): screen (`inset` 32/20, `gutter` 16/16, `group` 48/32, `top` 112/72),
   header (`row` 48/32, `back-gap` 16/12, `header-time-w` 72/48 = docs `clock-w`), rows (`section-gap` 16/12, `more-row-h`
   64/44), overlay (`sheet-top` 96/64, `toast-top` 96/64, `toast-h` 120/80, `toast-pad` 24/16).
+- **Toast behaviour** (top-level `toast` group = docs tokens.json `toast`, WIP 2026-10-22): `position` top, `max` 2,
+  `life` / `life-urgent` = motion.json durations `toast-life` 6000 / `toast-life-urgent` 12000 (referenced, not copied),
+  `swipe` 64/44, `swipe-out` 160/108 (docs toastLayer's sideways leave), `tap-slop` 8/8, `sound` = sound.json `notify`.
+  Here and not in motion.json because it is where an overlay sits and how it behaves on the screen, beside its geometry;
+  gen_layout checks the motion / sound references and the grid -> `fw::toast::top|max|life|life_urgent|sound|swipe|
+  swipe_out|tap_slop`.
 - **Devices:** Waveshare P4-86 720 (1.5x, reference), Guition 4848S040 480 (1x, rotated 90 deg in software for the mount),
   Shelly X1i 720 (1.5x WASM build in an Android WebView), planned 480x800 tall, 1024x600 wide, 1280x800 large.
   **Size classes** by logical size (px / density): square 480x480 dp (Home 2 cols), tall 480x720, wide 960x560 (4 cols),
@@ -216,6 +222,46 @@ frame (the sheet scrim, every row of a screen rise), not movement.
 transition stays the content rise with its fade); optimise later. These numbers are the reference for that work:
 the expensive parts are the sheet dim fade and the screen rise fade. Candidate fixes: a stepped dim (2-3 opacity
 steps), rise without the fade, or `instant` on 1x boards.
+
+### Bottom sheet frame cost (2026-10-22, browser only; panels pending a flash)
+
+Workbench device page (`/wasm/device?target=<id with no stored show>` for 720, `guition` for 480), `bottom_sheet`
+`{"loop": true}` (open + close forever), headless Chromium with 8x CPU throttling, own frame collector (WASM tick +
+render + canvas copy per frame while an animation runs). Work ms per frame, 2 runs each:
+
+| | 720 | 480 |
+|---|---|---|
+| idle-ish baseline (motion `pulse`) | 3.7 | 1.7 |
+| the old Motion page sheet sample (the one benched on the panels above) | 21.7-22.0 | 9.7-9.9 |
+| Bottom sheet (real screen + 5 picker rows) | 27.2 | 13.0-13.3 |
+| + `panel: solid` (opaque panel, rise only) | 24.1 | 11.2 |
+| + `flatten` (screen under it = one lv_snapshot image) | no gain (27.6) | no gain (13.5) |
+| panel as a moving snapshot image (ARGB) | worse (34.1) | worse (14.8) |
+
+Over the baseline the real sheet costs ~1.3x (720) / ~1.4x (480) the old sample, so scaled from the panel numbers above
+the estimate is Guition ~125 ms per frame (~8 fps; 160 ms open = one or two in-between frames), Shelly ~55 ms (~16 fps),
+Waveshare ~30 ms (~28 fps). The cost is the area blended at partial opacity each frame (full-screen scrim + a panel that
+fades over most of the screen), not the number of objects. Levers left (Darren's call, "optimise later"): opaque panel
+that only rises (-15-18 %), a stepped scrim (2-3 levels: fewer full-screen frames), or `instant` sheets on 1x boards.
+
+### Toast frame cost (2026-10-22, browser only; panels pending a flash)
+
+Same bench as the bottom sheet (workbench device page, headless Chromium, 8x CPU throttle, work ms per frame while an
+animation runs, 2 runs each; the sheet re-measured as the yardstick):
+
+| | 720 | 480 |
+|---|---|---|
+| Bottom sheet loop (yardstick) | 27.0-27.7 | 13.3-13.7 |
+| one toast sitting (timer bar only) | 4.0 | 1.7-1.8 |
+| two toasts sitting (two bars) | 4.9-5.3 | 2.1 |
+| arrivals loop (a toast every 280 ms: in + restack + the oldest out) | 12.5-12.9 | 7.1 |
+
+The bar is the only steady cost and it is close to the idle baseline (3.7 / 1.7): a stroke::edge strip per frame. The
+in / out motion costs ~0.4x (720) / ~0.5x (480) of the sheet: the fading toast is drawn through a layer the size of
+the toast, nothing full-screen. Scaled from the sheet's panel estimate: Guition ~65 ms per frame while a toast moves
+(~15 fps: 2-3 frames in 160 ms), Shelly ~25 ms (~40 fps), Waveshare ~12 ms (60); a sitting toast's bar ~ the idle
+redraw on each. Levers if the Guition needs them: a stepped bar (redraw every 4 px instead of every px), or `instant`
+toasts on 1x boards.
 
 ## Mascot tokens (single source, WIP)
 
@@ -320,7 +366,10 @@ value step on sliders/dials, which control plays which sound, toast sound, sound
 
 `foundations/<id>.cpp`, same `FW_COMPONENT` API with section `foundations`. Meta `"layout": "doc"` = a document page:
 one full-width WASM stage per variant (heading + `about` in HTML), `"frame": [w, 0]` = auto height (the stage follows
-its content, `fw_content_h` + `fw_stage_resize`). Status = the .cpp plus `tokens/<id>.json` if present (any untracked
+its content, `fw_content_h` + `fw_stage_resize`; it measures the children top to bottom, since the screen centres them
+and content taller than the first 64 px stage sticks out at both ends (fixed 2026-10-22: it used the bottom only and
+cut a 96 px List row to 80), plus the screen padding or a bled mark (fw::bleed ext draw, deepest holder, labels skipped)
+where that reaches further). Status = the .cpp plus `tokens/<id>.json` if present (any untracked
 = WIP; approve = commit both; Motion also adds `core/motion.cpp` + `tools/gen_motion.mjs`). **Motion**
 (`foundations/motion.cpp`): see "Motion tokens". **Type** (`foundations/type.cpp`): both scales at true size in their line boxes (hairlines) with spec + use, mono caps beside sans, number styles (units, tabular digits), glyph coverage per set, the fonts of the build with their flash cost (device switch = 720 / 480 build). **Layout & devices** (`foundations/layout.cpp`): see "Layout tokens and devices". **Spacing & radius** (`foundations/space.cpp`, id `space`): spacing steps (true-size square + 8x bar), layout tokens (true-size bars + grid), radius samples on surface cards, strokes (line, ring, outlined control), touch targets (hit area tinted around a smaller drawn back button / chip / row); every value also shows the other density (the whole screen moved to Layout & devices, round 3). **Colour** (`foundations/colour.cpp`): every token by group, name + role, the colour in
 its dark and light context with its hex (chips drawn by LVGL in RGB565, as on the panel), the accent sets, the contrast
@@ -435,6 +484,17 @@ Motion: components take every duration / easing from the Motion tokens (see "Mot
 | `section_header` | Facet section header (docs `sectionHeader({title, count, tone, right})`, `.f-section`): `lay::section_h` (48 / 32) x content width (656 / 440), flex row gap `sp::s5` (16 / 12 = docs gutter both densities): Label title (caps-sm, text-dim), optional Count badge (count / tone / zero), grow, right = none / meta (Label meta, text-dim; docs text-mute) / action (text button, caps-sm accent-text, hit box section_h tall + `sp::s2` padding translated right so the text ends on the content edge; pressed = Card mix `press-tint` fill with Motion press / release, radius chip; disabled = text-mute, USER_1, `blocked` + error; tap = `tap` + sound `tap`). Title, badge, meta static. 8 variants. Pairs: section `section_header`. WIP round 1. |
 | `corner_ticks` | Facet corner ticks atom (docs `cornerTicks(corners, len, thick)`, `.f-ticks`), WIP: core `fw::corner_ticks(obj, Corners::all\|tr_bl, show = st::ON, len = lay::corner_tick, thick = stroke::corner_tick)` in `core/atoms.h` (8 / 4 x 2, `st::on_mark` = accent, on the border box past padding + border; with a `show` state the owner needs `LV_OBJ_FLAG_STATE_TRICKLE`). Button secondary active calls it (all). Pressed (active + pressed) = `st::on_mark_pressed` (accent-text, states.json on.mark-pressed: accent was 2.87-2.99 on the pressed grey in light; Darren 2026-10-21). Cards / tiles: decide with the screens (no ticks on the approved Card for now). Page: plain surface box all / tr-bl (shown while active) + the real Button secondary active / active+pressed / default. Pairs section `corner_ticks`. |
 | `focus_ring` | Facet focus ring atom (docs `focusRing(offset, r)`, `.f-ring`), WIP: core `fw::focus_ring(obj, show = st::ON, offset = st::FOCUS_OFFSET)` in `core/atoms.h` (LVGL outline `stroke::focus` 1 px, pad offset - width, radius follows the owner, hidden under `st::OFF`, `fw::bleed` so nothing clips it); replaces the generated `st::add_focus_ring`. Button primary + Icon button play call it. Page: box at focus-offset / none / space 2 / space 4 / disabled + the real Button primary active, play active, primary active+disabled. Pairs section `focus_ring`. Refactor pixel-identical: 1104 frames (Button 24 + Icon button 19 + Back 3 variants x 720 / 480 x dark / light x default + 5 accent sets) hashed before / after, 0 differ. |
+| `header` | Facet screen header (docs `header()`, `.fs-header`), WIP: the row only, `lay::content_w` x `lay::row` (656 x 48 / 440 x 32; static_assert `touch::back == lay::row`), placed by the screen at (inset, inset). Flex row centred, gap `lay::gutter`: Back button (`fw::find("back_button")`, optional) + `lay::back_gap` (16 / 12) to the label (screen type `label`, caps, text-dim, grows + ellipsises: LVGL flex never shrinks, so the label is the grow), optional Status chip (working, "2 working" = docs explorer "Right chip"), time (type `label`, text-dim, `lay::header_time_w` 72 / 48, right-aligned). Props label / back / clock / time / chip; 5 variants. The Layout foundation's samples use it (`header(s, label, back)`; Home without back). Pairs: section `header` (+ icon_button, status_chip). |
+| `tile` | Facet agent tile (docs `tile(agent)`, `.fs-tile`), WIP: `lay::tile_w` x `tile_h` (208 / 136), surface + 1 px line, `rad::tile`, padding `tile_pad` - hair, flex column: core mascot (`fw::mascot`, mood = docs `moodFor(kind, status)`: error/failed, working, needs, idle = sleeping, done <= 2 h = done else idle; colour = the mood's own token = the docs tile colours), grow, title (type body, 2 lines in 2 x body box, ellipsis), `sp::s5`, status row (type label: state word working accent-text / needs warn / else text-dim, detail right text-dim fit to the grid, " ctx" / " ago" dropped). Pressed = Card press (states.json pressed.style, prop `press`); the sleeping body brightens text-mute -> text-dim while pressed (2.9:1 on press-tint in dark; states.json disabled on-fill token). Unavailable = sleeping mascot in `st::unavailable_ink`, title text-mute, "Unavailable". Tap = `tap` (title) + `open`; unavailable = `blocked` + error on finger down. 8 variants. Pairs: section `tile` (+ mascot). |
+| `hero_block` | Facet hero block (docs `heroBlock()`, `.fs-hero`), WIP: content width x the number's type box (hero 96 / 64, role display 144 / 96), flex row gap `lay::gutter`: number (type hero / display, text; accent = accent-text; box fit to the grid) + column (label type `label` text, `sp::s2`, line type body text-dim ellipsis) offset (hero box - column) / 2 from the top (= docs padding-top 16 at 720, 12 at 480; kept for display too). Unavailable = em dash (`st::PLACEHOLDER`, now in every number glyph set) text-mute + "Unavailable". Static. 6 variants. Pairs: section `hero_block`. |
+| `more_row` | Facet more row (docs `moreRow()`, `.fs-more`), WIP: content width x `lay::more_row_h` (64 / 44), 1 px line on top, padding top `sp::s7` - hair (label at 24 / 16 like the docs rows), sides `sp::s4` (= List row, so it lines up with the rows above; docs none), flex row gap `lay::gutter`: label (type label, text-dim, grows, ellipsis) + chevron (`ic::icon`, text-dim; docs text-mute). Pressed = List row's press-tint fill; disabled = text-mute, `blocked` + error; tap = `tap` + `open`. 4 variants. The Layout foundation's rows sample uses it. Pairs: section `more_row`. |
+| `stat` | Facet stat (docs `stat()`, `.fs-stat`), WIP: flex column gap `sp::s2`: label (type label, text-dim; docs text-mute) over value (type body, one line, ellipsis; tone dim / text / warn / ok). Width `lay::card_w`, or the parent's with internal prop `fill`. Unavailable = label text-mute + "Unavailable". Static. 6 variants. Pairs: section `stat`. |
+| `radio` | Facet radio (docs `radio(on)`, `.f-radio`), WIP: `lay::radio` (24 / 16; docs 24 at both, 480 = x 2/3 to match `ic::icon`) round, `stroke::edge` ring **text-dim** (docs line-hi is 1.8-2.0:1 on bg, a control boundary needs ui 3:1), on = ring + `lay::radio_dot` (8 / 8, centred on the grid) in `st::on_mark` (accent); state = CHECKED (`st::ON`) trickled to the dot, so an owner just sets the state; switch = Motion toggle as style transitions (colour / opacity only); disabled = text-mute. Standalone tap selects (never un-chooses): `tap` "on" + tap; disabled = `blocked` + error. Hit area `touch::min`. 4 variants. Pairs: section `radio`. |
+| `picker_row` | Facet picker row (docs `pickerRow()`, `.f-prow`), WIP: the List row component itself (`fw::find("list_row")`: hairline, `list-row-h` = layout `sheet-row-h` static_assert, icon `ic::icon`, name = title, press, disabled / unavailable, tap `tap` + tap) + a caps status (screen type `label`, text-dim; tone working = icon + status accent-text) added to its text column (slot grown onto the grid: 40 + 24 / 28 + 16 -> 48) + the Radio component trailing (non-clickable: the row is the target). Picker rows sharing a parent are one group (rows marked `LV_OBJ_FLAG_USER_1`): a tap turns its radio on and the siblings' off. Docs draw the icon at sheet-icon 32 / 20, but icons.json ships the picker-row icons at icon size only (open question). 10 variants incl. `list: group`. Pairs: section `picker_row`. |
+| `speaker_button` | Facet speaker button (docs `speakerButton()`, `.f-spk`), WIP: `lay::speaker_btn_h` (48 / 32, static_asserts: fits the header row, >= touch min), hug width on the grid, surface + hair line, `rad::button`, padding `sp::s4` - hair, gap `sp::s2`: speaker `ic::small` (text-dim; accent-text while playing) + name (type c-label caps, text, max `lay::speaker_btn_max` 240 / 160 then ellipsis) + chevron-down `ic::small` text-dim. Pressed = surface-press + line-hi (Motion press / release); disabled = text-mute + `blocked` + error. Tap = `tap` (name) + sound `open` (docs data-snd open). 5 variants. Pairs: section `speaker_button`. Open: 480 icon 12 in 32 = 10 px offset (off grid). |
+| `bottom_sheet` | Facet bottom sheet (docs `bottomSheet()`, `.f-bsheet`), WIP: overlay on its screen (floating, hidden while closed): scrim = one full-screen rect, bg at Motion `scrim` 0.72, tap = `close` "scrim" + sound back; panel from `lay::sheet_top` to the bottom, full width (docs left 0 right 0), bg, 1 px line-hi top edge, `rad::ring` top corners (runs `rad::ring` past the bottom), padding inset - hair / inset, gap gutter: head (`lay::row`: caps title text-dim + Close = Icon button square close via `fw::find` in a hit box that trickles PRESSED: `close` "close" + sound back) + a scrolling list of Picker rows (group: the radio follows the tap; the sheet closes after a pick). Motion `sheet-open` / `sheet-close` (scrim bg_opa + panel opa / translate as one object; reduced = fade; reversible mid-way). Workbench page: the sheet over a real "Settings" screen at device size (Header + List rows; the Speaker / Theme rows open their list, a pick updates the row value); props open / list / title / selected / screen; internal `loop` (bench), `overlay` + `still` (the Layout foundation's overlay sample), `flatten` + `panel: solid` (bench options, see "Bottom sheet frame cost"). 5 variants incl. reduced motion; the demo reset replays the opening. Pairs: section `bottom_sheet`. |
+| `toast` | Facet toast (docs `toast()`, `.f-toast`), WIP: content_w x `lay::toast_h` (120/80), surface, 1 px line-hi edge, `rad::card`, padding toast-pad - hair, row gap toast-pad: icon square `lay::toast_icon` (48/32, space.json; `rad::button`, tone at chip.tint = mix chip-<tone>-surface) with the icon at `ic::glyph` in the tone ink (working accent-text, idle text-dim), title (type title) over body (type body, text-dim), optional action = Button secondary via `fw::find` (dismisses: "action"), timer bar `stroke::edge` along the bottom in the tone fill, shrinking linearly over `toast::life` / `life_urgent`, paused while pressed. Gestures: drag follows the finger (translate_x only, no fade: perf), released past `toast::swipe` = swipe, under `tap_slop` = tap, else springs back (Motion toast-in). Dismiss = event `dismiss` (tap / swipe-left / swipe-right / timeout / action / pushed) + sound back on tap or swipe, then leaves (Motion toast-out: fade + back to its edge, or sideways `swipe_out`). Protocol for the layer: internal props `layer` + `edge`, sends VALUE_CHANGED (dismissed) and READY (left), takes CANCEL (pushed out; param 1 = quiet). Props icon / tone / title / body / action / timer (off = docs static) / life; 9 variants. Pairs: section `toast`. |
+| `toast_layer` | Facet toast layer (docs `toastLayer()`, `.f-toasts`), WIP: floating, non-clickable layer over its screen (only toasts take taps), up to `toast::max` Toasts newest nearest the entry edge, `lay::gutter` apart, top = first at `toast_top`, bottom = first ends at the bottom inset. Push = Motion toast-in (fade + slide from the edge), the others move a slot (y, toast-in), over max = the oldest gets CANCEL; arrival = event `toast` + sound `toast::sound` (notify). Workbench page: a real "Toasts" screen (Header + six List rows, one per tone; a tap pushes that tone's toast); props position / push (arrives on build: the demo reset replays it) / stack (1-3, toast-in apart, follow-ups quiet so a sample never re-arms its own reset) / timer / action / screen; internal `overlay` + `still` (Layout page overlays) and `loop` (bench). 8 variants (timer off so the grid stays full). Frame cost: "Toast frame cost". |
 
 ## Add a component
 

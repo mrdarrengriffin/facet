@@ -11,6 +11,8 @@ import { fileURLToPath } from 'node:url';
 const HERE = dirname(fileURLToPath(import.meta.url));
 const t = JSON.parse(readFileSync(join(HERE, '..', 'tokens', 'layout.json'), 'utf8'));
 const space = JSON.parse(readFileSync(join(HERE, '..', 'tokens', 'space.json'), 'utf8'));
+const motion = JSON.parse(readFileSync(join(HERE, '..', 'tokens', 'motion.json'), 'utf8'));
+const sound = JSON.parse(readFileSync(join(HERE, '..', 'tokens', 'sound.json'), 'utf8'));
 const out = process.argv[2];
 if (!out) { console.error('usage: gen_layout.mjs <out.h>'); process.exit(2); }
 const die = (m) => { console.error(`tokens/layout.json: ${m}`); process.exit(1); };
@@ -58,6 +60,17 @@ for (const d of dens) {
   if (V('toast-top', d) + V('toast-h', d) > S.h - V('inset', d)) bad.push(`${d}: a toast at toast-top runs past the bottom inset`);
   derived[d] = { screen_w: S.w, screen_h: S.h, content_w: cw, content_h: ch, header_gap: gap };
 }
+// toast behaviour group (docs tokens.json `toast`): references checked against motion.json / sound.json, distances on the grid
+const TO = t.toast;
+if (!TO) die('toast group missing');
+if (!(TO.position?.options ?? []).includes(TO.position?.value)) die('toast.position: value must be one of its options');
+if (!Number.isInteger(TO.max?.value) || TO.max.value < 1) die('toast.max: a whole number >= 1');
+for (const k of ['life', 'life-urgent']) if (!motion.durations?.[TO[k]?.motion]) die(`toast.${k}: motion.json has no duration ${TO[k]?.motion}`);
+if (!sound.types.some((x) => x.id === TO.sound?.sound)) die(`toast.sound: sound.json has no type ${TO.sound?.sound}`);
+const TD = ['swipe', 'swipe-out', 'tap-slop'];
+for (const k of TD)
+  for (const [d, x] of [['720 (v)', TO[k]?.v], ['480 (1x)', TO[k]?.['1x']]])
+    if (!Number.isInteger(x) || x < 4 || x % 4) bad.push(`toast.${k} ${d} = ${x}: not a multiple of 4`);
 if (bad.length) die(`layout rule:\n  ${bad.join('\n  ')}`);
 
 // densities, size classes, devices: each device's class = the largest class whose min fits its dp size
@@ -81,10 +94,20 @@ const block = (d) => {
   const B = ['namespace lay {'];
   for (const r of rows) B.push(`constexpr int ${field(r.n)} = ${d === '1x' ? r['1x'] : r.v};`);
   for (const [k, x] of Object.entries(derived[d])) B.push(`constexpr int ${k} = ${x};  // derived`);
-  B.push('}  // namespace lay');
+  B.push('}  // namespace lay', 'namespace toast {  // toast behaviour (layout.json toast)');
+  for (const k of TD) B.push(`constexpr int ${field(k)} = ${d === '1x' ? TO[k]['1x'] : TO[k].v};  // ${TO[k].use}`);
+  B.push('}  // namespace toast');
+  return B;
   return B;
 };
 L.push('#ifdef FW_1X', ...block('1x'), '#else', ...block('1.5x'), '#endif');
+L.push('namespace toast {',
+  `constexpr bool top = ${TO.position.value === 'top'};  // ${TO.position.use}`,
+  `constexpr int max = ${TO.max.value};  // ${TO.max.use}`,
+  `constexpr uint32_t life = ${motion.durations[TO.life.motion].ms};  // motion ${TO.life.motion}: ${TO.life.use}`,
+  `constexpr uint32_t life_urgent = ${motion.durations[TO['life-urgent'].motion].ms};  // motion ${TO['life-urgent'].motion}`,
+  `constexpr const char *sound = ${cstr(TO.sound.sound)};  // ${TO.sound.use}`,
+  '}  // namespace toast');
 L.push('namespace lyt {  // the Layout page tables: both densities, device px');
 L.push('struct Group { const char *id, *label, *about; };', 'constexpr Group GROUPS[] = {');
 for (const g of t.groups) L.push(`  {${cstr(g.id)}, ${cstr(g.label)}, ${cstr(g.about)}},`);

@@ -12,10 +12,13 @@
 //   fw_anims() -> n                   LVGL animations running (frame stats)
 //   fw_events() -> JSON               events + sound requests since the last call (fw::emit / fw::sound): [{stage,kind,name,detail}] or ""
 #include <emscripten.h>
+#include <cstdint>
 #include <cstdlib>
 #include <string>
 #include <vector>
 #include "fw.h"
+// LVGL private (src/core/lv_obj_draw_private.h): the ext draw size an object holds (fw::bleed sets it)
+extern "C" int32_t lv_obj_get_ext_draw_size(const lv_obj_t *obj);
 
 
 namespace {
@@ -133,19 +136,46 @@ EMSCRIPTEN_KEEPALIVE const char *fw_render(int id, const char *comp, const char 
 // the colour tokens file (JSON) the build was generated from
 EMSCRIPTEN_KEEPALIVE const char *fw_tokens() { return fw::tokens::JSON; }
 
-// height in device px the last build of stage `id` needs (bottom of its lowest child + the screen's bottom padding):
-// lets the page size an "auto height" stage (meta "frame": [w, 0]) to its content
+// height in device px the last build of stage `id` needs: lets the page size an "auto height" stage (meta "frame":
+// [w, 0]) to its content. The screen centres its content (flex column), so content taller than the stage sticks out
+// at BOTH ends: measure top to bottom of the children (not 0 to the bottom, which clipped a 96 px List row in a 64 px
+// first stage to 80) plus the screen's padding, and widen that to any bled mark (fw::bleed, focus ring outline) that
+// reaches further. fw::bleed puts the same ext draw size on the whole ancestor chain, so a mark is counted on the
+// deepest object holding it (an object whose children hold as much is only passing it up). Same answer whatever the
+// stage's current height. Labels don't count (glyph overhang, see reach()).
+namespace {
+void reach(lv_obj_t *o, int32_t &top, int32_t &bot) {
+  int32_t kid = 0;
+  for (uint32_t i = 0; i < lv_obj_get_child_count(o); i++) {
+    lv_obj_t *c = lv_obj_get_child(o, i);
+    if (lv_obj_has_flag(c, LV_OBJ_FLAG_HIDDEN)) continue;
+    kid = LV_MAX(kid, lv_obj_get_ext_draw_size(c));
+    reach(c, top, bot);
+  }
+  const int32_t ext = lv_obj_get_ext_draw_size(o);
+  // labels skipped: their ext is the font's glyph overhang (the text-box rule cuts line boxes to caps on purpose)
+  if (ext <= 0 || kid >= ext || lv_obj_check_type(o, &lv_label_class)) return;
+  lv_area_t a;
+  lv_obj_get_coords(o, &a);
+  top = LV_MIN(top, a.y1 - ext);
+  bot = LV_MAX(bot, a.y2 + 1 + ext);
+}
+}  // namespace
 EMSCRIPTEN_KEEPALIVE int fw_content_h(int id) {
   Stage *s = get(id);
   if (!s) return 0;
   lv_obj_t *scr = lv_display_get_screen_active(s->d);
-  int32_t y = 0;
+  int32_t top = INT32_MAX, bot = INT32_MIN;
   for (uint32_t i = 0; i < lv_obj_get_child_count(scr); i++) {
+    lv_obj_t *c = lv_obj_get_child(scr, i);
+    if (lv_obj_has_flag(c, LV_OBJ_FLAG_HIDDEN)) continue;
     lv_area_t a;
-    lv_obj_get_coords(lv_obj_get_child(scr, i), &a);
-    if (a.y2 + 1 > y) y = a.y2 + 1;
+    lv_obj_get_coords(c, &a);
+    top = LV_MIN(top, a.y1 - lv_obj_get_style_pad_top(scr, LV_PART_MAIN));
+    bot = LV_MAX(bot, a.y2 + 1 + lv_obj_get_style_pad_bottom(scr, LV_PART_MAIN));
+    reach(c, top, bot);
   }
-  return y + lv_obj_get_style_pad_bottom(scr, LV_PART_MAIN);
+  return top == INT32_MAX ? 0 : bot - top;
 }
 
 // every object under stage `id`'s screen (depth first): [{d: depth (1 = the screen's children), x, y, w, h}] in device
