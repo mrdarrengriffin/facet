@@ -2,14 +2,16 @@
 // segment per option in a hairline box; exactly one is chosen. Docs uses: a Settings row with up to 3 options inline
 // (Theme auto / dark / light), and the view tabs of Weather (Weather / Sun / Moon / Lightning), Calendar
 // (Agenda / Month) and Overhead (Now / Radar).
-//   box      height touch::min (48 / 32; docs 48), stroke::hair border in line, radius rad::button (12 / 8)
+//   box      height touch::min (48 / 32; docs 48), stroke::hair border in line, radius rad::button (12 / 8); the
+//            line is a ring child drawn over the segments, so every segment box starts on the box edge (on the grid)
 //   segment  label (type label: the docs .fst-label, caps) + sp::s7 each side (24 / 16; docs padding 0 24), width
 //            snapped up to the 4 px grid so every separator lands on the grid; segments after the first have a
 //            stroke::hair separator in line on their left (docs border-left)
 //   width    hug (docs: the box hugs its segments) or fill = lay::content_w (a full-width tab bar), segments equal
-//   chosen   st::ON (LVGL CHECKED): plate surface-press + 1 px line-hi outline drawn inside the segment over its
-//            separator (docs: outline-offset -hair), label text (rest labels text-dim). End plates keep the box's
-//            inner corner (radius button - hair) on the outside and stay square inside (docs border-radius on
+//   chosen   st::ON (LVGL CHECKED): plate surface-press + 1 px line-hi outline just inside the box line and over its
+//            separator (docs: outline-offset -hair), label text (rest labels text-dim). Plates are the segment's grid
+//            box; on the box's outer sides their ring is 2 hairlines and the box line covers the outer one. End
+//            plates round the outer corners (radius button) and stay square inside (docs border-radius on
 //            :first-child / :last-child): LVGL has one radius per box, so an end plate is a rounded box under a
 //            square box with no border on the rounded side
 //   pressed  plate surface-press (st::pressed_surface; docs :active), label unchanged, Motion press / release fades
@@ -50,8 +52,9 @@ std::string lower(std::string s) {
   return s;
 }
 
-// the chosen / pressed plate of one segment: the look lives in state styles, the segment trickles its state down
-lv_obj_t *plate(lv_obj_t *seg, int x, int w, int h, int radius, lv_border_side_t sides) {
+// a plate of one segment: the look lives in state styles, the segment trickles its state down. fill = the chosen /
+// pressed surface; bw / sides = its line-hi ring (shown when chosen)
+lv_obj_t *plate(lv_obj_t *seg, int x, int w, int h, int radius, lv_border_side_t sides, int bw, bool fill) {
   const fw::Theme &t = *fw::T;
   lv_obj_t *o = lv_obj_create(seg);
   lv_obj_remove_style_all(o);
@@ -60,13 +63,15 @@ lv_obj_t *plate(lv_obj_t *seg, int x, int w, int h, int radius, lv_border_side_t
   lv_obj_set_pos(o, x, 0);
   lv_obj_set_size(o, w, h);
   lv_obj_set_style_radius(o, radius, 0);
-  lv_obj_set_style_bg_color(o, fw::st::pressed_surface(t), 0);
-  lv_obj_set_style_bg_opa(o, LV_OPA_TRANSP, 0);
-  lv_obj_set_style_bg_opa(o, LV_OPA_COVER, LV_STATE_PRESSED);
-  lv_obj_set_style_bg_opa(o, LV_OPA_COVER, ST_ON);
-  lv_obj_set_style_bg_opa(o, LV_OPA_TRANSP, ST_OFF);       // disabled: no press look
-  lv_obj_set_style_bg_opa(o, LV_OPA_COVER, ST_ON | ST_OFF);  // ...but the choice still shows
-  lv_obj_set_style_border_width(o, fw::stroke::hair, 0);
+  if (fill) {
+    lv_obj_set_style_bg_color(o, fw::st::pressed_surface(t), 0);
+    lv_obj_set_style_bg_opa(o, LV_OPA_TRANSP, 0);
+    lv_obj_set_style_bg_opa(o, LV_OPA_COVER, LV_STATE_PRESSED);
+    lv_obj_set_style_bg_opa(o, LV_OPA_COVER, ST_ON);
+    lv_obj_set_style_bg_opa(o, LV_OPA_TRANSP, ST_OFF);       // disabled: no press look
+    lv_obj_set_style_bg_opa(o, LV_OPA_COVER, ST_ON | ST_OFF);  // ...but the choice still shows
+  }
+  lv_obj_set_style_border_width(o, bw, 0);
   lv_obj_set_style_border_side(o, sides, 0);
   lv_obj_set_style_border_color(o, fw::st::on_line(t), 0);
   lv_obj_set_style_border_opa(o, LV_OPA_TRANSP, 0);
@@ -78,9 +83,10 @@ lv_obj_t *plate(lv_obj_t *seg, int x, int w, int h, int radius, lv_border_side_t
 }
 
 void choose(lv_obj_t *box, int i) {
-  for (uint32_t k = 0; k < lv_obj_get_child_count(box); k++) {
+  const int n = (int) ((Seg *) lv_obj_get_user_data(box))->ids.size();  // the segments (the ring child comes after)
+  for (int k = 0; k < n; k++) {
     lv_obj_t *s = lv_obj_get_child(box, k);
-    if ((int) k == i) lv_obj_add_state(s, ST_ON);
+    if (k == i) lv_obj_add_state(s, ST_ON);
     else lv_obj_remove_state(s, ST_ON);
   }
   ((Seg *) lv_obj_get_user_data(box))->chosen = i;
@@ -116,6 +122,8 @@ FW_COMPONENT(segmented, "Segmented", "components", R"({
     lv_obj_set_size(u, LV_SIZE_CONTENT, fw::touch::min);
     lv_obj_t *l = fw::text(u, fw::ty::body, fw::st::UNAVAILABLE_TEXT, fw::st::unavailable_note(t));
     lv_obj_remove_flag(l, LV_OBJ_FLAG_CLICKABLE);
+    lv_label_set_long_mode(l, LV_LABEL_LONG_MODE_CLIP);  // one line at the type box (a new label wraps: font height)
+    lv_obj_set_height(l, fw::style(fw::ty::body).box);
     lv_obj_center(l);
     lv_obj_update_layout(l);
     lv_obj_set_width(u, (lv_obj_get_width(l) + fw::sp::GRID - 1) / fw::sp::GRID * fw::sp::GRID);  // on the grid
@@ -149,16 +157,12 @@ FW_COMPONENT(segmented, "Segmented", "components", R"({
     if (d->ids[i] == sel) d->chosen = i;
 
   const int G = fw::sp::GRID, hair = fw::stroke::hair, pad = fw::sp::s7, h = fw::touch::min;
-  const int rp = fw::rad::button - hair;  // the box's inner corner
-  static_assert(fw::rad::button > fw::stroke::hair, "the end plates follow the box's inner corner");
+  const int R = fw::rad::button, ring = 2 * hair;  // plate ring: the box line over its outer px + line-hi inside
+  static_assert(fw::rad::button > 2 * fw::stroke::hair, "the end plates follow the box's corner");
 
   lv_obj_t *box = lv_obj_create(parent);
   lv_obj_remove_style_all(box);
   lv_obj_remove_flag(box, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
-  lv_obj_set_style_radius(box, fw::rad::button, 0);
-  lv_obj_set_style_border_width(box, hair, 0);
-  lv_obj_set_style_border_color(box, t.line, 0);
-  lv_obj_set_style_border_opa(box, LV_OPA_COVER, 0);
   lv_obj_set_user_data(box, d);
   lv_obj_add_event_cb(box, [](lv_event_t *e) { delete (Seg *) lv_event_get_user_data(e); }, LV_EVENT_DELETE, d);
 
@@ -178,6 +182,8 @@ FW_COMPONENT(segmented, "Segmented", "components", R"({
     }
     lv_obj_t *l = fw::text(s, fw::ty::label, labels[i].c_str(), t.text_dim);
     lv_obj_remove_flag(l, LV_OBJ_FLAG_CLICKABLE);
+    lv_label_set_long_mode(l, LV_LABEL_LONG_MODE_CLIP);  // one line at the type box (a new label wraps: font height)
+    lv_obj_set_height(l, fw::style(fw::ty::label).box);
     lv_obj_set_style_text_color(l, t.text, ST_ON);  // chosen = full text colour (docs)
     lv_obj_set_style_text_color(l, fw::st::disabled_ink(t), ST_OFF);
     lv_obj_set_style_text_color(l, fw::st::disabled_on_fill(t), ST_ON | ST_OFF);  // text-mute fails 3:1 on the plate
@@ -194,28 +200,32 @@ FW_COMPONENT(segmented, "Segmented", "components", R"({
   for (int w : ws) W += w;
   lv_obj_set_size(box, W, h);
 
-  // place: the box border eats `hair` on each end, so the end segments are hair narrower and every separator sits at
-  // a box x that is a sum of grid widths
-  const int ih = h - 2 * hair;
+  // place: every segment is a grid box (x = a sum of grid widths, full height); the box line is a ring child drawn
+  // over them (below), so it sits on the box edge and nothing inside is pushed off the grid by it
   int x = 0;
   for (int i = 0; i < n; i++) {
-    const int w = ws[i] - (i == 0 ? hair : 0) - (i == n - 1 ? hair : 0);
+    const int w = ws[i];
     lv_obj_t *s = segs[i];
     lv_obj_set_pos(s, x, 0);
-    lv_obj_set_size(s, w, ih);
+    lv_obj_set_size(s, w, h);
     lv_obj_center(labs[i]);
-    // plate over the whole segment incl. its separator (children start inside the border: x = -hair)
+    // plates cover the whole segment incl. its separator (children start after the separator: x = -hair). On the
+    // box's outer sides the line-hi ring is 2 hairlines wide: the box line covers the outer one, so the chosen ring
+    // shows just inside the box line (docs outline-offset -hair); on the separator sides it is 1 hairline
     const int px0 = i > 0 ? -hair : 0, pw = w;
-    const auto TBR = (lv_border_side_t) (LV_BORDER_SIDE_TOP | LV_BORDER_SIDE_BOTTOM | LV_BORDER_SIDE_RIGHT);
-    const auto TBL = (lv_border_side_t) (LV_BORDER_SIDE_TOP | LV_BORDER_SIDE_BOTTOM | LV_BORDER_SIDE_LEFT);
-    if (n == 1) plate(s, px0, pw, ih, rp, LV_BORDER_SIDE_FULL);
+    const auto TB = (lv_border_side_t) (LV_BORDER_SIDE_TOP | LV_BORDER_SIDE_BOTTOM);
+    if (n == 1) plate(s, px0, pw, h, R, LV_BORDER_SIDE_FULL, ring, true);
     else if (i == 0) {
-      plate(s, px0, pw, ih, rp, LV_BORDER_SIDE_FULL);
-      plate(s, px0 + rp, pw - rp, ih, 0, TBR);  // squares the inner corners
+      plate(s, px0, pw, h, R, LV_BORDER_SIDE_FULL, ring, true);
+      plate(s, px0 + R, pw - R, h, 0, TB, ring, true);  // squares the inner corners
     } else if (i == n - 1) {
-      plate(s, px0, pw, ih, rp, LV_BORDER_SIDE_FULL);
-      plate(s, px0, pw - rp, ih, 0, TBL);
-    } else plate(s, px0, pw, ih, 0, LV_BORDER_SIDE_FULL);
+      plate(s, px0, pw, h, R, LV_BORDER_SIDE_FULL, ring, true);
+      plate(s, px0, pw - R, h, 0, TB, ring, true);
+    } else plate(s, px0, pw, h, 0, TB, ring, true);
+    if (n > 1) {  // the separator sides, 1 hairline
+      const int sides = (i > 0 ? LV_BORDER_SIDE_LEFT : 0) | (i < n - 1 ? LV_BORDER_SIDE_RIGHT : 0);
+      plate(s, px0, pw, h, 0, (lv_border_side_t) sides, hair, false);
+    }
     lv_obj_move_foreground(labs[i]);
     if (off) lv_obj_add_state(s, ST_OFF);
     x += w;
@@ -234,5 +244,15 @@ FW_COMPONENT(segmented, "Segmented", "components", R"({
       fw::sound(o, fw::st::TAP_SOUND);
     }, nullptr);
   }
+  // the box line: a ring on the box edge over the segments (their press / chosen fill runs under it)
+  lv_obj_t *rg = lv_obj_create(box);
+  lv_obj_remove_style_all(rg);
+  lv_obj_remove_flag(rg, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
+  lv_obj_add_flag(rg, LV_OBJ_FLAG_IGNORE_LAYOUT);
+  lv_obj_set_size(rg, W, h);
+  lv_obj_set_style_radius(rg, R, 0);
+  lv_obj_set_style_border_width(rg, hair, 0);
+  lv_obj_set_style_border_color(rg, t.line, 0);
+  lv_obj_set_style_border_opa(rg, LV_OPA_COVER, 0);
   choose(box, d->chosen);
 }

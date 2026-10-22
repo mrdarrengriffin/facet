@@ -120,7 +120,8 @@ FW_COMPONENT(card, "Card", "components", R"({
   lv_obj_set_flex_flow(top, LV_FLEX_FLOW_ROW);
   lv_obj_set_flex_align(top, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
   lv_obj_t *lab = box(top);
-  lv_obj_set_size(lab, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+  // fixed height (icon 16 / 24 = label box): a content height would follow the label's caps translate (15 at 480)
+  lv_obj_set_size(lab, LV_SIZE_CONTENT, std::max<int>(fw::ic::icon, fw::style(fw::ty::label).box));
   lv_obj_set_flex_grow(lab, 1);
   lv_obj_set_flex_flow(lab, LV_FLEX_FLOW_ROW);
   lv_obj_set_flex_align(lab, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
@@ -129,6 +130,10 @@ FW_COMPONENT(card, "Card", "components", R"({
   if (strcmp(ic, "none")) fw::icon(lab, ("screen-" + std::string(ic)).c_str(), fw::ic::icon, dim);
   lv_obj_t *l = fw::text(lab, fw::ty::label, p["label"] | "Weather", dim);
   lv_obj_remove_flag(l, LV_OBJ_FLAG_CLICKABLE);
+  // one line at the type box (16 / 24): a new label is LONG_WRAP, so fw::text_style leaves its height to the font's
+  // line height (17 at 480), which made the row 17 tall and pushed the icon off the grid
+  lv_label_set_long_mode(l, LV_LABEL_LONG_MODE_DOTS);
+  lv_obj_set_height(l, fw::style(fw::ty::label).box);
   if (accent) {
     lv_obj_t *dot = box(lab);
     lv_obj_set_size(dot, fw::sp::s2, fw::sp::s2);
@@ -140,7 +145,7 @@ FW_COMPONENT(card, "Card", "components", R"({
   if (!off && strcmp(pv, "none")) fw::icon(top, pv, fw::ic::card, t.text_dim);
 
   lv_obj_t *grow = box(c);
-  lv_obj_set_width(grow, 1);
+  lv_obj_set_width(grow, 0);
   lv_obj_set_flex_grow(grow, 1);
 
   const int inner = fw::lay::card_w - 2 * fw::lay::card_pad;
@@ -148,13 +153,18 @@ FW_COMPONENT(card, "Card", "components", R"({
     lv_obj_t *tx = fw::text(c, fw::ty::title, p["text"] | "", t.text, inner);
     lv_obj_remove_flag(tx, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_update_layout(tx);
-    const int two = 2 * fw::style(fw::ty::title).box;
-    if (lv_obj_get_height(tx) > two) {
-      lv_label_set_long_mode(tx, LV_LABEL_LONG_MODE_DOTS);
-      lv_obj_set_height(tx, two);
-    }
+    // a wrapped label is its lines' height (the last line = the font line height, 26 / 37), not a whole number of
+    // type boxes: set it to 1 or 2 boxes (28 / 40 each) so the text box keeps to the grid
+    const int bx = fw::style(fw::ty::title).box, lines = (lv_obj_get_height(tx) + bx - 1) / bx;
+    if (lines > 2) lv_label_set_long_mode(tx, LV_LABEL_LONG_MODE_DOTS);
+    lv_obj_set_height(tx, std::min(lines, 2) * bx);
   } else {
-    lv_obj_t *v = fw::text(c, fw::ty::value, off ? fw::st::PLACEHOLDER : (p["value"] | ""),
+    // the value's line box (64 / 44) on the grid; the label inside it is pulled up by text_style to centre the caps
+    // (translate -6 at 720), content centred in an on-grid box
+    lv_obj_t *vb = box(c);
+    lv_obj_set_size(vb, inner, fw::style(fw::ty::value).box);
+    lv_obj_add_flag(vb, LV_OBJ_FLAG_OVERFLOW_VISIBLE);  // the pulled-up label must not clip
+    lv_obj_t *v = fw::text(vb, fw::ty::value, off ? fw::st::PLACEHOLDER : (p["value"] | ""),
                            off ? fw::st::unavailable_ink(t) : accent ? t.accent_text : t.text);
     lv_obj_remove_flag(v, LV_OBJ_FLAG_CLICKABLE);
     lv_label_set_long_mode(v, LV_LABEL_LONG_MODE_DOTS);
@@ -163,7 +173,7 @@ FW_COMPONENT(card, "Card", "components", R"({
   }
 
   lv_obj_t *gap = box(c);
-  lv_obj_set_size(gap, 1, fw::sp::s9);  // value box bottom = card-value-bottom (88 / 56) from the card edge
+  lv_obj_set_size(gap, 0, fw::sp::s9);  // value box bottom = card-value-bottom (88 / 56) from the card edge
 
   const char *sub = off ? fw::st::UNAVAILABLE_TEXT : (p["sub"] | "");
   lv_obj_t *s = fw::text(c, fw::ty::body, sub, off ? fw::st::unavailable_note(t) : tone(p["tone"] | "dim"));
