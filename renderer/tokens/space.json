@@ -85,7 +85,14 @@
       "clock-tick": { "v": 16, "1x": 12, "use": "Clock / Ring: hour tick length (docs 16)" },
       "clock-tick-major": { "v": 24, "1x": 16, "use": "Clock / Ring: quarter tick length (docs 24)" },
       "clock-numeral-r": { "v": 224, "1x": 148, "use": "Clock / Analogue: the numerals' centres from the centre (docs dial / 2 - 22 - 34)" },
-      "clock-date-y": { "v": 104, "1x": 68, "use": "Clock / Analogue: the date line's top below the centre (docs 466 - 360 = 106, onto the grid)" }
+      "clock-date-y": { "v": 104, "1x": 68, "use": "Clock / Analogue: the date line's top below the centre (docs 466 - 360 = 106, onto the grid)" },
+      "row-pad": { "v": 16, "1x": 12, "use": "Pull request row (docs listRow): padding inside the hairline (docs size row-pad 16)" },
+      "pr-row-h": { "v": 144, "1x": 96, "use": "Pull request row height: meta, a two-line title, chips (docs size pr-row-h 144)" },
+      "check-row-h": { "v": 32, "1x": 20, "use": "Check row height (docs size check-row-h 32 / layout 1x 20)" },
+      "check-state-w": { "v": 64, "1x": 44, "use": "Check row: the state word's right-aligned slot (docs 64)" },
+      "empty-h": { "v": 136, "1x": 92, "use": "Empty state box height (docs 136)" },
+      "qr": { "v": 176, "1x": 116, "use": "QR block: the code's square (docs size qr 176)" },
+      "qr-block-w": { "v": 208, "1x": 140, "use": "QR block width: the code + the gutter each side (docs size qr-block-w 208)" }
     },
     "radius": {
       "tile": { "v": 0, "1x": 0, "use": "tiles" },
