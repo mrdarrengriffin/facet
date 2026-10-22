@@ -102,6 +102,74 @@ lv_obj_t *underline(lv_obj_t *b, int w, int h) {
 }
 }  // namespace
 
+namespace {
+// structural props (a change = the contents again, fw::refill); state + label move in place
+std::string sig(fw::Props p) {
+  return std::string(p["kind"] | "primary") + "|" + (p["icon"] | "none") + "|" + std::to_string((int) (p["width"] | 0));
+}
+lv_obj_t *label_of(lv_obj_t *b) {
+  for (int i = (int) lv_obj_get_child_count(b) - 1; i >= 0; i--)
+    if (lv_obj_check_type(lv_obj_get_child(b, i), &lv_label_class)) return lv_obj_get_child(b, i);
+  return nullptr;
+}
+// the forced state from props; animate = the state looks fade (fw::st::set_state; a forced press shows at once)
+void set_state(lv_obj_t *b, const char *state, bool animate) {
+  const bool pressed = !strcmp(state, "pressed") || !strcmp(state, "active-pressed");
+  const bool active = !strcmp(state, "active") || !strcmp(state, "active-pressed");
+  if (pressed != lv_obj_has_state(b, LV_STATE_PRESSED)) lv_obj_set_state(b, LV_STATE_PRESSED, pressed);
+  fw::st::set_state(b, LV_STATE_CHECKED, active, animate);
+  fw::st::set_state(b, ST_OFF, !strcmp(state, "disabled"), animate);
+}
+void fill(lv_obj_t *b, fw::Props p) {
+  const char *kn = p["kind"] | "primary";
+  const char *state = p["state"] | "default";
+  const char *txt = p["label"] | "Start";
+  const int width = p["width"] | 0;  // dp, 0 = hug the label
+  const Kind k = kind_of(kn);
+
+  lv_obj_remove_style_all(b);
+  fw::shape(b, sig(p));
+  lv_obj_add_flag(b, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_STATE_TRICKLE));
+  lv_obj_remove_flag(b, LV_OBJ_FLAG_SCROLLABLE);
+  lv_obj_set_height(b, fw::touch::button_h);
+  lv_obj_set_width(b, width > 0 ? fw::px(width) : LV_SIZE_CONTENT);
+  lv_obj_set_style_radius(b, fw::rad::button, 0);
+  // 1 px border on every kind (transparent on primary/ghost) inside the box; label at button-pad-x (space 7)
+  lv_obj_set_style_border_width(b, fw::stroke::hair, 0);
+  lv_obj_set_style_pad_hor(b, fw::sp::s7 - fw::stroke::hair, 0);
+  lv_obj_set_style_pad_column(b, fw::sp::s2, 0);  // button-gap: icon to label
+  lv_obj_set_flex_flow(b, LV_FLEX_FLOW_ROW);
+  lv_obj_set_flex_align(b, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+  box_looks(b, k);
+  if (!strcmp(kn, "primary")) fw::focus_ring(b);  // active: the focus ring atom (core/atoms.h, states.json focus)
+
+  const char *ic = p["icon"] | "none";
+  if (strcmp(ic, "none")) icon(b, ic, k);
+  lv_obj_t *l = fw::text(b, fw::ty::c_label, txt, k.normal.fg);
+  lv_obj_remove_flag(l, LV_OBJ_FLAG_CLICKABLE);
+  fg_looks(l, k);
+  if (width > 0) {
+    lv_obj_set_flex_grow(l, 1);
+    lv_obj_set_style_text_align(l, LV_TEXT_ALIGN_CENTER, 0);
+  } else {  // fit8: label box = text width rounded up to the grid, so the button stays on the grid
+    lv_obj_update_layout(l);
+    const int w = lv_obj_get_width(l), g = fw::sp::GRID;
+    lv_obj_set_width(l, (w + g - 1) / g * g);
+    lv_obj_set_style_text_align(l, LV_TEXT_ALIGN_CENTER, 0);  // the rounding slack splits both sides, not all after the text
+  }
+
+  // active marks: corner ticks atom on the border box (all four, layout corner-tick x stroke corner-tick, shown while CHECKED)
+  if (!strcmp(kn, "secondary")) fw::corner_ticks(b, fw::Corners::all);
+  else if (!strcmp(kn, "ghost")) {  // underline: space 9 wide, stroke edge high, space 2 above the padding box bottom
+    lv_obj_align(underline(b, fw::sp::s9, fw::stroke::edge), LV_ALIGN_BOTTOM_MID, 0, -fw::sp::s2);
+  }
+
+  set_state(b, state, false);
+
+
+}
+}  // namespace
+
 FW_COMPONENT(button, "Button", "components", R"({
   "about": "A text button in four kinds (primary, secondary, outline, ghost), with an optional icon.",
   "frame": [240, 112],
@@ -140,60 +208,39 @@ FW_COMPONENT(button, "Button", "components", R"({
     {"label": "primary · fixed width", "props": {"width": 192}}
   ]
 })") {
-  const char *kn = p["kind"] | "primary";
-  const char *state = p["state"] | "default";
-  const char *txt = p["label"] | "Start";
-  const int width = p["width"] | 0;  // dp, 0 = hug the label
-  const Kind k = kind_of(kn);
-
   lv_obj_t *b = lv_obj_create(parent);
-  lv_obj_remove_style_all(b);
-  lv_obj_add_flag(b, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_STATE_TRICKLE));
-  lv_obj_remove_flag(b, LV_OBJ_FLAG_SCROLLABLE);
-  lv_obj_set_height(b, fw::touch::button_h);
-  lv_obj_set_width(b, width > 0 ? fw::px(width) : LV_SIZE_CONTENT);
-  lv_obj_set_style_radius(b, fw::rad::button, 0);
-  // 1 px border on every kind (transparent on primary/ghost) inside the box; label at button-pad-x (space 7)
-  lv_obj_set_style_border_width(b, fw::stroke::hair, 0);
-  lv_obj_set_style_pad_hor(b, fw::sp::s7 - fw::stroke::hair, 0);
-  lv_obj_set_style_pad_column(b, fw::sp::s2, 0);  // button-gap: icon to label
-  lv_obj_set_flex_flow(b, LV_FLEX_FLOW_ROW);
-  lv_obj_set_flex_align(b, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-  box_looks(b, k);
-  if (!strcmp(kn, "primary")) fw::focus_ring(b);  // active: the focus ring atom (core/atoms.h, states.json focus)
-
-  const char *ic = p["icon"] | "none";
-  if (strcmp(ic, "none")) icon(b, ic, k);
-  lv_obj_t *l = fw::text(b, fw::ty::c_label, txt, k.normal.fg);
-  lv_obj_remove_flag(l, LV_OBJ_FLAG_CLICKABLE);
-  fg_looks(l, k);
-  if (width > 0) {
-    lv_obj_set_flex_grow(l, 1);
-    lv_obj_set_style_text_align(l, LV_TEXT_ALIGN_CENTER, 0);
-  } else {  // fit8: label box = text width rounded up to the grid, so the button stays on the grid
-    lv_obj_update_layout(l);
-    const int w = lv_obj_get_width(l), g = fw::sp::GRID;
-    lv_obj_set_width(l, (w + g - 1) / g * g);
-    lv_obj_set_style_text_align(l, LV_TEXT_ALIGN_CENTER, 0);  // the rounding slack splits both sides, not all after the text
-  }
-
-  // active marks: corner ticks atom on the border box (all four, layout corner-tick x stroke corner-tick, shown while CHECKED)
-  if (!strcmp(kn, "secondary")) fw::corner_ticks(b, fw::Corners::all);
-  else if (!strcmp(kn, "ghost")) {  // underline: space 9 wide, stroke edge high, space 2 above the padding box bottom
-    lv_obj_align(underline(b, fw::sp::s9, fw::stroke::edge), LV_ALIGN_BOTTOM_MID, 0, -fw::sp::s2);
-  }
-
-  if (!strcmp(state, "pressed")) lv_obj_add_state(b, LV_STATE_PRESSED);
-  if (!strcmp(state, "active")) lv_obj_add_state(b, LV_STATE_CHECKED);
-  if (!strcmp(state, "active-pressed")) lv_obj_add_state(b, (lv_state_t) (LV_STATE_CHECKED | LV_STATE_PRESSED));
-  if (!strcmp(state, "disabled")) lv_obj_add_state(b, ST_OFF);
+  fill(b, p);
 
   // a real tap (LVGL drops CLICKED after a scroll, like the docs' "moved > 8 px stays silent")
   fw::st::on_tap(b, [](lv_event_t *e) {  // blocked on finger down, a real tap on CLICKED (states.json)
     if (!fw::st::tap_now(e)) return;
     auto *o = (lv_obj_t *) lv_event_get_current_target(e);
-    const char *d = lv_label_get_text((lv_obj_t *) lv_event_get_user_data(e));
+    const char *d = lv_label_get_text(label_of(o));  // looked up: an update may have made the label again
     if (lv_obj_has_state(o, ST_OFF)) fw::st::blocked(o, d);
     else { fw::emit(o, "tap", d); fw::sound(o, "tap"); }
-  }, l);
+  }, nullptr);
+}
+
+// Update path: state (default / pressed / active / disabled) fades in place through fw::st::set_state, a new label
+// text is set in place (a hug button re-fits its grid width); kind, icon or width = the contents again (fw::refill,
+// snap). Silent.
+FW_UPDATE(button) {
+  if (!fw::shape(root, sig(p))) {
+    fw::refill(root);
+    fill(root, p);
+    return true;
+  }
+  lv_obj_t *l = label_of(root);
+  const char *txt = p["label"] | "Start";
+  if (l && fw::cased(fw::ty::c_label, txt) != lv_label_get_text(l)) {
+    fw::set_text(l, fw::ty::c_label, txt);
+    if (!((p["width"] | 0) > 0)) {
+      lv_obj_set_width(l, LV_SIZE_CONTENT);
+      lv_obj_update_layout(l);
+      const int w = lv_obj_get_width(l), g = fw::sp::GRID;
+      lv_obj_set_width(l, (w + g - 1) / g * g);
+    }
+  }
+  set_state(root, p["state"] | "default", true);
+  return true;
 }

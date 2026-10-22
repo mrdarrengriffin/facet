@@ -41,6 +41,24 @@ lv_color_t colour_of(const char *c) {
 }
 }  // namespace
 
+namespace {
+// style + text on the label (build: a new one; update: the same one, restyled in place)
+void fill(lv_obj_t *l, fw::Props p) {
+  const fw::ty::Id s = type_of(p["type"] | "meta");
+  const char *txt = p["text"] | "";
+  if (!txt[0]) txt = fw::style(s).sample;
+  lv_obj_set_width(l, LV_SIZE_CONTENT);  // a new label's width (the grid width below is set from it)
+  fw::text_style(l, s);
+  lv_obj_set_style_text_color(l, colour_of(p["colour"] | "text"), 0);
+  fw::set_text(l, s, txt);
+  lv_obj_remove_flag(l, LV_OBJ_FLAG_CLICKABLE);
+  lv_obj_update_layout(l);
+  const int g = fw::sp::GRID, w = lv_obj_get_width(l);
+  lv_obj_set_width(l, (w + g - 1) / g * g);  // fit8: the box on the grid, the text at its left
+  lv_obj_set_height(l, fw::style(s).box);    // the style's line box (fw::text leaves default labels at content height)
+}
+}  // namespace
+
 FW_COMPONENT(label, "Label", "components", R"({
   "about": "One line of text in a component type style and colour.",
   "frame": [320, 80],
@@ -67,13 +85,11 @@ FW_COMPONENT(label, "Label", "components", R"({
     {"label": "caps-sm · accent-text", "props": {"type": "caps-sm", "colour": "accent-text", "text": "3 working"}}
   ]
 })") {
-  const fw::ty::Id s = type_of(p["type"] | "meta");
-  const char *txt = p["text"] | "";
-  if (!txt[0]) txt = fw::style(s).sample;
-  lv_obj_t *l = fw::text(parent, s, txt, colour_of(p["colour"] | "text"));
-  lv_obj_remove_flag(l, LV_OBJ_FLAG_CLICKABLE);
-  lv_obj_update_layout(l);
-  const int g = fw::sp::GRID, w = lv_obj_get_width(l);
-  lv_obj_set_width(l, (w + g - 1) / g * g);  // fit8: the box on the grid, the text at its left
-  lv_obj_set_height(l, fw::style(s).box);    // the style's line box (fw::text leaves default labels at content height)
+  fill(lv_label_create(parent), p);
+}
+
+// Update path: text, type and colour restyle the same label in place (snap), silent.
+FW_UPDATE(label) {
+  fill(root, p);
+  return true;
 }

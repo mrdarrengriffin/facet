@@ -1,9 +1,11 @@
 // Foundations > Layout & devices: tokens/layout.json (via the generated layout_gen.h) drawn by the panel renderer at
-// true size. Sections: the screen overlay (grid, inset, header zone, content area, Home columns; layer chips under the
-// screen toggle each layer), the header zone, groups and rows on a sample screen, overlays (sheet + toast), the devices
-// with their density and size class (to scale in dp), the size classes (sketched at 1/4) and the token table. Values
-// are this build's (device switch = 720 or 480 build); the tables also show the other density. Status (WIP/Done) =
-// this file + tokens/layout.json in git.
+// true size. Sections (labels + abouts from tools/gen_layout.mjs; the rule sections' text = layout.json rules.sections,
+// plain words, no token names on the page): the screen layer by layer (grid, margin, header, content, gutters; chips
+// toggle each layer), then one visual per rule (grid, two sizes, spacing steps, groups, screen frame, touch, nested
+// corners, when the grid may break) built from real components with the grid on top, then sheets and toasts, devices
+// and screen shapes. Values are this build's (device switch = 720 or 480 build), the other screen's in brackets.
+// Status (WIP/Done) = this file + tokens/layout.json in git.
+#include <cmath>
 #include <cstdio>
 #include "fw.h"
 
@@ -77,6 +79,9 @@ lv_obj_t *screen_box(lv_obj_t *parent) {
   return s;
 }
 // a sample header: back, the screen label, the time slot at the right edge (one row at y = inset)
+void legend(lv_obj_t *l, lv_color_t c, bool filled, const char *name, int v, int v1x, const char *use);
+// a plain key line: swatch, name, this build's value of a layout.json token (+ the other screen's), one sentence
+void key(lv_obj_t *l, lv_color_t c, bool filled, const char *name, const char *token, const char *what);
 void legend(lv_obj_t *l, lv_color_t c, bool filled, const char *name, int v, int v1x, const char *use) {
   lv_obj_t *e = entry(l, sp::s1);
   lv_obj_t *r = row(e, sp::s4);
@@ -88,7 +93,8 @@ void legend(lv_obj_t *l, lv_color_t c, bool filled, const char *name, int v, int
   snprintf(b, sizeof b, "%s", name);
   text(r, ty::c_caps_sm, b, T->text);
   if (v >= 0) {
-    snprintf(b, sizeof b, "%d px · %d at %s", is1x() ? v1x : v, is1x() ? v : v1x, other_den());
+    if (v == v1x) snprintf(b, sizeof b, "%d px", v);
+    else snprintf(b, sizeof b, "%d px · %d at %s", is1x() ? v1x : v, is1x() ? v : v1x, other_den());
     text(r, ty::c_meta, b, T->text_dim);
   }
   if (use && *use) text(e, ty::c_meta, use, T->text_dim, inner_w());
@@ -97,12 +103,9 @@ const lyt::Token *tok(const char *name) {
   for (int i = 0; i < lyt::N_TOKENS; i++) if (!strcmp(lyt::TOKENS[i].name, name)) return &lyt::TOKENS[i];
   return nullptr;
 }
-void legend_tok(lv_obj_t *l, lv_color_t c, bool filled, const char *name) {
-  const lyt::Token *k = tok(name);
-  char n[48];
-  snprintf(n, sizeof n, "lay::%s", name);
-  for (char *p = n; *p; p++) if (*p == '-') *p = '_';
-  if (k) legend(l, c, filled, n, k->v, k->v1x, k->use);
+void key(lv_obj_t *l, lv_color_t c, bool filled, const char *name, const char *token, const char *what) {
+  const lyt::Token *k = tok(token);
+  legend(l, c, filled, name, k ? k->v : -1, k ? k->v1x : 0, what);
 }
 // ---- Real components (Darren, round 2): every example is built by the approved components' own build functions,
 // called through the registry (fw::find + Component::build, as List row builds Toggle and Dial builds Button); a part
@@ -212,6 +215,22 @@ void inset_bands(lv_obj_t *L) {
   for (auto &b : bands) mark_box(L, b[0], b[1], b[2], b[3], T->accent);
 }
 
+// the grid: text-coloured hairlines every grid step (sp::GRID), every lay::group a stronger one, at component tokens
+// grid.minor / grid.major (colour.json): drawn on top of the real components and see-through on them
+lv_opa_t grid_opa(bool major) { return (lv_opa_t) lroundf((major ? fw::tokens::comp::grid_major : fw::tokens::comp::grid_minor) * 255); }
+void grid_lines(lv_obj_t *L, int w, int h) {
+  for (int x = sp::GRID; x < w; x += sp::GRID) {
+    lv_obj_t *v = rect(L, x, 0, stroke::hair, h);
+    fill(v, T->text);
+    lv_obj_set_style_bg_opa(v, grid_opa(x % lay::group == 0), 0);
+  }
+  for (int y = sp::GRID; y < h; y += sp::GRID) {
+    lv_obj_t *o = rect(L, 0, y, w, stroke::hair);
+    fill(o, T->text);
+    lv_obj_set_style_bg_opa(o, grid_opa(y % lay::group == 0), 0);
+  }
+}
+
 // ---- Screen overlay: the real Home (Header + Cards) with toggleable token layers on top -----------------------------
 enum Layer { GRID, INSET, HEADER, CONTENT, GUTTER, N_LAYERS };
 const char *LAYER_NAMES[N_LAYERS] = {"grid", "inset", "header", "content", "gutter"};
@@ -256,12 +275,7 @@ void screen(lv_obj_t *parent) {
   lv_obj_update_layout(s);
   // token layers on top
   lv_obj_t *L = o->layer[GRID] = layer(s);
-  const lv_color_t minor = lv_color_mix(T->line, T->bg, LV_OPA_50);
-  for (int i = 1; i * sp::GRID < S; i++) {
-    const bool maj = (i * sp::GRID) % lay::group == 0;
-    fill(rect(L, i * sp::GRID, 0, stroke::hair, S), maj ? T->line : minor);
-    fill(rect(L, 0, i * sp::GRID, S, stroke::hair), maj ? T->line : minor);
-  }
+  grid_lines(L, S, S);
   inset_bands(o->layer[INSET] = layer(s));
   L = o->layer[GUTTER] = layer(s);  // the gutters between the cards, measured from the real cards
   lv_obj_t *c0 = lv_obj_get_child(cards, 0), *c3 = lv_obj_get_child(cards, 3);
@@ -281,7 +295,7 @@ void screen(lv_obj_t *parent) {
   lv_obj_set_flex_flow(cr, LV_FLEX_FLOW_ROW_WRAP);
   lv_obj_set_style_pad_all(cr, in, 0);
   lv_obj_set_style_pad_row(cr, sp::s3, 0);
-  const lv_color_t sw[N_LAYERS] = {T->line, T->accent, T->accent, T->blue, T->steel};
+  const lv_color_t sw[N_LAYERS] = {T->text, T->accent, T->accent, T->blue, T->steel};
   char b[64];
   for (int i = 0; i < N_LAYERS; i++) {
     lv_obj_t *c = o->chip[i] = box(cr);
@@ -295,6 +309,7 @@ void screen(lv_obj_t *parent) {
     lv_obj_set_size(d, sp::s5, sp::s5);
     if (i == CONTENT || i == HEADER) outline(d, sw[i], stroke::edge);
     else fill(d, sw[i]);
+    if (i == GRID) lv_obj_set_style_bg_opa(d, grid_opa(true), 0);  // the swatch = a major grid line
     switch (i) {
       case GRID: snprintf(b, sizeof b, "Grid %d", sp::GRID); break;
       case INSET: snprintf(b, sizeof b, "Inset %d", in); break;
@@ -336,17 +351,16 @@ void header_zone(lv_obj_t *parent) {
   fill(rect(L, in, lay::top, lay::content_w, stroke::edge), T->line_hi);
   lv_obj_t *l = column(col, 0, S);
   lv_obj_set_style_pad_hor(l, sp::s7, 0);
-  legend(l, T->accent, true, "lay::inset", tok("inset")->v, tok("inset")->v1x, "the header row starts at y = inset, x = inset");
-  legend_tok(l, T->accent, false, "row");
-  legend(l, T->steel, false, "Back button (real Header component)", tok("row")->v, tok("row")->v1x,
-         "the real Header builds the real Back button: touch back = the header row, so it fills the row exactly");
-  legend_tok(l, T->blue, false, "header-time-w");
-  legend_tok(l, T->text_dim, false, "back-gap");
-  legend_tok(l, T->text_dim, false, "gutter");
-  const lyt::Derived *g = nullptr;
-  for (int i = 0; i < lyt::N_DERIVED; i++) if (!strcmp(lyt::DERIVED[i].name, "header_gap")) g = &lyt::DERIVED[i];
-  if (g) legend(l, T->blue, true, "header gap (derived)", g->v, g->v1x, g->how);
-  legend(l, T->line_hi, true, "lay::top", tok("top")->v, tok("top")->v1x, tok("top")->use);
+  key(l, T->accent, true, "Margin", "inset", "The same on every side of every screen; the header row starts at its inner corner.");
+  key(l, T->accent, false, "Header row", "row", "Back button, the screen's name and the time, in one row.");
+  key(l, T->steel, false, "Back button", "row", "A square as tall as the header row, so it fills the row exactly.");
+  key(l, T->blue, false, "Time", "header-time-w", "Always at the right end of the row.");
+  key(l, T->text_dim, false, "Back button to name", "back-gap", "");
+  {
+    const lyt::Token *tp = tok("top"), *in = tok("inset"), *rw = tok("row");
+    legend(l, T->blue, true, "Gap under the header", tp->v - in->v - rw->v, tp->v1x - in->v1x - rw->v1x, "");
+  }
+  key(l, T->line_hi, true, "Content starts", "top", "Measured from the top of the screen: the same on every screen.");
 }
 
 // ---- Groups and rows: a settings screen from real List rows -------------------------------------------------------
@@ -392,17 +406,10 @@ void rhythm(lv_obj_t *parent) {
   outline(rect(L, lay::inset, lay::top, lay::content_w, lay::content_h), T->blue, stroke::hair);
   lv_obj_t *l = column(col, 0, lay::screen_w);
   lv_obj_set_style_pad_hor(l, sp::s7, 0);
-  legend_tok(l, T->accent, true, "group");
-  legend_tok(l, T->steel, true, "section-gap");
-  legend(l, T->line, false, "List row (real component)", -1, 0,
-         "four real List rows: value + chevron, toggle (the real Toggle inside), value, chevron; rows touch, so each "
-         "row's top hairline is the divider; height lay::list_row_h (space.json)");
-  legend_tok(l, T->line_hi, false, "more-row-h");  // the real More row
-  char b[320];
-  const int used = 2 * sh - slack + 2 * std::max(0, lay::section_gap - slack) + 4 * lay::list_row_h + std::max(0, lay::group - slack) + lay::more_row_h;
-  snprintf(b, sizeof b, "Section headers are the real Section header (%d px, the title centred; the gaps around it are cut by its %d px centring slack so the visible gaps are the tokens); the more row is the real More row. This fills %d of the %d px content height.", sh, slack, used, lay::content_h);
-  lv_obj_t *e = entry(l);
-  text(e, ty::c_meta, b, T->text_dim, inner_w());
+  key(l, T->accent, true, "Between groups", "group", "The larger gap, after the last row of a group.");
+  key(l, T->steel, true, "Title to its rows", "section-gap", "A small gap: the title belongs to the rows under it.");
+  key(l, T->line, false, "Rows", "more-row-h", "Real rows touching each other; the thin line on top of each is the divider. A list that shows only the first few ends with a \"more\" row (this height).");
+  (void) sh;
 }
 
 // ---- Overlays: sheet + toast positions over the real Home ----------------------------------------------------------
@@ -452,12 +459,218 @@ void overlay(lv_obj_t *parent) {
     }
   lv_obj_t *l = column(col, 0, S);
   lv_obj_set_style_pad_hor(l, sp::s7, 0);
-  legend_tok(l, T->accent, false, "sheet-top");
-  legend_tok(l, T->accent, false, "toast-top");
-  legend_tok(l, T->accent, false, "toast-h");
-  legend_tok(l, T->blue, false, "toast-pad");
+  key(l, T->accent, false, "Sheet starts", "sheet-top", "A sheet covers the screen from here down, edge to edge, with the usual margin inside.");
+  key(l, T->accent, false, "First toast", "toast-top", "Just under the header; a toast at the bottom ends at the bottom margin.");
+  key(l, T->accent, false, "Toast height", "toast-h", "As wide as the content.");
+  key(l, T->blue, false, "Inside a toast", "toast-pad", "The space around its icon and text.");
+}
+
+// ---- Rules (layout.json rules.sections: each a heading + one or two plain sentences = the section label + about; the
+// visual for each is here). Plain words on the page; token names and tables live in the token files.
+// both densities' value of a token (space.json or layout.json), for "48 px (32 at 480)" captions
+const spt::Token *stok(const char *name) {
+  for (int i = 0; i < spt::N_TOKENS; i++) if (!strcmp(spt::TOKENS[i].name, name)) return &spt::TOKENS[i];
+  return nullptr;
+}
+std::string both(int v, int v1x) {
+  char b[48];
+  if (v == v1x) snprintf(b, sizeof b, "%d px", v);
+  else snprintf(b, sizeof b, "%d px (%d at %s)", is1x() ? v1x : v, is1x() ? v : v1x, other_den());
+  return b;
+}
+void caption(lv_obj_t *e, const std::string &s) { text(e, ty::c_meta, s.c_str(), T->text_dim, inner_w()); }
+// a real component on a panel with the grid over it and its box outlined; returns the entry for captions
+lv_obj_t *on_grid(lv_obj_t *l, const char *id, Doc &d, lv_obj_t **out = nullptr) {
+  lv_obj_t *e = entry(l, sp::s3);
+  lv_obj_t *pn = box(e);
+  fill(pn, T->bg);
+  lv_obj_set_style_pad_all(pn, lay::gutter, 0);
+  lv_obj_set_size(pn, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+  lv_obj_t *c = comp(pn, id, d);
+  lv_obj_update_layout(pn);
+  const int cw = lv_obj_get_width(c), ch = lv_obj_get_height(c), G = sp::GRID, P = lay::gutter;
+  const int pw = std::min(inner_w(), (cw + 2 * P + G - 1) / G * G), ph = (ch + 2 * P + G - 1) / G * G;
+  lv_obj_set_size(pn, pw, ph);
+  lv_obj_t *L = rect(pn, -P, -P, pw, ph);  // the panel's own box (its padding moves children in)
+  lv_obj_add_flag(L, LV_OBJ_FLAG_IGNORE_LAYOUT);
+  grid_lines(L, pw, ph);
+  outline(rect(L, P, P, cw, ch), T->accent, stroke::hair);
+  if (out) *out = c;
+  return e;
+}
+void grid_sec(lv_obj_t *l) {
+  {
+    Doc d;
+    d["label"] = "Start";
+    lv_obj_t *e = on_grid(l, "button", d);
+    const spt::Token *k = stok("button-h");
+    caption(e, std::string("A button: ") + (k ? both(k->v, k->v1x) : "") + " tall, as wide as its label rounded up to the grid.");
+  }
+  {
+    Doc d;
+    d["on"] = true;
+    lv_obj_t *e = on_grid(l, "toggle", d);
+    const spt::Token *k = stok("min");
+    caption(e, std::string("A switch: ") + (k ? both(k->v, k->v1x) : "") + " tall; the knob keeps the same gap all round.");
+  }
+  {
+    Doc d;
+    d["icon"] = "bulb", d["trailing"] = "chevron";
+    lv_obj_t *e = on_grid(l, "list_row", d);
+    const spt::Token *k = stok("list-row-h");
+    caption(e, std::string("A row: ") + (k ? both(k->v, k->v1x) : "") + " tall and as wide as the content area.");
+  }
   lv_obj_t *e = entry(l);
-  text(e, ty::c_meta, "Under them: the real Header and Home Cards. The sheet is the real Bottom sheet (shown open; the accent line marks sheet-top); the toasts are the real Toast layer, top (the accent line marks toast-top, the blue box the content inside toast-pad) and bottom (it ends at the bottom inset).", T->text_dim, inner_w());
+  caption(e, "The orange outline is each component's box. The faint lines are the grid, every 8 px here at 720 (every 4 px at 480), with a stronger line every group.");
+}
+// today's two screens side by side at 1/4 of their pixels, drawn from the layout tokens of each size: every edge is
+// scaled from its real position (not each size on its own), so equal gaps stay equal; the frame line sits outside
+void sizes_sec(lv_obj_t *l) {
+  lv_obj_t *e = entry(l, sp::s3);
+  lv_obj_t *r = row(e, sp::s7);
+  lv_obj_set_flex_align(r, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_END, LV_FLEX_ALIGN_START);
+  const spt::Token *cw = stok("card-w"), *chh = stok("card-h");
+  const lyt::Token *in = tok("inset"), *gu = tok("gutter"), *top = tok("top"), *rw = tok("row");
+  lv_obj_t *thumbs[2];
+  for (int k = 0; k < 2; k++) {
+    const bool big = k == 0;
+    auto v = [&](const auto *t) { return big ? t->v : t->v1x; };
+    auto X = [](int px_) { return (int) std::lround(px_ / 4.0); };
+    const int S = big ? 720 : 480, i = v(in), g = v(gu), tp = v(top), rh = v(rw), w = v(cw), h = v(chh);
+    lv_obj_t *c = column(r, sp::s3, X(S));
+    lv_obj_t *sc = thumbs[k] = box(c);
+    lv_obj_set_size(sc, X(S), X(S));
+    fill(sc, T->bg);
+    lv_obj_set_style_outline_width(sc, stroke::hair, 0);
+    lv_obj_set_style_outline_color(sc, (big != is1x()) ? T->accent : T->line_hi, 0);
+    auto part = [&](int x0, int y0, int x1, int y1, lv_color_t col) { fill(rect(sc, X(x0), X(y0), X(x1) - X(x0), X(y1) - X(y0)), col); };
+    part(i, i, S - i, i + rh, T->line);
+    for (int q = 0; q < 4; q++) {
+      const int x0 = i + (q % 2) * (w + g), y0 = tp + (q / 2) * (h + g);
+      part(x0, y0, x0 + w, y0 + h, T->surface_press);
+    }
+    text(c, ty::c_caps_sm, big ? "720 x 720" : "480 x 480", T->text);
+    text(c, ty::c_meta, big ? "Waveshare, Shelly" : "Guition", T->text_dim, X(S));
+  }
+  lv_obj_t *n = entry(l);
+  caption(n, "Today's two panels at a quarter of their pixels, drawn from their own layout values: the same margin, header and two columns of cards. The outlined one is the screen this page is built for; switch the device in the sidebar to see the other.");
+  lv_obj_update_layout(l);
+  for (lv_obj_t *s : thumbs) {
+    lv_area_t a;
+    lv_obj_get_coords(s, &a);
+    char b[48];
+    snprintf(b, sizeof b, "%d,%d,%d,%d", (int) a.x1, (int) a.y1, (int) lv_area_get_width(&a), (int) lv_area_get_height(&a));
+    emit(s, "thumb", b);  // for tests measuring the gaps (fw_events)
+  }
+}
+// the spacing steps at true size (each distinct step once)
+void spacing_sec(lv_obj_t *l) {
+  lv_obj_t *e = entry(l, sp::s3);
+  lv_obj_t *r = row(e, sp::s5);
+  lv_obj_set_flex_align(r, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_END, LV_FLEX_ALIGN_END);
+  int last = -1;
+  for (int i = 0; i < spt::N_TOKENS; i++) {
+    const spt::Token &k = spt::TOKENS[i];
+    if (strcmp(k.group, "space")) continue;
+    const int v = is1x() ? k.v1x : k.v;
+    if (v == last) continue;
+    last = v;
+    lv_obj_t *c = column(r, sp::s2, LV_SIZE_CONTENT);
+    lv_obj_set_flex_align(c, LV_FLEX_ALIGN_END, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_t *sq = box(c);
+    lv_obj_set_size(sq, v, v);
+    fill(sq, T->accent);
+    char b[8];
+    snprintf(b, sizeof b, "%d", v);
+    text(c, ty::c_meta, b, T->text_dim);
+  }
+  lv_obj_t *n = entry(l);
+  caption(n, "Every step at true size, in pixels. Inside a status chip the dot and the text are one small step apart; inside a card the content keeps a large step from the edge.");
+  Doc d;
+  on_grid(l, "status_chip", d);
+}
+// touch: real controls with their touch area tinted
+void touch_sec(lv_obj_t *l) {
+  const spt::Token *mn = stok("min"), *rd = stok("radio");
+  {
+    lv_obj_t *e = entry(l, sp::s3);
+    lv_obj_t *pn = box(e);
+    lv_obj_set_size(pn, touch::min * 3, touch::min);
+    Doc d;
+    lv_obj_t *c = comp(pn, "radio", d);
+    lv_obj_update_layout(pn);
+    lv_obj_align(c, LV_ALIGN_LEFT_MID, (touch::min - lv_obj_get_width(c)) / 2, 0);
+    mark_box(pn, 0, 0, touch::min, touch::min, T->accent);
+    caption(e, std::string("A radio is drawn ") + (rd ? both(rd->v, rd->v1x) : "") + " wide, but you can tap anywhere in the tinted square: " + (mn ? both(mn->v, mn->v1x) : "") + ".");
+  }
+  {
+    Doc d;
+    d["label"] = "Start";
+    lv_obj_t *e = on_grid(l, "button", d);
+    const spt::Token *k = stok("button-h");
+    caption(e, std::string("Buttons and rows are bigger still: ") + (k ? both(k->v, k->v1x) : "") + " tall.");
+  }
+}
+// nested corners: right (inner = outer - gap), square in square, and the mistake (same corner inside)
+void corners_sec(lv_obj_t *l) {
+  lv_obj_t *e = entry(l, sp::s3);
+  lv_obj_t *r = row(e, sp::s7);
+  lv_obj_set_flex_align(r, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
+  const int W = (inner_w() - 2 * sp::s7) / 3 / sp::GRID * sp::GRID, gap = sp::s5, R = rad::ring + gap;
+  struct { int outer, inner; const char *what; lv_color_t edge; } S[] = {
+      {R, R - gap, "Inner corner = outer corner minus the gap", T->line_hi},
+      {0, 0, "Square outside, square inside", T->line_hi},
+      {R, R, "Not this: the same corner inside, the gap bulges", T->warn},
+  };
+  for (auto &s : S) {
+    lv_obj_t *c = column(r, sp::s3, W);
+    lv_obj_t *o = box(c);
+    lv_obj_set_size(o, W, W * 3 / 4 / sp::GRID * sp::GRID);
+    fill(o, T->surface);
+    outline(o, s.edge, stroke::hair);
+    lv_obj_set_style_radius(o, s.outer, 0);
+    lv_obj_set_style_pad_all(o, gap, 0);
+    lv_obj_t *in = box(o);
+    lv_obj_set_size(in, LV_PCT(100), LV_PCT(100));
+    fill(in, T->surface_press);
+    lv_obj_set_style_radius(in, s.inner, 0);
+    text(c, ty::c_meta, s.what, T->text_dim, W);
+  }
+  lv_obj_t *n = entry(l);
+  caption(n, "The selected option in a switcher follows the same rule: its corner is the box's corner minus the border.");
+  Doc d;
+  on_grid(l, "segmented", d);
+}
+// breaks: a hairline row, a centred label, a text line box
+void breaks_sec(lv_obj_t *l) {
+  {
+    Doc d;
+    d["icon"] = "speaker", d["trailing"] = "value", d["value"] = "40%";
+    lv_obj_t *e = on_grid(l, "list_row", d);
+    caption(e, "The divider on top of a row is a 1 px line inside the row's box; the box is on the grid.");
+  }
+  {
+    Doc d;
+    d["label"] = "Start";
+    lv_obj_t *e = on_grid(l, "button", d);
+    caption(e, "The label is centred in the button. The button is on the grid; at 480 its label lands between two lines, and that is fine.");
+  }
+  {
+    lv_obj_t *e = entry(l, sp::s3);
+    lv_obj_t *pn = box(e);
+    fill(pn, T->bg);
+    const int G = sp::GRID, P = lay::gutter;
+    lv_obj_t *t = text(pn, ty::title, "Living room", T->text);
+    lv_obj_set_pos(t, P, P);
+    lv_obj_update_layout(pn);
+    const int tw = lv_obj_get_width(t), th = lv_obj_get_height(t);
+    const int pw = (tw + 2 * P + G - 1) / G * G, ph = (th + 2 * P + G - 1) / G * G;
+    lv_obj_set_size(pn, pw, ph);
+    lv_obj_t *L = rect(pn, 0, 0, pw, ph);
+    grid_lines(L, pw, ph);
+    outline(rect(L, P, P, tw, th), T->accent, stroke::hair);
+    caption(e, "Text sits in a line box on the grid (outlined); the letters inside it follow the line, not the grid.");
+  }
 }
 
 // ---- Devices and density ------------------------------------------------------------------------------------------
@@ -479,26 +692,18 @@ void devices(lv_obj_t *l) {
     lv_obj_t *tx = column(r, sp::s1, inner_w() - thumb - sp::s5);
     text(tx, ty::c_body, d.name, T->text);
     char b[160];
-    snprintf(b, sizeof b, "%d x %d px · %.1f in · %s · %d x %d dp · %s", d.w, d.h, d.inches, d.density, dw, dh, d.cls);
+    snprintf(b, sizeof b, "%d x %d px · %.1f inch · %s", d.w, d.h, d.inches, d.cls);
     text(tx, ty::c_meta, b, T->text_dim, inner_w() - thumb - sp::s5);
     if (*d.runs) {
       snprintf(b, sizeof b, "%s%s%s", d.runs, *d.mount ? " · mount: " : "", d.mount);
       text(tx, ty::c_meta, b, T->text_dim, inner_w() - thumb - sp::s5);
     }
-    std::string st = std::string(in_build(d) ? "THIS BUILD · " : "") + d.status + (*d.role ? std::string(" · ") + d.role : "");
+    std::string st = std::string(in_build(d) ? "THIS PAGE · " : "") + (strcmp(d.status, "target") ? "planned" : "built today");
     text(tx, ty::c_caps_sm, st.c_str(), in_build(d) ? T->accent_text : T->text_dim);
   }
-  for (int i = 0; i < lyt::N_DENSITIES; i++) {
-    const lyt::Density &d = lyt::DENSITIES[i];
-    lv_obj_t *e = entry(l, sp::s1);
-    char b[128];
-    snprintf(b, sizeof b, "density %s · %.1f px per dp · grid %d px", d.id, d.d, d.grid);
-    text(e, ty::c_caps_sm, b, (D > 1.2f) == (d.d > 1.2f) ? T->accent_text : T->text);
-    snprintf(b, sizeof b, "%s", d.role);
-    text(e, ty::c_meta, b, T->text_dim, inner_w());
-    std::string o = std::string("optical pass: ") + d.optical;
-    text(e, ty::c_meta, o.c_str(), T->text_dim, inner_w());
-  }
+  lv_obj_t *e = entry(l, sp::s1);
+  text(e, ty::c_meta, "720 panels have about 250 pixels per inch, 480 panels about 170: the same design gets 1.5 pixels on the sharper screen for every pixel on the other. At 480, thin text is drawn one weight heavier and small text one size up, so it stays crisp.", T->text_dim, inner_w());
+
 }
 
 // ---- Size classes ------------------------------------------------------------------------------------------------
@@ -508,7 +713,7 @@ void classes(lv_obj_t *l) {
     lv_obj_t *e = entry(l, sp::s3);
     char b[128];
     const bool here = !strcmp(c.id, "square");  // every build today is a square panel
-    snprintf(b, sizeof b, "%s · from %d x %d dp · Home %d columns%s", c.id, c.min_w, c.min_h, c.home_cols, here ? " · THIS BUILD" : "");
+    snprintf(b, sizeof b, "%s · Home in %d columns%s", c.id, c.home_cols, here ? " · TODAY'S PANELS" : "");
     text(e, ty::c_caps_sm, b, here ? T->accent_text : T->text);
     text(e, ty::c_meta, c.use, T->text_dim, inner_w());
     // sketch at 1/4 (dp): inset, header row, the Home columns
@@ -522,51 +727,6 @@ void classes(lv_obj_t *l) {
   }
 }
 
-// ---- Token table --------------------------------------------------------------------------------------------------
-void token_table(lv_obj_t *l) {
-  for (int gi = 0; gi < lyt::N_GROUPS; gi++) {
-    const lyt::Group &g = lyt::GROUPS[gi];
-    lv_obj_t *e = entry(l, sp::s1);
-    text(e, ty::c_title, g.label, T->text);
-    text(e, ty::c_meta, g.about, T->text_dim, inner_w());
-    for (int i = 0; i < lyt::N_TOKENS; i++) {
-      const lyt::Token &k = lyt::TOKENS[i];
-      if (strcmp(k.group, g.id)) continue;
-      lv_obj_t *t = entry(l, sp::s2);
-      char n[48];
-      snprintf(n, sizeof n, "lay::%s", k.name);
-      for (char *p = n; *p; p++) if (*p == '-') *p = '_';
-      lv_obj_t *r = row(t, sp::s5);
-      text(r, ty::c_caps_sm, n, T->text);
-      char b[64];
-      snprintf(b, sizeof b, "%d px · %d at %s", is1x() ? k.v1x : k.v, is1x() ? k.v : k.v1x, other_den());
-      text(r, ty::c_meta, b, T->text_dim);
-      text(t, ty::c_meta, k.use, T->text_dim, inner_w());
-      lv_obj_t *bar = box(t);
-      lv_obj_set_size(bar, std::min(is1x() ? k.v1x : k.v, inner_w()), sp::s2);
-      fill(bar, T->accent_dim);
-    }
-  }
-  lv_obj_t *e = entry(l, sp::s1);
-  text(e, ty::c_title, "Derived", T->text);
-  text(e, ty::c_meta, "Computed by the generator from the tokens and checked on the grid (fw::lay::, read-only).", T->text_dim, inner_w());
-  for (int i = 0; i < lyt::N_DERIVED; i++) {
-    const lyt::Derived &d = lyt::DERIVED[i];
-    lv_obj_t *t = entry(l, sp::s1);
-    lv_obj_t *r = row(t, sp::s5);
-    char b[64];
-    snprintf(b, sizeof b, "lay::%s", d.name);
-    text(r, ty::c_caps_sm, b, T->text);
-    snprintf(b, sizeof b, "%d px · %d at %s", is1x() ? d.v1x : d.v, is1x() ? d.v : d.v1x, other_den());
-    text(r, ty::c_meta, b, T->text_dim);
-    text(t, ty::c_meta, d.how, T->text_dim, inner_w());
-  }
-  e = entry(l, sp::s1);
-  char b[96];
-  snprintf(b, sizeof b, "grid %d px (%d at %s)", sp::GRID, is1x() ? spt::GRID_REF : spt::GRID_1X, other_den());
-  text(e, ty::c_caps_sm, b, T->text);
-  text(e, ty::c_meta, spt::GRID_ABOUT, T->text_dim, inner_w());
-}
 }  // namespace
 
 FW_COMPONENT(layout, "Layout & devices", "foundations", R"({
@@ -579,11 +739,16 @@ FW_COMPONENT(layout, "Layout & devices", "foundations", R"({
 })") {
   const char *s = p["section"] | "screen";
   if (!strcmp(s, "screen")) return screen(parent);
-  if (!strcmp(s, "header")) return header_zone(parent);
+  if (!strcmp(s, "frame")) return header_zone(parent);
   if (!strcmp(s, "rhythm")) return rhythm(parent);
   if (!strcmp(s, "overlay")) return overlay(parent);
   lv_obj_t *l = page(parent);
-  if (!strcmp(s, "devices")) devices(l);
-  else if (!strcmp(s, "classes")) classes(l);
-  else token_table(l);
+  if (!strcmp(s, "grid")) grid_sec(l);
+  else if (!strcmp(s, "sizes")) sizes_sec(l);
+  else if (!strcmp(s, "spacing")) spacing_sec(l);
+  else if (!strcmp(s, "touch")) touch_sec(l);
+  else if (!strcmp(s, "corners")) corners_sec(l);
+  else if (!strcmp(s, "breaks")) breaks_sec(l);
+  else if (!strcmp(s, "devices")) devices(l);
+  else classes(l);
 }

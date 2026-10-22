@@ -1,0 +1,276 @@
+{
+  "$comment": "Facet chart / data tokens: the shared groundwork every chart component reads (line / history graph, sparkline, bars, energy, gauges), so they look like one system on both panels. From Facet main packages/ui/src/charts.ts + styles/30-charts.css (solid token fills, 1-2 px lines, rounded data end of bars, 2 px bar gap, dotted now marker, legend swatch 8 px radius 2, axis 16 px row, sparkline 2 px line + 8 px end dot, donut 3 deg gaps, layout chart-h 132 / 200), snapped to the 4 px grid. tools/gen_chart.mjs -> chart_gen.h (fw::ch::). Colours are colour.json token names (contrast pairs: colour.json section chart); motion refers to motion.json durations and easings by name (the generator checks they exist). Geometry: v = 720 px panels, 1x = 480.",
+  "series": [
+    {
+      "id": "s1",
+      "token": "blue",
+      "label": "First",
+      "use": "the main series: temperature, power, the one line on a sparkline"
+    },
+    {
+      "id": "s2",
+      "token": "steel",
+      "label": "Second",
+      "use": "a second series next to the first (outside vs inside)"
+    },
+    {
+      "id": "s3",
+      "token": "text-dim",
+      "label": "Third",
+      "use": "a third, neutral series; also this week's bars on Energy"
+    },
+    {
+      "id": "compare",
+      "token": "line-hi",
+      "label": "Compare",
+      "dashed": true,
+      "use": "last week / yesterday: dashed line or outline-only bars, always named in the legend"
+    }
+  ],
+  "roles": {
+    "highlight": {
+      "token": "accent",
+      "use": "now / the value that matters: the latest bar, the peak band, a gauge's value",
+      "about": "Now, or the value that matters: the latest bar, a gauge's value."
+    },
+    "select": {
+      "token": "text",
+      "use": "what a finger is on while scrubbing: the bar, the cursor dot",
+      "about": "What your finger is on while you drag across a chart."
+    },
+    "cursor": {
+      "token": "text-dim",
+      "use": "the scrub cursor line and the dotted now marker",
+      "about": "The line that follows your finger, and the dotted line at now."
+    },
+    "grid": {
+      "token": "line",
+      "use": "grid lines (faint, decorative: the labels carry the values)",
+      "about": "Faint grid lines: the labels carry the values."
+    },
+    "baseline": {
+      "token": "line-hi",
+      "use": "the zero / bottom line a chart stands on",
+      "about": "The line a chart stands on, a little firmer than the grid."
+    },
+    "axis": {
+      "token": "text-dim",
+      "use": "axis labels and units (text-mute fails 4.5:1 for text, so not the docs' text-mute)",
+      "about": "Axis labels, units and legend words."
+    },
+    "unavailable": {
+      "token": "text-mute",
+      "use": "the last known line when the sensor is gone (the disabled ink)",
+      "about": "The last known line when the sensor is gone."
+    },
+    "loading": {
+      "token": "line-hi",
+      "use": "the placeholder line while history loads (pulses)",
+      "about": "The placeholder line while history loads."
+    }
+  },
+  "area": {
+    "mix": "chart-area",
+    "mix-bg": "chart-area-bg",
+    "use": "fill under a single-series line: series 1 at colour.json components.chart.area (12 %) over the card / canvas; decorative, only on single-series charts (12 % not 16: text-dim must still read over it in light)",
+    "about": "A single line gets a soft fill under it in its own colour. Grid lines are faint (the labels carry the values), the baseline a little firmer, and a dotted line marks now; hours still to come stay empty."
+  },
+  "geometry": {
+    "chart-h": {
+      "v": 200,
+      "1x": 132,
+      "use": "plot height on a full-width chart (docs layout chart-h)"
+    },
+    "spark-h": {
+      "v": 48,
+      "1x": 32,
+      "use": "sparkline height inside a card or row"
+    },
+    "plot-top": {
+      "v": 8,
+      "1x": 8,
+      "use": "space above the top grid line (the end dot and readout fit)"
+    },
+    "plot-bottom": {
+      "v": 8,
+      "1x": 4,
+      "use": "space under the baseline"
+    },
+    "line": {
+      "v": 4,
+      "1x": 2,
+      "use": "series line (= stroke arc: 2 at 480, the even step at 720)"
+    },
+    "line-thin": {
+      "v": 2,
+      "1x": 2,
+      "use": "sparklines, compare lines, several series at once"
+    },
+    "grid": {
+      "v": 1,
+      "1x": 1,
+      "use": "grid lines and the baseline"
+    },
+    "dash": {
+      "v": 2,
+      "1x": 1,
+      "use": "dotted now marker: dash length"
+    },
+    "dash-gap": {
+      "v": 6,
+      "1x": 3,
+      "use": "dotted now marker: gap (dash + gap = one grid step)"
+    },
+    "compare-dash": {
+      "v": 12,
+      "1x": 8,
+      "use": "compare line: dash length"
+    },
+    "compare-gap": {
+      "v": 8,
+      "1x": 4,
+      "use": "compare line: gap"
+    },
+    "dot": {
+      "v": 12,
+      "1x": 8,
+      "use": "end dot on the latest value"
+    },
+    "dot-ring": {
+      "v": 4,
+      "1x": 4,
+      "use": "surface ring around the scrub dot so it reads on the line"
+    },
+    "ping": {
+      "v": 32,
+      "1x": 24,
+      "use": "the ring a new value sends out from the end dot"
+    },
+    "bar-gap": {
+      "v": 4,
+      "1x": 4,
+      "use": "gap between bars (docs 2, the 4 px grid)"
+    },
+    "bar-radius": {
+      "v": 4,
+      "1x": 4,
+      "use": "rounded data end of a bar; the baseline end stays square"
+    },
+    "bar-min": {
+      "v": 4,
+      "1x": 4,
+      "use": "smallest bar that is not zero"
+    },
+    "gauge": {
+      "v": 192,
+      "1x": 128,
+      "use": "gauge sample size"
+    },
+    "gauge-track": {
+      "v": 2,
+      "1x": 2,
+      "use": "gauge track (line)"
+    },
+    "gauge-ind": {
+      "v": 6,
+      "1x": 4,
+      "use": "gauge value arc (= stroke indicator)"
+    },
+    "legend-sw": {
+      "v": 12,
+      "1x": 8,
+      "use": "legend swatch (radius chip)"
+    }
+  },
+  "grid-lines": 3,
+  "motion": {
+    "draw": {
+      "label": "Line draws in",
+      "duration": "dial-sweep",
+      "easing": "ease-out",
+      "animates": "The line draws itself from left to right with the end dot riding the tip, then the dot sends out one ping.",
+      "reduced": "fade",
+      "lite": "keep",
+      "use": "first show of a line or sparkline",
+      "cost": "Light: only the newly drawn strip is redrawn."
+    },
+    "shift": {
+      "label": "New value (shift)",
+      "duration": "clock-hand",
+      "easing": "ease-out",
+      "animates": "The end dot moves up or down to the new value while the whole line slides left by one step, in step, so the dot looks like it draws the line as it goes; where it lands, it pings.",
+      "reduced": "instant",
+      "lite": "keep",
+      "use": "a live history gets a new reading (the update path: no rebuild)",
+      "cost": "Medium: the plot moves as one picture, drawn once per reading (kept on the 480 too: one short slide per reading)."
+    },
+    "morph": {
+      "label": "New set (morph)",
+      "duration": "dial-sweep",
+      "easing": "ease-out",
+      "animates": "Every point moves from its old value to its new one.",
+      "reduced": "instant",
+      "lite": "instant",
+      "use": "the whole window changes: a forecast revised, a new day picked",
+      "cost": "Heavy: the line is redrawn every frame, so on the 480 it jumps."
+    },
+    "bars": {
+      "label": "Bars grow",
+      "duration": "dial-sweep",
+      "easing": "ease-out",
+      "animates": "Bars grow up from the baseline one after another; new values move all the heights together.",
+      "stagger": 12,
+      "reduced": "fade",
+      "lite": "keep",
+      "use": "first show of a bar chart (Energy, moon, forecast bars)",
+      "cost": "Light: plain blocks, only the bars' area is redrawn."
+    },
+    "gauge": {
+      "label": "Gauge sweep",
+      "duration": "dial-sweep",
+      "easing": "ease-out",
+      "animates": "The value arc sweeps from where it was to the new value and the number counts with it, like the Dial.",
+      "reduced": "instant",
+      "lite": "keep",
+      "use": "gauges, rings, a big number counting",
+      "cost": "Medium: one arc redrawn per frame, the same as the Dial."
+    },
+    "ping": {
+      "label": "Ping",
+      "duration": "zoom",
+      "easing": "ease-out",
+      "animates": "A ring in the line's colour grows out of the end dot and fades, once.",
+      "reduced": "instant",
+      "lite": "keep",
+      "use": "a new value landed (the fun bit, never loops)",
+      "cost": "Very light: one small ring."
+    },
+    "scrub": {
+      "label": "Scrub",
+      "duration": "press",
+      "easing": "ease-out",
+      "animates": "Finger down: a line, a dot and the reading appear and follow your finger point by point, with a tick for each that rises and falls with the line. Finger up: they fade away.",
+      "out": "fade",
+      "reduced": "keep",
+      "lite": "keep",
+      "use": "press and drag across a chart to read values",
+      "cost": "Very light: three small marks follow your finger."
+    }
+  },
+  "sound": {
+    "scrub-pitch": {
+      "low": 0.2,
+      "high": 0.8,
+      "use": "scrub ticks follow the line: the line's height at the cursor (bottom to top of the plot) maps to this part of the sound.json pitch range (0 = pitch.low, 1 = pitch.high; with -6 / +3 that is about -4 to +1 semitones), so a rise sounds like a rise without the slider's full sweep (Darren 2026-10-22)",
+      "about": "As you drag across a line, the ticks rise and fall with it: higher readings tick higher."
+    }
+  },
+  "lite": {
+    "about": "The 480 panel redraws big areas slowly. There, anything that would redraw the whole chart every frame jumps to its new place instead; small things still move, and a ping marks what changed. (Measured: about 12 frames a second for a full-screen fade on the 480, 19 for the screen rise.)",
+    "modes": {
+      "keep": "the same as here",
+      "instant": "jumps straight to the end"
+    },
+    "say": "The 480 panel redraws big areas slowly, so there anything that would redraw the whole chart every frame jumps instead; small things still move, and a ping marks what changed."
+  }
+}

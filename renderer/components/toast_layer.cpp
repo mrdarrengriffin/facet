@@ -134,7 +134,8 @@ Layer *layer(lv_obj_t *host, fw::Props p) {
   L->action = p["action"] | true;
   L->still = p["still"] | false;
   L->ov = box(host);
-  lv_obj_add_flag(L->ov, (lv_obj_flag_t) (LV_OBJ_FLAG_FLOATING | LV_OBJ_FLAG_IGNORE_LAYOUT));
+  lv_obj_add_flag(L->ov, (lv_obj_flag_t) (LV_OBJ_FLAG_FLOATING | LV_OBJ_FLAG_IGNORE_LAYOUT | LV_OBJ_FLAG_USER_4));
+  lv_obj_set_user_data(L->ov, L);  // the update path finds the layer here (USER_4 marks the overlay)
   lv_obj_set_size(L->ov, LV_PCT(100), LV_PCT(100));
   lv_obj_set_pos(L->ov, 0, 0);
   lv_obj_add_event_cb(L->ov, [](lv_event_t *e) {
@@ -147,35 +148,41 @@ Layer *layer(lv_obj_t *host, fw::Props p) {
 }
 }  // namespace
 
-FW_COMPONENT(toast_layer, "Toast layer", "components", R"({
-  "about": "The layer that stacks toasts over any screen (two at most), animates them in and out and plays the notify sound. Tap a row to send that tone's toast.",
-  "frame": [480, 480],
-  "icons": ["timer@glyph", "person@glyph", "alert@glyph", "agent@glyph", "washer@glyph", "vacuum@glyph", "back@glyph"],
-  "props": [
-    {"name": "position", "type": "select", "options": ["top", "bottom"], "default": "top"},
-    {"name": "push", "type": "select", "options": ["ok", "warn", "error", "working", "info", "idle", "none"], "default": "ok"},
-    {"name": "stack", "type": "range", "min": 1, "max": 3, "step": 1, "default": 1},
-    {"name": "timer", "type": "bool", "default": true},
-    {"name": "action", "type": "bool", "default": true},
-    {"name": "screen", "type": "bool", "default": true}
-  ],
-  "variants": [
-    {"label": "top · ok arrives", "props": {"timer": false}},
-    {"label": "bottom · info arrives", "props": {"position": "bottom", "push": "info", "timer": false}},
-    {"label": "two stacked · newest first", "props": {"push": "error", "stack": 2, "timer": false}},
-    {"label": "a third pushes the oldest out", "props": {"push": "ok", "stack": 3, "timer": false}},
-    {"label": "warn with its action", "props": {"push": "warn", "timer": false}},
-    {"label": "timer running · 6 s, then it leaves", "props": {"push": "working"}},
-    {"label": "empty · tap a row", "props": {"push": "none"}},
-    {"label": "reduced motion", "props": {"push": "idle", "stack": 2, "timer": false, "reduced_motion": true}}
-  ]
-})") {
+namespace {
+// the pushes a build makes: `push` arrives now (quiet = no event / sound: an update), with stack > 1 the next tones
+// follow, toast-in apart (always quiet)
+void pushes(Layer *L, fw::Props p, bool quiet) {
+  const int first = sample_of(p["push"] | "ok");
+  const int stack = std::min(std::max((int) (p["stack"] | 1), 1), N_SAMPLES);
+  if (first < 0) return;
+  push(L, first, quiet);
+  L->next = first + 1;
+  L->left = stack - 1;
+  if (L->still)
+    for (; L->left > 0; L->left--) push(L, L->next++ % N_SAMPLES, true);
+  if (L->left > 0)
+    L->stagger = lv_timer_create([](lv_timer_t *tm) {
+      auto *L = (Layer *) lv_timer_get_user_data(tm);
+      push(L, L->next++ % N_SAMPLES, true);
+      if (--L->left <= 0) { L->stagger = nullptr; lv_timer_delete(tm); }
+    }, fw::mo::ms::toast_in, L);
+}
+// what needs the screen again (fw::refill): the rest (push, stack, timer, action) moves in place
+std::string sig(fw::Props p) {
+  return std::string(p["position"] | (fw::toast::top ? "top" : "bottom")) + "|" + ((p["screen"] | true) ? "s" : "") + "|" +
+         ((p["loop"] | false) ? "l" : "") + ((p["still"] | false) ? "t" : "");
+}
+// the screen (root = its box; nullptr = make it on parent) + the layer; returns the layer
+Layer *fill(lv_obj_t *parent, lv_obj_t *root, fw::Props p) {
   const fw::Theme &t = *fw::T;
   const bool overlay = p["overlay"] | false;
   lv_obj_t *host = parent;
   lv_obj_t *rows[N_SAMPLES] = {};
   if (!overlay) {
-    host = box(parent);
+    host = root ? root : box(parent);
+    lv_obj_remove_style_all(host);
+    lv_obj_remove_flag(host, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
+    fw::shape(host, sig(p));
     lv_obj_set_size(host, fw::lay::screen_w, fw::lay::screen_h);
     lv_obj_set_style_bg_color(host, t.bg, 0);
     lv_obj_set_style_bg_opa(host, LV_OPA_COVER, 0);
@@ -213,19 +220,58 @@ FW_COMPONENT(toast_layer, "Toast layer", "components", R"({
       auto *L = (Layer *) lv_timer_get_user_data(tm);
       push(L, L->next++ % N_SAMPLES, true);
     }, fw::mo::ms::toast_in + fw::mo::ms::toast_out, L);
-  // build-time pushes: `push` arrives now; with stack > 1 the next tones follow, toast-in apart
-  const int first = sample_of(p["push"] | "ok");
-  const int stack = std::min(std::max((int) (p["stack"] | 1), 1), N_SAMPLES);
-  if (first < 0) return;
-  push(L, first);
-  L->next = first + 1;
-  L->left = stack - 1;
-  if (L->still)
-    for (; L->left > 0; L->left--) push(L, L->next++ % N_SAMPLES, true);
-  if (L->left > 0)
-    L->stagger = lv_timer_create([](lv_timer_t *tm) {
-      auto *L = (Layer *) lv_timer_get_user_data(tm);
-      push(L, L->next++ % N_SAMPLES, true);
-      if (--L->left <= 0) { L->stagger = nullptr; lv_timer_delete(tm); }
-    }, fw::mo::ms::toast_in, L);
+  return L;
+}
+}  // namespace
+
+FW_COMPONENT(toast_layer, "Toast layer", "components", R"({
+  "about": "The layer that stacks toasts over any screen (two at most), animates them in and out and plays the notify sound. Tap a row to send that tone's toast.",
+  "frame": [480, 480],
+  "icons": ["timer@glyph", "person@glyph", "alert@glyph", "agent@glyph", "washer@glyph", "vacuum@glyph", "back@glyph"],
+  "props": [
+    {"name": "position", "type": "select", "options": ["top", "bottom"], "default": "top"},
+    {"name": "push", "type": "select", "options": ["ok", "warn", "error", "working", "info", "idle", "none"], "default": "ok"},
+    {"name": "stack", "type": "range", "min": 1, "max": 3, "step": 1, "default": 1},
+    {"name": "timer", "type": "bool", "default": true},
+    {"name": "action", "type": "bool", "default": true},
+    {"name": "screen", "type": "bool", "default": true}
+  ],
+  "variants": [
+    {"label": "top · ok arrives", "props": {"timer": false}},
+    {"label": "bottom · info arrives", "props": {"position": "bottom", "push": "info", "timer": false}},
+    {"label": "two stacked · newest first", "props": {"push": "error", "stack": 2, "timer": false}},
+    {"label": "a third pushes the oldest out", "props": {"push": "ok", "stack": 3, "timer": false}},
+    {"label": "warn with its action", "props": {"push": "warn", "timer": false}},
+    {"label": "timer running · 6 s, then it leaves", "props": {"push": "working"}},
+    {"label": "empty · tap a row", "props": {"push": "none"}},
+    {"label": "reduced motion", "props": {"push": "idle", "stack": 2, "timer": false, "reduced_motion": true}}
+  ]
+})") {
+  Layer *L = fill(parent, nullptr, p);
+  pushes(L, p, false);
+}
+
+// Update path: the layer's root = the screen box (the overlay itself when built as an overlay). push / stack / timer /
+// action = the toasts showing leave quietly (Motion toast-out) and the new ones arrive (toast-in), no event or sound;
+// position, screen = the screen again (fw::refill, snap) and the toasts arrive. Silent.
+FW_UPDATE(toast_layer) {
+  lv_obj_t *ov = lv_obj_has_flag(root, LV_OBJ_FLAG_USER_4) ? root : lv_obj_get_child(root, -1);
+  if (!ov || !lv_obj_has_flag(ov, LV_OBJ_FLAG_USER_4)) return false;
+  Layer *L = (Layer *) lv_obj_get_user_data(ov);
+  if (ov != root && !fw::shape(root, sig(p))) {
+    fw::refill(root);  // the old overlay goes with it (its DELETE frees the layer and its timers)
+    pushes(fill(nullptr, root, p), p, true);
+    return true;
+  }
+  if (L->stagger) { lv_timer_delete(L->stagger); L->stagger = nullptr; }
+  L->timer = p["timer"] | true;
+  L->action = p["action"] | true;
+  L->left = 0;
+  while (!L->shown.empty()) {  // every toast showing leaves quietly (it takes itself out of `shown`)
+    lv_obj_t *old = L->shown.back();
+    L->shown.pop_back();
+    lv_obj_send_event(old, LV_EVENT_CANCEL, (void *) 1);
+  }
+  pushes(L, p, true);
+  return true;
 }

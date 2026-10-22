@@ -102,6 +102,7 @@ const doc = [
   { label: 'Durations', about: `${durs.length} named durations as bars (interaction on one scale, ambient loops on a log scale). Tap a bar to run it at its real length.`, props: { section: 'durations' } },
   { label: 'Patterns', about: `${pats.length} named patterns, each = duration + easing + what moves, live on a sample. Tap a sample to play it; the reduced_motion setting in the playground shows each one with reduced motion.`, props: { section: 'patterns' } },
   { label: 'Reduced motion', about: 'What each pattern does when reduced motion is on.', props: { section: 'reduced' } },
+  { label: 'Charts', about: 'How charts move, built from these durations and easings: a line draws in, new readings slide in, a whole set morphs, bars grow, gauges sweep, a ping on each new value, scrubbing. Tap a sample to play it; each says how heavy it is for the panel and what the 480 panel does instead.', props: { section: 'charts' } },
 ];
 L.push(`#define FW_MOTION_SECTIONS ${cstr(JSON.stringify(doc))}`);
 L.push(`#define FW_MOTION_SECTION_IDS ${cstr(JSON.stringify(doc.map((d) => d.props.section)))}`);

@@ -11,6 +11,14 @@
 static_assert(fw::touch::back == fw::lay::row, "back button must fill the header row (space.json touch back = layout.json header row)");
 static_assert(fw::touch::back >= fw::touch::min, "back button below the touch minimum");
 
+namespace {
+void props(fw::Props p, ArduinoJson::JsonDocument &bp) {  // the Icon button's props
+  bp["style"] = "square";
+  bp["role"] = "back";
+  bp["state"] = p["state"] | "default";
+}
+}  // namespace
+
 FW_COMPONENT(back_button, "Back button", "components", R"({
   "about": "The square back arrow at the start of a screen's header.",
   "frame": [96, 96],
@@ -27,8 +35,13 @@ FW_COMPONENT(back_button, "Back button", "components", R"({
   const fw::Component *ib = fw::find("icon_button");
   if (!ib) return;
   ArduinoJson::JsonDocument bp;
-  bp["style"] = "square";
-  bp["role"] = "back";
-  bp["state"] = p["state"] | "default";
+  props(p, bp);
   ib->build(parent, bp.as<fw::Props>());
+}
+
+// Update path: the Icon button's own (the state fades in place), silent.
+FW_UPDATE(back_button) {
+  ArduinoJson::JsonDocument bp;
+  props(p, bp);
+  return fw::update_child(fw::find("icon_button"), root, bp.as<fw::Props>());
 }

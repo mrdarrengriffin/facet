@@ -54,36 +54,25 @@ lv_color_t tone(const char *t) {
 }
 }  // namespace
 
-FW_COMPONENT(card, "Card", "components", R"({
-  "about": "A tappable Home card: an icon and label, a value or short text, and a supporting line.",
-  "frame": [244, 220],
-  "icons": ["screen-weather@icon", "screen-media@icon", "screen-timer@icon", "screen-energy@icon", "screen-light@icon",
-            "partly-day@card", "rain-light@card", "clear-night@card"],
-  "props": [
-    {"name": "label", "type": "text", "default": "Weather"},
-    {"name": "icon", "type": "select", "options": ["none", "weather", "media", "timer", "energy", "light"], "default": "weather"},
-    {"name": "preview", "type": "select", "options": ["none", "partly-day", "rain-light", "clear-night"], "default": "partly-day"},
-    {"name": "mode", "type": "select", "options": ["value", "text"], "default": "value"},
-    {"name": "value", "type": "text", "default": "13°"},
-    {"name": "text", "type": "text", "default": "Paper Lanterns on a Quiet Evening"},
-    {"name": "sub", "type": "text", "default": "Dry for the next hour"},
-    {"name": "tone", "type": "select", "options": ["dim", "ok", "warn", "error"], "default": "dim"},
-    {"name": "accent", "type": "bool", "default": false},
-    {"name": "state", "type": "select", "options": ["default", "pressed", "unavailable"], "default": "default"},
-    {"name": "press", "type": "select", "options": ["fill", "border", "border-fill"], "default": "fill"}
-  ],
-  "variants": [
-    {"label": "value · icon + preview", "props": {}},
-    {"label": "pressed · fill", "props": {"state": "pressed", "press": "fill"}},
-    {"label": "pressed · border", "props": {"state": "pressed", "press": "border"}},
-    {"label": "pressed · border + fill", "props": {"state": "pressed", "press": "border-fill"}},
-    {"label": "text · two lines", "props": {"label": "Media", "icon": "media", "preview": "none", "mode": "text", "sub": "The Quiet Hours"}},
-    {"label": "accent · needs you", "props": {"label": "Timer", "icon": "timer", "preview": "none", "value": "04:32", "sub": "Pasta", "accent": true}},
-    {"label": "sub tone · warn", "props": {"preview": "rain-light", "value": "9°", "sub": "Rain from 15:00", "tone": "warn"}},
-    {"label": "no icon, no preview", "props": {"label": "Energy", "icon": "none", "preview": "none", "value": "£2.42", "sub": "Today so far"}},
-    {"label": "unavailable", "props": {"label": "Lights", "icon": "light", "preview": "none", "value": "65%", "sub": "", "state": "unavailable"}}
-  ]
-})") {
+namespace {
+// the label (top row > label box > the label), looked up so a tap after an update reads the live one
+lv_obj_t *label_of(lv_obj_t *c) {
+  lv_obj_t *lab = lv_obj_get_child(lv_obj_get_child(c, 0), 0);
+  for (uint32_t i = 0; lab && i < lv_obj_get_child_count(lab); i++)
+    if (lv_obj_check_type(lv_obj_get_child(lab, (int32_t) i), &lv_label_class)) return lv_obj_get_child(lab, (int32_t) i);
+  return c;  // never: a card always has its label
+}
+// the props without the press state: equal = only the press moves
+std::string sig(fw::Props p) {
+  ArduinoJson::JsonDocument rest;
+  rest.set(p);
+  if (strcmp(p["state"] | "default", "unavailable")) rest["state"] = "default";
+  std::string s;
+  serializeJson(rest, s);
+  return s;
+}
+void fill(lv_obj_t *c, fw::Props p) {
+  fw::shape(c, sig(p));
   const char *state = p["state"] | "default";
   const bool off = !strcmp(state, "unavailable");
   const bool accent = !off && (p["accent"] | false);
@@ -91,7 +80,6 @@ FW_COMPONENT(card, "Card", "components", R"({
   const fw::Theme &t = *fw::T;
   const lv_color_t dim = off ? fw::st::unavailable_ink(t) : t.text_dim;
 
-  lv_obj_t *c = lv_obj_create(parent);
   lv_obj_remove_style_all(c);
   lv_obj_add_flag(c, LV_OBJ_FLAG_CLICKABLE);
   lv_obj_remove_flag(c, LV_OBJ_FLAG_SCROLLABLE);
@@ -130,10 +118,7 @@ FW_COMPONENT(card, "Card", "components", R"({
   if (strcmp(ic, "none")) fw::icon(lab, ("screen-" + std::string(ic)).c_str(), fw::ic::icon, dim);
   lv_obj_t *l = fw::text(lab, fw::ty::label, p["label"] | "Weather", dim);
   lv_obj_remove_flag(l, LV_OBJ_FLAG_CLICKABLE);
-  // one line at the type box (16 / 24): a new label is LONG_WRAP, so fw::text_style leaves its height to the font's
-  // line height (17 at 480), which made the row 17 tall and pushed the icon off the grid
-  lv_label_set_long_mode(l, LV_LABEL_LONG_MODE_DOTS);
-  lv_obj_set_height(l, fw::style(fw::ty::label).box);
+  // one line at the type box (16 / 24): fw::text sizes every content-height label to whole type boxes
   if (accent) {
     lv_obj_t *dot = box(lab);
     lv_obj_set_size(dot, fw::sp::s2, fw::sp::s2);
@@ -153,11 +138,12 @@ FW_COMPONENT(card, "Card", "components", R"({
     lv_obj_t *tx = fw::text(c, fw::ty::title, p["text"] | "", t.text, inner);
     lv_obj_remove_flag(tx, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_update_layout(tx);
-    // a wrapped label is its lines' height (the last line = the font line height, 26 / 37), not a whole number of
-    // type boxes: set it to 1 or 2 boxes (28 / 40 each) so the text box keeps to the grid
-    const int bx = fw::style(fw::ty::title).box, lines = (lv_obj_get_height(tx) + bx - 1) / bx;
-    if (lines > 2) lv_label_set_long_mode(tx, LV_LABEL_LONG_MODE_DOTS);
-    lv_obj_set_height(tx, std::min(lines, 2) * bx);
+    // fw::text sizes a wrapped label to whole type boxes (28 / 40 a line): at most 2 lines
+    const int two = 2 * fw::style(fw::ty::title).box;
+    if (lv_obj_get_height(tx) > two) {
+      lv_label_set_long_mode(tx, LV_LABEL_LONG_MODE_DOTS);
+      lv_obj_set_height(tx, two);
+    }
   } else {
     // the value's line box (64 / 44) on the grid; the label inside it is pulled up by text_style to centre the caps
     // (translate -6 at 720), content centred in an on-grid box
@@ -182,14 +168,68 @@ FW_COMPONENT(card, "Card", "components", R"({
   lv_obj_set_width(s, inner);
   lv_obj_set_height(s, fw::style(fw::ty::body).box);
 
-  if (!strcmp(state, "pressed")) lv_obj_add_state(c, LV_STATE_PRESSED);
+  if (!strcmp(state, "pressed") != lv_obj_has_state(c, LV_STATE_PRESSED)) lv_obj_set_state(c, LV_STATE_PRESSED, !strcmp(state, "pressed"));
   if (off) lv_obj_add_state(c, ST_OFF);
+
+
+}
+}  // namespace
+
+FW_COMPONENT(card, "Card", "components", R"({
+  "about": "A tappable Home card: an icon and label, a value or short text, and a supporting line.",
+  "frame": [244, 220],
+  "icons": ["screen-weather@icon", "screen-media@icon", "screen-timer@icon", "screen-energy@icon", "screen-light@icon",
+            "partly-day@card", "rain-light@card", "clear-night@card"],
+  "props": [
+    {"name": "label", "type": "text", "default": "Weather"},
+    {"name": "icon", "type": "select", "options": ["none", "weather", "media", "timer", "energy", "light"], "default": "weather"},
+    {"name": "preview", "type": "select", "options": ["none", "partly-day", "rain-light", "clear-night"], "default": "partly-day"},
+    {"name": "mode", "type": "select", "options": ["value", "text"], "default": "value"},
+    {"name": "value", "type": "text", "default": "13°"},
+    {"name": "text", "type": "text", "default": "Paper Lanterns on a Quiet Evening"},
+    {"name": "sub", "type": "text", "default": "Dry for the next hour"},
+    {"name": "tone", "type": "select", "options": ["dim", "ok", "warn", "error"], "default": "dim"},
+    {"name": "accent", "type": "bool", "default": false},
+    {"name": "state", "type": "select", "options": ["default", "pressed", "unavailable"], "default": "default"},
+    {"name": "press", "type": "select", "options": ["fill", "border", "border-fill"], "default": "fill"}
+  ],
+  "variants": [
+    {"label": "value · icon + preview", "props": {}},
+    {"label": "pressed · fill", "props": {"state": "pressed", "press": "fill"}},
+    {"label": "pressed · border", "props": {"state": "pressed", "press": "border"}},
+    {"label": "pressed · border + fill", "props": {"state": "pressed", "press": "border-fill"}},
+    {"label": "text · two lines", "props": {"label": "Media", "icon": "media", "preview": "none", "mode": "text", "sub": "The Quiet Hours"}},
+    {"label": "accent · needs you", "props": {"label": "Timer", "icon": "timer", "preview": "none", "value": "04:32", "sub": "Pasta", "accent": true}},
+    {"label": "sub tone · warn", "props": {"preview": "rain-light", "value": "9°", "sub": "Rain from 15:00", "tone": "warn"}},
+    {"label": "no icon, no preview", "props": {"label": "Energy", "icon": "none", "preview": "none", "value": "£2.42", "sub": "Today so far"}},
+    {"label": "unavailable", "props": {"label": "Lights", "icon": "light", "preview": "none", "value": "65%", "sub": "", "state": "unavailable"}}
+  ]
+})") {
+  lv_obj_t *c = lv_obj_create(parent);
+  fill(c, p);
 
   fw::st::on_tap(c, [](lv_event_t *e) {  // blocked on finger down, a real tap on CLICKED (states.json)
     if (!fw::st::tap_now(e)) return;
     auto *o = (lv_obj_t *) lv_event_get_current_target(e);
-    const char *d = lv_label_get_text((lv_obj_t *) lv_event_get_user_data(e));
+    const char *d = lv_label_get_text(label_of(o));  // looked up: an update may have made it again
     if (lv_obj_has_state(o, ST_OFF)) fw::st::blocked(o, d);
     else { fw::emit(o, "tap", d); fw::sound(o, "open"); }
-  }, l);
+  }, nullptr);
+}
+
+// Update path: pressed <-> default = the press fade (LVGL state transition); every other prop builds the contents again
+// in the same card (fw::refill, snap); default <-> unavailable fades the new contents in (fw::st::fade_in_children).
+// Silent.
+FW_UPDATE(card) {
+  const char *state = p["state"] | "default";
+  const bool was_off = lv_obj_has_state(root, ST_OFF), off = !strcmp(state, "unavailable");
+  if (fw::shape(root, sig(p)) && was_off == off) {
+    const bool pr = !strcmp(state, "pressed");
+    if (pr != lv_obj_has_state(root, LV_STATE_PRESSED)) lv_obj_set_state(root, LV_STATE_PRESSED, pr);
+    return true;
+  }
+  fw::refill(root);
+  fill(root, p);
+  if (was_off != off) fw::st::fade_in_children(root);
+  return true;
 }

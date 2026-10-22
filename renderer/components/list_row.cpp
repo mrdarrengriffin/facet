@@ -83,15 +83,29 @@ struct Spec {
   bool on, divider;
 };
 
-lv_obj_t *row(lv_obj_t *parent, const Spec &s) {
-  const fw::Theme &t = *fw::T;
-  const bool unavail = !strcmp(s.state, "unavailable"), off = unavail || !strcmp(s.state, "disabled");
+void row_free(lv_event_t *e) { delete (Row *) lv_event_get_user_data(e); }
+Row *row_of(lv_obj_t *r) {  // the Row rides on the root's DELETE event (the root's own user data is the caller's)
+  for (uint32_t i = 0, n = lv_obj_get_event_count(r); i < n; i++) {
+    lv_event_dsc_t *d = lv_obj_get_event_dsc(r, i);
+    if (lv_event_dsc_get_cb(d) == row_free) return (Row *) lv_event_dsc_get_user_data(d);
+  }
+  return nullptr;
+}
+Kind effective(const Spec &s) {
+  const bool unavail = !strcmp(s.state, "unavailable");
   Kind kind = unavail ? K_NONE : kind_of(s.trailing);
   if (!unavail && kind == K_NONE && s.on) kind = K_TOGGLE;            // playground: on implies a toggle
   else if (!unavail && kind == K_NONE && s.value[0]) kind = K_VALUE;  // a typed value implies a value
+  return kind;
+}
+
+// the row's look and contents on r (build: a new object; update: the same root after fw::refill)
+void fill(lv_obj_t *r, const Spec &s, Row *d) {
+  const fw::Theme &t = *fw::T;
+  const bool unavail = !strcmp(s.state, "unavailable"), off = unavail || !strcmp(s.state, "disabled");
+  const Kind kind = effective(s);
   const lv_color_t ink = off ? fw::st::disabled_ink(t) : t.text, dim = off ? fw::st::disabled_ink(t) : t.text_dim;
 
-  lv_obj_t *r = lv_obj_create(parent);
   lv_obj_remove_style_all(r);
   lv_obj_add_flag(r, LV_OBJ_FLAG_CLICKABLE);
   lv_obj_remove_flag(r, LV_OBJ_FLAG_SCROLLABLE);
@@ -130,9 +144,9 @@ lv_obj_t *row(lv_obj_t *parent, const Spec &s) {
     lv_obj_set_height(su, fw::style(fw::ty::body).box);
   }
 
-  auto *d = new Row;
   d->kind = kind;
   d->title = s.title;
+  d->toggle = nullptr;
   const int body_h = fw::style(fw::ty::body).box;
   if (unavail) label(slot(r, body_h), fw::ty::body, fw::st::UNAVAILABLE_TEXT, fw::st::unavailable_note(t));
   if (kind == K_VALUE || kind == K_VALUE_CHEVRON) label(slot(r, body_h), fw::ty::body, s.value[0] ? s.value : fw::st::PLACEHOLDER, dim);  // empty = em dash
@@ -150,8 +164,13 @@ lv_obj_t *row(lv_obj_t *parent, const Spec &s) {
 
   if (!strcmp(s.state, "pressed")) lv_obj_add_state(r, LV_STATE_PRESSED);
   if (off) lv_obj_add_state(r, ST_OFF);
+}
 
-  lv_obj_add_event_cb(r, [](lv_event_t *e) { delete (Row *) lv_event_get_user_data(e); }, LV_EVENT_DELETE, d);
+// the root (made once): the Row + the tap handler; stack = the same root as a column of fixed demo rows
+lv_obj_t *root(lv_obj_t *parent) {
+  lv_obj_t *r = lv_obj_create(parent);
+  auto *d = new Row;
+  lv_obj_add_event_cb(r, row_free, LV_EVENT_DELETE, d);
   fw::st::on_tap(r, [](lv_event_t *e) {  // blocked on finger down, a real tap on CLICKED (states.json)
     if (!fw::st::tap_now(e)) return;
     auto *o = (lv_obj_t *) lv_event_get_current_target(e);
@@ -162,6 +181,45 @@ lv_obj_t *row(lv_obj_t *parent, const Spec &s) {
     fw::sound(o, d->kind == K_CHEVRON || d->kind == K_VALUE_CHEVRON ? "open" : "tap");
   }, d);
   return r;
+}
+lv_obj_t *row(lv_obj_t *parent, const Spec &s) {
+  lv_obj_t *r = root(parent);
+  fill(r, s, row_of(r));
+  return r;
+}
+
+Spec spec_of(fw::Props p) {
+  return {p["title"] | "Lights", p["icon"] | "bulb", p["sub"] | "", p["trailing"] | "none", p["value"] | "",
+          p["state"] | "default", p["on"] | false, p["divider"] | true};
+}
+// the props that need the contents again: all but a pressed state and a toggle's on (those move in place)
+std::string sig(fw::Props p) {
+  ArduinoJson::JsonDocument r;
+  r.set(p);
+  if (!strcmp(p["state"] | "default", "pressed")) r["state"] = "default";
+  if (effective(spec_of(p)) == K_TOGGLE) { r.remove("on"); r["trailing"] = "toggle"; }
+  std::string s;
+  serializeJson(r, s);
+  return s;
+}
+const Spec STACK[] = {
+    {"Lights", "bulb", "", "value-chevron", "3 on", "default", false, true},
+    {"Chime", "speaker", "Plays on every tap", "toggle", "", "default", true, true},
+    {"Volume", "volume", "", "value", "60%", "default", false, true},
+    {"Night dimming", "power", "", "toggle", "", "disabled", false, true},
+    {"Porch light", "house", "", "chevron", "", "unavailable", false, true},
+};
+void fill_props(lv_obj_t *r, fw::Props p) {
+  fw::shape(r, sig(p));
+  if (!strcmp(p["list"] | "single", "stack")) {  // a short list: rows touch, the hairline on top of each = the divider
+    lv_obj_remove_style_all(r);
+    lv_obj_remove_flag(r, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
+    lv_obj_set_size(r, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+    lv_obj_set_flex_flow(r, LV_FLEX_FLOW_COLUMN);
+    for (const Spec &s : STACK) row(r, s);
+    return;
+  }
+  fill(r, spec_of(p), row_of(r));
 }
 }  // namespace
 
@@ -196,20 +254,31 @@ FW_COMPONENT(list_row, "List row", "components", R"({
     {"label": "stack · dividers", "props": {"list": "stack"}}
   ]
 })") {
-  if (!strcmp(p["list"] | "single", "stack")) {  // a short list: rows touch, the hairline on top of each = the divider
-    lv_obj_t *l = box(parent);
-    lv_obj_set_size(l, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
-    lv_obj_set_flex_flow(l, LV_FLEX_FLOW_COLUMN);
-    const Spec rows[] = {
-        {"Lights", "bulb", "", "value-chevron", "3 on", "default", false, true},
-        {"Chime", "speaker", "Plays on every tap", "toggle", "", "default", true, true},
-        {"Volume", "volume", "", "value", "60%", "default", false, true},
-        {"Night dimming", "power", "", "toggle", "", "disabled", false, true},
-        {"Porch light", "house", "", "chevron", "", "unavailable", false, true},
-    };
-    for (const Spec &s : rows) row(l, s);
-    return;
+  fill_props(root(parent), p);
+}
+
+// Update path: default <-> pressed = the press fade in place, a toggle row's on = the Toggle's own update (the knob
+// slides, silent); any other prop (title, icon, trailing, value, disabled / unavailable, stack) = the contents again
+// in the same root (fw::refill, snap; disabled / unavailable in or out fades them in). Silent.
+FW_UPDATE(list_row) {
+  Row *d = row_of(root);
+  if (!d) return false;
+  const bool pr = !strcmp(p["state"] | "default", "pressed");
+  if (fw::shape(root, sig(p))) {
+    if (!strcmp(p["list"] | "single", "stack")) return true;  // fixed demo rows
+    if (pr != lv_obj_has_state(root, LV_STATE_PRESSED)) lv_obj_set_state(root, LV_STATE_PRESSED, pr);
+    if (d->toggle) {
+      ArduinoJson::JsonDocument tp;
+      tp["on"] = p["on"] | false;
+      tp["state"] = "default";
+      fw::update_child(fw::find("toggle"), d->toggle, tp.as<fw::Props>());
+    }
+    return true;
   }
-  row(parent, {p["title"] | "Lights", p["icon"] | "bulb", p["sub"] | "", p["trailing"] | "none", p["value"] | "",
-               p["state"] | "default", p["on"] | false, p["divider"] | true});
+  const bool was_off = lv_obj_has_state(root, ST_OFF);
+  fw::refill(root);
+  fill_props(root, p);
+  if (pr != lv_obj_has_state(root, LV_STATE_PRESSED)) lv_obj_set_state(root, LV_STATE_PRESSED, pr);
+  if (was_off != lv_obj_has_state(root, ST_OFF)) fw::st::fade_in_children(root);
+  return true;
 }

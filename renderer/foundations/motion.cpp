@@ -271,7 +271,7 @@ void set_hand(void *o, int32_t deg10) {
   float x0 = c, y0 = c, x1 = c, y1 = c;
   for (const StrokePt &q : {d->pts[1], np[1]}) x0 = std::min(x0, q.x), x1 = std::max(x1, q.x), y0 = std::min(y0, q.y), y1 = std::max(y1, q.y);
   const lv_area_t dirty = {std::max(0, (int) floorf(x0 - m)), std::max(0, (int) floorf(y0 - m)),
-                           std::min(d->size - 1, (int) ceilf(x1 + m)), std::min(d->size - 1, (int) ceilf(y1 + m))};
+                           std::min<int32_t>(d->size - 1, (int32_t) ceilf(x1 + m)), std::min<int32_t>(d->size - 1, (int32_t) ceilf(y1 + m))};
   d->pts[0] = np[0];
   d->pts[1] = np[1];
   stroke_redraw(d->a, d->pts, 2, &dirty);
@@ -345,7 +345,7 @@ void sample(Demo *d, int w, int h) {
       lv_obj_add_flag(d->a, LV_OBJ_FLAG_IGNORE_LAYOUT);
       lv_obj_set_size(d->a, w, h);
       lv_obj_set_pos(d->a, -sp::s5, -sp::s5);
-      fill(d->a, T->bg, (lv_opa_t) lroundf(mo::OPA_SCRIM * 255));
+      fill(d->a, T->scrim, (lv_opa_t) lroundf((T->light ? mo::OPA_SCRIM_LIGHT : mo::OPA_SCRIM) * 255));
       d->b = box(f);
       lv_obj_add_flag(d->b, LV_OBJ_FLAG_IGNORE_LAYOUT);
       lv_obj_set_size(d->b, w, h - h * 2 / 5 + rad::ring);
@@ -607,6 +607,8 @@ mo::Id pattern_of(const char *s) {
 }
 }  // namespace
 
+namespace fw::chart { void motion_section(lv_obj_t *list, bool reduced, int lite); }  // foundations/chart.cpp
+
 FW_COMPONENT(motion, "Motion", "foundations", R"({
   "about": "Durations, easings and the motion patterns components use, including the reduced-motion rule.",
   "layout": "doc",
@@ -614,7 +616,8 @@ FW_COMPONENT(motion, "Motion", "foundations", R"({
   "props": [
     {"name": "section", "type": "select", "options": )" FW_MOTION_SECTION_IDS R"(, "default": "easing"},
     {"name": "reduced_motion", "type": "bool", "default": false},
-    {"name": "loop", "type": "select", "options": )" FW_MOTION_PATTERN_IDS R"(, "default": "off"}
+    {"name": "loop", "type": "select", "options": )" FW_MOTION_PATTERN_IDS R"(, "default": "off"},
+    {"name": "chart_lite", "type": "select", "options": ["auto", "on", "off"], "default": "auto"}
   ],
   "variants": )" FW_MOTION_SECTIONS R"(
 })") {
@@ -629,5 +632,9 @@ FW_COMPONENT(motion, "Motion", "foundations", R"({
   if (!strcmp(s, "durations")) durations(l);
   else if (!strcmp(s, "patterns")) patterns(l, reduced);
   else if (!strcmp(s, "reduced")) reduced_page(l, reduced);
+  else if (!strcmp(s, "charts")) {  // chart motion (tokens/chart.json): lite auto = on for the 480 build
+    const char *cl = p["chart_lite"] | "auto";
+    fw::chart::motion_section(l, reduced, !strcmp(cl, "on") ? 1 : !strcmp(cl, "off") ? 0 : -1);
+  }
   else easing(l);
 }

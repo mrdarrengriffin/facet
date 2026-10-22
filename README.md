@@ -263,6 +263,41 @@ the toast, nothing full-screen. Scaled from the sheet's panel estimate: Guition 
 redraw on each. Levers if the Guition needs them: a stepped bar (redraw every 4 px instead of every px), or `instant`
 toasts on 1x boards.
 
+## Chart tokens (single source, WIP)
+
+`renderer/tokens/chart.json` (docs `@facet/ui` charts.ts + 30-charts.css, snapped to the 4 px grid) ->
+`tools/gen_chart.mjs` -> `chart_gen.h` (`fw::ch::`): series colours `ch::series(t, i)` (blue / steel / text-dim, plus
+the dashed compare line-hi), roles `ch::ink::highlight|select|cursor|grid|baseline|axis|unavailable|loading(t)` and
+`ch::ink_of(t, i)`, the area mix (12 % of series 1 over surface / bg: mixes `chart-area(-bg)`), geometry per density
+(`ch::chart_h`, `line`, `dot`, `bar_gap`, ...; the generator checks the grid, strokes 1-2 or even), chart motion
+`ch::MOTION[ch::M_draw]` (enum `M_`-prefixed: `ch::gauge` / `ch::ping` are sizes) = motion.json durations + easings by
+name, with a reduced mode and a **lite** mode each (`keep | dot | instant`). Plain-word fields (`roles.*.about`,
+`motion.*.cost`, `lite.say`, `area.about`) are what the pages print: no token names on the page. Contrast pairs:
+colour.json section `chart` (0 fails).
+Page `/wasm/foundations/chart` (`foundations/chart.cpp`): series colours on a card and the canvas in both themes with
+their 16-bit contrast, the other chart colours, line weights, area + grid + dotted now, sparkline, bars (rounded data
+end, square foot, highlight, outline compare) + gauge (stroke atom arc), big number / axis / grid values / legend /
+scrub readout, and no data / unavailable / loading (Pulse) / gaps. Scrub = press and drag (PRESS_LOCK): cursor, dot
+with a surface ring and a readout follow point by point with `fw::step_ticks`; release = event `scrub` `"<i> <value>"`.
+How it draws: the series line and the area are A8 masks (stroke atom `stroke_segments` + an area raster here) shown as
+recoloured `lv_image`s (lv_line steps visibly through float points); grid, bars, dots, cursor and labels are plain
+objects. Bench props (no page control; `/fw/show` or the device page): `loop: draw|shift|morph|bars|gauge|ping` = one
+chart animating forever (for `GET /fw/perf`), `lite: auto|on|off` (auto = on in the 1x build).
+Motion page section **Charts** (`fw::chart::motion_section`, motion.cpp bench prop `chart_lite`): one entry per chart
+motion (duration + easing, what moves, reduced + 480 behaviour, how heavy) with a tap-to-play sample (scrub = drag).
+
+Frame cost, estimated from the Motion / sheet bench numbers above by the area each frame repaints (not yet measured on
+the panels: `loop` + `/fw/perf`):
+
+| motion | how | 720 est. | 480 est. | 480 lite |
+|---|---|---|---|---|
+| draw | clip grows, only the new strip invalidated | 50+ fps | 45+ | same |
+| shift | track translates one step, one raster per value | 45+ | 25-30 | line jumps, dot glides: ~50 |
+| morph | re-raster line (+ area) every frame | 30-40 | 12-18 | jumps |
+| bars | rect heights, the bars' area only | 50 | 35-45 | same |
+| gauge | arc atom re-raster (= the Dial sweep) | 50 | 35-40 | same |
+| ping / scrub | one small ring / three small objects | free | free | same |
+
 ## Mascot tokens (single source, WIP)
 
 `renderer/tokens/mascot.json` (docs `@facet/ui` mascot.ts + 20-mascot.css, cross-checked with the approved panel firmware
@@ -465,6 +500,69 @@ Browser: hub `src/wasm/sound.ts playUi(id, detail)` (playbackRate). Panels: same
 Motion: components take every duration / easing from the Motion tokens (see "Motion tokens"); Button = patterns
 `press` + `release` as style transitions.
 
+## Update path
+
+Every component takes new props IN PLACE and moves to them with its own animation, no rebuild (Darren 2026-10-22: for
+everything, from the docs, the workbench and code). A new component isn't done without it.
+
+| Where | Call |
+|---|---|
+| component | `FW_UPDATE(id) { ... }` after its `FW_COMPONENT` block: `bool (lv_obj_t *root, fw::Props p)`, root = the one object `build()` made, p = the FULL new props; `false` = can't (structural prop: range, state, ...) |
+| C++ (device / HA side) | `fw::update(scr, comp, props_json, light, accent)` on a screen `fw::render()` built -> `""` applied / `"rebuild"` (call `render`) / error. Different component, theme or accent, no update path, or more than one root object = `"rebuild"` |
+| a component holding another | `fw::update_child(fw::find("button"), root, props)` |
+| WASM | `fw_update(stage, comp, props, light, accent)`; JS `Stage.update()` / `apply()` (update, else render) in the hub workbench engine and `site/src/lib/engine.ts` |
+
+**Silent:** updates are automated (nobody touched the panel), so no sound and no events. `fw::update` runs the
+component inside `fw::Quiet` (core drops `emit` / `sound` / `step_ticks` while it lives); animations an update starts
+run later, so the component keeps them silent itself (the Dial's quiet sweep). While a finger holds a control the
+user wins: the update waits for the next one.
+
+Hosts: the workbench playground (control changes; "Replay opening" stays a fresh build) and the demo reset (variants,
+doc sections, docs site samples: back to the starting props) call update first and rebuild only on `"rebuild"`.
+Theme / accent changes stay a rebuild.
+
+**Every component has one (phase 2, 2026-10-22): no component returns "rebuild" any more.** The shared pieces:
+
+| Piece | What |
+|---|---|
+| `fw::refill(root)` | a structural prop (another kind, icon, layout, a part that comes or goes): the contents are made again inside the SAME root (children, local styles, running anims, state-style states go; user data, flags, event callbacks stay), the component's `fill()` styles it again. Snaps. |
+| `fw::shape(root, sig, key = "")` | the structural props as one string on the root: true = unchanged (move in place). `key`: a component built on another's root (Picker row on the List row) keeps its own |
+| `fw::st::set_state` / `set_off` | states (disabled, active, chosen) as LVGL state styles, faded in place (Motion fade) |
+| `fw::st::swap` / `fade_in_children` | a part traded in place (Slider track <-> the unavailable word); contents made again for a new state fade in |
+| `fw::st::built` / `fw::st::update(root, p, fill)` | the common pressable case: pressed <-> default = the press fade, anything else = refill (+ fade when disabled / unavailable changes) |
+| single root | multi-object components got one: Corner ticks, Focus ring, Accent swatches = a content-sized wrapper; Count badge hidden at zero-hide; Toggle / Slider / Segmented unavailable = the same root; Bottom sheet + Toast layer = their screen box (or the overlay itself) |
+| quiet | `fw::Quiet` covers the synchronous part; animations an update starts are quiet themselves (Dial / Slider sweeps: no step ticks; Toast layer pushes: no arrival event / sound) |
+| `fw::bleed` | idempotent now (one callback per object, the largest px), so refills never pile callbacks on the ancestors |
+
+Per component, what moves in place (animated) vs what snaps in place (refill):
+
+| Component | Animates | Snaps (refill) |
+|---|---|---|
+| Dial | value, on / off (sweeps) | range, step, caption / unit text; state (contents fade in) |
+| Slider | value (sweep), disabled, unavailable (track <-> word) | range, step, width |
+| Toggle | on (knob slide), disabled | unavailable in / out (fades in) |
+| Radio | on, disabled | - |
+| Button / Icon button / Back button | state (pressed, active, disabled, unavailable), label text | kind, icon, width, style |
+| Segmented / Accent swatches | the choice, disabled | options, width, context; unavailable (fades in) |
+| Card / Tile / More row / Speaker button / Section header | pressed | everything else; unavailable / disabled (fades in) |
+| List row | pressed, a toggle row's on (the Toggle's update) | everything else (fades in on disabled / unavailable) |
+| Picker row | selected (the Radio's update), pressed | name, icon, status, tone, state, group |
+| Header | label + time text | back / clock / chip |
+| Bottom sheet | open / closed (sheet-open / sheet-close), selected (radios + screen row values) | list, title, items (rows again); screen / bench props |
+| Toast | a dismissed toast comes back (toast-in) | contents (the timer keeps its progress) |
+| Toast layer | push / stack / timer / action: the showing toasts leave, the new ones arrive (silent) | position, screen |
+| Label, Stat, Hero block, Status dot / chip, Count badge, Corner ticks, Focus ring | Corner ticks / Focus ring state | the rest |
+
+Test (2026-10-22): every playground control value and every variant, both directions (start -> props and back),
+both densities, light + dark: update settled == a fresh build pixel for pixel (0 differ, except the Tile's looping
+mascot phase), no event or sound from an update, a tap after an update reports what a tap on a fresh build reports.
+
+**Demo state** (Darren 2026-10-22): a demo whose replay ends where it started reports it, and the hosts skip the demo
+reset (no reset step: the replay plays straight away). `fw::demo_away(obj, away)` -> WASM `fw_demo_state(stage)`
+(-1 nothing reported = reset as before, 0 all at their preset = skip, 1 moved away = reset); JS `Stage.demoState()`
+(hub workbench + `site/src/lib/engine.ts`). Charts (Motion page): Line draws in and the same bars growing again stay at
+the preset; new readings, a morph, a new gauge value or another day of bars move away.
+
 ## Components
 
 | Id | What |
@@ -474,7 +572,7 @@ Motion: components take every duration / easing from the Motion tokens (see "Mot
 | `back_button` | Facet back button (docs `backButton()`: 48 px square, back arrow, no label): built by `icon_button` via `fw::find` (style square, `role: back`), side `touch::back` (48 / 32), compile-time checked = layout `header row` and >= `touch::min`, so it fills the header row exactly. Tap = event `back` + sound `back` (the workbench tap counter counts `tap` only); disabled = `blocked` + error. 3 variants (default / pressed / disabled). Pairs: shared `icon_button`. WIP round 1. |
 | `toggle` | Facet switch (docs `toggleSwitch()`, `.f-toggle`): off / on x default / disabled (4 variants). Geometry from tokens: height `touch::min`, inset `sp::s2`, knob = height - 2 x inset, width = 2 x knob + 2 x inset (720: 80 x 48, knob 32, = docs; 480: 56 x 32, knob 24, travel 24). Tap = Motion pattern `toggle` (knob slide + track colour via `fw::animate`, reduced = instant), `fw::emit` "tap" detail on/off, sound `toggle-on` / `toggle-off`; disabled (`USER_1`, not in the docs toggle, Button rule) = hollow track + text-mute knob (off) / accent-dim track + text-dim knob (on), tap = "blocked" + `error`. No pressed look, no visible label (docs); labelled row = List row later. Pairs: colour.json section `toggle`. |
 | `slider` | Facet slider (docs `slider()`, `.f-slider`): horizontal, height `touch::min` (48 / 32 = docs slider-h), track `sp::s1` 4 px round ends `line-hi`, fill `blue`, knob = height / 2 (24 / 16 = docs slider-knob) `accent`, centred on the value; box = track + half a knob each side (track inset knob / 2 = 12 / 8) so the knob never clips at min / max. Props value / min / max / step / width (dp) / state; 6 variants (0, 40, 100, step 10, disabled x 2). Press on the knob = grab; elsewhere = tap-to-jump (value set at once, knob sweeps with Motion `value`, moving stops the sweep). Sound: `fw::step_ticks` (see "Events and sound"): every step the shown value crosses (drag, sweep, jump) counts, ticks at most every `tick-min`, ends = `slider-landmark`. `change` (value) on release; disabled (`USER_1`: track line, fill text-mute, knob text-dim) = `blocked` + `error` once per press. Pairs: colour.json section `slider`. |
-| `dial` | Facet light dial (docs `dial()`, `.f-dial`, Light screen; v1 lab look): square `lay::dial_scale` (560 / 376) tick scale 0-100 over 270 deg from 135 (open at the bottom), 51 ticks drawn in ONE draw event by a `TickRing` struct (count / range / minor + major length, colour, stride, numbers) shaped to move to the core as the shared step-mark helper (facet-129, not built): minor `lay::dial_tick` line-hi, every 5th `lay::dial_tick_major` blue + its number (c-meta, text-dim) `sp::s3` inside. Ticks = one cached stroke-atom mask each (square ends). `lay::dial_arc` (432 / 288) = stroke atoms (`fw::stroke_arc`, facet-145): track `stroke::edge` line square ends, indicator `stroke::indicator` accent round caps re-rasterised only where it moved (`stroke_set_arc`; Chromium avg 0.04 ms / frame at 720), knob (an lv_arc drawing only its knob) `lay::dial_knob` accent with a `stroke::knob` canvas ring. Centre flex column (value centred on the dial): caption (label, text-dim) `sp::s7`, value (display), `sp::s2`, unit (body, text-dim), `sp::s9`, ON (outline) / OFF (secondary) = the Button component (`lay::dial_toggle_w` x `button_h`) in a hit box that owns the tap and trickles PRESSED. 480 = docs x 2/3 onto the grid (no docs 1x). Slider value model: step index x 256, grab the knob or tap the ring = set now + Motion `value` sweep; centre (inside dial_arc / 2 - touch::target) ignored; bottom gap = nearer end, a drag never crosses it. Opening sweeps 0 -> value (silent; prop `sweep`). Button: off sweeps to 0, on back to the last value (silent sweep), `toggle` on/off + toggle-on/off; dragging while off turns on, release at 0 turns off. Step ticks pitched (see Events and sound). Round 2: range props `min` / `max` / `step` (0.5 steps fine, value shows the step's decimals: 0.5 -> "21.0", "21.5") + `unit`; scale numbers = smallest 1/2/5 x 10^k interval with at most 11 numbers, minors split it in 5 (a 2 in 4); value, sweep, ticks, landmarks and pitch follow the range; release at 0 switches off only when min is 0. Disabled = text-mute scale/value/arc, text-dim knob, disabled button, `blocked` + error; unavailable = no arc value/knob/unit/button, "Unavailable" (body, text-dim). 8 variants (incl. 16-30 °C step 0.5). Pairs: colour.json section `dial`. |
+| `dial` | Facet light dial (docs `dial()`, `.f-dial`, Light screen; v1 lab look): square `lay::dial_scale` (560 / 376) tick scale 0-100 over 270 deg from 135 (open at the bottom), 51 ticks drawn in ONE draw event by a `TickRing` struct (count / range / minor + major length, colour, stride, numbers) shaped to move to the core as the shared step-mark helper (facet-129, not built): minor `lay::dial_tick` line-hi, every 5th `lay::dial_tick_major` blue + its number (c-meta, text-dim) `sp::s3` inside. Ticks = `lv_draw_line` (anti-aliased; endpoints snap to whole px, up to ~0.9 px off the true radial, measured 2026-10-22). `lay::dial_arc` (432 / 288) = lv_arc (already anti-aliased, no buffer). Darren 2026-10-22: ticks and arcs back from the stroke atom (atom only where LVGL is visibly pixelated): track `stroke::edge` line square ends, indicator `stroke::indicator` accent round caps, knob `lay::dial_knob` accent with a `stroke::knob` canvas ring. Centre flex column (value centred on the dial): caption (label, text-dim) `sp::s7`, value (display), `sp::s2`, unit (body, text-dim), `sp::s9`, ON (outline) / OFF (secondary) = the Button component (`lay::dial_toggle_w` x `button_h`) in a hit box that owns the tap and trickles PRESSED. 480 = docs x 2/3 onto the grid (no docs 1x). Slider value model: step index x 256, grab the knob or tap the ring = set now + Motion `value` sweep; centre (inside dial_arc / 2 - touch::target) ignored; bottom gap = nearer end, a drag never crosses it. Opening sweeps 0 -> value on every build (silent, no prop; workbench re-builds from playground changes / demo resets pass `"opening": false`, meta `opening` = the "Replay opening" button). Button: off sweeps to 0, on back to the last value (silent sweep), `toggle` on/off + toggle-on/off; dragging while off turns on, release at 0 turns off. Step ticks pitched (see Events and sound). Round 2: range props `min` / `max` / `step` (0.5 steps fine, value shows the step's decimals: 0.5 -> "21.0", "21.5") + `unit`; scale numbers = smallest 1/2/5 x 10^k interval with at most 11 numbers, minors split it in 5 (a 2 in 4); value, sweep, ticks, landmarks and pitch follow the range; release at 0 switches off only when min is 0. Disabled = text-mute scale/value/arc, text-dim knob, disabled button, `blocked` + error; unavailable = no arc value/knob/unit/button, "Unavailable" (body, text-dim). 8 variants (incl. 16-30 °C step 0.5). Pairs: colour.json section `dial`. |
 | `card` | Facet Home card (docs `card()`, `.fs-card`): `lay::card_w` x `card_h` (320 x 280 / 212 x 188), surface + 1 px line border, padding `card-pad` - hair, flex column (no hand placement): top row = screen icon (`ic::icon`, text-dim) + caps `label` + accent dot (`sp::s2`, 8 / 4: docs 6 at 1x is off the grid) and the preview artwork top right (weather at `ic::card`, 72 / 48); grow; `value` (type value, one line) or `text` (type title, up to 2 lines, bottom-aligned); gap `sp::s9` so the value box ends at the docs card-value-bottom (88 / 56); `sub` (type body, text-dim or tone ok / warn / error). Props label / icon / preview / mode / value / text / sub / tone / accent (dot + accent-text value) / state; 9 variants. Pressed (Motion press / release); press style = component token `components.card.press` in colour.json (`fw::tokens::comp::card_press`, default fill; prop `press` overrides): fill = mix token `press-tint` (the accent moved halfway to text-mute, `components.card.press-desat` 0.5, then 5 % over the surface, `card.press-tint` 0.05; on RGB565 such a faint tint is one 5/6-bit step per channel, so desaturation, not lower opacity, is what makes it gentler) + line-hi border, border = 1 px accent border, border-fill = both. Unavailable (not in the docs; Button rule, `USER_1`): icon, label and an em-dash value in text-mute, sub "Unavailable", no preview, no press look. Tap = `tap` (detail = label) + sound `open`; unavailable = `blocked` + `error`. Pairs: colour.json section `card`. |
 | `list_row` | Facet hairline list row (docs Settings rows `.fs-set`, picker rows `pickerRow()`): not boxed, on the canvas, 1 px `line` hairline on top (a stack = dividers between rows); height layout token `list-row-h` (96 / 64 = docs sheet-row-h, new in space.json), width = content width 2 x `card-w` + `gutter` (656 / 440), padding `sp::s4` left/right, flex row gap `sp::s4`, centred. Optional icon (`ic::icon` 24 / 16: the icon manifest ships row icons at that size; an icon@size not in the build draws nothing, text-dim), title (type title, one line, ellipsis) over optional sub (type body, text-dim; 40 + 32 / 28 + 20 = on the grid), trailing none / value (body, text-dim) / chevron (`ic::icon`, text-dim: text-mute is disabled-only) / value + chevron / toggle (the `toggle` component itself via `fw::find`, made non-clickable: the whole row is the hit area and forwards CLICKED). Pressed = Card's mix `press-tint` fill (Motion press / release on bg_opa; a tint over the canvas was tried: invisible on dark 565 or failing the toggle track 3:1 in light). Disabled (`USER_1`): text-mute icon/title/value/chevron, toggle disabled; unavailable: text-mute icon + title, trailing = "Unavailable" (text-dim). Tap: chevron rows `tap` + `open`, toggle rows = the toggle's own tap + toggle-on/off, others `tap` + `tap`; disabled / unavailable = `blocked` + `error`. 4 px grid: text parts sit in slots grown so row - slot is a multiple of 8 (480: title 28 -> 32, body 20 -> 24), so every centred top lands on the grid at both densities. Playground: trailing none + a typed value shows the value, `on` with trailing none shows a toggle, an empty value shows an em dash. 13 variants incl. `list: stack`. Pairs: colour.json section `list_row`. |
 | `label` | Facet label atom (docs `label(text, type)`, `.f-label` + `fit8`): one line in a component type style (type select = the 13 c-* styles in docs order: title, card-title, tile, body, label, label-sm, meta, meta-sm, caps-sm, subtitle, date, weather, number), colour text / text-dim / accent-text / blue / ok / warn / error / disabled (= text-mute, disabled only). Box width = text width rounded up to `sp::GRID` (8 / 4, docs fit8), height = the style box (set in the component: core text-helper note). Empty text = the style's `sample` (c-number is digits only). Static. The other small parts build their text through `fw::find("label")`. 15 variants. Pairs: colour.json section `label`. WIP round 1. |

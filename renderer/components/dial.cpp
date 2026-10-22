@@ -10,9 +10,8 @@
 //   scale   lay::dial_scale (560 / 376), 51 ticks every 2 % from 135 deg, drawn inward from the edge: minor
 //           lay::dial_tick (12 / 8) line-hi, every 5th = major lay::dial_tick_major (20 / 12) blue with its number
 //           (0, 10 ... 100; type c-meta, text-dim: text-mute is disabled-only) sp::s3 inside it; ticks stroke::tick
-//   arc     lay::dial_arc (432 / 288) centred, stroke atoms (fw::stroke_arc, lv_arc geometry): track stroke::edge (2)
-//           line, square ends; indicator stroke::indicator (6 / 4) accent with round caps; an lv_arc on top draws only the
-//           knob lay::dial_knob (28 / 20) accent with a stroke::knob ring in the canvas colour
+//   arc     lay::dial_arc (432 / 288) centred: lv_arc (already anti-aliased, no buffer; Darren 2026-10-22: no stroke
+//           atom), track stroke::edge (2) line, indicator stroke::indicator (6 / 4) accent with round caps, knob lay::dial_knob (28 / 20) accent with a stroke::knob ring in the canvas colour
 //   centre  a flex column: caption (type label, caps, text-dim), sp::s7, value (type display, text, the dial's
 //           centre = the value's centre), sp::s2, unit (type body, text-dim), sp::s9, the button (lay::dial_toggle_w
 //           x touch::button_h: the Button component, outline "ON" / secondary "OFF", docs)
@@ -23,7 +22,10 @@
 // reduced motion = instant); moving during the sweep makes it follow the finger. Presses inside dial_arc / 2 -
 // touch::target from the centre are ignored (docs: the centre stays free, 150 of 216). In the bottom gap the value holds
 // the nearer end; a drag never jumps across the gap (100 -> 0), it stays at the end it reached.
-// Opening = the docs "opening the screen sweeps up from zero": the arc and number sweep 0 -> value (silent).
+// Opening = the docs "opening the screen sweeps up from zero": every build sweeps the arc and number 0 -> value
+// (silent), always (no prop). Not on / off, drag or ring taps. Workbench only: props key "opening": false = a re-build
+// that is not an opening (playground control changes, demo resets), so the dial appears at its value; meta "opening"
+// = the workbench's "Replay opening" button.
 // On / off (docs: brightness 0 means off): tap the button = off sweeps the arc to 0, on sweeps back to the value it had
 // (or 100 if that was 0); emits "toggle" on / off + sound toggle-on / toggle-off, the sweep itself is silent. Dragging
 // while off turns it on; releasing at 0 turns it off.
@@ -33,11 +35,9 @@
 // button disabled; any press = "blocked" + error once, nothing moves, no opening sweep. Unavailable (Card rule, the
 // entity is gone): disabled scale, no arc value or knob, the value slot says "Unavailable" (body, text-dim), no unit,
 // no button.
-// Redraw cost per drag frame: the indicator re-rasters and invalidates only the arc between the old and new angle
-// (fw::stroke_set_arc; measured in Chromium 2026-10-22: avg 0.04 ms at 720, 0.02 ms at 480 per frame, max ~1 ms for a
-// full 0 -> 100 redraw) + the knob; the value label hugs its text, so a new number invalidates just its own box; the
-// tick ring is drawn in one draw event (no objects per tick: one cached stroke-atom mask per tick, ~0.5 KB each) and
-// only repaints where those areas cross it.
+// Redraw cost per drag frame: lv_arc invalidates only the arc between the old and new angle + the knob; the value label
+// hugs its text, so a new number invalidates just its own box; the tick ring is drawn in one draw event (no objects per
+// tick) and only repaints where those areas cross it.
 // Contrast pairs: tokens/colour.json section "dial".
 #include "fw.h"
 
@@ -59,8 +59,6 @@ struct TickRing {
   fw::ty::Id num_style = fw::ty::c_meta;
   lv_color_t num_c;
 };
-struct Tick { lv_draw_buf_t *mask; int x, y; bool major; };  // one tick's stroke-atom mask at (x, y) of the ring
-struct Ring { TickRing spec; std::vector<Tick> ticks; };
 
 // "nice" intervals for a range (Darren 2026-10-21, round 2): the label interval is the smallest 1 / 2 / 5 x 10^k that
 // keeps the numbers to at most MAX_LABELS (the docs dial: 0-100 every 10 = 11) so they never crowd; minor ticks split
@@ -79,37 +77,35 @@ int decimals_of(double v) {  // 0, 1 or 2 decimals to show v exactly (steps / in
   return 2;
 }
 
-// the value of tick k and whether it is a major one; its angle in radians
-bool tick_at(const TickRing *r, long k, double *v, float *rad) {
-  const int sub = (int) std::lround(r->major / r->minor);
-  *v = k * r->minor;
-  *rad = (r->start + (float) ((*v - r->lo) / (r->hi - r->lo)) * r->range) * 3.14159265f / 180.0f;
-  return sub > 0 && ((k % sub) + sub) % sub == 0;
-}
-long tick_first(const TickRing *r) { return (long) std::ceil(r->lo / r->minor - 1e-6); }
-long tick_last(const TickRing *r) { return (long) std::floor(r->hi / r->minor + 1e-6); }
-
 void ring_draw(lv_event_t *e) {
   auto *o = (lv_obj_t *) lv_event_get_current_target(e);
-  auto *rg = (const Ring *) lv_event_get_user_data(e);
-  const TickRing *r = &rg->spec;
+  auto *r = (const TickRing *) lv_event_get_user_data(e);
   lv_layer_t *layer = lv_event_get_layer(e);
   lv_area_t a;
   lv_obj_get_coords(o, &a);
   const float cx = (a.x1 + a.x2 + 1) / 2.0f, cy = (a.y1 + a.y2 + 1) / 2.0f, R = lv_area_get_width(&a) / 2.0f;
-  for (const Tick &t : rg->ticks) fw::stroke_draw(layer, t.mask, a.x1 + t.x, a.y1 + t.y, t.major ? r->major_c : r->minor_c);
-  if (!r->numbers) return;
   const lv_font_t *f = fw::font(r->num_style);
   const fw::ty::Style &st = fw::style(r->num_style);
   // visual centre of a digit below the line top (cap height centred, the text-box rule)
   lv_font_glyph_dsc_t g;
   float dig_mid = f->line_height / 2.0f;
   if (lv_font_get_glyph_dsc(f, &g, '0', 0)) dig_mid = (f->line_height - f->base_line) - (g.ofs_y + g.box_h / 2.0f);
-  for (long k = tick_first(r); k <= tick_last(r); k++) {
-    double v;
-    float rad;
-    if (!tick_at(r, k, &v, &rad)) continue;
-    const float c = std::cos(rad), s = std::sin(rad);
+  const int sub = (int) std::lround(r->major / r->minor);
+  const long k0 = (long) std::ceil(r->lo / r->minor - 1e-6), k1 = (long) std::floor(r->hi / r->minor + 1e-6);
+  for (long k = k0; k <= k1; k++) {
+    const double v = k * r->minor;
+    const bool maj = sub > 0 && ((k % sub) + sub) % sub == 0;
+    const float deg = r->start + (float) ((v - r->lo) / (r->hi - r->lo)) * r->range;
+    const float rad = deg * 3.14159265f / 180.0f, c = std::cos(rad), s = std::sin(rad);
+    const int len = maj ? r->major_len : r->minor_len;
+    lv_draw_line_dsc_t ld;
+    lv_draw_line_dsc_init(&ld);
+    ld.color = maj ? r->major_c : r->minor_c;
+    ld.width = r->width;
+    ld.p1.x = cx + c * R; ld.p1.y = cy + s * R;
+    ld.p2.x = cx + c * (R - len); ld.p2.y = cy + s * (R - len);
+    lv_draw_line(layer, &ld);
+    if (!maj || !r->numbers) continue;
     char b[12];
     snprintf(b, sizeof b, "%.*f", r->num_dec, std::fabs(v) < 1e-9 ? 0.0 : v);
     lv_point_t sz;
@@ -133,27 +129,9 @@ lv_obj_t *tick_ring(lv_obj_t *parent, int size, const TickRing &spec) {
   lv_obj_remove_style_all(o);
   lv_obj_remove_flag(o, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
   lv_obj_set_size(o, size, size);
-  auto *rg = new Ring{spec, {}};
-  // every tick = a stroke atom (radial, square ends like lv_draw_line), rasterised once into its own small mask
-  const float c = size / 2.0f - 0.5f, R = size / 2.0f, m = spec.width / 2.0f + 1;  // centre in pixel-centre coords
-  for (long k = tick_first(&spec); k <= tick_last(&spec); k++) {
-    double v;
-    float rad;
-    const bool maj = tick_at(&spec, k, &v, &rad);
-    const int len = maj ? spec.major_len : spec.minor_len;
-    const float co = std::cos(rad), si = std::sin(rad);
-    fw::StrokePt p[2] = {{c + co * R, c + si * R}, {c + co * (R - len), c + si * (R - len)}};
-    const int x = (int) std::floor(std::min(p[0].x, p[1].x) - m), y = (int) std::floor(std::min(p[0].y, p[1].y) - m);
-    const int w = (int) std::ceil(std::max(p[0].x, p[1].x) + m) - x + 1, h = (int) std::ceil(std::max(p[0].y, p[1].y) + m) - y + 1;
-    for (auto &q : p) q.x -= x, q.y -= y;
-    rg->ticks.push_back({fw::stroke_segments(w, h, p, 1, spec.width, fw::Cap::butt), x, y, maj});
-  }
-  lv_obj_add_event_cb(o, ring_draw, LV_EVENT_DRAW_MAIN, rg);
-  lv_obj_add_event_cb(o, [](lv_event_t *e) {
-    auto *rg = (Ring *) lv_event_get_user_data(e);
-    for (Tick &t : rg->ticks) lv_draw_buf_destroy(t.mask);
-    delete rg;
-  }, LV_EVENT_DELETE, rg);
+  auto *r = new TickRing(spec);
+  lv_obj_add_event_cb(o, ring_draw, LV_EVENT_DRAW_MAIN, r);
+  lv_obj_add_event_cb(o, [](lv_event_t *e) { delete (TickRing *) lv_event_get_user_data(e); }, LV_EVENT_DELETE, r);
   return o;
 }
 
@@ -165,10 +143,11 @@ struct Dial {
   int last_on = 100;       // value to come back to when switched on
   int press_idx = 0;
   bool on = true, quiet = false, grab = false, moved = false, active = false;
+  int state = 0;           // 0 default, 1 disabled, 2 unavailable (a change = rebuild)
   int32_t shown = 0;       // drawn position, step index x FP
   int shown_idx = 0, shown_val = -1;  // shown_val = the step index on the label
   lv_point_t press_pt = {0, 0};
-  lv_obj_t *arc = nullptr, *ind = nullptr, *val = nullptr, *btn_on = nullptr, *btn_off = nullptr;
+  lv_obj_t *arc = nullptr, *val = nullptr, *btn_on = nullptr, *btn_off = nullptr, *cap = nullptr, *unit = nullptr;
 };
 
 Dial *of(lv_obj_t *o) { return (Dial *) lv_obj_get_user_data(o); }
@@ -184,10 +163,7 @@ void show(void *o, int32_t v) {
   auto *d = of(s);
   v = LV_CLAMP(0, v, d->n * FP);
   d->shown = v;
-  if (d->arc) lv_arc_set_value(d->arc, v);  // the knob
-  if (d->ind) {  // the value arc: a stroke atom re-rasterised where it moved
-    fw::stroke_set_arc(d->ind, START, START + RANGE * v / (float) (d->n * FP));
-  }
+  if (d->arc) lv_arc_set_value(d->arc, v);
   const int i = (v + FP / 2) / FP;
   if (i != d->shown_val && d->val) {  // only a new number touches the label (its own box)
     lv_label_set_text(d->val, fmt(d, value_of(d, i)).c_str());
@@ -227,6 +203,22 @@ int idx_at(lv_obj_t *s, lv_point_t pt, bool dragging, float *dist) {
   return i;
 }
 
+// range (round 2): min / max / step like the Slider; a step that does not divide the range ends on max
+void range_of(fw::Props p, Dial *d) {
+  d->step = std::max(0.01, (double) (p["step"] | 1.0));
+  d->min = p["min"] | 0.0;
+  d->max = std::max(d->min + d->step, (double) (p["max"] | 100.0));
+  d->n = std::max(1, (int) std::ceil((d->max - d->min) / d->step - 1e-6));
+  d->dec = decimals_of(d->step);
+}
+int idx_of(const Dial *d, fw::Props p) {
+  const double v = LV_CLAMP(d->min, (double) (p["value"] | 64.0), d->max);
+  return (int) std::lround((v - d->min) / d->step);
+}
+void retext(lv_obj_t *l, fw::ty::Id s, const char *txt) {  // only a changed text touches the label
+  if (l && fw::cased(s, txt) != lv_label_get_text(l)) fw::set_text(l, s, txt);
+}
+
 lv_obj_t *box(lv_obj_t *parent) {
   lv_obj_t *o = lv_obj_create(parent);
   lv_obj_remove_style_all(o);
@@ -252,53 +244,24 @@ lv_obj_t *button(lv_obj_t *parent, bool on, bool disabled) {
 }
 }  // namespace
 
-FW_COMPONENT(dial, "Dial", "components", R"({
-  "about": "A large circular control for a value such as brightness or temperature, with an on/off button in the centre.",
-  "frame": [384, 384],
-  "props": [
-    {"name": "value", "type": "range", "min": -20, "max": 200, "step": 0.5, "default": 64},
-    {"name": "min", "type": "range", "min": -20, "max": 100, "step": 1, "default": 0},
-    {"name": "max", "type": "range", "min": 1, "max": 200, "step": 1, "default": 100},
-    {"name": "on", "type": "bool", "default": true},
-    {"name": "caption", "type": "text", "default": "Brightness"},
-    {"name": "unit", "type": "text", "default": "%"},
-    {"name": "step", "type": "range", "min": 0.5, "max": 25, "step": 0.5, "default": 1},
-    {"name": "state", "type": "select", "options": ["default", "disabled", "unavailable"], "default": "default"},
-    {"name": "sweep", "type": "bool", "default": true}
-  ],
-  "variants": [
-    {"label": "value · 40", "props": {"value": 40}},
-    {"label": "value · 100", "props": {"value": 100}},
-    {"label": "value · 0", "props": {"value": 0}},
-    {"label": "off", "props": {"value": 64, "on": false}},
-    {"label": "step 10 · 40", "props": {"value": 40, "step": 10}},
-    {"label": "16-30 °C · step 0.5", "props": {"caption": "Target", "unit": "°C", "min": 16, "max": 30, "step": 0.5, "value": 21.5}},
-    {"label": "disabled · 64", "props": {"state": "disabled"}},
-    {"label": "unavailable", "props": {"state": "unavailable"}}
-  ]
-})") {
+namespace {
+void fill(lv_obj_t *s, fw::Props p, bool opening) {
   const fw::Theme &t = *fw::T;
   const char *state = p["state"] | "default";
   const bool unavail = !strcmp(state, "unavailable"), off = unavail || !strcmp(state, "disabled");
-  auto *d = new Dial;
-  // range (round 2): min / max / step like the Slider; a step that does not divide the range ends on max
-  d->step = std::max(0.01, (double) (p["step"] | 1.0));
-  d->min = p["min"] | 0.0;
-  d->max = std::max(d->min + d->step, (double) (p["max"] | 100.0));
-  d->n = std::max(1, (int) std::ceil((d->max - d->min) / d->step - 1e-6));
-  d->dec = decimals_of(d->step);
-  const double v0 = LV_CLAMP(d->min, (double) (p["value"] | 64.0), d->max);
-  d->idx = (int) std::lround((v0 - d->min) / d->step);
+  auto *d = of(s);
+  *d = Dial{};
+  range_of(p, d);
+  d->state = unavail ? 2 : off ? 1 : 0;
+  d->idx = idx_of(d, p);
   d->on = p["on"] | true;
   d->last_on = d->idx ? d->idx : d->n;
 
   const int S = fw::lay::dial_scale, A = fw::lay::dial_arc, C = S / 2;
-  lv_obj_t *s = lv_obj_create(parent);
   lv_obj_remove_style_all(s);
   lv_obj_add_flag(s, LV_OBJ_FLAG_CLICKABLE);
   lv_obj_remove_flag(s, (lv_obj_flag_t) (LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_SCROLL_CHAIN | LV_OBJ_FLAG_GESTURE_BUBBLE));
   lv_obj_set_size(s, S, S);
-  lv_obj_set_user_data(s, d);
 
   TickRing tr;
   tr.lo = d->min;
@@ -315,12 +278,6 @@ FW_COMPONENT(dial, "Dial", "components", R"({
   tick_ring(s, S, tr);
 
   if (!unavail) {
-    // track + value arc = stroke atoms (lv_arc geometry: drawn inward from the A x A box); the lv_arc on top only
-    // draws the knob (its arcs transparent, widths kept so the knob sits on the indicator's middle line)
-    const int ax = (S - A) / 2;
-    fw::stroke_arc(s, ax, ax, A, START, START + RANGE, fw::stroke::edge, t.line, fw::Cap::butt);
-    d->ind = fw::stroke_arc(s, ax, ax, A, START, START, fw::stroke::indicator,
-                            off ? fw::st::disabled_ink(t) : fw::st::on_fill(t));
     lv_obj_t *a = d->arc = lv_arc_create(s);
     lv_obj_remove_flag(a, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
     lv_obj_set_size(a, A, A);
@@ -330,9 +287,11 @@ FW_COMPONENT(dial, "Dial", "components", R"({
     lv_arc_set_range(a, 0, d->n * FP);
     lv_arc_set_value(a, 0);
     lv_obj_set_style_arc_width(a, fw::stroke::edge, LV_PART_MAIN);
-    lv_obj_set_style_arc_opa(a, LV_OPA_TRANSP, LV_PART_MAIN);
+    lv_obj_set_style_arc_color(a, t.line, LV_PART_MAIN);
+    lv_obj_set_style_arc_rounded(a, false, LV_PART_MAIN);
     lv_obj_set_style_arc_width(a, fw::stroke::indicator, LV_PART_INDICATOR);
-    lv_obj_set_style_arc_opa(a, LV_OPA_TRANSP, LV_PART_INDICATOR);
+    lv_obj_set_style_arc_color(a, off ? fw::st::disabled_ink(t) : fw::st::on_fill(t), LV_PART_INDICATOR);
+    lv_obj_set_style_arc_rounded(a, true, LV_PART_INDICATOR);
     lv_obj_set_style_bg_opa(a, LV_OPA_COVER, LV_PART_KNOB);
     lv_obj_set_style_bg_color(a, off ? fw::st::disabled_knob(t) : t.accent, LV_PART_KNOB);
     lv_obj_set_style_radius(a, LV_RADIUS_CIRCLE, LV_PART_KNOB);
@@ -348,7 +307,7 @@ FW_COMPONENT(dial, "Dial", "components", R"({
   lv_obj_set_pos(col, (S - A) / 2, C - val_h / 2 - fw::sp::s7 - cap_h);
   lv_obj_set_flex_flow(col, LV_FLEX_FLOW_COLUMN);
   lv_obj_set_flex_align(col, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-  lv_obj_t *cap = fw::text(col, fw::ty::label, p["caption"] | "Brightness", off ? fw::st::disabled_ink(t) : t.text_dim);
+  lv_obj_t *cap = d->cap = fw::text(col, fw::ty::label, p["caption"] | "Brightness", off ? fw::st::disabled_ink(t) : t.text_dim);
   lv_obj_set_height(cap, cap_h);  // the type box (labels default to WRAP, where fw::text leaves the height to content)
   lv_obj_set_style_margin_bottom(cap, fw::sp::s7, 0);
   if (unavail) {
@@ -359,7 +318,7 @@ FW_COMPONENT(dial, "Dial", "components", R"({
     d->val = fw::text(col, fw::ty::display, "0", off ? fw::st::disabled_ink(t) : t.text);
     lv_obj_set_height(d->val, val_h);
     lv_obj_set_style_margin_bottom(d->val, fw::sp::s2, 0);
-    lv_obj_t *unit = fw::text(col, fw::ty::body, p["unit"] | "%", off ? fw::st::disabled_ink(t) : t.text_dim);
+    lv_obj_t *unit = d->unit = fw::text(col, fw::ty::body, p["unit"] | "%", off ? fw::st::disabled_ink(t) : t.text_dim);
     lv_obj_set_height(unit, fw::style(fw::ty::body).box);
     lv_obj_set_style_margin_bottom(unit, fw::sp::s9, 0);
     lv_obj_t *hit = box(col);  // the button's hit box: owns the tap, trickles PRESSED into the button
@@ -387,13 +346,47 @@ FW_COMPONENT(dial, "Dial", "components", R"({
   }
   set_on(s, d->on);
 
-  // first draw: silent; the opening sweep rises from 0 (docs), unless disabled / sweep off / reduced motion
+  // first draw: silent; the opening sweep rises from 0 (docs), unless disabled / a workbench re-build / reduced motion
   const int32_t target = d->on ? d->idx * FP : 0;
   d->quiet = true;
   show(s, 0);
-  if (off || !(p["sweep"] | true)) show(s, target), d->quiet = false;
+  if (off || !opening) show(s, target), d->quiet = false;
   else sweep_quiet(s, 0, target);
   if (off) lv_obj_add_state(s, ST_OFF);
+
+
+}
+}  // namespace
+
+FW_COMPONENT(dial, "Dial", "components", R"({
+  "about": "A large circular control for a value such as brightness or temperature, with an on/off button in the centre.",
+  "frame": [384, 384],
+  "props": [
+    {"name": "value", "type": "range", "min": -20, "max": 200, "step": 0.5, "default": 64},
+    {"name": "min", "type": "range", "min": -20, "max": 100, "step": 1, "default": 0},
+    {"name": "max", "type": "range", "min": 1, "max": 200, "step": 1, "default": 100},
+    {"name": "on", "type": "bool", "default": true},
+    {"name": "caption", "type": "text", "default": "Brightness"},
+    {"name": "unit", "type": "text", "default": "%"},
+    {"name": "step", "type": "range", "min": 0.5, "max": 25, "step": 0.5, "default": 1},
+    {"name": "state", "type": "select", "options": ["default", "disabled", "unavailable"], "default": "default"}
+  ],
+  "opening": "Opening the screen sweeps the arc and number up from 0 (Motion value, 400 ms).",
+  "variants": [
+    {"label": "value · 40", "props": {"value": 40}},
+    {"label": "value · 100", "props": {"value": 100}},
+    {"label": "value · 0", "props": {"value": 0}},
+    {"label": "off", "props": {"value": 64, "on": false}},
+    {"label": "step 10 · 40", "props": {"value": 40, "step": 10}},
+    {"label": "16-30 °C · step 0.5", "props": {"caption": "Target", "unit": "°C", "min": 16, "max": 30, "step": 0.5, "value": 21.5}},
+    {"label": "disabled · 64", "props": {"state": "disabled"}},
+    {"label": "unavailable", "props": {"state": "unavailable"}}
+  ]
+})") {
+  auto *d = new Dial;
+  lv_obj_t *s = lv_obj_create(parent);
+  lv_obj_set_user_data(s, d);
+  fill(s, p, p["opening"] | true);
 
   lv_obj_add_event_cb(s, [](lv_event_t *e) { delete (Dial *) lv_event_get_user_data(e); }, LV_EVENT_DELETE, d);
   lv_obj_add_event_cb(s, [](lv_event_t *e) {
@@ -443,4 +436,38 @@ FW_COMPONENT(dial, "Dial", "components", R"({
       else if (d->idx) d->last_on = d->idx;
     }
   }, LV_EVENT_ALL, nullptr);
+}
+
+// Update path (README "Update path"): value -> the arc and number sweep there (Motion value, up or down), on / off ->
+// the on / off sweep, caption / unit -> new text; all silent (no step ticks, no toggle / change events or sounds).
+// A different state (default / disabled / unavailable) or range (min / max / step) = the dial's contents again in the
+// same root (fw::refill, snap at the value, no opening sweep); a state change fades the new contents in
+// (fw::st::fade_in_children). While a finger holds the dial the user wins: value and on wait for the next update (the
+// release reports the user's value).
+FW_UPDATE(dial) {
+  auto *d = of(root);
+  if (!d) return false;
+  const char *state = p["state"] | "default";
+  const int st = !strcmp(state, "unavailable") ? 2 : !strcmp(state, "disabled") ? 1 : 0;
+  Dial r;
+  range_of(p, &r);
+  if (st != d->state || r.n != d->n || std::fabs(r.min - d->min) > 1e-9 || std::fabs(r.max - d->max) > 1e-9 ||
+      std::fabs(r.step - d->step) > 1e-9) {
+    const bool state_changed = st != d->state;
+    fw::refill(root);
+    fill(root, p, false);
+    if (state_changed) fw::st::fade_in_children(root);
+    return true;
+  }
+  retext(d->cap, fw::ty::label, p["caption"] | "Brightness");
+  retext(d->unit, fw::ty::body, p["unit"] | "%");
+  if (d->active || !d->arc) return true;
+  const int idx = idx_of(d, p);
+  const bool on = p["on"] | true;
+  d->idx = idx;
+  if (idx) d->last_on = idx;
+  if (on != d->on) set_on(root, on);
+  const int32_t target = on ? idx * FP : 0;
+  if (target != d->shown || lv_anim_get(root, (lv_anim_exec_xcb_t) show)) sweep_quiet(root, d->shown, target);
+  return true;
 }

@@ -63,6 +63,11 @@
     "note": "Smooth curves; now used by Motion, the Dial and the mascot"
    },
    {
+    "name": "Charts",
+    "group": "Core",
+    "status": "doing"
+   },
+   {
     "name": "Personalisation settings",
     "group": "Settings",
     "status": "planned",

@@ -35,33 +35,9 @@ lv_obj_t *build(const char *id, lv_obj_t *parent, ArduinoJson::JsonDocument &pro
 }
 }  // namespace
 
-FW_COMPONENT(section_header, "Section header", "components", R"({
-  "about": "A caption that starts a group of content, with an optional count and a meta text or action on the right.",
-  "frame": [480, 96],
-  "props": [
-    {"name": "title", "type": "text", "default": "Needs you"},
-    {"name": "badge", "type": "bool", "default": true},
-    {"name": "count", "type": "range", "min": 0, "max": 150, "step": 1, "default": 3},
-    {"name": "tone", "type": "select", "options": ["ok", "warn", "error", "working", "info", "idle"], "default": "warn"},
-    {"name": "zero", "type": "select", "options": ["muted", "hide"], "default": "muted"},
-    {"name": "right", "type": "select", "options": ["none", "meta", "action"], "default": "meta"},
-    {"name": "meta", "type": "text", "default": "updated 2m"},
-    {"name": "action", "type": "text", "default": "See all"},
-    {"name": "state", "type": "select", "options": ["default", "pressed", "disabled"], "default": "default"}
-  ],
-  "variants": [
-    {"label": "count + meta", "props": {}},
-    {"label": "title only", "props": {"title": "Today", "badge": false, "right": "none"}},
-    {"label": "count 0 · muted", "props": {"title": "Reviews", "count": 0, "right": "none"}},
-    {"label": "count 0 · hidden", "props": {"title": "Reviews", "count": 0, "zero": "hide", "right": "none"}},
-    {"label": "99+ · working", "props": {"title": "Running", "count": 128, "tone": "working", "right": "none"}},
-    {"label": "action", "props": {"title": "Your pull requests", "count": 2, "tone": "info", "right": "action"}},
-    {"label": "action · pressed", "props": {"title": "Notifications", "count": 5, "tone": "error", "right": "action", "action": "Clear", "state": "pressed"}},
-    {"label": "action · disabled", "props": {"title": "Notifications", "badge": false, "right": "action", "action": "Clear", "state": "disabled"}}
-  ]
-})") {
+namespace {
+void fill(lv_obj_t *h, fw::Props p) {
   const fw::Theme &t = *fw::T;
-  lv_obj_t *h = lv_obj_create(parent);
   lv_obj_remove_style_all(h);
   lv_obj_remove_flag(h, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
   lv_obj_set_size(h, 2 * fw::lay::card_w + fw::lay::gutter, fw::lay::section_h);
@@ -134,4 +110,60 @@ FW_COMPONENT(section_header, "Section header", "components", R"({
       else { fw::emit(o, "tap", d); fw::sound(o, "tap"); }
     }, l);
   }
+}
+}  // namespace
+
+FW_COMPONENT(section_header, "Section header", "components", R"({
+  "about": "A caption that starts a group of content, with an optional count and a meta text or action on the right.",
+  "frame": [480, 96],
+  "props": [
+    {"name": "title", "type": "text", "default": "Needs you"},
+    {"name": "badge", "type": "bool", "default": true},
+    {"name": "count", "type": "range", "min": 0, "max": 150, "step": 1, "default": 3},
+    {"name": "tone", "type": "select", "options": ["ok", "warn", "error", "working", "info", "idle"], "default": "warn"},
+    {"name": "zero", "type": "select", "options": ["muted", "hide"], "default": "muted"},
+    {"name": "right", "type": "select", "options": ["none", "meta", "action"], "default": "meta"},
+    {"name": "meta", "type": "text", "default": "updated 2m"},
+    {"name": "action", "type": "text", "default": "See all"},
+    {"name": "state", "type": "select", "options": ["default", "pressed", "disabled"], "default": "default"}
+  ],
+  "variants": [
+    {"label": "count + meta", "props": {}},
+    {"label": "title only", "props": {"title": "Today", "badge": false, "right": "none"}},
+    {"label": "count 0 · muted", "props": {"title": "Reviews", "count": 0, "right": "none"}},
+    {"label": "count 0 · hidden", "props": {"title": "Reviews", "count": 0, "zero": "hide", "right": "none"}},
+    {"label": "99+ · working", "props": {"title": "Running", "count": 128, "tone": "working", "right": "none"}},
+    {"label": "action", "props": {"title": "Your pull requests", "count": 2, "tone": "info", "right": "action"}},
+    {"label": "action · pressed", "props": {"title": "Notifications", "count": 5, "tone": "error", "right": "action", "action": "Clear", "state": "pressed"}},
+    {"label": "action · disabled", "props": {"title": "Notifications", "badge": false, "right": "action", "action": "Clear", "state": "disabled"}}
+  ]
+})") {
+  lv_obj_t *h = lv_obj_create(parent);
+  fill(h, p);
+  fw::st::built(h, p);
+}
+
+// Update path: the action's default <-> pressed = its press fade in place; any other prop builds the header again in
+// the same root (fw::refill, snap: badge, right side, texts), the action going disabled / back fades in. Silent.
+FW_UPDATE(section_header) {
+  const bool pr = !strcmp(p["state"] | "default", "pressed");
+  const bool was_off = !strcmp(p["right"] | "meta", "action") && lv_obj_has_state(lv_obj_get_child(root, -1), ST_OFF);
+  if (fw::shape(root, [&] {  // the props with pressed read as default (fw::st::built stored the same)
+        ArduinoJson::JsonDocument r;
+        r.set(p);
+        if (pr) r["state"] = "default";
+        std::string s;
+        serializeJson(r, s);
+        return s;
+      }())) {
+    lv_obj_t *a = lv_obj_get_child(root, -1);
+    if (a && !strcmp(p["right"] | "meta", "action") && pr != lv_obj_has_state(a, LV_STATE_PRESSED))
+      lv_obj_set_state(a, LV_STATE_PRESSED, pr);
+    return true;
+  }
+  fw::refill(root);
+  fill(root, p);
+  const bool off = !strcmp(p["right"] | "meta", "action") && !strcmp(p["state"] | "default", "disabled");
+  if (off != was_off) fw::st::fade_in_children(lv_obj_get_child(root, -1));
+  return true;
 }

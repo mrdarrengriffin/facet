@@ -46,18 +46,35 @@ struct Spec {
   bool selected;
 };
 
-lv_obj_t *picker_row(lv_obj_t *parent, const Spec &s) {
-  const fw::Theme &t = *fw::T;
-  const bool unavail = !strcmp(s.state, "unavailable"), off = unavail || !strcmp(s.state, "disabled");
-  const bool working = !strcmp(s.tone, "working") && !off;
-  ArduinoJson::JsonDocument d;
+void pick_cb(lv_event_t *e) {
+  // a real tap on an enabled row: this radio on, the sibling picker rows' radios off (after the List row's own
+  // tap / blocked handling, which runs first: it was added first)
+  auto *o = (lv_obj_t *) lv_event_get_current_target(e);
+  if (lv_obj_has_state(o, ST_OFF)) return;
+  lv_obj_t *p = lv_obj_get_parent(o);
+  for (uint32_t i = 0; i < lv_obj_get_child_count(p); i++) {
+    lv_obj_t *rd = radio_of(lv_obj_get_child(p, i));
+    if (rd && lv_obj_get_child(p, i) != o) lv_obj_remove_state(rd, ST_ON);
+  }
+  if (lv_obj_t *rd = radio_of(o)) lv_obj_add_state(rd, ST_ON);
+}
+void list_props(const Spec &s, ArduinoJson::JsonDocument &d) {  // the List row underneath
   d["title"] = s.name;
   d["icon"] = s.icon;
   d["trailing"] = "none";
   d["state"] = s.state;
-  lv_obj_t *r = build("list_row", parent, d);
-  if (!r) return nullptr;
+}
+void radio_props(const Spec &s, ArduinoJson::JsonDocument &rp) {
+  const bool off = !strcmp(s.state, "unavailable") || !strcmp(s.state, "disabled");
+  rp["on"] = s.selected;
+  rp["state"] = off ? "disabled" : "default";
+}
 
+// the picker's parts on a List row r: the caps status under the title, the radio, the PICKER mark + tap handler
+void decorate(lv_obj_t *r, const Spec &s) {
+  const fw::Theme &t = *fw::T;
+  const bool unavail = !strcmp(s.state, "unavailable"), off = unavail || !strcmp(s.state, "disabled");
+  const bool working = !strcmp(s.tone, "working") && !off;
   // the List row's parts: [icon] text column (the one that grows) [Unavailable]
   lv_obj_t *icon = nullptr, *col = nullptr;
   for (uint32_t i = 0; i < lv_obj_get_child_count(r); i++) {
@@ -79,37 +96,47 @@ lv_obj_t *picker_row(lv_obj_t *parent, const Spec &s) {
   lv_obj_t *radio = nullptr;
   if (!unavail) {
     ArduinoJson::JsonDocument rp;
-    rp["on"] = s.selected;
-    rp["state"] = off ? "disabled" : "default";
+    radio_props(s, rp);
     radio = build("radio", r, rp);
     if (radio) lv_obj_remove_flag(radio, LV_OBJ_FLAG_CLICKABLE);  // the row is the target
   }
   lv_obj_add_flag(r, PICKER);
   lv_obj_set_user_data(r, radio);
+  lv_obj_remove_event_cb(r, pick_cb);  // one handler (an update may decorate the same root again)
+  lv_obj_add_event_cb(r, pick_cb, LV_EVENT_CLICKED, nullptr);
+}
 
-  // a real tap on an enabled row: this radio on, the sibling picker rows' radios off (after the List row's own
-  // tap / blocked handling, which runs first: it was added first)
-  lv_obj_add_event_cb(r, [](lv_event_t *e) {
-    auto *o = (lv_obj_t *) lv_event_get_current_target(e);
-    if (lv_obj_has_state(o, ST_OFF)) return;
-    lv_obj_t *p = lv_obj_get_parent(o);
-    for (uint32_t i = 0; i < lv_obj_get_child_count(p); i++) {
-      lv_obj_t *rd = radio_of(lv_obj_get_child(p, i));
-      if (rd && lv_obj_get_child(p, i) != o) lv_obj_remove_state(rd, ST_ON);
-    }
-    if (lv_obj_t *rd = radio_of(o)) lv_obj_add_state(rd, ST_ON);
-  }, LV_EVENT_CLICKED, nullptr);
+lv_obj_t *picker_row(lv_obj_t *parent, const Spec &s) {
+  ArduinoJson::JsonDocument d;
+  list_props(s, d);
+  lv_obj_t *r = build("list_row", parent, d);
+  if (!r) return nullptr;
+  decorate(r, s);
   return r;
 }
 
-lv_obj_t *column(lv_obj_t *parent) {
-  lv_obj_t *l = lv_obj_create(parent);
-  lv_obj_remove_style_all(l);
-  lv_obj_remove_flag(l, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
-  lv_obj_set_size(l, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
-  lv_obj_set_flex_flow(l, LV_FLEX_FLOW_COLUMN);
-  return l;
+const Spec GROUP[] = {
+    {"auto", "Auto", "follow what's playing", "dim", "default", true},
+    {"speaker", "Kitchen speaker", "playing · Northbound", "working", "default", false},
+    {"tv", "Living room TV", "idle", "dim", "default", false},
+    {"speakers", "Downstairs", "group · 3 speakers", "dim", "default", false},
+};
+void group(lv_obj_t *l) { for (const Spec &s : GROUP) picker_row(l, s); }
+Spec spec_of(fw::Props p) {
+  return {p["icon"] | "speaker", p["name"] | "Kitchen speaker", p["status"] | "", p["tone"] | "dim", p["state"] | "default",
+          p["selected"] | false};
 }
+// the props that need the parts again: all but a pressed state and selected (those move in place)
+std::string sig(fw::Props p) {
+  ArduinoJson::JsonDocument r;
+  r.set(p);
+  if (!strcmp(p["state"] | "default", "pressed")) r["state"] = "default";
+  r.remove("selected");
+  std::string s;
+  serializeJson(r, s);
+  return s;
+}
+
 }  // namespace
 
 FW_COMPONENT(picker_row, "Picker row", "components", R"({
@@ -139,17 +166,50 @@ FW_COMPONENT(picker_row, "Picker row", "components", R"({
   ]
 })") {
   if (!strcmp(p["list"] | "single", "group")) {  // a short choose-one list: rows touch, the radio follows the tap
-    lv_obj_t *l = column(parent);
-    const Spec rows[] = {
-        {"auto", "Auto", "follow what's playing", "dim", "default", true},
-        {"speaker", "Kitchen speaker", "playing · Northbound", "working", "default", false},
-        {"tv", "Living room TV", "idle", "dim", "default", false},
-        {"speakers", "Downstairs", "group · 3 speakers", "dim", "default", false},
-    };
-    for (const Spec &s : rows) picker_row(l, s);
+    ArduinoJson::JsonDocument lp;
+    lp["list"] = "stack";  // the List row's column root (so a later update can turn it back into one row)
+    lv_obj_t *l = build("list_row", parent, lp);
+    if (!l) return;
+    lv_obj_clean(l);  // the List row's own demo rows out, the picker rows in
+    group(l);
+    fw::shape(l, sig(p), "picker");
     return;
   }
-  lv_obj_t *r = picker_row(parent, {p["icon"] | "speaker", p["name"] | "Kitchen speaker", p["status"] | "", p["tone"] | "dim",
-                                    p["state"] | "default", p["selected"] | false});
-  (void) r;
+  lv_obj_t *r = picker_row(parent, spec_of(p));
+  if (r) fw::shape(r, sig(p), "picker");
+}
+
+// Update path: selected = the Radio's own update (its ring + dot transitions), default <-> pressed = the List row's
+// press fade; name, icon, status, tone, disabled / unavailable or the group demo = the List row's contents again
+// (its update, forced) and the picker's parts on it again (snap; disabled / unavailable in or out fades in). Silent.
+FW_UPDATE(picker_row) {
+  const bool grp = !strcmp(p["list"] | "single", "group");
+  const Spec s = spec_of(p);
+  ArduinoJson::JsonDocument lp;
+  if (grp) lp["list"] = "stack";
+  else list_props(s, lp);
+  if (fw::shape(root, sig(p), "picker")) {
+    if (grp) return true;  // fixed demo rows
+    fw::update_child(fw::find("list_row"), root, lp.as<fw::Props>());  // only the press can differ: in place
+    if (lv_obj_t *rd = radio_of(root)) {
+      ArduinoJson::JsonDocument rp;
+      radio_props(s, rp);
+      fw::update_child(fw::find("radio"), rd, rp.as<fw::Props>());
+    }
+    return true;
+  }
+  const bool was_off = lv_obj_has_state(root, ST_OFF);
+  fw::shape(root, "");  // the List row's stored props: forget them, so its update builds its contents again
+  if (!fw::update_child(fw::find("list_row"), root, lp.as<fw::Props>())) return false;
+  if (grp) {
+    lv_obj_remove_flag(root, PICKER);
+    lv_obj_set_user_data(root, nullptr);
+    lv_obj_remove_event_cb(root, pick_cb);
+    lv_obj_clean(root);
+    group(root);
+  } else {
+    decorate(root, s);
+  }
+  if (was_off != lv_obj_has_state(root, ST_OFF)) fw::st::fade_in_children(root);
+  return true;
 }

@@ -28,6 +28,20 @@ lv_color_t tone(const char *t) {
 }
 }  // namespace
 
+namespace {
+void fill(lv_obj_t *s, fw::Props p) {
+  const fw::Theme &t = *fw::T;
+  const bool off = !strcmp(p["state"] | "default", "unavailable");
+  lv_obj_remove_style_all(s);
+  lv_obj_remove_flag(s, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
+  lv_obj_set_size(s, (p["fill"] | false) ? LV_PCT(100) : fw::lay::card_w, LV_SIZE_CONTENT);
+  lv_obj_set_flex_flow(s, LV_FLEX_FLOW_COLUMN);
+  lv_obj_set_style_pad_row(s, fw::sp::s2, 0);
+  line(s, fw::ty::label, p["label"] | "", off ? fw::st::unavailable_ink(t) : t.text_dim);
+  line(s, fw::ty::body, off ? fw::st::UNAVAILABLE_TEXT : (p["value"] | ""), off ? fw::st::unavailable_note(t) : tone(p["tone"] | "dim"));
+}
+}  // namespace
+
 FW_COMPONENT(stat, "Stat", "components", R"({
   "about": "A caps label over one line of text: one fact in a column of facts.",
   "frame": [240, 64],
@@ -46,14 +60,12 @@ FW_COMPONENT(stat, "Stat", "components", R"({
     {"label": "unavailable", "props": {"label": "outside", "value": "12°", "state": "unavailable"}}
   ]
 })") {
-  const fw::Theme &t = *fw::T;
-  const bool off = !strcmp(p["state"] | "default", "unavailable");
-  lv_obj_t *s = lv_obj_create(parent);
-  lv_obj_remove_style_all(s);
-  lv_obj_remove_flag(s, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
-  lv_obj_set_size(s, (p["fill"] | false) ? LV_PCT(100) : fw::lay::card_w, LV_SIZE_CONTENT);
-  lv_obj_set_flex_flow(s, LV_FLEX_FLOW_COLUMN);
-  lv_obj_set_style_pad_row(s, fw::sp::s2, 0);
-  line(s, fw::ty::label, p["label"] | "", off ? fw::st::unavailable_ink(t) : t.text_dim);
-  line(s, fw::ty::body, off ? fw::st::UNAVAILABLE_TEXT : (p["value"] | ""), off ? fw::st::unavailable_note(t) : tone(p["tone"] | "dim"));
+  fill(lv_obj_create(parent), p);
+}
+
+// Update path: label, value, tone and unavailable snap in the same root (fw::refill), silent.
+FW_UPDATE(stat) {
+  fw::refill(root);
+  fill(root, p);
+  return true;
 }

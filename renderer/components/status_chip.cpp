@@ -24,26 +24,9 @@ lv_color_t fill_of(const char *t) {
 }
 }  // namespace
 
-FW_COMPONENT(status_chip, "Status chip", "components", R"({
-  "about": "A small tinted pill with a status dot and a short caps label.",
-  "frame": [240, 64],
-  "props": [
-    {"name": "tone", "type": "select", "options": ["ok", "warn", "error", "working", "info", "idle"], "default": "working"},
-    {"name": "text", "type": "text", "default": "3 working"},
-    {"name": "pulse", "type": "bool", "default": false}
-  ],
-  "variants": [
-    {"label": "ok", "props": {"tone": "ok", "text": "sys: ok"}},
-    {"label": "warn", "props": {"tone": "warn", "text": "needs you"}},
-    {"label": "error", "props": {"tone": "error", "text": "sys: error"}},
-    {"label": "working", "props": {"tone": "working", "text": "sys: working"}},
-    {"label": "info", "props": {"tone": "info", "text": "sys: info"}},
-    {"label": "idle", "props": {"tone": "idle", "text": "sys: idle"}},
-    {"label": "working · pulse", "props": {"tone": "working", "text": "3 working", "pulse": true}}
-  ]
-})") {
+namespace {
+void fill(lv_obj_t *c, fw::Props p) {
   const char *tone = p["tone"] | "working";
-  lv_obj_t *c = lv_obj_create(parent);
   lv_obj_remove_style_all(c);
   lv_obj_remove_flag(c, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
   lv_obj_set_size(c, LV_SIZE_CONTENT, fw::lay::chip_h);
@@ -69,4 +52,33 @@ FW_COMPONENT(status_chip, "Status chip", "components", R"({
     lp["colour"] = "text";
     lc->build(c, lp.as<fw::Props>());
   }
+}
+}  // namespace
+
+FW_COMPONENT(status_chip, "Status chip", "components", R"({
+  "about": "A small tinted pill with a status dot and a short caps label.",
+  "frame": [240, 64],
+  "props": [
+    {"name": "tone", "type": "select", "options": ["ok", "warn", "error", "working", "info", "idle"], "default": "working"},
+    {"name": "text", "type": "text", "default": "3 working"},
+    {"name": "pulse", "type": "bool", "default": false}
+  ],
+  "variants": [
+    {"label": "ok", "props": {"tone": "ok", "text": "sys: ok"}},
+    {"label": "warn", "props": {"tone": "warn", "text": "needs you"}},
+    {"label": "error", "props": {"tone": "error", "text": "sys: error"}},
+    {"label": "working", "props": {"tone": "working", "text": "sys: working"}},
+    {"label": "info", "props": {"tone": "info", "text": "sys: info"}},
+    {"label": "idle", "props": {"tone": "idle", "text": "sys: idle"}},
+    {"label": "working · pulse", "props": {"tone": "working", "text": "3 working", "pulse": true}}
+  ]
+})") {
+  fill(lv_obj_create(parent), p);
+}
+
+// Update path: everything snaps to the new props in the same root (fw::refill; a pulse restarts), silent.
+FW_UPDATE(status_chip) {
+  fw::refill(root);
+  fill(root, p);
+  return true;
 }

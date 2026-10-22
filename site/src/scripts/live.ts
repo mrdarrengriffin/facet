@@ -26,7 +26,7 @@ function armReset(it: Item) {
   clearTimeout(it.timer);
   if (it.held || it.sandbox || it.still) return;
   it.timer = window.setTimeout(() => {
-    if (it.held || !engine || !it.stage) return;
+    if (it.held || !engine || !it.stage || it.stage.demoState() === 0) return;  // at its preset: no reset step
     it.muteUntil = performance.now() + 250;
     draw(it, engine, getPrefs(), true);
   }, RESET_MS);

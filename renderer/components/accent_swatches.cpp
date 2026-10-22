@@ -152,23 +152,30 @@ lv_obj_t *swatches(lv_obj_t *parent, int chosen, bool off) {
 }
 }  // namespace
 
-FW_COMPONENT(accent_swatches, "Accent swatches", "components", R"({
-  "about": "Pick the accent colour: one dot per accent set in the theme in use, the chosen one ringed.",
-  "frame": [480, 96],
-  "props": [
-    {"name": "selected", "type": "select", "options": ["current", "ember", "rose", "violet", "teal", "mono"], "default": "current"},
-    {"name": "state", "type": "select", "options": ["default", "disabled", "unavailable"], "default": "default"},
-    {"name": "context", "type": "select", "options": ["alone", "settings-row"], "default": "alone"}
-  ],
-  "variants": [
-    {"label": "default · the accent in use", "props": {}},
-    {"label": "teal chosen", "props": {"selected": "teal"}},
-    {"label": "disabled", "props": {"selected": "violet", "state": "disabled"}},
-    {"label": "unavailable", "props": {"state": "unavailable"}},
-    {"label": "settings row", "props": {"context": "settings-row"}},
-    {"label": "settings row · disabled", "props": {"context": "settings-row", "state": "disabled"}}
-  ]
-})") {
+namespace {
+// the root = a content-sized wrapper (no look of its own) holding the swatch row, the word, or the List row with the
+// swatches as its trailing part, so every prop keeps one root for the update path
+std::string sig(fw::Props p) {
+  return std::string(p["context"] | "alone") + "|" + (strcmp(p["state"] | "default", "unavailable") ? "" : "u");
+}
+lv_obj_t *swatch_row(lv_obj_t *w, fw::Props p) {  // the swatches' row, or nullptr (unavailable)
+  if (!strcmp(p["state"] | "default", "unavailable")) return nullptr;
+  lv_obj_t *c = lv_obj_get_child(w, 0);
+  if (c && !strcmp(p["context"] | "alone", "settings-row")) c = lv_obj_get_child(c, -1);
+  return c;
+}
+int chosen_of(fw::Props p) {
+  int chosen = fw::T->accent_set;
+  const char *sel = p["selected"] | "current";
+  for (int i = 0; i < fw::tokens::N_ACCENTS; i++)
+    if (!strcmp(fw::tokens::ACCENTS[i].id, sel)) chosen = i;
+  return chosen;
+}
+void fill(lv_obj_t *w, fw::Props p) {
+  lv_obj_remove_style_all(w);
+  lv_obj_remove_flag(w, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
+  lv_obj_set_size(w, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+  fw::shape(w, sig(p));
   const char *state = p["state"] | "default";
   const bool unavail = !strcmp(state, "unavailable"), off = !strcmp(state, "disabled");
   int chosen = fw::T->accent_set;
@@ -187,14 +194,58 @@ FW_COMPONENT(accent_swatches, "Accent swatches", "components", R"({
     rp["icon"] = "none";
     rp["trailing"] = "none";
     rp["state"] = state;
-    const uint32_t before = lv_obj_get_child_count(parent);
-    c->build(parent, rp.as<fw::Props>());
-    if (lv_obj_get_child_count(parent) == before) return;
-    lv_obj_t *row = lv_obj_get_child(parent, -1);
+    const uint32_t before = lv_obj_get_child_count(w);
+    c->build(w, rp.as<fw::Props>());
+    if (lv_obj_get_child_count(w) == before) return;
+    lv_obj_t *row = lv_obj_get_child(w, -1);
     lv_obj_remove_flag(row, LV_OBJ_FLAG_CLICKABLE);
     if (!unavail) swatches(row, chosen, off);
     return;
   }
-  if (unavail) unavailable(parent);
-  else swatches(parent, chosen, off);
+  if (unavail) unavailable(w);
+  else swatches(w, chosen, off);
+}
+}  // namespace
+
+FW_COMPONENT(accent_swatches, "Accent swatches", "components", R"({
+  "about": "Pick the accent colour: one dot per accent set in the theme in use, the chosen one ringed.",
+  "frame": [480, 96],
+  "props": [
+    {"name": "selected", "type": "select", "options": ["current", "ember", "rose", "violet", "teal", "mono"], "default": "current"},
+    {"name": "state", "type": "select", "options": ["default", "disabled", "unavailable"], "default": "default"},
+    {"name": "context", "type": "select", "options": ["alone", "settings-row"], "default": "alone"}
+  ],
+  "variants": [
+    {"label": "default · the accent in use", "props": {}},
+    {"label": "teal chosen", "props": {"selected": "teal"}},
+    {"label": "disabled", "props": {"selected": "violet", "state": "disabled"}},
+    {"label": "unavailable", "props": {"state": "unavailable"}},
+    {"label": "settings row", "props": {"context": "settings-row"}},
+    {"label": "settings row · disabled", "props": {"context": "settings-row", "state": "disabled"}}
+  ]
+})") {
+  fill(lv_obj_create(parent), p);
+}
+
+// Update path: another accent = the ring moves (the swatches' ON state, Motion toggle transition), default <->
+// disabled fades in place (fw::st::set_state OFF); context or unavailable in / out = the contents again (fw::refill,
+// snap; unavailable fades the new contents in). Silent.
+FW_UPDATE(accent_swatches) {
+  if (!fw::shape(root, sig(p))) {
+    fw::refill(root);
+    fill(root, p);
+    fw::st::fade_in_children(root);
+    return true;
+  }
+  lv_obj_t *row = swatch_row(root, p);
+  if (!row || !lv_obj_get_user_data(row)) return true;  // unavailable: the word only
+  const int c = chosen_of(p);
+  const bool off = !strcmp(p["state"] | "default", "disabled");
+  for (uint32_t i = 0; i < lv_obj_get_child_count(row); i++) {
+    lv_obj_t *sw = lv_obj_get_child(row, (int32_t) i);
+    fw::st::set_state(sw, ST_ON, (int) i == c, false);  // the ring's own transition (Motion toggle) moves it
+    fw::st::set_state(sw, ST_OFF, off);
+  }
+  ((Sw *) lv_obj_get_user_data(row))->chosen = c;
+  return true;
 }

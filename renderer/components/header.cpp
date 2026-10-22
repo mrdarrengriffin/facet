@@ -39,26 +39,15 @@ lv_obj_t *caps(lv_obj_t *parent, const char *txt) {
 }
 }  // namespace
 
-FW_COMPONENT(header, "Header", "components", R"({
-  "about": "The row at the top of every screen: a back button, the screen's name, optional items and the time.",
-  "frame": [480, 80],
-  "icons": ["back@glyph"],
-  "props": [
-    {"name": "label", "type": "text", "default": "Weather"},
-    {"name": "back", "type": "bool", "default": true},
-    {"name": "clock", "type": "bool", "default": true},
-    {"name": "time", "type": "text", "default": "21:42"},
-    {"name": "chip", "type": "bool", "default": false}
-  ],
-  "variants": [
-    {"label": "back + label + time", "props": {}},
-    {"label": "Home · no back", "props": {"label": "Home", "back": false}},
-    {"label": "right chip", "props": {"label": "Agents", "chip": true}},
-    {"label": "no time", "props": {"label": "Settings", "clock": false}},
-    {"label": "long label", "props": {"label": "Living room ceiling and the sofa lamps", "chip": true}}
-  ]
-})") {
-  lv_obj_t *h = box(parent);
+namespace {
+// the parts that come and go (a change = the row again, fw::refill, snap); label and time change in place
+std::string sig(fw::Props p) {
+  return std::string((p["back"] | true) ? "b" : "") + ((p["clock"] | true) ? "c" : "") + ((p["chip"] | false) ? "s" : "");
+}
+void fill(lv_obj_t *h, fw::Props p) {
+  lv_obj_remove_style_all(h);
+  lv_obj_remove_flag(h, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
+  fw::shape(h, sig(p));
   lv_obj_set_size(h, fw::lay::content_w, fw::lay::row);
   lv_obj_set_flex_flow(h, LV_FLEX_FLOW_ROW);
   lv_obj_set_flex_align(h, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
@@ -87,4 +76,42 @@ FW_COMPONENT(header, "Header", "components", R"({
     lv_obj_set_size(t, fw::lay::header_time_w, fw::style(fw::ty::label).box);
     lv_obj_set_style_text_align(t, LV_TEXT_ALIGN_RIGHT, 0);
   }
+}
+}  // namespace
+
+FW_COMPONENT(header, "Header", "components", R"({
+  "about": "The row at the top of every screen: a back button, the screen's name, optional items and the time.",
+  "frame": [480, 80],
+  "icons": ["back@glyph"],
+  "props": [
+    {"name": "label", "type": "text", "default": "Weather"},
+    {"name": "back", "type": "bool", "default": true},
+    {"name": "clock", "type": "bool", "default": true},
+    {"name": "time", "type": "text", "default": "21:42"},
+    {"name": "chip", "type": "bool", "default": false}
+  ],
+  "variants": [
+    {"label": "back + label + time", "props": {}},
+    {"label": "Home · no back", "props": {"label": "Home", "back": false}},
+    {"label": "right chip", "props": {"label": "Agents", "chip": true}},
+    {"label": "no time", "props": {"label": "Settings", "clock": false}},
+    {"label": "long label", "props": {"label": "Living room ceiling and the sofa lamps", "chip": true}}
+  ]
+})") {
+  fill(lv_obj_create(parent), p);
+}
+
+// Update path: label and time = new text in place (the label ellipsises in its grown box, the time in its slot);
+// back, clock or chip on / off = the row again (fw::refill, snap). Silent.
+FW_UPDATE(header) {
+  if (!fw::shape(root, sig(p))) {
+    fw::refill(root);
+    fill(root, p);
+    return true;
+  }
+  lv_obj_t *l = lv_obj_get_child(root, (p["back"] | true) ? 1 : 0);
+  if (l) fw::set_text(l, fw::ty::label, p["label"] | "");
+  if (p["clock"] | true)
+    if (lv_obj_t *t = lv_obj_get_child(root, -1)) fw::set_text(t, fw::ty::label, p["time"] | "");
+  return true;
 }

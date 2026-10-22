@@ -129,16 +129,24 @@ L.push('struct Device { const char *id, *name; int w, h; float inches; const cha
 for (const [id, v] of DV) L.push(`  {${cstr(id)}, ${cstr(v.name)}, ${v.w}, ${v.h}, ${flt(v.inches)}, ${cstr(v.density)}, ${flt(t.density[v.density].d)}, ${cstr(v.class)}, ${cstr(v.status)}, ${cstr(v.role)}, ${cstr(v.runs)}, ${cstr(v.mount)}},`);
 L.push('};', `constexpr int N_DEVICES = ${DV.length};`);
 L.push(`constexpr const char *SCREEN_ABOUT = ${cstr(t.screen.about)};`);
+// rules (layout.json `rules`, Darren 2026-10-22): plain-words sections (heading + one or two sentences) that are the
+// page's section labels + abouts below (the docs site reads the same keys); `components` is checked, not emitted
+const R = t.rules ?? die('rules: missing');
+const RS = Object.fromEntries((R.sections ?? []).map((s) => [s.id, s]));
+for (const s of R.sections ?? []) if (!s.id || !s.title || !s.text) die(`rules.sections ${s.id}: needs id, title, text`);
+for (const c of R.components ?? []) {
+  if (!existsSync(join(HERE, '..', 'components', `${c.id}.cpp`))) die(`rules.components ${c.id}: no components/${c.id}.cpp`);
+  if (!c.size) die(`rules.components ${c.id}: no size line`);
+}
 L.push('}  // namespace lyt');
 const sec = (id, label, about) => ({ label, about, props: { section: id } });
+const rule = (id) => { const s = RS[id] ?? die(`rules.sections: no ${id}`); return sec(id, s.title, s.text); };
 const doc = [
-  sec('screen', 'Screen overlay', `This build's screen at true size with its layout layers: the ${space.grid['1.5x']} px grid (${space.grid['1x']} at 480), the inset on every side, the header zone, the content area and the Home columns. Tap a layer chip under the screen to hide or show it. ${t.screen.about}`),
-  sec('header', 'Header zone', `${t.groups.find((g) => g.id === 'header').about} Shown at true size across the content width, with the header gap down to where content starts.`),
-  sec('rhythm', 'Groups and rows', `${t.groups.find((g) => g.id === 'rows').about} A sample screen: two groups, a group apart; inside a group, a gutter apart.`),
-  sec('overlay', 'Overlays', t.groups.find((g) => g.id === 'overlay').about),
-  sec('devices', 'Devices and density', `${t.density.$comment} Today's targets first, then the planned sizes; each device drawn to scale in dp.`),
-  sec('classes', 'Size classes', `${t.sizeClass.$comment} Each class sketched at its minimum size (1/4 scale, dp) with its Home columns.`),
-  sec('tokens', 'Token table', 'Every layout token at this build\'s density beside the other, plus the values the frame derives from them. Component sizes (card, tile, list row, dial) are on Spacing & radius.'),
+  sec('screen', 'The screen, layer by layer', 'A real Home screen at true size with the layout drawn over it: the grid, the margin around the edge, the header, the content area and the gaps between cards. Tap a chip under the screen to hide or show a layer.'),
+  rule('grid'), rule('sizes'), rule('spacing'), rule('rhythm'), rule('frame'), rule('touch'), rule('corners'), rule('breaks'),
+  sec('overlay', 'Sheets and toasts', 'Some things slide in over the screen. A sheet comes up from below and keeps the same margin inside; a toast is as wide as the content and appears just under the header.'),
+  sec('devices', 'Devices', "The panels Facet is built for today, and the sizes planned next, each drawn to scale."),
+  sec('classes', 'Screen shapes', 'Square, tall, wide and large screens each get their own layout; the same content is arranged to fit. Each shape is sketched with its Home columns.'),
 ];
 L.push(`#define FW_LAYOUT_SECTIONS ${cstr(JSON.stringify(doc))}`);
 L.push(`#define FW_LAYOUT_SECTION_IDS ${cstr(JSON.stringify(doc.map((d) => d.props.section)))}`);

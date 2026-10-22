@@ -83,6 +83,11 @@
         "v": 64,
         "1x": 44,
         "use": "the more row at the end of a list (hairline, caps label, chevron)"
+      },
+      "set-slider-row-h": {
+        "v": 144,
+        "1x": 96,
+        "use": "a Settings slider row: hairline, title and value on top, the full-width slider under them (docs .fs-set--slider)"
       }
     },
     "overlay": {
@@ -250,5 +255,148 @@
       "runs": "",
       "mount": ""
     }
+  },
+  "rules": {
+    "$comment": "How Facet lays things out (Darren 2026-10-22). Plain words for everyone: each section = a short heading + one or two sentences; the workbench Layout & devices page shows each with a visual (section label + about) and the docs site renders the same text. Technical detail (token names, values) lives in the token files. `components` = which tokens set each component's size, for docs and tooling (not shown on the page).",
+    "sections": [
+      {
+        "id": "grid",
+        "title": "Everything sits on a 4-pixel grid",
+        "text": "Every size, gap and position is a multiple of 4 pixels, so edges line up across the whole screen and nothing lands between two pixels. Below, real components with the grid drawn over them: their edges fall on the lines."
+      },
+      {
+        "id": "sizes",
+        "title": "Many screen sizes, one design",
+        "text": "Today Facet runs on square panels of 720 x 720 pixels (Waveshare, Shelly) and 480 x 480 (Guition), about the same size on the wall. Each size gets its own values on the same grid rather than a shrunk copy, and the tall and wide panels planned next follow the same rules."
+      },
+      {
+        "id": "spacing",
+        "title": "Spacing steps",
+        "text": "Gaps come from one short scale of steps, never a free number. Small steps hold the parts of one thing together; bigger steps keep separate things apart."
+      },
+      {
+        "id": "rhythm",
+        "title": "More space between groups",
+        "text": "Items in a group sit close together and groups sit further apart, so you can see what belongs together without drawing boxes. Rows are split by thin lines instead of being drawn as cards."
+      },
+      {
+        "id": "frame",
+        "title": "The screen frame",
+        "text": "Every screen keeps the same margin on all four sides. The header row sits in that margin with the back button, the screen's name and the time, and content starts at the same height on every screen."
+      },
+      {
+        "id": "touch",
+        "title": "Big enough to touch",
+        "text": "Anything you can tap is at least 48 pixels tall and wide on a 720 screen (32 at 480), about a fingertip; most buttons and rows are bigger. When a control is drawn smaller, its touch area still reaches that size."
+      },
+      {
+        "id": "corners",
+        "title": "Corners inside corners",
+        "text": "When a rounded shape sits inside another, the inner corner is the outer corner minus the gap between them, so the two curves run side by side. Square outside means square inside."
+      },
+      {
+        "id": "breaks",
+        "title": "When it's OK to break the grid",
+        "text": "Thin lines of 1 or 2 pixels sit inside the box they outline, and letters follow their line rather than their outline. Something centred inside a box that is on the grid (a button's label, a chip's dot, the icon in a square button) may land between grid lines; the box itself never does."
+      }
+    ],
+    "components": [
+      {
+        "id": "button",
+        "size": "height touch::button_h (64 / 44); hug width rounded up to the grid (or the width prop); side padding sp::s7 - hair; radius rad::button; icon ic::icon"
+      },
+      {
+        "id": "icon_button",
+        "size": "play lay::ibtn_play (96 / 64), round lay::ibtn_round (80 / 52), square lay::ibtn_square (48 / 32 = touch min); glyph ic::feature / ic::glyph; radius round / rad::square"
+      },
+      {
+        "id": "back_button",
+        "size": "touch::back (48 / 32) = the header row = touch min; radius rad::square; glyph ic::glyph"
+      },
+      {
+        "id": "segmented",
+        "size": "height touch::min (48 / 32); segments = label + sp::s7 each side, hug (or fill = content width); hair border; radius rad::button"
+      },
+      {
+        "id": "toggle",
+        "size": "height touch::min (48 / 32); knob = height - 2 x sp::s2; width from the same tokens (80 / 56)"
+      },
+      {
+        "id": "status_chip",
+        "size": "height lay::chip_h (32 / 24); padding and gap sp::s2; radius rad::chip; hug width"
+      },
+      {
+        "id": "count_badge",
+        "size": "height lay::badge_h (32 / 24) = its minimum width; padding sp::s2; radius round"
+      },
+      {
+        "id": "status_dot",
+        "size": "lay::dot (8 / 4); round"
+      },
+      {
+        "id": "radio",
+        "size": "lay::radio (24 / 16) with lay::radio_dot (8); hit area touch::min"
+      },
+      {
+        "id": "list_row",
+        "size": "height lay::list_row_h (96 / 64); content width; side padding and gap sp::s4; hairline on top; icon ic::icon; text slots snapped to the grid"
+      },
+      {
+        "id": "picker_row",
+        "size": "the List row (lay::list_row_h = sheet-row-h) + a Radio"
+      },
+      {
+        "id": "more_row",
+        "size": "height lay::more_row_h (64 / 44); content width; top padding sp::s7 - hair; side padding sp::s4; chevron ic::icon"
+      },
+      {
+        "id": "section_header",
+        "size": "height lay::section_h (48 / 32 = touch min); content width; gap sp::s5; action hit box section_h tall, padding sp::s2"
+      },
+      {
+        "id": "header",
+        "size": "lay::content_w x lay::row at (inset, inset); Back button + lay::back_gap; time slot lay::header_time_w"
+      },
+      {
+        "id": "card",
+        "size": "lay::card_w x lay::card_h (320 x 280 / 212 x 184); padding lay::card_pad - hair; radius rad::card (0); icon ic::icon, preview ic::card"
+      },
+      {
+        "id": "tile",
+        "size": "lay::tile_w x lay::tile_h (208 / 136); padding lay::tile_pad - hair; radius rad::tile (0)"
+      },
+      {
+        "id": "hero_block",
+        "size": "content width x the number's type line box (hero 96 / 64); gap lay::gutter"
+      },
+      {
+        "id": "stat",
+        "size": "width lay::card_w (one Home column) or the parent's; type line boxes"
+      },
+      {
+        "id": "speaker_button",
+        "size": "height lay::speaker_btn_h (48 / 32 = touch min); hug width up to lay::speaker_btn_max; padding sp::s4 - hair; gap sp::s2; radius rad::button"
+      },
+      {
+        "id": "accent_swatches",
+        "size": "lay::swatch (48 / 40) with lay::swatch_dot (32 / 24) centred; gap sp::s2"
+      },
+      {
+        "id": "slider",
+        "size": "height touch::min; track sp::s1; knob = height / 2; width prop in dp through px()"
+      },
+      {
+        "id": "dial",
+        "size": "lay::dial_scale (560 / 376), lay::dial_arc (432 / 288), ticks lay::dial_tick / dial_tick_major, knob lay::dial_knob, centre button lay::dial_toggle_w"
+      },
+      {
+        "id": "toast",
+        "size": "lay::content_w x lay::toast_h (120 / 80); padding lay::toast_pad - hair; icon square lay::toast_icon (48 / 32)"
+      },
+      {
+        "id": "bottom_sheet",
+        "size": "from lay::sheet_top to the screen bottom, full width; content inset (top inset - hair); rows lay::sheet_row_h; radius rad::ring (top)"
+      }
+    ]
   }
 }

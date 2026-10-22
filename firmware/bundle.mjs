@@ -35,9 +35,9 @@ const ls = (d, ext) => (existsSync(join(HERE, d)) ? readdirSync(join(HERE, d)).f
 // core = what every item's pixels depend on (compiled into each item's build); glue = the device-side host code
 // (HTTP, screen setup), reported separately: a glue change does not make an item show old code
 const lsr = (d) => (existsSync(join(HERE, d)) ? readdirSync(join(HERE, d), { recursive: true }).filter((f) => f.endsWith('.svg')).sort().map((f) => `${d}/${f}`) : []);
-const coreFiles = [...ls('core', '.h'), 'core/fw_core.cpp', 'core/motion.cpp', 'core/atoms.cpp', 'core/mascot.cpp', 'core/fonts.cpp', 'core/icons.cpp', ...ls('tokens', '.json'), 'tools/gen_colour.mjs', 'tools/gen_type.mjs', 'tools/gen_space.mjs', 'tools/gen_layout.mjs', 'tools/gen_motion.mjs', 'tools/gen_states.mjs', 'tools/gen_mascot.mjs', 'tools/gen_fonts.py', 'tools/facet_font.inc', 'tools/gen_icons.mjs', ...lsr('icons')];
+const coreFiles = [...ls('core', '.h'), 'core/fw_core.cpp', 'core/motion.cpp', 'core/atoms.cpp', 'core/states.cpp', 'core/mascot.cpp', 'core/fonts.cpp', 'core/icons.cpp', ...ls('tokens', '.json'), 'tools/gen_colour.mjs', 'tools/gen_type.mjs', 'tools/gen_space.mjs', 'tools/gen_layout.mjs', 'tools/gen_motion.mjs', 'tools/gen_states.mjs', 'tools/gen_mascot.mjs', 'tools/gen_chart.mjs', 'tools/gen_settings.mjs', 'tools/gen_fonts.py', 'tools/facet_font.inc', 'tools/gen_icons.mjs', ...lsr('icons')];
 const glueFiles = ['firmware/fw_device.h', 'firmware/esphome_init.py', 'firmware/bundle.mjs'];  // relative to ROOT
-const srcFiles = [...ls('foundations', '.cpp'), ...ls('components', '.cpp')];
+const srcFiles = [...ls('foundations', '.cpp'), ...ls('components', '.cpp'), ...ls('screens', '.cpp')];
 const read = (rel) => readFileSync(join(HERE, rel));
 const core = sha(...coreFiles.flatMap((f) => [f, '\0', read(f), '\0']));
 // per-file hashes of the core too, so a host can say WHICH file changed
@@ -77,6 +77,10 @@ execFileSync('node', [join(HERE, 'tools/gen_states.mjs'), join(C, 'states_gen.h'
 wrote.add('states_gen.h');
 execFileSync('node', [join(HERE, 'tools/gen_mascot.mjs'), join(C, 'mascot_gen.h')]);
 wrote.add('mascot_gen.h');
+execFileSync('node', [join(HERE, 'tools/gen_chart.mjs'), join(C, 'chart_gen.h')]);
+wrote.add('chart_gen.h');
+execFileSync('node', [join(HERE, 'tools/gen_settings.mjs'), join(C, 'settings_gen.h')]);
+wrote.add('settings_gen.h');
 execFileSync('node', [join(HERE, 'tools/gen_icons.mjs'), '--meta', join(C, 'icons_gen.h')]);
 wrote.add('icons_gen.h');
 // this density's fonts (cached next to the WASM build's; the generator skips work when type.json is unchanged)
@@ -89,6 +93,7 @@ execFileSync(FONT_PY, [join(HERE, 'tools/gen_fonts.py'), density, fontH], { env:
 put('fw_core.cpp', read('core/fw_core.cpp'));
 put('motion.cpp', read('core/motion.cpp'));
 put('atoms.cpp', read('core/atoms.cpp'));
+put('states.cpp', read('core/states.cpp'));
 put('mascot.cpp', read('core/mascot.cpp'));
 // fonts.cpp with this density's font header inlined (and the #ifdef picking it)
 const fonts = read('core/fonts.cpp').toString().replace(/#ifdef FW_1X\n#include "facet_fonts_1x.h"\n#else\n#include "facet_fonts.h"\n#endif\n/,
@@ -105,7 +110,7 @@ const icons = read('core/icons.cpp').toString().replace(/#ifdef FW_1X\n#include 
 if (icons.includes('#include "facet_icons')) { console.error('icons.cpp: icon include not found where expected'); process.exit(1); }
 put('icons.cpp', link('fwlink_icons', icons));
 for (const f of srcFiles) {
-  const n = `${f.startsWith('foundations') ? 'f' : 'c'}_${basename(f, '.cpp')}`;
+  const n = `${f.startsWith('foundations') ? 'f' : f.startsWith('screens') ? 's' : 'c'}_${basename(f, '.cpp')}`;
   put(`${n}.cpp`, link(`fwlink_${n}`, read(f).toString()));
 }
 // `built` = when these hashes were first bundled (kept while the sources are unchanged, so main.cpp, which includes

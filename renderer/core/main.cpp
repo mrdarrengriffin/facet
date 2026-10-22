@@ -6,6 +6,8 @@
 //   fw_stage(w, h) -> id              a new display, w x h device pixels
 //   fw_stage_free(id)
 //   fw_render(id, comp, props, light) build component `comp` with props JSON on stage `id` -> "" or an error
+//   fw_update(id, comp, props, light, accent) the update path: new props in place, animated, silent -> "" / "rebuild" / error
+//   fw_demo_state(id) -> -1 / 0 / 1   demos on that stage: none reported / all at their preset (skip the demo reset) / one moved away
 //   fw_touch(id, x, y, down)          pointer on that stage (device pixels)
 //   fw_tick(ms)                       LVGL timers/refresh for all stages
 //   fw_dirty(id) / fw_frame(id)       redrawn since last read? / RGBA pixels (w*h*4)
@@ -131,6 +133,22 @@ EMSCRIPTEN_KEEPALIVE const char *fw_render(int id, const char *comp, const char 
   if (!s) return "no such stage";
   lv_display_set_default(s->d);
   return fw::render(lv_display_get_screen_active(s->d), comp, props, light, accent);
+}
+
+// new props for what stage `id` shows, in place (fw::update): "" = applied (the component animates there, silently),
+// "rebuild" = call fw_render instead (another component / theme / accent, no update path, or a structural prop)
+EMSCRIPTEN_KEEPALIVE const char *fw_update(int id, const char *comp, const char *props, int light, int accent) {
+  Stage *s = get(id);
+  if (!s) return "no such stage";
+  lv_display_set_default(s->d);
+  return fw::update(lv_display_get_screen_active(s->d), comp, props, light, accent);
+}
+
+// demo state of stage `id` (fw::demo_state): -1 no demo reported, 0 every demo at its preset (hosts skip the demo
+// reset), 1 a demo moved away (reset as usual)
+EMSCRIPTEN_KEEPALIVE int fw_demo_state(int id) {
+  Stage *s = get(id);
+  return s ? fw::demo_state(lv_display_get_screen_active(s->d)) : -1;
 }
 
 // the colour tokens file (JSON) the build was generated from

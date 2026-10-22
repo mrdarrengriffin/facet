@@ -24,6 +24,22 @@ lv_color_t tone_of(const char *t, bool chip) {
 void set_opa(void *o, int32_t v) { lv_obj_set_style_opa((lv_obj_t *) o, (lv_opa_t) v, 0); }
 }  // namespace
 
+namespace {
+void fill(lv_obj_t *d, fw::Props p) {
+  lv_obj_remove_style_all(d);
+  lv_obj_remove_flag(d, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
+  lv_obj_set_size(d, fw::lay::dot, fw::lay::dot);
+  lv_obj_set_style_radius(d, LV_RADIUS_CIRCLE, 0);
+  lv_obj_set_style_bg_color(d, tone_of(p["tone"] | "working", !strcmp(p["on"] | "canvas", "chip")), 0);
+  lv_obj_set_style_bg_opa(d, LV_OPA_COVER, 0);
+  if (p["pulse"] | false) {
+    fw::Anim a{set_opa, LV_OPA_COVER, (int32_t) lroundf(fw::mo::OPA_PULSE_MIN * 255), fw::mo::OPA};
+    a.loop = true;
+    fw::animate(d, fw::mo::pulse, a);
+  }
+}
+}  // namespace
+
 FW_COMPONENT(status_dot, "Status dot", "components", R"({
   "about": "A small coloured dot that shows a state: ok, warning, error, working, info or idle.",
   "frame": [96, 64],
@@ -41,16 +57,12 @@ FW_COMPONENT(status_dot, "Status dot", "components", R"({
     {"label": "working · pulse", "props": {"tone": "working", "pulse": true}}
   ]
 })") {
-  lv_obj_t *d = lv_obj_create(parent);
-  lv_obj_remove_style_all(d);
-  lv_obj_remove_flag(d, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
-  lv_obj_set_size(d, fw::lay::dot, fw::lay::dot);
-  lv_obj_set_style_radius(d, LV_RADIUS_CIRCLE, 0);
-  lv_obj_set_style_bg_color(d, tone_of(p["tone"] | "working", !strcmp(p["on"] | "canvas", "chip")), 0);
-  lv_obj_set_style_bg_opa(d, LV_OPA_COVER, 0);
-  if (p["pulse"] | false) {
-    fw::Anim a{set_opa, LV_OPA_COVER, (int32_t) lroundf(fw::mo::OPA_PULSE_MIN * 255), fw::mo::OPA};
-    a.loop = true;
-    fw::animate(d, fw::mo::pulse, a);
-  }
+  fill(lv_obj_create(parent), p);
+}
+
+// Update path: everything snaps to the new props in the same root (fw::refill; a pulse restarts), silent.
+FW_UPDATE(status_dot) {
+  fw::refill(root);
+  fill(root, p);
+  return true;
 }

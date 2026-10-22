@@ -64,11 +64,11 @@ function build(why) {
     if (again) { again = false; build('changed during build'); }
   });
 }
-for (const d of ['components', 'foundations', 'core', 'tokens', 'tools', 'icons'])
+for (const d of ['components', 'foundations', 'screens', 'core', 'tokens', 'tools', 'icons'])
   watch(join(HERE, d), { recursive: true }, (_e, f) => {
     if (!f || f.includes('node_modules') || !/\.(cpp|h|json|mjs|py|inc|svg)$/.test(f)) return;
     clearTimeout(timer);
     timer = setTimeout(() => build(`${d}/${f}`), 150);
   });
-console.log(`watching ${HERE}/{components,foundations,core,tokens,tools,icons}`);
+console.log(`watching ${HERE}/{components,foundations,screens,core,tokens,tools,icons}`);
 build('start');

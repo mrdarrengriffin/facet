@@ -28,7 +28,9 @@ constexpr lv_state_t ST_OFF = fw::st::OFF;  // disabled (LVGL sends no events to
 constexpr int32_t FP = 256;                       // shown position: step index x 256 (sweeps move between steps)
 
 struct Slider {
-  double min = 0, step = 1;
+  double min = 0, max = 100, step = 1;
+  bool unavail = false, quiet = false;  // quiet = an update's sweep: no step ticks
+  lv_obj_t *track = nullptr, *word = nullptr;
   int n = 100;          // steps over the range (max - min) / step
   int idx = 0;          // the value, as a step index
   int press_idx = 0;    // value when the press started (change event on release)
@@ -52,7 +54,7 @@ void show(void *o, int32_t v) {
   lv_obj_set_x(d->kn, x);  // box x of the knob = track x - knob / 2 + knob / 2
   d->shown = v;
   const int i = (v + FP / 2) / FP;
-  if (i != d->shown_idx && !lv_obj_has_state(s, ST_OFF)) fw::step_ticks(s, d->shown_idx, i, d->n);
+  if (i != d->shown_idx && !d->quiet && !lv_obj_has_state(s, ST_OFF)) fw::step_ticks(s, d->shown_idx, i, d->n);
   d->shown_idx = i;
 }
 
@@ -65,11 +67,94 @@ int idx_at(lv_obj_t *s, int32_t x) {
 }
 
 void stop_sweep(lv_obj_t *s) { lv_anim_delete(s, (lv_anim_exec_xcb_t) show); }
+void unquiet(lv_anim_t *a) { of((lv_obj_t *) lv_anim_get_user_data(a))->quiet = false; }
 
 std::string fmt(const Slider *d, int i) {
   char b[24];
   snprintf(b, sizeof b, "%g", d->min + i * d->step);
   return b;
+}
+}  // namespace
+
+namespace {
+// structural props (a change = the contents again, fw::refill, snap); value + state move in place
+std::string sig(fw::Props p) {
+  char b[96];
+  snprintf(b, sizeof b, "%g|%g|%g|%g", (double) (p["min"] | 0.0), (double) (p["max"] | 100.0), (double) (p["step"] | 1.0),
+           (double) (p["width"] | 256));
+  return b;
+}
+int idx_of(const Slider *d, fw::Props p) {
+  const double v = LV_CLAMP(d->min, (double) (p["value"] | 40.0), d->max);
+  return (int) std::lround((v - d->min) / d->step);
+}
+// the slider in `s` (user data d, made once): track + fill + knob, and the unavailable word in the same box (states.json
+// unavailable: the word in place of the track, rows do not jump), one of the two hidden. Disabled = st::OFF state
+// styles (fw::st::set_off fades between them), unavailable = OFF + the word.
+void fill(lv_obj_t *s, fw::Props p) {
+  auto *d = of(s);
+  const char *state = p["state"] | "default";
+  d->unavail = !strcmp(state, "unavailable");
+  const bool off = d->unavail || !strcmp(state, "disabled");
+  d->min = p["min"] | 0.0;
+  d->max = std::max(d->min, (double) (p["max"] | 100.0));
+  d->step = std::max(1e-6, (double) (p["step"] | 1.0));
+  d->n = std::max(1, (int) std::lround((d->max - d->min) / d->step));
+  d->idx = idx_of(d, p);
+
+  const int h = fw::touch::min;   // 48 / 32 = docs slider-h
+  const int tr = fw::sp::s1;      // 4 / 4: the docs track (4 px at both)
+  d->knob = h / 2;                // 24 / 16 = docs slider-knob
+  d->w = fw::px((float) (p["width"] | 256));
+  fw::shape(s, sig(p));
+
+  lv_obj_remove_style_all(s);
+  lv_obj_add_flag(s, LV_OBJ_FLAG_CLICKABLE);
+  lv_obj_remove_flag(s, (lv_obj_flag_t) (LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_SCROLL_CHAIN | LV_OBJ_FLAG_GESTURE_BUBBLE));
+  lv_obj_set_size(s, d->w + d->knob, h);  // track + half a knob each side: the knob stays inside at min / max
+
+  lv_obj_t *t = d->track = lv_obj_create(s);  // track
+  lv_obj_remove_style_all(t);
+  lv_obj_remove_flag(t, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
+  lv_obj_set_size(t, d->w, tr);
+  lv_obj_set_pos(t, d->knob / 2, (h - tr) / 2);
+  lv_obj_set_style_radius(t, LV_RADIUS_CIRCLE, 0);
+  lv_obj_set_style_bg_opa(t, LV_OPA_COVER, 0);
+  lv_obj_set_style_bg_color(t, fw::T->line_hi, 0);
+  lv_obj_set_style_bg_color(t, fw::st::disabled_line(*fw::T), ST_OFF);
+  lv_obj_set_style_clip_corner(t, true, 0);  // the fill keeps the track's round start (docs: overflow hidden)
+
+  d->fill = lv_obj_create(t);
+  lv_obj_remove_style_all(d->fill);
+  lv_obj_remove_flag(d->fill, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
+  lv_obj_set_size(d->fill, 0, tr);
+  lv_obj_set_style_bg_opa(d->fill, LV_OPA_COVER, 0);
+  lv_obj_set_style_bg_color(d->fill, fw::T->blue, 0);
+  lv_obj_set_style_bg_color(d->fill, fw::st::disabled_ink(*fw::T), ST_OFF);
+
+  d->kn = lv_obj_create(s);
+  lv_obj_remove_style_all(d->kn);
+  lv_obj_remove_flag(d->kn, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
+  lv_obj_set_size(d->kn, d->knob, d->knob);
+  lv_obj_set_y(d->kn, (h - d->knob) / 2);
+  lv_obj_set_style_radius(d->kn, LV_RADIUS_CIRCLE, 0);
+  lv_obj_set_style_bg_opa(d->kn, LV_OPA_COVER, 0);
+  lv_obj_set_style_bg_color(d->kn, fw::T->accent, 0);
+  lv_obj_set_style_bg_color(d->kn, fw::st::disabled_knob(*fw::T), ST_OFF);
+
+  // the word where the track starts (half a knob in)
+  lv_obj_t *u = d->word = fw::text(s, fw::ty::body, fw::st::UNAVAILABLE_TEXT, fw::st::unavailable_note(*fw::T));
+  lv_obj_remove_flag(u, LV_OBJ_FLAG_CLICKABLE);
+  lv_obj_align(u, LV_ALIGN_LEFT_MID, h / 4, 0);
+  lv_obj_set_flag(u, LV_OBJ_FLAG_HIDDEN, !d->unavail);
+  lv_obj_set_flag(t, LV_OBJ_FLAG_HIDDEN, d->unavail);
+  lv_obj_set_flag(d->kn, LV_OBJ_FLAG_HIDDEN, d->unavail);
+
+  d->quiet = true;  // the first draw makes no sound
+  d->shown_idx = d->idx;
+  show(s, d->idx * FP);
+  d->quiet = false;
+  fw::st::set_off(s, off, false);
 }
 }  // namespace
 
@@ -94,73 +179,10 @@ FW_COMPONENT(slider, "Slider", "components", R"({
     {"label": "unavailable", "props": {"state": "unavailable"}}
   ]
 })") {
-  const bool disabled = !strcmp(p["state"] | "default", "disabled");
   auto *d = new Slider;
-  d->min = p["min"] | 0.0;
-  const double max = std::max(d->min, (double) (p["max"] | 100.0));
-  d->step = std::max(1e-6, (double) (p["step"] | 1.0));
-  d->n = std::max(1, (int) std::lround((max - d->min) / d->step));
-  const double v = LV_CLAMP(d->min, (double) (p["value"] | 40.0), max);
-  d->idx = (int) std::lround((v - d->min) / d->step);
-
-  const int h = fw::touch::min;   // 48 / 32 = docs slider-h
-  const int tr = fw::sp::s1;      // 4 / 4: the docs track (4 px at both)
-  d->knob = h / 2;                // 24 / 16 = docs slider-knob
-  d->w = fw::px((float) (p["width"] | 256));
-  if (!strcmp(p["state"] | "default", "unavailable")) {  // states.json unavailable: the word in place of the track
-    delete d;  // same box (rows do not jump), track / fill / knob hidden, the word where the track starts
-    lv_obj_t *u = lv_obj_create(parent);
-    lv_obj_remove_style_all(u);
-    lv_obj_add_flag(u, LV_OBJ_FLAG_CLICKABLE);
-    lv_obj_remove_flag(u, LV_OBJ_FLAG_SCROLLABLE);
-    lv_obj_set_size(u, fw::px((float) (p["width"] | 256)) + h / 2, h);
-    lv_obj_set_style_pad_left(u, h / 4, 0);  // = the track start (half a knob)
-    lv_obj_t *l = fw::text(u, fw::ty::body, fw::st::UNAVAILABLE_TEXT, fw::st::unavailable_note(*fw::T));
-    lv_obj_remove_flag(l, LV_OBJ_FLAG_CLICKABLE);
-    lv_obj_align(l, LV_ALIGN_LEFT_MID, 0, 0);
-    lv_obj_add_state(u, ST_OFF);
-    fw::st::on_tap(u, [](lv_event_t *e) {
-      if (fw::st::tap_now(e)) fw::st::blocked((lv_obj_t *) lv_event_get_current_target(e), "unavailable");
-    }, nullptr);
-    return;
-  }
-
   lv_obj_t *s = lv_obj_create(parent);
-  lv_obj_remove_style_all(s);
-  lv_obj_add_flag(s, LV_OBJ_FLAG_CLICKABLE);
-  lv_obj_remove_flag(s, (lv_obj_flag_t) (LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_SCROLL_CHAIN | LV_OBJ_FLAG_GESTURE_BUBBLE));
-  lv_obj_set_size(s, d->w + d->knob, h);  // track + half a knob each side: the knob stays inside at min / max
   lv_obj_set_user_data(s, d);
-
-  lv_obj_t *t = lv_obj_create(s);  // track
-  lv_obj_remove_style_all(t);
-  lv_obj_remove_flag(t, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
-  lv_obj_set_size(t, d->w, tr);
-  lv_obj_set_pos(t, d->knob / 2, (h - tr) / 2);
-  lv_obj_set_style_radius(t, LV_RADIUS_CIRCLE, 0);
-  lv_obj_set_style_bg_opa(t, LV_OPA_COVER, 0);
-  lv_obj_set_style_bg_color(t, disabled ? fw::st::disabled_line(*fw::T) : fw::T->line_hi, 0);
-  lv_obj_set_style_clip_corner(t, true, 0);  // the fill keeps the track's round start (docs: overflow hidden)
-
-  d->fill = lv_obj_create(t);
-  lv_obj_remove_style_all(d->fill);
-  lv_obj_remove_flag(d->fill, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
-  lv_obj_set_size(d->fill, 0, tr);
-  lv_obj_set_style_bg_opa(d->fill, LV_OPA_COVER, 0);
-  lv_obj_set_style_bg_color(d->fill, disabled ? fw::st::disabled_ink(*fw::T) : fw::T->blue, 0);
-
-  d->kn = lv_obj_create(s);
-  lv_obj_remove_style_all(d->kn);
-  lv_obj_remove_flag(d->kn, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
-  lv_obj_set_size(d->kn, d->knob, d->knob);
-  lv_obj_set_y(d->kn, (h - d->knob) / 2);
-  lv_obj_set_style_radius(d->kn, LV_RADIUS_CIRCLE, 0);
-  lv_obj_set_style_bg_opa(d->kn, LV_OPA_COVER, 0);
-  lv_obj_set_style_bg_color(d->kn, disabled ? fw::st::disabled_knob(*fw::T) : fw::T->accent, 0);
-
-  d->shown_idx = d->idx;  // the first draw makes no sound
-  show(s, d->idx * FP);
-  if (disabled) lv_obj_add_state(s, ST_OFF);
+  fill(s, p);
 
   lv_obj_add_event_cb(s, [](lv_event_t *e) { delete (Slider *) lv_event_get_user_data(e); }, LV_EVENT_DELETE, d);
   lv_obj_add_event_cb(s, [](lv_event_t *e) {
@@ -171,10 +193,11 @@ FW_COMPONENT(slider, "Slider", "components", R"({
     lv_point_t pt = {0, 0};
     if (lv_indev_t *in = lv_indev_active()) lv_indev_get_point(in, &pt);
     if (lv_obj_has_state(s, ST_OFF)) {
-      if (code == LV_EVENT_PRESSED) fw::st::blocked(s, fmt(d, d->idx).c_str());
+      if (code == LV_EVENT_PRESSED) fw::st::blocked(s, d->unavail ? "unavailable" : fmt(d, d->idx).c_str());
       return;
     }
     if (code == LV_EVENT_PRESSED) {
+      d->quiet = false;
       lv_area_t a;
       lv_obj_get_coords(s, &a);
       const int32_t kx = a.x1 + d->knob / 2 + (int32_t) ((int64_t) d->w * d->shown / ((int64_t) d->n * FP));
@@ -197,4 +220,33 @@ FW_COMPONENT(slider, "Slider", "components", R"({
       if (d->idx != d->press_idx) fw::emit(s, "change", fmt(d, d->idx).c_str());
     }
   }, LV_EVENT_ALL, nullptr);
+}
+
+// Update path: value -> the knob and fill sweep there (Motion value, silent: no step ticks), default <-> disabled <->
+// unavailable -> fw::st::set_off fades the colours and fw::st::swap trades the track for the word (Motion fade); a new
+// range (min / max / step) or width = the contents again (fw::refill, snap). While a finger holds it the user wins.
+FW_UPDATE(slider) {
+  auto *d = of(root);
+  if (!d) return false;
+  if (!fw::shape(root, sig(p))) {
+    stop_sweep(root);
+    fw::refill(root);
+    fill(root, p);
+    return true;
+  }
+  const char *state = p["state"] | "default";
+  const bool unavail = !strcmp(state, "unavailable"), off = unavail || !strcmp(state, "disabled");
+  if (unavail != d->unavail) {
+    d->unavail = unavail;
+    if (unavail) { fw::st::swap(d->track, d->word); lv_obj_add_flag(d->kn, LV_OBJ_FLAG_HIDDEN); }
+    else { fw::st::swap(d->word, d->track); fw::st::swap(nullptr, d->kn); }
+  }
+  if (off != lv_obj_has_state(root, ST_OFF)) fw::st::set_off(root, off);
+  if (lv_obj_has_state(root, LV_STATE_PRESSED)) return true;  // the finger wins
+  d->idx = idx_of(d, p);
+  if (d->idx * FP != d->shown || lv_anim_get(root, (lv_anim_exec_xcb_t) show)) {
+    d->quiet = true;
+    fw::animate(root, fw::st::SWEEP, {show, d->shown, d->idx * FP, fw::mo::VALUE, 0, false, unquiet, root});
+  }
+  return true;
 }

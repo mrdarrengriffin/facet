@@ -13,6 +13,7 @@
   "colours": {
     "bg": {"group": "surfaces", "dark": "#000000", "light": "#F4F2EE", "role": "canvas"},
     "surface": {"group": "surfaces", "dark": "#0A0B0E", "light": "#FFFFFF", "role": "tile / card / secondary button"},
+    "scrim": {"group": "surfaces", "dark": "#000000", "light": "#16181C", "role": "sheet backdrop: darkens the screen behind an open sheet (at motion.json opacity scrim / scrim-light), never text"},
     "surface-press": {"group": "surfaces", "dark": "#15171C", "light": "#E9E6E0", "role": "pressed surface"},
     "text": {"group": "text", "dark": "#F2F1EE", "light": "#16181C", "role": "primary text"},
     "text-dim": {"group": "text", "dark": "#8A919B", "light": "#5C636D", "role": "secondary text"},
@@ -66,15 +67,24 @@
     "mv-reel": {"group": "media", "dark": "#2C3038", "light": "#C2C7CE", "role": "reel flanges (plastic)"}
   },
   "components": {
+    "chart": {
+      "area": {"value": 0.12, "use": "opacity of the series colour under a single-series line (mix chart-area; chart.json area)"}
+    },
     "card": {
       "press-tint": {"value": 0.05, "use": "opacity of the accent tint over the card surface while pressed (mix press-tint); a theme may set it later"},
       "press-desat": {"value": 0.5, "use": "how far the accent is moved towards neutral grey (text-mute) before tinting the pressed card (0 = pure accent, 1 = grey); a theme may set it later"}
     },
     "chip": {
       "tint": {"value": 0.14, "use": "opacity of the tone fill behind a status chip or count badge (docs opacity chip-bg; drawn as bg_opa so it works on the canvas or a card); a theme may set it later"}
+    },
+    "grid": {
+      "minor": {"value": 0.05, "use": "opacity of the minor grid lines (every grid step, 8 px at 720 / 4 at 480; ink = colour text) in the Layout page's screen overlay: drawn on top of the real components, see-through on cards, still visible on the bare bg (Darren 2026-10-22: translucent ink, ~5 % light-on-dark / dark-on-light)"},
+      "major": {"value": 0.15, "use": "opacity of the group grid lines (ink = colour text) in the Layout page's screen overlay: a step stronger than grid.minor so both the 4 px grid and the group lines read"}
     }
   },
   "mixes": {
+    "chart-area": {"tint": "blue", "over": "surface", "opa": "chart.area", "use": "area fill under a single-series line (series 1, blue) on a card (chart.json area)"},
+    "chart-area-bg": {"tint": "blue", "over": "bg", "opa": "chart.area", "use": "the same area fill on the canvas"},
     "press-tint": {"tint": "accent", "toward": "text-mute", "desat": "card.press-desat", "over": "surface", "opa": "card.press-tint", "use": "pressed card fill: a faint, greyed accent tint over the surface (Darren 2026-10-21, card rounds 4-5), per theme x accent set; = the pressed tint role of states.json (Card, List row, section header action; the Card press style lives there too)"},
     "chip-ok": {"tint": "ok", "over": "bg", "opa": "chip.tint", "use": "status chip / count badge fill: tone ok (ok) at chip.tint over the bg"},
     "chip-ok-surface": {"tint": "ok", "over": "surface", "opa": "chip.tint", "use": "status chip / count badge fill: tone ok (ok) at chip.tint over the surface"},
@@ -304,7 +314,17 @@
       {"section": "accent_swatches", "fg": "text", "bg": ["bg", "surface"], "kind": "ui", "use": "chosen: the 2 px ring on the swatch edge (docs text)"},
       {"section": "accent_swatches", "fg": "accent-dim", "bg": ["bg", "surface"], "kind": "decor", "use": "disabled: dots (st::disabled_accent, = Toggle track; the ring carries the choice)"},
       {"section": "accent_swatches", "fg": "text-mute", "bg": ["bg", "surface"], "kind": "disabled", "use": "disabled: the chosen ring (st::disabled_ink)"},
-      {"section": "accent_swatches", "fg": "text-dim", "bg": ["bg", "surface"], "kind": "text", "use": "unavailable: the word Unavailable in place of the control"}
+      {"section": "accent_swatches", "fg": "text-dim", "bg": ["bg", "surface"], "kind": "text", "use": "unavailable: the word Unavailable in place of the control"},
+      {"section": "chart", "fg": "blue", "bg": ["bg", "surface", "chart-area", "chart-area-bg"], "kind": "ui", "use": "series 1 line, bars, end dot (also over its own area fill)"},
+      {"section": "chart", "fg": "steel", "bg": ["bg", "surface"], "kind": "ui", "use": "series 2"},
+      {"section": "chart", "fg": "text-dim", "bg": ["bg", "surface"], "kind": "ui", "use": "series 3; the scrub cursor and the dotted now marker"},
+      {"section": "chart", "fg": "line-hi", "bg": ["bg", "surface"], "kind": "decor", "use": "compare series (dashed / outline-only, always named in the legend), baseline, loading placeholder"},
+      {"section": "chart", "fg": "accent", "bg": ["bg", "surface"], "kind": "ui", "use": "highlight: now / the value that matters, gauge value arc"},
+      {"section": "chart", "fg": "text", "bg": ["bg", "surface", "chart-area", "chart-area-bg"], "kind": "ui", "use": "selected bar / scrub dot"},
+      {"section": "chart", "fg": "line", "bg": ["bg", "surface"], "kind": "decor", "use": "grid lines, gauge track"},
+      {"section": "chart", "fg": "text-mute", "bg": ["bg", "surface"], "kind": "disabled", "use": "unavailable: the last known line"},
+      {"section": "chart", "fg": "text-dim", "bg": ["bg", "surface", "chart-area", "chart-area-bg"], "kind": "text", "use": "axis labels, units, legend, empty / unavailable words (also over the area fill)"},
+      {"section": "chart", "fg": "text", "bg": ["bg", "surface", "chart-area", "chart-area-bg"], "kind": "text", "use": "scrub readout and the big number"}
     ]
   },
   "accent": {

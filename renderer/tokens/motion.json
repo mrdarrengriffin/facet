@@ -36,7 +36,8 @@
     "ease-in-out": { "bezier": [0.42, 0, 0.58, 1], "css": "cubic-bezier(0.42, 0, 0.58, 1)", "lvgl": "lv_anim_path_ease_in_out", "use": "ambient loops that go back and forth (pulse, mascot)" }
   },
   "opacity": {
-    "scrim": { "value": 0.72, "use": "sheet scrim: bg at this opacity over the screen" },
+    "scrim": { "value": 0.8, "use": "sheet scrim, dark theme: colour.json scrim at this opacity over the screen (was bg at 0.72; Darren 2026-10-22: the backdrop must read clearly darker)" },
+    "scrim-light": { "value": 0.48, "use": "sheet scrim, light theme: colour.json scrim (near-black) at this opacity, so the screen behind dims instead of washing out" },
     "pulse-min": { "value": 0.35, "use": "pulse: the faintest point of a breath" }
   },
   "reduced": {

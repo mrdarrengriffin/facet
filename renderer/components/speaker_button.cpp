@@ -30,29 +30,13 @@ const lv_style_transition_dsc_t *tr(bool pressed) {
 struct Data { std::string name; };
 }  // namespace
 
-FW_COMPONENT(speaker_button, "Speaker button", "components", R"({
-  "about": "The header button that opens the speaker picker; its icon turns orange while something is playing.",
-  "frame": [320, 96],
-  "icons": ["speaker@small", "chevron-down@small"],
-  "props": [
-    {"name": "name", "type": "text", "default": "auto · study"},
-    {"name": "playing", "type": "bool", "default": true},
-    {"name": "state", "type": "select", "options": ["default", "pressed", "disabled"], "default": "default"}
-  ],
-  "variants": [
-    {"label": "playing", "props": {}},
-    {"label": "idle", "props": {"name": "kitchen", "playing": false}},
-    {"label": "long name", "props": {"name": "downstairs speakers and the soundbar"}},
-    {"label": "pressed", "props": {"state": "pressed"}},
-    {"label": "disabled", "props": {"name": "no speakers", "playing": false, "state": "disabled"}}
-  ]
-})") {
+namespace {
+void fill(lv_obj_t *b, fw::Props p) {
   const fw::Theme &t = *fw::T;
   const char *st = p["state"] | "default";
   const bool off = !strcmp(st, "disabled"), playing = (p["playing"] | true) && !off;
   const lv_color_t dim = off ? fw::st::disabled_ink(t) : t.text_dim;
 
-  lv_obj_t *b = lv_obj_create(parent);
   lv_obj_remove_style_all(b);
   lv_obj_add_flag(b, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_STATE_TRICKLE));
   lv_obj_remove_flag(b, LV_OBJ_FLAG_SCROLLABLE);
@@ -75,6 +59,7 @@ FW_COMPONENT(speaker_button, "Speaker button", "components", R"({
 
   fw::icon(b, "speaker", fw::ic::small, playing ? t.accent_text : dim);
   const char *name = p["name"] | "";
+  if (auto *d = (Data *) lv_obj_get_user_data(b)) d->name = name;  // what a tap reports
   lv_obj_t *l = fw::text(b, fw::ty::c_label, name, off ? fw::st::disabled_ink(t) : t.text);
   lv_obj_remove_flag(l, LV_OBJ_FLAG_CLICKABLE);
   lv_obj_update_layout(l);
@@ -86,7 +71,33 @@ FW_COMPONENT(speaker_button, "Speaker button", "components", R"({
   if (!strcmp(st, "pressed")) lv_obj_add_state(b, LV_STATE_PRESSED);
   if (off) lv_obj_add_state(b, ST_OFF);
 
-  auto *d = new Data{name};
+
+}
+}  // namespace
+
+FW_COMPONENT(speaker_button, "Speaker button", "components", R"({
+  "about": "The header button that opens the speaker picker; its icon turns orange while something is playing.",
+  "frame": [320, 96],
+  "icons": ["speaker@small", "chevron-down@small"],
+  "props": [
+    {"name": "name", "type": "text", "default": "auto · study"},
+    {"name": "playing", "type": "bool", "default": true},
+    {"name": "state", "type": "select", "options": ["default", "pressed", "disabled"], "default": "default"}
+  ],
+  "variants": [
+    {"label": "playing", "props": {}},
+    {"label": "idle", "props": {"name": "kitchen", "playing": false}},
+    {"label": "long name", "props": {"name": "downstairs speakers and the soundbar"}},
+    {"label": "pressed", "props": {"state": "pressed"}},
+    {"label": "disabled", "props": {"name": "no speakers", "playing": false, "state": "disabled"}}
+  ]
+})") {
+  lv_obj_t *b = lv_obj_create(parent);
+  auto *d = new Data;
+  lv_obj_set_user_data(b, d);
+  fill(b, p);
+  fw::st::built(b, p);
+
   lv_obj_add_event_cb(b, [](lv_event_t *e) { delete (Data *) lv_event_get_user_data(e); }, LV_EVENT_DELETE, d);
   fw::st::on_tap(b, [](lv_event_t *e) {  // blocked on finger down, a real tap on CLICKED (states.json)
     if (!fw::st::tap_now(e)) return;
@@ -97,3 +108,7 @@ FW_COMPONENT(speaker_button, "Speaker button", "components", R"({
     fw::sound(o, "open");  // states.json rest sounds: open = going deeper (it opens the speaker sheet)
   }, d);
 }
+
+// Update path: default <-> pressed = the press fade in place; any other prop builds the contents again in the same
+// root (fw::refill, snap), disabled in / out fades them in (fw::st::update). Silent.
+FW_UPDATE(speaker_button) { return fw::st::update(root, p, fill); }

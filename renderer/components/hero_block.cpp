@@ -32,32 +32,15 @@ lv_obj_t *line(lv_obj_t *parent, fw::ty::Id s, const char *txt, lv_color_t c) {
 }
 }  // namespace
 
-FW_COMPONENT(hero_block, "Hero block", "components", R"({
-  "about": "A screen's one big number, with a label and one line beside it; accent when it matters now.",
-  "frame": [480, 112],
-  "props": [
-    {"name": "n", "type": "text", "default": "3"},
-    {"name": "label", "type": "text", "default": "need you"},
-    {"name": "line", "type": "text", "default": "2 reviews · 2 assigned"},
-    {"name": "accent", "type": "bool", "default": true},
-    {"name": "role", "type": "select", "options": ["hero", "display"], "default": "hero"},
-    {"name": "state", "type": "select", "options": ["default", "unavailable"], "default": "default"}
-  ],
-  "variants": [
-    {"label": "accent · needs you", "props": {}},
-    {"label": "quiet", "props": {"n": "12", "label": "open", "line": "3 drafts · 1 waiting on CI", "accent": false}},
-    {"label": "money", "props": {"n": "£2.42", "label": "today", "line": "8.4 kWh · cheaper than yesterday", "accent": false}},
-    {"label": "display role", "props": {"n": "21", "label": "inside", "line": "Feels like 19 · heating off", "accent": false, "role": "display"}},
-    {"label": "long line", "props": {"n": "7", "label": "strikes", "line": "nearest 14 km north-east, moving away at 30 km/h", "accent": true}},
-    {"label": "unavailable", "props": {"n": "21", "label": "inside", "line": "", "accent": false, "state": "unavailable"}}
-  ]
-})") {
+namespace {
+void fill(lv_obj_t *h, fw::Props p) {
   const fw::Theme &t = *fw::T;
   const bool off = !strcmp(p["state"] | "default", "unavailable");
   const bool accent = !off && (p["accent"] | false);
   const fw::ty::Id role = !strcmp(p["role"] | "hero", "display") ? fw::ty::display : fw::ty::hero;
 
-  lv_obj_t *h = box(parent);
+  lv_obj_remove_style_all(h);
+  lv_obj_remove_flag(h, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
   lv_obj_set_size(h, 2 * fw::lay::card_w + fw::lay::gutter, fw::style(role).box);
   lv_obj_set_flex_flow(h, LV_FLEX_FLOW_ROW);
   lv_obj_set_flex_align(h, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
@@ -80,4 +63,35 @@ FW_COMPONENT(hero_block, "Hero block", "components", R"({
   lv_obj_set_style_margin_top(col, (fw::style(fw::ty::hero).box - (lab + fw::sp::s2 + body)) / 2, 0);
   line(col, fw::ty::label, p["label"] | "", off ? fw::st::unavailable_ink(t) : t.text);
   line(col, fw::ty::body, off ? fw::st::UNAVAILABLE_TEXT : (p["line"] | ""), off ? fw::st::unavailable_note(t) : t.text_dim);
+}
+}  // namespace
+
+FW_COMPONENT(hero_block, "Hero block", "components", R"({
+  "about": "A screen's one big number, with a label and one line beside it; accent when it matters now.",
+  "frame": [480, 112],
+  "props": [
+    {"name": "n", "type": "text", "default": "3"},
+    {"name": "label", "type": "text", "default": "need you"},
+    {"name": "line", "type": "text", "default": "2 reviews · 2 assigned"},
+    {"name": "accent", "type": "bool", "default": true},
+    {"name": "role", "type": "select", "options": ["hero", "display"], "default": "hero"},
+    {"name": "state", "type": "select", "options": ["default", "unavailable"], "default": "default"}
+  ],
+  "variants": [
+    {"label": "accent · needs you", "props": {}},
+    {"label": "quiet", "props": {"n": "12", "label": "open", "line": "3 drafts · 1 waiting on CI", "accent": false}},
+    {"label": "money", "props": {"n": "£2.42", "label": "today", "line": "8.4 kWh · cheaper than yesterday", "accent": false}},
+    {"label": "display role", "props": {"n": "21", "label": "inside", "line": "Feels like 19 · heating off", "accent": false, "role": "display"}},
+    {"label": "long line", "props": {"n": "7", "label": "strikes", "line": "nearest 14 km north-east, moving away at 30 km/h", "accent": true}},
+    {"label": "unavailable", "props": {"n": "21", "label": "inside", "line": "", "accent": false, "state": "unavailable"}}
+  ]
+})") {
+  fill(lv_obj_create(parent), p);
+}
+
+// Update path: number, label, line, accent, role and unavailable snap in the same root (fw::refill), silent.
+FW_UPDATE(hero_block) {
+  fw::refill(root);
+  fill(root, p);
+  return true;
 }

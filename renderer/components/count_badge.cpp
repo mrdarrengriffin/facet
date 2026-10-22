@@ -24,34 +24,18 @@ lv_color_t fill_of(const char *t) {
 }
 }  // namespace
 
-FW_COMPONENT(count_badge, "Count badge", "components", R"({
-  "about": "A small round number, such as how many items need attention.",
-  "frame": [160, 64],
-  "props": [
-    {"name": "count", "type": "range", "min": 0, "max": 150, "step": 1, "default": 3},
-    {"name": "tone", "type": "select", "options": ["ok", "warn", "error", "working", "info", "idle"], "default": "idle"},
-    {"name": "zero", "type": "select", "options": ["muted", "hide"], "default": "muted"}
-  ],
-  "variants": [
-    {"label": "0 · muted", "props": {"count": 0, "tone": "warn"}},
-    {"label": "1", "props": {"count": 1, "tone": "warn"}},
-    {"label": "9", "props": {"count": 9, "tone": "working"}},
-    {"label": "12", "props": {"count": 12, "tone": "error"}},
-    {"label": "99", "props": {"count": 99, "tone": "info"}},
-    {"label": "128 = 99+", "props": {"count": 128, "tone": "ok"}},
-    {"label": "idle", "props": {"count": 3, "tone": "idle"}}
-  ]
-})") {
+namespace {
+void fill(lv_obj_t *b, fw::Props p) {
   const int n = std::max(0, (int) (p["count"] | 0));
   const bool zero = n == 0;
-  if (zero && !strcmp(p["zero"] | "muted", "hide")) return;
   const char *tone = zero ? "idle" : (p["tone"] | "idle");
   char txt[8];
   if (n > 99) snprintf(txt, sizeof txt, "99+");
   else snprintf(txt, sizeof txt, "%d", n);
 
-  lv_obj_t *b = lv_obj_create(parent);
   lv_obj_remove_style_all(b);
+  // zero + hide: the badge stays as a hidden root (the update path needs one object; hidden = out of the layout)
+  lv_obj_set_flag(b, LV_OBJ_FLAG_HIDDEN, zero && !strcmp(p["zero"] | "muted", "hide"));
   lv_obj_remove_flag(b, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
   lv_obj_set_size(b, LV_SIZE_CONTENT, fw::lay::badge_h);
   lv_obj_set_style_min_width(b, fw::lay::badge_h, 0);
@@ -73,4 +57,33 @@ FW_COMPONENT(count_badge, "Count badge", "components", R"({
     if (lv_obj_get_width(l) < min_w) lv_obj_set_width(l, min_w);
     lv_obj_set_style_text_align(l, LV_TEXT_ALIGN_CENTER, 0);
   }
+}
+}  // namespace
+
+FW_COMPONENT(count_badge, "Count badge", "components", R"({
+  "about": "A small round number, such as how many items need attention.",
+  "frame": [160, 64],
+  "props": [
+    {"name": "count", "type": "range", "min": 0, "max": 150, "step": 1, "default": 3},
+    {"name": "tone", "type": "select", "options": ["ok", "warn", "error", "working", "info", "idle"], "default": "idle"},
+    {"name": "zero", "type": "select", "options": ["muted", "hide"], "default": "muted"}
+  ],
+  "variants": [
+    {"label": "0 · muted", "props": {"count": 0, "tone": "warn"}},
+    {"label": "1", "props": {"count": 1, "tone": "warn"}},
+    {"label": "9", "props": {"count": 9, "tone": "working"}},
+    {"label": "12", "props": {"count": 12, "tone": "error"}},
+    {"label": "99", "props": {"count": 99, "tone": "info"}},
+    {"label": "128 = 99+", "props": {"count": 128, "tone": "ok"}},
+    {"label": "idle", "props": {"count": 3, "tone": "idle"}}
+  ]
+})") {
+  fill(lv_obj_create(parent), p);
+}
+
+// Update path: the new count / tone / zero rule snaps in the same root (fw::refill), silent.
+FW_UPDATE(count_badge) {
+  fw::refill(root);
+  fill(root, p);
+  return true;
 }

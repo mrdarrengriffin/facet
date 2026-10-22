@@ -93,29 +93,21 @@ void choose(lv_obj_t *box, int i) {
 }
 }  // namespace
 
-FW_COMPONENT(segmented, "Segmented", "components", R"({
-  "about": "One choice out of a few, side by side: a setting with up to 3 options, or the view tabs of a screen.",
-  "frame": [480, 96],
-  "props": [
-    {"name": "options", "type": "text", "default": "Auto, Dark, Light"},
-    {"name": "selected", "type": "text", "default": "auto"},
-    {"name": "width", "type": "select", "options": ["hug", "fill"], "default": "hug"},
-    {"name": "state", "type": "select", "options": ["default", "disabled", "unavailable"], "default": "default"}
-  ],
-  "variants": [
-    {"label": "setting · 3 options", "props": {}},
-    {"label": "setting · 2 options", "props": {"options": "Mono, Analogue", "selected": "analogue"}},
-    {"label": "tabs · Weather", "props": {"options": "Weather, Sun, Moon, Lightning", "selected": "weather"}},
-    {"label": "tabs · Calendar", "props": {"options": "Agenda, Month", "selected": "month"}},
-    {"label": "tabs · fill", "props": {"options": "Now, Radar", "selected": "now", "width": "fill"}},
-    {"label": "disabled", "props": {"selected": "dark", "state": "disabled"}},
-    {"label": "unavailable", "props": {"state": "unavailable"}}
-  ]
-})") {
+namespace {
+// structural props (a change = the segments again, fw::refill, snap); the choice and disabled move in place
+std::string sig(fw::Props p) {
+  return std::string(p["options"] | "Auto, Dark, Light") + "|" + (p["width"] | "hug") + "|" +
+         (strcmp(p["state"] | "default", "unavailable") ? "" : "u");
+}
+void fill(lv_obj_t *box, fw::Props p) {
   const fw::Theme &t = *fw::T;
   const char *state = p["state"] | "default";
+  auto *d = (Seg *) lv_obj_get_user_data(box);
+  d->ids.clear();
+  d->chosen = 0;
+  fw::shape(box, sig(p));
   if (!strcmp(state, "unavailable")) {  // states.json unavailable: the word in place of the control (= Toggle)
-    lv_obj_t *u = lv_obj_create(parent);
+    lv_obj_t *u = box;
     lv_obj_remove_style_all(u);
     lv_obj_add_flag(u, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_remove_flag(u, LV_OBJ_FLAG_SCROLLABLE);
@@ -127,13 +119,10 @@ FW_COMPONENT(segmented, "Segmented", "components", R"({
     lv_obj_center(l);
     lv_obj_update_layout(l);
     lv_obj_set_width(u, (lv_obj_get_width(l) + fw::sp::GRID - 1) / fw::sp::GRID * fw::sp::GRID);  // on the grid
-    lv_obj_add_state(u, ST_OFF);
-    fw::st::on_tap(u, [](lv_event_t *e) {
-      if (fw::st::tap_now(e)) fw::st::blocked((lv_obj_t *) lv_event_get_current_target(e), "unavailable");
-    }, nullptr);
+    lv_obj_add_state(u, ST_OFF);  // the tap = blocked (the root's handler, made once in build)
     return;
   }
-  const bool off = !strcmp(state, "disabled"), fill = !strcmp(p["width"] | "hug", "fill");
+  const bool off = !strcmp(state, "disabled"), fill_w = !strcmp(p["width"] | "hug", "fill");
 
   // options: comma list of labels, id = label lower-cased
   std::vector<std::string> labels;
@@ -150,7 +139,6 @@ FW_COMPONENT(segmented, "Segmented", "components", R"({
     if (labels.empty()) labels.push_back("Option");
   }
   const int n = (int) labels.size();
-  auto *d = new Seg;
   for (auto &l : labels) d->ids.push_back(lower(l));
   const std::string sel = lower(trim(p["selected"] | ""));
   for (int i = 0; i < n; i++)
@@ -160,11 +148,8 @@ FW_COMPONENT(segmented, "Segmented", "components", R"({
   const int R = fw::rad::button, ring = 2 * hair;  // plate ring: the box line over its outer px + line-hi inside
   static_assert(fw::rad::button > 2 * fw::stroke::hair, "the end plates follow the box's corner");
 
-  lv_obj_t *box = lv_obj_create(parent);
   lv_obj_remove_style_all(box);
   lv_obj_remove_flag(box, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
-  lv_obj_set_user_data(box, d);
-  lv_obj_add_event_cb(box, [](lv_event_t *e) { delete (Seg *) lv_event_get_user_data(e); }, LV_EVENT_DELETE, d);
 
   // segments: labels first (hug needs their widths), each segment width on the grid
   std::vector<lv_obj_t *> segs, labs;
@@ -192,7 +177,7 @@ FW_COMPONENT(segmented, "Segmented", "components", R"({
     segs.push_back(s);
     labs.push_back(l);
   }
-  if (fill) {  // equal segments over the content width, the last takes the remainder (all on the grid)
+  if (fill_w) {  // equal segments over the content width, the last takes the remainder (all on the grid)
     const int each = fw::lay::content_w / n / G * G;
     for (int i = 0; i < n; i++) ws[i] = i < n - 1 ? each : fw::lay::content_w - each * (n - 1);
   }
@@ -255,4 +240,63 @@ FW_COMPONENT(segmented, "Segmented", "components", R"({
   lv_obj_set_style_border_color(rg, t.line, 0);
   lv_obj_set_style_border_opa(rg, LV_OPA_COVER, 0);
   choose(box, d->chosen);
+}
+}  // namespace
+
+FW_COMPONENT(segmented, "Segmented", "components", R"({
+  "about": "One choice out of a few, side by side: a setting with up to 3 options, or the view tabs of a screen.",
+  "frame": [480, 96],
+  "props": [
+    {"name": "options", "type": "text", "default": "Auto, Dark, Light"},
+    {"name": "selected", "type": "text", "default": "auto"},
+    {"name": "width", "type": "select", "options": ["hug", "fill"], "default": "hug"},
+    {"name": "state", "type": "select", "options": ["default", "disabled", "unavailable"], "default": "default"}
+  ],
+  "variants": [
+    {"label": "setting · 3 options", "props": {}},
+    {"label": "setting · 2 options", "props": {"options": "Mono, Analogue", "selected": "analogue"}},
+    {"label": "tabs · Weather", "props": {"options": "Weather, Sun, Moon, Lightning", "selected": "weather"}},
+    {"label": "tabs · Calendar", "props": {"options": "Agenda, Month", "selected": "month"}},
+    {"label": "tabs · fill", "props": {"options": "Now, Radar", "selected": "now", "width": "fill"}},
+    {"label": "disabled", "props": {"selected": "dark", "state": "disabled"}},
+    {"label": "unavailable", "props": {"state": "unavailable"}}
+  ]
+})") {
+  auto *d = new Seg;
+  lv_obj_t *box = lv_obj_create(parent);
+  lv_obj_set_user_data(box, d);
+  lv_obj_add_event_cb(box, [](lv_event_t *e) { delete (Seg *) lv_event_get_user_data(e); }, LV_EVENT_DELETE, d);
+  fill(box, p);
+  fw::st::on_tap(box, [](lv_event_t *e) {  // unavailable: the root is the word (clickable), a tap = blocked
+    auto *o = (lv_obj_t *) lv_event_get_current_target(e);
+    if (lv_obj_has_flag(o, LV_OBJ_FLAG_CLICKABLE) && fw::st::tap_now(e)) fw::st::blocked(o, "unavailable");
+  }, nullptr);
+}
+
+// Update path: another selected option = the choice moves (the chosen plate + label fade, fw::st::set_state ON),
+// default <-> disabled fades in place (fw::st::set_state OFF on each segment); options, width or unavailable in / out
+// = the segments again (fw::refill, snap; unavailable fades the new contents in). Silent.
+FW_UPDATE(segmented) {
+  auto *d = (Seg *) lv_obj_get_user_data(root);
+  if (!d) return false;
+  const bool was_unavail = !d->ids.size();
+  if (!fw::shape(root, sig(p))) {
+    fw::refill(root);
+    fill(root, p);
+    if (was_unavail != !d->ids.size()) fw::st::fade_in_children(root);
+    return true;
+  }
+  if (!d->ids.size()) return true;  // unavailable: nothing else shows
+  const std::string sel = lower(trim(p["selected"] | ""));
+  int c = 0;
+  for (int i = 0; i < (int) d->ids.size(); i++)
+    if (d->ids[i] == sel) c = i;
+  const bool off = !strcmp(p["state"] | "default", "disabled");
+  for (int i = 0; i < (int) d->ids.size(); i++) {
+    lv_obj_t *s = lv_obj_get_child(root, i);
+    fw::st::set_state(s, ST_ON, i == c);
+    fw::st::set_state(s, ST_OFF, off);
+  }
+  d->chosen = c;
+  return true;
 }

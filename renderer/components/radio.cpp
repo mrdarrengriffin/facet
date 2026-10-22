@@ -91,3 +91,12 @@ FW_COMPONENT(radio, "Radio", "components", R"({
     fw::sound(o, fw::st::TAP_SOUND);
   }, nullptr);
 }
+
+// Update path: on / off -> the state's own transitions (ring colour + dot, Motion toggle), default <-> disabled ->
+// fw::st::set_off fades in place. Silent (no tap).
+FW_UPDATE(radio) {
+  fw::st::set_state(root, ST_ON, p["on"] | true, false);  // LVGL's transitions animate the dot + ring
+  const bool off = !strcmp(p["state"] | "default", "disabled");
+  if (off != lv_obj_has_state(root, ST_OFF)) fw::st::set_off(root, off);
+  return true;
+}

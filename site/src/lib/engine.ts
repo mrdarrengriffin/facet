@@ -117,6 +117,9 @@ export class Stage {
     if (!e.m._fw_update) return 'rebuild';
     return e.withStr(comp, (c) => e.withStr(JSON.stringify(props), (p) => e.str(e.m._fw_update(this.id, c, p, light ? 1 : 0, accent))));
   }
+  /** demos on this stage (fw::demo_state): -1 none reported, 0 every demo at its preset (a replay that ended where it
+   *  started: skip the demo reset), 1 one moved away; -1 on an older build */
+  demoState(): number { return this.e.m._fw_demo_state ? (this.e.m._fw_demo_state(this.id) as number) : -1; }
   /** the height the shown content needs (auto-height stages: an update that changes it needs a render) */
   contentH(minH = 1) { return Math.max(minH, 1, this.e.m._fw_content_h(this.id)); }
   resize(w: number, h: number) {

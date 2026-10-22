@@ -27,27 +27,13 @@ const lv_style_transition_dsc_t *tr(bool pressed) {
 }
 }  // namespace
 
-FW_COMPONENT(more_row, "More row", "components", R"({
-  "about": "The last row of a short list: a caps label and a chevron that open the rest.",
-  "frame": [480, 64],
-  "icons": ["chevron@icon"],
-  "props": [
-    {"name": "text", "type": "text", "default": "all pull requests · 3 more"},
-    {"name": "state", "type": "select", "options": ["default", "pressed", "disabled"], "default": "default"}
-  ],
-  "variants": [
-    {"label": "default", "props": {}},
-    {"label": "pressed", "props": {"state": "pressed"}},
-    {"label": "disabled", "props": {"text": "all notifications · 0 more", "state": "disabled"}},
-    {"label": "long label", "props": {"text": "every automation that ran in the last 24 hours · 128 more"}}
-  ]
-})") {
+namespace {
+void fill(lv_obj_t *r, fw::Props p) {
   const fw::Theme &t = *fw::T;
   const char *state = p["state"] | "default";
   const bool off = !strcmp(state, "disabled");
   const lv_color_t ink = off ? fw::st::disabled_ink(t) : t.text_dim;
 
-  lv_obj_t *r = lv_obj_create(parent);
   lv_obj_remove_style_all(r);
   lv_obj_add_flag(r, LV_OBJ_FLAG_CLICKABLE);
   lv_obj_remove_flag(r, LV_OBJ_FLAG_SCROLLABLE);
@@ -78,11 +64,38 @@ FW_COMPONENT(more_row, "More row", "components", R"({
   if (!strcmp(state, "pressed")) lv_obj_add_state(r, LV_STATE_PRESSED);
   if (off) lv_obj_add_state(r, ST_OFF);
 
+
+}
+}  // namespace
+
+FW_COMPONENT(more_row, "More row", "components", R"({
+  "about": "The last row of a short list: a caps label and a chevron that open the rest.",
+  "frame": [480, 64],
+  "icons": ["chevron@icon"],
+  "props": [
+    {"name": "text", "type": "text", "default": "all pull requests · 3 more"},
+    {"name": "state", "type": "select", "options": ["default", "pressed", "disabled"], "default": "default"}
+  ],
+  "variants": [
+    {"label": "default", "props": {}},
+    {"label": "pressed", "props": {"state": "pressed"}},
+    {"label": "disabled", "props": {"text": "all notifications · 0 more", "state": "disabled"}},
+    {"label": "long label", "props": {"text": "every automation that ran in the last 24 hours · 128 more"}}
+  ]
+})") {
+  lv_obj_t *r = lv_obj_create(parent);
+  fill(r, p);
+  fw::st::built(r, p);
+
   fw::st::on_tap(r, [](lv_event_t *e) {  // blocked on finger down, a real tap on CLICKED (states.json)
     if (!fw::st::tap_now(e)) return;
     auto *o = (lv_obj_t *) lv_event_get_current_target(e);
-    const char *d = lv_label_get_text((lv_obj_t *) lv_event_get_user_data(e));
+    const char *d = lv_label_get_text(lv_obj_get_child(o, 0));  // the label, looked up (updates make it again)
     if (lv_obj_has_state(o, ST_OFF)) fw::st::blocked(o, d);
     else { fw::emit(o, "tap", d); fw::sound(o, "open"); }
-  }, l);
+  }, nullptr);
 }
+
+// Update path: default <-> pressed = the press fade in place; any other prop builds the contents again in the same
+// root (fw::refill, snap), disabled in / out fades them in (fw::st::update). Silent.
+FW_UPDATE(more_row) { return fw::st::update(root, p, fill); }

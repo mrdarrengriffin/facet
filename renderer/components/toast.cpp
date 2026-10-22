@@ -147,40 +147,19 @@ void on_pointer(lv_event_t *e) {
 }
 }  // namespace
 
-FW_COMPONENT(toast, "Toast", "components", R"({
-  "about": "A message over any screen: a tone-tinted icon, a title over a body line, an optional action and a timer bar. Tap or swipe it away.",
-  "frame": [480, 0],
-  "icons": ["timer@glyph", "agent@glyph", "person@glyph", "washer@glyph", "vacuum@glyph", "bolt@glyph", "alert@glyph", "done@glyph", "bell@glyph", "check@glyph", "pr@glyph"],
-  "props": [
-    {"name": "icon", "type": "select", "options": ["timer", "agent", "person", "washer", "vacuum", "bolt", "alert", "done", "bell", "check", "pr"], "default": "timer"},
-    {"name": "tone", "type": "select", "options": ["ok", "warn", "error", "working", "info", "idle"], "default": "ok"},
-    {"name": "title", "type": "text", "default": "Pasta is ready"},
-    {"name": "body", "type": "text", "default": "Your 9 min timer has finished."},
-    {"name": "action", "type": "text", "default": ""},
-    {"name": "timer", "type": "bool", "default": false},
-    {"name": "life", "type": "select", "options": ["normal", "urgent"], "default": "normal"}
-  ],
-  "variants": [
-    {"label": "ok · timer done", "props": {}},
-    {"label": "warn · action", "props": {"icon": "person", "tone": "warn", "title": "Someone at the front door", "body": "Person on the doorstep", "action": "View"}},
-    {"label": "error", "props": {"icon": "alert", "tone": "error", "title": "Garden sensor offline", "body": "No reading for 30 min"}},
-    {"label": "working", "props": {"icon": "agent", "tone": "working", "title": "Recipe importer started", "body": "Importing 12 recipes"}},
-    {"label": "info", "props": {"icon": "washer", "tone": "info", "title": "Washing machine done", "body": "Took 1 h 4 min."}},
-    {"label": "idle", "props": {"icon": "vacuum", "tone": "idle", "title": "Back on the dock", "body": "Kitchen and hallway cleaned in 23 min."}},
-    {"label": "no body", "props": {"icon": "bell", "tone": "info", "title": "Doorbell", "body": ""}},
-    {"label": "long text", "props": {"icon": "bolt", "tone": "warn", "title": "Lightning 9 km W, closing at 48 km/h from the coast", "body": "6 strikes within 25 km in the last ten minutes", "action": "Radar"}},
-    {"label": "timer running", "props": {"timer": true}}
-  ]
-})") {
+namespace {
+// the toast's look and contents on o (user data = its Toast, made once in build); the bar starts full
+void fill(lv_obj_t *o, fw::Props p) {
   const fw::Theme &T = *fw::T;
   const Tone tone = tone_of(p["tone"] | "ok");
-  auto *t = new Toast;
+  auto *t = (Toast *) lv_obj_get_user_data(o);
   t->timer = p["timer"] | false;  // the layer passes it; off = the docs' static toast
   t->layer = p["layer"] | false;
   t->top = strcmp(p["edge"] | (fw::toast::top ? "top" : "bottom"), "bottom") != 0;
   t->life = !strcmp(p["life"] | "normal", "urgent") ? fw::toast::life_urgent : fw::toast::life;
 
-  lv_obj_t *o = t->o = box(parent);
+  lv_obj_remove_style_all(o);
+  lv_obj_remove_flag(o, LV_OBJ_FLAG_SCROLLABLE);
   lv_obj_add_flag(o, LV_OBJ_FLAG_CLICKABLE);
   lv_obj_set_size(o, fw::lay::content_w, fw::lay::toast_h);
   lv_obj_set_style_bg_color(o, T.surface, 0);
@@ -238,6 +217,40 @@ FW_COMPONENT(toast, "Toast", "components", R"({
   lv_obj_set_style_bg_color(t->bar, tone.fill, 0);
   lv_obj_set_style_bg_opa(t->bar, LV_OPA_COVER, 0);
 
+
+}
+}  // namespace
+
+FW_COMPONENT(toast, "Toast", "components", R"({
+  "about": "A message over any screen: a tone-tinted icon, a title over a body line, an optional action and a timer bar. Tap or swipe it away.",
+  "frame": [480, 0],
+  "icons": ["timer@glyph", "agent@glyph", "person@glyph", "washer@glyph", "vacuum@glyph", "bolt@glyph", "alert@glyph", "done@glyph", "bell@glyph", "check@glyph", "pr@glyph"],
+  "props": [
+    {"name": "icon", "type": "select", "options": ["timer", "agent", "person", "washer", "vacuum", "bolt", "alert", "done", "bell", "check", "pr"], "default": "timer"},
+    {"name": "tone", "type": "select", "options": ["ok", "warn", "error", "working", "info", "idle"], "default": "ok"},
+    {"name": "title", "type": "text", "default": "Pasta is ready"},
+    {"name": "body", "type": "text", "default": "Your 9 min timer has finished."},
+    {"name": "action", "type": "text", "default": ""},
+    {"name": "timer", "type": "bool", "default": false},
+    {"name": "life", "type": "select", "options": ["normal", "urgent"], "default": "normal"}
+  ],
+  "variants": [
+    {"label": "ok · timer done", "props": {}},
+    {"label": "warn · action", "props": {"icon": "person", "tone": "warn", "title": "Someone at the front door", "body": "Person on the doorstep", "action": "View"}},
+    {"label": "error", "props": {"icon": "alert", "tone": "error", "title": "Garden sensor offline", "body": "No reading for 30 min"}},
+    {"label": "working", "props": {"icon": "agent", "tone": "working", "title": "Recipe importer started", "body": "Importing 12 recipes"}},
+    {"label": "info", "props": {"icon": "washer", "tone": "info", "title": "Washing machine done", "body": "Took 1 h 4 min."}},
+    {"label": "idle", "props": {"icon": "vacuum", "tone": "idle", "title": "Back on the dock", "body": "Kitchen and hallway cleaned in 23 min."}},
+    {"label": "no body", "props": {"icon": "bell", "tone": "info", "title": "Doorbell", "body": ""}},
+    {"label": "long text", "props": {"icon": "bolt", "tone": "warn", "title": "Lightning 9 km W, closing at 48 km/h from the coast", "body": "6 strikes within 25 km in the last ten minutes", "action": "Radar"}},
+    {"label": "timer running", "props": {"timer": true}}
+  ]
+})") {
+  auto *t = new Toast;
+  lv_obj_t *o = t->o = lv_obj_create(parent);
+  lv_obj_set_user_data(o, t);
+  fill(o, p);
+
   for (lv_event_code_t c : {LV_EVENT_PRESSED, LV_EVENT_PRESSING, LV_EVENT_RELEASED, LV_EVENT_PRESS_LOST})
     lv_obj_add_event_cb(o, on_pointer, c, t);
   // pushed out by a newer toast (the layer; param 1 = a quiet build-time push: no event)
@@ -249,4 +262,32 @@ FW_COMPONENT(toast, "Toast", "components", R"({
     delete t;
   }, LV_EVENT_DELETE, t);
   bar_run(t);
+  bar_run(t);
+}
+
+// Update path: new icon, tone, texts or action = the contents again in the same toast (fw::refill, snap); the timer bar
+// keeps how much life is left when the timer and life stay (else it starts full). A dismissed toast comes back in
+// place (Motion toast-in from its edge, silent). Silent: no dismiss / arrival events or sounds.
+FW_UPDATE(toast) {
+  auto *t = (Toast *) lv_obj_get_user_data(root);
+  if (!t) return false;
+  const bool timer = p["timer"] | false;
+  const uint32_t life = !strcmp(p["life"] | "normal", "urgent") ? fw::toast::life_urgent : fw::toast::life;
+  int32_t left = -1;  // the bar's width to keep, -1 = full
+  if (t->bar && timer == t->timer && life == t->life && !t->closed) left = lv_obj_get_style_width(t->bar, LV_PART_MAIN);
+  bar_pause(t);
+  const bool was_closed = t->closed;
+  lv_anim_delete(root, nullptr);
+  fw::refill(root);
+  t->closed = t->down = t->dragged = false;
+  t->dx = 0;
+  fill(root, p);
+  if (left >= 0 && t->bar) lv_obj_set_width(t->bar, left);
+  lv_obj_set_style_translate_x(root, 0, 0);
+  if (was_closed) {
+    lv_obj_remove_flag(root, LV_OBJ_FLAG_HIDDEN);
+    fw::appear(root, fw::mo::toast_in, true, t->top ? -1 : 1);
+  }
+  bar_run(t);
+  return true;
 }
