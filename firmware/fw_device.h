@@ -4,6 +4,10 @@
 //   GET  /fw/meta   [{id, name, section, meta}]                                     the registry (same as fw_meta())
 //   POST /fw/show   {id, props?, theme?: dark|light, accent?: <set id>}  -> {ok, error?, ms, heap}
 //   GET  /fw/perf   frame stats while animations run (since boot or the last ?reset=1): fps, frame / render ms
+// Probation: while the running OTA image is still ESP_OTA_IMG_PENDING_VERIFY (safe_mode has not confirmed it yet,
+// boot_is_good_after = FW_PROBATION_S), a warn Status chip on the LVGL top layer (over every screen) says
+// "Update settling: don't unplug m:ss"; a reboot then would roll back to the previous image. Gone when confirmed
+// ("Update confirmed" ok chip for 4 s). /fw/info "probation_s" = seconds left (-1 = confirmed); YAML binary_sensor.
 // Rendering = fw::render() on one screen of our own (the same call the WASM preview makes): the component centred at
 // true size on the Facet bg; content taller than the screen scrolls (doc pages). The last request is kept in flash and
 // shown again after a reboot. Requests run in the httpd task; anything touching LVGL is handed to the main loop (an
@@ -17,6 +21,7 @@
 #include "freertos/semphr.h"
 #include "esp_heap_caps.h"
 #include "esp_timer.h"
+#include "esp_ota_ops.h"
 #include "esphome/core/defines.h"
 #include "esphome/core/log.h"
 #include "esphome/core/preferences.h"
@@ -33,6 +38,8 @@ struct Saved {
 struct State {
   lv_obj_t *scr = nullptr;
   std::string shown = "null";  // last successful request (JSON)
+  bool light = false;          // theme + accent of the last request (the probation chip follows it)
+  int accent = -1;
   esphome::ESPPreferenceObject pref;
 };
 inline State S;
@@ -186,12 +193,103 @@ inline bool show(ArduinoJson::JsonObjectConst req, ArduinoJson::JsonObject out) 
   if (*e) return false;
   S.shown.clear();
   serializeJson(req, S.shown);
+  S.light = light;
+  S.accent = accent_index(req["accent"] | "");
   return true;
 }
 inline void save() {
   Saved s{};
   if (S.shown.size() < sizeof s.req) memcpy(s.req, S.shown.data(), S.shown.size());
   S.pref.save(&s);
+}
+
+// ---------------------------------------------------------------- probation (OTA image not confirmed yet)
+#ifndef FW_PROBATION_S
+#define FW_PROBATION_S 180
+#endif
+// seconds until safe_mode confirms the running image (0 = due), -1 = confirmed / not an OTA image under verify
+inline int probation_left() {
+  static bool done = false;  // once valid it stays valid: no more partition reads
+  static int64_t checked = -1;  // the partition state is read at most once a second (callers poll every loop)
+  if (done) return -1;
+  const int64_t now = esp_timer_get_time();
+  if (checked < 0 || now - checked >= 1000000) {
+    checked = now;
+    esp_ota_img_states_t st;
+    if (esp_ota_get_state_partition(esp_ota_get_running_partition(), &st) != ESP_OK || st != ESP_OTA_IMG_PENDING_VERIFY) {
+      done = true;
+      return -1;
+    }
+  }
+  const int left = FW_PROBATION_S - (int) (now / 1000000);
+  return left > 0 ? left : 0;
+}
+struct Probation {
+  lv_obj_t *box = nullptr;  // top-layer holder (full width, top inset), the chip is rebuilt into it
+  int shown = -2;           // last seconds value drawn
+  int64_t ok_until = 0;     // "Update confirmed" until (us)
+  lv_timer_t *timer = nullptr;
+};
+inline Probation PR;
+inline void probation_chip(const char *tone, const char *text) {
+  const fw::Component *cc = fw::find("status_chip");
+  if (!cc) return;
+  if (!PR.box) {
+    PR.box = lv_obj_create(lv_layer_top());
+    lv_obj_remove_style_all(PR.box);
+    lv_obj_remove_flag(PR.box, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
+    lv_obj_set_size(PR.box, LV_PCT(100), LV_SIZE_CONTENT);
+    lv_obj_align(PR.box, LV_ALIGN_TOP_MID, 0, fw::sp::s4);
+    lv_obj_set_flex_flow(PR.box, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(PR.box, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+  }
+  lv_obj_clean(PR.box);
+  const fw::Theme *old = fw::T;
+  fw::T = fw::theme(S.light, S.accent);
+  // a solid backing under the 14 % tint so the chip reads over any screen (the tint alone is see-through)
+  lv_obj_t *back = lv_obj_create(PR.box);
+  lv_obj_remove_style_all(back);
+  lv_obj_remove_flag(back, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
+  lv_obj_set_size(back, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+  lv_obj_set_style_radius(back, fw::rad::chip, 0);
+  lv_obj_set_style_bg_color(back, fw::T->surface, 0);
+  lv_obj_set_style_bg_opa(back, LV_OPA_COVER, 0);
+  ArduinoJson::JsonDocument p;
+  p["tone"] = tone;
+  p["text"] = text;
+  cc->build(back, p.as<fw::Props>());
+  fw::T = old;
+}
+inline void probation_tick(lv_timer_t *) {
+  const int left = probation_left();
+  if (left >= 0) {
+    if (left == PR.shown) return;
+    PR.shown = left;
+    char t[64];
+    snprintf(t, sizeof t, "Update settling: don't unplug %d:%02d", left / 60, left % 60);
+    probation_chip("warn", t);
+    return;
+  }
+  if (PR.shown >= -1 && PR.box) {  // was on probation: confirmed now
+    if (PR.shown >= 0) {
+      PR.shown = -1;
+      PR.ok_until = esp_timer_get_time() + 4000000;
+      probation_chip("ok", "Update confirmed");
+      ESP_LOGI("facet_wb", "OTA image confirmed (probation over)");
+      return;
+    }
+    if (esp_timer_get_time() < PR.ok_until) return;
+  }
+  if (PR.box) lv_obj_delete(PR.box);
+  PR.box = nullptr;
+  lv_timer_delete(PR.timer);  // nothing left to watch until the next OTA (a new boot)
+  PR.timer = nullptr;
+}
+inline void probation_start() {
+  if (probation_left() < 0) return;
+  ESP_LOGW("facet_wb", "OTA image on probation: %d s until confirmed; a reboot now rolls back", probation_left());
+  PR.timer = lv_timer_create(probation_tick, 500, nullptr);
+  probation_tick(PR.timer);
 }
 
 // ---------------------------------------------------------------- HTTP
@@ -226,6 +324,7 @@ class Handler : public AsyncWebHandler {
       d["w"] = FW_DEVICE_W;
       d["h"] = FW_DEVICE_H;
       d["uptime_s"] = (int) (esp_timer_get_time() / 1000000);
+      d["probation_s"] = probation_left();
       heap(d["heap"].to<ArduinoJson::JsonObject>());
       std::string sh = "null";
       in_loop([&] { sh = S.shown; }, 2000);
@@ -297,6 +396,7 @@ inline void setup() {
   }
   ESP_LOGI("facet_wb", "%u components, showing %s", (unsigned) fw::reg().size(), S.shown.c_str());
   lv_timer_create(drain, 20, nullptr);
+  probation_start();
   if (auto *ws = esphome::web_server_base::global_web_server_base) ws->add_handler(new Handler());
 }
 
