@@ -298,7 +298,13 @@
       {"section": "segmented", "fg": "line", "bg": ["bg", "surface"], "kind": "decor", "use": "box border + separators, disabled chosen outline"},
       {"section": "segmented", "fg": "text-mute", "bg": ["bg", "surface"], "kind": "disabled", "use": "disabled: labels"},
       {"section": "segmented", "fg": "text-dim", "bg": "surface-press", "kind": "disabled", "use": "disabled: the chosen label on the plate (st::disabled_on_fill; text-mute is 2.7:1 there)"},
-      {"section": "segmented", "fg": "text-dim", "bg": ["bg", "surface"], "kind": "text", "use": "unavailable: the word Unavailable in place of the control"}
+      {"section": "segmented", "fg": "text-dim", "bg": ["bg", "surface"], "kind": "text", "use": "unavailable: the word Unavailable in place of the control"},
+      {"section": "accent_swatches", "fg": "accent", "bg": ["bg", "surface"], "kind": "ui", "use": "a dot in its set's accent against its surroundings (every set is tested, so all five dots are covered)"},
+      {"section": "accent_swatches", "fg": "accent-press", "bg": ["bg", "surface"], "kind": "ui", "use": "pressed: the dot goes to its set's accent-press (st::pressed_accent: an accent fill pressed; a surface-press plate behind the dot fails 3:1 for ember / rose / teal in light)"},
+      {"section": "accent_swatches", "fg": "text", "bg": ["bg", "surface"], "kind": "ui", "use": "chosen: the 2 px ring on the swatch edge (docs text)"},
+      {"section": "accent_swatches", "fg": "accent-dim", "bg": ["bg", "surface"], "kind": "decor", "use": "disabled: dots (st::disabled_accent, = Toggle track; the ring carries the choice)"},
+      {"section": "accent_swatches", "fg": "text-mute", "bg": ["bg", "surface"], "kind": "disabled", "use": "disabled: the chosen ring (st::disabled_ink)"},
+      {"section": "accent_swatches", "fg": "text-dim", "bg": ["bg", "surface"], "kind": "text", "use": "unavailable: the word Unavailable in place of the control"}
     ]
   },
   "accent": {
