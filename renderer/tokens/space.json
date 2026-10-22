@@ -70,7 +70,22 @@
       "cover-stack": { "v": 16, "1x": 12, "use": "Cover visual: the slat stack a closed-up Venetian blind keeps under the rail (docs 16)" },
       "cover-panel-min": { "v": 24, "1x": 16, "use": "Cover visual: the narrowest a curtain panel folds to when open (docs 24)" },
       "checkbox": { "v": 24, "1x": 16, "use": "Checkbox: the box (docs 20 at the docs site size; = Radio and the check icon at icon size, 24 / 16, so the check fills it)" },
-      "checkbox-dot": { "v": 8, "1x": 8, "use": "Checkbox in progress: the accent dot (docs 8; centred: (24 - 8) / 2 and (16 - 8) / 2 on the grid)" }
+      "checkbox-dot": { "v": 8, "1x": 8, "use": "Checkbox in progress: the accent dot (docs 8; centred: (24 - 8) / 2 and (16 - 8) / 2 on the grid)" },
+      "clock-ring": { "v": 600, "1x": 400, "use": "Clock / Ring: the dotted seconds ring (docs size clock-ring 600)" },
+      "clock-ring-inner": { "v": 560, "1x": 376, "use": "Clock / Ring: the hour tick ring inside it (docs clock-ring-inner 560; 1x 376 = the Dial scale, centred on the grid)" },
+      "clock-orbit-dot": { "v": 16, "1x": 8, "use": "Clock / Ring: the accent seconds dot orbiting on the dots (docs 14, onto the grid)" },
+      "clock-dial": { "v": 560, "1x": 376, "use": "Clock / Analogue: the tick scale (docs clock-dial 560 = the Dial scale)" },
+      "clock-hand-hour": { "v": 152, "1x": 100, "use": "Clock / Analogue: hour hand length from the centre (docs 150)" },
+      "clock-hand-min": { "v": 228, "1x": 152, "use": "Clock / Analogue: minute hand length (docs 228)" },
+      "clock-hand-sec": { "v": 248, "1x": 164, "use": "Clock / Analogue: seconds hand length (docs 246)" },
+      "clock-hand-tail": { "v": 36, "1x": 24, "use": "Clock / Analogue: the seconds hand's tail past the centre (docs 34)" },
+      "clock-hand-tip": { "v": 12, "1x": 8, "use": "Clock / Analogue: the dot on the seconds hand's tip (docs 10)" },
+      "clock-cap": { "v": 16, "1x": 12, "use": "Clock / Analogue: the centre cap, canvas with an accent ring (docs 14)" },
+      "clock-secbar": { "v": 64, "1x": 44, "use": "Clock / Hero: the seconds strip under the date (docs secondsBar(64))" },
+      "clock-tick": { "v": 16, "1x": 12, "use": "Clock / Ring: hour tick length (docs 16)" },
+      "clock-tick-major": { "v": 24, "1x": 16, "use": "Clock / Ring: quarter tick length (docs 24)" },
+      "clock-numeral-r": { "v": 224, "1x": 148, "use": "Clock / Analogue: the numerals' centres from the centre (docs dial / 2 - 22 - 34)" },
+      "clock-date-y": { "v": 104, "1x": 68, "use": "Clock / Analogue: the date line's top below the centre (docs 466 - 360 = 106, onto the grid)" }
     },
     "radius": {
       "tile": { "v": 0, "1x": 0, "use": "tiles" },

@@ -141,7 +141,7 @@ void refill_fade(lv_obj_t *root, const std::function<void()> &rebuild, bool anim
       for (lv_part_t part : PARTS)
         for (lv_style_prop_t prop : PROPS) {
           lv_style_value_t v;
-          if (lv_obj_get_local_style_prop(x, prop, &v, part) == LV_RESULT_OK) was.push_back({path, lv_obj_get_class(x), part, prop, v});
+          if (lv_obj_get_local_style_prop(x, prop, &v, part) == LV_STYLE_RES_FOUND) was.push_back({path, lv_obj_get_class(x), part, prop, v});
         }
   }
   rebuild();
@@ -167,7 +167,7 @@ void restyle(lv_obj_t *o, const std::function<void()> &change, bool animate) {
       for (lv_part_t part : PARTS)
         for (lv_style_prop_t prop : PROPS) {
           lv_style_value_t v;
-          if (lv_obj_get_local_style_prop(x, prop, &v, part) == LV_RESULT_OK) was.push_back({x, part, prop, v});
+          if (lv_obj_get_local_style_prop(x, prop, &v, part) == LV_STYLE_RES_FOUND) was.push_back({x, part, prop, v});
         }
   change();
   if (!ms) return;
@@ -181,7 +181,7 @@ void restyle(lv_obj_t *o, const std::function<void()> &change, bool animate) {
 namespace {
 void fade_value(lv_obj_t *root, lv_obj_t *obj, lv_part_t part, lv_style_prop_t prop, lv_style_value_t from, uint32_t ms, int32_t big) {
   lv_style_value_t now;
-  if (lv_obj_get_local_style_prop(obj, prop, &now, part) != LV_RESULT_OK) return;
+  if (lv_obj_get_local_style_prop(obj, prop, &now, part) != LV_STYLE_RES_FOUND) return;
   const bool col = is_colour(prop);
   if (col ? lv_color_eq(now.color, from.color) : now.num == from.num) return;
   // no large fades on a display without fades (the Guition): a large FILL changes at once (thin marks still fade)

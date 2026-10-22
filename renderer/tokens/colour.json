@@ -391,7 +391,16 @@
       {"section": "donut", "fg": "blue", "bg": ["bg", "surface"], "kind": "ui", "use": "part 1 (cheap)"},
       {"section": "donut", "fg": "band-normal", "bg": ["bg", "surface"], "kind": "ui", "use": "part 2 (normal)"},
       {"section": "donut", "fg": "accent", "bg": ["bg", "surface"], "kind": "ui", "use": "part 3 (peak, the highlight)"},
-      {"section": "donut", "fg": "line", "bg": ["bg", "surface"], "kind": "decor", "use": "the hairline track"}
+      {"section": "donut", "fg": "line", "bg": ["bg", "surface"], "kind": "decor", "use": "the hairline track"},
+      {"section": "clock", "fg": "text", "bg": ["bg", "surface"], "kind": "large", "use": "the time digits (clock-hero / mid) and compact digits"},
+      {"section": "clock", "fg": "text-dim", "bg": ["bg", "surface"], "kind": "text", "use": "AM / PM, the date line, analogue numerals"},
+      {"section": "clock", "fg": "line-hi", "bg": ["bg"], "kind": "decor", "use": "ring face: the 60 dots; analogue: minor ticks"},
+      {"section": "clock", "fg": "text-mute", "bg": ["bg"], "kind": "decor", "use": "ring face: the hour ticks between the quarters (docs text-mute; the quarters + numbers carry the hours)"},
+      {"section": "clock", "fg": "text-dim", "bg": ["bg"], "kind": "ui", "use": "ring face: quarter ticks; analogue: 5-minute ticks"},
+      {"section": "clock", "fg": "accent", "bg": ["bg"], "kind": "ui", "use": "the seconds: orbit dot, seconds hand + tip, the seconds strip fill, cap ring"},
+      {"section": "clock", "fg": "line-hi", "bg": ["accent"], "kind": "decor", "use": "ring face: a 4 px dot passing under the 16 px orbit dot (the dot meets the canvas all round)"},
+      {"section": "clock", "fg": "line", "bg": ["bg"], "kind": "decor", "use": "the seconds strip track"},
+      {"section": "clock", "fg": "text", "bg": ["bg"], "kind": "ui", "use": "analogue hour + minute hands"}
     ]
   },
   "accent": {

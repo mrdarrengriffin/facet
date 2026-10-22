@@ -38,6 +38,14 @@ const row = (n, d) => {
   return `  {${cstr(n)}, ${cstr(s.scale)}, ${cstr(s.use)}, ${cstr(s.sample)}, ${cstr(s.glyphs)}, ${s.font === 'mono'}, ${s.case === 'upper'}, ${tab.has(n)}, ${r.weight}, ${r.size}, ${r.box}, ${Number(r.lineHeight).toFixed(2)}f, ${r.letterSpacing}},`;
 };
 L.push('#ifdef FW_1X', 'constexpr Style STYLES[N] = {', ...names.map((n) => row(n, '1x')), '};', '#else', 'constexpr Style STYLES[N] = {', ...names.map((n) => row(n, '1.5x')), '};', '#endif');
+// fixed digit cells (clock digits): styles with "cells" {digit, colon, colonY} in em of the style's size
+L.push('struct Cells { Id style; float digit, colon, colon_y; };  // em of the size: digit cell, colon cell, colon raise');
+{
+  const cs = names.filter((n) => t.styles[n].cells);
+  L.push(`constexpr Cells CELLS[${Math.max(1, cs.length)}] = {`, ...cs.map((n) => `  {${field(n)}, ${t.styles[n].cells.digit}f, ${t.styles[n].cells.colon}f, ${t.styles[n].cells.colonY}f},`), ...(cs.length ? [] : ['  {}']), '};');
+  L.push(`constexpr int N_CELLS = ${cs.length};`);
+  L.push('inline const Cells *cells(Id s) { for (int i = 0; i < N_CELLS; i++) if (CELLS[i].style == s) return &CELLS[i]; return nullptr; }');
+}
 L.push('struct Number { const char *id, *label, *sample, *unit, *unit_colour, *about; Id style; int unit_style; };  // unit_style -1 = inline');
 L.push('constexpr Number NUMBERS[] = {');
 for (const x of t.numbers) L.push(`  {${cstr(x.id)}, ${cstr(x.label)}, ${cstr(x.sample)}, ${cstr(x.unit === 'inline' ? '' : x.unit)}, ${cstr(x.unitColour ?? '')}, ${cstr(x.about)}, ${field(x.style)}, ${x.unitStyle ? field(x.unitStyle) : -1}},`);

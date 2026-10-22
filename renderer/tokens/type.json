@@ -73,6 +73,18 @@
       "chars": [
         "·−→▲▼"
       ]
+    },
+    "clock": {
+      "about": "clock digits: 0-9, the colon and the placeholder (the big clock fonts carry nothing else)",
+      "chars": [
+        "0123456789:—"
+      ]
+    },
+    "ampm": {
+      "about": "12h marker letters",
+      "chars": [
+        "AMP"
+      ]
     }
   },
   "numbers": [
@@ -515,6 +527,320 @@
         "box": 16,
         "weight": 400,
         "letterSpacing": 1
+      }
+    },
+    "clock-hero": {
+      "scale": "screen",
+      "font": "sans",
+      "weight": 200,
+      "size": 180,
+      "box": 184,
+      "lineHeight": 1,
+      "letterSpacing": 0,
+      "case": "none",
+      "glyphs": "clock",
+      "use": "Clock / Hero digits (Inter; docs clock-hero 180)",
+      "sample": "14:52",
+      "1x": {
+        "size": 120,
+        "box": 120,
+        "weight": 300,
+        "letterSpacing": 0
+      },
+      "cells": {
+        "digit": 0.62,
+        "colon": 0.3,
+        "colonY": -0.11,
+        "about": "fixed digit cells (em): every digit centred in a digit-wide cell, the colon in its own cell raised by colonY so it sits on the figures (docs type digit / colon / colonY)"
+      }
+    },
+    "clock-hero-mono": {
+      "scale": "screen",
+      "font": "mono",
+      "weight": 200,
+      "size": 180,
+      "box": 184,
+      "lineHeight": 1,
+      "letterSpacing": 0,
+      "case": "none",
+      "glyphs": "clock",
+      "use": "Clock / Hero digits (JetBrains Mono)",
+      "sample": "14:52",
+      "1x": {
+        "size": 120,
+        "box": 120,
+        "weight": 300,
+        "letterSpacing": 0
+      },
+      "cells": {
+        "digit": 0.6,
+        "colon": 0.42,
+        "colonY": -0.09,
+        "about": "fixed digit cells (em): every digit centred in a digit-wide cell, the colon in its own cell raised by colonY so it sits on the figures (docs type digit / colon / colonY)"
+      }
+    },
+    "clock-mid": {
+      "scale": "screen",
+      "font": "sans",
+      "weight": 200,
+      "size": 128,
+      "box": 128,
+      "lineHeight": 1,
+      "letterSpacing": 0,
+      "case": "none",
+      "glyphs": "clock",
+      "use": "Clock / Ring + context digits (Inter; docs clock-mid 128)",
+      "sample": "14:52",
+      "1x": {
+        "size": 84,
+        "box": 84,
+        "weight": 300,
+        "letterSpacing": 0
+      },
+      "cells": {
+        "digit": 0.62,
+        "colon": 0.3,
+        "colonY": -0.11,
+        "about": "fixed digit cells (em): every digit centred in a digit-wide cell, the colon in its own cell raised by colonY so it sits on the figures (docs type digit / colon / colonY)"
+      }
+    },
+    "clock-mid-mono": {
+      "scale": "screen",
+      "font": "mono",
+      "weight": 200,
+      "size": 128,
+      "box": 128,
+      "lineHeight": 1,
+      "letterSpacing": 0,
+      "case": "none",
+      "glyphs": "clock",
+      "use": "Clock / Ring + context digits (Mono)",
+      "sample": "14:52",
+      "1x": {
+        "size": 84,
+        "box": 84,
+        "weight": 300,
+        "letterSpacing": 0
+      },
+      "cells": {
+        "digit": 0.6,
+        "colon": 0.42,
+        "colonY": -0.09,
+        "about": "fixed digit cells (em): every digit centred in a digit-wide cell, the colon in its own cell raised by colonY so it sits on the figures (docs type digit / colon / colonY)"
+      }
+    },
+    "clock-compact": {
+      "scale": "component",
+      "font": "sans",
+      "weight": 400,
+      "size": 28,
+      "box": 32,
+      "lineHeight": 1,
+      "letterSpacing": 0,
+      "case": "none",
+      "glyphs": "clock",
+      "use": "Clock / Compact, a header (Inter; docs 28)",
+      "sample": "14:52",
+      "1x": {
+        "size": 20,
+        "box": 24,
+        "weight": 500,
+        "letterSpacing": 0
+      },
+      "cells": {
+        "digit": 0.63,
+        "colon": 0.3,
+        "colonY": -0.1,
+        "about": "fixed digit cells (em): every digit centred in a digit-wide cell, the colon in its own cell raised by colonY so it sits on the figures (docs type digit / colon / colonY)"
+      }
+    },
+    "clock-compact-mono": {
+      "scale": "component",
+      "font": "mono",
+      "weight": 500,
+      "size": 24,
+      "box": 32,
+      "lineHeight": 1,
+      "letterSpacing": 0,
+      "case": "none",
+      "glyphs": "clock",
+      "use": "Clock / Compact, a header (Mono; docs 24)",
+      "sample": "14:52",
+      "1x": {
+        "size": 16,
+        "box": 20,
+        "weight": 500,
+        "letterSpacing": 0
+      },
+      "cells": {
+        "digit": 0.6,
+        "colon": 0.5,
+        "colonY": -0.08,
+        "about": "fixed digit cells (em): every digit centred in a digit-wide cell, the colon in its own cell raised by colonY so it sits on the figures (docs type digit / colon / colonY)"
+      }
+    },
+    "clock-ampm": {
+      "scale": "component",
+      "font": "sans",
+      "weight": 500,
+      "size": 26,
+      "box": 32,
+      "lineHeight": 1,
+      "letterSpacing": 1,
+      "case": "upper",
+      "glyphs": "ampm",
+      "use": "12h AM / PM beside big digits (Inter; docs 26)",
+      "sample": "PM",
+      "1x": {
+        "size": 18,
+        "box": 20,
+        "weight": 600,
+        "letterSpacing": 1
+      }
+    },
+    "clock-ampm-mono": {
+      "scale": "component",
+      "font": "mono",
+      "weight": 500,
+      "size": 24,
+      "box": 32,
+      "lineHeight": 1,
+      "letterSpacing": 2,
+      "case": "upper",
+      "glyphs": "ampm",
+      "use": "12h AM / PM beside big digits (Mono; docs 24)",
+      "sample": "PM",
+      "1x": {
+        "size": 16,
+        "box": 20,
+        "weight": 600,
+        "letterSpacing": 1
+      }
+    },
+    "clock-ampm-sm": {
+      "scale": "component",
+      "font": "mono",
+      "weight": 600,
+      "size": 12,
+      "box": 16,
+      "lineHeight": 1,
+      "letterSpacing": 1,
+      "case": "upper",
+      "glyphs": "ampm",
+      "use": "12h AM / PM beside the compact clock (docs 11, the 12 px floor)",
+      "sample": "PM",
+      "1x": {
+        "size": 12,
+        "box": 16,
+        "weight": 600,
+        "letterSpacing": 1
+      }
+    },
+    "clock-numeral": {
+      "scale": "component",
+      "font": "sans",
+      "weight": 300,
+      "size": 30,
+      "box": 32,
+      "lineHeight": 1,
+      "letterSpacing": 0,
+      "case": "none",
+      "glyphs": "digits",
+      "use": "Clock / Analogue numerals 12 3 6 9 (Inter; docs 30)",
+      "sample": "12",
+      "1x": {
+        "size": 20,
+        "box": 24,
+        "weight": 400,
+        "letterSpacing": 0
+      }
+    },
+    "clock-numeral-mono": {
+      "scale": "component",
+      "font": "mono",
+      "weight": 300,
+      "size": 26,
+      "box": 32,
+      "lineHeight": 1,
+      "letterSpacing": 0,
+      "case": "none",
+      "glyphs": "digits",
+      "use": "Clock / Analogue numerals (Mono; docs 26)",
+      "sample": "12",
+      "1x": {
+        "size": 18,
+        "box": 20,
+        "weight": 400,
+        "letterSpacing": 0
+      }
+    },
+    "date-long": {
+      "scale": "component",
+      "font": "sans",
+      "weight": 300,
+      "size": 26,
+      "box": 32,
+      "lineHeight": 1,
+      "letterSpacing": 0,
+      "case": "none",
+      "glyphs": "text",
+      "use": "Date line, spelled out: Monday 19 October (docs date-long 26)",
+      "sample": "Monday 19 October",
+      "1x": {
+        "size": 18,
+        "box": 24,
+        "weight": 400,
+        "letterSpacing": 0
+      }
+    },
+    "clock-seconds": {
+      "scale": "screen",
+      "font": "sans",
+      "weight": 200,
+      "size": 56,
+      "box": 56,
+      "lineHeight": 1,
+      "letterSpacing": 0,
+      "case": "none",
+      "glyphs": "clock",
+      "use": "Clock / Hero seconds beside the 180 px time, on its baseline: 56 so the widest hero (12h, seconds, AM / PM) still fits the content width",
+      "sample": ":20",
+      "1x": {
+        "size": 36,
+        "box": 36,
+        "weight": 300,
+        "letterSpacing": 0
+      },
+      "cells": {
+        "digit": 0.62,
+        "colon": 0.3,
+        "colonY": -0.11,
+        "about": "fixed digit cells (em), as the clock digits"
+      }
+    },
+    "clock-seconds-mono": {
+      "scale": "screen",
+      "font": "mono",
+      "weight": 200,
+      "size": 56,
+      "box": 56,
+      "lineHeight": 1,
+      "letterSpacing": 0,
+      "case": "none",
+      "glyphs": "clock",
+      "use": "Clock / Hero seconds beside the 180 px time, on its baseline: 56 so the widest hero (12h, seconds, AM / PM) still fits the content width",
+      "sample": ":20",
+      "1x": {
+        "size": 36,
+        "box": 36,
+        "weight": 300,
+        "letterSpacing": 0
+      },
+      "cells": {
+        "digit": 0.6,
+        "colon": 0.42,
+        "colonY": -0.09,
+        "about": "fixed digit cells (em), as the clock digits"
       }
     }
   }
