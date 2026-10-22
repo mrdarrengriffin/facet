@@ -32,6 +32,7 @@ void fill(lv_obj_t *d, fw::Props p) {
   lv_obj_set_style_radius(d, LV_RADIUS_CIRCLE, 0);
   lv_obj_set_style_bg_color(d, tone_of(p["tone"] | "working", !strcmp(p["on"] | "canvas", "chip")), 0);
   lv_obj_set_style_bg_opa(d, LV_OPA_COVER, 0);
+  fw::shape(d, std::string(p["on"] | "canvas") + ((p["pulse"] | false) ? "|p" : ""), "dot");
   if (p["pulse"] | false) {
     fw::Anim a{set_opa, LV_OPA_COVER, (int32_t) lroundf(fw::mo::OPA_PULSE_MIN * 255), fw::mo::OPA};
     a.loop = true;
@@ -61,7 +62,13 @@ FW_COMPONENT(status_dot, "Status dot", "components", R"({
 }
 
 // Update path: everything snaps to the new props in the same root (fw::refill; a pulse restarts), silent.
+// a new tone fades in place like a tap would (fw::st::restyle, silent); pulse / place refill
 FW_UPDATE(status_dot) {
+  const std::string sig = std::string(p["on"] | "canvas") + ((p["pulse"] | false) ? "|p" : "");
+  if (fw::shape(root, sig, "dot")) {
+    fw::st::restyle(root, [&] { lv_obj_set_style_bg_color(root, tone_of(p["tone"] | "working", !strcmp(p["on"] | "canvas", "chip")), 0); });
+    return true;
+  }
   fw::refill(root);
   fill(root, p);
   return true;

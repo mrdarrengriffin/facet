@@ -62,6 +62,7 @@ void fill(lv_obj_t *b, fw::Props p) {
 
 FW_COMPONENT(count_badge, "Count badge", "components", R"({
   "about": "A small round number, such as how many items need attention.",
+  "audit": {"snaps": {"count": "a count is a number that changes like text, no tap transition to copy"}},
   "frame": [160, 64],
   "props": [
     {"name": "count", "type": "range", "min": 0, "max": 150, "step": 1, "default": 3},
@@ -83,7 +84,6 @@ FW_COMPONENT(count_badge, "Count badge", "components", R"({
 
 // Update path: the new count / tone / zero rule snaps in the same root (fw::refill), silent.
 FW_UPDATE(count_badge) {
-  fw::refill(root);
-  fill(root, p);
+  fw::st::refill_fade(root, [&] { fw::refill(root); fill(root, p); });  // a new tone / mark fades (an update animates like a tap)
   return true;
 }

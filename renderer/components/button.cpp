@@ -172,6 +172,7 @@ void fill(lv_obj_t *b, fw::Props p) {
 
 FW_COMPONENT(button, "Button", "components", R"({
   "about": "A text button in four kinds (primary, secondary, outline, ghost), with an optional icon.",
+  "audit": {"snaps": {"kind": "another kind of button is another button: structure"}},
   "frame": [240, 112],
   "icons": ["plus@icon", "check@icon", "close@icon"],
   "props": [

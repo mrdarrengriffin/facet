@@ -45,6 +45,7 @@ Kind kind_of(const char *s) {
 struct Row {
   Kind kind = K_NONE;
   lv_obj_t *toggle = nullptr;
+  lv_obj_t *ti = nullptr, *su = nullptr, *val = nullptr;  // title, sub, value labels (the update path sets their text)
   std::string title;
 };
 
@@ -133,12 +134,13 @@ void fill(lv_obj_t *r, const Spec &s, Row *d) {
   lv_obj_set_size(col, 0, on_grid(col_h));  // width from flex grow; text ellipsises instead of pushing the trailing
   lv_obj_set_flex_grow(col, 1);
   lv_obj_set_flex_flow(col, LV_FLEX_FLOW_COLUMN);
-  lv_obj_t *ti = label(col, fw::ty::title, s.title, ink);
+  lv_obj_t *ti = d->ti = label(col, fw::ty::title, s.title, ink);
+  d->su = d->val = nullptr;
   lv_label_set_long_mode(ti, LV_LABEL_LONG_MODE_DOTS);
   lv_obj_set_width(ti, LV_PCT(100));
   lv_obj_set_height(ti, fw::style(fw::ty::title).box);  // set_long_mode resets the text-box height
   if (!unavail && s.sub[0]) {
-    lv_obj_t *su = label(col, fw::ty::body, s.sub, off ? fw::st::disabled_ink(t) : t.text_dim);
+    lv_obj_t *su = d->su = label(col, fw::ty::body, s.sub, off ? fw::st::disabled_ink(t) : t.text_dim);
     lv_label_set_long_mode(su, LV_LABEL_LONG_MODE_DOTS);
     lv_obj_set_width(su, LV_PCT(100));
     lv_obj_set_height(su, fw::style(fw::ty::body).box);
@@ -149,7 +151,7 @@ void fill(lv_obj_t *r, const Spec &s, Row *d) {
   d->toggle = nullptr;
   const int body_h = fw::style(fw::ty::body).box;
   if (unavail) label(slot(r, body_h), fw::ty::body, fw::st::UNAVAILABLE_TEXT, fw::st::unavailable_note(t));
-  if (kind == K_VALUE || kind == K_VALUE_CHEVRON) label(slot(r, body_h), fw::ty::body, s.value[0] ? s.value : fw::st::PLACEHOLDER, dim);  // empty = em dash
+  if (kind == K_VALUE || kind == K_VALUE_CHEVRON) d->val = label(slot(r, body_h), fw::ty::body, s.value[0] ? s.value : fw::st::PLACEHOLDER, dim);  // empty = em dash
   if (kind == K_CHEVRON || kind == K_VALUE_CHEVRON) fw::icon(r, "chevron", fw::ic::icon, dim);
   if (kind == K_TOGGLE) {
     if (const fw::Component *tc = fw::find("toggle")) {  // the Toggle component itself, not a copy
@@ -198,6 +200,11 @@ std::string sig(fw::Props p) {
   r.set(p);
   if (!strcmp(p["state"] | "default", "pressed")) r["state"] = "default";
   if (effective(spec_of(p)) == K_TOGGLE) { r.remove("on"); r["trailing"] = "toggle"; }
+  // texts move in place (a light's "Off" -> "On · 64%" must not rebuild the row: its Toggle would snap); only whether
+  // there is a sub / a value is structure
+  r["title"] = "";
+  r["sub"] = (p["sub"] | "")[0] ? "sub" : "";
+  if (r["value"].is<const char *>()) r["value"] = (p["value"] | "")[0] ? "value" : "";
   std::string s;
   serializeJson(r, s);
   return s;
@@ -225,6 +232,7 @@ void fill_props(lv_obj_t *r, fw::Props p) {
 
 FW_COMPONENT(list_row, "List row", "components", R"({
   "about": "A full-width row in a list or settings page, with an optional icon, a title and sub line, and a value, chevron or toggle.",
+  "audit": {"base": {"trailing": "toggle"}},
   "frame": [448, 0],
   "icons": ["bulb@icon", "speaker@icon", "tv@icon", "volume@icon", "power@icon", "house@icon", "chevron@icon"],
   "props": [
@@ -267,6 +275,12 @@ FW_UPDATE(list_row) {
   if (fw::shape(root, sig(p))) {
     if (!strcmp(p["list"] | "single", "stack")) return true;  // fixed demo rows
     if (pr != lv_obj_has_state(root, LV_STATE_PRESSED)) lv_obj_set_state(root, LV_STATE_PRESSED, pr);
+    const Spec sp = spec_of(p);
+    auto put = [](lv_obj_t *l, fw::ty::Id st, const char *t) { if (l && strcmp(lv_label_get_text(l), t)) fw::set_text(l, st, t); };
+    put(d->ti, fw::ty::title, sp.title);
+    d->title = sp.title;
+    put(d->su, fw::ty::body, sp.sub);
+    put(d->val, fw::ty::body, sp.value[0] ? sp.value : fw::st::PLACEHOLDER);
     if (d->toggle) {
       ArduinoJson::JsonDocument tp;
       tp["on"] = p["on"] | false;

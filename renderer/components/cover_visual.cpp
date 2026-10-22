@@ -262,6 +262,7 @@ void fill(lv_obj_t *s, fw::Props p) {
 
 FW_COMPONENT(cover_visual, "Cover visual", "components", R"({
   "about": "A window with a roller blind, a Venetian blind or curtains in it, at the cover's position. Drag the blind's edge, or the curtains sideways, to set it.",
+  "audit": {"snaps": {"kind": "a roller, Venetian or curtain is a different drawing: structure"}},
   "frame": [224, 400],
   "props": [
     {"name": "kind", "type": "select", "options": ["roller", "venetian", "curtain"], "default": "roller"},

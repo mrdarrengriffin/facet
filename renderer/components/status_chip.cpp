@@ -73,12 +73,31 @@ FW_COMPONENT(status_chip, "Status chip", "components", R"({
     {"label": "working · pulse", "props": {"tone": "working", "text": "3 working", "pulse": true}}
   ]
 })") {
-  fill(lv_obj_create(parent), p);
+  lv_obj_t *c = lv_obj_create(parent);
+  fill(c, p);
+  fw::shape(c, (p["pulse"] | false) ? "p" : "", "chip");
 }
 
 // Update path: everything snaps to the new props in the same root (fw::refill; a pulse restarts), silent.
 FW_UPDATE(status_chip) {
+  // tone + text in place (Darren 2026-10-22: an update animates like a tap): the fill and the dot fade to the new tone
+  // (fw::st::restyle, silent), the words change in place; a pulse change refills
+  const char *tone = p["tone"] | "working";
+  lv_obj_t *dot = lv_obj_get_child(root, 0), *lab = lv_obj_get_child(root, 1);
+  if (dot && lab && fw::shape(root, (p["pulse"] | false) ? "p" : "", "chip")) {
+    fw::st::restyle(root, [&] {
+      lv_obj_set_style_bg_color(root, fill_of(tone), 0);
+      ArduinoJson::JsonDocument dp;
+      dp["tone"] = tone, dp["on"] = "chip", dp["pulse"] = p["pulse"] | false;
+      fw::update_child(fw::find("status_dot"), dot, dp.as<fw::Props>());
+      ArduinoJson::JsonDocument lp;
+      lp["text"] = p["text"] | "", lp["type"] = "caps-sm", lp["colour"] = "text";
+      fw::update_child(fw::find("label"), lab, lp.as<fw::Props>());
+    });
+    return true;
+  }
   fw::refill(root);
   fill(root, p);
+  fw::shape(root, (p["pulse"] | false) ? "p" : "", "chip");
   return true;
 }

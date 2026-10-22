@@ -57,6 +57,7 @@ void fill(lv_obj_t *w, fw::Props p) {
 
 FW_COMPONENT(focus_ring, "Focus ring", "components", R"({
   "about": "A thin accent outline around a control that is active or selected.",
+  "audit": {"snaps": {"on": "the sample owner, box, button or play, not a state"}},
   "frame": [240, 112],
   "icons": ["play@feature", "pause@feature"],
   "props": [

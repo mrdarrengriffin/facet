@@ -121,12 +121,12 @@ void fill(lv_obj_t *c, fw::Props p) {
   lv_obj_update_layout(l);  // the label box on the grid (Label fit8), so the dot after it lands on the grid (audit)
   lv_obj_set_width(l, (lv_obj_get_width(l) + fw::sp::GRID - 1) / fw::sp::GRID * fw::sp::GRID);
   // one line at the type box (16 / 24): fw::text sizes every content-height label to whole type boxes
-  if (accent) {
+  {  // the accent dot is always there, shown by its opacity, so an update fades it in / out (like a tap)
     lv_obj_t *dot = box(lab);
     lv_obj_set_size(dot, fw::sp::s2, fw::sp::s2);
     lv_obj_set_style_radius(dot, LV_RADIUS_CIRCLE, 0);
     lv_obj_set_style_bg_color(dot, t.accent, 0);
-    lv_obj_set_style_bg_opa(dot, LV_OPA_COVER, 0);
+    lv_obj_set_style_bg_opa(dot, accent ? LV_OPA_COVER : LV_OPA_TRANSP, 0);
   }
   const char *pv = p["preview"] | "none";
   if (!off && strcmp(pv, "none")) fw::icon(top, pv, fw::ic::card, t.text_dim);
@@ -230,8 +230,7 @@ FW_UPDATE(card) {
     if (pr != lv_obj_has_state(root, LV_STATE_PRESSED)) lv_obj_set_state(root, LV_STATE_PRESSED, pr);
     return true;
   }
-  fw::refill(root);
-  fill(root, p);
+  fw::st::refill_fade(root, [&] { fw::refill(root); fill(root, p); });  // a new tone / the dot fade (like a tap)
   if (was_off != off) fw::st::fade_in_children(root);
   return true;
 }

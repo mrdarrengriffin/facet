@@ -30,6 +30,7 @@
 // (or 100 if that was 0); emits "toggle" on / off + sound toggle-on / toggle-off, the sweep itself is silent. Dragging
 // while off turns it on; releasing at 0 turns it off.
 // Sound: fw::step_ticks for every step the shown value crosses on a drag or a ring tap (ends = landmarks).
+// Live: fw::notify "input" (detail = the value) on every step while dragging (listeners only, like the Slider's).
 // Events: "change" (detail = value) on release when it moved, "toggle" (on / off), "blocked" (disabled / unavailable).
 // Disabled (USER_1, Button rule): scale numbers, majors, value, caption, unit and arc text-mute, knob text-dim, the
 // button disabled; any press = "blocked" + error once, nothing moves, no opening sweep. Unavailable (Card rule, the
@@ -54,6 +55,7 @@ struct Dial {
   double min = 0, max = 100, step = 1;
   int n = 100, dec = 0;    // value = min + idx x step (the last step = max), n steps; dec = decimals shown
   int idx = 0;             // the value (step index)
+  int live_idx = -1;       // the last value sent as "input" while dragging
   int last_on = 100;       // value to come back to when switched on
   int press_idx = 0;
   bool on = true, quiet = false, grab = false, moved = false, active = false;
@@ -338,6 +340,10 @@ FW_COMPONENT(dial, "Dial", "components", R"({
       if (!d->grab) { stop_sweep(s); d->grab = true; }
       d->idx = idx_at(s, pt, true, nullptr);
       show(s, d->idx * FP);
+      if (d->idx != d->live_idx) {  // live value while dragging (a page following the finger: the Light screen); not an event
+        d->live_idx = d->idx;
+        fw::notify(s, "input", fmt(d, value_of(d, d->idx)).c_str());
+      }
     } else {  // released / lost
       d->active = false;
       if (d->idx != d->press_idx) fw::emit(s, "change", fmt(d, value_of(d, d->idx)).c_str());

@@ -657,6 +657,7 @@ Each component x every variant x dark / light, on its workbench frame (screens: 
 | grid | a drawn box (fill / border) or arc whose place in its parent or size is off the 4 px grid. Allowed: centred in its parent, filling the inside of the parent's border, edge to edge with its own 1-2 px border pushed off both sides (the Bottom sheet's rounded top edge), a 1-2 px hairline on its thin axis, `fw::qa::free(obj, why)` (placed by value / angle; a note) |
 | touch | an object taking touches under `touch::min` with its ext click area |
 | radial | a ring's marks at 12 / 3 / 6 / 9 o'clock off their centre lines by more than 0.5 px (`fw::tick_ring` declares which axes carry a tick: `fw::qa::radial`) |
+| update | a state / value prop (on, value, tone, selected, progress, ...) changed through the update path must animate (3+ distinct frames), silently; `"audit": {"snaps": {"prop": "why"}}`, test case `"audit": {"base": {...}}` (Darren 2026-10-22: updates animate like a tap; core `fw::st::restyle` / `refill_fade`) |
 | motion | while it animates (2 s from the build): ink leaving the box, an object off its declared path (`fw::qa::circle(obj, ref, cx, cy, r)`, `fw::qa::inside(obj, ref)`) |
 
 Marks (`core/audit.h`) are empty inlines on the panels. A component says only what the audit can't know; exceptions per

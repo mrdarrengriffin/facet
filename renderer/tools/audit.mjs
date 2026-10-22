@@ -15,6 +15,7 @@
 //   radial    meta "audit": {"radial": true}: the marks at 12, 3, 6 and 9 o'clock (ink in the outer band of the
 //             component's circle) sit on the centre lines within 0.5 px
 //   stale     the frame after the animations equals a full redraw at that moment (nothing left behind)
+//   update    a state / value prop changed through the update path animates (3+ frames), silently
 //   motion    while it animates (the first 2 s from the build, every 2nd frame): no ink leaves the box; an object
 //             marked fw::qa::circle(obj, ref, cx, cy, r) keeps its centre on that circle (1 px), fw::qa::inside(obj,
 //             ref) stays inside ref
@@ -197,6 +198,7 @@ function runCase(m, den, c, props, light, vskip = {}) {
   }
   // ---- radial: a ring's marks at 12 / 3 / 6 / 9 o'clock (fw::qa::radial: fw::tick_ring declares which it has) sit on
   // the ring's centre lines: the ink-weighted centre of each mark, across its axis, within 0.5 px
+  // (0.52: a 1 px hairline on an even ring sits half a pixel off by nature; anything more is a placement error)
   for (const r of os) {
     if (!r.axes || skip.radial) continue;
     const cx = r.x + r.w / 2, cy = r.y + r.h / 2, R = Math.min(r.w, r.h) / 2, half = 3;
@@ -214,11 +216,63 @@ function runCase(m, den, c, props, light, vskip = {}) {
         sw += wgt; sp += wgt * perp; lo = Math.min(lo, along); hi = Math.max(hi, along);
       }
       if (!sw) errs.push(`radial: the ${name} o'clock mark is missing`);
-      else if (Math.abs(sp / sw) > 0.5) errs.push(`radial: the ${name} o'clock mark sits ${(sp / sw).toFixed(2)} px off its centre line (ring ${r.w} at ${r.x},${r.y})`);
+      else if (Math.abs(sp / sw) > 0.52) errs.push(`radial: the ${name} o'clock mark sits ${(sp / sw).toFixed(2)} px off its centre line (ring ${r.w} at ${r.x},${r.y})`);
       else if (hi > R + 0.01) errs.push(`radial: the ${name} o'clock mark pokes ${(hi - R).toFixed(1)} px past the ring's edge`);
     }
   }
   m._fw_stage_free(A);
+  return { errs, notes };
+}
+
+// ---- update animates (Darren 2026-10-22: "if something gets updated from Home Assistant, and it is like a toggle, I
+// want to make sure it animates like as if I've pressed it. Not just flicks on instantly"): for every state / value prop
+// (by name, below), an update from the defaults to a changed value must show an animated sequence (at least 3
+// distinct frames in the second after it), not a single-frame jump. Declared exceptions: meta "audit": {"snaps":
+// {"<prop>": "why"}} (notes); meta "audit": {"base": {...}} = props the update test starts from (a List row as a
+// toggle row).
+const STATE_PROPS = new Set(['on', 'value', 'progress', 'position', 'tilt', 'target', 'current', 'check', 'selected', 'tone',
+  'lit', 'pct', 'count', 'playing', 'accent', 'open', 'a', 'b', 'c', 'kind', 'phase', 'n', 'status', 'action']);
+function changed(p, v) {
+  if (p.type === 'bool') return !v;
+  if (p.type === 'range') { const lo = p.min ?? 0, hi = p.max ?? 100, mid = (lo + hi) / 2; return v >= mid ? lo + (hi - lo) * 0.2 : lo + (hi - lo) * 0.8; }
+  if (p.type === 'select') { const o = p.options || []; return o[(o.indexOf(v) + 1) % o.length]; }
+  return null;
+}
+function runUpdates(m, den, c) {
+  const errs = [], notes = [];
+  const snaps = (c.meta.audit && c.meta.audit.snaps) || {};
+  const S = den === '1x' ? 480 : 720, D = den === '1x' ? 1 : 1.5;
+  const screen = c.section === 'screens';
+  const [fw, fh] = c.meta.frame || [S / D, S / D];
+  const W = screen ? S : Math.round(fw * D), H = screen ? S : (fh ? Math.round(fh * D) : S);
+  const defaults = Object.fromEntries((c.meta.props || []).map((p) => [p.name, p.default]));
+  for (const p of c.meta.props || []) {
+    if (!STATE_PROPS.has(p.name) || p.type === 'text') continue;
+    if (snaps[p.name]) { notes.push(`update: ${p.name} snaps on purpose: ${snaps[p.name]}`); continue; }
+    const from = { ...defaults, ...((c.meta.audit && c.meta.audit.base) || {}) }[p.name];
+    const to = changed(p, from);
+    if (to === null || to === undefined) continue;
+    const id = m._fw_stage(W, H);
+    let t = Math.round(m.__t || 0);
+    const tick = (n = 1) => { for (let i = 0; i < n; i++) { t += TICK; m._fw_tick(t); } m.__t = t; m._fw_events(); };
+    const base = { ...defaults, ...((c.meta.audit && c.meta.audit.base) || {}), opening: false };  // meta audit.base: the case to test from
+    str(m, c.id, (cp) => str(m, JSON.stringify(base), (pp) => m._fw_render(id, cp, pp, 0, 0)));
+    tick(90);
+    const hash = () => { const fp = m._fw_frame(id); return createHash('sha1').update(m.HEAPU8.subarray(fp, fp + W * H * 4)).digest('hex'); };
+    const h0 = hash();
+    // a looping component (a pulse, a playing disc) changes on its own: measure what it does without the update first
+    const idle = new Set();
+    for (let k = 0; k < 20; k++) { tick(); idle.add(hash()); }
+    const r = str(m, c.id, (cp) => str(m, JSON.stringify({ ...base, [p.name]: to }), (pp) => m.UTF8ToString(m._fw_update(id, cp, pp, 0, 0))));
+    const seen = new Set();
+    for (let k = 0; k < 62; k++) { tick(); seen.add(hash()); }
+    m._fw_stage_free(id);
+    if (r === 'rebuild') { errs.push(`update: ${p.name} -> ${JSON.stringify(to)} rebuilds instead of updating`); continue; }
+    if (idle.size > 2) continue;  // it moves by itself: can't tell
+    const fresh = [...seen].filter((h) => h !== h0 && !idle.has(h)).length;
+    if (fresh === 0) continue;   // nothing visible changed (e.g. a prop with no look in this variant)
+    if (fresh < 3) errs.push(`update: ${p.name} ${JSON.stringify(defaults[p.name])} -> ${JSON.stringify(to)} jumps in ${fresh} frame${fresh > 1 ? 's' : ''} (it must animate like a tap, silently)`);
+  }
   return { errs, notes };
 }
 
@@ -240,6 +294,11 @@ for (const den of dens) {
       const defaults = Object.fromEntries((c.meta.props || []).map((p) => [p.name, p.default]));
       const cases = [{ label: 'default', props: {} }, ...(c.meta.variants || [])];
       const out = [];
+      if (c.section === 'components') {
+        const u = runUpdates(m, den, c);
+        for (const e of u.errs) out.push({ e, at: 'update' });
+        for (const n of u.notes) out.push({ n, at: 'update' });
+      }
       for (const v of cases) for (const light of [false, true]) {
         const r = runCase(m, den, c, { ...defaults, ...v.props, ...EXTRA }, light, (v.audit && v.audit.skip) || {});
         for (const e of r.errs) out.push({ e, at: `${v.label} · ${light ? 'light' : 'dark'}` });

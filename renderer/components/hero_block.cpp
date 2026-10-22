@@ -91,7 +91,6 @@ FW_COMPONENT(hero_block, "Hero block", "components", R"({
 
 // Update path: number, label, line, accent, role and unavailable snap in the same root (fw::refill), silent.
 FW_UPDATE(hero_block) {
-  fw::refill(root);
-  fill(root, p);
+  fw::st::refill_fade(root, [&] { fw::refill(root); fill(root, p); });  // a new tone / mark fades (an update animates like a tap)
   return true;
 }

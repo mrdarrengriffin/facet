@@ -54,6 +54,7 @@ void fill(lv_obj_t *w, fw::Props p) {
 
 FW_COMPONENT(corner_ticks, "Corner ticks", "components", R"({
   "about": "Small accent marks on the corners of a box that show it is active.",
+  "audit": {"snaps": {"on": "the sample owner, box or button, not a state"}},
   "frame": [240, 112],
   "props": [
     {"name": "on", "type": "select", "options": ["box", "button"], "default": "box"},

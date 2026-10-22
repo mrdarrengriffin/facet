@@ -115,6 +115,7 @@ void fill(lv_obj_t *h, fw::Props p) {
 
 FW_COMPONENT(section_header, "Section header", "components", R"({
   "about": "A caption that starts a group of content, with an optional count and a meta text or action on the right.",
+  "audit": {"snaps": {"count": "the Count badge's count changes like text"}},
   "frame": [480, 96],
   "props": [
     {"name": "title", "type": "text", "default": "Needs you"},
@@ -161,8 +162,7 @@ FW_UPDATE(section_header) {
       lv_obj_set_state(a, LV_STATE_PRESSED, pr);
     return true;
   }
-  fw::refill(root);
-  fill(root, p);
+  fw::st::refill_fade(root, [&] { fw::refill(root); fill(root, p); });  // a new tone fades (like a tap)
   const bool off = !strcmp(p["right"] | "meta", "action") && !strcmp(p["state"] | "default", "disabled");
   if (off != was_off) fw::st::fade_in_children(lv_obj_get_child(root, -1));
   return true;

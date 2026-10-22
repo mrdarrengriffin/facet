@@ -65,7 +65,6 @@ FW_COMPONENT(stat, "Stat", "components", R"({
 
 // Update path: label, value, tone and unavailable snap in the same root (fw::refill), silent.
 FW_UPDATE(stat) {
-  fw::refill(root);
-  fill(root, p);
+  fw::st::refill_fade(root, [&] { fw::refill(root); fill(root, p); });  // a new tone / mark fades (an update animates like a tap)
   return true;
 }

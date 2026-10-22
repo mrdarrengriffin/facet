@@ -90,6 +90,6 @@ FW_COMPONENT(label, "Label", "components", R"({
 
 // Update path: text, type and colour restyle the same label in place (snap), silent.
 FW_UPDATE(label) {
-  fill(root, p);
+  fw::st::restyle(root, [&] { fill(root, p); });  // a new colour fades (like a tap)
   return true;
 }

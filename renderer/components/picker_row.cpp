@@ -200,7 +200,10 @@ FW_UPDATE(picker_row) {
   }
   const bool was_off = lv_obj_has_state(root, ST_OFF);
   fw::shape(root, "");  // the List row's stored props: forget them, so its update builds its contents again
-  if (!fw::update_child(fw::find("list_row"), root, lp.as<fw::Props>())) return false;
+  bool ok = true;
+  fw::st::refill_fade(root, [&] {  // a new tone fades (like a tap)
+  ok = fw::update_child(fw::find("list_row"), root, lp.as<fw::Props>());
+  if (!ok) return;
   if (grp) {
     lv_obj_remove_flag(root, PICKER);
     lv_obj_set_user_data(root, nullptr);
@@ -210,6 +213,8 @@ FW_UPDATE(picker_row) {
   } else {
     decorate(root, s);
   }
+  });
+  if (!ok) return false;
   if (was_off != lv_obj_has_state(root, ST_OFF)) fw::st::fade_in_children(root);
   return true;
 }

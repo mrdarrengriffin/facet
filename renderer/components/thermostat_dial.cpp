@@ -338,6 +338,7 @@ FW_UPDATE(thermostat_dial) {
     return true;
   }
   if (!d->arc) return true;
+  if (act != d->action) fw::st::restyle(root, [&] { d->action = act; span(root); });  // the span fades (like a tap)
   d->action = act;
   const double cur = LV_CLAMP(d->min, (double) (p["current"] | 19.4), d->max);
   if (std::fabs(cur - d->current) > 1e-9) {

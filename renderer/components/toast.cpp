@@ -279,10 +279,12 @@ FW_UPDATE(toast) {
   bar_pause(t);
   const bool was_closed = t->closed;
   lv_anim_delete(root, nullptr);
-  fw::refill(root);
-  t->closed = t->down = t->dragged = false;
-  t->dx = 0;
-  fill(root, p);
+  fw::st::refill_fade(root, [&] {  // a new tone fades (like a tap)
+    fw::refill(root);
+    t->closed = t->down = t->dragged = false;
+    t->dx = 0;
+    fill(root, p);
+  });
   if (left >= 0 && t->bar) lv_obj_set_width(t->bar, left);
   lv_obj_set_style_translate_x(root, 0, 0);
   if (was_closed) {

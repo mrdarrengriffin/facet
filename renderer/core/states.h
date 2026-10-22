@@ -10,6 +10,7 @@
 // local styles are never touched, a fade still running is reversed from where it is), so the state styles own the
 // look again when it ends. LVGL's own transitions (press fades) run as before.
 #pragma once
+#include <functional>
 #include "fw.h"
 
 namespace fw {
@@ -31,5 +32,17 @@ void fade_in_children(lv_obj_t *root, bool animate = true);
 using Fill = void (*)(lv_obj_t *root, ArduinoJson::JsonObjectConst p);
 void built(lv_obj_t *root, ArduinoJson::JsonObjectConst p);
 bool update(lv_obj_t *root, ArduinoJson::JsonObjectConst p, Fill fill);
+// Updates animate like a tap (Darren 2026-10-22: "if something gets updated from Home Assistant, and it is like a
+// toggle, I want to make sure it animates like as if I've pressed it. Not just flicks on instantly"). A look that
+// follows a prop (a tone's colour, a mark shown / hidden by opacity) changes inside restyle(): it reads every colour /
+// opacity on o and its subtree, runs change(), and every LOCAL value that changed fades from the old one to the new
+// (Motion fade, the set_state fade; reduced motion: its reduced form). Silent by construction (no sound, no press).
+// Objects made again inside change() just appear. On a display without fades (the Guition) a large object (over
+// 1/16 of the screen) changes at once (no large fades). animate false = at rest (a first build).
+void restyle(lv_obj_t *o, const std::function<void()> &change, bool animate = true);
+// the same for a component that makes its contents again (fw::refill + fill): objects are matched by their place in
+// the tree (child index path + type) before and after, and every local colour / opacity that differs fades from the
+// old look to the new. Same structure = a pure look change (a tone, a mark); new or moved parts just appear.
+void refill_fade(lv_obj_t *root, const std::function<void()> &rebuild, bool animate = true);
 }  // namespace st
 }  // namespace fw

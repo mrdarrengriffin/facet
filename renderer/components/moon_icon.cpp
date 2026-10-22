@@ -26,6 +26,7 @@ void fill(lv_obj_t *r, Props p) {
 
 FW_COMPONENT(moon_icon, "Moon phase", "components", R"({
   "about": "The moon as it looks tonight: a dark disc with the lit part for any point in the month.",
+  "audit": {"snaps": {"phase": "the phase moves once a day: a redraw, nothing to animate"}},
   "frame": [240, 200],
   "props": [
     {"name": "phase", "type": "range", "min": 0, "max": 1, "step": 0.01, "default": 0.25},
