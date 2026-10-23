@@ -2,7 +2,7 @@
 // Home page: the original Facet site's landing layout (main a5df2ac: site/src/pages/index.astro) as a short intro
 // (Darren 2026-10-22): what Facet is, a glimpse of how it's built, then a walk into the docs. Every example is the
 // real WASM component. The old hero ran the whole demo house; screens aren't built yet, so the panel shows the Dial.
-// A longer intro and the idea behind the name come later.
+// The intro and the idea behind the name are drafts for Darren to edit (2026-10-22).
 import Base from '../layouts/Base.astro';
 import Live from '../components/Live.astro';
 import { COMPONENTS, FOUNDATIONS, defaults, href } from '../lib/data';
@@ -56,6 +56,12 @@ const steps = [
       <div class="landing__intro">
         <h1 class="landing__title">Facet</h1>
         <p class="landing__lede">{description}</p>
+        <!-- intro: draft for Darren to edit (2026-10-22) -->
+        <p class="landing__intro-text">
+          Facet is a design system for wall panels: small touch screens that show and control your home through Home
+          Assistant. Its tokens, components and sounds are drawn by one renderer, on ESP32 panels and in the browser
+          alike, so every screen looks and feels the same wherever it runs.
+        </p>
         <div class="landing__actions">
           <a class="button button--primary" href={url('/components/')}>Browse components</a>
           <a class="button button--secondary" href={url('/foundations/')}>Design system</a>
@@ -92,10 +98,16 @@ const steps = [
     <section class="landing__section" aria-labelledby="what-title">
       <div class="landing__head">
         <h2 id="what-title">What Facet is</h2>
+        <!-- the idea behind the name: draft for Darren to edit (2026-10-22) -->
         <blockquote class="landing__definition">
           <p><strong>facet</strong> <em>noun</em><br />one part of a subject, situation, etc. that has many parts</p>
           <p class="landing__source"><a href="https://dictionary.cambridge.org/dictionary/english/facet">Cambridge Dictionary</a></p>
         </blockquote>
+        <p>
+          Each screen in Facet is shaped around the one thing it does, from a light's dial to a 3D printer or the planes
+          overhead. Like the faces cut into a gemstone, they are many small parts of one system, cut to fit together, so
+          the whole feels thought out and designed.
+        </p>
       </div>
       <ul class="parts parts--3">
         {

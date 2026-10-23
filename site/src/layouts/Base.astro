@@ -75,6 +75,20 @@ const bg = (TOKENS.colour as { colours: Record<string, { dark: string; light: st
     <Header hasSidebar={hasSidebar} />
     <slot />
     <Search />
+    <script is:inline>
+      // sidebar keeps its scroll across page loads (Darren 2026-10-23: a click lost his place); per sidebar kind
+      (function () {
+        var s = document.querySelector('[data-sidebar]');
+        if (!s) return;
+        var k = 'facet-sidebar-scroll:' + (s.classList.contains('explorer__sidebar') ? 'components' : 'docs');
+        try { var y = sessionStorage.getItem(k); if (y !== null) s.scrollTop = +y; } catch (e) {}
+        var a = s.querySelector('[aria-current="page"]');
+        if (a) { var r = a.getBoundingClientRect(), b = s.getBoundingClientRect(); if (r.top < b.top || r.bottom > b.bottom) a.scrollIntoView({ block: 'nearest' }); }
+        var save = function () { try { sessionStorage.setItem(k, String(s.scrollTop)); } catch (e) {} };
+        s.addEventListener('click', save, true);
+        addEventListener('pagehide', save);
+      })();
+    </script>
     <script>
       import { initPrefs } from '../scripts/prefs';
       import { initLive } from '../scripts/live';

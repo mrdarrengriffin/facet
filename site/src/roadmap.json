@@ -1,5 +1,5 @@
 {
- "updated": "2026-10-22",
+ "updated": "2026-10-23",
  "tables": {
   "foundations": [
    {
@@ -77,7 +77,7 @@
    {
     "name": "Units (km/miles, mph/km/h/knots)",
     "group": "Settings",
-    "status": "planned",
+    "status": "done",
     "note": "Distances and speeds follow the chosen units"
    },
    {
@@ -183,7 +183,7 @@
    {
     "name": "Mascot mood",
     "group": "Atoms",
-    "status": "planned",
+    "status": "done",
     "note": "Picks the mascot mood from what an agent is doing"
    },
    {
@@ -260,49 +260,37 @@
    {
     "name": "Thermostat dial",
     "group": "Controls",
-    "status": "planned",
+    "status": "done",
     "note": "Room temperature tick, set point knob, heating arc"
-   },
-   {
-    "name": "Big switch",
-    "group": "Controls",
-    "status": "planned",
-    "note": "One big round on/off button for the Switch screen"
    },
    {
     "name": "Cover visual",
     "group": "Controls",
-    "status": "planned",
+    "status": "done",
     "note": "Window drawn as roller, Venetian or curtains; drag to set"
    },
    {
     "name": "Arc",
     "group": "Controls",
-    "status": "planned",
+    "status": "done",
     "note": "Curved progress or level arc"
-   },
-   {
-    "name": "Media disc",
-    "group": "Controls",
-    "status": "planned",
-    "note": "Spinning disc showing playback state"
    },
    {
     "name": "Media visuals",
     "group": "Controls",
-    "status": "planned",
+    "status": "done",
     "note": "Cassette, CD, vinyl with tonearm, reel-to-reel"
    },
    {
     "name": "Tick ring",
     "group": "Controls",
-    "status": "planned",
+    "status": "done",
     "note": "Ring of ticks, used by clocks and timers"
    },
    {
     "name": "Checkbox",
     "group": "Controls",
-    "status": "planned",
+    "status": "done",
     "note": "Tick box with on, off and mixed"
    },
    {
@@ -356,25 +344,25 @@
    {
     "name": "State readout",
     "group": "Screen parts",
-    "status": "planned",
+    "status": "done",
     "note": "Bare state text on Home, no box, not tappable"
    },
    {
     "name": "Moon facts",
     "group": "Screen parts",
-    "status": "planned",
+    "status": "done",
     "note": "Moon rise, set, illumination, next full and new"
    },
    {
     "name": "Card previews (Graphics)",
     "group": "Screen parts",
-    "status": "planned",
+    "status": "done",
     "note": "Little top-right pictures on Home cards; only weather so far"
    },
    {
     "name": "Scroll track",
     "group": "Screen parts",
-    "status": "planned",
+    "status": "done",
     "note": "Thin scroll position bar on long screens"
    },
    {
@@ -392,31 +380,31 @@
    {
     "name": "State chip",
     "group": "Lists",
-    "status": "planned",
+    "status": "done",
     "note": "Coloured state pill for PRs and checks"
    },
    {
     "name": "Pull request row",
     "group": "Lists",
-    "status": "planned",
+    "status": "done",
     "note": "GitHub PR line: repo, number, age, status"
    },
    {
     "name": "Check row",
     "group": "Lists",
-    "status": "planned",
+    "status": "done",
     "note": "One CI check with its result"
    },
    {
     "name": "Empty state",
     "group": "Lists",
-    "status": "planned",
+    "status": "done",
     "note": "\"Loading\" then \"no data\" message"
    },
    {
     "name": "QR block",
     "group": "Lists",
-    "status": "planned"
+    "status": "done"
    },
    {
     "name": "Radio",
@@ -463,78 +451,78 @@
    {
     "name": "Bar chart",
     "group": "Charts",
-    "status": "planned",
+    "status": "done",
     "note": "Bars over time, e.g. energy per half hour"
    },
    {
     "name": "Moon by day",
     "group": "Charts",
-    "status": "planned",
+    "status": "done",
     "note": "Moon phase across the next 75 days"
    },
    {
     "name": "Rate strip",
     "group": "Charts",
-    "status": "planned",
+    "status": "done",
     "note": "Energy price bands across the day"
    },
    {
     "name": "Sparkline",
     "group": "Charts",
-    "status": "planned",
+    "status": "done",
     "note": "Tiny trend line"
    },
    {
     "name": "Big number",
     "group": "Charts",
-    "status": "planned",
+    "status": "done",
     "note": "Large figure with unit"
    },
    {
     "name": "Delta chip",
     "group": "Charts",
-    "status": "planned",
+    "status": "done",
     "note": "Up/down change versus before"
    },
    {
     "name": "Donut",
     "group": "Charts",
-    "status": "planned"
+    "status": "done"
    },
    {
     "name": "Legend and axis",
     "group": "Charts",
-    "status": "planned",
+    "status": "done",
     "note": "Labels and scales for charts"
    },
    {
     "name": "Time",
     "group": "Clock",
-    "status": "planned",
+    "status": "done",
     "note": "Live time text"
    },
    {
     "name": "Date line",
     "group": "Clock",
-    "status": "planned",
+    "status": "done",
     "note": "Today's date line"
    },
    {
     "name": "Clock faces",
     "group": "Clock",
-    "status": "planned",
+    "status": "done",
     "note": "Hero, ring, analogue and compact clocks"
    },
    {
     "name": "Lightning radar",
     "group": "Radar",
-    "status": "planned",
+    "status": "done",
     "note": "Strikes plotted around the house by distance"
    },
    {
     "name": "3D print model",
     "group": "Visuals",
-    "status": "planned",
+    "status": "done",
     "note": "Print model filling up layer by layer"
    },
    {
@@ -555,19 +543,19 @@
     "name": "Settings",
     "group": "Core",
     "status": "done",
-    "note": "First full screen: look, sound, clock/idle, behaviour, units; changes apply live"
+    "note": "Look, sound, clock/idle, behaviour, units; Settings > Screens: on/off, source, typed options per screen (0c67407, not flashed)"
    },
    {
     "name": "Clock",
     "group": "Core",
-    "status": "planned",
-    "note": "Idle clock with several faces"
+    "status": "done",
+    "note": "Orbit face: 120-tick ring, orbiting dots, time/date/weather from HA"
    },
    {
     "name": "Timer",
     "group": "Core",
-    "status": "planned",
-    "note": "Presets, live countdown; Home card while running"
+    "status": "done",
+    "note": "Presets, live countdown ring"
    },
    {
     "name": "Toasts over any screen",
@@ -578,8 +566,8 @@
    {
     "name": "Light",
     "group": "Home control",
-    "status": "planned",
-    "note": "Brightness dial for a light"
+    "status": "done",
+    "note": "Live HA: Living room rows + Light screen with the Dial, live dimming; on the Waveshare"
    },
    {
     "name": "Switch",
@@ -590,14 +578,14 @@
    {
     "name": "Thermostat",
     "group": "Home control",
-    "status": "planned",
+    "status": "done",
     "note": "Heating ring, set point, modes, presets"
    },
    {
     "name": "Blinds and curtains",
     "group": "Home control",
-    "status": "planned",
-    "note": "Window drawn per kind; drag to a position"
+    "status": "done",
+    "note": "Window drawn per kind; drag to a position; pick a window in the header"
    },
    {
     "name": "Robot vacuum",
@@ -638,25 +626,25 @@
    {
     "name": "Media",
     "group": "Media",
-    "status": "planned",
+    "status": "done",
     "note": "Now playing with disc/cassette/vinyl visuals, speaker picker; later a full-screen album art view"
    },
    {
     "name": "Weather",
     "group": "Weather and sky",
-    "status": "planned",
+    "status": "done",
     "note": "Forecast with Sun, Moon, Lightning views"
    },
    {
     "name": "Moon",
     "group": "Weather and sky",
-    "status": "planned",
+    "status": "done",
     "note": "Phase as the hero, worked out on the device"
    },
    {
     "name": "Lightning",
     "group": "Weather and sky",
-    "status": "planned",
+    "status": "done",
     "note": "Lightning radar; also a Weather view"
    },
    {
@@ -668,13 +656,13 @@
    {
     "name": "Calendar",
     "group": "Info",
-    "status": "planned",
-    "note": "Next event, two weeks of days, month view"
+    "status": "done",
+    "note": "Next event, two weeks of days, month view with a day sheet, show / hide calendars"
    },
    {
     "name": "Energy",
     "group": "Info",
-    "status": "planned",
+    "status": "done",
     "note": "Today's usage and cost, week view"
    },
    {
@@ -698,7 +686,7 @@
    {
     "name": "GitHub",
     "group": "Work",
-    "status": "planned",
+    "status": "done",
     "note": "PRs needing you, detail with checks and QR"
    },
    {
@@ -709,14 +697,14 @@
    {
     "name": "3D print",
     "group": "Making",
-    "status": "planned",
+    "status": "done",
     "note": "Model fills up layer by layer"
    },
    {
     "name": "Sports (live scores)",
     "group": "Info",
-    "status": "planned",
-    "note": "Live scores, fixtures and results for the teams you follow"
+    "status": "done",
+    "note": "F1 (23 circuits, broadcast map), tennis, football; tennis + football live: hub feeds (API-Tennis trial + ESPN), on-screen match picker, TV sync (delay buffer, pause/play bar) (064790e); workbench done, panels not wired"
    }
   ]
  }

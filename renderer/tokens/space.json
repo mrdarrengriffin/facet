@@ -133,7 +133,9 @@
       "sport-sf": { "v": 24, "1x": 16, "use": "Sport: the start / finish line across the track" },
       "sport-row": { "v": 40, "1x": 28, "use": "Sport: one standings row (read-out, not a touch target)" },
       "sport-player": { "v": 32, "1x": 24, "use": "Sport: a player disc on the pitch (shirt number inside)" },
-      "sport-row-compact": { "v": 24, "1x": 20, "use": "Sport: a compact standings row (the whole field in one column; small text)" }
+      "sport-row-compact": { "v": 24, "1x": 20, "use": "Sport: a compact standings row (the whole field in one column; small text)" },
+      "sport-flag-sm": { "v": 24, "1x": 20, "use": "Sport: a flag in a status line or header (width; height = 2/3, snapped)" },
+      "sport-flag-lg": { "v": 96, "1x": 72, "use": "Sport: the hero flag of a race-control moment (width; height = 2/3)" }
     },
     "radius": {
       "tile": { "v": 0, "1x": 0, "use": "tiles" },
