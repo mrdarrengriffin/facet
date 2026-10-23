@@ -5,6 +5,8 @@
 //            16 - hair at 720; 8 at 480), flex row centred, gap sp::s2 (8 / 4)
 //   icon     speaker at ic::small (16 / 12 = docs speaker-btn-icon), text-dim; accent-text while playing (docs: "the
 //            icon turns orange while something's playing", tone working)
+//            prop icon: another ic::small mark in its place (the sport screens' match picker: sport-tennis-ball /
+//            sport-goal, accent-text while a match is live) or none
 //   name     component type c-label (caps, mono, 18 / 12: docs speaker-btn-font 18 / 13), text, one line; width = the
 //            text rounded up to the grid, at most lay::speaker_btn_max (240 / 160), then ellipsis (docs fit8 + max)
 //   chevron  chevron-down at ic::small, text-dim (docs .f-spk-chev)
@@ -57,7 +59,8 @@ void fill(lv_obj_t *b, fw::Props p) {
   lv_obj_set_flex_align(b, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
   lv_obj_set_style_pad_column(b, fw::sp::s2, 0);
 
-  fw::icon(b, "speaker", fw::ic::small, playing ? t.accent_text : dim);
+  const char *ic = p["icon"] | "speaker";  // the sport screens' match picker: its sport's mark (live = accent, like playing)
+  if (strcmp(ic, "none")) fw::icon(b, ic, fw::ic::small, playing ? t.accent_text : dim);
   const char *name = p["name"] | "";
   if (auto *d = (Data *) lv_obj_get_user_data(b)) d->name = name;  // what a tap reports
   lv_obj_t *l = fw::text(b, fw::ty::c_label, name, off ? fw::st::disabled_ink(t) : t.text);
@@ -78,16 +81,18 @@ void fill(lv_obj_t *b, fw::Props p) {
 FW_COMPONENT(speaker_button, "Speaker button", "components", R"({
   "about": "The header button that opens the speaker picker; its icon turns orange while something is playing.",
   "frame": [320, 96],
-  "icons": ["speaker@small", "chevron-down@small"],
+  "icons": ["speaker@small", "chevron-down@small", "sport-tennis-ball@small", "sport-goal@small"],
   "props": [
     {"name": "name", "type": "text", "default": "auto · study"},
     {"name": "playing", "type": "bool", "default": true},
+    {"name": "icon", "type": "select", "options": ["speaker", "sport-tennis-ball", "sport-goal", "none"], "default": "speaker"},
     {"name": "state", "type": "select", "options": ["default", "pressed", "disabled"], "default": "default"}
   ],
   "variants": [
     {"label": "playing", "props": {}},
     {"label": "idle", "props": {"name": "kitchen", "playing": false}},
     {"label": "long name", "props": {"name": "downstairs speakers and the soundbar"}},
+    {"label": "match pick · live", "props": {"name": "ningbo · wta", "icon": "sport-tennis-ball"}},
     {"label": "pressed", "props": {"state": "pressed"}},
     {"label": "disabled", "props": {"name": "no speakers", "playing": false, "state": "disabled"}}
   ]

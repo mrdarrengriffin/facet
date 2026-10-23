@@ -7,7 +7,8 @@
 //            the names over it, sets and games in one line under it.
 //   compact  for a card: name + games of the set in play + the point, sets as a dim prefix.
 // The server: the Icons foundation tennis ball (small) beside the name.
-// Under all: the moment line (accent-text caps: Break point / Set point / Match point / Tiebreak) and the state
+// Under all: the moment line (accent-text caps: Break point / Set point / Match point / Tiebreak; upcoming: Starts
+// 14:00 from the feed's "starts") and the state
 // (Status chip: Live pulses; Changeover; Final; Upcoming). A point won lifts the new digits in (sport-flash), silent.
 // Sources without points (ESPN / Team Tracker) hide the point; without a server the dot hides (sports-data.md).
 // Data: prop "feed" = a tennis feed, or the tennis simulator (seed, speed, jump, best_of, final_set). Pairs: "sport".
@@ -148,10 +149,12 @@ void apply_feed(lv_obj_t *root, View &v, ArduinoJson::JsonVariantConst f, bool l
     }
   }
   // the moment (in order of weight) and the state
+  const State st = state_of(f["state"] | "upcoming", f["stale"] | false);
   const char *m = done ? "" : n.match_point ? "Match point" : n.set_point ? "Set point" : n.break_point ? "Break point"
                 : n.tiebreak ? "Tiebreak" : "";
+  char starts[32] = "";  // an upcoming match: its start time from the feed ("starts": "14:00", the house's time)
+  if (st == State::upcoming && *(f["starts"] | "")) snprintf(starts, sizeof starts, "Starts %s", f["starts"] | ""), m = starts;
   set_lift(v.moment, fw::ty::c_caps_sm, m, lift);
-  const State st = state_of(f["state"] | "upcoming", f["stale"] | false);
   if (v.chip) {
     ArduinoJson::JsonDocument cp;
     const char *word = st == State::brk ? "Changeover" : st == State::final ? (done ? "Final" : "Final") : state_word(st);

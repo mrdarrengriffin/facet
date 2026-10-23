@@ -133,6 +133,7 @@ void apply_feed(lv_obj_t *root, View &v, ArduinoJson::JsonVariantConst f, bool l
   else if (st == State::live) snprintf(b, sizeof b, "%d'", mn);
   else if (st == State::brk) snprintf(b, sizeof b, "HT");
   else if (st == State::final) snprintf(b, sizeof b, "FT");
+  else if (*(f["starts"] | "")) snprintf(b, sizeof b, "%s", f["starts"] | "");  // a real fixture: its kick-off ("20:00")
   else if ((f["starts_in"] | -1) >= 0) snprintf(b, sizeof b, "%ds", (int) (f["starts_in"] | 0));
   else snprintf(b, sizeof b, " ");
   fw::set_text(v.minute, fw::ty::label, b);

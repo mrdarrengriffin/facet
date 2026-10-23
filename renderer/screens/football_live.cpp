@@ -6,10 +6,11 @@
 // The screen runs one simulator (sample data) or takes p["feed"] from an adapter.
 #include "fw.h"
 #include "sport.h"
+#include "sport_pick.h"
 
 namespace {
 using namespace fw::sport;
-struct Screen { lv_obj_t *header = nullptr, *pitch = nullptr; int pw = 0; };
+struct Screen { lv_obj_t *header = nullptr, *pitch = nullptr; int pw = 0; Picker *pick = nullptr; };
 Screen *of(lv_obj_t *root) {
   lv_obj_t *h = lv_obj_get_child(root, 0);
   return h ? (Screen *) lv_obj_get_user_data(h) : nullptr;
@@ -25,13 +26,15 @@ lv_obj_t *box(lv_obj_t *parent, int x, int y, int w, int h) {
 }
 void push(lv_obj_t *root, ArduinoJson::JsonVariantConst f) {
   Screen *s = of(root);
-  if (!s) return;
+  if (!s || picker_paused(s->pick)) return;  // TV sync paused: the screen holds what it shows
   ArduinoJson::JsonDocument a;
   a["feed"] = f, a["sim"] = false, a["width"] = s->pw;
   fw::update_child(fw::find("football_pitch"), s->pitch, a.as<fw::Props>());
   ArduinoJson::JsonDocument hd;
   hd["label"] = f["comp"] | "Football";
   fw::update_child(fw::find("header"), s->header, hd.as<fw::Props>());
+  const char *st = f["state"] | "";
+  picker_live(s->pick, !strcmp(st, "live") || !strcmp(st, "half_time"));
 }
 const char *META = R"({
   "about": "A live football match: the score and minute, both line-ups in formation, and the match's events.",
@@ -41,7 +44,12 @@ const char *META = R"({
     {"name": "speed", "type": "select", "options": ["1x", "10x", "60x"], "default": "60x"},
     {"name": "jump", "type": "select", "options": ["start", "kickoff", "goal", "card", "sub", "half time", "added time", "full time"], "default": "start"},
     {"name": "seed", "type": "range", "min": 1, "max": 20, "step": 1, "default": 7},
-    {"name": "feed", "type": "text", "default": ""}
+    {"name": "feed", "type": "text", "default": ""},
+    {"name": "match", "type": "text", "default": ""},
+    {"name": "pick", "type": "text", "default": ""},
+    {"name": "event", "type": "text", "default": ""},
+    {"name": "picker", "type": "text", "default": ""},
+    {"name": "delay", "type": "range", "min": 0, "max": 300, "step": 5, "default": 0}
   ],
   "opening": "Sample data: the match simulator (seeded): made-up clubs and players.",
   "variants": [
@@ -61,7 +69,7 @@ void fill(lv_obj_t *root, fw::Props p) {
   Screen *s = new Screen;
   lv_obj_t *h = box(root, 0, 0, 0, 0);
   lv_obj_set_user_data(h, s);
-  lv_obj_add_event_cb(h, [](lv_event_t *e) { delete (Screen *) lv_event_get_user_data(e); }, LV_EVENT_DELETE, s);
+  lv_obj_add_event_cb(h, [](lv_event_t *e) { auto *s = (Screen *) lv_event_get_user_data(e); picker_free(s->pick); delete s; }, LV_EVENT_DELETE, s);
   ArduinoJson::JsonDocument hd;
   hd["label"] = "Football";
   fw::find("header")->build(root, hd.as<fw::Props>());
@@ -85,6 +93,9 @@ void fill(lv_obj_t *root, fw::Props p) {
   const int pw = lv_obj_get_width(s->pitch);
   lv_obj_set_pos(pb, X + (W - pw) / 2 / 4 * 4, Y);
   lv_obj_set_size(pb, pw, H);
+  // the match picker: the header button + its sheet over the whole screen (core/sport_pick.h)
+  s->pick = picker_attach(root, s->header, 'm', p);
+  picker_hero(s->pick, pb);
   ArduinoJson::JsonDocument doc;
   ArduinoJson::JsonVariantConst f = football_match_feed(root, p, doc, push);
   if (!f.isNull()) {
@@ -95,6 +106,7 @@ void fill(lv_obj_t *root, fw::Props p) {
 void build_f(lv_obj_t *parent, fw::Props p) { fill(lv_obj_create(parent), p); }
 bool update_f(lv_obj_t *root, fw::Props p) {
   if (!of(root)) { fw::refill(root); fill(root, p); return true; }
+  picker_update(of(root)->pick, p);
   ArduinoJson::JsonDocument doc;
   ArduinoJson::JsonVariantConst f = football_match_feed(root, p, doc, push);
   if (!f.isNull()) push(root, f);
