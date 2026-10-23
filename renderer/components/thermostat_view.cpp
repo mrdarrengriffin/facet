@@ -19,6 +19,7 @@
 // rebuilt when the list of modes changes. Contrast: "thermostat" (+ thermostat_dial, button, icon_button, picker_row).
 #include <ctime>
 // audit deps: bottom_sheet, button, icon_button, thermostat_dial
+#include <strings.h>
 #include "fw.h"
 
 namespace {
@@ -33,6 +34,10 @@ std::string preset_text(const std::string &p) {
   if (!s.empty()) s[0] = (char) toupper((unsigned char) s[0]);
   for (char &c : s) if (c == '_') c = ' ';
   return s;
+}
+// a preset worth showing: not empty, "none", or HA's unknown / unavailable / None (an unavailable climate entity)
+bool real_preset(const std::string &p) {
+  return !p.empty() && strcasecmp(p.c_str(), "none") && strcasecmp(p.c_str(), "unknown") && strcasecmp(p.c_str(), "unavailable");
 }
 std::string temp_text(double v, double step = -1) {  // 19.25 -> "19.3°"; a set point drops a trailing .0: "17°", "17.5°"
   if (std::isnan(v)) return "--";
@@ -99,8 +104,13 @@ void render(lv_obj_t *root) {
   fw::set_text(v->val, fw::ty::display, temp_text(v->current).c_str());
   lv_obj_set_style_text_color(v->val, off ? t.text_dim : t.text, 0);
   fw::set_text(v->set, fw::ty::title, off ? "" : ("set " + temp_text(target_of(v), v->step)).c_str());
-  fw::set_text(v->quiet, fw::ty::body, !off && !v->next.empty() ? v->next.c_str() : (!v->preset.empty() && v->preset != "none" ? preset_text(v->preset).c_str() : ""));
-  for (lv_obj_t *b : {v->minus, v->plus}) lv_obj_set_style_opa(b, off ? LV_OPA_TRANSP : LV_OPA_COVER, 0);
+  fw::set_text(v->quiet, fw::ty::body, !off && !v->next.empty() ? v->next.c_str() : (real_preset(v->preset) ? preset_text(v->preset).c_str() : ""));
+  for (lv_obj_t *b : {v->minus, v->plus}) {  // hidden while off, and no taps then (an invisible button never acts)
+    if (!b) continue;
+    lv_obj_set_style_opa(b, off ? LV_OPA_TRANSP : LV_OPA_COVER, 0);
+    if (off) lv_obj_remove_flag(b, LV_OBJ_FLAG_CLICKABLE);
+    else lv_obj_add_flag(b, LV_OBJ_FLAG_CLICKABLE);
+  }
   for (size_t i = 0; i < v->mode_btns.size(); i++) {
     ArduinoJson::JsonDocument bp;
     bp["kind"] = "secondary", bp["label"] = mode_text(v->mode_ids[i]), bp["width"] = (int) std::lround(fw::lay::thermo_mode_w / fw::D);  // Button takes dp
@@ -109,7 +119,7 @@ void render(lv_obj_t *root) {
   }
   if (v->preset_btn) {
     ArduinoJson::JsonDocument bp;
-    bp["kind"] = "secondary", bp["label"] = !v->preset.empty() && v->preset != "none" ? preset_text(v->preset).c_str() : "Presets";
+    bp["kind"] = "secondary", bp["label"] = real_preset(v->preset) ? preset_text(v->preset).c_str() : "Presets";
     fw::update_child(fw::find("button"), v->preset_btn, bp.as<fw::Props>());
   }
   ArduinoJson::JsonDocument dp;
