@@ -1,0 +1,7 @@
+{"v": 1, "id": "overhead", "name": "Overhead", "rev": 1,
+ "params": {
+  "sample": {"type": "select", "options": ["busy", "overhead", "emergency", "quiet"], "label": "Sample", "default": "busy"}
+ },
+ "header": {"label": "Overhead", "back": true},
+ "layout": "list",
+ "nodes": [{"c": "overhead_view", "p": {"sample": "$sample"}, "on": {"open": {"do": "nav.open"}}}]}

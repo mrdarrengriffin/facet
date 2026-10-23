@@ -48,6 +48,10 @@
   "clock": {"needs": null, "sources": [{"id": "panel", "kind": "builtin", "name": "Panel clock"}]},
   "agents": {"needs": "AI agents that report their status", "sources": [
    {"id": "feed", "kind": "direct", "name": "Agent status feed (JSON)", "setup": ["feed URL"]}]},
+  "overhead": {"needs": null, "sources": [
+   {"id": "adsb_lol", "kind": "direct", "name": "adsb.lol (open ADS-B, no key)"},
+   {"id": "adsb_fi", "kind": "direct", "name": "adsb.fi (open ADS-B, no key)"},
+   {"id": "ha_flightradar24", "kind": "ha", "name": "HA Flightradar24", "detect": {"integration": "flightradar24"}}]},
   "moon": {"needs": null, "sources": [{"id": "panel", "kind": "builtin", "name": "Worked out on the panel"}]}
  }
 }

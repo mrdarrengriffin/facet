@@ -1,0 +1,7 @@
+{"v": 1, "id": "aircraft", "name": "All aircraft", "rev": 1,
+ "params": {
+  "sample": {"type": "select", "options": ["busy", "overhead", "emergency", "quiet"], "label": "Sample", "default": "busy"}
+ },
+ "header": {"label": "All aircraft", "back": true},
+ "layout": "list",
+ "nodes": [{"c": "overhead_view", "p": {"sample": "$sample", "view": "list"}}]}
