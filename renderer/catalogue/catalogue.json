@@ -3333,6 +3333,12 @@
     }
    ],
    "events": {
+    "change": [
+     "climate.set_temperature"
+    ],
+    "input": [
+     "climate.set_temperature"
+    ],
     "open": [
      "nav.open"
     ]
@@ -3862,6 +3868,9 @@
   "light.switch",
   "light.toggle",
   "light.brightness",
+  "climate.set_temperature",
+  "climate.set_hvac_mode",
+  "climate.set_preset_mode",
   "nav.open",
   "nav.back"
  ],
@@ -3870,7 +3879,8 @@
   "pct",
   "avail",
   "light",
-  "name"
+  "name",
+  "num"
  ],
  "layouts": [
   "list",
@@ -3884,5 +3894,5 @@
   "screens": 16,
   "deck_bytes": 2048
  },
- "hash": "86926d54"
+ "hash": "305d0a47"
 }

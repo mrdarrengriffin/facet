@@ -15,6 +15,10 @@
 //   action     {"do": "light.switch", "e"}  (a toggle's on / off)    {"do": "light.toggle", "e"}
 //              {"do": "light.brightness", "e"}  (a Dial / Slider value: live while dragging = throttle with a
 //                                                trailing send, light-throttle-ms; the release always sends)
+//              {"do": "climate.set_temperature", "e"}  (a thermostat set point: live while dragging = throttle with a
+//                                                       trailing send, clamped + snapped to the entity's min / max /
+//                                                       step; settles when HA reports it)
+//              {"do": "climate.set_hvac_mode", "e"} / {"do": "climate.set_preset_mode", "e"}  (the event's value)
 //              {"do": "nav.open", "screen": "<id>", "params"?: {k: v}}    {"do": "nav.back"}
 //              on "open" (any component's own open event): {"do": "nav.open"} = the screen its detail names
 //              The closed whitelist: each component + event allows only the actions in RULES (the catalogue).
@@ -68,12 +72,17 @@ constexpr Rule RULES[] = {
     {"dial", "input", "light.brightness"},           {"dial", "toggle", "light.switch"},
     {"slider", "change", "light.brightness"},        {"slider", "input", "light.brightness"},
     {"toggle", "toggle", "light.switch"},            {"button", "tap", "nav.open,nav.back,light.toggle"},
-    {"more_row", "tap", "nav.open,nav.back"},        // a link to a sub-view spec (moon -> moon_details -> ...)
+    {"more_row", "tap", "nav.open,nav.back"},
+    {"thermostat_dial", "change", "climate.set_temperature"}, {"thermostat_dial", "input", "climate.set_temperature"},
+    {"thermostat_view", "target", "climate.set_temperature"}, {"thermostat_view", "mode", "climate.set_hvac_mode"},
+    {"thermostat_view", "preset", "climate.set_preset_mode"},        // a link to a sub-view spec (moon -> moon_details -> ...)
     {"*", "open", "nav.open"},                       // any component's own "open" (a tapped calendar day, a PR):
                                                      // its detail = the screen id [+ "?" + params JSON]
 };
-constexpr const char *ACTIONS[] = {"light.switch", "light.toggle", "light.brightness", "nav.open", "nav.back"};
-constexpr const char *FMTS[] = {"", "on", "pct", "avail", "light", "name"};
+constexpr const char *ACTIONS[] = {"light.switch", "light.toggle", "light.brightness", "climate.set_temperature",
+                                   "climate.set_hvac_mode", "climate.set_preset_mode", "nav.open", "nav.back"};
+constexpr const char *FMTS[] = {"", "on", "pct", "avail", "light", "name", "num"};
+constexpr uint32_t CLIMATE_THROTTLE_MS = 250;  // like light-throttle-ms: a set point while dragging at most this often
 constexpr const char *LAYOUTS[] = {"list", "center", "cards"};
 constexpr const char *STYLE_KEYS[] = {"color", "colour", "bg", "x", "y", "w", "h", "width", "height", "size", "font",
                                       "radius", "pad", "padding", "margin", "align", "sound", "opacity"};
@@ -164,6 +173,10 @@ inline void check_action(ArduinoJson::JsonVariantConst a, const char *comp, cons
     const std::string en = a["e"] | "";
     if (!entity_ok(en) || (en[0] != '$' && en.rfind("light.", 0) != 0)) err(e, path + ".e", "bad_entity", "a light entity (light.x or $param)");
   }
+  if (d.rfind("climate.", 0) == 0) {
+    const std::string en = a["e"] | "";
+    if (!entity_ok(en) || (en[0] != '$' && en.rfind("climate.", 0) != 0)) err(e, path + ".e", "bad_entity", "a climate entity (climate.x or $param)");
+  }
   if (d == "nav.open") {
     const std::string s = a["screen"] | "";
     const bool from_event = !strcmp(event, "open") && a["screen"].isNull();  // the component's "open" names the screen
@@ -176,7 +189,7 @@ inline void check_value(const PropInfo &pi, ArduinoJson::JsonVariantConst v, con
     static const char *const K[] = {"e", "a", "fmt"};
     check_keys(v.as<ArduinoJson::JsonObjectConst>(), K, 3, path, e);
     if (!entity_ok(v["e"] | "")) err(e, path + ".e", "bad_bind", "a bind needs an entity (domain.object or $param)");
-    if (!one_of(FMTS, v["fmt"] | "")) err(e, path + ".fmt", "bad_bind", "fmt is one of on, pct, avail, light, name");
+    if (!one_of(FMTS, v["fmt"] | "")) err(e, path + ".fmt", "bad_bind", "fmt is one of on, pct, avail, light, name, num");
     binds++;
     return;
   }
@@ -378,6 +391,8 @@ struct Node {
   lv_obj_t *obj = nullptr;
   std::string comp, on, pending, entity;  // on / pending = JSON; entity = the light its actions act on
   bool has_brightness = false;
+  double c_sent = NAN, c_want = NAN;  // climate set point: last sent, the latest waiting for the interval
+  uint32_t c_at = 0;
   int sent = -1, want = -1;  // brightness throttle (light-throttle-ms)
   uint32_t sent_at = 0;
   bool drag_sent = false;
@@ -424,6 +439,21 @@ inline void send_brightness(Node &n, int v) {
   n.sent = v;
   n.sent_at = lv_tick_get();
 }
+// a set point within the entity's own range and step (HA min_temp / max_temp / target_temp_step, else 5..35 by 0.5)
+inline double climate_clamp(const std::string &e, double v) {
+  const double mn = ha::num(ha::get(e, "min_temp")), mx = ha::num(ha::get(e, "max_temp")), st = ha::num(ha::get(e, "target_temp_step"));
+  const double lo = std::isfinite(mn) ? mn : 5, hi = std::isfinite(mx) ? mx : 35, step = std::isfinite(st) && st > 0 ? st : 0.5;
+  return LV_CLAMP(lo, lo + std::round((v - lo) / step) * step, hi);
+}
+inline void send_temperature(Node &n, double v) {
+  v = climate_clamp(n.entity, v);
+  if (std::isfinite(n.c_sent) && std::fabs(v - n.c_sent) < 1e-6) return;
+  char data[48];
+  snprintf(data, sizeof data, "{\"temperature\":%g}", v);
+  if (*ha::act(n.obj, "climate.set_temperature", n.entity.c_str(), data)) return;
+  n.c_sent = v;
+  n.c_at = lv_tick_get();
+}
 inline void tick(lv_timer_t *t) {
   auto *s = (Screen *) lv_timer_get_user_data(t);
   const uint32_t now = lv_tick_get();
@@ -435,6 +465,10 @@ inline void tick(lv_timer_t *t) {
     } else if (n.want >= 0 && n.want != ON_ONLY && lv_tick_diff(now, n.sent_at) >= LIGHT_THROTTLE_MS) {
       send_brightness(n, n.want);
       n.want = -1;
+    }
+    if (std::isfinite(n.c_want) && lv_tick_diff(now, n.c_at) >= CLIMATE_THROTTLE_MS) {
+      send_temperature(n, n.c_want);
+      n.c_want = NAN;
     }
     if (n.pend && lv_tick_diff(now, n.sent_at) >= mo::duration(n.obj, st::SWITCH, mo::MOVE) + 20) {
       const bool on = n.pend > 0;
@@ -483,6 +517,31 @@ inline bool run(Screen *s, Node &n, const char *event, const char *detail) {
     n.sent_at = lv_tick_get();
     ha::hold(n.obj, PENDING_MS, n.entity, "", v ? "on" : "off");
     if (!n.pending.empty()) n.pend = v ? 1 : -1;
+    return true;
+  }
+  if (d == "climate.set_temperature") {  // live while dragging: throttle with a trailing send; the release / a step now
+    const double v = atof(detail);
+    if (!strcmp(event, "input")) {
+      ha::hold(n.obj, PENDING_MS);
+      if (!std::isfinite(n.c_sent) || lv_tick_elaps(n.c_at) >= CLIMATE_THROTTLE_MS) { n.c_want = NAN; send_temperature(n, v); }
+      else n.c_want = v;
+      return true;
+    }
+    n.c_want = NAN;
+    send_temperature(n, v);
+    char want[24];
+    snprintf(want, sizeof want, "%g", climate_clamp(n.entity, v));
+    ha::hold(n.obj, PENDING_MS, n.entity, "temperature", want);  // settles when HA reports the set point
+    return true;
+  }
+  if (d == "climate.set_hvac_mode" || d == "climate.set_preset_mode") {
+    const bool hvac = d == "climate.set_hvac_mode";
+    ArduinoJson::JsonDocument data;
+    data[hvac ? "hvac_mode" : "preset_mode"] = detail;
+    std::string ds;
+    serializeJson(data, ds);
+    if (!*ha::act(n.obj, d.c_str(), n.entity.c_str(), ds.c_str()))
+      ha::hold(n.obj, PENDING_MS, n.entity, hvac ? "" : "preset_mode", detail);  // the state = the hvac mode in HA
     return true;
   }
   if (d == "light.brightness") {
@@ -579,6 +638,8 @@ inline lv_obj_t *build(lv_obj_t *parent, const std::string &id, Props opened, st
       const std::string e = kv.value()["e"] | "";
       if (!e.empty()) n.entity = e;
       if (!strcmp(kv.value()["do"] | "", "light.brightness")) n.has_brightness = true;
+      if (!strncmp(kv.value()["do"] | "", "climate.", 8) && !e.empty())  // its range + what settles a change
+        for (const char *a : {"", "temperature", "min_temp", "max_temp", "target_temp_step", "preset_mode"}) ha::want(e, a);
     }
     if (!nd["on"]["long"].isNull())
       lv_obj_add_event_cb(n.obj, [](lv_event_t *e) {  // a long press (no tap after it)

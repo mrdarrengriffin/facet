@@ -71,5 +71,12 @@ ok(spec('check', linkSpec([{ c: 'card', p: {}, on: { open: { do: 'nav.open' } } 
 ok(codes(spec('check', linkSpec([{ c: 'card', p: {}, on: { open: { do: 'light.toggle', e: 'light.x' } } }]))).includes('not_allowed'), 'an open event allows nav.open only');
 ok(codes(spec('check', linkSpec([{ c: 'more_row', p: {}, on: { tap: { do: 'light.toggle', e: 'light.x' } } }]))).includes('not_allowed'), 'a more_row tap allows navigation only');
 ok(codes(spec('check', linkSpec([{ c: 'more_row', p: {}, on: { tap: { do: 'nav.open' } } }]))).includes('bad_screen'), 'a tap without a screen is refused (only open takes it from the event)');
+// climate: thermostat_dial change / input -> climate.set_temperature on a climate entity; nothing else
+const tSpec = (on) => JSON.stringify({ ...factory, rev: 30, nodes: [{ c: 'thermostat_dial', p: { target: { e: 'climate.test_room', a: 'temperature', fmt: 'num' } }, on }] });
+ok(spec('check', tSpec({ change: { do: 'climate.set_temperature', e: 'climate.test_room' }, input: { do: 'climate.set_temperature', e: '$entity' } })).ok, 'a thermostat dial may set the temperature (live and on release), fmt num binds');
+ok(codes(spec('check', tSpec({ change: { do: 'climate.set_temperature', e: 'light.x' } }))).includes('bad_entity'), 'climate actions need a climate entity');
+ok(codes(spec('check', tSpec({ change: { do: 'light.brightness', e: 'light.x' } }))).includes('not_allowed'), 'a thermostat dial cannot dim a light');
+ok(codes(spec('check', tSpec({ change: { do: 'climate.set_hvac_mode', e: 'climate.test_room' } }))).includes('not_allowed'), 'the dial sets the temperature only (modes come from the thermostat view)');
+ok(codes(spec('check', JSON.stringify({ ...factory, rev: 31, nodes: [{ c: 'dial', on: { change: { do: 'climate.set_temperature', e: 'climate.test_room' } } }] }))).includes('not_allowed'), 'a light dial cannot set a thermostat');
 console.log(fails ? `spec_test: ${fails} FAILED` : 'spec_test: all passed');
 process.exit(fails ? 1 : 0);

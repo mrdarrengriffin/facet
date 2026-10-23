@@ -10,13 +10,16 @@
 //            its update path (FW_UPDATE, silent), never a rebuild. fmt: (none) the raw string; "on" state == on (bool);
 //            "pct" a 0-255 attribute as 0-100 (missing / None = 0); "avail" "unavailable" when the state is
 //            unavailable / unknown, else "default" (no value yet = "default"); "light" the light row's sub text
-//            ("Off", "On", "On · 64%"); "name" the friendly_name (else the entity id).
+//            ("Off", "On", "On · 64%"); "name" the friendly_name (else the entity id); "num" a number attribute
+//            (a thermostat's temperature / current_temperature; missing = the component's default).
 //   hold     instant feedback (simple model): a control the person just moved shows the new value at once (its own
 //            animation); hold(obj, ms, e, a, expect) keeps store updates off it until HA reports `expect` for (e, a)
 //            (confirmed: settle on the store) or ms pass (timed out / refused: back to what HA says). Pending text is
 //            the screen's (the room's "Turning on").
 //   actions  act(obj, service, entity, data_json) = a closed whitelist (light.turn_on [+ brightness_pct 0-100],
-//            light.turn_off, light.toggle on light.* entities): emits "ha" {service, entity, data} (the workbench host
+//            light.turn_off, light.toggle on light.* entities; climate.set_temperature {temperature},
+//            climate.set_hvac_mode {hvac_mode: off|heat|cool|heat_cool|auto|dry|fan_only}, climate.set_preset_mode
+//            {preset_mode} on climate.* entities): emits "ha" {service, entity, data} (the workbench host
 //            calls HA through the hub) and calls the action sink (the panel: an HA action over its API).
 // TODO (full "wish" model, plan §2.3): wishes per entity shared across screens, drag throttling (brightness while
 // dragging), providers, a deck-wide subscription union, big attributes kept raw.
@@ -106,6 +109,12 @@ inline void bind_value(ArduinoJson::JsonVariantConst b, ArduinoJson::JsonObject 
     out[key] = std::isfinite(br) ? "On · " + std::to_string(pct(e, "brightness")) + "%" : std::string("On");
     return;
   }
+  if (fmt == "num") {  // a number attribute (temperature, current_temperature, min_temp): missing / None = no prop
+    use(a);
+    const double x = num(get(e, a));
+    if (std::isfinite(x)) out[key] = x;
+    return;
+  }
   if (fmt == "name") { use("friendly_name"); const std::string *n = get(e, "friendly_name"); out[key] = n && !n->empty() ? *n : e; return; }
   use(a);
   const std::string *v = get(e, a);
@@ -146,7 +155,11 @@ inline void start_timer() {
 }
 
 inline bool matches(const Bound *b, const std::string &v) {
-  if (!b->expect_pct) return b->expect == v;
+  if (!b->expect_pct) {
+    if (b->expect == v) return true;
+    const double x = num(&v), y = num(&b->expect);  // numbers: "21" == "21.0"
+    return std::isfinite(x) && std::isfinite(y) && std::fabs(x - y) < 1e-6;
+  }
   const double x = num(&v);
   return std::isfinite(x) && (int) std::lround(LV_CLAMP(0.0, x, 255.0) * 100 / 255) == atoi(b->expect.c_str());
 }
@@ -210,10 +223,28 @@ inline bool held(lv_obj_t *obj) {
 // ---- actions (closed whitelist)
 inline const char *act(lv_obj_t *from, const char *service, const char *entity, const char *data_json = "") {
   const std::string svc = service ? service : "", ent = entity ? entity : "";
-  if (ent.rfind("light.", 0) != 0) return "not a light";
+  const bool light = ent.rfind("light.", 0) == 0, climate = ent.rfind("climate.", 0) == 0;
+  if (svc.rfind("light.", 0) == 0 && !light) return "not a light";
+  if (svc.rfind("climate.", 0) == 0 && !climate) return "not a climate entity";
   ArduinoJson::JsonDocument data;
   if (data_json && *data_json && deserializeJson(data, data_json)) return "data is not JSON";
-  if (svc == "light.turn_on") {
+  auto only = [&](const char *key) {  // the data holds exactly this one key
+    if (data.size() != 1 || data[key].isNull()) return false;
+    return true;
+  };
+  if (svc == "climate.set_temperature") {
+    if (!only("temperature") || !data["temperature"].is<double>()) return "climate.set_temperature takes temperature";
+    const double t = data["temperature"].as<double>();
+    if (!std::isfinite(t) || t < 0 || t > 50) return "temperature outside 0..50";
+  } else if (svc == "climate.set_hvac_mode") {
+    static const char *const MODES[] = {"off", "heat", "cool", "heat_cool", "auto", "dry", "fan_only"};
+    const std::string m = data["hvac_mode"] | "";
+    if (!only("hvac_mode") || std::none_of(std::begin(MODES), std::end(MODES), [&](const char *x) { return m == x; })) return "hvac_mode is one of off, heat, cool, heat_cool, auto, dry, fan_only";
+  } else if (svc == "climate.set_preset_mode") {
+    const std::string m = data["preset_mode"] | "";
+    if (!only("preset_mode") || m.empty() || m.size() > 32) return "climate.set_preset_mode takes preset_mode (a short name)";
+    for (char c : m) if (!(isalnum((unsigned char) c) || c == '_' || c == ' ' || c == '-')) return "preset_mode: letters, digits, space, _ or -";
+  } else if (svc == "light.turn_on") {
     for (ArduinoJson::JsonPairConst kv : data.as<ArduinoJson::JsonObjectConst>())
       if (strcmp(kv.key().c_str(), "brightness_pct")) return "light.turn_on takes brightness_pct only";
     if (data["brightness_pct"].is<double>()) data["brightness_pct"] = (int) LV_CLAMP(0.0, std::round(data["brightness_pct"].as<double>()), 100.0);
