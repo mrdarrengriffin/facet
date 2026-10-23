@@ -3,6 +3,7 @@
  "id": "covers",
  "name": "Blinds and curtains",
  "rev": 2,
+ "role": "detail",
  "params": {
   "entity": {"type": "entity", "domain": "cover", "label": "Window", "default": ""},
   "covers": {"type": "entities", "domain": "cover", "label": "Windows", "default": ""}

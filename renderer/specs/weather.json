@@ -3,6 +3,7 @@
  "id": "weather",
  "name": "Weather",
  "rev": 2,
+ "role": "page",
  "params": {
   "weather": {
    "type": "entity",

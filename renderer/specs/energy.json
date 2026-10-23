@@ -3,6 +3,7 @@
  "id": "energy",
  "name": "Energy",
  "rev": 1,
+ "role": "page",
  "header": {
   "label": "Energy",
   "back": true

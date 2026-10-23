@@ -3,6 +3,7 @@
  "id": "clock",
  "name": "Clock",
  "rev": 2,
+ "role": "page",
  "params": {
   "weather": {
    "type": "entity",

@@ -1,4 +1,4 @@
-{"v": 1, "id": "aircraft", "name": "All aircraft", "rev": 1,
+{"v": 1, "id": "aircraft", "name": "All aircraft", "rev": 1, "role": "detail",
  "params": {
   "sample": {"type": "select", "options": ["busy", "overhead", "emergency", "quiet"], "label": "Sample", "default": "busy"}
  },

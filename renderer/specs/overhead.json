@@ -1,4 +1,4 @@
-{"v": 1, "id": "overhead", "name": "Overhead", "rev": 1,
+{"v": 1, "id": "overhead", "name": "Overhead", "rev": 1, "role": "page",
  "params": {
   "sample": {"type": "select", "options": ["busy", "overhead", "emergency", "quiet"], "label": "Sample", "default": "busy"}
  },

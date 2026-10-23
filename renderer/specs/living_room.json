@@ -3,6 +3,7 @@
  "id": "living_room",
  "name": "Living room",
  "rev": 1,
+ "role": "page",
  "header": {
   "label": "Living room",
   "back": true

@@ -40,11 +40,24 @@
 //              on "open" (any component's own open event): {"do": "nav.open"} = the screen its detail names
 //              The closed whitelist: each component + event allows only the actions in RULES (the catalogue).
 //   pending    while a light.switch waits for HA: the prop shows on / off text (a List row's sub "Turning on")
-// Deck         {"v": 1, "rev": 2, "screens": [{"id": "living_room", "card": true}, ...]}: the screens, their order
-//              and Home's cards (card: true). An id is a spec screen or a built-in screen (settings).
-//              Per entry also (2026-10-23, this panel's picks): "on" (false = off: no Home card), "source" (an id
-//              of the screen's sources in renderer/sources/sources.json), "params" ({k: text}: the screen opens with
-//              them, over the spec's defaults; a host's discovery fills them). Settings > Screens edits them.
+// Spec role   "role": "page" | "detail" | "both" (default page; screen model 2026-10-23): a page is a place in the deck
+//              (Home links to it); a detail screen is opened from something on a page, for one entity (Light,
+//              Blinds), never in the deck; both = either (Media, Thermostat). Built-in screens: "home" is a page
+//              kind, the rest (Settings) are system screens, never in the deck.
+// Deck v2      {"v": 2, "rev": 7, "start": "living", "pages": [
+//                {"id": "living", "kind": "home", "name": "Living room", "cards": [
+//                  {"t": "light", "e": "light.x", "size": "s", "tap": "toggle", "label": "Ceiling"},
+//                  {"t": "page", "page": "media", "size": "m"}]},
+//                {"id": "media", "kind": "media", "name"?, "source"?, "params"?: {k: text}}]}
+//              This panel's pages in order (notes: screen-model.md). id = unique, a-z 0-9 _, at most 12; kind = a
+//              page-role spec or "home"; name = header label + card title (else the spec's name); source = an id
+//              of the kind's sources (renderer/sources/sources.json); params = the page opens with them over the
+//              spec's defaults (a host's discovery fills them). cards only on a home: t = a card type (CARD_TYPES),
+//              e = its entity (a domain the type takes), size s | m | l, tap toggle | detail | page | none (the
+//              type's first by default), page = a page id (t page), label (else the entity's name). start = the
+//              page shown first. A v1 deck ({"v": 1, "screens": [...]}) is refused: a panel holding one falls back
+//              to the factory deck. No "on": a page you don't want is not in the deck (Settings > Screens and the
+//              editor list the other page kinds as off; turning one on adds it at the end).
 //
 // Validation (one implementation for the panels, the WASM workbench and the hub's dry render): unknown keys (style
 // keys such as colour / x / width / font get `style_key`), unknown components, props a component doesn't have,
@@ -74,8 +87,9 @@
 namespace fw {
 namespace spec {
 constexpr int PROTOCOL = 1;
+constexpr int DECK_V = 2;  // the deck's own version (v1 decks are refused)
 struct Budget {
-  int nodes = 48, binds = 64, bytes = 8192, screens = 16, deck_bytes = 4096;
+  int nodes = 48, binds = 64, bytes = 8192, screens = 16, deck_bytes = 8192, pages = 16, homes = 4, cards = 24;  // start values (screen model): the bench sets them
 };
 inline const Budget &budget() {
   static Budget b;
@@ -109,6 +123,14 @@ constexpr const char *FMTS[] = {"", "on", "pct", "avail", "light", "name", "num"
 constexpr uint32_t CLIMATE_THROTTLE_MS = 250;  // like light-throttle-ms: a set point while dragging at most this often
 constexpr const char *LAYOUTS[] = {"list", "center", "cards"};
 constexpr const char *PARAM_TYPES[] = {"text", "select", "entity", "entities", "toggle", "hidden"};
+constexpr const char *ROLES[] = {"page", "detail", "both"};
+// Home card types (deck v2; piece 2 moves them to renderer/cards/cards.json): domains its entity may be, sizes,
+// taps (the default first)
+struct CardType { const char *t, *domains, *sizes, *taps; };
+constexpr CardType CARD_TYPES[] = {
+    {"light", "light,switch", "s,m", "toggle,detail"},          {"cover", "cover", "s,m", "detail,toggle"},
+    {"climate", "climate", "m", "detail"},                      {"media", "media_player", "m,l", "page,detail,toggle"},
+    {"sensor", "sensor,binary_sensor", "s,m", "detail,none"},   {"page", "", "s,m,l", "page"}};
 // a parameter's default: its text, or a typed parameter's "default"
 inline std::string param_default(ArduinoJson::JsonVariantConst v) {
   if (v.is<const char *>()) return v.as<std::string>();
@@ -258,8 +280,9 @@ inline void check_value(const PropInfo &pi, ArduinoJson::JsonVariantConst v, con
 // a screen spec: errors into e (empty = valid)
 inline void check_screen(ArduinoJson::JsonVariantConst s, size_t bytes, Errs &e) {
   if (!s.is<ArduinoJson::JsonObjectConst>()) { err(e, "", "bad_spec", "a screen spec is an object"); return; }
-  static const char *const K[] = {"v", "id", "name", "rev", "params", "header", "layout", "nodes"};
-  check_keys(s.as<ArduinoJson::JsonObjectConst>(), K, 8, "", e);
+  static const char *const K[] = {"v", "id", "name", "rev", "role", "params", "header", "layout", "nodes"};
+  check_keys(s.as<ArduinoJson::JsonObjectConst>(), K, 9, "", e);
+  if (!s["role"].isNull() && !one_of(ROLES, s["role"] | "")) err(e, ".role", "bad_role", "role is page, detail or both");
   if ((s["v"] | 0) != PROTOCOL) err(e, ".v", "bad_version", "v must be 1");
   if (!id_ok(s["id"] | "")) err(e, ".id", "bad_id", "id: a-z, 0-9, _; at most 12 characters");
   if (!s["rev"].is<int>() || s["rev"].as<int>() < 0) err(e, ".rev", "bad_rev", "rev is a whole number");
@@ -316,32 +339,87 @@ inline void check_screen(ArduinoJson::JsonVariantConst s, size_t bytes, Errs &e)
   if (binds > budget().binds) err(e, ".nodes", "over_budget", "more than " + std::to_string(budget().binds) + " binds");
 }
 inline bool screen_known(const std::string &id);
+inline std::string role_of(const std::string &id);
+// a comma list holds x
+inline bool csv_has(const char *list, const std::string &x) {
+  for (const char *p = list; *p;) {
+    const char *c = strchr(p, ',');
+    const size_t n = c ? (size_t) (c - p) : strlen(p);
+    if (n == x.size() && !strncmp(p, x.c_str(), n)) return true;
+    if (!c) break;
+    p = c + 1;
+  }
+  return false;
+}
+inline const CardType *card_type(const std::string &t) {
+  for (const CardType &c : CARD_TYPES) if (t == c.t) return &c;
+  return nullptr;
+}
+inline void check_card(ArduinoJson::JsonVariantConst c, const std::string &p, const std::set<std::string> &ids, Errs &e) {
+  static const char *const CK[] = {"t", "e", "size", "tap", "page", "label"};
+  if (!c.is<ArduinoJson::JsonObjectConst>()) { err(e, p, "bad_card", "a card is {t, e, size, tap?, page?, label?}"); return; }
+  check_keys(c.as<ArduinoJson::JsonObjectConst>(), CK, 6, p, e);
+  const std::string t = c["t"] | "", ent = c["e"] | "", size = c["size"] | "", tap = c["tap"] | "", pg = c["page"] | "";
+  const CardType *ct = card_type(t);
+  if (!ct) { err(e, p + ".t", "bad_card", "t is a card type (light, cover, climate, media, sensor, page)"); return; }
+  if (*ct->domains) {
+    const size_t dot = ent.find('.');
+    if (dot == std::string::npos || !csv_has(ct->domains, ent.substr(0, dot))) err(e, p + ".e", "bad_entity", std::string("a ") + t + " card takes " + ct->domains + " entities");
+  } else if (!ent.empty()) err(e, p + ".e", "bad_card", "a page card has no entity");
+  if (!csv_has(ct->sizes, size)) err(e, p + ".size", "bad_size", std::string("a ") + t + " card is size " + ct->sizes);
+  if (!tap.empty() && !csv_has(ct->taps, tap)) err(e, p + ".tap", "bad_tap", std::string("a ") + t + " card's tap is " + ct->taps);
+  if (!pg.empty() && !ids.count(pg)) err(e, p + ".page", "bad_page", "no page " + pg + " in this deck");
+  if (t == "page" && pg.empty()) err(e, p + ".page", "bad_page", "a page card names a page");
+  if (!c["label"].isNull() && (!c["label"].is<const char *>() || strlen(c["label"] | "") > 32)) err(e, p + ".label", "bad_card", "label is text (at most 32)");
+}
 inline void check_deck(ArduinoJson::JsonVariantConst d, size_t bytes, Errs &e) {
   if (!d.is<ArduinoJson::JsonObjectConst>()) { err(e, "", "bad_spec", "a deck is an object"); return; }
-  static const char *const K[] = {"v", "rev", "screens"};
-  check_keys(d.as<ArduinoJson::JsonObjectConst>(), K, 3, "", e);
-  if ((d["v"] | 0) != PROTOCOL) err(e, ".v", "bad_version", "v must be 1");
+  if ((d["v"] | 0) != DECK_V) { err(e, ".v", "bad_version", "deck v must be 2 (v1 decks are retired)"); return; }
+  static const char *const K[] = {"v", "rev", "start", "pages"};
+  check_keys(d.as<ArduinoJson::JsonObjectConst>(), K, 4, "", e);
   if (!d["rev"].is<int>()) err(e, ".rev", "bad_rev", "rev is a whole number");
   if (bytes > (size_t) budget().deck_bytes) err(e, "", "over_budget", "deck over " + std::to_string(budget().deck_bytes) + " bytes");
-  ArduinoJson::JsonArrayConst s = d["screens"].as<ArduinoJson::JsonArrayConst>();
-  if (s.isNull() || !s.size()) { err(e, ".screens", "bad_deck", "screens is a non-empty list"); return; }
-  if ((int) s.size() > budget().screens) err(e, ".screens", "over_budget", "more than " + std::to_string(budget().screens) + " screens");
+  ArduinoJson::JsonArrayConst s = d["pages"].as<ArduinoJson::JsonArrayConst>();
+  if (s.isNull() || !s.size()) { err(e, ".pages", "bad_deck", "pages is a non-empty list"); return; }
+  if ((int) s.size() > budget().pages) err(e, ".pages", "over_budget", "more than " + std::to_string(budget().pages) + " pages");
+  std::set<std::string> ids;
   int i = 0;
   for (ArduinoJson::JsonVariantConst x : s) {
-    const std::string p = ".screens[" + std::to_string(i++) + "]";
-    static const char *const SK[] = {"id", "card", "on", "source", "params"};
-    if (!x.is<ArduinoJson::JsonObjectConst>()) { err(e, p, "bad_deck", "a deck entry is {id, card?, on?, source?, params?}"); continue; }
-    check_keys(x.as<ArduinoJson::JsonObjectConst>(), SK, 5, p, e);
-    if (!x["on"].isNull() && !x["on"].is<bool>()) err(e, p + ".on", "bad_deck", "on is true / false");
+    const std::string id = x["id"] | "", p = ".pages[" + std::to_string(i++) + "]";
+    if (!id_ok(id)) err(e, p + ".id", "bad_id", "id: a-z, 0-9, _; at most 12 characters");
+    else if (!ids.insert(id).second) err(e, p + ".id", "bad_id", "two pages are " + id);
+  }
+  const std::string start = d["start"] | "";
+  if (!ids.count(start)) err(e, ".start", "bad_start", "start names a page of this deck");
+  int homes = 0;
+  i = 0;
+  for (ArduinoJson::JsonVariantConst x : s) {
+    const std::string p = ".pages[" + std::to_string(i++) + "]";
+    static const char *const SK[] = {"id", "kind", "name", "source", "params", "cards"};
+    if (!x.is<ArduinoJson::JsonObjectConst>()) { err(e, p, "bad_deck", "a page is {id, kind, name?, source?, params?, cards?}"); continue; }
+    check_keys(x.as<ArduinoJson::JsonObjectConst>(), SK, 6, p, e);
+    const std::string kind = x["kind"] | "";
+    if (!screen_known(kind)) { err(e, p + ".kind", "unknown_screen", "no screen " + kind + " (send its spec first)"); continue; }
+    const std::string role = role_of(kind);
+    if (role == "detail") err(e, p + ".kind", "not_a_page", kind + " is a detail screen: it opens from a card, not the deck");
+    else if (role == "system") err(e, p + ".kind", "not_a_page", kind + " is part of the panel, not a page");
+    if (!x["name"].isNull() && (!x["name"].is<const char *>() || strlen(x["name"] | "") > 32)) err(e, p + ".name", "bad_deck", "name is text (at most 32)");
     if (!x["source"].isNull() && !word_ok(x["source"] | "", 24)) err(e, p + ".source", "bad_deck", "source: a source id (a-z, 0-9, _; at most 24)");
     if (!x["params"].isNull()) {
       if (!x["params"].is<ArduinoJson::JsonObjectConst>()) err(e, p + ".params", "bad_deck", "params is {name: text}");
       else for (ArduinoJson::JsonPairConst kv : x["params"].as<ArduinoJson::JsonObjectConst>())
         if (!kv.value().is<const char *>() || strlen(kv.value().as<const char *>()) > 1024) err(e, p + ".params." + kv.key().c_str(), "bad_deck", "a parameter is text (at most 1024)");
     }
-    const std::string id = x["id"] | "";
-    if (!screen_known(id)) err(e, p + ".id", "unknown_screen", "no screen " + id + " (send its spec first)");
+    if (kind == "home") homes++;
+    if (x["cards"].isNull()) continue;
+    if (kind != "home") { err(e, p + ".cards", "bad_deck", "only a home has cards"); continue; }
+    ArduinoJson::JsonArrayConst cs = x["cards"].as<ArduinoJson::JsonArrayConst>();
+    if (cs.isNull()) { err(e, p + ".cards", "bad_deck", "cards is a list"); continue; }
+    if ((int) cs.size() > budget().cards) err(e, p + ".cards", "over_budget", "more than " + std::to_string(budget().cards) + " cards on a home");
+    int k = 0;
+    for (ArduinoJson::JsonVariantConst c : cs) check_card(c, p + ".cards[" + std::to_string(k++) + "]", ids, e);
   }
+  if (homes > budget().homes) err(e, ".pages", "over_budget", "more than " + std::to_string(budget().homes) + " homes");
 }
 inline std::string errs_json(const Errs &e) {
   ArduinoJson::JsonDocument d;
@@ -400,16 +478,41 @@ inline const char *screen_json(const std::string &id) {
 }
 inline bool screen_known(const std::string &id) { return screen_json(id) || find(id.c_str()); }
 inline const char *deck_json() { return S().deck_over.empty() ? FACTORY_DECK : S().deck_over.c_str(); }
-// this panel's deck entry for screen id into out (false = not in the deck)
+// a screen's role: its spec's "role" (page when it has none), "page" for the built-in Home, "system" for the other
+// built-ins (Settings), "" = unknown
+inline std::string role_of(const std::string &id) {
+  if (const char *j = screen_json(id)) {
+    ArduinoJson::JsonDocument d;
+    if (deserializeJson(d, j)) return "";
+    return d["role"] | "page";
+  }
+  if (id == "home") return "page";
+  return find(id.c_str()) ? "system" : "";
+}
+inline bool page_role(const std::string &id) { const std::string r = role_of(id); return r == "page" || r == "both"; }
+// this panel's deck page for id into out: the page with that id, else the first page of that kind (a screen opened
+// by its spec id finds its page); false = not in the deck
 inline bool deck_entry(const std::string &id, ArduinoJson::JsonDocument &out) {
   ArduinoJson::JsonDocument d;
   if (deserializeJson(d, deck_json())) return false;
-  for (ArduinoJson::JsonVariantConst x : d["screens"].as<ArduinoJson::JsonArrayConst>())
-    if (id == (x["id"] | "")) { out.set(x); return true; }
+  ArduinoJson::JsonArrayConst ps = d["pages"].as<ArduinoJson::JsonArrayConst>();
+  for (ArduinoJson::JsonVariantConst x : ps) if (id == (x["id"] | "")) { out.set(x); return true; }
+  for (ArduinoJson::JsonVariantConst x : ps) if (id == (x["kind"] | "")) { out.set(x); return true; }
   return false;
 }
-// is screen id on (in the deck and not switched off)? Off screens have no Home card.
-inline bool deck_on(ArduinoJson::JsonVariantConst entry) { return entry["on"] | true; }
+// is this deck page there (deck_entry found one)? A page you don't want is not in the deck.
+inline bool deck_on(ArduinoJson::JsonVariantConst entry) { return entry.is<ArduinoJson::JsonObjectConst>(); }
+// page kinds this panel could add but has no page of (Settings > Screens and the editor show them as off)
+inline std::vector<std::string> off_kinds() {
+  ArduinoJson::JsonDocument d;
+  deserializeJson(d, deck_json());
+  std::set<std::string> used;
+  for (ArduinoJson::JsonVariantConst x : d["pages"].as<ArduinoJson::JsonArrayConst>()) used.insert(x["kind"] | "");
+  std::vector<std::string> v;
+  for (const auto &f : FACTORY) if (!used.count(f.id) && page_role(f.id)) v.push_back(f.id);
+  for (const auto &kv : S().over) if (!factory(kv.first) && !used.count(kv.first) && page_role(kv.first)) v.push_back(kv.first);
+  return v;
+}
 inline int rev_of(const char *json) {
   ArduinoJson::JsonDocument d;
   return json && !deserializeJson(d, json) ? (d["rev"] | -1) : -1;
@@ -1026,7 +1129,11 @@ inline void want_all() {
   };
   ArduinoJson::JsonDocument deck;
   deserializeJson(deck, deck_json());
-  for (ArduinoJson::JsonVariantConst x : deck["screens"].as<ArduinoJson::JsonArrayConst>()) scan(screen_json(x["id"] | ""));
+  for (ArduinoJson::JsonVariantConst x : deck["pages"].as<ArduinoJson::JsonArrayConst>()) {
+    scan(screen_json(x["kind"] | ""));
+    for (ArduinoJson::JsonVariantConst c : x["cards"].as<ArduinoJson::JsonArrayConst>())  // a Home's cards
+      if (const char *e = c["e"]) { ha::want(e, ""); ha::want(e, "friendly_name"); }
+  }
 }
 
 // the spec as one canonical string (parsed and written again: the sender's spacing doesn't count), its CRC
@@ -1097,22 +1204,37 @@ inline bool apply(const char *kind, const std::string &json, lv_obj_t *dry, Ardu
   out["status"] = "applied";
   return true;
 }
-// this panel's pick for screen id (Settings > Screens): key "on" / "source" / "params.<name>" = value, kept as the
-// deck (a new rev, validated and stored like a sent one) without rebuilding what shows; false = refused
+// this panel's pick for page id (Settings > Screens; a page id, else the first page of that kind): key "source" /
+// "params.<name>" = value; "on" = false takes the page out of the deck (never the start page), true adds a page of
+// kind id at the end. Kept as the deck (a new rev, validated and stored like a sent one) without rebuilding what
+// shows; false = refused
 inline bool deck_set(const std::string &id, const std::string &key, ArduinoJson::JsonVariantConst value) {
   ArduinoJson::JsonDocument d;
   if (deserializeJson(d, deck_json())) return false;
-  for (ArduinoJson::JsonVariant x : d["screens"].as<ArduinoJson::JsonArray>()) {
-    if (id != (x["id"] | "")) continue;
-    if (key.rfind("params.", 0) == 0) x["params"][key.substr(7)] = value;
-    else x[key] = value;
-    d["rev"] = (d["rev"] | 0) + 1;
-    std::string js;
-    serializeJson(d, js);
-    ArduinoJson::JsonDocument o;
-    return apply("deck", js, nullptr, o.to<ArduinoJson::JsonObject>(), true);
+  ArduinoJson::JsonArray ps = d["pages"].as<ArduinoJson::JsonArray>();
+  int at = -1, i = 0;
+  for (ArduinoJson::JsonVariant x : ps) { if (id == (x["id"] | "")) { at = i; break; } i++; }
+  if (at < 0) { i = 0; for (ArduinoJson::JsonVariant x : ps) { if (id == (x["kind"] | "")) { at = i; break; } i++; } }
+  if (key == "on") {
+    if (value.as<bool>()) {
+      if (at >= 0 || !page_role(id)) return at >= 0;
+      ArduinoJson::JsonObject n = ps.add<ArduinoJson::JsonObject>();
+      n["id"] = id, n["kind"] = id;
+    } else {
+      if (at < 0) return true;
+      if (id == (d["start"] | "") || (ps[at]["id"] | "") == std::string(d["start"] | "")) return false;
+      ps.remove(at);
+    }
+  } else {
+    if (at < 0) return false;
+    if (key.rfind("params.", 0) == 0) ps[at]["params"][key.substr(7)] = value;
+    else ps[at][key] = value;
   }
-  return false;
+  d["rev"] = (d["rev"] | 0) + 1;
+  std::string js;
+  serializeJson(d, js);
+  ArduinoJson::JsonDocument o;
+  return apply("deck", js, nullptr, o.to<ArduinoJson::JsonObject>(), true);
 }
 // revert one override (screen id, "deck") or "all" to factory
 inline void revert(const std::string &id, ArduinoJson::JsonObject out) {
@@ -1165,6 +1287,12 @@ inline void catalogue(ArduinoJson::JsonObject out) {
   ArduinoJson::JsonObject b = out["budget"].to<ArduinoJson::JsonObject>();
   b["nodes"] = budget().nodes; b["binds"] = budget().binds; b["bytes"] = budget().bytes;
   b["screens"] = budget().screens; b["deck_bytes"] = budget().deck_bytes;
+  b["pages"] = budget().pages; b["homes"] = budget().homes; b["cards"] = budget().cards;
+  out["deck_v"] = DECK_V;
+  auto rl = out["roles"].to<ArduinoJson::JsonArray>();
+  for (const char *r : ROLES) rl.add(r);
+  ArduinoJson::JsonObject ct = out["cards"].to<ArduinoJson::JsonObject>();
+  for (const CardType &c : CARD_TYPES) { auto o = ct[c.t].to<ArduinoJson::JsonObject>(); o["domains"] = c.domains; o["sizes"] = c.sizes; o["taps"] = c.taps; }
 }
 inline uint32_t catalogue_hash() {
   static uint32_t h = 0;

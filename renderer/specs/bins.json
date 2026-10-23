@@ -1,4 +1,4 @@
-{"v": 1, "id": "bins", "name": "Bins", "rev": 1,
+{"v": 1, "id": "bins", "name": "Bins", "rev": 1, "role": "page",
  "params": {
   "calendar": {"type": "entity", "domain": "calendar", "label": "Bin calendar", "default": ""},
   "sample": {"type": "select", "options": ["tonight", "today", "collected", "later", "two", "none"], "label": "Sample", "default": "tonight"}

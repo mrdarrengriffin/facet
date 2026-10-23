@@ -23,10 +23,10 @@ const spec = (c, a) => S(c, (pc) => S(a, (pa) => JSON.parse(m.UTF8ToString(m._fw
 const out = spec('check', text);
 let parsed = null;
 try { parsed = JSON.parse(text); } catch { /* the check said so */ }
-out.kind = parsed && Array.isArray(parsed.screens) ? 'deck' : 'screen';
+out.kind = parsed && (Array.isArray(parsed.pages) || Array.isArray(parsed.screens)) ? 'deck' : 'screen';
 const known = (arg('--known', '') || '').split(',').filter(Boolean);
 if (out.kind === 'deck' && known.length) {
-  out.errors = out.errors.filter((e) => !(e.code === 'unknown_screen' && known.includes(parsed.screens[Number(e.path.match(/\[(\d+)\]/)?.[1])]?.id)));
+  out.errors = out.errors.filter((e) => !(e.code === 'unknown_screen' && known.includes(parsed.pages?.[Number(e.path.match(/\[(\d+)\]/)?.[1])]?.kind)));
   out.ok = out.errors.length === 0;
 }
 if (out.ok && out.kind === 'screen') {

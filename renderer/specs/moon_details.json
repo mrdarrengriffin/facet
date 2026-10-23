@@ -3,6 +3,7 @@
  "id": "moon_details",
  "name": "Moon details",
  "rev": 1,
+ "role": "detail",
  "header": {
   "label": "Moon details",
   "back": true

@@ -3,6 +3,7 @@
  "id": "timer",
  "name": "Timer",
  "rev": 1,
+ "role": "page",
  "header": {
   "label": "Timer",
   "back": true

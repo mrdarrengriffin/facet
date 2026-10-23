@@ -150,7 +150,7 @@ EMSCRIPTEN_KEEPALIVE const char *fw_spec(const char *cmd, const char *arg) {
     ArduinoJson::JsonDocument s;
     fw::spec::Errs e;
     if (deserializeJson(s, a)) fw::spec::err(e, "", "bad_json", "not JSON");
-    else if (s["screens"].is<ArduinoJson::JsonArray>()) fw::spec::check_deck(s.as<ArduinoJson::JsonVariantConst>(), a.size(), e);
+    else if (s["pages"].is<ArduinoJson::JsonArray>() || s["screens"].is<ArduinoJson::JsonArray>()) fw::spec::check_deck(s.as<ArduinoJson::JsonVariantConst>(), a.size(), e);
     else fw::spec::check_screen(s.as<ArduinoJson::JsonVariantConst>(), a.size(), e);
     ArduinoJson::JsonDocument ed;
     deserializeJson(ed, fw::spec::errs_json(e));

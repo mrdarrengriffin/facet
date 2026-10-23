@@ -1,69 +1,103 @@
 {
- "v": 1,
- "rev": 2,
- "screens": [
+ "v": 2,
+ "rev": 1,
+ "start": "living",
+ "pages": [
+  {
+   "id": "living",
+   "kind": "home",
+   "name": "Living room",
+   "cards": [
+    {
+     "t": "light",
+     "e": "light.living_room_dimmer_light",
+     "size": "s",
+     "tap": "toggle",
+     "label": "Ceiling"
+    },
+    {
+     "t": "light",
+     "e": "light.sofa_table_light",
+     "size": "s",
+     "tap": "toggle",
+     "label": "Sofa table"
+    },
+    {
+     "t": "light",
+     "e": "light.chair_light",
+     "size": "s",
+     "tap": "toggle",
+     "label": "Chair"
+    },
+    {
+     "t": "climate",
+     "e": "climate.portable_ac",
+     "size": "m",
+     "tap": "detail"
+    },
+    {
+     "t": "page",
+     "page": "media",
+     "size": "m"
+    },
+    {
+     "t": "page",
+     "page": "weather",
+     "size": "l"
+    }
+   ]
+  },
   {
    "id": "living_room",
-   "card": true
+   "kind": "living_room"
   },
   {
    "id": "calendar",
-   "card": true
+   "kind": "calendar"
   },
   {
    "id": "clock",
-   "card": true
+   "kind": "clock"
   },
   {
    "id": "weather",
-   "card": true
+   "kind": "weather"
   },
   {
    "id": "media",
-   "card": true
+   "kind": "media"
   },
   {
    "id": "thermostat",
-   "card": true
-  },
-  {
-   "id": "covers",
-   "card": true
+   "kind": "thermostat"
   },
   {
    "id": "energy",
-   "card": true
+   "kind": "energy"
   },
   {
    "id": "github",
-   "card": true
+   "kind": "github"
   },
   {
    "id": "agents",
-   "card": true
+   "kind": "agents"
   },
   {
    "id": "overhead",
-   "card": true
+   "kind": "overhead"
   },
   {
    "id": "bins",
-   "card": true
+   "kind": "bins"
   },
   {
    "id": "print",
-   "card": true
+   "kind": "print"
   },
   {
    "id": "timer",
-   "card": true
-  },
-  {
-   "id": "light"
-  },
-  {
-   "id": "settings",
-   "card": true
+   "kind": "timer"
   }
  ]
 }

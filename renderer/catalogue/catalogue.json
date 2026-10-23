@@ -48,6 +48,31 @@
     "bytes_est": 1920
    }
   },
+  "agents_view": {
+   "name": "Agents view",
+   "update": true,
+   "props": [
+    {
+     "name": "sample",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "mixed",
+      "calm",
+      "empty"
+     ]
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 193,
+    "bytes_est": 30880
+   }
+  },
   "arc": {
    "name": "Arc",
    "update": true,
@@ -222,6 +247,34 @@
    "cost": {
     "objects": 6,
     "bytes_est": 960
+   }
+  },
+  "bins_view": {
+   "name": "Bins view",
+   "update": true,
+   "props": [
+    {
+     "name": "sample",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "tonight",
+      "today",
+      "collected",
+      "later",
+      "two",
+      "none"
+     ]
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 60,
+    "bytes_est": 9600
    }
   },
   "bottom_sheet": {
@@ -1415,6 +1468,196 @@
     "bytes_est": 640
    }
   },
+  "f1_flag": {
+   "name": "F1 flag",
+   "update": true,
+   "props": [
+    {
+     "name": "flag",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "green",
+      "yellow",
+      "double_yellow",
+      "red",
+      "blue",
+      "bw",
+      "black",
+      "chequered",
+      "sc",
+      "vsc",
+      "none"
+     ]
+    },
+    {
+     "name": "size",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "sm",
+      "lg"
+     ]
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 1,
+    "bytes_est": 160
+   }
+  },
+  "f1_race_control": {
+   "name": "F1 race control",
+   "update": true,
+   "props": [
+    {
+     "name": "lines",
+     "type": "range",
+     "bindable": true,
+     "min": 1,
+     "max": 4
+    },
+    {
+     "name": "width",
+     "type": "range",
+     "bindable": true,
+     "min": 240,
+     "max": 448
+    },
+    {
+     "name": "sim",
+     "type": "bool",
+     "bindable": true
+    },
+    {
+     "name": "speed",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "1x",
+      "10x",
+      "60x"
+     ]
+    },
+    {
+     "name": "jump",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "start",
+      "yellow",
+      "penalty",
+      "black and white",
+      "vsc",
+      "safety car",
+      "red flag",
+      "restart",
+      "fastest lap",
+      "chequered"
+     ]
+    },
+    {
+     "name": "seed",
+     "type": "range",
+     "bindable": true,
+     "min": 1,
+     "max": 20
+    },
+    {
+     "name": "feed",
+     "type": "text",
+     "bindable": true
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 6,
+    "bytes_est": 960
+   }
+  },
+  "f1_race_status": {
+   "name": "F1 race status",
+   "update": true,
+   "props": [
+    {
+     "name": "form",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "pill",
+      "card",
+      "banner"
+     ]
+    },
+    {
+     "name": "width",
+     "type": "range",
+     "bindable": true,
+     "min": 240,
+     "max": 448
+    },
+    {
+     "name": "sim",
+     "type": "bool",
+     "bindable": true
+    },
+    {
+     "name": "speed",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "1x",
+      "10x",
+      "60x"
+     ]
+    },
+    {
+     "name": "jump",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "start",
+      "yellow",
+      "double yellow",
+      "vsc",
+      "safety car",
+      "red flag",
+      "restart",
+      "final lap",
+      "chequered"
+     ]
+    },
+    {
+     "name": "seed",
+     "type": "range",
+     "bindable": true,
+     "min": 1,
+     "max": 20
+    },
+    {
+     "name": "feed",
+     "type": "text",
+     "bindable": true
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 6,
+    "bytes_est": 960
+   }
+  },
   "f1_standings": {
    "name": "F1 standings",
    "update": true,
@@ -2585,6 +2828,41 @@
     "bytes_est": 640
    }
   },
+  "overhead_view": {
+   "name": "Overhead view",
+   "update": true,
+   "props": [
+    {
+     "name": "sample",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "busy",
+      "overhead",
+      "emergency",
+      "quiet"
+     ]
+    },
+    {
+     "name": "view",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "now",
+      "list"
+     ]
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 48,
+    "bytes_est": 7680
+   }
+  },
   "picker_row": {
    "name": "Picker row",
    "update": true,
@@ -3266,6 +3544,17 @@
      "name": "playing",
      "type": "bool",
      "bindable": true
+    },
+    {
+     "name": "icon",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "speaker",
+      "sport-tennis-ball",
+      "sport-goal",
+      "none"
+     ]
     },
     {
      "name": "state",
@@ -4315,7 +4604,48 @@
   "binds": 64,
   "bytes": 8192,
   "screens": 16,
-  "deck_bytes": 4096
+  "deck_bytes": 8192,
+  "pages": 16,
+  "homes": 4,
+  "cards": 24
  },
- "hash": "cae07064"
+ "deck_v": 2,
+ "roles": [
+  "page",
+  "detail",
+  "both"
+ ],
+ "cards": {
+  "light": {
+   "domains": "light,switch",
+   "sizes": "s,m",
+   "taps": "toggle,detail"
+  },
+  "cover": {
+   "domains": "cover",
+   "sizes": "s,m",
+   "taps": "detail,toggle"
+  },
+  "climate": {
+   "domains": "climate",
+   "sizes": "m",
+   "taps": "detail"
+  },
+  "media": {
+   "domains": "media_player",
+   "sizes": "m,l",
+   "taps": "page,detail,toggle"
+  },
+  "sensor": {
+   "domains": "sensor,binary_sensor",
+   "sizes": "s,m",
+   "taps": "detail,none"
+  },
+  "page": {
+   "domains": "",
+   "sizes": "s,m,l",
+   "taps": "page"
+  }
+ },
+ "hash": "2b404cf6"
 }

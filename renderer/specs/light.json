@@ -3,6 +3,7 @@
  "id": "light",
  "name": "Light",
  "rev": 2,
+ "role": "detail",
  "params": {
   "entity": {
    "type": "entity",

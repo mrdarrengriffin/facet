@@ -63,7 +63,26 @@ ok(codes(spec('screen', '{"v":1,')).includes('bad_json'), 'half a spec (cut JSON
 ok(live().rev === 1, 'after the refusals the factory spec is live');
 ok(spec('screen', rev(2)).status === 'applied' && spec('screen', rev(2)).status === 'unchanged', 'the same spec again = unchanged');
 ok(spec('screen', JSON.stringify({ ...JSON.parse(rev(2)), name: 'Edited, same rev' })).status === 'applied', 'an edit with the same rev applies');
-ok(spec('deck', JSON.stringify({ v: 1, rev: 5, screens: [{ id: 'garage' }] })).status === 'refused', 'a deck naming an unknown screen is refused');
+// deck v2 (screen model): pages, a start page, Home cards checked against the card types; v1 decks refused
+const D = (pages, extra = {}) => JSON.stringify({ v: 2, rev: 5, start: 'h', pages: [{ id: 'h', kind: 'home', cards: [] }, ...pages], ...extra });
+const dc = (d) => codes(spec('check', d));
+ok(spec('check', D([{ id: 'media', kind: 'media', name: 'Speaker' }])).ok, 'a v2 deck with a Home and a page passes');
+ok(dc(JSON.stringify({ v: 1, rev: 5, screens: [{ id: 'clock', card: true }] })).includes('bad_version'), 'a v1 deck is refused (bad_version)');
+ok(spec('deck', D([{ id: 'g', kind: 'garage' }])).status === 'refused', 'a deck naming an unknown screen is refused');
+ok(dc(D([{ id: 'l', kind: 'light' }])).includes('not_a_page'), 'a detail screen cannot be a page');
+ok(dc(D([{ id: 's', kind: 'settings' }])).includes('not_a_page'), 'a system screen (Settings) cannot be a page');
+ok(dc(D([{ id: 'h', kind: 'clock' }])).includes('bad_id'), 'two pages with one id are refused');
+ok(dc(D([], { start: 'nope' })).includes('bad_start'), 'start names a page of the deck');
+ok(dc(D([{ id: 'c', kind: 'clock', cards: [] }])).includes('bad_deck'), 'only a Home has cards');
+const H = (cards) => JSON.stringify({ v: 2, rev: 5, start: 'h', pages: [{ id: 'h', kind: 'home', cards }, { id: 'w', kind: 'weather' }] });
+ok(spec('check', H([{ t: 'light', e: 'light.x', size: 's', tap: 'toggle' }, { t: 'page', page: 'w', size: 'l' }])).ok, 'light and page cards pass');
+ok(dc(H([{ t: 'light', e: 'cover.x', size: 's' }])).includes('bad_entity'), 'a card takes only its domains');
+ok(dc(H([{ t: 'climate', e: 'climate.x', size: 's' }])).includes('bad_size'), 'a card takes only its sizes');
+ok(dc(H([{ t: 'cover', e: 'cover.x', size: 'm', tap: 'page' }])).includes('bad_tap'), 'a card takes only its taps');
+ok(dc(H([{ t: 'page', page: 'nope', size: 'm' }])).includes('bad_page'), 'a page card names a page of the deck');
+ok(dc(H([{ t: 'light', e: 'light.x', size: 's', x: 10 }])).includes('style_key'), 'a card has no position (style_key)');
+ok(dc(H(Array(25).fill({ t: 'light', e: 'light.x', size: 's' }))).includes('over_budget'), 'over the card budget is refused');
+ok(codes(bad({ ...factory, rev: 9, role: 'hero' })).includes('bad_role'), 'a spec role is page, detail or both');
 // links: more_row tap -> nav.open; any component's own "open" -> nav.open (screen from the event); not other actions
 const linkSpec = (nodes) => JSON.stringify({ ...factory, rev: 20, nodes });
 ok(spec('check', linkSpec([{ c: 'more_row', p: {}, on: { tap: { do: 'nav.open', screen: 'light' } } }])).ok, 'a more_row tap may open a screen');

@@ -402,12 +402,9 @@ void build_settings(lv_obj_t *parent, fw::Props p) {
     Doc deck;
     deserializeJson(deck, fw::spec::deck_json());
     int on = 0, all = 0;
-    for (ArduinoJson::JsonVariantConst x : deck["screens"].as<ArduinoJson::JsonArrayConst>()) {
-      const std::string id = x["id"] | "";
-      if (id == "settings" || id == "home") continue;
-      all++;
-      on += fw::spec::deck_on(x);
-    }
+    for (ArduinoJson::JsonVariantConst x : deck["pages"].as<ArduinoJson::JsonArrayConst>())
+      if (strcmp(x["kind"] | "", "home")) on++;  // the deck's pages (not the Homes) + the page kinds it has none of
+    all = on + (int) fw::spec::off_kinds().size();
     Doc rd;
     rd["title"] = "Screens", rd["icon"] = "none", rd["trailing"] = "value-chevron";
     rd["value"] = (std::to_string(on) + " of " + std::to_string(all) + " on").c_str();

@@ -3,6 +3,7 @@
  "id": "moon_days",
  "name": "Moon, next days",
  "rev": 1,
+ "role": "detail",
  "header": {
   "label": "Next days",
   "back": true

@@ -3,6 +3,7 @@
  "id": "calendar",
  "name": "Calendar",
  "rev": 3,
+ "role": "page",
  "header": {
   "label": "Calendar",
   "back": true

@@ -3,6 +3,7 @@
  "id": "weather_days",
  "name": "Weather, 5 days",
  "rev": 1,
+ "role": "detail",
  "header": {
   "label": "5 days",
   "back": true

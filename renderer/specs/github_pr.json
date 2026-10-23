@@ -1,4 +1,4 @@
-{"v": 1, "id": "github_pr", "name": "Pull request", "rev": 1,
+{"v": 1, "id": "github_pr", "name": "Pull request", "rev": 1, "role": "detail",
  "params": {"pr": "n1"},
  "header": {"label": "Pull request", "back": true},
  "layout": "center",

@@ -3,6 +3,7 @@
  "id": "thermostat",
  "name": "Thermostat",
  "rev": 2,
+ "role": "both",
  "params": {
   "entity": {
    "type": "entity",

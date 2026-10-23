@@ -2,13 +2,15 @@
 // where each gets its data. Composed only of real components:
 //   header   the Header (back + "Screens" + the screen chrome) at (inset, inset)
 //   content  from lay::top, one scrolling column: the label "on this panel" (screen type label, text-dim, as the
-//            Settings group labels), section-gap, then one List row per deck screen (not Home / Settings): its name,
+//            Settings group labels), section-gap, then one List row per deck page (deck v2; not the Homes), then one
+//            per page kind the deck has none of (off; core/spec.h off_kinds): its name,
 //            the source as the sub line (core/sources.h: the deck entry's source, else the screen's first; "Built in"
 //            when it has none), and a real Toggle appended as its trailing part (on = the screen is on: a Home card)
 //   taps     the Toggle = on / off: kept in this panel's deck (fw::spec::deck_set "on", stored like a sent deck, Home
 //            follows the next time it shows), event "deck" <id> on=true|false; the rest of the row opens the screen's
 //            page (navigate "screen_set?{"id": <id>}")
-// Off screens stay in the deck (their picks kept), so switching one back on brings it back as it was.
+// Off = not in the deck (a page you don't want is deleted, deck v2): switching one on adds it at the end, with its spec's
+// defaults; the start page can't be switched off.
 // Update path: none needed (the device builds it each time it opens; props: none). Pairs: the components'.
 #include "fw.h"
 #include "spec.h"
@@ -78,9 +80,14 @@ void build_screens(lv_obj_t *parent, fw::Props) {
   Doc deck, cat;
   deserializeJson(deck, fw::spec::deck_json());
   fw::src::load(cat);
-  for (ArduinoJson::JsonVariantConst x : deck["screens"].as<ArduinoJson::JsonArrayConst>()) {
-    const std::string id = x["id"] | "";
-    if (id.empty() || id == "settings" || id == "home") continue;
+  // the deck's pages (on, deck order; not the Homes), then the page kinds it has none of (off)
+  std::vector<std::pair<std::string, ArduinoJson::JsonVariantConst>> list;
+  for (ArduinoJson::JsonVariantConst x : deck["pages"].as<ArduinoJson::JsonArrayConst>())
+    if (strcmp(x["kind"] | "", "home")) list.push_back({x["kind"] | "", x});
+  for (const std::string &k : fw::spec::off_kinds()) list.push_back({k, ArduinoJson::JsonVariantConst()});
+  for (const auto &it : list) {
+    const std::string &id = it.first;
+    ArduinoJson::JsonVariantConst x = it.second;
     Doc rd;
     rd["title"] = name_of(id).c_str();
     rd["icon"] = "none";

@@ -3,6 +3,7 @@
  "id": "lightning",
  "name": "Lightning",
  "rev": 1,
+ "role": "detail",
  "header": {
   "label": "Lightning",
   "back": true

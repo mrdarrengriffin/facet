@@ -3,6 +3,7 @@
  "id": "energy_week",
  "name": "Energy, last 7 days",
  "rev": 1,
+ "role": "detail",
  "header": {
   "label": "Last 7 days",
   "back": true

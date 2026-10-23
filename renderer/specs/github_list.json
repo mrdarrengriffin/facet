@@ -1,4 +1,4 @@
-{"v": 1, "id": "github_list", "name": "Pull requests", "rev": 1,
+{"v": 1, "id": "github_list", "name": "Pull requests", "rev": 1, "role": "detail",
  "header": {"label": "Pull requests", "back": true},
  "layout": "list",
  "nodes": [{"c": "github_list", "p": {}, "on": {"open": {"do": "nav.open"}}}]}

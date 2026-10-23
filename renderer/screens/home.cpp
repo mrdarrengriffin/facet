@@ -6,7 +6,7 @@
 //   content  from lay::top, one scrolling column of Cards, two per row (lay::card_w x lay::card_h, a gutter apart both
 //            ways; 480: 2 x 184 + 16 = 384 of the 388 content height, the 4 px left over stays at the bottom), bottom
 //            padding inset
-//   cards    the deck's screens with a card (core/spec.h deck: factory or sent; their order), then the workbench pages
+//   cards    a link per deck page (core/spec.h deck v2: factory or sent; its order; not the Homes), then the workbench pages
 //            in PAGES that this build has (fw::find): title only (the page name as the Card label; no
 //            icon, value or line under it: Darren 2026-10-22, placeholder). Tap = the Card's own tap (event tap + sound open), then
 //            event "navigate" (detail = the page id): the workbench opens that page, the panel host will open the screen
@@ -69,17 +69,22 @@ void build_home(lv_obj_t *parent, fw::Props) {
   lv_obj_set_style_pad_column(c, fw::lay::gutter, 0);
   lv_obj_set_style_pad_row(c, fw::lay::gutter, 0);
 
-  // the deck's cards (a spec screen's name, else the component's), then the workbench pages
+  // a link per deck page (deck v2; the start Home's own cards come with the Home renderer, screen model piece 2):
+  // the page's name, else its spec's; other Homes wait for that renderer too. Then the workbench pages.
   std::vector<std::pair<std::string, std::string>> cards;
   {
     Doc deck;
     deserializeJson(deck, fw::spec::deck_json());
-    for (ArduinoJson::JsonVariantConst x : deck["screens"].as<ArduinoJson::JsonArrayConst>()) {
-      if (!(x["card"] | false) || !fw::spec::deck_on(x)) continue;  // off (Settings > Screens): no card
-      const std::string id = x["id"] | "";
-      Doc sp;
-      if (const char *j = fw::spec::screen_json(id)) { deserializeJson(sp, j); cards.push_back({id, sp["name"] | id.c_str()}); }
-      else if (const fw::Component *comp = fw::find(id.c_str())) cards.push_back({id, comp->name});
+    for (ArduinoJson::JsonVariantConst x : deck["pages"].as<ArduinoJson::JsonArrayConst>()) {
+      const std::string kind = x["kind"] | "";
+      if (kind == "home") continue;
+      std::string name = x["name"] | "";
+      if (name.empty()) {
+        Doc sp;
+        if (const char *j = fw::spec::screen_json(kind)) { deserializeJson(sp, j); name = sp["name"] | kind.c_str(); }
+        else if (const fw::Component *comp = fw::find(kind.c_str())) name = comp->name;
+      }
+      cards.push_back({kind, name});
     }
   }
   for (const char *id : PAGES)
