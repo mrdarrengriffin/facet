@@ -11,29 +11,8 @@
 
 namespace {
 using fw::lunar::DAY;
-std::string hm(double ms) {
-  const time_t t = (time_t) (ms / 1000);
-  struct tm tm;
-  localtime_r(&t, &tm);
-  char b[8];
-  snprintf(b, sizeof b, "%02d:%02d", tm.tm_hour, tm.tm_min);
-  return b;
-}
-// "tonight" / "today" / "tomorrow" / "Fri" within a week / "24 Oct" (docs moonDay)
-std::string day(double ms, double now) {
-  static const char *WD[] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
-  static const char *MO[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
-  const long days = std::lround((fw::lunar::day_start(ms) - fw::lunar::day_start(now)) / DAY);
-  const time_t t = (time_t) (ms / 1000);
-  struct tm tm;
-  localtime_r(&t, &tm);
-  if (days == 0) return tm.tm_hour >= 17 ? "tonight" : "today";
-  if (days == 1) return "tomorrow";
-  char b[16];
-  if (days < 7) snprintf(b, sizeof b, "%s", WD[tm.tm_wday]);
-  else snprintf(b, sizeof b, "%d %s", tm.tm_mday, MO[tm.tm_mon]);
-  return b;
-}
+using fw::lunar::hm;
+std::string day(double ms, double now) { return fw::lunar::day_word(ms, now); }
 double now_of(fw::Props p) {
   const double fixed = p["now"] | 0.0;
   const double base = fixed > 0 ? fixed : (double) time(nullptr) * 1000;
@@ -47,12 +26,10 @@ Facts facts(fw::Props p) {
   Facts f;
   f.frac = (float) m.frac;
   f.south = lat < 0;
-  const bool full = m.next_full < m.next_new;
-  const std::string when = day(full ? m.next_full : m.next_new, now);
-  const bool near = when == "today" || when == "tonight" || when == "tomorrow";
+  std::string name, rest;
+  fw::lunar::line(m, now, &name, &rest);
+  f.line = name + " \xC2\xB7 " + rest;
   char b[96];
-  snprintf(b, sizeof b, "%s · %ld%% · %s %s%s", fw::lunar::PHASE_TEXT[m.phase], std::lround(m.illumination), full ? "full" : "new", near ? "" : "on ", when.c_str());
-  f.line = b;
   snprintf(b, sizeof b, "%ld%%", std::lround(m.illumination));
   f.v[0] = b;
   snprintf(b, sizeof b, "%.1f days", m.age);

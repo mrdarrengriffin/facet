@@ -1,0 +1,17 @@
+{
+ "v": 1,
+ "id": "lightning",
+ "name": "Lightning",
+ "rev": 1,
+ "header": {
+  "label": "Lightning",
+  "back": true
+ },
+ "layout": "center",
+ "nodes": [
+  {
+   "c": "lightning_view",
+   "p": {}
+  }
+ ]
+}

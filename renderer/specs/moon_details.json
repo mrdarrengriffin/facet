@@ -1,0 +1,41 @@
+{
+ "v": 1,
+ "id": "moon_details",
+ "name": "Moon details",
+ "rev": 1,
+ "header": {
+  "label": "Moon details",
+  "back": true
+ },
+ "layout": "list",
+ "nodes": [
+  {
+   "c": "moon_facts",
+   "p": {}
+  },
+  {
+   "c": "label",
+   "p": {
+    "text": "next phases",
+    "type": "label",
+    "colour": "text-dim"
+   }
+  },
+  {
+   "c": "moon_phases",
+   "p": {}
+  },
+  {
+   "c": "more_row",
+   "p": {
+    "text": "next days"
+   },
+   "on": {
+    "tap": {
+     "do": "nav.open",
+     "screen": "moon_days"
+    }
+   }
+  }
+ ]
+}

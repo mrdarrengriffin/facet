@@ -1,0 +1,29 @@
+{
+ "v": 1,
+ "id": "moon",
+ "name": "Moon",
+ "rev": 1,
+ "header": {
+  "label": "Moon",
+  "back": true
+ },
+ "layout": "list",
+ "nodes": [
+  {
+   "c": "moon_view",
+   "p": {}
+  },
+  {
+   "c": "more_row",
+   "p": {
+    "text": "details"
+   },
+   "on": {
+    "tap": {
+     "do": "nav.open",
+     "screen": "moon_details"
+    }
+   }
+  }
+ ]
+}

@@ -78,6 +78,8 @@
       "clock-orbit-step": { "v": 40, "1x": 28, "use": "Clock / Orbit: how much further in each inner orbit runs (docs 40)" },
       "clock-orbit-tick": { "v": 8, "1x": 4, "use": "Clock / Orbit: the every-10th tick of the 120 (docs 6, onto the grid)" },
       "timer-ring": { "v": 432, "1x": 288, "use": "Timer: the ring that empties as it runs (docs 432)" },
+      "moon-hero": { "v": 384, "1x": 256, "use": "Moon: the moon itself, the screen's hero (docs 384)" },
+      "lx-col": { "v": 240, "1x": 160, "use": "Lightning: the left column beside the radar (nearest strike + stats; docs 240)" },
       "clock-dial": { "v": 560, "1x": 376, "use": "Clock / Analogue: the tick scale (docs clock-dial 560 = the Dial scale)" },
       "clock-hand-hour": { "v": 152, "1x": 100, "use": "Clock / Analogue: hour hand length from the centre (docs 150)" },
       "clock-hand-min": { "v": 228, "1x": 152, "use": "Clock / Analogue: minute hand length (docs 228)" },

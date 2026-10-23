@@ -439,11 +439,15 @@ void moon_lit(int S, float frac, bool south, uint8_t *out) {
   });
 }
 struct MoonStatic { uint8_t *disc = nullptr, *edge = nullptr; lv_image_dsc_t d_disc, d_edge; };
-MoonStatic &moon_static(fw::ic::Size size) {  // disc + outline masks of one size, made once
-  static MoonStatic m[fw::ic::N_SIZES];
-  MoonStatic &x = m[size];
-  if (x.disc) return x;
-  const int S = fw::ic::PX[size];
+MoonStatic &moon_static(int S) {  // disc + outline masks of one size (px), made once per size
+  static MoonStatic m[fw::ic::N_SIZES + 2];
+  static int px[fw::ic::N_SIZES + 2] = {};
+  int k = 0;
+  while (k < fw::ic::N_SIZES + 1 && px[k] && px[k] != S) k++;  // the last slot is shared by any further size
+  MoonStatic &x = m[k];
+  if (x.disc && px[k] == S) return x;
+  if (x.disc) { lv_free(x.disc); lv_free(x.edge); x.disc = x.edge = nullptr; }
+  px[k] = S;
   const MoonGeo g = moon_geo(S);
   x.disc = (uint8_t *) lv_malloc(S * S);
   x.edge = (uint8_t *) lv_malloc(S * S);
@@ -473,7 +477,7 @@ void a8_dsc(lv_image_dsc_t &x, int S, const uint8_t *data) {
   x.data_size = (uint32_t) S * S;
   x.data = data;
 }
-struct Moon { fw::ic::Size size; float frac; bool south; uint8_t *lit; lv_image_dsc_t dsc; lv_obj_t *im; };
+struct Moon { int px; float frac; bool south; uint8_t *lit; lv_image_dsc_t dsc; lv_obj_t *im; };
 void moon_free(lv_event_t *ev) {
   Moon *m = (Moon *) lv_event_get_user_data(ev);
   lv_free(m->lit);
@@ -498,17 +502,17 @@ lv_obj_t *moon_layer(lv_obj_t *box, const lv_image_dsc_t *d, lv_color_t c) {
 }
 }  // namespace
 
-lv_obj_t *fw::moon_icon(lv_obj_t *parent, float frac, ic::Size size, bool south) {
-  const int S = ic::PX[size];
+lv_obj_t *fw::moon_icon(lv_obj_t *parent, float frac, ic::Size size, bool south) { return moon_icon_px(parent, frac, ic::PX[size], south); }
+lv_obj_t *fw::moon_icon_px(lv_obj_t *parent, float frac, int S, bool south) {
   lv_obj_t *box = lv_obj_create(parent);
   lv_obj_remove_style_all(box);
   lv_obj_remove_flag(box, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
   lv_obj_add_flag(box, LV_OBJ_FLAG_STATE_TRICKLE);
   lv_obj_set_size(box, S, S);
-  MoonStatic &st = moon_static(size);
+  MoonStatic &st = moon_static(S);
   a8_dsc(st.d_disc, S, st.disc);
   a8_dsc(st.d_edge, S, st.edge);
-  Moon *m = new Moon{size, frac, south, (uint8_t *) lv_malloc(S * S), {}, nullptr};
+  Moon *m = new Moon{S, frac, south, (uint8_t *) lv_malloc(S * S), {}, nullptr};
   moon_lit(S, frac, south, m->lit);
   a8_dsc(m->dsc, S, m->lit);
   lv_obj_add_event_cb(box, moon_free, LV_EVENT_DELETE, m);
@@ -522,7 +526,7 @@ bool fw::moon_icon_set(lv_obj_t *box, float frac, bool south) {
   if (!m) return false;
   if (fabsf(frac - m->frac) < 0.0005f && south == m->south) return true;
   m->frac = frac, m->south = south;
-  moon_lit(ic::PX[m->size], frac, south, m->lit);
+  moon_lit(m->px, frac, south, m->lit);
   lv_obj_invalidate(m->im);
   return true;
 }

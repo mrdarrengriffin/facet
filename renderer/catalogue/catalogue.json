@@ -1782,6 +1782,40 @@
     "bytes_est": 2560
    }
   },
+  "lightning_view": {
+   "name": "Lightning view",
+   "update": true,
+   "props": [
+    {
+     "name": "demo",
+     "type": "bool",
+     "bindable": true
+    },
+    {
+     "name": "quiet",
+     "type": "bool",
+     "bindable": true
+    },
+    {
+     "name": "unit",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "km",
+      "mi"
+     ]
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 31,
+    "bytes_est": 4960
+   }
+  },
   "list_row": {
    "name": "List row",
    "update": true,
@@ -2109,6 +2143,28 @@
     "bytes_est": 800
    }
   },
+  "moon_phases": {
+   "name": "Moon phases",
+   "update": true,
+   "props": [
+    {
+     "name": "lat",
+     "type": "range",
+     "bindable": true,
+     "min": -60,
+     "max": 65
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 29,
+    "bytes_est": 4640
+   }
+  },
   "moon_range": {
    "name": "Moon by day",
    "update": true,
@@ -2146,6 +2202,35 @@
    "cost": {
     "objects": 137,
     "bytes_est": 21920
+   }
+  },
+  "moon_view": {
+   "name": "Moon view",
+   "update": true,
+   "props": [
+    {
+     "name": "lat",
+     "type": "range",
+     "bindable": true,
+     "min": -60,
+     "max": 65
+    },
+    {
+     "name": "lon",
+     "type": "range",
+     "bindable": true,
+     "min": -180,
+     "max": 180
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 9,
+    "bytes_est": 1440
    }
   },
   "more_row": {
@@ -3712,5 +3797,5 @@
   "screens": 16,
   "deck_bytes": 2048
  },
- "hash": "cb43f8db"
+ "hash": "8f584317"
 }

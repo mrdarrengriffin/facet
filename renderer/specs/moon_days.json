@@ -1,0 +1,20 @@
+{
+ "v": 1,
+ "id": "moon_days",
+ "name": "Moon, next days",
+ "rev": 1,
+ "header": {
+  "label": "Next days",
+  "back": true
+ },
+ "layout": "center",
+ "nodes": [
+  {
+   "c": "moon_range",
+   "p": {
+    "start": "",
+    "height": 160
+   }
+  }
+ ]
+}

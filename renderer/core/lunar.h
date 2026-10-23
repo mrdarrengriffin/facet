@@ -4,7 +4,9 @@
 // epoch (double). Header-only (the firmware bundle picks up core/*.h by itself). Used by Moon facts and Moon by day.
 #pragma once
 #include <cmath>
+#include <cstdio>
 #include <ctime>
+#include <string>
 #include <vector>
 
 namespace fw::lunar {
@@ -135,5 +137,40 @@ inline Data data(double ms, double lat, double lon) {
     if (std::isnan(r.next_set) && !std::isnan(st) && st > ms) r.next_set = st;
   }
   return r;
+}
+// "14:05" in the device's time zone
+inline std::string hm(double ms) {
+  const time_t t = (time_t) (ms / 1000);
+  struct tm tm;
+  localtime_r(&t, &tm);
+  char b[8];
+  snprintf(b, sizeof b, "%02d:%02d", tm.tm_hour, tm.tm_min);
+  return b;
+}
+// "tonight" / "today" / "tomorrow" / "Fri" within a week / "24 Oct" (docs moonDay)
+inline std::string day_word(double ms, double now) {
+  static const char *WD[] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
+  static const char *MO[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+  const long days = std::lround((day_start(ms) - day_start(now)) / DAY);
+  const time_t t = (time_t) (ms / 1000);
+  struct tm tm;
+  localtime_r(&t, &tm);
+  if (days == 0) return tm.tm_hour >= 17 ? "tonight" : "today";
+  if (days == 1) return "tomorrow";
+  char b[16];
+  if (days < 7) snprintf(b, sizeof b, "%s", WD[tm.tm_wday]);
+  else snprintf(b, sizeof b, "%d %s", tm.tm_mday, MO[tm.tm_mon]);
+  return b;
+}
+// the one line, in two parts (docs moonLine): name "Waxing gibbous", rest "78% \xB7 full on Fri" (the next full or new
+// moon, whichever comes first)
+inline void line(const Data &m, double now, std::string *name, std::string *rest) {
+  const bool full = m.next_full < m.next_new;
+  const std::string when = day_word(full ? m.next_full : m.next_new, now);
+  const bool near = when == "today" || when == "tonight" || when == "tomorrow";
+  char b[64];
+  snprintf(b, sizeof b, "%ld%% \xC2\xB7 %s %s%s", std::lround(m.illumination), full ? "full" : "new", near ? "" : "on ", when.c_str());
+  *name = PHASE_TEXT[m.phase];
+  *rest = b;
 }
 }  // namespace fw::lunar

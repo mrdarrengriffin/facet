@@ -91,6 +91,8 @@ int weather_anim_parts(int index, ic::Size size);  // number of part masks
 // (weather stroke: 2 px, 3 from 96); south = mirrored. A8 masks computed at the exact px on the device (lit part per
 // phase, disc + outline once per size). moon_icon_set = a new phase redrawn in place.
 lv_obj_t *moon_icon(lv_obj_t *parent, float frac, ic::Size size, bool south = false);
+// the same drawn at any size in px (the Moon screen's hero, lay::moon_hero); masks made once per size
+lv_obj_t *moon_icon_px(lv_obj_t *parent, float frac, int px, bool south = false);
 bool moon_icon_set(lv_obj_t *moon, float frac, bool south = false);
 
 // Motion (tokens/motion.json, README "Motion tokens"): never a raw duration or easing in a component. Named patterns

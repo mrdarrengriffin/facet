@@ -14,6 +14,7 @@
 //           none that would run off the right edge)
 // Motion: bars grow on show (chart motion bars). Scrub: "scrub" (detail "index value") + ticks. Update path: refills
 // (snap: a new start day redraws the chart). Contrast pairs: colour.json sections "chart" + "moon".
+#include <ctime>
 #include "fw.h"
 #include "chart.h"
 #include "lunar.h"
@@ -49,7 +50,13 @@ void fill(lv_obj_t *root, fw::Props p, bool opening) {
   lv_obj_set_style_pad_row(root, fw::sp::s5, 0);
   const char *start = p["start"] | "2026-10-15";
   int y = 2026, mo = 10, da = 15;
-  sscanf(start, "%d-%d-%d", &y, &mo, &da);
+  if (*start) sscanf(start, "%d-%d-%d", &y, &mo, &da);
+  else {  // "" = live: today on the "today" slot (the Moon screen's next-days view)
+    const time_t t = time(nullptr) - (time_t) (p["today"] | 7) * 86400;
+    struct tm tm;
+    localtime_r(&t, &tm);
+    y = tm.tm_year + 1900, mo = tm.tm_mon + 1, da = tm.tm_mday;
+  }
   const long d0 = days_from_civil(y, (unsigned) mo, (unsigned) da);
   const int today = p["today"] | 7;
   const bool south = p["south"] | false;
