@@ -11,8 +11,13 @@
 //   GET  /fw/spec   the spec hello (core/spec.h: protocol, catalogue hash, components, screens + revs, budgets, heap)
 //   POST /fw/spec   {kind: screen|deck|revert, spec?: {...}, id?} -> the apply answer (the HA actions facet_screen /
 //                   facet_deck / facet_revert do the same; workbench.yaml)
+//   GET  /fw/deck   the deck this panel runs (core/spec.h deck_json: the override, else factory) {deck, rev, override}
 //   GET  /fw/ha     the Home Assistant store (core/ha.h): {wants: [[e, a]...], values: {"e|a": value}, bound: n}
 //   POST /fw/bench  a batch of bench cases the panel runs on its own screen (fw_bench.h); GET /fw/bench = the report
+// Web UI (optional): a bundle may add fw_web_gen.h (fw::web::FILES, gzipped files linked into the image's rodata by
+// the host's build, e.g. the Facet editor + the 1x renderer): GET / and each FILES path are served straight from
+// flash in 4 KB chunks (no RAM copy; Content-Encoding gzip, ETag + If-None-Match -> 304, each file's Cache-Control),
+// ahead of ESPHome's own web_server page. No fw_web_gen.h = no web UI (/ stays ESPHome's).
 // Probation: while the running OTA image is still ESP_OTA_IMG_PENDING_VERIFY (safe_mode has not confirmed it yet,
 // boot_is_good_after = FW_PROBATION_S), a warn Status chip on the LVGL top layer (over every screen) says
 // "Update settling: don't unplug m:ss"; a reboot then would roll back to the previous image. Gone when confirmed
@@ -42,6 +47,9 @@
 #include "esphome/core/log.h"
 #include "esphome/core/preferences.h"
 #include "esphome/components/web_server_base/web_server_base.h"
+#if __has_include("fw_web_gen.h")
+#include "fw_web_gen.h"  // namespace fw::web: File, FILES, blob() (the host build's web UI; see "Web UI" above)
+#endif
 #include "fw.h"
 #include "device.h"
 #include "settings_gen.h"
@@ -555,6 +563,59 @@ class Handler : public AsyncWebHandler {
 #define FW_BENCH_FROM_DEVICE
 #include "fw_bench.h"
 
+// ---------------------------------------------------------------- web UI (fw_web_gen.h, optional)
+#if __has_include("fw_web_gen.h")
+namespace web {
+using ::fw::web::File;
+using ::fw::web::FILES;
+class Handler : public AsyncWebHandler {
+ public:
+  static const File *find(const char *path) {
+    for (const File &f : FILES) if (!strcmp(f.path, path)) return &f;
+    return nullptr;
+  }
+  bool canHandle(AsyncWebServerRequest *req) const override {
+    if (req->method() != HTTP_GET) return false;
+    char buf[AsyncWebServerRequest::URL_BUF_SIZE];
+    return find(req->url_to(buf).c_str()) != nullptr;  // url_to() has no query string (?v= cache busting)
+  }
+  void handleRequest(AsyncWebServerRequest *request) override {
+    char buf[AsyncWebServerRequest::URL_BUF_SIZE];
+    const File *f = find(request->url_to(buf).c_str());
+    httpd_req_t *req = *request;
+    httpd_resp_set_hdr(req, "ETag", f->etag);
+    httpd_resp_set_hdr(req, "Cache-Control", f->cache);
+    auto inm = request->get_header("If-None-Match");
+    if (inm.has_value() && *inm == f->etag) {
+      httpd_resp_set_status(req, "304 Not Modified");
+      httpd_resp_send(req, nullptr, 0);
+      return;
+    }
+    httpd_resp_set_status(req, HTTPD_200);
+    httpd_resp_set_type(req, f->type);
+    httpd_resp_set_hdr(req, "Content-Encoding", "gzip");
+    const uint8_t *p = ::fw::web::blob() + f->off;
+    for (uint32_t done = 0; done < f->len;) {
+      const uint32_t n = std::min<uint32_t>(4096, f->len - done);
+      if (httpd_resp_send_chunk(req, (const char *) p + done, n) != ESP_OK) return;  // client gone
+      done += n;
+      // Wi-Fi TX buffers come out of internal RAM on the Guition (shot.h): give it room when it runs low
+      if (heap_caps_get_free_size(MALLOC_CAP_INTERNAL) < 24 * 1024) vTaskDelay(pdMS_TO_TICKS(20));
+    }
+    httpd_resp_send_chunk(req, nullptr, 0);
+  }
+};
+// ahead of every other handler (ESPHome's web_server claims "/"): AsyncWebServer's list is protected, reached through
+// a pointer to member taken in a derived class (legal C++, no layout assumptions)
+struct Front : esphome::web_server_idf::AsyncWebServer {
+  static void add(esphome::web_server_idf::AsyncWebServer *s, AsyncWebHandler *h) {
+    auto list = &Front::handlers_;
+    (s->*list).insert((s->*list).begin(), h);
+  }
+};
+}  // namespace web
+#endif
+
 // ---------------------------------------------------------------- HTTP
 class Handler : public AsyncWebHandler {
  public:
@@ -629,6 +690,13 @@ class Handler : public AsyncWebHandler {
         }
       } else in_loop([&] { spec_hello(d.to<ArduinoJson::JsonObject>()); }, 2000);
       if (ok) serializeJson(d, s);
+    } else if (path == "/fw/deck") {
+      std::string dj;
+      bool over = false;
+      in_loop([&] { dj = fw::spec::deck_json(); over = !fw::spec::S().deck_over.empty(); }, 2000);
+      ArduinoJson::JsonDocument d, dk;
+      if (dj.empty() || deserializeJson(dk, dj)) { code = 503; s = R"({"ok":false,"error":"no deck"})"; }
+      else { d["deck"] = dk; d["rev"] = dk["rev"]; d["override"] = over; serializeJson(d, s); }
     } else if (path == "/fw/ha") {
       ArduinoJson::JsonDocument d;
       in_loop([&] {
@@ -679,7 +747,7 @@ class Handler : public AsyncWebHandler {
       }
     } else {
       code = 404;
-      s = R"({"ok":false,"error":"GET /fw/info, GET /fw/meta, GET /fw/perf[?reset=1], POST /fw/show, GET|POST /fw/settings, GET /fw/ha, POST|GET /fw/bench"})";
+      s = R"({"ok":false,"error":"GET /fw/info, GET /fw/meta, GET /fw/perf[?reset=1], POST /fw/show, GET|POST /fw/settings, GET|POST /fw/spec, GET /fw/deck, GET /fw/ha, POST|GET /fw/bench"})";
     }
     body_.clear();  // a body is only delivered for some content types: never reuse the previous request's
     too_big_ = false;
@@ -744,6 +812,10 @@ inline void setup() {
   if (auto *ws = esphome::web_server_base::global_web_server_base) {
     ws->add_handler(new Handler());
     ws->add_handler(new shot::Handler());  // GET /screenshot
+#if __has_include("fw_web_gen.h")
+    if (auto *srv = ws->get_server()) web::Front::add(srv, new web::Handler());  // GET / = the web UI
+    else ws->add_handler(new web::Handler());  // no server yet: behind web_server ("/" stays ESPHome's, /ed/* works)
+#endif
     lv_timer_create(shot::take, 100, nullptr);
   }
 }
