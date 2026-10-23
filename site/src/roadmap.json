@@ -537,7 +537,7 @@
     "name": "Home",
     "group": "Core",
     "status": "doing",
-    "note": "Placeholder: title-only card grid; real Home will be per room"
+    "note": "Deck v2 pages + a start Home with cards (screen model piece 1); still draws page links until the card renderer (piece 2)"
    },
    {
     "name": "Settings",
@@ -560,8 +560,8 @@
    {
     "name": "Toasts over any screen",
     "group": "Core",
-    "status": "planned",
-    "note": "Demo page showing toasts on top of screens"
+    "status": "doing",
+    "note": "Toast layer over every screen; Settings > Toasts; HA sends toasts (action to wire on device)"
    },
    {
     "name": "Light",
@@ -624,6 +624,12 @@
     "note": "Camera grid plus Frigate detections"
    },
    {
+    "name": "Bins",
+    "group": "Home control",
+    "status": "doing",
+    "note": "Next collection as coloured bins, put-out / bring-in, rhythm; sample data, HA calendar or iCal source to wire"
+   },
+   {
     "name": "Media",
     "group": "Media",
     "status": "done",
@@ -650,8 +656,7 @@
    {
     "name": "Overhead (flights)",
     "group": "Weather and sky",
-    "status": "planned",
-    "note": "What's flying over the house, sky radar, routes"
+    "status": "doing"
    },
    {
     "name": "Calendar",
@@ -692,7 +697,8 @@
    {
     "name": "Agents",
     "group": "Work",
-    "status": "planned"
+    "status": "doing",
+    "note": "Count needing you + tile per agent; sample data, status feed fetch to wire"
    },
    {
     "name": "3D print",
