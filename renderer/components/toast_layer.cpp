@@ -87,9 +87,7 @@ void restack(Layer *L) {
 
 // quiet = a build-time follow-up (stack > 1): no event, no sound, and the toast it pushes out leaves silently too, so a
 // workbench sample's arrival never re-arms its demo reset (the hub mutes only the first 250 ms of a rebuild)
-void push(Layer *L, int si, bool quiet = false) {
-  if (si < 0 || si >= N_SAMPLES) return;
-  const Sample &s = SAMPLES[si];
+void push_one(Layer *L, const Sample &s, bool quiet) {
   Doc d;
   d["icon"] = s.icon, d["tone"] = s.tone, d["title"] = s.title, d["body"] = s.body;
   d["action"] = L->action ? s.action : "";
@@ -125,6 +123,9 @@ void push(Layer *L, int si, bool quiet = false) {
     fw::emit(t, "toast", s.title);
     fw::sound(t, fw::toast::sound);
   }
+}
+void push(Layer *L, int si, bool quiet = false) {
+  if (si >= 0 && si < N_SAMPLES) push_one(L, SAMPLES[si], quiet);
 }
 
 Layer *layer(lv_obj_t *host, fw::Props p) {
@@ -276,3 +277,26 @@ FW_UPDATE(toast_layer) {
   pushes(L, p, true);
   return true;
 }
+
+// The device's toast layer (core/toasts.h): core/device.cpp puts one over every screen of a mounted device (on the
+// display's top layer) and pushes the toasts Home Assistant sends (fw::dev::toast). A pushed toast = the same Toast
+// and the same arrival as the samples above: event "toast" + sound notify, timer on, the oldest pushed out over
+// toast.max. Position = Settings > Toasts (top / bottom), taken when no toast is showing (a stack never flips).
+namespace fw {
+namespace toasts {
+lv_obj_t *layer(lv_obj_t *host) {
+  Doc d;
+  return ::layer(host, d.as<fw::Props>())->ov;
+}
+void push(lv_obj_t *ov, fw::Props t, bool top) {
+  auto *L = ov ? (Layer *) lv_obj_get_user_data(ov) : nullptr;
+  if (!L) return;
+  if (L->shown.empty()) L->top = top;
+  const std::string tone = t["tone"] | "info";
+  const char *icon = tone == "ok" ? "done" : tone == "warn" || tone == "error" ? "alert" : tone == "working" ? "agent" : "bell";
+  const Sample s{t["tone"] | "info", "", t["icon"] | icon, t["title"] | "", t["body"] | "", t["action"] | "",
+                 !strcmp(t["life"] | "normal", "urgent")};
+  push_one(L, s, false);
+}
+}  // namespace toasts
+}  // namespace fw

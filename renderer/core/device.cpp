@@ -3,6 +3,7 @@
 #include <functional>
 #include "device.h"
 #include "spec.h"
+#include "toasts.h"
 #include "settings_gen.h"
 
 namespace fw {
@@ -21,6 +22,7 @@ struct Device {
   Op op = NONE;
   std::string target;
   lv_timer_t *timer = nullptr;
+  lv_obj_t *toasts = nullptr;  // the Toast layer over every screen (the display's top layer; core/toasts.h)
 };
 
 std::vector<Device *> devices;  // every mounted device (usually one; a workbench page may show several)
@@ -283,6 +285,12 @@ void apply(int k, From from) {
 }
 }  // namespace
 
+void toast_put(const std::string &e, const std::string &a, const std::string &v) {
+  if (e != TOAST_PAIR || !a.empty() || v.empty()) return;
+  ArduinoJson::JsonDocument t;
+  if (deserializeJson(t, v) || !t.is<ArduinoJson::JsonObject>()) return;
+  toast(t.as<Props>());
+}
 lv_obj_t *mount(lv_obj_t *parent, const char *start) {
   spec::reload_hook() = reload;  // a sent spec / deck rebuilds what shows it
   spec::want_all();               // the deck's entities (idempotent; the panel also does it at boot)
@@ -298,16 +306,33 @@ lv_obj_t *mount(lv_obj_t *parent, const char *start) {
     auto *d = (Device *) lv_event_get_user_data(e);
     if (d->timer) lv_timer_delete(d->timer);
     if (d->restyle) lv_timer_delete(d->restyle);
+    if (d->toasts) lv_obj_delete(d->toasts);  // its DELETE clears d->toasts
     devices.erase(std::remove(devices.begin(), devices.end(), d), devices.end());
     delete d;
   }, LV_EVENT_DELETE, d);
   listen(d->root, on_emit);
+  // toasts arrive over whatever screen shows: a Toast layer on the display's top layer (above the screen stack and
+  // its cuts); it goes with the device (or with the display, whichever is deleted first)
+  static const bool hooked = (ha::on_put(toast_put), true);
+  (void) hooked;
+  d->toasts = toasts::layer(lv_display_get_layer_top(lv_obj_get_display(d->root)));
+  lv_obj_add_event_cb(d->toasts, [](lv_event_t *e) { ((Device *) lv_event_get_user_data(e))->toasts = nullptr; }, LV_EVENT_DELETE, d);
   const char *s = start && known(start) ? start : "home";
   d->stack.push_back(s);
   std::vector<lv_obj_t *> items;
   show(d, s, items);  // the first screen cut in (no rise: the panel just shows it)
   T = was;
   return d->root;
+}
+void toast(Props t) {
+  const bool top = store().v[index_of("toastPosition")] != "bottom";
+  for (Device *d : devices) {
+    if (!d->toasts) continue;
+    const Theme *was = T;
+    T = d->theme;  // built in the device's look (fw::T is global)
+    toasts::push(d->toasts, t, top);
+    T = was;
+  }
 }
 void reload(const char *id) {
   for (Device *d : devices) {

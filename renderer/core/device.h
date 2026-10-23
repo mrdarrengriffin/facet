@@ -30,12 +30,19 @@
 //              workbench theme, the panel's /fw/show theme). Accent: the stage's set until one is set (workbench).
 //              The rest (sounds, sound pack, volume, idle, units, toasts) is kept and reported for their consumers;
 //              the workbench host switches its sound pack on the "setting" event.
+//   toasts     every mounted device has a Toast layer over its screens (core/toasts.h, on the display's top layer).
+//              toast({tone, title, body, icon?, action?, life?}) pushes one to every device (position = Settings >
+//              Toasts). From Home Assistant: the host puts the toast JSON on the pseudo pair TOAST_PAIR ("facet.toast",
+//              state) through ha::put (the panel: its ESPHome "toast" action; the workbench: fw_ha_put); each put
+//              must differ (include an id or the time), an unchanged value is no new toast.
 // TODO (with the panel host): idle -> clock, as createDevice; Text size (a type-scale rebuild).
 #pragma once
 #include "fw.h"
 
 namespace fw {
 namespace dev {
+constexpr const char *TOAST_PAIR = "facet.toast";  // the HA store pair a host puts a toast's JSON on
+void toast(Props t);  // a toast over every mounted device's screen (see "toasts" above)
 lv_obj_t *mount(lv_obj_t *parent, const char *start = "home");  // the device root (its screen is its one child)
 void go(lv_obj_t *in, const char *id);  // in = the root or anything inside it; queued for the next tick
 void back(lv_obj_t *in);

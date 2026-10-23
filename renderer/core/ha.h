@@ -59,6 +59,7 @@ struct State {
   std::vector<Bound *> bounds;
   WantSink want_sink = nullptr;
   ActSink act_sink = nullptr;
+  std::vector<void (*)(const std::string &e, const std::string &a, const std::string &v)> put_hooks;  // on_put
   lv_timer_t *timer = nullptr;
 };
 inline State &S() {
@@ -82,6 +83,8 @@ inline void on_want(WantSink f) {  // the panel: subscribe; called at once for e
   for (const Pair &p : std::vector<Pair>(S().wants)) f(p.first, p.second);
 }
 inline void on_act(ActSink f) { S().act_sink = f; }
+// a runtime that reacts to a pair without a component (the device's toasts: "facet.toast"); called on every change
+inline void on_put(void (*f)(const std::string &e, const std::string &a, const std::string &v)) { S().put_hooks.push_back(f); }
 inline const std::vector<Pair> &wants() { return S().wants; }
 
 // ---- binds
@@ -179,6 +182,7 @@ inline void put(const std::string &e, const std::string &a, const std::string &v
   auto it = s.store.find({e, a});
   if (it != s.store.end() && it->second == v) return;
   s.store[{e, a}] = v;
+  for (auto f : s.put_hooks) f(e, a, v);  // a changed value only (a toast sends its own id / time)
   for (Bound *b : s.bounds) {
     if (std::find(b->pairs.begin(), b->pairs.end(), Pair{e, a}) == b->pairs.end()) continue;
     if (b->hold_until && b->expect_pair == Pair{e, a} && matches(b, v)) b->hold_until = 0;  // confirmed
