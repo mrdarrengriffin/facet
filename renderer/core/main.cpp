@@ -367,6 +367,26 @@ EMSCRIPTEN_KEEPALIVE const char *fw_rects(int id) {
   return out.c_str();
 }
 
+// the editor's click-to-edit (core/spec.h anchors): every anchored region of the spec screen on stage `id`
+// [{n, c, prop?, params, x, y, w, h}] (device px, as drawn); fw_hit = the smallest one at (x, y), "null" if none
+EMSCRIPTEN_KEEPALIVE const char *fw_hits(int id) {
+  out.clear();
+  Stage *s = get(id);
+  if (!s) return "[]";
+  ArduinoJson::JsonDocument doc;
+  fw::spec::hits(s->d, doc.to<ArduinoJson::JsonArray>());
+  serializeJson(doc, out);
+  return out.c_str();
+}
+EMSCRIPTEN_KEEPALIVE const char *fw_hit(int id, int x, int y) {
+  out.clear();
+  Stage *s = get(id);
+  ArduinoJson::JsonDocument doc;
+  if (!s || !fw::spec::hit(s->d, x, y, doc.to<ArduinoJson::JsonObject>())) return "null";
+  serializeJson(doc, out);
+  return out.c_str();
+}
+
 // resize a stage (display + buffers), keeps its id
 EMSCRIPTEN_KEEPALIVE void fw_stage_resize(int id, int w, int h) {
   Stage *s = get(id);

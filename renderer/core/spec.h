@@ -64,6 +64,7 @@
 #include <cstring>
 #include <functional>
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
 #include "fw.h"
@@ -464,6 +465,8 @@ struct Node {
   lv_obj_t *obj = nullptr;
   std::string comp, on, pending, entity;  // on / pending = JSON; entity = the light its actions act on
   std::string raw_p, raw_on;               // props / on as the spec has them ("$param" kept): screen.param binds again
+  std::vector<std::string> params;         // anchors: the screen parameters this node shows / acts on (spec order)
+  std::map<std::string, std::vector<std::string>> prop_params;  // per prop: the parameters it is fed by
   bool has_brightness = false;
   double c_sent = NAN, c_want = NAN;  // climate set point: last sent, the latest waiting for the interval
   uint32_t c_at = 0;
@@ -485,6 +488,99 @@ struct Screen {
   std::string follow_param, follow_src, follow_last, id;
   bool following = false;
 };
+// the spec screens alive now (the editor's hit-test walks them)
+inline std::vector<Screen *> &live() { static std::vector<Screen *> v; return v; }
+
+// ---- anchors (2026-10-23, the editor's click-to-edit): which screen parameters a part of the screen shows.
+// Every node is anchored to the "$param"s its props and actions use (found when the screen is built, no spec
+// changes). A component may also mark one of its parts with the prop that part shows (fw::spec::anchor(part,
+// "visual")): the editor can then pick that part alone (its parameters = the ones feeding that prop). Hosts read them
+// with hits(): [{n, c, prop?, params, x, y, w, h}] in device px, nodes first then parts; hit() = the smallest at a point.
+inline std::map<lv_obj_t *, std::string> &anchors() { static std::map<lv_obj_t *, std::string> m; return m; }
+inline void anchor(lv_obj_t *part, const char *prop) {
+  if (!anchors().count(part))
+    lv_obj_add_event_cb(part, [](lv_event_t *e) { anchors().erase((lv_obj_t *) lv_event_get_current_target(e)); }, LV_EVENT_DELETE, nullptr);
+  anchors()[part] = prop;
+}
+// the "$name" refs inside v that name a parameter (not the derived "$mode")
+inline void refs(ArduinoJson::JsonVariantConst v, const std::map<std::string, std::string> &pm, std::set<std::string> &out) {
+  if (v.is<const char *>()) {
+    const char *t = v.as<const char *>();
+    for (const char *c = strchr(t, '$'); c; c = strchr(c + 1, '$')) {
+      const char *j = c + 1;
+      while (isalnum((unsigned char) *j) || *j == '_') j++;
+      std::string k(c + 1, j - c - 1);
+      if (k != "mode" && pm.count(k)) out.insert(k);
+    }
+  } else if (v.is<ArduinoJson::JsonObjectConst>()) {
+    for (ArduinoJson::JsonPairConst kv : v.as<ArduinoJson::JsonObjectConst>()) refs(kv.value(), pm, out);
+  } else if (v.is<ArduinoJson::JsonArrayConst>()) {
+    for (ArduinoJson::JsonVariantConst x : v.as<ArduinoJson::JsonArrayConst>()) refs(x, pm, out);
+  }
+}
+inline std::vector<std::string> ordered(const std::set<std::string> &got, ArduinoJson::JsonObjectConst spec_params) {
+  std::vector<std::string> v;
+  for (ArduinoJson::JsonPairConst kv : spec_params)
+    if (got.count(kv.key().c_str())) v.push_back(kv.key().c_str());
+  return v;
+}
+inline void hit_box(ArduinoJson::JsonObject r, lv_obj_t *o) {
+  lv_area_t a;
+  lv_obj_get_coords(o, &a);
+  r["x"] = a.x1;
+  r["y"] = a.y1;
+  r["w"] = lv_area_get_width(&a);
+  r["h"] = lv_area_get_height(&a);
+}
+inline bool shown(lv_obj_t *o, lv_obj_t *upto) {
+  for (; o && o != upto; o = lv_obj_get_parent(o))
+    if (lv_obj_has_flag(o, LV_OBJ_FLAG_HIDDEN)) return false;
+  return true;
+}
+inline void hits(lv_display_t *d, ArduinoJson::JsonArray arr) {
+  lv_obj_t *act = lv_display_get_screen_active(d);
+  for (Screen *s : live()) {
+    if (lv_obj_get_screen(s->root) != act || !shown(s->root, nullptr)) continue;
+    for (size_t i = 0; i < s->nodes.size(); i++) {
+      const Node &n = s->nodes[i];
+      if (!n.obj || n.params.empty() || !shown(n.obj, s->root)) continue;
+      auto r = arr.add<ArduinoJson::JsonObject>();
+      r["n"] = i;
+      r["c"] = n.comp;
+      for (const std::string &p : n.params) r["params"].add(p);
+      hit_box(r, n.obj);
+    }
+    for (auto &kv : anchors()) {
+      Node *n = nullptr;
+      for (lv_obj_t *o = kv.first; o && !n; o = lv_obj_get_parent(o))
+        for (Node &x : s->nodes) if (x.obj == o) { n = &x; break; }
+      if (!n || !shown(kv.first, s->root)) continue;
+      auto it = n->prop_params.find(kv.second);
+      if (it == n->prop_params.end() || it->second.empty()) continue;
+      auto r = arr.add<ArduinoJson::JsonObject>();
+      r["n"] = n - s->nodes.data();
+      r["c"] = n->comp;
+      r["prop"] = kv.second;
+      for (const std::string &p : it->second) r["params"].add(p);
+      hit_box(r, kv.first);
+    }
+  }
+}
+// the smallest anchored box at (x, y), or false
+inline bool hit(lv_display_t *d, int x, int y, ArduinoJson::JsonObject out) {
+  ArduinoJson::JsonDocument all;
+  hits(d, all.to<ArduinoJson::JsonArray>());
+  ArduinoJson::JsonVariantConst best;
+  long area = -1;
+  for (ArduinoJson::JsonVariantConst r : all.as<ArduinoJson::JsonArrayConst>()) {
+    const int rx = r["x"], ry = r["y"], rw = r["w"], rh = r["h"];
+    if (x < rx || y < ry || x >= rx + rw || y >= ry + rh) continue;
+    if (area < 0 || (long) rw * rh < area) { area = (long) rw * rh; best = r; }
+  }
+  if (area < 0) return false;
+  out.set(best.as<ArduinoJson::JsonObjectConst>());
+  return true;
+}
 // "$name" -> the parameter (whole-string refs and inside texts)
 inline std::string subst(const std::string &v, const std::map<std::string, std::string> &pm) {
   if (v.find('$') == std::string::npos) return v;
@@ -819,16 +915,31 @@ inline lv_obj_t *build(lv_obj_t *parent, const std::string &id, Props opened, st
   ArduinoJson::JsonDocument raw;  // the nodes as written ("$param" kept): screen.param binds them again (kept only then)
   const bool rebinds = strstr(json, "\"screen.param\"") != nullptr;
   if (rebinds) raw.set(doc["nodes"]);
+  std::vector<std::pair<std::vector<std::string>, std::map<std::string, std::vector<std::string>>>> anc;  // per node
+  for (ArduinoJson::JsonVariantConst nd : doc["nodes"].as<ArduinoJson::JsonArrayConst>()) {
+    std::set<std::string> all;
+    std::map<std::string, std::vector<std::string>> per;
+    for (ArduinoJson::JsonPairConst kv : nd["p"].as<ArduinoJson::JsonObjectConst>()) {
+      std::set<std::string> one;
+      refs(kv.value(), s->params, one);
+      if (!one.empty()) per[kv.key().c_str()] = ordered(one, doc["params"].as<ArduinoJson::JsonObjectConst>());
+      all.insert(one.begin(), one.end());
+    }
+    refs(nd["on"], s->params, all);
+    anc.emplace_back(ordered(all, doc["params"].as<ArduinoJson::JsonObjectConst>()), std::move(per));
+  }
   subst_all(doc.as<ArduinoJson::JsonVariant>(), s->params);
   const Theme &t = *T;
   s->root = box(parent);
   lv_obj_set_user_data(s->root, s);
+  live().push_back(s);
   lv_obj_set_size(s->root, lay::screen_w, lay::screen_h);
   lv_obj_set_style_bg_color(s->root, t.bg, 0);
   lv_obj_set_style_bg_opa(s->root, LV_OPA_COVER, 0);
   lv_obj_add_event_cb(s->root, [](lv_event_t *e) {
     auto *s = (Screen *) lv_event_get_user_data(e);
     if (s->timer) lv_timer_delete(s->timer);
+    live().erase(std::remove(live().begin(), live().end(), s), live().end());
     delete s;
   }, LV_EVENT_DELETE, s);
   listen(s->root, [](lv_obj_t *from, const char *name, const char *detail, void *user) {
@@ -880,6 +991,7 @@ inline lv_obj_t *build(lv_obj_t *parent, const std::string &id, Props opened, st
     if (!nd["pending"].isNull()) serializeJson(nd["pending"], n.pending);
     if (rebinds && !rn["p"].isNull()) serializeJson(rn["p"], n.raw_p);
     if (rebinds && !rn["on"].isNull()) serializeJson(rn["on"], n.raw_on);
+    if (ni - 1 < anc.size()) { n.params = anc[ni - 1].first; n.prop_params = anc[ni - 1].second; }
     node_actions(n);
     if (!nd["on"]["long"].isNull())
       lv_obj_add_event_cb(n.obj, [](lv_event_t *e) {  // a long press (no tap after it)
