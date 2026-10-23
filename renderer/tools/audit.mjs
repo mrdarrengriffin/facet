@@ -3,7 +3,8 @@
 // there's nothing off about them. The components don't clip out of their box and it's not cut off ... tests on
 // animations to make sure that they follow the right path"). README "Audit". Runs on the WASM build, headless, over
 // every registered component and screen x every variant x theme (dark, light) for one density, and checks:
-//   outside   no ink outside the component's own box (+ the marks it bleeds on purpose: fw::bleed / ext draw size)
+//   outside   no ink outside the component's own box (+ the marks it bleeds on purpose: fw::bleed / ext draw size);
+//             no visible part at least half off the stage (it would draw where no pixel is checked)
 //   clip      nothing is cut off: the same render with every object allowed to draw outside its box (fw_unclip) must
 //             give the same pixels; whatever differs was clipped (an ancestor's box, a custom draw's own box). Objects
 //             marked fw::qa::clips(obj, why) and scroll containers keep their clip
@@ -24,8 +25,9 @@
 //             a toast layer) say so with fw::qa::free(obj, "overlay: <why>")
 // Exceptions: meta "audit": {"skip": {"<check>": "why"}}, or the same on one variant (printed as notes). Failures are errors (exit 1).
 //   node tools/audit.mjs [--den 1x|1.5x|all] [--comp id,id] [--props '{"fades":true}'] [--build <dir>] [--json out.json] [--quiet] [--all-variants]
-// Cache: results per component are kept while the inputs are unchanged (core, tokens, this tool, the component's file
-// and the files of components it builds with fw::find) in $FW_CACHE/audit-<den>.json, so a build re-audits only what
+// Cache: results per component are kept while the inputs are unchanged (core + the charts library foundations/chart.cpp,
+// tokens, this tool, the component's file and the files of components it builds with fw::find or names in a
+// "// audit deps: a, b" comment) in $FW_CACHE/audit-<den>.json, so a build re-audits only what
 // changed. --fresh ignores it.
 import { readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs';
 import { dirname, join, resolve, basename } from 'node:path';
@@ -50,13 +52,16 @@ const TICK = 16;
 const sha = (s) => createHash('sha1').update(s).digest('hex').slice(0, 12);
 const ls = (d, ext) => (existsSync(join(HERE, d)) ? readdirSync(join(HERE, d)).filter((f) => f.endsWith(ext)).sort().map((f) => join(d, f)) : []);
 const read = (f) => readFileSync(join(HERE, f));
-const coreHash = sha(Buffer.concat([...ls('core', '.h'), ...ls('core', '.cpp'), ...ls('tokens', '.json'), 'tools/audit.mjs', 'tools/audit_screens.mjs'].flatMap((f) => [Buffer.from(f), read(f)])));
+const coreHash = sha(Buffer.concat([...ls('core', '.h'), ...ls('core', '.cpp'), 'foundations/chart.cpp', ...ls('tokens', '.json'), 'tools/audit.mjs', 'tools/audit_screens.mjs'].flatMap((f) => [Buffer.from(f), read(f)])));
 const srcOf = {};
 for (const d of ['components', 'screens', 'foundations']) for (const f of ls(d, '.cpp')) srcOf[basename(f, '.cpp')] = f;
 const deps = (id, seen = new Set()) => {
   if (seen.has(id) || !srcOf[id]) return seen;
   seen.add(id);
-  for (const m of read(srcOf[id]).toString().matchAll(/fw::find\("([a-z_0-9]+)"\)/g)) deps(m[1], seen);
+  const src = read(srcOf[id]).toString();
+  for (const m of src.matchAll(/fw::find\("([a-z_0-9]+)"\)/g)) deps(m[1], seen);
+  // a file that calls another component's code directly (not through fw::find) says so: "// audit deps: a, b"
+  for (const m of src.matchAll(/\/\/ audit deps: ([a-z_0-9, ]+)/g)) for (const d of m[1].split(/[, ]+/)) if (d) deps(d, seen);
   return seen;
 };
 const compHash = (id) => sha(coreHash + [...deps(id)].sort().map((d) => d + sha(read(srcOf[d]))).join());
@@ -146,6 +151,16 @@ function runCase(m, den, c, props, light, vskip = {}) {
   if (!screen && !skip.outside) {
     const o = outside(pxA, allowed(os));
     if (o) errs.push(`outside: ${o.n} px of ink outside the component's box (${o.bb.join(',')})`);
+    // parts placed off the stage draw where no pixel can be checked (2026-10-22: two card-preview mascots at x 72 of a
+    // 72 box, read as width 0 before layout, their ancestors overflow-visible for the mascot's bleed): a visible object
+    // at least half outside the stage, with nothing above it clipping, is an error
+    for (const o of os) {
+      if (o.p < 0 || o.opa === 0 || !o.w || !o.h) continue;
+      let k = o.p; while (k >= 0 && os[k].ov && !os[k].sc) k = os[k].p;
+      if (k >= 0) continue;  // an ancestor clips it (or scrolls it out of view): it cannot draw off the stage
+      const vis = Math.max(0, Math.min(o.x + o.w, W) - Math.max(o.x, 0)) * Math.max(0, Math.min(o.y + o.h, H) - Math.max(o.y, 0));
+      if (vis * 2 < o.w * o.h) { errs.push(`outside: a ${o.t || 'obj'} ${o.w}x${o.h} at ${o.x},${o.y} is ${vis ? 'mostly' : 'wholly'} off the ${W}x${H} stage`); break; }
+    }
   } else if (skip.outside) notes.push(`outside skipped: ${skip.outside}`);
   // ---- stale: what the partial redraws left on screen must equal a full redraw at the same moment (an animation that
   // invalidates too little leaves old pixels behind)

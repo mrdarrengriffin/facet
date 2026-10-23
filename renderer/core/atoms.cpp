@@ -369,8 +369,11 @@ lv_obj_t *value_arc(lv_obj_t *parent, int d, const ArcLook &k) {
   lv_obj_remove_flag(a, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
   lv_obj_set_size(a, d, d);
   lv_arc_set_rotation(a, 0);
-  const float end = k.start + k.range;
-  lv_arc_set_bg_angles(a, (lv_value_precise_t) k.start, (lv_value_precise_t) (end >= 360.0f ? end - 360.0f : end));
+  // a full turn ends 1 degree short of its start (lv_arc draws nothing when the two angles meet: the 2026-10-22 timer
+  // preview showed no ring at all; docs arc() end 269 for a 270 start, the same rule)
+  float end = k.start + std::min(k.range, 359.0f);
+  while (end >= 360.0f) end -= 360.0f;
+  lv_arc_set_bg_angles(a, (lv_value_precise_t) k.start, (lv_value_precise_t) end);
   lv_arc_set_range(a, 0, k.steps);
   lv_arc_set_value(a, 0);
   lv_obj_set_style_arc_width(a, k.track_w, LV_PART_MAIN);
@@ -405,6 +408,38 @@ float ring_frac(lv_obj_t *o, lv_point_t pt, float start, float range, float *dis
   else f = rel / range;
   if (held >= 0 && range < 360.0f && std::fabs(f - held) > 0.5f) f = held > 0.5f ? 1.0f : 0.0f;  // never across the gap
   return f;
+}
+
+
+// ---- scroll track (atoms.h)
+namespace {
+void track_draw(lv_event_t *e) {
+  auto *o = (lv_obj_t *) lv_event_get_current_target(e);
+  if (lv_obj_get_scroll_top(o) <= 0 && lv_obj_get_scroll_bottom(o) <= 0) return;  // nothing to scroll: no track
+  lv_area_t a;
+  lv_obj_get_coords(o, &a);
+  lv_draw_rect_dsc_t d;
+  lv_draw_rect_dsc_init(&d);
+  d.bg_color = T->line;
+  d.radius = LV_RADIUS_CIRCLE;
+  const int w = sp::s1;
+  lv_area_t t = {a.x2 - w + 1, a.y1, a.x2, a.y2};
+  lv_draw_rect(lv_event_get_layer(e), &d, &t);
+}
+}  // namespace
+void scroll_track(lv_obj_t *o) {
+  lv_obj_set_scrollbar_mode(o, LV_SCROLLBAR_MODE_AUTO);
+  lv_obj_set_scroll_dir(o, LV_DIR_VER);
+  lv_obj_set_style_width(o, sp::s1, LV_PART_SCROLLBAR);
+  lv_obj_set_style_pad_right(o, 0, LV_PART_SCROLLBAR);
+  lv_obj_set_style_pad_ver(o, 0, LV_PART_SCROLLBAR);
+  lv_obj_set_style_radius(o, LV_RADIUS_CIRCLE, LV_PART_SCROLLBAR);
+  lv_obj_set_style_bg_color(o, T->text_dim, LV_PART_SCROLLBAR);
+  lv_obj_set_style_bg_opa(o, LV_OPA_COVER, LV_PART_SCROLLBAR);
+  lv_obj_set_style_bg_opa(o, LV_OPA_COVER, LV_PART_SCROLLBAR | LV_STATE_SCROLLED);
+  lv_obj_set_style_pad_right(o, lay::gutter, 0);  // the bar + the gap: the content's right margin = its left one
+  lv_obj_remove_event_cb(o, track_draw);
+  lv_obj_add_event_cb(o, track_draw, LV_EVENT_DRAW_MAIN_END, nullptr);
 }
 
 }  // namespace fw

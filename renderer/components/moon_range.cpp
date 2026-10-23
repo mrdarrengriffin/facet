@@ -5,7 +5,7 @@
 // the now marker and the scrub are the Bar chart's; marks = the Moon phase glyph (core fw::moon_icon) at ic::icon.
 //   days    one sp::s1 (4) bar + ch::bar_gap (4) per day = 8 px a day at both densities (docs: 8 px a day at 720, bar 6 +
 //           gap 2 off the grid), across lay::content_w (the Moon screen's content width; docs width control)
-//   moon    the evening moon (21:00 UTC) from the mean synodic month (29.53 d from a new moon, 2000-01-06 18:14 UTC),
+//   moon    the evening moon (21:00 UTC) from the sun-moon elongation (core/lunar.h, docs moonFrac),
 //           illumination (1 - cos 2 pi f) / 2; new / first / full / last = the day the phase crosses 0 / .25 / .5 / .75
 //           (docs: Meeus moonFrac; a real screen gets its days from the moon entity, this is the workbench sample)
 //   colours full = the chart highlight (accent), before today = compare (line-hi, decor: the readout and the month
@@ -16,13 +16,11 @@
 // (snap: a new start day redraws the chart). Contrast pairs: colour.json sections "chart" + "moon".
 #include "fw.h"
 #include "chart.h"
+#include "lunar.h"
 
 namespace {
-constexpr double SYNODIC = 29.530588853, NEW_JD = 2451550.25972;  // a known new moon: 2000-01-06 18:14 UTC
-double frac_at(double unix_days) {
-  const double jd = unix_days + 2440587.5, f = std::fmod((jd - NEW_JD) / SYNODIC, 1.0);
-  return f < 0 ? f + 1 : f;
-}
+// the moon's place in its month from the sun-moon elongation (core/lunar.h = docs moonFrac; was the mean month)
+double frac_at(double unix_days) { return fw::lunar::frac(unix_days * fw::lunar::DAY); }
 // days since 1970-01-01 of a civil date (Howard Hinnant's days_from_civil)
 long days_from_civil(int y, unsigned m, unsigned d) {
   y -= m <= 2;
@@ -63,7 +61,7 @@ void fill(lv_obj_t *root, fw::Props p, bool opening) {
     const double f0 = frac_at(d0 + i), f1 = frac_at(d0 + i + 1), f = frac_at(d0 + i + 21.0 / 24);
     const auto across = [&](double x) { return f0 < x && f1 >= x; };
     ev[i] = f1 < f0 ? 1 : across(0.5) ? 2 : 0;
-    o.v.push_back((float) std::lround((1 - std::cos(2 * 3.14159265 * f)) / 2 * 100));
+    o.v.push_back((float) std::lround(fw::lunar::illumination(f) * 100));
     o.col.push_back(ev[i] == 2 ? fw::ch::ink::highlight(t) : i < today ? fw::ch::series(t, 3) : fw::ch::series(t, 1));
     int yy; unsigned mm, dd;
     civil_from_days(d0 + i, &yy, &mm, &dd);

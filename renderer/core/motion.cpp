@@ -65,7 +65,9 @@ void transition(lv_style_transition_dsc_t *d, Id p, const lv_style_prop_t *props
 void animate(lv_obj_t *o, mo::Id p, const Anim &x) {
   lv_anim_delete(o, x.exec);
   const uint32_t ms = mo::duration(o, p, x.ch);
-  if (!ms || (x.loop && mo::reduced(o))) {  // instant (or a loop with reduced motion: resting frame)
+  // nothing to move (from == to, not a loop): set it and finish now, no animation running for nothing (2026-10-22
+  // visual check: Dial at 0 / off ran a 0 -> 0 sweep every build, a panel redraw timer for no pixels)
+  if (!ms || (x.loop && mo::reduced(o)) || (!x.loop && x.from == x.to)) {  // instant (or a loop with reduced motion: resting frame)
     x.exec(o, x.loop ? x.from : x.to);
     if (x.done) {
       lv_anim_t a;

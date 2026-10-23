@@ -50,35 +50,8 @@ lv_obj_t *line(lv_obj_t *parent, fw::ty::Id s, const char *txt, lv_color_t c) {
   return l;
 }
 
-bool has_ci(const std::string &s, const char *w) {
-  std::string a = s;
-  for (char &c : a) c = (char) tolower((unsigned char) c);
-  return a.find(w) != std::string::npos;
-}
-
-// docs mascot.ts moodFor(kind, status)
-fw::mas::Mood mood_for(const char *kind, const std::string &status) {
-  if (has_ci(status, "error") || has_ci(status, "failed")) return fw::mas::error;
-  if (!strcmp(kind, "working")) return fw::mas::working;
-  if (!strcmp(kind, "needs")) return fw::mas::needs;
-  if (!strcmp(kind, "idle")) return fw::mas::sleeping;
-  if (!strcmp(kind, "done")) {  // "done · 40m ago": done when it finished within 2 h, else idle
-    int mins = 9999;
-    for (size_t i = 0; i < status.size(); i++) {
-      if (!isdigit((unsigned char) status[i]) || (i && isdigit((unsigned char) status[i - 1]))) continue;
-      size_t j = i;
-      long n = 0;
-      while (j < status.size() && isdigit((unsigned char) status[j])) n = n * 10 + (status[j++] - '0');
-      while (j < status.size() && status[j] == ' ') j++;
-      const char u = j < status.size() ? status[j] : 0;
-      const bool word_end = j + 1 >= status.size() || !isalpha((unsigned char) status[j + 1]);
-      const int k = u == 'm' ? 1 : u == 'h' ? 60 : u == 'd' ? 1440 : u == 'w' ? 10080 : 0;
-      if (k && word_end) { mins = (int) (n * k); break; }
-    }
-    return mins <= 120 ? fw::mas::done : fw::mas::idle;
-  }
-  return fw::mas::idle;
-}
+// docs mascot.ts moodFor(kind, status): core fw::mascot_mood_for (core/mascot.h), shared with the Mascot mood page
+fw::mas::Mood mood_for(const char *kind, const std::string &status) { return fw::mascot_mood_for(kind, status.c_str()); }
 
 // a states.json colour role's token name (fw::st::ROLES), for parts that take a token name (the mascot)
 const char *role_token(const char *state, const char *role) {

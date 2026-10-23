@@ -20,6 +20,7 @@
     "clock-tick": { "ms": 1000, "group": "ambient", "use": "seconds tick" },
     "clock-progress": { "ms": 1000, "group": "ambient", "use": "progress ring step" },
     "pulse": { "ms": 2200, "group": "ambient", "use": "working pulse (one breath)" },
+    "ripple": { "ms": 600, "group": "ui", "use": "a ripple from a point: a new lightning strike's ring grows and fades (docs radar.ts flash 600 ms ease-out)" },
     "disc-marker": { "ms": 8000, "group": "ambient", "use": "media disc turn" },
     "orbit-b": { "ms": 23000, "group": "ambient", "use": "orbit clock, inner ring" },
     "orbit-c": { "ms": 37000, "group": "ambient", "use": "orbit clock, middle ring" },
@@ -72,6 +73,7 @@
     "screen": { "label": "Screen transition (content rise)", "duration": "rise", "easing": "ease-out", "animates": "cut to the new screen (the old one goes at once), then its blocks, grouped into rows by their top (side by side = one row), fade in and rise by the offset: header first, each row a stagger later, at most max-steps steps (later rows share the last delay), hidden until they start; back to Home they drop in from above", "offset": { "v": 8, "1x": 4 }, "stagger": 40, "max-steps": 6, "reduced": "instant", "use": "open a screen, back to Home (= Facet motion.transition.rise, the old lab's Content rise, Darren's pick facet-6; instant = option for slow boards)" },
     "value": { "label": "Value change", "duration": "dial-sweep", "easing": "ease-out", "animates": "the shown number and its arc / bar sweep from the old value to the new one", "reduced": "instant", "use": "dials, thermostat, counters, a new reading" },
     "clock-hand": { "label": "Clock hand", "duration": "clock-hand", "easing": "ease-out", "animates": "the hand turns to the new minute", "reduced": "instant", "use": "analogue clocks" },
+    "ripple": { "label": "Ripple", "duration": "ripple", "easing": "ease-out", "animates": "a small ring at a point grows to 6x (its stroke with it) and fades to 0, once", "reduced": "instant", "use": "a new event at a place: a lightning strike on the radar (Darren 2026-10-22: the docs ripple, softer than a flash)" },
     "pulse": { "label": "Pulse", "duration": "pulse", "easing": "ease-in-out", "animates": "opacity breathes from 100 % to opacity.pulse-min and back, forever", "reduced": "still", "use": "working / live indicators" },
     "weather": { "label": "Weather icon", "duration": "wx-rays", "easing": "linear", "animates": "a few small parts of the icon: rays turn, clouds drift 1-2 units, drops / snow / hail fall and fade, the bolt flashes, fog / wind lines slide, stars twinkle (keyframes per part: weather)", "reduced": "still", "use": "weather icons on the Home card and the Weather hero (reduced = the static master)" }
   },

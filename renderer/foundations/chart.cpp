@@ -465,8 +465,9 @@ Line *line_chart(lv_obj_t *parent, const Theme &t, const LineOpts &o) {
     delete L;
   }, LV_EVENT_DELETE, L);
   if (o.grid) grid_lines(L->root, t, o.w, gt(L), gb(L));
-  if (o.baseline_dots)  // the docs sparkline: a dotted baseline, no grid
-    for (int x = 0; x < o.w; x += ch::dash + ch::dash_gap) rect(L->root, x, gb(L), std::min(ch::dash, o.w - x), ch::grid, ch::ink::grid(t));
+  if (o.baseline_dots)  // the docs sparkline: a dotted baseline on the box's bottom edge (docs y = h - 0.5), under the
+    // lowest point, no grid (2026-10-22 reference check: it sat on the plot bottom and the line ran through its dots)
+    for (int x = 0; x < o.w; x += ch::dash + ch::dash_gap) rect(L->root, x, o.h - ch::grid, std::min(ch::dash, o.w - x), ch::grid, ch::ink::grid(t));
   const int n = std::max<int>(2, L->v.size());
   L->tw = L->v.size() < 2 ? o.w : o.w + (int) std::ceil(slot(L, n)) + L->weight + 2;  // room for one more point (shift)
   L->track = box(L->root);

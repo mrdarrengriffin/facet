@@ -1,0 +1,335 @@
+{
+ "about": "Astro originals for ported components (tools/visual.mjs reference check): each WASM variant (comp + variant label) against an element of a docs explorer item (components/#<item>, the index-th match of selector, default '.explorer__preview .ex-prev'), captured headless in both themes at 720 into tests/ref/ (kept in the repo: the Astro originals are frozen). astro.static = a capture made by hand (an Astro part with no explorer item), never re-captured. ssim / iou = per-reference thresholds (default 0.8 / 0.6; SSIM on luminance with the background taken away); under them = flagged for review, never a failure. crop = compare the ink boxes only (both cropped to their ink, the docs one scaled to the WASM one): for whole-component references whose stage padding differs.",
+ "refs": [
+  {
+   "comp": "card_previews",
+   "variant": "agents",
+   "astro": {
+    "item": "previews",
+    "index": 0
+   }
+  },
+  {
+   "comp": "card_previews",
+   "variant": "media",
+   "astro": {
+    "item": "previews",
+    "index": 1
+   }
+  },
+  {
+   "comp": "card_previews",
+   "variant": "dial",
+   "astro": {
+    "item": "previews",
+    "index": 2
+   }
+  },
+  {
+   "comp": "card_previews",
+   "variant": "switch \u00b7 unavailable",
+   "astro": {
+    "static": "previewSwitch(null)"
+   },
+   "note": "rendered once from @facet/ui previewSwitch on the surface (not in the docs explorer)"
+  },
+  {
+   "comp": "card_previews",
+   "variant": "switch \u00b7 off",
+   "astro": {
+    "static": "previewSwitch(false)"
+   },
+   "note": "rendered once from @facet/ui previewSwitch on the surface (not in the docs explorer)"
+  },
+  {
+   "comp": "card_previews",
+   "variant": "switch \u00b7 on",
+   "astro": {
+    "static": "previewSwitch(true)"
+   },
+   "note": "rendered once from @facet/ui previewSwitch on the surface (not in the docs explorer)"
+  },
+  {
+   "comp": "card_previews",
+   "variant": "clock",
+   "astro": {
+    "item": "previews",
+    "index": 3
+   }
+  },
+  {
+   "comp": "card_previews",
+   "variant": "github",
+   "astro": {
+    "item": "previews",
+    "index": 4
+   }
+  },
+  {
+   "comp": "card_previews",
+   "variant": "energy",
+   "astro": {
+    "item": "previews",
+    "index": 5
+   },
+   "note": "docs data is today's energy at capture time"
+  },
+  {
+   "comp": "card_previews",
+   "variant": "lightning",
+   "astro": {
+    "item": "previews",
+    "index": 6
+   },
+   "note": "docs storm is at capture time"
+  },
+  {
+   "comp": "card_previews",
+   "variant": "timer",
+   "astro": {
+    "item": "previews",
+    "index": 7
+   }
+  },
+  {
+   "comp": "tick_ring",
+   "variant": "default",
+   "astro": {
+    "item": "tick-ring",
+    "selector": "[data-ex-stage] > *"
+   },
+   "crop": true,
+   "note": "docs explorer default controls vs the WASM default: values may differ"
+  },
+  {
+   "comp": "arc",
+   "variant": "default",
+   "astro": {
+    "item": "arc",
+    "selector": "[data-ex-stage] > *"
+   },
+   "crop": true,
+   "note": "docs explorer default controls vs the WASM default: values may differ"
+  },
+  {
+   "comp": "checkbox",
+   "variant": "default",
+   "astro": {
+    "item": "checkbox",
+    "selector": "[data-ex-stage] > *"
+   },
+   "crop": true,
+   "note": "docs explorer default controls vs the WASM default: values may differ"
+  },
+  {
+   "comp": "media_disc",
+   "variant": "default",
+   "astro": {
+    "item": "disc",
+    "selector": "[data-ex-stage] > *"
+   },
+   "crop": true,
+   "note": "docs explorer default controls vs the WASM default: values may differ"
+  },
+  {
+   "comp": "media_visual",
+   "variant": "default",
+   "astro": {
+    "item": "media-visual",
+    "selector": "[data-ex-stage] > *"
+   },
+   "crop": true,
+   "note": "docs explorer default controls vs the WASM default: values may differ"
+  },
+  {
+   "comp": "readout",
+   "variant": "default",
+   "astro": {
+    "item": "readout",
+    "selector": "[data-ex-stage] > *"
+   },
+   "crop": true,
+   "note": "docs explorer default controls vs the WASM default: values may differ"
+  },
+  {
+   "comp": "moon_facts",
+   "variant": "default",
+   "astro": {
+    "item": "moon-facts",
+    "selector": "[data-ex-stage] > *"
+   },
+   "crop": true,
+   "note": "docs explorer default controls vs the WASM default: values may differ"
+  },
+  {
+   "comp": "state_chip",
+   "variant": "default",
+   "astro": {
+    "item": "state-chip",
+    "selector": "[data-ex-stage] > *"
+   },
+   "crop": true,
+   "note": "docs explorer default controls vs the WASM default: values may differ"
+  },
+  {
+   "comp": "pr_row",
+   "variant": "default",
+   "astro": {
+    "item": "pr-row",
+    "selector": "[data-ex-stage] > *"
+   },
+   "crop": true,
+   "note": "docs explorer default controls vs the WASM default: values may differ"
+  },
+  {
+   "comp": "check_row",
+   "variant": "default",
+   "astro": {
+    "item": "check-row",
+    "selector": "[data-ex-stage] > *"
+   },
+   "crop": true,
+   "note": "docs explorer default controls vs the WASM default: values may differ"
+  },
+  {
+   "comp": "empty_state",
+   "variant": "default",
+   "astro": {
+    "item": "empty-state",
+    "selector": "[data-ex-stage] > *"
+   },
+   "crop": true,
+   "note": "docs explorer default controls vs the WASM default: values may differ"
+  },
+  {
+   "comp": "qr_block",
+   "variant": "default",
+   "astro": {
+    "item": "qr-block",
+    "selector": "[data-ex-stage] > *"
+   },
+   "crop": true,
+   "note": "docs explorer default controls vs the WASM default: values may differ"
+  },
+  {
+   "comp": "bar_chart",
+   "variant": "default",
+   "astro": {
+    "item": "bar-chart",
+    "selector": "[data-ex-stage] > *"
+   },
+   "crop": true,
+   "note": "docs explorer default controls vs the WASM default: values may differ"
+  },
+  {
+   "comp": "moon_range",
+   "variant": "default",
+   "astro": {
+    "item": "moon-range",
+    "selector": "[data-ex-stage] > *"
+   },
+   "crop": true,
+   "note": "docs explorer default controls vs the WASM default: values may differ"
+  },
+  {
+   "comp": "rate_strip",
+   "variant": "default",
+   "astro": {
+    "item": "rate-strip",
+    "selector": "[data-ex-stage] > *"
+   },
+   "crop": true,
+   "note": "docs explorer default controls vs the WASM default: values may differ"
+  },
+  {
+   "comp": "sparkline",
+   "variant": "default",
+   "astro": {
+    "item": "sparkline",
+    "selector": "[data-ex-stage] > *"
+   },
+   "crop": true,
+   "note": "docs explorer default controls vs the WASM default: values may differ"
+  },
+  {
+   "comp": "big_number",
+   "variant": "default",
+   "astro": {
+    "item": "big-number",
+    "selector": "[data-ex-stage] > *"
+   },
+   "crop": true,
+   "note": "docs explorer default controls vs the WASM default: values may differ"
+  },
+  {
+   "comp": "delta_chip",
+   "variant": "default",
+   "astro": {
+    "item": "delta-chip",
+    "selector": "[data-ex-stage] > *"
+   },
+   "crop": true,
+   "note": "docs explorer default controls vs the WASM default: values may differ"
+  },
+  {
+   "comp": "donut",
+   "variant": "default",
+   "astro": {
+    "item": "donut",
+    "selector": "[data-ex-stage] > *"
+   },
+   "crop": true,
+   "note": "docs explorer default controls vs the WASM default: values may differ"
+  },
+  {
+   "comp": "legend",
+   "variant": "default",
+   "astro": {
+    "item": "legend",
+    "selector": "[data-ex-stage] > *"
+   },
+   "crop": true,
+   "note": "docs explorer default controls vs the WASM default: values may differ"
+  },
+  {
+   "comp": "time",
+   "variant": "default",
+   "astro": {
+    "item": "time-text",
+    "selector": "[data-ex-stage] > *"
+   },
+   "crop": true,
+   "note": "docs explorer default controls vs the WASM default: values may differ"
+  },
+  {
+   "comp": "date_line",
+   "variant": "default",
+   "astro": {
+    "item": "date-line",
+    "selector": "[data-ex-stage] > *"
+   },
+   "crop": true,
+   "note": "docs explorer default controls vs the WASM default: values may differ"
+  },
+  {
+   "comp": "clock_face",
+   "variant": "default",
+   "astro": {
+    "item": "clock-face",
+    "selector": "[data-ex-stage] > *"
+   },
+   "crop": true,
+   "note": "docs explorer default controls vs the WASM default: values may differ"
+  },
+  {
+   "comp": "lightning_radar",
+   "variant": "default",
+   "astro": {
+    "item": "radar",
+    "selector": "[data-ex-stage] > *"
+   },
+   "crop": true,
+   "note": "docs explorer default controls vs the WASM default: values may differ"
+  }
+ ]
+}

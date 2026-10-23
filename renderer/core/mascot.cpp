@@ -328,4 +328,36 @@ void mascot_replay(lv_obj_t *root) {
   start(m, true);
 }
 
+// docs mascot.ts moodFor(kind, status): moved from the Tile (2026-10-22) so the Mascot mood page shares it
+static bool has_ci(const std::string &s, const char *w) {
+  std::string a = s;
+  for (char &c : a) c = (char) tolower((unsigned char) c);
+  return a.find(w) != std::string::npos;
+}
+
+mas::Mood mascot_mood_for(const char *kind, const char *status_c) {
+  const std::string status = status_c ? status_c : "";
+  if (has_ci(status, "error") || has_ci(status, "failed")) return mas::error;
+  if (!strcmp(kind, "working")) return mas::working;
+  if (!strcmp(kind, "needs")) return mas::needs;
+  if (!strcmp(kind, "idle")) return mas::sleeping;
+  if (!strcmp(kind, "done")) {  // "done · 40m ago": done when it finished within 2 h, else idle
+    int mins = 9999;
+    for (size_t i = 0; i < status.size(); i++) {
+      if (!isdigit((unsigned char) status[i]) || (i && isdigit((unsigned char) status[i - 1]))) continue;
+      size_t j = i;
+      long n = 0;
+      while (j < status.size() && isdigit((unsigned char) status[j])) n = n * 10 + (status[j++] - '0');
+      while (j < status.size() && status[j] == ' ') j++;
+      const char u = j < status.size() ? status[j] : 0;
+      const bool word_end = j + 1 >= status.size() || !isalpha((unsigned char) status[j + 1]);
+      const int k = u == 'm' ? 1 : u == 'h' ? 60 : u == 'd' ? 1440 : u == 'w' ? 10080 : 0;
+      if (k && word_end) { mins = (int) (n * k); break; }
+    }
+    return mins <= 120 ? mas::done : mas::idle;
+  }
+  return mas::idle;
+}
+
+
 }  // namespace fw

@@ -187,9 +187,9 @@
       "use": "donut ring thickness (docs 16)"
     },
     "legend-sw": {
-      "v": 12,
+      "v": 8,
       "1x": 8,
-      "use": "legend swatch (radius chip)"
+      "use": "legend swatch (radius chip; docs 8 radius 2: 8 is on the grid, the radius rounds to chip; was 12, the 2026-10-22 reference check)"
     }
   },
   "grid-lines": 3,

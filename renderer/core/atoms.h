@@ -125,6 +125,12 @@ lv_obj_t *value_arc(lv_obj_t *parent, int d, const ArcLook &look);
 // px from the centre (dials keep their centre free).
 float ring_frac(lv_obj_t *o, lv_point_t pt, float start, float range, float *dist = nullptr, float held = -1.0f);
 
+// Scroll track (docs scrolltrack.ts addScrollTracks(), CSS .f-track): every scrolling area gets a sp::s1 (4) bar at its
+// right edge, the area's height: the track in line, the thumb (how much is in view and where) in text-dim (docs
+// text-mute: under 3:1 on the track, and a position mark is a control boundary). LVGL's own scrollbar draws the thumb
+// (only while there is something to scroll); the track is drawn under it in the area's draw event. The content
+// keeps one gutter on the right (lay::gutter: the 4 px bar + the gap), so the margin to the edge matches the left.
+void scroll_track(lv_obj_t *scroll);
 }  // namespace fw
 // Audit marks (core/audit.h): what the component audit cannot know by itself
 #include "audit.h"

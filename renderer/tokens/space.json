@@ -92,7 +92,15 @@
       "check-state-w": { "v": 64, "1x": 44, "use": "Check row: the state word's right-aligned slot (docs 64)" },
       "empty-h": { "v": 136, "1x": 92, "use": "Empty state box height (docs 136)" },
       "qr": { "v": 176, "1x": 116, "use": "QR block: the code's square (docs size qr 176)" },
-      "qr-block-w": { "v": 208, "1x": 140, "use": "QR block width: the code + the gutter each side (docs size qr-block-w 208)" }
+      "qr-block-w": { "v": 208, "1x": 140, "use": "QR block width: the code + the gutter each side (docs size qr-block-w 208)" },
+      "radar": { "v": 384, "1x": 256, "use": "Lightning radar: the square (docs 384); rings sit at the outer radius x sqrt(km / outer km), on the grid" },
+      "radar-strike": { "v": 8, "1x": 8, "use": "Lightning radar: a strike dot (docs 8; 8 at 480 too, so the newest one's accent edge still shows its white middle)" },
+      "radar-near": { "v": 24, "1x": 16, "use": "Lightning radar: the ring round the nearest strike of the last 15 minutes (docs 24)" },
+      "radar-home": { "v": 16, "1x": 12, "use": "Lightning radar: home in the centre, a blue ring (docs 16)" },
+      "radar-home-dot": { "v": 8, "1x": 4, "use": "Lightning radar: the dot inside home (docs 6, onto the grid)" },
+      "radar-flash": { "v": 48, "1x": 48, "use": "Lightning radar: a new strike's ripple grows from the dot to this (docs scale 6 of the 8 px dot = 48; the dot is 8 at both sizes)" },
+      "preview-strike": { "v": 4, "1x": 4, "use": "Card preview, lightning: a strike dot (docs 4)" },
+      "preview-home": { "v": 8, "1x": 4, "use": "Card previews: the blue centre dot (lightning home, the dial and timer hub; docs 6 / 8, onto the grid)" }
     },
     "radius": {
       "tile": { "v": 0, "1x": 0, "use": "tiles" },

@@ -406,7 +406,10 @@ void frame(void *var, int32_t) {
   const float tauUp[3] = {0.25f, 0.6f, 0.5f}, tauDown[3] = {0.12f, 0.9f, 0.7f};
   d->m = ease(d->m, d->playing ? 1.0f : 0.0f, dt, d->playing ? tauUp[d->kind] : tauDown[d->kind]);
   bool moving = false;
-  if (d->m > 0.0005f && !still) {
+  // the plain vinyl label has no art, so its turn is invisible (dirty_turning draws nothing for it): it does not keep
+  // the clock running (2026-10-22 visual check: a frame clock every frame for no pixels); revisit with the vinyl round
+  const bool turns = d->kind != VINYL;
+  if (d->m > 0.0005f && !still && turns) {
     moving = true;
     if (d->kind == CASSETTE) {  // both spools counter-clockwise at the tape speed at the pack edge
       d->ang[0] -= deg_per_sec(cs::speed, d->sup) * dt * d->m;
@@ -429,7 +432,7 @@ void frame(void *var, int32_t) {
     dirty_box(o, x0, y0, x1, y1);
     moving = true;
   }
-  if (!moving && !d->playing && !d->starting) {  // settled: the clock stops (no idle redraw; never inside lv_anim_start,
+  if (!moving && (!d->playing || !turns) && !d->starting) {  // settled: the clock stops (no idle redraw; never inside lv_anim_start,
     // which runs this once and then still uses the anim: ASan 2026-10-22, heap-use-after-free)
     d->running = false;
     d->last = 0;

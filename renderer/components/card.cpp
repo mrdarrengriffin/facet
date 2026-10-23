@@ -4,7 +4,8 @@
 //   surface fill, 1 px line border, radius card (0); children count from the outer edge (pad - hair, = docs)
 // Layout (flex column, nothing hand-placed):
 //   top row      screen icon (icon size, text-dim) + caps label (type label, text-dim) + status dot (accent, only when
-//                the card is "accent"), the preview artwork top right (weather at the icon size token "card": 72 / 48)
+//                the card is "accent"), the preview artwork top right at the icon size token "card" (72 / 48): a
+//                weather icon, or a card preview (core/previews.h: agents, media, dial, ... lightning)
 //   (grow)
 //   value        type value (64 / 44 box, text; accent card = accent-text), one line, ellipsis
 //     or text    type title, up to two lines bottom-aligned at the same place (a track name), text
@@ -27,6 +28,8 @@
 // Tap = a real CLICKED: fw::emit "tap" (detail = the label) + fw::sound "open" (sound.json: going deeper, a card opens
 // its screen). Contrast pairs: tokens/colour.json section "card".
 #include "fw.h"
+#include "previews.h"
+// audit deps: card_previews
 
 namespace {
 constexpr lv_state_t ST_OFF = fw::st::OFF;  // unavailable (LVGL sends no events to LV_STATE_DISABLED; see Button)
@@ -129,7 +132,8 @@ void fill(lv_obj_t *c, fw::Props p) {
     lv_obj_set_style_bg_opa(dot, accent ? LV_OPA_COVER : LV_OPA_TRANSP, 0);
   }
   const char *pv = p["preview"] | "none";
-  if (!off && strcmp(pv, "none")) fw::icon(top, pv, fw::ic::card, t.text_dim);
+  if (!off && fw::is_preview(pv)) fw::card_preview(top, pv, p);  // the card artwork (components/card_previews.cpp)
+  else if (!off && strcmp(pv, "none")) fw::icon(top, pv, fw::ic::card, t.text_dim);
 
   lv_obj_t *grow = box(c);
   lv_obj_set_width(grow, 0);
@@ -185,7 +189,7 @@ FW_COMPONENT(card, "Card", "components", R"({
   "props": [
     {"name": "label", "type": "text", "default": "Weather"},
     {"name": "icon", "type": "select", "options": ["none", "weather", "media", "timer", "energy", "light"], "default": "weather"},
-    {"name": "preview", "type": "select", "options": ["none", "partly-day", "rain-light", "clear-night"], "default": "partly-day"},
+    {"name": "preview", "type": "select", "options": ["none", "partly-day", "rain-light", "clear-night", "agents", "media", "dial", "switch", "clock", "timer", "github", "energy", "lightning"], "default": "partly-day"},
     {"name": "mode", "type": "select", "options": ["value", "text"], "default": "value"},
     {"name": "value", "type": "text", "default": "13°"},
     {"name": "text", "type": "text", "default": "Paper Lanterns on a Quiet Evening"},
@@ -203,6 +207,7 @@ FW_COMPONENT(card, "Card", "components", R"({
     {"label": "text · two lines", "props": {"label": "Media", "icon": "media", "preview": "none", "mode": "text", "sub": "The Quiet Hours"}},
     {"label": "accent · needs you", "props": {"label": "Timer", "icon": "timer", "preview": "none", "value": "04:32", "sub": "Pasta", "accent": true}},
     {"label": "sub tone · warn", "props": {"preview": "rain-light", "value": "9°", "sub": "Rain from 15:00", "tone": "warn"}},
+    {"label": "preview · energy bars", "props": {"label": "Energy", "icon": "energy", "preview": "energy", "value": "£2.42", "sub": "Today so far"}},
     {"label": "no icon, no preview", "props": {"label": "Energy", "icon": "none", "preview": "none", "value": "£2.42", "sub": "Today so far"}},
     {"label": "unavailable", "props": {"label": "Lights", "icon": "light", "preview": "none", "value": "65%", "sub": "", "state": "unavailable"}}
   ]

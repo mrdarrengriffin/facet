@@ -22,6 +22,9 @@ void mascot_set(lv_obj_t *m, mas::Mood mood, const char *colour = nullptr);
 // restart its patterns from the start of their loop (+ the hop when done)
 void mascot_replay(lv_obj_t *m);
 mas::Mood mascot_mood(const char *id);  // by name; unknown = idle
+// docs moodFor(kind, status): error / failed in the status = error, working, needs, idle = sleeping, done within 2 h
+// ("done · 40m ago") = done else idle; anything else idle
+mas::Mood mascot_mood_for(const char *kind, const char *status);
 int mascot_reach(int scale = 1);        // px the extras + motion reach outside the body box (the bleed)
 
 }  // namespace fw

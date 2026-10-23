@@ -73,6 +73,10 @@
       "press-tint": {"value": 0.05, "use": "opacity of the accent tint over the card surface while pressed (mix press-tint); a theme may set it later"},
       "press-desat": {"value": 0.5, "use": "how far the accent is moved towards neutral grey (text-mute) before tinting the pressed card (0 = pure accent, 1 = grey); a theme may set it later"}
     },
+    "radar": {
+      "faded": {"value": 0.5, "use": "Lightning radar: opacity of a strike 5-15 minutes old (accent; docs 0.5)"},
+      "old": {"value": 0.45, "use": "Lightning radar: opacity of a strike over 15 minutes old (steel; docs 0.45)"}
+    },
     "chip": {
       "tint": {"value": 0.14, "use": "opacity of the tone fill behind a status chip or count badge (docs opacity chip-bg; drawn as bg_opa so it works on the canvas or a card); a theme may set it later"}
     },
@@ -96,6 +100,9 @@
     "chip-info": {"tint": "blue", "over": "bg", "opa": "chip.tint", "use": "status chip / count badge fill: tone info (blue) at chip.tint over the bg"},
     "chip-info-surface": {"tint": "blue", "over": "surface", "opa": "chip.tint", "use": "status chip / count badge fill: tone info (blue) at chip.tint over the surface"},
     "chip-idle": {"tint": "text-dim", "over": "bg", "opa": "chip.tint", "use": "status chip / count badge fill: tone idle (text-dim) at chip.tint over the bg"},
+    "lx-faded": {"tint": "accent", "over": "bg", "opa": "radar.faded", "use": "Lightning radar: a strike 5-15 minutes old (drawn as accent at radar.faded opacity)"},
+    "lx-faded-surface": {"tint": "accent", "over": "surface", "opa": "radar.faded", "use": "Card preview, lightning: a strike 5-15 minutes old on the card"},
+    "lx-old": {"tint": "steel", "over": "bg", "opa": "radar.old", "use": "Lightning radar: a strike over 15 minutes old (steel at radar.old opacity)"},
     "chip-idle-surface": {"tint": "text-dim", "over": "surface", "opa": "chip.tint", "use": "status chip / count badge fill: tone idle (text-dim) at chip.tint over the surface"}
   },
   "contrast": {
@@ -421,7 +428,40 @@
       {"section": "pr_row", "fg": "text-dim", "bg": "surface", "kind": "text", "use": "meta: repo, number, age (docs text-mute for number / age: disabled-only here)"},
       {"section": "pr_row", "fg": "text", "bg": "press-tint", "kind": "text", "use": "title while pressed"},
       {"section": "pr_row", "fg": "text-dim", "bg": "press-tint", "kind": "text", "use": "meta while pressed"},
-      {"section": "pr_row", "fg": "line", "bg": ["bg"], "kind": "decor", "use": "the row edge"}
+      {"section": "pr_row", "fg": "line", "bg": ["bg"], "kind": "decor", "use": "the row edge"},
+      {"section": "readout", "fg": "text-dim", "bg": "bg", "kind": "text", "use": "the label row (icon + caps label) and the detail"},
+      {"section": "readout", "fg": "text", "bg": "bg", "kind": "text", "use": "the state"},
+      {"section": "readout", "fg": "accent-text", "bg": "bg", "kind": "text", "use": "a state that matters (+ the working dot)"},
+      {"section": "readout", "fg": "warn", "bg": "bg", "kind": "text", "use": "out of range (too cold / wet)"},
+      {"section": "readout", "fg": "text-mute", "bg": "bg", "kind": "disabled", "use": "offline: the label row and the state (the unavailable ink)"},
+      {"section": "readout", "fg": "line", "bg": "bg", "kind": "decor", "use": "the hairline between two readouts"},
+      {"section": "scroll_track", "fg": "line", "bg": ["bg", "surface"], "kind": "decor", "use": "the track"},
+      {"section": "scroll_track", "fg": "text-dim", "bg": ["line"], "kind": "ui", "use": "the thumb on the track (docs text-mute: under 3:1)"},
+      {"section": "scroll_track", "fg": "text-dim", "bg": ["bg", "surface"], "kind": "ui", "use": "the thumb against the canvas"},
+      {"section": "radar", "fg": "line-hi", "bg": ["bg", "surface"], "kind": "decor", "use": "distance rings (the labels name them) and the minor 30 degree ticks"},
+      {"section": "radar", "fg": "accent-dim", "bg": ["bg", "surface"], "kind": "decor", "use": "the 25 km alert ring (2 px; its label names it)"},
+      {"section": "radar", "fg": "steel", "bg": ["bg", "surface"], "kind": "ui", "use": "the N / E / S / W ticks"},
+      {"section": "radar", "fg": "text-dim", "bg": ["bg", "surface"], "kind": "text", "use": "ring distances and the N marker (docs text-mute: under 4.5:1)"},
+      {"section": "radar", "fg": "blue", "bg": ["bg", "surface"], "kind": "ui", "use": "home: the ring and its dot"},
+      {"section": "radar", "fg": "accent", "bg": ["bg", "surface"], "kind": "ui", "use": "a strike under 5 minutes old; the edge of one under a minute; the flash"},
+      {"section": "radar", "fg": "on-accent", "bg": ["accent"], "kind": "ui", "use": "the middle of a strike under a minute old, inside its accent edge (docs text: under 3:1 on the dark accents, so on-accent: the newest strike reads as an accent ring)"},
+      {"section": "radar", "fg": "accent-text", "bg": ["bg", "surface"], "kind": "ui", "use": "the ring round the nearest strike"},
+      {"section": "radar", "fg": "lx-faded", "bg": ["bg"], "kind": "decor", "use": "a strike 5-15 minutes old: history, fading on purpose (the fresh strikes carry the alert)"},
+      {"section": "radar", "fg": "lx-old", "bg": ["bg"], "kind": "decor", "use": "a strike over 15 minutes old: history, fading on purpose"},
+      {"section": "card_preview", "fg": "accent", "bg": ["surface"], "kind": "ui", "use": "dial / timer arc, label spot, merge dot, the clock's outer dot, peak bars, fresh strikes, the switch on"},
+      {"section": "card_preview", "fg": "blue", "bg": ["surface"], "kind": "ui", "use": "hubs, home, the record marker, the branch, cheap bars"},
+      {"section": "card_preview", "fg": "steel", "bg": ["surface"], "kind": "ui", "use": "commits, the switch knob off, an orbit dot"},
+      {"section": "card_preview", "fg": "band-normal", "bg": ["surface"], "kind": "ui", "use": "normal price bars"},
+      {"section": "card_preview", "fg": "on-accent", "bg": ["accent"], "kind": "ui", "use": "the switch knob on"},
+      {"section": "card_preview", "fg": "line-hi", "bg": ["surface"], "kind": "decor", "use": "outer rings, the switch outline off (artwork: the card is the control)"},
+      {"section": "card_preview", "fg": "line", "bg": ["surface"], "kind": "decor", "use": "arc tracks, the switch outline unavailable"},
+      {"section": "card_preview", "fg": "groove", "bg": ["surface", "disc"], "kind": "decor", "use": "inner rings, the record's groove"},
+      {"section": "card_preview", "fg": "disc", "bg": ["surface"], "kind": "decor", "use": "the record's face (line-hi edge)"},
+      {"section": "print_model", "fg": "accent", "bg": ["bg"], "kind": "ui", "use": "the last layers printed (accent-press .. accent by face)"},
+      {"section": "print_model", "fg": "text-dim", "bg": ["bg"], "kind": "ui", "use": "the printed part, light theme: text-dim (darkest face) .. surface-press (lit top); dark theme line .. text"},
+      {"section": "print_model", "fg": "text-mute", "bg": ["surface", "bg"], "kind": "decor", "use": "the ghost's hairline edges (dark theme; light: line-hi): the part above the cut, faint on purpose"},
+      {"section": "print_model", "fg": "surface-press", "bg": ["bg"], "kind": "decor", "use": "the ghost fill (surface .. surface-press dark, surface-press .. line light at 60 %)"},
+      {"section": "card_preview", "fg": "lx-faded-surface", "bg": ["surface"], "kind": "decor", "use": "a strike 5-15 minutes old: history, fading on purpose"}
     ]
   },
   "accent": {
