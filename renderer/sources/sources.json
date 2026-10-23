@@ -46,6 +46,8 @@
    {"id": "ha_timers", "kind": "ha", "name": "HA timer helpers", "detect": {"domain": "timer"}},
    {"id": "panel", "kind": "builtin", "name": "On the panel"}]},
   "clock": {"needs": null, "sources": [{"id": "panel", "kind": "builtin", "name": "Panel clock"}]},
+  "agents": {"needs": "AI agents that report their status", "sources": [
+   {"id": "feed", "kind": "direct", "name": "Agent status feed (JSON)", "setup": ["feed URL"]}]},
   "moon": {"needs": null, "sources": [{"id": "panel", "kind": "builtin", "name": "Worked out on the panel"}]}
  }
 }

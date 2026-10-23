@@ -1,0 +1,7 @@
+{"v": 1, "id": "agents", "name": "Agents", "rev": 1,
+ "params": {
+  "sample": {"type": "select", "options": ["mixed", "calm", "empty"], "label": "Sample", "default": "mixed"}
+ },
+ "header": {"label": "Agents", "back": true},
+ "layout": "list",
+ "nodes": [{"c": "agents_view", "p": {"sample": "$sample"}}]}
