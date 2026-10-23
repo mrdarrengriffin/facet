@@ -21,7 +21,9 @@
 // Probation: while the running OTA image is still ESP_OTA_IMG_PENDING_VERIFY (safe_mode has not confirmed it yet,
 // boot_is_good_after = FW_PROBATION_S), a warn Status chip on the LVGL top layer (over every screen) says
 // "Update settling: don't unplug m:ss"; a reboot then would roll back to the previous image. Gone when confirmed
-// ("Update confirmed" ok chip for 4 s). /fw/info "probation_s" = seconds left (-1 = confirmed); YAML binary_sensor.
+// ("Update confirmed" ok chip for 4 s). /fw/info "probation_s" = seconds left (-1 = confirmed); probation_left() for
+// the host's entities (e.g. its Firmware update entity shows the countdown as install progress).
+// Screen: screen_names() / screen_now() / screen_go() = the deck as readable names for a host select (see below).
 // Rendering = fw::render() on one screen of our own (the same call the WASM preview makes): the component centred at
 // true size on the Facet bg; content taller than the screen scrolls (doc pages). The last request is kept in flash and
 // shown again after a reboot. Requests run in the httpd task; anything touching LVGL is handed to the main loop (an
@@ -476,6 +478,105 @@ inline void spec_apply(const char *kind, const std::string &json, ArduinoJson::J
   lv_obj_delete(dry);
   out["ms"] = (int) ((esp_timer_get_time() - t0) / 1000);
   ESP_LOGW("facet_wb", "spec %s %s rev %d: %s", kind, (const char *) (out["id"] | ""), (int) (out["rev"] | -1), (const char *) (out["status"] | ""));
+}
+
+// ---------------------------------------------------------------- Screen (the host's Home Assistant select)
+// The deck as a list of readable names for a host entity (e.g. an ESPHome template select "Screen"): Home, every deck
+// page that is not a Home (its name, else its spec's "name", else the component's name, else the kind), Settings. screen_names() is built once
+// (the host gives the select these options at boot; a deck saved later shows new names after a restart, the select's
+// option list is announced to HA when it connects). screen_now() = the name of the screen on the glass ("" = none of
+// them, e.g. a workbench page or a screen opened from a card); screen_go(name or id) shows the device if a workbench
+// page is up, then opens that screen (Home = back to the root). Main loop only.
+struct Screens {
+  std::vector<std::string> ids, names;
+  bool built = false;
+};
+inline Screens SCR;
+inline void screens_build() {
+  if (SCR.built) return;
+  SCR.built = true;
+  auto add = [](const std::string &id, std::string name) {
+    if (name.empty()) name = id;
+    for (const auto &n : SCR.names)
+      if (n == name) { name += " (" + id + ")"; break; }
+    SCR.ids.push_back(id);
+    SCR.names.push_back(name);
+  };
+  add("home", "Home");
+  // deck v2 (core/spec.h): each page that is not a Home, opened by its kind (as Home's links do), named by the page's
+  // name, else its spec's, else the component's
+  ArduinoJson::JsonDocument d;
+  if (!deserializeJson(d, fw::spec::deck_json()))
+    for (ArduinoJson::JsonVariantConst x : d["pages"].as<ArduinoJson::JsonArrayConst>()) {
+      const std::string kind = x["kind"] | "";
+      if (kind.empty() || kind == "home" || kind == "settings") continue;
+      std::string name = x["name"] | "";
+      ArduinoJson::JsonDocument sd;
+      if (name.empty())
+        if (const char *j = fw::spec::screen_json(kind))
+          if (!deserializeJson(sd, j)) name = sd["name"] | "";
+      if (name.empty())
+        if (const fw::Component *c = fw::find(kind.c_str())) name = c->name ? c->name : "";
+      add(kind, name);
+    }
+  if (fw::find("settings")) add("settings", "Settings");
+}
+inline const std::vector<std::string> &screen_names() {
+  screens_build();
+  return SCR.names;
+}
+// the device root's stack top ("" = the device is not what is shown)
+inline const char *device_top() {
+  if (!S.scr) return "";
+  lv_obj_t *x = lv_obj_get_child_count(S.scr) ? lv_obj_get_child(S.scr, 0) : nullptr;
+  for (int depth = 0; x && depth < 4; depth++) {
+    const char *t = fw::dev::current(x);
+    if (*t) return t;
+    x = lv_obj_get_child_count(x) ? lv_obj_get_child(x, 0) : nullptr;
+  }
+  return "";
+}
+inline lv_obj_t *device_in() {
+  lv_obj_t *x = S.scr && lv_obj_get_child_count(S.scr) ? lv_obj_get_child(S.scr, 0) : nullptr;
+  for (int depth = 0; x && depth < 4; depth++) {
+    if (*fw::dev::current(x)) return x;
+    x = lv_obj_get_child_count(x) ? lv_obj_get_child(x, 0) : nullptr;
+  }
+  return nullptr;
+}
+inline std::string screen_now() {
+  screens_build();
+  std::string top = device_top();
+  const size_t q = top.find('?');
+  if (q != std::string::npos) top.resize(q);
+  for (size_t i = 0; i < SCR.ids.size(); i++)
+    if (SCR.ids[i] == top) return SCR.names[i];
+  return "";
+}
+// name (a screen_names() entry) or a deck screen id -> {ok, error?, screen}
+inline bool screen_go(const std::string &what, ArduinoJson::JsonObject out) {
+  screens_build();
+  std::string id;
+  for (size_t i = 0; i < SCR.ids.size(); i++)
+    if (SCR.names[i] == what || SCR.ids[i] == what) { id = SCR.ids[i]; break; }
+  if (id.empty() && fw::spec::screen_known(what)) id = what;
+  out["screen"] = what;
+  if (id.empty()) { out["ok"] = false; out["error"] = "no such screen"; return false; }
+  if (!device_in()) {  // a workbench page is up: back to the device (same theme / accent as the page)
+    ArduinoJson::JsonDocument req, o;
+    deserializeJson(req, S.shown);
+    if (!req.is<ArduinoJson::JsonObject>()) req.to<ArduinoJson::JsonObject>();
+    req["id"] = "device";
+    req.remove("props");
+    if (!show(req.as<ArduinoJson::JsonObjectConst>(), o.to<ArduinoJson::JsonObject>()) || !device_in()) {
+      out["ok"] = false; out["error"] = "the device runtime is not in this build"; return false;
+    }
+    save();
+  }
+  if (id == "home") fw::dev::home(device_in());
+  else fw::dev::go(device_in(), id.c_str());
+  out["ok"] = true;
+  return true;
 }
 
 // ---------------------------------------------------------------- screenshot (GET /screenshot)

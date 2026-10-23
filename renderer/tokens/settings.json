@@ -114,7 +114,8 @@
       "esphome": {
         "id": "text_size_select",
         "name": "Text size",
-        "icon": "mdi:format-size"
+        "icon": "mdi:format-size",
+        "internal": true
       }
     },
     {
@@ -127,7 +128,8 @@
       "esphome": {
         "id": "ui_sounds",
         "name": "UI sounds",
-        "icon": "mdi:volume-source"
+        "icon": "mdi:volume-source",
+        "internal": true
       }
     },
     {
@@ -172,7 +174,8 @@
       "esphome": {
         "id": "sound_pack_select",
         "name": "Sound pack",
-        "icon": "mdi:music-box-multiple-outline"
+        "icon": "mdi:music-box-multiple-outline",
+        "internal": true
       }
     },
     {
@@ -189,7 +192,8 @@
       "esphome": {
         "id": "ui_volume",
         "name": "Volume",
-        "icon": "mdi:volume-high"
+        "icon": "mdi:volume-high",
+        "internal": true
       }
     },
     {
@@ -251,7 +255,9 @@
       "esphome": {
         "id": "idle_after_s",
         "name": "Clock after",
-        "icon": "mdi:clock-start"
+        "icon": "mdi:clock-start",
+        "device_class": "duration",
+        "internal": true
       }
     },
     {
@@ -268,7 +274,8 @@
       "esphome": {
         "id": "idle_brightness",
         "name": "Idle brightness",
-        "icon": "mdi:brightness-6"
+        "icon": "mdi:brightness-6",
+        "internal": true
       }
     },
     {
@@ -294,7 +301,9 @@
       "esphome": {
         "id": "screen_off_min",
         "name": "Screen off after",
-        "icon": "mdi:monitor-off"
+        "icon": "mdi:monitor-off",
+        "device_class": "duration",
+        "internal": true
       }
     },
     {
@@ -342,7 +351,8 @@
       "esphome": {
         "id": "toast_position",
         "name": "Toast position",
-        "icon": "mdi:dock-top"
+        "icon": "mdi:dock-top",
+        "internal": true
       }
     },
     {
