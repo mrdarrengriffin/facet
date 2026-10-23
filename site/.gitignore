@@ -8,3 +8,5 @@ dist.next/
 dist.old/
 public/sound.json
 public/previews/
+# firmware images + manifests: published by the release workflow (GitHub Pages); copied in locally, never committed
+public/firmware/

@@ -8,7 +8,8 @@
 //            header back-gap; the docs use the gutter for every gap, = back-gap at 720)
 //   label    screen type label (caps, mono), text-dim, one line; grows into the free space and ellipsises before the
 //            right side (docs: fit8 + a grow spacer; LVGL flex never shrinks, so the label is the grow here)
-//   right    optional: the Status chip component (docs explorer "Right chip": working, "2 working"), a gutter apart
+//   right    optional: the Status chip component (docs explorer "Right chip": working, "2 working"), a gutter apart;
+//            internal props chip_tone / chip_text set its tone and text (a screen's own status: Set up)
 //   chrome   the Screen chrome component (fw::find("screen_chrome")): the time (lay::header_time_w, right-aligned on
 //            the content edge) on every screen; prop settings (bool, default off; on for Home, Darren 2026-10-22) puts
 //            the settings button a gutter before it (lay::chrome_w). Prop time empty = the live clock. A gutter from
@@ -50,6 +51,11 @@ void chrome_props(fw::Props p, ArduinoJson::JsonDocument &cp) {
   cp["time"] = p["time"] | "";
   cp["settings"] = (p["settings"] | false) ? "button" : "none";  // the settings button: Home only (Darren 2026-10-22)
 }
+void chip_props(fw::Props p, ArduinoJson::JsonDocument &cp) {  // internal chip_tone / chip_text (a screen's status)
+  cp["tone"] = p["chip_tone"] | "working";
+  cp["text"] = p["chip_text"] | "2 working";
+  cp["pulse"] = p["chip_pulse"] | false;
+}
 void fill(lv_obj_t *h, fw::Props p) {
   lv_obj_remove_style_all(h);
   lv_obj_remove_flag(h, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
@@ -72,8 +78,7 @@ void fill(lv_obj_t *h, fw::Props p) {
 
   if (p["chip"] | false) {
     ArduinoJson::JsonDocument cp;
-    cp["tone"] = "working";
-    cp["text"] = "2 working";
+    chip_props(p, cp);
     build("status_chip", h, cp);
   }
 
@@ -119,6 +124,12 @@ FW_UPDATE(header) {
   }
   lv_obj_t *l = lv_obj_get_child(root, (p["back"] | true) ? 1 : 0);
   if (l) fw::set_text(l, fw::ty::label, p["label"] | "");
+  if (p["chip"] | false)  // tone / text: the chip's own update path (its tone fades)
+    if (lv_obj_t *c = lv_obj_get_child(root, (p["back"] | true) ? 2 : 1)) {
+      ArduinoJson::JsonDocument cp;
+      chip_props(p, cp);
+      fw::update_child(fw::find("status_chip"), c, cp.as<fw::Props>());
+    }
   if (p["clock"] | true)
     if (lv_obj_t *c = lv_obj_get_child(root, -1)) {
       ArduinoJson::JsonDocument cp;

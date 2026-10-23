@@ -33,7 +33,7 @@ const soon = (label: string): NavLink => ({ label, badge: 'Soon' });
 
 export function getSidebar(): NavGroup[] {
   return [
-    { label: 'Start here', links: [soon('Getting started')] },
+    { label: 'Start here', links: [soon('Getting started'), { label: 'Install', href: url('/install/') }] },
     { label: 'Concepts', links: [soon('Design tokens'), soon('Components'), soon('Firmware')] },
     {
       label: 'Design system',
