@@ -471,7 +471,13 @@
       {"section": "sport", "fg": "warn", "bg": ["bg", "surface"], "kind": "ui", "use": "yellow card mark, safety car flag"},
       {"section": "sport", "fg": "error", "bg": ["bg", "surface"], "kind": "ui", "use": "red card mark, red flag"},
       {"section": "sport", "fg": "sport-purple", "bg": ["bg", "surface"], "kind": "text", "use": "fastest lap mark and time"},
-      {"section": "sport", "fg": "line", "bg": ["bg", "surface"], "kind": "decor", "use": "standings row hairlines (team colours are data: fitted to 3:1 at run time by sport::team_ink, not listed here)"}
+      {"section": "sport", "fg": "line", "bg": ["bg", "surface"], "kind": "decor", "use": "standings row hairlines (team colours are data: fitted to 3:1 at run time by sport::team_ink, not listed here)"},
+      {"section": "timer", "fg": "accent", "bg": ["bg"], "kind": "ui", "use": "the ring: the time left"},
+      {"section": "timer", "fg": "line", "bg": ["bg"], "kind": "decor", "use": "the ring's track (the time gone)"},
+      {"section": "timer", "fg": "text-mute", "bg": ["bg"], "kind": "disabled", "use": "the label over the time (docs text-mute: meta, 3:1)"},
+      {"section": "timer", "fg": "accent-text", "bg": ["bg"], "kind": "text", "use": "the label once it ran out: done"},
+      {"section": "timer", "fg": "text", "bg": ["bg"], "kind": "large", "use": "the time left (display)"},
+      {"section": "timer", "fg": "text-dim", "bg": ["bg"], "kind": "text", "use": "of 10 min, ends 14:52; pick a length"}
     ]
   },
   "accent": {

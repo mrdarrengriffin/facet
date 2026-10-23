@@ -1,0 +1,19 @@
+{
+ "v": 1,
+ "id": "timer",
+ "name": "Timer",
+ "rev": 1,
+ "header": {
+  "label": "Timer",
+  "back": true
+ },
+ "layout": "center",
+ "nodes": [
+  {
+   "c": "timer_view",
+   "p": {
+    "state": "idle"
+   }
+  }
+ ]
+}

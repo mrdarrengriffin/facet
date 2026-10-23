@@ -3408,6 +3408,50 @@
     "bytes_est": 1920
    }
   },
+  "timer_view": {
+   "name": "Timer view",
+   "update": true,
+   "props": [
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "idle",
+      "running",
+      "done"
+     ]
+    },
+    {
+     "name": "label",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "total",
+     "type": "range",
+     "bindable": true,
+     "min": 60,
+     "max": 7200
+    },
+    {
+     "name": "left",
+     "type": "range",
+     "bindable": true,
+     "min": 1,
+     "max": 7200
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 39,
+    "bytes_est": 6240
+   }
+  },
   "toast": {
    "name": "Toast",
    "update": true,
@@ -3668,5 +3712,5 @@
   "screens": 16,
   "deck_bytes": 2048
  },
- "hash": "08917d28"
+ "hash": "cb43f8db"
 }
