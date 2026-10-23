@@ -63,7 +63,8 @@
     "mv-groove": {"group": "media", "dark": "#1A1A1E", "light": "#1F1F23", "role": "vinyl groove rings"},
     "mv-metal": {"group": "media", "dark": "#9AA0A8", "light": "#A7ADB5", "role": "tonearm, heads, guides, spindles"},
     "mv-metal-2": {"group": "media", "dark": "#5D636C", "light": "#6E747D", "role": "headshell, counterweight, arm rest"},
-    "mv-deck": {"group": "media", "dark": "#14161A", "light": "#E4E0D9", "role": "deck parts: arm base, head cover"}
+    "mv-deck": {"group": "media", "dark": "#14161A", "light": "#E4E0D9", "role": "deck parts: arm base, head cover"},
+    "sport-purple": {"group": "secondary", "dark": "#B48CFF", "light": "#6B3FC4", "role": "Sport: F1 fastest lap / personal best (the sport's own convention: purple)"}
   },
   "components": {
     "chart": {
@@ -461,7 +462,16 @@
       {"section": "print_model", "fg": "text-dim", "bg": ["bg"], "kind": "ui", "use": "the printed part, light theme: text-dim (darkest face) .. surface-press (lit top); dark theme line .. text"},
       {"section": "print_model", "fg": "text-mute", "bg": ["surface", "bg"], "kind": "decor", "use": "the ghost's hairline edges (dark theme; light: line-hi): the part above the cut, faint on purpose"},
       {"section": "print_model", "fg": "surface-press", "bg": ["bg"], "kind": "decor", "use": "the ghost fill (surface .. surface-press dark, surface-press .. line light at 60 %)"},
-      {"section": "card_preview", "fg": "lx-faded-surface", "bg": ["surface"], "kind": "decor", "use": "a strike 5-15 minutes old: history, fading on purpose"}
+      {"section": "card_preview", "fg": "lx-faded-surface", "bg": ["surface"], "kind": "decor", "use": "a strike 5-15 minutes old: history, fading on purpose"},
+      {"section": "sport", "fg": "steel", "bg": ["bg", "surface"], "kind": "ui", "use": "the circuit line, court and pitch lines"},
+      {"section": "sport", "fg": "text", "bg": ["bg", "surface"], "kind": "ui", "use": "start / finish bar, the leader ring, the serve dot, goal marks"},
+      {"section": "sport", "fg": "text", "bg": ["bg", "surface"], "kind": "text", "use": "codes, names, numbers, scores"},
+      {"section": "sport", "fg": "text-dim", "bg": ["bg", "surface"], "kind": "text", "use": "gaps, positions, set history, minutes"},
+      {"section": "sport", "fg": "accent-text", "bg": ["bg", "surface"], "kind": "text", "use": "the point in play, a moment word (break point, goal)"},
+      {"section": "sport", "fg": "warn", "bg": ["bg", "surface"], "kind": "ui", "use": "yellow card mark, safety car flag"},
+      {"section": "sport", "fg": "error", "bg": ["bg", "surface"], "kind": "ui", "use": "red card mark, red flag"},
+      {"section": "sport", "fg": "sport-purple", "bg": ["bg", "surface"], "kind": "text", "use": "fastest lap mark and time"},
+      {"section": "sport", "fg": "line", "bg": ["bg", "surface"], "kind": "decor", "use": "standings row hairlines (team colours are data: fitted to 3:1 at run time by sport::team_ink, not listed here)"}
     ]
   },
   "accent": {

@@ -18,7 +18,8 @@
     {"id": "status", "label": "Status"},
     {"id": "github", "label": "GitHub"},
     {"id": "screens", "label": "Screen icons"},
-    {"id": "weather", "label": "Weather"}
+    {"id": "weather", "label": "Weather"},
+    {"id": "sport", "label": "Sport"}
   ],
   "compare": {"$comment": "the size-comparison row of the Icons page (Facet docs Icons > Optical sizes: these five at 16/24/32/48); the extra sizes these add are compare-only and left out of a used-icons-only build", "icons": ["speaker", "timer", "done", "back", "play"], "sizes": ["small", "icon", "glyph", "feature"]},
   "icons": [
@@ -95,6 +96,10 @@
     {"name": "door", "kind": "ui", "group": "status", "keyline": "portrait", "file": "door.svg", "sizes": ["icon"], "use": "state readout 24"},
     {"name": "window", "kind": "ui", "group": "status", "keyline": "square", "file": "window.svg", "sizes": ["icon"], "use": "state readout 24"},
     {"name": "thermometer", "kind": "ui", "group": "status", "keyline": "portrait", "file": "thermometer.svg", "sizes": ["icon"], "use": "state readout 24"},
-    {"name": "house", "kind": "ui", "group": "status", "keyline": "square", "file": "house.svg", "sizes": ["icon"], "use": "state readout 24"}
+    {"name": "house", "kind": "ui", "group": "status", "keyline": "square", "file": "house.svg", "sizes": ["icon"], "use": "state readout 24"},
+    {"name": "sport-goal", "kind": "ui", "group": "sport", "keyline": "square", "file": "sport-goal.svg", "sizes": ["small", "icon"], "use": "football: a goal on the minute line (small) and in the latest-event line"},
+    {"name": "sport-card", "kind": "ui", "group": "sport", "keyline": "portrait", "file": "sport-card.svg", "sizes": ["small", "icon"], "use": "football: a booking; warn = yellow card, error = red card (one shape, the colour says which)"},
+    {"name": "sport-sub", "kind": "ui", "group": "sport", "keyline": "square", "file": "sport-sub.svg", "sizes": ["small", "icon"], "use": "football: a substitution (on up, off down)"},
+    {"name": "sport-tennis-ball", "kind": "ui", "group": "sport", "keyline": "square", "file": "sport-tennis-ball.svg", "sizes": ["small"], "use": "tennis: who serves, beside the name"}
   ]
 }

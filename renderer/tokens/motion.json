@@ -40,7 +40,11 @@
     "toast-life": { "ms": 6000, "group": "timing", "use": "a toast stays this long" },
     "toast-life-urgent": { "ms": 12000, "group": "timing", "use": "an urgent toast stays this long (someone at the door; layout.json toast life-urgent)" },
     "tick-min": { "ms": 40, "group": "timing", "use": "step ticks (slider, dial, arc): audible ticks never closer than this; slow drags tick every step, fast drags thin out (26 -> 40 ms, Darren 2026-10-22)" },
-    "demo-reset": { "ms": 1800, "group": "timing", "use": "docs site + workbench samples: a demo sample returns to its initial state this long after the last interaction (timer starts on release; the revert is silent: no sound, no event) (Darren 2026-10-22)" }
+    "demo-reset": { "ms": 1800, "group": "timing", "use": "docs site + workbench samples: a demo sample returns to its initial state this long after the last interaction (timer starts on release; the revert is silent: no sound, no event) (Darren 2026-10-22)" },
+    "sport-glide-max": { "ms": 1000, "group": "timing", "use": "Sport: a car glides along the track for the time since the last feed update, at most this long (a slower or stalled feed jumps instead of crawling)" },
+    "sport-moment": { "ms": 3000, "group": "timing", "use": "Sport: how long a moment stays marked (overtake tags, a point / goal emphasis)" },
+    "sport-flash": { "ms": 400, "group": "ui", "use": "Sport: a score that changes lifts in (new digits rise into place), a moment ring fades" },
+    "sport-glide-step": { "ms": 40, "group": "timing", "use": "Sport, lite (480 build): cars move in steps this long between feed updates (25 a second), so a frame only redraws when a car actually moved" }
   },
   "easings": {
     "linear": { "bezier": [0, 0, 1, 1], "css": "linear", "lvgl": "lv_anim_path_linear", "use": "loops, clock sweeps, progress" },

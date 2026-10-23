@@ -100,7 +100,13 @@
       "radar-home-dot": { "v": 8, "1x": 4, "use": "Lightning radar: the dot inside home (docs 6, onto the grid)" },
       "radar-flash": { "v": 48, "1x": 48, "use": "Lightning radar: a new strike's ripple grows from the dot to this (docs scale 6 of the 8 px dot = 48; the dot is 8 at both sizes)" },
       "preview-strike": { "v": 4, "1x": 4, "use": "Card preview, lightning: a strike dot (docs 4)" },
-      "preview-home": { "v": 8, "1x": 4, "use": "Card previews: the blue centre dot (lightning home, the dial and timer hub; docs 6 / 8, onto the grid)" }
+      "preview-home": { "v": 8, "1x": 4, "use": "Card previews: the blue centre dot (lightning home, the dial and timer hub; docs 6 / 8, onto the grid)" },
+      "sport-marker": { "v": 16, "1x": 12, "use": "Sport: a car on the circuit (team dot, its bg cut-out ring included)" },
+      "sport-marker-lg": { "v": 24, "1x": 20, "use": "Sport: a numbered car disc (number inside)" },
+      "sport-sf": { "v": 24, "1x": 16, "use": "Sport: the start / finish line across the track" },
+      "sport-row": { "v": 40, "1x": 28, "use": "Sport: one standings row (read-out, not a touch target)" },
+      "sport-player": { "v": 32, "1x": 24, "use": "Sport: a player disc on the pitch (shirt number inside)" },
+      "sport-row-compact": { "v": 24, "1x": 20, "use": "Sport: a compact standings row (the whole field in one column; small text)" }
     },
     "radius": {
       "tile": { "v": 0, "1x": 0, "use": "tiles" },
@@ -121,7 +127,8 @@
       "corner-tick": { "v": 2, "1x": 2, "use": "Corner ticks: width of each L (docs btn-tick-thick 2)" },
       "arc": { "v": 4, "1x": 2, "use": "dial and progress arcs" },
       "knob": { "v": 4, "1x": 2, "use": "slider and dial knob outline" },
-      "indicator": { "v": 6, "1x": 4, "use": "value indicators, active bars" }
+      "indicator": { "v": 6, "1x": 4, "use": "value indicators, active bars" },
+      "track": { "v": 6, "1x": 4, "use": "Sport: the circuit line" }
     },
     "touch": {
       "target": { "v": 64, "1x": 44, "use": "standard touch target (buttons, rows)" },
