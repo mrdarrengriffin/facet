@@ -79,3 +79,39 @@ big blends are the outliers).
 
 **Cost:** workbench firmware only (production screens untouched): the batch and results in RAM (a few KB), a 1 KB frame
 ring, a second pointer indev, one 5 ms lv_timer.
+
+## Stress / capability suite (2026-10-22, round 3)
+
+Benchmarks the hardware and the screen, not our components (Darren: "how many instances on a screen can be put on there
+before it starts lagging"). The load is `bench/stress.cpp` (item `stress`, section "bench", not in the workbench nav);
+the cases are generated from `suite.json` `stress` (tag `stress`, never in the full suite; `--case tag:stress`, or Tests =
+Stress on `/wasm/bench`). Every target runs it: headless (estimates for both panels), this browser, each panel (its own
+batch, split into batches of at most 64 cases, ramp groups never split).
+
+- **Ramps to the knee:** n instances of 48 dp (shrinking only once they no longer fit) of `icons` (the animated Weather
+  icon), `arcs` (turning lv_arc), `rects` (sliding boxes), `labels` (a number changing every frame), n in x1.5 steps
+  from 1 to 1024. A group stops one step past the knee (under `stop_fps` = 20); the card reads the knee at full rate
+  (within 10 % of the target's own refresh ceiling), 30 and 20 fps. Knees use frame cost, not how often the load asks
+  for a frame (headless: capacity fps from the estimate; panel / browser: the real frame rate).
+- **Animation boundaries:** one object whose side is 5 % to 100 % of the screen, for `move`, `fade`, `colour` (a step
+  every frame) and `rotate` (transform_rotation, a layer render), plus three speeds (loop 2000 / 500 / 125 ms at 35 %).
+- **Raw capability:** `refresh` (an 8 x 8 change: the ceiling), `fill` (opaque full screen, ms and MB/s), `blend` (50 %
+  over the whole screen), `blit` / `blit_alpha` (a full-screen RGB565 / RGB565A8 image), `text` at 12 / 24 / 48 dp
+  (glyphs per ms; glyphs = rows x columns as stress.cpp lays them out), and on the panels the flush share of a frame
+  (`flush_ms_avg`: FLUSH_START..FINISH + any wait for the bus).
+- **Memory:** `objects` n = 64 to 4096 static rows; bytes per object (panel: internal / PSRAM from `heap_caps`, between
+  cases only), stopping before `reserve` (internal 64 KB, PSRAM 1 MB) using the last step's bytes per object.
+- **Touch to frame:** `touch` scenario, 5 taps through the bench pointer: press to the first rendered frame after it.
+
+The capability card (`apps/hub/src/lib/bench-card.mjs` in the host repo) turns a run into knees, the fps-by-size curve
+per motion, raw rates, memory and touch, with the change against the previous stress run on the same target.
+
+**Results 2026-10-22 (real, on the glass):** Guition: 62 fps ceiling, ~16 animated icons / 6 arcs / 12 boxes / 8
+changing numbers at full rate; one slide or fade at full rate up to 35 % of the screen, rotation 10 %; full-screen
+fill 71 ms (7 MB/s), 95 % of it the flush (90 deg software rotation); text 14 glyphs/ms at 12 dp; touch to frame
+82 ms. Waveshare: 63 fps, ~32 icons / 12 arcs / 16 boxes / 16 numbers at full rate; slide / fade / colour step to
+75-100 %, rotation 10 %; fill 5.6 ms (184 MB/s), image with alpha 94 ms; touch 15 ms. Objects ~200 B each, in PSRAM.
+The pixel-based estimate is good for single objects and raw fills, but too optimistic for many small moving objects
+(each LVGL object has a per-frame cost the fit doesn't see): the Waveshare's knees are 2-8x lower than estimated.
+Objects ramp capped at 256: building thousands in one go blocks the panel past the task watchdog (fw_bench.h now
+also stops a ramp whose step takes over 1 s to build).

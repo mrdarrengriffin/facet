@@ -4,7 +4,9 @@
 // at the end. No per-case requests and no polling while it runs. Included by fw_device.h (inside namespace fw::device;
 // uses S, show(), in_loop()).
 //   POST /fw/bench {run: "<id>", theme?, timing?: {settle_ms, window_ms, drag_ms, after_ms, nav_ms},
-//                   cases: [[case, component, props (object), scenario, path?: [[x0,y0],[x1,y1]], to?], ...]}
+//                   cases: [[case, component, props (object), scenario, path?: [[x0,y0],[x1,y1]], to?, opts?], ...]}
+//        scenario idle | animate | drag | navigate | touch (5 taps: press to the first frame after it); opts = {settle_ms,
+//        window_ms, group, stop_fps, reserve_int_kb, reserve_ps_kb, n} (the stress suite: ramps stop past their knee)
 //        -> 200 {ok, run, total, eta_s} at once (409 while a batch runs; 400 over FW_BENCH_MAX cases or a bad body)
 //   GET  /fw/bench -> {run, state: idle|running|done|interrupted, done, total, results: [row...]}
 //        row = {case, scenario, error?, panel: {frames, active_ms, redraw_fps, fps, slow, build_ms, render_ms_avg|p95|max,
@@ -23,13 +25,18 @@ namespace bench {
 #ifndef FW_BENCH_MAX
 #define FW_BENCH_MAX 96
 #endif
-enum Phase : uint8_t { IDLE, BUILD, SETTLE, WINDOW, DRAG, AFTER, NAV1, NAV2, GAP, DONE };
-enum Scen : uint8_t { S_IDLE, S_ANIMATE, S_DRAG, S_NAV };
+enum Phase : uint8_t { IDLE, BUILD, SETTLE, WINDOW, DRAG, AFTER, NAV1, NAV2, TAP, TAPGAP, GAP, DONE };
+enum Scen : uint8_t { S_IDLE, S_ANIMATE, S_DRAG, S_NAV, S_TOUCH };
 struct Case {
   std::string name, comp, req;  // req = the /fw/show body for this case
   Scen sc = S_ANIMATE;
   float path[4] = {0.2f, 0.5f, 0.8f, 0.5f};
   std::string to = "settings";
+  // per-case options (7th element, the stress suite): own settle / window, and a ramp group that stops one step past its
+  // knee (fps under stop_fps) or before the memory reserve (predicted from the last step's bytes per object)
+  uint32_t settle_ms = 0, window_ms = 0, n = 0, res_int_kb = 0, res_ps_kb = 0;
+  float stop_fps = 0;
+  std::string group;
 };
 struct Row {
   bool ok = false;
@@ -37,7 +44,9 @@ struct Row {
   uint32_t frames = 0, slow = 0, full = 0, active_ms = 0, objs = 0, px_avg = 0;
   float redraw_fps = 0, fps = 0, build_ms = 0, avg = 0, p95 = 0, max = 0, px_pct = 0, areas_avg = 0;
   int heap_kb = 0;
-  size_t int_free = 0, ps_free = 0, int_largest = 0, ps_largest = 0;
+  size_t int_free = 0, ps_free = 0, int_largest = 0, ps_largest = 0, int_used = 0, ps_used = 0;
+  float flush_ms = 0, touch_ms = -1;
+  std::string skipped;
 };
 struct Batch {
   std::string run;
@@ -58,6 +67,16 @@ struct Batch {
   size_t int0 = 0, ps0 = 0;
   bool down = false;
   lv_point_t pt{};
+  // flush time (FLUSH_START..FINISH + any wait for the bus / DMA), touch to frame, stopped ramp groups, memory per object
+  int64_t t_flush = 0, t_wait = 0, t_press = 0;
+  uint64_t flush_us = 0, touch_us = 0;
+  uint32_t touch_n = 0, taps = 0;
+  bool press_wait = false;
+  std::vector<std::string> stopped;
+  std::string mem_group;
+  float per_int = 0, per_ps = 0;
+  std::string build_group;  // the last ramp group and its build ms per instance (a big step must not block the loop)
+  float per_build_ms = 0;
 };
 inline Batch B;
 inline lv_indev_t *indev = nullptr;
@@ -74,13 +93,18 @@ inline void on_disp(lv_event_t *e) {
   const int64_t t = esp_timer_get_time();
   switch (lv_event_get_code(e)) {
     case LV_EVENT_RENDER_START: B.t_render = t; B.frame_px = 0; break;
+    case LV_EVENT_FLUSH_FINISH: if (B.counting) B.flush_us += t - B.t_flush; break;
+    case LV_EVENT_FLUSH_WAIT_START: B.t_wait = t; break;
+    case LV_EVENT_FLUSH_WAIT_FINISH: if (B.counting) B.flush_us += t - B.t_wait; break;
     case LV_EVENT_FLUSH_START: {
+      B.t_flush = t;
       auto *a = (const lv_area_t *) lv_event_get_param(e);
       if (a) { B.frame_px += (uint64_t) lv_area_get_size(a); if (B.counting) B.areas++; }
       break;
     }
     case LV_EVENT_RENDER_READY: {
       if (B.first_pending) { B.build_us = t - B.t_build; B.first_pending = false; break; }  // the build's first frame
+      if (B.press_wait && B.t_render >= B.t_press) { B.touch_us += t - B.t_press; B.touch_n++; B.press_wait = false; }
       if (!B.counting) break;
       const uint32_t r = (uint32_t) (t - B.t_render);
       if (B.last_frame) {
@@ -172,11 +196,29 @@ inline void end_case(const char *err) {
     r.px_pct = n ? 100.f * B.px / n / (FW_DEVICE_W * FW_DEVICE_H) : 0;
     r.areas_avg = n ? (float) B.areas / n : 0;
     r.full = B.full;
+    r.flush_ms = n ? B.flush_us / 1000.f / n : 0;
+    if (B.touch_n) r.touch_ms = B.touch_us / 1000.f / B.touch_n;
     r.int_free = heap_caps_get_free_size(MALLOC_CAP_INTERNAL);
     r.ps_free = heap_caps_get_free_size(MALLOC_CAP_SPIRAM);
     r.int_largest = heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL);
     r.ps_largest = heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM);  // between cases: no frames running now
     r.heap_kb = (int) (((int64_t) B.int0 + B.ps0 - (int64_t) r.int_free - r.ps_free) / 1024);
+    r.int_used = B.int0 > r.int_free ? B.int0 - r.int_free : 0;
+    r.ps_used = B.ps0 > r.ps_free ? B.ps0 - r.ps_free : 0;
+    // ramp groups: one step past the knee, or the memory reserve reached (next step predicted from this one)
+    const Case &cc = B.cases[B.i];
+    if (!cc.group.empty()) {
+      if (cc.stop_fps > 0 && n >= 3 && r.fps < cc.stop_fps) B.stopped.push_back(cc.group);
+      // building blocks the main loop: past ~1 s a bigger step risks the task watchdog (Guition 2026-10-22: 4096 objects reset it)
+      if (cc.n) { B.build_group = cc.group; B.per_build_ms = r.build_ms / cc.n; }
+      if (r.build_ms > 1000) B.stopped.push_back(cc.group);
+      if (cc.res_int_kb || cc.res_ps_kb) {
+        B.mem_group = cc.group;
+        B.per_int = cc.n ? (float) r.int_used / cc.n : 0;
+        B.per_ps = cc.n ? (float) r.ps_used / cc.n : 0;
+        if (r.int_free < cc.res_int_kb * 1024u || r.ps_free < cc.res_ps_kb * 1024u) B.stopped.push_back(cc.group);
+      }
+    }
     r.objs = count(lv_display_get_screen_active(lv_display_get_default()));
   }
   B.rows.push_back(std::move(r));
@@ -199,6 +241,24 @@ inline void step(lv_timer_t *) {
   const Case *c = B.i < B.cases.size() ? &B.cases[B.i] : nullptr;
   switch (B.ph) {
     case GAP:  // between cases: the caption changes here only, then the next build after a short pause
+      // ramp steps past a stopped group's knee (or the memory reserve) are not run: recorded as skipped
+      while (c && !c->group.empty()) {
+        const bool stop = std::find(B.stopped.begin(), B.stopped.end(), c->group) != B.stopped.end();
+        bool mem = false;
+        if (!stop && c->group == B.mem_group && c->n) {
+          const size_t fi = heap_caps_get_free_size(MALLOC_CAP_INTERNAL), fp = heap_caps_get_free_size(MALLOC_CAP_SPIRAM);
+          mem = (c->res_int_kb && fi < c->res_int_kb * 1024u + (size_t) (B.per_int * c->n)) ||
+                (c->res_ps_kb && fp < c->res_ps_kb * 1024u + (size_t) (B.per_ps * c->n));
+        }
+        const bool slow = !stop && !mem && c->group == B.build_group && c->n && B.per_build_ms * c->n > 2500;
+        if (!stop && !mem && !slow) break;
+        Row r;
+        r.skipped = stop ? "past the knee" : mem ? "the memory reserve would be crossed" : "building it would block the panel too long";
+        B.rows.push_back(std::move(r));
+        if (mem || slow) B.stopped.push_back(c->group);
+        B.i++;
+        c = B.i < B.cases.size() ? &B.cases[B.i] : nullptr;
+      }
       if (!c) { finish(); return; }
       if (!B.gap_drawn) { caption(); B.gap_drawn = true; }
       if (el < 150) return;
@@ -209,6 +269,9 @@ inline void step(lv_timer_t *) {
       B.frames = B.intervals = B.slow = B.areas = B.full = B.render_max = 0;
       B.render_us = B.active_us = B.px = 0;
       B.first_frame = B.last_frame = 0;
+      B.flush_us = B.touch_us = 0;
+      B.touch_n = B.taps = 0;
+      B.press_wait = false;
       ArduinoJson::JsonDocument req, out;
       deserializeJson(req, c->req);
       B.int0 = heap_caps_get_free_size(MALLOC_CAP_INTERNAL);
@@ -222,14 +285,30 @@ inline void step(lv_timer_t *) {
       return;
     }
     case SETTLE:
-      if (el < B.settle_ms) return;
+      if (el < (c->settle_ms ? c->settle_ms : B.settle_ms)) return;
       B.counting = true;
+      if (c->sc == S_TOUCH) { go(TAPGAP); return; }
       if (c->sc == S_DRAG) { touch_at(c->path[0], c->path[1], true); go(DRAG); }
       else if (c->sc == S_NAV) { ::fw::dev::go(device_root(), c->to.c_str()); go(NAV1); }
       else go(WINDOW);
       return;
     case WINDOW:
-      if (el >= B.window_ms) end_case(nullptr);
+      if (el >= (c->window_ms ? c->window_ms : B.window_ms)) end_case(nullptr);
+      return;
+    case TAP:  // pressed: wait for the first frame after the press (on_disp), then let go
+      if (B.press_wait && el < 500) return;
+      B.press_wait = false;
+      touch_at(0.5f, 0.5f, false);
+      go(TAPGAP);
+      return;
+    case TAPGAP:  // 5 taps, 300 ms apart
+      if (B.taps && el < 300) return;
+      if (B.taps >= 5) { end_case(nullptr); return; }
+      B.taps++;
+      touch_at(0.5f, 0.5f, true);
+      B.t_press = esp_timer_get_time();
+      B.press_wait = true;
+      go(TAP);
       return;
     case DRAG: {
       const float k = std::min(1.f, (float) el / (float) B.drag_ms);
@@ -273,7 +352,17 @@ inline std::string start(ArduinoJson::JsonObjectConst b, uint32_t *total, uint32
     c.name = a[0] | "";
     c.comp = a[1] | "";
     const char *sc = a[3] | "animate";
-    c.sc = !strcmp(sc, "idle") ? S_IDLE : !strcmp(sc, "drag") ? S_DRAG : !strcmp(sc, "navigate") ? S_NAV : S_ANIMATE;
+    c.sc = !strcmp(sc, "idle") ? S_IDLE : !strcmp(sc, "drag") ? S_DRAG : !strcmp(sc, "navigate") ? S_NAV : !strcmp(sc, "touch") ? S_TOUCH : S_ANIMATE;
+    if (a[6].is<ArduinoJson::JsonObjectConst>()) {
+      auto o = a[6];
+      c.settle_ms = std::min<uint32_t>(o["settle_ms"] | 0u, 10000);
+      c.window_ms = std::min<uint32_t>(o["window_ms"] | 0u, 10000);
+      c.group = o["group"] | "";
+      c.stop_fps = o["stop_fps"] | 0.f;
+      c.res_int_kb = o["reserve_int_kb"] | 0u;
+      c.res_ps_kb = o["reserve_ps_kb"] | 0u;
+      c.n = o["n"] | 0u;
+    }
     if (a[4].is<ArduinoJson::JsonArrayConst>() && a[4].size() == 2)
       for (int i = 0; i < 4; i++) c.path[i] = std::clamp(a[4][i / 2][i % 2] | c.path[i], 0.f, 1.f);
     if (a[5].is<const char *>()) c.to = a[5].as<const char *>();
@@ -282,8 +371,9 @@ inline std::string start(ArduinoJson::JsonObjectConst b, uint32_t *total, uint32
     if (a[2].is<ArduinoJson::JsonObjectConst>()) req["props"] = a[2];
     req["theme"] = theme;
     serializeJson(req, c.req);
-    eta += 650 + (c.sc == S_ANIMATE ? nb.window_ms : c.sc == S_IDLE ? nb.settle_ms + nb.window_ms
-                  : c.sc == S_DRAG ? nb.settle_ms + nb.drag_ms + nb.after_ms : nb.settle_ms + 2 * nb.nav_ms);
+    const uint32_t st = c.settle_ms ? c.settle_ms : nb.settle_ms, wi = c.window_ms ? c.window_ms : nb.window_ms;
+    eta += 650 + (c.sc == S_ANIMATE ? wi : c.sc == S_IDLE ? st + wi : c.sc == S_DRAG ? st + nb.drag_ms + nb.after_ms
+                  : c.sc == S_TOUCH ? st + 5 * 500 : st + 2 * nb.nav_ms);
     nb.cases.push_back(std::move(c));
   }
   nb.rows.reserve(nb.cases.size());
@@ -293,7 +383,9 @@ inline std::string start(ArduinoJson::JsonObjectConst b, uint32_t *total, uint32
   *eta_s = (uint32_t) (eta / 1000 + 1);
   lv_display_t *d = lv_display_get_default();
   if (!hooked) {
-    for (auto c : {LV_EVENT_RENDER_START, LV_EVENT_RENDER_READY, LV_EVENT_FLUSH_START}) lv_display_add_event_cb(d, on_disp, c, nullptr);
+    for (auto c : {LV_EVENT_RENDER_START, LV_EVENT_RENDER_READY, LV_EVENT_FLUSH_START, LV_EVENT_FLUSH_FINISH, LV_EVENT_FLUSH_WAIT_START,
+                   LV_EVENT_FLUSH_WAIT_FINISH})
+      lv_display_add_event_cb(d, on_disp, c, nullptr);
     hooked = true;
   }
   if (!indev) {
@@ -323,15 +415,19 @@ inline void result_json(ArduinoJson::JsonObject o) {
     const Row &r = B.rows[i];
     auto x = rows.add<ArduinoJson::JsonObject>();
     x["case"] = B.cases[i].name;
-    x["scenario"] = B.cases[i].sc == S_IDLE ? "idle" : B.cases[i].sc == S_DRAG ? "drag" : B.cases[i].sc == S_NAV ? "navigate" : "animate";
+    x["scenario"] = B.cases[i].sc == S_IDLE ? "idle" : B.cases[i].sc == S_DRAG ? "drag" : B.cases[i].sc == S_NAV ? "navigate" : B.cases[i].sc == S_TOUCH ? "touch" : "animate";
+    if (!r.skipped.empty()) { x["skipped"] = r.skipped; continue; }
     if (!r.ok) { x["error"] = r.error; continue; }
     auto p = x["panel"].to<ArduinoJson::JsonObject>();
     p["frames"] = r.frames; p["active_ms"] = r.active_ms; p["redraw_fps"] = r2(r.redraw_fps); p["fps"] = r2(r.fps);
     p["slow"] = r.slow; p["build_ms"] = r2(r.build_ms); p["render_ms_avg"] = r2(r.avg); p["render_ms_p95"] = r2(r.p95);
     p["render_ms_max"] = r2(r.max); p["px_avg"] = r.px_avg; p["px_pct"] = r2(r.px_pct); p["areas_avg"] = r2(r.areas_avg);
     p["full_redraws"] = r.full;
+    p["flush_ms_avg"] = r2(r.flush_ms);
+    if (r.touch_ms >= 0) p["touch_ms"] = r2(r.touch_ms);
     auto m = x["mem"].to<ArduinoJson::JsonObject>();
     m["heap_kb"] = r.heap_kb; m["internal_free_after"] = r.int_free; m["psram_free_after"] = r.ps_free;
+    m["internal_used"] = r.int_used; m["psram_used"] = r.ps_used;
     m["internal_largest"] = r.int_largest; m["psram_largest"] = r.ps_largest; m["objs"] = r.objs;
   }
 }

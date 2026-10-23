@@ -101,10 +101,17 @@ export function shoot(m, d, c, props, light, { ms = 0, every = 2 } = {}) {
     for (let i = 3; i < b.length; i += 4) b[i] = 255;  // the stage is RGBA in memory (fw_frame); opaque
     return b;
   };
+  // dirty-area overflow (more than LVGL's 32 areas in one refresh = a full-screen redraw), counted by the bench probes
+  if (m._fw_bench_attach) { m._fw_bench_attach(); m._fw_bench_take(); }
+  let overflows = 0;
   const frames = [grab()];
-  for (let n = 0; n < ms / TICK / every; n++) { tick(every); frames.push(grab()); }
+  for (let n = 0; n < ms / TICK / every; n++) {
+    tick(every);
+    if (m._fw_bench_take) overflows += new Float64Array(m.HEAPU8.buffer, m._fw_bench_take(), 9)[8] || 0;
+    frames.push(grab());
+  }
   m._fw_stage_free(id);
-  return { W, H, frames, anims, box };
+  return { W, H, frames, anims, box, overflows };
 }
 const hash = (b) => createHash('sha1').update(b).digest('hex').slice(0, 12);
 
@@ -214,6 +221,7 @@ for (const c of meta) {
     if (k.n < 16 || k.share < 0.0005) add('error', `blank: ${(k.share * 100).toFixed(2)} % ink in its ${bx.w}x${bx.h} box`);
     else if (k.share < 0.02 || k.box < 0.1) add('review', `little ink: ${(k.share * 100).toFixed(1)} % of its ${bx.w}x${bx.h} box, the ink's own box ${(k.box * 100).toFixed(0)} % of it`);
     if (k.n && k.one > 0.97 && k.n > 64) add('review', `one colour: ${(k.one * 100).toFixed(0)} % of the ink is one colour`);
+    if (r.overflows > 0) add('review', `dirty areas: ${r.overflows} refresh${r.overflows > 1 ? 'es' : ''} over LVGL's 32 areas in 3 s (each one a full-screen redraw on the panel)`);
     const distinct = new Set(r.frames.map(hash)).size;
     // a declared motion can be switched off per variant by its meta "motion_off" prop (a pinned time: demo false)
     const declared = c.meta.motion && !(c.meta.motion_off && props[c.meta.motion_off] === false);

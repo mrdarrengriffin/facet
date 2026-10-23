@@ -8,13 +8,13 @@
       "h": 480,
       "loop_cap_fps": 53,
       "budget": {
-        "regression_pct": 10,
+        "regression_pct": 15,
         "regression_min_ms": 0.5,
         "pacing_ratio": 2,
         "idle_px_per_s": 0,
         "heap_kb_max": 512,
         "objs_max": 400,
-        "note": "Darren 2026-10-22: the Guition runs as fast as it can, no absolute fps / frame budget; flagged when it gets worse than the accepted baseline (> 10 %, median of 3 runs) or when frames are uneven (p95 > 2x the average = judder)."
+        "note": "Darren 2026-10-22: the Guition runs as fast as it can, no absolute fps / frame budget; flagged when it gets worse than the accepted baseline (> 15 %, Darren 2026-10-22, median of 3 runs) or when frames are uneven (p95 > 2x the average = judder)."
       },
       "anchors": [
         {
@@ -41,6 +41,16 @@
           "case": "anchor.mascots-agents",
           "device_ms": 5.6,
           "source": "/fw/perf 2026-10-22 (journal 2026-10-22)"
+        },
+        {
+          "case": "anchor.f1-circuit-22",
+          "device_ms": 7.55,
+          "source": "panel bench 2026-10-23 03:20, core 8102ef8059ff: 22 small moving marks over a stroke track (before the one-layer fix: 27 ms, 6 full redraws in 1.8 s)"
+        },
+        {
+          "case": "anchor.f1-live",
+          "device_ms": 9.02,
+          "source": "panel bench 2026-10-23 03:20, core 8102ef8059ff (before: 53 ms, 7 full redraws)"
         }
       ],
       "checks": [

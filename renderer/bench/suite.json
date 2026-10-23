@@ -1,9 +1,24 @@
 {
   "about": "Facet bench suite (facet-153), read by tools/bench.mjs. Every registered component and screen gets the auto scenarios with its default props; `cases` add named variants and interactions; `anchors` are the scenarios also measured on the panels (budgets.json), used to fit the WASM -> panel line; they keep `fades: true` because the panels were measured with fades. Scenarios: idle (settle 1 s, then 2 s with no input: a still component must not redraw), animate (2 s from the first frame: opening motion and loops), drag (settle, press, move along `path` for 600 ms, release, 400 ms), navigate (device runtime: go(`to`), 1.2 s, back, 1.2 s). `live` = the case redraws forever by design (idle redraw allowed; frame budget still applies). `stage: content` = width of the device, height of the content (doc pages).",
   "panel_skip": {},
+  "panel_skip_components": ["light", "room"],
+  "stress": {
+    "about": "Stress / capability suite (Darren 2026-10-22: benchmark the hardware and the screen). Not in the full suite: run it with tag:stress. Ramps stop one step past the knee (fps under stop_fps) or at the memory reserve; the knees are read at 60 / 30 / 20 fps.",
+    "timing": { "settle_ms": 300, "window_ms": 1200 },
+    "stop_fps": 20,
+    "ramps": { "icons": [1, 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64, 96, 128, 192, 256, 384, 512, 768, 1024], "arcs": [1, 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64, 96, 128, 192, 256, 384, 512, 768, 1024], "rects": [1, 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64, 96, 128, 192, 256, 384, 512, 768, 1024], "labels": [1, 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64, 96, 128, 192, 256, 384, 512, 768, 1024] },
+    "ramp_props": { "rects": { "ms": 250 } },
+    "motions": ["move", "fade", "colour", "rotate"],
+    "sizes": [0.05, 0.1, 0.2, 0.35, 0.5, 0.75, 1.0],
+    "speeds": { "size": 0.35, "ms": [2000, 500, 125] },
+    "raw": [["refresh", {}], ["fill", {}], ["blend", {}], ["blit", {}], ["blit_alpha", {}], ["text-s", {"kind": "text", "dp": 12}], ["text-m", {"kind": "text", "dp": 24}], ["text-l", {"kind": "text", "dp": 48}]],
+    "objects": [32, 64, 128, 256], "objects_note": "capped at 256: building thousands of objects in one go blocks the panel main loop past the task watchdog (Guition 2026-10-22: 256 = 1.1 s build, more reset the panel)",
+    "reserve": { "internal_kb": 64, "psram_kb": 1024 },
+    "touch": true
+  },
   "timing": { "tick_ms": 16, "settle_ms": 1000, "window_ms": 2000, "drag_ms": 600, "after_ms": 400, "nav_ms": 1200 },
   "auto": { "sections": ["components", "screens"], "scenarios": ["idle", "animate"], "skip": ["device"] },
-  "live": ["weather_icon", "tile", "toast_layer", "media_visual", "media_disc"],
+  "live": ["weather_icon", "tile", "toast_layer", "media_visual", "media_disc", "mascot_mood", "lightning_radar", "f1_circuit", "f1_standings", "f1_live", "tennis_score", "tennis_court", "tennis_live", "football_pitch", "football_live"],
   "cases": [
     { "id": "weather_icon.feature", "comp": "weather_icon", "props": { "icon": "rain-heavy", "size": "feature" }, "scenarios": ["animate"], "live": true, "tags": ["weather"] },
     { "id": "weather_icon.card", "comp": "weather_icon", "props": { "icon": "rain-heavy", "size": "card" }, "scenarios": ["animate"], "live": true, "tags": ["weather"] },
@@ -28,6 +43,8 @@
     { "id": "anchor.motion-fade", "comp": "motion", "props": { "fades": true, "loop": "fade" }, "scenarios": ["animate"], "live": true },
     { "id": "anchor.motion-screen", "comp": "motion", "props": { "fades": true, "loop": "screen" }, "scenarios": ["animate"], "live": true },
     { "id": "anchor.motion-clock-hand", "comp": "motion", "props": { "fades": true, "loop": "clock-hand" }, "scenarios": ["animate"], "live": true },
-    { "id": "anchor.mascots-agents", "comp": "mascots", "props": { "fades": true, "bench": "agents" }, "scenarios": ["animate"], "live": true }
+    { "id": "anchor.mascots-agents", "comp": "mascots", "props": { "fades": true, "bench": "agents" }, "scenarios": ["animate"], "live": true },
+    { "id": "anchor.f1-circuit-22", "comp": "f1_circuit", "props": {}, "scenarios": ["animate"], "live": true },
+    { "id": "anchor.f1-live", "comp": "f1_live", "props": {}, "scenarios": ["animate"], "live": true }
   ]
 }

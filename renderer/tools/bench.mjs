@@ -27,7 +27,7 @@ const env = (() => { try { return Object.fromEntries(readFileSync(join(ROOT, 'lo
 const BUILD = arg('--build', process.env.FW_OUT || env.FW_OUT || join(HERE, 'out'));
 const budgets = JSON.parse(readFileSync(join(HERE, 'bench/budgets.json'), 'utf8'));
 const suite = JSON.parse(readFileSync(join(HERE, 'bench/suite.json'), 'utf8'));
-const T = suite.timing;
+const TG = suite.timing, T = TG;
 const EXTRA = JSON.parse(arg('--props', '{}'));
 const REPEAT = Math.max(1, Math.min(5, +arg('--repeat', 1) || 1));
 const log = flag('--quiet') ? () => {} : (...a) => console.error(...a);
@@ -64,11 +64,29 @@ function cases() {
     out.push({ id: c.id, comp: c.id, props: {}, scenarios: suite.auto.scenarios, live: suite.live.includes(c.id), auto: true });
   }
   for (const c of suite.cases) out.push({ live: false, ...c });
+  return [...out, ...stressCases()];
+}
+// the stress / capability suite (suite.json "stress"): generated cases, tag "stress", only when asked for (tag:stress).
+// stress = {group, n?, stop_fps?, reserve?}: a ramp group stops one step past its knee (runners + the panel firmware).
+function stressCases() {
+  const S = suite.stress;
+  if (!S) return [];
+  const base = { comp: 'stress', live: true, tags: ['stress'], timing: S.timing };
+  const out = [];
+  for (const [kind, ns] of Object.entries(S.ramps))
+    for (const n of ns) out.push({ ...base, id: `stress.ramp.${kind}.${n}`, props: { kind, n, ...(S.ramp_props?.[kind] || {}) }, scenarios: ['animate'], stress: { group: `ramp.${kind}`, n, stop_fps: S.stop_fps } });
+  for (const kind of S.motions) {
+    for (const size of S.sizes) out.push({ ...base, id: `stress.size.${kind}.${size}`, props: { kind, size, ms: 1000 }, scenarios: ['animate'], stress: { group: `size.${kind}`, size, stop_fps: S.stop_fps } });
+    for (const ms of S.speeds.ms) out.push({ ...base, id: `stress.speed.${kind}.${ms}`, props: { kind, size: S.speeds.size, ms }, scenarios: ['animate'], stress: { group: `speed.${kind}`, ms } });
+  }
+  for (const [name, props] of S.raw) out.push({ ...base, id: `stress.raw.${name}`, props: { kind: name, ...props }, scenarios: ['animate'], stress: { group: 'raw' } });
+  for (const n of S.objects) out.push({ ...base, live: false, id: `stress.objects.${n}`, props: { kind: 'objects', n }, scenarios: ['idle'], stress: { group: 'objects', n, reserve: S.reserve } });
+  if (S.touch) out.push({ ...base, live: false, id: 'stress.touch', props: { kind: 'touch' }, scenarios: ['touch'], stress: { group: 'touch' } });
   return out;
 }
 function pick(all) {
   const f = arg('--case');
-  if (!f) return all;
+  if (!f) return all.filter((c) => !c.stress);  // the full suite = components + screens; stress only on request
   const keys = f.split(',');
   return all.filter((c) => keys.some((k) => (k.startsWith('tag:') ? (c.tags || []).includes(k.slice(4)) : c.id === k || c.id.startsWith(k + '.') || c.comp === k)));
 }
@@ -80,6 +98,7 @@ const r2 = (v) => Math.round(v * 100) / 100;
 const r3 = (v) => Math.round(v * 1000) / 1000;
 
 async function run(dev, c, scenario) {
+  const T = { ...TG, ...(c.timing || {}) };
   const D = budgets.devices[dev];
   const m = await load(D.density);
   let w = D.w, h = D.h;
@@ -105,14 +124,15 @@ async function run(dev, c, scenario) {
   // host copy proxy (the workbench's canvas copy): whole stage vs only the flushed areas (the 2026-10-22 lag fix)
   const dst = new Uint8ClampedArray(w * h * 4);
   let tn = 0;
-  const frames = { at: [], render: [], work: [], px: [], areas: [], flush: 0, full: 0, renders: 0, refr: 0, hostFull: [], hostAreas: [] };
+  const frames = { at: [], render: [], work: [], px: [], areas: [], flush: 0, full: 0, renders: 0, refr: 0, overflow: 0, hostFull: [], hostAreas: [] };
   const step = () => {
     tn++;
     const w0 = performance.now();
     tick();
     const work = performance.now() - w0;
-    const s = f64(m, m._fw_bench_take(), 8);
+    const s = f64(m, m._fw_bench_take(), 9);
     const ap = m._fw_areas(id);
+    frames.overflow += s[8] || 0;
     if (!s[0]) return;
     frames.renders += s[0]; frames.at.push(tn); frames.render.push(s[1]); frames.work.push(work); frames.px.push(s[4]); frames.areas.push(s[5]);
     frames.flush += s[3]; frames.full += s[7]; frames.refr += s[6];
@@ -132,7 +152,7 @@ async function run(dev, c, scenario) {
   };
   const ticks = (ms) => { for (let i = 0; i < Math.round(ms / T.tick_ms); i++) step(); };
   const reset = () => { for (const k of ['at', 'render', 'work', 'px', 'areas', 'hostFull', 'hostAreas']) frames[k] = []; frames.flush = frames.full = frames.renders = frames.refr = 0; };
-  let window_ms = 0, note = '';
+  let window_ms = 0, note = '', touch_ms = null;
   const settle = () => { ticks(T.settle_ms); reset(); };
   if (scenario === 'animate') { ticks(T.window_ms); window_ms = T.window_ms; }
   else if (scenario === 'idle') { settle(); ticks(T.window_ms); window_ms = T.window_ms; }
@@ -145,6 +165,21 @@ async function run(dev, c, scenario) {
     m._fw_touch(id, Math.round(x1 * w), Math.round(y1 * D.h), 0);
     ticks(T.after_ms);
     window_ms = T.tick_ms * (n + 1) + T.after_ms;
+  } else if (scenario === 'touch') {
+    // touch to frame: press the middle (a full-screen box that changes colour on press), count virtual ms to the first
+    // redraw; 5 taps (press, release, 300 ms apart). Virtual time: LVGL's input read period + the refresh slot.
+    settle();
+    const lat = [];
+    for (let k = 0; k < 5; k++) {
+      m._fw_touch(id, w >> 1, D.h >> 1, 1);
+      let i = 0;
+      for (; i < 40; i++) { const before = frames.render.length; step(); if (frames.render.length > before) break; }
+      lat.push((i + 1) * T.tick_ms);
+      m._fw_touch(id, w >> 1, D.h >> 1, 0);
+      ticks(300);
+    }
+    touch_ms = avg(lat);
+    window_ms = 5 * 300;
   } else if (scenario === 'navigate') {
     settle();
     const e1 = str(m, c.to || 'settings', (p) => m.UTF8ToString(m._fw_bench_nav(p, 0)));
@@ -167,11 +202,11 @@ async function run(dev, c, scenario) {
       render_ms_avg: r3(avg(frames.render)), render_ms_p95: r3(pct(frames.render, 0.95)), render_ms_max: r3(Math.max(0, ...frames.render)),
       work_ms_avg: r3(avg(frames.work)), flush_ms_avg: r3(n ? frames.flush / n : 0),
       px_avg: Math.round(avg(frames.px)), px_pct: r2((100 * avg(frames.px)) / (w * h)), px_per_s: Math.round((frames.px.reduce((a, b) => a + b, 0) * 1000) / window_ms),
-      areas_avg: r2(avg(frames.areas)), full_redraws: frames.full,
+      areas_avg: r2(avg(frames.areas)), full_redraws: frames.full, area_overflows: frames.overflow, ...(touch_ms != null ? { touch_ms: r2(touch_ms) } : {}),
     },
     host: { copy_full_ms: r3(avg(frames.hostFull)), copy_areas_ms: r3(avg(frames.hostAreas)) },
     // heap growth of the case, minus the bigger stage buffers of a content-height stage (RGBA + RGB565 draw buffer)
-    mem: { heap_kb: Math.round((mem1[0] - mem0[0] - (h - D.h) * w * 6) / 1024), heap_total_kb: Math.round(mem1[1] / 1024), objs: mem1[2], anims: mem1[3] },
+    mem: { heap_b: Math.round(mem1[0] - mem0[0] - (h - D.h) * w * 6), heap_kb: Math.round((mem1[0] - mem0[0] - (h - D.h) * w * 6) / 1024), heap_total_kb: Math.round(mem1[1] / 1024), objs: mem1[2], anims: mem1[3] },
   };
 }
 
@@ -206,6 +241,9 @@ function judge(dev, fit, c, scenario, r) {
   if (on('idle') && scenario === 'idle' && !c.live && r.wasm.px_per_s > B.idle_px_per_s) over.push(`idle redraw ${r.wasm.px_per_s} px/s`);
   if (on('build') && est.build_ms != null && est.build_ms > B.build_ms_max) over.push(`build ${est.build_ms} ms > ${B.build_ms_max}`);
   if (on('heap') && r.mem.heap_kb > B.heap_kb_max) over.push(`heap ${r.mem.heap_kb} KB > ${B.heap_kb_max}`);
+  // every device: more than 32 invalidated areas in one refresh = LVGL redraws the whole screen (the 2026-10-23 F1 track:
+  // 3 fps on the Guition); many moving things = one layer + union boxes, never one object each
+  if (r.wasm.area_overflows > 0) over.push(`dirty areas over 32 in ${r.wasm.area_overflows} refresh${r.wasm.area_overflows > 1 ? 'es' : ''} (full redraws)`);
   if (on('objs') && r.mem.objs > B.objs_max) over.push(`objs ${r.mem.objs} > ${B.objs_max}`);
   return { est, over };
 }
@@ -242,35 +280,67 @@ if (arg('--panel')) {
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const info = await get('/fw/info');
   const have = new Set((await get('/fw/meta')).map((m) => m.id));  // what this firmware registered
+  // the panel's own settings: bench cases may tap them (the Settings screen); put them back after the run, also on an
+  // error or abort (2026-10-22: UI sounds toggled during a run)
+  const settings0 = await get('/fw/settings').catch(() => null);
+  let restored = false;
+  const restoreSettings = async () => {
+    if (restored || !settings0?.values) return;
+    restored = true;
+    try { await fetch(base + '/fw/settings', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ values: settings0.values }), signal: AbortSignal.timeout(8000) }); log(`[panel ${dev}] settings put back`); }
+    catch (e) { console.error(`[panel ${dev}] could not put the settings back: ${e.message || e}`); }
+  };
+  for (const sig of ['SIGINT', 'SIGTERM']) process.on(sig, async () => { await restoreSettings(); process.exit(130); });
+  process.on('uncaughtException', async (e) => { console.error(e); await restoreSettings(); process.exit(1); });
+  const haSkip = new Set(suite.panel_skip_components || []);  // components bound to Home Assistant: never on a panel
   const skip = suite.panel_skip || {};
   const list = [...chosen, ...(arg('--case') ? [] : suite.anchors)];
   const cases = [], skipped = [];
   for (const c of list) for (const sc of c.scenarios) {
     if (onlyScen && sc !== onlyScen) continue;
+    if (haSkip.has(c.comp)) { skipped.push({ case: c.id, comp: c.comp, scenario: sc, device: dev, skipped: 'binds Home Assistant entities: not run on a panel' }); continue; }
     if (c.browser_only) { skipped.push({ case: c.id, comp: c.comp, scenario: sc, device: dev, skipped: c.browser_only }); continue; }
     if (skip[c.id]) { skipped.push({ case: c.id, comp: c.comp, scenario: sc, device: dev, skipped: skip[c.id] }); continue; }
-    if (have.has(c.comp)) cases.push([c.id, c.comp, { ...(c.props || {}), ...EXTRA }, sc, ...(c.path || c.to ? [c.path ?? null, c.to ?? null] : [])]);
+    const opts = c.stress || c.timing ? { ...(c.timing || {}), ...(c.stress ? { group: c.stress.group, stop_fps: c.stress.stop_fps ?? 0, reserve_int_kb: c.stress.reserve?.internal_kb ?? 0, reserve_ps_kb: c.stress.reserve?.psram_kb ?? 0, n: c.stress.n ?? 0 } : {}) } : null;
+    if (have.has(c.comp)) cases.push([c.id, c.comp, { ...(c.props || {}), ...EXTRA }, sc, ...(c.path || c.to || opts ? [c.path ?? null, c.to ?? null] : []), ...(opts ? [opts] : [])]);
     else skipped.push({ case: c.id, comp: c.comp, scenario: sc, device: dev, skipped: 'not in this firmware' });
   }
   const run = arg('--run', `${dev}-${Date.now()}`);
   const res = { v: 1, source: 'panel', device: dev, run, at: new Date().toISOString(), filter: { case: arg('--case') || null, scenario: onlyScen || null, device: dev, props: Object.keys(EXTRA).length ? EXTRA : null },
     firmware: { core: info.core, glue: info.glue, built: info.built }, results: [] };
-  const p = await (await fetch(base + '/fw/bench', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ run, theme: 'dark', timing: T, cases }), signal: AbortSignal.timeout(8000) })).json();
-  if (!p.ok) { console.error(`panel refused the batch: ${p.error}`); process.exit(1); }
-  log(`[panel ${dev}] ${p.total} cases sent, about ${p.eta_s} s; collecting after that`);
-  if (arg('--status')) writeFileSync(arg('--status'), JSON.stringify({ device: dev, run, total: p.total, eta_s: p.eta_s, started: Date.now() }));
-  await sleep(p.eta_s * 1000 + 3000);
-  let r;
-  for (let i = 0; ; i++) {
-    try { r = await get('/fw/bench'); } catch (e) { r = { state: 'unreachable', error: String(e.message || e) }; }
-    if (r.state === 'done' || r.state === 'interrupted' || r.state === 'idle' || r.run !== run && r.state !== 'unreachable') break;
-    if (i > 60) { r = { state: 'timeout' }; break; }
-    log(`[panel ${dev}] ${r.state} ${r.done ?? '?'}/${r.total ?? '?'}`);
-    await sleep(10000);
+  // batches of at most 64 cases (the panel keeps a batch in RAM), a stress ramp group never split across two
+  const chunks = [[]];
+  for (const cs of cases) {
+    const g = cs[6]?.group, last = chunks[chunks.length - 1];
+    const sameGroup = g && last.length && last[last.length - 1][6]?.group === g;
+    if (last.length >= 64 && !sameGroup || last.length >= 80) chunks.push([]);
+    chunks[chunks.length - 1].push(cs);
   }
-  if (r.state !== 'done' || r.run !== run) { res.error = r.state === 'done' ? 'another batch replaced this one' : r.state; log(`[panel ${dev}] ${res.error}`); }
+  const rows = [];
+  for (let ci = 0; ci < chunks.length; ci++) {
+    const bid = chunks.length > 1 ? `${run}-${ci + 1}` : run;
+    const p = await (await fetch(base + '/fw/bench', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ run: bid, theme: 'dark', timing: T, cases: chunks[ci] }), signal: AbortSignal.timeout(8000) })).json();
+    if (!p.ok) { console.error(`panel refused the batch: ${p.error}`); await restoreSettings(); process.exit(1); }
+    log(`[panel ${dev}] batch ${ci + 1}/${chunks.length}: ${p.total} cases sent, about ${p.eta_s} s; collecting after that`);
+    if (arg('--status')) writeFileSync(arg('--status'), JSON.stringify({ device: dev, run, total: cases.length, eta_s: Math.round(p.eta_s * (cases.length / chunks[ci].length) * (chunks.length - ci) / chunks.length) || p.eta_s, started: Date.now() }));
+    await sleep(p.eta_s * 1000 + 3000);
+    let r;
+    for (let i = 0; ; i++) {
+      try { r = await get('/fw/bench'); } catch (e) { r = { state: 'unreachable', error: String(e.message || e) }; }
+      if (r.state === 'done' || r.state === 'interrupted' || r.state === 'idle' || r.run !== bid && r.state !== 'unreachable') break;
+      if (i > 60) { r = { state: 'timeout' }; break; }
+      log(`[panel ${dev}] ${r.state} ${r.done ?? '?'}/${r.total ?? '?'}`);
+      await sleep(10000);
+    }
+    if (r.state !== 'done' || r.run !== bid) { res.error = r.state === 'done' ? 'another batch replaced this one' : r.state; log(`[panel ${dev}] ${res.error}`); break; }
+    rows.push(...(r.results || []));
+  }
+  const r = { results: rows };
+  await restoreSettings();
+  // chunked runs: each batch puts back what the previous batch's last case showed, so put back what was shown before the first
+  if (chunks.length > 1 && info.shown) await fetch(base + '/fw/show', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(info.shown), signal: AbortSignal.timeout(8000) }).catch(() => {});
   const byKey = new Map(list.flatMap((c) => c.scenarios.map((sc) => [`${c.id}|${sc}`, c])));
-  for (const x of r.results || []) { const c = byKey.get(`${x.case}|${x.scenario}`); res.results.push({ ...x, comp: c?.comp, device: dev, live: !!c?.live, anchor: x.case.startsWith('anchor.') }); }
+  for (const x of r.results || []) { const c = byKey.get(`${x.case}|${x.scenario}`); res.results.push({ ...x, comp: c?.comp, device: dev, live: !!c?.live, anchor: x.case.startsWith('anchor.'), ...(c?.stress ? { stress: c.stress, props: c.props, tags: c.tags } : {}) }); }
   res.results.push(...skipped);
   res.run_s = r2((Date.now() - Date.parse(res.at)) / 1000);
   const o = arg('--out');
@@ -331,15 +401,22 @@ for (const dev of devIds) {
   out.devices[dev] = { name: D.name, w: D.w, h: D.h, fit: { a: r2(fit.a), b: r2(fit.b), n: D.measured ? D.measured.n : pts.length, source: D.measured ? 'measured' : 'anchors' }, anchors, budget: D.budget, checks: D.checks ?? null, build_factor: D.build_factor ?? null };
   log(`[${dev}] panel ms = ${fit.a.toFixed(2)} + ${fit.b.toFixed(1)} x wasm ms (${pts.length} anchors)`);
   const list = [...chosen, ...(arg('--case') ? [] : suite.anchors)];
-  for (const c of list) await run(dev, c, c.scenarios[0]);  // warm-up: every code path compiled before it is timed
+  for (const c of list) if (!c.stress || c.stress.n == null || c.stress.n <= 16) await run(dev, c, c.scenarios[0]);  // warm-up: every code path compiled before it is timed
+  const stopped = new Map();  // stress group -> why it stopped (one step past the knee)
   for (const c of list) {
     for (const sc of c.scenarios) {
       if (onlyScen && sc !== onlyScen) continue;
-      const r = await runMed(dev, c, sc, REPEAT);
+      if (c.stress && stopped.has(c.stress.group)) { out.results.push({ case: c.id, comp: c.comp, props: c.props, scenario: sc, device: dev, tags: c.tags, stress: c.stress, skipped: stopped.get(c.stress.group), over: [] }); continue; }
+      const r = await runMed(dev, c, sc, c.stress ? 1 : REPEAT);  // a stress ramp is its own series: once
       const row = { case: c.id, comp: c.comp, props: c.props || {}, scenario: sc, device: dev, live: !!c.live, tags: c.tags || [], anchor: c.id.startsWith('anchor.') };
       if (r.error) { out.results.push({ ...row, error: r.error, over: ['error'] }); log(`[${dev}] ${c.id} ${sc}: ERROR ${r.error}`); continue; }
       const j = judge(dev, fit, c, sc, r);
-      out.results.push({ ...row, w: r.w, h: r.h, window_ms: r.window_ms, wasm: r.wasm, est: j.est, host: r.host, mem: r.mem, over: j.over });
+      out.results.push({ ...row, ...(c.stress ? { stress: c.stress, props: c.props } : {}), w: r.w, h: r.h, window_ms: r.window_ms, wasm: r.wasm, est: j.est, host: r.host, mem: r.mem, over: c.stress ? [] : j.over });
+      // capacity fps (frame cost only, not how often the load asks for a frame): the knee is about cost
+      const cap = Math.min(budgets.devices[dev].loop_cap_fps, j.est.render_ms_avg > 0 ? 1000 / j.est.render_ms_avg : Infinity);
+      if (c.stress) j.est.cap_fps = r2(cap);
+      if (c.stress?.stop_fps && r.wasm.frames >= 3 && cap < c.stress.stop_fps) stopped.set(c.stress.group, `past the knee (${r2(cap)} fps at the step before)`);
+      if (c.stress?.reserve && r.mem.heap_b > (budgets.devices[dev].budget.heap_kb_max ?? 1e9) * 1024 * 4) stopped.set(c.stress.group, 'memory cap');
       log(`[${dev}] ${c.id} ${sc}: ${r.wasm.frames} fr, est ${j.est.render_ms_avg} ms ${j.est.fps} fps, ${r.wasm.px_pct}% px${j.over.length ? '  OVER: ' + j.over.join('; ') : ''}`);
     }
   }

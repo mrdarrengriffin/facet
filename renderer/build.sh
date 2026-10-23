@@ -82,7 +82,7 @@ FW_TTF=${FW_TTF:?set FW_TTF (dir of the TTFs) in local.env} "${FW_FONT_PY:?set F
 # workbench + foundations + components: recompile when the source, a core header, a token header or (fonts) the font header is newer
 CXX="em++ $FL $VFLAG -std=c++17 -I$HERE/core -I$AJ"
 OBJS=; JOBS=
-for f in "$HERE"/core/*.cpp "$HERE"/foundations/*.cpp "$HERE"/components/*.cpp "$HERE"/screens/*.cpp; do
+for f in "$HERE"/core/*.cpp "$HERE"/foundations/*.cpp "$HERE"/components/*.cpp "$HERE"/screens/*.cpp "$HERE"/bench/*.cpp; do
   [ -f "$f" ] || continue
   o="$O/$(basename "$(dirname "$f")")_$(basename "$f" .cpp).o"
   OBJS="$OBJS $o"

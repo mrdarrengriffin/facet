@@ -2,7 +2,9 @@
 // every display. Same window as the panels' GET /fw/perf (firmware/fw_device.h): LVGL RENDER_START -> RENDER_READY =
 // render + flush. WASM only (emscripten.h): not in the panel bundle (firmware/bundle.mjs lists its core files).
 //   fw_bench_attach()       hook every display (idempotent) and zero the counters
-//   fw_bench_take() -> f64[8] since the last call: [renders, render_ms, render_ms_max, flush_ms, px, areas, refr_ms, full]
+//   fw_bench_take() -> f64[9] since the last call: [renders, render_ms, render_ms_max, flush_ms, px, areas, refr_ms, full,
+//                           overflows] overflows = refreshes whose invalidated areas went past LVGL's 32-area buffer
+//                           (LV_INV_BUF_SIZE): LVGL then redraws the whole screen (2026-10-23, the F1 track at 3 fps)
 //                           render_ms = sum of RENDER_START..READY (incl. the host flush), flush_ms = the host flush part
 //                           (RGB565 -> RGBA copy, a workbench cost), px = pixels flushed, areas = flushed areas,
 //                           refr_ms = REFR_START..READY (layout + render), full = refreshes that flushed the whole display
@@ -18,8 +20,9 @@
 
 namespace {
 struct Acc {
-  double renders = 0, render_ms = 0, render_max = 0, flush_ms = 0, px = 0, areas = 0, refr_ms = 0, full = 0;
+  double renders = 0, render_ms = 0, render_max = 0, flush_ms = 0, px = 0, areas = 0, refr_ms = 0, full = 0, overflow = 0;
 };
+int inv_count = 0;  // invalidations since the last refresh (an upper bound: LVGL drops ones inside a saved area)
 Acc acc;
 double t_refr = 0, t_render = 0, t_flush = 0, frame_px = 0;
 std::vector<lv_display_t *> hooked;
@@ -28,7 +31,12 @@ void on_disp(lv_event_t *e) {
   const double t = emscripten_get_now();
   auto *d = (lv_display_t *) lv_event_get_current_target(e);
   switch (lv_event_get_code(e)) {
-    case LV_EVENT_REFR_START: t_refr = t; break;
+    case LV_EVENT_REFR_START:
+      t_refr = t;
+      if (inv_count > 32) acc.overflow++;  // past LV_INV_BUF_SIZE: this refresh is a full-screen redraw
+      inv_count = 0;
+      break;
+    case LV_EVENT_INVALIDATE_AREA: inv_count++; break;
     case LV_EVENT_REFR_READY: acc.refr_ms += t - t_refr; break;
     case LV_EVENT_RENDER_START: t_render = t; frame_px = 0; break;
     case LV_EVENT_RENDER_READY: {
@@ -66,7 +74,7 @@ EMSCRIPTEN_KEEPALIVE void fw_bench_attach() {
     for (auto *h : hooked) have |= h == d;
     if (have) continue;
     for (auto c : {LV_EVENT_REFR_START, LV_EVENT_REFR_READY, LV_EVENT_RENDER_START, LV_EVENT_RENDER_READY,
-                   LV_EVENT_FLUSH_START, LV_EVENT_FLUSH_FINISH})
+                   LV_EVENT_FLUSH_START, LV_EVENT_FLUSH_FINISH, LV_EVENT_INVALIDATE_AREA})
       lv_display_add_event_cb(d, on_disp, c, nullptr);
     hooked.push_back(d);
   }
@@ -74,9 +82,9 @@ EMSCRIPTEN_KEEPALIVE void fw_bench_attach() {
 }
 
 EMSCRIPTEN_KEEPALIVE const double *fw_bench_take() {
-  static double out[8];
+  static double out[9];
   out[0] = acc.renders; out[1] = acc.render_ms; out[2] = acc.render_max; out[3] = acc.flush_ms;
-  out[4] = acc.px; out[5] = acc.areas; out[6] = acc.refr_ms; out[7] = acc.full;
+  out[4] = acc.px; out[5] = acc.areas; out[6] = acc.refr_ms; out[7] = acc.full; out[8] = acc.overflow;
   acc = Acc{};
   return out;
 }
