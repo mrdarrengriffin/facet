@@ -48,7 +48,15 @@ bool skip(lv_obj_t *o) { return lv_obj_has_flag(o, LV_OBJ_FLAG_HIDDEN) || lv_obj
 // an id may carry the screen's props: "light?{\"entity\":\"light.x\"}" (one Light screen for every light)
 std::string base_of(const std::string &id) { return id.substr(0, id.find('?')); }
 bool known(const std::string &id) { return find(base_of(id).c_str()) || spec::screen_json(base_of(id)); }
+bool text_large_setting();
+// the device's screens are built in its Text size (Settings > Text size: Large = core/fonts.cpp large fonts)
+struct LargeScope {
+  bool was;
+  explicit LargeScope(bool on) : was(text_large()) { set_text_large(on); }
+  ~LargeScope() { set_text_large(was); }
+};
 bool show(Device *d, const std::string &id, std::vector<lv_obj_t *> &items) {
+  LargeScope large(text_large_setting());
   const Component *c = find(base_of(id).c_str());
   const bool from_spec = !c && spec::screen_json(base_of(id));  // a screen from its spec (core/spec.h)
   if (!c && !from_spec) return false;
@@ -160,6 +168,8 @@ Store &store() {
   static Store s;
   return s;
 }
+int index_of(const char *id);
+bool text_large_setting() { return store().v[index_of("textSize")] == "large"; }
 int index_of(const char *id) {
   for (int i = 0; id && i < set::N_SETTINGS; i++)
     if (!strcmp(set::SETTINGS[i].id, id)) return i;
@@ -239,9 +249,16 @@ void restyle_tick(lv_timer_t *t) {
 // every device after a change: its theme, the Settings screen's controls (a change from outside the screen)
 void apply(int k, From from) {
   const char *id = set::SETTINGS[k].id;
-  const bool look_ = !strcmp(id, "theme") || !strcmp(id, "accent");
+  const bool text_ = !strcmp(id, "textSize");  // Large text: other fonts, every device builds its screen again
+  if (text_) set_text_large_default(store().v[k] == "large");
+  const bool look_ = !strcmp(id, "theme") || !strcmp(id, "accent") || text_;
   if (look_ && store().look_hook) store().look_hook();
   for (Device *d : devices) {
+    if (text_) {
+      if (!d->restyle) d->restyle = lv_timer_create(restyle_tick, 30, d);
+      d->restyle_at = lv_tick_get();
+      continue;
+    }
     if (look_) {
       const Theme *t = look(d->stage);
       if (t != d->theme) {

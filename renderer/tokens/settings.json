@@ -95,7 +95,7 @@
       "kind": "select",
       "control": "segmented",
       "default": "standard",
-      "about": "Large sets the small text roles one step bigger inside the same line boxes, so nothing on a screen moves.",
+      "about": "Large sets the small text roles one step bigger inside the same line boxes, so nothing on a screen moves (480: titles only; body and label line boxes have no room there).",
       "options": [
         {
           "id": "standard",
@@ -107,7 +107,7 @@
           "type": {
             "title": 32,
             "body": 26,
-            "label": 22
+            "label": 20
           }
         }
       ],

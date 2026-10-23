@@ -242,6 +242,13 @@
         "box": 28,
         "weight": 500,
         "letterSpacing": 0
+      },
+      "large": {
+        "size": 32,
+        "1x": {
+          "size": 21
+        },
+        "about": "Large text: one step bigger in the same line box (480: 21, the longest titles still fit)"
       }
     },
     "body": {
@@ -261,6 +268,13 @@
         "box": 20,
         "weight": 500,
         "letterSpacing": 0
+      },
+      "large": {
+        "size": 26,
+        "1x": {
+          "size": 16
+        },
+        "about": "Large text: one step bigger at 720; at 480 the 20 px line box has no room for the descenders, so body stays 16"
       }
     },
     "label": {
@@ -280,6 +294,13 @@
         "box": 16,
         "weight": 600,
         "letterSpacing": 1
+      },
+      "large": {
+        "size": 20,
+        "1x": {
+          "size": 13
+        },
+        "about": "Large text: 20 at 720 (21+ overflows the header clock box); at 480 the 16 px box has no room, so it stays 13"
       }
     },
     "c-number": {

@@ -243,6 +243,7 @@ struct Built {
   const Component *c = nullptr;
   const Theme *t = nullptr;  // theme + accent it was built in
   lv_obj_t *root = nullptr;  // the one object build() made
+  bool large = false;        // Large text it was built with
 };
 void built_free(lv_event_t *e) { delete (Built *) lv_event_get_user_data(e); }
 Built *built_of(lv_obj_t *scr, bool make) {
@@ -268,6 +269,7 @@ const char *render(lv_obj_t *scr, const char *comp, const char *props, bool ligh
   T = theme(light, accent);
   // reduced motion for this display: props "reduced_motion" (workbench playground / Show on device), else the panel's
   mo::set_reduced(lv_obj_get_display(scr), doc["reduced_motion"] | mo::reduced_default());
+  set_text_large(doc["text_size"].is<const char *>() ? !strcmp(doc["text_size"], "large") : text_large_default());
   mo::set_fades(lv_obj_get_display(scr), doc["fades"] | mo::fades_default());
   demo_clear(scr);  // (before the clean: the demos' DELETE events find no set)
   lv_obj_clean(scr);
@@ -279,7 +281,7 @@ const char *render(lv_obj_t *scr, const char *comp, const char *props, bool ligh
   lv_obj_remove_flag(scr, LV_OBJ_FLAG_SCROLLABLE);
   c->build(scr, doc.as<ArduinoJson::JsonObjectConst>());
   // the update path needs exactly one root object (a component that puts several objects on the screen has none)
-  if (lv_obj_get_child_count(scr) == 1) *b = Built{c, T, lv_obj_get_child(scr, 0)};
+  if (lv_obj_get_child_count(scr) == 1) *b = Built{c, T, lv_obj_get_child(scr, 0), text_large()};
   lv_obj_update_layout(scr);
   lv_obj_invalidate(scr);
   return "";
@@ -294,6 +296,9 @@ const char *update(lv_obj_t *scr, const char *comp, const char *props, bool ligh
   const Theme *t = theme(light, accent);
   if (!b || b->c != c || b->t != t || !c->update || !b->root || !lv_obj_is_valid(b->root) || lv_obj_get_parent(b->root) != scr)
     return "rebuild";
+  const bool lg = doc["text_size"].is<const char *>() ? !strcmp(doc["text_size"], "large") : text_large_default();
+  if (lg != b->large) return "rebuild";  // another text size = other fonts: built again
+  set_text_large(lg);
   T = t;
   mo::set_reduced(lv_obj_get_display(scr), doc["reduced_motion"] | mo::reduced_default());
   mo::set_fades(lv_obj_get_display(scr), doc["fades"] | mo::fades_default());

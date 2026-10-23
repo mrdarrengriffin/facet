@@ -8,7 +8,20 @@
 #include "facet_fonts.h"
 #endif
 
-const lv_font_t *fw::font(ty::Id s) { return (s >= 0 && s < ty::N) ? gen::STYLE_FONT[s]->get() : LV_FONT_DEFAULT; }
+// Large text (Settings > Text size, tokens/type.json "large"): the styles that have one use their bigger font in the
+// same line box while it is on (set per build: fw::render props "text_size", the device runtime's setting)
+namespace {
+bool large_now = false, large_dflt = false;
+}
+void fw::set_text_large(bool on) { large_now = on; }
+bool fw::text_large() { return large_now; }
+void fw::set_text_large_default(bool on) { large_dflt = on; }
+bool fw::text_large_default() { return large_dflt; }
+const lv_font_t *fw::font(ty::Id s) {
+  if (s < 0 || s >= ty::N) return LV_FONT_DEFAULT;
+  if (large_now && gen::LARGE_FONT[s]) return gen::LARGE_FONT[s]->get();
+  return gen::STYLE_FONT[s]->get();
+}
 
 // nearest full-text font in px to `dp` (sans or mono): for quick labels that are not a type style (prefer fw::text)
 const lv_font_t *fw::font(float dp, bool mono) {

@@ -43,6 +43,13 @@ inline int px(float dp) {
 // Type (tokens/type.json, README "Type tokens"): styles fw::ty::display, ty::body, ty::c_meta, ... (- -> _), values in
 // device px for this density (fw::ty::STYLES[s]). Fonts are generated per density with only the glyphs the styles use.
 const lv_font_t *font(ty::Id s);
+// Large text (Settings > Text size = Large): title / body / label one step bigger in the same line boxes, so nothing
+// moves. A build-time switch: fw::font(s) gives the large font while it is on. render() sets it from props "text_size"
+// (large / standard), else the panel's setting (set_text_large_default); the device runtime from its setting.
+void set_text_large(bool on);
+bool text_large();
+void set_text_large_default(bool on);
+bool text_large_default();
 inline const ty::Style &style(ty::Id s) { return ty::STYLES[s]; }
 // a label in type style `s`: font, letter spacing, case (upper styles are upper-cased here), height = the style's line
 // box with the cap height centred in it (the Facet text-box rule). wrap_w > 0 = a paragraph wrapped at that width, lines
