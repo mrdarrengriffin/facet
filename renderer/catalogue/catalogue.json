@@ -607,7 +607,8 @@
       "hero",
       "ring",
       "analogue",
-      "compact"
+      "compact",
+      "orbit"
      ]
     },
     {
@@ -649,6 +650,16 @@
     },
     {
      "name": "day",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "condition",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "temp",
      "type": "text",
      "bindable": true
     }
@@ -1040,6 +1051,354 @@
     "bytes_est": 800
    }
   },
+  "f1_car_marker": {
+   "name": "F1 car marker",
+   "update": true,
+   "props": [
+    {
+     "name": "marker",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "dot",
+      "code",
+      "number"
+     ]
+    },
+    {
+     "name": "code",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "num",
+     "type": "range",
+     "bindable": true,
+     "min": 1,
+     "max": 99
+    },
+    {
+     "name": "colour",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "lead",
+     "type": "bool",
+     "bindable": true
+    },
+    {
+     "name": "label",
+     "type": "bool",
+     "bindable": true
+    },
+    {
+     "name": "pit",
+     "type": "bool",
+     "bindable": true
+    },
+    {
+     "name": "on",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "bg",
+      "surface"
+     ]
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 4,
+    "bytes_est": 640
+   }
+  },
+  "f1_circuit": {
+   "name": "F1 circuit",
+   "update": true,
+   "props": [
+    {
+     "name": "track",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "au-1953",
+      "cn-2004",
+      "jp-1962",
+      "us-2022",
+      "ca-1978",
+      "mc-1929",
+      "es-1991",
+      "at-1969",
+      "gb-1948",
+      "be-1925",
+      "hu-1986",
+      "nl-1948",
+      "it-1922",
+      "es-2026",
+      "az-2016",
+      "my-1999",
+      "sg-2008",
+      "us-2012",
+      "mx-1962",
+      "br-1940",
+      "us-2023",
+      "qa-2004",
+      "ae-2009"
+     ]
+    },
+    {
+     "name": "marker",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "dot",
+      "code",
+      "number"
+     ]
+    },
+    {
+     "name": "labels",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "none",
+      "leader",
+      "top 3",
+      "battles",
+      "all"
+     ]
+    },
+    {
+     "name": "moments",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "tags",
+      "off"
+     ]
+    },
+    {
+     "name": "race_control",
+     "type": "bool",
+     "bindable": true
+    },
+    {
+     "name": "orientation",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "broadcast",
+      "north"
+     ]
+    },
+    {
+     "name": "lite",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "auto",
+      "on",
+      "off"
+     ]
+    },
+    {
+     "name": "sim",
+     "type": "bool",
+     "bindable": true
+    },
+    {
+     "name": "speed",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "1x",
+      "10x",
+      "60x"
+     ]
+    },
+    {
+     "name": "jump",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "start",
+      "yellow",
+      "double yellow",
+      "vsc",
+      "safety car",
+      "red flag",
+      "restart",
+      "overtake",
+      "pit stop",
+      "blue flag",
+      "fastest lap",
+      "retirement",
+      "final lap",
+      "chequered"
+     ]
+    },
+    {
+     "name": "seed",
+     "type": "range",
+     "bindable": true,
+     "min": 1,
+     "max": 20
+    },
+    {
+     "name": "cars",
+     "type": "range",
+     "bindable": true,
+     "min": 2,
+     "max": 22
+    },
+    {
+     "name": "width",
+     "type": "range",
+     "bindable": true,
+     "min": 240,
+     "max": 448
+    },
+    {
+     "name": "height",
+     "type": "range",
+     "bindable": true,
+     "min": 200,
+     "max": 448
+    },
+    {
+     "name": "feed",
+     "type": "text",
+     "bindable": true
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 4,
+    "bytes_est": 640
+   }
+  },
+  "f1_standings": {
+   "name": "F1 standings",
+   "update": true,
+   "props": [
+    {
+     "name": "rows",
+     "type": "range",
+     "bindable": true,
+     "min": 3,
+     "max": 22
+    },
+    {
+     "name": "from",
+     "type": "range",
+     "bindable": true,
+     "min": 1,
+     "max": 20
+    },
+    {
+     "name": "density",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "normal",
+      "compact"
+     ]
+    },
+    {
+     "name": "stat",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "badges",
+      "interval",
+      "tyre"
+     ]
+    },
+    {
+     "name": "width",
+     "type": "range",
+     "bindable": true,
+     "min": 176,
+     "max": 320
+    },
+    {
+     "name": "sim",
+     "type": "bool",
+     "bindable": true
+    },
+    {
+     "name": "speed",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "1x",
+      "10x",
+      "60x"
+     ]
+    },
+    {
+     "name": "jump",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "start",
+      "penalty",
+      "black and white",
+      "blue flag",
+      "overtake",
+      "pit stop",
+      "safety car",
+      "red flag",
+      "fastest lap",
+      "retirement",
+      "final lap",
+      "chequered"
+     ]
+    },
+    {
+     "name": "seed",
+     "type": "range",
+     "bindable": true,
+     "min": 1,
+     "max": 20
+    },
+    {
+     "name": "track",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "us-2012",
+      "mc-1929",
+      "gb-1948",
+      "be-1925",
+      "it-1922"
+     ]
+    },
+    {
+     "name": "feed",
+     "type": "text",
+     "bindable": true
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 62,
+    "bytes_est": 9920
+   }
+  },
   "focus_ring": {
    "name": "Focus ring",
    "update": true,
@@ -1079,6 +1438,70 @@
    "cost": {
     "objects": 2,
     "bytes_est": 320
+   }
+  },
+  "football_pitch": {
+   "name": "Football pitch",
+   "update": true,
+   "props": [
+    {
+     "name": "width",
+     "type": "range",
+     "bindable": true,
+     "min": 280,
+     "max": 432
+    },
+    {
+     "name": "sim",
+     "type": "bool",
+     "bindable": true
+    },
+    {
+     "name": "speed",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "1x",
+      "10x",
+      "60x"
+     ]
+    },
+    {
+     "name": "jump",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "start",
+      "kickoff",
+      "goal",
+      "card",
+      "sub",
+      "half time",
+      "added time",
+      "full time"
+     ]
+    },
+    {
+     "name": "seed",
+     "type": "range",
+     "bindable": true,
+     "min": 1,
+     "max": 20
+    },
+    {
+     "name": "feed",
+     "type": "text",
+     "bindable": true
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 118,
+    "bytes_est": 18880
    }
   },
   "header": {
@@ -2570,6 +2993,178 @@
     "bytes_est": 160
    }
   },
+  "tennis_court": {
+   "name": "Tennis court",
+   "update": true,
+   "props": [
+    {
+     "name": "width",
+     "type": "range",
+     "bindable": true,
+     "min": 240,
+     "max": 448
+    },
+    {
+     "name": "sim",
+     "type": "bool",
+     "bindable": true
+    },
+    {
+     "name": "speed",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "1x",
+      "10x",
+      "60x"
+     ]
+    },
+    {
+     "name": "jump",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "start",
+      "break point",
+      "break",
+      "tiebreak",
+      "set point",
+      "match point"
+     ]
+    },
+    {
+     "name": "seed",
+     "type": "range",
+     "bindable": true,
+     "min": 1,
+     "max": 20
+    },
+    {
+     "name": "best_of",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "3",
+      "5"
+     ]
+    },
+    {
+     "name": "final_set",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "tb10",
+      "tb7",
+      "adv"
+     ]
+    },
+    {
+     "name": "feed",
+     "type": "text",
+     "bindable": true
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 15,
+    "bytes_est": 2400
+   }
+  },
+  "tennis_score": {
+   "name": "Tennis score",
+   "update": true,
+   "props": [
+    {
+     "name": "layout",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "board",
+      "hero",
+      "compact"
+     ]
+    },
+    {
+     "name": "width",
+     "type": "range",
+     "bindable": true,
+     "min": 240,
+     "max": 448
+    },
+    {
+     "name": "sim",
+     "type": "bool",
+     "bindable": true
+    },
+    {
+     "name": "speed",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "1x",
+      "10x",
+      "60x"
+     ]
+    },
+    {
+     "name": "jump",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "start",
+      "break point",
+      "break",
+      "tiebreak",
+      "set point",
+      "match point"
+     ]
+    },
+    {
+     "name": "seed",
+     "type": "range",
+     "bindable": true,
+     "min": 1,
+     "max": 20
+    },
+    {
+     "name": "best_of",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "3",
+      "5"
+     ]
+    },
+    {
+     "name": "final_set",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "tb10",
+      "tb7",
+      "adv"
+     ]
+    },
+    {
+     "name": "feed",
+     "type": "text",
+     "bindable": true
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 29,
+    "bytes_est": 4640
+   }
+  },
   "thermostat_dial": {
    "name": "Thermostat dial",
    "update": true,
@@ -3073,5 +3668,5 @@
   "screens": 16,
   "deck_bytes": 2048
  },
- "hash": "4e556333"
+ "hash": "08917d28"
 }

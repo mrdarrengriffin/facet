@@ -15,6 +15,14 @@
 //             a lay::clock_hand_tail tail and a lay::clock_hand_tip dot, sweeping; centre cap lay::clock_cap, canvas
 //             with a stroke::edge accent ring. Hands drawn in one draw event, each move repaints only its old + new box
 //   compact   the compact Time alone (docs clockCompact: a header clock)
+//   orbit     the Clock screen's own face (docs screens/clock.ts orbitFace), sized to the content box (a screen's
+//             body under its header): a tick ring the content height (120 ticks, stroke::tick dots line-hi, every
+//             10th lay::clock_orbit_tick steel), three dots orbiting inside it at different speeds (accent
+//             lay::clock_orbit_dot one turn a minute with the seconds; blue and steel lay::clock_orbit_dot_sm,
+//             lay::clock_orbit_step and 2x further in, Motion orbit-b reversed / orbit-c), and a column centred on the
+//             ring: Time (mid), the Date line, the weather line (c-weather, text-dim: "rain \xB7 13\xB0", props
+//             condition = an HA weather state, temp = its temperature, both bindable; empty = no line). Reduced
+//             motion: the dots stay where they are (the seconds dot steps once a second).
 //   seconds   prop (Darren 2026-10-22): the Time's seconds on hero and compact (ring and analogue show them their way)
 //   context   (docs) not here: it needs the weather, calendar and timer feeds (a screen job, with the Clock screen)
 // Time: prop "time" = a fixed "HH:MM[:SS]" (tests, the audit) that then runs on; empty = live (localtime). The seconds
@@ -23,9 +31,10 @@
 // updates); another face refills. Contrast pairs: colour.json section "clock".
 #include <ctime>
 #include "fw.h"
+#include "weather.h"
 
 namespace {
-enum Face { HERO, RING, ANALOGUE, COMPACT };
+enum Face { HERO, RING, ANALOGUE, COMPACT, ORBIT };
 struct Clock {
   Face face = RING;
   long base_ms = 0;          // time of day at t0 (ms)
@@ -34,6 +43,8 @@ struct Clock {
   float hour_deg = 0, min_deg = 0, sec_deg = 0;  // shown angles (cumulative for hour / minute)
   float hour_from = 0, min_from = 0, hour_to = 0, min_to = 0;
   lv_obj_t *time = nullptr, *date = nullptr, *orbit = nullptr, *hands = nullptr, *bar = nullptr, *fillb = nullptr;
+  lv_obj_t *wx = nullptr, *orb[3] = {};  // orbit face: the weather line, the three dots
+  int orb_r[3] = {}, oc = 0;              // their radii, the ring centre (root px)
   lv_timer_t *timer = nullptr;
   std::string font, format, datestyle, fixed;
   bool seconds = false;
@@ -41,7 +52,7 @@ struct Clock {
 Clock *of(lv_obj_t *o) { return (Clock *) lv_obj_get_user_data(o); }
 Face face_of(fw::Props p) {
   const char *f = p["face"] | "ring";
-  return !strcmp(f, "hero") ? HERO : !strcmp(f, "analogue") ? ANALOGUE : !strcmp(f, "compact") ? COMPACT : RING;
+  return !strcmp(f, "hero") ? HERO : !strcmp(f, "analogue") ? ANALOGUE : !strcmp(f, "compact") ? COMPACT : !strcmp(f, "orbit") ? ORBIT : RING;
 }
 long now_ms(const Clock *d) { return d->base_ms + (long) lv_tick_elaps(d->t0); }
 long day_ms(fw::Props p) {
@@ -144,6 +155,31 @@ void hand_dirty(lv_obj_t *root, int k) {  // the box of hand k as it is now
   lv_obj_invalidate_area(d->hands, &ca);
 }
 
+// ---- orbit face: a dot k at an angle on its circle round the ring centre
+void orbit_place(Clock *d, int k, float deg) {
+  const int M = (int) lv_obj_get_style_width(d->orb[k], LV_PART_MAIN);
+  const fw::StrokePt c = fw::polar((float) d->oc, (float) d->oc, (float) d->orb_r[k], deg);
+  const int32_t x = (int32_t) std::lround(c.x - M / 2.0f), y = (int32_t) std::lround(c.y - M / 2.0f);
+  if (x != lv_obj_get_x(d->orb[k]) || y != lv_obj_get_y(d->orb[k])) lv_obj_set_pos(d->orb[k], x, y);
+}
+void orbit_b(void *o, int32_t v) { auto *d = of((lv_obj_t *) o); orbit_place(d, 1, 270 - v / 100.0f); }  // reversed
+void orbit_c(void *o, int32_t v) { auto *d = of((lv_obj_t *) o); orbit_place(d, 2, 270 + v / 100.0f); }
+void orbit_spin(lv_obj_t *root, lv_anim_exec_xcb_t f, uint32_t ms) {
+  lv_anim_t a;
+  lv_anim_init(&a);
+  lv_anim_set_var(&a, root);
+  lv_anim_set_exec_cb(&a, f);
+  lv_anim_set_values(&a, 0, 36000);
+  lv_anim_set_duration(&a, ms);
+  lv_anim_set_path_cb(&a, fw::mo::EASINGS[fw::mo::E_linear].path);
+  lv_anim_set_repeat_count(&a, LV_ANIM_REPEAT_INFINITE);
+  lv_anim_start(&a);
+}
+std::string wx_line(fw::Props p) {
+  const char *t = p["temp"] | "";
+  return fw::wx::line(p["condition"] | "", *t ? strtod(t, nullptr) : NAN);
+}
+
 // ---- the seconds (orbit dot / seconds hand / strip): one angle from the time
 void seconds(void *o, int32_t) {
   auto *root = (lv_obj_t *) o;
@@ -161,6 +197,7 @@ void seconds(void *o, int32_t) {
     const int32_t x = (int32_t) std::lround(c.x - M / 2.0f), y = (int32_t) std::lround(c.y - M / 2.0f);
     if (x != lv_obj_get_x(d->orbit) || y != lv_obj_get_y(d->orbit)) lv_obj_set_pos(d->orbit, x, y);
   }
+  if (d->orb[0]) orbit_place(d, 0, 270 + deg);
   if (d->fillb) {
     const int w = (int) std::lround(fw::lay::clock_secbar * (ms % 60000) / 60000.0);
     if (w != lv_obj_get_width(d->fillb)) lv_obj_set_width(d->fillb, w);
@@ -223,12 +260,14 @@ void fill(lv_obj_t *root, fw::Props p) {
   d->base_ms = day_ms(p);
   d->t0 = lv_tick_get();
   d->shown_min = -1;
-  d->time = d->date = d->orbit = d->hands = d->bar = d->fillb = nullptr;
+  d->time = d->date = d->orbit = d->hands = d->bar = d->fillb = d->wx = nullptr;
+  d->orb[0] = d->orb[1] = d->orb[2] = nullptr;
   d->hour_deg = d->min_deg = d->sec_deg = 0;
   const int S = fw::lay::screen_w, C = S / 2;
   lv_obj_remove_style_all(root);
   lv_obj_remove_flag(root, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
-  lv_obj_set_size(root, S, S);
+  if (d->face == ORBIT) lv_obj_set_size(root, fw::lay::content_w, fw::lay::content_h);  // a screen body
+  else lv_obj_set_size(root, S, S);
   const char *date = p["day"] | "";
   ArduinoJson::JsonDocument tp, dp;
   date_props(d, dp, date);
@@ -296,6 +335,48 @@ void fill(lv_obj_t *root, fw::Props p) {
     d->hands = box(root);
     lv_obj_set_size(d->hands, S, S);
     lv_obj_add_event_cb(d->hands, hands_draw, LV_EVENT_DRAW_MAIN, root);
+  } else if (d->face == ORBIT) {
+    const int W = fw::lay::content_w, H = fw::lay::content_h, RG = std::min(W, H) / 8 * 8, R = RG / 2;
+    fw::TickRing ring;  // docs tickRing 120 / every 10th: dots, majors short ticks
+    ring.lo = 0, ring.hi = 120, ring.minor = 1, ring.major = 10, ring.start = 270, ring.range = 360;
+    ring.width = fw::stroke::tick, ring.minor_len = fw::stroke::tick, ring.major_len = fw::lay::clock_orbit_tick;
+    ring.minor_c = t.line_hi, ring.major_c = t.steel;
+    lv_obj_t *rg = fw::tick_ring(root, RG, ring);
+    lv_obj_set_pos(rg, (W - RG) / 2, (H - RG) / 2);
+    d->oc = R;  // the dots live in a ring-sized box so their centre is the ring's
+    lv_obj_t *ob = box(root);
+    lv_obj_set_size(ob, RG, RG);
+    lv_obj_set_pos(ob, (W - RG) / 2, (H - RG) / 2);
+    const int sz[3] = {fw::lay::clock_orbit_dot, fw::lay::clock_orbit_dot_sm, fw::lay::clock_orbit_dot_sm};
+    const lv_color_t ink[3] = {t.accent, t.blue, t.steel};
+    for (int k = 0; k < 3; k++) {
+      lv_obj_t *dot = d->orb[k] = box(ob);
+      lv_obj_set_size(dot, sz[k], sz[k]);
+      lv_obj_set_style_radius(dot, LV_RADIUS_CIRCLE, 0);
+      lv_obj_set_style_bg_color(dot, ink[k], 0);
+      lv_obj_set_style_bg_opa(dot, LV_OPA_COVER, 0);
+      // the outer dot rides just inside the ticks (docs: centred on the ring's edge, half outside the box)
+      d->orb_r[k] = R - fw::lay::clock_orbit_dot / 2 - fw::lay::clock_orbit_tick - k * fw::lay::clock_orbit_step;
+      fw::qa::free(dot, "an orbit dot: placed by angle");
+      fw::qa::circle(dot, ob, R, R, d->orb_r[k]);
+      orbit_place(d, k, 270);
+    }
+    lv_obj_t *col = box(root);  // Time, Date line, weather, centred on the ring
+    lv_obj_set_size(col, W, LV_SIZE_CONTENT);
+    lv_obj_set_flex_flow(col, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_align(col, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_style_pad_row(col, fw::sp::s5, 0);
+    time_props(d, "mid", tp);
+    d->time = child(col, "time", tp);
+    d->date = child(col, "date_line", dp);
+    const std::string w = wx_line(p);
+    d->wx = fw::text(col, fw::ty::c_weather, w.c_str(), t.text_dim);
+    lv_obj_set_style_opa(d->wx, w.empty() ? LV_OPA_TRANSP : LV_OPA_COVER, 0);  // always there: an update fades it
+    lv_obj_center(col);
+    if (!fw::mo::reduced(root)) {
+      orbit_spin(root, (lv_anim_exec_xcb_t) orbit_b, fw::mo::ms::orbit_b);
+      orbit_spin(root, (lv_anim_exec_xcb_t) orbit_c, fw::mo::ms::orbit_c);
+    }
   } else {
     time_props(d, "compact", tp);
     d->time = child(root, "time", tp);
@@ -311,16 +392,18 @@ void fill(lv_obj_t *root, fw::Props p) {
 }  // namespace
 
 FW_COMPONENT(clock_face, "Clock faces", "components", R"({
-  "about": "The whole-screen faces of the clock: big digits, a dotted ring with an orbiting seconds dot, an analogue face with thin hands, or the compact header time.",
+  "about": "The faces of the clock: big digits, a dotted ring with an orbiting seconds dot, an analogue face with thin hands, the compact header time, or the Clock screen's orbit face (three orbiting dots, the time, date and weather).",
   "frame": [480, 480],
   "props": [
-    {"name": "face", "type": "select", "options": ["hero", "ring", "analogue", "compact"], "default": "ring"},
+    {"name": "face", "type": "select", "options": ["hero", "ring", "analogue", "compact", "orbit"], "default": "ring"},
     {"name": "font", "type": "select", "options": ["mono", "inter"], "default": "mono"},
     {"name": "format", "type": "select", "options": ["24h", "12h"], "default": "24h"},
     {"name": "date", "type": "select", "options": ["short", "long"], "default": "short"},
     {"name": "seconds", "type": "bool", "default": false},
     {"name": "time", "type": "text", "default": ""},
-    {"name": "day", "type": "text", "default": ""}
+    {"name": "day", "type": "text", "default": ""},
+    {"name": "condition", "type": "text", "default": ""},
+    {"name": "temp", "type": "text", "default": ""}
   ],
   "variants": [
     {"label": "hero · 14:52", "props": {"face": "hero", "time": "14:52:20", "day": "2026-10-19"}},
@@ -329,7 +412,9 @@ FW_COMPONENT(clock_face, "Clock faces", "components", R"({
     {"label": "ring · inter · 12h · long date", "props": {"face": "ring", "font": "inter", "format": "12h", "date": "long", "time": "21:47:05", "day": "2026-10-19"}},
     {"label": "compact", "props": {"face": "compact", "time": "09:05:00"}},
     {"label": "hero · seconds", "props": {"face": "hero", "time": "14:52:20", "day": "2026-10-19", "seconds": true}},
-    {"label": "compact · seconds", "props": {"face": "compact", "time": "09:05:00", "seconds": true}}
+    {"label": "compact · seconds", "props": {"face": "compact", "time": "09:05:00", "seconds": true}},
+    {"label": "orbit · the Clock screen", "props": {"face": "orbit", "time": "10:08:30", "day": "2026-10-19", "condition": "rainy", "temp": "13.4"}},
+    {"label": "orbit · no weather", "props": {"face": "orbit", "time": "21:47:05", "day": "2026-10-19"}}
   ]
 })") {
   auto *d = new Clock;
@@ -372,6 +457,11 @@ FW_UPDATE(clock_face) {
     date_props(d, cp, p["day"] | "");
     if (!fw::update_child(fw::find("date_line"), d->date, cp.as<fw::Props>())) { fw::refill(root); fill(root, p); return true; }
     if (d->face == RING && d->time) lv_obj_align_to(d->date, d->time, LV_ALIGN_OUT_BOTTOM_MID, 0, fw::sp::s7);
+  }
+  if (d->wx) {  // the weather line: text in place, shown / hidden by opacity
+    const std::string w = wx_line(p);
+    if (!w.empty()) fw::set_text(d->wx, fw::ty::c_weather, w.c_str());
+    lv_obj_set_style_opa(d->wx, w.empty() ? LV_OPA_TRANSP : LV_OPA_COVER, 0);
   }
   return true;
 }

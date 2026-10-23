@@ -1,0 +1,29 @@
+{
+ "v": 1,
+ "id": "clock",
+ "name": "Clock",
+ "rev": 1,
+ "params": {
+  "weather": "weather.forecast_home"
+ },
+ "header": {
+  "label": "Clock",
+  "back": true
+ },
+ "layout": "center",
+ "nodes": [
+  {
+   "c": "clock_face",
+   "p": {
+    "face": "orbit",
+    "condition": {
+     "e": "$weather"
+    },
+    "temp": {
+     "e": "$weather",
+     "a": "temperature"
+    }
+   }
+  }
+ ]
+}
