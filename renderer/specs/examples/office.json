@@ -1,0 +1,173 @@
+{
+ "v": 1,
+ "id": "office",
+ "name": "Office",
+ "rev": 1,
+ "header": {
+  "label": "Office",
+  "back": true
+ },
+ "layout": "list",
+ "nodes": [
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Ceiling",
+    "icon": "bulb",
+    "trailing": "toggle",
+    "sub": {
+     "e": "light.office_ceiling_light",
+     "fmt": "light"
+    },
+    "on": {
+     "e": "light.office_ceiling_light",
+     "fmt": "on"
+    },
+    "state": {
+     "e": "light.office_ceiling_light",
+     "fmt": "avail"
+    }
+   },
+   "on": {
+    "toggle": {
+     "do": "light.switch",
+     "e": "light.office_ceiling_light"
+    },
+    "long": {
+     "do": "nav.open",
+     "screen": "light",
+     "params": {
+      "entity": "light.office_ceiling_light",
+      "name": "Ceiling"
+     }
+    }
+   },
+   "pending": {
+    "sub": [
+     "Turning on",
+     "Turning off"
+    ]
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Key light",
+    "icon": "bulb",
+    "trailing": "toggle",
+    "sub": {
+     "e": "light.key_light",
+     "fmt": "light"
+    },
+    "on": {
+     "e": "light.key_light",
+     "fmt": "on"
+    },
+    "state": {
+     "e": "light.key_light",
+     "fmt": "avail"
+    }
+   },
+   "on": {
+    "toggle": {
+     "do": "light.switch",
+     "e": "light.key_light"
+    },
+    "long": {
+     "do": "nav.open",
+     "screen": "light",
+     "params": {
+      "entity": "light.key_light",
+      "name": "Key light"
+     }
+    }
+   },
+   "pending": {
+    "sub": [
+     "Turning on",
+     "Turning off"
+    ]
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Key light Air left",
+    "icon": "bulb",
+    "trailing": "toggle",
+    "sub": {
+     "e": "light.elgato_key_light_air_a291",
+     "fmt": "light"
+    },
+    "on": {
+     "e": "light.elgato_key_light_air_a291",
+     "fmt": "on"
+    },
+    "state": {
+     "e": "light.elgato_key_light_air_a291",
+     "fmt": "avail"
+    }
+   },
+   "on": {
+    "toggle": {
+     "do": "light.switch",
+     "e": "light.elgato_key_light_air_a291"
+    },
+    "long": {
+     "do": "nav.open",
+     "screen": "light",
+     "params": {
+      "entity": "light.elgato_key_light_air_a291",
+      "name": "Key light Air left"
+     }
+    }
+   },
+   "pending": {
+    "sub": [
+     "Turning on",
+     "Turning off"
+    ]
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Key light Air right",
+    "icon": "bulb",
+    "trailing": "toggle",
+    "sub": {
+     "e": "light.elgato_key_light_air_a7cf",
+     "fmt": "light"
+    },
+    "on": {
+     "e": "light.elgato_key_light_air_a7cf",
+     "fmt": "on"
+    },
+    "state": {
+     "e": "light.elgato_key_light_air_a7cf",
+     "fmt": "avail"
+    }
+   },
+   "on": {
+    "toggle": {
+     "do": "light.switch",
+     "e": "light.elgato_key_light_air_a7cf"
+    },
+    "long": {
+     "do": "nav.open",
+     "screen": "light",
+     "params": {
+      "entity": "light.elgato_key_light_air_a7cf",
+      "name": "Key light Air right"
+     }
+    }
+   },
+   "pending": {
+    "sub": [
+     "Turning on",
+     "Turning off"
+    ]
+   }
+  }
+ ]
+}

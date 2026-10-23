@@ -21,9 +21,11 @@
 #include <cstdint>
 #include <cstdlib>
 #include <string>
+#include <functional>
 #include <vector>
 #include "fw.h"
 #include "ha.h"
+#include "spec.h"
 // LVGL private (src/core/lv_obj_draw_private.h): the ext draw size an object holds (fw::bleed sets it)
 extern "C" int32_t lv_obj_get_ext_draw_size(const lv_obj_t *obj);
 #include <map>
@@ -114,6 +116,119 @@ EMSCRIPTEN_KEEPALIVE const char *fw_ha_wants() {
   return out.c_str();
 }
 EMSCRIPTEN_KEEPALIVE void fw_ha_put(const char *e, const char *a, const char *v) { fw::ha::put(e ? e : "", a ? a : "", v ? v : ""); }
+
+// Screen specs (core/spec.h): fw_spec(cmd, arg) -> JSON. cmd: check (a screen or deck spec: the errors, the
+// components it uses, nodes, binds), screen / deck (apply: validate, build once off screen, store, swap), revert
+// (arg = id | deck | all), hello, list (every live spec). Storage here = memory (fw_spec_storage: fault injection +
+// reboot for the power-loss test, tools/spec_test.mjs).
+namespace {
+std::map<std::string, std::string> mem_store;
+int fault_at = -1, writes = 0;  // the write that loses power (-1 = none); after it every write is lost too
+std::string fault_mode = "drop";
+void mem_io() {
+  auto &io = fw::spec::S().io;
+  io.load = [](const std::string &k, std::string &out) { auto it = mem_store.find(k); if (it == mem_store.end()) return false; out = it->second; return true; };
+  io.save = [](const std::string &k, const std::string &v) {
+    const int n = writes++;
+    if (fault_at >= 0 && n >= fault_at) {
+      if (n == fault_at && fault_mode == "torn") mem_store[k] = v.substr(0, v.size() / 2);  // a write cut in half
+      return true;  // the device thinks it wrote (power is going): nothing after this lands
+    }
+    mem_store[k] = v;
+    return true;
+  };
+  io.erase = [](const std::string &k) { mem_store.erase(k); };
+}
+}  // namespace
+EMSCRIPTEN_KEEPALIVE const char *fw_spec(const char *cmd, const char *arg) {
+  static std::string out;
+  if (!fw::spec::S().io.save) mem_io();
+  ArduinoJson::JsonDocument d;
+  ArduinoJson::JsonObject o = d.to<ArduinoJson::JsonObject>();
+  const std::string c = cmd ? cmd : "", a = arg ? arg : "";
+  if (c == "check") {
+    ArduinoJson::JsonDocument s;
+    fw::spec::Errs e;
+    if (deserializeJson(s, a)) fw::spec::err(e, "", "bad_json", "not JSON");
+    else if (s["screens"].is<ArduinoJson::JsonArray>()) fw::spec::check_deck(s.as<ArduinoJson::JsonVariantConst>(), a.size(), e);
+    else fw::spec::check_screen(s.as<ArduinoJson::JsonVariantConst>(), a.size(), e);
+    ArduinoJson::JsonDocument ed;
+    deserializeJson(ed, fw::spec::errs_json(e));
+    o["ok"] = e.empty();
+    o["errors"] = ed;
+    auto comps = o["components"].to<ArduinoJson::JsonArray>();
+    int binds = 0;
+    for (ArduinoJson::JsonVariantConst n : s["nodes"].as<ArduinoJson::JsonArrayConst>()) {
+      bool have = false;
+      for (ArduinoJson::JsonVariantConst x : comps) have = have || x == n["c"];
+      if (!have) comps.add(n["c"]);
+      for (ArduinoJson::JsonPairConst kv : n["p"].as<ArduinoJson::JsonObjectConst>()) binds += kv.value()["e"].is<const char *>();
+    }
+    o["nodes"] = s["nodes"].size();
+    o["binds"] = binds;
+  } else if (c == "screen" || c == "deck") {
+    lv_display_t *disp = lv_display_get_default();
+    lv_obj_t *dry = disp ? lv_obj_create(lv_display_get_screen_active(disp)) : nullptr;
+    if (dry) { lv_obj_add_flag(dry, LV_OBJ_FLAG_HIDDEN); }
+    fw::spec::apply(c.c_str(), a, dry, o);
+    if (dry) lv_obj_delete(dry);
+  } else if (c == "revert") fw::spec::revert(a.empty() ? "all" : a, o);
+  else if (c == "hello") fw::spec::hello(o);
+  else if (c == "list") {
+    for (const auto &f : fw::spec::FACTORY) o["screens"][f.id] = fw::spec::screen_json(f.id);
+    for (const auto &kv : fw::spec::S().over) o["screens"][kv.first] = kv.second;
+    o["deck"] = fw::spec::deck_json();
+  } else { o["ok"] = false; o["error"] = "check | screen | deck | revert | hello | list"; }
+  out.clear();
+  serializeJson(d, out);
+  return out.c_str();
+}
+// fault <n> [torn|drop] (the nth storage write from now loses power) | reboot (load the store again) | reset | dump
+EMSCRIPTEN_KEEPALIVE const char *fw_spec_storage(const char *cmd, const char *arg) {
+  static std::string out;
+  if (!fw::spec::S().io.save) mem_io();
+  const std::string c = cmd ? cmd : "";
+  ArduinoJson::JsonDocument d;
+  if (c == "fault") { fault_at = writes + atoi(arg ? arg : "0"); fault_mode = arg && strstr(arg, "torn") ? "torn" : "drop"; }
+  else if (c == "reboot") { fault_at = -1; fw::spec::load(); d["log"].to<ArduinoJson::JsonArray>(); for (auto &x : fw::spec::S().log) d["log"].add(x); }
+  else if (c == "reset") { mem_store.clear(); fault_at = -1; fw::spec::load(); }
+  for (const auto &kv : mem_store) d["keys"][kv.first] = (int) kv.second.size();
+  out.clear();
+  serializeJson(d, out);
+  return out.c_str();
+}
+// the catalogue (core/spec.h) + a cost per component: objects in its default build (tools/gen_catalogue.mjs)
+EMSCRIPTEN_KEEPALIVE const char *fw_catalogue() {
+  static std::string out;
+  ArduinoJson::JsonDocument d;
+  fw::spec::catalogue(d.to<ArduinoJson::JsonObject>());
+  char h[12];
+  snprintf(h, sizeof h, "%08x", (unsigned) fw::spec::catalogue_hash());
+  d["hash"] = h;
+  lv_display_t *disp = lv_display_get_default();
+  if (disp) {
+    lv_obj_t *tmp = lv_obj_create(lv_display_get_screen_active(disp));
+    lv_obj_add_flag(tmp, LV_OBJ_FLAG_HIDDEN);
+    for (const fw::Component &c : fw::reg()) {
+      if (strcmp(c.section, "components")) continue;
+      ArduinoJson::JsonDocument none;
+      none.to<ArduinoJson::JsonObject>();
+      lv_obj_clean(tmp);
+      {
+        fw::Quiet q;
+        c.build(tmp, none.as<fw::Props>());
+      }
+      std::function<int(lv_obj_t *)> count = [&](lv_obj_t *o) { int n = 1; for (uint32_t i = 0; i < lv_obj_get_child_count(o); i++) n += count(lv_obj_get_child(o, i)); return n; };
+      const int objs = count(tmp) - 1;
+      d["components"][c.id]["cost"]["objects"] = objs;
+      d["components"][c.id]["cost"]["bytes_est"] = objs * 160;  // LVGL obj + styles, rough (priced on the panel later)
+    }
+    lv_obj_delete(tmp);
+  }
+  out.clear();
+  serializeJson(d, out);
+  return out.c_str();
+}
 
 EMSCRIPTEN_KEEPALIVE const char *fw_meta() {
   out.clear();

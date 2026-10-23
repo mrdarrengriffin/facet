@@ -70,6 +70,7 @@ node "$HERE/tools/gen_mascot.mjs" "$C/gen/mascot_gen.h"
 node "$HERE/tools/gen_chart.mjs" "$C/gen/chart_gen.h"  # tokens/chart.json (+ colour, motion) -> fw::ch:: chart colours, geometry, chart motion
 # settings schema: tokens/settings.json -> settings_gen.h (fw::set:: the personalisation settings, screens/settings.cpp)
 node "$HERE/tools/gen_settings.mjs" "$C/gen/settings_gen.h"
+node "$HERE/tools/gen_specs.mjs" "$C/gen/specs_gen.h"  # factory screen specs (core/spec.h)
 # icons: tokens/icons.json + icons/*.svg -> icons_gen.h (table, density-free) + this density's A8 masks (tools/gen_icons.mjs,
 # resvg: `cd tools && npm install` once; FW_ICONS=used in local.env = only the icons components declare)
 node "$HERE/tools/gen_icons.mjs" --meta "$C/gen/icons_gen.h"
@@ -85,7 +86,7 @@ for f in "$HERE"/core/*.cpp "$HERE"/foundations/*.cpp "$HERE"/components/*.cpp "
   [ -f "$f" ] || continue
   o="$O/$(basename "$(dirname "$f")")_$(basename "$f" .cpp).o"
   OBJS="$OBJS $o"
-  dep="$f $HERE/core/*.h $C/gen/colour_gen.h $C/gen/type_gen.h $C/gen/space_gen.h $C/gen/layout_gen.h $C/gen/icons_gen.h $C/gen/motion_gen.h $C/gen/states_gen.h $C/gen/mascot_gen.h $C/gen/settings_gen.h $C/gen/chart_gen.h"; [ "$(basename "$f")" = fonts.cpp ] && dep="$dep $FONTS_H"; [ "$(basename "$f")" = icons.cpp ] && dep="$dep $ICONS_H"
+  dep="$f $HERE/core/*.h $C/gen/colour_gen.h $C/gen/type_gen.h $C/gen/space_gen.h $C/gen/layout_gen.h $C/gen/icons_gen.h $C/gen/motion_gen.h $C/gen/states_gen.h $C/gen/mascot_gen.h $C/gen/settings_gen.h $C/gen/chart_gen.h $C/gen/specs_gen.h"; [ "$(basename "$f")" = fonts.cpp ] && dep="$dep $FONTS_H"; [ "$(basename "$f")" = icons.cpp ] && dep="$dep $ICONS_H"
   stale=0; [ -f "$o" ] || stale=1
   [ $stale = 0 ] && for d in $dep; do [ "$d" -nt "$o" ] && stale=1; done
   if [ $stale = 1 ]; then echo "[$DEN] cc $(basename "$f")"; $CXX -c "$f" -o "$o" & JOBS="$JOBS $!"; fi
@@ -93,7 +94,7 @@ done
 for j in $JOBS; do wait "$j"; done
 # objects of deleted components must not linger in the link: OBJS lists only live sources
 em++ $OPT $LVGL_OBJS $OBJS -sALLOW_MEMORY_GROWTH=1 -sMODULARIZE=1 -sEXPORT_ES6=1 -sENVIRONMENT=web,node \
-  -sEXPORTED_FUNCTIONS='["_fw_init","_fw_meta","_fw_stage","_fw_stage_free","_fw_render","_fw_update","_fw_demo_state","_fw_tokens","_fw_content_h","_fw_stage_resize","_fw_touch","_fw_tick","_fw_dirty","_fw_frame","_fw_areas","_fw_events","_fw_ha_wants","_fw_ha_put","_fw_anims","_fw_rects","_malloc","_free"]' \
+  -sEXPORTED_FUNCTIONS='["_fw_init","_fw_meta","_fw_stage","_fw_stage_free","_fw_render","_fw_update","_fw_demo_state","_fw_tokens","_fw_content_h","_fw_stage_resize","_fw_touch","_fw_tick","_fw_dirty","_fw_frame","_fw_areas","_fw_events","_fw_ha_wants","_fw_ha_put","_fw_spec","_fw_catalogue","_fw_spec_storage","_fw_anims","_fw_rects","_malloc","_free"]' \
   -sEXPORTED_RUNTIME_METHODS='["HEAPU8","UTF8ToString","stringToNewUTF8"]' -o "$OUT/fw.mjs"
 S=$(awk "BEGIN{printf \"%.1f\", $(date +%s.%N) - $t0}")
 printf '{"built": "%s", "density": "%s", "opt": "%s", "build_s": %s, "wasm_bytes": %s}\n' "$(date -Is)" "$DEN" "$OPT" "$S" "$(stat -c %s "$OUT/fw.wasm")" > "$OUT/manifest.json"
@@ -102,3 +103,8 @@ echo "[$DEN] built in ${S}s"
 # size, ring symmetry, motion paths, for every component / screen x variant x theme at this density. The new build is
 # already in place (the page still reloads); errors fail the build so they are seen. Cached per component.
 node "$HERE/tools/audit.mjs" --den "$DEN" --quiet --build "${FW_OUT:-$HERE/out}" | sed "s/^/[$DEN] /" ; [ "${PIPESTATUS[0]}" = 0 ] || { echo "[$DEN] audit: errors above"; exit 1; }
+# the spec catalogue + JSON Schema (core/spec.h; catalogue/) and the spec store test (power loss, refusals)
+if [ "$DEN" = 1.5x ]; then
+  node "$HERE/tools/gen_catalogue.mjs" --build "${FW_OUT:-$HERE/out}" | sed "s/^/[$DEN] /"
+  node "$HERE/tools/spec_test.mjs" --build "${FW_OUT:-$HERE/out}" | tail -1 | sed "s/^/[$DEN] /"
+fi

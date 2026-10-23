@@ -1,0 +1,21 @@
+{
+ "v": 1,
+ "rev": 2,
+ "screens": [
+  {
+   "id": "living_room",
+   "card": true
+  },
+  {
+   "id": "office",
+   "card": true
+  },
+  {
+   "id": "light"
+  },
+  {
+   "id": "settings",
+   "card": true
+  }
+ ]
+}

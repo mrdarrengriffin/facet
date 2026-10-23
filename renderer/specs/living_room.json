@@ -1,0 +1,133 @@
+{
+ "v": 1,
+ "id": "living_room",
+ "name": "Living room",
+ "rev": 1,
+ "header": {
+  "label": "Living room",
+  "back": true
+ },
+ "layout": "list",
+ "nodes": [
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Ceiling",
+    "icon": "bulb",
+    "trailing": "toggle",
+    "sub": {
+     "e": "light.living_room_dimmer_light",
+     "fmt": "light"
+    },
+    "on": {
+     "e": "light.living_room_dimmer_light",
+     "fmt": "on"
+    },
+    "state": {
+     "e": "light.living_room_dimmer_light",
+     "fmt": "avail"
+    }
+   },
+   "on": {
+    "toggle": {
+     "do": "light.switch",
+     "e": "light.living_room_dimmer_light"
+    },
+    "long": {
+     "do": "nav.open",
+     "screen": "light",
+     "params": {
+      "entity": "light.living_room_dimmer_light",
+      "name": "Ceiling"
+     }
+    }
+   },
+   "pending": {
+    "sub": [
+     "Turning on",
+     "Turning off"
+    ]
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Sofa table",
+    "icon": "bulb",
+    "trailing": "toggle",
+    "sub": {
+     "e": "light.sofa_table_light",
+     "fmt": "light"
+    },
+    "on": {
+     "e": "light.sofa_table_light",
+     "fmt": "on"
+    },
+    "state": {
+     "e": "light.sofa_table_light",
+     "fmt": "avail"
+    }
+   },
+   "on": {
+    "toggle": {
+     "do": "light.switch",
+     "e": "light.sofa_table_light"
+    },
+    "long": {
+     "do": "nav.open",
+     "screen": "light",
+     "params": {
+      "entity": "light.sofa_table_light",
+      "name": "Sofa table"
+     }
+    }
+   },
+   "pending": {
+    "sub": [
+     "Turning on",
+     "Turning off"
+    ]
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Chair",
+    "icon": "bulb",
+    "trailing": "toggle",
+    "sub": {
+     "e": "light.chair_light",
+     "fmt": "light"
+    },
+    "on": {
+     "e": "light.chair_light",
+     "fmt": "on"
+    },
+    "state": {
+     "e": "light.chair_light",
+     "fmt": "avail"
+    }
+   },
+   "on": {
+    "toggle": {
+     "do": "light.switch",
+     "e": "light.chair_light"
+    },
+    "long": {
+     "do": "nav.open",
+     "screen": "light",
+     "params": {
+      "entity": "light.chair_light",
+      "name": "Chair"
+     }
+    }
+   },
+   "pending": {
+    "sub": [
+     "Turning on",
+     "Turning off"
+    ]
+   }
+  }
+ ]
+}

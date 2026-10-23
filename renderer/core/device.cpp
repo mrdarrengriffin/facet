@@ -1,6 +1,8 @@
 // Device runtime: core/device.h (screen stack, navigation, the screen transition). Same file on the panels and in WASM.
 #include <cmath>
+#include <functional>
 #include "device.h"
+#include "spec.h"
 #include "settings_gen.h"
 
 namespace fw {
@@ -12,6 +14,8 @@ struct Device {
   const Theme *stage = nullptr;                 // the theme the device was mounted with (fw::T is global)
   const Theme *theme = nullptr;                 // the theme it shows (look(stage): the Theme / Accent settings)
   lv_timer_t *restyle = nullptr;                // a restyle waiting for the running animations
+  uint32_t builds = 0;    // screens built (cuts + restyles + spec reloads): hello diagnostics
+  std::string reloaded;  // the spec id a pending rebuild is for ("" = a restyle)
   uint32_t restyle_at = 0;
   std::vector<std::string> stack;
   Op op = NONE;
@@ -43,19 +47,22 @@ bool skip(lv_obj_t *o) { return lv_obj_has_flag(o, LV_OBJ_FLAG_HIDDEN) || lv_obj
 // build screen `id` as the device's screen; returns the items for the rise (header first), or false if unknown
 // an id may carry the screen's props: "light?{\"entity\":\"light.x\"}" (one Light screen for every light)
 std::string base_of(const std::string &id) { return id.substr(0, id.find('?')); }
+bool known(const std::string &id) { return find(base_of(id).c_str()) || spec::screen_json(base_of(id)); }
 bool show(Device *d, const std::string &id, std::vector<lv_obj_t *> &items) {
   const Component *c = find(base_of(id).c_str());
-  if (!c) return false;
+  const bool from_spec = !c && spec::screen_json(base_of(id));  // a screen from its spec (core/spec.h)
+  if (!c && !from_spec) return false;
   ArduinoJson::JsonDocument none;
   const size_t q = id.find('?');
   if (q == std::string::npos || deserializeJson(none, id.c_str() + q + 1) || !none.is<ArduinoJson::JsonObject>()) none.to<ArduinoJson::JsonObject>();
   if (d->screen) lv_obj_delete(d->screen);
+  d->builds++;
   d->screen = box(d->root);
   lv_obj_set_size(d->screen, lay::screen_w, lay::screen_h);
   lv_obj_set_style_bg_color(d->screen, T->bg, 0);
   lv_obj_set_style_bg_opa(d->screen, LV_OPA_COVER, 0);
-  if (!strcmp(c->section, "screens")) {
-    lv_obj_t *s = build_into(d->screen, c, none.as<Props>());
+  if (from_spec || !strcmp(c->section, "screens")) {
+    lv_obj_t *s = from_spec ? spec::build(d->screen, base_of(id), none.as<Props>()) : build_into(d->screen, c, none.as<Props>());
     if (!s) return true;
     lv_obj_update_layout(d->screen);
     // header = the screen's first child; blocks = the rest, a scrolling content column = its children on screen
@@ -100,7 +107,7 @@ void run(lv_timer_t *t) {
   std::string id;
   bool home_dir = false;
   if (op == GO) {
-    if (!find(base_of(d->target).c_str()) || (!d->stack.empty() && d->stack.back() == d->target)) return;
+    if (!known(d->target) || (!d->stack.empty() && d->stack.back() == d->target)) return;
     auto at = std::find(d->stack.begin(), d->stack.end(), d->target);
     home_dir = at != d->stack.end();  // already on the stack: back to it
     if (home_dir) d->stack.erase(at + 1, d->stack.end());
@@ -220,6 +227,7 @@ void restyle_now(Device *d) {
     lv_obj_scroll_to_y(k, y, LV_ANIM_OFF);
   }
   emit(d->root, "restyle", d->theme->light ? "light" : "dark");
+  if (!d->reloaded.empty()) { emit(d->root, "spec-applied", d->reloaded.c_str()); d->reloaded.clear(); }  // the host may say so
 }
 void restyle_tick(lv_timer_t *t) {
   auto *d = (Device *) lv_timer_get_user_data(t);
@@ -259,6 +267,8 @@ void apply(int k, From from) {
 }  // namespace
 
 lv_obj_t *mount(lv_obj_t *parent, const char *start) {
+  spec::reload_hook() = reload;  // a sent spec / deck rebuilds what shows it
+  spec::want_all();               // the deck's entities (idempotent; the panel also does it at boot)
   auto *d = new Device;
   d->stage = T;
   d->theme = look(T);
@@ -275,12 +285,37 @@ lv_obj_t *mount(lv_obj_t *parent, const char *start) {
     delete d;
   }, LV_EVENT_DELETE, d);
   listen(d->root, on_emit);
-  const char *s = start && find(base_of(start).c_str()) ? start : "home";
+  const char *s = start && known(start) ? start : "home";
   d->stack.push_back(s);
   std::vector<lv_obj_t *> items;
   show(d, s, items);  // the first screen cut in (no rise: the panel just shows it)
   T = was;
   return d->root;
+}
+void reload(const char *id) {
+  for (Device *d : devices) {
+    if (d->stack.empty()) continue;
+    const std::string top = base_of(d->stack.back());
+    if (!strcmp(id, "deck")) {  // the deck changed: screens it no longer has leave the stack; Home shows the new cards
+      while (d->stack.size() > 1 && !known(d->stack.back())) d->stack.pop_back();
+    } else if (top != id) {  // a sent screen that isn't showing: open it (Darren 2026-10-23: a send must show)
+      if (strcmp(id, "all")) go(d->root, id);
+      continue;
+    }
+    d->reloaded = id;
+    if (!d->restyle) d->restyle = lv_timer_create(restyle_tick, 30, d);
+    d->restyle_at = lv_tick_get();
+  }
+}
+void state(ArduinoJson::JsonArray out) {
+  for (Device *d : devices) {
+    ArduinoJson::JsonObject o = out.add<ArduinoJson::JsonObject>();
+    ArduinoJson::JsonArray st = o["stack"].to<ArduinoJson::JsonArray>();
+    for (const auto &x : d->stack) st.add(base_of(x));
+    o["builds"] = d->builds;
+    std::function<int(lv_obj_t *)> count = [&](lv_obj_t *x) { int n = 1; for (uint32_t i = 0; i < lv_obj_get_child_count(x); i++) n += count(lv_obj_get_child(x, i)); return n; };
+    o["objects"] = d->screen ? count(d->screen) : 0;
+  }
 }
 void go(lv_obj_t *in, const char *id) { queue(in, GO, id); }
 void back(lv_obj_t *in) { queue(in, BACK, nullptr); }

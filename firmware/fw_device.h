@@ -1,12 +1,16 @@
 // Facet device glue (README "Device firmware"): the workbench's core + foundations + components on a real panel,
 // driven over HTTP by the workbench's "Show on device" button. ESPHome only (lvgl + web_server); no house specifics.
-//   GET  /fw/info   {v, density, core, files, ids, built, board, w, h, shown, heap}   what this firmware was built from
+//   GET  /fw/info   {v, density, core, files, ids, built, board, w, h, shown, devices: [{stack, builds, objects}], heap}   what this firmware was built from
 //   GET  /fw/meta   [{id, name, section, meta}]                                     the registry (same as fw_meta())
 //   POST /fw/show   {id, props?, theme?: dark|light, accent?: <set id>}  -> {ok, error?, ms, heap}
 //   GET  /fw/perf   frame stats while animations run (since boot or the last ?reset=1): fps, frame / render ms
 //   GET  /fw/settings  the settings backup {"facet":"settings","version":1,"values":{...}} (core/device.h; no secrets)
 //   POST /fw/settings  {values:{id: value}} (a backup, or a few) -> each through fw::dev::set (HOST): applied, the
 //                      entities follow and keep it (settings.yaml from firmware/settings_yaml.mjs) -> {ok, error?, settings}
+//   GET  /screenshot  the glass as a 16-bit BMP (paced chunks; ported from the old panel's shot.h)
+//   GET  /fw/spec   the spec hello (core/spec.h: protocol, catalogue hash, components, screens + revs, budgets, heap)
+//   POST /fw/spec   {kind: screen|deck|revert, spec?: {...}, id?} -> the apply answer (the HA actions facet_screen /
+//                   facet_deck / facet_revert do the same; workbench.yaml)
 //   GET  /fw/ha     the Home Assistant store (core/ha.h): {wants: [[e, a]...], values: {"e|a": value}, bound: n}
 //   POST /fw/bench  a batch of bench cases the panel runs on its own screen (fw_bench.h); GET /fw/bench = the report
 // Probation: while the running OTA image is still ESP_OTA_IMG_PENDING_VERIFY (safe_mode has not confirmed it yet,
@@ -19,6 +23,8 @@
 // lv_timer drains the job queue) and the request waits for it (6 s cap).
 #pragma once
 #include <algorithm>
+#include <atomic>
+#include <vector>
 #include <cstring>
 #include <deque>
 #include <functional>
@@ -26,6 +32,7 @@
 #include <string>
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
+#include "freertos/task.h"
 #include "esp_heap_caps.h"
 #include "esp_timer.h"
 #include "esp_ota_ops.h"
@@ -39,6 +46,8 @@
 #include "device.h"
 #include "settings_gen.h"
 #include "ha.h"
+#include "spec.h"
+#include "nvs.h"
 #ifdef USE_API
 #include "esphome/components/api/api_server.h"
 #endif
@@ -412,6 +421,137 @@ inline void ha_action(const char *service, const char *entity, const char *data_
 #endif
 }
 
+// ---------------------------------------------------------------- screen specs (core/spec.h)
+// Overrides live in NVS namespace "facet_spec" (key s.<id> = the record, g.<id> = its last good copy, idx = the ids;
+// a record = CRC32 + JSON). NVS writes one key atomically; the CRC catches the rest. Apply runs in the main loop
+// (the HA action / the HTTP job): validate, build once off screen (a hidden box on our screen), store, swap.
+inline nvs_handle_t spec_nvs() {
+  static nvs_handle_t h = 0;
+  static bool tried = false;
+  if (!tried) { tried = true; if (nvs_open("facet_spec", NVS_READWRITE, &h) != ESP_OK) { h = 0; ESP_LOGE("facet_wb", "spec NVS: cannot open"); } }
+  return h;
+}
+inline void spec_storage() {
+  auto &io = fw::spec::S().io;
+  io.load = [](const std::string &k, std::string &out) {
+    nvs_handle_t h = spec_nvs();
+    size_t n = 0;
+    if (!h || nvs_get_blob(h, k.c_str(), nullptr, &n) != ESP_OK) return false;
+    out.resize(n);
+    return nvs_get_blob(h, k.c_str(), out.data(), &n) == ESP_OK;
+  };
+  io.save = [](const std::string &k, const std::string &v) {
+    nvs_handle_t h = spec_nvs();
+    return h && nvs_set_blob(h, k.c_str(), v.data(), v.size()) == ESP_OK && nvs_commit(h) == ESP_OK;
+  };
+  io.erase = [](const std::string &k) {
+    if (nvs_handle_t h = spec_nvs()) { nvs_erase_key(h, k.c_str()); nvs_commit(h); }
+  };
+}
+inline void spec_hello(ArduinoJson::JsonObject out) {
+  fw::spec::hello(out);
+  fw::dev::state(out["devices"].to<ArduinoJson::JsonArray>());
+  out["board"] = FW_DEVICE_BOARD;
+  out["w"] = FW_DEVICE_W;
+  out["h"] = FW_DEVICE_H;
+  ArduinoJson::JsonDocument info;
+  if (!deserializeJson(info, fw::bundle::INFO)) out["core"] = info["core"];
+  heap(out["heap"].to<ArduinoJson::JsonObject>());
+}
+// kind screen | deck: json = the spec; revert: json = the id (| deck | all)
+inline void spec_apply(const char *kind, const std::string &json, ArduinoJson::JsonObject out) {
+  if (!strcmp(kind, "revert")) { fw::spec::revert(json.empty() ? "all" : json, out); return; }
+  lv_obj_t *dry = lv_obj_create(S.scr);
+  lv_obj_add_flag(dry, (lv_obj_flag_t) (LV_OBJ_FLAG_HIDDEN | LV_OBJ_FLAG_FLOATING));
+  const int64_t t0 = esp_timer_get_time();
+  fw::spec::apply(kind, json, dry, out);
+  lv_obj_delete(dry);
+  out["ms"] = (int) ((esp_timer_get_time() - t0) / 1000);
+  ESP_LOGW("facet_wb", "spec %s %s rev %d: %s", kind, (const char *) (out["id"] | ""), (int) (out["rev"] | -1), (const char *) (out["status"] | ""));
+}
+
+// ---------------------------------------------------------------- screenshot (GET /screenshot)
+// Ported from the old panel firmware (projects/esphome/panel/include/shot.h, facet-90): what the glass shows as a
+// 16-bit BMP. The web server runs in its own task and LVGL is not thread-safe, so the request raises a flag and waits;
+// an lv_timer (main loop) snapshots the active screen in the display's RGB565 (+ the top layer, ARGB8888, blended in:
+// the probation chip) into PSRAM; the rows go out 4 at a time with a pause (Guition: Wi-Fi TX buffers come out of
+// ~45 KB internal RAM; an unpaced response crashed it). Only the internal heap is read (no PSRAM walk while lit).
+namespace shot {
+struct State {
+  std::atomic<int> state{0};  // 0 idle, 1 requested, 2 ready, 3 failed
+  lv_draw_buf_t *scr = nullptr, *top = nullptr;
+};
+inline State SH;
+inline void take(lv_timer_t *) {
+  if (SH.state.load() != 1) return;
+  SH.scr = lv_snapshot_take(lv_screen_active(), LV_COLOR_FORMAT_RGB565);
+  SH.top = lv_obj_get_child_count(lv_layer_top()) ? lv_snapshot_take(lv_layer_top(), LV_COLOR_FORMAT_ARGB8888) : nullptr;
+  SH.state = SH.scr ? 2 : 3;
+}
+inline void release() {
+  if (SH.scr) lv_draw_buf_destroy(SH.scr);
+  if (SH.top) lv_draw_buf_destroy(SH.top);
+  SH.scr = SH.top = nullptr;
+  SH.state = 0;
+}
+class Handler : public AsyncWebHandler {
+ public:
+  bool canHandle(AsyncWebServerRequest *request) const override {
+    char buf[AsyncWebServerRequest::URL_BUF_SIZE];
+    return request->url_to(buf) == "/screenshot";
+  }
+  void handleRequest(AsyncWebServerRequest *request) override {
+    int expected = 0;
+    if (!SH.state.compare_exchange_strong(expected, 1)) { request->send(503, "text/plain", "busy"); return; }
+    for (int i = 0; i < 60 && SH.state.load() == 1; i++) vTaskDelay(pdMS_TO_TICKS(50));
+    if (SH.state.load() != 2) {
+      if (SH.state.load() == 1) SH.state = 0;
+      else release();
+      request->send(500, "text/plain", "snapshot failed (LVGL paused or out of memory)");
+      return;
+    }
+    const int w = SH.scr->header.w, h = SH.scr->header.h, row = w * 2;
+    uint8_t hd[66] = {'B', 'M'};
+    auto le32 = [&](int o, uint32_t v) { for (int k = 0; k < 4; k++) hd[o + k] = (v >> (8 * k)) & 0xFF; };
+    le32(2, 66 + row * h); le32(10, 66); le32(14, 40); le32(18, w); le32(22, h);
+    hd[26] = 1; hd[28] = 16;
+    le32(30, 3); le32(34, row * h); le32(54, 0xF800); le32(58, 0x07E0); le32(62, 0x001F);
+    request->beginResponse(200, "image/bmp");
+    httpd_req_t *req = *request;
+    httpd_resp_set_hdr(req, "Cache-Control", "no-store");
+    httpd_resp_send_chunk(req, (const char *) hd, sizeof hd);
+    static const int ROWS = 4;
+    std::vector<uint8_t> out(row * ROWS);
+    for (int y0 = h - 1; y0 >= 0; y0 -= ROWS) {
+      size_t n = 0;
+      for (int y = y0; y > y0 - ROWS && y >= 0; y--) {
+        const uint8_t *sp = SH.scr->data + y * SH.scr->header.stride;
+        const uint8_t *t = SH.top && y < (int) SH.top->header.h ? SH.top->data + y * SH.top->header.stride : nullptr;
+        for (int x = 0; x < w; x++) {
+          uint16_t v = sp[2 * x] | (sp[2 * x + 1] << 8);
+          if (t && x < (int) SH.top->header.w && t[4 * x + 3]) {
+            const int a = t[4 * x + 3];
+            int r = (v >> 11) & 31, g = (v >> 5) & 63, b = v & 31;
+            r = r << 3 | r >> 2, g = g << 2 | g >> 4, b = b << 3 | b >> 2;
+            b = (t[4 * x] * a + b * (255 - a)) / 255;
+            g = (t[4 * x + 1] * a + g * (255 - a)) / 255;
+            r = (t[4 * x + 2] * a + r * (255 - a)) / 255;
+            v = ((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3);
+          }
+          out[n++] = v & 0xFF;
+          out[n++] = v >> 8;
+        }
+      }
+      if (httpd_resp_send_chunk(req, (const char *) out.data(), n) != ESP_OK) break;
+      if (heap_caps_get_free_size(MALLOC_CAP_INTERNAL) < 24 * 1024) vTaskDelay(pdMS_TO_TICKS(20));
+      else vTaskDelay(1);
+    }
+    httpd_resp_send_chunk(req, nullptr, 0);
+    release();
+  }
+};
+}  // namespace shot
+
 #define FW_BENCH_FROM_DEVICE
 #include "fw_bench.h"
 
@@ -450,7 +590,9 @@ class Handler : public AsyncWebHandler {
       d["probation_s"] = probation_left();
       heap(d["heap"].to<ArduinoJson::JsonObject>());
       std::string sh = "null";
-      in_loop([&] { sh = S.shown; }, 2000);
+      ArduinoJson::JsonDocument devs;
+      in_loop([&] { sh = S.shown; fw::dev::state(devs.to<ArduinoJson::JsonArray>()); }, 2000);
+      d["devices"] = devs;  // what is on the glass: each mounted device's screen stack (top = shown), builds, objects
       ArduinoJson::JsonDocument shd;
       if (!deserializeJson(shd, sh)) d["shown"] = shd;
       serializeJson(d, s);
@@ -472,6 +614,21 @@ class Handler : public AsyncWebHandler {
         else { code = e == "busy" ? 409 : 400; out["ok"] = false; out["error"] = e; }
         serializeJson(out, s);
       }
+    } else if (path == "/fw/spec") {
+      ArduinoJson::JsonDocument d, body;
+      bool ok = true;
+      if (post) {
+        if (too_big_ || body_.empty() || deserializeJson(body, body_)) { code = 400; ok = false; s = R"({"ok":false,"error":"body is not JSON"})"; }
+        else {
+          const std::string kind = body["kind"] | "screen";
+          std::string arg;
+          if (kind == "revert") arg = body["id"] | "all";
+          else serializeJson(body["spec"], arg);
+          if (!in_loop([&] { spec_apply(kind.c_str(), arg, d.to<ArduinoJson::JsonObject>()); }, 5000)) { code = 503; ok = false; s = R"({"ok":false,"error":"the main loop did not answer in time"})"; }
+          else if (!(d["ok"] | false)) code = 400;
+        }
+      } else in_loop([&] { spec_hello(d.to<ArduinoJson::JsonObject>()); }, 2000);
+      if (ok) serializeJson(d, s);
     } else if (path == "/fw/ha") {
       ArduinoJson::JsonDocument d;
       in_loop([&] {
@@ -550,6 +707,9 @@ inline void setup() {
   lv_display_add_event_cb(d, perf_event, LV_EVENT_RENDER_READY, nullptr);
   S.scr = lv_obj_create(nullptr);
   lv_screen_load(S.scr);
+  spec_storage();     // screen specs: the overrides from NVS (each falls back to its last good copy, then factory)
+  fw::spec::load();
+  for (const auto &x : fw::spec::S().log) ESP_LOGW("facet_wb", "spec boot: %s", x.c_str());
   S.pref = esphome::global_preferences->make_preference<Saved>(0xFAC37B01u, true);
   Saved sv{};
   ArduinoJson::JsonDocument req, out;
@@ -575,12 +735,17 @@ inline void setup() {
   });
   fw::ha::on_want(ha_subscribe);  // (the pairs wanted so far too: the Living room's lights, declared at boot)
   fw::ha::on_act(ha_action);
+  fw::spec::want_all();  // every entity the deck's specs bind (the overrides were loaded before the first show)
   fw::dev::on_look([] {  // theme / accent / the sun: draw the page again in the new look (+ the probation chip)
     reshow_later(true);
     PR.shown = -2;
   });
   probation_start();
-  if (auto *ws = esphome::web_server_base::global_web_server_base) ws->add_handler(new Handler());
+  if (auto *ws = esphome::web_server_base::global_web_server_base) {
+    ws->add_handler(new Handler());
+    ws->add_handler(new shot::Handler());  // GET /screenshot
+    lv_timer_create(shot::take, 100, nullptr);
+  }
 }
 
 }  // namespace fw::device

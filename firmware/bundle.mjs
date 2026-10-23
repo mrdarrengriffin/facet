@@ -35,7 +35,9 @@ const ls = (d, ext) => (existsSync(join(HERE, d)) ? readdirSync(join(HERE, d)).f
 // core = what every item's pixels depend on (compiled into each item's build); glue = the device-side host code
 // (HTTP, screen setup), reported separately: a glue change does not make an item show old code
 const lsr = (d) => (existsSync(join(HERE, d)) ? readdirSync(join(HERE, d), { recursive: true }).filter((f) => f.endsWith('.svg')).sort().map((f) => `${d}/${f}`) : []);
-const coreFiles = [...ls('core', '.h'), 'core/fw_core.cpp', 'core/motion.cpp', 'core/atoms.cpp', 'core/states.cpp', 'core/mascot.cpp', 'core/device.cpp', 'core/fonts.cpp', 'core/icons.cpp', ...ls('tokens', '.json'), 'tools/gen_colour.mjs', 'tools/gen_type.mjs', 'tools/gen_space.mjs', 'tools/gen_layout.mjs', 'tools/gen_motion.mjs', 'tools/gen_states.mjs', 'tools/gen_mascot.mjs', 'tools/gen_chart.mjs', 'tools/gen_settings.mjs', 'tools/gen_fonts.py', 'tools/facet_font.inc', 'tools/gen_icons.mjs', ...lsr('icons')];
+// core .cpp files the list below doesn't name (sport.cpp, ...): bundled as they are (not main.cpp / bench.cpp: WASM host only)
+const coreExtra = ls('core', '.cpp').filter((f) => !['core/fw_core.cpp', 'core/motion.cpp', 'core/atoms.cpp', 'core/states.cpp', 'core/mascot.cpp', 'core/device.cpp', 'core/fonts.cpp', 'core/icons.cpp', 'core/main.cpp', 'core/bench.cpp'].includes(f));
+const coreFiles = [...ls('core', '.h'), ...coreExtra, 'core/fw_core.cpp', 'core/motion.cpp', 'core/atoms.cpp', 'core/states.cpp', 'core/mascot.cpp', 'core/device.cpp', 'core/fonts.cpp', 'core/icons.cpp', ...ls('tokens', '.json'), 'tools/gen_colour.mjs', 'tools/gen_type.mjs', 'tools/gen_space.mjs', 'tools/gen_layout.mjs', 'tools/gen_motion.mjs', 'tools/gen_states.mjs', 'tools/gen_mascot.mjs', 'tools/gen_chart.mjs', 'tools/gen_settings.mjs', 'tools/gen_specs.mjs', ...ls('specs', '.json'), 'tools/gen_fonts.py', 'tools/facet_font.inc', 'tools/gen_icons.mjs', ...lsr('icons')];
 const glueFiles = ['firmware/fw_device.h', 'firmware/fw_bench.h', 'firmware/esphome_init.py', 'firmware/bundle.mjs'];  // relative to ROOT
 const srcFiles = [...ls('foundations', '.cpp'), ...ls('components', '.cpp'), ...ls('screens', '.cpp')];
 const read = (rel) => readFileSync(join(HERE, rel));
@@ -82,6 +84,8 @@ execFileSync('node', [join(HERE, 'tools/gen_chart.mjs'), join(C, 'chart_gen.h')]
 wrote.add('chart_gen.h');
 execFileSync('node', [join(HERE, 'tools/gen_settings.mjs'), join(C, 'settings_gen.h')]);
 wrote.add('settings_gen.h');
+execFileSync('node', [join(HERE, 'tools/gen_specs.mjs'), join(C, 'specs_gen.h')]);  // factory screen specs (core/spec.h)
+wrote.add('specs_gen.h');
 execFileSync('node', [join(HERE, 'tools/gen_icons.mjs'), '--meta', join(C, 'icons_gen.h')]);
 wrote.add('icons_gen.h');
 // this density's fonts (cached next to the WASM build's; the generator skips work when type.json is unchanged)
@@ -97,6 +101,7 @@ put('atoms.cpp', read('core/atoms.cpp'));
 put('states.cpp', read('core/states.cpp'));
 put('mascot.cpp', read('core/mascot.cpp'));
 put('device.cpp', read('core/device.cpp'));  // the device runtime (screen stack, navigation)
+for (const f of coreExtra) put(basename(f), read(f));
 // fonts.cpp with this density's font header inlined (and the #ifdef picking it)
 const fonts = read('core/fonts.cpp').toString().replace(/#ifdef FW_1X\n#include "facet_fonts_1x.h"\n#else\n#include "facet_fonts.h"\n#endif\n/,
   `// ---- inlined ${basename(fontH)} (firmware/bundle.mjs)\n${readFileSync(fontH, 'utf8').replace('#pragma once', '')}\n// ---- end of ${basename(fontH)}\n`);

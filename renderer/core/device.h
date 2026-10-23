@@ -8,6 +8,8 @@
 //              settings button, Home's cards) = go(id); "back" (the Header's Back button) = back. The tap's own sound
 //              already played (states / sound hooks); the runtime adds none. The cut runs on the next LVGL tick (a
 //              one-shot timer), never inside the tapped object's own event (it is deleted with its screen).
+//   specs      an id that is no registered component but a spec screen (core/spec.h: factory or sent) is built from
+//              its spec; "light?{...}" = the screen's parameters (one Light spec for every light)
 //   stack      go(id) pushes id (an id already on the stack pops back to it: no loops); back pops (at the root: no-op);
 //              home() clears to the root. Ids = registered components: a "screens" component is built as the whole
 //              screen (props {}); any other (the placeholder Home lists the foundation pages) is shown as a page: the
@@ -38,6 +40,8 @@ lv_obj_t *mount(lv_obj_t *parent, const char *start = "home");  // the device ro
 void go(lv_obj_t *in, const char *id);  // in = the root or anything inside it; queued for the next tick
 void back(lv_obj_t *in);
 void home(lv_obj_t *in);
+void reload(const char *id);
+void state(ArduinoJson::JsonArray out);  // every mounted device: {stack, builds, objects} (spec hello diagnostics)  // a spec changed (core/spec.h apply): devices showing it (or every device: "deck") build it again
 const char *current(lv_obj_t *in);  // the id on top of the stack ("" = not a device)
 
 // settings (above)

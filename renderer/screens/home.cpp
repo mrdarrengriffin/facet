@@ -6,11 +6,13 @@
 //   content  from lay::top, one scrolling column of Cards, two per row (lay::card_w x lay::card_h, a gutter apart both
 //            ways; 480: 2 x 184 + 16 = 384 of the 388 content height, the 4 px left over stays at the bottom), bottom
 //            padding inset
-//   cards    one per page in PAGES that this build has (fw::find): title only (the page name as the Card label; no
+//   cards    the deck's screens with a card (core/spec.h deck: factory or sent; their order), then the workbench pages
+//            in PAGES that this build has (fw::find): title only (the page name as the Card label; no
 //            icon, value or line under it: Darren 2026-10-22, placeholder). Tap = the Card's own tap (event tap + sound open), then
 //            event "navigate" (detail = the page id): the workbench opens that page, the panel host will open the screen
 // Update path: nothing in it changes with props (the clock runs on its own), so an update keeps it as it is.
 #include "fw.h"
+#include "spec.h"
 
 namespace {
 using Doc = ArduinoJson::JsonDocument;
@@ -31,7 +33,7 @@ lv_obj_t *build(const char *id, lv_obj_t *parent, Doc &props) {
 
 // the pages Home lists, screens first. Title only on every card (Darren 2026-10-22: "just show the title for now"),
 // no icon, so they all match
-const char *const PAGES[] = {"living_room", "settings", "colour", "type", "space", "layout", "icons", "motion", "states", "mascots", "chart"};
+const char *const PAGES[] = {"colour", "type", "space", "layout", "icons", "motion", "states", "mascots", "chart"};
 
 const char *META = R"({
   "about": "Placeholder Home: a grid of cards for the screens and workbench pages that exist; each card opens its page. The real Home will be laid out per room.",
@@ -67,11 +69,24 @@ void build_home(lv_obj_t *parent, fw::Props) {
   lv_obj_set_style_pad_column(c, fw::lay::gutter, 0);
   lv_obj_set_style_pad_row(c, fw::lay::gutter, 0);
 
-  for (const char *id : PAGES) {
-    const fw::Component *comp = fw::find(id);
-    if (!comp) continue;
+  // the deck's cards (a spec screen's name, else the component's), then the workbench pages
+  std::vector<std::pair<std::string, std::string>> cards;
+  {
+    Doc deck;
+    deserializeJson(deck, fw::spec::deck_json());
+    for (ArduinoJson::JsonVariantConst x : deck["screens"].as<ArduinoJson::JsonArrayConst>()) {
+      if (!(x["card"] | false)) continue;
+      const std::string id = x["id"] | "";
+      Doc sp;
+      if (const char *j = fw::spec::screen_json(id)) { deserializeJson(sp, j); cards.push_back({id, sp["name"] | id.c_str()}); }
+      else if (const fw::Component *comp = fw::find(id.c_str())) cards.push_back({id, comp->name});
+    }
+  }
+  for (const char *id : PAGES)
+    if (const fw::Component *comp = fw::find(id)) cards.push_back({id, comp->name});
+  for (const auto &cd : cards) {
     Doc d;  // title only
-    d["label"] = comp->name;
+    d["label"] = cd.second;
     d["icon"] = "none";
     d["preview"] = "none";
     d["mode"] = "value";
@@ -79,11 +94,13 @@ void build_home(lv_obj_t *parent, fw::Props) {
     d["sub"] = "";
     lv_obj_t *card = build("card", c, d);
     if (!card) continue;
+    char *id = strdup(cd.first.c_str());  // freed with the card
+    lv_obj_add_event_cb(card, [](lv_event_t *e) { free(lv_event_get_user_data(e)); }, LV_EVENT_DELETE, id);
     lv_obj_add_event_cb(card, [](lv_event_t *e) {  // after the Card's own tap (event tap + sound open)
       auto *o = (lv_obj_t *) lv_event_get_current_target(e);
       if (lv_obj_has_state(o, fw::st::OFF)) return;
       fw::emit(o, "navigate", (const char *) lv_event_get_user_data(e));
-    }, LV_EVENT_CLICKED, (void *) id);
+    }, LV_EVENT_CLICKED, id);
   }
 }
 const int reg = fw::add({"home", "Home", "screens", META, build_home});

@@ -1,0 +1,2835 @@
+{
+ "protocol": 1,
+ "components": {
+  "accent_swatches": {
+   "name": "Accent swatches",
+   "update": true,
+   "props": [
+    {
+     "name": "selected",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "current",
+      "ember",
+      "rose",
+      "violet",
+      "teal",
+      "mono"
+     ]
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "default",
+      "disabled",
+      "unavailable"
+     ]
+    },
+    {
+     "name": "context",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "alone",
+      "settings-row"
+     ]
+    }
+   ],
+   "events": {},
+   "cost": {
+    "objects": 12,
+    "bytes_est": 1920
+   }
+  },
+  "arc": {
+   "name": "Arc",
+   "update": true,
+   "props": [
+    {
+     "name": "value",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 100
+    },
+    {
+     "name": "size",
+     "type": "range",
+     "bindable": true,
+     "min": 64,
+     "max": 320
+    },
+    {
+     "name": "knob",
+     "type": "bool",
+     "bindable": true
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "default",
+      "disabled"
+     ]
+    }
+   ],
+   "events": {},
+   "cost": {
+    "objects": 2,
+    "bytes_est": 320
+   }
+  },
+  "back_button": {
+   "name": "Back button",
+   "update": true,
+   "props": [
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "default",
+      "pressed",
+      "disabled"
+     ]
+    }
+   ],
+   "events": {},
+   "cost": {
+    "objects": 3,
+    "bytes_est": 480
+   }
+  },
+  "bar_chart": {
+   "name": "Bar chart",
+   "update": true,
+   "props": [
+    {
+     "name": "values",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "colour",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "bands",
+      "series"
+     ]
+    },
+    {
+     "name": "now",
+     "type": "range",
+     "bindable": true,
+     "min": -1,
+     "max": 23
+    },
+    {
+     "name": "width",
+     "type": "range",
+     "bindable": true,
+     "min": 160,
+     "max": 440
+    },
+    {
+     "name": "height",
+     "type": "range",
+     "bindable": true,
+     "min": 48,
+     "max": 136
+    },
+    {
+     "name": "scrub",
+     "type": "bool",
+     "bindable": true
+    }
+   ],
+   "events": {},
+   "cost": {
+    "objects": 40,
+    "bytes_est": 6400
+   }
+  },
+  "big_number": {
+   "name": "Big number",
+   "update": true,
+   "props": [
+    {
+     "name": "label",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "value",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 40
+    },
+    {
+     "name": "unit",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "decimals",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 3
+    },
+    {
+     "name": "prefix",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "default",
+      "unavailable"
+     ]
+    }
+   ],
+   "events": {},
+   "cost": {
+    "objects": 6,
+    "bytes_est": 960
+   }
+  },
+  "bottom_sheet": {
+   "name": "Bottom sheet",
+   "update": true,
+   "props": [
+    {
+     "name": "open",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "open",
+      "closed"
+     ]
+    },
+    {
+     "name": "list",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "speakers",
+      "theme"
+     ]
+    },
+    {
+     "name": "title",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "selected",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 4
+    },
+    {
+     "name": "screen",
+     "type": "bool",
+     "bindable": true
+    }
+   ],
+   "events": {},
+   "cost": {
+    "objects": 91,
+    "bytes_est": 14560
+   }
+  },
+  "button": {
+   "name": "Button",
+   "update": true,
+   "props": [
+    {
+     "name": "kind",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "primary",
+      "secondary",
+      "outline",
+      "ghost"
+     ]
+    },
+    {
+     "name": "label",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "default",
+      "pressed",
+      "active",
+      "active-pressed",
+      "disabled"
+     ]
+    },
+    {
+     "name": "icon",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "none",
+      "plus",
+      "check",
+      "close"
+     ]
+    },
+    {
+     "name": "width",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 224
+    }
+   ],
+   "events": {
+    "tap": [
+     "nav.open",
+     "nav.back",
+     "light.toggle"
+    ]
+   },
+   "cost": {
+    "objects": 2,
+    "bytes_est": 320
+   }
+  },
+  "card": {
+   "name": "Card",
+   "update": true,
+   "props": [
+    {
+     "name": "label",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "icon",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "none",
+      "weather",
+      "media",
+      "timer",
+      "energy",
+      "light"
+     ]
+    },
+    {
+     "name": "preview",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "none",
+      "partly-day",
+      "rain-light",
+      "clear-night",
+      "agents",
+      "media",
+      "dial",
+      "switch",
+      "clock",
+      "timer",
+      "github",
+      "energy",
+      "lightning"
+     ]
+    },
+    {
+     "name": "mode",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "value",
+      "text"
+     ]
+    },
+    {
+     "name": "value",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "text",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "sub",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "tone",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "dim",
+      "ok",
+      "warn",
+      "error"
+     ]
+    },
+    {
+     "name": "accent",
+     "type": "bool",
+     "bindable": true
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "default",
+      "pressed",
+      "unavailable"
+     ]
+    },
+    {
+     "name": "press",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "fill",
+      "border",
+      "border-fill"
+     ]
+    }
+   ],
+   "events": {
+    "tap": [
+     "nav.open",
+     "light.toggle"
+    ],
+    "long": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 13,
+    "bytes_est": 2080
+   }
+  },
+  "card_previews": {
+   "name": "Card previews",
+   "update": true,
+   "props": [
+    {
+     "name": "preview",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "agents",
+      "media",
+      "dial",
+      "switch",
+      "clock",
+      "timer",
+      "github",
+      "energy",
+      "lightning"
+     ]
+    },
+    {
+     "name": "value",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 100
+    },
+    {
+     "name": "on",
+     "type": "bool",
+     "bindable": true
+    },
+    {
+     "name": "unavailable",
+     "type": "bool",
+     "bindable": true
+    },
+    {
+     "name": "quiet",
+     "type": "bool",
+     "bindable": true
+    }
+   ],
+   "events": {},
+   "cost": {
+    "objects": 4,
+    "bytes_est": 640
+   }
+  },
+  "check_row": {
+   "name": "Check row",
+   "update": true,
+   "props": [
+    {
+     "name": "name",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "pass",
+      "fail",
+      "pending",
+      "skipped"
+     ]
+    },
+    {
+     "name": "width",
+     "type": "range",
+     "bindable": true,
+     "min": 160,
+     "max": 440
+    }
+   ],
+   "events": {},
+   "cost": {
+    "objects": 4,
+    "bytes_est": 640
+   }
+  },
+  "checkbox": {
+   "name": "Checkbox",
+   "update": true,
+   "props": [
+    {
+     "name": "check",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "open",
+      "doing",
+      "done"
+     ]
+    },
+    {
+     "name": "label",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "interactive",
+     "type": "bool",
+     "bindable": true
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "default",
+      "disabled"
+     ]
+    }
+   ],
+   "events": {},
+   "cost": {
+    "objects": 5,
+    "bytes_est": 800
+   }
+  },
+  "clock_face": {
+   "name": "Clock faces",
+   "update": true,
+   "props": [
+    {
+     "name": "face",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "hero",
+      "ring",
+      "analogue",
+      "compact"
+     ]
+    },
+    {
+     "name": "font",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "mono",
+      "inter"
+     ]
+    },
+    {
+     "name": "format",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "24h",
+      "12h"
+     ]
+    },
+    {
+     "name": "date",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "short",
+      "long"
+     ]
+    },
+    {
+     "name": "seconds",
+     "type": "bool",
+     "bindable": true
+    },
+    {
+     "name": "time",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "day",
+     "type": "text",
+     "bindable": true
+    }
+   ],
+   "events": {},
+   "cost": {
+    "objects": 18,
+    "bytes_est": 2880
+   }
+  },
+  "corner_ticks": {
+   "name": "Corner ticks",
+   "update": true,
+   "props": [
+    {
+     "name": "on",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "box",
+      "button"
+     ]
+    },
+    {
+     "name": "corners",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "all",
+      "tr-bl"
+     ]
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "active",
+      "active-pressed",
+      "default"
+     ]
+    }
+   ],
+   "events": {},
+   "cost": {
+    "objects": 6,
+    "bytes_est": 960
+   }
+  },
+  "count_badge": {
+   "name": "Count badge",
+   "update": true,
+   "props": [
+    {
+     "name": "count",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 150
+    },
+    {
+     "name": "tone",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "ok",
+      "warn",
+      "error",
+      "working",
+      "info",
+      "idle"
+     ]
+    },
+    {
+     "name": "zero",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "muted",
+      "hide"
+     ]
+    }
+   ],
+   "events": {},
+   "cost": {
+    "objects": 2,
+    "bytes_est": 320
+   }
+  },
+  "cover_visual": {
+   "name": "Cover visual",
+   "update": true,
+   "props": [
+    {
+     "name": "kind",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "roller",
+      "venetian",
+      "curtain"
+     ]
+    },
+    {
+     "name": "position",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 100
+    },
+    {
+     "name": "tilt",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 100
+    },
+    {
+     "name": "heading",
+     "type": "range",
+     "bindable": true,
+     "min": -1,
+     "max": 100
+    },
+    {
+     "name": "draggable",
+     "type": "bool",
+     "bindable": true
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "default",
+      "disabled",
+      "unavailable"
+     ]
+    }
+   ],
+   "events": {},
+   "cost": {
+    "objects": 6,
+    "bytes_est": 960
+   }
+  },
+  "date_line": {
+   "name": "Date line",
+   "update": true,
+   "props": [
+    {
+     "name": "style",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "short",
+      "long"
+     ]
+    },
+    {
+     "name": "date",
+     "type": "text",
+     "bindable": true
+    }
+   ],
+   "events": {},
+   "cost": {
+    "objects": 2,
+    "bytes_est": 320
+   }
+  },
+  "delta_chip": {
+   "name": "Delta chip",
+   "update": true,
+   "props": [
+    {
+     "name": "pct",
+     "type": "range",
+     "bindable": true,
+     "min": -60,
+     "max": 60
+    },
+    {
+     "name": "ref",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "up_is_good",
+     "type": "bool",
+     "bindable": true
+    }
+   ],
+   "events": {},
+   "cost": {
+    "objects": 3,
+    "bytes_est": 480
+   }
+  },
+  "dial": {
+   "name": "Dial",
+   "update": true,
+   "props": [
+    {
+     "name": "value",
+     "type": "range",
+     "bindable": true,
+     "min": -20,
+     "max": 200
+    },
+    {
+     "name": "min",
+     "type": "range",
+     "bindable": true,
+     "min": -20,
+     "max": 100
+    },
+    {
+     "name": "max",
+     "type": "range",
+     "bindable": true,
+     "min": 1,
+     "max": 200
+    },
+    {
+     "name": "on",
+     "type": "bool",
+     "bindable": true
+    },
+    {
+     "name": "caption",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "unit",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "step",
+     "type": "range",
+     "bindable": true,
+     "min": 0.5,
+     "max": 25
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "default",
+      "disabled",
+      "unavailable"
+     ]
+    }
+   ],
+   "events": {
+    "change": [
+     "light.brightness"
+    ],
+    "input": [
+     "light.brightness"
+    ],
+    "toggle": [
+     "light.switch"
+    ]
+   },
+   "cost": {
+    "objects": 16,
+    "bytes_est": 2560
+   }
+  },
+  "donut": {
+   "name": "Donut",
+   "update": true,
+   "props": [
+    {
+     "name": "a",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 10
+    },
+    {
+     "name": "b",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 10
+    },
+    {
+     "name": "c",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 10
+    },
+    {
+     "name": "size",
+     "type": "range",
+     "bindable": true,
+     "min": 64,
+     "max": 160
+    }
+   ],
+   "events": {},
+   "cost": {
+    "objects": 5,
+    "bytes_est": 800
+   }
+  },
+  "empty_state": {
+   "name": "Empty state",
+   "update": true,
+   "props": [
+    {
+     "name": "icon",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "done",
+      "alert",
+      "pr"
+     ]
+    },
+    {
+     "name": "title",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "body",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "tone",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "ok",
+      "warn",
+      "error",
+      "working",
+      "info",
+      "idle"
+     ]
+    }
+   ],
+   "events": {},
+   "cost": {
+    "objects": 5,
+    "bytes_est": 800
+   }
+  },
+  "focus_ring": {
+   "name": "Focus ring",
+   "update": true,
+   "props": [
+    {
+     "name": "on",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "box",
+      "button",
+      "play"
+     ]
+    },
+    {
+     "name": "offset",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "focus-offset",
+      "none",
+      "space-2",
+      "space-4"
+     ]
+    },
+    {
+     "name": "disabled",
+     "type": "bool",
+     "bindable": true
+    }
+   ],
+   "events": {},
+   "cost": {
+    "objects": 2,
+    "bytes_est": 320
+   }
+  },
+  "header": {
+   "name": "Header",
+   "update": true,
+   "props": [
+    {
+     "name": "label",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "back",
+     "type": "bool",
+     "bindable": true
+    },
+    {
+     "name": "clock",
+     "type": "bool",
+     "bindable": true
+    },
+    {
+     "name": "time",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "settings",
+     "type": "bool",
+     "bindable": true
+    },
+    {
+     "name": "chip",
+     "type": "bool",
+     "bindable": true
+    }
+   ],
+   "events": {},
+   "cost": {
+    "objects": 7,
+    "bytes_est": 1120
+   }
+  },
+  "hero_block": {
+   "name": "Hero block",
+   "update": true,
+   "props": [
+    {
+     "name": "n",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "label",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "line",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "accent",
+     "type": "bool",
+     "bindable": true
+    },
+    {
+     "name": "role",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "hero",
+      "display"
+     ]
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "default",
+      "unavailable"
+     ]
+    }
+   ],
+   "events": {},
+   "cost": {
+    "objects": 5,
+    "bytes_est": 800
+   }
+  },
+  "icon_button": {
+   "name": "Icon button",
+   "update": true,
+   "props": [
+    {
+     "name": "style",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "play",
+      "round",
+      "square"
+     ]
+    },
+    {
+     "name": "icon",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "next",
+      "prev",
+      "play",
+      "plus",
+      "close",
+      "check",
+      "back"
+     ]
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "default",
+      "pressed",
+      "active",
+      "active-pressed",
+      "disabled",
+      "unavailable"
+     ]
+    }
+   ],
+   "events": {},
+   "cost": {
+    "objects": 3,
+    "bytes_est": 480
+   }
+  },
+  "label": {
+   "name": "Label",
+   "update": true,
+   "props": [
+    {
+     "name": "text",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "type",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "title",
+      "card-title",
+      "tile",
+      "body",
+      "label",
+      "label-sm",
+      "meta",
+      "meta-sm",
+      "caps-sm",
+      "subtitle",
+      "date",
+      "weather",
+      "number"
+     ]
+    },
+    {
+     "name": "colour",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "text",
+      "text-dim",
+      "accent-text",
+      "blue",
+      "ok",
+      "warn",
+      "error",
+      "disabled"
+     ]
+    }
+   ],
+   "events": {},
+   "cost": {
+    "objects": 1,
+    "bytes_est": 160
+   }
+  },
+  "legend": {
+   "name": "Legend and axis",
+   "update": true,
+   "props": [
+    {
+     "name": "items",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "ticks",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "width",
+     "type": "range",
+     "bindable": true,
+     "min": 160,
+     "max": 440
+    }
+   ],
+   "events": {},
+   "cost": {
+    "objects": 17,
+    "bytes_est": 2720
+   }
+  },
+  "lightning_radar": {
+   "name": "Lightning radar",
+   "update": true,
+   "props": [
+    {
+     "name": "demo",
+     "type": "bool",
+     "bindable": true
+    },
+    {
+     "name": "quiet",
+     "type": "bool",
+     "bindable": true
+    },
+    {
+     "name": "size",
+     "type": "range",
+     "bindable": true,
+     "min": 192,
+     "max": 320
+    },
+    {
+     "name": "unit",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "km",
+      "mi"
+     ]
+    }
+   ],
+   "events": {},
+   "cost": {
+    "objects": 16,
+    "bytes_est": 2560
+   }
+  },
+  "list_row": {
+   "name": "List row",
+   "update": true,
+   "props": [
+    {
+     "name": "title",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "icon",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "none",
+      "bulb",
+      "speaker",
+      "tv",
+      "volume",
+      "power",
+      "house"
+     ]
+    },
+    {
+     "name": "sub",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "trailing",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "none",
+      "value",
+      "chevron",
+      "value-chevron",
+      "toggle"
+     ]
+    },
+    {
+     "name": "value",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "on",
+     "type": "bool",
+     "bindable": true
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "default",
+      "pressed",
+      "disabled",
+      "unavailable"
+     ]
+    },
+    {
+     "name": "divider",
+     "type": "bool",
+     "bindable": true
+    },
+    {
+     "name": "list",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "single",
+      "stack"
+     ]
+    }
+   ],
+   "events": {
+    "toggle": [
+     "light.switch"
+    ],
+    "tap": [
+     "nav.open",
+     "nav.back",
+     "light.toggle"
+    ],
+    "long": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 5,
+    "bytes_est": 800
+   }
+  },
+  "mascot_mood": {
+   "name": "Mascot mood",
+   "update": true,
+   "props": [
+    {
+     "name": "from",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "mood",
+      "agent"
+     ]
+    },
+    {
+     "name": "mood",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "idle",
+      "working",
+      "done",
+      "needs",
+      "error",
+      "sleeping"
+     ]
+    },
+    {
+     "name": "kind",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "working",
+      "needs",
+      "done",
+      "idle"
+     ]
+    },
+    {
+     "name": "status",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "colour",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "mood",
+      "accent",
+      "steel",
+      "warn"
+     ]
+    },
+    {
+     "name": "scale",
+     "type": "range",
+     "bindable": true,
+     "min": 1,
+     "max": 4
+    }
+   ],
+   "events": {},
+   "cost": {
+    "objects": 16,
+    "bytes_est": 2560
+   }
+  },
+  "media_disc": {
+   "name": "Media disc",
+   "update": true,
+   "props": [
+    {
+     "name": "progress",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 100
+    },
+    {
+     "name": "playing",
+     "type": "bool",
+     "bindable": true
+    },
+    {
+     "name": "size",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "256",
+      "320"
+     ]
+    }
+   ],
+   "events": {},
+   "cost": {
+    "objects": 9,
+    "bytes_est": 1440
+   }
+  },
+  "media_visual": {
+   "name": "Media visuals",
+   "update": true,
+   "props": [
+    {
+     "name": "visual",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "cassette",
+      "cd",
+      "vinyl"
+     ]
+    },
+    {
+     "name": "progress",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 100
+    },
+    {
+     "name": "playing",
+     "type": "bool",
+     "bindable": true
+    },
+    {
+     "name": "title",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "artist",
+     "type": "text",
+     "bindable": true
+    }
+   ],
+   "events": {},
+   "cost": {
+    "objects": 1,
+    "bytes_est": 160
+   }
+  },
+  "moon_facts": {
+   "name": "Moon facts",
+   "update": true,
+   "props": [
+    {
+     "name": "ahead",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 29
+    },
+    {
+     "name": "lat",
+     "type": "range",
+     "bindable": true,
+     "min": -60,
+     "max": 65
+    },
+    {
+     "name": "lon",
+     "type": "range",
+     "bindable": true,
+     "min": -180,
+     "max": 180
+    }
+   ],
+   "events": {},
+   "cost": {
+    "objects": 26,
+    "bytes_est": 4160
+   }
+  },
+  "moon_icon": {
+   "name": "Moon phase",
+   "update": true,
+   "props": [
+    {
+     "name": "phase",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 1
+    },
+    {
+     "name": "size",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "icon",
+      "glyph",
+      "detail",
+      "feature",
+      "card",
+      "hero"
+     ]
+    },
+    {
+     "name": "south",
+     "type": "bool",
+     "bindable": true
+    }
+   ],
+   "events": {},
+   "cost": {
+    "objects": 5,
+    "bytes_est": 800
+   }
+  },
+  "moon_range": {
+   "name": "Moon by day",
+   "update": true,
+   "props": [
+    {
+     "name": "start",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "today",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 30
+    },
+    {
+     "name": "height",
+     "type": "range",
+     "bindable": true,
+     "min": 80,
+     "max": 160
+    },
+    {
+     "name": "south",
+     "type": "bool",
+     "bindable": true
+    }
+   ],
+   "events": {},
+   "cost": {
+    "objects": 137,
+    "bytes_est": 21920
+   }
+  },
+  "more_row": {
+   "name": "More row",
+   "update": true,
+   "props": [
+    {
+     "name": "text",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "default",
+      "pressed",
+      "disabled"
+     ]
+    }
+   ],
+   "events": {},
+   "cost": {
+    "objects": 4,
+    "bytes_est": 640
+   }
+  },
+  "picker_row": {
+   "name": "Picker row",
+   "update": true,
+   "props": [
+    {
+     "name": "icon",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "none",
+      "speaker",
+      "speakers",
+      "tv",
+      "stream",
+      "auto"
+     ]
+    },
+    {
+     "name": "name",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "status",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "tone",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "dim",
+      "working"
+     ]
+    },
+    {
+     "name": "selected",
+     "type": "bool",
+     "bindable": true
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "default",
+      "pressed",
+      "disabled",
+      "unavailable"
+     ]
+    },
+    {
+     "name": "list",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "single",
+      "group"
+     ]
+    }
+   ],
+   "events": {},
+   "cost": {
+    "objects": 7,
+    "bytes_est": 1120
+   }
+  },
+  "pr_row": {
+   "name": "Pull request row",
+   "update": true,
+   "props": [
+    {
+     "name": "repo",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "number",
+     "type": "range",
+     "bindable": true,
+     "min": 1,
+     "max": 9999
+    },
+    {
+     "name": "title",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "age",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "draft",
+     "type": "bool",
+     "bindable": true
+    },
+    {
+     "name": "ci",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "pass",
+      "fail",
+      "pending",
+      "none"
+     ]
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "default",
+      "pressed"
+     ]
+    }
+   ],
+   "events": {},
+   "cost": {
+    "objects": 13,
+    "bytes_est": 2080
+   }
+  },
+  "print_model": {
+   "name": "3D print model",
+   "update": true,
+   "props": [
+    {
+     "name": "progress",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 100
+    },
+    {
+     "name": "solid",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "neutral",
+      "steel"
+     ]
+    },
+    {
+     "name": "hot",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 12
+    },
+    {
+     "name": "width",
+     "type": "range",
+     "bindable": true,
+     "min": 160,
+     "max": 440
+    },
+    {
+     "name": "height",
+     "type": "range",
+     "bindable": true,
+     "min": 160,
+     "max": 296
+    },
+    {
+     "name": "ss",
+     "type": "range",
+     "bindable": true,
+     "min": 1,
+     "max": 3
+    }
+   ],
+   "events": {},
+   "cost": {
+    "objects": 2,
+    "bytes_est": 320
+   }
+  },
+  "qr_block": {
+   "name": "QR block",
+   "update": true,
+   "props": [
+    {
+     "name": "text",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "caption",
+     "type": "text",
+     "bindable": true
+    }
+   ],
+   "events": {},
+   "cost": {
+    "objects": 3,
+    "bytes_est": 480
+   }
+  },
+  "radio": {
+   "name": "Radio",
+   "update": true,
+   "props": [
+    {
+     "name": "on",
+     "type": "bool",
+     "bindable": true
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "default",
+      "disabled"
+     ]
+    }
+   ],
+   "events": {},
+   "cost": {
+    "objects": 2,
+    "bytes_est": 320
+   }
+  },
+  "rate_strip": {
+   "name": "Rate strip",
+   "update": true,
+   "props": [
+    {
+     "name": "bands",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "now",
+     "type": "range",
+     "bindable": true,
+     "min": -1,
+     "max": 23
+    },
+    {
+     "name": "width",
+     "type": "range",
+     "bindable": true,
+     "min": 160,
+     "max": 440
+    }
+   ],
+   "events": {},
+   "cost": {
+    "objects": 1,
+    "bytes_est": 160
+   }
+  },
+  "readout": {
+   "name": "State readout",
+   "update": true,
+   "props": [
+    {
+     "name": "top",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "occupancy · on",
+      "occupancy · off",
+      "door · open",
+      "door · closed",
+      "window · open",
+      "temperature",
+      "temperature · cold",
+      "home · everyone",
+      "home · some",
+      "moisture · wet",
+      "offline"
+     ]
+    },
+    {
+     "name": "bottom",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "none",
+      "occupancy · on",
+      "occupancy · off",
+      "door · open",
+      "door · closed",
+      "window · open",
+      "temperature",
+      "temperature · cold",
+      "home · everyone",
+      "home · some",
+      "moisture · wet",
+      "offline"
+     ]
+    }
+   ],
+   "events": {},
+   "cost": {
+    "objects": 18,
+    "bytes_est": 2880
+   }
+  },
+  "screen_chrome": {
+   "name": "Screen chrome",
+   "update": true,
+   "props": [
+    {
+     "name": "time",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "settings",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "none",
+      "button",
+      "here"
+     ]
+    }
+   ],
+   "events": {},
+   "cost": {
+    "objects": 2,
+    "bytes_est": 320
+   }
+  },
+  "scroll_track": {
+   "name": "Scroll track",
+   "update": true,
+   "props": [
+    {
+     "name": "rows",
+     "type": "range",
+     "bindable": true,
+     "min": 1,
+     "max": 12
+    },
+    {
+     "name": "height",
+     "type": "range",
+     "bindable": true,
+     "min": 128,
+     "max": 256
+    }
+   ],
+   "events": {},
+   "cost": {
+    "objects": 57,
+    "bytes_est": 9120
+   }
+  },
+  "section_header": {
+   "name": "Section header",
+   "update": true,
+   "props": [
+    {
+     "name": "title",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "badge",
+     "type": "bool",
+     "bindable": true
+    },
+    {
+     "name": "count",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 150
+    },
+    {
+     "name": "tone",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "ok",
+      "warn",
+      "error",
+      "working",
+      "info",
+      "idle"
+     ]
+    },
+    {
+     "name": "zero",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "muted",
+      "hide"
+     ]
+    },
+    {
+     "name": "right",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "none",
+      "meta",
+      "action"
+     ]
+    },
+    {
+     "name": "meta",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "action",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "default",
+      "pressed",
+      "disabled"
+     ]
+    }
+   ],
+   "events": {},
+   "cost": {
+    "objects": 6,
+    "bytes_est": 960
+   }
+  },
+  "segmented": {
+   "name": "Segmented",
+   "update": true,
+   "props": [
+    {
+     "name": "options",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "selected",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "width",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "hug",
+      "fill"
+     ]
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "default",
+      "disabled",
+      "unavailable"
+     ]
+    }
+   ],
+   "events": {},
+   "cost": {
+    "objects": 16,
+    "bytes_est": 2560
+   }
+  },
+  "slider": {
+   "name": "Slider",
+   "update": true,
+   "props": [
+    {
+     "name": "value",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 100
+    },
+    {
+     "name": "min",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 50
+    },
+    {
+     "name": "max",
+     "type": "range",
+     "bindable": true,
+     "min": 10,
+     "max": 100
+    },
+    {
+     "name": "step",
+     "type": "range",
+     "bindable": true,
+     "min": 1,
+     "max": 25
+    },
+    {
+     "name": "width",
+     "type": "range",
+     "bindable": true,
+     "min": 96,
+     "max": 288
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "default",
+      "disabled",
+      "unavailable"
+     ]
+    }
+   ],
+   "events": {
+    "change": [
+     "light.brightness"
+    ],
+    "input": [
+     "light.brightness"
+    ]
+   },
+   "cost": {
+    "objects": 5,
+    "bytes_est": 800
+   }
+  },
+  "sparkline": {
+   "name": "Sparkline",
+   "update": true,
+   "props": [
+    {
+     "name": "values",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "colour",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "steel",
+      "blue",
+      "accent",
+      "text-dim"
+     ]
+    },
+    {
+     "name": "width",
+     "type": "range",
+     "bindable": true,
+     "min": 96,
+     "max": 224
+    },
+    {
+     "name": "dot",
+     "type": "bool",
+     "bindable": true
+    }
+   ],
+   "events": {},
+   "cost": {
+    "objects": 34,
+    "bytes_est": 5440
+   }
+  },
+  "speaker_button": {
+   "name": "Speaker button",
+   "update": true,
+   "props": [
+    {
+     "name": "name",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "playing",
+     "type": "bool",
+     "bindable": true
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "default",
+      "pressed",
+      "disabled"
+     ]
+    }
+   ],
+   "events": {},
+   "cost": {
+    "objects": 6,
+    "bytes_est": 960
+   }
+  },
+  "stat": {
+   "name": "Stat",
+   "update": true,
+   "props": [
+    {
+     "name": "label",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "value",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "tone",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "dim",
+      "text",
+      "warn",
+      "ok"
+     ]
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "default",
+      "unavailable"
+     ]
+    }
+   ],
+   "events": {},
+   "cost": {
+    "objects": 3,
+    "bytes_est": 480
+   }
+  },
+  "state_chip": {
+   "name": "State chip",
+   "update": true,
+   "props": [
+    {
+     "name": "kind",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "approved",
+      "changes",
+      "pending",
+      "draft",
+      "ci-pass",
+      "ci-fail",
+      "ci-pending",
+      "review",
+      "assigned"
+     ]
+    }
+   ],
+   "events": {},
+   "cost": {
+    "objects": 3,
+    "bytes_est": 480
+   }
+  },
+  "status_chip": {
+   "name": "Status chip",
+   "update": true,
+   "props": [
+    {
+     "name": "tone",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "ok",
+      "warn",
+      "error",
+      "working",
+      "info",
+      "idle"
+     ]
+    },
+    {
+     "name": "text",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "pulse",
+     "type": "bool",
+     "bindable": true
+    }
+   ],
+   "events": {},
+   "cost": {
+    "objects": 3,
+    "bytes_est": 480
+   }
+  },
+  "status_dot": {
+   "name": "Status dot",
+   "update": true,
+   "props": [
+    {
+     "name": "tone",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "ok",
+      "warn",
+      "error",
+      "working",
+      "info",
+      "idle"
+     ]
+    },
+    {
+     "name": "pulse",
+     "type": "bool",
+     "bindable": true
+    }
+   ],
+   "events": {},
+   "cost": {
+    "objects": 1,
+    "bytes_est": 160
+   }
+  },
+  "thermostat_dial": {
+   "name": "Thermostat dial",
+   "update": true,
+   "props": [
+    {
+     "name": "target",
+     "type": "range",
+     "bindable": true,
+     "min": 5,
+     "max": 30
+    },
+    {
+     "name": "current",
+     "type": "range",
+     "bindable": true,
+     "min": 5,
+     "max": 30
+    },
+    {
+     "name": "action",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "heating",
+      "cooling",
+      "idle",
+      "off"
+     ]
+    },
+    {
+     "name": "min",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 20
+    },
+    {
+     "name": "max",
+     "type": "range",
+     "bindable": true,
+     "min": 20,
+     "max": 40
+    },
+    {
+     "name": "step",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "0.5",
+      "1",
+      "0.1"
+     ]
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "default",
+      "disabled",
+      "unavailable"
+     ]
+    }
+   ],
+   "events": {},
+   "cost": {
+    "objects": 5,
+    "bytes_est": 800
+   }
+  },
+  "tick_ring": {
+   "name": "Tick ring",
+   "update": true,
+   "props": [
+    {
+     "name": "count",
+     "type": "range",
+     "bindable": true,
+     "min": 12,
+     "max": 120
+    },
+    {
+     "name": "range",
+     "type": "range",
+     "bindable": true,
+     "min": 90,
+     "max": 360
+    },
+    {
+     "name": "size",
+     "type": "range",
+     "bindable": true,
+     "min": 96,
+     "max": 400
+    },
+    {
+     "name": "stride",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "5",
+      "3",
+      "6",
+      "10",
+      "0"
+     ]
+    },
+    {
+     "name": "numbers",
+     "type": "bool",
+     "bindable": true
+    },
+    {
+     "name": "lit",
+     "type": "range",
+     "bindable": true,
+     "min": -1,
+     "max": 100
+    }
+   ],
+   "events": {},
+   "cost": {
+    "objects": 2,
+    "bytes_est": 320
+   }
+  },
+  "tile": {
+   "name": "Tile",
+   "update": true,
+   "props": [
+    {
+     "name": "title",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "kind",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "working",
+      "needs",
+      "done",
+      "idle"
+     ]
+    },
+    {
+     "name": "status",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "default",
+      "pressed",
+      "unavailable"
+     ]
+    },
+    {
+     "name": "press",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "fill",
+      "border",
+      "border-fill"
+     ]
+    }
+   ],
+   "events": {},
+   "cost": {
+    "objects": 19,
+    "bytes_est": 3040
+   }
+  },
+  "time": {
+   "name": "Time",
+   "update": true,
+   "props": [
+    {
+     "name": "size",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "compact",
+      "mid",
+      "hero"
+     ]
+    },
+    {
+     "name": "font",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "mono",
+      "inter"
+     ]
+    },
+    {
+     "name": "format",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "24h",
+      "12h"
+     ]
+    },
+    {
+     "name": "seconds",
+     "type": "bool",
+     "bindable": true
+    },
+    {
+     "name": "time",
+     "type": "text",
+     "bindable": true
+    }
+   ],
+   "events": {},
+   "cost": {
+    "objects": 12,
+    "bytes_est": 1920
+   }
+  },
+  "toast": {
+   "name": "Toast",
+   "update": true,
+   "props": [
+    {
+     "name": "icon",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "timer",
+      "agent",
+      "person",
+      "washer",
+      "vacuum",
+      "bolt",
+      "alert",
+      "done",
+      "bell",
+      "check",
+      "pr"
+     ]
+    },
+    {
+     "name": "tone",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "ok",
+      "warn",
+      "error",
+      "working",
+      "info",
+      "idle"
+     ]
+    },
+    {
+     "name": "title",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "body",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "action",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "timer",
+     "type": "bool",
+     "bindable": true
+    },
+    {
+     "name": "life",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "normal",
+      "urgent"
+     ]
+    }
+   ],
+   "events": {},
+   "cost": {
+    "objects": 8,
+    "bytes_est": 1280
+   }
+  },
+  "toast_layer": {
+   "name": "Toast layer",
+   "update": true,
+   "props": [
+    {
+     "name": "position",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "top",
+      "bottom"
+     ]
+    },
+    {
+     "name": "push",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "ok",
+      "warn",
+      "error",
+      "working",
+      "info",
+      "idle",
+      "none"
+     ]
+    },
+    {
+     "name": "stack",
+     "type": "range",
+     "bindable": true,
+     "min": 1,
+     "max": 3
+    },
+    {
+     "name": "timer",
+     "type": "bool",
+     "bindable": true
+    },
+    {
+     "name": "action",
+     "type": "bool",
+     "bindable": true
+    },
+    {
+     "name": "screen",
+     "type": "bool",
+     "bindable": true
+    }
+   ],
+   "events": {},
+   "cost": {
+    "objects": 48,
+    "bytes_est": 7680
+   }
+  },
+  "toggle": {
+   "name": "Toggle",
+   "update": true,
+   "props": [
+    {
+     "name": "on",
+     "type": "bool",
+     "bindable": true
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "default",
+      "disabled",
+      "unavailable"
+     ]
+    }
+   ],
+   "events": {
+    "toggle": [
+     "light.switch"
+    ]
+   },
+   "cost": {
+    "objects": 2,
+    "bytes_est": 320
+   }
+  },
+  "weather_icon": {
+   "name": "Weather icon",
+   "update": true,
+   "props": [
+    {
+     "name": "icon",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "clear-day",
+      "clear-night",
+      "partly-day",
+      "partly-night",
+      "cloudy",
+      "fog",
+      "rain-light",
+      "rain-heavy",
+      "showers-day",
+      "showers-night",
+      "snow",
+      "sleet",
+      "thunder",
+      "thunder-rain",
+      "hail",
+      "wind",
+      "exceptional"
+     ]
+    },
+    {
+     "name": "size",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "glyph",
+      "detail",
+      "feature",
+      "card",
+      "hero"
+     ]
+    },
+    {
+     "name": "animated",
+     "type": "bool",
+     "bindable": true
+    },
+    {
+     "name": "on",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "canvas",
+      "card"
+     ]
+    }
+   ],
+   "events": {},
+   "cost": {
+    "objects": 2,
+    "bytes_est": 320
+   }
+  }
+ },
+ "actions": [
+  "light.switch",
+  "light.toggle",
+  "light.brightness",
+  "nav.open",
+  "nav.back"
+ ],
+ "fmt": [
+  "on",
+  "pct",
+  "avail",
+  "light",
+  "name"
+ ],
+ "layouts": [
+  "list",
+  "center",
+  "cards"
+ ],
+ "budget": {
+  "nodes": 48,
+  "binds": 64,
+  "bytes": 8192,
+  "screens": 16,
+  "deck_bytes": 2048
+ },
+ "hash": "161e44a1"
+}

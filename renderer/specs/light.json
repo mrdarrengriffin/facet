@@ -1,0 +1,51 @@
+{
+ "v": 1,
+ "id": "light",
+ "name": "Light",
+ "rev": 1,
+ "params": {
+  "entity": "light.living_room_dimmer_light",
+  "name": "Ceiling"
+ },
+ "header": {
+  "label": "$name",
+  "back": true
+ },
+ "layout": "center",
+ "nodes": [
+  {
+   "c": "dial",
+   "p": {
+    "caption": "Brightness",
+    "unit": "%",
+    "value": {
+     "e": "$entity",
+     "a": "brightness",
+     "fmt": "pct"
+    },
+    "on": {
+     "e": "$entity",
+     "fmt": "on"
+    },
+    "state": {
+     "e": "$entity",
+     "fmt": "avail"
+    }
+   },
+   "on": {
+    "input": {
+     "do": "light.brightness",
+     "e": "$entity"
+    },
+    "change": {
+     "do": "light.brightness",
+     "e": "$entity"
+    },
+    "toggle": {
+     "do": "light.switch",
+     "e": "$entity"
+    }
+   }
+  }
+ ]
+}
