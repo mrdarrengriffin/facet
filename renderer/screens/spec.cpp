@@ -1,6 +1,7 @@
 // Spec screen (core/spec.h, WIP): a screen built from its JSON spec, here for the workbench and the audit; the device
 // runtime builds spec screens the same way when it opens one (core/device.cpp). Prop screen = one of this build's
-// factory specs (renderer/specs/*.json); entity / name = the Light spec's parameters.
+// factory specs (renderer/specs/*.json); entity / name / speakers = the screen's parameters (empty = the spec's own
+// default; speakers = the Media screen's players, a comma list of media_player ids the host knows).
 #include "fw.h"
 #include "spec.h"
 
@@ -17,8 +18,9 @@ std::string meta() {
   "icons": ["back@glyph", "bulb@icon"],
   "props": [
     {"name": "screen", "type": "select", "options": [)" + ids + R"(], "default": "living_room"},
-    {"name": "entity", "type": "text", "default": "light.living_room_dimmer_light"},
-    {"name": "name", "type": "text", "default": "Ceiling"}
+    {"name": "entity", "type": "text", "default": ""},
+    {"name": "name", "type": "text", "default": ""},
+    {"name": "speakers", "type": "text", "default": ""}
   ],
   "variants": [
     )" + vars + R"(
@@ -28,8 +30,8 @@ std::string meta() {
 const std::string META = meta();
 void build_spec(lv_obj_t *parent, fw::Props p) {
   ArduinoJson::JsonDocument params;
-  params["entity"] = p["entity"] | "light.living_room_dimmer_light";
-  params["name"] = p["name"] | "Ceiling";
+  for (const char *k : {"entity", "name", "speakers"})  // given = the screen opened with it, else the spec's default
+    if (*(p[k] | "")) params[k] = p[k] | "";
   fw::spec::build(parent, p["screen"] | "living_room", params.as<fw::Props>());
 }
 const int reg = fw::add({"spec", "Spec screen", "screens", META.c_str(), build_spec});

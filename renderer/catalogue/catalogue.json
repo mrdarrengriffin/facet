@@ -2251,9 +2251,25 @@
       "cd",
       "vinyl"
      ]
+    },
+    {
+     "name": "player",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "speakers",
+     "type": "text",
+     "bindable": true
     }
    ],
    "events": {
+    "media": [
+     "media.control"
+    ],
+    "speaker": [
+     "screen.param"
+    ],
     "open": [
      "nav.open"
     ]
@@ -4224,6 +4240,8 @@
   "climate.set_temperature",
   "climate.set_hvac_mode",
   "climate.set_preset_mode",
+  "media.control",
+  "screen.param",
   "nav.open",
   "nav.back"
  ],
@@ -4233,7 +4251,8 @@
   "avail",
   "light",
   "name",
-  "num"
+  "num",
+  "frac"
  ],
  "layouts": [
   "list",
@@ -4247,5 +4266,5 @@
   "screens": 16,
   "deck_bytes": 2048
  },
- "hash": "12ccf1ad"
+ "hash": "fcb97c09"
 }

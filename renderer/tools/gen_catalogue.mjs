@@ -35,7 +35,7 @@ const schema = {
   oneOf: [{ $ref: '#/$defs/screen' }, { $ref: '#/$defs/deck' }],
   $defs: {
     bind, param,
-    action: { type: 'object', additionalProperties: false, required: ['do'], properties: { do: { enum: cat.actions }, e: { type: 'string' }, screen: { type: 'string', pattern: '^[a-z0-9_]{1,12}$' }, params: { type: 'object', additionalProperties: { type: 'string' } } } },
+    action: { type: 'object', additionalProperties: false, required: ['do'], properties: { do: { enum: cat.actions }, e: { type: 'string' }, screen: { type: 'string', pattern: '^[a-z0-9_]{1,12}$' }, params: { type: 'object', additionalProperties: { type: 'string' } }, param: { type: 'string', pattern: '^[a-z0-9_]{1,12}$' }, from: { type: 'string', pattern: '^[a-z0-9_]{1,12}$' } } },
     screen: { type: 'object', additionalProperties: false, required: ['v', 'id', 'rev', 'layout', 'nodes'], properties: {
       v: { const: cat.protocol }, id: { type: 'string', pattern: '^[a-z0-9_]{1,12}$' }, name: { type: 'string' }, rev: { type: 'integer', minimum: 0 },
       params: { type: 'object', additionalProperties: { type: 'string' } }, header: { type: 'object', additionalProperties: false, properties: { label: { type: 'string' }, back: { type: 'boolean' } } },

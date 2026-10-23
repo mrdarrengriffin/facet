@@ -19,6 +19,13 @@
 //                                                       trailing send, clamped + snapped to the entity's min / max /
 //                                                       step; settles when HA reports it)
 //              {"do": "climate.set_hvac_mode", "e"} / {"do": "climate.set_preset_mode", "e"}  (the event's value)
+//              {"do": "media.control", "e"}  (a Media view's "media" event: previous | play_pause | next |
+//                                              volume 0-100 -> media_player.media_previous_track / media_play_pause /
+//                                              media_next_track / volume_set)
+//              {"do": "screen.param", "param": "entity", "from"?: "speakers"}  (the event's detail becomes the
+//                screen's parameter `param` and every node is bound again in place, through its update path: a
+//                picked speaker re-binds the Media screen; with "from" the value must be one of that parameter's
+//                comma list, the same domain as before)
 //              {"do": "nav.open", "screen": "<id>", "params"?: {k: v}}    {"do": "nav.back"}
 //              on "open" (any component's own open event): {"do": "nav.open"} = the screen its detail names
 //              The closed whitelist: each component + event allows only the actions in RULES (the catalogue).
@@ -75,13 +82,15 @@ constexpr Rule RULES[] = {
     {"more_row", "tap", "nav.open,nav.back"},
     {"thermostat_dial", "change", "climate.set_temperature"}, {"thermostat_dial", "input", "climate.set_temperature"},
     {"thermostat_view", "target", "climate.set_temperature"}, {"thermostat_view", "mode", "climate.set_hvac_mode"},
-    {"thermostat_view", "preset", "climate.set_preset_mode"},        // a link to a sub-view spec (moon -> moon_details -> ...)
+    {"thermostat_view", "preset", "climate.set_preset_mode"},
+    {"media_view", "media", "media.control"},        {"media_view", "speaker", "screen.param"},        // a link to a sub-view spec (moon -> moon_details -> ...)
     {"*", "open", "nav.open"},                       // any component's own "open" (a tapped calendar day, a PR):
                                                      // its detail = the screen id [+ "?" + params JSON]
 };
 constexpr const char *ACTIONS[] = {"light.switch", "light.toggle", "light.brightness", "climate.set_temperature",
-                                   "climate.set_hvac_mode", "climate.set_preset_mode", "nav.open", "nav.back"};
-constexpr const char *FMTS[] = {"", "on", "pct", "avail", "light", "name", "num"};
+                                   "climate.set_hvac_mode", "climate.set_preset_mode", "media.control", "screen.param",
+                                   "nav.open", "nav.back"};
+constexpr const char *FMTS[] = {"", "on", "pct", "avail", "light", "name", "num", "frac"};
 constexpr uint32_t CLIMATE_THROTTLE_MS = 250;  // like light-throttle-ms: a set point while dragging at most this often
 constexpr const char *LAYOUTS[] = {"list", "center", "cards"};
 constexpr const char *STYLE_KEYS[] = {"color", "colour", "bg", "x", "y", "w", "h", "width", "height", "size", "font",
@@ -163,8 +172,8 @@ inline void check_keys(ArduinoJson::JsonObjectConst o, const char *const *keys, 
 }
 inline void check_action(ArduinoJson::JsonVariantConst a, const char *comp, const char *event, const std::string &path, Errs &e) {
   if (!a.is<ArduinoJson::JsonObjectConst>()) { err(e, path, "bad_action", "an action is an object {do, ...}"); return; }
-  static const char *const K[] = {"do", "e", "screen", "params"};
-  check_keys(a.as<ArduinoJson::JsonObjectConst>(), K, 4, path, e);
+  static const char *const K[] = {"do", "e", "screen", "params", "param", "from"};
+  check_keys(a.as<ArduinoJson::JsonObjectConst>(), K, 6, path, e);
   const std::string d = a["do"] | "";
   if (!one_of(ACTIONS, d)) { err(e, path + ".do", "bad_action", "unknown action " + d); return; }
   const char *ok = allowed(comp, event);
@@ -176,6 +185,14 @@ inline void check_action(ArduinoJson::JsonVariantConst a, const char *comp, cons
   if (d.rfind("climate.", 0) == 0) {
     const std::string en = a["e"] | "";
     if (!entity_ok(en) || (en[0] != '$' && en.rfind("climate.", 0) != 0)) err(e, path + ".e", "bad_entity", "a climate entity (climate.x or $param)");
+  }
+  if (d == "media.control") {
+    const std::string en = a["e"] | "";
+    if (!entity_ok(en) || (en[0] != '$' && en.rfind("media_player.", 0) != 0)) err(e, path + ".e", "bad_entity", "a media player (media_player.x or $param)");
+  }
+  if (d == "screen.param") {
+    if (!id_ok(a["param"] | "")) err(e, path + ".param", "bad_action", "param: the screen parameter to set (a-z, 0-9, _)");
+    if (!a["from"].isNull() && !id_ok(a["from"] | "")) err(e, path + ".from", "bad_action", "from: the parameter holding the allowed values");
   }
   if (d == "nav.open") {
     const std::string s = a["screen"] | "";
@@ -189,7 +206,7 @@ inline void check_value(const PropInfo &pi, ArduinoJson::JsonVariantConst v, con
     static const char *const K[] = {"e", "a", "fmt"};
     check_keys(v.as<ArduinoJson::JsonObjectConst>(), K, 3, path, e);
     if (!entity_ok(v["e"] | "")) err(e, path + ".e", "bad_bind", "a bind needs an entity (domain.object or $param)");
-    if (!one_of(FMTS, v["fmt"] | "")) err(e, path + ".fmt", "bad_bind", "fmt is one of on, pct, avail, light, name, num");
+    if (!one_of(FMTS, v["fmt"] | "")) err(e, path + ".fmt", "bad_bind", "fmt is one of on, pct, avail, light, name, num, frac");
     binds++;
     return;
   }
@@ -390,6 +407,7 @@ inline void load() {
 struct Node {
   lv_obj_t *obj = nullptr;
   std::string comp, on, pending, entity;  // on / pending = JSON; entity = the light its actions act on
+  std::string raw_p, raw_on;               // props / on as the spec has them ("$param" kept): screen.param binds again
   bool has_brightness = false;
   double c_sent = NAN, c_want = NAN;  // climate set point: last sent, the latest waiting for the interval
   uint32_t c_at = 0;
@@ -486,6 +504,45 @@ inline void tick(lv_timer_t *t) {
     }
   }
 }
+// what a node's actions act on (from its "on"): the entity, a brightness drag, the climate attributes it needs
+inline void node_actions(Node &n) {
+  ArduinoJson::JsonDocument on;
+  deserializeJson(on, n.on.empty() ? "{}" : n.on);
+  n.has_brightness = false;
+  for (ArduinoJson::JsonPairConst kv : on.as<ArduinoJson::JsonObjectConst>()) {
+    const std::string e = kv.value()["e"] | "";
+    if (!e.empty()) n.entity = e;
+    if (!strcmp(kv.value()["do"] | "", "light.brightness")) n.has_brightness = true;
+    if (!strncmp(kv.value()["do"] | "", "climate.", 8) && !e.empty())  // its range + what settles a change
+      for (const char *a : {"", "temperature", "min_temp", "max_temp", "target_temp_step", "preset_mode"}) ha::want(e, a);
+  }
+}
+// screen.param: the parameter takes `v` and every node is bound again from its spec as written (update path)
+inline bool set_param(Screen *s, const std::string &param, const std::string &from, const std::string &v) {
+  auto cur = s->params.find(param);
+  if (cur == s->params.end() || cur->second == v || !entity_ok(v) || v[0] == '$') return false;
+  const std::string &old = cur->second;
+  if (old.find('.') != std::string::npos && v.substr(0, v.find('.')) != old.substr(0, old.find('.'))) return false;  // same domain
+  if (!from.empty()) {  // one of that parameter's comma list
+    auto l = s->params.find(from);
+    if (l == s->params.end() || !in_list(l->second.c_str(), v)) return false;
+  }
+  cur->second = v;
+  for (Node &n : s->nodes) {
+    ArduinoJson::JsonDocument p, on;
+    deserializeJson(p, n.raw_p.empty() ? "{}" : n.raw_p);
+    subst_all(p.as<ArduinoJson::JsonVariant>(), s->params);
+    if (!n.raw_on.empty()) {
+      deserializeJson(on, n.raw_on);
+      subst_all(on.as<ArduinoJson::JsonVariant>(), s->params);
+      n.on.clear();
+      serializeJson(on, n.on);
+      node_actions(n);
+    }
+    ha::rebind(n.obj, p.as<Props>());
+  }
+  return true;
+}
 // an event from inside node n -> its action (the whitelist was checked when the spec was accepted)
 inline bool run(Screen *s, Node &n, const char *event, const char *detail) {
   ArduinoJson::JsonDocument on;
@@ -505,6 +562,23 @@ inline bool run(Screen *s, Node &n, const char *event, const char *detail) {
     }
     if (!strcmp(event, "long")) sound(n.obj, "open");
     emit(n.obj, "navigate", id.c_str());
+    return true;
+  }
+  if (d == "media.control") {  // previous | play_pause | next | volume 0-100 (the view shows it at once itself)
+    static const char *const CMD[][2] = {{"previous", "media_player.media_previous_track"},
+                                         {"play_pause", "media_player.media_play_pause"},
+                                         {"next", "media_player.media_next_track"}};
+    for (auto &c : CMD)
+      if (!strcmp(detail, c[0])) { ha::act(n.obj, c[1], n.entity.c_str()); return true; }
+    if (!strncmp(detail, "volume ", 7)) {
+      char data[40];
+      snprintf(data, sizeof data, "{\"volume_level\":%.2f}", LV_CLAMP(0, atoi(detail + 7), 100) / 100.0);
+      ha::act(n.obj, "media_player.volume_set", n.entity.c_str(), data);
+    }
+    return true;
+  }
+  if (d == "screen.param") {
+    set_param(s, a["param"] | "", a["from"] | "", detail);
     return true;
   }
   if (d == "light.toggle") { if (!*ha::act(n.obj, "light.toggle", n.entity.c_str())) ha::hold(n.obj, PENDING_MS); return true; }
@@ -599,6 +673,9 @@ inline lv_obj_t *build(lv_obj_t *parent, const std::string &id, Props opened, st
   for (ArduinoJson::JsonPairConst kv : doc["params"].as<ArduinoJson::JsonObjectConst>()) s->params[kv.key().c_str()] = kv.value().as<std::string>();
   for (ArduinoJson::JsonPairConst kv : opened)
     if (kv.value().is<const char *>()) s->params[kv.key().c_str()] = kv.value().as<std::string>();
+  ArduinoJson::JsonDocument raw;  // the nodes as written ("$param" kept): screen.param binds them again (kept only then)
+  const bool rebinds = strstr(json, "\"screen.param\"") != nullptr;
+  if (rebinds) raw.set(doc["nodes"]);
   subst_all(doc.as<ArduinoJson::JsonVariant>(), s->params);
   const Theme &t = *T;
   s->root = box(parent);
@@ -646,7 +723,9 @@ inline lv_obj_t *build(lv_obj_t *parent, const std::string &id, Props opened, st
       lv_obj_set_style_pad_row(c, lay::gutter, 0);
     }
   }
+  size_t ni = 0;
   for (ArduinoJson::JsonVariantConst nd : doc["nodes"].as<ArduinoJson::JsonArrayConst>()) {
+    ArduinoJson::JsonVariantConst rn = raw[ni++];
     Node n;
     n.comp = nd["c"] | "";
     ArduinoJson::JsonDocument p;
@@ -656,13 +735,9 @@ inline lv_obj_t *build(lv_obj_t *parent, const std::string &id, Props opened, st
     if (!n.obj) continue;
     if (!nd["on"].isNull()) serializeJson(nd["on"], n.on);
     if (!nd["pending"].isNull()) serializeJson(nd["pending"], n.pending);
-    for (ArduinoJson::JsonPairConst kv : nd["on"].as<ArduinoJson::JsonObjectConst>()) {
-      const std::string e = kv.value()["e"] | "";
-      if (!e.empty()) n.entity = e;
-      if (!strcmp(kv.value()["do"] | "", "light.brightness")) n.has_brightness = true;
-      if (!strncmp(kv.value()["do"] | "", "climate.", 8) && !e.empty())  // its range + what settles a change
-        for (const char *a : {"", "temperature", "min_temp", "max_temp", "target_temp_step", "preset_mode"}) ha::want(e, a);
-    }
+    if (rebinds && !rn["p"].isNull()) serializeJson(rn["p"], n.raw_p);
+    if (rebinds && !rn["on"].isNull()) serializeJson(rn["on"], n.raw_on);
+    node_actions(n);
     if (!nd["on"]["long"].isNull())
       lv_obj_add_event_cb(n.obj, [](lv_event_t *e) {  // a long press (no tap after it)
         auto *o = (lv_obj_t *) lv_event_get_current_target(e);

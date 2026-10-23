@@ -18,8 +18,13 @@
 //            right [spk], clock false); a tap opens the speakers sheet (Bottom sheet, its picker rows: Auto, the
 //            speakers, the TV, a group; the docs story until a host lists the house's players), a pick shows on the
 //            button and emits "speaker" <name>. The sheet covers the whole screen (the view bleeds up to it).
-// Not ported yet (noted for Darren): progress moving on between updates; picking a speaker re-binding the screen to
-// that player (a host job). HA media actions are not in the spec whitelist yet.
+//            Real players (2026-10-23): prop speakers = a comma list of media_player entity ids (the host's: spec
+//            param $speakers) lists those instead (no Auto row): each row its friendly name and state (+ the title
+//            while it plays) from the HA store, read when the sheet opens; prop player = the bound entity (spec
+//            $entity) = the selected row and the button's name; a pick emits "speaker" <entity id>, the spec's
+//            screen.param re-binds the screen to it (now playing + controls follow, update path).
+// Actions: the spec's media.control turns "media" into media_player.media_previous_track / media_play_pause /
+// media_next_track / volume_set (core/spec.h). Not ported yet: progress moving on between updates; Auto.
 // Update path: texts in place, the disc / slider / play glyph through their own updates. Contrast: "media"
 // (+ media_disc, icon_button, slider, text).
 // audit deps: icon_button, media_disc, media_visual, slider, speaker_button, bottom_sheet
@@ -31,6 +36,8 @@ struct MV {
   std::string visual = "disc";
   lv_obj_t *spk = nullptr, *sheet = nullptr;
   int speaker = 0;
+  std::string player;                // the bound media_player (prop player)
+  std::vector<std::string> spk_ids;  // the host's players (prop speakers), empty = the sample list
   lv_obj_t *disc = nullptr, *state = nullptr, *title = nullptr, *artist = nullptr, *play = nullptr, *slider = nullptr, *vlab = nullptr;
   std::string st = "playing", title_s, artist_s;
   int progress = 38, volume = 42;
@@ -50,7 +57,7 @@ lv_obj_t *build(const char *id, lv_obj_t *parent, ArduinoJson::JsonDocument &d) 
   if (const fw::Component *c = fw::find(id)) c->build(parent, d.as<fw::Props>());
   return lv_obj_get_child_count(parent) > n ? lv_obj_get_child(parent, -1) : nullptr;
 }
-std::string spk_name(int i);
+std::string spk_name(const MV *m, int i);
 bool held(const MV *m) { return (int32_t) (m->hold_until - lv_tick_get()) > 0; }
 int vol_track_dp() {  // the slider's track: the width less the two labels, their gutters and a knob
   return (int) std::lround((fw::lay::content_w - 2 * fw::lay::m_vol_label - 2 * fw::lay::gutter - fw::touch::min / 2) / fw::D);
@@ -58,7 +65,8 @@ int vol_track_dp() {  // the slider's track: the width less the two labels, thei
 void render(lv_obj_t *root) {
   MV *m = of(root);
   const bool playing = m->st == "playing";
-  fw::set_text(m->state, fw::ty::label, m->st == "off" ? "off" : m->st.c_str());
+  const bool known = m->st == "off" || m->st == "paused" || playing;  // on / standby / buffering / unavailable: idle
+  fw::set_text(m->state, fw::ty::label, known ? m->st.c_str() : "idle");
   fw::set_text(m->title, fw::ty::headline, m->title_s.empty() ? "Nothing playing" : m->title_s.c_str());
   fw::set_text(m->artist, fw::ty::body, m->artist_s.c_str());
   ArduinoJson::JsonDocument dp;
@@ -68,7 +76,7 @@ void render(lv_obj_t *root) {
   fw::update_child(fw::find(m->visual == "disc" ? "media_disc" : "media_visual"), m->disc, dp.as<fw::Props>());
   if (m->spk) {  // the speaker icon: accent while playing
     ArduinoJson::JsonDocument bp;
-    bp["name"] = spk_name(m->speaker), bp["playing"] = playing;
+    bp["name"] = spk_name(m, m->speaker), bp["playing"] = playing;
     fw::update_child(fw::find("speaker_button"), m->spk, bp.as<fw::Props>());
   }
   ArduinoJson::JsonDocument pp;
@@ -92,29 +100,77 @@ void send_volume(lv_obj_t *root, int v) {
   snprintf(b, sizeof b, "volume %d", v);
   fw::emit(root, "media", b);
 }
+void sync_speakers(lv_obj_t *root, fw::Props p);
+// HA's "None" / unknown text = no value (docs clean())
+std::string clean(const char *v) {
+  if (!v || !strcmp(v, "None") || !strcmp(v, "unknown") || !strcmp(v, "unavailable")) return "";
+  return v;
+}
 void take(lv_obj_t *root, fw::Props p) {
   MV *m = of(root);
+  const std::string was = m->player;
+  sync_speakers(root, p);
+  if (m->player != was) { m->hold_until = 0; m->sent = -1; }  // another player: what it says, at once
   if (!held(m)) {
     m->st = p["state"] | "playing";
     m->volume = p["volume"] | 42;
   }
-  m->title_s = p["title"] | "Harbour Lights";
-  m->artist_s = p["artist"] | "The Lanterns";
+  m->title_s = clean(p["title"] | "Harbour Lights");
+  m->artist_s = clean(p["artist"] | "The Lanterns");
   m->progress = p["progress"] | 38;
   render(root);
 }
 // the speakers (docs demo-data players; bottom_sheet's own Speakers list): icon, name, status
 const char *const SPEAKERS[][3] = {{"auto", "Auto", "follow what's playing"}, {"speaker", "Kitchen speaker", "playing \xC2\xB7 Northbound"},
                                    {"tv", "Living room TV", "idle"}, {"speaker", "Study", "paused"}, {"speakers", "Downstairs", "group \xC2\xB7 3 speakers"}};
-std::string spk_name(int i) {  // the button: "auto · study" for Auto (it follows what's playing), else the speaker
-  std::string s = i == 0 ? "auto \xC2\xB7 study" : SPEAKERS[i][1];
+constexpr int N_SAMPLE = sizeof SPEAKERS / sizeof SPEAKERS[0];
+std::string friendly(const std::string &e) {
+  const std::string *n = fw::ha::get(e, "friendly_name");
+  return n && !n->empty() ? *n : e;
+}
+std::string spk_name(const MV *m, int i) {  // the button: "auto · study" for Auto (it follows what's playing), else the speaker
+  std::string s;
+  if (!m->spk_ids.empty()) s = i >= 0 && i < (int) m->spk_ids.size() ? friendly(m->spk_ids[i]) : friendly(m->player);
+  else s = i == 0 ? "auto \xC2\xB7 study" : SPEAKERS[i][1];
   for (char &c : s) c = (char) tolower((unsigned char) c);
   return s;
 }
+// props speakers / player -> the list, the selected row; wants their names, states and titles from the host
+void sync_speakers(lv_obj_t *root, fw::Props p) {
+  MV *m = of(root);
+  m->player = p["player"] | "";
+  m->spk_ids.clear();
+  const std::string l = p["speakers"] | "";
+  for (size_t i = 0; i < l.size();) {
+    size_t j = l.find(',', i);
+    if (j == std::string::npos) j = l.size();
+    std::string id = l.substr(i, j - i);
+    while (!id.empty() && id[0] == ' ') id.erase(0, 1);
+    if (id.rfind("media_player.", 0) == 0 && m->spk_ids.size() < 12) m->spk_ids.push_back(id);
+    i = j + 1;
+  }
+  if (m->spk_ids.empty()) return;
+  m->speaker = -1;
+  for (size_t i = 0; i < m->spk_ids.size(); i++) {
+    if (m->spk_ids[i] == m->player) m->speaker = (int) i;
+    for (const char *a : {"", "friendly_name", "media_title"}) fw::ha::want(m->spk_ids[i], a);
+  }
+}
 void sheet_props(const MV *m, bool open, ArduinoJson::JsonDocument &d) {
-  d["overlay"] = true, d["title"] = "speaker", d["open"] = open ? "open" : "closed", d["selected"] = m->speaker;
+  d["overlay"] = true, d["title"] = "speaker", d["open"] = open ? "open" : "closed", d["selected"] = m->speaker < 0 ? 0 : m->speaker;
   ArduinoJson::JsonArray items = d["items"].to<ArduinoJson::JsonArray>();
-  for (auto &s : SPEAKERS) { ArduinoJson::JsonObject it = items.add<ArduinoJson::JsonObject>(); it["icon"] = s[0], it["name"] = s[1], it["status"] = s[2]; }
+  if (m->spk_ids.empty()) {
+    for (auto &s : SPEAKERS) { ArduinoJson::JsonObject it = items.add<ArduinoJson::JsonObject>(); it["icon"] = s[0], it["name"] = s[1], it["status"] = s[2]; }
+    return;
+  }
+  for (const std::string &e : m->spk_ids) {  // the host's players: name, state (+ the title while it plays)
+    ArduinoJson::JsonObject it = items.add<ArduinoJson::JsonObject>();
+    const std::string *st = fw::ha::get(e, "");
+    std::string status = st && !st->empty() ? *st : "unknown";
+    const std::string title = clean(fw::ha::get(e, "media_title") ? fw::ha::get(e, "media_title")->c_str() : "");
+    if (status == "playing" && !title.empty()) status += " \xC2\xB7 " + title;
+    it["icon"] = "speaker", it["name"] = friendly(e), it["status"] = status;
+  }
 }
 void speaker_header(lv_obj_t *root) {
   lv_obj_t *hdr = fw::spec::building_header();
@@ -123,7 +179,7 @@ void speaker_header(lv_obj_t *root) {
   // docs header clock: false: the button takes the time's place
   if (lv_obj_get_child_count(hdr)) lv_obj_add_flag(lv_obj_get_child(hdr, -1), LV_OBJ_FLAG_HIDDEN);
   ArduinoJson::JsonDocument bp;
-  bp["name"] = spk_name(m->speaker), bp["playing"] = m->st == "playing";
+  bp["name"] = spk_name(m, m->speaker), bp["playing"] = m->st == "playing";
   m->spk = build("speaker_button", hdr, bp);
   if (!m->spk) return;
   ArduinoJson::JsonDocument sd;
@@ -138,12 +194,12 @@ void speaker_header(lv_obj_t *root) {
       auto *root = (lv_obj_t *) lv_event_get_user_data(e);
       MV *m = of(root);
       const int i = (int) (intptr_t) lv_event_get_param(e);
-      if (i < 0 || i >= 5) return;
+      if (i < 0 || i >= (m->spk_ids.empty() ? N_SAMPLE : (int) m->spk_ids.size())) return;
       m->speaker = i;
       ArduinoJson::JsonDocument bp;
-      bp["name"] = spk_name(i), bp["playing"] = m->st == "playing";
+      bp["name"] = spk_name(m, i), bp["playing"] = m->st == "playing";
       fw::update_child(fw::find("speaker_button"), m->spk, bp.as<fw::Props>());
-      fw::emit(root, "speaker", SPEAKERS[i][1]);
+      fw::emit(root, "speaker", m->spk_ids.empty() ? SPEAKERS[i][1] : m->spk_ids[i].c_str());
     }, LV_EVENT_VALUE_CHANGED, root);
   }
   lv_obj_add_event_cb(m->spk, [](lv_event_t *e) {
@@ -166,7 +222,9 @@ FW_COMPONENT(media_view, "Media view", "components", R"({
     {"name": "artist", "type": "text", "default": "The Lanterns"},
     {"name": "progress", "type": "range", "min": 0, "max": 100, "step": 1, "default": 38},
     {"name": "volume", "type": "range", "min": 0, "max": 100, "step": 1, "default": 42},
-    {"name": "visual", "type": "select", "options": ["disc", "cassette", "cd", "vinyl"], "default": "disc"}
+    {"name": "visual", "type": "select", "options": ["disc", "cassette", "cd", "vinyl"], "default": "disc"},
+    {"name": "player", "type": "text", "default": ""},
+    {"name": "speakers", "type": "text", "default": ""}
   ],
   "variants": [
     {"label": "playing", "props": {}},

@@ -11,7 +11,8 @@
 //            "pct" a 0-255 attribute as 0-100 (missing / None = 0); "avail" "unavailable" when the state is
 //            unavailable / unknown, else "default" (no value yet = "default"); "light" the light row's sub text
 //            ("Off", "On", "On · 64%"); "name" the friendly_name (else the entity id); "num" a number attribute
-//            (a thermostat's temperature / current_temperature; missing = the component's default).
+//            (a thermostat's temperature / current_temperature; missing = the component's default); "frac" a 0-1
+//            attribute as 0-100 (a media player's volume_level; missing = the component's default).
 //   hold     instant feedback (simple model): a control the person just moved shows the new value at once (its own
 //            animation); hold(obj, ms, e, a, expect) keeps store updates off it until HA reports `expect` for (e, a)
 //            (confirmed: settle on the store) or ms pass (timed out / refused: back to what HA says). Pending text is
@@ -19,8 +20,9 @@
 //   actions  act(obj, service, entity, data_json) = a closed whitelist (light.turn_on [+ brightness_pct 0-100],
 //            light.turn_off, light.toggle on light.* entities; climate.set_temperature {temperature},
 //            climate.set_hvac_mode {hvac_mode: off|heat|cool|heat_cool|auto|dry|fan_only}, climate.set_preset_mode
-//            {preset_mode} on climate.* entities): emits "ha" {service, entity, data} (the workbench host
-//            calls HA through the hub) and calls the action sink (the panel: an HA action over its API).
+//            {preset_mode} on climate.* entities; media_player.media_play_pause / media_next_track /
+//            media_previous_track, media_player.volume_set {volume_level 0..1} on media_player.* entities): emits
+//            "ha" {service, entity, data} (the workbench host calls HA through the hub) and calls the action sink (the panel: an HA action over its API).
 // TODO (full "wish" model, plan §2.3): wishes per entity shared across screens, drag throttling (brightness while
 // dragging), providers, a deck-wide subscription union, big attributes kept raw.
 #pragma once
@@ -115,6 +117,12 @@ inline void bind_value(ArduinoJson::JsonVariantConst b, ArduinoJson::JsonObject 
     if (std::isfinite(x)) out[key] = x;
     return;
   }
+  if (fmt == "frac") {  // a 0-1 attribute (volume_level) as 0-100; missing / None = no prop
+    use(a);
+    const double x = num(get(e, a));
+    if (std::isfinite(x)) out[key] = (int) std::lround(LV_CLAMP(0.0, x, 1.0) * 100);
+    return;
+  }
   if (fmt == "name") { use("friendly_name"); const std::string *n = get(e, "friendly_name"); out[key] = n && !n->empty() ? *n : e; return; }
   use(a);
   const std::string *v = get(e, a);
@@ -200,6 +208,21 @@ inline lv_obj_t *bound(lv_obj_t *parent, const char *comp, Props spec) {
   start_timer();
   return b->obj;
 }
+// obj (built by bound()) takes new props / binds (a screen parameter changed: another entity): the pairs are read
+// again, wanted, any hold dropped, and the component moves there through its update path (silent)
+inline bool rebind(lv_obj_t *obj, Props spec) {
+  Bound *b = bound_of(obj);
+  if (!b) return false;
+  b->spec.clear();
+  serializeJson(spec, b->spec);
+  b->pairs.clear();
+  ArduinoJson::JsonDocument p;
+  resolve(spec, p, &b->pairs);
+  for (const Pair &pr : b->pairs) want(pr.first, pr.second);
+  b->hold_until = 0;
+  refresh(b);
+  return true;
+}
 // instant feedback: keep the store off obj until (e, a) == expect or ms pass, then show what HA says
 // pct = expect is 0-100 of a 0-255 attribute (brightness_pct sent, brightness reported)
 inline void hold(lv_obj_t *obj, uint32_t ms, const std::string &e = "", const std::string &a = "", const std::string &expect = "", bool pct = false) {
@@ -223,9 +246,10 @@ inline bool held(lv_obj_t *obj) {
 // ---- actions (closed whitelist)
 inline const char *act(lv_obj_t *from, const char *service, const char *entity, const char *data_json = "") {
   const std::string svc = service ? service : "", ent = entity ? entity : "";
-  const bool light = ent.rfind("light.", 0) == 0, climate = ent.rfind("climate.", 0) == 0;
+  const bool light = ent.rfind("light.", 0) == 0, climate = ent.rfind("climate.", 0) == 0, media = ent.rfind("media_player.", 0) == 0;
   if (svc.rfind("light.", 0) == 0 && !light) return "not a light";
   if (svc.rfind("climate.", 0) == 0 && !climate) return "not a climate entity";
+  if (svc.rfind("media_player.", 0) == 0 && !media) return "not a media player";
   ArduinoJson::JsonDocument data;
   if (data_json && *data_json && deserializeJson(data, data_json)) return "data is not JSON";
   auto only = [&](const char *key) {  // the data holds exactly this one key
@@ -248,7 +272,12 @@ inline const char *act(lv_obj_t *from, const char *service, const char *entity, 
     for (ArduinoJson::JsonPairConst kv : data.as<ArduinoJson::JsonObjectConst>())
       if (strcmp(kv.key().c_str(), "brightness_pct")) return "light.turn_on takes brightness_pct only";
     if (data["brightness_pct"].is<double>()) data["brightness_pct"] = (int) LV_CLAMP(0.0, std::round(data["brightness_pct"].as<double>()), 100.0);
-  } else if (svc == "light.turn_off" || svc == "light.toggle") {
+  } else if (svc == "media_player.volume_set") {
+    if (!only("volume_level") || !data["volume_level"].is<double>()) return "media_player.volume_set takes volume_level";
+    const double v = data["volume_level"].as<double>();
+    if (!std::isfinite(v) || v < 0 || v > 1) return "volume_level outside 0..1";
+  } else if (svc == "light.turn_off" || svc == "light.toggle" || svc == "media_player.media_play_pause" ||
+             svc == "media_player.media_next_track" || svc == "media_player.media_previous_track") {
     if (data.size()) return "no data for this action";
   } else return "action not allowed";
   ArduinoJson::JsonDocument ev;
