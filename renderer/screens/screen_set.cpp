@@ -9,7 +9,8 @@
 //            "options"  one row per typed parameter of the screen's spec (core/spec.h "params", hidden ones left
 //                       out): select = a List row + Segmented (up to 4 options) or the sheet; toggle = a List row
 //                       toggle; entity = its friendly name, and a sheet of the screen's list of the same domain when
-//                       it has one (Media: the Player from the Speakers); entities = "N chosen"; text = the value.
+//                       it has one (Media: the Player from the Speakers, Auto first when the spec's screen.param
+//                       follows a sensor: "auto" or nothing picked = Auto); entities = "N chosen"; text = the value.
 //                       Lists of entities and text come from the host's discovery (the hub writes them into the deck).
 //   sheet    the Bottom sheet in overlay mode, the screen's last child (one, moved in place per row)
 // Every change is kept in this panel's deck (fw::spec::deck_set: "on", "source", "params.<name>"; stored like a sent
@@ -220,12 +221,25 @@ void build_page(lv_obj_t *parent, fw::Props p) {
       std::vector<std::string> from;
       for (ArduinoJson::JsonPairConst o : params)
         if (!strcmp(o.value()["type"] | "", "entities") && dom == (o.value()["domain"] | "")) from = split(value(o.key().c_str(), o.value()));
-      rd["value"] = v.empty() ? "" : friendly(v).c_str();
-      rd["trailing"] = from.size() > 1 ? "value-chevron" : "value";
+      // Auto (the spec's screen.param "auto" for this parameter, its sensor set): the sheet's first row; the value
+      // "auto" or nothing picked = Auto (the screen follows HA's target); a real pick sticks until Auto is picked
+      std::string auto_src;
+      for (ArduinoJson::JsonVariantConst nd : spec["nodes"].as<ArduinoJson::JsonArrayConst>())
+        for (ArduinoJson::JsonPairConst o : nd["on"].as<ArduinoJson::JsonObjectConst>())
+          if (!strcmp(o.value()["do"] | "", "screen.param") && key == (o.value()["param"] | "") && o.value()["auto"].is<const char *>()) {
+            const char *ak = o.value()["auto"];
+            auto_src = value(ak, params[ak]);
+          }
+      if (!fw::spec::entity_ok(auto_src) || auto_src[0] == '$') auto_src.clear();
+      const bool is_auto = !auto_src.empty() && (v == "auto" || entry["params"][key.c_str()].isNull());
+      const size_t n = from.size() + (auto_src.empty() ? 0 : 1);
+      rd["value"] = is_auto ? "Auto" : v.empty() || v == "auto" ? "" : friendly(v).c_str();
+      rd["trailing"] = n > 1 ? "value-chevron" : "value";
       lv_obj_t *r = build("list_row", c, rd);
-      if (!r || from.size() < 2) continue;
+      if (!r || n < 2) continue;
       Pick pk;
       pk.key = "params." + key, pk.row = r, pk.title = label;
+      if (!auto_src.empty()) { pk.ids.push_back("auto"); pk.names.push_back("Auto"); pk.status.push_back("follows what's playing"); }
       for (const std::string &e : from) {
         pk.ids.push_back(e);
         pk.names.push_back(friendly(e));
@@ -233,7 +247,7 @@ void build_page(lv_obj_t *parent, fw::Props p) {
         const std::string *st = fw::ha::get(e);
         pk.status.push_back(st ? *st : "");
       }
-      for (size_t i = 0; i < pk.ids.size(); i++) if (pk.ids[i] == v) pk.sel = (int) i;
+      for (size_t i = 0; i < pk.ids.size(); i++) if (pk.ids[i] == (is_auto ? "auto" : v)) pk.sel = (int) i;
       pg->picks.push_back(pk);
       continue;
     }

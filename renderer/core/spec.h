@@ -480,7 +480,9 @@ struct Screen {
   std::map<std::string, std::string> params;
   // Auto (screen.param "auto"): the parameter follow_param follows the state of entity follow_src (HA's media target
   // sensor) while following; a pick of a real value stops it, a pick of "auto" starts it again
-  std::string follow_param, follow_src, follow_last;
+  // a pick (Auto or a real one, here or in Settings > Screens) is kept in the deck (params.<follow_param>: "auto" =
+  // Auto), so the screen opens on it next time; id = the deck screen id
+  std::string follow_param, follow_src, follow_last, id;
   bool following = false;
 };
 // "$name" -> the parameter (whole-string refs and inside texts)
@@ -533,6 +535,7 @@ inline void send_temperature(Node &n, double v) {
   n.c_at = lv_tick_get();
 }
 inline void follow_now(Screen *s);
+inline bool deck_set(const std::string &id, const std::string &key, ArduinoJson::JsonVariantConst value);
 inline void tick(lv_timer_t *t) {
   auto *s = (Screen *) lv_timer_get_user_data(t);
   const uint32_t now = lv_tick_get();
@@ -676,13 +679,19 @@ inline bool run(Screen *s, Node &n, const char *event, const char *detail) {
       const std::string *v = ha::get(s->follow_src);
       if (!v || !set_param(s, s->follow_param, "", *v)) rebind_all(s);
       if (v) s->follow_last = *v;
+      ArduinoJson::JsonDocument kv;
+      kv.set("auto");
+      deck_set(s->id, "params." + s->follow_param, kv.as<ArduinoJson::JsonVariantConst>());  // Auto sticks
       return true;
     }
     if (!s->follow_src.empty()) {  // a real pick: manual until Auto is picked again
       const bool was = s->following;
       s->following = false;
       s->params["mode"] = "manual";
-      if (!set_param(s, a["param"] | "", a["from"] | "", detail)) { s->following = was; s->params["mode"] = was ? "auto" : "manual"; rebind_all(s); }
+      if (!set_param(s, a["param"] | "", a["from"] | "", detail)) { s->following = was; s->params["mode"] = was ? "auto" : "manual"; rebind_all(s); return true; }
+      ArduinoJson::JsonDocument kv;
+      kv.set(detail);
+      deck_set(s->id, "params." + s->follow_param, kv.as<ArduinoJson::JsonVariantConst>());  // the pick sticks
       return true;
     }
     set_param(s, a["param"] | "", a["from"] | "", detail);
@@ -777,10 +786,11 @@ inline lv_obj_t *build(lv_obj_t *parent, const std::string &id, Props opened, st
   ArduinoJson::JsonDocument doc;
   if (!json || deserializeJson(doc, json)) { if (error) *error = "no spec " + id; return nullptr; }
   auto *s = new Screen;
+  s->id = doc["id"] | id.c_str();
   for (ArduinoJson::JsonPairConst kv : doc["params"].as<ArduinoJson::JsonObjectConst>()) s->params[kv.key().c_str()] = param_default(kv.value());
-  {  // this panel's picks (the deck entry's params), then what it was opened with
-    ArduinoJson::JsonDocument de;
-    if (deck_entry(doc["id"] | id.c_str(), de))
+  ArduinoJson::JsonDocument de;  // this panel's picks (the deck entry's params), then what it was opened with
+  {
+    if (deck_entry(s->id, de))
       for (ArduinoJson::JsonPairConst kv : de["params"].as<ArduinoJson::JsonObjectConst>())
         if (kv.value().is<const char *>()) s->params[kv.key().c_str()] = kv.value().as<std::string>();
   }
@@ -792,7 +802,11 @@ inline lv_obj_t *build(lv_obj_t *parent, const std::string &id, Props opened, st
       s->follow_param = kv.value()["param"] | "";
       s->follow_src = s->params[kv.value()["auto"] | ""];
       if (!entity_ok(s->follow_src) || s->follow_src[0] == '$') s->follow_src.clear();
-      s->following = !s->follow_src.empty() && opened[s->follow_param.c_str()].isNull();  // opened on one: manual
+      std::string &fv = s->params[s->follow_param];
+      const bool picked = de["params"][s->follow_param.c_str()].is<const char *>();  // nothing picked = Auto
+      const bool asked = fv == "auto" || !picked;
+      if (fv == "auto") fv = param_default(doc["params"][s->follow_param.c_str()]);  // a real one until the target says
+      s->following = !s->follow_src.empty() && asked && opened[s->follow_param.c_str()].isNull();  // opened on one: manual
       if (s->following) {
         ha::want(s->follow_src);
         const std::string *v = ha::get(s->follow_src);
