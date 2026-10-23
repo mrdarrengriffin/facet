@@ -1804,6 +1804,15 @@
       "km",
       "mi"
      ]
+    },
+    {
+     "name": "size",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "screen",
+      "weather"
+     ]
     }
    ],
    "events": {
@@ -2208,6 +2217,15 @@
    "name": "Moon view",
    "update": true,
    "props": [
+    {
+     "name": "size",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "screen",
+      "weather"
+     ]
+    },
     {
      "name": "lat",
      "type": "range",
@@ -3705,6 +3723,20 @@
     "bytes_est": 320
    }
   },
+  "weather_days": {
+   "name": "Weather days",
+   "update": true,
+   "props": [],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 46,
+    "bytes_est": 7360
+   }
+  },
   "weather_icon": {
    "name": "Weather icon",
    "update": true,
@@ -3769,6 +3801,61 @@
     "objects": 2,
     "bytes_est": 320
    }
+  },
+  "weather_view": {
+   "name": "Weather view",
+   "update": true,
+   "props": [
+    {
+     "name": "view",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "weather",
+      "sun",
+      "moon",
+      "lightning"
+     ]
+    },
+    {
+     "name": "condition",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "temp",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "feels",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "lat",
+     "type": "range",
+     "bindable": true,
+     "min": -60,
+     "max": 65
+    },
+    {
+     "name": "lon",
+     "type": "range",
+     "bindable": true,
+     "min": -180,
+     "max": 180
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 167,
+    "bytes_est": 26720
+   }
   }
  },
  "actions": [
@@ -3797,5 +3884,5 @@
   "screens": 16,
   "deck_bytes": 2048
  },
- "hash": "8f584317"
+ "hash": "86926d54"
 }

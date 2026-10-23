@@ -3,7 +3,8 @@
 // from the phase (fw::moon_icon_px at lay::moon_hero; south of the equator = mirrored), and one line under it:
 // "Waxing gibbous" (title, text) + " · 78% · full on Fri" (title, text-dim), sp::s9 under the moon, the two centred
 // as one. The maths = core/lunar.h (no API).
-//   box      content width x (content height - lay::more_row_h): the more row under it is the spec's
+//   box      content width x (content height - lay::more_row_h): the more row under it is the spec's; size
+//            "weather" = the Weather screen's Moon tab (lay::moon_hero_tab, its own height)
 //   place    lat / lon props (the docs sample), now = a fixed time (ms, tests), 0 = live; the view re-works the moon
 //            every minute (clock-tick x 60) while live
 // Update path: the glyph redraws in place (moon_icon_set), the line's texts in place. Static to touch. Contrast:
@@ -44,13 +45,15 @@ FW_COMPONENT(moon_view, "Moon view", "components", R"({
   "about": "The Moon screen's summary: the moon itself as the hero, drawn from tonight's phase, and one line under it.",
   "frame": [480, 360],
   "props": [
+    {"name": "size", "type": "select", "options": ["screen", "weather"], "default": "screen"},
     {"name": "lat", "type": "range", "min": -60, "max": 65, "step": 0.1, "default": 52.2},
     {"name": "lon", "type": "range", "min": -180, "max": 180, "step": 0.1, "default": -1.2}
   ],
   "variants": [
     {"label": "tonight", "props": {"now": 1792944000000}},
     {"label": "new moon", "props": {"now": 1793714400000}},
-    {"label": "southern hemisphere", "props": {"now": 1792944000000, "lat": -33.9, "lon": 151.2}}
+    {"label": "southern hemisphere", "props": {"now": 1792944000000, "lat": -33.9, "lon": 151.2}},
+    {"label": "the Weather screen's tab", "props": {"now": 1792944000000, "size": "weather"}}
   ]
 })") {
   const fw::Theme &t = *fw::T;
@@ -64,13 +67,14 @@ FW_COMPONENT(moon_view, "Moon view", "components", R"({
     if (v->tick) lv_timer_delete(v->tick);
     delete v;
   }, LV_EVENT_DELETE, v);
-  lv_obj_set_size(root, fw::lay::content_w, fw::lay::content_h - fw::lay::more_row_h);
+  const bool tab = !strcmp(p["size"] | "screen", "weather");  // the Weather screen's Moon tab: a smaller moon, its own height
+  lv_obj_set_size(root, fw::lay::content_w, tab ? LV_SIZE_CONTENT : fw::lay::content_h - fw::lay::more_row_h);
   lv_obj_t *col = box(root);
   lv_obj_set_size(col, fw::lay::content_w, LV_SIZE_CONTENT);
   lv_obj_set_flex_flow(col, LV_FLEX_FLOW_COLUMN);
   lv_obj_set_flex_align(col, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
   lv_obj_set_style_pad_row(col, fw::sp::s9, 0);
-  v->hero = fw::moon_icon_px(col, 0.25f, fw::lay::moon_hero, false);
+  v->hero = fw::moon_icon_px(col, 0.25f, tab ? fw::lay::moon_hero_tab : fw::lay::moon_hero, false);
   lv_obj_t *line = box(col);
   lv_obj_set_size(line, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
   lv_obj_set_flex_flow(line, LV_FLEX_FLOW_ROW);

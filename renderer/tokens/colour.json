@@ -477,7 +477,13 @@
       {"section": "timer", "fg": "text-mute", "bg": ["bg"], "kind": "disabled", "use": "the label over the time (docs text-mute: meta, 3:1)"},
       {"section": "timer", "fg": "accent-text", "bg": ["bg"], "kind": "text", "use": "the label once it ran out: done"},
       {"section": "timer", "fg": "text", "bg": ["bg"], "kind": "large", "use": "the time left (display)"},
-      {"section": "timer", "fg": "text-dim", "bg": ["bg"], "kind": "text", "use": "of 10 min, ends 14:52; pick a length"}
+      {"section": "timer", "fg": "text-dim", "bg": ["bg"], "kind": "text", "use": "of 10 min, ends 14:52; pick a length"},
+      {"section": "weather", "fg": "text", "bg": ["bg"], "kind": "large", "use": "the temperature (display), the sun's next time (hero)"},
+      {"section": "weather", "fg": "text", "bg": ["bg"], "kind": "text", "use": "the condition, hour temperatures, day names and highs"},
+      {"section": "weather", "fg": "text-dim", "bg": ["bg"], "kind": "text", "use": "feels / high / low, hour labels, rise and set times, day conditions and lows"},
+      {"section": "weather", "fg": "accent-text", "bg": ["bg"], "kind": "text", "use": "the hour label now"},
+      {"section": "weather", "fg": "accent", "bg": ["bg"], "kind": "ui", "use": "the sun's arc so far and the sun on it"},
+      {"section": "weather", "fg": "line", "bg": ["bg"], "kind": "decor", "use": "the arc's track, the horizon, the day rows' hairlines"}
     ]
   },
   "accent": {

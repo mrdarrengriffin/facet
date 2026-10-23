@@ -1,0 +1,37 @@
+{
+ "v": 1,
+ "id": "weather",
+ "name": "Weather",
+ "rev": 1,
+ "params": {
+  "weather": "weather.forecast_home"
+ },
+ "header": {
+  "label": "Weather",
+  "back": true
+ },
+ "layout": "center",
+ "nodes": [
+  {
+   "c": "weather_view",
+   "p": {
+    "condition": {
+     "e": "$weather"
+    },
+    "temp": {
+     "e": "$weather",
+     "a": "temperature"
+    },
+    "feels": {
+     "e": "$weather",
+     "a": "apparent_temperature"
+    }
+   },
+   "on": {
+    "open": {
+     "do": "nav.open"
+    }
+   }
+  }
+ ]
+}

@@ -21,6 +21,7 @@ namespace {
 constexpr double DEMO_SPEED = 20;  // the radar's: one clock tick = 20 s of storm
 struct LV {
   lv_obj_t *num = nullptr, *unit = nullptr, *stats[3] = {}, *radar = nullptr;
+  std::string stat_key[3], num_s, unit_s;
   lv_timer_t *demo = nullptr;
   double now = 0;
   bool quiet = false, word = false;
@@ -74,14 +75,20 @@ void show(lv_obj_t *root, bool radar_too) {
   if (word != v->word) { fw::text_style(v->num, word ? fw::ty::value : fw::ty::hero); v->word = word; }
   char b[48];
   if (d.has_nearest) snprintf(b, sizeof b, "%ld", std::lround(fw::units::from_km(d.nearest.d, v->du)));
-  fw::set_text(v->num, word ? fw::ty::value : fw::ty::hero, word ? "Quiet" : b);
-  lv_obj_set_style_text_color(v->num, d.has_nearest && d.nearest.d <= 25 ? t.accent_text : t.text, 0);
+  const std::string num_s = word ? "Quiet" : b;
+  if (num_s != v->num_s) { v->num_s = num_s; fw::set_text(v->num, word ? fw::ty::value : fw::ty::hero, num_s.c_str()); }
+  const lv_color_t nc = d.has_nearest && d.nearest.d <= 25 ? t.accent_text : t.text;
+  if (!lv_color_eq(lv_obj_get_style_text_color(v->num, LV_PART_MAIN), nc)) lv_obj_set_style_text_color(v->num, nc, 0);
   if (d.has_nearest) snprintf(b, sizeof b, "%s %s", v->du == fw::units::Distance::mi ? "mi" : "km", fw::lx::compass(d.nearest.az));
   else snprintf(b, sizeof b, "nothing within %s", fw::units::distance(d.radius, v->du).c_str());
-  fw::set_text(v->unit, fw::ty::body, b);
-  for (int i = 0; i < 3; i++) {
+  if (v->unit_s != b) { v->unit_s = b; fw::set_text(v->unit, fw::ty::body, b); }
+  for (int i = 0; i < 3; i++) {  // only a Stat whose words changed (a demo tick must stay under LVGL's 32 dirty areas)
     ArduinoJson::JsonDocument p;
     stat_props(d, v->now, i, p);
+    std::string key;
+    serializeJson(p, key);
+    if (key == v->stat_key[i]) continue;
+    v->stat_key[i] = key;
     fw::update_child(fw::find("stat"), v->stats[i], p.as<fw::Props>());
   }
   if (radar_too && v->radar) {
@@ -103,7 +110,8 @@ FW_COMPONENT(lightning_view, "Lightning view", "components", R"({
   "props": [
     {"name": "demo", "type": "bool", "default": true},
     {"name": "quiet", "type": "bool", "default": false},
-    {"name": "unit", "type": "select", "options": ["km", "mi"], "default": "km"}
+    {"name": "unit", "type": "select", "options": ["km", "mi"], "default": "km"},
+    {"name": "size", "type": "select", "options": ["screen", "weather"], "default": "screen"}
   ],
   "variants": [
     {"label": "a storm, 9 km away", "props": {"demo": false, "now": 1792944000000}},
@@ -123,7 +131,8 @@ FW_COMPONENT(lightning_view, "Lightning view", "components", R"({
     if (v->demo) lv_timer_delete(v->demo);
     delete v;
   }, LV_EVENT_DELETE, v);
-  lv_obj_set_size(root, fw::lay::content_w, fw::lay::content_h);
+  // size "weather" = the Weather screen's Lightning tab: its own height under the tabs
+  lv_obj_set_size(root, fw::lay::content_w, !strcmp(p["size"] | "screen", "weather") ? LV_SIZE_CONTENT : fw::lay::content_h);
   lv_obj_set_flex_flow(root, LV_FLEX_FLOW_ROW);
   lv_obj_set_flex_align(root, LV_FLEX_ALIGN_SPACE_BETWEEN, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
   const bool demo = p["demo"] | true;

@@ -1,0 +1,17 @@
+{
+ "v": 1,
+ "id": "weather_days",
+ "name": "Weather, 5 days",
+ "rev": 1,
+ "header": {
+  "label": "5 days",
+  "back": true
+ },
+ "layout": "list",
+ "nodes": [
+  {
+   "c": "weather_days",
+   "p": {}
+  }
+ ]
+}
