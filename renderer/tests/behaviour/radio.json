@@ -1,0 +1,29 @@
+{
+  "id": "radio",
+  "tests": [
+    {
+      "name": "tap selects",
+      "kind": "interaction",
+      "steps": [
+        {
+          "tap": {
+            "clk": 0
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "tap"
+          ]
+        ],
+        "sounds": [
+          "tap"
+        ]
+      }
+    }
+  ],
+  "xfail": {
+    "interaction:press-cancel:default": "BF-001"
+  }
+}

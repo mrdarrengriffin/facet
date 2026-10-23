@@ -1,0 +1,29 @@
+{
+  "id": "more_row",
+  "tests": [
+    {
+      "name": "tap opens",
+      "kind": "interaction",
+      "steps": [
+        {
+          "tap": {
+            "clk": 0
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "tap"
+          ]
+        ],
+        "sounds": [
+          "open"
+        ]
+      }
+    }
+  ],
+  "xfail": {
+    "interaction:press-cancel:default": "BF-001"
+  }
+}

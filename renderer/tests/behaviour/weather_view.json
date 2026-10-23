@@ -1,0 +1,10 @@
+{
+  "id": "weather_view",
+  "live": true,
+  "live_why": "animated weather icons",
+  "tests": [],
+  "xfail": {
+    "lag:tap:default": "BF-036",
+    "interaction:press-cancel:default": "BF-001"
+  }
+}

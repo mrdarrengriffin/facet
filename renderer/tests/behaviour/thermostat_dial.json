@@ -1,0 +1,7 @@
+{
+  "id": "thermostat_dial",
+  "tests": [],
+  "xfail": {
+    "lag:same-update:default": "BF-004"
+  }
+}

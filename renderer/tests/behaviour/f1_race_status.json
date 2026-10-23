@@ -1,0 +1,7 @@
+{
+  "id": "f1_race_status",
+  "live": true,
+  "live_why": "simulated live race feed",
+  "tests": [],
+  "xfail": {}
+}

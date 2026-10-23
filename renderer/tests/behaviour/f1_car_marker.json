@@ -1,0 +1,7 @@
+{
+  "id": "f1_car_marker",
+  "live": true,
+  "live_why": "simulated live race",
+  "tests": [],
+  "xfail": {}
+}

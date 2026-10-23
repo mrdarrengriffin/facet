@@ -1,0 +1,172 @@
+{
+  "id": "settings",
+  "tests": [
+    {
+      "name": "Theme: Dark sets the setting",
+      "kind": "interaction",
+      "steps": [
+        {
+          "tap": {
+            "text": "DARK"
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "setting",
+            "theme=dark"
+          ]
+        ],
+        "sounds": [
+          "tap"
+        ]
+      }
+    },
+    {
+      "name": "Sound pack sheet: a pick sets it and stays open (to audition)",
+      "kind": "interaction",
+      "steps": [
+        {
+          "drag": {
+            "at": [
+              0.5,
+              0.85
+            ]
+          },
+          "by": [
+            0,
+            -0.45
+          ]
+        },
+        {
+          "tap": {
+            "text": "Sound pack"
+          }
+        },
+        {
+          "tap": {
+            "text": "Crystal"
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "setting",
+            "soundPack=crystal"
+          ]
+        ],
+        "exists": {
+          "text": "Arcade"
+        }
+      }
+    },
+    {
+      "name": "Clock face sheet: a pick sets it and closes",
+      "kind": "interaction",
+      "steps": [
+        {
+          "drag": {
+            "at": [
+              0.5,
+              0.97
+            ]
+          },
+          "by": [
+            0,
+            -0.95
+          ]
+        },
+        {
+          "tap": {
+            "text": "Clock face"
+          }
+        },
+        {
+          "tap": {
+            "text": "Analogue"
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "setting",
+            "clockFace=analogue"
+          ]
+        ],
+        "absent": {
+          "text": "Context"
+        }
+      }
+    },
+    {
+      "name": "Sound pack sheet: scrim closes without a change",
+      "kind": "interaction",
+      "steps": [
+        {
+          "drag": {
+            "at": [
+              0.5,
+              0.85
+            ]
+          },
+          "by": [
+            0,
+            -0.45
+          ]
+        },
+        {
+          "tap": {
+            "text": "Sound pack"
+          }
+        },
+        {
+          "tap": {
+            "at": [
+              0.5,
+              0.06
+            ]
+          }
+        }
+      ],
+      "expect": {
+        "no_events": [
+          "setting"
+        ],
+        "absent": {
+          "text": "Arcade"
+        }
+      }
+    },
+    {
+      "name": "Screens row navigates",
+      "kind": "interaction",
+      "steps": [
+        {
+          "tap": {
+            "text": "Screens"
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "navigate",
+            "screens"
+          ]
+        ],
+        "sounds": [
+          "open"
+        ]
+      }
+    }
+  ],
+  "xfail": {
+    "lag:tap:default": "BF-043",
+    "interaction:press-cancel:default": "BF-001",
+    "lag:build:sheet open": "BF-044",
+    "lag:build:sheet bench (open / close loop)": "BF-044"
+  }
+}

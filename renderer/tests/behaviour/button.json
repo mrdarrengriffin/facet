@@ -1,0 +1,66 @@
+{
+  "id": "button",
+  "tests": [
+    {
+      "name": "tap fires tap + sound",
+      "kind": "interaction",
+      "steps": [
+        {
+          "tap": {
+            "text": "START"
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "tap",
+            "START"
+          ]
+        ],
+        "sounds": [
+          "tap"
+        ]
+      }
+    },
+    {
+      "name": "disabled: error only",
+      "kind": "interaction",
+      "props": {
+        "state": "disabled"
+      },
+      "steps": [
+        {
+          "tap": {
+            "text": "START"
+          }
+        }
+      ],
+      "expect": {
+        "no_events": [
+          "tap"
+        ],
+        "sounds": [
+          "error"
+        ]
+      }
+    },
+    {
+      "name": "update to disabled is silent",
+      "kind": "sound",
+      "steps": [
+        {
+          "update": {
+            "state": "disabled"
+          }
+        }
+      ],
+      "expect": {
+        "silent": true
+      }
+    }
+  ],
+  "xfail": {
+    "interaction:press-cancel:default": "BF-001"
+  }
+}

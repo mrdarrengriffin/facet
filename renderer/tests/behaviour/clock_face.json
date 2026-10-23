@@ -1,0 +1,7 @@
+{
+  "id": "clock_face",
+  "live": true,
+  "live_why": "a clock: the hands move",
+  "tests": [],
+  "xfail": {}
+}

@@ -1,0 +1,9 @@
+{
+  "id": "f1_race_control",
+  "live": true,
+  "live_why": "simulated live race feed",
+  "tests": [],
+  "xfail": {
+    "lag:idle:default": "BF-016"
+  }
+}

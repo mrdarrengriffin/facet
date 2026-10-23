@@ -1,0 +1,27 @@
+{
+  "id": "checkbox",
+  "tests": [
+    {
+      "name": "tap toggles",
+      "kind": "interaction",
+      "steps": [
+        {
+          "tap": {
+            "clk": 0
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "toggle"
+          ]
+        ]
+      }
+    }
+  ],
+  "xfail": {
+    "lag:tap:default": "BF-010",
+    "interaction:press-cancel:default": "BF-001"
+  }
+}

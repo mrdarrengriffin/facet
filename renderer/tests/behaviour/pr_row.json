@@ -1,0 +1,8 @@
+{
+  "id": "pr_row",
+  "tests": [],
+  "xfail": {
+    "lag:tap:default": "BF-026",
+    "interaction:press-cancel:default": "BF-001"
+  }
+}

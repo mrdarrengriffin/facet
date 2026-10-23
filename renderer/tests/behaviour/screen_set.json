@@ -1,0 +1,56 @@
+{
+  "id": "screen_set",
+  "tests": [
+    {
+      "name": "Show on Home toggles",
+      "kind": "interaction",
+      "steps": [
+        {
+          "tap": {
+            "text": "Show on Home"
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "toggle",
+            "off"
+          ],
+          [
+            "deck",
+            "on=false"
+          ]
+        ],
+        "sounds": [
+          "toggle-off"
+        ]
+      }
+    },
+    {
+      "name": "Back goes back",
+      "kind": "interaction",
+      "steps": [
+        {
+          "tap": {
+            "clk": 0
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "back"
+          ]
+        ],
+        "sounds": [
+          "back"
+        ]
+      }
+    }
+  ],
+  "xfail": {
+    "lag:tap:default": "BF-042",
+    "interaction:press-cancel:default": "BF-001"
+  }
+}

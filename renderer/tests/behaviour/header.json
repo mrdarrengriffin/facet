@@ -1,0 +1,31 @@
+{
+  "id": "header",
+  "tests": [
+    {
+      "name": "Back goes back",
+      "kind": "interaction",
+      "steps": [
+        {
+          "tap": {
+            "clk": 0
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "back"
+          ]
+        ],
+        "sounds": [
+          "back"
+        ]
+      }
+    }
+  ],
+  "xfail": {
+    "lag:same-update:default": "BF-004",
+    "interaction:press-cancel:default": "BF-001",
+    "sound:tap:Home · no back, settings button": "BF-020"
+  }
+}

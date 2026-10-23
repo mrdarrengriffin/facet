@@ -1,0 +1,11 @@
+{
+  "id": "bar_chart",
+  "tests": [],
+  "xfail": {
+    "lag:build:default": "BF-003",
+    "lag:build:price bands · now 14:00": "BF-003",
+    "lag:build:series · now · later as outlines": "BF-003",
+    "lag:build:a week": "BF-003",
+    "lag:build:no data in places": "BF-003"
+  }
+}

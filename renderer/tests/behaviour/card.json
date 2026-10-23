@@ -1,0 +1,52 @@
+{
+  "id": "card",
+  "tests": [
+    {
+      "name": "tap opens",
+      "kind": "interaction",
+      "steps": [
+        {
+          "tap": {
+            "clk": 0
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "tap"
+          ]
+        ],
+        "sounds": [
+          "open"
+        ]
+      }
+    },
+    {
+      "name": "unavailable: error only",
+      "kind": "interaction",
+      "props": {
+        "state": "unavailable"
+      },
+      "steps": [
+        {
+          "tap": {
+            "clk": 0
+          }
+        }
+      ],
+      "expect": {
+        "no_events": [
+          "tap"
+        ],
+        "sounds": [
+          "error"
+        ]
+      }
+    }
+  ],
+  "xfail": {
+    "lag:tap:default": "BF-009",
+    "interaction:press-cancel:default": "BF-001"
+  }
+}

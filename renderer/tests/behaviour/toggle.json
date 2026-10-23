@@ -1,0 +1,108 @@
+{
+  "id": "toggle",
+  "tests": [
+    {
+      "name": "tap turns on",
+      "kind": "interaction",
+      "props": {
+        "on": false
+      },
+      "steps": [
+        {
+          "tap": {
+            "clk": 0
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "toggle",
+            "on"
+          ]
+        ],
+        "sounds": [
+          "toggle-on"
+        ]
+      }
+    },
+    {
+      "name": "two taps: on then off",
+      "kind": "interaction",
+      "props": {
+        "on": false
+      },
+      "steps": [
+        {
+          "tap": {
+            "clk": 0
+          }
+        },
+        {
+          "tap": {
+            "clk": 0
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "toggle",
+            "on"
+          ],
+          [
+            "toggle",
+            "off"
+          ]
+        ],
+        "sounds": [
+          "toggle-on",
+          "toggle-off"
+        ]
+      }
+    },
+    {
+      "name": "disabled: error only",
+      "kind": "interaction",
+      "props": {
+        "on": false,
+        "state": "disabled"
+      },
+      "steps": [
+        {
+          "tap": {
+            "clk": 0
+          }
+        }
+      ],
+      "expect": {
+        "no_events": [
+          "toggle"
+        ],
+        "sounds": [
+          "error"
+        ]
+      }
+    },
+    {
+      "name": "update off -> on is silent",
+      "kind": "sound",
+      "props": {
+        "on": false
+      },
+      "steps": [
+        {
+          "update": {
+            "on": true
+          }
+        }
+      ],
+      "expect": {
+        "silent": true
+      }
+    }
+  ],
+  "xfail": {
+    "interaction:press-cancel:default": "BF-001"
+  }
+}

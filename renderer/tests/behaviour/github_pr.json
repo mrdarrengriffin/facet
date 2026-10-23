@@ -1,0 +1,7 @@
+{
+  "id": "github_pr",
+  "tests": [],
+  "xfail": {
+    "lag:same-update:default": "BF-004"
+  }
+}

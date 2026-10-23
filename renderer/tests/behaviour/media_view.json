@@ -1,0 +1,10 @@
+{
+  "id": "media_view",
+  "live": true,
+  "live_why": "the visual spins while playing",
+  "tests": [],
+  "xfail": {
+    "lag:tap:default": "BF-022",
+    "interaction:press-cancel:default": "BF-001"
+  }
+}

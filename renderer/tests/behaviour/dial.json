@@ -1,0 +1,56 @@
+{
+  "id": "dial",
+  "tests": [
+    {
+      "name": "centre button switches off",
+      "kind": "interaction",
+      "steps": [
+        {
+          "tap": {
+            "text": "ON"
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "toggle",
+            "off"
+          ]
+        ],
+        "sounds": [
+          "toggle-off"
+        ]
+      }
+    },
+    {
+      "name": "drag along the arc changes the value",
+      "kind": "interaction",
+      "steps": [
+        {
+          "drag": {
+            "at": [
+              0.5,
+              0.2
+            ]
+          },
+          "by": [
+            0.12,
+            0.03
+          ]
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "change"
+          ]
+        ],
+        "ticks_min": 1
+      }
+    }
+  ],
+  "xfail": {
+    "interaction:press-cancel:default": "BF-001"
+  }
+}

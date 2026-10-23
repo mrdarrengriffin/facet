@@ -1,0 +1,9 @@
+{
+  "id": "github_list",
+  "tests": [],
+  "xfail": {
+    "lag:same-update:default": "BF-004",
+    "lag:tap:default": "BF-018",
+    "interaction:press-cancel:default": "BF-001"
+  }
+}

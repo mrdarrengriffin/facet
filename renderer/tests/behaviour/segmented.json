@@ -1,0 +1,47 @@
+{
+  "id": "segmented",
+  "tests": [
+    {
+      "name": "tap another option changes",
+      "kind": "interaction",
+      "steps": [
+        {
+          "tap": {
+            "text": "DARK"
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "change",
+            "dark"
+          ]
+        ],
+        "sounds": [
+          "tap"
+        ]
+      }
+    },
+    {
+      "name": "tap the chosen option changes nothing",
+      "kind": "interaction",
+      "steps": [
+        {
+          "tap": {
+            "text": "AUTO"
+          }
+        }
+      ],
+      "expect": {
+        "no_events": [
+          "change"
+        ]
+      }
+    }
+  ],
+  "xfail": {
+    "lag:tap:default": "BF-029",
+    "interaction:press-cancel:default": "BF-001"
+  }
+}

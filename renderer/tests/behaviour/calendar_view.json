@@ -1,0 +1,10 @@
+{
+  "id": "calendar_view",
+  "tests": [],
+  "xfail": {
+    "lag:same-update:default": "BF-004",
+    "lag:tap:default": "BF-007",
+    "interaction:press-cancel:default": "BF-001",
+    "scroll:moves-v0:default": "BF-008"
+  }
+}

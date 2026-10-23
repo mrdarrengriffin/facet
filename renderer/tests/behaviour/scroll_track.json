@@ -1,0 +1,10 @@
+{
+  "id": "scroll_track",
+  "tests": [],
+  "xfail": {
+    "lag:same-update:default": "BF-004",
+    "interaction:press-cancel:default": "BF-001",
+    "lag:scroll-v0:default": "BF-027",
+    "scroll:keeps-v0:default": "BF-028"
+  }
+}

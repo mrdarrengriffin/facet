@@ -1,0 +1,7 @@
+{
+  "id": "check_row",
+  "tests": [],
+  "xfail": {
+    "lag:same-update:default": "BF-004"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "id": "count_badge",
+  "tests": [],
+  "xfail": {
+    "lag:same-update:default": "BF-004"
+  }
+}

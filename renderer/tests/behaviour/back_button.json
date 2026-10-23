@@ -1,0 +1,29 @@
+{
+  "id": "back_button",
+  "tests": [
+    {
+      "name": "tap goes back",
+      "kind": "interaction",
+      "steps": [
+        {
+          "tap": {
+            "clk": 0
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "back"
+          ]
+        ],
+        "sounds": [
+          "back"
+        ]
+      }
+    }
+  ],
+  "xfail": {
+    "interaction:press-cancel:default": "BF-001"
+  }
+}

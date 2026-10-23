@@ -1,0 +1,7 @@
+{
+  "id": "weather_icon",
+  "live": true,
+  "live_why": "animated weather icons",
+  "tests": [],
+  "xfail": {}
+}

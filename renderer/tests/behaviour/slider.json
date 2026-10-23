@@ -1,0 +1,55 @@
+{
+  "id": "slider",
+  "tests": [
+    {
+      "name": "drag changes the value with step ticks",
+      "kind": "interaction",
+      "steps": [
+        {
+          "drag": {
+            "clk": 0
+          },
+          "by": [
+            0.15,
+            0
+          ]
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "change"
+          ]
+        ],
+        "ticks_min": 3
+      }
+    },
+    {
+      "name": "disabled drag: error, no change",
+      "kind": "interaction",
+      "props": {
+        "state": "disabled"
+      },
+      "steps": [
+        {
+          "drag": {
+            "clk": 0
+          },
+          "by": [
+            0.15,
+            0
+          ]
+        }
+      ],
+      "expect": {
+        "no_events": [
+          "change"
+        ],
+        "sounds": [
+          "error"
+        ]
+      }
+    }
+  ],
+  "xfail": {}
+}

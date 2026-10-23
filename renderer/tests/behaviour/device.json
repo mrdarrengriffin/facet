@@ -1,0 +1,155 @@
+{
+  "id": "device",
+  "tests": [
+    {
+      "name": "settings button opens Settings",
+      "kind": "interaction",
+      "steps": [
+        {
+          "tap": {
+            "clk": 0
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "navigate",
+            "settings"
+          ],
+          [
+            "screen",
+            "settings"
+          ]
+        ],
+        "sounds": [
+          "open"
+        ],
+        "stack": [
+          "home",
+          "settings"
+        ]
+      }
+    },
+    {
+      "name": "Back from Settings returns Home",
+      "kind": "interaction",
+      "steps": [
+        {
+          "tap": {
+            "clk": 0
+          }
+        },
+        {
+          "tap": {
+            "clk": 0
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "back"
+          ],
+          [
+            "screen",
+            "home"
+          ]
+        ],
+        "stack": [
+          "home"
+        ]
+      }
+    },
+    {
+      "name": "three deep and back again",
+      "kind": "interaction",
+      "steps": [
+        {
+          "tap": {
+            "clk": 0
+          }
+        },
+        {
+          "tap": {
+            "text": "Screens"
+          }
+        },
+        {
+          "tap": {
+            "text": "Living room"
+          }
+        },
+        {
+          "tap": {
+            "clk": 0
+          }
+        },
+        {
+          "tap": {
+            "clk": 0
+          }
+        },
+        {
+          "tap": {
+            "clk": 0
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "screen",
+            "settings"
+          ],
+          [
+            "screen",
+            "screens"
+          ],
+          [
+            "screen",
+            "screen_set"
+          ],
+          [
+            "screen",
+            "screens"
+          ],
+          [
+            "screen",
+            "settings"
+          ],
+          [
+            "screen",
+            "home"
+          ]
+        ],
+        "stack": [
+          "home"
+        ]
+      }
+    },
+    {
+      "name": "Sounds off: taps play nothing",
+      "kind": "sound",
+      "steps": [
+        {
+          "setting": "sounds=false"
+        },
+        {
+          "tap": {
+            "clk": 0
+          }
+        }
+      ],
+      "expect": {
+        "sounds": []
+      }
+    }
+  ],
+  "xfail": {
+    "lag:tap:default": "BF-037",
+    "interaction:press-cancel:default": "BF-001",
+    "sound:muted:default": "BF-038",
+    "sound:Sounds off: taps play nothing:custom": "BF-039"
+  }
+}

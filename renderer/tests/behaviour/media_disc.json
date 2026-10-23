@@ -1,0 +1,7 @@
+{
+  "id": "media_disc",
+  "live": true,
+  "live_why": "the disc spins while playing",
+  "tests": [],
+  "xfail": {}
+}

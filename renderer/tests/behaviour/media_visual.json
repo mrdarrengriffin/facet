@@ -1,0 +1,7 @@
+{
+  "id": "media_visual",
+  "live": true,
+  "live_why": "visuals spin while playing",
+  "tests": [],
+  "xfail": {}
+}

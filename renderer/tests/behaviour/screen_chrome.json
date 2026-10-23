@@ -1,0 +1,8 @@
+{
+  "id": "screen_chrome",
+  "tests": [],
+  "xfail": {
+    "lag:same-update:default": "BF-004",
+    "interaction:press-cancel:default": "BF-001"
+  }
+}

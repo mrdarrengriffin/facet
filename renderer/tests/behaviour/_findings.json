@@ -1,0 +1,392 @@
+{
+  "BF-001": {
+    "ids": [
+      "accent_swatches",
+      "agents_view",
+      "back_button",
+      "bins_view",
+      "bottom_sheet",
+      "button",
+      "calendar_view",
+      "card",
+      "checkbox",
+      "covers_view",
+      "dial",
+      "energy_view",
+      "github_list",
+      "github_view",
+      "header",
+      "icon_button",
+      "list_row",
+      "media_view",
+      "more_row",
+      "overhead_view",
+      "picker_row",
+      "pr_row",
+      "radio",
+      "screen_chrome",
+      "scroll_track",
+      "segmented",
+      "speaker_button",
+      "thermostat_view",
+      "tile",
+      "timer_view",
+      "toast_layer",
+      "toggle",
+      "weather_view",
+      "device",
+      "f1_live",
+      "football_live",
+      "home",
+      "screen_set",
+      "screens",
+      "settings",
+      "setup",
+      "spec",
+      "tennis_live"
+    ],
+    "code": "cancel-fires",
+    "kind": "interaction",
+    "example": "cancel-fires: press on 40x40@132,220, slid 88 px off and released, fired tap(ember)"
+  },
+  "BF-002": {
+    "id": "agents_view",
+    "code": "lag-overflow",
+    "kind": "lag",
+    "example": "lag-overflow: 2 refreshes past 32 dirty areas (LVGL redraws the whole screen) (tap \"Recipe importer\")"
+  },
+  "BF-003": {
+    "id": "bar_chart",
+    "code": "lag-overflow",
+    "kind": "lag",
+    "example": "lag-overflow: 25 refreshes past 32 dirty areas (LVGL redraws the whole screen)"
+  },
+  "BF-004": {
+    "ids": [
+      "big_number",
+      "bins_view",
+      "calendar_view",
+      "check_row",
+      "count_badge",
+      "covers_view",
+      "delta_chip",
+      "donut",
+      "empty_state",
+      "energy_view",
+      "energy_week",
+      "github_list",
+      "github_pr",
+      "github_view",
+      "header",
+      "hero_block",
+      "label",
+      "legend",
+      "moon_facts",
+      "moon_phases",
+      "moon_range",
+      "moon_view",
+      "overhead_view",
+      "print_view",
+      "qr_block",
+      "rate_strip",
+      "readout",
+      "screen_chrome",
+      "scroll_track",
+      "stat",
+      "state_chip",
+      "status_chip",
+      "status_dot",
+      "thermostat_dial",
+      "thermostat_view",
+      "tick_ring",
+      "toast",
+      "weather_days",
+      "setup"
+    ],
+    "code": "same-update-redraw",
+    "kind": "lag",
+    "example": "same-update-redraw: an update with the same props redrew 1 frames (3k px)"
+  },
+  "BF-005": {
+    "id": "bottom_sheet",
+    "code": "lag-heavy",
+    "kind": "lag",
+    "example": "lag-heavy: 6 frames in a row redraw >= 50% of the screen (Guition ~12-19 fps territory)"
+  },
+  "BF-006": {
+    "id": "bottom_sheet",
+    "code": "lag-overflow",
+    "kind": "lag",
+    "example": "lag-overflow: 1 refresh past 32 dirty areas (LVGL redraws the whole screen) (tap \"Theme\")"
+  },
+  "BF-007": {
+    "id": "calendar_view",
+    "code": "lag-overflow",
+    "kind": "lag",
+    "example": "lag-overflow: 1 refresh past 32 dirty areas (LVGL redraws the whole screen) (tap \"MONTH\")"
+  },
+  "BF-008": {
+    "id": "calendar_view",
+    "code": "scroll-stuck",
+    "kind": "scroll",
+    "example": "scroll-stuck: v0 overflows by 924 px but a drag did not move it"
+  },
+  "BF-009": {
+    "id": "card",
+    "code": "lag-overflow",
+    "kind": "lag",
+    "example": "lag-overflow: 2 refreshes past 32 dirty areas (LVGL redraws the whole screen) (tap \"WEATHER\")"
+  },
+  "BF-010": {
+    "id": "checkbox",
+    "code": "lag-overflow",
+    "kind": "lag",
+    "example": "lag-overflow: 1 refresh past 32 dirty areas (LVGL redraws the whole screen) (tap \"Screens: Home, Med\")"
+  },
+  "BF-011": {
+    "id": "covers_view",
+    "code": "lag-overflow",
+    "kind": "lag",
+    "example": "lag-overflow: 2 refreshes past 32 dirty areas (LVGL redraws the whole screen) (tap \"OPEN\")"
+  },
+  "BF-012": {
+    "id": "covers_view",
+    "code": "disabled-fires",
+    "kind": "interaction",
+    "example": "disabled-fires: tap on \"OPEN\" (disabled/unavailable) fired tap(OPEN)"
+  },
+  "BF-013": {
+    "id": "covers_view",
+    "code": "disabled-sound",
+    "kind": "sound",
+    "example": "disabled-sound: tap on \"OPEN\" (disabled/unavailable) played ♪tap (only error)"
+  },
+  "BF-014": {
+    "id": "energy_view",
+    "code": "lag-overflow",
+    "kind": "lag",
+    "example": "lag-overflow: 30 refreshes past 32 dirty areas (LVGL redraws the whole screen)"
+  },
+  "BF-015": {
+    "id": "energy_week",
+    "code": "lag-overflow",
+    "kind": "lag",
+    "example": "lag-overflow: 29 refreshes past 32 dirty areas (LVGL redraws the whole screen)"
+  },
+  "BF-016": {
+    "id": "f1_race_control",
+    "code": "lag-overflow",
+    "kind": "lag",
+    "example": "lag-overflow: 1 refresh past 32 dirty areas (LVGL redraws the whole screen)"
+  },
+  "BF-017": {
+    "id": "football_pitch",
+    "code": "lag-overflow",
+    "kind": "lag",
+    "example": "lag-overflow: 5 refreshes past 32 dirty areas (LVGL redraws the whole screen)"
+  },
+  "BF-018": {
+    "id": "github_list",
+    "code": "lag-overflow",
+    "kind": "lag",
+    "example": "lag-overflow: 2 refreshes past 32 dirty areas (LVGL redraws the whole screen) (tap \"hearth-ui\")"
+  },
+  "BF-019": {
+    "id": "github_view",
+    "code": "lag-overflow",
+    "kind": "lag",
+    "example": "lag-overflow: 2 refreshes past 32 dirty areas (LVGL redraws the whole screen) (tap \"lantern\")"
+  },
+  "BF-020": {
+    "id": "header",
+    "code": "unknown-sound",
+    "kind": "sound",
+    "example": "unknown-sound: tap on 32x32@364,224 played open, not in sound_usage.json (back, toggle-on, toggle-off, tap, error)"
+  },
+  "BF-021": {
+    "id": "lightning_view",
+    "code": "lag-overflow",
+    "kind": "lag",
+    "example": "lag-overflow: 2 refreshes past 32 dirty areas (LVGL redraws the whole screen)"
+  },
+  "BF-022": {
+    "id": "media_view",
+    "code": "lag-overflow",
+    "kind": "lag",
+    "example": "lag-overflow: 1 refresh past 32 dirty areas (LVGL redraws the whole screen) (tap 64x64@208,242)"
+  },
+  "BF-023": {
+    "id": "moon_range",
+    "code": "lag-overflow",
+    "kind": "lag",
+    "example": "lag-overflow: 51 refreshes past 32 dirty areas (LVGL redraws the whole screen)"
+  },
+  "BF-024": {
+    "id": "overhead_view",
+    "code": "lag-overflow",
+    "kind": "lag",
+    "example": "lag-overflow: 2 refreshes past 32 dirty areas (LVGL redraws the whole screen) (tap \"B763 · 21,000 FT ·\")"
+  },
+  "BF-025": {
+    "id": "picker_row",
+    "code": "lag-overflow",
+    "kind": "lag",
+    "example": "lag-overflow: 1 refresh past 32 dirty areas (LVGL redraws the whole screen) (tap \"Kitchen speaker\")"
+  },
+  "BF-026": {
+    "id": "pr_row",
+    "code": "lag-overflow",
+    "kind": "lag",
+    "example": "lag-overflow: 2 refreshes past 32 dirty areas (LVGL redraws the whole screen) (tap \"hearth-ui\")"
+  },
+  "BF-027": {
+    "id": "scroll_track",
+    "code": "lag-overflow",
+    "kind": "lag",
+    "example": "lag-overflow: 2 refreshes past 32 dirty areas (LVGL redraws the whole screen)"
+  },
+  "BF-028": {
+    "id": "scroll_track",
+    "code": "scroll-lost-on-update",
+    "kind": "scroll",
+    "example": "scroll-lost-on-update: v0 was at 256, after an update (in place) it is at 0"
+  },
+  "BF-029": {
+    "id": "segmented",
+    "code": "lag-overflow",
+    "kind": "lag",
+    "example": "lag-overflow: 1 refresh past 32 dirty areas (LVGL redraws the whole screen) (tap \"DARK\")"
+  },
+  "BF-030": {
+    "id": "tennis_score",
+    "code": "lag-overflow",
+    "kind": "lag",
+    "example": "lag-overflow: 5 refreshes past 32 dirty areas (LVGL redraws the whole screen)"
+  },
+  "BF-031": {
+    "id": "thermostat_view",
+    "code": "lag-overflow",
+    "kind": "lag",
+    "example": "lag-overflow: 1 refresh past 32 dirty areas (LVGL redraws the whole screen) (tap 32x32@198,282)"
+  },
+  "BF-032": {
+    "id": "tile",
+    "code": "lag-overflow",
+    "kind": "lag",
+    "example": "lag-overflow: 2 refreshes past 32 dirty areas (LVGL redraws the whole screen) (tap \"Photo backup\")"
+  },
+  "BF-033": {
+    "id": "timer_view",
+    "code": "lag-overflow",
+    "kind": "lag",
+    "example": "lag-overflow: 2 refreshes past 32 dirty areas (LVGL redraws the whole screen) (tap \"+1 MIN\")"
+  },
+  "BF-034": {
+    "id": "toast_layer",
+    "code": "double-sound",
+    "kind": "sound",
+    "example": "double-sound: tap on \"Someone at the doo\" played 2 sounds: ♪tap, ♪notify"
+  },
+  "BF-035": {
+    "id": "toast_layer",
+    "code": "lag-overflow",
+    "kind": "lag",
+    "example": "lag-overflow: 1 refresh past 32 dirty areas (LVGL redraws the whole screen) (tap \"Someone at the doo\")"
+  },
+  "BF-036": {
+    "id": "weather_view",
+    "code": "lag-overflow",
+    "kind": "lag",
+    "example": "lag-overflow: 2 refreshes past 32 dirty areas (LVGL redraws the whole screen) (tap \"SUN\")"
+  },
+  "BF-037": {
+    "id": "device",
+    "code": "lag-overflow",
+    "kind": "lag",
+    "example": "lag-overflow: 1 refresh past 32 dirty areas (LVGL redraws the whole screen) (tap 32x32@364,20)"
+  },
+  "BF-038": {
+    "id": "device",
+    "code": "muted-sound",
+    "kind": "sound",
+    "example": "muted-sound: with Sounds off (setting applied), tap 32x32@364,20 still requested ♪open"
+  },
+  "BF-039": {
+    "id": "device",
+    "code": "wrong-sound",
+    "kind": "sound",
+    "example": "wrong-sound: expected sounds [], got [open]"
+  },
+  "BF-040": {
+    "id": "f1_live",
+    "code": "lag-overflow",
+    "kind": "lag",
+    "example": "lag-overflow: 1 refresh past 32 dirty areas (LVGL redraws the whole screen) (tap \"ORDER\")"
+  },
+  "BF-041": {
+    "id": "football_live",
+    "code": "lag-overflow",
+    "kind": "lag",
+    "example": "lag-overflow: 5 refreshes past 32 dirty areas (LVGL redraws the whole screen)"
+  },
+  "BF-042": {
+    "id": "screen_set",
+    "code": "lag-overflow",
+    "kind": "lag",
+    "example": "lag-overflow: 1 refresh past 32 dirty areas (LVGL redraws the whole screen) (tap \"Source\")"
+  },
+  "BF-043": {
+    "id": "settings",
+    "code": "lag-overflow",
+    "kind": "lag",
+    "example": "lag-overflow: 1 refresh past 32 dirty areas (LVGL redraws the whole screen) (tap \"LIGHT\")"
+  },
+  "BF-044": {
+    "id": "settings",
+    "code": "lag-heavy",
+    "kind": "lag",
+    "example": "lag-heavy: 6 frames in a row redraw >= 50% of the screen (Guition ~12-19 fps territory)"
+  },
+  "BF-045": {
+    "id": "setup",
+    "code": "lag-overflow",
+    "kind": "lag",
+    "example": "lag-overflow: 2 refreshes past 32 dirty areas (LVGL redraws the whole screen) (tap \"OTHER WAYS\")"
+  },
+  "BF-046": {
+    "id": "spec",
+    "code": "lag-overflow",
+    "kind": "lag",
+    "example": "lag-overflow: 2 refreshes past 32 dirty areas (LVGL redraws the whole screen)"
+  },
+  "BF-047": {
+    "id": "spec",
+    "code": "scroll-stuck",
+    "kind": "scroll",
+    "example": "scroll-stuck: v0 overflows by 924 px but a drag did not move it"
+  },
+  "BF-048": {
+    "id": "spec",
+    "code": "spec-no-action",
+    "kind": "interaction",
+    "example": "spec-no-action: 212x388@20,72 (covers_view) emitted cover(position 50), handled by the spec (cover.control), but no action reached the host"
+  },
+  "BF-049": {
+    "id": "spec",
+    "code": "unavailable-fires",
+    "kind": "interaction",
+    "example": "unavailable-fires: tap 52x52@136,274 with media_player.living_room_speaker_2 unavailable called media_player.media_previous_track"
+  },
+  "BF-050": {
+    "id": "spec",
+    "code": "scroll-start",
+    "kind": "scroll",
+    "example": "scroll-start: v0 stopped at 12 after flinging past the start (start = 0)"
+  },
+  "BF-051": {
+    "id": "tennis_live",
+    "code": "lag-overflow",
+    "kind": "lag",
+    "example": "lag-overflow: 5 refreshes past 32 dirty areas (LVGL redraws the whole screen)"
+  }
+}

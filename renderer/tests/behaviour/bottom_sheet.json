@@ -1,0 +1,62 @@
+{
+  "id": "bottom_sheet",
+  "tests": [
+    {
+      "name": "close button closes",
+      "kind": "interaction",
+      "steps": [
+        {
+          "tap": {
+            "at": [
+              0.92,
+              0.2
+            ]
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "close"
+          ]
+        ],
+        "sounds": [
+          "back"
+        ]
+      }
+    },
+    {
+      "name": "scrim tap closes",
+      "kind": "interaction",
+      "steps": [
+        {
+          "tap": {
+            "at": [
+              0.5,
+              0.06
+            ]
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "close",
+            "scrim"
+          ]
+        ],
+        "sounds": [
+          "back"
+        ]
+      }
+    }
+  ],
+  "xfail": {
+    "lag:build:default": "BF-005",
+    "lag:tap:default": "BF-006",
+    "interaction:press-cancel:default": "BF-001",
+    "lag:build:open · speakers": "BF-005",
+    "lag:build:open · theme": "BF-005",
+    "lag:build:no screen under it": "BF-005"
+  }
+}

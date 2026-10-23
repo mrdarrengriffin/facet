@@ -1,0 +1,53 @@
+{
+  "id": "screens",
+  "tests": [
+    {
+      "name": "row opens its screen settings",
+      "kind": "interaction",
+      "steps": [
+        {
+          "tap": {
+            "text": "Clock"
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "navigate",
+            "screen_set.*clock"
+          ]
+        ]
+      }
+    },
+    {
+      "name": "toggle takes a screen off Home",
+      "kind": "interaction",
+      "steps": [
+        {
+          "tap": {
+            "clk": 2
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "toggle",
+            "off"
+          ],
+          [
+            "deck",
+            "on=false"
+          ]
+        ],
+        "sounds": [
+          "toggle-off"
+        ]
+      }
+    }
+  ],
+  "xfail": {
+    "interaction:press-cancel:default": "BF-001"
+  }
+}

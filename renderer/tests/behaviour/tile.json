@@ -1,0 +1,32 @@
+{
+  "id": "tile",
+  "live": true,
+  "live_why": "the mascot animates",
+  "tests": [
+    {
+      "name": "tap opens",
+      "kind": "interaction",
+      "steps": [
+        {
+          "tap": {
+            "clk": 0
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "tap"
+          ]
+        ],
+        "sounds": [
+          "open"
+        ]
+      }
+    }
+  ],
+  "xfail": {
+    "lag:tap:default": "BF-032",
+    "interaction:press-cancel:default": "BF-001"
+  }
+}

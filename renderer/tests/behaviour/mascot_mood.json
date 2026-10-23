@@ -1,0 +1,7 @@
+{
+  "id": "mascot_mood",
+  "live": true,
+  "live_why": "mascot motion",
+  "tests": [],
+  "xfail": {}
+}

@@ -1,0 +1,14 @@
+{
+  "id": "football_pitch",
+  "live": true,
+  "live_why": "simulated live match",
+  "tests": [],
+  "xfail": {
+    "lag:build:default": "BF-017",
+    "lag:idle:default": "BF-017",
+    "lag:build:simulator · 60x": "BF-017",
+    "lag:build:first goal": "BF-017",
+    "lag:build:half time": "BF-017",
+    "lag:build:full time": "BF-017"
+  }
+}

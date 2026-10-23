@@ -1,0 +1,7 @@
+{
+  "id": "f1_circuit",
+  "live": true,
+  "live_why": "simulated live race",
+  "tests": [],
+  "xfail": {}
+}

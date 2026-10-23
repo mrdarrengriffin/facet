@@ -1,0 +1,7 @@
+{
+  "id": "big_number",
+  "tests": [],
+  "xfail": {
+    "lag:same-update:default": "BF-004"
+  }
+}

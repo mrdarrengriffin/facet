@@ -1,0 +1,7 @@
+{
+  "id": "print_view",
+  "tests": [],
+  "xfail": {
+    "lag:same-update:default": "BF-004"
+  }
+}

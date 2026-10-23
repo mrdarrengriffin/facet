@@ -1,0 +1,30 @@
+{
+  "id": "accent_swatches",
+  "tests": [
+    {
+      "name": "tap a swatch changes the accent",
+      "kind": "interaction",
+      "steps": [
+        {
+          "tap": {
+            "clk": 3
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "change",
+            "teal"
+          ]
+        ],
+        "sounds": [
+          "tap"
+        ]
+      }
+    }
+  ],
+  "xfail": {
+    "interaction:press-cancel:default": "BF-001"
+  }
+}

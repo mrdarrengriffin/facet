@@ -725,6 +725,57 @@ renderer like the panel; on a single-screen page the workbench opens that page i
 | `home` | **PLACEHOLDER** (Darren 2026-10-22; the real Home will be laid out per room, not just a card grid): Header (no back, "Home", screen chrome with the settings button: Home only for now), a scrolling 2-column grid of real Cards (`lay::card_w` x `lay::card_h`, gutter both ways; 480 cards stay 184: 2 x 184 + 16 = 384 of 388, the 4 px left at the bottom) for the screens and workbench pages this build has (`PAGES` checked with `fw::find`: Settings, then the foundations); **placeholder cards: title only** (no icon, value or line; Darren 2026-10-22). Card tap = its own tap + `navigate` <page id>. No props. |
 | `settings` | Every personalisation setting from `tokens/settings.json` (WIP): Header ("Settings", the live clock), one scrolling column from `lay::top`; per group its label (screen type `label`, caps, text-dim = docs `.fs-set-glabel`; Darren 2026-10-22: the component caps-sm was too small), `section-gap` to its rows, groups `group` apart; rows = List row / Segmented / Accent swatches / Toggle / slider row / sheet rows + one Bottom sheet. Update path for every control. Pairs: section `settings` (+ the components'). |
 
+## Behaviour tests
+
+The audits check how things look; `renderer/tools/behaviour.mjs` checks that they work. Every component and screen is
+built headless on the WASM build (a fresh module per gesture, so nothing leaks between tests) and driven through LVGL
+input with time advanced in fixed 16 ms ticks: tap, long press (800 ms), press-slide-off-release, drag. It asserts on
+what reaches the host (`fw_events`: actions, `navigate` / `back`, HA calls `ha`, `setting`), sounds, scroll position and
+limits, the device screen stack, the update path and HA values. Hooks it needs that the workbench has no call for live in
+`core/test_hooks.cpp` (`fw_test("stack" | "setting" | "scrolls")`, WASM only). Runs in `facet-gate full` (`behaviour`
+step; `--ids` limits it; `fast --ids` runs the 1.5x interaction / scroll / sound part). About a minute for everything.
+
+```
+node renderer/tools/behaviour.mjs [--den 1x|1.5x] [--ids a,b] [--kind interaction,scroll,sound,lag] [--verbose] [--json out.json]
+```
+
+| Kind | Automatic, for every id x variant | Fails when |
+|---|---|---|
+| interaction | tap each clickable part; long press; press, slide off, release; spec screens: taps inside each node `fw_hits` returns; device: every navigation + Back | a disabled / unavailable part fires anything but `blocked`; one gesture fires the same action twice; sliding off fires; a spec node's handled event reaches no action, an HA call names another entity, an unavailable entity gets a call; the stack after a navigation or Back is wrong |
+| scroll | every scroller with room to scroll (labels and lists under a sheet aside); a drag on content that fits | a drag does not move it; a step jumps or goes back; a fling past either end does not stop exactly at the end; an update moves it; a nested scroller of the same direction moves in the same frames; content that fits moves |
+| sound | the same gestures; an update to each variant; HA values for every bound pair; device with Sounds off | more than one sound per gesture (step ticks aside); a sound not in `tokens/sound_usage.json` for the id (+ what it builds); an action with no sound; any event or sound from an update; a sound with Sounds off |
+| lag (1x) | frames of the build animation, every tap, every scroll; 2 s idle; an update with the same props | a refresh past 32 dirty areas (LVGL redraws the whole screen); more than 3 frames in a row redrawing half the screen (a scroll list: 90 %); typical frame estimated over 33 ms on the Guition; any redraw while idle or after an update that changed nothing |
+
+**Lag is a proxy.** It runs the 1x build (the Guition, the weakest panel) and estimates Guition frame time as
+`a + b x WASM ms` from the bench fit (`bench/budgets.json`); pixels and dirty areas are exact, times are estimates.
+Real fps needs the device (`tools/bench.mjs --panel`). Budgets: `tests/behaviour/_budgets.json`.
+
+**Per-id files** `renderer/tests/behaviour/<id>.json` (every component and screen has one):
+
+```json
+{ "id": "toggle",
+  "live": true, "live_why": "...",           // moves by design (clock, spinning disc, live sim): idle / same-update redraws allowed
+  "tests": [ { "name": "tap turns on", "kind": "interaction", "props": {"on": false},
+               "steps": [ {"tap": {"clk": 0}} ],
+               "expect": { "events": [["toggle", "on"]], "sounds": ["toggle-on"] } } ],
+  "xfail": { "interaction:press-cancel:default": "BF-012" } }
+```
+
+Steps: `tap` / `long` / `press` / `release` / `drag` (+ `"by": [dx, dy]`, fractions of the screen when |v| <= 1) on a
+selector, `wait` ms, `update` props (the update path), `ha` `[entity, attribute, value]`, `setting` `"id=value"`;
+`before_ha` sets HA values right after the build. Selectors: `{"text": "Start"}` or `{"text": "/re/"}` (the clickable
+around that label), `{"clk": i}` (i-th clickable), `{"type": "arc"}`, `{"hit": "dial"}` (a spec node from `fw_hits`),
+`{"at": [fx, fy]}`. Expect: `events` (in order, others may come between; detail = regex), `no_events`, `sounds` (exact
+list, ticks aside), `ticks_min`, `silent`, `stack`, `exists` / `absent` (a selector).
+
+**Expected fails.** A known failure is listed in the id's `xfail` (key `kind:test:variant`, `*` allowed) with its finding
+id; the gate stays green on them and prints `XPASS` when one passes again (then delete the line). Findings registry:
+`tests/behaviour/_findings.json` (`--write-xfail` adds today's new failures as findings: bootstrap / after a review only).
+
+**A new component or screen ships with its file:** its automatic tests pass (or its known fails are listed with a
+finding), plus a custom test for each thing it does (the action and value a tap or drag sends, the sound, what it does
+disabled / unavailable, sheets it opens, where Back goes).
+
 ## Add a component
 
 Create `components/<id>.cpp`:
@@ -745,4 +796,5 @@ FW_COMPONENT(button, "Button", "components", R"({
 
 Meta: `frame` = stage size in dp; prop types `text`, `select` (`options`), `range` (`min/max/step`), `bool`;
 `variants` = props over the defaults; `"demo": true` tags it. Section = `foundations`, `components` or `screens`.
-Save: the watcher builds and the nav shows it (as WIP). Delete a component = delete its file.
+Save: the watcher builds and the nav shows it (as WIP). Delete a component = delete its file. Add its behaviour test
+file `tests/behaviour/<id>.json` (section "Behaviour tests").

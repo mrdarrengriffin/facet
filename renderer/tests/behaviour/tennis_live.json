@@ -1,0 +1,15 @@
+{
+  "id": "tennis_live",
+  "live": true,
+  "live_why": "simulated live match",
+  "tests": [],
+  "xfail": {
+    "lag:build:default": "BF-051",
+    "lag:idle:default": "BF-051",
+    "lag:tap:default": "BF-051",
+    "interaction:press-cancel:default": "BF-001",
+    "lag:build:the match": "BF-051",
+    "lag:build:break point": "BF-051",
+    "lag:build:match point · best of 5": "BF-051"
+  }
+}

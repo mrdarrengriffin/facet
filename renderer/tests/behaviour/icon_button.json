@@ -1,0 +1,29 @@
+{
+  "id": "icon_button",
+  "tests": [
+    {
+      "name": "tap fires tap",
+      "kind": "interaction",
+      "steps": [
+        {
+          "tap": {
+            "clk": 0
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "tap"
+          ]
+        ],
+        "sounds": [
+          "tap"
+        ]
+      }
+    }
+  ],
+  "xfail": {
+    "interaction:press-cancel:default": "BF-001"
+  }
+}

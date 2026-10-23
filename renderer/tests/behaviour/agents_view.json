@@ -1,0 +1,10 @@
+{
+  "id": "agents_view",
+  "live": true,
+  "live_why": "mascots animate by design",
+  "tests": [],
+  "xfail": {
+    "lag:tap:default": "BF-002",
+    "interaction:press-cancel:default": "BF-001"
+  }
+}

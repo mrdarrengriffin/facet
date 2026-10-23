@@ -1,0 +1,30 @@
+{
+  "id": "list_row",
+  "tests": [
+    {
+      "name": "tap fires tap",
+      "kind": "interaction",
+      "steps": [
+        {
+          "tap": {
+            "text": "Lights"
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "tap",
+            "Lights"
+          ]
+        ],
+        "sounds": [
+          "tap"
+        ]
+      }
+    }
+  ],
+  "xfail": {
+    "interaction:press-cancel:default": "BF-001"
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "id": "picker_row",
+  "tests": [
+    {
+      "name": "tap picks",
+      "kind": "interaction",
+      "steps": [
+        {
+          "tap": {
+            "clk": 0
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "tap"
+          ]
+        ],
+        "sounds": [
+          "tap"
+        ]
+      }
+    }
+  ],
+  "xfail": {
+    "lag:tap:default": "BF-025",
+    "interaction:press-cancel:default": "BF-001"
+  }
+}

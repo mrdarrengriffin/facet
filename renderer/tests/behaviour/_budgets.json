@@ -1,0 +1,30 @@
+{
+  "$comment": "Behaviour test settings + lag budgets (tools/behaviour.mjs, README 'Behaviour tests'). The lag numbers are a PROXY for the Guition (1x, the weakest panel): real fps needs the device (tools/bench.mjs --panel).",
+  "long_press_ms": 800,
+  "drag_px_per_tick": 8,
+  "cancel_px": 48,
+  "targets": 6,
+  "targets_screen": 10,
+  "targets_variant": 3,
+  "max_variants": 8,
+  "skip": [],
+  "scroll": {
+    "slack": 1,
+    "jump_slack": 4
+  },
+  "lag": {
+    "overflow_max": 0,
+    "heavy_frac": 0.5,
+    "scroll_heavy_frac": 0.9,
+    "heavy_run_max": 3,
+    "est_min_frames": 5,
+    "est_ms_max": 33,
+    "idle_ms": 2000,
+    "$why": "overflow: a refresh past LVGL's 32 dirty areas is a full redraw (F1 track 3 fps). heavy: > 3 frames in a row redrawing half the screen or more = the sheet dim (12 fps) / rise fade (19 fps) territory on the Guition. est: a + b x median WASM frame ms (bench/budgets.json guition fit) over 50 ms = under 20 fps. idle: nothing may redraw while nothing changes (live ids say \"live\": true in their file). est between est_ms_max and est_ms_fail = a warning (timing noise), over est_ms_fail = a fail.",
+    "est_ms_fail": 50
+  },
+  "group_codes": [
+    "cancel-fires",
+    "same-update-redraw"
+  ]
+}

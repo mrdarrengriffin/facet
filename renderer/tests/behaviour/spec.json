@@ -1,0 +1,292 @@
+{
+  "id": "spec",
+  "live_screens": [
+    "clock",
+    "lightning",
+    "overhead",
+    "aircraft",
+    "timer",
+    "media",
+    "agents",
+    "print",
+    "weather"
+  ],
+  "tests": [
+    {
+      "name": "Light: centre button switches the light",
+      "kind": "interaction",
+      "props": {
+        "screen": "light",
+        "entity": "light.test"
+      },
+      "steps": [
+        {
+          "tap": {
+            "text": "/^(ON|OFF)$/"
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "ha",
+            "light\\.(turn_off|turn_on|toggle).*light\\.test"
+          ]
+        ]
+      },
+      "before_ha": [
+        [
+          "light.test",
+          "",
+          "on"
+        ],
+        [
+          "light.test",
+          "brightness",
+          "128"
+        ]
+      ]
+    },
+    {
+      "name": "Light: drag on the dial sets the brightness",
+      "kind": "interaction",
+      "props": {
+        "screen": "light",
+        "entity": "light.test"
+      },
+      "steps": [
+        {
+          "drag": {
+            "at": [
+              0.5,
+              0.2
+            ]
+          },
+          "by": [
+            0.12,
+            0.03
+          ]
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "ha",
+            "light\\.turn_on.*light\\.test.*brightness"
+          ]
+        ]
+      },
+      "before_ha": [
+        [
+          "light.test",
+          "",
+          "on"
+        ],
+        [
+          "light.test",
+          "brightness",
+          "128"
+        ]
+      ]
+    },
+    {
+      "name": "Light: unavailable dial calls nothing",
+      "kind": "interaction",
+      "props": {
+        "screen": "light",
+        "entity": "light.test"
+      },
+      "steps": [
+        {
+          "tap": {
+            "at": [
+              0.5,
+              0.79
+            ]
+          }
+        },
+        {
+          "drag": {
+            "at": [
+              0.5,
+              0.2
+            ]
+          },
+          "by": [
+            0.12,
+            0.03
+          ]
+        }
+      ],
+      "expect": {
+        "no_events": [
+          "ha"
+        ]
+      },
+      "before_ha": [
+        [
+          "light.test",
+          "",
+          "unavailable"
+        ]
+      ]
+    },
+    {
+      "name": "Media: play / pause calls the player",
+      "kind": "interaction",
+      "props": {
+        "screen": "media",
+        "entity": "media_player.alpha"
+      },
+      "steps": [
+        {
+          "tap": {
+            "at": [
+              0.5,
+              0.625
+            ]
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "ha",
+            "media_play_pause.*media_player\\.alpha"
+          ]
+        ]
+      },
+      "before_ha": [
+        [
+          "media_player.alpha",
+          "",
+          "playing"
+        ]
+      ]
+    },
+    {
+      "name": "Media: picking a speaker rebinds the screen",
+      "kind": "interaction",
+      "props": {
+        "screen": "media",
+        "entity": "media_player.alpha",
+        "speakers": "media_player.alpha,media_player.beta"
+      },
+      "steps": [
+        {
+          "tap": {
+            "clk": 1
+          }
+        },
+        {
+          "tap": {
+            "text": "/[Bb][Ee][Tt][Aa]/"
+          }
+        },
+        {
+          "tap": {
+            "at": [
+              0.5,
+              0.625
+            ]
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "ha",
+            "media_play_pause.*media_player\\.beta"
+          ]
+        ]
+      },
+      "before_ha": [
+        [
+          "media_player.alpha",
+          "",
+          "playing"
+        ],
+        [
+          "media_player.beta",
+          "",
+          "paused"
+        ],
+        [
+          "media_player.beta",
+          "friendly_name",
+          "Beta"
+        ]
+      ]
+    },
+    {
+      "name": "Media: HA values arriving are silent",
+      "kind": "sound",
+      "props": {
+        "screen": "media",
+        "entity": "media_player.alpha"
+      },
+      "steps": [
+        {
+          "ha": [
+            "media_player.alpha",
+            "",
+            "paused"
+          ]
+        },
+        {
+          "ha": [
+            "media_player.alpha",
+            "volume_level",
+            "0.2"
+          ]
+        }
+      ],
+      "expect": {
+        "silent": true
+      },
+      "before_ha": [
+        [
+          "media_player.alpha",
+          "",
+          "playing"
+        ]
+      ]
+    }
+  ],
+  "xfail": {
+    "interaction:press-cancel:agents": "BF-001",
+    "lag:scroll-v0:agents": "BF-046",
+    "interaction:press-cancel:aircraft": "BF-001",
+    "interaction:press-cancel:bins": "BF-001",
+    "interaction:press-cancel:calendar": "BF-001",
+    "scroll:moves-v0:calendar": "BF-047",
+    "interaction:press-cancel:clock": "BF-001",
+    "interaction:tap:covers": "BF-048",
+    "interaction:press-cancel:covers": "BF-001",
+    "interaction:press-cancel:energy": "BF-001",
+    "lag:build:energy_week": "BF-046",
+    "interaction:press-cancel:energy_week": "BF-001",
+    "interaction:press-cancel:github": "BF-001",
+    "lag:scroll-v0:github": "BF-046",
+    "interaction:press-cancel:github_list": "BF-001",
+    "lag:scroll-v0:github_list": "BF-046",
+    "interaction:press-cancel:github_pr": "BF-001",
+    "interaction:press-cancel:light": "BF-001",
+    "interaction:press-cancel:lightning": "BF-001",
+    "interaction:press-cancel:living_room": "BF-001",
+    "interaction:press-cancel:media": "BF-001",
+    "interaction:unavailable:media": "BF-049",
+    "interaction:press-cancel:moon": "BF-001",
+    "lag:build:moon_days": "BF-046",
+    "interaction:press-cancel:moon_days": "BF-001",
+    "interaction:press-cancel:moon_details": "BF-001",
+    "interaction:press-cancel:overhead": "BF-001",
+    "scroll:ends-v0:overhead": "BF-050",
+    "interaction:press-cancel:print": "BF-001",
+    "interaction:press-cancel:thermostat": "BF-001",
+    "interaction:unavailable:thermostat": "BF-049",
+    "interaction:press-cancel:timer": "BF-001",
+    "interaction:press-cancel:weather": "BF-001",
+    "interaction:press-cancel:weather_days": "BF-001"
+  }
+}
