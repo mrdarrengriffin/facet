@@ -2,7 +2,7 @@
 // section (foundation sections, component variants / props / events / notes), all from the generated data.
 import type { APIRoute } from 'astro';
 import { getCollection } from 'astro:content';
-import { COMPONENTS, FOUNDATIONS, href } from '../lib/data';
+import { COMPONENTS, FOUNDATIONS, SCREENS, href, screenHref } from '../lib/data';
 import { url } from '../lib/nav';
 
 type Rec = { title: string; heading: string; text: string; url: string };
@@ -16,7 +16,12 @@ export const GET: APIRoute = async () => {
   recs.push({ title: 'Updates', heading: '', text: 'How Facet came to be and what changed lately, newest first.', url: url('/updates/') });
   for (const e of await getCollection('updates')) recs.push({ title: 'Updates', heading: e.data.title, text: (e.body ?? '').replace(/[>*]/g, '').replace(/\s+/g, ' ').trim(), url: `${url('/updates/')}#${e.id}` });
   recs.push({ title: 'Components', heading: '', text: 'Every component, drawn live by the panel renderer.', url: url('/components/') });
-  recs.push({ title: 'Screens', heading: '', text: 'Screens come after the components.', url: url('/screens/') });
+  recs.push({ title: 'Screens', heading: '', text: 'Every screen, live: what it shows, its settings, where its data comes from.', url: url('/screens/') });
+  for (const s of SCREENS) {
+    recs.push({ title: s.name, heading: '', text: plain(`Screen. ${s.about}`), url: screenHref(s) });
+    if (s.params.length) recs.push({ title: s.name, heading: 'Settings', text: s.params.map((p) => p.label).join(', '), url: `${screenHref(s)}#settings` });
+    if (s.sources) recs.push({ title: s.name, heading: 'Sources', text: s.sources.list.map((x) => x.name).join(', '), url: `${screenHref(s)}#sources` });
+  }
   for (const f of FOUNDATIONS) {
     recs.push({ title: f.name, heading: '', text: plain(`Design system. ${f.lede}`), url: href(f) });
     (f.meta.variants ?? []).forEach((v, i) => recs.push({ title: f.name, heading: v.label, text: plain(v.about ?? ''), url: `${href(f)}#${anchor(v.label, i)}` }));

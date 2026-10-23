@@ -74,7 +74,7 @@ function calls(src, fn) {
   return out;
 }
 const files = {};
-for (const dir of ['components', 'foundations']) {
+for (const dir of ['components', 'foundations', 'screens']) {
   for (const f of readdirSync(join(R, dir)).filter((f) => f.endsWith('.cpp'))) {
     const rel = `renderer/${dir}/${f}`, src = readFileSync(join(ROOT, rel), 'utf8');
     const rels = [rel];
@@ -83,9 +83,9 @@ for (const dir of ['components', 'foundations']) {
     const events = calls(src, 'fw::emit'), sounds = calls(src, 'fw::sound');
     if (/st::blocked\(/.test(src)) { events.add(ST.BLOCKED_EVENT); sounds.add(ST.BLOCKED_SOUND); }
     if (/fw::step_ticks\(/.test(src)) { sounds.add('slider-tick'); sounds.add('slider-landmark'); }
-    const uses = [...new Set([...src.matchAll(/fw::find\("([a-z0-9_]+)"\)/g)].map((x) => x[1]))];
+    const uses = [...new Set([...src.matchAll(/\bfind\("([a-z0-9_]+)"\)/g)].map((x) => x[1]))];
     const info = { uses, files: rels, status: combine(rels.map(one)), notes: headerComment(src), events: [...events], sounds: [...sounds] };
-    for (const mm of src.matchAll(/FW_COMPONENT\(\s*([A-Za-z0-9_]+)/g)) files[mm[1]] = info;
+    for (const mm of src.matchAll(/FW_COMPONENT\(\s*([A-Za-z0-9_]+)|fw::add\(\{\s*"([a-z0-9_]+)"/g)) files[mm[1] ?? mm[2]] = info;
   }
 }
 
@@ -144,7 +144,7 @@ for (const e of entries) {
 }
 const comps = entries.filter((e) => e.section === 'components');
 const founds = entries.filter((e) => e.section === 'foundations');
-const others = entries.filter((e) => e.section !== 'components' && e.section !== 'foundations');
+const others = entries.filter((e) => !['components', 'foundations', 'screens', 'bench'].includes(e.section));
 if (others.length) console.warn(`extract: sections not on the site yet: ${[...new Set(others.map((e) => e.section))].join(', ')}`);
 
 // 5. tokens for the site itself (theme CSS + colour table)
@@ -316,6 +316,82 @@ function previews() {
   return { shots: done, rules: [rules[0], rules[2]].filter(Boolean).map(quote) };
 }
 
+
+// 5f. Screens (docs Screens section): every factory spec (renderer/specs/*.json) + every registered screen (section
+// "screens" of the build, minus the workbench tools in SCREEN_SKIP). Per screen: what it shows (registered: meta
+// about; spec: its main component's about), its typed parameters (core/spec.h "params"), its data sources
+// (renderer/sources/sources.json: the screen's own entry, else its parent's: weather_days -> weather), the parts it is
+// built from (spec nodes + the parts core/spec.h draws itself, e.g. the header; registered: its fw::find calls), the
+// screens it opens / is opened from (nav.open actions), status (git rule as above). Public: entity defaults are never
+// shown (they are the build's own panels' picks); the preview opens with sample entities (sampleParams), whose values
+// come from site/src/lib/sample-ha.ts.
+const SCREEN_SKIP = new Set(['spec', 'device']);
+function screenSet() {
+  const srcs = json('sources/sources.json');
+  const chrome = [...new Set([...readFileSync(join(R, 'core/spec.h'), 'utf8').matchAll(/\bfind\("([a-z0-9_]+)"\)/g)].map((x) => x[1]))];
+  const compById = Object.fromEntries(entries.map((e) => [e.id, e]));
+  const sourcesOf = (id) => {
+    const own = srcs.screens[id], parent = !own && id.includes('_') ? id.split('_')[0] : null;
+    const e = own ?? (parent && srcs.screens[parent]);
+    if (!e) return null;
+    return {
+      from: own ? null : parent, needs: e.needs,
+      list: e.sources.map((x) => ({ id: x.id, kind: x.kind, kindLabel: srcs.kinds[x.kind] ?? x.kind, name: x.name, setup: x.setup ?? [],
+        fills: Object.entries(x.fills ?? {}).map(([param, f]) => ({ param, domain: f.domain, integration: f.integration ?? null, list: !!f.list })) })),
+    };
+  };
+  const sampleOf = (k, t) => {
+    if (t.type === 'entity') return t.domain === 'sensor' ? '' : `${t.domain}.sample_1`;
+    if (t.type === 'entities') return [1, 2, 3].slice(0, t.domain === 'calendar' ? 2 : 3).map((i) => `${t.domain}.sample_${i}`).join(',');
+    return t.default ?? '';
+  };
+  const out = [];
+  const opens = {};
+  const walkOpen = (id, v) => {
+    if (Array.isArray(v)) return v.forEach((x) => walkOpen(id, x));
+    if (v && typeof v === 'object') {
+      if (v.do === 'nav.open' && typeof v.screen === 'string') (opens[id] ??= new Set()).add(v.screen);
+      Object.values(v).forEach((x) => walkOpen(id, x));
+    }
+  };
+  for (const f of readdirSync(join(R, 'specs')).filter((f) => f.endsWith('.json')).sort()) {
+    const spec = json(`specs/${f}`);
+    if (!spec.id || !Array.isArray(spec.nodes)) continue;  // the deck, not a screen
+    walkOpen(spec.id, spec.nodes);
+    const params = Object.entries(spec.params ?? {}).map(([name, v]) => {
+      const t = typeof v === 'object' && v ? v : { type: 'text', default: v };
+      return { name, label: t.label ?? name, type: t.type ?? 'text', domain: t.domain ?? null, options: t.options ?? null,
+        default: t.type === 'entity' || t.type === 'entities' ? null : (t.default ?? ''), sample: sampleOf(name, t) };
+    }).filter((p) => p.type !== 'hidden');
+    const nodes = spec.nodes.map((n) => n.c);
+    const parts = [...new Set([...nodes, ...(spec.header ? chrome : [])])].filter((c) => compById[c]);
+    const main = compById[nodes[0]];
+    const rows = nodes.every((c) => c === 'list_row');
+    const about = rows
+      ? `A list of ${nodes.length} rows, one per device: each shows the device's state, and a tap switches it.`
+      : main?.meta.about || main?.lede || '';
+    const rel = `renderer/specs/${f}`;
+    out.push({ id: spec.id, name: pub(spec.name), kind: 'spec', about: pub(about), layout: spec.layout, params,
+      sampleProps: { screen: spec.id, ...Object.fromEntries(params.filter((p) => p.sample).map((p) => [p.name, p.sample])) },
+      comp: 'spec', frame: [480, 480], parts, sources: sourcesOf(spec.id), status: one(rel), source: [{ path: rel, url: `${REPO}/${rel}` }] });
+  }
+  for (const c of entries.filter((e) => e.section === 'screens' && !SCREEN_SKIP.has(e.id))) {
+    const f = files[c.id] ?? { uses: [], files: [], status: 'wip' };
+    const props = (c.meta.props ?? []).filter((p) => !(p.type === 'text' && !p.default));
+    out.push({ id: c.id, name: c.name, kind: 'built', about: pub(c.meta.about ?? c.lede ?? ''), opening: c.meta.opening ? pub(c.meta.opening) : null,
+      params: props.map((p) => ({ name: p.name, label: p.name.replace(/_/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase().replace(/^./, (x) => x.toUpperCase()),
+        type: p.type, domain: null, options: p.options ?? (p.type === 'range' ? [`${p.min ?? 0} to ${p.max}`] : null), default: p.default ?? '' })),
+      sampleProps: Object.fromEntries((c.meta.props ?? []).map((p) => [p.name, p.default ?? (p.type === 'bool' ? false : p.type === 'range' ? p.min ?? 0 : '')])),
+      comp: c.id, frame: c.meta.frame, parts: f.uses.filter((u) => compById[u] && u !== c.id), sources: sourcesOf(c.id), status: f.status,
+      source: f.files.map((p) => ({ path: p, url: `${REPO}/${p}` })) });
+  }
+  for (const s of out) {
+    s.opens = [...(opens[s.id] ?? [])].filter((x) => out.some((o) => o.id === x));
+    s.openedFrom = Object.entries(opens).filter(([, v]) => v.has(s.id)).map(([k]) => k);
+  }
+  return out;
+}
+
 const manifests = Object.fromEntries(DENS.map((d) => [d, JSON.parse(readFileSync(join(fwOut, d, 'manifest.json'), 'utf8'))]));
 const motion = json('tokens/motion.json');
 const site = {
@@ -336,6 +412,8 @@ w('foundations.json', founds);
 w('tokens.json', tokens);
 w('icons.json', iconSet());
 w('previews.json', previews());
+const screens = screenSet();
+w('screens.json', screens);
 const road = roadmapSnapshot();
 if (road) writeFileSync(join(SITE, 'src/roadmap.json'), JSON.stringify(road, null, 1) + '\n');
 writeFileSync(join(out, 'tokens.css'), tokensCss());
@@ -350,4 +428,4 @@ for (const d of DENS) {
   mkdirSync(to, { recursive: true });
   for (const f of ['fw.mjs', 'fw.wasm', 'manifest.json']) copyFileSync(join(fwOut, d, f), join(to, f));
 }
-console.log(`extract: ${comps.length} components, ${founds.length} foundations, build ${manifests['1.5x'].built} (${fwOut})`);
+console.log(`extract: ${comps.length} components, ${founds.length} foundations, ${screens.length} screens, build ${manifests['1.5x'].built} (${fwOut})`);

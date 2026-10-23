@@ -3,6 +3,7 @@
 // in the header (Base.astro) and re-render every stage. The engine module (~1 MB) loads only when the first preview
 // comes into view.
 import { Engine, type Stage } from '../lib/engine';
+import { feedSampleHa } from '../lib/sample-ha';
 import { getPrefs, onPrefs, type Prefs } from './prefs';
 import { playUi } from './sound';
 import site from '../data/site.json';
@@ -64,6 +65,7 @@ async function ensure(p: Prefs): Promise<Engine> {
     engine?.dispose();
     for (const it of items) { it.stage = undefined; clearTimeout(it.timer); it.held = false; }
     engine = e;
+    feedSampleHa(e);
     accentSets = e.tokens.accent.sets;
     e.onEvent = (ev, s) => {
       const it = s && items.find((i) => i.stage === s);

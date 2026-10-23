@@ -1,21 +1,42 @@
 ---
-// Screens placeholder: screens come after the components (Darren's build order, 2026-10-21); the original site's
-// screen pages are not ported.
+// The Screens overview: every screen (scripts/extract.mjs screenSet(): the specs + the build's registered screens) as
+// a still picture drawn by the WASM renderer on sample data, grouped as on the roadmap; each opens its page.
 import Docs from '../../layouts/Docs.astro';
+import Live from '../../components/Live.astro';
+import { SCREENS, STATUS, screenGroups, screenHref } from '../../lib/data';
 import { url } from '../../lib/nav';
+const done = SCREENS.filter((s) => s.status !== 'wip').length;
 ---
 
 <Docs
   title="Screens"
-  description="One job per screen. Each screen will get a page with a live preview, as on the original site."
+  description={`One job per screen. ${SCREENS.length} screens, each drawn here by the renderer the panels run, on sample data.`}
   group="Screens"
   current={url('/screens/')}
+  wide
 >
-  <div class="callout">
-    <span class="dot" aria-hidden="true"></span>
-    <p>
-      <strong>Coming later.</strong> Screens are built after the components, from the same parts and from
-      screen-level patterns defined for them. Until then, see the <a href={url('/components/')}>components</a>.
-    </p>
-  </div>
+  <p>
+    A screen is built from the <a href={url('/components/')}>components</a>: most are a short spec that names its parts
+    and settings, and the panel finds the data for them. {done} of {SCREENS.length} are done; the rest are being worked on.
+  </p>
+  {
+    screenGroups().map((g) => (
+      <section>
+        <h2 class="facet-label">{g.label}</h2>
+        <ul class="shots">
+          {g.items.map((s) => (
+            <li>
+              <a class="shot" href={screenHref(s)}>
+                <span class="shot__viewport">
+                  <Live comp={s.comp} props={s.sampleProps} label={s.name} frame={s.frame} caption={false} still />
+                </span>
+                <span class="shot__name">{s.name}{s.status === 'wip' && <span class="badge" title={STATUS.wip.hint}>WIP</span>}</span>
+                <span class="shot__about">{s.about}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </section>
+    ))
+  }
 </Docs>

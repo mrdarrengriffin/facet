@@ -1,0 +1,107 @@
+---
+// One page per screen, all generated (scripts/extract.mjs screenSet(): renderer/specs/*.json, the build's registered
+// screens, renderer/sources/sources.json): a live preview on sample data (the real screen, drawn by the panel
+// renderer), what it shows, its settings (the spec's typed parameters), its data sources, the parts it is built from,
+// the screens it opens, its status.
+import Docs, { type Heading } from '../../layouts/Docs.astro';
+import Live from '../../components/Live.astro';
+import PreviewBox from '../../components/PreviewBox.astro';
+import { ALL, STATUS, href, screenById, screenGroupOf, screenHref, slug, SCREENS, type Screen } from '../../lib/data';
+
+export function getStaticPaths() {
+  return SCREENS.map((s) => ({ params: { id: slug(s.id) }, props: { s } }));
+}
+const { s } = Astro.props as { s: Screen };
+const parts = s.parts.map((id) => ALL.find((e) => e.id === id)).filter((e) => !!e);
+const link = (id: string) => screenById(id);
+const sources = s.sources;
+const typeOf = (p: Screen['params'][number]) =>
+  p.type === 'entity' ? `one ${p.domain}` : p.type === 'entities' ? `${p.domain} list` : p.type === 'bool' || p.type === 'toggle' ? 'on / off' : p.type;
+const valuesOf = (p: Screen['params'][number]) => (p.options?.length ? p.options.join(' · ') : p.type === 'entity' || p.type === 'entities' ? `${p.domain} entities` : 'text');
+const fill = (f: { param: string; domain: string; integration: string | null; list: boolean }) =>
+  `${s.params.find((p) => p.name === f.param)?.label ?? f.param}: ${f.list ? 'every' : 'a'} ${f.domain.replace(/_/g, ' ')}${f.integration ? ` from ${f.integration.replace(/_/g, ' ')}` : ''}`;
+const headings: Heading[] = [
+  { depth: 2, slug: 'preview', text: 'Preview' },
+  { depth: 2, slug: 'settings', text: 'Settings' },
+  { depth: 2, slug: 'sources', text: 'Sources' },
+  { depth: 2, slug: 'parts', text: 'Parts' },
+  { depth: 2, slug: 'status', text: 'Status' },
+];
+const st = STATUS[s.status];
+---
+
+<Docs title={s.name} description={s.about} group={`Screens · ${screenGroupOf(s.id)}`} current={screenHref(s)} headings={headings} source={s.source} wide>
+  <div data-preview-scope>
+    <h2 id="preview">Preview</h2>
+    <PreviewBox />
+    <Live comp={s.comp} props={s.sampleProps} label={`${s.name} screen`} frame={s.frame} caption={false} />
+    <p class="hint">{s.opening ?? 'Sample data: made-up devices and values, not a real home.'} Tap it as on a panel; it returns to its start after a moment.</p>
+  </div>
+
+  <h2 id="settings">Settings</h2>
+  {
+    s.params.length ? (
+      <>
+        {s.kind === 'built' && <p>Options of this preview (the screen is built into the panel, not from a spec).</p>}
+        <table>
+          <thead><tr><th>Setting</th><th>Type</th><th>Values</th><th>Default</th></tr></thead>
+          <tbody>
+            {s.params.map((p) => (
+              <tr>
+                <td>{p.label} <code>{p.name}</code></td>
+                <td>{typeOf(p)}</td>
+                <td>{valuesOf(p)}</td>
+                <td>{p.default === null ? 'found by discovery' : p.default === '' ? 'none' : <code>{String(p.default)}</code>}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </>
+    ) : (
+      <p class="hint">No settings: it works as it is.</p>
+    )
+  }
+
+  <h2 id="sources">Sources</h2>
+  {
+    sources ? (
+      <>
+        <p>
+          {sources.needs ? <>Needs {sources.needs}.</> : <>Works in every home.</>}
+          {sources.from && link(sources.from) && <> Uses the <a href={screenHref(link(sources.from)!)}>{link(sources.from)!.name}</a> screen's source.</>}
+          {' '}In order of preference:
+        </p>
+        <table>
+          <thead><tr><th>Source</th><th>Kind</th><th>Needs first</th><th>Fills</th></tr></thead>
+          <tbody>
+            {sources.list.map((x) => (
+              <tr>
+                <td>{x.name}</td>
+                <td>{x.kindLabel}</td>
+                <td>{x.setup.length ? x.setup.join(', ') : 'nothing'}</td>
+                <td>{x.fills.length ? x.fills.map(fill).join('; ') : 'the screen itself'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </>
+    ) : (
+      <p class="hint">Built in: the panel works it out itself, no source to pick.</p>
+    )
+  }
+
+  <h2 id="parts">Parts</h2>
+  {parts.length ? <ul class="tags">{parts.map((p) => <li><a href={href(p)}>{p.name}</a></li>)}</ul> : <p class="hint">Drawn by the screen itself.</p>}
+  {
+    (s.opens.length > 0 || s.openedFrom.length > 0) && (
+      <div class="cols">
+        {s.opens.length > 0 && <div><h3 class="facet-label">Opens</h3><ul class="tags">{s.opens.map((id) => <li><a href={screenHref(link(id)!)}>{link(id)!.name}</a></li>)}</ul></div>}
+        {s.openedFrom.length > 0 && <div><h3 class="facet-label">Opened from</h3><ul class="tags">{s.openedFrom.map((id) => link(id) && <li><a href={screenHref(link(id)!)}>{link(id)!.name}</a></li>)}</ul></div>}
+      </div>
+    )
+  }
+
+  <h2 id="status">Status</h2>
+  <p><span class={`status-badge status-badge--${s.status === 'done' ? 'done' : 'doing'}`}><span class="status-badge__dot" aria-hidden="true" />{st.label}</span> {st.hint}.</p>
+</Docs>
+

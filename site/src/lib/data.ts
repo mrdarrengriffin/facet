@@ -81,3 +81,27 @@ export function componentGroups(): { label: string; items: Entry[] }[] {
   return out.filter((g) => g.items.length);
 }
 export const groupOf = (id: string) => componentGroups().find((g) => g.items.some((c) => c.id === id))?.label ?? 'Components';
+
+// Screens (scripts/extract.mjs screenSet(): renderer/specs/*.json + the build's registered screens + sources.json)
+import screens from '../data/screens.json';
+import { SCREEN_GROUPS } from './screen-groups';
+export type ScreenParam = { name: string; label: string; type: string; domain: string | null; options: string[] | null; default: string | number | boolean | null };
+export type ScreenSourceFill = { param: string; domain: string; integration: string | null; list: boolean };
+export type ScreenSources = { from: string | null; needs: string | null; list: { id: string; kind: string; kindLabel: string; name: string; setup: string[]; fills: ScreenSourceFill[] }[] };
+export type Screen = {
+  id: string; name: string; kind: 'spec' | 'built'; about: string; opening?: string | null; layout?: string; params: ScreenParam[];
+  sampleProps: Record<string, unknown>; comp: string; frame: [number, number]; parts: string[]; sources: ScreenSources | null;
+  status: Status; source: { path: string; url: string }[]; opens: string[]; openedFrom: string[];
+};
+export const SCREENS = screens as unknown as Screen[];
+export const screenHref = (s: Pick<Screen, 'id'>) => `${BASE}screens/${slug(s.id)}/`;
+export const screenById = (id: string) => SCREENS.find((s) => s.id === id);
+/** screens in index / sidebar groups (lib/screen-groups.ts order; unknown ids last, under Other) */
+export function screenGroups(): { label: string; items: Screen[] }[] {
+  const known = new Set(SCREEN_GROUPS.flatMap(([, ids]) => ids));
+  const out = SCREEN_GROUPS.map(([label, ids]) => ({ label, items: ids.map(screenById).filter((s): s is Screen => !!s) }));
+  const other = SCREENS.filter((s) => !known.has(s.id));
+  if (other.length) out.push({ label: 'Other', items: other });
+  return out.filter((g) => g.items.length);
+}
+export const screenGroupOf = (id: string) => screenGroups().find((g) => g.items.some((s) => s.id === id))?.label ?? 'Screens';

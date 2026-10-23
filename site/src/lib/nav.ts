@@ -1,7 +1,7 @@
 // Site navigation, in the original Facet site's shape (main a5df2ac: site/src/lib/nav.ts + Header.astro): header links,
 // the docs sidebar groups and the reading order for previous / next. Foundations (the "Design system") and
 // components come from the WASM registry; pages not written yet show as "Soon" (getting started, concepts).
-import { BASE, FOUNDATIONS, href } from './data';
+import { BASE, FOUNDATIONS, href, screenGroups, screenHref } from './data';
 
 export interface NavLink {
   label: string;
@@ -39,7 +39,10 @@ export function getSidebar(): NavGroup[] {
       label: 'Design system',
       links: [{ label: 'Overview', href: url('/foundations/') }, ...FOUNDATIONS.map((f) => ({ label: f.name, href: href(f) }))],
     },
-    { label: 'Screens', links: [{ label: 'Coming later', href: url('/screens/'), icon: 'screen-home' }] },
+    {
+      label: 'Screens',
+      links: [{ label: 'Overview', href: url('/screens/') }, ...screenGroups().flatMap((g) => g.items).map((s) => ({ label: s.name, href: screenHref(s) }))],
+    },
     {
       label: 'Project',
       links: [
@@ -52,5 +55,5 @@ export function getSidebar(): NavGroup[] {
 
 /** Every docs page in reading order, for the previous / next links. */
 export function getReadingOrder(): { label: string; href: string }[] {
-  return getSidebar().flatMap((g) => g.links.filter((l): l is NavLink & { href: string } => !!l.href).map((l) => ({ label: l.label === 'Overview' ? 'Design system' : l.label === 'Coming later' ? 'Screens' : l.label, href: l.href })));
+  return getSidebar().flatMap((g) => g.links.filter((l): l is NavLink & { href: string } => !!l.href).map((l) => ({ label: l.label === 'Overview' ? (l.href === url('/screens/') ? 'Screens' : 'Design system') : l.label, href: l.href })));
 }
