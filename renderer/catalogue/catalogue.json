@@ -340,6 +340,20 @@
     "bytes_est": 320
    }
   },
+  "calendar_view": {
+   "name": "Calendar view",
+   "update": true,
+   "props": [],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 102,
+    "bytes_est": 16320
+   }
+  },
   "card": {
    "name": "Card",
    "update": true,
@@ -822,6 +836,57 @@
     "bytes_est": 960
    }
   },
+  "covers_view": {
+   "name": "Covers view",
+   "update": true,
+   "props": [
+    {
+     "name": "kind",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "roller",
+      "venetian",
+      "curtain"
+     ]
+    },
+    {
+     "name": "position",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 100
+    },
+    {
+     "name": "tilt",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 100
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "open",
+      "closed",
+      "opening",
+      "closing",
+      "unavailable"
+     ]
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 40,
+    "bytes_est": 6400
+   }
+  },
   "date_line": {
    "name": "Date line",
    "update": true,
@@ -1049,6 +1114,34 @@
    "cost": {
     "objects": 5,
     "bytes_est": 800
+   }
+  },
+  "energy_view": {
+   "name": "Energy view",
+   "update": true,
+   "props": [],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 95,
+    "bytes_est": 15200
+   }
+  },
+  "energy_week": {
+   "name": "Energy week",
+   "update": true,
+   "props": [],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 36,
+    "bytes_est": 5760
    }
   },
   "f1_car_marker": {
@@ -1502,6 +1595,62 @@
    "cost": {
     "objects": 118,
     "bytes_est": 18880
+   }
+  },
+  "github_list": {
+   "name": "GitHub list",
+   "update": true,
+   "props": [],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 95,
+    "bytes_est": 15200
+   }
+  },
+  "github_pr": {
+   "name": "GitHub PR",
+   "update": true,
+   "props": [
+    {
+     "name": "pr",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "n1",
+      "n2",
+      "n3",
+      "m1",
+      "m2",
+      "m3"
+     ]
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 35,
+    "bytes_est": 5600
+   }
+  },
+  "github_view": {
+   "name": "GitHub view",
+   "update": true,
+   "props": [],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 54,
+    "bytes_est": 8640
    }
   },
   "header": {
@@ -2029,6 +2178,56 @@
     "bytes_est": 1440
    }
   },
+  "media_view": {
+   "name": "Media view",
+   "update": true,
+   "props": [
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "playing",
+      "paused",
+      "idle",
+      "off"
+     ]
+    },
+    {
+     "name": "title",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "artist",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "progress",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 100
+    },
+    {
+     "name": "volume",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 100
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 35,
+    "bytes_est": 5600
+   }
+  },
   "media_visual": {
    "name": "Media visuals",
    "update": true,
@@ -2476,6 +2675,45 @@
    "cost": {
     "objects": 2,
     "bytes_est": 320
+   }
+  },
+  "print_view": {
+   "name": "Print view",
+   "update": true,
+   "props": [
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "printing",
+      "paused",
+      "preparing",
+      "done",
+      "idle"
+     ]
+    },
+    {
+     "name": "progress",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 100
+    },
+    {
+     "name": "task",
+     "type": "text",
+     "bindable": true
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 9,
+    "bytes_est": 1440
    }
   },
   "qr_block": {
@@ -3348,6 +3586,81 @@
     "bytes_est": 800
    }
   },
+  "thermostat_view": {
+   "name": "Thermostat view",
+   "update": true,
+   "props": [
+    {
+     "name": "target",
+     "type": "range",
+     "bindable": true,
+     "min": 5,
+     "max": 30
+    },
+    {
+     "name": "current",
+     "type": "range",
+     "bindable": true,
+     "min": 5,
+     "max": 30
+    },
+    {
+     "name": "action",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "heating",
+      "cooling",
+      "idle"
+     ]
+    },
+    {
+     "name": "mode",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "heat",
+      "auto",
+      "off"
+     ]
+    },
+    {
+     "name": "preset",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "none",
+      "home",
+      "away",
+      "eco",
+      "boost"
+     ]
+    },
+    {
+     "name": "next",
+     "type": "text",
+     "bindable": true
+    }
+   ],
+   "events": {
+    "target": [
+     "climate.set_temperature"
+    ],
+    "mode": [
+     "climate.set_hvac_mode"
+    ],
+    "preset": [
+     "climate.set_preset_mode"
+    ],
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 53,
+    "bytes_est": 8480
+   }
+  },
   "tick_ring": {
    "name": "Tick ring",
    "update": true,
@@ -3894,5 +4207,5 @@
   "screens": 16,
   "deck_bytes": 2048
  },
- "hash": "305d0a47"
+ "hash": "1b71a404"
 }

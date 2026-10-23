@@ -24,7 +24,7 @@ lv_obj_t *box(lv_obj_t *parent) {
 }
 lv_obj_t *meta(lv_obj_t *parent, const char *s, bool grow = false) {
   lv_obj_t *l = fw::text(parent, fw::ty::c_meta, s, fw::T->text_dim);
-  lv_obj_set_height(l, fw::style(fw::ty::c_meta).box);
+  // (its height = the style box: fw::text sizes it; an explicit height here cut the g of "seedling")
   if (grow) { lv_label_set_long_mode(l, LV_LABEL_LONG_MODE_DOTS); lv_obj_set_flex_grow(l, 1); }
   else { lv_obj_update_layout(l); lv_obj_set_width(l, (lv_obj_get_width(l) + fw::sp::GRID - 1) / fw::sp::GRID * fw::sp::GRID); }
   return l;
@@ -49,7 +49,9 @@ void fill(lv_obj_t *c, fw::Props p) {
   lv_obj_set_flex_flow(c, LV_FLEX_FLOW_COLUMN);
   lv_obj_set_style_pad_row(c, fw::sp::s2, 0);
   lv_obj_t *m = box(c);
-  lv_obj_set_size(m, LV_PCT(100), fw::style(fw::ty::c_meta).box);
+  // the line's box reaches a step below the text (descenders: the g of "seedling" was cut nested in a list, 2026-10-23);
+  // the title pulls up by the same step, so the layout is the docs'
+  lv_obj_set_size(m, LV_PCT(100), fw::style(fw::ty::c_meta).box + fw::sp::s1);
   lv_obj_set_flex_flow(m, LV_FLEX_FLOW_ROW);
   lv_obj_set_style_pad_column(m, fw::sp::s2, 0);
   meta(m, p["repo"] | "hearth-ui");
@@ -58,6 +60,7 @@ void fill(lv_obj_t *c, fw::Props p) {
   meta(m, num, true);
   meta(m, p["age"] | "5h");
   lv_obj_t *ti = fw::text(c, fw::ty::c_tile, p["title"] | "Card grid: snap scrolling one row at a time", t.text, 1);
+  lv_obj_set_style_margin_top(ti, -fw::sp::s1, 0);
   lv_label_set_long_mode(ti, LV_LABEL_LONG_MODE_DOTS);
   lv_obj_set_size(ti, LV_PCT(100), 2 * fw::style(fw::ty::c_tile).box);
   lv_obj_t *chips = box(c);
@@ -95,7 +98,8 @@ FW_COMPONENT(pr_row, "Pull request row", "components", R"({
     {"label": "review · ci pass", "props": {}},
     {"label": "draft · ci running", "props": {"draft": true, "ci": "pending", "number": 412, "title": "Lantern: dim the hallway after midnight"}},
     {"label": "long title", "props": {"title": "Sensors: debounce the door contact so a slow close does not send two events, and log the bounce count for tuning", "ci": "fail"}},
-    {"label": "pressed", "props": {"state": "pressed"}}
+    {"label": "pressed", "props": {"state": "pressed"}},
+    {"label": "descenders · seedling", "props": {"repo": "seedling", "number": 1290, "title": "Fix the sunrise time drifting by a minute each week", "age": "3d"}}
   ]
 })") {
   lv_obj_t *c = lv_obj_create(parent);

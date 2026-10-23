@@ -21,6 +21,7 @@
 // Contrast: "weather" (+ stat, status_dot, more_row, radar, moon, text).
 #include <strings.h>
 #include <ctime>
+// audit deps: lightning_view, moon_view, more_row, segmented, stat, status_dot
 #include "fw.h"
 #include "sun.h"
 #include "weather.h"

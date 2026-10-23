@@ -1,0 +1,5 @@
+{"v": 1, "id": "github_pr", "name": "Pull request", "rev": 1,
+ "params": {"pr": "n1"},
+ "header": {"label": "Pull request", "back": true},
+ "layout": "center",
+ "nodes": [{"c": "github_pr", "p": {"pr": "$pr"}}]}

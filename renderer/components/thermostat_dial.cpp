@@ -22,7 +22,8 @@
 // action: heating (accent span current -> set point when the set point is above), cooling (blue span set point ->
 // current when below), idle (no span), off (no set point: no knob, no span, the ring takes no touch; docs target null).
 // Sound: fw::step_ticks for every step the shown set point crosses on a drag or ring tap (ends = landmarks).
-// Events: "change" (detail = the set point) on release when it moved, "blocked" (disabled / unavailable).
+// Events: "change" (detail = the set point) on release when it moved, "blocked" (disabled / unavailable); live:
+// fw::notify "input" (the set point) on every step while dragging (listeners only, the Dial's rule).
 // Disabled (st::OFF): majors, span and marker text-mute, knob text-dim; any press = "blocked" + error once, no opening
 // sweep. Unavailable: disabled scale, no knob, span or marker, "Unavailable" (body, text-dim) on the centre.
 // Update path: set point -> quiet sweep; current -> the marker moves (Motion value, quiet); action -> the span (snap);
@@ -42,7 +43,7 @@ double num(fw::Props p, const char *k, double def) {
 
 struct Thermo {
   double min = 5, max = 30, step = 0.5, current = 19.4;
-  int n = 50, dec = 1, idx = 0, press_idx = 0;
+  int n = 50, dec = 1, idx = 0, press_idx = 0, live_idx = -1;
   int action = 0;  // 0 heating, 1 cooling, 2 idle, 3 off
   int state = 0;   // 0 default, 1 disabled, 2 unavailable
   bool quiet = false, grab = false, moved = false, active = false;
@@ -295,6 +296,7 @@ FW_COMPONENT(thermostat_dial, "Thermostat dial", "components", R"({
       stop_sweep(s);
       d->quiet = false;
       d->press_idx = d->idx;
+      d->live_idx = d->idx;
       d->press_pt = pt;
       d->moved = false;
       lv_area_t ka;
@@ -314,6 +316,10 @@ FW_COMPONENT(thermostat_dial, "Thermostat dial", "components", R"({
       const float f = fw::ring_frac(s, pt, START, RANGE, nullptr, frac_of(d, value_of(d, d->idx)));
       d->idx = LV_CLAMP(0, (int) std::lround(f * (d->max - d->min) / d->step), d->n);
       show(s, d->idx * FP);
+      if (d->idx != d->live_idx) {  // live set point while dragging (the Dial's rule: listeners only, not an event)
+        d->live_idx = d->idx;
+        fw::notify(s, "input", fmt(d, value_of(d, d->idx)).c_str());
+      }
     } else {  // released / lost
       d->active = false;
       if (d->idx != d->press_idx) fw::emit(s, "change", fmt(d, value_of(d, d->idx)).c_str());

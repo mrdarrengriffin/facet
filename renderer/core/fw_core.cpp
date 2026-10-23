@@ -156,6 +156,11 @@ void bleed_cb(lv_event_t *e) { lv_event_set_ext_draw_size(e, (int32_t) (intptr_t
 }  // namespace
 void bleed(lv_obj_t *o, int px) {
   for (lv_obj_t *x = o; x; x = lv_obj_get_parent(x)) {
+    // a scroll area keeps clipping its content (2026-10-23: a mark's bleed inside a spec list made the list overflow
+    // visible, so its rows would draw over the header when scrolled; the screen check caught the list leaving the screen)
+    // (a scroll area = scrollable with its direction set: the spec list, scroll_track lists; a box left at the defaults
+    // is not one)
+    if (x != o && lv_obj_has_flag(x, LV_OBJ_FLAG_SCROLLABLE) && lv_obj_get_scroll_dir(x) != LV_DIR_ALL) break;
     lv_obj_add_flag(x, LV_OBJ_FLAG_OVERFLOW_VISIBLE);
     lv_event_dsc_t *had = nullptr;
     for (uint32_t i = 0, n = lv_obj_get_event_count(x); i < n && !had; i++) {

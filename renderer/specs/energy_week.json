@@ -1,0 +1,17 @@
+{
+ "v": 1,
+ "id": "energy_week",
+ "name": "Energy, last 7 days",
+ "rev": 1,
+ "header": {
+  "label": "Last 7 days",
+  "back": true
+ },
+ "layout": "center",
+ "nodes": [
+  {
+   "c": "energy_week",
+   "p": {}
+  }
+ ]
+}

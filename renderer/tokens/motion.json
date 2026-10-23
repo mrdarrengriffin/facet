@@ -21,6 +21,7 @@
     "clock-progress": { "ms": 1000, "group": "ambient", "use": "progress ring step" },
     "pulse": { "ms": 2200, "group": "ambient", "use": "working pulse (one breath)" },
     "ripple": { "ms": 600, "group": "ui", "use": "a ripple from a point: a new lightning strike's ring grows and fades (docs radar.ts flash 600 ms ease-out)" },
+    "nudge-wait": { "ms": 800, "group": "timing", "use": "- / + on a dial (Thermostat): more taps within this long are one change, then it goes out (docs 800)" },
     "disc-marker": { "ms": 8000, "group": "ambient", "use": "media disc turn" },
     "orbit-b": { "ms": 23000, "group": "ambient", "use": "orbit clock, inner ring" },
     "orbit-c": { "ms": 37000, "group": "ambient", "use": "orbit clock, middle ring" },

@@ -1,0 +1,4 @@
+{"v": 1, "id": "print", "name": "3D print", "rev": 1,
+ "header": {"label": "3D print", "back": true},
+ "layout": "center",
+ "nodes": [{"c": "print_view", "p": {}}]}

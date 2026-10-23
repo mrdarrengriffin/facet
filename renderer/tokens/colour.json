@@ -483,7 +483,19 @@
       {"section": "weather", "fg": "text-dim", "bg": ["bg"], "kind": "text", "use": "feels / high / low, hour labels, rise and set times, day conditions and lows"},
       {"section": "weather", "fg": "accent-text", "bg": ["bg"], "kind": "text", "use": "the hour label now"},
       {"section": "weather", "fg": "accent", "bg": ["bg"], "kind": "ui", "use": "the sun's arc so far and the sun on it"},
-      {"section": "weather", "fg": "line", "bg": ["bg"], "kind": "decor", "use": "the arc's track, the horizon, the day rows' hairlines"}
+      {"section": "weather", "fg": "line", "bg": ["bg"], "kind": "decor", "use": "the arc's track, the horizon, the day rows' hairlines"},
+      {"section": "calendar", "fg": "text", "bg": ["bg"], "kind": "text", "use": "event titles"},
+      {"section": "calendar", "fg": "text-dim", "bg": ["bg"], "kind": "text", "use": "times, the day lines"},
+      {"section": "calendar", "fg": "accent-text", "bg": ["bg"], "kind": "text", "use": "now (the time of a running event)"},
+      {"section": "calendar", "fg": "text-mute", "bg": ["bg"], "kind": "disabled", "use": "a finished event's time and title"},
+      {"section": "calendar", "fg": "blue", "bg": ["bg"], "kind": "ui", "use": "the Family calendar's dot (each calendar's colour token)"},
+      {"section": "calendar", "fg": "ok", "bg": ["bg"], "kind": "ui", "use": "the Work calendar's dot"},
+      {"section": "calendar", "fg": "warn", "bg": ["bg"], "kind": "ui", "use": "the School calendar's dot"},
+      {"section": "calendar", "fg": "steel", "bg": ["bg"], "kind": "ui", "use": "the Birthdays calendar's dot"},
+      {"section": "calendar", "fg": "line", "bg": ["bg"], "kind": "decor", "use": "the rows' hairlines"},
+      {"section": "energy", "fg": "text", "bg": ["bg"], "kind": "large", "use": "the cost so far (hero)"},
+      {"section": "energy", "fg": "text-dim", "bg": ["bg"], "kind": "text", "use": "today so far / a bar's reading, the kWh line"},
+      {"section": "energy", "fg": "text", "bg": ["bg"], "kind": "text", "use": "the rate line"}
     ]
   },
   "accent": {

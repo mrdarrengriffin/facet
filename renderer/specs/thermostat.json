@@ -1,0 +1,56 @@
+{
+ "v": 1,
+ "id": "thermostat",
+ "name": "Thermostat",
+ "rev": 1,
+ "params": {
+  "entity": "climate.portable_ac"
+ },
+ "header": {
+  "label": "Thermostat",
+  "back": true
+ },
+ "layout": "center",
+ "nodes": [
+  {
+   "c": "thermostat_view",
+   "p": {
+    "target": {
+     "e": "$entity",
+     "a": "temperature",
+     "fmt": "num"
+    },
+    "current": {
+     "e": "$entity",
+     "a": "current_temperature",
+     "fmt": "num"
+    },
+    "action": {
+     "e": "$entity",
+     "a": "hvac_action"
+    },
+    "mode": {
+     "e": "$entity"
+    },
+    "preset": {
+     "e": "$entity",
+     "a": "preset_mode"
+    }
+   },
+   "on": {
+    "target": {
+     "do": "climate.set_temperature",
+     "e": "$entity"
+    },
+    "mode": {
+     "do": "climate.set_hvac_mode",
+     "e": "$entity"
+    },
+    "preset": {
+     "do": "climate.set_preset_mode",
+     "e": "$entity"
+    }
+   }
+  }
+ ]
+}

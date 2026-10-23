@@ -14,8 +14,14 @@
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd)
 [ -f "$HERE/../local.env" ] && . "$HERE/../local.env"
+# BUILD_JOBS = compiles at once (LVGL and the renderer's own files): default 2 in the quiet hours (00-06: the box is
+# shared and heavy caps a job at 3 GB; a cold build of every file at once was OOM-killed) else half the cores
+if [ -z "${BUILD_JOBS:-}" ]; then h=$(date +%-H); if [ "$h" -lt 6 ]; then BUILD_JOBS=2; else BUILD_JOBS=$(( $(nproc) / 2 )); fi; fi
+[ "$BUILD_JOBS" -ge 1 ] 2>/dev/null || BUILD_JOBS=1
+export BUILD_JOBS
 : "${FW_PANEL:?set FW_PANEL (panel firmware source dir) in the env or local.env}"
 if [ $# -eq 0 ]; then
+  if [ "$BUILD_JOBS" -lt 4 ]; then ra=0; "$0" 1.5x || ra=$?; rb=0; "$0" 1x || rb=$?; exit $(( ra | rb )); fi  # one density at a time
   "$0" 1.5x & a=$!; "$0" 1x & b=$!; wait $a; ra=$?; wait $b; rb=$?; exit $(( ra | rb ))
 fi
 DEN=$1
@@ -48,7 +54,7 @@ FL="$OPT -DLV_CONF_INCLUDE_SIMPLE -I$C/gen -I$L -I$L/src"
 
 # LVGL: one cache for both densities (density-free)
 LVGL_OBJS=$(find "$L/src" -name '*.c' | while read -r f; do echo "$C/lvgl$OPT/$(echo "$f $CONF_SUM" | md5sum | cut -c1-12).o"; done)
-find "$L/src" -name '*.c' | xargs -P"$(nproc)" -I{} sh -c \
+find "$L/src" -name '*.c' | xargs -P"$BUILD_JOBS" -I{} sh -c \
   'o='"$C/lvgl$OPT"'/$(echo "{} '"$CONF_SUM"'" | md5sum | cut -c1-12).o; [ -f $o ] || { emcc '"$FL"' -c {} -o $o.$$ && mv $o.$$ $o; }'
 
 # colour tokens: tokens/colour.json -> colour_gen.h (written only when it changes, so an unchanged JSON rebuilds nothing)
@@ -89,9 +95,13 @@ for f in "$HERE"/core/*.cpp "$HERE"/foundations/*.cpp "$HERE"/components/*.cpp "
   dep="$f $HERE/core/*.h $C/gen/colour_gen.h $C/gen/type_gen.h $C/gen/space_gen.h $C/gen/layout_gen.h $C/gen/icons_gen.h $C/gen/motion_gen.h $C/gen/states_gen.h $C/gen/mascot_gen.h $C/gen/settings_gen.h $C/gen/chart_gen.h $C/gen/specs_gen.h"; [ "$(basename "$f")" = fonts.cpp ] && dep="$dep $FONTS_H"; [ "$(basename "$f")" = icons.cpp ] && dep="$dep $ICONS_H"
   stale=0; [ -f "$o" ] || stale=1
   [ $stale = 0 ] && for d in $dep; do [ "$d" -nt "$o" ] && stale=1; done
-  if [ $stale = 1 ]; then echo "[$DEN] cc $(basename "$f")"; $CXX -c "$f" -o "$o" & JOBS="$JOBS $!"; fi
+  if [ $stale = 1 ]; then
+    while [ "$(jobs -rp | wc -l)" -ge "$BUILD_JOBS" ]; do wait -n || CC_FAIL=1; done  # at most BUILD_JOBS at once
+    echo "[$DEN] cc $(basename "$f")"; $CXX -c "$f" -o "$o" & JOBS="$JOBS $!"
+  fi
 done
-for j in $JOBS; do wait "$j"; done
+while [ "$(jobs -rp | wc -l)" -gt 0 ]; do wait -n || CC_FAIL=1; done
+[ "${CC_FAIL:-0}" = 0 ] || exit 1
 # objects of deleted components must not linger in the link: OBJS lists only live sources
 em++ $OPT $LVGL_OBJS $OBJS -sALLOW_MEMORY_GROWTH=1 -sMODULARIZE=1 -sEXPORT_ES6=1 -sENVIRONMENT=web,node \
   -sEXPORTED_FUNCTIONS='["_fw_init","_fw_meta","_fw_stage","_fw_stage_free","_fw_render","_fw_update","_fw_demo_state","_fw_tokens","_fw_content_h","_fw_stage_resize","_fw_touch","_fw_tick","_fw_dirty","_fw_frame","_fw_areas","_fw_events","_fw_ha_wants","_fw_ha_put","_fw_spec","_fw_catalogue","_fw_spec_storage","_fw_anims","_fw_rects","_malloc","_free"]' \

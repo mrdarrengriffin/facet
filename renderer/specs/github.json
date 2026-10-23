@@ -1,0 +1,4 @@
+{"v": 1, "id": "github", "name": "GitHub", "rev": 1,
+ "header": {"label": "GitHub", "back": true},
+ "layout": "list",
+ "nodes": [{"c": "github_view", "p": {}, "on": {"open": {"do": "nav.open"}}}]}

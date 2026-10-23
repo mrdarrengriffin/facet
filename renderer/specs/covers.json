@@ -1,0 +1,17 @@
+{
+ "v": 1,
+ "id": "covers",
+ "name": "Blinds and curtains",
+ "rev": 1,
+ "header": {
+  "label": "Blinds",
+  "back": true
+ },
+ "layout": "center",
+ "nodes": [
+  {
+   "c": "covers_view",
+   "p": {}
+  }
+ ]
+}

@@ -14,6 +14,7 @@
 // Update path: the texts and the Stats in place, the radar through its own. Static to touch. Contrast: "radar",
 // "stat", "text".
 #include <ctime>
+// audit deps: lightning_radar, stat
 #include "fw.h"
 #include "lightning.h"
 

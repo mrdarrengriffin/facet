@@ -16,6 +16,7 @@
 // Update path: state / left / total / label move in place (the ring steps to the new share, silently); the button
 // rows swap with Motion fade (both always built). Contrast: tokens/colour.json section "timer" (+ button).
 #include <ctime>
+// audit deps: button
 #include "fw.h"
 
 namespace {

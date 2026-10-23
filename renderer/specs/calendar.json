@@ -1,0 +1,17 @@
+{
+ "v": 1,
+ "id": "calendar",
+ "name": "Calendar",
+ "rev": 1,
+ "header": {
+  "label": "Calendar",
+  "back": true
+ },
+ "layout": "list",
+ "nodes": [
+  {
+   "c": "calendar_view",
+   "p": {}
+  }
+ ]
+}

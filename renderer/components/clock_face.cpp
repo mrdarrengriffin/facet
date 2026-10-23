@@ -30,6 +30,7 @@
 // second (nothing sweeps). Static to touch. Update path: font / format / date / time move in place (the children's own
 // updates); another face refills. Contrast pairs: colour.json section "clock".
 #include <ctime>
+// audit deps: date_line, time
 #include "fw.h"
 #include "weather.h"
 
