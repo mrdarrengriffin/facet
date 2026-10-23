@@ -7,7 +7,9 @@
 // Layout (flex row, centred vertically, gap space 4; nothing hand-placed):
 //   icon     optional, ic::icon (24 / 16: the Facet icon manifest ships row icons at this size, "picker rows 24";
 //            only icon@size pairs that exist are drawn, never scaled), text-dim
-//   text     grows: title (type title, 40 / 28 box, text, one line, ellipsis) over an optional sub (type body, text-dim)
+//   text     grows: an optional over line (prop over: type label, text-dim, caps; the panel lab's row3 label above the
+//            title, e.g. Overhead's "B763 · 21,000 FT · 22 KM S"), the title (type title, 40 / 28 box, text, one line,
+//            ellipsis) and an optional sub (type body, text-dim)
 //            (40 + 32 = 72 in 96, 28 + 20 = 48 in 64: both lines sit on the 4 px grid)
 //   trailing none | value (type body, text-dim, = docs .fs-set-val) | chevron (ic::icon 24 / 16) | value + chevron
 //            (= a Settings row that opens a picker) | toggle (the Toggle component itself, built through fw::find)
@@ -45,7 +47,7 @@ Kind kind_of(const char *s) {
 struct Row {
   Kind kind = K_NONE;
   lv_obj_t *toggle = nullptr;
-  lv_obj_t *ti = nullptr, *su = nullptr, *val = nullptr;  // title, sub, value labels (the update path sets their text)
+  lv_obj_t *ti = nullptr, *su = nullptr, *val = nullptr, *ov = nullptr;  // title, sub, value, over labels (the update path sets their text)
   std::string title;
 };
 
@@ -82,7 +84,13 @@ lv_obj_t *slot(lv_obj_t *parent, int h) {
 struct Spec {
   const char *title, *icon, *sub, *trailing, *value, *state;
   bool on, divider;
+  const char *over = "";
 };
+std::string caps(const char *s) {
+  std::string o(s);
+  for (char &c : o) c = (char) toupper((unsigned char) c);  // ASCII only; UTF-8 bytes pass through
+  return o;
+}
 
 void row_free(lv_event_t *e) { delete (Row *) lv_event_get_user_data(e); }
 Row *row_of(lv_obj_t *r) {  // the Row rides on the root's DELETE event (the root's own user data is the caller's)
@@ -130,10 +138,18 @@ void fill(lv_obj_t *r, const Spec &s, Row *d) {
   if (strcmp(s.icon, "none")) fw::icon(r, s.icon, fw::ic::icon, dim);
 
   lv_obj_t *col = box(r);
-  const int col_h = fw::style(fw::ty::title).box + (!unavail && s.sub[0] ? fw::style(fw::ty::body).box : 0);
+  const int col_h = fw::style(fw::ty::title).box + (!unavail && s.sub[0] ? fw::style(fw::ty::body).box : 0) +
+                    (s.over[0] ? fw::style(fw::ty::label).box : 0);
   lv_obj_set_size(col, 0, on_grid(col_h));  // width from flex grow; text ellipsises instead of pushing the trailing
   lv_obj_set_flex_grow(col, 1);
   lv_obj_set_flex_flow(col, LV_FLEX_FLOW_COLUMN);
+  d->ov = nullptr;
+  if (s.over[0]) {
+    lv_obj_t *ov = d->ov = label(col, fw::ty::label, caps(s.over).c_str(), dim);
+    lv_label_set_long_mode(ov, LV_LABEL_LONG_MODE_DOTS);
+    lv_obj_set_width(ov, LV_PCT(100));
+    lv_obj_set_height(ov, fw::style(fw::ty::label).box);
+  }
   lv_obj_t *ti = d->ti = label(col, fw::ty::title, s.title, ink);
   d->su = d->val = nullptr;
   lv_label_set_long_mode(ti, LV_LABEL_LONG_MODE_DOTS);
@@ -192,7 +208,7 @@ lv_obj_t *row(lv_obj_t *parent, const Spec &s) {
 
 Spec spec_of(fw::Props p) {
   return {p["title"] | "Lights", p["icon"] | "bulb", p["sub"] | "", p["trailing"] | "none", p["value"] | "",
-          p["state"] | "default", p["on"] | false, p["divider"] | true};
+          p["state"] | "default", p["on"] | false, p["divider"] | true, p["over"] | ""};
 }
 // the props that need the contents again: all but a pressed state and a toggle's on (those move in place)
 std::string sig(fw::Props p) {
@@ -204,6 +220,7 @@ std::string sig(fw::Props p) {
   // there is a sub / a value is structure
   r["title"] = "";
   r["sub"] = (p["sub"] | "")[0] ? "sub" : "";
+  r["over"] = (p["over"] | "")[0] ? "over" : "";
   if (r["value"].is<const char *>()) r["value"] = (p["value"] | "")[0] ? "value" : "";
   std::string s;
   serializeJson(r, s);
@@ -239,6 +256,7 @@ FW_COMPONENT(list_row, "List row", "components", R"({
     {"name": "title", "type": "text", "default": "Lights"},
     {"name": "icon", "type": "select", "options": ["none", "bulb", "speaker", "tv", "volume", "power", "house"], "default": "bulb"},
     {"name": "sub", "type": "text", "default": ""},
+    {"name": "over", "type": "text", "default": ""},
     {"name": "trailing", "type": "select", "options": ["none", "value", "chevron", "value-chevron", "toggle"], "default": "none"},
     {"name": "value", "type": "text", "default": ""},
     {"name": "on", "type": "bool", "default": false},
@@ -249,6 +267,7 @@ FW_COMPONENT(list_row, "List row", "components", R"({
   "variants": [
     {"label": "icon + title", "props": {}},
     {"label": "title + sub", "props": {"title": "Living room", "icon": "none", "sub": "3 lights on"}},
+    {"label": "over + title", "props": {"title": "Brussels \u2192 Nottingham", "icon": "none", "over": "B763 \u00b7 21,000 ft \u00b7 22 km S"}},
     {"label": "icon + title + sub", "props": {"title": "Kitchen", "icon": "bulb", "sub": "Off since 18:40"}},
     {"label": "trailing value", "props": {"title": "Brightness", "icon": "none", "trailing": "value", "value": "80%"}},
     {"label": "trailing chevron", "props": {"title": "Sounds", "icon": "volume", "trailing": "chevron"}},
@@ -280,6 +299,7 @@ FW_UPDATE(list_row) {
     put(d->ti, fw::ty::title, sp.title);
     d->title = sp.title;
     put(d->su, fw::ty::body, sp.sub);
+    if (d->ov) put(d->ov, fw::ty::label, caps(sp.over).c_str());
     put(d->val, fw::ty::body, sp.value[0] ? sp.value : fw::st::PLACEHOLDER);
     if (d->toggle) {
       ArduinoJson::JsonDocument tp;
