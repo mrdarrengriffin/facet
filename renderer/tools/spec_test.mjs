@@ -64,5 +64,12 @@ ok(live().rev === 1, 'after the refusals the factory spec is live');
 ok(spec('screen', rev(2)).status === 'applied' && spec('screen', rev(2)).status === 'unchanged', 'the same spec again = unchanged');
 ok(spec('screen', JSON.stringify({ ...JSON.parse(rev(2)), name: 'Edited, same rev' })).status === 'applied', 'an edit with the same rev applies');
 ok(spec('deck', JSON.stringify({ v: 1, rev: 5, screens: [{ id: 'garage' }] })).status === 'refused', 'a deck naming an unknown screen is refused');
+// links: more_row tap -> nav.open; any component's own "open" -> nav.open (screen from the event); not other actions
+const linkSpec = (nodes) => JSON.stringify({ ...factory, rev: 20, nodes });
+ok(spec('check', linkSpec([{ c: 'more_row', p: {}, on: { tap: { do: 'nav.open', screen: 'light' } } }])).ok, 'a more_row tap may open a screen');
+ok(spec('check', linkSpec([{ c: 'card', p: {}, on: { open: { do: 'nav.open' } } }])).ok, 'any component\'s own open event may open the screen it names');
+ok(codes(spec('check', linkSpec([{ c: 'card', p: {}, on: { open: { do: 'light.toggle', e: 'light.x' } } }]))).includes('not_allowed'), 'an open event allows nav.open only');
+ok(codes(spec('check', linkSpec([{ c: 'more_row', p: {}, on: { tap: { do: 'light.toggle', e: 'light.x' } } }]))).includes('not_allowed'), 'a more_row tap allows navigation only');
+ok(codes(spec('check', linkSpec([{ c: 'more_row', p: {}, on: { tap: { do: 'nav.open' } } }]))).includes('bad_screen'), 'a tap without a screen is refused (only open takes it from the event)');
 console.log(fails ? `spec_test: ${fails} FAILED` : 'spec_test: all passed');
 process.exit(fails ? 1 : 0);

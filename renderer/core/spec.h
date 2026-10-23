@@ -16,6 +16,7 @@
 //              {"do": "light.brightness", "e"}  (a Dial / Slider value: live while dragging = throttle with a
 //                                                trailing send, light-throttle-ms; the release always sends)
 //              {"do": "nav.open", "screen": "<id>", "params"?: {k: v}}    {"do": "nav.back"}
+//              on "open" (any component's own open event): {"do": "nav.open"} = the screen its detail names
 //              The closed whitelist: each component + event allows only the actions in RULES (the catalogue).
 //   pending    while a light.switch waits for HA: the prop shows on / off text (a List row's sub "Turning on")
 // Deck         {"v": 1, "rev": 2, "screens": [{"id": "living_room", "card": true}, ...]}: the screens, their order
@@ -67,6 +68,9 @@ constexpr Rule RULES[] = {
     {"dial", "input", "light.brightness"},           {"dial", "toggle", "light.switch"},
     {"slider", "change", "light.brightness"},        {"slider", "input", "light.brightness"},
     {"toggle", "toggle", "light.switch"},            {"button", "tap", "nav.open,nav.back,light.toggle"},
+    {"more_row", "tap", "nav.open,nav.back"},        // a link to a sub-view spec (moon -> moon_details -> ...)
+    {"*", "open", "nav.open"},                       // any component's own "open" (a tapped calendar day, a PR):
+                                                     // its detail = the screen id [+ "?" + params JSON]
 };
 constexpr const char *ACTIONS[] = {"light.switch", "light.toggle", "light.brightness", "nav.open", "nav.back"};
 constexpr const char *FMTS[] = {"", "on", "pct", "avail", "light", "name"};
@@ -85,7 +89,7 @@ inline bool in_list(const char *csv, const std::string &w) {
 }
 inline const char *allowed(const char *comp, const char *event) {
   for (const Rule &r : RULES)
-    if (!strcmp(r.comp, comp) && !strcmp(r.event, event)) return r.actions;
+    if ((!strcmp(r.comp, comp) || !strcmp(r.comp, "*")) && !strcmp(r.event, event)) return r.actions;
   return nullptr;
 }
 template <size_t N> bool one_of(const char *const (&set)[N], const std::string &v) {
@@ -162,7 +166,8 @@ inline void check_action(ArduinoJson::JsonVariantConst a, const char *comp, cons
   }
   if (d == "nav.open") {
     const std::string s = a["screen"] | "";
-    if (!id_ok(s)) err(e, path + ".screen", "bad_screen", "a screen id (a-z, 0-9, _; at most 12)");
+    const bool from_event = !strcmp(event, "open") && a["screen"].isNull();  // the component's "open" names the screen
+    if (!from_event && !id_ok(s)) err(e, path + ".screen", "bad_screen", "a screen id (a-z, 0-9, _; at most 12)");
     if (!a["params"].isNull() && !a["params"].is<ArduinoJson::JsonObjectConst>()) err(e, path + ".params", "bad_action", "params is an object");
   }
 }
@@ -457,6 +462,8 @@ inline bool run(Screen *s, Node &n, const char *event, const char *detail) {
   if (d == "nav.back") { emit(n.obj, "back"); return true; }
   if (d == "nav.open") {
     std::string id = a["screen"] | "";
+    if (id.empty()) id = detail;  // the component's own "open": its detail is "<screen>[?{params}]"
+    if (id.empty() || !id_ok(id.substr(0, id.find('?')))) return true;
     if (a["params"].is<ArduinoJson::JsonObjectConst>()) {
       std::string pj;
       serializeJson(a["params"], pj);
@@ -713,7 +720,7 @@ inline void catalogue(ArduinoJson::JsonObject out) {
     }
     ArduinoJson::JsonObject ev = o["events"].to<ArduinoJson::JsonObject>();
     for (const Rule &r : RULES)
-      if (!strcmp(r.comp, c.id)) {
+      if (!strcmp(r.comp, c.id) || !strcmp(r.comp, "*")) {
         auto a = ev[r.event].to<ArduinoJson::JsonArray>();
         for (const char *p = r.actions; *p;) { const char *e = strchr(p, ','); a.add(std::string(p, e ? e - p : strlen(p))); if (!e) break; p = e + 1; }
       }
