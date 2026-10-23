@@ -103,7 +103,7 @@ void render(lv_obj_t *root) {
   for (lv_obj_t *b : {v->minus, v->plus}) lv_obj_set_style_opa(b, off ? LV_OPA_TRANSP : LV_OPA_COVER, 0);
   for (size_t i = 0; i < v->mode_btns.size(); i++) {
     ArduinoJson::JsonDocument bp;
-    bp["kind"] = "secondary", bp["label"] = mode_text(v->mode_ids[i]), bp["width"] = fw::lay::thermo_mode_w;
+    bp["kind"] = "secondary", bp["label"] = mode_text(v->mode_ids[i]), bp["width"] = (int) std::lround(fw::lay::thermo_mode_w / fw::D);  // Button takes dp
     bp["state"] = v->mode_ids[i] == v->mode ? "active" : "default";
     fw::update_child(fw::find("button"), v->mode_btns[i], bp.as<fw::Props>());
   }
@@ -168,7 +168,7 @@ void build_row(lv_obj_t *root) {  // the modes + Presets (again when the list of
   lv_obj_set_style_pad_column(left, fw::sp::s3, 0);
   for (size_t i = 0; i < v->mode_ids.size() && i < 3; i++) {
     ArduinoJson::JsonDocument bp;
-    bp["kind"] = "secondary", bp["label"] = mode_text(v->mode_ids[i]), bp["width"] = fw::lay::thermo_mode_w;
+    bp["kind"] = "secondary", bp["label"] = mode_text(v->mode_ids[i]), bp["width"] = (int) std::lround(fw::lay::thermo_mode_w / fw::D);  // Button takes dp
     lv_obj_t *b = build("button", left, bp);
     if (!b) continue;
     lv_obj_set_user_data(b, (void *) (intptr_t) i);

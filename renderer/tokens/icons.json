@@ -29,7 +29,7 @@
     {"name": "chevron-down", "kind": "ui", "group": "navigation", "keyline": "glyph", "file": "chevron-down.svg", "sizes": ["small"], "use": "speaker button"},
     {"name": "close", "kind": "ui", "group": "navigation", "keyline": "glyph", "file": "close.svg", "sizes": ["icon", "glyph"], "use": "Button icon 24 · bottom sheet close button"},
     {"name": "plus", "kind": "ui", "group": "navigation", "keyline": "glyph", "file": "plus.svg", "sizes": ["icon", "glyph"], "use": "Button icon 24 · icon buttons"},
-    {"name": "minus", "kind": "ui", "group": "navigation", "keyline": "glyph", "file": "minus.svg", "sizes": ["icon"], "use": "component library (no screen uses it yet: shipped at icon size)"},
+    {"name": "minus", "kind": "ui", "group": "navigation", "keyline": "glyph", "file": "minus.svg", "sizes": ["icon", "glyph"], "use": "Thermostat: the - button (square icon button, glyph size; 2026-10-23 it was missing there)"},
     {"name": "check", "kind": "ui", "group": "navigation", "keyline": "glyph", "file": "check.svg", "sizes": ["icon", "glyph"], "use": "Button icon 24 · toast"},
     {"name": "play", "kind": "ui", "group": "media", "keyline": "glyph", "file": "play.svg", "sizes": ["glyph", "feature"], "use": "play button (glyph-play) · toast"},
     {"name": "pause", "kind": "ui", "group": "media", "keyline": "glyph", "file": "pause.svg", "sizes": ["feature"], "use": "play button active"},

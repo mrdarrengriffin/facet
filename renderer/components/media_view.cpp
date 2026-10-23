@@ -11,17 +11,26 @@
 // volume (0-100): an HA media_player.* entity's state and attributes (media_title, media_artist, volume_level), or
 // the sample. Taps: prev / play / next and the volume (live while dragging: at most every 200 ms + a trailing send,
 // the final one on release; the docs volumeControl) emit "media" (previous | play_pause | next | volume 42) for the
-// host, and show it at once (play / pause flips the state, held 3 s against updates). Not ported yet (noted for
-// Darren): the speaker picker in the header, the cassette / CD / vinyl visuals in the disc's place (the Media visual
-// component exists; a "visual" prop later), progress moving on between updates. HA media actions are not in the spec
-// whitelist yet.
+// host, and show it at once (play / pause flips the state, held 3 s against updates).
+//   visual   prop visual: disc (the Media disc) or cassette / cd / vinyl (the real Media visuals component in the
+//            disc's place, lay::mv_h tall, title / artist / progress / playing passed on; docs MediaOptions.visual)
+//   speaker  on a spec screen: the Speaker button component in the screen's Header in place of the time (docs header
+//            right [spk], clock false); a tap opens the speakers sheet (Bottom sheet, its picker rows: Auto, the
+//            speakers, the TV, a group; the docs story until a host lists the house's players), a pick shows on the
+//            button and emits "speaker" <name>. The sheet covers the whole screen (the view bleeds up to it).
+// Not ported yet (noted for Darren): progress moving on between updates; picking a speaker re-binding the screen to
+// that player (a host job). HA media actions are not in the spec whitelist yet.
 // Update path: texts in place, the disc / slider / play glyph through their own updates. Contrast: "media"
 // (+ media_disc, icon_button, slider, text).
-// audit deps: icon_button, media_disc, slider
+// audit deps: icon_button, media_disc, media_visual, slider, speaker_button, bottom_sheet
 #include "fw.h"
+#include "spec.h"
 
 namespace {
 struct MV {
+  std::string visual = "disc";
+  lv_obj_t *spk = nullptr, *sheet = nullptr;
+  int speaker = 0;
   lv_obj_t *disc = nullptr, *state = nullptr, *title = nullptr, *artist = nullptr, *play = nullptr, *slider = nullptr, *vlab = nullptr;
   std::string st = "playing", title_s, artist_s;
   int progress = 38, volume = 42;
@@ -41,6 +50,7 @@ lv_obj_t *build(const char *id, lv_obj_t *parent, ArduinoJson::JsonDocument &d) 
   if (const fw::Component *c = fw::find(id)) c->build(parent, d.as<fw::Props>());
   return lv_obj_get_child_count(parent) > n ? lv_obj_get_child(parent, -1) : nullptr;
 }
+std::string spk_name(int i);
 bool held(const MV *m) { return (int32_t) (m->hold_until - lv_tick_get()) > 0; }
 int vol_track_dp() {  // the slider's track: the width less the two labels, their gutters and a knob
   return (int) std::lround((fw::lay::content_w - 2 * fw::lay::m_vol_label - 2 * fw::lay::gutter - fw::touch::min / 2) / fw::D);
@@ -52,8 +62,15 @@ void render(lv_obj_t *root) {
   fw::set_text(m->title, fw::ty::headline, m->title_s.empty() ? "Nothing playing" : m->title_s.c_str());
   fw::set_text(m->artist, fw::ty::body, m->artist_s.c_str());
   ArduinoJson::JsonDocument dp;
-  dp["progress"] = m->progress, dp["playing"] = playing, dp["size"] = "256";
-  fw::update_child(fw::find("media_disc"), m->disc, dp.as<fw::Props>());
+  dp["progress"] = m->progress, dp["playing"] = playing;
+  if (m->visual == "disc") dp["size"] = "256";
+  else dp["visual"] = m->visual, dp["title"] = m->title_s, dp["artist"] = m->artist_s;
+  fw::update_child(fw::find(m->visual == "disc" ? "media_disc" : "media_visual"), m->disc, dp.as<fw::Props>());
+  if (m->spk) {  // the speaker icon: accent while playing
+    ArduinoJson::JsonDocument bp;
+    bp["name"] = spk_name(m->speaker), bp["playing"] = playing;
+    fw::update_child(fw::find("speaker_button"), m->spk, bp.as<fw::Props>());
+  }
   ArduinoJson::JsonDocument pp;
   pp["style"] = "play", pp["icon"] = "play", pp["state"] = playing ? "active" : "default";
   fw::update_child(fw::find("icon_button"), m->play, pp.as<fw::Props>());
@@ -86,6 +103,58 @@ void take(lv_obj_t *root, fw::Props p) {
   m->progress = p["progress"] | 38;
   render(root);
 }
+// the speakers (docs demo-data players; bottom_sheet's own Speakers list): icon, name, status
+const char *const SPEAKERS[][3] = {{"auto", "Auto", "follow what's playing"}, {"speaker", "Kitchen speaker", "playing \xC2\xB7 Northbound"},
+                                   {"tv", "Living room TV", "idle"}, {"speaker", "Study", "paused"}, {"speakers", "Downstairs", "group \xC2\xB7 3 speakers"}};
+std::string spk_name(int i) {  // the button: "auto · study" for Auto (it follows what's playing), else the speaker
+  std::string s = i == 0 ? "auto \xC2\xB7 study" : SPEAKERS[i][1];
+  for (char &c : s) c = (char) tolower((unsigned char) c);
+  return s;
+}
+void sheet_props(const MV *m, bool open, ArduinoJson::JsonDocument &d) {
+  d["overlay"] = true, d["title"] = "speaker", d["open"] = open ? "open" : "closed", d["selected"] = m->speaker;
+  ArduinoJson::JsonArray items = d["items"].to<ArduinoJson::JsonArray>();
+  for (auto &s : SPEAKERS) { ArduinoJson::JsonObject it = items.add<ArduinoJson::JsonObject>(); it["icon"] = s[0], it["name"] = s[1], it["status"] = s[2]; }
+}
+void speaker_header(lv_obj_t *root) {
+  lv_obj_t *hdr = fw::spec::building_header();
+  if (!hdr) return;
+  MV *m = of(root);
+  // docs header clock: false: the button takes the time's place
+  if (lv_obj_get_child_count(hdr)) lv_obj_add_flag(lv_obj_get_child(hdr, -1), LV_OBJ_FLAG_HIDDEN);
+  ArduinoJson::JsonDocument bp;
+  bp["name"] = spk_name(m->speaker), bp["playing"] = m->st == "playing";
+  m->spk = build("speaker_button", hdr, bp);
+  if (!m->spk) return;
+  ArduinoJson::JsonDocument sd;
+  sheet_props(m, false, sd);
+  m->sheet = build("bottom_sheet", root, sd);
+  if (m->sheet) {
+    lv_obj_set_pos(m->sheet, -fw::lay::inset, -fw::lay::top);
+    lv_obj_set_size(m->sheet, fw::lay::screen_w, fw::lay::screen_h);
+    fw::qa::free(root, "overlay: hosts the speakers sheet, which covers the whole screen");
+    fw::bleed(root, fw::lay::top);
+    lv_obj_add_event_cb(m->sheet, [](lv_event_t *e) {  // a speaker picked
+      auto *root = (lv_obj_t *) lv_event_get_user_data(e);
+      MV *m = of(root);
+      const int i = (int) (intptr_t) lv_event_get_param(e);
+      if (i < 0 || i >= 5) return;
+      m->speaker = i;
+      ArduinoJson::JsonDocument bp;
+      bp["name"] = spk_name(i), bp["playing"] = m->st == "playing";
+      fw::update_child(fw::find("speaker_button"), m->spk, bp.as<fw::Props>());
+      fw::emit(root, "speaker", SPEAKERS[i][1]);
+    }, LV_EVENT_VALUE_CHANGED, root);
+  }
+  lv_obj_add_event_cb(m->spk, [](lv_event_t *e) {
+    auto *root = (lv_obj_t *) lv_event_get_user_data(e);
+    MV *m = of(root);
+    if (!m->sheet || lv_obj_has_state(m->spk, fw::st::OFF)) return;
+    ArduinoJson::JsonDocument sd;
+    sheet_props(m, true, sd);
+    fw::update_child(fw::find("bottom_sheet"), m->sheet, sd.as<fw::Props>());
+  }, LV_EVENT_CLICKED, root);
+}
 }  // namespace
 
 FW_COMPONENT(media_view, "Media view", "components", R"({
@@ -96,11 +165,14 @@ FW_COMPONENT(media_view, "Media view", "components", R"({
     {"name": "title", "type": "text", "default": "Harbour Lights"},
     {"name": "artist", "type": "text", "default": "The Lanterns"},
     {"name": "progress", "type": "range", "min": 0, "max": 100, "step": 1, "default": 38},
-    {"name": "volume", "type": "range", "min": 0, "max": 100, "step": 1, "default": 42}
+    {"name": "volume", "type": "range", "min": 0, "max": 100, "step": 1, "default": 42},
+    {"name": "visual", "type": "select", "options": ["disc", "cassette", "cd", "vinyl"], "default": "disc"}
   ],
   "variants": [
     {"label": "playing", "props": {}},
     {"label": "paused · a long title", "props": {"state": "paused", "title": "Paper Lanterns on a Quiet Evening by the Harbour", "artist": "Marlow & Finch"}},
+    {"label": "cassette", "props": {"visual": "cassette", "progress": 30}},
+    {"label": "CD", "props": {"visual": "cd", "progress": 45}},
     {"label": "nothing playing", "props": {"state": "idle", "title": "", "artist": "", "progress": 0}}
   ]
 })") {
@@ -124,9 +196,13 @@ FW_COMPONENT(media_view, "Media view", "components", R"({
   lv_obj_set_flex_flow(top, LV_FLEX_FLOW_ROW);
   lv_obj_set_flex_align(top, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
   lv_obj_set_style_pad_column(top, fw::sp::s9, 0);
+  const char *vis = p["visual"] | "disc";
+  m->visual = !strcmp(vis, "cassette") || !strcmp(vis, "cd") || !strcmp(vis, "vinyl") ? vis : "disc";
   ArduinoJson::JsonDocument dp;
-  dp["progress"] = p["progress"] | 38, dp["playing"] = !strcmp(p["state"] | "playing", "playing"), dp["size"] = "256";
-  m->disc = build("media_disc", top, dp);
+  dp["progress"] = p["progress"] | 38, dp["playing"] = !strcmp(p["state"] | "playing", "playing");
+  if (m->visual == "disc") dp["size"] = "256";
+  else dp["visual"] = m->visual, dp["title"] = p["title"] | "Harbour Lights", dp["artist"] = p["artist"] | "The Lanterns";
+  m->disc = build(m->visual == "disc" ? "media_disc" : "media_visual", top, dp);
   lv_obj_update_layout(top);
   const int cw = fw::lay::content_w - (m->disc ? lv_obj_get_width(m->disc) : 0) - fw::sp::s9;
   lv_obj_t *col = box(top);
@@ -204,11 +280,16 @@ FW_COMPONENT(media_view, "Media view", "components", R"({
       }, (uint32_t) wait, root);
     }
   }, root);
+  speaker_header(root);
   take(root, p);
 }
 
 FW_UPDATE(media_view) {
-  if (!of(root)) return false;
+  MV *m = of(root);
+  if (!m) return false;
+  const char *vis = p["visual"] | "disc";
+  if (strcmp(vis, m->visual.c_str()) && (!strcmp(vis, "disc") || !strcmp(vis, "cassette") || !strcmp(vis, "cd") || !strcmp(vis, "vinyl")))
+    return false;  // another visual: the view again (snap)
   take(root, p);
   return true;
 }

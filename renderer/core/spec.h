@@ -577,6 +577,20 @@ inline lv_obj_t *&building_header() {
   static lv_obj_t *h = nullptr;
   return h;
 }
+// `item`, just built into building_header(), goes before the screen chrome (the time stays at the right edge)
+inline void header_place(lv_obj_t *item) {
+  lv_obj_t *h = item ? lv_obj_get_parent(item) : nullptr;
+  const uint32_t n = h ? lv_obj_get_child_count(h) : 0;
+  if (n >= 2) lv_obj_move_to_index(item, (int32_t) n - 2);
+}
+// a header label's width = its text rounded up to the grid (docs fit8), so what follows it stays on the grid; measured
+// from the text (the header is not laid out yet while the screen builds)
+inline void header_fit(lv_obj_t *label) {
+  lv_point_t sz;
+  lv_text_get_size(&sz, lv_label_get_text(label), lv_obj_get_style_text_font(label, LV_PART_MAIN),
+                   lv_obj_get_style_text_letter_space(label, LV_PART_MAIN), 0, LV_COORD_MAX, LV_TEXT_FLAG_NONE);
+  lv_obj_set_width(label, (sz.x + sp::GRID - 1) / sp::GRID * sp::GRID);
+}
 inline lv_obj_t *build(lv_obj_t *parent, const std::string &id, Props opened, std::string *error = nullptr, const char *json = nullptr) {
   if (!json) json = screen_json(id);
   ArduinoJson::JsonDocument doc;

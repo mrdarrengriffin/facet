@@ -15,11 +15,17 @@
 // Feed (core/weather.h): props condition / temp / feels (bindable: an HA weather.* state and its attributes), the
 // hours and days from the sample adapter until a panel fetches forecasts; lat / lon for the sun and moon (the docs
 // sample); now = a fixed time (ms, tests), 0 = live. Taps: the Segmented switches the view (instant, like the docs);
-// a More row emits "open" "weather_days" / "moon_details" (the spec's nav.open). Not ported yet (noted for Darren):
-// the Lightning tab's bolt + distance when a storm is near, the header's place name, landing on Lightning in a storm.
+// a More row emits "open" "weather_days" / "moon_details" (the spec's nav.open).
+//   place    on a spec screen: prop place (the forecast's place name, bindable) in the screen's Header before the
+//            time (label type, text-dim, its width on the grid), on the Weather view only (docs header right [place]);
+//            empty = nothing
+// Not ported yet (noted for Darren): the Lightning tab's bolt + distance when a storm is near and landing on
+// Lightning in a storm: they wait for a real lightning feed (the view's strikes are the docs sample storm, so a
+// panel would always land on Lightning).
 // Update path: the weather texts, icon and hours in place; view = a prop for the workbench (switches in place).
 // Contrast: "weather" (+ stat, status_dot, more_row, radar, moon, text).
 #include <strings.h>
+#include "spec.h"
 #include <ctime>
 // audit deps: lightning_view, moon_view, more_row, segmented, stat, status_dot
 #include "fw.h"
@@ -36,6 +42,8 @@ struct WV {
   lv_obj_t *s_kind = nullptr, *s_time = nullptr, *s_in = nullptr, *s_arc = nullptr, *s_rise = nullptr, *s_set = nullptr, *s_stats[4] = {};
   lv_obj_t *lx = nullptr;
   int view = 0;
+  bool dot_built = false;
+  lv_obj_t *place = nullptr;
   double fixed = 0, lat = 52.2, lon = -1.2;
   std::string condition, icon_name = "partly-day";
   double temp_v = NAN, feels_v = NAN;
@@ -112,7 +120,15 @@ void render_weather(lv_obj_t *root) {
   fw::set_text(w->rain, fw::ty::body, b);
   ArduinoJson::JsonDocument dp;
   dp["tone"] = std::isnan(d.rain_from) ? "idle" : "info";
-  fw::update_child(fw::find("status_dot"), w->dot, dp.as<fw::Props>());
+  if (w->dot_built) fw::update_child(fw::find("status_dot"), w->dot, dp.as<fw::Props>());
+  else {  // the first render builds the dot in its tone: a build appears at rest (no tone fade at the build)
+    lv_obj_t *par = lv_obj_get_parent(w->dot);
+    const int32_t at = lv_obj_get_index(w->dot);
+    lv_obj_delete(w->dot);
+    w->dot = build("status_dot", par, dp);
+    if (w->dot) lv_obj_move_to_index(w->dot, at);
+    w->dot_built = true;
+  }
   for (int i = 0; i < 8; i++) {
     const fw::wx::Hour &h = d.hourly[i];
     fw::set_text(w->hours[i].hr, fw::ty::label, i == 0 ? "now" : hm(h.t).substr(0, 2).c_str());
@@ -130,7 +146,7 @@ void build_weather(lv_obj_t *root, lv_obj_t *v) {
   lv_obj_set_flex_flow(row, LV_FLEX_FLOW_ROW);
   lv_obj_set_flex_align(row, LV_FLEX_ALIGN_SPACE_BETWEEN, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
   w->temp = fw::text(row, fw::ty::display, "--\xC2\xB0", t.text);
-  w->icon = fw::weather_icon(row, "partly-day", fw::ic::hero, true, t.text, t.bg);
+  w->icon = fw::weather_icon(row, "partly-day", fw::ic::hero, false, t.text, t.bg);  // still until pick() shows the Weather view (no motion in a hidden view at the build)
   w->cond = fw::text(col, fw::ty::headline, "Loading", t.text);
   w->line = fw::text(col, fw::ty::body, "", t.text_dim, fw::lay::content_w);
   lv_obj_t *rr = box(col);
@@ -234,6 +250,10 @@ void pick(lv_obj_t *root, int v) {
     else lv_obj_add_flag(w->views[i], LV_OBJ_FLAG_HIDDEN);
   }
   if (v == 1) render_sun(root);
+  if (w->place) {  // the place: Weather view only, never empty
+    if (v == 0 && *lv_label_get_text(w->place)) lv_obj_remove_flag(w->place, LV_OBJ_FLAG_HIDDEN);
+    else lv_obj_add_flag(w->place, LV_OBJ_FLAG_HIDDEN);
+  }
   // the big weather icon moves only while its view shows (a hidden animation is a panel's CPU for nothing)
   if (w->icon) fw::weather_icon_set(w->icon, w->icon_name.c_str(), v == 0);
 }
@@ -246,6 +266,12 @@ void take(lv_obj_t *root, fw::Props p) {
   const char *tv = p["temp"] | "", *fv = p["feels"] | "";
   w->temp_v = *tv ? strtod(tv, nullptr) : NAN;
   w->feels_v = *fv ? strtod(fv, nullptr) : NAN;
+  if (w->place) {
+    const char *pl = p["place"] | "";
+    if (strcmp(lv_label_get_text(w->place), pl)) { fw::set_text(w->place, fw::ty::label, pl); fw::spec::header_fit(w->place); }
+    if (w->view == 0 && *pl) lv_obj_remove_flag(w->place, LV_OBJ_FLAG_HIDDEN);
+    else lv_obj_add_flag(w->place, LV_OBJ_FLAG_HIDDEN);
+  }
   render_weather(root);
   render_sun(root);
 }
@@ -259,12 +285,13 @@ FW_COMPONENT(weather_view, "Weather view", "components", R"({
     {"name": "condition", "type": "text", "default": ""},
     {"name": "temp", "type": "text", "default": ""},
     {"name": "feels", "type": "text", "default": ""},
+    {"name": "place", "type": "text", "default": ""},
     {"name": "lat", "type": "range", "min": -60, "max": 65, "step": 0.1, "default": 52.2},
     {"name": "lon", "type": "range", "min": -180, "max": 180, "step": 0.1, "default": -1.2}
   ],
   "variants": [
     {"label": "weather", "props": {"now": 1792926000000}},
-    {"label": "weather · bound: sunny 21", "props": {"now": 1792926000000, "condition": "sunny", "temp": "21.3", "feels": "20"}},
+    {"label": "weather · bound: sunny 21", "props": {"now": 1792926000000, "condition": "sunny", "temp": "21.3", "feels": "20", "place": "Larkfield"}},
     {"label": "sun", "props": {"view": "sun", "now": 1792926000000}},
     {"label": "moon", "props": {"view": "moon", "now": 1792926000000}},
     {"label": "lightning", "props": {"view": "lightning", "now": 1792926000000}, "audit": {"skip": {"radial": "strikes on the radar's west edge sit over the 9 o'clock tick: data, not the ring's geometry"}}}
@@ -286,6 +313,11 @@ FW_COMPONENT(weather_view, "Weather view", "components", R"({
   lv_obj_set_flex_flow(root, LV_FLEX_FLOW_COLUMN);
   lv_obj_set_style_pad_row(root, fw::sp::s7, 0);
   w->fixed = p["now"] | 0.0;
+  if (lv_obj_t *hdr = fw::spec::building_header()) {  // the place, before the time
+    w->place = fw::text(hdr, fw::ty::label, "", fw::T->text_dim);
+    lv_obj_add_flag(w->place, LV_OBJ_FLAG_HIDDEN);
+    fw::spec::header_place(w->place);
+  }
   lv_obj_t *tabs = box(root);  // the Segmented, listened to here (its change switches the view)
   lv_obj_set_size(tabs, fw::lay::content_w, LV_SIZE_CONTENT);
   ArduinoJson::JsonDocument sd;

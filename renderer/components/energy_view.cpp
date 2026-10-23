@@ -9,17 +9,20 @@
 //            lay::chart_h, a real Rate strip under it, the hour axis (00 06 12 18 24) under that
 //   more     "last 7 days" (a More row at the foot: emits "open" energy_week, the spec's nav.open)
 // Feed (core/energy.h): the sample tariff day until a panel reads its energy sensors; now = a fixed time (ms, tests),
-// 0 = live (re-renders every half hour). Not ported yet (noted for Darren): the header's "420 w now".
+// 0 = live (re-renders every half hour).
+//   header   on a spec screen: "420 w now" (type label, text-dim, its width on the grid) in the screen's Header before
+//            the time (docs header right [now]; fw::spec::building_header)
 // Update path: the texts in place, the chart through its own update (bars move), the strip likewise. Contrast:
 // "energy" (+ chart, rate_strip, status_dot, more_row, text).
 #include <ctime>
 #include "chart.h"
 #include "energy.h"
+#include "spec.h"
 // audit deps: bar_chart, more_row, rate_strip, status_dot
 #include "fw.h"
 
 namespace {
-struct EV { double fixed = 0; lv_obj_t *lbl = nullptr, *big = nullptr, *line = nullptr, *dot = nullptr, *rate = nullptr, *bars = nullptr, *strip = nullptr; lv_timer_t *tick = nullptr; int slot = -2; };
+struct EV { double fixed = 0; lv_obj_t *now = nullptr, *lbl = nullptr, *big = nullptr, *line = nullptr, *dot = nullptr, *rate = nullptr, *bars = nullptr, *strip = nullptr; lv_timer_t *tick = nullptr; int slot = -2; };
 EV *of(lv_obj_t *o) { return (EV *) lv_obj_get_user_data(o); }
 lv_obj_t *box(lv_obj_t *parent) {
   lv_obj_t *o = lv_obj_create(parent);
@@ -76,6 +79,12 @@ void render(lv_obj_t *root) {
   const double now = e->fixed > 0 ? e->fixed : (double) time(nullptr) * 1000;
   const en::Data d = en::sample(now);
   fw::set_text(e->big, fw::ty::hero, en::money(d.cost).c_str());
+  if (e->now) {
+    char w[24];
+    if (std::isnan(d.watts)) snprintf(w, sizeof w, "-- w now");
+    else snprintf(w, sizeof w, "%ld w now", std::lround(d.watts));
+    if (strcmp(lv_label_get_text(e->now), w)) { fw::set_text(e->now, fw::ty::label, w); fw::spec::header_fit(e->now); }
+  }
   char b[96];
   const double y = d.yesterday_to_now;
   if (!std::isnan(y) && y > 0) {
@@ -125,6 +134,10 @@ FW_COMPONENT(energy_view, "Energy view", "components", R"({
   lv_obj_set_style_pad_row(root, fw::sp::s2, 0);
   e->fixed = p["now"] | 0.0;
   const double now = e->fixed > 0 ? e->fixed : (double) time(nullptr) * 1000;
+  if (lv_obj_t *hdr = fw::spec::building_header()) {  // the live power in the screen's header
+    e->now = fw::text(hdr, fw::ty::label, "", t.text_dim);
+    fw::spec::header_place(e->now);
+  }
   e->lbl = fw::text(root, fw::ty::label, "today so far", t.text_dim, fw::lay::content_w);
   e->big = fw::text(root, fw::ty::hero, "\xC2\xA3--", t.text);
   e->line = fw::text(root, fw::ty::body, "", t.text_dim, fw::lay::content_w);

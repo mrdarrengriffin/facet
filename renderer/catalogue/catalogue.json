@@ -2240,6 +2240,17 @@
      "bindable": true,
      "min": 0,
      "max": 100
+    },
+    {
+     "name": "visual",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "disc",
+      "cassette",
+      "cd",
+      "vinyl"
+     ]
     }
    ],
    "events": {
@@ -3681,8 +3692,8 @@
     ]
    },
    "cost": {
-    "objects": 53,
-    "bytes_est": 8480
+    "objects": 55,
+    "bytes_est": 8800
    }
   },
   "tick_ring": {
@@ -4176,6 +4187,11 @@
      "bindable": true
     },
     {
+     "name": "place",
+     "type": "text",
+     "bindable": true
+    },
+    {
      "name": "lat",
      "type": "range",
      "bindable": true,
@@ -4231,5 +4247,5 @@
   "screens": 16,
   "deck_bytes": 2048
  },
- "hash": "0e1d2e89"
+ "hash": "12ccf1ad"
 }

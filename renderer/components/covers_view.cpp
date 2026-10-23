@@ -11,17 +11,26 @@
 // unavailable), heading (where it is going while it moves): an HA cover.* entity, or the sample. Taps: a drag on the
 // window ("change" on release), the slats, a button: each emits "cover" (position 40 | tilt 60 | open | stop | close)
 // for the host and shows it at once (held 3 s against updates, the docs rule); open / close set the heading line.
-// Not ported yet (noted for Darren): the "N windows" picker in the header (one cover per screen for now), the live
-// "set to" text while dragging (the visual emits on release). HA cover actions are not in the spec whitelist yet.
+//   windows  on a spec screen with more than one window (the docs story: Study blind, Lounge curtains, Kitchen
+//            blind, until a host lists the house's covers): the screen's Header label = the window's name, and before
+//            the time "3 windows" (label type, text-dim, on a surface pill lay::row tall, rad::button, padding
+//            lay::cal_btn_pad; pressed surface-press; tap = sound open) opens the windows sheet (Bottom sheet, picker
+//            rows: the kind's icon, the name, its state); a pick shows that window (event "window" <name>). The sheet
+//            covers the whole screen (the view bleeds up to it). Docs header right [pick].
+// Not ported yet (noted for Darren): the live "set to" text while dragging (the visual emits on release); a picked
+// window re-binding the screen to that cover (a host job). HA cover actions are not in the spec whitelist yet.
 // Update path: the visual and the slider through their own updates (the cover glides there), texts in place.
 // Contrast: "cover_visual", "button", "slider", "text".
-// audit deps: button, cover_visual, slider
+// audit deps: button, cover_visual, slider, bottom_sheet
 #include "fw.h"
+#include "spec.h"
 
 namespace {
 struct CV {
   lv_obj_t *vis = nullptr, *cap = nullptr, *val = nullptr, *kind_l = nullptr, *tilt_box = nullptr, *tilt_v = nullptr, *slider = nullptr;
   std::string kind = "roller", state = "open";
+  lv_obj_t *hlabel = nullptr, *sheet = nullptr;
+  int win = -1;  // the window shown (the spec screen's windows list), -1 = the props
   int position = 40, tilt = 50, heading = -1;
   int held = -1;
   uint32_t hold_until = 0;
@@ -83,6 +92,87 @@ void take(lv_obj_t *root, fw::Props p) {
   c->heading = p["heading"] | -1;
   if (c->held == c->position) c->held = -1;  // HA caught up
   render(root);
+}
+// the windows (docs demo-data WINDOW_COVERS): name, kind, position, tilt
+struct Win { const char *name, *kind; int position, tilt; };
+constexpr Win WINDOWS[] = {{"Study blind", "roller", 60, 50}, {"Lounge curtains", "curtain", 100, 50}, {"Kitchen blind", "venetian", 100, 60}};
+constexpr int N_WIN = sizeof WINDOWS / sizeof WINDOWS[0];
+void show_window(lv_obj_t *root, int i) {
+  CV *c = of(root);
+  c->win = i;
+  ArduinoJson::JsonDocument d;
+  d["kind"] = WINDOWS[i].kind, d["position"] = WINDOWS[i].position, d["tilt"] = WINDOWS[i].tilt, d["state"] = WINDOWS[i].position > 0 ? "open" : "closed";
+  c->held = -1;
+  take(root, d.as<fw::Props>());
+  if (c->hlabel) fw::set_text(c->hlabel, fw::ty::label, WINDOWS[i].name);
+}
+void win_sheet_props(const CV *c, bool open, ArduinoJson::JsonDocument &d) {
+  d["overlay"] = true, d["title"] = "windows", d["open"] = open ? "open" : "closed", d["selected"] = c->win < 0 ? 0 : c->win;
+  ArduinoJson::JsonArray items = d["items"].to<ArduinoJson::JsonArray>();
+  for (const Win &w : WINDOWS) {
+    ArduinoJson::JsonObject it = items.add<ArduinoJson::JsonObject>();
+    it["icon"] = w.kind, it["name"] = w.name;
+    it["status"] = w.position <= 0 ? "closed" : w.position >= 100 ? "open" : std::to_string(w.position) + "% open";
+  }
+}
+const lv_style_prop_t PICK_PROPS[] = {LV_STYLE_BG_COLOR, LV_STYLE_PROP_INV};
+const lv_style_transition_dsc_t *pick_tr(bool pressed) {
+  static lv_style_transition_dsc_t d[2];
+  static bool ready = false;
+  if (!ready) { fw::st::press_transitions(d, PICK_PROPS); ready = true; }
+  return &d[pressed];
+}
+// the windows picker in the screen's header + its sheet (spec screens only)
+void windows_header(lv_obj_t *root) {
+  lv_obj_t *hdr = fw::spec::building_header();
+  if (!hdr || N_WIN < 2) return;
+  CV *c = of(root);
+  const fw::Theme &t = *fw::T;
+  c->hlabel = lv_obj_get_child_count(hdr) > 1 ? lv_obj_get_child(hdr, 1) : nullptr;  // back, label, ..., chrome
+  if (c->hlabel && !lv_obj_check_type(c->hlabel, &lv_label_class)) c->hlabel = nullptr;
+  lv_obj_t *b = lv_obj_create(hdr);
+  lv_obj_remove_style_all(b);
+  lv_obj_remove_flag(b, LV_OBJ_FLAG_SCROLLABLE);
+  lv_obj_add_flag(b, LV_OBJ_FLAG_CLICKABLE);
+  lv_obj_set_style_radius(b, fw::rad::button, 0);
+  lv_obj_set_style_bg_opa(b, LV_OPA_COVER, 0);
+  lv_obj_set_style_bg_color(b, t.surface, 0);
+  lv_obj_set_style_bg_color(b, fw::st::pressed_surface(t), LV_STATE_PRESSED);
+  lv_obj_set_style_transition(b, pick_tr(false), 0);
+  lv_obj_set_style_transition(b, pick_tr(true), LV_STATE_PRESSED);
+  const std::string txt = std::to_string(N_WIN) + " windows";
+  lv_obj_t *l = fw::text(b, fw::ty::label, txt.c_str(), t.text_dim);
+  fw::spec::header_fit(l);
+  lv_obj_set_size(b, lv_obj_get_style_width(l, LV_PART_MAIN) + 2 * fw::lay::cal_btn_pad, fw::lay::row);
+  lv_obj_center(l);
+  fw::spec::header_place(b);
+  ArduinoJson::JsonDocument sd;
+  win_sheet_props(c, false, sd);
+  c->sheet = build("bottom_sheet", root, sd);
+  if (c->sheet) {
+    lv_obj_set_pos(c->sheet, -fw::lay::inset, -fw::lay::top);
+    lv_obj_set_size(c->sheet, fw::lay::screen_w, fw::lay::screen_h);
+    fw::qa::free(root, "overlay: hosts the windows sheet, which covers the whole screen");
+    fw::bleed(root, fw::lay::top);
+    lv_obj_add_event_cb(c->sheet, [](lv_event_t *e) {  // a window picked
+      auto *root = (lv_obj_t *) lv_event_get_user_data(e);
+      const int i = (int) (intptr_t) lv_event_get_param(e);
+      if (i < 0 || i >= N_WIN) return;
+      show_window(root, i);
+      fw::emit(root, "window", WINDOWS[i].name);
+    }, LV_EVENT_VALUE_CHANGED, root);
+  }
+  lv_obj_add_event_cb(b, [](lv_event_t *e) {
+    auto *root = (lv_obj_t *) lv_event_get_user_data(e);
+    CV *c = of(root);
+    fw::emit((lv_obj_t *) lv_event_get_current_target(e), "open", "windows");
+    fw::sound((lv_obj_t *) lv_event_get_current_target(e), "open");
+    if (!c->sheet) return;
+    ArduinoJson::JsonDocument sd;
+    win_sheet_props(c, true, sd);
+    fw::update_child(fw::find("bottom_sheet"), c->sheet, sd.as<fw::Props>());
+  }, LV_EVENT_CLICKED, root);
+  show_window(root, 0);
 }
 }  // namespace
 
@@ -181,10 +271,13 @@ FW_COMPONENT(covers_view, "Covers view", "components", R"({
     }, LV_EVENT_CLICKED, root);
   }
   take(root, p);
+  windows_header(root);
 }
 
 FW_UPDATE(covers_view) {
-  if (!of(root)) return false;
+  CV *c = of(root);
+  if (!c) return false;
+  if (c->win >= 0) { render(root); return true; }  // a picked window keeps showing (its own sample state)
   take(root, p);
   return true;
 }
