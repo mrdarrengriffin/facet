@@ -13,7 +13,9 @@
 // the final one on release; the docs volumeControl) emit "media" (previous | play_pause | next | volume 42) for the
 // host, and show it at once (play / pause flips the state, held 3 s against updates).
 //   visual   prop visual: disc (the Media disc) or cassette / cd / vinyl (the real Media visuals component in the
-//            disc's place, lay::mv_h tall, title / artist / progress / playing passed on; docs MediaOptions.visual)
+//            disc's place, lay::mv_h tall, title / artist / progress / playing passed on; docs MediaOptions.visual);
+//            the cassette's right edge sits on the disc slot's (lay::mv_h wide), the rest bleeds off the screen's
+//            left edge as in the docs (CD and vinyl are square: they fit the slot)
 //   speaker  on a spec screen: the Speaker button component in the screen's Header in place of the time (docs header
 //            right [spk], clock false); a tap opens the speakers sheet (Bottom sheet, its picker rows: Auto, the
 //            speakers, the TV, a group; the docs story until a host lists the house's players), a pick shows on the
@@ -330,9 +332,22 @@ FW_COMPONENT(media_view, "Media view", "components", R"({
   dp["progress"] = p["progress"] | 38, dp["playing"] = !strcmp(p["state"] | "playing", "playing");
   if (m->visual == "disc") dp["size"] = "256";
   else dp["visual"] = m->visual, dp["title"] = p["title"] | "Harbour Lights", dp["artist"] = p["artist"] | "The Lanterns";
-  m->disc = build(m->visual == "disc" ? "media_disc" : "media_visual", top, dp);
+  // the cassette (wider than tall) sits in a slot as wide as the disc (lay::mv_h), its right edge on the slot's (docs
+  // layout mv-right = inset + mv-h): the rest runs off the screen's left edge (docs .f-mv-layer, cropped left)
+  lv_obj_t *slot = nullptr;
+  if (m->visual == "cassette") {
+    slot = box(top);
+    lv_obj_set_size(slot, fw::lay::mv_h, LV_SIZE_CONTENT);
+  }
+  m->disc = build(m->visual == "disc" ? "media_disc" : "media_visual", slot ? slot : top, dp);
+  if (slot && m->disc) {
+    lv_obj_update_layout(slot);
+    const int off = lv_obj_get_width(m->disc) - fw::lay::mv_h;  // what runs past the slot's left edge
+    lv_obj_set_x(m->disc, -off);
+    fw::bleed(m->disc, off);  // drawn past the content inset, off the screen's left edge (on purpose)
+  }
   lv_obj_update_layout(top);
-  const int cw = fw::lay::content_w - (m->disc ? lv_obj_get_width(m->disc) : 0) - fw::sp::s9;
+  const int cw = fw::lay::content_w - (slot ? fw::lay::mv_h : m->disc ? lv_obj_get_width(m->disc) : 0) - fw::sp::s9;
   lv_obj_t *col = box(top);
   lv_obj_set_size(col, cw, LV_SIZE_CONTENT);
   lv_obj_set_flex_flow(col, LV_FLEX_FLOW_COLUMN);
