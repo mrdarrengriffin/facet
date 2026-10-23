@@ -2,7 +2,7 @@
  "v": 1,
  "id": "calendar",
  "name": "Calendar",
- "rev": 2,
+ "rev": 3,
  "header": {
   "label": "Calendar",
   "back": true
@@ -13,5 +13,13 @@
    "c": "calendar_view",
    "p": {}
   }
- ]
+ ],
+ "params": {
+  "calendars": {
+   "type": "entities",
+   "domain": "calendar",
+   "label": "Calendars",
+   "default": ""
+  }
+ }
 }

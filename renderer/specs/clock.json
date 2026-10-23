@@ -2,9 +2,14 @@
  "v": 1,
  "id": "clock",
  "name": "Clock",
- "rev": 1,
+ "rev": 2,
  "params": {
-  "weather": "weather.forecast_home"
+  "weather": {
+   "type": "entity",
+   "domain": "weather",
+   "label": "Forecast",
+   "default": "weather.forecast_home"
+  }
  },
  "header": {
   "label": "Clock",

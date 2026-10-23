@@ -23,6 +23,12 @@
 //            while it plays) from the HA store, read when the sheet opens; prop player = the bound entity (spec
 //            $entity) = the selected row and the button's name; a pick emits "speaker" <entity id>, the spec's
 //            screen.param re-binds the screen to it (now playing + controls follow, update path).
+// Auto (prop mode = auto | manual, "" = none: the spec's screen.param "auto"): the sheet's first row is Auto (follows
+// what's playing: HA's media target), the button reads "auto · <player>" while it follows; a pick of Auto emits
+// "speaker" "auto".
+// Progress (2026-10-23): props position + duration (seconds) + position_at (HA media_position_updated_at, ISO time):
+// while playing the arc moves on locally once a second from that moment (the wall clock); paused = where HA left it;
+// no duration = prop progress.
 // Actions: the spec's media.control turns "media" into media_player.media_previous_track / media_play_pause /
 // media_next_track / volume_set (core/spec.h). Not ported yet: progress moving on between updates; Auto.
 // Update path: texts in place, the disc / slider / play glyph through their own updates. Contrast: "media"
@@ -38,6 +44,10 @@ struct MV {
   int speaker = 0;
   std::string player;                // the bound media_player (prop player)
   std::vector<std::string> spk_ids;  // the host's players (prop speakers), empty = the sample list
+  std::string mode;                  // auto | manual | "" (no Auto row)
+  double pos = NAN, dur = NAN;       // seconds (HA media_position / media_duration)
+  double pos_at = NAN;               // the epoch second pos was true at (media_position_updated_at)
+  lv_timer_t *ticker = nullptr;      // moves the progress on while playing
   lv_obj_t *disc = nullptr, *state = nullptr, *title = nullptr, *artist = nullptr, *play = nullptr, *slider = nullptr, *vlab = nullptr;
   std::string st = "playing", title_s, artist_s;
   int progress = 38, volume = 42;
@@ -62,6 +72,24 @@ bool held(const MV *m) { return (int32_t) (m->hold_until - lv_tick_get()) > 0; }
 int vol_track_dp() {  // the slider's track: the width less the two labels, their gutters and a knob
   return (int) std::lround((fw::lay::content_w - 2 * fw::lay::m_vol_label - 2 * fw::lay::gutter - fw::touch::min / 2) / fw::D);
 }
+int live_progress(const MV *m) {
+  if (!(m->dur > 0)) return -1;
+  double p = std::isfinite(m->pos) ? m->pos : 0;
+  const double now = (double) time(nullptr);
+  if (m->st == "playing" && std::isfinite(m->pos_at) && now > 1e9) p += now - m->pos_at;  // a set clock only
+  return (int) std::lround(LV_CLAMP(0.0, p, m->dur) / m->dur * 100);
+}
+// the disc / visual: progress (moved on while playing) + playing (+ the track for a visual)
+void push_progress(lv_obj_t *root) {
+  MV *m = of(root);
+  if (!m->disc) return;
+  const int lp = live_progress(m);
+  ArduinoJson::JsonDocument dp;
+  dp["progress"] = lp >= 0 ? lp : m->progress, dp["playing"] = m->st == "playing";
+  if (m->visual == "disc") dp["size"] = "256";
+  else dp["visual"] = m->visual, dp["title"] = m->title_s, dp["artist"] = m->artist_s;
+  fw::update_child(fw::find(m->visual == "disc" ? "media_disc" : "media_visual"), m->disc, dp.as<fw::Props>());
+}
 void render(lv_obj_t *root) {
   MV *m = of(root);
   const bool playing = m->st == "playing";
@@ -69,11 +97,7 @@ void render(lv_obj_t *root) {
   fw::set_text(m->state, fw::ty::label, known ? m->st.c_str() : "idle");
   fw::set_text(m->title, fw::ty::headline, m->title_s.empty() ? "Nothing playing" : m->title_s.c_str());
   fw::set_text(m->artist, fw::ty::body, m->artist_s.c_str());
-  ArduinoJson::JsonDocument dp;
-  dp["progress"] = m->progress, dp["playing"] = playing;
-  if (m->visual == "disc") dp["size"] = "256";
-  else dp["visual"] = m->visual, dp["title"] = m->title_s, dp["artist"] = m->artist_s;
-  fw::update_child(fw::find(m->visual == "disc" ? "media_disc" : "media_visual"), m->disc, dp.as<fw::Props>());
+  push_progress(root);
   if (m->spk) {  // the speaker icon: accent while playing
     ArduinoJson::JsonDocument bp;
     bp["name"] = spk_name(m, m->speaker), bp["playing"] = playing;
@@ -101,6 +125,22 @@ void send_volume(lv_obj_t *root, int v) {
   fw::emit(root, "media", b);
 }
 void sync_speakers(lv_obj_t *root, fw::Props p);
+// "2026-10-23T09:50:12.123456+00:00" -> epoch seconds (NAN when not a time)
+double iso_epoch(const char *s) {
+  int Y, M, D, h, m;
+  double sec;
+  if (!s || sscanf(s, "%d-%d-%dT%d:%d:%lf", &Y, &M, &D, &h, &m, &sec) != 6) return NAN;
+  const int y = Y - (M <= 2), era = (y >= 0 ? y : y - 399) / 400, yoe = y - era * 400;  // days from civil
+  const int doy = (153 * (M + (M > 2 ? -3 : 9)) + 2) / 5 + D - 1, doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+  double t = (double) (era * 146097 + doe - 719468) * 86400 + h * 3600 + m * 60 + sec;
+  const char *z = s + 19;
+  while (*z && *z != '+' && *z != '-' && *z != 'Z') z++;
+  int oh = 0, om = 0;
+  if ((*z == '+' || *z == '-') && sscanf(z + 1, "%d:%d", &oh, &om) >= 1) t -= (*z == '+' ? 1 : -1) * (oh * 3600 + om * 60);
+  return t;
+}
+// the progress now (0-100): HA's position moved on by the time since it was true while playing; -1 = no duration
+int live_progress(const struct MV *m);
 // HA's "None" / unknown text = no value (docs clean())
 std::string clean(const char *v) {
   if (!v || !strcmp(v, "None") || !strcmp(v, "unknown") || !strcmp(v, "unavailable")) return "";
@@ -118,6 +158,12 @@ void take(lv_obj_t *root, fw::Props p) {
   m->title_s = clean(p["title"] | "Harbour Lights");
   m->artist_s = clean(p["artist"] | "The Lanterns");
   m->progress = p["progress"] | 38;
+  m->pos = p["position"].is<double>() ? p["position"].as<double>() : NAN;
+  m->dur = p["duration"].is<double>() ? p["duration"].as<double>() : NAN;
+  m->pos_at = iso_epoch(p["position_at"] | "");
+  const std::string mode = p["mode"] | "";
+  m->mode = mode == "auto" || mode == "manual" ? mode : "";
+  if (!m->spk_ids.empty() && m->mode == "auto") m->speaker = -2;  // Auto selected
   render(root);
 }
 // the speakers (docs demo-data players; bottom_sheet's own Speakers list): icon, name, status
@@ -130,7 +176,8 @@ std::string friendly(const std::string &e) {
 }
 std::string spk_name(const MV *m, int i) {  // the button: "auto · study" for Auto (it follows what's playing), else the speaker
   std::string s;
-  if (!m->spk_ids.empty()) s = i >= 0 && i < (int) m->spk_ids.size() ? friendly(m->spk_ids[i]) : friendly(m->player);
+  if (!m->spk_ids.empty() && m->mode == "auto") s = "auto \xC2\xB7 " + friendly(m->player);
+  else if (!m->spk_ids.empty()) s = i >= 0 && i < (int) m->spk_ids.size() ? friendly(m->spk_ids[i]) : friendly(m->player);
   else s = i == 0 ? "auto \xC2\xB7 study" : SPEAKERS[i][1];
   for (char &c : s) c = (char) tolower((unsigned char) c);
   return s;
@@ -157,8 +204,15 @@ void sync_speakers(lv_obj_t *root, fw::Props p) {
   }
 }
 void sheet_props(const MV *m, bool open, ArduinoJson::JsonDocument &d) {
-  d["overlay"] = true, d["title"] = "speaker", d["open"] = open ? "open" : "closed", d["selected"] = m->speaker < 0 ? 0 : m->speaker;
+  const int off = m->spk_ids.empty() || m->mode.empty() ? 0 : 1;  // the Auto row first
+  d["overlay"] = true, d["title"] = "speaker", d["open"] = open ? "open" : "closed";
+  d["selected"] = off && m->mode == "auto" ? 0 : m->speaker < 0 ? 0 : m->speaker + off;
   ArduinoJson::JsonArray items = d["items"].to<ArduinoJson::JsonArray>();
+  if (off) {
+    ArduinoJson::JsonObject it = items.add<ArduinoJson::JsonObject>();
+    it["icon"] = "auto", it["name"] = "Auto";
+    it["status"] = m->mode == "auto" ? "follows what's playing \xC2\xB7 " + friendly(m->player) : std::string("follows what's playing");
+  }
   if (m->spk_ids.empty()) {
     for (auto &s : SPEAKERS) { ArduinoJson::JsonObject it = items.add<ArduinoJson::JsonObject>(); it["icon"] = s[0], it["name"] = s[1], it["status"] = s[2]; }
     return;
@@ -193,9 +247,20 @@ void speaker_header(lv_obj_t *root) {
     lv_obj_add_event_cb(m->sheet, [](lv_event_t *e) {  // a speaker picked
       auto *root = (lv_obj_t *) lv_event_get_user_data(e);
       MV *m = of(root);
-      const int i = (int) (intptr_t) lv_event_get_param(e);
+      int i = (int) (intptr_t) lv_event_get_param(e);
+      const int off = m->spk_ids.empty() || m->mode.empty() ? 0 : 1;
+      if (off && i == 0) {  // Auto: the screen follows the target again
+        m->mode = "auto";
+        ArduinoJson::JsonDocument bp;
+        bp["name"] = spk_name(m, m->speaker), bp["playing"] = m->st == "playing";
+        fw::update_child(fw::find("speaker_button"), m->spk, bp.as<fw::Props>());
+        fw::emit(root, "speaker", "auto");
+        return;
+      }
+      i -= off;
       if (i < 0 || i >= (m->spk_ids.empty() ? N_SAMPLE : (int) m->spk_ids.size())) return;
       m->speaker = i;
+      if (off) m->mode = "manual";
       ArduinoJson::JsonDocument bp;
       bp["name"] = spk_name(m, i), bp["playing"] = m->st == "playing";
       fw::update_child(fw::find("speaker_button"), m->spk, bp.as<fw::Props>());
@@ -224,7 +289,11 @@ FW_COMPONENT(media_view, "Media view", "components", R"({
     {"name": "volume", "type": "range", "min": 0, "max": 100, "step": 1, "default": 42},
     {"name": "visual", "type": "select", "options": ["disc", "cassette", "cd", "vinyl"], "default": "disc"},
     {"name": "player", "type": "text", "default": ""},
-    {"name": "speakers", "type": "text", "default": ""}
+    {"name": "speakers", "type": "text", "default": ""},
+    {"name": "mode", "type": "select", "options": ["", "auto", "manual"], "default": ""},
+    {"name": "position", "type": "range", "min": 0, "max": 86400, "step": 1, "default": 0},
+    {"name": "duration", "type": "range", "min": 0, "max": 86400, "step": 1, "default": 0},
+    {"name": "position_at", "type": "text", "default": ""}
   ],
   "variants": [
     {"label": "playing", "props": {}},
@@ -243,6 +312,7 @@ FW_COMPONENT(media_view, "Media view", "components", R"({
   lv_obj_add_event_cb(root, [](lv_event_t *e) {
     auto *m = (MV *) lv_event_get_user_data(e);
     if (m->trail) lv_timer_delete(m->trail);
+    if (m->ticker) lv_timer_delete(m->ticker);
     delete m;
   }, LV_EVENT_DELETE, m);
   lv_obj_set_size(root, fw::lay::content_w, fw::lay::content_h);
@@ -340,6 +410,11 @@ FW_COMPONENT(media_view, "Media view", "components", R"({
   }, root);
   speaker_header(root);
   take(root, p);
+  m->ticker = lv_timer_create([](lv_timer_t *tm) {  // the progress moves on while playing (once a second)
+    auto *root = (lv_obj_t *) lv_timer_get_user_data(tm);
+    MV *m = of(root);
+    if (m->st == "playing" && m->dur > 0) push_progress(root);
+  }, 1000, root);
 }
 
 FW_UPDATE(media_view) {

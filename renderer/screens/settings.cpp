@@ -26,6 +26,7 @@
 #include "fw.h"
 #include "settings_gen.h"
 #include "device.h"
+#include "spec.h"
 
 namespace {
 using Doc = ArduinoJson::JsonDocument;
@@ -393,6 +394,30 @@ void build_settings(lv_obj_t *parent, fw::Props p) {
 
   // per group: its label (docs .fs-set-glabel: the screen type label, caps, the header's own style; text-dim, docs
   // text-mute is disabled-only here) at its line box, section-gap above its rows; groups a group apart
+  {  // "panel": Screens (Settings > Screens: which screens this panel has, their sources and options)
+    lv_obj_t *gl = fw::text(c, fw::ty::label, "panel", t.text_dim);
+    lv_obj_remove_flag(gl, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_set_height(gl, fw::style(fw::ty::label).box);
+    spacer(c, fw::lay::section_gap);
+    Doc deck;
+    deserializeJson(deck, fw::spec::deck_json());
+    int on = 0, all = 0;
+    for (ArduinoJson::JsonVariantConst x : deck["screens"].as<ArduinoJson::JsonArrayConst>()) {
+      const std::string id = x["id"] | "";
+      if (id == "settings" || id == "home") continue;
+      all++;
+      on += fw::spec::deck_on(x);
+    }
+    Doc rd;
+    rd["title"] = "Screens", rd["icon"] = "none", rd["trailing"] = "value-chevron";
+    rd["value"] = (std::to_string(on) + " of " + std::to_string(all) + " on").c_str();
+    if (lv_obj_t *r = build("list_row", c, rd))
+      lv_obj_add_event_cb(r, [](lv_event_t *e) {  // after the List row's own tap (event tap + sound open)
+        auto *o = (lv_obj_t *) lv_event_get_current_target(e);
+        if (!lv_obj_has_state(o, fw::st::OFF)) fw::emit(o, "navigate", "screens");
+      }, LV_EVENT_CLICKED, nullptr);
+    spacer(c, fw::lay::group);
+  }
   for (int g = 0; g < fw::set::N_GROUPS; g++) {
     if (g) spacer(c, fw::lay::group);
     lv_obj_t *gl = fw::text(c, fw::ty::label, fw::set::GROUPS[g].label, t.text_dim);

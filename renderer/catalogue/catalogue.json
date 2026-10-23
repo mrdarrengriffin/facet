@@ -2261,6 +2261,35 @@
      "name": "speakers",
      "type": "text",
      "bindable": true
+    },
+    {
+     "name": "mode",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "",
+      "auto",
+      "manual"
+     ]
+    },
+    {
+     "name": "position",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 86400
+    },
+    {
+     "name": "duration",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 86400
+    },
+    {
+     "name": "position_at",
+     "type": "text",
+     "bindable": true
     }
    ],
    "events": {
@@ -4264,7 +4293,7 @@
   "binds": 64,
   "bytes": 8192,
   "screens": 16,
-  "deck_bytes": 2048
+  "deck_bytes": 4096
  },
- "hash": "fcb97c09"
+ "hash": "28e4c1c1"
 }

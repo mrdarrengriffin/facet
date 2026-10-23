@@ -4,7 +4,12 @@
 //
 // Screen spec  {"v": 1, "id": "office", "name": "Office", "rev": 3,
 //               "params": {"entity": "light.x", ...},     the screen's parameters + defaults; "$entity" anywhere
-//                                                          in a string = the value it was opened with
+//                                                          in a string = the value it was opened with. Typed
+//                                                          (2026-10-23): {"type": text|select|entity|entities|
+//                                                          toggle|hidden, "default", "label", "domain", "options"}:
+//                                                          Settings > Screens and the workbench build their controls
+//                                                          from it (entity / entities = one / a comma list of
+//                                                          `domain` ids, filled by the host's discovery)
 //               "header": {"label": "Office", "back": true},
 //               "layout": "list" | "center" | "cards",    list = one scrolling column (rows touch), center = one node
 //                                                          centred in the content box, cards = the card grid
@@ -25,13 +30,18 @@
 //              {"do": "screen.param", "param": "entity", "from"?: "speakers"}  (the event's detail becomes the
 //                screen's parameter `param` and every node is bound again in place, through its update path: a
 //                picked speaker re-binds the Media screen; with "from" the value must be one of that parameter's
-//                comma list, the same domain as before)
+//                comma list, the same domain as before; with "auto": "<param>" naming an entity (a sensor whose
+//                state is an entity id: HA's media target), the parameter follows that state while in Auto, a
+//                pick of "auto" starts following again; the screen's "$mode" = auto | manual | "" (no Auto))
 //              {"do": "nav.open", "screen": "<id>", "params"?: {k: v}}    {"do": "nav.back"}
 //              on "open" (any component's own open event): {"do": "nav.open"} = the screen its detail names
 //              The closed whitelist: each component + event allows only the actions in RULES (the catalogue).
 //   pending    while a light.switch waits for HA: the prop shows on / off text (a List row's sub "Turning on")
 // Deck         {"v": 1, "rev": 2, "screens": [{"id": "living_room", "card": true}, ...]}: the screens, their order
 //              and Home's cards (card: true). An id is a spec screen or a built-in screen (settings).
+//              Per entry also (2026-10-23, this panel's picks): "on" (false = off: no Home card), "source" (an id
+//              of the screen's sources in renderer/sources/sources.json), "params" ({k: text}: the screen opens with
+//              them, over the spec's defaults; a host's discovery fills them). Settings > Screens edits them.
 //
 // Validation (one implementation for the panels, the WASM workbench and the hub's dry render): unknown keys (style
 // keys such as colour / x / width / font get `style_key`), unknown components, props a component doesn't have,
@@ -61,7 +71,7 @@ namespace fw {
 namespace spec {
 constexpr int PROTOCOL = 1;
 struct Budget {
-  int nodes = 48, binds = 64, bytes = 8192, screens = 16, deck_bytes = 2048;
+  int nodes = 48, binds = 64, bytes = 8192, screens = 16, deck_bytes = 4096;
 };
 inline const Budget &budget() {
   static Budget b;
@@ -93,6 +103,12 @@ constexpr const char *ACTIONS[] = {"light.switch", "light.toggle", "light.bright
 constexpr const char *FMTS[] = {"", "on", "pct", "avail", "light", "name", "num", "frac"};
 constexpr uint32_t CLIMATE_THROTTLE_MS = 250;  // like light-throttle-ms: a set point while dragging at most this often
 constexpr const char *LAYOUTS[] = {"list", "center", "cards"};
+constexpr const char *PARAM_TYPES[] = {"text", "select", "entity", "entities", "toggle", "hidden"};
+// a parameter's default: its text, or a typed parameter's "default"
+inline std::string param_default(ArduinoJson::JsonVariantConst v) {
+  if (v.is<const char *>()) return v.as<std::string>();
+  return v["default"] | "";
+}
 constexpr const char *STYLE_KEYS[] = {"color", "colour", "bg", "x", "y", "w", "h", "width", "height", "size", "font",
                                       "radius", "pad", "padding", "margin", "align", "sound", "opacity"};
 inline bool in_list(const char *csv, const std::string &w) {
@@ -153,6 +169,12 @@ inline bool entity_ok(const std::string &s) {
     if (!(islower((unsigned char) c) || isdigit((unsigned char) c) || c == '_' || c == '.')) return false;
   return true;
 }
+inline bool word_ok(const std::string &s, size_t max) {  // a-z, 0-9, _; 1..max
+  if (s.empty() || s.size() > max) return false;
+  for (char c : s)
+    if (!(islower((unsigned char) c) || isdigit((unsigned char) c) || c == '_')) return false;
+  return true;
+}
 inline bool id_ok(const std::string &s) {
   if (s.empty() || s.size() > 12) return false;
   for (char c : s)
@@ -172,8 +194,8 @@ inline void check_keys(ArduinoJson::JsonObjectConst o, const char *const *keys, 
 }
 inline void check_action(ArduinoJson::JsonVariantConst a, const char *comp, const char *event, const std::string &path, Errs &e) {
   if (!a.is<ArduinoJson::JsonObjectConst>()) { err(e, path, "bad_action", "an action is an object {do, ...}"); return; }
-  static const char *const K[] = {"do", "e", "screen", "params", "param", "from"};
-  check_keys(a.as<ArduinoJson::JsonObjectConst>(), K, 6, path, e);
+  static const char *const K[] = {"do", "e", "screen", "params", "param", "from", "auto"};
+  check_keys(a.as<ArduinoJson::JsonObjectConst>(), K, 7, path, e);
   const std::string d = a["do"] | "";
   if (!one_of(ACTIONS, d)) { err(e, path + ".do", "bad_action", "unknown action " + d); return; }
   const char *ok = allowed(comp, event);
@@ -193,6 +215,7 @@ inline void check_action(ArduinoJson::JsonVariantConst a, const char *comp, cons
   if (d == "screen.param") {
     if (!id_ok(a["param"] | "")) err(e, path + ".param", "bad_action", "param: the screen parameter to set (a-z, 0-9, _)");
     if (!a["from"].isNull() && !id_ok(a["from"] | "")) err(e, path + ".from", "bad_action", "from: the parameter holding the allowed values");
+    if (!a["auto"].isNull() && !id_ok(a["auto"] | "")) err(e, path + ".auto", "bad_action", "auto: the parameter naming the entity Auto follows");
   }
   if (d == "nav.open") {
     const std::string s = a["screen"] | "";
@@ -236,8 +259,16 @@ inline void check_screen(ArduinoJson::JsonVariantConst s, size_t bytes, Errs &e)
   if (bytes > (size_t) budget().bytes) err(e, "", "over_budget", "spec over " + std::to_string(budget().bytes) + " bytes");
   if (!s["params"].isNull()) {
     if (!s["params"].is<ArduinoJson::JsonObjectConst>()) err(e, ".params", "bad_params", "params is an object of defaults");
-    else for (ArduinoJson::JsonPairConst kv : s["params"].as<ArduinoJson::JsonObjectConst>())
-      if (!kv.value().is<const char *>()) err(e, std::string(".params.") + kv.key().c_str(), "bad_params", "a parameter default is text");
+    else for (ArduinoJson::JsonPairConst kv : s["params"].as<ArduinoJson::JsonObjectConst>()) {
+      const std::string pp = std::string(".params.") + kv.key().c_str();
+      if (kv.value().is<const char *>()) continue;
+      if (!kv.value().is<ArduinoJson::JsonObjectConst>()) { err(e, pp, "bad_params", "a parameter is its default (text) or {type, default, label, ...}"); continue; }
+      static const char *const PK[] = {"type", "default", "label", "domain", "options"};
+      check_keys(kv.value().as<ArduinoJson::JsonObjectConst>(), PK, 5, pp, e);
+      if (!one_of(PARAM_TYPES, kv.value()["type"] | "")) err(e, pp + ".type", "bad_params", "type is text, select, entity, entities, toggle or hidden");
+      if (!kv.value()["default"].isNull() && !kv.value()["default"].is<const char *>()) err(e, pp + ".default", "bad_params", "a parameter default is text");
+      if (!strcmp(kv.value()["type"] | "", "select") && !kv.value()["options"].is<ArduinoJson::JsonArrayConst>()) err(e, pp + ".options", "bad_params", "a select lists its options");
+    }
   }
   if (!s["header"].isNull()) {
     static const char *const H[] = {"label", "back"};
@@ -289,9 +320,16 @@ inline void check_deck(ArduinoJson::JsonVariantConst d, size_t bytes, Errs &e) {
   int i = 0;
   for (ArduinoJson::JsonVariantConst x : s) {
     const std::string p = ".screens[" + std::to_string(i++) + "]";
-    static const char *const SK[] = {"id", "card"};
-    if (!x.is<ArduinoJson::JsonObjectConst>()) { err(e, p, "bad_deck", "a deck entry is {id, card?}"); continue; }
-    check_keys(x.as<ArduinoJson::JsonObjectConst>(), SK, 2, p, e);
+    static const char *const SK[] = {"id", "card", "on", "source", "params"};
+    if (!x.is<ArduinoJson::JsonObjectConst>()) { err(e, p, "bad_deck", "a deck entry is {id, card?, on?, source?, params?}"); continue; }
+    check_keys(x.as<ArduinoJson::JsonObjectConst>(), SK, 5, p, e);
+    if (!x["on"].isNull() && !x["on"].is<bool>()) err(e, p + ".on", "bad_deck", "on is true / false");
+    if (!x["source"].isNull() && !word_ok(x["source"] | "", 24)) err(e, p + ".source", "bad_deck", "source: a source id (a-z, 0-9, _; at most 24)");
+    if (!x["params"].isNull()) {
+      if (!x["params"].is<ArduinoJson::JsonObjectConst>()) err(e, p + ".params", "bad_deck", "params is {name: text}");
+      else for (ArduinoJson::JsonPairConst kv : x["params"].as<ArduinoJson::JsonObjectConst>())
+        if (!kv.value().is<const char *>() || strlen(kv.value().as<const char *>()) > 1024) err(e, p + ".params." + kv.key().c_str(), "bad_deck", "a parameter is text (at most 1024)");
+    }
     const std::string id = x["id"] | "";
     if (!screen_known(id)) err(e, p + ".id", "unknown_screen", "no screen " + id + " (send its spec first)");
   }
@@ -353,6 +391,16 @@ inline const char *screen_json(const std::string &id) {
 }
 inline bool screen_known(const std::string &id) { return screen_json(id) || find(id.c_str()); }
 inline const char *deck_json() { return S().deck_over.empty() ? FACTORY_DECK : S().deck_over.c_str(); }
+// this panel's deck entry for screen id into out (false = not in the deck)
+inline bool deck_entry(const std::string &id, ArduinoJson::JsonDocument &out) {
+  ArduinoJson::JsonDocument d;
+  if (deserializeJson(d, deck_json())) return false;
+  for (ArduinoJson::JsonVariantConst x : d["screens"].as<ArduinoJson::JsonArrayConst>())
+    if (id == (x["id"] | "")) { out.set(x); return true; }
+  return false;
+}
+// is screen id on (in the deck and not switched off)? Off screens have no Home card.
+inline bool deck_on(ArduinoJson::JsonVariantConst entry) { return entry["on"] | true; }
 inline int rev_of(const char *json) {
   ArduinoJson::JsonDocument d;
   return json && !deserializeJson(d, json) ? (d["rev"] | -1) : -1;
@@ -422,6 +470,10 @@ struct Screen {
   std::vector<Node> nodes;
   lv_timer_t *timer = nullptr;  // throttle trail + pending texts
   std::map<std::string, std::string> params;
+  // Auto (screen.param "auto"): the parameter follow_param follows the state of entity follow_src (HA's media target
+  // sensor) while following; a pick of a real value stops it, a pick of "auto" starts it again
+  std::string follow_param, follow_src, follow_last;
+  bool following = false;
 };
 // "$name" -> the parameter (whole-string refs and inside texts)
 inline std::string subst(const std::string &v, const std::map<std::string, std::string> &pm) {
@@ -472,9 +524,11 @@ inline void send_temperature(Node &n, double v) {
   n.c_sent = v;
   n.c_at = lv_tick_get();
 }
+inline void follow_now(Screen *s);
 inline void tick(lv_timer_t *t) {
   auto *s = (Screen *) lv_timer_get_user_data(t);
   const uint32_t now = lv_tick_get();
+  follow_now(s);
   for (Node &n : s->nodes) {
     if (n.want == ON_ONLY && lv_tick_diff(now, n.sent_at) >= 300) {
       n.want = -1;
@@ -517,10 +571,13 @@ inline void node_actions(Node &n) {
       for (const char *a : {"", "temperature", "min_temp", "max_temp", "target_temp_step", "preset_mode"}) ha::want(e, a);
   }
 }
-// screen.param: the parameter takes `v` and every node is bound again from its spec as written (update path)
+// every node bound again from its spec as written, with the screen's parameters as they are now (update path)
+inline void rebind_all(Screen *s);
+// screen.param: the parameter takes `v` (checked) and every node is bound again (update path); false = refused
 inline bool set_param(Screen *s, const std::string &param, const std::string &from, const std::string &v) {
   auto cur = s->params.find(param);
-  if (cur == s->params.end() || cur->second == v || !entity_ok(v) || v[0] == '$') return false;
+  if (cur == s->params.end() || !entity_ok(v) || v[0] == '$') return false;
+  if (cur->second == v) { rebind_all(s); return true; }
   const std::string &old = cur->second;
   if (old.find('.') != std::string::npos && v.substr(0, v.find('.')) != old.substr(0, old.find('.'))) return false;  // same domain
   if (!from.empty()) {  // one of that parameter's comma list
@@ -528,6 +585,10 @@ inline bool set_param(Screen *s, const std::string &param, const std::string &fr
     if (l == s->params.end() || !in_list(l->second.c_str(), v)) return false;
   }
   cur->second = v;
+  rebind_all(s);
+  return true;
+}
+inline void rebind_all(Screen *s) {
   for (Node &n : s->nodes) {
     ArduinoJson::JsonDocument p, on;
     deserializeJson(p, n.raw_p.empty() ? "{}" : n.raw_p);
@@ -541,7 +602,16 @@ inline bool set_param(Screen *s, const std::string &param, const std::string &fr
     }
     ha::rebind(n.obj, p.as<Props>());
   }
-  return true;
+}
+// Auto: the followed entity's state, if it names an entity of the parameter's domain
+inline void follow_now(Screen *s) {
+  if (!s->following || s->follow_src.empty()) return;
+  const std::string *v = ha::get(s->follow_src);
+  if (!v || *v == s->follow_last) return;
+  s->follow_last = *v;
+  const std::string &cur = s->params[s->follow_param];
+  if (!entity_ok(*v) || (*v)[0] == '$' || v->substr(0, v->find('.')) != cur.substr(0, cur.find('.'))) return;
+  set_param(s, s->follow_param, "", *v);
 }
 // an event from inside node n -> its action (the whitelist was checked when the spec was accepted)
 inline bool run(Screen *s, Node &n, const char *event, const char *detail) {
@@ -578,6 +648,22 @@ inline bool run(Screen *s, Node &n, const char *event, const char *detail) {
     return true;
   }
   if (d == "screen.param") {
+    if (!s->follow_src.empty() && !strcmp(detail, "auto")) {  // Auto again: follow the target entity
+      s->following = true;
+      s->params["mode"] = "auto";
+      s->follow_last.clear();
+      const std::string *v = ha::get(s->follow_src);
+      if (!v || !set_param(s, s->follow_param, "", *v)) rebind_all(s);
+      if (v) s->follow_last = *v;
+      return true;
+    }
+    if (!s->follow_src.empty()) {  // a real pick: manual until Auto is picked again
+      const bool was = s->following;
+      s->following = false;
+      s->params["mode"] = "manual";
+      if (!set_param(s, a["param"] | "", a["from"] | "", detail)) { s->following = was; s->params["mode"] = was ? "auto" : "manual"; rebind_all(s); }
+      return true;
+    }
     set_param(s, a["param"] | "", a["from"] | "", detail);
     return true;
   }
@@ -670,9 +756,31 @@ inline lv_obj_t *build(lv_obj_t *parent, const std::string &id, Props opened, st
   ArduinoJson::JsonDocument doc;
   if (!json || deserializeJson(doc, json)) { if (error) *error = "no spec " + id; return nullptr; }
   auto *s = new Screen;
-  for (ArduinoJson::JsonPairConst kv : doc["params"].as<ArduinoJson::JsonObjectConst>()) s->params[kv.key().c_str()] = kv.value().as<std::string>();
+  for (ArduinoJson::JsonPairConst kv : doc["params"].as<ArduinoJson::JsonObjectConst>()) s->params[kv.key().c_str()] = param_default(kv.value());
+  {  // this panel's picks (the deck entry's params), then what it was opened with
+    ArduinoJson::JsonDocument de;
+    if (deck_entry(doc["id"] | id.c_str(), de))
+      for (ArduinoJson::JsonPairConst kv : de["params"].as<ArduinoJson::JsonObjectConst>())
+        if (kv.value().is<const char *>()) s->params[kv.key().c_str()] = kv.value().as<std::string>();
+  }
   for (ArduinoJson::JsonPairConst kv : opened)
     if (kv.value().is<const char *>()) s->params[kv.key().c_str()] = kv.value().as<std::string>();
+  for (ArduinoJson::JsonVariantConst nd : doc["nodes"].as<ArduinoJson::JsonArrayConst>())  // Auto (screen.param "auto")
+    for (ArduinoJson::JsonPairConst kv : nd["on"].as<ArduinoJson::JsonObjectConst>()) {
+      if (strcmp(kv.value()["do"] | "", "screen.param") || !kv.value()["auto"].is<const char *>()) continue;
+      s->follow_param = kv.value()["param"] | "";
+      s->follow_src = s->params[kv.value()["auto"] | ""];
+      if (!entity_ok(s->follow_src) || s->follow_src[0] == '$') s->follow_src.clear();
+      s->following = !s->follow_src.empty() && opened[s->follow_param.c_str()].isNull();  // opened on one: manual
+      if (s->following) {
+        ha::want(s->follow_src);
+        const std::string *v = ha::get(s->follow_src);
+        const std::string &cur = s->params[s->follow_param];
+        if (v && entity_ok(*v) && (*v)[0] != '$' && v->substr(0, v->find('.')) == cur.substr(0, cur.find('.'))) s->params[s->follow_param] = *v;
+        if (v) s->follow_last = *v;
+      }
+      s->params["mode"] = s->follow_src.empty() ? "" : s->following ? "auto" : "manual";
+    }
   ArduinoJson::JsonDocument raw;  // the nodes as written ("$param" kept): screen.param binds them again (kept only then)
   const bool rebinds = strstr(json, "\"screen.param\"") != nullptr;
   if (rebinds) raw.set(doc["nodes"]);
@@ -789,7 +897,7 @@ inline Reload &reload_hook() {
   return r;
 }
 // out: {ok, status: applied|unchanged|refused, id, rev, errors?}; dry = a hidden parent for the off-screen build
-inline bool apply(const char *kind, const std::string &json, lv_obj_t *dry, ArduinoJson::JsonObject out) {
+inline bool apply(const char *kind, const std::string &json, lv_obj_t *dry, ArduinoJson::JsonObject out, bool quiet = false) {
   const bool deck = !strcmp(kind, "deck");
   ArduinoJson::JsonDocument d;
   Errs e;
@@ -837,10 +945,27 @@ inline bool apply(const char *kind, const std::string &json, lv_obj_t *dry, Ardu
   if (deck) s.deck_over = json;
   else s.over[id] = json;
   want_all();
-  if (reload_hook()) reload_hook()(id.c_str());
+  if (reload_hook() && !quiet) reload_hook()(id.c_str());
   out["ok"] = true;
   out["status"] = "applied";
   return true;
+}
+// this panel's pick for screen id (Settings > Screens): key "on" / "source" / "params.<name>" = value, kept as the
+// deck (a new rev, validated and stored like a sent one) without rebuilding what shows; false = refused
+inline bool deck_set(const std::string &id, const std::string &key, ArduinoJson::JsonVariantConst value) {
+  ArduinoJson::JsonDocument d;
+  if (deserializeJson(d, deck_json())) return false;
+  for (ArduinoJson::JsonVariant x : d["screens"].as<ArduinoJson::JsonArray>()) {
+    if (id != (x["id"] | "")) continue;
+    if (key.rfind("params.", 0) == 0) x["params"][key.substr(7)] = value;
+    else x[key] = value;
+    d["rev"] = (d["rev"] | 0) + 1;
+    std::string js;
+    serializeJson(d, js);
+    ArduinoJson::JsonDocument o;
+    return apply("deck", js, nullptr, o.to<ArduinoJson::JsonObject>(), true);
+  }
+  return false;
 }
 // revert one override (screen id, "deck") or "all" to factory
 inline void revert(const std::string &id, ArduinoJson::JsonObject out) {

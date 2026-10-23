@@ -2,10 +2,12 @@
  "v": 1,
  "id": "media",
  "name": "Media",
- "rev": 2,
+ "rev": 3,
  "params": {
-  "entity": "media_player.living_room_speaker_2",
-  "speakers": ""
+  "entity": {"type": "entity", "domain": "media_player", "label": "Player", "default": "media_player.living_room_speaker_2"},
+  "speakers": {"type": "entities", "domain": "media_player", "label": "Speakers", "default": ""},
+  "auto": {"type": "entity", "domain": "sensor", "label": "Auto follows", "default": ""},
+  "visual": {"type": "select", "options": ["disc", "cassette", "cd", "vinyl"], "label": "Visual", "default": "cd"}
  },
  "header": {
   "label": "Media",
@@ -20,12 +22,17 @@
     "title": {"e": "$entity", "a": "media_title"},
     "artist": {"e": "$entity", "a": "media_artist"},
     "volume": {"e": "$entity", "a": "volume_level", "fmt": "frac"},
+    "position": {"e": "$entity", "a": "media_position", "fmt": "num"},
+    "duration": {"e": "$entity", "a": "media_duration", "fmt": "num"},
+    "position_at": {"e": "$entity", "a": "media_position_updated_at"},
+    "visual": "$visual",
     "player": "$entity",
-    "speakers": "$speakers"
+    "speakers": "$speakers",
+    "mode": "$mode"
    },
    "on": {
     "media": {"do": "media.control", "e": "$entity"},
-    "speaker": {"do": "screen.param", "param": "entity", "from": "speakers"}
+    "speaker": {"do": "screen.param", "param": "entity", "from": "speakers", "auto": "auto"}
    }
   }
  ]

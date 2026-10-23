@@ -75,7 +75,7 @@ void build_home(lv_obj_t *parent, fw::Props) {
     Doc deck;
     deserializeJson(deck, fw::spec::deck_json());
     for (ArduinoJson::JsonVariantConst x : deck["screens"].as<ArduinoJson::JsonArrayConst>()) {
-      if (!(x["card"] | false)) continue;
+      if (!(x["card"] | false) || !fw::spec::deck_on(x)) continue;  // off (Settings > Screens): no card
       const std::string id = x["id"] | "";
       Doc sp;
       if (const char *j = fw::spec::screen_json(id)) { deserializeJson(sp, j); cards.push_back({id, sp["name"] | id.c_str()}); }

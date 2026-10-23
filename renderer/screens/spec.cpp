@@ -1,7 +1,7 @@
 // Spec screen (core/spec.h, WIP): a screen built from its JSON spec, here for the workbench and the audit; the device
 // runtime builds spec screens the same way when it opens one (core/device.cpp). Prop screen = one of this build's
-// factory specs (renderer/specs/*.json); entity / name / speakers = the screen's parameters (empty = the spec's own
-// default; speakers = the Media screen's players, a comma list of media_player ids the host knows).
+// factory specs (renderer/specs/*.json); every other prop = one of the screen's parameters (empty = this panel's deck
+// value, else the spec's default): the workbench makes a control per typed parameter (spec "params").
 #include "fw.h"
 #include "spec.h"
 
@@ -30,8 +30,12 @@ std::string meta() {
 const std::string META = meta();
 void build_spec(lv_obj_t *parent, fw::Props p) {
   ArduinoJson::JsonDocument params;
-  for (const char *k : {"entity", "name", "speakers"})  // given = the screen opened with it, else the spec's default
-    if (*(p[k] | "")) params[k] = p[k] | "";
+  for (ArduinoJson::JsonPairConst kv : p) {  // every other prop = a parameter (the workbench builds them from the
+    const char *k = kv.key().c_str();      // spec's typed params); empty = the deck's / the spec's default
+    if (!strcmp(k, "screen") || !strcmp(k, "opening")) continue;
+    if (kv.value().is<bool>()) params[k] = kv.value().as<bool>() ? "true" : "false";
+    else if (kv.value().is<const char *>() && *kv.value().as<const char *>()) params[k] = kv.value().as<const char *>();
+  }
   fw::spec::build(parent, p["screen"] | "living_room", params.as<fw::Props>());
 }
 const int reg = fw::add({"spec", "Spec screen", "screens", META.c_str(), build_spec});

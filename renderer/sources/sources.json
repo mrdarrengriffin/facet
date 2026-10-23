@@ -1,0 +1,51 @@
+{
+ "$comment": "Where each screen's data can come from (Settings > Screens; ported from the panel lab's screen catalogue). Per screen: needs (the equipment in words, null = every home), sources in order of preference. A source: id, kind (builtin = worked out on the panel, ha = a Home Assistant integration or entity domain, direct = the panel calls a service itself), name, detect (how a host's discovery finds it: integration and / or domain), setup (what a direct source needs first), fills (which screen parameters it fills: domain [+ integration] -> every matching entity (list: true, a comma list) or one). The host (the hub, later a Home Assistant integration) runs discovery and writes the values into the panel's deck.",
+ "v": 1,
+ "kinds": {"builtin": "Built in", "ha": "Home Assistant", "direct": "Direct"},
+ "screens": {
+  "media": {"needs": "a speaker or music service", "sources": [
+   {"id": "music_assistant", "kind": "ha", "name": "Music Assistant", "detect": {"integration": "music_assistant", "domain": "media_player"},
+    "fills": {"speakers": {"domain": "media_player", "integration": "music_assistant", "list": true}, "entity": {"domain": "media_player", "integration": "music_assistant"}}},
+   {"id": "media_players", "kind": "ha", "name": "HA media players", "detect": {"domain": "media_player"},
+    "fills": {"speakers": {"domain": "media_player", "list": true}, "entity": {"domain": "media_player"}}},
+   {"id": "spotify", "kind": "direct", "name": "Spotify", "setup": ["Spotify sign-in"]}]},
+  "bins": {"needs": "a bin collection schedule", "sources": [
+   {"id": "waste_collection", "kind": "ha", "name": "Waste Collection Schedule (HACS)", "detect": {"integration": "waste_collection_schedule", "domain": "calendar"},
+    "fills": {"calendar": {"domain": "calendar", "integration": "waste_collection_schedule"}}},
+   {"id": "ical", "kind": "direct", "name": "Council calendar link (iCal)", "setup": ["calendar URL"]}]},
+  "calendar": {"needs": "a calendar", "sources": [
+   {"id": "ha_calendars", "kind": "ha", "name": "HA calendars", "detect": {"domain": "calendar"}, "fills": {"calendars": {"domain": "calendar", "list": true}}},
+   {"id": "ical", "kind": "direct", "name": "Calendar link (iCal)", "setup": ["calendar URL"]}]},
+  "weather": {"needs": null, "sources": [
+   {"id": "ha_weather", "kind": "ha", "name": "HA weather", "detect": {"domain": "weather"}, "fills": {"weather": {"domain": "weather"}}},
+   {"id": "open_meteo", "kind": "direct", "name": "Open-Meteo"}]},
+  "energy": {"needs": "a smart meter or tariff", "sources": [
+   {"id": "octopus", "kind": "ha", "name": "Octopus Energy", "detect": {"integration": "octopus_energy"}},
+   {"id": "ha_energy", "kind": "ha", "name": "HA Energy dashboard", "detect": {"energy": true}},
+   {"id": "octopus_api", "kind": "direct", "name": "Octopus API", "setup": ["API key", "account number"]}]},
+  "thermostat": {"needs": "a smart thermostat", "sources": [
+   {"id": "ha_climate", "kind": "ha", "name": "HA climate", "detect": {"domain": "climate"}, "fills": {"entity": {"domain": "climate"}}}]},
+  "covers": {"needs": "a motorised blind or curtain", "sources": [
+   {"id": "ha_covers", "kind": "ha", "name": "HA covers", "detect": {"domain": "cover"},
+    "fills": {"covers": {"domain": "cover", "list": true}, "entity": {"domain": "cover"}}}]},
+  "light": {"needs": "a dimmable light", "sources": [
+   {"id": "ha_lights", "kind": "ha", "name": "HA lights", "detect": {"domain": "light"}, "fills": {"entity": {"domain": "light"}}}]},
+  "print": {"needs": "a 3D printer", "sources": [
+   {"id": "bambu_lab", "kind": "ha", "name": "Bambu Lab", "detect": {"integration": "bambu_lab"}},
+   {"id": "octoprint", "kind": "ha", "name": "OctoPrint", "detect": {"integration": "octoprint"}},
+   {"id": "prusalink", "kind": "ha", "name": "PrusaLink", "detect": {"integration": "prusalink"}},
+   {"id": "moonraker", "kind": "ha", "name": "Moonraker (Klipper)", "detect": {"integration": "moonraker"}},
+   {"id": "bambu_lan", "kind": "direct", "name": "Bambu printer on the LAN", "setup": ["printer address", "access code"]}]},
+  "lightning": {"needs": null, "sources": [
+   {"id": "blitzortung", "kind": "ha", "name": "Blitzortung (HA)", "detect": {"integration": "blitzortung"}},
+   {"id": "blitzortung_org", "kind": "direct", "name": "Blitzortung.org"}]},
+  "github": {"needs": "a GitHub account", "sources": [
+   {"id": "github_api", "kind": "direct", "name": "GitHub API", "setup": ["GitHub token"]},
+   {"id": "ha_github", "kind": "ha", "name": "HA GitHub", "detect": {"integration": "github"}}]},
+  "timer": {"needs": null, "sources": [
+   {"id": "ha_timers", "kind": "ha", "name": "HA timer helpers", "detect": {"domain": "timer"}},
+   {"id": "panel", "kind": "builtin", "name": "On the panel"}]},
+  "clock": {"needs": null, "sources": [{"id": "panel", "kind": "builtin", "name": "Panel clock"}]},
+  "moon": {"needs": null, "sources": [{"id": "panel", "kind": "builtin", "name": "Worked out on the panel"}]}
+ }
+}

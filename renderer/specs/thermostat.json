@@ -2,9 +2,14 @@
  "v": 1,
  "id": "thermostat",
  "name": "Thermostat",
- "rev": 1,
+ "rev": 2,
  "params": {
-  "entity": "climate.portable_ac"
+  "entity": {
+   "type": "entity",
+   "domain": "climate",
+   "label": "Thermostat",
+   "default": "climate.portable_ac"
+  }
  },
  "header": {
   "label": "Thermostat",

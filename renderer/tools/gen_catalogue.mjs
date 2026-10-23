@@ -35,14 +35,15 @@ const schema = {
   oneOf: [{ $ref: '#/$defs/screen' }, { $ref: '#/$defs/deck' }],
   $defs: {
     bind, param,
-    action: { type: 'object', additionalProperties: false, required: ['do'], properties: { do: { enum: cat.actions }, e: { type: 'string' }, screen: { type: 'string', pattern: '^[a-z0-9_]{1,12}$' }, params: { type: 'object', additionalProperties: { type: 'string' } }, param: { type: 'string', pattern: '^[a-z0-9_]{1,12}$' }, from: { type: 'string', pattern: '^[a-z0-9_]{1,12}$' } } },
+    typedParam: { type: 'object', additionalProperties: false, required: ['type'], properties: { type: { enum: ['text', 'select', 'entity', 'entities', 'toggle', 'hidden'] }, default: { type: 'string' }, label: { type: 'string' }, domain: { type: 'string', pattern: '^[a-z_]+$' }, options: { type: 'array', items: { type: 'string' } } } },
+    action: { type: 'object', additionalProperties: false, required: ['do'], properties: { do: { enum: cat.actions }, e: { type: 'string' }, screen: { type: 'string', pattern: '^[a-z0-9_]{1,12}$' }, params: { type: 'object', additionalProperties: { type: 'string' } }, param: { type: 'string', pattern: '^[a-z0-9_]{1,12}$' }, from: { type: 'string', pattern: '^[a-z0-9_]{1,12}$' }, auto: { type: 'string', pattern: '^[a-z0-9_]{1,12}$' } } },
     screen: { type: 'object', additionalProperties: false, required: ['v', 'id', 'rev', 'layout', 'nodes'], properties: {
       v: { const: cat.protocol }, id: { type: 'string', pattern: '^[a-z0-9_]{1,12}$' }, name: { type: 'string' }, rev: { type: 'integer', minimum: 0 },
-      params: { type: 'object', additionalProperties: { type: 'string' } }, header: { type: 'object', additionalProperties: false, properties: { label: { type: 'string' }, back: { type: 'boolean' } } },
+      params: { type: 'object', additionalProperties: { anyOf: [{ type: 'string' }, { $ref: '#/$defs/typedParam' }] } }, header: { type: 'object', additionalProperties: false, properties: { label: { type: 'string' }, back: { type: 'boolean' } } },
       layout: { enum: cat.layouts }, nodes: { type: 'array', maxItems: cat.budget.nodes, items: { oneOf: Object.keys(cat.components).map((id) => ({ $ref: `#/$defs/c_${id}` })) } } } },
     ...Object.fromEntries(Object.entries(cat.components).map(([id, c]) => [`c_${id}`, node(id, c)])),
     deck: { type: 'object', additionalProperties: false, required: ['v', 'rev', 'screens'], properties: { v: { const: cat.protocol }, rev: { type: 'integer' },
-      screens: { type: 'array', minItems: 1, maxItems: cat.budget.screens, items: { type: 'object', additionalProperties: false, required: ['id'], properties: { id: { type: 'string' }, card: { type: 'boolean' } } } } } },
+      screens: { type: 'array', minItems: 1, maxItems: cat.budget.screens, items: { type: 'object', additionalProperties: false, required: ['id'], properties: { id: { type: 'string' }, card: { type: 'boolean' }, on: { type: 'boolean' }, source: { type: 'string', pattern: '^[a-z0-9_]{1,24}$' }, params: { type: 'object', additionalProperties: { type: 'string', maxLength: 1024 } } } } } } },
   },
 };
 const D = join(HERE, 'catalogue');
