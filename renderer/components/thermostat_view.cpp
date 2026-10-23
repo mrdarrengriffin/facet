@@ -309,7 +309,8 @@ FW_COMPONENT(thermostat_view, "Thermostat view", "components", R"({
     if (v->sheet) {
       lv_obj_set_pos(v->sheet, -fw::lay::inset, -fw::lay::top);
       lv_obj_set_size(v->sheet, fw::lay::screen_w, fw::lay::screen_h);
-      lv_obj_add_flag(root, LV_OBJ_FLAG_OVERFLOW_VISIBLE);
+      fw::qa::free(root, "overlay: hosts the presets sheet, which covers the whole screen");
+      fw::bleed(root, fw::lay::top);  // out of its box up to the screen (LVGL: by ext draw size only): the scrim covers the header too
     }
     if (v->sheet)
       lv_obj_add_event_cb(v->sheet, [](lv_event_t *e) {  // a preset picked

@@ -83,7 +83,13 @@ inline const char *cal_name(const std::string &cal) {
   return "";
 }
 // the docs story (two weeks from today; Bins hidden like a calendar you'd rather not see on a wall)
-inline std::vector<Event> sample(double now) {
+constexpr int N_CALENDARS = sizeof CALENDARS / sizeof CALENDARS[0];
+inline int cal_index(const std::string &cal) {
+  for (int i = 0; i < N_CALENDARS; i++) if (cal == CALENDARS[i].id) return i;
+  return -1;
+}
+// on = which calendars show (N_CALENDARS flags; nullptr = each calendar's own default), the Calendar's sheet
+inline std::vector<Event> sample(double now, const bool *show = nullptr) {
   const double d0 = midnight(now);
   auto at = [&](int n, double h, double len, const char *s, const char *cal, const char *loc = "") {
     const double st = day_add(d0, n) + h * HOUR;
@@ -108,7 +114,8 @@ inline std::vector<Event> sample(double now) {
   std::vector<Event> on;
   for (Event &e : ev) {
     bool vis = true;
-    for (const Cal &c : CALENDARS) if (e.calendar == c.id) vis = c.on;
+    const int ci = cal_index(e.calendar);
+    if (ci >= 0) vis = show ? show[ci] : CALENDARS[ci].on;
     if (vis) on.push_back(e);
   }
   for (size_t i = 1; i < on.size(); i++)  // by start (all-day first on a tie)
@@ -130,6 +137,52 @@ inline std::vector<DayGroup> days(const std::vector<Event> &ev, double now, int 
   for (size_t i = 1; i < out.size(); i++)
     for (size_t j = i; j > 0 && out[j].day < out[j - 1].day; j--) std::swap(out[j], out[j - 1]);
   if ((int) out.size() > max_days) out.resize((size_t) max_days);
+  return out;
+}
+// ---- month view (docs calendar-month.ts): the grid starts on the Monday on or before the 1st, 6 weeks
+inline void ym(double t, int &y, int &m) {  // year, month 0-11 (local)
+  const time_t s = (time_t) (t / 1000);
+  struct tm tm;
+  localtime_r(&s, &tm);
+  y = tm.tm_year + 1900, m = tm.tm_mon;
+}
+inline double month_first(int y, int m) {  // local midnight of the 1st (m may run past 0-11)
+  struct tm tm = {};
+  tm.tm_year = y - 1900, tm.tm_mon = m, tm.tm_mday = 1, tm.tm_isdst = -1;
+  return (double) mktime(&tm) * 1000;
+}
+inline double grid_start(int y, int m) {
+  const double f = month_first(y, m);
+  const time_t s = (time_t) (f / 1000);
+  struct tm tm;
+  localtime_r(&s, &tm);
+  return day_add(f, -((tm.tm_wday + 6) % 7));
+}
+inline int mday(double t) {
+  const time_t s = (time_t) (t / 1000);
+  struct tm tm;
+  localtime_r(&s, &tm);
+  return tm.tm_mday;
+}
+inline std::string month_title(int y, int m) {  // "October 2026"
+  static const char *M[] = {"January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"};
+  int yy = y, mm = m;
+  ym(month_first(y, m), yy, mm);
+  return std::string(M[mm]) + " " + std::to_string(yy);
+}
+inline std::string day_title(double t) {  // "Friday 23 October" (the day sheet)
+  static const char *W[] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
+  static const char *M[] = {"January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"};
+  const time_t s = (time_t) (t / 1000);
+  struct tm tm;
+  localtime_r(&s, &tm);
+  return std::string(W[tm.tm_wday]) + " " + std::to_string(tm.tm_mday) + " " + M[tm.tm_mon];
+}
+// the events on one local day (an event over several days is on each)
+inline std::vector<const Event *> on_day(const std::vector<Event> &ev, double day) {
+  std::vector<const Event *> out;
+  const double next = day_add(day, 1);
+  for (const Event &e : ev) if (e.start < next && e.end > day) out.push_back(&e);
   return out;
 }
 }  // namespace fw::agenda

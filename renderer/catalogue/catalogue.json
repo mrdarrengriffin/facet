@@ -343,15 +343,30 @@
   "calendar_view": {
    "name": "Calendar view",
    "update": true,
-   "props": [],
+   "props": [
+    {
+     "name": "view",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "agenda",
+      "month"
+     ]
+    },
+    {
+     "name": "month",
+     "type": "text",
+     "bindable": true
+    }
+   ],
    "events": {
     "open": [
      "nav.open"
     ]
    },
    "cost": {
-    "objects": 102,
-    "bytes_est": 16320
+    "objects": 338,
+    "bytes_est": 54080
    }
   },
   "card": {
@@ -1729,6 +1744,15 @@
      "options": [
       "hero",
       "display"
+     ]
+    },
+    {
+     "name": "label_type",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "label",
+      "title"
      ]
     },
     {
@@ -4207,5 +4231,5 @@
   "screens": 16,
   "deck_bytes": 2048
  },
- "hash": "1b71a404"
+ "hash": "0e1d2e89"
 }

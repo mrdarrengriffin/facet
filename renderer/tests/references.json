@@ -330,6 +330,14 @@
    },
    "crop": true,
    "note": "docs explorer default controls vs the WASM default: values may differ"
+  },
+  {
+   "comp": "spec",
+   "variant": "calendar",
+   "astro": {
+    "static": "docs /docs/screens/calendar/ preview frame (720 x 720, Agenda)"
+   },
+   "note": "the whole Calendar screen, captured by hand from the docs screen page; the docs preview has no Back button and its own clock time"
   }
  ]
 }

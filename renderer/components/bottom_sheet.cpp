@@ -33,7 +33,9 @@
 // open (open = it opens on build, so the 1.8 s demo reset replays it; closed = tap a row), list, title, selected,
 // screen. Internal: `items` (array of {icon, name, status}: the caller's own list instead of the built-in ones; a pick
 // sends LV_EVENT_VALUE_CHANGED to the overlay, param = the index; with `selected` = the index ringed, `stay` = a pick
-// keeps it open; the Settings screen uses this), `loop` (opens and closes forever: the frame-rate bench), `overlay` (only the overlay, built into
+// keeps it open; the Settings screen uses this), `rows` + `row_h` (host rows: the caller's own rows, `rows` of `row_h`
+// px for the panel's height; every fill sends LV_EVENT_REFRESH to the overlay with the list as the param, the caller
+// builds into it; the Calendar's calendars and day sheets), `loop` (opens and closes forever: the frame-rate bench), `overlay` (only the overlay, built into
 // the caller's screen; the Layout foundation's overlay sample) with `still` (shown open, no animation).
 // Contrast pairs: tokens/colour.json section "bottom_sheet" (+ picker_row, radio, list_row, icon_button, header).
 #include "fw.h"
@@ -86,8 +88,11 @@ struct Sheet {
   std::vector<std::string> items;  // icon, name, status per item
   int item_sel = 0;
   bool custom = false, stay = false;
+  // host rows (the Calendar's calendars and day sheets): the caller fills the list itself with `rows` rows of `row_h`
+  int host_rows = -1, host_row_h = 0;
 };
-int n_opts(const Sheet *s) { return s->custom ? (int) s->items.size() / 3 : LISTS[s->which].n; }
+int n_opts(const Sheet *s) { return s->host_rows >= 0 ? s->host_rows : s->custom ? (int) s->items.size() / 3 : LISTS[s->which].n; }
+int row_h(const Sheet *s) { return s->host_rows >= 0 && s->host_row_h > 0 ? s->host_row_h : fw::lay::sheet_row_h; }
 Option opt(const Sheet *s, int i) {
   if (!s->custom) return LISTS[s->which].opts[i];
   return {s->items[3 * i].c_str(), s->items[3 * i + 1].c_str(), s->items[3 * i + 2].c_str(), "dim"};
@@ -201,9 +206,13 @@ lv_obj_t *label_with(lv_obj_t *o, const char *txt) {
 // the panel's height = its content (padding + head + gutter + the rows + the part past the bottom), capped at the
 // tallest sheet (from lay::sheet_top to the bottom; the list scrolls only then), its top on the grid: every term is a
 // layout token on the 4 px grid. Bottom-anchored, so a short list opens lower (Darren 2026-10-22: no empty space).
+// The overlay's own box, not the host's: a caller may stretch the overlay over the whole screen from inside a smaller
+// box (the Thermostat and Calendar views); the panel follows it (width too).
 void size_panel(Sheet *s) {
-  const int H = lv_obj_get_content_height(s->host), max_h = H - fw::lay::sheet_top + fw::rad::ring;
-  const int need = 2 * fw::lay::inset + fw::lay::row + fw::lay::gutter + n_opts(s) * fw::lay::sheet_row_h + fw::rad::ring;
+  lv_obj_update_layout(s->host);
+  const int H = lv_obj_get_height(s->ov), max_h = H - fw::lay::sheet_top + fw::rad::ring;
+  lv_obj_set_width(s->panel, lv_obj_get_width(s->ov) + 2 * fw::stroke::hair);
+  const int need = 2 * fw::lay::inset + fw::lay::row + fw::lay::gutter + n_opts(s) * row_h(s) + fw::rad::ring;
   const int h = std::min(max_h, need);
   lv_obj_set_height(s->panel, h);
   lv_obj_set_y(s->panel, H + fw::rad::ring - h);
@@ -214,6 +223,10 @@ void fill_list(Sheet *s) {
   size_panel(s);
   lv_obj_clean(s->list);
   lv_obj_scroll_to_y(s->list, 0, LV_ANIM_OFF);
+  if (s->host_rows >= 0) {  // host rows: the caller builds them (LV_EVENT_REFRESH on the overlay, param = the list)
+    lv_obj_send_event(s->ov, LV_EVENT_REFRESH, s->list);
+    return;
+  }
   for (int i = 0; i < n_opts(s); i++) {
     const Option o = opt(s, i);
     Doc d;
@@ -272,6 +285,8 @@ void choices(Sheet *s, fw::Props p) {
   s->sel[1] = std::min(std::max(sel, 0), LISTS[1].n - 1);
   s->items.clear();
   s->custom = false;
+  s->host_rows = p["rows"].is<int>() ? std::max(0, p["rows"].as<int>()) : -1;
+  s->host_row_h = p["row_h"] | 0;
   if (p["items"].is<ArduinoJson::JsonArrayConst>()) {
     s->custom = true;
     for (ArduinoJson::JsonObjectConst it : p["items"].as<ArduinoJson::JsonArrayConst>()) {
@@ -499,7 +514,7 @@ FW_UPDATE(bottom_sheet) {
       row_props(i, p["selected"] | 0, d);
       fw::update_child(fw::find("list_row"), s->trigger[i], d.as<fw::Props>());
     }
-  const bool same_rows = which == s->which && was_title == s->custom_title && items == was_items && was_custom == s->custom &&
+  const bool same_rows = s->host_rows < 0 && which == s->which && was_title == s->custom_title && items == was_items && was_custom == s->custom &&
                          (int) lv_obj_get_child_count(s->list) == n_opts(s);
   s->which = which;
   if (same_rows) {  // the radios move to the pick

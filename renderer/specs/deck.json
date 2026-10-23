@@ -1,9 +1,49 @@
 {
  "v": 1,
- "rev": 1,
+ "rev": 2,
  "screens": [
   {
    "id": "living_room",
+   "card": true
+  },
+  {
+   "id": "calendar",
+   "card": true
+  },
+  {
+   "id": "clock",
+   "card": true
+  },
+  {
+   "id": "weather",
+   "card": true
+  },
+  {
+   "id": "media",
+   "card": true
+  },
+  {
+   "id": "thermostat",
+   "card": true
+  },
+  {
+   "id": "covers",
+   "card": true
+  },
+  {
+   "id": "energy",
+   "card": true
+  },
+  {
+   "id": "github",
+   "card": true
+  },
+  {
+   "id": "print",
+   "card": true
+  },
+  {
+   "id": "timer",
    "card": true
   },
   {

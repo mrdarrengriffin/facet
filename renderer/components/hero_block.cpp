@@ -10,6 +10,8 @@
 //            docs padding-top 16 at 720, and 12 at 480 (64 - 40) / 2: a derived offset, no literal. With role display
 //            the docs keep 16 from the top; here it stays on the hero box offset too (top-aligned with the hero row of
 //            other screens), so the label / line read at the same height whichever number style is used.
+//            label_type title (the Calendar hero, docs .fs-cal-htitle): the label in title type, as written (not caps),
+//            text; the column centres the same way ((96 - (40 + 8 + 32)) / 2 = 8 = the docs padding-top 8)
 // Unavailable (states.json; the hero shows a device's state): number = the placeholder em dash in st::unavailable_ink,
 // no accent, line = "Unavailable" in st::unavailable_note. Static: no press, no events, no sound (docs).
 // Contrast pairs: tokens/colour.json section "hero_block".
@@ -54,14 +56,16 @@ void fill(lv_obj_t *h, fw::Props p) {
   lv_obj_set_width(num, (w + g - 1) / g * g);  // fit8: the box on the grid, the text at its left
   lv_obj_set_height(num, fw::style(role).box);
 
-  const int lab = fw::style(fw::ty::label).box, body = fw::style(fw::ty::body).box;
+  // label type: caps label (default) or title (the Calendar hero: the event's name as written, docs .fs-cal-htitle)
+  const fw::ty::Id lt = !strcmp(p["label_type"] | "label", "title") ? fw::ty::title : fw::ty::label;
+  const int lab = fw::style(lt).box, body = fw::style(fw::ty::body).box;
   lv_obj_t *col = box(h);
   lv_obj_set_size(col, 0, lab + fw::sp::s2 + body);  // width from flex grow: the line ellipsises
   lv_obj_set_flex_grow(col, 1);
   lv_obj_set_flex_flow(col, LV_FLEX_FLOW_COLUMN);
   lv_obj_set_style_pad_row(col, fw::sp::s2, 0);
   lv_obj_set_style_margin_top(col, (fw::style(fw::ty::hero).box - (lab + fw::sp::s2 + body)) / 2, 0);
-  line(col, fw::ty::label, p["label"] | "", off ? fw::st::unavailable_ink(t) : t.text);
+  line(col, lt, p["label"] | "", off ? fw::st::unavailable_ink(t) : t.text);
   line(col, fw::ty::body, off ? fw::st::UNAVAILABLE_TEXT : (p["line"] | ""), off ? fw::st::unavailable_note(t) : t.text_dim);
 }
 }  // namespace
@@ -75,6 +79,7 @@ FW_COMPONENT(hero_block, "Hero block", "components", R"({
     {"name": "line", "type": "text", "default": "2 reviews · 2 assigned"},
     {"name": "accent", "type": "bool", "default": true},
     {"name": "role", "type": "select", "options": ["hero", "display"], "default": "hero"},
+    {"name": "label_type", "type": "select", "options": ["label", "title"], "default": "label"},
     {"name": "state", "type": "select", "options": ["default", "unavailable"], "default": "default"}
   ],
   "variants": [
@@ -82,6 +87,7 @@ FW_COMPONENT(hero_block, "Hero block", "components", R"({
     {"label": "quiet", "props": {"n": "12", "label": "open", "line": "3 drafts · 1 waiting on CI", "accent": false}},
     {"label": "money", "props": {"n": "£2.42", "label": "today", "line": "8.4 kWh · cheaper than yesterday", "accent": false}},
     {"label": "display role", "props": {"n": "21", "label": "inside", "line": "Feels like 19 · heating off", "accent": false, "role": "display"}},
+    {"label": "title label · calendar", "props": {"n": "16:50", "label": "Pottery class", "line": "today · Larkfield studio · Family", "accent": false, "label_type": "title"}},
     {"label": "long line", "props": {"n": "7", "label": "strikes", "line": "nearest 14 km north-east, moving away at 30 km/h", "accent": true}},
     {"label": "unavailable", "props": {"n": "21", "label": "inside", "line": "", "accent": false, "state": "unavailable"}}
   ]

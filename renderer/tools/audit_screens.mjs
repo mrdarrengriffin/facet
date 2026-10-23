@@ -5,7 +5,8 @@
 //   overlap   two regions (the screen root's direct children: header, region boxes, ...) whose boxes intersect
 //   escape    an object inside one region whose box (+ its ext draw size), cut by the ancestors that clip (scroll
 //             lists, anything not overflow-visible), reaches into ANOTHER region's box, or off the screen
-// A region that is meant to sit over others marks itself fw::qa::free(obj, "overlay: <why>") (a bottom sheet,
+// A region that is meant to sit over others marks itself fw::qa::free(obj, "overlay: <why>") (also inside a region:
+// a view that hosts its sheets; 2026-10-23) (a bottom sheet,
 // a toast layer): it is skipped for both checks. Zero-size boxes (holders of state) are not regions.
 // Usage:  node renderer/tools/audit_screens.mjs [--den 1x|1.5x] [--screen id,id] [--json out.json]
 // As a module (tools/audit.mjs can call it per screen case): import { checkScreen } and pass the fw_audit objects.
@@ -45,6 +46,9 @@ export function checkScreen(objs, W, H) {
   objs.forEach((o, i) => {
     const r = regionOf[i];
     if (r < 0 || r === i || objs[r].p !== root || overlay(objs[r]) || o.w <= 0 || o.h <= 0 || (o.opa !== undefined && o.opa === 0)) return;
+    // an overlay inside a region (a view hosting its sheets: fw::qa::free "overlay: ...") and what it holds sit over
+    // the screen on purpose, as a top-level overlay does
+    for (let k = i; k >= 0 && k !== r; k = objs[k].p) if (overlay(objs[k])) return;
     // what can actually show: the box cut by every ancestor that clips (not overflow-visible; scroll lists clip)
     let b = box(o, o.ext || 0);
     for (let k = o.p; k >= 0 && k !== root && b; k = objs[k].p) {

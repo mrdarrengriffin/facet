@@ -493,6 +493,10 @@
       {"section": "calendar", "fg": "warn", "bg": ["bg"], "kind": "ui", "use": "the School calendar's dot"},
       {"section": "calendar", "fg": "steel", "bg": ["bg"], "kind": "ui", "use": "the Birthdays calendar's dot"},
       {"section": "calendar", "fg": "line", "bg": ["bg"], "kind": "decor", "use": "the rows' hairlines"},
+      {"section": "calendar", "fg": "text-dim", "bg": ["surface", "surface-press"], "kind": "text", "use": "the calendars button and Today (icon, count, word), at rest and pressed"},
+      {"section": "calendar", "fg": "text", "bg": ["surface"], "kind": "text", "use": "month: the selected day's number on its plate"},
+      {"section": "calendar", "fg": "on-accent", "bg": ["accent"], "kind": "text", "use": "month: today's number in its accent disc"},
+      {"section": "calendar", "fg": "accent", "bg": ["bg", "surface"], "kind": "ui", "use": "month: today's disc"},
       {"section": "energy", "fg": "text", "bg": ["bg"], "kind": "large", "use": "the cost so far (hero)"},
       {"section": "energy", "fg": "text-dim", "bg": ["bg"], "kind": "text", "use": "today so far / a bar's reading, the kWh line"},
       {"section": "energy", "fg": "text", "bg": ["bg"], "kind": "text", "use": "the rate line"}

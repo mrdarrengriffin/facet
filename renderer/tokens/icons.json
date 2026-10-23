@@ -24,7 +24,8 @@
   "compare": {"$comment": "the size-comparison row of the Icons page (Facet docs Icons > Optical sizes: these five at 16/24/32/48); the extra sizes these add are compare-only and left out of a used-icons-only build", "icons": ["speaker", "timer", "done", "back", "play"], "sizes": ["small", "icon", "glyph", "feature"]},
   "icons": [
     {"name": "back", "kind": "ui", "group": "navigation", "keyline": "glyph", "file": "back.svg", "sizes": ["glyph"], "use": "back button (glyph-square)"},
-    {"name": "chevron", "kind": "ui", "group": "navigation", "keyline": "glyph", "file": "chevron.svg", "sizes": ["icon"], "use": "rows and \"more\" rows"},
+    {"name": "chevron", "kind": "ui", "group": "navigation", "keyline": "glyph", "file": "chevron.svg", "sizes": ["icon", "glyph"], "use": "rows and \"more\" rows · Calendar month: next month (square icon button)"},
+    {"name": "chevron-left", "kind": "ui", "group": "navigation", "keyline": "glyph", "file": "chevron-left.svg", "sizes": ["glyph"], "use": "Calendar month: previous month (the chevron mirrored; docs rotate(180deg))"},
     {"name": "chevron-down", "kind": "ui", "group": "navigation", "keyline": "glyph", "file": "chevron-down.svg", "sizes": ["small"], "use": "speaker button"},
     {"name": "close", "kind": "ui", "group": "navigation", "keyline": "glyph", "file": "close.svg", "sizes": ["icon", "glyph"], "use": "Button icon 24 · bottom sheet close button"},
     {"name": "plus", "kind": "ui", "group": "navigation", "keyline": "glyph", "file": "plus.svg", "sizes": ["icon", "glyph"], "use": "Button icon 24 · icon buttons"},

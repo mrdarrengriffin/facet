@@ -570,6 +570,13 @@ inline lv_obj_t *box(lv_obj_t *parent) {
   return o;
 }
 // build screen `id` (its live spec) into parent with the parameters it was opened with; returns its root or nullptr
+// the header row of the spec screen being built (nullptr outside a build): a node may put its own controls in it,
+// before the screen chrome, while it builds (docs header({right: [...]}): the Calendar's Agenda | Month + calendars
+// button). Only during its build; the header is the screen's, so they go with the screen.
+inline lv_obj_t *&building_header() {
+  static lv_obj_t *h = nullptr;
+  return h;
+}
 inline lv_obj_t *build(lv_obj_t *parent, const std::string &id, Props opened, std::string *error = nullptr, const char *json = nullptr) {
   if (!json) json = screen_json(id);
   ArduinoJson::JsonDocument doc;
@@ -603,6 +610,7 @@ inline lv_obj_t *build(lv_obj_t *parent, const std::string &id, Props opened, st
   if (const Component *h = find("header")) {
     h->build(s->root, hd.as<Props>());
     lv_obj_set_pos(lv_obj_get_child(s->root, -1), lay::inset, lay::inset);
+    building_header() = lv_obj_get_child(s->root, -1);
   }
   const std::string layout = doc["layout"] | "list";
   lv_obj_t *c = box(s->root);
@@ -651,6 +659,7 @@ inline lv_obj_t *build(lv_obj_t *parent, const std::string &id, Props opened, st
       }, LV_EVENT_LONG_PRESSED, nullptr);
     s->nodes.push_back(std::move(n));
   }
+  building_header() = nullptr;
   s->timer = lv_timer_create(tick, 20, s);
   return s->root;
 }

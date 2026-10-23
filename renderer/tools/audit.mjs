@@ -62,9 +62,15 @@ const deps = (id, seen = new Set()) => {
   for (const m of src.matchAll(/fw::find\("([a-z_0-9]+)"\)/g)) deps(m[1], seen);
   // a file that calls another component's code directly (not through fw::find) says so: "// audit deps: a, b"
   for (const m of src.matchAll(/\/\/ audit deps: ([a-z_0-9, ]+)/g)) for (const d of m[1].split(/[, ]+/)) if (d) deps(d, seen);
+  // a screen built from the factory specs (spec::build: the Spec screen, Device, Home) depends on every component the
+  // specs name (2026-10-23: the Calendar spec kept a stale audit after calendar_view changed)
+  if (/spec::build\(|spec::FACTORY/.test(src)) for (const c of SPEC_COMPS) deps(c, seen);
   return seen;
 };
-const compHash = (id) => sha(coreHash + [...deps(id)].sort().map((d) => d + sha(read(srcOf[d]))).join());
+const SPEC_FILES = ls('specs', '.json');
+const SPEC_COMPS = [...new Set(SPEC_FILES.flatMap((f) => [...read(f).toString().matchAll(/"c":\s*"([a-z_0-9]+)"/g)].map((m) => m[1])))];
+const specHash = sha(Buffer.concat(SPEC_FILES.flatMap((f) => [Buffer.from(f), read(f)])));
+const compHash = (id) => sha(coreHash + specHash + [...deps(id)].sort().map((d) => d + sha(read(srcOf[d]))).join());
 
 // ---------------------------------------------------------------- the module
 async function load(den) {

@@ -2,12 +2,12 @@
  "v": 1,
  "id": "calendar",
  "name": "Calendar",
- "rev": 1,
+ "rev": 2,
  "header": {
   "label": "Calendar",
   "back": true
  },
- "layout": "list",
+ "layout": "center",
  "nodes": [
   {
    "c": "calendar_view",
