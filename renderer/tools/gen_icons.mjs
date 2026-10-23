@@ -50,7 +50,38 @@ for (const i of t.icons) {
   if (!existsSync(join(R, 'icons', i.file))) die(`${i.name}: no master icons/${i.file}`);
   if (!i.sizes.length) die(`${i.name}: no sizes`);
   for (const s of i.sizes) if (!SIZES.includes(s)) die(`${i.name}: size ${s} not in sizes`);
+  if (i.turn && i.kind !== 'ui') die(`${i.name}: turn needs kind ui`);
 }
+// turn icons: the master's one filled path as an outline on its 24 grid (M/L/H/V/C/Z, absolute or relative; a cubic
+// = 8 segments), so the device fills it at any heading (fw::icon_turned) instead of resampling a turned mask
+const outline = (name, src) => {
+  const ds = [...src.matchAll(/<path[^>]*\sd="([^"]+)"/g)].map((m) => m[1]);
+  if (ds.length !== 1 || !/fill="currentColor"/.test(src) || /stroke="currentColor"/.test(src)) die(`${name}: turn needs one filled path`);
+  const tk = ds[0].match(/[a-zA-Z]|-?(?:\d*\.\d+|\d+\.?\d*)(?:e[-+]?\d+)?/g);
+  const pts = [];
+  let k = 0, cmd = '', x = 0, y = 0, closed = false;
+  const num = () => parseFloat(tk[k++]);
+  while (k < tk.length) {
+    if (/[a-zA-Z]/.test(tk[k])) cmd = tk[k++];
+    const rel = cmd === cmd.toLowerCase(), C = cmd.toUpperCase();
+    if (closed && C !== 'Z') die(`${name}: turn needs one subpath`);
+    if (C === 'Z') { closed = true; continue; }
+    if (C === 'M' || C === 'L') { const nx = num(), ny = num(); x = rel ? x + nx : nx; y = rel ? y + ny : ny; if (C === 'M' && pts.length) die(`${name}: turn needs one subpath`); pts.push([x, y]); if (C === 'M') cmd = rel ? 'l' : 'L'; }
+    else if (C === 'H') { const n = num(); x = rel ? x + n : n; pts.push([x, y]); }
+    else if (C === 'V') { const n = num(); y = rel ? y + n : n; pts.push([x, y]); }
+    else if (C === 'C') {
+      const c = [num(), num(), num(), num(), num(), num()].map((v, j) => (rel ? v + (j % 2 ? y : x) : v));
+      for (let j = 1; j <= 8; j++) {
+        const t = j / 8, u = 1 - t, a = u * u * u, b = 3 * u * u * t, cc = 3 * u * t * t, d = t * t * t;
+        pts.push([a * x + b * c[0] + cc * c[2] + d * c[4], a * y + b * c[1] + cc * c[3] + d * c[5]]);
+      }
+      x = c[4], y = c[5];
+    } else die(`${name}: path command ${cmd} not supported for turn`);
+  }
+  const [f, l] = [pts[0], pts[pts.length - 1]];
+  if (Math.hypot(f[0] - l[0], f[1] - l[1]) < 1e-6) pts.pop();
+  return pts;
+};
 for (const n of t.compare.icons) if (!names.has(n)) die(`compare: ${n} is not an icon`);
 const ROLES = ['ink', 'accent', 'text-dim', 'blue', 'steel', 'occluder'];  // ink = the caller's colour; occluder = an
 // animated weather part's bg fill, drawn in the colour behind the icon (icons.json animated)
@@ -78,6 +109,17 @@ if (process.argv[2] === '--meta') {
   L.push(`constexpr float STROKE_TABLE[][2] = {${t.stroke.ui.table.map(([a, b]) => `{${a}, ${b}}`).join(', ')}};`);
   L.push(`constexpr float WX_STROKE = ${t.stroke.weather.px}, WX_STROKE_96 = ${t.stroke.weather.from96};  // weather + moon phase stroke px (from96 at 96 px and up)`);
   L.push(`constexpr uint16_t ANIM_SIZES = ${(t.animated?.sizes ?? []).reduce((m, s) => m | (1 << SIZES.indexOf(s)), 0)};  // sizes the animated weather parts ship in (icons.json animated)`);
+  const turns = t.icons.map((i, ii) => [i, ii]).filter(([i]) => i.turn);
+  const tp = [], tt = [];
+  for (const [i, ii] of turns) {
+    const o = outline(i.name, readFileSync(join(R, 'icons', i.file), 'utf8').replace(/<!--[\s\S]*?-->/g, ''));
+    tt.push(`{${ii}, ${tp.length}, ${o.length}}`);
+    tp.push(...o);
+  }
+  L.push('// turn icons (icons.json turn): the master\'s filled outline on its 24 grid, curves flattened (gen_icons.mjs outline);');
+  L.push('// fw::icon_turned fills it at any heading on the device (exact span coverage, no resampled mask)');
+  L.push('struct Turn { uint16_t icon, first, n; };', `constexpr Turn TURNS[${Math.max(1, tt.length)}] = {${tt.join(', ') || '{0, 0, 0}'}};`, `constexpr int N_TURNS = ${tt.length};`);
+  L.push(`constexpr float TURN_PTS[${Math.max(1, tp.length)}][2] = {${tp.map((q) => `{${q.map((v) => `${+v.toFixed(4)}`.replace(/^(-?\d+)$/, '$1.') + 'f').join(', ')}}`).join(', ') || '{0, 0}'}};`);
   L.push('}  // namespace ic', '}  // namespace fw');
   // Icons page sections (FW_COMPONENT meta): id list + variants
   const sections = [['compare', 'Size comparison'], ...t.groups.map((g) => [g.id, g.label]), ['animated', 'Animated weather'], ['moon', 'Moon phase'], ['all', 'Every icon'], ['memory', 'Flash']];

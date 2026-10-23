@@ -395,6 +395,17 @@ recolours the ink per state (the Button's pressed / active / disabled looks). Co
 `icons` (ink, accent, text-dim, blue, steel on bg + surface, kind ui). Page `/wasm/foundations/icons`: size comparison,
 one section per group, every icon, flash per size and kind; playground search / size / accent tint / boxes.
 
+### Turn icons (WIP 2026-10-23)
+
+An icon with `"turn": true` in `icons.json` (so far `plane`, Facet main's `planeGlyph`: a plane from above, nose up,
+filled) also ships its outline: `gen_icons.mjs` reads the master's one filled path (M / L / H / V / C / Z, a cubic = 8
+segments) into `ic::TURNS` / `ic::TURN_PTS` (meta header, 24 grid). `fw::icon_turned(parent, "plane", px, deg, colour)`
+fills it at any heading on the device (clockwise about the box centre = the original's `rotate()` with origin 50 % 50 %,
+exact span coverage on 16 sub-rows per px row, so the edges match an SVG fill); `fw::icon_turned_mask` gives the bare A8
+mask for a component's own draw event (Overhead's sky radar), freed with `fw::icon_mask_free`. No turned bitmap is
+resampled. The static masks at its `sizes` stay (heading 0, the Icons grid); the Icons page adds a "(heading)" tile at
+eight headings. Checked against resvg renders of the original path at 32 px: per-pixel coverage within 0.11, mean 0.003.
+
 ### Animated weather (WIP 2026-10-22)
 
 Facet `main` animates the weather icons on the Home card (72) and the Weather hero (144) (`weatherIcon(id, { animated })`

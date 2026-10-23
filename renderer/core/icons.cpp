@@ -1,6 +1,9 @@
 // Facet icons for this density (README "Icons"): the generated A8 masks (tools/gen_icons.mjs -> facet_icons*.h, from
 // tokens/icons.json + icons/), in their own translation unit so a component change never recompiles the pixels.
 // One icon = an S x S box with one lv_image per colour layer, each cropped to its ink and placed at its offset.
+#include <algorithm>
+#include <cmath>
+#include <cstring>
 #include "fw.h"
 #ifdef FW_1X
 #include "facet_icons_1x.h"
@@ -82,6 +85,67 @@ lv_obj_t *fw::icon(lv_obj_t *parent, const char *name, ic::Size size, lv_color_t
     lv_obj_set_user_data(im, (void *) (uintptr_t) l.role);
   }
   return box;
+}
+
+// ---------------------------------------------------------------- turn icons (icons.json turn, README "Icons" > "Turn
+// icons"): the master's outline (ic::TURN_PTS) filled at any heading into an A8 mask, exact span coverage on 16
+// sub-rows per px row (an SVG fill's edges), turned clockwise about the box centre (CSS rotate, origin 50% 50%).
+extern "C" void lv_image_cache_drop(const void *src);  // LVGL 9 (misc/cache/instance/lv_image_cache.h, not in lvgl.h)
+lv_draw_buf_t *fw::icon_turned_mask(int index, int px, float deg) {
+  const ic::Turn *tn = nullptr;
+  for (int i = 0; i < ic::N_TURNS; i++)
+    if (ic::TURNS[i].icon == index) tn = &ic::TURNS[i];
+  if (!tn || px < 1) return nullptr;
+  lv_draw_buf_t *b = lv_draw_buf_create(px, px, LV_COLOR_FORMAT_A8, LV_STRIDE_AUTO);
+  if (!b) return nullptr;
+  std::memset(b->data, 0, b->data_size);
+  const float k = px / 24.f, h = px / 2.f, an = deg * 3.14159265f / 180.f, c = std::cos(an), sn = std::sin(an);
+  float p[64][2];
+  const int n = std::min<int>(tn->n, 64);
+  for (int i = 0; i < n; i++) {
+    const float x = (ic::TURN_PTS[tn->first + i][0] - 12) * k, y = (ic::TURN_PTS[tn->first + i][1] - 12) * k;
+    p[i][0] = h + x * c - y * sn, p[i][1] = h + x * sn + y * c;
+  }
+  constexpr int SUB = 16;
+  float acc[256], xs[64];
+  for (int py = 0; py < px; py++) {
+    const int w = std::min(px, 256);
+    std::fill(acc, acc + w, 0.f);
+    for (int j = 0; j < SUB; j++) {
+      const float y = py + (j + .5f) / SUB;
+      int m = 0;
+      for (int i = 0; i < n; i++) {
+        const float *a = p[i], *e = p[(i + 1) % n];
+        if ((a[1] <= y) != (e[1] <= y)) xs[m++] = a[0] + (y - a[1]) / (e[1] - a[1]) * (e[0] - a[0]);
+      }
+      std::sort(xs, xs + m);
+      for (int i = 0; i + 1 < m; i += 2) {
+        const float x0 = std::max(0.f, xs[i]), x1 = std::min((float) w, xs[i + 1]);
+        for (int x = (int) x0; x < w && x < x1; x++) acc[x] += (std::min(x1, x + 1.f) - std::max(x0, (float) x)) / SUB;
+      }
+    }
+    uint8_t *row = (uint8_t *) b->data + py * b->header.stride;
+    for (int x = 0; x < w; x++) row[x] = (uint8_t) std::lround(std::min(1.f, acc[x]) * 255);
+  }
+  return b;
+}
+void fw::icon_mask_free(lv_draw_buf_t *b) {
+  if (!b) return;
+  lv_image_cache_drop(b);
+  lv_draw_buf_destroy(b);
+}
+lv_obj_t *fw::icon_turned(lv_obj_t *parent, const char *name, int px, float deg, lv_color_t colour) {
+  lv_draw_buf_t *b = icon_turned_mask(icon_index(name), px, deg);
+  if (!b) return nullptr;
+  lv_obj_t *im = lv_image_create(parent);
+  lv_obj_remove_flag(im, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
+  lv_obj_set_size(im, px, px);
+  lv_image_set_src(im, b);
+  lv_obj_set_style_image_recolor(im, colour, 0);
+  lv_obj_set_style_image_recolor_opa(im, LV_OPA_COVER, 0);
+  lv_obj_set_user_data(im, (void *) (uintptr_t) ic::R_ink);
+  lv_obj_add_event_cb(im, [](lv_event_t *e) { icon_mask_free((lv_draw_buf_t *) lv_event_get_user_data(e)); }, LV_EVENT_DELETE, b);
+  return im;
 }
 
 void fw::icon_colour(lv_obj_t *icon, lv_color_t colour, lv_style_selector_t sel, const lv_style_transition_dsc_t *tr) {

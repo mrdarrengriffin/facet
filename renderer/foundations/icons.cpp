@@ -107,6 +107,25 @@ void grid(lv_obj_t *l, const char *group, const char *title, const Opts &o) {
   int n = 0;
   for (int i = 0; i < ic::N; i++)
     if (matches(i, group, o) && tile(w, i, o)) n++;
+  for (int t = 0; t < ic::N_TURNS; t++) {  // a turn icon at eight headings, filled on the device (fw::icon_turned)
+    const int i = ic::TURNS[t].icon;
+    if (!matches(i, group, o) || (o.size >= 0 && o.size != ic::glyph)) continue;
+    lv_obj_t *c = column(w, sp::s2, LV_SIZE_CONTENT);
+    lv_obj_t *r = row(c, sp::s4, LV_FLEX_ALIGN_END);
+    for (int h = 0; h < 360; h += 45) {
+      lv_obj_t *im = icon_turned(r, ic::ICONS[i].name, ic::PX[ic::glyph], (float) h, o.ink());
+      if (im && o.boxes) {
+        lv_obj_set_style_outline_width(im, stroke::hair, 0);
+        lv_obj_set_style_outline_color(im, T->line_hi, 0);
+        lv_obj_set_style_outline_pad(im, 0, 0);
+      }
+    }
+    char b[48];
+    snprintf(b, sizeof b, "%s (heading)", ic::ICONS[i].name);
+    text(c, ty::c_label, b, T->text);
+    text(c, ty::c_meta_sm, "turned on the device · 0 to 315 deg", T->text_dim);
+    n++;
+  }
   if (group && !strcmp(group, "weather") && (!*o.search || strstr("moon", o.search))) {  // the moon phase glyph, drawn in code
     lv_obj_t *t = column(w, sp::s2, LV_SIZE_CONTENT);
     lv_obj_t *r = row(t, sp::s4, LV_FLEX_ALIGN_END);

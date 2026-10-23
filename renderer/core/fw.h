@@ -75,6 +75,13 @@ uint32_t font_glyph(int font, int g);  // g-th code point of a font (sorted), 0 
 lv_obj_t *icon(lv_obj_t *parent, const char *name, ic::Size size, lv_color_t colour);
 // recolour an icon's ink parts for a state selector (e.g. LV_STATE_PRESSED), optional transition (press fades)
 void icon_colour(lv_obj_t *icon, lv_color_t colour, lv_style_selector_t sel = 0, const lv_style_transition_dsc_t *tr = nullptr);
+// Turn icons (icons.json turn: the plane): the master's outline filled at any heading on the device (no resampled
+// mask). fw::icon_turned(parent, "plane", px, track, T->text_dim) = a px square image turned clockwise by deg;
+// icon_turned_mask = the same as a bare A8 mask (draw it with an image recolour) for a component's own draw event,
+// freed with icon_mask_free. nullptr = not a turn icon.
+lv_obj_t *icon_turned(lv_obj_t *parent, const char *name, int px, float deg, lv_color_t colour);
+lv_draw_buf_t *icon_turned_mask(int index, int px, float deg);
+void icon_mask_free(lv_draw_buf_t *mask);
 int icon_index(const char *name);          // into ic::ICONS, -1 = unknown
 bool icon_has(int index, ic::Size size);  // is this icon@size in this build (all sizes, or FW_ICONS=used)
 int icon_bytes(int index, ic::Size size); // flash of one icon@size (its masks), 0 = not in this build

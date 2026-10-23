@@ -98,6 +98,7 @@
     {"name": "window", "kind": "ui", "group": "status", "keyline": "square", "file": "window.svg", "sizes": ["icon"], "use": "state readout 24"},
     {"name": "thermometer", "kind": "ui", "group": "status", "keyline": "portrait", "file": "thermometer.svg", "sizes": ["icon"], "use": "state readout 24"},
     {"name": "house", "kind": "ui", "group": "status", "keyline": "square", "file": "house.svg", "sizes": ["icon"], "use": "state readout 24"},
+    {"name": "plane", "kind": "ui", "group": "status", "keyline": "glyph", "file": "plane.svg", "sizes": ["icon", "glyph"], "turn": true, "use": "Overhead: an aircraft on the sky radar, a plane seen from above turned to its track (Facet main planeGlyph, filled; turn = drawn on the device at any heading, fw::icon_turned)"},
     {"name": "sport-goal", "kind": "ui", "group": "sport", "keyline": "square", "file": "sport-goal.svg", "sizes": ["small", "icon"], "use": "football: a goal on the minute line (small) and in the latest-event line"},
     {"name": "sport-card", "kind": "ui", "group": "sport", "keyline": "portrait", "file": "sport-card.svg", "sizes": ["small", "icon"], "use": "football: a booking; warn = yellow card, error = red card (one shape, the colour says which)"},
     {"name": "sport-sub", "kind": "ui", "group": "sport", "keyline": "square", "file": "sport-sub.svg", "sizes": ["small", "icon"], "use": "football: a substitution (on up, off down)"},

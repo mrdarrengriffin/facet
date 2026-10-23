@@ -24,7 +24,7 @@
 // The sky radar (one draw event, so a refill is one dirty area): rings on a square-root scale (km 5 / 15 / 30 / 50,
 // mi 3 / 10 / 20 / 30 = Units) out to R - plane / 2, inner rings stroke::hair line, the outer one stroke::edge line-hi;
 // N / E / S / W (type label, text-dim, a bg box that cuts the outer ring); home = a text dot (radar_home_dot); every
-// aircraft = a plane seen from above (the lab's 24 grid glyph: fuselage line + wing and tail triangles) turned to its
+// aircraft = a plane seen from above (the Icons foundation's plane, a turn icon) turned to its
 // track, text-dim; the selected one accent with a stroke::edge ring sp::s2 out, drawn last; an emergency error.
 // Feed: props sample (busy / overhead / emergency / quiet: the panel lab's sample sets, fixed), unit (km | mi) and
 // speed (mph | kmh | kn) = Settings > Units. Live = the open ADS-B feeds (adsb.lol / adsb.fi, no key) fetched by the
@@ -124,21 +124,16 @@ lv_obj_t *build(const char *id, lv_obj_t *parent, ArduinoJson::JsonDocument &d) 
 }
 
 // ---------------------------------------------------------------- the sky radar
-struct Mark { float x, y, track; lv_color_t col; bool hero; };
+struct Mark { float x, y, track; lv_color_t col; bool hero; lv_draw_buf_t *b = nullptr; };
 struct Sky {
   int S = 0, glyph = 0;
   std::vector<std::pair<float, bool>> rings;  // radius px, outer
   std::vector<Mark> marks;                    // the selected one last (on top)
+  ~Sky() {
+    for (Mark &m : marks) fw::icon_mask_free(m.b);
+  }
 };
 int32_t pv(float v) { return (int32_t) std::lround(v); }
-void tri(lv_layer_t *l, const float (*p)[2], lv_color_t col) {
-  lv_draw_triangle_dsc_t td;
-  lv_draw_triangle_dsc_init(&td);
-  td.color = col;
-  td.opa = LV_OPA_COVER;
-  for (int i = 0; i < 3; i++) td.p[i] = {pv(p[i][0]), pv(p[i][1])};
-  lv_draw_triangle(l, &td);
-}
 void arc(lv_layer_t *l, float cx, float cy, float r, int w, lv_color_t col) {
   lv_draw_arc_dsc_t ad;
   lv_draw_arc_dsc_init(&ad);
@@ -149,30 +144,6 @@ void arc(lv_layer_t *l, float cx, float cy, float r, int w, lv_color_t col) {
   ad.start_angle = 0;
   ad.end_angle = 360;
   lv_draw_arc(l, &ad);
-}
-// the lab's plane (24 grid, nose up) at (cx, cy), size px, turned clockwise by track: fuselage + wings + tail
-void plane(lv_layer_t *l, float cx, float cy, float size, float track, lv_color_t col) {
-  const float k = size / 24.f, a = track * (float) M_PI / 180, c = std::cos(a), s = std::sin(a);
-  auto P = [&](float x, float y, float *o) {
-    x = (x - 12) * k, y = (y - 12) * k;
-    o[0] = cx + x * c - y * s, o[1] = cy + x * s + y * c;
-  };
-  float n[2], t[2];
-  P(12, 3.2f, n), P(12, 19.6f, t);
-  lv_draw_line_dsc_t ld;
-  lv_draw_line_dsc_init(&ld);
-  ld.color = col;
-  ld.width = std::max(2, (int) std::lround(2.6f * k));
-  ld.round_start = ld.round_end = true;
-  ld.p1 = {pv(n[0]), pv(n[1])}, ld.p2 = {pv(t[0]), pv(t[1])};
-  lv_draw_line(l, &ld);
-  const float W[2][3][2] = {{{12, 8.6f}, {21, 14.8f}, {12, 13.4f}}, {{12, 16.4f}, {15.6f, 20.6f}, {12, 19.8f}}};
-  for (const auto &w : W)
-    for (int side = 0; side < 2; side++) {
-      float p[3][2];
-      for (int i = 0; i < 3; i++) P(side ? 24 - w[i][0] : w[i][0], w[i][1], p[i]);
-      tri(l, p, col);
-    }
 }
 void sky_draw(lv_event_t *e) {
   auto *k = (Sky *) lv_event_get_user_data(e);
@@ -188,7 +159,16 @@ void sky_draw(lv_event_t *e) {
   }
   arc(l, cx, cy, fw::lay::radar_home_dot / 2.f, 0, t.text);
   for (const Mark &m : k->marks) {
-    plane(l, a.x1 + m.x, a.y1 + m.y, (float) k->glyph, m.track, m.col);
+    if (m.b) {
+      lv_draw_image_dsc_t id;
+      lv_draw_image_dsc_init(&id);
+      id.src = m.b;
+      id.recolor = m.col;
+      id.recolor_opa = LV_OPA_COVER;
+      const int32_t x0 = a.x1 + pv(m.x - k->glyph / 2.f), y0 = a.y1 + pv(m.y - k->glyph / 2.f);
+      const lv_area_t ia = {x0, y0, x0 + k->glyph - 1, y0 + k->glyph - 1};
+      lv_draw_image(l, &id, &ia);
+    }
     if (m.hero) arc(l, a.x1 + m.x, a.y1 + m.y, k->glyph / 2.f + fw::sp::s2, fw::stroke::edge, m.col);
   }
 }
@@ -202,6 +182,7 @@ lv_obj_t *radar(lv_obj_t *parent, const View *v, const std::vector<Flight> &fl, 
   lv_obj_set_size(r, S, S);
   auto *k = new Sky;
   k->S = S, k->glyph = glyph;
+  static const int PLANE = fw::icon_index("plane");
   for (double ring : rg.rings) k->rings.push_back({std::round(rpx(ring)), ring == rg.edge});
   std::vector<const Flight *> near;
   for (const Flight &f : fl) near.push_back(&f);
@@ -217,6 +198,7 @@ lv_obj_t *radar(lv_obj_t *parent, const View *v, const std::vector<Flight> &fl, 
       const float rr = std::min(rpx(fw::units::from_km(f.km, v->du)), hero ? rmax - fw::sp::s2 : rmax), an = (float) (f.brg * M_PI / 180);
       const float x = R + rr * std::sin(an), y = R - rr * std::cos(an);
       k->marks.push_back({x, y, (float) f.track, f.emergency() ? t.error : hero ? t.accent : t.text_dim, hero});
+      k->marks.back().b = fw::icon_turned_mask(PLANE, glyph, (float) f.track);  // the Icons plane, turned to its track
       if (labels && ((int) i < labels || hero)) {
         lv_obj_t *cs = fw::text(r, LT, f.cs, hero ? t.text : t.text_dim);
         lv_obj_update_layout(cs);
