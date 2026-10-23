@@ -8,7 +8,7 @@
     {"id": "secondary", "label": "Secondary accents", "about": "Quiet support colours: weather, markers, done states."},
     {"id": "status", "label": "Status", "about": ""},
     {"id": "special", "label": "Special purpose", "about": "Charts, the moon glyph and QR codes (QR stays dark on light in both themes)."},
-    {"id": "media", "label": "Media visuals", "about": "Only for the media visuals (disc, cassette, CD, vinyl, reel)."}
+    {"id": "media", "label": "Media visuals", "about": "Only for the media visuals (disc, cassette, CD, vinyl, reel)."}, {"id": "bins", "label": "Bins", "about": "Only for the Bins screen: the bin colours councils use; the screen always names the bin too."}
   ],
   "colours": {
     "bg": {"group": "surfaces", "dark": "#000000", "light": "#F4F2EE", "role": "canvas"},
@@ -51,6 +51,14 @@
     "mv-tape": {"group": "media", "dark": "#3B2A1F", "light": "#4A3426", "role": "tape (oxide brown): packs, tape path"},
     "mv-tape-hi": {"group": "media", "dark": "#6E5140", "light": "#7E604B", "role": "tape pack sheen / tape edge"},
     "mv-hub": {"group": "media", "dark": "#CFCBC3", "light": "#F1EEE8", "role": "cassette hubs (white plastic)"},
+    "bin-black": {"group": "bins", "dark": "#2A2D33", "light": "#2B2E33", "role": "Bins: a black wheelie bin"},
+    "bin-green": {"group": "bins", "dark": "#3E8A4C", "light": "#3C8547", "role": "Bins: a green wheelie bin"},
+    "bin-brown": {"group": "bins", "dark": "#7D5538", "light": "#7A5136", "role": "Bins: a brown wheelie bin"},
+    "bin-blue": {"group": "bins", "dark": "#2F6DB0", "light": "#2D68A8", "role": "Bins: a blue wheelie bin"},
+    "bin-grey": {"group": "bins", "dark": "#7D838C", "light": "#8A9099", "role": "Bins: a grey wheelie bin"},
+    "bin-purple": {"group": "bins", "dark": "#6B4E98", "light": "#6A4C95", "role": "Bins: a purple wheelie bin"},
+    "bin-red": {"group": "bins", "dark": "#A8443A", "light": "#A8443A", "role": "Bins: a red wheelie bin"},
+    "bin-yellow": {"group": "bins", "dark": "#D2AE2E", "light": "#C9A52A", "role": "Bins: a yellow wheelie bin"},
     "mv-clear": {"group": "media", "dark": "#1E2228", "light": "#D3D0CA", "role": "CD clear polycarbonate"},
     "mv-clear-2": {"group": "media", "dark": "#2E333B", "light": "#BDB9B2", "role": "CD clamping area, stacking ring"},
     "mv-mirror": {"group": "media", "dark": "#A9AFB8", "light": "#B9BEC6", "role": "CD metallised band"},
@@ -73,6 +81,7 @@
     "flag-white": {"group": "secondary", "dark": "#F7F7F5", "light": "#F7F7F5", "role": "Sport: chequered squares, black-and-white flag (fixed)"}
   },
   "components": {
+    "bin": {"shade": {"value": 0.28, "use": "Bins: the darker parts of a bin (handle, lid, band, slots) = black over the bin colour at this opacity (panel lab 0.28)"}},
     "chart": {
       "area": {"value": 0.12, "use": "opacity of the series colour under a single-series line (mix chart-area; chart.json area)"}
     },
@@ -460,6 +469,15 @@
       {"section": "overhead", "fg": "accent", "bg": ["bg"], "kind": "ui", "use": "Overhead sky radar: the hero aircraft"},
       {"section": "overhead", "fg": "error", "bg": ["bg"], "kind": "ui", "use": "Overhead sky radar: an aircraft squawking an emergency"},
       {"section": "overhead", "fg": "accent-text", "bg": ["bg"], "kind": "text", "use": "Overhead: the look line when the hero is 30 degrees or more up"},
+      {"section": "bins", "fg": "bin-black", "bg": ["bg"], "kind": "decor", "use": "a black bin (the row or caption names it)"},
+      {"section": "bins", "fg": "bin-green", "bg": ["bg"], "kind": "decor", "use": "a green bin (the row or caption names it)"},
+      {"section": "bins", "fg": "bin-brown", "bg": ["bg"], "kind": "decor", "use": "a brown bin (the row or caption names it)"},
+      {"section": "bins", "fg": "bin-blue", "bg": ["bg"], "kind": "decor", "use": "a blue bin (the row or caption names it)"},
+      {"section": "bins", "fg": "bin-grey", "bg": ["bg"], "kind": "decor", "use": "a grey bin (the row or caption names it)"},
+      {"section": "bins", "fg": "bin-purple", "bg": ["bg"], "kind": "decor", "use": "a purple bin (the row or caption names it)"},
+      {"section": "bins", "fg": "bin-red", "bg": ["bg"], "kind": "decor", "use": "a red bin (the row or caption names it)"},
+      {"section": "bins", "fg": "bin-yellow", "bg": ["bg"], "kind": "decor", "use": "a yellow bin (the row or caption names it)"},
+      {"section": "bins", "fg": "line-hi", "bg": ["bin-black", "bin-grey"], "kind": "decor", "use": "the edge round black and grey bins"},
       {"section": "radar", "fg": "line-hi", "bg": ["bg", "surface"], "kind": "decor", "use": "distance rings (the labels name them) and the minor 30 degree ticks"},
       {"section": "radar", "fg": "accent-dim", "bg": ["bg", "surface"], "kind": "decor", "use": "the 25 km alert ring (2 px; its label names it)"},
       {"section": "radar", "fg": "steel", "bg": ["bg", "surface"], "kind": "ui", "use": "the N / E / S / W ticks"},

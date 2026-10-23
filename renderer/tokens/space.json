@@ -128,6 +128,7 @@
       "radar-flash": { "v": 48, "1x": 48, "use": "Lightning radar: a new strike's ripple grows from the dot to this (docs scale 6 of the 8 px dot = 48; the dot is 8 at both sizes)" },
       "preview-strike": { "v": 4, "1x": 4, "use": "Card preview, lightning: a strike dot (docs 4)" },
       "preview-home": { "v": 8, "1x": 4, "use": "Card previews: the blue centre dot (lightning home, the dial and timer hub; docs 6 / 8, onto the grid)" },
+      "bin-hero": { "v": 144, "1x": 96, "use": "Bins: the next collection's bins, this tall (width 4 / 5 of it, on the grid)" },
       "sky-radar": { "v": 208, "1x": 136, "use": "Overhead: the sky radar beside the hero aircraft (panel lab 208); rings 5 / 15 / 30 / 50 km on a square-root scale" },
       "sky-plane": { "v": 12, "1x": 8, "use": "Overhead: an aircraft dot on the sky radar" },
       "sport-marker": { "v": 16, "1x": 12, "use": "Sport: a car on the circuit (team dot, its bg cut-out ring included)" },

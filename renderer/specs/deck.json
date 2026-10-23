@@ -47,6 +47,10 @@
    "card": true
   },
   {
+   "id": "bins",
+   "card": true
+  },
+  {
    "id": "print",
    "card": true
   },
