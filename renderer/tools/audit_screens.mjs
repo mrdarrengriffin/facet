@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // Screen layout check (2026-10-22, after the F1 screen drew its circuit over the header and the standings): the
 // component audit checks parts alone; this checks how a SCREEN places them. For every screen x variant x theme x
-// density, at the build and again after 1 s and 3 s of updates (live screens move):
+// density, at the build and again after 1 s and 3 s of updates (live screens move), and after an update from the
+// default props to each variant (fw_update: the update path must place things as the build does):
 //   overlap   two regions (the screen root's direct children: header, region boxes, ...) whose boxes intersect
 //   escape    an object inside one region whose box (+ its ext draw size), cut by the ancestors that clip (scroll
 //             lists, anything not overflow-visible), reaches into ANOTHER region's box, or off the screen
@@ -106,6 +107,23 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
             for (const err of checkScreen(JSON.parse(m.UTF8ToString(m._fw_audit(A))), S, S))
               out.set(err, [...(out.get(err) || []), `${v.label} · ${light ? 'light' : 'dark'} · ${at / 1000}s`]);
           }
+          m.__t0 = t;
+          m._fw_stage_free(A);
+        }
+      // the update path (2026-10-23, Set up on the panel: a state change through fw_update dropped the body's position
+      // and size, so only the QR code showed): build the default, then update to each variant, check the layout again
+      for (const v of c.meta.variants || [])
+        for (const light of [false, true]) {
+          const A = m._fw_stage(S, S);
+          const e0 = str(c.id, (cp) => str(JSON.stringify(defaults), (pp) => m.UTF8ToString(m._fw_render(A, cp, pp, light ? 1 : 0, 0))));
+          const e = e0 || str(c.id, (cp) => str(JSON.stringify({ ...defaults, ...v.props }), (pp) => m.UTF8ToString(m._fw_update(A, cp, pp, light ? 1 : 0, 0))));
+          if (e && e !== 'rebuild') { out.set(`update: ${e}`, [`${v.label}`]); m._fw_stage_free(A); continue; }
+          if (e === 'rebuild') { m._fw_stage_free(A); continue; }  // a rebuild = the build checked above
+          const end = t + 1000;
+          while (t < end) { t += 16; m._fw_tick(t); }
+          m._fw_events();
+          for (const err of checkScreen(JSON.parse(m.UTF8ToString(m._fw_audit(A))), S, S))
+            out.set(err, [...(out.get(err) || []), `default → ${v.label} (update) · ${light ? 'light' : 'dark'}`]);
           m.__t0 = t;
           m._fw_stage_free(A);
         }

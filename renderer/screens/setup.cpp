@@ -25,7 +25,8 @@
 //   added         ok "Connected"       "Connected to Home Assistant" (the panel then opens Home with a toast)
 //   actions       warn "Actions off"   Home Assistant refuses this panel's actions: where to turn them on
 // Events: "setup" detail allow / not-now (the Allow buttons), "way" detail hotspot|bluetooth|usb (a way picked).
-// Update path: header in place (the chip's tone fades), body made again with a fade (refill_fade), silent.
+// Update path: header in place (the chip's tone fades), body made again with a fade (refill_fade), silent; header and
+// body placed again after it (place: a refill drops position + size).
 #include <algorithm>
 #include <functional>
 #include <string>
@@ -332,9 +333,20 @@ void sheet_props(Screen *scr, bool open, Doc &d) {
   d["selected"] = sel;
 }
 
+// where the header and the body sit on the screen. Set again after every update: fw::refill (the body made again, or
+// the Header's own refill when its shape changes, e.g. the clock appears on Wi-Fi) removes ALL local styles, position
+// and size included, and a bare box falls back to LVGL's default 130 x 130 at 0,0 (2026-10-23, the panel showed only
+// the QR code in the top-left corner after the first state change: every text was clipped by that box).
+void place(Screen *scr) {
+  if (scr->header) lv_obj_set_pos(scr->header, fw::lay::inset, fw::lay::inset);
+  lv_obj_set_pos(scr->body, fw::lay::inset, fw::lay::top);
+  lv_obj_set_size(scr->body, fw::lay::content_w, fw::lay::screen_h - fw::lay::top - fw::lay::inset);
+}
+
 void rebuild_body(Screen *scr, bool animate) {
   fw::st::refill_fade(scr->body, [scr] {
     fw::refill(scr->body);
+    place(scr);
     fill_body(scr);
   }, animate);
 }
@@ -406,11 +418,8 @@ void build_setup(lv_obj_t *parent, fw::Props p) {
   Doc hd;
   header_props(v, scr->props.as<fw::Props>(), hd);
   scr->header = build("header", scr->root, hd);
-  if (scr->header) lv_obj_set_pos(scr->header, fw::lay::inset, fw::lay::inset);
-
   scr->body = box(scr->root);
-  lv_obj_set_pos(scr->body, fw::lay::inset, fw::lay::top);
-  lv_obj_set_size(scr->body, fw::lay::content_w, fw::lay::screen_h - fw::lay::top - fw::lay::inset);
+  place(scr);
   fill_body(scr);
 
   if (fw::lay::screen_w < 600 && scr->ways.size() > 1) {  // 480: "Other ways" opens this sheet (overlay)
@@ -440,7 +449,7 @@ FW_UPDATE(setup) {
   Doc hd;
   header_props(v, p, hd);
   if (scr->header) fw::update_child(fw::find("header"), scr->header, hd.as<fw::Props>());
-  rebuild_body(scr, true);
+  rebuild_body(scr, true);  // places the header and the body again (place)
   if (scr->sheet) {
     Doc d;
     sheet_props(scr, false, d);
