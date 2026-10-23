@@ -21,7 +21,9 @@
 //            light.turn_off, light.toggle on light.* entities; climate.set_temperature {temperature},
 //            climate.set_hvac_mode {hvac_mode: off|heat|cool|heat_cool|auto|dry|fan_only}, climate.set_preset_mode
 //            {preset_mode} on climate.* entities; media_player.media_play_pause / media_next_track /
-//            media_previous_track, media_player.volume_set {volume_level 0..1} on media_player.* entities): emits
+//            media_previous_track, media_player.volume_set {volume_level 0..1} on media_player.* entities;
+//            cover.open_cover / close_cover / stop_cover, set_cover_position {position}, set_cover_tilt_position
+//            {tilt_position} 0-100 on cover.* entities): emits
 //            "ha" {service, entity, data} (the workbench host calls HA through the hub) and calls the action sink (the panel: an HA action over its API).
 // TODO (full "wish" model, plan §2.3): wishes per entity shared across screens, drag throttling (brightness while
 // dragging), providers, a deck-wide subscription union, big attributes kept raw.
@@ -250,6 +252,7 @@ inline const char *act(lv_obj_t *from, const char *service, const char *entity, 
   if (svc.rfind("light.", 0) == 0 && !light) return "not a light";
   if (svc.rfind("climate.", 0) == 0 && !climate) return "not a climate entity";
   if (svc.rfind("media_player.", 0) == 0 && !media) return "not a media player";
+  if (svc.rfind("cover.", 0) == 0 && ent.rfind("cover.", 0) != 0) return "not a cover";
   ArduinoJson::JsonDocument data;
   if (data_json && *data_json && deserializeJson(data, data_json)) return "data is not JSON";
   auto only = [&](const char *key) {  // the data holds exactly this one key
@@ -276,7 +279,12 @@ inline const char *act(lv_obj_t *from, const char *service, const char *entity, 
     if (!only("volume_level") || !data["volume_level"].is<double>()) return "media_player.volume_set takes volume_level";
     const double v = data["volume_level"].as<double>();
     if (!std::isfinite(v) || v < 0 || v > 1) return "volume_level outside 0..1";
-  } else if (svc == "light.turn_off" || svc == "light.toggle" || svc == "media_player.media_play_pause" ||
+  } else if (svc == "cover.set_cover_position" || svc == "cover.set_cover_tilt_position") {
+    const char *k = svc == "cover.set_cover_position" ? "position" : "tilt_position";
+    if (!only(k) || !data[k].is<double>()) return "cover position: position / tilt_position 0..100";
+    data[k] = (int) LV_CLAMP(0.0, std::round(data[k].as<double>()), 100.0);
+  } else if (svc == "cover.open_cover" || svc == "cover.close_cover" || svc == "cover.stop_cover" ||
+             svc == "light.turn_off" || svc == "light.toggle" || svc == "media_player.media_play_pause" ||
              svc == "media_player.media_next_track" || svc == "media_player.media_previous_track") {
     if (data.size()) return "no data for this action";
   } else return "action not allowed";

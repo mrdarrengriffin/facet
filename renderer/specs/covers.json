@@ -2,7 +2,11 @@
  "v": 1,
  "id": "covers",
  "name": "Blinds and curtains",
- "rev": 1,
+ "rev": 2,
+ "params": {
+  "entity": {"type": "entity", "domain": "cover", "label": "Window", "default": ""},
+  "covers": {"type": "entities", "domain": "cover", "label": "Windows", "default": ""}
+ },
  "header": {
   "label": "Blinds",
   "back": true
@@ -11,7 +15,18 @@
  "nodes": [
   {
    "c": "covers_view",
-   "p": {}
+   "p": {
+    "state": {"e": "$entity"},
+    "position": {"e": "$entity", "a": "current_position", "fmt": "num"},
+    "tilt": {"e": "$entity", "a": "current_tilt_position", "fmt": "num"},
+    "device_class": {"e": "$entity", "a": "device_class"},
+    "cover": "$entity",
+    "covers": "$covers"
+   },
+   "on": {
+    "cover": {"do": "cover.control", "e": "$entity"},
+    "window": {"do": "screen.param", "param": "entity", "from": "covers"}
+   }
   }
  ]
 }

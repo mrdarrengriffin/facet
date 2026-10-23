@@ -880,6 +880,21 @@
      "max": 100
     },
     {
+     "name": "device_class",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "cover",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "covers",
+     "type": "text",
+     "bindable": true
+    },
+    {
      "name": "state",
      "type": "select",
      "bindable": true,
@@ -893,6 +908,12 @@
     }
    ],
    "events": {
+    "cover": [
+     "cover.control"
+    ],
+    "window": [
+     "screen.param"
+    ],
     "open": [
      "nav.open"
     ]
@@ -4270,6 +4291,7 @@
   "climate.set_hvac_mode",
   "climate.set_preset_mode",
   "media.control",
+  "cover.control",
   "screen.param",
   "nav.open",
   "nav.back"
@@ -4295,5 +4317,5 @@
   "screens": 16,
   "deck_bytes": 4096
  },
- "hash": "28e4c1c1"
+ "hash": "cae07064"
 }

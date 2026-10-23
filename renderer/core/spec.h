@@ -27,6 +27,9 @@
 //              {"do": "media.control", "e"}  (a Media view's "media" event: previous | play_pause | next |
 //                                              volume 0-100 -> media_player.media_previous_track / media_play_pause /
 //                                              media_next_track / volume_set)
+//              {"do": "cover.control", "e"}  (a Covers view's "cover": position N | tilt N | open | stop | close ->
+//                                              cover.set_cover_position / set_cover_tilt_position / open_cover /
+//                                              stop_cover / close_cover)
 //              {"do": "screen.param", "param": "entity", "from"?: "speakers"}  (the event's detail becomes the
 //                screen's parameter `param` and every node is bound again in place, through its update path: a
 //                picked speaker re-binds the Media screen; with "from" the value must be one of that parameter's
@@ -93,12 +96,13 @@ constexpr Rule RULES[] = {
     {"thermostat_dial", "change", "climate.set_temperature"}, {"thermostat_dial", "input", "climate.set_temperature"},
     {"thermostat_view", "target", "climate.set_temperature"}, {"thermostat_view", "mode", "climate.set_hvac_mode"},
     {"thermostat_view", "preset", "climate.set_preset_mode"},
-    {"media_view", "media", "media.control"},        {"media_view", "speaker", "screen.param"},        // a link to a sub-view spec (moon -> moon_details -> ...)
+    {"media_view", "media", "media.control"},        {"media_view", "speaker", "screen.param"},
+    {"covers_view", "cover", "cover.control"},       {"covers_view", "window", "screen.param"},        // a link to a sub-view spec (moon -> moon_details -> ...)
     {"*", "open", "nav.open"},                       // any component's own "open" (a tapped calendar day, a PR):
                                                      // its detail = the screen id [+ "?" + params JSON]
 };
 constexpr const char *ACTIONS[] = {"light.switch", "light.toggle", "light.brightness", "climate.set_temperature",
-                                   "climate.set_hvac_mode", "climate.set_preset_mode", "media.control", "screen.param",
+                                   "climate.set_hvac_mode", "climate.set_preset_mode", "media.control", "cover.control", "screen.param",
                                    "nav.open", "nav.back"};
 constexpr const char *FMTS[] = {"", "on", "pct", "avail", "light", "name", "num", "frac"};
 constexpr uint32_t CLIMATE_THROTTLE_MS = 250;  // like light-throttle-ms: a set point while dragging at most this often
@@ -211,6 +215,10 @@ inline void check_action(ArduinoJson::JsonVariantConst a, const char *comp, cons
   if (d == "media.control") {
     const std::string en = a["e"] | "";
     if (!entity_ok(en) || (en[0] != '$' && en.rfind("media_player.", 0) != 0)) err(e, path + ".e", "bad_entity", "a media player (media_player.x or $param)");
+  }
+  if (d == "cover.control") {
+    const std::string en = a["e"] | "";
+    if (!entity_ok(en) || (en[0] != '$' && en.rfind("cover.", 0) != 0)) err(e, path + ".e", "bad_entity", "a cover (cover.x or $param)");
   }
   if (d == "screen.param") {
     if (!id_ok(a["param"] | "")) err(e, path + ".param", "bad_action", "param: the screen parameter to set (a-z, 0-9, _)");
@@ -645,6 +653,19 @@ inline bool run(Screen *s, Node &n, const char *event, const char *detail) {
       snprintf(data, sizeof data, "{\"volume_level\":%.2f}", LV_CLAMP(0, atoi(detail + 7), 100) / 100.0);
       ha::act(n.obj, "media_player.volume_set", n.entity.c_str(), data);
     }
+    return true;
+  }
+  if (d == "cover.control") {  // position N | tilt N | open | stop | close (the view shows it at once itself)
+    char data[40];
+    if (!strncmp(detail, "position ", 9)) {
+      snprintf(data, sizeof data, "{\"position\":%d}", (int) LV_CLAMP(0, atoi(detail + 9), 100));
+      ha::act(n.obj, "cover.set_cover_position", n.entity.c_str(), data);
+    } else if (!strncmp(detail, "tilt ", 5)) {
+      snprintf(data, sizeof data, "{\"tilt_position\":%d}", (int) LV_CLAMP(0, atoi(detail + 5), 100));
+      ha::act(n.obj, "cover.set_cover_tilt_position", n.entity.c_str(), data);
+    } else if (!strcmp(detail, "open")) ha::act(n.obj, "cover.open_cover", n.entity.c_str());
+    else if (!strcmp(detail, "close")) ha::act(n.obj, "cover.close_cover", n.entity.c_str());
+    else if (!strcmp(detail, "stop")) ha::act(n.obj, "cover.stop_cover", n.entity.c_str());
     return true;
   }
   if (d == "screen.param") {

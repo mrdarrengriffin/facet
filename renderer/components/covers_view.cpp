@@ -17,8 +17,12 @@
 //            lay::cal_btn_pad; pressed surface-press; tap = sound open) opens the windows sheet (Bottom sheet, picker
 //            rows: the kind's icon, the name, its state); a pick shows that window (event "window" <name>). The sheet
 //            covers the whole screen (the view bleeds up to it). Docs header right [pick].
-// Not ported yet (noted for Darren): the live "set to" text while dragging (the visual emits on release); a picked
-// window re-binding the screen to that cover (a host job). HA cover actions are not in the spec whitelist yet.
+// Real covers (2026-10-23): prop covers = a comma list of cover ids (the host's, spec $covers) lists those in the
+// windows sheet (name, state / position from the HA store), prop cover = the bound one (its friendly name in the
+// Header); a pick emits "window" <entity id> and the spec's screen.param re-binds the screen; prop device_class (HA's)
+// sets the kind: curtain = curtains, a tilt position = Venetian, else roller. The spec's cover.control turns "cover"
+// into cover.set_cover_position / set_cover_tilt_position / open_cover / stop_cover / close_cover.
+// Not ported yet: the live "set to" text while dragging (the visual emits on release).
 // Update path: the visual and the slider through their own updates (the cover glides there), texts in place.
 // Contrast: "cover_visual", "button", "slider", "text".
 // audit deps: button, cover_visual, slider, bottom_sheet
@@ -31,6 +35,8 @@ struct CV {
   std::string kind = "roller", state = "open";
   lv_obj_t *hlabel = nullptr, *sheet = nullptr;
   int win = -1;  // the window shown (the spec screen's windows list), -1 = the props
+  std::string cover;             // the bound cover (prop cover)
+  std::vector<std::string> ids;  // the host's covers (prop covers), empty = the docs sample windows
   int position = 40, tilt = 50, heading = -1;
   int held = -1;
   uint32_t hold_until = 0;
@@ -83,12 +89,31 @@ void render(lv_obj_t *root) {
   sp["value"] = c->tilt, sp["width"] = track_dp(), sp["state"] = off ? "unavailable" : "default";
   fw::update_child(fw::find("slider"), c->slider, sp.as<fw::Props>());
 }
+std::string friendly(const std::string &e) {
+  const std::string *n = fw::ha::get(e, "friendly_name");
+  return n && !n->empty() ? *n : e;
+}
 void take(lv_obj_t *root, fw::Props p) {
   CV *c = of(root);
-  c->kind = p["kind"] | "roller";
+  c->cover = p["cover"] | "";
+  c->ids.clear();
+  const std::string l = p["covers"] | "";
+  for (size_t i = 0; i < l.size();) {
+    size_t j = l.find(',', i);
+    if (j == std::string::npos) j = l.size();
+    std::string id = l.substr(i, j - i);
+    while (!id.empty() && id[0] == ' ') id.erase(0, 1);
+    if (id.rfind("cover.", 0) == 0 && c->ids.size() < 12) { c->ids.push_back(id); for (const char *a : {"", "friendly_name", "current_position"}) fw::ha::want(id, a); }
+    i = j + 1;
+  }
+  const std::string dc = p["device_class"] | "";  // HA's device class: curtain = curtains, a tilt = Venetian, else roller
+  c->kind = !dc.empty() || !c->cover.empty() ? (dc == "curtain" ? "curtain" : p["tilt"].is<double>() ? "venetian" : "roller") : (p["kind"] | "roller");
+  if (c->hlabel && !c->ids.empty() && !c->cover.empty()) fw::set_text(c->hlabel, fw::ty::label, friendly(c->cover).c_str());
   c->position = p["position"] | 40;
   c->tilt = p["tilt"] | 50;
   c->state = p["state"] | "open";
+  if (c->state == "unknown") c->state = "unavailable";
+  if (c->state.empty()) c->state = "open";  // nothing bound: the sample
   c->heading = p["heading"] | -1;
   if (c->held == c->position) c->held = -1;  // HA caught up
   render(root);
@@ -106,9 +131,22 @@ void show_window(lv_obj_t *root, int i) {
   take(root, d.as<fw::Props>());
   if (c->hlabel) fw::set_text(c->hlabel, fw::ty::label, WINDOWS[i].name);
 }
+int n_win(const CV *c) { return c->ids.empty() ? N_WIN : (int) c->ids.size(); }
 void win_sheet_props(const CV *c, bool open, ArduinoJson::JsonDocument &d) {
   d["overlay"] = true, d["title"] = "windows", d["open"] = open ? "open" : "closed", d["selected"] = c->win < 0 ? 0 : c->win;
   ArduinoJson::JsonArray items = d["items"].to<ArduinoJson::JsonArray>();
+  if (!c->ids.empty()) {  // the host's covers: name, state / position from the store
+    for (size_t i = 0; i < c->ids.size(); i++) {
+      const std::string &e = c->ids[i];
+      if (e == c->cover) d["selected"] = (int) i;
+      ArduinoJson::JsonObject it = items.add<ArduinoJson::JsonObject>();
+      const std::string *st = fw::ha::get(e), *pos = fw::ha::get(e, "current_position");
+      std::string status = st ? *st : "unknown";
+      if (pos && status == "open" && atoi(pos->c_str()) < 100) status = *pos + "% open";
+      it["icon"] = "roller", it["name"] = friendly(e), it["status"] = status;
+    }
+    return;
+  }
   for (const Win &w : WINDOWS) {
     ArduinoJson::JsonObject it = items.add<ArduinoJson::JsonObject>();
     it["icon"] = w.kind, it["name"] = w.name;
@@ -125,7 +163,7 @@ const lv_style_transition_dsc_t *pick_tr(bool pressed) {
 // the windows picker in the screen's header + its sheet (spec screens only)
 void windows_header(lv_obj_t *root) {
   lv_obj_t *hdr = fw::spec::building_header();
-  if (!hdr || N_WIN < 2) return;
+  if (!hdr || n_win(of(root)) < 2) return;
   CV *c = of(root);
   const fw::Theme &t = *fw::T;
   c->hlabel = lv_obj_get_child_count(hdr) > 1 ? lv_obj_get_child(hdr, 1) : nullptr;  // back, label, ..., chrome
@@ -140,7 +178,7 @@ void windows_header(lv_obj_t *root) {
   lv_obj_set_style_bg_color(b, fw::st::pressed_surface(t), LV_STATE_PRESSED);
   lv_obj_set_style_transition(b, pick_tr(false), 0);
   lv_obj_set_style_transition(b, pick_tr(true), LV_STATE_PRESSED);
-  const std::string txt = std::to_string(N_WIN) + " windows";
+  const std::string txt = std::to_string(n_win(c)) + " windows";
   lv_obj_t *l = fw::text(b, fw::ty::label, txt.c_str(), t.text_dim);
   fw::spec::header_fit(l);
   lv_obj_set_size(b, lv_obj_get_style_width(l, LV_PART_MAIN) + 2 * fw::lay::cal_btn_pad, fw::lay::row);
@@ -157,6 +195,11 @@ void windows_header(lv_obj_t *root) {
     lv_obj_add_event_cb(c->sheet, [](lv_event_t *e) {  // a window picked
       auto *root = (lv_obj_t *) lv_event_get_user_data(e);
       const int i = (int) (intptr_t) lv_event_get_param(e);
+      CV *c = of(root);
+      if (!c->ids.empty()) {  // a real cover: the spec's screen.param re-binds the screen to it
+        if (i >= 0 && i < (int) c->ids.size()) { c->held = -1; fw::emit(root, "window", c->ids[i].c_str()); }
+        return;
+      }
       if (i < 0 || i >= N_WIN) return;
       show_window(root, i);
       fw::emit(root, "window", WINDOWS[i].name);
@@ -172,7 +215,8 @@ void windows_header(lv_obj_t *root) {
     win_sheet_props(c, true, sd);
     fw::update_child(fw::find("bottom_sheet"), c->sheet, sd.as<fw::Props>());
   }, LV_EVENT_CLICKED, root);
-  show_window(root, 0);
+  if (c->ids.empty()) show_window(root, 0);
+  else if (c->hlabel && !c->cover.empty()) fw::set_text(c->hlabel, fw::ty::label, friendly(c->cover).c_str());
 }
 }  // namespace
 
@@ -184,6 +228,9 @@ FW_COMPONENT(covers_view, "Covers view", "components", R"({
     {"name": "kind", "type": "select", "options": ["roller", "venetian", "curtain"], "default": "roller"},
     {"name": "position", "type": "range", "min": 0, "max": 100, "step": 1, "default": 40},
     {"name": "tilt", "type": "range", "min": 0, "max": 100, "step": 1, "default": 50},
+    {"name": "device_class", "type": "text", "default": ""},
+    {"name": "cover", "type": "text", "default": ""},
+    {"name": "covers", "type": "text", "default": ""},
     {"name": "state", "type": "select", "options": ["open", "closed", "opening", "closing", "unavailable"], "default": "open"}
   ],
   "variants": [
@@ -277,7 +324,7 @@ FW_COMPONENT(covers_view, "Covers view", "components", R"({
 FW_UPDATE(covers_view) {
   CV *c = of(root);
   if (!c) return false;
-  if (c->win >= 0) { render(root); return true; }  // a picked window keeps showing (its own sample state)
+  if (c->win >= 0 && !(p["covers"] | "")[0]) { render(root); return true; }  // a picked sample window keeps showing
   take(root, p);
   return true;
 }
