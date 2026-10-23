@@ -1,10 +1,10 @@
 ---
-title: "Screens in the docs"
+title: "A docs page for every screen"
 date: "2026-10-23"
 time: "13:50"
-area: "Site"
-links: [["Screens", "screens/"], ["Media", "screens/media/"]]
+kind: "Docs"
+image: "2026-10-23-screens-in-the-docs.png"
+alt: "The Media screen's docs page with its live preview"
+links: [["Screens", "screens/"]]
 ---
-Every screen now has its own page here: a live preview on sample data at both panel sizes, what it shows, its settings, where its data can come from and the components it is built with.
-
-The pages are generated from the screens themselves, so they change when the screens do.
+Each screen has a page with a live preview at both panel sizes, its settings, where its data can come from and the components it's built with.

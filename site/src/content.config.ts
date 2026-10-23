@@ -12,8 +12,10 @@ const updates = defineCollection({
     date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
     /** HH:MM (local time), shown next to the date and orders entries of the same day; leave out when unknown */
     time: z.string().regex(/^\d{2}:\d{2}$/).optional(),
-    /** what it touched: Components, Design system, Sound, Site, ... */
-    area: z.string(),
+    /** what a reader gets (README: the kinds); drawn as a chip and used by the filter row */
+    kind: z.string().optional(),
+    /** older entries: what it touched; shown when there is no kind */
+    area: z.string().optional(),
     /** a turning point in Facet's story: drawn as a tinted box with a Milestone mark */
     milestone: z.boolean().default(false),
     /** pictures in public/updates/: a before / after pair, or one image */

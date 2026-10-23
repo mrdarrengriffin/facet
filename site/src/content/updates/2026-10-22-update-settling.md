@@ -1,8 +1,7 @@
 ---
-title: "The panel tells you when an update is settling"
+title: "A warning while an update settles"
 date: "2026-10-22"
 time: "18:52"
-area: "Panels"
-links: []
+kind: "New feature"
 ---
-After a firmware update, a panel runs the new build on probation for three minutes. If it restarts in that time, it goes back to the previous build, which keeps a bad update from leaving it stuck. That's easy to trip over without knowing, so the panel now shows a small "Update settling: don't unplug" pill with a countdown over whatever is on screen. It turns green with "Update confirmed" when the build is kept. Home Assistant gets a matching "Firmware on probation" sensor too.
+For three minutes after a firmware update, the panel rolls back on its own if the new build restarts. A small "don't unplug" countdown now shows that time, then "Update confirmed".

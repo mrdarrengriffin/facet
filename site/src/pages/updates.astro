@@ -17,21 +17,29 @@ const headings: Heading[] = days.flatMap(({ d, items }) => [
   { depth: 2 as const, slug: `day-${d}`, text: dayLabel(d) },
   ...items.map(({ e }) => ({ depth: 3 as const, slug: e.id, text: e.data.title })),
 ]);
+// kinds in filter order (README); an entry without one falls back to its old area
+const ORDER = ['New screen', 'New feature', 'New component', 'Improved', 'Fixed', 'Design system', 'Docs', 'Story', 'Behind the scenes'];
+const kindOf = (e: (typeof all)[number]) => e.data.kind ?? e.data.area ?? 'Story';
+const kinds = [...new Set(all.map(kindOf))].sort((a, b) => (ORDER.indexOf(a) + 99) % 99 - (ORDER.indexOf(b) + 99) % 99);
 const pic = (f: string) => url(`/updates/${f}`);
 const link = (p: string) => (/^https?:/.test(p) ? p : url(`/${p}`));
 ---
 
-<Docs title="Updates" description="How Facet came to be and what changed lately, newest first." group="Project" current={url('/updates/')} headings={headings}>
+<Docs title="Updates" description="What's new in Facet, newest first, and how it came to be." group="Project" current={url('/updates/')} headings={headings}>
+  <div class="updates__filter" role="group" aria-label="Show">
+    <button type="button" class="updates__chip" aria-pressed="true" data-kind="">All</button>
+    {kinds.map((k) => <button type="button" class="updates__chip" aria-pressed="false" data-kind={k}>{k}</button>)}
+  </div>
   {
     days.map(({ d, items }) => (
       <section class="updates__day">
         <h2 id={`day-${d}`} class="updates__date">{dayLabel(d)}</h2>
         <ol class="progress">
           {items.map(({ e, Content }) => (
-            <li class={e.data.milestone ? 'progress__entry progress__entry--milestone' : 'progress__entry'}>
-              <p class="facet-label">
-                {e.data.milestone && <span class="progress__mark" aria-hidden="true" />}
-                {shortDay(e.data.date)}{e.data.time && <> · {e.data.time}</>} · {e.data.area}
+            <li class={e.data.milestone ? 'progress__entry progress__entry--milestone' : 'progress__entry'} data-kind={kindOf(e)}>
+              <p class="facet-label updates__meta">
+                <span class="updates__kind">{e.data.milestone && <span class="progress__mark" aria-hidden="true" />}{kindOf(e)}</span>
+                {shortDay(e.data.date)}{e.data.time && <> · {e.data.time}</>}
               </p>
               <h3 id={e.id}>{e.data.title}</h3>
               <Content />
@@ -58,3 +66,15 @@ const link = (p: string) => (/^https?:/.test(p) ? p : url(`/${p}`));
     ))
   }
 </Docs>
+
+<script>
+  // filter row: one kind at a time (All = every entry); days left empty hide with their heading
+  const chips = [...document.querySelectorAll<HTMLButtonElement>('.updates__chip')];
+  for (const c of chips)
+    c.addEventListener('click', () => {
+      const k = c.dataset.kind ?? '';
+      for (const o of chips) o.setAttribute('aria-pressed', String(o === c));
+      for (const li of document.querySelectorAll<HTMLElement>('.progress__entry')) li.hidden = !!k && li.dataset.kind !== k;
+      for (const d of document.querySelectorAll<HTMLElement>('.updates__day')) d.hidden = !d.querySelector('.progress__entry:not([hidden])');
+    });
+</script>

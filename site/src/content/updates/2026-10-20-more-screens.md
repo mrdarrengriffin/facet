@@ -1,9 +1,10 @@
 ---
-title: "Thermostat, Calendar, Switch and Blinds"
+title: "New screens: Thermostat, Calendar, Switch, Blinds"
 date: "2026-10-20"
 time: "01:03"
-area: "Screens"
+kind: "New screen"
 image: "2026-10-20-thermostat.png"
-alt: "The Thermostat screen on demo data"
+alt: "The Thermostat screen on sample data"
+links: [["Thermostat", "screens/thermostat/"], ["Calendar", "screens/calendar/"]]
 ---
-A night of new screens: a heating ring with the room temperature as the hero, an agenda with a month view, one big button for anything with an on and an off, and blinds and curtains drawn per kind.
+A heating ring with the room temperature as the hero, an agenda with a month view, one big button for anything that switches on and off, and blinds and curtains drawn as what they are.
