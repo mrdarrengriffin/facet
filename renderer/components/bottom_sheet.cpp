@@ -39,6 +39,7 @@
 // the caller's screen; the Layout foundation's overlay sample) with `still` (shown open, no animation).
 // Contrast pairs: tokens/colour.json section "bottom_sheet" (+ picker_row, radio, list_row, icon_button, header).
 #include "fw.h"
+#include "device.h"
 
 namespace {
 using Doc = ArduinoJson::JsonDocument;
@@ -328,6 +329,15 @@ Sheet *sheet(lv_obj_t *host, fw::Props p) {
     fw::sound(s->scrim, "back");
     close(s);
   }, LV_EVENT_CLICKED, s);
+  // the panel's hardware key (core/device.h, Contextual): closes the open sheet like the scrim (detail "button")
+  fw::dev::claim_button(s->ov, fw::dev::BUTTON_SHEET, [](void *u, const char *press) {
+    auto *s = (Sheet *) u;
+    if (!s->open || strcmp(press, "single")) return false;
+    fw::emit(s->scrim, "close", "button");
+    fw::sound(s->scrim, "back");
+    close(s);
+    return true;
+  }, s);
 
   lv_obj_update_layout(host);
   const int W = lv_obj_get_content_width(host), H = lv_obj_get_content_height(host);

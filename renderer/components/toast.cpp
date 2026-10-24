@@ -15,7 +15,8 @@
 // docs also fade it while dragging, left out because an opacity under 100 % renders the whole toast through a layer
 // on every move, the slow part on the Guition); released past toast.swipe (64 / 44) = dismissed by swipe, moved less
 // than toast.tap-slop = a tap (dismiss), anything between springs back (Motion toast-in) and the timer resumes.
-// Dismiss = event "dismiss" (detail tap | swipe | timeout | action | pushed) and, for a tap or swipe, sound "back"
+// Dismiss = event "dismiss" (detail tap | swipe | timeout | action | pushed | button) and, for a tap, swipe or the
+// panel key (core/device.h claim_button: the newest toast shown), sound "back"
 // (it closes, like the sheet's scrim / Close; the docs give the toast no sound of its own, open question), then
 // leaves (Motion toast-out: fade + slide back to its edge by the offset, or sideways by toast.swipe-out after a
 // swipe; reduced = fade). The Toast layer (toast_layer.cpp) builds toasts with internal props `layer` + `edge`,
@@ -27,6 +28,7 @@
 // Props: icon (glyph icons the docs' demo toasts use), tone, title, body, action, timer (off = static, the docs'
 // documentation toast: a full bar, no timeout), life (normal | urgent). Contrast pairs: colour.json section "toast".
 #include "fw.h"
+#include "device.h"
 
 namespace {
 struct Tone { const char *id; lv_color_t fill, ink; };
@@ -92,7 +94,7 @@ void dismiss(Toast *t, const char *how, bool quiet) {
   bar_pause(t);
   lv_obj_remove_flag(t->o, LV_OBJ_FLAG_CLICKABLE);  // leaving: taps go through (docs pointer-events none)
   if (!quiet) fw::emit(t->o, "dismiss", how);
-  if (!quiet && (!strcmp(how, "tap") || !strncmp(how, "swipe", 5))) fw::sound(t->o, "back");
+  if (!quiet && (!strcmp(how, "tap") || !strcmp(how, "button") || !strncmp(how, "swipe", 5))) fw::sound(t->o, "back");
   lv_obj_send_event(t->o, LV_EVENT_VALUE_CHANGED, (void *) how);  // the layer restacks the others now
   // leave (Motion toast-out): a swipe carries on sideways, anything else slides back to its edge; both fade
   if (!strncmp(how, "swipe", 5)) {
@@ -254,6 +256,13 @@ FW_COMPONENT(toast, "Toast", "components", R"({
 
   for (lv_event_code_t c : {LV_EVENT_PRESSED, LV_EVENT_PRESSING, LV_EVENT_RELEASED, LV_EVENT_PRESS_LOST})
     lv_obj_add_event_cb(o, on_pointer, c, t);
+  // the panel's hardware key (core/device.h, Contextual): dismisses the newest toast shown (reason "button")
+  fw::dev::claim_button(o, fw::dev::BUTTON_ALERT, [](void *u, const char *press) {
+    auto *t = (Toast *) u;
+    if (t->closed || strcmp(press, "single")) return false;
+    dismiss(t, "button");
+    return true;
+  }, t);
   // pushed out by a newer toast (the layer; param 1 = a quiet build-time push: no event)
   lv_obj_add_event_cb(o, [](lv_event_t *e) { dismiss((Toast *) lv_event_get_user_data(e), "pushed", lv_event_get_param(e) != nullptr); }, LV_EVENT_CANCEL, t);
   lv_obj_add_event_cb(o, [](lv_event_t *e) {

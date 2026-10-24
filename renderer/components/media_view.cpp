@@ -37,6 +37,7 @@
 // (+ media_disc, icon_button, slider, text).
 // audit deps: icon_button, media_disc, media_visual, slider, speaker_button, bottom_sheet
 #include "fw.h"
+#include "device.h"
 #include "spec.h"
 
 namespace {
@@ -388,6 +389,14 @@ FW_COMPONENT(media_view, "Media view", "components", R"({
       fw::emit(root, "media", cmd);
     }, LV_EVENT_CLICKED, cm);
   }
+  // the panel's hardware key (core/device.h, Contextual): play / pause while something is playing or paused (= a tap
+  // on the play button: flips at once, emits "media" play_pause)
+  fw::dev::claim_button(root, fw::dev::BUTTON_SCREEN, [](void *u, const char *press) {
+    MV *m = of((lv_obj_t *) u);
+    if (!m || !m->play || strcmp(press, "single") || (m->st != "playing" && m->st != "paused")) return false;
+    lv_obj_send_event(m->play, LV_EVENT_CLICKED, nullptr);
+    return true;
+  }, root);
   // volume
   lv_obj_t *vol = box(root);
   lv_obj_set_size(vol, fw::lay::content_w, LV_SIZE_CONTENT);

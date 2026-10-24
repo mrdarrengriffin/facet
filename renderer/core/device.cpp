@@ -2,6 +2,8 @@
 #include <cmath>
 #include <functional>
 #include "device.h"
+#include <algorithm>
+#include <vector>
 #include "spec.h"
 #include "toasts.h"
 #include "settings_gen.h"
@@ -451,6 +453,40 @@ const Theme *look(const Theme *stage) {
     for (int i = 0; i < tokens::N_ACCENTS; i++)
       if (st.v[ka] == tokens::ACCENTS[i].id) accent = i;
   return theme(light, accent);
+}
+// ---------------------------------------------------------------- hardware button (device.h)
+namespace {
+struct Claim { lv_obj_t *obj; ButtonLevel level; ButtonFn fn; void *user; uint32_t seq; };
+std::vector<Claim> &claims() { static std::vector<Claim> c; return c; }
+uint32_t claim_seq = 0;
+bool shown(lv_obj_t *o) {
+  lv_obj_t *scr = lv_obj_get_screen(o);
+  if (scr != lv_screen_active() && scr != lv_layer_top()) return false;
+  for (lv_obj_t *x = o; x; x = lv_obj_get_parent(x))
+    if (lv_obj_has_flag(x, LV_OBJ_FLAG_HIDDEN)) return false;
+  return true;
+}
+}  // namespace
+void claim_button(lv_obj_t *obj, ButtonLevel level, ButtonFn fn, void *user) {
+  if (!obj || !fn) return;
+  claims().push_back({obj, level, fn, user, ++claim_seq});
+  lv_obj_add_event_cb(obj, [](lv_event_t *e) {
+    lv_obj_t *o = (lv_obj_t *) lv_event_get_current_target(e);
+    auto &c = claims();
+    for (size_t i = c.size(); i-- > 0;) if (c[i].obj == o) c.erase(c.begin() + i);
+  }, LV_EVENT_DELETE, nullptr);
+}
+const char *button(const char *press) {
+  // highest level first, newest first; a fn may delete objects (a dismissed toast): work on a copy
+  std::vector<Claim> c = claims();
+  std::sort(c.begin(), c.end(), [](const Claim &a, const Claim &b) { return a.level != b.level ? a.level > b.level : a.seq > b.seq; });
+  for (const Claim &x : c) {
+    bool live = false;
+    for (const Claim &y : claims()) if (y.seq == x.seq) { live = true; break; }
+    if (!live || !lv_obj_is_valid(x.obj) || !shown(x.obj)) continue;
+    if (x.fn(x.user, press)) return x.level == BUTTON_ALERT ? "alert" : x.level == BUTTON_SHEET ? "sheet" : "screen";
+  }
+  return "";
 }
 }  // namespace dev
 }  // namespace fw

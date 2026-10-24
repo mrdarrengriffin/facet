@@ -18,6 +18,7 @@
 #include <ctime>
 // audit deps: button
 #include "fw.h"
+#include "device.h"
 
 namespace {
 constexpr int PRESETS[4] = {3, 5, 10, 20};
@@ -229,6 +230,17 @@ FW_COMPONENT(timer_view, "Timer view", "components", R"({
   auto *t = new TV;
   lv_obj_t *root = lv_obj_create(parent);
   lv_obj_set_user_data(root, t);
+  // the panel's hardware key (core/device.h, Contextual): a timer that ran out ("done") is dismissed (back to idle)
+  fw::dev::claim_button(root, fw::dev::BUTTON_ALERT, [](void *u, const char *press) {
+    auto *root = (lv_obj_t *) u;
+    TV *t = of(root);
+    if (!t || t->state != 2 || strcmp(press, "single")) return false;
+    t->state = 0;
+    fw::emit(root, "timer", "dismiss");
+    rows(t);
+    render(root, true);
+    return true;
+  }, root);
   lv_obj_add_event_cb(root, [](lv_event_t *e) {
     auto *t = (TV *) lv_event_get_user_data(e);
     if (t->tick) lv_timer_delete(t->tick);

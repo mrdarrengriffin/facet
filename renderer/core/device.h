@@ -66,5 +66,16 @@ std::string restore(const char *json, From from);  // a backup's values through 
 void set_daylight(int day);                          // the sun for theme auto: 1 day, 0 night, -1 unknown
 const Theme *look(const Theme *stage);               // the theme the device shows over a stage theme
 void on_look(void (*cb)());  // the look may have changed (theme / accent set, the sun): hosts redraw what they show
+
+// hardware button (a panel's physical key, e.g. the Waveshare's BOOT key; Darren 2026-10-24): the "Contextual" action.
+// A part that has something to do with the key claims it while it lives: claim_button(obj, level, fn, user). A press
+// goes to the claims whose object is shown (on the active screen or the top layer, not hidden), highest level first,
+// then newest first; the first fn that returns true took it. A claim ends with its object (LV_EVENT_DELETE).
+// Levels: BUTTON_ALERT (a toast, a ringing timer: dismiss), BUTTON_SHEET (an open bottom sheet: close), BUTTON_SCREEN (the screen's own
+// action, e.g. Media play / pause). press = "single" | "double" | "long"; parts act on "single" unless they say so.
+enum ButtonLevel : uint8_t { BUTTON_SCREEN = 0, BUTTON_SHEET = 1, BUTTON_ALERT = 2 };
+using ButtonFn = bool (*)(void *user, const char *press);
+void claim_button(lv_obj_t *obj, ButtonLevel level, ButtonFn fn, void *user);
+const char *button(const char *press);  // the host's key press: "" = nothing took it, else the taker's object kind ("alert" ...)
 }  // namespace dev
 }  // namespace fw
