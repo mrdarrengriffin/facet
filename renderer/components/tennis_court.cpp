@@ -3,7 +3,7 @@
 // serves, from which half (deuce or ad: the points played in the game) and into which service box (the diagonal
 // one, highlighted). No ball or player positions: no public source has them (Hawk-Eye is private; sports-data.md).
 // Ends are fixed (player 1 left): feeds do not say who is at which end.
-//   surface  prop "surface" = a surface (hard, clay, grass, indoor, carpet) or a venue preset (wimbledon, ...);
+//   surface  prop "surface" = a surface (hard, clay, grass, indoor, carpet, club, duotone, facet) or a venue preset (wimbledon, ...);
 //            the feed's "surface" word (Clay / Hard / Grass) wins when the prop is "auto"; nothing known = the
 //            generic Facet court (surface "facet"), never a guessed hard court
 //   serve    a court-line dot (lay::sport_marker) in the run-off behind the server's baseline, on the half they serve from
@@ -146,7 +146,7 @@ FW_COMPONENT(tennis_court, "Tennis court", "components", R"({
   "frame": [400, 256],
   "props": [
     {"name": "width", "type": "range", "min": 160, "max": 448, "step": 8, "default": 360},
-    {"name": "surface", "type": "select", "options": ["auto", "hard", "clay", "grass", "indoor", "carpet", "facet", "wimbledon", "roland-garros", "us-open", "australian-open", "atp-finals"], "default": "auto"},
+    {"name": "surface", "type": "select", "options": ["auto", "hard", "clay", "grass", "indoor", "carpet", "club", "duotone", "facet", "wimbledon", "roland-garros", "us-open", "australian-open", "atp-finals"], "default": "auto"},
     {"name": "names", "type": "bool", "default": true},
     {"name": "sim", "type": "bool", "default": true},
     {"name": "speed", "type": "select", "options": ["1x", "10x", "60x"], "default": "10x"},

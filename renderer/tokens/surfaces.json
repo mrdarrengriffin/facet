@@ -17,6 +17,8 @@
     "grass": {"label": "Grass", "court": "court-grass", "out": "court-grass-out", "about": "Grass, plain. Venues add the mowing stripes."},
     "indoor": {"label": "Indoor hard", "court": "court-indoor", "out": "court-indoor-out", "about": "Indoor hard court: a cool grey."},
     "carpet": {"label": "Carpet", "court": "court-carpet", "out": "court-carpet-out", "about": "Carpet, rare now: a grey green."},
+    "club": {"label": "Club red and green", "court": "court-club", "out": "court-club-out", "about": "The usual club or park hard court: green inside the lines, a muted brick red surround."},
+    "duotone": {"label": "Duotone green", "court": "court-duo", "out": "court-duo-out", "about": "A club hard court in two greens: dark inside the lines, lighter around."},
     "facet": {"label": "Facet court", "court": "surface-press", "out": "surface", "line": "text-dim", "mark": "court-mark-facet", "about": "When the surface isn't known: Facet's own quiet card colours and dim lines, so it reads as no real surface. The serve box gets a light accent wash."}
   },
   "venues": {

@@ -92,7 +92,7 @@ FW_COMPONENT(surfaces, "Sports surfaces", "foundations", R"({
     {"name": "section", "type": "select", "options": ["surfaces", "venues", "rules", "sizes", "data"], "default": "surfaces"}
   ],
   "variants": [
-    {"label": "Surfaces", "about": "The five tennis surfaces in their real colours, toned down to sit on the canvas, and the generic Facet court for when the surface is unknown. Switch the theme: dark goes deeper, light stays mid-tone so the white lines still read.", "props": {"section": "surfaces"}},
+    {"label": "Surfaces", "about": "The five tennis surfaces and two common club hard courts in their real colours, toned down to sit on the canvas, and the generic Facet court for when the surface is unknown. Switch the theme: dark goes deeper, light stays mid-tone so the white lines still read.", "props": {"section": "surfaces"}},
     {"label": "Venues", "about": "Presets for the big events: recognisable at a glance, drawn the Facet way, with no logos or sponsor boards.", "props": {"section": "venues"}},
     {"label": "Rules", "about": "What every surface follows, with a live court: the server's dot sits in the run-off and the box they serve into is lifted, under the lines.", "props": {"section": "rules"}},
     {"label": "Sizes", "about": "The same venue small and large.", "props": {"section": "sizes"}},
