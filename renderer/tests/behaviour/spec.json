@@ -528,7 +528,7 @@
         "events": [
           [
             "pick",
-            "Corridor:1"
+            "Lounge:1"
           ]
         ],
         "sounds": [
@@ -558,7 +558,7 @@
         },
         {
           "tap": {
-            "text": "/^(CLEAN CORRIDOR|Clean Corridor)$/"
+            "text": "/^(CLEAN LOUNGE|Clean Lounge)$/"
           }
         }
       ],
@@ -605,7 +605,7 @@
       }
     },
     {
-      "name": "Robot vacuum: cleaning: rooms are for the next run, Pause sends pause",
+      "name": "Robot vacuum: cleaning hides the rooms and Clean, Pause sends pause",
       "kind": "interaction",
       "props": {
         "screen": "vacuum",
@@ -621,25 +621,20 @@
       "steps": [
         {
           "tap": {
-            "hit": "room_tile"
-          }
-        },
-        {
-          "tap": {
             "text": "PAUSE"
           }
         }
       ],
       "expect": {
-        "no_events": [
-          "pick"
-        ],
         "events": [
           [
             "ha",
             "vacuum\\.pause.*vacuum\\.test"
           ]
-        ]
+        ],
+        "absent": {
+          "hit": "room_tile"
+        }
       }
     }
   ],

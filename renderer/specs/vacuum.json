@@ -2,7 +2,7 @@
  "v": 1,
  "id": "vacuum",
  "name": "Robot vacuum",
- "rev": 3,
+ "rev": 4,
  "role": "both",
  "params": {
   "entity": {
@@ -83,11 +83,11 @@
   },
   "plan": {
    "type": "hidden",
-   "default": "Kitchen|3|0,0 5.49,0 5.49,2.75 4.6,2.75 4.6,3.99 0,3.99|2.3,1.6;Pantry||4.7,2.8 5.49,2.8 5.49,3.99 4.7,3.99|;Living room|2|0,4.09 3.35,4.09 3.35,8.18 0,8.18|1.7,6.1;Corridor|1|3.45,4.09 4.6,4.09 4.6,8.18 3.45,8.18|4.02,6.6;Stairs||4.7,4.15 5.49,4.15 5.49,6.5 4.7,6.5|;WC||4.7,6.6 5.49,6.6 5.49,8.18 4.7,8.18|"
+   "default": "Dining|2|0,0 3.6,0 3.6,3 0,3|1.8,1.5;Utility||3.7,0 6.4,0 6.4,1.4 3.7,1.4|;Study||3.7,1.5 6.4,1.5 6.4,3 3.7,3|;Lounge|1|0,3.1 3.9,3.1 3.9,7.2 0,7.2|1.95,5.15;Hall|3|4,3.1 6.4,3.1 6.4,5.6 4,5.6|5.2,4.35;Cloakroom||4,5.7 6.4,5.7 6.4,7.2 4,7.2|"
   },
   "dock": {
    "type": "hidden",
-   "default": "0,0.4,0.14,0.7,0.36"
+   "default": "0,0.5,0.14,0.8,0.36"
   },
   "rooms": {
    "type": "hidden",
@@ -236,7 +236,7 @@
     },
     "line": {
      "e": "$room",
-     "s": "Living room"
+     "s": "Lounge"
     },
     "line2": {
      "e": "$progress",
@@ -273,22 +273,54 @@
    }
   },
   {
+   "c": "level_bar",
+   "in": 2,
+   "p": {
+    "value": {
+     "e": "$progress",
+     "fmt": "num",
+     "s": "46"
+    },
+    "mark": -1,
+    "tone": "accent"
+   },
+   "show": {
+    "e": "$entity",
+    "s": "$demo",
+    "map": {
+     "cleaning": "1",
+     "paused": "1"
+    },
+    "else": ""
+   }
+  },
+  {
    "c": "group",
    "in": 2,
    "p": {
     "space": "block"
+   },
+   "show": {
+    "e": "$entity",
+    "s": "$demo",
+    "map": {
+     "cleaning": "",
+     "returning": "",
+     "paused": ""
+    },
+    "else": "1"
    }
   },
   {
    "c": "room_tile",
-   "in": 5,
+   "in": 6,
    "each": "areas",
    "p": {
     "room": "$item",
     "picked": "$rooms",
     "here": {
      "e": "$room",
-     "s": "Living room"
+     "s": "Lounge"
     },
     "state": {
      "e": "$entity",
@@ -303,13 +335,13 @@
    },
    "sample": [
     {
-     "room": "Corridor:1"
+     "room": "Lounge:1"
     },
     {
-     "room": "Living room:2"
+     "room": "Dining:2"
     },
     {
-     "room": "Kitchen:3"
+     "room": "Hall:3"
     }
    ],
    "on": {
@@ -324,11 +356,21 @@
    "in": 2,
    "p": {
     "space": "block"
+   },
+   "show": {
+    "e": "$entity",
+    "s": "$demo",
+    "map": {
+     "cleaning": "",
+     "returning": "",
+     "paused": ""
+    },
+    "else": "1"
    }
   },
   {
    "c": "vacuum_mode",
-   "in": 7,
+   "in": 8,
    "p": {
     "style": "row",
     "mode": {
@@ -372,7 +414,7 @@
   },
   {
    "c": "status_block",
-   "in": 9,
+   "in": 10,
    "p": {
     "size": "title",
     "caption": "",
@@ -429,7 +471,7 @@
   },
   {
    "c": "status_block",
-   "in": 9,
+   "in": 10,
    "p": {
     "size": "title",
     "caption": "",
@@ -448,7 +490,7 @@
     },
     "value2": {
      "e": "$room",
-     "s": "Living room"
+     "s": "Lounge"
     },
     "line": {
      "e": "$progress",
@@ -483,14 +525,14 @@
   },
   {
    "c": "group",
-   "in": 9,
+   "in": 10,
    "p": {
     "space": "near"
    }
   },
   {
    "c": "iso_floorplan",
-   "in": 12,
+   "in": 13,
    "p": {
     "plan": "$plan",
     "dock": "$dock",
@@ -499,9 +541,9 @@
      "e": "$position",
      "s": "$demo",
      "map": {
-      "cleaning": "1.2,5.6",
-      "paused": "1.2,5.6",
-      "returning": "2.4,3.4"
+      "cleaning": "1.4,4.8",
+      "paused": "1.4,4.8",
+      "returning": "2.0,2.6"
      }
     },
     "trail": {
@@ -509,16 +551,16 @@
      "a": "points",
      "s": "$demo",
      "map": {
-      "docked": "0.6,0.7 4.4,0.7 4.4,1.3 0.6,1.3 0.6,1.9 4.4,1.9 4.4,2.5 0.6,2.5",
-      "cleaning": "0.5,4.5 3.0,4.5 3.0,5.1 0.5,5.1 0.5,5.6 1.2,5.6",
-      "paused": "0.5,4.5 3.0,4.5 3.0,5.1 0.5,5.1 0.5,5.6 1.2,5.6"
+      "docked": "0.6,0.7 3.1,0.7 3.1,1.3 0.6,1.3 0.6,1.9 3.1,1.9 3.1,2.5 0.6,2.5",
+      "cleaning": "0.5,3.6 3.4,3.6 3.4,4.2 0.5,4.2 0.5,4.8 1.4,4.8",
+      "paused": "0.5,3.6 3.4,3.6 3.4,4.2 0.5,4.2 0.5,4.8 1.4,4.8"
      },
      "else": ""
     },
     "picked": "$rooms",
     "here": {
      "e": "$room",
-     "s": "Living room"
+     "s": "Lounge"
     },
     "state": {
      "e": "$entity",
@@ -542,7 +584,7 @@
   },
   {
    "c": "vacuum_mode",
-   "in": 14,
+   "in": 15,
    "p": {
     "style": "button",
     "view": "$view",
@@ -581,7 +623,7 @@
   },
   {
    "c": "button",
-   "in": 14,
+   "in": 15,
    "p": {
     "kind": "outline",
     "label": "Dock",
@@ -607,7 +649,7 @@
   },
   {
    "c": "button",
-   "in": 14,
+   "in": 15,
    "p": {
     "kind": "secondary",
     "label": "Pause",
@@ -631,7 +673,7 @@
   },
   {
    "c": "button",
-   "in": 14,
+   "in": 15,
    "p": {
     "kind": "primary",
     "label": "Resume",
@@ -654,7 +696,7 @@
   },
   {
    "c": "button",
-   "in": 14,
+   "in": 15,
    "p": {
     "kind": "primary",
     "label": {

@@ -18,7 +18,7 @@ lv_color_t tone(const char *t) {
 }
 void level_w(void *o, int32_t v) { lv_obj_set_width((lv_obj_t *) o, v); }
 void place(lv_obj_t *root, LB *b, fw::Props p, bool animate) {
-  const int v = p["value"] | -1, m = p["mark"] | -1, H = fw::sp::s2;
+  const int v = (int) lround(p["value"] | -1.0), m = (int) lround(p["mark"] | -1.0), H = fw::sp::s2;  // binds give doubles
   const int to = v < 0 ? 0 : std::max(H, (int) std::lround(b->w * LV_CLAMP(0, v, 100) / 100.0));
   const int from = lv_obj_get_width(b->level);
   if (to != b->to) {  // only a new level moves (the same props redraw nothing)
