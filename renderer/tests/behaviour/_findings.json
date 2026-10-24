@@ -1,60 +1,51 @@
 {
-  "BF-001": {
-    "ids": [
-      "bottom_sheet"
-    ],
-    "code": "cancel-fires",
-    "kind": "interaction",
-    "example": "cancel-fires: press on 40x40@132,220, slid 88 px off and released, fired tap(ember)",
-    "left": "Left (test artefact): the press lands on the open sheet's scrim, not the 48 px target under it; the release is on the scrim too, so the scrim closing the sheet is right. Everything else in BF-001 is fixed in core (indev tap guard)."
-  },
   "BF-005": {
     "id": "bottom_sheet",
     "code": "lag-heavy",
     "kind": "lag",
     "example": "lag-heavy: 6 frames in a row redraw >= 50% of the screen (Guition ~12-19 fps territory)",
-    "left": "Left for Darren: the sheet's dim fade over the whole screen (kept 2026-10-21). Same family: vacuum_mode MODE sheet."
+    "left": "By design (Darren 2026-10-24): on the Guition (1x, board profile fades off, motion.cpp FADES_DEFAULT) the backdrop already dims at once; the heavy frames left are the sheet itself sliding up from the bottom edge (12 -> 87 % of the screen as it rises), which Darren keeps. On the Waveshare (1.5x) the dim fade is kept. Bottom sheet + vacuum Mode sheet."
   },
   "BF-007": {
     "id": "calendar_view",
     "code": "lag-overflow",
     "kind": "lag",
     "example": "lag-overflow: 1 refresh past 32 dirty areas (LVGL redraws the whole screen) (tap \"MONTH\")",
-    "left": "Left for Darren: calendar Month switch = the sheet-style rise over most of the screen (same family as BF-005)."
+    "left": "By design (Darren 2026-10-24): on the Guition (1x, board profile fades off, motion.cpp FADES_DEFAULT) the backdrop already dims at once; the heavy frames left are the sheet itself sliding up from the bottom edge (12 -> 87 % of the screen as it rises), which Darren keeps. On the Waveshare (1.5x) the dim fade is kept. Calendar day sheet (tap a day)."
   },
   "BF-041": {
     "id": "football_live",
     "code": "lag-overflow",
     "kind": "lag",
     "example": "lag-overflow: 5 refreshes past 32 dirty areas (LVGL redraws the whole screen)",
-    "left": "Fixed except the SAMPLE tap: it opens a sheet (dim fade, BF-005 family): left for Darren."
+    "left": "By design (Darren 2026-10-24): on the Guition (1x, board profile fades off, motion.cpp FADES_DEFAULT) the backdrop already dims at once; the heavy frames left are the sheet itself sliding up from the bottom edge (12 -> 87 % of the screen as it rises), which Darren keeps. On the Waveshare (1.5x) the dim fade is kept. Football live SAMPLE sheet; the rest of BF-041 is fixed."
   },
   "BF-042": {
     "id": "screen_set",
     "code": "lag-overflow",
     "kind": "lag",
     "example": "lag-overflow: 1 refresh past 32 dirty areas (LVGL redraws the whole screen) (tap \"Source\")",
-    "left": "Left for Darren: screen_set Source opens a sheet (BF-005 family)."
+    "left": "By design (Darren 2026-10-24): on the Guition (1x, board profile fades off, motion.cpp FADES_DEFAULT) the backdrop already dims at once; the heavy frames left are the sheet itself sliding up from the bottom edge (12 -> 87 % of the screen as it rises), which Darren keeps. On the Waveshare (1.5x) the dim fade is kept. Screen set Source sheet."
   },
   "BF-044": {
     "id": "settings",
     "code": "lag-heavy",
     "kind": "lag",
     "example": "lag-heavy: 6 frames in a row redraw >= 50% of the screen (Guition ~12-19 fps territory)",
-    "left": "Left for Darren: the Settings sheet open (BF-005 family)."
+    "left": "By design (Darren 2026-10-24): on the Guition (1x, board profile fades off, motion.cpp FADES_DEFAULT) the backdrop already dims at once; the heavy frames left are the sheet itself sliding up from the bottom edge (12 -> 87 % of the screen as it rises), which Darren keeps. On the Waveshare (1.5x) the dim fade is kept. Settings sheet."
   },
   "BF-045": {
     "id": "setup",
     "code": "lag-overflow",
     "kind": "lag",
     "example": "lag-overflow: 2 refreshes past 32 dirty areas (LVGL redraws the whole screen) (tap \"OTHER WAYS\")",
-    "left": "Left for Darren: setup OTHER WAYS opens a sheet (BF-005 family)."
+    "left": "By design (Darren 2026-10-24): on the Guition (1x, board profile fades off, motion.cpp FADES_DEFAULT) the backdrop already dims at once; the heavy frames left are the sheet itself sliding up from the bottom edge (12 -> 87 % of the screen as it rises), which Darren keeps. On the Waveshare (1.5x) the dim fade is kept. Setup OTHER WAYS sheet."
   },
   "BF-051": {
     "id": "tennis_live",
     "code": "lag-overflow",
     "kind": "lag",
     "example": "lag-overflow: 5 refreshes past 32 dirty areas (LVGL redraws the whole screen)",
-    "left": "Fixed except the SAMPLE tap: it opens a sheet (dim fade, BF-005 family): left for Darren."
+    "left": "By design (Darren 2026-10-24): on the Guition (1x, board profile fades off, motion.cpp FADES_DEFAULT) the backdrop already dims at once; the heavy frames left are the sheet itself sliding up from the bottom edge (12 -> 87 % of the screen as it rises), which Darren keeps. On the Waveshare (1.5x) the dim fade is kept. Tennis live SAMPLE sheet; the rest of BF-051 is fixed."
   }
 }

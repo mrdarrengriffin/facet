@@ -298,7 +298,17 @@ async function autoTests(c, den, spec, specs) {
         await b.render(id, props); b.settle(1500); b.events();
         const r = checkGesture(b.long(x, y), { blocked, allowed, what, gesture: 'long press' });
         lm.push(...r.inter); sm.push(...r.snd.filter((s) => !s.startsWith('silent-action')));
-        // press, slide well off the target (away from the stage centre), release: nothing may fire
+      }
+      // press, slide well off the target (away from the stage centre), release: nothing may fire. Only targets a finger
+      // can reach: the topmost clickable at the centre is the target or inside it (not one under an open sheet's scrim)
+      const reach = (o) => {
+        const [x, y] = centre(o), i = objs.indexOf(o);
+        const top = objs.filter((k) => k.clk && k.w > 0 && k.h > 0 && k.opa !== 0 && inBox(k, x, y)).pop();
+        return top === o || (!!top && objs.indexOf(top) > i && inBox(o, top.x, top.y) && inBox(o, top.x + top.w - 1, top.y + top.h - 1));
+      };
+      for (const o of targets(objs, S, 1e9).filter(reach).slice(0, B.targets_variant)) {
+        const what = label(objs, o);
+        const [x, y] = centre(o);
         await b.render(id, props); b.settle(1500); b.events();
         const away = Math.max(o.w, o.h) + B.cancel_px;
         const dx = x < S / 2 ? Math.min(away, S - 1 - x) : -Math.min(away, x);
