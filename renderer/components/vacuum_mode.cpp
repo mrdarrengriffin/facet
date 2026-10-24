@@ -140,7 +140,7 @@ void paint(lv_obj_t *root) {
       lv_point_t sz;  // the box = the text + padding, rounded up to the grid (docs fit8), at most mode-btn-max
       lv_text_get_size(&sz, lv_label_get_text(c->btn_l), lv_obj_get_style_text_font(c->btn_l, LV_PART_MAIN),
                        lv_obj_get_style_text_letter_space(c->btn_l, LV_PART_MAIN), 0, LV_COORD_MAX, LV_TEXT_FLAG_NONE);
-      const int w = std::min((int) fw::lay::mode_btn_max, (sz.x + 2 * fw::sp::s4 + fw::sp::GRID - 1) / fw::sp::GRID * fw::sp::GRID);
+      const int w = std::min<int>((int) fw::lay::mode_btn_max, (sz.x + 2 * fw::sp::s4 + fw::sp::GRID - 1) / fw::sp::GRID * fw::sp::GRID);
       lv_obj_set_width(c->btn, w);
       lv_obj_set_width(c->btn_l, w - 2 * fw::sp::s4);
     }

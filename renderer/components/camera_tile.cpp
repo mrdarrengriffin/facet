@@ -68,7 +68,7 @@ void take(CT *c, fw::Props p) {
   lv_point_t sz;  // the tab hugs its label, rounded up to the grid, kept inside the still
   lv_text_get_size(&sz, lv_label_get_text(c->tab_l), lv_obj_get_style_text_font(c->tab_l, LV_PART_MAIN),
                    lv_obj_get_style_text_letter_space(c->tab_l, LV_PART_MAIN), 0, LV_COORD_MAX, LV_TEXT_FLAG_NONE);
-  const int tw = std::min(W, (sz.x + 2 * fw::sp::s2 + fw::sp::GRID - 1) / fw::sp::GRID * fw::sp::GRID);
+  const int tw = std::min<int>(W, (sz.x + 2 * fw::sp::s2 + fw::sp::GRID - 1) / fw::sp::GRID * fw::sp::GRID);
   lv_obj_set_size(c->tab, tw, fw::lay::chip_h);
   lv_obj_set_pos(c->tab, std::min(px, W - tw), py);
 }
