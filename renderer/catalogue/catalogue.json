@@ -1094,38 +1094,6 @@
     "bytes_est": 320
    }
   },
-  "delta_chip": {
-   "name": "Delta chip",
-   "update": true,
-   "props": [
-    {
-     "name": "pct",
-     "type": "range",
-     "bindable": true,
-     "min": -60,
-     "max": 60
-    },
-    {
-     "name": "ref",
-     "type": "text",
-     "bindable": true
-    },
-    {
-     "name": "up_is_good",
-     "type": "bool",
-     "bindable": true
-    }
-   ],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 3,
-    "bytes_est": 480
-   }
-  },
   "dial": {
    "name": "Dial",
    "update": true,
@@ -5376,5 +5344,5 @@
    "taps": "page"
   }
  },
- "hash": "8bf6a7e3"
+ "hash": "8ff3bfb1"
 }

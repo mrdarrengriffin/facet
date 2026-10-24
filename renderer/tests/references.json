@@ -252,16 +252,6 @@
    "note": "docs explorer default controls vs the WASM default: values may differ"
   },
   {
-   "comp": "delta_chip",
-   "variant": "default",
-   "astro": {
-    "item": "delta-chip",
-    "selector": "[data-ex-stage] > *"
-   },
-   "crop": true,
-   "note": "docs explorer default controls vs the WASM default: values may differ"
-  },
-  {
    "comp": "donut",
    "variant": "default",
    "astro": {

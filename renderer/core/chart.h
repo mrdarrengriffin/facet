@@ -5,6 +5,9 @@
 // with these, so the page and the components are one system (parity batch B, 2026-10-22). Header-only declarations:
 // the firmware bundle picks up core/*.h by itself, and foundations/chart.cpp is bundled like every foundation.
 #pragma once
+#include <cmath>
+#include <cstdio>
+#include <string>
 #include <vector>
 #include "fw.h"
 #include "chart_gen.h"
@@ -129,6 +132,19 @@ inline std::vector<std::string> words(Props p, const char *key, const char *def)
     } else cur += *s;
   }
   return w;
+}
+
+// ---- a change against a reference, as Status chip props (docs @facet/ui charts.ts deltaChip(); was the Delta chip
+// component until 2026-10-24): "▲ 12% vs yday" / "▼ 12% vs yday", "= 0% vs yday" when flat (under 0.5 % either way),
+// "-- vs yday" with no number (NAN). Tone ok when the change goes the good way, warn the bad way, idle flat / none.
+// The arrows are in the text glyph set (type.json, c-caps-sm at both densities).
+struct Delta { const char *tone; std::string text; };
+inline Delta delta(double pct, bool up_is_good, const char *ref = "vs yday") {
+  char b[64];
+  if (std::isnan(pct)) { snprintf(b, sizeof b, "-- %s", ref); return {"idle", b}; }
+  const bool up = pct >= 0.5, down = pct <= -0.5;
+  snprintf(b, sizeof b, "%s %d%% %s", up ? "\xE2\x96\xB2" : down ? "\xE2\x96\xBC" : "=", (int) std::lround(std::fabs(pct)), ref);
+  return {!up && !down ? "idle" : up == up_is_good ? "ok" : "warn", b};
 }
 
 }  // namespace fw::chart

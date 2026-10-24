@@ -9,7 +9,8 @@
 //            status colours drop under 4.5:1 in light (ok 3.8, warn 3.8, error 3.8 at 14 %, still 4.2 at 6 %), so the
 //            tone is carried by the dot + fill and the words stay readable
 // Tones = Status dot's: ok / warn / error / working (accent) / info (blue) / idle (text-dim fill + dot; text-mute is disabled-only, Darren 2026-10-21).
-// Static: no events, no sound. Contrast pairs: tokens/colour.json section "status_chip".
+// Changes against a reference ("▲ 12% vs yday", the former Delta chip) are plain Status chips: fw::chart::delta()
+// (core/chart.h) gives the tone + words. Static: no events, no sound. Contrast pairs: tokens/colour.json section "status_chip".
 #include "fw.h"
 
 namespace {
@@ -70,7 +71,11 @@ FW_COMPONENT(status_chip, "Status chip", "components", R"({
     {"label": "working", "props": {"tone": "working", "text": "sys: working"}},
     {"label": "info", "props": {"tone": "info", "text": "sys: info"}},
     {"label": "idle", "props": {"tone": "idle", "text": "sys: idle"}},
-    {"label": "working · pulse", "props": {"tone": "working", "text": "3 working", "pulse": true}}
+    {"label": "working · pulse", "props": {"tone": "working", "text": "3 working", "pulse": true}},
+    {"label": "delta · down, down is good", "props": {"tone": "ok", "text": "▼ 12% vs yday"}},
+    {"label": "delta · up, up is bad", "props": {"tone": "warn", "text": "▲ 18% vs yday"}},
+    {"label": "delta · up, up is good", "props": {"tone": "ok", "text": "▲ 18% vs yday"}},
+    {"label": "delta · flat", "props": {"tone": "idle", "text": "= 0% vs yday"}}
   ]
 })") {
   lv_obj_t *c = lv_obj_create(parent);
