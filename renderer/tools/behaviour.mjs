@@ -585,6 +585,7 @@ async function customTests(c, den, spec) {
     b.settle(1500); b.events();
     const evs = [];
     let down = null;
+    b.rec = (t.expect || {}).redraw_max !== undefined ? [] : null;  // expect.redraw_max: the biggest share of the screen one frame may redraw during the steps
     for (const st of t.steps || []) {
       const op = ['tap', 'long', 'press', 'release', 'drag'].find((k) => st[k] !== undefined);
       if (op) {
@@ -611,6 +612,11 @@ async function customTests(c, den, spec) {
     if (x.silent && evs.length) msgs.push(`${t.miss || 'update-noise'}: expected nothing, got ${evs.map(fmtEv).join(', ')}`);
     if (x.stack) { const s = b.stack(); if (s && JSON.stringify(s) !== JSON.stringify(x.stack)) msgs.push(`${t.miss || 'nav-wrong'}: stack [${s.join(', ')}], expected [${x.stack.join(', ')}]`); }
     if (x.exists && !resolveSel(b, x.exists)) msgs.push(`${t.miss || 'missing-part'}: ${JSON.stringify(x.exists)} not shown`);
+    if (x.redraw_max !== undefined && b.rec) {
+      const worst = Math.max(0, ...b.rec.filter((f) => f.renders).map((f) => f.px)) / (b.S * b.S);
+      if (worst > x.redraw_max) msgs.push(`${t.miss || 'redraw-too-big'}: a frame redrew ${Math.round(worst * 100)}% of the screen, budget ${Math.round(x.redraw_max * 100)}%`);
+      b.rec = null;
+    }
     if (x.absent && resolveSel(b, x.absent)) msgs.push(`${t.miss || 'still-shown'}: ${JSON.stringify(x.absent)} still shown`);
     judge(c.id, den, t.kind, t.name, 'custom', msgs);
   }

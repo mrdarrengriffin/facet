@@ -1,5 +1,84 @@
 {
   "id": "tennis_court",
-  "tests": [],
+  "tests": [
+    {
+      "name": "a point redraws only the serve marks, not the court",
+      "kind": "lag",
+      "props": {
+        "sim": false,
+        "surface": "wimbledon",
+        "feed": "{\"state\":\"live\",\"players\":[{\"short\":\"LIN\"},{\"short\":\"MOR\"}],\"sets\":[[2,1]],\"points\":[1,1],\"server\":0}"
+      },
+      "steps": [
+        {
+          "update": {
+            "feed": "{\"state\":\"live\",\"players\":[{\"short\":\"LIN\"},{\"short\":\"MOR\"}],\"sets\":[[2,1]],\"points\":[2,1],\"server\":0}"
+          }
+        }
+      ],
+      "expect": {
+        "silent": true,
+        "redraw_max": 0.05
+      }
+    },
+    {
+      "name": "a new game (server changes ends) stays small",
+      "kind": "lag",
+      "props": {
+        "sim": false,
+        "surface": "wimbledon",
+        "feed": "{\"state\":\"live\",\"players\":[{\"short\":\"LIN\"},{\"short\":\"MOR\"}],\"sets\":[[2,1]],\"points\":[1,1],\"server\":0}"
+      },
+      "steps": [
+        {
+          "update": {
+            "feed": "{\"state\":\"live\",\"players\":[{\"short\":\"LIN\"},{\"short\":\"MOR\"}],\"sets\":[[3,1]],\"points\":[0,0],\"server\":1}"
+          }
+        }
+      ],
+      "expect": {
+        "silent": true,
+        "redraw_max": 0.05
+      }
+    },
+    {
+      "name": "game over hides the marks quietly",
+      "kind": "sound",
+      "props": {
+        "sim": false,
+        "surface": "wimbledon",
+        "feed": "{\"state\":\"live\",\"players\":[{\"short\":\"LIN\"},{\"short\":\"MOR\"}],\"sets\":[[2,1]],\"points\":[1,1],\"server\":0}"
+      },
+      "steps": [
+        {
+          "update": {
+            "feed": "{\"state\": \"final\", \"players\": [{\"short\": \"LIN\"}, {\"short\": \"MOR\"}], \"sets\": [[6, 4], [6, 3]], \"points\": [0, 0], \"server\": -1, \"winner\": 0}"
+          }
+        }
+      ],
+      "expect": {
+        "silent": true
+      }
+    },
+    {
+      "name": "surface change in place is silent",
+      "kind": "sound",
+      "props": {
+        "sim": false,
+        "surface": "wimbledon",
+        "feed": "{\"state\":\"live\",\"players\":[{\"short\":\"LIN\"},{\"short\":\"MOR\"}],\"sets\":[[2,1]],\"points\":[1,1],\"server\":0}"
+      },
+      "steps": [
+        {
+          "update": {
+            "surface": "clay"
+          }
+        }
+      ],
+      "expect": {
+        "silent": true
+      }
+    }
+  ],
   "xfail": {}
 }

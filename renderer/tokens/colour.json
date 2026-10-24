@@ -8,7 +8,8 @@
     {"id": "secondary", "label": "Secondary accents", "about": "Quiet support colours: weather, markers, done states."},
     {"id": "status", "label": "Status", "about": ""},
     {"id": "special", "label": "Special purpose", "about": "Charts, the moon glyph and QR codes (QR stays dark on light in both themes)."},
-    {"id": "media", "label": "Media visuals", "about": "Only for the media visuals (disc, cassette, CD, vinyl, reel)."}, {"id": "bins", "label": "Bins", "about": "Only for the Bins screen: the bin colours councils use; the screen always names the bin too."}
+    {"id": "media", "label": "Media visuals", "about": "Only for the media visuals (disc, cassette, CD, vinyl, reel)."}, {"id": "bins", "label": "Bins", "about": "Only for the Bins screen: the bin colours councils use; the screen always names the bin too."},
+    {"id": "courts", "label": "Sports surfaces", "about": "Only for playing surfaces (tennis courts, later pitches): the real surface colours, muted to sit on the canvas; white lines carry the contrast (tokens/surfaces.json)."}
   ],
   "colours": {
     "bg": {"group": "surfaces", "dark": "#000000", "light": "#F4F2EE", "role": "canvas"},
@@ -78,7 +79,25 @@
     "flag-red": {"group": "secondary", "dark": "#E10600", "light": "#E10600", "role": "Sport: red flag (fixed)"},
     "flag-blue": {"group": "secondary", "dark": "#2A7FFF", "light": "#2A7FFF", "role": "Sport: blue flag (fixed)"},
     "flag-black": {"group": "secondary", "dark": "#101114", "light": "#101114", "role": "Sport: black flag, chequered squares, SC board letters (fixed)"},
-    "flag-white": {"group": "secondary", "dark": "#F7F7F5", "light": "#F7F7F5", "role": "Sport: chequered squares, black-and-white flag (fixed)"}
+    "flag-white": {"group": "secondary", "dark": "#F7F7F5", "light": "#F7F7F5", "role": "Sport: chequered squares, black-and-white flag (fixed)"},
+    "court-line": {"group": "courts", "dark": "#D9DCD6", "light": "#FFFFFF", "role": "court and pitch lines, the net, the serve dot (white; a touch dimmer on dark)"},
+    "court-clay": {"group": "courts", "dark": "#7E4630", "light": "#B4613F", "role": "clay court"},
+    "court-clay-out": {"group": "courts", "dark": "#6E3C29", "light": "#A65738", "role": "clay run-off"},
+    "court-grass": {"group": "courts", "dark": "#34512F", "light": "#4F7B40", "role": "grass court"},
+    "court-grass-out": {"group": "courts", "dark": "#2E4829", "light": "#48723B", "role": "grass run-off"},
+    "court-grass-stripe": {"group": "courts", "dark": "#3B5A35", "light": "#578546", "role": "the lighter mowing stripe on grass"},
+    "court-hard": {"group": "courts", "dark": "#2F4A66", "light": "#4C729A", "role": "hard court (acrylic)"},
+    "court-hard-out": {"group": "courts", "dark": "#2A4058", "light": "#43678C", "role": "hard run-off"},
+    "court-indoor": {"group": "courts", "dark": "#333B44", "light": "#5D6873", "role": "indoor hard court"},
+    "court-indoor-out": {"group": "courts", "dark": "#2A3138", "light": "#535D67", "role": "indoor hard run-off"},
+    "court-carpet": {"group": "courts", "dark": "#3D5650", "light": "#5E8077", "role": "carpet court"},
+    "court-carpet-out": {"group": "courts", "dark": "#344A45", "light": "#54746C", "role": "carpet run-off"},
+    "court-usopen": {"group": "courts", "dark": "#2F5480", "light": "#3F6EA5", "role": "US Open blue court"},
+    "court-usopen-out": {"group": "courts", "dark": "#355E44", "light": "#4C7D57", "role": "US Open green surround"},
+    "court-ao": {"group": "courts", "dark": "#2C5E92", "light": "#3B7CC0", "role": "Australian Open blue court"},
+    "court-ao-out": {"group": "courts", "dark": "#24476E", "light": "#2F6399", "role": "Australian Open darker blue surround"},
+    "court-finals": {"group": "courts", "dark": "#1A222C", "light": "#2A3542", "role": "ATP Finals dark indoor court"},
+    "court-finals-out": {"group": "courts", "dark": "#10151B", "light": "#1D252F", "role": "ATP Finals surround"}
   },
   "components": {
     "bin": {"shade": {"value": 0.28, "use": "Bins: the darker parts of a bin (handle, lid, band, slots) = black over the bin colour at this opacity (panel lab 0.28)"}},
@@ -96,12 +115,24 @@
     "chip": {
       "tint": {"value": 0.14, "use": "opacity of the tone fill behind a status chip or count badge (docs opacity chip-bg; drawn as bg_opa so it works on the canvas or a card); a theme may set it later"}
     },
+    "court": {
+      "mark": {"value": 0.2, "use": "Sports surfaces: opacity of the line colour over the court for a highlighted area (the next serve's box; mixes court-mark-*; surfaces.json mark)"}
+    },
     "grid": {
       "minor": {"value": 0.05, "use": "opacity of the minor grid lines (every grid step, 8 px at 720 / 4 at 480; ink = colour text) in the Layout page's screen overlay: drawn on top of the real components, see-through on cards, still visible on the bare bg (Darren 2026-10-22: translucent ink, ~5 % light-on-dark / dark-on-light)"},
       "major": {"value": 0.15, "use": "opacity of the group grid lines (ink = colour text) in the Layout page's screen overlay: a step stronger than grid.minor so both the 4 px grid and the group lines read"}
     }
   },
   "mixes": {
+    "court-mark-clay": {"tint": "court-line", "over": "court-clay", "opa": "court.mark", "use": "Sports surfaces: the highlighted box on clay"},
+    "court-mark-grass": {"tint": "court-line", "over": "court-grass", "opa": "court.mark", "use": "Sports surfaces: the highlighted box on grass"},
+    "court-mark-grass-stripe": {"tint": "court-line", "over": "court-grass-stripe", "opa": "court.mark", "use": "Sports surfaces: the highlighted box on grass-stripe"},
+    "court-mark-hard": {"tint": "court-line", "over": "court-hard", "opa": "court.mark", "use": "Sports surfaces: the highlighted box on hard"},
+    "court-mark-indoor": {"tint": "court-line", "over": "court-indoor", "opa": "court.mark", "use": "Sports surfaces: the highlighted box on indoor"},
+    "court-mark-carpet": {"tint": "court-line", "over": "court-carpet", "opa": "court.mark", "use": "Sports surfaces: the highlighted box on carpet"},
+    "court-mark-usopen": {"tint": "court-line", "over": "court-usopen", "opa": "court.mark", "use": "Sports surfaces: the highlighted box on usopen"},
+    "court-mark-ao": {"tint": "court-line", "over": "court-ao", "opa": "court.mark", "use": "Sports surfaces: the highlighted box on ao"},
+    "court-mark-finals": {"tint": "court-line", "over": "court-finals", "opa": "court.mark", "use": "Sports surfaces: the highlighted box on finals"},
     "chart-area": {"tint": "blue", "over": "surface", "opa": "chart.area", "use": "area fill under a single-series line (series 1, blue) on a card (chart.json area)"},
     "chart-area-bg": {"tint": "blue", "over": "bg", "opa": "chart.area", "use": "the same area fill on the canvas"},
     "press-tint": {"tint": "accent", "toward": "text-mute", "desat": "card.press-desat", "over": "surface", "opa": "card.press-tint", "use": "pressed card fill: a faint, greyed accent tint over the surface (Darren 2026-10-21, card rounds 4-5), per theme x accent set; = the pressed tint role of states.json (Card, List row, section header action; the Card press style lives there too)"},
@@ -456,6 +487,10 @@
       {"section": "sport", "fg": "flag-black", "bg": ["flag-yellow"], "kind": "text", "use": "SC / VSC board letters"},
       {"section": "sport", "fg": "flag-yellow", "bg": ["bg", "surface"], "kind": "decor", "use": "flag fills are fixed colours: the text keyline around every flag carries the 3:1"},
       {"section": "sport", "fg": "line", "bg": ["bg", "surface"], "kind": "decor", "use": "standings row hairlines (team colours are data: fitted to 3:1 at run time by sport::team_ink, not listed here)"},
+      {"section": "surfaces", "fg": "court-line", "bg": ["court-clay", "court-clay-out", "court-grass", "court-grass-out", "court-grass-stripe", "court-hard", "court-hard-out", "court-indoor", "court-indoor-out", "court-carpet", "court-carpet-out", "court-usopen", "court-usopen-out", "court-ao", "court-ao-out", "court-finals", "court-finals-out"], "kind": "ui", "use": "court lines, the net and the serve dot on every surface and run-off, both themes (white carries the 3:1)"},
+      {"section": "surfaces", "fg": "court-line", "bg": ["court-clay", "court-clay-out", "court-grass", "court-grass-out", "court-grass-stripe", "court-hard", "court-hard-out", "court-indoor", "court-indoor-out", "court-carpet", "court-carpet-out", "court-usopen", "court-usopen-out", "court-ao", "court-ao-out", "court-finals", "court-finals-out"], "kind": "decor", "use": "the next serve's box fill (court-mark-*: a highlight; the lines over it are checked below)"},
+      {"section": "surfaces", "fg": "court-line", "bg": ["court-mark-clay", "court-mark-grass", "court-mark-grass-stripe", "court-mark-hard", "court-mark-indoor", "court-mark-carpet", "court-mark-usopen", "court-mark-ao", "court-mark-finals"], "kind": "ui", "use": "lines and the net over the highlighted box (the mark mixes), both themes"},
+      {"section": "surfaces", "fg": "court-clay", "bg": ["bg"], "kind": "decor", "use": "surface fills on the canvas: the run-off frames the court, no contrast needed (every surface fill is listed in the ui pair above)"},
       {"section": "readout", "fg": "text-dim", "bg": "bg", "kind": "text", "use": "the label row (icon + caps label) and the detail"},
       {"section": "readout", "fg": "text", "bg": "bg", "kind": "text", "use": "the state"},
       {"section": "readout", "fg": "accent-text", "bg": "bg", "kind": "text", "use": "a state that matters (+ the working dot)"},

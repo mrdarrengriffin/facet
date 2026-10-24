@@ -5,6 +5,7 @@
 //   court    Tennis court under it: who serves, from which half, into which box; sized to the room left
 // The screen runs one simulator (sample data) or takes p["feed"] from an adapter and hands it to both parts.
 #include "fw.h"
+#include "surface.h"
 #include "sport.h"
 #include "sport_pick.h"
 
@@ -92,11 +93,11 @@ void fill(lv_obj_t *root, fw::Props p) {
   lv_obj_update_layout(sb);
   const int sh = (lv_obj_get_height(s->score) + 3) / 4 * 4;
   lv_obj_set_height(sb, sh);
-  // the court: as wide as fits the room left (its height = label row + the court at ITF proportions + the net)
+  // the court: as wide as fits the room left (its height = label row + the surface: Sports surfaces sf::tennis_fit)
   const int room = H - sh - fw::lay::group;
-  const int side = fw::lay::sport_marker + fw::sp::s2 * 2, label = fw::style(fw::ty::c_caps_sm).box + fw::sp::s3 + fw::sp::s2;
+  const int label = fw::style(fw::ty::c_caps_sm).box + fw::sp::s3;
   int cw = W;
-  while (cw > 4 * side && label + (int) ((cw - 2 * side) * 10.97f / 23.77f) > room) cw -= 8;
+  while (cw > 160 && label + fw::sf::tennis_fit(cw).h > room) cw -= 8;
   cw = cw / 8 * 8;
   lv_obj_t *cb = box(root, X + (W - cw) / 2 / 4 * 4, Y + sh + fw::lay::group, cw, room);
   s->cw = dp(cw);
