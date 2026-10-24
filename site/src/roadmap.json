@@ -1,5 +1,5 @@
 {
- "updated": "2026-10-23",
+ "updated": "2026-10-24",
  "tables": {
   "foundations": [
    {
@@ -135,6 +135,17 @@
     "name": "Mascot design round 2",
     "group": "Customisation",
     "status": "planned"
+   },
+   {
+    "name": "Sports surfaces",
+    "group": "Core",
+    "status": "doing"
+   },
+   {
+    "name": "Behaviour tests",
+    "group": "Platform",
+    "status": "done",
+    "note": "5913 tests (interaction, scroll, sound, lag proxy) for every component + screen, in facet-gate full; 51 findings in notes/facet-design/behaviour-findings.md (d575c79)"
    }
   ],
   "components": [
@@ -590,37 +601,25 @@
    {
     "name": "Robot vacuum",
     "group": "Home control",
-    "status": "planned",
+    "status": "doing",
     "note": "Rooms plus a good-looking 3D floorplan map"
    },
    {
     "name": "Door lock",
     "group": "Home control",
-    "status": "planned",
+    "status": "doing",
     "note": "Locked state, unlock with a confirm step"
-   },
-   {
-    "name": "Washing machine",
-    "group": "Home control",
-    "status": "planned",
-    "note": "Cycle time left, predicted end, done"
-   },
-   {
-    "name": "Coffee machine",
-    "group": "Home control",
-    "status": "planned",
-    "note": "Brew status and progress, maybe start a brew"
    },
    {
     "name": "Plant monitor",
     "group": "Home control",
-    "status": "planned",
+    "status": "doing",
     "note": "Soil moisture per plant, needs-water state"
    },
    {
     "name": "Security cameras",
     "group": "Home control",
-    "status": "planned",
+    "status": "doing",
     "note": "Camera grid plus Frigate detections"
    },
    {
