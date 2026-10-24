@@ -388,7 +388,7 @@ Sheet *sheet(lv_obj_t *host, fw::Props p) {
   }, LV_EVENT_CLICKED, s);
 
   s->list = box(s->panel);
-  lv_obj_add_flag(s->list, LV_OBJ_FLAG_SCROLLABLE);
+  lv_obj_add_flag(s->list, (lv_obj_flag_t) (LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_CLICKABLE));  // clickable: a drag in a gap scrolls too
   lv_obj_set_scroll_dir(s->list, LV_DIR_VER);
   lv_obj_set_scrollbar_mode(s->list, LV_SCROLLBAR_MODE_OFF);  // the Facet scroll track is its own part (later)
   lv_obj_set_width(s->list, LV_PCT(100));

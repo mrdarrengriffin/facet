@@ -99,7 +99,7 @@ bool show(Device *d, const std::string &id, std::vector<lv_obj_t *> &items) {
   lv_obj_t *h = build_into(d->screen, find("header"), hd.as<Props>());
   if (h) lv_obj_set_pos(h, lay::inset, lay::inset);
   lv_obj_t *sc = box(d->screen);
-  lv_obj_add_flag(sc, LV_OBJ_FLAG_SCROLLABLE);
+  lv_obj_add_flag(sc, (lv_obj_flag_t) (LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_CLICKABLE));  // clickable: a drag on plain text scrolls too
   lv_obj_set_scroll_dir(sc, LV_DIR_VER);
   lv_obj_set_scrollbar_mode(sc, LV_SCROLLBAR_MODE_OFF);
   lv_obj_set_pos(sc, 0, lay::top);

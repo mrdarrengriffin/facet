@@ -51,7 +51,7 @@ struct MV {
   double pos = NAN, dur = NAN;       // seconds (HA media_position / media_duration)
   double pos_at = NAN;               // the epoch second pos was true at (media_position_updated_at)
   lv_timer_t *ticker = nullptr;      // moves the progress on while playing
-  lv_obj_t *disc = nullptr, *state = nullptr, *title = nullptr, *artist = nullptr, *play = nullptr, *slider = nullptr, *vlab = nullptr;
+  lv_obj_t *disc = nullptr, *state = nullptr, *title = nullptr, *artist = nullptr, *play = nullptr, *prev = nullptr, *next = nullptr, *slider = nullptr, *vlab = nullptr;
   std::string st = "playing", title_s, artist_s;
   int progress = 38, volume = 42;
   uint32_t hold_until = 0, last_send = 0;
@@ -96,8 +96,10 @@ void push_progress(lv_obj_t *root) {
 void render(lv_obj_t *root) {
   MV *m = of(root);
   const bool playing = m->st == "playing";
-  const bool known = m->st == "off" || m->st == "paused" || playing;  // on / standby / buffering / unavailable: idle
-  fw::set_text(m->state, fw::ty::label, known ? m->st.c_str() : "idle");
+  const bool known = m->st == "off" || m->st == "paused" || playing;  // on / standby / buffering: idle
+  // unavailable / unknown (HA): the word, and the transport + volume blocked (a tap = blocked + error, no call)
+  const bool down = m->st == "unavailable" || m->st == "unknown";
+  fw::set_text(m->state, fw::ty::label, down ? "unavailable" : known ? m->st.c_str() : "idle");
   fw::set_text(m->title, fw::ty::headline, m->title_s.empty() ? "Nothing playing" : m->title_s.c_str());
   fw::set_text(m->artist, fw::ty::body, m->artist_s.c_str());
   push_progress(root);
@@ -107,13 +109,19 @@ void render(lv_obj_t *root) {
     fw::update_child(fw::find("speaker_button"), m->spk, bp.as<fw::Props>());
   }
   ArduinoJson::JsonDocument pp;
-  pp["style"] = "play", pp["icon"] = "play", pp["state"] = playing ? "active" : "default";
+  pp["style"] = "play", pp["icon"] = "play", pp["state"] = down ? "disabled" : playing ? "active" : "default";
   fw::update_child(fw::find("icon_button"), m->play, pp.as<fw::Props>());
+  for (lv_obj_t *b : {m->prev, m->next}) {
+    if (!b || down == lv_obj_has_state(b, fw::st::OFF)) continue;
+    ArduinoJson::JsonDocument rp;
+    rp["style"] = "round", rp["icon"] = b == m->prev ? "prev" : "next", rp["state"] = down ? "disabled" : "default";
+    fw::update_child(fw::find("icon_button"), b, rp.as<fw::Props>());
+  }
   char b[8];
   snprintf(b, sizeof b, "%d", m->volume);
   fw::set_text(m->vlab, fw::ty::label, b);
   ArduinoJson::JsonDocument sp;
-  sp["value"] = m->volume, sp["width"] = vol_track_dp();
+  sp["value"] = m->volume, sp["width"] = vol_track_dp(), sp["state"] = down ? "disabled" : "default";
   fw::update_child(fw::find("slider"), m->slider, sp.as<fw::Props>());
 }
 void send_volume(lv_obj_t *root, int v) {
@@ -285,7 +293,7 @@ FW_COMPONENT(media_view, "Media view", "components", R"({
   "about": "The Media screen's body: the disc with the track beside it, the controls and a live volume slider.",
   "frame": [480, 400],
   "props": [
-    {"name": "state", "type": "select", "options": ["playing", "paused", "idle", "off"], "default": "playing"},
+    {"name": "state", "type": "select", "options": ["playing", "paused", "idle", "off", "unavailable"], "default": "playing"},
     {"name": "title", "type": "text", "default": "Harbour Lights"},
     {"name": "artist", "type": "text", "default": "The Lanterns"},
     {"name": "progress", "type": "range", "min": 0, "max": 100, "step": 1, "default": 38},
@@ -303,7 +311,8 @@ FW_COMPONENT(media_view, "Media view", "components", R"({
     {"label": "paused · a long title", "props": {"state": "paused", "title": "Paper Lanterns on a Quiet Evening by the Harbour", "artist": "Marlow & Finch"}},
     {"label": "cassette", "props": {"visual": "cassette", "progress": 30}},
     {"label": "CD", "props": {"visual": "cd", "progress": 45}},
-    {"label": "nothing playing", "props": {"state": "idle", "title": "", "artist": "", "progress": 0}}
+    {"label": "nothing playing", "props": {"state": "idle", "title": "", "artist": "", "progress": 0}},
+    {"label": "unavailable", "props": {"state": "unavailable", "title": "", "artist": "", "progress": 0}}
   ]
 })") {
   const fw::Theme &t = *fw::T;
@@ -372,6 +381,7 @@ FW_COMPONENT(media_view, "Media view", "components", R"({
     lv_obj_t *b = build("icon_button", ctl, bp);
     if (!b) continue;
     if (!strcmp(c[1], "play")) m->play = b;
+    else (!strcmp(c[1], "prev") ? m->prev : m->next) = b;
     // the command rides on the event's own user data (an Icon button keeps its state in the object's user data)
     struct Cmd { lv_obj_t *root; const char *cmd; };
     auto *cm = new Cmd{root, c[2]};
@@ -381,6 +391,7 @@ FW_COMPONENT(media_view, "Media view", "components", R"({
       lv_obj_t *root = cm->root;
       MV *m = of(root);
       const char *cmd = cm->cmd;
+      if (lv_obj_has_state((lv_obj_t *) lv_event_get_current_target(e), fw::st::OFF)) return;  // blocked (the button said so)
       if (!strcmp(cmd, "play_pause")) {  // flips at once, held against updates
         m->st = m->st == "playing" ? "paused" : "playing";
         m->hold_until = lv_tick_get() + 3000;

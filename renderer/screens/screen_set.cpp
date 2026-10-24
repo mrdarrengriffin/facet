@@ -131,7 +131,7 @@ void build_page(lv_obj_t *parent, fw::Props p) {
   hd["label"] = name.c_str();
   if (lv_obj_t *h = build("header", pg->root, hd)) lv_obj_set_pos(h, fw::lay::inset, fw::lay::inset);
   lv_obj_t *c = box(pg->root);
-  lv_obj_add_flag(c, LV_OBJ_FLAG_SCROLLABLE);
+  lv_obj_add_flag(c, (lv_obj_flag_t) (LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_CLICKABLE));  // clickable: a drag in a gap scrolls too
   lv_obj_set_scroll_dir(c, LV_DIR_VER);
   lv_obj_set_scrollbar_mode(c, LV_SCROLLBAR_MODE_OFF);
   lv_obj_set_pos(c, fw::lay::inset, fw::lay::top);

@@ -3,7 +3,7 @@
 // nothing scrolls. This page shows the core atom fw::scroll_track (atoms.h, LVGL's own styled scrollbar + the track)
 // on a scrolling column of real List rows (fw::find("list_row")), the way a long screen gets it.
 //   rows    prop: how many List rows (few = nothing to scroll, so no track), the area lay::content_w x the frame
-// Drag to scroll (LVGL's scroll, with its momentum). No events of its own. Update path: refills (snap).
+// Drag to scroll (LVGL's scroll, with its momentum). No events of its own. Update path: refills (snap), keeps the scroll.
 // Contrast pairs: colour.json section "scroll_track".
 #include "fw.h"
 
@@ -45,8 +45,11 @@ FW_COMPONENT(scroll_track, "Scroll track", "components", R"({
   fill(s, p);
 }
 
-FW_UPDATE(scroll_track) {
+FW_UPDATE(scroll_track) {  // the rows again, where you were scrolled to (an update never jumps the list: BF-028)
+  const int32_t y = lv_obj_get_scroll_y(root);
   fw::refill(root);
   fill(root, p);
+  lv_obj_update_layout(root);
+  lv_obj_scroll_to_y(root, std::max<int32_t>(0, std::min(y, lv_obj_get_scroll_y(root) + lv_obj_get_scroll_bottom(root))), LV_ANIM_OFF);
   return true;
 }

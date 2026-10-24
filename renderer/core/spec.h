@@ -961,6 +961,13 @@ inline bool run(Screen *s, Node &n, const char *event, const char *detail) {
     emit(n.obj, "navigate", id.c_str());
     return true;
   }
+  // an entity that is unavailable / unknown takes no call (BF-049): the component shows it blocked (its unavailable
+  // state); this is the net under every HA action, whatever the component does
+  static const char *const HA_DOS[] = {"media.", "cover.", "vacuum.", "lock.", "light.", "climate."};
+  if (std::any_of(std::begin(HA_DOS), std::end(HA_DOS), [&](const char *p) { return d.rfind(p, 0) == 0; })) {
+    const std::string *es = ha::get(n.entity);
+    if (es && (*es == "unavailable" || *es == "unknown")) { emit(n.obj, st::BLOCKED_EVENT, "unavailable"); return true; }
+  }
   if (d == "media.control") {  // previous | play_pause | next | volume 0-100 (the view shows it at once itself)
     static const char *const CMD[][2] = {{"previous", "media_player.media_previous_track"},
                                          {"play_pause", "media_player.media_play_pause"},

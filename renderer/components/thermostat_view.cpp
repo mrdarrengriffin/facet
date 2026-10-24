@@ -83,6 +83,8 @@ lv_obj_t *build(const char *id, lv_obj_t *parent, ArduinoJson::JsonDocument &d) 
 bool held(const TV *v) { return !std::isnan(v->held) && (int32_t) (v->hold_until - lv_tick_get()) > 0; }
 double target_of(const TV *v) { return held(v) ? v->held : v->target; }
 void hold(TV *v, double t) { v->held = t; v->hold_until = lv_tick_get() + 3000; }
+// HA unavailable / unknown climate entity: the dial says Unavailable, the modes and presets are blocked (BF-049)
+bool down(const TV *v) { return v->mode == "unavailable" || v->mode == "unknown"; }
 void dial_props(const TV *v, ArduinoJson::JsonDocument &d) {
   const bool off = v->mode == "off";
   d["target"] = target_of(v);
@@ -93,12 +95,13 @@ void dial_props(const TV *v, ArduinoJson::JsonDocument &d) {
   snprintf(s, sizeof s, "%g", v->step);
   d["step"] = s;
   d["opening"] = false;
+  if (down(v)) d["state"] = "unavailable";
 }
 void render(lv_obj_t *root) {
   TV *v = of(root);
   const fw::Theme &t = *fw::T;
-  const bool off = v->mode == "off";
-  const char *doing = off ? "off" : v->action == "heating" ? "heating" : v->action == "cooling" ? "cooling" : "idle";
+  const bool off = v->mode == "off" || down(v);
+  const char *doing = down(v) ? "unavailable" : off ? "off" : v->action == "heating" ? "heating" : v->action == "cooling" ? "cooling" : "idle";
   fw::set_text(v->cap, fw::ty::label, doing);
   lv_obj_set_style_text_color(v->cap, !strcmp(doing, "heating") ? t.accent_text : !strcmp(doing, "cooling") ? t.blue : t.text_mute, 0);
   fw::set_text(v->val, fw::ty::display, temp_text(v->current).c_str());
@@ -114,12 +117,13 @@ void render(lv_obj_t *root) {
   for (size_t i = 0; i < v->mode_btns.size(); i++) {
     ArduinoJson::JsonDocument bp;
     bp["kind"] = "secondary", bp["label"] = mode_text(v->mode_ids[i]), bp["width"] = (int) std::lround(fw::lay::thermo_mode_w / fw::D);  // Button takes dp
-    bp["state"] = v->mode_ids[i] == v->mode ? "active" : "default";
+    bp["state"] = down(v) ? "disabled" : v->mode_ids[i] == v->mode ? "active" : "default";
     fw::update_child(fw::find("button"), v->mode_btns[i], bp.as<fw::Props>());
   }
   if (v->preset_btn) {
     ArduinoJson::JsonDocument bp;
     bp["kind"] = "secondary", bp["label"] = real_preset(v->preset) ? preset_text(v->preset).c_str() : "Presets";
+    bp["state"] = down(v) ? "disabled" : "default";
     fw::update_child(fw::find("button"), v->preset_btn, bp.as<fw::Props>());
   }
   ArduinoJson::JsonDocument dp;
@@ -134,7 +138,7 @@ void climate(lv_obj_t *root, const char *what, const std::string &value) {
 }
 void nudge(lv_obj_t *root, int dir) {
   TV *v = of(root);
-  if (v->mode == "off") return;
+  if (v->mode == "off" || down(v)) return;
   const double t = std::min(v->max, std::max(v->min, std::round((target_of(v) + dir * v->step) * 100) / 100));
   hold(v, t);
   render(root);
@@ -186,6 +190,7 @@ void build_row(lv_obj_t *root) {  // the modes + Presets (again when the list of
       auto *root = (lv_obj_t *) lv_event_get_user_data(e);
       TV *v = of(root);
       const size_t i = (size_t) (intptr_t) lv_obj_get_user_data((lv_obj_t *) lv_event_get_current_target(e));
+      if (lv_obj_has_state((lv_obj_t *) lv_event_get_current_target(e), fw::st::OFF)) return;  // blocked (the button said so)
       v->mode = v->mode_ids[i];
       climate(root, "mode", v->mode);
       render(root);
@@ -201,7 +206,7 @@ void build_row(lv_obj_t *root) {  // the modes + Presets (again when the list of
       lv_obj_add_event_cb(v->preset_btn, [](lv_event_t *e) {
         auto *root = (lv_obj_t *) lv_event_get_user_data(e);
         TV *v = of(root);
-        if (!v->sheet) return;
+        if (!v->sheet || lv_obj_has_state((lv_obj_t *) lv_event_get_current_target(e), fw::st::OFF)) return;
         ArduinoJson::JsonDocument sd;
         sheet_props(v, true, sd);
         fw::update_child(fw::find("bottom_sheet"), v->sheet, sd.as<fw::Props>());
@@ -236,7 +241,7 @@ FW_COMPONENT(thermostat_view, "Thermostat view", "components", R"({
     {"name": "target", "type": "range", "min": 5, "max": 30, "step": 0.5, "default": 21},
     {"name": "current", "type": "range", "min": 5, "max": 30, "step": 0.1, "default": 19.4},
     {"name": "action", "type": "select", "options": ["heating", "cooling", "idle"], "default": "heating"},
-    {"name": "mode", "type": "select", "options": ["heat", "auto", "off"], "default": "heat"},
+    {"name": "mode", "type": "select", "options": ["heat", "auto", "off", "unavailable"], "default": "heat"},
     {"name": "preset", "type": "select", "options": ["none", "home", "away", "eco", "boost"], "default": "none"},
     {"name": "next", "type": "text", "default": "17° from 22:30"}
   ],
@@ -244,7 +249,8 @@ FW_COMPONENT(thermostat_view, "Thermostat view", "components", R"({
     {"label": "heating to 21", "props": {}},
     {"label": "idle at 21", "props": {"current": 21, "action": "idle"}},
     {"label": "eco preset", "props": {"preset": "eco", "next": ""}},
-    {"label": "off", "props": {"mode": "off", "action": "idle"}}
+    {"label": "off", "props": {"mode": "off", "action": "idle"}},
+    {"label": "unavailable", "props": {"mode": "unavailable", "action": "idle"}}
   ]
 })") {
   const fw::Theme &t = *fw::T;

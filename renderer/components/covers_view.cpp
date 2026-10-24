@@ -12,7 +12,8 @@
 // window ("change" on release), the slats, a button: each emits "cover" (position 40 | tilt 60 | open | stop | close)
 // for the host and shows it at once (held 3 s against updates, the docs rule); open / close set the heading line.
 //   windows  on a spec screen with more than one window (the docs story: Study blind, Lounge curtains, Kitchen
-//            blind, until a host lists the house's covers): the screen's Header label = the window's name, and before
+//            blind, on the component page; a spec screen bound to no cover shows no story but its empty state:
+//            "no window chosen", controls blocked, BF-048): the screen's Header label = the window's name, and before
 //            the time "3 windows" (label type, text-dim, on a surface pill lay::row tall, rad::button, padding
 //            lay::cal_btn_pad; pressed surface-press; tap = sound open) opens the windows sheet (Bottom sheet, picker
 //            rows: the kind's icon, the name, its state); a pick shows that window (event "window" <name>). The sheet
@@ -34,6 +35,9 @@ struct CV {
   lv_obj_t *vis = nullptr, *cap = nullptr, *val = nullptr, *kind_l = nullptr, *tilt_box = nullptr, *tilt_v = nullptr, *slider = nullptr;
   std::string kind = "roller", state = "open";
   lv_obj_t *hlabel = nullptr, *sheet = nullptr;
+  lv_obj_t *btn[3] = {nullptr, nullptr, nullptr};  // Open / Stop / Close (disabled while offline: blocked + error)
+  int btn_w = 0;                                   // their width (dp)
+  bool none = false;  // a screen with no window chosen yet (spec entity ""): blocked like offline, says so (BF-048)
   int win = -1;  // the window shown (the spec screen's windows list), -1 = the props
   std::string cover;             // the bound cover (prop cover)
   std::vector<std::string> ids;  // the host's covers (prop covers), empty = the docs sample windows
@@ -64,7 +68,7 @@ void render(lv_obj_t *root) {
   const bool off = c->state == "unavailable", moving = c->state == "opening" || c->state == "closing";
   const int p = pos_of(c);
   char b[24];
-  if (off) snprintf(b, sizeof b, "offline");
+  if (off) snprintf(b, sizeof b, c->none ? "no window chosen" : "offline");
   else if (moving) snprintf(b, sizeof b, "%s", c->state.c_str());
   else if (p <= 0) snprintf(b, sizeof b, "closed");
   else if (p >= 100) snprintf(b, sizeof b, "open");
@@ -88,6 +92,13 @@ void render(lv_obj_t *root) {
   ArduinoJson::JsonDocument sp;
   sp["value"] = c->tilt, sp["width"] = track_dp(), sp["state"] = off ? "unavailable" : "default";
   fw::update_child(fw::find("slider"), c->slider, sp.as<fw::Props>());
+  static const char *const LABEL[3] = {"Open", "Stop", "Close"};
+  for (int i = 0; i < 3; i++) {
+    if (!c->btn[i] || off == lv_obj_has_state(c->btn[i], fw::st::OFF)) continue;
+    ArduinoJson::JsonDocument bp;
+    bp["kind"] = "secondary", bp["label"] = LABEL[i], bp["width"] = c->btn_w, bp["state"] = off ? "disabled" : "default";
+    fw::update_child(fw::find("button"), c->btn[i], bp.as<fw::Props>());
+  }
 }
 std::string friendly(const std::string &e) {
   const std::string *n = fw::ha::get(e, "friendly_name");
@@ -114,6 +125,9 @@ void take(lv_obj_t *root, fw::Props p) {
   c->state = p["state"] | "open";
   if (c->state == "unknown") c->state = "unavailable";
   if (c->state.empty()) c->state = "open";  // nothing bound: the sample
+  // bound to no cover: the prop is there (the sample has none) but holds no cover id ("" or an unset "$entity")
+  c->none = p["cover"].is<const char *>() && c->cover.rfind("cover.", 0) != 0;
+  if (c->none) c->state = "unavailable";
   c->heading = p["heading"] | -1;
   if (c->held == c->position) c->held = -1;  // HA caught up
   render(root);
@@ -131,7 +145,7 @@ void show_window(lv_obj_t *root, int i) {
   take(root, d.as<fw::Props>());
   if (c->hlabel) fw::set_text(c->hlabel, fw::ty::label, WINDOWS[i].name);
 }
-int n_win(const CV *c) { return c->ids.empty() ? N_WIN : (int) c->ids.size(); }
+int n_win(const CV *c) { return c->none && c->ids.empty() ? 0 : c->ids.empty() ? N_WIN : (int) c->ids.size(); }  // none: no sample story
 void win_sheet_props(const CV *c, bool open, ArduinoJson::JsonDocument &d) {
   d["overlay"] = true, d["title"] = "windows", d["open"] = open ? "open" : "closed", d["selected"] = c->win < 0 ? 0 : c->win;
   ArduinoJson::JsonArray items = d["items"].to<ArduinoJson::JsonArray>();
@@ -303,6 +317,7 @@ FW_COMPONENT(covers_view, "Covers view", "components", R"({
     bp["kind"] = "secondary", bp["label"] = CMD[i][0], bp["width"] = (int) std::lround(W / fw::D);
     lv_obj_t *b = build("button", btns, bp);
     if (!b) continue;
+    c->btn[i] = b, c->btn_w = bp["width"];
     lv_obj_set_user_data(b, (void *) CMD[i][1]);
     lv_obj_add_event_cb(b, [](lv_event_t *e) {
       auto *root = (lv_obj_t *) lv_event_get_user_data(e);

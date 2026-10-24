@@ -538,7 +538,7 @@ FW_COMPONENT(calendar_view, "Calendar view", "components", R"({
   c->agenda = box(root);
   lv_obj_set_pos(c->agenda, ox, oy);
   lv_obj_set_size(c->agenda, fw::lay::content_w, CH);
-  lv_obj_add_flag(c->agenda, LV_OBJ_FLAG_SCROLLABLE);
+  lv_obj_add_flag(c->agenda, (lv_obj_flag_t) (LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_CLICKABLE));  // clickable: a drag on a day row or its text scrolls too (BF-008)
   lv_obj_set_scroll_dir(c->agenda, LV_DIR_VER);
   lv_obj_set_scrollbar_mode(c->agenda, LV_SCROLLBAR_MODE_OFF);
   lv_obj_set_flex_flow(c->agenda, LV_FLEX_FLOW_COLUMN);
