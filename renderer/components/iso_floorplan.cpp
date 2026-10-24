@@ -12,7 +12,6 @@
 //   picked   the screen's picked rooms (spec "$rooms": "Kitchen:3,1": the id after a colon) = accent-dim top + accent
 //            edge (the label stays text: accent-text is under 4.5:1 on accent-dim); here = the room it's cleaning now (name or id) = accent edge
 //   state    the vacuum's state: cleaning = the LiDAR in accent + the live trail; while a run is on a tap is blocked
-//   show     plan | rules (the foundation's rules in words, for the workbench page)
 // Drawing (fw::fp:: tokens): scale = the largest that fits the whole house in content-w x lay::plan_h, plan centred
 // on the grid. ONE RGB565 image, drawn here with 4-sample anti-aliasing (scanline coverage), in painter's order: back
 // + left walls, rooms back to front (front + right sides, top, hairline edge), the dock after the room it stands in,
@@ -339,26 +338,16 @@ void take(FP *f, fw::Props p) {
   }
 }
 std::string build_key(fw::Props p) {
-  return std::string(p["plan"] | "") + "#" + (p["dock"] | "") + "#" + (p["transform"] | "") + "#" + (p["show"] | "plan");
+  return std::string(p["plan"] | "") + "#" + (p["dock"] | "") + "#" + (p["transform"] | "");
 }
 
 #define FP_PLAN "Dining|2|0,0 3.6,0 3.6,3 0,3|1.8,1.5;Utility||3.7,0 6.4,0 6.4,1.4 3.7,1.4|;Study||3.7,1.5 6.4,1.5 6.4,3 3.7,3|;Lounge|1|0,3.1 3.9,3.1 3.9,7.2 0,7.2|1.95,5.15;Hall|3|4,3.1 6.4,3.1 6.4,5.6 4,5.6|5.2,4.35;Cloakroom||4,5.7 6.4,5.7 6.4,7.2 4,7.2|"
 #define FP_TRAIL "0.6,0.7 3.1,0.7 3.1,1.3 0.6,1.3 0.6,1.9 3.1,1.9 3.1,2.5 0.6,2.5"
 
-void rules_page(lv_obj_t *root) {
-  const fw::Theme &t = *fw::T;
-  lv_obj_set_flex_flow(root, LV_FLEX_FLOW_COLUMN);
-  lv_obj_set_style_pad_row(root, fw::sp::s4, 0);
-  for (const fw::fp::Rule &r : fw::fp::RULES) {
-    fw::text(root, fw::ty::label, r.title, t.text_dim, fw::lay::content_w);
-    fw::text(root, fw::ty::body, r.about, t.text, fw::lay::content_w);
-  }
-  lv_obj_set_height(root, LV_SIZE_CONTENT);
-}
 }  // namespace
 
 FW_COMPONENT(iso_floorplan, "Iso floor plan", "components", R"({
-  "about": "A floor plan in isometric: the rooms as raised tiles with a low back wall, the dock, and the robot moving on it with its path. Rooms are data (polygons in metres); tap a room to pick it. Drawn once as one picture per theme; only the robot moves. Rules: Floor plans tokens (tokens/floorplan.json): tile 0.3 m, wall 0.5 m, tops surface + line-hi hairline, sides line-hi / line, picked accent-dim + accent edge, labels in the caps label type for rooms it cleans.",
+  "about": "A floor plan in isometric: the rooms as raised tiles with a low back wall, the dock, and the robot moving on it with its path. Rooms are data (polygons in metres); tap a room to pick it. Drawn once as one picture per theme; only the robot moves. How it is drawn: the Floor plans foundation (Foundations > Floor plans).",
   "frame": [480, 0],
   "audit": {"snaps": {"picked": "one pre-rendered picture (the lab's rule: no live drawing per frame): a pick redraws that room once", "here": "the same picture: the current room's edge is redrawn once", "state": "the LiDAR colour and the trail ink are part of the pictures", "trail": "the path is drawn into the picture when a new point arrives, every few seconds"}},
   "props": [
@@ -369,14 +358,12 @@ FW_COMPONENT(iso_floorplan, "Iso floor plan", "components", R"({
     {"name": "trail", "type": "text", "default": "0.6,0.7 3.1,0.7 3.1,1.3 0.6,1.3 0.6,1.9 3.1,1.9 3.1,2.5 0.6,2.5"},
     {"name": "picked", "type": "text", "default": ""},
     {"name": "here", "type": "text", "default": ""},
-    {"name": "state", "type": "select", "options": ["docked", "cleaning", "returning", "paused", "idle", "error", "unavailable"], "default": "docked"},
-    {"name": "show", "type": "select", "options": ["plan", "rules"], "default": "plan"}
+    {"name": "state", "type": "select", "options": ["docked", "cleaning", "returning", "paused", "idle", "error", "unavailable"], "default": "docked"}
   ],
   "variants": [
     {"label": "docked · last run", "about": "On the dock; the last run's path in text-mute. Rooms it cleans have names; the pantry, stairs and WC stay quiet.", "props": {}},
     {"label": "two rooms picked", "about": "Picked rooms: accent-dim top and an accent edge; the name in text (tap a room to pick it).", "props": {"picked": "Dining:2,Hall:3"}},
-    {"label": "cleaning", "about": "A run on: the robot on the plan with its LiDAR in the accent, the room it's in edged in the accent, the live path in blue.", "props": {"state": "cleaning", "here": "Lounge", "robot": "1.4,4.8", "trail": "0.5,3.6 3.4,3.6 3.4,4.2 0.5,4.2 0.5,4.8 1.4,4.8"}},
-    {"label": "rules", "about": "The Floor plans rules, from tokens/floorplan.json.", "props": {"show": "rules"}}
+    {"label": "cleaning", "about": "A run on: the robot on the plan with its LiDAR in the accent, the room it's in edged in the accent, the live path in blue.", "props": {"state": "cleaning", "here": "Lounge", "robot": "1.4,4.8", "trail": "0.5,3.6 3.4,3.6 3.4,4.2 0.5,4.2 0.5,4.8 1.4,4.8"}}
   ]
 })") {
   auto *f = new FP;
@@ -393,7 +380,6 @@ FW_COMPONENT(iso_floorplan, "Iso floor plan", "components", R"({
   }, LV_EVENT_DELETE, f);
   f->key_plan = build_key(p);
   lv_obj_set_width(root, fw::lay::content_w);
-  if (!strcmp(p["show"] | "plan", "rules")) { rules_page(root); return; }
   lv_obj_set_height(root, fw::lay::plan_h);
   f->theme = fw::T;
   parse_plan(f, p["plan"] | FP_PLAN);
@@ -469,7 +455,6 @@ FW_COMPONENT(iso_floorplan, "Iso floor plan", "components", R"({
 FW_UPDATE(iso_floorplan) {
   FP *f = of(root);
   if (!f || f->key_plan != build_key(p) || f->theme != fw::T) return false;  // another house / theme: built again
-  if (!f->buf) return true;                                                   // the rules page
   const std::set<std::string> was_picked = f->picked;
   const std::string was_here = f->here, was_state = f->state, was_trail = f->trail_s;
   std::vector<bool> was_here_room;
