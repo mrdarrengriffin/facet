@@ -70,14 +70,15 @@ void data(lv_obj_t *page) {
   const fw::Theme &t = *fw::T;
   lv_obj_t *w = wrap(page, fw::sp::s5);
   const int dp = (page_dp() - 16) / 2 / 8 * 8;
-  for (const char *word : {"Clay", "Grass"}) {
+  for (const char *word : {"Clay", "Grass", ""}) {
     char f[160];
-    snprintf(f, sizeof f, R"({"state":"live","surface":"%s","players":[{"short":"LIN"},{"short":"MOR"}],"sets":[[0,0]],"points":[0,0],"server":1})", word);
+    snprintf(f, sizeof f, R"({"state":"live",%s%s%s"players":[{"short":"LIN"},{"short":"MOR"}],"sets":[[0,0]],"points":[0,0],"server":1})", *word ? "\"surface\":\"" : "", word, *word ? "\"," : "");
     lv_obj_t *c = column(w, fw::sp::s2);
     lv_obj_set_width(c, px_of(dp));
     court(c, "auto", dp, f);
     char b[64];
-    snprintf(b, sizeof b, "The data says \"%s\"", word);
+    if (*word) snprintf(b, sizeof b, "The data says \"%s\"", word);
+    else snprintf(b, sizeof b, "No surface in the data: the Facet court");
     fw::text(c, fw::ty::c_meta, b, t.text_dim, px_of(dp));
   }
 }
@@ -91,11 +92,11 @@ FW_COMPONENT(surfaces, "Sports surfaces", "foundations", R"({
     {"name": "section", "type": "select", "options": ["surfaces", "venues", "rules", "sizes", "data"], "default": "surfaces"}
   ],
   "variants": [
-    {"label": "Surfaces", "about": "The five tennis surfaces in their real colours, toned down to sit on the canvas. Switch the theme: dark goes deeper, light stays mid-tone so the white lines still read.", "props": {"section": "surfaces"}},
+    {"label": "Surfaces", "about": "The five tennis surfaces in their real colours, toned down to sit on the canvas, and the generic Facet court for when the surface is unknown. Switch the theme: dark goes deeper, light stays mid-tone so the white lines still read.", "props": {"section": "surfaces"}},
     {"label": "Venues", "about": "Presets for the big events: recognisable at a glance, drawn the Facet way, with no logos or sponsor boards.", "props": {"section": "venues"}},
     {"label": "Rules", "about": "What every surface follows, with a live court: the server's dot sits in the run-off and the box they serve into is lifted, under the lines.", "props": {"section": "rules"}},
     {"label": "Sizes", "about": "The same venue small and large.", "props": {"section": "sizes"}},
-    {"label": "From the data", "about": "When a source names the surface, the court follows it; when it doesn't, a venue table fills the gap, and the plain hard court is the fallback.", "props": {"section": "data"}}
+    {"label": "From the data", "about": "When a source names the surface, the court follows it; when it doesn't, a venue table fills the gap; when nothing is known it is the Facet court, never a guessed hard court.", "props": {"section": "data"}}
   ]
 })") {
   const char *s = p["section"] | "surfaces";

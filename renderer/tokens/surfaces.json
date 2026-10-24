@@ -2,20 +2,22 @@
   "about": "Facet Sports surfaces foundation, the single source for how playing surfaces are drawn (build.sh: tools/gen_surfaces.mjs -> surfaces_gen.h fw::sf::; runtime core/surface.h). A surface = court + run-off colour tokens (colour.json group courts) + optional mowing stripes; a venue = a recognisable preset over a surface. Accurate to the venue, drawn the Facet way: flat fills, one line weight, outer edges on the 4 px grid, everything else at true proportions. Tennis first; football pitch and F1 track later use the same rules.",
   "rules": [
     {"id": "colour", "title": "Real colours, muted", "about": "Every surface keeps the colour people know (orange clay, green grass, blue hard court) but toned down so it sits on the canvas like a card. Dark theme: deeper. Light theme: mid tones, never pastel, so white lines still read."},
-    {"id": "lines", "title": "White lines, one weight", "about": "Lines are white (a touch dimmer on dark) and always one weight, whatever the size: real lines are a few centimetres wide, which would vanish on a panel. Every line passes contrast on every surface, its run-off and the highlighted box."},
+    {"id": "lines", "title": "White lines, one weight", "about": "Lines are white (a touch dimmer on dark; the Facet court uses Facet's dim grey) and always one weight, whatever the size: real lines are a few centimetres wide, which would vanish on a panel. Every line passes contrast on every surface, its run-off and the highlighted box."},
     {"id": "grid", "title": "Edges on the grid, lines true", "about": "A slim run-off frames the court: half a real club court's, in the same proportions, so the court itself gets the room. The run-off and the court's outer edge land on the 4 px grid so the court lines up with everything around it. The lines inside sit at their true proportions. Marks too small to see at true scale, like the centre mark, get one grid step."},
     {"id": "cheap", "title": "Flat and cheap", "about": "A surface is drawn as one object: flat boxes for the run-off, court, stripes and lines. No shadows, gradients or textures. A live score on top only redraws the small area that changed."},
     {"id": "venues", "title": "Venues, recognisable not copied", "about": "A venue preset gives a court its well-known look (Wimbledon's mown stripes, the US Open's blue court in a green surround) without logos, sponsor boards or exact paint codes."},
-    {"id": "data", "title": "Where the surface comes from", "about": "Some tennis sources say the surface of each tournament (clay, hard or grass); others don't, so a small venue table fills the gap. The court shows the plain surface when nothing is known."}
+    {"id": "data", "title": "Where the surface comes from", "about": "Some tennis sources say the surface of each tournament (clay, hard or grass); others don't, so a small venue table fills the gap."},
+    {"id": "unknown", "title": "Unknown surface, Facet court", "about": "When nothing names the surface, the court doesn't guess a blue hard court: it is drawn in Facet's own card colours with dim lines, plainly generic, in both themes."}
   ],
-  "line": {"colour": "court-line", "weight": "edge", "net": "edge", "about": "lines: stroke token edge at both densities; the net is the same weight, post to post"},
-  "mark": {"mix": "court-mark", "about": "a highlighted area on the court (the next serve's box) = the line colour over the court at colour.json components.court.mark; lines stay on top"},
+  "line": {"colour": "court-line", "weight": "edge", "net": "edge", "about": "lines: stroke token edge at both densities; the net is the same weight, post to post; a surface may set its own line colour (facet: text-dim)"},
+  "mark": {"mix": "court-mark", "about": "a highlighted area on the court (the next serve's box) = the line colour over the court at colour.json components.court.mark; lines stay on top; mix court-mark-<court> unless the surface names its own mark mix"},
   "surfaces": {
     "hard": {"label": "Hard", "court": "court-hard", "out": "court-hard-out", "about": "Acrylic hard court: blue inside, a darker run-off."},
     "clay": {"label": "Clay", "court": "court-clay", "out": "court-clay-out", "about": "Crushed brick: orange, the run-off a shade darker."},
     "grass": {"label": "Grass", "court": "court-grass", "out": "court-grass-out", "about": "Grass, plain. Venues add the mowing stripes."},
     "indoor": {"label": "Indoor hard", "court": "court-indoor", "out": "court-indoor-out", "about": "Indoor hard court: a cool grey."},
-    "carpet": {"label": "Carpet", "court": "court-carpet", "out": "court-carpet-out", "about": "Carpet, rare now: a grey green."}
+    "carpet": {"label": "Carpet", "court": "court-carpet", "out": "court-carpet-out", "about": "Carpet, rare now: a grey green."},
+    "facet": {"label": "Facet court", "court": "surface-press", "out": "surface", "line": "text-dim", "mark": "court-mark-facet", "about": "When the surface isn't known: Facet's own quiet card colours and dim lines, so it reads as no real surface."}
   },
   "venues": {
     "wimbledon": {"label": "Wimbledon", "surface": "grass", "out": "court-grass", "stripes": {"colour": "court-grass-stripe", "per-half": 6}, "about": "One lawn, mown in stripes that run across the court, parallel to the net."},
@@ -35,6 +37,6 @@
   "data": {
     "api-tennis": "get_tournaments gives tournament_sourface (sic): Clay / Hard / Grass -> surfaces clay / hard / grass",
     "espn": "no surface field: a venue table (tournament -> venue preset) fills it",
-    "default": "hard when nothing is known"
+    "default": "the Facet court (surfaces.facet) when nothing is known"
   }
 }

@@ -4,7 +4,8 @@
 // one, highlighted). No ball or player positions: no public source has them (Hawk-Eye is private; sports-data.md).
 // Ends are fixed (player 1 left): feeds do not say who is at which end.
 //   surface  prop "surface" = a surface (hard, clay, grass, indoor, carpet) or a venue preset (wimbledon, ...);
-//            the feed's "surface" word (Clay / Hard / Grass) wins when the prop is "auto"
+//            the feed's "surface" word (Clay / Hard / Grass) wins when the prop is "auto"; nothing known = the
+//            generic Facet court (surface "facet"), never a guessed hard court
 //   serve    a court-line dot (lay::sport_marker) in the run-off behind the server's baseline, on the half they serve from
 //   box      the target service box: sf::tennis_mark (court-line at court.mark under the lines)
 //   names    caps label over each end (text); the server's in text, the receiver's in text-dim; only with a feed
@@ -48,9 +49,14 @@ const fw::sf::Surface &surface_of(fw::Props p, ArduinoJson::JsonVariantConst f) 
   const fw::sf::Surface *s = fw::sf::from_data(f["surface"] | "");
   return s ? *s : fw::sf::find(nullptr);
 }
+// the court and the serve dot follow the surface (the dot = its line colour)
+void set_surface(View &v, const fw::sf::Surface &s) {
+  fw::sf::tennis_surface(v.court, s);
+  lv_obj_set_style_bg_color(v.dot, fw::T->*s.line, 0);
+}
 void apply_feed(View &v, fw::Props p, ArduinoJson::JsonVariantConst f, bool glide) {
   const fw::Theme &t = *fw::T;
-  fw::sf::tennis_surface(v.court, surface_of(p, f));
+  set_surface(v, surface_of(p, f));
   const TennisNow n = tennis_now(f);
   for (int i = 0; i < 2 && v.names; i++) {
     const char *nm = f["players"][i]["short"] | (f["players"][i]["name"] | (i ? "P2" : "P1"));
@@ -121,7 +127,7 @@ void fill(lv_obj_t *root, fw::Props p) {
   }
   v->dot = plain(root, 0, 0, fw::lay::sport_marker, fw::lay::sport_marker);
   lv_obj_set_style_radius(v->dot, LV_RADIUS_CIRCLE, 0);
-  lv_obj_set_style_bg_color(v->dot, t.*fw::sf::line_ink(), 0);
+  lv_obj_set_style_bg_color(v->dot, t.*surface_of(p, ArduinoJson::JsonVariantConst()).line, 0);
   lv_obj_set_style_bg_opa(v->dot, LV_OPA_COVER, 0);
   lv_obj_add_flag(v->dot, LV_OBJ_FLAG_HIDDEN);
   fw::qa::free(v->dot, "behind the server's baseline");
@@ -140,7 +146,7 @@ FW_COMPONENT(tennis_court, "Tennis court", "components", R"({
   "frame": [400, 256],
   "props": [
     {"name": "width", "type": "range", "min": 160, "max": 448, "step": 8, "default": 360},
-    {"name": "surface", "type": "select", "options": ["auto", "hard", "clay", "grass", "indoor", "carpet", "wimbledon", "roland-garros", "us-open", "australian-open", "atp-finals"], "default": "auto"},
+    {"name": "surface", "type": "select", "options": ["auto", "hard", "clay", "grass", "indoor", "carpet", "facet", "wimbledon", "roland-garros", "us-open", "australian-open", "atp-finals"], "default": "auto"},
     {"name": "names", "type": "bool", "default": true},
     {"name": "sim", "type": "bool", "default": true},
     {"name": "speed", "type": "select", "options": ["1x", "10x", "60x"], "default": "10x"},
@@ -174,6 +180,6 @@ FW_UPDATE(tennis_court) {
   v->surface = p["surface"] | "auto";
   ArduinoJson::JsonVariantConst feed = tennis_match_feed(root, p, doc, sim_apply);
   if (!feed.isNull()) apply_feed(*v, p, feed, true);
-  else fw::sf::tennis_surface(v->court, surface_of(p, feed));
+  else set_surface(*v, surface_of(p, feed));
   return true;
 }

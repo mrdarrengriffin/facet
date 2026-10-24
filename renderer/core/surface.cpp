@@ -44,7 +44,7 @@ void draw(lv_event_t *e) {
         fill(layer, o, x0, 0, x1 - x0, f.h, t.*s.stripe);
       }
   }
-  const lv_color_t ink = t.*line_ink();
+  const lv_color_t ink = t.*s.line;
   if (c->show) fill(layer, o, c->mark.x, c->mark.y, c->mark.w, c->mark.h, ink, (lv_opa_t) lroundf(tokens::comp::court_mark * 255));
   const int e2 = LINE_W, cx = f.court.x, cy = f.court.y, cw = f.court.w, ch = f.court.h;
   fill(layer, o, cx, cy, cw, e2, ink), fill(layer, o, cx, cy + ch - e2, cw, e2, ink);          // doubles sidelines
@@ -81,12 +81,14 @@ void set_my(void *v, int32_t y) {
 const Surface &find(const char *id) {
   for (const Surface &s : SURFACES)
     if (id && !strcmp(s.id, id)) return s;
+  for (const Surface &s : SURFACES)
+    if (!strcmp(s.id, "facet")) return s;
   return SURFACES[0];
 }
 const Surface *from_data(const char *name) {
   if (!name || !*name) return nullptr;
   for (int i = 0; i < N_BASES; i++)
-    if (!strcasecmp(SURFACES[i].id, name) || !strcasecmp(SURFACES[i].label, name)) return &SURFACES[i];
+    if (strcmp(SURFACES[i].id, "facet") && (!strcasecmp(SURFACES[i].id, name) || !strcasecmp(SURFACES[i].label, name))) return &SURFACES[i];
   return nullptr;
 }
 TennisFit tennis_fit(int w) {

@@ -2,7 +2,7 @@
 // surface is drawn, accurate to the venue but Facet-styled. A surface = run-off + court colour tokens (colour.json
 // group courts, both themes, muted to sit on the canvas) + optional mowing stripes; a venue = a preset over a surface
 // (Wimbledon, Roland-Garros, US Open, Australian Open, ATP Finals).
-//   lines   court-line (white; dimmer on dark), one weight (sf::LINE_W = stroke edge) at every size; 3:1 on every
+//   lines   court-line (white; dimmer on dark; a surface may set its own, the Facet court = text-dim), one weight (sf::LINE_W = stroke edge) at every size; 3:1 on every
 //           surface, run-off and highlighted box (contrast section "surfaces")
 //   grid    the outer box and the court's outer edge land on the 4 px grid; lines inside at true ITF proportions;
 //           marks too small at true scale (the centre mark) get one grid step
@@ -15,9 +15,9 @@
 #include "surfaces_gen.h"
 
 namespace fw::sf {
-const Surface &find(const char *id);         // surface or venue id; unknown / empty = hard (the data default)
+const Surface &find(const char *id);         // surface or venue id; unknown / empty = the Facet court (generic)
 const Surface *from_data(const char *name);  // a source's surface word ("Clay", "Hard", "Grass", API-Tennis
-                                             // tournament_sourface) -> the base surface; nullptr = unknown
+                                             // tournament_sourface) -> a real base surface (never facet); nullptr = unknown
 struct Box { int x = 0, y = 0, w = 0, h = 0; };
 // a tennis court fitted to an outer width (device px, on the grid): outer height + court box on the grid
 struct TennisFit {
