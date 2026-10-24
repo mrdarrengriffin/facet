@@ -8,6 +8,7 @@
 //   serve    a court-line dot (lay::sport_marker) in the run-off behind the server's baseline, on the half they serve from
 //   box      the target service box: sf::tennis_mark (court-line at court.mark under the lines)
 //   names    caps label over each end (text); the server's in text, the receiver's in text-dim; only with a feed
+//            and prop names (a screen that shows the score above turns them off: Tennis live)
 // Motion: the serve dot and the box glide to the next point's place (Motion "value"); silent. Pairs: "sport", "surfaces".
 // Data: prop "feed" = a tennis feed, or the tennis simulator.
 #include "fw.h"
@@ -90,7 +91,7 @@ void sim_apply(lv_obj_t *root, ArduinoJson::JsonVariantConst feed) {
 std::string sig_of(fw::Props p) {
   char b[64];
   const char *feed = p["feed"].is<const char *>() ? p["feed"].as<const char *>() : "";
-  snprintf(b, sizeof b, "%d|%d", (int) (p["width"] | 360), (int) ((p["sim"] | true) || *feed || p["feed"].is<ArduinoJson::JsonObjectConst>()));
+  snprintf(b, sizeof b, "%d|%d|%d", (int) (p["width"] | 360), (int) ((p["sim"] | true) || *feed || p["feed"].is<ArduinoJson::JsonObjectConst>()), (int) (p["names"] | true));
   return b;
 }
 void fill(lv_obj_t *root, fw::Props p) {
@@ -105,7 +106,7 @@ void fill(lv_obj_t *root, fw::Props p) {
   // names row (only with a feed or the simulator), then the court object with the serve dot in its run-off
   v->surface = p["surface"] | "auto";
   const char *ft = p["feed"].is<const char *>() ? p["feed"].as<const char *>() : "";
-  v->names = (p["sim"] | true) || *ft || p["feed"].is<ArduinoJson::JsonObjectConst>();
+  v->names = (p["names"] | true) && ((p["sim"] | true) || *ft || p["feed"].is<ArduinoJson::JsonObjectConst>());
   const int label_h = fw::style(fw::ty::c_caps_sm).box;
   v->top = v->names ? label_h + fw::sp::s3 : 0;
   v->court = fw::sf::court(root, w, surface_of(p, ArduinoJson::JsonVariantConst()));
@@ -140,6 +141,7 @@ FW_COMPONENT(tennis_court, "Tennis court", "components", R"({
   "props": [
     {"name": "width", "type": "range", "min": 160, "max": 448, "step": 8, "default": 360},
     {"name": "surface", "type": "select", "options": ["auto", "hard", "clay", "grass", "indoor", "carpet", "wimbledon", "roland-garros", "us-open", "australian-open", "atp-finals"], "default": "auto"},
+    {"name": "names", "type": "bool", "default": true},
     {"name": "sim", "type": "bool", "default": true},
     {"name": "speed", "type": "select", "options": ["1x", "10x", "60x"], "default": "10x"},
     {"name": "jump", "type": "select", "options": ["start", "break point", "break", "tiebreak", "set point", "match point"], "default": "start"},

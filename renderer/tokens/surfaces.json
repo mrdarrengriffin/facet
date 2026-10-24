@@ -3,7 +3,7 @@
   "rules": [
     {"id": "colour", "title": "Real colours, muted", "about": "Every surface keeps the colour people know (orange clay, green grass, blue hard court) but toned down so it sits on the canvas like a card. Dark theme: deeper. Light theme: mid tones, never pastel, so white lines still read."},
     {"id": "lines", "title": "White lines, one weight", "about": "Lines are white (a touch dimmer on dark) and always one weight, whatever the size: real lines are a few centimetres wide, which would vanish on a panel. Every line passes contrast on every surface, its run-off and the highlighted box."},
-    {"id": "grid", "title": "Edges on the grid, lines true", "about": "The run-off and the court's outer edge land on the 4 px grid so the court lines up with everything around it. The lines inside sit at their true proportions. Marks too small to see at true scale, like the centre mark, get one grid step."},
+    {"id": "grid", "title": "Edges on the grid, lines true", "about": "A slim run-off frames the court: half a real club court's, in the same proportions, so the court itself gets the room. The run-off and the court's outer edge land on the 4 px grid so the court lines up with everything around it. The lines inside sit at their true proportions. Marks too small to see at true scale, like the centre mark, get one grid step."},
     {"id": "cheap", "title": "Flat and cheap", "about": "A surface is drawn as one object: flat boxes for the run-off, court, stripes and lines. No shadows, gradients or textures. A live score on top only redraws the small area that changed."},
     {"id": "venues", "title": "Venues, recognisable not copied", "about": "A venue preset gives a court its well-known look (Wimbledon's mown stripes, the US Open's blue court in a green surround) without logos, sponsor boards or exact paint codes."},
     {"id": "data", "title": "Where the surface comes from", "about": "Some tennis sources say the surface of each tournament (clay, hard or grass); others don't, so a small venue table fills the gap. The court shows the plain surface when nothing is known."}
@@ -25,8 +25,8 @@
     "atp-finals": {"label": "ATP Finals", "surface": "indoor", "court": "court-finals", "out": "court-finals-out", "about": "Indoor, dark court and surround under the arena lights."}
   },
   "tennis": {
-    "about": "ITF court in metres: doubles 23.77 x 10.97, singles width 8.23, service line 6.40 from the net, net posts 0.914 outside the doubles sidelines; run-off = ITF club minimum 5.48 behind each baseline, 3.05 at the sides",
-    "length": 23.77, "width": 10.97, "singles": 8.23, "service": 6.40, "post": 0.914, "runoff-back": 5.48, "runoff-side": 3.05
+    "about": "ITF court in metres: doubles 23.77 x 10.97, singles width 8.23, service line 6.40 from the net, net posts 0.914 outside the doubles sidelines; run-off = half the ITF club minimum (5.48 / 3.05 m), same proportions, so the court itself is bigger on the panel (Darren 2026-10-24) and the serve dot still fits behind the baseline",
+    "length": 23.77, "width": 10.97, "singles": 8.23, "service": 6.40, "post": 0.914, "runoff-back": 2.74, "runoff-side": 1.52
   },
   "pitch": {
     "about": "Planned (football pitch): grass + stripes + white lines from these same rules; the football_pitch component moves over later",

@@ -2,7 +2,9 @@
 //   header   the event ("Sample Open · Final")
 //   hero     Tennis score, hero layout: the point in display type (what changes most, read from across the room),
 //            the players with the serve dot, finished sets and the set in play, the moment line + state chip
-//   court    Tennis court under it: who serves, from which half, into which box; sized to the room left
+//   court    Tennis court at the bottom, the full content width (screen inset each side; Darren 2026-10-24), height from
+//            the court's proportions (sf::tennis_fit); its names row off (the score shows them). The score takes the
+//            room above: hero layout when it fits, else compact
 // The screen runs one simulator (sample data) or takes p["feed"] from an adapter and hands it to both parts.
 #include "fw.h"
 #include "surface.h"
@@ -11,7 +13,7 @@
 
 namespace {
 using namespace fw::sport;
-struct Screen { lv_obj_t *header = nullptr, *score = nullptr, *court = nullptr; int sw = 0, cw = 0; Picker *pick = nullptr; };
+struct Screen { lv_obj_t *header = nullptr, *score = nullptr, *court = nullptr; int sw = 0, cw = 0; const char *layout = "hero"; Picker *pick = nullptr; };
 Screen *of(lv_obj_t *root) {
   lv_obj_t *h = lv_obj_get_child(root, 0);
   return h ? (Screen *) lv_obj_get_user_data(h) : nullptr;
@@ -29,10 +31,10 @@ void push(lv_obj_t *root, ArduinoJson::JsonVariantConst f) {
   Screen *s = of(root);
   if (!s || picker_paused(s->pick)) return;  // TV sync paused: the screen holds what it shows
   ArduinoJson::JsonDocument a;
-  a["feed"] = f, a["sim"] = false, a["layout"] = "hero", a["width"] = s->sw;
+  a["feed"] = f, a["sim"] = false, a["layout"] = s->layout, a["width"] = s->sw;
   fw::update_child(fw::find("tennis_score"), s->score, a.as<fw::Props>());
   ArduinoJson::JsonDocument b;
-  b["feed"] = f, b["sim"] = false, b["width"] = s->cw;
+  b["feed"] = f, b["sim"] = false, b["names"] = false, b["width"] = s->cw;
   fw::update_child(fw::find("tennis_court"), s->court, b.as<fw::Props>());
   ArduinoJson::JsonDocument hd;
   hd["label"] = f["event"] | "Tennis";
@@ -80,32 +82,31 @@ void fill(lv_obj_t *root, fw::Props p) {
   fw::find("header")->build(root, hd.as<fw::Props>());
   s->header = lv_obj_get_child(root, -1);
   lv_obj_set_pos(s->header, fw::lay::inset, fw::lay::inset);
-  const int X = fw::lay::inset, Y = fw::lay::top, W = fw::lay::content_w, H = fw::lay::screen_h - fw::lay::top - fw::lay::inset;
-  // the score: full width, its own height
-  lv_obj_t *sb = box(root, X, Y, W, 0);
-  lv_obj_set_height(sb, LV_SIZE_CONTENT);
-  s->sw = dp(W);
-  ArduinoJson::JsonDocument sd;
-  sd["sim"] = false, sd["feed"] = "{\"players\":[{},{}],\"sets\":[[0,0]],\"points\":[0,0],\"server\":0}", sd["layout"] = "hero", sd["width"] = s->sw;
-  fw::find("tennis_score")->build(sb, sd.as<fw::Props>());
-  s->score = lv_obj_get_child(sb, -1);
-  lv_obj_add_flag(sb, LV_OBJ_FLAG_OVERFLOW_VISIBLE);
-  lv_obj_update_layout(sb);
-  const int sh = (lv_obj_get_height(s->score) + 3) / 4 * 4;
-  lv_obj_set_height(sb, sh);
-  // the court: as wide as fits the room left (its height = label row + the surface: Sports surfaces sf::tennis_fit)
-  const int room = H - sh - fw::lay::group;
-  const int label = fw::style(fw::ty::c_caps_sm).box + fw::sp::s3;
-  int cw = W;
-  while (cw > 160 && label + fw::sf::tennis_fit(cw).h > room) cw -= 8;
-  cw = cw / 8 * 8;
-  lv_obj_t *cb = box(root, X + (W - cw) / 2 / 4 * 4, Y + sh + fw::lay::group, cw, room);
-  s->cw = dp(cw);
+  const int X = fw::lay::inset, Y = fw::lay::top, W = fw::lay::content_w;
+  // the court first: the full content width at the bottom, its height from the court's proportions
+  const fw::sf::TennisFit g = fw::sf::tennis_fit(W);
+  const int cy = fw::lay::screen_h - fw::lay::inset - g.h;
+  lv_obj_t *cb = box(root, X, cy, W, g.h);
+  s->cw = dp(W);
   ArduinoJson::JsonDocument cd;
-  cd["sim"] = false, cd["feed"] = "{}", cd["width"] = s->cw;
+  cd["sim"] = false, cd["feed"] = "{}", cd["names"] = false, cd["width"] = s->cw;
   fw::find("tennis_court")->build(cb, cd.as<fw::Props>());
   s->court = lv_obj_get_child(cb, -1);
   lv_obj_add_flag(cb, LV_OBJ_FLAG_OVERFLOW_VISIBLE);
+  // the score: full width in the room above (a group gap clear of the court): hero when it fits, else compact
+  const int room = cy - fw::lay::group - Y;
+  lv_obj_t *sb = box(root, X, Y, W, room);
+  s->sw = dp(W);
+  for (const char *layout : {"hero", "compact"}) {
+    lv_obj_clean(sb);
+    ArduinoJson::JsonDocument sd;
+    sd["sim"] = false, sd["feed"] = "{\"players\":[{},{}],\"sets\":[[0,0]],\"points\":[0,0],\"server\":0}", sd["layout"] = layout, sd["width"] = s->sw;
+    fw::find("tennis_score")->build(sb, sd.as<fw::Props>());
+    s->score = lv_obj_get_child(sb, -1), s->layout = layout;
+    lv_obj_update_layout(sb);
+    if (lv_obj_get_height(s->score) <= room) break;
+  }
+  lv_obj_add_flag(sb, LV_OBJ_FLAG_OVERFLOW_VISIBLE);
   // the match picker: the header button + its sheet over the whole screen (core/sport_pick.h)
   s->pick = picker_attach(root, s->header, 't', p);
   picker_hero(s->pick, sb);
