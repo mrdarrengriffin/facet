@@ -2,6 +2,8 @@
 // (device/fw_device.h). Themes from the generated token tables, the component registry, and render() = build one
 // component on a screen exactly the way the workbench preview does.
 #include <algorithm>
+#include <array>
+#include <utility>
 #include <cmath>
 #include <string>
 #include <vector>
@@ -35,8 +37,72 @@ std::vector<Component> &reg() {
   static std::vector<Component> r;
   return r;
 }
+#ifndef ESP_PLATFORM
+// Component outlines (hosts only, never on a panel (ESP_PLATFORM), an introspection hook for the workbench "Components" view, hub src/wasm/outline.ts):
+// add() swaps each build for a trampoline that tags the objects the build put on `parent` with the component's
+// registry index (kept on the object until it is deleted); comps_json() walks a screen and lists the tagged objects.
+// Panel builds register the build as is.
+namespace {
+constexpr int kTramp = 256;
+Build real_build[kTramp];
+std::vector<std::pair<lv_obj_t *, std::vector<int>>> &tags() { static std::vector<std::pair<lv_obj_t *, std::vector<int>>> v; return v; }
+std::vector<int> *tags_of(lv_obj_t *o) {
+  for (auto &t : tags()) if (t.first == o) return &t.second;
+  return nullptr;
+}
+void tag(lv_obj_t *o, int n) {
+  std::vector<int> *v = tags_of(o);
+  if (!v) {
+    lv_obj_add_event_cb(o, [](lv_event_t *e) {
+      lv_obj_t *d = (lv_obj_t *) lv_event_get_current_target(e);
+      auto &t = tags();
+      for (size_t i = 0; i < t.size(); i++) if (t[i].first == d) { t[i] = std::move(t.back()); t.pop_back(); break; }
+    }, LV_EVENT_DELETE, nullptr);
+    tags().push_back({o, {}});
+    v = &tags().back().second;
+  }
+  v->push_back(n);  // inner build first (a component built on another's root), the outer one after it
+}
+template <int N> void tramp(lv_obj_t *parent, Props p) {
+  const uint32_t n0 = lv_obj_get_child_count(parent);
+  real_build[N](parent, p);
+  const uint32_t n1 = lv_obj_get_child_count(parent);
+  for (uint32_t i = n0; i < n1; i++) tag(lv_obj_get_child(parent, (int32_t) i), N);
+}
+template <int... I> constexpr std::array<Build, sizeof...(I)> tramps(std::integer_sequence<int, I...>) { return {{tramp<I>...}}; }
+constexpr std::array<Build, kTramp> TRAMP = tramps(std::make_integer_sequence<int, kTramp>{});
+void comps(lv_obj_t *o, int depth, ArduinoJson::JsonArray arr) {
+  for (uint32_t i = 0; i < lv_obj_get_child_count(o); i++) {
+    lv_obj_t *c = lv_obj_get_child(o, (int32_t) i);
+    if (lv_obj_has_flag(c, LV_OBJ_FLAG_HIDDEN)) continue;
+    const std::vector<int> *v = tags_of(c);
+    if (v) {
+      lv_area_t a;
+      lv_obj_get_coords(c, &a);
+      auto r = arr.add<ArduinoJson::JsonObject>();
+      r["d"] = depth;
+      for (size_t k = v->size(); k-- > 0;) r["ids"].add(reg()[(*v)[k]].id);  // outermost first
+      r["x"] = a.x1;
+      r["y"] = a.y1;
+      r["w"] = lv_area_get_width(&a);
+      r["h"] = lv_area_get_height(&a);
+    }
+    comps(c, v ? depth + 1 : depth, arr);
+  }
+}
+}  // namespace
+void comps_json(lv_obj_t *scr, std::string &out) {
+  ArduinoJson::JsonDocument doc;
+  comps(scr, 1, doc.to<ArduinoJson::JsonArray>());
+  serializeJson(doc, out);
+}
+#endif
 int add(const Component &c) {
   reg().push_back(c);
+#ifndef ESP_PLATFORM
+  const int n = (int) reg().size() - 1;
+  if (n < kTramp) { real_build[n] = c.build; reg().back().build = TRAMP[n]; }
+#endif
   return (int) reg().size();
 }
 

@@ -171,6 +171,11 @@ int add(const Component &c);
 int set_update(const char *id, Update u);  // FW_UPDATE registers through this
 std::vector<Component> &reg();            // every registered component (registration order)
 const Component *find(const char *id);    // nullptr = not in this build
+#ifndef ESP_PLATFORM
+// Host introspection, not on panels (workbench "Components" view): every component instance under `scr`, depth first, as JSON
+// [{d: nesting depth (1 = outermost), ids: [outer..inner] (several = built on another's root), x, y, w, h}] device px
+void comps_json(lv_obj_t *scr, std::string &out);
+#endif
 void meta_json(std::string &out);         // [{id,name,section,meta}] as JSON
 // clean `scr` (any LVGL screen) and build component `comp` on it with props JSON, theme light/dark + accent set
 // index: the same call the workbench preview and the device firmware make. Returns "" or an error.

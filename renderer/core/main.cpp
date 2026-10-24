@@ -367,6 +367,15 @@ EMSCRIPTEN_KEEPALIVE const char *fw_rects(int id) {
   return out.c_str();
 }
 
+// the component instances on stage `id` (fw::comps_json): the workbench Components view outlines them
+EMSCRIPTEN_KEEPALIVE const char *fw_comps(int id) {
+  out.clear();
+  Stage *s = get(id);
+  if (!s) return "[]";
+  fw::comps_json(lv_display_get_screen_active(s->d), out);
+  return out.c_str();
+}
+
 // the editor's click-to-edit (core/spec.h anchors): every anchored region of the spec screen on stage `id`
 // [{n, c, prop?, params, x, y, w, h}] (device px, as drawn); fw_hit = the smallest one at (x, y), "null" if none
 EMSCRIPTEN_KEEPALIVE const char *fw_hits(int id) {
