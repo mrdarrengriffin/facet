@@ -45,7 +45,7 @@ void draw(lv_event_t *e) {
       }
   }
   const lv_color_t ink = t.*s.line;
-  if (c->show) fill(layer, o, c->mark.x, c->mark.y, c->mark.w, c->mark.h, ink, (lv_opa_t) lroundf(tokens::comp::court_mark * 255));
+  if (c->show) fill(layer, o, c->mark.x, c->mark.y, c->mark.w, c->mark.h, t.*s.mark, (lv_opa_t) lroundf(s.mark_opa * 255));  // the surface's mark mix
   const int e2 = LINE_W, cx = f.court.x, cy = f.court.y, cw = f.court.w, ch = f.court.h;
   fill(layer, o, cx, cy, cw, e2, ink), fill(layer, o, cx, cy + ch - e2, cw, e2, ink);          // doubles sidelines
   fill(layer, o, cx, cy, e2, ch, ink), fill(layer, o, cx + cw - e2, cy, e2, ch, ink);          // baselines

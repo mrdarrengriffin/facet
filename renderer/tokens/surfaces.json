@@ -10,14 +10,14 @@
     {"id": "unknown", "title": "Unknown surface, Facet court", "about": "When nothing names the surface, the court doesn't guess a blue hard court: it is drawn in Facet's own card colours with dim lines, plainly generic, in both themes."}
   ],
   "line": {"colour": "court-line", "weight": "edge", "net": "edge", "about": "lines: stroke token edge at both densities; the net is the same weight, post to post; a surface may set its own line colour (facet: text-dim)"},
-  "mark": {"mix": "court-mark", "about": "a highlighted area on the court (the next serve's box) = the line colour over the court at colour.json components.court.mark; lines stay on top; mix court-mark-<court> unless the surface names its own mark mix"},
+  "mark": {"mix": "court-mark", "about": "a highlighted area on the court (the next serve's box) = the line colour over the court at colour.json components.court.mark; lines stay on top; mix court-mark-<court> unless the surface names its own mark mix; the box is drawn with that mix's tint + opacity (facet: a light accent wash)"},
   "surfaces": {
     "hard": {"label": "Hard", "court": "court-hard", "out": "court-hard-out", "about": "Acrylic hard court: blue inside, a darker run-off."},
     "clay": {"label": "Clay", "court": "court-clay", "out": "court-clay-out", "about": "Crushed brick: orange, the run-off a shade darker."},
     "grass": {"label": "Grass", "court": "court-grass", "out": "court-grass-out", "about": "Grass, plain. Venues add the mowing stripes."},
     "indoor": {"label": "Indoor hard", "court": "court-indoor", "out": "court-indoor-out", "about": "Indoor hard court: a cool grey."},
     "carpet": {"label": "Carpet", "court": "court-carpet", "out": "court-carpet-out", "about": "Carpet, rare now: a grey green."},
-    "facet": {"label": "Facet court", "court": "surface-press", "out": "surface", "line": "text-dim", "mark": "court-mark-facet", "about": "When the surface isn't known: Facet's own quiet card colours and dim lines, so it reads as no real surface."}
+    "facet": {"label": "Facet court", "court": "surface-press", "out": "surface", "line": "text-dim", "mark": "court-mark-facet", "about": "When the surface isn't known: Facet's own quiet card colours and dim lines, so it reads as no real surface. The serve box gets a light accent wash."}
   },
   "venues": {
     "wimbledon": {"label": "Wimbledon", "surface": "grass", "out": "court-grass", "stripes": {"colour": "court-grass-stripe", "per-half": 6}, "about": "One lawn, mown in stripes that run across the court, parallel to the net."},

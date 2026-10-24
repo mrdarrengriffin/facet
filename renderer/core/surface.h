@@ -30,6 +30,6 @@ TennisFit tennis_fit(int w);
 lv_obj_t *court(lv_obj_t *parent, int w, const Surface &s);  // the court object (w x tennis_fit(w).h), place it yourself
 const TennisFit &tennis_geo(lv_obj_t *court);
 void tennis_surface(lv_obj_t *court, const Surface &s);    // another surface in place (one redraw)
-// the highlighted area (px inside the court object): drawn under the lines; glide = Motion "value", silent
+// the highlighted area (px inside the court object): the surface's mark mix (court-line wash; facet: accent wash), drawn under the lines; glide = Motion "value", silent
 void tennis_mark(lv_obj_t *court, Box b, bool show, bool glide);
 }  // namespace fw::sf

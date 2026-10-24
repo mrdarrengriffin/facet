@@ -116,7 +116,8 @@
       "tint": {"value": 0.14, "use": "opacity of the tone fill behind a status chip or count badge (docs opacity chip-bg; drawn as bg_opa so it works on the canvas or a card); a theme may set it later"}
     },
     "court": {
-      "mark": {"value": 0.2, "use": "Sports surfaces: opacity of the line colour over the court for a highlighted area (the next serve's box; mixes court-mark-*; surfaces.json mark)"}
+      "mark": {"value": 0.2, "use": "Sports surfaces: opacity of the line colour over the court for a highlighted area (the next serve's box; mixes court-mark-*; surfaces.json mark)"},
+      "tint": {"value": 0.12, "use": "Sports surfaces: opacity of the accent over the Facet court for the highlighted serve box (mix court-mark-facet): a light wash, not clay"}
     },
     "grid": {
       "minor": {"value": 0.05, "use": "opacity of the minor grid lines (every grid step, 8 px at 720 / 4 at 480; ink = colour text) in the Layout page's screen overlay: drawn on top of the real components, see-through on cards, still visible on the bare bg (Darren 2026-10-22: translucent ink, ~5 % light-on-dark / dark-on-light)"},
@@ -133,7 +134,7 @@
     "court-mark-usopen": {"tint": "court-line", "over": "court-usopen", "opa": "court.mark", "use": "Sports surfaces: the highlighted box on usopen"},
     "court-mark-ao": {"tint": "court-line", "over": "court-ao", "opa": "court.mark", "use": "Sports surfaces: the highlighted box on ao"},
     "court-mark-finals": {"tint": "court-line", "over": "court-finals", "opa": "court.mark", "use": "Sports surfaces: the highlighted box on finals"},
-    "court-mark-facet": {"tint": "text-dim", "over": "surface-press", "opa": "court.mark", "use": "Sports surfaces: the highlighted box on the Facet court (unknown surface)"},
+    "court-mark-facet": {"tint": "accent", "over": "surface-press", "opa": "court.tint", "use": "Sports surfaces: the highlighted serve box on the Facet court (unknown surface): a light accent wash"},
     "chart-area": {"tint": "blue", "over": "surface", "opa": "chart.area", "use": "area fill under a single-series line (series 1, blue) on a card (chart.json area)"},
     "chart-area-bg": {"tint": "blue", "over": "bg", "opa": "chart.area", "use": "the same area fill on the canvas"},
     "press-tint": {"tint": "accent", "toward": "text-mute", "desat": "card.press-desat", "over": "surface", "opa": "card.press-tint", "use": "pressed card fill: a faint, greyed accent tint over the surface (Darren 2026-10-21, card rounds 4-5), per theme x accent set; = the pressed tint role of states.json (Card, List row, section header action; the Card press style lives there too)"},
