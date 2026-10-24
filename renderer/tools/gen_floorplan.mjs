@@ -27,6 +27,9 @@ L.push('// opacities (percent, mixed when the image is drawn)');
 for (const [k, v] of Object.entries(t.opacity)) { if (k === 'about') continue; if (!(v > 0 && v <= 100)) die(`opacity.${k} 1..100`); L.push(`constexpr int OPA_${field(k).toUpperCase()} = ${v};`); }
 L.push('// strokes (device px)');
 for (const [k, v] of Object.entries(t.stroke)) L.push(`constexpr int W_${field(k).toUpperCase()} = ${stroke(v)};`);
+L.push('// the generator (core/floorplan_auto.cpp): metres, % as noted', 'namespace gen {');
+for (const [k, v] of Object.entries(t.generate || {})) { if (k === 'about') continue; if (!(v > 0)) die(`generate.${k} must be > 0`); L.push(`constexpr float ${field(k).toUpperCase()} = ${Number.isInteger(v) ? v + ".0" : v}f;`); }
+L.push('}  // namespace gen');
 if (!(t.motion?.['glide-ms'] > 0)) die('motion.glide-ms');
 L.push(`constexpr uint32_t GLIDE_MS = ${t.motion['glide-ms']};`);
 if (!(t.rules?.length)) die('rules missing');

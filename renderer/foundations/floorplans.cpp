@@ -2,9 +2,15 @@
 // rules in plain words with a sample plan, then the same sample at each state, every plan drawn by the real Iso floor
 // plan component (the sample house is made up). Density: the device setting (Waveshare 720 = 1.5x, Guition 480 = 1x)
 // redraws every plan at that density. For people (no token names on the page).
+// Generated: the floor plan generator (core/floorplan_auto.cpp) run live on a public test map (Valetudo's Dreame D9,
+// tests/floorplan/README.md, embedded by build.sh as fp_fixture_gen.h): the map's rooms as traced, then the cleaned plan
+// with the robot, its path and the dock through the generator's transform, and each cleanup step in words.
 // Status = this file + tokens/floorplan.json (WIP until approved).
+#include <string>
 #include "fw.h"
 #include "floorplan_gen.h"
+#include "floorplan_auto.h"
+#include "fp_fixture_gen.h"
 
 namespace {
 lv_obj_t *column(lv_obj_t *parent, int gap) {
@@ -51,6 +57,42 @@ void states(lv_obj_t *page) {
     caption(c, s.title, s.about);
   }
 }
+// the generator on the embedded test map, once (the report is plain data: plan strings, steps, cuts)
+const ArduinoJson::JsonDocument &report() {
+  static ArduinoJson::JsonDocument rep;
+  static bool done = false;
+  if (!done) deserializeJson(rep, fw::fpa::run(R"({"adapter": "valetudo_json"})", FP_FIXTURE, nullptr, 0, 0)), done = true;
+  return rep;
+}
+void generated(lv_obj_t *page) {
+  const ArduinoJson::JsonDocument &r = report();
+  char b[400];
+  snprintf(b, sizeof b, "A plan can come straight from the robot's own map: every room it knows, traced, straightened into walls on a %.0f cm grid with a gap between rooms, and anything odd cut and reported. This is a public test map from a Dreame D9.", fw::fp::gen::GRID * 100);
+  caption(page, "From the vacuum's map", b);
+  if (!r["error"].isNull()) { caption(page, "Couldn't read the map", r["error"] | ""); return; }
+  const fw::Component *c = fw::find("iso_floorplan");
+  if (!c) return;
+  lv_obj_t *col = column(page, fw::sp::s3);
+  ArduinoJson::JsonDocument d;
+  const float h = fw::fp::gen::DOCK / 2;
+  auto dock = [&](const char *key) {
+    if (!r[key].is<ArduinoJson::JsonArrayConst>()) return std::string("0,0,0,0,0");
+    const float x = r[key][0], z = r[key][1];
+    snprintf(b, sizeof b, "%.2f,%.2f,%.2f,%.2f,%.2f", x - h, z - h, x + h, z + h, fw::fp::gen::DOCK);
+    return std::string(b);
+  };
+  d["plan"] = r["plan_raw"], d["state"] = "paused", d["robot"] = r["robot_src"], d["trail"] = "", d["picked"] = "", d["here"] = "";
+  d["transform"] = r["transform_raw"], d["dock"] = dock("dock_raw");
+  c->build(col, d.as<fw::Props>());
+  caption(col, "As the map draws it", r["steps"][0]["detail"] | "");
+  col = column(page, fw::sp::s3);
+  d.clear();
+  d["plan"] = r["plan"], d["state"] = "paused", d["robot"] = r["robot_src"], d["trail"] = r["trail"], d["picked"] = "", d["here"] = "";
+  d["transform"] = r["transform"], d["dock"] = dock("dock");
+  c->build(col, d.as<fw::Props>());
+  caption(col, "Cleaned up", "The same rooms after the steps below. The robot, its path and the dock land in place through the plan's own transform from the vacuum's coordinates.");
+  for (ArduinoJson::JsonVariantConst s : r["steps"].as<ArduinoJson::JsonArrayConst>()) caption(page, s["name"] | "", s["detail"] | "");
+}
 }  // namespace
 
 FW_COMPONENT(floorplans, "Floor plans", "foundations", R"({
@@ -58,11 +100,12 @@ FW_COMPONENT(floorplans, "Floor plans", "foundations", R"({
   "layout": "doc",
   "frame": [480, 0],
   "props": [
-    {"name": "section", "type": "select", "options": ["rules", "states"], "default": "rules"}
+    {"name": "section", "type": "select", "options": ["rules", "states", "generated"], "default": "rules"}
   ],
   "variants": [
     {"label": "Rules", "about": "What every floor plan follows, with the sample house (made up) drawn by the real component.", "props": {"section": "rules"}},
-    {"label": "States", "about": "The same house at each state: docked, rooms picked, cleaning, paused. Switch the device to see it at 1.5x (720) and 1x (480).", "props": {"section": "states"}}
+    {"label": "States", "about": "The same house at each state: docked, rooms picked, cleaning, paused. Switch the device to see it at 1.5x (720) and 1x (480).", "props": {"section": "states"}},
+    {"label": "Generated", "about": "A plan made by the floor plan generator from a public vacuum map (a Dreame D9 test map), before and after the cleanup, with each step.", "props": {"section": "generated"}}
   ]
 })") {
   const char *s = p["section"] | "rules";
@@ -70,5 +113,6 @@ FW_COMPONENT(floorplans, "Floor plans", "foundations", R"({
   lv_obj_t *page = column(parent, fw::sp::s5);
   lv_obj_set_style_pad_hor(page, fw::lay::inset, 0);
   if (!strcmp(s, "states")) states(page);
+  else if (!strcmp(s, "generated")) generated(page);
   else rules(page);
 }

@@ -29,5 +29,11 @@
   "opacity": {"wall-left": 60, "trail": 50, "trail-live": 80, "about": "percent, mixed into the colour under it when the image is drawn (one solid RGB565 value per pixel, never a live blend)"},
   "stroke": {"edge": "hair", "mark": "edge", "trail": "edge"},
   "label": {"type": "label"},
+  "generate": {
+    "grid": 0.05, "gap": 0.1, "straighten": 0.3, "align": 0.2, "smooth": 0.3, "trim": 0.5, "min-room": 0.5,
+    "doorway": 1.6, "spill": 1.5, "spill-keep": 60, "wall-reach": 1.0, "wall-cover": 30, "spare-min": 0.6, "spare-trim": 0.25, "seal": 0.25, "speck": 0.05,
+    "map-px": 0.05, "dock": 0.3,
+    "about": "the floor plan generator (core/floorplan_auto.cpp, fw::fp::gen::), metres unless noted. grid = every corner lands on it; gap = the line between two rooms; straighten = edges shorter than this fold into one straight wall; align = room edges this close become one line; smooth = notches this small are closed; trim = bumps this narrow are cut; min-room (m2) = smaller pieces are not rooms; doorway / spill (m2) / spill-keep (%) = floor that leaked through an opening this wide, a piece this big, while the room keeps this share, is cut and reported; wall-reach / wall-cover (%) = a side moves out to a wall the vacuum saw within reach that runs along this share of it (furniture hides floor, not walls); spare-min (m2) / spare-trim = space left inside the house becomes a proposed room when this big, slivers this thin dropped; seal / speck = gaps this small in the house outline are closed and specks this small dropped before rooms are traced; map-px = a vacuum map pixel when the source doesn't say; dock = the dock's footprint side"
+  },
   "motion": {"glide-ms": 2000, "about": "the robot's glide to a new position: linear over the position sensor's report interval (lab 2 s)"}
 }

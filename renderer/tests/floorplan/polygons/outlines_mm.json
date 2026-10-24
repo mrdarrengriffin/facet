@@ -1,0 +1,13 @@
+{
+  "about": "Made up for the Facet tests (MIT, like the repo): four rooms as outlines in millimetres with y up, the way Ecovacs-style map data gives them; the lounge has a slanted bay corner and the hall's edge overlaps the kitchen's by 50 mm.",
+  "units_per_m": 1000,
+  "flip_y": true,
+  "rooms": [
+    {"id": "1", "name": "Kitchen", "points": [[0, 0], [4000, 0], [4000, 3000], [0, 3000]]},
+    {"id": "2", "name": "Hall", "points": [[3950, 0], [6000, 0], [6000, 5000], [3950, 5000]]},
+    {"id": "3", "name": "Lounge", "points": [[0, 3100], [4000, 3100], [4000, 6500], [3500, 7000], [0, 7000]]},
+    {"id": "4", "name": "Bathroom", "points": [[4100, 5100], [6000, 5100], [6000, 7000], [4100, 7000]]}
+  ],
+  "robot": [2000, 5000],
+  "dock": [150, 3300]
+}
