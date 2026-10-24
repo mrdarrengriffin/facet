@@ -1,0 +1,21 @@
+{
+  "id": "placeholder",
+  "tests": [
+    {
+      "name": "update is silent",
+      "kind": "sound",
+      "steps": [
+        {
+          "update": {
+            "label": "sheet",
+            "note": "Component coming"
+          }
+        }
+      ],
+      "expect": {
+        "silent": true
+      }
+    }
+  ],
+  "xfail": {}
+}

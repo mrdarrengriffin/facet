@@ -100,7 +100,38 @@ inline int pct(const std::string &e, const char *a) {
   return std::isfinite(b) ? (int) std::lround(LV_CLAMP(0.0, b, 255.0) * 100 / 255) : 0;
 }
 // the value of one bind into out[key]; the pairs it reads go to `pairs`
+inline void bind_raw(ArduinoJson::JsonVariantConst b, ArduinoJson::JsonObject out, const char *key, std::vector<Pair> *pairs);
+// s (the value while the entity is empty: the factory demo), map / else (the value as words or a tone), tpl ("{}")
 inline void bind_value(ArduinoJson::JsonVariantConst b, ArduinoJson::JsonObject out, const char *key, std::vector<Pair> *pairs) {
+  const std::string e = b["e"] | "";
+  const bool sample = e.empty() && b["s"].is<const char *>();
+  if (sample) {
+    const std::string fmt = b["fmt"] | "";
+    const char *sv = b["s"];
+    if (fmt == "num" || fmt == "frac" || fmt == "pct") { char *end = nullptr; const double x = strtod(sv, &end); if (end != sv) out[key] = x; }
+    else if (fmt == "on") out[key] = !strcmp(sv, "on");
+    else out[key] = sv;
+  } else bind_raw(b, out, key, pairs);
+  if (b["map"].isNull() && b["tpl"].isNull()) return;
+  std::string v;
+  ArduinoJson::JsonVariant cur = out[key];
+  if (cur.is<double>()) { char nb[24]; snprintf(nb, sizeof nb, "%g", cur.as<double>()); v = nb; }
+  else if (cur.is<bool>()) v = cur.as<bool>() ? "on" : "off";
+  else v = cur | "";
+  if (b["map"].is<ArduinoJson::JsonObjectConst>()) {
+    ArduinoJson::JsonVariantConst m = b["map"][v.c_str()];
+    if (m.is<const char *>()) v = m.as<const char *>();
+    else if (b["else"].is<const char *>()) v = b["else"].as<const char *>();
+  }
+  if (b["tpl"].is<const char *>() && !v.empty()) {
+    std::string t = b["tpl"].as<const char *>();
+    const size_t at = t.find("{}");
+    if (at != std::string::npos) t.replace(at, 2, v);
+    v = t;
+  }
+  out[key] = v;
+}
+inline void bind_raw(ArduinoJson::JsonVariantConst b, ArduinoJson::JsonObject out, const char *key, std::vector<Pair> *pairs) {
   const std::string e = b["e"] | "", a = b["a"] | "", fmt = b["fmt"] | "";
   auto use = [&](const std::string &aa) { if (pairs && std::find(pairs->begin(), pairs->end(), Pair{e, aa}) == pairs->end()) pairs->push_back({e, aa}); };
   const std::string *st = get(e, "");
@@ -257,6 +288,8 @@ inline const char *act(lv_obj_t *from, const char *service, const char *entity, 
   if (svc.rfind("climate.", 0) == 0 && !climate) return "not a climate entity";
   if (svc.rfind("media_player.", 0) == 0 && !media) return "not a media player";
   if (svc.rfind("cover.", 0) == 0 && ent.rfind("cover.", 0) != 0) return "not a cover";
+  if (svc.rfind("lock.", 0) == 0 && ent.rfind("lock.", 0) != 0) return "not a lock";
+  if (svc.rfind("vacuum.", 0) == 0 && ent.rfind("vacuum.", 0) != 0) return "not a vacuum";
   ArduinoJson::JsonDocument data;
   if (data_json && *data_json && deserializeJson(data, data_json)) return "data is not JSON";
   auto only = [&](const char *key) {  // the data holds exactly this one key
@@ -287,7 +320,18 @@ inline const char *act(lv_obj_t *from, const char *service, const char *entity, 
     const char *k = svc == "cover.set_cover_position" ? "position" : "tilt_position";
     if (!only(k) || !data[k].is<double>()) return "cover position: position / tilt_position 0..100";
     data[k] = (int) LV_CLAMP(0.0, std::round(data[k].as<double>()), 100.0);
+  } else if (svc == "vacuum.set_fan_speed") {
+    const std::string f = data["fan_speed"] | "";
+    if (!only("fan_speed") || f.empty() || f.size() > 24) return "vacuum.set_fan_speed takes fan_speed (a short name)";
+    for (char c : f) if (!(isalnum((unsigned char) c) || c == '_' || c == ' ' || c == '-')) return "fan_speed: letters, digits, space, _ or -";
+  } else if (svc == "vacuum.send_command") {  // only the room clean (Roborock app_segment_clean)
+    if (data.size() != 2 || strcmp(data["command"] | "", "app_segment_clean") || !data["params"][0]["segments"].is<ArduinoJson::JsonArrayConst>())
+      return "vacuum.send_command: app_segment_clean with segments only";
+    for (ArduinoJson::JsonVariantConst x : data["params"][0]["segments"].as<ArduinoJson::JsonArrayConst>())
+      if (!x.is<int>() || x.as<int>() < 0 || x.as<int>() > 999) return "segments are room numbers";
   } else if (svc == "cover.open_cover" || svc == "cover.close_cover" || svc == "cover.stop_cover" ||
+             svc == "lock.lock" || svc == "lock.unlock" || svc == "lock.open" || svc == "vacuum.start" ||
+             svc == "vacuum.pause" || svc == "vacuum.return_to_base" ||
              svc == "light.turn_off" || svc == "light.toggle" || svc == "media_player.media_play_pause" ||
              svc == "media_player.media_next_track" || svc == "media_player.media_previous_track") {
     if (data.size()) return "no data for this action";

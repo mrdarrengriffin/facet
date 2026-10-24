@@ -1,0 +1,22 @@
+{
+  "id": "status_block",
+  "tests": [
+    {
+      "name": "update is silent",
+      "kind": "sound",
+      "steps": [
+        {
+          "update": {
+            "caption": "not locked",
+            "value": "Unlocked",
+            "tone": "accent"
+          }
+        }
+      ],
+      "expect": {
+        "silent": true
+      }
+    }
+  ],
+  "xfail": {}
+}

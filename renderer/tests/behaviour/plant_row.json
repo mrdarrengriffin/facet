@@ -1,0 +1,42 @@
+{
+  "id": "plant_row",
+  "tests": [
+    {
+      "name": "with a sensor a tap opens its plant",
+      "kind": "interaction",
+      "props": {
+        "entity": "sensor.fern_moisture"
+      },
+      "steps": [
+        {
+          "tap": {
+            "clk": 0
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "open",
+            "plants.*sensor\\.fern_moisture"
+          ]
+        ]
+      }
+    },
+    {
+      "name": "update is silent",
+      "kind": "sound",
+      "steps": [
+        {
+          "update": {
+            "moisture": 60
+          }
+        }
+      ],
+      "expect": {
+        "silent": true
+      }
+    }
+  ],
+  "xfail": {}
+}

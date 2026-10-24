@@ -38,6 +38,8 @@
     "wx-fog": { "ms": 4000, "group": "ambient", "use": "weather icon: fog line slide, one way" },
     "wx-wind": { "ms": 3000, "group": "ambient", "use": "weather icon: wind line slide, one way" },
     "wx-twinkle": { "ms": 3200, "group": "ambient", "use": "weather icon: star twinkle" },
+    "hold-confirm": { "ms": 1200, "group": "timing", "use": "hold to confirm (Door lock unlock / open): the ring fills over this long; let go early and nothing happens (panel lab HOLD_MS 1200)" },
+    "busy-turn": { "ms": 1000, "group": "ambient", "use": "a short arc turning round a ring while a device works (Door lock locking / unlocking; panel lab 1 s linear)" },
     "toast-life": { "ms": 6000, "group": "timing", "use": "a toast stays this long" },
     "toast-life-urgent": { "ms": 12000, "group": "timing", "use": "an urgent toast stays this long (someone at the door; layout.json toast life-urgent)" },
     "tick-min": { "ms": 40, "group": "timing", "use": "step ticks (slider, dial, arc): audible ticks never closer than this; slow drags tick every step, fast drags thin out (26 -> 40 ms, Darren 2026-10-22)" },

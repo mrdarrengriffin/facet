@@ -1,0 +1,35 @@
+{
+ "v": 1,
+ "id": "lock",
+ "name": "Door lock",
+ "rev": 2,
+ "role": "detail",
+ "params": {
+  "entity": {"type": "entity", "domain": "lock", "label": "Lock", "default": ""},
+  "activity": {"type": "hidden", "default": ""}
+ },
+ "header": {"label": "Door lock", "back": true},
+ "layout": "list",
+ "nodes": [
+  {"c": "split", "p": {}},
+  {"c": "lock_ring", "in": 0, "slot": 0,
+   "p": {"state": {"e": "$entity", "s": "locked"}},
+   "on": {"lock": {"do": "lock.control", "e": "$entity"}}},
+  {"c": "hold_button", "in": 0, "slot": 1,
+   "p": {"label": "Hold to open", "value": "open", "mask": 1,
+         "features": {"e": "$entity", "a": "supported_features", "fmt": "num", "s": "1"},
+         "state": {"e": "$entity", "s": "locked", "map": {"unavailable": "disabled", "unknown": "disabled", "locking": "disabled", "unlocking": "disabled", "opening": "disabled"}, "else": "default"}},
+   "on": {"confirm": {"do": "lock.control", "e": "$entity"}}},
+  {"c": "status_block", "in": 0, "slot": 2,
+   "p": {"caption": {"e": "$entity", "s": "locked", "map": {"locked": "secure", "unlocked": "not locked", "open": "latch open", "locking": "locking", "unlocking": "unlocking", "opening": "opening", "jammed": "jammed · check the door"}, "else": "offline"},
+         "value": {"e": "$entity", "s": "locked", "map": {"locked": "Locked", "unlocked": "Unlocked", "open": "Open", "locking": "Locking", "unlocking": "Unlocking", "opening": "Opening", "jammed": "Jammed"}, "else": ""},
+         "line": {"e": "$entity", "a": "changed_by", "s": "Alex", "tpl": "by {}"},
+         "tone": {"e": "$entity", "s": "locked", "map": {"locked": "dim", "locking": "dim", "unlocked": "accent", "open": "accent", "unlocking": "accent", "opening": "accent", "jammed": "error"}, "else": "off"}}},
+  {"c": "section_header", "in": 0, "slot": 2, "p": {"title": "last 24 h", "badge": false, "right": "none"}},
+  {"c": "list_row", "in": 0, "slot": 2, "each": "activity",
+   "p": {"title": "$item", "icon": "none", "trailing": "value"},
+   "sample": [{"title": "Locked", "sub": "Alex", "value": "18:48"},
+              {"title": "Unlocked", "sub": "keypad", "value": "18:46"},
+              {"title": "Locked", "sub": "Night lock", "value": "16:20"}]}
+ ]
+}

@@ -28,6 +28,18 @@
   "covers": {"needs": "a motorised blind or curtain", "sources": [
    {"id": "ha_covers", "kind": "ha", "name": "HA covers", "detect": {"domain": "cover"},
     "fills": {"covers": {"domain": "cover", "list": true}, "entity": {"domain": "cover"}}}]},
+  "lock": {"needs": "a smart door lock", "sources": [
+   {"id": "ha_locks", "kind": "ha", "name": "HA locks", "detect": {"domain": "lock"},
+    "fills": {"entity": {"domain": "lock"}}}]},
+  "vacuum": {"needs": "a robot vacuum", "sources": [
+   {"id": "roborock", "kind": "ha", "name": "Roborock", "detect": {"integration": "roborock", "domain": "vacuum"}, "fills": {"entity": {"domain": "vacuum", "integration": "roborock"}}},
+   {"id": "ha_vacuum", "kind": "ha", "name": "HA vacuums", "detect": {"domain": "vacuum"}, "fills": {"entity": {"domain": "vacuum"}}}]},
+  "plants": {"needs": "soil moisture sensors", "sources": [
+   {"id": "ha_moisture", "kind": "ha", "name": "HA moisture sensors", "detect": {"domain": "sensor"},
+    "fills": {"plants": {"domain": "sensor", "list": true}, "entity": {"domain": "sensor"}}}]},
+  "cameras": {"needs": "cameras", "sources": [
+   {"id": "frigate", "kind": "ha", "name": "Frigate", "detect": {"integration": "frigate", "domain": "camera"}, "fills": {"cameras": {"domain": "camera", "integration": "frigate", "list": true}}},
+   {"id": "ha_cameras", "kind": "ha", "name": "HA cameras", "detect": {"domain": "camera"}, "fills": {"cameras": {"domain": "camera", "list": true}}}]},
   "light": {"needs": "a dimmable light", "sources": [
    {"id": "ha_lights", "kind": "ha", "name": "HA lights", "detect": {"domain": "light"}, "fills": {"entity": {"domain": "light"}}}]},
   "print": {"needs": "a 3D printer", "sources": [

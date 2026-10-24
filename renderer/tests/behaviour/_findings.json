@@ -388,5 +388,11 @@
     "code": "lag-overflow",
     "kind": "lag",
     "example": "lag-overflow: 5 refreshes past 32 dirty areas (LVGL redraws the whole screen)"
+  },
+  "BF-052": {
+    "id": "button",
+    "code": "lag-overflow",
+    "kind": "lag",
+    "example": "lag-overflow: a press on a secondary Button (its corner ticks trickle the pressed state) invalidates past 32 areas on the 1x build; seen through hold_button (2026-10-24)"
   }
 }

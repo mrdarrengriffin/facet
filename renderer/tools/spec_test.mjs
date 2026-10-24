@@ -97,5 +97,37 @@ ok(codes(spec('check', tSpec({ change: { do: 'climate.set_temperature', e: 'ligh
 ok(codes(spec('check', tSpec({ change: { do: 'light.brightness', e: 'light.x' } }))).includes('not_allowed'), 'a thermostat dial cannot dim a light');
 ok(codes(spec('check', tSpec({ change: { do: 'climate.set_hvac_mode', e: 'climate.test_room' } }))).includes('not_allowed'), 'the dial sets the temperature only (modes come from the thermostat view)');
 ok(codes(spec('check', JSON.stringify({ ...factory, rev: 31, nodes: [{ c: 'dial', on: { change: { do: 'climate.set_temperature', e: 'climate.test_room' } } }] }))).includes('not_allowed'), 'a light dial cannot set a thermostat');
+// pages from components (2026-10-23): layout slots (in / slot), repeated nodes (each / sample), bind maps, screen.toggle
+const P = (nodes) => JSON.stringify({ ...factory, rev: 40, params: { entity: '', areas: '', rooms: { type: 'hidden', default: '' } }, nodes });
+ok(spec('check', P([{ c: 'split', p: {} }, { c: 'status_block', in: 0, slot: 2, p: {} }])).ok, 'a node may go into a layout node\'s slot');
+ok(codes(spec('check', P([{ c: 'card', p: {} }, { c: 'status_block', in: 0, p: {} }]))).includes('bad_in'), 'in: only a layout (a component with slots)');
+ok(codes(spec('check', P([{ c: 'status_block', in: 1, p: {} }, { c: 'split', p: {} }]))).includes('bad_in'), 'in: only an earlier node');
+ok(codes(spec('check', P([{ c: 'split', p: {} }, { c: 'status_block', in: 0, slot: 4, p: {} }]))).includes('bad_in'), 'slot: within the layout\'s slots');
+ok(codes(spec('check', P([{ c: 'group', p: {}, each: 'areas' }, { c: 'room_tile', in: 0, p: {} }]))).includes('bad_in'), 'a repeated node holds no others');
+ok(codes(spec('check', P([{ c: 'room_tile', p: {}, sample: [{}] }]))).includes('bad_each'), 'sample goes with each');
+ok(codes(spec('check', P([{ c: 'room_tile', p: {}, each: 'areas', sample: [{ nope: 1 }] }]))).includes('unknown_prop'), 'sample props are checked like props');
+ok(codes(spec('check', P([{ c: 'status_block', p: { value: { e: '$entity', map: 'x' } } }]))).includes('bad_bind'), 'a bind map is {value: text}');
+ok(spec('check', P([{ c: 'status_block', p: { value: { e: '$entity', s: 'docked', map: { docked: 'Docked' }, else: '', tpl: '{}' } } }])).ok, 'a bind may carry a sample, a map and a template');
+ok(codes(spec('check', P([{ c: 'room_tile', p: {}, on: { pick: { do: 'screen.toggle' } } }]))).includes('bad_action'), 'screen.toggle names its parameter');
+// behaviour on the factory vacuum: three sample rooms, a pick goes into $rooms, Clean sends just those segments
+const H2 = () => JSON.parse(m.UTF8ToString(m._fw_hits(stage)));
+const step = (n) => { for (let k = 0; k < n; k++) { t += 16; m._fw_tick(t); } };  // ticks that keep the events (tick() drains them)
+const tapAt = (x, y) => { m._fw_touch(stage, x, y, 1); step(4); m._fw_touch(stage, x, y, 0); step(6); };
+const evs = () => { const e = m.UTF8ToString(m._fw_events()); return e ? JSON.parse(e) : []; };
+S('vacuum.test', (e) => S('', (a) => S('docked', (v) => m._fw_ha_put(e, a, v))));
+ok(render('spec', { screen: 'vacuum' }) === '' && (tick(40), true), 'the vacuum spec builds');
+let tiles = H2().filter((h) => h.c === 'room_tile' && !h.prop);
+ok(tiles.length === 3, `no rooms from a host = the three sample rooms (${tiles.length})`);
+ok(render('spec', { screen: 'vacuum', entity: 'vacuum.test', areas: 'Kitchen:3, Hall:1' }) === '' && (tick(40), true), 'the vacuum spec builds on a vacuum');
+tiles = H2().filter((h) => h.c === 'room_tile' && !h.prop).sort((a, b) => a.x - b.x);
+ok(tiles.length === 2, `a room per item of areas (${tiles.length})`);
+evs();
+tapAt(tiles[0].x + 20, tiles[0].y + 20); tick(10); evs();
+for (let y = 600; y >= 100; y -= 25) { m._fw_touch(stage, 360, y, 1); tick(1); }  // scroll the list to its foot
+m._fw_touch(stage, 360, 100, 0); tick(60); evs();
+const clean = H2().filter((h) => h.c === 'button' && !h.prop).sort((a, b) => b.x - a.x)[0];
+tapAt(clean.x + 20, clean.y + 10);
+const sent = evs().filter((e) => e.name === 'ha').map((e) => e.detail).join(' ');
+ok(/app_segment_clean/.test(sent) && /"segments":\[3\]/.test(sent), `a picked room, then Clean = clean just that room (${sent.slice(0, 120)})`);
 console.log(fails ? `spec_test: ${fails} FAILED` : 'spec_test: all passed');
 process.exit(fails ? 1 : 0);

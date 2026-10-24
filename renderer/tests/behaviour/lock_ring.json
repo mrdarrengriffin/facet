@@ -1,0 +1,164 @@
+{
+  "id": "lock_ring",
+  "live": true,
+  "live_why": "locking / unlocking: a quarter of the meter turns while the motor runs",
+  "tests": [
+    {
+      "name": "hold unlocks",
+      "kind": "interaction",
+      "props": {},
+      "steps": [
+        {
+          "press": {
+            "clk": 0
+          }
+        },
+        {
+          "wait": 1400
+        },
+        {
+          "release": {
+            "clk": 0
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "lock",
+            "unlock"
+          ]
+        ],
+        "sounds": [
+          "confirm"
+        ]
+      }
+    },
+    {
+      "name": "a short tap does not unlock",
+      "kind": "interaction",
+      "props": {},
+      "steps": [
+        {
+          "tap": {
+            "clk": 0
+          }
+        }
+      ],
+      "expect": {
+        "no_events": [
+          "lock"
+        ]
+      }
+    },
+    {
+      "name": "let go early: nothing",
+      "kind": "interaction",
+      "props": {},
+      "steps": [
+        {
+          "press": {
+            "clk": 0
+          }
+        },
+        {
+          "wait": 500
+        },
+        {
+          "release": {
+            "clk": 0
+          }
+        }
+      ],
+      "expect": {
+        "no_events": [
+          "lock"
+        ]
+      }
+    },
+    {
+      "name": "unlocked: a tap locks",
+      "kind": "interaction",
+      "props": {
+        "state": "unlocked"
+      },
+      "steps": [
+        {
+          "tap": {
+            "clk": 0
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "lock",
+            "lock"
+          ]
+        ],
+        "sounds": [
+          "tap"
+        ]
+      }
+    },
+    {
+      "name": "jammed: a tap locks again",
+      "kind": "interaction",
+      "props": {
+        "state": "jammed"
+      },
+      "steps": [
+        {
+          "tap": {
+            "clk": 0
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "lock",
+            "lock"
+          ]
+        ]
+      }
+    },
+    {
+      "name": "offline: blocked",
+      "kind": "interaction",
+      "props": {
+        "state": "unavailable"
+      },
+      "steps": [
+        {
+          "tap": {
+            "clk": 0
+          }
+        }
+      ],
+      "expect": {
+        "no_events": [
+          "lock"
+        ],
+        "sounds": [
+          "error"
+        ]
+      }
+    },
+    {
+      "name": "update is silent",
+      "kind": "sound",
+      "steps": [
+        {
+          "update": {
+            "state": "unlocked"
+          }
+        }
+      ],
+      "expect": {
+        "silent": true
+      }
+    }
+  ],
+  "xfail": {}
+}

@@ -382,7 +382,8 @@
     "tap": [
      "nav.open",
      "nav.back",
-     "light.toggle"
+     "light.toggle",
+     "vacuum.control"
     ],
     "open": [
      "nav.open"
@@ -418,8 +419,59 @@
     ]
    },
    "cost": {
-    "objects": 338,
-    "bytes_est": 54080
+    "objects": 337,
+    "bytes_est": 53920
+   }
+  },
+  "camera_tile": {
+   "name": "Camera tile",
+   "update": true,
+   "props": [
+    {
+     "name": "name",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "time",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "detect",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "score",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 100
+    },
+    {
+     "name": "box",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "default",
+      "unavailable"
+     ]
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 9,
+    "bytes_est": 1440
    }
   },
   "card": {
@@ -1932,6 +1984,46 @@
     "bytes_est": 8640
    }
   },
+  "group": {
+   "name": "Group",
+   "update": true,
+   "props": [
+    {
+     "name": "align",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "start",
+      "end"
+     ]
+    },
+    {
+     "name": "space",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "none",
+      "group"
+     ]
+    },
+    {
+     "name": "sample",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 6
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 4,
+    "bytes_est": 640
+   }
+  },
   "header": {
    "name": "Header",
    "update": true,
@@ -2037,6 +2129,66 @@
    "cost": {
     "objects": 5,
     "bytes_est": 800
+   }
+  },
+  "hold_button": {
+   "name": "Hold button",
+   "update": true,
+   "props": [
+    {
+     "name": "label",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "value",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "width",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "fill",
+      "hug"
+     ]
+    },
+    {
+     "name": "features",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 65535
+    },
+    {
+     "name": "mask",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 65535
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "default",
+      "disabled"
+     ]
+    }
+   ],
+   "events": {
+    "confirm": [
+     "lock.control"
+    ],
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 7,
+    "bytes_est": 1120
    }
   },
   "icon_button": {
@@ -2178,6 +2330,53 @@
     "bytes_est": 2720
    }
   },
+  "level_bar": {
+   "name": "Level bar",
+   "update": true,
+   "props": [
+    {
+     "name": "value",
+     "type": "range",
+     "bindable": true,
+     "min": -1,
+     "max": 100
+    },
+    {
+     "name": "mark",
+     "type": "range",
+     "bindable": true,
+     "min": -1,
+     "max": 100
+    },
+    {
+     "name": "tone",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "accent",
+      "steel",
+      "blue",
+      "off"
+     ]
+    },
+    {
+     "name": "width",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 480
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 4,
+    "bytes_est": 640
+   }
+  },
   "lightning_radar": {
    "name": "Lightning radar",
    "update": true,
@@ -2291,6 +2490,11 @@
      "bindable": true
     },
     {
+     "name": "over",
+     "type": "text",
+     "bindable": true
+    },
+    {
      "name": "trailing",
      "type": "select",
      "bindable": true,
@@ -2349,6 +2553,39 @@
     ],
     "long": [
      "nav.open"
+    ],
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 5,
+    "bytes_est": 800
+   }
+  },
+  "lock_ring": {
+   "name": "Lock ring",
+   "update": true,
+   "props": [
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "locked",
+      "unlocked",
+      "locking",
+      "unlocking",
+      "jammed",
+      "open",
+      "opening",
+      "unavailable"
+     ]
+    }
+   ],
+   "events": {
+    "lock": [
+     "lock.control"
     ],
     "open": [
      "nav.open"
@@ -2849,7 +3086,27 @@
      "bindable": true,
      "options": [
       "now",
+      "radar",
       "list"
+     ]
+    },
+    {
+     "name": "unit",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "km",
+      "mi"
+     ]
+    },
+    {
+     "name": "speed",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "mph",
+      "kmh",
+      "kn"
      ]
     }
    ],
@@ -2859,8 +3116,8 @@
     ]
    },
    "cost": {
-    "objects": 48,
-    "bytes_est": 7680
+    "objects": 39,
+    "bytes_est": 6240
    }
   },
   "picker_row": {
@@ -2933,6 +3190,128 @@
    "cost": {
     "objects": 7,
     "bytes_est": 1120
+   }
+  },
+  "placeholder": {
+   "name": "Placeholder",
+   "update": true,
+   "props": [
+    {
+     "name": "label",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "note",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "height",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "card",
+      "tile",
+      "row"
+     ]
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 3,
+    "bytes_est": 480
+   }
+  },
+  "plant_gauge": {
+   "name": "Plant gauge",
+   "update": true,
+   "props": [
+    {
+     "name": "name",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "moisture",
+     "type": "range",
+     "bindable": true,
+     "min": -1,
+     "max": 100
+    },
+    {
+     "name": "dry",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 100
+    },
+    {
+     "name": "wet",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 100
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 8,
+    "bytes_est": 1280
+   }
+  },
+  "plant_row": {
+   "name": "Plant row",
+   "update": true,
+   "props": [
+    {
+     "name": "name",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "moisture",
+     "type": "range",
+     "bindable": true,
+     "min": -1,
+     "max": 100
+    },
+    {
+     "name": "dry",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 100
+    },
+    {
+     "name": "wet",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 100
+    },
+    {
+     "name": "entity",
+     "type": "text",
+     "bindable": true
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 11,
+    "bytes_est": 1760
    }
   },
   "pr_row": {
@@ -3235,6 +3614,48 @@
     "bytes_est": 2880
    }
   },
+  "room_tile": {
+   "name": "Room tile",
+   "update": true,
+   "props": [
+    {
+     "name": "room",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "picked",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "here",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "default",
+      "disabled"
+     ]
+    }
+   ],
+   "events": {
+    "pick": [
+     "screen.toggle"
+    ],
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 3,
+    "bytes_est": 480
+   }
+  },
   "screen_chrome": {
    "name": "Screen chrome",
    "update": true,
@@ -3413,6 +3834,9 @@
     }
    ],
    "events": {
+    "change": [
+     "vacuum.control"
+    ],
     "open": [
      "nav.open"
     ]
@@ -3577,6 +4001,26 @@
     "bytes_est": 960
    }
   },
+  "split": {
+   "name": "Split",
+   "update": true,
+   "props": [
+    {
+     "name": "outline",
+     "type": "bool",
+     "bindable": true
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 13,
+    "bytes_est": 2080
+   }
+  },
   "stat": {
    "name": "Stat",
    "update": true,
@@ -3651,6 +4095,49 @@
    "cost": {
     "objects": 3,
     "bytes_est": 480
+   }
+  },
+  "status_block": {
+   "name": "Status block",
+   "update": true,
+   "props": [
+    {
+     "name": "caption",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "value",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "line",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "tone",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "dim",
+      "accent",
+      "ok",
+      "warn",
+      "error",
+      "off"
+     ]
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 4,
+    "bytes_est": 640
    }
   },
   "status_chip": {
@@ -3732,8 +4219,31 @@
      "name": "width",
      "type": "range",
      "bindable": true,
-     "min": 240,
+     "min": 160,
      "max": 448
+    },
+    {
+     "name": "surface",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "auto",
+      "hard",
+      "clay",
+      "grass",
+      "indoor",
+      "carpet",
+      "wimbledon",
+      "roland-garros",
+      "us-open",
+      "australian-open",
+      "atp-finals"
+     ]
+    },
+    {
+     "name": "names",
+     "type": "bool",
+     "bindable": true
     },
     {
      "name": "sim",
@@ -3801,8 +4311,8 @@
     ]
    },
    "cost": {
-    "objects": 15,
-    "bytes_est": 2400
+    "objects": 6,
+    "bytes_est": 960
    }
   },
   "tennis_score": {
@@ -4581,6 +5091,9 @@
   "climate.set_preset_mode",
   "media.control",
   "cover.control",
+  "lock.control",
+  "vacuum.control",
+  "screen.toggle",
   "screen.param",
   "nav.open",
   "nav.back"
@@ -4647,5 +5160,5 @@
    "taps": "page"
   }
  },
- "hash": "2b404cf6"
+ "hash": "1e038c53"
 }

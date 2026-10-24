@@ -1,0 +1,22 @@
+{
+  "id": "camera_tile",
+  "tests": [
+    {
+      "name": "update is silent",
+      "kind": "sound",
+      "steps": [
+        {
+          "update": {
+            "detect": "car",
+            "score": 70,
+            "box": "10,40,40,40"
+          }
+        }
+      ],
+      "expect": {
+        "silent": true
+      }
+    }
+  ],
+  "xfail": {}
+}

@@ -710,6 +710,17 @@ Rule: no component is shown to Darren until it passes.
 | `toast_layer` | Facet toast layer (docs `toastLayer()`, `.f-toasts`), WIP: floating, non-clickable layer over its screen (only toasts take taps), up to `toast::max` Toasts newest nearest the entry edge, `lay::gutter` apart, top = first at `toast_top`, bottom = first ends at the bottom inset. Push = Motion toast-in (fade + slide from the edge), the others move a slot (y, toast-in), over max = the oldest gets CANCEL; arrival = event `toast` + sound `toast::sound` (notify). Workbench page: a real "Toasts" screen (Header + six List rows, one per tone; a tap pushes that tone's toast); props position / push (arrives on build: the demo reset replays it) / stack (1-3, toast-in apart, follow-ups quiet so a sample never re-arms its own reset) / timer / action / screen; internal `overlay` + `still` (Layout page overlays) and `loop` (bench). 8 variants (timer off so the grid stays full). Frame cost: "Toast frame cost". |
 | `weather_icon` | Facet weather icon (docs `weatherIcon(id, { size, animated })`), WIP: core `fw::weather_icon`; animated = the master's parts moving by `motion.json` weather, static / reduced motion = the static master; props icon (17) / size / animated / on canvas|card (the occluder colour; card = surface box). Update path: icon + animated swap in place. See Icons > Animated weather. |
 | `moon_icon` | Facet moon phase glyph (docs `moonIcon(frac)`), WIP: core `fw::moon_icon`, masks computed on the device; props phase 0..1 / size / south; 9 variants. Update path: phase redraws in place. See Icons > Moon phase. |
+| `split` | **Layout** (pages are made only from components, Darren 2026-10-23): two columns over the content box, card-w + sp::s9 + the rest, each a top and a foot slot (meta `"slots": 4`; slots marked `fw::spec::SLOT`). Spec nodes go in with `"in"` + `"slot"`. |
+| `group` | **Layout**: one content-width slot that wraps its nodes, lay::gutter apart both ways (tiles, cards, a row of buttons); `align` start / end, `space` none / group. |
+| `status_block` | A device's state in words: caption (label, tone), value (value), line (body, text-dim); fed by bind maps. |
+| `lock_ring` | The door lock's padlock in its ring (the panel lab's lock art): the state and the control, hold-to-unlock confirm meter (Motion hold-confirm), tap to lock, busy turn (Motion busy-turn). |
+| `hold_button` | A Button that fills while held (hold-confirm) and only then emits `confirm`; shown by an entity's supported_features (`features` & `mask`). |
+| `room_tile` | A room to pick for a job (vacuum rooms): tile-w x room-tile-h, picked = accent edge + corner ticks, emits `pick` (spec screen.toggle). |
+| `placeholder` | A part not built yet: a plain labelled outline (first use: the vacuum's map, waiting for the Floor plan foundation). |
+| `level_bar` | A level as a straight bar with an optional threshold mark (soil moisture). |
+| `plant_gauge` | One plant's soil moisture as a screen hero: caption, hero %, line, Level bar with the dry line. |
+| `plant_row` | One plant in a list: the List row + a small Level bar; with an entity a tap opens its Plants screen. |
+| `camera_tile` | One camera's still (stand-in until the panel fetches stills) with a Frigate-style detection box + tab, name and time. |
 
 ## Screens
 
@@ -724,6 +735,13 @@ renderer like the panel; on a single-screen page the workbench opens that page i
 | `device` | **Device (live)** (WIP): the panel running as on the wall, `core/device.h` `fw::dev::mount(parent, start)`: starts on Home, every tap handled inside the renderer (no page loads): `navigate` <id> (settings button, Home cards) = go, `back` (Header Back) = back, a screen stack (an id already on it pops back to it), the Content rise (Motion `screen`, from above going back), a non-screen id (foundation pages from the placeholder Home) shown under a Header with Back. Emits `screen` <id> after each cut. Panels: POST /fw/show `{"id":"device"}` (core/device.cpp is in firmware/bundle.mjs). Prop `start`. |
 | `home` | **PLACEHOLDER** (Darren 2026-10-22; the real Home will be laid out per room, not just a card grid): Header (no back, "Home", screen chrome with the settings button: Home only for now), a scrolling 2-column grid of real Cards (`lay::card_w` x `lay::card_h`, gutter both ways; 480 cards stay 184: 2 x 184 + 16 = 384 of 388, the 4 px left at the bottom) for the screens and workbench pages this build has (`PAGES` checked with `fw::find`: Settings, then the foundations); **placeholder cards: title only** (no icon, value or line; Darren 2026-10-22). Card tap = its own tap + `navigate` <page id>. No props. |
 | `settings` | Every personalisation setting from `tokens/settings.json` (WIP): Header ("Settings", the live clock), one scrolling column from `lay::top`; per group its label (screen type `label`, caps, text-dim = docs `.fs-set-glabel`; Darren 2026-10-22: the component caps-sm was too small), `section-gap` to its rows, groups `group` apart; rows = List row / Segmented / Accent swatches / Toggle / slider row / sheet rows + one Bottom sheet. Update path for every control. Pairs: section `settings` (+ the components'). |
+
+**Pages from components only (Darren 2026-10-23).** A screen spec is a tree of real components: no screen-specific
+`*_view` body for new screens. Arrangements come from layout components (`split`, `group`) whose slots take nodes
+(`"in"` / `"slot"`); a node can repeat per item of a list parameter (`"each"`, with `"sample"` entries while the list
+is empty); binds carry a sample value, a map to words / tones and a template (`"s"`, `"map"`, `"else"`, `"tpl"`);
+`screen.toggle` keeps a picked list (room picks). Specs `lock`, `vacuum`, `plants`, `cameras` are built this way;
+core/spec.h has the format.
 
 ## Behaviour tests
 

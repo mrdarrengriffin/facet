@@ -1,0 +1,24 @@
+{
+ "v": 1,
+ "id": "plants",
+ "name": "Plants",
+ "rev": 1,
+ "role": "both",
+ "params": {
+  "entity": {"type": "entity", "domain": "sensor", "label": "Plant (soil moisture)", "default": ""},
+  "plants": {"type": "entities", "domain": "sensor", "label": "Plants (soil moisture)", "default": ""}
+ },
+ "header": {"label": "Plants", "back": true},
+ "layout": "list",
+ "nodes": [
+  {"c": "plant_gauge",
+   "p": {"name": {"e": "$entity", "fmt": "name", "s": "Fern"},
+         "moisture": {"e": "$entity", "fmt": "num", "s": "18"}}},
+  {"c": "section_header", "p": {"title": "all plants", "badge": false, "right": "none"}},
+  {"c": "plant_row", "each": "plants",
+   "p": {"name": {"e": "$item", "fmt": "name"}, "moisture": {"e": "$item", "fmt": "num"}, "entity": "$item"},
+   "sample": [{"name": "Fern", "moisture": 18}, {"name": "Basil", "moisture": 26}, {"name": "Monstera", "moisture": 46},
+              {"name": "Peace lily", "moisture": 61}, {"name": "Snake plant", "moisture": 91}],
+   "on": {"open": {"do": "nav.open"}}}
+ ]
+}

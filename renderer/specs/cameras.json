@@ -1,0 +1,29 @@
+{
+ "v": 1,
+ "id": "cameras",
+ "name": "Cameras",
+ "rev": 1,
+ "role": "page",
+ "params": {
+  "cameras": {"type": "entities", "domain": "camera", "label": "Cameras", "default": ""},
+  "detections": {"type": "hidden", "default": ""}
+ },
+ "header": {"label": "Cameras", "back": true},
+ "layout": "list",
+ "nodes": [
+  {"c": "group", "p": {}},
+  {"c": "camera_tile", "in": 0, "each": "cameras",
+   "p": {"name": {"e": "$item", "fmt": "name"}, "state": {"e": "$item", "fmt": "avail"}, "time": "", "detect": ""},
+   "sample": [{"name": "Front door", "time": "19:28", "detect": "person", "score": 92, "box": "40,20,24,64"},
+              {"name": "Driveway", "time": "18:47", "detect": "car", "score": 81, "box": "8,44,52,44"},
+              {"name": "Garden", "time": "19:02"},
+              {"name": "Garage", "state": "unavailable"}]},
+  {"c": "section_header", "p": {"title": "detections", "badge": false, "right": "meta", "meta": "today"}},
+  {"c": "list_row", "each": "detections",
+   "p": {"title": "$item", "icon": "none", "trailing": "value"},
+   "sample": [{"title": "Person", "sub": "Front door · 92%", "value": "19:28"},
+              {"title": "Car", "sub": "Driveway · 81%", "value": "18:47"},
+              {"title": "Person", "sub": "Garden · 88%", "value": "18:02"},
+              {"title": "Cat", "sub": "Garden · 74%", "value": "17:15"}]}
+ ]
+}

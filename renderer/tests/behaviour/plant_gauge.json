@@ -1,0 +1,20 @@
+{
+  "id": "plant_gauge",
+  "tests": [
+    {
+      "name": "update is silent",
+      "kind": "sound",
+      "steps": [
+        {
+          "update": {
+            "moisture": 60
+          }
+        }
+      ],
+      "expect": {
+        "silent": true
+      }
+    }
+  ],
+  "xfail": {}
+}

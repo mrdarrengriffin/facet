@@ -1,0 +1,65 @@
+{
+  "id": "room_tile",
+  "tests": [
+    {
+      "name": "tap picks the room",
+      "kind": "interaction",
+      "props": {},
+      "steps": [
+        {
+          "tap": {
+            "clk": 0
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "pick",
+            "3"
+          ]
+        ],
+        "sounds": [
+          "tap"
+        ]
+      }
+    },
+    {
+      "name": "disabled: blocked",
+      "kind": "interaction",
+      "props": {
+        "state": "disabled"
+      },
+      "steps": [
+        {
+          "tap": {
+            "clk": 0
+          }
+        }
+      ],
+      "expect": {
+        "no_events": [
+          "pick"
+        ],
+        "sounds": [
+          "error"
+        ]
+      }
+    },
+    {
+      "name": "update is silent",
+      "kind": "sound",
+      "steps": [
+        {
+          "update": {
+            "picked": "3"
+          }
+        }
+      ],
+      "expect": {
+        "silent": true
+      }
+    }
+  ],
+  "xfail": {}
+}

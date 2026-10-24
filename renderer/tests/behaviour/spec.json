@@ -251,6 +251,185 @@
           "playing"
         ]
       ]
+    },
+    {
+      "name": "Door lock: hold the ring unlocks the lock",
+      "kind": "interaction",
+      "props": {
+        "screen": "lock",
+        "entity": "lock.test"
+      },
+      "before_ha": [
+        [
+          "lock.test",
+          "",
+          "locked"
+        ]
+      ],
+      "steps": [
+        {
+          "press": {
+            "hit": "lock_ring"
+          }
+        },
+        {
+          "wait": 1400
+        },
+        {
+          "release": {
+            "hit": "lock_ring"
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "ha",
+            "lock\\.unlock.*lock\\.test"
+          ]
+        ]
+      }
+    },
+    {
+      "name": "Door lock: a tap on an unlocked lock locks it",
+      "kind": "interaction",
+      "props": {
+        "screen": "lock",
+        "entity": "lock.test"
+      },
+      "before_ha": [
+        [
+          "lock.test",
+          "",
+          "unlocked"
+        ]
+      ],
+      "steps": [
+        {
+          "tap": {
+            "hit": "lock_ring"
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "ha",
+            "lock\\.lock.*lock\\.test"
+          ]
+        ]
+      }
+    },
+    {
+      "name": "Door lock: hold Open opens the latch",
+      "kind": "interaction",
+      "props": {
+        "screen": "lock",
+        "entity": "lock.test"
+      },
+      "before_ha": [
+        [
+          "lock.test",
+          "",
+          "locked"
+        ],
+        [
+          "lock.test",
+          "supported_features",
+          "1"
+        ]
+      ],
+      "steps": [
+        {
+          "press": {
+            "hit": "hold_button"
+          }
+        },
+        {
+          "wait": 1400
+        },
+        {
+          "release": {
+            "hit": "hold_button"
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "ha",
+            "lock\\.open.*lock\\.test"
+          ]
+        ]
+      }
+    },
+    {
+      "name": "Robot vacuum: suction sets the fan speed",
+      "kind": "interaction",
+      "props": {
+        "screen": "vacuum",
+        "entity": "vacuum.test"
+      },
+      "before_ha": [
+        [
+          "vacuum.test",
+          "",
+          "docked"
+        ],
+        [
+          "vacuum.test",
+          "fan_speed",
+          "balanced"
+        ]
+      ],
+      "steps": [
+        {
+          "tap": {
+            "text": "/^(TURBO|Turbo)$/"
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "ha",
+            "vacuum\\.set_fan_speed.*vacuum\\.test.*turbo"
+          ]
+        ]
+      }
+    },
+    {
+      "name": "Robot vacuum: a room tap picks it",
+      "kind": "interaction",
+      "props": {
+        "screen": "vacuum",
+        "entity": "vacuum.test"
+      },
+      "before_ha": [
+        [
+          "vacuum.test",
+          "",
+          "docked"
+        ]
+      ],
+      "steps": [
+        {
+          "tap": {
+            "hit": "room_tile"
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "pick",
+            "3"
+          ]
+        ],
+        "sounds": [
+          "tap"
+        ]
+      }
     }
   ],
   "xfail": {
@@ -281,12 +460,15 @@
     "interaction:press-cancel:moon_days": "BF-001",
     "interaction:press-cancel:moon_details": "BF-001",
     "interaction:press-cancel:overhead": "BF-001",
-    "scroll:ends-v0:overhead": "BF-050",
     "interaction:press-cancel:print": "BF-001",
     "interaction:press-cancel:thermostat": "BF-001",
     "interaction:unavailable:thermostat": "BF-049",
     "interaction:press-cancel:timer": "BF-001",
     "interaction:press-cancel:weather": "BF-001",
-    "interaction:press-cancel:weather_days": "BF-001"
+    "interaction:press-cancel:weather_days": "BF-001",
+    "interaction:press-cancel:lock": "BF-001",
+    "interaction:press-cancel:vacuum": "BF-001",
+    "interaction:press-cancel:plants": "BF-001",
+    "interaction:press-cancel:cameras": "BF-001"
   }
 }

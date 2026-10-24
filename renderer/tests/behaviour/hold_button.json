@@ -1,0 +1,105 @@
+{
+  "id": "hold_button",
+  "tests": [
+    {
+      "name": "hold confirms",
+      "kind": "interaction",
+      "props": {},
+      "steps": [
+        {
+          "press": {
+            "clk": 0
+          }
+        },
+        {
+          "wait": 1400
+        },
+        {
+          "release": {
+            "clk": 0
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "confirm",
+            "open"
+          ]
+        ],
+        "sounds": [
+          "confirm"
+        ],
+        "no_events": [
+          "tap"
+        ]
+      }
+    },
+    {
+      "name": "let go early: no confirm",
+      "kind": "interaction",
+      "props": {},
+      "steps": [
+        {
+          "press": {
+            "clk": 0
+          }
+        },
+        {
+          "wait": 500
+        },
+        {
+          "release": {
+            "clk": 0
+          }
+        }
+      ],
+      "expect": {
+        "no_events": [
+          "confirm"
+        ]
+      }
+    },
+    {
+      "name": "disabled: blocked",
+      "kind": "interaction",
+      "props": {
+        "state": "disabled"
+      },
+      "steps": [
+        {
+          "tap": {
+            "clk": 0
+          }
+        }
+      ],
+      "expect": {
+        "no_events": [
+          "confirm"
+        ],
+        "sounds": [
+          "error"
+        ]
+      }
+    },
+    {
+      "name": "update is silent",
+      "kind": "sound",
+      "steps": [
+        {
+          "update": {
+            "label": "Hold to open",
+            "state": "disabled"
+          }
+        }
+      ],
+      "expect": {
+        "silent": true
+      }
+    }
+  ],
+  "xfail": {
+    "lag:tap:default": "BF-052",
+    "interaction:press-cancel:default": "BF-001"
+  }
+}
