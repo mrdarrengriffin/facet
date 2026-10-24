@@ -2363,15 +2363,6 @@
       "error",
       "unavailable"
      ]
-    },
-    {
-     "name": "show",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "plan",
-      "rules"
-     ]
     }
    ],
    "events": {
@@ -4220,37 +4211,6 @@
     "bytes_est": 480
    }
   },
-  "state_chip": {
-   "name": "State chip",
-   "update": true,
-   "props": [
-    {
-     "name": "kind",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "approved",
-      "changes",
-      "pending",
-      "draft",
-      "ci-pass",
-      "ci-fail",
-      "ci-pending",
-      "review",
-      "assigned"
-     ]
-    }
-   ],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 3,
-    "bytes_est": 480
-   }
-  },
   "status_block": {
    "name": "Status block",
    "update": true,
@@ -4417,6 +4377,7 @@
       "grass",
       "indoor",
       "carpet",
+      "facet",
       "wimbledon",
       "roland-garros",
       "us-open",
@@ -5415,5 +5376,5 @@
    "taps": "page"
   }
  },
- "hash": "388f4b89"
+ "hash": "8bf6a7e3"
 }

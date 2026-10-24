@@ -162,16 +162,6 @@
    "note": "docs explorer default controls vs the WASM default: values may differ"
   },
   {
-   "comp": "state_chip",
-   "variant": "default",
-   "astro": {
-    "item": "state-chip",
-    "selector": "[data-ex-stage] > *"
-   },
-   "crop": true,
-   "note": "docs explorer default controls vs the WASM default: values may differ"
-  },
-  {
    "comp": "pr_row",
    "variant": "default",
    "astro": {

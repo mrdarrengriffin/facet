@@ -1,7 +1,0 @@
-{
-  "id": "state_chip",
-  "tests": [],
-  "xfail": {
-    "lag:same-update:default": "BF-004"
-  }
-}

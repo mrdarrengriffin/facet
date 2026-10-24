@@ -2,11 +2,13 @@
 // on listRow()): lay::pr_row_h (144 / 96), full width (content_w), surface + 1 px line, rad::card, padding lay::row_pad
 // - hair, a column: meta (c-meta, text-dim: repo · #number, grow, age; docs number / age text-mute, which is
 // disabled-only here), sp::s2, the title (c-tile, text, up to two lines in 2 x its box, ellipsis), sp::s2, the chips
-// (State chip components, sp::s2 apart): review, then draft, then the CI chip.
+// (Status chip components, sp::s2 apart, tone + words from fw::gh::state): review, then draft, then the CI chip.
 // Pressed (states.json, the Card's press: the press-tint fill, line-hi edge, Motion press / release); tap = "tap"
 // (detail "repo#number") + sound open. Update path: pressed <-> default fades, anything else refills (fw::st::update).
 // Contrast pairs: colour.json sections "card" (press), "chart" (meta text-dim), "status_chip".
+// audit deps: status_chip
 #include "fw.h"
+#include "github.h"
 
 namespace {
 const lv_style_prop_t TR_PROPS[] = {LV_STYLE_BG_COLOR, LV_STYLE_BORDER_COLOR, LV_STYLE_PROP_INV};
@@ -67,14 +69,15 @@ void fill(lv_obj_t *c, fw::Props p) {
   lv_obj_set_size(chips, LV_PCT(100), fw::lay::chip_h);
   lv_obj_set_flex_flow(chips, LV_FLEX_FLOW_ROW);
   lv_obj_set_style_pad_column(chips, fw::sp::s2, 0);
-  if (const fw::Component *sc = fw::find("state_chip")) {
+  if (const fw::Component *sc = fw::find("status_chip")) {
     std::vector<std::string> kinds = {"review"};
     if (p["draft"] | false) kinds.push_back("draft");
     const char *ci = p["ci"] | "pass";
     if (strcmp(ci, "none")) kinds.push_back(std::string("ci-") + ci);
     for (const auto &k : kinds) {
+      const fw::gh::Status s = fw::gh::state(k);
       ArduinoJson::JsonDocument cp;
-      cp["kind"] = k;
+      cp["tone"] = s.tone, cp["text"] = s.text;
       sc->build(chips, cp.as<fw::Props>());
     }
   }

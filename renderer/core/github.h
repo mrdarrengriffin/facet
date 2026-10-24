@@ -49,6 +49,17 @@ inline std::string age(double h) {
   return b;
 }
 struct Status { const char *tone, *text; };
+// one PR state as Status chip props (docs @facet/ui lists.ts stateChip() + CHIP; was the State chip component until
+// 2026-10-24): approved ok, changes requested error, review pending / draft idle, ci pass ok, ci fail error,
+// ci running working, review warn, assigned info; anything else = review
+inline Status state(const std::string &k) {
+  static const struct { const char *id; Status s; } KINDS[] = {
+      {"approved", {"ok", "approved"}},       {"changes", {"error", "changes requested"}}, {"pending", {"idle", "review pending"}},
+      {"draft", {"idle", "draft"}},           {"ci-pass", {"ok", "ci pass"}},              {"ci-fail", {"error", "ci fail"}},
+      {"ci-pending", {"working", "ci running"}}, {"review", {"warn", "review"}},           {"assigned", {"info", "assigned"}}};
+  for (const auto &x : KINDS) if (k == x.id) return x.s;
+  return {"warn", "review"};
+}
 // the detail view's status line: why it needs you (or its review state, for your own), draft, CI
 inline std::vector<Status> statuses(const PR &p, bool mine) {
   std::vector<Status> out;
