@@ -188,7 +188,8 @@
       "button-h": { "v": 64, "1x": 44, "use": "button height" },
       "back": { "v": 48, "1x": 32, "use": "back button (drawn square)" },
       "icon": { "v": 24, "1x": 16, "use": "icon inside a control" },
-      "focus-offset": { "v": 8, "1x": 4, "use": "focus ring offset" }
+      "focus-offset": { "v": 8, "1x": 4, "use": "focus ring offset" },
+      "slop": { "v": 12, "1x": 8, "use": "how far a finger may move and still be a press: further = a drag, no long press (core tap guard)" }
     }
   },
   "columns": {

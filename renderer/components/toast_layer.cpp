@@ -209,11 +209,17 @@ Layer *fill(lv_obj_t *parent, lv_obj_t *root, fw::Props p) {
     }
   }
   Layer *L = layer(host, p);
-  // a tap on a tone row pushes its toast (after the List row's own tap: event + sound tap)
+  // a tap on a tone row pushes its toast: the List row's own tap event goes out, its tap sound does not (the toast's
+  // notify is the one sound of the gesture, as when HA sends one: BF-034). Preprocess = before the row's handler.
+  static fw::Quiet *row_quiet = nullptr;
   for (int i = 0; i < N_SAMPLES; i++) {
     if (!rows[i]) continue;
     lv_obj_set_user_data(rows[i], (void *) (intptr_t) i);
+    lv_obj_add_event_cb(rows[i], [](lv_event_t *) { if (!row_quiet) row_quiet = new fw::Quiet; },
+                        (lv_event_code_t) (LV_EVENT_CLICKED | LV_EVENT_PREPROCESS), nullptr);
     lv_obj_add_event_cb(rows[i], [](lv_event_t *e) {
+      delete row_quiet;
+      row_quiet = nullptr;
       push((Layer *) lv_event_get_user_data(e), (int) (intptr_t) lv_obj_get_user_data((lv_obj_t *) lv_event_get_current_target(e)));
     }, LV_EVENT_CLICKED, L);
   }

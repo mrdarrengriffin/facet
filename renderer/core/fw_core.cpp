@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include "fw.h"
+#include "device.h"
 
 namespace fw {
 // themes from the generated token tables (tokens/colour.json): [accent set][dark, light], built once
@@ -96,11 +97,19 @@ void emit(lv_obj_t *o, const char *name, const char *detail) {
   if (sink) sink(o, "event", name, detail ? detail : "");
   notify(o, name, detail);
 }
-void sound(lv_obj_t *o, const char *id) { if (sink && !quiet_n) sink(o, "sound", id, ""); }
+// Settings > UI sounds off (BF-038): no sound request leaves the renderer (the host / panel audio never sees one)
+namespace {
+bool muted() {
+  const char *v = dev::setting("sounds");
+  return v && !strcmp(v, "false");
+}
+}  // namespace
+void sound(lv_obj_t *o, const char *id) { if (sink && !quiet_n && !muted()) sink(o, "sound", id, ""); }
 void sound(lv_obj_t *o, const char *id, float pos) {
+  if (!sink || quiet_n || muted()) return;
   char b[12];
   snprintf(b, sizeof b, "%.3f", LV_CLAMP(0.0f, pos, 1.0f));
-  if (sink && !quiet_n) sink(o, "sound", id, b);
+  sink(o, "sound", id, b);
 }
 
 // step ticks (fw.h): a tick limiter shared by every step control
@@ -249,6 +258,8 @@ struct Built {
   const Theme *t = nullptr;  // theme + accent it was built in
   lv_obj_t *root = nullptr;  // the one object build() made
   bool large = false;        // Large text it was built with
+  std::string props;         // the props it shows now (serialized): the same again = nothing to do (BF-004)
+  uint32_t input = 0;        // the input count then: a press since may have moved its look away from the props
 };
 void built_free(lv_event_t *e) { delete (Built *) lv_event_get_user_data(e); }
 Built *built_of(lv_obj_t *scr, bool make) {
@@ -261,6 +272,40 @@ Built *built_of(lv_obj_t *scr, bool make) {
   lv_obj_add_event_cb(scr, built_free, LV_EVENT_DELETE, b);
   return b;
 }
+// Slide off to cancel (BF-001, states.json "moved off stays silent"): LVGL's press lock still sends CLICKED when the
+// finger is released outside the pressed object (no scroll started). One indev hook for every component: a click whose
+// release point is off the pressed object (and every object its events bubble to) is stopped before any handler sees it;
+// so is a long press whose finger has already slid off (LVGL times it without looking at where the finger went).
+uint32_t input_n = 0;  // presses so far (any pointer): an update with the same props after one is applied again
+void tap_guard(lv_event_t *e) {
+  const lv_event_code_t code = lv_event_get_code(e);
+  static lv_point_t down;  // where the finger went down (one pointer at a time)
+  if (code == LV_EVENT_PRESSED) {
+    input_n++;
+    lv_indev_get_point((lv_indev_t *) lv_event_get_current_target(e), &down);
+  }
+  if (code != LV_EVENT_CLICKED && code != LV_EVENT_SHORT_CLICKED && code != LV_EVENT_SINGLE_CLICKED &&
+      code != LV_EVENT_LONG_PRESSED && code != LV_EVENT_LONG_PRESSED_REPEAT) return;
+  auto *in = (lv_indev_t *) lv_event_get_current_target(e);
+  if (lv_indev_get_type(in) != LV_INDEV_TYPE_POINTER) return;
+  lv_obj_t *o = lv_indev_get_active_obj();
+  if (!o) return;
+  lv_point_t p;
+  lv_indev_get_point(in, &p);
+  const bool longp = code == LV_EVENT_LONG_PRESSED || code == LV_EVENT_LONG_PRESSED_REPEAT;
+  if (longp && (LV_ABS(p.x - down.x) > touch::slop || LV_ABS(p.y - down.y) > touch::slop)) { lv_indev_stop_processing(in); return; }
+  for (lv_obj_t *x = o; x; x = lv_obj_has_flag(x, LV_OBJ_FLAG_EVENT_BUBBLE) ? lv_obj_get_parent(x) : nullptr)
+    if (lv_obj_hit_test(x, &p)) return;
+  lv_indev_stop_processing(in);
+}
+void guard_taps() {  // every pointer indev once (the WASM stages and the panel's touch both come through render)
+  for (lv_indev_t *in = lv_indev_get_next(nullptr); in; in = lv_indev_get_next(in)) {
+    bool had = false;
+    for (uint32_t i = 0; i < lv_indev_get_event_count(in); i++)
+      if (lv_event_dsc_get_cb(lv_indev_get_event_dsc(in, i)) == tap_guard) had = true;
+    if (!had) lv_indev_add_event_cb(in, tap_guard, LV_EVENT_ALL, nullptr);
+  }
+}
 }  // namespace
 
 // clean `scr`, make it the Facet screen (bg token, flex column, centred) and build `comp` with `props` on it
@@ -269,6 +314,7 @@ const char *render(lv_obj_t *scr, const char *comp, const char *props, bool ligh
   if (!c) return "no such component";
   ArduinoJson::JsonDocument doc;
   if (deserializeJson(doc, props && *props ? props : "{}")) return "props: bad JSON";
+  guard_taps();
   Built *b = built_of(scr, true);
   *b = Built{};
   T = theme(light, accent);
@@ -286,7 +332,11 @@ const char *render(lv_obj_t *scr, const char *comp, const char *props, bool ligh
   lv_obj_remove_flag(scr, LV_OBJ_FLAG_SCROLLABLE);
   c->build(scr, doc.as<ArduinoJson::JsonObjectConst>());
   // the update path needs exactly one root object (a component that puts several objects on the screen has none)
-  if (lv_obj_get_child_count(scr) == 1) *b = Built{c, T, lv_obj_get_child(scr, 0), text_large()};
+  if (lv_obj_get_child_count(scr) == 1) {
+    *b = Built{c, T, lv_obj_get_child(scr, 0), text_large()};
+    serializeJson(doc, b->props);
+    b->input = input_n;
+  }
   lv_obj_update_layout(scr);
   lv_obj_invalidate(scr);
   return "";
@@ -303,6 +353,10 @@ const char *update(lv_obj_t *scr, const char *comp, const char *props, bool ligh
     return "rebuild";
   const bool lg = doc["text_size"].is<const char *>() ? !strcmp(doc["text_size"], "large") : text_large_default();
   if (lg != b->large) return "rebuild";  // another text size = other fonts: built again
+  // the same props again with no touch since: nothing changed, so nothing is restyled or redrawn (an HA tick)
+  std::string sig;
+  serializeJson(doc, sig);
+  if (sig == b->props && b->input == input_n) return "";
   set_text_large(lg);
   T = t;
   mo::set_reduced(lv_obj_get_display(scr), doc["reduced_motion"] | mo::reduced_default());
@@ -313,6 +367,8 @@ const char *update(lv_obj_t *scr, const char *comp, const char *props, bool ligh
     ok = c->update(b->root, doc.as<ArduinoJson::JsonObjectConst>());
   }
   if (!ok) return "rebuild";
+  b->props = std::move(sig);
+  b->input = input_n;
   lv_obj_update_layout(scr);
   return "";
 }

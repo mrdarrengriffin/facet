@@ -53,21 +53,21 @@
         "back"
       ],
       "via": [
+        "list_row",
         "picker_row",
         "icon_button",
-        "header",
-        "list_row"
+        "header"
       ],
       "when": "Close button or a scrim tap: back. Its rows play their own sounds.",
       "calls": [
         {
           "sound": "back",
-          "line": 217,
+          "line": 328,
           "how": "sound"
         },
         {
           "sound": "back",
-          "line": 262,
+          "line": 376,
           "how": "sound"
         }
       ]
@@ -86,12 +86,82 @@
       "calls": [
         {
           "sound": "tap",
-          "line": 197,
+          "line": 221,
           "how": "sound"
         },
         {
           "sound": "error",
-          "line": 196,
+          "line": 220,
+          "how": "blocked"
+        }
+      ]
+    },
+    {
+      "id": "calendar_view",
+      "name": "Calendar view",
+      "section": "components",
+      "file": "renderer/components/calendar_view.cpp",
+      "sounds": [
+        "open",
+        "tap"
+      ],
+      "via": [
+        "checkbox",
+        "bottom_sheet",
+        "segmented",
+        "icon_button",
+        "header"
+      ],
+      "when": "",
+      "calls": [
+        {
+          "sound": "open",
+          "line": 255,
+          "how": "sound"
+        },
+        {
+          "sound": "tap",
+          "line": 319,
+          "how": "sound"
+        },
+        {
+          "sound": "open",
+          "line": 430,
+          "how": "sound"
+        },
+        {
+          "sound": "tap",
+          "line": 458,
+          "how": "sound"
+        }
+      ]
+    },
+    {
+      "id": "camera_tile",
+      "name": "Camera tile",
+      "section": "components",
+      "file": "renderer/components/camera_tile.cpp",
+      "sounds": [
+        "back",
+        "open",
+        "error"
+      ],
+      "via": [],
+      "when": "",
+      "calls": [
+        {
+          "sound": "back",
+          "line": 142,
+          "how": "sound"
+        },
+        {
+          "sound": "open",
+          "line": 144,
+          "how": "sound"
+        },
+        {
+          "sound": "error",
+          "line": 141,
           "how": "blocked"
         }
       ]
@@ -110,13 +180,96 @@
       "calls": [
         {
           "sound": "open",
-          "line": 183,
+          "line": 223,
           "how": "sound"
         },
         {
           "sound": "error",
-          "line": 182,
+          "line": 222,
           "how": "blocked"
+        }
+      ]
+    },
+    {
+      "id": "checkbox",
+      "name": "Checkbox",
+      "section": "components",
+      "file": "renderer/components/checkbox.cpp",
+      "sounds": [
+        "toggle-on",
+        "toggle-off",
+        "error"
+      ],
+      "via": [],
+      "when": "",
+      "calls": [
+        {
+          "sound": "toggle-on",
+          "line": 151,
+          "how": "sound"
+        },
+        {
+          "sound": "toggle-off",
+          "line": 151,
+          "how": "sound"
+        },
+        {
+          "sound": "error",
+          "line": 147,
+          "how": "blocked"
+        }
+      ]
+    },
+    {
+      "id": "cover_visual",
+      "name": "Cover visual",
+      "section": "components",
+      "file": "renderer/components/cover_visual.cpp",
+      "sounds": [
+        "slider-tick",
+        "slider-landmark",
+        "error"
+      ],
+      "via": [],
+      "when": "",
+      "calls": [
+        {
+          "sound": "slider-tick",
+          "line": 172,
+          "how": "step_ticks"
+        },
+        {
+          "sound": "slider-landmark",
+          "line": 172,
+          "how": "step_ticks"
+        },
+        {
+          "sound": "error",
+          "line": 299,
+          "how": "blocked"
+        }
+      ]
+    },
+    {
+      "id": "covers_view",
+      "name": "Covers view",
+      "section": "components",
+      "file": "renderer/components/covers_view.cpp",
+      "sounds": [
+        "open"
+      ],
+      "via": [
+        "cover_visual",
+        "slider",
+        "bottom_sheet",
+        "button"
+      ],
+      "when": "",
+      "calls": [
+        {
+          "sound": "open",
+          "line": 212,
+          "how": "sound"
         }
       ]
     },
@@ -139,32 +292,32 @@
       "calls": [
         {
           "sound": "toggle-on",
-          "line": 384,
+          "line": 254,
           "how": "sound"
         },
         {
           "sound": "toggle-off",
-          "line": 384,
+          "line": 254,
           "how": "sound"
         },
         {
           "sound": "slider-tick",
-          "line": 196,
+          "line": 88,
           "how": "step_ticks"
         },
         {
           "sound": "slider-landmark",
-          "line": 196,
+          "line": 88,
           "how": "step_ticks"
         },
         {
           "sound": "error",
-          "line": 375,
+          "line": 245,
           "how": "blocked"
         },
         {
           "sound": "error",
-          "line": 407,
+          "line": 311,
           "how": "blocked"
         }
       ]
@@ -176,10 +329,31 @@
       "file": "renderer/components/header.cpp",
       "sounds": [],
       "via": [
+        "screen_chrome",
         "back_button"
       ],
-      "when": "Only through its Back button: back.",
+      "when": "Through its Back button: back; through the Screen chrome's settings button: open.",
       "calls": []
+    },
+    {
+      "id": "hold_button",
+      "name": "Hold button",
+      "section": "components",
+      "file": "renderer/components/hold_button.cpp",
+      "sounds": [
+        "confirm"
+      ],
+      "via": [
+        "button"
+      ],
+      "when": "",
+      "calls": [
+        {
+          "sound": "confirm",
+          "line": 126,
+          "how": "sound"
+        }
+      ]
     },
     {
       "id": "icon_button",
@@ -188,6 +362,7 @@
       "file": "renderer/components/icon_button.cpp",
       "sounds": [
         "back",
+        "open",
         "toggle-on",
         "toggle-off",
         "tap",
@@ -198,27 +373,56 @@
       "calls": [
         {
           "sound": "back",
-          "line": 148,
+          "line": 197,
+          "how": "sound"
+        },
+        {
+          "sound": "open",
+          "line": 198,
           "how": "sound"
         },
         {
           "sound": "toggle-on",
-          "line": 153,
+          "line": 203,
           "how": "sound"
         },
         {
           "sound": "toggle-off",
-          "line": 153,
+          "line": 203,
           "how": "sound"
         },
         {
           "sound": "tap",
-          "line": 157,
+          "line": 207,
           "how": "sound"
         },
         {
           "sound": "error",
-          "line": 147,
+          "line": 196,
+          "how": "blocked"
+        }
+      ]
+    },
+    {
+      "id": "iso_floorplan",
+      "name": "Iso floor plan",
+      "section": "components",
+      "file": "renderer/components/iso_floorplan.cpp",
+      "sounds": [
+        "tap",
+        "error"
+      ],
+      "via": [],
+      "when": "",
+      "calls": [
+        {
+          "sound": "tap",
+          "line": 445,
+          "how": "sound"
+        },
+        {
+          "sound": "error",
+          "line": 440,
           "how": "blocked"
         }
       ]
@@ -240,17 +444,52 @@
       "calls": [
         {
           "sound": "open",
-          "line": 162,
+          "line": 199,
           "how": "sound"
         },
         {
           "sound": "tap",
-          "line": 162,
+          "line": 199,
           "how": "sound"
         },
         {
           "sound": "error",
-          "line": 159,
+          "line": 196,
+          "how": "blocked"
+        }
+      ]
+    },
+    {
+      "id": "lock_ring",
+      "name": "Lock ring",
+      "section": "components",
+      "file": "renderer/components/lock_ring.cpp",
+      "sounds": [
+        "confirm",
+        "tap",
+        "error"
+      ],
+      "via": [],
+      "when": "",
+      "calls": [
+        {
+          "sound": "confirm",
+          "line": 188,
+          "how": "sound"
+        },
+        {
+          "sound": "tap",
+          "line": 260,
+          "how": "sound"
+        },
+        {
+          "sound": "error",
+          "line": 274,
+          "how": "sound"
+        },
+        {
+          "sound": "error",
+          "line": 256,
           "how": "blocked"
         }
       ]
@@ -269,12 +508,12 @@
       "calls": [
         {
           "sound": "open",
-          "line": 86,
+          "line": 95,
           "how": "sound"
         },
         {
           "sound": "error",
-          "line": 85,
+          "line": 94,
           "how": "blocked"
         }
       ]
@@ -291,6 +530,24 @@
       ],
       "when": "Through its List row: tap when an option is chosen. Disabled / unavailable: error.",
       "calls": []
+    },
+    {
+      "id": "pr_row",
+      "name": "Pull request row",
+      "section": "components",
+      "file": "renderer/components/pr_row.cpp",
+      "sounds": [
+        "open"
+      ],
+      "via": [],
+      "when": "",
+      "calls": [
+        {
+          "sound": "open",
+          "line": 117,
+          "how": "sound"
+        }
+      ]
     },
     {
       "id": "radio",
@@ -317,6 +574,42 @@
       ]
     },
     {
+      "id": "room_tile",
+      "name": "Room tile",
+      "section": "components",
+      "file": "renderer/components/room_tile.cpp",
+      "sounds": [
+        "tap",
+        "error"
+      ],
+      "via": [],
+      "when": "",
+      "calls": [
+        {
+          "sound": "tap",
+          "line": 125,
+          "how": "sound"
+        },
+        {
+          "sound": "error",
+          "line": 120,
+          "how": "blocked"
+        }
+      ]
+    },
+    {
+      "id": "screen_chrome",
+      "name": "Screen chrome",
+      "section": "components",
+      "file": "renderer/components/screen_chrome.cpp",
+      "sounds": [],
+      "via": [
+        "icon_button"
+      ],
+      "when": "The settings button (an Icon button in its settings role): open, going to Settings.",
+      "calls": []
+    },
+    {
       "id": "section_header",
       "name": "Section header",
       "section": "components",
@@ -330,12 +623,12 @@
       "calls": [
         {
           "sound": "tap",
-          "line": 134,
+          "line": 118,
           "how": "sound"
         },
         {
           "sound": "error",
-          "line": 133,
+          "line": 117,
           "how": "blocked"
         }
       ]
@@ -354,17 +647,17 @@
       "calls": [
         {
           "sound": "tap",
-          "line": 234,
+          "line": 229,
           "how": "sound"
         },
         {
           "sound": "error",
-          "line": 124,
+          "line": 224,
           "how": "blocked"
         },
         {
           "sound": "error",
-          "line": 229,
+          "line": 272,
           "how": "blocked"
         }
       ]
@@ -384,22 +677,17 @@
       "calls": [
         {
           "sound": "slider-tick",
-          "line": 55,
+          "line": 61,
           "how": "step_ticks"
         },
         {
           "sound": "slider-landmark",
-          "line": 55,
+          "line": 61,
           "how": "step_ticks"
         },
         {
           "sound": "error",
-          "line": 123,
-          "how": "blocked"
-        },
-        {
-          "sound": "error",
-          "line": 174,
+          "line": 204,
           "how": "blocked"
         }
       ]
@@ -418,12 +706,42 @@
       "calls": [
         {
           "sound": "open",
-          "line": 97,
+          "line": 113,
           "how": "sound"
         },
         {
           "sound": "error",
-          "line": 95,
+          "line": 111,
+          "how": "blocked"
+        }
+      ]
+    },
+    {
+      "id": "thermostat_dial",
+      "name": "Thermostat dial",
+      "section": "components",
+      "file": "renderer/components/thermostat_dial.cpp",
+      "sounds": [
+        "slider-tick",
+        "slider-landmark",
+        "error"
+      ],
+      "via": [],
+      "when": "",
+      "calls": [
+        {
+          "sound": "slider-tick",
+          "line": 152,
+          "how": "step_ticks"
+        },
+        {
+          "sound": "slider-landmark",
+          "line": 152,
+          "how": "step_ticks"
+        },
+        {
+          "sound": "error",
+          "line": 287,
           "how": "blocked"
         }
       ]
@@ -442,13 +760,33 @@
       "calls": [
         {
           "sound": "open",
-          "line": 220,
+          "line": 212,
           "how": "sound"
         },
         {
           "sound": "error",
-          "line": 219,
+          "line": 211,
           "how": "blocked"
+        }
+      ]
+    },
+    {
+      "id": "timer_view",
+      "name": "Timer view",
+      "section": "components",
+      "file": "renderer/components/timer_view.cpp",
+      "sounds": [
+        "timer-done"
+      ],
+      "via": [
+        "button"
+      ],
+      "when": "",
+      "calls": [
+        {
+          "sound": "timer-done",
+          "line": 80,
+          "how": "sound"
         }
       ]
     },
@@ -489,7 +827,7 @@
       "calls": [
         {
           "sound": "notify",
-          "line": 126,
+          "line": 124,
           "how": "sound"
         }
       ]
@@ -509,23 +847,74 @@
       "calls": [
         {
           "sound": "toggle-on",
-          "line": 121,
+          "line": 131,
           "how": "sound"
         },
         {
           "sound": "toggle-off",
-          "line": 121,
+          "line": 131,
           "how": "sound"
         },
         {
           "sound": "error",
-          "line": 70,
+          "line": 127,
           "how": "blocked"
+        }
+      ]
+    },
+    {
+      "id": "vacuum_mode",
+      "name": "Vacuum mode",
+      "section": "components",
+      "file": "renderer/components/vacuum_mode.cpp",
+      "sounds": [
+        "open"
+      ],
+      "via": [
+        "bottom_sheet",
+        "list_row",
+        "segmented"
+      ],
+      "when": "",
+      "calls": [
+        {
+          "sound": "open",
+          "line": 235,
+          "how": "sound"
+        }
+      ]
+    },
+    {
+      "id": "chart",
+      "name": "Charts",
+      "section": "foundations",
+      "file": "renderer/foundations/chart.cpp",
+      "sounds": [
+        "slider-tick",
+        "slider-landmark"
+      ],
+      "via": [],
+      "when": "",
+      "calls": [
+        {
+          "sound": "slider-tick",
+          "line": 405,
+          "how": "step_ticks"
         },
         {
-          "sound": "error",
-          "line": 118,
-          "how": "blocked"
+          "sound": "slider-landmark",
+          "line": 405,
+          "how": "step_ticks"
+        },
+        {
+          "sound": "slider-tick",
+          "line": 625,
+          "how": "step_ticks"
+        },
+        {
+          "sound": "slider-landmark",
+          "line": 625,
+          "how": "step_ticks"
         }
       ]
     },
@@ -543,12 +932,12 @@
       "calls": [
         {
           "sound": "toggle-on",
-          "line": 242,
+          "line": 263,
           "how": "sound"
         },
         {
           "sound": "toggle-off",
-          "line": 242,
+          "line": 263,
           "how": "sound"
         }
       ]
@@ -558,59 +947,90 @@
     "tap": [
       "accent_swatches",
       "button",
+      "calendar_view",
       "icon_button",
+      "iso_floorplan",
       "list_row",
+      "lock_ring",
       "radio",
+      "room_tile",
       "section_header",
       "segmented"
     ],
     "open": [
+      "calendar_view",
+      "camera_tile",
       "card",
+      "covers_view",
+      "icon_button",
       "list_row",
       "more_row",
+      "pr_row",
       "speaker_button",
-      "tile"
+      "tile",
+      "vacuum_mode"
     ],
     "back": [
       "bottom_sheet",
+      "camera_tile",
       "icon_button",
       "toast"
     ],
     "toggle-on": [
+      "checkbox",
       "dial",
       "icon_button",
       "toggle",
       "layout"
     ],
     "toggle-off": [
+      "checkbox",
       "dial",
       "icon_button",
       "toggle",
       "layout"
     ],
     "slider-tick": [
+      "cover_visual",
       "dial",
-      "slider"
+      "slider",
+      "thermostat_dial",
+      "chart"
     ],
     "slider-landmark": [
+      "cover_visual",
       "dial",
-      "slider"
+      "slider",
+      "thermostat_dial",
+      "chart"
     ],
-    "confirm": [],
-    "timer-done": [],
+    "confirm": [
+      "hold_button",
+      "lock_ring"
+    ],
+    "timer-done": [
+      "timer_view"
+    ],
     "error": [
       "accent_swatches",
       "button",
+      "camera_tile",
       "card",
+      "checkbox",
+      "cover_visual",
       "dial",
       "icon_button",
+      "iso_floorplan",
       "list_row",
+      "lock_ring",
       "more_row",
       "radio",
+      "room_tile",
       "section_header",
       "segmented",
       "slider",
       "speaker_button",
+      "thermostat_dial",
       "tile",
       "toggle"
     ],
@@ -618,9 +1038,21 @@
       "toast_layer"
     ]
   },
-  "unused": [
-    "confirm",
-    "timer-done"
-  ],
-  "warnings": []
+  "unused": [],
+  "warnings": [
+    "calendar_view makes a sound (open, tap) but sound.json usage has no line for it",
+    "camera_tile makes a sound (back, open, error) but sound.json usage has no line for it",
+    "checkbox makes a sound (toggle-on, toggle-off, error) but sound.json usage has no line for it",
+    "cover_visual makes a sound (slider-tick, slider-landmark, error) but sound.json usage has no line for it",
+    "covers_view makes a sound (open) but sound.json usage has no line for it",
+    "hold_button makes a sound (confirm) but sound.json usage has no line for it",
+    "iso_floorplan makes a sound (tap, error) but sound.json usage has no line for it",
+    "lock_ring makes a sound (confirm, tap, error) but sound.json usage has no line for it",
+    "pr_row makes a sound (open) but sound.json usage has no line for it",
+    "room_tile makes a sound (tap, error) but sound.json usage has no line for it",
+    "thermostat_dial makes a sound (slider-tick, slider-landmark, error) but sound.json usage has no line for it",
+    "timer_view makes a sound (timer-done) but sound.json usage has no line for it",
+    "vacuum_mode makes a sound (open) but sound.json usage has no line for it",
+    "chart makes a sound (slider-tick, slider-landmark) but sound.json usage has no line for it"
+  ]
 }

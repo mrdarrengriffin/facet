@@ -420,6 +420,7 @@ async function muteTest(b, den) {
   const msgs = [];
   for (const o of targets(objs, b.S, 4)) {
     await b.render('device', { start: 'home' }); b.settle(1500); b.events();
+    b.test('setting', 'sounds=false'); b.settle(); b.events();  // every render is a fresh instance (settings at defaults)
     const snd = b.tap(...centre(o)).filter((e) => e.kind === 'sound');
     if (snd.length) msgs.push(`muted-sound: with Sounds off (setting ${r || 'applied'}), tap ${label(objs, o)} still requested ${snd.map(fmtEv).join(', ')}`);
   }

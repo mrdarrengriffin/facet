@@ -18,7 +18,7 @@
   "states": {
     "rest": {
       "label": "Rest and tap",
-      "about": "The resting look, and what a real tap does. Sounds and events only on a real tap (LVGL CLICKED: finger down and up on the part; a scroll or a slide off cancels it). The sound says what the tap means. A blocked part answers on finger down instead (see Disabled).",
+      "about": "The resting look, and what a real tap does. Sounds and events only on a real tap (LVGL CLICKED: finger down and up on the part; a scroll or a slide off cancels it, and a finger that moved past touch slop gets no long press). The sound says what the tap means. A blocked part answers on finger down instead (see Disabled).",
       "motion": [],
       "event": "tap",
       "sound": "tap",
