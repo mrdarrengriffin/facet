@@ -4,9 +4,9 @@ date: "2026-10-24"
 time: "01:30"
 kind: "New screen"
 image: "2026-10-24-robot-vacuum.png"
-alt: "The Robot vacuum screen: Docked with the battery, room tiles to pick, suction, and Dock, Pause and Clean buttons"
+alt: "The Robot vacuum Map view: the floor plan in isometric with the robot on its dock, the last run's path, a mode button and Clean all"
 links: [["Robot vacuum", "screens/vacuum/"]]
 ---
-See what the robot is doing, pick the rooms to clean (none picked cleans everywhere), set the suction and send it out
-or home. While it cleans, the screen shrinks to its progress with Pause and Dock. A space for the floor plan is kept:
-maps get their own drawing rules first.
+Two views in the header. Rooms shows the state big with the battery and the last run, the rooms as tiles to pick
+(none picked cleans everywhere) and the cleaning mode. Map draws the floor plan as raised tiles with the robot moving
+on it and its path; tap a room on the plan to pick it too. While it cleans, Pause and Dock take over.

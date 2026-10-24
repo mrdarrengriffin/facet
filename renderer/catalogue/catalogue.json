@@ -825,6 +825,26 @@
     "bytes_est": 2880
    }
   },
+  "column": {
+   "name": "Column",
+   "update": true,
+   "props": [
+    {
+     "name": "outline",
+     "type": "bool",
+     "bindable": true
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 6,
+    "bytes_est": 960
+   }
+  },
   "corner_ticks": {
    "name": "Corner ticks",
    "update": true,
@@ -1300,6 +1320,26 @@
    "cost": {
     "objects": 36,
     "bytes_est": 5760
+   }
+  },
+  "event_row": {
+   "name": "Event row",
+   "update": true,
+   "props": [
+    {
+     "name": "event",
+     "type": "text",
+     "bindable": true
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 3,
+    "bytes_est": 480
    }
   },
   "f1_car_marker": {
@@ -2015,12 +2055,23 @@
      ]
     },
     {
+     "name": "flow",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "wrap",
+      "stack"
+     ]
+    },
+    {
      "name": "space",
      "type": "select",
      "bindable": true,
      "options": [
       "none",
-      "group"
+      "group",
+      "block",
+      "near"
      ]
     },
     {
@@ -2258,6 +2309,82 @@
    "cost": {
     "objects": 3,
     "bytes_est": 480
+   }
+  },
+  "iso_floorplan": {
+   "name": "Iso floor plan",
+   "update": true,
+   "props": [
+    {
+     "name": "plan",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "dock",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "robot",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "transform",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "trail",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "picked",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "here",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "docked",
+      "cleaning",
+      "returning",
+      "paused",
+      "idle",
+      "error",
+      "unavailable"
+     ]
+    },
+    {
+     "name": "show",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "plan",
+      "rules"
+     ]
+    }
+   ],
+   "events": {
+    "pick": [
+     "screen.toggle"
+    ],
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 6,
+    "bytes_est": 960
    }
   },
   "label": {
@@ -3804,6 +3931,15 @@
       "pressed",
       "disabled"
      ]
+    },
+    {
+     "name": "size",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "sm",
+      "label"
+     ]
     }
    ],
    "events": {
@@ -3852,7 +3988,8 @@
    ],
    "events": {
     "change": [
-     "vacuum.control"
+     "vacuum.control",
+     "screen.param"
     ],
     "open": [
      "nav.open"
@@ -4145,6 +4282,36 @@
       "error",
       "off"
      ]
+    },
+    {
+     "name": "size",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "value",
+      "hero",
+      "title"
+     ]
+    },
+    {
+     "name": "value2",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "line2",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "line3",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "line4",
+     "type": "text",
+     "bindable": true
     }
    ],
    "events": {
@@ -4959,6 +5126,74 @@
     "bytes_est": 320
    }
   },
+  "vacuum_mode": {
+   "name": "Vacuum mode",
+   "update": true,
+   "props": [
+    {
+     "name": "mode",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "vacuum",
+      "vac_and_mop",
+      "mop"
+     ]
+    },
+    {
+     "name": "fan",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "quiet",
+      "balanced",
+      "turbo",
+      "max",
+      "max_plus"
+     ]
+    },
+    {
+     "name": "mop",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "low",
+      "medium",
+      "high"
+     ]
+    },
+    {
+     "name": "style",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "row",
+      "button"
+     ]
+    },
+    {
+     "name": "view",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "rooms",
+      "map"
+     ]
+    }
+   ],
+   "events": {
+    "change": [
+     "vacuum.control"
+    ],
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 17,
+    "bytes_est": 2720
+   }
+  },
   "weather_days": {
    "name": "Weather days",
    "update": true,
@@ -5122,7 +5357,10 @@
   "light",
   "name",
   "num",
-  "frac"
+  "frac",
+  "count",
+  "time",
+  "day"
  ],
  "layouts": [
   "list",
@@ -5177,5 +5415,5 @@
    "taps": "page"
   }
  },
- "hash": "a046e618"
+ "hash": "388f4b89"
 }

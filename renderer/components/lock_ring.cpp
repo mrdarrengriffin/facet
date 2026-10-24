@@ -2,14 +2,14 @@
 // facet-53, apps/hub panel/lock lockRing3; Art for the lock, scope "Art (big screen pictures)").
 //   ring     lay::lock_ring square (= card-w, a Split's left column), rad::round, surface fill, stroke::edge border;
 //            the confirm meter round it (fw::value_arc, stroke::indicator, accent, the full turn from 12 o'clock)
-//   padlock  centred, sp::s2 low so the raised shackle stays clear of the edge, drawn in ONE object (its draw event:
+//   padlock  centred, sp::s2 high (lab lock.css: margin -96 on its 176 box), drawn in ONE object (its draw event:
 //            one invalidation per change instead of ten; the "many moving things: one layer" rule): the shackle = a
 //            half ring (lay::lock_bar, flat ends) on two legs, the body lay::lock_body_w x _h (rad::button) with the keyhole cut
 //            in the ring's fill (a round top lay::lock_hole over a slot lay::lock_slot_w x _h). Locked: the legs go
 //            lay::lock_overlap into the body. Unlocked: the shackle rises lay::lock_raise with only the LEFT leg still
 //            in (the pin), the right leg free: open at a glance (lab lock.css). Parts at the padlock's own
 //            proportions; the padlock's box holds the raised shackle, so nothing draws outside a box
-//   hint     sp::s3 under the ring, type label, text-dim, centred: "hold to unlock", "keep holding", "tap to lock",
+//   hint     sp::s5 under the ring, type label, text-dim, centred: "hold to unlock", "keep holding", "tap to lock",
 //            "tap to lock again" (jammed, error), "wait" (busy), nothing offline
 // States (HA lock): locked = calm (text ink, line-hi edge); unlocked / open = accent edge + ink (not secure);
 // jammed = loud (error edge + ink, the ring filled error at chip.tint over the surface, the error sound when it
@@ -151,7 +151,7 @@ void padlock(LR *c) {
   const int top = SH - OV, H = top + BH, E = fw::stroke::edge;  // children sit inside the ring's border
   c->pad = box(c->ring);  // holds the raised shackle too (UP over it), so nothing draws outside its box
   lv_obj_set_size(c->pad, BW, UP + H);
-  lv_obj_set_pos(c->pad, (R - BW) / 2 - E, (R - H) / 2 + fw::sp::s2 - UP - E);
+  lv_obj_set_pos(c->pad, (R - BW) / 2 - E, (R - H) / 2 - fw::sp::s2 - UP - E);  // the lab: sp::s2 high (margin -96 on 176)
   lv_obj_add_event_cb(c->pad, draw_pad, LV_EVENT_DRAW_MAIN, nullptr);
   fw::qa::free(c->pad, "the padlock: one drawn object at its own proportions (lab lock.css), the shackle rises inside it");
 }
@@ -226,7 +226,7 @@ FW_COMPONENT(lock_ring, "Lock ring", "components", R"({
   }, LV_EVENT_DELETE, c);
   lv_obj_set_size(root, R, LV_SIZE_CONTENT);
   lv_obj_set_flex_flow(root, LV_FLEX_FLOW_COLUMN);
-  lv_obj_set_style_pad_row(root, fw::sp::s3, 0);
+  lv_obj_set_style_pad_row(root, fw::sp::s5, 0);  // the lab: 16 under the ring
   c->ring = box(root);
   lv_obj_add_flag(c->ring, LV_OBJ_FLAG_CLICKABLE);
   lv_obj_remove_flag(c->ring, LV_OBJ_FLAG_PRESS_LOCK);  // slid off = press lost: the hold drains, a tap does nothing

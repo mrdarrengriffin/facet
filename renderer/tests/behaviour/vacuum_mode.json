@@ -1,0 +1,118 @@
+{
+  "id": "vacuum_mode",
+  "tests": [
+    {
+      "name": "the row opens the sheet; a suction pick sends fan",
+      "kind": "interaction",
+      "props": {
+        "fan": "balanced"
+      },
+      "steps": [
+        {
+          "tap": {
+            "text": "/High water/"
+          }
+        },
+        {
+          "wait": 400
+        },
+        {
+          "tap": {
+            "text": "/^(QUIET|Quiet)$/"
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "change",
+            "fan quiet"
+          ]
+        ],
+        "sounds": [
+          "open",
+          "tap"
+        ]
+      }
+    },
+    {
+      "name": "mode pick sends mode",
+      "kind": "interaction",
+      "props": {},
+      "steps": [
+        {
+          "tap": {
+            "text": "/High water/"
+          }
+        },
+        {
+          "wait": 400
+        },
+        {
+          "tap": {
+            "text": "/^(MOP|Mop)$/"
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "change",
+            "mode mop"
+          ]
+        ]
+      }
+    },
+    {
+      "name": "the map button opens the sheet",
+      "kind": "interaction",
+      "props": {
+        "style": "button"
+      },
+      "steps": [
+        {
+          "tap": {
+            "text": "/TURBO/"
+          }
+        },
+        {
+          "wait": 400
+        },
+        {
+          "tap": {
+            "text": "/^(LOW|Low)$/"
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "change",
+            "mop low"
+          ]
+        ],
+        "sounds": [
+          "open",
+          "tap"
+        ]
+      }
+    },
+    {
+      "name": "update is silent",
+      "kind": "sound",
+      "steps": [
+        {
+          "update": {
+            "fan": "max"
+          }
+        }
+      ],
+      "expect": {
+        "silent": true
+      }
+    }
+  ],
+  "xfail": {
+    "lag:tap:*": "BF-005"
+  }
+}

@@ -30,6 +30,8 @@
 #pragma once
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
+#include <ctime>
 #include <map>
 #include <string>
 #include <utility>
@@ -99,6 +101,31 @@ inline int pct(const std::string &e, const char *a) {
   const double b = num(get(e, a));
   return std::isfinite(b) ? (int) std::lround(LV_CLAMP(0.0, b, 255.0) * 100 / 255) : 0;
 }
+// fmt time / day (2026-10-24): an ISO time ("2026-10-24T09:03:12+01:00", HA's) -> "09:03" today / "Mon 22:05"
+// (time), "today 07:59" / "yesterday 18:42" / "Mon 18:42" (day); local time; "" when it doesn't parse
+inline std::string when(const std::string &iso, bool day, time_t now = time(nullptr)) {
+  int Y, M, D, h, m;
+  double sec = 0;
+  if (sscanf(iso.c_str(), "%d-%d-%dT%d:%d:%lf", &Y, &M, &D, &h, &m, &sec) < 5 || M < 1 || M > 12) return "";
+  // days from the civil date (UTC), then the offset after the seconds (Z, +hh:mm, -hh:mm)
+  const int y = Y - (M <= 2), era = (y >= 0 ? y : y - 399) / 400, yoe = y - era * 400, mp = (M + 9) % 12;
+  const long days = era * 146097L + yoe * 365L + yoe / 4 - yoe / 100 + (153 * mp + 2) / 5 + D - 1 - 719468L;
+  long t = days * 86400L + h * 3600L + m * 60L + (long) sec;
+  const size_t tp = iso.find('T');
+  const size_t z = iso.find_first_of("+-Z", tp == std::string::npos ? 0 : tp);
+  if (z != std::string::npos && iso[z] != 'Z') { int oh = 0, om = 0; sscanf(iso.c_str() + z + 1, "%d:%d", &oh, &om); t -= (iso[z] == '-' ? -1 : 1) * (oh * 3600L + om * 60L); }
+  const time_t tt = (time_t) t;
+  struct tm a, b;
+  localtime_r(&tt, &a);
+  localtime_r(&now, &b);
+  static const char *const WD[] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
+  char hm[8];
+  snprintf(hm, sizeof hm, "%02d:%02d", a.tm_hour, a.tm_min);
+  const long da = (long) (tt - a.tm_hour * 3600 - a.tm_min * 60 - a.tm_sec) / 86400, db = (long) (now - b.tm_hour * 3600 - b.tm_min * 60 - b.tm_sec) / 86400;
+  const long ago = now < 1600000000 ? 99 : db - da;  // no clock yet: the weekday form
+  if (!day) return ago == 0 ? std::string(hm) : std::string(WD[a.tm_wday]) + " " + hm;
+  return std::string(ago == 0 ? "today" : ago == 1 ? "yesterday" : WD[a.tm_wday]) + " " + hm;
+}
 // the value of one bind into out[key]; the pairs it reads go to `pairs`
 inline void bind_raw(ArduinoJson::JsonVariantConst b, ArduinoJson::JsonObject out, const char *key, std::vector<Pair> *pairs);
 // s (the value while the entity is empty: the factory demo), map / else (the value as words or a tone), tpl ("{}")
@@ -109,9 +136,25 @@ inline void bind_value(ArduinoJson::JsonVariantConst b, ArduinoJson::JsonObject 
     const std::string fmt = b["fmt"] | "";
     const char *sv = b["s"];
     if (fmt == "num" || fmt == "frac" || fmt == "pct") { char *end = nullptr; const double x = strtod(sv, &end); if (end != sv) out[key] = x; }
+    else if (fmt == "time" || fmt == "day") { const std::string w = strchr(sv, 'T') ? when(sv, fmt == "day") : std::string(sv); out[key] = w; }
     else if (fmt == "on") out[key] = !strcmp(sv, "on");
     else out[key] = sv;
   } else bind_raw(b, out, key, pairs);
+  std::string one;  // fmt count: the number of items; the one item's name (before its colon) when there is one
+  if ((b["fmt"] | "") == std::string("count")) {
+    const std::string l = out[key] | "";
+    int n = 0;
+    for (size_t i = 0; i < l.size();) {
+      size_t j = l.find(',', i);
+      if (j == std::string::npos) j = l.size();
+      std::string it = l.substr(i, j - i);
+      while (!it.empty() && it.front() == ' ') it.erase(0, 1);
+      if (!it.empty()) { n++; one = it.substr(0, it.rfind(':')); }
+      i = j + 1;
+    }
+    if (n != 1) one.clear();
+    out[key] = std::to_string(n);
+  }
   if (b["map"].isNull() && b["tpl"].isNull()) return;
   std::string v;
   ArduinoJson::JsonVariant cur = out[key];
@@ -120,8 +163,11 @@ inline void bind_value(ArduinoJson::JsonVariantConst b, ArduinoJson::JsonObject 
   else v = cur | "";
   if (b["map"].is<ArduinoJson::JsonObjectConst>()) {
     ArduinoJson::JsonVariantConst m = b["map"][v.c_str()];
+    const std::string was = v;
     if (m.is<const char *>()) v = m.as<const char *>();
     else if (b["else"].is<const char *>()) v = b["else"].as<const char *>();
+    const size_t at = v.find("{}");  // "{}" in a map / else value: the one item (count), else the value itself
+    if (at != std::string::npos && v != was) v.replace(at, 2, m.is<const char *>() && !one.empty() ? one : was);
   }
   if (b["tpl"].is<const char *>() && !v.empty()) {
     std::string t = b["tpl"].as<const char *>();
@@ -159,6 +205,7 @@ inline void bind_raw(ArduinoJson::JsonVariantConst b, ArduinoJson::JsonObject ou
     if (std::isfinite(x)) out[key] = (int) std::lround(LV_CLAMP(0.0, x, 1.0) * 100);
     return;
   }
+  if (fmt == "time" || fmt == "day") { use(a); const std::string *v = get(e, a); out[key] = v ? when(*v, fmt == "day") : std::string(); return; }
   if (fmt == "name") { use("friendly_name"); const std::string *n = get(e, "friendly_name"); out[key] = n && !n->empty() ? *n : e; return; }
   use(a);
   const std::string *v = get(e, a);
@@ -344,6 +391,11 @@ inline const char *act(lv_obj_t *from, const char *service, const char *entity, 
       return "vacuum.send_command: app_segment_clean with segments only";
     for (ArduinoJson::JsonVariantConst x : data["params"][0]["segments"].as<ArduinoJson::JsonArrayConst>())
       if (!x.is<int>() || x.as<int>() < 0 || x.as<int>() > 999) return "segments are room numbers";
+  } else if (svc == "select.select_option") {  // a Vacuum mode pick (cleaning mode, water): one option name
+    if (ent.rfind("select.", 0) != 0) return "not a select";
+    const std::string o = data["option"] | "";
+    if (!only("option") || o.empty() || o.size() > 32) return "select.select_option takes option (a short name)";
+    for (char c : o) if (!(isalnum((unsigned char) c) || c == '_' || c == ' ' || c == '-' || c == '+')) return "option: letters, digits, space, _, - or +";
   } else if (svc == "cover.open_cover" || svc == "cover.close_cover" || svc == "cover.stop_cover" ||
              svc == "lock.lock" || svc == "lock.unlock" || svc == "lock.open" || svc == "vacuum.start" ||
              svc == "vacuum.pause" || svc == "vacuum.return_to_base" ||

@@ -75,6 +75,7 @@ node "$HERE/tools/gen_states.mjs" "$C/gen/states_gen.h"
 node "$HERE/tools/gen_mascot.mjs" "$C/gen/mascot_gen.h"
 node "$HERE/tools/gen_chart.mjs" "$C/gen/chart_gen.h"  # tokens/chart.json (+ colour, motion) -> fw::ch:: chart colours, geometry, chart motion
 node "$HERE/tools/gen_surfaces.mjs" "$C/gen/surfaces_gen.h"  # tokens/surfaces.json (+ colour, space) -> fw::sf:: sports surfaces, venues, court geometry
+node "$HERE/tools/gen_floorplan.mjs" "$C/gen/floorplan_gen.h"  # tokens/floorplan.json (+ colour, space) -> fw::fp:: floor plan geometry, inks, rules
 # settings schema: tokens/settings.json -> settings_gen.h (fw::set:: the personalisation settings, screens/settings.cpp)
 node "$HERE/tools/gen_settings.mjs" "$C/gen/settings_gen.h"
 node "$HERE/tools/gen_specs.mjs" "$C/gen/specs_gen.h"  # factory screen specs (core/spec.h)
@@ -93,7 +94,7 @@ for f in "$HERE"/core/*.cpp "$HERE"/foundations/*.cpp "$HERE"/components/*.cpp "
   [ -f "$f" ] || continue
   o="$O/$(basename "$(dirname "$f")")_$(basename "$f" .cpp).o"
   OBJS="$OBJS $o"
-  dep="$f $HERE/core/*.h $C/gen/colour_gen.h $C/gen/type_gen.h $C/gen/space_gen.h $C/gen/layout_gen.h $C/gen/icons_gen.h $C/gen/motion_gen.h $C/gen/states_gen.h $C/gen/mascot_gen.h $C/gen/settings_gen.h $C/gen/chart_gen.h $C/gen/surfaces_gen.h $C/gen/specs_gen.h"; [ "$(basename "$f")" = fonts.cpp ] && dep="$dep $FONTS_H"; [ "$(basename "$f")" = icons.cpp ] && dep="$dep $ICONS_H"
+  dep="$f $HERE/core/*.h $C/gen/colour_gen.h $C/gen/type_gen.h $C/gen/space_gen.h $C/gen/layout_gen.h $C/gen/icons_gen.h $C/gen/motion_gen.h $C/gen/states_gen.h $C/gen/mascot_gen.h $C/gen/settings_gen.h $C/gen/chart_gen.h $C/gen/surfaces_gen.h $C/gen/floorplan_gen.h $C/gen/specs_gen.h"; [ "$(basename "$f")" = fonts.cpp ] && dep="$dep $FONTS_H"; [ "$(basename "$f")" = icons.cpp ] && dep="$dep $ICONS_H"
   stale=0; [ -f "$o" ] || stale=1
   [ $stale = 0 ] && for d in $dep; do [ "$d" -nt "$o" ] && stale=1; done
   if [ $stale = 1 ]; then

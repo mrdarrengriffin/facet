@@ -2,7 +2,8 @@
 // .f-section): a caps title, an optional count badge, and an optional right side, above a group of rows.
 //   box      height lay::section_h (48 / 32, = touch min), width = the screen content width (2 x card-w + gutter,
 //            656 / 440, = List row), flex row centred, gap space 5 (16 / 12 = docs gutter at both densities)
-//   title    the Label component, type caps-sm, text-dim (= docs .f-section-title)
+//   title    the Label component, type caps-sm, text-dim (= docs .f-section-title); size label = the screen label
+//            type instead (the panel lab's Door lock "last 24 h")
 //   count    the Count badge component (prop "badge"; count / tone / zero passed on: 0 = muted or hidden)
 //   right    none | meta (the Label, type meta, text-dim: docs .f-section-meta is text-mute, which is disabled-only
 //            here) | action (a text button: caps-sm accent-text, not in the docs atom; the board asked for "count or
@@ -45,11 +46,18 @@ void fill(lv_obj_t *h, fw::Props p) {
   lv_obj_set_flex_align(h, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
   lv_obj_set_style_pad_column(h, fw::sp::s5, 0);
 
-  ArduinoJson::JsonDocument tp;
-  tp["text"] = p["title"] | "";
-  tp["type"] = "caps-sm";
-  tp["colour"] = "text-dim";
-  build("label", h, tp);
+  if (!strcmp(p["size"] | "sm", "label")) {  // the screen label type (the panel lab's lock "last 24 h" heading):
+    lv_obj_set_height(h, fw::style(fw::ty::label).box + fw::sp::s2);  // its box + sp::s2 to the rows, at the top
+    lv_obj_set_flex_align(h, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
+    lv_obj_t *l = fw::text(h, fw::ty::label, p["title"] | "", t.text_dim);
+    lv_obj_set_height(l, fw::style(fw::ty::label).box);
+  } else {
+    ArduinoJson::JsonDocument tp;
+    tp["text"] = p["title"] | "";
+    tp["type"] = "caps-sm";
+    tp["colour"] = "text-dim";
+    build("label", h, tp);
+  }
 
   if (p["badge"] | true) {
     ArduinoJson::JsonDocument bp;
@@ -126,7 +134,8 @@ FW_COMPONENT(section_header, "Section header", "components", R"({
     {"name": "right", "type": "select", "options": ["none", "meta", "action"], "default": "meta"},
     {"name": "meta", "type": "text", "default": "updated 2m"},
     {"name": "action", "type": "text", "default": "See all"},
-    {"name": "state", "type": "select", "options": ["default", "pressed", "disabled"], "default": "default"}
+    {"name": "state", "type": "select", "options": ["default", "pressed", "disabled"], "default": "default"},
+    {"name": "size", "type": "select", "options": ["sm", "label"], "default": "sm"}
   ],
   "variants": [
     {"label": "count + meta", "props": {}},

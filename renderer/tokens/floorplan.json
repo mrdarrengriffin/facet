@@ -1,0 +1,33 @@
+{
+  "about": "Facet Floor plans foundation (first piece, 2026-10-24: the Vacuum's Map view), the single source for how a floor plan is drawn (build.sh: tools/gen_floorplan.mjs -> floorplan_gen.h fw::fp::; component iso_floorplan). A plan = rooms as polygons in metres (data, never code: a spec parameter), drawn in true isometric as raised tiles with a low back wall, the dolls-house cutaway the panel lab approved (apps/hub panel/vacuum/iso.ts, from the House 3D model). On a panel the plan is ONE pre-rendered image per theme; only the robot is a small sprite moved by an animation, so a move redraws two small boxes, never the plan.",
+  "rules": [
+    {"id": "data", "title": "Rooms are data", "about": "Each room is a polygon in metres (plan x right, z down, origin = the inside rear-left corner), a name, an optional cleaning segment and an optional label point. A screen passes them in; the drawing never changes in code for a new house."},
+    {"id": "iso", "title": "True isometric, fitted", "about": "x and z go off at 30 degrees, heights straight up. The scale is the largest that fits the whole house in the box, so the plan never moves when a room is picked or the robot drives."},
+    {"id": "tiles", "title": "Raised tiles, a low back wall", "about": "Every room is a tile the slab's thickness deep: its front and right sides show, in two steps of the line colours, so the tiles read as solid. A low wall runs along the back and left edges, like a dolls house with the front taken off."},
+    {"id": "ink", "title": "Flat fills from the colour tokens", "about": "Tops are the surface colour with a line-hi hairline; rooms the robot can't clean are the canvas with a line hairline. Picked rooms fill with accent-dim and an accent edge; the room it's cleaning now gets the accent edge. The dock is steel."},
+    {"id": "labels", "title": "Labels only where you can act", "about": "Only rooms the robot cleans carry a name, in the caps label type, text-dim, centred on the room's label point; a picked room's name turns text (the accent-dim fill and edge carry the pick; accent-text would be under 4.5:1 on it). Small rooms (pantry, WC, stairs) stay quiet."},
+    {"id": "robot", "title": "The robot is the only thing that moves", "about": "Drawn at twice its real size so it reads: a short cylinder with its LiDAR turret, accent while it cleans. It glides to each new position (linear, the time between position reports) and its last run's path trails behind it."},
+    {"id": "cost", "title": "Cheap on the panel", "about": "One image per theme, redrawn only where a room changes (a pick, the room it's in); the robot sprite moves with an animation. No live 3D per frame."}
+  ],
+  "geometry": {
+    "slab": 0.3,
+    "wall": 0.5,
+    "robot-r": 0.3,
+    "robot-h": 0.14,
+    "lidar": 0.35,
+    "robot-real-r": 0.175,
+    "about": "metres: tile thickness (slab), back wall height, the robot drawn at 2x its 0.35 m (radius 0.3, height 0.14), the LiDAR turret as a share of its top, its real radius (docked, it parks that far in front of the dock)"
+  },
+  "ink": {
+    "top": "surface", "top-off": "bg", "edge": "line-hi", "edge-off": "line",
+    "side-front": "line-hi", "side-right": "line", "wall": "line", "wall-left": "line-hi",
+    "picked": "accent-dim", "picked-edge": "accent", "here-edge": "accent", "dock": "steel",
+    "trail": "text-mute", "trail-live": "blue",
+    "robot-side": "steel-dim", "robot-top": "text", "lidar": "steel", "lidar-run": "accent",
+    "label": "text-dim", "label-picked": "text"
+  },
+  "opacity": {"wall-left": 60, "trail": 50, "trail-live": 80, "about": "percent, mixed into the colour under it when the image is drawn (one solid RGB565 value per pixel, never a live blend)"},
+  "stroke": {"edge": "hair", "mark": "edge", "trail": "edge"},
+  "label": {"type": "label"},
+  "motion": {"glide-ms": 2000, "about": "the robot's glide to a new position: linear over the position sensor's report interval (lab 2 s)"}
+}

@@ -71,7 +71,7 @@
       "about": "Google Fonts Latin Core (UK/EU text)",
       "glyphset": "GF_Latin_Core",
       "chars": [
-        "·−→▲▼"
+        "·−→▲▼²"
       ]
     },
     "clock": {
@@ -177,8 +177,8 @@
       "lineHeight": 1,
       "letterSpacing": -1,
       "case": "none",
-      "glyphs": "numeric",
-      "use": "screen hero numbers: PRs that need you, £ today, nearest strike, agents that need you",
+      "glyphs": "ascii",
+      "use": "screen hero numbers + a state word (the panel lab's Vacuum: Docked; ascii since 2026-10-24): PRs that need you, £ today, nearest strike, agents that need you",
       "sample": "3",
       "1x": {
         "size": 64,

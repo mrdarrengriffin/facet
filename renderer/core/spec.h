@@ -19,6 +19,8 @@
 //   show       (2026-10-24) a bind: the node shows only while its value is set (hidden for "", 0, off, false), e.g. the
 //              vacuum's room tiles only while it isn't cleaning: {"e": "$entity", "map": {"cleaning": ""}, "else": "1"}.
 //              Re-read with the node's binds (a hidden node takes no room in its column).
+//   in header  (2026-10-24) "in": "header" builds the node into the screen's header row, before the screen chrome
+//              (docs header({right: [...]}): the Vacuum's Rooms | Map Segmented)
 //   in / slot  (2026-10-23, pages from components only) build this node into slot n (default 0) of node k (an earlier
 //              node whose component is a LAYOUT: its meta says "slots": N and it marks its slot objects with
 //              fw::spec::SLOT, in order) instead of the screen's content box: Split = two columns, Group = a wrapping
@@ -32,7 +34,12 @@
 //   bind       {"e": "light.x" | "$param", "a"?: "<attribute>", "fmt"?: on|pct|avail|light|name|num|frac,
 //               "s"?: sample, "map"?: {value: text}, "else"?: text, "tpl"?: "battery {}%"} (core/ha.h): s = the value
 //              while the entity is empty (the factory demo), map = the value as words / a tone ("else" for the rest,
-//              default the value itself), tpl = the text around it ({} = the value; empty value = empty text)
+//              default the value itself), tpl = the text around it ({} = the value; empty value = empty text).
+//              e "" with s = a bind on a screen parameter, not an entity: {"e": "", "s": "$view", "map": {...}}.
+//              fmt (2026-10-24, the panel lab's Vacuum + Door lock lines): count = the number of items in a comma
+//              list ("Kitchen:3,Corridor:1" -> 2; a map value's "{}" = the one item's name when there is one, an
+//              else's "{}" = the number: "Clean {}" / "Clean {} rooms"); time = an ISO time as "09:03" today,
+//              "Mon 22:05" before; day = "today 07:59", "yesterday 18:42", "Mon 18:42" 
 //   on         event = what the component emits (or "long": a long press, made here) -> one action:
 //   action     {"do": "light.switch", "e"}  (a toggle's on / off)    {"do": "light.toggle", "e"}
 //              {"do": "light.brightness", "e"}  (a Dial / Slider value: live while dragging = throttle with a
@@ -49,10 +56,12 @@
 //                                              stop_cover / close_cover)
 //              {"do": "lock.control", "e"}  (a Lock view's "lock": lock | unlock | open -> lock.lock / lock.unlock /
 //                                             lock.open; the view emits unlock / open only after its hold-to-confirm)
-//              {"do": "vacuum.control", "e", "rooms"?: "$rooms"}  (a Button tap by its label: Clean / Start (with
+//              {"do": "vacuum.control", "e", "rooms"?: "$rooms", "mode"?, "mop"?}  (a Button tap by its label: Clean / Start (with
 //                rooms = a comma list of segment ids: vacuum.send_command app_segment_clean, the Roborock form; else
 //                vacuum.start) | Resume | Pause | Dock -> vacuum.start / pause / return_to_base; a Segmented "change"
-//                = the suction: vacuum.set_fan_speed with its option id)
+//                = the suction: vacuum.set_fan_speed with its option id; a Vacuum mode "change" = "fan <id>" (the
+//                suction), "mode <id>" / "mop <id>" = select.select_option on the action's "mode" / "mop" select entity;
+//                rooms items may be "Name:id": the id after the last colon is the segment)
 //              {"do": "screen.toggle", "param": "rooms"}  (the event's detail goes in or out of the comma list
 //                parameter `param`, at most EACH_MAX items; every node is bound again: room picks)
 //              {"do": "screen.param", "param": "entity", "from"?: "speakers"}  (the event's detail becomes the
@@ -140,23 +149,28 @@ constexpr Rule RULES[] = {
     {"covers_view", "cover", "cover.control"},       {"covers_view", "window", "screen.param"},
     {"lock_ring", "lock", "lock.control"},           {"hold_button", "confirm", "lock.control"},
     {"room_tile", "pick", "screen.toggle"},          {"camera_tile", "tap", "nav.back"},          {"button", "tap", "nav.open,nav.back,light.toggle,vacuum.control"},
-    {"segmented", "change", "vacuum.control"},        // a link to a sub-view spec (moon -> moon_details -> ...)
+    {"segmented", "change", "vacuum.control,screen.param"}, {"iso_floorplan", "pick", "screen.toggle"},
+    {"vacuum_mode", "change", "vacuum.control"},        // a link to a sub-view spec (moon -> moon_details -> ...)
     {"*", "open", "nav.open"},                       // any component's own "open" (a tapped calendar day, a PR):
                                                      // its detail = the screen id [+ "?" + params JSON]
 };
 constexpr const char *ACTIONS[] = {"light.switch", "light.toggle", "light.brightness", "climate.set_temperature",
                                    "climate.set_hvac_mode", "climate.set_preset_mode", "media.control", "cover.control", "lock.control", "vacuum.control", "screen.toggle", "screen.param",
                                    "nav.open", "nav.back"};
-constexpr const char *FMTS[] = {"", "on", "pct", "avail", "light", "name", "num", "frac"};
+constexpr const char *FMTS[] = {"", "on", "pct", "avail", "light", "name", "num", "frac", "count", "time", "day"};
 constexpr uint32_t CLIMATE_THROTTLE_MS = 250;  // like light-throttle-ms: a set point while dragging at most this often
 constexpr const char *LAYOUTS[] = {"list", "center", "cards"};
 constexpr int EACH_MAX = 12;                         // copies one "each" node makes at most
 constexpr lv_obj_flag_t SLOT = LV_OBJ_FLAG_USER_2;  // a layout component's slot object (in / slot), in order
-// slot n of a layout node: itself if marked, then its descendants marked SLOT (pre-order), nullptr = none
+// slot n of a layout node: itself if marked, then its descendants marked SLOT (pre-order, not inside another slot:
+// a layout nested in a slot keeps its own slots), nullptr = none
 inline lv_obj_t *slot(lv_obj_t *o, int &n) {
   for (uint32_t i = 0; i < lv_obj_get_child_count(o); i++) {
     lv_obj_t *c = lv_obj_get_child(o, (int32_t) i);
-    if (lv_obj_has_flag(c, SLOT) && n-- == 0) return c;
+    if (lv_obj_has_flag(c, SLOT)) {  // a slot: its contents (nested layouts' slots) belong to them, not to o
+      if (n-- == 0) return c;
+      continue;
+    }
     if (lv_obj_t *d = slot(c, n)) return d;
   }
   return nullptr;
@@ -271,8 +285,8 @@ inline void check_keys(ArduinoJson::JsonObjectConst o, const char *const *keys, 
 }
 inline void check_action(ArduinoJson::JsonVariantConst a, const char *comp, const char *event, const std::string &path, Errs &e) {
   if (!a.is<ArduinoJson::JsonObjectConst>()) { err(e, path, "bad_action", "an action is an object {do, ...}"); return; }
-  static const char *const K[] = {"do", "e", "screen", "params", "param", "from", "auto", "rooms"};
-  check_keys(a.as<ArduinoJson::JsonObjectConst>(), K, 8, path, e);
+  static const char *const K[] = {"do", "e", "screen", "params", "param", "from", "auto", "rooms", "mode", "mop"};
+  check_keys(a.as<ArduinoJson::JsonObjectConst>(), K, 10, path, e);
   const std::string d = a["do"] | "";
   if (!one_of(ACTIONS, d)) { err(e, path + ".do", "bad_action", "unknown action " + d); return; }
   const char *ok = allowed(comp, event);
@@ -297,6 +311,11 @@ inline void check_action(ArduinoJson::JsonVariantConst a, const char *comp, cons
     const std::string en = a["e"] | "";
     if (!entity_ok(en) || (en[0] != '$' && en.rfind("vacuum.", 0) != 0)) err(e, path + ".e", "bad_entity", "a vacuum (vacuum.x or $param)");
     if (!a["rooms"].isNull() && !a["rooms"].is<const char *>()) err(e, path + ".rooms", "bad_action", "rooms: a comma list of segment ids or $param");
+    for (const char *k : {"mode", "mop"})
+      if (!a[k].isNull()) {
+        const std::string sel = a[k] | "";
+        if (!entity_ok(sel) || (sel[0] != '$' && sel.rfind("select.", 0) != 0)) err(e, path + "." + k, "bad_entity", std::string(k) + ": a select entity (select.x or $param)");
+      }
   }
   if (d == "screen.toggle" && !id_ok(a["param"] | "")) err(e, path + ".param", "bad_action", "param: the screen parameter to toggle the detail in (a-z, 0-9, _)");
   if (d == "lock.control") {
@@ -326,8 +345,9 @@ inline void check_value(const PropInfo &pi, ArduinoJson::JsonVariantConst v, con
     }
     for (const char *k : {"s", "else", "tpl"})
       if (!v[k].isNull() && (!v[k].is<const char *>() || strlen(v[k].as<const char *>()) > 64)) err(e, path + "." + k, "bad_bind", std::string(k) + " is text (at most 64)");
-    if (!entity_ok(v["e"] | "")) err(e, path + ".e", "bad_bind", "a bind needs an entity (domain.object or $param)");
-    if (!one_of(FMTS, v["fmt"] | "")) err(e, path + ".fmt", "bad_bind", "fmt is one of on, pct, avail, light, name, num, frac");
+    if (!entity_ok(v["e"] | "") && !(!strcmp(v["e"] | "x", "") && v["s"].is<const char *>()))
+      err(e, path + ".e", "bad_bind", "a bind needs an entity (domain.object or $param), or e \"\" with s (a screen parameter)");
+    if (!one_of(FMTS, v["fmt"] | "")) err(e, path + ".fmt", "bad_bind", "fmt is one of on, pct, avail, light, name, num, frac, count, time, day");
     binds++;
     return;
   }
@@ -389,7 +409,10 @@ inline void check_screen(ArduinoJson::JsonVariantConst s, size_t bytes, Errs &e)
       else { PropInfo si; si.name = "show"; si.type = "text"; check_value(si, n["show"], p + ".show", e, binds); }
     }
     const std::string c = n["c"] | "";
-    if (!n["in"].isNull()) {  // into an earlier layout node's slot
+    if (n["in"].is<const char *>()) {  // into the header row
+      if (strcmp(n["in"] | "", "header")) err(e, p + ".in", "bad_in", "in: \"header\" or an earlier layout node");
+      if (!n["slot"].isNull()) err(e, p + ".slot", "bad_in", "the header has no slots");
+    } else if (!n["in"].isNull()) {  // into an earlier layout node's slot
       const int k = n["in"] | -1, sl = n["slot"] | 0;
       const std::string kc = k >= 0 && k < i - 1 ? (nodes[k]["c"] | "") : "";
       const int ns = kc.empty() ? 0 : slots_of(kc.c_str());
@@ -880,7 +903,7 @@ inline void rebind_all(Screen *s);
 // screen.param: the parameter takes `v` (checked) and every node is bound again (update path); false = refused
 inline bool set_param(Screen *s, const std::string &param, const std::string &from, const std::string &v) {
   auto cur = s->params.find(param);
-  if (cur == s->params.end() || !entity_ok(v) || v[0] == '$') return false;
+  if (cur == s->params.end() || v.empty() || v[0] == '$' || !(entity_ok(v) || word_ok(v, 24))) return false;  // an entity or a word (a view)
   if (cur->second == v) { rebind_all(s); return true; }
   const std::string &old = cur->second;
   if (old.find('.') != std::string::npos && v.substr(0, v.find('.')) != old.substr(0, old.find('.'))) return false;  // same domain
@@ -968,7 +991,23 @@ inline bool run(Screen *s, Node &n, const char *event, const char *detail) {
     std::string w = detail;      // "change" = the suction (its option id = the fan speed)
     for (char &ch : w) ch = (char) tolower((unsigned char) ch);
     if (!strcmp(event, "change")) {
-      if (w.empty() || w.size() > 24) return true;
+      if (w.empty() || w.size() > 32) return true;
+      const size_t sp = w.find(' ');
+      if (sp != std::string::npos) {  // a Vacuum mode change: "fan turbo", "mode mop", "mop high"
+        const std::string key = w.substr(0, sp), opt = detail + sp + 1;
+        if (key == "mode" || key == "mop") {
+          const std::string sel = a[key.c_str()] | "";
+          if (sel.empty() || sel[0] == '$') return true;
+          ArduinoJson::JsonDocument od;
+          od["option"] = opt;
+          std::string data;
+          serializeJson(od, data);
+          ha::act(n.obj, "select.select_option", sel.c_str(), data.c_str());
+          return true;
+        }
+        if (key != "fan") return true;
+        w = w.substr(sp + 1);
+      }
       ArduinoJson::JsonDocument fd;
       fd["fan_speed"] = w;
       std::string data;
@@ -977,13 +1016,18 @@ inline bool run(Screen *s, Node &n, const char *event, const char *detail) {
       return true;
     }
     const std::string rooms = a["rooms"] | "";
-    if (w == "clean" || w == "start" || w == "clean all") {
-      std::string segs;  // "1,3" -> [1,3]
-      for (const char *q = rooms.c_str(); *q;) {
+    if (w.rfind("clean", 0) == 0 || w == "start") {  // Clean all / Clean Kitchen / Clean 2 rooms
+      std::string segs;  // "1,3" or "Kitchen:3,Corridor:1" -> [3,1] (the id after an item's last colon)
+      for (size_t i = 0; i < rooms.size();) {
+        size_t j = rooms.find(',', i);
+        if (j == std::string::npos) j = rooms.size();
+        std::string it = rooms.substr(i, j - i);
+        const size_t c = it.rfind(':');
+        if (c != std::string::npos) it = it.substr(c + 1);
+        const char *q = it.c_str();
         while (*q && !isdigit((unsigned char) *q)) q++;
-        if (!*q) break;
-        segs += (segs.empty() ? "" : ",") + std::to_string(atoi(q));
-        while (isdigit((unsigned char) *q)) q++;
+        if (*q) segs += (segs.empty() ? "" : ",") + std::to_string(atoi(q));
+        i = j + 1;
       }
       if (segs.empty()) { ha::act(n.obj, "vacuum.start", n.entity.c_str()); return true; }
       const std::string data = "{\"command\":\"app_segment_clean\",\"params\":[{\"segments\":[" + segs + "],\"repeat\":1}]}";
@@ -1012,6 +1056,7 @@ inline bool run(Screen *s, Node &n, const char *event, const char *detail) {
     for (const std::string &x : l) v += (v.empty() ? "" : ",") + x;
     it->second = v;
     rebind_all(s);
+    emit(s->root, "param", (param + "=" + v).c_str());  // the host sees the picks
     return true;
   }
   if (d == "lock.control") {  // lock | unlock | open: the view sends unlock / open only after its hold (the confirm step)
@@ -1038,12 +1083,13 @@ inline bool run(Screen *s, Node &n, const char *event, const char *detail) {
       s->following = false;
       s->params["mode"] = "manual";
       if (!set_param(s, a["param"] | "", a["from"] | "", detail)) { s->following = was; s->params["mode"] = was ? "auto" : "manual"; rebind_all(s); return true; }
+      emit(s->root, "param", (std::string(a["param"] | "") + "=" + detail).c_str());  // the host sees the pick
       ArduinoJson::JsonDocument kv;
       kv.set(detail);
       deck_set(s->id, "params." + s->follow_param, kv.as<ArduinoJson::JsonVariantConst>());  // the pick sticks
       return true;
     }
-    set_param(s, a["param"] | "", a["from"] | "", detail);
+    if (set_param(s, a["param"] | "", a["from"] | "", detail)) emit(s->root, "param", (std::string(a["param"] | "") + "=" + detail).c_str());  // the host sees it (a view, a speaker)
     return true;
   }
   if (d == "light.toggle") { if (!*ha::act(n.obj, "light.toggle", n.entity.c_str())) ha::hold(n.obj, PENDING_MS); return true; }
@@ -1244,7 +1290,8 @@ inline lv_obj_t *build(lv_obj_t *parent, const std::string &id, Props opened, st
   }, s);
   // header (the Header component + the screen chrome)
   ArduinoJson::JsonDocument hd;
-  hd["label"] = doc["header"]["label"] | (doc["name"] | "");
+  const char *hl = doc["header"]["label"] | "";
+  hd["label"] = *hl ? hl : (doc["name"] | "");  // "$name" left empty = the spec's name
   hd["back"] = doc["header"]["back"] | true;
   if (const Component *h = find("header")) {
     h->build(s->root, hd.as<Props>());
@@ -1280,14 +1327,17 @@ inline lv_obj_t *build(lv_obj_t *parent, const std::string &id, Props opened, st
     p.set(nd["p"]);
     if (p.isNull()) p.to<ArduinoJson::JsonObject>();
     if (!nd["show"].isNull()) p[ha::SHOW_KEY] = nd["show"];  // read with the binds, applied as visibility (ha.h)
-    lv_obj_t *into = c;  // "in": an earlier layout node's slot
+    lv_obj_t *into = c;  // "in": an earlier layout node's slot, or the header row
+    const bool in_hdr = nd["in"].is<const char *>() && building_header();
+    if (in_hdr) into = building_header();
     const int k = nd["in"] | -1;
     if (k >= 0 && k < n_orig && orig_obj[k])
       if (lv_obj_t *sl = slot_of(orig_obj[k], nd["slot"] | 0)) into = sl;
     n.obj = ha::bound(into, n.comp.c_str(), p.as<Props>());
     if (!n.obj) continue;
+    if (in_hdr) header_place(n.obj);
     if (ni - 1 < orig.size()) orig_obj[orig[ni - 1]] = n.obj;
-    if (into != c) {  // a full-width node (list row, section header) in a narrower slot: the slot's width
+    if (into != c && !in_hdr) {  // a full-width node (list row, section header) in a narrower slot: the slot's width
       const int32_t sw = lv_obj_get_style_width(into, LV_PART_MAIN), w = lv_obj_get_style_width(n.obj, LV_PART_MAIN);
       if (sw > 0 && !LV_COORD_IS_SPEC(sw) && w > sw && !LV_COORD_IS_SPEC(w)) lv_obj_set_width(n.obj, sw);
     }

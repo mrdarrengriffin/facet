@@ -364,74 +364,6 @@
       }
     },
     {
-      "name": "Robot vacuum: suction sets the fan speed",
-      "kind": "interaction",
-      "props": {
-        "screen": "vacuum",
-        "entity": "vacuum.test"
-      },
-      "before_ha": [
-        [
-          "vacuum.test",
-          "",
-          "docked"
-        ],
-        [
-          "vacuum.test",
-          "fan_speed",
-          "balanced"
-        ]
-      ],
-      "steps": [
-        {
-          "tap": {
-            "text": "/^(TURBO|Turbo)$/"
-          }
-        }
-      ],
-      "expect": {
-        "events": [
-          [
-            "ha",
-            "vacuum\\.set_fan_speed.*vacuum\\.test.*turbo"
-          ]
-        ]
-      }
-    },
-    {
-      "name": "Robot vacuum: a room tap picks it",
-      "kind": "interaction",
-      "props": {
-        "screen": "vacuum",
-        "entity": "vacuum.test"
-      },
-      "before_ha": [
-        [
-          "vacuum.test",
-          "",
-          "docked"
-        ]
-      ],
-      "steps": [
-        {
-          "tap": {
-            "hit": "room_tile"
-          }
-        }
-      ],
-      "expect": {
-        "events": [
-          [
-            "pick",
-            "3"
-          ]
-        ],
-        "sounds": [
-          "tap"
-        ]
-      }
-    },
-    {
       "name": "Cameras: a camera tap opens its own screen",
       "kind": "interaction",
       "props": {
@@ -485,7 +417,195 @@
       }
     },
     {
-      "name": "Robot vacuum: cleaning hides the rooms, Pause sends pause",
+      "name": "Robot vacuum: the mode sheet's suction sets the fan speed",
+      "kind": "interaction",
+      "props": {
+        "screen": "vacuum",
+        "entity": "vacuum.test"
+      },
+      "before_ha": [
+        [
+          "vacuum.test",
+          "",
+          "docked"
+        ],
+        [
+          "vacuum.test",
+          "fan_speed",
+          "balanced"
+        ]
+      ],
+      "steps": [
+        {
+          "tap": {
+            "text": "/High water/"
+          }
+        },
+        {
+          "wait": 400
+        },
+        {
+          "tap": {
+            "text": "/^(TURBO|Turbo)$/"
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "ha",
+            "vacuum\\.set_fan_speed.*vacuum\\.test.*turbo"
+          ]
+        ]
+      }
+    },
+    {
+      "name": "Robot vacuum: the mode sheet's cleaning mode selects the mode",
+      "kind": "interaction",
+      "props": {
+        "screen": "vacuum",
+        "entity": "vacuum.test",
+        "modesel": "select.test_mode"
+      },
+      "before_ha": [
+        [
+          "vacuum.test",
+          "",
+          "docked"
+        ],
+        [
+          "select.test_mode",
+          "",
+          "vac_and_mop"
+        ]
+      ],
+      "steps": [
+        {
+          "tap": {
+            "text": "/High water/"
+          }
+        },
+        {
+          "wait": 400
+        },
+        {
+          "tap": {
+            "text": "/^(MOP|Mop)$/"
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "ha",
+            "select\\.select_option.*select\\.test_mode.*mop"
+          ]
+        ]
+      }
+    },
+    {
+      "name": "Robot vacuum: a room tap picks it",
+      "kind": "interaction",
+      "props": {
+        "screen": "vacuum",
+        "entity": "vacuum.test"
+      },
+      "before_ha": [
+        [
+          "vacuum.test",
+          "",
+          "docked"
+        ]
+      ],
+      "steps": [
+        {
+          "tap": {
+            "hit": "room_tile"
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "pick",
+            "Corridor:1"
+          ]
+        ],
+        "sounds": [
+          "tap"
+        ]
+      }
+    },
+    {
+      "name": "Robot vacuum: a picked room: Clean <room> cleans that segment",
+      "kind": "interaction",
+      "props": {
+        "screen": "vacuum",
+        "entity": "vacuum.test"
+      },
+      "before_ha": [
+        [
+          "vacuum.test",
+          "",
+          "docked"
+        ]
+      ],
+      "steps": [
+        {
+          "tap": {
+            "hit": "room_tile"
+          }
+        },
+        {
+          "tap": {
+            "text": "/^(CLEAN CORRIDOR|Clean Corridor)$/"
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "ha",
+            "vacuum\\.send_command.*vacuum\\.test.*app_segment_clean.*\\[1\\]"
+          ]
+        ]
+      }
+    },
+    {
+      "name": "Robot vacuum: Map shows the floor plan; a room tap there picks it",
+      "kind": "interaction",
+      "props": {
+        "screen": "vacuum",
+        "entity": "vacuum.test"
+      },
+      "before_ha": [
+        [
+          "vacuum.test",
+          "",
+          "docked"
+        ]
+      ],
+      "steps": [
+        {
+          "tap": {
+            "text": "/^(MAP|Map)$/"
+          }
+        },
+        {
+          "wait": 300
+        }
+      ],
+      "expect": {
+        "exists": {
+          "hit": "iso_floorplan"
+        },
+        "absent": {
+          "hit": "room_tile"
+        }
+      }
+    },
+    {
+      "name": "Robot vacuum: cleaning: rooms are for the next run, Pause sends pause",
       "kind": "interaction",
       "props": {
         "screen": "vacuum",
@@ -500,16 +620,9 @@
       ],
       "steps": [
         {
-          "drag": {
-            "at": [
-              0.5,
-              0.75
-            ]
-          },
-          "by": [
-            0,
-            -0.6
-          ]
+          "tap": {
+            "hit": "room_tile"
+          }
         },
         {
           "tap": {
@@ -518,15 +631,15 @@
         }
       ],
       "expect": {
+        "no_events": [
+          "pick"
+        ],
         "events": [
           [
             "ha",
             "vacuum\\.pause.*vacuum\\.test"
           ]
-        ],
-        "absent": {
-          "hit": "room_tile"
-        }
+        ]
       }
     }
   ],
@@ -568,6 +681,7 @@
     "interaction:press-cancel:vacuum": "BF-001",
     "interaction:press-cancel:plants": "BF-001",
     "interaction:press-cancel:cameras": "BF-001",
-    "interaction:press-cancel:camera": "BF-001"
+    "interaction:press-cancel:camera": "BF-001",
+    "lag:build:energy": "BF-046"
   }
 }

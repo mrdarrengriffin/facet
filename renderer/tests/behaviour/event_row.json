@@ -1,0 +1,20 @@
+{
+  "id": "event_row",
+  "tests": [
+    {
+      "name": "update is silent",
+      "kind": "sound",
+      "steps": [
+        {
+          "update": {
+            "event": "10:12|unlocked|Sam"
+          }
+        }
+      ],
+      "expect": {
+        "silent": true
+      }
+    }
+  ],
+  "xfail": {}
+}

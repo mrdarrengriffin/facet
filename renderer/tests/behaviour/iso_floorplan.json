@@ -1,0 +1,111 @@
+{
+  "id": "iso_floorplan",
+  "tests": [
+    {
+      "name": "tap a room picks it",
+      "kind": "interaction",
+      "props": {},
+      "steps": [
+        {
+          "tap": {
+            "at": [
+              0.3,
+              0.55
+            ]
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "pick",
+            "Living room:2"
+          ]
+        ],
+        "sounds": [
+          "tap"
+        ]
+      }
+    },
+    {
+      "name": "during a run a tap is blocked",
+      "kind": "interaction",
+      "props": {
+        "state": "cleaning",
+        "here": "Living room"
+      },
+      "steps": [
+        {
+          "tap": {
+            "at": [
+              0.3,
+              0.55
+            ]
+          }
+        }
+      ],
+      "expect": {
+        "no_events": [
+          "pick"
+        ],
+        "sounds": [
+          "error"
+        ]
+      }
+    },
+    {
+      "name": "the robot moving redraws only its boxes",
+      "kind": "interaction",
+      "props": {
+        "state": "cleaning",
+        "robot": "1.2,5.6"
+      },
+      "steps": [
+        {
+          "update": {
+            "state": "cleaning",
+            "robot": "2.4,6.4"
+          }
+        },
+        {
+          "wait": 2200
+        }
+      ],
+      "expect": {
+        "silent": true,
+        "redraw_max": 0.05
+      }
+    },
+    {
+      "name": "a pick from the screen redraws one room",
+      "kind": "interaction",
+      "props": {},
+      "steps": [
+        {
+          "update": {
+            "picked": "Kitchen:3"
+          }
+        }
+      ],
+      "expect": {
+        "silent": true,
+        "redraw_max": 0.35
+      }
+    },
+    {
+      "name": "update is silent",
+      "kind": "sound",
+      "steps": [
+        {
+          "update": {
+            "picked": "Corridor:1"
+          }
+        }
+      ],
+      "expect": {
+        "silent": true
+      }
+    }
+  ],
+  "xfail": {}
+}
