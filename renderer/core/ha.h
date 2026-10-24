@@ -173,6 +173,17 @@ inline void resolve(Props in, ArduinoJson::JsonDocument &out, std::vector<Pair> 
   }
 }
 
+// a spec node's "show" bind travels with its props under this key; bound() / refresh() turn it into visibility and
+// never hand it to the component
+constexpr const char *SHOW_KEY = "__show";
+inline void apply_show(lv_obj_t *obj, ArduinoJson::JsonDocument &p) {
+  if (p[SHOW_KEY].isNull()) return;
+  ArduinoJson::JsonVariant v = p[SHOW_KEY];
+  const std::string s = v.is<bool>() ? (v.as<bool>() ? "1" : "") : v.is<double>() ? (v.as<double>() != 0 ? "1" : "") : std::string(v | "");
+  const bool hide = s.empty() || s == "0" || s == "off" || s == "false";
+  if (obj && hide != lv_obj_has_flag(obj, LV_OBJ_FLAG_HIDDEN)) lv_obj_set_flag(obj, LV_OBJ_FLAG_HIDDEN, hide);
+  p.remove(SHOW_KEY);
+}
 inline Bound *bound_of(lv_obj_t *obj) {
   for (Bound *b : S().bounds)
     if (b->obj == obj) return b;
@@ -184,6 +195,7 @@ inline void refresh(Bound *b) {
   ArduinoJson::JsonDocument spec, p;
   deserializeJson(spec, b->spec);
   resolve(spec.as<Props>(), p, nullptr);
+  apply_show(b->obj, p);
   Quiet q;
   update_child(b->c, b->obj, p.as<Props>());
 }
@@ -230,10 +242,13 @@ inline lv_obj_t *bound(lv_obj_t *parent, const char *comp, Props spec) {
   serializeJson(spec, b->spec);
   ArduinoJson::JsonDocument p;
   resolve(spec, p, &b->pairs);
+  ArduinoJson::JsonDocument show;
+  if (!p[SHOW_KEY].isNull()) { show[SHOW_KEY] = p[SHOW_KEY]; p.remove(SHOW_KEY); }
   const uint32_t before = lv_obj_get_child_count(parent);
   c->build(parent, p.as<Props>());
   if (lv_obj_get_child_count(parent) <= before) { delete b; return nullptr; }
   b->obj = lv_obj_get_child(parent, -1);
+  apply_show(b->obj, show);
   for (const Pair &pr : b->pairs) want(pr.first, pr.second);
   S().bounds.push_back(b);
   lv_obj_add_event_cb(b->obj, [](lv_event_t *e) {

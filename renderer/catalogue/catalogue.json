@@ -462,9 +462,26 @@
       "default",
       "unavailable"
      ]
+    },
+    {
+     "name": "size",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "tile",
+      "full"
+     ]
+    },
+    {
+     "name": "entity",
+     "type": "text",
+     "bindable": true
     }
    ],
    "events": {
+    "tap": [
+     "nav.back"
+    ],
     "open": [
      "nav.open"
     ]
@@ -5160,5 +5177,5 @@
    "taps": "page"
   }
  },
- "hash": "1e038c53"
+ "hash": "a046e618"
 }

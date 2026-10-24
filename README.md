@@ -740,7 +740,8 @@ renderer like the panel; on a single-screen page the workbench opens that page i
 `*_view` body for new screens. Arrangements come from layout components (`split`, `group`) whose slots take nodes
 (`"in"` / `"slot"`); a node can repeat per item of a list parameter (`"each"`, with `"sample"` entries while the list
 is empty); binds carry a sample value, a map to words / tones and a template (`"s"`, `"map"`, `"else"`, `"tpl"`);
-`screen.toggle` keeps a picked list (room picks). Specs `lock`, `vacuum`, `plants`, `cameras` are built this way;
+`screen.toggle` keeps a picked list (room picks); `"show"` (a bind) shows a node only while its value is set (the
+vacuum hides its rooms while cleaning). Specs `lock`, `vacuum`, `plants`, `cameras` are built this way;
 core/spec.h has the format.
 
 ## Behaviour tests

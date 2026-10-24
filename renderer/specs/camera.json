@@ -1,0 +1,68 @@
+{
+ "v": 1,
+ "id": "camera",
+ "name": "Camera",
+ "rev": 1,
+ "role": "detail",
+ "params": {
+  "entity": {
+   "type": "entity",
+   "domain": "camera",
+   "label": "Camera",
+   "default": ""
+  },
+  "name": {
+   "type": "hidden",
+   "default": "Front door"
+  },
+  "time": {
+   "type": "hidden",
+   "default": "19:28"
+  },
+  "detect": {
+   "type": "hidden",
+   "default": "person"
+  },
+  "score": {
+   "type": "hidden",
+   "default": "92"
+  },
+  "box": {
+   "type": "hidden",
+   "default": "40,20,24,64"
+  }
+ },
+ "header": {
+  "label": "Camera",
+  "back": true
+ },
+ "layout": "list",
+ "nodes": [
+  {
+   "c": "camera_tile",
+   "p": {
+    "size": "full",
+    "entity": "$entity",
+    "name": {
+     "e": "$entity",
+     "fmt": "name",
+     "s": "$name"
+    },
+    "state": {
+     "e": "$entity",
+     "fmt": "avail",
+     "s": "default"
+    },
+    "time": "$time",
+    "detect": "$detect",
+    "score": "$score",
+    "box": "$box"
+   },
+   "on": {
+    "tap": {
+     "do": "nav.back"
+    }
+   }
+  }
+ ]
+}

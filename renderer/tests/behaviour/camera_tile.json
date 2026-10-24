@@ -16,6 +16,54 @@
       "expect": {
         "silent": true
       }
+    },
+    {
+      "name": "a tile tap opens the camera",
+      "kind": "interaction",
+      "props": {},
+      "steps": [
+        {
+          "tap": {
+            "clk": 0
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "open",
+            "^camera\\?.*Front door"
+          ]
+        ],
+        "sounds": [
+          "open"
+        ]
+      }
+    },
+    {
+      "name": "full size: a tap closes",
+      "kind": "interaction",
+      "props": {
+        "size": "full"
+      },
+      "steps": [
+        {
+          "tap": {
+            "clk": 0
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "tap",
+            "close"
+          ]
+        ],
+        "sounds": [
+          "back"
+        ]
+      }
     }
   ],
   "xfail": {}

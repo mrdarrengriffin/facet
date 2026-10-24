@@ -8,7 +8,10 @@
 //   caption  sp::s3 under the still: the camera's name (type title, text, ellipsis) and the still's time at the right
 //            (type body, text-dim)
 //   state    default | unavailable: the name text-dim, "offline" in the still
-// Static to touch for now (a tap could open the camera big later: open for Darren). Update path: texts in place,
+//   size     tile (card-w, the Cameras grid) | full (the content width x lay::camera_full_h: the camera's own screen)
+// Tap (Darren 2026-10-24): a tile opens the camera's own screen (event "open" "camera?{entity, name, time, detect,
+// score, box}" + sound open, the spec's nav.open); full size, a tap closes it (event "tap" + sound back, the spec's
+// nav.back). Slid off before letting go = nothing. Offline: a tap = blocked + error. Update path: texts in place,
 // the box moves / shows / hides with the props (snap: a new still is a new picture).
 // Contrast: section "camera_tile".
 #include "fw.h"
@@ -18,7 +21,7 @@ namespace {
 void put(lv_obj_t *l, fw::ty::Id ty, const char *t) {
   if (fw::cased(ty, t) != lv_label_get_text(l)) fw::set_text(l, ty, t);
 }
-struct CT { lv_obj_t *still, *note, *box, *tab, *tab_l, *name, *time; };
+struct CT { lv_obj_t *still, *note, *box, *tab, *tab_l, *name, *time; bool full = false; std::string params; };
 CT *of(lv_obj_t *o) { return (CT *) lv_obj_get_user_data(o); }
 lv_obj_t *mk(lv_obj_t *parent) {
   lv_obj_t *o = lv_obj_create(parent);
@@ -27,9 +30,19 @@ lv_obj_t *mk(lv_obj_t *parent) {
   return o;
 }
 int snap(int v) { return v / fw::sp::GRID * fw::sp::GRID; }
+int still_w(const CT *c) { return c->full ? fw::lay::content_w : fw::lay::card_w; }
+int still_h(const CT *c) { return c->full ? fw::lay::camera_full_h : fw::lay::camera_h; }
 void take(CT *c, fw::Props p) {
+  {  // what opens the camera's own screen: the tile's props as the camera spec's parameters
+    ArduinoJson::JsonDocument d;
+    for (const char *k : {"entity", "name", "time", "detect", "box"}) if ((p[k] | "")[0]) d[k] = p[k] | "";
+    if ((p["score"] | 0) > 0) d["score"] = std::to_string((int) (p["score"] | 0));
+    c->params.clear();
+    serializeJson(d, c->params);
+  }
   const fw::Theme &t = *fw::T;
   const bool off = !strcmp(p["state"] | "default", "unavailable");
+  if (off != lv_obj_has_state(lv_obj_get_parent(c->still), fw::st::OFF)) fw::st::set_off(lv_obj_get_parent(c->still), off, false);
   put(c->name, fw::ty::title, p["name"] | "Front door");
   put(c->time, fw::ty::body, off ? "" : (p["time"] | ""));
   const lv_color_t nc = off ? t.text_dim : t.text;
@@ -42,14 +55,14 @@ void take(CT *c, fw::Props p) {
     return;
   }
   for (lv_obj_t *o : {c->box, c->tab}) if (lv_obj_has_flag(o, LV_OBJ_FLAG_HIDDEN)) lv_obj_remove_flag(o, LV_OBJ_FLAG_HIDDEN);
-  const int W = fw::lay::card_w, H = fw::lay::camera_h;
+  const int W = still_w(c), H = still_h(c);
   const int bx = snap(W * LV_CLAMP(0, x, 100) / 100), by = snap(H * LV_CLAMP(0, y, 100) / 100);
   const int bw = std::max(fw::touch::min, snap(W * LV_CLAMP(0, w, 100) / 100)), bh = std::max(fw::touch::min, snap(H * LV_CLAMP(0, h, 100) / 100));
   const int px = std::max(0, std::min(bx, W - bw)), py = std::max(0, std::min(by, H - bh));
   lv_obj_set_pos(c->box, px, py);
   lv_obj_set_size(c->box, std::min(bw, W), std::min(bh, H));
   std::string tab = det;
-  const int score = p["score"] | 0;
+  const int score = p["score"].is<const char *>() ? atoi(p["score"] | "0") : (p["score"] | 0);
   if (score > 0) tab += " " + std::to_string(score) + "%";
   put(c->tab_l, fw::ty::label, tab.c_str());
   lv_point_t sz;  // the tab hugs its label, rounded up to the grid, kept inside the still
@@ -70,18 +83,22 @@ FW_COMPONENT(camera_tile, "Camera tile", "components", R"({
     {"name": "detect", "type": "text", "default": "person"},
     {"name": "score", "type": "range", "min": 0, "max": 100, "step": 1, "default": 92},
     {"name": "box", "type": "text", "default": "40,20,24,64"},
-    {"name": "state", "type": "select", "options": ["default", "unavailable"], "default": "default"}
+    {"name": "state", "type": "select", "options": ["default", "unavailable"], "default": "default"},
+    {"name": "size", "type": "select", "options": ["tile", "full"], "default": "tile"},
+    {"name": "entity", "type": "text", "default": ""}
   ],
   "variants": [
     {"label": "person", "props": {}},
     {"label": "nothing seen", "props": {"name": "Garden", "detect": "", "time": "19:02"}},
     {"label": "car", "props": {"name": "Driveway", "detect": "car", "score": 81, "box": "8,44,52,44", "time": "18:47"}},
-    {"label": "offline", "props": {"name": "Garage", "state": "unavailable"}}
+    {"label": "offline", "props": {"name": "Garage", "state": "unavailable"}},
+    {"label": "full size", "props": {"size": "full"}}
   ]
 })") {
   const fw::Theme &t = *fw::T;
   auto *c = new CT;
-  const int W = fw::lay::card_w, H = fw::lay::camera_h;
+  c->full = !strcmp(p["size"] | "tile", "full");
+  const int W = still_w(c), H = still_h(c);
   lv_obj_t *r = mk(parent);
   lv_obj_set_user_data(r, c);
   lv_obj_add_event_cb(r, [](lv_event_t *e) { delete (CT *) lv_event_get_user_data(e); }, LV_EVENT_DELETE, c);
@@ -115,12 +132,23 @@ FW_COMPONENT(camera_tile, "Camera tile", "components", R"({
   lv_obj_set_flex_grow(c->name, 1);
   lv_label_set_long_mode(c->name, LV_LABEL_LONG_DOT);
   c->time = fw::text(cap, fw::ty::body, "", t.text_dim);
+  lv_obj_add_flag(r, LV_OBJ_FLAG_CLICKABLE);  // tile: opens the camera; full: closes it (Back)
+  lv_obj_remove_flag(r, LV_OBJ_FLAG_PRESS_LOCK);  // slid off before letting go = nothing
+  fw::st::on_tap(r, [](lv_event_t *e) {
+    if (!fw::st::tap_now(e)) return;
+    auto *r = (lv_obj_t *) lv_event_get_current_target(e);
+    CT *c = of(r);
+    if (lv_obj_has_state(r, fw::st::OFF)) { fw::st::blocked(r, "offline"); return; }
+    if (c->full) { fw::emit(r, "tap", "close"); fw::sound(r, "back"); return; }
+    fw::emit(r, "open", ("camera?" + c->params).c_str());
+    fw::sound(r, "open");
+  }, nullptr);
   take(c, p);
 }
 
 FW_UPDATE(camera_tile) {
   CT *c = of(root);
-  if (!c) return false;
+  if (!c || c->full != !strcmp(p["size"] | "tile", "full")) return false;
   take(c, p);
   return true;
 }

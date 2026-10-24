@@ -142,6 +142,7 @@
       "lock-slot-h": { "v": 28, "1x": 20, "use": "Door lock: the keyhole slot's height (panel lab 28)" },
       "room-tile-h": { "v": 120, "1x": 80, "use": "Room tile height (tile-w wide, three across: the robot vacuum's rooms; panel lab 208 x 120)" },
       "camera-h": { "v": 180, "1x": 120, "use": "Camera tile: the snapshot's height, card-w wide (16:9 on the grid)" },
+      "camera-full-h": { "v": 368, "1x": 248, "use": "Camera tile, full size (the camera's own screen): the still's height, the content width wide (16:9 on the grid)" },
       "level-bar-w": { "v": 96, "1x": 64, "use": "Plant row: the small moisture level bar before the value" },
       "sky-radar": { "v": 208, "1x": 136, "use": "Overhead: the sky radar beside the hero aircraft (panel lab 208); rings 5 / 15 / 30 / 50 km on a square-root scale" },
       "sky-plane": { "v": 24, "1x": 16, "use": "Overhead: an aircraft on the sky radar beside the hero, a plane seen from above turned to its track (panel lab 24 grid glyph)" },

@@ -8,4 +8,5 @@ alt: "The Cameras screen: four camera tiles with a person and a car outlined, th
 links: [["Cameras", "screens/cameras/"]]
 ---
 A still from each camera with what it last saw outlined, like a person at the front door, and a list of today's
-detections underneath. Stills only, so it stays light on the panel.
+detections underneath. Tap a camera to see its still big, tap again to go back. Stills only, so it stays light
+on the panel.

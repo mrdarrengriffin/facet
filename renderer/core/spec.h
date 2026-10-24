@@ -15,7 +15,10 @@
 //                                                          centred in the content box, cards = the card grid
 //               "nodes": [node...]}
 // Node         {"c": "<component id>", "p": {prop: value | bind}, "on": {event: action}, "pending": {prop: [on, off]},
-//               "in"?: k, "slot"?: n, "each"?: "<param>", "sample"?: [{prop: value}...]}
+//               "in"?: k, "slot"?: n, "each"?: "<param>", "sample"?: [{prop: value}...], "show"?: bind}
+//   show       (2026-10-24) a bind: the node shows only while its value is set (hidden for "", 0, off, false), e.g. the
+//              vacuum's room tiles only while it isn't cleaning: {"e": "$entity", "map": {"cleaning": ""}, "else": "1"}.
+//              Re-read with the node's binds (a hidden node takes no room in its column).
 //   in / slot  (2026-10-23, pages from components only) build this node into slot n (default 0) of node k (an earlier
 //              node whose component is a LAYOUT: its meta says "slots": N and it marks its slot objects with
 //              fw::spec::SLOT, in order) instead of the screen's content box: Split = two columns, Group = a wrapping
@@ -136,7 +139,7 @@ constexpr Rule RULES[] = {
     {"media_view", "media", "media.control"},        {"media_view", "speaker", "screen.param"},
     {"covers_view", "cover", "cover.control"},       {"covers_view", "window", "screen.param"},
     {"lock_ring", "lock", "lock.control"},           {"hold_button", "confirm", "lock.control"},
-    {"room_tile", "pick", "screen.toggle"},          {"button", "tap", "nav.open,nav.back,light.toggle,vacuum.control"},
+    {"room_tile", "pick", "screen.toggle"},          {"camera_tile", "tap", "nav.back"},          {"button", "tap", "nav.open,nav.back,light.toggle,vacuum.control"},
     {"segmented", "change", "vacuum.control"},        // a link to a sub-view spec (moon -> moon_details -> ...)
     {"*", "open", "nav.open"},                       // any component's own "open" (a tapped calendar day, a PR):
                                                      // its detail = the screen id [+ "?" + params JSON]
@@ -379,8 +382,12 @@ inline void check_screen(ArduinoJson::JsonVariantConst s, size_t bytes, Errs &e)
   for (ArduinoJson::JsonVariantConst n : nodes) {
     const std::string p = ".nodes[" + std::to_string(i++) + "]";
     if (!n.is<ArduinoJson::JsonObjectConst>()) { err(e, p, "bad_node", "a node is an object {c, p, on}"); continue; }
-    static const char *const NK[] = {"c", "p", "on", "pending", "in", "slot", "each", "sample"};
-    check_keys(n.as<ArduinoJson::JsonObjectConst>(), NK, 8, p, e);
+    static const char *const NK[] = {"c", "p", "on", "pending", "in", "slot", "each", "sample", "show"};
+    check_keys(n.as<ArduinoJson::JsonObjectConst>(), NK, 9, p, e);
+    if (!n["show"].isNull()) {
+      if (!ha::is_bind(n["show"])) err(e, p + ".show", "bad_bind", "show is a bind {e, ...}");
+      else { PropInfo si; si.name = "show"; si.type = "text"; check_value(si, n["show"], p + ".show", e, binds); }
+    }
     const std::string c = n["c"] | "";
     if (!n["in"].isNull()) {  // into an earlier layout node's slot
       const int k = n["in"] | -1, sl = n["slot"] | 0;
@@ -1272,6 +1279,7 @@ inline lv_obj_t *build(lv_obj_t *parent, const std::string &id, Props opened, st
     ArduinoJson::JsonDocument p;
     p.set(nd["p"]);
     if (p.isNull()) p.to<ArduinoJson::JsonObject>();
+    if (!nd["show"].isNull()) p[ha::SHOW_KEY] = nd["show"];  // read with the binds, applied as visibility (ha.h)
     lv_obj_t *into = c;  // "in": an earlier layout node's slot
     const int k = nd["in"] | -1;
     if (k >= 0 && k < n_orig && orig_obj[k])
@@ -1287,7 +1295,12 @@ inline lv_obj_t *build(lv_obj_t *parent, const std::string &id, Props opened, st
       lv_obj_set_style_margin_top(n.obj, lay::group, 0);  // more space between groups (Layout rule)
     if (!nd["on"].isNull()) serializeJson(nd["on"], n.on);
     if (!nd["pending"].isNull()) serializeJson(nd["pending"], n.pending);
-    if (rebinds && !rn["p"].isNull()) serializeJson(rn["p"], n.raw_p);
+    if (rebinds && (!rn["p"].isNull() || !rn["show"].isNull())) {
+      ArduinoJson::JsonDocument rp;
+      rp.set(rn["p"]);
+      if (!rn["show"].isNull()) rp[ha::SHOW_KEY] = rn["show"];
+      serializeJson(rp, n.raw_p);
+    }
     if (rebinds && !rn["on"].isNull()) serializeJson(rn["on"], n.raw_on);
     if (ni - 1 < anc.size()) { n.params = anc[ni - 1].first; n.prop_params = anc[ni - 1].second; }
     node_actions(n);

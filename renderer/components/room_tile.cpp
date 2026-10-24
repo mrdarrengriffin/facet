@@ -1,6 +1,6 @@
 // Room tile: one room you can pick for a job (the robot vacuum's rooms: the panel lab's Vacuum screen tiles, 208 x
 // 120). tile-w x room-tile-h (three across a Group), surface, 1 px line edge, rad::tile; inside, lay::tile_pad in:
-// the room (type title, text, one line) over its status (type label, caps: "tap to pick" text-dim, "picked"
+// the room (type c-tile = the tile title role, text, one line; title type cut "Living room" at 480) over its status (type label, caps: "tap to pick" text-dim, "picked"
 // accent-text, "cleaning now" accent-text).
 //   room     "Kitchen:3" = the name and the room's id (the robot's segment number); the id is what a pick sends
 //   picked   the screen's picked rooms (a comma list of ids, spec "$rooms"): this one picked = an accent edge
@@ -57,7 +57,7 @@ void take(lv_obj_t *r, RT *c, fw::Props p, bool animate) {
   const std::string here = p["here"] | "";
   const bool is_here = !here.empty() && (here == c->id || here == c->title);
   const bool off = !strcmp(p["state"] | "default", "disabled");
-  put(c->name, fw::ty::title, c->title.c_str());
+  put(c->name, fw::ty::c_tile, c->title.c_str());
   const std::string key = std::string(c->picked ? "p" : "") + (is_here ? "h" : "") + (off ? "o" : "");
   if (key == c->key) return;  // the same look: nothing to redraw
   c->key = key;
@@ -103,9 +103,9 @@ FW_COMPONENT(room_tile, "Room tile", "components", R"({
   lv_obj_set_flex_flow(r, LV_FLEX_FLOW_COLUMN);
   lv_obj_set_flex_align(r, LV_FLEX_ALIGN_SPACE_BETWEEN, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
   const int w = fw::lay::tile_w - 2 * fw::lay::tile_pad;
-  c->name = fw::text(r, fw::ty::title, "", t.text, w);
+  c->name = fw::text(r, fw::ty::c_tile, "", t.text, w);
   c->status = fw::text(r, fw::ty::label, "", t.text_dim, w);
-  for (auto [l, ty] : {std::pair{c->name, fw::ty::title}, std::pair{c->status, fw::ty::label}}) {
+  for (auto [l, ty] : {std::pair{c->name, fw::ty::c_tile}, std::pair{c->status, fw::ty::label}}) {
     lv_obj_set_size(l, w, fw::style(ty).box);
     lv_label_set_long_mode(l, LV_LABEL_LONG_DOT);
   }

@@ -430,6 +430,104 @@
           "tap"
         ]
       }
+    },
+    {
+      "name": "Cameras: a camera tap opens its own screen",
+      "kind": "interaction",
+      "props": {
+        "screen": "cameras"
+      },
+      "steps": [
+        {
+          "tap": {
+            "text": "Front door"
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "navigate",
+            "^camera\\?"
+          ]
+        ],
+        "sounds": [
+          "open"
+        ]
+      }
+    },
+    {
+      "name": "Camera: a tap on the still goes back",
+      "kind": "interaction",
+      "props": {
+        "screen": "camera"
+      },
+      "steps": [
+        {
+          "tap": {
+            "at": [
+              0.5,
+              0.4
+            ]
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "back",
+            ""
+          ]
+        ],
+        "sounds": [
+          "back"
+        ]
+      }
+    },
+    {
+      "name": "Robot vacuum: cleaning hides the rooms, Pause sends pause",
+      "kind": "interaction",
+      "props": {
+        "screen": "vacuum",
+        "entity": "vacuum.test"
+      },
+      "before_ha": [
+        [
+          "vacuum.test",
+          "",
+          "cleaning"
+        ]
+      ],
+      "steps": [
+        {
+          "drag": {
+            "at": [
+              0.5,
+              0.75
+            ]
+          },
+          "by": [
+            0,
+            -0.6
+          ]
+        },
+        {
+          "tap": {
+            "text": "PAUSE"
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "ha",
+            "vacuum\\.pause.*vacuum\\.test"
+          ]
+        ],
+        "absent": {
+          "hit": "room_tile"
+        }
+      }
     }
   ],
   "xfail": {
@@ -469,6 +567,7 @@
     "interaction:press-cancel:lock": "BF-001",
     "interaction:press-cancel:vacuum": "BF-001",
     "interaction:press-cancel:plants": "BF-001",
-    "interaction:press-cancel:cameras": "BF-001"
+    "interaction:press-cancel:cameras": "BF-001",
+    "interaction:press-cancel:camera": "BF-001"
   }
 }
