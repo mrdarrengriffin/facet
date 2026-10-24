@@ -554,9 +554,14 @@ void bars_exec(void *o, int32_t ms) {  // one animation for every bar: each star
   const bool together = B->from.size() == B->v.size() && !B->from.empty() && B->from[0] >= 0;
   // many bars: one invalidation of the plot instead of one per bar (past LVGL's 32 dirty areas a frame becomes a full
   // screen redraw: Moon by day's 55 bars repainted 62 % of the Guition per frame, 2026-10-22)
+  // (the moves land in the layout pass, so that pass runs inside the window too; anything else waiting for layout goes
+  // first, with its own invalidations, so nothing outside the plot is missed)
   lv_display_t *disp = lv_obj_get_display(B->root);
   const bool batch = B->n > 16;
-  if (batch) lv_display_enable_invalidation(disp, false);
+  if (batch) {
+    lv_obj_update_layout(B->root);
+    lv_display_enable_invalidation(disp, false);
+  }
   for (int i = 0; i < B->n; i++) {
     const int32_t local = together ? ms : std::clamp<int32_t>(ms - (int32_t) (i * k.stagger), 0, k.ms);
     const int32_t e = ease(ch::M_bars, local * 1024 / k.ms);
@@ -564,6 +569,7 @@ void bars_exec(void *o, int32_t ms) {  // one animation for every bar: each star
     bar_place(B, i, h0 + (h1 - h0) * e / 1024);
   }
   if (batch) {
+    lv_obj_update_layout(B->root);
     lv_display_enable_invalidation(disp, true);
     lv_obj_invalidate(B->plot);
   }

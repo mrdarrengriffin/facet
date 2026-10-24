@@ -164,8 +164,6 @@
     }
   ],
   "xfail": {
-    "lag:tap:default": "BF-043",
-    "interaction:press-cancel:default": "BF-001",
     "lag:build:sheet open": "BF-044",
     "lag:build:sheet bench (open / close loop)": "BF-044"
   }

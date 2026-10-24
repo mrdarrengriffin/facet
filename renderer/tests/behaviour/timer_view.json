@@ -3,8 +3,5 @@
   "live": true,
   "live_why": "a running countdown",
   "tests": [],
-  "xfail": {
-    "lag:tap:default": "BF-033",
-    "interaction:press-cancel:default": "BF-001"
-  }
+  "xfail": {}
 }

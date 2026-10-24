@@ -1,9 +1,5 @@
 {
   "id": "overhead_view",
   "tests": [],
-  "xfail": {
-    "lag:same-update:default": "BF-004",
-    "lag:tap:default": "BF-024",
-    "interaction:press-cancel:default": "BF-001"
-  }
+  "xfail": {}
 }

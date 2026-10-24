@@ -1,10 +1,5 @@
 {
   "id": "energy_view",
   "tests": [],
-  "xfail": {
-    "lag:same-update:default": "BF-004",
-    "interaction:press-cancel:default": "BF-001",
-    "lag:build:a Thursday afternoon": "BF-014",
-    "lag:build:evening peak": "BF-014"
-  }
+  "xfail": {}
 }

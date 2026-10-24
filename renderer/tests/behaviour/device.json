@@ -146,10 +146,5 @@
       }
     }
   ],
-  "xfail": {
-    "lag:tap:default": "BF-037",
-    "interaction:press-cancel:default": "BF-001",
-    "sound:muted:default": "BF-038",
-    "sound:Sounds off: taps play nothing:custom": "BF-039"
-  }
+  "xfail": {}
 }

@@ -50,7 +50,6 @@
     }
   ],
   "xfail": {
-    "lag:tap:default": "BF-042",
-    "interaction:press-cancel:default": "BF-001"
+    "lag:tap:default": "BF-042"
   }
 }

@@ -3,8 +3,5 @@
   "live": true,
   "live_why": "simulated live race",
   "tests": [],
-  "xfail": {
-    "lag:tap:default": "BF-040",
-    "interaction:press-cancel:default": "BF-001"
-  }
+  "xfail": {}
 }

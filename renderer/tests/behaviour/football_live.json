@@ -4,13 +4,6 @@
   "live_why": "simulated live match",
   "tests": [],
   "xfail": {
-    "lag:build:default": "BF-041",
-    "lag:idle:default": "BF-041",
-    "lag:tap:default": "BF-041",
-    "interaction:press-cancel:default": "BF-001",
-    "lag:build:the match · 60x": "BF-041",
-    "lag:build:first goal": "BF-041",
-    "lag:build:half time": "BF-041",
-    "lag:build:full time": "BF-041"
+    "lag:tap:default": "BF-041"
   }
 }

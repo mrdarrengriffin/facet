@@ -1,7 +1,5 @@
 {
   "id": "readout",
   "tests": [],
-  "xfail": {
-    "lag:same-update:default": "BF-004"
-  }
+  "xfail": {}
 }

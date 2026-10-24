@@ -3,15 +3,5 @@
   "live": true,
   "live_why": "simulated live match",
   "tests": [],
-  "xfail": {
-    "lag:build:default": "BF-030",
-    "lag:idle:default": "BF-030",
-    "lag:build:board": "BF-030",
-    "lag:build:hero": "BF-030",
-    "lag:build:compact": "BF-030",
-    "lag:build:break point": "BF-030",
-    "lag:build:hero · break point": "BF-030",
-    "lag:build:tiebreak": "BF-030",
-    "lag:build:match point · best of 5": "BF-030"
-  }
+  "xfail": {}
 }

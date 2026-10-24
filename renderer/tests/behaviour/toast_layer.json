@@ -3,19 +3,5 @@
   "live": true,
   "live_why": "the workbench sample keeps pushing toasts",
   "tests": [],
-  "xfail": {
-    "sound:tap:default": "BF-034",
-    "lag:tap:default": "BF-035",
-    "interaction:press-cancel:default": "BF-001",
-    "sound:long-press:default": "BF-034",
-    "sound:tap:top · ok arrives": "BF-034",
-    "sound:tap:bottom · info arrives": "BF-034",
-    "lag:build:two stacked · newest first": "BF-035",
-    "sound:tap:two stacked · newest first": "BF-034",
-    "lag:build:a third pushes the oldest out": "BF-035",
-    "sound:tap:a third pushes the oldest out": "BF-034",
-    "sound:tap:warn with its action": "BF-034",
-    "sound:tap:timer running · 6 s, then it leaves": "BF-034",
-    "sound:tap:empty · tap a row": "BF-034"
-  }
+  "xfail": {}
 }

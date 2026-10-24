@@ -53,7 +53,6 @@
   ],
   "xfail": {
     "lag:build:default": "BF-005",
-    "lag:tap:default": "BF-006",
     "interaction:press-cancel:default": "BF-001",
     "lag:build:open · speakers": "BF-005",
     "lag:build:open · theme": "BF-005",

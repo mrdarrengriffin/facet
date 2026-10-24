@@ -102,7 +102,5 @@
       }
     }
   ],
-  "xfail": {
-    "interaction:press-cancel:default": "BF-001"
-  }
+  "xfail": {}
 }

@@ -20,8 +20,5 @@
       }
     }
   ],
-  "xfail": {
-    "lag:tap:default": "BF-010",
-    "interaction:press-cancel:default": "BF-001"
-  }
+  "xfail": {}
 }

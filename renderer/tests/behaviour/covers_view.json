@@ -1,14 +1,5 @@
 {
   "id": "covers_view",
   "tests": [],
-  "xfail": {
-    "lag:same-update:default": "BF-004",
-    "lag:tap:default": "BF-011",
-    "interaction:press-cancel:default": "BF-001",
-    "interaction:tap:offline": "BF-012",
-    "sound:tap:offline": "BF-013",
-    "interaction:long-press:offline": "BF-012",
-    "interaction:press-cancel:offline": "BF-001",
-    "sound:long-press:offline": "BF-013"
-  }
+  "xfail": {}
 }

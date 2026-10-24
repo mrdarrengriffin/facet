@@ -1,11 +1,5 @@
 {
   "id": "moon_range",
   "tests": [],
-  "xfail": {
-    "lag:build:default": "BF-023",
-    "lag:same-update:default": "BF-004",
-    "lag:build:from a week ago": "BF-023",
-    "lag:build:southern hemisphere": "BF-023",
-    "lag:build:from 1 December": "BF-023"
-  }
+  "xfail": {}
 }

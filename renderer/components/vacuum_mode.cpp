@@ -64,6 +64,7 @@ void sheet_props(const VM *c, bool open, ArduinoJson::JsonDocument &d) {
   d["row_h"] = row_h();
 }
 void paint(lv_obj_t *root);
+void open_sheet(lv_obj_t *root);
 // the sheet's rows (the sheet asks with LV_EVENT_REFRESH, param = its list)
 void fill_rows(lv_obj_t *root, lv_obj_t *list) {
   VM *c = of(root);
@@ -107,11 +108,10 @@ void fill_rows(lv_obj_t *root, lv_obj_t *list) {
         const std::string ev = std::string(s.key) + " " + s.opts[i].id;
         fw::emit(root, "change", ev.c_str());
         paint(root);
-        if (k == 0 && c->sheet) {  // Suction / Water come and go with the mode: the rows again, still open
-          ArduinoJson::JsonDocument d;
-          sheet_props(c, true, d);
-          fw::update_child(fw::find("bottom_sheet"), c->sheet, d.as<fw::Props>());
-        }
+        // Suction / Water come and go with the mode: the rows again, still open. On the next tick: the Segmented that
+        // sent this is one of those rows, and it still plays its tap after this returns (a refill now = use after free)
+        if (k == 0 && c->sheet)
+          lv_async_call([](void *r) { if (lv_obj_is_valid((lv_obj_t *) r)) open_sheet((lv_obj_t *) r); }, root);
         return;
       }
     }, root);

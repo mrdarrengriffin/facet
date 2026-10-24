@@ -2,8 +2,6 @@
   "id": "setup",
   "tests": [],
   "xfail": {
-    "lag:same-update:default": "BF-004",
-    "lag:tap:default": "BF-045",
-    "interaction:press-cancel:default": "BF-001"
+    "lag:tap:default": "BF-045"
   }
 }

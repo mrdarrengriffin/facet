@@ -4,7 +4,10 @@
 //   fw_bench_attach()       hook every display (idempotent) and zero the counters
 //   fw_bench_take() -> f64[9] since the last call: [renders, render_ms, render_ms_max, flush_ms, px, areas, refr_ms, full,
 //                           overflows] overflows = refreshes whose invalidated areas went past LVGL's 32-area buffer
-//                           (LV_INV_BUF_SIZE): LVGL then redraws the whole screen (2026-10-23, the F1 track at 3 fps)
+//                           (LV_INV_BUF_SIZE): LVGL then redraws the whole screen (2026-10-23, the F1 track at 3 fps).
+//                           Exact (2026-10-24): an area inside one already saved is dropped by LVGL (lv_inv_area), so
+//                           only an area that would really need a 33rd slot counts (a press restyling a card's 40
+//                           children invalidates 40 areas inside the card's own: one area, no full redraw)
 //                           render_ms = sum of RENDER_START..READY (incl. the host flush), flush_ms = the host flush part
 //                           (RGB565 -> RGBA copy, a workbench cost), px = pixels flushed, areas = flushed areas,
 //                           refr_ms = REFR_START..READY (layout + render), full = refreshes that flushed the whole display
@@ -17,12 +20,14 @@
 #include <vector>
 #include "fw.h"
 #include "device.h"
+#include "misc/lv_area_private.h"      // lv_area_is_in
+#include "display/lv_display_private.h"  // inv_areas / inv_p: replay lv_inv_area's containment test (bench only)
 
 namespace {
 struct Acc {
   double renders = 0, render_ms = 0, render_max = 0, flush_ms = 0, px = 0, areas = 0, refr_ms = 0, full = 0, overflow = 0;
 };
-int inv_count = 0;  // invalidations since the last refresh (an upper bound: LVGL drops ones inside a saved area)
+bool inv_over = false;  // this refresh's invalidations went past LV_INV_BUF_SIZE (LVGL fell back to the whole screen)
 Acc acc;
 double t_refr = 0, t_render = 0, t_flush = 0, frame_px = 0;
 std::vector<lv_display_t *> hooked;
@@ -33,10 +38,16 @@ void on_disp(lv_event_t *e) {
   switch (lv_event_get_code(e)) {
     case LV_EVENT_REFR_START:
       t_refr = t;
-      if (inv_count > 32) acc.overflow++;  // past LV_INV_BUF_SIZE: this refresh is a full-screen redraw
-      inv_count = 0;
+      if (inv_over) acc.overflow++;  // past LV_INV_BUF_SIZE: this refresh is a full-screen redraw
+      inv_over = false;
       break;
-    case LV_EVENT_INVALIDATE_AREA: inv_count++; break;
+    case LV_EVENT_INVALIDATE_AREA: {  // sent before LVGL's own check: the same test, on the areas saved so far
+      auto *a = (const lv_area_t *) lv_event_get_param(e);
+      bool in = false;
+      for (uint32_t i = 0; a && i < d->inv_p && !in; i++) in = lv_area_is_in(a, &d->inv_areas[i], 0);
+      if (a && !in && d->inv_p >= LV_INV_BUF_SIZE) inv_over = true;
+      break;
+    }
     case LV_EVENT_REFR_READY: acc.refr_ms += t - t_refr; break;
     case LV_EVENT_RENDER_START: t_render = t; frame_px = 0; break;
     case LV_EVENT_RENDER_READY: {

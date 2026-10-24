@@ -1,7 +1,5 @@
 {
   "id": "hero_block",
   "tests": [],
-  "xfail": {
-    "lag:same-update:default": "BF-004"
-  }
+  "xfail": {}
 }

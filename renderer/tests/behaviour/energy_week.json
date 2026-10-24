@@ -1,9 +1,5 @@
 {
   "id": "energy_week",
   "tests": [],
-  "xfail": {
-    "lag:build:default": "BF-015",
-    "lag:same-update:default": "BF-004",
-    "lag:build:to Thursday": "BF-015"
-  }
+  "xfail": {}
 }
