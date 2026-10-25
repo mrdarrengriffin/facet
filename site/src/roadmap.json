@@ -137,10 +137,20 @@
     "status": "planned"
    },
    {
+    "name": "Sports surfaces",
+    "group": "Core",
+    "status": "doing"
+   },
+   {
     "name": "Behaviour tests",
     "group": "Platform",
     "status": "done",
     "note": "5913 tests (interaction, scroll, sound, lag proxy) for every component + screen, in facet-gate full; 51 findings in notes/facet-design/behaviour-findings.md (d575c79)"
+   },
+   {
+    "name": "Floor plans",
+    "group": "Core",
+    "status": "doing"
    }
   ],
   "components": [
@@ -264,6 +274,11 @@
     "note": "Pick one of a few options, settings and tabs styles"
    },
    {
+    "name": "Thermostat dial",
+    "group": "Controls",
+    "status": "doing"
+   },
+   {
     "name": "Cover visual",
     "group": "Controls",
     "status": "done",
@@ -384,6 +399,16 @@
     "note": "Folded into Status chip (2026-10-24): PR states are plain Status chips"
    },
    {
+    "name": "Pull request row",
+    "group": "Lists",
+    "status": "doing"
+   },
+   {
+    "name": "Check row",
+    "group": "Lists",
+    "status": "doing"
+   },
+   {
     "name": "Empty state",
     "group": "Lists",
     "status": "done",
@@ -502,10 +527,65 @@
     "note": "Hero, ring, analogue and compact clocks"
    },
    {
+    "name": "Lightning radar",
+    "group": "Radar",
+    "status": "doing"
+   },
+   {
+    "name": "3D print model",
+    "group": "Visuals",
+    "status": "doing"
+   },
+   {
     "name": "Art (big screen pictures)",
     "group": "Visuals",
     "status": "planned",
     "note": "Coloured bins, blinds, lock, printer pictures; built with each screen"
+   },
+   {
+    "name": "Split / Group layouts",
+    "group": "Screen parts",
+    "status": "doing"
+   },
+   {
+    "name": "Status block",
+    "group": "Screen parts",
+    "status": "doing"
+   },
+   {
+    "name": "Lock ring",
+    "group": "Screen parts",
+    "status": "doing"
+   },
+   {
+    "name": "Hold button",
+    "group": "Screen parts",
+    "status": "doing"
+   },
+   {
+    "name": "Room tile",
+    "group": "Screen parts",
+    "status": "doing"
+   },
+   {
+    "name": "Placeholder",
+    "group": "Screen parts",
+    "status": "doing"
+   },
+   {
+    "name": "Level bar",
+    "group": "Screen parts",
+    "status": "doing"
+   },
+   {
+    "name": "Plant gauge / row",
+    "group": "Screen parts",
+    "status": "doing"
+   },
+   {
+    "name": "Camera tile",
+    "group": "Screen parts",
+    "status": "doing"
    }
   ],
   "screens": [
@@ -551,10 +631,40 @@
     "note": "One big on/off button with power and time"
    },
    {
+    "name": "Thermostat",
+    "group": "Home control",
+    "status": "doing"
+   },
+   {
     "name": "Blinds and curtains",
     "group": "Home control",
     "status": "done",
     "note": "Window drawn per kind; drag to a position; pick a window in the header"
+   },
+   {
+    "name": "Robot vacuum",
+    "group": "Home control",
+    "status": "doing"
+   },
+   {
+    "name": "Door lock",
+    "group": "Home control",
+    "status": "doing"
+   },
+   {
+    "name": "Plant monitor",
+    "group": "Home control",
+    "status": "doing"
+   },
+   {
+    "name": "Security cameras",
+    "group": "Home control",
+    "status": "doing"
+   },
+   {
+    "name": "Bins",
+    "group": "Home control",
+    "status": "doing"
    },
    {
     "name": "Media",
@@ -573,6 +683,16 @@
     "group": "Weather and sky",
     "status": "done",
     "note": "Phase as the hero, worked out on the device"
+   },
+   {
+    "name": "Lightning",
+    "group": "Weather and sky",
+    "status": "doing"
+   },
+   {
+    "name": "Overhead (flights)",
+    "group": "Weather and sky",
+    "status": "doing"
    },
    {
     "name": "Calendar",
@@ -603,6 +723,26 @@
     "group": "Info",
     "status": "planned",
     "note": "Netlify, Cloudflare, GitHub status; \"another day\""
+   },
+   {
+    "name": "GitHub",
+    "group": "Work",
+    "status": "doing"
+   },
+   {
+    "name": "Agents",
+    "group": "Work",
+    "status": "doing"
+   },
+   {
+    "name": "3D print",
+    "group": "Making",
+    "status": "doing"
+   },
+   {
+    "name": "Sports (live scores)",
+    "group": "Info",
+    "status": "doing"
    }
   ]
  }

@@ -14,7 +14,7 @@
 // Build location: $FW_OUT (env, else local.env at the repo root, else renderer/out), densities 1.5x and 1x: the DOCS
 // flavour of the build ($FW_OUT/docs/<density>, `FW_FEATURES=docs renderer/build.sh`): only the features shown in the
 // docs (renderer/features.json, README "Feature flags") are in it, so hidden screens, their parts, deck pages and Home
-// cards are not on the site at all. Hidden features are also left out of the roadmap and the Updates entries that
+// cards are not on the site at all. Hidden features show on the roadmap as In progress / Planned and are left out of the Updates entries that
 // name them (`feature:`), and a shown feature's status (done | wip | preview) is the one its manifest entry says.
 import { execFileSync } from 'node:child_process';
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -273,9 +273,10 @@ function roadmapSnapshot() {
   }
   return { updated: scope.updated ?? scope.generated, tables };
 }
-// hidden features' rows out of the roadmap (also out of a snapshot made before a flag changed)
+// hidden (not yet released) features stay on the roadmap as In progress, or Planned when not started (Darren 2026-10-25;
+// also applied to a snapshot made before a flag changed); their notes are left out
 const ROAD_HIDE = hiddenRoadmap(FEAT);
-const roadFilter = (r) => ({ ...r, tables: Object.fromEntries(Object.entries(r.tables).map(([k, rows]) => [k, rows.filter((x) => !ROAD_HIDE.has(x.name))])) });
+const roadFilter = (r) => ({ ...r, tables: Object.fromEntries(Object.entries(r.tables).map(([k, rows]) => [k, rows.map((x) => (ROAD_HIDE.has(x.name) ? { name: x.name, group: x.group, status: x.status === 'planned' ? 'planned' : 'doing' } : x))])) });
 
 // 5e. Home page previews (Darren 2026-10-22): still PNGs rendered here by the WASM build itself (the 1.5x / 720
 // build already running in node), both themes, so they stay current with the code. Foundations: one section each
