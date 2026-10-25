@@ -14,7 +14,7 @@
 //            lay::group under it the days: a section line (label type, text-dim: "TODAY · FRI 23 OCT") lay::section_gap
 //            above its rows, a row per event lay::cal_row_h tall with a hairline on top: the time (body, lay::cal_time
 //            wide, text-dim; "now" accent-text, "all day"), the calendar's dot (sp::s2 round, its colour token), the
-//            title (title, one line, ellipsis); a finished event goes text-mute with its dot at 40 %. Days
+//            title (title, one line, ellipsis); a finished event goes text-dim (text-mute is disabled-only) with its dot at 40 %. Days
 //            lay::cal_day_gap apart (docs 32: a list to scan). Nothing on the shown calendars = one body line.
 //   month    the month bar (lay::row: the month title in title type, then Today when another month shows (the
 //            calendars button's look), then previous / next = Icon buttons, square, chevron-left / chevron at
@@ -22,7 +22,7 @@
 //            cells from lay::cal_grid_y, lay::cal_cell_w x lay::cal_cell_h, lay::cal_cell_gx / gy apart (7 across =
 //            the content width): the number (body) centred in a lay::cal_disc disc (today: accent disc, on-accent
 //            number), under it up to three event dots (sp::s2, sp::s2 apart, lay::cal_dots_h row) or two and "+N"
-//            (label, text-dim); days of other months text-mute, dots at 40 %; the selected day on a surface plate
+//            (label, text-dim); days of other months text-dim, dots at 40 %; the selected day on a surface plate
 //            (rad::square). A cell tap = sound open, the plate, and the day sheet.
 //   sheets   two Bottom sheet components (overlay, host rows), over the whole screen: "calendars" = a row per
 //            calendar (lay::sheet_row_h, hairline on top: its dot (text-mute when hidden), the name (title) over
@@ -139,9 +139,9 @@ void agenda_row(lv_obj_t *parent, const ag::Event &x, double now) {
   lv_obj_set_style_border_width(row, fw::stroke::hair, 0);
   lv_obj_set_style_border_color(row, t.line, 0);
   const std::string tm = x.all_day ? "all day" : on ? "now" : ag::hm(x.start);
-  fw::text(row, fw::ty::body, tm.c_str(), past ? t.text_mute : on ? t.accent_text : t.text_dim, fw::lay::cal_time);
+  fw::text(row, fw::ty::body, tm.c_str(), on && !past ? t.accent_text : t.text_dim, fw::lay::cal_time);
   dot(row, token(ag::colour_of(x.calendar)), past ? PAST_OPA : LV_OPA_COVER);
-  lv_obj_t *ti = fw::text(row, fw::ty::title, x.summary.c_str(), past ? t.text_mute : t.text);
+  lv_obj_t *ti = fw::text(row, fw::ty::title, x.summary.c_str(), past ? t.text_dim : t.text);
   lv_obj_set_flex_grow(ti, 1);
   lv_obj_set_width(ti, 0);
   lv_label_set_long_mode(ti, LV_LABEL_LONG_MODE_DOTS);
@@ -231,7 +231,7 @@ void fill_month(CV *c) {
     lv_obj_set_style_bg_color(disc, t.accent, 0);
     lv_obj_set_style_bg_opa(disc, is_today ? LV_OPA_COVER : LV_OPA_TRANSP, 0);
     const std::string n = std::to_string(ag::mday(d));
-    lv_obj_t *nl = fw::text(disc, fw::ty::body, n.c_str(), is_today ? t.on_accent : out ? t.text_mute : t.text);
+    lv_obj_t *nl = fw::text(disc, fw::ty::body, n.c_str(), is_today ? t.on_accent : out ? t.text_dim : t.text);
     lv_obj_center(nl);
     // dots: up to three, or two and "+N"
     lv_obj_t *dots = box(cell);
@@ -243,7 +243,7 @@ void fill_month(CV *c) {
     const int more = on.size() > 3 ? (int) on.size() - 2 : 0;
     for (size_t k = 0; k < on.size() && (int) k < (more ? 2 : 3); k++)
       dot(dots, token(ag::colour_of(on[k]->calendar)), out ? PAST_OPA : LV_OPA_COVER);
-    if (more) fw::text(dots, fw::ty::label, ("+" + std::to_string(more)).c_str(), out ? t.text_mute : t.text_dim);
+    if (more) fw::text(dots, fw::ty::label, ("+" + std::to_string(more)).c_str(), t.text_dim);
     lv_obj_set_user_data(cell, (void *) (intptr_t) i);
     lv_obj_add_event_cb(cell, [](lv_event_t *e) {
       auto *c = (CV *) lv_event_get_user_data(e);

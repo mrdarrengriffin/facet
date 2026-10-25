@@ -3,7 +3,7 @@
 // two buttons (+1 min, Cancel); with no timer running, one-tap presets (3 / 5 / 10 / 20 min, 5 the primary).
 //   box      the content box (lay::content_w x content_h); a column centred in it: the ring, sp::s9, the button row
 //   ring     a full-turn value arc (fw::value_arc) lay::timer_ring, track stroke::arc line, indicator stroke::indicator
-//            accent, 1000 steps; inside it, centred, sp::s3 apart: the label (type label, text-mute; "done" in
+//            accent, 1000 steps; inside it, centred, sp::s3 apart: the label (type label, text-dim: text-mute is disabled-only; "done" in
 //            accent-text when it ran out), the time left (display, text: "4:32"; an hour or more in hero, so "1:02:05" fits inside the ring), the sub (body, text-dim:
 //            "of 10 min · ends 14:52", "pick a length")
 //   buttons  real Buttons (fw::find): presets secondary + the 5 min primary; running: "+1 min" secondary, "Cancel"
@@ -101,7 +101,7 @@ void render(lv_obj_t *root, bool force = false) {
   t->shown = s;
   if (t->state == 1) {
     fw::set_text(t->lbl, fw::ty::label, t->label.c_str());
-    lv_obj_set_style_text_color(t->lbl, th.text_mute, 0);
+    lv_obj_set_style_text_color(t->lbl, th.text_dim, 0);
     const fw::ty::Id ls = s >= 3600 ? fw::ty::hero : fw::ty::display;  // h:mm:ss fits the ring a size down
     if (ls != t->left_style) { fw::text_style(t->left, ls); t->left_style = ls; }
     fw::set_text(t->left, ls, countdown(s).c_str());
@@ -114,7 +114,7 @@ void render(lv_obj_t *root, bool force = false) {
     lv_arc_set_value(t->ring, t->total > 0 ? (int32_t) std::lround(1000.0 * s / t->total) : 0);
   } else {
     fw::set_text(t->lbl, fw::ty::label, t->state == 2 ? "done" : "timer");
-    lv_obj_set_style_text_color(t->lbl, t->state == 2 ? th.accent_text : th.text_mute, 0);
+    lv_obj_set_style_text_color(t->lbl, t->state == 2 ? th.accent_text : th.text_dim, 0);
     if (t->left_style != fw::ty::display) { fw::text_style(t->left, fw::ty::display); t->left_style = fw::ty::display; }
     fw::set_text(t->left, fw::ty::display, "0:00");
     fw::set_text(t->sub, fw::ty::body, t->state == 2 ? t->label.c_str() : "pick a length");
@@ -160,7 +160,7 @@ void fill(lv_obj_t *root, fw::Props p) {
   lv_obj_set_flex_flow(mid, LV_FLEX_FLOW_COLUMN);
   lv_obj_set_flex_align(mid, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
   lv_obj_set_style_pad_row(mid, fw::sp::s3, 0);
-  t->lbl = fw::text(mid, fw::ty::label, "timer", th.text_mute);
+  t->lbl = fw::text(mid, fw::ty::label, "timer", th.text_dim);
   t->left = fw::text(mid, fw::ty::display, "0:00", th.text);
   t->sub = fw::text(mid, fw::ty::body, "pick a length", th.text_dim);
   lv_obj_center(mid);

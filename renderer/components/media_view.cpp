@@ -189,7 +189,7 @@ std::string spk_name(const MV *m, int i) {  // the button: "auto · study" for A
   std::string s;
   if (!m->spk_ids.empty() && m->mode == "auto") s = "auto \xC2\xB7 " + friendly(m->player);
   else if (!m->spk_ids.empty()) s = i >= 0 && i < (int) m->spk_ids.size() ? friendly(m->spk_ids[i]) : friendly(m->player);
-  else s = i == 0 ? "auto \xC2\xB7 study" : SPEAKERS[i][1];
+  else s = i == 0 ? "auto" : SPEAKERS[i][1];  // no speakers given: plain Auto (no demo room)
   for (char &c : s) c = (char) tolower((unsigned char) c);
   return s;
 }

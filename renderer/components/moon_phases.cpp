@@ -1,6 +1,6 @@
 // Moon phases: the next four principal phases (docs screens/moon.ts, Moon details "next phases" strip .fs-mn): four
 // equal columns across the content width, each the phase's moon (fw::moon_icon at ic::feature), sp::s2 lower its name
-// (type c-caps-sm, text-mute: New, First quarter, Full, Last quarter; docs label, too wide for a quarter of 440) and the day (body, text: "tonight", "Fri", "9 Nov").
+// (type c-caps-sm, text-dim: New, First quarter, Full, Last quarter; docs label, too wide for a quarter of 440) and the day (body, text: "tonight", "Fri", "9 Nov").
 // The maths = core/lunar.h phases_around (Meeus, no API). Props lat (south = mirrored glyphs), now (ms, tests; 0 =
 // live). Static to touch; update path: glyphs and texts in place. Contrast: "moon" + "text".
 #include <ctime>
@@ -63,7 +63,7 @@ FW_COMPONENT(moon_phases, "Moon phases", "components", R"({
     lv_obj_set_style_pad_row(col, fw::sp::s2, 0);
     c.ic = fw::moon_icon(col, 0, fw::ic::feature, false);
     lv_obj_set_style_margin_bottom(c.ic, fw::sp::s2, 0);  // docs: the glyph a step further from its text
-    c.k = fw::text(col, fw::ty::c_caps_sm, "--", t.text_mute);  // caps-sm: "FIRST QUARTER" fits a quarter of 440
+    c.k = fw::text(col, fw::ty::c_caps_sm, "--", t.text_dim);  // caps-sm: "FIRST QUARTER" fits a quarter of 440
     c.d = fw::text(col, fw::ty::body, "--", t.text);
   }
   show(root, p);

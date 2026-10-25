@@ -17,7 +17,9 @@
 // data (no leak check inside), generated specs allowed to be blank.
 // Skipped: docs-site previews (an Astro build, not the WASM; "blank" covers a component that draws nothing).
 // Usage: node tools/corpus.mjs [--den 1x|1.5x|all] [--gen-den 1x|1.5x|all] [--no-gen] [--only text] [--extra dir]
-//        [--json out.json] [-v]   -> table on stdout, PNGs of failures only in tests/spec-corpus/out/, exit 1 on fail
+//        [--json out.json] [--out dir] [--all-png] [-v]   -> table on stdout, PNGs of failures only in tests/spec-corpus/out/
+//        (--out: another PNG dir; --all-png: every render, both themes), exit 1 on fail. JSON: per render {file, comp, tag,
+//        den, fails: [{kind, msg, theme, box: [{x, y, w, h}]}], png: {dark, light}} (box = the regions the check found)
 import { readFileSync, writeFileSync, readdirSync, mkdirSync, rmSync, existsSync } from 'node:fs';
 import { dirname, join, resolve, basename } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -26,9 +28,10 @@ import { checkScreen } from './audit_screens.mjs';
 import { generate, optionCount } from '../tests/spec-corpus/gen.mjs';
 
 const R = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const CORPUS = join(R, 'tests', 'spec-corpus'), OUT = join(CORPUS, 'out');
+const CORPUS = join(R, 'tests', 'spec-corpus');
 const argv = process.argv;
 const arg = (k, d) => { const i = argv.indexOf(k); return i > 0 ? argv[i + 1] : d; };
+const OUT = resolve(arg('--out', join(CORPUS, 'out'))), ALLPNG = argv.includes('--all-png');
 const args = (k) => argv.flatMap((a, i) => (a === k ? [argv[i + 1]] : []));
 const env = (() => { try { return Object.fromEntries(readFileSync(join(R, '..', 'local.env'), 'utf8').split('\n').map((l) => l.match(/^([A-Z_]+)=(.*)$/)).filter(Boolean).map((m) => [m[1], m[2]])); } catch { return {}; } })();
 const BUILD = process.env.FW_OUT || env.FW_OUT || join(R, 'out');
@@ -90,7 +93,7 @@ function gridErrs(os) {  // tools/audit.mjs "grid", same allowances
       return bad;
     };
     const bx = axis(o.x, o.w, P.x, P.w, P.bw), by = axis(o.y, o.h, P.y, P.h, P.bw);
-    if (bx.length || by.length) errs.push(`${o.t} ${o.w}x${o.h} at ${o.x - P.x},${o.y - P.y} off the 4 px grid (${[...bx.map((v) => `x ${v}`), ...by.map((v) => `y ${v}`)].join(', ')})`);
+    if (bx.length || by.length) errs.push({ b: o, m: `${o.t} ${o.w}x${o.h} at ${o.x - P.x},${o.y - P.y} off the 4 px grid (${[...bx.map((v) => `x ${v}`), ...by.map((v) => `y ${v}`)].join(', ')})` });
   }
   return errs;
 }
@@ -105,6 +108,8 @@ async function mod(den) {
   const m = await F({ instantiateWasm: (imports, ok) => { WebAssembly.instantiate(wasm, imports).then((i) => ok(i, wasm)); return {}; } });
   m._fw_init();
   m.t = 0;
+  // each component's prop defaults (the registered meta: catalogue.json leaves defaults out)
+  m.meta = Object.fromEntries(JSON.parse(m.UTF8ToString(m._fw_meta())).map((c) => [c.id, typeof c.meta === 'string' ? JSON.parse(c.meta) : c.meta]));
   return (mods[den] = m);
 }
 const str = (m, s, f) => { const p = m.stringToNewUTF8(s); try { return f(p); } finally { m._free(p); } };
@@ -113,7 +118,8 @@ const tick = (m, ms) => { const end = m.t + ms; while (m.t < end) { m.t += 16; m
 
 async function run(item, den) {
   const m = await mod(den), W = den === '1x' ? 480 : 720, D = den === '1x' ? 1 : 1.5;
-  const fails = [], add = (kind, msg, theme) => { if (!fails.some((f) => f.kind === kind && f.msg === msg)) fails.push({ kind, msg, theme }); };
+  const bx = (o) => ({ x: o.x, y: o.y, w: o.w, h: o.h });
+  const fails = [], add = (kind, msg, theme, box) => { if (!fails.some((f) => f.kind === kind && f.msg === msg)) fails.push({ kind, msg, theme, box: (box || []).map(bx) }); };
   if (!item.spec) { add('valid', 'not JSON'); return { fails }; }
   const text = item.text || JSON.stringify(item.spec), spec = item.spec;
   const chk = JSON.parse(call(m, '_fw_spec', 'check', text));
@@ -125,7 +131,7 @@ async function run(item, den) {
   const ap = JSON.parse(call(m, '_fw_spec', 'screen', text));
   if (!ap.ok) { add('valid', `apply: ${JSON.stringify(ap.errors || ap.status)}`); return { fails }; }
   const nodeComps = new Set((spec.nodes || []).map((n) => n.c));
-  const numDefaults = [...nodeComps].flatMap((c) => (cat.components[c]?.props || []).filter((p) => p.type !== 'text' && p.default !== undefined).map((p) => p.default));
+  const numDefaults = [...nodeComps].flatMap((c) => (m.meta[c]?.props || []).filter((p) => p.type !== 'text' && p.default !== undefined).map((p) => p.default));
   const blob = strings({ spec, numDefaults }).join('\n').toLowerCase();
   const frames = {};
   const disabled = (spec.nodes || []).some((n) => /disabled|unavailable/.test(String(n.p?.state ?? '')));
@@ -146,13 +152,13 @@ async function run(item, den) {
     const at = (o) => { const cx = o.x + o.w / 2, cy = o.y + o.h / 2; const h = comps.filter((c) => cx >= c.x && cx < c.x + c.w && cy >= c.y && cy < c.y + c.h); return (h.filter((c) => c.top).sort((a, b) => a.d - b.d)[0] || h.sort((a, b) => b.d - a.d)[0] || {}).top || (h[0] || {}).c || '?'; };
     // a label that can show: on screen, not transparent, not inside a clipping ancestor that cuts it away
     const shows = (o) => { if (!o.w || !o.h || o.opa === 0 || o.x < 0 || o.y < 0 || o.x + o.w > W || o.y + o.h > W) return false; for (let k = o.p; k >= 0; k = os[k].p) { const a = os[k]; if ((!a.ov || a.sc) && !meets(o, a)) return false; } return true; };
-    for (const err of checkScreen(os, W, W)) add(/leaves the screen/.test(err) ? 'outside' : 'overlap', err, theme);
+    for (const err of checkScreen(os, W, W)) add(/leaves the screen/.test(err) ? 'outside' : 'overlap', err, theme, [...err.matchAll(/(\d+)x(\d+) at (-?\d+),(-?\d+)/g)].map((q) => ({ w: +q[1], h: +q[2], x: +q[3], y: +q[4] })));
     if (!light) {
       // sibling component boxes (the spec's nodes, side by side in one column or slot)
       const tops = comps.filter((c) => c.top === c.c && !CHROME.has(c.c));
       for (let a = 0; a < tops.length; a++) for (let b = a + 1; b < tops.length; b++) {
         const A = tops[a], Bx = tops[b];
-        if (A.d === Bx.d && meets(A, Bx) && !inside(A, Bx) && !inside(Bx, A)) add('overlap', `${A.c} ${A.w}x${A.h} at ${A.x},${A.y} and ${Bx.c} ${Bx.w}x${Bx.h} at ${Bx.x},${Bx.y}`);
+        if (A.d === Bx.d && meets(A, Bx) && !inside(A, Bx) && !inside(Bx, A)) add('overlap', `${A.c} ${A.w}x${A.h} at ${A.x},${A.y} and ${Bx.c} ${Bx.w}x${Bx.h} at ${Bx.x},${Bx.y}`, undefined, [A, Bx]);
       }
       // spacing: list layout, the group gap after a non-row node
       if ((spec.layout || 'list') === 'list') {
@@ -160,24 +166,24 @@ async function run(item, den) {
         const col = tops.filter((c) => c.d === minD && c.y >= tok(TOP, den) - 1).sort((a, b) => a.y - b.y);
         for (let i = 0; i + 1 < col.length; i++) {
           const a = col[i], b = col[i + 1], gap = b.y - (a.y + a.h);
-          if (!ROW(a.c) && Math.abs(a.x - b.x) < 2 && gap < tok(GROUP, den)) add('spacing', `${a.c} -> ${b.c}: gap ${gap} px < group ${tok(GROUP, den)}`);
+          if (!ROW(a.c) && Math.abs(a.x - b.x) < 2 && gap < tok(GROUP, den)) add('spacing', `${a.c} -> ${b.c}: gap ${gap} px < group ${tok(GROUP, den)}`, undefined, [a, b]);
         }
       }
-      for (const g of gridErrs(os)) add('grid', g);
+      for (const g of gridErrs(os)) add('grid', g.m, undefined, [g.b]);
     }
     for (const o of os) {
       if (o.t !== 'label' || !o.text || !String(o.text).trim() || !shows(o)) continue;
       const t = String(o.text), who = at(o);
       if (!light) {
-        if (o.cut) add('text', `${who} "${t}" cut ${o.cut} px at the bottom`);
-        if (o.cutr) add('text', `${who} "${t}" ${o.cutr} px wider than its box (clipped/ellipsised)`);
-        if (/…|\.\.\.$/.test(t)) add('text', `${who} "${t}" ellipsised`);
+        if (o.cut) add('text', `${who} "${t}" cut ${o.cut} px at the bottom`, undefined, [o]);
+        if (o.cutr) add('text', `${who} "${t}" ${o.cutr} px wider than its box (clipped/ellipsised)`, undefined, [o]);
+        if (/…|\.\.\.$/.test(t)) add('text', `${who} "${t}" ellipsised`, undefined, [o]);
         // leak: every word / number of the label must come from the spec
         const low = t.toLowerCase().trim();
         if (!blob.includes(low) && !allowed(who, t) && !ALLOW.own_data.list.includes(who)) {
           const words = low.match(/[a-zÀ-ɏ]+|\d+/g) || [];
           const miss = words.filter((w) => !blob.includes(w));
-          if (miss.length) add('leak', `${who} "${t.slice(0, 40)}"`);
+          if (miss.length) add('leak', `${who} "${t.slice(0, 40)}"`, undefined, [o]);
         }
       }
       // contrast in the drawn pixels: background = the commonest colour in the box, ink = the farthest from it
@@ -188,13 +194,13 @@ async function run(item, den) {
       const lb = lum(bg >> 16, (bg >> 8) & 255, bg & 255);
       let best = 1; for (const k of hist.keys()) { const l = lum(k >> 16, (k >> 8) & 255, k & 255); best = Math.max(best, (Math.max(l, lb) + 0.05) / (Math.min(l, lb) + 0.05)); }
       const need = o.h >= 32 * D ? 3 : 4.5;
-      if (best > 1.2 && best < need) add('contrast', `${who} "${t.slice(0, 30)}" ${best.toFixed(2)}:1 < ${need} (${theme})`, theme);
+      if (best > 1.2 && best < need) add('contrast', `${who} "${t.slice(0, 30)}" ${best.toFixed(2)}:1 < ${need} (${theme})`, theme, [o]);
     }
     // blank: a generated spec drawing nothing under the header
     if (item.gen && !light && !ALLOW.blank_ok.list.some((b) => b === item.comp || b === `${item.comp}/${item.tag}`)) {
       const y0 = tok(TOP, den), b0 = [px[(y0 * W + 2) * 4], px[(y0 * W + 2) * 4 + 1], px[(y0 * W + 2) * 4 + 2]];
       let ink = 0; for (let y = y0; y < W; y++) for (let x = 0; x < W; x++) { const i = (y * W + x) * 4; if (px[i] !== b0[0] || px[i + 1] !== b0[1] || px[i + 2] !== b0[2]) ink++; }
-      if (ink < 16) add('blank', `draws ${ink} px under the header`);
+      if (ink < 16) add('blank', `draws ${ink} px under the header`, undefined, [{ x: 0, y: y0, w: W, h: W - y0 }]);
     }
   }
   call(m, '_fw_spec', 'revert', spec.id);
@@ -208,12 +214,16 @@ const kinds = {};
 for (const item of todo) {
   for (const den of item.gen ? GDEN : DEN) {
     const r = await run(item, den);
-    results.push({ file: item.file, comp: item.comp, den, fails: r.fails });
+    const res = { file: item.file, comp: item.comp, tag: item.tag, den, fails: r.fails, png: {} };
+    results.push(res);
     for (const k of new Set(r.fails.map((f) => f.kind))) kinds[k] = (kinds[k] || 0) + 1;
-    if (r.fails.length && r.frames) {
+    if ((r.fails.length || ALLPNG) && r.frames) {
       mkdirSync(OUT, { recursive: true });
-      const theme = r.fails.every((f) => f.theme === 'light') ? 'light' : 'dark';
-      if (r.frames[theme]) writeFileSync(join(OUT, `${item.file.replace(/[^a-z0-9=._-]+/gi, '_')}--${den}--${theme}.png`), png(r.frames[theme], r.W, r.W));
+      const themes = ALLPNG ? ['dark', 'light'] : [r.fails.every((f) => f.theme === 'light') ? 'light' : 'dark'];
+      for (const theme of themes) if (r.frames[theme]) {
+        res.png[theme] = `${item.file.replace(/[^a-z0-9=._-]+/gi, '_')}--${den}--${theme}.png`;
+        writeFileSync(join(OUT, res.png[theme]), png(r.frames[theme], r.W, r.W));
+      }
     }
   }
 }
@@ -233,6 +243,6 @@ const failed = results.filter((r) => r.fails.length).length;
 const gen = results.filter((r) => r.comp);
 console.log(`corpus: ${results.length} renders (${results.length - gen.length} hand/extra, ${gen.length} generated over ${Object.keys(byComp).length}/${Object.keys(cat.components).length} components, ${optionCount(cat)} props+options), ${results.length - failed} pass, ${failed} fail`);
 console.log(`by kind (renders failing): ${Object.entries(kinds).sort((a, b) => b[1] - a[1]).map(([k, n]) => `${k} ${n}`).join(', ') || 'none'}`);
-if (existsSync(OUT)) console.log(`failure PNGs: ${OUT}`);
+if (existsSync(OUT)) console.log(`${ALLPNG ? 'render' : 'failure'} PNGs: ${OUT}`);
 if (arg('--json')) writeFileSync(arg('--json'), JSON.stringify(results, null, 1));
 process.exit(failed ? 1 : 0);

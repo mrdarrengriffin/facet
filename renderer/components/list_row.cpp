@@ -207,7 +207,7 @@ lv_obj_t *row(lv_obj_t *parent, const Spec &s) {
 }
 
 Spec spec_of(fw::Props p) {
-  return {p["title"] | "Lights", p["icon"] | "bulb", p["sub"] | "", p["trailing"] | "none", p["value"] | "",
+  return {p["title"] | "", p["icon"] | "bulb", p["sub"] | "", p["trailing"] | "none", p["value"] | "",
           p["state"] | "default", p["on"] | false, p["divider"] | true, p["over"] | ""};
 }
 // the props that need the contents again: all but a pressed state and a toggle's on (those move in place)

@@ -31,7 +31,8 @@
 //              spec's demo, so a screen shows something before a host fills the list). Expanded when the screen opens
 //              (a later screen.param doesn't add or drop copies).
 //   spacing    in the list layout and in a layout's column slots, a section_header that isn't first gets lay::group
-//              above it (Layout rule "more space between groups"); everything else touches (rows have hairlines).
+//              above it (Layout rule "more space between groups"); in the list layout so does any node after a non-row
+//              node (hero_block, gauge, readout ...); rows touch (they have hairlines).
 //   bind       {"e": "light.x" | "$param", "a"?: "<attribute>", "fmt"?: on|pct|avail|light|name|num|frac,
 //               "s"?: sample, "map"?: {value: text}, "else"?: text, "tpl"?: "battery {}%"} (core/ha.h): s = the value
 //              while the entity is empty (the factory demo), map = the value as words / a tone ("else" for the rest,
@@ -1362,6 +1363,7 @@ inline lv_obj_t *build(lv_obj_t *parent, const std::string &id, Props opened, st
     }
   }
   size_t ni = 0;
+  bool prev_row = true;  // the last node placed straight in the list column was a row
   for (ArduinoJson::JsonVariantConst nd : doc["nodes"].as<ArduinoJson::JsonArrayConst>()) {
     ArduinoJson::JsonVariantConst rn = raw[ni++];
     Node n;
@@ -1384,8 +1386,13 @@ inline lv_obj_t *build(lv_obj_t *parent, const std::string &id, Props opened, st
       const int32_t sw = lv_obj_get_style_width(into, LV_PART_MAIN), w = lv_obj_get_style_width(n.obj, LV_PART_MAIN);
       if (sw > 0 && !LV_COORD_IS_SPEC(sw) && w > sw && !LV_COORD_IS_SPEC(w)) lv_obj_set_width(n.obj, sw);
     }
-    if (n.comp == "section_header" && lv_obj_get_index(n.obj) > 0 && (into != c || layout == "list"))
+    const bool after_block = into == c && layout == "list" && lv_obj_get_index(n.obj) > 0 && !prev_row;
+    if ((n.comp == "section_header" && lv_obj_get_index(n.obj) > 0 && (into != c || layout == "list")) || after_block)
       lv_obj_set_style_margin_top(n.obj, lay::group, 0);  // more space between groups (Layout rule)
+    if (into == c) {  // a row (list_row, plant_row, section_header ...) touches the next; any other block doesn't
+      const size_t L = n.comp.size();
+      prev_row = n.comp == "section_header" || (L > 4 && n.comp.compare(L - 4, 4, "_row") == 0);
+    }
     if (!nd["on"].isNull()) serializeJson(nd["on"], n.on);
     if (!nd["pending"].isNull()) serializeJson(nd["pending"], n.pending);
     if (rebinds && (!rn["p"].isNull() || !rn["show"].isNull())) {

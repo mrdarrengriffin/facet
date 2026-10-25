@@ -25,7 +25,13 @@
    "ci fail",
    "ci pending",
    "done",
-   "timer"
+   "timer",
+   "working",
+   "needs you",
+   "radar",
+   "slats",
+   "too wet",
+   "too dry"
   ],
   "covers_view": [
    "no window chosen"
@@ -44,8 +50,10 @@
    "ci failed"
   ],
   "lock_ring": [
+   "hold to lock",
    "hold to unlock",
-   "hold to lock"
+   "tap to lock",
+   "tap to lock again"
   ],
   "weather_view": [
    "weather",
@@ -55,13 +63,50 @@
   ],
   "camera_tile": [
    "no still yet"
+  ],
+  "count_badge": [
+   "0"
+  ],
+  "section_header": [
+   "0"
+  ],
+  "room_tile": [
+   "tap to pick"
+  ],
+  "column": [
+   "foot",
+   "top"
+  ],
+  "split": [
+   "left",
+   "left foot",
+   "right",
+   "right foot"
+  ],
+  "focus_ring": [
+   "start"
+  ],
+  "clock_face": [
+   "12",
+   "3",
+   "6",
+   "9",
+   "am",
+   "pm"
+  ],
+  "time": [
+   "am",
+   "pm"
   ]
  },
  "pattern": {
   "screen_chrome": "^\\d{1,2}:\\d{2}$",
-  "header": "^\\d{1,2}:\\d{2}$",
+  "header": "^\\d{1,2}:\\d{2}$|^\\d+ W NOW$",
   "timer_view": "^\\d+:\\d{2}$|^\\d+ MIN$|^of \\d+ min · ends \\d{1,2}:\\d{2}$",
-  "thermostat_view": "^set \\d+(\\.\\d)?°$"
+  "thermostat_view": "^set \\d+(\\.\\d)?°$",
+  "clock_face": "^\\d{1,2}:\\d{2}$|^(MON|TUE|WED|THU|FRI|SAT|SUN) \\d{1,2} [A-Z]{3}$|^[A-Z][a-z]+day \\d{1,2} [A-Z][a-z]+$",
+  "date_line": "^(MON|TUE|WED|THU|FRI|SAT|SUN) \\d{1,2} [A-Z]{3}$|^[A-Z][a-z]+day \\d{1,2} [A-Z][a-z]+$",
+  "vacuum_mode": "^(Vac \\+ mop|Vacuum|Mop)( · [A-Za-z+ ]+)*$|^(VAC \\+ MOP|VACUUM|MOP)( · [A-Z+ ]+)*$"
  },
  "own_data": {
   "about": "Components that draw their own live feed, simulation or built-in sample data (not spec text): leak is not checked inside them.",

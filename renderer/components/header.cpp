@@ -58,7 +58,7 @@ void chrome_props(fw::Props p, ArduinoJson::JsonDocument &cp) {
 }
 void chip_props(fw::Props p, ArduinoJson::JsonDocument &cp) {  // internal chip_tone / chip_text (a screen's status)
   cp["tone"] = p["chip_tone"] | "working";
-  cp["text"] = p["chip_text"] | "2 working";
+  cp["text"] = p["chip_text"] | (p["chip_tone"] | "working");  // no text given: the tone's own word, no demo count
   cp["pulse"] = p["chip_pulse"] | false;
 }
 void fill(lv_obj_t *h, fw::Props p) {

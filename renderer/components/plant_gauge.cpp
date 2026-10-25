@@ -38,8 +38,8 @@ void texts(PG *g, fw::Props p, const Read &r) {
   else snprintf(b, sizeof b, "%d%%", r.m);
   put(g->cap, fw::ty::label, r.cap);
   put(g->val, fw::ty::hero, b);
-  std::string line = p["name"] | "Fern";
-  line += " \xC2\xB7 water below " + std::to_string((int) (p["dry"] | 30)) + "%";
+  std::string line = p["name"] | "";  // no name given: just the threshold (no demo plant)
+  line += std::string(line.empty() ? "" : " \xC2\xB7 ") + "water below " + std::to_string((int) (p["dry"] | 30)) + "%";
   put(g->line, fw::ty::body, line.c_str());
 }
 void colours(PG *g, const Read &r) {

@@ -3,8 +3,8 @@
 // measured temperature big in its middle, the set point under it, the schedule's quiet line, and - / + square Icon
 // buttons; under the ring the modes (up to three Buttons, the current one active) and a Presets button that opens a
 // Bottom sheet of the presets (Picker rows: in use / tap to use).
-//   centre   "heating" / "cooling" / "idle" / "off" (type label: accent / blue / text-mute), the measured temperature
-//            (display, text; off = text-dim; "19.4°"), "set 21°" (title, text-dim), the quiet line (body, text-mute:
+//   centre   "heating" / "cooling" / "idle" / "off" (type label: accent / blue / text-dim; text-mute is disabled-only), the measured temperature
+//            (display, text; off = text-dim; "19.4°"), "set 21°" (title, text-dim), the quiet line (body, text-dim:
 //            "17° from 22:30" or the preset), - / + (Icon button square minus / plus), sp::s5 apart, centred in the ring
 //   row      lay::button_h tall at the content's foot: the modes left (Button secondary, the current active),
 //            Presets right (Button secondary, the preset's name when one is in use)
@@ -103,7 +103,7 @@ void render(lv_obj_t *root) {
   const bool off = v->mode == "off" || down(v);
   const char *doing = down(v) ? "unavailable" : off ? "off" : v->action == "heating" ? "heating" : v->action == "cooling" ? "cooling" : "idle";
   fw::set_text(v->cap, fw::ty::label, doing);
-  lv_obj_set_style_text_color(v->cap, !strcmp(doing, "heating") ? t.accent_text : !strcmp(doing, "cooling") ? t.blue : t.text_mute, 0);
+  lv_obj_set_style_text_color(v->cap, !strcmp(doing, "heating") ? t.accent_text : !strcmp(doing, "cooling") ? t.blue : t.text_dim, 0);
   fw::set_text(v->val, fw::ty::display, temp_text(v->current).c_str());
   lv_obj_set_style_text_color(v->val, off ? t.text_dim : t.text, 0);
   fw::set_text(v->set, fw::ty::title, off ? "" : ("set " + temp_text(target_of(v), v->step)).c_str());
@@ -293,10 +293,10 @@ FW_COMPONENT(thermostat_view, "Thermostat view", "components", R"({
   lv_obj_set_flex_flow(mid, LV_FLEX_FLOW_COLUMN);
   lv_obj_set_flex_align(mid, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
   lv_obj_set_style_pad_row(mid, fw::sp::s2, 0);
-  v->cap = fw::text(mid, fw::ty::label, "", t.text_mute);
+  v->cap = fw::text(mid, fw::ty::label, "", t.text_dim);
   v->val = fw::text(mid, fw::ty::display, "--", t.text);
   v->set = fw::text(mid, fw::ty::title, "", t.text_dim);
-  v->quiet = fw::text(mid, fw::ty::body, "", t.text_mute);
+  v->quiet = fw::text(mid, fw::ty::body, "", t.text_dim);
   lv_obj_t *pm = box(mid);
   lv_obj_set_size(pm, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
   lv_obj_set_flex_flow(pm, LV_FLEX_FLOW_ROW);
