@@ -276,7 +276,9 @@ if (arg('--panel')) {
   const dev = arg('--panel'), host = arg('--host');
   if (!budgets.devices[dev] || !host) { console.error('--panel guition|waveshare --host <ip>'); process.exit(2); }
   const base = `http://${host}`;
-  const get = async (u) => (await fetch(base + u, { signal: AbortSignal.timeout(8000) })).json();
+  // an agent token (facet-163: the panel's write endpoints need it unless the request is same-origin) on every /fw/* call
+  const AUTH = process.env.FACET_AGENT_TOKEN ? { authorization: `Bearer ${process.env.FACET_AGENT_TOKEN}` } : {};
+  const get = async (u) => (await fetch(base + u, { headers: AUTH, signal: AbortSignal.timeout(8000) })).json();
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const info = await get('/fw/info');
   const have = new Set((await get('/fw/meta')).map((m) => m.id));  // what this firmware registered
@@ -287,7 +289,7 @@ if (arg('--panel')) {
   const restoreSettings = async () => {
     if (restored || !settings0?.values) return;
     restored = true;
-    try { await fetch(base + '/fw/settings', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ values: settings0.values }), signal: AbortSignal.timeout(8000) }); log(`[panel ${dev}] settings put back`); }
+    try { await fetch(base + '/fw/settings', { method: 'POST', headers: { 'content-type': 'application/json', ...AUTH }, body: JSON.stringify({ values: settings0.values }), signal: AbortSignal.timeout(8000) }); log(`[panel ${dev}] settings put back`); }
     catch (e) { console.error(`[panel ${dev}] could not put the settings back: ${e.message || e}`); }
   };
   for (const sig of ['SIGINT', 'SIGTERM']) process.on(sig, async () => { await restoreSettings(); process.exit(130); });
@@ -319,7 +321,7 @@ if (arg('--panel')) {
   const rows = [];
   for (let ci = 0; ci < chunks.length; ci++) {
     const bid = chunks.length > 1 ? `${run}-${ci + 1}` : run;
-    const p = await (await fetch(base + '/fw/bench', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ run: bid, theme: 'dark', timing: T, cases: chunks[ci] }), signal: AbortSignal.timeout(8000) })).json();
+    const p = await (await fetch(base + '/fw/bench', { method: 'POST', headers: { 'content-type': 'application/json', ...AUTH }, body: JSON.stringify({ run: bid, theme: 'dark', timing: T, cases: chunks[ci] }), signal: AbortSignal.timeout(8000) })).json();
     if (!p.ok) { console.error(`panel refused the batch: ${p.error}`); await restoreSettings(); process.exit(1); }
     log(`[panel ${dev}] batch ${ci + 1}/${chunks.length}: ${p.total} cases sent, about ${p.eta_s} s; collecting after that`);
     if (arg('--status')) writeFileSync(arg('--status'), JSON.stringify({ device: dev, run, total: cases.length, eta_s: Math.round(p.eta_s * (cases.length / chunks[ci].length) * (chunks.length - ci) / chunks.length) || p.eta_s, started: Date.now() }));
@@ -338,7 +340,7 @@ if (arg('--panel')) {
   const r = { results: rows };
   await restoreSettings();
   // chunked runs: each batch puts back what the previous batch's last case showed, so put back what was shown before the first
-  if (chunks.length > 1 && info.shown) await fetch(base + '/fw/show', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(info.shown), signal: AbortSignal.timeout(8000) }).catch(() => {});
+  if (chunks.length > 1 && info.shown) await fetch(base + '/fw/show', { method: 'POST', headers: { 'content-type': 'application/json', ...AUTH }, body: JSON.stringify(info.shown), signal: AbortSignal.timeout(8000) }).catch(() => {});
   const byKey = new Map(list.flatMap((c) => c.scenarios.map((sc) => [`${c.id}|${sc}`, c])));
   for (const x of r.results || []) { const c = byKey.get(`${x.case}|${x.scenario}`); res.results.push({ ...x, comp: c?.comp, device: dev, live: !!c?.live, anchor: x.case.startsWith('anchor.'), ...(c?.stress ? { stress: c.stress, props: c.props, tags: c.tags } : {}) }); }
   res.results.push(...skipped);

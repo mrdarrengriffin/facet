@@ -419,6 +419,9 @@ const char *set(const char *id, const char *value, From from, lv_obj_t *obj) {
   const set::Setting &s = set::SETTINGS[k];
   const std::string v = normal(s, value);
   if (v.empty()) return "not a valid value";
+  // Allow AI agents (facet-163): only the panel itself or Home Assistant can turn it on, never an HTTP request (an
+  // agent must not be able to let itself in); a host may still turn it off
+  if (from == HOST && v == "true" && !strcmp(id, "aiAgents")) return "turn Allow AI agents on on the panel (Settings) or in Home Assistant";
   Store &st = store();
   const bool was_given = st.given[k];
   st.given[k] = true;
@@ -472,6 +475,7 @@ std::string restore(const char *json, From from) {
     if (kv.value().is<bool>()) val = kv.value().as<bool>() ? "true" : "false";
     else if (kv.value().is<double>()) val = num(kv.value().as<double>());
     else if (kv.value().is<const char *>()) val = kv.value().as<const char *>();
+    if (from == HOST && !strcmp(kv.key().c_str(), "aiAgents")) continue;  // a backup never changes it (see set())
     const char *e = set(kv.key().c_str(), val.c_str(), from);
     if (*e && strcmp(e, "same") && err.empty()) err = std::string(kv.key().c_str()) + ": " + e;
   }

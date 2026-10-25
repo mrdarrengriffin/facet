@@ -15,6 +15,16 @@
 //   GET  /fw/ha     the Home Assistant store (core/ha.h): {wants: [[e, a]...], values: {"e|a": value}, bound: n};
 //                   ?want=e1,e2[&attrs=a1] subscribes to those first (the panel-served editor's live preview)
 //   POST /fw/bench  a batch of bench cases the panel runs on its own screen (fw_bench.h); GET /fw/bench = the report
+//   POST /fw/show   {screen: <deck page id | screen id | name>} opens that screen on the device (agents)
+//   POST /fw/spec   kind check | check_deck = validate (+ build off screen) only, nothing stored
+//   GET  /llms.txt, /agents.md   the agent docs (bundle fw_docs_gen.h from tools/gen_agents.mjs; open)
+// AI agents (facet-163, Darren 2026-10-25): every POST under /fw/ and GET /fw/ha?want= go through agent::allow():
+// the panel's own editor (a browser request from this origin: Sec-Fetch-Site same-origin, or Origin = this host)
+// always passes; anything else needs the setting Allow AI agents on (only the panel or HA can turn it on, core/
+// device.cpp set()) AND `Authorization: Bearer <token>` (or X-Facet-Token). Else 403 with what to do. The token =
+// 32 hex in NVS "facet_agent" (made on first boot; agent_token() for the host's HA entity, agent_new_token() makes a
+// new one). Not a wall against a hostile LAN client (the same-origin check is browser-enforced only); it stops other
+// web pages (CSRF) and agents that were not let in.
 // Web UI (optional): a bundle may add fw_web_gen.h (fw::web::FILES, gzipped files linked into the image's rodata by
 // the host's build, e.g. the Facet editor + the 1x renderer): GET / and each FILES path are served straight from
 // flash in 4 KB chunks (no RAM copy; Content-Encoding gzip, ETag + If-None-Match -> 304, each file's Cache-Control),
@@ -52,6 +62,9 @@
 #include "esphome/components/web_server_base/web_server_base.h"
 #if __has_include("fw_web_gen.h")
 #include "fw_web_gen.h"  // namespace fw::web: File, FILES, blob() (the host build's web UI; see "Web UI" above)
+#endif
+#if __has_include("fw_docs_gen.h")
+#include "fw_docs_gen.h"  // namespace fw::docs: the agent docs /llms.txt + /agents.md (bundle.mjs, tools/gen_agents.mjs)
 #endif
 #include "fw.h"
 #include "device.h"
@@ -718,6 +731,108 @@ struct Front : esphome::web_server_idf::AsyncWebServer {
 }  // namespace web
 #endif
 
+// ---------------------------------------------------------------- AI agents (see the header)
+namespace agent {
+inline std::mutex &lock() { static std::mutex m; return m; }
+inline std::string &tok() { static std::string t; return t; }
+inline std::atomic<bool> &on() { static std::atomic<bool> o{false}; return o; }
+inline void new_token() {
+  static const char *H = "0123456789abcdef";
+  std::string t;
+  for (int i = 0; i < 32; i++) t += H[esp_random() & 15];
+  nvs_handle_t h;
+  if (nvs_open("facet_agent", NVS_READWRITE, &h) == ESP_OK) { nvs_set_str(h, "tok", t.c_str()); nvs_commit(h); nvs_close(h); }
+  std::lock_guard<std::mutex> g(lock());
+  tok() = t;
+}
+inline void setup() {  // on_boot (main loop): the token from NVS (else a new one), the setting's value + its observer
+  char buf[40] = {0};
+  size_t n = sizeof buf;
+  nvs_handle_t h;
+  bool have = false;
+  if (nvs_open("facet_agent", NVS_READONLY, &h) == ESP_OK) { have = nvs_get_str(h, "tok", buf, &n) == ESP_OK && strlen(buf) == 32; nvs_close(h); }
+  if (have) { std::lock_guard<std::mutex> g(lock()); tok() = buf; }
+  else new_token();
+  const char *v = fw::dev::setting("aiAgents");
+  on() = v && !strcmp(v, "true");
+  fw::dev::observe([](const char *id, const char *value, fw::dev::From) { if (!strcmp(id, "aiAgents")) on() = !strcmp(value, "true"); });
+}
+inline bool same(const std::string &a, const std::string &b) {  // constant time
+  if (a.size() != b.size() || a.empty()) return false;
+  uint8_t d = 0;
+  for (size_t i = 0; i < a.size(); i++) d |= a[i] ^ b[i];
+  return !d;
+}
+// nullptr = allowed; else the reason ("off" | "token") and *msg = the 403 body
+inline const char *allow(AsyncWebServerRequest *req, std::string *msg) {
+  auto site = req->get_header("Sec-Fetch-Site");
+  if (site.has_value() && *site == "same-origin") return nullptr;  // the panel's own editor
+  if (!site.has_value()) {  // an older browser: Origin = this host
+    auto org = req->get_header("Origin"), host = req->get_header("Host");
+    if (org.has_value() && host.has_value() && (*org == "http://" + *host)) return nullptr;
+  }
+  if (!on()) {
+    *msg = R"J({"ok":false,"agents":"off","error":"AI agents are off on this panel. Ask its owner to turn on Settings > AI agents > Allow AI agents (on the panel or in Home Assistant), then send Authorization: Bearer <agent token> (Home Assistant: the panel's AI agent token). Docs: /agents.md"})J";
+    return "off";
+  }
+  std::string given;
+  auto a = req->get_header("Authorization");
+  if (a.has_value() && a->rfind("Bearer ", 0) == 0) given = a->substr(7);
+  else if (auto x = req->get_header("X-Facet-Token"); x.has_value()) given = *x;
+  std::string want;
+  { std::lock_guard<std::mutex> g(lock()); want = tok(); }
+  if (same(given, want)) return nullptr;
+  *msg = given.empty() ? R"J({"ok":false,"agents":"token","error":"send Authorization: Bearer <agent token> (Home Assistant: the panel's AI agent token entity). Docs: /agents.md"})J"
+                       : R"J({"ok":false,"agents":"token","error":"wrong agent token (Home Assistant: the panel's AI agent token entity; it changes when someone makes a new one)"})J";
+  return "token";
+}
+}  // namespace agent
+inline std::string agent_token() { std::lock_guard<std::mutex> g(agent::lock()); return agent::tok(); }
+inline void agent_new_token() { agent::new_token(); }
+inline bool agents_on() { return agent::on(); }
+
+// ---------------------------------------------------------------- agent docs (fw_docs_gen.h, optional)
+#if __has_include("fw_docs_gen.h")
+namespace docs {
+class Handler : public AsyncWebHandler {
+ public:
+  static const ::fw::docs::File *find(const char *path) {
+    for (int i = 0; i < ::fw::docs::N_FILES; i++) if (!strcmp(::fw::docs::FILES[i].path, path)) return &::fw::docs::FILES[i];
+    return nullptr;
+  }
+  bool canHandle(AsyncWebServerRequest *req) const override {
+    if (req->method() != HTTP_GET) return false;
+    char buf[AsyncWebServerRequest::URL_BUF_SIZE];
+    return find(req->url_to(buf).c_str()) != nullptr;
+  }
+  void handleRequest(AsyncWebServerRequest *request) override {
+    char buf[AsyncWebServerRequest::URL_BUF_SIZE];
+    const ::fw::docs::File *f = find(request->url_to(buf).c_str());
+    httpd_req_t *req = *request;
+    httpd_resp_set_hdr(req, "ETag", f->etag);
+    httpd_resp_set_hdr(req, "Cache-Control", "no-cache");
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    httpd_resp_set_hdr(req, "Vary", "Accept-Encoding");
+    auto inm = request->get_header("If-None-Match");
+    if (inm.has_value() && *inm == f->etag) { httpd_resp_set_status(req, "304 Not Modified"); httpd_resp_send(req, nullptr, 0); return; }
+    auto ae = request->get_header("Accept-Encoding");
+    const bool gz = ae.has_value() && ae->find("gzip") != std::string::npos;
+    httpd_resp_set_status(req, HTTPD_200);
+    httpd_resp_set_type(req, f->type);
+    if (gz) httpd_resp_set_hdr(req, "Content-Encoding", "gzip");
+    const uint8_t *p = gz ? f->gz : f->raw;
+    const uint32_t len = gz ? f->gz_len : f->raw_len;
+    for (uint32_t done = 0; done < len;) {
+      const uint32_t n = std::min<uint32_t>(4096, len - done);
+      if (httpd_resp_send_chunk(req, (const char *) p + done, n) != ESP_OK) return;
+      done += n;
+    }
+    httpd_resp_send_chunk(req, nullptr, 0);
+  }
+};
+}  // namespace docs
+#endif
+
 // ---------------------------------------------------------------- HTTP
 class Handler : public AsyncWebHandler {
  public:
@@ -741,7 +856,9 @@ class Handler : public AsyncWebHandler {
     const bool post = req->method() == HTTP_POST;
     std::string s;
     int code = 200;
-    if (path == "/fw/meta") {
+    if ((post || (path == "/fw/ha" && req->hasArg("want"))) && agent::allow(req, &s)) {
+      code = 403;  // s = what to do (agent::allow)
+    } else if (path == "/fw/meta") {
       fw::meta_json(s);  // the registry is fixed after boot: no loop job needed
     } else if (path == "/fw/info") {
       ArduinoJson::JsonDocument d;
@@ -843,6 +960,12 @@ class Handler : public AsyncWebHandler {
       ArduinoJson::JsonDocument d;
       in_loop([&] { bench::result_json(d.to<ArduinoJson::JsonObject>()); }, 2000);
       serializeJson(d, s);
+    } else if (path == "/fw/show" && post && !too_big_ && !body_.empty() && body_.find("\"screen\"") != std::string::npos && body_.find("\"id\"") == std::string::npos) {
+      ArduinoJson::JsonDocument body, out;  // {screen: <id | name>}: open a deck page / screen on the device
+      bool ok = false;
+      if (deserializeJson(body, body_) || !body["screen"].is<const char *>()) { code = 400; s = R"({"ok":false,"error":"{\"screen\": \"<id>\"}"})"; }
+      else if (!in_loop([&] { ok = screen_go(body["screen"].as<const char *>(), out.to<ArduinoJson::JsonObject>()); })) { code = 503; s = R"({"ok":false,"error":"the main loop did not answer in time"})"; }
+      else { if (ok) out["ok"] = true; else code = 400; serializeJson(out, s); }
     } else if (path == "/fw/show" && post) {
       ArduinoJson::JsonDocument body, out;
       if (too_big_ || body_.empty() || deserializeJson(body, body_)) {
@@ -862,7 +985,7 @@ class Handler : public AsyncWebHandler {
       }
     } else {
       code = 404;
-      s = R"({"ok":false,"error":"GET /fw/info, GET /fw/meta, GET /fw/perf[?reset=1], POST /fw/show, GET|POST /fw/settings, GET|POST /fw/spec, GET /fw/deck, GET /fw/ha, POST|GET /fw/bench"})";
+      s = R"({"ok":false,"error":"docs: /llms.txt /agents.md; GET /fw/info, GET /fw/meta, GET /fw/perf[?reset=1], POST /fw/show, GET|POST /fw/settings, GET|POST /fw/spec, GET /fw/deck, GET /fw/ha, POST|GET /fw/bench"})";
     }
     body_.clear();  // a body is only delivered for some content types: never reuse the previous request's
     too_big_ = false;
@@ -891,6 +1014,7 @@ inline void setup() {
   S.scr = lv_obj_create(nullptr);
   lv_screen_load(S.scr);
   spec_storage();     // screen specs: the overrides from NVS (each falls back to its last good copy, then factory)
+  agent::setup();     // AI agents: the token (NVS) + the setting (facet-163)
   fw::spec::load();
   for (const auto &x : fw::spec::S().log) ESP_LOGW("facet_wb", "spec boot: %s", x.c_str());
   S.pref = esphome::global_preferences->make_preference<Saved>(0xFAC37B01u, true);
@@ -916,7 +1040,7 @@ inline void setup() {
     const bool look = !strcmp(id, "theme") || !strcmp(id, "accent");
     if (!look && from != fw::dev::SCREEN) reshow_later(false);  // a value from elsewhere: the controls move
   });
-  fw::ha::on_want(ha_subscribe);  // (the pairs wanted so far too: the Living room's lights, declared at boot)
+  fw::ha::on_want(ha_subscribe);  // (the pairs wanted so far too)
   fw::ha::on_act(ha_action);
   fw::spec::want_all();  // every entity the deck's specs bind (the overrides were loaded before the first show)
   fw::dev::on_look([] {  // theme / accent / the sun: draw the page again in the new look (+ the probation chip)
@@ -927,6 +1051,9 @@ inline void setup() {
   if (auto *ws = esphome::web_server_base::global_web_server_base) {
     ws->add_handler(new Handler());
     ws->add_handler(new shot::Handler());  // GET /screenshot
+#if __has_include("fw_docs_gen.h")
+    ws->add_handler(new docs::Handler());  // GET /llms.txt, /agents.md
+#endif
 #if __has_include("fw_web_gen.h")
     if (auto *srv = ws->get_server()) web::Front::add(srv, new web::Handler());  // GET / = the web UI
     else ws->add_handler(new web::Handler());  // no server yet: behind web_server ("/" stays ESPHome's, /ed/* works)

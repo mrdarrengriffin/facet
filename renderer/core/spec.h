@@ -1424,25 +1424,43 @@ inline lv_obj_t *build(lv_obj_t *parent, const std::string &id, Props opened, st
 }
 
 // every concrete entity the specs bind (the deck's union, subscribed at boot; "$param" binds come when opened)
+// only the panel's real deck (facet-169): a Home's cards, a page's own params ("$name" -> the page's value; no value =
+// the spec default = a demo id, skipped) and the literal ids of a SENT spec; a factory spec's literal ids are demo
+// entities (light.living_room_ceiling ...), so the panel never subscribes to them at boot (a page still wants what it
+// binds once it is built)
 inline void want_all() {
-  auto scan = [](const char *json) {
+  auto scan = [](const char *json, ArduinoJson::JsonObjectConst params, bool literal) {
     ArduinoJson::JsonDocument d;
     if (!json || deserializeJson(d, json)) return;
     for (ArduinoJson::JsonVariantConst n : d["nodes"].as<ArduinoJson::JsonArrayConst>())
       for (ArduinoJson::JsonPairConst kv : n["p"].as<ArduinoJson::JsonObjectConst>()) {
-        const std::string e = kv.value()["e"] | "";
-        if (e.empty() || e[0] == '$') continue;
+        std::string e = kv.value()["e"] | "";
+        if (e.empty()) continue;
+        if (e[0] == '$') e = params[e.substr(1)] | "";
+        else if (!literal) continue;
+        if (e.empty() || e.find('.') == std::string::npos) continue;
         const std::string fmt = kv.value()["fmt"] | "", a = kv.value()["a"] | "";
-        ha::want(e, "");
-        if (fmt == "pct" || fmt == "light") ha::want(e, a.empty() ? "brightness" : a);
-        else if (fmt == "name") ha::want(e, "friendly_name");
-        else if (!a.empty()) ha::want(e, a);
+        size_t from = 0;  // an "entities" param = a comma list
+        while (from <= e.size()) {
+          size_t to = e.find(',', from);
+          if (to == std::string::npos) to = e.size();
+          std::string one = e.substr(from, to - from);
+          while (!one.empty() && one[0] == ' ') one.erase(0, 1);
+          while (!one.empty() && one.back() == ' ') one.pop_back();
+          from = to + 1;
+          if (one.find('.') == std::string::npos) continue;
+          ha::want(one, "");
+          if (fmt == "pct" || fmt == "light") ha::want(one, a.empty() ? "brightness" : a);
+          else if (fmt == "name") ha::want(one, "friendly_name");
+          else if (!a.empty()) ha::want(one, a);
+        }
       }
   };
   ArduinoJson::JsonDocument deck;
   deserializeJson(deck, deck_json());
   for (ArduinoJson::JsonVariantConst x : deck["pages"].as<ArduinoJson::JsonArrayConst>()) {
-    scan(screen_json(x["kind"] | ""));
+    const std::string kind = x["kind"] | "";
+    scan(screen_json(kind), x["params"].as<ArduinoJson::JsonObjectConst>(), S().over.count(kind) > 0);
     for (ArduinoJson::JsonVariantConst c : x["cards"].as<ArduinoJson::JsonArrayConst>())  // a Home's cards
       if (const char *e = c["e"]) { ha::want(e, ""); ha::want(e, "friendly_name"); }
   }
@@ -1463,8 +1481,11 @@ inline Reload &reload_hook() {
   return r;
 }
 // out: {ok, status: applied|unchanged|refused, id, rev, errors?}; dry = a hidden parent for the off-screen build
+// kind "check" / "check_deck" (facet-163, agents): validate (+ the off-screen build for a screen) and answer, store
+// nothing: {ok, status: valid|refused, id, rev, errors?}
 inline bool apply(const char *kind, const std::string &json, lv_obj_t *dry, ArduinoJson::JsonObject out, bool quiet = false) {
-  const bool deck = !strcmp(kind, "deck");
+  const bool only_check = !strcmp(kind, "check") || !strcmp(kind, "check_deck");
+  const bool deck = !strcmp(kind, "deck") || !strcmp(kind, "check_deck");
   ArduinoJson::JsonDocument d;
   Errs e;
   if (deserializeJson(d, json)) err(e, "", "bad_json", "not JSON");
@@ -1483,7 +1504,7 @@ inline bool apply(const char *kind, const std::string &json, lv_obj_t *dry, Ardu
   }
   const char *live = deck ? (S().deck_over.empty() ? nullptr : S().deck_over.c_str()) : (S().over.count(id) ? S().over[id].c_str() : nullptr);
   if (!live) live = deck ? FACTORY_DECK : factory(id);
-  if (live && canonical(live) == canonical(json)) {  // the same content (Darren 2026-10-23: not the rev) = a no-op
+  if (!only_check && live && canonical(live) == canonical(json)) {  // the same content (Darren 2026-10-23: not the rev) = a no-op
     out["ok"] = true;
     out["status"] = "unchanged";
     out["why"] = "the panel already has this exact spec";
@@ -1498,6 +1519,7 @@ inline bool apply(const char *kind, const std::string &json, lv_obj_t *dry, Ardu
     lv_obj_update_layout(r);
     lv_obj_delete(r);
   }
+  if (only_check) { out["ok"] = true; out["status"] = "valid"; return true; }
   Store &s = S();
   bool ok = true;
   if (s.io.save) {

@@ -21,6 +21,10 @@
     {
       "id": "units",
       "label": "Units"
+    },
+    {
+      "id": "agents",
+      "label": "AI agents"
     }
   ],
   "settings": [
@@ -405,6 +409,21 @@
         "id": "speed_unit",
         "name": "Speed unit",
         "icon": "mdi:speedometer"
+      }
+    },
+    {
+      "id": "aiAgents",
+      "help": "Lets AI assistants on your network send screens to this panel. Each request needs the panel's agent token (Home Assistant shows it). Turn it on here or in Home Assistant.",
+      "group": "agents",
+      "label": "Allow AI agents",
+      "kind": "switch",
+      "control": "toggle",
+      "default": false,
+      "about": "Off: the write endpoints (/fw/spec, /fw/show, /fw/settings, /fw/bench) refuse everything but the panel's own editor. On: they also take requests with Authorization: Bearer <agent token>. /llms.txt and /agents.md are always readable.",
+      "esphome": {
+        "id": "ai_agents",
+        "name": "Allow AI agents",
+        "icon": "mdi:robot-outline"
       }
     }
   ]
