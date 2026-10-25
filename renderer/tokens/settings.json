@@ -261,7 +261,7 @@
       }
     },
     {
-      "id": "idleBrightness", "help": "How bright the screen is while it shows the idle clock, in per cent.",
+      "id": "idleBrightness", "help": "How bright the screen is while it shows the idle clock, as a percentage.",
       "group": "idle",
       "label": "Idle brightness",
       "kind": "number",

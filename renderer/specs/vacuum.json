@@ -11,7 +11,7 @@
    "label": "Robot vacuum",
    "default": ""
   },
-  "battery": {"about": "The sensor for the robot's battery level, in per cent.", 
+  "battery": {"about": "The sensor for the robot's battery level, as a percentage.", 
    "type": "entity",
    "domain": "sensor",
    "label": "Battery (%)",
@@ -23,7 +23,7 @@
    "label": "Current room",
    "default": ""
   },
-  "progress": {"about": "The sensor for how much of the current clean is done, in per cent.", 
+  "progress": {"about": "The sensor for how much of the current clean is done, as a percentage.", 
    "type": "entity",
    "domain": "sensor",
    "label": "Cleaning progress (%)",

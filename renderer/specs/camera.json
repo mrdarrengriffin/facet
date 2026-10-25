@@ -23,7 +23,7 @@
    "type": "hidden",
    "default": "person"
   },
-  "score": {"about": "For previews only: how sure the sample camera is, from 0 to 100 per cent.", 
+  "score": {"about": "For previews only: how sure the sample camera is, as a percentage.", 
    "type": "hidden",
    "default": "92"
   },
