@@ -145,6 +145,13 @@ const entries = reg.filter((c) => shown(c.id)).map((c) => {
 // leading "Experiment:" / "WIP" markers in names, ledes and section texts
 const pub = (t) => typeof t === 'string' ? t.replace(/\s*\((?:facet-\d+|lab)[^)]*\)/gi, '').replace(/\bfacet-\d+\b,?\s*/gi, '').replace(/,?\s*\bWIP( round \d+)?\b\.?/g, '').replace(/^\s*Experiment:\s*/i, '')
   .replace(/\s*by Darren \(\d{4}-\d{2}-\d{2}:[^)]*\)/g, '').replace(/\s*\(Darren \d{4}-\d{2}-\d{2}\)/g, '').replace(/,\s*Darren \d{4}-\d{2}-\d{2}/g, '').trim() : t;
+// a shown component's variants / select options that name a hidden feature (Weather's lightning view while the
+// Lightning feature is hidden: the docs build has no such view) are left out
+const HIDDEN_FEATS = new Set(FEAT.features.filter((f) => !f.docs).map((f) => f.id));
+for (const e of entries) {
+  e.meta.variants = (e.meta.variants ?? []).filter((v) => !Object.values(v.props ?? {}).some((x) => HIDDEN_FEATS.has(x)));
+  for (const pr of e.meta.props ?? []) if (pr.options) pr.options = pr.options.filter((o) => !HIDDEN_FEATS.has(o));
+}
 for (const e of entries) {
   e.name = pub(e.name);
   e.lede = pub(e.lede);

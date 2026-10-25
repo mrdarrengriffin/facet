@@ -44,8 +44,11 @@ Build-time only (nothing on the device): `tools/features.mjs` reads the manifest
   cards (`cards` = the card types that open them) left out of `specs_gen.h`, their Colour page sections out
   (`colour` aliases), `FW_ICONS=used` trims by the components left; into `$FW_OUT/<flavour>/<density>/` with its own
   cache, no audit (the full build has it). Unset = everything (the workbench).
-- `firmware/bundle.mjs` = the release (firmware flags) by default; `--all` bundles every feature (a Show on device
-  build of work in progress).
+- `firmware/bundle.mjs` = the release (firmware flags) by default; `--all` bundles every feature: the workbench
+  firmware (`panel wb build`, the hub's Show on device hash check) always uses it, so the bench panels keep everything.
+- A shown part that offers a hidden feature drops that piece itself when its component is not in the build (Weather's
+  Lightning tab: `fw::find("lightning_view")`); the docs leave out variants / select options named after a hidden
+  feature.
 - `site/` builds from the docs flavour (`FW_FEATURES=docs renderer/build.sh` first, then `npm run build`).
 
 `node tools/features.mjs table` prints the flags; `exclude docs|firmware` the files a flavour leaves out.

@@ -37,6 +37,7 @@ constexpr const char *VIEWS[4] = {"weather", "sun", "moon", "lightning"};
 struct HourCol { lv_obj_t *hr, *ic, *t; };
 struct WV {
   lv_obj_t *views[4] = {};
+  int n = 4;  // views this build has: 3 when the Lightning feature is left out (renderer/features.json: no lightning_view)
   lv_obj_t *temp = nullptr, *icon = nullptr, *cond = nullptr, *line = nullptr, *dot = nullptr, *rain = nullptr;
   HourCol hours[8] = {};
   lv_obj_t *s_kind = nullptr, *s_time = nullptr, *s_in = nullptr, *s_arc = nullptr, *s_rise = nullptr, *s_set = nullptr, *s_stats[4] = {};
@@ -245,7 +246,7 @@ void build_sun(lv_obj_t *root, lv_obj_t *v) {
 void pick(lv_obj_t *root, int v) {
   WV *w = of(root);
   w->view = v;
-  for (int i = 0; i < 4; i++) {
+  for (int i = 0; i < w->n; i++) {
     if (i == v) lv_obj_remove_flag(w->views[i], LV_OBJ_FLAG_HIDDEN);
     else lv_obj_add_flag(w->views[i], LV_OBJ_FLAG_HIDDEN);
   }
@@ -260,6 +261,8 @@ void pick(lv_obj_t *root, int v) {
 void take(lv_obj_t *root, fw::Props p) {
   WV *w = of(root);
   w->fixed = p["now"] | 0.0;
+  // the Lightning tab follows the Lightning feature: a build without it (FW_FEATURES, features.json) has three tabs
+  w->n = fw::find("lightning_view") ? 4 : 3;  // features: optional
   w->lat = p["lat"] | 52.2;
   w->lon = p["lon"] | -1.2;
   w->condition = p["condition"] | "";
@@ -321,15 +324,15 @@ FW_COMPONENT(weather_view, "Weather view", "components", R"({
   lv_obj_t *tabs = box(root);  // the Segmented, listened to here (its change switches the view)
   lv_obj_set_size(tabs, fw::lay::content_w, LV_SIZE_CONTENT);
   ArduinoJson::JsonDocument sd;
-  sd["options"] = "Weather, Sun, Moon, Lightning";
+  sd["options"] = w->n == 4 ? "Weather, Sun, Moon, Lightning" : "Weather, Sun, Moon";
   sd["selected"] = p["view"] | "weather";
   sd["width"] = "fill";
   build("segmented", tabs, sd);
   fw::listen(tabs, [](lv_obj_t *, const char *name, const char *detail, void *user) {
     if (strcmp(name, "change")) return;
-    for (int i = 0; i < 4; i++) if (!strcasecmp(detail, VIEWS[i])) pick((lv_obj_t *) user, i);
+    for (int i = 0; i < of((lv_obj_t *) user)->n; i++) if (!strcasecmp(detail, VIEWS[i])) pick((lv_obj_t *) user, i);
   }, root);
-  for (int i = 0; i < 4; i++) {
+  for (int i = 0; i < w->n; i++) {
     lv_obj_t *v = w->views[i] = box(root);
     lv_obj_set_width(v, fw::lay::content_w);
     lv_obj_set_flex_grow(v, 1);
@@ -338,7 +341,7 @@ FW_COMPONENT(weather_view, "Weather view", "components", R"({
   }
   lv_obj_update_layout(root);
   const int top = lv_obj_get_height(tabs) + fw::sp::s7, vh = fw::lay::content_h - top;
-  for (lv_obj_t *v : w->views) { lv_obj_set_pos(v, 0, top); lv_obj_set_height(v, vh); }
+  for (int i = 0; i < w->n; i++) { lv_obj_set_pos(w->views[i], 0, top); lv_obj_set_height(w->views[i], vh); }
   build_weather(root, w->views[0]);
   build_sun(root, w->views[1]);
   {
@@ -350,7 +353,7 @@ FW_COMPONENT(weather_view, "Weather view", "components", R"({
     lv_obj_set_flex_grow(grow, 1);
     more(root, w->views[2], "details", "moon_details");
   }
-  {
+  if (w->n == 4) {
     ArduinoJson::JsonDocument lp;
     lp["size"] = "weather";
     if (w->fixed > 0) { lp["demo"] = false; lp["now"] = w->fixed; }
@@ -359,7 +362,7 @@ FW_COMPONENT(weather_view, "Weather view", "components", R"({
   take(root, p);
   const char *v0 = p["view"] | "weather";
   int vi = 0;
-  for (int i = 0; i < 4; i++) if (!strcmp(v0, VIEWS[i])) vi = i;
+  for (int i = 0; i < w->n; i++) if (!strcmp(v0, VIEWS[i])) vi = i;
   pick(root, vi);
   if (w->fixed <= 0)
     w->tick = lv_timer_create([](lv_timer_t *tm) {
@@ -373,6 +376,6 @@ FW_UPDATE(weather_view) {
   if (!w) return false;
   take(root, p);
   const char *v0 = p["view"] | "weather";
-  for (int i = 0; i < 4; i++) if (!strcmp(v0, VIEWS[i]) && i != w->view) pick(root, i);
+  for (int i = 0; i < w->n; i++) if (!strcmp(v0, VIEWS[i]) && i != w->view) pick(root, i);
   return true;
 }

@@ -22,7 +22,9 @@ const SRC_DIRS = { foundations: 'foundations', components: 'components', screens
 function inventory() {
   const out = [];
   const core = new Set(readdirSync(join(R, 'core')));
-  const depsOf = (src) => {
+  // a line marked `features: optional` asks whether a part is in the build (and does without it): not a dependency
+  const depsOf = (src0) => {
+    const src = src0.split('\n').filter((l) => !l.includes('features: optional')).join('\n');
     const d = new Set([...src.matchAll(/\bfind\("([a-z0-9_]+)"/g)].map((m) => m[1]));
     for (const m of src.matchAll(/#include "([a-z0-9_]+\.h)"/g)) if (core.has(m[1])) d.add(`core/${m[1]}`);
     return d;
