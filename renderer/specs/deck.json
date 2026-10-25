@@ -1,6 +1,6 @@
 {
  "v": 2,
- "rev": 1,
+ "rev": 2,
  "start": "living",
  "pages": [
   {
@@ -33,17 +33,102 @@
      "t": "climate",
      "e": "climate.portable_ac",
      "size": "m",
-     "tap": "detail"
+     "tap": "detail",
+     "label": "Air con"
+    },
+    {
+     "t": "media",
+     "e": "media_player.living_room_speaker_2",
+     "size": "m",
+     "tap": "detail",
+     "label": "Speaker"
+    },
+    {
+     "t": "sensor",
+     "e": "binary_sensor.back_door_opening",
+     "size": "m",
+     "label": "Back door"
+    },
+    {
+     "t": "sensor",
+     "e": "sensor.garage_temperature_office_temperature_temperature",
+     "size": "m",
+     "label": "Garage"
     },
     {
      "t": "page",
-     "page": "media",
+     "page": "kitchen",
+     "size": "m"
+    },
+    {
+     "t": "page",
+     "page": "calendar",
      "size": "m"
     },
     {
      "t": "page",
      "page": "weather",
      "size": "l"
+    }
+   ]
+  },
+  {
+   "id": "kitchen",
+   "kind": "home",
+   "name": "Kitchen",
+   "cards": [
+    {
+     "t": "light",
+     "e": "light.pantry_light",
+     "size": "s",
+     "tap": "toggle",
+     "label": "Pantry"
+    },
+    {
+     "t": "light",
+     "e": "light.pantry_leds_2",
+     "size": "s",
+     "tap": "toggle",
+     "label": "Pantry LEDs"
+    },
+    {
+     "t": "page",
+     "page": "timer",
+     "size": "s"
+    },
+    {
+     "t": "sensor",
+     "e": "binary_sensor.fridge_door_opening",
+     "size": "m",
+     "label": "Fridge"
+    },
+    {
+     "t": "sensor",
+     "e": "sensor.kitchen_dishwasher_plug_power",
+     "size": "m",
+     "label": "Dishwasher"
+    },
+    {
+     "t": "media",
+     "e": "media_player.kitchen_display_2",
+     "size": "m",
+     "tap": "detail",
+     "label": "Kitchen display"
+    },
+    {
+     "t": "page",
+     "page": "living",
+     "size": "m"
+    },
+    {
+     "t": "page",
+     "page": "calendar",
+     "size": "m"
+    },
+    {
+     "t": "page",
+     "page": "weather",
+     "size": "m"
     }
    ]
   },

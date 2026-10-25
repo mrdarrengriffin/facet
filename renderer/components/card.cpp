@@ -2,6 +2,8 @@
 // opens that screen. Fixed size from the layout tokens, two per row:
 //   720: 320 x 280 (card-w x card-h), padding card-pad 24      480: 212 x 184, padding 16
 //   surface fill, 1 px line border, radius card (0); children count from the outer edge (pad - hair, = docs)
+// Size (screen model §4, Home cards): m = the card above (default); l = the wide card, lay::content_w x card_h (656 x 280
+// / 440 x 184: one per row), same parts and padding, the value / text / sub as wide as the card.
 // Layout (flex column, nothing hand-placed):
 //   top row      screen icon (icon size, text-dim) + caps label (type label, text-dim) + status dot (accent, only when
 //                the card is "accent"), the preview artwork top right at the icon size token "card" (72 / 48): a
@@ -86,7 +88,8 @@ void fill(lv_obj_t *c, fw::Props p) {
   lv_obj_remove_style_all(c);
   lv_obj_add_flag(c, LV_OBJ_FLAG_CLICKABLE);
   lv_obj_remove_flag(c, LV_OBJ_FLAG_SCROLLABLE);
-  lv_obj_set_size(c, fw::lay::card_w, fw::lay::card_h);
+  const int cw = !strcmp(p["size"] | "m", "l") ? fw::lay::content_w : fw::lay::card_w;  // l = the wide card
+  lv_obj_set_size(c, cw, fw::lay::card_h);
   lv_obj_set_style_radius(c, fw::rad::card, 0);
   lv_obj_set_style_bg_opa(c, LV_OPA_COVER, 0);
   lv_obj_set_style_border_width(c, fw::stroke::hair, 0);
@@ -139,7 +142,7 @@ void fill(lv_obj_t *c, fw::Props p) {
   lv_obj_set_width(grow, 0);
   lv_obj_set_flex_grow(grow, 1);
 
-  const int inner = fw::lay::card_w - 2 * fw::lay::card_pad;
+  const int inner = cw - 2 * fw::lay::card_pad;
   if (text_mode && !off) {  // up to two lines of title, bottom-aligned (the grow above pushes it down)
     lv_obj_t *tx = fw::text(c, fw::ty::title, p["text"] | "", t.text, inner);
     lv_obj_remove_flag(tx, LV_OBJ_FLAG_CLICKABLE);
@@ -185,10 +188,12 @@ FW_COMPONENT(card, "Card", "components", R"({
   "about": "A tappable Home card: an icon and label, a value or short text, and a supporting line.",
   "frame": [244, 220],
   "icons": ["screen-weather@icon", "screen-media@icon", "screen-timer@icon", "screen-energy@icon", "screen-light@icon",
+            "screen-thermostat@icon", "screen-covers@icon", "screen-calendar@icon", "screen-clock@icon", "screen-switch@icon",
             "partly-day@card", "rain-light@card", "clear-night@card"],
   "props": [
     {"name": "label", "type": "text", "default": "Weather"},
-    {"name": "icon", "type": "select", "options": ["none", "weather", "media", "timer", "energy", "light"], "default": "weather"},
+    {"name": "icon", "type": "select", "options": ["none", "weather", "media", "timer", "energy", "light", "thermostat", "covers", "calendar", "clock", "switch"], "default": "weather"},
+    {"name": "size", "type": "select", "options": ["m", "l"], "default": "m"},
     {"name": "preview", "type": "select", "options": ["none", "partly-day", "rain-light", "clear-night", "agents", "media", "dial", "switch", "clock", "timer", "github", "energy", "lightning"], "default": "partly-day"},
     {"name": "mode", "type": "select", "options": ["value", "text"], "default": "value"},
     {"name": "value", "type": "text", "default": "13°"},
@@ -208,6 +213,7 @@ FW_COMPONENT(card, "Card", "components", R"({
     {"label": "accent · needs you", "props": {"label": "Timer", "icon": "timer", "preview": "none", "value": "04:32", "sub": "Pasta", "accent": true}},
     {"label": "sub tone · warn", "props": {"preview": "rain-light", "value": "9°", "sub": "Rain from 15:00", "tone": "warn"}},
     {"label": "preview · energy bars", "props": {"label": "Energy", "icon": "energy", "preview": "energy", "value": "£2.42", "sub": "Today so far"}},
+    {"label": "wide (l) · a page", "props": {"size": "l", "label": "Weather", "value": "13°", "sub": "Dry for the next hour"}},
     {"label": "no icon, no preview", "props": {"label": "Energy", "icon": "none", "preview": "none", "value": "£2.42", "sub": "Today so far"}},
     {"label": "unavailable", "props": {"label": "Lights", "icon": "light", "preview": "none", "value": "65%", "sub": "", "state": "unavailable"}}
   ]

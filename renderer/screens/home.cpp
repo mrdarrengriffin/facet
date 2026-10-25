@@ -1,115 +1,216 @@
-// Home (PLACEHOLDER, Darren 2026-10-22): the real Home will be customisable per room (not just a card grid); until
-// then a simple grid of the screens and workbench pages that exist, so the panel and the workbench can get around.
-// Composed only of real components:
-//   header   the Header component (no back; "Home" + the screen chrome: the settings button (Home only) + live clock)
-//            at (inset, inset)
-//   content  from lay::top, one scrolling column of Cards, two per row (lay::card_w x lay::card_h, a gutter apart both
-//            ways; 480: 2 x 184 + 16 = 384 of the 388 content height, the 4 px left over stays at the bottom), bottom
-//            padding inset
-//   cards    a link per deck page (core/spec.h deck v2: factory or sent; its order; not the Homes), then the workbench pages
-//            in PAGES that this build has (fw::find): title only (the page name as the Card label; no
-//            icon, value or line under it: Darren 2026-10-22, placeholder). Tap = the Card's own tap (event tap + sound open), then
-//            event "navigate" (detail = the page id): the workbench opens that page, the panel host will open the screen
-// Update path: nothing in it changes with props (the clock runs on its own), so an update keeps it as it is.
+// Home: a room's page (screen model §4, piece 2). Each Home in the deck (core/spec.h deck v2) holds its own cards; this
+// screen turns the Home page into a screen spec made only of real components and builds it with the spec renderer
+// (core/spec.h build: binds to the entities' live state, the tap actions, the header):
+//   header   the Header (label = the page name; Back unless it is the start page) + the screen chrome
+//   content  one Card grid (components/card_grid.cpp: the §4 packing, s / m / l rows) holding one node per card, in
+//            the deck's order, from the card type catalogue (CARD_TYPES: the component per size):
+//              light   s Entity tile (bulb / power icon, "64%" / "Off", on = accent) | m Card (value = the level)
+//              cover   s Entity tile (opens Blinds) | m Card (position, state)
+//              climate m Card (current temperature, state)
+//              media   m / l Card in text mode (the track, the state)
+//              sensor  m State readout (read-only: no box, no tap); two in a row share one card slot
+//              page    s Entity tile / m Card / l wide Card: the page's name (opens it)
+//            label = the card's label, else the entity's friendly name (a bind). Unavailable entities show the
+//            components' own unavailable look.
+//   taps     toggle = light.toggle (a light or a switch); detail = nav.open of the type's detail screen for that
+//            entity; page = nav.open of that deck page; none = nothing (sensors)
+// Prop page = the Home's page id ("" = the deck's start page if it is a Home, else the first Home). With no Home in the
+// deck: the header and an empty grid.
+// Update path: the deck changing rebuilds the screen (the device reloads it); entity changes move each card through
+// its own update path (binds), so nothing else changes with props.
+#include <string>
 #include "fw.h"
 #include "spec.h"
 
 namespace {
 using Doc = ArduinoJson::JsonDocument;
-
-lv_obj_t *box(lv_obj_t *parent) {
-  lv_obj_t *o = lv_obj_create(parent);
-  lv_obj_remove_style_all(o);
-  lv_obj_remove_flag(o, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
-  return o;
-}
-lv_obj_t *build(const char *id, lv_obj_t *parent, Doc &props) {
-  const fw::Component *c = fw::find(id);
-  if (!c) return nullptr;
-  const uint32_t before = lv_obj_get_child_count(parent);
-  c->build(parent, props.as<fw::Props>());
-  return lv_obj_get_child_count(parent) > before ? lv_obj_get_child(parent, -1) : nullptr;
-}
-
-// the pages Home lists, screens first. Title only on every card (Darren 2026-10-22: "just show the title for now"),
-// no icon, so they all match
-const char *const PAGES[] = {"colour", "type", "space", "layout", "icons", "motion", "states", "mascots", "chart"};
+using Var = ArduinoJson::JsonVariantConst;
 
 const char *META = R"({
-  "about": "Placeholder Home: a grid of cards for the screens and workbench pages that exist; each card opens its page. The real Home will be laid out per room.",
+  "about": "A room's Home: its cards from the deck (tiles, cards, wide cards and read-only readouts) in rows of one size, live from the entities. Tap a tile to toggle, a card to open its screen.",
   "frame": [480, 480],
-  "icons": ["screen-settings@icon"],
-  "props": [],
+  "icons": ["screen-settings@icon", "bulb@icon", "power@icon"],
+  "props": [
+    {"name": "page", "type": "text", "default": ""}
+  ],
   "variants": [
-    {"label": "default", "props": {}}
+    {"label": "start Home · Living room", "props": {}},
+    {"label": "Kitchen", "props": {"page": "kitchen"}}
   ]
 })";
 
-void build_home(lv_obj_t *parent, fw::Props) {
-  const fw::Theme &t = *fw::T;
-  lv_obj_t *root = box(parent);
-  lv_obj_set_size(root, fw::lay::screen_w, fw::lay::screen_h);
-  lv_obj_set_style_bg_color(root, t.bg, 0);
-  lv_obj_set_style_bg_opa(root, LV_OPA_COVER, 0);
+// a bind on the card's entity
+void bind(ArduinoJson::JsonObject p, const char *key, const std::string &e, const char *fmt, const char *a = nullptr) {
+  ArduinoJson::JsonObject b = p[key].to<ArduinoJson::JsonObject>();
+  b["e"] = e;
+  if (fmt && *fmt) b["fmt"] = fmt;
+  if (a) b["a"] = a;
+}
+// screen icons the Card and the Entity tile draw (screen-<kind>); others draw none
+bool has_icon(const std::string &k) {
+  static const char *const K[] = {"weather", "media", "timer", "energy", "light", "thermostat", "covers", "calendar", "clock", "switch",
+                                  "agents", "github", "moon", "lightning", "overhead", "bins", "print", "home"};
+  for (const char *x : K) if (k == x) return true;
+  return false;
+}
+// the page's display name: its own, else its kind's spec name
+std::string page_name(Var pg) {
+  std::string n = pg["name"] | "";
+  if (!n.empty()) return n;
+  const std::string kind = pg["kind"] | "";
+  Doc sp;
+  if (const char *j = fw::spec::screen_json(kind)) { deserializeJson(sp, j); return sp["name"] | kind.c_str(); }
+  if (kind == "home") return "Home";
+  return kind;
+}
 
-  Doc hd;  // the Header + its screen chrome (settings button, live clock)
-  hd["label"] = "Home";
-  hd["back"] = false;
-  hd["settings"] = true;  // the settings button: Home only for now (Darren 2026-10-22)
-  if (lv_obj_t *h = build("header", root, hd)) lv_obj_set_pos(h, fw::lay::inset, fw::lay::inset);
-
-  lv_obj_t *c = box(root);
-  lv_obj_add_flag(c, (lv_obj_flag_t) (LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_CLICKABLE));  // clickable: a drag in a gap scrolls too
-  lv_obj_set_scroll_dir(c, LV_DIR_VER);
-  lv_obj_set_scrollbar_mode(c, LV_SCROLLBAR_MODE_OFF);
-  lv_obj_set_pos(c, fw::lay::inset, fw::lay::top);
-  lv_obj_set_size(c, fw::lay::content_w, fw::lay::screen_h - fw::lay::top);
-  lv_obj_set_style_pad_bottom(c, fw::lay::inset, 0);
-  lv_obj_set_flex_flow(c, LV_FLEX_FLOW_ROW_WRAP);
-  lv_obj_set_style_pad_column(c, fw::lay::gutter, 0);
-  lv_obj_set_style_pad_row(c, fw::lay::gutter, 0);
-
-  // a link per deck page (deck v2; the start Home's own cards come with the Home renderer, screen model piece 2):
-  // the page's name, else its spec's; other Homes wait for that renderer too. Then the workbench pages.
-  std::vector<std::pair<std::string, std::string>> cards;
-  {
-    Doc deck;
-    deserializeJson(deck, fw::spec::deck_json());
-    for (ArduinoJson::JsonVariantConst x : deck["pages"].as<ArduinoJson::JsonArrayConst>()) {
-      const std::string kind = x["kind"] | "";
-      if (kind == "home") continue;
-      std::string name = x["name"] | "";
-      if (name.empty()) {
-        Doc sp;
-        if (const char *j = fw::spec::screen_json(kind)) { deserializeJson(sp, j); name = sp["name"] | kind.c_str(); }
-        else if (const fw::Component *comp = fw::find(kind.c_str())) name = comp->name;
-      }
-      cards.push_back({kind, name});
+// one deck card -> one spec node in slot `slot` of node 0 (the Card grid); returns its cell size ('s', 'm', 'l', 'h')
+char card_node(Var cd, Var pages, int slot, ArduinoJson::JsonArray nodes) {
+  const std::string t = cd["t"] | "", e = cd["e"] | "", size = cd["size"] | "m", label = cd["label"] | "";
+  const fw::spec::CardType *ct = fw::spec::card_type(t);
+  if (!ct) return 0;
+  std::string tap = cd["tap"] | "";
+  if (tap.empty()) tap = std::string(ct->taps).substr(0, std::string(ct->taps).find(','));
+  const char *comp = size == "s" ? ct->comp_s : size == "l" ? ct->comp_l : ct->comp_m;
+  if (!*comp) return 0;
+  ArduinoJson::JsonObject n = nodes.add<ArduinoJson::JsonObject>();
+  n["c"] = comp;
+  n["in"] = 0;
+  n["slot"] = slot;
+  ArduinoJson::JsonObject p = n["p"].to<ArduinoJson::JsonObject>();
+  const std::string dom = e.substr(0, e.find('.'));
+  // the label: the card's, else the entity's friendly name; a page card: the page's name
+  std::string pid = cd["page"] | "", kind;
+  Var target;
+  for (Var pg : pages.as<ArduinoJson::JsonArrayConst>())
+    if (pid == (pg["id"] | "")) target = pg;
+  if (t == "page") { p["label"] = label.empty() ? page_name(target) : label; kind = target["kind"] | ""; }
+  else if (label.empty()) bind(p, "label", e, "name");
+  else p["label"] = label;
+  const std::string comp_s = comp;
+  if (comp_s == "entity_tile") {
+    if (t == "page") {
+      p["icon"] = has_icon(kind) ? "screen-" + kind : std::string("screen-home");
+      p["status"] = "";
+      p["on"] = false;
+    } else if (t == "cover") {
+      p["icon"] = "screen-covers";
+      bind(p, "status", e, "state");
+      ArduinoJson::JsonObject on = p["on"].to<ArduinoJson::JsonObject>();
+      on["e"] = e;
+      on["map"]["open"] = "on";
+      on["map"]["opening"] = "on";
+      on["else"] = "off";
+    } else {
+      p["icon"] = dom == "switch" ? "power" : "bulb";
+      bind(p, "status", e, "level");
+      bind(p, "on", e, "on");
     }
+    p["act"] = tap == "toggle" ? "toggle" : "open";
+    if (t != "page") bind(p, "state", e, "avail");
+  } else if (comp_s == "card") {
+    p["size"] = size;
+    p["preview"] = "none";
+    p["sub"] = "";
+    p["value"] = "";
+    p["mode"] = "value";
+    if (t == "page") p["icon"] = has_icon(kind) ? kind : std::string("none");
+    else if (t == "light") { p["icon"] = "light"; bind(p, "value", e, "level"); bind(p, "accent", e, "on"); }
+    else if (t == "cover") {
+      p["icon"] = "covers";
+      bind(p, "value", e, "num", "current_position");
+      p["value"]["tpl"] = "{}%";
+      bind(p, "sub", e, "state");
+    } else if (t == "climate") {
+      p["icon"] = "thermostat";
+      bind(p, "value", e, "num", "current_temperature");
+      p["value"]["tpl"] = "{}\xC2\xB0";
+      bind(p, "sub", e, "state");
+    } else if (t == "media") {
+      p["icon"] = "media";
+      p["mode"] = "text";
+      bind(p, "text", e, "", "media_title");
+      bind(p, "sub", e, "state");
+    }
+    if (t != "page") bind(p, "state", e, "avail");
+  } else if (comp_s == "readout") {
+    p["half"] = true;
+    bind(p, "state", e, "state");
+    ArduinoJson::JsonObject ic = p["icon"].to<ArduinoJson::JsonObject>();
+    ic["e"] = e;
+    ic["a"] = "device_class";
+    static const char *const MAP[][2] = {{"temperature", "thermometer"}, {"door", "door"}, {"garage_door", "door"},
+        {"opening", "door"}, {"window", "window"}, {"motion", "person"}, {"occupancy", "person"}, {"presence", "person"},
+        {"moisture", "alert"}, {"power", "bolt"}, {"energy", "bolt"}, {"current", "bolt"}, {"voltage", "bolt"}};
+    for (auto &m : MAP) ic["map"][m[0]] = m[1];
+    ic["else"] = "house";
+    ArduinoJson::JsonObject tone = p["tone"].to<ArduinoJson::JsonObject>();
+    tone["e"] = e;
+    tone["map"]["unavailable"] = "mute";
+    tone["map"]["unknown"] = "mute";
+    tone["else"] = "text";
   }
-  for (const char *id : PAGES)
-    if (const fw::Component *comp = fw::find(id)) cards.push_back({id, comp->name});
-  for (const auto &cd : cards) {
-    Doc d;  // title only
-    d["label"] = cd.second;
-    d["icon"] = "none";
-    d["preview"] = "none";
-    d["mode"] = "value";
-    d["value"] = "";
-    d["sub"] = "";
-    lv_obj_t *card = build("card", c, d);
-    if (!card) continue;
-    char *id = strdup(cd.first.c_str());  // freed with the card
-    lv_obj_add_event_cb(card, [](lv_event_t *e) { free(lv_event_get_user_data(e)); }, LV_EVENT_DELETE, id);
-    lv_obj_add_event_cb(card, [](lv_event_t *e) {  // after the Card's own tap (event tap + sound open)
-      auto *o = (lv_obj_t *) lv_event_get_current_target(e);
-      if (lv_obj_has_state(o, fw::st::OFF)) return;
-      fw::emit(o, "navigate", (const char *) lv_event_get_user_data(e));
-    }, LV_EVENT_CLICKED, id);
+  // the tap
+  if (tap == "toggle") {
+    ArduinoJson::JsonObject a = n["on"]["tap"].to<ArduinoJson::JsonObject>();
+    a["do"] = "light.toggle";
+    a["e"] = e;
+  } else if (tap == "detail" && *ct->detail) {
+    ArduinoJson::JsonObject a = n["on"]["tap"].to<ArduinoJson::JsonObject>();
+    a["do"] = "nav.open";
+    a["screen"] = ct->detail;
+    a["params"]["entity"] = e;
+    if (!label.empty()) a["params"]["name"] = label;
+  } else if (tap == "page" && !pid.empty()) {
+    ArduinoJson::JsonObject a = n["on"]["tap"].to<ArduinoJson::JsonObject>();
+    a["do"] = "nav.open";
+    a["screen"] = pid;
   }
+  return t == "sensor" ? 'h' : size[0];
+}
+
+void build_home(lv_obj_t *parent, fw::Props props) {
+  Doc deck;
+  deserializeJson(deck, fw::spec::deck_json());
+  const std::string want = props["page"] | "", start = deck["start"] | "";
+  Var page, first;
+  for (Var pg : deck["pages"].as<ArduinoJson::JsonArrayConst>()) {
+    if (strcmp(pg["kind"] | "", "home")) continue;
+    if (first.isNull()) first = pg;
+    const std::string id = pg["id"] | "";
+    if (want.empty() ? id == start : id == want) page = pg;
+  }
+  if (page.isNull()) page = first;
+  Doc sp;  // the Home as a screen spec
+  sp["v"] = 1;
+  sp["id"] = "home";
+  sp["name"] = page.isNull() ? std::string("Home") : page_name(page);
+  sp["header"]["label"] = sp["name"];
+  sp["header"]["back"] = !page.isNull() && start != (page["id"] | "");
+  sp["header"]["settings"] = true;
+  sp["layout"] = "list";
+  ArduinoJson::JsonArray nodes = sp["nodes"].to<ArduinoJson::JsonArray>();
+  ArduinoJson::JsonObject grid = nodes.add<ArduinoJson::JsonObject>();
+  grid["c"] = "card_grid";
+  grid["p"]["sample"] = false;
+  std::string cells;
+  int slot = 0;
+  for (Var cd : page["cards"].as<ArduinoJson::JsonArrayConst>()) {
+    const char k = card_node(cd, deck["pages"], slot, nodes);
+    if (!k) continue;
+    cells += (cells.empty() ? "" : ",") + std::string(1, k);
+    slot++;
+  }
+  grid["p"]["cells"] = cells;
+  std::string json, error;
+  serializeJson(sp, json);
+  Doc none;
+  none.to<ArduinoJson::JsonObject>();
+  fw::spec::build(parent, "home", none.as<fw::Props>(), &error, json.c_str());
 }
 const int reg = fw::add({"home", "Home", "screens", META, build_home});
 }  // namespace
 
-// Update path: no props change what Home shows (the clock keeps itself), so it stays as it is. Silent.
+// Update path: an entity's change reaches each card through its binds; the deck changing rebuilds the screen (the
+// device's reload), so props never change what is built here.
 FW_UPDATE(home) { return lv_obj_get_child_count(root) > 0; }

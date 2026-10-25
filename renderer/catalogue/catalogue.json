@@ -419,8 +419,8 @@
     ]
    },
    "cost": {
-    "objects": 337,
-    "bytes_est": 53920
+    "objects": 336,
+    "bytes_est": 53760
    }
   },
   "camera_tile": {
@@ -510,7 +510,21 @@
       "media",
       "timer",
       "energy",
-      "light"
+      "light",
+      "thermostat",
+      "covers",
+      "calendar",
+      "clock",
+      "switch"
+     ]
+    },
+    {
+     "name": "size",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "m",
+      "l"
      ]
     },
     {
@@ -609,6 +623,31 @@
    "cost": {
     "objects": 13,
     "bytes_est": 2080
+   }
+  },
+  "card_grid": {
+   "name": "Card grid",
+   "update": true,
+   "props": [
+    {
+     "name": "cells",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "sample",
+     "type": "bool",
+     "bindable": true
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 9,
+    "bytes_est": 1440
    }
   },
   "card_previews": {
@@ -1288,6 +1327,82 @@
    "cost": {
     "objects": 36,
     "bytes_est": 5760
+   }
+  },
+  "entity_tile": {
+   "name": "Entity tile",
+   "update": true,
+   "props": [
+    {
+     "name": "icon",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "bulb",
+      "power",
+      "screen-covers",
+      "screen-timer",
+      "screen-media",
+      "screen-weather"
+     ]
+    },
+    {
+     "name": "label",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "status",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "on",
+     "type": "bool",
+     "bindable": true
+    },
+    {
+     "name": "act",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "toggle",
+      "open"
+     ]
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "default",
+      "pressed",
+      "unavailable"
+     ]
+    },
+    {
+     "name": "press",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "fill",
+      "border",
+      "border-fill"
+     ]
+    }
+   ],
+   "events": {
+    "tap": [
+     "nav.open",
+     "light.toggle"
+    ],
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 7,
+    "bytes_est": 1120
    }
   },
   "event_row": {
@@ -2818,7 +2933,8 @@
       "playing",
       "paused",
       "idle",
-      "off"
+      "off",
+      "unavailable"
      ]
     },
     {
@@ -3688,6 +3804,51 @@
      ]
     },
     {
+     "name": "label",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "icon",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "person",
+      "door",
+      "window",
+      "thermometer",
+      "house",
+      "alert",
+      "bolt"
+     ]
+    },
+    {
+     "name": "state",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "detail",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "tone",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "text",
+      "accent",
+      "warn",
+      "mute"
+     ]
+    },
+    {
+     "name": "half",
+     "type": "bool",
+     "bindable": true
+    },
+    {
      "name": "bottom",
      "type": "select",
      "bindable": true,
@@ -4345,6 +4506,8 @@
       "grass",
       "indoor",
       "carpet",
+      "club",
+      "duotone",
       "facet",
       "wimbledon",
       "roland-garros",
@@ -4634,7 +4797,8 @@
      "options": [
       "heat",
       "auto",
-      "off"
+      "off",
+      "unavailable"
      ]
     },
     {
@@ -5289,7 +5453,9 @@
   "frac",
   "count",
   "time",
-  "day"
+  "day",
+  "level",
+  "state"
  ],
  "layouts": [
   "list",
@@ -5316,33 +5482,62 @@
   "light": {
    "domains": "light,switch",
    "sizes": "s,m",
-   "taps": "toggle,detail"
+   "taps": "toggle,detail",
+   "detail": "light",
+   "component": {
+    "s": "entity_tile",
+    "m": "card"
+   }
   },
   "cover": {
    "domains": "cover",
    "sizes": "s,m",
-   "taps": "detail,toggle"
+   "taps": "detail",
+   "detail": "covers",
+   "component": {
+    "s": "entity_tile",
+    "m": "card"
+   }
   },
   "climate": {
    "domains": "climate",
    "sizes": "m",
-   "taps": "detail"
+   "taps": "detail",
+   "detail": "thermostat",
+   "component": {
+    "m": "card"
+   }
   },
   "media": {
    "domains": "media_player",
    "sizes": "m,l",
-   "taps": "page,detail,toggle"
+   "taps": "detail,page",
+   "detail": "media",
+   "component": {
+    "m": "card",
+    "l": "card"
+   }
   },
   "sensor": {
    "domains": "sensor,binary_sensor",
-   "sizes": "s,m",
-   "taps": "detail,none"
+   "sizes": "m",
+   "taps": "none",
+   "detail": "",
+   "component": {
+    "m": "readout"
+   }
   },
   "page": {
    "domains": "",
    "sizes": "s,m,l",
-   "taps": "page"
+   "taps": "page",
+   "detail": "",
+   "component": {
+    "s": "entity_tile",
+    "m": "card",
+    "l": "card"
+   }
   }
  },
- "hash": "8ff3bfb1"
+ "hash": "392c4f4e"
 }

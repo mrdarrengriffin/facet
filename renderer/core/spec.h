@@ -10,7 +10,8 @@
 //                                                          Settings > Screens and the workbench build their controls
 //                                                          from it (entity / entities = one / a comma list of
 //                                                          `domain` ids, filled by the host's discovery)
-//               "header": {"label": "Office", "back": true},
+//               "header": {"label": "Office", "back": true, "settings"?: false},   settings = the chrome's
+//                                                          settings button (a Home)
 //               "layout": "list" | "center" | "cards",    list = one scrolling column (rows touch), center = one node
 //                                                          centred in the content box, cards = the card grid
 //               "nodes": [node...]}
@@ -138,6 +139,7 @@ constexpr Rule RULES[] = {
     {"list_row", "toggle", "light.switch"},          {"list_row", "tap", "nav.open,nav.back,light.toggle"},
     {"list_row", "long", "nav.open"},                {"card", "tap", "nav.open,light.toggle"},
     {"card", "long", "nav.open"},                    {"dial", "change", "light.brightness"},
+    {"entity_tile", "tap", "nav.open,light.toggle"},
     {"dial", "input", "light.brightness"},           {"dial", "toggle", "light.switch"},
     {"slider", "change", "light.brightness"},        {"slider", "input", "light.brightness"},
     {"toggle", "toggle", "light.switch"},
@@ -157,7 +159,7 @@ constexpr Rule RULES[] = {
 constexpr const char *ACTIONS[] = {"light.switch", "light.toggle", "light.brightness", "climate.set_temperature",
                                    "climate.set_hvac_mode", "climate.set_preset_mode", "media.control", "cover.control", "lock.control", "vacuum.control", "screen.toggle", "screen.param",
                                    "nav.open", "nav.back"};
-constexpr const char *FMTS[] = {"", "on", "pct", "avail", "light", "name", "num", "frac", "count", "time", "day"};
+constexpr const char *FMTS[] = {"", "on", "pct", "avail", "light", "name", "num", "frac", "count", "time", "day", "level", "state"};
 constexpr uint32_t CLIMATE_THROTTLE_MS = 250;  // like light-throttle-ms: a set point while dragging at most this often
 constexpr const char *LAYOUTS[] = {"list", "center", "cards"};
 constexpr int EACH_MAX = 12;                         // copies one "each" node makes at most
@@ -188,13 +190,20 @@ inline int slots_of(const char *comp) {
 }
 constexpr const char *PARAM_TYPES[] = {"text", "select", "entity", "entities", "toggle", "hidden"};
 constexpr const char *ROLES[] = {"page", "detail", "both"};
-// Home card types (deck v2; piece 2 moves them to renderer/cards/cards.json): domains its entity may be, sizes,
-// taps (the default first)
-struct CardType { const char *t, *domains, *sizes, *taps; };
+// Home card type catalogue (deck v2, screen model piece 2): per type the entity domains it takes, its sizes, its taps
+// (the default first), the detail screen "detail" opens, and the component that draws it at each size (s | m | l; ""
+// = not offered). Sizes: s = a tile (tile-w x tile-h, three across), m = a card (card-w x card-h, two across),
+// l = a wide card (content-w x card-h). A sensor is a State readout: no box, no tap (a box is a button, no box is a
+// readout); it is m, and two sensors in a row share one card slot, stacked (docs readoutSlot). Taps: toggle = the
+// entity's toggle, detail = its detail screen for that entity, page = a deck page, none = reports only.
+struct CardType { const char *t, *domains, *sizes, *taps, *detail, *comp_s, *comp_m, *comp_l; };
 constexpr CardType CARD_TYPES[] = {
-    {"light", "light,switch", "s,m", "toggle,detail"},          {"cover", "cover", "s,m", "detail,toggle"},
-    {"climate", "climate", "m", "detail"},                      {"media", "media_player", "m,l", "page,detail,toggle"},
-    {"sensor", "sensor,binary_sensor", "s,m", "detail,none"},   {"page", "", "s,m,l", "page"}};
+    {"light", "light,switch", "s,m", "toggle,detail", "light", "entity_tile", "card", ""},
+    {"cover", "cover", "s,m", "detail", "covers", "entity_tile", "card", ""},
+    {"climate", "climate", "m", "detail", "thermostat", "", "card", ""},
+    {"media", "media_player", "m,l", "detail,page", "media", "", "card", "card"},
+    {"sensor", "sensor,binary_sensor", "m", "none", "", "", "readout", ""},
+    {"page", "", "s,m,l", "page", "", "entity_tile", "card", "card"}};
 // a parameter's default: its text, or a typed parameter's "default"
 inline std::string param_default(ArduinoJson::JsonVariantConst v) {
   if (v.is<const char *>()) return v.as<std::string>();
@@ -390,9 +399,9 @@ inline void check_screen(ArduinoJson::JsonVariantConst s, size_t bytes, Errs &e)
     }
   }
   if (!s["header"].isNull()) {
-    static const char *const H[] = {"label", "back"};
-    if (!s["header"].is<ArduinoJson::JsonObjectConst>()) err(e, ".header", "bad_header", "header is {label, back}");
-    else check_keys(s["header"].as<ArduinoJson::JsonObjectConst>(), H, 2, ".header", e);
+    static const char *const H[] = {"label", "back", "settings"};
+    if (!s["header"].is<ArduinoJson::JsonObjectConst>()) err(e, ".header", "bad_header", "header is {label, back, settings?}");
+    else check_keys(s["header"].as<ArduinoJson::JsonObjectConst>(), H, 3, ".header", e);
   }
   ArduinoJson::JsonArrayConst nodes = s["nodes"].as<ArduinoJson::JsonArrayConst>();
   if (nodes.isNull()) { err(e, ".nodes", "bad_nodes", "nodes is a list"); return; }
@@ -963,7 +972,7 @@ inline bool run(Screen *s, Node &n, const char *event, const char *detail) {
   }
   // an entity that is unavailable / unknown takes no call (BF-049): the component shows it blocked (its unavailable
   // state); this is the net under every HA action, whatever the component does
-  static const char *const HA_DOS[] = {"media.", "cover.", "vacuum.", "lock.", "light.", "climate."};
+  static const char *const HA_DOS[] = {"media.", "cover.", "vacuum.", "lock.", "light.", "climate."};  // (light.toggle covers switches)
   if (std::any_of(std::begin(HA_DOS), std::end(HA_DOS), [&](const char *p) { return d.rfind(p, 0) == 0; })) {
     const std::string *es = ha::get(n.entity);
     if (es && (*es == "unavailable" || *es == "unknown")) { emit(n.obj, st::BLOCKED_EVENT, "unavailable"); return true; }
@@ -1099,7 +1108,11 @@ inline bool run(Screen *s, Node &n, const char *event, const char *detail) {
     if (set_param(s, a["param"] | "", a["from"] | "", detail)) emit(s->root, "param", (std::string(a["param"] | "") + "=" + detail).c_str());  // the host sees it (a view, a speaker)
     return true;
   }
-  if (d == "light.toggle") { if (!*ha::act(n.obj, "light.toggle", n.entity.c_str())) ha::hold(n.obj, PENDING_MS); return true; }
+  if (d == "light.toggle") {  // a light, or a switch (a Home light card takes both)
+    const char *svc = n.entity.rfind("switch.", 0) == 0 ? "switch.toggle" : "light.toggle";
+    if (!*ha::act(n.obj, svc, n.entity.c_str())) ha::hold(n.obj, PENDING_MS);
+    return true;
+  }
   if (d == "light.switch") {
     const bool v = !strcmp(detail, "on");
     if (v && n.has_brightness) { n.want = ON_ONLY; n.sent_at = lv_tick_get(); return true; }  // a drag may follow
@@ -1300,6 +1313,7 @@ inline lv_obj_t *build(lv_obj_t *parent, const std::string &id, Props opened, st
   const char *hl = doc["header"]["label"] | "";
   hd["label"] = *hl ? hl : (doc["name"] | "");  // "$name" left empty = the spec's name
   hd["back"] = doc["header"]["back"] | true;
+  hd["settings"] = doc["header"]["settings"] | false;  // the settings button in the chrome (Home)
   if (const Component *h = find("header")) {
     h->build(s->root, hd.as<Props>());
     lv_obj_set_pos(lv_obj_get_child(s->root, -1), lay::inset, lay::inset);
@@ -1557,7 +1571,8 @@ inline void catalogue(ArduinoJson::JsonObject out) {
   auto rl = out["roles"].to<ArduinoJson::JsonArray>();
   for (const char *r : ROLES) rl.add(r);
   ArduinoJson::JsonObject ct = out["cards"].to<ArduinoJson::JsonObject>();
-  for (const CardType &c : CARD_TYPES) { auto o = ct[c.t].to<ArduinoJson::JsonObject>(); o["domains"] = c.domains; o["sizes"] = c.sizes; o["taps"] = c.taps; }
+  for (const CardType &c : CARD_TYPES) { auto o = ct[c.t].to<ArduinoJson::JsonObject>(); o["domains"] = c.domains; o["sizes"] = c.sizes; o["taps"] = c.taps; o["detail"] = c.detail;
+    auto cm = o["component"].to<ArduinoJson::JsonObject>(); if (*c.comp_s) cm["s"] = c.comp_s; if (*c.comp_m) cm["m"] = c.comp_m; if (*c.comp_l) cm["l"] = c.comp_l; }
 }
 inline uint32_t catalogue_hash() {
   static uint32_t h = 0;

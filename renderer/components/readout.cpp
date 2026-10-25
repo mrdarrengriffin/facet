@@ -9,6 +9,9 @@
 //           the detail (type body, text-dim, ellipsis) on one baseline, sp::s3 apart
 //   tones   text (default) · accent = it matters (accent-text + the dot) · warn = out of range · mute = offline
 //           (text-mute, the unavailable ink; the label row too)
+// Live (a Home sensor card, screen model piece 2): prop label set = one readout from its own props (icon, label,
+// state, detail, tone), half = half a card slot tall ((card_h - s2) / 2: the Home grid stacks two in one slot, as the
+// pair above), else the whole slot.
 // The samples are the docs readoutFrom() wordings (a mock house): occupancy, door, temperature, who is home, offline.
 // Update path: texts in place, a tone fades (fw::st::refill_fade, like a tap would), silent. Contrast: "readout".
 #include "fw.h"
@@ -87,8 +90,17 @@ void fill(lv_obj_t *s, fw::Props p) {
   lv_obj_set_size(s, fw::lay::card_w, fw::lay::card_h);
   lv_obj_set_flex_flow(s, LV_FLEX_FLOW_COLUMN);
   lv_obj_set_style_pad_row(s, fw::sp::s2, 0);
-  const Ro *a = find_ro(p["top"] | "occupancy · on"), *b = find_ro(p["bottom"] | "door · open");
   const int h = (fw::lay::card_h - fw::sp::s2) / 2;
+  if (*(p["label"] | "")) {  // one live readout (a Home sensor card): its own texts, half a card slot or all of it
+    static std::string keep[5];
+    keep[0] = p["icon"] | "thermometer"; keep[1] = p["label"] | ""; keep[2] = p["state"] | ""; keep[3] = p["detail"] | ""; keep[4] = p["tone"] | "text";
+    const Ro r{"live", keep[0].c_str(), keep[1].c_str(), keep[2].c_str(), keep[3].c_str(), keep[4].c_str()};
+    const int rh = (p["half"] | false) ? h / fw::sp::GRID * fw::sp::GRID : fw::lay::card_h;  // half: on the grid (88 at 480)
+    lv_obj_set_height(s, rh);
+    one(s, r, rh);
+    return;
+  }
+  const Ro *a = find_ro(p["top"] | "occupancy · on"), *b = find_ro(p["bottom"] | "door · open");
   if (a) one(s, *a, b ? h : fw::lay::card_h);
   if (a && b) {  // the hairline between, inset like the card text, centred in the gap
     lv_obj_t *hl = box(s);
@@ -105,16 +117,23 @@ void fill(lv_obj_t *s, fw::Props p) {
 FW_COMPONENT(readout, "State readout", "components", R"({
   "about": "Reports a state and opens nothing: someone in a room, a door open, one temperature, who is home. No box, no press, no sound; two share a Home card slot.",
   "frame": [352, 304],
-  "icons": ["person@icon", "door@icon", "window@icon", "thermometer@icon", "house@icon", "alert@icon"],
+  "icons": ["person@icon", "door@icon", "window@icon", "thermometer@icon", "house@icon", "alert@icon", "bolt@icon"],
   "props": [
     {"name": "top", "type": "select", "options": ["occupancy · on", "occupancy · off", "door · open", "door · closed", "window · open", "temperature", "temperature · cold", "home · everyone", "home · some", "moisture · wet", "offline"], "default": "occupancy · on"},
+    {"name": "label", "type": "text", "default": ""},
+    {"name": "icon", "type": "select", "options": ["person", "door", "window", "thermometer", "house", "alert", "bolt"], "default": "thermometer"},
+    {"name": "state", "type": "text", "default": "21.4°"},
+    {"name": "detail", "type": "text", "default": ""},
+    {"name": "tone", "type": "select", "options": ["text", "accent", "warn", "mute"], "default": "text"},
+    {"name": "half", "type": "bool", "default": false},
     {"name": "bottom", "type": "select", "options": ["none", "occupancy · on", "occupancy · off", "door · open", "door · closed", "window · open", "temperature", "temperature · cold", "home · everyone", "home · some", "moisture · wet", "offline"], "default": "door · open"}
   ],
   "variants": [
     {"label": "someone in · a door open", "props": {}},
     {"label": "temperature · who is home", "props": {"top": "temperature", "bottom": "home · some"}},
     {"label": "too cold · offline", "props": {"top": "temperature · cold", "bottom": "offline"}},
-    {"label": "one alone", "props": {"top": "home · everyone", "bottom": "none"}}
+    {"label": "one alone", "props": {"top": "home · everyone", "bottom": "none"}},
+    {"label": "live · half a slot", "props": {"label": "Dishwasher", "icon": "bolt", "state": "0.8 W", "half": true}}
   ]
 })") {
   lv_obj_t *s = lv_obj_create(parent);

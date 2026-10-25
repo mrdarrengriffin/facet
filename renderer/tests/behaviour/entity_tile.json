@@ -1,0 +1,15 @@
+{
+  "id": "entity_tile",
+  "tests": [
+    {"name": "toggle: off at once, toggle-off sound, tap event", "kind": "interaction",
+     "steps": [{"tap": {"clk": 0}}], "expect": {"events": [["tap", "Sofa table"]], "sounds": ["toggle-off"]}},
+    {"name": "toggle from off: toggle-on", "kind": "interaction", "props": {"on": false, "status": "Off"},
+     "steps": [{"tap": {"clk": 0}}], "expect": {"events": [["tap"]], "sounds": ["toggle-on"]}},
+    {"name": "open: open sound", "kind": "interaction", "props": {"act": "open", "on": false},
+     "steps": [{"tap": {"clk": 0}}], "expect": {"events": [["tap"]], "sounds": ["open"]}},
+    {"name": "unavailable: error only", "kind": "interaction", "props": {"state": "unavailable"},
+     "steps": [{"tap": {"clk": 0}}], "expect": {"no_events": ["tap"], "sounds": ["error"]}},
+    {"name": "update is silent", "kind": "sound", "steps": [{"update": {"on": false, "status": "Off"}}], "expect": {"silent": true}}
+  ],
+  "xfail": {}
+}

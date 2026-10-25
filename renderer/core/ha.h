@@ -177,6 +177,42 @@ inline void bind_value(ArduinoJson::JsonVariantConst b, ArduinoJson::JsonObject 
   }
   out[key] = v;
 }
+// fmt "state": an entity's state in words, as HA shows it: a number with its unit ("21.4°", "0.8 W", one decimal at
+// most), a binary sensor by its device class (Open / Closed, Detected / Clear, Wet / Dry, On / Off), any other state
+// with a capital and spaces ("heat_cool" -> "Heat cool"); unavailable / unknown = "Unavailable"; no value yet = ""
+inline std::string words(const std::string &e) {
+  const std::string *st = get(e, "");
+  if (!st) return "";
+  if (*st == "unavailable" || *st == "unknown") return "Unavailable";
+  const std::string dom = e.substr(0, e.find('.'));
+  if (dom == "binary_sensor") {
+    const std::string *dc = get(e, "device_class");
+    const std::string c = dc ? *dc : "";
+    const bool on = *st == "on";
+    static const char *const OPEN[] = {"door", "window", "opening", "garage_door"};
+    static const char *const SEEN[] = {"motion", "occupancy", "presence"};
+    if (std::any_of(std::begin(OPEN), std::end(OPEN), [&](const char *x) { return c == x; })) return on ? "Open" : "Closed";
+    if (std::any_of(std::begin(SEEN), std::end(SEEN), [&](const char *x) { return c == x; })) return on ? "Detected" : "Clear";
+    if (c == "moisture") return on ? "Wet" : "Dry";
+    return on ? "On" : "Off";
+  }
+  char *end = nullptr;
+  const double x = strtod(st->c_str(), &end);
+  if (end != st->c_str() && !*end && std::isfinite(x)) {
+    char b[24];
+    const double r = std::round(x * 10) / 10;
+    if (r == std::floor(r)) snprintf(b, sizeof b, "%.0f", r); else snprintf(b, sizeof b, "%.1f", r);
+    const std::string *u = get(e, "unit_of_measurement");
+    std::string unit = u ? *u : "";
+    if (unit == "\xC2\xB0" "C" || unit == "\xC2\xB0" "F") unit = "\xC2\xB0";
+    if (unit.empty()) return b;
+    return std::string(b) + (unit == "\xC2\xB0" || unit == "%" ? "" : " ") + unit;
+  }
+  std::string w = *st;
+  for (char &c : w) if (c == '_') c = ' ';
+  if (!w.empty()) w[0] = (char) toupper((unsigned char) w[0]);
+  return w;
+}
 inline void bind_raw(ArduinoJson::JsonVariantConst b, ArduinoJson::JsonObject out, const char *key, std::vector<Pair> *pairs) {
   const std::string e = b["e"] | "", a = b["a"] | "", fmt = b["fmt"] | "";
   auto use = [&](const std::string &aa) { if (pairs && std::find(pairs->begin(), pairs->end(), Pair{e, aa}) == pairs->end()) pairs->push_back({e, aa}); };
@@ -206,6 +242,14 @@ inline void bind_raw(ArduinoJson::JsonVariantConst b, ArduinoJson::JsonObject ou
     return;
   }
   if (fmt == "time" || fmt == "day") { use(a); const std::string *v = get(e, a); out[key] = v ? when(*v, fmt == "day") : std::string(); return; }
+  if (fmt == "level") {  // a light / switch as one short value: "Off", "64%" (a dimmable light on), "On"; "" unavailable
+    use(""); use("brightness");
+    if (!st || *st == "unavailable" || *st == "unknown") { out[key] = ""; return; }
+    if (!on) { out[key] = "Off"; return; }
+    out[key] = std::isfinite(num(get(e, "brightness"))) ? std::to_string(pct(e, "brightness")) + "%" : std::string("On");
+    return;
+  }
+  if (fmt == "state") { use(""); use("unit_of_measurement"); use("device_class"); out[key] = words(e); return; }
   if (fmt == "name") { use("friendly_name"); const std::string *n = get(e, "friendly_name"); out[key] = n && !n->empty() ? *n : e; return; }
   use(a);
   const std::string *v = get(e, a);
@@ -352,6 +396,7 @@ inline const char *act(lv_obj_t *from, const char *service, const char *entity, 
   if (svc.rfind("cover.", 0) == 0 && ent.rfind("cover.", 0) != 0) return "not a cover";
   if (svc.rfind("lock.", 0) == 0 && ent.rfind("lock.", 0) != 0) return "not a lock";
   if (svc.rfind("vacuum.", 0) == 0 && ent.rfind("vacuum.", 0) != 0) return "not a vacuum";
+  if (svc.rfind("switch.", 0) == 0 && ent.rfind("switch.", 0) != 0) return "not a switch";
   ArduinoJson::JsonDocument data;
   if (data_json && *data_json && deserializeJson(data, data_json)) return "data is not JSON";
   auto only = [&](const char *key) {  // the data holds exactly this one key
@@ -399,7 +444,7 @@ inline const char *act(lv_obj_t *from, const char *service, const char *entity, 
   } else if (svc == "cover.open_cover" || svc == "cover.close_cover" || svc == "cover.stop_cover" ||
              svc == "lock.lock" || svc == "lock.unlock" || svc == "lock.open" || svc == "vacuum.start" ||
              svc == "vacuum.pause" || svc == "vacuum.return_to_base" ||
-             svc == "light.turn_off" || svc == "light.toggle" || svc == "media_player.media_play_pause" ||
+             svc == "light.turn_off" || svc == "light.toggle" || svc == "switch.toggle" || svc == "media_player.media_play_pause" ||
              svc == "media_player.media_next_track" || svc == "media_player.media_previous_track") {
     if (data.size()) return "no data for this action";
   } else return "action not allowed";
