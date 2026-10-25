@@ -1,0 +1,58 @@
+name: Deploy docs
+
+# The docs site (site/) on GitHub Pages. The renderer's WASM build needs LVGL and the fonts, which are not vendored
+# in this repo yet, so it is built locally and kept as the asset of the `docs-build` release
+# (site/scripts/upload-build.sh); this workflow downloads it and builds the Astro site around it.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+      - name: Download the WASM docs build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download docs-build -p docs-build.tar.gz -R "$GITHUB_REPOSITORY"
+          mkdir -p renderer/out/docs && tar -xzf docs-build.tar.gz -C renderer/out/docs
+      - run: npm ci
+        working-directory: site
+      - run: npm run build
+        working-directory: site
+        env:
+          FW_OUT: renderer/out
+          FACET_DOCS_BASE: /facet/
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

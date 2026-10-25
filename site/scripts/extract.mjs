@@ -5,7 +5,7 @@
 //     registered FW_COMPONENT (id, name, section, meta JSON: frame, props, variants), fw_tokens() = the colour tokens
 //   - the .cpp sources: the header comment (notes), fw::emit / fw::sound calls (events + sounds; the fw::st:: names
 //     resolved through tokens/states.json, the step ticks of core fw::step_ticks), FW_COMPONENT ids -> file
-//   - README.md: the "Components" table row per id (description)
+//   - renderer/README.md: the "Components" table row per id (description)
 //   - tokens/*.json: colour (site theme + colour table), sound (sound names), each foundation's own token file
 //   - git: WIP / Done / Done, edited per source file (same rule as the workbench's /api/wasm/status)
 // Output: src/data/{site,components,foundations,tokens}.json + public/wasm/<density>/ (a copy of the build, so the
@@ -25,7 +25,7 @@ import { byId, hiddenIds, hiddenRoadmap, load as loadFeatures } from '../../rend
 const SITE = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const ROOT = resolve(SITE, '..');
 const R = join(ROOT, 'renderer');
-const REPO = 'https://github.com/mrdarrengriffin/facet/blob/wasm';
+const REPO = 'https://github.com/mrdarrengriffin/facet/blob/main';
 const DENS = ['1.5x', '1x'];
 // meta "about" sentences are drafts (shown with a "draft" tag) until Darren's writing pass; set false then
 const ABOUT_DRAFT = true;
@@ -99,7 +99,7 @@ for (const dir of ['components', 'foundations', 'screens']) {
 }
 
 // 3. README "Components" rows: | `id` | description |
-const readme = readFileSync(join(ROOT, 'README.md'), 'utf8');
+const readme = readFileSync(join(ROOT, 'renderer', 'README.md'), 'utf8');
 const rows = {};
 for (const mm of readme.matchAll(/^\| `([a-z0-9_]+)` \| (.+) \|$/gm)) rows[mm[1]] = mm[2];
 

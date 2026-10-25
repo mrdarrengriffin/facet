@@ -1,0 +1,28 @@
+name: CI
+
+# Checks that run without the WASM build. The renderer's gates (build + audit, contrast, spec, behaviour, visual,
+# ASan) need LVGL and the fonts, so they run locally until those are vendored (renderer/README.md "Fast loop").
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Feature flags (every source in one feature, shown features complete)
+        run: node renderer/tools/features.mjs check
+      - name: JSON sources parse
+        run: |
+          for f in renderer/specs/*.json renderer/specs/examples/*.json renderer/tokens/*.json renderer/features.json; do
+            node -e "JSON.parse(require('fs').readFileSync(process.argv[1], 'utf8'))" "$f" || { echo "bad JSON: $f"; exit 1; }
+          done
