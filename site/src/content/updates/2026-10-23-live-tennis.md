@@ -2,6 +2,7 @@
 title: "Follow a live tennis match"
 date: "2026-10-23"
 time: "12:17"
+feature: "tennis"
 kind: "New feature"
 image: "2026-10-23-live-tennis.png"
 alt: "The tennis screen on a sample match"

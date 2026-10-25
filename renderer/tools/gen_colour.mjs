@@ -85,6 +85,17 @@ const doc = [...t.groups.map((g) => ({ label: g.label, about: g.about, props: { 
   { label: 'Contrast: summary', about: `${t.contrast.about} Every theme x accent set: combinations that pass / tested; a cross = something fails (the next section lists it).`, props: { group: 'contrast' } },
   { label: 'Contrast: failures', about: 'Every failing combination across all themes and accent sets (worse of exact and RGB565 ratio). Empty = everything passes.', props: { group: 'contrast-fail' } },
   ...sections.map((id) => ({ label: `Contrast: ${id[0].toUpperCase()}${id.slice(1)}`, about: `${CP.filter((p) => p.section === id).length} pairs for the selected accent set (toolbar), dark and light side by side: sample, ratio, required minimum (kind).`, props: { group: `contrast-${id}` } }))];
+// a FW_FEATURES=docs|firmware build: no page sections for hidden features' groups / contrast pairs (tools/features.mjs;
+// the tokens themselves stay)
+if (process.env.FW_FEATURES) {
+  const F = await import('./features.mjs'), hide = F.hiddenColour(process.env.FW_FEATURES);
+  // contrast sections by id; colour groups only by a feature's "colour" list (the group "surfaces" = backgrounds)
+  const own = F.hiddenColour(process.env.FW_FEATURES, undefined, true);
+  for (let i = doc.length - 1; i >= 0; i--) {
+    const g = doc[i].props.group;
+    if (g.startsWith('contrast-') ? hide.has(g.slice(9)) : own.has(g)) doc.splice(i, 1);
+  }
+}
 L.push(`#define FW_COLOUR_SECTIONS ${cstr(JSON.stringify(doc))}`);
 L.push(`#define FW_COLOUR_GROUP_IDS ${cstr(JSON.stringify(doc.map((d) => d.props.group)))}`);
 L.push('// the whole tokens file (fw_tokens() hands it to the workbench page)');

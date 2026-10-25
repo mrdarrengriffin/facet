@@ -1,0 +1,237 @@
+{
+  "$comment": "Release flags per feature (README 'Feature flags'). The firmware flag is a SCREEN decision: a feature = pre-made screens plus the UI only they use (their *_view, f1_*, ...), or a group of unfinished parts / foundations. Components and foundations not listed belong to the library (in docs + firmware): finished parts stay in so custom specs can use them; list one under a feature only when it is that screen's own UI or unfinished. docs: shown on the docs site + workbench nav; status: the label the docs show (done | wip | preview); firmware: compiled into the panel firmware (and listed in the factory deck, Home, Settings > Screens). Build-time only: tools/features.mjs reads this; `node renderer/tools/features.mjs check` (run by build.sh) fails when a shown feature needs a hidden one or a source belongs to no feature. ids: screens = spec ids (specs/<id>.json) or registered screens; components / foundations = registered ids; core = renderer/core files only this feature uses (left out of the firmware with it); cards = Home card types that open this feature's screen; colour = Colour page sections (colour.json groups / contrast sections) it owns besides its ids; roadmap = roadmap rows (hidden when every feature naming them is hidden).",
+  "status": {
+    "done": "Done",
+    "wip": "Work in progress",
+    "preview": "Preview"
+  },
+  "library": {
+    "id": "library",
+    "label": "Component library",
+    "docs": true, "status": "done", "firmware": true,
+    "about": "Every component and foundation not listed under a feature below: the parts people (and custom specs) build screens with, so a finished one ships even when no shipped screen uses it."
+  },
+  "features": [
+    {
+      "id": "system",
+      "label": "Home, Settings and Set up",
+      "docs": true, "status": "done", "firmware": true,
+      "screens": ["home", "settings", "screens", "screen_set", "setup", "device"]
+    },
+    {
+      "id": "toasts",
+      "label": "Toasts",
+      "docs": true, "status": "done", "firmware": true,
+      "components": ["toast", "toast_layer"]
+    },
+    {
+      "id": "clock",
+      "label": "Clock",
+      "docs": true, "status": "done", "firmware": true,
+      "screens": ["clock"],
+      "components": ["clock_face"]
+    },
+    {
+      "id": "timer",
+      "label": "Timer",
+      "docs": true, "status": "done", "firmware": true,
+      "screens": ["timer"],
+      "components": ["timer_view"]
+    },
+    {
+      "id": "lights",
+      "label": "Lights",
+      "docs": true, "status": "done", "firmware": true,
+      "screens": ["light", "living_room"]
+    },
+    {
+      "id": "covers",
+      "label": "Blinds and curtains",
+      "docs": true, "status": "done", "firmware": true,
+      "screens": ["covers"],
+      "components": ["covers_view", "cover_visual"]
+    },
+    {
+      "id": "media",
+      "label": "Media",
+      "docs": true, "status": "done", "firmware": true,
+      "screens": ["media"],
+      "components": ["media_view", "media_visual"]
+    },
+    {
+      "id": "weather",
+      "label": "Weather",
+      "docs": true, "status": "done", "firmware": true,
+      "screens": ["weather", "weather_days"],
+      "components": ["weather_view", "weather_days"]
+    },
+    {
+      "id": "moon",
+      "label": "Moon",
+      "docs": true, "status": "done", "firmware": true,
+      "screens": ["moon", "moon_details", "moon_days"],
+      "components": ["moon_view", "moon_icon", "moon_facts", "moon_phases", "moon_range"]
+    },
+    {
+      "id": "calendar",
+      "label": "Calendar",
+      "docs": true, "status": "done", "firmware": true,
+      "screens": ["calendar"],
+      "components": ["calendar_view"]
+    },
+    {
+      "id": "energy",
+      "label": "Energy",
+      "docs": true, "status": "done", "firmware": true,
+      "screens": ["energy", "energy_week"],
+      "components": ["energy_view", "energy_week"]
+    },
+    {
+      "id": "wip_parts",
+      "label": "Layout and status parts (in progress)",
+      "docs": false, "status": "wip", "firmware": false,
+      "components": ["split", "group", "column", "status_block", "level_bar", "placeholder"],
+      "roadmap": ["Split / Group layouts", "Status block", "Placeholder", "Level bar"]
+    },
+    {
+      "id": "thermostat",
+      "label": "Thermostat",
+      "docs": false, "status": "wip", "firmware": false,
+      "screens": ["thermostat"],
+      "components": ["thermostat_view", "thermostat_dial"],
+      "cards": ["climate"],
+      "roadmap": ["Thermostat", "Thermostat dial"]
+    },
+    {
+      "id": "lock",
+      "label": "Door lock",
+      "docs": false, "status": "wip", "firmware": false,
+      "screens": ["lock"],
+      "components": ["lock_ring", "hold_button", "event_row"],
+      "roadmap": ["Door lock", "Lock ring", "Hold button"]
+    },
+    {
+      "id": "vacuum",
+      "label": "Robot vacuum",
+      "docs": false, "status": "wip", "firmware": false,
+      "screens": ["vacuum"],
+      "components": ["room_tile", "vacuum_mode"],
+      "roadmap": ["Robot vacuum", "Room tile"]
+    },
+    {
+      "id": "floorplans",
+      "label": "Floor plans",
+      "docs": false, "status": "wip", "firmware": false,
+      "foundations": ["floorplans"],
+      "components": ["iso_floorplan"],
+      "core": ["floorplan_auto.cpp", "floorplan_auto.h"],
+      "roadmap": ["Floor plans"]
+    },
+    {
+      "id": "plants",
+      "label": "Plants",
+      "docs": false, "status": "wip", "firmware": false,
+      "screens": ["plants"],
+      "components": ["plant_gauge", "plant_row"],
+      "roadmap": ["Plant monitor", "Plant gauge / row"]
+    },
+    {
+      "id": "cameras",
+      "label": "Cameras",
+      "docs": false, "status": "wip", "firmware": false,
+      "screens": ["cameras", "camera"],
+      "components": ["camera_tile"],
+      "roadmap": ["Security cameras", "Camera tile"]
+    },
+    {
+      "id": "bins",
+      "label": "Bins",
+      "docs": false, "status": "wip", "firmware": false,
+      "screens": ["bins"],
+      "components": ["bins_view"],
+      "colour": ["bins"],
+      "roadmap": ["Bins"]
+    },
+    {
+      "id": "lightning",
+      "label": "Lightning",
+      "docs": false, "status": "wip", "firmware": false,
+      "screens": ["lightning"],
+      "components": ["lightning_view", "lightning_radar"],
+      "colour": ["radar"],
+      "roadmap": ["Lightning", "Lightning radar"]
+    },
+    {
+      "id": "overhead",
+      "label": "Overhead (aircraft)",
+      "docs": false, "status": "wip", "firmware": false,
+      "screens": ["overhead", "aircraft"],
+      "components": ["overhead_view"],
+      "roadmap": ["Overhead (flights)"]
+    },
+    {
+      "id": "github",
+      "label": "GitHub",
+      "docs": false, "status": "wip", "firmware": false,
+      "screens": ["github", "github_list", "github_pr"],
+      "components": ["github_view", "github_list", "github_pr", "pr_row", "check_row"],
+      "roadmap": ["GitHub", "Pull request row", "Check row"]
+    },
+    {
+      "id": "agents",
+      "label": "Agents",
+      "docs": false, "status": "wip", "firmware": false,
+      "screens": ["agents"],
+      "components": ["agents_view"],
+      "roadmap": ["Agents"]
+    },
+    {
+      "id": "print",
+      "label": "3D print",
+      "docs": false, "status": "wip", "firmware": false,
+      "screens": ["print"],
+      "components": ["print_view", "print_model"],
+      "roadmap": ["3D print", "3D print model"]
+    },
+    {
+      "id": "sport",
+      "label": "Sports surfaces",
+      "docs": false, "status": "wip", "firmware": false,
+      "foundations": ["sport", "surfaces"],
+      "colour": ["courts"],
+      "core": ["sport.cpp", "sport.h", "sport_sim.cpp", "sport_circuits.cpp", "sport_pick.cpp", "sport_pick.h", "surface.cpp", "surface.h"],
+      "roadmap": ["Sports surfaces"]
+    },
+    {
+      "id": "f1",
+      "label": "F1",
+      "docs": false, "status": "wip", "firmware": false,
+      "screens": ["f1_live"],
+      "components": ["f1_circuit", "f1_car_marker", "f1_flag", "f1_race_control", "f1_race_status", "f1_standings"],
+      "roadmap": ["Sports (live scores)"]
+    },
+    {
+      "id": "football",
+      "label": "Football",
+      "docs": false, "status": "wip", "firmware": false,
+      "screens": ["football_live"],
+      "components": ["football_pitch"],
+      "roadmap": ["Sports (live scores)"]
+    },
+    {
+      "id": "tennis",
+      "label": "Tennis",
+      "docs": false, "status": "wip", "firmware": false,
+      "screens": ["tennis_live"],
+      "components": ["tennis_score", "tennis_court"],
+      "roadmap": ["Sports (live scores)"]
+    },
+    {
+      "id": "workbench",
+      "label": "Workbench tools",
+      "docs": false, "status": "wip", "firmware": false,
+      "screens": ["spec"],
+      "bench": ["stress"]
+    }
+  ]
+}

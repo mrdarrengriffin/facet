@@ -2,7 +2,7 @@
 // section (foundation sections, component variants / props / events / notes), all from the generated data.
 import type { APIRoute } from 'astro';
 import { getCollection } from 'astro:content';
-import { COMPONENTS, FOUNDATIONS, SCREENS, href, screenHref } from '../lib/data';
+import { COMPONENTS, FOUNDATIONS, SCREENS, href, screenHref, updateShown } from '../lib/data';
 import { url } from '../lib/nav';
 
 type Rec = { title: string; heading: string; text: string; url: string };
@@ -14,7 +14,7 @@ export const GET: APIRoute = async () => {
   recs.push({ title: 'Design system', heading: '', text: 'The tokens and rules every component is built from: colour, type, space, layout, motion, states, icons, sound.', url: url('/foundations/') });
   recs.push({ title: 'Roadmap', heading: '', text: 'Where Facet is headed, area by area: available, in progress, planned.', url: url('/roadmap/') });
   recs.push({ title: 'Updates', heading: '', text: 'How Facet came to be and what changed lately, newest first.', url: url('/updates/') });
-  for (const e of await getCollection('updates')) recs.push({ title: 'Updates', heading: e.data.title, text: (e.body ?? '').replace(/[>*]/g, '').replace(/\s+/g, ' ').trim(), url: `${url('/updates/')}#${e.id}` });
+  for (const e of (await getCollection('updates')).filter(updateShown)) recs.push({ title: 'Updates', heading: e.data.title, text: (e.body ?? '').replace(/[>*]/g, '').replace(/\s+/g, ' ').trim(), url: `${url('/updates/')}#${e.id}` });
   recs.push({ title: 'Components', heading: '', text: 'Every component, drawn live by the panel renderer.', url: url('/components/') });
   recs.push({ title: 'Screens', heading: '', text: 'Every screen, live: what it shows, its settings, where its data comes from.', url: url('/screens/') });
   for (const s of SCREENS) {

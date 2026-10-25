@@ -2,6 +2,7 @@
 title: "New: Lightning radar"
 date: "2026-10-22"
 time: "22:55"
+feature: "lightning"
 kind: "New component"
 image: "2026-10-22-lightning-radar.png"
 alt: "The lightning radar with a sample storm"

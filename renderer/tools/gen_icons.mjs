@@ -145,7 +145,9 @@ const used = (process.env.FW_ICONS ?? env.FW_ICONS ?? 'all') === 'used';
 const want = new Map();  // name -> Set(size)
 if (used) {
   const dir = join(R, 'components');
-  for (const f of existsSync(dir) ? readdirSync(dir).filter((f) => f.endsWith('.cpp')) : [])
+  // a FW_FEATURES=docs|firmware build: only the components it carries (tools/features.mjs)
+  const skip = new Set((await import('./features.mjs')).excluded(process.env.FW_FEATURES || ''));
+  for (const f of existsSync(dir) ? readdirSync(dir).filter((f) => f.endsWith('.cpp') && !skip.has(`components/${f}`)) : [])
     for (const m of readFileSync(join(dir, f), 'utf8').matchAll(/"icons"\s*:\s*\[([^\]]*)\]/g))
       for (const p of m[1].matchAll(/"([a-z0-9-]+)@([a-z0-9]+)"/g)) {
         if (!names.has(p[1]) || !SIZES.includes(p[2])) die(`components/${f}: icons "${p[1]}@${p[2]}" is not a shipped icon@size`);

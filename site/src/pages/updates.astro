@@ -5,8 +5,9 @@
 import { getCollection, render } from 'astro:content';
 import Docs, { type Heading } from '../layouts/Docs.astro';
 import { url } from '../lib/nav';
+import { linkShown, updateShown } from '../lib/data';
 
-const all = (await getCollection('updates')).sort((a, b) =>
+const all = (await getCollection('updates')).filter(updateShown).sort((a, b) =>
   `${b.data.date} ${b.data.time ?? '00:00'}`.localeCompare(`${a.data.date} ${a.data.time ?? '00:00'}`),
 );
 const entries = await Promise.all(all.map(async (e) => ({ e, Content: (await render(e)).Content })));
@@ -54,9 +55,9 @@ const link = (p: string) => (/^https?:/.test(p) ? p : url(`/${p}`));
                   <figure><img src={pic(e.data.image)} alt={e.data.alt ?? e.data.title} loading="lazy" /></figure>
                 </div>
               )}
-              {e.data.links.length > 0 && (
+              {e.data.links.filter(linkShown).length > 0 && (
                 <p class="progress__links">
-                  {e.data.links.map(([label, path], i) => <>{i > 0 && ' · '}<a href={link(path)}>{label}</a></>)}
+                  {e.data.links.filter(linkShown).map(([label, path], i) => <>{i > 0 && ' · '}<a href={link(path)}>{label}</a></>)}
                 </p>
               )}
             </li>

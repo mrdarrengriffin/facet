@@ -23,6 +23,8 @@ const updates = defineCollection({
     after: z.string().optional(),
     image: z.string().optional(),
     alt: z.string().optional(),
+    /** the feature it is about (renderer/features.json id): the entry is left out while that feature is hidden */
+    feature: z.string().optional(),
     /** links: [label, path under the site base, or a full https:// URL] */
     links: z.array(z.tuple([z.string(), z.string()])).default([]),
   }),

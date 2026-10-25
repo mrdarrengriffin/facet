@@ -2,6 +2,7 @@
 title: "Overhead: planes on the radar, and a Radar view"
 date: "2026-10-23"
 time: "17:50"
+feature: "overhead"
 kind: "Improved"
 image: "2026-10-23-overhead-planes.png"
 alt: "The Overhead screen: the closest aircraft with its route and stats, a sky radar of planes turned to their tracks, the two nearest others"

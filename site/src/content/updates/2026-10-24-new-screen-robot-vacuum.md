@@ -2,6 +2,7 @@
 title: "New screen: Robot vacuum"
 date: "2026-10-24"
 time: "01:30"
+feature: "vacuum"
 kind: "New screen"
 image: "2026-10-24-robot-vacuum.png"
 alt: "The Robot vacuum Map view: the floor plan in isometric (a sample house) with the robot on its dock, the last run's path, a mode button and Clean all"

@@ -2,6 +2,7 @@
 title: "Floor plans have their own rules"
 date: "2026-10-24"
 time: "16:30"
+feature: "floorplans"
 kind: "Design system"
 image: "2026-10-24-floor-plans.png"
 alt: "A made-up house drawn in isometric as raised tiles with a low back wall, the robot on its dock and two rooms picked in the accent"

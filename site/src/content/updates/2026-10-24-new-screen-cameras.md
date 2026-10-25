@@ -2,6 +2,7 @@
 title: "New screen: Cameras"
 date: "2026-10-24"
 time: "01:30"
+feature: "cameras"
 kind: "New screen"
 image: "2026-10-24-cameras.png"
 alt: "The Cameras screen: four camera tiles with a person and a car outlined, then today's detections"

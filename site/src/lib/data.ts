@@ -10,7 +10,7 @@ import { COMPONENT_GROUPS } from './groups';
 export type Prop = { name: string; type: 'text' | 'select' | 'range' | 'bool'; default?: unknown; options?: string[]; min?: number; max?: number; step?: number };
 export type Variant = { label: string; about?: string; props: Record<string, unknown> };
 export type Meta = { about?: string; demo?: boolean; layout?: 'doc'; events?: boolean; frame: [number, number]; props?: Prop[]; variants?: Variant[] };
-export type Status = 'wip' | 'done' | 'edited';
+export type Status = 'wip' | 'done' | 'edited' | 'preview';
 export type Entry = {
   id: string; name: string; section: string; meta: Meta; lede: string; ledeKind: 'draft' | 'about' | 'fallback'; description: string; notes: string;
   events: string[]; uses: string[]; sounds: { id: string; name: string; for: string }[]; status: Status;
@@ -33,7 +33,16 @@ export const STATUS: Record<Status, { label: string; hint: string }> = {
   wip: { label: 'WIP', hint: 'Work in progress: not approved yet' },
   done: { label: 'Done', hint: 'Approved and committed' },
   edited: { label: 'Done, edited', hint: 'Approved, changed since (the change is not approved yet)' },
+  preview: { label: 'Preview', hint: 'An early look: it may still change' },
 };
+
+// feature flags (renderer/features.json via scripts/extract.mjs): Updates entries about a hidden feature and links to
+// hidden pages are left out
+import flags from '../data/features.json';
+const HIDDEN_FEATURES = new Set(flags.hiddenFeatures);
+const HIDDEN_PATHS = new Set(flags.hiddenPaths);
+export const updateShown = (e: { data: { feature?: string } }) => !e.data.feature || !HIDDEN_FEATURES.has(e.data.feature);
+export const linkShown = ([, path]: [string, string]) => !HIDDEN_PATHS.has(path.replace(/^\//, '').replace(/#.*$/, '').replace(/\/?$/, '/'));
 
 export const defaults = (m: Meta) =>
   Object.fromEntries((m.props ?? []).map((p) => [p.name, p.default ?? (p.type === 'bool' ? false : p.type === 'range' ? p.min ?? 0 : '')]));
