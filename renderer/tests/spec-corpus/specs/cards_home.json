@@ -1,0 +1,50 @@
+{
+ "v": 1,
+ "id": "c_cardshome",
+ "name": "Home",
+ "rev": 1,
+ "role": "page",
+ "header": {
+  "label": "Home",
+  "back": false
+ },
+ "layout": "cards",
+ "nodes": [
+  {
+   "c": "card",
+   "p": {
+    "label": "Weather",
+    "icon": "weather",
+    "value": "14°",
+    "sub": "Cloudy"
+   }
+  },
+  {
+   "c": "card",
+   "p": {
+    "label": "Lights",
+    "icon": "light",
+    "value": "3 on",
+    "sub": "Downstairs"
+   }
+  },
+  {
+   "c": "card",
+   "p": {
+    "label": "Heating",
+    "icon": "thermostat",
+    "value": "21°",
+    "sub": "Heating"
+   }
+  },
+  {
+   "c": "card",
+   "p": {
+    "label": "Timer",
+    "icon": "timer",
+    "value": "4:12",
+    "sub": "Pasta"
+   }
+  }
+ ]
+}

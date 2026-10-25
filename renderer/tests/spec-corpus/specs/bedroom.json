@@ -1,0 +1,80 @@
+{
+ "v": 1,
+ "id": "c_bedroom",
+ "name": "Bedroom",
+ "rev": 1,
+ "role": "both",
+ "header": {
+  "label": "Bedroom",
+  "back": true
+ },
+ "layout": "list",
+ "nodes": [
+  {
+   "c": "hero_block",
+   "p": {
+    "n": "21°",
+    "label": "Bedroom",
+    "line": "Heating to 22°"
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Bedside left",
+    "icon": "bulb",
+    "trailing": "toggle",
+    "sub": {
+     "e": "light.bed_l",
+     "fmt": "light",
+     "s": "On · 60%"
+    },
+    "on": {
+     "e": "light.bed_l",
+     "fmt": "on",
+     "s": "on"
+    },
+    "state": {
+     "e": "light.bed_l",
+     "fmt": "avail",
+     "s": "default"
+    }
+   },
+   "on": {
+    "toggle": {
+     "do": "light.switch",
+     "e": "light.bed_l"
+    }
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Bedside right",
+    "icon": "bulb",
+    "trailing": "toggle",
+    "sub": {
+     "e": "light.bed_r",
+     "fmt": "light",
+     "s": "On · 60%"
+    },
+    "on": {
+     "e": "light.bed_r",
+     "fmt": "on",
+     "s": "on"
+    },
+    "state": {
+     "e": "light.bed_r",
+     "fmt": "avail",
+     "s": "default"
+    }
+   },
+   "on": {
+    "toggle": {
+     "do": "light.switch",
+     "e": "light.bed_r"
+    }
+   }
+  }
+ ]
+}

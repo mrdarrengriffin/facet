@@ -1,0 +1,36 @@
+{
+ "v": 1,
+ "id": "c_stacklist",
+ "name": "Speakers",
+ "rev": 1,
+ "role": "both",
+ "header": {
+  "label": "Speakers",
+  "back": true
+ },
+ "layout": "list",
+ "nodes": [
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Kitchen",
+    "icon": "speaker",
+    "trailing": "value",
+    "value": "40%",
+    "list": "stack",
+    "sub": "Playing"
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Lounge",
+    "icon": "speaker",
+    "trailing": "value",
+    "value": "25%",
+    "list": "stack",
+    "sub": "Idle"
+   }
+  }
+ ]
+}

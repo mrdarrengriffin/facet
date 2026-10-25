@@ -1,0 +1,51 @@
+{
+ "v": 1,
+ "id": "c_prs",
+ "name": "Pull requests",
+ "rev": 1,
+ "role": "both",
+ "header": {
+  "label": "Pull requests",
+  "back": true
+ },
+ "layout": "list",
+ "nodes": [
+  {
+   "c": "section_header",
+   "p": {
+    "title": "review",
+    "badge": true,
+    "count": 3,
+    "tone": "info",
+    "right": "none"
+   }
+  },
+  {
+   "c": "pr_row",
+   "p": {
+    "repo": "facet",
+    "number": 142,
+    "title": "Fix list spacing",
+    "age": "2h",
+    "ci": "pass"
+   }
+  },
+  {
+   "c": "pr_row",
+   "p": {
+    "repo": "core",
+    "number": 9901,
+    "title": "Bump deps",
+    "age": "1d",
+    "ci": "pending",
+    "draft": true
+   }
+  },
+  {
+   "c": "more_row",
+   "p": {
+    "text": "3 more"
+   }
+  }
+ ]
+}

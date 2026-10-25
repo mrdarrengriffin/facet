@@ -1,0 +1,65 @@
+{
+ "v": 1,
+ "id": "c_lightseach",
+ "name": "Lights",
+ "rev": 1,
+ "role": "both",
+ "header": {
+  "label": "Lights",
+  "back": true
+ },
+ "layout": "list",
+ "nodes": [
+  {
+   "c": "list_row",
+   "each": "lights",
+   "p": {
+    "title": {
+     "e": "$item",
+     "fmt": "name"
+    },
+    "icon": "bulb",
+    "trailing": "toggle",
+    "on": {
+     "e": "$item",
+     "fmt": "on"
+    },
+    "sub": {
+     "e": "$item",
+     "fmt": "light"
+    }
+   },
+   "on": {
+    "toggle": {
+     "do": "light.switch",
+     "e": "$item"
+    }
+   },
+   "sample": [
+    {
+     "title": "Hall",
+     "on": true,
+     "sub": "On"
+    },
+    {
+     "title": "Porch",
+     "on": false,
+     "sub": "Off"
+    },
+    {
+     "title": "Landing",
+     "on": true,
+     "sub": "On"
+    }
+   ]
+  }
+ ],
+ "params": {
+  "lights": {
+   "type": "entities",
+   "domain": "light",
+   "label": "Lights",
+   "default": "light.hall"
+  }
+ }
+}

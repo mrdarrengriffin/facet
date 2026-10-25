@@ -1,0 +1,36 @@
+{
+ "v": 1,
+ "id": "c_readouts",
+ "name": "Hallway",
+ "rev": 1,
+ "role": "both",
+ "header": {
+  "label": "Hallway",
+  "back": true
+ },
+ "layout": "list",
+ "nodes": [
+  {
+   "c": "readout",
+   "p": {
+    "top": "occupancy · on",
+    "label": "Hall",
+    "icon": "person",
+    "state": "Occupied",
+    "detail": "2 min",
+    "tone": "accent"
+   }
+  },
+  {
+   "c": "readout",
+   "p": {
+    "top": "door · closed",
+    "label": "Front door",
+    "icon": "door",
+    "state": "Closed",
+    "detail": "1 h",
+    "tone": "text"
+   }
+  }
+ ]
+}

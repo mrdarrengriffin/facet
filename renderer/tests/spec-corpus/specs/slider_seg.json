@@ -1,0 +1,52 @@
+{
+ "v": 1,
+ "id": "c_sliderseg",
+ "name": "Vacuum",
+ "rev": 1,
+ "role": "both",
+ "header": {
+  "label": "Vacuum",
+  "back": true
+ },
+ "layout": "list",
+ "nodes": [
+  {
+   "c": "segmented",
+   "p": {
+    "options": "Quiet,Balanced,Turbo",
+    "selected": "Balanced",
+    "width": "fill"
+   },
+   "on": {
+    "change": {
+     "do": "vacuum.control",
+     "e": "vacuum.robot"
+    }
+   }
+  },
+  {
+   "c": "section_header",
+   "p": {
+    "title": "rooms",
+    "right": "none",
+    "badge": false
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Kitchen",
+    "icon": "house",
+    "trailing": "chevron"
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Lounge",
+    "icon": "house",
+    "trailing": "chevron"
+   }
+  }
+ ]
+}

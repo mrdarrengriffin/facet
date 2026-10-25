@@ -1,0 +1,24 @@
+{
+ "v": 1,
+ "id": "c_weather",
+ "name": "Weather",
+ "rev": 1,
+ "role": "both",
+ "header": {
+  "label": "Weather",
+  "back": true
+ },
+ "layout": "center",
+ "nodes": [
+  {
+   "c": "weather_view",
+   "p": {
+    "view": "weather",
+    "condition": "Light rain",
+    "temp": "11°",
+    "feels": "Feels 9°",
+    "place": "Wisbech"
+   }
+  }
+ ]
+}

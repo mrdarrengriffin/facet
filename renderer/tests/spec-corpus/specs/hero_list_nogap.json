@@ -1,0 +1,80 @@
+{
+ "v": 1,
+ "id": "c_herolistno",
+ "name": "Lights",
+ "rev": 1,
+ "role": "both",
+ "header": {
+  "label": "Lights",
+  "back": true
+ },
+ "layout": "list",
+ "nodes": [
+  {
+   "c": "hero_block",
+   "p": {
+    "n": "2",
+    "label": "on",
+    "line": "of 5 lights"
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Hall",
+    "icon": "bulb",
+    "trailing": "toggle",
+    "sub": {
+     "e": "light.hall",
+     "fmt": "light",
+     "s": "On · 60%"
+    },
+    "on": {
+     "e": "light.hall",
+     "fmt": "on",
+     "s": "on"
+    },
+    "state": {
+     "e": "light.hall",
+     "fmt": "avail",
+     "s": "default"
+    }
+   },
+   "on": {
+    "toggle": {
+     "do": "light.switch",
+     "e": "light.hall"
+    }
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Porch",
+    "icon": "bulb",
+    "trailing": "toggle",
+    "sub": {
+     "e": "light.porch",
+     "fmt": "light",
+     "s": "On · 60%"
+    },
+    "on": {
+     "e": "light.porch",
+     "fmt": "on",
+     "s": "on"
+    },
+    "state": {
+     "e": "light.porch",
+     "fmt": "avail",
+     "s": "default"
+    }
+   },
+   "on": {
+    "toggle": {
+     "do": "light.switch",
+     "e": "light.porch"
+    }
+   }
+  }
+ ]
+}

@@ -1,0 +1,53 @@
+{
+ "v": 1,
+ "id": "c_toggles",
+ "name": "Switches",
+ "rev": 1,
+ "role": "both",
+ "header": {
+  "label": "Switches",
+  "back": true
+ },
+ "layout": "list",
+ "nodes": [
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Fan",
+    "icon": "power",
+    "trailing": "toggle",
+    "on": true,
+    "sub": "On"
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Heater",
+    "icon": "power",
+    "trailing": "toggle",
+    "on": false,
+    "sub": "Off"
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Router",
+    "icon": "power",
+    "trailing": "value-chevron",
+    "value": "Online"
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Lamp",
+    "icon": "bulb",
+    "trailing": "toggle",
+    "state": "unavailable",
+    "sub": "Unavailable"
+   }
+  }
+ ]
+}

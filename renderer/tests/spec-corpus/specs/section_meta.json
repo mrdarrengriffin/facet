@@ -1,0 +1,43 @@
+{
+ "v": 1,
+ "id": "c_sectionmet",
+ "name": "Garden",
+ "rev": 1,
+ "role": "both",
+ "header": {
+  "label": "Garden",
+  "back": true
+ },
+ "layout": "list",
+ "nodes": [
+  {
+   "c": "section_header",
+   "p": {
+    "title": "sensors",
+    "right": "meta",
+    "meta": "just now",
+    "badge": false
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Soil",
+    "icon": "house",
+    "trailing": "value",
+    "value": "46%",
+    "sub": "Moist"
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Rain",
+    "icon": "house",
+    "trailing": "value",
+    "value": "0 mm",
+    "sub": "Dry"
+   }
+  }
+ ]
+}

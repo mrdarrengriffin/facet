@@ -1,0 +1,53 @@
+{
+ "v": 1,
+ "id": "c_groupchips",
+ "name": "Status",
+ "rev": 1,
+ "role": "both",
+ "header": {
+  "label": "Status",
+  "back": true
+ },
+ "layout": "list",
+ "nodes": [
+  {
+   "c": "group",
+   "p": {
+    "flow": "wrap",
+    "space": "group"
+   }
+  },
+  {
+   "c": "status_chip",
+   "in": 0,
+   "p": {
+    "tone": "ok",
+    "text": "All locked"
+   }
+  },
+  {
+   "c": "status_chip",
+   "in": 0,
+   "p": {
+    "tone": "warn",
+    "text": "Window open"
+   }
+  },
+  {
+   "c": "section_header",
+   "p": {
+    "title": "doors",
+    "right": "none",
+    "badge": false
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Front",
+    "icon": "house",
+    "sub": "Locked"
+   }
+  }
+ ]
+}

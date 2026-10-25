@@ -1,0 +1,25 @@
+{
+ "v": 1,
+ "id": "c_thermo",
+ "name": "Heating",
+ "rev": 1,
+ "role": "both",
+ "header": {
+  "label": "Heating",
+  "back": true
+ },
+ "layout": "center",
+ "nodes": [
+  {
+   "c": "thermostat_view",
+   "p": {
+    "target": 21,
+    "current": 19.5,
+    "action": "heating",
+    "mode": "heat",
+    "preset": "home",
+    "next": "18° at 22:00"
+   }
+  }
+ ]
+}

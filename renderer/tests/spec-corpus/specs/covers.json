@@ -1,0 +1,42 @@
+{
+ "v": 1,
+ "id": "c_covers",
+ "name": "Blind",
+ "rev": 1,
+ "role": "both",
+ "header": {
+  "label": "Blind",
+  "back": true
+ },
+ "layout": "center",
+ "nodes": [
+  {
+   "c": "covers_view",
+   "p": {
+    "kind": "roller",
+    "position": {
+     "e": "$entity",
+     "fmt": "num",
+     "s": "40",
+     "a": "current_position"
+    },
+    "cover": "Office blind",
+    "state": "open"
+   },
+   "on": {
+    "cover": {
+     "do": "cover.control",
+     "e": "$entity"
+    }
+   }
+  }
+ ],
+ "params": {
+  "entity": {
+   "type": "entity",
+   "domain": "cover",
+   "label": "Cover",
+   "default": "cover.office_blind"
+  }
+ }
+}

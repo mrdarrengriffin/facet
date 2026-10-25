@@ -1,0 +1,72 @@
+{
+ "v": 1,
+ "id": "c_longtitles",
+ "name": "Downstairs",
+ "rev": 1,
+ "role": "both",
+ "header": {
+  "label": "Downstairs",
+  "back": true
+ },
+ "layout": "list",
+ "nodes": [
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Living room ceiling light",
+    "icon": "bulb",
+    "trailing": "toggle",
+    "sub": {
+     "e": "light.lr_ceiling",
+     "fmt": "light",
+     "s": "On · 60%"
+    },
+    "on": {
+     "e": "light.lr_ceiling",
+     "fmt": "on",
+     "s": "on"
+    },
+    "state": {
+     "e": "light.lr_ceiling",
+     "fmt": "avail",
+     "s": "default"
+    }
+   },
+   "on": {
+    "toggle": {
+     "do": "light.switch",
+     "e": "light.lr_ceiling"
+    }
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Kitchen under-cabinet strip",
+    "icon": "bulb",
+    "trailing": "toggle",
+    "sub": {
+     "e": "light.kit_strip",
+     "fmt": "light",
+     "s": "On · 60%"
+    },
+    "on": {
+     "e": "light.kit_strip",
+     "fmt": "on",
+     "s": "on"
+    },
+    "state": {
+     "e": "light.kit_strip",
+     "fmt": "avail",
+     "s": "default"
+    }
+   },
+   "on": {
+    "toggle": {
+     "do": "light.switch",
+     "e": "light.kit_strip"
+    }
+   }
+  }
+ ]
+}

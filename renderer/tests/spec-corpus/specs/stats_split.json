@@ -1,0 +1,65 @@
+{
+ "v": 1,
+ "id": "c_statssplit",
+ "name": "Energy",
+ "rev": 1,
+ "role": "both",
+ "header": {
+  "label": "Energy",
+  "back": true
+ },
+ "layout": "list",
+ "nodes": [
+  {
+   "c": "split",
+   "p": {}
+  },
+  {
+   "c": "stat",
+   "in": 0,
+   "slot": 0,
+   "p": {
+    "label": "Today",
+    "value": "6.2 kWh"
+   }
+  },
+  {
+   "c": "stat",
+   "in": 0,
+   "slot": 1,
+   "p": {
+    "label": "Cost",
+    "value": "£1.84",
+    "tone": "warn"
+   }
+  },
+  {
+   "c": "section_header",
+   "p": {
+    "title": "devices",
+    "right": "none",
+    "badge": false
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Oven",
+    "icon": "power",
+    "trailing": "value",
+    "value": "2 h",
+    "sub": "1.2 kWh"
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Dryer",
+    "icon": "power",
+    "trailing": "value",
+    "value": "1 h",
+    "sub": "0.8 kWh"
+   }
+  }
+ ]
+}

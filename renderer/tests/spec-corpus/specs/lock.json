@@ -1,0 +1,20 @@
+{
+ "v": 1,
+ "id": "c_lock",
+ "name": "Front door",
+ "rev": 1,
+ "role": "both",
+ "header": {
+  "label": "Front door",
+  "back": true
+ },
+ "layout": "center",
+ "nodes": [
+  {
+   "c": "lock_ring",
+   "p": {
+    "state": "locked"
+   }
+  }
+ ]
+}

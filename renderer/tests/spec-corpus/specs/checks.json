@@ -1,0 +1,35 @@
+{
+ "v": 1,
+ "id": "c_checks",
+ "name": "Checks",
+ "rev": 1,
+ "role": "both",
+ "header": {
+  "label": "Checks",
+  "back": true
+ },
+ "layout": "list",
+ "nodes": [
+  {
+   "c": "check_row",
+   "p": {
+    "name": "Build",
+    "state": "pass"
+   }
+  },
+  {
+   "c": "check_row",
+   "p": {
+    "name": "Lint",
+    "state": "fail"
+   }
+  },
+  {
+   "c": "check_row",
+   "p": {
+    "name": "Tests",
+    "state": "pending"
+   }
+  }
+ ]
+}

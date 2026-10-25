@@ -1,0 +1,42 @@
+{
+ "v": 1,
+ "id": "c_sectionbad",
+ "name": "Alerts",
+ "rev": 1,
+ "role": "both",
+ "header": {
+  "label": "Alerts",
+  "back": true
+ },
+ "layout": "list",
+ "nodes": [
+  {
+   "c": "section_header",
+   "p": {
+    "title": "open",
+    "badge": true,
+    "count": 2,
+    "tone": "warn",
+    "right": "none"
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Back door",
+    "icon": "house",
+    "trailing": "chevron",
+    "sub": "Open 5 min"
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Garage",
+    "icon": "house",
+    "trailing": "chevron",
+    "sub": "Open 1 h"
+   }
+  }
+ ]
+}

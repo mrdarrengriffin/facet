@@ -1,0 +1,50 @@
+{
+ "v": 1,
+ "id": "c_tiles",
+ "name": "Rooms",
+ "rev": 1,
+ "role": "both",
+ "header": {
+  "label": "Rooms",
+  "back": true
+ },
+ "layout": "cards",
+ "nodes": [
+  {
+   "c": "entity_tile",
+   "p": {
+    "icon": "bulb",
+    "label": "Hall",
+    "status": "On",
+    "on": true
+   }
+  },
+  {
+   "c": "entity_tile",
+   "p": {
+    "icon": "door",
+    "label": "Back door",
+    "status": "Closed",
+    "on": false
+   }
+  },
+  {
+   "c": "entity_tile",
+   "p": {
+    "icon": "thermometer",
+    "label": "Loft",
+    "status": "17°",
+    "on": false
+   }
+  },
+  {
+   "c": "entity_tile",
+   "p": {
+    "icon": "person",
+    "label": "Sam",
+    "status": "Home",
+    "on": true
+   }
+  }
+ ]
+}

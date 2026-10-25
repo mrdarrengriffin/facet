@@ -1,0 +1,35 @@
+{
+ "v": 1,
+ "id": "c_tempcenter",
+ "name": "Temperature",
+ "rev": 1,
+ "role": "both",
+ "header": {
+  "label": "Temperature",
+  "back": true
+ },
+ "layout": "center",
+ "nodes": [
+  {
+   "c": "big_number",
+   "p": {
+    "label": "Outside",
+    "value": {
+     "e": "$entity",
+     "fmt": "num",
+     "s": "12"
+    },
+    "unit": "°C",
+    "decimals": 0
+   }
+  }
+ ],
+ "params": {
+  "entity": {
+   "type": "entity",
+   "domain": "sensor",
+   "label": "Sensor",
+   "default": "sensor.outside_temp"
+  }
+ }
+}

@@ -1,0 +1,60 @@
+{
+ "v": 1,
+ "id": "c_sensorboun",
+ "name": "Loft",
+ "rev": 1,
+ "role": "both",
+ "header": {
+  "label": "Loft",
+  "back": true
+ },
+ "layout": "list",
+ "nodes": [
+  {
+   "c": "hero_block",
+   "p": {
+    "n": {
+     "e": "$entity",
+     "fmt": "num",
+     "s": "17"
+    },
+    "label": "Loft",
+    "line": {
+     "e": "$hum",
+     "fmt": "pct",
+     "s": "55%"
+    }
+   }
+  },
+  {
+   "c": "section_header",
+   "p": {
+    "title": "history",
+    "right": "meta",
+    "meta": "24 h",
+    "badge": false
+   }
+  },
+  {
+   "c": "sparkline",
+   "p": {
+    "values": "16,17,17,18,17,16,17",
+    "colour": "steel"
+   }
+  }
+ ],
+ "params": {
+  "entity": {
+   "type": "entity",
+   "domain": "sensor",
+   "label": "Temperature",
+   "default": "sensor.loft_temp"
+  },
+  "hum": {
+   "type": "entity",
+   "domain": "sensor",
+   "label": "Humidity",
+   "default": "sensor.loft_hum"
+  }
+ }
+}

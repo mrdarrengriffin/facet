@@ -1,0 +1,23 @@
+{
+ "v": 1,
+ "id": "c_timer",
+ "name": "Pasta",
+ "rev": 1,
+ "role": "both",
+ "header": {
+  "label": "Pasta",
+  "back": true
+ },
+ "layout": "center",
+ "nodes": [
+  {
+   "c": "timer_view",
+   "p": {
+    "state": "running",
+    "label": "Pasta",
+    "total": 600,
+    "left": 372
+   }
+  }
+ ]
+}

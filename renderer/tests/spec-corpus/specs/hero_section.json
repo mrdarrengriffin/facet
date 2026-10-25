@@ -1,0 +1,88 @@
+{
+ "v": 1,
+ "id": "c_herosectio",
+ "name": "Office",
+ "rev": 1,
+ "role": "both",
+ "header": {
+  "label": "Office",
+  "back": true
+ },
+ "layout": "list",
+ "nodes": [
+  {
+   "c": "hero_block",
+   "p": {
+    "n": "3",
+    "label": "lights on",
+    "line": "Office"
+   }
+  },
+  {
+   "c": "section_header",
+   "p": {
+    "title": "lights",
+    "right": "none",
+    "badge": false
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Desk",
+    "icon": "bulb",
+    "trailing": "toggle",
+    "sub": {
+     "e": "light.desk",
+     "fmt": "light",
+     "s": "On · 60%"
+    },
+    "on": {
+     "e": "light.desk",
+     "fmt": "on",
+     "s": "on"
+    },
+    "state": {
+     "e": "light.desk",
+     "fmt": "avail",
+     "s": "default"
+    }
+   },
+   "on": {
+    "toggle": {
+     "do": "light.switch",
+     "e": "light.desk"
+    }
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Shelf",
+    "icon": "bulb",
+    "trailing": "toggle",
+    "sub": {
+     "e": "light.shelf",
+     "fmt": "light",
+     "s": "On · 60%"
+    },
+    "on": {
+     "e": "light.shelf",
+     "fmt": "on",
+     "s": "on"
+    },
+    "state": {
+     "e": "light.shelf",
+     "fmt": "avail",
+     "s": "default"
+    }
+   },
+   "on": {
+    "toggle": {
+     "do": "light.switch",
+     "e": "light.shelf"
+    }
+   }
+  }
+ ]
+}

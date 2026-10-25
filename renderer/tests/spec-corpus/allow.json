@@ -1,0 +1,110 @@
+{
+ "about": "Text a component draws itself that is UI vocabulary, not demo data: exact labels (any case) per component ('*' = any), and regex patterns per component (live clock, computed countdowns). Everything else on screen must come from the spec. Number / option defaults of a node's component count as spec values (only TEXT defaults are leaks).",
+ "exact": {
+  "*": [
+   "on",
+   "off",
+   "auto",
+   "open",
+   "close",
+   "stop",
+   "cancel",
+   "unavailable",
+   "now",
+   "offline",
+   "wait",
+   "playing",
+   "paused",
+   "heat",
+   "heating",
+   "cooling",
+   "idle",
+   "presets",
+   "review",
+   "ci pass",
+   "ci fail",
+   "ci pending",
+   "done",
+   "timer"
+  ],
+  "covers_view": [
+   "no window chosen"
+  ],
+  "media_view": [
+   "vol"
+  ],
+  "timer_view": [
+   "+1 min",
+   "pick a length"
+  ],
+  "pr_row": [
+   "draft",
+   "ci running",
+   "ci passed",
+   "ci failed"
+  ],
+  "lock_ring": [
+   "hold to unlock",
+   "hold to lock"
+  ],
+  "weather_view": [
+   "weather",
+   "sun",
+   "moon",
+   "lightning"
+  ],
+  "camera_tile": [
+   "no still yet"
+  ]
+ },
+ "pattern": {
+  "screen_chrome": "^\\d{1,2}:\\d{2}$",
+  "header": "^\\d{1,2}:\\d{2}$",
+  "timer_view": "^\\d+:\\d{2}$|^\\d+ MIN$|^of \\d+ min · ends \\d{1,2}:\\d{2}$",
+  "thermostat_view": "^set \\d+(\\.\\d)?°$"
+ },
+ "own_data": {
+  "about": "Components that draw their own live feed, simulation or built-in sample data (not spec text): leak is not checked inside them.",
+  "list": [
+   "f1_standings",
+   "f1_race_control",
+   "f1_race_status",
+   "f1_circuit",
+   "football_pitch",
+   "tennis_score",
+   "tennis_court",
+   "lightning_view",
+   "lightning_radar",
+   "overhead_view",
+   "toast_layer",
+   "weather_view",
+   "weather_days",
+   "calendar_view",
+   "agents_view",
+   "bins_view",
+   "github_view",
+   "github_list",
+   "github_pr",
+   "energy_view",
+   "energy_week",
+   "moon_view",
+   "moon_facts",
+   "moon_phases",
+   "moon_range",
+   "print_view",
+   "card_grid",
+   "bottom_sheet"
+  ]
+ },
+ "blank_ok": {
+  "about": "Generated specs that may draw nothing: layout holders with no children, a badge hidden at zero.",
+  "list": [
+   "group",
+   "column",
+   "split",
+   "card_grid",
+   "count_badge/zero=hide",
+   "scroll_track"
+  ]
+ }
+}

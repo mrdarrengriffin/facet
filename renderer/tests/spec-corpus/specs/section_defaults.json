@@ -1,0 +1,38 @@
+{
+ "v": 1,
+ "id": "c_sectdef",
+ "name": "Porch",
+ "rev": 1,
+ "role": "both",
+ "header": {
+  "label": "Porch",
+  "back": true
+ },
+ "layout": "list",
+ "nodes": [
+  {
+   "c": "section_header",
+   "p": {
+    "title": "lights"
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Porch",
+    "icon": "bulb",
+    "trailing": "toggle",
+    "on": true
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Path",
+    "icon": "bulb",
+    "trailing": "toggle",
+    "on": false
+   }
+  }
+ ]
+}

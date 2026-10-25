@@ -1,0 +1,25 @@
+{
+ "v": 1,
+ "id": "c_media",
+ "name": "Lounge",
+ "rev": 1,
+ "role": "both",
+ "header": {
+  "label": "Lounge",
+  "back": true
+ },
+ "layout": "center",
+ "nodes": [
+  {
+   "c": "media_view",
+   "p": {
+    "state": "playing",
+    "title": "Blue in Green",
+    "artist": "Miles Davis",
+    "progress": 40,
+    "volume": 30,
+    "player": "Lounge"
+   }
+  }
+ ]
+}

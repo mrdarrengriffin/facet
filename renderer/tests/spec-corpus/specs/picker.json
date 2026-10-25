@@ -1,0 +1,39 @@
+{
+ "v": 1,
+ "id": "c_picker",
+ "name": "Play on",
+ "rev": 1,
+ "role": "both",
+ "header": {
+  "label": "Play on",
+  "back": true
+ },
+ "layout": "list",
+ "nodes": [
+  {
+   "c": "picker_row",
+   "p": {
+    "icon": "speaker",
+    "name": "Kitchen",
+    "status": "Idle",
+    "selected": true
+   }
+  },
+  {
+   "c": "picker_row",
+   "p": {
+    "icon": "tv",
+    "name": "Lounge TV",
+    "status": "Off"
+   }
+  },
+  {
+   "c": "picker_row",
+   "p": {
+    "icon": "speakers",
+    "name": "Everywhere",
+    "status": "3 speakers"
+   }
+  }
+ ]
+}

@@ -1,0 +1,45 @@
+{
+ "v": 1,
+ "id": "c_diallight",
+ "name": "Desk lamp",
+ "rev": 1,
+ "role": "both",
+ "header": {
+  "label": "Desk lamp",
+  "back": true
+ },
+ "layout": "center",
+ "nodes": [
+  {
+   "c": "dial",
+   "p": {
+    "value": {
+     "e": "$entity",
+     "fmt": "level",
+     "s": "60"
+    },
+    "caption": "Desk lamp",
+    "unit": "%",
+    "on": true
+   },
+   "on": {
+    "change": {
+     "do": "light.brightness",
+     "e": "$entity"
+    },
+    "toggle": {
+     "do": "light.switch",
+     "e": "$entity"
+    }
+   }
+  }
+ ],
+ "params": {
+  "entity": {
+   "type": "entity",
+   "domain": "light",
+   "label": "Light",
+   "default": "light.desk"
+  }
+ }
+}

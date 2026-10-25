@@ -1,0 +1,101 @@
+{
+ "v": 1,
+ "id": "c_kitchen",
+ "name": "Kitchen",
+ "rev": 1,
+ "role": "both",
+ "header": {
+  "label": "Kitchen",
+  "back": true
+ },
+ "layout": "list",
+ "nodes": [
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Ceiling",
+    "icon": "bulb",
+    "trailing": "toggle",
+    "sub": {
+     "e": "light.kitchen",
+     "fmt": "light",
+     "s": "On · 60%"
+    },
+    "on": {
+     "e": "light.kitchen",
+     "fmt": "on",
+     "s": "on"
+    },
+    "state": {
+     "e": "light.kitchen",
+     "fmt": "avail",
+     "s": "default"
+    }
+   },
+   "on": {
+    "toggle": {
+     "do": "light.switch",
+     "e": "light.kitchen"
+    }
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Under cabinets",
+    "icon": "bulb",
+    "trailing": "toggle",
+    "sub": {
+     "e": "light.kitchen_strip",
+     "fmt": "light",
+     "s": "On · 60%"
+    },
+    "on": {
+     "e": "light.kitchen_strip",
+     "fmt": "on",
+     "s": "on"
+    },
+    "state": {
+     "e": "light.kitchen_strip",
+     "fmt": "avail",
+     "s": "default"
+    }
+   },
+   "on": {
+    "toggle": {
+     "do": "light.switch",
+     "e": "light.kitchen_strip"
+    }
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Pendant",
+    "icon": "bulb",
+    "trailing": "toggle",
+    "sub": {
+     "e": "light.kitchen_pendant",
+     "fmt": "light",
+     "s": "On · 60%"
+    },
+    "on": {
+     "e": "light.kitchen_pendant",
+     "fmt": "on",
+     "s": "on"
+    },
+    "state": {
+     "e": "light.kitchen_pendant",
+     "fmt": "avail",
+     "s": "default"
+    }
+   },
+   "on": {
+    "toggle": {
+     "do": "light.switch",
+     "e": "light.kitchen_pendant"
+    }
+   }
+  }
+ ]
+}

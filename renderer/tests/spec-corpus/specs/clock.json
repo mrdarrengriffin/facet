@@ -1,0 +1,24 @@
+{
+ "v": 1,
+ "id": "c_clock",
+ "name": "Clock",
+ "rev": 1,
+ "role": "both",
+ "header": {
+  "label": "Clock",
+  "back": false
+ },
+ "layout": "center",
+ "nodes": [
+  {
+   "c": "clock_face",
+   "p": {
+    "face": "hero",
+    "time": "09:41",
+    "day": "Saturday",
+    "condition": "Sunny",
+    "temp": "14°"
+   }
+  }
+ ]
+}

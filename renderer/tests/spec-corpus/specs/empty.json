@@ -1,0 +1,23 @@
+{
+ "v": 1,
+ "id": "c_empty",
+ "name": "Bins",
+ "rev": 1,
+ "role": "both",
+ "header": {
+  "label": "Bins",
+  "back": true
+ },
+ "layout": "center",
+ "nodes": [
+  {
+   "c": "empty_state",
+   "p": {
+    "icon": "done",
+    "title": "Nothing due",
+    "body": "Next collection Tuesday",
+    "tone": "ok"
+   }
+  }
+ ]
+}
