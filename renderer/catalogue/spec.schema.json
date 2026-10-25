@@ -1625,7 +1625,7 @@
          "$ref": "#/$defs/param"
         }
        ],
-       "description": "How sure the camera is about what it saw, from 0 to 100 per cent."
+       "description": "How sure the camera is about what it saw, as a percentage."
       },
       "box": {
        "anyOf": [
@@ -8838,7 +8838,7 @@
          "$ref": "#/$defs/param"
         }
        ],
-       "description": "The soil moisture now, from 0 to 100 per cent. -1 means it cannot be read."
+       "description": "The soil moisture now, as a percentage. -1 means it cannot be read."
       },
       "dry": {
        "anyOf": [
@@ -8946,7 +8946,7 @@
          "$ref": "#/$defs/param"
         }
        ],
-       "description": "The soil moisture now, from 0 to 100 per cent. -1 means it cannot be read."
+       "description": "The soil moisture now, as a percentage. -1 means it cannot be read."
       },
       "dry": {
        "anyOf": [

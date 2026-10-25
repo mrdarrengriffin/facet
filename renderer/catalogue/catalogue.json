@@ -485,7 +485,7 @@
      "bindable": true,
      "min": 0,
      "max": 100,
-     "about": "How sure the camera is about what it saw, from 0 to 100 per cent."
+     "about": "How sure the camera is about what it saw, as a percentage."
     },
     {
      "name": "box",
@@ -3772,7 +3772,7 @@
      "bindable": true,
      "min": -1,
      "max": 100,
-     "about": "The soil moisture now, from 0 to 100 per cent. -1 means it cannot be read."
+     "about": "The soil moisture now, as a percentage. -1 means it cannot be read."
     },
     {
      "name": "dry",
@@ -3817,7 +3817,7 @@
      "bindable": true,
      "min": -1,
      "max": 100,
-     "about": "The soil moisture now, from 0 to 100 per cent. -1 means it cannot be read."
+     "about": "The soil moisture now, as a percentage. -1 means it cannot be read."
     },
     {
      "name": "dry",

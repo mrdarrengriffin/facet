@@ -46,7 +46,7 @@ FW_COMPONENT(plant_row, "Plant row", "components", R"({
   "frame": [480, 0],
   "props": [
     {"name": "name", "about": "The plant's name.", "type": "text", "default": "Fern"},
-    {"name": "moisture", "about": "The soil moisture now, from 0 to 100 per cent. -1 means it cannot be read.", "type": "range", "min": -1, "max": 100, "step": 1, "default": 18},
+    {"name": "moisture", "about": "The soil moisture now, as a percentage. -1 means it cannot be read.", "type": "range", "min": -1, "max": 100, "step": 1, "default": 18},
     {"name": "dry", "about": "The moisture below which the plant needs water. The bar shows it as a line.", "type": "range", "min": 0, "max": 100, "step": 1, "default": 30},
     {"name": "wet", "about": "The moisture above which the soil is too wet.", "type": "range", "min": 0, "max": 100, "step": 1, "default": 80},
     {"name": "entity", "about": "The plant's moisture sensor, by its Home Assistant entity id.", "type": "text", "default": ""}
