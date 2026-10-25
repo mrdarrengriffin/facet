@@ -14,27 +14,14 @@ const DEN = { 720: { den: '1.5x', d: 1.5, size: 720 }, 480: { den: '1x', d: 1, s
 type Item = { el: HTMLElement; comp: string; props: Record<string, unknown>; label: string; frame: [number, number]; doc: boolean; stage?: Stage; err?: HTMLElement;
   /** the playground stage (props from the controls, never reset) / a picture only (home strip, components overview) */
   sandbox?: boolean; still?: boolean;
-  /** demo reset: finger down on the canvas, the pending revert, events dropped until (the revert is silent) */
-  held?: boolean; timer?: number; muteUntil?: number };
+  /** a finger is down on the canvas */
+  held?: boolean };
 
-// Demo reset (Darren 2026-10-22): every sample is a demo. After an interaction (any event, or a release) the sample is
-// rebuilt with its original props motion.json "demo-reset" ms after the last one (timer restarts on every event, never
-// while a finger is down); the revert takes the update path (the component animates back, silent; renderer README
-// "Update path"), else a silent rebuild (its events / sounds are dropped). Everything on the site reverts except the
-// playground stage, whose control changes take the update path too.
-const RESET_MS = (site as { demoResetMs?: number }).demoResetMs ?? 1800;
-function armReset(it: Item) {
-  clearTimeout(it.timer);
-  if (it.held || it.sandbox || it.still) return;
-  it.timer = window.setTimeout(() => {
-    if (it.held || !engine || !it.stage || it.stage.demoState() === 0) return;  // at its preset: no reset step
-    it.muteUntil = performance.now() + 250;
-    draw(it, engine, getPrefs(), true);
-  }, RESET_MS);
-}
+// No demo reset (Darren 2026-10-25): a demo keeps its state until the page is left (it was rebuilt with its original
+// props a moment after the last interaction).
 function watchGestures(it: Item, c: HTMLCanvasElement) {
-  c.addEventListener('pointerdown', () => { it.held = true; clearTimeout(it.timer); });
-  const up = () => { if (!it.held) return; it.held = false; armReset(it); };
+  c.addEventListener('pointerdown', () => { it.held = true; });
+  const up = () => { it.held = false; };
   c.addEventListener('pointerup', up);
   c.addEventListener('pointercancel', up);
 }
@@ -69,8 +56,6 @@ async function ensure(p: Prefs): Promise<Engine> {
     accentSets = e.tokens.accent.sets;
     e.onEvent = (ev, s) => {
       const it = s && items.find((i) => i.stage === s);
-      if (it?.muteUntil && performance.now() < it.muteUntil) return;  // a silent demo revert
-      if (it) armReset(it);
       if (ev.kind === 'sound') void playUi(ev.name, ev.detail);
       log(ev.kind, ev.name, ev.detail, s?.label ?? '');
     };

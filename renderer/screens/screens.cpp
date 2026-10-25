@@ -45,6 +45,7 @@ struct Row { std::string id; lv_obj_t *toggle; };
 struct Page { lv_obj_t *root = nullptr; std::vector<Row> rows; };
 
 const char *META = R"({
+  "role": "detail",
   "about": "Settings > Screens: every screen of this panel with where its data comes from and an on / off toggle; a screen off leaves Home. Tap a screen for its source and options.",
   "frame": [480, 480],
   "icons": ["back@glyph"],

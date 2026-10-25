@@ -61,6 +61,11 @@ struct LargeScope {
 };
 bool show(Device *d, const std::string &id, std::vector<lv_obj_t *> &items) {
   LargeScope large(text_large_setting());
+  struct RootScope {  // the stack's root screen is built without Back (spec::at_root)
+    bool was;
+    explicit RootScope(bool on) : was(spec::at_root) { spec::at_root = on; }
+    ~RootScope() { spec::at_root = was; }
+  } root(d->stack.size() <= 1);
   const Component *c = find(base_of(id).c_str());
   const bool from_spec = !c && spec::screen_json(base_of(id));  // a screen from its spec (core/spec.h)
   if (!c && !from_spec) return false;

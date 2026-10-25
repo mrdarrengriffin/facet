@@ -110,9 +110,12 @@ export type ScreenSources = { from: string | null; needs: string | null; list: {
 export type Screen = {
   id: string; name: string; kind: 'spec' | 'built'; about: string; opening?: string | null; layout?: string; params: ScreenParam[];
   sampleProps: Record<string, unknown>; comp: string; frame: [number, number]; parts: string[]; sources: ScreenSources | null;
-  status: Status; source: { path: string; url: string }[]; opens: string[]; openedFrom: string[];
+  status: Status; source: { path: string; url: string }[]; opens: string[]; openedFrom: string[]; role: string;
 };
-export const SCREENS = screens as unknown as Screen[];
+/** every screen of the build; SCREENS = the ones with a page: a detail screen (spec / meta role "detail": a drill-down
+ *  such as Energy's last days or Settings > Screens) has none, it opens by tapping inside its parent's demo (Darren 2026-10-25) */
+export const ALL_SCREENS = screens as unknown as Screen[];
+export const SCREENS = ALL_SCREENS.filter((s) => s.role !== 'detail');
 export const screenHref = (s: Pick<Screen, 'id'>) => `${BASE}screens/${slug(s.id)}/`;
 export const screenById = (id: string) => SCREENS.find((s) => s.id === id);
 /** screens in index / sidebar groups (lib/screen-groups.ts order; unknown ids last, under Other) */

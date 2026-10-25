@@ -394,7 +394,7 @@ function screenSet() {
     const rel = `renderer/specs/${f}`;
     out.push({ id: spec.id, name: pub(spec.name), kind: 'spec', about: pub(about), layout: spec.layout, params,
       sampleProps: { screen: spec.id, ...Object.fromEntries(params.filter((p) => p.sample).map((p) => [p.name, p.sample])) },
-      comp: 'spec', frame: [480, 480], parts, sources: sourcesOf(spec.id), status: relStatus(spec.id, one(rel)), source: [{ path: rel, url: `${REPO}/${rel}` }] });
+      role: spec.role ?? 'page', comp: 'spec', frame: [480, 480], parts, sources: sourcesOf(spec.id), status: relStatus(spec.id, one(rel)), source: [{ path: rel, url: `${REPO}/${rel}` }] });
   }
   for (const c of entries.filter((e) => e.section === 'screens' && !SCREEN_SKIP.has(e.id))) {
     const f = files[c.id] ?? { uses: [], files: [], status: 'wip' };
@@ -403,7 +403,7 @@ function screenSet() {
       params: props.map((p) => ({ name: p.name, about: p.about ?? '', label: p.name.replace(/_/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase().replace(/^./, (x) => x.toUpperCase()),
         type: p.type, domain: null, options: p.options ?? (p.type === 'range' ? [`${p.min ?? 0} to ${p.max}`] : null), default: p.default ?? '' })),
       sampleProps: Object.fromEntries((c.meta.props ?? []).map((p) => [p.name, p.default ?? (p.type === 'bool' ? false : p.type === 'range' ? p.min ?? 0 : '')])),
-      comp: c.id, frame: c.meta.frame, parts: f.uses.filter((u) => compById[u] && u !== c.id), sources: sourcesOf(c.id), status: relStatus(c.id, f.status),
+      role: c.meta.role ?? 'page', comp: c.id, frame: c.meta.frame, parts: f.uses.filter((u) => compById[u] && u !== c.id), sources: sourcesOf(c.id), status: relStatus(c.id, f.status),
       source: f.files.map((p) => ({ path: p, url: `${REPO}/${p}` })) });
   }
   for (const s of out) {

@@ -102,6 +102,7 @@ void sheet_props(Page *pg, int k, bool open, Doc &d) {
 }
 
 const char *META = R"({
+  "role": "detail",
   "about": "One screen's settings on this panel: on Home or not, where its data comes from and its own options (Media: the visual, the player).",
   "frame": [480, 480],
   "icons": ["back@glyph", "chevron@icon", "check@icon", "close@glyph"],

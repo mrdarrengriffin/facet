@@ -125,6 +125,9 @@
 
 namespace fw {
 namespace spec {
+// set by the device runtime while it builds the root of its stack (core/device.cpp show): the root screen has no Back
+// (nowhere to go back to; the panel's root is Home, which has none anyway; the docs demo a screen as a device's root)
+inline bool at_root = false;
 constexpr int PROTOCOL = 1;
 constexpr int DECK_V = 2;  // the deck's own version (v1 decks are refused)
 struct Budget {
@@ -1328,7 +1331,7 @@ inline lv_obj_t *build(lv_obj_t *parent, const std::string &id, Props opened, st
   ArduinoJson::JsonDocument hd;
   const char *hl = doc["header"]["label"] | "";
   hd["label"] = *hl ? hl : (doc["name"] | "");  // "$name" left empty = the spec's name
-  hd["back"] = doc["header"]["back"] | true;
+  hd["back"] = !at_root && (doc["header"]["back"] | true);
   hd["settings"] = doc["header"]["settings"] | false;  // the settings button in the chrome (Home)
   if (doc["header"]["actions"].is<ArduinoJson::JsonObjectConst>()) hd["actions"] = doc["header"]["actions"];  // a Home's header actions
   {  // opened for one entity (a Home card's detail): the header names it, the card's label else its friendly name

@@ -6,7 +6,7 @@
 import Docs, { type Heading } from '../../layouts/Docs.astro';
 import Live from '../../components/Live.astro';
 import PreviewBox from '../../components/PreviewBox.astro';
-import { ALL, STATUS, href, screenById, screenGroupOf, screenHref, slug, SCREENS, type Screen } from '../../lib/data';
+import { ALL, ALL_SCREENS, STATUS, href, screenById, screenGroupOf, screenHref, slug, SCREENS, type Screen } from '../../lib/data';
 
 export function getStaticPaths() {
   return SCREENS.map((s) => ({ params: { id: slug(s.id) }, props: { s } }));
@@ -32,13 +32,17 @@ const headings: Heading[] = [
   { depth: 2, slug: 'status', text: 'Status' },
 ];
 const st = STATUS[s.status];
+// the demo runs as on a panel (Darren 2026-10-25): a spec screen is the root of a device stack (spec prop live), so
+// its taps open the screens it leads to and Back returns; the root itself has no Back. Home and Settings = the Device component started on them.
+const demo = s.comp === 'spec' ? { comp: 'spec', props: { ...s.sampleProps, live: true } }
+  : s.comp === 'home' || s.comp === 'settings' ? { comp: 'device', props: { start: s.comp } } : { comp: s.comp, props: s.sampleProps };
 ---
 
 <Docs title={s.name} description={s.about} group={`Screens · ${screenGroupOf(s.id)}`} current={screenHref(s)} headings={headings} source={s.source} wide>
   <div data-preview-scope>
     <h2 id="preview">Preview</h2>
     <PreviewBox />
-    <Live comp={s.comp} props={s.sampleProps} label={`${s.name} screen`} frame={s.frame} caption={false} />
+    <Live comp={demo.comp} props={demo.props} label={`${s.name} screen`} frame={s.frame} caption={false} />
     <p class="hint">{s.opening ?? 'Sample data: made-up devices and values, not a real home.'} Tap it as on a panel; it returns to its start after a moment.</p>
   </div>
 
@@ -99,7 +103,7 @@ const st = STATUS[s.status];
   {
     (s.opens.length > 0 || s.openedFrom.length > 0) && (
       <div class="cols">
-        {s.opens.length > 0 && <div><h3 class="facet-label">Opens</h3><ul class="tags">{s.opens.map((id) => <li><a href={screenHref(link(id)!)}>{link(id)!.name}</a></li>)}</ul></div>}
+        {s.opens.length > 0 && <div><h3 class="facet-label">Opens</h3><ul class="tags">{s.opens.map((id) => <li>{link(id) ? <a href={screenHref(link(id)!)}>{link(id)!.name}</a> : ALL_SCREENS.find((x) => x.id === id)?.name ?? id}</li>)}</ul></div>}
         {s.openedFrom.length > 0 && <div><h3 class="facet-label">Opened from</h3><ul class="tags">{s.openedFrom.map((id) => link(id) && <li><a href={screenHref(link(id)!)}>{link(id)!.name}</a></li>)}</ul></div>}
       </div>
     )
