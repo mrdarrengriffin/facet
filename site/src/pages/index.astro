@@ -226,7 +226,7 @@ const steps = [
   /* hero: text on the left, the device on the right; stacked on narrow screens */
   .landing__hero {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 480px);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 574px);
     gap: 64px;
     align-items: center;
     padding: 80px 0 64px;
@@ -299,7 +299,7 @@ const steps = [
   .landing__bezel {
     --r-outer: 32px;
     --inset: calc(16px + 1px);
-    padding: 16px;
+    padding: 16px; /* 16 + 1 border each side: a 574 px frame holds the 720 px panel at exactly 3/4 */
     border: 1px solid var(--facet-color-line);
     border-radius: 32px;
     background: var(--facet-color-surface);
@@ -307,7 +307,6 @@ const steps = [
   .landing__viewport {
     position: relative;
     box-sizing: border-box;
-    padding: var(--facet-layout-inset-1x);
     display: grid;
     place-items: center;
     aspect-ratio: 1;
@@ -315,7 +314,7 @@ const steps = [
     border-radius: max(0px, calc(var(--r-outer) - var(--inset)));
     background: var(--facet-color-bg-565);
   }
-  /* the live Dial: its own size, shrunk to fit the screen */
+  /* the live panel IS the screen: it fills it edge to edge (the panel UI has its own inset) */
   .landing__viewport :global(.live),
   .landing__viewport :global(.live__stage) {
     display: grid;
@@ -324,9 +323,9 @@ const steps = [
     height: 100%;
   }
   .landing__viewport :global(.live__canvas) {
-    width: auto !important;
-    max-width: 100%;
-    max-height: 100%;
+    width: 100% !important;
+    height: 100%;
+    max-width: none;
   }
   .landing__device figcaption {
     margin-top: 16px;
@@ -532,7 +531,7 @@ const steps = [
       padding-top: 56px;
     }
     .landing__device {
-      max-width: 480px;
+      max-width: 574px;
     }
     .landing__section .shots {
       grid-template-columns: repeat(3, minmax(0, 1fr));
