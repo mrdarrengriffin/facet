@@ -414,10 +414,10 @@ FW_COMPONENT(overhead_view, "Overhead view", "components", R"({
   "about": "The Overhead screen's body: the selected aircraft (else the closest) with its route and a sky radar, the two nearest others, the big radar, and the way to all of them.",
   "frame": [480, 0],
   "props": [
-    {"name": "sample", "type": "select", "options": ["busy", "overhead", "emergency", "quiet"], "default": "busy"},
-    {"name": "view", "type": "select", "options": ["now", "radar", "list"], "default": "now"},
-    {"name": "unit", "type": "select", "options": ["km", "mi"], "default": "km"},
-    {"name": "speed", "type": "select", "options": ["mph", "kmh", "kn"], "default": "mph"}
+    {"name": "sample", "about": "For previews only: which made-up sky to show. busy has many aircraft, overhead has one right above, emergency has one squawking an emergency, quiet has none nearby.", "type": "select", "options": ["busy", "overhead", "emergency", "quiet"], "default": "busy"},
+    {"name": "view", "about": "Which view to open on: now shows the closest aircraft with its route, radar shows the big radar, list lists every aircraft nearby.", "type": "select", "options": ["now", "radar", "list"], "default": "now"},
+    {"name": "unit", "about": "Whether distances are shown in kilometres or miles.", "type": "select", "options": ["km", "mi"], "default": "km"},
+    {"name": "speed", "about": "How aircraft speeds are shown: miles per hour, kilometres per hour, or knots.", "type": "select", "options": ["mph", "kmh", "kn"], "default": "mph"}
   ],
   "variants": [
     {"label": "busy sky", "props": {}},

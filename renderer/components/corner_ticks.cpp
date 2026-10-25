@@ -57,9 +57,9 @@ FW_COMPONENT(corner_ticks, "Corner ticks", "components", R"({
   "audit": {"snaps": {"on": "the sample owner, box or button, not a state"}},
   "frame": [240, 112],
   "props": [
-    {"name": "on", "type": "select", "options": ["box", "button"], "default": "box"},
-    {"name": "corners", "type": "select", "options": ["all", "tr-bl"], "default": "all"},
-    {"name": "state", "type": "select", "options": ["active", "active-pressed", "default"], "default": "active"}
+    {"name": "on", "about": "What the marks sit on: box for a card or tile, button for a smaller button.", "type": "select", "options": ["box", "button"], "default": "box"},
+    {"name": "corners", "about": "Which corners get a mark: all four, or tr-bl for just top right and bottom left.", "type": "select", "options": ["all", "tr-bl"], "default": "all"},
+    {"name": "state", "about": "active shows the marks; active-pressed shows them while the active control is held; default hides them.", "type": "select", "options": ["active", "active-pressed", "default"], "default": "active"}
   ],
   "variants": [
     {"label": "box · all", "props": {}},

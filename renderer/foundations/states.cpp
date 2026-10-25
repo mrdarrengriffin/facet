@@ -330,7 +330,7 @@ FW_COMPONENT(states, "States", "foundations", R"({
   "layout": "doc",
   "events": true,
   "frame": [480, 0],
-  "props": [{"name": "section", "type": "select", "options": )" FW_STATES_SECTION_IDS R"(, "default": "rules"}],
+  "props": [{"name": "section", "about": "Which part of the states page to show, such as the rules or each state in turn.", "type": "select", "options": )" FW_STATES_SECTION_IDS R"(, "default": "rules"}],
   "variants": )" FW_STATES_SECTIONS R"(
 })") {
   const char *s = p["section"] | "rules";

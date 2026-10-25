@@ -170,12 +170,12 @@ FW_COMPONENT(slider, "Slider", "components", R"({
   "about": "A horizontal control for picking a value in a range by dragging or tapping.",
   "frame": [320, 96],
   "props": [
-    {"name": "value", "type": "range", "min": 0, "max": 100, "step": 1, "default": 40},
-    {"name": "min", "type": "range", "min": 0, "max": 50, "step": 1, "default": 0},
-    {"name": "max", "type": "range", "min": 10, "max": 100, "step": 1, "default": 100},
-    {"name": "step", "type": "range", "min": 1, "max": 25, "step": 1, "default": 1},
-    {"name": "width", "type": "range", "min": 96, "max": 288, "step": 8, "default": 256},
-    {"name": "state", "type": "select", "options": ["default", "disabled", "unavailable"], "default": "default"}
+    {"name": "value", "about": "The value the slider is set to.", "type": "range", "min": 0, "max": 100, "step": 1, "default": 40},
+    {"name": "min", "about": "The lowest value, at the left end.", "type": "range", "min": 0, "max": 50, "step": 1, "default": 0},
+    {"name": "max", "about": "The highest value, at the right end.", "type": "range", "min": 10, "max": 100, "step": 1, "default": 100},
+    {"name": "step", "about": "How much the value changes from one position to the next.", "type": "range", "min": 1, "max": 25, "step": 1, "default": 1},
+    {"name": "width", "about": "How long the slider is, in pixels.", "type": "range", "min": 96, "max": 288, "step": 8, "default": 256},
+    {"name": "state", "about": "default can be dragged; disabled cannot be changed; unavailable shows the device cannot be reached.", "type": "select", "options": ["default", "disabled", "unavailable"], "default": "default"}
   ],
   "variants": [
     {"label": "min · 0", "props": {"value": 0}},

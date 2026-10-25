@@ -265,12 +265,12 @@ FW_COMPONENT(cover_visual, "Cover visual", "components", R"({
   "audit": {"snaps": {"kind": "a roller, Venetian or curtain is a different drawing: structure"}},
   "frame": [224, 400],
   "props": [
-    {"name": "kind", "type": "select", "options": ["roller", "venetian", "curtain"], "default": "roller"},
-    {"name": "position", "type": "range", "min": 0, "max": 100, "step": 1, "default": 40},
-    {"name": "tilt", "type": "range", "min": 0, "max": 100, "step": 1, "default": 50},
-    {"name": "heading", "type": "range", "min": -1, "max": 100, "step": 1, "default": -1},
-    {"name": "draggable", "type": "bool", "default": true},
-    {"name": "state", "type": "select", "options": ["default", "disabled", "unavailable"], "default": "default"}
+    {"name": "kind", "about": "What hangs in the window: a roller blind, a Venetian blind with slats, or a pair of curtains.", "type": "select", "options": ["roller", "venetian", "curtain"], "default": "roller"},
+    {"name": "position", "about": "How open the cover is, from 0 (closed) to 100 (fully open).", "type": "range", "min": 0, "max": 100, "step": 1, "default": 40},
+    {"name": "tilt", "about": "For Venetian blinds: how far the slats are turned, from 0 (shut) to 100 (fully open).", "type": "range", "min": 0, "max": 100, "step": 1, "default": 50},
+    {"name": "heading", "about": "Where the cover is moving to while it moves, from 0 to 100, shown as a faint target. -1 means it is not moving.", "type": "range", "min": -1, "max": 100, "step": 1, "default": -1},
+    {"name": "draggable", "about": "Lets you drag the blind's edge, or the curtains sideways, to move the cover.", "type": "bool", "default": true},
+    {"name": "state", "about": "default can be dragged; disabled cannot be moved; unavailable shows the cover cannot be reached.", "type": "select", "options": ["default", "disabled", "unavailable"], "default": "default"}
   ],
   "variants": [
     {"label": "roller · 40 %", "props": {}},

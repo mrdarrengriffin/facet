@@ -233,7 +233,7 @@ FW_COMPONENT(space, "Spacing & radius", "foundations", R"({
   "about": "Spacing steps on the 4 px grid, radii, strokes and touch target sizes.",
   "layout": "doc",
   "frame": [480, 0],
-  "props": [{"name": "section", "type": "select", "options": )" FW_SPACE_SECTION_IDS R"(, "default": "space"}],
+  "props": [{"name": "section", "about": "Which part of the page to show: the spacing steps, the corner radii, the line weights or the touch target sizes.", "type": "select", "options": )" FW_SPACE_SECTION_IDS R"(, "default": "space"}],
   "variants": )" FW_SPACE_SECTIONS R"(
 })") {
   const char *s = p["section"] | "space";

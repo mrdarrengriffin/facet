@@ -67,10 +67,10 @@ FW_COMPONENT(arc, "Arc", "components", R"({
   "about": "A value as an arc with a track, a round-capped indicator and an optional knob: the arc every dial uses.",
   "frame": [336, 336],
   "props": [
-    {"name": "value", "type": "range", "min": 0, "max": 100, "step": 1, "default": 62},
-    {"name": "size", "type": "range", "min": 64, "max": 320, "step": 16, "default": 160},
-    {"name": "knob", "type": "bool", "default": true},
-    {"name": "state", "type": "select", "options": ["default", "disabled"], "default": "default"}
+    {"name": "value", "about": "How far round the arc is filled, from 0 (empty) to 100 (full).", "type": "range", "min": 0, "max": 100, "step": 1, "default": 62},
+    {"name": "size", "about": "How wide the arc is across, in pixels.", "type": "range", "min": 64, "max": 320, "step": 16, "default": 160},
+    {"name": "knob", "about": "Shows a round knob at the end of the filled part, the handle you drag on a dial.", "type": "bool", "default": true},
+    {"name": "state", "about": "default draws the arc in the accent colour; disabled greys it out to show it cannot be changed.", "type": "select", "options": ["default", "disabled"], "default": "default"}
   ],
   "variants": [
     {"label": "62 · knob", "props": {}},

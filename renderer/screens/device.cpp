@@ -10,7 +10,7 @@ const char *META = R"({
   "frame": [480, 480],
   "icons": ["screen-settings@icon", "back@glyph"],
   "props": [
-    {"name": "start", "type": "select", "options": ["home", "settings"], "default": "home"}
+    {"name": "start", "about": "Which screen the panel starts on: Home, or Settings.", "type": "select", "options": ["home", "settings"], "default": "home"}
   ],
   "variants": []
 })";

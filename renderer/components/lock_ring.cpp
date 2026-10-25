@@ -204,7 +204,7 @@ FW_COMPONENT(lock_ring, "Lock ring", "components", R"({
   "about": "A door lock's padlock in its ring: the state at a glance and the control. Hold to unlock (the ring fills), tap to lock.",
   "frame": [320, 0],
   "props": [
-    {"name": "state", "type": "select", "options": ["locked", "unlocked", "locking", "unlocking", "jammed", "open", "opening", "unavailable"], "default": "locked"}
+    {"name": "state", "about": "The lock's state: locked, unlocked, locking or unlocking while it moves, jammed when it is stuck, open or opening for a door that can open, or unavailable when it cannot be reached. The ring and padlock change to match.", "type": "select", "options": ["locked", "unlocked", "locking", "unlocking", "jammed", "open", "opening", "unavailable"], "default": "locked"}
   ],
   "variants": [
     {"label": "locked", "props": {}},

@@ -109,10 +109,10 @@ FW_COMPONENT(lightning_view, "Lightning view", "components", R"({
   "motion": "demo: strikes arrive and ripple on the radar; the nearest, the counts and the last strike follow",
   "motion_off": "demo",
   "props": [
-    {"name": "demo", "type": "bool", "default": true},
-    {"name": "quiet", "type": "bool", "default": false},
-    {"name": "unit", "type": "select", "options": ["km", "mi"], "default": "km"},
-    {"name": "size", "type": "select", "options": ["screen", "weather"], "default": "screen"}
+    {"name": "demo", "about": "For previews only: plays a made-up storm so strikes appear.", "type": "bool", "default": true},
+    {"name": "quiet", "about": "For previews only: shows a quiet sky with no recent strikes.", "type": "bool", "default": false},
+    {"name": "unit", "about": "Whether distances are shown in kilometres or miles.", "type": "select", "options": ["km", "mi"], "default": "km"},
+    {"name": "size", "about": "screen fills the Lightning screen; weather fits it inside the Weather screen's lightning view.", "type": "select", "options": ["screen", "weather"], "default": "screen"}
   ],
   "variants": [
     {"label": "a storm, 9 km away", "props": {"demo": false, "now": 1792944000000}},

@@ -112,10 +112,10 @@ FW_COMPONENT(moon_range, "Moon by day", "components", R"({
   "about": "One bar per evening, its height how much of the moon is lit: full moons in the accent, past days dimmed, a dotted line on today, a moon over every new and full moon and month names under the 1st. Press and drag to read a day.",
   "frame": [448, 240],
   "props": [
-    {"name": "start", "type": "text", "default": "2026-10-15"},
-    {"name": "today", "type": "range", "min": 0, "max": 30, "step": 1, "default": 7},
-    {"name": "height", "type": "range", "min": 80, "max": 160, "step": 8, "default": 120},
-    {"name": "south", "type": "bool", "default": false}
+    {"name": "start", "about": "The first evening shown, as a date like 2026-10-15.", "type": "text", "default": "2026-10-15"},
+    {"name": "today", "about": "Which bar is today, counting from 0 at the left; it gets the dotted line and the moon above it.", "type": "range", "min": 0, "max": 30, "step": 1, "default": 7},
+    {"name": "height", "about": "How tall the tallest bar can be, in pixels.", "type": "range", "min": 80, "max": 160, "step": 8, "default": 120},
+    {"name": "south", "about": "Draws the moons as seen from the southern half of the world.", "type": "bool", "default": false}
   ],
   "opening": "Showing it grows the bars (chart motion bars).",
   "variants": [

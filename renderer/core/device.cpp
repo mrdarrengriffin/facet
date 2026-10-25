@@ -111,11 +111,13 @@ bool show(Device *d, const std::string &id, std::vector<lv_obj_t *> &items) {
   return true;
 }
 
-// Navigation (screen model §3): a deck page id or a page kind is a PAGE (going there resets the stack to the start
-// page + it); anything opened with parameters (a card's detail: "light?{...}") or that is not a page (Settings,
-// sub-views) is pushed, at most MAX_DEPTH deep. A deck page id becomes what shows it: a Home = "home" (the start page)
+// Navigation (screen model §3; Darren 2026-10-25: Back always returns to the previous screen): every go pushes, a page
+// (a deck page id or page kind, from a shortcut or a page card) as much as a card's detail ("light?{...}") or Settings,
+// so Kitchen -> Timer -> Back = Kitchen. A screen already on the stack is gone back to (the stack is cut after it, no
+// loops). At most MAX_DEPTH deep: at the cap the oldest screen after the start page is forgotten (Back still steps
+// through the rest and ends on the start page). A deck page id becomes what shows it: a Home = "home" (the start page)
 // or "home?{"page":"<id>"}", another page = its kind.
-constexpr size_t MAX_DEPTH = 4;
+constexpr size_t MAX_DEPTH = 8;
 std::string target_of(const std::string &id, bool &page) {
   const std::string base = base_of(id);
   page = false;
@@ -145,19 +147,13 @@ void run(lv_timer_t *t) {
     bool page = false;
     const std::string tgt = target_of(d->target, page);
     if (!known(tgt) || (!d->stack.empty() && d->stack.back() == tgt)) return;
-    if (page) {  // pages are peers: the stack becomes [start] or [start, page] (screen model §3)
-      const size_t was = d->stack.size();
-      d->stack.assign(1, "home");
-      if (tgt != "home") d->stack.push_back(tgt);
-      home_dir = d->stack.size() < was;
-    } else {
-      auto at = std::find(d->stack.begin(), d->stack.end(), tgt);
-      home_dir = at != d->stack.end();  // already on the stack: back to it
-      if (home_dir) d->stack.erase(at + 1, d->stack.end());
-      else {
-        if (d->stack.size() >= MAX_DEPTH) d->stack.pop_back();  // depth cap: the deepest gives way
-        d->stack.push_back(tgt);
-      }
+    (void) page;  // pages push like everything else (Back = the previous screen)
+    auto at = std::find(d->stack.begin(), d->stack.end(), tgt);
+    home_dir = at != d->stack.end();  // already on the stack: back to it
+    if (home_dir) d->stack.erase(at + 1, d->stack.end());
+    else {
+      if (d->stack.size() >= MAX_DEPTH) d->stack.erase(d->stack.begin() + 1);  // depth cap: the oldest after the start goes
+      d->stack.push_back(tgt);
     }
   } else if (op == BACK) {
     if (d->stack.size() < 2) return;

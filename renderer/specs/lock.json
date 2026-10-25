@@ -5,22 +5,22 @@
  "rev": 3,
  "role": "detail",
  "params": {
-  "entity": {
+  "entity": {"about": "The door lock this screen controls.", 
    "type": "entity",
    "domain": "lock",
    "label": "Lock",
    "default": ""
   },
-  "name": {
+  "name": {"about": "The name shown in the header. Leave empty to use the lock's own name.", 
    "type": "text",
    "label": "Name (header)",
    "default": ""
   },
-  "activity": {
+  "activity": {"about": "The lock's recent history, sent to the panel to list who locked and unlocked it.", 
    "type": "hidden",
    "default": ""
   },
-  "demo": {
+  "demo": {"about": "For previews only: which state the sample lock is in, such as locked or jammed.", 
    "type": "select",
    "options": [
     "locked",

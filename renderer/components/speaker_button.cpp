@@ -83,10 +83,10 @@ FW_COMPONENT(speaker_button, "Speaker button", "components", R"({
   "frame": [320, 96],
   "icons": ["speaker@small", "chevron-down@small", "sport-tennis-ball@small", "sport-goal@small"],
   "props": [
-    {"name": "name", "type": "text", "default": "auto · study"},
-    {"name": "playing", "type": "bool", "default": true},
-    {"name": "icon", "type": "select", "options": ["speaker", "sport-tennis-ball", "sport-goal", "none"], "default": "speaker"},
-    {"name": "state", "type": "select", "options": ["default", "pressed", "disabled"], "default": "default"}
+    {"name": "name", "about": "The speaker's name on the button, such as auto study when it follows you to the study.", "type": "text", "default": "auto · study"},
+    {"name": "playing", "about": "Whether something is playing. The icon turns orange while it plays.", "type": "bool", "default": true},
+    {"name": "icon", "about": "The icon on the button: speaker for media, a tennis ball or a goal for the sport screens' match picker, or none.", "type": "select", "options": ["speaker", "sport-tennis-ball", "sport-goal", "none"], "default": "speaker"},
+    {"name": "state", "about": "How the button looks: default ready to tap, pressed while held, or disabled.", "type": "select", "options": ["default", "pressed", "disabled"], "default": "default"}
   ],
   "variants": [
     {"label": "playing", "props": {}},

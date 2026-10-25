@@ -119,14 +119,14 @@ FW_COMPONENT(readout, "State readout", "components", R"({
   "frame": [352, 304],
   "icons": ["person@icon", "door@icon", "window@icon", "thermometer@icon", "house@icon", "alert@icon", "bolt@icon"],
   "props": [
-    {"name": "top", "type": "select", "options": ["occupancy · on", "occupancy · off", "door · open", "door · closed", "window · open", "temperature", "temperature · cold", "home · everyone", "home · some", "moisture · wet", "offline"], "default": "occupancy · on"},
-    {"name": "label", "type": "text", "default": ""},
-    {"name": "icon", "type": "select", "options": ["person", "door", "window", "thermometer", "house", "alert", "bolt"], "default": "thermometer"},
-    {"name": "state", "type": "text", "default": "21.4°"},
-    {"name": "detail", "type": "text", "default": ""},
-    {"name": "tone", "type": "select", "options": ["text", "accent", "warn", "mute"], "default": "text"},
-    {"name": "half", "type": "bool", "default": false},
-    {"name": "bottom", "type": "select", "options": ["none", "occupancy · on", "occupancy · off", "door · open", "door · closed", "window · open", "temperature", "temperature · cold", "home · everyone", "home · some", "moisture · wet", "offline"], "default": "door · open"}
+    {"name": "top", "about": "For previews only: the made-up readout in the top half of the slot, such as someone in the room or a door open.", "type": "select", "options": ["occupancy · on", "occupancy · off", "door · open", "door · closed", "window · open", "temperature", "temperature · cold", "home · everyone", "home · some", "moisture · wet", "offline"], "default": "occupancy · on"},
+    {"name": "label", "about": "The name of the thing it reports on. Leave empty to use the sample's own.", "type": "text", "default": ""},
+    {"name": "icon", "about": "The icon before the name.", "type": "select", "options": ["person", "door", "window", "thermometer", "house", "alert", "bolt"], "default": "thermometer"},
+    {"name": "state", "about": "The state in words, such as 21.4° or Open.", "type": "text", "default": "21.4°"},
+    {"name": "detail", "about": "A quieter line after the state, such as how long ago it changed. Leave empty for none.", "type": "text", "default": ""},
+    {"name": "tone", "about": "The colour of the state: text for normal, accent for something notable, warn for something to check, mute for quiet.", "type": "select", "options": ["text", "accent", "warn", "mute"], "default": "text"},
+    {"name": "half", "about": "Shows one readout on its own in half a card slot.", "type": "bool", "default": false},
+    {"name": "bottom", "about": "For previews only: the made-up readout in the bottom half of the slot, or none.", "type": "select", "options": ["none", "occupancy · on", "occupancy · off", "door · open", "door · closed", "window · open", "temperature", "temperature · cold", "home · everyone", "home · some", "moisture · wet", "offline"], "default": "door · open"}
   ],
   "variants": [
     {"label": "someone in · a door open", "props": {}},

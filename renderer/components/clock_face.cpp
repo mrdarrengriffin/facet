@@ -396,15 +396,15 @@ FW_COMPONENT(clock_face, "Clock faces", "components", R"({
   "about": "The faces of the clock: big digits, a dotted ring with an orbiting seconds dot, an analogue face with thin hands, the compact header time, or the Clock screen's orbit face (three orbiting dots, the time, date and weather).",
   "frame": [480, 480],
   "props": [
-    {"name": "face", "type": "select", "options": ["hero", "ring", "analogue", "compact", "orbit"], "default": "ring"},
-    {"name": "font", "type": "select", "options": ["mono", "inter"], "default": "mono"},
-    {"name": "format", "type": "select", "options": ["24h", "12h"], "default": "24h"},
-    {"name": "date", "type": "select", "options": ["short", "long"], "default": "short"},
-    {"name": "seconds", "type": "bool", "default": false},
-    {"name": "time", "type": "text", "default": ""},
-    {"name": "day", "type": "text", "default": ""},
-    {"name": "condition", "type": "text", "default": ""},
-    {"name": "temp", "type": "text", "default": ""}
+    {"name": "face", "about": "Which clock to draw: hero is big digits, ring adds a dotted ring with a seconds dot going round, analogue has thin hands, compact is the small time in a header, orbit circles the time with the date.", "type": "select", "options": ["hero", "ring", "analogue", "compact", "orbit"], "default": "ring"},
+    {"name": "font", "about": "The typeface of the digits: mono is the fixed-width face, inter the rounder everyday face.", "type": "select", "options": ["mono", "inter"], "default": "mono"},
+    {"name": "format", "about": "24h shows 13:00; 12h shows 1:00 with AM or PM.", "type": "select", "options": ["24h", "12h"], "default": "24h"},
+    {"name": "date", "about": "How the date under the time is written: short like MON 19 OCT, or long like Monday 19 October.", "type": "select", "options": ["short", "long"], "default": "short"},
+    {"name": "seconds", "about": "Shows the seconds as well as hours and minutes.", "type": "bool", "default": false},
+    {"name": "time", "about": "For previews only: a fixed time to show, like 14:52:20. Leave empty for the real time.", "type": "text", "default": ""},
+    {"name": "day", "about": "For previews only: a fixed date to show, like 2026-10-19. Leave empty for today.", "type": "text", "default": ""},
+    {"name": "condition", "about": "The weather now, shown beside the time on faces that have room, such as partly-day. Leave empty for none.", "type": "text", "default": ""},
+    {"name": "temp", "about": "The temperature now, shown with the weather. Leave empty for none.", "type": "text", "default": ""}
   ],
   "variants": [
     {"label": "hero · 14:52", "props": {"face": "hero", "time": "14:52:20", "day": "2026-10-19"}},

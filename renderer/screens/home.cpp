@@ -8,15 +8,16 @@
 //              cover   s Entity tile (opens Blinds) | m Card (position, state)
 //              climate m Card (current temperature, state)
 //              media   m / l Card in text mode (the track, the state)
-//              sensor  m State readout (read-only: no box, no tap); two in a row share one card slot
+//              sensor  s Entity tile, read-only (act none: the value + label, no press) | m State readout (no box,
+//                      no tap); two m sensors in a row share one card slot
 //              page    s Entity tile / m Card / l wide Card: the page's name (opens it)
 //            label = the card's label, else the entity's friendly name (a bind). Unavailable entities show the
 //            components' own unavailable look.
 //   taps     toggle = light.toggle (a light or a switch); detail = nav.open of the type's detail screen for that
 //            entity; page = nav.open of that deck page; none = nothing (sensors)
 // Header actions (the deck page's header_actions, screen model §10): button settings (default) or a page id = that
-// page's shortcut in the settings button's place (Settings is then a long press on the time); status timer = the
-// panel's timer, time left beside the time.
+// page's shortcut, a gutter before the settings button (which always stays; a long press on the time opens Settings
+// too); status timer = the panel's timer, time left beside the time.
 // Prop page = the Home's page id ("" = the deck's start page if it is a Home, else the first Home). With no Home in the
 // deck: the header and an empty grid.
 // Update path: the deck changing rebuilds the screen (the device reloads it); entity changes move each card through
@@ -34,7 +35,7 @@ const char *META = R"({
   "frame": [480, 480],
   "icons": ["screen-settings@icon", "bulb@icon", "power@icon"],
   "props": [
-    {"name": "page", "type": "text", "default": ""}
+    {"name": "page", "about": "Which page of the deck to show, by its id, such as kitchen. Leave empty for the start page.", "type": "text", "default": ""}
   ],
   "variants": [
     {"label": "start Home · Living room", "props": {}},
@@ -67,6 +68,18 @@ std::string page_name(Var pg) {
   return kind;
 }
 
+// a sensor's icon from its device class (the State readout's and the Entity tile's icon sets)
+void sensor_icon(ArduinoJson::JsonObject p, const std::string &e) {
+  ArduinoJson::JsonObject ic = p["icon"].to<ArduinoJson::JsonObject>();
+  ic["e"] = e;
+  ic["a"] = "device_class";
+  static const char *const MAP[][2] = {{"temperature", "thermometer"}, {"door", "door"}, {"garage_door", "door"},
+      {"opening", "door"}, {"window", "window"}, {"motion", "person"}, {"occupancy", "person"}, {"presence", "person"},
+      {"moisture", "alert"}, {"power", "bolt"}, {"energy", "bolt"}, {"current", "bolt"}, {"voltage", "bolt"}};
+  for (auto &m : MAP) ic["map"][m[0]] = m[1];
+  ic["else"] = "house";
+}
+
 // one deck card -> one spec node in slot `slot` of node 0 (the Card grid); returns its cell size ('s', 'm', 'l', 'h')
 char card_node(Var cd, Var pages, int slot, ArduinoJson::JsonArray nodes) {
   const std::string t = cd["t"] | "", e = cd["e"] | "", size = cd["size"] | "m", label = cd["label"] | "";
@@ -92,7 +105,11 @@ char card_node(Var cd, Var pages, int slot, ArduinoJson::JsonArray nodes) {
   else p["label"] = label;
   const std::string comp_s = comp;
   if (comp_s == "entity_tile") {
-    if (t == "page") {
+    if (t == "sensor") {  // read-only: the value as the status, the device class icon, no press (Darren 2026-10-25)
+      sensor_icon(p, e);
+      bind(p, "status", e, "state");
+      p["on"] = false;
+    } else if (t == "page") {
       p["icon"] = has_icon(kind) ? "screen-" + kind : std::string("screen-home");
       p["status"] = "";
       p["on"] = false;
@@ -109,7 +126,7 @@ char card_node(Var cd, Var pages, int slot, ArduinoJson::JsonArray nodes) {
       bind(p, "status", e, "level");
       bind(p, "on", e, "on");
     }
-    p["act"] = tap == "toggle" ? "toggle" : "open";
+    p["act"] = t == "sensor" ? "none" : tap == "toggle" ? "toggle" : "open";
     if (t != "page") bind(p, "state", e, "avail");
   } else if (comp_s == "card") {
     p["size"] = size;
@@ -139,14 +156,7 @@ char card_node(Var cd, Var pages, int slot, ArduinoJson::JsonArray nodes) {
   } else if (comp_s == "readout") {
     p["half"] = true;
     bind(p, "state", e, "state");
-    ArduinoJson::JsonObject ic = p["icon"].to<ArduinoJson::JsonObject>();
-    ic["e"] = e;
-    ic["a"] = "device_class";
-    static const char *const MAP[][2] = {{"temperature", "thermometer"}, {"door", "door"}, {"garage_door", "door"},
-        {"opening", "door"}, {"window", "window"}, {"motion", "person"}, {"occupancy", "person"}, {"presence", "person"},
-        {"moisture", "alert"}, {"power", "bolt"}, {"energy", "bolt"}, {"current", "bolt"}, {"voltage", "bolt"}};
-    for (auto &m : MAP) ic["map"][m[0]] = m[1];
-    ic["else"] = "house";
+    sensor_icon(p, e);
     ArduinoJson::JsonObject tone = p["tone"].to<ArduinoJson::JsonObject>();
     tone["e"] = e;
     tone["map"]["unavailable"] = "mute";
@@ -169,7 +179,7 @@ char card_node(Var cd, Var pages, int slot, ArduinoJson::JsonArray nodes) {
     a["do"] = "nav.open";
     a["screen"] = pid;
   }
-  return t == "sensor" ? 'h' : size[0];
+  return t == "sensor" && size == "m" ? 'h' : size[0];
 }
 
 void build_home(lv_obj_t *parent, fw::Props props) {
@@ -196,7 +206,7 @@ void build_home(lv_obj_t *parent, fw::Props props) {
     for (Var pg : deck["pages"].as<ArduinoJson::JsonArrayConst>())
       if (b == (pg["id"] | "")) kind = pg["kind"] | "";
     const bool sc = b != "settings" && has_icon(kind);
-    sp["header"]["settings"] = !sc;
+    sp["header"]["settings"] = true;  // Settings stays a real button (Darren 2026-10-25)
     if (sc || st == "timer") {
       if (sc) { sp["header"]["actions"]["shortcut"] = kind; sp["header"]["actions"]["to"] = b; }
       sp["header"]["actions"]["status"] = st;

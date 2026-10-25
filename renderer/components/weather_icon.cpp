@@ -39,10 +39,10 @@ FW_COMPONENT(weather_icon, "Weather icon", "components", R"({
   "about": "A weather icon from the Icons foundation; animated, its parts move gently (rays turn, clouds drift, rain falls). Reduced motion shows it still.",
   "frame": [240, 200],
   "props": [
-    {"name": "icon", "type": "select", "options": )" FW_WEATHER_IDS R"(, "default": "partly-day"},
-    {"name": "size", "type": "select", "options": )" FW_WEATHER_SIZE_IDS R"(, "default": "card"},
-    {"name": "animated", "type": "bool", "default": true},
-    {"name": "on", "type": "select", "options": ["canvas", "card"], "default": "canvas"}
+    {"name": "icon", "about": "Which weather to show, such as partly cloudy by day, rain or a clear night.", "type": "select", "options": )" FW_WEATHER_IDS R"(, "default": "partly-day"},
+    {"name": "size", "about": "How big the icon is drawn, from the small sizes in text up to the hero size of a screen.", "type": "select", "options": )" FW_WEATHER_SIZE_IDS R"(, "default": "card"},
+    {"name": "animated", "about": "Makes the icon's parts move gently: rays turn, clouds drift, rain falls. With reduced motion it stays still.", "type": "bool", "default": true},
+    {"name": "on", "about": "What the icon sits on, so its colours fit: canvas for the screen background, card for a card.", "type": "select", "options": ["canvas", "card"], "default": "canvas"}
   ],
   "variants": [
     {"label": "partly-day", "props": {"icon": "partly-day"}},

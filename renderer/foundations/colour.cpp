@@ -285,7 +285,7 @@ FW_COMPONENT(colour, "Colour", "foundations", R"({
   "about": "Every colour token in dark and light, the accent sets, and the contrast checks they all pass.",
   "layout": "doc",
   "frame": [480, 0],
-  "props": [{"name": "group", "type": "select", "options": )" FW_COLOUR_GROUP_IDS R"(, "default": "surfaces"}],
+  "props": [{"name": "group", "about": "Which group of colours to show, such as the surfaces, the text colours or the accent sets.", "type": "select", "options": )" FW_COLOUR_GROUP_IDS R"(, "default": "surfaces"}],
   "variants": )" FW_COLOUR_SECTIONS R"(
 })") {
   const char *g = p["group"] | "surfaces";

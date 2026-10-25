@@ -77,7 +77,7 @@ FW_COMPONENT(agents_view, "Agents view", "components", R"({
   "about": "The Agents screen's body: how many agents need you, then a tile per agent, three across, the ones that need you first.",
   "frame": [480, 0],
   "props": [
-    {"name": "sample", "type": "select", "options": ["mixed", "calm", "empty"], "default": "mixed"}
+    {"name": "sample", "about": "For previews only: which set of made-up agents to show. mixed has some needing you, calm has none needing you, empty has no agents at all.", "type": "select", "options": ["mixed", "calm", "empty"], "default": "mixed"}
   ],
   "variants": [
     {"label": "two need you", "props": {}},

@@ -64,12 +64,12 @@ FW_COMPONENT(tick_ring, "Tick ring", "components", R"({
   "about": "A ring of ticks drawn inward from its edge, every few a longer major: the basis of the dial scales, the media disc and the clock faces.",
   "frame": [416, 416],
   "props": [
-    {"name": "count", "type": "range", "min": 12, "max": 120, "step": 12, "default": 60},
-    {"name": "range", "type": "range", "min": 90, "max": 360, "step": 6, "default": 360},
-    {"name": "size", "type": "range", "min": 96, "max": 400, "step": 16, "default": 240},
-    {"name": "stride", "type": "select", "options": ["5", "3", "6", "10", "0"], "default": "5"},
-    {"name": "numbers", "type": "bool", "default": false},
-    {"name": "lit", "type": "range", "min": -1, "max": 100, "step": 1, "default": -1}
+    {"name": "count", "about": "How many ticks go round the ring.", "type": "range", "min": 12, "max": 120, "step": 12, "default": 60},
+    {"name": "range", "about": "How far round the ring goes, in degrees: 360 is a full circle, 270 leaves a gap at the bottom like a dial.", "type": "range", "min": 90, "max": 360, "step": 6, "default": 360},
+    {"name": "size", "about": "How wide the ring is across, in pixels.", "type": "range", "min": 96, "max": 400, "step": 16, "default": 240},
+    {"name": "stride", "about": "Every how many ticks a longer major tick is drawn. 0 draws them all the same.", "type": "select", "options": ["5", "3", "6", "10", "0"], "default": "5"},
+    {"name": "numbers", "about": "Writes a number by each major tick, as on a clock.", "type": "bool", "default": false},
+    {"name": "lit", "about": "How much of the ring is lit in the accent, from 0 to 100. -1 lights none.", "type": "range", "min": -1, "max": 100, "step": 1, "default": -1}
   ],
   "variants": [
     {"label": "60 · majors every 5", "props": {}},

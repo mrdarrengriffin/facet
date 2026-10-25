@@ -351,14 +351,14 @@ FW_COMPONENT(iso_floorplan, "Iso floor plan", "components", R"({
   "frame": [480, 0],
   "audit": {"snaps": {"picked": "one pre-rendered picture (the lab's rule: no live drawing per frame): a pick redraws that room once", "here": "the same picture: the current room's edge is redrawn once", "state": "the LiDAR colour and the trail ink are part of the pictures", "trail": "the path is drawn into the picture when a new point arrives, every few seconds"}},
   "props": [
-    {"name": "plan", "type": "text", "default": "Dining|2|0,0 3.6,0 3.6,3 0,3|1.8,1.5;Utility||3.7,0 6.4,0 6.4,1.4 3.7,1.4|;Study||3.7,1.5 6.4,1.5 6.4,3 3.7,3|;Lounge|1|0,3.1 3.9,3.1 3.9,7.2 0,7.2|1.95,5.15;Hall|3|4,3.1 6.4,3.1 6.4,5.6 4,5.6|5.2,4.35;Cloakroom||4,5.7 6.4,5.7 6.4,7.2 4,7.2|"},
-    {"name": "dock", "type": "text", "default": "0,0.5,0.14,0.8,0.36"},
-    {"name": "robot", "type": "text", "default": "1.4,4.8"},
-    {"name": "transform", "type": "text", "default": ""},
-    {"name": "trail", "type": "text", "default": "0.6,0.7 3.1,0.7 3.1,1.3 0.6,1.3 0.6,1.9 3.1,1.9 3.1,2.5 0.6,2.5"},
-    {"name": "picked", "type": "text", "default": ""},
-    {"name": "here", "type": "text", "default": ""},
-    {"name": "state", "type": "select", "options": ["docked", "cleaning", "returning", "paused", "idle", "error", "unavailable"], "default": "docked"}
+    {"name": "plan", "about": "The rooms of the floor plan: for each room its name, its number in the vacuum, its corner points in metres and where its name goes, rooms separated by semicolons.", "type": "text", "default": "Dining|2|0,0 3.6,0 3.6,3 0,3|1.8,1.5;Utility||3.7,0 6.4,0 6.4,1.4 3.7,1.4|;Study||3.7,1.5 6.4,1.5 6.4,3 3.7,3|;Lounge|1|0,3.1 3.9,3.1 3.9,7.2 0,7.2|1.95,5.15;Hall|3|4,3.1 6.4,3.1 6.4,5.6 4,5.6|5.2,4.35;Cloakroom||4,5.7 6.4,5.7 6.4,7.2 4,7.2|"},
+    {"name": "dock", "about": "Where the charging dock sits on the plan and which way it faces, in metres.", "type": "text", "default": "0,0.5,0.14,0.8,0.36"},
+    {"name": "robot", "about": "Where the robot is on the plan, as x and y in metres.", "type": "text", "default": "1.4,4.8"},
+    {"name": "transform", "about": "How to turn the robot's own position numbers into metres on the plan, as six numbers. Leave empty when they already match.", "type": "text", "default": ""},
+    {"name": "trail", "about": "The path the robot has taken, as x,y points in metres separated by spaces.", "type": "text", "default": "0.6,0.7 3.1,0.7 3.1,1.3 0.6,1.3 0.6,1.9 3.1,1.9 3.1,2.5 0.6,2.5"},
+    {"name": "picked", "about": "The rooms picked for the next clean, as name:number pairs separated by commas. Picked rooms are edged in the accent.", "type": "text", "default": ""},
+    {"name": "here", "about": "The room the robot is in now; its edge is lit.", "type": "text", "default": ""},
+    {"name": "state", "about": "What the robot is doing: docked, cleaning, returning to the dock, paused, idle, error, or unavailable when it cannot be reached.", "type": "select", "options": ["docked", "cleaning", "returning", "paused", "idle", "error", "unavailable"], "default": "docked"}
   ],
   "variants": [
     {"label": "docked · last run", "about": "On the dock; the last run's path in text-mute. Rooms it cleans have names; the pantry, stairs and WC stay quiet.", "props": {}},

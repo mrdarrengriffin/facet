@@ -192,17 +192,17 @@ FW_COMPONENT(f1_standings, "F1 standings", "components", R"({
   "motion_off": "sim",
   "frame": [240, 0],
   "props": [
-    {"name": "rows", "type": "range", "min": 3, "max": 22, "step": 1, "default": 10},
-    {"name": "from", "type": "range", "min": 1, "max": 20, "step": 1, "default": 1},
-    {"name": "density", "type": "select", "options": ["normal", "compact"], "default": "normal"},
-    {"name": "stat", "type": "select", "options": ["badges", "interval", "tyre"], "default": "badges"},
-    {"name": "width", "type": "range", "min": 176, "max": 320, "step": 8, "default": 208},
-    {"name": "sim", "type": "bool", "default": true},
-    {"name": "speed", "type": "select", "options": ["1x", "10x", "60x"], "default": "10x"},
-    {"name": "jump", "type": "select", "options": ["start", "penalty", "black and white", "blue flag", "overtake", "pit stop", "safety car", "red flag", "fastest lap", "retirement", "final lap", "chequered"], "default": "start"},
-    {"name": "seed", "type": "range", "min": 1, "max": 20, "step": 1, "default": 7},
-    {"name": "track", "type": "select", "options": ["us-2012", "mc-1929", "gb-1948", "be-1925", "it-1922"], "default": "us-2012"},
-    {"name": "feed", "type": "text", "default": ""}
+    {"name": "rows", "about": "How many drivers are listed.", "type": "range", "min": 3, "max": 22, "step": 1, "default": 10},
+    {"name": "from", "about": "The position the list starts at, so you can show the middle or the back of the field.", "type": "range", "min": 1, "max": 20, "step": 1, "default": 1},
+    {"name": "density", "about": "normal gives each driver a comfortable row; compact fits more rows in the same height.", "type": "select", "options": ["normal", "compact"], "default": "normal"},
+    {"name": "stat", "about": "The small fact at the end of each row: badges for fastest lap and pit stops, interval for the gap to the car ahead, or tyre for the tyre in use.", "type": "select", "options": ["badges", "interval", "tyre"], "default": "badges"},
+    {"name": "width", "about": "How wide the list is, in pixels.", "type": "range", "min": 176, "max": 320, "step": 8, "default": 208},
+    {"name": "sim", "about": "For previews only: runs a made-up race so the order changes.", "type": "bool", "default": true},
+    {"name": "speed", "about": "For previews only: how fast the made-up race runs, real time or 10 or 60 times faster.", "type": "select", "options": ["1x", "10x", "60x"], "default": "10x"},
+    {"name": "jump", "about": "For previews only: skips the made-up race to a moment such as an overtake or a pit stop.", "type": "select", "options": ["start", "penalty", "black and white", "blue flag", "overtake", "pit stop", "safety car", "red flag", "fastest lap", "retirement", "final lap", "chequered"], "default": "start"},
+    {"name": "seed", "about": "For previews only: picks a different made-up race; the same number always gives the same race.", "type": "range", "min": 1, "max": 20, "step": 1, "default": 7},
+    {"name": "track", "about": "For previews only: which circuit the made-up race is run on.", "type": "select", "options": ["us-2012", "mc-1929", "gb-1948", "be-1925", "it-1922"], "default": "us-2012"},
+    {"name": "feed", "about": "The live race data sent to the panel. Leave empty to use the made-up race.", "type": "text", "default": ""}
   ],
   "opening": "Sample data: the race simulator (seeded).",
   "variants": [

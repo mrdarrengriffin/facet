@@ -89,13 +89,13 @@ FW_COMPONENT(pr_row, "Pull request row", "components", R"({
   "about": "A pull request row: repo, number and age, a two-line title, and chips.",
   "frame": [464, 128],
   "props": [
-    {"name": "repo", "type": "text", "default": "hearth-ui"},
-    {"name": "number", "type": "range", "min": 1, "max": 9999, "step": 1, "default": 88},
-    {"name": "title", "type": "text", "default": "Card grid: snap scrolling one row at a time"},
-    {"name": "age", "type": "text", "default": "5h"},
-    {"name": "draft", "type": "bool", "default": false},
-    {"name": "ci", "type": "select", "options": ["pass", "fail", "pending", "none"], "default": "pass"},
-    {"name": "state", "type": "select", "options": ["default", "pressed"], "default": "default"}
+    {"name": "repo", "about": "The repository the pull request is in.", "type": "text", "default": "hearth-ui"},
+    {"name": "number", "about": "The pull request's number.", "type": "range", "min": 1, "max": 9999, "step": 1, "default": 88},
+    {"name": "title", "about": "The pull request's title, over up to two lines.", "type": "text", "default": "Card grid: snap scrolling one row at a time"},
+    {"name": "age", "about": "How long ago it was opened or last changed, such as 5h.", "type": "text", "default": "5h"},
+    {"name": "draft", "about": "Marks it as a draft that is not ready for review yet.", "type": "bool", "default": false},
+    {"name": "ci", "about": "How its automatic checks went: pass, fail, pending, or none when it has no checks.", "type": "select", "options": ["pass", "fail", "pending", "none"], "default": "pass"},
+    {"name": "state", "about": "default ready to tap; pressed while held.", "type": "select", "options": ["default", "pressed"], "default": "default"}
   ],
   "variants": [
     {"label": "review · ci pass", "props": {}},

@@ -33,8 +33,8 @@ FW_COMPONENT(scroll_track, "Scroll track", "components", R"({
   "frame": [464, 272],
   "icons": ["bulb@icon"],
   "props": [
-    {"name": "rows", "type": "range", "min": 1, "max": 12, "step": 1, "default": 8},
-    {"name": "height", "type": "range", "min": 128, "max": 256, "step": 8, "default": 256}
+    {"name": "rows", "about": "For previews only: how many rows the sample list has, which sets how long the bar is.", "type": "range", "min": 1, "max": 12, "step": 1, "default": 8},
+    {"name": "height", "about": "How tall the list's visible area is, in pixels.", "type": "range", "min": 128, "max": 256, "step": 8, "default": 256}
   ],
   "variants": [
     {"label": "eight rows · scrolls", "props": {}},

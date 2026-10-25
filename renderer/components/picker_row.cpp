@@ -144,13 +144,13 @@ FW_COMPONENT(picker_row, "Picker row", "components", R"({
   "frame": [448, 288],
   "icons": ["speaker@icon", "speakers@icon", "tv@icon", "stream@icon", "auto@icon"],
   "props": [
-    {"name": "icon", "type": "select", "options": ["none", "speaker", "speakers", "tv", "stream", "auto"], "default": "speaker"},
-    {"name": "name", "type": "text", "default": "Kitchen speaker"},
-    {"name": "status", "type": "text", "default": "playing · Northbound · Marlow & Finch"},
-    {"name": "tone", "type": "select", "options": ["dim", "working"], "default": "dim"},
-    {"name": "selected", "type": "bool", "default": false},
-    {"name": "state", "type": "select", "options": ["default", "pressed", "disabled", "unavailable"], "default": "default"},
-    {"name": "list", "type": "select", "options": ["single", "group"], "default": "single"}
+    {"name": "icon", "about": "The icon at the start of the row, such as a speaker or a TV, or none.", "type": "select", "options": ["none", "speaker", "speakers", "tv", "stream", "auto"], "default": "speaker"},
+    {"name": "name", "about": "The option's name, such as the speaker's name.", "type": "text", "default": "Kitchen speaker"},
+    {"name": "status", "about": "The small capitals line under the name, such as what is playing there.", "type": "text", "default": "playing · Northbound · Marlow & Finch"},
+    {"name": "tone", "about": "The status colour: dim for normal, working for something going on now, such as playing.", "type": "select", "options": ["dim", "working"], "default": "dim"},
+    {"name": "selected", "about": "Whether this is the chosen option; its radio is on.", "type": "bool", "default": false},
+    {"name": "state", "about": "How the row looks: default ready to tap, pressed while held, disabled when it cannot be chosen, or unavailable when its device cannot be reached.", "type": "select", "options": ["default", "pressed", "disabled", "unavailable"], "default": "default"},
+    {"name": "list", "about": "For previews only: single shows one row; group shows a short list where a tap moves the choice.", "type": "select", "options": ["single", "group"], "default": "single"}
   ],
   "variants": [
     {"label": "idle", "props": {"name": "Study", "status": "idle"}},

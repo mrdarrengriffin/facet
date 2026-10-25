@@ -55,15 +55,15 @@ FW_COMPONENT(status_block, "Status block", "components", R"({
   "about": "A device's state in words: a caps caption in its tone, the state as a value, one quiet line.",
   "frame": [480, 0],
   "props": [
-    {"name": "caption", "type": "text", "default": "secure"},
-    {"name": "value", "type": "text", "default": "Locked"},
-    {"name": "line", "type": "text", "default": "since 08:14 · by Alex"},
-    {"name": "tone", "type": "select", "options": ["dim", "accent", "ok", "warn", "error", "off"], "default": "dim"},
-    {"name": "size", "type": "select", "options": ["value", "hero", "title"], "default": "value"},
-    {"name": "value2", "type": "text", "default": ""},
-    {"name": "line2", "type": "text", "default": ""},
-    {"name": "line3", "type": "text", "default": ""},
-    {"name": "line4", "type": "text", "default": ""}
+    {"name": "caption", "about": "The small capitals line at the top in the tone colour, such as secure. Leave empty for none.", "type": "text", "default": "secure"},
+    {"name": "value", "about": "The state in words, such as Locked.", "type": "text", "default": "Locked"},
+    {"name": "line", "about": "One quieter line under the state, such as since when.", "type": "text", "default": "since 08:14 · by Alex"},
+    {"name": "tone", "about": "The caption's colour: dim, accent, ok, warn, error, or off.", "type": "select", "options": ["dim", "accent", "ok", "warn", "error", "off"], "default": "dim"},
+    {"name": "size", "about": "How big the state is: value for the usual size, hero for a screen's main figure, title for a smaller heading.", "type": "select", "options": ["value", "hero", "title"], "default": "value"},
+    {"name": "value2", "about": "A second value beside the first, such as a battery level. Leave empty for none.", "type": "text", "default": ""},
+    {"name": "line2", "about": "A second quieter line. Leave empty for none.", "type": "text", "default": ""},
+    {"name": "line3", "about": "A third quieter line. Leave empty for none.", "type": "text", "default": ""},
+    {"name": "line4", "about": "A fourth quieter line. Leave empty for none.", "type": "text", "default": ""}
   ],
   "variants": [
     {"label": "calm", "props": {}},

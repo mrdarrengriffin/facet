@@ -45,8 +45,8 @@ FW_COMPONENT(status_dot, "Status dot", "components", R"({
   "about": "A small coloured dot that shows a state: ok, warning, error, working, info or idle.",
   "frame": [96, 64],
   "props": [
-    {"name": "tone", "type": "select", "options": ["ok", "warn", "error", "working", "info", "idle"], "default": "working"},
-    {"name": "pulse", "type": "bool", "default": false}
+    {"name": "tone", "about": "The state the dot shows: ok, warn, error, working, info or idle, each in its own colour.", "type": "select", "options": ["ok", "warn", "error", "working", "info", "idle"], "default": "working"},
+    {"name": "pulse", "about": "Makes the dot pulse gently, for something happening now.", "type": "bool", "default": false}
   ],
   "variants": [
     {"label": "ok", "props": {"tone": "ok"}},

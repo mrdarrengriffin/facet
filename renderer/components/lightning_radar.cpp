@@ -174,10 +174,10 @@ FW_COMPONENT(lightning_radar, "Lightning radar", "components", R"({
   "motion_off": "demo",
   "motion": "demo: strikes arrive (about every 2 s), age through their colours and flash; the nearest ring moves",
   "props": [
-    {"name": "demo", "type": "bool", "default": true},
-    {"name": "quiet", "type": "bool", "default": false},
-    {"name": "size", "type": "range", "min": 192, "max": 320, "step": 32, "default": 256},
-    {"name": "unit", "type": "select", "options": ["km", "mi"], "default": "km"}
+    {"name": "demo", "about": "For previews only: plays a made-up storm so strikes appear.", "type": "bool", "default": true},
+    {"name": "quiet", "about": "For previews only: shows a quiet sky with no recent strikes.", "type": "bool", "default": false},
+    {"name": "size", "about": "How wide the radar is across, in pixels.", "type": "range", "min": 192, "max": 320, "step": 32, "default": 256},
+    {"name": "unit", "about": "Whether distances are shown in kilometres or miles.", "type": "select", "options": ["km", "mi"], "default": "km"}
   ],
   "variants": [
     {"label": "a storm passing", "props": {"demo": false, "now": 1792944000000}},

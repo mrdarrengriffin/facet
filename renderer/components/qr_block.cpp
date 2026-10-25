@@ -19,8 +19,8 @@ FW_COMPONENT(qr_block, "QR block", "components", R"({
   "about": "A QR code with a caption, dark on light in both themes so phones can read it.",
   "frame": [224, 256],
   "props": [
-    {"name": "text", "type": "text", "default": "https://example.com/orchard-labs/lantern/pull/412"},
-    {"name": "caption", "type": "text", "default": "open on your phone"}
+    {"name": "text", "about": "What the QR code holds, usually a web address to open on your phone.", "type": "text", "default": "https://example.com/orchard-labs/lantern/pull/412"},
+    {"name": "caption", "about": "The line under the code that says what scanning it does.", "type": "text", "default": "open on your phone"}
   ],
   "variants": [
     {"label": "a pull request", "props": {}},

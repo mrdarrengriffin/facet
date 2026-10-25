@@ -131,9 +131,9 @@ FW_COMPONENT(media_disc, "Media disc", "components", R"({
   "about": "Progress as an accent arc around a record; the blue marker circles while it plays.",
   "frame": [336, 336],
   "props": [
-    {"name": "progress", "type": "range", "min": 0, "max": 100, "step": 1, "default": 38},
-    {"name": "playing", "type": "bool", "default": true},
-    {"name": "size", "type": "select", "options": ["256", "320"], "default": "256"}
+    {"name": "progress", "about": "How far through the track it is, from 0 to 100, drawn as the accent arc round the record.", "type": "range", "min": 0, "max": 100, "step": 1, "default": 38},
+    {"name": "playing", "about": "Whether it is playing. While it plays the blue marker circles the record.", "type": "bool", "default": true},
+    {"name": "size", "about": "How wide the disc is, in pixels: 256 or 320.", "type": "select", "options": ["256", "320"], "default": "256"}
   ],
   "variants": [
     {"label": "playing · 38 %", "props": {}},

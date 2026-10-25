@@ -43,10 +43,10 @@ FW_COMPONENT(level_bar, "Level bar", "components", R"({
   "about": "How full something is as a straight bar, with an optional threshold mark: soil moisture, a tank, a battery.",
   "frame": [320, 0],
   "props": [
-    {"name": "value", "type": "range", "min": -1, "max": 100, "step": 1, "default": 44},
-    {"name": "mark", "type": "range", "min": -1, "max": 100, "step": 1, "default": 30},
-    {"name": "tone", "type": "select", "options": ["accent", "steel", "blue", "off"], "default": "steel"},
-    {"name": "width", "type": "range", "min": 0, "max": 480, "step": 4, "default": 0}
+    {"name": "value", "about": "How full the bar is, from 0 to 100. -1 means the level is not known and shows an empty bar.", "type": "range", "min": -1, "max": 100, "step": 1, "default": 44},
+    {"name": "mark", "about": "Where the threshold line sits, from 0 to 100, such as the point a plant needs water. -1 hides it.", "type": "range", "min": -1, "max": 100, "step": 1, "default": 30},
+    {"name": "tone", "about": "The fill colour: accent, steel, blue, or off for a grey fill.", "type": "select", "options": ["accent", "steel", "blue", "off"], "default": "steel"},
+    {"name": "width", "about": "How wide the bar is, in pixels. 0 fills the space it is in.", "type": "range", "min": 0, "max": 480, "step": 4, "default": 0}
   ],
   "variants": [
     {"label": "fine", "props": {}},

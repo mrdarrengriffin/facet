@@ -56,12 +56,12 @@ FW_COMPONENT(hold_button, "Hold button", "components", R"({
   "about": "A button for an action that needs a confirm: it fills while you hold it, and only acts when full.",
   "frame": [320, 0],
   "props": [
-    {"name": "label", "type": "text", "default": "Hold to open"},
-    {"name": "value", "type": "text", "default": "open"},
-    {"name": "width", "type": "select", "options": ["fill", "hug"], "default": "fill"},
-    {"name": "features", "type": "range", "min": 0, "max": 65535, "step": 1, "default": 1},
-    {"name": "mask", "type": "range", "min": 0, "max": 65535, "step": 1, "default": 0},
-    {"name": "state", "type": "select", "options": ["default", "disabled"], "default": "default"}
+    {"name": "label", "about": "The words on the button, such as Hold to open.", "type": "text", "default": "Hold to open"},
+    {"name": "value", "about": "The action the button sends when the hold completes, such as open.", "type": "text", "default": "open"},
+    {"name": "width", "about": "fill stretches the button across the space it is in; hug fits it to its words.", "type": "select", "options": ["fill", "hug"], "default": "fill"},
+    {"name": "features", "about": "What the device can do, as Home Assistant reports it in its supported features number.", "type": "range", "min": 0, "max": 65535, "step": 1, "default": 1},
+    {"name": "mask", "about": "The feature this button needs. If the device's features do not include it, the button is hidden. 0 always shows it.", "type": "range", "min": 0, "max": 65535, "step": 1, "default": 0},
+    {"name": "state", "about": "default can be held; disabled is greyed out and cannot be used.", "type": "select", "options": ["default", "disabled"], "default": "default"}
   ],
   "variants": [
     {"label": "default", "props": {}},

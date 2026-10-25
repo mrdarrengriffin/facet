@@ -208,6 +208,160 @@
           "home"
         ]
       }
+    },
+    {
+      "name": "a page from a page card and a header shortcut pushes; Back returns to where you came from (Kitchen -> Timer -> Back = Kitchen)",
+      "kind": "interaction",
+      "steps": [
+        {
+          "drag": {
+            "at": [
+              0.5,
+              0.8
+            ]
+          },
+          "by": [
+            0,
+            -240
+          ]
+        },
+        {
+          "wait": 600
+        },
+        {
+          "tap": {
+            "text": "/^Kitchen$|^KITCHEN$/"
+          }
+        },
+        {
+          "tap": {
+            "clk": 1
+          }
+        },
+        {
+          "tap": {
+            "clk": 0
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "screen",
+            "home"
+          ],
+          [
+            "navigate",
+            "timer"
+          ],
+          [
+            "screen",
+            "timer"
+          ],
+          [
+            "back"
+          ],
+          [
+            "screen",
+            "home"
+          ]
+        ],
+        "stack": [
+          "home",
+          "home"
+        ]
+      }
+    },
+    {
+      "name": "Kitchen keeps the Settings button beside its Timer shortcut",
+      "kind": "interaction",
+      "steps": [
+        {
+          "drag": {
+            "at": [
+              0.5,
+              0.8
+            ]
+          },
+          "by": [
+            0,
+            -240
+          ]
+        },
+        {
+          "wait": 600
+        },
+        {
+          "tap": {
+            "text": "/^Kitchen$|^KITCHEN$/"
+          }
+        },
+        {
+          "tap": {
+            "clk": 2
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "navigate",
+            "settings"
+          ],
+          [
+            "screen",
+            "settings"
+          ]
+        ],
+        "stack": [
+          "home",
+          "home",
+          "settings"
+        ]
+      }
+    },
+    {
+      "name": "a sensor tile (size s) is read-only: a tap on it does nothing (only the Kitchen card's open sound)",
+      "kind": "interaction",
+      "steps": [
+        {
+          "drag": {
+            "at": [
+              0.5,
+              0.8
+            ]
+          },
+          "by": [
+            0,
+            -240
+          ]
+        },
+        {
+          "wait": 600
+        },
+        {
+          "tap": {
+            "text": "/^Kitchen$|^KITCHEN$/"
+          }
+        },
+        {
+          "tap": {
+            "text": "/^Fridge$/"
+          }
+        }
+      ],
+      "expect": {
+        "no_events": [
+          "ha"
+        ],
+        "sounds": [
+          "open"
+        ],
+        "stack": [
+          "home",
+          "home"
+        ]
+      }
     }
   ],
   "xfail": {}

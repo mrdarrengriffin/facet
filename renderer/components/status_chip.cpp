@@ -60,9 +60,9 @@ FW_COMPONENT(status_chip, "Status chip", "components", R"({
   "about": "A small tinted pill with a status dot and a short caps label.",
   "frame": [240, 64],
   "props": [
-    {"name": "tone", "type": "select", "options": ["ok", "warn", "error", "working", "info", "idle"], "default": "working"},
-    {"name": "text", "type": "text", "default": "3 working"},
-    {"name": "pulse", "type": "bool", "default": false}
+    {"name": "tone", "about": "The chip's colour, by what it reports: ok, warn, error, working, info or idle.", "type": "select", "options": ["ok", "warn", "error", "working", "info", "idle"], "default": "working"},
+    {"name": "text", "about": "The short words on the chip.", "type": "text", "default": "3 working"},
+    {"name": "pulse", "about": "Makes the dot pulse gently, for something happening now.", "type": "bool", "default": false}
   ],
   "variants": [
     {"label": "ok", "props": {"tone": "ok", "text": "sys: ok"}},

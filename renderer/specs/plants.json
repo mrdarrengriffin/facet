@@ -5,8 +5,8 @@
  "rev": 1,
  "role": "both",
  "params": {
-  "entity": {"type": "entity", "domain": "sensor", "label": "Plant (soil moisture)", "default": "sensor.third_reality_inc_3rsm0347z_soil_moisture"},
-  "plants": {"type": "entities", "domain": "sensor", "label": "Plants (soil moisture)", "default": "sensor.third_reality_inc_3rsm0347z_soil_moisture"}
+  "entity": {"about": "The soil moisture sensor of the plant shown as the hero.", "type": "entity", "domain": "sensor", "label": "Plant (soil moisture)", "default": "sensor.monstera_soil_moisture"},
+  "plants": {"about": "The soil moisture sensors of every plant in the list, one row each.", "type": "entities", "domain": "sensor", "label": "Plants (soil moisture)", "default": "sensor.monstera_soil_moisture"}
  },
  "header": {"label": "Plants", "back": true},
  "layout": "list",

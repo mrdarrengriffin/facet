@@ -100,8 +100,8 @@ FW_COMPONENT(card_grid, "Card grid", "components", R"({
   "frame": [480, 0],
   "slots": 24,
   "props": [
-    {"name": "cells", "type": "text", "default": "s,s,s,m,h,h,l"},
-    {"name": "sample", "type": "bool", "default": true}
+    {"name": "cells", "about": "The cards in order, separated by commas: s is a small square tile, three to a row; m is half the row; l is the full width; h is a read-only readout, two of which share one slot.", "type": "text", "default": "s,s,s,m,h,h,l"},
+    {"name": "sample", "about": "For previews only: fills the cells with made-up cards so the layout can be seen.", "type": "bool", "default": true}
   ],
   "variants": [
     {"label": "tiles, a card, two readouts, a wide card", "props": {}},

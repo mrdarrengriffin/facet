@@ -198,9 +198,9 @@ FW_COMPONENT(type, "Type", "foundations", R"({
   "about": "The type scale: every text style at true size, the two font families and the glyphs each panel size ships.",
   "layout": "doc",
   "frame": [480, 0],
-  "props": [{"name": "section", "type": "select", "options": )" FW_TYPE_SECTION_IDS R"(, "default": "screen"},
-            {"name": "sample", "type": "text", "default": ""},
-            {"name": "accent", "type": "bool", "default": false}],
+  "props": [{"name": "section", "about": "Which part of the type page to show, such as the screen styles or the glyphs each panel carries.", "type": "select", "options": )" FW_TYPE_SECTION_IDS R"(, "default": "screen"},
+            {"name": "sample", "about": "Your own words to show in every style. Leave empty for the usual sample text.", "type": "text", "default": ""},
+            {"name": "accent", "about": "Draws the samples in the accent colour.", "type": "bool", "default": false}],
   "variants": )" FW_TYPE_SECTIONS R"(
 })") {
   const char *s = p["section"] | "screen";

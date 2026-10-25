@@ -48,12 +48,12 @@ FW_COMPONENT(mascot_mood, "Mascot mood", "components", R"({
   "about": "The mascot in a mood, picked directly or from what an agent is doing: working, needs you, done, error, idle or asleep.",
   "frame": [352, 224],
   "props": [
-    {"name": "from", "type": "select", "options": ["mood", "agent"], "default": "mood"},
-    {"name": "mood", "type": "select", "options": ["idle", "working", "done", "needs", "error", "sleeping"], "default": "working"},
-    {"name": "kind", "type": "select", "options": ["working", "needs", "done", "idle"], "default": "done"},
-    {"name": "status", "type": "text", "default": "done · 40m ago"},
-    {"name": "colour", "type": "select", "options": ["mood", "accent", "steel", "warn"], "default": "mood"},
-    {"name": "scale", "type": "range", "min": 1, "max": 4, "step": 1, "default": 2}
+    {"name": "from", "about": "How the mood is chosen: mood picks it directly; agent works it out from what an agent is doing.", "type": "select", "options": ["mood", "agent"], "default": "mood"},
+    {"name": "mood", "about": "The mascot's mood when picked directly: idle, working, done, needs you, error or sleeping.", "type": "select", "options": ["idle", "working", "done", "needs", "error", "sleeping"], "default": "working"},
+    {"name": "kind", "about": "When the mood comes from an agent: what the agent is doing, working, needs you, done or idle.", "type": "select", "options": ["working", "needs", "done", "idle"], "default": "done"},
+    {"name": "status", "about": "When the mood comes from an agent: its status line, such as done 40m ago. A task done long ago turns the mascot idle.", "type": "text", "default": "done · 40m ago"},
+    {"name": "colour", "about": "The mascot's colour: mood uses the mood's own colour, or accent, steel or warn for one fixed colour.", "type": "select", "options": ["mood", "accent", "steel", "warn"], "default": "mood"},
+    {"name": "scale", "about": "How big the mascot is drawn, from 1 (screen size) to 4 times.", "type": "range", "min": 1, "max": 4, "step": 1, "default": 2}
   ],
   "variants": [
     {"label": "working", "props": {"mood": "working"}},

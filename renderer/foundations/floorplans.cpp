@@ -100,7 +100,7 @@ FW_COMPONENT(floorplans, "Floor plans", "foundations", R"({
   "layout": "doc",
   "frame": [480, 0],
   "props": [
-    {"name": "section", "type": "select", "options": ["rules", "states", "generated"], "default": "rules"}
+    {"name": "section", "about": "Which part of the page to show: rules for how plans are drawn, states for the robot's states, generated for a plan made from room data.", "type": "select", "options": ["rules", "states", "generated"], "default": "rules"}
   ],
   "variants": [
     {"label": "Rules", "about": "What every floor plan follows, with the sample house (made up) drawn by the real component.", "props": {"section": "rules"}},

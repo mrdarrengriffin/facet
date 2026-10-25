@@ -6,7 +6,7 @@
 //               "params": {"entity": "light.x", ...},     the screen's parameters + defaults; "$entity" anywhere
 //                                                          in a string = the value it was opened with. Typed
 //                                                          (2026-10-23): {"type": text|select|entity|entities|
-//                                                          toggle|hidden, "default", "label", "domain", "options"}:
+//                                                          toggle|hidden, "default", "label", "domain", "options", "about"}:
 //                                                          Settings > Screens and the workbench build their controls
 //                                                          from it (entity / entities = one / a comma list of
 //                                                          `domain` ids, filled by the host's discovery)
@@ -196,8 +196,9 @@ constexpr const char *ROLES[] = {"page", "detail", "both"};
 // Home card type catalogue (deck v2, screen model piece 2): per type the entity domains it takes, its sizes, its taps
 // (the default first), the detail screen "detail" opens, and the component that draws it at each size (s | m | l; ""
 // = not offered). Sizes: s = a tile (tile-w x tile-h, three across), m = a card (card-w x card-h, two across),
-// l = a wide card (content-w x card-h). A sensor is a State readout: no box, no tap (a box is a button, no box is a
-// readout); it is m, and two sensors in a row share one card slot, stacked (docs readoutSlot). Taps: toggle = the
+// l = a wide card (content-w x card-h). A sensor is read-only, in either size (Darren 2026-10-25): s = an Entity tile
+// with no press (act none: value + label), m = a State readout (no box, no tap), two in a row sharing one card slot,
+// stacked (docs readoutSlot). Taps: toggle = the
 // entity's toggle, detail = its detail screen for that entity, page = a deck page, none = reports only.
 struct CardType { const char *t, *domains, *sizes, *taps, *detail, *comp_s, *comp_m, *comp_l; };
 constexpr CardType CARD_TYPES[] = {
@@ -205,7 +206,7 @@ constexpr CardType CARD_TYPES[] = {
     {"cover", "cover", "s,m", "detail", "covers", "entity_tile", "card", ""},
     {"climate", "climate", "m", "detail", "thermostat", "", "card", ""},
     {"media", "media_player", "m,l", "detail,page", "media", "", "card", "card"},
-    {"sensor", "sensor,binary_sensor", "m", "none", "", "", "readout", ""},
+    {"sensor", "sensor,binary_sensor", "s,m", "none", "", "entity_tile", "readout", ""},
     {"page", "", "s,m,l", "page", "", "entity_tile", "card", "card"}};
 // a parameter's default: its text, or a typed parameter's "default"
 inline std::string param_default(ArduinoJson::JsonVariantConst v) {
@@ -394,8 +395,8 @@ inline void check_screen(ArduinoJson::JsonVariantConst s, size_t bytes, Errs &e)
       const std::string pp = std::string(".params.") + kv.key().c_str();
       if (kv.value().is<const char *>()) continue;
       if (!kv.value().is<ArduinoJson::JsonObjectConst>()) { err(e, pp, "bad_params", "a parameter is its default (text) or {type, default, label, ...}"); continue; }
-      static const char *const PK[] = {"type", "default", "label", "domain", "options"};
-      check_keys(kv.value().as<ArduinoJson::JsonObjectConst>(), PK, 5, pp, e);
+      static const char *const PK[] = {"type", "default", "label", "domain", "options", "about"};
+      check_keys(kv.value().as<ArduinoJson::JsonObjectConst>(), PK, 6, pp, e);
       if (!one_of(PARAM_TYPES, kv.value()["type"] | "")) err(e, pp + ".type", "bad_params", "type is text, select, entity, entities, toggle or hidden");
       if (!kv.value()["default"].isNull() && !kv.value()["default"].is<const char *>()) err(e, pp + ".default", "bad_params", "a parameter default is text");
       if (!strcmp(kv.value()["type"] | "", "select") && !kv.value()["options"].is<ArduinoJson::JsonArrayConst>()) err(e, pp + ".options", "bad_params", "a select lists its options");

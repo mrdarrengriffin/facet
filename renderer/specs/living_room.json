@@ -17,28 +17,28 @@
     "icon": "bulb",
     "trailing": "toggle",
     "sub": {
-     "e": "light.living_room_dimmer_light",
+     "e": "light.living_room_ceiling",
      "fmt": "light"
     },
     "on": {
-     "e": "light.living_room_dimmer_light",
+     "e": "light.living_room_ceiling",
      "fmt": "on"
     },
     "state": {
-     "e": "light.living_room_dimmer_light",
+     "e": "light.living_room_ceiling",
      "fmt": "avail"
     }
    },
    "on": {
     "toggle": {
      "do": "light.switch",
-     "e": "light.living_room_dimmer_light"
+     "e": "light.living_room_ceiling"
     },
     "long": {
      "do": "nav.open",
      "screen": "light",
      "params": {
-      "entity": "light.living_room_dimmer_light",
+      "entity": "light.living_room_ceiling",
       "name": "Ceiling"
      }
     }
@@ -57,28 +57,28 @@
     "icon": "bulb",
     "trailing": "toggle",
     "sub": {
-     "e": "light.sofa_table_light",
+     "e": "light.sofa_lamp",
      "fmt": "light"
     },
     "on": {
-     "e": "light.sofa_table_light",
+     "e": "light.sofa_lamp",
      "fmt": "on"
     },
     "state": {
-     "e": "light.sofa_table_light",
+     "e": "light.sofa_lamp",
      "fmt": "avail"
     }
    },
    "on": {
     "toggle": {
      "do": "light.switch",
-     "e": "light.sofa_table_light"
+     "e": "light.sofa_lamp"
     },
     "long": {
      "do": "nav.open",
      "screen": "light",
      "params": {
-      "entity": "light.sofa_table_light",
+      "entity": "light.sofa_lamp",
       "name": "Sofa table"
      }
     }
@@ -97,28 +97,28 @@
     "icon": "bulb",
     "trailing": "toggle",
     "sub": {
-     "e": "light.chair_light",
+     "e": "light.reading_lamp",
      "fmt": "light"
     },
     "on": {
-     "e": "light.chair_light",
+     "e": "light.reading_lamp",
      "fmt": "on"
     },
     "state": {
-     "e": "light.chair_light",
+     "e": "light.reading_lamp",
      "fmt": "avail"
     }
    },
    "on": {
     "toggle": {
      "do": "light.switch",
-     "e": "light.chair_light"
+     "e": "light.reading_lamp"
     },
     "long": {
      "do": "nav.open",
      "screen": "light",
      "params": {
-      "entity": "light.chair_light",
+      "entity": "light.reading_lamp",
       "name": "Chair"
      }
     }

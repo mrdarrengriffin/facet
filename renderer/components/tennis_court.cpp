@@ -145,16 +145,16 @@ FW_COMPONENT(tennis_court, "Tennis court", "components", R"({
   "motion_off": "sim",
   "frame": [400, 256],
   "props": [
-    {"name": "width", "type": "range", "min": 160, "max": 448, "step": 8, "default": 360},
-    {"name": "surface", "type": "select", "options": ["auto", "hard", "clay", "grass", "indoor", "carpet", "club", "duotone", "facet", "wimbledon", "roland-garros", "us-open", "australian-open", "atp-finals"], "default": "auto"},
-    {"name": "names", "type": "bool", "default": true},
-    {"name": "sim", "type": "bool", "default": true},
-    {"name": "speed", "type": "select", "options": ["1x", "10x", "60x"], "default": "10x"},
-    {"name": "jump", "type": "select", "options": ["start", "break point", "break", "tiebreak", "set point", "match point"], "default": "start"},
-    {"name": "seed", "type": "range", "min": 1, "max": 20, "step": 1, "default": 7},
-    {"name": "best_of", "type": "select", "options": ["3", "5"], "default": "3"},
-    {"name": "final_set", "type": "select", "options": ["tb10", "tb7", "adv"], "default": "tb10"},
-    {"name": "feed", "type": "text", "default": ""}
+    {"name": "width", "about": "How wide the court is drawn, in pixels.", "type": "range", "min": 160, "max": 448, "step": 8, "default": 360},
+    {"name": "surface", "about": "The court's look: auto follows the match, or pick a surface like clay or grass, a plain look, or a famous venue such as Wimbledon.", "type": "select", "options": ["auto", "hard", "clay", "grass", "indoor", "carpet", "club", "duotone", "facet", "wimbledon", "roland-garros", "us-open", "australian-open", "atp-finals"], "default": "auto"},
+    {"name": "names", "about": "Shows the players' names at each end.", "type": "bool", "default": true},
+    {"name": "sim", "about": "For previews only: runs a made-up match so the serve changes.", "type": "bool", "default": true},
+    {"name": "speed", "about": "For previews only: how fast the made-up match runs, real time or 10 or 60 times faster.", "type": "select", "options": ["1x", "10x", "60x"], "default": "10x"},
+    {"name": "jump", "about": "For previews only: skips the made-up match to a moment such as a break point or a tiebreak.", "type": "select", "options": ["start", "break point", "break", "tiebreak", "set point", "match point"], "default": "start"},
+    {"name": "seed", "about": "For previews only: picks a different made-up match; the same number always gives the same match.", "type": "range", "min": 1, "max": 20, "step": 1, "default": 7},
+    {"name": "best_of", "about": "For previews only: whether the made-up match is best of 3 or 5 sets.", "type": "select", "options": ["3", "5"], "default": "3"},
+    {"name": "final_set", "about": "For previews only: how the made-up match's last set ends: tb10 is a tiebreak to 10, tb7 a tiebreak to 7, adv plays on until someone is two games ahead.", "type": "select", "options": ["tb10", "tb7", "adv"], "default": "tb10"},
+    {"name": "feed", "about": "The live match data sent to the panel. Leave empty to use the made-up match.", "type": "text", "default": ""}
   ],
   "opening": "Sample data: the tennis simulator (seeded): made-up players, real scoring.",
   "variants": [

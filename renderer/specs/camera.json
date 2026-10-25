@@ -5,29 +5,29 @@
  "rev": 1,
  "role": "detail",
  "params": {
-  "entity": {
+  "entity": {"about": "The camera to show.", 
    "type": "entity",
    "domain": "camera",
    "label": "Camera",
    "default": ""
   },
-  "name": {
+  "name": {"about": "For previews only: the sample camera's name.", 
    "type": "hidden",
    "default": "Front door"
   },
-  "time": {
+  "time": {"about": "For previews only: when the sample picture was taken.", 
    "type": "hidden",
    "default": "19:28"
   },
-  "detect": {
+  "detect": {"about": "For previews only: what the sample camera saw, such as person.", 
    "type": "hidden",
    "default": "person"
   },
-  "score": {
+  "score": {"about": "For previews only: how sure the sample camera is, from 0 to 100 per cent.", 
    "type": "hidden",
    "default": "92"
   },
-  "box": {
+  "box": {"about": "For previews only: where the box round what was seen sits on the sample picture.", 
    "type": "hidden",
    "default": "40,20,24,64"
   }

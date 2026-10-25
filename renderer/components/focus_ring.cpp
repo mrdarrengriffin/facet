@@ -61,9 +61,9 @@ FW_COMPONENT(focus_ring, "Focus ring", "components", R"({
   "frame": [240, 112],
   "icons": ["play@feature", "pause@feature"],
   "props": [
-    {"name": "on", "type": "select", "options": ["box", "button", "play"], "default": "box"},
-    {"name": "offset", "type": "select", "options": ["focus-offset", "none", "space-2", "space-4"], "default": "focus-offset"},
-    {"name": "disabled", "type": "bool", "default": false}
+    {"name": "on", "about": "What the outline goes round: box for a card or tile, button for a button, play for the round play button.", "type": "select", "options": ["box", "button", "play"], "default": "box"},
+    {"name": "offset", "about": "The gap between the control and its outline: the usual focus gap, none for no gap, or a small or larger step.", "type": "select", "options": ["focus-offset", "none", "space-2", "space-4"], "default": "focus-offset"},
+    {"name": "disabled", "about": "Greys the outline, for a chosen control that cannot be used right now.", "type": "bool", "default": false}
   ],
   "variants": [
     {"label": "box · focus-offset", "props": {}},

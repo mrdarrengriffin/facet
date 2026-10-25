@@ -13,9 +13,9 @@
 //   time     screen type label (caps, mono), text-dim, lay::header_time_w wide, right-aligned on the content edge.
 //            Prop time = a fixed text (docs, tests, the Header playground); empty = the live clock (localtime, HH:MM,
 //            checked every second, redrawn only when the minute changes; "--:--" until the device has the time)
-//   header actions (Darren 2026-10-25, per Home; screen model §10): internal props shortcut (a screen kind: the button
-//            holds that screen's icon and opens page `to` instead of Settings; Settings is then a long press on the
-//            time) and status timer (the panel's timer, time left in accent-text, in a fixed header-time-w box before
+//   header actions (Darren 2026-10-25, per Home; screen model §10): internal props shortcut (a screen kind: a second
+//            square button with that screen's icon, opening page `to`, a gutter BEFORE the settings button, which stays;
+//            a long press on the time opens Settings too) and status timer (the panel's timer, time left in accent-text, in a fixed header-time-w box before
 //            the time; empty while none runs). The chrome grows by a gutter + header-time-w for it.
 // Contrast pairs: tokens/colour.json section "screen_chrome" (+ icon_button).
 #include <ctime>
@@ -39,9 +39,15 @@ bool has_shortcut(fw::Props p) { return *(p["shortcut"] | ""); }
 bool has_status(fw::Props p) { return !strcmp(p["status"] | "none", "timer"); }
 void button_props(fw::Props p, ArduinoJson::JsonDocument &bp) {
   bp["style"] = "square";
-  bp["role"] = has_shortcut(p) ? "shortcut" : "settings";
-  if (has_shortcut(p)) { bp["icon"] = std::string("screen-") + (p["shortcut"] | ""); bp["to"] = p["to"] | ""; }
+  bp["role"] = "settings";
   bp["state"] = !strcmp(p["settings"] | "button", "here") ? "active" : "default";
+}
+void shortcut_props(fw::Props p, ArduinoJson::JsonDocument &bp) {
+  bp["style"] = "square";
+  bp["role"] = "shortcut";
+  bp["icon"] = std::string("screen-") + (p["shortcut"] | "");
+  bp["to"] = p["to"] | "";
+  bp["state"] = "default";
 }
 // the live clock: HH:MM from localtime, "--:--" before the device has the time (year < 2020)
 void tick(lv_timer_t *t) {
@@ -74,7 +80,7 @@ void time_text(lv_obj_t *l, fw::Props p) {
   c->minute = -1;
   tick(c->timer);
 }
-bool has_button(fw::Props p) { return strcmp(p["settings"] | "none", "none") || has_shortcut(p); }
+bool has_button(fw::Props p) { return strcmp(p["settings"] | "none", "none"); }
 std::string sig(fw::Props p) { return std::string(has_button(p) ? "b" : "") + (has_status(p) ? "s" : "") + (p["shortcut"] | "") + "|" + (p["to"] | ""); }
 // the status beside the time: the panel's timer, time left ("4:32", "1:02:05"), "" when none runs (the box stays)
 void status_tick(lv_timer_t *tm) {
@@ -93,12 +99,18 @@ void fill(lv_obj_t *r, fw::Props p) {
   lv_obj_remove_style_all(r);
   lv_obj_remove_flag(r, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
   fw::shape(r, sig(p));
-  const int w = fw::lay::header_time_w + (has_button(p) ? fw::lay::chrome_btn + fw::lay::gutter : 0) + (has_status(p) ? fw::lay::header_time_w + fw::lay::gutter : 0);
+  const int w = fw::lay::header_time_w + (has_shortcut(p) ? fw::lay::chrome_btn + fw::lay::gutter : 0) +
+      (has_button(p) ? fw::lay::chrome_btn + fw::lay::gutter : 0) + (has_status(p) ? fw::lay::header_time_w + fw::lay::gutter : 0);
   lv_obj_set_size(r, w, fw::lay::row);
   lv_obj_set_flex_flow(r, LV_FLEX_FLOW_ROW);
   lv_obj_set_flex_align(r, LV_FLEX_ALIGN_END, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
   lv_obj_set_style_pad_column(r, fw::lay::gutter, 0);
 
+  if (has_shortcut(p)) {  // the shortcut first, a gutter before the settings button
+    ArduinoJson::JsonDocument bp;
+    shortcut_props(p, bp);
+    build("icon_button", r, bp);
+  }
   if (has_button(p)) {
     ArduinoJson::JsonDocument bp;
     button_props(p, bp);
@@ -117,7 +129,7 @@ void fill(lv_obj_t *r, fw::Props p) {
   }
   lv_obj_t *l = fw::text(r, fw::ty::label, "", fw::T->text_dim);
   lv_obj_remove_flag(l, LV_OBJ_FLAG_CLICKABLE);
-  if (has_shortcut(p)) {  // the settings square holds a shortcut: Settings is a long press on the time
+  if (has_shortcut(p)) {  // with a shortcut, a long press on the time opens Settings too (an extra; the button stays)
     lv_obj_add_flag(l, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_set_ext_click_area(l, (fw::lay::row - fw::style(fw::ty::label).box) / 2);
     lv_obj_add_event_cb(l, [](lv_event_t *e) {
@@ -146,18 +158,18 @@ FW_COMPONENT(screen_chrome, "Screen chrome", "components", R"({
   "frame": [240, 80],
   "icons": ["screen-settings@icon", "screen-timer@icon", "screen-media@icon", "screen-weather@icon", "screen-calendar@icon"],
   "props": [
-    {"name": "time", "type": "text", "default": "21:42"},
-    {"name": "settings", "type": "select", "options": ["none", "button", "here"], "default": "button"},
-    {"name": "shortcut", "type": "select", "options": ["", "timer", "media", "weather", "calendar"], "default": ""},
-    {"name": "to", "type": "text", "default": "timer"},
-    {"name": "status", "type": "select", "options": ["none", "timer"], "default": "none"}
+    {"name": "time", "about": "For previews only: a fixed time to show, like 21:42. Leave empty for the real time.", "type": "text", "default": "21:42"},
+    {"name": "settings", "about": "The settings button: none hides it, button shows it, here shows it as the screen you are on.", "type": "select", "options": ["none", "button", "here"], "default": "button"},
+    {"name": "shortcut", "about": "A shortcut button to another screen, such as the timer or media, or empty for none.", "type": "select", "options": ["", "timer", "media", "weather", "calendar"], "default": ""},
+    {"name": "to", "about": "The screen the shortcut opens.", "type": "text", "default": "timer"},
+    {"name": "status", "about": "Extra status before the time: none, or timer to show the time left on a running timer.", "type": "select", "options": ["none", "timer"], "default": "none"}
   ],
   "variants": [
     {"label": "Home · settings button", "props": {}},
     {"label": "other screens · time only", "props": {"settings": "none"}},
     {"label": "on Settings · here", "props": {"settings": "here"}},
     {"label": "live clock", "props": {"time": ""}},
-    {"label": "header actions · timer shortcut + time left", "props": {"shortcut": "timer", "status": "timer"}}
+    {"label": "header actions · timer shortcut + settings + time left", "props": {"shortcut": "timer", "status": "timer"}}
   ]
 })") {
   fill(lv_obj_create(parent), p);
@@ -173,7 +185,7 @@ FW_UPDATE(screen_chrome) {
     return true;
   }
   const bool btn = has_button(p);
-  lv_obj_t *b = btn ? lv_obj_get_child(root, 0) : nullptr, *l = lv_obj_get_child(root, -1);
+  lv_obj_t *b = btn ? lv_obj_get_child(root, has_shortcut(p) ? 1 : 0) : nullptr, *l = lv_obj_get_child(root, -1);
   if (!l || (btn && !b)) return false;
   if (b) {
     ArduinoJson::JsonDocument bp;

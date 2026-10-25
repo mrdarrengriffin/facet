@@ -232,10 +232,10 @@ FW_COMPONENT(timer_view, "Timer view", "components", R"({
   "about": "The Timer screen's body: the time left inside a ring that empties as it runs, the timer's name above it, +1 min and Cancel under it; with nothing running, one-tap presets.",
   "frame": [480, 400],
   "props": [
-    {"name": "state", "type": "select", "options": ["idle", "running", "done"], "default": "running"},
-    {"name": "label", "type": "text", "default": "Pasta"},
-    {"name": "total", "type": "range", "min": 60, "max": 7200, "step": 60, "default": 600},
-    {"name": "left", "type": "range", "min": 1, "max": 7200, "step": 1, "default": 272}
+    {"name": "state", "about": "What the timer is doing: idle with none set, running, or done when it has finished.", "type": "select", "options": ["idle", "running", "done"], "default": "running"},
+    {"name": "label", "about": "The timer's name, shown above the time, such as Pasta.", "type": "text", "default": "Pasta"},
+    {"name": "total", "about": "How long the timer was set for, in seconds.", "type": "range", "min": 60, "max": 7200, "step": 60, "default": 600},
+    {"name": "left", "about": "How many seconds are left. The ring empties as it runs down.", "type": "range", "min": 1, "max": 7200, "step": 1, "default": 272}
   ],
   "variants": [
     {"label": "running · 4:32 of 10 min", "props": {}},

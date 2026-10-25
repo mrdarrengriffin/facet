@@ -15,9 +15,13 @@ const { s } = Astro.props as { s: Screen };
 const parts = s.parts.map((id) => ALL.find((e) => e.id === id)).filter((e) => !!e);
 const link = (id: string) => screenById(id);
 const sources = s.sources;
-const typeOf = (p: Screen['params'][number]) =>
-  p.type === 'entity' ? `one ${p.domain}` : p.type === 'entities' ? `${p.domain} list` : p.type === 'bool' || p.type === 'toggle' ? 'on / off' : p.type;
-const valuesOf = (p: Screen['params'][number]) => (p.options?.length ? p.options.join(' · ') : p.type === 'entity' || p.type === 'entities' ? `${p.domain} entities` : 'text');
+const typeWord = (p: Screen['params'][number]) =>
+  p.options?.length ? 'pick one' : p.type === 'bool' || p.type === 'toggle' ? 'on / off' : p.type === 'entity' ? `one ${p.domain} entity` : p.type === 'entities' ? `a list of ${p.domain} entities` : p.type;
+// the values a setting accepts, as written in a spec (null = free text / an entity id)
+const valuesOf = (p: Screen['params'][number]): string[] | null =>
+  p.options?.length ? p.options : p.type === 'bool' || p.type === 'toggle' ? ['true', 'false'] : null;
+// description: the param's own about line when it has one (to come from the source), else its label
+const aboutOf = (p: Screen['params'][number] & { about?: string }) => p.about || p.label;
 const fill = (f: { param: string; domain: string; integration: string | null; list: boolean }) =>
   `${s.params.find((p) => p.name === f.param)?.label ?? f.param}: ${f.list ? 'every' : 'a'} ${f.domain.replace(/_/g, ' ')}${f.integration ? ` from ${f.integration.replace(/_/g, ' ')}` : ''}`;
 const headings: Heading[] = [
@@ -44,13 +48,13 @@ const st = STATUS[s.status];
       <>
         {s.kind === 'built' && <p>Options of this preview (the screen is built into the panel, not from a spec).</p>}
         <table>
-          <thead><tr><th>Setting</th><th>Type</th><th>Values</th><th>Default</th></tr></thead>
+          <thead><tr><th>Setting</th><th>Description</th><th>Values</th><th>Default</th></tr></thead>
           <tbody>
             {s.params.map((p) => (
               <tr>
-                <td>{p.label} <code>{p.name}</code></td>
-                <td>{typeOf(p)}</td>
-                <td>{valuesOf(p)}</td>
+                <td><code>{p.name}</code></td>
+                <td>{aboutOf(p)} <span class="hint">({typeWord(p)})</span></td>
+                <td>{valuesOf(p) ? valuesOf(p)!.map((v, i) => <>{i ? ' ' : ''}<code>{v}</code></>) : p.type === 'entity' || p.type === 'entities' ? <>an entity id, e.g. <code>{p.domain}.kitchen</code></> : 'any text'}</td>
                 <td>{p.default === null ? 'found by discovery' : p.default === '' ? 'none' : <code>{String(p.default)}</code>}</td>
               </tr>
             ))}

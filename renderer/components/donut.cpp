@@ -94,10 +94,10 @@ FW_COMPONENT(donut, "Donut", "components", R"({
   "about": "One arc per part, clockwise from 12 o'clock, with small gaps.",
   "frame": [176, 176],
   "props": [
-    {"name": "a", "type": "range", "min": 0, "max": 10, "step": 0.1, "default": 3.2},
-    {"name": "b", "type": "range", "min": 0, "max": 10, "step": 0.1, "default": 4.1},
-    {"name": "c", "type": "range", "min": 0, "max": 10, "step": 0.1, "default": 1.4},
-    {"name": "size", "type": "range", "min": 64, "max": 160, "step": 16, "default": 112}
+    {"name": "a", "about": "The size of the first part of the ring.", "type": "range", "min": 0, "max": 10, "step": 0.1, "default": 3.2},
+    {"name": "b", "about": "The size of the second part of the ring.", "type": "range", "min": 0, "max": 10, "step": 0.1, "default": 4.1},
+    {"name": "c", "about": "The size of the third part of the ring.", "type": "range", "min": 0, "max": 10, "step": 0.1, "default": 1.4},
+    {"name": "size", "about": "How wide the ring is across, in pixels.", "type": "range", "min": 64, "max": 160, "step": 16, "default": 112}
   ],
   "opening": "Showing it fades the arcs in one after another.",
   "variants": [

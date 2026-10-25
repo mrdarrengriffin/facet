@@ -239,13 +239,13 @@ FW_COMPONENT(covers_view, "Covers view", "components", R"({
   "frame": [480, 400],
   "audit": {"snaps": {"kind": "a roller, Venetian or curtain is a different drawing: structure, the Cover visual's rule"}},
   "props": [
-    {"name": "kind", "type": "select", "options": ["roller", "venetian", "curtain"], "default": "roller"},
-    {"name": "position", "type": "range", "min": 0, "max": 100, "step": 1, "default": 40},
-    {"name": "tilt", "type": "range", "min": 0, "max": 100, "step": 1, "default": 50},
-    {"name": "device_class", "type": "text", "default": ""},
-    {"name": "cover", "type": "text", "default": ""},
-    {"name": "covers", "type": "text", "default": ""},
-    {"name": "state", "type": "select", "options": ["open", "closed", "opening", "closing", "unavailable"], "default": "open"}
+    {"name": "kind", "about": "What hangs in the window: a roller blind, a Venetian blind with slats, or curtains.", "type": "select", "options": ["roller", "venetian", "curtain"], "default": "roller"},
+    {"name": "position", "about": "How open the cover is, from 0 (closed) to 100 (fully open).", "type": "range", "min": 0, "max": 100, "step": 1, "default": 40},
+    {"name": "tilt", "about": "For Venetian blinds: how far the slats are turned, from 0 (shut) to 100 (fully open).", "type": "range", "min": 0, "max": 100, "step": 1, "default": 50},
+    {"name": "device_class", "about": "The kind of cover as Home Assistant names it, such as curtain or blind. When set it picks the drawing: curtain draws curtains, a cover that tilts draws a Venetian blind, anything else a roller blind.", "type": "text", "default": ""},
+    {"name": "cover", "about": "The cover this screen controls, by its Home Assistant entity id.", "type": "text", "default": ""},
+    {"name": "covers", "about": "Every cover you can switch between on this screen, as entity ids separated by commas.", "type": "text", "default": ""},
+    {"name": "state", "about": "What the cover is doing: open, closed, opening, closing, or unavailable when it cannot be reached.", "type": "select", "options": ["open", "closed", "opening", "closing", "unavailable"], "default": "open"}
   ],
   "variants": [
     {"label": "roller · 40% open", "props": {}},

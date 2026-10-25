@@ -65,9 +65,9 @@ FW_COMPONENT(count_badge, "Count badge", "components", R"({
   "audit": {"snaps": {"count": "a count is a number that changes like text, no tap transition to copy"}},
   "frame": [160, 64],
   "props": [
-    {"name": "count", "type": "range", "min": 0, "max": 150, "step": 1, "default": 3},
-    {"name": "tone", "type": "select", "options": ["ok", "warn", "error", "working", "info", "idle"], "default": "idle"},
-    {"name": "zero", "type": "select", "options": ["muted", "hide"], "default": "muted"}
+    {"name": "count", "about": "The number in the badge. Above 99 it shows 99+.", "type": "range", "min": 0, "max": 150, "step": 1, "default": 3},
+    {"name": "tone", "about": "The badge colour, by what the number means: ok, warn, error, working, info or idle.", "type": "select", "options": ["ok", "warn", "error", "working", "info", "idle"], "default": "idle"},
+    {"name": "zero", "about": "What happens at zero: muted shows a quiet 0; hide removes the badge.", "type": "select", "options": ["muted", "hide"], "default": "muted"}
   ],
   "variants": [
     {"label": "0 · muted", "props": {"count": 0, "tone": "warn"}},

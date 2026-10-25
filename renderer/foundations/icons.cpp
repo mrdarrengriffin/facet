@@ -374,13 +374,13 @@ FW_COMPONENT(icons, "Icons", "foundations", R"({
   "layout": "doc",
   "frame": [480, 0],
   "props": [
-    {"name": "section", "type": "select", "options": )" FW_ICON_SECTION_IDS R"(, "default": "compare"},
-    {"name": "search", "type": "text", "default": ""},
-    {"name": "size", "type": "select", "options": )" FW_ICON_SIZE_IDS R"(, "default": "all"},
-    {"name": "accent", "type": "bool", "default": false},
-    {"name": "boxes", "type": "bool", "default": false},
-    {"name": "animated", "type": "bool", "default": true},
-    {"name": "phase", "type": "range", "min": 0, "max": 1, "step": 0.01, "default": 0.25}
+    {"name": "section", "about": "Which part of the icons page to show, such as the icons side by side at each size.", "type": "select", "options": )" FW_ICON_SECTION_IDS R"(, "default": "compare"},
+    {"name": "search", "about": "Shows only the icons whose name contains these words.", "type": "text", "default": ""},
+    {"name": "size", "about": "Which icon size to show, or all of them.", "type": "select", "options": )" FW_ICON_SIZE_IDS R"(, "default": "all"},
+    {"name": "accent", "about": "Draws the icons in the accent colour instead of the text colour.", "type": "bool", "default": false},
+    {"name": "boxes", "about": "For previews only: outlines the box each icon sits in, to check they line up.", "type": "bool", "default": false},
+    {"name": "animated", "about": "Lets the weather icons move gently.", "type": "bool", "default": true},
+    {"name": "phase", "about": "The moon phase the moon icons show: 0 is new, 0.5 full.", "type": "range", "min": 0, "max": 1, "step": 0.01, "default": 0.25}
   ],
   "variants": )" FW_ICON_SECTIONS R"(
 })") {

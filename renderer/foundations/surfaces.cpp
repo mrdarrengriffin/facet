@@ -89,7 +89,7 @@ FW_COMPONENT(surfaces, "Sports surfaces", "foundations", R"({
   "layout": "doc",
   "frame": [480, 0],
   "props": [
-    {"name": "section", "type": "select", "options": ["surfaces", "venues", "rules", "sizes", "data"], "default": "surfaces"}
+    {"name": "section", "about": "Which part of the page to show: the surfaces, the venues, the rules, the sizes or the data they come from.", "type": "select", "options": ["surfaces", "venues", "rules", "sizes", "data"], "default": "surfaces"}
   ],
   "variants": [
     {"label": "Surfaces", "about": "The five tennis surfaces and two common club hard courts in their real colours, toned down to sit on the canvas, and the generic Facet court for when the surface is unknown. Switch the theme: dark goes deeper, light stays mid-tone so the white lines still read.", "props": {"section": "surfaces"}},

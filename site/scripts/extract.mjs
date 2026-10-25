@@ -380,7 +380,7 @@ function screenSet() {
     walkOpen(spec.id, spec.nodes);
     const params = Object.entries(spec.params ?? {}).map(([name, v]) => {
       const t = typeof v === 'object' && v ? v : { type: 'text', default: v };
-      return { name, label: t.label ?? name, type: t.type ?? 'text', domain: t.domain ?? null, options: t.options ?? null,
+      return { name, about: t.about ?? '', label: t.label ?? name, type: t.type ?? 'text', domain: t.domain ?? null, options: t.options ?? null,
         default: t.type === 'entity' || t.type === 'entities' ? null : (t.default ?? ''), sample: sampleOf(name, t) };
     }).filter((p) => p.type !== 'hidden');
     const nodes = spec.nodes.map((n) => n.c);
@@ -399,7 +399,7 @@ function screenSet() {
     const f = files[c.id] ?? { uses: [], files: [], status: 'wip' };
     const props = (c.meta.props ?? []).filter((p) => !(p.type === 'text' && !p.default));
     out.push({ id: c.id, name: c.name, kind: 'built', about: pub(c.meta.about ?? c.lede ?? ''), opening: c.meta.opening ? pub(c.meta.opening) : null,
-      params: props.map((p) => ({ name: p.name, label: p.name.replace(/_/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase().replace(/^./, (x) => x.toUpperCase()),
+      params: props.map((p) => ({ name: p.name, about: p.about ?? '', label: p.name.replace(/_/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase().replace(/^./, (x) => x.toUpperCase()),
         type: p.type, domain: null, options: p.options ?? (p.type === 'range' ? [`${p.min ?? 0} to ${p.max}`] : null), default: p.default ?? '' })),
       sampleProps: Object.fromEntries((c.meta.props ?? []).map((p) => [p.name, p.default ?? (p.type === 'bool' ? false : p.type === 'range' ? p.min ?? 0 : '')])),
       comp: c.id, frame: c.meta.frame, parts: f.uses.filter((u) => compById[u] && u !== c.id), sources: sourcesOf(c.id), status: relStatus(c.id, f.status),

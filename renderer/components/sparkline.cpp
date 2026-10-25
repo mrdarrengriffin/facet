@@ -52,10 +52,10 @@ FW_COMPONENT(sparkline, "Sparkline", "components", R"({
   "about": "A thin line over the recent values with a dot on the latest one.",
   "frame": [240, 64],
   "props": [
-    {"name": "values", "type": "text", "default": "320,300,420,380,900,1200,640,410,380,450,300,299"},
-    {"name": "colour", "type": "select", "options": ["steel", "blue", "accent", "text-dim"], "default": "steel"},
-    {"name": "width", "type": "range", "min": 96, "max": 224, "step": 8, "default": 148},
-    {"name": "dot", "type": "bool", "default": true}
+    {"name": "values", "about": "The recent values, as numbers separated by commas, oldest first.", "type": "text", "default": "320,300,420,380,900,1200,640,410,380,450,300,299"},
+    {"name": "colour", "about": "The line colour: steel, blue, accent, or text-dim for a quiet grey.", "type": "select", "options": ["steel", "blue", "accent", "text-dim"], "default": "steel"},
+    {"name": "width", "about": "How wide the line is drawn, in pixels.", "type": "range", "min": 96, "max": 224, "step": 8, "default": 148},
+    {"name": "dot", "about": "Puts a dot on the latest value at the right end.", "type": "bool", "default": true}
   ],
   "opening": "Showing it draws the line in from the left (chart motion draw).",
   "variants": [

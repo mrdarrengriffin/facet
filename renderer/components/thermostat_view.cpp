@@ -238,12 +238,12 @@ FW_COMPONENT(thermostat_view, "Thermostat view", "components", R"({
   "about": "The Thermostat screen's body: the ring with the measured temperature in its middle, the set point, - and +, the modes and a Presets sheet.",
   "frame": [480, 400],
   "props": [
-    {"name": "target", "type": "range", "min": 5, "max": 30, "step": 0.5, "default": 21},
-    {"name": "current", "type": "range", "min": 5, "max": 30, "step": 0.1, "default": 19.4},
-    {"name": "action", "type": "select", "options": ["heating", "cooling", "idle"], "default": "heating"},
-    {"name": "mode", "type": "select", "options": ["heat", "auto", "off", "unavailable"], "default": "heat"},
-    {"name": "preset", "type": "select", "options": ["none", "home", "away", "eco", "boost"], "default": "none"},
-    {"name": "next", "type": "text", "default": "17° from 22:30"}
+    {"name": "target", "about": "The temperature it is set to.", "type": "range", "min": 5, "max": 30, "step": 0.5, "default": 21},
+    {"name": "current", "about": "The temperature measured in the room, shown in the middle of the ring.", "type": "range", "min": 5, "max": 30, "step": 0.1, "default": 19.4},
+    {"name": "action", "about": "What it is doing now: heating, cooling or idle.", "type": "select", "options": ["heating", "cooling", "idle"], "default": "heating"},
+    {"name": "mode", "about": "The thermostat's mode: heat, auto, off, or unavailable when it cannot be reached.", "type": "select", "options": ["heat", "auto", "off", "unavailable"], "default": "heat"},
+    {"name": "preset", "about": "The preset in use, such as home, away, eco or boost, or none.", "type": "select", "options": ["none", "home", "away", "eco", "boost"], "default": "none"},
+    {"name": "next", "about": "The next scheduled change, such as 17° from 22:30. Leave empty for none.", "type": "text", "default": "17° from 22:30"}
   ],
   "variants": [
     {"label": "heating to 21", "props": {}},

@@ -229,13 +229,13 @@ FW_COMPONENT(toast, "Toast", "components", R"({
   "frame": [480, 0],
   "icons": ["timer@glyph", "agent@glyph", "person@glyph", "washer@glyph", "vacuum@glyph", "bolt@glyph", "alert@glyph", "done@glyph", "bell@glyph", "check@glyph", "pr@glyph"],
   "props": [
-    {"name": "icon", "type": "select", "options": ["timer", "agent", "person", "washer", "vacuum", "bolt", "alert", "done", "bell", "check", "pr"], "default": "timer"},
-    {"name": "tone", "type": "select", "options": ["ok", "warn", "error", "working", "info", "idle"], "default": "ok"},
-    {"name": "title", "type": "text", "default": "Pasta is ready"},
-    {"name": "body", "type": "text", "default": "Your 9 min timer has finished."},
-    {"name": "action", "type": "text", "default": ""},
-    {"name": "timer", "type": "bool", "default": false},
-    {"name": "life", "type": "select", "options": ["normal", "urgent"], "default": "normal"}
+    {"name": "icon", "about": "The icon at the start, picked for what the message is about, such as a timer, a person or a washing machine.", "type": "select", "options": ["timer", "agent", "person", "washer", "vacuum", "bolt", "alert", "done", "bell", "check", "pr"], "default": "timer"},
+    {"name": "tone", "about": "The icon's colour, by what the message means: ok, warn, error, working, info or idle.", "type": "select", "options": ["ok", "warn", "error", "working", "info", "idle"], "default": "ok"},
+    {"name": "title", "about": "The message's heading.", "type": "text", "default": "Pasta is ready"},
+    {"name": "body", "about": "One line of detail under the heading.", "type": "text", "default": "Your 9 min timer has finished."},
+    {"name": "action", "about": "The words of a button on the message, such as Open. Leave empty for no button.", "type": "text", "default": ""},
+    {"name": "timer", "about": "Shows a thin bar that runs down until the message goes away on its own.", "type": "bool", "default": false},
+    {"name": "life", "about": "How long the message stays: normal, or urgent which stays much longer.", "type": "select", "options": ["normal", "urgent"], "default": "normal"}
   ],
   "variants": [
     {"label": "ok · timer done", "props": {}},

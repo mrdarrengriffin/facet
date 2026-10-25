@@ -237,12 +237,12 @@ FW_COMPONENT(toast_layer, "Toast layer", "components", R"({
   "frame": [480, 480],
   "icons": ["timer@glyph", "person@glyph", "alert@glyph", "agent@glyph", "washer@glyph", "vacuum@glyph", "back@glyph"],
   "props": [
-    {"name": "position", "type": "select", "options": ["top", "bottom"], "default": "top"},
-    {"name": "push", "type": "select", "options": ["ok", "warn", "error", "working", "info", "idle", "none"], "default": "ok"},
-    {"name": "stack", "type": "range", "min": 1, "max": 3, "step": 1, "default": 1},
-    {"name": "timer", "type": "bool", "default": true},
-    {"name": "action", "type": "bool", "default": true},
-    {"name": "screen", "type": "bool", "default": true}
+    {"name": "position", "about": "Where messages appear: from the top or from the bottom of the screen.", "type": "select", "options": ["top", "bottom"], "default": "top"},
+    {"name": "push", "about": "For previews only: the tone of the first sample message that arrives, or none.", "type": "select", "options": ["ok", "warn", "error", "working", "info", "idle", "none"], "default": "ok"},
+    {"name": "stack", "about": "For previews only: how many sample messages are stacked, up to two showing at once.", "type": "range", "min": 1, "max": 3, "step": 1, "default": 1},
+    {"name": "timer", "about": "Shows the bar on each message that runs down until it goes away.", "type": "bool", "default": true},
+    {"name": "action", "about": "For previews only: gives the sample messages a button.", "type": "bool", "default": true},
+    {"name": "screen", "about": "For previews only: draws a sample screen under the messages.", "type": "bool", "default": true}
   ],
   "variants": [
     {"label": "top · ok arrives", "props": {"timer": false}},

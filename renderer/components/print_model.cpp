@@ -251,12 +251,12 @@ FW_COMPONENT(print_model, "3D print model", "components", R"({
   "about": "The print as a voxel model in isometric: the printed part solid, the last layers in the accent, the rest a ghost with hairline edges. Fits by the whole model, so it never moves while it fills up.",
   "frame": [288, 288],
   "props": [
-    {"name": "progress", "type": "range", "min": 0, "max": 100, "step": 1, "default": 45},
-    {"name": "solid", "type": "select", "options": ["neutral", "steel"], "default": "neutral"},
-    {"name": "hot", "type": "range", "min": 0, "max": 12, "step": 1, "default": 4},
-    {"name": "width", "type": "range", "min": 160, "max": 440, "step": 8, "default": 288},
-    {"name": "height", "type": "range", "min": 160, "max": 296, "step": 8, "default": 288},
-    {"name": "ss", "type": "range", "min": 1, "max": 3, "step": 1, "default": 2}
+    {"name": "progress", "about": "How much of the print is done, from 0 to 100. The model fills up from the bottom.", "type": "range", "min": 0, "max": 100, "step": 1, "default": 45},
+    {"name": "solid", "about": "The colour of the printed part: neutral grey, or steel blue.", "type": "select", "options": ["neutral", "steel"], "default": "neutral"},
+    {"name": "hot", "about": "How many of the most recent layers are drawn in the accent colour.", "type": "range", "min": 0, "max": 12, "step": 1, "default": 4},
+    {"name": "width", "about": "How wide the drawing is, in pixels.", "type": "range", "min": 160, "max": 440, "step": 8, "default": 288},
+    {"name": "height", "about": "How tall the drawing is, in pixels.", "type": "range", "min": 160, "max": 296, "step": 8, "default": 288},
+    {"name": "ss", "about": "How smooth the edges are: higher numbers draw more finely but take more memory. Panels use 1.", "type": "range", "min": 1, "max": 3, "step": 1, "default": 2}
   ],
   "audit": {"snaps": {"progress": "a new layer is a new picture (a re-render, like the docs canvas); the print moves one layer at a time"}},
   "variants": [

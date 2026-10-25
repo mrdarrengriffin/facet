@@ -5,13 +5,13 @@
  "rev": 2,
  "role": "detail",
  "params": {
-  "entity": {
+  "entity": {"about": "The light this screen controls.", 
    "type": "entity",
    "domain": "light",
    "label": "Light",
-   "default": "light.living_room_dimmer_light"
+   "default": "light.living_room_ceiling"
   },
-  "name": {
+  "name": {"about": "The name shown in the header, such as Ceiling.", 
    "type": "text",
    "label": "Name",
    "default": "Ceiling"

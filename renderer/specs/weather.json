@@ -5,7 +5,7 @@
  "rev": 2,
  "role": "page",
  "params": {
-  "weather": {
+  "weather": {"about": "The weather forecast to show.", 
    "type": "entity",
    "domain": "weather",
    "label": "Forecast",

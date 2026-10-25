@@ -81,9 +81,9 @@ FW_COMPONENT(moon_facts, "Moon facts", "components", R"({
   "about": "What the moon maths works out with no API: the one line, how much is lit, its age, moonrise and moonset, the next full and new moon.",
   "frame": [464, 240],
   "props": [
-    {"name": "ahead", "type": "range", "min": 0, "max": 29, "step": 1, "default": 0},
-    {"name": "lat", "type": "range", "min": -60, "max": 65, "step": 0.1, "default": 52.2},
-    {"name": "lon", "type": "range", "min": -180, "max": 180, "step": 0.1, "default": -1.2}
+    {"name": "ahead", "about": "For previews only: how many days ahead of today to work the moon out for. 0 is today.", "type": "range", "min": 0, "max": 29, "step": 1, "default": 0},
+    {"name": "lat", "about": "Your latitude in degrees, which sets the moonrise and moonset times.", "type": "range", "min": -60, "max": 65, "step": 0.1, "default": 52.2},
+    {"name": "lon", "about": "Your longitude in degrees, which sets the moonrise and moonset times.", "type": "range", "min": -180, "max": 180, "step": 0.1, "default": -1.2}
   ],
   "variants": [
     {"label": "tonight", "props": {"now": 1792944000000}},

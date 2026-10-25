@@ -46,10 +46,10 @@ FW_COMPONENT(stat, "Stat", "components", R"({
   "about": "A caps label over one line of text: one fact in a column of facts.",
   "frame": [240, 64],
   "props": [
-    {"name": "label", "type": "text", "default": "trend"},
-    {"name": "value", "type": "text", "default": "48 km/h"},
-    {"name": "tone", "type": "select", "options": ["dim", "text", "warn", "ok"], "default": "dim"},
-    {"name": "state", "type": "select", "options": ["default", "unavailable"], "default": "default"}
+    {"name": "label", "about": "The small capitals line that says what the fact is, such as trend.", "type": "text", "default": "trend"},
+    {"name": "value", "about": "The fact itself, such as 48 km/h.", "type": "text", "default": "48 km/h"},
+    {"name": "tone", "about": "The colour of the value: dim for quiet, text for normal, warn for something to watch, ok for good news.", "type": "select", "options": ["dim", "text", "warn", "ok"], "default": "dim"},
+    {"name": "state", "about": "default shows the value; unavailable shows a dash when it cannot be read.", "type": "select", "options": ["default", "unavailable"], "default": "default"}
   ],
   "variants": [
     {"label": "dim · default", "props": {}},

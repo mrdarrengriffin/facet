@@ -44,14 +44,14 @@ FW_COMPONENT(f1_car_marker, "F1 car marker", "components", R"({
   "audit": {"snaps": {"on": "what the mark sits on is where it is placed, not a state: it changes with the screen, never live"}},
   "frame": [160, 64],
   "props": [
-    {"name": "marker", "type": "select", "options": ["dot", "code", "number"], "default": "code"},
-    {"name": "code", "type": "text", "default": "NOR"},
-    {"name": "num", "type": "range", "min": 1, "max": 99, "step": 1, "default": 1},
-    {"name": "colour", "type": "text", "default": "#F47600"},
-    {"name": "lead", "type": "bool", "default": false},
-    {"name": "label", "type": "bool", "default": false},
-    {"name": "pit", "type": "bool", "default": false},
-    {"name": "on", "type": "select", "options": ["bg", "surface"], "default": "bg"}
+    {"name": "marker", "about": "How the car is drawn: a plain dot, the driver's three-letter code, or the car number.", "type": "select", "options": ["dot", "code", "number"], "default": "code"},
+    {"name": "code", "about": "The driver's three-letter code, such as NOR.", "type": "text", "default": "NOR"},
+    {"name": "num", "about": "The car's racing number.", "type": "range", "min": 1, "max": 99, "step": 1, "default": 1},
+    {"name": "colour", "about": "The team colour, as a hex colour like #F47600.", "type": "text", "default": "#F47600"},
+    {"name": "lead", "about": "Marks the car as the race leader.", "type": "bool", "default": false},
+    {"name": "label", "about": "Shows the driver's code in a tag beside the car.", "type": "bool", "default": false},
+    {"name": "pit", "about": "Shows the car is in the pit lane.", "type": "bool", "default": false},
+    {"name": "on", "about": "What the car sits on, so its edge stands out: bg for the screen background, surface for a card.", "type": "select", "options": ["bg", "surface"], "default": "bg"}
   ],
   "variants": [
     {"label": "code · McLaren", "props": {}},

@@ -174,11 +174,11 @@ FW_COMPONENT(vacuum_mode, "Vacuum mode", "components", R"({
   "about": "The robot vacuum's cleaning settings: a row (or a short button on the map) that opens a sheet with the cleaning mode, suction and water, applied at once.",
   "frame": [480, 0],
   "props": [
-    {"name": "mode", "type": "select", "options": ["vacuum", "vac_and_mop", "mop"], "default": "vac_and_mop"},
-    {"name": "fan", "type": "select", "options": ["quiet", "balanced", "turbo", "max", "max_plus"], "default": "turbo"},
-    {"name": "mop", "type": "select", "options": ["low", "medium", "high"], "default": "high"},
-    {"name": "style", "type": "select", "options": ["row", "button"], "default": "row"},
-    {"name": "view", "type": "select", "options": ["rooms", "map"], "default": "map"}
+    {"name": "mode", "about": "What the robot does: vacuum only, vacuum and mop together, or mop only.", "type": "select", "options": ["vacuum", "vac_and_mop", "mop"], "default": "vac_and_mop"},
+    {"name": "fan", "about": "How hard it sucks: quiet, balanced, turbo, max or max plus.", "type": "select", "options": ["quiet", "balanced", "turbo", "max", "max_plus"], "default": "turbo"},
+    {"name": "mop", "about": "How much water the mop uses: low, medium or high.", "type": "select", "options": ["low", "medium", "high"], "default": "high"},
+    {"name": "style", "about": "row shows the settings as a full row; button shows a short button that sits on the map.", "type": "select", "options": ["row", "button"], "default": "row"},
+    {"name": "view", "about": "Which vacuum view it sits in: the room list or the map.", "type": "select", "options": ["rooms", "map"], "default": "map"}
   ],
   "variants": [
     {"label": "row", "props": {}},

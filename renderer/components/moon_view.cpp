@@ -45,9 +45,9 @@ FW_COMPONENT(moon_view, "Moon view", "components", R"({
   "about": "The Moon screen's summary: the moon itself as the hero, drawn from tonight's phase, and one line under it.",
   "frame": [480, 360],
   "props": [
-    {"name": "size", "type": "select", "options": ["screen", "weather"], "default": "screen"},
-    {"name": "lat", "type": "range", "min": -60, "max": 65, "step": 0.1, "default": 52.2},
-    {"name": "lon", "type": "range", "min": -180, "max": 180, "step": 0.1, "default": -1.2}
+    {"name": "size", "about": "screen fills the Moon screen; weather fits it inside the Weather screen's moon view.", "type": "select", "options": ["screen", "weather"], "default": "screen"},
+    {"name": "lat", "about": "Your latitude in degrees, used to work out tonight's moon.", "type": "range", "min": -60, "max": 65, "step": 0.1, "default": 52.2},
+    {"name": "lon", "about": "Your longitude in degrees, used to work out tonight's moon.", "type": "range", "min": -180, "max": 180, "step": 0.1, "default": -1.2}
   ],
   "variants": [
     {"label": "tonight", "props": {"now": 1792944000000}},

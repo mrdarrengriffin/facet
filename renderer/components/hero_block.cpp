@@ -74,13 +74,13 @@ FW_COMPONENT(hero_block, "Hero block", "components", R"({
   "about": "A screen's one big number, with a label and one line beside it; accent when it matters now.",
   "frame": [480, 112],
   "props": [
-    {"name": "n", "type": "text", "default": "3"},
-    {"name": "label", "type": "text", "default": "need you"},
-    {"name": "line", "type": "text", "default": "2 reviews · 2 assigned"},
-    {"name": "accent", "type": "bool", "default": true},
-    {"name": "role", "type": "select", "options": ["hero", "display"], "default": "hero"},
-    {"name": "label_type", "type": "select", "options": ["label", "title"], "default": "label"},
-    {"name": "state", "type": "select", "options": ["default", "unavailable"], "default": "default"}
+    {"name": "n", "about": "The big number, such as how many things need you.", "type": "text", "default": "3"},
+    {"name": "label", "about": "The words next to the number that say what it counts.", "type": "text", "default": "need you"},
+    {"name": "line", "about": "One quieter line with the detail, under the label.", "type": "text", "default": "2 reviews · 2 assigned"},
+    {"name": "accent", "about": "Draws the number in the accent colour, for when it matters now.", "type": "bool", "default": true},
+    {"name": "role", "about": "hero is the largest number for a screen's main figure; display is a step smaller.", "type": "select", "options": ["hero", "display"], "default": "hero"},
+    {"name": "label_type", "about": "How the words next to the number are written: label in small capitals, or title in larger plain text.", "type": "select", "options": ["label", "title"], "default": "label"},
+    {"name": "state", "about": "default shows the number; unavailable shows a dash when the value cannot be read.", "type": "select", "options": ["default", "unavailable"], "default": "default"}
   ],
   "variants": [
     {"label": "accent · needs you", "props": {}},

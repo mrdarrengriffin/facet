@@ -20,6 +20,7 @@
 //   motion    while it animates (the first 2 s from the build, every 2nd frame): no ink leaves the box; an object
 //             marked fw::qa::circle(obj, ref, cx, cy, r) keeps its centre on that circle (1 px), fw::qa::inside(obj,
 //             ref) stays inside ref
+//   about     every prop (meta "about") and every spec parameter (params.<name>.about) has a description
 //   layout    screens only (tools/audit_screens.mjs checkScreen, at the build and after the motion loop): the screen
 //             root's regions don't overlap and nothing escapes its region or the screen; overlays (a bottom sheet,
 //             a toast layer) say so with fw::qa::free(obj, "overlay: <why>")
@@ -313,6 +314,18 @@ const report = {};
 for (const den of dens) {
   const m = await load(den);
   const meta = JSON.parse(m.UTF8ToString(m._fw_meta())).map((c) => ({ ...c, meta: typeof c.meta === 'string' ? JSON.parse(c.meta) : c.meta }));
+  // about (Darren 2026-10-25): every setting has a plain description, the docs tables, the agent guide and the editor
+  // show it: each registered prop (meta "about") and each spec parameter (renderer/specs/*.json params.<name>.about)
+  if (den === dens[0]) {
+    const missing = [];
+    for (const c of meta) for (const p of c.meta.props || []) if (!p.about) missing.push(`${c.id}.${p.name}`);
+    for (const f of readdirSync(join(HERE, 'specs')).filter((f) => f.endsWith('.json')).sort()) {
+      const sp = JSON.parse(readFileSync(join(HERE, 'specs', f), 'utf8'));
+      for (const [k, v] of Object.entries(sp.params || {})) if (!(v && typeof v === 'object' && v.about)) missing.push(`specs/${f} ${k}`);
+    }
+    total++;
+    if (missing.length) { failed++; console.log(`✗ about: ${missing.length} settings have no description: ${missing.slice(0, 10).join(', ')}${missing.length > 10 ? ` +${missing.length - 10}` : ''}`); }
+  }
   const cache = !flag('--fresh') && existsSync(cachePath(den)) ? JSON.parse(readFileSync(cachePath(den), 'utf8')) : {};
   const next = {};
   for (const c of meta) {

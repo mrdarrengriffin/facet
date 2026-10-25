@@ -176,11 +176,11 @@ FW_COMPONENT(button, "Button", "components", R"({
   "frame": [240, 112],
   "icons": ["plus@icon", "check@icon", "close@icon"],
   "props": [
-    {"name": "kind", "type": "select", "options": ["primary", "secondary", "outline", "ghost"], "default": "primary"},
-    {"name": "label", "type": "text", "default": "Start"},
-    {"name": "state", "type": "select", "options": ["default", "pressed", "active", "active-pressed", "disabled"], "default": "default"},
-    {"name": "icon", "type": "select", "options": ["none", "plus", "check", "close"], "default": "none"},
-    {"name": "width", "type": "range", "min": 0, "max": 224, "step": 8, "default": 0}
+    {"name": "kind", "about": "How strong the button looks: primary is filled in the accent for the main action, secondary is a quieter fill, outline is just an edge, ghost is text only for the least important action.", "type": "select", "options": ["primary", "secondary", "outline", "ghost"], "default": "primary"},
+    {"name": "label", "about": "The words on the button.", "type": "text", "default": "Start"},
+    {"name": "state", "about": "How the button looks: default ready to tap, pressed while held, active when it is the chosen one, active-pressed while the chosen one is held, or disabled when it cannot be used.", "type": "select", "options": ["default", "pressed", "active", "active-pressed", "disabled"], "default": "default"},
+    {"name": "icon", "about": "An icon shown before the words, or none for words only.", "type": "select", "options": ["none", "plus", "check", "close"], "default": "none"},
+    {"name": "width", "about": "How wide the button is, in pixels. 0 lets it fit its words.", "type": "range", "min": 0, "max": 224, "step": 8, "default": 0}
   ],
   "variants": [
     {"label": "primary · default", "props": {}},

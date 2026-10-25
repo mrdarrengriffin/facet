@@ -1,6 +1,6 @@
 {"v": 1, "id": "aircraft", "name": "All aircraft", "rev": 1, "role": "detail",
  "params": {
-  "sample": {"type": "select", "options": ["busy", "overhead", "emergency", "quiet"], "label": "Sample", "default": "busy"}
+  "sample": {"about": "For previews only: which made-up sky to show. busy has many aircraft, overhead has one right above, emergency has one squawking an emergency, quiet has none nearby.", "type": "select", "options": ["busy", "overhead", "emergency", "quiet"], "label": "Sample", "default": "busy"}
  },
  "header": {"label": "All aircraft", "back": true},
  "layout": "list",

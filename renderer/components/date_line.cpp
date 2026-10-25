@@ -60,8 +60,8 @@ FW_COMPONENT(date_line, "Date line", "components", R"({
   "about": "The date: short (MON 19 OCT, mono caps) or long (Monday 19 October).",
   "frame": [400, 64],
   "props": [
-    {"name": "style", "type": "select", "options": ["short", "long"], "default": "short"},
-    {"name": "date", "type": "text", "default": ""}
+    {"name": "style", "about": "short is compact capitals like MON 19 OCT; long is written out like Monday 19 October.", "type": "select", "options": ["short", "long"], "default": "short"},
+    {"name": "date", "about": "For previews only: a fixed date like 2026-10-19. Leave empty for today.", "type": "text", "default": ""}
   ],
   "variants": [
     {"label": "short", "props": {"date": "2026-10-19"}},

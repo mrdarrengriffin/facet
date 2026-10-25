@@ -30,6 +30,8 @@ export const headerLinks = [
 ];
 
 const soon = (label: string): NavLink => ({ label, badge: 'Soon' });
+// the docs sidebar lists are alphabetical (Overview stays first)
+const byLabel = (a: NavLink, b: NavLink) => a.label.localeCompare(b.label);
 
 export function getSidebar(): NavGroup[] {
   return [
@@ -37,11 +39,11 @@ export function getSidebar(): NavGroup[] {
     { label: 'Concepts', links: [soon('Design tokens'), soon('Components'), soon('Firmware')] },
     {
       label: 'Design system',
-      links: [{ label: 'Overview', href: url('/foundations/') }, ...FOUNDATIONS.map((f) => ({ label: f.name, href: href(f) }))],
+      links: [{ label: 'Overview', href: url('/foundations/') }, ...FOUNDATIONS.map((f) => ({ label: f.name, href: href(f) })).sort(byLabel)],
     },
     {
       label: 'Screens',
-      links: [{ label: 'Overview', href: url('/screens/') }, ...screenGroups().flatMap((g) => g.items).map((s) => ({ label: s.name, href: screenHref(s) }))],
+      links: [{ label: 'Overview', href: url('/screens/') }, ...screenGroups().flatMap((g) => g.items).map((s) => ({ label: s.name, href: screenHref(s) })).sort(byLabel)],
     },
     {
       label: 'Project',

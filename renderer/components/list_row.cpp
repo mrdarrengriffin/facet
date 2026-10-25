@@ -253,16 +253,16 @@ FW_COMPONENT(list_row, "List row", "components", R"({
   "frame": [448, 0],
   "icons": ["bulb@icon", "speaker@icon", "tv@icon", "volume@icon", "power@icon", "house@icon", "chevron@icon"],
   "props": [
-    {"name": "title", "type": "text", "default": "Lights"},
-    {"name": "icon", "type": "select", "options": ["none", "bulb", "speaker", "tv", "volume", "power", "house"], "default": "bulb"},
-    {"name": "sub", "type": "text", "default": ""},
-    {"name": "over", "type": "text", "default": ""},
-    {"name": "trailing", "type": "select", "options": ["none", "value", "chevron", "value-chevron", "toggle"], "default": "none"},
-    {"name": "value", "type": "text", "default": ""},
-    {"name": "on", "type": "bool", "default": false},
-    {"name": "state", "type": "select", "options": ["default", "pressed", "disabled", "unavailable"], "default": "default"},
-    {"name": "divider", "type": "bool", "default": true},
-    {"name": "list", "type": "select", "options": ["single", "stack"], "default": "single"}
+    {"name": "title", "about": "The main words of the row.", "type": "text", "default": "Lights"},
+    {"name": "icon", "about": "The icon at the start of the row, or none.", "type": "select", "options": ["none", "bulb", "speaker", "tv", "volume", "power", "house"], "default": "bulb"},
+    {"name": "sub", "about": "A quieter second line under the title. Leave empty for none.", "type": "text", "default": ""},
+    {"name": "over", "about": "A small line above the title, for extra detail such as a flight's height and distance. Leave empty for none.", "type": "text", "default": ""},
+    {"name": "trailing", "about": "What sits at the right end: none, a value, a chevron to show it opens more, a value and a chevron, or an on/off switch.", "type": "select", "options": ["none", "value", "chevron", "value-chevron", "toggle"], "default": "none"},
+    {"name": "value", "about": "The value shown at the right end when there is one, such as 42%.", "type": "text", "default": ""},
+    {"name": "on", "about": "Whether the switch at the right end is on.", "type": "bool", "default": false},
+    {"name": "state", "about": "How the row looks: default ready to tap, pressed while held, disabled when it cannot be used, or unavailable when its device cannot be reached.", "type": "select", "options": ["default", "pressed", "disabled", "unavailable"], "default": "default"},
+    {"name": "divider", "about": "Draws a thin line under the row to separate it from the next.", "type": "bool", "default": true},
+    {"name": "list", "about": "single is one row on its own; stack shows a short list of rows touching, with lines between them.", "type": "select", "options": ["single", "stack"], "default": "single"}
   ],
   "variants": [
     {"label": "icon + title", "props": {}},

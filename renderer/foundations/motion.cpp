@@ -638,10 +638,10 @@ FW_COMPONENT(motion, "Motion", "foundations", R"({
   "layout": "doc",
   "frame": [480, 0],
   "props": [
-    {"name": "section", "type": "select", "options": )" FW_MOTION_SECTION_IDS R"(, "default": "easing"},
-    {"name": "reduced_motion", "type": "bool", "default": false},
-    {"name": "loop", "type": "select", "options": )" FW_MOTION_PATTERN_IDS R"(, "default": "off"},
-    {"name": "chart_lite", "type": "select", "options": ["auto", "on", "off"], "default": "auto"}
+    {"name": "section", "about": "Which part of the motion page to show, such as the easing curves or the durations.", "type": "select", "options": )" FW_MOTION_SECTION_IDS R"(, "default": "easing"},
+    {"name": "reduced_motion", "about": "Shows the motion as it looks when reduced motion is turned on.", "type": "bool", "default": false},
+    {"name": "loop", "about": "For previews only: plays one movement over and over so it can be watched. off keeps it still.", "type": "select", "options": )" FW_MOTION_PATTERN_IDS R"(, "default": "off"},
+    {"name": "chart_lite", "about": "A lighter way of drawing chart motion for smaller panels. auto picks it on the smaller panel, on and off force it.", "type": "select", "options": ["auto", "on", "off"], "default": "auto"}
   ],
   "variants": )" FW_MOTION_SECTIONS R"(
 })") {

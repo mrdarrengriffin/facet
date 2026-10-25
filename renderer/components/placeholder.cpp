@@ -19,9 +19,9 @@ FW_COMPONENT(placeholder, "Placeholder", "components", R"({
   "about": "A part that isn't built yet: a plain outline with its name and one line, never a look-alike.",
   "frame": [480, 0],
   "props": [
-    {"name": "label", "type": "text", "default": "map"},
-    {"name": "note", "type": "text", "default": "Floor plans are coming"},
-    {"name": "height", "type": "select", "options": ["card", "tile", "row"], "default": "card"}
+    {"name": "label", "about": "The name of the part that is not built yet.", "type": "text", "default": "map"},
+    {"name": "note", "about": "One line saying what is coming.", "type": "text", "default": "Floor plans are coming"},
+    {"name": "height", "about": "How tall the outline is, matching the part it stands in for: a card, a tile or a row.", "type": "select", "options": ["card", "tile", "row"], "default": "card"}
   ],
   "variants": [
     {"label": "card", "props": {}},

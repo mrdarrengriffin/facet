@@ -493,8 +493,8 @@ FW_COMPONENT(calendar_view, "Calendar view", "components", R"({
   "frame": [480, 480],
   "icons": ["screen-calendar@icon", "chevron@glyph", "chevron-left@glyph", "close@glyph", "check@icon", "back@glyph"],
   "props": [
-    {"name": "view", "type": "select", "options": ["agenda", "month"], "default": "agenda"},
-    {"name": "month", "type": "text", "default": ""}
+    {"name": "view", "about": "Which view the calendar opens on: agenda lists the next event and the days after it; month shows six weeks of days with their events.", "type": "select", "options": ["agenda", "month"], "default": "agenda"},
+    {"name": "month", "about": "Which month the month view shows, written as year and month like 2026-10. Leave empty for this month.", "type": "text", "default": ""}
   ],
   "variants": [
     {"label": "a Thursday afternoon", "props": {"now": 1792926000000}},

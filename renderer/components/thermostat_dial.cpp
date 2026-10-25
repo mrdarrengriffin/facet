@@ -253,13 +253,13 @@ FW_COMPONENT(thermostat_dial, "Thermostat dial", "components", R"({
   "about": "The thermostat ring: a tick a degree, the set point as the knob, the measured temperature as a long tick, and the heating or cooling span between them. Drag the ring to set it.",
   "frame": [336, 336],
   "props": [
-    {"name": "target", "type": "range", "min": 5, "max": 30, "step": 0.5, "default": 21},
-    {"name": "current", "type": "range", "min": 5, "max": 30, "step": 0.1, "default": 19.4},
-    {"name": "action", "type": "select", "options": ["heating", "cooling", "idle", "off"], "default": "heating"},
-    {"name": "min", "type": "range", "min": 0, "max": 20, "step": 1, "default": 5},
-    {"name": "max", "type": "range", "min": 20, "max": 40, "step": 1, "default": 30},
-    {"name": "step", "type": "select", "options": ["0.5", "1", "0.1"], "default": "0.5"},
-    {"name": "state", "type": "select", "options": ["default", "disabled", "unavailable"], "default": "default"}
+    {"name": "target", "about": "The temperature it is set to, shown as the knob on the ring.", "type": "range", "min": 5, "max": 30, "step": 0.5, "default": 21},
+    {"name": "current", "about": "The temperature measured in the room, shown as a long tick.", "type": "range", "min": 5, "max": 30, "step": 0.1, "default": 19.4},
+    {"name": "action", "about": "What it is doing now: heating or cooling colours the span between the two, idle and off leave it plain.", "type": "select", "options": ["heating", "cooling", "idle", "off"], "default": "heating"},
+    {"name": "min", "about": "The lowest temperature on the ring.", "type": "range", "min": 0, "max": 20, "step": 1, "default": 5},
+    {"name": "max", "about": "The highest temperature on the ring.", "type": "range", "min": 20, "max": 40, "step": 1, "default": 30},
+    {"name": "step", "about": "How much one step changes the set temperature, in degrees.", "type": "select", "options": ["0.5", "1", "0.1"], "default": "0.5"},
+    {"name": "state", "about": "default can be turned; disabled cannot be changed; unavailable shows the thermostat cannot be reached.", "type": "select", "options": ["default", "disabled", "unavailable"], "default": "default"}
   ],
   "opening": "Opening the screen sweeps the set point up from the minimum (Motion value, 400 ms).",
   "variants": [

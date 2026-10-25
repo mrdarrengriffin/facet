@@ -183,7 +183,7 @@ FW_COMPONENT(bins_view, "Bins view", "components", R"({
   "about": "The Bins screen's body: the next collection drawn as its bins with when to put them out, then what is coming up and every bin's rhythm.",
   "frame": [480, 0],
   "props": [
-    {"name": "sample", "type": "select", "options": ["tonight", "today", "collected", "later", "two", "none"], "default": "tonight"}
+    {"name": "sample", "about": "For previews only: which made-up collection week to show. tonight means put the bins out tonight, today means collection is today, collected means it is done, later means nothing soon, two means two bins go out together, none means no collections are known.", "type": "select", "options": ["tonight", "today", "collected", "later", "two", "none"], "default": "tonight"}
   ],
   "variants": [
     {"label": "put out tonight", "props": {}},

@@ -52,7 +52,7 @@ FW_COMPONENT(split, "Split", "components", R"({
   "frame": [480, 400],
   "slots": 4,
   "props": [
-    {"name": "outline", "type": "bool", "default": false}
+    {"name": "outline", "about": "For previews only: outlines the two columns and their top and foot areas so you can see where things go.", "type": "bool", "default": false}
   ],
   "variants": [
     {"label": "slots", "props": {"outline": true}}

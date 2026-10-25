@@ -211,9 +211,9 @@ FW_COMPONENT(accent_swatches, "Accent swatches", "components", R"({
   "about": "Pick the accent colour: one dot per accent set in the theme in use, the chosen one ringed.",
   "frame": [480, 96],
   "props": [
-    {"name": "selected", "type": "select", "options": ["current", "ember", "rose", "violet", "teal", "mono"], "default": "current"},
-    {"name": "state", "type": "select", "options": ["default", "disabled", "unavailable"], "default": "default"},
-    {"name": "context", "type": "select", "options": ["alone", "settings-row"], "default": "alone"}
+    {"name": "selected", "about": "Which accent colour is ringed as the chosen one. current follows the colour the panel uses now; the others pick that accent set by name.", "type": "select", "options": ["current", "ember", "rose", "violet", "teal", "mono"], "default": "current"},
+    {"name": "state", "about": "How the swatches look: default can be tapped; disabled is dimmed and ignores taps; unavailable shows the colour cannot be read right now.", "type": "select", "options": ["default", "disabled", "unavailable"], "default": "default"},
+    {"name": "context", "about": "Where the swatches sit: alone on their own, or settings-row tucked into the right end of a row on a settings page.", "type": "select", "options": ["alone", "settings-row"], "default": "alone"}
   ],
   "variants": [
     {"label": "default · the accent in use", "props": {}},

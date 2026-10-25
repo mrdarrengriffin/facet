@@ -95,11 +95,11 @@ FW_COMPONENT(stress, "Stress", "bench", R"({
   "about": "Bench load (not a Facet component): a ramp of moving things, one moving object of a given size, or a raw redraw of the whole screen, for the stress and capability suite.",
   "frame": [480, 480],
   "props": [
-    {"name": "kind", "type": "select", "options": ["icons", "arcs", "rects", "labels", "move", "fade", "colour", "rotate", "refresh", "fill", "blend", "blit", "blit_alpha", "text", "objects", "touch"], "default": "icons"},
-    {"name": "n", "type": "range", "min": 1, "max": 4096, "step": 1, "default": 16},
-    {"name": "size", "type": "range", "min": 0.02, "max": 1, "step": 0.01, "default": 0.35},
-    {"name": "ms", "type": "range", "min": 60, "max": 4000, "step": 10, "default": 1000},
-    {"name": "dp", "type": "range", "min": 8, "max": 96, "step": 1, "default": 16}
+    {"name": "kind", "about": "For testing only: what is drawn to load the panel, such as icons, arcs, moving shapes or a full redraw of the screen.", "type": "select", "options": ["icons", "arcs", "rects", "labels", "move", "fade", "colour", "rotate", "refresh", "fill", "blend", "blit", "blit_alpha", "text", "objects", "touch"], "default": "icons"},
+    {"name": "n", "about": "For testing only: how many things are drawn at once.", "type": "range", "min": 1, "max": 4096, "step": 1, "default": 16},
+    {"name": "size", "about": "For testing only: how big each moving thing is, as a share of the screen.", "type": "range", "min": 0.02, "max": 1, "step": 0.01, "default": 0.35},
+    {"name": "ms", "about": "For testing only: how long one movement takes, in milliseconds.", "type": "range", "min": 60, "max": 4000, "step": 10, "default": 1000},
+    {"name": "dp", "about": "For testing only: the size of each thing, in pixels.", "type": "range", "min": 8, "max": 96, "step": 1, "default": 16}
   ],
   "variants": [
     {"label": "16 animated icons", "props": {"kind": "icons", "n": 16}},

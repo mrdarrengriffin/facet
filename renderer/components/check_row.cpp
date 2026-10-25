@@ -38,9 +38,9 @@ FW_COMPONENT(check_row, "Check row", "components", R"({
   "about": "A row for one CI check: a status dot, the name and the state.",
   "frame": [256, 64],
   "props": [
-    {"name": "name", "type": "text", "default": "test"},
-    {"name": "state", "type": "select", "options": ["pass", "fail", "pending", "skipped"], "default": "pass"},
-    {"name": "width", "type": "range", "min": 160, "max": 440, "step": 8, "default": 224}
+    {"name": "name", "about": "The name of the check, such as test or build.", "type": "text", "default": "test"},
+    {"name": "state", "about": "How the check went: pass, fail, pending while it still runs, or skipped. The dot and the word change to match.", "type": "select", "options": ["pass", "fail", "pending", "skipped"], "default": "pass"},
+    {"name": "width", "about": "How wide the row is, in pixels.", "type": "range", "min": 160, "max": 440, "step": 8, "default": 224}
   ],
   "variants": [
     {"label": "pass", "props": {"name": "build"}},

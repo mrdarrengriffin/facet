@@ -122,10 +122,10 @@ FW_COMPONENT(checkbox, "Checkbox", "components", R"({
   "frame": [400, 96],
   "icons": ["check@icon"],
   "props": [
-    {"name": "check", "type": "select", "options": ["open", "doing", "done"], "default": "done"},
-    {"name": "label", "type": "text", "default": "Screens: Home, Media, Light"},
-    {"name": "interactive", "type": "bool", "default": true},
-    {"name": "state", "type": "select", "options": ["default", "disabled"], "default": "default"}
+    {"name": "check", "about": "Where the item is: open not started, doing in progress with an accent dot, or done filled with a check mark.", "type": "select", "options": ["open", "doing", "done"], "default": "done"},
+    {"name": "label", "about": "The words next to the box.", "type": "text", "default": "Screens: Home, Media, Light"},
+    {"name": "interactive", "about": "Lets a tap move the box between open and done. Off makes it read-only.", "type": "bool", "default": true},
+    {"name": "state", "about": "default can be used; disabled is greyed out and ignores taps.", "type": "select", "options": ["default", "disabled"], "default": "default"}
   ],
   "variants": [
     {"label": "open", "props": {"check": "open", "label": "Planned"}},

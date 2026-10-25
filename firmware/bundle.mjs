@@ -49,7 +49,10 @@ const coreFiles = [...ls('core', '.h'), ...coreExtra, 'core/fw_core.cpp', 'core/
 const glueFiles = ['firmware/fw_device.h', 'firmware/fw_bench.h', 'firmware/esphome_init.py', 'firmware/bundle.mjs'];  // relative to ROOT
 const srcFiles = [...ls('foundations', '.cpp'), ...ls('components', '.cpp'), ...ls('screens', '.cpp'), ...ls('bench', '.cpp')].filter((f) => !OFF.has(f));  // bench = the stress item (facet-153)
 const read = (rel) => readFileSync(join(HERE, rel));
-const core = sha(...coreFiles.flatMap((f) => [f, '\0', read(f), '\0']));
+// a house overlay (FW_SPECS_OVERLAY, tools/gen_specs.mjs) changes the baked-in specs: part of the core hash
+const ovDir = process.env.FW_SPECS_OVERLAY || '';
+const ovFiles = ovDir && existsSync(ovDir) ? readdirSync(ovDir).filter((f) => f.endsWith('.json')).sort() : [];
+const core = sha(...coreFiles.flatMap((f) => [f, '\0', read(f), '\0']), ...ovFiles.flatMap((f) => ['overlay/' + f, '\0', readFileSync(join(ovDir, f)), '\0']));
 // per-file hashes of the core too, so a host can say WHICH file changed
 const corefiles = Object.fromEntries(coreFiles.map((f) => [f, sha(read(f))]));
 const glue = sha(...glueFiles.flatMap((f) => [f, '\0', readFileSync(join(ROOT, f)), '\0']));

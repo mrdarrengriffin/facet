@@ -16,7 +16,8 @@
       "violet",
       "teal",
       "mono"
-     ]
+     ],
+     "about": "Which accent colour is ringed as the chosen one. current follows the colour the panel uses now; the others pick that accent set by name."
     },
     {
      "name": "state",
@@ -26,7 +27,8 @@
       "default",
       "disabled",
       "unavailable"
-     ]
+     ],
+     "about": "How the swatches look: default can be tapped; disabled is dimmed and ignores taps; unavailable shows the colour cannot be read right now."
     },
     {
      "name": "context",
@@ -35,7 +37,8 @@
      "options": [
       "alone",
       "settings-row"
-     ]
+     ],
+     "about": "Where the swatches sit: alone on their own, or settings-row tucked into the right end of a row on a settings page."
     }
    ],
    "events": {
@@ -60,7 +63,8 @@
       "mixed",
       "calm",
       "empty"
-     ]
+     ],
+     "about": "For previews only: which set of made-up agents to show. mixed has some needing you, calm has none needing you, empty has no agents at all."
     }
    ],
    "events": {
@@ -82,19 +86,22 @@
      "type": "range",
      "bindable": true,
      "min": 0,
-     "max": 100
+     "max": 100,
+     "about": "How far round the arc is filled, from 0 (empty) to 100 (full)."
     },
     {
      "name": "size",
      "type": "range",
      "bindable": true,
      "min": 64,
-     "max": 320
+     "max": 320,
+     "about": "How wide the arc is across, in pixels."
     },
     {
      "name": "knob",
      "type": "bool",
-     "bindable": true
+     "bindable": true,
+     "about": "Shows a round knob at the end of the filled part, the handle you drag on a dial."
     },
     {
      "name": "state",
@@ -103,7 +110,8 @@
      "options": [
       "default",
       "disabled"
-     ]
+     ],
+     "about": "default draws the arc in the accent colour; disabled greys it out to show it cannot be changed."
     }
    ],
    "events": {
@@ -128,7 +136,8 @@
       "default",
       "pressed",
       "disabled"
-     ]
+     ],
+     "about": "How the button looks: default ready to tap, pressed while a finger is on it, or disabled when there is nowhere to go back to."
     }
    ],
    "events": {
@@ -148,7 +157,8 @@
     {
      "name": "values",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The height of each bar, as numbers separated by commas, one bar per number from left to right."
     },
     {
      "name": "colour",
@@ -157,33 +167,38 @@
      "options": [
       "bands",
       "series"
-     ]
+     ],
+     "about": "How the bars are coloured: bands colours each bar by its price band (cheap, normal, peak); series draws every bar in the one chart colour."
     },
     {
      "name": "now",
      "type": "range",
      "bindable": true,
      "min": -1,
-     "max": 23
+     "max": 23,
+     "about": "Which bar is now, counting from 0 on the left; it gets the dotted now marker. -1 shows no marker."
     },
     {
      "name": "width",
      "type": "range",
      "bindable": true,
      "min": 160,
-     "max": 440
+     "max": 440,
+     "about": "How wide the whole chart is, in pixels."
     },
     {
      "name": "height",
      "type": "range",
      "bindable": true,
      "min": 48,
-     "max": 136
+     "max": 136,
+     "about": "How tall the tallest bar can be, in pixels."
     },
     {
      "name": "scrub",
      "type": "bool",
-     "bindable": true
+     "bindable": true,
+     "about": "Lets you press and drag along the chart to read the value of each bar."
     }
    ],
    "events": {
@@ -203,31 +218,36 @@
     {
      "name": "label",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The small capitals line above the number that says what it is, such as today so far."
     },
     {
      "name": "value",
      "type": "range",
      "bindable": true,
      "min": 0,
-     "max": 40
+     "max": 40,
+     "about": "The number itself. It counts up to this value when the number first appears."
     },
     {
      "name": "unit",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The unit shown after the number, such as kWh or %. Leave empty for none."
     },
     {
      "name": "decimals",
      "type": "range",
      "bindable": true,
      "min": 0,
-     "max": 3
+     "max": 3,
+     "about": "How many digits are shown after the decimal point."
     },
     {
      "name": "prefix",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "Text shown just before the number, such as a currency sign. Leave empty for none."
     },
     {
      "name": "state",
@@ -236,7 +256,8 @@
      "options": [
       "default",
       "unavailable"
-     ]
+     ],
+     "about": "default shows the number; unavailable shows a dash in place of it when the value cannot be read."
     }
    ],
    "events": {
@@ -264,7 +285,8 @@
       "later",
       "two",
       "none"
-     ]
+     ],
+     "about": "For previews only: which made-up collection week to show. tonight means put the bins out tonight, today means collection is today, collected means it is done, later means nothing soon, two means two bins go out together, none means no collections are known."
     }
    ],
    "events": {
@@ -288,7 +310,8 @@
      "options": [
       "open",
       "closed"
-     ]
+     ],
+     "about": "Whether the sheet is showing (open) or hidden off the bottom of the screen (closed). Changing it slides the sheet in or out."
     },
     {
      "name": "list",
@@ -297,24 +320,28 @@
      "options": [
       "speakers",
       "theme"
-     ]
+     ],
+     "about": "For previews only: which made-up list fills the sheet, the speakers to play on or the light and dark theme choices."
     },
     {
      "name": "title",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The heading at the top of the sheet. Leave empty to use the list's own title."
     },
     {
      "name": "selected",
      "type": "range",
      "bindable": true,
      "min": 0,
-     "max": 4
+     "max": 4,
+     "about": "Which row is chosen, counting from 0 at the top; its radio is on."
     },
     {
      "name": "screen",
      "type": "bool",
-     "bindable": true
+     "bindable": true,
+     "about": "For previews only: draws a sample screen under the sheet so you can see it dim behind the scrim."
     }
    ],
    "events": {
@@ -340,12 +367,14 @@
       "secondary",
       "outline",
       "ghost"
-     ]
+     ],
+     "about": "How strong the button looks: primary is filled in the accent for the main action, secondary is a quieter fill, outline is just an edge, ghost is text only for the least important action."
     },
     {
      "name": "label",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The words on the button."
     },
     {
      "name": "state",
@@ -357,7 +386,8 @@
       "active",
       "active-pressed",
       "disabled"
-     ]
+     ],
+     "about": "How the button looks: default ready to tap, pressed while held, active when it is the chosen one, active-pressed while the chosen one is held, or disabled when it cannot be used."
     },
     {
      "name": "icon",
@@ -368,14 +398,16 @@
       "plus",
       "check",
       "close"
-     ]
+     ],
+     "about": "An icon shown before the words, or none for words only."
     },
     {
      "name": "width",
      "type": "range",
      "bindable": true,
      "min": 0,
-     "max": 224
+     "max": 224,
+     "about": "How wide the button is, in pixels. 0 lets it fit its words."
     }
    ],
    "events": {
@@ -405,12 +437,14 @@
      "options": [
       "agenda",
       "month"
-     ]
+     ],
+     "about": "Which view the calendar opens on: agenda lists the next event and the days after it; month shows six weeks of days with their events."
     },
     {
      "name": "month",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "Which month the month view shows, written as year and month like 2026-10. Leave empty for this month."
     }
    ],
    "events": {
@@ -430,29 +464,34 @@
     {
      "name": "name",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The camera's name, shown along the bottom of the picture."
     },
     {
      "name": "time",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "When the picture was taken, shown next to the name."
     },
     {
      "name": "detect",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "What the camera saw, such as person or car, shown as a label on the box around it. Leave empty when nothing was seen."
     },
     {
      "name": "score",
      "type": "range",
      "bindable": true,
      "min": 0,
-     "max": 100
+     "max": 100,
+     "about": "How sure the camera is about what it saw, from 0 to 100 per cent."
     },
     {
      "name": "box",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "Where the box around what was seen sits on the picture: left, top, width and height as percentages, separated by commas."
     },
     {
      "name": "state",
@@ -461,7 +500,8 @@
      "options": [
       "default",
       "unavailable"
-     ]
+     ],
+     "about": "default shows the picture; unavailable shows that the camera cannot be reached."
     },
     {
      "name": "size",
@@ -470,12 +510,14 @@
      "options": [
       "tile",
       "full"
-     ]
+     ],
+     "about": "tile is a small picture for a grid of cameras; full fills the screen with one camera."
     },
     {
      "name": "entity",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "Which camera to show, by its Home Assistant entity id. Leave empty to use the sample picture."
     }
    ],
    "events": {
@@ -498,7 +540,8 @@
     {
      "name": "label",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The card's name, shown next to its icon at the top."
     },
     {
      "name": "icon",
@@ -516,7 +559,8 @@
       "calendar",
       "clock",
       "switch"
-     ]
+     ],
+     "about": "The small icon before the name, or none."
     },
     {
      "name": "size",
@@ -525,7 +569,8 @@
      "options": [
       "m",
       "l"
-     ]
+     ],
+     "about": "How much of the row the card takes: m is half the row; l is the full width."
     },
     {
      "name": "preview",
@@ -545,7 +590,8 @@
       "github",
       "energy",
       "lightning"
-     ]
+     ],
+     "about": "The small picture at the top right of the card, such as the weather now or the record that is playing, or none."
     },
     {
      "name": "mode",
@@ -554,22 +600,26 @@
      "options": [
       "value",
       "text"
-     ]
+     ],
+     "about": "What the middle of the card shows: value is a big short value such as 13°; text is a line of words such as the song playing."
     },
     {
      "name": "value",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The big value shown in the middle when the mode is value."
     },
     {
      "name": "text",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The words shown in the middle when the mode is text, such as a song title."
     },
     {
      "name": "sub",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The quieter supporting line at the bottom of the card."
     },
     {
      "name": "tone",
@@ -580,12 +630,14 @@
       "ok",
       "warn",
       "error"
-     ]
+     ],
+     "about": "The colour of the supporting line: dim for normal, ok for good news, warn for something to watch, error for a problem."
     },
     {
      "name": "accent",
      "type": "bool",
-     "bindable": true
+     "bindable": true,
+     "about": "Edges the card in the accent colour to show it needs you now, such as a timer that is running."
     },
     {
      "name": "state",
@@ -595,7 +647,8 @@
       "default",
       "pressed",
       "unavailable"
-     ]
+     ],
+     "about": "How the card looks: default ready to tap, pressed while held, or unavailable when its device cannot be reached."
     },
     {
      "name": "press",
@@ -605,7 +658,8 @@
       "fill",
       "border",
       "border-fill"
-     ]
+     ],
+     "about": "How the card shows it is being pressed: fill darkens the whole card, border lights its edge, border-fill does both."
     }
    ],
    "events": {
@@ -632,12 +686,14 @@
     {
      "name": "cells",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The cards in order, separated by commas: s is a small square tile, three to a row; m is half the row; l is the full width; h is a read-only readout, two of which share one slot."
     },
     {
      "name": "sample",
      "type": "bool",
-     "bindable": true
+     "bindable": true,
+     "about": "For previews only: fills the cells with made-up cards so the layout can be seen."
     }
    ],
    "events": {
@@ -668,67 +724,34 @@
       "github",
       "energy",
       "lightning"
-     ]
+     ],
+     "about": "Which picture to draw, as it appears at the top right of a Home card: agents, media, a dial, a switch, the clock, a timer, GitHub, energy or lightning."
     },
     {
      "name": "value",
      "type": "range",
      "bindable": true,
      "min": 0,
-     "max": 100
+     "max": 100,
+     "about": "The level the picture shows where it has one, such as how far round the dial is, from 0 to 100."
     },
     {
      "name": "on",
      "type": "bool",
-     "bindable": true
+     "bindable": true,
+     "about": "Whether the thing the picture stands for is on, such as the switch or the dial's light."
     },
     {
      "name": "unavailable",
      "type": "bool",
-     "bindable": true
+     "bindable": true,
+     "about": "Shows the picture greyed out, for a device that cannot be reached."
     },
     {
      "name": "quiet",
      "type": "bool",
-     "bindable": true
-    }
-   ],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 4,
-    "bytes_est": 640
-   }
-  },
-  "check_row": {
-   "name": "Check row",
-   "update": true,
-   "props": [
-    {
-     "name": "name",
-     "type": "text",
-     "bindable": true
-    },
-    {
-     "name": "state",
-     "type": "select",
      "bindable": true,
-     "options": [
-      "pass",
-      "fail",
-      "pending",
-      "skipped"
-     ]
-    },
-    {
-     "name": "width",
-     "type": "range",
-     "bindable": true,
-     "min": 160,
-     "max": 440
+     "about": "For the lightning picture: shows a quiet sky with no recent strikes."
     }
    ],
    "events": {
@@ -753,17 +776,20 @@
       "open",
       "doing",
       "done"
-     ]
+     ],
+     "about": "Where the item is: open not started, doing in progress with an accent dot, or done filled with a check mark."
     },
     {
      "name": "label",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The words next to the box."
     },
     {
      "name": "interactive",
      "type": "bool",
-     "bindable": true
+     "bindable": true,
+     "about": "Lets a tap move the box between open and done. Off makes it read-only."
     },
     {
      "name": "state",
@@ -772,7 +798,8 @@
      "options": [
       "default",
       "disabled"
-     ]
+     ],
+     "about": "default can be used; disabled is greyed out and ignores taps."
     }
    ],
    "events": {
@@ -783,6 +810,47 @@
    "cost": {
     "objects": 5,
     "bytes_est": 800
+   }
+  },
+  "check_row": {
+   "name": "Check row",
+   "update": true,
+   "props": [
+    {
+     "name": "name",
+     "type": "text",
+     "bindable": true,
+     "about": "The name of the check, such as test or build."
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "pass",
+      "fail",
+      "pending",
+      "skipped"
+     ],
+     "about": "How the check went: pass, fail, pending while it still runs, or skipped. The dot and the word change to match."
+    },
+    {
+     "name": "width",
+     "type": "range",
+     "bindable": true,
+     "min": 160,
+     "max": 440,
+     "about": "How wide the row is, in pixels."
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 4,
+    "bytes_est": 640
    }
   },
   "clock_face": {
@@ -799,7 +867,8 @@
       "analogue",
       "compact",
       "orbit"
-     ]
+     ],
+     "about": "Which clock to draw: hero is big digits, ring adds a dotted ring with a seconds dot going round, analogue has thin hands, compact is the small time in a header, orbit circles the time with the date."
     },
     {
      "name": "font",
@@ -808,7 +877,8 @@
      "options": [
       "mono",
       "inter"
-     ]
+     ],
+     "about": "The typeface of the digits: mono is the fixed-width face, inter the rounder everyday face."
     },
     {
      "name": "format",
@@ -817,7 +887,8 @@
      "options": [
       "24h",
       "12h"
-     ]
+     ],
+     "about": "24h shows 13:00; 12h shows 1:00 with AM or PM."
     },
     {
      "name": "date",
@@ -826,32 +897,38 @@
      "options": [
       "short",
       "long"
-     ]
+     ],
+     "about": "How the date under the time is written: short like MON 19 OCT, or long like Monday 19 October."
     },
     {
      "name": "seconds",
      "type": "bool",
-     "bindable": true
+     "bindable": true,
+     "about": "Shows the seconds as well as hours and minutes."
     },
     {
      "name": "time",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "For previews only: a fixed time to show, like 14:52:20. Leave empty for the real time."
     },
     {
      "name": "day",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "For previews only: a fixed date to show, like 2026-10-19. Leave empty for today."
     },
     {
      "name": "condition",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The weather now, shown beside the time on faces that have room, such as partly-day. Leave empty for none."
     },
     {
      "name": "temp",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The temperature now, shown with the weather. Leave empty for none."
     }
    ],
    "events": {
@@ -871,7 +948,8 @@
     {
      "name": "outline",
      "type": "bool",
-     "bindable": true
+     "bindable": true,
+     "about": "For previews only: outlines the top and foot areas so you can see where the content and the buttons go."
     }
    ],
    "events": {
@@ -895,7 +973,8 @@
      "options": [
       "box",
       "button"
-     ]
+     ],
+     "about": "What the marks sit on: box for a card or tile, button for a smaller button."
     },
     {
      "name": "corners",
@@ -904,7 +983,8 @@
      "options": [
       "all",
       "tr-bl"
-     ]
+     ],
+     "about": "Which corners get a mark: all four, or tr-bl for just top right and bottom left."
     },
     {
      "name": "state",
@@ -914,7 +994,8 @@
       "active",
       "active-pressed",
       "default"
-     ]
+     ],
+     "about": "active shows the marks; active-pressed shows them while the active control is held; default hides them."
     }
    ],
    "events": {
@@ -936,7 +1017,8 @@
      "type": "range",
      "bindable": true,
      "min": 0,
-     "max": 150
+     "max": 150,
+     "about": "The number in the badge. Above 99 it shows 99+."
     },
     {
      "name": "tone",
@@ -949,7 +1031,8 @@
       "working",
       "info",
       "idle"
-     ]
+     ],
+     "about": "The badge colour, by what the number means: ok, warn, error, working, info or idle."
     },
     {
      "name": "zero",
@@ -958,7 +1041,8 @@
      "options": [
       "muted",
       "hide"
-     ]
+     ],
+     "about": "What happens at zero: muted shows a quiet 0; hide removes the badge."
     }
    ],
    "events": {
@@ -969,67 +1053,6 @@
    "cost": {
     "objects": 2,
     "bytes_est": 320
-   }
-  },
-  "cover_visual": {
-   "name": "Cover visual",
-   "update": true,
-   "props": [
-    {
-     "name": "kind",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "roller",
-      "venetian",
-      "curtain"
-     ]
-    },
-    {
-     "name": "position",
-     "type": "range",
-     "bindable": true,
-     "min": 0,
-     "max": 100
-    },
-    {
-     "name": "tilt",
-     "type": "range",
-     "bindable": true,
-     "min": 0,
-     "max": 100
-    },
-    {
-     "name": "heading",
-     "type": "range",
-     "bindable": true,
-     "min": -1,
-     "max": 100
-    },
-    {
-     "name": "draggable",
-     "type": "bool",
-     "bindable": true
-    },
-    {
-     "name": "state",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "default",
-      "disabled",
-      "unavailable"
-     ]
-    }
-   ],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 6,
-    "bytes_est": 960
    }
   },
   "covers_view": {
@@ -1044,36 +1067,42 @@
       "roller",
       "venetian",
       "curtain"
-     ]
+     ],
+     "about": "What hangs in the window: a roller blind, a Venetian blind with slats, or curtains."
     },
     {
      "name": "position",
      "type": "range",
      "bindable": true,
      "min": 0,
-     "max": 100
+     "max": 100,
+     "about": "How open the cover is, from 0 (closed) to 100 (fully open)."
     },
     {
      "name": "tilt",
      "type": "range",
      "bindable": true,
      "min": 0,
-     "max": 100
+     "max": 100,
+     "about": "For Venetian blinds: how far the slats are turned, from 0 (shut) to 100 (fully open)."
     },
     {
      "name": "device_class",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The kind of cover as Home Assistant names it, such as curtain or blind. When set it picks the drawing: curtain draws curtains, a cover that tilts draws a Venetian blind, anything else a roller blind."
     },
     {
      "name": "cover",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The cover this screen controls, by its Home Assistant entity id."
     },
     {
      "name": "covers",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "Every cover you can switch between on this screen, as entity ids separated by commas."
     },
     {
      "name": "state",
@@ -1085,7 +1114,8 @@
       "opening",
       "closing",
       "unavailable"
-     ]
+     ],
+     "about": "What the cover is doing: open, closed, opening, closing, or unavailable when it cannot be reached."
     }
    ],
    "events": {
@@ -1104,6 +1134,73 @@
     "bytes_est": 6400
    }
   },
+  "cover_visual": {
+   "name": "Cover visual",
+   "update": true,
+   "props": [
+    {
+     "name": "kind",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "roller",
+      "venetian",
+      "curtain"
+     ],
+     "about": "What hangs in the window: a roller blind, a Venetian blind with slats, or a pair of curtains."
+    },
+    {
+     "name": "position",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 100,
+     "about": "How open the cover is, from 0 (closed) to 100 (fully open)."
+    },
+    {
+     "name": "tilt",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 100,
+     "about": "For Venetian blinds: how far the slats are turned, from 0 (shut) to 100 (fully open)."
+    },
+    {
+     "name": "heading",
+     "type": "range",
+     "bindable": true,
+     "min": -1,
+     "max": 100,
+     "about": "Where the cover is moving to while it moves, from 0 to 100, shown as a faint target. -1 means it is not moving."
+    },
+    {
+     "name": "draggable",
+     "type": "bool",
+     "bindable": true,
+     "about": "Lets you drag the blind's edge, or the curtains sideways, to move the cover."
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "default",
+      "disabled",
+      "unavailable"
+     ],
+     "about": "default can be dragged; disabled cannot be moved; unavailable shows the cover cannot be reached."
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 6,
+    "bytes_est": 960
+   }
+  },
   "date_line": {
    "name": "Date line",
    "update": true,
@@ -1115,12 +1212,14 @@
      "options": [
       "short",
       "long"
-     ]
+     ],
+     "about": "short is compact capitals like MON 19 OCT; long is written out like Monday 19 October."
     },
     {
      "name": "date",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "For previews only: a fixed date like 2026-10-19. Leave empty for today."
     }
    ],
    "events": {
@@ -1142,43 +1241,50 @@
      "type": "range",
      "bindable": true,
      "min": -20,
-     "max": 200
+     "max": 200,
+     "about": "The value the dial is set to, between its lowest and highest."
     },
     {
      "name": "min",
      "type": "range",
      "bindable": true,
      "min": -20,
-     "max": 100
+     "max": 100,
+     "about": "The lowest value the dial goes down to."
     },
     {
      "name": "max",
      "type": "range",
      "bindable": true,
      "min": 1,
-     "max": 200
+     "max": 200,
+     "about": "The highest value the dial goes up to."
     },
     {
      "name": "on",
      "type": "bool",
-     "bindable": true
+     "bindable": true,
+     "about": "Whether the thing it controls is on. Off dims the dial; the button in the middle switches it."
     },
     {
      "name": "caption",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The word under the value that says what it is, such as Brightness."
     },
     {
      "name": "unit",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The unit shown after the value, such as % or °."
     },
     {
      "name": "step",
      "type": "range",
      "bindable": true,
      "min": 0.5,
-     "max": 25
+     "max": 25,
+     "about": "How much one step of the dial changes the value."
     },
     {
      "name": "state",
@@ -1188,7 +1294,8 @@
       "default",
       "disabled",
       "unavailable"
-     ]
+     ],
+     "about": "default can be turned; disabled cannot be changed; unavailable shows the device cannot be reached."
     }
    ],
    "events": {
@@ -1219,28 +1326,32 @@
      "type": "range",
      "bindable": true,
      "min": 0,
-     "max": 10
+     "max": 10,
+     "about": "The size of the first part of the ring."
     },
     {
      "name": "b",
      "type": "range",
      "bindable": true,
      "min": 0,
-     "max": 10
+     "max": 10,
+     "about": "The size of the second part of the ring."
     },
     {
      "name": "c",
      "type": "range",
      "bindable": true,
      "min": 0,
-     "max": 10
+     "max": 10,
+     "about": "The size of the third part of the ring."
     },
     {
      "name": "size",
      "type": "range",
      "bindable": true,
      "min": 64,
-     "max": 160
+     "max": 160,
+     "about": "How wide the ring is across, in pixels."
     }
    ],
    "events": {
@@ -1265,17 +1376,20 @@
       "done",
       "alert",
       "pr"
-     ]
+     ],
+     "about": "The icon at the top: done for all clear, alert for a problem, pr for pull requests."
     },
     {
      "name": "title",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The short heading that says nothing is here."
     },
     {
      "name": "body",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "One quieter line under the heading that explains it."
     },
     {
      "name": "tone",
@@ -1288,7 +1402,8 @@
       "working",
       "info",
       "idle"
-     ]
+     ],
+     "about": "The icon's colour, by what the emptiness means: ok, warn, error, working, info or idle."
     }
    ],
    "events": {
@@ -1343,23 +1458,34 @@
       "screen-covers",
       "screen-timer",
       "screen-media",
-      "screen-weather"
-     ]
+      "screen-weather",
+      "thermometer",
+      "door",
+      "window",
+      "person",
+      "alert",
+      "bolt",
+      "house"
+     ],
+     "about": "The icon on the tile, picked for the kind of thing it is, such as a bulb for a light or a door for a door sensor."
     },
     {
      "name": "label",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The thing's name on the tile."
     },
     {
      "name": "status",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The short state under the name, such as 64% or Off."
     },
     {
      "name": "on",
      "type": "bool",
-     "bindable": true
+     "bindable": true,
+     "about": "Whether the thing is on. On tiles are lit in the accent colour."
     },
     {
      "name": "act",
@@ -1367,8 +1493,10 @@
      "bindable": true,
      "options": [
       "toggle",
-      "open"
-     ]
+      "open",
+      "none"
+     ],
+     "about": "What a tap does: toggle switches it on or off, open opens its own screen, none does nothing."
     },
     {
      "name": "state",
@@ -1378,7 +1506,8 @@
       "default",
       "pressed",
       "unavailable"
-     ]
+     ],
+     "about": "How the tile looks: default ready to tap, pressed while held, or unavailable when the device cannot be reached."
     },
     {
      "name": "press",
@@ -1388,7 +1517,8 @@
       "fill",
       "border",
       "border-fill"
-     ]
+     ],
+     "about": "How the tile shows it is being pressed: fill darkens the whole tile, border lights its edge, border-fill does both."
     }
    ],
    "events": {
@@ -1412,7 +1542,8 @@
     {
      "name": "event",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "What happened, as time, action and who did it separated by bars, like 09:03|locked|Alex. A jammed lock shows in the error colour."
     }
    ],
    "events": {
@@ -1437,39 +1568,46 @@
       "dot",
       "code",
       "number"
-     ]
+     ],
+     "about": "How the car is drawn: a plain dot, the driver's three-letter code, or the car number."
     },
     {
      "name": "code",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The driver's three-letter code, such as NOR."
     },
     {
      "name": "num",
      "type": "range",
      "bindable": true,
      "min": 1,
-     "max": 99
+     "max": 99,
+     "about": "The car's racing number."
     },
     {
      "name": "colour",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The team colour, as a hex colour like #F47600."
     },
     {
      "name": "lead",
      "type": "bool",
-     "bindable": true
+     "bindable": true,
+     "about": "Marks the car as the race leader."
     },
     {
      "name": "label",
      "type": "bool",
-     "bindable": true
+     "bindable": true,
+     "about": "Shows the driver's code in a tag beside the car."
     },
     {
      "name": "pit",
      "type": "bool",
-     "bindable": true
+     "bindable": true,
+     "about": "Shows the car is in the pit lane."
     },
     {
      "name": "on",
@@ -1478,7 +1616,8 @@
      "options": [
       "bg",
       "surface"
-     ]
+     ],
+     "about": "What the car sits on, so its edge stands out: bg for the screen background, surface for a card."
     }
    ],
    "events": {
@@ -1523,7 +1662,8 @@
       "us-2023",
       "qa-2004",
       "ae-2009"
-     ]
+     ],
+     "about": "Which circuit to draw, by its country and the year the layout was first used, such as gb-1948 for Silverstone."
     },
     {
      "name": "marker",
@@ -1533,7 +1673,8 @@
       "dot",
       "code",
       "number"
-     ]
+     ],
+     "about": "How each car is drawn: a plain dot, the driver's code, or the car number."
     },
     {
      "name": "labels",
@@ -1545,7 +1686,8 @@
       "top 3",
       "battles",
       "all"
-     ]
+     ],
+     "about": "Which cars get a name tag: none, the leader, the top 3, cars close to each other in a battle, or all."
     },
     {
      "name": "moments",
@@ -1554,12 +1696,14 @@
      "options": [
       "tags",
       "off"
-     ]
+     ],
+     "about": "tags pins race moments such as overtakes and pit stops to the track; off hides them."
     },
     {
      "name": "race_control",
      "type": "bool",
-     "bindable": true
+     "bindable": true,
+     "about": "Shows the race director's latest message over the circuit."
     },
     {
      "name": "orientation",
@@ -1568,7 +1712,8 @@
      "options": [
       "broadcast",
       "north"
-     ]
+     ],
+     "about": "broadcast turns the track the way TV shows it; north puts north at the top."
     },
     {
      "name": "lite",
@@ -1578,12 +1723,14 @@
       "auto",
       "on",
       "off"
-     ]
+     ],
+     "about": "A lighter way of drawing for smaller panels: cars step instead of gliding. auto picks it on the smaller panel, on and off force it."
     },
     {
      "name": "sim",
      "type": "bool",
-     "bindable": true
+     "bindable": true,
+     "about": "For previews only: runs a made-up race so the cars move."
     },
     {
      "name": "speed",
@@ -1593,7 +1740,8 @@
       "1x",
       "10x",
       "60x"
-     ]
+     ],
+     "about": "For previews only: how fast the made-up race runs, real time or 10 or 60 times faster."
     },
     {
      "name": "jump",
@@ -1614,40 +1762,46 @@
       "retirement",
       "final lap",
       "chequered"
-     ]
+     ],
+     "about": "For previews only: skips the made-up race to a moment such as a safety car or the last lap."
     },
     {
      "name": "seed",
      "type": "range",
      "bindable": true,
      "min": 1,
-     "max": 20
+     "max": 20,
+     "about": "For previews only: picks a different made-up race; the same number always gives the same race."
     },
     {
      "name": "cars",
      "type": "range",
      "bindable": true,
      "min": 2,
-     "max": 22
+     "max": 22,
+     "about": "For previews only: how many cars are in the made-up race."
     },
     {
      "name": "width",
      "type": "range",
      "bindable": true,
      "min": 240,
-     "max": 448
+     "max": 448,
+     "about": "How wide the drawing is, in pixels."
     },
     {
      "name": "height",
      "type": "range",
      "bindable": true,
      "min": 200,
-     "max": 448
+     "max": 448,
+     "about": "How tall the drawing is, in pixels."
     },
     {
      "name": "feed",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The live race data sent to the panel. Leave empty to use the made-up race."
     }
    ],
    "events": {
@@ -1680,7 +1834,8 @@
       "sc",
       "vsc",
       "none"
-     ]
+     ],
+     "about": "Which flag to show: green, yellow, double_yellow, red, blue, bw (black and white for a warning), black, chequered, sc for the safety car, vsc for the virtual safety car, or none."
     },
     {
      "name": "size",
@@ -1689,7 +1844,8 @@
      "options": [
       "sm",
       "lg"
-     ]
+     ],
+     "about": "sm is a small flag for a line of text; lg is a big one for a card."
     }
    ],
    "events": {
@@ -1711,19 +1867,22 @@
      "type": "range",
      "bindable": true,
      "min": 1,
-     "max": 4
+     "max": 4,
+     "about": "How many of the latest messages are shown at once."
     },
     {
      "name": "width",
      "type": "range",
      "bindable": true,
      "min": 240,
-     "max": 448
+     "max": 448,
+     "about": "How wide the message list is, in pixels."
     },
     {
      "name": "sim",
      "type": "bool",
-     "bindable": true
+     "bindable": true,
+     "about": "For previews only: runs a made-up race so messages arrive."
     },
     {
      "name": "speed",
@@ -1733,7 +1892,8 @@
       "1x",
       "10x",
       "60x"
-     ]
+     ],
+     "about": "For previews only: how fast the made-up race runs, real time or 10 or 60 times faster."
     },
     {
      "name": "jump",
@@ -1750,19 +1910,22 @@
       "restart",
       "fastest lap",
       "chequered"
-     ]
+     ],
+     "about": "For previews only: skips the made-up race to a moment such as a penalty or a red flag."
     },
     {
      "name": "seed",
      "type": "range",
      "bindable": true,
      "min": 1,
-     "max": 20
+     "max": 20,
+     "about": "For previews only: picks a different made-up race; the same number always gives the same race."
     },
     {
      "name": "feed",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The live race data sent to the panel. Leave empty to use the made-up race."
     }
    ],
    "events": {
@@ -1787,19 +1950,22 @@
       "pill",
       "card",
       "banner"
-     ]
+     ],
+     "about": "How it is laid out: pill is a small tag, card is a box with more room, banner is a wide strip."
     },
     {
      "name": "width",
      "type": "range",
      "bindable": true,
      "min": 240,
-     "max": 448
+     "max": 448,
+     "about": "How wide it is, in pixels."
     },
     {
      "name": "sim",
      "type": "bool",
-     "bindable": true
+     "bindable": true,
+     "about": "For previews only: runs a made-up race so the status changes."
     },
     {
      "name": "speed",
@@ -1809,7 +1975,8 @@
       "1x",
       "10x",
       "60x"
-     ]
+     ],
+     "about": "For previews only: how fast the made-up race runs, real time or 10 or 60 times faster."
     },
     {
      "name": "jump",
@@ -1825,19 +1992,22 @@
       "restart",
       "final lap",
       "chequered"
-     ]
+     ],
+     "about": "For previews only: skips the made-up race to a moment such as a yellow flag or the chequered flag."
     },
     {
      "name": "seed",
      "type": "range",
      "bindable": true,
      "min": 1,
-     "max": 20
+     "max": 20,
+     "about": "For previews only: picks a different made-up race; the same number always gives the same race."
     },
     {
      "name": "feed",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The live race data sent to the panel. Leave empty to use the made-up race."
     }
    ],
    "events": {
@@ -1859,14 +2029,16 @@
      "type": "range",
      "bindable": true,
      "min": 3,
-     "max": 22
+     "max": 22,
+     "about": "How many drivers are listed."
     },
     {
      "name": "from",
      "type": "range",
      "bindable": true,
      "min": 1,
-     "max": 20
+     "max": 20,
+     "about": "The position the list starts at, so you can show the middle or the back of the field."
     },
     {
      "name": "density",
@@ -1875,7 +2047,8 @@
      "options": [
       "normal",
       "compact"
-     ]
+     ],
+     "about": "normal gives each driver a comfortable row; compact fits more rows in the same height."
     },
     {
      "name": "stat",
@@ -1885,19 +2058,22 @@
       "badges",
       "interval",
       "tyre"
-     ]
+     ],
+     "about": "The small fact at the end of each row: badges for fastest lap and pit stops, interval for the gap to the car ahead, or tyre for the tyre in use."
     },
     {
      "name": "width",
      "type": "range",
      "bindable": true,
      "min": 176,
-     "max": 320
+     "max": 320,
+     "about": "How wide the list is, in pixels."
     },
     {
      "name": "sim",
      "type": "bool",
-     "bindable": true
+     "bindable": true,
+     "about": "For previews only: runs a made-up race so the order changes."
     },
     {
      "name": "speed",
@@ -1907,7 +2083,8 @@
       "1x",
       "10x",
       "60x"
-     ]
+     ],
+     "about": "For previews only: how fast the made-up race runs, real time or 10 or 60 times faster."
     },
     {
      "name": "jump",
@@ -1926,14 +2103,16 @@
       "retirement",
       "final lap",
       "chequered"
-     ]
+     ],
+     "about": "For previews only: skips the made-up race to a moment such as an overtake or a pit stop."
     },
     {
      "name": "seed",
      "type": "range",
      "bindable": true,
      "min": 1,
-     "max": 20
+     "max": 20,
+     "about": "For previews only: picks a different made-up race; the same number always gives the same race."
     },
     {
      "name": "track",
@@ -1945,12 +2124,14 @@
       "gb-1948",
       "be-1925",
       "it-1922"
-     ]
+     ],
+     "about": "For previews only: which circuit the made-up race is run on."
     },
     {
      "name": "feed",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The live race data sent to the panel. Leave empty to use the made-up race."
     }
    ],
    "events": {
@@ -1975,7 +2156,8 @@
       "box",
       "button",
       "play"
-     ]
+     ],
+     "about": "What the outline goes round: box for a card or tile, button for a button, play for the round play button."
     },
     {
      "name": "offset",
@@ -1986,12 +2168,14 @@
       "none",
       "space-2",
       "space-4"
-     ]
+     ],
+     "about": "The gap between the control and its outline: the usual focus gap, none for no gap, or a small or larger step."
     },
     {
      "name": "disabled",
      "type": "bool",
-     "bindable": true
+     "bindable": true,
+     "about": "Greys the outline, for a chosen control that cannot be used right now."
     }
    ],
    "events": {
@@ -2013,12 +2197,14 @@
      "type": "range",
      "bindable": true,
      "min": 280,
-     "max": 432
+     "max": 432,
+     "about": "How wide the pitch is, in pixels."
     },
     {
      "name": "sim",
      "type": "bool",
-     "bindable": true
+     "bindable": true,
+     "about": "For previews only: runs a made-up match so the score and events change."
     },
     {
      "name": "speed",
@@ -2028,7 +2214,8 @@
       "1x",
       "10x",
       "60x"
-     ]
+     ],
+     "about": "For previews only: how fast the made-up match runs, real time or 10 or 60 times faster."
     },
     {
      "name": "jump",
@@ -2043,19 +2230,22 @@
       "half time",
       "added time",
       "full time"
-     ]
+     ],
+     "about": "For previews only: skips the made-up match to a moment such as a goal, a card or half time."
     },
     {
      "name": "seed",
      "type": "range",
      "bindable": true,
      "min": 1,
-     "max": 20
+     "max": 20,
+     "about": "For previews only: picks a different made-up match; the same number always gives the same match."
     },
     {
      "name": "feed",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The live match data sent to the panel. Leave empty to use the made-up match."
     }
    ],
    "events": {
@@ -2097,7 +2287,8 @@
       "m1",
       "m2",
       "m3"
-     ]
+     ],
+     "about": "For previews only: which made-up pull request to show. n1 to n3 are ones that need your review; m1 to m3 are your own."
     }
    ],
    "events": {
@@ -2135,7 +2326,8 @@
      "options": [
       "start",
       "end"
-     ]
+     ],
+     "about": "Which side the parts line up from: start is the left, end is the right."
     },
     {
      "name": "flow",
@@ -2144,7 +2336,8 @@
      "options": [
       "wrap",
       "stack"
-     ]
+     ],
+     "about": "wrap lays the parts side by side and starts a new line when the row is full; stack puts each part under the last."
     },
     {
      "name": "space",
@@ -2155,14 +2348,16 @@
       "group",
       "block",
       "near"
-     ]
+     ],
+     "about": "The gap between the parts: none, group for related parts, block for separate blocks, near for parts that belong tightly together."
     },
     {
      "name": "sample",
      "type": "range",
      "bindable": true,
      "min": 0,
-     "max": 6
+     "max": 6,
+     "about": "For previews only: how many made-up tiles fill the row. 0 shows the empty layout."
     }
    ],
    "events": {
@@ -2182,32 +2377,38 @@
     {
      "name": "label",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The screen's name, shown after the back button."
     },
     {
      "name": "back",
      "type": "bool",
-     "bindable": true
+     "bindable": true,
+     "about": "Shows the back button at the start, to return to the screen before."
     },
     {
      "name": "clock",
      "type": "bool",
-     "bindable": true
+     "bindable": true,
+     "about": "Shows the time at the end of the row."
     },
     {
      "name": "time",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "For previews only: a fixed time to show, like 21:42. Leave empty for the real time."
     },
     {
      "name": "settings",
      "type": "bool",
-     "bindable": true
+     "bindable": true,
+     "about": "Shows the settings button before the time, as on Home."
     },
     {
      "name": "chip",
      "type": "bool",
-     "bindable": true
+     "bindable": true,
+     "about": "For previews only: shows a sample status tag in the row, to see how extra items fit."
     }
    ],
    "events": {
@@ -2227,22 +2428,26 @@
     {
      "name": "n",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The big number, such as how many things need you."
     },
     {
      "name": "label",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The words next to the number that say what it counts."
     },
     {
      "name": "line",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "One quieter line with the detail, under the label."
     },
     {
      "name": "accent",
      "type": "bool",
-     "bindable": true
+     "bindable": true,
+     "about": "Draws the number in the accent colour, for when it matters now."
     },
     {
      "name": "role",
@@ -2251,7 +2456,8 @@
      "options": [
       "hero",
       "display"
-     ]
+     ],
+     "about": "hero is the largest number for a screen's main figure; display is a step smaller."
     },
     {
      "name": "label_type",
@@ -2260,7 +2466,8 @@
      "options": [
       "label",
       "title"
-     ]
+     ],
+     "about": "How the words next to the number are written: label in small capitals, or title in larger plain text."
     },
     {
      "name": "state",
@@ -2269,7 +2476,8 @@
      "options": [
       "default",
       "unavailable"
-     ]
+     ],
+     "about": "default shows the number; unavailable shows a dash when the value cannot be read."
     }
    ],
    "events": {
@@ -2289,12 +2497,14 @@
     {
      "name": "label",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The words on the button, such as Hold to open."
     },
     {
      "name": "value",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The action the button sends when the hold completes, such as open."
     },
     {
      "name": "width",
@@ -2303,21 +2513,24 @@
      "options": [
       "fill",
       "hug"
-     ]
+     ],
+     "about": "fill stretches the button across the space it is in; hug fits it to its words."
     },
     {
      "name": "features",
      "type": "range",
      "bindable": true,
      "min": 0,
-     "max": 65535
+     "max": 65535,
+     "about": "What the device can do, as Home Assistant reports it in its supported features number."
     },
     {
      "name": "mask",
      "type": "range",
      "bindable": true,
      "min": 0,
-     "max": 65535
+     "max": 65535,
+     "about": "The feature this button needs. If the device's features do not include it, the button is hidden. 0 always shows it."
     },
     {
      "name": "state",
@@ -2326,7 +2539,8 @@
      "options": [
       "default",
       "disabled"
-     ]
+     ],
+     "about": "default can be held; disabled is greyed out and cannot be used."
     }
    ],
    "events": {
@@ -2354,7 +2568,8 @@
       "play",
       "round",
       "square"
-     ]
+     ],
+     "about": "The button's shape: play is the large round play and pause button, round is a smaller circle, square has rounded corners."
     },
     {
      "name": "icon",
@@ -2368,7 +2583,8 @@
       "close",
       "check",
       "back"
-     ]
+     ],
+     "about": "The icon on the button, such as next, previous, play or close."
     },
     {
      "name": "state",
@@ -2381,7 +2597,8 @@
       "active-pressed",
       "disabled",
       "unavailable"
-     ]
+     ],
+     "about": "How the button looks: default ready to tap, pressed while held, active when it is switched on, active-pressed while the active one is held, disabled when it cannot be used, or unavailable when its device cannot be reached."
     }
    ],
    "events": {
@@ -2401,37 +2618,44 @@
     {
      "name": "plan",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The rooms of the floor plan: for each room its name, its number in the vacuum, its corner points in metres and where its name goes, rooms separated by semicolons."
     },
     {
      "name": "dock",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "Where the charging dock sits on the plan and which way it faces, in metres."
     },
     {
      "name": "robot",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "Where the robot is on the plan, as x and y in metres."
     },
     {
      "name": "transform",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "How to turn the robot's own position numbers into metres on the plan, as six numbers. Leave empty when they already match."
     },
     {
      "name": "trail",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The path the robot has taken, as x,y points in metres separated by spaces."
     },
     {
      "name": "picked",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The rooms picked for the next clean, as name:number pairs separated by commas. Picked rooms are edged in the accent."
     },
     {
      "name": "here",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The room the robot is in now; its edge is lit."
     },
     {
      "name": "state",
@@ -2445,7 +2669,8 @@
       "idle",
       "error",
       "unavailable"
-     ]
+     ],
+     "about": "What the robot is doing: docked, cleaning, returning to the dock, paused, idle, error, or unavailable when it cannot be reached."
     }
    ],
    "events": {
@@ -2468,7 +2693,8 @@
     {
      "name": "text",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The words to show."
     },
     {
      "name": "type",
@@ -2488,7 +2714,8 @@
       "date",
       "weather",
       "number"
-     ]
+     ],
+     "about": "The text style, from the large title down to small meta text and capitals, as set in the type scale."
     },
     {
      "name": "colour",
@@ -2503,7 +2730,8 @@
       "warn",
       "error",
       "disabled"
-     ]
+     ],
+     "about": "The text colour: text for normal, text-dim for quieter, accent-text for the accent, blue, ok, warn, error, or disabled."
     }
    ],
    "events": {
@@ -2523,19 +2751,22 @@
     {
      "name": "items",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The colour keys, as words separated by commas, each one shown with its swatch, such as cheap 13.5p."
     },
     {
      "name": "ticks",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The labels along the bottom axis, separated by commas, spread evenly from left to right."
     },
     {
      "name": "width",
      "type": "range",
      "bindable": true,
      "min": 160,
-     "max": 440
+     "max": 440,
+     "about": "How wide the legend is, in pixels."
     }
    ],
    "events": {
@@ -2557,14 +2788,16 @@
      "type": "range",
      "bindable": true,
      "min": -1,
-     "max": 100
+     "max": 100,
+     "about": "How full the bar is, from 0 to 100. -1 means the level is not known and shows an empty bar."
     },
     {
      "name": "mark",
      "type": "range",
      "bindable": true,
      "min": -1,
-     "max": 100
+     "max": 100,
+     "about": "Where the threshold line sits, from 0 to 100, such as the point a plant needs water. -1 hides it."
     },
     {
      "name": "tone",
@@ -2575,14 +2808,16 @@
       "steel",
       "blue",
       "off"
-     ]
+     ],
+     "about": "The fill colour: accent, steel, blue, or off for a grey fill."
     },
     {
      "name": "width",
      "type": "range",
      "bindable": true,
      "min": 0,
-     "max": 480
+     "max": 480,
+     "about": "How wide the bar is, in pixels. 0 fills the space it is in."
     }
    ],
    "events": {
@@ -2602,19 +2837,22 @@
     {
      "name": "demo",
      "type": "bool",
-     "bindable": true
+     "bindable": true,
+     "about": "For previews only: plays a made-up storm so strikes appear."
     },
     {
      "name": "quiet",
      "type": "bool",
-     "bindable": true
+     "bindable": true,
+     "about": "For previews only: shows a quiet sky with no recent strikes."
     },
     {
      "name": "size",
      "type": "range",
      "bindable": true,
      "min": 192,
-     "max": 320
+     "max": 320,
+     "about": "How wide the radar is across, in pixels."
     },
     {
      "name": "unit",
@@ -2623,7 +2861,8 @@
      "options": [
       "km",
       "mi"
-     ]
+     ],
+     "about": "Whether distances are shown in kilometres or miles."
     }
    ],
    "events": {
@@ -2643,12 +2882,14 @@
     {
      "name": "demo",
      "type": "bool",
-     "bindable": true
+     "bindable": true,
+     "about": "For previews only: plays a made-up storm so strikes appear."
     },
     {
      "name": "quiet",
      "type": "bool",
-     "bindable": true
+     "bindable": true,
+     "about": "For previews only: shows a quiet sky with no recent strikes."
     },
     {
      "name": "unit",
@@ -2657,7 +2898,8 @@
      "options": [
       "km",
       "mi"
-     ]
+     ],
+     "about": "Whether distances are shown in kilometres or miles."
     },
     {
      "name": "size",
@@ -2666,7 +2908,8 @@
      "options": [
       "screen",
       "weather"
-     ]
+     ],
+     "about": "screen fills the Lightning screen; weather fits it inside the Weather screen's lightning view."
     }
    ],
    "events": {
@@ -2686,7 +2929,8 @@
     {
      "name": "title",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The main words of the row."
     },
     {
      "name": "icon",
@@ -2700,17 +2944,20 @@
       "volume",
       "power",
       "house"
-     ]
+     ],
+     "about": "The icon at the start of the row, or none."
     },
     {
      "name": "sub",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "A quieter second line under the title. Leave empty for none."
     },
     {
      "name": "over",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "A small line above the title, for extra detail such as a flight's height and distance. Leave empty for none."
     },
     {
      "name": "trailing",
@@ -2722,17 +2969,20 @@
       "chevron",
       "value-chevron",
       "toggle"
-     ]
+     ],
+     "about": "What sits at the right end: none, a value, a chevron to show it opens more, a value and a chevron, or an on/off switch."
     },
     {
      "name": "value",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The value shown at the right end when there is one, such as 42%."
     },
     {
      "name": "on",
      "type": "bool",
-     "bindable": true
+     "bindable": true,
+     "about": "Whether the switch at the right end is on."
     },
     {
      "name": "state",
@@ -2743,12 +2993,14 @@
       "pressed",
       "disabled",
       "unavailable"
-     ]
+     ],
+     "about": "How the row looks: default ready to tap, pressed while held, disabled when it cannot be used, or unavailable when its device cannot be reached."
     },
     {
      "name": "divider",
      "type": "bool",
-     "bindable": true
+     "bindable": true,
+     "about": "Draws a thin line under the row to separate it from the next."
     },
     {
      "name": "list",
@@ -2757,7 +3009,8 @@
      "options": [
       "single",
       "stack"
-     ]
+     ],
+     "about": "single is one row on its own; stack shows a short list of rows touching, with lines between them."
     }
    ],
    "events": {
@@ -2798,7 +3051,8 @@
       "open",
       "opening",
       "unavailable"
-     ]
+     ],
+     "about": "The lock's state: locked, unlocked, locking or unlocking while it moves, jammed when it is stuck, open or opening for a door that can open, or unavailable when it cannot be reached. The ring and padlock change to match."
     }
    ],
    "events": {
@@ -2825,7 +3079,8 @@
      "options": [
       "mood",
       "agent"
-     ]
+     ],
+     "about": "How the mood is chosen: mood picks it directly; agent works it out from what an agent is doing."
     },
     {
      "name": "mood",
@@ -2838,7 +3093,8 @@
       "needs",
       "error",
       "sleeping"
-     ]
+     ],
+     "about": "The mascot's mood when picked directly: idle, working, done, needs you, error or sleeping."
     },
     {
      "name": "kind",
@@ -2849,12 +3105,14 @@
       "needs",
       "done",
       "idle"
-     ]
+     ],
+     "about": "When the mood comes from an agent: what the agent is doing, working, needs you, done or idle."
     },
     {
      "name": "status",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "When the mood comes from an agent: its status line, such as done 40m ago. A task done long ago turns the mascot idle."
     },
     {
      "name": "colour",
@@ -2865,14 +3123,16 @@
       "accent",
       "steel",
       "warn"
-     ]
+     ],
+     "about": "The mascot's colour: mood uses the mood's own colour, or accent, steel or warn for one fixed colour."
     },
     {
      "name": "scale",
      "type": "range",
      "bindable": true,
      "min": 1,
-     "max": 4
+     "max": 4,
+     "about": "How big the mascot is drawn, from 1 (screen size) to 4 times."
     }
    ],
    "events": {
@@ -2894,12 +3154,14 @@
      "type": "range",
      "bindable": true,
      "min": 0,
-     "max": 100
+     "max": 100,
+     "about": "How far through the track it is, from 0 to 100, drawn as the accent arc round the record."
     },
     {
      "name": "playing",
      "type": "bool",
-     "bindable": true
+     "bindable": true,
+     "about": "Whether it is playing. While it plays the blue marker circles the record."
     },
     {
      "name": "size",
@@ -2908,7 +3170,8 @@
      "options": [
       "256",
       "320"
-     ]
+     ],
+     "about": "How wide the disc is, in pixels: 256 or 320."
     }
    ],
    "events": {
@@ -2935,31 +3198,36 @@
       "idle",
       "off",
       "unavailable"
-     ]
+     ],
+     "about": "What the player is doing: playing, paused, idle, off, or unavailable when it cannot be reached."
     },
     {
      "name": "title",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The track title."
     },
     {
      "name": "artist",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The artist of the track."
     },
     {
      "name": "progress",
      "type": "range",
      "bindable": true,
      "min": 0,
-     "max": 100
+     "max": 100,
+     "about": "How far through the track it is, from 0 to 100, when the exact position is not known."
     },
     {
      "name": "volume",
      "type": "range",
      "bindable": true,
      "min": 0,
-     "max": 100
+     "max": 100,
+     "about": "The volume, from 0 to 100, shown on the volume slider."
     },
     {
      "name": "visual",
@@ -2970,17 +3238,20 @@
       "cassette",
       "cd",
       "vinyl"
-     ]
+     ],
+     "about": "What is drawn for the music: disc is a plain record with a progress ring; cassette, cd and vinyl are drawn to their real look and turn while playing."
     },
     {
      "name": "player",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The media player this screen controls, by its Home Assistant entity id."
     },
     {
      "name": "speakers",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The speakers you can switch between in the speaker picker, as entity ids separated by commas."
     },
     {
      "name": "mode",
@@ -2990,26 +3261,30 @@
       "",
       "auto",
       "manual"
-     ]
+     ],
+     "about": "How the speaker is chosen: auto follows the room you are in, manual keeps the one you picked. Empty hides the Auto choice."
     },
     {
      "name": "position",
      "type": "range",
      "bindable": true,
      "min": 0,
-     "max": 86400
+     "max": 86400,
+     "about": "How far into the track it is, in seconds, as the player last reported."
     },
     {
      "name": "duration",
      "type": "range",
      "bindable": true,
      "min": 0,
-     "max": 86400
+     "max": 86400,
+     "about": "How long the track is, in seconds."
     },
     {
      "name": "position_at",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "When the player reported the position, as a date and time, so the panel can count on from there."
     }
    ],
    "events": {
@@ -3040,29 +3315,34 @@
       "cassette",
       "cd",
       "vinyl"
-     ]
+     ],
+     "about": "What is drawn: a cassette, a CD or a vinyl record."
     },
     {
      "name": "progress",
      "type": "range",
      "bindable": true,
      "min": 0,
-     "max": 100
+     "max": 100,
+     "about": "How far through the track it is, from 0 to 100. The tape moves from one reel to the other, or the tonearm moves in."
     },
     {
      "name": "playing",
      "type": "bool",
-     "bindable": true
+     "bindable": true,
+     "about": "Whether it is playing. While it plays the cassette reels or the disc turn at their real speed."
     },
     {
      "name": "title",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The track title, written on the cassette label or the record."
     },
     {
      "name": "artist",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The artist, written under the title."
     }
    ],
    "events": {
@@ -3084,21 +3364,24 @@
      "type": "range",
      "bindable": true,
      "min": 0,
-     "max": 29
+     "max": 29,
+     "about": "For previews only: how many days ahead of today to work the moon out for. 0 is today."
     },
     {
      "name": "lat",
      "type": "range",
      "bindable": true,
      "min": -60,
-     "max": 65
+     "max": 65,
+     "about": "Your latitude in degrees, which sets the moonrise and moonset times."
     },
     {
      "name": "lon",
      "type": "range",
      "bindable": true,
      "min": -180,
-     "max": 180
+     "max": 180,
+     "about": "Your longitude in degrees, which sets the moonrise and moonset times."
     }
    ],
    "events": {
@@ -3120,7 +3403,8 @@
      "type": "range",
      "bindable": true,
      "min": 0,
-     "max": 1
+     "max": 1,
+     "about": "Where the moon is in its month: 0 is new, 0.25 first quarter, 0.5 full, 0.75 last quarter."
     },
     {
      "name": "size",
@@ -3133,12 +3417,14 @@
       "feature",
       "card",
       "hero"
-     ]
+     ],
+     "about": "How big the moon is drawn, from the small icon size up to the hero size of a screen."
     },
     {
      "name": "south",
      "type": "bool",
-     "bindable": true
+     "bindable": true,
+     "about": "Draws the moon as seen from the southern half of the world, where the lit side is the other way round."
     }
    ],
    "events": {
@@ -3160,7 +3446,8 @@
      "type": "range",
      "bindable": true,
      "min": -60,
-     "max": 65
+     "max": 65,
+     "about": "Your latitude in degrees. South of the equator the moons are drawn the other way round."
     }
    ],
    "events": {
@@ -3180,26 +3467,30 @@
     {
      "name": "start",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The first evening shown, as a date like 2026-10-15."
     },
     {
      "name": "today",
      "type": "range",
      "bindable": true,
      "min": 0,
-     "max": 30
+     "max": 30,
+     "about": "Which bar is today, counting from 0 at the left; it gets the dotted line and the moon above it."
     },
     {
      "name": "height",
      "type": "range",
      "bindable": true,
      "min": 80,
-     "max": 160
+     "max": 160,
+     "about": "How tall the tallest bar can be, in pixels."
     },
     {
      "name": "south",
      "type": "bool",
-     "bindable": true
+     "bindable": true,
+     "about": "Draws the moons as seen from the southern half of the world."
     }
    ],
    "events": {
@@ -3223,21 +3514,24 @@
      "options": [
       "screen",
       "weather"
-     ]
+     ],
+     "about": "screen fills the Moon screen; weather fits it inside the Weather screen's moon view."
     },
     {
      "name": "lat",
      "type": "range",
      "bindable": true,
      "min": -60,
-     "max": 65
+     "max": 65,
+     "about": "Your latitude in degrees, used to work out tonight's moon."
     },
     {
      "name": "lon",
      "type": "range",
      "bindable": true,
      "min": -180,
-     "max": 180
+     "max": 180,
+     "about": "Your longitude in degrees, used to work out tonight's moon."
     }
    ],
    "events": {
@@ -3257,7 +3551,8 @@
     {
      "name": "text",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The words of the row, such as how many more items there are."
     },
     {
      "name": "state",
@@ -3267,7 +3562,8 @@
       "default",
       "pressed",
       "disabled"
-     ]
+     ],
+     "about": "How the row looks: default ready to tap, pressed while held, or disabled when there is nothing more to open."
     }
    ],
    "events": {
@@ -3297,7 +3593,8 @@
       "overhead",
       "emergency",
       "quiet"
-     ]
+     ],
+     "about": "For previews only: which made-up sky to show. busy has many aircraft, overhead has one right above, emergency has one squawking an emergency, quiet has none nearby."
     },
     {
      "name": "view",
@@ -3307,7 +3604,8 @@
       "now",
       "radar",
       "list"
-     ]
+     ],
+     "about": "Which view to open on: now shows the closest aircraft with its route, radar shows the big radar, list lists every aircraft nearby."
     },
     {
      "name": "unit",
@@ -3316,7 +3614,8 @@
      "options": [
       "km",
       "mi"
-     ]
+     ],
+     "about": "Whether distances are shown in kilometres or miles."
     },
     {
      "name": "speed",
@@ -3326,7 +3625,8 @@
       "mph",
       "kmh",
       "kn"
-     ]
+     ],
+     "about": "How aircraft speeds are shown: miles per hour, kilometres per hour, or knots."
     }
    ],
    "events": {
@@ -3354,17 +3654,20 @@
       "tv",
       "stream",
       "auto"
-     ]
+     ],
+     "about": "The icon at the start of the row, such as a speaker or a TV, or none."
     },
     {
      "name": "name",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The option's name, such as the speaker's name."
     },
     {
      "name": "status",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The small capitals line under the name, such as what is playing there."
     },
     {
      "name": "tone",
@@ -3373,12 +3676,14 @@
      "options": [
       "dim",
       "working"
-     ]
+     ],
+     "about": "The status colour: dim for normal, working for something going on now, such as playing."
     },
     {
      "name": "selected",
      "type": "bool",
-     "bindable": true
+     "bindable": true,
+     "about": "Whether this is the chosen option; its radio is on."
     },
     {
      "name": "state",
@@ -3389,7 +3694,8 @@
       "pressed",
       "disabled",
       "unavailable"
-     ]
+     ],
+     "about": "How the row looks: default ready to tap, pressed while held, disabled when it cannot be chosen, or unavailable when its device cannot be reached."
     },
     {
      "name": "list",
@@ -3398,7 +3704,8 @@
      "options": [
       "single",
       "group"
-     ]
+     ],
+     "about": "For previews only: single shows one row; group shows a short list where a tap moves the choice."
     }
    ],
    "events": {
@@ -3418,12 +3725,14 @@
     {
      "name": "label",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The name of the part that is not built yet."
     },
     {
      "name": "note",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "One line saying what is coming."
     },
     {
      "name": "height",
@@ -3433,7 +3742,8 @@
       "card",
       "tile",
       "row"
-     ]
+     ],
+     "about": "How tall the outline is, matching the part it stands in for: a card, a tile or a row."
     }
    ],
    "events": {
@@ -3453,28 +3763,32 @@
     {
      "name": "name",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The plant's name."
     },
     {
      "name": "moisture",
      "type": "range",
      "bindable": true,
      "min": -1,
-     "max": 100
+     "max": 100,
+     "about": "The soil moisture now, from 0 to 100 per cent. -1 means it cannot be read."
     },
     {
      "name": "dry",
      "type": "range",
      "bindable": true,
      "min": 0,
-     "max": 100
+     "max": 100,
+     "about": "The moisture below which the plant needs water. The bar shows it as a line."
     },
     {
      "name": "wet",
      "type": "range",
      "bindable": true,
      "min": 0,
-     "max": 100
+     "max": 100,
+     "about": "The moisture above which the soil is too wet."
     }
    ],
    "events": {
@@ -3494,33 +3808,38 @@
     {
      "name": "name",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The plant's name."
     },
     {
      "name": "moisture",
      "type": "range",
      "bindable": true,
      "min": -1,
-     "max": 100
+     "max": 100,
+     "about": "The soil moisture now, from 0 to 100 per cent. -1 means it cannot be read."
     },
     {
      "name": "dry",
      "type": "range",
      "bindable": true,
      "min": 0,
-     "max": 100
+     "max": 100,
+     "about": "The moisture below which the plant needs water. The bar shows it as a line."
     },
     {
      "name": "wet",
      "type": "range",
      "bindable": true,
      "min": 0,
-     "max": 100
+     "max": 100,
+     "about": "The moisture above which the soil is too wet."
     },
     {
      "name": "entity",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The plant's moisture sensor, by its Home Assistant entity id."
     }
    ],
    "events": {
@@ -3533,68 +3852,6 @@
     "bytes_est": 1760
    }
   },
-  "pr_row": {
-   "name": "Pull request row",
-   "update": true,
-   "props": [
-    {
-     "name": "repo",
-     "type": "text",
-     "bindable": true
-    },
-    {
-     "name": "number",
-     "type": "range",
-     "bindable": true,
-     "min": 1,
-     "max": 9999
-    },
-    {
-     "name": "title",
-     "type": "text",
-     "bindable": true
-    },
-    {
-     "name": "age",
-     "type": "text",
-     "bindable": true
-    },
-    {
-     "name": "draft",
-     "type": "bool",
-     "bindable": true
-    },
-    {
-     "name": "ci",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "pass",
-      "fail",
-      "pending",
-      "none"
-     ]
-    },
-    {
-     "name": "state",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "default",
-      "pressed"
-     ]
-    }
-   ],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 13,
-    "bytes_est": 2080
-   }
-  },
   "print_model": {
    "name": "3D print model",
    "update": true,
@@ -3604,7 +3861,8 @@
      "type": "range",
      "bindable": true,
      "min": 0,
-     "max": 100
+     "max": 100,
+     "about": "How much of the print is done, from 0 to 100. The model fills up from the bottom."
     },
     {
      "name": "solid",
@@ -3613,35 +3871,40 @@
      "options": [
       "neutral",
       "steel"
-     ]
+     ],
+     "about": "The colour of the printed part: neutral grey, or steel blue."
     },
     {
      "name": "hot",
      "type": "range",
      "bindable": true,
      "min": 0,
-     "max": 12
+     "max": 12,
+     "about": "How many of the most recent layers are drawn in the accent colour."
     },
     {
      "name": "width",
      "type": "range",
      "bindable": true,
      "min": 160,
-     "max": 440
+     "max": 440,
+     "about": "How wide the drawing is, in pixels."
     },
     {
      "name": "height",
      "type": "range",
      "bindable": true,
      "min": 160,
-     "max": 296
+     "max": 296,
+     "about": "How tall the drawing is, in pixels."
     },
     {
      "name": "ss",
      "type": "range",
      "bindable": true,
      "min": 1,
-     "max": 3
+     "max": 3,
+     "about": "How smooth the edges are: higher numbers draw more finely but take more memory. Panels use 1."
     }
    ],
    "events": {
@@ -3668,19 +3931,22 @@
       "preparing",
       "done",
       "idle"
-     ]
+     ],
+     "about": "What the printer is doing: printing, paused, preparing to start, done, or idle."
     },
     {
      "name": "progress",
      "type": "range",
      "bindable": true,
      "min": 0,
-     "max": 100
+     "max": 100,
+     "about": "How much of the print is done, from 0 to 100."
     },
     {
      "name": "task",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The name of the thing being printed."
     }
    ],
    "events": {
@@ -3693,6 +3959,75 @@
     "bytes_est": 1440
    }
   },
+  "pr_row": {
+   "name": "Pull request row",
+   "update": true,
+   "props": [
+    {
+     "name": "repo",
+     "type": "text",
+     "bindable": true,
+     "about": "The repository the pull request is in."
+    },
+    {
+     "name": "number",
+     "type": "range",
+     "bindable": true,
+     "min": 1,
+     "max": 9999,
+     "about": "The pull request's number."
+    },
+    {
+     "name": "title",
+     "type": "text",
+     "bindable": true,
+     "about": "The pull request's title, over up to two lines."
+    },
+    {
+     "name": "age",
+     "type": "text",
+     "bindable": true,
+     "about": "How long ago it was opened or last changed, such as 5h."
+    },
+    {
+     "name": "draft",
+     "type": "bool",
+     "bindable": true,
+     "about": "Marks it as a draft that is not ready for review yet."
+    },
+    {
+     "name": "ci",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "pass",
+      "fail",
+      "pending",
+      "none"
+     ],
+     "about": "How its automatic checks went: pass, fail, pending, or none when it has no checks."
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "default",
+      "pressed"
+     ],
+     "about": "default ready to tap; pressed while held."
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 13,
+    "bytes_est": 2080
+   }
+  },
   "qr_block": {
    "name": "QR block",
    "update": true,
@@ -3700,12 +4035,14 @@
     {
      "name": "text",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "What the QR code holds, usually a web address to open on your phone."
     },
     {
      "name": "caption",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The line under the code that says what scanning it does."
     }
    ],
    "events": {
@@ -3725,7 +4062,8 @@
     {
      "name": "on",
      "type": "bool",
-     "bindable": true
+     "bindable": true,
+     "about": "Whether this option is the chosen one; the ring fills in."
     },
     {
      "name": "state",
@@ -3734,7 +4072,8 @@
      "options": [
       "default",
       "disabled"
-     ]
+     ],
+     "about": "default can be chosen; disabled is greyed out."
     }
    ],
    "events": {
@@ -3754,21 +4093,24 @@
     {
      "name": "bands",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The price band of each hour from midnight, separated by commas: cheap, normal or peak."
     },
     {
      "name": "now",
      "type": "range",
      "bindable": true,
      "min": -1,
-     "max": 23
+     "max": 23,
+     "about": "Which hour is now, counting from 0; it gets the tick. -1 shows no tick."
     },
     {
      "name": "width",
      "type": "range",
      "bindable": true,
      "min": 160,
-     "max": 440
+     "max": 440,
+     "about": "How wide the strip is, in pixels."
     }
    ],
    "events": {
@@ -3801,12 +4143,14 @@
       "home · some",
       "moisture · wet",
       "offline"
-     ]
+     ],
+     "about": "For previews only: the made-up readout in the top half of the slot, such as someone in the room or a door open."
     },
     {
      "name": "label",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The name of the thing it reports on. Leave empty to use the sample's own."
     },
     {
      "name": "icon",
@@ -3820,17 +4164,20 @@
       "house",
       "alert",
       "bolt"
-     ]
+     ],
+     "about": "The icon before the name."
     },
     {
      "name": "state",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The state in words, such as 21.4° or Open."
     },
     {
      "name": "detail",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "A quieter line after the state, such as how long ago it changed. Leave empty for none."
     },
     {
      "name": "tone",
@@ -3841,12 +4188,14 @@
       "accent",
       "warn",
       "mute"
-     ]
+     ],
+     "about": "The colour of the state: text for normal, accent for something notable, warn for something to check, mute for quiet."
     },
     {
      "name": "half",
      "type": "bool",
-     "bindable": true
+     "bindable": true,
+     "about": "Shows one readout on its own in half a card slot."
     },
     {
      "name": "bottom",
@@ -3865,7 +4214,8 @@
       "home · some",
       "moisture · wet",
       "offline"
-     ]
+     ],
+     "about": "For previews only: the made-up readout in the bottom half of the slot, or none."
     }
    ],
    "events": {
@@ -3874,8 +4224,8 @@
     ]
    },
    "cost": {
-    "objects": 18,
-    "bytes_est": 2880
+    "objects": 20,
+    "bytes_est": 3200
    }
   },
   "room_tile": {
@@ -3885,17 +4235,20 @@
     {
      "name": "room",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The room's name and its number in the vacuum, written as name:number, such as Kitchen:3."
     },
     {
      "name": "picked",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The rooms picked for the next clean, as name:number pairs separated by commas. If this room is among them it is shown picked."
     },
     {
      "name": "here",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The room being cleaned now; if it is this one, the tile shows it."
     },
     {
      "name": "state",
@@ -3904,7 +4257,8 @@
      "options": [
       "default",
       "disabled"
-     ]
+     ],
+     "about": "default can be tapped to pick the room; disabled cannot be picked."
     }
    ],
    "events": {
@@ -3927,7 +4281,8 @@
     {
      "name": "time",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "For previews only: a fixed time to show, like 21:42. Leave empty for the real time."
     },
     {
      "name": "settings",
@@ -3937,7 +4292,8 @@
       "none",
       "button",
       "here"
-     ]
+     ],
+     "about": "The settings button: none hides it, button shows it, here shows it as the screen you are on."
     },
     {
      "name": "shortcut",
@@ -3949,12 +4305,14 @@
       "media",
       "weather",
       "calendar"
-     ]
+     ],
+     "about": "A shortcut button to another screen, such as the timer or media, or empty for none."
     },
     {
      "name": "to",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The screen the shortcut opens."
     },
     {
      "name": "status",
@@ -3963,7 +4321,8 @@
      "options": [
       "none",
       "timer"
-     ]
+     ],
+     "about": "Extra status before the time: none, or timer to show the time left on a running timer."
     }
    ],
    "events": {
@@ -3985,14 +4344,16 @@
      "type": "range",
      "bindable": true,
      "min": 1,
-     "max": 12
+     "max": 12,
+     "about": "For previews only: how many rows the sample list has, which sets how long the bar is."
     },
     {
      "name": "height",
      "type": "range",
      "bindable": true,
      "min": 128,
-     "max": 256
+     "max": 256,
+     "about": "How tall the list's visible area is, in pixels."
     }
    ],
    "events": {
@@ -4012,19 +4373,22 @@
     {
      "name": "title",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The caption that starts the group."
     },
     {
      "name": "badge",
      "type": "bool",
-     "bindable": true
+     "bindable": true,
+     "about": "Shows a count badge after the caption."
     },
     {
      "name": "count",
      "type": "range",
      "bindable": true,
      "min": 0,
-     "max": 150
+     "max": 150,
+     "about": "The number in the badge."
     },
     {
      "name": "tone",
@@ -4037,7 +4401,8 @@
       "working",
       "info",
       "idle"
-     ]
+     ],
+     "about": "The badge colour, by what the number means: ok, warn, error, working, info or idle."
     },
     {
      "name": "zero",
@@ -4046,7 +4411,8 @@
      "options": [
       "muted",
       "hide"
-     ]
+     ],
+     "about": "What happens when the count is zero: muted shows a quiet 0; hide removes the badge."
     },
     {
      "name": "right",
@@ -4056,17 +4422,20 @@
       "none",
       "meta",
       "action"
-     ]
+     ],
+     "about": "What sits at the right end: none, meta for a quiet line of text, or action for a tappable link."
     },
     {
      "name": "meta",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The quiet text at the right end, such as when it was last updated."
     },
     {
      "name": "action",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The words of the link at the right end, such as See all."
     },
     {
      "name": "state",
@@ -4076,7 +4445,8 @@
       "default",
       "pressed",
       "disabled"
-     ]
+     ],
+     "about": "How the link looks: default ready to tap, pressed while held, or disabled."
     },
     {
      "name": "size",
@@ -4085,7 +4455,8 @@
      "options": [
       "sm",
       "label"
-     ]
+     ],
+     "about": "sm is the small capitals caption; label is the larger screen label style."
     }
    ],
    "events": {
@@ -4105,12 +4476,14 @@
     {
      "name": "options",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The choices, separated by commas, up to three."
     },
     {
      "name": "selected",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "Which choice is picked, by its name in lower case."
     },
     {
      "name": "width",
@@ -4119,7 +4492,8 @@
      "options": [
       "hug",
       "fill"
-     ]
+     ],
+     "about": "hug fits the control to its words; fill stretches it across the space."
     },
     {
      "name": "state",
@@ -4129,7 +4503,8 @@
       "default",
       "disabled",
       "unavailable"
-     ]
+     ],
+     "about": "default can be tapped; disabled cannot be changed; unavailable shows the setting cannot be read."
     }
    ],
    "events": {
@@ -4155,35 +4530,40 @@
      "type": "range",
      "bindable": true,
      "min": 0,
-     "max": 100
+     "max": 100,
+     "about": "The value the slider is set to."
     },
     {
      "name": "min",
      "type": "range",
      "bindable": true,
      "min": 0,
-     "max": 50
+     "max": 50,
+     "about": "The lowest value, at the left end."
     },
     {
      "name": "max",
      "type": "range",
      "bindable": true,
      "min": 10,
-     "max": 100
+     "max": 100,
+     "about": "The highest value, at the right end."
     },
     {
      "name": "step",
      "type": "range",
      "bindable": true,
      "min": 1,
-     "max": 25
+     "max": 25,
+     "about": "How much the value changes from one position to the next."
     },
     {
      "name": "width",
      "type": "range",
      "bindable": true,
      "min": 96,
-     "max": 288
+     "max": 288,
+     "about": "How long the slider is, in pixels."
     },
     {
      "name": "state",
@@ -4193,7 +4573,8 @@
       "default",
       "disabled",
       "unavailable"
-     ]
+     ],
+     "about": "default can be dragged; disabled cannot be changed; unavailable shows the device cannot be reached."
     }
    ],
    "events": {
@@ -4219,7 +4600,8 @@
     {
      "name": "values",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The recent values, as numbers separated by commas, oldest first."
     },
     {
      "name": "colour",
@@ -4230,19 +4612,22 @@
       "blue",
       "accent",
       "text-dim"
-     ]
+     ],
+     "about": "The line colour: steel, blue, accent, or text-dim for a quiet grey."
     },
     {
      "name": "width",
      "type": "range",
      "bindable": true,
      "min": 96,
-     "max": 224
+     "max": 224,
+     "about": "How wide the line is drawn, in pixels."
     },
     {
      "name": "dot",
      "type": "bool",
-     "bindable": true
+     "bindable": true,
+     "about": "Puts a dot on the latest value at the right end."
     }
    ],
    "events": {
@@ -4262,12 +4647,14 @@
     {
      "name": "name",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The speaker's name on the button, such as auto study when it follows you to the study."
     },
     {
      "name": "playing",
      "type": "bool",
-     "bindable": true
+     "bindable": true,
+     "about": "Whether something is playing. The icon turns orange while it plays."
     },
     {
      "name": "icon",
@@ -4278,7 +4665,8 @@
       "sport-tennis-ball",
       "sport-goal",
       "none"
-     ]
+     ],
+     "about": "The icon on the button: speaker for media, a tennis ball or a goal for the sport screens' match picker, or none."
     },
     {
      "name": "state",
@@ -4288,7 +4676,8 @@
       "default",
       "pressed",
       "disabled"
-     ]
+     ],
+     "about": "How the button looks: default ready to tap, pressed while held, or disabled."
     }
    ],
    "events": {
@@ -4308,7 +4697,8 @@
     {
      "name": "outline",
      "type": "bool",
-     "bindable": true
+     "bindable": true,
+     "about": "For previews only: outlines the two columns and their top and foot areas so you can see where things go."
     }
    ],
    "events": {
@@ -4328,12 +4718,14 @@
     {
      "name": "label",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The small capitals line that says what the fact is, such as trend."
     },
     {
      "name": "value",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The fact itself, such as 48 km/h."
     },
     {
      "name": "tone",
@@ -4344,7 +4736,8 @@
       "text",
       "warn",
       "ok"
-     ]
+     ],
+     "about": "The colour of the value: dim for quiet, text for normal, warn for something to watch, ok for good news."
     },
     {
      "name": "state",
@@ -4353,7 +4746,8 @@
      "options": [
       "default",
       "unavailable"
-     ]
+     ],
+     "about": "default shows the value; unavailable shows a dash when it cannot be read."
     }
    ],
    "events": {
@@ -4373,17 +4767,20 @@
     {
      "name": "caption",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The small capitals line at the top in the tone colour, such as secure. Leave empty for none."
     },
     {
      "name": "value",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The state in words, such as Locked."
     },
     {
      "name": "line",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "One quieter line under the state, such as since when."
     },
     {
      "name": "tone",
@@ -4396,7 +4793,8 @@
       "warn",
       "error",
       "off"
-     ]
+     ],
+     "about": "The caption's colour: dim, accent, ok, warn, error, or off."
     },
     {
      "name": "size",
@@ -4406,27 +4804,32 @@
       "value",
       "hero",
       "title"
-     ]
+     ],
+     "about": "How big the state is: value for the usual size, hero for a screen's main figure, title for a smaller heading."
     },
     {
      "name": "value2",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "A second value beside the first, such as a battery level. Leave empty for none."
     },
     {
      "name": "line2",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "A second quieter line. Leave empty for none."
     },
     {
      "name": "line3",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "A third quieter line. Leave empty for none."
     },
     {
      "name": "line4",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "A fourth quieter line. Leave empty for none."
     }
    ],
    "events": {
@@ -4454,17 +4857,20 @@
       "working",
       "info",
       "idle"
-     ]
+     ],
+     "about": "The chip's colour, by what it reports: ok, warn, error, working, info or idle."
     },
     {
      "name": "text",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The short words on the chip."
     },
     {
      "name": "pulse",
      "type": "bool",
-     "bindable": true
+     "bindable": true,
+     "about": "Makes the dot pulse gently, for something happening now."
     }
    ],
    "events": {
@@ -4492,12 +4898,14 @@
       "working",
       "info",
       "idle"
-     ]
+     ],
+     "about": "The state the dot shows: ok, warn, error, working, info or idle, each in its own colour."
     },
     {
      "name": "pulse",
      "type": "bool",
-     "bindable": true
+     "bindable": true,
+     "about": "Makes the dot pulse gently, for something happening now."
     }
    ],
    "events": {
@@ -4519,7 +4927,8 @@
      "type": "range",
      "bindable": true,
      "min": 160,
-     "max": 448
+     "max": 448,
+     "about": "How wide the court is drawn, in pixels."
     },
     {
      "name": "surface",
@@ -4540,17 +4949,20 @@
       "us-open",
       "australian-open",
       "atp-finals"
-     ]
+     ],
+     "about": "The court's look: auto follows the match, or pick a surface like clay or grass, a plain look, or a famous venue such as Wimbledon."
     },
     {
      "name": "names",
      "type": "bool",
-     "bindable": true
+     "bindable": true,
+     "about": "Shows the players' names at each end."
     },
     {
      "name": "sim",
      "type": "bool",
-     "bindable": true
+     "bindable": true,
+     "about": "For previews only: runs a made-up match so the serve changes."
     },
     {
      "name": "speed",
@@ -4560,7 +4972,8 @@
       "1x",
       "10x",
       "60x"
-     ]
+     ],
+     "about": "For previews only: how fast the made-up match runs, real time or 10 or 60 times faster."
     },
     {
      "name": "jump",
@@ -4573,14 +4986,16 @@
       "tiebreak",
       "set point",
       "match point"
-     ]
+     ],
+     "about": "For previews only: skips the made-up match to a moment such as a break point or a tiebreak."
     },
     {
      "name": "seed",
      "type": "range",
      "bindable": true,
      "min": 1,
-     "max": 20
+     "max": 20,
+     "about": "For previews only: picks a different made-up match; the same number always gives the same match."
     },
     {
      "name": "best_of",
@@ -4589,7 +5004,8 @@
      "options": [
       "3",
       "5"
-     ]
+     ],
+     "about": "For previews only: whether the made-up match is best of 3 or 5 sets."
     },
     {
      "name": "final_set",
@@ -4599,12 +5015,14 @@
       "tb10",
       "tb7",
       "adv"
-     ]
+     ],
+     "about": "For previews only: how the made-up match's last set ends: tb10 is a tiebreak to 10, tb7 a tiebreak to 7, adv plays on until someone is two games ahead."
     },
     {
      "name": "feed",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The live match data sent to the panel. Leave empty to use the made-up match."
     }
    ],
    "events": {
@@ -4629,19 +5047,22 @@
       "board",
       "hero",
       "compact"
-     ]
+     ],
+     "about": "board is a full scoreboard with every set; hero makes the current point the big figure; compact fits it in one short line."
     },
     {
      "name": "width",
      "type": "range",
      "bindable": true,
      "min": 240,
-     "max": 448
+     "max": 448,
+     "about": "How wide the score is, in pixels."
     },
     {
      "name": "sim",
      "type": "bool",
-     "bindable": true
+     "bindable": true,
+     "about": "For previews only: runs a made-up match so the score changes."
     },
     {
      "name": "speed",
@@ -4651,7 +5072,8 @@
       "1x",
       "10x",
       "60x"
-     ]
+     ],
+     "about": "For previews only: how fast the made-up match runs, real time or 10 or 60 times faster."
     },
     {
      "name": "jump",
@@ -4664,14 +5086,16 @@
       "tiebreak",
       "set point",
       "match point"
-     ]
+     ],
+     "about": "For previews only: skips the made-up match to a moment such as a break point or a tiebreak."
     },
     {
      "name": "seed",
      "type": "range",
      "bindable": true,
      "min": 1,
-     "max": 20
+     "max": 20,
+     "about": "For previews only: picks a different made-up match; the same number always gives the same match."
     },
     {
      "name": "best_of",
@@ -4680,7 +5104,8 @@
      "options": [
       "3",
       "5"
-     ]
+     ],
+     "about": "For previews only: whether the made-up match is best of 3 or 5 sets."
     },
     {
      "name": "final_set",
@@ -4690,12 +5115,14 @@
       "tb10",
       "tb7",
       "adv"
-     ]
+     ],
+     "about": "For previews only: how the made-up match's last set ends: tb10 is a tiebreak to 10, tb7 a tiebreak to 7, adv plays on until someone is two games ahead."
     },
     {
      "name": "feed",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The live match data sent to the panel. Leave empty to use the made-up match."
     }
    ],
    "events": {
@@ -4717,14 +5144,16 @@
      "type": "range",
      "bindable": true,
      "min": 5,
-     "max": 30
+     "max": 30,
+     "about": "The temperature it is set to, shown as the knob on the ring."
     },
     {
      "name": "current",
      "type": "range",
      "bindable": true,
      "min": 5,
-     "max": 30
+     "max": 30,
+     "about": "The temperature measured in the room, shown as a long tick."
     },
     {
      "name": "action",
@@ -4735,21 +5164,24 @@
       "cooling",
       "idle",
       "off"
-     ]
+     ],
+     "about": "What it is doing now: heating or cooling colours the span between the two, idle and off leave it plain."
     },
     {
      "name": "min",
      "type": "range",
      "bindable": true,
      "min": 0,
-     "max": 20
+     "max": 20,
+     "about": "The lowest temperature on the ring."
     },
     {
      "name": "max",
      "type": "range",
      "bindable": true,
      "min": 20,
-     "max": 40
+     "max": 40,
+     "about": "The highest temperature on the ring."
     },
     {
      "name": "step",
@@ -4759,7 +5191,8 @@
       "0.5",
       "1",
       "0.1"
-     ]
+     ],
+     "about": "How much one step changes the set temperature, in degrees."
     },
     {
      "name": "state",
@@ -4769,7 +5202,8 @@
       "default",
       "disabled",
       "unavailable"
-     ]
+     ],
+     "about": "default can be turned; disabled cannot be changed; unavailable shows the thermostat cannot be reached."
     }
    ],
    "events": {
@@ -4797,14 +5231,16 @@
      "type": "range",
      "bindable": true,
      "min": 5,
-     "max": 30
+     "max": 30,
+     "about": "The temperature it is set to."
     },
     {
      "name": "current",
      "type": "range",
      "bindable": true,
      "min": 5,
-     "max": 30
+     "max": 30,
+     "about": "The temperature measured in the room, shown in the middle of the ring."
     },
     {
      "name": "action",
@@ -4814,7 +5250,8 @@
       "heating",
       "cooling",
       "idle"
-     ]
+     ],
+     "about": "What it is doing now: heating, cooling or idle."
     },
     {
      "name": "mode",
@@ -4825,7 +5262,8 @@
       "auto",
       "off",
       "unavailable"
-     ]
+     ],
+     "about": "The thermostat's mode: heat, auto, off, or unavailable when it cannot be reached."
     },
     {
      "name": "preset",
@@ -4837,12 +5275,14 @@
       "away",
       "eco",
       "boost"
-     ]
+     ],
+     "about": "The preset in use, such as home, away, eco or boost, or none."
     },
     {
      "name": "next",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The next scheduled change, such as 17° from 22:30. Leave empty for none."
     }
    ],
    "events": {
@@ -4873,21 +5313,24 @@
      "type": "range",
      "bindable": true,
      "min": 12,
-     "max": 120
+     "max": 120,
+     "about": "How many ticks go round the ring."
     },
     {
      "name": "range",
      "type": "range",
      "bindable": true,
      "min": 90,
-     "max": 360
+     "max": 360,
+     "about": "How far round the ring goes, in degrees: 360 is a full circle, 270 leaves a gap at the bottom like a dial."
     },
     {
      "name": "size",
      "type": "range",
      "bindable": true,
      "min": 96,
-     "max": 400
+     "max": 400,
+     "about": "How wide the ring is across, in pixels."
     },
     {
      "name": "stride",
@@ -4899,19 +5342,22 @@
       "6",
       "10",
       "0"
-     ]
+     ],
+     "about": "Every how many ticks a longer major tick is drawn. 0 draws them all the same."
     },
     {
      "name": "numbers",
      "type": "bool",
-     "bindable": true
+     "bindable": true,
+     "about": "Writes a number by each major tick, as on a clock."
     },
     {
      "name": "lit",
      "type": "range",
      "bindable": true,
      "min": -1,
-     "max": 100
+     "max": 100,
+     "about": "How much of the ring is lit in the accent, from 0 to 100. -1 lights none."
     }
    ],
    "events": {
@@ -4931,7 +5377,8 @@
     {
      "name": "title",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The agent's name, over up to two lines."
     },
     {
      "name": "kind",
@@ -4942,12 +5389,14 @@
       "needs",
       "done",
       "idle"
-     ]
+     ],
+     "about": "What the agent is doing: working, needs you, done or idle. The mascot's mood follows it."
     },
     {
      "name": "status",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The status line at the bottom, such as how far it has got."
     },
     {
      "name": "state",
@@ -4957,7 +5406,8 @@
       "default",
       "pressed",
       "unavailable"
-     ]
+     ],
+     "about": "How the tile looks: default ready to tap, pressed while held, or unavailable when the agent cannot be reached."
     },
     {
      "name": "press",
@@ -4967,7 +5417,8 @@
       "fill",
       "border",
       "border-fill"
-     ]
+     ],
+     "about": "How the tile shows it is being pressed: fill darkens the whole tile, border lights its edge, border-fill does both."
     }
    ],
    "events": {
@@ -4992,7 +5443,8 @@
       "compact",
       "mid",
       "hero"
-     ]
+     ],
+     "about": "How big the digits are: compact for a header, mid for a card, hero for a screen's main figure."
     },
     {
      "name": "font",
@@ -5001,7 +5453,8 @@
      "options": [
       "mono",
       "inter"
-     ]
+     ],
+     "about": "The typeface of the digits: mono is the fixed-width face, inter the rounder everyday face."
     },
     {
      "name": "format",
@@ -5010,17 +5463,20 @@
      "options": [
       "24h",
       "12h"
-     ]
+     ],
+     "about": "24h shows 13:00; 12h shows 1:00 with AM or PM."
     },
     {
      "name": "seconds",
      "type": "bool",
-     "bindable": true
+     "bindable": true,
+     "about": "Shows the seconds as well as hours and minutes."
     },
     {
      "name": "time",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "For previews only: a fixed time to show, like 14:52:20. Leave empty for the real time."
     }
    ],
    "events": {
@@ -5045,26 +5501,30 @@
       "idle",
       "running",
       "done"
-     ]
+     ],
+     "about": "What the timer is doing: idle with none set, running, or done when it has finished."
     },
     {
      "name": "label",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The timer's name, shown above the time, such as Pasta."
     },
     {
      "name": "total",
      "type": "range",
      "bindable": true,
      "min": 60,
-     "max": 7200
+     "max": 7200,
+     "about": "How long the timer was set for, in seconds."
     },
     {
      "name": "left",
      "type": "range",
      "bindable": true,
      "min": 1,
-     "max": 7200
+     "max": 7200,
+     "about": "How many seconds are left. The ring empties as it runs down."
     }
    ],
    "events": {
@@ -5097,7 +5557,8 @@
       "bell",
       "check",
       "pr"
-     ]
+     ],
+     "about": "The icon at the start, picked for what the message is about, such as a timer, a person or a washing machine."
     },
     {
      "name": "tone",
@@ -5110,27 +5571,32 @@
       "working",
       "info",
       "idle"
-     ]
+     ],
+     "about": "The icon's colour, by what the message means: ok, warn, error, working, info or idle."
     },
     {
      "name": "title",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The message's heading."
     },
     {
      "name": "body",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "One line of detail under the heading."
     },
     {
      "name": "action",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The words of a button on the message, such as Open. Leave empty for no button."
     },
     {
      "name": "timer",
      "type": "bool",
-     "bindable": true
+     "bindable": true,
+     "about": "Shows a thin bar that runs down until the message goes away on its own."
     },
     {
      "name": "life",
@@ -5139,7 +5605,8 @@
      "options": [
       "normal",
       "urgent"
-     ]
+     ],
+     "about": "How long the message stays: normal, or urgent which stays much longer."
     }
    ],
    "events": {
@@ -5163,7 +5630,8 @@
      "options": [
       "top",
       "bottom"
-     ]
+     ],
+     "about": "Where messages appear: from the top or from the bottom of the screen."
     },
     {
      "name": "push",
@@ -5177,29 +5645,34 @@
       "info",
       "idle",
       "none"
-     ]
+     ],
+     "about": "For previews only: the tone of the first sample message that arrives, or none."
     },
     {
      "name": "stack",
      "type": "range",
      "bindable": true,
      "min": 1,
-     "max": 3
+     "max": 3,
+     "about": "For previews only: how many sample messages are stacked, up to two showing at once."
     },
     {
      "name": "timer",
      "type": "bool",
-     "bindable": true
+     "bindable": true,
+     "about": "Shows the bar on each message that runs down until it goes away."
     },
     {
      "name": "action",
      "type": "bool",
-     "bindable": true
+     "bindable": true,
+     "about": "For previews only: gives the sample messages a button."
     },
     {
      "name": "screen",
      "type": "bool",
-     "bindable": true
+     "bindable": true,
+     "about": "For previews only: draws a sample screen under the messages."
     }
    ],
    "events": {
@@ -5219,7 +5692,8 @@
     {
      "name": "on",
      "type": "bool",
-     "bindable": true
+     "bindable": true,
+     "about": "Whether the switch is on."
     },
     {
      "name": "state",
@@ -5229,7 +5703,8 @@
       "default",
       "disabled",
       "unavailable"
-     ]
+     ],
+     "about": "default can be tapped; disabled cannot be changed; unavailable shows the device cannot be reached."
     }
    ],
    "events": {
@@ -5257,7 +5732,8 @@
       "vacuum",
       "vac_and_mop",
       "mop"
-     ]
+     ],
+     "about": "What the robot does: vacuum only, vacuum and mop together, or mop only."
     },
     {
      "name": "fan",
@@ -5269,7 +5745,8 @@
       "turbo",
       "max",
       "max_plus"
-     ]
+     ],
+     "about": "How hard it sucks: quiet, balanced, turbo, max or max plus."
     },
     {
      "name": "mop",
@@ -5279,7 +5756,8 @@
       "low",
       "medium",
       "high"
-     ]
+     ],
+     "about": "How much water the mop uses: low, medium or high."
     },
     {
      "name": "style",
@@ -5288,7 +5766,8 @@
      "options": [
       "row",
       "button"
-     ]
+     ],
+     "about": "row shows the settings as a full row; button shows a short button that sits on the map."
     },
     {
      "name": "view",
@@ -5297,7 +5776,8 @@
      "options": [
       "rooms",
       "map"
-     ]
+     ],
+     "about": "Which vacuum view it sits in: the room list or the map."
     }
    ],
    "events": {
@@ -5353,7 +5833,8 @@
       "hail",
       "wind",
       "exceptional"
-     ]
+     ],
+     "about": "Which weather to show, such as partly cloudy by day, rain or a clear night."
     },
     {
      "name": "size",
@@ -5365,12 +5846,14 @@
       "feature",
       "card",
       "hero"
-     ]
+     ],
+     "about": "How big the icon is drawn, from the small sizes in text up to the hero size of a screen."
     },
     {
      "name": "animated",
      "type": "bool",
-     "bindable": true
+     "bindable": true,
+     "about": "Makes the icon's parts move gently: rays turn, clouds drift, rain falls. With reduced motion it stays still."
     },
     {
      "name": "on",
@@ -5379,7 +5862,8 @@
      "options": [
       "canvas",
       "card"
-     ]
+     ],
+     "about": "What the icon sits on, so its colours fit: canvas for the screen background, card for a card."
     }
    ],
    "events": {
@@ -5405,41 +5889,48 @@
       "sun",
       "moon",
       "lightning"
-     ]
+     ],
+     "about": "Which view to open on: weather with the next hours, sun with sunrise and sunset, moon, or lightning."
     },
     {
      "name": "condition",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The weather now, such as rainy. Leave empty to use the forecast."
     },
     {
      "name": "temp",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The temperature now. Leave empty to use the forecast."
     },
     {
      "name": "feels",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The feels-like temperature. Leave empty to use the forecast."
     },
     {
      "name": "place",
      "type": "text",
-     "bindable": true
+     "bindable": true,
+     "about": "The place name shown with the weather. Leave empty for none."
     },
     {
      "name": "lat",
      "type": "range",
      "bindable": true,
      "min": -60,
-     "max": 65
+     "max": 65,
+     "about": "Your latitude in degrees, used for sunrise, sunset and the moon."
     },
     {
      "name": "lon",
      "type": "range",
      "bindable": true,
      "min": -180,
-     "max": 180
+     "max": 180,
+     "about": "Your longitude in degrees, used for sunrise, sunset and the moon."
     }
    ],
    "events": {
@@ -5546,10 +6037,11 @@
   },
   "sensor": {
    "domains": "sensor,binary_sensor",
-   "sizes": "m",
+   "sizes": "s,m",
    "taps": "none",
    "detail": "",
    "component": {
+    "s": "entity_tile",
     "m": "readout"
    }
   },
@@ -5565,5 +6057,5 @@
    }
   }
  },
- "hash": "b2518ab7"
+ "hash": "018565ac"
 }

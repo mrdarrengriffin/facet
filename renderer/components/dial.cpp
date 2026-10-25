@@ -273,14 +273,14 @@ FW_COMPONENT(dial, "Dial", "components", R"({
   "about": "A large circular control for a value such as brightness or temperature, with an on/off button in the centre.",
   "frame": [384, 384],
   "props": [
-    {"name": "value", "type": "range", "min": -20, "max": 200, "step": 0.5, "default": 64},
-    {"name": "min", "type": "range", "min": -20, "max": 100, "step": 1, "default": 0},
-    {"name": "max", "type": "range", "min": 1, "max": 200, "step": 1, "default": 100},
-    {"name": "on", "type": "bool", "default": true},
-    {"name": "caption", "type": "text", "default": "Brightness"},
-    {"name": "unit", "type": "text", "default": "%"},
-    {"name": "step", "type": "range", "min": 0.5, "max": 25, "step": 0.5, "default": 1},
-    {"name": "state", "type": "select", "options": ["default", "disabled", "unavailable"], "default": "default"}
+    {"name": "value", "about": "The value the dial is set to, between its lowest and highest.", "type": "range", "min": -20, "max": 200, "step": 0.5, "default": 64},
+    {"name": "min", "about": "The lowest value the dial goes down to.", "type": "range", "min": -20, "max": 100, "step": 1, "default": 0},
+    {"name": "max", "about": "The highest value the dial goes up to.", "type": "range", "min": 1, "max": 200, "step": 1, "default": 100},
+    {"name": "on", "about": "Whether the thing it controls is on. Off dims the dial; the button in the middle switches it.", "type": "bool", "default": true},
+    {"name": "caption", "about": "The word under the value that says what it is, such as Brightness.", "type": "text", "default": "Brightness"},
+    {"name": "unit", "about": "The unit shown after the value, such as % or °.", "type": "text", "default": "%"},
+    {"name": "step", "about": "How much one step of the dial changes the value.", "type": "range", "min": 0.5, "max": 25, "step": 0.5, "default": 1},
+    {"name": "state", "about": "default can be turned; disabled cannot be changed; unavailable shows the device cannot be reached.", "type": "select", "options": ["default", "disabled", "unavailable"], "default": "default"}
   ],
   "opening": "Opening the screen sweeps the arc and number up from 0 (Motion value, 400 ms).",
   "variants": [

@@ -175,11 +175,11 @@ FW_COMPONENT(tile, "Tile", "components", R"({
   "about": "An agent at a glance: the mascot in its mood, a two-line title and a status row.",
   "frame": [160, 160],
   "props": [
-    {"name": "title", "type": "text", "default": "Photo backup"},
-    {"name": "kind", "type": "select", "options": ["working", "needs", "done", "idle"], "default": "working"},
-    {"name": "status", "type": "text", "default": "working · 42% ctx"},
-    {"name": "state", "type": "select", "options": ["default", "pressed", "unavailable"], "default": "default"},
-    {"name": "press", "type": "select", "options": ["fill", "border", "border-fill"], "default": "fill"}
+    {"name": "title", "about": "The agent's name, over up to two lines.", "type": "text", "default": "Photo backup"},
+    {"name": "kind", "about": "What the agent is doing: working, needs you, done or idle. The mascot's mood follows it.", "type": "select", "options": ["working", "needs", "done", "idle"], "default": "working"},
+    {"name": "status", "about": "The status line at the bottom, such as how far it has got.", "type": "text", "default": "working · 42% ctx"},
+    {"name": "state", "about": "How the tile looks: default ready to tap, pressed while held, or unavailable when the agent cannot be reached.", "type": "select", "options": ["default", "pressed", "unavailable"], "default": "default"},
+    {"name": "press", "about": "How the tile shows it is being pressed: fill darkens the whole tile, border lights its edge, border-fill does both.", "type": "select", "options": ["fill", "border", "border-fill"], "default": "fill"}
   ],
   "variants": [
     {"label": "working", "props": {}},

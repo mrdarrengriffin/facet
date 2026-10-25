@@ -487,11 +487,11 @@ FW_COMPONENT(media_visual, "Media visuals", "components", R"({
   "about": "A cassette, CD or vinyl record for the Media screen, drawn to the real sizes. They turn at the real speeds while playing; the tape or tonearm follows the track's progress.",
   "frame": [296, 208],
   "props": [
-    {"name": "visual", "type": "select", "options": ["cassette", "cd", "vinyl"], "default": "cassette"},
-    {"name": "progress", "type": "range", "min": 0, "max": 100, "step": 1, "default": 38},
-    {"name": "playing", "type": "bool", "default": true},
-    {"name": "title", "type": "text", "default": "Harbour Lights"},
-    {"name": "artist", "type": "text", "default": "The Lanterns"}
+    {"name": "visual", "about": "What is drawn: a cassette, a CD or a vinyl record.", "type": "select", "options": ["cassette", "cd", "vinyl"], "default": "cassette"},
+    {"name": "progress", "about": "How far through the track it is, from 0 to 100. The tape moves from one reel to the other, or the tonearm moves in.", "type": "range", "min": 0, "max": 100, "step": 1, "default": 38},
+    {"name": "playing", "about": "Whether it is playing. While it plays the cassette reels or the disc turn at their real speed.", "type": "bool", "default": true},
+    {"name": "title", "about": "The track title, written on the cassette label or the record.", "type": "text", "default": "Harbour Lights"},
+    {"name": "artist", "about": "The artist, written under the title.", "type": "text", "default": "The Lanterns"}
   ],
   "variants": [
     {"label": "Cassette", "props": {"visual": "cassette", "progress": 30}},

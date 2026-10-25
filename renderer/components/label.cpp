@@ -63,9 +63,9 @@ FW_COMPONENT(label, "Label", "components", R"({
   "about": "One line of text in a component type style and colour.",
   "frame": [320, 80],
   "props": [
-    {"name": "text", "type": "text", "default": ""},
-    {"name": "type", "type": "select", "options": ["title", "card-title", "tile", "body", "label", "label-sm", "meta", "meta-sm", "caps-sm", "subtitle", "date", "weather", "number"], "default": "meta"},
-    {"name": "colour", "type": "select", "options": ["text", "text-dim", "accent-text", "blue", "ok", "warn", "error", "disabled"], "default": "text"}
+    {"name": "text", "about": "The words to show.", "type": "text", "default": ""},
+    {"name": "type", "about": "The text style, from the large title down to small meta text and capitals, as set in the type scale.", "type": "select", "options": ["title", "card-title", "tile", "body", "label", "label-sm", "meta", "meta-sm", "caps-sm", "subtitle", "date", "weather", "number"], "default": "meta"},
+    {"name": "colour", "about": "The text colour: text for normal, text-dim for quieter, accent-text for the accent, blue, ok, warn, error, or disabled.", "type": "select", "options": ["text", "text-dim", "accent-text", "blue", "ok", "warn", "error", "disabled"], "default": "text"}
   ],
   "variants": [
     {"label": "title", "props": {"type": "title"}},

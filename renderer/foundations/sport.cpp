@@ -216,7 +216,7 @@ FW_COMPONENT(sport, "Sport", "foundations", R"({
   "layout": "doc",
   "frame": [480, 0],
   "props": [
-    {"name": "section", "type": "select", "options": ["colours", "marks", "states", "type", "moments", "circuits", "car_marks", "gaps", "court", "scoring", "sets", "pitch", "events", "scoreline"], "default": "colours"}
+    {"name": "section", "about": "Which part of the sport page to show, from the shared colours and marks to each sport's own parts such as F1 circuits, the tennis court or the football pitch.", "type": "select", "options": ["colours", "marks", "states", "type", "moments", "circuits", "car_marks", "gaps", "court", "scoring", "sets", "pitch", "events", "scoreline"], "default": "colours"}
   ],
   "variants": [
     {"label": "Team colours", "about": "Shared. Team colours come with the data, not from Facet. They only ever mark a car, a player or a bar, never carry text, and each is lifted towards the text colour just enough to stand out from what it sits on.", "props": {"section": "colours"}},

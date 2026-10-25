@@ -5,99 +5,99 @@
  "rev": 4,
  "role": "both",
  "params": {
-  "entity": {
+  "entity": {"about": "The robot vacuum this screen controls.", 
    "type": "entity",
    "domain": "vacuum",
    "label": "Robot vacuum",
    "default": ""
   },
-  "battery": {
+  "battery": {"about": "The sensor for the robot's battery level, in per cent.", 
    "type": "entity",
    "domain": "sensor",
    "label": "Battery (%)",
    "default": ""
   },
-  "room": {
+  "room": {"about": "The sensor for the room the robot is in now.", 
    "type": "entity",
    "domain": "sensor",
    "label": "Current room",
    "default": ""
   },
-  "progress": {
+  "progress": {"about": "The sensor for how much of the current clean is done, in per cent.", 
    "type": "entity",
    "domain": "sensor",
    "label": "Cleaning progress (%)",
    "default": ""
   },
-  "time": {
+  "time": {"about": "The sensor for how long the current clean has run, in minutes.", 
    "type": "entity",
    "domain": "sensor",
    "label": "Cleaning time (min)",
    "default": ""
   },
-  "area": {
+  "area": {"about": "The sensor for how much floor the current clean has covered, in square metres.", 
    "type": "entity",
    "domain": "sensor",
    "label": "Cleaning area (m²)",
    "default": ""
   },
-  "last_clean": {
+  "last_clean": {"about": "The sensor for when the last clean ended.", 
    "type": "entity",
    "domain": "sensor",
    "label": "Last clean end",
    "default": ""
   },
-  "modesel": {
+  "modesel": {"about": "The setting that picks the cleaning mode: vacuum, mop or both.", 
    "type": "entity",
    "domain": "select",
    "label": "Cleaning mode",
    "default": ""
   },
-  "mopsel": {
+  "mopsel": {"about": "The setting that picks how much water the mop uses.", 
    "type": "entity",
    "domain": "select",
    "label": "Water (mop intensity)",
    "default": ""
   },
-  "position": {
+  "position": {"about": "The sensor for where the robot is on the map, as x and y.", 
    "type": "entity",
    "domain": "sensor",
    "label": "Robot position (x,y)",
    "default": ""
   },
-  "transform": {
+  "transform": {"about": "How to turn the robot's own position numbers into metres on the floor plan, as six numbers separated by commas. Leave empty when they already match.", 
    "type": "text",
    "label": "Position to plan metres (a,b,c,d,e,f)",
    "default": ""
   },
-  "path": {
+  "path": {"about": "The sensor whose points are the path the robot has taken on this run.", 
    "type": "entity",
    "domain": "sensor",
    "label": "Run path (points attribute)",
    "default": ""
   },
-  "areas": {
+  "areas": {"about": "Your rooms as the vacuum knows them, as name:number pairs separated by commas, such as Kitchen:3.", 
    "type": "text",
    "label": "Rooms (name:segment, comma list)",
    "default": ""
   },
-  "plan": {
+  "plan": {"about": "The floor plan drawn on the map: each room's name, number, corners and label spot.", 
    "type": "hidden",
    "default": "Dining|2|0,0 3.6,0 3.6,3 0,3|1.8,1.5;Utility||3.7,0 6.4,0 6.4,1.4 3.7,1.4|;Study||3.7,1.5 6.4,1.5 6.4,3 3.7,3|;Lounge|1|0,3.1 3.9,3.1 3.9,7.2 0,7.2|1.95,5.15;Hall|3|4,3.1 6.4,3.1 6.4,5.6 4,5.6|5.2,4.35;Cloakroom||4,5.7 6.4,5.7 6.4,7.2 4,7.2|"
   },
-  "dock": {
+  "dock": {"about": "Where the charging dock sits on the floor plan and which way it faces.", 
    "type": "hidden",
    "default": "0,0.5,0.14,0.8,0.36"
   },
-  "rooms": {
+  "rooms": {"about": "The rooms picked for the next clean.", 
    "type": "hidden",
    "default": ""
   },
-  "view": {
+  "view": {"about": "Which view the screen opens on: the room list or the map.", 
    "type": "hidden",
    "default": "rooms"
   },
-  "demo": {
+  "demo": {"about": "For previews only: which state the sample robot is in, such as docked or cleaning.", 
    "type": "select",
    "options": [
     "docked",

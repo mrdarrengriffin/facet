@@ -25,7 +25,7 @@
   ],
   "settings": [
     {
-      "id": "theme",
+      "id": "theme", "help": "Whether the panel is light or dark. Auto is light while the sun is up and dark after sunset.",
       "group": "look",
       "label": "Theme",
       "kind": "select",
@@ -53,7 +53,7 @@
       }
     },
     {
-      "id": "accent",
+      "id": "accent", "help": "The one colour used for what matters, such as what is playing or what needs you. current keeps the colour in use now.",
       "group": "look",
       "label": "Accent",
       "kind": "select",
@@ -89,7 +89,7 @@
       }
     },
     {
-      "id": "textSize",
+      "id": "textSize", "help": "How big the small text is. Large makes small text one step bigger without moving anything on the screen.",
       "group": "look",
       "label": "Text size",
       "kind": "select",
@@ -119,7 +119,7 @@
       }
     },
     {
-      "id": "sounds",
+      "id": "sounds", "help": "Turns the panel's taps and alert sounds on or off.",
       "group": "sound",
       "label": "UI sounds",
       "kind": "switch",
@@ -133,7 +133,7 @@
       }
     },
     {
-      "id": "soundPack",
+      "id": "soundPack", "help": "Which set of sounds the panel plays, each with its own character, from soft keycaps to playful arcade blips.",
       "group": "sound",
       "label": "Sound pack",
       "kind": "select",
@@ -179,7 +179,7 @@
       }
     },
     {
-      "id": "volume",
+      "id": "volume", "help": "How loud the panel's sounds are, from 0 (silent) to 100.",
       "group": "sound",
       "label": "Volume",
       "kind": "number",
@@ -197,7 +197,7 @@
       }
     },
     {
-      "id": "clockFace",
+      "id": "clockFace", "help": "Which clock the panel shows when it is idle: big digits, a ring with a seconds dot, an analogue face, or context with the weather and what is next.",
       "group": "idle",
       "label": "Clock face",
       "kind": "select",
@@ -232,7 +232,7 @@
       }
     },
     {
-      "id": "idleAfter",
+      "id": "idleAfter", "help": "How many seconds with no touch before the panel shows the clock. 0 never goes idle.",
       "group": "idle",
       "label": "Clock after",
       "kind": "number",
@@ -261,7 +261,7 @@
       }
     },
     {
-      "id": "idleBrightness",
+      "id": "idleBrightness", "help": "How bright the screen is while it shows the idle clock, in per cent.",
       "group": "idle",
       "label": "Idle brightness",
       "kind": "number",
@@ -279,7 +279,7 @@
       }
     },
     {
-      "id": "screenOff",
+      "id": "screenOff", "help": "How many minutes the idle clock shows before the screen turns off. 0 keeps it on.",
       "group": "idle",
       "label": "Screen off after",
       "kind": "number",
@@ -307,7 +307,7 @@
       }
     },
     {
-      "id": "transition",
+      "id": "transition", "help": "How a new screen appears: instant shows it at once; rise fades its rows in from below.",
       "group": "behaviour",
       "label": "Transition",
       "kind": "select",
@@ -332,7 +332,7 @@
       }
     },
     {
-      "id": "toastPosition",
+      "id": "toastPosition", "help": "Where messages such as a finished timer appear: at the top or the bottom of the screen.",
       "group": "behaviour",
       "label": "Toast position",
       "kind": "select",
@@ -356,7 +356,7 @@
       }
     },
     {
-      "id": "distanceUnit",
+      "id": "distanceUnit", "help": "Whether every distance on the panel, such as aircraft overhead or the nearest lightning, is shown in kilometres or miles.",
       "group": "units",
       "label": "Distance",
       "kind": "select",
@@ -380,7 +380,7 @@
       }
     },
     {
-      "id": "speedUnit",
+      "id": "speedUnit", "help": "How every speed on the panel, such as wind or aircraft, is shown: miles per hour, kilometres per hour, or knots.",
       "group": "units",
       "label": "Speed",
       "kind": "select",

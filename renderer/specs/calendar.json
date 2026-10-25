@@ -16,7 +16,7 @@
   }
  ],
  "params": {
-  "calendars": {
+  "calendars": {"about": "The calendars to show events from. Each calendar's events take their own colour.", 
    "type": "entities",
    "domain": "calendar",
    "label": "Calendars",

@@ -7,7 +7,7 @@ import sound from '../data/sound-packs.json';
 import icons from '../data/icons.json';
 import { COMPONENT_GROUPS } from './groups';
 
-export type Prop = { name: string; type: 'text' | 'select' | 'range' | 'bool'; default?: unknown; options?: string[]; min?: number; max?: number; step?: number };
+export type Prop = { name: string; about?: string; type: 'text' | 'select' | 'range' | 'bool'; default?: unknown; options?: string[]; min?: number; max?: number; step?: number };
 export type Variant = { label: string; about?: string; props: Record<string, unknown> };
 export type Meta = { about?: string; demo?: boolean; layout?: 'doc'; events?: boolean; frame: [number, number]; props?: Prop[]; variants?: Variant[] };
 export type Status = 'wip' | 'done' | 'edited' | 'preview';
@@ -47,6 +47,16 @@ export const linkShown = ([, path]: [string, string]) => !HIDDEN_PATHS.has(path.
 export const defaults = (m: Meta) =>
   Object.fromEntries((m.props ?? []).map((p) => [p.name, p.default ?? (p.type === 'bool' ? false : p.type === 'range' ? p.min ?? 0 : '')]));
 
+/** the kind of input a prop is, in words (the props table's description ends with it in brackets) */
+export const propTypeWord = (p: Prop) =>
+  p.options?.length ? 'pick one' : p.type === 'range' ? 'a number' : p.type === 'bool' ? 'on / off' : 'text';
+/** the accepted values as separate items (code in the table); null = any text */
+export function valueList(p: Prop): string[] | null {
+  if (p.type === 'select') return p.options ?? [];
+  if (p.type === 'range') return [`${p.min ?? 0}`, `${p.max ?? ''}`];
+  if (p.type === 'bool') return ['true', 'false'];
+  return null;
+}
 /** the values a prop takes, for the props table */
 export function values(p: Prop): string {
   if (p.type === 'select') return (p.options ?? []).join(' · ');
@@ -81,10 +91,10 @@ export function iconSvg(name: string, size = 24, cls = ''): string {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${i.viewBox}" width="${size}" height="${size}" aria-hidden="true" class="icon ${cls}"${stroke}>${i.inner}</svg>`;
 }
 
-/** components in sidebar groups (lib/groups.ts order; unknown ids last, under Other) */
+/** components in sidebar groups (lib/groups.ts group order, each group alphabetical; unknown ids last, under Other) */
 export function componentGroups(): { label: string; items: Entry[] }[] {
   const known = new Set(COMPONENT_GROUPS.flatMap(([, ids]) => ids));
-  const out = COMPONENT_GROUPS.map(([label, ids]) => ({ label, items: ids.map((id) => COMPONENTS.find((c) => c.id === id)).filter((c): c is Entry => !!c) }));
+  const out = COMPONENT_GROUPS.map(([label, ids]) => ({ label, items: ids.map((id) => COMPONENTS.find((c) => c.id === id)).filter((c): c is Entry => !!c).sort((a, b) => a.name.localeCompare(b.name)) }));
   const other = COMPONENTS.filter((c) => !known.has(c.id));
   if (other.length) out.push({ label: 'Other', items: other });
   return out.filter((g) => g.items.length);

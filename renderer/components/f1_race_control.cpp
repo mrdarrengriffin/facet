@@ -116,13 +116,13 @@ FW_COMPONENT(f1_race_control, "F1 race control", "components", R"({
   "about": "The race director's messages: flags, safety car, penalties and investigations, newest first.",
   "frame": [440, 120],
   "props": [
-    {"name": "lines", "type": "range", "min": 1, "max": 4, "step": 1, "default": 3},
-    {"name": "width", "type": "range", "min": 240, "max": 448, "step": 8, "default": 400},
-    {"name": "sim", "type": "bool", "default": true},
-    {"name": "speed", "type": "select", "options": ["1x", "10x", "60x"], "default": "10x"},
-    {"name": "jump", "type": "select", "options": ["start", "yellow", "penalty", "black and white", "vsc", "safety car", "red flag", "restart", "fastest lap", "chequered"], "default": "penalty"},
-    {"name": "seed", "type": "range", "min": 1, "max": 20, "step": 1, "default": 7},
-    {"name": "feed", "type": "text", "default": ""}
+    {"name": "lines", "about": "How many of the latest messages are shown at once.", "type": "range", "min": 1, "max": 4, "step": 1, "default": 3},
+    {"name": "width", "about": "How wide the message list is, in pixels.", "type": "range", "min": 240, "max": 448, "step": 8, "default": 400},
+    {"name": "sim", "about": "For previews only: runs a made-up race so messages arrive.", "type": "bool", "default": true},
+    {"name": "speed", "about": "For previews only: how fast the made-up race runs, real time or 10 or 60 times faster.", "type": "select", "options": ["1x", "10x", "60x"], "default": "10x"},
+    {"name": "jump", "about": "For previews only: skips the made-up race to a moment such as a penalty or a red flag.", "type": "select", "options": ["start", "yellow", "penalty", "black and white", "vsc", "safety car", "red flag", "restart", "fastest lap", "chequered"], "default": "penalty"},
+    {"name": "seed", "about": "For previews only: picks a different made-up race; the same number always gives the same race.", "type": "range", "min": 1, "max": 20, "step": 1, "default": 7},
+    {"name": "feed", "about": "The live race data sent to the panel. Leave empty to use the made-up race.", "type": "text", "default": ""}
   ],
   "opening": "Sample data: the race simulator (seeded).",
   "variants": [

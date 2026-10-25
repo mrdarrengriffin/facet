@@ -45,17 +45,17 @@ const char *META = R"({
   "motion": "the simulated match",
   "frame": [480, 480],
   "props": [
-    {"name": "speed", "type": "select", "options": ["1x", "10x", "60x"], "default": "10x"},
-    {"name": "jump", "type": "select", "options": ["start", "break point", "break", "tiebreak", "set point", "match point"], "default": "start"},
-    {"name": "seed", "type": "range", "min": 1, "max": 20, "step": 1, "default": 7},
-    {"name": "best_of", "type": "select", "options": ["3", "5"], "default": "3"},
-    {"name": "final_set", "type": "select", "options": ["tb10", "tb7", "adv"], "default": "tb10"},
-    {"name": "feed", "type": "text", "default": ""},
-    {"name": "match", "type": "text", "default": ""},
-    {"name": "pick", "type": "text", "default": ""},
-    {"name": "event", "type": "text", "default": ""},
-    {"name": "picker", "type": "text", "default": ""},
-    {"name": "delay", "type": "range", "min": 0, "max": 300, "step": 5, "default": 0}
+    {"name": "speed", "about": "For previews only: how fast the made-up match runs, real time or 10 or 60 times faster.", "type": "select", "options": ["1x", "10x", "60x"], "default": "10x"},
+    {"name": "jump", "about": "For previews only: skips the made-up match to a moment such as a break point or match point.", "type": "select", "options": ["start", "break point", "break", "tiebreak", "set point", "match point"], "default": "start"},
+    {"name": "seed", "about": "For previews only: picks a different made-up match; the same number always gives the same match.", "type": "range", "min": 1, "max": 20, "step": 1, "default": 7},
+    {"name": "best_of", "about": "For previews only: whether the made-up match is best of 3 or 5 sets.", "type": "select", "options": ["3", "5"], "default": "3"},
+    {"name": "final_set", "about": "For previews only: how the made-up match's last set ends: tb10 is a tiebreak to 10, tb7 a tiebreak to 7, adv plays on until someone is two games ahead.", "type": "select", "options": ["tb10", "tb7", "adv"], "default": "tb10"},
+    {"name": "feed", "about": "The live match data sent to the panel. Leave empty to use the made-up match.", "type": "text", "default": ""},
+    {"name": "match", "about": "The match picked to follow, by its id. Leave empty to show the made-up match.", "type": "text", "default": ""},
+    {"name": "pick", "about": "The name of the picked match, shown on the match button in the header.", "type": "text", "default": ""},
+    {"name": "event", "about": "The tournament whose matches are listed in the match picker.", "type": "text", "default": ""},
+    {"name": "picker", "about": "The tournaments and matches the match picker lists, sent to the panel. Missing means it shows Loading.", "type": "text", "default": ""},
+    {"name": "delay", "about": "How many seconds your TV runs behind the live data, so the screen does not spoil a point before you see it.", "type": "range", "min": 0, "max": 300, "step": 5, "default": 0}
   ],
   "opening": "Sample data: the tennis simulator (seeded): made-up players, real scoring.",
   "variants": [

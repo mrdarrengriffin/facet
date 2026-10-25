@@ -38,7 +38,7 @@ FW_COMPONENT(moon_phases, "Moon phases", "components", R"({
   "about": "The next four principal phases of the moon: the glyph, its name and the day, in four columns.",
   "frame": [480, 160],
   "props": [
-    {"name": "lat", "type": "range", "min": -60, "max": 65, "step": 0.1, "default": 52.2}
+    {"name": "lat", "about": "Your latitude in degrees. South of the equator the moons are drawn the other way round.", "type": "range", "min": -60, "max": 65, "step": 0.1, "default": 52.2}
   ],
   "variants": [
     {"label": "from tonight", "props": {"now": 1792944000000}},

@@ -10,48 +10,48 @@
    "cards": [
     {
      "t": "light",
-     "e": "light.living_room_dimmer_light",
+     "e": "light.living_room_ceiling",
      "size": "s",
      "tap": "toggle",
      "label": "Ceiling"
     },
     {
      "t": "light",
-     "e": "light.sofa_table_light",
+     "e": "light.sofa_lamp",
      "size": "s",
      "tap": "toggle",
      "label": "Sofa table"
     },
     {
      "t": "light",
-     "e": "light.chair_light",
+     "e": "light.reading_lamp",
      "size": "s",
      "tap": "toggle",
      "label": "Chair"
     },
     {
      "t": "climate",
-     "e": "climate.portable_ac",
+     "e": "climate.living_room",
      "size": "m",
      "tap": "detail",
      "label": "Air con"
     },
     {
      "t": "media",
-     "e": "media_player.living_room_speaker_2",
+     "e": "media_player.sitting_room_speaker",
      "size": "m",
      "tap": "detail",
      "label": "Speaker"
     },
     {
      "t": "sensor",
-     "e": "binary_sensor.back_door_opening",
+     "e": "binary_sensor.back_door",
      "size": "m",
      "label": "Back door"
     },
     {
      "t": "sensor",
-     "e": "sensor.garage_temperature_office_temperature_temperature",
+     "e": "sensor.garage_temperature",
      "size": "m",
      "label": "Garage"
     },
@@ -83,14 +83,14 @@
    "cards": [
     {
      "t": "light",
-     "e": "light.pantry_light",
+     "e": "light.pantry",
      "size": "s",
      "tap": "toggle",
      "label": "Pantry"
     },
     {
      "t": "light",
-     "e": "light.pantry_leds_2",
+     "e": "light.pantry_strip",
      "size": "s",
      "tap": "toggle",
      "label": "Pantry LEDs"
@@ -102,19 +102,19 @@
     },
     {
      "t": "sensor",
-     "e": "binary_sensor.fridge_door_opening",
-     "size": "m",
+     "e": "binary_sensor.fridge_door",
+     "size": "s",
      "label": "Fridge"
     },
     {
      "t": "sensor",
-     "e": "sensor.kitchen_dishwasher_plug_power",
-     "size": "m",
+     "e": "sensor.dishwasher_power",
+     "size": "s",
      "label": "Dishwasher"
     },
     {
      "t": "media",
-     "e": "media_player.kitchen_display_2",
+     "e": "media_player.kitchen_hub",
      "size": "m",
      "tap": "detail",
      "label": "Kitchen display"

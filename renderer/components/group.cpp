@@ -18,10 +18,10 @@ FW_COMPONENT(group, "Group", "components", R"({
   "frame": [480, 0],
   "slots": 1,
   "props": [
-    {"name": "align", "type": "select", "options": ["start", "end"], "default": "start"},
-    {"name": "flow", "type": "select", "options": ["wrap", "stack"], "default": "wrap"},
-    {"name": "space", "type": "select", "options": ["none", "group", "block", "near"], "default": "none"},
-    {"name": "sample", "type": "range", "min": 0, "max": 6, "step": 1, "default": 0}
+    {"name": "align", "about": "Which side the parts line up from: start is the left, end is the right.", "type": "select", "options": ["start", "end"], "default": "start"},
+    {"name": "flow", "about": "wrap lays the parts side by side and starts a new line when the row is full; stack puts each part under the last.", "type": "select", "options": ["wrap", "stack"], "default": "wrap"},
+    {"name": "space", "about": "The gap between the parts: none, group for related parts, block for separate blocks, near for parts that belong tightly together.", "type": "select", "options": ["none", "group", "block", "near"], "default": "none"},
+    {"name": "sample", "about": "For previews only: how many made-up tiles fill the row. 0 shows the empty layout.", "type": "range", "min": 0, "max": 6, "step": 1, "default": 0}
   ],
   "variants": [
     {"label": "four tiles", "props": {"sample": 4}},

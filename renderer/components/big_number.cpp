@@ -57,12 +57,12 @@ FW_COMPONENT(big_number, "Big number", "components", R"({
   "about": "A caps label over a big value and its unit. It counts up when shown.",
   "frame": [256, 96],
   "props": [
-    {"name": "label", "type": "text", "default": "today · so far"},
-    {"name": "value", "type": "range", "min": 0, "max": 40, "step": 0.01, "default": 8.69},
-    {"name": "unit", "type": "text", "default": "kWh"},
-    {"name": "decimals", "type": "range", "min": 0, "max": 3, "step": 1, "default": 2},
-    {"name": "prefix", "type": "text", "default": ""},
-    {"name": "state", "type": "select", "options": ["default", "unavailable"], "default": "default"}
+    {"name": "label", "about": "The small capitals line above the number that says what it is, such as today so far.", "type": "text", "default": "today · so far"},
+    {"name": "value", "about": "The number itself. It counts up to this value when the number first appears.", "type": "range", "min": 0, "max": 40, "step": 0.01, "default": 8.69},
+    {"name": "unit", "about": "The unit shown after the number, such as kWh or %. Leave empty for none.", "type": "text", "default": "kWh"},
+    {"name": "decimals", "about": "How many digits are shown after the decimal point.", "type": "range", "min": 0, "max": 3, "step": 1, "default": 2},
+    {"name": "prefix", "about": "Text shown just before the number, such as a currency sign. Leave empty for none.", "type": "text", "default": ""},
+    {"name": "state", "about": "default shows the number; unavailable shows a dash in place of it when the value cannot be read.", "type": "select", "options": ["default", "unavailable"], "default": "default"}
   ],
   "opening": "Showing it counts up from 0 (Motion value).",
   "variants": [

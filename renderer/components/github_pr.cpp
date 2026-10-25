@@ -95,7 +95,7 @@ FW_COMPONENT(github_pr, "GitHub PR", "components", R"({
   "about": "The GitHub screen's pull request: the text on the left, a QR code to carry on on your phone, and the checks.",
   "frame": [480, 0],
   "props": [
-    {"name": "pr", "type": "select", "options": ["n1", "n2", "n3", "m1", "m2", "m3"], "default": "n1"}
+    {"name": "pr", "about": "For previews only: which made-up pull request to show. n1 to n3 are ones that need your review; m1 to m3 are your own.", "type": "select", "options": ["n1", "n2", "n3", "m1", "m2", "m3"], "default": "n1"}
   ],
   "variants": [
     {"label": "needs a review · checks running", "props": {"pr": "n1"}},

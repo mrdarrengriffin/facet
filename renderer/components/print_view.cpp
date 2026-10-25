@@ -62,9 +62,9 @@ FW_COMPONENT(print_view, "Print view", "components", R"({
   "frame": [480, 400],
   "audit": {"snaps": {"progress": "a new layer is a new picture: the model re-renders, like the docs canvas"}},
   "props": [
-    {"name": "state", "type": "select", "options": ["printing", "paused", "preparing", "done", "idle"], "default": "printing"},
-    {"name": "progress", "type": "range", "min": 0, "max": 100, "step": 1, "default": 45},
-    {"name": "task", "type": "text", "default": "Lighthouse"}
+    {"name": "state", "about": "What the printer is doing: printing, paused, preparing to start, done, or idle.", "type": "select", "options": ["printing", "paused", "preparing", "done", "idle"], "default": "printing"},
+    {"name": "progress", "about": "How much of the print is done, from 0 to 100.", "type": "range", "min": 0, "max": 100, "step": 1, "default": 45},
+    {"name": "task", "about": "The name of the thing being printed.", "type": "text", "default": "Lighthouse"}
   ],
   "variants": [
     {"label": "printing · 45%", "props": {}},

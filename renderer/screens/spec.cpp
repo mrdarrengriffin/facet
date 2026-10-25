@@ -17,10 +17,10 @@ std::string meta() {
   "frame": [480, 480],
   "icons": ["back@glyph", "bulb@icon"],
   "props": [
-    {"name": "screen", "type": "select", "options": [)" + ids + R"(], "default": "living_room"},
-    {"name": "entity", "type": "text", "default": ""},
-    {"name": "name", "type": "text", "default": ""},
-    {"name": "speakers", "type": "text", "default": ""}
+    {"name": "screen", "about": "Which built-in screen to draw from its spec, such as the Light or Weather screen.", "type": "select", "options": [)" + ids + R"(], "default": "living_room"},
+    {"name": "entity", "about": "The entity the screen shows, by its Home Assistant id. Leave empty to use the screen's own.", "type": "text", "default": ""},
+    {"name": "name", "about": "The name shown in the screen's header. Leave empty to use the screen's own.", "type": "text", "default": ""},
+    {"name": "speakers", "about": "For the Media screen: the speakers you can switch between, as entity ids separated by commas.", "type": "text", "default": ""}
   ],
   "variants": [
     )" + vars + R"(

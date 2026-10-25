@@ -477,11 +477,11 @@ FW_COMPONENT(bottom_sheet, "Bottom sheet", "components", R"({
   "frame": [480, 480],
   "icons": ["close@glyph", "speaker@icon", "speakers@icon", "tv@icon", "auto@icon", "bulb@icon", "volume@icon", "back@glyph"],
   "props": [
-    {"name": "open", "type": "select", "options": ["open", "closed"], "default": "open"},
-    {"name": "list", "type": "select", "options": ["speakers", "theme"], "default": "speakers"},
-    {"name": "title", "type": "text", "default": ""},
-    {"name": "selected", "type": "range", "min": 0, "max": 4, "step": 1, "default": 1},
-    {"name": "screen", "type": "bool", "default": true}
+    {"name": "open", "about": "Whether the sheet is showing (open) or hidden off the bottom of the screen (closed). Changing it slides the sheet in or out.", "type": "select", "options": ["open", "closed"], "default": "open"},
+    {"name": "list", "about": "For previews only: which made-up list fills the sheet, the speakers to play on or the light and dark theme choices.", "type": "select", "options": ["speakers", "theme"], "default": "speakers"},
+    {"name": "title", "about": "The heading at the top of the sheet. Leave empty to use the list's own title.", "type": "text", "default": ""},
+    {"name": "selected", "about": "Which row is chosen, counting from 0 at the top; its radio is on.", "type": "range", "min": 0, "max": 4, "step": 1, "default": 1},
+    {"name": "screen", "about": "For previews only: draws a sample screen under the sheet so you can see it dim behind the scrim.", "type": "bool", "default": true}
   ],
   "variants": [
     {"label": "open · speakers", "props": {}},

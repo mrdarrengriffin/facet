@@ -144,8 +144,8 @@ FW_COMPONENT(f1_flag, "F1 flag", "components", R"({
   "about": "The flag the race is under, drawn flat: green, yellow, double yellow, red, blue, black and white, black, chequered, and the safety car boards.",
   "frame": [160, 112],
   "props": [
-    {"name": "flag", "type": "select", "options": ["green", "yellow", "double_yellow", "red", "blue", "bw", "black", "chequered", "sc", "vsc", "none"], "default": "green"},
-    {"name": "size", "type": "select", "options": ["sm", "lg"], "default": "lg"}
+    {"name": "flag", "about": "Which flag to show: green, yellow, double_yellow, red, blue, bw (black and white for a warning), black, chequered, sc for the safety car, vsc for the virtual safety car, or none.", "type": "select", "options": ["green", "yellow", "double_yellow", "red", "blue", "bw", "black", "chequered", "sc", "vsc", "none"], "default": "green"},
+    {"name": "size", "about": "sm is a small flag for a line of text; lg is a big one for a card.", "type": "select", "options": ["sm", "lg"], "default": "lg"}
   ],
   "variants": [
     {"label": "green", "props": {}},

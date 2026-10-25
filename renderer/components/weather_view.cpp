@@ -284,13 +284,13 @@ FW_COMPONENT(weather_view, "Weather view", "components", R"({
   "about": "The Weather screen's body: Weather, Sun, Moon and Lightning views under one Segmented. The weather with the next eight hours, the day's sun arc, the moon, the storm.",
   "frame": [480, 400],
   "props": [
-    {"name": "view", "type": "select", "options": ["weather", "sun", "moon", "lightning"], "default": "weather"},
-    {"name": "condition", "type": "text", "default": ""},
-    {"name": "temp", "type": "text", "default": ""},
-    {"name": "feels", "type": "text", "default": ""},
-    {"name": "place", "type": "text", "default": ""},
-    {"name": "lat", "type": "range", "min": -60, "max": 65, "step": 0.1, "default": 52.2},
-    {"name": "lon", "type": "range", "min": -180, "max": 180, "step": 0.1, "default": -1.2}
+    {"name": "view", "about": "Which view to open on: weather with the next hours, sun with sunrise and sunset, moon, or lightning.", "type": "select", "options": ["weather", "sun", "moon", "lightning"], "default": "weather"},
+    {"name": "condition", "about": "The weather now, such as rainy. Leave empty to use the forecast.", "type": "text", "default": ""},
+    {"name": "temp", "about": "The temperature now. Leave empty to use the forecast.", "type": "text", "default": ""},
+    {"name": "feels", "about": "The feels-like temperature. Leave empty to use the forecast.", "type": "text", "default": ""},
+    {"name": "place", "about": "The place name shown with the weather. Leave empty for none.", "type": "text", "default": ""},
+    {"name": "lat", "about": "Your latitude in degrees, used for sunrise, sunset and the moon.", "type": "range", "min": -60, "max": 65, "step": 0.1, "default": 52.2},
+    {"name": "lon", "about": "Your longitude in degrees, used for sunrise, sunset and the moon.", "type": "range", "min": -180, "max": 180, "step": 0.1, "default": -1.2}
   ],
   "variants": [
     {"label": "weather", "props": {"now": 1792926000000}},

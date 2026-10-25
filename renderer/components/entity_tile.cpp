@@ -9,8 +9,8 @@
 //   gap      space 5 (16 / 12, Tile)
 //   status   type label (caps), one line, a fixed box: the state ("Off", "64%", "Open"); st::on_ink (accent-text) while
 //            on, else text-dim
-// Props: icon (a UI or screen icon name), label, status, on (bool), act toggle | open (what a tap does: the sound and
-// the instant look), state default | pressed | unavailable.
+// Props: icon (a UI or screen icon name), label, status, on (bool), act toggle | open | none (what a tap does: the
+// sound and the instant look; none = read-only, a Home sensor tile: not clickable, no press look), state default | pressed | unavailable.
 // Tap (states.json): act toggle = the tile shows the other side at once (Motion toggle fade, like a tap on a Toggle)
 // + sound toggle-on / toggle-off + event "tap" (the Home's spec sends the toggle; HA's answer settles it); act open =
 // sound open + event "tap" (the Home opens the screen). Pressed = the Card press (states.json pressed.style).
@@ -104,6 +104,7 @@ void fill(lv_obj_t *c, fw::Props p) {
   if (off) lv_obj_add_state(c, ST_OFF);
   paint(c, !off && on_of(p), true);
   lv_obj_set_flag(c, LV_OBJ_FLAG_USER_4, !strcmp(p["act"] | "toggle", "toggle"));  // a tap toggles (else opens)
+  lv_obj_set_flag(c, LV_OBJ_FLAG_CLICKABLE, strcmp(p["act"] | "toggle", "none") != 0);  // none: read-only
 }
 // a text only when it changes (an update with the same props redraws nothing)
 void put(lv_obj_t *l, fw::ty::Id ty, const char *txt) {
@@ -114,15 +115,15 @@ void put(lv_obj_t *l, fw::ty::Id ty, const char *txt) {
 FW_COMPONENT(entity_tile, "Entity tile", "components", R"({
   "about": "A Home tile for one thing in the room: its icon, name and state; a tap toggles it or opens its screen.",
   "frame": [240, 240],
-  "icons": ["bulb@icon", "power@icon", "screen-covers@icon", "screen-timer@icon", "screen-media@icon", "screen-weather@icon"],
+  "icons": ["bulb@icon", "power@icon", "screen-covers@icon", "screen-timer@icon", "screen-media@icon", "screen-weather@icon", "thermometer@icon", "door@icon", "window@icon", "person@icon", "alert@icon", "bolt@icon", "house@icon"],
   "props": [
-    {"name": "icon", "type": "select", "options": ["bulb", "power", "screen-covers", "screen-timer", "screen-media", "screen-weather"], "default": "bulb"},
-    {"name": "label", "type": "text", "default": "Sofa table"},
-    {"name": "status", "type": "text", "default": "64%"},
-    {"name": "on", "type": "bool", "default": true},
-    {"name": "act", "type": "select", "options": ["toggle", "open"], "default": "toggle"},
-    {"name": "state", "type": "select", "options": ["default", "pressed", "unavailable"], "default": "default"},
-    {"name": "press", "type": "select", "options": ["fill", "border", "border-fill"], "default": "fill"}
+    {"name": "icon", "about": "The icon on the tile, picked for the kind of thing it is, such as a bulb for a light or a door for a door sensor.", "type": "select", "options": ["bulb", "power", "screen-covers", "screen-timer", "screen-media", "screen-weather", "thermometer", "door", "window", "person", "alert", "bolt", "house"], "default": "bulb"},
+    {"name": "label", "about": "The thing's name on the tile.", "type": "text", "default": "Sofa table"},
+    {"name": "status", "about": "The short state under the name, such as 64% or Off.", "type": "text", "default": "64%"},
+    {"name": "on", "about": "Whether the thing is on. On tiles are lit in the accent colour.", "type": "bool", "default": true},
+    {"name": "act", "about": "What a tap does: toggle switches it on or off, open opens its own screen, none does nothing.", "type": "select", "options": ["toggle", "open", "none"], "default": "toggle"},
+    {"name": "state", "about": "How the tile looks: default ready to tap, pressed while held, or unavailable when the device cannot be reached.", "type": "select", "options": ["default", "pressed", "unavailable"], "default": "default"},
+    {"name": "press", "about": "How the tile shows it is being pressed: fill darkens the whole tile, border lights its edge, border-fill does both.", "type": "select", "options": ["fill", "border", "border-fill"], "default": "fill"}
   ],
   "variants": [
     {"label": "light · on", "props": {}},
@@ -130,6 +131,7 @@ FW_COMPONENT(entity_tile, "Entity tile", "components", R"({
     {"label": "long name", "props": {"label": "Living room ceiling lights", "on": false, "status": "Off"}},
     {"label": "switch · on", "props": {"icon": "power", "label": "Dishwasher", "status": "On"}},
     {"label": "opens a screen", "props": {"icon": "screen-timer", "label": "Timer", "status": "", "on": false, "act": "open"}},
+    {"label": "sensor · read only", "props": {"icon": "thermometer", "label": "Kitchen", "status": "21.4\u00b0", "on": false, "act": "none"}},
     {"label": "pressed", "props": {"state": "pressed", "on": false, "status": "Off"}},
     {"label": "unavailable", "props": {"label": "Chair", "state": "unavailable"}}
   ]
@@ -161,6 +163,7 @@ FW_UPDATE(entity_tile) {
     const bool on = !off && on_of(p);
     if (on != is_on(root)) paint(root, on, false);
     lv_obj_set_flag(root, LV_OBJ_FLAG_USER_4, !strcmp(p["act"] | "toggle", "toggle"));
+    lv_obj_set_flag(root, LV_OBJ_FLAG_CLICKABLE, strcmp(p["act"] | "toggle", "none") != 0);
     const bool pr = !strcmp(state, "pressed");
     if (pr != lv_obj_has_state(root, LV_STATE_PRESSED)) lv_obj_set_state(root, LV_STATE_PRESSED, pr);
     return true;

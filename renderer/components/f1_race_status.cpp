@@ -172,13 +172,13 @@ FW_COMPONENT(f1_race_status, "F1 race status", "components", R"({
   "about": "What is happening in the race right now: the flag, the state in a word, and the lap.",
   "frame": [400, 120],
   "props": [
-    {"name": "form", "type": "select", "options": ["pill", "card", "banner"], "default": "pill"},
-    {"name": "width", "type": "range", "min": 240, "max": 448, "step": 8, "default": 360},
-    {"name": "sim", "type": "bool", "default": true},
-    {"name": "speed", "type": "select", "options": ["1x", "10x", "60x"], "default": "10x"},
-    {"name": "jump", "type": "select", "options": ["start", "yellow", "double yellow", "vsc", "safety car", "red flag", "restart", "final lap", "chequered"], "default": "yellow"},
-    {"name": "seed", "type": "range", "min": 1, "max": 20, "step": 1, "default": 7},
-    {"name": "feed", "type": "text", "default": ""}
+    {"name": "form", "about": "How it is laid out: pill is a small tag, card is a box with more room, banner is a wide strip.", "type": "select", "options": ["pill", "card", "banner"], "default": "pill"},
+    {"name": "width", "about": "How wide it is, in pixels.", "type": "range", "min": 240, "max": 448, "step": 8, "default": 360},
+    {"name": "sim", "about": "For previews only: runs a made-up race so the status changes.", "type": "bool", "default": true},
+    {"name": "speed", "about": "For previews only: how fast the made-up race runs, real time or 10 or 60 times faster.", "type": "select", "options": ["1x", "10x", "60x"], "default": "10x"},
+    {"name": "jump", "about": "For previews only: skips the made-up race to a moment such as a yellow flag or the chequered flag.", "type": "select", "options": ["start", "yellow", "double yellow", "vsc", "safety car", "red flag", "restart", "final lap", "chequered"], "default": "yellow"},
+    {"name": "seed", "about": "For previews only: picks a different made-up race; the same number always gives the same race.", "type": "range", "min": 1, "max": 20, "step": 1, "default": 7},
+    {"name": "feed", "about": "The live race data sent to the panel. Leave empty to use the made-up race.", "type": "text", "default": ""}
   ],
   "opening": "Sample data: the race simulator (seeded).",
   "variants": [

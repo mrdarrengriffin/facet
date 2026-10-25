@@ -16,6 +16,12 @@ const m = await F();
 m._fw_init();
 m._fw_stage(720, 720);
 const cat = JSON.parse(m.UTF8ToString(m._fw_catalogue()));
+// each prop's one-line description (meta "about" of the registered component; the docs + the agent guide + the editor)
+const META = Object.fromEntries(JSON.parse(m.UTF8ToString(m._fw_meta())).map((c) => [c.id, typeof c.meta === 'string' ? JSON.parse(c.meta) : c.meta]));
+for (const [id, c] of Object.entries(cat.components)) for (const p of c.props) {
+  const about = META[id]?.props?.find((x) => x.name === p.name)?.about;
+  if (about) p.about = about;
+}
 const bind = { type: 'object', additionalProperties: false, required: ['e'], properties: { e: { type: 'string', pattern: '^(\\$[a-z_]+|[a-z_]+\\.[a-z0-9_]+)$' }, a: { type: 'string' }, fmt: { enum: cat.fmt } } };
 const param = { type: 'string', pattern: '^\\$' };
 const node = (id, c) => ({
@@ -24,7 +30,7 @@ const node = (id, c) => ({
     c: { const: id },
     p: { type: 'object', additionalProperties: false, properties: Object.fromEntries(c.props.map((p) => [p.name, { anyOf: [
       p.type === 'bool' ? { type: 'boolean' } : p.type === 'range' ? { type: 'number', minimum: p.min, maximum: p.max } : p.options ? { enum: p.options } : { type: 'string', maxLength: 64 },
-      { $ref: '#/$defs/bind' }, { $ref: '#/$defs/param' }] }])) },
+      { $ref: '#/$defs/bind' }, { $ref: '#/$defs/param' }], ...(p.about ? { description: p.about } : {}) }])) },
     on: { type: 'object', additionalProperties: false, properties: Object.fromEntries(Object.entries(c.events).map(([ev, acts]) => [ev, { $ref: '#/$defs/action', properties: { do: { enum: acts } } }])) },
     pending: { type: 'object', additionalProperties: { type: 'array', items: { type: 'string' }, minItems: 2, maxItems: 2 } },
   },
@@ -35,7 +41,7 @@ const schema = {
   oneOf: [{ $ref: '#/$defs/screen' }, { $ref: '#/$defs/deck' }],
   $defs: {
     bind, param,
-    typedParam: { type: 'object', additionalProperties: false, required: ['type'], properties: { type: { enum: ['text', 'select', 'entity', 'entities', 'toggle', 'hidden'] }, default: { type: 'string' }, label: { type: 'string' }, domain: { type: 'string', pattern: '^[a-z_]+$' }, options: { type: 'array', items: { type: 'string' } } } },
+    typedParam: { type: 'object', additionalProperties: false, required: ['type'], properties: { type: { enum: ['text', 'select', 'entity', 'entities', 'toggle', 'hidden'] }, default: { type: 'string' }, label: { type: 'string' }, about: { type: 'string', description: 'What the setting does, in one or two plain sentences (docs, editor)' }, domain: { type: 'string', pattern: '^[a-z_]+$' }, options: { type: 'array', items: { type: 'string' } } } },
     action: { type: 'object', additionalProperties: false, required: ['do'], properties: { do: { enum: cat.actions }, e: { type: 'string' }, screen: { type: 'string', pattern: '^[a-z0-9_]{1,12}$' }, params: { type: 'object', additionalProperties: { type: 'string' } }, param: { type: 'string', pattern: '^[a-z0-9_]{1,12}$' }, from: { type: 'string', pattern: '^[a-z0-9_]{1,12}$' }, auto: { type: 'string', pattern: '^[a-z0-9_]{1,12}$' } } },
     screen: { type: 'object', additionalProperties: false, required: ['v', 'id', 'rev', 'layout', 'nodes'], properties: {
       v: { const: cat.protocol }, id: { type: 'string', pattern: '^[a-z0-9_]{1,12}$' }, name: { type: 'string' }, rev: { type: 'integer', minimum: 0 }, role: { enum: cat.roles },

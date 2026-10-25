@@ -5,8 +5,8 @@
  "rev": 2,
  "role": "detail",
  "params": {
-  "entity": {"type": "entity", "domain": "cover", "label": "Window", "default": ""},
-  "covers": {"type": "entities", "domain": "cover", "label": "Windows", "default": ""}
+  "entity": {"about": "The blind or curtain this screen opens on.", "type": "entity", "domain": "cover", "label": "Window", "default": ""},
+  "covers": {"about": "Every blind and curtain you can switch between on this screen.", "type": "entities", "domain": "cover", "label": "Windows", "default": ""}
  },
  "header": {
   "label": "Blinds",

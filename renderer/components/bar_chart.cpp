@@ -62,12 +62,12 @@ FW_COMPONENT(bar_chart, "Bar chart", "components", R"({
   "about": "Bars on a baseline, coloured by token, with a dotted now marker. Press and drag to read a bar; they grow from the baseline when shown.",
   "frame": [448, 160],
   "props": [
-    {"name": "values", "type": "text", "default": "0.3,0.2,0.2,0.2,0.3,0.4,0.9,1.2,0.8,0.5,0.4,0.6,0.7,0.5,0.6,1.1,1.6,1.9,1.4,1.0,0.8,0.6,0.4,0.3"},
-    {"name": "colour", "type": "select", "options": ["bands", "series"], "default": "bands"},
-    {"name": "now", "type": "range", "min": -1, "max": 23, "step": 1, "default": 14},
-    {"name": "width", "type": "range", "min": 160, "max": 440, "step": 8, "default": 320},
-    {"name": "height", "type": "range", "min": 48, "max": 136, "step": 8, "default": 80},
-    {"name": "scrub", "type": "bool", "default": true}
+    {"name": "values", "about": "The height of each bar, as numbers separated by commas, one bar per number from left to right.", "type": "text", "default": "0.3,0.2,0.2,0.2,0.3,0.4,0.9,1.2,0.8,0.5,0.4,0.6,0.7,0.5,0.6,1.1,1.6,1.9,1.4,1.0,0.8,0.6,0.4,0.3"},
+    {"name": "colour", "about": "How the bars are coloured: bands colours each bar by its price band (cheap, normal, peak); series draws every bar in the one chart colour.", "type": "select", "options": ["bands", "series"], "default": "bands"},
+    {"name": "now", "about": "Which bar is now, counting from 0 on the left; it gets the dotted now marker. -1 shows no marker.", "type": "range", "min": -1, "max": 23, "step": 1, "default": 14},
+    {"name": "width", "about": "How wide the whole chart is, in pixels.", "type": "range", "min": 160, "max": 440, "step": 8, "default": 320},
+    {"name": "height", "about": "How tall the tallest bar can be, in pixels.", "type": "range", "min": 48, "max": 136, "step": 8, "default": 80},
+    {"name": "scrub", "about": "Lets you press and drag along the chart to read the value of each bar.", "type": "bool", "default": true}
   ],
   "opening": "Showing the chart grows the bars from the baseline (chart motion bars).",
   "variants": [

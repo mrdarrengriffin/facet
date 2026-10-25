@@ -34,7 +34,7 @@ FW_COMPONENT(event_row, "Event row", "components", R"({
   "about": "One thing that happened, in an activity list: the time and what happened, who did it (a jammed lock in the error colour).",
   "frame": [320, 0],
   "props": [
-    {"name": "event", "type": "text", "default": "09:03|locked|Alex"}
+    {"name": "event", "about": "What happened, as time, action and who did it separated by bars, like 09:03|locked|Alex. A jammed lock shows in the error colour.", "type": "text", "default": "09:03|locked|Alex"}
   ],
   "variants": [
     {"label": "locked", "props": {}},

@@ -1086,9 +1086,9 @@ FW_COMPONENT(chart, "Charts", "foundations", R"({
   "layout": "doc",
   "frame": [480, 0],
   "props": [
-    {"name": "section", "type": "select", "options": )" FW_CHART_SECTION_IDS R"(, "default": "colours"},
-    {"name": "loop", "type": "select", "options": ["off", "draw", "shift", "morph", "bars", "gauge", "ping"], "default": "off"},
-    {"name": "lite", "type": "select", "options": ["auto", "on", "off"], "default": "auto"}
+    {"name": "section", "about": "Which part of the charts page to show, such as the series colours, the lines or the no-data states.", "type": "select", "options": )" FW_CHART_SECTION_IDS R"(, "default": "colours"},
+    {"name": "loop", "about": "For previews only: plays one chart movement over and over, such as a line drawing in or bars growing. off keeps them still.", "type": "select", "options": ["off", "draw", "shift", "morph", "bars", "gauge", "ping"], "default": "off"},
+    {"name": "lite", "about": "A lighter way of drawing charts for smaller panels. auto picks it on the smaller panel, on and off force it.", "type": "select", "options": ["auto", "on", "off"], "default": "auto"}
   ],
   "variants": )" FW_CHART_SECTIONS R"(
 })") {

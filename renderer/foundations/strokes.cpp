@@ -318,8 +318,8 @@ FW_COMPONENT(strokes, "Smooth strokes (lab)", "foundations", R"({
   "about": "Experiment (facet-145): the same curves drawn four ways, to pick how Facet draws smooth lines.",
   "frame": [480, 0],
   "props": [
-    {"name": "curve", "type": "select", "options": ["all", "ease-out", "ease-in-out", "arc", "wave", "floorplan"], "default": "all"},
-    {"name": "stroke", "type": "select", "options": ["edge", "arc", "indicator", "hair"], "default": "edge"}
+    {"name": "curve", "about": "Which curve to draw, or all of them.", "type": "select", "options": ["all", "ease-out", "ease-in-out", "arc", "wave", "floorplan"], "default": "all"},
+    {"name": "stroke", "about": "Which line weight to draw the curves in: edge, arc, indicator or hair.", "type": "select", "options": ["edge", "arc", "indicator", "hair"], "default": "edge"}
   ],
   "variants": [
     {"label": "ease-out · edge", "props": {"curve": "ease-out"}},

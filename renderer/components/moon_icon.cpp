@@ -29,9 +29,9 @@ FW_COMPONENT(moon_icon, "Moon phase", "components", R"({
   "audit": {"snaps": {"phase": "the phase moves once a day: a redraw, nothing to animate"}},
   "frame": [240, 200],
   "props": [
-    {"name": "phase", "type": "range", "min": 0, "max": 1, "step": 0.01, "default": 0.25},
-    {"name": "size", "type": "select", "options": ["icon", "glyph", "detail", "feature", "card", "hero"], "default": "card"},
-    {"name": "south", "type": "bool", "default": false}
+    {"name": "phase", "about": "Where the moon is in its month: 0 is new, 0.25 first quarter, 0.5 full, 0.75 last quarter.", "type": "range", "min": 0, "max": 1, "step": 0.01, "default": 0.25},
+    {"name": "size", "about": "How big the moon is drawn, from the small icon size up to the hero size of a screen.", "type": "select", "options": ["icon", "glyph", "detail", "feature", "card", "hero"], "default": "card"},
+    {"name": "south", "about": "Draws the moon as seen from the southern half of the world, where the lit side is the other way round.", "type": "bool", "default": false}
   ],
   "variants": [
     {"label": "new", "props": {"phase": 0}},

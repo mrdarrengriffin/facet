@@ -78,14 +78,14 @@ FW_COMPONENT(camera_tile, "Camera tile", "components", R"({
   "about": "One camera's latest still with what it saw: the object's box and label, the camera's name and the time.",
   "frame": [320, 0],
   "props": [
-    {"name": "name", "type": "text", "default": "Front door"},
-    {"name": "time", "type": "text", "default": "19:28"},
-    {"name": "detect", "type": "text", "default": "person"},
-    {"name": "score", "type": "range", "min": 0, "max": 100, "step": 1, "default": 92},
-    {"name": "box", "type": "text", "default": "40,20,24,64"},
-    {"name": "state", "type": "select", "options": ["default", "unavailable"], "default": "default"},
-    {"name": "size", "type": "select", "options": ["tile", "full"], "default": "tile"},
-    {"name": "entity", "type": "text", "default": ""}
+    {"name": "name", "about": "The camera's name, shown along the bottom of the picture.", "type": "text", "default": "Front door"},
+    {"name": "time", "about": "When the picture was taken, shown next to the name.", "type": "text", "default": "19:28"},
+    {"name": "detect", "about": "What the camera saw, such as person or car, shown as a label on the box around it. Leave empty when nothing was seen.", "type": "text", "default": "person"},
+    {"name": "score", "about": "How sure the camera is about what it saw, from 0 to 100 per cent.", "type": "range", "min": 0, "max": 100, "step": 1, "default": 92},
+    {"name": "box", "about": "Where the box around what was seen sits on the picture: left, top, width and height as percentages, separated by commas.", "type": "text", "default": "40,20,24,64"},
+    {"name": "state", "about": "default shows the picture; unavailable shows that the camera cannot be reached.", "type": "select", "options": ["default", "unavailable"], "default": "default"},
+    {"name": "size", "about": "tile is a small picture for a grid of cameras; full fills the screen with one camera.", "type": "select", "options": ["tile", "full"], "default": "tile"},
+    {"name": "entity", "about": "Which camera to show, by its Home Assistant entity id. Leave empty to use the sample picture.", "type": "text", "default": ""}
   ],
   "variants": [
     {"label": "person", "props": {}},

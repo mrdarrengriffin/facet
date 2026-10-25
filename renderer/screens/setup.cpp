@@ -366,15 +366,15 @@ const char *META = R"J({
   "about": "The screen a new panel shows until it is on Wi-Fi and added to Home Assistant: a code to join its hotspot (with the password), the other ways to set it up, then each step until it is connected.",
   "frame": [480, 480],
   "props": [
-    {"name": "state", "type": "select", "options": ["no-wifi", "phone-joined", "allow", "connecting", "failed", "connected", "added", "actions"], "default": "no-wifi"},
-    {"name": "way", "type": "select", "options": ["hotspot", "bluetooth", "usb"], "default": "hotspot"},
-    {"name": "bluetooth", "type": "bool", "default": true},
-    {"name": "back", "type": "bool", "default": false},
-    {"name": "ssid", "type": "text", "default": "Facet-1A2B"},
-    {"name": "password", "type": "text", "default": "k7mqx3tpa9"},
-    {"name": "wifi", "type": "text", "default": "Larkfield"},
-    {"name": "device", "type": "text", "default": "Facet panel 1a2b3c"},
-    {"name": "ip", "type": "text", "default": "192.168.1.42"}
+    {"name": "state", "about": "Which step of setting up the panel is on: no Wi-Fi yet, phone joined, Home Assistant asking, connecting, failed, connected, added, or the hint to allow actions. The panel sets this itself; pick one here to preview a step.", "type": "select", "options": ["no-wifi", "phone-joined", "allow", "connecting", "failed", "connected", "added", "actions"], "default": "no-wifi"},
+    {"name": "way", "about": "How the panel is being set up: by joining its own hotspot from a phone, through the Home Assistant app over Bluetooth, or over a USB cable from a computer.", "type": "select", "options": ["hotspot", "bluetooth", "usb"], "default": "hotspot"},
+    {"name": "bluetooth", "about": "Whether this panel can be set up over Bluetooth. Off on boards without Bluetooth, which hides that option.", "type": "bool", "default": true},
+    {"name": "back", "about": "Shows a Back button. On when the screen is opened again from Settings, off on a brand-new panel.", "type": "bool", "default": false},
+    {"name": "ssid", "about": "The name of the panel's own hotspot, shown in the QR code and under Wi-Fi.", "type": "text", "default": "Facet-1A2B"},
+    {"name": "password", "about": "The password for the panel's hotspot. Each panel makes its own.", "type": "text", "default": "k7mqx3tpa9"},
+    {"name": "wifi", "about": "The name of your home Wi-Fi network the panel is joining, shown while it connects.", "type": "text", "default": "Larkfield"},
+    {"name": "device", "about": "The name the panel shows for itself and in Home Assistant.", "type": "text", "default": "Facet panel 1a2b3c"},
+    {"name": "ip", "about": "The panel's address on your network, shown once it is connected.", "type": "text", "default": "192.168.1.42"}
   ],
   "audit": {"snaps": {"way": "another way is another page of the screen: the body is made again and fades (refill_fade)"}},
   "variants": [

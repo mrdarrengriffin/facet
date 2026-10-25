@@ -5,11 +5,11 @@
  "rev": 2,
  "role": "both",
  "params": {
-  "entity": {
+  "entity": {"about": "The thermostat this screen controls.", 
    "type": "entity",
    "domain": "climate",
    "label": "Thermostat",
-   "default": "climate.portable_ac"
+   "default": "climate.living_room"
   }
  },
  "header": {

@@ -1,6 +1,6 @@
 {"v": 1, "id": "overhead", "name": "Overhead", "rev": 1, "role": "page",
  "params": {
-  "sample": {"type": "select", "options": ["busy", "overhead", "emergency", "quiet"], "label": "Sample", "default": "busy"}
+  "sample": {"about": "For previews only: which made-up sky to show. busy has many aircraft, overhead has one right above, emergency has one squawking an emergency, quiet has none nearby.", "type": "select", "options": ["busy", "overhead", "emergency", "quiet"], "label": "Sample", "default": "busy"}
  },
  "header": {"label": "Overhead", "back": true},
  "layout": "list",

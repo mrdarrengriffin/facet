@@ -111,7 +111,7 @@ FW_COMPONENT(units, "Units", "foundations", R"({
   "about": "Distances and speeds follow one setting each: kilometres or miles, mph, km/h or knots.",
   "layout": "doc",
   "frame": [480, 0],
-  "props": [{"name": "section", "type": "select", "options": ["settings", "rules"], "default": "settings"}],
+  "props": [{"name": "section", "about": "Which part of the page to show: the unit settings, or the rules for showing distances and speeds.", "type": "select", "options": ["settings", "rules"], "default": "settings"}],
   "variants": [
     {"label": "Distance and speed", "about": "Pick a unit: the numbers below change in place.", "props": {"section": "settings"}},
     {"label": "How they are written", "props": {"section": "rules"}}

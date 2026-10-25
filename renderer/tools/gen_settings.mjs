@@ -55,13 +55,15 @@ for (const s of S.settings)
     `${q(String(s.default))}, ${s.min ?? 0}, ${s.max ?? 0}, ${s.step ?? 1}, ${q(s.unit)}, ${q(s.zero)}, ${s.presets ? `PRE_${s.id}` : 'nullptr'}, ${s.presets?.length ?? 0}},`);
 L.push('};', `constexpr int N_SETTINGS = ${S.settings.length};`);
 // playground props of the Settings screen: one per setting (its value), in schema order
-const props = S.settings.map((s) => {
+// "help" = the setting's plain description for the docs and the editor (the props' about; the panel's own lines stay in "about")
+const props = S.settings.map((s) => ({ ...prop(s), about: s.help ?? '' }));
+function prop(s) {
   if (s.kind === 'switch') return { name: s.id, type: 'bool', default: !!s.default };
   if (s.kind === 'number' && s.control === 'slider') return { name: s.id, type: 'range', min: s.min, max: s.max, step: s.step, default: s.default };
   if (s.kind === 'number') return { name: s.id, type: 'select', options: s.presets.map(String), default: String(s.default) };
   if (s.id === 'accent') return { name: s.id, type: 'select', options: ['current', ...s.options.map((o) => o.id)], default: 'current' };
   return { name: s.id, type: 'select', options: s.options.map((o) => o.id), default: s.default };
-});
+}
 L.push(`constexpr const char *PROPS_JSON = R"(${JSON.stringify(props)})";`);
 L.push('}  // namespace set', '}  // namespace fw', '');
 const text = L.join('\n');

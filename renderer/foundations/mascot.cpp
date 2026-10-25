@@ -353,10 +353,10 @@ FW_COMPONENT(mascots, "Mascots", "foundations", R"({
   "layout": "doc",
   "frame": [480, 0],
   "props": [
-    {"name": "section", "type": "select", "options": )" FW_MASCOT_SECTION_IDS R"(, "default": "moods"},
-    {"name": "colour", "type": "select", "options": )" FW_MASCOT_COLOURS R"(, "default": "mood"},
-    {"name": "reduced_motion", "type": "bool", "default": false},
-    {"name": "bench", "type": "select", "options": ["off", "agents", "big"], "default": "off"}
+    {"name": "section", "about": "Which part of the mascot page to show, such as the moods or the usage rules.", "type": "select", "options": )" FW_MASCOT_SECTION_IDS R"(, "default": "moods"},
+    {"name": "colour", "about": "The mascots' colour: each mood's own colour, or one fixed colour.", "type": "select", "options": )" FW_MASCOT_COLOURS R"(, "default": "mood"},
+    {"name": "reduced_motion", "about": "Shows the mascots as they look when reduced motion is turned on: still.", "type": "bool", "default": false},
+    {"name": "bench", "about": "For previews only: a speed test with many mascots moving at once. off shows the normal page.", "type": "select", "options": ["off", "agents", "big"], "default": "off"}
   ],
   "variants": )" FW_MASCOT_SECTIONS R"(
 })") {

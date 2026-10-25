@@ -279,11 +279,11 @@ FW_COMPONENT(card_previews, "Card previews", "components", R"({
   "about": "The artwork at the top right of a Home card, at its size on the card (icon size card: 72 / 48). Plain shapes from the atoms: mascots, value arcs, bars, rings and dots.",
   "frame": [48, 48],
   "props": [
-    {"name": "preview", "type": "select", "options": ["agents", "media", "dial", "switch", "clock", "timer", "github", "energy", "lightning"], "default": "dial"},
-    {"name": "value", "type": "range", "min": 0, "max": 100, "step": 1, "default": 64},
-    {"name": "on", "type": "bool", "default": true},
-    {"name": "unavailable", "type": "bool", "default": false},
-    {"name": "quiet", "type": "bool", "default": false}
+    {"name": "preview", "about": "Which picture to draw, as it appears at the top right of a Home card: agents, media, a dial, a switch, the clock, a timer, GitHub, energy or lightning.", "type": "select", "options": ["agents", "media", "dial", "switch", "clock", "timer", "github", "energy", "lightning"], "default": "dial"},
+    {"name": "value", "about": "The level the picture shows where it has one, such as how far round the dial is, from 0 to 100.", "type": "range", "min": 0, "max": 100, "step": 1, "default": 64},
+    {"name": "on", "about": "Whether the thing the picture stands for is on, such as the switch or the dial's light.", "type": "bool", "default": true},
+    {"name": "unavailable", "about": "Shows the picture greyed out, for a device that cannot be reached.", "type": "bool", "default": false},
+    {"name": "quiet", "about": "For the lightning picture: shows a quiet sky with no recent strikes.", "type": "bool", "default": false}
   ],
   "variants": [
     {"label": "agents", "props": {"preview": "agents"}},

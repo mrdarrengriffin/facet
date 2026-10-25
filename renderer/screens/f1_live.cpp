@@ -80,14 +80,14 @@ const char *META = R"({
   "motion": "the simulated race",
   "frame": [480, 480],
   "props": [
-    {"name": "track", "type": "select", "options": ["au-1953", "cn-2004", "jp-1962", "us-2022", "ca-1978", "mc-1929", "es-1991", "at-1969", "gb-1948", "be-1925", "hu-1986", "nl-1948", "it-1922", "es-2026", "az-2016", "my-1999", "sg-2008", "us-2012", "mx-1962", "br-1940", "us-2023", "qa-2004", "ae-2009"], "default": "us-2012"},
-    {"name": "view", "type": "select", "options": ["map", "order"], "default": "map"},
-    {"name": "marker", "type": "select", "options": ["dot", "code", "number"], "default": "dot"},
-    {"name": "labels", "type": "select", "options": ["none", "leader", "top 3", "battles", "all"], "default": "battles"},
-    {"name": "speed", "type": "select", "options": ["1x", "10x", "60x"], "default": "10x"},
-    {"name": "jump", "type": "select", "options": ["start", "overtake", "pit stop", "fastest lap", "retirement", "final lap", "chequered"], "default": "start"},
-    {"name": "seed", "type": "range", "min": 1, "max": 20, "step": 1, "default": 7},
-    {"name": "feed", "type": "text", "default": ""}
+    {"name": "track", "about": "Which circuit to draw, by its country and the year the layout was first used, such as gb-1948 for Silverstone.", "type": "select", "options": ["au-1953", "cn-2004", "jp-1962", "us-2022", "ca-1978", "mc-1929", "es-1991", "at-1969", "gb-1948", "be-1925", "hu-1986", "nl-1948", "it-1922", "es-2026", "az-2016", "my-1999", "sg-2008", "us-2012", "mx-1962", "br-1940", "us-2023", "qa-2004", "ae-2009"], "default": "us-2012"},
+    {"name": "view", "about": "Which view to open on: map shows the cars on the circuit, order shows the running order.", "type": "select", "options": ["map", "order"], "default": "map"},
+    {"name": "marker", "about": "How each car is drawn: a plain dot, the driver's code, or the car number.", "type": "select", "options": ["dot", "code", "number"], "default": "dot"},
+    {"name": "labels", "about": "Which cars get a name tag: none, the leader, the top 3, cars close to each other in a battle, or all.", "type": "select", "options": ["none", "leader", "top 3", "battles", "all"], "default": "battles"},
+    {"name": "speed", "about": "For previews only: how fast the made-up race runs, real time or 10 or 60 times faster.", "type": "select", "options": ["1x", "10x", "60x"], "default": "10x"},
+    {"name": "jump", "about": "For previews only: skips the made-up race to a moment such as an overtake or the chequered flag.", "type": "select", "options": ["start", "overtake", "pit stop", "fastest lap", "retirement", "final lap", "chequered"], "default": "start"},
+    {"name": "seed", "about": "For previews only: picks a different made-up race; the same number always gives the same race.", "type": "range", "min": 1, "max": 20, "step": 1, "default": 7},
+    {"name": "feed", "about": "The live race data sent to the panel. Leave empty to use the made-up race.", "type": "text", "default": ""}
   ],
   "opening": "Sample data: the race simulator (seeded) on the 2026 grid.",
   "variants": [

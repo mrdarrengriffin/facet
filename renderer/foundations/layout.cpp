@@ -779,7 +779,7 @@ FW_COMPONENT(layout, "Layout & devices", "foundations", R"({
   "about": "Screen geometry, devices and size classes: how a screen is laid out on 720 and 480 panels.",
   "layout": "doc",
   "frame": [480, 0],
-  "props": [{"name": "section", "type": "select", "options": )" FW_LAYOUT_SECTION_IDS R"(, "default": "screen"}],
+  "props": [{"name": "section", "about": "Which part of the layout page to show, such as the screen areas, the devices or the size classes.", "type": "select", "options": )" FW_LAYOUT_SECTION_IDS R"(, "default": "screen"}],
   "icons": ["back@icon", "screen-settings@icon"],
   "variants": )" FW_LAYOUT_SECTIONS R"(
 })") {

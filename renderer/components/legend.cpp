@@ -44,9 +44,9 @@ FW_COMPONENT(legend, "Legend and axis", "components", R"({
   "about": "Legend swatches and axis labels, on the grid.",
   "frame": [448, 96],
   "props": [
-    {"name": "items", "type": "text", "default": "cheap 13.5p,normal 26.2p,peak 39.4p"},
-    {"name": "ticks", "type": "text", "default": "00,06,12,18,24"},
-    {"name": "width", "type": "range", "min": 160, "max": 440, "step": 8, "default": 320}
+    {"name": "items", "about": "The colour keys, as words separated by commas, each one shown with its swatch, such as cheap 13.5p.", "type": "text", "default": "cheap 13.5p,normal 26.2p,peak 39.4p"},
+    {"name": "ticks", "about": "The labels along the bottom axis, separated by commas, spread evenly from left to right.", "type": "text", "default": "00,06,12,18,24"},
+    {"name": "width", "about": "How wide the legend is, in pixels.", "type": "range", "min": 160, "max": 440, "step": 8, "default": 320}
   ],
   "variants": [
     {"label": "price bands + a day", "props": {}},

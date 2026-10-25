@@ -5,10 +5,10 @@
  "rev": 3,
  "role": "both",
  "params": {
-  "entity": {"type": "entity", "domain": "media_player", "label": "Player", "default": "media_player.living_room_speaker_2"},
-  "speakers": {"type": "entities", "domain": "media_player", "label": "Speakers", "default": ""},
-  "auto": {"type": "entity", "domain": "sensor", "label": "Auto follows", "default": ""},
-  "visual": {"type": "select", "options": ["disc", "cassette", "cd", "vinyl"], "label": "Visual", "default": "cd"}
+  "entity": {"about": "The media player this screen controls.", "type": "entity", "domain": "media_player", "label": "Player", "default": "media_player.sitting_room_speaker"},
+  "speakers": {"about": "The speakers you can switch between in the speaker picker.", "type": "entities", "domain": "media_player", "label": "Speakers", "default": ""},
+  "auto": {"about": "A sensor that names the speaker in the room you are in. When set, the picker offers Auto, which follows you.", "type": "entity", "domain": "sensor", "label": "Auto follows", "default": ""},
+  "visual": {"about": "What is drawn for the music: disc is a plain record with a progress ring; cassette, cd and vinyl are drawn to their real look and turn while playing.", "type": "select", "options": ["disc", "cassette", "cd", "vinyl"], "label": "Visual", "default": "cd"}
  },
  "header": {
   "label": "Media",

@@ -100,12 +100,12 @@ FW_COMPONENT(header, "Header", "components", R"({
   "frame": [480, 80],
   "icons": ["back@glyph", "screen-settings@icon"],
   "props": [
-    {"name": "label", "type": "text", "default": "Weather"},
-    {"name": "back", "type": "bool", "default": true},
-    {"name": "clock", "type": "bool", "default": true},
-    {"name": "time", "type": "text", "default": "21:42"},
-    {"name": "settings", "type": "bool", "default": false},
-    {"name": "chip", "type": "bool", "default": false}
+    {"name": "label", "about": "The screen's name, shown after the back button.", "type": "text", "default": "Weather"},
+    {"name": "back", "about": "Shows the back button at the start, to return to the screen before.", "type": "bool", "default": true},
+    {"name": "clock", "about": "Shows the time at the end of the row.", "type": "bool", "default": true},
+    {"name": "time", "about": "For previews only: a fixed time to show, like 21:42. Leave empty for the real time.", "type": "text", "default": "21:42"},
+    {"name": "settings", "about": "Shows the settings button before the time, as on Home.", "type": "bool", "default": false},
+    {"name": "chip", "about": "For previews only: shows a sample status tag in the row, to see how extra items fit.", "type": "bool", "default": false}
   ],
   "variants": [
     {"label": "back + label + time", "props": {}},

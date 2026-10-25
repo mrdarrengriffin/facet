@@ -247,10 +247,10 @@ FW_COMPONENT(segmented, "Segmented", "components", R"({
   "about": "One choice out of a few, side by side: a setting with up to 3 options, or the view tabs of a screen.",
   "frame": [480, 96],
   "props": [
-    {"name": "options", "type": "text", "default": "Auto, Dark, Light"},
-    {"name": "selected", "type": "text", "default": "auto"},
-    {"name": "width", "type": "select", "options": ["hug", "fill"], "default": "hug"},
-    {"name": "state", "type": "select", "options": ["default", "disabled", "unavailable"], "default": "default"}
+    {"name": "options", "about": "The choices, separated by commas, up to three.", "type": "text", "default": "Auto, Dark, Light"},
+    {"name": "selected", "about": "Which choice is picked, by its name in lower case.", "type": "text", "default": "auto"},
+    {"name": "width", "about": "hug fits the control to its words; fill stretches it across the space.", "type": "select", "options": ["hug", "fill"], "default": "hug"},
+    {"name": "state", "about": "default can be tapped; disabled cannot be changed; unavailable shows the setting cannot be read.", "type": "select", "options": ["default", "disabled", "unavailable"], "default": "default"}
   ],
   "variants": [
     {"label": "setting · 3 options", "props": {}},

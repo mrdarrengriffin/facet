@@ -24,7 +24,7 @@ FW_COMPONENT(back_button, "Back button", "components", R"({
   "frame": [96, 96],
   "icons": ["back@glyph"],
   "props": [
-    {"name": "state", "type": "select", "options": ["default", "pressed", "disabled"], "default": "default"}
+    {"name": "state", "about": "How the button looks: default ready to tap, pressed while a finger is on it, or disabled when there is nowhere to go back to.", "type": "select", "options": ["default", "pressed", "disabled"], "default": "default"}
   ],
   "variants": [
     {"label": "default", "props": {}},

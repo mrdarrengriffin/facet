@@ -5,13 +5,13 @@
  "rev": 1,
  "role": "page",
  "params": {
-  "cameras": {
+  "cameras": {"about": "The cameras to show, one tile each.", 
    "type": "entities",
    "domain": "camera",
    "label": "Cameras",
    "default": ""
   },
-  "detections": {
+  "detections": {"about": "What each camera last saw, sent to the panel to label the tiles.", 
    "type": "hidden",
    "default": ""
   }

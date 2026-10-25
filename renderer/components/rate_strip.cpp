@@ -58,9 +58,9 @@ FW_COMPONENT(rate_strip, "Rate strip", "components", R"({
   "about": "Price bands as a strip of runs, with a tick at now.",
   "frame": [448, 48],
   "props": [
-    {"name": "bands", "type": "text", "default": "cheap,cheap,cheap,cheap,cheap,cheap,normal,normal,normal,normal,normal,normal,normal,normal,normal,normal,peak,peak,peak,normal,normal,normal,cheap,cheap"},
-    {"name": "now", "type": "range", "min": -1, "max": 23, "step": 1, "default": 14},
-    {"name": "width", "type": "range", "min": 160, "max": 440, "step": 8, "default": 320}
+    {"name": "bands", "about": "The price band of each hour from midnight, separated by commas: cheap, normal or peak.", "type": "text", "default": "cheap,cheap,cheap,cheap,cheap,cheap,normal,normal,normal,normal,normal,normal,normal,normal,normal,normal,peak,peak,peak,normal,normal,normal,cheap,cheap"},
+    {"name": "now", "about": "Which hour is now, counting from 0; it gets the tick. -1 shows no tick.", "type": "range", "min": -1, "max": 23, "step": 1, "default": 14},
+    {"name": "width", "about": "How wide the strip is, in pixels.", "type": "range", "min": 160, "max": 440, "step": 8, "default": 320}
   ],
   "variants": [
     {"label": "a day · now 14:00", "props": {}},

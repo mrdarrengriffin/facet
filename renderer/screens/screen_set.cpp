@@ -106,7 +106,7 @@ const char *META = R"({
   "frame": [480, 480],
   "icons": ["back@glyph", "chevron@icon", "check@icon", "close@glyph"],
   "props": [
-    {"name": "id", "type": "select", "options": ["media", "weather", "calendar", "energy", "thermostat", "covers", "clock"], "default": "media"}
+    {"name": "id", "about": "Which screen's settings to show: media, weather, calendar, energy, thermostat, covers or clock.", "type": "select", "options": ["media", "weather", "calendar", "energy", "thermostat", "covers", "clock"], "default": "media"}
   ]
 })";
 

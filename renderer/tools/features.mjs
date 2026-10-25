@@ -97,7 +97,9 @@ const on = (ft, flag) => !flag || !ft || ft[flag];
 /** source files (relative to renderer/) a build of this flavour leaves out (none when flag is unset) */
 export function excluded(flag, L = load()) {
   if (!flag) return [];
-  return L.sources.filter((s) => s.feature && !s.feature[flag]).map((s) => s.file);
+  // the docs previews of spec screens are drawn through the Spec screen, so a docs build keeps it (it stays off the nav)
+  const keep = flag === 'docs' ? new Set(['screens/spec.cpp']) : new Set();
+  return L.sources.filter((s) => s.feature && !s.feature[flag] && !keep.has(s.file)).map((s) => s.file);
 }
 /** ids (screens, components, foundations, bench) hidden in this flavour */
 export function hiddenIds(flag, L = load()) {

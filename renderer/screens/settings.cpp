@@ -350,7 +350,7 @@ void row_for(Screen *scr, lv_obj_t *col, const fw::set::Setting &s) {
 std::string meta_json() {
   std::string props = fw::set::PROPS_JSON;  // one per setting (generated), then the screen's own
   props.pop_back();
-  props += R"(,{"name":"sheet","type":"select","options":["closed","open","loop"],"default":"closed"}])";
+  props += R"(,{"name":"sheet","about":"For previews only: shows the picker sheet closed, open, or opening and closing over and over to check its motion.","type":"select","options":["closed","open","loop"],"default":"closed"}])";
   return std::string(R"({
   "about": "Every personalisation setting of the panel, grouped, from the one settings schema: inline controls, toggles, sliders and pickers in a bottom sheet.",
   "frame": [480, 480],

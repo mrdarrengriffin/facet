@@ -16,28 +16,28 @@
     "icon": "bulb",
     "trailing": "toggle",
     "sub": {
-     "e": "light.office_ceiling_light",
+     "e": "light.office_ceiling",
      "fmt": "light"
     },
     "on": {
-     "e": "light.office_ceiling_light",
+     "e": "light.office_ceiling",
      "fmt": "on"
     },
     "state": {
-     "e": "light.office_ceiling_light",
+     "e": "light.office_ceiling",
      "fmt": "avail"
     }
    },
    "on": {
     "toggle": {
      "do": "light.switch",
-     "e": "light.office_ceiling_light"
+     "e": "light.office_ceiling"
     },
     "long": {
      "do": "nav.open",
      "screen": "light",
      "params": {
-      "entity": "light.office_ceiling_light",
+      "entity": "light.office_ceiling",
       "name": "Ceiling"
      }
     }
@@ -56,28 +56,28 @@
     "icon": "bulb",
     "trailing": "toggle",
     "sub": {
-     "e": "light.key_light",
+     "e": "light.desk_lamp",
      "fmt": "light"
     },
     "on": {
-     "e": "light.key_light",
+     "e": "light.desk_lamp",
      "fmt": "on"
     },
     "state": {
-     "e": "light.key_light",
+     "e": "light.desk_lamp",
      "fmt": "avail"
     }
    },
    "on": {
     "toggle": {
      "do": "light.switch",
-     "e": "light.key_light"
+     "e": "light.desk_lamp"
     },
     "long": {
      "do": "nav.open",
      "screen": "light",
      "params": {
-      "entity": "light.key_light",
+      "entity": "light.desk_lamp",
       "name": "Key light"
      }
     }
@@ -96,28 +96,28 @@
     "icon": "bulb",
     "trailing": "toggle",
     "sub": {
-     "e": "light.elgato_key_light_air_a291",
+     "e": "light.key_light_left",
      "fmt": "light"
     },
     "on": {
-     "e": "light.elgato_key_light_air_a291",
+     "e": "light.key_light_left",
      "fmt": "on"
     },
     "state": {
-     "e": "light.elgato_key_light_air_a291",
+     "e": "light.key_light_left",
      "fmt": "avail"
     }
    },
    "on": {
     "toggle": {
      "do": "light.switch",
-     "e": "light.elgato_key_light_air_a291"
+     "e": "light.key_light_left"
     },
     "long": {
      "do": "nav.open",
      "screen": "light",
      "params": {
-      "entity": "light.elgato_key_light_air_a291",
+      "entity": "light.key_light_left",
       "name": "Key light Air left"
      }
     }
@@ -136,28 +136,28 @@
     "icon": "bulb",
     "trailing": "toggle",
     "sub": {
-     "e": "light.elgato_key_light_air_a7cf",
+     "e": "light.key_light_right",
      "fmt": "light"
     },
     "on": {
-     "e": "light.elgato_key_light_air_a7cf",
+     "e": "light.key_light_right",
      "fmt": "on"
     },
     "state": {
-     "e": "light.elgato_key_light_air_a7cf",
+     "e": "light.key_light_right",
      "fmt": "avail"
     }
    },
    "on": {
     "toggle": {
      "do": "light.switch",
-     "e": "light.elgato_key_light_air_a7cf"
+     "e": "light.key_light_right"
     },
     "long": {
      "do": "nav.open",
      "screen": "light",
      "params": {
-      "entity": "light.elgato_key_light_air_a7cf",
+      "entity": "light.key_light_right",
       "name": "Key light Air right"
      }
     }

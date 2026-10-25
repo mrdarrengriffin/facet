@@ -52,6 +52,9 @@ SKIP=" "; [ -z "$FEAT" ] || SKIP=" $(node "$HERE/tools/features.mjs" exclude "$F
   sed -e 's/^#define LV_USE_LOG 1/#define LV_USE_LOG 0/' -e '/^#define LV_LOG_LEVEL /d' \
       -e 's/^#define LV_USE_STDLIB_MALLOC LV_STDLIB_CUSTOM/#define LV_USE_STDLIB_MALLOC LV_STDLIB_CLIB/' "$PB/src/lv_conf.h"
   grep -o -- '-DLV_[A-Z_]*=[0-9]*' "$FW_PANEL/packages/ui.yaml" | sed 's/-D\([A-Z_]*\)=\(.*\)/#undef \1\n#define \1 \2/'
+  # labels never break after a hyphen ("Wi-Fi" stays whole): LVGL's Kconfig default minus '-'. KEEP IDENTICAL to the
+  # panel firmware's sdkconfig CONFIG_LV_TXT_BREAK_CHARS (its board YAML)
+  echo '#define LV_TXT_BREAK_CHARS " ,.;:_)}"'
   echo '#define LV_CONF_H'
   echo '#define LV_USE_OS LV_OS_NONE'
   echo '#define LV_ASSERT_HANDLER_INCLUDE <stdlib.h>'

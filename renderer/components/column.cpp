@@ -25,7 +25,7 @@ FW_COMPONENT(column, "Column", "components", R"({
   "frame": [480, 400],
   "slots": 2,
   "props": [
-    {"name": "outline", "type": "bool", "default": false}
+    {"name": "outline", "about": "For previews only: outlines the top and foot areas so you can see where the content and the buttons go.", "type": "bool", "default": false}
   ],
   "variants": [
     {"label": "slots", "props": {"outline": true}}

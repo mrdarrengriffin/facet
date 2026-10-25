@@ -10,7 +10,7 @@ import Lede from '../../components/Lede.astro';
 import SoundToggle from '../../components/SoundToggle.astro';
 import ThemeSwitch from '../../components/ThemeSwitch.astro';
 import SizeSwitch from '../../components/SizeSwitch.astro';
-import { ALL, COMPONENTS, defaults, groupOf, href, slug, values, type Entry } from '../../lib/data';
+import { ALL, COMPONENTS, defaults, groupOf, href, propTypeWord, slug, valueList, type Entry } from '../../lib/data';
 
 export function getStaticPaths() {
   return COMPONENTS.map((c) => ({ params: { id: slug(c.id) }, props: { c } }));
@@ -116,13 +116,13 @@ const fid = (n: string) => `pg-${c.id}-${n}`;
         {
           m.props?.length ? (
             <table>
-              <thead><tr><th>Prop</th><th>Type</th><th>Values</th><th>Default</th></tr></thead>
+              <thead><tr><th>Setting</th><th>Description</th><th>Values</th><th>Default</th></tr></thead>
               <tbody>
                 {m.props.map((p) => (
                   <tr>
                     <td><code>{p.name}</code></td>
-                    <td>{p.type}</td>
-                    <td>{values(p)}</td>
+                    <td>{p.about || label(p.name)} <span class="hint">({propTypeWord(p)})</span></td>
+                    <td>{p.type === 'range' ? <><code>{p.min ?? 0}</code> to <code>{p.max}</code>{p.step && p.step !== 1 ? <>, in steps of <code>{p.step}</code></> : null}</> : valueList(p) ? valueList(p)!.map((v, i) => <>{i ? ' ' : ''}<code>{v}</code></>) : 'any text'}</td>
                     <td><code>{JSON.stringify(base[p.name])}</code></td>
                   </tr>
                 ))}

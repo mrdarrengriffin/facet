@@ -36,8 +36,8 @@ FW_COMPONENT(radio, "Radio", "components", R"({
   "about": "A ring that shows which one option of a group is chosen; the picker row around it owns the choice.",
   "frame": [160, 96],
   "props": [
-    {"name": "on", "type": "bool", "default": true},
-    {"name": "state", "type": "select", "options": ["default", "disabled"], "default": "default"}
+    {"name": "on", "about": "Whether this option is the chosen one; the ring fills in.", "type": "bool", "default": true},
+    {"name": "state", "about": "default can be chosen; disabled is greyed out.", "type": "select", "options": ["default", "disabled"], "default": "default"}
   ],
   "variants": [
     {"label": "off", "props": {"on": false}},

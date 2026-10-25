@@ -173,11 +173,11 @@ FW_COMPONENT(time, "Time", "components", R"({
   "about": "The time in fixed-width digit cells, so it never shifts as it changes.",
   "frame": [480, 160],
   "props": [
-    {"name": "size", "type": "select", "options": ["compact", "mid", "hero"], "default": "mid"},
-    {"name": "font", "type": "select", "options": ["mono", "inter"], "default": "mono"},
-    {"name": "format", "type": "select", "options": ["24h", "12h"], "default": "24h"},
-    {"name": "seconds", "type": "bool", "default": false},
-    {"name": "time", "type": "text", "default": ""}
+    {"name": "size", "about": "How big the digits are: compact for a header, mid for a card, hero for a screen's main figure.", "type": "select", "options": ["compact", "mid", "hero"], "default": "mid"},
+    {"name": "font", "about": "The typeface of the digits: mono is the fixed-width face, inter the rounder everyday face.", "type": "select", "options": ["mono", "inter"], "default": "mono"},
+    {"name": "format", "about": "24h shows 13:00; 12h shows 1:00 with AM or PM.", "type": "select", "options": ["24h", "12h"], "default": "24h"},
+    {"name": "seconds", "about": "Shows the seconds as well as hours and minutes.", "type": "bool", "default": false},
+    {"name": "time", "about": "For previews only: a fixed time to show, like 14:52:20. Leave empty for the real time.", "type": "text", "default": ""}
   ],
   "variants": [
     {"label": "mid · mono · 14:52", "props": {"time": "14:52"}},

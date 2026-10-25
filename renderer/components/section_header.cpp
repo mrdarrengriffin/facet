@@ -126,16 +126,16 @@ FW_COMPONENT(section_header, "Section header", "components", R"({
   "audit": {"snaps": {"count": "the Count badge's count changes like text"}},
   "frame": [480, 96],
   "props": [
-    {"name": "title", "type": "text", "default": "Needs you"},
-    {"name": "badge", "type": "bool", "default": true},
-    {"name": "count", "type": "range", "min": 0, "max": 150, "step": 1, "default": 3},
-    {"name": "tone", "type": "select", "options": ["ok", "warn", "error", "working", "info", "idle"], "default": "warn"},
-    {"name": "zero", "type": "select", "options": ["muted", "hide"], "default": "muted"},
-    {"name": "right", "type": "select", "options": ["none", "meta", "action"], "default": "meta"},
-    {"name": "meta", "type": "text", "default": "updated 2m"},
-    {"name": "action", "type": "text", "default": "See all"},
-    {"name": "state", "type": "select", "options": ["default", "pressed", "disabled"], "default": "default"},
-    {"name": "size", "type": "select", "options": ["sm", "label"], "default": "sm"}
+    {"name": "title", "about": "The caption that starts the group.", "type": "text", "default": "Needs you"},
+    {"name": "badge", "about": "Shows a count badge after the caption.", "type": "bool", "default": true},
+    {"name": "count", "about": "The number in the badge.", "type": "range", "min": 0, "max": 150, "step": 1, "default": 3},
+    {"name": "tone", "about": "The badge colour, by what the number means: ok, warn, error, working, info or idle.", "type": "select", "options": ["ok", "warn", "error", "working", "info", "idle"], "default": "warn"},
+    {"name": "zero", "about": "What happens when the count is zero: muted shows a quiet 0; hide removes the badge.", "type": "select", "options": ["muted", "hide"], "default": "muted"},
+    {"name": "right", "about": "What sits at the right end: none, meta for a quiet line of text, or action for a tappable link.", "type": "select", "options": ["none", "meta", "action"], "default": "meta"},
+    {"name": "meta", "about": "The quiet text at the right end, such as when it was last updated.", "type": "text", "default": "updated 2m"},
+    {"name": "action", "about": "The words of the link at the right end, such as See all.", "type": "text", "default": "See all"},
+    {"name": "state", "about": "How the link looks: default ready to tap, pressed while held, or disabled.", "type": "select", "options": ["default", "pressed", "disabled"], "default": "default"},
+    {"name": "size", "about": "sm is the small capitals caption; label is the larger screen label style.", "type": "select", "options": ["sm", "label"], "default": "sm"}
   ],
   "variants": [
     {"label": "count + meta", "props": {}},
