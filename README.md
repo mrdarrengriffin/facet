@@ -69,8 +69,6 @@ anywhere:
 | `POST /fw/deck` | send the panel's set of screens |
 | `GET /fw/info`, `/fw/meta` | what the panel runs and what it can show |
 
-Changes to the panel can be gated behind an **Allow AI agents** switch on the device.
-
 ## <picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/icon-home-dark.svg"><source media="(prefers-color-scheme: light)" srcset=".github/assets/icon-home-light.svg"><img alt="" src=".github/assets/icon-home-light.svg" width="20" height="20"></picture>&nbsp; Screens
 
 Each screen has a page in the docs with a live preview you can tap and drag, what it shows and the
@@ -146,8 +144,8 @@ More screens are on the way (thermostat, lock, vacuum, cameras, plants and other
 
 | Panel | Screen | Status |
 |---|---|---|
-| Waveshare ESP32-P4-86 | 4", 720 x 720 | Available |
-| Guition ESP32-4848S040 | 4", 480 x 480 | Available |
+| Waveshare ESP32-P4-86 | 4", 720 x 720 | In progress |
+| Guition ESP32-4848S040 | 4", 480 x 480 | In progress |
 
 Both panels get the same layout: the 480 panel is the reference size, the 720 panel draws it at 1.5x.
 Other sizes are planned.
@@ -172,7 +170,6 @@ Facet learns a lot from other open-source panel projects, and they're well worth
   [jtenniswood.github.io/espcontrol](https://jtenniswood.github.io/espcontrol/).
 - [openHASP](https://github.com/HASwitchPlate/openHASP) by fvanroie and contributors, LVGL pages on
   touch panels driven over MQTT.
-- [Tessera](https://tessera-maxgramser.on-forge.com), a panel you send screens to.
 
 Facet isn't affiliated with these projects.
 
