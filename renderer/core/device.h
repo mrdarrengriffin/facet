@@ -77,5 +77,12 @@ enum ButtonLevel : uint8_t { BUTTON_SCREEN = 0, BUTTON_SHEET = 1, BUTTON_ALERT =
 using ButtonFn = bool (*)(void *user, const char *press);
 void claim_button(lv_obj_t *obj, ButtonLevel level, ButtonFn fn, void *user);
 const char *button(const char *press);  // the host's key press: "" = nothing took it, else the taker's object kind ("alert" ...)
+
+// the panel's own timer (one per panel, Darren 2026-10-25): the Timer view inside a device runs it and keeps it here, so
+// it survives leaving the screen and a Home's header actions can show its time left. state 0 idle, 1 running, 2 done;
+// ends = wall-clock seconds (time()). Views shown alone (workbench pages, tests) never touch it.
+struct Timer { int state = 0; long long ends = 0; int total = 0; std::string label; };
+Timer &timer();
+bool in_device(lv_obj_t *obj);  // obj is part of a mounted device (the panel), not a workbench page alone
 }  // namespace dev
 }  // namespace fw

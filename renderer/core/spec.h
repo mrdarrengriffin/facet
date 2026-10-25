@@ -89,7 +89,10 @@
 //              of the kind's sources (renderer/sources/sources.json); params = the page opens with them over the
 //              spec's defaults (a host's discovery fills them). cards only on a home: t = a card type (CARD_TYPES),
 //              e = its entity (a domain the type takes), size s | m | l, tap toggle | detail | page | none (the
-//              type's first by default), page = a page id (t page), label (else the entity's name). start = the
+//              type's first by default), page = a page id (t page), label (else the entity's name). A home may set
+//              header_actions {button: "settings" (default) | a page id (that page's shortcut in the settings
+//              button's place; Settings = a long press on the time), status: "none" | "timer" (the panel's timer,
+//              time left beside the time)}. start = the
 //              page shown first. A v1 deck ({"v": 1, "screens": [...]}) is refused: a panel holding one falls back
 //              to the factory deck. No "on": a page you don't want is not in the deck (Settings > Screens and the
 //              editor list the other page kinds as off; turning one on adds it at the end).
@@ -399,9 +402,9 @@ inline void check_screen(ArduinoJson::JsonVariantConst s, size_t bytes, Errs &e)
     }
   }
   if (!s["header"].isNull()) {
-    static const char *const H[] = {"label", "back", "settings"};
-    if (!s["header"].is<ArduinoJson::JsonObjectConst>()) err(e, ".header", "bad_header", "header is {label, back, settings?}");
-    else check_keys(s["header"].as<ArduinoJson::JsonObjectConst>(), H, 3, ".header", e);
+    static const char *const H[] = {"label", "back", "settings", "actions"};
+    if (!s["header"].is<ArduinoJson::JsonObjectConst>()) err(e, ".header", "bad_header", "header is {label, back, settings?, actions?}");
+    else check_keys(s["header"].as<ArduinoJson::JsonObjectConst>(), H, 4, ".header", e);
   }
   ArduinoJson::JsonArrayConst nodes = s["nodes"].as<ArduinoJson::JsonArrayConst>();
   if (nodes.isNull()) { err(e, ".nodes", "bad_nodes", "nodes is a list"); return; }
@@ -521,9 +524,9 @@ inline void check_deck(ArduinoJson::JsonVariantConst d, size_t bytes, Errs &e) {
   i = 0;
   for (ArduinoJson::JsonVariantConst x : s) {
     const std::string p = ".pages[" + std::to_string(i++) + "]";
-    static const char *const SK[] = {"id", "kind", "name", "source", "params", "cards"};
+    static const char *const SK[] = {"id", "kind", "name", "source", "params", "cards", "header_actions"};
     if (!x.is<ArduinoJson::JsonObjectConst>()) { err(e, p, "bad_deck", "a page is {id, kind, name?, source?, params?, cards?}"); continue; }
-    check_keys(x.as<ArduinoJson::JsonObjectConst>(), SK, 6, p, e);
+    check_keys(x.as<ArduinoJson::JsonObjectConst>(), SK, 7, p, e);
     const std::string kind = x["kind"] | "";
     if (!screen_known(kind)) { err(e, p + ".kind", "unknown_screen", "no screen " + kind + " (send its spec first)"); continue; }
     const std::string role = role_of(kind);
@@ -537,6 +540,17 @@ inline void check_deck(ArduinoJson::JsonVariantConst d, size_t bytes, Errs &e) {
         if (!kv.value().is<const char *>() || strlen(kv.value().as<const char *>()) > 1024) err(e, p + ".params." + kv.key().c_str(), "bad_deck", "a parameter is text (at most 1024)");
     }
     if (kind == "home") homes++;
+    if (!x["header_actions"].isNull()) {  // a Home's header actions: {button: "settings" | a page id, status: none | timer}
+      ArduinoJson::JsonVariantConst ha_ = x["header_actions"];
+      static const char *const HK[] = {"button", "status"};
+      if (kind != "home" || !ha_.is<ArduinoJson::JsonObjectConst>()) err(e, p + ".header_actions", "bad_deck", "header_actions is {button?, status?} on a home");
+      else {
+        check_keys(ha_.as<ArduinoJson::JsonObjectConst>(), HK, 2, p + ".header_actions", e);
+        const std::string b = ha_["button"] | "settings", st = ha_["status"] | "none";
+        if (b != "settings" && !ids.count(b)) err(e, p + ".header_actions.button", "bad_page", "button is settings or a page id of this deck");
+        if (st != "none" && st != "timer") err(e, p + ".header_actions.status", "bad_deck", "status is none or timer");
+      }
+    }
     if (x["cards"].isNull()) continue;
     if (kind != "home") { err(e, p + ".cards", "bad_deck", "only a home has cards"); continue; }
     ArduinoJson::JsonArrayConst cs = x["cards"].as<ArduinoJson::JsonArrayConst>();
@@ -1314,10 +1328,17 @@ inline lv_obj_t *build(lv_obj_t *parent, const std::string &id, Props opened, st
   hd["label"] = *hl ? hl : (doc["name"] | "");  // "$name" left empty = the spec's name
   hd["back"] = doc["header"]["back"] | true;
   hd["settings"] = doc["header"]["settings"] | false;  // the settings button in the chrome (Home)
-  if (const Component *h = find("header")) {
-    h->build(s->root, hd.as<Props>());
-    lv_obj_set_pos(lv_obj_get_child(s->root, -1), lay::inset, lay::inset);
-    building_header() = lv_obj_get_child(s->root, -1);
+  if (doc["header"]["actions"].is<ArduinoJson::JsonObjectConst>()) hd["actions"] = doc["header"]["actions"];  // a Home's header actions
+  {  // opened for one entity (a Home card's detail): the header names it, the card's label else its friendly name
+    const std::string oe = opened["entity"] | "", on = opened["name"] | "";
+    if (!oe.empty() && oe[0] != '$' && entity_ok(oe)) {
+      if (!on.empty()) hd["label"] = on;
+      else { hd["label"].to<ArduinoJson::JsonObject>(); hd["label"]["e"] = oe; hd["label"]["fmt"] = "name"; }
+    }
+  }
+  if (lv_obj_t *h = ha::bound(s->root, "header", hd.as<Props>())) {  // a bound label follows the entity's name
+    lv_obj_set_pos(h, lay::inset, lay::inset);
+    building_header() = h;
   }
   const std::string layout = doc["layout"] | "list";
   lv_obj_t *c = box(s->root);

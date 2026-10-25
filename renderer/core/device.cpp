@@ -111,6 +111,29 @@ bool show(Device *d, const std::string &id, std::vector<lv_obj_t *> &items) {
   return true;
 }
 
+// Navigation (screen model §3): a deck page id or a page kind is a PAGE (going there resets the stack to the start
+// page + it); anything opened with parameters (a card's detail: "light?{...}") or that is not a page (Settings,
+// sub-views) is pushed, at most MAX_DEPTH deep. A deck page id becomes what shows it: a Home = "home" (the start page)
+// or "home?{"page":"<id>"}", another page = its kind.
+constexpr size_t MAX_DEPTH = 4;
+std::string target_of(const std::string &id, bool &page) {
+  const std::string base = base_of(id);
+  page = false;
+  ArduinoJson::JsonDocument deck;
+  if (id.find('?') == std::string::npos && !deserializeJson(deck, spec::deck_json())) {
+    const std::string start = deck["start"] | "";
+    for (ArduinoJson::JsonVariantConst pg : deck["pages"].as<ArduinoJson::JsonArrayConst>()) {
+      if (base != (pg["id"] | "")) continue;
+      page = true;
+      const std::string kind = pg["kind"] | "";
+      if (kind != "home") return kind;
+      return base == start ? std::string("home") : "home?{\"page\":\"" + base + "\"}";
+    }
+  }
+  if (base == "home") { page = true; return id; }
+  if (id.find('?') == std::string::npos && spec::page_role(base) && find(base.c_str()) == nullptr) page = true;
+  return id;
+}
 void run(lv_timer_t *t) {
   auto *d = (Device *) lv_timer_get_user_data(t);
   d->timer = nullptr;  // one-shot: LVGL deletes it after this call
@@ -119,11 +142,23 @@ void run(lv_timer_t *t) {
   std::string id;
   bool home_dir = false;
   if (op == GO) {
-    if (!known(d->target) || (!d->stack.empty() && d->stack.back() == d->target)) return;
-    auto at = std::find(d->stack.begin(), d->stack.end(), d->target);
-    home_dir = at != d->stack.end();  // already on the stack: back to it
-    if (home_dir) d->stack.erase(at + 1, d->stack.end());
-    else d->stack.push_back(d->target);
+    bool page = false;
+    const std::string tgt = target_of(d->target, page);
+    if (!known(tgt) || (!d->stack.empty() && d->stack.back() == tgt)) return;
+    if (page) {  // pages are peers: the stack becomes [start] or [start, page] (screen model §3)
+      const size_t was = d->stack.size();
+      d->stack.assign(1, "home");
+      if (tgt != "home") d->stack.push_back(tgt);
+      home_dir = d->stack.size() < was;
+    } else {
+      auto at = std::find(d->stack.begin(), d->stack.end(), tgt);
+      home_dir = at != d->stack.end();  // already on the stack: back to it
+      if (home_dir) d->stack.erase(at + 1, d->stack.end());
+      else {
+        if (d->stack.size() >= MAX_DEPTH) d->stack.pop_back();  // depth cap: the deepest gives way
+        d->stack.push_back(tgt);
+      }
+    }
   } else if (op == BACK) {
     if (d->stack.size() < 2) return;
     d->stack.pop_back();
@@ -364,6 +399,11 @@ void state(ArduinoJson::JsonArray out) {
 void go(lv_obj_t *in, const char *id) { queue(in, GO, id); }
 void back(lv_obj_t *in) { queue(in, BACK, nullptr); }
 void home(lv_obj_t *in) { queue(in, HOME, nullptr); }
+Timer &timer() {
+  static Timer t;
+  return t;
+}
+bool in_device(lv_obj_t *obj) { return of(obj) != nullptr; }
 const char *current(lv_obj_t *in) {
   Device *d = of(in);
   return d && !d->stack.empty() ? d->stack.back().c_str() : "";

@@ -18,6 +18,8 @@
 // component): side touch::back, event "back" + sound back. "settings" = the Settings button of the screen chrome
 // (components/screen_chrome.cpp): square, side lay::chrome_btn, the screen-settings icon at ic::icon (docs Home
 // settingsButton(): screenIcon('settings', 24) in the 48 square), tap = event "navigate" (detail settings) + sound open;
+// "shortcut" = the same square holding another screen (a Home's header actions, e.g. the Timer): internal props icon
+// (a screen icon at ic::icon, "screen-timer") and to (the page id), tap = event "navigate" (detail = to) + sound open.
 // active = "you are in Settings" (the square's active border; the icon keeps its Icons-page look, see glyph()). Hit area: at least touch::min each way (ext click area when
 // the drawn box is smaller; no style is today). Pairs: colour.json contrast section "icon_button".
 #include "fw.h"
@@ -76,8 +78,8 @@ lv_obj_t *glyph(lv_obj_t *b, const char *name, fw::ic::Size size, const Style &s
   return o;
 }
 
-enum Role : uint8_t { R_TAP, R_PLAY, R_BACK, R_SETTINGS };
-struct Data { Role role; char icon[16]; };
+enum Role : uint8_t { R_TAP, R_PLAY, R_BACK, R_SETTINGS, R_SHORTCUT };
+struct Data { Role role; char icon[24]; char to[16]; };
 }  // namespace
 
 namespace {
@@ -98,19 +100,21 @@ void set_state(lv_obj_t *b, const char *state, bool animate) {
 void data(lv_obj_t *b, fw::Props p) {
   auto *d = (Data *) lv_obj_get_user_data(b);
   if (!d) return;
-  const bool back = !strcmp(p["role"] | "", "back"), set = !strcmp(p["role"] | "", "settings");
-  const bool play = !back && !set && !strcmp(p["style"] | "round", "play");
+  const bool back = !strcmp(p["role"] | "", "back"), set = !strcmp(p["role"] | "", "settings"), sc = !strcmp(p["role"] | "", "shortcut");
+  const bool play = !back && !set && !sc && !strcmp(p["style"] | "round", "play");
   const char *ic = back ? "back" : set ? "settings" : (p["icon"] | "next");
-  d->role = back ? R_BACK : set ? R_SETTINGS : play ? R_PLAY : R_TAP;
+  d->role = back ? R_BACK : set ? R_SETTINGS : sc ? R_SHORTCUT : play ? R_PLAY : R_TAP;
+  snprintf(d->to, sizeof d->to, "%s", p["to"] | "");
   snprintf(d->icon, sizeof d->icon, "%s", !strcmp(p["state"] | "default", "unavailable") ? "unavailable" : play && !back ? "play" : ic);
 }
 void fill(lv_obj_t *b, fw::Props p) {
   const char *st = p["style"] | "round";
   const char *state = p["state"] | "default";
   const char *role = p["role"] | "";
-  const bool set = !strcmp(role, "settings"), back = !strcmp(role, "back") || set;  // both: the header's squares
+  const bool sc = !strcmp(role, "shortcut"), set = !strcmp(role, "settings") || sc;  // a shortcut = the settings square
+  const bool back = !strcmp(role, "back") || set;  // all: the header's squares
   const bool play = !strcmp(st, "play"), square = back || !strcmp(st, "square");
-  const char *ic = set ? "screen-settings" : back ? "back" : (p["icon"] | "next");
+  const char *ic = sc ? (p["icon"] | "screen-timer") : set ? "screen-settings" : back ? "back" : (p["icon"] | "next");
   const Style s = style_of(play && !back, square);
   const int side = set ? fw::lay::chrome_btn : back ? fw::touch::back : play ? fw::lay::ibtn_play : square ? fw::lay::ibtn_square : fw::lay::ibtn_round;
 
@@ -196,6 +200,7 @@ FW_COMPONENT(icon_button, "Icon button", "components", R"({
     if (lv_obj_has_state(o, ST_OFF)) { fw::st::blocked(o, d->icon); return; }
     if (d->role == R_BACK) { fw::emit(o, "back"); fw::sound(o, "back"); return; }
     if (d->role == R_SETTINGS) { fw::emit(o, "navigate", "settings"); fw::sound(o, "open"); return; }
+    if (d->role == R_SHORTCUT) { fw::emit(o, "navigate", d->to); fw::sound(o, "open"); return; }
     if (d->role == R_PLAY) {
       const bool on = !lv_obj_has_state(o, LV_STATE_CHECKED);
       if (on) lv_obj_add_state(o, LV_STATE_CHECKED); else lv_obj_remove_state(o, LV_STATE_CHECKED);

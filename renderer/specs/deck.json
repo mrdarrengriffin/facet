@@ -76,6 +76,10 @@
    "id": "kitchen",
    "kind": "home",
    "name": "Kitchen",
+   "header_actions": {
+    "button": "timer",
+    "status": "timer"
+   },
    "cards": [
     {
      "t": "light",

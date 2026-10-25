@@ -11,7 +11,8 @@
 //   right    optional: the Status chip component (docs explorer "Right chip": working, "2 working"), a gutter apart;
 //            internal props chip_tone / chip_text set its tone and text (a screen's own status: Set up)
 //   chrome   the Screen chrome component (fw::find("screen_chrome")): the time (lay::header_time_w, right-aligned on
-//            the content edge) on every screen; prop settings (bool, default off; on for Home, Darren 2026-10-22) puts
+//            the content edge) on every screen; internal prop actions = a Home's header actions ({shortcut, to,
+//            status}: the chrome's shortcut button and status, see screen_chrome.cpp); prop settings (bool, default off; on for Home, Darren 2026-10-22) puts
 //            the settings button a gutter before it (lay::chrome_w). Prop time empty = the live clock. A gutter from
 //            what comes before it. Prop clock off = no chrome (docs header clock: false)
 // Static apart from the Back button and the chrome's settings button, which keep its own look, press, tap ("back" + sound back) and disabled rules.
@@ -50,6 +51,10 @@ std::string sig(fw::Props p) {
 void chrome_props(fw::Props p, ArduinoJson::JsonDocument &cp) {
   cp["time"] = p["time"] | "";
   cp["settings"] = (p["settings"] | false) ? "button" : "none";  // the settings button: Home only (Darren 2026-10-22)
+  // header actions (a Home's own, screen model §10): {shortcut: a screen kind, to: its page id, status: none | timer}
+  cp["shortcut"] = p["actions"]["shortcut"] | "";
+  cp["to"] = p["actions"]["to"] | "";
+  cp["status"] = p["actions"]["status"] | "none";
 }
 void chip_props(fw::Props p, ArduinoJson::JsonDocument &cp) {  // internal chip_tone / chip_text (a screen's status)
   cp["tone"] = p["chip_tone"] | "working";

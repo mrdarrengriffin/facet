@@ -14,6 +14,9 @@
 //            components' own unavailable look.
 //   taps     toggle = light.toggle (a light or a switch); detail = nav.open of the type's detail screen for that
 //            entity; page = nav.open of that deck page; none = nothing (sensors)
+// Header actions (the deck page's header_actions, screen model §10): button settings (default) or a page id = that
+// page's shortcut in the settings button's place (Settings is then a long press on the time); status timer = the
+// panel's timer, time left beside the time.
 // Prop page = the Home's page id ("" = the deck's start page if it is a Home, else the first Home). With no Home in the
 // deck: the header and an empty grid.
 // Update path: the deck changing rebuilds the screen (the device reloads it); entity changes move each card through
@@ -187,7 +190,18 @@ void build_home(lv_obj_t *parent, fw::Props props) {
   sp["name"] = page.isNull() ? std::string("Home") : page_name(page);
   sp["header"]["label"] = sp["name"];
   sp["header"]["back"] = !page.isNull() && start != (page["id"] | "");
-  sp["header"]["settings"] = true;
+  {  // header actions (§10): the settings button, or a page's shortcut in its place; the timer's time left beside the time
+    const std::string b = page["header_actions"]["button"] | "settings", st = page["header_actions"]["status"] | "none";
+    std::string kind;
+    for (Var pg : deck["pages"].as<ArduinoJson::JsonArrayConst>())
+      if (b == (pg["id"] | "")) kind = pg["kind"] | "";
+    const bool sc = b != "settings" && has_icon(kind);
+    sp["header"]["settings"] = !sc;
+    if (sc || st == "timer") {
+      if (sc) { sp["header"]["actions"]["shortcut"] = kind; sp["header"]["actions"]["to"] = b; }
+      sp["header"]["actions"]["status"] = st;
+    }
+  }
   sp["layout"] = "list";
   ArduinoJson::JsonArray nodes = sp["nodes"].to<ArduinoJson::JsonArray>();
   ArduinoJson::JsonObject grid = nodes.add<ArduinoJson::JsonObject>();

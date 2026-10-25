@@ -144,6 +144,70 @@
       "expect": {
         "sounds": []
       }
+    },
+    {
+      "name": "a Home card opens its entity's screen, named after it; Back returns",
+      "kind": "interaction",
+      "steps": [
+        {
+          "tap": {
+            "text": "/^SPEAKER$|^Speaker$/"
+          }
+        },
+        {
+          "tap": {
+            "clk": 0
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "navigate",
+            "media\\?"
+          ],
+          [
+            "screen",
+            "media"
+          ],
+          [
+            "back"
+          ],
+          [
+            "screen",
+            "home"
+          ]
+        ],
+        "stack": [
+          "home"
+        ]
+      }
+    },
+    {
+      "name": "a Home tile toggles its light",
+      "kind": "interaction",
+      "steps": [
+        {
+          "tap": {
+            "text": "/^Ceiling$/"
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "tap",
+            "Ceiling"
+          ],
+          [
+            "ha",
+            "light.toggle"
+          ]
+        ],
+        "stack": [
+          "home"
+        ]
+      }
     }
   ],
   "xfail": {}
