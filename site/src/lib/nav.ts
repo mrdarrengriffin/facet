@@ -22,11 +22,15 @@ export function url(path: string): string {
   return `${BASE.replace(/\/$/, '')}${path.startsWith('/') ? path : `/${path}`}`;
 }
 
+/** the Updates page (src/pages/[updates].astro) and every link to it (header, sidebar, search, homepage, roadmap).
+ *  Off for now (Darren 2026-10-25): the entries stay in src/content/updates/ so the page can come back by setting this. */
+export const UPDATES_PAGE = false;
+
 export const headerLinks = [
   { label: 'Docs', href: url('/roadmap/'), match: [url('/roadmap/'), url('/screens/')] },
   { label: 'Components', href: url('/components/'), match: [url('/components/')] },
   { label: 'Design system', href: url('/foundations/'), match: [url('/foundations/')] },
-  { label: 'Updates', href: url('/updates/'), match: [url('/updates/')] },
+  ...(UPDATES_PAGE ? [{ label: 'Updates', href: url('/updates/'), match: [url('/updates/')] }] : []),
 ];
 
 const soon = (label: string): NavLink => ({ label, badge: 'Soon' });
@@ -49,7 +53,7 @@ export function getSidebar(): NavGroup[] {
       label: 'Project',
       links: [
         { label: 'Roadmap', href: url('/roadmap/') },
-        { label: 'Updates', href: url('/updates/') },
+        ...(UPDATES_PAGE ? [{ label: 'Updates', href: url('/updates/') }] : []),
       ],
     },
   ];

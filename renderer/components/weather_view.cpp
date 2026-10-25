@@ -86,6 +86,7 @@ bool is_day(const WV *w, double t) {
 // has to come from outside the listened box, the nearest scope takes it)
 struct MoreLink { lv_obj_t *root; const char *screen; };
 void more(lv_obj_t *root, lv_obj_t *parent, const char *text, const char *screen) {
+  if (!fw::spec::screen_known(screen)) return;  // the screen is not in this build (its feature is off): no row
   lv_obj_t *holder = box(parent);
   lv_obj_set_size(holder, fw::lay::content_w, LV_SIZE_CONTENT);
   ArduinoJson::JsonDocument d;

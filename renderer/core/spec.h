@@ -980,6 +980,7 @@ inline bool run(Screen *s, Node &n, const char *event, const char *detail) {
     std::string id = a["screen"] | "";
     if (id.empty()) id = detail;  // the component's own "open": its detail is "<screen>[?{params}]"
     if (id.empty() || !id_ok(id.substr(0, id.find('?')))) return true;
+    if (!screen_known(id.substr(0, id.find('?')))) return true;  // a screen this build lacks (its feature is off): nothing opens
     if (a["params"].is<ArduinoJson::JsonObjectConst>()) {
       std::string pj;
       serializeJson(a["params"], pj);

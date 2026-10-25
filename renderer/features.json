@@ -1,5 +1,5 @@
 {
-  "$comment": "Release flags per feature (README 'Feature flags'). The firmware flag is a SCREEN decision: a feature = pre-made screens plus the UI only they use (their *_view, f1_*, ...), or a group of unfinished parts / foundations. Components and foundations not listed belong to the library (in docs + firmware): finished parts stay in so custom specs can use them; list one under a feature only when it is that screen's own UI or unfinished. docs: shown on the docs site + workbench nav; status: the label the docs show (done | wip | preview); firmware: compiled into the panel firmware (and listed in the factory deck, Home, Settings > Screens). Build-time only: tools/features.mjs reads this; `node renderer/tools/features.mjs check` (run by build.sh) fails when a shown feature needs a hidden one or a source belongs to no feature. ids: screens = spec ids (specs/<id>.json) or registered screens; components / foundations = registered ids; core = renderer/core files only this feature uses (left out of the firmware with it); cards = Home card types that open this feature's screen; colour = Colour page sections (colour.json groups / contrast sections) it owns besides its ids; roadmap = roadmap rows (hidden when every feature naming them is hidden).",
+  "$comment": "Release flags per feature (README 'Feature flags'). The firmware flag is a SCREEN decision: a feature = pre-made screens plus the UI only they use (their *_view, f1_*, ...), or a group of unfinished parts / foundations. Components and foundations not listed belong to the library (in docs + firmware): finished parts stay in so custom specs can use them; list one under a feature only when it is that screen's own UI or unfinished. docs: shown on the docs site + workbench nav; status: the label the docs show (done | wip | preview); firmware: compiled into the panel firmware (and listed in the factory deck, Home, Settings > Screens). Build-time only: tools/features.mjs reads this; `node renderer/tools/features.mjs check` (run by build.sh) fails when a shown feature needs a hidden one or a source belongs to no feature. ids: screens = spec ids (specs/<id>.json) or registered screens; components / foundations = registered ids; core = renderer/core files only this feature uses (left out of the firmware with it); cards = Home card types that open this feature's screen; docs_pages = its detail screens (spec role detail: opened from a card or a parent screen, never a deck page) that still get their own docs page (a released screen such as Light; other detail screens open only inside their parent's demo); colour = Colour page sections (colour.json groups / contrast sections) it owns besides its ids; roadmap = roadmap rows (hidden when every feature naming them is hidden).",
   "status": {
     "done": "Done",
     "wip": "Work in progress",
@@ -43,6 +43,7 @@
       "label": "Lights",
       "docs": true, "status": "done", "firmware": true,
       "screens": ["light", "living_room"],
+      "docs_pages": ["light"],
       "cards": ["light"]
     },
     {
@@ -50,6 +51,7 @@
       "label": "Blinds and curtains",
       "docs": true, "status": "done", "firmware": true,
       "screens": ["covers"],
+      "docs_pages": ["covers"],
       "components": ["covers_view", "cover_visual"],
       "cards": ["cover"]
     },
@@ -73,6 +75,7 @@
       "label": "Moon",
       "docs": true, "status": "done", "firmware": true,
       "screens": ["moon", "moon_details", "moon_days"],
+      "docs_pages": ["moon"],
       "components": ["moon_view", "moon_icon", "moon_facts", "moon_phases", "moon_range"]
     },
     {

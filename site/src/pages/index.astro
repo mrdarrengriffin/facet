@@ -1,19 +1,22 @@
 ---
 // Home page: the original Facet site's landing layout (main a5df2ac: site/src/pages/index.astro) as a short intro
 // (Darren 2026-10-22): what Facet is, a glimpse of how it's built, then a walk into the docs. Every example is the
-// real WASM component. The old hero ran the whole demo house; screens aren't built yet, so the panel shows the Dial.
+// real WASM component. The hero is the live panel (the Device component started on Home, as on the screen pages):
+// tap a card and its screen opens, Back returns. The Screens step shows the released screens as still pictures.
 // The intro and the idea behind the name are drafts for Darren to edit (2026-10-22).
 import Base from '../layouts/Base.astro';
 import Live from '../components/Live.astro';
-import { COMPONENTS, FOUNDATIONS, defaults, href } from '../lib/data';
-import { url } from '../lib/nav';
+import { COMPONENTS, FOUNDATIONS, SCREENS, href, screenById, screenHref } from '../lib/data';
+import { UPDATES_PAGE, url } from '../lib/nav';
 import previews from '../data/previews.json';
 
 const description =
   'Wall panel UI for Home Assistant. One design system for ESP32 touch panels (ESPHome and LVGL), shown here by the same renderer the panels run.';
 
-const find = (id: string) => COMPONENTS.find((c) => c.id === id);
-const hero = find('dial');
+// the hero: a whole panel, live (sample data, no Home Assistant)
+const hero = screenById('home');
+// the screens step: every released screen (not WIP), still, each opening its page
+const released = SCREENS.filter((s) => s.status !== 'wip');
 // previews rendered by the WASM build at extract time (scripts/extract.mjs 5e): still PNGs, both themes, linking
 // to their pages
 type Shot = { id: string; section: string; label: string; name: string; w: number; h: number };
@@ -44,9 +47,10 @@ const what = [
 
 const steps = [
   { title: 'Getting started', text: 'What you need and how to put Facet on a panel.', soon: true },
+  { title: 'Screens', text: `${SCREENS.length} screens, each running live on its page as it does on a panel.`, href: url('/screens/') },
   { title: 'Design system', text: 'The foundations: colour, type, space, layout, motion, states, icons.', href: url('/foundations/') },
   { title: 'Components', text: `${COMPONENTS.length} components, each with a playground: change its props, tap it, hear it.`, href: url('/components/') },
-  { title: 'Roadmap and updates', text: "Where it's headed, and how it got here.", href: url('/roadmap/') },
+  { title: 'Roadmap', text: "Where it's headed, and what's done.", href: url('/roadmap/') },
 ];
 ---
 
@@ -63,8 +67,8 @@ const steps = [
           alike, so every screen looks and feels the same wherever it runs.
         </p>
         <div class="landing__actions">
-          <a class="button button--primary" href={url('/components/')}>Browse components</a>
-          <a class="button button--secondary" href={url('/foundations/')}>Design system</a>
+          <a class="button button--primary" href={url('/screens/')}>See the screens</a>
+          <a class="button button--secondary" href={url('/components/')}>Browse components</a>
         </div>
         <p class="landing__docs">
           New here? Start with <a href="#start">where to go next</a>, or see what's coming on the{' '}
@@ -77,10 +81,10 @@ const steps = [
           <figure class="landing__device">
             <div class="landing__bezel">
               <div class="landing__viewport">
-                <Live comp={hero.id} props={{ ...defaults(hero.meta), ...(hero.meta.variants?.[0]?.props ?? {}) }} label={hero.name} frame={hero.meta.frame} caption={false} />
+                <Live comp="device" props={{ start: 'home' }} label="Facet panel" frame={hero.frame} caption={false} />
               </div>
             </div>
-            <figcaption>The {hero.name}, live. Drag it around.</figcaption>
+            <figcaption>A panel, live, on made-up devices. Tap a card to open its screen.</figcaption>
           </figure>
         )
       }
@@ -89,9 +93,9 @@ const steps = [
     <section class="callout callout--warn landing__status" aria-label="Project status">
       <span class="dot" aria-hidden="true"></span>
       <p>
-        <strong>Everything here is a work in progress.</strong> Facet is being rebuilt from scratch on the panel renderer:
-        foundations and small components first, then screens. Expect things to move around while that happens; the{' '}
-        <a href={url('/updates/')}>updates page</a> shows what changed lately.
+        <strong>Facet is a work in progress.</strong> The foundations, the components and the first screens are here; more
+        screens and the panel firmware are on the way. Expect things to move around while that happens{UPDATES_PAGE ? <>; the{' '}
+        <a href={url('/updates/')}>updates page</a> shows what changed lately.</> : '.'}
       </p>
     </section>
 
@@ -104,8 +108,8 @@ const steps = [
           <p class="landing__source"><a href="https://dictionary.cambridge.org/dictionary/english/facet">Cambridge Dictionary</a></p>
         </blockquote>
         <p>
-          Each screen in Facet is shaped around the one thing it does, from a light's dial to a 3D printer or the planes
-          overhead. Like the faces cut into a gemstone, they are many small parts of one system, cut to fit together, so
+          Each screen in Facet is shaped around the one thing it does, from a light's dial to
+          the weather or the moon. Like the faces cut into a gemstone, they are many small parts of one system, cut to fit together, so
           the whole feels thought out and designed.
         </p>
       </div>
@@ -171,18 +175,21 @@ const steps = [
           <p class="build__links"><a href={url('/components/')}>All {COMPONENTS.length} components</a></p>
         </li>
         <li class="build__step">
-          <h3><span class="build__n">3</span>Screens <span class="badge">Soon</span></h3>
-          <p>One job per screen, made from the components and a few shared screen patterns. They come next.</p>
-          <ul class="previews">
-            {['Home', 'Settings', 'Media'].map((n) => (
+          <h3><span class="build__n">3</span>Screens</h3>
+          <p>One job per screen, made from the components and a few shared screen patterns. Each one runs live on its page.</p>
+          <ul class="shots">
+            {released.map((sc) => (
               <li>
-                <span class="preview preview--soon">
-                  <span class="preview__img preview__img--square preview__img--empty">{n}: coming</span>
-                  <span class="preview__name">{n}</span>
-                </span>
+                <a class="shot" href={screenHref(sc)}>
+                  <span class="shot__viewport">
+                    <Live comp={sc.comp} props={sc.sampleProps} label={sc.name} frame={sc.frame} caption={false} still />
+                  </span>
+                  <span class="shot__name">{sc.name}</span>
+                </a>
               </li>
             ))}
           </ul>
+          <p class="build__links"><a href={url('/screens/')}>All {SCREENS.length} screens</a></p>
         </li>
       </ol>
     </section>

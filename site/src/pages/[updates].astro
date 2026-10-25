@@ -4,8 +4,13 @@
 // src/content/updates/*.md (format: README there). "On this page" lists them by day.
 import { getCollection, render } from 'astro:content';
 import Docs, { type Heading } from '../layouts/Docs.astro';
-import { url } from '../lib/nav';
+import { UPDATES_PAGE, url } from '../lib/nav';
 import { linkShown, updateShown } from '../lib/data';
+
+// the route exists only while the Updates page is on (lib/nav.ts UPDATES_PAGE)
+export function getStaticPaths() {
+  return UPDATES_PAGE ? [{ params: { updates: 'updates' } }] : [];
+}
 
 const all = (await getCollection('updates')).filter(updateShown).sort((a, b) =>
   `${b.data.date} ${b.data.time ?? '00:00'}`.localeCompare(`${a.data.date} ${a.data.time ?? '00:00'}`),

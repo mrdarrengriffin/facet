@@ -38,6 +38,7 @@ lv_obj_t *build(const char *id, lv_obj_t *parent, ArduinoJson::JsonDocument &d) 
 // a More row inside a listened box: its tap emits "open" <screen> from the view's root (the spec's nav.open)
 struct MoreLink { lv_obj_t *root; const char *screen; };
 void more(lv_obj_t *root, lv_obj_t *parent, const char *text, const char *screen) {
+  if (!fw::spec::screen_known(screen)) return;  // the screen is not in this build (its feature is off): no row
   lv_obj_t *holder = box(parent);
   lv_obj_set_size(holder, fw::lay::content_w, LV_SIZE_CONTENT);
   ArduinoJson::JsonDocument d;

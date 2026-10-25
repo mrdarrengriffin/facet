@@ -2,6 +2,8 @@
 // pair a built screen binds (fw_ha_wants, core/ha.h) gets a made-up value here, by domain. The previews open with
 // sample entities (domain.sample_N, scripts/extract.mjs sampleParams); nothing here belongs to a real home.
 import type { Engine } from './engine';
+// the README images' demo values (one list for both): named demo entities (the docs Home's cards) and by entity name
+import { demoValue } from '../../../renderer/tools/demo_ha.mjs';
 
 const NAMES: Record<string, string[]> = {
   light: ['Ceiling', 'Lamp', 'Desk light'],
@@ -22,9 +24,14 @@ const VALUES: Record<string, Record<string, string | (() => string)>> = {
 function value(entity: string, attr: string): string | undefined {
   const [domain, obj = ''] = entity.split('.');
   if (attr === 'friendly_name') {
+    if (!/^sample_\d+$/.test(obj)) return obj.replace(/_/g, ' ').replace(/^./, (x) => x.toUpperCase());  // light.sofa_lamp: Sofa lamp
     const names = NAMES[domain] ?? [];
     const i = Math.max(0, (parseInt(obj.replace(/\D+/g, ''), 10) || 1) - 1);
     return names[i % Math.max(1, names.length)] ?? obj.replace(/_/g, ' ');
+  }
+  if (!/^sample_\d+$/.test(obj)) {  // a named demo entity (the demo deck, a spec's default): the shared demo values
+    const d = demoValue(entity, attr);
+    if (d !== undefined) return d;
   }
   const v = VALUES[domain]?.[attr];
   return typeof v === 'function' ? v() : v;

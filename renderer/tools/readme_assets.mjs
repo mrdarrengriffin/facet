@@ -9,6 +9,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { deflateSync } from 'node:zlib';
+import { demoValue } from './demo_ha.mjs';
 
 const HERE = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const ROOT = resolve(HERE, '..');
@@ -28,28 +29,9 @@ const screens = meta.filter((c) => c.section === 'screens');
 if (process.argv.includes('--list')) { for (const c of screens) console.log(c.id, '|', c.meta?.title || c.title || '', '|', c.meta?.desc || c.meta?.description || ''); process.exit(0); }
 
 const str = (s, f) => { const p = m.stringToNewUTF8(s); try { return f(p); } finally { m._free(p); } };
-// Demo HA values so the images look alive: every (entity, attribute) a built screen binds (fw_ha_wants) gets a
-// believable value (a track playing, the ceiling light at 70 %, temperatures, doors closed, battery levels).
-const DEMO = {
-  'light.living_room_ceiling': { '': 'on', brightness: '179' },
-  'light.sofa_lamp': { '': 'on', brightness: '115' },
-  'light.reading_lamp': { '': 'off' },
-  'media_player.sitting_room_speaker': { '': 'playing', media_title: 'Harvest Moon', media_artist: 'Neil Young', volume_level: '0.45', media_position: '118', media_duration: '303' },
-};
+// Demo HA values so the images look alive (tools/demo_ha.mjs, shared with the docs site's previews)
 const put = new Set();
-function demo(e, a) {
-  const d = DEMO[e]?.[a];
-  if (d !== undefined) return d;
-  if (a === 'media_position_updated_at') return new Date().toISOString();
-  if (/temperature/.test(e)) return { '': '18.5', unit_of_measurement: '°C', device_class: 'temperature' }[a];
-  if (/humidity/.test(e)) return { '': '52', unit_of_measurement: '%', device_class: 'humidity' }[a];
-  if (/battery/.test(e)) return { '': '82', unit_of_measurement: '%', device_class: 'battery' }[a];
-  if (/door|window/.test(e)) return { '': 'off', device_class: /window/.test(e) ? 'window' : 'door' }[a];
-  if (/^(light|switch|fan)\./.test(e)) return { '': 'on', brightness: '204' }[a];
-  if (/^cover\./.test(e)) return { '': 'open', current_position: '60' }[a];
-  if (/^climate\./.test(e)) return { '': 'heat', temperature: '21', current_temperature: '19.5' }[a];
-  return undefined;
-}
+const demo = demoValue;
 function feed() {
   for (const [e, a] of JSON.parse(m.UTF8ToString(m._fw_ha_wants()) || '[]')) {
     const k = `${e}|${a}`, v = demo(e, a);

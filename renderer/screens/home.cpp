@@ -89,6 +89,18 @@ char card_node(Var cd, Var pages, int slot, ArduinoJson::JsonArray nodes) {
   if (tap.empty()) tap = std::string(ct->taps).substr(0, std::string(ct->taps).find(','));
   const char *comp = size == "s" ? ct->comp_s : size == "l" ? ct->comp_l : ct->comp_m;
   if (!*comp) return 0;
+  {  // a card that opens a screen this build lacks (its feature is off, features.json; a custom deck can still name
+     // one) is left out, so no card leads nowhere
+    std::string to = tap == "detail" ? ct->detail : "";
+    if (t == "page" || tap == "page") {
+      const std::string id = cd["page"] | "";
+      to.clear();
+      for (Var pg : pages.as<ArduinoJson::JsonArrayConst>())
+        if (id == (pg["id"] | "")) to = pg["kind"] | "";
+      if (to.empty()) return 0;
+    }
+    if (!to.empty() && !fw::spec::screen_known(to)) return 0;
+  }
   ArduinoJson::JsonObject n = nodes.add<ArduinoJson::JsonObject>();
   n["c"] = comp;
   n["in"] = 0;

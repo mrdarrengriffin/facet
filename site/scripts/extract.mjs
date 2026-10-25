@@ -148,6 +148,10 @@ const pub = (t) => typeof t === 'string' ? t.replace(/\s*\((?:facet-\d+|lab)[^)]
 // a shown component's variants / select options that name a hidden feature (Weather's lightning view while the
 // Lightning feature is hidden: the docs build has no such view) are left out
 const HIDDEN_FEATS = new Set(FEAT.features.filter((f) => !f.docs).map((f) => f.id));
+// detail screens (spec / meta role "detail") get no docs page unless their feature lists them in docs_pages (a released
+// screen such as Light, Blinds or Moon); the rest open only inside their parent's demo
+const DOCS_PAGES = new Set(FEAT.features.flatMap((f) => f.docs_pages ?? []));
+const hasPage = (id, role) => role !== 'detail' || DOCS_PAGES.has(id);
 for (const e of entries) {
   e.meta.variants = (e.meta.variants ?? []).filter((v) => !Object.values(v.props ?? {}).some((x) => HIDDEN_FEATS.has(x)));
   for (const pr of e.meta.props ?? []) if (pr.options) pr.options = pr.options.filter((o) => !HIDDEN_FEATS.has(o));
@@ -394,7 +398,7 @@ function screenSet() {
     const rel = `renderer/specs/${f}`;
     out.push({ id: spec.id, name: pub(spec.name), kind: 'spec', about: pub(about), layout: spec.layout, params,
       sampleProps: { screen: spec.id, ...Object.fromEntries(params.filter((p) => p.sample).map((p) => [p.name, p.sample])) },
-      role: spec.role ?? 'page', comp: 'spec', frame: [480, 480], parts, sources: sourcesOf(spec.id), status: relStatus(spec.id, one(rel)), source: [{ path: rel, url: `${REPO}/${rel}` }] });
+      role: spec.role ?? 'page', page: hasPage(spec.id, spec.role ?? 'page'), comp: 'spec', frame: [480, 480], parts, sources: sourcesOf(spec.id), status: relStatus(spec.id, one(rel)), source: [{ path: rel, url: `${REPO}/${rel}` }] });
   }
   for (const c of entries.filter((e) => e.section === 'screens' && !SCREEN_SKIP.has(e.id))) {
     const f = files[c.id] ?? { uses: [], files: [], status: 'wip' };
@@ -403,7 +407,7 @@ function screenSet() {
       params: props.map((p) => ({ name: p.name, about: p.about ?? '', label: p.name.replace(/_/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase().replace(/^./, (x) => x.toUpperCase()),
         type: p.type, domain: null, options: p.options ?? (p.type === 'range' ? [`${p.min ?? 0} to ${p.max}`] : null), default: p.default ?? '' })),
       sampleProps: Object.fromEntries((c.meta.props ?? []).map((p) => [p.name, p.default ?? (p.type === 'bool' ? false : p.type === 'range' ? p.min ?? 0 : '')])),
-      role: c.meta.role ?? 'page', comp: c.id, frame: c.meta.frame, parts: f.uses.filter((u) => compById[u] && u !== c.id), sources: sourcesOf(c.id), status: relStatus(c.id, f.status),
+      role: c.meta.role ?? 'page', page: hasPage(c.id, c.meta.role ?? 'page'), comp: c.id, frame: c.meta.frame, parts: f.uses.filter((u) => compById[u] && u !== c.id), sources: sourcesOf(c.id), status: relStatus(c.id, f.status),
       source: f.files.map((p) => ({ path: p, url: `${REPO}/${p}` })) });
   }
   for (const s of out) {

@@ -29,11 +29,15 @@ only they use (their `*_view`, `f1_*`, ...), or a group of unfinished parts / fo
 | `docs` | shown on the docs site (pages, nav, component listings, search, roadmap rows, Updates entries tagged `feature:`) |
 | `status` | the label the docs show while it is shown: `done` (git's WIP / Done / edited), `wip`, `preview` |
 | `firmware` | compiled into the panel firmware, and so in the factory deck, Home cards and Settings > Screens |
+| `docs_pages` | its detail screens (spec role `detail`: opened from a card or a parent screen, never a deck page) that still get their own docs page, such as Light; the others open only inside their parent's demo |
 
 The firmware flag is a **screen** decision: every component or foundation not listed under a feature belongs to the
 **library** (`"library"`, shipped), because people and custom specs build with it; list a component under a feature only
 when it is that screen's own UI or unfinished. **Flip one:** edit its `"docs"` / `"status"` / `"firmware"` in
 `renderer/features.json`; the next build checks it. Workbench: Tools > **Release** (hub `/wasm/release`) lists them.
+
+A tab, card or drill-down never points at a screen the build lacks: a Home card whose screen is not in the build is
+left out, a More row to a missing screen is not drawn, and `nav.open` to an unknown screen does nothing (`spec::screen_known`).
 
 Build-time only (nothing on the device): `tools/features.mjs` reads the manifest.
 - `build.sh` runs `node tools/features.mjs check` first and fails when a source belongs to no feature (or two), a
