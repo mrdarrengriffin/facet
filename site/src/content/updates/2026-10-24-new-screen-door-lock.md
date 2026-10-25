@@ -2,6 +2,7 @@
 title: "New screen: Door lock"
 date: "2026-10-24"
 time: "01:30"
+feature: "lock"
 kind: "New screen"
 image: "2026-10-24-door-lock.png"
 alt: "The Door lock screen: a padlock in a ring on the left, Locked with who locked it and the last day's activity on the right"

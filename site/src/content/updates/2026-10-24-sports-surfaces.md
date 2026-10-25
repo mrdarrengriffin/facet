@@ -2,6 +2,7 @@
 title: "Tennis courts on their real surface"
 date: "2026-10-24"
 time: "01:30"
+feature: "sport"
 kind: "Design system"
 image: "2026-10-24-sports-surfaces.png"
 alt: "A grass tennis court from above with mown stripes, white lines, the server's dot in the run-off and the target service box lifted"

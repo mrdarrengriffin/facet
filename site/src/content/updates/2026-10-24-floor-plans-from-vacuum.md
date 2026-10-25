@@ -2,6 +2,7 @@
 title: "Floor plans from your vacuum's map"
 date: "2026-10-24"
 time: "19:30"
+feature: "floorplans"
 kind: "New feature"
 image: "2026-10-24-floor-plans-from-vacuum.png"
 alt: "A test map from a Dreame robot vacuum: its rooms as traced, then the same rooms as a clean isometric floor plan with the robot, its path and the dock"

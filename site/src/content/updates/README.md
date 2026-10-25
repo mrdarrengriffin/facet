@@ -22,6 +22,8 @@ The Updates page is what's new in Facet, newest first, ending with how it began:
 - **One good picture** where there is something to see: the feature itself, captured from the live renderer
   (the docs site's screen / component canvas at 720, dark), square or whole, never a page crop that cuts a panel or
   shows half the site chrome. Sample data only: no real names, rooms, speakers, events or places from a real home.
+- **feature: "<id>"** when the entry is about one feature of `renderer/features.json` (a screen like `"vacuum"`): the
+  entry is left out of the site while that feature is hidden (`docs: false`). Links to hidden pages are dropped.
 - **milestone: true** only for real turning points (a handful in all): a tinted box.
 - Links: the docs page(s) for what changed, checked to exist (paths use hyphens: `components/clock-face/`).
 - Public words only: no board ids, no quotes from chat.

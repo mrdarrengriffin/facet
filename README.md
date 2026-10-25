@@ -19,6 +19,40 @@ Dark/Light and device toggles.
 Later, as on `main`: `site/` (Astro docs) and `packages/` (pnpm workspace). All paths below are relative to
 `renderer/` unless they start with `firmware/`.
 
+## Feature flags (what ships)
+
+`renderer/features.json` is the one manifest of what a release carries. A **feature** = pre-made screens plus the UI
+only they use (their `*_view`, `f1_*`, ...), or a group of unfinished parts / foundations; per feature three flags:
+
+| Flag | What it decides |
+|---|---|
+| `docs` | shown on the docs site (pages, nav, component listings, search, roadmap rows, Updates entries tagged `feature:`) |
+| `status` | the label the docs show while it is shown: `done` (git's WIP / Done / edited), `wip`, `preview` |
+| `firmware` | compiled into the panel firmware, and so in the factory deck, Home cards and Settings > Screens |
+
+The firmware flag is a **screen** decision: every component or foundation not listed under a feature belongs to the
+**library** (`"library"`, shipped), because people and custom specs build with it; list a component under a feature only
+when it is that screen's own UI or unfinished. **Flip one:** edit its `"docs"` / `"status"` / `"firmware"` in
+`renderer/features.json`; the next build checks it. Workbench: Tools > **Release** (hub `/wasm/release`) lists them.
+
+Build-time only (nothing on the device): `tools/features.mjs` reads the manifest.
+- `build.sh` runs `node tools/features.mjs check` first and fails when a source belongs to no feature (or two), a
+  listed id does not exist, or a feature shown in docs / firmware needs a part of a hidden one (`find("x")` calls, spec
+  nodes, `nav.open` screens, `#include` of a feature's core file). Writes `features.json` (id -> feature, flags) next
+  to the build for the workbench nav ("off" tag).
+- `FW_FEATURES=docs|firmware ./build.sh` = that flavour: hidden sources not compiled, their specs, deck pages and Home
+  cards (`cards` = the card types that open them) left out of `specs_gen.h`, their Colour page sections out
+  (`colour` aliases), `FW_ICONS=used` trims by the components left; into `$FW_OUT/<flavour>/<density>/` with its own
+  cache, no audit (the full build has it). Unset = everything (the workbench).
+- `firmware/bundle.mjs` = the release (firmware flags) by default; `--all` bundles every feature: the workbench
+  firmware (`panel wb build`, the hub's Show on device hash check) always uses it, so the bench panels keep everything.
+- A shown part that offers a hidden feature drops that piece itself when its component is not in the build (Weather's
+  Lightning tab: `fw::find("lightning_view")`); the docs leave out variants / select options named after a hidden
+  feature.
+- `site/` builds from the docs flavour (`FW_FEATURES=docs renderer/build.sh` first, then `npm run build`).
+
+`node tools/features.mjs table` prints the flags; `exclude docs|firmware` the files a flavour leaves out.
+
 ## Workflow: WIP -> approved -> one commit per component
 
 - Every component starts as **WIP**: a new `components/<id>.cpp`, untracked.

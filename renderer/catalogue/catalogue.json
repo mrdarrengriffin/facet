@@ -703,6 +703,44 @@
     "bytes_est": 640
    }
   },
+  "check_row": {
+   "name": "Check row",
+   "update": true,
+   "props": [
+    {
+     "name": "name",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "pass",
+      "fail",
+      "pending",
+      "skipped"
+     ]
+    },
+    {
+     "name": "width",
+     "type": "range",
+     "bindable": true,
+     "min": 160,
+     "max": 440
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 4,
+    "bytes_est": 640
+   }
+  },
   "checkbox": {
    "name": "Checkbox",
    "update": true,
@@ -745,44 +783,6 @@
    "cost": {
     "objects": 5,
     "bytes_est": 800
-   }
-  },
-  "check_row": {
-   "name": "Check row",
-   "update": true,
-   "props": [
-    {
-     "name": "name",
-     "type": "text",
-     "bindable": true
-    },
-    {
-     "name": "state",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "pass",
-      "fail",
-      "pending",
-      "skipped"
-     ]
-    },
-    {
-     "name": "width",
-     "type": "range",
-     "bindable": true,
-     "min": 160,
-     "max": 440
-    }
-   ],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 4,
-    "bytes_est": 640
    }
   },
   "clock_face": {
@@ -971,6 +971,67 @@
     "bytes_est": 320
    }
   },
+  "cover_visual": {
+   "name": "Cover visual",
+   "update": true,
+   "props": [
+    {
+     "name": "kind",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "roller",
+      "venetian",
+      "curtain"
+     ]
+    },
+    {
+     "name": "position",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 100
+    },
+    {
+     "name": "tilt",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 100
+    },
+    {
+     "name": "heading",
+     "type": "range",
+     "bindable": true,
+     "min": -1,
+     "max": 100
+    },
+    {
+     "name": "draggable",
+     "type": "bool",
+     "bindable": true
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "default",
+      "disabled",
+      "unavailable"
+     ]
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 6,
+    "bytes_est": 960
+   }
+  },
   "covers_view": {
    "name": "Covers view",
    "update": true,
@@ -1041,67 +1102,6 @@
    "cost": {
     "objects": 40,
     "bytes_est": 6400
-   }
-  },
-  "cover_visual": {
-   "name": "Cover visual",
-   "update": true,
-   "props": [
-    {
-     "name": "kind",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "roller",
-      "venetian",
-      "curtain"
-     ]
-    },
-    {
-     "name": "position",
-     "type": "range",
-     "bindable": true,
-     "min": 0,
-     "max": 100
-    },
-    {
-     "name": "tilt",
-     "type": "range",
-     "bindable": true,
-     "min": 0,
-     "max": 100
-    },
-    {
-     "name": "heading",
-     "type": "range",
-     "bindable": true,
-     "min": -1,
-     "max": 100
-    },
-    {
-     "name": "draggable",
-     "type": "bool",
-     "bindable": true
-    },
-    {
-     "name": "state",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "default",
-      "disabled",
-      "unavailable"
-     ]
-    }
-   ],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 6,
-    "bytes_est": 960
    }
   },
   "date_line": {
@@ -3533,6 +3533,68 @@
     "bytes_est": 1760
    }
   },
+  "pr_row": {
+   "name": "Pull request row",
+   "update": true,
+   "props": [
+    {
+     "name": "repo",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "number",
+     "type": "range",
+     "bindable": true,
+     "min": 1,
+     "max": 9999
+    },
+    {
+     "name": "title",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "age",
+     "type": "text",
+     "bindable": true
+    },
+    {
+     "name": "draft",
+     "type": "bool",
+     "bindable": true
+    },
+    {
+     "name": "ci",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "pass",
+      "fail",
+      "pending",
+      "none"
+     ]
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "default",
+      "pressed"
+     ]
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 13,
+    "bytes_est": 2080
+   }
+  },
   "print_model": {
    "name": "3D print model",
    "update": true,
@@ -3629,68 +3691,6 @@
    "cost": {
     "objects": 9,
     "bytes_est": 1440
-   }
-  },
-  "pr_row": {
-   "name": "Pull request row",
-   "update": true,
-   "props": [
-    {
-     "name": "repo",
-     "type": "text",
-     "bindable": true
-    },
-    {
-     "name": "number",
-     "type": "range",
-     "bindable": true,
-     "min": 1,
-     "max": 9999
-    },
-    {
-     "name": "title",
-     "type": "text",
-     "bindable": true
-    },
-    {
-     "name": "age",
-     "type": "text",
-     "bindable": true
-    },
-    {
-     "name": "draft",
-     "type": "bool",
-     "bindable": true
-    },
-    {
-     "name": "ci",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "pass",
-      "fail",
-      "pending",
-      "none"
-     ]
-    },
-    {
-     "name": "state",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "default",
-      "pressed"
-     ]
-    }
-   ],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 13,
-    "bytes_est": 2080
    }
   },
   "qr_block": {
@@ -5565,5 +5565,5 @@
    }
   }
  },
- "hash": "ee2268e1"
+ "hash": "b2518ab7"
 }

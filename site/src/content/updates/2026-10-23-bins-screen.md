@@ -2,6 +2,7 @@
 title: "New screen: Bins"
 date: "2026-10-23"
 time: "17:15"
+feature: "bins"
 kind: "New screen"
 ---
 The next collection is drawn as the bins themselves, in their colours, with the moment that matters: put them out

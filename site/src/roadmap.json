@@ -1,5 +1,5 @@
 {
- "updated": "2026-10-24",
+ "updated": "2026-10-25",
  "tables": {
   "foundations": [
    {
@@ -137,11 +137,6 @@
     "status": "planned"
    },
    {
-    "name": "Sports surfaces",
-    "group": "Core",
-    "status": "doing"
-   },
-   {
     "name": "Behaviour tests",
     "group": "Platform",
     "status": "done",
@@ -269,12 +264,6 @@
     "note": "Pick one of a few options, settings and tabs styles"
    },
    {
-    "name": "Thermostat dial",
-    "group": "Controls",
-    "status": "done",
-    "note": "Room temperature tick, set point knob, heating arc"
-   },
-   {
     "name": "Cover visual",
     "group": "Controls",
     "status": "done",
@@ -392,19 +381,7 @@
     "name": "State chip",
     "group": "Lists",
     "status": "done",
-    "note": "Coloured state pill for PRs and checks"
-   },
-   {
-    "name": "Pull request row",
-    "group": "Lists",
-    "status": "done",
-    "note": "GitHub PR line: repo, number, age, status"
-   },
-   {
-    "name": "Check row",
-    "group": "Lists",
-    "status": "done",
-    "note": "One CI check with its result"
+    "note": "Folded into Status chip (2026-10-24): PR states are plain Status chips"
    },
    {
     "name": "Empty state",
@@ -493,7 +470,7 @@
     "name": "Delta chip",
     "group": "Charts",
     "status": "done",
-    "note": "Up/down change versus before"
+    "note": "Folded into Status chip (2026-10-24): an arrow in the chip's words"
    },
    {
     "name": "Donut",
@@ -525,18 +502,6 @@
     "note": "Hero, ring, analogue and compact clocks"
    },
    {
-    "name": "Lightning radar",
-    "group": "Radar",
-    "status": "done",
-    "note": "Strikes plotted around the house by distance"
-   },
-   {
-    "name": "3D print model",
-    "group": "Visuals",
-    "status": "done",
-    "note": "Print model filling up layer by layer"
-   },
-   {
     "name": "Art (big screen pictures)",
     "group": "Visuals",
     "status": "planned",
@@ -547,8 +512,7 @@
    {
     "name": "Home",
     "group": "Core",
-    "status": "doing",
-    "note": "Deck v2 pages + a start Home with cards (screen model piece 1); still draws page links until the card renderer (piece 2)"
+    "status": "doing"
    },
    {
     "name": "Settings",
@@ -587,46 +551,10 @@
     "note": "One big on/off button with power and time"
    },
    {
-    "name": "Thermostat",
-    "group": "Home control",
-    "status": "done",
-    "note": "Heating ring, set point, modes, presets"
-   },
-   {
     "name": "Blinds and curtains",
     "group": "Home control",
     "status": "done",
     "note": "Window drawn per kind; drag to a position; pick a window in the header"
-   },
-   {
-    "name": "Robot vacuum",
-    "group": "Home control",
-    "status": "doing",
-    "note": "Rooms plus a good-looking 3D floorplan map"
-   },
-   {
-    "name": "Door lock",
-    "group": "Home control",
-    "status": "doing",
-    "note": "Locked state, unlock with a confirm step"
-   },
-   {
-    "name": "Plant monitor",
-    "group": "Home control",
-    "status": "doing",
-    "note": "Soil moisture per plant, needs-water state"
-   },
-   {
-    "name": "Security cameras",
-    "group": "Home control",
-    "status": "doing",
-    "note": "Camera grid plus Frigate detections"
-   },
-   {
-    "name": "Bins",
-    "group": "Home control",
-    "status": "doing",
-    "note": "Next collection as coloured bins, put-out / bring-in, rhythm; sample data, HA calendar or iCal source to wire"
    },
    {
     "name": "Media",
@@ -645,17 +573,6 @@
     "group": "Weather and sky",
     "status": "done",
     "note": "Phase as the hero, worked out on the device"
-   },
-   {
-    "name": "Lightning",
-    "group": "Weather and sky",
-    "status": "done",
-    "note": "Lightning radar; also a Weather view"
-   },
-   {
-    "name": "Overhead (flights)",
-    "group": "Weather and sky",
-    "status": "doing"
    },
    {
     "name": "Calendar",
@@ -686,30 +603,6 @@
     "group": "Info",
     "status": "planned",
     "note": "Netlify, Cloudflare, GitHub status; \"another day\""
-   },
-   {
-    "name": "GitHub",
-    "group": "Work",
-    "status": "done",
-    "note": "PRs needing you, detail with checks and QR"
-   },
-   {
-    "name": "Agents",
-    "group": "Work",
-    "status": "doing",
-    "note": "Count needing you + tile per agent; sample data, status feed fetch to wire"
-   },
-   {
-    "name": "3D print",
-    "group": "Making",
-    "status": "done",
-    "note": "Model fills up layer by layer"
-   },
-   {
-    "name": "Sports (live scores)",
-    "group": "Info",
-    "status": "done",
-    "note": "F1 (23 circuits, broadcast map), tennis, football; tennis + football live: hub feeds (API-Tennis trial + ESPN), on-screen match picker, TV sync (delay buffer, pause/play bar) (064790e); workbench done, panels not wired"
    }
   ]
  }

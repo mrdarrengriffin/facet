@@ -11,11 +11,16 @@
 // Output: src/data/{site,components,foundations,tokens}.json + public/wasm/<density>/ (a copy of the build, so the
 // site is self-contained wherever it is deployed).
 //
-// Build location: $FW_OUT (env, else local.env at the repo root, else renderer/out), densities 1.5x and 1x.
+// Build location: $FW_OUT (env, else local.env at the repo root, else renderer/out), densities 1.5x and 1x: the DOCS
+// flavour of the build ($FW_OUT/docs/<density>, `FW_FEATURES=docs renderer/build.sh`): only the features shown in the
+// docs (renderer/features.json, README "Feature flags") are in it, so hidden screens, their parts, deck pages and Home
+// cards are not on the site at all. Hidden features are also left out of the roadmap and the Updates entries that
+// name them (`feature:`), and a shown feature's status (done | wip | preview) is the one its manifest entry says.
 import { execFileSync } from 'node:child_process';
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { byId, hiddenIds, hiddenRoadmap, load as loadFeatures } from '../../renderer/tools/features.mjs';
 
 const SITE = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const ROOT = resolve(SITE, '..');
@@ -28,8 +33,10 @@ const ABOUT_DRAFT = true;
 // FW_OUT: env > local.env > renderer/out
 let fwOut = process.env.FW_OUT;
 if (!fwOut && existsSync(join(ROOT, 'local.env'))) fwOut = readFileSync(join(ROOT, 'local.env'), 'utf8').match(/^FW_OUT=(.*)$/m)?.[1]?.trim();
-fwOut = resolve(ROOT, fwOut || 'renderer/out');
-for (const d of DENS) if (!existsSync(join(fwOut, d, 'fw.mjs'))) { console.error(`extract: no build in ${fwOut}/${d} (run renderer/build.sh)`); process.exit(1); }
+fwOut = join(resolve(ROOT, fwOut || 'renderer/out'), 'docs');
+for (const d of DENS) if (!existsSync(join(fwOut, d, 'fw.mjs'))) { console.error(`extract: no docs build in ${fwOut}/${d} (run FW_FEATURES=docs renderer/build.sh)`); process.exit(1); }
+const FEAT = loadFeatures(), FEAT_ID = byId(FEAT), HIDDEN = hiddenIds('docs', FEAT);
+const shown = (id) => !HIDDEN.has(id) && FEAT_ID[id]?.docs !== false;
 
 // 1. the WASM registry, read by running the build in node
 const base = join(fwOut, '1.5x') + '/';
@@ -54,6 +61,8 @@ const git = (...a) => { try { return execFileSync('git', ['-C', ROOT, ...a], { e
 const tracked = new Set(git('ls-files', '--', 'renderer').split('\n').filter(Boolean));
 const changed = new Set(git('status', '--porcelain', '--untracked-files=all', '--', 'renderer').split('\n').filter(Boolean).map((l) => l.slice(3)));
 const one = (rel) => (!tracked.has(rel) ? 'wip' : changed.has(rel) ? 'edited' : 'done');
+// the status the docs show: the feature's (features.json) when it says wip / preview, else git's (WIP / Done / edited)
+const relStatus = (id, git) => (FEAT_ID[id] && FEAT_ID[id].status !== 'done' ? FEAT_ID[id].status : git);
 const combine = (xs) => (xs.includes('wip') ? 'wip' : xs.includes('edited') ? 'edited' : 'done');
 
 /** the leading // comment block of a source file, as paragraphs */
@@ -115,7 +124,7 @@ const lede = (s) => {
   const u = t[0].toUpperCase() + t.slice(1);
   return u.length > 160 ? u.slice(0, 157) + '...' : u;
 };
-const entries = reg.map((c) => {
+const entries = reg.filter((c) => shown(c.id)).map((c) => {
   const f = files[c.id] ?? { uses: [], files: [], status: 'wip', notes: '', events: [], sounds: [] };
   const desc = rows[c.id] ?? '';
   return {
@@ -128,7 +137,7 @@ const entries = reg.map((c) => {
     events: f.events,
     uses: f.uses.filter((u) => u !== c.id),
     sounds: f.sounds.map((id) => ({ id, ...(soundName[id] ?? { name: id, for: '' }) })),
-    status: f.status,
+    status: relStatus(c.id, f.status),
     source: f.files.map((p) => ({ path: p, url: `${REPO}/${p}` })),
   };
 });
@@ -136,6 +145,13 @@ const entries = reg.map((c) => {
 // leading "Experiment:" / "WIP" markers in names, ledes and section texts
 const pub = (t) => typeof t === 'string' ? t.replace(/\s*\((?:facet-\d+|lab)[^)]*\)/gi, '').replace(/\bfacet-\d+\b,?\s*/gi, '').replace(/,?\s*\bWIP( round \d+)?\b\.?/g, '').replace(/^\s*Experiment:\s*/i, '')
   .replace(/\s*by Darren \(\d{4}-\d{2}-\d{2}:[^)]*\)/g, '').replace(/\s*\(Darren \d{4}-\d{2}-\d{2}\)/g, '').replace(/,\s*Darren \d{4}-\d{2}-\d{2}/g, '').trim() : t;
+// a shown component's variants / select options that name a hidden feature (Weather's lightning view while the
+// Lightning feature is hidden: the docs build has no such view) are left out
+const HIDDEN_FEATS = new Set(FEAT.features.filter((f) => !f.docs).map((f) => f.id));
+for (const e of entries) {
+  e.meta.variants = (e.meta.variants ?? []).filter((v) => !Object.values(v.props ?? {}).some((x) => HIDDEN_FEATS.has(x)));
+  for (const pr of e.meta.props ?? []) if (pr.options) pr.options = pr.options.filter((o) => !HIDDEN_FEATS.has(o));
+}
 for (const e of entries) {
   e.name = pub(e.name);
   e.lede = pub(e.lede);
@@ -257,6 +273,9 @@ function roadmapSnapshot() {
   }
   return { updated: scope.updated ?? scope.generated, tables };
 }
+// hidden features' rows out of the roadmap (also out of a snapshot made before a flag changed)
+const ROAD_HIDE = hiddenRoadmap(FEAT);
+const roadFilter = (r) => ({ ...r, tables: Object.fromEntries(Object.entries(r.tables).map(([k, rows]) => [k, rows.filter((x) => !ROAD_HIDE.has(x.name))])) });
 
 // 5e. Home page previews (Darren 2026-10-22): still PNGs rendered here by the WASM build itself (the 1.5x / 720
 // build already running in node), both themes, so they stay current with the code. Foundations: one section each
@@ -357,6 +376,7 @@ function screenSet() {
   for (const f of readdirSync(join(R, 'specs')).filter((f) => f.endsWith('.json')).sort()) {
     const spec = json(`specs/${f}`);
     if (!spec.id || !Array.isArray(spec.nodes)) continue;  // the deck, not a screen
+    if (!shown(spec.id)) continue;  // a hidden feature (features.json)
     walkOpen(spec.id, spec.nodes);
     const params = Object.entries(spec.params ?? {}).map(([name, v]) => {
       const t = typeof v === 'object' && v ? v : { type: 'text', default: v };
@@ -373,7 +393,7 @@ function screenSet() {
     const rel = `renderer/specs/${f}`;
     out.push({ id: spec.id, name: pub(spec.name), kind: 'spec', about: pub(about), layout: spec.layout, params,
       sampleProps: { screen: spec.id, ...Object.fromEntries(params.filter((p) => p.sample).map((p) => [p.name, p.sample])) },
-      comp: 'spec', frame: [480, 480], parts, sources: sourcesOf(spec.id), status: one(rel), source: [{ path: rel, url: `${REPO}/${rel}` }] });
+      comp: 'spec', frame: [480, 480], parts, sources: sourcesOf(spec.id), status: relStatus(spec.id, one(rel)), source: [{ path: rel, url: `${REPO}/${rel}` }] });
   }
   for (const c of entries.filter((e) => e.section === 'screens' && !SCREEN_SKIP.has(e.id))) {
     const f = files[c.id] ?? { uses: [], files: [], status: 'wip' };
@@ -382,7 +402,7 @@ function screenSet() {
       params: props.map((p) => ({ name: p.name, label: p.name.replace(/_/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase().replace(/^./, (x) => x.toUpperCase()),
         type: p.type, domain: null, options: p.options ?? (p.type === 'range' ? [`${p.min ?? 0} to ${p.max}`] : null), default: p.default ?? '' })),
       sampleProps: Object.fromEntries((c.meta.props ?? []).map((p) => [p.name, p.default ?? (p.type === 'bool' ? false : p.type === 'range' ? p.min ?? 0 : '')])),
-      comp: c.id, frame: c.meta.frame, parts: f.uses.filter((u) => compById[u] && u !== c.id), sources: sourcesOf(c.id), status: f.status,
+      comp: c.id, frame: c.meta.frame, parts: f.uses.filter((u) => compById[u] && u !== c.id), sources: sourcesOf(c.id), status: relStatus(c.id, f.status),
       source: f.files.map((p) => ({ path: p, url: `${REPO}/${p}` })) });
   }
   for (const s of out) {
@@ -414,8 +434,14 @@ w('icons.json', iconSet());
 w('previews.json', previews());
 const screens = screenSet();
 w('screens.json', screens);
-const road = roadmapSnapshot();
-if (road) writeFileSync(join(SITE, 'src/roadmap.json'), JSON.stringify(road, null, 1) + '\n');
+const road = roadmapSnapshot() ?? JSON.parse(readFileSync(join(SITE, 'src/roadmap.json'), 'utf8'));
+writeFileSync(join(SITE, 'src/roadmap.json'), JSON.stringify(roadFilter(road), null, 1) + '\n');
+// feature flags for the pages: hidden features (Updates entries tagged with one are left out) + the paths of hidden
+// pages (links to them are dropped)
+const hiddenFeatures = FEAT.features.filter((f) => !f.docs).map((f) => f.id);
+const hiddenPaths = [...HIDDEN].flatMap((id) => [`screens/${id.replace(/_/g, '-')}/`, `components/${id.replace(/_/g, '-')}/`, `foundations/${id.replace(/_/g, '-')}/`])
+  .filter((p) => !(p.startsWith('screens/') ? screens : entries).some((e) => p.endsWith(`/${e.id.replace(/_/g, '-')}/`)));
+w('features.json', { hiddenFeatures, hiddenPaths, status: FEAT.man.status });
 writeFileSync(join(out, 'tokens.css'), tokensCss());
 // sound: the packs for the header picker; the whole sound.json is copied to public/ (fetched on the first sound)
 w('sound-packs.json', { default: soundTok.default, variants: soundTok.variants.map((v) => ({ id: v.id, name: v.name, about: v.about })) });
