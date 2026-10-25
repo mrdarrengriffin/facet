@@ -810,10 +810,15 @@ class Handler : public AsyncWebHandler {
       }
       in_loop([&] {
         for (const auto &p : add) fw::ha::want(p.first, p.second);
-        ArduinoJson::JsonArray w = d["wants"].to<ArduinoJson::JsonArray>();
-        for (const auto &p : fw::ha::wants()) { auto x = w.add<ArduinoJson::JsonArray>(); x.add(p.first); x.add(p.second); }
+        if (add.empty()) {  // ?want= answers only {values} of those entities (minimal)
+          ArduinoJson::JsonArray w = d["wants"].to<ArduinoJson::JsonArray>();
+          for (const auto &p : fw::ha::wants()) { auto x = w.add<ArduinoJson::JsonArray>(); x.add(p.first); x.add(p.second); }
+        }
         ArduinoJson::JsonObject v = d["values"].to<ArduinoJson::JsonObject>();
-        for (const auto &kv : fw::ha::S().store) v[kv.first.first + (kv.first.second.empty() ? "" : "|" + kv.first.second)] = kv.second;
+        for (const auto &kv : fw::ha::S().store) {
+          if (!add.empty() && std::none_of(add.begin(), add.end(), [&](const auto &p) { return p.first == kv.first.first; })) continue;  // ?want=: only those
+          v[kv.first.first + (kv.first.second.empty() ? "" : "|" + kv.first.second)] = kv.second;
+        }
         d["bound"] = (int) fw::ha::S().bounds.size();
       }, 2000);
       serializeJson(d, s);
