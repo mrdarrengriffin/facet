@@ -12,7 +12,8 @@
 //   POST /fw/spec   {kind: screen|deck|revert, spec?: {...}, id?} -> the apply answer (the HA actions facet_screen /
 //                   facet_deck / facet_revert do the same; workbench.yaml)
 //   GET  /fw/deck   the deck this panel runs (core/spec.h deck_json: the override, else factory) {deck, rev, override}
-//   GET  /fw/ha     the Home Assistant store (core/ha.h): {wants: [[e, a]...], values: {"e|a": value}, bound: n}
+//   GET  /fw/ha     the Home Assistant store (core/ha.h): {wants: [[e, a]...], values: {"e|a": value}, bound: n};
+//                   ?want=e1,e2[&attrs=a1] subscribes to those first (the panel-served editor's live preview)
 //   POST /fw/bench  a batch of bench cases the panel runs on its own screen (fw_bench.h); GET /fw/bench = the report
 // Web UI (optional): a bundle may add fw_web_gen.h (fw::web::FILES, gzipped files linked into the image's rodata by
 // the host's build, e.g. the Facet editor + the 1x renderer): GET / and each FILES path are served straight from
@@ -800,7 +801,15 @@ class Handler : public AsyncWebHandler {
       else { d["deck"] = dk; d["rev"] = dk["rev"]; d["override"] = over; serializeJson(d, s); }
     } else if (path == "/fw/ha") {
       ArduinoJson::JsonDocument d;
+      // ?want=e1,e2[&attrs=a1,a2]: subscribe to these too (the panel's editor previews live values: Darren 2026-10-25)
+      std::vector<std::pair<std::string, std::string>> add;
+      if (req->hasArg("want")) {
+        auto split = [](const std::string &v) { std::vector<std::string> o; size_t i = 0; while (i <= v.size()) { size_t j = v.find(',', i); if (j == std::string::npos) j = v.size(); if (j > i) o.push_back(v.substr(i, j - i)); i = j + 1; } return o; };
+        const auto es = split(req->arg("want").c_str()), as = req->hasArg("attrs") ? split(req->arg("attrs").c_str()) : std::vector<std::string>{};
+        for (const auto &e : es) if (e.size() < 80 && add.size() < 32) { add.push_back({e, ""}); add.push_back({e, "friendly_name"}); for (const auto &a : as) if (a.size() < 40) add.push_back({e, a}); }
+      }
       in_loop([&] {
+        for (const auto &p : add) fw::ha::want(p.first, p.second);
         ArduinoJson::JsonArray w = d["wants"].to<ArduinoJson::JsonArray>();
         for (const auto &p : fw::ha::wants()) { auto x = w.add<ArduinoJson::JsonArray>(); x.add(p.first); x.add(p.second); }
         ArduinoJson::JsonObject v = d["values"].to<ArduinoJson::JsonObject>();
