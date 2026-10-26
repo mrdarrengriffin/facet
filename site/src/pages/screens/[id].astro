@@ -32,6 +32,7 @@ const headings: Heading[] = [
   { depth: 2, slug: 'status', text: 'Status' },
 ];
 const st = STATUS[s.status];
+const DEMO_SETTINGS = 'Its Settings stick: theme, accent, sounds, sound pack and volume are the site\'s own settings too; text size, clock face, transitions, toasts and units apply to the demo. Idle, idle brightness, screen off and Allow AI agents only act on a real panel.';
 // the demo runs as on a panel (Darren 2026-10-25): a spec screen is the root of a device stack (spec prop live), so
 // its taps open the screens it leads to and Back returns; the root itself has no Back. Home and Settings = the Device component started on them.
 const demo = s.comp === 'spec' ? { comp: 'spec', props: { ...s.sampleProps, live: true } }
@@ -43,7 +44,8 @@ const demo = s.comp === 'spec' ? { comp: 'spec', props: { ...s.sampleProps, live
     <h2 id="preview">Preview</h2>
     <PreviewBox />
     <Live comp={demo.comp} props={demo.props} label={`${s.name} screen`} frame={s.frame} caption={false} />
-    <p class="hint">{s.opening ?? 'Sample data: made-up devices and values, not a real home.'} Tap it as on a panel; it returns to its start after a moment.</p>
+    <p class="hint">{s.opening ?? 'Sample data: made-up devices and values, not a real home.'} Tap it as on a panel; it keeps its place until you leave the page.</p>
+    {demo.comp === 'device' && <p class="hint">{DEMO_SETTINGS}</p>}
   </div>
 
   <h2 id="settings">Settings</h2>

@@ -26,6 +26,7 @@
 #include "fw.h"
 #include "ha.h"
 #include "spec.h"
+#include "device.h"
 // LVGL private (src/core/lv_obj_draw_private.h): the ext draw size an object holds (fw::bleed sets it)
 extern "C" int32_t lv_obj_get_ext_draw_size(const lv_obj_t *obj);
 #include <map>
@@ -116,6 +117,16 @@ EMSCRIPTEN_KEEPALIVE const char *fw_ha_wants() {
   return out.c_str();
 }
 EMSCRIPTEN_KEEPALIVE void fw_ha_put(const char *e, const char *a, const char *v) { fw::ha::put(e ? e : "", a ? a : "", v ? v : ""); }
+
+// One panel setting from the host (the docs site's live demo: its theme / accent / sound prefs and the demo's own
+// Settings stay one value), through the ONE set() path (core/device.h) as HA or the panel API: "" applied, "same",
+// else the error. value null = read: the current value ("" = unknown id).
+EMSCRIPTEN_KEEPALIVE const char *fw_setting(const char *id, const char *value) {
+  static std::string out;
+  if (!value) { const char *v = fw::dev::setting(id ? id : ""); out = v ? v : ""; }
+  else out = fw::dev::set(id ? id : "", value, fw::dev::HOST);
+  return out.c_str();
+}
 
 // Screen specs (core/spec.h): fw_spec(cmd, arg) -> JSON. cmd: check (a screen or deck spec: the errors, the
 // components it uses, nodes, binds), screen / deck (apply: validate, build once off screen, store, swap), revert

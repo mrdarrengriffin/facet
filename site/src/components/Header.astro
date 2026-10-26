@@ -3,42 +3,34 @@
 // popover (accent + sound pack).
 import Logo from './Logo.astro';
 import SiteSettings from './SiteSettings.astro';
-import { headerLinks, url } from '../lib/nav';
+import { getSidebar, headerLinks, url } from '../lib/nav';
 
 interface Props {
-  /** Show the menu button that opens the docs sidebar on small screens. */
+  /** kept for the layouts; the mobile menu now shows on every page */
   hasSidebar?: boolean;
 }
-const { hasSidebar = false } = Astro.props;
 const path = Astro.url.pathname;
 
 const links = headerLinks;
+const sections = getSidebar();
+const here = (href: string) => href.replace(/\/?$/, '/') === path.replace(/\/?$/, '/');
 ---
 
 <header class="header">
   <div class="header__inner">
-    {
-      hasSidebar && (
-        <button
-          class="icon-button header__menu"
-          type="button"
-          aria-label="Open navigation"
-          aria-controls="sidebar"
-          aria-expanded="false"
-          data-nav-toggle
-        >
-          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-            <path
-              d="M4 7h16M4 12h16M4 17h16"
-              stroke="currentColor"
-              stroke-width="1.5"
-              fill="none"
-              stroke-linecap="round"
-            />
-          </svg>
-        </button>
-      )
-    }
+    <button
+      class="icon-button header__menu"
+      type="button"
+      aria-label="Open menu"
+      aria-haspopup="dialog"
+      aria-controls="mmenu"
+      aria-expanded="false"
+      data-menu-open
+    >
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+        <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" />
+      </svg>
+    </button>
     <a class="header__brand" href={url('/')}>
       <Logo />
       <span>Facet</span>
@@ -111,7 +103,7 @@ const links = headerLinks;
         </svg>
       </a>
       <a
-        class="icon-button"
+        class="icon-button header__gh"
         href="https://github.com/mrdarrengriffin/facet"
         aria-label="Facet on GitHub"
       >
@@ -125,3 +117,72 @@ const links = headerLinks;
     </div>
   </div>
 </header>
+
+<!-- Mobile menu (Darren 2026-10-25: the header nav was unreachable on phones): a modal sheet from the left with the
+     header links, then this page's sidebar (a docs or components page: its own list, current page marked) or the docs
+     sections. Escape, the close button or the backdrop close it; focus stays inside while open (modal dialog + Tab wrap). -->
+<dialog class="mmenu" id="mmenu" aria-label="Menu" data-menu>
+  <div class="mmenu__head">
+    <a class="header__brand" href={url('/')}>
+      <Logo />
+      <span>Facet</span>
+    </a>
+    <button class="icon-button" type="button" aria-label="Close menu" data-menu-close>
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+        <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" />
+      </svg>
+    </button>
+  </div>
+  <div class="mmenu__body">
+    <nav class="mmenu__nav" aria-label="Main">
+      <ul>
+        {
+          links.map((link) => (
+            <li>
+              <a href={link.href} aria-current={link.match.some((m) => path.startsWith(m)) ? 'page' : undefined}>
+                {link.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+    <div class="mmenu__sections" data-menu-sections>
+      <nav aria-label="Docs">
+        {
+          sections.map((g) => (
+            <section class="sidebar__group">
+              <h2 class="facet-label">{g.label}</h2>
+              <ul>
+                {g.links.map((link) => (
+                  <li>
+                    {link.href ? (
+                      <a href={link.href} aria-current={here(link.href) ? 'page' : undefined}>
+                        {link.label}
+                        {link.badge && <span class="badge">{link.badge}</span>}
+                      </a>
+                    ) : (
+                      <span class="sidebar__soon">
+                        {link.label}
+                        {link.badge && <span class="badge">{link.badge}</span>}
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))
+        }
+      </nav>
+    </div>
+    <div class="mmenu__foot">
+      <a href="https://buymeacoffee.com/mrdarrengriffin">Support Facet</a>
+      <a href="https://github.com/mrdarrengriffin/facet">GitHub</a>
+    </div>
+  </div>
+</dialog>
+
+<script>
+  import { initMenu } from '../scripts/menu';
+  initMenu();
+</script>

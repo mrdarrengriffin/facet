@@ -18,10 +18,14 @@ export const soundDoc = () => (docP ??= fetch(URL_DOC).then((r) => r.json()).the
 
 let ac: AudioContext | null = null, master: GainNode | null = null;
 /** played-sound counter + last id (for tests: window.__facetSound) */
-const stats = { played: 0, last: '', rate: 1, ctx: 'none' as string };
+const stats = { played: 0, last: '', pack: '', rate: 1, ctx: 'none' as string };
 (window as unknown as { __facetSound: typeof stats }).__facetSound = stats;
+// the live demo's Settings > Volume (0-100; the panel default 80 = the site's old fixed 0.7)
+let vol = 80;
+const gainOf = (v: number) => 0.7 * Math.max(0, Math.min(100, v)) / 80;
+export function setVolume(v: number) { if (!Number.isFinite(v)) return; vol = v; if (master) master.gain.value = gainOf(v); }
 function ctx() {
-  if (!ac) { ac = new AudioContext({ latencyHint: 'interactive' }); master = ac.createGain(); master.gain.value = 0.7; master.connect(ac.destination); }
+  if (!ac) { ac = new AudioContext({ latencyHint: 'interactive' }); master = ac.createGain(); master.gain.value = gainOf(vol); master.connect(ac.destination); }
   if (ac.state === 'suspended') void ac.resume();
   stats.ctx = ac.state;
   return ac;
@@ -61,7 +65,7 @@ export async function playUi(id: string, detail = '') {
   }
   src.connect(master!);
   src.start();
-  stats.played++; stats.last = id; stats.rate = src.playbackRate.value;
+  stats.played++; stats.last = id; stats.pack = v.id; stats.rate = src.playbackRate.value;
 }
 
 export function initSound() {

@@ -4,8 +4,8 @@
 // comes into view.
 import { Engine, type Stage } from '../lib/engine';
 import { feedSampleHa } from '../lib/sample-ha';
-import { getPrefs, onPrefs, type Prefs } from './prefs';
-import { playUi } from './sound';
+import { getPrefs, onPrefs, setPrefs, type Prefs } from './prefs';
+import { playUi, setVolume } from './sound';
 import site from '../data/site.json';
 
 const ROOT = `${import.meta.env.BASE_URL.replace(/\/?$/, '/')}wasm/`;
@@ -59,6 +59,61 @@ const shown = new Set<Item>();
 
 function accentIdx(p: Prefs) { return accentSets.findIndex((a) => a.id === p.accent); }
 
+// ---- the live demo's Settings <-> the site prefs (Darren 2026-10-25: demo settings did not stick). The panel's
+// settings store (core/device.h, one per engine) is the source while you use the demo: a change there ("setting"
+// id=value) updates the site prefs (theme, accent, sounds, sound pack) or, for the rest, this browser's demo-only
+// values (kept and set again on the next engine / page); a site pref change is set on the panel (fw_setting, HOST).
+// Device stages are never rendered again for a pref change: the device restyles itself, so its screen stays put.
+const SHARED: Record<string, keyof Prefs> = { theme: 'theme', accent: 'accent', sounds: 'sound', soundPack: 'pack' };
+const OWN_KEY = 'facet-docs-panel';
+let pushed: Record<string, string> = {};
+function panelOwn(): Record<string, string> {
+  try { return JSON.parse(localStorage.getItem(OWN_KEY) ?? '{}') as Record<string, string>; } catch { return {}; }
+}
+function setting(e: Engine, id: string, value: string | null): string {
+  const m = e.m as unknown as { _fw_setting?: (a: number, b: number) => number };
+  if (!m._fw_setting) return 'old build';
+  if (value === null) return e.withStr(id, (pa) => e.str(m._fw_setting!(pa, 0)));
+  if (id === 'volume') setVolume(Number(value));
+  return e.withStr(id, (pa) => e.withStr(value, (pb) => e.str(m._fw_setting!(pa, pb))));
+}
+/** a stage that is a whole panel (the Device component, a live spec stack): its look follows the panel settings */
+const isDevice = (i: Item) => i.comp === 'device' || i.props.live === true;
+/** the Theme the panel is set to: the panels' common theme, or auto when they differ (an example page's dark + light
+ *  pair: each then shows its own stage theme, so one shared settings store cannot force them the same) */
+function panelTheme(p: Prefs): string {
+  const ts = new Set(items.filter(isDevice).map((i) => themeOf(i, p)));
+  return ts.size === 1 ? [...ts][0] : ts.size ? 'auto' : p.theme;
+}
+/** the site prefs onto the panel: only what changed since the last push (a demo Theme Auto stays Auto) */
+function pushPrefs(e: Engine, p: Prefs) {
+  const want: Record<string, string> = { theme: panelTheme(p), accent: p.accent, sounds: String(p.sound), soundPack: p.pack };
+  for (const [k, v] of Object.entries(want)) {
+    if (!v || pushed[k] === v) continue;
+    pushed[k] = v;
+    setting(e, k, v);
+  }
+}
+function fromPanel(detail: string) {
+  const eq = detail.indexOf('=');
+  if (eq < 0) return;
+  const id = detail.slice(0, eq), v = detail.slice(eq + 1);
+  const pref = SHARED[id];
+  if (!pref) {
+    if (id === 'volume') setVolume(Number(v));
+    const own = panelOwn();
+    own[id] = v;
+    try { localStorage.setItem(OWN_KEY, JSON.stringify(own)); } catch { /* private mode: this page only */ }
+    return;
+  }
+  pushed[id] = v;
+  const cur = getPrefs();
+  if (pref === 'theme') { if ((v === 'dark' || v === 'light') && v !== cur.theme && panelTheme(cur) !== 'auto') setPrefs({ theme: v }); }
+  else if (pref === 'accent') { if (v !== cur.accent && accentSets.some((a) => a.id === v)) setPrefs({ accent: v }); }
+  else if (pref === 'sound') { if ((v === 'true') !== cur.sound) setPrefs({ sound: v === 'true' }); }
+  else if (v !== cur.pack) setPrefs({ pack: v });
+}
+
 async function ensure(p: Prefs): Promise<Engine> {
   if (engine && loadedFor === p.device) return engine;
   if (loading && loadedFor === p.device) return loading;
@@ -71,9 +126,12 @@ async function ensure(p: Prefs): Promise<Engine> {
     engine = e;
     feedSampleHa(e);
     accentSets = e.tokens.accent.sets;
+    pushed = {};
+    for (const [k, v] of Object.entries(panelOwn())) setting(e, k, v);  // this browser's demo-only settings
+    pushPrefs(e, p);
     e.onEvent = (ev, s) => {
-      const it = s && items.find((i) => i.stage === s);
       if (ev.kind === 'sound') void playUi(ev.name, ev.detail);
+      if (ev.kind === 'event' && ev.name === 'setting') fromPanel(ev.detail);
       log(ev.kind, ev.name, ev.detail, s?.label ?? '');
     };
     document.documentElement.dataset.live = 'ready';
@@ -118,7 +176,8 @@ async function redrawAll(p: Prefs) {
   if (!shown.size || (engine && loadedFor === p.device && lastLook === look(p))) return;
   lastLook = look(p);
   const e = await ensure(p);
-  for (const it of shown) draw(it, e, p);
+  const own = panelTheme(p) !== 'auto';
+  for (const it of shown) if (!(own && isDevice(it) && it.stage)) draw(it, e, p);  // a panel restyles itself (pushPrefs)
 }
 
 // event log: the page's [data-events] box (components and the States foundation)
@@ -143,7 +202,7 @@ function log(kind: string, name: string, detail: string, from: string) {
 
 export function initLive() {
   // debugging / tests: the page's engine and previews
-  (window as unknown as { __facetDocs: unknown }).__facetDocs = { engine: () => engine, items };
+  (window as unknown as { __facetDocs: unknown }).__facetDocs = { engine: () => engine, items, setting: (id: string, v: string | null = null) => (engine ? setting(engine, id, v) : '') };
   const io = new IntersectionObserver((xs) => {
     for (const x of xs) if (x.isIntersecting) { io.unobserve(x.target); const it = items.find((i) => i.el === x.target); if (it) void show(it); }
   }, { rootMargin: '400px 0px' });
@@ -162,7 +221,7 @@ export function initLive() {
     items.push(it);
     io.observe(el);
   }
-  onPrefs((p) => void redrawAll(p));
+  onPrefs((p) => { if (engine && loadedFor === p.device) pushPrefs(engine, p); void redrawAll(p); });
   // preview theme switches (Site / Dark / Light) of each box
   for (const sw of document.querySelectorAll<HTMLButtonElement>('[data-theme-set]')) {
     sw.addEventListener('click', () => {
@@ -171,7 +230,9 @@ export function initLive() {
       const v = sw.dataset.themeSet!;
       if (v === 'site') delete scope.dataset.previewTheme; else scope.dataset.previewTheme = v;
       for (const b of scope.querySelectorAll<HTMLButtonElement>('[data-theme-set]')) b.setAttribute('aria-pressed', String(b.dataset.themeSet === v));
-      void redrawAll(getPrefs());
+      const p = getPrefs();
+      if (engine && loadedFor === p.device) pushPrefs(engine, p);
+      void redrawAll(p);
     });
   }
 }
