@@ -4,7 +4,7 @@
 // /agents.md, the AI agents setting + token), through Home Assistant (the ESPHome actions), or with a starter prompt.
 // The panel-side agent API ships with the next firmware (marked on the page). Examples: a grid of tiles (WASM shots, dark + light, follow the site theme: renderer/tools/readme_assets.mjs --ai-examples) linking to ./examples/<id>/.
 import Docs, { type Heading } from '../../layouts/Docs.astro';
-import { url } from '../../lib/nav';
+import { AI_EXAMPLES, url } from '../../lib/nav';
 import examples from '../../lib/ai-examples.json';
 
 const headings: Heading[] = [
@@ -13,7 +13,7 @@ const headings: Heading[] = [
   { depth: 2, slug: 'panel', text: 'Point an AI at your panel' },
   { depth: 2, slug: 'home-assistant', text: 'Through Home Assistant' },
   { depth: 2, slug: 'prompt', text: 'Starter prompt' },
-  { depth: 2, slug: 'examples', text: 'Examples' },
+  ...(AI_EXAMPLES ? [{ depth: 2, slug: 'examples', text: 'Examples' }] : []),
 ];
 const spec = `{"v": 1, "id": "bin_day", "name": "Bin day", "rev": 1, "role": "page",
  "header": {"label": "Bin day", "back": true},
@@ -61,7 +61,7 @@ const prompt = `You are making a screen for my Facet wall panel at http://<panel
 
   <div class="callout">
     <span class="dot" aria-hidden="true"></span>
-    <p>The panel's agent access (the guide it serves, the AI agents setting and its token) is coming in the next firmware. Specs, the components and the examples on these pages work today.</p>
+    <p>The panel's agent access (the guide it serves, the AI agents setting and its token) is coming in the next firmware. Specs and the components on these pages work today.</p>
   </div>
 
   <h2 id="spec">What a spec is</h2>
@@ -107,6 +107,7 @@ const prompt = `You are making a screen for my Facet wall panel at http://<panel
   <pre id="starter"><code>{prompt}</code></pre>
   <button type="button" class="copy" data-copy="starter">Copy prompt</button>
 
+  {AI_EXAMPLES && (<>
   <h2 id="examples">Examples</h2>
   <p>Twenty screens made only from today's released components, each leaning on a different part of Facet: charts, dials, gauges, tiles, clocks, media, chips, grids and rows. Open one to try it live, copy its spec or copy the prompt that makes it. Sample data: made-up devices, not a real home.</p>
   <ul class="ex-grid">
@@ -121,6 +122,7 @@ const prompt = `You are making a screen for my Facet wall panel at http://<panel
       </li>
     ))}
   </ul>
+  </>)}
 </Docs>
 
 <style>

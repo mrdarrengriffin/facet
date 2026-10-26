@@ -5,11 +5,12 @@
 import Docs, { type Heading } from '../../../layouts/Docs.astro';
 import Live from '../../../components/Live.astro';
 import PreviewBox from '../../../components/PreviewBox.astro';
-import { url } from '../../../lib/nav';
+import { AI_EXAMPLES, url } from '../../../lib/nav';
 import examples from '../../../lib/ai-examples.json';
 
 const raw = import.meta.glob('../../../../../renderer/specs/ai-examples/*.json', { query: '?raw', import: 'default', eager: true }) as Record<string, string>;
 export function getStaticPaths() {
+  if (!AI_EXAMPLES) return [];
   return examples.map((e, i) => ({ params: { id: e.id }, props: { i } }));
 }
 const { i } = Astro.props as { i: number };

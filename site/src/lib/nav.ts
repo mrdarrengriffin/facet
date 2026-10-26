@@ -25,6 +25,8 @@ export function url(path: string): string {
 /** the Updates page (src/pages/[updates].astro) and every link to it (header, sidebar, search, homepage, roadmap).
  *  Off for now (Darren 2026-10-25): the entries stay in src/content/updates/ so the page can come back by setting this. */
 export const UPDATES_PAGE = false;
+// The AI example screens (/ai/examples/<id>/, the grid on /ai/, search records): hidden until the smaller set is redone.
+export const AI_EXAMPLES = false;
 
 export const headerLinks = [
   { label: 'Docs', href: url('/roadmap/'), match: [url('/roadmap/'), url('/screens/'), url('/ai/')] },

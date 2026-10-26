@@ -3,7 +3,7 @@
 import type { APIRoute } from 'astro';
 import { getCollection } from 'astro:content';
 import { COMPONENTS, FOUNDATIONS, SCREENS, href, screenHref, updateShown } from '../lib/data';
-import { UPDATES_PAGE, url } from '../lib/nav';
+import { AI_EXAMPLES, UPDATES_PAGE, url } from '../lib/nav';
 import examples from '../lib/ai-examples.json';
 
 type Rec = { title: string; heading: string; text: string; url: string };
@@ -14,7 +14,7 @@ export const GET: APIRoute = async () => {
   const recs: Rec[] = [];
   recs.push({ title: 'Design system', heading: '', text: 'The tokens and rules every component is built from: colour, type, space, layout, motion, states, icons, sound.', url: url('/foundations/') });
   recs.push({ title: 'Make screens with AI', heading: '', text: 'Let an AI assistant make panel screens from Facet components: specs, budgets, the panel API, Home Assistant actions and a starter prompt.', url: url('/ai/') });
-  for (const e of examples) recs.push({ title: e.title, heading: 'Example screen', text: plain(e.about), url: url(`/ai/examples/${e.id}/`) });
+  if (AI_EXAMPLES) for (const e of examples) recs.push({ title: e.title, heading: 'Example screen', text: plain(e.about), url: url(`/ai/examples/${e.id}/`) });
   recs.push({ title: 'Roadmap', heading: '', text: 'Where Facet is headed, area by area: available, in progress, planned.', url: url('/roadmap/') });
   if (UPDATES_PAGE) recs.push({ title: 'Updates', heading: '', text: 'How Facet came to be and what changed lately, newest first.', url: url('/updates/') });
   if (UPDATES_PAGE) for (const e of (await getCollection('updates')).filter(updateShown)) recs.push({ title: 'Updates', heading: e.data.title, text: (e.body ?? '').replace(/[>*]/g, '').replace(/\s+/g, ' ').trim(), url: `${url('/updates/')}#${e.id}` });
