@@ -21,11 +21,16 @@
 // Drawn in one draw event on a cover layer over the window (the frame + glass are objects): a position change
 // invalidates only the strip between the old and new edge (+ the bar), so a blind drag repaints a thin band, not the
 // window (curtains: the two panels, their pleats spread with the width).
-// Drag (draggable, default on; off = the cover has no position, docs): vertical on a blind (the edge follows the
-// finger), sideways on curtains (the distance from the middle); press = the value jumps there and the edge sweeps
-// (Motion value; docs jumps: the Slider's tap sweep, so every value drag in Facet feels the same), moving follows the
-// finger. Sound: fw::step_ticks per 1 % step crossed (0 and 100 = landmarks, closed / open). Events: "change" (detail =
-// position) on release when it moved; "blocked" when disabled / unavailable.
+// Drag (draggable, default on; off = the cover has no position, docs): vertical on a blind, sideways on curtains (the
+// distance from the middle). A drag sets a GHOST target, never the drawing (Darren 2026-10-26): the drawn cover is
+// the real position (prop position, HA's). Blinds: the accent handle bar becomes the ghost and follows the finger
+// (press = it jumps there with a sweep, Motion value, like the Slider's tap), the real blind stays put with a plain
+// steel bar; curtains: the panels trail the finger with a light lerp (Motion fabric-follow, no overshoot; reduced
+// motion = they follow at once). On release the ghost stays until the position reaches it (+-1 %: the ghost fades
+// into the real bar, Motion fade; curtains simply end there) or no move is reported for Motion cover-ghost-wait
+// (then it fades and curtains sweep back to the real position). Sound: fw::step_ticks per 1 % step the ghost crosses
+// (0 and 100 = landmarks, closed / open); real moves are silent. Events: "change" (detail = position) once, on
+// release, when the target moved; "blocked" when disabled / unavailable.
 // States: disabled (st::OFF) = the marks (bar, edges, heading) st::disabled_knob (text-dim: text-mute is 1.7:1 on the
 // fabric), a press = blocked + error;
 // unavailable = the empty window with "Unavailable" (body, text-dim) on the glass, no cover. Update path: position and
@@ -39,12 +44,15 @@ enum Kind { ROLLER, VENETIAN, CURTAIN };
 struct Cover {
   Kind kind = ROLLER;
   int state = 0;  // 0 default, 1 disabled, 2 unavailable
-  bool drag = true, quiet = false, grab = false, active = false, moved = false;
-  int pos = 0, tilt = 50, heading = -1, press_pos = 0;
-  int32_t shown = 0, shown_tilt = 500;  // x 10
-  int shown_step = 0;
+  bool drag = true, grab = false, active = false, moved = false, fading = false;
+  int pos = 0, real = 0, tilt = 50, heading = -1, press_pos = 0;  // pos = the finger's target, real = HA's
+  int32_t shown = 0, shown_tilt = 500;                            // x 10: the drawn (real) position, tilt
+  int32_t ghost = -1, ghost_fade = 255;                           // x 10 target (-1 none); 255 = full, 0 = gone
+  int ghost_step = 0;
+  uint32_t ghost_since = 0, lerp_at = 0;  // the last reported move (or release); the curtain lerp's last frame
   lv_point_t press_pt = {0, 0};
   lv_obj_t *layer = nullptr;
+  lv_timer_t *timer = nullptr;  // curtain lerp + ghost wait, only while a ghost exists
 };
 Cover *of(lv_obj_t *o) { return (Cover *) lv_obj_get_user_data(o); }
 Kind kind_of(fw::Props p) {
@@ -118,6 +126,7 @@ void cover_draw(lv_event_t *e) {
     return;
   }
   const float fh = fabric_h(d, d->shown);
+  const bool ghosted = d->ghost >= 0;
   if (d->kind == ROLLER) {
     rect(l, o, p, p, w - p, p + fh, t.steel_dim);
   } else {
@@ -132,11 +141,14 @@ void cover_draw(lv_event_t *e) {
     }
   }
   rect(l, o, 0, p - fw::lay::cover_rail / 2.0f, w, p + fw::lay::cover_rail / 2.0f, t.steel, fw::rad::part);  // head rail
-  if (d->heading >= 0) {  // a thin line where it is going (docs: 4 px at half opacity; here stroke::edge, ringed, full)
+  if (d->heading >= 0 && !ghosted) {  // a thin line where it is going (docs: 4 px at half opacity; here stroke::edge, ringed, full)
     const float y = p + gh * (1.0f - d->heading / 100.0f);
     mark_rect(l, o, p, y - fw::stroke::edge / 2.0f, w - p, y + fw::stroke::edge / 2.0f, mark);
   }
-  mark_rect(l, o, p - s1, p + fh - fw::lay::cover_bar / 2.0f, w - p + s1, p + fh + fw::lay::cover_bar / 2.0f, mark, fw::rad::part);
+  // the handle bar: the real blind's; while a ghost target is out the accent is the ghost's and the real bar is steel
+  const auto bar = [&](float y, lv_color_t c) { mark_rect(l, o, p - s1, p + y - fw::lay::cover_bar / 2.0f, w - p + s1, p + y + fw::lay::cover_bar / 2.0f, c, fw::rad::part); };
+  bar(fh, ghosted ? lv_color_mix(t.steel, mark, (uint8_t) d->ghost_fade) : mark);
+  if (ghosted) bar(fabric_h(d, d->ghost), lv_color_mix(mark, t.disc, (uint8_t) d->ghost_fade));
 }
 
 // the band a position change repaints: between the old and new edge, padded by the bar / leading edge
@@ -162,15 +174,34 @@ void dirty(lv_obj_t *s, int32_t a, int32_t b) {
   lv_obj_invalidate_area(d->layer, &r);
 }
 
-void show(void *o, int32_t v) {
+void show(void *o, int32_t v) {  // the drawn (real) position: silent
   auto *s = (lv_obj_t *) o;
   auto *d = of(s);
   v = LV_CLAMP(0, v, 1000);
   if (v != d->shown) dirty(s, d->shown, v);
   d->shown = v;
+}
+void show_ghost(void *o, int32_t v) {  // the finger's target: ticks per step crossed
+  auto *s = (lv_obj_t *) o;
+  auto *d = of(s);
+  v = LV_CLAMP(0, v, 1000);
+  if (d->kind != CURTAIN && v != d->ghost) dirty(s, d->ghost < 0 ? d->shown : d->ghost, v);
+  d->ghost = v;
   const int i = (v + 5) / 10;
-  if (i != d->shown_step && !d->quiet && !lv_obj_has_state(s, ST_OFF)) fw::step_ticks(s, d->shown_step, i, 100);
-  d->shown_step = i;
+  if (i != d->ghost_step) fw::step_ticks(s, d->ghost_step, i, 100);
+  d->ghost_step = i;
+}
+void ghost_fade_to(void *o, int32_t v) {
+  auto *s = (lv_obj_t *) o;
+  auto *d = of(s);
+  d->ghost_fade = v;
+  if (d->ghost >= 0) { dirty(s, d->ghost, d->ghost); dirty(s, d->shown, d->shown); }
+}
+void ghost_gone(lv_anim_t *a) {
+  auto *s = (lv_obj_t *) lv_anim_get_user_data(a);
+  auto *d = of(s);
+  if (d->ghost >= 0) { dirty(s, d->ghost, d->ghost); dirty(s, d->shown, d->shown); }
+  d->ghost = -1, d->ghost_fade = 255, d->fading = false;
 }
 void show_tilt(void *o, int32_t v) {
   auto *s = (lv_obj_t *) o;
@@ -180,10 +211,40 @@ void show_tilt(void *o, int32_t v) {
   if (d->layer) lv_obj_invalidate(d->layer);
 }
 void stop_sweep(lv_obj_t *s) { lv_anim_delete(s, (lv_anim_exec_xcb_t) show); }
-void unquiet(lv_anim_t *a) { of((lv_obj_t *) lv_anim_get_user_data(a))->quiet = false; }
-void sweep_quiet(lv_obj_t *s, int32_t from, int32_t to) {
-  of(s)->quiet = true;
-  fw::animate(s, fw::st::SWEEP, {show, from, to, fw::mo::VALUE, 0, false, unquiet, s});
+void sweep_quiet(lv_obj_t *s, int32_t from, int32_t to) { fw::animate(s, fw::st::SWEEP, {show, from, to, fw::mo::VALUE}); }
+// the ghost is done (HA got there, or the wait ran out): blinds fade it into the real bar; curtains end at the real
+// position (they are already there when HA got there, else they sweep back)
+void ghost_done(lv_obj_t *s) {
+  auto *d = of(s);
+  if (d->ghost < 0 || d->fading) return;
+  lv_anim_delete(s, (lv_anim_exec_xcb_t) show_ghost);
+  if (d->kind == CURTAIN) {
+    d->ghost = -1;
+    if (d->shown != d->real * 10) sweep_quiet(s, d->shown, d->real * 10);
+    return;
+  }
+  d->fading = true;
+  fw::animate(s, fw::mo::fade, {ghost_fade_to, 255, 0, fw::mo::OPA, 0, false, ghost_gone, s});
+}
+// one timer while a ghost is out: curtains lerp toward it (fabric), and the wait for HA runs out
+void ghost_tick(lv_timer_t *tm) {
+  auto *s = (lv_obj_t *) lv_timer_get_user_data(tm);
+  auto *d = of(s);
+  const uint32_t dt = lv_tick_elaps(d->lerp_at);
+  d->lerp_at = lv_tick_get();
+  if (d->kind == CURTAIN && d->ghost >= 0 && d->shown != d->ghost) {
+    const int32_t gap = d->ghost - d->shown;
+    int32_t step = fw::mo::reduced(s) ? gap : (int32_t) ((int64_t) gap * dt / (fw::mo::ms::fabric_follow + dt));
+    if (!step) step = gap > 0 ? 1 : -1;
+    show(s, d->shown + step);
+  }
+  if (d->ghost >= 0 && !d->active && lv_tick_elaps(d->ghost_since) > fw::mo::ms::cover_ghost_wait) ghost_done(s);
+  if (d->ghost < 0 && !d->fading) { lv_timer_delete(tm); d->timer = nullptr; }
+}
+void ghost_timer(lv_obj_t *s) {
+  auto *d = of(s);
+  d->lerp_at = lv_tick_get();
+  if (!d->timer) d->timer = lv_timer_create(ghost_tick, LV_DEF_REFR_PERIOD, s);
 }
 int pos_at(lv_obj_t *s, lv_point_t pt) {
   auto *d = of(s);
@@ -209,15 +270,17 @@ void fill(lv_obj_t *s, fw::Props p) {
   auto *d = of(s);
   const char *state = p["state"] | "default";
   const bool unavail = !strcmp(state, "unavailable"), off = unavail || !strcmp(state, "disabled");
+  if (d->timer) lv_timer_delete(d->timer);
+  lv_anim_delete(s, (lv_anim_exec_xcb_t) show_ghost);
+  lv_anim_delete(s, (lv_anim_exec_xcb_t) ghost_fade_to);
   *d = Cover{};
   d->kind = kind_of(p);
   d->state = unavail ? 2 : off ? 1 : 0;
   d->drag = p["draggable"] | true;
-  d->pos = clamp100(p["position"] | 40.0);
+  d->pos = d->real = clamp100(p["position"] | 40.0);
   d->tilt = clamp100(p["tilt"] | 50.0);
   d->heading = (p["heading"] | -1.0) < 0 ? -1 : clamp100(p["heading"] | -1.0);
   d->shown = d->pos * 10;
-  d->shown_step = d->pos;
   d->shown_tilt = d->tilt * 10;
 
   lv_obj_remove_style_all(s);
@@ -287,7 +350,11 @@ FW_COMPONENT(cover_visual, "Cover visual", "components", R"({
   lv_obj_t *s = lv_obj_create(parent);
   lv_obj_set_user_data(s, d);
   fill(s, p);
-  lv_obj_add_event_cb(s, [](lv_event_t *e) { delete (Cover *) lv_event_get_user_data(e); }, LV_EVENT_DELETE, d);
+  lv_obj_add_event_cb(s, [](lv_event_t *e) {
+    auto *d = (Cover *) lv_event_get_user_data(e);
+    if (d->timer) lv_timer_delete(d->timer);
+    delete d;
+  }, LV_EVENT_DELETE, d);
   lv_obj_add_event_cb(s, [](lv_event_t *e) {
     auto *s = (lv_obj_t *) lv_event_get_current_target(e);
     auto *d = of(s);
@@ -296,37 +363,43 @@ FW_COMPONENT(cover_visual, "Cover visual", "components", R"({
     lv_point_t pt = {0, 0};
     if (lv_indev_t *in = lv_indev_active()) lv_indev_get_point(in, &pt);
     if (lv_obj_has_state(s, ST_OFF)) {
-      if (code == LV_EVENT_PRESSED) fw::st::blocked(s, d->layer ? std::to_string(d->pos).c_str() : "unavailable");
+      if (code == LV_EVENT_PRESSED) fw::st::blocked(s, d->layer ? std::to_string(d->real).c_str() : "unavailable");
       return;
     }
     if (!d->drag || !d->layer) return;
     if (code == LV_EVENT_PRESSED) {
-      stop_sweep(s);
-      d->quiet = false;
+      lv_anim_delete(s, (lv_anim_exec_xcb_t) show_ghost);
+      if (d->fading) { lv_anim_delete(s, (lv_anim_exec_xcb_t) ghost_fade_to); d->fading = false, d->ghost_fade = 255; }
+      if (d->kind == CURTAIN) stop_sweep(s);  // the fabric follows the finger from where it is
+      const int32_t cur = d->ghost >= 0 ? d->ghost : d->shown;  // what the finger takes hold of
       d->active = true;
-      d->press_pos = d->pos;
+      d->press_pos = (cur + 5) / 10;
       d->press_pt = pt;
       d->moved = false;
-      // on the edge (bar / leading edge, within touch::min / 2) = grab; elsewhere = jump there with a sweep
+      // on the edge (bar / leading edge, within touch::min / 2) = grab; elsewhere = the ghost jumps there with a sweep
       lv_area_t a;
       lv_obj_get_coords(s, &a);
-      const float edge = d->kind == CURTAIN ? std::fabs(std::fabs(pt.x - a.x1 - W() / 2.0f) - (W() / 2.0f - panel_w(d->shown)))
-                                            : std::fabs(pt.y - a.y1 - P() - fabric_h(d, d->shown));
+      const float edge = d->kind == CURTAIN ? std::fabs(std::fabs(pt.x - a.x1 - W() / 2.0f) - (W() / 2.0f - panel_w(cur)))
+                                            : std::fabs(pt.y - a.y1 - P() - fabric_h(d, cur));
       d->grab = edge <= fw::touch::min / 2;
       d->pos = pos_at(s, pt);
-      if (d->grab) show(s, d->pos * 10);
-      else fw::animate(s, fw::st::SWEEP, {show, d->shown, d->pos * 10, fw::mo::VALUE});
+      if (d->ghost < 0) d->ghost = cur, d->ghost_step = d->press_pos;
+      ghost_timer(s);
+      if (d->grab) show_ghost(s, d->pos * 10);
+      else fw::animate(s, fw::st::SWEEP, {show_ghost, d->ghost, d->pos * 10, fw::mo::VALUE});
     } else if (!d->active) {
       return;
     } else if (code == LV_EVENT_PRESSING) {
       if (!d->grab && !d->moved && std::hypot(pt.x - d->press_pt.x, pt.y - d->press_pt.y) < fw::sp::s2) return;  // still a tap
       d->moved = true;
-      if (!d->grab) { stop_sweep(s); d->grab = true; }
+      if (!d->grab) { lv_anim_delete(s, (lv_anim_exec_xcb_t) show_ghost); d->grab = true; }
       d->pos = pos_at(s, pt);
-      show(s, d->pos * 10);
+      show_ghost(s, d->pos * 10);
     } else {
       d->active = false;
-      if (d->pos != d->press_pos) fw::emit(s, "change", std::to_string(d->pos).c_str());
+      d->ghost_since = lv_tick_get();
+      if (d->pos != d->press_pos) fw::emit(s, "change", std::to_string(d->pos).c_str());  // the one command
+      if (d->pos == d->real && d->kind != CURTAIN) ghost_done(s);  // back on the real position: nothing to wait for
     }
   }, LV_EVENT_ALL, nullptr);
 }
@@ -347,9 +420,13 @@ FW_UPDATE(cover_visual) {
   if (hd != d->heading) { d->heading = hd; if (d->layer) lv_obj_invalidate(d->layer); }
   const int tl = clamp100(p["tilt"] | 50.0);
   if (tl != d->tilt) { d->tilt = tl; fw::animate(root, fw::st::SWEEP, {show_tilt, d->shown_tilt, tl * 10, fw::mo::VALUE}); }
-  if (d->active) return true;  // the user holds it: the position waits
   const int ps = clamp100(p["position"] | 40.0);
-  d->pos = ps;
+  if (ps != d->real) d->real = ps, d->ghost_since = lv_tick_get();  // a reported move: the ghost keeps waiting
+  if (d->active) return true;  // the user holds it: the drawing waits
+  if (d->ghost >= 0 && !d->fading) {
+    if (std::abs(ps * 10 - d->ghost) <= 10) ghost_done(root);  // HA got there
+    else if (d->kind == CURTAIN) return true;                   // the fabric holds the target till then
+  }
   if (ps * 10 != d->shown || lv_anim_get(root, (lv_anim_exec_xcb_t) show)) sweep_quiet(root, d->shown, ps * 10);
   return true;
 }

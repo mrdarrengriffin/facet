@@ -10,7 +10,10 @@
 // Feed (docs CoverData): props kind, position (0 closed .. 100 open), tilt, state (open / closed / opening / closing /
 // unavailable), heading (where it is going while it moves): an HA cover.* entity, or the sample. Taps: a drag on the
 // window ("change" on release), the slats, a button: each emits "cover" (position 40 | tilt 60 | open | stop | close)
-// for the host and shows it at once (held 3 s against updates, the docs rule); open / close set the heading line.
+// for the host. The window always draws the REAL cover (position + tilt from HA; a drag only moves the Cover visual's
+// ghost target, Darren 2026-10-26); the texts say "set to 40%" and the slats slider keeps the finger's tilt while the
+// host catches up (position: as long as the ghost waits, Motion cover-ghost-wait; tilt 3 s, the docs rule); open / close set the heading line. The sample (no cover
+// bound) plays the host: a drag or the slats move it there.
 //   windows  on a spec screen with more than one window (the docs story: Study blind, Lounge curtains, Kitchen
 //            blind, on the component page; a spec screen bound to no cover shows no story but its empty state:
 //            "no window chosen", controls blocked, BF-048): the screen's Header label = the window's name, and before
@@ -23,7 +26,6 @@
 // Header); a pick emits "window" <entity id> and the spec's screen.param re-binds the screen; prop device_class (HA's)
 // sets the kind: curtain = curtains, a tilt position = Venetian, else roller. The spec's cover.control turns "cover"
 // into cover.set_cover_position / set_cover_tilt_position / open_cover / stop_cover / close_cover.
-// Not ported yet: the live "set to" text while dragging (the visual emits on release).
 // Update path: the visual and the slider through their own updates (the cover glides there), texts in place.
 // Contrast: "cover_visual", "button", "slider", "text".
 // audit deps: button, cover_visual, slider, bottom_sheet
@@ -48,9 +50,9 @@ struct CV {
   int win = -1;  // the window shown (the spec screen's windows list), -1 = the props
   std::string cover;             // the bound cover (prop cover)
   std::vector<std::string> ids;  // the host's covers (prop covers), empty = the docs sample windows
-  int position = 40, tilt = 50, heading = -1;
-  int held = -1;
-  uint32_t hold_until = 0;
+  int position = 40, tilt = 50, heading = -1;  // HA's (the sample's)
+  int held = -1, held_tilt = -1;              // what a finger set, until HA reports it (or 3 s)
+  uint32_t hold_until = 0, tilt_until = 0;
 };
 CV *of(lv_obj_t *o) { return (CV *) lv_obj_get_user_data(o); }
 lv_obj_t *box(lv_obj_t *parent) {
@@ -68,7 +70,9 @@ int col_w() { return fw::lay::content_w - fw::lay::card_w - fw::sp::s9; }
 // the slats slider's track (dp): the column less a knob (the Slider's box = its track + half a knob each side)
 int track_dp() { return (int) std::lround((col_w() - fw::touch::min / 2) / fw::D); }
 int pos_of(const CV *c) { return c->held >= 0 && (int32_t) (c->hold_until - lv_tick_get()) > 0 ? c->held : c->position; }
-void hold(CV *c, int p) { c->held = p; c->hold_until = lv_tick_get() + 3000; }
+int tilt_of(const CV *c) { return c->held_tilt >= 0 && (int32_t) (c->tilt_until - lv_tick_get()) > 0 ? c->held_tilt : c->tilt; }
+bool sample(const CV *c) { return c->cover.empty() && c->ids.empty() && !c->none; }  // no HA: the screen plays it
+void hold(CV *c, int p) { c->held = p; c->hold_until = lv_tick_get() + fw::mo::ms::cover_ghost_wait; }  // as long as the ghost waits
 const char *kind_text(const std::string &k) { return k == "curtain" ? "curtains" : k == "venetian" ? "Venetian blind" : "roller blind"; }
 void render(lv_obj_t *root) {
   CV *c = of(root);
@@ -78,26 +82,28 @@ void render(lv_obj_t *root) {
   if (off) snprintf(b, sizeof b, c->none ? "no window chosen" : "offline");
   else if (moving) snprintf(b, sizeof b, "%s", c->state.c_str());
   else if (p <= 0) snprintf(b, sizeof b, "closed");
+  else if (p != c->position) snprintf(b, sizeof b, "set to %d%%", p);  // a drag sent, HA not there yet
   else if (p >= 100) snprintf(b, sizeof b, "open");
   else snprintf(b, sizeof b, "%d%% open", p);
   fw::set_text(c->cap, fw::ty::label, b);
+  const int r = c->position;  // the value = the real cover
   if (off) snprintf(b, sizeof b, "--");
-  else if (p <= 0) snprintf(b, sizeof b, "Closed");
-  else if (p >= 100) snprintf(b, sizeof b, "Open");
-  else snprintf(b, sizeof b, "%d%%", p);
+  else if (r <= 0) snprintf(b, sizeof b, "Closed");
+  else if (r >= 100) snprintf(b, sizeof b, "Open");
+  else snprintf(b, sizeof b, "%d%%", r);
   fw::set_text(c->val, fw::ty::hero, b);
   fw::set_text(c->kind_l, fw::ty::body, kind_text(c->kind));
-  snprintf(b, sizeof b, "%d%%", c->tilt);
+  snprintf(b, sizeof b, "%d%%", tilt_of(c));
   fw::set_text(c->tilt_v, fw::ty::label, b);
   const bool venetian = c->kind == "venetian";
   if (venetian) lv_obj_remove_flag(c->tilt_box, LV_OBJ_FLAG_HIDDEN);
   else lv_obj_add_flag(c->tilt_box, LV_OBJ_FLAG_HIDDEN);
   ArduinoJson::JsonDocument vp;
-  vp["kind"] = c->kind, vp["position"] = p, vp["tilt"] = c->tilt, vp["heading"] = moving ? c->heading : -1;
+  vp["kind"] = c->kind, vp["position"] = c->position, vp["tilt"] = c->tilt, vp["heading"] = moving ? c->heading : -1;
   vp["state"] = off ? "unavailable" : "default";
   fw::update_child(fw::find("cover_visual"), c->vis, vp.as<fw::Props>());
   ArduinoJson::JsonDocument sp;
-  sp["value"] = c->tilt, sp["width"] = track_dp(), sp["state"] = off ? "unavailable" : "default";
+  sp["value"] = tilt_of(c), sp["width"] = track_dp(), sp["state"] = off ? "unavailable" : "default";
   fw::update_child(fw::find("slider"), c->slider, sp.as<fw::Props>());
   static const char *const LABEL[3] = {"Open", "Stop", "Close"};
   for (int i = 0; i < 3; i++) {
@@ -137,6 +143,7 @@ void take(lv_obj_t *root, fw::Props p) {
   if (c->none) c->state = "unavailable";
   c->heading = num_or(p, "heading", -1);
   if (c->held == c->position) c->held = -1;  // HA caught up
+  if (c->held_tilt == c->tilt) c->held_tilt = -1;
   render(root);
 }
 // the windows (docs demo-data WINDOW_COVERS): name, kind, position, tilt
@@ -282,6 +289,7 @@ FW_COMPONENT(covers_view, "Covers view", "components", R"({
     auto *root = (lv_obj_t *) user;
     CV *c = of(root);
     hold(c, atoi(detail));
+    if (sample(c)) c->position = atoi(detail), c->held = -1;  // the sample plays HA: the blind goes there
     fw::emit(root, "cover", (std::string("position ") + detail).c_str());
     render(root);
   }, root);
@@ -308,7 +316,8 @@ FW_COMPONENT(covers_view, "Covers view", "components", R"({
     if (strcmp(name, "change")) return;
     auto *root = (lv_obj_t *) user;
     CV *c = of(root);
-    c->tilt = atoi(detail);
+    c->held_tilt = atoi(detail), c->tilt_until = lv_tick_get() + 3000;
+    if (sample(c)) c->tilt = c->held_tilt;
     fw::emit(root, "cover", (std::string("tilt ") + detail).c_str());
     render(root);
   }, root);
