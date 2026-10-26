@@ -2,7 +2,7 @@
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset=".github/assets/facet-logo-dark.svg">
     <source media="(prefers-color-scheme: light)" srcset=".github/assets/facet-logo-light.svg">
-    <img alt="Facet" src=".github/assets/facet-logo-light.svg" width="236" height="64">
+    <img alt="Facet" src=".github/assets/facet-logo-light.svg" width="182" height="64">
   </picture>
 </p>
 
