@@ -224,23 +224,27 @@ void build_page(lv_obj_t *parent, fw::Props p) {
         if (!strcmp(o.value()["type"] | "", "entities") && dom == (o.value()["domain"] | "")) from = split(value(o.key().c_str(), o.value()));
       // Auto (the spec's screen.param "auto" for this parameter, its sensor set): the sheet's first row; the value
       // "auto" or nothing picked = Auto (the screen follows HA's target); a real pick sticks until Auto is picked
+      // (or, with no sensor set, Auto follows what's playing among the list: offered whenever the list has entities)
       std::string auto_src;
+      bool has_auto = false;
       for (ArduinoJson::JsonVariantConst nd : spec["nodes"].as<ArduinoJson::JsonArrayConst>())
         for (ArduinoJson::JsonPairConst o : nd["on"].as<ArduinoJson::JsonObjectConst>())
           if (!strcmp(o.value()["do"] | "", "screen.param") && key == (o.value()["param"] | "") && o.value()["auto"].is<const char *>()) {
             const char *ak = o.value()["auto"];
             auto_src = value(ak, params[ak]);
+            has_auto = true;
           }
       if (!fw::spec::entity_ok(auto_src) || auto_src[0] == '$') auto_src.clear();
-      const bool is_auto = !auto_src.empty() && (v == "auto" || entry["params"][key.c_str()].isNull());
-      const size_t n = from.size() + (auto_src.empty() ? 0 : 1);
+      const bool offer_auto = !auto_src.empty() || (has_auto && !from.empty());
+      const bool is_auto = offer_auto && (v == "auto" || !fw::spec::deck_picked(pg->id, key));
+      const size_t n = from.size() + (offer_auto ? 1 : 0);
       rd["value"] = is_auto ? "Auto" : v.empty() || v == "auto" ? "" : friendly(v).c_str();
       rd["trailing"] = n > 1 ? "value-chevron" : "value";
       lv_obj_t *r = build("list_row", c, rd);
       if (!r || n < 2) continue;
       Pick pk;
       pk.key = "params." + key, pk.row = r, pk.title = label;
-      if (!auto_src.empty()) { pk.ids.push_back("auto"); pk.names.push_back("Auto"); pk.status.push_back("follows what's playing"); }
+      if (offer_auto) { pk.ids.push_back("auto"); pk.names.push_back("Auto"); pk.status.push_back("follows what's playing"); }
       for (const std::string &e : from) {
         pk.ids.push_back(e);
         pk.names.push_back(friendly(e));

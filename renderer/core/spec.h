@@ -76,7 +76,10 @@
 //                picked speaker re-binds the Media screen; with "from" the value must be one of that parameter's
 //                comma list, the same domain as before; with "auto": "<param>" naming an entity (a sensor whose
 //                state is an entity id: HA's media target), the parameter follows that state while in Auto, a
-//                pick of "auto" starts following again; the screen's "$mode" = auto | manual | "" (no Auto))
+//                pick of "auto" starts following again; the screen's "$mode" = auto | manual | "" (no Auto)).
+//                With that sensor unset, Auto follows what's playing (2026-10-26): the first entity of the "from"
+//                list whose state is playing (none playing = it stays where it is); Auto is offered whenever the
+//                sensor is set or that list has entities)
 //              {"do": "nav.open", "screen": "<id>", "params"?: {k: v}}    {"do": "nav.back"}
 //              on "open" (any component's own open event): {"do": "nav.open"} = the screen its detail names
 //              The closed whitelist: each component + event allows only the actions in RULES (the catalogue).
@@ -696,15 +699,32 @@ inline std::string role_of(const std::string &id) {
   return find(id.c_str()) ? "system" : "";
 }
 inline bool page_role(const std::string &id) { const std::string r = role_of(id); return r == "page" || r == "both"; }
-// this panel's deck page for id into out: the page with that id, else the first page of that kind (a screen opened
-// by its spec id finds its page); false = not in the deck
-inline bool deck_entry(const std::string &id, ArduinoJson::JsonDocument &out) {
+// the page with that id in a deck's JSON, else the first page of that kind; false = none
+inline bool deck_page(const char *json, const std::string &id, ArduinoJson::JsonDocument &out) {
   ArduinoJson::JsonDocument d;
-  if (deserializeJson(d, deck_json())) return false;
+  if (!json || deserializeJson(d, json)) return false;
   ArduinoJson::JsonArrayConst ps = d["pages"].as<ArduinoJson::JsonArrayConst>();
   for (ArduinoJson::JsonVariantConst x : ps) if (id == (x["id"] | "")) { out.set(x); return true; }
   for (ArduinoJson::JsonVariantConst x : ps) if (id == (x["kind"] | "")) { out.set(x); return true; }
   return false;
+}
+// this panel's deck page for id into out: the page with that id, else the first page of that kind (a screen opened
+// by its spec id finds its page); false = not in the deck. A saved deck's page takes the params it does not set from
+// the factory deck's page of the same id (2026-10-26: a deck saved before a parameter existed, e.g. the Media
+// screen's speakers, still gets the build's list; a param set to "" stays cleared)
+inline bool deck_entry(const std::string &id, ArduinoJson::JsonDocument &out) {
+  if (!deck_page(deck_json(), id, out)) return false;
+  if (S().deck_over.empty()) return true;
+  ArduinoJson::JsonDocument f;
+  if (!deck_page(FACTORY_DECK, out["id"] | id.c_str(), f) || strcmp(f["kind"] | "", out["kind"] | "")) return true;
+  for (ArduinoJson::JsonPairConst kv : f["params"].as<ArduinoJson::JsonObjectConst>())
+    if (out["params"][kv.key()].isNull()) out["params"][kv.key()] = kv.value();
+  return true;
+}
+// did this panel pick param key for deck page id (the saved deck's own value, not a factory fallback)?
+inline bool deck_picked(const std::string &id, const std::string &key) {
+  ArduinoJson::JsonDocument d;
+  return deck_page(deck_json(), id, d) && d["params"][key.c_str()].is<const char *>();
 }
 // is this deck page there (deck_entry found one)? A page you don't want is not in the deck.
 inline bool deck_on(ArduinoJson::JsonVariantConst entry) { return entry.is<ArduinoJson::JsonObjectConst>(); }
@@ -806,7 +826,8 @@ struct Screen {
   // sensor) while following; a pick of a real value stops it, a pick of "auto" starts it again
   // a pick (Auto or a real one, here or in Settings > Screens) is kept in the deck (params.<follow_param>: "auto" =
   // Auto), so the screen opens on it next time; id = the deck screen id
-  std::string follow_param, follow_src, follow_last, id;
+  // follow_from = the action's "from" list parameter: with no follow_src, Auto follows the first of it that plays
+  std::string follow_param, follow_src, follow_from, follow_last, id;
   bool following = false;
 };
 // the spec screens alive now (the editor's hit-test walks them)
@@ -1031,10 +1052,39 @@ inline void rebind_all(Screen *s) {
     ha::rebind(n.obj, p.as<Props>());
   }
 }
-// Auto: the followed entity's state, if it names an entity of the parameter's domain
+// Auto is on offer: the target sensor is set, or the "from" list has entities (Auto then follows what's playing)
+inline bool auto_ok(Screen *s) {
+  if (!s->follow_src.empty()) return true;
+  if (s->follow_from.empty()) return false;
+  const std::string &l = s->params[s->follow_from];
+  return l.find('.') != std::string::npos && l[0] != '$';
+}
+// what Auto follows now: the target sensor's state, else the first entity of the "from" list that is playing; "" =
+// nothing to follow (stay where it is)
+inline std::string follow_target(Screen *s) {
+  if (!s->follow_src.empty()) { const std::string *v = ha::get(s->follow_src); return v ? *v : ""; }
+  if (s->follow_from.empty()) return "";
+  const std::string l = s->params[s->follow_from];
+  for (size_t i = 0; i < l.size();) {
+    size_t j = l.find(',', i);
+    if (j == std::string::npos) j = l.size();
+    std::string e = l.substr(i, j - i);
+    while (!e.empty() && e[0] == ' ') e.erase(0, 1);
+    while (!e.empty() && e.back() == ' ') e.pop_back();
+    if (entity_ok(e)) {
+      ha::want(e);
+      const std::string *st = ha::get(e);
+      if (st && *st == "playing") return e;
+    }
+    i = j + 1;
+  }
+  return "";
+}
+// Auto: the followed entity (the target's state, or the player that plays), if it names one of the parameter's domain
 inline void follow_now(Screen *s) {
-  if (!s->following || s->follow_src.empty()) return;
-  const std::string *v = ha::get(s->follow_src);
+  if (!s->following || !auto_ok(s)) return;
+  const std::string t = follow_target(s);
+  const std::string *v = t.empty() ? nullptr : &t;
   if (!v || *v == s->follow_last) return;
   s->follow_last = *v;
   const std::string &cur = s->params[s->follow_param];
@@ -1175,19 +1225,19 @@ inline bool run(Screen *s, Node &n, const char *event, const char *detail) {
     return true;
   }
   if (d == "screen.param") {
-    if (!s->follow_src.empty() && !strcmp(detail, "auto")) {  // Auto again: follow the target entity
+    if (auto_ok(s) && !strcmp(detail, "auto")) {  // Auto again: follow the target entity (or what's playing)
       s->following = true;
       s->params["mode"] = "auto";
       s->follow_last.clear();
-      const std::string *v = ha::get(s->follow_src);
-      if (!v || !set_param(s, s->follow_param, "", *v)) rebind_all(s);
-      if (v) s->follow_last = *v;
+      const std::string t = follow_target(s);
+      if (t.empty() || !set_param(s, s->follow_param, "", t)) rebind_all(s);
+      if (!t.empty()) s->follow_last = t;
       ArduinoJson::JsonDocument kv;
       kv.set("auto");
       deck_set(s->id, "params." + s->follow_param, kv.as<ArduinoJson::JsonVariantConst>());  // Auto sticks
       return true;
     }
-    if (!s->follow_src.empty()) {  // a real pick: manual until Auto is picked again
+    if (auto_ok(s)) {  // a real pick: manual until Auto is picked again
       const bool was = s->following;
       s->following = false;
       s->params["mode"] = "manual";
@@ -1311,21 +1361,22 @@ inline lv_obj_t *build(lv_obj_t *parent, const std::string &id, Props opened, st
     for (ArduinoJson::JsonPairConst kv : nd["on"].as<ArduinoJson::JsonObjectConst>()) {
       if (strcmp(kv.value()["do"] | "", "screen.param") || !kv.value()["auto"].is<const char *>()) continue;
       s->follow_param = kv.value()["param"] | "";
+      s->follow_from = kv.value()["from"] | "";
       s->follow_src = s->params[kv.value()["auto"] | ""];
       if (!entity_ok(s->follow_src) || s->follow_src[0] == '$') s->follow_src.clear();
       std::string &fv = s->params[s->follow_param];
-      const bool picked = de["params"][s->follow_param.c_str()].is<const char *>();  // nothing picked = Auto
+      const bool picked = deck_picked(s->id, s->follow_param);  // nothing picked (here, not the factory's) = Auto
       const bool asked = fv == "auto" || !picked;
       if (fv == "auto") fv = param_default(doc["params"][s->follow_param.c_str()]);  // a real one until the target says
-      s->following = !s->follow_src.empty() && asked && opened[s->follow_param.c_str()].isNull();  // opened on one: manual
+      s->following = auto_ok(s) && asked && opened[s->follow_param.c_str()].isNull();  // opened on one: manual
       if (s->following) {
-        ha::want(s->follow_src);
-        const std::string *v = ha::get(s->follow_src);
+        if (!s->follow_src.empty()) ha::want(s->follow_src);
+        const std::string t = follow_target(s);
         const std::string &cur = s->params[s->follow_param];
-        if (v && entity_ok(*v) && (*v)[0] != '$' && v->substr(0, v->find('.')) == cur.substr(0, cur.find('.'))) s->params[s->follow_param] = *v;
-        if (v) s->follow_last = *v;
+        if (!t.empty() && entity_ok(t) && t[0] != '$' && t.substr(0, t.find('.')) == cur.substr(0, cur.find('.'))) s->params[s->follow_param] = t;
+        if (!t.empty()) s->follow_last = t;
       }
-      s->params["mode"] = s->follow_src.empty() ? "" : s->following ? "auto" : "manual";
+      s->params["mode"] = !auto_ok(s) ? "" : s->following ? "auto" : "manual";
     }
   // "each": a node per item of its list parameter (or per sample entry), "$item" = the item; orig = the node as written
   std::vector<int> orig;

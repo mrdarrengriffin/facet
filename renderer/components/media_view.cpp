@@ -17,22 +17,26 @@
 //            the cassette's right edge sits on the disc slot's (lay::mv_h wide), the rest bleeds off the screen's
 //            left edge as in the docs (CD and vinyl are square: they fit the slot)
 //   speaker  on a spec screen: the Speaker button component in the screen's Header in place of the time (docs header
-//            right [spk], clock false); a tap opens the speakers sheet (Bottom sheet, its picker rows: Auto, the
-//            speakers, the TV, a group; the docs story until a host lists the house's players), a pick shows on the
-//            button and emits "speaker" <name>. The sheet covers the whole screen (the view bleeds up to it).
-//            Real players (2026-10-23): prop speakers = a comma list of media_player entity ids (the host's: spec
-//            param $speakers) lists those instead (no Auto row): each row its friendly name and state (+ the title
-//            while it plays) from the HA store, read when the sheet opens; prop player = the bound entity (spec
-//            $entity) = the selected row and the button's name; a pick emits "speaker" <entity id>, the spec's
-//            screen.param re-binds the screen to it (now playing + controls follow, update path).
-// Auto (prop mode = auto | manual, "" = none: the spec's screen.param "auto"): the sheet's first row is Auto (follows
-// what's playing: HA's media target), the button reads "auto · <player>" while it follows; a pick of Auto emits
-// "speaker" "auto".
+//            right [spk], clock false); a tap opens the speakers sheet (Bottom sheet over the whole screen, the view
+//            bleeds up to it); a pick shows on the button.
+//            Real players (2026-10-23, Auto always 2026-10-26): prop speakers = a comma list of media_player entity
+//            ids (spec param $speakers: the deck page's, else the factory deck's, core/spec.h deck_entry): the rows
+//            are Auto first, then those players, each its friendly name and state (+ the title while it plays) from
+//            the HA store, read when the sheet opens; prop player = the bound entity (spec $entity) = the selected row
+//            and the button's name; a pick emits "speaker" <entity id>, the spec's screen.param re-binds the screen
+//            to it (now playing + controls follow, update path).
+//            No speakers but a player (a device whose deck lists none): the player alone, never sample rows.
+//            Neither (the component gallery only): the docs demo list (Auto, Kitchen speaker, a TV, a group), which
+//            emits "speaker" <name>.
+// Auto (prop mode = auto | manual; the spec sets it whenever Auto is on offer: its "auto" sensor is set or the
+// speakers list has entities; "" = no Auto): the first row, "follows what's playing"; the button reads
+// "auto · <player>" while it follows; a pick of Auto emits "speaker" "auto" and the spec follows HA's media target
+// sensor, or with none set the first of the speakers that is playing (core/spec.h follow_target).
 // Progress (2026-10-23): props position + duration (seconds) + position_at (HA media_position_updated_at, ISO time):
 // while playing the arc moves on locally once a second from that moment (the wall clock); paused = where HA left it;
 // no duration = prop progress.
 // Actions: the spec's media.control turns "media" into media_player.media_previous_track / media_play_pause /
-// media_next_track / volume_set (core/spec.h). Not ported yet: progress moving on between updates; Auto.
+// media_next_track / volume_set (core/spec.h). Not ported yet: progress moving on between updates.
 // Update path: texts in place, the disc / slider / play glyph through their own updates. Contrast: "media"
 // (+ media_disc, icon_button, slider, text).
 // audit deps: icon_button, media_disc, media_visual, slider, speaker_button, bottom_sheet
@@ -189,7 +193,8 @@ std::string spk_name(const MV *m, int i) {  // the button: "auto · study" for A
   std::string s;
   if (!m->spk_ids.empty() && m->mode == "auto") s = "auto \xC2\xB7 " + friendly(m->player);
   else if (!m->spk_ids.empty()) s = i >= 0 && i < (int) m->spk_ids.size() ? friendly(m->spk_ids[i]) : friendly(m->player);
-  else s = i == 0 ? "auto" : SPEAKERS[i][1];  // no speakers given: plain Auto (no demo room)
+  else if (!m->player.empty()) s = friendly(m->player);  // a device with no list: its own player
+  else s = i == 0 ? "auto" : SPEAKERS[i][1];  // the gallery: plain Auto (no demo room)
   for (char &c : s) c = (char) tolower((unsigned char) c);
   return s;
 }
@@ -207,7 +212,10 @@ void sync_speakers(lv_obj_t *root, fw::Props p) {
     if (id.rfind("media_player.", 0) == 0 && m->spk_ids.size() < 12) m->spk_ids.push_back(id);
     i = j + 1;
   }
-  if (m->spk_ids.empty()) return;
+  if (m->spk_ids.empty()) {  // no list: the bound player's own name and state (a device), else the gallery sample
+    if (!m->player.empty()) for (const char *a : {"", "friendly_name"}) fw::ha::want(m->player, a);
+    return;
+  }
   m->speaker = -1;
   for (size_t i = 0; i < m->spk_ids.size(); i++) {
     if (m->spk_ids[i] == m->player) m->speaker = (int) i;
@@ -223,6 +231,12 @@ void sheet_props(const MV *m, bool open, ArduinoJson::JsonDocument &d) {
     ArduinoJson::JsonObject it = items.add<ArduinoJson::JsonObject>();
     it["icon"] = "auto", it["name"] = "Auto";
     it["status"] = m->mode == "auto" ? "follows what's playing \xC2\xB7 " + friendly(m->player) : std::string("follows what's playing");
+  }
+  if (m->spk_ids.empty() && !m->player.empty()) {  // no list on a device: the bound player alone, never the sample
+    ArduinoJson::JsonObject it = items.add<ArduinoJson::JsonObject>();
+    const std::string *st = fw::ha::get(m->player, "");
+    it["icon"] = "speaker", it["name"] = friendly(m->player), it["status"] = st && !st->empty() ? *st : "unknown";
+    return;
   }
   if (m->spk_ids.empty()) {
     for (auto &s : SPEAKERS) { ArduinoJson::JsonObject it = items.add<ArduinoJson::JsonObject>(); it["icon"] = s[0], it["name"] = s[1], it["status"] = s[2]; }
@@ -269,6 +283,7 @@ void speaker_header(lv_obj_t *root) {
         return;
       }
       i -= off;
+      if (m->spk_ids.empty() && !m->player.empty()) return;  // the bound player alone: already it
       if (i < 0 || i >= (m->spk_ids.empty() ? N_SAMPLE : (int) m->spk_ids.size())) return;
       m->speaker = i;
       if (off) m->mode = "manual";
