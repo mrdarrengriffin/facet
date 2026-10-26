@@ -1,0 +1,208 @@
+---
+// Install TEST page (not in the nav, noindex): same as install.astro but with the vendored, patched ESP Web Tools in
+// public/vendor/esp-web-tools-10.4.0-facet.1/ (460800 baud with fallback to 115200, targeted erase, MD5 check; see its
+// PATCH.md). ?baud=115200 forces the old speed for a timing comparison. Keep the rest in step with install.astro until
+// the patch replaces the live installer.
+//
+// Install: flash Facet onto a panel from the browser (ESP Web Tools over Web Serial), then set up Wi-Fi with Improv
+// serial and add the panel to Home Assistant. Design: the firmware's install + onboarding notes (public build, two
+// boards). Each board's ESP Web Tools manifest + factory image live under /firmware/<board>/ next to the site (the
+// release workflow publishes them there; a local build copies them into public/firmware/, untracked), so the page
+// only names the manifest URL.
+import Docs, { type Heading } from '../layouts/Docs.astro';
+import { url } from '../lib/nav';
+
+const boards = [
+  {
+    id: 'waveshare-p4-86',
+    name: 'Waveshare ESP32-P4-86',
+    about: '4 inch, 720 x 720, ESP32-P4 with an ESP32-C6 for Wi-Fi and Bluetooth.',
+    ways: 'USB, Bluetooth or the panel hotspot',
+  },
+  {
+    id: 'guition-4848s040',
+    name: 'Guition ESP32-S3-4848S040',
+    about: '4 inch, 480 x 480, ESP32-S3.',
+    ways: 'USB or the panel hotspot (no Bluetooth on this board)',
+  },
+];
+const headings: Heading[] = [
+  { depth: 2, slug: 'before', text: 'Before you start' },
+  { depth: 2, slug: 'install', text: 'Install' },
+  { depth: 2, slug: 'wifi', text: 'Wi-Fi' },
+  { depth: 2, slug: 'home-assistant', text: 'Home Assistant' },
+  { depth: 2, slug: 'updates', text: 'Updates' },
+];
+const manifest = (id: string) => url(`/firmware/${id}/manifest.json`);
+---
+
+<Docs edit="site/src/pages/install-test.astro" title="Install (test)" noindex description="Put Facet on your panel from the browser, connect it to Wi-Fi and add it to Home Assistant." group="Start here" current={url('/install-test/')} headings={headings}>
+  <p class="lede">Put Facet on your panel from this page, connect it to Wi-Fi and add it to Home Assistant. No tools to install.</p>
+
+  <div class="callout callout--warn">
+    <span class="dot" aria-hidden="true"></span>
+    <p>Test installer: flashes faster (460800 baud, falls back to 115200 by itself) and "erase the device" clears only the
+    settings areas instead of the whole chip. Use <a href={url('/install/')}>Install</a> if anything goes wrong.</p>
+  </div>
+
+  <div class="callout callout--warn">
+    <span class="dot" aria-hidden="true"></span>
+    <p>Preview build: Facet's firmware is early. Installing replaces what is on the panel now.</p>
+  </div>
+
+  <h2 id="before">Before you start</h2>
+  <ul>
+    <li>A computer with <strong>Chrome or Edge</strong>. Flashing uses Web Serial, which other browsers (and phones) do not have.</li>
+    <li>A USB-C cable that carries data, not only power.</li>
+    <li>Home Assistant with the ESPHome integration (it is built in).</li>
+  </ul>
+
+  <h2 id="install">Install</h2>
+  <ol>
+    <li>Pick your panel.</li>
+    <li>Plug it into the computer and press <strong>Install</strong>, then choose its USB port.</li>
+    <li>For a first install, say yes to <strong>erase the device</strong>. Flashing takes a minute or two; leave the cable in.</li>
+  </ol>
+
+  <fieldset class="boards" data-boards>
+    <legend class="facet-label">Your panel</legend>
+    {
+      boards.map((b, i) => (
+        <label class="board">
+          <input type="radio" name="board" value={b.id} data-manifest={manifest(b.id)} checked={i === 0} />
+          <span class="board__name">{b.name}</span>
+          <span class="board__about">{b.about}</span>
+          <span class="board__ways">Set up with {b.ways}</span>
+        </label>
+      ))
+    }
+  </fieldset>
+
+  <div class="install">
+    <esp-web-install-button manifest={manifest(boards[0].id)} data-install>
+      <button slot="activate" class="button button--primary" type="button">Install</button>
+      <p slot="unsupported" class="callout callout--warn">
+        <span class="dot" aria-hidden="true"></span>
+        This browser cannot flash over USB. Open this page in Chrome or Edge on a computer.
+      </p>
+      <p slot="not-allowed" class="callout callout--warn">
+        <span class="dot" aria-hidden="true"></span>
+        Flashing needs a secure page (https).
+      </p>
+    </esp-web-install-button>
+    <p class="hint" data-report hidden></p>
+  </div>
+
+  <h2 id="wifi">Wi-Fi</h2>
+  <p>Pick one of these. The panel remembers the network.</p>
+  <ul>
+    <li>
+      <strong>Right after installing</strong>: the installer offers <strong>Connect to Wi-Fi</strong>. Pick your network
+      and type its password; the panel joins while it is still plugged in.
+    </li>
+    <li>
+      <strong>From your phone</strong>: with no Wi-Fi set, the panel starts its own hotspot, named
+      <code>Facet-</code> and four letters or digits. It has a password of its own, made by the panel on its first
+      start and kept until the next install with erase. Scan the code on the panel to join, then pick your home
+      network on the page that opens (if it does not, go to <code>192.168.4.1</code>).
+    </li>
+    <li>
+      <strong>Bluetooth</strong> (Waveshare only): the Home Assistant app finds the panel and asks for your Wi-Fi.
+    </li>
+  </ul>
+  <p class="hint">
+    Until the panel's set up screen arrives in this preview, the hotspot name and password are in the panel's log:
+    press Install again, choose <strong>Logs &amp; console</strong>, then <strong>Reset device</strong>; the line
+    starts with <code>hotspot Facet-</code>.
+  </p>
+
+  <h2 id="home-assistant">Home Assistant</h2>
+  <ol>
+    <li>Once the panel is on your Wi-Fi, Home Assistant shows it under <strong>Settings &gt; Devices &amp; services</strong> as a discovered ESPHome device, named <strong>Facet panel</strong> and the end of its address. Press <strong>Add</strong>.</li>
+    <li>Home Assistant gives the panel its own encryption key while adding it; there is nothing to copy.</li>
+    <li>
+      Open the new device, press <strong>Configure</strong> and turn on <strong>Allow the device to perform Home Assistant
+      actions</strong>, so the panel's controls can switch your lights and more.
+    </li>
+  </ol>
+
+  <h2 id="updates">Updates</h2>
+  <p>
+    Home Assistant shows a <strong>Firmware</strong> update on the panel's device page when a new Facet release is out.
+    It installs only when you press Install. Installing from this page again works too, without erasing.
+    <a href={url('/docs/troubleshooting/')}>Updating and troubleshooting</a> has more, and fixes for common set up problems.
+  </p>
+</Docs>
+
+<script is:inline>
+  // ?baud=115200 = old speed, for timing against the fast path
+  {
+    const b = Number(new URLSearchParams(location.search).get('baud'));
+    if (b) window.FACET_FLASH_BAUD = b;
+  }
+</script>
+<script is:inline type="module" src={url('/vendor/esp-web-tools-10.4.0-facet.1/install-button.js')}></script>
+<script>
+  // the install's speed, fallback, erase plan and time (from the patched flash step)
+  const report = document.querySelector<HTMLElement>('[data-report]');
+  window.addEventListener('facet-flash-report', (ev) => {
+    const r = (ev as CustomEvent).detail;
+    if (!report) return;
+    const erase = r.erase == null ? 'no erase' : r.erase.full ? `full erase (${r.erase.reason})` : `erased ${r.erase.join(', ') || 'nothing extra'}`;
+    report.textContent = `${r.ok ? 'Done' : 'Failed'} in ${r.seconds} s at ${r.baud} baud${r.fallback ? ` (fell back from ${r.fallback.from}: ${r.fallback.stage})` : ''}; ${erase}.`;
+    report.hidden = false;
+  });
+  // the board pick sets the installer's manifest
+  const button = document.querySelector<HTMLElement>('[data-install]');
+  document.querySelectorAll<HTMLInputElement>('[data-boards] input[name="board"]').forEach((r) =>
+    r.addEventListener('change', () => {
+      if (r.checked && button && r.dataset.manifest) button.setAttribute('manifest', r.dataset.manifest);
+    }),
+  );
+</script>
+
+<style>
+  .boards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+    margin: 24px 0;
+    padding: 0;
+    border: 0;
+  }
+  .boards legend {
+    margin-bottom: 12px;
+  }
+  .board {
+    display: grid;
+    gap: 4px;
+    padding: 16px 20px;
+    border: 1px solid var(--facet-color-line);
+    border-radius: 12px;
+    background: var(--facet-color-surface);
+    cursor: pointer;
+  }
+  .board:has(input:checked) {
+    border-color: var(--facet-color-accent);
+  }
+  .board:has(input:focus-visible) {
+    outline: 2px solid var(--facet-color-accent);
+    outline-offset: 2px;
+  }
+  .board input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .board__name {
+    font-weight: 600;
+  }
+  .board__about,
+  .board__ways {
+    color: var(--facet-color-text-dim);
+    font-size: 0.92em;
+  }
+  .install {
+    margin: 8px 0 32px;
+  }
+</style>

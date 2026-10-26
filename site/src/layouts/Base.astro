@@ -22,12 +22,15 @@ interface Props {
   title: string;
   description?: string;
   hasSidebar?: boolean;
+  /** Keep the page out of search engines (test pages). */
+  noindex?: boolean;
 }
 
 const {
   title,
   description = 'Wall panel UI for Home Assistant: one design system for ESP32 touch panels, drawn by the same renderer the panels run.',
   hasSidebar = false,
+  noindex = false,
 } = Astro.props;
 const pageTitle = title === 'Facet' ? 'Facet' : `${title} · Facet`;
 const canonical = new URL(Astro.url.pathname, Astro.site);
@@ -42,6 +45,7 @@ const bg = (TOKENS.colour as { colours: Record<string, { dark: string; light: st
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{pageTitle}</title>
     <meta name="description" content={description} />
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
     <link rel="canonical" href={canonical} />
     <link rel="icon" href={`${BASE}favicon.svg`} type="image/svg+xml" />
     <link rel="icon" href={`${BASE}favicon-32.png`} type="image/png" sizes="32x32" />

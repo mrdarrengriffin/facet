@@ -12,3 +12,8 @@ tokens CSS, icons, home previews, roadmap snapshot) + `astro build`. Every examp
   features hidden in `renderer/features.json` (root README "Feature flags") are not on the site at all; an Updates
   entry about one says `feature: <id>` and is left out while it is hidden.
 - Roadmap: `src/roadmap.json`, a public snapshot refreshed by `scripts/extract.mjs` on the build box.
+- Installer: `/install/` uses ESP Web Tools 10.4.0 from unpkg. `/install-test/` (not in the nav, noindex) uses a
+  vendored, patched copy in `public/vendor/esp-web-tools-10.4.0-facet.1/` (460800 baud with fallback to 115200,
+  "Erase device" erases only the data partitions the image does not rewrite, MD5 check; `PATCH.md` there;
+  `?baud=115200` = old speed). Tests: `node scripts/test-install-flash.mjs` (fallback + erase plan, no hardware),
+  `node scripts/test-install-page.mjs` (headless, after `astro build`; `PLAYWRIGHT=` / `CHROMIUM=` paths if needed).

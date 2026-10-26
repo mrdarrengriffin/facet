@@ -26,9 +26,11 @@ interface Props {
   icon?: string;
   /** Wider content column (for pages with live previews). */
   wide?: boolean;
+  /** Keep the page out of search engines (test pages). */
+  noindex?: boolean;
 }
 
-const { title, description, group, current, headings = [], source = [], edit, icon, wide = false } = Astro.props;
+const { title, description, group, current, headings = [], source = [], edit, icon, wide = false, noindex = false } = Astro.props;
 const editPath = edit === false ? undefined : (edit ?? source[0]?.path);
 
 const sidebar = getSidebar();
@@ -39,7 +41,7 @@ const next = index >= 0 && index < order.length - 1 ? order[index + 1] : undefin
 const repo = SITE.repo.replace('/blob/', '/tree/');
 ---
 
-<Base title={title} description={description} hasSidebar>
+<Base title={title} description={description} hasSidebar noindex={noindex}>
   <div class:list={['docs', { 'docs--wide': wide }]}>
     <aside class="sidebar" id="sidebar" data-sidebar>
       <nav aria-label="Docs">
