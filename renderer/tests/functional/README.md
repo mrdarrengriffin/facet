@@ -48,7 +48,7 @@ export default {
   label), `t.find(sel)`, `t.objs()` (the audit tree: every object's box, type, text, clk, opa, parent), `t.comps()`.
 - **Fake HA (`t.ha`):** `set(e, state, attrs)` (`null` attr = HA dropped it), `unavailable(e)`, `disconnect()` (every
   bound entity reads unavailable), `reconnect()` (stored states arrive again), `calls` (service calls sent), `auto`
-  (default true: toggle / turn_on / turn_off for light, switch, fan, input_boolean; cover open / close / position),
+  (default true: toggle / turn_on / turn_off for light, switch, fan, input_boolean; cover open / close / position / tilt; vacuum start / room clean / pause / dock / suction; select option),
   `lag` (ms before an answer arrives). Unset values fall back to `tools/demo_ha.mjs`.
 - **Fake image host (`t.img`, the Image component):** `serve(url, w, h, fill)` (fill `[r,g,b,a]` or `(x, y) => [...]`),
   `status(url, 404)`, `hang(url)` (never answers: the device times out), unknown URLs = 404; `asked` (URLs fetched),
@@ -65,8 +65,8 @@ export default {
 ## Families still to cover (one agent per family)
 
 Done: button, slider + family 1 below (controls), entity_tile, readout (cards; incl. Home light + sensor cards on the
-device), device (navigation rules, facet-188), image (cache cap + fallbacks). Shared helpers for family 1: `_controls.mjs` (pixel reads for drawn /
-not drawn, dial ring points).
+device), device (navigation rules, facet-188), image (cache cap + fallbacks), covers + vacuum screens (WIP features, via
+the `spec` component). Shared helpers for family 1: `_controls.mjs` (pixel reads for drawn / not drawn, dial ring points).
 
 1. **Controls + inputs** (done 2026-10-26): toggle, checkbox, radio, segmented, hold_button, icon_button, speaker_button, back_button,
    dial, thermostat_dial, picker_row, check_row, list_row, more_row, focus_ring, scroll_track, bottom_sheet, toast,

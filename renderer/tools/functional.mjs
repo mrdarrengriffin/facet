@@ -75,7 +75,11 @@ class FakeHA {
         if (svc === 'open_cover') { next = 'open'; attrs.current_position = 100; }
         else if (svc === 'close_cover') { next = 'closed'; attrs.current_position = 0; }
         else if (svc === 'set_cover_position') { attrs.current_position = data.position; next = data.position > 0 ? 'open' : 'closed'; }
-      }
+        else if (svc === 'set_cover_tilt_position') attrs.current_tilt_position = data.tilt_position;
+      } else if (ed === 'vacuum' && dom === 'vacuum') {  // start / a room clean -> cleaning, pause, dock, suction
+        next = { start: 'cleaning', send_command: 'cleaning', pause: 'paused', return_to_base: 'returning' }[svc] ?? null;
+        if (svc === 'set_fan_speed') attrs.fan_speed = data.fan_speed;
+      } else if (ed === 'select' && dom === 'select' && svc === 'select_option') next = data.option;
       if (next === null && !Object.keys(attrs).length) continue;
       const apply = () => this.set(d.entity, next ?? undefined, attrs);
       if (this.lag) this.pending.push({ at: this.t.b.t + this.lag, apply }); else apply();

@@ -49,7 +49,7 @@
     {
       "id": "covers",
       "label": "Blinds and curtains",
-      "docs": true, "status": "done", "firmware": true,
+      "docs": false, "status": "wip", "firmware": false,
       "screens": ["covers"],
       "docs_pages": ["covers"],
       "components": ["covers_view", "cover_visual"],

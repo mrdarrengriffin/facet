@@ -34,6 +34,7 @@ export function demoValue(e, a) {
   if (/door|window/.test(e)) return { '': 'off', device_class: /window/.test(e) ? 'window' : 'door' }[a];
   if (/^(light|switch|fan)\./.test(e)) return { '': 'on', brightness: '204' }[a];
   if (/^cover\./.test(e)) return { '': 'open', current_position: '60' }[a];
+  if (/^vacuum\./.test(e)) return { '': 'docked', fan_speed: 'turbo' }[a];
   if (/^climate\./.test(e)) return { '': 'heat', temperature: '21', current_temperature: '19.5' }[a];
   return undefined;
 }
