@@ -1,0 +1,75 @@
+---
+// FAQ + supported hardware. Facts: install.astro (boards, set up ways), README "Panels" (480 reference, 720 = 1.5x,
+// other sizes planned), "How it works", "Licence" (MIT, fonts SIL OFL); the public firmware YAML (UI sounds on the
+// Waveshare speaker only, no Bluetooth set up on the Guition).
+import Docs, { type Heading } from '../../layouts/Docs.astro';
+import { url } from '../../lib/nav';
+
+const headings: Heading[] = [
+  { depth: 2, slug: 'hardware', text: 'Supported hardware' },
+  { depth: 3, slug: 'other-panels', text: 'Will other panels work?' },
+  { depth: 2, slug: 'faq', text: 'Questions' },
+  { depth: 3, slug: 'need-ha', text: 'Do I need Home Assistant?' },
+  { depth: 3, slug: 'cloud', text: 'Does it need the internet or a cloud account?' },
+  { depth: 3, slug: 'esphome', text: 'Do I need to know ESPHome?' },
+  { depth: 3, slug: 'own-screens', text: 'Can I make my own screens?' },
+  { depth: 3, slug: 'missing', text: 'Why is a screen I saw mentioned not on my panel?' },
+  { depth: 3, slug: 'cost', text: 'What does it cost?' },
+];
+const boards = [
+  ['Waveshare ESP32-P4-86', '4 inch, 720 x 720', 'ESP32-P4 with an ESP32-C6 for Wi-Fi and Bluetooth', 'Sounds on its speaker; Wi-Fi set up over USB, Bluetooth or the panel hotspot'],
+  ['Guition ESP32-S3-4848S040', '4 inch, 480 x 480', 'ESP32-S3', 'Wi-Fi set up over USB or the panel hotspot'],
+];
+---
+
+<Docs edit="site/src/pages/docs/faq.astro" title="FAQ and hardware" description="The panels Facet runs on, and answers to the questions people ask first." group="Using Facet" current={url('/docs/faq/')} headings={headings}>
+  <h2 id="hardware">Supported hardware</h2>
+  <table>
+    <thead><tr><th>Panel</th><th>Screen</th><th>Chip</th><th>Notes</th></tr></thead>
+    <tbody>
+      {boards.map(([name, screen, chip, notes]) => <tr><td><strong>{name}</strong></td><td>{screen}</td><td>{chip}</td><td>{notes}</td></tr>)}
+    </tbody>
+  </table>
+  <p>
+    Both are square 4 inch touch panels that fit a standard wall box, and both get the same layout: the 480 panel is the
+    reference size and the 720 panel draws it at 1.5 times, so it looks the same, only sharper.
+  </p>
+  <h3 id="other-panels">Will other panels work?</h3>
+  <p>
+    Not yet. Facet is built and tested on these two; other sizes are planned. If you would like to see a panel
+    supported, say so on GitHub (<a href={url('/contributing/')}>Contributing</a>).
+  </p>
+
+  <h2 id="faq">Questions</h2>
+  <h3 id="need-ha">Do I need Home Assistant?</h3>
+  <p>
+    Yes. Facet is made for Home Assistant: your lights, covers, speakers and sensors come from it, and firmware updates
+    are offered there.
+  </p>
+  <h3 id="cloud">Does it need the internet or a cloud account?</h3>
+  <p>
+    No account. The panel talks to Home Assistant on your own network. Screens such as the weather fetch public data
+    from the internet themselves, and checking for updates needs it too.
+  </p>
+  <h3 id="esphome">Do I need to know ESPHome?</h3>
+  <p>
+    No. You install Facet from the browser on the <a href={url('/install/')}>Install</a> page and set it up from the panel
+    and Home Assistant. There is no YAML to write.
+  </p>
+  <h3 id="own-screens">Can I make my own screens?</h3>
+  <p>
+    Yes. A screen is a short spec made of Facet's <a href={url('/docs/concepts/components/')}>components</a>, so an AI
+    assistant can make one for you: <a href={url('/ai/')}>Make screens with AI</a>.
+  </p>
+  <h3 id="missing">Why is a screen I saw mentioned not on my panel?</h3>
+  <p>
+    A release only carries the screens that are ready. The <a href={url('/roadmap/')}>roadmap</a> shows what is in
+    progress and planned.
+  </p>
+  <h3 id="cost">What does it cost?</h3>
+  <p>
+    Nothing. Facet is open source under the MIT licence (its fonts keep their SIL Open Font Licence). You only need the
+    panel. If you enjoy it, you can support it on <a href="https://buymeacoffee.com/mrdarrengriffin">Buy Me a Coffee</a>
+    or <a href="https://ko-fi.com/mrdarrengriffin">Ko-fi</a>.
+  </p>
+</Docs>

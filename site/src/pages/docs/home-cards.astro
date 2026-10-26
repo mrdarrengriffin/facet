@@ -1,0 +1,84 @@
+---
+// Home cards: choosing what is on Home + the card sizes. Facts: core/spec.h CARD_TYPES (types, sizes s/m/l, taps),
+// screens/home.cpp (the grid, unavailable look), components/card_grid.cpp, screens/screens.cpp + screen_set.cpp
+// (Settings > Screens, Show on Home), renderer/README.md "Feature flags" (cards to screens the build lacks are left out).
+// Only released card types (the climate card needs the Thermostat screen, not released yet: left out).
+import Docs, { type Heading } from '../../layouts/Docs.astro';
+import { url } from '../../lib/nav';
+import { screenById, screenHref } from '../../lib/data';
+
+const home = screenById('home');
+const headings: Heading[] = [
+  { depth: 2, slug: 'home', text: 'What Home is' },
+  { depth: 2, slug: 'sizes', text: 'Card sizes' },
+  { depth: 2, slug: 'types', text: 'What a card can show' },
+  { depth: 2, slug: 'choose', text: 'Choosing what is on Home' },
+  { depth: 2, slug: 'unavailable', text: 'When an entity is unavailable' },
+];
+const sizes = [
+  ['Tile', 'Small', 'Three across. An icon, a short value and the label, such as a light and its level.', 'entity-tile'],
+  ['Card', 'Medium', 'Two across. Room for a value or a line of text and a sub line, plus artwork such as the weather.', 'card'],
+  ['Wide card', 'Large', 'The full width, for a page or a media player that needs the room.', 'card'],
+  ['Readout', 'Medium, for a sensor', 'A value and its label with no box and no tap. Two readouts in a row share one card space, one above the other.', 'readout'],
+];
+const types = [
+  ['Light (or a switch)', 'Tile, card', 'Tap to switch it, or open the Light screen for that light.'],
+  ['Cover', 'Tile, card', 'Opens the Covers screen for it.'],
+  ['Media player', 'Card, wide card', 'Shows the track and the state; opens the Media screen.'],
+  ['Sensor', 'Tile, readout', 'Read only: the value and its label.'],
+  ['Page', 'Tile, card, wide card', 'Opens another screen or another Home.'],
+];
+---
+
+<Docs edit="site/src/pages/docs/home-cards.astro" title="Home cards" description="What can go on Home, the four card sizes, and how to choose what your panel shows." group="Using Facet" current={url('/docs/home-cards/')} headings={headings}>
+  <h2 id="home">What Home is</h2>
+  <p>
+    {home ? <a href={screenHref(home)}>Home</a> : 'Home'} is the screen the panel starts on: a grid of cards, each one a
+    light, a cover, a speaker, a sensor or a way into another screen. The cards keep their order and fill the grid row by
+    row, and the page scrolls when there are more than fit. A panel can have more than one Home, for example one per
+    room, with a card on one that opens the next.
+  </p>
+
+  <h2 id="sizes">Card sizes</h2>
+  <p>Every card comes in one of four shapes. The same layout is used on the 480 and the 720 panel.</p>
+  <table>
+    <thead><tr><th>Shape</th><th>Size</th><th>What it is for</th></tr></thead>
+    <tbody>
+      {sizes.map(([name, size, about, id]) => <tr><td><a href={url(`/components/${id}/`)}>{name}</a></td><td>{size}</td><td>{about}</td></tr>)}
+    </tbody>
+  </table>
+
+  <h2 id="types">What a card can show</h2>
+  <p>Each kind of card takes certain sizes and does one thing when you tap it.</p>
+  <table>
+    <thead><tr><th>Card</th><th>Sizes</th><th>Tap</th></tr></thead>
+    <tbody>
+      {types.map(([name, sizes, tap]) => <tr><td>{name}</td><td>{sizes}</td><td>{tap}</td></tr>)}
+    </tbody>
+  </table>
+  <p>
+    The label is the one you give the card, or else the entity's name from Home Assistant. A card only appears when its
+    screen is part of your panel's firmware, so a card never leads to a screen that is not there.
+  </p>
+
+  <h2 id="choose">Choosing what is on Home</h2>
+  <ul>
+    <li>
+      <strong>On the panel</strong>: open <strong>Settings &gt; Screens</strong>. Each screen has a switch; on puts its
+      card on Home, off takes it away. Tap a screen's name to see where its data comes from and set its options, such as
+      which speaker the Media screen follows.
+    </li>
+    <li>
+      <strong>Your own cards</strong>: the full list of Homes, cards and screens is the panel's <em>deck</em>. An AI
+      assistant can make one for your entities and send it to the panel; <a href={url('/ai/')}>Make screens with AI</a>
+      shows how.
+    </li>
+  </ul>
+
+  <h2 id="unavailable">When an entity is unavailable</h2>
+  <p>
+    If Home Assistant reports an entity as unavailable, its card stays in place but greys out: the icon and label dim,
+    the value shows a dash and the sub line reads <strong>Unavailable</strong>. A tap only plays a short error sound.
+    When the entity is back, the card returns by itself.
+  </p>
+</Docs>

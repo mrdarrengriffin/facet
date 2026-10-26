@@ -35,14 +35,22 @@ export const headerLinks = [
   ...(UPDATES_PAGE ? [{ label: 'Updates', href: url('/updates/'), match: [url('/updates/')] }] : []),
 ];
 
-const soon = (label: string): NavLink => ({ label, badge: 'Soon' });
+// a page still to come: soon('Label') = a 'Soon' row, no link
+export const soon = (label: string): NavLink => ({ label, badge: 'Soon' });
 // the docs sidebar lists are alphabetical (Overview stays first)
 const byLabel = (a: NavLink, b: NavLink) => a.label.localeCompare(b.label);
 
 export function getSidebar(): NavGroup[] {
   return [
     { label: 'Start here', links: [{ label: 'Getting started', href: url('/docs/') }, { label: 'Install', href: url('/install/') }, { label: 'Make screens with AI', href: url('/ai/') }, { label: 'Contributing', href: url('/contributing/') }] },
-    { label: 'Concepts', links: [soon('Design tokens'), soon('Components'), soon('Firmware')] },
+    {
+      label: 'Using Facet',
+      links: [{ label: 'Home cards', href: url('/docs/home-cards/') }, { label: 'Updating and troubleshooting', href: url('/docs/troubleshooting/') }, { label: 'FAQ and hardware', href: url('/docs/faq/') }],
+    },
+    {
+      label: 'Concepts',
+      links: [{ label: 'Components', href: url('/docs/concepts/components/') }, { label: 'Design tokens', href: url('/docs/concepts/design-tokens/') }, { label: 'How the firmware works', href: url('/docs/concepts/firmware/') }],
+    },
     {
       label: 'Design system',
       links: [{ label: 'Overview', href: url('/foundations/') }, ...FOUNDATIONS.map((f) => ({ label: f.name, href: href(f) })).sort(byLabel)],

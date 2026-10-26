@@ -1,0 +1,85 @@
+---
+// Updating + troubleshooting. Facts: install.astro (flash, Wi-Fi ways, HA adding), the public firmware YAML
+// (net_public: hotspot after the saved Wi-Fi fails for 90 s, encryption key from HA on adoption, API never reboots for
+// want of a client, no browser firmware upload; workbench: update entity hourly, installs only on Install, 3 min
+// settling = safe_mode boot_is_good_after, a power cut in it boots the previous firmware).
+import Docs, { type Heading } from '../../layouts/Docs.astro';
+import { url } from '../../lib/nav';
+
+const headings: Heading[] = [
+  { depth: 2, slug: 'updates', text: 'Firmware updates' },
+  { depth: 2, slug: 'settling', text: 'After an update' },
+  { depth: 2, slug: 'reflash', text: 'Re-flashing' },
+  { depth: 2, slug: 'wifi', text: 'Wi-Fi does not join' },
+  { depth: 2, slug: 'home-assistant', text: 'Not showing in Home Assistant' },
+  { depth: 2, slug: 'actions', text: 'Controls do nothing' },
+  { depth: 2, slug: 'help', text: 'Still stuck?' },
+];
+---
+
+<Docs edit="site/src/pages/docs/troubleshooting.astro" title="Updating and troubleshooting" description="Keep Facet up to date, put it back on the panel, and fix the common set up problems." group="Using Facet" current={url('/docs/troubleshooting/')} headings={headings}>
+  <h2 id="updates">Firmware updates</h2>
+  <p>
+    The panel checks for a new Facet release every hour, and shortly after it starts. When there is one, Home Assistant
+    shows a <strong>Firmware</strong> update on the panel's device page. Nothing installs by itself: press
+    <strong>Install</strong> when it suits you. The panel downloads the update over Wi-Fi and restarts on the new version.
+  </p>
+
+  <h2 id="settling">After an update</h2>
+  <p>
+    For the first three minutes on a new version, the panel shows <strong>Update settling: don't unplug</strong> with a
+    countdown, and Home Assistant shows the same countdown on the Firmware update. Leave the power on until it reads
+    <strong>Update confirmed</strong>. If the panel loses power before then, it starts the version it had before, as a
+    safety net. Nothing is lost: install the update again.
+  </p>
+
+  <h2 id="reflash">Re-flashing</h2>
+  <p>
+    You can always put Facet back on the panel over USB from the <a href={url('/install/')}>Install</a> page. Firmware
+    cannot be uploaded from the panel's own web page.
+  </p>
+  <ul>
+    <li><strong>Without erasing</strong>: the panel keeps its Wi-Fi, its settings and its place in Home Assistant. Use this to repair or update it.</li>
+    <li>
+      <strong>With erase</strong>: the panel starts as new, with no Wi-Fi and a new hotspot password. Home Assistant no
+      longer recognises it: delete the old device in Home Assistant, then add the panel again as on the Install page.
+    </li>
+  </ul>
+
+  <h2 id="wifi">Wi-Fi does not join</h2>
+  <ul>
+    <li>The panels use <strong>2.4 GHz</strong> Wi-Fi. If your router has separate 2.4 and 5 GHz names, pick the 2.4 GHz one.</li>
+    <li>Check the password: it is case sensitive.</li>
+    <li>
+      If the panel cannot reach its saved network for about a minute and a half, it starts its <code>Facet-</code> hotspot
+      again, so you can join it from your phone and pick the network again (<code>192.168.4.1</code> if the page does not
+      open).
+    </li>
+    <li>With the panel plugged into a computer, the Install page can set the Wi-Fi again too: press Install, then <strong>Connect to Wi-Fi</strong>.</li>
+  </ul>
+
+  <h2 id="home-assistant">Not showing in Home Assistant</h2>
+  <ul>
+    <li>
+      Home Assistant finds the panel on your local network. If they are on different networks or VLANs, discovery
+      cannot see it: add it by hand under <strong>Settings &gt; Devices &amp; services &gt; Add integration &gt;
+      ESPHome</strong> with the panel's IP address (your router lists it).
+    </li>
+    <li>The panel waits as long as it takes to be added; it does not need restarting.</li>
+    <li>Look for <strong>Facet panel</strong> and the end of its address in the discovered devices.</li>
+  </ul>
+
+  <h2 id="actions">Controls do nothing</h2>
+  <p>
+    If the panel shows your lights but tapping them changes nothing, Home Assistant is not letting it act. Open the
+    panel's device in Home Assistant, press <strong>Configure</strong> and turn on <strong>Allow the device to perform
+    Home Assistant actions</strong>.
+  </p>
+
+  <h2 id="help">Still stuck?</h2>
+  <p>
+    Open an issue on GitHub with your panel model and what you see: <a href={url('/contributing/')}>Contributing</a> has
+    the details. The panel's log helps a lot: on the Install page press Install and choose <strong>Logs &amp;
+    console</strong>.
+  </p>
+</Docs>

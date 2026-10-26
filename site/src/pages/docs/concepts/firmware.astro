@@ -1,0 +1,77 @@
+---
+// Concepts: how the firmware works. Facts: README "How it works" + "Panels", firmware/ (ESPHome external component,
+// bundle.mjs), firmware/fw_device.h (HTTP API, AI agents gate), the public firmware YAML (Home Assistant API with
+// encryption from adoption, states + actions, update entity), renderer/features.json (what a release carries).
+import Docs, { type Heading } from '../../../layouts/Docs.astro';
+import { url } from '../../../lib/nav';
+
+const headings: Heading[] = [
+  { depth: 2, slug: 'one-renderer', text: 'One renderer, two places' },
+  { depth: 2, slug: 'panel', text: 'What runs on the panel' },
+  { depth: 2, slug: 'home-assistant', text: 'Talking to Home Assistant' },
+  { depth: 2, slug: 'own-data', text: 'Data the panel gets itself' },
+  { depth: 2, slug: 'screens', text: 'Screens and the deck' },
+  { depth: 2, slug: 'api', text: 'The panel API' },
+  { depth: 2, slug: 'updates', text: 'Updates' },
+];
+---
+
+<Docs edit="site/src/pages/docs/concepts/firmware.astro" title="How the firmware works" description="What runs on the panel, and how it talks to Home Assistant and the rest of your network." group="Concepts" current={url('/docs/concepts/firmware/')} headings={headings}>
+  <h2 id="one-renderer">One renderer, two places</h2>
+  <p>
+    Facet is one renderer, written in C++ on <a href="https://lvgl.io">LVGL</a>. The same source builds two ways: into
+    the panel's firmware, and into WebAssembly for the browser. These docs use the browser build, so the components and
+    screens you see here are drawn pixel for pixel as the panel draws them.
+  </p>
+
+  <h2 id="panel">What runs on the panel</h2>
+  <p>
+    The firmware is an <a href="https://esphome.io">ESPHome</a> build. ESPHome looks after the hardware, Wi-Fi and the
+    link to Home Assistant; Facet is an ESPHome component inside it that draws every screen, handles every tap and plays
+    the sounds. Taps are handled on the panel itself, so moving between screens needs no round trip to anything else.
+  </p>
+  <p>
+    A release carries only the screens that are ready. Screens still being made are left out of the firmware, so the
+    panel never shows a half-built screen or a card that leads nowhere.
+  </p>
+
+  <h2 id="home-assistant">Talking to Home Assistant</h2>
+  <p>
+    The panel uses ESPHome's own connection to Home Assistant, encrypted with a key Home Assistant makes when you add the
+    panel. Over it the panel:
+  </p>
+  <ul>
+    <li><strong>reads</strong> the state of the entities its screens show, and updates each card as they change;</li>
+    <li><strong>calls</strong> Home Assistant actions when you use a control, such as switching a light (this needs the panel to be allowed to perform actions);</li>
+    <li><strong>shows up</strong> as a device with its own entities: its settings, the firmware update, Wi-Fi signal and more.</li>
+  </ul>
+
+  <h2 id="own-data">Data the panel gets itself</h2>
+  <p>
+    Some screens need data Home Assistant may not have, such as the weather, the moon or energy prices. The panel fetches
+    these from public services itself, and only while that screen is on show.
+  </p>
+
+  <h2 id="screens">Screens and the deck</h2>
+  <p>
+    Every screen is a JSON spec, a tree of <a href={url('/docs/concepts/components/')}>components</a>. The panel's set of
+    Homes, cards and screens is its <em>deck</em>, kept on the panel. It starts with Facet's own, and changes you make in
+    <strong>Settings &gt; Screens</strong>, or a deck sent to it, are stored on the panel and kept across restarts.
+    <a href={url('/docs/home-cards/')}>Home cards</a> explains the cards.
+  </p>
+
+  <h2 id="api">The panel API</h2>
+  <p>
+    The panel also answers a small HTTP API on your network: what it runs, what it can show, and a way to show a screen
+    or install a new one. Anything that changes the panel, except from the panel's own pages, needs the
+    <strong>Allow AI agents</strong> setting on (it is off by default) and the panel's token.
+    <a href={url('/ai/')}>Make screens with AI</a> describes it.
+  </p>
+
+  <h2 id="updates">Updates</h2>
+  <p>
+    The panel checks for new releases itself and offers them in Home Assistant; it installs only when you say so, and
+    goes back to the previous version if an update does not settle. <a href={url('/docs/troubleshooting/')}>Updating and
+    troubleshooting</a> has the details.
+  </p>
+</Docs>

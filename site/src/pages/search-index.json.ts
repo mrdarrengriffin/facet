@@ -14,6 +14,15 @@ export const GET: APIRoute = async () => {
   const recs: Rec[] = [];
   recs.push({ title: 'Getting started', heading: '', text: 'What Facet is, what you need (a Waveshare ESP32-P4-86 or Guition ESP32-S3-4848S040 panel and Home Assistant) and the steps from install to your own screens.', url: url('/docs/') });
   recs.push({ title: 'Install', heading: '', text: 'Put Facet on your panel from the browser, connect it to Wi-Fi and add it to Home Assistant.', url: url('/install/') });
+  const guides: [string, string, string][] = [
+    ['Home cards', 'What can go on Home: tiles, cards, wide cards and readouts, what each card does when tapped, and choosing cards in Settings > Screens.', '/docs/home-cards/'],
+    ['Updating and troubleshooting', 'Firmware updates in Home Assistant, the settling countdown, re-flashing with or without erase, Wi-Fi not joining, the panel not showing in Home Assistant, controls doing nothing.', '/docs/troubleshooting/'],
+    ['FAQ and hardware', 'Supported panels (Waveshare ESP32-P4-86, Guition ESP32-S3-4848S040), other panels, Home Assistant, internet and cloud, ESPHome, own screens, cost and licence.', '/docs/faq/'],
+    ['Components', 'Concepts: what a component is, screens made of components, props, variants, states, events, sounds and updates.', '/docs/concepts/components/'],
+    ['Design tokens', 'Concepts: named values for colour, type, spacing, layout, motion, states and icons; the 4 px grid, contrast tests, 480 and 720 sizes, 16-bit colour.', '/docs/concepts/design-tokens/'],
+    ['How the firmware works', 'Concepts: one renderer on the panel and in the browser, ESPHome, how the panel reads and controls Home Assistant, its own data, the deck, the panel API, updates.', '/docs/concepts/firmware/'],
+  ];
+  for (const [title, text, path] of guides) recs.push({ title, heading: '', text, url: url(path) });
   recs.push({ title: 'Design system', heading: '', text: 'The tokens and rules every component is built from: colour, type, space, layout, motion, states, icons, sound.', url: url('/foundations/') });
   recs.push({ title: 'Make screens with AI', heading: '', text: 'Let an AI assistant make panel screens from Facet components: specs, budgets, the panel API, Home Assistant actions and a starter prompt.', url: url('/ai/') });
   if (AI_EXAMPLES) for (const e of examples) recs.push({ title: e.title, heading: 'Example screen', text: plain(e.about), url: url(`/ai/examples/${e.id}/`) });

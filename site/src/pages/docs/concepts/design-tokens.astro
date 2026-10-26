@@ -1,0 +1,71 @@
+---
+// Concepts: design tokens. Facts: renderer/tokens/*.json (one file per foundation, build.sh generates the C++),
+// space.json (4 px grid, gen_space), colour.json (themes, accent sets, RGB565), layout.json (480 reference, 720 = 1.5x),
+// contrast pairs (renderer/README.md).
+import Docs, { type Heading } from '../../../layouts/Docs.astro';
+import { url } from '../../../lib/nav';
+
+const headings: Heading[] = [
+  { depth: 2, slug: 'what', text: 'What a token is' },
+  { depth: 2, slug: 'kinds', text: 'The kinds of token' },
+  { depth: 2, slug: 'rules', text: 'Rules every value follows' },
+  { depth: 2, slug: 'sizes', text: 'One layout, two sizes' },
+  { depth: 2, slug: 'panel', text: 'Made for the panel' },
+];
+const kinds = [
+  ['Colour', 'colour', 'Backgrounds, surfaces, three text levels, lines, the accent and status colours, in a light and a dark theme.'],
+  ['Type', 'type', 'The type styles, from small labels to the big hero numbers, with their sizes and weights.'],
+  ['Spacing & radius', 'space', 'Every gap, padding and corner, all on a 4 px grid.'],
+  ['Layout & devices', 'layout', 'Insets, gutters, rows and component sizes such as cards and tiles, per panel size.'],
+  ['Motion', 'motion', 'How long things move and on which curve: presses, screen changes, toasts.'],
+  ['States', 'states', 'How on, off, pressed, loading and unavailable look, shared by every component.'],
+  ['Icons', 'icons', 'The icon sizes and stroke weights icons are drawn at.'],
+];
+---
+
+<Docs edit="site/src/pages/docs/concepts/design-tokens.astro" title="Design tokens" description="The named values every colour, size, gap and movement in Facet comes from." group="Concepts" current={url('/docs/concepts/design-tokens/')} headings={headings}>
+  <h2 id="what">What a token is</h2>
+  <p>
+    A design token is a named value: the surface colour, the gap between cards, the length of a press animation.
+    Components never use a raw number; they ask for a token. Change the token and every component that uses it
+    follows, on every screen.
+  </p>
+  <p>
+    The tokens live in one JSON file per foundation in the repository (<code>renderer/tokens/</code>). The build turns
+    them into the C++ the panel runs and into the pages of this site, so the docs and the panel never disagree.
+  </p>
+
+  <h2 id="kinds">The kinds of token</h2>
+  <table>
+    <thead><tr><th>Foundation</th><th>What it holds</th></tr></thead>
+    <tbody>
+      {kinds.map(([name, id, about]) => <tr><td><a href={url(`/foundations/${id}/`)}>{name}</a></td><td>{about}</td></tr>)}
+    </tbody>
+  </table>
+  <p>
+    Sound is a foundation too: each component names the sound it plays, and the sound pack decides how it sounds. The
+    <a href={url('/foundations/')}>Design system</a> section has a page for each, with the values drawn live.
+  </p>
+
+  <h2 id="rules">Rules every value follows</h2>
+  <ul>
+    <li><strong>4 px grid</strong>: every size and gap is a whole number of 4 px steps.</li>
+    <li>
+      <strong>Contrast</strong>: every place two colours meet is listed and tested against the WCAG AA levels, in both
+      themes and with every accent colour, on the 16-bit colours the panel really shows. Facet ships with no failures.
+    </li>
+  </ul>
+
+  <h2 id="sizes">One layout, two sizes</h2>
+  <p>
+    The 480 x 480 panel is the reference size. The 720 x 720 panel uses the same layout at 1.5 times the size, so a
+    screen looks the same on both, just sharper on the bigger one. The size switch at the top of each page shows either.
+  </p>
+
+  <h2 id="panel">Made for the panel</h2>
+  <p>
+    The panels show 16-bit colour, which has fewer shades than a computer screen. Facet's colours are chosen for that:
+    softer looks come from a less saturated colour, not from transparency, and gradients are dithered so they do not
+    band. What you see on these pages is drawn the same way.
+  </p>
+</Docs>

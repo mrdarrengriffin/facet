@@ -48,7 +48,8 @@ const headings: Heading[] = [
   <p>
     Home Assistant finds the panel on your network. Add it, then allow it to perform Home Assistant actions so its
     controls can switch your lights and more. The steps are on the <a href={url('/install/#home-assistant')}>Install</a> page.
-    Firmware updates then arrive in Home Assistant too.
+    Firmware updates then arrive in Home Assistant too. Something not working? See
+    <a href={url('/docs/troubleshooting/')}>Updating and troubleshooting</a>.
   </p>
 
   <h2 id="screens">3. Find your way round</h2>
@@ -56,6 +57,7 @@ const headings: Heading[] = [
     The panel starts on {home ? <a href={screenHref(home)}>Home</a> : 'Home'}: your cards at a glance, with the other
     screens a tap away. Lights, covers, media, weather, the clock, timers, the calendar and energy each have a screen.
     <a href={url('/screens/')}>Screens</a> shows every one live, with what it shows, its settings and where its data comes from.
+    <a href={url('/docs/home-cards/')}>Home cards</a> explains the card sizes and how to choose what is on Home.
   </p>
 
   <h2 id="ai">4. Make your own screens</h2>
@@ -67,8 +69,10 @@ const headings: Heading[] = [
 
   <h2 id="reference">5. Go deeper</h2>
   <ul>
+    <li><a href={url('/docs/concepts/components/')}>Concepts</a>: how components, design tokens and <a href={url('/docs/concepts/firmware/')}>the firmware</a> fit together.</li>
     <li><a href={url('/components/')}>Components</a>: every building block, drawn live by the panel renderer.</li>
     <li><a href={url('/foundations/')}>Design system</a>: the colour, type, space, motion, icons and sound every screen is made from.</li>
+    <li><a href={url('/docs/faq/')}>FAQ and hardware</a>: the supported panels and the questions people ask first.</li>
     <li><a href={url('/roadmap/')}>Roadmap</a>: where Facet is headed, area by area.</li>
   </ul>
 

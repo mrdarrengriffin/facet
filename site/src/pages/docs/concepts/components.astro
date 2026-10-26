@@ -1,0 +1,65 @@
+---
+// Concepts: components. What a Facet component is, how screens are made of them, and what every component brings
+// (props, variants, states, events, sounds, an update path). Facts: renderer/README.md (Components, Feature flags),
+// core/spec.h (specs), site/src/pages/components/.
+import Docs, { type Heading } from '../../../layouts/Docs.astro';
+import { url } from '../../../lib/nav';
+
+const headings: Heading[] = [
+  { depth: 2, slug: 'what', text: 'What a component is' },
+  { depth: 2, slug: 'screens', text: 'Screens are made of components' },
+  { depth: 2, slug: 'parts', text: 'What every component has' },
+  { depth: 2, slug: 'library', text: 'Library and screen parts' },
+  { depth: 2, slug: 'docs', text: 'Reading a component page' },
+];
+---
+
+<Docs edit="site/src/pages/docs/concepts/components.astro" title="Components" description="The building blocks every Facet screen is made of, and what each one brings with it." group="Concepts" current={url('/docs/concepts/components/')} headings={headings}>
+  <h2 id="what">What a component is</h2>
+  <p>
+    A component is one building block of the panel: a button, a toggle, a list row, a Home card, a chart, a clock face.
+    Each one is drawn by Facet's renderer, written in C++ on <a href="https://lvgl.io">LVGL</a>, and takes every
+    colour, size, gap and movement from the <a href={url('/docs/concepts/design-tokens/')}>design tokens</a>. Nothing on a
+    screen is drawn by hand, so a button looks and behaves the same wherever it appears.
+  </p>
+
+  <h2 id="screens">Screens are made of components</h2>
+  <p>
+    A screen is a tree of components: a header, a layout, and the parts inside it. Screens are written as short JSON
+    <em>specs</em> that name what to show and bind it to Home Assistant entities, not how to draw it. Positions, sizes
+    and colours come from the components and the layout, so a spec stays the same on the 480 and the 720 panel.
+  </p>
+  <p>
+    That is also how you make your own screens: a new screen is a new arrangement of the components Facet already has.
+    <a href={url('/ai/')}>Make screens with AI</a> shows how.
+  </p>
+
+  <h2 id="parts">What every component has</h2>
+  <ul>
+    <li><strong>Props</strong>: the values it shows, such as a label, a value or an icon. A prop can be fixed or follow an entity.</li>
+    <li><strong>Variants</strong>: the looks it comes in, for example a primary, secondary or ghost button.</li>
+    <li><strong>States</strong>: pressed, on, off, loading, unavailable and so on, from one shared set, so a disabled toggle looks like a disabled button.</li>
+    <li><strong>Events and sounds</strong>: what it reports when you use it (a tap, a new value) and the sound it plays.</li>
+    <li>
+      <strong>Updates</strong>: when something changes elsewhere, say a light switched on from your phone, the component
+      moves to the new state with the same animation as a tap, without the sound.
+    </li>
+  </ul>
+  <p>
+    Every component also lists the colour pairs it uses, and each pair is tested for contrast in light and dark, so
+    text stays readable whatever the theme.
+  </p>
+
+  <h2 id="library">Library and screen parts</h2>
+  <p>
+    Most components are the <strong>library</strong>: general parts any screen can use, including the ones you make. A
+    few belong to one screen only, such as the parts of the Media or Calendar screen, and ship with that screen.
+  </p>
+
+  <h2 id="docs">Reading a component page</h2>
+  <p>
+    Every page under <a href={url('/components/')}>Components</a> draws the component live with the same renderer the
+    panel runs, compiled for the browser, so what you see there is what the panel shows. Each page lists its variants,
+    props, events and sounds, and the size switch shows it at 480 or 720.
+  </p>
+</Docs>
