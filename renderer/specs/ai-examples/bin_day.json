@@ -11,19 +11,34 @@
  "layout": "list",
  "nodes": [
   {
-   "c": "hero_block",
+   "c": "big_number",
    "p": {
-    "n": {
-     "e": "sensor.bin_days",
-     "s": "2"
-    },
     "label": "days to bin day",
-    "role": "hero",
-    "label_type": "label",
-    "line": {
+    "value": {
+     "e": "sensor.bin_days",
+     "s": "1"
+    },
+    "unit": "",
+    "decimals": 0
+   }
+  },
+  {
+   "c": "status_chip",
+   "p": {
+    "tone": {
+     "e": "sensor.bin_days",
+     "map": {
+      "0": "warn",
+      "1": "warn"
+     },
+     "else": "idle",
+     "s": "1"
+    },
+    "text": {
      "e": "sensor.bin_next",
-     "s": "Recycling and garden · Tue"
-    }
+     "s": "Recycling and garden out tonight"
+    },
+    "pulse": true
    }
   },
   {
@@ -35,52 +50,62 @@
    }
   },
   {
-   "c": "list_row",
+   "c": "grid",
    "p": {
-    "title": "Recycling",
-    "icon": "none",
-    "trailing": "value",
+    "cols": 2,
+    "gap": "group",
+    "aspect": "row"
+   }
+  },
+  {
+   "c": "stat",
+   "p": {
+    "label": "recycling",
     "value": {
      "e": "sensor.bin_recycling",
-     "s": "Tue 27 Oct"
-    }
-   }
+     "s": "Tue 27"
+    },
+    "tone": "ok"
+   },
+   "in": 3,
+   "slot": 0
   },
   {
-   "c": "list_row",
+   "c": "stat",
    "p": {
-    "title": "Garden waste",
-    "icon": "none",
-    "trailing": "value",
+    "label": "garden",
     "value": {
      "e": "sensor.bin_garden",
-     "s": "Tue 27 Oct"
-    }
-   }
+     "s": "Tue 27"
+    },
+    "tone": "ok"
+   },
+   "in": 3,
+   "slot": 1
   },
   {
-   "c": "list_row",
+   "c": "stat",
    "p": {
-    "title": "General waste",
-    "icon": "none",
-    "trailing": "value",
+    "label": "general",
     "value": {
      "e": "sensor.bin_general",
-     "s": "Tue 3 Nov"
+     "s": "Tue 3"
     }
-   }
+   },
+   "in": 3,
+   "slot": 2
   },
   {
-   "c": "list_row",
+   "c": "stat",
    "p": {
-    "title": "Food caddy",
-    "icon": "none",
-    "trailing": "value",
+    "label": "food",
     "value": {
      "e": "sensor.bin_food",
      "s": "Every Tue"
     }
-   }
+   },
+   "in": 3,
+   "slot": 3
   }
  ]
 }

@@ -11,80 +11,132 @@
  "layout": "list",
  "nodes": [
   {
-   "c": "hero_block",
+   "c": "grid",
    "p": {
-    "n": {
+    "cols": 2,
+    "gap": "group",
+    "aspect": "row"
+   }
+  },
+  {
+   "c": "weather_icon",
+   "p": {
+    "icon": {
+     "e": "weather.home",
+     "map": {
+      "sunny": "clear-day",
+      "partlycloudy": "partly-day",
+      "cloudy": "cloudy",
+      "rainy": "rain-light",
+      "pouring": "rain-heavy",
+      "fog": "fog"
+     },
+     "else": "cloudy",
+     "s": "partlycloudy"
+    },
+    "size": "card",
+    "animated": true
+   },
+   "in": 0,
+   "slot": 0
+  },
+  {
+   "c": "big_number",
+   "p": {
+    "label": "degrees outside",
+    "value": {
      "e": "weather.home",
      "a": "temperature",
-     "tpl": "{}°",
      "s": "14"
     },
-    "label": "good for a run",
-    "role": "hero",
-    "label_type": "label",
-    "line": "Dry until 18:00, light wind"
+    "unit": "",
+    "decimals": 0
+   },
+   "in": 0,
+   "slot": 1
+  },
+  {
+   "c": "status_chip",
+   "p": {
+    "tone": "ok",
+    "text": {
+     "e": "sensor.run_verdict",
+     "s": "Good for a run · dry until 18:00"
+    }
    }
   },
   {
-   "c": "section_header",
+   "c": "segmented",
    "p": {
-    "title": "conditions",
-    "badge": false,
-    "right": "none"
+    "options": "Run,Ride",
+    "selected": {
+     "e": "input_select.activity",
+     "s": "run"
+    },
+    "width": "fill"
    }
   },
   {
-   "c": "list_row",
+   "c": "grid",
    "p": {
-    "title": "Wind",
-    "icon": "none",
-    "trailing": "value",
+    "cols": 2,
+    "gap": "group",
+    "aspect": "row"
+   }
+  },
+  {
+   "c": "stat",
+   "p": {
+    "label": "wind",
     "value": {
      "e": "weather.home",
      "a": "wind_speed",
      "tpl": "{} km/h",
      "s": "12"
     }
-   }
+   },
+   "in": 5,
+   "slot": 0
   },
   {
-   "c": "list_row",
+   "c": "stat",
    "p": {
-    "title": "Rain",
-    "icon": "none",
-    "trailing": "value",
+    "label": "rain",
     "value": {
      "e": "sensor.rain_chance",
      "tpl": "{}%",
      "s": "5"
-    }
-   }
+    },
+    "tone": "ok"
+   },
+   "in": 5,
+   "slot": 1
   },
   {
-   "c": "list_row",
+   "c": "stat",
    "p": {
-    "title": "UV",
-    "icon": "none",
-    "trailing": "value",
+    "label": "uv",
     "value": {
      "e": "sensor.uv_index",
      "tpl": "{} low",
      "s": "2"
     }
-   }
+   },
+   "in": 5,
+   "slot": 2
   },
   {
-   "c": "list_row",
+   "c": "stat",
    "p": {
-    "title": "Sunset",
-    "icon": "none",
-    "trailing": "value",
+    "label": "sunset",
     "value": {
      "e": "sun.sun",
      "a": "next_setting",
      "s": "17:41"
     }
-   }
+   },
+   "in": 5,
+   "slot": 3
   }
  ]
 }

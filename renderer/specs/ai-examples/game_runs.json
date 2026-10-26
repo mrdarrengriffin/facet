@@ -11,55 +11,111 @@
  "layout": "list",
  "nodes": [
   {
-   "c": "hero_block",
+   "c": "grid",
    "p": {
-    "n": {
-     "e": "sensor.isaac_wins",
-     "s": "37"
+    "cols": 2,
+    "gap": "group",
+    "aspect": "row"
+   }
+  },
+  {
+   "c": "donut",
+   "p": {
+    "a": {
+     "e": "sensor.isaac",
+     "a": "won_share",
+     "s": "3"
     },
-    "label": "runs won",
-    "role": "hero",
-    "label_type": "label",
-    "line": {
-     "e": "sensor.isaac_runs",
-     "tpl": "of {} runs",
-     "s": "112"
-    }
+    "b": {
+     "e": "sensor.isaac",
+     "a": "lost_share",
+     "s": "6"
+    },
+    "c": {
+     "e": "sensor.isaac",
+     "a": "quit_share",
+     "s": "1"
+    },
+    "size": 128
+   },
+   "in": 0,
+   "slot": 0
+  },
+  {
+   "c": "legend",
+   "p": {
+    "items": {
+     "e": "sensor.isaac",
+     "a": "key",
+     "s": "won 37,lost 68,quit 7"
+    },
+    "ticks": "",
+    "width": 200
+   },
+   "in": 0,
+   "slot": 1
+  },
+  {
+   "c": "grid",
+   "p": {
+    "cols": 2,
+    "gap": "group",
+    "aspect": "row"
    }
   },
   {
-   "c": "section_header",
+   "c": "stat",
    "p": {
-    "title": "progress",
-    "badge": false,
-    "right": "none"
-   }
-  },
-  {
-   "c": "list_row",
-   "p": {
-    "title": "Win streak",
-    "icon": "none",
-    "trailing": "value",
+    "label": "streak",
     "value": {
-     "e": "sensor.isaac_streak",
-     "tpl": "{} in a row",
+     "e": "sensor.isaac",
+     "a": "streak",
      "s": "4"
-    }
-   }
+    },
+    "tone": "ok"
+   },
+   "in": 3,
+   "slot": 0
   },
   {
-   "c": "list_row",
+   "c": "stat",
    "p": {
-    "title": "Achievements",
-    "icon": "none",
-    "trailing": "value",
+    "label": "achievements",
     "value": {
-     "e": "sensor.isaac_achievements",
-     "tpl": "{} of 637",
+     "e": "sensor.isaac",
+     "a": "achievements",
+     "tpl": "{}/637",
      "s": "412"
     }
-   }
+   },
+   "in": 3,
+   "slot": 1
+  },
+  {
+   "c": "stat",
+   "p": {
+    "label": "best time",
+    "value": {
+     "e": "sensor.isaac",
+     "a": "best_time",
+     "s": "21:08"
+    }
+   },
+   "in": 3,
+   "slot": 2
+  },
+  {
+   "c": "stat",
+   "p": {
+    "label": "runs",
+    "value": {
+     "e": "sensor.isaac",
+     "a": "runs",
+     "s": "112"
+    }
+   },
+   "in": 3,
+   "slot": 3
   },
   {
    "c": "section_header",
@@ -72,31 +128,19 @@
   {
    "c": "list_row",
    "p": {
-    "title": "Mom's Heart",
+    "list": "stack",
+    "items": {
+     "e": "sensor.isaac",
+     "a": "last_runs",
+     "s": "[{\"b\":\"Mom's Heart\",\"c\":\"Judas · 38 min\",\"r\":\"Won\"},{\"b\":\"The Lamb\",\"c\":\"Isaac · 52 min\",\"r\":\"Lost\"},{\"b\":\"Mega Satan\",\"c\":\"Azazel · 44 min\",\"r\":\"Won\"}]"
+    },
+    "title": "$item.b",
+    "sub": "$item.c",
+    "value": "$item.r",
     "icon": "none",
     "trailing": "value",
-    "value": "Won",
-    "sub": "Judas · 38 min"
-   }
-  },
-  {
-   "c": "list_row",
-   "p": {
-    "title": "The Lamb",
-    "icon": "none",
-    "trailing": "value",
-    "value": "Lost",
-    "sub": "Isaac · 52 min"
-   }
-  },
-  {
-   "c": "list_row",
-   "p": {
-    "title": "Mega Satan",
-    "icon": "none",
-    "trailing": "value",
-    "value": "Won",
-    "sub": "Azazel · 44 min"
+    "rows": 3,
+    "empty": "No runs yet"
    }
   }
  ]

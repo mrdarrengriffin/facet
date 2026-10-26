@@ -39,7 +39,7 @@ const byLabel = (a: NavLink, b: NavLink) => a.label.localeCompare(b.label);
 
 export function getSidebar(): NavGroup[] {
   return [
-    { label: 'Start here', links: [soon('Getting started'), { label: 'Install', href: url('/install/') }, { label: 'Make screens with AI', href: url('/ai/') }, { label: 'Example screens', href: url('/ai/examples/') }] },
+    { label: 'Start here', links: [soon('Getting started'), { label: 'Install', href: url('/install/') }, { label: 'Make screens with AI', href: url('/ai/') }] },
     { label: 'Concepts', links: [soon('Design tokens'), soon('Components'), soon('Firmware')] },
     {
       label: 'Design system',

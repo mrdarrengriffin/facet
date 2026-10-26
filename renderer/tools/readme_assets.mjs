@@ -5,7 +5,9 @@
 // dark and light, halves it (2 x 2 box filter) to 360 with rounded corners, and writes
 //   .github/assets/screen-<id>-<theme>.png   one per screen (shown at 200 in the README)
 //   .github/assets/screens-<theme>.png       the hero: the --hero screens in a 4-wide grid, transparent around them
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
+//   node tools/readme_assets.mjs --ai-examples   instead: each "Make screens with AI" example (specs/ai-examples, installed as a
+//   panel installs a spec, demo HA values) -> site/public/ai/shots/<id>-<theme>.png (the tiles on the docs /ai/ page)
+import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { deflateSync } from 'node:zlib';
@@ -78,6 +80,18 @@ function png(rgba, W, Hh) {
   return Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk('IHDR', ih), chunk('IDAT', deflateSync(raw, { level: 9 })), chunk('IEND', Buffer.alloc(0))]);
 }
 
+if (process.argv.includes('--ai-examples')) {
+  const dir = join(HERE, 'specs', 'ai-examples'), out = join(ROOT, 'site', 'public', 'ai', 'shots');
+  mkdirSync(out, { recursive: true });
+  const ex = readdirSync(dir).filter((f) => f.endsWith('.json')).map((f) => f.slice(0, -5)).sort();
+  for (const id of ex) {
+    const r = JSON.parse(str('screen', (kp) => str(readFileSync(join(dir, `${id}.json`), 'utf8'), (sp) => m.UTF8ToString(m._fw_spec(kp, sp)))));
+    if (!r.ok) throw new Error(`${id}: spec ${JSON.stringify(r.errors ?? r.status)}`);
+    for (const theme of ['dark', 'light']) writeFileSync(join(out, `${id}-${theme}.png`), png(render(`spec:${id}`, theme === 'light'), H, H));
+  }
+  console.log(`readme_assets: ${ex.length} AI examples x 2 themes -> site/public/ai/shots/`);
+  process.exit(0);
+}
 const ids = arg('--screens') ? arg('--screens').split(',') : screens.map((c) => c.id);
 const hero = arg('--hero') ? arg('--hero').split(',') : ids.slice(0, 8);
 const shots = {};

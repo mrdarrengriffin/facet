@@ -18,25 +18,33 @@
    }
   },
   {
-   "c": "list_row",
+   "c": "grid",
    "p": {
-    "title": "Network",
-    "icon": "none",
-    "trailing": "value",
-    "value": "Guest"
+    "cols": 2,
+    "gap": "group",
+    "aspect": "row"
    }
   },
   {
-   "c": "list_row",
+   "c": "stat",
    "p": {
-    "title": "Password",
-    "icon": "none",
-    "trailing": "value",
+    "label": "network",
+    "value": "Guest"
+   },
+   "in": 1,
+   "slot": 0
+  },
+  {
+   "c": "stat",
+   "p": {
+    "label": "password",
     "value": {
      "e": "input_text.guest_wifi_password",
      "s": "sunny-otter-42"
     }
-   }
+   },
+   "in": 1,
+   "slot": 1
   }
  ]
 }

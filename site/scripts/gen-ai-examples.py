@@ -60,183 +60,219 @@ def ex(id, title, about, prompt, nodes, layout='list', better=None, label=None):
                         'header': {'label': label or title, 'back': True}, 'layout': layout, 'nodes': nodes}})
 
 
-# ---------------------------------------------------------------- the 20 examples
-ex('news', 'Headlines', 'The top stories of a news feed, newest first, with the source and how long ago.',
-   'Make a Facet screen "Headlines" listing the five newest stories from my news feed sensors (sensor.news_story_1 to 5, the title is the state, the source in the attribute source). Keep each headline on one line.',
-   [sec('top stories', meta=b('sensor.news_story_1', '07:40', 'updated')),
-    *[{'c': 'list_row', 'p': {'title': b(f'sensor.news_story_{i}', t), 'over': b(f'sensor.news_story_{i}', o, 'source'), 'icon': 'none', 'trailing': 'chevron'}}
-      for i, (t, o) in enumerate([('Rail strike called off', 'BBC News · 12 min'), ('Rates held at 4%', 'Reuters · 40 min'),
-                                  ('Fen floods ease overnight', 'Look East · 1 h'), ('New Mars rover named', 'BBC Science · 2 h'),
-                                  ('Cup draw: home tie for city', 'BBC Sport · 3 h')], 1)]],
-   better='Source logos would come with the icon component.')
+# ---------------------------------------------------------------- layout helpers
+def N(_comp, /, **p):
+    """a node of component c with props p (None props dropped)"""
+    return {"c": _comp, "p": {k: v for k, v in p.items() if v is not None}}
 
-ex('game_runs', 'Game progress', 'Wins, a streak and the latest runs of a roguelike, from a Steam or save-file sensor.',
-   'Make a Facet screen "Game progress" for my roguelike: the hero is my win count (sensor.isaac_wins) of all runs (sensor.isaac_runs), then my win streak, achievements and the last three runs with how they ended.',
-   [hero(b('sensor.isaac_wins', '37'), 'runs won', b('sensor.isaac_runs', '112', tpl='of {} runs')),
-    sec('progress'),
-    row('Win streak', b('sensor.isaac_streak', '4', tpl='{} in a row')),
-    row('Achievements', b('sensor.isaac_achievements', '412', tpl='{} of 637')),
-    sec('last runs'),
-    row("Mom's Heart", 'Won', sub='Judas · 38 min'),
-    row('The Lamb', 'Lost', sub='Isaac · 52 min'),
-    row('Mega Satan', 'Won', sub='Azazel · 44 min')],
-   better='Character portraits and achievement badges would come with the icon component.')
 
-ex('ai_agents', 'AI agents', 'What each AI agent is doing: working, needs you, done or idle, with a mascot that shows it.',
-   'Make a Facet screen "AI agents" with one tile per agent (sensor.agent_docs, sensor.agent_firmware, sensor.agent_review, sensor.agent_research): the state is working, needs, done or idle and the attribute status says how far it has got.',
-   [{'c': 'tile', 'p': {'title': t, 'kind': b(e, k, map={'working': 'working', 'needs': 'needs', 'done': 'done'}, **{'else': 'idle'}), 'status': b(e, st, 'status')}}
-    for t, e, k, st in [('Docs writer', 'sensor.agent_docs', 'working', 'Page 3 of 5'), ('Firmware build', 'sensor.agent_firmware', 'needs', '1 question'),
-                        ('Code review', 'sensor.agent_review', 'done', '12 notes'), ('Research', 'sensor.agent_research', 'idle', 'Waiting')]],
-   layout='cards', better='A grid layout would let a screen mix agent tiles with a summary.')
+def grid(kids=(), cell=None, **p):
+    """a Grid: static kids go into its cells in order (built with "in" / "slot" when the page is flattened)"""
+    return ('grid', N('grid', **p), list(kids), cell)
+
+
+def page(*parts):
+    """flatten nodes and grids into the spec's node list: a grid's kids get "in" = the grid's index, "slot" = n"""
+    out = []
+    for x in parts:
+        if isinstance(x, tuple):
+            _, g, kids, cell = x
+            if cell: g['cell'] = cell
+            gi = len(out); out.append(g)
+            for n, k in enumerate(kids):
+                k = dict(k); k['in'] = gi; k['slot'] = n; out.append(k)
+        else:
+            out.append(x)
+    return out
+
+
+def rows(e, a, items, cap=256, **p):
+    """real rows: one list_row per item of a JSON list bound to an entity attribute ($item.key fills each row)"""
+    return N('list_row', list='stack', items=b(e, json.dumps(items, ensure_ascii=False, separators=(',', ':')), a, cap=cap), **p)
+
+
+def stat(label, value, tone=None):
+    return N('stat', label=label, value=value, tone=tone)
+
+
+# ---------------------------------------------------------------- the 20 examples (each leans on a different family)
+ex('news', 'Headlines', 'The newest stories of a news feed as real rows, one per story in the feed, with the source and how long ago.',
+   'Make a Facet screen "Headlines" from my news feed sensor (sensor.news): its attribute stories is a JSON list of {t: title, s: source}. Show a count of new stories, then one row per story with the source above the title.',
+   page(N('status_chip', tone='info', text=b('sensor.news', 'Updated 07:40', 'updated'), pulse=False),
+        sec('top stories', count=b('sensor.news', '4'), tone='info'),
+        rows('sensor.news', 'stories', [{'t': 'Rail strike called off', 's': 'BBC · 12 min'}, {'t': 'Rates held at 4%', 's': 'Reuters · 40 min'},
+                                        {'t': 'Fen floods ease overnight', 's': 'Look East · 1 h'}, {'t': 'New Mars rover named', 's': 'BBC · 2 h'}],
+             title='$item.t', over='$item.s', icon='none', trailing='chevron', rows=6, empty='No new stories')),
+   better='Source logos need an image component.')
+
+ex('game_runs', 'Game progress', 'How a roguelike is going: a ring of runs won, lost and quit, the streak and the latest runs.',
+   'Make a Facet screen "Game progress" for my roguelike (sensor.isaac): a ring split into runs won, lost and quit with a key, four facts (streak, achievements, best time, runs), then the last runs as rows from the attribute last_runs.',
+   page(grid([N('donut', a=b('sensor.isaac', '3', 'won_share'), b=b('sensor.isaac', '6', 'lost_share'), c=b('sensor.isaac', '1', 'quit_share'), size=128),
+              N('legend', items=b('sensor.isaac', 'won 37,lost 68,quit 7', 'key'), ticks='', width=200)], cols=2, gap='group', aspect='row'),
+        grid([stat('streak', b('sensor.isaac', '4', 'streak'), 'ok'), stat('achievements', b('sensor.isaac', '412', 'achievements', tpl='{}/637')),
+              stat('best time', b('sensor.isaac', '21:08', 'best_time')), stat('runs', b('sensor.isaac', '112', 'runs'))], cols=2, gap='group', aspect='row'),
+        sec('last runs'),
+        rows('sensor.isaac', 'last_runs', [{'b': "Mom's Heart", 'c': 'Judas · 38 min', 'r': 'Won'}, {'b': 'The Lamb', 'c': 'Isaac · 52 min', 'r': 'Lost'},
+                                           {'b': 'Mega Satan', 'c': 'Azazel · 44 min', 'r': 'Won'}],
+             title='$item.b', sub='$item.c', value='$item.r', icon='none', trailing='value', rows=3, empty='No runs yet')),
+   better='The ring has no value in its middle and takes parts 0 to 10, not raw counts.')
+
+ex('ai_agents', 'AI agents', 'What each AI agent is doing, as a tile with a mascot per agent, and a tally of who needs you.',
+   'Make a Facet screen "AI agents": status chips for how many agents are working and need me, then a two-column grid with one tile per agent (sensor.agent_docs, sensor.agent_firmware, sensor.agent_review, sensor.agent_research): the state is working, needs, done or idle and the attribute status says how far it has got.',
+   page(grid([N('status_chip', tone='working', text=b('sensor.agents_working', '1', tpl='{} working'), pulse=True),
+              N('status_chip', tone='warn', text=b('sensor.agents_needs', '1', tpl='{} needs you')),
+              N('status_chip', tone='ok', text=b('sensor.agents_done', '1', tpl='{} done'))], cols=3, gap='near', aspect='row'),
+        grid([N('tile', title=t, kind=b(e, k, map={'working': 'working', 'needs': 'needs', 'done': 'done'}, **{'else': 'idle'}), status=b(e, st, 'status'))
+              for t, e, k, st in [('Docs writer', 'sensor.agent_docs', 'working', 'Page 3 of 5'), ('Firmware build', 'sensor.agent_firmware', 'needs', '1 question'),
+                                  ('Code review', 'sensor.agent_review', 'done', '12 notes'), ('Research', 'sensor.agent_research', 'idle', 'Waiting')]],
+             cols=2, gap='group', aspect='row')))
 
 ex('shopping', 'Shopping list', 'A tick-off shopping list from a Home Assistant to-do list.',
    'Make a Facet screen "Shopping list" from todo.shopping: a count of what is left, then each item as a checkbox, ticked ones done.',
-   [sec('to buy', count=b('todo.shopping', '5'), tone='info'),
-    check('Oat milk'), check('Sourdough loaf'), check('Bananas'), check('Washing-up liquid'), check('Coffee beans'),
-    check('Eggs', 'done'), check('Tomatoes', 'done')])
+   page(sec('to buy', count=b('todo.shopping', '5'), tone='info'),
+        check('Oat milk'), check('Sourdough loaf'), check('Bananas'), check('Washing-up liquid'), check('Coffee beans'),
+        sec('in the basket'), check('Eggs', 'done'), check('Tomatoes', 'done')),
+   better='The checkboxes are written out: a to-do list bound as real rows (one checkbox per item) is still to come.')
 
-ex('medication', 'Medication', "Today's doses, which are taken and when the next one is due.",
-   'Make a Facet screen "Medication" for today: the next dose time as the hero (sensor.next_dose), then each dose of the day as a checkbox, the ones taken ticked.',
-   [hero(b('sensor.next_dose', '13:00'), 'next dose', b('sensor.next_dose', 'Ibuprofen 200 mg', 'medicine'), accent=True),
-    sec('today'),
-    check('Vitamin D · 08:00', 'done'), check('Ibuprofen · 13:00'), check('Ibuprofen · 19:00')])
+ex('hot_water', 'Hot water', 'The hot water tank: its temperature on a dial, the mode and what heats it.',
+   'Make a Facet screen "Hot water" for water_heater.tank: a dial with the tank temperature from 40 to 65°, a three-way mode switch (off, auto, boost) and two facts: what heats it now and the next boost.',
+   page(N('dial', value=b('water_heater.tank', '52', 'current_temperature'), min=40, max=65, step=1, unit='°', caption='Tank', on=True),
+        N('segmented', options='Off,Auto,Boost', selected=b('water_heater.tank', 'auto', 'operation_mode'), width='fill'),
+        grid([stat('heated by', b('sensor.tank_source', 'Solar'), 'ok'), stat('next boost', b('sensor.tank_next_boost', '17:00'))], cols=2, gap='group', aspect='row')),
+   better='The dial and mode switch show the tank but cannot set it yet: their actions are for lights and the vacuum only.')
 
-ex('bin_day', 'Bin day', 'Which bins go out next and how many days are left, from a council collection sensor.',
-   'Make a Facet screen "Bin day": how many days until the next collection (sensor.bin_days) as the hero with which bins go out, then each bin with its next date.',
-   [hero(b('sensor.bin_days', '2'), 'days to bin day', b('sensor.bin_next', 'Recycling and garden · Tue')),
-    sec('next collections'),
-    row('Recycling', b('sensor.bin_recycling', 'Tue 27 Oct')),
-    row('Garden waste', b('sensor.bin_garden', 'Tue 27 Oct')),
-    row('General waste', b('sensor.bin_general', 'Tue 3 Nov')),
-    row('Food caddy', b('sensor.bin_food', 'Every Tue'))],
-   better='Bin colour icons would come with the icon component.')
+ex('bin_day', 'Bin day', 'Which bins go out next, a reminder chip on the night and each bin with its next date.',
+   'Make a Facet screen "Bin day": a big count of days until the next collection (sensor.bin_days) with a chip that pulses on the night before, then a grid of each bin with its next date.',
+   page(N('big_number', label='days to bin day', value=b('sensor.bin_days', '1'), unit='', decimals=0),
+        N('status_chip', tone=b('sensor.bin_days', '1', map={'0': 'warn', '1': 'warn'}, **{'else': 'idle'}),
+          text=b('sensor.bin_next', 'Recycling and garden out tonight'), pulse=True),
+        sec('next collections'),
+        grid([stat('recycling', b('sensor.bin_recycling', 'Tue 27'), 'ok'), stat('garden', b('sensor.bin_garden', 'Tue 27'), 'ok'),
+              stat('general', b('sensor.bin_general', 'Tue 3')), stat('food', b('sensor.bin_food', 'Every Tue'))], cols=2, gap='group', aspect='row')),
+   better='Bin colour icons need more icons in the set.')
 
-ex('trains', 'Next trains', 'The next departures from your station with platforms and delays.',
-   'Make a Facet screen "Next trains" for my commute (sensor.next_train_1 to 3 from the National Rail integration): the first train as the hero with its platform, then the next departures with on time or the delay.',
-   [hero(b('sensor.next_train_1', '07:42'), 'next train', b('sensor.next_train_1', 'Platform 2 · on time', 'summary'), role='display'),
-    sec('to cambridge', meta='Ely'),
-    {'c': 'list_row', 'p': {'title': '08:12 Cambridge', 'over': 'Platform 1', 'icon': 'none', 'trailing': 'value', 'value': b('sensor.next_train_2', 'On time', 'status')}},
-    {'c': 'list_row', 'p': {'title': '08:42 Cambridge', 'over': 'Platform 2', 'icon': 'none', 'trailing': 'value', 'value': b('sensor.next_train_3', '+4 min', 'status')}},
-    {'c': 'list_row', 'p': {'title': '09:12 Cambridge', 'over': 'Platform 1', 'icon': 'none', 'trailing': 'value', 'value': 'On time'}}],
-   better='A grid would put platform and delay in columns.')
+ex('trains', 'Next trains', 'The next departure as a big time, its platform, then the trains after it as real rows.',
+   'Make a Facet screen "Next trains" for my commute (sensor.next_trains from the National Rail integration): the first departure time big with a chip for its platform and delay, then the next departures from the attribute departures, a JSON list of {t: time and destination, p: platform, d: on time or the delay}.',
+   page(hero(b('sensor.next_trains', '07:42', 'first_time'), 'next train', role='display'),
+        N('status_chip', tone=b('sensor.next_trains', 'on time', 'first_status', map={'on time': 'ok'}, **{'else': 'warn'}),
+          text=b('sensor.next_trains', 'Platform 2 · on time', 'first_line')),
+        sec('to cambridge', meta='from Ely'),
+        rows('sensor.next_trains', 'departures', [{'t': '08:12 Cambridge', 'p': 'Platform 1', 'd': 'On time'}, {'t': '08:42 Cambridge', 'p': 'Platform 2', 'd': '+4 min'},
+                                                  {'t': '09:12 Cambridge', 'p': 'Platform 1', 'd': 'On time'}],
+             title='$item.t', over='$item.p', value='$item.d', icon='none', trailing='value', rows=4, empty='No trains')),
+   better='The big time is a fixed value: a countdown to the departure is still to come.')
 
-ex('parcels', 'Parcels', 'Deliveries due today and this week, with where each one is.',
-   'Make a Facet screen "Parcels" from my parcel tracking sensors: the number arriving today as the hero, then each parcel with its status and when it is due.',
-   [hero(b('sensor.parcels_today', '2'), 'arriving today', 'Out for delivery'),
-    sec('on the way'),
-    row('Running shoes', b('sensor.parcel_shoes', 'By 14:00'), sub='Out for delivery'),
-    row('Printer filament', b('sensor.parcel_filament', 'Today'), sub='With the courier'),
-    row('Birthday present', b('sensor.parcel_present', 'Thu'), sub='Dispatched'),
-    sec('delivered'),
-    row('Light bulbs', 'Mon', sub='In the porch')],
-   better='Courier logos would come with the icon component.')
+ex('front_door', 'Front door', 'The front door at a glance: open or shut, someone there, the porch temperature and the porch light.',
+   'Make a Facet screen "Front door" with state readouts for binary_sensor.front_door (open or closed and since when), binary_sensor.porch_person (someone at the door) and sensor.porch_temperature, then a switch row for light.porch.',
+   page(N('readout', label='Front door', icon='door', state=b('binary_sensor.front_door', 'off', map={'on': 'Open', 'off': 'Closed'}), detail=b('binary_sensor.front_door', 'since 18:02', 'since'), tone='text'),
+        N('readout', label='Porch', icon='person', state=b('binary_sensor.porch_person', 'on', map={'on': 'Visitor', 'off': 'Clear'}), detail='now',
+          tone='text'),
+        N('readout', label='Outside', icon='thermometer', state=b('sensor.porch_temperature', '9', tpl='{}°'), detail='feels like 6°', tone='text'),
+        sec('porch'),
+        N('list_row', title='Porch light', icon='bulb', trailing='toggle', on=b('light.porch', 'on', map={'on': '1'}, **{'else': '0'}))),
+   better='The door cannot be locked from here: the lock parts are still in progress.')
 
-ex('energy_price', 'Energy price', 'The electricity price now, the cheap and peak hours of the day and when to run the dishwasher.',
-   'Make a Facet screen "Energy price" from my Octopus Agile sensors: the price now as the hero in pence per kWh, the day as cheap / normal / peak hours with now marked, and the cheapest slot.',
-   [hero(b('sensor.electricity_price', '13.5', tpl='{}p'), 'per kWh now', 'Normal rate until 16:00'),
-    {'c': 'rate_strip', 'p': {'bands': b('sensor.electricity_bands', 'cheap,cheap,cheap,cheap,cheap,cheap,normal,normal,peak,peak,normal,normal,normal,normal,normal,normal,peak,peak,peak,normal,normal,normal,cheap,cheap'), 'now': 13, 'width': 400}},
-    {'c': 'legend', 'p': {'items': 'cheap 9p,normal 14p,peak 31p', 'ticks': '00,06,12,18,24', 'width': 400}},
-    sec('cheapest'),
-    row('Run the dishwasher', b('sensor.cheapest_slot', '02:00'), sub='9.1p for 3 hours')])
+ex('energy_price', 'Energy price', "The electricity price now as a big number and today's prices as a bar chart, coloured cheap to peak.",
+   'Make a Facet screen "Energy price" from my Octopus Agile sensors: the price now big in pence per kWh, a bar chart of the 24 hourly prices coloured by band with now marked, a key and the cheapest slot.',
+   page(N('big_number', label='pence per kwh now', value=b('sensor.electricity_price', '13.5'), unit='', prefix='', decimals=1),
+        N('bar_chart', values=b('sensor.electricity_prices', '9,9,8,8,9,9,14,15,29,31,15,14,13,13,14,15,30,33,31,16,14,13,9,9'), colour='bands', now=13, width=400, height=96),
+        N('legend', items='cheap 9p,normal 14p,peak 31p', ticks='00,06,12,18,24', width=400),
+        grid([stat('cheapest', b('sensor.cheapest_slot', '02:00'), 'ok'), stat('peak from', '16:00', 'warn')], cols=2, gap='group', aspect='row')))
 
-ex('plants', 'Plant care', 'Which plants need water today, by their soil moisture.',
-   'Make a Facet screen "Plant care": how many plants need water as the hero, then each plant with its soil moisture and when it needs water.',
-   [hero(b('sensor.plants_thirsty', '2'), 'plants to water', 'Fern and basil are dry', accent=True),
-    sec('soil moisture'),
-    row('Fern', b('sensor.fern_moisture', '18', tpl='{}%'), sub='Water today'),
-    row('Basil', b('sensor.basil_moisture', '26', tpl='{}%'), sub='Water today'),
-    row('Monstera', b('sensor.monstera_moisture', '46', tpl='{}%'), sub='In 3 days'),
-    row('Snake plant', b('sensor.snake_plant_moisture', '91', tpl='{}%'), sub='Fine for 2 weeks')],
-   better='The plant gauge, once released, would draw each moisture as a bar.')
+ex('plants', 'Plant care', 'Soil moisture of each plant as a row of gauges, with the ones to water today called out.',
+   'Make a Facet screen "Plant care": a chip for how many plants need water, then four gauges side by side for the soil moisture of the fern, basil, monstera and snake plant, each with its name under it, the dry ones in amber.',
+   page(N('status_chip', tone='warn', text=b('sensor.plants_thirsty', '2', tpl='{} plants to water today')),
+        grid([N('arc', value=b(f'sensor.{p}_moisture', v), size=80) for p, v in [('fern', '18'), ('basil', '26'), ('monstera', '46'), ('snake_plant', '91')]]
+             + [N('label', text=n, type='meta', colour=t) for n, p, v, t in [('Fern', 'fern', '18', 'warn'), ('Basil', 'basil', '26', 'warn'),
+                                                                                    ('Monstera', 'monstera', '46', 'text-dim'), ('Snake', 'snake_plant', '91', 'ok')]],
+             cols=4, gap='near', aspect='row')),
+   better='A gauge with its value and name inside it (a cell made of more than one part) would make each plant one cell.')
 
-ex('chores', 'Chores', "Each child's jobs for today, ticked off as they go.",
-   'Make a Facet screen "Chores" for my two kids: how many jobs are left today as the hero, then each job as a checkbox starting with whose job it is, done ones ticked.',
-   [hero(b('sensor.chores_left', '3'), 'jobs left', b('sensor.chores_left', 'Mia 1 · Leo 2', 'by_child')),
-    sec('today'),
-    check('Mia · Pack school bag'), check('Leo · Tidy the lego'), check('Leo · Water the plants'),
-    check('Mia · Feed the cat', 'done'), check('Leo · Make the bed', 'done')],
-   better='Avatars per child would come with the icon component.')
+ex('kitchenradio', 'Kitchen radio', 'What the kitchen speaker is playing, drawn as a turning cassette, with the controls and volume.',
+   'Make a Facet screen "Kitchen radio" for media_player.kitchen: a cassette that turns while it plays with the title and artist on its label, previous / play / next buttons and a volume slider.',
+   page(N('media_visual', visual='cassette', playing=b('media_player.kitchen', 'playing', map={'playing': '1'}, **{'else': '0'}),
+          progress=b('media_player.kitchen', '42', 'media_progress'), title=b('media_player.kitchen', 'Harvest Moon', 'media_title'),
+          artist=b('media_player.kitchen', 'Neil Young', 'media_artist')),
+        grid([N('icon_button', style='round', icon='prev'), N('icon_button', style='play', icon='play'), N('icon_button', style='round', icon='next')], cols=3, gap='group', aspect='row'),
+        N('slider', value=b('media_player.kitchen', '35', 'volume_pct'), min=0, max=100, step=5, width=288)),
+   better='The buttons and slider show the player but cannot control it yet: media actions are still to come.')
 
-ex('focus', 'Focus', 'A focus session timer: time left, which session it is and a break after.',
-   'Make a Facet screen "Focus" for a pomodoro timer (timer.focus): the time left as the hero, a ring that fills as the session runs, then the session count and what comes next.',
-   [hero(b('timer.focus', '18:24', 'remaining'), 'focus left', 'Session 3 of 4', accent=True),
-    {'c': 'tick_ring', 'p': {'count': 60, 'range': 360, 'size': 200, 'stride': '5', 'numbers': False, 'lit': b('sensor.focus_progress', '38')}},
-    row('Next', 'Break · 5 min'),
-    row('Done today', b('counter.focus_sessions', '2', tpl='{} sessions'))])
+ex('focus', 'Focus', 'A focus timer: the time left big, a dot per session of the day, the session length and start / skip.',
+   'Make a Facet screen "Focus" for a pomodoro timer (timer.focus): the time left big, a row of four session icons (done ones ticked), a three-way choice of focus, short or long break, and start and skip buttons.',
+   page(hero(b('timer.focus', '18:24', 'remaining'), 'focus left', role='display', accent=True),
+        grid([], cell=N('icon', name='$item', fit='cell', tone='accent'), cols=4, gap='near', aspect='row', empty='No sessions yet', items=b('sensor.focus_sessions', 'check,check,minus,minus')),
+        N('segmented', options='Focus,Short,Long', selected=b('input_select.focus_mode', 'focus'), width='fill'),
+        grid([N('button', kind='primary', label='Pause', width=0), N('button', kind='secondary', label='Skip', width=0)], cols=2, gap='group', aspect='row')),
+   better='The big time is fixed text from the timer: a live countdown is still to come.')
 
-ex('homelab', 'Homelab', 'Servers and services at a glance: what is up, CPU load and anything that needs a look.',
-   'Make a Facet screen "Homelab": how many services are up as the hero with anything that needs a look, each server with its load, then the NAS CPU over the last hour as a small line.',
-   [hero(b('sensor.services_up', '11'), 'services up', 'Backup box needs a look'),
-    sec('servers'),
-    row('NAS', b('sensor.nas_cpu', '41', tpl='{}%'), sub='Up 12 days'),
-    row('Proxmox', b('sensor.proxmox_cpu', '18', tpl='{}%'), sub='6 guests running'),
-    row('Backup box', 'Check', sub='Last backup 3 days ago'),
-    row('Router', b('sensor.router_cpu', '7', tpl='{}%'), sub='Up 41 days'),
-    sec('nas cpu', meta='last hour'),
-    {'c': 'sparkline', 'p': {'values': b('sensor.nas_cpu_history', '22,25,31,28,35,52,47,39,41'), 'colour': 'accent', 'width': 224, 'dot': True}}])
+ex('homelab', 'Homelab', 'Servers at a glance: a chip per server, the NAS load as a line and its CPU, memory and disk.',
+   'Make a Facet screen "Homelab": a grid of status chips, one per server (NAS, Proxmox, Backup box, Router), the backup box one in warning, then the NAS CPU over the last hour as a line and four facts: CPU, memory, disk and uptime.',
+   page(grid([N('status_chip', tone=b(f'binary_sensor.{e}', s, map={'on': 'ok'}, **{'else': 'warn'}), text=t, pulse=(s == 'off'))
+              for e, s, t in [('nas', 'on', 'NAS'), ('proxmox', 'on', 'Proxmox'), ('backup', 'off', 'Backup box'), ('router', 'on', 'Router')]],
+             cols=2, gap='near', aspect='row'),
+        sec('nas cpu', meta='last hour'),
+        N('sparkline', values=b('sensor.nas_cpu_history', '22,25,31,28,35,52,47,39,41'), colour='accent', width=224, dot=True),
+        grid([stat('cpu', b('sensor.nas_cpu', '41', tpl='{}%')), stat('memory', b('sensor.nas_memory', '63', tpl='{}%')),
+              stat('disk', b('sensor.nas_disk', '78', tpl='{}%'), 'warn'), stat('uptime', b('sensor.nas_uptime', '12', tpl='{} days'))], cols=2, gap='group', aspect='row')))
 
-ex('printer', '3D printer', 'A 3D print under way: how far along, time left and the temperatures.',
-   'Make a Facet screen "3D printer" for my Bambu printer: the print progress as the hero with the file name, then time left, layer, nozzle and bed temperature.',
-   [hero(b('sensor.printer_progress', '64', tpl='{}%'), 'printed', b('sensor.printer_task', 'Benchy v2 · PLA'), accent=True),
-    sec('details'),
-    row('Time left', b('sensor.printer_remaining', '1 h 12 min')),
-    row('Layer', b('sensor.printer_layer', '148 of 230')),
-    row('Nozzle', b('sensor.printer_nozzle', '215', tpl='{}°')),
-    row('Bed', b('sensor.printer_bed', '60', tpl='{}°'))])
+ex('printer', '3D printer', 'A 3D print under way: a dial-like ring of progress, the percentage and the temperatures.',
+   'Make a Facet screen "3D printer" for my Bambu printer: a 270° tick ring lit to the print progress with the percentage big under it, then a grid of time left, layer, nozzle and bed temperature, and pause and stop buttons.',
+   page(N('tick_ring', count=60, range=270, size=192, stride='5', numbers=False, lit=b('sensor.printer_progress', '64')),
+        N('big_number', label=b('sensor.printer_task', 'Benchy v2 · PLA'), value=b('sensor.printer_progress', '64'), unit='%', decimals=0),
+        grid([stat('time left', b('sensor.printer_remaining', '1 h 12 min')), stat('layer', b('sensor.printer_layer', '148/230')),
+              stat('nozzle', b('sensor.printer_nozzle', '215', tpl='{}°')), stat('bed', b('sensor.printer_bed', '60', tpl='{}°'))], cols=2, gap='group', aspect='row'),
+        grid([N('button', kind='secondary', label='Pause', width=0), N('button', kind='outline', label='Stop', width=0)], cols=2, gap='group', aspect='row')),
+   better='The percentage sits under the ring: a value inside a ring needs a stacked layout.')
 
-ex('run_weather', 'Run weather', 'Is it good for a run or a ride: the weather now and sunset.',
-   'Make a Facet screen "Run weather" from weather.home: the temperature with a one-line verdict for a run, then wind, rain chance, UV and the next dry window.',
-   [hero(b('weather.home', '14', 'temperature', tpl='{}°'), 'good for a run', 'Dry until 18:00, light wind'),
-    sec('conditions'),
-    row('Wind', b('weather.home', '12', 'wind_speed', tpl='{} km/h')),
-    row('Rain', b('sensor.rain_chance', '5', tpl='{}%')),
-    row('UV', b('sensor.uv_index', '2', tpl='{} low')),
-    row('Sunset', b('sun.sun', '17:41', 'next_setting'))],
-   better='A weather icon beside the temperature would fit once a row layout is released.')
+ex('run_weather', 'Run weather', 'Is it good for a run or a ride: a big weather icon, the temperature, a verdict and the conditions.',
+   'Make a Facet screen "Run weather" from weather.home: the weather icon big beside the temperature, a verdict chip, a run / ride choice, then wind, rain chance, UV and sunset.',
+   page(grid([N('weather_icon', icon=b('weather.home', 'partlycloudy', map={'sunny': 'clear-day', 'partlycloudy': 'partly-day', 'cloudy': 'cloudy', 'rainy': 'rain-light', 'pouring': 'rain-heavy', 'fog': 'fog'}, **{'else': 'cloudy'}),
+                              size='card', animated=True),
+              N('big_number', label='degrees outside', value=b('weather.home', '14', 'temperature'), unit='', decimals=0)], cols=2, gap='group', aspect='row'),
+        N('status_chip', tone='ok', text=b('sensor.run_verdict', 'Good for a run · dry until 18:00')),
+        N('segmented', options='Run,Ride', selected=b('input_select.activity', 'run'), width='fill'),
+        grid([stat('wind', b('weather.home', '12', 'wind_speed', tpl='{} km/h')), stat('rain', b('sensor.rain_chance', '5', tpl='{}%'), 'ok'),
+              stat('uv', b('sensor.uv_index', '2', tpl='{} low')), stat('sunset', b('sun.sun', '17:41', 'next_setting'))], cols=2, gap='group', aspect='row')))
 
-ex('guest_wifi', 'Guest Wi-Fi', 'A QR code guests scan to join the Wi-Fi, with the network name and password.',
+ex('guest_wifi', 'Guest Wi-Fi', 'A QR code guests scan to join the Wi-Fi, with the network name and password beside it.',
    'Make a Facet screen "Guest Wi-Fi" with a QR code for my guest network (WIFI:T:WPA;S:Guest;P:<password>;;) that phones can scan, and the name and password written under it.',
-   [{'c': 'qr_block', 'p': {'text': 'WIFI:T:WPA;S:Guest;P:sunny-otter-42;;', 'caption': 'Scan to join'}},
-    row('Network', 'Guest'),
-    row('Password', b('input_text.guest_wifi_password', 'sunny-otter-42'))])
+   page(N('qr_block', text='WIFI:T:WPA;S:Guest;P:sunny-otter-42;;', caption='Scan to join'),
+        grid([stat('network', 'Guest'), stat('password', b('input_text.guest_wifi_password', 'sunny-otter-42'))], cols=2, gap='group', aspect='row')),
+   )
 
-ex('laundry', 'Laundry', 'The washer and dryer: minutes left, the programme and when it ends.',
-   'Make a Facet screen "Laundry": the washing machine time left as the hero with its programme and end time, then each machine and the detergent left.',
-   [hero(b('sensor.washer_remaining', '38'), 'minutes left', b('sensor.washer_programme', 'Cotton 40° · ends 11:52')),
-    sec('machines'),
-    row('Washing machine', b('sensor.washer_state', 'Washing'), sub='Started 10:34'),
-    row('Dryer', b('sensor.dryer_state', 'Idle'), sub='Last run yesterday'),
-    row('Detergent', b('sensor.washer_detergent', 'About 9 washes'))])
+ex('laundry', 'Laundry', 'The washer and dryer as tiles you can tap, and a card for when the wash ends.',
+   'Make a Facet screen "Laundry": a tile each for the washing machine and the dryer (lit while running, with the time left), then a card for when the wash ends and its programme.',
+   page(grid([N('entity_tile', icon='power', label='Washer', status=b('sensor.washer_remaining', '38', tpl='{} min left'), on=b('sensor.washer_state', 'Washing', map={'Washing': '1'}, **{'else': '0'}), act='none'),
+              N('entity_tile', icon='power', label='Dryer', status=b('sensor.dryer_state', 'Idle'), on=b('sensor.dryer_state', 'Idle', map={'Drying': '1'}, **{'else': '0'}), act='none')],
+             cols=2, gap='group', aspect='row'),
+        N('card', label='Wash ends', icon='timer', size='l', mode='value', value=b('sensor.washer_end', '11:52'), sub=b('sensor.washer_programme', 'Cotton 40° · 1400 spin'), tone='dim')),
+   better='Tiles and cards take a few icons only: the icon set has a washer, the tile cannot use it yet.')
 
-ex('air_quality', 'Air quality', 'Indoor air: fine particles, CO2 and humidity, with the trend today.',
-   'Make a Facet screen "Air quality" from my indoor air sensor: PM2.5 as the hero with a one-line verdict, then CO2, VOC and humidity, and the PM2.5 trend today as a small line.',
-   [hero(b('sensor.living_room_pm25', '8'), 'pm2.5 µg/m³', 'Good · no need to open a window'),
-    sec('living room'),
-    row('CO2', b('sensor.living_room_co2', '640', tpl='{} ppm')),
-    row('VOC', b('sensor.living_room_voc', 'Low')),
-    row('Humidity', b('sensor.living_room_rh', '52', tpl='{}%')),
-    sec('pm2.5 today'),
-    {'c': 'sparkline', 'p': {'values': b('sensor.living_room_pm25_history', '6,7,9,14,12,10,8,7,8'), 'colour': 'steel', 'width': 224, 'dot': True}}])
+ex('air_quality', 'Air quality', 'Indoor air: fine particles big with a verdict, the trend today as a line and CO2, VOC and humidity.',
+   'Make a Facet screen "Air quality" from my indoor air sensor: PM2.5 big with a verdict chip, the PM2.5 trend today as a line with times under it, then CO2, VOC, humidity and temperature in a grid.',
+   page(N('big_number', label='pm2.5 µg/m³', value=b('sensor.living_room_pm25', '8'), unit='', decimals=0),
+        N('status_chip', tone='ok', text=b('sensor.living_room_air', 'Good · no need to open a window')),
+        N('sparkline', values=b('sensor.living_room_pm25_history', '6,7,9,14,12,10,8,7,8'), colour='steel', width=224, dot=True),
+        grid([stat('co2', b('sensor.living_room_co2', '640', tpl='{} ppm')), stat('voc', b('sensor.living_room_voc', 'Low'), 'ok'),
+              stat('humidity', b('sensor.living_room_rh', '52', tpl='{}%')), stat('temperature', b('sensor.living_room_temp', '20.5', tpl='{}°'))], cols=2, gap='group', aspect='row')),
+   better='The line has no axis or scale yet.')
 
-ex('birthdays', 'Birthdays', 'Days to the next birthday and who comes after, from a calendar.',
-   'Make a Facet screen "Birthdays" from calendar.birthdays: days to the next birthday as the hero with who and how old, then the next three.',
-   [hero(b('sensor.next_birthday_days', '12'), 'days to go', b('sensor.next_birthday', 'Mia turns 9 · Sat 6 Nov'), accent=True),
-    sec('coming up'),
-    row('Grandad', '21 Nov', sub='Turns 70'),
-    row('Sam', '2 Dec', sub='Turns 34'),
-    row('Aunt Jo', '18 Dec', sub='Turns 51')])
+ex('bedside', 'Bedside', 'A bedside clock: a ring clock with the date, the alarm switch and the lamp brightness.',
+   'Make a Facet screen "Bedside": a ring clock with the date, a switch row for my alarm (input_boolean.alarm, the time in sensor.alarm_time) and a slider for the bedside lamp (light.bedside).',
+   page(N('clock_face', face='ring', font='mono', format='24h', date='short', seconds=False),
+        N('list_row', title='Alarm', sub=b('sensor.alarm_time', '06:45'), icon='none', trailing='toggle', on=b('input_boolean.alarm', 'on', map={'on': '1'}, **{'else': '0'})),
+        N('slider', value=b('light.bedside', '30', 'brightness_pct'), min=0, max=100, step=5, width=288)))
 
-ex('fixtures', 'Fixtures', "Your team's next match, the latest result and the league position.",
-   'Make a Facet screen "Fixtures" for my football team from the TeamTracker sensor: the next kick-off as the hero, the last result and league position, then the next three fixtures.',
-   [hero(b('sensor.team_next_kickoff', 'Sat 15:00'), 'next match', b('sensor.team_next_match', 'v Ipswich · home')),
-    sec('form'),
-    row('Last result', b('sensor.team_last_result', 'Won 2-1'), sub='v Luton, away'),
-    row('League', b('sensor.team_position', '6', tpl='{}th')),
-    sec('fixtures'),
-    row('Norwich v Ipswich', 'Sat 1 Nov'),
-    row('Leeds v Norwich', 'Tue 4 Nov'),
-    row('Norwich v Hull', 'Sat 8 Nov')],
-   better='Club crests would come with the icon component; a grid would line up scores.')
+ex('fixtures', 'Fixtures', 'The last score as a scoreboard, the form and league place, then the next fixtures as real rows.',
+   'Make a Facet screen "Fixtures" for my football team from the TeamTracker sensor (sensor.team): the last result as a scoreboard (both teams and scores), a chip for the result and league position, then the next fixtures from the attribute next, a JSON list of {m: match, d: date}.',
+   page(grid([N('big_number', label=b('sensor.team', 'norwich', 'home'), value=b('sensor.team', '2', 'home_score'), unit='', decimals=0),
+              N('label', text='FT', type='label', colour='text-dim'),
+              N('big_number', label=b('sensor.team', 'luton', 'away'), value=b('sensor.team', '1', 'away_score'), unit='', decimals=0)], cols=3, gap='group', aspect='row'),
+        N('status_chip', tone='ok', text=b('sensor.team', 'Won · 6th in the league', 'summary')),
+        sec('next fixtures'),
+        rows('sensor.team', 'next', [{'m': 'Norwich v Ipswich', 'd': 'Sat 1 Nov'}, {'m': 'Leeds v Norwich', 'd': 'Tue 4 Nov'}, {'m': 'Norwich v Hull', 'd': 'Sat 8 Nov'}],
+             title='$item.m', value='$item.d', icon='none', trailing='value', rows=3, empty='No fixtures')),
+   better='Club crests need an image component.')
 
 
 # ---------------------------------------------------------------- write

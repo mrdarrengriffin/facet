@@ -8,8 +8,64 @@
   "label": "AI agents",
   "back": true
  },
- "layout": "cards",
+ "layout": "list",
  "nodes": [
+  {
+   "c": "grid",
+   "p": {
+    "cols": 3,
+    "gap": "near",
+    "aspect": "row"
+   }
+  },
+  {
+   "c": "status_chip",
+   "p": {
+    "tone": "working",
+    "text": {
+     "e": "sensor.agents_working",
+     "tpl": "{} working",
+     "s": "1"
+    },
+    "pulse": true
+   },
+   "in": 0,
+   "slot": 0
+  },
+  {
+   "c": "status_chip",
+   "p": {
+    "tone": "warn",
+    "text": {
+     "e": "sensor.agents_needs",
+     "tpl": "{} needs you",
+     "s": "1"
+    }
+   },
+   "in": 0,
+   "slot": 1
+  },
+  {
+   "c": "status_chip",
+   "p": {
+    "tone": "ok",
+    "text": {
+     "e": "sensor.agents_done",
+     "tpl": "{} done",
+     "s": "1"
+    }
+   },
+   "in": 0,
+   "slot": 2
+  },
+  {
+   "c": "grid",
+   "p": {
+    "cols": 2,
+    "gap": "group",
+    "aspect": "row"
+   }
+  },
   {
    "c": "tile",
    "p": {
@@ -29,7 +85,9 @@
      "a": "status",
      "s": "Page 3 of 5"
     }
-   }
+   },
+   "in": 4,
+   "slot": 0
   },
   {
    "c": "tile",
@@ -50,7 +108,9 @@
      "a": "status",
      "s": "1 question"
     }
-   }
+   },
+   "in": 4,
+   "slot": 1
   },
   {
    "c": "tile",
@@ -71,7 +131,9 @@
      "a": "status",
      "s": "12 notes"
     }
-   }
+   },
+   "in": 4,
+   "slot": 2
   },
   {
    "c": "tile",
@@ -92,7 +154,9 @@
      "a": "status",
      "s": "Waiting"
     }
-   }
+   },
+   "in": 4,
+   "slot": 3
   }
  ]
 }

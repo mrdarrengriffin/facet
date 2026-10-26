@@ -1,0 +1,92 @@
+{
+ "v": 1,
+ "id": "kitchenradio",
+ "name": "Kitchen radio",
+ "rev": 1,
+ "role": "page",
+ "header": {
+  "label": "Kitchen radio",
+  "back": true
+ },
+ "layout": "list",
+ "nodes": [
+  {
+   "c": "media_visual",
+   "p": {
+    "visual": "cassette",
+    "playing": {
+     "e": "media_player.kitchen",
+     "map": {
+      "playing": "1"
+     },
+     "else": "0",
+     "s": "playing"
+    },
+    "progress": {
+     "e": "media_player.kitchen",
+     "a": "media_progress",
+     "s": "42"
+    },
+    "title": {
+     "e": "media_player.kitchen",
+     "a": "media_title",
+     "s": "Harvest Moon"
+    },
+    "artist": {
+     "e": "media_player.kitchen",
+     "a": "media_artist",
+     "s": "Neil Young"
+    }
+   }
+  },
+  {
+   "c": "grid",
+   "p": {
+    "cols": 3,
+    "gap": "group",
+    "aspect": "row"
+   }
+  },
+  {
+   "c": "icon_button",
+   "p": {
+    "style": "round",
+    "icon": "prev"
+   },
+   "in": 1,
+   "slot": 0
+  },
+  {
+   "c": "icon_button",
+   "p": {
+    "style": "play",
+    "icon": "play"
+   },
+   "in": 1,
+   "slot": 1
+  },
+  {
+   "c": "icon_button",
+   "p": {
+    "style": "round",
+    "icon": "next"
+   },
+   "in": 1,
+   "slot": 2
+  },
+  {
+   "c": "slider",
+   "p": {
+    "value": {
+     "e": "media_player.kitchen",
+     "a": "volume_pct",
+     "s": "35"
+    },
+    "min": 0,
+    "max": 100,
+    "step": 5,
+    "width": 288
+   }
+  }
+ ]
+}

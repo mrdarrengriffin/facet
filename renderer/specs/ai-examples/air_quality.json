@@ -11,70 +11,25 @@
  "layout": "list",
  "nodes": [
   {
-   "c": "hero_block",
+   "c": "big_number",
    "p": {
-    "n": {
+    "label": "pm2.5 µg/m³",
+    "value": {
      "e": "sensor.living_room_pm25",
      "s": "8"
     },
-    "label": "pm2.5 µg/m³",
-    "role": "hero",
-    "label_type": "label",
-    "line": "Good · no need to open a window"
+    "unit": "",
+    "decimals": 0
    }
   },
   {
-   "c": "section_header",
+   "c": "status_chip",
    "p": {
-    "title": "living room",
-    "badge": false,
-    "right": "none"
-   }
-  },
-  {
-   "c": "list_row",
-   "p": {
-    "title": "CO2",
-    "icon": "none",
-    "trailing": "value",
-    "value": {
-     "e": "sensor.living_room_co2",
-     "tpl": "{} ppm",
-     "s": "640"
+    "tone": "ok",
+    "text": {
+     "e": "sensor.living_room_air",
+     "s": "Good · no need to open a window"
     }
-   }
-  },
-  {
-   "c": "list_row",
-   "p": {
-    "title": "VOC",
-    "icon": "none",
-    "trailing": "value",
-    "value": {
-     "e": "sensor.living_room_voc",
-     "s": "Low"
-    }
-   }
-  },
-  {
-   "c": "list_row",
-   "p": {
-    "title": "Humidity",
-    "icon": "none",
-    "trailing": "value",
-    "value": {
-     "e": "sensor.living_room_rh",
-     "tpl": "{}%",
-     "s": "52"
-    }
-   }
-  },
-  {
-   "c": "section_header",
-   "p": {
-    "title": "pm2.5 today",
-    "badge": false,
-    "right": "none"
    }
   },
   {
@@ -88,6 +43,66 @@
     "width": 224,
     "dot": true
    }
+  },
+  {
+   "c": "grid",
+   "p": {
+    "cols": 2,
+    "gap": "group",
+    "aspect": "row"
+   }
+  },
+  {
+   "c": "stat",
+   "p": {
+    "label": "co2",
+    "value": {
+     "e": "sensor.living_room_co2",
+     "tpl": "{} ppm",
+     "s": "640"
+    }
+   },
+   "in": 3,
+   "slot": 0
+  },
+  {
+   "c": "stat",
+   "p": {
+    "label": "voc",
+    "value": {
+     "e": "sensor.living_room_voc",
+     "s": "Low"
+    },
+    "tone": "ok"
+   },
+   "in": 3,
+   "slot": 1
+  },
+  {
+   "c": "stat",
+   "p": {
+    "label": "humidity",
+    "value": {
+     "e": "sensor.living_room_rh",
+     "tpl": "{}%",
+     "s": "52"
+    }
+   },
+   "in": 3,
+   "slot": 2
+  },
+  {
+   "c": "stat",
+   "p": {
+    "label": "temperature",
+    "value": {
+     "e": "sensor.living_room_temp",
+     "tpl": "{}°",
+     "s": "20.5"
+    }
+   },
+   "in": 3,
+   "slot": 3
   }
  ]
 }

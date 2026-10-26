@@ -11,65 +11,74 @@
  "layout": "list",
  "nodes": [
   {
-   "c": "hero_block",
+   "c": "grid",
    "p": {
-    "n": {
+    "cols": 2,
+    "gap": "group",
+    "aspect": "row"
+   }
+  },
+  {
+   "c": "entity_tile",
+   "p": {
+    "icon": "power",
+    "label": "Washer",
+    "status": {
      "e": "sensor.washer_remaining",
+     "tpl": "{} min left",
      "s": "38"
     },
-    "label": "minutes left",
-    "role": "hero",
-    "label_type": "label",
-    "line": {
-     "e": "sensor.washer_programme",
-     "s": "Cotton 40° · ends 11:52"
-    }
-   }
-  },
-  {
-   "c": "section_header",
-   "p": {
-    "title": "machines",
-    "badge": false,
-    "right": "none"
-   }
-  },
-  {
-   "c": "list_row",
-   "p": {
-    "title": "Washing machine",
-    "icon": "none",
-    "trailing": "value",
-    "value": {
+    "on": {
      "e": "sensor.washer_state",
+     "map": {
+      "Washing": "1"
+     },
+     "else": "0",
      "s": "Washing"
     },
-    "sub": "Started 10:34"
-   }
+    "act": "none"
+   },
+   "in": 0,
+   "slot": 0
   },
   {
-   "c": "list_row",
+   "c": "entity_tile",
    "p": {
-    "title": "Dryer",
-    "icon": "none",
-    "trailing": "value",
-    "value": {
+    "icon": "power",
+    "label": "Dryer",
+    "status": {
      "e": "sensor.dryer_state",
      "s": "Idle"
     },
-    "sub": "Last run yesterday"
-   }
+    "on": {
+     "e": "sensor.dryer_state",
+     "map": {
+      "Drying": "1"
+     },
+     "else": "0",
+     "s": "Idle"
+    },
+    "act": "none"
+   },
+   "in": 0,
+   "slot": 1
   },
   {
-   "c": "list_row",
+   "c": "card",
    "p": {
-    "title": "Detergent",
-    "icon": "none",
-    "trailing": "value",
+    "label": "Wash ends",
+    "icon": "timer",
+    "size": "l",
+    "mode": "value",
     "value": {
-     "e": "sensor.washer_detergent",
-     "s": "About 9 washes"
-    }
+     "e": "sensor.washer_end",
+     "s": "11:52"
+    },
+    "sub": {
+     "e": "sensor.washer_programme",
+     "s": "Cotton 40° · 1400 spin"
+    },
+    "tone": "dim"
    }
   }
  ]

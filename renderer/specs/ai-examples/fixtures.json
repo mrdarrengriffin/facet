@@ -11,25 +11,76 @@
  "layout": "list",
  "nodes": [
   {
-   "c": "hero_block",
+   "c": "grid",
    "p": {
-    "n": {
-     "e": "sensor.team_next_kickoff",
-     "s": "Sat 15:00"
+    "cols": 3,
+    "gap": "group",
+    "aspect": "row"
+   }
+  },
+  {
+   "c": "big_number",
+   "p": {
+    "label": {
+     "e": "sensor.team",
+     "a": "home",
+     "s": "norwich"
     },
-    "label": "next match",
-    "role": "hero",
-    "label_type": "label",
-    "line": {
-     "e": "sensor.team_next_match",
-     "s": "v Ipswich · home"
+    "value": {
+     "e": "sensor.team",
+     "a": "home_score",
+     "s": "2"
+    },
+    "unit": "",
+    "decimals": 0
+   },
+   "in": 0,
+   "slot": 0
+  },
+  {
+   "c": "label",
+   "p": {
+    "text": "FT",
+    "type": "label",
+    "colour": "text-dim"
+   },
+   "in": 0,
+   "slot": 1
+  },
+  {
+   "c": "big_number",
+   "p": {
+    "label": {
+     "e": "sensor.team",
+     "a": "away",
+     "s": "luton"
+    },
+    "value": {
+     "e": "sensor.team",
+     "a": "away_score",
+     "s": "1"
+    },
+    "unit": "",
+    "decimals": 0
+   },
+   "in": 0,
+   "slot": 2
+  },
+  {
+   "c": "status_chip",
+   "p": {
+    "tone": "ok",
+    "text": {
+     "e": "sensor.team",
+     "a": "summary",
+     "s": "Won · 6th in the league"
     }
    }
   },
   {
    "c": "section_header",
    "p": {
-    "title": "form",
+    "title": "next fixtures",
     "badge": false,
     "right": "none"
    }
@@ -37,62 +88,18 @@
   {
    "c": "list_row",
    "p": {
-    "title": "Last result",
-    "icon": "none",
-    "trailing": "value",
-    "value": {
-     "e": "sensor.team_last_result",
-     "s": "Won 2-1"
+    "list": "stack",
+    "items": {
+     "e": "sensor.team",
+     "a": "next",
+     "s": "[{\"m\":\"Norwich v Ipswich\",\"d\":\"Sat 1 Nov\"},{\"m\":\"Leeds v Norwich\",\"d\":\"Tue 4 Nov\"},{\"m\":\"Norwich v Hull\",\"d\":\"Sat 8 Nov\"}]"
     },
-    "sub": "v Luton, away"
-   }
-  },
-  {
-   "c": "list_row",
-   "p": {
-    "title": "League",
+    "title": "$item.m",
+    "value": "$item.d",
     "icon": "none",
     "trailing": "value",
-    "value": {
-     "e": "sensor.team_position",
-     "tpl": "{}th",
-     "s": "6"
-    }
-   }
-  },
-  {
-   "c": "section_header",
-   "p": {
-    "title": "fixtures",
-    "badge": false,
-    "right": "none"
-   }
-  },
-  {
-   "c": "list_row",
-   "p": {
-    "title": "Norwich v Ipswich",
-    "icon": "none",
-    "trailing": "value",
-    "value": "Sat 1 Nov"
-   }
-  },
-  {
-   "c": "list_row",
-   "p": {
-    "title": "Leeds v Norwich",
-    "icon": "none",
-    "trailing": "value",
-    "value": "Tue 4 Nov"
-   }
-  },
-  {
-   "c": "list_row",
-   "p": {
-    "title": "Norwich v Hull",
-    "icon": "none",
-    "trailing": "value",
-    "value": "Sat 8 Nov"
+    "rows": 3,
+    "empty": "No fixtures"
    }
   }
  ]

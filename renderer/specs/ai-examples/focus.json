@@ -19,47 +19,70 @@
      "s": "18:24"
     },
     "label": "focus left",
-    "role": "hero",
+    "role": "display",
     "label_type": "label",
-    "line": "Session 3 of 4",
     "accent": true
    }
   },
   {
-   "c": "tick_ring",
+   "c": "grid",
    "p": {
-    "count": 60,
-    "range": 360,
-    "size": 200,
-    "stride": "5",
-    "numbers": false,
-    "lit": {
-     "e": "sensor.focus_progress",
-     "s": "38"
+    "cols": 4,
+    "gap": "near",
+    "aspect": "row",
+    "empty": "No sessions yet",
+    "items": {
+     "e": "sensor.focus_sessions",
+     "s": "check,check,minus,minus"
+    }
+   },
+   "cell": {
+    "c": "icon",
+    "p": {
+     "name": "$item",
+     "fit": "cell",
+     "tone": "accent"
     }
    }
   },
   {
-   "c": "list_row",
+   "c": "segmented",
    "p": {
-    "title": "Next",
-    "icon": "none",
-    "trailing": "value",
-    "value": "Break · 5 min"
+    "options": "Focus,Short,Long",
+    "selected": {
+     "e": "input_select.focus_mode",
+     "s": "focus"
+    },
+    "width": "fill"
    }
   },
   {
-   "c": "list_row",
+   "c": "grid",
    "p": {
-    "title": "Done today",
-    "icon": "none",
-    "trailing": "value",
-    "value": {
-     "e": "counter.focus_sessions",
-     "tpl": "{} sessions",
-     "s": "2"
-    }
+    "cols": 2,
+    "gap": "group",
+    "aspect": "row"
    }
+  },
+  {
+   "c": "button",
+   "p": {
+    "kind": "primary",
+    "label": "Pause",
+    "width": 0
+   },
+   "in": 3,
+   "slot": 0
+  },
+  {
+   "c": "button",
+   "p": {
+    "kind": "secondary",
+    "label": "Skip",
+    "width": 0
+   },
+   "in": 3,
+   "slot": 1
   }
  ]
 }

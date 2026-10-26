@@ -11,27 +11,29 @@
  "layout": "list",
  "nodes": [
   {
-   "c": "hero_block",
+   "c": "big_number",
    "p": {
-    "n": {
+    "label": "pence per kwh now",
+    "value": {
      "e": "sensor.electricity_price",
-     "tpl": "{}p",
      "s": "13.5"
     },
-    "label": "per kWh now",
-    "role": "hero",
-    "label_type": "label",
-    "line": "Normal rate until 16:00"
+    "unit": "",
+    "prefix": "",
+    "decimals": 1
    }
   },
   {
-   "c": "rate_strip",
+   "c": "bar_chart",
    "p": {
-    "bands": {
-     "e": "sensor.electricity_bands"
+    "values": {
+     "e": "sensor.electricity_prices",
+     "s": "9,9,8,8,9,9,14,15,29,31,15,14,13,13,14,15,30,33,31,16,14,13,9,9"
     },
+    "colour": "bands",
     "now": 13,
-    "width": 400
+    "width": 400,
+    "height": 96
    }
   },
   {
@@ -43,25 +45,35 @@
    }
   },
   {
-   "c": "section_header",
+   "c": "grid",
    "p": {
-    "title": "cheapest",
-    "badge": false,
-    "right": "none"
+    "cols": 2,
+    "gap": "group",
+    "aspect": "row"
    }
   },
   {
-   "c": "list_row",
+   "c": "stat",
    "p": {
-    "title": "Run the dishwasher",
-    "icon": "none",
-    "trailing": "value",
+    "label": "cheapest",
     "value": {
      "e": "sensor.cheapest_slot",
      "s": "02:00"
     },
-    "sub": "9.1p for 3 hours"
-   }
+    "tone": "ok"
+   },
+   "in": 3,
+   "slot": 0
+  },
+  {
+   "c": "stat",
+   "p": {
+    "label": "peak from",
+    "value": "16:00",
+    "tone": "warn"
+   },
+   "in": 3,
+   "slot": 1
   }
  ]
 }

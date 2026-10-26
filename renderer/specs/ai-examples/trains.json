@@ -14,15 +14,30 @@
    "c": "hero_block",
    "p": {
     "n": {
-     "e": "sensor.next_train_1",
+     "e": "sensor.next_trains",
+     "a": "first_time",
      "s": "07:42"
     },
     "label": "next train",
     "role": "display",
-    "label_type": "label",
-    "line": {
-     "e": "sensor.next_train_1",
-     "a": "summary",
+    "label_type": "label"
+   }
+  },
+  {
+   "c": "status_chip",
+   "p": {
+    "tone": {
+     "e": "sensor.next_trains",
+     "a": "first_status",
+     "map": {
+      "on time": "ok"
+     },
+     "else": "warn",
+     "s": "on time"
+    },
+    "text": {
+     "e": "sensor.next_trains",
+     "a": "first_line",
      "s": "Platform 2 · on time"
     }
    }
@@ -33,45 +48,25 @@
     "title": "to cambridge",
     "badge": false,
     "right": "meta",
-    "meta": "Ely"
+    "meta": "from Ely"
    }
   },
   {
    "c": "list_row",
    "p": {
-    "title": "08:12 Cambridge",
-    "over": "Platform 1",
+    "list": "stack",
+    "items": {
+     "e": "sensor.next_trains",
+     "a": "departures",
+     "s": "[{\"t\":\"08:12 Cambridge\",\"p\":\"Platform 1\",\"d\":\"On time\"},{\"t\":\"08:42 Cambridge\",\"p\":\"Platform 2\",\"d\":\"+4 min\"},{\"t\":\"09:12 Cambridge\",\"p\":\"Platform 1\",\"d\":\"On time\"}]"
+    },
+    "title": "$item.t",
+    "over": "$item.p",
+    "value": "$item.d",
     "icon": "none",
     "trailing": "value",
-    "value": {
-     "e": "sensor.next_train_2",
-     "a": "status",
-     "s": "On time"
-    }
-   }
-  },
-  {
-   "c": "list_row",
-   "p": {
-    "title": "08:42 Cambridge",
-    "over": "Platform 2",
-    "icon": "none",
-    "trailing": "value",
-    "value": {
-     "e": "sensor.next_train_3",
-     "a": "status",
-     "s": "+4 min"
-    }
-   }
-  },
-  {
-   "c": "list_row",
-   "p": {
-    "title": "09:12 Cambridge",
-    "over": "Platform 1",
-    "icon": "none",
-    "trailing": "value",
-    "value": "On time"
+    "rows": 4,
+    "empty": "No trains"
    }
   }
  ]

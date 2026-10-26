@@ -2,7 +2,7 @@
 // Make screens with AI: what a screen spec is, why AI-made screens still look like Facet (components + tokens, budgets,
 // validation on the panel), and how to let an assistant make one: on the panel's own API (agent docs at /llms.txt and
 // /agents.md, the AI agents setting + token), through Home Assistant (the ESPHome actions), or with a starter prompt.
-// The panel-side agent API ships with the next firmware (marked on the page). Examples: ./examples/.
+// The panel-side agent API ships with the next firmware (marked on the page). Examples: a grid of tiles (WASM shots, dark + light, follow the site theme: renderer/tools/readme_assets.mjs --ai-examples) linking to ./examples/<id>/.
 import Docs, { type Heading } from '../../layouts/Docs.astro';
 import { url } from '../../lib/nav';
 import examples from '../../lib/ai-examples.json';
@@ -108,15 +108,31 @@ const prompt = `You are making a screen for my Facet wall panel at http://<panel
   <button type="button" class="copy" data-copy="starter">Copy prompt</button>
 
   <h2 id="examples">Examples</h2>
-  <p>Twenty screens made from today's components, each live with its spec and the prompt that makes it. <a href={url('/ai/examples/')}>See all examples</a>.</p>
-  <ul class="ex-links">
-    {examples.map((e) => <li><a href={url(`/ai/examples/${e.id}/`)}>{e.title}</a></li>)}
+  <p>Twenty screens made only from today's released components, each leaning on a different part of Facet: charts, dials, gauges, tiles, clocks, media, chips, grids and rows. Open one to try it live, copy its spec or copy the prompt that makes it. Sample data: made-up devices, not a real home.</p>
+  <ul class="ex-grid">
+    {examples.map((e) => (
+      <li>
+        <a href={url(`/ai/examples/${e.id}/`)}>
+          <img class="shot shot-dark" src={url(`/ai/shots/${e.id}-dark.png`)} alt="" width="360" height="360" loading="lazy" />
+          <img class="shot shot-light" src={url(`/ai/shots/${e.id}-light.png`)} alt="" width="360" height="360" loading="lazy" />
+          <strong>{e.title}</strong>
+          <span>{e.about}</span>
+        </a>
+      </li>
+    ))}
   </ul>
 </Docs>
 
 <style>
   pre { max-width: 100%; white-space: pre-wrap; overflow-wrap: anywhere; }
-  .ex-links { display: flex; flex-wrap: wrap; gap: 8px 16px; padding: 0; list-style: none; }
+  .ex-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; padding: 0; list-style: none; }
+  .ex-grid a { display: flex; flex-direction: column; gap: 4px; height: 100%; padding: 12px; border: 1px solid var(--facet-color-line); border-radius: 16px; background: var(--facet-color-surface); color: var(--facet-color-text); text-decoration: none; }
+  .ex-grid a:hover { border-color: var(--facet-color-line-hi); background: var(--facet-color-surface-press); }
+  .ex-grid .shot { width: 100%; height: auto; margin-bottom: 8px; border-radius: 12px; }
+  .ex-grid .shot-light { display: none; }
+  :global(:root[data-theme='light']) .ex-grid .shot-light { display: block; }
+  :global(:root[data-theme='light']) .ex-grid .shot-dark { display: none; }
+  .ex-grid span { color: var(--facet-color-text-dim); font-size: 14px; line-height: 20px; }
   .copy { margin-top: 8px; padding: 8px 16px; border: 1px solid var(--facet-color-line-hi); border-radius: 8px; background: var(--facet-color-surface); color: var(--facet-color-text); font: inherit; cursor: pointer; }
   .copy:hover { background: var(--facet-color-surface-press); }
 </style>

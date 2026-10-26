@@ -1,0 +1,90 @@
+{
+ "v": 1,
+ "id": "front_door",
+ "name": "Front door",
+ "rev": 1,
+ "role": "page",
+ "header": {
+  "label": "Front door",
+  "back": true
+ },
+ "layout": "list",
+ "nodes": [
+  {
+   "c": "readout",
+   "p": {
+    "label": "Front door",
+    "icon": "door",
+    "state": {
+     "e": "binary_sensor.front_door",
+     "map": {
+      "on": "Open",
+      "off": "Closed"
+     },
+     "s": "off"
+    },
+    "detail": {
+     "e": "binary_sensor.front_door",
+     "a": "since",
+     "s": "since 18:02"
+    },
+    "tone": "text"
+   }
+  },
+  {
+   "c": "readout",
+   "p": {
+    "label": "Porch",
+    "icon": "person",
+    "state": {
+     "e": "binary_sensor.porch_person",
+     "map": {
+      "on": "Visitor",
+      "off": "Clear"
+     },
+     "s": "on"
+    },
+    "detail": "now",
+    "tone": "text"
+   }
+  },
+  {
+   "c": "readout",
+   "p": {
+    "label": "Outside",
+    "icon": "thermometer",
+    "state": {
+     "e": "sensor.porch_temperature",
+     "tpl": "{}°",
+     "s": "9"
+    },
+    "detail": "feels like 6°",
+    "tone": "text"
+   }
+  },
+  {
+   "c": "section_header",
+   "p": {
+    "title": "porch",
+    "badge": false,
+    "right": "none"
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Porch light",
+    "icon": "bulb",
+    "trailing": "toggle",
+    "on": {
+     "e": "light.porch",
+     "map": {
+      "on": "1"
+     },
+     "else": "0",
+     "s": "on"
+    }
+   }
+  }
+ ]
+}

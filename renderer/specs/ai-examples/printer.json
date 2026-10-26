@@ -11,80 +11,119 @@
  "layout": "list",
  "nodes": [
   {
-   "c": "hero_block",
+   "c": "tick_ring",
    "p": {
-    "n": {
+    "count": 60,
+    "range": 270,
+    "size": 192,
+    "stride": "5",
+    "numbers": false,
+    "lit": {
      "e": "sensor.printer_progress",
-     "tpl": "{}%",
      "s": "64"
-    },
-    "label": "printed",
-    "role": "hero",
-    "label_type": "label",
-    "line": {
+    }
+   }
+  },
+  {
+   "c": "big_number",
+   "p": {
+    "label": {
      "e": "sensor.printer_task",
      "s": "Benchy v2 · PLA"
     },
-    "accent": true
+    "value": {
+     "e": "sensor.printer_progress",
+     "s": "64"
+    },
+    "unit": "%",
+    "decimals": 0
    }
   },
   {
-   "c": "section_header",
+   "c": "grid",
    "p": {
-    "title": "details",
-    "badge": false,
-    "right": "none"
+    "cols": 2,
+    "gap": "group",
+    "aspect": "row"
    }
   },
   {
-   "c": "list_row",
+   "c": "stat",
    "p": {
-    "title": "Time left",
-    "icon": "none",
-    "trailing": "value",
+    "label": "time left",
     "value": {
      "e": "sensor.printer_remaining",
      "s": "1 h 12 min"
     }
-   }
+   },
+   "in": 2,
+   "slot": 0
   },
   {
-   "c": "list_row",
+   "c": "stat",
    "p": {
-    "title": "Layer",
-    "icon": "none",
-    "trailing": "value",
+    "label": "layer",
     "value": {
      "e": "sensor.printer_layer",
-     "s": "148 of 230"
+     "s": "148/230"
     }
-   }
+   },
+   "in": 2,
+   "slot": 1
   },
   {
-   "c": "list_row",
+   "c": "stat",
    "p": {
-    "title": "Nozzle",
-    "icon": "none",
-    "trailing": "value",
+    "label": "nozzle",
     "value": {
      "e": "sensor.printer_nozzle",
      "tpl": "{}°",
      "s": "215"
     }
-   }
+   },
+   "in": 2,
+   "slot": 2
   },
   {
-   "c": "list_row",
+   "c": "stat",
    "p": {
-    "title": "Bed",
-    "icon": "none",
-    "trailing": "value",
+    "label": "bed",
     "value": {
      "e": "sensor.printer_bed",
      "tpl": "{}°",
      "s": "60"
     }
+   },
+   "in": 2,
+   "slot": 3
+  },
+  {
+   "c": "grid",
+   "p": {
+    "cols": 2,
+    "gap": "group",
+    "aspect": "row"
    }
+  },
+  {
+   "c": "button",
+   "p": {
+    "kind": "secondary",
+    "label": "Pause",
+    "width": 0
+   },
+   "in": 7,
+   "slot": 0
+  },
+  {
+   "c": "button",
+   "p": {
+    "kind": "outline",
+    "label": "Stop",
+    "width": 0
+   },
+   "in": 7,
+   "slot": 1
   }
  ]
 }

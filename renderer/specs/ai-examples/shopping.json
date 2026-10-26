@@ -65,6 +65,14 @@
    }
   },
   {
+   "c": "section_header",
+   "p": {
+    "title": "in the basket",
+    "badge": false,
+    "right": "none"
+   }
+  },
+  {
    "c": "checkbox",
    "p": {
     "check": "done",

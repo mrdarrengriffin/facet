@@ -1,0 +1,75 @@
+{
+ "v": 1,
+ "id": "hot_water",
+ "name": "Hot water",
+ "rev": 1,
+ "role": "page",
+ "header": {
+  "label": "Hot water",
+  "back": true
+ },
+ "layout": "list",
+ "nodes": [
+  {
+   "c": "dial",
+   "p": {
+    "value": {
+     "e": "water_heater.tank",
+     "a": "current_temperature",
+     "s": "52"
+    },
+    "min": 40,
+    "max": 65,
+    "step": 1,
+    "unit": "°",
+    "caption": "Tank",
+    "on": true
+   }
+  },
+  {
+   "c": "segmented",
+   "p": {
+    "options": "Off,Auto,Boost",
+    "selected": {
+     "e": "water_heater.tank",
+     "a": "operation_mode",
+     "s": "auto"
+    },
+    "width": "fill"
+   }
+  },
+  {
+   "c": "grid",
+   "p": {
+    "cols": 2,
+    "gap": "group",
+    "aspect": "row"
+   }
+  },
+  {
+   "c": "stat",
+   "p": {
+    "label": "heated by",
+    "value": {
+     "e": "sensor.tank_source",
+     "s": "Solar"
+    },
+    "tone": "ok"
+   },
+   "in": 2,
+   "slot": 0
+  },
+  {
+   "c": "stat",
+   "p": {
+    "label": "next boost",
+    "value": {
+     "e": "sensor.tank_next_boost",
+     "s": "17:00"
+    }
+   },
+   "in": 2,
+   "slot": 1
+  }
+ ]
+}
