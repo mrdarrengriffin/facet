@@ -1,6 +1,6 @@
 // Site navigation, in the original Facet site's shape (main a5df2ac: site/src/lib/nav.ts + Header.astro): header links,
 // the docs sidebar groups and the reading order for previous / next. Foundations (the "Design system") and
-// components come from the WASM registry; pages not written yet show as "Soon" (getting started, concepts).
+// components come from the WASM registry; pages not written yet show as "Soon" (concepts).
 import { BASE, FOUNDATIONS, href, screenGroups, screenHref } from './data';
 
 export interface NavLink {
@@ -29,7 +29,7 @@ export const UPDATES_PAGE = false;
 export const AI_EXAMPLES = false;
 
 export const headerLinks = [
-  { label: 'Docs', href: url('/roadmap/'), match: [url('/roadmap/'), url('/screens/'), url('/ai/')] },
+  { label: 'Docs', href: url('/docs/'), match: [url('/docs/'), url('/install/'), url('/roadmap/'), url('/screens/'), url('/ai/')] },
   { label: 'Components', href: url('/components/'), match: [url('/components/')] },
   { label: 'Design system', href: url('/foundations/'), match: [url('/foundations/')] },
   ...(UPDATES_PAGE ? [{ label: 'Updates', href: url('/updates/'), match: [url('/updates/')] }] : []),
@@ -41,7 +41,7 @@ const byLabel = (a: NavLink, b: NavLink) => a.label.localeCompare(b.label);
 
 export function getSidebar(): NavGroup[] {
   return [
-    { label: 'Start here', links: [soon('Getting started'), { label: 'Install', href: url('/install/') }, { label: 'Make screens with AI', href: url('/ai/') }] },
+    { label: 'Start here', links: [{ label: 'Getting started', href: url('/docs/') }, { label: 'Install', href: url('/install/') }, { label: 'Make screens with AI', href: url('/ai/') }] },
     { label: 'Concepts', links: [soon('Design tokens'), soon('Components'), soon('Firmware')] },
     {
       label: 'Design system',

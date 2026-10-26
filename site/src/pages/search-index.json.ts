@@ -12,6 +12,8 @@ const plain = (s: string) => s.replace(/`|\*\*/g, '').replace(/\s+/g, ' ').trim(
 
 export const GET: APIRoute = async () => {
   const recs: Rec[] = [];
+  recs.push({ title: 'Getting started', heading: '', text: 'What Facet is, what you need (a Waveshare ESP32-P4-86 or Guition ESP32-S3-4848S040 panel and Home Assistant) and the steps from install to your own screens.', url: url('/docs/') });
+  recs.push({ title: 'Install', heading: '', text: 'Put Facet on your panel from the browser, connect it to Wi-Fi and add it to Home Assistant.', url: url('/install/') });
   recs.push({ title: 'Design system', heading: '', text: 'The tokens and rules every component is built from: colour, type, space, layout, motion, states, icons, sound.', url: url('/foundations/') });
   recs.push({ title: 'Make screens with AI', heading: '', text: 'Let an AI assistant make panel screens from Facet components: specs, budgets, the panel API, Home Assistant actions and a starter prompt.', url: url('/ai/') });
   if (AI_EXAMPLES) for (const e of examples) recs.push({ title: e.title, heading: 'Example screen', text: plain(e.about), url: url(`/ai/examples/${e.id}/`) });

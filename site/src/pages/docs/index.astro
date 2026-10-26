@@ -1,0 +1,73 @@
+---
+// Getting started: the Docs landing (header "Docs" lands here). What Facet is, what you need, and the path through the
+// docs: install -> Home Assistant -> screens -> AI screens -> reference -> roadmap. Released features only.
+import Docs, { type Heading } from '../../layouts/Docs.astro';
+import { url } from '../../lib/nav';
+import { screenById, screenHref } from '../../lib/data';
+
+const home = screenById('home');
+const headings: Heading[] = [
+  { depth: 2, slug: 'need', text: 'What you need' },
+  { depth: 2, slug: 'install', text: '1. Install Facet' },
+  { depth: 2, slug: 'home-assistant', text: '2. Connect to Home Assistant' },
+  { depth: 2, slug: 'screens', text: '3. Find your way round' },
+  { depth: 2, slug: 'ai', text: '4. Make your own screens' },
+  { depth: 2, slug: 'reference', text: '5. Go deeper' },
+];
+---
+
+<Docs title="Getting started" description="What Facet is, what you need, and the steps from a blank panel to your own screens." group="Start here" current={url('/docs/')} headings={headings}>
+  <p class="lede">
+    Facet turns a small touch screen on the wall into a panel for your home. It runs on ESP32 panels with ESPHome,
+    talks to Home Assistant, and every screen is built from one design system, so it all looks and feels the same.
+  </p>
+
+  <div class="callout">
+    <span class="dot" aria-hidden="true"></span>
+    <p>Facet is early. The firmware is a preview build, and new screens arrive often: the <a href={url('/roadmap/')}>roadmap</a> shows what is available and what is next.</p>
+  </div>
+
+  <h2 id="need">What you need</h2>
+  <ul>
+    <li>
+      A supported panel: the <strong>Waveshare ESP32-P4-86</strong> (4 inch, 720 x 720) or the
+      <strong>Guition ESP32-S3-4848S040</strong> (4 inch, 480 x 480). Both fit a standard wall box.
+    </li>
+    <li><strong>Home Assistant</strong> with the ESPHome integration (it is built in).</li>
+    <li>A computer with Chrome or Edge and a USB-C data cable, for the first install.</li>
+  </ul>
+
+  <h2 id="install">1. Install Facet</h2>
+  <p>
+    Flash the firmware from your browser on the <a href={url('/install/')}>Install</a> page, then put the panel on your
+    Wi-Fi. It takes a few minutes and needs no other tools.
+  </p>
+
+  <h2 id="home-assistant">2. Connect to Home Assistant</h2>
+  <p>
+    Home Assistant finds the panel on your network. Add it, then allow it to perform Home Assistant actions so its
+    controls can switch your lights and more. The steps are on the <a href={url('/install/#home-assistant')}>Install</a> page.
+    Firmware updates then arrive in Home Assistant too.
+  </p>
+
+  <h2 id="screens">3. Find your way round</h2>
+  <p>
+    The panel starts on {home ? <a href={screenHref(home)}>Home</a> : 'Home'}: your cards at a glance, with the other
+    screens a tap away. Lights, covers, media, weather, the clock, timers, the calendar and energy each have a screen.
+    <a href={url('/screens/')}>Screens</a> shows every one live, with what it shows, its settings and where its data comes from.
+  </p>
+
+  <h2 id="ai">4. Make your own screens</h2>
+  <p>
+    Want something Facet does not have? Describe it to an AI assistant and it builds the screen from Facet's own
+    components. <a href={url('/ai/')}>Make screens with AI</a> has the rules, a starter prompt and how to send the
+    result to your panel.
+  </p>
+
+  <h2 id="reference">5. Go deeper</h2>
+  <ul>
+    <li><a href={url('/components/')}>Components</a>: every building block, drawn live by the panel renderer.</li>
+    <li><a href={url('/foundations/')}>Design system</a>: the colour, type, space, motion, icons and sound every screen is made from.</li>
+    <li><a href={url('/roadmap/')}>Roadmap</a>: where Facet is headed, area by area.</li>
+  </ul>
+</Docs>
