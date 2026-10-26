@@ -182,9 +182,9 @@
      "name": "width",
      "type": "range",
      "bindable": true,
-     "min": 160,
+     "min": 0,
      "max": 440,
-     "about": "How wide the whole chart is, in pixels."
+     "about": "How wide the whole chart is, in pixels; 0 fills the space it is in."
     },
     {
      "name": "height",
@@ -199,6 +199,14 @@
      "type": "bool",
      "bindable": true,
      "about": "Lets you press and drag along the chart to read the value of each bar."
+    },
+    {
+     "name": "ticks",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 12,
+     "about": "Hour labels on the axis under the bars, every this many hours (6 = 00, 06, 12, 18); 0 shows none."
     }
    ],
    "events": {
@@ -4947,9 +4955,9 @@
      "name": "width",
      "type": "range",
      "bindable": true,
-     "min": 96,
+     "min": 0,
      "max": 288,
-     "about": "How long the slider is, in pixels."
+     "about": "How long the slider is, in pixels; 0 fills the space it is in."
     },
     {
      "name": "state",
@@ -6446,5 +6454,5 @@
    }
   }
  },
- "hash": "e775387f"
+ "hash": "9b2e0b42"
 }

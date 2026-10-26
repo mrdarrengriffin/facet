@@ -11,118 +11,34 @@
  "layout": "list",
  "nodes": [
   {
-   "c": "grid",
+   "c": "hero_block",
    "p": {
-    "cols": 2,
-    "gap": "group",
-    "aspect": "row"
-   }
-  },
-  {
-   "c": "donut",
-   "p": {
-    "a": {
-     "e": "sensor.isaac",
-     "a": "won_share",
-     "s": "3"
-    },
-    "b": {
-     "e": "sensor.isaac",
-     "a": "lost_share",
-     "s": "6"
-    },
-    "c": {
-     "e": "sensor.isaac",
-     "a": "quit_share",
-     "s": "1"
-    },
-    "size": 128
-   },
-   "in": 0,
-   "slot": 0
-  },
-  {
-   "c": "legend",
-   "p": {
-    "items": {
-     "e": "sensor.isaac",
-     "a": "key",
-     "s": "won 37,lost 68,quit 7"
-    },
-    "ticks": "",
-    "width": 200
-   },
-   "in": 0,
-   "slot": 1
-  },
-  {
-   "c": "grid",
-   "p": {
-    "cols": 2,
-    "gap": "group",
-    "aspect": "row"
-   }
-  },
-  {
-   "c": "stat",
-   "p": {
-    "label": "streak",
-    "value": {
-     "e": "sensor.isaac",
-     "a": "streak",
-     "s": "4"
-    },
-    "tone": "ok"
-   },
-   "in": 3,
-   "slot": 0
-  },
-  {
-   "c": "stat",
-   "p": {
-    "label": "achievements",
-    "value": {
-     "e": "sensor.isaac",
-     "a": "achievements",
-     "tpl": "{}/637",
+    "n": {
+     "e": "sensor.isaac_achievements",
      "s": "412"
+    },
+    "label": "achievements",
+    "role": "hero",
+    "label_type": "label",
+    "line": {
+     "e": "sensor.isaac_achievements",
+     "a": "line",
+     "s": "of 637 · 225 to go for Dead God"
     }
-   },
-   "in": 3,
-   "slot": 1
+   }
   },
   {
-   "c": "stat",
+   "c": "level_bar",
    "p": {
-    "label": "best time",
     "value": {
-     "e": "sensor.isaac",
-     "a": "best_time",
-     "s": "21:08"
-    }
-   },
-   "in": 3,
-   "slot": 2
-  },
-  {
-   "c": "stat",
-   "p": {
-    "label": "runs",
-    "value": {
-     "e": "sensor.isaac",
-     "a": "runs",
-     "s": "112"
-    }
-   },
-   "in": 3,
-   "slot": 3
-  },
-  {
-   "c": "section_header",
-   "p": {
-    "title": "last runs",
-    "badge": false,
-    "right": "none"
+     "e": "sensor.isaac_achievements",
+     "a": "percent",
+     "fmt": "num",
+     "s": "65"
+    },
+    "mark": -1,
+    "tone": "accent",
+    "width": 0
    }
   },
   {
@@ -130,17 +46,15 @@
    "p": {
     "list": "stack",
     "items": {
-     "e": "sensor.isaac",
-     "a": "last_runs",
-     "s": "[{\"b\":\"Mom's Heart\",\"c\":\"Judas · 38 min\",\"r\":\"Won\"},{\"b\":\"The Lamb\",\"c\":\"Isaac · 52 min\",\"r\":\"Lost\"},{\"b\":\"Mega Satan\",\"c\":\"Azazel · 44 min\",\"r\":\"Won\"}]"
+     "e": "sensor.isaac_achievements",
+     "a": "facts",
+     "s": "[{\"t\":\"Win streak\",\"v\":\"4\"},{\"t\":\"Runs\",\"v\":\"112\"},{\"t\":\"Characters\",\"v\":\"28 of 34\"},{\"t\":\"Last run\",\"v\":\"Won · 38 min\"}]"
     },
-    "title": "$item.b",
-    "sub": "$item.c",
-    "value": "$item.r",
+    "title": "$item.t",
+    "value": "$item.v",
     "icon": "none",
     "trailing": "value",
-    "rows": 3,
-    "empty": "No runs yet"
+    "rows": 4
    }
   }
  ]

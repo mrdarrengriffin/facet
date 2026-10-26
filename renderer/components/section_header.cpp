@@ -59,9 +59,9 @@ void fill(lv_obj_t *h, fw::Props p) {
     build("label", h, tp);
   }
 
-  if (p["badge"].is<bool>() ? (bool) p["badge"] : p["count"].is<double>()) {  // no count asked for = no badge
+  if (p["badge"].is<bool>() ? (bool) p["badge"] : !p["count"].isNull()) {  // no count asked for = no badge
     ArduinoJson::JsonDocument bp;
-    bp["count"] = p["count"] | 0;
+    bp["count"] = p["count"];  // a number or a bound state's text: the badge reads either
     bp["tone"] = p["tone"] | "warn";
     bp["zero"] = p["zero"] | "muted";
     build("count_badge", h, bp);

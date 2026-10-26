@@ -11,83 +11,24 @@
  "layout": "list",
  "nodes": [
   {
+   "c": "hero_block",
+   "p": {
+    "n": {
+     "e": "sensor.agents_working",
+     "s": "3"
+    },
+    "label": "agents working",
+    "role": "hero",
+    "label_type": "label"
+   }
+  },
+  {
    "c": "grid",
    "p": {
     "cols": 3,
-    "gap": "near",
-    "aspect": "row"
-   }
-  },
-  {
-   "c": "status_chip",
-   "p": {
-    "tone": "working",
-    "text": {
-     "e": "sensor.agents_working",
-     "tpl": "{} working",
-     "s": "1"
-    },
-    "pulse": true
-   },
-   "in": 0,
-   "slot": 0
-  },
-  {
-   "c": "status_chip",
-   "p": {
-    "tone": "warn",
-    "text": {
-     "e": "sensor.agents_needs",
-     "tpl": "{} needs you",
-     "s": "1"
-    }
-   },
-   "in": 0,
-   "slot": 1
-  },
-  {
-   "c": "status_chip",
-   "p": {
-    "tone": "ok",
-    "text": {
-     "e": "sensor.agents_done",
-     "tpl": "{} done",
-     "s": "1"
-    }
-   },
-   "in": 0,
-   "slot": 2
-  },
-  {
-   "c": "grid",
-   "p": {
-    "cols": 2,
     "gap": "group",
     "aspect": "row"
    }
-  },
-  {
-   "c": "tile",
-   "p": {
-    "title": "Docs writer",
-    "kind": {
-     "e": "sensor.agent_docs",
-     "map": {
-      "working": "working",
-      "needs": "needs",
-      "done": "done"
-     },
-     "else": "idle",
-     "s": "working"
-    },
-    "status": {
-     "e": "sensor.agent_docs",
-     "a": "status",
-     "s": "Page 3 of 5"
-    }
-   },
-   "in": 4,
-   "slot": 0
   },
   {
    "c": "tile",
@@ -106,10 +47,33 @@
     "status": {
      "e": "sensor.agent_firmware",
      "a": "status",
-     "s": "1 question"
+     "s": "3 of 4"
     }
    },
-   "in": 4,
+   "in": 1,
+   "slot": 0
+  },
+  {
+   "c": "tile",
+   "p": {
+    "title": "Docs writer",
+    "kind": {
+     "e": "sensor.agent_docs",
+     "map": {
+      "working": "working",
+      "needs": "needs",
+      "done": "done"
+     },
+     "else": "idle",
+     "s": "working"
+    },
+    "status": {
+     "e": "sensor.agent_docs",
+     "a": "status",
+     "s": "3 of 5"
+    }
+   },
+   "in": 1,
    "slot": 1
   },
   {
@@ -124,23 +88,69 @@
       "done": "done"
      },
      "else": "idle",
-     "s": "done"
+     "s": "working"
     },
     "status": {
      "e": "sensor.agent_review",
      "a": "status",
-     "s": "12 notes"
+     "s": "7 of 12"
     }
    },
-   "in": 4,
+   "in": 1,
    "slot": 2
   },
   {
    "c": "tile",
    "p": {
-    "title": "Research",
+    "title": "Test runner",
     "kind": {
-     "e": "sensor.agent_research",
+     "e": "sensor.agent_tests",
+     "map": {
+      "working": "working",
+      "needs": "needs",
+      "done": "done"
+     },
+     "else": "idle",
+     "s": "working"
+    },
+    "status": {
+     "e": "sensor.agent_tests",
+     "a": "status",
+     "s": "18 of 40"
+    }
+   },
+   "in": 1,
+   "slot": 3
+  },
+  {
+   "c": "tile",
+   "p": {
+    "title": "Media fetch",
+    "kind": {
+     "e": "sensor.agent_media",
+     "map": {
+      "working": "working",
+      "needs": "needs",
+      "done": "done"
+     },
+     "else": "idle",
+     "s": "done"
+    },
+    "status": {
+     "e": "sensor.agent_media",
+     "a": "status",
+     "s": "4 of 4"
+    }
+   },
+   "in": 1,
+   "slot": 4
+  },
+  {
+   "c": "tile",
+   "p": {
+    "title": "House audit",
+    "kind": {
+     "e": "sensor.agent_audit",
      "map": {
       "working": "working",
       "needs": "needs",
@@ -150,13 +160,13 @@
      "s": "idle"
     },
     "status": {
-     "e": "sensor.agent_research",
+     "e": "sensor.agent_audit",
      "a": "status",
-     "s": "Waiting"
+     "s": "next 18:00"
     }
    },
-   "in": 4,
-   "slot": 3
+   "in": 1,
+   "slot": 5
   }
  ]
 }

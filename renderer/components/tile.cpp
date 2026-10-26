@@ -12,7 +12,7 @@
 //   title    screen type body, text, up to two lines in a box of 2 x the body box (64 / 40), text at its top (docs
 //            line-clamp 2, height 64), ellipsis on the 2nd line
 //   gap      space 5 (16 / 12; docs 16 = the title box bottom 64 from the edge: pad 24 + status 24 + 16)
-//   status   screen type label (caps), one line: state word left (working accent-text, needs warn, idle / done
+//   status   screen type label (caps), one line: state word left (working text: calm, the mascot carries the accent; needs warn, idle / done
 //            text-dim), detail right (text-dim; trailing " ctx" / " ago" dropped like the docs). The docs use text-mute
 //            for idle / done and the detail: text-mute is for disabled only here (contrast rule), so text-dim
 // Pressed (Motion press / release): the Card press (states.json pressed.style, prop "press" overrides): fill = mix
@@ -62,7 +62,7 @@ const char *role_token(const char *state, const char *role) {
 
 lv_color_t state_ink(const char *kind) {
   const fw::Theme &t = *fw::T;
-  if (!strcmp(kind, "working")) return t.accent_text;
+  if (!strcmp(kind, "working")) return t.text;  // calm: busy is normal, only needs-you is coloured (the mascot carries the accent)
   if (!strcmp(kind, "needs")) return t.warn;
   return t.text_dim;
 }

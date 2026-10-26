@@ -26,7 +26,7 @@ export function url(path: string): string {
  *  Off for now (Darren 2026-10-25): the entries stay in src/content/updates/ so the page can come back by setting this. */
 export const UPDATES_PAGE = false;
 // The AI example screens (/ai/examples/<id>/, the grid on /ai/, search records): hidden until the smaller set is redone.
-export const AI_EXAMPLES = false;
+export const AI_EXAMPLES = true;
 
 export const headerLinks = [
   { label: 'Docs', href: url('/docs/'), match: [url('/docs/'), url('/install/'), url('/contributing/'), url('/roadmap/'), url('/screens/'), url('/ai/')] },

@@ -532,7 +532,8 @@ int bar_h(const Bars *B, float v) {
 }
 int bar_x(const Bars *B, int i) {
   const int g = std::max(1, B->group), gg = g > 1 ? B->group_gap : B->gap;  // between groups (no groups: the bar gap)
-  return (i / g) * (g * (B->bw + B->gap) - B->gap + gg) + (i % g) * (B->bw + B->gap);
+  const int sp = B->spread && B->n > 1 ? (int) ((int64_t) i * B->spread / (B->n - 1)) : 0;  // fill: the gaps share the rest
+  return (i / g) * (g * (B->bw + B->gap) - B->gap + gg) + (i % g) * (B->bw + B->gap) + sp;
 }
 void bar_place(Bars *B, int i, int hp) {
   lv_obj_t *o = B->b[i];
@@ -648,6 +649,7 @@ Bars *bars(lv_obj_t *parent, const Theme &t, const BarOpts &o) {
   const int ng = (B->n + B->group - 1) / B->group;
   const int avail = o.w - (ng - 1) * B->group_gap - (B->n - ng) * B->gap - (ng - 1) * B->gap * (B->group > 1 ? 0 : 1);
   B->bw = std::max(4, (avail / std::max(1, B->n)) / 4 * 4);
+  if (o.fill && B->group == 1 && B->n > 1) B->spread = std::max(0, o.w - (B->n * B->bw + (B->n - 1) * B->gap));
   const int cw = B->n ? bar_x(B, B->n - 1) + B->bw : o.w;
   B->root = box(parent);
   lv_obj_set_size(B->root, cw, o.h);

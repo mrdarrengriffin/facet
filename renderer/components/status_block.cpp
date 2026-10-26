@@ -44,7 +44,7 @@ void texts(SB *b, fw::Props p) {
   const std::string v = join(p, {"value", "value2"}), l = join(p, {"line", "line2", "line3", "line4"});
   const char *cap = p["caption"] | "";
   put(b->cap, fw::ty::label, cap);
-  if (*cap == lv_obj_has_flag(b->cap, LV_OBJ_FLAG_HIDDEN)) lv_obj_set_flag(b->cap, LV_OBJ_FLAG_HIDDEN, !*cap);
+  if (!*cap != lv_obj_has_flag(b->cap, LV_OBJ_FLAG_HIDDEN)) lv_obj_set_flag(b->cap, LV_OBJ_FLAG_HIDDEN, !*cap);  // was *cap == (a char vs a bool: a hidden caption never came back)
   put(b->val, val_ty(b->size), v.empty() ? "\xE2\x80\x94" : v.c_str());
   put(b->line, line_ty(b->size), l.c_str());
   if (l.empty() == !lv_obj_has_flag(b->line, LV_OBJ_FLAG_HIDDEN)) lv_obj_set_flag(b->line, LV_OBJ_FLAG_HIDDEN, l.empty());

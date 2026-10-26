@@ -11,69 +11,69 @@
  "layout": "list",
  "nodes": [
   {
-   "c": "big_number",
+   "c": "hero_block",
    "p": {
-    "label": "pence per kwh now",
-    "value": {
+    "n": {
      "e": "sensor.electricity_price",
-     "s": "13.5"
+     "tpl": "{}p",
+     "s": "15"
     },
-    "unit": "",
-    "prefix": "",
-    "decimals": 1
+    "label": "per kwh now",
+    "role": "hero",
+    "label_type": "label",
+    "line": {
+     "e": "sensor.electricity_price",
+     "a": "band_line",
+     "s": "Normal · peak from 16:00"
+    }
    }
   },
   {
    "c": "bar_chart",
    "p": {
     "values": {
-     "e": "sensor.electricity_prices",
-     "s": "9,9,8,8,9,9,14,15,29,31,15,14,13,13,14,15,30,33,31,16,14,13,9,9"
+     "e": "sensor.electricity_price",
+     "a": "today",
+     "s": "9,9,8,8,9,9,14,15,19,21,15,14,13,13,14,15,30,33,31,16,14,13,9,9"
     },
     "colour": "bands",
-    "now": 13,
-    "width": 400,
-    "height": 96
-   }
-  },
-  {
-   "c": "legend",
-   "p": {
-    "items": "cheap 9p,normal 14p,peak 31p",
-    "ticks": "00,06,12,18,24",
-    "width": 400
-   }
-  },
-  {
-   "c": "grid",
-   "p": {
-    "cols": 2,
-    "gap": "group",
-    "aspect": "row"
-   }
-  },
-  {
-   "c": "stat",
-   "p": {
-    "label": "cheapest",
-    "value": {
-     "e": "sensor.cheapest_slot",
-     "s": "02:00"
+    "ticks": 6,
+    "now": {
+     "e": "sensor.electricity_price",
+     "a": "hour",
+     "fmt": "num",
+     "s": "10"
     },
-    "tone": "ok"
-   },
-   "in": 3,
-   "slot": 0
+    "width": 0,
+    "height": 136,
+    "scrub": false
+   }
   },
   {
-   "c": "stat",
+   "c": "list_row",
    "p": {
-    "label": "peak from",
-    "value": "16:00",
-    "tone": "warn"
-   },
-   "in": 3,
-   "slot": 1
+    "title": "Cheapest",
+    "icon": "none",
+    "trailing": "value",
+    "value": {
+     "e": "sensor.electricity_price",
+     "a": "cheapest",
+     "s": "02:00 · 8p"
+    }
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Peak",
+    "icon": "none",
+    "trailing": "value",
+    "value": {
+     "e": "sensor.electricity_price",
+     "a": "peak",
+     "s": "17:00 · 33p"
+    }
+   }
   }
  ]
 }

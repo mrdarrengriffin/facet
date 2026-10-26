@@ -26,7 +26,8 @@ lv_color_t fill_of(const char *t) {
 
 namespace {
 void fill(lv_obj_t *b, fw::Props p) {
-  const int n = std::max(0, (int) (p["count"] | 0));
+  // a number, or a bound Home Assistant state (text: "4", "4.0")
+  const int n = std::max(0, p["count"].is<const char *>() ? atoi(p["count"].as<const char *>()) : (int) (p["count"] | 0));
   const bool zero = n == 0;
   const char *tone = zero ? "idle" : (p["tone"] | "idle");
   char txt[8];

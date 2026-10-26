@@ -58,6 +58,7 @@ struct Bars {
   std::vector<lv_color_t> col;    // per-bar colour (empty = by kind); a compare bar keeps its outline
   float max = 1;
   int n = 0, bw = 0, h = 0, top = 0, bot = 0, series = 2, sel = -1, gap = 0, group = 1, group_gap = 0;
+  int spread = 0;                 // fill: px left over after the grid-snapped bars, shared over the gaps (no groups)
   // readout while scrubbing: "<value> <unit>  <hh>:00" (hours) or "<value> <unit>  <label>" (labels)
   const char *unit = "kWh";
   int dec = 2, first_hour = 0;
@@ -73,6 +74,7 @@ struct BarOpts {
   std::vector<lv_color_t> col;      // per bar (empty = by kind)
   float max = 0;                    // 0 = the largest value
   bool scrub = true, baseline = true, readout = true;
+  bool fill = false;                // span exactly w: the left-over px widen the gaps (bars keep their grid width)
   int now = -1, gap = -1, group = 1, group_gap = 0;  // gap -1 = ch::bar_gap
   const char *unit = "";
   int dec = 1, first_hour = -1;     // first_hour >= 0: readout "hh:00"; else labels[i] (or the index)

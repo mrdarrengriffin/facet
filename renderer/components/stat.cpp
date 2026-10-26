@@ -1,11 +1,11 @@
 // Stat: the Facet stat (docs: @facet/ui layout.ts stat(label) + set(value, tone, label), CSS .fs-stat). A caps label
 // over one line of body text: "trend / 48 km/h", "lit / 63%". Screens lay stats out in columns; a stat fills the width
 // its parent gives it.
-//   box      flex column, gap space 2: label box + 8 + body box = 24 + 8 + 32 = 64 at 720 (= docs), 16 + 4 + 20 = 40
+//   box      flex column, gap space 2: label box + 8 + title box = 24 + 8 + 40 = 72 at 720, 16 + 4 + title 1x box
 //            at 480; width lay::card_w (one Home column, 320 / 212), or the parent's width with the internal prop
 //            "fill" (not in the playground; a screen's column passes it), so the value ellipsises in its column
 //   label    screen type label (caps), text-dim (docs text-mute: disabled only here, the contrast rule)
-//   value    screen type body, one line, ellipsis; tone dim (default, docs) = text-dim, text = text (docs moon facts
+//   value    screen type title (heavier than the docs body: the value is what you read), one line, ellipsis; tone dim (default, docs) = text-dim, text = text (docs moon facts
 //            pass 'text'), warn = warn, ok = ok
 // Unavailable (states.json; a stat often shows one device value): label text-mute, value = "Unavailable" in
 // st::unavailable_note. Static: no press, no events, no sound (docs). The docs explorer sample is 240 px wide. Contrast pairs: tokens/colour.json section "stat".
@@ -38,7 +38,7 @@ void fill(lv_obj_t *s, fw::Props p) {
   lv_obj_set_flex_flow(s, LV_FLEX_FLOW_COLUMN);
   lv_obj_set_style_pad_row(s, fw::sp::s2, 0);
   line(s, fw::ty::label, p["label"] | "", off ? fw::st::unavailable_ink(t) : t.text_dim);
-  line(s, fw::ty::body, off ? fw::st::UNAVAILABLE_TEXT : (p["value"] | ""), off ? fw::st::unavailable_note(t) : tone(p["tone"] | "dim"));
+  line(s, fw::ty::title, off ? fw::st::UNAVAILABLE_TEXT : (p["value"] | ""), off ? fw::st::unavailable_note(t) : tone(p["tone"] | "dim"));
 }
 }  // namespace
 

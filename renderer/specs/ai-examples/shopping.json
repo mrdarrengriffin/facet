@@ -14,54 +14,35 @@
    "c": "section_header",
    "p": {
     "title": "to buy",
-    "badge": true,
-    "right": "none",
-    "count": {
+    "badge": false,
+    "right": "meta",
+    "meta": {
      "e": "todo.shopping",
-     "s": "5"
+     "tpl": "{} left",
+     "s": "6"
+    }
+   }
+  },
+  {
+   "c": "grid",
+   "p": {
+    "cols": 1,
+    "gap": "near",
+    "aspect": "row",
+    "items": {
+     "e": "todo.shopping",
+     "a": "to_buy",
+     "s": "[\"Oat milk\",\"Sourdough loaf\",\"Bananas\",\"Coffee beans\",\"Cheddar\",\"Washing-up liquid\"]"
     },
-    "tone": "info",
-    "zero": "muted"
-   }
-  },
-  {
-   "c": "checkbox",
-   "p": {
-    "check": "open",
-    "label": "Oat milk",
-    "interactive": true
-   }
-  },
-  {
-   "c": "checkbox",
-   "p": {
-    "check": "open",
-    "label": "Sourdough loaf",
-    "interactive": true
-   }
-  },
-  {
-   "c": "checkbox",
-   "p": {
-    "check": "open",
-    "label": "Bananas",
-    "interactive": true
-   }
-  },
-  {
-   "c": "checkbox",
-   "p": {
-    "check": "open",
-    "label": "Washing-up liquid",
-    "interactive": true
-   }
-  },
-  {
-   "c": "checkbox",
-   "p": {
-    "check": "open",
-    "label": "Coffee beans",
-    "interactive": true
+    "empty": "Nothing left to buy"
+   },
+   "cell": {
+    "c": "checkbox",
+    "p": {
+     "check": "open",
+     "label": "$item",
+     "interactive": true
+    }
    }
   },
   {
@@ -73,19 +54,25 @@
    }
   },
   {
-   "c": "checkbox",
+   "c": "grid",
    "p": {
-    "check": "done",
-    "label": "Eggs",
-    "interactive": true
-   }
-  },
-  {
-   "c": "checkbox",
-   "p": {
-    "check": "done",
-    "label": "Tomatoes",
-    "interactive": true
+    "cols": 1,
+    "gap": "near",
+    "aspect": "row",
+    "items": {
+     "e": "todo.shopping",
+     "a": "basket",
+     "s": "[\"Eggs\",\"Tomatoes\",\"Pasta\"]"
+    },
+    "empty": "Nothing in the basket yet"
+   },
+   "cell": {
+    "c": "checkbox",
+    "p": {
+     "check": "done",
+     "label": "$item",
+     "interactive": true
+    }
    }
   }
  ]

@@ -8,6 +8,10 @@
 //            band-normal / peak accent) or series (series 1, the now bar in the highlight, later bars outline-only)
 //   scrub    press and drag: the bar under the finger takes the select colour, a readout (value + unit + hour) over
 //            it, a tick per bar crossed (the slider rule), "scrub" on release (detail "index value"); docs onTap(i)
+//   width    dp, 0 = its parent's content width (a screen's full column: the bars keep their grid width and the gaps
+//            share the rest, so the chart spans the column; > 0 = the bars snap to the grid, the chart hugs them)
+//   ticks    hours between axis labels (0 = none): "00" "06" ... in the Charts axis ink + c-meta-sm under their bar's
+//            centre, sp::s1 below the baseline, clamped inside the chart width
 //   motion   chart motion "bars": they grow up one after another (stagger), new values move every height together
 //            (the update path), reduced = a fade at their heights; workbench "opening": false = a rebuild, no growth
 // No data = NAN / "-" in values (an empty slot). Update path: same number of bars + same shape = the heights move
@@ -22,10 +26,13 @@ const char *DEF_BANDS = "cheap,cheap,cheap,cheap,cheap,cheap,normal,normal,norma
 lv_color_t band_colour(const fw::Theme &t, const std::string &b) {  // docs BAND_COLOUR
   return b == "peak" ? fw::ch::ink::highlight(t) : b == "cheap" ? t.blue : t.band_normal;
 }
+int now_of(fw::Props p) {  // a number, or a bound Home Assistant state (text: "10")
+  return p["now"].is<const char *>() ? atoi(p["now"].as<const char *>()) : (int) lround(p["now"] | 14.0);  // binds give doubles
+}
 std::string sig_of(fw::Props p, size_t n) {
   char b[96];
-  snprintf(b, sizeof b, "%zu|%s|%d|%d|%d|%d|", n, p["colour"] | "bands", (int) (p["now"] | 14), (int) (p["width"] | 320),
-           (int) (p["height"] | 80), (int) (p["scrub"] | true));
+  snprintf(b, sizeof b, "%zu|%s|%d|%d|%d|%d|", n, p["colour"] | "bands", now_of(p), (int) (p["width"] | 320),
+           (int) (p["height"] | 80), (int) (p["scrub"] | true) + 2 * (int) (p["ticks"] | 0));
   return std::string(b) + (p["bands"] | DEF_BANDS);
 }
 fw::chart::Bars *of(lv_obj_t *root) {
@@ -38,10 +45,12 @@ void fill(lv_obj_t *root, fw::Props p, bool opening) {
   lv_obj_remove_flag(root, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
   lv_obj_set_size(root, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
   fw::chart::BarOpts o;
-  o.w = fw::px((float) (p["width"] | 320));
+  const int wdp = p["width"] | 320;  // 0 = its parent's content width (the bars still snap to the grid and hug)
+  if (wdp > 0) o.w = fw::px((float) wdp);
+  else { lv_obj_update_layout(lv_obj_get_parent(root)); o.w = lv_obj_get_content_width(lv_obj_get_parent(root)); o.fill = true; }
   o.h = fw::px((float) (p["height"] | 80));
   o.v = fw::chart::values(p, "values", DEF_VALUES);
-  const int n = (int) o.v.size(), now = p["now"] | 14;
+  const int n = (int) o.v.size(), now = now_of(p);
   o.now = now < n ? now : -1;
   o.scrub = p["scrub"] | true;
   o.unit = "kWh", o.dec = 2, o.first_hour = 0;
@@ -52,8 +61,31 @@ void fill(lv_obj_t *root, fw::Props p, bool opening) {
     const std::vector<std::string> bands = fw::chart::words(p, "bands", DEF_BANDS);
     for (int i = 0; i < n; i++) o.col.push_back(band_colour(t, i < (int) bands.size() ? bands[i] : "normal"));
   }
+  const int ticks = p["ticks"] | 0;  // hours between axis labels (0 = no axis)
+  if (ticks > 0) {
+    lv_obj_set_flex_flow(root, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_style_pad_row(root, fw::sp::s1, 0);
+  }
   fw::chart::Bars *B = fw::chart::bars(root, t, o);
   if (opening) fw::chart::bars_play(B);
+  if (ticks > 0) {  // the hour under its bar's centre ("06"), kept inside the chart's width (Charts axis ink + type)
+    lv_obj_update_layout(B->root);
+    const int cw = lv_obj_get_width(B->root);
+    lv_obj_t *a = lv_obj_create(root);
+    lv_obj_remove_style_all(a);
+    lv_obj_remove_flag(a, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
+    lv_obj_set_size(a, cw, fw::style(fw::ty::c_meta_sm).box);
+    for (int i = 0; i < n; i++) {
+      if ((o.first_hour + i) % ticks) continue;
+      char hh[4];
+      snprintf(hh, sizeof hh, "%02d", (o.first_hour + i) % 24);
+      lv_obj_t *l = fw::text(a, fw::ty::c_meta_sm, hh, fw::ch::ink::axis(t));
+      lv_obj_remove_flag(l, LV_OBJ_FLAG_CLICKABLE);
+      lv_obj_update_layout(l);
+      const int lw = lv_obj_get_width(l);
+      lv_obj_set_x(l, LV_CLAMP(0, fw::chart::bar_x(B, i) + B->bw / 2 - lw / 2, cw - lw));
+    }
+  }
   fw::shape(root, sig_of(p, o.v.size()));
 }
 }  // namespace
@@ -65,9 +97,10 @@ FW_COMPONENT(bar_chart, "Bar chart", "components", R"({
     {"name": "values", "about": "The height of each bar, as numbers separated by commas, one bar per number from left to right.", "type": "text", "default": "0.3,0.2,0.2,0.2,0.3,0.4,0.9,1.2,0.8,0.5,0.4,0.6,0.7,0.5,0.6,1.1,1.6,1.9,1.4,1.0,0.8,0.6,0.4,0.3"},
     {"name": "colour", "about": "How the bars are coloured: bands colours each bar by its price band (cheap, normal, peak); series draws every bar in the one chart colour.", "type": "select", "options": ["bands", "series"], "default": "bands"},
     {"name": "now", "about": "Which bar is now, counting from 0 on the left; it gets the dotted now marker. -1 shows no marker.", "type": "range", "min": -1, "max": 23, "step": 1, "default": 14},
-    {"name": "width", "about": "How wide the whole chart is, in pixels.", "type": "range", "min": 160, "max": 440, "step": 8, "default": 320},
+    {"name": "width", "about": "How wide the whole chart is, in pixels; 0 fills the space it is in.", "type": "range", "min": 0, "max": 440, "step": 8, "default": 320},
     {"name": "height", "about": "How tall the tallest bar can be, in pixels.", "type": "range", "min": 48, "max": 136, "step": 8, "default": 80},
-    {"name": "scrub", "about": "Lets you press and drag along the chart to read the value of each bar.", "type": "bool", "default": true}
+    {"name": "scrub", "about": "Lets you press and drag along the chart to read the value of each bar.", "type": "bool", "default": true},
+    {"name": "ticks", "about": "Hour labels on the axis under the bars, every this many hours (6 = 00, 06, 12, 18); 0 shows none.", "type": "range", "min": 0, "max": 12, "step": 1, "default": 0}
   ],
   "opening": "Showing the chart grows the bars from the baseline (chart motion bars).",
   "variants": [

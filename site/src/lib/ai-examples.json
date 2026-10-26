@@ -2,141 +2,43 @@
  {
   "id": "news",
   "title": "Headlines",
-  "about": "The newest stories of a news feed as real rows, one per story in the feed, with the source and how long ago.",
-  "prompt": "Make a Facet screen \"Headlines\" from my news feed sensor (sensor.news): its attribute stories is a JSON list of {t: title, s: source}. Show a count of new stories, then one row per story with the source above the title.",
-  "better": "Source logos need an image component."
- },
- {
-  "id": "game_runs",
-  "title": "Game progress",
-  "about": "How a roguelike is going: a ring of runs won, lost and quit, the streak and the latest runs.",
-  "prompt": "Make a Facet screen \"Game progress\" for my roguelike (sensor.isaac): a ring split into runs won, lost and quit with a key, four facts (streak, achievements, best time, runs), then the last runs as rows from the attribute last_runs.",
-  "better": "The ring has no value in its middle and takes parts 0 to 10, not raw counts."
+  "about": "The newest stories of a news feed: when it last updated, then one row per story with its source above the title.",
+  "prompt": "Make a Facet screen \"Headlines\" from my news feed sensor (sensor.news): its attribute updated says when it last updated and its attribute stories is a JSON list of {t: title, s: source and age}. A section header with the update time, then one row per story (up to six), the source above the title.",
+  "better": "A tap on a story does nothing yet: opening the full story is still to come, so the rows have no chevron."
  },
  {
   "id": "ai_agents",
   "title": "AI agents",
-  "about": "What each AI agent is doing, as a tile with a mascot per agent, and a tally of who needs you.",
-  "prompt": "Make a Facet screen \"AI agents\": status chips for how many agents are working and need me, then a two-column grid with one tile per agent (sensor.agent_docs, sensor.agent_firmware, sensor.agent_review, sensor.agent_research): the state is working, needs, done or idle and the attribute status says how far it has got.",
-  "better": ""
+  "about": "Your AI agents at a glance: how many are working, then a tile per agent with its mascot in the mood of what it is doing and how far it has got.",
+  "prompt": "Make a Facet screen \"AI agents\": the number of agents working as the big number (sensor.agents_working), then a grid of agent tiles three across for sensor.agent_firmware, sensor.agent_docs, sensor.agent_review, sensor.agent_tests, sensor.agent_media and sensor.agent_audit, the ones that need me first, then working, done and idle (state working, needs, done or idle; attribute status = how far it has got, as \"3 of 5\").",
+  "better": "The tiles have nothing to open yet: a screen per agent is still to come. The order is fixed in the spec: a grid that sorts its tiles by state is still to come."
  },
  {
   "id": "shopping",
   "title": "Shopping list",
-  "about": "A tick-off shopping list from a Home Assistant to-do list.",
-  "prompt": "Make a Facet screen \"Shopping list\" from todo.shopping: a count of what is left, then each item as a checkbox, ticked ones done.",
-  "better": "The checkboxes are written out: a to-do list bound as real rows (one checkbox per item) is still to come."
+  "about": "A tick-off shopping list from a to-do list: what is left to buy with a count, and what is already in the basket.",
+  "prompt": "Make a Facet screen \"Shopping list\" from todo.shopping (its state is how many are left; attribute to_buy and attribute basket are JSON lists of item names): a caption with the count left, one checkbox per item to buy, then the ticked ones under \"in the basket\".",
+  "better": "Ticking an item changes the count here, but the to-do list itself is not updated yet: Facet has no to-do action."
  },
  {
-  "id": "hot_water",
-  "title": "Hot water",
-  "about": "The hot water tank: its temperature on a dial, the mode and what heats it.",
-  "prompt": "Make a Facet screen \"Hot water\" for water_heater.tank: a dial with the tank temperature from 40 to 65°, a three-way mode switch (off, auto, boost) and two facts: what heats it now and the next boost.",
-  "better": "The dial and mode switch show the tank but cannot set it yet: their actions are for lights and the vacuum only."
- },
- {
-  "id": "bin_day",
-  "title": "Bin day",
-  "about": "Which bins go out next, a reminder chip on the night and each bin with its next date.",
-  "prompt": "Make a Facet screen \"Bin day\": a big count of days until the next collection (sensor.bin_days) with a chip that pulses on the night before, then a grid of each bin with its next date.",
-  "better": "Bin colour icons need more icons in the set."
- },
- {
-  "id": "trains",
-  "title": "Next trains",
-  "about": "The next departure as a big time, its platform, then the trains after it as real rows.",
-  "prompt": "Make a Facet screen \"Next trains\" for my commute (sensor.next_trains from the National Rail integration): the first departure time big with a chip for its platform and delay, then the next departures from the attribute departures, a JSON list of {t: time and destination, p: platform, d: on time or the delay}.",
-  "better": "The big time is a fixed value: a countdown to the departure is still to come."
- },
- {
-  "id": "front_door",
-  "title": "Front door",
-  "about": "The front door at a glance: open or shut, someone there, the porch temperature and the porch light.",
-  "prompt": "Make a Facet screen \"Front door\" with state readouts for binary_sensor.front_door (open or closed and since when), binary_sensor.porch_person (someone at the door) and sensor.porch_temperature, then a switch row for light.porch.",
-  "better": "The door cannot be locked from here: the lock parts are still in progress."
+  "id": "medication",
+  "title": "Medication",
+  "about": "Today's doses: the next one big with what to take, a box to tick for each dose, and how long the pack will last.",
+  "prompt": "Make a Facet screen \"Medication\": how long until the next dose big (sensor.next_dose attribute in_hours) with its time and the medicine beside it, today's four doses as checkboxes, then two rows: tablets left and when to reorder.",
+  "better": ""
  },
  {
   "id": "energy_price",
   "title": "Energy price",
-  "about": "The electricity price now as a big number and today's prices as a bar chart, coloured cheap to peak.",
-  "prompt": "Make a Facet screen \"Energy price\" from my Octopus Agile sensors: the price now big in pence per kWh, a bar chart of the 24 hourly prices coloured by band with now marked, a key and the cheapest slot.",
+  "about": "The electricity price now as the big number, today's 24 hourly prices as bars coloured cheap to peak with now marked, and the cheapest and dearest times.",
+  "prompt": "Make a Facet screen \"Energy price\" from my Octopus Agile sensors: the price now big (sensor.electricity_price, pence per kWh) with the band beside it, a full-width bar chart of the 24 hourly prices (attribute today, a comma list) coloured by band with now (attribute hour) marked, then two rows: the cheapest slot and the peak.",
+  "better": "The chart has no hour labels under it yet, and reading a bar by pressing it would say kWh, not pence: it is left off here."
+ },
+ {
+  "id": "lights",
+  "title": "Living room lights",
+  "about": "Every light in the room as a tile: a lit one shows its bulb and state in the accent colour, a tap switches it; the ceiling dimmer below.",
+  "prompt": "Make a Facet screen \"Living room lights\": a three-column grid of tiles for light.lounge_ceiling, light.lounge_sofa_lamp, light.lounge_reading_lamp, light.lounge_shelves, light.lounge_tv_glow and light.lounge_fireplace (a tap toggles each), then a full-width slider for the ceiling light's brightness.",
   "better": ""
- },
- {
-  "id": "plants",
-  "title": "Plant care",
-  "about": "Soil moisture of each plant as a row of gauges, with the ones to water today called out.",
-  "prompt": "Make a Facet screen \"Plant care\": a chip for how many plants need water, then four gauges side by side for the soil moisture of the fern, basil, monstera and snake plant, each with its name under it, the dry ones in amber.",
-  "better": "A gauge with its value and name inside it (a cell made of more than one part) would make each plant one cell."
- },
- {
-  "id": "kitchenradio",
-  "title": "Kitchen radio",
-  "about": "What the kitchen speaker is playing, drawn as a turning cassette, with the controls and volume.",
-  "prompt": "Make a Facet screen \"Kitchen radio\" for media_player.kitchen: a cassette that turns while it plays with the title and artist on its label, previous / play / next buttons and a volume slider.",
-  "better": "The buttons and slider show the player but cannot control it yet: media actions are still to come."
- },
- {
-  "id": "focus",
-  "title": "Focus",
-  "about": "A focus timer: the time left big, a dot per session of the day, the session length and start / skip.",
-  "prompt": "Make a Facet screen \"Focus\" for a pomodoro timer (timer.focus): the time left big, a row of four session icons (done ones ticked), a three-way choice of focus, short or long break, and start and skip buttons.",
-  "better": "The big time is fixed text from the timer: a live countdown is still to come."
- },
- {
-  "id": "homelab",
-  "title": "Homelab",
-  "about": "Servers at a glance: a chip per server, the NAS load as a line and its CPU, memory and disk.",
-  "prompt": "Make a Facet screen \"Homelab\": a grid of status chips, one per server (NAS, Proxmox, Backup box, Router), the backup box one in warning, then the NAS CPU over the last hour as a line and four facts: CPU, memory, disk and uptime.",
-  "better": ""
- },
- {
-  "id": "printer",
-  "title": "3D printer",
-  "about": "A 3D print under way: a dial-like ring of progress, the percentage and the temperatures.",
-  "prompt": "Make a Facet screen \"3D printer\" for my Bambu printer: a 270° tick ring lit to the print progress with the percentage big under it, then a grid of time left, layer, nozzle and bed temperature, and pause and stop buttons.",
-  "better": "The percentage sits under the ring: a value inside a ring needs a stacked layout."
- },
- {
-  "id": "run_weather",
-  "title": "Run weather",
-  "about": "Is it good for a run or a ride: a big weather icon, the temperature, a verdict and the conditions.",
-  "prompt": "Make a Facet screen \"Run weather\" from weather.home: the weather icon big beside the temperature, a verdict chip, a run / ride choice, then wind, rain chance, UV and sunset.",
-  "better": ""
- },
- {
-  "id": "guest_wifi",
-  "title": "Guest Wi-Fi",
-  "about": "A QR code guests scan to join the Wi-Fi, with the network name and password beside it.",
-  "prompt": "Make a Facet screen \"Guest Wi-Fi\" with a QR code for my guest network (WIFI:T:WPA;S:Guest;P:<password>;;) that phones can scan, and the name and password written under it.",
-  "better": ""
- },
- {
-  "id": "laundry",
-  "title": "Laundry",
-  "about": "The washer and dryer as tiles you can tap, and a card for when the wash ends.",
-  "prompt": "Make a Facet screen \"Laundry\": a tile each for the washing machine and the dryer (lit while running, with the time left), then a card for when the wash ends and its programme.",
-  "better": "Tiles and cards take a few icons only: the icon set has a washer, the tile cannot use it yet."
- },
- {
-  "id": "air_quality",
-  "title": "Air quality",
-  "about": "Indoor air: fine particles big with a verdict, the trend today as a line and CO2, VOC and humidity.",
-  "prompt": "Make a Facet screen \"Air quality\" from my indoor air sensor: PM2.5 big with a verdict chip, the PM2.5 trend today as a line with times under it, then CO2, VOC, humidity and temperature in a grid.",
-  "better": "The line has no axis or scale yet."
- },
- {
-  "id": "bedside",
-  "title": "Bedside",
-  "about": "A bedside clock: a ring clock with the date, the alarm switch and the lamp brightness.",
-  "prompt": "Make a Facet screen \"Bedside\": a ring clock with the date, a switch row for my alarm (input_boolean.alarm, the time in sensor.alarm_time) and a slider for the bedside lamp (light.bedside).",
-  "better": ""
- },
- {
-  "id": "fixtures",
-  "title": "Fixtures",
-  "about": "The last score as a scoreboard, the form and league place, then the next fixtures as real rows.",
-  "prompt": "Make a Facet screen \"Fixtures\" for my football team from the TeamTracker sensor (sensor.team): the last result as a scoreboard (both teams and scores), a chip for the result and league position, then the next fixtures from the attribute next, a JSON list of {m: match, d: date}.",
-  "better": "Club crests need an image component."
  }
 ]

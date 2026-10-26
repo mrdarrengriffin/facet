@@ -11,29 +11,17 @@
  "layout": "list",
  "nodes": [
   {
-   "c": "status_chip",
-   "p": {
-    "tone": "info",
-    "text": {
-     "e": "sensor.news",
-     "a": "updated",
-     "s": "Updated 07:40"
-    },
-    "pulse": false
-   }
-  },
-  {
    "c": "section_header",
    "p": {
     "title": "top stories",
-    "badge": true,
-    "right": "none",
-    "count": {
+    "badge": false,
+    "right": "meta",
+    "meta": {
      "e": "sensor.news",
-     "s": "4"
-    },
-    "tone": "info",
-    "zero": "muted"
+     "a": "updated",
+     "tpl": "updated {}",
+     "s": "10:00"
+    }
    }
   },
   {
@@ -43,12 +31,12 @@
     "items": {
      "e": "sensor.news",
      "a": "stories",
-     "s": "[{\"t\":\"Rail strike called off\",\"s\":\"BBC · 12 min\"},{\"t\":\"Rates held at 4%\",\"s\":\"Reuters · 40 min\"},{\"t\":\"Fen floods ease overnight\",\"s\":\"Look East · 1 h\"},{\"t\":\"New Mars rover named\",\"s\":\"BBC · 2 h\"}]"
+     "s": "[{\"t\":\"Rail strike off\",\"s\":\"BBC · 6m\"},{\"t\":\"Rates held at 4%\",\"s\":\"PA · 25m\"},{\"t\":\"Fen floods ease\",\"s\":\"ITV · 48m\"},{\"t\":\"Mars rover named\",\"s\":\"BBC · 1h\"},{\"t\":\"Winter fair opens\",\"s\":\"BBC · 2h\"},{\"t\":\"Ely roof saved\",\"s\":\"ITV · 3h\"}]"
     },
     "title": "$item.t",
     "over": "$item.s",
     "icon": "none",
-    "trailing": "chevron",
+    "trailing": "none",
     "rows": 6,
     "empty": "No new stories"
    }

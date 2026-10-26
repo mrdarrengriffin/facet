@@ -1,10 +1,11 @@
 // Checkbox (components/checkbox.cpp): open / doing / done; interactive tap cycles open -> done -> open, doing -> done;
-// read-only takes no touch; disabled blocks; hit area touch-min tall; update path silent.
+// read-only takes no touch; disabled blocks; hit area touch-min tall; update path silent; a ticked (done) label is struck through.
 import { D, px, diff } from './_controls.mjs';
-const box = (t) => { const k = t.objs().filter((o) => o.w === o.h && (o.w === 24 || o.w === 16)); return k[0]; };  // the box (24 / 16)
+const box = (t) => { const k = t.objs().filter((o) => o.w === o.h && (o.w === 24 || o.w === 20)); return k[0]; };  // the box (24 / 20)
 const filled = (t) => { const b = box(t), bg = px(t, b.x - 12, b.y - 12); return diff(px(t, b.x + b.w / 2, b.y + 3), bg); };  // top middle, just inside the edge
 const dot = (t) => { const b = box(t), bg = px(t, b.x - 12, b.y - 12); return diff(px(t, b.x + b.w / 2, b.y + b.h / 2), bg); };
 const L = 'Water the plants';
+const lab = (t, text) => t.objs().find((o) => o.text === text && t.visible(o));
 export default {
   id: 'checkbox', family: 'controls', about: 'Open / doing / done box; a tap moves it between open and done.',
   tests: [
@@ -40,6 +41,18 @@ export default {
     } },
     { name: 'update label: new words in place', mount: ['checkbox', { check: 'open', label: L }], run(t) {
       t.update({ check: 'open', label: 'Feed the cat' }); t.has(t.texts(), 'Feed the cat', 'new label'); t.hasNot(t.texts(), L, 'old label');
+    } },
+    { name: 'done: label struck through', mount: ['checkbox', { check: 'done', label: 'Milk' }], run(t) { t.ok(lab(t, 'Milk')?.strike, 'strike'); } },
+    { name: 'open and doing: not struck', async run(t) {
+      await t.mount('checkbox', { check: 'open', label: 'Milk' }); t.ok(!lab(t, 'Milk')?.strike, 'open');
+      await t.mount('checkbox', { check: 'doing', label: 'Milk' }); t.ok(!lab(t, 'Milk')?.strike, 'doing');
+    } },
+    { name: 'tap open -> done strikes it, again -> open clears it', mount: ['checkbox', { check: 'open', label: 'Milk', interactive: true }], run(t) {
+      t.emitted(t.tap('Milk'), 'toggle'); t.ok(lab(t, 'Milk')?.strike, 'struck after tick');
+      t.tap('Milk'); t.ok(!lab(t, 'Milk')?.strike, 'clear after untick');
+    } },
+    { name: 'update to done strikes it, silently', mount: ['checkbox', { check: 'open', label: 'Milk' }], run(t) {
+      const ev = t.update({ check: 'done' }); t.silent(ev); t.ok(lab(t, 'Milk')?.strike, 'strike');
     } },
   ],
 };

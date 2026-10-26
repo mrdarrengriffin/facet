@@ -160,7 +160,7 @@ void build_static(lv_obj_t *r, G &g, Props p) {
 }
 // ---- items
 lv_obj_t *item_cell(lv_obj_t *r, const G &g, int i, const std::string &item, bool more, int rest) {
-  lv_obj_t *c = cell_at(r, g, {g.left + (i % g.cols) * (g.cw + g.gap), (i / g.cols) * (g.ch + g.gap), g.cw, g.ch}, true);
+  lv_obj_t *c = cell_at(r, g, {g.left + (i % g.cols) * (g.cw + g.gap), (i / g.cols) * (g.ch + g.gap), g.cw, g.ch}, !g.row);  // row cells start at the left, as static ones do
   if (more) {  // "+N": the items past the cap
     text(c, ty::body, ("+" + std::to_string(rest)).c_str(), T->text_dim);
     return c;

@@ -1,12 +1,12 @@
 // Checkbox: the Facet checkbox (docs: Components > Pickers > Checkbox, @facet/ui checkbox.ts, CSS .f-checkbox): a small
 // rounded box that is open, in progress (an accent dot) or done (filled accent with a check), with an optional label.
 // Read-only unless interactive: a tap cycles open -> done and doing -> done, done -> open (docs).
-//   box     lay::checkbox (24 / 16; docs 20 at the docs site size: = the Radio and the check icon's own icon size, so the
+//   box     lay::checkbox (24 / 20, the check at icon / glyph size; docs 20 at the docs site size: = the Radio and the check icon's own icon size, so the
 //           check fills the box exactly as the docs SVG does), stroke::edge border, rad::chip (8 / 4; docs 6)
 //   open    border text-dim (a control boundary, ui 3:1), no fill
 //   doing   border + lay::checkbox_dot (8) dot st::on_mark (accent), centred on the grid
 //   done    fill + border st::on_fill (accent), the Icons foundation "check" at ic::icon in st::on_label (on-accent)
-//   label   type body, text; done = text-dim (docs); sp::s2 after the box, the box centred on the label's line box
+//   label   type body, text; done = text-dim (docs) + struck through (a ticked list item); sp::s2 after the box, the box centred on the label's line box
 // States (states.json): disabled (st::OFF) = box, fill and label text-mute (st::disabled_ink), the check in bg on the
 // muted fill; a tap = "blocked" + error on finger down. A read-only checkbox takes no touch at all (docs aria-readonly).
 // Tap (interactive): event "toggle" (detail = the new state) + sound toggle-on (to done) / toggle-off (to open); the
@@ -95,7 +95,7 @@ void fill(lv_obj_t *r, fw::Props p) {
   transitions(k, 1);
 
   // done: the check (Icons foundation, icon size = the box; the box's border is drawn over its edge, like the docs SVG)
-  if (lv_obj_t *ic = fw::icon(b, "check", fw::ic::icon, fw::st::on_label(t))) {
+  if (lv_obj_t *ic = fw::icon(b, "check", fw::ic::PX[fw::ic::icon] == B ? fw::ic::icon : fw::ic::glyph, fw::st::on_label(t))) {
     lv_obj_add_flag(ic, LV_OBJ_FLAG_IGNORE_LAYOUT);
     lv_obj_align(ic, LV_ALIGN_CENTER, 0, 0);
     fw::icon_colour(ic, t.bg, ST_OFF | ST_DONE);
@@ -109,6 +109,7 @@ void fill(lv_obj_t *r, fw::Props p) {
     lv_obj_update_layout(l);  // the label's box rounded up to the grid (Label fit8), so the checkbox is on the grid
     lv_obj_set_width(l, (lv_obj_get_width(l) + fw::sp::GRID - 1) / fw::sp::GRID * fw::sp::GRID);
     lv_obj_set_style_text_color(l, t.text_dim, ST_DONE);
+    lv_obj_set_style_text_decor(l, LV_TEXT_DECOR_STRIKETHROUGH, ST_DONE);  // ticked = struck through (a done list item)
     lv_obj_set_style_text_color(l, fw::st::disabled_ink(t), ST_OFF);
     lv_obj_set_style_text_color(l, fw::st::disabled_ink(t), ST_OFF | ST_DONE);
     transitions(l, 2);

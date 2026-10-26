@@ -1,0 +1,119 @@
+{
+ "v": 1,
+ "id": "medication",
+ "name": "Medication",
+ "rev": 1,
+ "role": "page",
+ "header": {
+  "label": "Medication",
+  "back": true
+ },
+ "layout": "list",
+ "nodes": [
+  {
+   "c": "hero_block",
+   "p": {
+    "n": {
+     "e": "sensor.next_dose",
+     "a": "in_hours",
+     "tpl": "in {} h",
+     "s": "3"
+    },
+    "label": "next dose",
+    "role": "hero",
+    "label_type": "label",
+    "line": {
+     "e": "sensor.next_dose",
+     "a": "what",
+     "s": "13:00 · Ibuprofen 400 mg"
+    }
+   }
+  },
+  {
+   "c": "section_header",
+   "p": {
+    "title": "today",
+    "badge": false,
+    "right": "meta",
+    "meta": {
+     "e": "sensor.doses_left_today",
+     "tpl": "{} to take",
+     "s": "2"
+    }
+   }
+  },
+  {
+   "c": "grid",
+   "p": {
+    "cols": 1,
+    "gap": "near",
+    "aspect": "row"
+   }
+  },
+  {
+   "c": "checkbox",
+   "p": {
+    "check": "done",
+    "label": "08:00 · Vitamin D",
+    "interactive": true
+   },
+   "in": 2,
+   "slot": 0
+  },
+  {
+   "c": "checkbox",
+   "p": {
+    "check": "done",
+    "label": "08:00 · Ibuprofen 400 mg",
+    "interactive": true
+   },
+   "in": 2,
+   "slot": 1
+  },
+  {
+   "c": "checkbox",
+   "p": {
+    "check": "open",
+    "label": "13:00 · Ibuprofen 400 mg",
+    "interactive": true
+   },
+   "in": 2,
+   "slot": 2
+  },
+  {
+   "c": "checkbox",
+   "p": {
+    "check": "open",
+    "label": "20:00 · Ibuprofen 400 mg",
+    "interactive": true
+   },
+   "in": 2,
+   "slot": 3
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Left in pack",
+    "icon": "none",
+    "trailing": "value",
+    "value": {
+     "e": "sensor.ibuprofen_left",
+     "tpl": "{} tablets",
+     "s": "14"
+    }
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Reorder by",
+    "icon": "none",
+    "trailing": "value",
+    "value": {
+     "e": "sensor.ibuprofen_reorder",
+     "s": "Wed 28 Oct"
+    }
+   }
+  }
+ ]
+}

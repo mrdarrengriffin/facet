@@ -552,6 +552,8 @@ void audit_walk(lv_obj_t *o, int parent, int depth, ArduinoJson::JsonArray arr) 
     j["pad"] = c->spec_attr ? c->spec_attr->ext_click_pad : 0;
     j["box"] = lv_obj_get_style_bg_opa(c, LV_PART_MAIN) > LV_OPA_TRANSP || lv_obj_get_style_border_width(c, LV_PART_MAIN) > 0;
     j["bw"] = lv_obj_get_style_border_width(c, LV_PART_MAIN);
+    auto hexc = [](lv_color_t k) { char h[8]; snprintf(h, sizeof h, "#%02X%02X%02X", k.red, k.green, k.blue); return std::string(h); };
+    if (j["box"].as<bool>()) j["bg"] = hexc(lv_obj_get_style_bg_color(c, LV_PART_MAIN));  // functional tests: filled when on
     for (lv_obj_t *k = c; k; k = lv_obj_get_parent(k))  // drawn disabled / unavailable (fw::st::OFF on it or an ancestor)
       if (lv_obj_has_state(k, fw::st::OFF)) { j["off"] = true; break; }
     if (!strcmp(type_of(c), "label")) {
@@ -560,6 +562,8 @@ void audit_walk(lv_obj_t *o, int parent, int depth, ArduinoJson::JsonArray arr) 
       if (cut > 0) j["cut"] = cut;
       if (right > 0) j["cutr"] = right;
       j["text"] = lv_label_get_text(c);
+      j["ink"] = hexc(lv_obj_get_style_text_color(c, LV_PART_MAIN));
+      if (lv_obj_get_style_text_decor(c, LV_PART_MAIN) & LV_TEXT_DECOR_STRIKETHROUGH) j["strike"] = true;
     }
     auto it = marks.find(c);
     if (it != marks.end()) {

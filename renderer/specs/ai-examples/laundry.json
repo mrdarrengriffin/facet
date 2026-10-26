@@ -1,11 +1,11 @@
 {
  "v": 1,
  "id": "laundry",
- "name": "Laundry",
+ "name": "Washing machine",
  "rev": 1,
  "role": "page",
  "header": {
-  "label": "Laundry",
+  "label": "Washing machine",
   "back": true
  },
  "layout": "list",
@@ -13,72 +13,50 @@
   {
    "c": "grid",
    "p": {
-    "cols": 2,
-    "gap": "group",
-    "aspect": "row"
+    "cols": 1,
+    "gap": "none",
+    "aspect": "wide"
    }
   },
   {
-   "c": "entity_tile",
+   "c": "arc",
    "p": {
-    "icon": "power",
-    "label": "Washer",
-    "status": {
-     "e": "sensor.washer_remaining",
-     "tpl": "{} min left",
-     "s": "38"
+    "value": {
+     "e": "sensor.washer",
+     "a": "progress",
+     "fmt": "num",
+     "s": "62"
     },
-    "on": {
-     "e": "sensor.washer_state",
-     "map": {
-      "Washing": "1"
-     },
-     "else": "0",
-     "s": "Washing"
-    },
-    "act": "none"
+    "size": 160,
+    "knob": false
    },
    "in": 0,
    "slot": 0
   },
   {
-   "c": "entity_tile",
+   "c": "status_block",
    "p": {
-    "icon": "power",
-    "label": "Dryer",
-    "status": {
-     "e": "sensor.dryer_state",
-     "s": "Idle"
+    "caption": {
+     "e": "sensor.washer",
+     "s": "rinse"
     },
-    "on": {
-     "e": "sensor.dryer_state",
-     "map": {
-      "Drying": "1"
-     },
-     "else": "0",
-     "s": "Idle"
-    },
-    "act": "none"
-   },
-   "in": 0,
-   "slot": 1
-  },
-  {
-   "c": "card",
-   "p": {
-    "label": "Wash ends",
-    "icon": "timer",
-    "size": "l",
-    "mode": "value",
     "value": {
-     "e": "sensor.washer_end",
-     "s": "11:52"
+     "e": "sensor.washer",
+     "a": "left",
+     "s": "38 min left"
     },
-    "sub": {
-     "e": "sensor.washer_programme",
-     "s": "Cotton 40° · 1400 spin"
+    "line": {
+     "e": "sensor.washer",
+     "a": "ends",
+     "s": "done at 10:39"
     },
-    "tone": "dim"
+    "line2": {
+     "e": "sensor.washer",
+     "a": "program",
+     "s": "Cotton 40° · 1200 rpm"
+    },
+    "tone": "dim",
+    "size": "value"
    }
   }
  ]

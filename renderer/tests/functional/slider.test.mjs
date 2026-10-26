@@ -1,5 +1,9 @@
+import fs from 'node:fs';
 // Slider (components/slider.cpp): drag, tap-to-jump, clamp at min / max, step snapping, disabled / unavailable,
 // update path. The value comes back as the "change" event detail on release; the knob position is read from the tree.
+const C = JSON.parse(fs.readFileSync(new URL('../../tokens/colour.json', import.meta.url))).colours;
+const is = (hex, tok) => !!hex && [C[tok].dark, C[tok].light].some((v) => v.toUpperCase() === String(hex).toUpperCase());
+const inBox = (o, b) => o.x >= b.x && o.y >= b.y && o.x + o.w <= b.x + b.w && o.y + o.h <= b.y + b.h;
 const KNOB = { '1.5x': 24, '1x': 16 };
 const geo = (t, den) => {  // slider box, track (inset half a knob each side), knob centre x
   const b = t.part('slider'), k = KNOB[den];
@@ -11,6 +15,13 @@ const at = (g, f) => g.x0 + (g.x1 - g.x0) * f;
 export default {
   id: 'slider', family: 'controls', about: 'Horizontal slider: drag or tap-to-jump, value on release, clamps and snaps.',
   tests: [
+    { name: 'fill and knob are the accent (the lit-tile colour)', mount: ['slider', { value: 40 }], run(t, { den }) {
+      const g = geo(t, den), boxes = t.objs().filter((o) => o.bg && t.visible(o) && inBox(o, g.b) && o.w < g.b.w);
+      t.ok(g.knob && is(boxes.find((o) => o.x === g.knob.x && o.w === g.knob.w)?.bg, 'accent'), 'knob accent');
+      const fill = boxes.filter((o) => o !== g.knob && o.h < KNOB[den] && o.w > 0 && o.w < g.b.w - KNOB[den]);
+      t.ok(fill.some((o) => is(o.bg, 'accent')), `fill accent (${fill.map((o) => o.bg).join()})`);
+      t.ok(!fill.some((o) => is(o.bg, 'blue')), 'no blue fill');
+    } },
     { name: 'knob sits on the value at rest', mount: ['slider', { value: 40 }], run(t, { den }) {
       const g = geo(t, den); t.ok(g.knob, 'knob found'); t.ok(Math.abs(g.kx - at(g, 0.4)) <= 2, `knob at ${g.kx}, want ${at(g, 0.4)}`);
     } },

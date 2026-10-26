@@ -1,0 +1,261 @@
+{
+ "v": 1,
+ "id": "lights",
+ "name": "Living room lights",
+ "rev": 1,
+ "role": "page",
+ "header": {
+  "label": "Living room lights",
+  "back": true
+ },
+ "layout": "list",
+ "nodes": [
+  {
+   "c": "grid",
+   "p": {
+    "cols": 3,
+    "gap": "group",
+    "aspect": "row"
+   }
+  },
+  {
+   "c": "entity_tile",
+   "p": {
+    "icon": "bulb",
+    "label": "Ceiling",
+    "act": "toggle",
+    "on": {
+     "e": "light.lounge_ceiling",
+     "fmt": "on",
+     "s": "on"
+    },
+    "status": {
+     "e": "light.lounge_ceiling",
+     "map": {
+      "on": "On",
+      "off": "Off"
+     },
+     "s": "on"
+    },
+    "state": {
+     "e": "light.lounge_ceiling",
+     "fmt": "avail",
+     "s": "on"
+    }
+   },
+   "on": {
+    "tap": {
+     "do": "light.toggle",
+     "e": "light.lounge_ceiling"
+    }
+   },
+   "in": 0,
+   "slot": 0
+  },
+  {
+   "c": "entity_tile",
+   "p": {
+    "icon": "bulb",
+    "label": "Sofa lamp",
+    "act": "toggle",
+    "on": {
+     "e": "light.lounge_sofa_lamp",
+     "fmt": "on",
+     "s": "on"
+    },
+    "status": {
+     "e": "light.lounge_sofa_lamp",
+     "map": {
+      "on": "On",
+      "off": "Off"
+     },
+     "s": "on"
+    },
+    "state": {
+     "e": "light.lounge_sofa_lamp",
+     "fmt": "avail",
+     "s": "on"
+    }
+   },
+   "on": {
+    "tap": {
+     "do": "light.toggle",
+     "e": "light.lounge_sofa_lamp"
+    }
+   },
+   "in": 0,
+   "slot": 1
+  },
+  {
+   "c": "entity_tile",
+   "p": {
+    "icon": "bulb",
+    "label": "Reading",
+    "act": "toggle",
+    "on": {
+     "e": "light.lounge_reading_lamp",
+     "fmt": "on",
+     "s": "off"
+    },
+    "status": {
+     "e": "light.lounge_reading_lamp",
+     "map": {
+      "on": "On",
+      "off": "Off"
+     },
+     "s": "off"
+    },
+    "state": {
+     "e": "light.lounge_reading_lamp",
+     "fmt": "avail",
+     "s": "off"
+    }
+   },
+   "on": {
+    "tap": {
+     "do": "light.toggle",
+     "e": "light.lounge_reading_lamp"
+    }
+   },
+   "in": 0,
+   "slot": 2
+  },
+  {
+   "c": "entity_tile",
+   "p": {
+    "icon": "bulb",
+    "label": "Shelves",
+    "act": "toggle",
+    "on": {
+     "e": "light.lounge_shelves",
+     "fmt": "on",
+     "s": "off"
+    },
+    "status": {
+     "e": "light.lounge_shelves",
+     "map": {
+      "on": "On",
+      "off": "Off"
+     },
+     "s": "off"
+    },
+    "state": {
+     "e": "light.lounge_shelves",
+     "fmt": "avail",
+     "s": "off"
+    }
+   },
+   "on": {
+    "tap": {
+     "do": "light.toggle",
+     "e": "light.lounge_shelves"
+    }
+   },
+   "in": 0,
+   "slot": 3
+  },
+  {
+   "c": "entity_tile",
+   "p": {
+    "icon": "bulb",
+    "label": "TV glow",
+    "act": "toggle",
+    "on": {
+     "e": "light.lounge_tv_glow",
+     "fmt": "on",
+     "s": "on"
+    },
+    "status": {
+     "e": "light.lounge_tv_glow",
+     "map": {
+      "on": "On",
+      "off": "Off"
+     },
+     "s": "on"
+    },
+    "state": {
+     "e": "light.lounge_tv_glow",
+     "fmt": "avail",
+     "s": "on"
+    }
+   },
+   "on": {
+    "tap": {
+     "do": "light.toggle",
+     "e": "light.lounge_tv_glow"
+    }
+   },
+   "in": 0,
+   "slot": 4
+  },
+  {
+   "c": "entity_tile",
+   "p": {
+    "icon": "bulb",
+    "label": "Fireplace",
+    "act": "toggle",
+    "on": {
+     "e": "light.lounge_fireplace",
+     "fmt": "on",
+     "s": "off"
+    },
+    "status": {
+     "e": "light.lounge_fireplace",
+     "map": {
+      "on": "On",
+      "off": "Off"
+     },
+     "s": "off"
+    },
+    "state": {
+     "e": "light.lounge_fireplace",
+     "fmt": "avail",
+     "s": "off"
+    }
+   },
+   "on": {
+    "tap": {
+     "do": "light.toggle",
+     "e": "light.lounge_fireplace"
+    }
+   },
+   "in": 0,
+   "slot": 5
+  },
+  {
+   "c": "section_header",
+   "p": {
+    "title": "ceiling brightness",
+    "badge": false,
+    "right": "meta",
+    "meta": {
+     "e": "light.lounge_ceiling",
+     "a": "brightness_pct",
+     "tpl": "{}%",
+     "s": "80"
+    }
+   }
+  },
+  {
+   "c": "slider",
+   "p": {
+    "value": {
+     "e": "light.lounge_ceiling",
+     "a": "brightness_pct",
+     "fmt": "num",
+     "s": "80"
+    },
+    "min": 0,
+    "max": 100,
+    "step": 5,
+    "width": 0
+   },
+   "on": {
+    "change": {
+     "do": "light.brightness",
+     "e": "light.lounge_ceiling"
+    }
+   }
+  }
+ ]
+}

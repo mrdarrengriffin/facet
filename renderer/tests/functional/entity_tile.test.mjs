@@ -1,8 +1,13 @@
+import fs from 'node:fs';
+const C = JSON.parse(fs.readFileSync(new URL('../../tokens/colour.json', import.meta.url))).colours;
+const is = (hex, tok) => !!hex && [C[tok].dark, C[tok].light].some((v) => v.toUpperCase() === String(hex).toUpperCase());
+const inBox = (o, b) => o.x >= b.x && o.y >= b.y && o.x + o.w <= b.x + b.w && o.y + o.h <= b.y + b.h;
 // Entity tile (components/entity_tile.cpp) on its own, and the Home light cards built from it (screens/home.cpp:
 // status = "level" of the light, on = its state) driven through the fake Home Assistant: the state line must follow
 // the live HA state after a tap, an outside change, unavailable and a reconnect.
 const tile = (t, label) => t.part('entity_tile', label);
 const status = (t, label) => { const p = tile(t, label); return p ? p.texts.filter((s) => s.toUpperCase() !== label.toUpperCase()) : null; };
+const tileBg = (t, label) => { const p = tile(t, label); return p && t.objs().find((o) => o.box && o.x === p.x && o.y === p.y && o.w === p.w && o.h === p.h)?.bg; };
 const HOME_LIGHTS = { Ceiling: 'light.living_room_ceiling', 'Sofa table': 'light.sofa_lamp', Chair: 'light.reading_lamp' };
 export default {
   id: 'entity_tile', family: 'cards', about: 'Small card for one entity: name + state line, tap toggles or opens. Home light cards (device) included.',
@@ -32,6 +37,20 @@ export default {
     { name: 'update status + on: new line shows, silently', mount: ['entity_tile', { label: 'Sofa table', status: '64%', on: true }], run(t) {
       const ev = t.update({ status: 'Off', on: false }); t.silent(ev);
       t.has(status(t, 'Sofa table'), /^off$/i, 'status after update'); t.hasNot(status(t, 'Sofa table'), /64%/, 'old status');
+    } },
+    { name: 'filled with the accent iff on', mount: ['entity_tile', { label: 'Sofa table', status: '64%', on: true }], run(t) {
+      t.ok(is(tileBg(t, 'Sofa table'), 'accent'), `on: fill ${tileBg(t, 'Sofa table')}`);
+      const ink = t.objs().filter((o) => o.text && inBox(o, tile(t, 'Sofa table'))).map((o) => o.ink);
+      t.ok(ink.length && ink.every((k) => is(k, 'on-accent')), `on: every text on-accent (${ink.join()})`);
+      t.update({ on: false, status: 'Off' });
+      t.ok(is(tileBg(t, 'Sofa table'), 'surface'), `off: fill ${tileBg(t, 'Sofa table')}`);
+    } },
+    { name: 'off tile is not filled; a tap lights it', mount: ['entity_tile', { label: 'Chair', on: false, status: 'Off' }], run(t) {
+      t.ok(is(tileBg(t, 'Chair'), 'surface'), 'off: surface'); t.tap('Chair'); t.wait(600);
+      t.ok(is(tileBg(t, 'Chair'), 'accent'), `after the tap: ${tileBg(t, 'Chair')}`);
+    } },
+    { name: 'sensor (act none) stays unfilled', mount: ['entity_tile', { label: 'Garage', act: 'none', on: false, status: '18.5 °C' }], run(t) {
+      t.ok(is(tileBg(t, 'Garage'), 'surface'), 'surface');
     } },
     // ---- Home light cards on the device, live HA
     { name: 'Home: light cards show their HA level', async run(t) {

@@ -1,0 +1,18 @@
+{
+ "v": 1,
+ "id": "c_gridrows",
+ "name": "Checklist",
+ "rev": 1,
+ "role": "page",
+ "header": {"label": "Checklist", "back": true},
+ "layout": "list",
+ "nodes": [
+  {"c": "section_header", "p": {"title": "from a list"}},
+  {"c": "grid", "p": {"cols": 1, "gap": "near", "aspect": "row", "items": "Milk,Bread,Eggs"},
+   "cell": {"c": "checkbox", "p": {"check": "open", "label": "$item", "interactive": true}}},
+  {"c": "section_header", "p": {"title": "static"}},
+  {"c": "grid", "p": {"cols": 1, "gap": "near", "aspect": "row"}},
+  {"c": "checkbox", "p": {"check": "done", "label": "Tea", "interactive": true}, "in": 3, "slot": 0},
+  {"c": "checkbox", "p": {"check": "done", "label": "Rice", "interactive": true}, "in": 3, "slot": 1}
+ ]
+}

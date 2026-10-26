@@ -129,7 +129,8 @@
   "list_row": "^(On|Off) · \\d+%$",
   "grid": "^\\+\\d+$",
   "count_badge": "^99\\+$",
-  "section_header": "^99\\+$"
+  "section_header": "^99\\+$",
+  "bar_chart": "^([01]\\d|2[0-3])$"
  },
  "own_data": {
   "about": "Components that draw their own live feed, simulation or built-in sample data (not spec text): leak is not checked inside them.",

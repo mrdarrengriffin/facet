@@ -2,256 +2,93 @@
 // (renderer/specs/ai-examples), the same as each bind's sample. Made-up devices, not a real home.
 export const EXAMPLES = {
  "sensor.news": {
-  "updated": "Updated 07:40",
-  "": "4",
-  "stories": "[{\"t\":\"Rail strike called off\",\"s\":\"BBC · 12 min\"},{\"t\":\"Rates held at 4%\",\"s\":\"Reuters · 40 min\"},{\"t\":\"Fen floods ease overnight\",\"s\":\"Look East · 1 h\"},{\"t\":\"New Mars rover named\",\"s\":\"BBC · 2 h\"}]"
+  "updated": "10:00",
+  "stories": "[{\"t\":\"Rail strike off\",\"s\":\"BBC · 6m\"},{\"t\":\"Rates held at 4%\",\"s\":\"PA · 25m\"},{\"t\":\"Fen floods ease\",\"s\":\"ITV · 48m\"},{\"t\":\"Mars rover named\",\"s\":\"BBC · 1h\"},{\"t\":\"Winter fair opens\",\"s\":\"BBC · 2h\"},{\"t\":\"Ely roof saved\",\"s\":\"ITV · 3h\"}]"
  },
- "sensor.isaac": {
-  "won_share": "3",
-  "lost_share": "6",
-  "quit_share": "1",
-  "key": "won 37,lost 68,quit 7",
-  "streak": "4",
-  "achievements": "412",
-  "best_time": "21:08",
-  "runs": "112",
-  "last_runs": "[{\"b\":\"Mom's Heart\",\"c\":\"Judas · 38 min\",\"r\":\"Won\"},{\"b\":\"The Lamb\",\"c\":\"Isaac · 52 min\",\"r\":\"Lost\"},{\"b\":\"Mega Satan\",\"c\":\"Azazel · 44 min\",\"r\":\"Won\"}]"
+ "sensor.isaac_achievements": {
+  "": "412",
+  "line": "of 637 · 225 to go for Dead God",
+  "percent": "65",
+  "facts": "[{\"t\":\"Win streak\",\"v\":\"4\"},{\"t\":\"Runs\",\"v\":\"112\"},{\"t\":\"Characters\",\"v\":\"28 of 34\"},{\"t\":\"Last run\",\"v\":\"Won · 38 min\"}]"
  },
  "sensor.agents_working": {
-  "": "1"
- },
- "sensor.agents_needs": {
-  "": "1"
- },
- "sensor.agents_done": {
-  "": "1"
- },
- "sensor.agent_docs": {
-  "": "working",
-  "status": "Page 3 of 5"
+  "": "3"
  },
  "sensor.agent_firmware": {
   "": "needs",
-  "status": "1 question"
+  "status": "3 of 4"
+ },
+ "sensor.agent_docs": {
+  "": "working",
+  "status": "3 of 5"
  },
  "sensor.agent_review": {
-  "": "done",
-  "status": "12 notes"
+  "": "working",
+  "status": "7 of 12"
  },
- "sensor.agent_research": {
+ "sensor.agent_tests": {
+  "": "working",
+  "status": "18 of 40"
+ },
+ "sensor.agent_media": {
+  "": "done",
+  "status": "4 of 4"
+ },
+ "sensor.agent_audit": {
   "": "idle",
-  "status": "Waiting"
+  "status": "next 18:00"
  },
  "todo.shopping": {
-  "": "5"
+  "": "6",
+  "to_buy": "[\"Oat milk\",\"Sourdough loaf\",\"Bananas\",\"Coffee beans\",\"Cheddar\",\"Washing-up liquid\"]",
+  "basket": "[\"Eggs\",\"Tomatoes\",\"Pasta\"]"
  },
- "water_heater.tank": {
-  "current_temperature": "52",
-  "operation_mode": "auto"
+ "sensor.next_dose": {
+  "in_hours": "3",
+  "what": "13:00 · Ibuprofen 400 mg"
  },
- "sensor.tank_source": {
-  "": "Solar"
+ "sensor.doses_left_today": {
+  "": "2"
  },
- "sensor.tank_next_boost": {
-  "": "17:00"
+ "sensor.ibuprofen_left": {
+  "": "14"
  },
- "sensor.bin_days": {
-  "": "1"
+ "sensor.ibuprofen_reorder": {
+  "": "Wed 28 Oct"
  },
- "sensor.bin_next": {
-  "": "Recycling and garden out tonight"
- },
- "sensor.bin_recycling": {
-  "": "Tue 27"
- },
- "sensor.bin_garden": {
-  "": "Tue 27"
- },
- "sensor.bin_general": {
-  "": "Tue 3"
- },
- "sensor.bin_food": {
-  "": "Every Tue"
- },
- "sensor.next_trains": {
-  "first_time": "07:42",
-  "first_status": "on time",
-  "first_line": "Platform 2 · on time",
-  "departures": "[{\"t\":\"08:12 Cambridge\",\"p\":\"Platform 1\",\"d\":\"On time\"},{\"t\":\"08:42 Cambridge\",\"p\":\"Platform 2\",\"d\":\"+4 min\"},{\"t\":\"09:12 Cambridge\",\"p\":\"Platform 1\",\"d\":\"On time\"}]"
- },
- "binary_sensor.front_door": {
-  "": "off",
-  "since": "since 18:02"
- },
- "binary_sensor.porch_person": {
-  "": "on"
- },
- "sensor.porch_temperature": {
-  "": "9"
- },
- "light.porch": {
-  "": "on"
+ "sensor.washer": {
+  "progress": "62",
+  "": "rinse",
+  "left": "38 min left",
+  "ends": "done at 10:39",
+  "program": "Cotton 40° · 1200 rpm"
  },
  "sensor.electricity_price": {
-  "": "13.5"
+  "": "15",
+  "band_line": "Normal · peak from 16:00",
+  "today": "9,9,8,8,9,9,14,15,19,21,15,14,13,13,14,15,30,33,31,16,14,13,9,9",
+  "hour": "10",
+  "cheapest": "02:00 · 8p",
+  "peak": "17:00 · 33p"
  },
- "sensor.electricity_prices": {
-  "": "9,9,8,8,9,9,14,15,29,31,15,14,13,13,14,15,30,33,31,16,14,13,9,9"
+ "light.lounge_ceiling": {
+  "": "on",
+  "brightness_pct": "80"
  },
- "sensor.cheapest_slot": {
-  "": "02:00"
- },
- "sensor.plants_thirsty": {
-  "": "2"
- },
- "sensor.fern_moisture": {
-  "": "18"
- },
- "sensor.basil_moisture": {
-  "": "26"
- },
- "sensor.monstera_moisture": {
-  "": "46"
- },
- "sensor.snake_plant_moisture": {
-  "": "91"
- },
- "media_player.kitchen": {
-  "": "playing",
-  "media_progress": "42",
-  "media_title": "Harvest Moon",
-  "media_artist": "Neil Young",
-  "volume_pct": "35"
- },
- "timer.focus": {
-  "remaining": "18:24"
- },
- "sensor.focus_sessions": {
-  "": "check,check,minus,minus"
- },
- "input_select.focus_mode": {
-  "": "focus"
- },
- "binary_sensor.nas": {
+ "light.lounge_sofa_lamp": {
   "": "on"
  },
- "binary_sensor.proxmox": {
-  "": "on"
- },
- "binary_sensor.backup": {
+ "light.lounge_reading_lamp": {
   "": "off"
  },
- "binary_sensor.router": {
+ "light.lounge_shelves": {
+  "": "off"
+ },
+ "light.lounge_tv_glow": {
   "": "on"
  },
- "sensor.nas_cpu_history": {
-  "": "22,25,31,28,35,52,47,39,41"
- },
- "sensor.nas_cpu": {
-  "": "41"
- },
- "sensor.nas_memory": {
-  "": "63"
- },
- "sensor.nas_disk": {
-  "": "78"
- },
- "sensor.nas_uptime": {
-  "": "12"
- },
- "sensor.printer_progress": {
-  "": "64"
- },
- "sensor.printer_task": {
-  "": "Benchy v2 · PLA"
- },
- "sensor.printer_remaining": {
-  "": "1 h 12 min"
- },
- "sensor.printer_layer": {
-  "": "148/230"
- },
- "sensor.printer_nozzle": {
-  "": "215"
- },
- "sensor.printer_bed": {
-  "": "60"
- },
- "weather.home": {
-  "": "partlycloudy",
-  "temperature": "14",
-  "wind_speed": "12"
- },
- "sensor.run_verdict": {
-  "": "Good for a run · dry until 18:00"
- },
- "input_select.activity": {
-  "": "run"
- },
- "sensor.rain_chance": {
-  "": "5"
- },
- "sensor.uv_index": {
-  "": "2"
- },
- "sun.sun": {
-  "next_setting": "17:41"
- },
- "input_text.guest_wifi_password": {
-  "": "sunny-otter-42"
- },
- "sensor.washer_remaining": {
-  "": "38"
- },
- "sensor.washer_state": {
-  "": "Washing"
- },
- "sensor.dryer_state": {
-  "": "Idle"
- },
- "sensor.washer_end": {
-  "": "11:52"
- },
- "sensor.washer_programme": {
-  "": "Cotton 40° · 1400 spin"
- },
- "sensor.living_room_pm25": {
-  "": "8"
- },
- "sensor.living_room_air": {
-  "": "Good · no need to open a window"
- },
- "sensor.living_room_pm25_history": {
-  "": "6,7,9,14,12,10,8,7,8"
- },
- "sensor.living_room_co2": {
-  "": "640"
- },
- "sensor.living_room_voc": {
-  "": "Low"
- },
- "sensor.living_room_rh": {
-  "": "52"
- },
- "sensor.living_room_temp": {
-  "": "20.5"
- },
- "sensor.alarm_time": {
-  "": "06:45"
- },
- "input_boolean.alarm": {
-  "": "on"
- },
- "light.bedside": {
-  "brightness_pct": "30"
- },
- "sensor.team": {
-  "home": "norwich",
-  "home_score": "2",
-  "away": "luton",
-  "away_score": "1",
-  "summary": "Won · 6th in the league",
-  "next": "[{\"m\":\"Norwich v Ipswich\",\"d\":\"Sat 1 Nov\"},{\"m\":\"Leeds v Norwich\",\"d\":\"Tue 4 Nov\"},{\"m\":\"Norwich v Hull\",\"d\":\"Sat 8 Nov\"}]"
+ "light.lounge_fireplace": {
+  "": "off"
  }
 };
 // what a tap on each example changes in the docs' fake Home Assistant (site/src/lib/sample-ha.ts), by screen id
@@ -272,162 +109,21 @@ export const REACTIONS = {
    }
   }
  ],
- "hot_water": [
-  {
-   "ev": "change",
-   "is": "\\d+",
-   "set": {
-    "water_heater.tank|current_temperature": "$"
-   }
-  },
-  {
-   "ev": "change",
-   "is": "boost",
-   "set": {
-    "water_heater.tank|operation_mode": "boost",
-    "sensor.tank_source": "Boost",
-    "sensor.tank_next_boost": "on · 45 min"
-   }
-  },
-  {
-   "ev": "change",
-   "is": "auto",
-   "set": {
-    "water_heater.tank|operation_mode": "auto",
-    "sensor.tank_source": "Solar",
-    "sensor.tank_next_boost": "17:00"
-   }
-  },
-  {
-   "ev": "change",
-   "is": "off",
-   "set": {
-    "water_heater.tank|operation_mode": "off",
-    "sensor.tank_source": "Off",
-    "sensor.tank_next_boost": "none"
-   }
-  }
- ],
- "front_door": [
+ "medication": [
   {
    "ev": "toggle",
-   "is": "on|off",
-   "set": {
-    "light.porch": "$"
-   }
-  }
- ],
- "kitchenradio": [
-  {
-   "ev": "toggle",
-   "is": "play",
-   "set": {
-    "media_player.kitchen": "playing"
+   "is": "done",
+   "add": {
+    "sensor.doses_left_today": -1,
+    "sensor.ibuprofen_left": -1
    }
   },
   {
    "ev": "toggle",
-   "is": "pause",
-   "set": {
-    "media_player.kitchen": "paused"
-   }
-  },
-  {
-   "ev": "tap",
-   "is": "next",
-   "set": {
-    "media_player.kitchen|media_title": "Old Man",
-    "media_player.kitchen|media_progress": "0"
-   }
-  },
-  {
-   "ev": "tap",
-   "is": "prev",
-   "set": {
-    "media_player.kitchen|media_title": "Harvest Moon",
-    "media_player.kitchen|media_progress": "0"
-   }
-  },
-  {
-   "ev": "change",
-   "set": {
-    "media_player.kitchen|volume_pct": "$"
-   }
-  }
- ],
- "focus": [
-  {
-   "ev": "change",
-   "is": "focus",
-   "set": {
-    "input_select.focus_mode": "focus",
-    "timer.focus|remaining": "25:00"
-   }
-  },
-  {
-   "ev": "change",
-   "is": "short",
-   "set": {
-    "input_select.focus_mode": "short",
-    "timer.focus|remaining": "05:00"
-   }
-  },
-  {
-   "ev": "change",
-   "is": "long",
-   "set": {
-    "input_select.focus_mode": "long",
-    "timer.focus|remaining": "15:00"
-   }
-  },
-  {
-   "ev": "tap",
-   "is": "Skip",
-   "set": {
-    "sensor.focus_sessions": "check,check,check,minus",
-    "timer.focus|remaining": "05:00"
-   }
-  }
- ],
- "run_weather": [
-  {
-   "ev": "change",
-   "is": "ride",
-   "set": {
-    "input_select.activity": "ride",
-    "sensor.run_verdict": "Good for a ride · light wind"
-   }
-  },
-  {
-   "ev": "change",
-   "is": "run",
-   "set": {
-    "input_select.activity": "run",
-    "sensor.run_verdict": "Good for a run · dry until 18:00"
-   }
-  }
- ],
- "bedside": [
-  {
-   "ev": "toggle",
-   "is": "on",
-   "set": {
-    "input_boolean.alarm": "on",
-    "sensor.alarm_time": "06:45"
-   }
-  },
-  {
-   "ev": "toggle",
-   "is": "off",
-   "set": {
-    "input_boolean.alarm": "off",
-    "sensor.alarm_time": "Off"
-   }
-  },
-  {
-   "ev": "change",
-   "set": {
-    "light.bedside|brightness_pct": "$"
+   "is": "open",
+   "add": {
+    "sensor.doses_left_today": 1,
+    "sensor.ibuprofen_left": 1
    }
   }
  ]

@@ -3,9 +3,10 @@
 //   720: 48 tall (touch-min = docs slider-h), track 4 (round ends), knob 24 (= docs slider-knob)
 //   480: 32 tall (touch-min = docs 1x slider-h), track 4 (docs CSS 4 px literal; x 2/3 would be 2.67), knob 16 (= docs
 //        1x slider-knob). Knob = height / 2 at both densities. Width = prop in dp (snapped to the 4 px grid by px()).
-//   track line-hi, fill blue (from the track start to the value), knob accent; the knob centre sits ON the value, so at
+//   track line-hi, fill st::on_fill (accent, the lit-tile colour; from the track start to the value), knob accent; the knob centre sits ON the value, so at
 //   min / max it overhangs the track end by half a knob (docs: margin-left -knob/2). The box is the track + half a knob
-//   on each side (track inset knob / 2 = 12 / 8), so the knob never draws outside it: width prop = the track length.
+//   on each side (track inset knob / 2 = 12 / 8), so the knob never draws outside it: width prop = the track length
+//   (0 = the parent's content width less one knob, on the grid).
 // The docs define no pressed / dragging look (the knob follows the finger) and no value label or end icons (a labelled
 // row = List row / screen part, later). Disabled is not in the docs' slider; it follows Button / Toggle:
 //   disabled   track line, fill text-mute, knob text-dim; a press emits "blocked" and plays error ONCE (on press,
@@ -111,7 +112,9 @@ void fill(lv_obj_t *s, fw::Props p) {
   const int h = fw::touch::min;   // 48 / 32 = docs slider-h
   const int tr = fw::sp::s1;      // 4 / 4: the docs track (4 px at both)
   d->knob = h / 2;                // 24 / 16 = docs slider-knob
-  d->w = fw::px((float) (p["width"] | 256));
+  const int wdp = p["width"] | 256;  // 0 = its parent's content width (the track = that less one knob)
+  if (wdp > 0) d->w = fw::px((float) wdp);
+  else { lv_obj_update_layout(lv_obj_get_parent(s)); d->w = std::max(0, (int) lv_obj_get_content_width(lv_obj_get_parent(s)) - d->knob) / fw::sp::GRID * fw::sp::GRID; }
   fw::shape(s, sig(p));
 
   lv_obj_remove_style_all(s);
@@ -136,7 +139,7 @@ void fill(lv_obj_t *s, fw::Props p) {
   lv_obj_remove_flag(d->fill, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
   lv_obj_set_size(d->fill, 0, tr);
   lv_obj_set_style_bg_opa(d->fill, LV_OPA_COVER, 0);
-  lv_obj_set_style_bg_color(d->fill, fw::T->blue, 0);
+  lv_obj_set_style_bg_color(d->fill, fw::st::on_fill(*fw::T), 0);
   lv_obj_set_style_bg_color(d->fill, fw::st::disabled_ink(*fw::T), ST_OFF);
 
   d->kn = lv_obj_create(s);
@@ -174,7 +177,7 @@ FW_COMPONENT(slider, "Slider", "components", R"({
     {"name": "min", "about": "The lowest value, at the left end.", "type": "range", "min": 0, "max": 50, "step": 1, "default": 0},
     {"name": "max", "about": "The highest value, at the right end.", "type": "range", "min": 10, "max": 100, "step": 1, "default": 100},
     {"name": "step", "about": "How much the value changes from one position to the next.", "type": "range", "min": 1, "max": 25, "step": 1, "default": 1},
-    {"name": "width", "about": "How long the slider is, in pixels.", "type": "range", "min": 96, "max": 288, "step": 8, "default": 256},
+    {"name": "width", "about": "How long the slider is, in pixels; 0 fills the space it is in.", "type": "range", "min": 0, "max": 288, "step": 8, "default": 256},
     {"name": "state", "about": "default can be dragged; disabled cannot be changed; unavailable shows the device cannot be reached.", "type": "select", "options": ["default", "disabled", "unavailable"], "default": "default"}
   ],
   "variants": [

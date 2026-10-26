@@ -20,7 +20,7 @@
 // so bound text is checked as people see it (the "Make screens with AI" examples: --extra specs/ai-examples --demo-ha).
 // Skipped: docs-site previews (an Astro build, not the WASM; "blank" covers a component that draws nothing).
 // Usage: node tools/corpus.mjs [--den 1x|1.5x|all] [--gen-den 1x|1.5x|all] [--no-gen] [--only text] [--extra dir]
-//        [--json out.json] [--out dir] [--all-png] [--demo-ha] [-v]   -> table on stdout, PNGs of failures only in tests/spec-corpus/out/
+//        [--json out.json] [--out dir] [--all-png] [--demo-ha] [--clock HH:MM] [-v]   -> table on stdout, PNGs of failures only in tests/spec-corpus/out/
 //        (--out: another PNG dir; --all-png: every render, both themes), exit 1 on fail. JSON: per render {file, comp, tag,
 //        den, fails: [{kind, msg, theme, box: [{x, y, w, h}]}], png: {dark, light}} (box = the regions the check found)
 import { readFileSync, writeFileSync, readdirSync, mkdirSync, rmSync, existsSync } from 'node:fs';
@@ -41,6 +41,10 @@ const env = (() => { try { return Object.fromEntries(readFileSync(join(R, '..', 
 const BUILD = process.env.FW_OUT || env.FW_OUT || join(R, 'out');
 const dens = (v) => (v === 'all' ? ['1x', '1.5x'] : [v]);
 const DEMO_HA = argv.includes('--demo-ha');
+// --clock HH:MM pins the panel clock (Date.now, read by time() / localtime in the WASM) to Monday 26 Oct 2026 at that
+// time, so renders agree with their data; --demo-ha pins it to 10:01, the sample time every example's data uses.
+const CLOCK = arg('--clock', DEMO_HA ? '10:01' : null);
+if (CLOCK) { const [h, m] = CLOCK.split(':').map(Number), t = new Date(2026, 9, 26, h, m, 0).getTime(); Date.now = () => t; }
 const DEN = dens(arg('--den', 'all')), GDEN = dens(arg('--gen-den', '1x')), VERB = argv.includes('-v'), ONLY = arg('--only');
 const cat = JSON.parse(readFileSync(join(R, 'catalogue', 'catalogue.json'), 'utf8'));
 const layoutTok = JSON.parse(readFileSync(join(R, 'tokens', 'layout.json'), 'utf8'));
