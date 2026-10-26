@@ -127,9 +127,11 @@ void fill(lv_obj_t *r, const Spec &s, Row *d) {
   lv_obj_remove_flag(r, LV_OBJ_FLAG_SCROLLABLE);
   lv_obj_set_size(r, 2 * fw::lay::card_w + fw::lay::gutter, fw::lay::list_row_h);
   lv_obj_set_style_pad_hor(r, fw::sp::s4, 0);
-  if (s.divider) {  // hairline on top; children start below it, so the content box is centred in row - hair
+  if (s.divider) {  // hairline on top; children start below it, and the same inset at the bottom keeps the content box
+                   // centred on the row, so a centred child (a slot, the toggle) still lands on the 4 px grid
     lv_obj_set_style_border_side(r, LV_BORDER_SIDE_TOP, 0);
     lv_obj_set_style_border_width(r, fw::stroke::hair, 0);
+    lv_obj_set_style_pad_bottom(r, fw::stroke::hair, 0);
     lv_obj_set_style_border_color(r, t.line, 0);
   }
   lv_obj_set_style_bg_color(r, fw::st::pressed_tint(t), 0);  // states.json pressed tint

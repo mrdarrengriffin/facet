@@ -34,7 +34,11 @@
    "too dry"
   ],
   "covers_view": [
-   "no window chosen"
+   "no window chosen",
+   "venetian blind",
+   "roller blind",
+   "curtain",
+   "blind"
   ],
   "media_view": [
    "vol"
@@ -97,6 +101,20 @@
   "time": [
    "am",
    "pm"
+  ],
+  "mascot_mood": [
+   "slow blink, glances left / right",
+   "calm: eyes scanning left -> right like reading, occasional blink, 3 progress dots",
+   "happy arches, hop on arrival",
+   "wide eyes, raised brows, tilt, orange \"!\"",
+   "droopy half-closed eyes, sad brows, slumps 1 px",
+   "closed eyes, slow breathing, three \"z\" rising up-right"
+  ],
+  "plant_gauge": [
+   "needs water"
+  ],
+  "plant_row": [
+   "needs water"
   ]
  },
  "pattern": {
@@ -106,7 +124,12 @@
   "thermostat_view": "^set \\d+(\\.\\d)?°$",
   "clock_face": "^\\d{1,2}:\\d{2}$|^(MON|TUE|WED|THU|FRI|SAT|SUN) \\d{1,2} [A-Z]{3}$|^[A-Z][a-z]+day \\d{1,2} [A-Z][a-z]+$",
   "date_line": "^(MON|TUE|WED|THU|FRI|SAT|SUN) \\d{1,2} [A-Z]{3}$|^[A-Z][a-z]+day \\d{1,2} [A-Z][a-z]+$",
-  "vacuum_mode": "^(Vac \\+ mop|Vacuum|Mop)( · [A-Za-z+ ]+)*$|^(VAC \\+ MOP|VACUUM|MOP)( · [A-Z+ ]+)*$"
+  "vacuum_mode": "^(Vac \\+ mop|Vacuum|Mop)( · [A-Za-z+ ]+)*$|^(VAC \\+ MOP|VACUUM|MOP)( · [A-Z+ ]+)*$",
+  "plant_gauge": "^.+ · water below \\d+%$",
+  "list_row": "^(On|Off) · \\d+%$",
+  "grid": "^\\+\\d+$",
+  "count_badge": "^99\\+$",
+  "section_header": "^99\\+$"
  },
  "own_data": {
   "about": "Components that draw their own live feed, simulation or built-in sample data (not spec text): leak is not checked inside them.",

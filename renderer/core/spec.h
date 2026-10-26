@@ -666,6 +666,15 @@ inline const char *screen_json(const std::string &id) {
 }
 inline bool screen_known(const std::string &id) { return screen_json(id) || find(id.c_str()); }
 inline const char *deck_json() { return S().deck_over.empty() ? FACTORY_DECK : S().deck_over.c_str(); }
+// what nav.open can open: a screen, or a deck page id (a page card / shortcut) whose kind is a screen this build has
+inline bool opens_known(const std::string &id) {
+  if (screen_known(id)) return true;
+  ArduinoJson::JsonDocument deck;
+  if (deserializeJson(deck, deck_json())) return false;
+  for (ArduinoJson::JsonVariantConst pg : deck["pages"].as<ArduinoJson::JsonArrayConst>())
+    if (id == (pg["id"] | "")) { const std::string k = pg["kind"] | ""; return k == "home" || screen_known(k); }
+  return false;
+}
 // a screen's role: its spec's "role" (page when it has none), "page" for the built-in Home, "system" for the other
 // built-ins (Settings), "" = unknown
 inline std::string role_of(const std::string &id) {
@@ -1035,7 +1044,7 @@ inline bool run(Screen *s, Node &n, const char *event, const char *detail) {
     std::string id = a["screen"] | "";
     if (id.empty()) id = detail;  // the component's own "open": its detail is "<screen>[?{params}]"
     if (id.empty() || !id_ok(id.substr(0, id.find('?')))) return true;
-    if (!screen_known(id.substr(0, id.find('?')))) return true;  // a screen this build lacks (its feature is off): nothing opens
+    if (!opens_known(id.substr(0, id.find('?')))) return true;  // a screen this build lacks (its feature is off): nothing opens
     if (a["params"].is<ArduinoJson::JsonObjectConst>()) {
       std::string pj;
       serializeJson(a["params"], pj);

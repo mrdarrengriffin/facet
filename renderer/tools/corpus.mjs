@@ -10,7 +10,8 @@
 //   text      a label cut at the bottom, wider than its box (clipped or ellipsised) or holding an ellipsis
 //   spacing   list layout: a non-row node (hero_block, gauge, ...) followed by the next node closer than the group gap
 //   grid      a drawn box off the 4 px grid in its parent (the component audit's rule)
-//   contrast  a label's ink against its background in the rendered pixels (565, as drawn): < 4.5 (< 3 large text)
+//   contrast  a label's ink against its background in the rendered pixels (565, as drawn): < 4.5 (< 3 large text);
+//             not for a label drawn disabled / unavailable (fw::st::OFF on it or an ancestor, audit "off")
 //   leak      text on the screen that is not in the spec (a demo / sample default showing through)
 //   blank     a generated spec that draws nothing in the content box
 // tests/spec-corpus/allow.json: UI vocabulary a component draws itself, components showing their own feed / sample
@@ -138,7 +139,7 @@ async function run(item, den) {
   const numDefaults = [...nodeComps].flatMap((c) => (m.meta[c]?.props || []).filter((p) => p.type !== 'text' && p.default !== undefined).map((p) => p.default));
   const blob = strings({ spec, numDefaults }).join('\n').toLowerCase();
   const frames = {};
-  const disabled = (spec.nodes || []).some((n) => /disabled|unavailable/.test(String(n.p?.state ?? '')));
+  const disabled = (spec.nodes || []).some((n) => /disabled|unavailable/.test(String(n.p?.state ?? '')) || n.p?.colour === 'disabled' || n.p?.tone === 'mute');  // drawn dim on purpose (text-mute = disabled only)
   for (const light of [0, 1]) {
     const theme = light ? 'light' : 'dark';
     const st = m._fw_stage(W, W);
@@ -150,6 +151,7 @@ async function run(item, den) {
       if (v !== undefined) str(m, en, (pe) => str(m, a, (pa) => str(m, v, (pv) => m._fw_ha_put(pe, pa, pv))));
     }
     tick(m, DEMO_HA ? 3000 : 1000);  // demo values arrive after the build: let count-ups finish
+    for (let calm = 0, end = m.t + 2000; m.t < end && calm < 3;) { tick(m, 16); calm = m._fw_anims() ? 0 : calm + 1; }  // then until motion settles (a sheet / toast mid-slide is not what people read; live loops stop at 2 s)
     m._fw_refresh(st);
     const p = m._fw_frame(st), px = m.HEAPU8.slice(p, p + W * W * 4);
     for (let i = 3; i < px.length; i += 4) px[i] = 255;
@@ -159,6 +161,8 @@ async function run(item, den) {
     m._fw_stage_free(st);
     const at = (o) => { const cx = o.x + o.w / 2, cy = o.y + o.h / 2; const h = comps.filter((c) => cx >= c.x && cx < c.x + c.w && cy >= c.y && cy < c.y + c.h); return (h.filter((c) => c.top).sort((a, b) => a.d - b.d)[0] || h.sort((a, b) => b.d - a.d)[0] || {}).top || (h[0] || {}).c || '?'; };
     // a label that can show: on screen, not transparent, not inside a clipping ancestor that cuts it away
+    // a label under a later, opaque box that covers it (a sheet's scrim, a toast over a row): its pixels are that layer's
+    const under = (o) => { const i = os.indexOf(o); for (let k = i + 1; k < os.length; k++) { const a = os[k]; let anc = false; for (let q = k; q >= 0; q = os[q].p) if (q === i) { anc = true; break; } for (let q = o.p; q >= 0 && !anc; q = os[q].p) if (q === k) anc = true; if (!anc && a.box && a.opa !== 0 && inside(o, a)) return true; } return false; };
     const shows = (o) => { if (!o.w || !o.h || o.opa === 0 || o.x < 0 || o.y < 0 || o.x + o.w > W || o.y + o.h > W) return false; for (let k = o.p; k >= 0; k = os[k].p) { const a = os[k]; if ((!a.ov || a.sc) && !meets(o, a)) return false; } return true; };
     for (const err of checkScreen(os, W, W)) add(/leaves the screen/.test(err) ? 'outside' : 'overlap', err, theme, [...err.matchAll(/(\d+)x(\d+) at (-?\d+),(-?\d+)/g)].map((q) => ({ w: +q[1], h: +q[2], x: +q[3], y: +q[4] })));
     if (!light) {
@@ -195,7 +199,7 @@ async function run(item, den) {
         }
       }
       // contrast in the drawn pixels: background = the commonest colour in the box, ink = the farthest from it
-      if (disabled) continue;
+      if (disabled || o.off || under(o)) continue;  // a disabled / unavailable control is dim on purpose (states.json; WCAG exempts it)
       const hist = new Map();
       for (let y = o.y; y < o.y + o.h; y++) for (let x = o.x; x < o.x + o.w; x++) { const i = (y * W + x) * 4, k = (px[i] << 16) | (px[i + 1] << 8) | px[i + 2]; hist.set(k, (hist.get(k) || 0) + 1); }
       let bg = 0, bn = -1; for (const [k, n] of hist) if (n > bn) { bn = n; bg = k; }

@@ -533,6 +533,8 @@ void audit_walk(lv_obj_t *o, int parent, int depth, ArduinoJson::JsonArray arr) 
     j["pad"] = c->spec_attr ? c->spec_attr->ext_click_pad : 0;
     j["box"] = lv_obj_get_style_bg_opa(c, LV_PART_MAIN) > LV_OPA_TRANSP || lv_obj_get_style_border_width(c, LV_PART_MAIN) > 0;
     j["bw"] = lv_obj_get_style_border_width(c, LV_PART_MAIN);
+    for (lv_obj_t *k = c; k; k = lv_obj_get_parent(k))  // drawn disabled / unavailable (fw::st::OFF on it or an ancestor)
+      if (lv_obj_has_state(k, fw::st::OFF)) { j["off"] = true; break; }
     if (!strcmp(type_of(c), "label")) {
       int right = 0;
       const int cut = label_cut(c, &right);
