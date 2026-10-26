@@ -1,0 +1,98 @@
+{
+ "v": 1,
+ "id": "ai_agents",
+ "name": "AI agents",
+ "rev": 1,
+ "role": "page",
+ "header": {
+  "label": "AI agents",
+  "back": true
+ },
+ "layout": "cards",
+ "nodes": [
+  {
+   "c": "tile",
+   "p": {
+    "title": "Docs writer",
+    "kind": {
+     "e": "sensor.agent_docs",
+     "map": {
+      "working": "working",
+      "needs": "needs",
+      "done": "done"
+     },
+     "else": "idle",
+     "s": "working"
+    },
+    "status": {
+     "e": "sensor.agent_docs",
+     "a": "status",
+     "s": "Page 3 of 5"
+    }
+   }
+  },
+  {
+   "c": "tile",
+   "p": {
+    "title": "Firmware build",
+    "kind": {
+     "e": "sensor.agent_firmware",
+     "map": {
+      "working": "working",
+      "needs": "needs",
+      "done": "done"
+     },
+     "else": "idle",
+     "s": "needs"
+    },
+    "status": {
+     "e": "sensor.agent_firmware",
+     "a": "status",
+     "s": "1 question"
+    }
+   }
+  },
+  {
+   "c": "tile",
+   "p": {
+    "title": "Code review",
+    "kind": {
+     "e": "sensor.agent_review",
+     "map": {
+      "working": "working",
+      "needs": "needs",
+      "done": "done"
+     },
+     "else": "idle",
+     "s": "done"
+    },
+    "status": {
+     "e": "sensor.agent_review",
+     "a": "status",
+     "s": "12 notes"
+    }
+   }
+  },
+  {
+   "c": "tile",
+   "p": {
+    "title": "Research",
+    "kind": {
+     "e": "sensor.agent_research",
+     "map": {
+      "working": "working",
+      "needs": "needs",
+      "done": "done"
+     },
+     "else": "idle",
+     "s": "idle"
+    },
+    "status": {
+     "e": "sensor.agent_research",
+     "a": "status",
+     "s": "Waiting"
+    }
+   }
+  }
+ ]
+}

@@ -1,0 +1,142 @@
+[
+ {
+  "id": "news",
+  "title": "Headlines",
+  "about": "The top stories of a news feed, newest first, with the source and how long ago.",
+  "prompt": "Make a Facet screen \"Headlines\" listing the five newest stories from my news feed sensors (sensor.news_story_1 to 5, the title is the state, the source in the attribute source). Keep each headline on one line.",
+  "better": "Source logos would come with the icon component."
+ },
+ {
+  "id": "game_runs",
+  "title": "Game progress",
+  "about": "Wins, a streak and the latest runs of a roguelike, from a Steam or save-file sensor.",
+  "prompt": "Make a Facet screen \"Game progress\" for my roguelike: the hero is my win count (sensor.isaac_wins) of all runs (sensor.isaac_runs), then my win streak, achievements and the last three runs with how they ended.",
+  "better": "Character portraits and achievement badges would come with the icon component."
+ },
+ {
+  "id": "ai_agents",
+  "title": "AI agents",
+  "about": "What each AI agent is doing: working, needs you, done or idle, with a mascot that shows it.",
+  "prompt": "Make a Facet screen \"AI agents\" with one tile per agent (sensor.agent_docs, sensor.agent_firmware, sensor.agent_review, sensor.agent_research): the state is working, needs, done or idle and the attribute status says how far it has got.",
+  "better": "A grid layout would let a screen mix agent tiles with a summary."
+ },
+ {
+  "id": "shopping",
+  "title": "Shopping list",
+  "about": "A tick-off shopping list from a Home Assistant to-do list.",
+  "prompt": "Make a Facet screen \"Shopping list\" from todo.shopping: a count of what is left, then each item as a checkbox, ticked ones done.",
+  "better": ""
+ },
+ {
+  "id": "medication",
+  "title": "Medication",
+  "about": "Today's doses, which are taken and when the next one is due.",
+  "prompt": "Make a Facet screen \"Medication\" for today: the next dose time as the hero (sensor.next_dose), then each dose of the day as a checkbox, the ones taken ticked.",
+  "better": ""
+ },
+ {
+  "id": "bin_day",
+  "title": "Bin day",
+  "about": "Which bins go out next and how many days are left, from a council collection sensor.",
+  "prompt": "Make a Facet screen \"Bin day\": how many days until the next collection (sensor.bin_days) as the hero with which bins go out, then each bin with its next date.",
+  "better": "Bin colour icons would come with the icon component."
+ },
+ {
+  "id": "trains",
+  "title": "Next trains",
+  "about": "The next departures from your station with platforms and delays.",
+  "prompt": "Make a Facet screen \"Next trains\" for my commute (sensor.next_train_1 to 3 from the National Rail integration): the first train as the hero with its platform, then the next departures with on time or the delay.",
+  "better": "A grid would put platform and delay in columns."
+ },
+ {
+  "id": "parcels",
+  "title": "Parcels",
+  "about": "Deliveries due today and this week, with where each one is.",
+  "prompt": "Make a Facet screen \"Parcels\" from my parcel tracking sensors: the number arriving today as the hero, then each parcel with its status and when it is due.",
+  "better": "Courier logos would come with the icon component."
+ },
+ {
+  "id": "energy_price",
+  "title": "Energy price",
+  "about": "The electricity price now, the cheap and peak hours of the day and when to run the dishwasher.",
+  "prompt": "Make a Facet screen \"Energy price\" from my Octopus Agile sensors: the price now as the hero in pence per kWh, the day as cheap / normal / peak hours with now marked, and the cheapest slot.",
+  "better": ""
+ },
+ {
+  "id": "plants",
+  "title": "Plant care",
+  "about": "Which plants need water today, by their soil moisture.",
+  "prompt": "Make a Facet screen \"Plant care\": how many plants need water as the hero, then each plant with its soil moisture and when it needs water.",
+  "better": "The plant gauge, once released, would draw each moisture as a bar."
+ },
+ {
+  "id": "chores",
+  "title": "Chores",
+  "about": "Each child's jobs for today, ticked off as they go.",
+  "prompt": "Make a Facet screen \"Chores\" for my two kids: how many jobs are left today as the hero, then each job as a checkbox starting with whose job it is, done ones ticked.",
+  "better": "Avatars per child would come with the icon component."
+ },
+ {
+  "id": "focus",
+  "title": "Focus",
+  "about": "A focus session timer: time left, which session it is and a break after.",
+  "prompt": "Make a Facet screen \"Focus\" for a pomodoro timer (timer.focus): the time left as the hero, a ring that fills as the session runs, then the session count and what comes next.",
+  "better": ""
+ },
+ {
+  "id": "homelab",
+  "title": "Homelab",
+  "about": "Servers and services at a glance: what is up, CPU load and anything that needs a look.",
+  "prompt": "Make a Facet screen \"Homelab\": how many services are up as the hero with anything that needs a look, each server with its load, then the NAS CPU over the last hour as a small line.",
+  "better": ""
+ },
+ {
+  "id": "printer",
+  "title": "3D printer",
+  "about": "A 3D print under way: how far along, time left and the temperatures.",
+  "prompt": "Make a Facet screen \"3D printer\" for my Bambu printer: the print progress as the hero with the file name, then time left, layer, nozzle and bed temperature.",
+  "better": ""
+ },
+ {
+  "id": "run_weather",
+  "title": "Run weather",
+  "about": "Is it good for a run or a ride: the weather now and sunset.",
+  "prompt": "Make a Facet screen \"Run weather\" from weather.home: the temperature with a one-line verdict for a run, then wind, rain chance, UV and the next dry window.",
+  "better": "A weather icon beside the temperature would fit once a row layout is released."
+ },
+ {
+  "id": "guest_wifi",
+  "title": "Guest Wi-Fi",
+  "about": "A QR code guests scan to join the Wi-Fi, with the network name and password.",
+  "prompt": "Make a Facet screen \"Guest Wi-Fi\" with a QR code for my guest network (WIFI:T:WPA;S:Guest;P:<password>;;) that phones can scan, and the name and password written under it.",
+  "better": ""
+ },
+ {
+  "id": "laundry",
+  "title": "Laundry",
+  "about": "The washer and dryer: minutes left, the programme and when it ends.",
+  "prompt": "Make a Facet screen \"Laundry\": the washing machine time left as the hero with its programme and end time, then each machine and the detergent left.",
+  "better": ""
+ },
+ {
+  "id": "air_quality",
+  "title": "Air quality",
+  "about": "Indoor air: fine particles, CO2 and humidity, with the trend today.",
+  "prompt": "Make a Facet screen \"Air quality\" from my indoor air sensor: PM2.5 as the hero with a one-line verdict, then CO2, VOC and humidity, and the PM2.5 trend today as a small line.",
+  "better": ""
+ },
+ {
+  "id": "birthdays",
+  "title": "Birthdays",
+  "about": "Days to the next birthday and who comes after, from a calendar.",
+  "prompt": "Make a Facet screen \"Birthdays\" from calendar.birthdays: days to the next birthday as the hero with who and how old, then the next three.",
+  "better": ""
+ },
+ {
+  "id": "fixtures",
+  "title": "Fixtures",
+  "about": "Your team's next match, the latest result and the league position.",
+  "prompt": "Make a Facet screen \"Fixtures\" for my football team from the TeamTracker sensor: the next kick-off as the hero, the last result and league position, then the next three fixtures.",
+  "better": "Club crests would come with the icon component; a grid would line up scores."
+ }
+]

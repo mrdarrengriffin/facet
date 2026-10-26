@@ -15,9 +15,11 @@
 //   blank     a generated spec that draws nothing in the content box
 // tests/spec-corpus/allow.json: UI vocabulary a component draws itself, components showing their own feed / sample
 // data (no leak check inside), generated specs allowed to be blank.
+// --demo-ha: feeds every (entity, attribute) a screen binds its demo value (tools/demo_ha.mjs), as the docs previews do,
+// so bound text is checked as people see it (the "Make screens with AI" examples: --extra specs/ai-examples --demo-ha).
 // Skipped: docs-site previews (an Astro build, not the WASM; "blank" covers a component that draws nothing).
 // Usage: node tools/corpus.mjs [--den 1x|1.5x|all] [--gen-den 1x|1.5x|all] [--no-gen] [--only text] [--extra dir]
-//        [--json out.json] [--out dir] [--all-png] [-v]   -> table on stdout, PNGs of failures only in tests/spec-corpus/out/
+//        [--json out.json] [--out dir] [--all-png] [--demo-ha] [-v]   -> table on stdout, PNGs of failures only in tests/spec-corpus/out/
 //        (--out: another PNG dir; --all-png: every render, both themes), exit 1 on fail. JSON: per render {file, comp, tag,
 //        den, fails: [{kind, msg, theme, box: [{x, y, w, h}]}], png: {dark, light}} (box = the regions the check found)
 import { readFileSync, writeFileSync, readdirSync, mkdirSync, rmSync, existsSync } from 'node:fs';
@@ -26,6 +28,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { deflateSync } from 'node:zlib';
 import { checkScreen } from './audit_screens.mjs';
 import { generate, optionCount } from '../tests/spec-corpus/gen.mjs';
+import { demoValue } from './demo_ha.mjs';
 
 const R = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const CORPUS = join(R, 'tests', 'spec-corpus');
@@ -36,6 +39,7 @@ const args = (k) => argv.flatMap((a, i) => (a === k ? [argv[i + 1]] : []));
 const env = (() => { try { return Object.fromEntries(readFileSync(join(R, '..', 'local.env'), 'utf8').split('\n').map((l) => l.match(/^([A-Z_]+)=(.*)$/)).filter(Boolean).map((m) => [m[1], m[2]])); } catch { return {}; } })();
 const BUILD = process.env.FW_OUT || env.FW_OUT || join(R, 'out');
 const dens = (v) => (v === 'all' ? ['1x', '1.5x'] : [v]);
+const DEMO_HA = argv.includes('--demo-ha');
 const DEN = dens(arg('--den', 'all')), GDEN = dens(arg('--gen-den', '1x')), VERB = argv.includes('-v'), ONLY = arg('--only');
 const cat = JSON.parse(readFileSync(join(R, 'catalogue', 'catalogue.json'), 'utf8'));
 const layoutTok = JSON.parse(readFileSync(join(R, 'tokens', 'layout.json'), 'utf8'));
@@ -141,7 +145,11 @@ async function run(item, den) {
     tick(m, 32);
     const e = str(m, 'spec', (pc) => str(m, JSON.stringify({ screen: spec.id }), (pp) => m.UTF8ToString(m._fw_render(st, pc, pp, light, -1))));
     if (e) { add('valid', `build: ${e}`); m._fw_stage_free(st); break; }
-    tick(m, 1000);
+    if (DEMO_HA) for (const [en, a] of JSON.parse(m.UTF8ToString(m._fw_ha_wants()))) {
+      const v = demoValue(en, a);
+      if (v !== undefined) str(m, en, (pe) => str(m, a, (pa) => str(m, v, (pv) => m._fw_ha_put(pe, pa, pv))));
+    }
+    tick(m, DEMO_HA ? 3000 : 1000);  // demo values arrive after the build: let count-ups finish
     m._fw_refresh(st);
     const p = m._fw_frame(st), px = m.HEAPU8.slice(p, p + W * W * 4);
     for (let i = 3; i < px.length; i += 4) px[i] = 255;

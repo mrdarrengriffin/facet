@@ -1,0 +1,108 @@
+{
+ "v": 1,
+ "id": "homelab",
+ "name": "Homelab",
+ "rev": 1,
+ "role": "page",
+ "header": {
+  "label": "Homelab",
+  "back": true
+ },
+ "layout": "list",
+ "nodes": [
+  {
+   "c": "hero_block",
+   "p": {
+    "n": {
+     "e": "sensor.services_up",
+     "s": "11"
+    },
+    "label": "services up",
+    "role": "hero",
+    "label_type": "label",
+    "line": "Backup box needs a look"
+   }
+  },
+  {
+   "c": "section_header",
+   "p": {
+    "title": "servers",
+    "badge": false,
+    "right": "none"
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "NAS",
+    "icon": "none",
+    "trailing": "value",
+    "value": {
+     "e": "sensor.nas_cpu",
+     "tpl": "{}%",
+     "s": "41"
+    },
+    "sub": "Up 12 days"
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Proxmox",
+    "icon": "none",
+    "trailing": "value",
+    "value": {
+     "e": "sensor.proxmox_cpu",
+     "tpl": "{}%",
+     "s": "18"
+    },
+    "sub": "6 guests running"
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Backup box",
+    "icon": "none",
+    "trailing": "value",
+    "value": "Check",
+    "sub": "Last backup 3 days ago"
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Router",
+    "icon": "none",
+    "trailing": "value",
+    "value": {
+     "e": "sensor.router_cpu",
+     "tpl": "{}%",
+     "s": "7"
+    },
+    "sub": "Up 41 days"
+   }
+  },
+  {
+   "c": "section_header",
+   "p": {
+    "title": "nas cpu",
+    "badge": false,
+    "right": "meta",
+    "meta": "last hour"
+   }
+  },
+  {
+   "c": "sparkline",
+   "p": {
+    "values": {
+     "e": "sensor.nas_cpu_history",
+     "s": "22,25,31,28,35,52,47,39,41"
+    },
+    "colour": "accent",
+    "width": 224,
+    "dot": true
+   }
+  }
+ ]
+}

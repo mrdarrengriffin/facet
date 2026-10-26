@@ -1,0 +1,84 @@
+{
+ "v": 1,
+ "id": "shopping",
+ "name": "Shopping list",
+ "rev": 1,
+ "role": "page",
+ "header": {
+  "label": "Shopping list",
+  "back": true
+ },
+ "layout": "list",
+ "nodes": [
+  {
+   "c": "section_header",
+   "p": {
+    "title": "to buy",
+    "badge": true,
+    "right": "none",
+    "count": {
+     "e": "todo.shopping",
+     "s": "5"
+    },
+    "tone": "info",
+    "zero": "muted"
+   }
+  },
+  {
+   "c": "checkbox",
+   "p": {
+    "check": "open",
+    "label": "Oat milk",
+    "interactive": true
+   }
+  },
+  {
+   "c": "checkbox",
+   "p": {
+    "check": "open",
+    "label": "Sourdough loaf",
+    "interactive": true
+   }
+  },
+  {
+   "c": "checkbox",
+   "p": {
+    "check": "open",
+    "label": "Bananas",
+    "interactive": true
+   }
+  },
+  {
+   "c": "checkbox",
+   "p": {
+    "check": "open",
+    "label": "Washing-up liquid",
+    "interactive": true
+   }
+  },
+  {
+   "c": "checkbox",
+   "p": {
+    "check": "open",
+    "label": "Coffee beans",
+    "interactive": true
+   }
+  },
+  {
+   "c": "checkbox",
+   "p": {
+    "check": "done",
+    "label": "Eggs",
+    "interactive": true
+   }
+  },
+  {
+   "c": "checkbox",
+   "p": {
+    "check": "done",
+    "label": "Tomatoes",
+    "interactive": true
+   }
+  }
+ ]
+}

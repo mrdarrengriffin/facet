@@ -1,0 +1,86 @@
+{
+ "v": 1,
+ "id": "bin_day",
+ "name": "Bin day",
+ "rev": 1,
+ "role": "page",
+ "header": {
+  "label": "Bin day",
+  "back": true
+ },
+ "layout": "list",
+ "nodes": [
+  {
+   "c": "hero_block",
+   "p": {
+    "n": {
+     "e": "sensor.bin_days",
+     "s": "2"
+    },
+    "label": "days to bin day",
+    "role": "hero",
+    "label_type": "label",
+    "line": {
+     "e": "sensor.bin_next",
+     "s": "Recycling and garden · Tue"
+    }
+   }
+  },
+  {
+   "c": "section_header",
+   "p": {
+    "title": "next collections",
+    "badge": false,
+    "right": "none"
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Recycling",
+    "icon": "none",
+    "trailing": "value",
+    "value": {
+     "e": "sensor.bin_recycling",
+     "s": "Tue 27 Oct"
+    }
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Garden waste",
+    "icon": "none",
+    "trailing": "value",
+    "value": {
+     "e": "sensor.bin_garden",
+     "s": "Tue 27 Oct"
+    }
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "General waste",
+    "icon": "none",
+    "trailing": "value",
+    "value": {
+     "e": "sensor.bin_general",
+     "s": "Tue 3 Nov"
+    }
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Food caddy",
+    "icon": "none",
+    "trailing": "value",
+    "value": {
+     "e": "sensor.bin_food",
+     "s": "Every Tue"
+    }
+   }
+  }
+ ]
+}

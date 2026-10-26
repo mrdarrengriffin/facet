@@ -1,0 +1,78 @@
+{
+ "v": 1,
+ "id": "trains",
+ "name": "Next trains",
+ "rev": 1,
+ "role": "page",
+ "header": {
+  "label": "Next trains",
+  "back": true
+ },
+ "layout": "list",
+ "nodes": [
+  {
+   "c": "hero_block",
+   "p": {
+    "n": {
+     "e": "sensor.next_train_1",
+     "s": "07:42"
+    },
+    "label": "next train",
+    "role": "display",
+    "label_type": "label",
+    "line": {
+     "e": "sensor.next_train_1",
+     "a": "summary",
+     "s": "Platform 2 · on time"
+    }
+   }
+  },
+  {
+   "c": "section_header",
+   "p": {
+    "title": "to cambridge",
+    "badge": false,
+    "right": "meta",
+    "meta": "Ely"
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "08:12 Cambridge",
+    "over": "Platform 1",
+    "icon": "none",
+    "trailing": "value",
+    "value": {
+     "e": "sensor.next_train_2",
+     "a": "status",
+     "s": "On time"
+    }
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "08:42 Cambridge",
+    "over": "Platform 2",
+    "icon": "none",
+    "trailing": "value",
+    "value": {
+     "e": "sensor.next_train_3",
+     "a": "status",
+     "s": "+4 min"
+    }
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "09:12 Cambridge",
+    "over": "Platform 1",
+    "icon": "none",
+    "trailing": "value",
+    "value": "On time"
+   }
+  }
+ ]
+}

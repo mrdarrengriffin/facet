@@ -1,0 +1,90 @@
+{
+ "v": 1,
+ "id": "printer",
+ "name": "3D printer",
+ "rev": 1,
+ "role": "page",
+ "header": {
+  "label": "3D printer",
+  "back": true
+ },
+ "layout": "list",
+ "nodes": [
+  {
+   "c": "hero_block",
+   "p": {
+    "n": {
+     "e": "sensor.printer_progress",
+     "tpl": "{}%",
+     "s": "64"
+    },
+    "label": "printed",
+    "role": "hero",
+    "label_type": "label",
+    "line": {
+     "e": "sensor.printer_task",
+     "s": "Benchy v2 · PLA"
+    },
+    "accent": true
+   }
+  },
+  {
+   "c": "section_header",
+   "p": {
+    "title": "details",
+    "badge": false,
+    "right": "none"
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Time left",
+    "icon": "none",
+    "trailing": "value",
+    "value": {
+     "e": "sensor.printer_remaining",
+     "s": "1 h 12 min"
+    }
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Layer",
+    "icon": "none",
+    "trailing": "value",
+    "value": {
+     "e": "sensor.printer_layer",
+     "s": "148 of 230"
+    }
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Nozzle",
+    "icon": "none",
+    "trailing": "value",
+    "value": {
+     "e": "sensor.printer_nozzle",
+     "tpl": "{}°",
+     "s": "215"
+    }
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Bed",
+    "icon": "none",
+    "trailing": "value",
+    "value": {
+     "e": "sensor.printer_bed",
+     "tpl": "{}°",
+     "s": "60"
+    }
+   }
+  }
+ ]
+}

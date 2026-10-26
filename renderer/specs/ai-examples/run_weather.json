@@ -1,0 +1,90 @@
+{
+ "v": 1,
+ "id": "run_weather",
+ "name": "Run weather",
+ "rev": 1,
+ "role": "page",
+ "header": {
+  "label": "Run weather",
+  "back": true
+ },
+ "layout": "list",
+ "nodes": [
+  {
+   "c": "hero_block",
+   "p": {
+    "n": {
+     "e": "weather.home",
+     "a": "temperature",
+     "tpl": "{}°",
+     "s": "14"
+    },
+    "label": "good for a run",
+    "role": "hero",
+    "label_type": "label",
+    "line": "Dry until 18:00, light wind"
+   }
+  },
+  {
+   "c": "section_header",
+   "p": {
+    "title": "conditions",
+    "badge": false,
+    "right": "none"
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Wind",
+    "icon": "none",
+    "trailing": "value",
+    "value": {
+     "e": "weather.home",
+     "a": "wind_speed",
+     "tpl": "{} km/h",
+     "s": "12"
+    }
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Rain",
+    "icon": "none",
+    "trailing": "value",
+    "value": {
+     "e": "sensor.rain_chance",
+     "tpl": "{}%",
+     "s": "5"
+    }
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "UV",
+    "icon": "none",
+    "trailing": "value",
+    "value": {
+     "e": "sensor.uv_index",
+     "tpl": "{} low",
+     "s": "2"
+    }
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Sunset",
+    "icon": "none",
+    "trailing": "value",
+    "value": {
+     "e": "sun.sun",
+     "a": "next_setting",
+     "s": "17:41"
+    }
+   }
+  }
+ ]
+}

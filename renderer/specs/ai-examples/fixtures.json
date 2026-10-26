@@ -1,0 +1,99 @@
+{
+ "v": 1,
+ "id": "fixtures",
+ "name": "Fixtures",
+ "rev": 1,
+ "role": "page",
+ "header": {
+  "label": "Fixtures",
+  "back": true
+ },
+ "layout": "list",
+ "nodes": [
+  {
+   "c": "hero_block",
+   "p": {
+    "n": {
+     "e": "sensor.team_next_kickoff",
+     "s": "Sat 15:00"
+    },
+    "label": "next match",
+    "role": "hero",
+    "label_type": "label",
+    "line": {
+     "e": "sensor.team_next_match",
+     "s": "v Ipswich · home"
+    }
+   }
+  },
+  {
+   "c": "section_header",
+   "p": {
+    "title": "form",
+    "badge": false,
+    "right": "none"
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Last result",
+    "icon": "none",
+    "trailing": "value",
+    "value": {
+     "e": "sensor.team_last_result",
+     "s": "Won 2-1"
+    },
+    "sub": "v Luton, away"
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "League",
+    "icon": "none",
+    "trailing": "value",
+    "value": {
+     "e": "sensor.team_position",
+     "tpl": "{}th",
+     "s": "6"
+    }
+   }
+  },
+  {
+   "c": "section_header",
+   "p": {
+    "title": "fixtures",
+    "badge": false,
+    "right": "none"
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Norwich v Ipswich",
+    "icon": "none",
+    "trailing": "value",
+    "value": "Sat 1 Nov"
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Leeds v Norwich",
+    "icon": "none",
+    "trailing": "value",
+    "value": "Tue 4 Nov"
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Norwich v Hull",
+    "icon": "none",
+    "trailing": "value",
+    "value": "Sat 8 Nov"
+   }
+  }
+ ]
+}

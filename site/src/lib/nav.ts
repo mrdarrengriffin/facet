@@ -27,7 +27,7 @@ export function url(path: string): string {
 export const UPDATES_PAGE = false;
 
 export const headerLinks = [
-  { label: 'Docs', href: url('/roadmap/'), match: [url('/roadmap/'), url('/screens/')] },
+  { label: 'Docs', href: url('/roadmap/'), match: [url('/roadmap/'), url('/screens/'), url('/ai/')] },
   { label: 'Components', href: url('/components/'), match: [url('/components/')] },
   { label: 'Design system', href: url('/foundations/'), match: [url('/foundations/')] },
   ...(UPDATES_PAGE ? [{ label: 'Updates', href: url('/updates/'), match: [url('/updates/')] }] : []),
@@ -39,7 +39,7 @@ const byLabel = (a: NavLink, b: NavLink) => a.label.localeCompare(b.label);
 
 export function getSidebar(): NavGroup[] {
   return [
-    { label: 'Start here', links: [soon('Getting started'), { label: 'Install', href: url('/install/') }] },
+    { label: 'Start here', links: [soon('Getting started'), { label: 'Install', href: url('/install/') }, { label: 'Make screens with AI', href: url('/ai/') }, { label: 'Example screens', href: url('/ai/examples/') }] },
     { label: 'Concepts', links: [soon('Design tokens'), soon('Components'), soon('Firmware')] },
     {
       label: 'Design system',

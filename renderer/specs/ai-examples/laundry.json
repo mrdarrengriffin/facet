@@ -1,0 +1,76 @@
+{
+ "v": 1,
+ "id": "laundry",
+ "name": "Laundry",
+ "rev": 1,
+ "role": "page",
+ "header": {
+  "label": "Laundry",
+  "back": true
+ },
+ "layout": "list",
+ "nodes": [
+  {
+   "c": "hero_block",
+   "p": {
+    "n": {
+     "e": "sensor.washer_remaining",
+     "s": "38"
+    },
+    "label": "minutes left",
+    "role": "hero",
+    "label_type": "label",
+    "line": {
+     "e": "sensor.washer_programme",
+     "s": "Cotton 40° · ends 11:52"
+    }
+   }
+  },
+  {
+   "c": "section_header",
+   "p": {
+    "title": "machines",
+    "badge": false,
+    "right": "none"
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Washing machine",
+    "icon": "none",
+    "trailing": "value",
+    "value": {
+     "e": "sensor.washer_state",
+     "s": "Washing"
+    },
+    "sub": "Started 10:34"
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Dryer",
+    "icon": "none",
+    "trailing": "value",
+    "value": {
+     "e": "sensor.dryer_state",
+     "s": "Idle"
+    },
+    "sub": "Last run yesterday"
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Detergent",
+    "icon": "none",
+    "trailing": "value",
+    "value": {
+     "e": "sensor.washer_detergent",
+     "s": "About 9 washes"
+    }
+   }
+  }
+ ]
+}

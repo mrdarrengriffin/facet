@@ -1,0 +1,103 @@
+{
+ "v": 1,
+ "id": "game_runs",
+ "name": "Game progress",
+ "rev": 1,
+ "role": "page",
+ "header": {
+  "label": "Game progress",
+  "back": true
+ },
+ "layout": "list",
+ "nodes": [
+  {
+   "c": "hero_block",
+   "p": {
+    "n": {
+     "e": "sensor.isaac_wins",
+     "s": "37"
+    },
+    "label": "runs won",
+    "role": "hero",
+    "label_type": "label",
+    "line": {
+     "e": "sensor.isaac_runs",
+     "tpl": "of {} runs",
+     "s": "112"
+    }
+   }
+  },
+  {
+   "c": "section_header",
+   "p": {
+    "title": "progress",
+    "badge": false,
+    "right": "none"
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Win streak",
+    "icon": "none",
+    "trailing": "value",
+    "value": {
+     "e": "sensor.isaac_streak",
+     "tpl": "{} in a row",
+     "s": "4"
+    }
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Achievements",
+    "icon": "none",
+    "trailing": "value",
+    "value": {
+     "e": "sensor.isaac_achievements",
+     "tpl": "{} of 637",
+     "s": "412"
+    }
+   }
+  },
+  {
+   "c": "section_header",
+   "p": {
+    "title": "last runs",
+    "badge": false,
+    "right": "none"
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Mom's Heart",
+    "icon": "none",
+    "trailing": "value",
+    "value": "Won",
+    "sub": "Judas · 38 min"
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "The Lamb",
+    "icon": "none",
+    "trailing": "value",
+    "value": "Lost",
+    "sub": "Isaac · 52 min"
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Mega Satan",
+    "icon": "none",
+    "trailing": "value",
+    "value": "Won",
+    "sub": "Azazel · 44 min"
+   }
+  }
+ ]
+}

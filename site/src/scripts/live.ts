@@ -14,6 +14,8 @@ const DEN = { 720: { den: '1.5x', d: 1.5, size: 720 }, 480: { den: '1x', d: 1, s
 type Item = { el: HTMLElement; comp: string; props: Record<string, unknown>; label: string; frame: [number, number]; doc: boolean; stage?: Stage; err?: HTMLElement;
   /** the playground stage (props from the controls, never reset) / a picture only (home strip, components overview) */
   sandbox?: boolean; still?: boolean;
+  /** a screen spec's JSON to install before the first draw (Live spec) */
+  spec?: string;
   /** a finger is down on the canvas */
   held?: boolean };
 
@@ -38,6 +40,21 @@ function themeOf(it: Item, p: Prefs): 'dark' | 'light' {
 let lastLook = '';
 let accentSets: { id: string }[] = [];
 const items: Item[] = [];
+// specs installed per engine (a new engine = a new panel: install again)
+const installed = new WeakMap<Engine, Set<string>>();
+/** a spec item's screen spec, sent to the engine as a panel takes one (POST /fw/spec kind screen); '' or the error */
+function install(e: Engine, it: Item): string {
+  if (!it.spec) return '';
+  let done = installed.get(e);
+  if (!done) installed.set(e, (done = new Set()));
+  const id = String(it.props.screen ?? '');
+  if (done.has(id)) return '';
+  const m = e.m as unknown as { _fw_spec: (a: number, b: number) => number };
+  const r = JSON.parse(e.withStr('screen', (pa) => e.withStr(it.spec!, (pb) => e.str(m._fw_spec(pa, pb))))) as { ok: boolean; status?: string; errors?: { path: string; code: string }[] };
+  if (!r.ok) return `spec ${r.errors?.map((x) => `${x.path} ${x.code}`).join(', ') ?? r.status}`;
+  done.add(id);
+  return '';
+}
 const shown = new Set<Item>();
 
 function accentIdx(p: Prefs) { return accentSets.findIndex((a) => a.id === p.accent); }
@@ -82,7 +99,7 @@ function draw(it: Item, e: Engine, p: Prefs, reset = false) {
     watchGestures(it, it.stage.canvas);
     it.el.querySelector('.live__stage')!.replaceChildren(it.stage.canvas);
   } else if (it.stage.w !== w || it.stage.h !== h && (!auto || reset)) it.stage.resize(w, h);
-  const err = it.stage.render(it.comp, it.props, themeOf(it, p) === 'light', accentIdx(p), auto, 1);
+  const err = install(e, it) || it.stage.render(it.comp, it.props, themeOf(it, p) === 'light', accentIdx(p), auto, 1);
   it.stage.canvas.style.width = `${it.stage.w}px`;
   it.el.style.setProperty('--w', `${it.stage.w}px`);
   it.el.classList.toggle('live--err', !!err);
@@ -140,6 +157,7 @@ export function initLive() {
       doc: el.dataset.doc === '1',
       sandbox: el.dataset.sandbox === '1',
       still: el.dataset.still === '1',
+      spec: el.dataset.spec,
     };
     items.push(it);
     io.observe(el);

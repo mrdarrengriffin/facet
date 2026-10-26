@@ -1,0 +1,29 @@
+---
+// Example screens made with AI: the 20 specs in renderer/specs/ai-examples (site/scripts/gen-ai-examples.py), one
+// card each linking to its page (live preview in both themes, the spec, the prompt).
+import Docs from '../../../layouts/Docs.astro';
+import { url } from '../../../lib/nav';
+import examples from '../../../lib/ai-examples.json';
+---
+
+<Docs title="Example screens" description="Twenty screens an AI assistant can make from Facet's components, each with its spec and prompt." group="Start here" current={url('/ai/examples/')}>
+  <p class="lede">Twenty screens made only from Facet's released components, bound to Home Assistant. Open one to try it live in light and dark, copy its spec, or copy the prompt that makes it.</p>
+  <ul class="ex-grid">
+    {examples.map((e) => (
+      <li>
+        <a href={url(`/ai/examples/${e.id}/`)}>
+          <strong>{e.title}</strong>
+          <span>{e.about}</span>
+        </a>
+      </li>
+    ))}
+  </ul>
+  <p>New to specs? Start with <a href={url('/ai/')}>Make screens with AI</a>.</p>
+</Docs>
+
+<style>
+  .ex-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; padding: 0; list-style: none; }
+  .ex-grid a { display: flex; flex-direction: column; gap: 4px; height: 100%; padding: 16px; border: 1px solid var(--facet-color-line); border-radius: 12px; background: var(--facet-color-surface); color: var(--facet-color-text); text-decoration: none; }
+  .ex-grid a:hover { border-color: var(--facet-color-line-hi); background: var(--facet-color-surface-press); }
+  .ex-grid span { color: var(--facet-color-text-dim); font-size: 14px; line-height: 20px; }
+</style>

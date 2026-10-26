@@ -1,0 +1,67 @@
+{
+ "v": 1,
+ "id": "energy_price",
+ "name": "Energy price",
+ "rev": 1,
+ "role": "page",
+ "header": {
+  "label": "Energy price",
+  "back": true
+ },
+ "layout": "list",
+ "nodes": [
+  {
+   "c": "hero_block",
+   "p": {
+    "n": {
+     "e": "sensor.electricity_price",
+     "tpl": "{}p",
+     "s": "13.5"
+    },
+    "label": "per kWh now",
+    "role": "hero",
+    "label_type": "label",
+    "line": "Normal rate until 16:00"
+   }
+  },
+  {
+   "c": "rate_strip",
+   "p": {
+    "bands": {
+     "e": "sensor.electricity_bands"
+    },
+    "now": 13,
+    "width": 400
+   }
+  },
+  {
+   "c": "legend",
+   "p": {
+    "items": "cheap 9p,normal 14p,peak 31p",
+    "ticks": "00,06,12,18,24",
+    "width": 400
+   }
+  },
+  {
+   "c": "section_header",
+   "p": {
+    "title": "cheapest",
+    "badge": false,
+    "right": "none"
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Run the dishwasher",
+    "icon": "none",
+    "trailing": "value",
+    "value": {
+     "e": "sensor.cheapest_slot",
+     "s": "02:00"
+    },
+    "sub": "9.1p for 3 hours"
+   }
+  }
+ ]
+}

@@ -1,0 +1,79 @@
+{
+ "v": 1,
+ "id": "chores",
+ "name": "Chores",
+ "rev": 1,
+ "role": "page",
+ "header": {
+  "label": "Chores",
+  "back": true
+ },
+ "layout": "list",
+ "nodes": [
+  {
+   "c": "hero_block",
+   "p": {
+    "n": {
+     "e": "sensor.chores_left",
+     "s": "3"
+    },
+    "label": "jobs left",
+    "role": "hero",
+    "label_type": "label",
+    "line": {
+     "e": "sensor.chores_left",
+     "a": "by_child",
+     "s": "Mia 1 · Leo 2"
+    }
+   }
+  },
+  {
+   "c": "section_header",
+   "p": {
+    "title": "today",
+    "badge": false,
+    "right": "none"
+   }
+  },
+  {
+   "c": "checkbox",
+   "p": {
+    "check": "open",
+    "label": "Mia · Pack school bag",
+    "interactive": true
+   }
+  },
+  {
+   "c": "checkbox",
+   "p": {
+    "check": "open",
+    "label": "Leo · Tidy the lego",
+    "interactive": true
+   }
+  },
+  {
+   "c": "checkbox",
+   "p": {
+    "check": "open",
+    "label": "Leo · Water the plants",
+    "interactive": true
+   }
+  },
+  {
+   "c": "checkbox",
+   "p": {
+    "check": "done",
+    "label": "Mia · Feed the cat",
+    "interactive": true
+   }
+  },
+  {
+   "c": "checkbox",
+   "p": {
+    "check": "done",
+    "label": "Leo · Make the bed",
+    "interactive": true
+   }
+  }
+ ]
+}

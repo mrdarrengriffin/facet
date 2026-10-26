@@ -1,0 +1,107 @@
+{
+ "v": 1,
+ "id": "news",
+ "name": "Headlines",
+ "rev": 1,
+ "role": "page",
+ "header": {
+  "label": "Headlines",
+  "back": true
+ },
+ "layout": "list",
+ "nodes": [
+  {
+   "c": "section_header",
+   "p": {
+    "title": "top stories",
+    "badge": false,
+    "right": "meta",
+    "meta": {
+     "e": "sensor.news_story_1",
+     "a": "updated",
+     "s": "07:40"
+    }
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": {
+     "e": "sensor.news_story_1",
+     "s": "Rail strike called off"
+    },
+    "over": {
+     "e": "sensor.news_story_1",
+     "a": "source",
+     "s": "BBC News · 12 min"
+    },
+    "icon": "none",
+    "trailing": "chevron"
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": {
+     "e": "sensor.news_story_2",
+     "s": "Rates held at 4%"
+    },
+    "over": {
+     "e": "sensor.news_story_2",
+     "a": "source",
+     "s": "Reuters · 40 min"
+    },
+    "icon": "none",
+    "trailing": "chevron"
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": {
+     "e": "sensor.news_story_3",
+     "s": "Fen floods ease overnight"
+    },
+    "over": {
+     "e": "sensor.news_story_3",
+     "a": "source",
+     "s": "Look East · 1 h"
+    },
+    "icon": "none",
+    "trailing": "chevron"
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": {
+     "e": "sensor.news_story_4",
+     "s": "New Mars rover named"
+    },
+    "over": {
+     "e": "sensor.news_story_4",
+     "a": "source",
+     "s": "BBC Science · 2 h"
+    },
+    "icon": "none",
+    "trailing": "chevron"
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": {
+     "e": "sensor.news_story_5",
+     "s": "Cup draw: home tie for city"
+    },
+    "over": {
+     "e": "sensor.news_story_5",
+     "a": "source",
+     "s": "BBC Sport · 3 h"
+    },
+    "icon": "none",
+    "trailing": "chevron"
+   }
+  }
+ ]
+}

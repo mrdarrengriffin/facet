@@ -1,0 +1,74 @@
+---
+// One example screen made with AI: live on the panel renderer in dark and light (the spec installed in the page's
+// engine as a panel installs one, demo Home Assistant values from renderer/tools/demo_ha.mjs), the prompt that makes
+// it and its spec, both copyable. Data: site/src/lib/ai-examples.json + renderer/specs/ai-examples/<id>.json.
+import Docs, { type Heading } from '../../../layouts/Docs.astro';
+import Live from '../../../components/Live.astro';
+import PreviewBox from '../../../components/PreviewBox.astro';
+import { url } from '../../../lib/nav';
+import examples from '../../../lib/ai-examples.json';
+
+const raw = import.meta.glob('../../../../../renderer/specs/ai-examples/*.json', { query: '?raw', import: 'default', eager: true }) as Record<string, string>;
+export function getStaticPaths() {
+  return examples.map((e, i) => ({ params: { id: e.id }, props: { i } }));
+}
+const { i } = Astro.props as { i: number };
+const e = examples[i];
+const text = Object.entries(raw).find(([p]) => p.endsWith(`/${e.id}.json`))![1];
+const compact = JSON.stringify(JSON.parse(text));
+const prev = examples[(i + examples.length - 1) % examples.length], next = examples[(i + 1) % examples.length];
+const headings: Heading[] = [
+  { depth: 2, slug: 'preview', text: 'Preview' },
+  { depth: 2, slug: 'prompt', text: 'Prompt' },
+  { depth: 2, slug: 'spec', text: 'Spec' },
+];
+const REPO = 'https://github.com/mrdarrengriffin/facet/blob/main';
+---
+
+<Docs title={e.title} description={e.about} group="Example screens" current={url('/ai/examples/')} headings={headings} wide source={[{ path: `renderer/specs/ai-examples/${e.id}.json`, url: `${REPO}/renderer/specs/ai-examples/${e.id}.json` }]}>
+  <p class="lede">{e.about}</p>
+  <div data-preview-scope>
+    <h2 id="preview">Preview</h2>
+    <PreviewBox />
+    <div class="pair">
+      <div data-preview-scope data-preview-theme="dark"><Live comp="spec" props={{ screen: e.id, live: true }} spec={compact} label={`${e.title}, dark`} frame={[480, 480]} /></div>
+      <div data-preview-scope data-preview-theme="light"><Live comp="spec" props={{ screen: e.id, live: true }} spec={compact} label={`${e.title}, light`} frame={[480, 480]} /></div>
+    </div>
+    <p class="hint">Sample data: made-up devices and values, not a real home.{e.better && ` ${e.better}`}</p>
+  </div>
+
+  <h2 id="prompt">Prompt</h2>
+  <p>What you would ask an assistant that can reach your panel (see <a href={url('/ai/')}>Make screens with AI</a>):</p>
+  <pre id="prompt-text"><code>{e.prompt}</code></pre>
+  <button type="button" class="copy" data-copy="prompt-text">Copy prompt</button>
+
+  <h2 id="spec">Spec</h2>
+  <p>{(new TextEncoder().encode(compact)).length} bytes. Change the entity ids to your own, then send it to your panel.</p>
+  <pre id="spec-text"><code>{text}</code></pre>
+  <button type="button" class="copy" data-copy="spec-text">Copy spec</button>
+
+  <nav class="ex-nav" aria-label="More examples">
+    <a href={url(`/ai/examples/${prev.id}/`)}>&larr; {prev.title}</a>
+    <a href={url('/ai/examples/')}>All examples</a>
+    <a href={url(`/ai/examples/${next.id}/`)}>{next.title} &rarr;</a>
+  </nav>
+</Docs>
+
+<style>
+  .pair { display: flex; flex-wrap: wrap; gap: 16px; }
+  .pair > div { flex: 1 1 280px; min-width: 0; }
+  pre { max-width: 100%; white-space: pre-wrap; overflow-wrap: anywhere; }
+  #spec-text { max-height: 480px; overflow: auto; }
+  .copy { margin-top: 8px; padding: 8px 16px; border: 1px solid var(--facet-color-line-hi); border-radius: 8px; background: var(--facet-color-surface); color: var(--facet-color-text); font: inherit; cursor: pointer; }
+  .copy:hover { background: var(--facet-color-surface-press); }
+  .ex-nav { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 16px; margin-top: 32px; }
+</style>
+
+<script>
+  for (const b of document.querySelectorAll<HTMLButtonElement>('[data-copy]')) {
+    b.addEventListener('click', () => {
+      const t = document.getElementById(b.dataset.copy!)?.textContent ?? '';
+      void navigator.clipboard?.writeText(t).then(() => { const was = b.textContent; b.textContent = 'Copied'; setTimeout(() => (b.textContent = was), 1500); });
+    });
+  }
+</script>

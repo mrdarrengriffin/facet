@@ -2,11 +2,13 @@
 // One live preview: a stage of the page's shared WASM engine (src/scripts/live.ts), drawn when it scrolls into view.
 // frame = the component's meta frame in dp ([w, 0] = auto height); doc = a full panel-width foundation section.
 // sandbox = the playground stage (props from the controls, never reset); still = a picture only (not interactive).
-interface Props { comp: string; props: Record<string, unknown>; label: string; frame: [number, number]; doc?: boolean; caption?: boolean; sandbox?: boolean; still?: boolean; id?: string }
-const { comp, props, label, frame, doc = false, caption = true, sandbox = false, still = false, id } = Astro.props;
+// spec = a screen spec's JSON (comp spec, props.screen = its id): installed in the engine first, as a panel installs a
+// spec sent to it (the "Make screens with AI" examples).
+interface Props { comp: string; props: Record<string, unknown>; label: string; frame: [number, number]; doc?: boolean; caption?: boolean; sandbox?: boolean; still?: boolean; id?: string; spec?: string }
+const { comp, props, label, frame, doc = false, caption = true, sandbox = false, still = false, id, spec } = Astro.props;
 ---
 
-<figure id={id} class:list={['live', { 'live--doc': doc, 'live--static': still }]} data-live data-comp={comp} data-props={JSON.stringify(props)} data-label={label} data-frame={JSON.stringify(frame)} data-doc={doc ? '1' : '0'} data-sandbox={sandbox ? '1' : undefined} data-still={still ? '1' : undefined}>
+<figure id={id} class:list={['live', { 'live--doc': doc, 'live--static': still }]} data-live data-comp={comp} data-props={JSON.stringify(props)} data-label={label} data-frame={JSON.stringify(frame)} data-doc={doc ? '1' : '0'} data-sandbox={sandbox ? '1' : undefined} data-still={still ? '1' : undefined} data-spec={spec}>
   <div class="live__stage"><span class="live__wait">Loading the renderer</span></div>
   {caption && <figcaption>{label}</figcaption>}
 </figure>

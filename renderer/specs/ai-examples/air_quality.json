@@ -1,0 +1,93 @@
+{
+ "v": 1,
+ "id": "air_quality",
+ "name": "Air quality",
+ "rev": 1,
+ "role": "page",
+ "header": {
+  "label": "Air quality",
+  "back": true
+ },
+ "layout": "list",
+ "nodes": [
+  {
+   "c": "hero_block",
+   "p": {
+    "n": {
+     "e": "sensor.living_room_pm25",
+     "s": "8"
+    },
+    "label": "pm2.5 µg/m³",
+    "role": "hero",
+    "label_type": "label",
+    "line": "Good · no need to open a window"
+   }
+  },
+  {
+   "c": "section_header",
+   "p": {
+    "title": "living room",
+    "badge": false,
+    "right": "none"
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "CO2",
+    "icon": "none",
+    "trailing": "value",
+    "value": {
+     "e": "sensor.living_room_co2",
+     "tpl": "{} ppm",
+     "s": "640"
+    }
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "VOC",
+    "icon": "none",
+    "trailing": "value",
+    "value": {
+     "e": "sensor.living_room_voc",
+     "s": "Low"
+    }
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Humidity",
+    "icon": "none",
+    "trailing": "value",
+    "value": {
+     "e": "sensor.living_room_rh",
+     "tpl": "{}%",
+     "s": "52"
+    }
+   }
+  },
+  {
+   "c": "section_header",
+   "p": {
+    "title": "pm2.5 today",
+    "badge": false,
+    "right": "none"
+   }
+  },
+  {
+   "c": "sparkline",
+   "p": {
+    "values": {
+     "e": "sensor.living_room_pm25_history",
+     "s": "6,7,9,14,12,10,8,7,8"
+    },
+    "colour": "steel",
+    "width": 224,
+    "dot": true
+   }
+  }
+ ]
+}

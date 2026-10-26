@@ -1,0 +1,65 @@
+{
+ "v": 1,
+ "id": "focus",
+ "name": "Focus",
+ "rev": 1,
+ "role": "page",
+ "header": {
+  "label": "Focus",
+  "back": true
+ },
+ "layout": "list",
+ "nodes": [
+  {
+   "c": "hero_block",
+   "p": {
+    "n": {
+     "e": "timer.focus",
+     "a": "remaining",
+     "s": "18:24"
+    },
+    "label": "focus left",
+    "role": "hero",
+    "label_type": "label",
+    "line": "Session 3 of 4",
+    "accent": true
+   }
+  },
+  {
+   "c": "tick_ring",
+   "p": {
+    "count": 60,
+    "range": 360,
+    "size": 200,
+    "stride": "5",
+    "numbers": false,
+    "lit": {
+     "e": "sensor.focus_progress",
+     "s": "38"
+    }
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Next",
+    "icon": "none",
+    "trailing": "value",
+    "value": "Break · 5 min"
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Done today",
+    "icon": "none",
+    "trailing": "value",
+    "value": {
+     "e": "counter.focus_sessions",
+     "tpl": "{} sessions",
+     "s": "2"
+    }
+   }
+  }
+ ]
+}

@@ -1,10 +1,12 @@
 // Demo Home Assistant values, shared by the README images (tools/readme_assets.mjs) and the docs site's previews
 // (site/src/lib/sample-ha.ts): neither has a Home Assistant, so every (entity, attribute) a screen binds gets a
 // believable value (a track playing, the ceiling light at 70 %, temperatures, doors closed, battery levels). Made-up
-// devices, not a real home. Plain JS, no imports: node and the site's bundler both load it.
+// devices, not a real home. Plain JS (one sibling import): node and the site's bundler both load it.
+import { EXAMPLES } from './demo_ha_examples.mjs';
 
 /** values for the demo deck's own entities (renderer/specs/deck.json and the specs' defaults) */
 export const DEMO = {
+  ...EXAMPLES,  // the docs' "Make screens with AI" examples (renderer/specs/ai-examples)
   'light.living_room_ceiling': { '': 'on', brightness: '179' },
   'light.sofa_lamp': { '': 'on', brightness: '115' },
   'light.reading_lamp': { '': 'off' },

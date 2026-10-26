@@ -1,0 +1,131 @@
+---
+// Make screens with AI: what a screen spec is, why AI-made screens still look like Facet (components + tokens, budgets,
+// validation on the panel), and how to let an assistant make one: on the panel's own API (agent docs at /llms.txt and
+// /agents.md, the AI agents setting + token), through Home Assistant (the ESPHome actions), or with a starter prompt.
+// The panel-side agent API ships with the next firmware (marked on the page). Examples: ./examples/.
+import Docs, { type Heading } from '../../layouts/Docs.astro';
+import { url } from '../../lib/nav';
+import examples from '../../lib/ai-examples.json';
+
+const headings: Heading[] = [
+  { depth: 2, slug: 'spec', text: 'What a spec is' },
+  { depth: 2, slug: 'why', text: 'Why it still looks right' },
+  { depth: 2, slug: 'panel', text: 'Point an AI at your panel' },
+  { depth: 2, slug: 'home-assistant', text: 'Through Home Assistant' },
+  { depth: 2, slug: 'prompt', text: 'Starter prompt' },
+  { depth: 2, slug: 'examples', text: 'Examples' },
+];
+const spec = `{"v": 1, "id": "bin_day", "name": "Bin day", "rev": 1, "role": "page",
+ "header": {"label": "Bin day", "back": true},
+ "layout": "list",
+ "nodes": [
+  {"c": "hero_block", "p": {"n": {"e": "sensor.bin_days", "s": "2"}, "label": "days to bin day",
+                            "line": {"e": "sensor.bin_next", "s": "Recycling · Tue"}}},
+  {"c": "section_header", "p": {"title": "next collections"}},
+  {"c": "list_row", "p": {"title": "Recycling", "trailing": "value",
+                          "value": {"e": "sensor.bin_recycling", "s": "Tue 27 Oct"}}}
+ ]}`;
+const curl = `P=http://<panel-ip>; T=<agent token>
+curl -s $P/llms.txt                                   # where to start
+curl -s $P/agents.md                                  # the spec guide for this firmware
+curl -s -H "Authorization: Bearer $T" -H 'Content-Type: application/json' \\
+  -d '{"kind":"check","spec":'"$(cat bin_day.json)"'}' $P/fw/spec    # valid, or what to fix
+curl -s -H "Authorization: Bearer $T" -H 'Content-Type: application/json' \\
+  -d '{"kind":"screen","spec":'"$(cat bin_day.json)"'}' $P/fw/spec   # install it
+curl -s -H "Authorization: Bearer $T" -H 'Content-Type: application/json' \\
+  -d '{"screen":"bin_day"}' $P/fw/show                               # open it
+curl -s -o shot.bmp $P/screenshot                     # see what the glass shows`;
+const ha = `# install (answers like POST /fw/spec: applied, or the errors to fix)
+action: esphome.kitchen_panel_facet_screen
+data:
+  spec: >-
+    {"v": 1, "id": "bin_day", "name": "Bin day", ... }
+response_variable: result
+
+# open it
+action: esphome.kitchen_panel_facet_show
+data:
+  screen: bin_day`;
+const prompt = `You are making a screen for my Facet wall panel at http://<panel-ip>.
+1. Read http://<panel-ip>/llms.txt, then /agents.md: it lists the only components, props and actions this panel accepts.
+2. Write a screen spec (JSON) for: <what you want, e.g. "my bin collections: days until the next one, then each bin with its date">.
+   Use my Home Assistant entities: <entity ids>. Use only components from /agents.md, no positions, sizes or colours.
+   One hero per screen, short text, rows for lists.
+3. POST it to /fw/spec with kind "check" (header Authorization: Bearer <agent token>) and fix every error it reports.
+4. When it is valid, POST it with kind "screen", then open it with POST /fw/show {"screen": "<id>"}.
+5. Fetch /screenshot and check that nothing is cut off; shorten text if it is.`;
+---
+
+<Docs title="Make screens with AI" description="Ask an AI assistant for any screen you like: it writes a Facet spec, the panel checks it, and it looks like the rest of Facet." group="Start here" current={url('/ai/')} headings={headings}>
+  <p class="lede">Describe a screen and let an AI assistant build it: your bins, your trains, your game stats, your agents. It writes a small spec, the panel checks it, and the result follows the design system like every built-in screen.</p>
+
+  <div class="callout">
+    <span class="dot" aria-hidden="true"></span>
+    <p>The panel's agent access (the guide it serves, the AI agents setting and its token) is coming in the next firmware. Specs, the components and the examples on these pages work today.</p>
+  </div>
+
+  <h2 id="spec">What a spec is</h2>
+  <p>Every Facet screen is a short JSON <em>spec</em>: a header, a layout and a list of components, each with its props. A prop can be a fixed value or bound to a Home Assistant entity, so the screen updates by itself. There are no positions, sizes, colours or fonts in a spec.</p>
+  <pre><code>{spec}</code></pre>
+  <p>Specs are small (a few kilobytes), so a panel holds many of them and only builds the one on screen.</p>
+
+  <h2 id="why">Why it still looks right</h2>
+  <ul>
+    <li><strong>Components and tokens only.</strong> A spec can only name components the firmware ships. Spacing, type, colour and motion come from the design tokens, in light and dark, so an assistant cannot pick an off-grid gap or an unreadable colour.</li>
+    <li><strong>Budgets.</strong> Each screen has limits on nodes, bindings and size, so a screen stays fast on the panel.</li>
+    <li><strong>Validation on the panel.</strong> The panel checks a spec before it keeps it and answers with the exact path and reason of anything wrong (an unknown prop, a value out of range, a style key). The assistant fixes it and tries again.</li>
+    <li><strong>Layout rules.</strong> One hero per screen, rows that touch, more space between groups: the layout applies them, not the assistant.</li>
+  </ul>
+
+  <h2 id="panel">Point an AI at your panel</h2>
+  <p>For assistants that can make web requests (coding agents, desktop assistants with tools):</p>
+  <ol>
+    <li>On the panel, open <strong>Settings &gt; AI agents</strong> and turn on <strong>Allow AI agents</strong> (you can also switch it in Home Assistant).</li>
+    <li>In Home Assistant, copy the panel's <strong>AI agent token</strong> sensor and give it to the assistant. Make a new token at any time to cut access off.</li>
+    <li>Tell the assistant to start at <code>http://&lt;panel&gt;/llms.txt</code>. It leads to <code>/agents.md</code>, a guide generated from the firmware itself: every component and prop this panel accepts, how to bind entities, the actions and the budgets.</li>
+  </ol>
+  <table>
+    <thead><tr><th>Request</th><th>What it does</th></tr></thead>
+    <tbody>
+      <tr><td><code>GET /llms.txt</code>, <code>GET /agents.md</code></td><td>The agent guide for this firmware. Open, no token needed.</td></tr>
+      <tr><td><code>GET /fw/spec</code></td><td>Components, screens, budgets and free memory.</td></tr>
+      <tr><td><code>POST /fw/spec</code> <code>kind: check</code></td><td>Checks a spec and lists errors, stores nothing.</td></tr>
+      <tr><td><code>POST /fw/spec</code> <code>kind: screen</code> / <code>deck</code> / <code>revert</code></td><td>Installs a screen, the page list, or goes back to the factory screen.</td></tr>
+      <tr><td><code>POST /fw/show</code> <code>{'{"screen": id}'}</code></td><td>Opens a screen on the panel.</td></tr>
+      <tr><td><code>GET /screenshot</code></td><td>What the screen shows now (a BMP image), so the assistant can check its work.</td></tr>
+    </tbody>
+  </table>
+  <p>Writes need the setting on and <code>Authorization: Bearer &lt;token&gt;</code>; otherwise the panel answers 403 and says what is missing.</p>
+  <pre><code>{curl}</code></pre>
+
+  <h2 id="home-assistant">Through Home Assistant</h2>
+  <p>Assistants that already work with your Home Assistant can install screens through the panel's ESPHome actions, with no network access to the panel: <code>esphome.&lt;panel&gt;_facet_hello</code> (components, screens and budgets), <code>_facet_screen</code> (install a screen spec), <code>_facet_deck</code> (the page list), <code>_facet_revert</code> (back to the factory screen) and <code>_facet_show</code> (open a screen). The first four answer with a response, so call them with a response variable and read the errors.</p>
+  <pre><code>{ha}</code></pre>
+
+  <h2 id="prompt">Starter prompt</h2>
+  <p>Paste this into your assistant and fill in the brackets.</p>
+  <pre id="starter"><code>{prompt}</code></pre>
+  <button type="button" class="copy" data-copy="starter">Copy prompt</button>
+
+  <h2 id="examples">Examples</h2>
+  <p>Twenty screens made from today's components, each live with its spec and the prompt that makes it. <a href={url('/ai/examples/')}>See all examples</a>.</p>
+  <ul class="ex-links">
+    {examples.map((e) => <li><a href={url(`/ai/examples/${e.id}/`)}>{e.title}</a></li>)}
+  </ul>
+</Docs>
+
+<style>
+  pre { max-width: 100%; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .ex-links { display: flex; flex-wrap: wrap; gap: 8px 16px; padding: 0; list-style: none; }
+  .copy { margin-top: 8px; padding: 8px 16px; border: 1px solid var(--facet-color-line-hi); border-radius: 8px; background: var(--facet-color-surface); color: var(--facet-color-text); font: inherit; cursor: pointer; }
+  .copy:hover { background: var(--facet-color-surface-press); }
+</style>
+
+<script>
+  for (const b of document.querySelectorAll<HTMLButtonElement>('[data-copy]')) {
+    b.addEventListener('click', () => {
+      const t = document.getElementById(b.dataset.copy!)?.textContent ?? '';
+      void navigator.clipboard?.writeText(t).then(() => { const was = b.textContent; b.textContent = 'Copied'; setTimeout(() => (b.textContent = was), 1500); });
+    });
+  }
+</script>

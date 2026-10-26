@@ -1,0 +1,69 @@
+{
+ "v": 1,
+ "id": "birthdays",
+ "name": "Birthdays",
+ "rev": 1,
+ "role": "page",
+ "header": {
+  "label": "Birthdays",
+  "back": true
+ },
+ "layout": "list",
+ "nodes": [
+  {
+   "c": "hero_block",
+   "p": {
+    "n": {
+     "e": "sensor.next_birthday_days",
+     "s": "12"
+    },
+    "label": "days to go",
+    "role": "hero",
+    "label_type": "label",
+    "line": {
+     "e": "sensor.next_birthday",
+     "s": "Mia turns 9 · Sat 6 Nov"
+    },
+    "accent": true
+   }
+  },
+  {
+   "c": "section_header",
+   "p": {
+    "title": "coming up",
+    "badge": false,
+    "right": "none"
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Grandad",
+    "icon": "none",
+    "trailing": "value",
+    "value": "21 Nov",
+    "sub": "Turns 70"
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Sam",
+    "icon": "none",
+    "trailing": "value",
+    "value": "2 Dec",
+    "sub": "Turns 34"
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Aunt Jo",
+    "icon": "none",
+    "trailing": "value",
+    "value": "18 Dec",
+    "sub": "Turns 51"
+   }
+  }
+ ]
+}

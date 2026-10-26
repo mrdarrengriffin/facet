@@ -1,0 +1,92 @@
+{
+ "v": 1,
+ "id": "plants",
+ "name": "Plant care",
+ "rev": 1,
+ "role": "page",
+ "header": {
+  "label": "Plant care",
+  "back": true
+ },
+ "layout": "list",
+ "nodes": [
+  {
+   "c": "hero_block",
+   "p": {
+    "n": {
+     "e": "sensor.plants_thirsty",
+     "s": "2"
+    },
+    "label": "plants to water",
+    "role": "hero",
+    "label_type": "label",
+    "line": "Fern and basil are dry",
+    "accent": true
+   }
+  },
+  {
+   "c": "section_header",
+   "p": {
+    "title": "soil moisture",
+    "badge": false,
+    "right": "none"
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Fern",
+    "icon": "none",
+    "trailing": "value",
+    "value": {
+     "e": "sensor.fern_moisture",
+     "tpl": "{}%",
+     "s": "18"
+    },
+    "sub": "Water today"
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Basil",
+    "icon": "none",
+    "trailing": "value",
+    "value": {
+     "e": "sensor.basil_moisture",
+     "tpl": "{}%",
+     "s": "26"
+    },
+    "sub": "Water today"
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Monstera",
+    "icon": "none",
+    "trailing": "value",
+    "value": {
+     "e": "sensor.monstera_moisture",
+     "tpl": "{}%",
+     "s": "46"
+    },
+    "sub": "In 3 days"
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Snake plant",
+    "icon": "none",
+    "trailing": "value",
+    "value": {
+     "e": "sensor.snake_plant_moisture",
+     "tpl": "{}%",
+     "s": "91"
+    },
+    "sub": "Fine for 2 weeks"
+   }
+  }
+ ]
+}

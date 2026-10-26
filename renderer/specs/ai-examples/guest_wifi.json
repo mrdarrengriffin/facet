@@ -1,0 +1,42 @@
+{
+ "v": 1,
+ "id": "guest_wifi",
+ "name": "Guest Wi-Fi",
+ "rev": 1,
+ "role": "page",
+ "header": {
+  "label": "Guest Wi-Fi",
+  "back": true
+ },
+ "layout": "list",
+ "nodes": [
+  {
+   "c": "qr_block",
+   "p": {
+    "text": "WIFI:T:WPA;S:Guest;P:sunny-otter-42;;",
+    "caption": "Scan to join"
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Network",
+    "icon": "none",
+    "trailing": "value",
+    "value": "Guest"
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Password",
+    "icon": "none",
+    "trailing": "value",
+    "value": {
+     "e": "input_text.guest_wifi_password",
+     "s": "sunny-otter-42"
+    }
+   }
+  }
+ ]
+}
