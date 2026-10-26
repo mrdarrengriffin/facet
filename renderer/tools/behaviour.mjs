@@ -122,6 +122,9 @@ class Bench {  // one module instance, one stage at a time
     const e = this.str(comp, (c) => this.str(JSON.stringify(props), (p) => this.m.UTF8ToString(this.m._fw_render(this.stage, c, p, light, 0))));
     return e;
   }
+  // build it again in this module (state kept: sent specs, the deck), as the device does after a deck change
+  rebuild(comp, props = {}, light = 0) { const e = this.str(comp, (c) => this.str(JSON.stringify(props), (p) => this.m.UTF8ToString(this.m._fw_render(this.stage, c, p, light, 0)))); this.tick(2); this.events(); return e; }
+  spec(cmd, a) { return this.str(cmd, (pc) => this.str(typeof a === 'string' ? a : JSON.stringify(a), (pa) => this.m.UTF8ToString(this.m._fw_spec(pc, pa)))); }
   update(comp, props, light = 0) { return this.str(comp, (c) => this.str(JSON.stringify(props), (p) => this.m.UTF8ToString(this.m._fw_update(this.stage, c, p, light, 0)))); }
   events() { const s = this.m.UTF8ToString(this.m._fw_events()); return s ? JSON.parse(s) : []; }
   audit() { return JSON.parse(this.m.UTF8ToString(this.m._fw_audit(this.stage))); }
@@ -592,6 +595,7 @@ async function customTests(c, den, spec) {
     const props = { ...defaults, ...(t.props || {}) };
     const err = await b.render(c.id, props);
     for (const h of t.before_ha || []) b.haPut(...h);
+    if (t.before_spec && !err) { for (const x of t.before_spec) b.spec(...x); b.rebuild(c.id, props); }  // specs sent first (a fresh module each test): built with them
     if (err) { judge(c.id, den, t.kind, t.name, 'custom', [`render-error: ${err}`]); continue; }
     b.settle(1500); b.events();
     const evs = [];
@@ -613,6 +617,8 @@ async function customTests(c, den, spec) {
       else if (st.update) { const u = b.update(c.id, { ...props, ...st.update }); if (u === 'rebuild') await b.render(c.id, { ...props, ...st.update }); b.settle(1500); evs.push(...b.events()); }
       else if (st.ha) { b.haPut(...st.ha); b.settle(1500); evs.push(...b.events()); }
       else if (st.setting) { b.test('setting', st.setting); b.settle(); evs.push(...b.events()); }
+      else if (st.spec) { b.spec(...st.spec); b.settle(); evs.push(...b.events()); }  // send / revert a spec (core/main.cpp fw_spec)
+      else if (st.render) { b.rebuild(c.id, props); b.settle(1500); b.events(); }  // build it again, state kept (what the device does after a deck change)
     }
     const x = t.expect || {};
     if (x.events) { const miss = matchEvents(evs, x.events); if (miss) msgs.push(`${t.miss || 'missing-event'}: expected ${miss[0]}${miss[1] ? ` ~ ${miss[1]}` : ''}; got ${evs.filter((e) => e.kind === 'event').map(fmtEv).join(', ') || 'nothing'}`); }

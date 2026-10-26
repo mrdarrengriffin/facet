@@ -690,14 +690,26 @@ inline bool deck_entry(const std::string &id, ArduinoJson::JsonDocument &out) {
 }
 // is this deck page there (deck_entry found one)? A page you don't want is not in the deck.
 inline bool deck_on(ArduinoJson::JsonVariantConst entry) { return entry.is<ArduinoJson::JsonObjectConst>(); }
-// page kinds this panel could add but has no page of (Settings > Screens and the editor show them as off)
-inline std::vector<std::string> off_kinds() {
+// the page kinds the deck has a page of
+inline std::set<std::string> deck_kinds() {
   ArduinoJson::JsonDocument d;
   deserializeJson(d, deck_json());
   std::set<std::string> used;
   for (ArduinoJson::JsonVariantConst x : d["pages"].as<ArduinoJson::JsonArrayConst>()) used.insert(x["kind"] | "");
+  return used;
+}
+// built-in page kinds this panel has no page of (Settings > Screens and the editor show them as off)
+inline std::vector<std::string> off_kinds() {
+  const std::set<std::string> used = deck_kinds();
   std::vector<std::string> v;
   for (const auto &f : FACTORY) if (!used.count(f.id) && page_role(f.id)) v.push_back(f.id);
+  return v;
+}
+// sent page screens (a spec sent by Claude, the API or an agent, not a built-in) the deck has no page of: Settings >
+// Screens' "Sent" group (Add to deck / Remove = revert), the editor's Sent list (facet-166)
+inline std::vector<std::string> sent_kinds() {
+  const std::set<std::string> used = deck_kinds();
+  std::vector<std::string> v;
   for (const auto &kv : S().over) if (!factory(kv.first) && !used.count(kv.first) && page_role(kv.first)) v.push_back(kv.first);
   return v;
 }
@@ -1703,7 +1715,7 @@ inline void hello(ArduinoJson::JsonObject out) {
   for (const Component &c : reg()) if (!strcmp(c.section, "components")) comps.add(c.id);
   auto scr = out["screens"].to<ArduinoJson::JsonObject>();
   for (const auto &f : FACTORY) { auto o = scr[f.id].to<ArduinoJson::JsonObject>(); o["rev"] = rev_of(screen_json(f.id)); o["override"] = S().over.count(f.id) > 0; }
-  for (const auto &kv : S().over) if (!factory(kv.first)) { auto o = scr[kv.first].to<ArduinoJson::JsonObject>(); o["rev"] = rev_of(kv.second.c_str()); o["override"] = true; }
+  for (const auto &kv : S().over) if (!factory(kv.first)) { auto o = scr[kv.first].to<ArduinoJson::JsonObject>(); o["rev"] = rev_of(kv.second.c_str()); o["override"] = true; o["sent"] = true; ArduinoJson::JsonDocument sd; if (!deserializeJson(sd, kv.second)) { o["name"] = sd["name"] | kv.first.c_str(); o["role"] = sd["role"] | "page"; } }
   out["deck_rev"] = rev_of(deck_json());
   out["deck_override"] = !S().deck_over.empty();
   ArduinoJson::JsonObject b = out["budget"].to<ArduinoJson::JsonObject>();

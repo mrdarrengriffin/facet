@@ -45,6 +45,465 @@
           "toggle-off"
         ]
       }
+    },
+    {
+      "name": "a sent screen shows under Sent",
+      "kind": "interaction",
+      "before_spec": [
+        [
+          "screen",
+          {
+            "v": 1,
+            "id": "sent_a",
+            "rev": 1,
+            "name": "Sent A",
+            "role": "page",
+            "layout": "list",
+            "header": {
+              "label": "Sent A",
+              "back": true
+            },
+            "nodes": [
+              {
+                "c": "list_row",
+                "p": {
+                  "title": "Sent row"
+                }
+              }
+            ]
+          }
+        ]
+      ],
+      "steps": [
+        {
+          "drag": {
+            "at": [
+              0.5,
+              0.85
+            ]
+          },
+          "by": [
+            0,
+            -0.7
+          ]
+        },
+        {
+          "wait": 600
+        },
+        {
+          "drag": {
+            "at": [
+              0.5,
+              0.85
+            ]
+          },
+          "by": [
+            0,
+            -0.7
+          ]
+        },
+        {
+          "wait": 600
+        },
+        {
+          "drag": {
+            "at": [
+              0.5,
+              0.85
+            ]
+          },
+          "by": [
+            0,
+            -0.7
+          ]
+        },
+        {
+          "wait": 600
+        },
+        {
+          "drag": {
+            "at": [
+              0.5,
+              0.85
+            ]
+          },
+          "by": [
+            0,
+            -0.7
+          ]
+        },
+        {
+          "wait": 600
+        }
+      ],
+      "expect": {
+        "exists": {
+          "text": "/^(Add to deck|ADD TO DECK)$/"
+        }
+      }
+    },
+    {
+      "name": "Add to deck puts it in the deck",
+      "kind": "interaction",
+      "steps": [
+        {
+          "drag": {
+            "at": [
+              0.5,
+              0.85
+            ]
+          },
+          "by": [
+            0,
+            -0.7
+          ]
+        },
+        {
+          "wait": 600
+        },
+        {
+          "drag": {
+            "at": [
+              0.5,
+              0.85
+            ]
+          },
+          "by": [
+            0,
+            -0.7
+          ]
+        },
+        {
+          "wait": 600
+        },
+        {
+          "drag": {
+            "at": [
+              0.5,
+              0.85
+            ]
+          },
+          "by": [
+            0,
+            -0.7
+          ]
+        },
+        {
+          "wait": 600
+        },
+        {
+          "drag": {
+            "at": [
+              0.5,
+              0.85
+            ]
+          },
+          "by": [
+            0,
+            -0.7
+          ]
+        },
+        {
+          "wait": 600
+        },
+        {
+          "tap": {
+            "text": "/^(Add to deck|ADD TO DECK)$/"
+          }
+        },
+        {
+          "render": true
+        },
+        {
+          "drag": {
+            "at": [
+              0.5,
+              0.85
+            ]
+          },
+          "by": [
+            0,
+            -0.7
+          ]
+        },
+        {
+          "wait": 600
+        },
+        {
+          "drag": {
+            "at": [
+              0.5,
+              0.85
+            ]
+          },
+          "by": [
+            0,
+            -0.7
+          ]
+        },
+        {
+          "wait": 600
+        },
+        {
+          "drag": {
+            "at": [
+              0.5,
+              0.85
+            ]
+          },
+          "by": [
+            0,
+            -0.7
+          ]
+        },
+        {
+          "wait": 600
+        },
+        {
+          "drag": {
+            "at": [
+              0.5,
+              0.85
+            ]
+          },
+          "by": [
+            0,
+            -0.7
+          ]
+        },
+        {
+          "wait": 600
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "tap",
+            "(Add to deck|ADD TO DECK)"
+          ],
+          [
+            "deck",
+            "sent_a on=true"
+          ]
+        ],
+        "sounds": [
+          "tap"
+        ],
+        "absent": {
+          "text": "/^(Add to deck|ADD TO DECK)$/"
+        },
+        "exists": {
+          "text": "Sent A"
+        }
+      },
+      "before_spec": [
+        [
+          "screen",
+          {
+            "v": 1,
+            "id": "sent_a",
+            "rev": 1,
+            "name": "Sent A",
+            "role": "page",
+            "layout": "list",
+            "header": {
+              "label": "Sent A",
+              "back": true
+            },
+            "nodes": [
+              {
+                "c": "list_row",
+                "p": {
+                  "title": "Sent row"
+                }
+              }
+            ]
+          }
+        ]
+      ]
+    },
+    {
+      "name": "Remove asks, then reverts the sent screen",
+      "kind": "interaction",
+      "before_spec": [
+        [
+          "screen",
+          {
+            "v": 1,
+            "id": "sent_b",
+            "rev": 1,
+            "name": "Sent B",
+            "role": "page",
+            "layout": "list",
+            "header": {
+              "label": "Sent B",
+              "back": true
+            },
+            "nodes": [
+              {
+                "c": "list_row",
+                "p": {
+                  "title": "Sent row"
+                }
+              }
+            ]
+          }
+        ]
+      ],
+      "steps": [
+        {
+          "drag": {
+            "at": [
+              0.5,
+              0.85
+            ]
+          },
+          "by": [
+            0,
+            -0.7
+          ]
+        },
+        {
+          "wait": 600
+        },
+        {
+          "drag": {
+            "at": [
+              0.5,
+              0.85
+            ]
+          },
+          "by": [
+            0,
+            -0.7
+          ]
+        },
+        {
+          "wait": 600
+        },
+        {
+          "drag": {
+            "at": [
+              0.5,
+              0.85
+            ]
+          },
+          "by": [
+            0,
+            -0.7
+          ]
+        },
+        {
+          "wait": 600
+        },
+        {
+          "drag": {
+            "at": [
+              0.5,
+              0.85
+            ]
+          },
+          "by": [
+            0,
+            -0.7
+          ]
+        },
+        {
+          "wait": 600
+        },
+        {
+          "tap": {
+            "text": "/^(Remove|REMOVE)$/"
+          }
+        },
+        {
+          "tap": {
+            "text": "/^(Confirm|CONFIRM)$/"
+          }
+        },
+        {
+          "render": true
+        },
+        {
+          "drag": {
+            "at": [
+              0.5,
+              0.85
+            ]
+          },
+          "by": [
+            0,
+            -0.7
+          ]
+        },
+        {
+          "wait": 600
+        },
+        {
+          "drag": {
+            "at": [
+              0.5,
+              0.85
+            ]
+          },
+          "by": [
+            0,
+            -0.7
+          ]
+        },
+        {
+          "wait": 600
+        },
+        {
+          "drag": {
+            "at": [
+              0.5,
+              0.85
+            ]
+          },
+          "by": [
+            0,
+            -0.7
+          ]
+        },
+        {
+          "wait": 600
+        },
+        {
+          "drag": {
+            "at": [
+              0.5,
+              0.85
+            ]
+          },
+          "by": [
+            0,
+            -0.7
+          ]
+        },
+        {
+          "wait": 600
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "tap",
+            "(Remove|REMOVE)"
+          ],
+          [
+            "tap",
+            "(Confirm|CONFIRM)"
+          ],
+          [
+            "spec",
+            "revert sent_b"
+          ]
+        ],
+        "absent": {
+          "text": "Sent B"
+        }
+      }
     }
   ],
   "xfail": {}

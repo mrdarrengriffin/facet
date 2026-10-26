@@ -11,6 +11,12 @@
 //            page (navigate "screen_set?{"id": <id>}")
 // Off = not in the deck (a page you don't want is deleted, deck v2): switching one on adds it at the end, with its spec's
 // defaults; the start page can't be switched off.
+// Sent (facet-166): screens sent to this panel (Claude, the API, an agent; core/spec.h sent_kinds) that the deck has
+// no page of are not built-in kinds, so not on / off: after the list, a group apart, the label "sent" (as above),
+// section-gap, one List row each (its name, sub "Sent to this panel") with two real Buttons appended: "Add to deck"
+// (secondary, icon plus: deck_set "on", event "deck" <id> on=true; it then shows in the list above) and "Remove"
+// (ghost; first tap turns it into "Confirm" primary, the second reverts that sent screen: fw::spec::revert, event
+// "spec" "revert <id>"). The device rebuilds the page after either (spec reload "deck").
 // Update path: none needed (the device builds it each time it opens; props: none). Pairs: the components'.
 #include "fw.h"
 #include "spec.h"
@@ -42,7 +48,10 @@ std::string name_of(const std::string &id) {
   return id;
 }
 struct Row { std::string id; lv_obj_t *toggle; };
-struct Page { lv_obj_t *root = nullptr; std::vector<Row> rows; };
+struct Sent { std::string id; lv_obj_t *add, *remove; bool armed = false; };
+struct Page { lv_obj_t *root = nullptr; std::vector<Row> rows; std::vector<Sent> sent; };
+// is o (an emitter) part of b
+bool within(lv_obj_t *o, lv_obj_t *b) { for (; o; o = lv_obj_get_parent(o)) if (o == b) return true; return false; }
 
 const char *META = R"({
   "role": "detail",
@@ -108,8 +117,57 @@ void build_screens(lv_obj_t *parent, fw::Props) {
       fw::emit(o, "navigate", (const char *) lv_event_get_user_data(e));
     }, LV_EVENT_CLICKED, nav);
   }
+  const std::vector<std::string> sent = fw::spec::sent_kinds();
+  if (!sent.empty()) {  // the Sent group: screens sent to this panel, not built-in kinds
+    lv_obj_t *sg = box(c);
+    lv_obj_set_size(sg, 1, fw::lay::group);
+    lv_obj_t *sl = fw::text(c, fw::ty::label, "sent", t.text_dim);
+    lv_obj_remove_flag(sl, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_set_height(sl, fw::style(fw::ty::label).box);
+    lv_obj_t *sgap = box(c);
+    lv_obj_set_size(sgap, 1, fw::lay::section_gap);
+    for (const std::string &id : sent) {
+      Doc rd;
+      rd["title"] = name_of(id).c_str();
+      rd["icon"] = "none";
+      rd["sub"] = "Sent to this panel";
+      rd["trailing"] = "none";
+      lv_obj_t *r = build("list_row", c, rd);
+      if (!r) continue;
+      Doc ad, rm;
+      ad["kind"] = "secondary", ad["label"] = "Add to deck", ad["icon"] = "plus";
+      rm["kind"] = "ghost", rm["label"] = "Remove";
+      lv_obj_t *a = build("button", r, ad);
+      lv_obj_t *x = build("button", r, rm);
+      pg->sent.push_back({id, a, x});
+    }
+  }
   fw::listen(root, [](lv_obj_t *from, const char *name, const char *detail, void *user) {
     auto *pg = (Page *) user;
+    if (!strcmp(name, "tap"))
+      for (Sent &s : pg->sent) {
+        if (s.add && within(from, s.add)) {
+          Doc v;
+          v.set(true);
+          fw::spec::deck_set(s.id, "on", v.as<ArduinoJson::JsonVariantConst>());
+          fw::emit(s.add, "deck", (s.id + " on=true").c_str());
+          return;
+        }
+        if (!s.remove || !within(from, s.remove)) continue;
+        if (!s.armed) {  // confirm first: the button asks again
+          s.armed = true;
+          Doc cf;
+          cf["kind"] = "primary", cf["label"] = "Confirm";
+          fw::update_child(fw::find("button"), s.remove, cf.as<fw::Props>());
+          return;
+        }
+        const std::string id = s.id;
+        lv_obj_t *em = s.remove;
+        Doc out;
+        fw::spec::revert(id, out.to<ArduinoJson::JsonObject>());
+        fw::emit(em, "spec", ("revert " + id).c_str());
+        return;
+      }
     if (!strcmp(name, fw::st::SWITCH_EVENT))
       for (const Row &r : pg->rows) {
         if (r.toggle != from) continue;
