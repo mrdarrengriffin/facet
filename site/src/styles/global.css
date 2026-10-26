@@ -505,7 +505,7 @@ kbd {
   display: flex;
   flex-wrap: wrap;
   gap: 8px 24px;
-  margin: 0 0 16px;
+  margin: 0 0 24px;
   font-size: 14px;
 }
 
@@ -518,6 +518,8 @@ kbd {
 }
 
 .docs__meta {
+  padding-top: 24px;
+  border-top: 1px solid var(--facet-color-line);
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
