@@ -3,14 +3,12 @@
 // agent Tile (the same box, padding, press look and two-line title), with an entity icon in place of the mascot.
 //   box      lay::tile_w x tile_h (208 x 208 / 136 x 136), surface fill, 1 px line border, radius rad::tile,
 //            padding lay::tile_pad - hair (children count from the outer edge, as the Tile); flex column
-//   on       lit: the box filled st::on_fill (accent, = the slider fill) with an accent border, icon / name / status in
-//            st::on_label (on-accent); pressed while on = accent-press
-//   icon     ic::icon (24 / 16): text-dim, on-accent while on; top-left on the padding line
+//   icon     ic::icon (24 / 16): text-dim, or st::on_mark (accent) while on; top-left on the padding line
 //   (grow)
 //   label    screen type body, text, up to two lines in a box of 2 x the body box (Tile title), ellipsis
 //   gap      space 5 (16 / 12, Tile)
-//   status   type label (caps), one line, a fixed box: the state ("Off", "64%", "Open"); on-accent while on, else
-//            text-dim
+//   status   type label (caps), one line, a fixed box: the state ("Off", "64%", "Open"); st::on_ink (accent-text) while
+//            on, else text-dim
 // Props: icon (a UI or screen icon name), label, status, on (bool), act toggle | open | none (what a tap does: the
 // sound and the instant look; none = read-only, a Home sensor tile: not clickable, no press look), state default | pressed | unavailable.
 // Tap (states.json): act toggle = the tile shows the other side at once (Motion toggle fade, like a tap on a Toggle)
@@ -42,23 +40,19 @@ lv_obj_t *part(lv_obj_t *c, int i) { return lv_obj_get_child(c, i); }
 // the look the props ask for: user flag USER_3 = on
 bool is_on(lv_obj_t *c) { return lv_obj_has_flag(c, LV_OBJ_FLAG_USER_3); }
 void paint(lv_obj_t *c, bool on, bool quiet) {
-  const fw::Theme &t = *fw::T;
+  const fw::Theme &t = *fw::theme_of(c);  // a tap / update paints after the build: the tile's own theme, not fw::T
   lv_obj_set_flag(c, LV_OBJ_FLAG_USER_3, on);
   if (lv_obj_has_state(c, ST_OFF)) return;
-  // on = lit: filled st::on_fill (accent, as the slider fill), every ink st::on_label (on-accent); pressed = accent-press
-  const lv_color_t ic = on ? fw::st::on_label(t) : t.text_dim, tx = on ? fw::st::on_label(t) : t.text_dim;
-  const lv_color_t ti = on ? fw::st::on_label(t) : t.text;
-  const bool p_fill = !lv_obj_has_flag(c, LV_OBJ_FLAG_USER_1);  // USER_1 = press style "border" (no press fill)
-  auto apply = [&] {
+  const lv_color_t ic = on ? fw::st::on_mark(t) : t.text_dim, tx = on ? fw::st::on_ink(t) : t.text_dim;
+  if (quiet) {
     fw::icon_colour(part(c, 0), ic);
-    lv_obj_set_style_text_color(part(c, 2), ti, 0);
     lv_obj_set_style_text_color(part(c, 4), tx, 0);
-    lv_obj_set_style_bg_color(c, on ? fw::st::on_fill(t) : t.surface, 0);
-    lv_obj_set_style_border_color(c, on ? fw::st::on_fill(t) : t.line, 0);
-    lv_obj_set_style_bg_color(c, on ? t.accent_press : p_fill ? fw::st::pressed_tint(t) : t.surface, LV_STATE_PRESSED);
-  };
-  if (quiet) { apply(); return; }
-  fw::st::restyle(c, apply);
+    return;
+  }
+  fw::st::restyle(c, [&] {
+    fw::icon_colour(part(c, 0), ic);
+    lv_obj_set_style_text_color(part(c, 4), tx, 0);
+  });
 }
 // on: a bool, or a state word "on" (a bind's map: a cover's open)
 bool on_of(fw::Props p) { return p["on"].is<bool>() ? p["on"].as<bool>() : !strcmp(p["on"] | "", "on"); }
@@ -82,7 +76,6 @@ void fill(lv_obj_t *c, fw::Props p) {
   const lv_style_selector_t SEL[3] = {0, LV_STATE_PRESSED, ST_OFF};
   const char *press = p["press"] | fw::st::PRESS_STYLE;
   const bool p_fill = strcmp(press, "border") != 0, p_border = strcmp(press, "fill") != 0;
-  lv_obj_set_flag(c, LV_OBJ_FLAG_USER_1, !p_fill);
   const lv_color_t BG[3] = {t.surface, p_fill ? fw::st::pressed_tint(t) : t.surface, t.surface};
   const lv_color_t BD[3] = {t.line, p_border ? fw::st::pressed_tint_line(t) : fw::st::pressed_line(t), t.line};
   for (int i = 0; i < 3; i++) {

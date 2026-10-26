@@ -373,6 +373,15 @@ void guard_taps() {  // every pointer indev once (the WASM stages and the panel'
   }
 }
 }  // namespace
+// the theme o was built in: its device's look (dev::theme_at), else the stage it was built on, else fw::T. For code that
+// paints after the build (a tap, an update): fw::T is global and then holds whichever stage was built last.
+const Theme *theme_of(lv_obj_t *o) {
+  for (lv_obj_t *x = o; x; x = lv_obj_get_parent(x)) {
+    if (const Theme *d = dev::theme_at(x)) return d;
+    if (Built *b = built_of(x, false); b && b->t) return b->t;
+  }
+  return T;
+}
 
 // clean `scr`, make it the Facet screen (bg token, flex column, centred) and build `comp` with `props` on it
 const char *render(lv_obj_t *scr, const char *comp, const char *props, bool light, int accent) {

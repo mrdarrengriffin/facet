@@ -25,6 +25,8 @@ namespace fw {
 extern const Theme *T;  // the theme of the stage being built
 // any theme (e.g. to show dark and light side by side); accent_set = index into tokens::ACCENTS, <0 = default
 const Theme *theme(bool light, int accent_set = -1);
+// the theme an object was built in (its device's look, else its stage's): use it, not fw::T, when painting after the build
+const Theme *theme_of(lv_obj_t *o);
 
 #ifdef FW_1X
 constexpr float D = 1.0f;

@@ -187,7 +187,7 @@ void run(lv_timer_t *t) {
   show(d, d->stack.back(), items);
   const char *tr = setting("transition");
   if (!items.empty() && !(tr && !strcmp(tr, "instant"))) rise(items.data(), (int) items.size(), home_dir);
-  T = was;
+  T = devices.size() == 1 ? d->theme : was;  // a panel (one device): fw::T stays its look for taps / fades
   emit(d->root, "screen", base_of(d->stack.back()).c_str());  // the host may mirror it (URL, HA); not a tap
 }
 void queue(lv_obj_t *in, Op op, const char *id) {
@@ -282,7 +282,7 @@ void restyle_now(Device *d) {
   T = d->theme;
   std::vector<lv_obj_t *> items;
   show(d, d->stack.back(), items);
-  T = was;
+  T = devices.size() == 1 ? d->theme : was;  // a panel (one device): fw::T stays its look for taps / fades
   root = d->screen && lv_obj_get_child_count(d->screen) ? lv_obj_get_child(d->screen, 0) : nullptr;
   if (root && idx >= 0 && idx < (int32_t) lv_obj_get_child_count(root) && y > 0) {
     lv_obj_t *k = lv_obj_get_child(root, idx);
@@ -316,6 +316,7 @@ void apply(int k, From from) {
       const Theme *t = look(d->stage);
       if (t != d->theme) {
         d->theme = t;
+        if (devices.size() == 1) T = t;  // taps / fades paint from fw::T after the build: the panel's look now
         if (!d->restyle) d->restyle = lv_timer_create(restyle_tick, 30, d);
         d->restyle_at = lv_tick_get();
         continue;  // the rebuild shows every value anyway
@@ -331,7 +332,7 @@ void apply(int k, From from) {
       Quiet q;
       update_child(find("settings"), root, p.as<Props>());
     }
-    T = was;
+    T = devices.size() == 1 ? d->theme : was;  // a panel (one device): fw::T stays its look for taps / fades
   }
 }
 }  // namespace
@@ -375,8 +376,12 @@ lv_obj_t *mount(lv_obj_t *parent, const char *start) {
   d->stack.push_back(s);
   std::vector<lv_obj_t *> items;
   show(d, s, items);  // the first screen cut in (no rise: the panel just shows it)
-  T = was;
+  T = devices.size() == 1 ? d->theme : was;  // a panel (one device): fw::T stays its look for taps / fades
   return d->root;
+}
+const Theme *theme_at(lv_obj_t *o) {
+  for (Device *d : devices) if (d->root == o) return d->theme;
+  return nullptr;
 }
 void toast(Props t) {
   const bool top = store().v[index_of("toastPosition")] != "bottom";
@@ -385,7 +390,7 @@ void toast(Props t) {
     const Theme *was = T;
     T = d->theme;  // built in the device's look (fw::T is global)
     toasts::push(d->toasts, t, top);
-    T = was;
+    T = devices.size() == 1 ? d->theme : was;  // a panel (one device): fw::T stays its look for taps / fades
   }
 }
 void reload(const char *id) {

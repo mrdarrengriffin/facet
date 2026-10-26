@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-const C = JSON.parse(fs.readFileSync(new URL('../../tokens/colour.json', import.meta.url))).colours;
+const CJ = JSON.parse(fs.readFileSync(new URL('../../tokens/colour.json', import.meta.url))), C = CJ.colours;
 const is = (hex, tok) => !!hex && [C[tok].dark, C[tok].light].some((v) => v.toUpperCase() === String(hex).toUpperCase());
 const inBox = (o, b) => o.x >= b.x && o.y >= b.y && o.x + o.w <= b.x + b.w && o.y + o.h <= b.y + b.h;
 // Entity tile (components/entity_tile.cpp) on its own, and the Home light cards built from it (screens/home.cpp:
@@ -38,16 +38,22 @@ export default {
       const ev = t.update({ status: 'Off', on: false }); t.silent(ev);
       t.has(status(t, 'Sofa table'), /^off$/i, 'status after update'); t.hasNot(status(t, 'Sofa table'), /64%/, 'old status');
     } },
-    { name: 'filled with the accent iff on', mount: ['entity_tile', { label: 'Sofa table', status: '64%', on: true }], run(t) {
-      t.ok(is(tileBg(t, 'Sofa table'), 'accent'), `on: fill ${tileBg(t, 'Sofa table')}`);
-      const ink = t.objs().filter((o) => o.text && inBox(o, tile(t, 'Sofa table'))).map((o) => o.ink);
-      t.ok(ink.length && ink.every((k) => is(k, 'on-accent')), `on: every text on-accent (${ink.join()})`);
+    // the card keeps the surface: on shows in the icon (accent) and the state (accent-text), never a filled card
+    { name: 'on and off: the card stays the surface', mount: ['entity_tile', { label: 'Sofa table', status: '64%', on: true }], run(t) {
+      t.ok(is(tileBg(t, 'Sofa table'), 'surface'), `on: fill ${tileBg(t, 'Sofa table')}`);
+      t.ok(!is(tileBg(t, 'Sofa table'), 'accent'), 'on: not the accent');
+      const st = t.objs().find((o) => o.text === '64%' && inBox(o, tile(t, 'Sofa table')));
+      t.ok(st && is(st.ink, 'accent-text'), `on: state ink ${st?.ink}`);
       t.update({ on: false, status: 'Off' });
       t.ok(is(tileBg(t, 'Sofa table'), 'surface'), `off: fill ${tileBg(t, 'Sofa table')}`);
+      t.update({ on: true, status: '64%' });
+      t.ok(is(tileBg(t, 'Sofa table'), 'surface'), `on again: fill ${tileBg(t, 'Sofa table')}`);
     } },
-    { name: 'off tile is not filled; a tap lights it', mount: ['entity_tile', { label: 'Chair', on: false, status: 'Off' }], run(t) {
+    { name: 'taps both ways keep the surface', mount: ['entity_tile', { label: 'Chair', on: false, status: 'Off' }], run(t) {
       t.ok(is(tileBg(t, 'Chair'), 'surface'), 'off: surface'); t.tap('Chair'); t.wait(600);
-      t.ok(is(tileBg(t, 'Chair'), 'accent'), `after the tap: ${tileBg(t, 'Chair')}`);
+      t.ok(is(tileBg(t, 'Chair'), 'surface'), `on after a tap: ${tileBg(t, 'Chair')}`);
+      t.tap('Chair'); t.wait(600);
+      t.ok(is(tileBg(t, 'Chair'), 'surface'), `off after a tap: ${tileBg(t, 'Chair')}`);
     } },
     { name: 'sensor (act none) stays unfilled', mount: ['entity_tile', { label: 'Garage', act: 'none', on: false, status: '18.5 °C' }], run(t) {
       t.ok(is(tileBg(t, 'Garage'), 'surface'), 'surface');
@@ -92,6 +98,32 @@ export default {
       const ev = t.tap('Sofa table'); t.eq(t.ha.calls.length, n, 'HA calls while unavailable'); t.sounds(ev, ['error']);
       t.ha.set('light.sofa_lamp', 'on', { brightness: 115 }); t.has(status(t, 'Sofa table') || [], /^45%$/, 'back');
       t.emitted(t.tap('Sofa table'), 'ha', /light\.sofa_lamp/, 'taps again once back');
+    } },
+    { name: 'Home: the panel theme set unlike the stage: taps keep the panel\'s card surface (Guition black off card)', async run(t) {
+      await t.device();
+      const bg0 = String(tileBg(t, 'Sofa table') || '').toUpperCase();
+      const stageLight = bg0 === C.surface.light.toUpperCase(), want = stageLight ? 'dark' : 'light';
+      t.b.str('theme', (a) => t.b.str(want, (v) => t.b.m.UTF8ToString(t.b.m._fw_setting(a, v)))); t.wait(1200);
+      const surf = C.surface[want].toUpperCase(), bg = () => String(tileBg(t, 'Sofa table') || '').toUpperCase();
+      t.eq(bg(), surf, `${want} panel: card surface`);
+      for (const s of ['on', 'off', 'on']) {
+        t.ha.set('light.sofa_lamp', s === 'on' ? 'off' : 'on', s === 'on' ? { brightness: null } : { brightness: 115 }); t.wait(600);
+        t.tap('Sofa table'); t.wait(600); t.eq(bg(), surf, `after a tap to ${s}`);
+      }
+    } },
+    { name: 'Home: on -> off -> another accent -> on: the current accent; a tile lit before the change follows it', async run(t) {
+      await t.device();
+      const light = String(tileBg(t, 'Sofa table') || '').toUpperCase() === C.surface.light.toUpperCase();
+      const set = CJ.accent.sets.find((a) => a.id !== (t.setting('accent') || CJ.accent.default));
+      const ink = (label, re) => t.objs().find((o) => o.text && re.test(o.text) && inBox(o, tile(t, label)))?.ink;
+      t.ha.set('light.living_room_ceiling', 'on', { brightness: 128 }); t.ha.set('light.sofa_lamp', 'on', { brightness: 115 }); t.wait(600);
+      t.tap('Sofa table'); t.wait(600); t.has(status(t, 'Sofa table') || [], /^off$/i, 'sofa off');
+      t.b.str('accent', (a) => t.b.str(set.id, (v) => t.b.m.UTF8ToString(t.b.m._fw_setting(a, v)))); t.wait(1500);
+      const want = set[light ? 'light' : 'dark']['accent-text'].toUpperCase();
+      t.eq(String(ink('Ceiling', /^50%$/) || '').toUpperCase(), want, `lit before the change: ${set.id} accent text`);
+      t.tap('Sofa table'); t.wait(600);
+      t.eq(String(ink('Sofa table', /^\d+%$/) || '').toUpperCase(), want, `on after the change: ${set.id} accent text`);
+      t.eq(String(tileBg(t, 'Sofa table') || '').toUpperCase(), C.surface[light ? 'light' : 'dark'].toUpperCase(), 'still the surface');
     } },
     { name: 'Home: HA disconnect + reconnect: every light line comes back', async run(t) {
       await t.device();
