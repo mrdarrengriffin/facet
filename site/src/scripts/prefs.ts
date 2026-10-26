@@ -29,6 +29,37 @@ export function setPrefs(ch: Partial<Prefs>) {
 }
 export function onPrefs(f: (p: Prefs) => void) { subs.push(f); }
 
+// Pages whose previews sit in the page like figures (component pages: [data-live-auto]) have no preview switches:
+// the theme follows the site, sounds stay off, and the panel size comes from the room the preview has (720 when the
+// component fits at 1.5x on a wide page, else 480). Never stored: the other pages keep the visitor's own prefs.
+let autoDev: 720 | 480 | 0 = 0;
+function pickDevice(host: HTMLElement): 720 | 480 {
+  if (!matchMedia('(min-width: 861px)').matches) return 480;
+  const fig = host.querySelector<HTMLElement>('figure[data-live]');
+  const fw = fig ? (JSON.parse(fig.dataset.frame ?? '[240,0]') as number[])[0] : 240;
+  const cs = getComputedStyle(host);
+  const room = host.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+  return room >= Math.round(fw * 1.5) ? 720 : 480;
+}
+/** the prefs the live previews draw with: the stored prefs, with a figure page's own theme / sound / size rules */
+export function livePrefs(): Prefs {
+  const p = getPrefs();
+  const host = document.querySelector<HTMLElement>('[data-live-auto]');
+  if (!host) return p;
+  if (!autoDev) {
+    autoDev = pickDevice(host);
+    let t = 0;
+    addEventListener('resize', () => {
+      clearTimeout(t);
+      t = window.setTimeout(() => {
+        const d = pickDevice(host);
+        if (d !== autoDev) { autoDev = d; const q = livePrefs(); for (const f of subs) f(q); }
+      }, 250);
+    });
+  }
+  return { ...p, device: autoDev, sound: false };
+}
+
 /** the header controls reflect the current prefs */
 function sync() {
   const p = getPrefs();

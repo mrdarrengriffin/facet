@@ -5,7 +5,7 @@
 // (step ticks): detail = position 0..1 -> sound.json pitch.low..pitch.high semitones (fallback (pos - 0.5) x track).
 // Browsers allow audio only after a gesture: the AudioContext starts on the first pointer / key press on the page.
 import { render, setLevels } from '../lib/synth';
-import { getPrefs } from './prefs';
+import { livePrefs } from './prefs';
 
 type Params = Record<string, unknown> & { engine: string; track?: number };
 interface Variant { id: string; name: string; engine: string; about: string; defaults: Record<string, unknown> }
@@ -49,7 +49,7 @@ export const pickVariant = (doc: SoundDoc, id: string) => doc.variants.find((x) 
 
 /** a UI sound requested by a component (fw_events kind "sound"); nothing when sound is off or before a gesture */
 export async function playUi(id: string, detail = '') {
-  const pr = getPrefs();
+  const pr = livePrefs();
   if (!pr.sound || !ac) return;
   const doc = await soundDoc(), t = doc.types.find((x) => x.id === id), v = pickVariant(doc, pr.pack);
   if (!t || !v) return;

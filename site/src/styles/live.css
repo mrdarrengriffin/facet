@@ -192,12 +192,16 @@
   gap: 16px;
   align-items: start;
 }
-.explorer__preview,
 .explorer__controls,
 .explorer__code pre {
   border: 1px solid var(--facet-color-line);
   border-radius: 16px;
   background: var(--facet-color-surface);
+  overflow: hidden;
+}
+/* the playground preview sits in the page like a figure: no bar, no border, just the panel background */
+.explorer__preview {
+  border-radius: 16px;
   overflow: hidden;
 }
 .explorer__themed {

@@ -4,7 +4,7 @@
 // comes into view.
 import { Engine, type Stage } from '../lib/engine';
 import { fakeHaEvent, fakeHaState, feedSampleHa } from '../lib/sample-ha';
-import { getPrefs, onPrefs, setPrefs, type Prefs } from './prefs';
+import { getPrefs, livePrefs, onPrefs, setPrefs, type Prefs } from './prefs';
 import { playUi, setVolume } from './sound';
 import site from '../data/site.json';
 
@@ -174,7 +174,7 @@ function draw(it: Item, e: Engine, p: Prefs, reset = false) {
 
 async function show(it: Item) {
   shown.add(it);
-  const p = getPrefs();
+  const p = livePrefs();
   const e = await ensure(p);
   draw(it, e, p);
 }
@@ -228,7 +228,7 @@ export function initLive() {
     items.push(it);
     io.observe(el);
   }
-  onPrefs((p) => { if (engine && loadedFor === p.device) pushPrefs(engine, p); void redrawAll(p); });
+  onPrefs(() => { const p = livePrefs(); if (engine && loadedFor === p.device) pushPrefs(engine, p); void redrawAll(p); });
   // preview theme switches (Site / Dark / Light) of each box
   for (const sw of document.querySelectorAll<HTMLButtonElement>('[data-theme-set]')) {
     sw.addEventListener('click', () => {
@@ -237,7 +237,7 @@ export function initLive() {
       const v = sw.dataset.themeSet!;
       if (v === 'site') delete scope.dataset.previewTheme; else scope.dataset.previewTheme = v;
       for (const b of scope.querySelectorAll<HTMLButtonElement>('[data-theme-set]')) b.setAttribute('aria-pressed', String(b.dataset.themeSet === v));
-      const p = getPrefs();
+      const p = livePrefs();
       if (engine && loadedFor === p.device) pushPrefs(engine, p);
       void redrawAll(p);
     });
@@ -249,5 +249,5 @@ export function setLiveProps(el: HTMLElement, props: Record<string, unknown>) {
   const it = items.find((i) => i.el === el);
   if (!it) return;
   it.props = props;
-  if (engine && it.stage) draw(it, engine, getPrefs(), true);
+  if (engine && it.stage) draw(it, engine, livePrefs(), true);
 }

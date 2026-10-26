@@ -1,16 +1,13 @@
 ---
 // One page per registered component, in the original site's UI explorer layout (main a5df2ac: site/src/pages/
 // components.astro): components sidebar with a filter; preview + props playground (the build's meta props drive the
-// live WASM stage); variants; then the reference generated from the source (props, events and sounds, built with). Every example is the real component, drawn by the panel renderer.
+// live WASM stage, sitting in the page like a figure: no preview bar, theme from the site, size from the room, silent); variants; then the reference generated from the source (props, events and sounds, built with). Every example is the real component, drawn by the panel renderer.
 import Base from '../../layouts/Base.astro';
 import ComponentsSidebar from '../../components/ComponentsSidebar.astro';
 import Events from '../../components/Events.astro';
 import EditPage from '../../components/EditPage.astro';
 import Live from '../../components/Live.astro';
 import Lede from '../../components/Lede.astro';
-import SoundToggle from '../../components/SoundToggle.astro';
-import ThemeSwitch from '../../components/ThemeSwitch.astro';
-import SizeSwitch from '../../components/SizeSwitch.astro';
 import { ALL, COMPONENTS, defaults, groupOf, href, propTypeWord, slug, valueList, type Entry } from '../../lib/data';
 
 export function getStaticPaths() {
@@ -39,15 +36,8 @@ const fid = (n: string) => `pg-${c.id}-${n}`;
 
       <section class="explorer__workbench" data-playground data-preview-scope data-defaults={JSON.stringify(base)}>
         <div class="explorer__preview">
-          <div class="preview__bar">
-            <span class="facet-label">Preview</span>
-            <span class="preview__spacer"></span>
-            <SoundToggle />
-            <ThemeSwitch />
-            <SizeSwitch />
-          </div>
           <div class="explorer__themed" data-themed>
-            <div class="explorer__stage">
+            <div class="explorer__stage" data-live-auto>
               <Live comp={c.id} props={base} label={`${c.name} playground`} frame={m.frame} caption={false} sandbox />
             </div>
           </div>
