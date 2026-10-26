@@ -2,7 +2,9 @@ name: Deploy docs
 
 # The docs site (site/) on GitHub Pages. The renderer's WASM build needs LVGL and the fonts, which are not vendored
 # in this repo yet, so it is built locally and kept as the asset of the `docs-build` release
-# (site/scripts/upload-build.sh); this workflow downloads it and builds the Astro site around it.
+# (site/scripts/upload-build.sh); this workflow downloads it and builds the Astro site around it. The public firmware
+# for the /install page (factory + OTA images, manifest.json + ota.json per board) is the asset of the `firmware`
+# release (site/scripts/upload-firmware.sh), unpacked into site/public/firmware/ and served at /facet/firmware/<board>/.
 
 on:
   push:
@@ -36,6 +38,13 @@ jobs:
         run: |
           gh release download docs-build -p docs-build.tar.gz -R "$GITHUB_REPOSITORY"
           mkdir -p renderer/out/docs && tar -xzf docs-build.tar.gz -C renderer/out/docs
+      - name: Download the public firmware (install page + panel updates)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download firmware -p firmware.tar.gz -R "$GITHUB_REPOSITORY"
+          mkdir -p site/public/firmware && tar -xzf firmware.tar.gz -C site/public/firmware
+          ls -R site/public/firmware
       - run: npm ci
         working-directory: site
       - run: npm run build
@@ -53,6 +62,35 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  check:
+    # the /install page fails with "Failed to download manifest" when these are not served
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Firmware manifests and images are served
+        env:
+          PAGE_URL: ${{ needs.deploy.outputs.page_url }}
+        run: |
+          base="${PAGE_URL%/}/firmware"
+          sleep 20
+          fail=0
+          for board in waveshare-p4-86 guition-4848s040; do
+            for f in manifest.json ota.json; do
+              ok=0
+              for try in 1 2 3 4 5 6; do curl -sfL -o "$board-$f" "$base/$board/$f" && { ok=1; break; }; sleep 10; done
+              [ $ok = 1 ] || { echo "::error::$base/$board/$f not served"; fail=1; continue; }
+              echo "$board/$f: version $(jq -r .version "$board-$f")"
+            done
+            [ -f "$board-manifest.json" ] || continue
+            for bin in $(jq -r '.builds[].parts[].path' "$board-manifest.json") $(jq -r '.builds[].ota.path' "$board-ota.json" 2>/dev/null); do
+              code=$(curl -sIL -o /dev/null -w '%{http_code}' "$base/$board/$bin")
+              echo "$board/$bin: $code"; [ "$code" = 200 ] || { echo "::error::$base/$board/$bin returned $code"; fail=1; }
+            done
+          done
+          exit $fail
