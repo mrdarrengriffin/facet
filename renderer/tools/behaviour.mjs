@@ -75,77 +75,10 @@ function specOf(id) {
 }
 
 // ---------------------------------------------------------------- one WASM instance per id (fresh LVGL + HA state)
-const mods = {};
-async function instance(den) {
-  if (!mods[den]) {
-    const dir = join(BUILD, den);
-    mods[den] = { F: (await import(pathToFileURL(join(dir, 'fw.mjs')).href)).default, wasm: await WebAssembly.compile(readFileSync(join(dir, 'fw.wasm'))) };
-  }
-  const M = mods[den];
-  const m = await M.F({ instantiateWasm: (imports, ok) => { WebAssembly.instantiate(M.wasm, imports).then((i) => ok(i, M.wasm)); return {}; } });
-  m._fw_init();
-  return m;
-}
-
-class Bench {  // one module instance, one stage at a time
-  constructor(m, den) {
-    this.m = m; this.den = den; this.S = den === '1x' ? 480 : 720; this.t = 0; this.stage = -1; this.rec = null;
-    this.hasTest = !!m._fw_test; this.hasBench = !!m._fw_bench_take;
-    if (this.hasBench) m._fw_bench_attach();
-  }
-  str(s, f) { const p = this.m.stringToNewUTF8(s); try { return f(p); } finally { this.m._free(p); } }
-  tick(n = 1) {
-    for (let i = 0; i < n; i++) {
-      this.t += T;
-      const w0 = performance.now();
-      this.m._fw_tick(this.t);
-      if (this.hasBench) {
-        const s = new Float64Array(this.m.HEAPU8.buffer, this.m._fw_bench_take(), 9);
-        if (this.rec && (s[0] || s[8])) this.rec.push({ at: this.t, renders: s[0], ms: Math.max(0, s[1] - s[3]), px: s[4], areas: s[5], full: s[7], over: s[8], anims: this.m._fw_anims(), work: performance.now() - w0 });
-      }
-    }
-  }
-  settle(max = 1500) {  // until no animation runs (or max ms: live things never settle)
-    const end = this.t + max;
-    let calm = 0;
-    while (this.t < end && calm < 3) { this.tick(); calm = this.m._fw_anims() ? 0 : calm + 1; }
-  }
-  // every build gets a fresh module (2.7 ms): no state leaks between gestures (deck, settings, HA values, timers)
-  async render(comp, props = {}, light = 0) {
-    this.m = await instance(this.den);
-    this.hasTest = !!this.m._fw_test; this.hasBench = !!this.m._fw_bench_take;
-    this.t = 0;
-    this.stage = this.m._fw_stage(this.S, this.S);
-    if (this.hasBench) this.m._fw_bench_attach();  // hooks the new display (idempotent), zeroes the counters
-    const rec = this.rec; this.rec = null; this.tick(2); this.rec = rec;
-    this.events();
-    const e = this.str(comp, (c) => this.str(JSON.stringify(props), (p) => this.m.UTF8ToString(this.m._fw_render(this.stage, c, p, light, 0))));
-    return e;
-  }
-  // build it again in this module (state kept: sent specs, the deck), as the device does after a deck change
-  rebuild(comp, props = {}, light = 0) { const e = this.str(comp, (c) => this.str(JSON.stringify(props), (p) => this.m.UTF8ToString(this.m._fw_render(this.stage, c, p, light, 0)))); this.tick(2); this.events(); return e; }
-  spec(cmd, a) { return this.str(cmd, (pc) => this.str(typeof a === 'string' ? a : JSON.stringify(a), (pa) => this.m.UTF8ToString(this.m._fw_spec(pc, pa)))); }
-  update(comp, props, light = 0) { return this.str(comp, (c) => this.str(JSON.stringify(props), (p) => this.m.UTF8ToString(this.m._fw_update(this.stage, c, p, light, 0)))); }
-  events() { const s = this.m.UTF8ToString(this.m._fw_events()); return s ? JSON.parse(s) : []; }
-  audit() { return JSON.parse(this.m.UTF8ToString(this.m._fw_audit(this.stage))); }
-  hits() { return JSON.parse(this.m.UTF8ToString(this.m._fw_hits(this.stage)) || '[]'); }
-  test(cmd, a = '') { if (!this.hasTest) return null; const r = this.str(cmd, (c) => this.str(a, (p) => this.m.UTF8ToString(this.m._fw_test(c, p)))); return cmd === 'setting' ? r : JSON.parse(r || 'null'); }
-  scrolls() { return this.test('scrolls') || this.audit().filter((o) => o.sc).map((o) => ({ ...o, sy: 0, sx: 0, t: 0, b: 1, l: 0, r: 0 })); }
-  stack() { const s = this.test('stack'); return s && s[0] ? s[0].stack : null; }
-  haPut(e, a, v) { this.str(e, (pe) => this.str(a, (pa) => this.str(v, (pv) => this.m._fw_ha_put(pe, pa, pv)))); }
-  touch(x, y, down) { this.m._fw_touch(this.stage, Math.round(x), Math.round(y), down ? 1 : 0); }
-  // gestures; each returns the events (incl. sounds) it caused, after the UI settles
-  tap(x, y, hold = 64) { this.touch(x, y, 1); this.tick(Math.ceil(hold / T)); this.touch(x, y, 0); this.tick(2); this.settle(); return this.events(); }
-  long(x, y) { return this.tap(x, y, B.long_press_ms); }
-  drag(x, y, dx, dy, { steps = 0, hold = 48, after = true, onStep } = {}) {
-    const n = steps || Math.max(2, Math.ceil(Math.hypot(dx, dy) / B.drag_px_per_tick));
-    this.touch(x, y, 1); this.tick(Math.ceil(hold / T));
-    for (let i = 1; i <= n; i++) { this.touch(x + (dx * i) / n, y + (dy * i) / n, 1); this.tick(); onStep && onStep(i); }
-    this.touch(x + dx, y + dy, 0); this.tick(2);
-    if (after) this.settle(2000);
-    return this.events();
-  }
-}
+import { instance as instance0, Bench as Bench0, setBuild } from './lib/fwbench.mjs';
+setBuild(BUILD);
+const instance = (den) => instance0(den, BUILD);
+class Bench extends Bench0 { constructor(m, den) { super(m, den, { build: BUILD, long_ms: B.long_press_ms, drag_px: B.drag_px_per_tick }); } }
 
 // clickable targets of what the stage shows: visible, on the stage, one per distinct box, at most `cap` spread evenly
 function targets(objs, S, cap) {
