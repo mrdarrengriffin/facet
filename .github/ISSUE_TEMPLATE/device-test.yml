@@ -1,0 +1,42 @@
+name: Device test report
+description: You tried Facet on a panel. Tell us how it went, good or bad.
+labels: [question]
+title: "Device test: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Real panels find things the browser never will. "Everything worked" is a useful report too.
+        How to install the preview build: https://mrdarrengriffin.github.io/facet/install/
+  - type: dropdown
+    id: panel
+    attributes:
+      label: Panel
+      options:
+        - Waveshare ESP32-P4-86 (720 x 720)
+        - Guition ESP32-S3-4848S040 (480 x 480)
+        - Another panel (say which below)
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Firmware version
+      description: Home Assistant shows it on the panel's device page.
+    validations:
+      required: true
+  - type: textarea
+    id: worked
+    attributes:
+      label: What worked
+      description: Screens you went through, controls you used.
+  - type: textarea
+    id: broke
+    attributes:
+      label: What broke or looked off
+      description: Clipped text, wrong colours, slow or janky animation, controls that did the wrong thing, freezes or reboots.
+  - type: textarea
+    id: shots
+    attributes:
+      label: Photos or videos
+      description: A phone photo of the panel is perfect.

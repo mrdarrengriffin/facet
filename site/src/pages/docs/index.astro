@@ -13,10 +13,11 @@ const headings: Heading[] = [
   { depth: 2, slug: 'screens', text: '3. Find your way round' },
   { depth: 2, slug: 'ai', text: '4. Make your own screens' },
   { depth: 2, slug: 'reference', text: '5. Go deeper' },
+  { depth: 2, slug: 'contribute', text: '6. Help make Facet better' },
 ];
 ---
 
-<Docs title="Getting started" description="What Facet is, what you need, and the steps from a blank panel to your own screens." group="Start here" current={url('/docs/')} headings={headings}>
+<Docs edit="site/src/pages/docs/index.astro" title="Getting started" description="What Facet is, what you need, and the steps from a blank panel to your own screens." group="Start here" current={url('/docs/')} headings={headings}>
   <p class="lede">
     Facet turns a small touch screen on the wall into a panel for your home. It runs on ESP32 panels with ESPHome,
     talks to Home Assistant, and every screen is built from one design system, so it all looks and feels the same.
@@ -70,4 +71,10 @@ const headings: Heading[] = [
     <li><a href={url('/foundations/')}>Design system</a>: the colour, type, space, motion, icons and sound every screen is made from.</li>
     <li><a href={url('/roadmap/')}>Roadmap</a>: where Facet is headed, area by area.</li>
   </ul>
+
+  <h2 id="contribute">6. Help make Facet better</h2>
+  <p>
+    Facet gets better with every person who tries it. Tell us what broke, test it on your panel, fix a line in these
+    docs or write some code: <a href={url('/contributing/')}>Contributing</a> has every way in, and most need no code.
+  </p>
 </Docs>

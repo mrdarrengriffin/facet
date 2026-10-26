@@ -1,0 +1,147 @@
+---
+// Contributing: every way to help, from a two-minute bug report to building the renderer. Same content as the repo's
+// CONTRIBUTING.md (keep the two in step). Real commands only (renderer/README.md, .github/workflows/deploy.yml).
+import Docs, { type Heading } from '../layouts/Docs.astro';
+import { url } from '../lib/nav';
+
+const REPO = 'https://github.com/mrdarrengriffin/facet';
+const issue = (t: string) => `${REPO}/issues/new?template=${t}.yml`;
+const headings: Heading[] = [
+  { depth: 2, slug: 'bug', text: 'Report a bug' },
+  { depth: 2, slug: 'device', text: 'Test on a device' },
+  { depth: 2, slug: 'docs', text: 'Improve the docs' },
+  { depth: 2, slug: 'code', text: 'Contribute code' },
+  { depth: 3, slug: 'site', text: 'The docs site' },
+  { depth: 3, slug: 'renderer', text: 'The renderer' },
+  { depth: 3, slug: 'checks', text: 'Checks' },
+  { depth: 3, slug: 'pull-requests', text: 'Pull requests' },
+  { depth: 2, slug: 'ideas', text: 'Share an idea' },
+  { depth: 2, slug: 'kind', text: 'Be kind' },
+];
+---
+
+<Docs edit="site/src/pages/contributing.astro" title="Contributing" description="Every way to help Facet, and most of them need no code." group="Start here" current={url('/contributing/')} headings={headings}>
+  <p class="lede">
+    Thanks for wanting to help. Facet is early and small, so every bit of help counts, and you don't need to write
+    code to make a difference.
+  </p>
+
+  <table>
+    <thead><tr><th>I want to...</th><th>Start here</th></tr></thead>
+    <tbody>
+      <tr><td>Tell you something is broken</td><td><a href="#bug">Report a bug</a></td></tr>
+      <tr><td>Try Facet on my panel</td><td><a href="#device">Test on a device</a></td></tr>
+      <tr><td>Fix a typo or explain something better</td><td><a href="#docs">Improve the docs</a></td></tr>
+      <tr><td>Write code</td><td><a href="#code">Contribute code</a></td></tr>
+      <tr><td>Suggest a screen, a component or a better way</td><td><a href="#ideas">Share an idea</a></td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    <span class="dot" aria-hidden="true"></span>
+    <p>Not sure where something fits? <a href={`${REPO}/issues/new/choose`}>Open an issue</a> and ask. There are no silly questions.</p>
+  </div>
+
+  <h2 id="bug">Report a bug</h2>
+  <p><a href={issue('bug')}>Open a bug report</a>. The most useful reports say:</p>
+  <ul>
+    <li>what you did, what you expected, and what happened instead;</li>
+    <li>where: which panel, or the docs site and which browser;</li>
+    <li>the firmware version, if it happened on a panel (Home Assistant shows it on the panel's device page);</li>
+    <li>a photo or screenshot, if it is something you can see.</li>
+  </ul>
+
+  <h2 id="device">Test on a device</h2>
+  <p>Real panels find things the browser never will, so test reports are gold.</p>
+  <ul>
+    <li>
+      <strong>Panels:</strong> the Waveshare ESP32-P4-86 (4 inch, 720 x 720) and the Guition ESP32-S3-4848S040 (4 inch,
+      480 x 480). Other panels are planned: if you have one, an issue saying so helps decide what comes next.
+    </li>
+    <li>
+      <strong>Install the preview build</strong> from your browser on the <a href={url('/install/')}>Install</a> page. It
+      replaces what is on the panel now; updates then arrive in Home Assistant.
+    </li>
+    <li>
+      <strong>What to try:</strong> go round every screen, tap, swipe and long press, switch dark and light, and leave it
+      running for a day. Look out for clipped text, misaligned edges, wrong colours, slow or janky animation, controls that
+      don't do what they say, and freezes or reboots.
+    </li>
+  </ul>
+  <p>
+    Then send a <a href={issue('device-test')}>device test report</a>: panel model, firmware version, what worked, what
+    broke. "Everything worked" is a useful report too.
+  </p>
+
+  <h2 id="docs">Improve the docs</h2>
+  <p>
+    Every docs page has an <strong>Edit this page on GitHub</strong> link at the bottom. It opens the file that holds that
+    page's text: edit it in the browser and GitHub turns it into a pull request for you. Spotted something but don't want
+    to edit? Use <strong>Report a problem</strong> next to it, or <a href={issue('docs')}>open a docs fix</a>.
+  </p>
+  <p>
+    Some pages are generated: a component's description comes from the comment at the top of its <code>.cpp</code> file,
+    a screen's from its spec in <code>renderer/specs/</code>. The edit link takes you to the right file either way.
+  </p>
+
+  <h2 id="code">Contribute code</h2>
+  <p>
+    The repository has three parts: <code>renderer/</code> (the C++/LVGL renderer: core, foundations, components,
+    screens, specs, tokens and the tools that check them), <code>firmware/</code> (the ESPHome external component) and
+    <code>site/</code> (these docs, generated from what the renderer registers).
+    The <a href={`${REPO}/blob/main/renderer/README.md`}>renderer README</a> has the detail.
+  </p>
+
+  <h3 id="site">The docs site</h3>
+  <p>The site needs no C++ toolchain: it uses the published WASM build.</p>
+  <pre><code>gh release download docs-build -p docs-build.tar.gz -R mrdarrengriffin/facet
+mkdir -p renderer/out/docs && tar -xzf docs-build.tar.gz -C renderer/out/docs
+cd site && npm ci
+FW_OUT=renderer/out npm run dev</code></pre>
+
+  <h3 id="renderer">The renderer</h3>
+  <p>
+    The renderer builds to WebAssembly with Emscripten. For now it borrows LVGL, <code>lv_conf.h</code> and the fonts
+    from an ESPHome panel firmware build next to it; <code>local.env</code> at the repo root says where they are (the
+    variables are in the renderer README, "Paths"). Bundling them into the repository is planned.
+  </p>
+  <pre><code>cd renderer/tools && npm install && cd ../..
+renderer/build.sh 1.5x       # one build (1.5x = the 720 panel, 1x = the 480 panel), with the audit
+node renderer/watch.mjs      # rebuild on save while you work</code></pre>
+  <p>If the build setup gets in your way, open an issue: getting a second person building Facet is worth fixing.</p>
+
+  <h3 id="checks">Checks</h3>
+  <p>Facet's rules are checked by tools, not by memory. Run the ones your change touches:</p>
+  <pre><code>node renderer/tools/features.mjs check      # every source in one feature (also runs in CI)
+renderer/build.sh 1.5x && renderer/build.sh 1x  # build + audit: 4 px grid, clipping, symmetry, motion
+node renderer/tools/contrast.mjs --summary  # every colour pair, dark and light: 0 failures
+node renderer/tools/spec_test.mjs           # screen specs
+node renderer/tools/behaviour.mjs           # taps, drags, scrolling, sounds, updates
+node renderer/tools/visual.mjs              # visual regression
+renderer/tools/asan.sh                      # memory errors</code></pre>
+  <p>
+    The house rules, in short: every value comes from a token, sizes sit on the 4 px grid, everything works at 720 and
+    480 in dark and light, and screens are made of real <a href={url('/components/')}>components</a>.
+  </p>
+
+  <h3 id="pull-requests">Pull requests</h3>
+  <ol>
+    <li>Fork, then branch from <code>main</code>.</li>
+    <li>Keep each pull request to one thing: one fix, one component, one page.</li>
+    <li>Say what changed and why; for anything visible, add a screenshot at 720 and 480.</li>
+    <li>Commit messages: a short summary line, <code>Area: what changed</code> (for example <code>Docs: contributing page</code>), then detail below if it helps.</li>
+  </ol>
+  <p>Small pull requests get reviewed fastest. For anything big, open an issue first so you can agree the shape before you spend the time.</p>
+
+  <h2 id="ideas">Share an idea</h2>
+  <p>
+    New screens, components, panels, sounds, better words: <a href={issue('idea')}>open an idea</a>. The
+    <a href={url('/roadmap/')}>roadmap</a> shows what is available, in progress and planned.
+  </p>
+
+  <h2 id="kind">Be kind</h2>
+  <p>
+    Everyone taking part agrees to the <a href={`${REPO}/blob/main/CODE_OF_CONDUCT.md`}>Code of Conduct</a>. By
+    contributing you agree your work is released under the project's MIT licence.
+  </p>
+</Docs>

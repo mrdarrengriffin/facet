@@ -212,6 +212,7 @@ const steps = [
           ))
         }
       </ol>
+      <p class="landing__help">Want to help? Report a bug, test on your panel, improve the docs or write code: <a href={url('/contributing/')}>Contributing</a>.</p>
     </section>
   </main>
 </Base>
@@ -275,6 +276,10 @@ const steps = [
     font-size: 13px;
   }
   .landing__source a {
+    color: var(--facet-color-text-dim);
+  }
+  .landing__help {
+    margin-top: 40px;
     color: var(--facet-color-text-dim);
   }
   .landing__head > p {

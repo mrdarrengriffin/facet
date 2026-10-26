@@ -164,6 +164,13 @@ Other sizes are planned.
 The earlier Facet, a TypeScript design system with the same screens, lives on the
 [`prototype`](https://github.com/mrdarrengriffin/facet/tree/prototype) branch.
 
+## Contributing
+
+Help of any kind is welcome, and most of it needs no code: report a bug, try Facet on your panel and say how it went,
+fix a line in the docs (every docs page has an **Edit this page** link), or share an idea for a screen.
+[CONTRIBUTING.md](CONTRIBUTING.md) has every way in, from a two-minute report to building the renderer, and the docs
+have the same guide: [Contributing](https://mrdarrengriffin.github.io/facet/contributing/).
+
 ## Inspiration
 
 Facet learns a lot from other open-source panel projects, and they're well worth a look:

@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Contributing guide
+    url: https://github.com/mrdarrengriffin/facet/blob/main/CONTRIBUTING.md
+    about: All the ways to help, from testing on a panel to writing code.
+  - name: Docs
+    url: https://mrdarrengriffin.github.io/facet/
+    about: Install, screens, components and the design system.

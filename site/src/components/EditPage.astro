@@ -1,0 +1,25 @@
+---
+// "Edit this page on GitHub" + "Report a problem" + "Contributing", at the bottom of every docs page (Docs layout,
+// component pages). `path` = the repository file that actually holds the page's text (a generated page names its
+// source: a component's .cpp, a screen's spec); no path = no single source, so the edit link opens a docs-fix issue.
+import { SITE } from '../lib/data';
+import { url } from '../lib/nav';
+
+interface Props {
+  /** repository-relative file holding this page's text, or undefined when there is none */
+  path?: string;
+  /** page title, for the issue title */
+  title: string;
+}
+const { path, title } = Astro.props;
+const repo = SITE.repo.replace(/\/blob\/main$/, '');
+const page = new URL(Astro.url.pathname, Astro.site ?? 'https://mrdarrengriffin.github.io').href;
+const issue = `${repo}/issues/new?template=docs.yml&labels=documentation&title=${encodeURIComponent(`Docs: ${title}`)}&page=${encodeURIComponent(page)}`;
+const edit = path ? `${repo}/edit/main/${path}` : issue;
+---
+
+<p class="edit-row">
+  <a href={edit}>Edit this page on GitHub</a>
+  <a href={issue}>Report a problem</a>
+  <a href={url('/contributing/')}>Contributing</a>
+</p>

@@ -1,0 +1,35 @@
+name: Bug report
+description: Something on a panel or the docs site doesn't work as it should.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for taking the time. A rough report is far better than none.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where
+      options:
+        - Waveshare ESP32-P4-86 (720 x 720)
+        - Guition ESP32-S3-4848S040 (480 x 480)
+        - Another panel
+        - Docs site
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Firmware version or browser
+      description: On a panel, Home Assistant shows the firmware version on its device page. On the docs site, your browser.
+  - type: textarea
+    id: shots
+    attributes:
+      label: Photos, screenshots or logs
+      description: Drag files in here. Anything you can see is easier to fix with a picture.

@@ -4,6 +4,7 @@
 import Base from '../../layouts/Base.astro';
 import ComponentsSidebar from '../../components/ComponentsSidebar.astro';
 import Live from '../../components/Live.astro';
+import EditPage from '../../components/EditPage.astro';
 import { COMPONENTS, componentGroups, defaults, href } from '../../lib/data';
 ---
 
@@ -36,6 +37,7 @@ import { COMPONENTS, componentGroups, defaults, href } from '../../lib/data';
           </section>
         ))
       }
+      <footer class="docs__footer"><EditPage path="site/src/pages/components/index.astro" title="Components" /></footer>
     </main>
   </div>
   <script>

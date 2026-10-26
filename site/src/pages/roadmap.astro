@@ -17,7 +17,7 @@ const BADGE: Record<Row['status'], string> = { done: 'Available', doing: 'In pro
 const when = new Date(`${road.updated}T12:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
 ---
 
-<Docs title="Roadmap" description="Where Facet is headed, area by area." group="Project" current={url('/roadmap/')} headings={headings}>
+<Docs edit={false} title="Roadmap" description="Where Facet is headed, area by area." group="Project" current={url('/roadmap/')} headings={headings}>
   <p>
     A rough plan, not a promise. Foundations and small components first, then the screens, then the firmware side.
     Ticked items are available, a dash means in progress, an empty box is planned.

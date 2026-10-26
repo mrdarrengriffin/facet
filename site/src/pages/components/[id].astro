@@ -5,6 +5,7 @@
 import Base from '../../layouts/Base.astro';
 import ComponentsSidebar from '../../components/ComponentsSidebar.astro';
 import Events from '../../components/Events.astro';
+import EditPage from '../../components/EditPage.astro';
 import Live from '../../components/Live.astro';
 import Lede from '../../components/Lede.astro';
 import SoundToggle from '../../components/SoundToggle.astro';
@@ -168,6 +169,7 @@ const fid = (n: string) => `pg-${c.id}-${n}`;
         }
 
         <p class="hint">Source: {c.source.map((s, i) => <>{i > 0 && ' + '}<a href={s.url}>{s.path}</a></>)}</p>
+        <footer class="docs__footer"><EditPage path={c.source[0]?.path} title={c.name} /></footer>
       </section>
     </main>
   </div>

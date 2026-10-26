@@ -29,7 +29,7 @@ export const UPDATES_PAGE = false;
 export const AI_EXAMPLES = false;
 
 export const headerLinks = [
-  { label: 'Docs', href: url('/docs/'), match: [url('/docs/'), url('/install/'), url('/roadmap/'), url('/screens/'), url('/ai/')] },
+  { label: 'Docs', href: url('/docs/'), match: [url('/docs/'), url('/install/'), url('/contributing/'), url('/roadmap/'), url('/screens/'), url('/ai/')] },
   { label: 'Components', href: url('/components/'), match: [url('/components/')] },
   { label: 'Design system', href: url('/foundations/'), match: [url('/foundations/')] },
   ...(UPDATES_PAGE ? [{ label: 'Updates', href: url('/updates/'), match: [url('/updates/')] }] : []),
@@ -41,7 +41,7 @@ const byLabel = (a: NavLink, b: NavLink) => a.label.localeCompare(b.label);
 
 export function getSidebar(): NavGroup[] {
   return [
-    { label: 'Start here', links: [{ label: 'Getting started', href: url('/docs/') }, { label: 'Install', href: url('/install/') }, { label: 'Make screens with AI', href: url('/ai/') }] },
+    { label: 'Start here', links: [{ label: 'Getting started', href: url('/docs/') }, { label: 'Install', href: url('/install/') }, { label: 'Make screens with AI', href: url('/ai/') }, { label: 'Contributing', href: url('/contributing/') }] },
     { label: 'Concepts', links: [soon('Design tokens'), soon('Components'), soon('Firmware')] },
     {
       label: 'Design system',

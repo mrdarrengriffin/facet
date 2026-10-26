@@ -501,6 +501,22 @@ kbd {
   border-top: 1px solid var(--facet-color-line);
 }
 
+.edit-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  margin: 0 0 16px;
+  font-size: 14px;
+}
+
+.edit-row a {
+  color: var(--facet-color-text-dim);
+}
+
+.edit-row a:hover {
+  color: var(--facet-color-text);
+}
+
 .docs__meta {
   display: flex;
   flex-wrap: wrap;
@@ -642,7 +658,8 @@ kbd {
 
 /* Code (Shiki dual themes, no default colour) */
 
-.astro-code {
+.astro-code,
+.prose pre {
   padding: 16px 20px;
   border: 1px solid var(--facet-color-line);
   border-radius: 12px;

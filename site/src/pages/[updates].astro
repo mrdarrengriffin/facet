@@ -31,7 +31,7 @@ const pic = (f: string) => url(`/updates/${f}`);
 const link = (p: string) => (/^https?:/.test(p) ? p : url(`/${p}`));
 ---
 
-<Docs title="Updates" description="What's new in Facet, newest first, and how it came to be." group="Project" current={url('/updates/')} headings={headings}>
+<Docs edit={false} title="Updates" description="What's new in Facet, newest first, and how it came to be." group="Project" current={url('/updates/')} headings={headings}>
   <div class="updates__filter" role="group" aria-label="Show">
     <button type="button" class="updates__chip" aria-pressed="true" data-kind="">All</button>
     {kinds.map((k) => <button type="button" class="updates__chip" aria-pressed="false" data-kind={k}>{k}</button>)}

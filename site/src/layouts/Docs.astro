@@ -4,6 +4,7 @@
 // examples (wide = the 800 px column, room for a 720 px panel canvas).
 import Base from './Base.astro';
 import Icon from '../components/Icon.astro';
+import EditPage from '../components/EditPage.astro';
 import { getReadingOrder, getSidebar } from '../lib/nav';
 import { SITE } from '../lib/data';
 
@@ -18,13 +19,17 @@ interface Props {
   headings?: Heading[];
   /** Source files in the repository (wasm branch), for the footer link. */
   source?: { path: string; url: string }[];
+  /** Repository file holding this page's text, for "Edit this page" (default: the first source file; false = no
+   *  single source, the link opens a docs-fix issue instead). */
+  edit?: string | false;
   /** WASM icon shown next to the title. */
   icon?: string;
   /** Wider content column (for pages with live previews). */
   wide?: boolean;
 }
 
-const { title, description, group, current, headings = [], source = [], icon, wide = false } = Astro.props;
+const { title, description, group, current, headings = [], source = [], edit, icon, wide = false } = Astro.props;
+const editPath = edit === false ? undefined : (edit ?? source[0]?.path);
 
 const sidebar = getSidebar();
 const order = getReadingOrder();
@@ -79,6 +84,7 @@ const repo = SITE.repo.replace('/blob/', '/tree/');
       </article>
 
       <footer class="docs__footer">
+        <EditPage path={editPath} title={title} />
         <div class="docs__meta">
           {
             source.length > 0 ? (
