@@ -385,7 +385,8 @@ inline void check_value(const PropInfo &pi, ArduinoJson::JsonVariantConst v, con
   if (!v.is<const char *>()) { err(e, path, "bad_prop", pi.name + " is text"); return; }
   if (pi.type == "select" && std::find(pi.options.begin(), pi.options.end(), v.as<std::string>()) == pi.options.end())
     err(e, path, "bad_prop", pi.name + ": " + v.as<std::string>() + " is not one of its options");
-  else if (strlen(v.as<const char *>()) > 64) err(e, path, "bad_prop", pi.name + ": text over 64 characters");
+  else if (strlen(v.as<const char *>()) > (pi.name == "items" ? 256u : 64u))  // a static items list: 256, as its bind sample
+    err(e, path, "bad_prop", pi.name + ": text over " + (pi.name == "items" ? "256" : "64") + " characters");
 }
 // a screen spec: errors into e (empty = valid)
 // Grid + Icon rules a prop check can't see (board facet-171): span only in a static grid, inside its cols; cell only
@@ -488,6 +489,8 @@ inline void check_screen(ArduinoJson::JsonVariantConst s, size_t bytes, Errs &e)
       const std::string k = kv.key().c_str();
       auto it = std::find_if(pis->begin(), pis->end(), [&](const PropInfo &x) { return x.name == k; });
       if (it == pis->end()) { err(e, p + ".p." + k, one_of(STYLE_KEYS, k) ? "style_key" : "unknown_prop", c + " has no prop " + k); continue; }
+      // a row list (List row stack, Picker row group, Scroll track: items, 2026-10-26) fills "$item..." per row
+      if (c != "grid" && !n["p"]["items"].isNull() && kv.value().is<const char *>() && strstr(kv.value() | "", "$item")) continue;
       check_value(*it, kv.value(), p + ".p." + k, e, binds);
     }
     check_grid(n, nodes, i, c, p, e, binds);

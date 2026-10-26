@@ -23,9 +23,11 @@
 // Contrast: section "grid" (outline sample, +N, empty text).
 #include "fw.h"
 #include "spec.h"
+#include "items.h"
 
 namespace {
 using namespace fw;
+using namespace fw::items;
 constexpr int ITEMS_MAX = 64;  // grid_items: cells an items grid makes at most
 constexpr int AUTO_COLS = 12;  // columns a min grid makes at most
 struct Rect { int x, y, w, h; };
@@ -56,75 +58,6 @@ int step_of(const char *s) {
 std::string sig(Props p) {
   return std::to_string(p["cols"] | 3) + "|" + (p["min"] | "none") + "|" + (p["gap"] | "group") + "|" + (p["aspect"] | "square") +
          "|" + std::to_string(p["rows"] | 0) + "|" + ((p["outline"] | false) ? "o" : "");
-}
-// ---- items: a comma list or a JSON list; "$item" / "$item.key" filled from one item
-std::vector<std::string> parse(const char *v) {
-  std::vector<std::string> out;
-  if (*v == '[') {
-    ArduinoJson::JsonDocument d;
-    if (!deserializeJson(d, v))
-      for (ArduinoJson::JsonVariantConst x : d.as<ArduinoJson::JsonArrayConst>()) {
-        std::string s;
-        if (x.is<const char *>()) s = x.as<std::string>();
-        else serializeJson(x, s);
-        out.push_back(s);
-      }
-    return out;
-  }
-  for (const char *p = v; *p;) {
-    const char *q = strchr(p, ',');
-    std::string it(p, q ? (size_t) (q - p) : strlen(p));
-    while (!it.empty() && it.front() == ' ') it.erase(0, 1);
-    while (!it.empty() && it.back() == ' ') it.pop_back();
-    if (!it.empty()) out.push_back(it);
-    if (!q) break;
-    p = q + 1;
-  }
-  return out;
-}
-// one field of an item ("" key = the item itself: an object's id, else its name); *num = the field is a JSON number
-std::string field(const std::string &item, const std::string &key, bool *num = nullptr) {
-  if (num) *num = false;
-  if (item.empty() || item[0] != '{') return key.empty() ? item : "";
-  ArduinoJson::JsonDocument d;
-  if (deserializeJson(d, item)) return "";
-  ArduinoJson::JsonVariantConst v = key.empty() ? (d["id"].isNull() ? d["name"] : d["id"]) : d[key.c_str()];
-  if (v.isNull()) return "";
-  if (v.is<const char *>()) return v.as<std::string>();
-  if (num) *num = v.is<double>() || v.is<bool>();
-  std::string s;
-  serializeJson(v, s);
-  return s;
-}
-void with_item(ArduinoJson::JsonVariant v, const std::string &item) {
-  if (v.is<ArduinoJson::JsonObject>()) { for (ArduinoJson::JsonPair kv : v.as<ArduinoJson::JsonObject>()) with_item(kv.value(), item); return; }
-  if (v.is<ArduinoJson::JsonArray>()) { for (ArduinoJson::JsonVariant x : v.as<ArduinoJson::JsonArray>()) with_item(x, item); return; }
-  if (!v.is<const char *>()) return;
-  const std::string s = v.as<std::string>();
-  if (s.find("$item") == std::string::npos) return;
-  std::string out;
-  bool whole = false, num = false;
-  for (size_t i = 0;;) {
-    const size_t j = s.find("$item", i);
-    if (j == std::string::npos) { out += s.substr(i); break; }
-    out += s.substr(i, j - i);
-    size_t k = j + 5;
-    std::string key;
-    if (k < s.size() && s[k] == '.') {
-      size_t m = k + 1;
-      while (m < s.size() && (isalnum((unsigned char) s[m]) || s[m] == '_')) m++;
-      key = s.substr(k + 1, m - k - 1);
-      k = m;
-    }
-    whole = j == 0 && k == s.size();
-    out += field(item, key, &num);
-    i = k;
-  }
-  if (whole && num) {  // "$item.count" alone, a number in the item: the prop gets the number
-    ArduinoJson::JsonDocument d;
-    deserializeJson(d, out);
-    v.set(d.as<ArduinoJson::JsonVariantConst>());
-  } else v.set(out);
 }
 // the props of item i's cell from the template (comp out)
 void cell_props(const G &g, const std::string &item, std::string &comp, ArduinoJson::JsonDocument &p) {

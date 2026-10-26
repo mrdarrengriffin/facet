@@ -1,30 +1,31 @@
 // Scroll track: the Facet scroll track (docs: Screen parts > Scroll track, @facet/ui scrolltrack.ts): a 4 px bar at
 // the right edge of every scrolling area, its height; the thumb shows how much is in view and where; nothing when
 // nothing scrolls. This page shows the core atom fw::scroll_track (atoms.h, LVGL's own styled scrollbar + the track)
-// on a scrolling column of real List rows (fw::find("list_row")), the way a long screen gets it.
-//   rows    prop: how many List rows (few = nothing to scroll, so no track), the area lay::content_w x the frame
+// on a scrolling column of real List rows (fw::find("list_row"), its stack), the way a long screen gets it.
+//   items   the rows (2026-10-26 real rows: the List row stack's items model, core/items.h: a comma list or a JSON
+//           list, usually bound to an entity attribute; plain item = title, object item = title / icon / sub / value
+//           / trailing / on / state fields); few = nothing to scroll, so no track; none = the empty words. Nothing
+//           demo: the sample rooms live in the variants. The area lay::content_w x height.
 // Drag to scroll (LVGL's scroll, with its momentum). No events of its own. Update path: refills (snap), keeps the scroll.
 // Contrast pairs: colour.json section "scroll_track".
 #include "fw.h"
 
 namespace {
-const char *TITLES[] = {"Living room", "Kitchen", "Hallway", "Study", "Bedroom", "Bathroom", "Garden", "Garage", "Utility", "Landing", "Porch", "Loft"};
 void fill(lv_obj_t *s, fw::Props p) {
   lv_obj_remove_style_all(s);
   lv_obj_add_flag(s, (lv_obj_flag_t) (LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_CLICKABLE));
   lv_obj_set_size(s, fw::lay::content_w, fw::px((float) (p["height"] | 256)));
   lv_obj_set_flex_flow(s, LV_FLEX_FLOW_COLUMN);
   fw::scroll_track(s);
-  const int n = std::max(1, std::min(12, (int) (p["rows"] | 8)));
-  if (const fw::Component *rc = fw::find("list_row"))
-    for (int i = 0; i < n; i++) {
-      ArduinoJson::JsonDocument rp;
-      rp["title"] = TITLES[i];
-      rp["icon"] = "bulb";
-      rp["trailing"] = "value";
-      rp["value"] = i % 3 ? "Off" : "On";
-      rc->build(s, rp.as<fw::Props>());
-    }
+  if (const fw::Component *rc = fw::find("list_row")) {
+    ArduinoJson::JsonDocument rp;  // one List row stack: its rows from the items, plain rows unless an item says more
+    rp["list"] = "stack";
+    rp["icon"] = "none";
+    rp["trailing"] = "none";
+    rp["items"] = p["items"] | "";
+    if (!p["empty"].isNull()) rp["empty"] = p["empty"];
+    rc->build(s, rp.as<fw::Props>());
+  }
 }
 }  // namespace
 
@@ -33,12 +34,14 @@ FW_COMPONENT(scroll_track, "Scroll track", "components", R"({
   "frame": [464, 272],
   "icons": ["bulb@icon"],
   "props": [
-    {"name": "rows", "about": "For previews only: how many rows the sample list has, which sets how long the bar is.", "type": "range", "min": 1, "max": 12, "step": 1, "default": 8},
+    {"name": "items", "about": "The rows of the scrolling list, a comma list or a JSON list, usually bound to an entity attribute. A plain item is a row's title; an object item's title (or name), icon, sub, value, trailing, on and state fields make the row. Up to 24 rows, the last a +N row for the rest. No items shows the empty words, never sample rows.", "type": "text", "default": ""},
+    {"name": "empty", "about": "The words shown when items is empty.", "type": "text", "default": "Nothing here"},
     {"name": "height", "about": "How tall the list's visible area is, in pixels.", "type": "range", "min": 128, "max": 256, "step": 8, "default": 256}
   ],
   "variants": [
-    {"label": "eight rows · scrolls", "props": {}},
-    {"label": "two rows · nothing to scroll", "props": {"rows": 2}}
+    {"label": "eight rows · scrolls", "props": {"items": "[{\"title\":\"Living room\",\"icon\":\"bulb\",\"trailing\":\"value\",\"value\":\"On\"},{\"title\":\"Kitchen\",\"icon\":\"bulb\",\"trailing\":\"value\",\"value\":\"Off\"},{\"title\":\"Hallway\",\"icon\":\"bulb\",\"trailing\":\"value\",\"value\":\"Off\"},{\"title\":\"Study\",\"icon\":\"bulb\",\"trailing\":\"value\",\"value\":\"On\"},{\"title\":\"Bedroom\",\"icon\":\"bulb\",\"trailing\":\"value\",\"value\":\"Off\"},{\"title\":\"Bathroom\",\"icon\":\"bulb\",\"trailing\":\"value\",\"value\":\"Off\"},{\"title\":\"Garden\",\"icon\":\"bulb\",\"trailing\":\"value\",\"value\":\"On\"},{\"title\":\"Garage\",\"icon\":\"bulb\",\"trailing\":\"value\",\"value\":\"Off\"}]"}},
+    {"label": "two rows · nothing to scroll", "props": {"items": "Living room,Kitchen"}},
+    {"label": "empty", "props": {"empty": "No rooms yet"}}
   ]
 })") {
   lv_obj_t *s = lv_obj_create(parent);

@@ -1,0 +1,28 @@
+{
+ "v": 1,
+ "id": "c_realrows",
+ "name": "Rows",
+ "rev": 1,
+ "role": "both",
+ "params": {
+  "entity": {"type": "entity", "domain": "sensor", "label": "List", "default": ""},
+  "player": {"type": "entity", "domain": "media_player", "label": "Player", "default": ""}
+ },
+ "header": {"label": "Rows", "back": true},
+ "layout": "list",
+ "nodes": [
+  {"c": "section_header", "p": {"title": "Static rows"}},
+  {"c": "list_row", "p": {"list": "stack", "icon": "none", "trailing": "chevron", "items": "Kitchen,Hallway,Study,Bedroom,Garden", "rows": 4}},
+  {"c": "section_header", "p": {"title": "Bound rows"}},
+  {"c": "list_row", "p": {"list": "stack", "icon": "$item.icon", "title": "$item.name", "trailing": "value", "value": "$item.state", "empty": "No devices",
+   "items": {"e": "$entity", "a": "devices", "s": "[{\"name\":\"Washer\",\"icon\":\"power\",\"state\":\"Running\"},{\"name\":\"Dryer\",\"icon\":\"power\",\"state\":\"Idle\"},{\"name\":\"Porch\",\"icon\":\"bulb\",\"state\":\"Off\"}]"}}},
+  {"c": "section_header", "p": {"title": "Choose one"}},
+  {"c": "picker_row", "p": {"list": "group", "icon": "none", "status": "", "items": "[{\"name\":\"Light\",\"selected\":true},{\"name\":\"Dark\"},{\"name\":\"Auto\"}]"}},
+  {"c": "section_header", "p": {"title": "Sources"}},
+  {"c": "picker_row", "p": {"list": "group", "icon": "tv", "name": "$item", "status": "", "empty": "No sources",
+   "items": {"e": "$player", "a": "source_list", "s": "TV,HDMI 1,HDMI 2,Chromecast"}}},
+  {"c": "section_header", "p": {"title": "Empty"}},
+  {"c": "list_row", "p": {"list": "stack", "items": "", "empty": "Nothing to show"}},
+  {"c": "scroll_track", "p": {"height": 160, "items": "Living room,Kitchen,Hallway,Study,Bedroom,Bathroom,Garden,Garage"}}
+ ]
+}

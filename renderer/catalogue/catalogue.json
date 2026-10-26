@@ -3245,7 +3245,27 @@
       "single",
       "stack"
      ],
-     "about": "single is one row on its own; stack shows a short list of rows touching, with lines between them."
+     "about": "single is one row on its own; stack is a list of rows touching, with lines between them, one row per item of items."
+    },
+    {
+     "name": "items",
+     "type": "text",
+     "bindable": true,
+     "about": "With list stack: the rows, a comma list or a JSON list, usually bound to an entity attribute. Each row is this node's props with $item (or $item.field) filled in; a plain item is the row's title, and an object item's title (or name), icon, sub, over, trailing, value, on and state fields fill the props that do not name $item. No items shows the empty words, never sample rows."
+    },
+    {
+     "name": "rows",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 24,
+     "about": "With list stack: at most this many rows; 0 for up to 24. A longer list ends with a +N row for the rest."
+    },
+    {
+     "name": "empty",
+     "type": "text",
+     "bindable": true,
+     "about": "With list stack: the words shown when items is empty."
     }
    ],
    "events": {
@@ -3940,7 +3960,27 @@
       "single",
       "group"
      ],
-     "about": "For previews only: single shows one row; group shows a short list where a tap moves the choice."
+     "about": "single is one row on its own; group is a choose-one list, one row per item of items, where a tap moves the choice."
+    },
+    {
+     "name": "items",
+     "type": "text",
+     "bindable": true,
+     "about": "With list group: the options, a comma list or a JSON list, usually bound to an entity attribute (such as a media player's source list). Each row is this node's props with $item (or $item.field) filled in; a plain item is the row's name, and an object item's name, icon, status, tone, selected and state fields fill the props that do not name $item. No items shows the empty words, never sample rows."
+    },
+    {
+     "name": "rows",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 24,
+     "about": "With list group: at most this many rows; 0 for up to 24. A longer list ends with a +N row for the rest."
+    },
+    {
+     "name": "empty",
+     "type": "text",
+     "bindable": true,
+     "about": "With list group: the words shown when items is empty."
     }
    ],
    "events": {
@@ -4575,12 +4615,16 @@
    "update": true,
    "props": [
     {
-     "name": "rows",
-     "type": "range",
+     "name": "items",
+     "type": "text",
      "bindable": true,
-     "min": 1,
-     "max": 12,
-     "about": "For previews only: how many rows the sample list has, which sets how long the bar is."
+     "about": "The rows of the scrolling list, a comma list or a JSON list, usually bound to an entity attribute. A plain item is a row's title; an object item's title (or name), icon, sub, value, trailing, on and state fields make the row. Up to 24 rows, the last a +N row for the rest. No items shows the empty words, never sample rows."
+    },
+    {
+     "name": "empty",
+     "type": "text",
+     "bindable": true,
+     "about": "The words shown when items is empty."
     },
     {
      "name": "height",
@@ -4597,8 +4641,8 @@
     ]
    },
    "cost": {
-    "objects": 57,
-    "bytes_est": 9120
+    "objects": 5,
+    "bytes_est": 800
    }
   },
   "section_header": {
@@ -6292,5 +6336,5 @@
    }
   }
  },
- "hash": "74672fde"
+ "hash": "a3334546"
 }

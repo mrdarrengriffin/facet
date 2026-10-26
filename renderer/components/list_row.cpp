@@ -29,8 +29,15 @@
 // text-mute, the trailing part replaced by "Unavailable" (body, text-dim), no sub; tap = blocked + error too.
 // Tap = a real CLICKED: chevron rows emit "tap" (detail = title) + sound "open" (they navigate); a toggle row hands
 // the tap to its toggle (whole row = hit area: the toggle slides, emits tap on/off, plays toggle-on / toggle-off);
-// other rows emit "tap" + sound "tap". Contrast pairs: tokens/colour.json section "list_row" (+ toggle, card).
+// other rows emit "tap" + sound "tap".
+// Stack (list: stack, 2026-10-26 real rows): one row per item of items (core/items.h, the Grid's model: a comma list or
+// a JSON list, usually bound to an entity attribute). A row = this node's props with "$item" / "$item.key" filled; a
+// prop that does not name $item comes from an object item's field of the same name (title also from its name / id),
+// a plain-text item is the title. rows caps the list (a last "+N" row for the rest); no items = the empty words.
+// Nothing demo: the sample rows live in the variants. Update: the same row count = each row's own update path (texts
+// in place, a toggle slides); another count = the rows again. Contrast pairs: tokens/colour.json section "list_row" (+ toggle, card).
 #include "fw.h"
+#include "items.h"
 
 namespace {
 constexpr lv_state_t ST_OFF = fw::st::OFF;  // disabled / unavailable (LVGL sends no events to LV_STATE_DISABLED)
@@ -211,9 +218,11 @@ Spec spec_of(fw::Props p) {
   return {p["title"] | "", p["icon"] | "bulb", p["sub"] | "", p["trailing"] | "none", p["value"] | "",
           p["state"] | "default", p["on"] | false, p["divider"] | true, p["over"] | ""};
 }
+std::string stack_sig(fw::Props p);  // below: a stack's row count
 // the props that need the contents again: all but a pressed state and a toggle's on (those move in place)
 std::string sig(fw::Props p) {
   ArduinoJson::JsonDocument r;
+  if (!strcmp(p["list"] | "single", "stack")) return "stack|" + stack_sig(p);
   r.set(p);
   if (!strcmp(p["state"] | "default", "pressed")) r["state"] = "default";
   if (effective(spec_of(p)) == K_TOGGLE) { r.remove("on"); r["trailing"] = "toggle"; }
@@ -227,21 +236,49 @@ std::string sig(fw::Props p) {
   serializeJson(r, s);
   return s;
 }
-const Spec STACK[] = {
-    {"Lights", "bulb", "", "value-chevron", "3 on", "default", false, true},
-    {"Chime", "speaker", "Plays on every tap", "toggle", "", "default", true, true},
-    {"Volume", "volume", "", "value", "60%", "default", false, true},
-    {"Night dimming", "power", "", "toggle", "", "disabled", false, true},
-    {"Porch light", "house", "", "chevron", "", "unavailable", false, true},
-};
+constexpr int LIST_MAX = 24;  // list_items: rows a stack makes at most
+const char *const ROW_FIELDS[] = {"title", "icon", "sub", "over", "trailing", "value", "on", "state"};
+const char *const ROW_SKIP[] = {"list", "items", "rows", "empty", "_items"};
+// the stack's rows: the props of each item that fits, then a "+N" row for the rest
+std::vector<ArduinoJson::JsonDocument> stack_rows(fw::Props p) {
+  std::vector<ArduinoJson::JsonDocument> out;
+  const std::vector<std::string> all = fw::items::parse(p["items"] | "");
+  const int rows = p["rows"] | 0, cap = rows > 0 ? std::min(rows, LIST_MAX) : LIST_MAX;
+  const int n = (int) all.size() > cap ? cap - 1 : (int) all.size();
+  for (int i = 0; i < n; i++) {
+    out.emplace_back();
+    ArduinoJson::JsonDocument &d = out.back();
+    fw::items::row_props(p, all[i], ROW_FIELDS, 8, ROW_SKIP, 5, d);
+    if (d["on"].is<const char *>()) d["on"] = !strcmp(d["on"] | "", "on") || !strcmp(d["on"] | "", "true");  // an HA state
+  }
+  if ((int) all.size() > n) {
+    out.emplace_back();
+    ArduinoJson::JsonDocument &m = out.back();
+    m["title"] = "+" + std::to_string(all.size() - n);
+    m["icon"] = "none";
+  }
+  return out;
+}
+// the stack's signature part: its row count (texts and toggles of the same rows move in place)
+std::string stack_sig(fw::Props p) { return std::to_string(stack_rows(p).size()) + "|" + (p["empty"] | ""); }
+void empty_row(lv_obj_t *r, const char *txt) {
+  lv_obj_t *b = box(r);
+  lv_obj_set_size(b, 2 * fw::lay::card_w + fw::lay::gutter, fw::lay::list_row_h);
+  lv_obj_set_style_pad_hor(b, fw::sp::s4, 0);
+  lv_obj_set_flex_flow(b, LV_FLEX_FLOW_ROW);
+  lv_obj_set_flex_align(b, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+  label(slot(b, fw::style(fw::ty::body).box), fw::ty::body, txt, fw::T->text_dim);
+}
 void fill_props(lv_obj_t *r, fw::Props p) {
   fw::shape(r, sig(p));
-  if (!strcmp(p["list"] | "single", "stack")) {  // a short list: rows touch, the hairline on top of each = the divider
+  if (!strcmp(p["list"] | "single", "stack")) {  // a list: rows touch, the hairline on top of each = the divider
     lv_obj_remove_style_all(r);
     lv_obj_remove_flag(r, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
     lv_obj_set_size(r, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
     lv_obj_set_flex_flow(r, LV_FLEX_FLOW_COLUMN);
-    for (const Spec &s : STACK) row(r, s);
+    std::vector<ArduinoJson::JsonDocument> rows = stack_rows(p);
+    if (rows.empty()) empty_row(r, p["empty"] | "Nothing here");
+    for (ArduinoJson::JsonDocument &d : rows) fill_props(root(r), d.as<fw::Props>());
     return;
   }
   fill(r, spec_of(p), row_of(r));
@@ -263,7 +300,10 @@ FW_COMPONENT(list_row, "List row", "components", R"({
     {"name": "on", "about": "Whether the switch at the right end is on.", "type": "bool", "default": false},
     {"name": "state", "about": "How the row looks: default ready to tap, pressed while held, disabled when it cannot be used, or unavailable when its device cannot be reached.", "type": "select", "options": ["default", "pressed", "disabled", "unavailable"], "default": "default"},
     {"name": "divider", "about": "Draws a thin line under the row to separate it from the next.", "type": "bool", "default": true},
-    {"name": "list", "about": "single is one row on its own; stack shows a short list of rows touching, with lines between them.", "type": "select", "options": ["single", "stack"], "default": "single"}
+    {"name": "list", "about": "single is one row on its own; stack is a list of rows touching, with lines between them, one row per item of items.", "type": "select", "options": ["single", "stack"], "default": "single"},
+    {"name": "items", "about": "With list stack: the rows, a comma list or a JSON list, usually bound to an entity attribute. Each row is this node's props with $item (or $item.field) filled in; a plain item is the row's title, and an object item's title (or name), icon, sub, over, trailing, value, on and state fields fill the props that do not name $item. No items shows the empty words, never sample rows.", "type": "text", "default": ""},
+    {"name": "rows", "about": "With list stack: at most this many rows; 0 for up to 24. A longer list ends with a +N row for the rest.", "type": "range", "min": 0, "max": 24, "step": 1, "default": 0},
+    {"name": "empty", "about": "With list stack: the words shown when items is empty.", "type": "text", "default": "Nothing here"}
   ],
   "variants": [
     {"label": "icon + title", "props": {}},
@@ -279,7 +319,9 @@ FW_COMPONENT(list_row, "List row", "components", R"({
     {"label": "disabled · toggle", "props": {"title": "Night dimming", "icon": "power", "sub": "Needs a clock source", "trailing": "toggle", "on": true, "state": "disabled"}},
     {"label": "disabled · value", "props": {"title": "Brightness", "icon": "none", "trailing": "value-chevron", "value": "80%", "state": "disabled"}},
     {"label": "unavailable", "props": {"title": "Porch light", "icon": "bulb", "trailing": "toggle", "state": "unavailable"}},
-    {"label": "stack · dividers", "props": {"list": "stack"}}
+    {"label": "stack · dividers", "props": {"list": "stack", "items": "[{\"title\":\"Lights\",\"icon\":\"bulb\",\"trailing\":\"value-chevron\",\"value\":\"3 on\"},{\"title\":\"Chime\",\"icon\":\"speaker\",\"sub\":\"Plays on every tap\",\"trailing\":\"toggle\",\"on\":true},{\"title\":\"Volume\",\"icon\":\"volume\",\"trailing\":\"value\",\"value\":\"60%\"},{\"title\":\"Night dimming\",\"icon\":\"power\",\"trailing\":\"toggle\",\"state\":\"disabled\"},{\"title\":\"Porch light\",\"icon\":\"house\",\"trailing\":\"chevron\",\"state\":\"unavailable\"}]"}},
+    {"label": "stack · plain items · cap", "props": {"list": "stack", "icon": "none", "trailing": "chevron", "items": "Kitchen,Hallway,Study,Bedroom,Garden", "rows": 3}},
+    {"label": "stack · empty", "props": {"list": "stack", "empty": "No rooms yet"}}
   ]
 })") {
   fill_props(root(parent), p);
@@ -293,7 +335,12 @@ FW_UPDATE(list_row) {
   if (!d) return false;
   const bool pr = !strcmp(p["state"] | "default", "pressed");
   if (fw::shape(root, sig(p))) {
-    if (!strcmp(p["list"] | "single", "stack")) return true;  // fixed demo rows
+    if (!strcmp(p["list"] | "single", "stack")) {  // the same rows: each one's own update (texts in place, toggles slide)
+      std::vector<ArduinoJson::JsonDocument> rows = stack_rows(p);
+      for (uint32_t i = 0; i < rows.size() && i < lv_obj_get_child_count(root); i++)
+        fw::update_child(fw::find("list_row"), lv_obj_get_child(root, i), rows[i].as<fw::Props>());
+      return true;
+    }
     if (pr != lv_obj_has_state(root, LV_STATE_PRESSED)) lv_obj_set_state(root, LV_STATE_PRESSED, pr);
     const Spec sp = spec_of(p);
     auto put = [](lv_obj_t *l, fw::ty::Id st, const char *t) { if (l && strcmp(lv_label_get_text(l), t)) fw::set_text(l, st, t); };

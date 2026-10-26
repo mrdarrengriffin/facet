@@ -18,6 +18,7 @@
 // radios of its sibling picker rows off (rows are marked with LV_OBJ_FLAG_USER_1), so a list needs no glue code; the
 // Bottom sheet only adds "close after a pick". Contrast pairs: tokens/colour.json section "picker_row" (+ list_row, radio).
 #include "fw.h"
+#include "items.h"
 
 static_assert(fw::lay::sheet_row_h == fw::lay::list_row_h, "a picker row is a List row: sheet-row-h must equal list-row-h");
 
@@ -115,16 +116,37 @@ lv_obj_t *picker_row(lv_obj_t *parent, const Spec &s) {
   return r;
 }
 
-const Spec GROUP[] = {
-    {"auto", "Auto", "follow what's playing", "dim", "default", true},
-    {"speaker", "Kitchen speaker", "playing · Northbound", "working", "default", false},
-    {"tv", "Living room TV", "idle", "dim", "default", false},
-    {"speakers", "Downstairs", "group · 3 speakers", "dim", "default", false},
-};
-void group(lv_obj_t *l) { for (const Spec &s : GROUP) picker_row(l, s); }
 Spec spec_of(fw::Props p) {
   return {p["icon"] | "speaker", p["name"] | "Kitchen speaker", p["status"] | "", p["tone"] | "dim", p["state"] | "default",
           p["selected"] | false};
+}
+// Group (list: group, 2026-10-26 real rows): one picker row per item of items (core/items.h, the Grid's model): a
+// row = this node's props with "$item" / "$item.key" filled; a prop that does not name $item comes from an object
+// item's field of that name (name also from its id), a plain-text item is the name. rows caps it (a last "+N" row);
+// no items = the List row's empty words. Nothing demo: the sample rows live in the variants.
+constexpr int GROUP_MAX = 24;
+const char *const ROW_FIELDS[] = {"name", "icon", "status", "tone", "selected", "state"};
+const char *const ROW_SKIP[] = {"list", "items", "rows", "empty", "_items"};
+void group(lv_obj_t *l, fw::Props p) {
+  const std::vector<std::string> all = fw::items::parse(p["items"] | "");
+  const int rows = p["rows"] | 0, cap = rows > 0 ? std::min(rows, GROUP_MAX) : GROUP_MAX;
+  const int n = (int) all.size() > cap ? cap - 1 : (int) all.size();
+  for (int i = 0; i < n; i++) {
+    ArduinoJson::JsonDocument d;
+    fw::items::row_props(p, all[i], ROW_FIELDS, 6, ROW_SKIP, 5, d);
+    if (d["selected"].is<const char *>()) d["selected"] = !strcmp(d["selected"] | "", "on") || !strcmp(d["selected"] | "", "true");
+    picker_row(l, spec_of(d.as<fw::Props>()));
+  }
+  if ((int) all.size() > n) {
+    const std::string more = "+" + std::to_string(all.size() - n);
+    picker_row(l, {"none", more.c_str(), "", "dim", "default", false});
+  }
+}
+// the List row column a group sits in: items empty = its empty words (no rows of its own)
+void group_list(fw::Props p, ArduinoJson::JsonDocument &lp) {
+  lp["list"] = "stack";
+  lp["items"] = (p["items"] | "")[0] ? "x" : "";  // a non-empty list: the List row's one placeholder row goes, rows come in
+  if (!p["empty"].isNull()) lp["empty"] = p["empty"];
 }
 // the props that need the parts again: all but a pressed state and selected (those move in place)
 std::string sig(fw::Props p) {
@@ -150,7 +172,10 @@ FW_COMPONENT(picker_row, "Picker row", "components", R"({
     {"name": "tone", "about": "The status colour: dim for normal, working for something going on now, such as playing.", "type": "select", "options": ["dim", "working"], "default": "dim"},
     {"name": "selected", "about": "Whether this is the chosen option; its radio is on.", "type": "bool", "default": false},
     {"name": "state", "about": "How the row looks: default ready to tap, pressed while held, disabled when it cannot be chosen, or unavailable when its device cannot be reached.", "type": "select", "options": ["default", "pressed", "disabled", "unavailable"], "default": "default"},
-    {"name": "list", "about": "For previews only: single shows one row; group shows a short list where a tap moves the choice.", "type": "select", "options": ["single", "group"], "default": "single"}
+    {"name": "list", "about": "single is one row on its own; group is a choose-one list, one row per item of items, where a tap moves the choice.", "type": "select", "options": ["single", "group"], "default": "single"},
+    {"name": "items", "about": "With list group: the options, a comma list or a JSON list, usually bound to an entity attribute (such as a media player's source list). Each row is this node's props with $item (or $item.field) filled in; a plain item is the row's name, and an object item's name, icon, status, tone, selected and state fields fill the props that do not name $item. No items shows the empty words, never sample rows.", "type": "text", "default": ""},
+    {"name": "rows", "about": "With list group: at most this many rows; 0 for up to 24. A longer list ends with a +N row for the rest.", "type": "range", "min": 0, "max": 24, "step": 1, "default": 0},
+    {"name": "empty", "about": "With list group: the words shown when items is empty.", "type": "text", "default": "Nothing here"}
   ],
   "variants": [
     {"label": "idle", "props": {"name": "Study", "status": "idle"}},
@@ -162,16 +187,20 @@ FW_COMPONENT(picker_row, "Picker row", "components", R"({
     {"label": "pressed", "props": {"name": "Study", "status": "idle", "state": "pressed"}},
     {"label": "disabled", "props": {"icon": "tv", "name": "Living room TV", "status": "off", "state": "disabled"}},
     {"label": "unavailable", "props": {"icon": "tv", "name": "Office TV", "state": "unavailable"}},
-    {"label": "group · tap to choose", "props": {"list": "group"}}
+    {"label": "group · tap to choose", "props": {"list": "group", "items": "[{\"icon\":\"auto\",\"name\":\"Auto\",\"status\":\"follow what's playing\",\"selected\":true},{\"icon\":\"speaker\",\"name\":\"Kitchen speaker\",\"status\":\"playing · Northbound\",\"tone\":\"working\"},{\"icon\":\"tv\",\"name\":\"Living room TV\",\"status\":\"idle\"},{\"icon\":\"speakers\",\"name\":\"Downstairs\",\"status\":\"group · 3 speakers\"}]"}},
+    {"label": "group · plain items", "props": {"list": "group", "icon": "none", "status": "", "items": "Light,Dark,Auto"}},
+    {"label": "group · empty", "props": {"list": "group", "empty": "No speakers found"}}
   ]
 })") {
   if (!strcmp(p["list"] | "single", "group")) {  // a short choose-one list: rows touch, the radio follows the tap
     ArduinoJson::JsonDocument lp;
-    lp["list"] = "stack";  // the List row's column root (so a later update can turn it back into one row)
+    group_list(p, lp);  // the List row's column root (so a later update can turn it back into one row)
     lv_obj_t *l = build("list_row", parent, lp);
     if (!l) return;
-    lv_obj_clean(l);  // the List row's own demo rows out, the picker rows in
-    group(l);
+    if ((p["items"] | "")[0]) {
+      lv_obj_clean(l);  // the List row's placeholder row out, the picker rows in
+      group(l, p);
+    }
     fw::shape(l, sig(p), "picker");
     return;
   }
@@ -186,10 +215,10 @@ FW_UPDATE(picker_row) {
   const bool grp = !strcmp(p["list"] | "single", "group");
   const Spec s = spec_of(p);
   ArduinoJson::JsonDocument lp;
-  if (grp) lp["list"] = "stack";
+  if (grp) group_list(p, lp);
   else list_props(s, lp);
   if (fw::shape(root, sig(p), "picker")) {
-    if (grp) return true;  // fixed demo rows
+    if (grp) return true;  // the same items (sig): nothing moves
     fw::update_child(fw::find("list_row"), root, lp.as<fw::Props>());  // only the press can differ: in place
     if (lv_obj_t *rd = radio_of(root)) {
       ArduinoJson::JsonDocument rp;
@@ -208,8 +237,10 @@ FW_UPDATE(picker_row) {
     lv_obj_remove_flag(root, PICKER);
     lv_obj_set_user_data(root, nullptr);
     lv_obj_remove_event_cb(root, pick_cb);
-    lv_obj_clean(root);
-    group(root);
+    if ((p["items"] | "")[0]) {
+      lv_obj_clean(root);
+      group(root, p);
+    }
   } else {
     decorate(root, s);
   }

@@ -95,6 +95,9 @@ write a spec, POST it as "check" until it is valid, POST it as "screen", then op
 - Node: \`{"c": component, "p": {prop: value | bind}, "on": {event: action}, "pending": {prop: [on text, off text]},
   "in"?: k, "slot"?: n, "each"?: "<entities param>", "sample"?: [{props}], "show"?: bind}\`.
   - \`each\` repeats the node per item of a comma list param (\`$item\` inside); \`sample\` = demo rows while it is empty.
+  - Lists of rows from data: a node's \`items\` prop (Grid; List row with \`list: stack\`; Picker row with \`list: group\`;
+    Scroll track) = a comma list or a JSON list, static or bound to an attribute; each row/cell fills \`$item\` /
+    \`$item.key\`; \`rows\` caps it (a +N row), \`empty\` = the words with no items. No items never shows sample rows.
   - \`show\` = a bind: the node shows only while its value is set (hidden for "", 0, off, false).
   - \`"in": "header"\` puts the node in the header row; \`"in": k, "slot": n\` puts it in slot n of layout node k.
 
@@ -102,7 +105,7 @@ write a spec, POST it as "check" until it is valid, POST it as "screen", then op
 A prop marked bindable takes a bind instead of a value:
 \`{"e": "light.x" | "$param", "a"?: "<attribute>", "fmt"?: <fmt>, "s"?: "<sample>", "map"?: {"<value>": "<text>"}, "else"?: "<text>", "tpl"?: "Battery {}%"}\`
 - fmt: ${C.fmt.join(', ')}.
-- \`s\` is shown until Home Assistant sends the value (at most 64 characters; 256 for a Grid's \`items\`); \`map\` turns states into words; \`tpl\` wraps the value (\`{}\`).
+- \`s\` is shown until Home Assistant sends the value (at most 64 characters; 256 for an \`items\` list); \`map\` turns states into words; \`tpl\` wraps the value (\`{}\`).
 - The panel subscribes to bound entities itself through its Home Assistant connection.
 
 ## Actions

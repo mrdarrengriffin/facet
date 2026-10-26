@@ -29,8 +29,10 @@ const node = (id, c) => ({
   properties: {
     c: { const: id },
     p: { type: 'object', additionalProperties: false, properties: Object.fromEntries(c.props.map((p) => [p.name, { anyOf: [
-      p.type === 'bool' ? { type: 'boolean' } : p.type === 'range' ? { type: 'number', minimum: p.min, maximum: p.max } : p.options ? { enum: p.options } : { type: 'string', maxLength: 64 },
-      { $ref: '#/$defs/bind' }, { $ref: '#/$defs/param' }], ...(p.about ? { description: p.about } : {}) }])) },
+      p.type === 'bool' ? { type: 'boolean' } : p.type === 'range' ? { type: 'number', minimum: p.min, maximum: p.max } : p.options ? { enum: p.options } : { type: 'string', maxLength: p.name === 'items' ? 256 : 64 },
+      { $ref: '#/$defs/bind' }, { $ref: '#/$defs/param' },
+      // a row list (an items prop, not Grid: its template is the cell) fills "$item..." per row
+      ...(id !== 'grid' && p.name !== 'items' && c.props.some((q) => q.name === 'items') ? [{ type: 'string', pattern: '\\$item' }] : [])], ...(p.about ? { description: p.about } : {}) }])) },
     on: { type: 'object', additionalProperties: false, properties: Object.fromEntries(Object.entries(c.events).map(([ev, acts]) => [ev, { $ref: '#/$defs/action', properties: { do: { enum: acts } } }])) },
     pending: { type: 'object', additionalProperties: { type: 'array', items: { type: 'string' }, minItems: 2, maxItems: 2 } },
   },

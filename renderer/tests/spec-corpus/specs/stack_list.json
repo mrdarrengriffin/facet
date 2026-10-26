@@ -17,7 +17,6 @@
     "icon": "speaker",
     "trailing": "value",
     "value": "40%",
-    "list": "stack",
     "sub": "Playing"
    }
   },
@@ -28,7 +27,6 @@
     "icon": "speaker",
     "trailing": "value",
     "value": "25%",
-    "list": "stack",
     "sub": "Idle"
    }
   }
