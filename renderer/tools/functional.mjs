@@ -124,7 +124,7 @@ class Ctx {
   // -- mount
   async mount(comp, props = {}) {
     this.comp = comp; this.props = props;
-    const err = await this.b.render(comp, props); this.b.settle(1500); this.b.events();
+    const err = await this.b.render(comp, props); this.built = this.b.t; this.b.settle(1500); this.b.events();
     if (err) throw new Error(`render ${comp}: ${err}`);
     this.ha.push(); this.b.settle(1500); this.img.flush(); this.b.settle(1500); this.b.events();
     this.log.push(`mount ${comp} ${JSON.stringify(props)}`);
@@ -159,6 +159,18 @@ class Ctx {
     this.log.push(`update ${JSON.stringify(props)}${r ? ' -> ' + r : ''}`);
     return this.b.events();
   }
+  // Rotate screen (facet-191). The panel turns the picture in ESPHome's LVGL flush (software rotation, clockwise) and
+  // maps every touch back through LvglComponent::rotate_coordinates (ESPHome 2026.9 lvgl_esphome.cpp); LVGL itself
+  // stays upright, which is what this WASM stage is. turn(deg) = what the firmware's rotate_hook does; glass([x, y]) =
+  // where a point of the UI shows on the glass, tapGlass(px, py) = a finger there (the touch goes through ESPHome's map).
+  turn(deg) { this.rot = deg; this.log.push(`turned ${deg}°`); }
+  glass([x, y]) { const W = this.b.S - 1, r = this.rot || 0; return r === 90 ? [W - y, x] : r === 180 ? [W - x, W - y] : r === 270 ? [y, W - x] : [x, y]; }
+  untouch([px, py]) { const W = this.b.S - 1, r = this.rot || 0; return r === 90 ? [py, W - px] : r === 180 ? [W - px, W - py] : r === 270 ? [W - py, px] : [px, py]; }
+  tapGlass(px, py) { const [x, y] = this.untouch([px, py]); return this.gesture(`tap glass ${Math.round(px)},${Math.round(py)} (${this.rot || 0}°)`, this.b.tap(x, y)); }
+  setting(id) { return this.b.str(id, (p) => this.b.m.UTF8ToString(this.b.m._fw_setting(p, 0))); }
+  toast(o) { this.b.haPut('facet.toast', '', JSON.stringify({ n: (this.nToast = (this.nToast || 0) + 1), ...o })); this.log.push(`ha: toast ${JSON.stringify(o)}`); this.b.tick(2); const ev = this.b.events(); this.b.settle(1500); return ev.concat(this.b.events()); }
+  since() { return this.b.t - (this.built ?? 0); }  // ms since the mount was built (mounts settle a few seconds)
+  until(ms) { return this.wait(Math.max(0, ms - this.since())); }  // wait until ms after the build
   wait(ms) { const end = this.b.t + ms; while (this.b.t < end) { this.b.tick(); this.ha.flush(); this.img.flush(); } return this.b.events(); }
   // -- read back
   objs() { return this.b.audit(); }

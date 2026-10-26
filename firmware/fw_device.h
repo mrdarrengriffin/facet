@@ -452,24 +452,19 @@ inline void ha_action(const char *service, const char *entity, const char *data_
 // ---------------------------------------------------------------- toasts from Home Assistant (facet-190)
 // The ESPHome action facet_toast {title, body, icon, kind, duration (ms)} -> the device runtime's Toast layer: the toast
 // JSON goes on the pseudo pair facet.toast (core/device.h TOAST_PAIR, ha::on_put), the same path the workbench uses.
-// kind = the Toast tone (ok warn error working info idle; else info); icon = one of the Toast's icons (else bell);
-// duration >= 10 s = an urgent toast (stays much longer), else normal. Each call carries its own n, so the same
-// message twice shows twice (ha::put drops an unchanged value). Main loop (ESPHome actions run there).
+// The renderer maps it (core/device.cpp toast_put, components/toast_layer.cpp push; functional test toast_ha): kind =
+// the tone (ok warn error working info idle; else info), icon = one of the Toast's icons (else the tone's own),
+// duration >= 10 s = urgent (stays much longer). Each call carries its own n, so the same message twice shows twice
+// (ha::put drops an unchanged value). Main loop (ESPHome actions run there).
 inline void toast_from_ha(const std::string &title, const std::string &body, const std::string &icon, const std::string &kind, float duration_ms) {
-  static const char *TONES[] = {"ok", "warn", "error", "working", "info", "idle"};
-  static const char *ICONS[] = {"timer", "agent", "person", "washer", "vacuum", "bolt", "alert", "done", "bell", "check", "pr"};
-  auto pick = [](const std::string &v, const char *const *list, size_t n, const char *dflt) {
-    for (size_t i = 0; i < n; i++) if (v == list[i]) return list[i];
-    return dflt;
-  };
   static uint32_t n = 0;
   ArduinoJson::JsonDocument t;
   t["n"] = ++n;
   t["title"] = title.substr(0, 80);
   t["body"] = body.substr(0, 160);
-  t["icon"] = pick(icon, ICONS, sizeof ICONS / sizeof *ICONS, "bell");
-  t["tone"] = pick(kind, TONES, sizeof TONES / sizeof *TONES, "info");
-  t["life"] = duration_ms >= 10000 ? "urgent" : "normal";
+  t["icon"] = icon.substr(0, 16);
+  t["kind"] = kind.substr(0, 16);
+  t["duration"] = duration_ms;
   std::string j;
   serializeJson(t, j);
   fw::ha::put(fw::dev::TOAST_PAIR, "", j);

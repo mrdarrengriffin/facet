@@ -340,6 +340,9 @@ void toast_put(const std::string &e, const std::string &a, const std::string &v)
   if (e != TOAST_PAIR || !a.empty() || v.empty()) return;
   ArduinoJson::JsonDocument t;
   if (deserializeJson(t, v) || !t.is<ArduinoJson::JsonObject>()) return;
+  // the HA action's words (facet_toast: kind, duration in ms) -> the Toast's (tone, life): duration >= 10 s = urgent
+  if (t["tone"].isNull() && !t["kind"].isNull()) t["tone"] = t["kind"].as<const char *>();
+  if (t["life"].isNull() && !t["duration"].isNull()) t["life"] = t["duration"].as<float>() >= 10000 ? "urgent" : "normal";
   toast(t.as<Props>());
 }
 lv_obj_t *mount(lv_obj_t *parent, const char *start) {

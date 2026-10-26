@@ -5,10 +5,30 @@ const DECK = { v: 2, rev: 9, start: 't', pages: [{ id: 't', kind: 'home', name: 
   { t: 'sensor', e: 'sensor.garage_temperature', size: 'm', label: 'Garage' },
   { t: 'light', e: 'light.sofa_lamp', size: 's', tap: 'toggle', label: 'Sofa table' }] }] };
 const val = (t, label) => { const p = t.part('readout', new RegExp(`^${label}$`, 'i')); return p ? p.texts.filter((s) => s.toUpperCase() !== label.toUpperCase()) : []; };
+const inside = (o, b) => o.x >= b.x && o.y >= b.y && o.x + o.w <= b.x + b.w && o.y + o.h <= b.y + b.h;
 const CARD_H = { '1.5x': 280, '1x': 184 };  // lay::card_h (tokens/layout.json)
 export default {
   id: 'readout', family: 'cards', about: 'Sensor readout: label + live value; the Home sensor card is two of these in one slot.',
   tests: [
+    // facet-182 (Darren 2026-10-26, office Waveshare): Home sensor values vanished and never came back. HA values
+    // reached the panel store, so suspect = the fade-on-update when updates arrive quicker than the fade.
+    ...[[20, 'every 20 ms'], [80, 'every 80 ms'], [150, 'every 150 ms']].map(([gap, how]) => ({ name: `Home: rapid HA updates (${how}) end on the last value, fully drawn (facet-182)`, async run(t) {
+      await t.device(DECK);
+      const ref = t.objs().find((o) => o.text && /°|^\d/.test(o.text) && t.part('readout', /^garage$/i) && inside(o, t.part('readout', /^garage$/i)));
+      for (let i = 0; i < 30; i++) {
+        const v = i % 7 === 3 ? 'unavailable' : (18 + i / 10).toFixed(1);
+        t.b.haPut('sensor.garage_temperature', '', v); t.b.haPut('binary_sensor.back_door', '', i % 2 ? 'on' : 'off');
+        t.wait(gap);
+      }
+      t.b.haPut('sensor.garage_temperature', '', '21.4'); t.b.haPut('binary_sensor.back_door', '', 'off'); t.wait(2000);
+      const g = t.part('readout', /^garage$/i), d = t.part('readout', /^back door$/i);
+      if (!t.ok(g && d, 'both readouts there')) return;
+      t.has(g.texts, /21\.4/, 'garage shows the last value');
+      t.ok(d.texts.length > 1, `back door shows a value: ${JSON.stringify(d.texts)}`);
+      const labs = t.objs().filter((o) => o.text && t.visible(o) && (inside(o, g) || inside(o, d)));
+      t.eq(labs.filter((o) => o.topa !== undefined || o.opa < 255).map((o) => `${o.text} topa ${o.topa} opa ${o.opa}`), [], 'no text left faded');
+      if (ref) { const now = labs.find((o) => /21\.4/.test(o.text)); t.eq(now && now.ink, ref.ink, 'value ink = the ink before the burst'); }
+    } })),
     { name: 'live readout shows label and state', mount: ['readout', { label: 'Dishwasher', icon: 'bolt', state: '0.8 W', half: true }], run(t) {
       t.has(t.texts(), /dishwasher/i, 'label'); t.has(val(t, 'Dishwasher'), '0.8 W', 'state');
     } },

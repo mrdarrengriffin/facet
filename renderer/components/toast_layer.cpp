@@ -120,7 +120,10 @@ void push_one(Layer *L, const Sample &s, bool quiet) {
     fw::appear(t, fw::mo::toast_in, true, L->top ? -1 : 1);
   }
   if (!L->still && !quiet) {
-    fw::emit(t, "toast", s.title);
+    // detail "<tone> <icon> <life>: <title>" (functional tests read what arrived; toast_ha.test.mjs)
+    char d[160];
+    snprintf(d, sizeof d, "%s %s %s: %s", s.tone, s.icon, s.urgent ? "urgent" : "normal", s.title);
+    fw::emit(t, "toast", d);
     fw::sound(t, fw::toast::sound);
   }
 }
@@ -298,9 +301,18 @@ void push(lv_obj_t *ov, fw::Props t, bool top) {
   auto *L = ov ? (Layer *) lv_obj_get_user_data(ov) : nullptr;
   if (!L) return;
   if (L->shown.empty()) L->top = top;
-  const std::string tone = t["tone"] | "info";
+  // an unknown tone = info; an unknown or empty icon = the tone's own (ok done, warn / error alert, working agent, else bell)
+  static const char *TONES[] = {"ok", "warn", "error", "working", "info", "idle"};
+  static const char *ICONS[] = {"timer", "agent", "person", "washer", "vacuum", "bolt", "alert", "done", "bell", "check", "pr"};
+  auto known = [](const char *v, const char *const *list, size_t n) -> const char * {
+    for (size_t i = 0; v && i < n; i++) if (!strcmp(v, list[i])) return list[i];
+    return nullptr;
+  };
+  const char *tn = known(t["tone"] | "", TONES, sizeof TONES / sizeof *TONES);
+  const std::string tone = tn ? tn : "info";
   const char *icon = tone == "ok" ? "done" : tone == "warn" || tone == "error" ? "alert" : tone == "working" ? "agent" : "bell";
-  const Sample s{t["tone"] | "info", "", t["icon"] | icon, t["title"] | "", t["body"] | "", t["action"] | "",
+  const char *ic = known(t["icon"] | "", ICONS, sizeof ICONS / sizeof *ICONS);
+  const Sample s{tn ? tn : "info", "", ic ? ic : icon, t["title"] | "", t["body"] | "", t["action"] | "",
                  !strcmp(t["life"] | "normal", "urgent")};
   push_one(L, s, false);
 }

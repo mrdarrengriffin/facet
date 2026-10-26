@@ -23,10 +23,10 @@ export default {
       t.hasNot(ev.filter((e) => e.kind === 'sound').map((e) => e.name), 'back', 'no back sound for the action');
     } },
     { name: 'timer on: dismiss(timeout) after ~6 s, silently', mount: ['toast', { ...P, timer: true }], run(t) {
-      let ev = t.wait(2000); t.notEmitted(ev, 'dismiss', 'too early (the mount settles ~3 s of its life)'); ev = t.wait(2500); t.emitted(ev, 'dismiss', 'timeout'); t.silent(ev); t.ok(!shown(t), 'gone');
+      let ev = t.until(5000); t.notEmitted(ev, 'dismiss', 'too early (at 5 s)'); ev = t.until(7000); t.emitted(ev, 'dismiss', 'timeout'); t.silent(ev); t.ok(!shown(t), 'gone');
     } },
-    { name: 'urgent: still there at 8 s, gone by 13 s', mount: ['toast', { ...P, timer: true, life: 'urgent' }], run(t) {
-      t.notEmitted(t.wait(8000), 'dismiss', 'at 8 s'); t.emitted(t.wait(5000), 'dismiss', 'timeout');
+    { name: 'urgent: still there at 11 s, gone by 13 s', mount: ['toast', { ...P, timer: true, life: 'urgent' }], run(t) {
+      t.notEmitted(t.until(11000), 'dismiss', 'at 11 s'); t.emitted(t.until(13000), 'dismiss', 'timeout');
     } },
     { name: 'timer off: stays (13 s)', mount: ['toast', P], run(t) { t.notEmitted(t.wait(13000), 'dismiss'); t.ok(shown(t), 'still there'); } },
     { name: 'long title stays inside the box', mount: ['toast', { ...P, title: 'Lightning 9 km W, closing at 48 km/h from the coast and heading inland' }], run(t) {

@@ -563,6 +563,7 @@ void audit_walk(lv_obj_t *o, int parent, int depth, ArduinoJson::JsonArray arr) 
       if (right > 0) j["cutr"] = right;
       j["text"] = lv_label_get_text(c);
       j["ink"] = hexc(lv_obj_get_style_text_color(c, LV_PART_MAIN));
+      if (lv_obj_get_style_text_opa(c, LV_PART_MAIN) < LV_OPA_COVER) j["topa"] = lv_obj_get_style_text_opa(c, LV_PART_MAIN);  // functional: faded text
       if (lv_obj_get_style_text_decor(c, LV_PART_MAIN) & LV_TEXT_DECOR_STRIKETHROUGH) j["strike"] = true;
     }
     auto it = marks.find(c);
@@ -612,7 +613,13 @@ EMSCRIPTEN_KEEPALIVE const char *fw_audit(int id) {
   Stage *s = get(id);
   if (!s) return "[]";
   ArduinoJson::JsonDocument doc;
-  audit_walk(lv_display_get_screen_active(s->d), -1, 1, doc.to<ArduinoJson::JsonArray>());
+  ArduinoJson::JsonArray arr = doc.to<ArduinoJson::JsonArray>();
+  audit_walk(lv_display_get_screen_active(s->d), -1, 1, arr);
+  // the top layer too (a device's Toast layer lives there), only while it shows something: a layer with toasts in it
+  lv_obj_t *top = lv_display_get_layer_top(s->d);
+  bool any = false;
+  for (uint32_t i = 0; i < lv_obj_get_child_count(top) && !any; i++) any = lv_obj_get_child_count(lv_obj_get_child(top, i)) > 0;
+  if (any) audit_walk(top, -1, 1, arr);
   serializeJson(doc, out);
   return out.c_str();
 }

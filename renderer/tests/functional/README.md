@@ -41,6 +41,11 @@ export default {
   update path (fw_update); `t.wait(ms)`.
 - **Navigation (device):** `t.send(spec)` = a sent spec (stored, never shown: facet-188), `t.unsend(id)` (revert),
   `t.show(id)` = what POST /fw/show does (`home` = straight Home), `t.stack()` (ids, root first), `t.where()` (the top).
+- **From HA:** `t.toast({title, body, kind, icon, duration})` = what the panel's `facet_toast` action puts on the
+  `facet.toast` pair (returns the events). `t.setting(id)` = a device setting's value now.
+- **Rotate screen:** `t.turn(deg)` = the firmware's rotate hook (ESPHome turns the picture, LVGL stays upright);
+  `t.glass([x, y])` = where a UI point shows on the glass, `t.tapGlass(px, py)` = a finger there (ESPHome's touch map).
+- **Time:** `t.since()` = ms since the mount was built (mounts settle ~4.5 s), `t.until(ms)` = wait until then.
 - **Touch:** `t.tap(sel)`, `t.hold(sel, ms?)`, `t.drag(sel, {by: [dx, dy]} | {toX} | {from: [x, y], ...})`. Each returns
   the events + sounds it caused (after settling, HA answers included). Selectors: `'TEXT'` (exact, as drawn: labels
   may be upper case), `/re/`, `{clk: i}`, `{type: 'arc'}`, `{at: [x, y]}`, or a box.
