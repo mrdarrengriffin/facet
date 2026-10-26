@@ -42,7 +42,9 @@ Everything below is served by this panel itself and matches its firmware (catalo
 ## Access
 Writes need the panel setting "${agents.label}" (off by default; the owner turns it on on the panel or in Home
 Assistant) and the header \`Authorization: Bearer <agent token>\` (the owner reads it in Home Assistant: the panel's
-"AI agent token" entity). Without them a write answers 403 with what to do. Reading the docs and GET endpoints is open.
+"AI agent token" entity). Without them a write (and GET /fw/ha, the panel's Home Assistant values) answers 403 with
+what to do. Reading the docs and the other GET endpoints is open. Browsers: CORS is answered (OPTIONS preflight allows
+Authorization, Content-Type and X-Facet-Token from any origin), so a web page can call the panel with the token.
 `;
 
 const typ = (p) => {

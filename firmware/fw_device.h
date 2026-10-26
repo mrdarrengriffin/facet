@@ -18,13 +18,17 @@
 //   POST /fw/show   {screen: <deck page id | screen id | name>} opens that screen on the device (agents)
 //   POST /fw/spec   kind check | check_deck = validate (+ build off screen) only, nothing stored
 //   GET  /llms.txt, /agents.md   the agent docs (bundle fw_docs_gen.h from tools/gen_agents.mjs; open)
-// AI agents (facet-163, Darren 2026-10-25): every POST under /fw/ and GET /fw/ha?want= go through agent::allow():
+// AI agents (facet-163, Darren 2026-10-25): every POST under /fw/ and every GET /fw/ha (it shows the subscribed HA
+// values; the editor's ?want= subscribes too) go through agent::allow():
 // the panel's own editor (a browser request from this origin: Sec-Fetch-Site same-origin, or Origin = this host)
 // always passes; anything else needs the setting Allow AI agents on (only the panel or HA can turn it on, core/
 // device.cpp set()) AND `Authorization: Bearer <token>` (or X-Facet-Token). Else 403 with what to do. The token =
 // 32 hex in NVS "facet_agent" (made on first boot; agent_token() for the host's HA entity, agent_new_token() makes a
 // new one). Not a wall against a hostile LAN client (the same-origin check is browser-enforced only); it stops other
-// web pages (CSRF) and agents that were not let in.
+// web pages (CSRF) and agents that were not let in. CORS (browser-based agents): OPTIONS /fw/* answers 204 with
+// Allow-Origin = the request's Origin, Allow-Methods GET, POST, OPTIONS, Allow-Headers Authorization, Content-Type,
+// X-Facet-Token (+ Private-Network for Chrome), Max-Age 600; every /fw/ response echoes the Origin (Vary: Origin;
+// "*" without one). No credentials (cookies) are involved: the token is the only key, so echoing is safe.
 // Web UI (optional): a bundle may add fw_web_gen.h (fw::web::FILES, gzipped files linked into the image's rodata by
 // the host's build, e.g. the Facet editor + the 1x renderer): GET / and each FILES path are served straight from
 // flash in 4 KB chunks (no RAM copy; Content-Encoding gzip, ETag + If-None-Match -> 304, each file's Cache-Control),
@@ -854,9 +858,22 @@ class Handler : public AsyncWebHandler {
     std::string url = req->url_to(buf).c_str();
     std::string path = url.substr(0, url.find('?'));
     const bool post = req->method() == HTTP_POST;
+    auto org = req->get_header("Origin");
+    const std::string origin = org.has_value() && !org->empty() ? *org : "*";
+    if (req->method() == HTTP_OPTIONS) {  // CORS preflight (a browser agent sending Authorization): no gate, no body
+      auto *r = req->beginResponse(204, "text/plain", "");
+      r->addHeader("Access-Control-Allow-Origin", origin.c_str());
+      r->addHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+      r->addHeader("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Facet-Token");
+      r->addHeader("Access-Control-Allow-Private-Network", "true");
+      r->addHeader("Access-Control-Max-Age", "600");
+      r->addHeader("Vary", "Origin");
+      req->send(r);
+      return;
+    }
     std::string s;
     int code = 200;
-    if ((post || (path == "/fw/ha" && req->hasArg("want"))) && agent::allow(req, &s)) {
+    if ((post || path == "/fw/ha") && agent::allow(req, &s)) {
       code = 403;  // s = what to do (agent::allow)
     } else if (path == "/fw/meta") {
       fw::meta_json(s);  // the registry is fixed after boot: no loop job needed
@@ -991,7 +1008,8 @@ class Handler : public AsyncWebHandler {
     too_big_ = false;
     auto *r = req->beginResponse(code, "application/json", s);
     r->addHeader("Cache-Control", "no-store");
-    r->addHeader("Access-Control-Allow-Origin", "*");
+    r->addHeader("Access-Control-Allow-Origin", origin.c_str());
+    r->addHeader("Vary", "Origin");
     req->send(r);
   }
 
