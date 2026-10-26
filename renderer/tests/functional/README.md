@@ -50,6 +50,10 @@ export default {
   bound entity reads unavailable), `reconnect()` (stored states arrive again), `calls` (service calls sent), `auto`
   (default true: toggle / turn_on / turn_off for light, switch, fan, input_boolean; cover open / close / position),
   `lag` (ms before an answer arrives). Unset values fall back to `tools/demo_ha.mjs`.
+- **Fake image host (`t.img`, the Image component):** `serve(url, w, h, fill)` (fill `[r,g,b,a]` or `(x, y) => [...]`),
+  `status(url, 404)`, `hang(url)` (never answers: the device times out), unknown URLs = 404; `asked` (URLs fetched),
+  `stats()` (the cache: cap, bytes, peak, views, shown, evicted, dropped, refused, pending), `leave()` (build another
+  screen: every image view goes). Serve before `await t.mount(...)`.
 - **Assert (soft, all collected):** `ok`, `eq`, `has(list, want)`, `hasNot`, `emitted(evs, name, detail?)`, `notEmitted`,
   `sounds(evs, [...])` (ticks ignored), `silent(evs)`, `call({service, entity})`.
 - What to cover per component: every gesture it answers (tap, hold, drag, slide-off), every prop that changes what it
@@ -61,7 +65,7 @@ export default {
 ## Families still to cover (one agent per family)
 
 Done: button, slider + family 1 below (controls), entity_tile, readout (cards; incl. Home light + sensor cards on the
-device), device (navigation rules, facet-188). Shared helpers for family 1: `_controls.mjs` (pixel reads for drawn /
+device), device (navigation rules, facet-188), image (cache cap + fallbacks). Shared helpers for family 1: `_controls.mjs` (pixel reads for drawn /
 not drawn, dial ring points).
 
 1. **Controls + inputs** (done 2026-10-26): toggle, checkbox, radio, segmented, hold_button, icon_button, speaker_button, back_button,

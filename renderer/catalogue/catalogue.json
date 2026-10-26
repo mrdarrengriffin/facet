@@ -2846,6 +2846,113 @@
     "bytes_est": 480
    }
   },
+  "image": {
+   "name": "Image",
+   "update": true,
+   "props": [
+    {
+     "name": "src",
+     "type": "text",
+     "bindable": true,
+     "about": "The picture's web address (http or https). Bind it to an entity's state or attribute to follow it; in a grid's item cell, $item.field takes it from each item."
+    },
+    {
+     "name": "step",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "icon",
+      "glyph",
+      "detail",
+      "feature",
+      "card",
+      "hero",
+      "content"
+     ],
+     "about": "How wide the picture is, as a size step from icon up to hero, or content for the full content width. Leave it out when fit is cell."
+    },
+    {
+     "name": "fit",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "step",
+      "cell"
+     ],
+     "about": "step: the size comes from step and aspect. cell: inside a grid cell or a layout slot, the picture fills the cell. Use step or cell, not both."
+    },
+    {
+     "name": "aspect",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "1:1",
+      "4:3",
+      "3:2",
+      "16:9"
+     ],
+     "about": "The box shape with step: 1:1, 4:3, 3:2 or 16:9 (width to height)."
+    },
+    {
+     "name": "scale",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "cover",
+      "contain",
+      "pixel"
+     ],
+     "about": "cover fills the box and crops the edges, contain shows the whole picture inside the box, pixel zooms pixel art by whole steps with sharp pixels."
+    },
+    {
+     "name": "radius",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "none",
+      "chip",
+      "button",
+      "ring",
+      "round"
+     ],
+     "about": "Rounded corners: none, chip, button, ring, or round for a circle."
+    },
+    {
+     "name": "fallback",
+     "type": "text",
+     "bindable": true,
+     "about": "An icon name shown if the picture can't be loaded; leave it empty for a plain quiet box."
+    },
+    {
+     "name": "alt",
+     "type": "text",
+     "bindable": true,
+     "about": "A few words saying what the picture shows; shown under the fallback icon when the picture fails and there is room."
+    },
+    {
+     "name": "refresh",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "off",
+      "1m",
+      "5m",
+      "15m",
+      "1h"
+     ],
+     "about": "Fetch the picture again every 1, 5 or 15 minutes or every hour (for a camera still or a chart); off loads it once. If a refresh fails, the last picture stays."
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 1,
+    "bytes_est": 160
+   }
+  },
   "iso_floorplan": {
    "name": "Iso floor plan",
    "update": true,
@@ -6339,5 +6446,5 @@
    }
   }
  },
- "hash": "6a7f4815"
+ "hash": "e775387f"
 }

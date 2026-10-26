@@ -15,6 +15,7 @@
 //   fw_anims() -> n                   LVGL animations running (frame stats)
 //   fw_events() -> JSON               events + sound requests since the last call (fw::emit / fw::sound): [{stage,kind,name,detail}] or ""
 //   fw_ha_wants() -> JSON [[e, a]...]  HA pairs the built screens bind (core/ha.h); fw_ha_put(e, a, v) = a value from the host
+//   fw_img_wants() -> JSON [url...]  image URLs to fetch (core/images.h); fw_img_put(url, w, h, rgba) / fw_img_fail(url, why); fw_img_stats() -> JSON
 //   fw_audit(id) -> JSON              every object of the stage for tools/audit.mjs (core/audit.h, README "Audit")
 //   fw_unclip(id)                     let every object draw outside its box (audit: what differs was clipped)
 #include <emscripten.h>
@@ -27,6 +28,7 @@
 #include "ha.h"
 #include "spec.h"
 #include "device.h"
+#include "images.h"
 // LVGL private (src/core/lv_obj_draw_private.h): the ext draw size an object holds (fw::bleed sets it)
 extern "C" int32_t lv_obj_get_ext_draw_size(const lv_obj_t *obj);
 #include <map>
@@ -114,6 +116,23 @@ EMSCRIPTEN_KEEPALIVE const char *fw_ha_wants() {
   }
   out.clear();
   serializeJson(d, out);
+  return out.c_str();
+}
+// Images (core/images.h): the host polls the wanted URLs, fetches + decodes them and puts RGBA8888 pixels (or a failure)
+EMSCRIPTEN_KEEPALIVE const char *fw_img_wants() {
+  static std::string out;
+  ArduinoJson::JsonDocument d;
+  ArduinoJson::JsonArray a = d.to<ArduinoJson::JsonArray>();
+  for (const auto &u : fw::img::wants()) a.add(u);
+  out.clear();
+  serializeJson(d, out);
+  return out.c_str();
+}
+EMSCRIPTEN_KEEPALIVE void fw_img_put(const char *src, int w, int h, const uint8_t *rgba) { fw::img::put(src, w, h, rgba); }
+EMSCRIPTEN_KEEPALIVE void fw_img_fail(const char *src, const char *why) { fw::img::fail(src, why); }
+EMSCRIPTEN_KEEPALIVE const char *fw_img_stats() {
+  static std::string out;
+  out = fw::img::stats();
   return out.c_str();
 }
 EMSCRIPTEN_KEEPALIVE void fw_ha_put(const char *e, const char *a, const char *v) { fw::ha::put(e ? e : "", a ? a : "", v ? v : ""); }

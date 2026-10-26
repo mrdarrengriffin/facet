@@ -386,8 +386,8 @@ inline void check_value(const PropInfo &pi, ArduinoJson::JsonVariantConst v, con
   if (!v.is<const char *>()) { err(e, path, "bad_prop", pi.name + " is text"); return; }
   if (pi.type == "select" && std::find(pi.options.begin(), pi.options.end(), v.as<std::string>()) == pi.options.end())
     err(e, path, "bad_prop", pi.name + ": " + v.as<std::string>() + " is not one of its options");
-  else if (strlen(v.as<const char *>()) > (pi.name == "items" ? 256u : 64u))  // a static items list: 256, as its bind sample
-    err(e, path, "bad_prop", pi.name + ": text over " + (pi.name == "items" ? "256" : "64") + " characters");
+  else if (strlen(v.as<const char *>()) > (pi.name == "items" ? 256u : pi.name == "src" ? 512u : 64u))  // a static items list: 256, as its bind sample
+    err(e, path, "bad_prop", pi.name + ": text over " + (pi.name == "items" ? "256" : pi.name == "src" ? "512" : "64") + " characters");
 }
 // a screen spec: errors into e (empty = valid)
 // Grid + Icon rules a prop check can't see (board facet-171): span only in a static grid, inside its cols; cell only
@@ -406,7 +406,12 @@ inline void check_grid(ArduinoJson::JsonVariantConst n, ArduinoJson::JsonArrayCo
     if (!n["p"]["cols"].isNull() && !n["p"]["min"].isNull()) err(e, p + ".p.min", "bad_prop", "cols or min, not both");
     if (!n["cell"].isNull() && n["p"]["items"].isNull()) err(e, p + ".cell", "bad_cell", "cell goes with items");
   } else if (!n["cell"].isNull()) err(e, p + ".cell", "bad_cell", "only a grid has a cell");
-  if (c == "icon" && !n["p"]["step"].isNull() && strcmp(n["p"]["fit"] | "step", "step")) err(e, p + ".p.fit", "bad_prop", "step or fit: cell, not both");
+  if ((c == "icon" || c == "image") && !n["p"]["step"].isNull() && strcmp(n["p"]["fit"] | "step", "step")) err(e, p + ".p.fit", "bad_prop", "step or fit: cell, not both");
+  if (c == "image" && !n["p"]["aspect"].isNull() && !strcmp(n["p"]["fit"] | "step", "cell")) err(e, p + ".p.aspect", "bad_prop", "aspect goes with step; a cell keeps its own shape");
+  if (c == "image" && n["p"]["src"].is<const char *>()) {  // a URL (http / https) or an item field; binds are checked as binds
+    const char *s = n["p"]["src"];
+    if (*s && strncmp(s, "http://", 7) && strncmp(s, "https://", 8) && !strstr(s, "$item")) err(e, p + ".p.src", "bad_prop", "src is an http(s) URL");
+  }
   if (n["cell"].isNull() || c != "grid") return;
   ArduinoJson::JsonVariantConst cn = n["cell"];
   const std::string cc = cn["c"] | "";

@@ -601,6 +601,8 @@
       {"section": "icon", "fg": "blue", "bg": ["bg"], "kind": "ui", "use": "Icon tone info"},
       {"section": "icon", "fg": "line-hi", "bg": ["bg"], "kind": "decor", "use": "Icon: the outlined box shown for an unknown icon name"},
       {"section": "grid", "fg": "line-hi", "bg": ["bg"], "kind": "decor", "use": "Grid workbench sample: cell outlines"},
+      {"section": "image", "fg": "text-dim", "bg": ["surface"], "kind": "ui", "use": "Image: the fallback icon on the quiet box (failed / no src)"},
+      {"section": "image", "fg": "text-dim", "bg": ["surface"], "kind": "text", "use": "Image: the alt words under the fallback icon"},
       {"section": "grid", "fg": "text-dim", "bg": ["bg"], "kind": "text", "use": "Grid: cell names (workbench), the +N overflow cell, the empty text"},
       {"section": "radar", "fg": "line-hi", "bg": ["bg", "surface"], "kind": "decor", "use": "distance rings (the labels name them) and the minor 30 degree ticks"},
       {"section": "radar", "fg": "accent-dim", "bg": ["bg", "surface"], "kind": "decor", "use": "the 25 km alert ring (2 px; its label names it)"},

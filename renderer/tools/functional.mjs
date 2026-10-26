@@ -84,15 +84,45 @@ class FakeHA {
   flush() { const now = this.t.b.t; const due = this.pending.filter((p) => p.at <= now); this.pending = this.pending.filter((p) => p.at > now); due.forEach((p) => p.apply()); }
 }
 
+// ---------------------------------------------------------------- fake image host
+// What the WASM host does for the Image component (core/images.h): the device lists the URLs it wants, the host answers
+// with RGBA pixels (fw_img_put) or a failure (fw_img_fail). serve(url, w, h, fill) = an image (fill: [r,g,b,a] or
+// (x, y) => [r,g,b,a]); status(url, 404) = an HTTP error; hang(url) = never answers (the device times out); unknown
+// URLs = 404. asked = every URL the device fetched, in order.
+class FakeImg {
+  constructor(t) { this.t = t; this.map = {}; this.asked = []; }
+  serve(url, w, h, fill = [128, 128, 128, 255]) { this.map[url] = { w, h, fill }; return this; }
+  status(url, code) { this.map[url] = { code: String(code) }; return this; }
+  hang(url) { this.map[url] = { hang: true }; return this; }
+  flush() {
+    const m = this.t.b.m;
+    if (!m._fw_img_wants) return;
+    for (const url of JSON.parse(m.UTF8ToString(m._fw_img_wants()) || '[]')) {
+      this.asked.push(url);
+      const s = this.map[url] || { code: '404' };
+      if (s.hang) { this.t.log.push(`img: ${url} (no answer)`); continue; }
+      if (s.code) { this.t.log.push(`img: ${url} -> ${s.code}`); this.t.b.str(url, (pu) => this.t.b.str(s.code, (pw) => m._fw_img_fail(pu, pw))); continue; }
+      const px = new Uint8Array(s.w * s.h * 4);
+      for (let y = 0; y < s.h; y++) for (let x = 0; x < s.w; x++) px.set(typeof s.fill === 'function' ? s.fill(x, y) : s.fill, (y * s.w + x) * 4);
+      const p = m._malloc(px.length); m.HEAPU8.set(px, p);
+      this.t.b.str(url, (pu) => m._fw_img_put(pu, s.w, s.h, p)); m._free(p);
+      this.t.log.push(`img: ${url} -> ${s.w}x${s.h}`);
+    }
+  }
+  stats() { const m = this.t.b.m; return m._fw_img_stats ? JSON.parse(m.UTF8ToString(m._fw_img_stats())) : {}; }
+  /** leave the screen: build something with no image on the same stage (every image view goes) */
+  leave() { this.t.b.rebuild('icon', { name: 'bulb' }); this.t.b.settle(500); this.t.log.push('img: left the screen'); return this.stats(); }
+}
+
 // ---------------------------------------------------------------- the test context (`t` in a test's run)
 class Ctx {
-  constructor(b) { this.b = b; this.log = []; this.fails = []; this.ha = new FakeHA(this); this.comp = null; }
+  constructor(b) { this.b = b; this.log = []; this.fails = []; this.ha = new FakeHA(this); this.img = new FakeImg(this); this.comp = null; }
   // -- mount
   async mount(comp, props = {}) {
     this.comp = comp; this.props = props;
     const err = await this.b.render(comp, props); this.b.settle(1500); this.b.events();
     if (err) throw new Error(`render ${comp}: ${err}`);
-    this.ha.push(); this.b.settle(1500); this.b.events();
+    this.ha.push(); this.b.settle(1500); this.img.flush(); this.b.settle(1500); this.b.events();
     this.log.push(`mount ${comp} ${JSON.stringify(props)}`);
     return this;
   }
@@ -121,11 +151,11 @@ class Ctx {
   where() { return this.stack().at(-1); }
   update(props) {  // the component's update path (fw_update), as a host pushing new props
     this.props = { ...this.props, ...props };
-    const r = this.b.update(this.comp, this.props); this.b.settle(1500);
+    const r = this.b.update(this.comp, this.props); this.b.settle(1500); this.img.flush(); this.b.settle(1500);
     this.log.push(`update ${JSON.stringify(props)}${r ? ' -> ' + r : ''}`);
     return this.b.events();
   }
-  wait(ms) { const end = this.b.t + ms; while (this.b.t < end) { this.b.tick(); this.ha.flush(); } return this.b.events(); }
+  wait(ms) { const end = this.b.t + ms; while (this.b.t < end) { this.b.tick(); this.ha.flush(); this.img.flush(); } return this.b.events(); }
   // -- read back
   objs() { return this.b.audit(); }
   visible(o) { return o.w > 0 && o.h > 0 && o.opa !== 0 && o.x + o.w > 0 && o.y + o.h > 0 && o.x < this.b.S && o.y < this.b.S; }
