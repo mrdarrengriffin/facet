@@ -213,6 +213,15 @@ FW_COMPONENT(button, "Button", "components", R"({
   fill(b, p);
 
   // a real tap (LVGL drops CLICKED after a scroll, like the docs' "moved > 8 px stays silent")
+  // internal prop tap false (Hold button): no tap of its own, only press / release (the hold acts, facet-187)
+  if (!(p["tap"] | true)) {
+    fw::st::on_tap(b, [](lv_event_t *e) {  // disabled still says so (blocked + error); enabled = nothing
+      if (!fw::st::tap_now(e)) return;
+      auto *o = (lv_obj_t *) lv_event_get_current_target(e);
+      if (lv_obj_has_state(o, ST_OFF)) fw::st::blocked(o, lv_label_get_text(label_of(o)));
+    }, nullptr);
+    return;
+  }
   fw::st::on_tap(b, [](lv_event_t *e) {  // blocked on finger down, a real tap on CLICKED (states.json)
     if (!fw::st::tap_now(e)) return;
     auto *o = (lv_obj_t *) lv_event_get_current_target(e);

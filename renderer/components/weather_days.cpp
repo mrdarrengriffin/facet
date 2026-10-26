@@ -56,7 +56,8 @@ FW_COMPONENT(weather_days, "Weather days", "components", R"({
   lv_obj_remove_flag(root, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
   lv_obj_set_user_data(root, w);
   lv_obj_add_event_cb(root, [](lv_event_t *e) { delete (WD *) lv_event_get_user_data(e); }, LV_EVENT_DELETE, w);
-  lv_obj_set_size(root, LV_PCT(100), LV_SIZE_CONTENT);  // the list column (its scroll track keeps a gutter)
+  // the screen content width, inset to inset, like a List row (facet-185: 100% of the column ran edge to edge)
+  lv_obj_set_size(root, 2 * fw::lay::card_w + fw::lay::gutter, LV_SIZE_CONTENT);
   lv_obj_set_flex_flow(root, LV_FLEX_FLOW_COLUMN);
   for (int i = 0; i < 5; i++) {
     lv_obj_t *row = box(root);
@@ -64,6 +65,7 @@ FW_COMPONENT(weather_days, "Weather days", "components", R"({
     lv_obj_set_flex_flow(row, LV_FLEX_FLOW_ROW);
     lv_obj_set_flex_align(row, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
     lv_obj_set_style_pad_column(row, fw::sp::s5, 0);
+    lv_obj_set_style_pad_hor(row, fw::sp::s4, 0);  // the List row inset
     if (i) {  // the hairline between rows (List row rule)
       lv_obj_set_style_border_side(row, LV_BORDER_SIDE_TOP, 0);
       lv_obj_set_style_border_width(row, fw::stroke::hair, 0);

@@ -82,7 +82,7 @@ void time_text(lv_obj_t *l, fw::Props p) {
 }
 bool has_button(fw::Props p) { return strcmp(p["settings"] | "none", "none"); }
 std::string sig(fw::Props p) { return std::string(has_button(p) ? "b" : "") + (has_status(p) ? "s" : "") + (p["shortcut"] | "") + "|" + (p["to"] | ""); }
-// the status beside the time: the panel's timer, time left ("4:32", "1:02:05"), "" when none runs (the box stays)
+// the status beside the time: the panel's timer, time left ("4:32", "1:02:05"); hidden (and the row narrower) when none runs
 void status_tick(lv_timer_t *tm) {
   auto *l = (lv_obj_t *) lv_timer_get_user_data(tm);
   const fw::dev::Timer &g = fw::dev::timer();
@@ -94,6 +94,14 @@ void status_tick(lv_timer_t *tm) {
     else snprintf(b, sizeof b, "%d:%02d", x / 60, x % 60);
   }
   if (strcmp(lv_label_get_text(l), b)) fw::set_text(l, fw::ty::label, b);
+  // no timer running = no box (facet-180: the empty box left a gap before the time); the row narrows with it
+  const bool hide = !*b;
+  if (hide != lv_obj_has_flag(l, LV_OBJ_FLAG_HIDDEN)) {
+    lv_obj_set_flag(l, LV_OBJ_FLAG_HIDDEN, hide);
+    lv_obj_t *r = lv_obj_get_parent(l);
+    const int32_t d = fw::lay::header_time_w + fw::lay::gutter;
+    lv_obj_set_width(r, lv_obj_get_style_width(r, LV_PART_MAIN) + (hide ? -d : d));
+  }
 }
 void fill(lv_obj_t *r, fw::Props p) {
   lv_obj_remove_style_all(r);

@@ -1203,7 +1203,10 @@ inline bool run(Screen *s, Node &n, const char *event, const char *detail) {
   }
   if (d == "light.toggle") {  // a light, or a switch (a Home light card takes both)
     const char *svc = n.entity.rfind("switch.", 0) == 0 ? "switch.toggle" : "light.toggle";
-    if (!*ha::act(n.obj, svc, n.entity.c_str())) ha::hold(n.obj, PENDING_MS);
+    // hold for HA's answer = the other side (facet-181: a bare hold kept HA's answer off the card's state line)
+    const std::string *cur = ha::get(n.entity, "");
+    const std::string want = cur && *cur == "on" ? "off" : "on";
+    if (!*ha::act(n.obj, svc, n.entity.c_str())) ha::hold(n.obj, PENDING_MS, n.entity, "", want);
     return true;
   }
   if (d == "light.switch") {

@@ -31,6 +31,13 @@
 #include "spec.h"
 
 namespace {
+// a number prop: a bound HA value arrives as a double (or text); `| 40` would drop it for the default (facet-51)
+int num_or(fw::Props p, const char *k, int d) {
+  ArduinoJson::JsonVariantConst v = p[k];
+  if (v.is<double>()) return (int) std::lround(v.as<double>());
+  if (v.is<const char *>() && *(v.as<const char *>())) { char *e; const double x = strtod(v.as<const char *>(), &e); if (!*e) return (int) std::lround(x); }
+  return d;
+}
 struct CV {
   lv_obj_t *vis = nullptr, *cap = nullptr, *val = nullptr, *kind_l = nullptr, *tilt_box = nullptr, *tilt_v = nullptr, *slider = nullptr;
   std::string kind = "roller", state = "open";
@@ -120,15 +127,15 @@ void take(lv_obj_t *root, fw::Props p) {
   const std::string dc = p["device_class"] | "";  // HA's device class: curtain = curtains, a tilt = Venetian, else roller
   c->kind = !dc.empty() || !c->cover.empty() ? (dc == "curtain" ? "curtain" : p["tilt"].is<double>() ? "venetian" : "roller") : (p["kind"] | "roller");
   if (c->hlabel && !c->ids.empty() && !c->cover.empty()) fw::set_text(c->hlabel, fw::ty::label, friendly(c->cover).c_str());
-  c->position = p["position"] | 40;
-  c->tilt = p["tilt"] | 50;
+  c->position = num_or(p, "position", 40);
+  c->tilt = num_or(p, "tilt", 50);
   c->state = p["state"] | "open";
   if (c->state == "unknown") c->state = "unavailable";
   if (c->state.empty()) c->state = "open";  // nothing bound: the sample
   // bound to no cover: the prop is there (the sample has none) but holds no cover id ("" or an unset "$entity")
   c->none = p["cover"].is<const char *>() && c->cover.rfind("cover.", 0) != 0;
   if (c->none) c->state = "unavailable";
-  c->heading = p["heading"] | -1;
+  c->heading = num_or(p, "heading", -1);
   if (c->held == c->position) c->held = -1;  // HA caught up
   render(root);
 }
@@ -268,7 +275,7 @@ FW_COMPONENT(covers_view, "Covers view", "components", R"({
   lv_obj_t *left = box(root);
   lv_obj_set_size(left, fw::lay::card_w, fw::lay::content_h);
   ArduinoJson::JsonDocument vp;
-  vp["kind"] = p["kind"] | "roller", vp["position"] = p["position"] | 40;
+  vp["kind"] = p["kind"] | "roller", vp["position"] = num_or(p, "position", 40);
   c->vis = build("cover_visual", left, vp);
   fw::listen(left, [](lv_obj_t *, const char *name, const char *detail, void *user) {  // a drag released
     if (strcmp(name, "change")) return;
@@ -295,7 +302,7 @@ FW_COMPONENT(covers_view, "Covers view", "components", R"({
   fw::text(c->tilt_box, fw::ty::label, "slats", t.text_dim);
   c->tilt_v = fw::text(c->tilt_box, fw::ty::label, "", t.text_dim);
   ArduinoJson::JsonDocument sp;
-  sp["value"] = p["tilt"] | 50, sp["width"] = track_dp();
+  sp["value"] = num_or(p, "tilt", 50), sp["width"] = track_dp();
   c->slider = build("slider", c->tilt_box, sp);
   fw::listen(c->tilt_box, [](lv_obj_t *, const char *name, const char *detail, void *user) {
     if (strcmp(name, "change")) return;

@@ -11,15 +11,15 @@ export default {
     { name: 'shows the HA position', mount: screen(), run(t) {
       t.ha.set(E, 'open', { current_position: 60 }); t.wait(600);
       t.has(hero(t), /^60%$/, 'position');
-    }, xfail: 'facet-51' },  // covers_view reads position / tilt with `| 40`: a bound number arrives as a double -> default
+    }, },
     { name: 'Open calls open_cover', mount: screen(), run(t) {
       t.ha.set(E, 'open', { current_position: 30 }); t.wait(600);
       t.tap('OPEN'); t.call({ service: 'cover.open_cover', entity: E }, 'open call');
     } },
     { name: 'position follows HA after Open (facet-51)', mount: screen(), run(t) {
       t.ha.set(E, 'open', { current_position: 30 }); t.wait(600);
-      t.tap('OPEN'); t.wait(1200); t.has(hero(t), /^100%$/, 'position after open');
-    }, xfail: 'facet-51' },
+      t.tap('OPEN'); t.wait(1200); t.has(hero(t), /^Open$/, 'position after open (100 = Open)'); t.hasNot(hero(t), /^30%$/, 'old position');
+    }, },
     { name: 'Close calls close_cover', mount: screen(), run(t) {
       t.ha.set(E, 'open', { current_position: 60 }); t.wait(600);
       t.tap('CLOSE'); t.call({ service: 'cover.close_cover', entity: E }, 'close call');
@@ -51,7 +51,7 @@ export default {
       t.ha.set(E, 'open', { current_position: 60 }); t.wait(600);
       t.ha.set(E, 'open', { current_position: 25 }); const ev = t.wait(1200);
       t.has(hero(t), /^25%$/, 'new position'); t.silent(ev);
-    }, xfail: 'facet-51' },
+    }, },
     { name: 'unavailable blocks the controls, back again works', mount: screen(), run(t) {
       t.ha.unavailable(E); t.wait(600); const n = t.ha.calls.length;
       t.tap('OPEN'); t.tap('CLOSE'); t.eq(t.ha.calls.length, n, 'no call while unavailable');

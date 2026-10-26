@@ -27,7 +27,7 @@ int width_dp(lv_obj_t *root, const HB *h) {
   return (int) std::lround(std::min(lv_obj_get_content_width(p), (int32_t) fw::lay::card_w) / fw::D);  // at most card-w
 }
 void button_props(lv_obj_t *root, HB *h, ArduinoJson::JsonDocument &d) {
-  d["kind"] = "secondary", d["label"] = h->label, d["state"] = h->state, d["width"] = width_dp(root, h);
+  d["kind"] = "secondary", d["tap"] = false, d["label"] = h->label, d["state"] = h->state, d["width"] = width_dp(root, h);
 }
 void relabel(lv_obj_t *root, HB *h) {
   ArduinoJson::JsonDocument d;

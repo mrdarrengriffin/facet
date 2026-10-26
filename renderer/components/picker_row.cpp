@@ -139,7 +139,9 @@ void group(lv_obj_t *l, fw::Props p) {
   }
   if ((int) all.size() > n) {
     const std::string more = "+" + std::to_string(all.size() - n);
-    picker_row(l, {"none", more.c_str(), "", "dim", "default", false});
+    ArduinoJson::JsonDocument d;  // the rest, as a plain List row: not a choice (no radio, no pick)
+    list_props({"none", more.c_str(), "", "dim", "default", false}, d);
+    build("list_row", l, d);
   }
 }
 // the List row column a group sits in: items empty = its empty words (no rows of its own)

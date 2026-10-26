@@ -110,6 +110,8 @@ bool show(Device *d, const std::string &id, std::vector<lv_obj_t *> &items) {
   lv_obj_set_pos(sc, 0, lay::top);
   lv_obj_set_size(sc, lay::screen_w, lay::screen_h - lay::top);
   lv_obj_set_flex_flow(sc, LV_FLEX_FLOW_COLUMN);
+  // a content-width view (Weather 5 days) sits centred, inset to inset (facet-185: it hugged the left edge)
+  lv_obj_set_flex_align(sc, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
   build_into(sc, c, none.as<Props>());
   if (h) items.push_back(h);
   items.push_back(sc);
@@ -120,7 +122,8 @@ bool show(Device *d, const std::string &id, std::vector<lv_obj_t *> &items) {
 // chain. Back = up one level (Home > Weather > Weather view), hold Back = straight Home ("home" event).
 //   pages       a page (a deck page id or page kind, from a shortcut or a page card) and a sent screen (spec::sent:
 //               an agent's / the AI's) sit one level above Home: opening one cuts the stack to the root first, so a
-//               sent screen replaces the previous sent screen and its Back = Home.
+//               sent screen replaces the previous sent screen and its Back = Home. A page opened from a second
+//               Home page (Kitchen's header Timer) sits above that Home page: Kitchen > Timer, Back = Kitchen.
 //   the rest    a card's detail ("light?{...}"), Settings, a sub-view: one level above where it was opened from.
 //   cap         Home + 2 (MAX_DEPTH 3): at the cap the deepest screen is replaced (Back = still up one level). The
 //               Settings tree (built-in "system" screens: Settings > Screens > one screen's set) is exempt.
@@ -161,7 +164,11 @@ void run(lv_timer_t *t) {
     home_dir = at != d->stack.end();  // already on the stack: back to it
     if (home_dir) d->stack.erase(at + 1, d->stack.end());
     else {
-      if (page || spec::sent(base_of(tgt))) d->stack.resize(1);  // one level above Home
+      // one level above Home; a second Home page (Kitchen) is the parent of its own header shortcuts / pages:
+      // Kitchen > Timer > Back = Kitchen (facet-188)
+      const bool sub_home = d->stack.size() == 2 && d->stack.back().rfind("home?", 0) == 0 && tgt.rfind("home", 0) != 0;
+      if (spec::sent(base_of(tgt))) d->stack.resize(1);
+      else if (page && !sub_home) d->stack.resize(1);
       else if (d->stack.size() >= MAX_DEPTH && spec::role_of(base_of(tgt)) != "system") d->stack.pop_back();  // the cap: the deepest is replaced
       d->stack.push_back(tgt);
     }

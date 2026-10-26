@@ -26,6 +26,19 @@ export default {
       t.eq(t.stack(), ['home', 'weather'], 'weather page');
       t.tap(back(t)); t.eq(t.stack(), ['home'], 'Back = Home');
     } },
+    { name: 'a second Home page is the parent of its header shortcut: Kitchen > Timer > Back = Kitchen', async run(t) {
+      await t.device();
+      t.show('kitchen'); t.eq(t.stack().length, 2, 'Kitchen one level above Home');
+      const k = t.where();
+      t.show('timer'); t.eq(t.stack(), ['home', k, 'timer'], 'Kitchen > Timer');
+      t.tap(back(t)); t.eq(t.where(), k, 'Back = Kitchen');
+      t.tap(back(t)); t.eq(t.stack(), ['home'], 'then Home');
+    } },
+    { name: 'from Home a page still opens one level above Home', async run(t) {
+      await t.device();
+      t.show('timer'); t.eq(t.stack(), ['home', 'timer'], 'Home > Timer');
+      t.show('weather'); t.eq(t.stack(), ['home', 'weather'], 'page from a page: one level above Home');
+    } },
     { name: 'depth capped at Home + 2: the deepest is replaced', async run(t) {
       await t.device();
       t.show('moon'); t.show('moon_details'); t.show('moon_days');
