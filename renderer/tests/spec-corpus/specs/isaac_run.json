@@ -1,0 +1,185 @@
+{
+ "v": 1,
+ "id": "c_isaacrun",
+ "name": "Isaac run",
+ "rev": 1,
+ "role": "both",
+ "params": {
+  "entity": {
+   "type": "entity",
+   "domain": "binary_sensor",
+   "label": "Run",
+   "default": ""
+  },
+  "picked": {
+   "type": "hidden",
+   "default": "none"
+  }
+ },
+ "header": {
+  "label": {
+   "e": "$entity",
+   "a": "floor",
+   "s": "Basement II"
+  },
+  "back": true
+ },
+ "layout": "list",
+ "nodes": [
+  {
+   "c": "grid",
+   "p": {
+    "min": "glyph",
+    "gap": "none",
+    "rows": 2,
+    "items": {
+     "e": "$entity",
+     "a": "heart_icons",
+     "s": "person,person,person,person,person,person,person"
+    }
+   },
+   "cell": {
+    "c": "icon",
+    "p": {
+     "name": "$item.icon",
+     "fit": "cell",
+     "tone": "error"
+    }
+   }
+  },
+  {
+   "c": "grid",
+   "p": {
+    "cols": 3,
+    "gap": "group",
+    "aspect": "row"
+   }
+  },
+  {
+   "c": "stat",
+   "in": 1,
+   "slot": 0,
+   "p": {
+    "label": "coins",
+    "value": {
+     "e": "$entity",
+     "a": "coins",
+     "s": "12"
+    },
+    "tone": "text"
+   }
+  },
+  {
+   "c": "stat",
+   "in": 1,
+   "slot": 1,
+   "p": {
+    "label": "bombs",
+    "value": {
+     "e": "$entity",
+     "a": "bombs",
+     "s": "3"
+    },
+    "tone": "text"
+   }
+  },
+  {
+   "c": "stat",
+   "in": 1,
+   "slot": 2,
+   "p": {
+    "label": "keys",
+    "value": {
+     "e": "$entity",
+     "a": "keys",
+     "s": "1"
+    },
+    "tone": "text"
+   }
+  },
+  {
+   "c": "stat",
+   "in": 1,
+   "slot": 3,
+   "p": {
+    "label": "speed",
+    "value": {
+     "e": "$entity",
+     "a": "speed",
+     "s": "1.30"
+    }
+   }
+  },
+  {
+   "c": "stat",
+   "in": 1,
+   "slot": 4,
+   "p": {
+    "label": "tears",
+    "value": {
+     "e": "$entity",
+     "a": "tears",
+     "s": "3.27"
+    }
+   }
+  },
+  {
+   "c": "stat",
+   "in": 1,
+   "slot": 5,
+   "p": {
+    "label": "damage",
+    "value": {
+     "e": "$entity",
+     "a": "damage",
+     "s": "5.25"
+    },
+    "tone": "ok"
+   }
+  },
+  {
+   "c": "section_header",
+   "p": {
+    "title": "items"
+   }
+  },
+  {
+   "c": "grid",
+   "p": {
+    "min": "feature",
+    "gap": "near",
+    "rows": 3,
+    "items": {
+     "e": "$entity",
+     "a": "collectibles",
+     "s": "bolt,bell,timer,power,plane,review,pr,done,alert,bulb"
+    }
+   },
+   "cell": {
+    "c": "icon",
+    "p": {
+     "name": "$item",
+     "fit": "cell"
+    }
+   },
+   "on": {
+    "pick": {
+     "do": "screen.param",
+     "param": "picked"
+    }
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "title": "Boss",
+    "trailing": "value",
+    "value": {
+     "e": "$entity",
+     "a": "boss",
+     "s": "Monstro"
+    }
+   }
+  }
+ ]
+}

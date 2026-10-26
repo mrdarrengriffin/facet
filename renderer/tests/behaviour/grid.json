@@ -1,0 +1,29 @@
+{
+  "id": "grid",
+  "tests": [
+    {
+      "name": "tap an item cell: pick with the item",
+      "kind": "interaction",
+      "props": {
+        "cols": 4,
+        "items": "bulb,power,timer"
+      },
+      "steps": [
+        {
+          "tap": {
+            "clk": 1
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "pick",
+            "power"
+          ]
+        ]
+      }
+    }
+  ],
+  "xfail": {}
+}

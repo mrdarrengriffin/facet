@@ -1,0 +1,79 @@
+{
+ "v": 1,
+ "id": "c_griditems",
+ "name": "Devices",
+ "rev": 1,
+ "role": "both",
+ "params": {
+  "entity": {
+   "type": "entity",
+   "domain": "sensor",
+   "label": "List",
+   "default": ""
+  }
+ },
+ "header": {
+  "label": "Devices",
+  "back": true
+ },
+ "layout": "list",
+ "nodes": [
+  {
+   "c": "grid",
+   "p": {
+    "min": "feature",
+    "gap": "near",
+    "rows": 1,
+    "items": {
+     "e": "$entity",
+     "a": "icons",
+     "s": "bolt,bell,door,pr,done,plane,bulb,house,timer,power,pr,bolt,bell"
+    }
+   }
+  },
+  {
+   "c": "section_header",
+   "p": {
+    "title": "wide"
+   }
+  },
+  {
+   "c": "grid",
+   "p": {
+    "cols": 2,
+    "gap": "group",
+    "aspect": "wide",
+    "items": {
+     "e": "$entity",
+     "a": "rooms",
+     "s": "[{\"id\":\"hall\",\"icon\":\"door\"},{\"id\":\"office\",\"icon\":\"window\"}]"
+    }
+   },
+   "cell": {
+    "c": "icon",
+    "p": {
+     "name": "$item.icon",
+     "fit": "cell",
+     "tone": "dim"
+    }
+   }
+  },
+  {
+   "c": "section_header",
+   "p": {
+    "title": "empty"
+   }
+  },
+  {
+   "c": "grid",
+   "p": {
+    "cols": 4,
+    "items": {
+     "e": "$entity",
+     "a": "nothing"
+    },
+    "empty": "No devices yet"
+   }
+  }
+ ]
+}

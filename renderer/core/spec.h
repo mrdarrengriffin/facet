@@ -26,6 +26,10 @@
 //              node whose component is a LAYOUT: its meta says "slots": N and it marks its slot objects with
 //              fw::spec::SLOT, in order) instead of the screen's content box: Split = two columns, Group = a wrapping
 //              row. k counts the nodes as written; a layout node can't repeat (each).
+//   span       (2026-10-25, Grid) [cols, rows]: a node in a static Grid's cell takes that many cells (the grid places
+//              its cells in reading order into the first free place that fits; spans stay inside its cols)
+//   cell       (2026-10-25, Grid items mode) a Grid with "items" repeats this one node {c, p} per item ("$item" = the
+//              item, "$item.<key>" = a field of an object item); not a layout (no grids in grids)
 //   each       repeat the node once per item of the comma list parameter (at most EACH_MAX), "$item" in its props /
 //              actions = the item. With the list empty, once per "sample" entry (its props over "p": the factory
 //              spec's demo, so a screen shows something before a host fills the list). Expanded when the screen opens
@@ -159,7 +163,7 @@ constexpr Rule RULES[] = {
     {"lock_ring", "lock", "lock.control"},           {"hold_button", "confirm", "lock.control"},
     {"room_tile", "pick", "screen.toggle"},          {"camera_tile", "tap", "nav.back"},          {"button", "tap", "nav.open,nav.back,light.toggle,vacuum.control"},
     {"segmented", "change", "vacuum.control,screen.param"}, {"iso_floorplan", "pick", "screen.toggle"},
-    {"vacuum_mode", "change", "vacuum.control"},        // a link to a sub-view spec (moon -> moon_details -> ...)
+    {"vacuum_mode", "change", "vacuum.control"},     {"grid", "pick", "screen.param,nav.open"},        // a link to a sub-view spec (moon -> moon_details -> ...)
     {"*", "open", "nav.open"},                       // any component's own "open" (a tapped calendar day, a PR):
                                                      // its detail = the screen id [+ "?" + params JSON]
 };
@@ -382,6 +386,39 @@ inline void check_value(const PropInfo &pi, ArduinoJson::JsonVariantConst v, con
   else if (strlen(v.as<const char *>()) > 64) err(e, path, "bad_prop", pi.name + ": text over 64 characters");
 }
 // a screen spec: errors into e (empty = valid)
+// Grid + Icon rules a prop check can't see (board facet-171): span only in a static grid, inside its cols; cell only
+// with items, one non-layout node; cols xor min; an Icon's step xor fit: cell
+inline void check_grid(ArduinoJson::JsonVariantConst n, ArduinoJson::JsonArrayConst nodes, int i, const std::string &c, const std::string &p, Errs &e, int &binds) {
+  if (!n["span"].isNull()) {
+    const int k = n["in"].is<int>() ? (n["in"] | -1) : -1;
+    const bool g = k >= 0 && k < i - 1 && !strcmp(nodes[k]["c"] | "", "grid") && nodes[k]["p"]["items"].isNull();
+    const int cols = g && nodes[k]["p"]["min"].isNull() ? (nodes[k]["p"]["cols"] | 3) : 8;
+    ArduinoJson::JsonArrayConst sa = n["span"].as<ArduinoJson::JsonArrayConst>();
+    if (!g) err(e, p + ".span", "bad_span", "span goes on a node in a static grid (in: a grid with no items)");
+    else if (sa.size() != 2 || !sa[0].is<int>() || !sa[1].is<int>() || sa[0].as<int>() < 1 || sa[0].as<int>() > cols || sa[1].as<int>() < 1 || sa[1].as<int>() > 8)
+      err(e, p + ".span", "bad_span", "span is [columns 1.." + std::to_string(cols) + ", rows 1..8]");
+  }
+  if (c == "grid") {
+    if (!n["p"]["cols"].isNull() && !n["p"]["min"].isNull()) err(e, p + ".p.min", "bad_prop", "cols or min, not both");
+    if (!n["cell"].isNull() && n["p"]["items"].isNull()) err(e, p + ".cell", "bad_cell", "cell goes with items");
+  } else if (!n["cell"].isNull()) err(e, p + ".cell", "bad_cell", "only a grid has a cell");
+  if (c == "icon" && !n["p"]["step"].isNull() && strcmp(n["p"]["fit"] | "step", "step")) err(e, p + ".p.fit", "bad_prop", "step or fit: cell, not both");
+  if (n["cell"].isNull() || c != "grid") return;
+  ArduinoJson::JsonVariantConst cn = n["cell"];
+  const std::string cc = cn["c"] | "";
+  const std::vector<PropInfo> *cps = props_of(cc.c_str());
+  if (!cn.is<ArduinoJson::JsonObjectConst>() || !cps) { err(e, p + ".cell", "bad_cell", "cell is one node {c, p} of a component"); return; }
+  if (slots_of(cc.c_str())) { err(e, p + ".cell.c", "bad_cell", "a cell can't be a layout (no grids in grids)"); return; }
+  static const char *const CK[] = {"c", "p"};
+  check_keys(cn.as<ArduinoJson::JsonObjectConst>(), CK, 2, p + ".cell", e);
+  for (ArduinoJson::JsonPairConst kv : cn["p"].as<ArduinoJson::JsonObjectConst>()) {
+    const std::string k = kv.key().c_str();
+    auto it = std::find_if(cps->begin(), cps->end(), [&](const PropInfo &x) { return x.name == k; });
+    if (it == cps->end()) err(e, p + ".cell.p." + k, one_of(STYLE_KEYS, k) ? "style_key" : "unknown_prop", cc + " has no prop " + k);
+    else if (!(kv.value().is<const char *>() && strstr(kv.value() | "", "$item")))  // "$item..." is filled per item
+      check_value(*it, kv.value(), p + ".cell.p." + k, e, binds);
+  }
+}
 inline void check_screen(ArduinoJson::JsonVariantConst s, size_t bytes, Errs &e) {
   if (!s.is<ArduinoJson::JsonObjectConst>()) { err(e, "", "bad_spec", "a screen spec is an object"); return; }
   static const char *const K[] = {"v", "id", "name", "rev", "role", "params", "header", "layout", "nodes"};
@@ -419,8 +456,8 @@ inline void check_screen(ArduinoJson::JsonVariantConst s, size_t bytes, Errs &e)
   for (ArduinoJson::JsonVariantConst n : nodes) {
     const std::string p = ".nodes[" + std::to_string(i++) + "]";
     if (!n.is<ArduinoJson::JsonObjectConst>()) { err(e, p, "bad_node", "a node is an object {c, p, on}"); continue; }
-    static const char *const NK[] = {"c", "p", "on", "pending", "in", "slot", "each", "sample", "show"};
-    check_keys(n.as<ArduinoJson::JsonObjectConst>(), NK, 9, p, e);
+    static const char *const NK[] = {"c", "p", "on", "pending", "in", "slot", "each", "sample", "show", "span", "cell"};
+    check_keys(n.as<ArduinoJson::JsonObjectConst>(), NK, 11, p, e);
     if (!n["show"].isNull()) {
       if (!ha::is_bind(n["show"])) err(e, p + ".show", "bad_bind", "show is a bind {e, ...}");
       else { PropInfo si; si.name = "show"; si.type = "text"; check_value(si, n["show"], p + ".show", e, binds); }
@@ -451,6 +488,7 @@ inline void check_screen(ArduinoJson::JsonVariantConst s, size_t bytes, Errs &e)
       if (it == pis->end()) { err(e, p + ".p." + k, one_of(STYLE_KEYS, k) ? "style_key" : "unknown_prop", c + " has no prop " + k); continue; }
       check_value(*it, kv.value(), p + ".p." + k, e, binds);
     }
+    check_grid(n, nodes, i, c, p, e, binds);
     int si = 0;
     for (ArduinoJson::JsonVariantConst sm : n["sample"].as<ArduinoJson::JsonArrayConst>()) {
       const std::string sp = p + ".sample[" + std::to_string(si++) + "]";
@@ -1376,6 +1414,18 @@ inline lv_obj_t *build(lv_obj_t *parent, const std::string &id, Props opened, st
     p.set(nd["p"]);
     if (p.isNull()) p.to<ArduinoJson::JsonObject>();
     if (!nd["show"].isNull()) p[ha::SHOW_KEY] = nd["show"];  // read with the binds, applied as visibility (ha.h)
+    if (n.comp == "grid") {  // the grid lays its cells out once: the items template, its static cells' count + spans
+      if (!nd["cell"].isNull()) p["_cell"] = nd["cell"];
+      if (!nd["p"]["items"].isNull()) p["_items"] = true;
+      const int me = ni - 1 < orig.size() ? orig[ni - 1] : -1;
+      int cells = 0;
+      for (ArduinoJson::JsonVariantConst o : doc["nodes"].as<ArduinoJson::JsonArrayConst>()) {
+        if (!o["in"].is<int>() || (o["in"] | -1) != me) continue;
+        cells = std::max(cells, (o["slot"] | 0) + 1);
+        if (o["span"].is<ArduinoJson::JsonArrayConst>()) p["_spans"][std::to_string(o["slot"] | 0)] = o["span"];
+      }
+      if (cells) p["_cells"] = cells;
+    }
     lv_obj_t *into = c;  // "in": an earlier layout node's slot, or the header row
     const bool in_hdr = nd["in"].is<const char *>() && building_header();
     if (in_hdr) into = building_header();

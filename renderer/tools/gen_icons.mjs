@@ -127,6 +127,9 @@ if (process.argv[2] === '--meta') {
   L.push(`#define FW_ICON_SECTIONS ${cstr(JSON.stringify(sections.map(([id, label]) => ({ label, props: { section: id } }))))}`);
   L.push(`#define FW_ICON_GROUP_IDS ${cstr(JSON.stringify(['all', ...GROUPS]))}`);
   L.push(`#define FW_ICON_SIZE_IDS ${cstr(JSON.stringify(['all', ...SIZES]))}`);
+  L.push(`#define FW_ICON_IDS ${cstr(JSON.stringify(t.icons.map((i) => i.name)))}`);  // the Icon component's names
+  L.push(`#define FW_ICON_STEP_IDS ${cstr(JSON.stringify(SIZES))}`);  // the Icon component's steps
+  L.push(`#define FW_ICON_MIN_IDS ${cstr(JSON.stringify(['none', ...SIZES]))}`);  // the Grid's min cell
   L.push(`#define FW_WEATHER_IDS ${cstr(JSON.stringify(t.icons.filter((i) => i.kind === 'weather').map((i) => i.name)))}`);
   L.push(`#define FW_WEATHER_SIZE_IDS ${cstr(JSON.stringify(SIZES.filter((s) => t.icons.some((i) => i.kind === 'weather' && i.sizes.includes(s)))))}`);
   write(out, `${L.join('\n')}\n`);

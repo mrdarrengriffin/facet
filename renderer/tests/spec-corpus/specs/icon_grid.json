@@ -1,0 +1,134 @@
+{
+ "v": 1,
+ "id": "c_icongrid",
+ "name": "Icons",
+ "rev": 1,
+ "role": "both",
+ "params": {
+  "weather": {
+   "type": "entity",
+   "domain": "weather",
+   "label": "Weather",
+   "default": ""
+  }
+ },
+ "header": {
+  "label": "Icons",
+  "back": true
+ },
+ "layout": "list",
+ "nodes": [
+  {
+   "c": "grid",
+   "p": {
+    "cols": 4,
+    "gap": "group",
+    "aspect": "square"
+   }
+  },
+  {
+   "c": "icon",
+   "in": 0,
+   "slot": 0,
+   "span": [
+    2,
+    2
+   ],
+   "p": {
+    "name": {
+     "e": "$weather",
+     "s": "rainy",
+     "map": {
+      "sunny": "clear-day",
+      "rainy": "rain-light",
+      "cloudy": "cloudy"
+     },
+     "else": "partly-day"
+    },
+    "fit": "cell"
+   }
+  },
+  {
+   "c": "icon",
+   "in": 0,
+   "slot": 1,
+   "p": {
+    "name": "bulb",
+    "fit": "cell",
+    "tone": "accent"
+   }
+  },
+  {
+   "c": "icon",
+   "in": 0,
+   "slot": 2,
+   "p": {
+    "name": "alert",
+    "fit": "cell",
+    "tone": "warn"
+   }
+  },
+  {
+   "c": "icon",
+   "in": 0,
+   "slot": 3,
+   "p": {
+    "name": "done",
+    "fit": "cell",
+    "tone": "ok"
+   }
+  },
+  {
+   "c": "icon",
+   "in": 0,
+   "slot": 4,
+   "p": {
+    "name": "bell",
+    "fit": "cell",
+    "tone": "dim"
+   }
+  },
+  {
+   "c": "section_header",
+   "p": {
+    "title": "today"
+   }
+  },
+  {
+   "c": "grid",
+   "p": {
+    "cols": 3,
+    "gap": "group",
+    "aspect": "row"
+   }
+  },
+  {
+   "c": "stat",
+   "in": 7,
+   "slot": 0,
+   "p": {
+    "label": "high",
+    "value": "14°"
+   }
+  },
+  {
+   "c": "stat",
+   "in": 7,
+   "slot": 1,
+   "p": {
+    "label": "low",
+    "value": "6°"
+   }
+  },
+  {
+   "c": "stat",
+   "in": 7,
+   "slot": 2,
+   "p": {
+    "label": "rain",
+    "value": "40%",
+    "tone": "warn"
+   }
+  }
+ ]
+}

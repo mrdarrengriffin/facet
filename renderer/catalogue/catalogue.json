@@ -453,8 +453,8 @@
     ]
    },
    "cost": {
-    "objects": 336,
-    "bytes_est": 53760
+    "objects": 335,
+    "bytes_est": 53600
    }
   },
   "camera_tile": {
@@ -2315,6 +2315,98 @@
     "bytes_est": 8640
    }
   },
+  "grid": {
+   "name": "Grid",
+   "update": true,
+   "props": [
+    {
+     "name": "cols",
+     "type": "range",
+     "bindable": true,
+     "min": 1,
+     "max": 8,
+     "about": "How many columns, 1 to 8. Leave it out when min is set."
+    },
+    {
+     "name": "min",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "none",
+      "small",
+      "icon",
+      "glyph",
+      "detail",
+      "feature",
+      "card",
+      "hero"
+     ],
+     "about": "Instead of cols: the smallest cell, as an icon size step; the grid fits as many columns as it can, so a bigger screen gets more columns. none uses cols."
+    },
+    {
+     "name": "gap",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "none",
+      "near",
+      "group",
+      "block"
+     ],
+     "about": "The space between cells: none, near, group or block (from tight to roomy)."
+    },
+    {
+     "name": "aspect",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "square",
+      "wide",
+      "row"
+     ],
+     "about": "The cell shape: square, wide (16 by 9), or row (as tall as what is inside, for text like stats)."
+    },
+    {
+     "name": "rows",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 8,
+     "about": "At most this many rows; 0 for no limit. A list of items that does not fit shows a last cell with +N for the rest."
+    },
+    {
+     "name": "items",
+     "type": "text",
+     "bindable": true,
+     "about": "The list to repeat one cell per item: a comma list or a JSON list, usually bound to an entity attribute. Each cell is the node's cell template with $item (or $item.field) filled in; without a template, an icon named by the item."
+    },
+    {
+     "name": "empty",
+     "type": "text",
+     "bindable": true,
+     "about": "The words shown when the items list is empty."
+    },
+    {
+     "name": "outline",
+     "type": "bool",
+     "bindable": true,
+     "about": "For previews only: outlines and names the cells so you can see where things go."
+    }
+   ],
+   "events": {
+    "pick": [
+     "screen.param",
+     "nav.open"
+    ],
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 7,
+    "bytes_est": 1120
+   }
+  },
   "group": {
    "name": "Group",
    "update": true,
@@ -2554,6 +2646,149 @@
    "cost": {
     "objects": 7,
     "bytes_est": 1120
+   }
+  },
+  "icon": {
+   "name": "Icon",
+   "update": true,
+   "props": [
+    {
+     "name": "name",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "back",
+      "chevron",
+      "chevron-left",
+      "chevron-down",
+      "close",
+      "plus",
+      "minus",
+      "check",
+      "play",
+      "pause",
+      "next",
+      "prev",
+      "volume",
+      "speaker",
+      "speakers",
+      "tv",
+      "stream",
+      "auto",
+      "power",
+      "bulb",
+      "timer",
+      "washer",
+      "vacuum",
+      "venetian",
+      "curtain",
+      "roller",
+      "bolt",
+      "agent",
+      "bell",
+      "person",
+      "done",
+      "alert",
+      "pr",
+      "review",
+      "clear-day",
+      "clear-night",
+      "partly-day",
+      "partly-night",
+      "cloudy",
+      "fog",
+      "rain-light",
+      "rain-heavy",
+      "showers-day",
+      "showers-night",
+      "snow",
+      "sleet",
+      "thunder",
+      "thunder-rain",
+      "hail",
+      "wind",
+      "exceptional",
+      "screen-agents",
+      "screen-clock",
+      "screen-energy",
+      "screen-github",
+      "screen-home",
+      "screen-light",
+      "screen-lightning",
+      "screen-calendar",
+      "screen-overhead",
+      "screen-moon",
+      "screen-thermostat",
+      "screen-covers",
+      "screen-switch",
+      "screen-print",
+      "screen-media",
+      "screen-settings",
+      "screen-timer",
+      "screen-toasts",
+      "screen-weather",
+      "screen-bins",
+      "door",
+      "window",
+      "thermometer",
+      "house",
+      "plane",
+      "sport-goal",
+      "sport-card",
+      "sport-sub",
+      "sport-tennis-ball"
+     ],
+     "about": "Which icon to show, by its name in the icon set (bulb, door, clear-day ...). Bind it to an entity with a map to change the icon with the entity's state; a name with no icon shows a quiet outlined box."
+    },
+    {
+     "name": "step",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "small",
+      "icon",
+      "glyph",
+      "detail",
+      "feature",
+      "card",
+      "hero"
+     ],
+     "about": "How big the icon is, as a size step from small up to hero. Each icon is made for some sizes only, so the icon snaps down to the nearest size it has. Leave it out when fit is cell."
+    },
+    {
+     "name": "fit",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "step",
+      "cell"
+     ],
+     "about": "step: the size comes from step. cell: inside a grid cell or a layout slot, the icon takes the largest size that fits the cell, leaving a small margin. Use step or cell, not both."
+    },
+    {
+     "name": "tone",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "ink",
+      "dim",
+      "accent",
+      "ok",
+      "warn",
+      "error",
+      "info"
+     ],
+     "about": "The icon's colour by what it means: ink for normal, dim for quiet, accent for the screen's colour, ok, warn, error or info for a status."
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 3,
+    "bytes_est": 480
    }
   },
   "icon_button": {
@@ -6057,5 +6292,5 @@
    }
   }
  },
- "hash": "2dba8209"
+ "hash": "74672fde"
 }
