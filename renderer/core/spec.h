@@ -10,8 +10,9 @@
 //                                                          Settings > Screens and the workbench build their controls
 //                                                          from it (entity / entities = one / a comma list of
 //                                                          `domain` ids, filled by the host's discovery)
-//               "header": {"label": "Office", "back": true, "settings"?: false},   settings = the chrome's
-//                                                          settings button (a Home)
+//               "header": {"label": "Office", "settings"?: false},   settings = the chrome's settings button (a
+//                                                          Home). Back is the renderer's (facet-188): every screen
+//                                                          but the device's root has it; "back" is accepted, ignored
 //               "layout": "list" | "center" | "cards",    list = one scrolling column (rows touch), center = one node
 //                                                          centred in the content box, cards = the card grid
 //               "nodes": [node...]}
@@ -161,7 +162,7 @@ constexpr Rule RULES[] = {
     {"media_view", "media", "media.control"},        {"media_view", "speaker", "screen.param"},
     {"covers_view", "cover", "cover.control"},       {"covers_view", "window", "screen.param"},
     {"lock_ring", "lock", "lock.control"},           {"hold_button", "confirm", "lock.control"},
-    {"room_tile", "pick", "screen.toggle"},          {"camera_tile", "tap", "nav.back"},          {"button", "tap", "nav.open,nav.back,light.toggle,vacuum.control"},
+    {"room_tile", "pick", "screen.toggle"},          {"camera_tile", "tap", "nav.back"},          {"tile", "tap", "nav.open"},          {"button", "tap", "nav.open,nav.back,light.toggle,vacuum.control"},
     {"segmented", "change", "vacuum.control,screen.param"}, {"iso_floorplan", "pick", "screen.toggle"},
     {"vacuum_mode", "change", "vacuum.control"},     {"grid", "pick", "screen.param,nav.open"},        // a link to a sub-view spec (moon -> moon_details -> ...)
     {"*", "open", "nav.open"},                       // any component's own "open" (a tapped calendar day, a PR):
@@ -659,6 +660,9 @@ inline const char *factory(const std::string &id) {
     if (id == f.id) return f.json;
   return nullptr;
 }
+// a sent screen (facet-188): a live spec screen with no factory copy (an agent's / the AI's). It opens one level
+// above Home and replaces the previous sent screen (core/device.cpp "Navigation").
+inline bool sent(const std::string &id) { return !factory(id) && S().over.count(id); }
 inline const char *screen_json(const std::string &id) {
   auto it = S().over.find(id);
   if (it != S().over.end()) return it->second.c_str();
@@ -1396,7 +1400,7 @@ inline lv_obj_t *build(lv_obj_t *parent, const std::string &id, Props opened, st
   ArduinoJson::JsonDocument hd;
   const char *hl = doc["header"]["label"] | "";
   hd["label"] = *hl ? hl : (doc["name"] | "");  // "$name" left empty = the spec's name
-  hd["back"] = !at_root && (doc["header"]["back"] | true);
+  hd["back"] = !at_root;  // the renderer owns Back (facet-188): a spec cannot remove it
   hd["settings"] = doc["header"]["settings"] | false;  // the settings button in the chrome (Home)
   if (doc["header"]["actions"].is<ArduinoJson::JsonObjectConst>()) hd["actions"] = doc["header"]["actions"];  // a Home's header actions
   {  // opened for one entity (a Home card's detail): the header names it, the card's label else its friendly name

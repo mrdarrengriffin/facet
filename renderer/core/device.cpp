@@ -116,13 +116,18 @@ bool show(Device *d, const std::string &id, std::vector<lv_obj_t *> &items) {
   return true;
 }
 
-// Navigation (screen model §3; Darren 2026-10-25: Back always returns to the previous screen): every go pushes, a page
-// (a deck page id or page kind, from a shortcut or a page card) as much as a card's detail ("light?{...}") or Settings,
-// so Kitchen -> Timer -> Back = Kitchen. A screen already on the stack is gone back to (the stack is cut after it, no
-// loops). At most MAX_DEPTH deep: at the cap the oldest screen after the start page is forgotten (Back still steps
-// through the rest and ends on the start page). A deck page id becomes what shows it: a Home = "home" (the start page)
-// or "home?{"page":"<id>"}", another page = its kind.
-constexpr size_t MAX_DEPTH = 8;
+// Navigation (facet-188, Darren 2026-10-26): a hierarchy, Home (the stack's root) at the bottom, never a long back
+// chain. Back = up one level (Home > Weather > Weather view), hold Back = straight Home ("home" event).
+//   pages       a page (a deck page id or page kind, from a shortcut or a page card) and a sent screen (spec::sent:
+//               an agent's / the AI's) sit one level above Home: opening one cuts the stack to the root first, so a
+//               sent screen replaces the previous sent screen and its Back = Home.
+//   the rest    a card's detail ("light?{...}"), Settings, a sub-view: one level above where it was opened from.
+//   cap         Home + 2 (MAX_DEPTH 3): at the cap the deepest screen is replaced (Back = still up one level). The
+//               Settings tree (built-in "system" screens: Settings > Screens > one screen's set) is exempt.
+//   loops       a screen already on the stack is gone back to (the stack is cut after it).
+// A deck page id becomes what shows it: a Home = "home" (the start page) or "home?{"page":"<id>"}", another page =
+// its kind. Sending a spec never opens it (core/spec.h apply -> reload): only a show (/fw/show, facet_show) does.
+constexpr size_t MAX_DEPTH = 3;
 std::string target_of(const std::string &id, bool &page) {
   const std::string base = base_of(id);
   page = false;
@@ -152,12 +157,12 @@ void run(lv_timer_t *t) {
     bool page = false;
     const std::string tgt = target_of(d->target, page);
     if (!known(tgt) || (!d->stack.empty() && d->stack.back() == tgt)) return;
-    (void) page;  // pages push like everything else (Back = the previous screen)
     auto at = std::find(d->stack.begin(), d->stack.end(), tgt);
     home_dir = at != d->stack.end();  // already on the stack: back to it
     if (home_dir) d->stack.erase(at + 1, d->stack.end());
     else {
-      if (d->stack.size() >= MAX_DEPTH) d->stack.erase(d->stack.begin() + 1);  // depth cap: the oldest after the start goes
+      if (page || spec::sent(base_of(tgt))) d->stack.resize(1);  // one level above Home
+      else if (d->stack.size() >= MAX_DEPTH && spec::role_of(base_of(tgt)) != "system") d->stack.pop_back();  // the cap: the deepest is replaced
       d->stack.push_back(tgt);
     }
   } else if (op == BACK) {
@@ -191,6 +196,7 @@ void queue(lv_obj_t *in, Op op, const char *id) {
 void on_emit(lv_obj_t *from, const char *name, const char *detail, void *) {
   if (!strcmp(name, "navigate")) queue(from, GO, detail);
   else if (!strcmp(name, "back")) queue(from, BACK, nullptr);
+  else if (!strcmp(name, "home")) queue(from, HOME, nullptr);  // hold Back (components/back_button.cpp)
 }
 
 // ---- settings (device.h "settings")
@@ -378,9 +384,8 @@ void reload(const char *id) {
     const std::string top = base_of(d->stack.back());
     if (!strcmp(id, "deck")) {  // the deck changed: screens it no longer has leave the stack; Home shows the new cards
       while (d->stack.size() > 1 && !known(d->stack.back())) d->stack.pop_back();
-    } else if (top != id) {  // a sent screen that isn't showing: open it (Darren 2026-10-23: a send must show)
-      if (strcmp(id, "all")) go(d->root, id);
-      continue;
+    } else if (top != id) {  // a sent screen that isn't showing stays where it is (facet-188: a send never takes
+      continue;               // over the display; the sender shows it with /fw/show or facet_show)
     }
     d->reloaded = id;
     if (!d->restyle) d->restyle = lv_timer_create(restyle_tick, 30, d);

@@ -210,7 +210,7 @@
       }
     },
     {
-      "name": "a page from a page card and a header shortcut pushes; Back returns to where you came from (Kitchen -> Timer -> Back = Kitchen)",
+      "name": "a page from a Home page's header shortcut sits one level above Home: Back = Home (facet-188; was Back = Kitchen)",
       "kind": "interaction",
       "steps": [
         {
@@ -266,10 +266,7 @@
             "home"
           ]
         ],
-        "stack": [
-          "home",
-          "home"
-        ]
+        "stack": ["home"]
       }
     },
     {

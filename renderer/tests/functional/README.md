@@ -39,6 +39,8 @@ export default {
 
 - **Mount:** `mount: [comp, props]` or `await t.mount(comp, props)`; `await t.device(deck?)`; `t.update(props)` = the
   update path (fw_update); `t.wait(ms)`.
+- **Navigation (device):** `t.send(spec)` = a sent spec (stored, never shown: facet-188), `t.unsend(id)` (revert),
+  `t.show(id)` = what POST /fw/show does (`home` = straight Home), `t.stack()` (ids, root first), `t.where()` (the top).
 - **Touch:** `t.tap(sel)`, `t.hold(sel, ms?)`, `t.drag(sel, {by: [dx, dy]} | {toX} | {from: [x, y], ...})`. Each returns
   the events + sounds it caused (after settling, HA answers included). Selectors: `'TEXT'` (exact, as drawn: labels
   may be upper case), `/re/`, `{clk: i}`, `{type: 'arc'}`, `{at: [x, y]}`, or a box.
@@ -58,7 +60,8 @@ export default {
 
 ## Families still to cover (one agent per family)
 
-Done: button, slider (controls), entity_tile, readout (cards; incl. Home light + sensor cards on the device).
+Done: button, slider (controls), entity_tile, readout (cards; incl. Home light + sensor cards on the device), device
+(navigation rules, facet-188).
 
 1. **Controls + inputs:** toggle, checkbox, radio, segmented, hold_button, icon_button, speaker_button, back_button,
    dial, thermostat_dial, picker_row, check_row, list_row, more_row, focus_ring, scroll_track, bottom_sheet, toast,

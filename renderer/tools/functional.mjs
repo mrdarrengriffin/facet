@@ -105,6 +105,20 @@ class Ctx {
     }
     return this;
   }
+  // -- the device's navigation (facet-188): send a spec (stored, never shown), show a screen (= POST /fw/show), the stack
+  send(spec) {
+    const r = JSON.parse(this.b.spec('screen', spec) || '{}'); this.b.settle(1500); this.b.events();
+    this.log.push(`send ${spec.id}: ${r.status}${r.errors ? ' ' + JSON.stringify(r.errors).slice(0, 160) : ''}`);
+    return r;
+  }
+  unsend(id) { this.b.spec('revert', id); this.b.settle(1500); this.b.events(); }
+  show(id) {
+    const e = this.b.str(id, (p) => this.b.m.UTF8ToString(this.b.m._fw_bench_nav(p, id === 'home' ? 2 : 0)));
+    this.b.settle(1500); this.ha.push(); this.b.settle(1500); this.log.push(`show ${id}${e ? ': ' + e : ''}`);
+    return this.b.events();
+  }
+  stack() { return (JSON.parse(this.b.str('stack', (c) => this.b.str('', (a) => this.b.m.UTF8ToString(this.b.m._fw_test(c, a))))) || [])[0]?.stack || []; }
+  where() { return this.stack().at(-1); }
   update(props) {  // the component's update path (fw_update), as a host pushing new props
     this.props = { ...this.props, ...props };
     const r = this.b.update(this.comp, this.props); this.b.settle(1500);
