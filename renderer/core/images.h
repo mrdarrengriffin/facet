@@ -3,7 +3,7 @@
 // is see-through: a rounded corner, a transparent PNG), dithered to 565 (pixel art: nearest, never dithered).
 // Sources: the host fetches each wanted URL and hands the DECODED pixels to put() (RGBA8888, any size up to
 // budget().src_max_px) or says fail(). WASM: the browser decodes (the hub proxy for CORS), core/main.cpp
-// fw_img_put / fw_img_fail; the panel (piece 2): its own HTTP fetch + JPEG/PNG decoder feeds the same put().
+// fw_img_put / fw_img_fail; the panel (piece 2, facet firmware/fw_images.h): its own HTTP fetch + JPEG/PNG decoder feeds the same put().
 // Cache: every view's pixels count against ONE per-board byte cap (budget().cache_bytes: Guition 512 KB, Waveshare
 // 3 MB); a new view that doesn't fit first evicts views nothing shows (least recently used first), and if it still
 // doesn't fit it is refused (the component shows its fallback): the cap is never exceeded. Views nothing shows stay
@@ -23,6 +23,7 @@ struct Budget {
   int src_max_px;      // a source image this big (w x h) at most; bigger = failed "too big"
   int timeout_ms;      // a wanted URL that hasn't come in by then = failed "timeout"
   const char *board;
+  size_t body_max;     // the panel's download of one picture, at most (compressed bytes; fw_images.h)
 };
 const Budget &budget();
 // a view's owner hears about every change of its view (pixels in, failed) through this
@@ -38,6 +39,7 @@ const char *error(void *owner);             // "" | "404" | "timeout" | "too big
 std::vector<std::string> wants();  // URLs waiting for bytes, each listed once until put/fail
 void put(const char *src, int w, int h, const uint8_t *rgba);
 void fail(const char *src, const char *why);
+bool waiting(const char *src);  // a view still wants this URL (false once put / fail / timeout, or the screen was left)
 void refresh(const char *src);  // fetch a URL again (its views keep their pixels until the new ones come; a failure keeps them)
 std::string stats();  // JSON {board, cap, bytes, peak, views, shown, evicted, dropped, refused, pending, fetches}
 }  // namespace fw::img
