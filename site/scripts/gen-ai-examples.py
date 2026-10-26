@@ -8,6 +8,7 @@ import json, os
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..')
 DEMO = {}
+REACT = {}
 
 
 def b(e, s, a=None, **kw):
@@ -54,7 +55,10 @@ def chip(text, tone='ok', pulse=False):
 EX = []
 
 
-def ex(id, title, about, prompt, nodes, layout='list', better=None, label=None):
+def ex(id, title, about, prompt, nodes, layout='list', better=None, label=None, react=None):
+    """react: the docs' fake Home Assistant reactions (site/src/lib/sample-ha.ts): what a tap on this screen changes, as
+    rules {ev: event name, is: detail (a regex, whole), set: {"entity|attr": value, "$" = the detail}, add: {"entity|attr": n}}"""
+    if react: REACT[id] = react
     EX.append({'id': id, 'title': title, 'about': about, 'prompt': prompt, 'better': better or '',
                'spec': {'v': 1, 'id': id, 'name': title, 'rev': 1, 'role': 'page',
                         'header': {'label': label or title, 'back': True}, 'layout': layout, 'nodes': nodes}})
@@ -132,14 +136,19 @@ ex('shopping', 'Shopping list', 'A tick-off shopping list from a Home Assistant 
    page(sec('to buy', count=b('todo.shopping', '5'), tone='info'),
         check('Oat milk'), check('Sourdough loaf'), check('Bananas'), check('Washing-up liquid'), check('Coffee beans'),
         sec('in the basket'), check('Eggs', 'done'), check('Tomatoes', 'done')),
-   better='The checkboxes are written out: a to-do list bound as real rows (one checkbox per item) is still to come.')
+   better='The checkboxes are written out: a to-do list bound as real rows (one checkbox per item) is still to come.',
+   react=[{'ev': 'toggle', 'is': 'done', 'add': {'todo.shopping': -1}}, {'ev': 'toggle', 'is': 'open', 'add': {'todo.shopping': 1}}])
 
 ex('hot_water', 'Hot water', 'The hot water tank: its temperature on a dial, the mode and what heats it.',
    'Make a Facet screen "Hot water" for water_heater.tank: a dial with the tank temperature from 40 to 65°, a three-way mode switch (off, auto, boost) and two facts: what heats it now and the next boost.',
    page(N('dial', value=b('water_heater.tank', '52', 'current_temperature'), min=40, max=65, step=1, unit='°', caption='Tank', on=True),
         N('segmented', options='Off,Auto,Boost', selected=b('water_heater.tank', 'auto', 'operation_mode'), width='fill'),
         grid([stat('heated by', b('sensor.tank_source', 'Solar'), 'ok'), stat('next boost', b('sensor.tank_next_boost', '17:00'))], cols=2, gap='group', aspect='row')),
-   better='The dial and mode switch show the tank but cannot set it yet: their actions are for lights and the vacuum only.')
+   better='The dial and mode switch show the tank but cannot set it yet: their actions are for lights and the vacuum only.',
+   react=[{'ev': 'change', 'is': r'\d+', 'set': {'water_heater.tank|current_temperature': '$'}},
+          {'ev': 'change', 'is': 'boost', 'set': {'water_heater.tank|operation_mode': 'boost', 'sensor.tank_source': 'Boost', 'sensor.tank_next_boost': 'on · 45 min'}},
+          {'ev': 'change', 'is': 'auto', 'set': {'water_heater.tank|operation_mode': 'auto', 'sensor.tank_source': 'Solar', 'sensor.tank_next_boost': '17:00'}},
+          {'ev': 'change', 'is': 'off', 'set': {'water_heater.tank|operation_mode': 'off', 'sensor.tank_source': 'Off', 'sensor.tank_next_boost': 'none'}}])
 
 ex('bin_day', 'Bin day', 'Which bins go out next, a reminder chip on the night and each bin with its next date.',
    'Make a Facet screen "Bin day": a big count of days until the next collection (sensor.bin_days) with a chip that pulses on the night before, then a grid of each bin with its next date.',
@@ -170,7 +179,8 @@ ex('front_door', 'Front door', 'The front door at a glance: open or shut, someon
         N('readout', label='Outside', icon='thermometer', state=b('sensor.porch_temperature', '9', tpl='{}°'), detail='feels like 6°', tone='text'),
         sec('porch'),
         N('list_row', title='Porch light', icon='bulb', trailing='toggle', on=b('light.porch', 'on', map={'on': '1'}, **{'else': '0'}))),
-   better='The door cannot be locked from here: the lock parts are still in progress.')
+   better='The door cannot be locked from here: the lock parts are still in progress.',
+   react=[{'ev': 'toggle', 'is': 'on|off', 'set': {'light.porch': '$'}}])
 
 ex('energy_price', 'Energy price', "The electricity price now as a big number and today's prices as a bar chart, coloured cheap to peak.",
    'Make a Facet screen "Energy price" from my Octopus Agile sensors: the price now big in pence per kWh, a bar chart of the 24 hourly prices coloured by band with now marked, a key and the cheapest slot.',
@@ -195,7 +205,11 @@ ex('kitchenradio', 'Kitchen radio', 'What the kitchen speaker is playing, drawn 
           artist=b('media_player.kitchen', 'Neil Young', 'media_artist')),
         grid([N('icon_button', style='round', icon='prev'), N('icon_button', style='play', icon='play'), N('icon_button', style='round', icon='next')], cols=3, gap='group', aspect='row'),
         N('slider', value=b('media_player.kitchen', '35', 'volume_pct'), min=0, max=100, step=5, width=288)),
-   better='The buttons and slider show the player but cannot control it yet: media actions are still to come.')
+   better='The buttons and slider show the player but cannot control it yet: media actions are still to come.',
+   react=[{'ev': 'toggle', 'is': 'play', 'set': {'media_player.kitchen': 'playing'}}, {'ev': 'toggle', 'is': 'pause', 'set': {'media_player.kitchen': 'paused'}},
+          {'ev': 'tap', 'is': 'next', 'set': {'media_player.kitchen|media_title': 'Old Man', 'media_player.kitchen|media_progress': '0'}},
+          {'ev': 'tap', 'is': 'prev', 'set': {'media_player.kitchen|media_title': 'Harvest Moon', 'media_player.kitchen|media_progress': '0'}},
+          {'ev': 'change', 'set': {'media_player.kitchen|volume_pct': '$'}}])
 
 ex('focus', 'Focus', 'A focus timer: the time left big, a dot per session of the day, the session length and start / skip.',
    'Make a Facet screen "Focus" for a pomodoro timer (timer.focus): the time left big, a row of four session icons (done ones ticked), a three-way choice of focus, short or long break, and start and skip buttons.',
@@ -203,7 +217,11 @@ ex('focus', 'Focus', 'A focus timer: the time left big, a dot per session of the
         grid([], cell=N('icon', name='$item', fit='cell', tone='accent'), cols=4, gap='near', aspect='row', empty='No sessions yet', items=b('sensor.focus_sessions', 'check,check,minus,minus')),
         N('segmented', options='Focus,Short,Long', selected=b('input_select.focus_mode', 'focus'), width='fill'),
         grid([N('button', kind='primary', label='Pause', width=0), N('button', kind='secondary', label='Skip', width=0)], cols=2, gap='group', aspect='row')),
-   better='The big time is fixed text from the timer: a live countdown is still to come.')
+   better='The big time is fixed text from the timer: a live countdown is still to come.',
+   react=[{'ev': 'change', 'is': 'focus', 'set': {'input_select.focus_mode': 'focus', 'timer.focus|remaining': '25:00'}},
+          {'ev': 'change', 'is': 'short', 'set': {'input_select.focus_mode': 'short', 'timer.focus|remaining': '05:00'}},
+          {'ev': 'change', 'is': 'long', 'set': {'input_select.focus_mode': 'long', 'timer.focus|remaining': '15:00'}},
+          {'ev': 'tap', 'is': 'Skip', 'set': {'sensor.focus_sessions': 'check,check,check,minus', 'timer.focus|remaining': '05:00'}}])
 
 ex('homelab', 'Homelab', 'Servers at a glance: a chip per server, the NAS load as a line and its CPU, memory and disk.',
    'Make a Facet screen "Homelab": a grid of status chips, one per server (NAS, Proxmox, Backup box, Router), the backup box one in warning, then the NAS CPU over the last hour as a line and four facts: CPU, memory, disk and uptime.',
@@ -232,7 +250,9 @@ ex('run_weather', 'Run weather', 'Is it good for a run or a ride: a big weather 
         N('status_chip', tone='ok', text=b('sensor.run_verdict', 'Good for a run · dry until 18:00')),
         N('segmented', options='Run,Ride', selected=b('input_select.activity', 'run'), width='fill'),
         grid([stat('wind', b('weather.home', '12', 'wind_speed', tpl='{} km/h')), stat('rain', b('sensor.rain_chance', '5', tpl='{}%'), 'ok'),
-              stat('uv', b('sensor.uv_index', '2', tpl='{} low')), stat('sunset', b('sun.sun', '17:41', 'next_setting'))], cols=2, gap='group', aspect='row')))
+              stat('uv', b('sensor.uv_index', '2', tpl='{} low')), stat('sunset', b('sun.sun', '17:41', 'next_setting'))], cols=2, gap='group', aspect='row')),
+   react=[{'ev': 'change', 'is': 'ride', 'set': {'input_select.activity': 'ride', 'sensor.run_verdict': 'Good for a ride · light wind'}},
+          {'ev': 'change', 'is': 'run', 'set': {'input_select.activity': 'run', 'sensor.run_verdict': 'Good for a run · dry until 18:00'}}])
 
 ex('guest_wifi', 'Guest Wi-Fi', 'A QR code guests scan to join the Wi-Fi, with the network name and password beside it.',
    'Make a Facet screen "Guest Wi-Fi" with a QR code for my guest network (WIFI:T:WPA;S:Guest;P:<password>;;) that phones can scan, and the name and password written under it.',
@@ -261,7 +281,10 @@ ex('bedside', 'Bedside', 'A bedside clock: a ring clock with the date, the alarm
    'Make a Facet screen "Bedside": a ring clock with the date, a switch row for my alarm (input_boolean.alarm, the time in sensor.alarm_time) and a slider for the bedside lamp (light.bedside).',
    page(N('clock_face', face='ring', font='mono', format='24h', date='short', seconds=False),
         N('list_row', title='Alarm', sub=b('sensor.alarm_time', '06:45'), icon='none', trailing='toggle', on=b('input_boolean.alarm', 'on', map={'on': '1'}, **{'else': '0'})),
-        N('slider', value=b('light.bedside', '30', 'brightness_pct'), min=0, max=100, step=5, width=288)))
+        N('slider', value=b('light.bedside', '30', 'brightness_pct'), min=0, max=100, step=5, width=288)),
+   react=[{'ev': 'toggle', 'is': 'on', 'set': {'input_boolean.alarm': 'on', 'sensor.alarm_time': '06:45'}},
+          {'ev': 'toggle', 'is': 'off', 'set': {'input_boolean.alarm': 'off', 'sensor.alarm_time': 'Off'}},
+          {'ev': 'change', 'set': {'light.bedside|brightness_pct': '$'}}])
 
 ex('fixtures', 'Fixtures', 'The last score as a scoreboard, the form and league place, then the next fixtures as real rows.',
    'Make a Facet screen "Fixtures" for my football team from the TeamTracker sensor (sensor.team): the last result as a scoreboard (both teams and scores), a chip for the result and league position, then the next fixtures from the attribute next, a JSON list of {m: match, d: date}.',
@@ -285,5 +308,7 @@ with open(os.path.join(ROOT, 'site/src/lib/ai-examples.json'), 'w') as f:
 with open(os.path.join(ROOT, 'renderer/tools/demo_ha_examples.mjs'), 'w') as f:
     f.write('// GENERATED by site/scripts/gen-ai-examples.py: the demo Home Assistant values of the "Make screens with AI" examples\n'
             '// (renderer/specs/ai-examples), the same as each bind\'s sample. Made-up devices, not a real home.\n'
-            'export const EXAMPLES = ' + json.dumps(DEMO, ensure_ascii=False, indent=1) + ';\n')
+            'export const EXAMPLES = ' + json.dumps(DEMO, ensure_ascii=False, indent=1) + ';\n'
+            '// what a tap on each example changes in the docs\' fake Home Assistant (site/src/lib/sample-ha.ts), by screen id\n'
+            'export const REACTIONS = ' + json.dumps(REACT, ensure_ascii=False, indent=1) + ';\n')
 print(len(EX), 'examples')

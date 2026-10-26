@@ -3,7 +3,7 @@
 // in the header (Base.astro) and re-render every stage. The engine module (~1 MB) loads only when the first preview
 // comes into view.
 import { Engine, type Stage } from '../lib/engine';
-import { feedSampleHa } from '../lib/sample-ha';
+import { fakeHaEvent, fakeHaState, feedSampleHa } from '../lib/sample-ha';
 import { getPrefs, onPrefs, setPrefs, type Prefs } from './prefs';
 import { playUi, setVolume } from './sound';
 import site from '../data/site.json';
@@ -17,7 +17,9 @@ type Item = { el: HTMLElement; comp: string; props: Record<string, unknown>; lab
   /** a screen spec's JSON to install before the first draw (Live spec) */
   spec?: string;
   /** a finger is down on the canvas */
-  held?: boolean };
+  held?: boolean;
+  /** the screen the stage shows now (its "screen" events; a fake HA reaction is per screen) */
+  screen?: string };
 
 // No demo reset (Darren 2026-10-25): a demo keeps its state until the page is left (it was rebuilt with its original
 // props a moment after the last interaction).
@@ -122,7 +124,7 @@ async function ensure(p: Prefs): Promise<Engine> {
   loading = Engine.load(DEN[p.device].den, ROOT).then((e) => {
     if (loadedFor !== p.device) { e.dispose(); return loading!; }
     engine?.dispose();
-    for (const it of items) { it.stage = undefined; clearTimeout(it.timer); it.held = false; }
+    for (const it of items) { it.stage = undefined; clearTimeout(it.timer); it.held = false; it.screen = undefined; }
     engine = e;
     feedSampleHa(e);
     accentSets = e.tokens.accent.sets;
@@ -132,6 +134,11 @@ async function ensure(p: Prefs): Promise<Engine> {
     e.onEvent = (ev, s) => {
       if (ev.kind === 'sound') void playUi(ev.name, ev.detail);
       if (ev.kind === 'event' && ev.name === 'setting') fromPanel(ev.detail);
+      if (ev.kind === 'event') {  // the fake HA (lib/sample-ha.ts): an action or a screen's reaction changes the demo entities
+        const it = items.find((i) => i.stage === s);
+        if (it && ev.name === 'screen') it.screen = ev.detail;
+        else if (it) fakeHaEvent(it.screen ?? String(it.props.screen ?? it.props.start ?? 'home'), ev.name, ev.detail);
+      }
       log(ev.kind, ev.name, ev.detail, s?.label ?? '');
     };
     document.documentElement.dataset.live = 'ready';
@@ -202,7 +209,7 @@ function log(kind: string, name: string, detail: string, from: string) {
 
 export function initLive() {
   // debugging / tests: the page's engine and previews
-  (window as unknown as { __facetDocs: unknown }).__facetDocs = { engine: () => engine, items, setting: (id: string, v: string | null = null) => (engine ? setting(engine, id, v) : '') };
+  (window as unknown as { __facetDocs: unknown }).__facetDocs = { engine: () => engine, items, ha: fakeHaState, setting: (id: string, v: string | null = null) => (engine ? setting(engine, id, v) : '') };
   const io = new IntersectionObserver((xs) => {
     for (const x of xs) if (x.isIntersecting) { io.unobserve(x.target); const it = items.find((i) => i.el === x.target); if (it) void show(it); }
   }, { rootMargin: '400px 0px' });

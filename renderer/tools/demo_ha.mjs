@@ -2,7 +2,10 @@
 // (site/src/lib/sample-ha.ts): neither has a Home Assistant, so every (entity, attribute) a screen binds gets a
 // believable value (a track playing, the ceiling light at 70 %, temperatures, doors closed, battery levels). Made-up
 // devices, not a real home. Plain JS (one sibling import): node and the site's bundler both load it.
-import { EXAMPLES } from './demo_ha_examples.mjs';
+import { EXAMPLES, REACTIONS } from './demo_ha_examples.mjs';
+
+/** what a tap on a screen changes in the docs' fake Home Assistant (site/src/lib/sample-ha.ts), by screen id */
+export { REACTIONS };
 
 /** values for the demo deck's own entities (renderer/specs/deck.json and the specs' defaults) */
 export const DEMO = {

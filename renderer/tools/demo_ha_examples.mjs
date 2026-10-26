@@ -254,3 +254,181 @@ export const EXAMPLES = {
   "next": "[{\"m\":\"Norwich v Ipswich\",\"d\":\"Sat 1 Nov\"},{\"m\":\"Leeds v Norwich\",\"d\":\"Tue 4 Nov\"},{\"m\":\"Norwich v Hull\",\"d\":\"Sat 8 Nov\"}]"
  }
 };
+// what a tap on each example changes in the docs' fake Home Assistant (site/src/lib/sample-ha.ts), by screen id
+export const REACTIONS = {
+ "shopping": [
+  {
+   "ev": "toggle",
+   "is": "done",
+   "add": {
+    "todo.shopping": -1
+   }
+  },
+  {
+   "ev": "toggle",
+   "is": "open",
+   "add": {
+    "todo.shopping": 1
+   }
+  }
+ ],
+ "hot_water": [
+  {
+   "ev": "change",
+   "is": "\\d+",
+   "set": {
+    "water_heater.tank|current_temperature": "$"
+   }
+  },
+  {
+   "ev": "change",
+   "is": "boost",
+   "set": {
+    "water_heater.tank|operation_mode": "boost",
+    "sensor.tank_source": "Boost",
+    "sensor.tank_next_boost": "on · 45 min"
+   }
+  },
+  {
+   "ev": "change",
+   "is": "auto",
+   "set": {
+    "water_heater.tank|operation_mode": "auto",
+    "sensor.tank_source": "Solar",
+    "sensor.tank_next_boost": "17:00"
+   }
+  },
+  {
+   "ev": "change",
+   "is": "off",
+   "set": {
+    "water_heater.tank|operation_mode": "off",
+    "sensor.tank_source": "Off",
+    "sensor.tank_next_boost": "none"
+   }
+  }
+ ],
+ "front_door": [
+  {
+   "ev": "toggle",
+   "is": "on|off",
+   "set": {
+    "light.porch": "$"
+   }
+  }
+ ],
+ "kitchenradio": [
+  {
+   "ev": "toggle",
+   "is": "play",
+   "set": {
+    "media_player.kitchen": "playing"
+   }
+  },
+  {
+   "ev": "toggle",
+   "is": "pause",
+   "set": {
+    "media_player.kitchen": "paused"
+   }
+  },
+  {
+   "ev": "tap",
+   "is": "next",
+   "set": {
+    "media_player.kitchen|media_title": "Old Man",
+    "media_player.kitchen|media_progress": "0"
+   }
+  },
+  {
+   "ev": "tap",
+   "is": "prev",
+   "set": {
+    "media_player.kitchen|media_title": "Harvest Moon",
+    "media_player.kitchen|media_progress": "0"
+   }
+  },
+  {
+   "ev": "change",
+   "set": {
+    "media_player.kitchen|volume_pct": "$"
+   }
+  }
+ ],
+ "focus": [
+  {
+   "ev": "change",
+   "is": "focus",
+   "set": {
+    "input_select.focus_mode": "focus",
+    "timer.focus|remaining": "25:00"
+   }
+  },
+  {
+   "ev": "change",
+   "is": "short",
+   "set": {
+    "input_select.focus_mode": "short",
+    "timer.focus|remaining": "05:00"
+   }
+  },
+  {
+   "ev": "change",
+   "is": "long",
+   "set": {
+    "input_select.focus_mode": "long",
+    "timer.focus|remaining": "15:00"
+   }
+  },
+  {
+   "ev": "tap",
+   "is": "Skip",
+   "set": {
+    "sensor.focus_sessions": "check,check,check,minus",
+    "timer.focus|remaining": "05:00"
+   }
+  }
+ ],
+ "run_weather": [
+  {
+   "ev": "change",
+   "is": "ride",
+   "set": {
+    "input_select.activity": "ride",
+    "sensor.run_verdict": "Good for a ride · light wind"
+   }
+  },
+  {
+   "ev": "change",
+   "is": "run",
+   "set": {
+    "input_select.activity": "run",
+    "sensor.run_verdict": "Good for a run · dry until 18:00"
+   }
+  }
+ ],
+ "bedside": [
+  {
+   "ev": "toggle",
+   "is": "on",
+   "set": {
+    "input_boolean.alarm": "on",
+    "sensor.alarm_time": "06:45"
+   }
+  },
+  {
+   "ev": "toggle",
+   "is": "off",
+   "set": {
+    "input_boolean.alarm": "off",
+    "sensor.alarm_time": "Off"
+   }
+  },
+  {
+   "ev": "change",
+   "set": {
+    "light.bedside|brightness_pct": "$"
+   }
+  }
+ ]
+};
