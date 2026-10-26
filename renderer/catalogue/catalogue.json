@@ -2266,6 +2266,43 @@
     "bytes_est": 18880
    }
   },
+  "fw_update_view": {
+   "name": "Firmware update",
+   "update": true,
+   "props": [
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "updating",
+      "failed"
+     ],
+     "about": "Where the update is: updating (about to install) or failed."
+    },
+    {
+     "name": "version",
+     "type": "text",
+     "bindable": true,
+     "about": "The version being installed. Empty hides it."
+    },
+    {
+     "name": "note",
+     "type": "text",
+     "bindable": true,
+     "about": "A line that replaces the default one, such as why it failed."
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 3,
+    "bytes_est": 480
+   }
+  },
   "github_list": {
    "name": "GitHub list",
    "update": true,
@@ -2911,6 +2948,16 @@
       "pixel"
      ],
      "about": "cover fills the box and crops the edges, contain shows the whole picture inside the box, pixel zooms pixel art by whole steps with sharp pixels."
+    },
+    {
+     "name": "sampling",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "smooth",
+      "nearest"
+     ],
+     "about": "How the picture is enlarged with cover or contain: smooth blends neighbouring pixels (photos), nearest keeps every pixel a sharp square (pixel art, icons). Smooth is the default because it can't be told from the picture; pixel scale is always nearest."
     },
     {
      "name": "radius",
@@ -6454,5 +6501,5 @@
    }
   }
  },
- "hash": "9b2e0b42"
+ "hash": "e775c8d6"
 }

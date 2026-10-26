@@ -28,7 +28,8 @@ const Budget &budget();
 // a view's owner hears about every change of its view (pixels in, failed) through this
 using Notify = void (*)(void *owner);
 // take a view for owner (any stable key: a component keeps two, the image shown + the one coming) (one per owner: a second acquire releases the first); returns its id (> 0)
-int acquire(void *owner, const char *src, int w, int h, Scale s, int radius, Notify cb);
+// nearest = no blur when scaling up (any scale; pixel always is): sharp pixel art in cover / contain boxes, never dithered
+int acquire(void *owner, const char *src, int w, int h, Scale s, int radius, Notify cb, bool nearest = false);
 void release(void *owner);
 State state(void *owner);
 const lv_image_dsc_t *pixels(void *owner);  // nullptr until ready (a failed refresh keeps the last good)

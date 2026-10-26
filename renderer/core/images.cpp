@@ -25,6 +25,7 @@ struct View {
   std::string src, err;
   int w = 0, h = 0, r = 0;
   Scale s = cover;
+  bool nearest = false;  // sampling: nearest (no blur up, no dither) | smooth
   State st = loading;
   lv_image_dsc_t dsc{};
   uint8_t *data = nullptr;
@@ -114,8 +115,9 @@ void scale(const View &v, const uint8_t *src, int sw, int sh, int ow, int oh, ui
   for (int y = 0; y < oh; y++)
     for (int x = 0; x < ow; x++) {
       double r = 0, g = 0, b = 0, a = 0;
-      if (v.s == pixel) {
-        const int sx = std::min(sw - 1, x * sw / ow), sy = std::min(sh - 1, y * sh / oh);
+      if (v.s == pixel || (v.nearest && k >= 1)) {  // nearest: the source pixel under this one's centre
+        const int sx = v.s == pixel ? std::min(sw - 1, x * sw / ow) : std::clamp((int) std::floor(x0 + (x + 0.5) / k), 0, sw - 1);
+        const int sy = v.s == pixel ? std::min(sh - 1, y * sh / oh) : std::clamp((int) std::floor(y0 + (y + 0.5) / k), 0, sh - 1);
         const uint8_t *p = src + ((size_t) sy * sw + sx) * 4;
         a = p[3]; r = p[0] * a; g = p[1] * a; b = p[2] * a;
       } else if (k >= 1) {  // up: bilinear
@@ -146,7 +148,7 @@ void scale(const View &v, const uint8_t *src, int sw, int sh, int ow, int oh, ui
         const double d = std::hypot(x + 0.5 - cx, y + 0.5 - cy);
         A = (int) std::lround(A * std::clamp(rad - d + 0.5, 0.0, 1.0));
       }
-      if (v.s != pixel) {  // ordered dither to 565 (photos band otherwise); pixel art stays exact
+      if (v.s != pixel && !v.nearest) {  // ordered dither to 565 (photos band otherwise); pixel art stays exact
         const int t = BAYER[(x & 3) + (y & 3) * 4];
         R = std::min(255, R + t / 2); G = std::min(255, G + t / 4); Bc = std::min(255, Bc + t / 2);
       }
@@ -208,15 +210,15 @@ void fill(View *v, const uint8_t *rgba, int sw, int sh) {
 
 const Budget &budget() { return B; }
 
-int acquire(void *owner, const char *src_c, int w, int h, Scale s, int radius, Notify cb) {
+int acquire(void *owner, const char *src_c, int w, int h, Scale s, int radius, Notify cb, bool nearest) {
   release(owner);
   const std::string src = src_c ? src_c : "";
   View *v = nullptr;
   for (View *x : views)
-    if (x->src == src && x->w == w && x->h == h && x->s == s && x->r == radius) { v = x; break; }
+    if (x->src == src && x->w == w && x->h == h && x->s == s && x->r == radius && x->nearest == nearest) { v = x; break; }
   if (!v) {
     v = new View;
-    v->src = src; v->w = std::max(1, w); v->h = std::max(1, h); v->s = s; v->r = radius;
+    v->src = src; v->w = std::max(1, w); v->h = std::max(1, h); v->s = s; v->r = radius; v->nearest = nearest;
     views.push_back(v);
     if (src.empty()) { v->st = failed; v->err = "no src"; }
     else if (!url_ok(src)) { v->st = failed; v->err = "not a URL"; }

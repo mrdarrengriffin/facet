@@ -3,11 +3,14 @@
 //   src       an http(s) URL; bindable (an entity's state or attribute) and "$item.<key>" in a grid's items cell
 //   step      icon | glyph | detail | feature | card | hero (ic:: sizes) | content (the content / slot width): the
 //             box width. Height = width / aspect, snapped down to the grid
-//   fit       step (default) | cell: inside a grid cell or a layout slot, the box = the whole cell. A spec sets step
+//   fit       step (default) | cell: inside a grid cell or a layout slot, the box = the whole cell (elsewhere: the
+//             parent's content box, snapped to the grid). A spec sets step
 //             or fit: cell, not both (core/spec.h)
 //   aspect    1:1 | 4:3 | 3:2 | 16:9 (with step; a cell keeps its own shape)
 //   scale     cover (fills the box, edges cropped) | contain (all of it, centred) | pixel (whole-number zoom,
 //             nearest neighbour: crisp pixel art, never dithered)
+//   sampling  smooth (default) | nearest: how pixels are scaled UP in cover / contain. nearest = no blur, no dither (pixel
+//             art at any scale); smooth can't be guessed from the picture, so it is the default. pixel is always nearest
 //   radius    none | chip | button | ring | round (rad:: tokens; round = a circle / pill), baked into the pixels'
 //             alpha (no clip layer)
 //   fallback  an icon name shown when the image fails or there is no src ("" = the quiet box only); alt = the words
@@ -30,6 +33,8 @@ struct I {
   Key cur{this}, prev{this};
   bool has_prev = false;
   int w = 0, h = 0, radius = 0;
+  img::Scale sc = img::cover;
+  bool nearest = false;
   std::string src, fallback, alt;
   lv_timer_t *every = nullptr;
 };
@@ -70,6 +75,15 @@ void box_of(lv_obj_t *parent, Props p, int &w, int &h) {
     if (cw > 0 && !LV_COORD_IS_SPEC(cw)) {
       w = (int) cw;
       h = ch > 0 && !LV_COORD_IS_SPEC(ch) ? (int) ch : w;
+      return;
+    }
+  }
+  if (!strcmp(p["fit"] | "step", "cell") && parent) {  // not in a cell (a playground, a plain column): fill the parent's content box
+    lv_obj_update_layout(parent);
+    const int32_t cw = lv_obj_get_content_width(parent), ch = lv_obj_get_content_height(parent);
+    if (cw >= sp::GRID) {
+      w = (int) cw / sp::GRID * sp::GRID;
+      h = ch >= sp::GRID ? (int) ch / sp::GRID * sp::GRID : w;
       return;
     }
   }
@@ -134,15 +148,20 @@ void fill(I &i, Props p, bool keep_old) {
   i.alt = p["alt"] | "";
   const std::string src = p["src"] | "";
   const img::Scale sc = scale_of(p["scale"] | "cover");
+  const bool nearest = !strcmp(p["sampling"] | "smooth", "nearest");
   const int pr = i.radius == LV_RADIUS_CIRCLE ? 1 << 14 : i.radius;
-  if (keep_old && img::pixels(&i.cur) && src != i.src) {  // keep the shown picture as prev while the new one loads
+  if (keep_old && img::pixels(&i.cur) && src != i.src && !src.empty()) {  // (no src = the quiet box at once)
+    // keep the shown picture as prev while the new one loads
     if (i.has_prev) img::release(&i.prev);
-    img::acquire(&i.prev, i.src.c_str(), i.w, i.h, sc, pr, changed);  // same view: shares its pixels, no fetch
+    img::acquire(&i.prev, i.src.c_str(), i.w, i.h, i.sc, pr, changed, i.nearest);  // same view: shares its pixels, no fetch
     i.has_prev = img::pixels(&i.prev) != nullptr;
     if (!i.has_prev) img::release(&i.prev);
   }
+  if (src.empty() && i.has_prev) { img::release(&i.prev); i.has_prev = false; }
   i.src = src;
-  img::acquire(&i.cur, src.c_str(), i.w, i.h, sc, pr, changed);
+  i.sc = sc;
+  i.nearest = nearest;
+  img::acquire(&i.cur, src.c_str(), i.w, i.h, sc, pr, changed, nearest);
   if (i.every) { lv_timer_delete(i.every); i.every = nullptr; }
   if (const uint32_t ms = every_ms(p["refresh"] | "off")) i.every = lv_timer_create(refresh_cb, ms, &i);
   draw(i);
@@ -158,6 +177,7 @@ FW_COMPONENT(image, "Image", "components", R"({
     {"name": "fit", "about": "step: the size comes from step and aspect. cell: inside a grid cell or a layout slot, the picture fills the cell. Use step or cell, not both.", "type": "select", "options": ["step", "cell"], "default": "step"},
     {"name": "aspect", "about": "The box shape with step: 1:1, 4:3, 3:2 or 16:9 (width to height).", "type": "select", "options": ["1:1", "4:3", "3:2", "16:9"], "default": "1:1"},
     {"name": "scale", "about": "cover fills the box and crops the edges, contain shows the whole picture inside the box, pixel zooms pixel art by whole steps with sharp pixels.", "type": "select", "options": ["cover", "contain", "pixel"], "default": "cover"},
+    {"name": "sampling", "about": "How the picture is enlarged with cover or contain: smooth blends neighbouring pixels (photos), nearest keeps every pixel a sharp square (pixel art, icons). Smooth is the default because it can't be told from the picture; pixel scale is always nearest.", "type": "select", "options": ["smooth", "nearest"], "default": "smooth"},
     {"name": "radius", "about": "Rounded corners: none, chip, button, ring, or round for a circle.", "type": "select", "options": ["none", "chip", "button", "ring", "round"], "default": "none"},
     {"name": "fallback", "about": "An icon name shown if the picture can't be loaded; leave it empty for a plain quiet box.", "type": "text", "default": ""},
     {"name": "alt", "about": "A few words saying what the picture shows; shown under the fallback icon when the picture fails and there is room.", "type": "text", "default": ""},
@@ -167,6 +187,7 @@ FW_COMPONENT(image, "Image", "components", R"({
     {"label": "card · 4:3 · cover", "props": {"src": "https://mrdarrengriffin.github.io/facet-docs/demo/images/hills.png", "step": "card", "aspect": "4:3"}},
     {"label": "hero · 16:9 · contain", "props": {"src": "https://mrdarrengriffin.github.io/facet-docs/demo/images/hills.png", "step": "hero", "aspect": "16:9", "scale": "contain", "radius": "button"}},
     {"label": "pixel art · hero", "props": {"src": "https://mrdarrengriffin.github.io/facet-docs/demo/images/sprite.png", "step": "hero", "scale": "pixel"}},
+    {"label": "pixel art · contain · nearest", "props": {"src": "https://mrdarrengriffin.github.io/facet-docs/demo/images/sprite.png", "step": "hero", "aspect": "4:3", "scale": "contain", "sampling": "nearest"}},
     {"label": "round · card", "props": {"src": "https://mrdarrengriffin.github.io/facet-docs/demo/images/avatar.png", "step": "card", "radius": "round"}},
     {"label": "failed · fallback + alt", "props": {"src": "https://mrdarrengriffin.github.io/facet-docs/demo/images/missing.png", "step": "hero", "aspect": "4:3", "fallback": "house", "alt": "Front garden"}},
     {"label": "no src · quiet box", "props": {"src": "", "step": "card"}}
