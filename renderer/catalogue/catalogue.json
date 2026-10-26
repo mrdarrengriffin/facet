@@ -2777,6 +2777,7 @@
       "window",
       "thermometer",
       "house",
+      "image",
       "plane",
       "sport-goal",
       "sport-card",
@@ -2976,7 +2977,7 @@
      "name": "fallback",
      "type": "text",
      "bindable": true,
-     "about": "An icon name shown if the picture can't be loaded; leave it empty for a plain quiet box."
+     "about": "An icon name shown if the picture can't be loaded; empty (or a name that isn't an icon) shows the picture icon."
     },
     {
      "name": "alt",
@@ -3004,8 +3005,8 @@
     ]
    },
    "cost": {
-    "objects": 1,
-    "bytes_est": 160
+    "objects": 3,
+    "bytes_est": 480
    }
   },
   "iso_floorplan": {
@@ -6501,5 +6502,5 @@
    }
   }
  },
- "hash": "e775c8d6"
+ "hash": "3a6ec728"
 }

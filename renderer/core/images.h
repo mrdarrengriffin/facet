@@ -9,7 +9,8 @@
 // doesn't fit it is refused (the component shows its fallback): the cap is never exceeded. Views nothing shows stay
 // while other images are on screen (a grid rebinding its items gets them back), and all go once no image is shown
 // (the screen was left). A failed refresh of a URL keeps the pixels it had (the last good image).
-// Pending URLs time out after budget().timeout_ms (failed: "timeout"). Single-threaded (LVGL task).
+// Pending URLs time out after budget().timeout_ms (failed: "timeout"; alive() restarts it). Single-threaded (LVGL task):
+// a host thread never calls in here (the panel hands results over on an lv_timer).
 #pragma once
 #include <string>
 #include <vector>
@@ -39,7 +40,10 @@ const char *error(void *owner);             // "" | "404" | "timeout" | "too big
 std::vector<std::string> wants();  // URLs waiting for bytes, each listed once until put/fail
 void put(const char *src, int w, int h, const uint8_t *rgba);
 void fail(const char *src, const char *why);
-bool waiting(const char *src);  // a view still wants this URL (false once put / fail / timeout, or the screen was left)
+bool waiting(const char *src);
+// the host is still on it (queued behind others, or just started): its timeout counts again from now. The panel fetches
+// one URL at a time, so a URL's budget().timeout_ms starts when its own download does, not when the view asked
+void alive(const char *src);  // a view still wants this URL (false once put / fail / timeout, or the screen was left)
 void refresh(const char *src);  // fetch a URL again (its views keep their pixels until the new ones come; a failure keeps them)
 std::string stats();  // JSON {board, cap, bytes, peak, views, shown, evicted, dropped, refused, pending, fetches}
 }  // namespace fw::img

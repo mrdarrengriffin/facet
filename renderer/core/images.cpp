@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cstring>
 #include <map>
+#include <new>
 #include <string>
 #include <vector>
 
@@ -173,23 +174,28 @@ void fill(View *v, const uint8_t *rgba, int sw, int sh) {
   int ow, oh;
   out_size(*v, sw, sh, ow, oh);
   const size_t px = (size_t) ow * oh;
-  // scale into scratch first (alpha known after), then keep only the planes needed
-  std::vector<uint16_t> col(px);
-  std::vector<uint8_t> al(px);
+  // scale into scratch first (alpha known after), then keep only the planes needed. Every allocation here may fail
+  // (the panel: a full PSRAM, no exceptions) = the view fails "no memory" and the component shows its fallback
+  uint8_t *scratch = (uint8_t *) lv_malloc(px * 3);
+  if (!scratch) { refused++; if (!v->data) { v->st = failed; v->err = "no memory"; } return; }
+  uint16_t *col = (uint16_t *) scratch;
+  uint8_t *al = scratch + px * 2;
   bool see = false;
-  scale(*v, rgba, sw, sh, ow, oh, col.data(), al.data(), see);
+  scale(*v, rgba, sw, sh, ow, oh, col, al, see);
   const size_t data = px * 2 + (see ? px : 0), bytes = data + sizeof(View);
   const size_t had = v->bytes;
   if (!room(bytes > had ? bytes - had : 0, v)) {
+    lv_free(scratch);
     refused++;
     if (!v->data) { v->st = failed; v->err = "over budget"; }
     else v->err = "over budget (kept the last image)";
     return;
   }
   uint8_t *d = (uint8_t *) lv_malloc(data);
-  if (!d) { refused++; if (!v->data) { v->st = failed; v->err = "no memory"; } return; }
-  memcpy(d, col.data(), px * 2);
-  if (see) memcpy(d + px * 2, al.data(), px);
+  if (!d) { lv_free(scratch); refused++; if (!v->data) { v->st = failed; v->err = "no memory"; } return; }
+  memcpy(d, col, px * 2);
+  if (see) memcpy(d + px * 2, al, px);
+  lv_free(scratch);
   free_px(v);
   v->data = d;
   v->bytes = bytes;
@@ -217,7 +223,8 @@ int acquire(void *owner, const char *src_c, int w, int h, Scale s, int radius, N
   for (View *x : views)
     if (x->src == src && x->w == w && x->h == h && x->s == s && x->r == radius && x->nearest == nearest) { v = x; break; }
   if (!v) {
-    v = new View;
+    v = new (std::nothrow) View;
+    if (!v) return 0;  // no memory: no view, state() = failed (the component shows its fallback)
     v->src = src; v->w = std::max(1, w); v->h = std::max(1, h); v->s = s; v->r = radius; v->nearest = nearest;
     views.push_back(v);
     if (src.empty()) { v->st = failed; v->err = "no src"; }
@@ -280,6 +287,11 @@ void fail(const char *src_c, const char *why) {
       else { v->st = failed; v->err = why ? why : "failed"; }
     }
   notify(src);
+}
+void alive(const char *src_c) {
+  const std::string src = src_c ? src_c : "";
+  for (auto &p : pending)
+    if (p.url == src) p.since = lv_tick_get();
 }
 bool waiting(const char *src_c) {
   const std::string src = src_c ? src_c : "";

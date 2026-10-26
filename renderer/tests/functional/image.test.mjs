@@ -30,6 +30,28 @@ export default {
       t.has(t.texts(), 'Slow', 'failed after the timeout');
       t.eq(t.img.stats().pending, 0, 'nothing left pending');
     } },
+    { name: 'many pictures, some failing: every cell shows its picture or the default fallback icon (TBOI grid, 2026-10-26)', async run(t) {
+      // 36 cells, no fallback named: 404s, a 500, a hang (times out), the rest served. A failure must never leave an empty box
+      const items = Array.from({ length: 36 }, (_, i) => ({ id: `m${i}`, pic: U(`m${i}`) }));
+      let served = 0;
+      items.forEach((it, i) => {
+        if (i % 4 === 1) t.img.status(it.pic, 404);
+        else if (i === 6) t.img.status(it.pic, 500);
+        else if (i === 10) t.img.hang(it.pic);
+        else { t.img.serve(it.pic, 16, 16, i % 2 ? RED : BLUE); served++; }
+      });
+      await t.mount('grid', { cols: 9, gap: 'near', aspect: 'square', items: JSON.stringify(items), _cell: { c: 'image', p: { src: '$item.pic', fit: 'cell', scale: 'pixel' } } });
+      t.wait(8600);  // the hung one times out
+      const ws = imgs(t).map((o) => o.w), big = Math.max(...ws);
+      t.eq(ws.length, 36, `every cell draws something: ${ws.length}`);
+      t.eq(ws.filter((w) => w === big).length, served, `${served} pictures`);
+      t.eq(ws.filter((w) => w < big).length, 36 - served, `${36 - served} fallback icons (the default image icon)`);
+      t.eq(t.img.stats().pending, 0, 'nothing left pending');
+    } },
+    { name: 'no src: the default fallback icon, not an empty box', async run(t) {
+      await t.mount('image', { src: '', step: 'card' });
+      t.eq(imgs(t).length, 1, 'the image icon');
+    } },
     { name: 'contain: a wide picture keeps its shape inside a square box', async run(t) {
       t.img.serve(U('wide'), 160, 90, BLUE);
       await t.mount('image', { src: U('wide'), step: 'hero', scale: 'contain' });
@@ -59,7 +81,8 @@ export default {
       await t.mount('grid', { cols: 1, gap: 'none', aspect: 'wide', items: JSON.stringify(items), _cell: { c: 'image', p: { src: '$item.pic', fit: 'cell' } } });
       const s = t.img.stats();
       t.ok(s.peak <= s.cap && s.bytes <= s.cap, `bytes ${s.bytes} / peak ${s.peak} <= cap ${s.cap} (${s.board})`);
-      t.ok(s.refused > 0 && imgs(t).length < n, `some refused (${s.refused}), ${imgs(t).length} shown of ${n}`);
+      const pics = imgs(t).filter((o) => o.w >= 120).length;  // (refused cells show the small fallback icon instead)
+      t.ok(s.refused > 0 && pics < n, `some refused (${s.refused}), ${pics} pictures of ${n}`);
       const after = t.img.leave();
       t.eq([after.bytes, after.views], [0, 0], 'screen left: cache empty');
       t.ok(after.dropped > 0, `dropped ${after.dropped}`);

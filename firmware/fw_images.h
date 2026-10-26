@@ -14,7 +14,9 @@
 #include <atomic>
 #include <deque>
 #include <mutex>
+#include <new>
 #include <string>
+#include <vector>
 #include "sdkconfig.h"
 #include "esp_heap_caps.h"
 #include "esp_http_client.h"
@@ -45,7 +47,21 @@ struct State {
   std::atomic<bool> cancel{false};
   TaskHandle_t task = nullptr;
   uint32_t fetched = 0, failed = 0;
+  // LVGL task only
+  std::string seen;         // the download pump() saw running last tick
+  uint32_t progress = 0;    // lv_tick of the worker's last sign of life (a new download or a result)
 };
+// at most this many URLs wait for the worker; more = failed "too many pictures" (each queued URL is ~150 B of PSRAM,
+// the bound is time: the downloads run one after another)
+constexpr size_t MAX_QUEUE = 128;
+// internal RAM the fetch never takes the panel below (Wi-Fi, LVGL draw, the API need it): checked before every
+// connect. TLS buffers come from PSRAM (CONFIG_MBEDTLS_EXTERNAL_MEM_ALLOC), software AES (no DMA bounce buffers)
+constexpr size_t INTERNAL_KEEP = 32 * 1024, INTERNAL_BLOCK = 8 * 1024, PSRAM_KEEP = 256 * 1024;
+inline bool low_memory() {
+  return heap_caps_get_free_size(MALLOC_CAP_INTERNAL) < INTERNAL_KEEP ||
+         heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL) < INTERNAL_BLOCK ||
+         heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) < PSRAM_KEEP + fw::img::budget().body_max / 4;
+}
 inline State &S() { static State s; return s; }
 
 // response headers the reasons need (esp_http_client hands them only to the event handler)
@@ -75,7 +91,7 @@ inline void fetch(const std::string &url, Done &d) {
   const auto late = [&] { return (esp_timer_get_time() - t0) / 1000 >= B.timeout_ms; };
   char tmo[24];
   snprintf(tmo, sizeof tmo, "timeout (%d s)", B.timeout_ms / 1000);
-  if (heap_caps_get_free_size(MALLOC_CAP_INTERNAL) < 20 * 1024) { d.err = "the panel is low on memory"; return; }
+  if (low_memory()) { d.err = "the panel is low on memory"; return; }
   Hdr hdr;
   esp_http_client_config_t c{};
   c.url = url.c_str();
@@ -95,6 +111,7 @@ inline void fetch(const std::string &url, Done &d) {
   int status = 0;
   int64_t len = -1;
   for (int hop = 0;; hop++) {
+    if (hop && low_memory()) { d.err = "the panel is low on memory"; goto out; }
     if (esp_http_client_open(h, 0) != ESP_OK) { d.err = late() ? tmo : "couldn't reach the site"; goto out; }
     len = esp_http_client_fetch_headers(h);
     status = esp_http_client_get_status_code(h);
@@ -155,13 +172,26 @@ inline void worker(void *) {
     }
     if (url.empty()) {
       if (!ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(20000))) {  // 20 s with nothing to do: the task goes (its stack too)
-        std::lock_guard<std::mutex> l(s.m);
-        if (s.queue.empty()) { s.task = nullptr; vTaskDelete(nullptr); }
+        // the lock is let go BEFORE vTaskDelete: a task deleted while holding it leaves it locked for ever, and the next
+        // pump() on the LVGL task waits on it = the UI and the loop stop, the task watchdog restarts the panel
+        // (2026-10-26, the TBOI grid: exactly 20 s after the last download)
+        bool go = false;
+        {
+          std::lock_guard<std::mutex> l(s.m);
+          if (s.queue.empty()) { s.task = nullptr; go = true; }
+        }
+        if (go) vTaskDelete(nullptr);
       }
       continue;
     }
-    Done *d = new Done{url, "", {}};
+    Done *d = new (std::nothrow) Done{url, "", {}};
+    if (!d) {  // no memory for the result: the view times out (fails) on its own
+      std::lock_guard<std::mutex> l(s.m);
+      s.current.clear();
+      continue;
+    }
     fetch(url, *d);
+    if (uxTaskGetStackHighWaterMark(nullptr) < 1024) ESP_LOGW("facet_img", "fetch task stack low (%u B left)", (unsigned) uxTaskGetStackHighWaterMark(nullptr));
     if (d->err.empty() && !d->px.rgba) d->err = "failed";
     if (!d->err.empty()) ESP_LOGW("facet_img", "%s: %s", url.c_str(), d->err.c_str());
     else ESP_LOGI("facet_img", "%s: %dx%d", url.c_str(), d->px.w, d->px.h);
@@ -185,22 +215,40 @@ inline void pump(lv_timer_t *) {
     fw::imgdec::release(d->px);
     delete d;
   }
+  if (!done.empty()) s.progress = lv_tick_get();
   const auto want = fw::img::wants();
-  std::lock_guard<std::mutex> l(s.m);
-  for (const auto &u : want)
-    if (std::find(s.queue.begin(), s.queue.end(), u) == s.queue.end() && u != s.current) s.queue.push_back(u);
-  s.queue.erase(std::remove_if(s.queue.begin(), s.queue.end(), [](const std::string &u) { return !fw::img::waiting(u.c_str()); }), s.queue.end());
-  if (!s.current.empty() && !fw::img::waiting(s.current.c_str())) s.cancel = true;
-  if (s.queue.empty()) return;
-  if (!s.task) {
-    // 10 KB stack: the TLS handshake runs on it. Core 0 at the loop's priority: decoding never holds up LVGL
-    if (xTaskCreatePinnedToCore(worker, "facet_img", 10240, nullptr, 1, &s.task, portNUM_PROCESSORS > 1 ? 0 : tskNO_AFFINITY) != pdPASS) {
-      s.task = nullptr;
-      ESP_LOGW("facet_img", "no memory for the fetch task");
-      return;
+  std::vector<std::string> over, keep;  // fail() / alive() run after the lock is let go (they redraw components)
+  {
+    std::lock_guard<std::mutex> l(s.m);
+    for (const auto &u : want) {
+      if (std::find(s.queue.begin(), s.queue.end(), u) != s.queue.end() || u == s.current) continue;
+      if (s.queue.size() >= MAX_QUEUE) over.push_back(u);
+      else s.queue.push_back(u);
+    }
+    s.queue.erase(std::remove_if(s.queue.begin(), s.queue.end(), [](const std::string &u) { return !fw::img::waiting(u.c_str()); }), s.queue.end());
+    if (!s.current.empty() && !fw::img::waiting(s.current.c_str())) s.cancel = true;
+    if (s.current != s.seen) {  // a new download started: its timeout counts from now
+      s.seen = s.current;
+      s.progress = lv_tick_get();
+      if (!s.current.empty()) keep.push_back(s.current);
+    }
+    // queued URLs don't time out while the worker is moving (one download at a time: the 35th picture of a grid waits
+    // its turn); a worker stuck past two timeouts stops vouching for them, so they fail instead of loading for ever
+    if (s.task && lv_tick_diff(lv_tick_get(), s.progress) < (uint32_t) (2 * fw::img::budget().timeout_ms + 2000))
+      keep.insert(keep.end(), s.queue.begin(), s.queue.end());
+    if (!s.queue.empty()) {
+      if (!s.task) {
+        // 12 KB internal stack: the TLS handshake runs on it. Core 0 at the loop's priority: decoding never holds up LVGL
+        if (xTaskCreatePinnedToCore(worker, "facet_img", 12288, nullptr, 1, &s.task, portNUM_PROCESSORS > 1 ? 0 : tskNO_AFFINITY) != pdPASS) {
+          s.task = nullptr;
+          ESP_LOGW("facet_img", "no memory for the fetch task");
+        } else s.progress = lv_tick_get();
+      }
+      if (s.task) xTaskNotifyGive(s.task);
     }
   }
-  xTaskNotifyGive(s.task);
+  for (const auto &u : over) fw::img::fail(u.c_str(), "too many pictures");
+  for (const auto &u : keep) fw::img::alive(u.c_str());
 }
 
 inline void setup() { lv_timer_create(pump, 100, nullptr); }

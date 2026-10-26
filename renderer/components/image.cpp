@@ -13,7 +13,8 @@
 //             art at any scale); smooth can't be guessed from the picture, so it is the default. pixel is always nearest
 //   radius    none | chip | button | ring | round (rad:: tokens; round = a circle / pill), baked into the pixels'
 //             alpha (no clip layer)
-//   fallback  an icon name shown when the image fails or there is no src ("" = the quiet box only); alt = the words
+//   fallback  an icon name shown when the image fails or there is no src (empty or an unknown name = the "image" icon:
+//             a failure never leaves an empty box, Darren 2026-10-26); alt = the words
 //             under it when there is room (and the image's name for the workbench / docs)
 //   refresh   off | 1m | 5m | 15m | 1h: fetch the URL again that often (a failed refresh keeps the last image)
 // States: loading = a quiet surface box (no spinner); ready = the picture; failed = surface box + fallback + alt.
@@ -145,6 +146,7 @@ void fill(I &i, Props p, bool keep_old) {
   const char *rs = p["radius"] | "none";
   i.radius = radius_of(rs);
   i.fallback = p["fallback"] | "";
+  if (i.fallback.empty() || icon_index(i.fallback.c_str()) < 0) i.fallback = "image";
   i.alt = p["alt"] | "";
   const std::string src = p["src"] | "";
   const img::Scale sc = scale_of(p["scale"] | "cover");
@@ -171,6 +173,7 @@ void fill(I &i, Props p, bool keep_old) {
 FW_COMPONENT(image, "Image", "components", R"({
   "about": "A picture from a web address (http or https), sized by a size step or the grid cell it sits in. Cover fills the box and crops the edges, contain shows all of it, pixel zooms small pixel art by whole steps so it stays crisp. While it loads the box is quiet; if it fails, a fallback icon and its alt words show instead, and a picture that was already there stays when a refresh fails.",
   "frame": [240, 200],
+  "icons": ["image@icon", "image@glyph", "image@feature", "image@card"],
   "props": [
     {"name": "src", "about": "The picture's web address (http or https). Bind it to an entity's state or attribute to follow it; in a grid's item cell, $item.field takes it from each item.", "type": "text", "default": "https://mrdarrengriffin.github.io/facet-docs/demo/images/hills.png"},
     {"name": "step", "about": "How wide the picture is, as a size step from icon up to hero, or content for the full content width. Leave it out when fit is cell.", "type": "select", "options": ["icon", "glyph", "detail", "feature", "card", "hero", "content"], "default": "card"},
@@ -179,7 +182,7 @@ FW_COMPONENT(image, "Image", "components", R"({
     {"name": "scale", "about": "cover fills the box and crops the edges, contain shows the whole picture inside the box, pixel zooms pixel art by whole steps with sharp pixels.", "type": "select", "options": ["cover", "contain", "pixel"], "default": "cover"},
     {"name": "sampling", "about": "How the picture is enlarged with cover or contain: smooth blends neighbouring pixels (photos), nearest keeps every pixel a sharp square (pixel art, icons). Smooth is the default because it can't be told from the picture; pixel scale is always nearest.", "type": "select", "options": ["smooth", "nearest"], "default": "smooth"},
     {"name": "radius", "about": "Rounded corners: none, chip, button, ring, or round for a circle.", "type": "select", "options": ["none", "chip", "button", "ring", "round"], "default": "none"},
-    {"name": "fallback", "about": "An icon name shown if the picture can't be loaded; leave it empty for a plain quiet box.", "type": "text", "default": ""},
+    {"name": "fallback", "about": "An icon name shown if the picture can't be loaded; empty (or a name that isn't an icon) shows the picture icon.", "type": "text", "default": ""},
     {"name": "alt", "about": "A few words saying what the picture shows; shown under the fallback icon when the picture fails and there is room.", "type": "text", "default": ""},
     {"name": "refresh", "about": "Fetch the picture again every 1, 5 or 15 minutes or every hour (for a camera still or a chart); off loads it once. If a refresh fails, the last picture stays.", "type": "select", "options": ["off", "1m", "5m", "15m", "1h"], "default": "off"}
   ],
@@ -190,7 +193,7 @@ FW_COMPONENT(image, "Image", "components", R"({
     {"label": "pixel art · contain · nearest", "props": {"src": "https://mrdarrengriffin.github.io/facet-docs/demo/images/sprite.png", "step": "hero", "aspect": "4:3", "scale": "contain", "sampling": "nearest"}},
     {"label": "round · card", "props": {"src": "https://mrdarrengriffin.github.io/facet-docs/demo/images/avatar.png", "step": "card", "radius": "round"}},
     {"label": "failed · fallback + alt", "props": {"src": "https://mrdarrengriffin.github.io/facet-docs/demo/images/missing.png", "step": "hero", "aspect": "4:3", "fallback": "house", "alt": "Front garden"}},
-    {"label": "no src · quiet box", "props": {"src": "", "step": "card"}}
+    {"label": "no src · picture icon", "props": {"src": "", "step": "card"}}
   ]
 })") {
   lv_obj_t *r = lv_obj_create(parent);
