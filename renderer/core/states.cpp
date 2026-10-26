@@ -95,6 +95,7 @@ struct Fade {
   lv_part_t part;
   lv_style_prop_t prop;
   lv_style_value_t from, to;
+  bool shared = false;  // the value is a shared token style's (contract): the local copy goes when the fade ends
   bool colour;
 };
 std::vector<Fade *> g_fades;
@@ -124,13 +125,13 @@ bool is_colour(lv_style_prop_t p) {
 
 namespace {
 // one fade from w (the old value) to what o has now (its local value), as restyle() makes them
-void fade_value(lv_obj_t *root, lv_obj_t *obj, lv_part_t part, lv_style_prop_t prop, lv_style_value_t from, uint32_t ms, int32_t big);
+void fade_value(lv_obj_t *root, lv_obj_t *obj, lv_part_t part, lv_style_prop_t prop, lv_style_value_t from, uint32_t ms, int32_t big, bool shared = false);
 void walk(lv_obj_t *o, const std::string &path, std::vector<std::pair<std::string, lv_obj_t *>> &out) {
   out.push_back({path, o});
   for (uint32_t i = 0; i < lv_obj_get_child_count(o); i++) walk(lv_obj_get_child(o, (int32_t) i), path + "/" + std::to_string(i), out);
 }
 }  // namespace
-void refill_fade(lv_obj_t *root, const std::function<void()> &rebuild, bool animate) {
+void refill_fade(lv_obj_t *root, const std::function<void()> &rebuild, bool animate, bool shared) {
   const uint32_t ms = animate && root ? mo::duration(root, mo::fade, mo::OPA) : 0;
   struct Was { std::string path; const lv_obj_class_t *cls; lv_part_t part; lv_style_prop_t prop; lv_style_value_t v; };
   std::vector<Was> was;
@@ -142,6 +143,7 @@ void refill_fade(lv_obj_t *root, const std::function<void()> &rebuild, bool anim
         for (lv_style_prop_t prop : PROPS) {
           lv_style_value_t v;
           if (lv_obj_get_local_style_prop(x, prop, &v, part) == LV_STYLE_RES_FOUND) was.push_back({path, lv_obj_get_class(x), part, prop, v});
+          else if (shared) was.push_back({path, lv_obj_get_class(x), part, prop, lv_obj_get_style_prop(x, part, prop)});  // resolved
         }
   }
   rebuild();
@@ -152,7 +154,7 @@ void refill_fade(lv_obj_t *root, const std::function<void()> &rebuild, bool anim
   const int32_t big = disp ? lv_display_get_horizontal_resolution(disp) * lv_display_get_vertical_resolution(disp) / 16 : 0;
   for (const Was &w : was)
     for (auto &[path, x] : now)
-      if (path == w.path && lv_obj_get_class(x) == w.cls) { fade_value(root, x, w.part, w.prop, w.v, ms, big); break; }
+      if (path == w.path && lv_obj_get_class(x) == w.cls) { fade_value(root, x, w.part, w.prop, w.v, ms, big, shared); break; }
 }
 
 void restyle(lv_obj_t *o, const std::function<void()> &change, bool animate) {
@@ -179,9 +181,11 @@ void restyle(lv_obj_t *o, const std::function<void()> &change, bool animate) {
     if (std::find(alive.begin(), alive.end(), w.obj) != alive.end()) fade_value(o, w.obj, w.part, w.prop, w.v, ms, big);
 }
 namespace {
-void fade_value(lv_obj_t *root, lv_obj_t *obj, lv_part_t part, lv_style_prop_t prop, lv_style_value_t from, uint32_t ms, int32_t big) {
+void fade_value(lv_obj_t *root, lv_obj_t *obj, lv_part_t part, lv_style_prop_t prop, lv_style_value_t from, uint32_t ms, int32_t big, bool shared) {
   lv_style_value_t now;
-  if (lv_obj_get_local_style_prop(obj, prop, &now, part) != LV_STYLE_RES_FOUND) return;
+  bool local = lv_obj_get_local_style_prop(obj, prop, &now, part) == LV_STYLE_RES_FOUND;
+  if (!local && !shared) return;
+  if (!local) now = lv_obj_get_style_prop(obj, part, prop);  // a shared token style's value (contract components)
   const bool col = is_colour(prop);
   if (col ? lv_color_eq(now.color, from.color) : now.num == from.num) return;
   // no large fades on a display without fades (the Guition): a large FILL changes at once (thin marks still fade)
@@ -190,6 +194,7 @@ void fade_value(lv_obj_t *root, lv_obj_t *obj, lv_part_t part, lv_style_prop_t p
   for (Fade *f : std::vector<Fade *>(g_fades))  // a fade of the same value still running: replaced from where it is
     if (f->obj == obj && f->part == part && f->prop == prop) lv_anim_delete(f, nullptr);
   auto *f = new Fade{obj, part, prop, from, now, col};
+  f->shared = !local;
   lv_obj_remove_event_cb(obj, fades_of_obj_gone);  // one handler per object
   lv_obj_add_event_cb(obj, fades_of_obj_gone, LV_EVENT_DELETE, nullptr);
   g_fades.push_back(f);
@@ -203,6 +208,10 @@ void fade_value(lv_obj_t *root, lv_obj_t *obj, lv_part_t part, lv_style_prop_t p
   lv_anim_set_duration(&a, ms);
   lv_anim_set_path_cb(&a, mo::path(mo::fade));
   lv_anim_set_deleted_cb(&a, fade_free);
+  if (f->shared) lv_anim_set_completed_cb(&a, [](lv_anim_t *a) {  // the shared style shows again (a theme switch reaches it)
+    auto *f = (Fade *) lv_anim_get_user_data(a);
+    lv_obj_remove_local_style_prop(f->obj, f->prop, f->part);
+  });
   lv_anim_start(&a);
 }
 }  // namespace

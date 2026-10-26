@@ -2,6 +2,7 @@
 #include <cmath>
 #include <functional>
 #include "device.h"
+#include "fx.h"
 #include <algorithm>
 #include <vector>
 #include "spec.h"
@@ -101,17 +102,9 @@ bool show(Device *d, const std::string &id, std::vector<lv_obj_t *> &items) {
   // a page that is not a screen (a foundation): the Header (back + its name) and the page scrolling under it
   ArduinoJson::JsonDocument hd;
   hd["label"] = c->name;
-  lv_obj_t *h = build_into(d->screen, find("header"), hd.as<Props>());
-  if (h) lv_obj_set_pos(h, lay::inset, lay::inset);
-  lv_obj_t *sc = box(d->screen);
-  lv_obj_add_flag(sc, (lv_obj_flag_t) (LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_CLICKABLE));  // clickable: a drag on plain text scrolls too
-  lv_obj_set_scroll_dir(sc, LV_DIR_VER);
-  lv_obj_set_scrollbar_mode(sc, LV_SCROLLBAR_MODE_OFF);
-  lv_obj_set_pos(sc, 0, lay::top);
-  lv_obj_set_size(sc, lay::screen_w, lay::screen_h - lay::top);
-  lv_obj_set_flex_flow(sc, LV_FLEX_FLOW_COLUMN);
-  // a content-width view (Weather 5 days) sits centred, inset to inset (facet-185: it hugged the left edge)
-  lv_obj_set_flex_align(sc, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+  const fx::Page pg = fx::page(d->screen, "page");  // Page > Header slot + Body (CONTRACT.md): the inset from the structure
+  lv_obj_t *h = build_into(pg.head, find("header"), hd.as<Props>());
+  lv_obj_t *sc = pg.body;
   build_into(sc, c, none.as<Props>());
   if (h) items.push_back(h);
   items.push_back(sc);

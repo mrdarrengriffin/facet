@@ -571,16 +571,6 @@
      "about": "The small icon before the name, or none."
     },
     {
-     "name": "size",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "m",
-      "l"
-     ],
-     "about": "How much of the row the card takes: m is half the row; l is the full width."
-    },
-    {
      "name": "preview",
      "type": "select",
      "bindable": true,
@@ -683,8 +673,8 @@
     ]
    },
    "cost": {
-    "objects": 13,
-    "bytes_est": 2080
+    "objects": 11,
+    "bytes_est": 1760
    }
   },
   "card_grid": {
@@ -770,6 +760,71 @@
    "cost": {
     "objects": 4,
     "bytes_est": 640
+   }
+  },
+  "cells": {
+   "name": "Cells",
+   "update": true,
+   "props": [
+    {
+     "name": "cells",
+     "type": "text",
+     "bindable": true,
+     "about": "The cells in order, separated by commas: c holds one component; p holds two half-height readouts, one above the other."
+    },
+    {
+     "name": "min-w",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "tile-w",
+      "home-card-min-w",
+      "card-min-w"
+     ],
+     "about": "The narrowest a cell gets: tile-w for tiles (three to a row), home-card-min-w for Home cards (two to a row)."
+    },
+    {
+     "name": "min-h",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "tile-h",
+      "card-h",
+      "card-min-h"
+     ],
+     "about": "The shortest a cell gets: tile-h for tiles, card-h for Home cards."
+    },
+    {
+     "name": "last",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "column",
+      "fill"
+     ],
+     "about": "A short last row: column keeps its cells the width of the rows above; fill lets them share the whole row (a lone Home card goes full width)."
+    },
+    {
+     "name": "wide",
+     "type": "bool",
+     "bindable": true,
+     "about": "Every cell on its own row, the full width: a wide card."
+    },
+    {
+     "name": "sample",
+     "type": "bool",
+     "bindable": true,
+     "about": "For previews only: fills the cells with cards so the layout can be seen."
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 37,
+    "bytes_est": 5920
    }
   },
   "check_row": {
@@ -1295,15 +1350,22 @@
      "about": "How much one step of the dial changes the value."
     },
     {
+     "name": "dimmable",
+     "type": "bool",
+     "bindable": true,
+     "about": "Whether the value can be set. Off = an on/off light or a switch: the ring shows on or off, only the button in the middle works."
+    },
+    {
      "name": "state",
      "type": "select",
      "bindable": true,
      "options": [
       "default",
       "disabled",
-      "unavailable"
+      "unavailable",
+      "missing"
      ],
-     "about": "default can be turned; disabled cannot be changed; unavailable shows the device cannot be reached."
+     "about": "default can be turned; disabled cannot be changed; unavailable shows the device cannot be reached; missing shows there is no such device."
     }
    ],
    "events": {
@@ -1321,8 +1383,8 @@
     ]
    },
    "cost": {
-    "objects": 16,
-    "bytes_est": 2560
+    "objects": 8,
+    "bytes_est": 1280
    }
   },
   "donut": {
@@ -6417,7 +6479,8 @@
   "time",
   "day",
   "level",
-  "state"
+  "state",
+  "dim"
  ],
  "layouts": [
   "list",
@@ -6502,5 +6565,5 @@
    }
   }
  },
- "hash": "3a6ec728"
+ "hash": "777f7413"
 }

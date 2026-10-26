@@ -2,7 +2,7 @@
  "v": 1,
  "id": "light",
  "name": "Light",
- "rev": 2,
+ "rev": 3,
  "role": "detail",
  "params": {
   "entity": {"about": "The light this screen controls.", 
@@ -40,6 +40,10 @@
     "state": {
      "e": "$entity",
      "fmt": "avail"
+    },
+    "dimmable": {
+     "e": "$entity",
+     "fmt": "dim"
     }
    },
    "on": {

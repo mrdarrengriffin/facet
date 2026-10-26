@@ -77,6 +77,10 @@ node "$HERE/tools/gen_colour.mjs" "$GEN/colour_gen.h"
 node "$HERE/tools/gen_type.mjs" "$GEN/type_gen.h"
 # space tokens: tokens/space.json -> space_gen.h (fw::sp::, fw::lay::, fw::rad::, fw::stroke::, fw::touch::)
 node "$HERE/tools/gen_space.mjs" "$GEN/space_gen.h"
+# contract core: colour + space + type token names -> fx_gen.h (core/fx_core.cpp: shared token styles, CONTRACT.md)
+node "$HERE/tools/gen_fx.mjs" "$GEN/fx_gen.h"
+# contract lint (tools/contract_lint.mjs): a migrated component (meta "contract": 2) that breaks the contract fails the build
+[ "$DEN" = 1x ] || node "$HERE/tools/contract_lint.mjs" --summary || exit 1
 # layout tokens: tokens/layout.json -> layout_gen.h (fw::lay:: screen geometry, fw::lyt:: devices / size classes / density)
 node "$HERE/tools/gen_layout.mjs" "$GEN/layout_gen.h"
 # motion tokens: tokens/motion.json -> motion_gen.h (fw::mo:: durations, easings, patterns)
@@ -121,7 +125,7 @@ while [ "$(jobs -rp | wc -l)" -gt 0 ]; do wait -n || CC_FAIL=1; done
 [ "${CC_FAIL:-0}" = 0 ] || exit 1
 # objects of deleted components must not linger in the link: OBJS lists only live sources
 em++ $OPT $LVGL_OBJS $OBJS -sALLOW_MEMORY_GROWTH=1 -sMODULARIZE=1 -sEXPORT_ES6=1 -sENVIRONMENT=web,node \
-  -sEXPORTED_FUNCTIONS='["_fw_init","_fw_meta","_fw_stage","_fw_stage_free","_fw_render","_fw_update","_fw_demo_state","_fw_tokens","_fw_content_h","_fw_stage_resize","_fw_touch","_fw_tick","_fw_dirty","_fw_frame","_fw_areas","_fw_events","_fw_ha_wants","_fw_ha_put","_fw_img_wants","_fw_img_put","_fw_img_fail","_fw_img_stats","_fw_setting","_fw_spec","_fw_catalogue","_fw_spec_storage","_fw_anims","_fw_rects","_fw_comps","_fw_hits","_fw_hit","_malloc","_free"]' \
+  -sEXPORTED_FUNCTIONS='["_fw_init","_fw_meta","_fw_stage","_fw_stage_free","_fw_render","_fw_update","_fw_demo_state","_fw_tokens","_fw_content_h","_fw_stage_resize","_fw_touch","_fw_tick","_fw_dirty","_fw_frame","_fw_areas","_fw_events","_fw_ha_wants","_fw_ha_put","_fw_img_wants","_fw_img_put","_fw_img_fail","_fw_img_stats","_fw_setting","_fw_spec","_fw_catalogue","_fw_spec_storage","_fw_anims","_fw_rects","_fw_comps","_fw_hits","_fw_hit","_fw_lab","_malloc","_free"]' \
   -sEXPORTED_RUNTIME_METHODS='["HEAPU8","UTF8ToString","stringToNewUTF8"]' -o "$OUT/fw.mjs"
 S=$(awk "BEGIN{printf \"%.1f\", $(date +%s.%N) - $t0}")
 printf '{"built": "%s", "density": "%s", "opt": "%s", "build_s": %s, "wasm_bytes": %s}\n' "$(date -Is)" "$DEN" "$OPT" "$S" "$(stat -c %s "$OUT/fw.wasm")" > "$OUT/manifest.json"
@@ -136,6 +140,7 @@ node "$HERE/tools/audit.mjs" --den "$DEN" --quiet --build "${FW_OUT:-$HERE/out}"
 if [ "$DEN" = 1.5x ]; then
   node "$HERE/tools/gen_catalogue.mjs" --build "${FW_OUT:-$HERE/out}" | sed "s/^/[$DEN] /"
   node "$HERE/tools/spec_test.mjs" --build "${FW_OUT:-$HERE/out}" | tail -1 | sed "s/^/[$DEN] /"
+  node "$HERE/tools/lab_test.mjs" --build "${FW_OUT:-$HERE/out}" | tail -1 | sed "s/^/[$DEN] /"
   # the floor plan generator on its public fixtures (tests/floorplan): fails the build
   node "$HERE/tools/floorplan_test.mjs" --build "${FW_OUT:-$HERE/out}" | sed "s/^/[$DEN] /"; [ "${PIPESTATUS[0]}" = 0 ] || { echo "[$DEN] floorplan: failures above"; exit 1; }
 fi

@@ -1,0 +1,41 @@
+#!/usr/bin/env node
+// Contract lint (renderer/CONTRACT.md). A component whose meta says "contract": 2 is MIGRATED: it may not know the
+// screen or card width, hold or resolve a colour, draw outside the pen, or set local styles / sizes (it fills its
+// parent through core/fx.h). A violation in a migrated component fails (build.sh, facet-gate). Unmarked components are
+// legacy: counted per rule = the migration backlog, never a failure.
+//   node tools/contract_lint.mjs [--summary | --list]   (--list = the legacy backlog per component)
+import { readFileSync, readdirSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+const DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'components');
+const RULES = {
+  width: /\blay::(screen_w|screen_h|card_w|content_w)\b/,
+  theme: /\bfw::T\b|\bT->|\btheme_of\(|\bfw::Theme\b|\blv_color_(hex|make)\(/,
+  draw: /\blv_draw_/,
+  local: /\blv_obj_set_style_|\blv_style_init\(|\blv_obj_set_(size|width|height|pos|x|y)\(/,
+};
+const mode = process.argv[2] || '--summary';
+const bad = [], legacy = {}, perComp = [];
+let migrated = 0;
+for (const f of readdirSync(DIR).filter((x) => x.endsWith('.cpp')).sort()) {
+  const src = readFileSync(join(DIR, f), 'utf8');
+  const isV2 = /"contract":\s*2\b/.test(src);
+  if (isV2) migrated++;
+  const hits = {};
+  src.split('\n').forEach((line, i) => {
+    const code = line.replace(/\/\/.*$/, '');
+    for (const [r, re] of Object.entries(RULES)) if (re.test(code)) {
+      hits[r] = (hits[r] || 0) + 1;
+      if (isV2) bad.push(`${f}:${i + 1}: ${r}: ${line.trim().slice(0, 120)}`);
+    }
+  });
+  if (!isV2 && Object.keys(hits).length) {
+    perComp.push(`${f.replace('.cpp', '')} ${Object.entries(hits).map(([k, v]) => `${k}=${v}`).join(' ')}`);
+    for (const [k, v] of Object.entries(hits)) { legacy[k] = legacy[k] || { comps: 0, lines: 0 }; legacy[k].comps++; legacy[k].lines += v; }
+  }
+}
+const sum = Object.entries(legacy).map(([k, v]) => `${k} ${v.comps} comps/${v.lines} lines`).join(', ');
+console.log(`contract lint: ${migrated} migrated, ${bad.length} violation(s); legacy backlog: ${perComp.length} components (${sum})`);
+if (mode === '--list') perComp.forEach((l) => console.log('  ' + l));
+bad.forEach((l) => console.log('FAIL ' + l));
+process.exit(bad.length ? 1 : 0);

@@ -2,8 +2,9 @@
 // screen turns the Home page into a screen spec made only of real components and builds it with the spec renderer
 // (core/spec.h build: binds to the entities' live state, the tap actions, the header):
 //   header   the Header (label = the page name; Back unless it is the start page) + the screen chrome
-//   content  one Card grid (components/card_grid.cpp: the §4 packing, s / m / l rows) holding one node per card, in
-//            the deck's order, from the card type catalogue (CARD_TYPES: the component per size):
+//   content  one Cells layout (components/cells.cpp) per run of same-size cards, in the deck's order: tiles (min
+//            tile-w x tile-h, three to a row), cards (min home-card-min-w x card-h, two to a row; two readouts in a row
+//            share one cell, a pair), wide cards (wide: one per row); one node per card, from the card type catalogue (CARD_TYPES: the component per size):
 //              light   s Entity tile (bulb / power icon, "64%" / "Off", on = accent) | m Card (value = the level)
 //              cover   s Entity tile (opens Blinds) | m Card (position, state)
 //              climate m Card (current temperature, state)
@@ -140,8 +141,7 @@ char card_node(Var cd, Var pages, int slot, ArduinoJson::JsonArray nodes) {
     }
     p["act"] = t == "sensor" ? "none" : tap == "toggle" ? "toggle" : "open";
     if (t != "page") bind(p, "state", e, "avail");
-  } else if (comp_s == "card") {
-    p["size"] = size;
+  } else if (comp_s == "card") {  // the card fills its cell (no size prop: the Card grid gives it its size)
     p["preview"] = "none";
     p["sub"] = "";
     p["value"] = "";
@@ -224,20 +224,52 @@ void build_home(lv_obj_t *parent, fw::Props props) {
       sp["header"]["actions"]["status"] = st;
     }
   }
-  sp["layout"] = "list";
+  sp["layout"] = "cards";  // the Cells layouts one under another, a gutter apart (each fills the width)
   ArduinoJson::JsonArray nodes = sp["nodes"].to<ArduinoJson::JsonArray>();
-  ArduinoJson::JsonObject grid = nodes.add<ArduinoJson::JsonObject>();
-  grid["c"] = "card_grid";
-  grid["p"]["sample"] = false;
-  std::string cells;
-  int slot = 0;
+  // every card's node first (in its own list), then one Cells per run of same-size cards (h counts as m: two readouts
+  // in a row share one cell, a "p" pair), each followed by its cards with "in" = that Cells and their slot in it
+  Doc tmp;
+  ArduinoJson::JsonArray cards = tmp.to<ArduinoJson::JsonArray>();
+  std::string kinds;
   for (Var cd : page["cards"].as<ArduinoJson::JsonArrayConst>()) {
-    const char k = card_node(cd, deck["pages"], slot, nodes);
-    if (!k) continue;
-    cells += (cells.empty() ? "" : ",") + std::string(1, k);
-    slot++;
+    const char k = card_node(cd, deck["pages"], 0, cards);
+    if (k) kinds += k;
   }
-  grid["p"]["cells"] = cells;
+  size_t i = 0;
+  while (i < kinds.size()) {
+    const char run = kinds[i] == 'h' ? 'm' : kinds[i];
+    const int at = (int) nodes.size();
+    ArduinoJson::JsonObject lay = nodes.add<ArduinoJson::JsonObject>();
+    lay["c"] = "cells";
+    lay["p"]["sample"] = false;
+    lay["p"]["min-w"] = run == 's' ? "tile-w" : "home-card-min-w";
+    lay["p"]["min-h"] = run == 's' ? "tile-h" : "card-h";
+    if (run == 'l') lay["p"]["wide"] = true;
+    else if (run != 's') lay["p"]["last"] = "fill";  // a lone card on the last row goes full width (tiles keep columns)
+    std::string cells;
+    int slot = 0;
+    for (; i < kinds.size() && (kinds[i] == 'h' ? 'm' : kinds[i]) == run; i++) {
+      const bool half = kinds[i] == 'h';
+      if (half) {  // a pair cell: this readout on top, the next one (if a readout) under it
+        cells += cells.empty() ? "p" : ",p";
+        for (int h = 0; h < 2 && i < kinds.size() && kinds[i] == 'h'; h++, i++) {
+          ArduinoJson::JsonObject n = nodes.add<ArduinoJson::JsonObject>();
+          n.set(cards[i]);
+          n["in"] = at;
+          n["slot"] = slot + h;
+        }
+        slot += 2;
+        i--;  // the for loop's i++
+        continue;
+      }
+      cells += cells.empty() ? "c" : ",c";
+      ArduinoJson::JsonObject n = nodes.add<ArduinoJson::JsonObject>();
+      n.set(cards[i]);
+      n["in"] = at;
+      n["slot"] = slot++;
+    }
+    lay["p"]["cells"] = cells;
+  }
   std::string json, error;
   serializeJson(sp, json);
   Doc none;

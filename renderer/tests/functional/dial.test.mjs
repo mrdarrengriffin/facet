@@ -3,7 +3,8 @@
 // disabled + unavailable block; update path silent.
 import { D, last, num, ring, comps } from './_controls.mjs';
 const P = { value: 64, min: 0, max: 100, step: 1, on: true, caption: 'Brightness', unit: '%', opening: false };
-const arc = (t) => t.find({ type: 'arc' });
+// the value arc's square (layout:dial-arc), centred in the dial: the ring is drawn by the Pen now (contract v2), no lv_arc
+const arc = (t) => { const b = t.part('dial'), a = t.b.S > 600 ? 432 : 288; return { x: b.x + b.w / 2 - a / 2, y: b.y + b.h / 2 - a / 2, w: a, h: a }; };
 const val = (t) => { const v = t.texts().filter((s) => /^-?\d+(\.\d+)?$/.test(s)); return v.length ? Number(v[0]) : null; };
 const ch = (ev) => num(last(ev, 'change'));
 const at = (t, f) => ring(arc(t), f, 3);

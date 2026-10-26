@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 #include "fw.h"
+#include "fx.h"
 #include "device.h"
 
 namespace fw {
@@ -405,6 +406,8 @@ const char *render(lv_obj_t *scr, const char *comp, const char *props, bool ligh
   lv_obj_set_flex_flow(scr, LV_FLEX_FLOW_COLUMN);
   lv_obj_set_flex_align(scr, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
   lv_obj_remove_flag(scr, LV_OBJ_FLAG_SCROLLABLE);
+  fx::look(lv_obj_get_display(scr), T);  // the contract's shared styles for this display (CONTRACT.md)
+  if (fx::migrated(c)) lv_obj_set_style_pad_hor(scr, lay::inset, 0);  // a migrated component fills a page's content box
   c->build(scr, doc.as<ArduinoJson::JsonObjectConst>());
   // the update path needs exactly one root object (a component that puts several objects on the screen has none)
   if (lv_obj_get_child_count(scr) == 1) {
@@ -532,6 +535,18 @@ lv_obj_t *text(lv_obj_t *parent, ty::Id s, const char *txt, lv_color_t c, int wr
   lv_obj_set_style_text_color(l, c, 0);
   lv_label_set_text(l, cased(s, txt).c_str());
   return l;
+}
+
+// the type style's box rule as values (core/fx_core.cpp builds the shared type:<style> styles from it)
+void text_metrics(ty::Id s, int &line_space, int &pad_top, int &pad_bottom, int &translate_y) {
+  const ty::Style &st = ty::STYLES[s];
+  const lv_font_t *f = font(s);
+  const int lh = lv_font_get_line_height(f), asc = lh - f->base_line;
+  const int off = (int) lroundf((st.box + cap_px(f)) / 2.0f) - asc;
+  line_space = st.box - lh;
+  pad_top = off > 0 ? off : 0;
+  pad_bottom = -(std::max(0, pad_top + lh - st.box) + 2);
+  translate_y = off < 0 ? off : 0;
 }
 
 void set_text(lv_obj_t *l, ty::Id s, const char *txt) { lv_label_set_text(l, cased(s, txt).c_str()); }

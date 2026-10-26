@@ -2,8 +2,8 @@
 // model §4. Cells of three sizes flow in the given order into rows of one size, each cell a slot a spec node goes into
 // ("in" / "slot", core/spec.h):
 //   s   a tile, lay::tile_w x tile_h (208 / 136), three per row
-//   m   a card, lay::card_w x card_h (320 x 280 / 212 x 184), two per row
-//   l   a wide card, lay::content_w x card_h, one per row
+//   m   a card, the full content width x card_h for now (Darren 2026-10-26: a card has no width of its own, it fills its
+//       cell; l = the same; a Grid component that lays cards out two-up comes later), one per row
 //   h   half a card slot (a State readout): two in a row share one m slot, stacked sp::s2 apart with a hairline between
 //       them inset by the card padding, each half on the grid (136 / 88: the first at the slot's top, the second ending on
 //       its bottom, the hairline centred in the gap), so they count as one m cell
@@ -30,7 +30,7 @@ int pack(const std::string &cells, std::vector<Cell> &out, std::vector<lv_area_t
   int in_row = 0;   // m slots / tiles used in it
   int y = 0, row_h = 0;
   bool half_open = false;  // the last m slot holds one h and has room for a second
-  auto per_row = [](char k) { return k == 's' ? 3 : k == 'm' ? 2 : 1; };
+  auto per_row = [](char k) { return k == 's' ? 3 : 1; };  // m = full width for now (Darren 2026-10-26: cards have no width; a Grid comes later)
   for (size_t i = 0; i < cells.size(); i++) {
     char k = cells[i];
     if (k == ',' || k == ' ') continue;
@@ -51,7 +51,7 @@ int pack(const std::string &cells, std::vector<Cell> &out, std::vector<lv_area_t
       in_row = 0;
       row_h = rk == 's' ? fw::lay::tile_h : fw::lay::card_h;
     }
-    const int w = rk == 's' ? fw::lay::tile_w : rk == 'm' ? fw::lay::card_w : fw::lay::content_w;
+    const int w = rk == 's' ? fw::lay::tile_w : fw::lay::content_w;  // a card fills its cell (contract): one per row
     const int x = in_row * (w + g);
     out.push_back({k, x, y, w, k == 'h' ? hh : row_h});
     in_row++;

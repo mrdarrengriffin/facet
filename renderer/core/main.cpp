@@ -29,6 +29,8 @@
 #include "spec.h"
 #include "device.h"
 #include "images.h"
+#include "fx.h"
+#include "core/lv_obj_style_private.h"  // the style list (fw_lab names the token styles)
 // LVGL private (src/core/lv_obj_draw_private.h): the ext draw size an object holds (fw::bleed sets it)
 extern "C" int32_t lv_obj_get_ext_draw_size(const lv_obj_t *obj);
 #include <map>
@@ -422,6 +424,128 @@ EMSCRIPTEN_KEEPALIVE const char *fw_hit(int id, int x, int y) {
   Stage *s = get(id);
   ArduinoJson::JsonDocument doc;
   if (!s || !fw::spec::hit(s->d, x, y, doc.to<ArduinoJson::JsonObject>())) return "null";
+  serializeJson(doc, out);
+  return out.c_str();
+}
+
+// the workbench Layout lab (hub src/wasm/lablayout.ts): fw_lab(id, cmd, arg)
+//   "tokens", ""           -> [[name, token px, now px]] every size token (fx::tunables)
+//   "tune", "name=px"      -> "" : that token as if it said px, live on every stage (fx::tune; "=" alone = all back)
+//   "uses", ""             -> ["name"]: the size tokens stage id's objects read (their shared styles + the pen while
+//                             drawing; page ones only with a Page on it): the lab shows exactly these
+//   "probe", "<squeeze>"   -> {name: 1 | 0}: which size tokens (+ "squeeze") change stage id's pixels (each moved
+//                             and put back, rendered synchronously): the lab shows what this component really uses
+//   "proof", ""            -> {bounds, overlap, trunc: [{x, y, w, h, why}]} for stage id: Body objects outside their
+//                             parent's content box (bleed skipped), clickable areas that overlap (not nested), text
+//                             wider than its label (cut to "...")
+namespace {
+bool lab_has(lv_obj_t *o, const char *name) {
+  for (uint32_t i = 0; i < o->style_cnt; i++) { const char *n = fx::style_name(o->styles[i].style); if (n && !strcmp(n, name)) return true; }
+  return false;
+}
+void lab_box(ArduinoJson::JsonArray arr, const lv_area_t &a, const std::string &why) {
+  auto r = arr.add<ArduinoJson::JsonObject>();
+  r["x"] = a.x1; r["y"] = a.y1; r["w"] = lv_area_get_width(&a); r["h"] = lv_area_get_height(&a); r["why"] = why;
+}
+std::string lab_name(lv_obj_t *o) {
+  if (lv_obj_check_type(o, &lv_label_class)) return std::string("text \"") + lv_label_get_text(o) + "\"";
+  for (uint32_t i = 0; i < o->style_cnt; i++) if (const char *n = fx::style_name(o->styles[i].style)) return std::string("[") + n + "]";
+  return "object";
+}
+void lab_walk(lv_obj_t *o, bool in_body, ArduinoJson::JsonArray bounds, ArduinoJson::JsonArray trunc, std::vector<lv_obj_t *> &clicks) {
+  for (uint32_t i = 0; i < lv_obj_get_child_count(o); i++) {
+    lv_obj_t *c = lv_obj_get_child(o, i);
+    if (lv_obj_has_flag(c, LV_OBJ_FLAG_HIDDEN)) continue;
+    const bool body = in_body || lab_has(c, "body");
+    lv_area_t a;
+    lv_obj_get_coords(c, &a);
+    if (lv_obj_check_type(c, &lv_label_class)) { const int32_t ty = lv_obj_get_style_translate_y(c, LV_PART_MAIN); a.y1 -= ty; a.y2 -= ty; }  // text-box translate is not layout
+    if (in_body && !lab_has(c, "bleed")) {
+      lv_area_t p;
+      lv_obj_get_content_coords(o, &p);
+      if (a.x1 < p.x1 || a.y1 < p.y1 || a.x2 > p.x2 || a.y2 > p.y2)
+        lab_box(bounds, a, lab_name(c) + " " + std::to_string(lv_area_get_width(&a)) + "x" + std::to_string(lv_area_get_height(&a)) +
+                " outside its parent's content box " + std::to_string(lv_area_get_width(&p)) + "x" + std::to_string(lv_area_get_height(&p)));
+    }
+    if (lv_obj_check_type(c, &lv_label_class)) {
+      const char *t = lv_label_get_text(c);
+      lv_point_t sz;
+      lv_text_get_size(&sz, t, lv_obj_get_style_text_font(c, LV_PART_MAIN), lv_obj_get_style_text_letter_space(c, LV_PART_MAIN),
+                       lv_obj_get_style_text_line_space(c, LV_PART_MAIN), LV_COORD_MAX, LV_TEXT_FLAG_NONE);
+      const int cw = lv_obj_get_content_width(c);
+      if (t && *t && sz.x > cw) lab_box(trunc, a, lab_name(c) + " needs " + std::to_string(sz.x) + " px, has " + std::to_string(cw));
+    }
+    if (body && lv_obj_has_flag(c, LV_OBJ_FLAG_CLICKABLE)) clicks.push_back(c);
+    lab_walk(c, body, bounds, trunc, clicks);
+  }
+}
+bool lab_inside(lv_obj_t *o, lv_obj_t *anc) { for (; o; o = lv_obj_get_parent(o)) if (o == anc) return true; return false; }
+}  // namespace
+EMSCRIPTEN_KEEPALIVE const char *fw_lab(int id, const char *cmd, const char *arg) {
+  out.clear();
+  const std::string c = cmd, a = arg ? arg : "";
+  if (c == "tokens") { out = fx::tunables(); return out.c_str(); }
+  if (c == "tune") {
+    const size_t eq = a.find('=');
+    const std::string n = a.substr(0, eq);
+    fx::tune(n.c_str(), eq == std::string::npos || eq + 1 >= a.size() ? -1 : atoi(a.c_str() + eq + 1));
+    for (Stage *s : stages) if (s && s->d) { lv_obj_update_layout(lv_display_get_screen_active(s->d)); lv_obj_invalidate(lv_display_get_screen_active(s->d)); }
+    return "";
+  }
+  if (c == "uses") { Stage *s = get(id); out = s ? fx::uses(s->d) : "[]"; if (s) { s->areas.assign({0, 0, s->w - 1, s->h - 1}); s->dirty = true; } return out.c_str(); }
+  if (c == "probe") {  // which size tokens change stage id's pixels: {"name": 1 | 0, ..., "squeeze": 1 | 0}; arg = the squeeze now
+    Stage *s = get(id);
+    if (!s) return "{}";
+    lv_obj_t *scr = lv_display_get_screen_active(s->d);
+    auto shot = [&] {
+      lv_obj_update_layout(scr); lv_obj_invalidate(scr); lv_refr_now(s->d);
+      uint64_t h = 1469598103934665603ull;
+      for (uint32_t p : s->rgba) h = (h ^ p) * 1099511628211ull;
+      return h;
+    };
+    ArduinoJson::JsonDocument all, doc;
+    deserializeJson(all, fx::tunables());
+    const uint64_t base = shot();
+    for (ArduinoJson::JsonVariant t : all.as<ArduinoJson::JsonArray>()) {
+      const std::string n = t[0].as<const char *>();
+      const int b = t[1], now = t[2], step = std::max(4, now / 2);
+      fx::tune(n.c_str(), now + step);  // a look size clamps to its range: then the other way too
+      bool hit = shot() != base;
+      if (!hit) { fx::tune(n.c_str(), std::max(0, now - step)); hit = shot() != base; }
+      fx::tune(n.c_str(), now == b ? -1 : now);
+      doc[n] = hit ? 1 : 0;
+    }
+    const int sq = a.empty() ? -1 : atoi(a.c_str());
+    fx::tune("squeeze", s->w / 2);
+    doc["squeeze"] = shot() != base ? 1 : 0;
+    fx::tune("squeeze", sq > 0 ? sq : -1);
+    shot();
+    s->areas.assign({0, 0, s->w - 1, s->h - 1});  // the host copies the stage once, not every probe frame
+    s->dirty = true;
+    serializeJson(doc, out);
+    return out.c_str();
+  }
+  if (c != "proof") return "tokens | tune | uses | probe | proof";
+  Stage *s = get(id);
+  if (!s) return "{}";
+  lv_obj_t *scr = lv_display_get_screen_active(s->d);
+  lv_obj_update_layout(scr);
+  ArduinoJson::JsonDocument doc;
+  auto bounds = doc["bounds"].to<ArduinoJson::JsonArray>(), overlap = doc["overlap"].to<ArduinoJson::JsonArray>(),
+       trunc = doc["trunc"].to<ArduinoJson::JsonArray>();
+  std::vector<lv_obj_t *> clicks;
+  // a component mounted alone (no Page on the stage) is all "body": the stage's content box is its parent
+  lv_obj_t *first = lv_obj_get_child(scr, 0);
+  lab_walk(scr, first && !lab_has(first, "page"), bounds, trunc, clicks);
+  for (size_t i = 0; i < clicks.size(); i++)
+    for (size_t j = i + 1; j < clicks.size(); j++) {
+      if (lab_inside(clicks[i], clicks[j]) || lab_inside(clicks[j], clicks[i])) continue;
+      lv_area_t p, q, r;
+      lv_obj_get_click_area(clicks[i], &p);
+      lv_obj_get_click_area(clicks[j], &q);
+      r.x1 = LV_MAX(p.x1, q.x1); r.y1 = LV_MAX(p.y1, q.y1); r.x2 = LV_MIN(p.x2, q.x2); r.y2 = LV_MIN(p.y2, q.y2);
+      if (r.x1 <= r.x2 && r.y1 <= r.y2) lab_box(overlap, r, lab_name(clicks[i]) + " and " + lab_name(clicks[j]) + " touch areas overlap");
+    }
   serializeJson(doc, out);
   return out.c_str();
 }

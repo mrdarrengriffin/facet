@@ -119,6 +119,7 @@
 // Boot: an override whose record fails its CRC or validation falls back to its last good copy, then to factory.
 #pragma once
 #include <algorithm>
+#include "fx.h"
 #include <cmath>
 #include <cstdint>
 #include <cstring>
@@ -128,6 +129,7 @@
 #include <string>
 #include <vector>
 #include "fw.h"
+#include "fx.h"
 #include "ha.h"
 #include "specs_gen.h"
 
@@ -145,7 +147,8 @@ inline const Budget &budget() {
   static Budget b;
   return b;
 }
-constexpr uint32_t LIGHT_THROTTLE_MS = 250;  // light-throttle-ms: live brightness at most this often while dragging
+constexpr uint32_t LIGHT_THROTTLE_MS = 200;  // light-throttle-ms: live brightness at most this often while dragging (Astro light.ts)
+constexpr uint32_t LIGHT_HOLD_MS = 3000;     // a light's own change holds HA's echoes off this long (Astro light.ts: no jump back)
 constexpr uint32_t PENDING_MS = 5000;        // a switch / brightness waits this long for HA before showing HA's state
 
 // ---- the action whitelist per component and event (the catalogue's "actions")
@@ -174,7 +177,7 @@ constexpr Rule RULES[] = {
 constexpr const char *ACTIONS[] = {"light.switch", "light.toggle", "light.brightness", "climate.set_temperature",
                                    "climate.set_hvac_mode", "climate.set_preset_mode", "media.control", "cover.control", "lock.control", "vacuum.control", "screen.toggle", "screen.param",
                                    "nav.open", "nav.back"};
-constexpr const char *FMTS[] = {"", "on", "pct", "avail", "light", "name", "num", "frac", "count", "time", "day", "level", "state"};
+constexpr const char *FMTS[] = {"", "on", "pct", "avail", "light", "name", "num", "frac", "count", "time", "day", "level", "state", "dim"};
 constexpr uint32_t CLIMATE_THROTTLE_MS = 250;  // like light-throttle-ms: a set point while dragging at most this often
 constexpr const char *LAYOUTS[] = {"list", "center", "cards"};
 constexpr int EACH_MAX = 12;                         // copies one "each" node makes at most
@@ -374,7 +377,7 @@ inline void check_value(const PropInfo &pi, ArduinoJson::JsonVariantConst v, con
     }
     if (!entity_ok(v["e"] | "") && !(!strcmp(v["e"] | "x", "") && v["s"].is<const char *>()))
       err(e, path + ".e", "bad_bind", "a bind needs an entity (domain.object or $param), or e \"\" with s (a screen parameter)");
-    if (!one_of(FMTS, v["fmt"] | "")) err(e, path + ".fmt", "bad_bind", "fmt is one of on, pct, avail, light, name, num, frac, count, time, day");
+    if (!one_of(FMTS, v["fmt"] | "")) err(e, path + ".fmt", "bad_bind", "fmt is one of on, pct, avail, dim, light, name, num, frac, count, time, day");
     binds++;
     return;
   }
@@ -982,7 +985,7 @@ inline void tick(lv_timer_t *t) {
     if (n.want == ON_ONLY && lv_tick_diff(now, n.sent_at) >= 300) {
       n.want = -1;
       if (!*ha::act(n.obj, "light.turn_on", n.entity.c_str())) { n.sent = -1; n.sent_at = now; }
-      ha::hold(n.obj, PENDING_MS, n.entity, "", "on");
+      ha::hold(n.obj, LIGHT_HOLD_MS, n.entity, "", "on");
     } else if (n.want >= 0 && n.want != ON_ONLY && lv_tick_diff(now, n.sent_at) >= LIGHT_THROTTLE_MS) {
       send_brightness(n, n.want);
       n.want = -1;
@@ -1261,12 +1264,13 @@ inline bool run(Screen *s, Node &n, const char *event, const char *detail) {
   }
   if (d == "light.switch") {
     const bool v = !strcmp(detail, "on");
-    if (v && n.has_brightness) { n.want = ON_ONLY; n.sent_at = lv_tick_get(); return true; }  // a drag may follow
+    const bool sw = n.entity.rfind("switch.", 0) == 0;  // the light screen takes switch.* too (an on / off dial)
+    if (v && n.has_brightness && !sw) { n.want = ON_ONLY; n.sent_at = lv_tick_get(); return true; }  // a drag may follow
     if (!v && n.has_brightness && n.sent == 0) return true;                                   // the released 0 did it
-    if (*ha::act(n.obj, v ? "light.turn_on" : "light.turn_off", n.entity.c_str())) return true;
+    if (*ha::act(n.obj, sw ? (v ? "switch.turn_on" : "switch.turn_off") : v ? "light.turn_on" : "light.turn_off", n.entity.c_str())) return true;
     if (n.has_brightness) n.sent = v ? -1 : 0;
     n.sent_at = lv_tick_get();
-    ha::hold(n.obj, PENDING_MS, n.entity, "", v ? "on" : "off");
+    ha::hold(n.obj, LIGHT_HOLD_MS, n.entity, "", v ? "on" : "off");
     if (!n.pending.empty()) n.pend = v ? 1 : -1;
     return true;
   }
@@ -1298,7 +1302,7 @@ inline bool run(Screen *s, Node &n, const char *event, const char *detail) {
   if (d == "light.brightness") {
     const int v = (int) std::lround(atof(detail));
     if (!strcmp(event, "input")) {  // live: throttle with a trailing send
-      ha::hold(n.obj, PENDING_MS);
+      ha::hold(n.obj, LIGHT_HOLD_MS);
       if (v == 0 && !n.drag_sent) return true;
       n.drag_sent = true;
       if (n.want == ON_ONLY || n.sent < 0 || lv_tick_elaps(n.sent_at) >= LIGHT_THROTTLE_MS) { n.want = -1; send_brightness(n, v); }
@@ -1308,8 +1312,8 @@ inline bool run(Screen *s, Node &n, const char *event, const char *detail) {
     n.want = -1;  // released: the final value now
     n.drag_sent = false;
     send_brightness(n, v);
-    if (v > 0) ha::hold(n.obj, PENDING_MS, n.entity, "brightness", std::to_string(v), true);
-    else ha::hold(n.obj, PENDING_MS, n.entity, "", "off");
+    if (v > 0) ha::hold(n.obj, LIGHT_HOLD_MS, n.entity, "brightness", std::to_string(v), true);
+    else ha::hold(n.obj, LIGHT_HOLD_MS, n.entity, "", "off");
     return true;
   }
   return false;
@@ -1441,8 +1445,8 @@ inline lv_obj_t *build(lv_obj_t *parent, const std::string &id, Props opened, st
   lv_obj_set_user_data(s->root, s);
   live().push_back(s);
   lv_obj_set_size(s->root, lay::screen_w, lay::screen_h);
-  lv_obj_set_style_bg_color(s->root, t.bg, 0);
-  lv_obj_set_style_bg_opa(s->root, LV_OPA_COVER, 0);
+  fx::look(lv_obj_get_display(parent), T);  // the contract's shared styles (CONTRACT.md): the screen is a Page
+  fx::use(s->root, "bg:bg");
   lv_obj_add_event_cb(s->root, [](lv_event_t *e) {
     auto *s = (Screen *) lv_event_get_user_data(e);
     if (s->timer) lv_timer_delete(s->timer);
@@ -1469,30 +1473,12 @@ inline lv_obj_t *build(lv_obj_t *parent, const std::string &id, Props opened, st
       else { hd["label"].to<ArduinoJson::JsonObject>(); hd["label"]["e"] = oe; hd["label"]["fmt"] = "name"; }
     }
   }
-  if (lv_obj_t *h = ha::bound(s->root, "header", hd.as<Props>())) {  // a bound label follows the entity's name
-    lv_obj_set_pos(h, lay::inset, lay::inset);
-    building_header() = h;
-  }
+  // Screen > Page > Header slot + Body (fx::page): the inset is padding INSIDE the body, from the structure
   const std::string layout = doc["layout"] | "list";
-  lv_obj_t *c = box(s->root);
-  if (layout == "center") {  // the one node centred in the content box (lay::top .. bottom inset), on the 4 px grid
-    lv_obj_set_pos(c, 0, lay::top);
-    lv_obj_set_size(c, lay::screen_w, lay::screen_h - lay::top - lay::inset);
-    lv_obj_set_flex_flow(c, LV_FLEX_FLOW_COLUMN);
-    lv_obj_set_flex_align(c, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-  } else {
-    lv_obj_add_flag(c, (lv_obj_flag_t) (LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_CLICKABLE));  // clickable: a drag on a
-    lv_obj_set_scroll_dir(c, LV_DIR_VER);  // readout (a plant row, a camera still) scrolls the list too
-    lv_obj_set_scrollbar_mode(c, LV_SCROLLBAR_MODE_OFF);
-    lv_obj_set_pos(c, lay::inset, lay::top);
-    lv_obj_set_size(c, lay::content_w, lay::screen_h - lay::top);
-    lv_obj_set_style_pad_bottom(c, lay::inset, 0);
-    lv_obj_set_flex_flow(c, layout == "cards" ? LV_FLEX_FLOW_ROW_WRAP : LV_FLEX_FLOW_COLUMN);
-    if (layout == "cards") {
-      lv_obj_set_style_pad_column(c, lay::gutter, 0);
-      lv_obj_set_style_pad_row(c, lay::gutter, 0);
-    }
-  }
+  const fx::Page pg = fx::page(s->root, layout == "center" ? "center" : layout == "cards" ? "cards" : "list");
+  if (lv_obj_t *h = ha::bound(pg.head, "header", hd.as<Props>()))  // a bound label follows the entity's name
+    building_header() = h;
+  lv_obj_t *c = pg.body;
   size_t ni = 0;
   bool prev_row = true;  // the last node placed straight in the list column was a row
   for (ArduinoJson::JsonVariantConst nd : doc["nodes"].as<ArduinoJson::JsonArrayConst>()) {

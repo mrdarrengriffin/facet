@@ -43,6 +43,7 @@ void restyle(lv_obj_t *o, const std::function<void()> &change, bool animate = tr
 // the same for a component that makes its contents again (fw::refill + fill): objects are matched by their place in
 // the tree (child index path + type) before and after, and every local colour / opacity that differs fades from the
 // old look to the new. Same structure = a pure look change (a tone, a mark); new or moved parts just appear.
-void refill_fade(lv_obj_t *root, const std::function<void()> &rebuild, bool animate = true);
+// shared = also fade values that come from shared token styles (contract components: core/fx.h)
+void refill_fade(lv_obj_t *root, const std::function<void()> &rebuild, bool animate = true, bool shared = false);
 }  // namespace st
 }  // namespace fw

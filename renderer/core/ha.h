@@ -9,7 +9,9 @@
 //            builds the component with the values from the store and, when one of its pairs changes, moves it through
 //            its update path (FW_UPDATE, silent), never a rebuild. fmt: (none) the raw string; "on" state == on (bool);
 //            "pct" a 0-255 attribute as 0-100 (missing / None = 0); "avail" "unavailable" when the state is
-//            unavailable / unknown, else "default" (no value yet = "default"); "light" the light row's sub text
+//            unavailable / unknown, "missing" when the host reported an empty state (HA has no such entity: the
+//            host puts "" for it), else "default" (no value yet = "default"); "dim" whether a light can be dimmed
+//            (false for switch.* and a light whose supported_color_modes is only onoff; missing = true); "light" the light row's sub text
 //            ("Off", "On", "On · 64%"); "name" the friendly_name (else the entity id); "num" a number attribute
 //            (a thermostat's temperature / current_temperature; missing = the component's default); "frac" a 0-1
 //            attribute as 0-100 (a media player's volume_level; missing = the component's default).
@@ -220,7 +222,20 @@ inline void bind_raw(ArduinoJson::JsonVariantConst b, ArduinoJson::JsonObject ou
   const bool on = st && *st == "on";
   if (fmt == "on") { use(""); out[key] = on; return; }
   if (fmt == "pct") { use(a.empty() ? "brightness" : a); out[key] = pct(e, a.empty() ? "brightness" : a.c_str()); return; }
-  if (fmt == "avail") { use(""); out[key] = st && (*st == "unavailable" || *st == "unknown") ? "unavailable" : "default"; return; }
+  if (fmt == "avail") {
+    use("");
+    out[key] = e.empty() || (st && st->empty()) ? "missing" : st && (*st == "unavailable" || *st == "unknown") ? "unavailable" : "default";
+    return;
+  }
+  if (fmt == "dim") {  // a dimmable light: any colour mode but onoff (HA supported_color_modes); a switch never
+    use("supported_color_modes");
+    if (e.rfind("switch.", 0) == 0) { out[key] = false; return; }
+    const std::string *m = get(e, "supported_color_modes");
+    bool dim = !m || m->empty();
+    for (const char *k : {"brightness", "color_temp", "hs", "xy", "rgb", "white"}) if (m && m->find(k) != std::string::npos) dim = true;
+    out[key] = dim;
+    return;
+  }
   if (fmt == "light") {
     use(""); use("brightness");
     if (!st || *st == "unavailable" || *st == "unknown") { out[key] = ""; return; }
@@ -449,7 +464,8 @@ inline const char *act(lv_obj_t *from, const char *service, const char *entity, 
   } else if (svc == "cover.open_cover" || svc == "cover.close_cover" || svc == "cover.stop_cover" ||
              svc == "lock.lock" || svc == "lock.unlock" || svc == "lock.open" || svc == "vacuum.start" ||
              svc == "vacuum.pause" || svc == "vacuum.return_to_base" ||
-             svc == "light.turn_off" || svc == "light.toggle" || svc == "switch.toggle" || svc == "media_player.media_play_pause" ||
+             svc == "light.turn_off" || svc == "light.toggle" || svc == "switch.toggle" ||
+             svc == "switch.turn_on" || svc == "switch.turn_off" || svc == "media_player.media_play_pause" ||
              svc == "media_player.media_next_track" || svc == "media_player.media_previous_track") {
     if (data.size()) return "no data for this action";
   } else return "action not allowed";
