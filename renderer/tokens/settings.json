@@ -123,6 +123,26 @@
       }
     },
     {
+      "id": "rotation", "help": "Turns the picture to match how the panel is mounted. Touch turns with it.",
+      "group": "look",
+      "label": "Rotate screen",
+      "kind": "select",
+      "control": "segmented",
+      "default": "0",
+      "about": "Clockwise, applied at once without a restart (panel firmware: LVGL rotation, the touch points turn with it). The workbench and docs previews stay upright.",
+      "options": [
+        {"id": "0", "label": "0°"},
+        {"id": "90", "label": "90°"},
+        {"id": "180", "label": "180°"},
+        {"id": "270", "label": "270°"}
+      ],
+      "esphome": {
+        "id": "rotation_select",
+        "name": "Rotate screen",
+        "icon": "mdi:screen-rotation"
+      }
+    },
+    {
       "id": "sounds", "help": "Turns the panel's taps and alert sounds on or off.",
       "group": "sound",
       "label": "UI sounds",

@@ -449,6 +449,33 @@ inline void ha_action(const char *service, const char *entity, const char *data_
 #endif
 }
 
+// ---------------------------------------------------------------- toasts from Home Assistant (facet-190)
+// The ESPHome action facet_toast {title, body, icon, kind, duration (ms)} -> the device runtime's Toast layer: the toast
+// JSON goes on the pseudo pair facet.toast (core/device.h TOAST_PAIR, ha::on_put), the same path the workbench uses.
+// kind = the Toast tone (ok warn error working info idle; else info); icon = one of the Toast's icons (else bell);
+// duration >= 10 s = an urgent toast (stays much longer), else normal. Each call carries its own n, so the same
+// message twice shows twice (ha::put drops an unchanged value). Main loop (ESPHome actions run there).
+inline void toast_from_ha(const std::string &title, const std::string &body, const std::string &icon, const std::string &kind, float duration_ms) {
+  static const char *TONES[] = {"ok", "warn", "error", "working", "info", "idle"};
+  static const char *ICONS[] = {"timer", "agent", "person", "washer", "vacuum", "bolt", "alert", "done", "bell", "check", "pr"};
+  auto pick = [](const std::string &v, const char *const *list, size_t n, const char *dflt) {
+    for (size_t i = 0; i < n; i++) if (v == list[i]) return list[i];
+    return dflt;
+  };
+  static uint32_t n = 0;
+  ArduinoJson::JsonDocument t;
+  t["n"] = ++n;
+  t["title"] = title.substr(0, 80);
+  t["body"] = body.substr(0, 160);
+  t["icon"] = pick(icon, ICONS, sizeof ICONS / sizeof *ICONS, "bell");
+  t["tone"] = pick(kind, TONES, sizeof TONES / sizeof *TONES, "info");
+  t["life"] = duration_ms >= 10000 ? "urgent" : "normal";
+  std::string j;
+  serializeJson(t, j);
+  fw::ha::put(fw::dev::TOAST_PAIR, "", j);
+  ESP_LOGI("facet_wb", "toast from HA: %s", j.c_str());
+}
+
 // ---------------------------------------------------------------- screen specs (core/spec.h)
 // Overrides live in NVS namespace "facet_spec" (key s.<id> = the record, g.<id> = its last good copy, idx = the ids;
 // a record = CRC32 + JSON). NVS writes one key atomically; the CRC catches the rest. Apply runs in the main loop
@@ -1019,6 +1046,18 @@ class Handler : public AsyncWebHandler {
 };
 
 // on_boot (after lvgl + web_server): our own screen, the last request again (or the first component), the handler
+// ---------------------------------------------------------------- Rotate screen (facet-191)
+// The setting "rotation" (0 / 90 / 180 / 270, clockwise) -> the host's LVGL rotation (ESPHome lvgl `rotation:` set in
+// the YAML, so it can change at run time; touch points turn with it in the ESPHome LVGL touch path). The host sets
+// rotate_hook at boot (workbench.yaml: id(lvgl_root)->set_rotation(deg)); applied at boot and on every change, from the
+// next LVGL pass (never inside the tap that changed it: the press and its release must land in one orientation).
+inline void (*rotate_hook)(int deg) = nullptr;
+inline int rotation_now() { const char *v = fw::dev::setting("rotation"); return v ? atoi(v) : 0; }
+inline void apply_rotation() {
+  if (!rotate_hook) return;
+  lv_async_call([](void *) { if (rotate_hook) rotate_hook(rotation_now()); }, nullptr);
+}
+
 inline void setup() {
   fw::bundle::link_all();
   // component events + sound requests: logged (TODO: sound playback on the panels; no audio path yet)
@@ -1055,6 +1094,7 @@ inline void setup() {
   lv_timer_create(drain, 20, nullptr);
   // settings (core/device.h): the shown page follows every change; the probation chip follows the look
   fw::dev::observe([](const char *id, const char *, fw::dev::From from) {
+    if (!strcmp(id, "rotation")) { apply_rotation(); return; }
     const bool look = !strcmp(id, "theme") || !strcmp(id, "accent");
     if (!look && from != fw::dev::SCREEN) reshow_later(false);  // a value from elsewhere: the controls move
   });
@@ -1065,6 +1105,7 @@ inline void setup() {
     reshow_later(true);
     PR.shown = -2;
   });
+  apply_rotation();  // the restored Rotate screen (the select restored it before on_boot)
   probation_start();
   if (auto *ws = esphome::web_server_base::global_web_server_base) {
     ws->add_handler(new Handler());

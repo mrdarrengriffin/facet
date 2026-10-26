@@ -168,7 +168,7 @@
     {
       "id": "lightning",
       "label": "Lightning",
-      "docs": false, "status": "wip", "firmware": false,
+      "docs": false, "status": "wip", "firmware": false, "panel": false,
       "screens": ["lightning"],
       "components": ["lightning_view", "lightning_radar"],
       "colour": ["radar"],

@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // Feature flags (README "Feature flags"): reads renderer/features.json, the one manifest of what ships where.
-// Build-time only (no flags on the device): the flavour of a build is the env FW_FEATURES = docs | firmware (unset =
-// everything, the workbench). Used by build.sh, tools/gen_specs.mjs, tools/gen_icons.mjs, firmware/bundle.mjs and
+// Build-time only (no flags on the device): the flavour of a build is the env FW_FEATURES = docs | firmware | panel
+// (unset = everything, the WASM workbench). panel = the workbench panel firmware (`firmware/bundle.mjs --all`): every
+// feature except one marked "panel": false (Darren 2026-10-26: Lightning is on NO firmware, not even his own panels). Used by build.sh, tools/gen_specs.mjs, tools/gen_icons.mjs, firmware/bundle.mjs and
 // site/scripts/extract.mjs.
 //   node tools/features.mjs check            fail (exit 1) when a source belongs to no feature (or two), a listed id
 //                                            does not exist (docs_pages: a screen of that feature), or a feature shown in
@@ -13,7 +14,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export const R = join(dirname(fileURLToPath(import.meta.url)), '..');
-export const FLAGS = ['docs', 'firmware'];
+export const FLAGS = ['docs', 'firmware', 'panel'];
 const KINDS = ['screens', 'components', 'foundations', 'bench'];
 // spec screens have their own id space (a spec and a component may share a name: weather_days): key spec:<id>
 const screenKey = (id) => (existsSync(join(R, 'specs', `${id}.json`)) ? `spec:${id}` : id);
@@ -68,6 +69,10 @@ export function load() {
   const lib = man.library;
   const features = [lib, ...man.features];
   for (const ft of features) {
+    ft.panel ??= true;  // the workbench panel firmware: everything unless a feature opts out
+    if (ft.firmware && !ft.panel) errors.push(`${ft.id}: firmware true needs panel true (the release is a subset of the workbench firmware)`);
+    // wip must not leak into the release firmware (facet-184): a feature ships on firmware only when it is done
+    if (ft.firmware && ft.status === 'wip') errors.push(`${ft.id}: status wip with firmware true: wip features stay off the firmware`);
     for (const flag of FLAGS) if (typeof ft[flag] !== 'boolean') errors.push(`${ft.id}: ${flag} is true or false`);
     if (!man.status[ft.status]) errors.push(`${ft.id}: status ${ft.status} is one of ${Object.keys(man.status).join(', ')}`);
     for (const k of KINDS) for (const id of (ft[k] ?? []).map((x) => (k === 'screens' ? screenKey(x) : x))) {

@@ -22,7 +22,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync
 import { basename, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
-import { excluded } from '../renderer/tools/features.mjs';
+import { excluded, hiddenIds } from '../renderer/tools/features.mjs';
 
 // ROOT = repo root (local.env, firmware/ glue); HERE = renderer/ (sources; hash keys are relative to it: core/fw.h, ...)
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
@@ -35,7 +35,7 @@ if (existsSync(join(ROOT, 'local.env')))
   for (const l of readFileSync(join(ROOT, 'local.env'), 'utf8').split('\n')) { const m = l.match(/^([A-Z_]+)=(.*)$/); if (m) env[m[1]] = m[2]; }
 
 // release flavour (renderer/features.json firmware flags); the generators below read FW_FEATURES too
-const FLAV = process.argv.includes('--all') ? '' : 'firmware';
+const FLAV = process.argv.includes('--all') ? 'panel' : 'firmware';  // --all = every feature with panel on (features.json)
 process.env.FW_FEATURES = FLAV;
 const OFF = new Set(excluded(FLAV));
 const sha = (...bufs) => { const h = createHash('sha1'); for (const b of bufs) h.update(b); return h.digest('hex').slice(0, 12); };
@@ -60,7 +60,10 @@ const glue = sha(...glueFiles.flatMap((f) => [f, '\0', readFileSync(join(ROOT, f
 const files = Object.fromEntries(srcFiles.map((f) => [f, sha(read(f))]));
 const ids = {};
 for (const f of srcFiles) for (const m of read(f).toString().matchAll(/FW_COMPONENT\(\s*([A-Za-z0-9_]+)/g)) ids[m[1]] = f;
-const hashes = { v: 1, density, features: FLAV || 'all', core, corefiles, glue, files, ids };
+// build check (facet-184): no part of a feature this flavour hides may reach the firmware (wip features, Lightning)
+const leaks = [...hiddenIds(FLAV)].filter((id) => ids[id]);
+if (leaks.length) { console.error(`bundle: hidden features in a ${FLAV} build: ${leaks.join(', ')} (renderer/features.json)`); process.exit(1); }
+const hashes = { v: 1, density, features: FLAV, core, corefiles, glue, files, ids };
 
 if (process.argv.includes('--hashes')) { process.stdout.write(JSON.stringify(hashes)); process.exit(0); }
 const out = arg('--out');
