@@ -6,9 +6,11 @@
 //           gauge / count chart motion), the label's box only repaints; reduced motion = the value at once
 //   unavailable  the value is the placeholder em dash (st::PLACEHOLDER), no count
 // A read-out: no events, no sound. Update path: a new value counts from the shown one (silent), label / unit / prefix /
-// decimals change the text at once; unavailable in / out refills. Contrast pairs: colour.json section "chart".
+// decimals change the text at once; unavailable in / out refills. The value may come as text (a bound HA state). Contrast pairs: colour.json section "chart".
 #include "fw.h"
 #include "chart.h"
+#include <cmath>
+#include <cstdlib>
 
 namespace {
 struct Big {
@@ -19,6 +21,21 @@ struct Big {
   bool unavailable = false;
 };
 Big *of(lv_obj_t *o) { return (Big *) lv_obj_get_user_data(o); }
+// the value: a number, or a number as text (a bound HA state arrives as text: "23.4"); text that isn't a number (an
+// empty bind, "unknown") = no value, shown as unavailable; no value prop at all = the demo 8.69
+bool value_of(fw::Props p, double *v) {
+  *v = 8.69;
+  if (p["value"].is<const char *>()) {
+    const char *s = p["value"];
+    char *end = nullptr;
+    const double x = strtod(s, &end);
+    if (end == s || !std::isfinite(x)) return false;
+    *v = x;
+    return true;
+  }
+  *v = p["value"] | 8.69;
+  return true;
+}
 std::string fmt(const Big *d, double v) {
   char b[32];
   snprintf(b, sizeof b, "%s%.*f", d->prefix.c_str(), d->dec, v);
@@ -36,8 +53,7 @@ void fill(lv_obj_t *root, fw::Props p, bool opening) {
   auto *d = of(root);
   d->dec = std::max(0, std::min(3, (int) (p["decimals"] | 2)));
   d->prefix = p["prefix"] | "";
-  d->unavailable = !strcmp(p["state"] | "default", "unavailable");
-  d->target = p["value"] | 8.69;
+  d->unavailable = !value_of(p, &d->target) || !strcmp(p["state"] | "default", "unavailable");
   lv_obj_remove_style_all(root);
   lv_obj_remove_flag(root, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
   lv_obj_set_size(root, fw::lay::card_w, LV_SIZE_CONTENT);  // docs width (the sample's 320 = a card), so a count never moves it
@@ -50,7 +66,10 @@ void fill(lv_obj_t *root, fw::Props p, bool opening) {
   if (opening) fw::animate(root, fw::st::SWEEP, {show, 0, 1024, fw::mo::VALUE});
   else { d->shown = d->target; show(root, 1024); }
 }
-std::string shape_of(fw::Props p) { return std::string(p["state"] | "default"); }
+std::string shape_of(fw::Props p) {
+  double v;
+  return value_of(p, &v) ? std::string(p["state"] | "default") : std::string("unavailable");
+}
 }  // namespace
 
 FW_COMPONENT(big_number, "Big number", "components", R"({
@@ -93,7 +112,8 @@ FW_UPDATE(big_number) {
   fw::set_text(d->unit, fw::ty::c_subtitle, p["unit"] | "kWh");
   d->dec = std::max(0, std::min(3, (int) (p["decimals"] | 2)));
   d->prefix = p["prefix"] | "";
-  const double v = p["value"] | 8.69;
+  double v;
+  value_of(p, &v);
   lv_anim_delete(root, (lv_anim_exec_xcb_t) show);
   d->target = v;
   fw::animate(root, fw::st::SWEEP, {show, 0, 1024, fw::mo::VALUE});  // counts from the shown value (silent: no sound)

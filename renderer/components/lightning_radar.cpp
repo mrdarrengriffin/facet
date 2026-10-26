@@ -56,9 +56,11 @@ float r_px(const LX &x, float d) {
   }
   return (float) x.R;
 }
-// centre of a mark `size` px across: on the outer ring it is pulled in so the whole mark stays inside the box
+// centre of a mark `size` px across: near the outer ring it is pulled in so the whole mark stays inside the tick ring
+// (a sp::s1 gap inside the major ticks' length), so a strike never sits on a compass mark
 void pos(const LX &x, float d, float az, float *px, float *py, int size = fw::lay::radar_strike) {
-  const float r = std::min(r_px(x, d), x.R - size / 2.0f), a = az * 3.14159265f / 180;
+  const float rmax = (float) (x.R - fw::lay::dial_tick_major - fw::sp::s1) - size / 2.0f;
+  const float r = std::min(r_px(x, d), rmax), a = az * 3.14159265f / 180;
   *px = x.R + r * sinf(a);
   *py = x.R - r * cosf(a);
 }

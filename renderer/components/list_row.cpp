@@ -167,7 +167,8 @@ void fill(lv_obj_t *r, const Spec &s, Row *d) {
   d->toggle = nullptr;
   const int body_h = fw::style(fw::ty::body).box;
   if (unavail) label(slot(r, body_h), fw::ty::body, fw::st::UNAVAILABLE_TEXT, fw::st::unavailable_note(t));
-  if (kind == K_VALUE || kind == K_VALUE_CHEVRON) d->val = label(slot(r, body_h), fw::ty::body, s.value[0] ? s.value : fw::st::PLACEHOLDER, dim);  // empty = em dash
+  // empty = the placeholder em dash, in text: a thin 1 px dash in text-dim measures under 4.5:1 at 1x (anti-aliased)
+  if (kind == K_VALUE || kind == K_VALUE_CHEVRON) d->val = label(slot(r, body_h), fw::ty::body, s.value[0] ? s.value : fw::st::PLACEHOLDER, s.value[0] || off ? dim : t.text);
   if (kind == K_CHEVRON || kind == K_VALUE_CHEVRON) fw::icon(r, "chevron", fw::ic::icon, dim);
   if (kind == K_TOGGLE) {
     if (const fw::Component *tc = fw::find("toggle")) {  // the Toggle component itself, not a copy
@@ -301,6 +302,7 @@ FW_UPDATE(list_row) {
     put(d->su, fw::ty::body, sp.sub);
     if (d->ov) put(d->ov, fw::ty::label, caps(sp.over).c_str());
     put(d->val, fw::ty::body, sp.value[0] ? sp.value : fw::st::PLACEHOLDER);
+    if (d->val && !lv_obj_has_state(root, ST_OFF)) lv_obj_set_style_text_color(d->val, sp.value[0] ? fw::T->text_dim : fw::T->text, 0);
     if (d->toggle) {
       ArduinoJson::JsonDocument tp;
       tp["on"] = p["on"] | false;

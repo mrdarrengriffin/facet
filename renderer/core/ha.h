@@ -287,8 +287,13 @@ inline void refresh(Bound *b) {
   deserializeJson(spec, b->spec);
   resolve(spec.as<Props>(), p, nullptr);
   apply_show(b->obj, p);
+  // the margins are the screen layout's placement (the list layout's group gap above a node), not the component's
+  // look: an update path that restyles its root (refill, remove_style_all) would drop them, so they are put back
+  const int32_t mt = lv_obj_get_style_margin_top(b->obj, LV_PART_MAIN), mb = lv_obj_get_style_margin_bottom(b->obj, LV_PART_MAIN);
   Quiet q;
   update_child(b->c, b->obj, p.as<Props>());
+  if (lv_obj_get_style_margin_top(b->obj, LV_PART_MAIN) != mt) lv_obj_set_style_margin_top(b->obj, mt, 0);
+  if (lv_obj_get_style_margin_bottom(b->obj, LV_PART_MAIN) != mb) lv_obj_set_style_margin_bottom(b->obj, mb, 0);
 }
 inline void tick(lv_timer_t *) {
   const uint32_t now = lv_tick_get();

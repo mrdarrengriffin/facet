@@ -1,5 +1,15 @@
 {
   "id": "big_number",
-  "tests": [],
+  "tests": [
+    { "name": "a value arriving while it counts up shows", "kind": "interaction", "props": {"value": 8.69, "decimals": 1},
+      "steps": [ {"update": {"value": 23.4, "decimals": 1}}, {"wait": 1000} ],
+      "expect": { "exists": {"text": "23.4"}, "absent": {"text": "8.7"} } },
+    { "name": "a value arriving after the first draw shows", "kind": "interaction", "props": {"value": 8.69, "decimals": 1},
+      "steps": [ {"wait": 1500}, {"update": {"value": 23.4, "decimals": 1}}, {"wait": 1000} ],
+      "expect": { "exists": {"text": "23.4"}, "absent": {"text": "8.7"} } },
+    { "name": "a value arriving as text (an HA state) shows", "kind": "interaction", "props": {"decimals": 1},
+      "steps": [ {"wait": 1500}, {"update": {"value": "23.4", "decimals": 1}}, {"wait": 1000} ],
+      "expect": { "exists": {"text": "23.4"}, "absent": {"text": "8.7"} } }
+  ],
   "xfail": {}
 }

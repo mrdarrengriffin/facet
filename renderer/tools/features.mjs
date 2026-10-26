@@ -4,7 +4,8 @@
 // everything, the workbench). Used by build.sh, tools/gen_specs.mjs, tools/gen_icons.mjs, firmware/bundle.mjs and
 // site/scripts/extract.mjs.
 //   node tools/features.mjs check            fail (exit 1) when a source belongs to no feature (or two), a listed id
-//                                            does not exist, or a feature shown in docs / firmware needs a hidden one
+//                                            does not exist (docs_pages: a screen of that feature), or a feature shown in
+//                                            docs / firmware needs a hidden one
 //   node tools/features.mjs exclude <flag>   the source files (relative to renderer/) a docs | firmware build leaves out
 //   node tools/features.mjs table            one line per feature: docs, status, firmware
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
@@ -88,6 +89,11 @@ export function load() {
   for (const ft of man.features) {
     for (const k of KINDS) for (const id of ft[k] ?? []) if (!known.has(k === 'screens' ? screenKey(id) : id)) errors.push(`${ft.id}: ${k} ${id} does not exist`);
     for (const f of ft.core ?? []) if (!existsSync(join(R, 'core', f))) errors.push(`${ft.id}: core/${f} does not exist`);
+    // docs_pages: real screens of this feature (a typo would silently drop a docs page)
+    for (const id of ft.docs_pages ?? []) {
+      if (!known.has(screenKey(id))) errors.push(`${ft.id}: docs_pages ${id} is not a screen`);
+      else if (!(ft.screens ?? []).includes(id)) errors.push(`${ft.id}: docs_pages ${id} is not one of its screens`);
+    }
   }
   for (const s of sources) if (s.feature === lib) for (const id of s.ids) owner[id] = lib;
   return { man, features, owner, sources, errors };
