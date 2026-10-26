@@ -100,7 +100,7 @@ write a spec, POST it as "check" until it is valid, POST it as "screen", then op
 A prop marked bindable takes a bind instead of a value:
 \`{"e": "light.x" | "$param", "a"?: "<attribute>", "fmt"?: <fmt>, "s"?: "<sample>", "map"?: {"<value>": "<text>"}, "else"?: "<text>", "tpl"?: "Battery {}%"}\`
 - fmt: ${C.fmt.join(', ')}.
-- \`s\` is shown until Home Assistant sends the value; \`map\` turns states into words; \`tpl\` wraps the value (\`{}\`).
+- \`s\` is shown until Home Assistant sends the value (at most 64 characters; 256 for a Grid's \`items\`); \`map\` turns states into words; \`tpl\` wraps the value (\`{}\`).
 - The panel subscribes to bound entities itself through its Home Assistant connection.
 
 ## Actions

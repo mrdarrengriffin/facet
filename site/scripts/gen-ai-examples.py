@@ -15,8 +15,9 @@ def b(e, s, a=None, **kw):
     DEMO.setdefault(e, {})[a or ''] = str(s)
     d = {'e': e}
     if a: d['a'] = a
+    cap = kw.pop('cap', 64)
     d.update(kw)
-    if len(str(s)) <= 64: d['s'] = str(s)  # a sample is at most 64 characters (the demo value can be longer)
+    if len(str(s)) <= cap: d['s'] = str(s)  # a sample is at most 64 characters, 256 for a Grid's items (the demo value can be longer)
     return d
 
 

@@ -27,7 +27,7 @@
     "items": {
      "e": "$entity",
      "a": "icons",
-     "s": "bolt,bell,door,pr,done,plane,bulb,house,timer,power,pr,bolt,bell"
+     "s": "bolt,bell,timer,power,plane,review,pr,done,alert,bulb,door,house,window,person,bolt,bell,timer,power,plane,review,pr,done,alert,bulb,door,house,window,person,bolt,bell,timer,power,plane,review,pr,done,alert,bulb,door,house"
     }
    }
   },

@@ -364,8 +364,10 @@ inline void check_value(const PropInfo &pi, ArduinoJson::JsonVariantConst v, con
       else for (ArduinoJson::JsonPairConst kv : v["map"].as<ArduinoJson::JsonObjectConst>())
         if (!kv.value().is<const char *>() || strlen(kv.value().as<const char *>()) > 64 || strlen(kv.key().c_str()) > 32) err(e, path + ".map", "bad_bind", "map values are text (64), keys at most 32");
     }
-    for (const char *k : {"s", "else", "tpl"})
-      if (!v[k].isNull() && (!v[k].is<const char *>() || strlen(v[k].as<const char *>()) > 64)) err(e, path + "." + k, "bad_bind", std::string(k) + " is text (at most 64)");
+    for (const char *k : {"s", "else", "tpl"}) {
+      const size_t cap = (!strcmp(k, "s") && pi.name == "items") ? 256 : 64;  // an items sample is a whole list (2026-10-26)
+      if (!v[k].isNull() && (!v[k].is<const char *>() || strlen(v[k].as<const char *>()) > cap)) err(e, path + "." + k, "bad_bind", std::string(k) + " is text (at most " + std::to_string(cap) + ")");
+    }
     if (!entity_ok(v["e"] | "") && !(!strcmp(v["e"] | "x", "") && v["s"].is<const char *>()))
       err(e, path + ".e", "bad_bind", "a bind needs an entity (domain.object or $param), or e \"\" with s (a screen parameter)");
     if (!one_of(FMTS, v["fmt"] | "")) err(e, path + ".fmt", "bad_bind", "fmt is one of on, pct, avail, light, name, num, frac, count, time, day");

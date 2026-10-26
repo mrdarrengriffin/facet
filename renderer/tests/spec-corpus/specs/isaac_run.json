@@ -152,7 +152,7 @@
     "items": {
      "e": "$entity",
      "a": "collectibles",
-     "s": "bolt,bell,timer,power,plane,review,pr,done,alert,bulb"
+     "s": "bolt,bell,timer,power,plane,review,pr,done,alert,bulb,door,house,window,person,bolt,bell,timer,power,plane,review,pr,done,alert,bulb,door,house,window,person,bolt,bell"
     }
    },
    "cell": {
