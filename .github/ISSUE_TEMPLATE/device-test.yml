@@ -1,6 +1,6 @@
 name: Device test report
 description: You tried Facet on a panel. Tell us how it went, good or bad.
-labels: [question]
+labels: [device-test]
 title: "Device test: "
 body:
   - type: markdown

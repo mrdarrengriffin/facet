@@ -1,5 +1,8 @@
 blank_issues_enabled: true
 contact_links:
+  - name: Share an idea
+    url: https://github.com/mrdarrengriffin/facet/discussions/categories/ideas
+    about: New screens, components, panels or a better way: start a thread in Discussions.
   - name: Contributing guide
     url: https://github.com/mrdarrengriffin/facet/blob/main/CONTRIBUTING.md
     about: All the ways to help, from testing on a panel to writing code.
