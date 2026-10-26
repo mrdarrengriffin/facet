@@ -356,6 +356,49 @@ inline void probation_start() {
   probation_tick(PR.timer);
 }
 
+// ---------------------------------------------------------------- firmware update notice (facet-196)
+// Before new firmware installs (ESPHome http_request OTA: the update entity's Install), the panel shows the real
+// Firmware update view (components/fw_update_view.cpp) full screen on the top layer, in the device's look; the board
+// YAML (workbench.yaml ota on_begin) then turns the backlight off: neither board can draw while flash is written (the
+// PSRAM framebuffer stalls). The OTA runs inside the main loop, so LVGL's timer never runs meanwhile: drawn at once
+// (lv_refr_now). A failed OTA shows the failed state for 6 s (the loop runs again), then the screen underneath.
+struct OtaScreen {
+  lv_obj_t *cover = nullptr;
+};
+inline OtaScreen OTA;
+inline void ota_show(const char *state, const char *version, const char *note) {
+  const fw::Component *cc = fw::find("fw_update_view");
+  if (!cc) return;
+  const fw::Theme *old = fw::T;
+  fw::T = fw::dev::look(fw::theme(S.light, S.accent));
+  ArduinoJson::JsonDocument p;
+  p["state"] = state, p["version"] = version ? version : "", p["note"] = note ? note : "";
+  if (!OTA.cover) {
+    OTA.cover = lv_obj_create(lv_layer_top());
+    lv_obj_remove_style_all(OTA.cover);
+    lv_obj_add_flag(OTA.cover, LV_OBJ_FLAG_CLICKABLE);  // swallows taps: nothing underneath reacts
+    lv_obj_remove_flag(OTA.cover, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_size(OTA.cover, LV_PCT(100), LV_PCT(100));
+    lv_obj_set_style_bg_color(OTA.cover, fw::T->bg, 0);
+    lv_obj_set_style_bg_opa(OTA.cover, LV_OPA_COVER, 0);
+  }
+  lv_obj_clean(OTA.cover);  // built new (no fade: no loop runs to play it)
+  cc->build(OTA.cover, p.as<fw::Props>());
+  if (lv_obj_t *v = lv_obj_get_child_count(OTA.cover) ? lv_obj_get_child(OTA.cover, 0) : nullptr)
+    lv_obj_align(v, LV_ALIGN_TOP_LEFT, fw::lay::inset, fw::lay::top);
+  fw::T = old;
+  lv_refr_now(nullptr);
+}
+inline void ota_begin(const char *version) { ota_show("updating", version, ""); }
+inline void ota_error() {
+  ota_show("failed", "", "");
+  lv_timer_create([](lv_timer_t *tm) {  // back to the screen underneath after 6 s
+    if (OTA.cover) lv_obj_delete(OTA.cover);
+    OTA.cover = nullptr;
+    lv_timer_delete(tm);
+  }, 6000, nullptr);
+}
+
 // ---------------------------------------------------------------- settings changed: the shown page follows
 // A setting changed (any source: the screen, HA, POST /fw/settings, the sun for Theme auto). The device runtime restyles
 // itself (core/device.cpp); a page shown on its own (POST /fw/show {"id": "settings"} and the like) is drawn again
