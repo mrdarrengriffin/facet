@@ -69,6 +69,9 @@ anywhere:
 | `POST /fw/deck` | send the panel's set of screens |
 | `GET /fw/info`, `/fw/meta` | what the panel runs and what it can show |
 
+Changes from anywhere but the panel's own editor are gated behind an **Allow AI agents** switch on the
+device (off by default) and a per-panel token. AI agents start at the panel's `/llms.txt`.
+
 ## <picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/icon-home-dark.svg"><source media="(prefers-color-scheme: light)" srcset=".github/assets/icon-home-light.svg"><img alt="" src=".github/assets/icon-home-light.svg" width="20" height="20"></picture>&nbsp; Screens
 
 Each screen has a page in the docs with a live preview you can tap and drag, what it shows and the
