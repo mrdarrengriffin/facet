@@ -60,10 +60,11 @@ export default {
 
 ## Families still to cover (one agent per family)
 
-Done: button, slider (controls), entity_tile, readout (cards; incl. Home light + sensor cards on the device), device
-(navigation rules, facet-188).
+Done: button, slider + family 1 below (controls), entity_tile, readout (cards; incl. Home light + sensor cards on the
+device), device (navigation rules, facet-188). Shared helpers for family 1: `_controls.mjs` (pixel reads for drawn /
+not drawn, dial ring points).
 
-1. **Controls + inputs:** toggle, checkbox, radio, segmented, hold_button, icon_button, speaker_button, back_button,
+1. **Controls + inputs** (done 2026-10-26): toggle, checkbox, radio, segmented, hold_button, icon_button, speaker_button, back_button,
    dial, thermostat_dial, picker_row, check_row, list_row, more_row, focus_ring, scroll_track, bottom_sheet, toast,
    toast_layer.
 2. **Cards + tiles:** card, tile, room_tile, camera_tile, stat, big_number, status_block, status_chip, status_dot,
