@@ -51,7 +51,7 @@ const char *const SHAPES[] = {"box", "col", "row", "stack", "centre", "cell", "g
                               "badge", "badge-num", "button", "button-fill", "border-clear", "fade-press-all",
                               "fade-release-all", "btn-underline", "seg", "seg-part", "seg-label", "seg-grow", "seg-sep", "seg-plate",
                               "seg-half-l", "seg-half-r", "ring-full-2", "ring-tb-2", "ring-l", "ring-r", "ring-lr",
-                              "slider", "slider-word", "text-mid"};
+                              "slider", "slider-word", "text-mid", "grow-w"};
 // tint:<c> = the colour at chip.tint over what is behind (Status chip; colour.json mixes chip-<tone>); outline:<c> = the
 // focus ring (states.json focus: stroke focus, touch focus-offset outside the box)
 const char *const TINTS[] = {"ok", "warn", "error", "accent", "blue", "text-dim"};
@@ -70,7 +70,9 @@ const char *type_name(fw::ty::Id id) {
 const char *const DERIVED_N[] = {"dial-wing-up", "dial-wing-down", "dial-slot", "card-pad", "card-text", "card-gap", "card-gap-s", "card-row", "pair-rule", "label-row",
                                  "list-text-t", "list-text-ts", "list-text-ot", "list-text-ots", "list-slot", "section-label", "empty-pad",
                                  // 17-23: padding a theme moves (C45: a flush bar), 24: the Segmented's own layers (a theme that styles the segment part draws it)
-                                 "page-move", "head-move", "body-move", "header-move", "card-move", "card-head-move", "card-body-move", "seg-layer"};
+                                 "page-move", "head-move", "body-move", "header-move", "card-move", "card-head-move", "card-body-move", "seg-layer",
+                                 // 25: the More row (its height + the top space that puts its label on the rows' 24 / 16 line)
+                                 "more-row"};
 // A display's look: its shared styles painted from theme t (mode + accent set) through the live Skin (theme_live: its
 // palette for that mode x set = th, the colours every contract style reads; Facet's Skin = Facet's colours, so th == *t)
 // and its generation (gen: a theme apply bumps it, the look repaints; never by Skin pointer, a freed one's address can
@@ -220,6 +222,7 @@ void shape(lv_style_t *s, const char *n) {  // the structure styles: density onl
   else if (k == "stack") { flex(s, LV_FLEX_FLOW_COLUMN, S, S, S); lv_style_set_pad_row(s, tok("space:2", sp::s2)); }
   else if (k == "centre") { flex(s, LV_FLEX_FLOW_COLUMN, C, C, C); }
   else if (k == "cell" || k == "grow") lv_style_set_flex_grow(s, 1);
+  else if (k == "grow-w") { lv_style_set_width(s, 0); lv_style_set_flex_grow(s, 1); }  // the free width in a row: a text in it ends in "...", never pushes what follows
   else if (k == "page") {  // the inset above the header is the page's; the header gap is the head's margin
     lv_style_set_width(s, lv_pct(100)); lv_style_set_height(s, lv_pct(100)); flex(s, LV_FLEX_FLOW_COLUMN, S, S, S);
     lv_style_set_pad_top(s, INSET());
@@ -519,7 +522,7 @@ void paint(Look *L, const fw::Theme *t, int only = -1) {  // colours from the th
       // approved geometry). Above: caption + space 7; below: space 2 + unit + space 9 + the button. Both wings take
       // the larger, the caption sits at the top wing's foot and the unit row at the bottom wing's head.
       using namespace fw;
-      if (d.i >= 17) { lv_style_reset(s); lv_style_init(s); moves(L, s, d.i); continue; }  // they follow the live theme
+      if (d.i >= 17 && d.i <= 24) { lv_style_reset(s); lv_style_init(s); moves(L, s, d.i); continue; }  // they follow the live theme
       if (d.i == 3) {  // card-pad: children count from the outer edge (layout:card-pad less the border hair, = docs)
         lv_style_set_pad_all(s, tok("layout:card-pad", lay::card_pad) - tok("stroke:hair", stroke::hair)); continue;
       }
@@ -544,6 +547,10 @@ void paint(Look *L, const fw::Theme *t, int only = -1) {  // colours from the th
       if (d.i == 15) {  // section-label: a Section header in the screen label type: its box + space 2 to the rows, at the top
         lv_style_set_height(s, box_of(ty::label) + tok("space:2", sp::s2));
         flex(s, LV_FLEX_FLOW_ROW, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START); continue;
+      }
+      if (d.i == 25) {  // more-row: more-row-h tall; top space 7 less the hairline on top (LVGL counts the border in the content offset)
+        lv_style_set_height(s, tok("layout:more-row-h", lay::more_row_h));
+        lv_style_set_pad_top(s, tok("space:7", sp::s7) - tok("stroke:hair", stroke::hair)); continue;
       }
       if (d.i == 16) {  // empty-pad: the Empty state's padding from the outer edge (less the border hair)
         lv_style_set_pad_all(s, tok("layout:empty-pad", lay::empty_pad) - tok("stroke:hair", stroke::hair)); continue;
