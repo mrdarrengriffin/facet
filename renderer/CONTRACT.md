@@ -116,6 +116,19 @@ component (Grid, Card grid, Column) or by `fx::row` + `fx::cell` inside one comp
 MUST NOT place a sibling, size a sibling, or position anything with coordinates.
 *Why:* one owner for arrangement means one place to prove it. *Check:* lint `local` (no positions); P2.
 
+**C8a. Every slot declares what it accepts and how many.** A component that holds other components (a layout, the
+Header) declares each slot ONCE, in its meta `slots`: `{"name", "about", "accepts": [component ids], "max": n}` (max 0
+= no limit), plus `"count": n` for n numbered slots (`"in": k, "slot": i`) or `"template": true` for a repeated cell
+template (the Grid's `cell`); a slot with neither is a named slot (`"in": "header", "slot": "end"`). A spec that puts a
+component a slot does not accept, more than its max (items the component adds itself count: the Header's settings
+button), or a repeated (`each`) node into a slot with a max is refused at load with a path error (`bad_slot` at
+`.nodes[i].c`, `.nodes[i].in`, `.nodes[i].each` or `.nodes[i].cell.c`), never built and clipped. The editor and the
+workbench offer only what the meta allows. Code (C++ screens) is not capped by the meta; an overfull slot is then a
+bounds failure (C11). A bare count (`"slots": 4`) is the legacy form: that many slots, any component, no max.
+*Why:* a slot that takes anything can be filled into a broken layout; one declaration means the check, the editor and
+the docs can never disagree. *Check:* the spec checker (`core/spec.h` `slot_decls`); each slotted component's
+functional test has a refusal case per rule and checks every accepted id is a real component.
+
 **C9. A component declares its minimum and scales above it in steps.**
 - Meta `"min": ["layout:<w>", "layout:<h>"]`: layout tokens, so the minimum is on the fixed grid.
 - Between the minimum and any larger parent it changes only by **steps**: fixed arrangements made of tokens, chosen

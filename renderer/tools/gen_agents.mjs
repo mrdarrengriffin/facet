@@ -58,7 +58,12 @@ const compLines = comps.map(([id, c]) => {
   for (const p of c.props ?? []) L.push(`- \`${p.name}\`: ${typ(p)}${p.default != null ? ` (default ${JSON.stringify(p.default)})` : ''}${p.bindable ? ', bindable' : ''}${p.about ? `. ${p.about}` : ''}`);
   const ev = Object.entries(c.events ?? {});
   if (ev.length) L.push(`- events: ${ev.map(([e, a]) => `\`${e}\` -> ${a.join(', ')}`).join('; ')}`);
-  if (c.slots) L.push(`- layout with ${c.slots} slot(s): later nodes go in with "in": <this node's index>, "slot": n`);
+  if (typeof c.slots === 'number') L.push(`- layout with ${c.slots} slot(s): later nodes go in with "in": <this node's index>, "slot": n`);
+  else if (Array.isArray(c.slots)) for (const s of c.slots) {
+    const takes = Array.isArray(s.accepts) ? s.accepts.join(', ') : 'any component', max = s.max ? `, at most ${s.max}` : '';
+    const how = s.template ? 'the node\'s "cell" template' : s.count ? `${s.count} numbered slots: "in": <this node's index>, "slot": n` : `"in": "${id}", "slot": "${s.name}"`;
+    L.push(`- slot ${s.name} (${how}): takes ${takes}${max}${s.about ? `. ${s.about}` : ''}`);
+  }
   return L.join('\n');
 });
 

@@ -42,6 +42,19 @@ lv_obj_t *row(lv_obj_t *parent);   // equal cells with the gutter between: row()
 lv_obj_t *cell(lv_obj_t *row);
 // a one-line text (or a row of fixed boxes) whose box ends on the 4 px grid (what follows it lands on the grid)
 void fit_grid(lv_obj_t *label);
+// The Grid layout's geometry (C8: a layout arranges; the sums live here so the component holds no size). grid() makes
+// `root` a grid of equal cells: `cols` columns, or min = an icon size name ("glyph", "icon" ...): as many min-wide cells
+// + gaps as fit, at most 12 ("none" = cols); gap "none" | "near" (space:3) | "group" (layout:gutter) | "block"
+// (layout:group); aspect "square" | "wide" (16:9) | "row" (the content's height: cells flow in rows). Everything from
+// root's OWN content width (C6) and tokens read live (the Layout lab moves them): cell width snapped down to the 4 px
+// grid, half the leftover on the left; re-placed on every size or token change (new cell sizes or a new column count
+// send root LV_EVENT_REFRESH: an items grid re-expands, its contents fit the new cells). grid_cell() adds a cell (a spec slot) at the end, spanning w x h cells,
+// placed in reading order into the first free place that fits; tap = clickable only while the cell is at least
+// touch:min both ways (C32). grid_place() again after cells were deleted; grid_cols() = the columns now.
+void grid(lv_obj_t *root, int cols, const char *min, const char *gap, const char *aspect);
+lv_obj_t *grid_cell(lv_obj_t *root, int w = 1, int h = 1, bool tap = false);
+void grid_place(lv_obj_t *root);
+int grid_cols(lv_obj_t *root);
 void bleed(lv_obj_t *o);           // the one escape: o's background reaches the page edge (the "bleed" style marks it)
 void name(lv_obj_t *o, const char *n);  // a component root's name for the inspector
 int size(const char *token);       // a size token ("stroke:hair", "layout:dial-tick") for DRAWING only

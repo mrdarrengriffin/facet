@@ -8,15 +8,17 @@
 //          label (a Segmented, a picker) and HUGS its natural width, left-aligned after Back. The title takes the room
 //          the end slot leaves: the label ellipsises and never pushes an end item off the row (flex grow from width
 //          0); a title node too wide for the row is overfull and reported by the bounds proof (C11).
-//   end    a SLOT: any number of items, any component, in spec order (Darren 2026-10-27: no hard limits in code;
-//          an overfull row = the bounds proof reports it). "in": "header" with no slot = end. Home's settings button
+//   end    a SLOT: up to 4 items in spec order, Icon buttons, Status chips or a Segmented (facet-205; the header's own
+//          settings / shortcut / timer items count). Code (C++ screens, Home) is not capped: an overfull row = the
+//          bounds proof reports it. "in": "header" with no slot = end. Home's settings button
 //          and a Home's header actions are END items too (props settings + actions, mapped here: shortcut square,
 //          settings square, the running timer's time left), after the spec's items.
 //   Time   fixed, always last: the Time component, size "header" (prop clock off = none; prop time = a fixed preview
 //          time, empty = the live clock). With a shortcut, a long press on the time opens Settings too.
-// There is NO start slot (Darren 2026-10-27; a spec naming slot "start" is refused by core/spec.h). The slots are
-// declared in ONE place, SLOTS below (+ the meta "slots", kept equal by header.test.mjs), so per-slot limits
-// (accepted components, max count: facet-205) and a start slot later slot in without rework.
+// There is NO start slot (Darren 2026-10-27; a spec naming slot "start" is refused by core/spec.h). Each slot is declared
+// ONCE, in the meta "slots" (name, accepts, max: CONTRACT.md C8a; core/spec.h enforces it at spec load, the editor reads
+// it); SLOTS below only maps a slot name to the child that holds it (header.test.mjs keeps the two equal), so a start
+// slot later is one row here + one declaration.
 // Fit: the row is layout:row tall (>= touch:min, tools/gen_layout.mjs), up to layout:header-max-w wide, items centred
 // on it, layout:header-item-gap apart (all through tok(): the /wasm Layout lab moves them live; C20).
 // Steps: none (one row; the title is what gives way). Bleed: none. States: n/a (its children have theirs). Events:
@@ -34,10 +36,9 @@
 #include "device.h"
 
 namespace {
-// the slots, in one place: name, the header child that holds it, what it accepts, how many (0 = no limit). facet-205
-// enforces accepts / max; today every slot takes any component, any number.
-struct Slot { const char *name; int child; const char *accepts; int max; };
-constexpr Slot SLOTS[] = {{"title", 1, "any", 1}, {"end", 2, "any", 0}};
+// slot name -> the header child that holds it (what each accepts and how many: the meta "slots")
+struct Slot { const char *name; int child; };
+constexpr Slot SLOTS[] = {{"title", 1}, {"end", 2}};
 enum Child { BACK = 0, TITLE = 1, END = 2, TIME = 3, N_CHILD = 4 };
 
 std::map<lv_obj_t *, int> own_tail;  // end slot -> how many of its last items the header itself built (settings, ...)
@@ -169,10 +170,6 @@ lv_obj_t *header_slot(lv_obj_t *header, const char *name) {
   for (const Slot &s : SLOTS) if (!strcmp(s.name, name)) return lv_obj_get_child(header, s.child);
   return nullptr;
 }
-bool header_slot_ok(const char *name) {
-  for (const Slot &s : SLOTS) if (!strcmp(s.name, name)) return true;
-  return false;
-}
 int header_tail(lv_obj_t *end) { auto it = own_tail.find(end); return it == own_tail.end() ? 0 : it->second; }
 void header_hide_time(lv_obj_t *o) {  // and shows the end slot: the control that takes the time's place goes there
   if (lv_obj_t *h = header_of(o)) {
@@ -188,8 +185,8 @@ FW_COMPONENT(header, "Header", "components", R"({
   "frame": [480, 80],
   "min": ["layout:ibtn-square", "layout:ibtn-square"],
   "slots": [
-    {"name": "title", "about": "Replaces the screen's name; keeps its own width, just after the back button.", "accepts": "any", "max": 1},
-    {"name": "end", "about": "Any number of items before the time, in order.", "accepts": "any", "max": 0}
+    {"name": "title", "about": "Replaces the screen's name; keeps its own width, just after the back button.", "accepts": ["segmented"], "max": 1},
+    {"name": "end", "about": "Up to four items before the time, in order: buttons, status chips or a segmented control. The header's own settings button, shortcut and timer count as items.", "accepts": ["icon_button", "status_chip", "segmented"], "max": 4}
   ],
   "icons": ["back@glyph", "screen-settings@icon", "screen-timer@icon", "plus@glyph", "close@glyph", "check@glyph"],
   "props": [

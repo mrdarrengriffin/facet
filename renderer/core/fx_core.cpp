@@ -5,6 +5,7 @@
 #include "fx.h"
 #include "fw.h"
 #include "fx_gen.h"
+#include "spec.h"  // spec::SLOT: a Grid cell is a slot
 #include "core/lv_obj_private.h"  // fx::uses walks o->styles
 #include "core/lv_obj_style_private.h"
 #include "display/lv_display_private.h"  // a display going away: its objects first, then its look (no leak)
@@ -622,7 +623,7 @@ std::string tunables() {  // [[name, token px, now px, kind, lo, hi]]: every siz
   std::map<std::string, int> base;
   for (int i = 0; i < gen::N_SIZES; i++) base[gen::SIZES[i].name] = gen::SIZES[i].v;
   using namespace fw;
-  const std::pair<const char *, int> extra[] = {{"layout:inset", lay::inset}, {"layout:gutter", lay::gutter}, {"layout:top", lay::top},
+  const std::pair<const char *, int> extra[] = {{"layout:inset", lay::inset}, {"layout:gutter", lay::gutter}, {"layout:group", lay::group}, {"space:3", sp::s3}, {"layout:top", lay::top},
     {"layout:header-gap", lay::header_gap}, {"layout:row", lay::row}, {"layout:back-gap", lay::back_gap},
     {"layout:header-item-gap", lay::header_item_gap}, {"layout:header-max-w", lay::header_max_w}, {"space:2", sp::s2}, {"space:7", sp::s7}, {"space:9", sp::s9}, {"touch:button-h", touch::button_h}};
   for (auto &e : extra) base.emplace(e.first, e.second);
@@ -671,3 +672,106 @@ const char *style_name(const lv_style_t *s) {
   return nullptr;
 }
 }  // namespace fx
+
+namespace {
+struct GridL { int cols = 1, want = 1, min = -1, W = -1, gap = 0, cw = 0, ch = 0, left = 0; bool row = false, wide = false, busy = false; std::string gapn; };
+struct GridC { int w = 1, h = 1; bool tap = false; };
+std::map<lv_obj_t *, GridL> grids;
+std::map<lv_obj_t *, GridC> gcells;
+int grid_gap(const std::string &n) {
+  using namespace fw;
+  if (n == "none") return 0;
+  if (n == "near") return tok("space:3", sp::s3);
+  if (n == "block") return tok("layout:group", lay::group);
+  return tok("layout:gutter", lay::gutter);
+}
+// the geometry from the root's own content width; true = the cells changed size or count
+bool grid_measure(lv_obj_t *r, GridL &g) {
+  using namespace fw;
+  const int W = lv_obj_get_content_width(r), was = g.cols * 100000 + g.cw * 100 + g.ch;
+  g.W = W; g.gap = grid_gap(g.gapn);
+  g.cols = g.min >= 0 ? LV_CLAMP(1, (W + g.gap) / (ic::PX[g.min] + g.gap), 12) : g.want;
+  g.cw = LV_MAX(0, (W - g.gap * (g.cols - 1)) / g.cols / sp::GRID * sp::GRID);
+  g.left = LV_MAX(0, (W - g.cw * g.cols - g.gap * (g.cols - 1)) / 2 / sp::GRID * sp::GRID);
+  g.ch = g.wide ? g.cw * 9 / 16 / sp::GRID * sp::GRID : g.cw;
+  if (g.row) {
+    lv_obj_set_style_pad_left(r, g.left, 0);
+    lv_obj_set_style_pad_column(r, g.gap, 0);
+    lv_obj_set_style_pad_row(r, g.gap, 0);
+  }
+  return g.cols * 100000 + g.cw * 100 + g.ch != was;
+}
+void grid_lay(lv_obj_t *r, GridL &g) {  // every cell into the first free place that fits, in reading order
+  std::vector<std::vector<bool>> occ;
+  for (uint32_t i = 0; i < lv_obj_get_child_count(r); i++) {
+    lv_obj_t *c = lv_obj_get_child(r, (int32_t) i);
+    auto it = gcells.find(c);
+    if (it == gcells.end()) continue;
+    const int w = LV_CLAMP(1, it->second.w, g.cols), h = g.row ? 1 : LV_CLAMP(1, it->second.h, 8);
+    const int cw = w * g.cw + (w - 1) * g.gap, chh = h * g.ch + (h - 1) * g.gap;
+    if (g.row) lv_obj_set_size(c, cw, LV_SIZE_CONTENT);
+    else
+      for (int y = 0, done = 0; !done; y++) {
+        while ((int) occ.size() < y + h) occ.emplace_back(g.cols, false);
+        for (int x = 0; x + w <= g.cols && !done; x++) {
+          bool free = true;
+          for (int yy = y; yy < y + h && free; yy++)
+            for (int xx = x; xx < x + w && free; xx++) free = !occ[yy][xx];
+          if (!free) continue;
+          for (int yy = y; yy < y + h; yy++)
+            for (int xx = x; xx < x + w; xx++) occ[yy][xx] = true;
+          lv_obj_set_pos(c, g.left + x * (g.cw + g.gap), y * (g.ch + g.gap));
+          lv_obj_set_size(c, cw, chh);
+          done = 1;
+        }
+      }
+    const bool tap = it->second.tap && g.cw >= fw::touch::min && (g.row || g.ch >= fw::touch::min);
+    if (tap) lv_obj_add_flag(c, LV_OBJ_FLAG_CLICKABLE); else lv_obj_remove_flag(c, LV_OBJ_FLAG_CLICKABLE);
+  }
+}
+void grid_changed(lv_event_t *e) {  // a new size or a tuned token: measure again (only when it changes the geometry)
+  lv_obj_t *r = (lv_obj_t *) lv_event_get_current_target(e);
+  auto it = grids.find(r);
+  if (it == grids.end() || it->second.busy) return;
+  GridL &g = it->second;
+  if (lv_obj_get_content_width(r) == g.W && grid_gap(g.gapn) == g.gap) return;
+  g.busy = true;
+  const bool cols = grid_measure(r, g);
+  grid_lay(r, g);
+  g.busy = false;
+  if (cols) lv_obj_send_event(r, LV_EVENT_REFRESH, nullptr);
+}
+}  // namespace
+
+namespace fx {
+void grid(lv_obj_t *r, int cols, const char *min, const char *gap, const char *aspect) {
+  const bool fresh = !grids.count(r);
+  GridL &g = grids[r];
+  g.want = LV_CLAMP(1, cols, 8); g.gapn = gap; g.row = !strcmp(aspect, "row"); g.wide = !strcmp(aspect, "wide"); g.min = -1;
+  for (int i = 0; i < fw::ic::N_SIZES; i++) if (!strcmp(fw::ic::SIZE_NAMES[i], min)) g.min = i;
+  if (g.row) { lv_obj_set_layout(r, LV_LAYOUT_FLEX); lv_obj_set_flex_flow(r, LV_FLEX_FLOW_ROW_WRAP); }
+  if (fresh) {
+    lv_obj_add_event_cb(r, grid_changed, LV_EVENT_SIZE_CHANGED, nullptr);
+    lv_obj_add_event_cb(r, grid_changed, LV_EVENT_STYLE_CHANGED, nullptr);
+    lv_obj_add_event_cb(r, [](lv_event_t *e) { grids.erase((lv_obj_t *) lv_event_get_current_target(e)); }, LV_EVENT_DELETE, nullptr);
+  }
+  lv_obj_update_layout(r);  // the own content box now, so the first cells are sized at build (an Icon's fit: cell)
+  g.busy = true; grid_measure(r, g); g.busy = false;
+}
+lv_obj_t *grid_cell(lv_obj_t *r, int w, int h, bool tap) {
+  auto it = grids.find(r);
+  lv_obj_t *c = box(r, it != grids.end() && it->second.row ? "col" : "centre");
+  lv_obj_add_flag(c, fw::spec::SLOT);
+  gcells[c] = {w, h, tap};
+  lv_obj_add_event_cb(c, [](lv_event_t *e) { gcells.erase((lv_obj_t *) lv_event_get_current_target(e)); }, LV_EVENT_DELETE, nullptr);
+  if (it != grids.end()) { it->second.busy = true; grid_lay(r, it->second); it->second.busy = false; }
+  return c;
+}
+void grid_place(lv_obj_t *r) {
+  auto it = grids.find(r);
+  if (it == grids.end()) return;
+  it->second.busy = true; grid_lay(r, it->second); it->second.busy = false;
+}
+int grid_cols(lv_obj_t *r) { auto it = grids.find(r); return it == grids.end() ? 1 : it->second.cols; }
+}  // namespace fx
+

@@ -88,13 +88,27 @@ export default {
       await at(t, {});
       const meta = JSON.parse(t.b.m.UTF8ToString(t.b.m._fw_meta())).find((c) => c.id === 'header');
       const m = typeof meta.meta === 'string' ? JSON.parse(meta.meta) : meta.meta;
-      t.eq(m.slots.map((s) => s.name), ['title', 'end'], 'meta slots');
+      t.eq(m.slots.map((s) => [s.name, s.accepts, s.max]), [['title', ['segmented'], 1], ['end', ['icon_button', 'status_chip', 'segmented'], 4]], 'meta slots: allow lists + max');
       const spec = (slot) => ({ v: 1, id: 'hdrslots', rev: 1, name: 'Slots', layout: 'list', nodes: [{ c: 'status_chip', p: {}, in: 'header', ...(slot ? { slot } : {}) }] });
       await t.device();
       const bad = JSON.stringify(JSON.parse(t.b.spec('check', spec('start')) || '{}'));
       t.ok(bad.includes('bad_in') && bad.includes('no start slot'), `slot start refused: ${bad.slice(0, 160)}`);
       t.ok(JSON.stringify(JSON.parse(t.b.spec('check', spec('middle')) || '{}')).includes('bad_in'), 'slot middle refused');
       t.ok(!JSON.stringify(JSON.parse(t.b.spec('check', spec('end')) || '{}')).includes('bad_in'), 'slot end ok');
+    } },
+    { name: 'slot rules at spec load (facet-205): wrong type, a 5th end item, the header\'s own items count, two titles, each: refused with a path; 4 pass', async run(t) {
+      await t.device();
+      const ck = (nodes, header) => JSON.stringify(JSON.parse(t.b.spec('check', { v: 1, id: 'hdrslots', rev: 1, name: 'Slots', layout: 'list', ...(header ? { header } : {}), nodes }) || '{}'));
+      const ib = (slot) => ({ c: 'icon_button', p: { icon: 'close', style: 'square' }, in: 'header', ...(slot ? { slot } : {}) });
+      const chip = { c: 'status_chip', p: { tone: 'ok', text: 'ok' }, in: 'header' };
+      let r = ck([ib(), ib('end'), ib(), chip]); t.ok(!r.includes('bad_slot'), `3 buttons + a chip pass: ${r.slice(0, 120)}`);
+      r = ck([ib(), ib(), ib(), chip, ib()]); t.ok(r.includes('bad_slot') && r.includes('.nodes[4].in') && r.includes('at most 4'), `a 5th end item refused at .nodes[4].in: ${r.slice(0, 200)}`);
+      r = ck([ib(), ib(), ib(), chip], { label: 'Home', settings: true }); t.ok(r.includes('bad_slot') && r.includes('.nodes[3].in') && r.includes('own'), `settings counts: the 4th spec item refused: ${r.slice(0, 200)}`);
+      r = ck([{ c: 'slider', p: {}, in: 'header' }]); t.ok(r.includes('bad_slot') && r.includes('.nodes[0].c') && r.includes('not slider'), `a slider in end refused at .nodes[0].c: ${r.slice(0, 200)}`);
+      r = ck([{ c: 'status_chip', p: {}, in: 'header', slot: 'title' }]); t.ok(r.includes('bad_slot') && r.includes('.nodes[0].c'), `a chip in the title refused: ${r.slice(0, 200)}`);
+      const sg = { c: 'segmented', p: { options: 'A, B', selected: 'a' }, in: 'header', slot: 'title' };
+      r = ck([sg, sg]); t.ok(r.includes('bad_slot') && r.includes('.nodes[1].in') && r.includes('at most 1'), `two titles refused at .nodes[1].in: ${r.slice(0, 200)}`);
+      r = ck([{ ...ib(), each: 'rooms' }]); t.ok(r.includes('bad_slot') && r.includes('.nodes[0].each'), `each into the end slot refused: ${r.slice(0, 200)}`);
     } },
     { name: 'spec: nodes in title / end; "in": "header" with no slot = end; Back first, the Time last', async run(t) {
       const spec = { v: 1, id: 'hdrslots', rev: 1, name: 'Slots', header: { label: 'Slots' }, layout: 'list', nodes: [
