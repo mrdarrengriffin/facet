@@ -415,7 +415,18 @@ EMSCRIPTEN_KEEPALIVE const char *fw_comps(int id) {
 EMSCRIPTEN_KEEPALIVE const char *fw_slots(int id) {
   Stage *s = get(id);
   if (!s) return "[]";
-  out = fx::slots_json(lv_display_get_screen_active(s->d));
+  // on a spec screen each slot also says whose it is (the editor adds nodes there): "in" = the node index, or
+  // "header" for the screen's header (spec "in": k | "header", "slot": n)
+  out = fx::slots_json(lv_display_get_screen_active(s->d), [](lv_obj_t *o) {
+    for (fw::spec::Screen *sc : fw::spec::live()) {
+      bool inside = false;
+      for (lv_obj_t *p = o; p && !inside; p = lv_obj_get_parent(p)) inside = p == sc->root;
+      if (!inside) continue;
+      fw::spec::Node *n = fw::spec::node_of(sc, o);
+      return n ? (int) (n - sc->nodes.data()) : -1;
+    }
+    return -2;
+  });
   return out.c_str();
 }
 

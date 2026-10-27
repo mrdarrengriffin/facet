@@ -10,6 +10,7 @@
 // bigger one's baseline), plus the structure styles below and derived ones ("dial-wing": core/fx_core.cpp says how).
 #pragma once
 #include "lvgl.h"
+#include <functional>
 #include <string>
 
 namespace fw { struct Theme; struct Component; }
@@ -64,7 +65,9 @@ void split(lv_obj_t *pair);
 void bleed(lv_obj_t *o);           // the one escape: o's background reaches the page edge (the "bleed" style marks it)
 void name(lv_obj_t *o, const char *n);  // a component root's name for the inspector
 void slot(lv_obj_t *o, const char *n);  // o holds the meta slot n (C8a): the workbench outlines it (hosts only, no-op on a panel)
-std::string slots_json(lv_obj_t *scr);  // [{n, x, y, w, h}] every marked slot shown on scr (device px)
+// [{n, x, y, w, h, empty?, in?}] every marked slot on scr (device px; an empty one = where its first item would go);
+// owner(o) = the spec node index that holds the slot, -1 = the screen header, -2 = not on a spec screen (no "in")
+std::string slots_json(lv_obj_t *scr, const std::function<int(lv_obj_t *)> &owner = {});
 int size(const char *token);       // a size token ("stroke:hair", "layout:dial-tick") for DRAWING only
 int type_box(const char *type);    // a type style's line box ("type:c-meta"), for placing drawn text only
 

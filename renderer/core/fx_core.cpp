@@ -1288,7 +1288,7 @@ void slot(lv_obj_t *o, const char *n) {
   if (!slot_marks().count(o)) lv_obj_add_event_cb(o, [](lv_event_t *e) { slot_marks().erase((lv_obj_t *) lv_event_get_current_target(e)); }, LV_EVENT_DELETE, nullptr);
   slot_marks()[o] = n;
 }
-std::string slots_json(lv_obj_t *scr) {
+std::string slots_json(lv_obj_t *scr, const std::function<int(lv_obj_t *)> &owner) {
   ArduinoJson::JsonDocument doc;
   ArduinoJson::JsonArray a = doc.to<ArduinoJson::JsonArray>();
   for (auto &[o, n] : slot_marks()) {
@@ -1312,6 +1312,7 @@ std::string slots_json(lv_obj_t *scr) {
       }
       b["n"] = n, b["x"] = x, b["y"] = pr.y1, b["w"] = 0, b["h"] = lv_area_get_height(&pr), b["empty"] = true;
     } else b["n"] = n, b["x"] = r.x1, b["y"] = r.y1, b["w"] = lv_area_get_width(&r), b["h"] = lv_area_get_height(&r);
+    if (const int k = owner ? owner(o) : -2; k >= 0) b["in"] = k; else if (k == -1) b["in"] = "header";
   }
   std::string out;
   serializeJson(doc, out);
@@ -1319,7 +1320,7 @@ std::string slots_json(lv_obj_t *scr) {
 }
 #else
 void slot(lv_obj_t *, const char *) {}
-std::string slots_json(lv_obj_t *) { return "[]"; }
+std::string slots_json(lv_obj_t *, const std::function<int(lv_obj_t *)> &) { return "[]"; }
 #endif
 int type_box(const char *type) { return box_of(type_id(type)); }
 int size(const char *t) {  // a size token now: tuned (the lab) > the live theme's look size (C19) > Facet's
