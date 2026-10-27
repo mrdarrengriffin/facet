@@ -780,6 +780,13 @@ void switch_draw(lv_event_t *e) {
       c0 = c1;
     }
 }
+bool seg_box(lv_obj_t *o, Look *L) {  // a Segmented's box ("seg") while the live theme styles the segment part (C46)
+  const S::Block sb = L->skin->merged(G::P_SEGMENT, 0);
+  if (!(sb.has & (S::K_FACE | S::K_EDGES))) return false;
+  const lv_style_t *seg = &L->s[ix("seg")];
+  for (uint32_t k = 0; k < o->style_cnt; k++) if (o->styles[k].style == seg) return true;
+  return false;
+}
 void part_draw(lv_event_t *e) {  // a box part: shadow under it (MAIN_BEGIN), pattern face + edges over its fill (MAIN_END)
   lv_obj_t *o = (lv_obj_t *) lv_event_get_current_target(e);
   const int p = (int) (intptr_t) lv_event_get_user_data(e);
@@ -789,6 +796,7 @@ void part_draw(lv_event_t *e) {  // a box part: shadow under it (MAIN_BEGIN), pa
   const S::Block b = k.merged(p, combo(o));
   if (!(b.has & (S::K_SHADOW | S::K_EDGES | S::K_FACE))) return;  // Facet: nothing (no draw call, S1)
   if (is_check(o)) return;  // the theme draws this switch as a checkbox (switch_draw): its track part goes
+  if (p == G::P_CONTROL && seg_box(o, L)) return;  // the theme draws each segment (part segment): the Segmented's box edges go
   lv_layer_t *ly = lv_event_get_layer(e);
   const int lt = L->th.light, set = L->th.accent_set, radius = lv_obj_get_style_radius(o, LV_PART_MAIN);
   lv_area_t A;
