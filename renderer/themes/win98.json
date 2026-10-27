@@ -34,6 +34,8 @@
   "stroke:knob": [3, 2],
   "stroke:indicator": [6, 4]
  },
+ "font": {"display": "w95fa", "body": "w95fa", "label": "w95fa", "mono": "w95fa"},
+ "type": {"display": [144, 96], "hero": [96, 48], "value": [36, 24], "headline": [36, 24], "title": [36, 24], "body": [24, 18], "label": [24, 12]},
  "shape": {"cap": "square", "ticks": "lines", "icons": "pixel", "snap": true},
  "parts": {
   "page": {"edges": [{"side": "top-left", "w": 1, "ink": "#DFDFDF"}, {"side": "bottom-right", "w": 1, "ink": "#0A0A0A"}, {"side": "top-left", "w": 1, "inset": 1, "ink": "line-hi"}, {"side": "bottom-right", "w": 1, "inset": 1, "ink": "line"}]},

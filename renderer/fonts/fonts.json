@@ -1,0 +1,5 @@
+{
+ "about": "The font registry (renderer/CONTRACT.md C49): family id -> its TTF and licence in this folder. tools/gen_fonts.py builds a family at every size a built-in theme (themes/*.json) names for it, with the glyph sets of the styles it draws; a theme may name any family here with source builtin. weights = the weights the file has (a style takes the nearest; bold is synthetic). grid = pixels per em of a pixel font: at a whole multiple of it the family is built 1 bpp (crisp), else 4 bpp. fallback: true = glyphs the family lacks are drawn by Facet's font (else a missing glyph fails the build). Licences: SIL OFL 1.1 only. Facet's own families (Inter, JetBrains Mono) come from tokens/type.json and are not listed. A new family = its .ttf + licence text here and one entry: no code edit.",
+ "monocraft": {"family": "Monocraft", "file": "Monocraft.ttf", "licence": "OFL-Monocraft.txt", "weights": [400], "grid": 9, "fallback": true},
+ "w95fa": {"family": "W95FA", "file": "W95FA-cell.ttf", "licence": "OFL-W95FA.txt", "weights": [400], "grid": 12, "fallback": true}
+}

@@ -2,7 +2,7 @@
  "schema": 1,
  "id": "blockcraft",
  "label": "Blockcraft",
- "about": "A block-game inventory GUI, in theme data only: on a pixel grid with a drop shadow (its font, Monocraft (OFL), arrives with the theme fonts), light-grey panels with a one-cell outer edge and a mitred bevel (white top-left, grey bottom-right) that inverts when pressed, grey bevel buttons, sunken slots, a bevelled block knob on a chunky pixel arc, block ticks, pixel icons. Gem and ore accents. Light is the inventory panel, dark a deep-slate GUI pack.",
+ "about": "A block-game inventory GUI, in theme data only: on a pixel grid with a drop shadow in Monocraft (OFL), 1 bpp, light-grey panels with a one-cell outer edge and a mitred bevel (white top-left, grey bottom-right) that inverts when pressed, grey bevel buttons, sunken slots, a bevelled block knob on a chunky pixel arc, block ticks, pixel icons. Gem and ore accents. Light is the inventory panel, dark a deep-slate GUI pack.",
  "modes": ["dark"],
  "colour": {
   "bg": {"dark": "#141417"},
@@ -32,6 +32,8 @@
   "stroke:indicator": [12, 8],
   "stroke:pixel": [3, 2]
  },
+ "font": {"display": "monocraft", "body": "monocraft", "label": "monocraft", "mono": "monocraft"},
+ "type": {"display": [144, 90], "hero": [90, 63], "value": [54, 36], "headline": [45, 27], "title": [36, 27], "body": [27, 18], "label": [18, 14]},
  "shape": {"cap": "square", "ticks": "blocks", "icons": "pixel", "snap": true},
  "parts": {
   "card": {"radius": 0, "edges": [{"side": "all", "w": 1, "ink": "#6C6C76"}, {"side": "top-left", "w": 1, "inset": 1, "ink": "line-hi"}, {"side": "bottom-right", "w": 1, "inset": 1, "ink": "line"}], "pressed": {"edges": [{"side": "all", "w": 1, "ink": "#6C6C76"}, {"side": "top-left", "w": 1, "inset": 1, "ink": "line"}, {"side": "bottom-right", "w": 1, "inset": 1, "ink": "line-hi"}]}, "on": {"edges": [{"side": "all", "w": 1, "ink": "accent"}, {"side": "top-left", "w": 1, "inset": 1, "ink": "line-hi"}, {"side": "bottom-right", "w": 1, "inset": 1, "ink": "line"}]}},

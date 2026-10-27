@@ -1,6 +1,6 @@
 // Facet bitmap font runtime (pasted into every generated font header by tools/gen_fonts.py).
-// A font = sorted glyph table + 4 bpp bitmaps (rows packed, two pixels per byte, high nibble first, no row padding);
-// LVGL gets an lv_font_t with glyph callbacks that expand the 4 bpp rows to A8 on demand.
+// A font = sorted glyph table + 1, 2 or 4 bpp bitmaps (rows packed, high bits first, no row padding; 1 bpp = a crisp
+// pixel font, fonts/fonts.json); LVGL gets an lv_font_t with glyph callbacks that expand the rows to A8 on demand.
 struct FacetGlyph {
   uint32_t cp;
   const uint8_t *data;
@@ -42,13 +42,13 @@ struct FacetFont {
     const FacetGlyph *g = f->find(d->gid.index);
     if (!g) return nullptr;
     const uint32_t stride = lv_draw_buf_width_to_stride(g->w, LV_COLOR_FORMAT_A8);
-    uint32_t bit = 0;  // nibble index into the packed bitmap
+    const int bpp = f->bpp, mx = (1 << bpp) - 1;
+    uint32_t bit = 0;  // bit index into the packed bitmap
     for (int y = 0; y < g->h; y++) {
       uint8_t *row = buf->data + y * stride;
-      for (int x = 0; x < g->w; x++, bit++) {
-        uint8_t b = g->data[bit >> 1];
-        uint8_t v = (bit & 1) ? (b & 0x0F) : (b >> 4);
-        row[x] = v * 17;  // 0..15 -> 0..255
+      for (int x = 0; x < g->w; x++, bit += bpp) {
+        const uint8_t v = (uint8_t) ((g->data[bit >> 3] >> (8 - bpp - (bit & 7))) & mx);
+        row[x] = (uint8_t) (v * 255 / mx);  // 0..mx -> 0..255
       }
     }
     return buf;

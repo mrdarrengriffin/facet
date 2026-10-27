@@ -330,6 +330,8 @@ struct Model {
   bool type_set[N_TYPES] = {};
   int16_t type_v[N_TYPES][2] = {};
   int font[N_FONT_ROLES];
+  int font_src[N_FONT_ROLES] = {}, font_fb[N_FONT_ROLES] = {};
+  std::string font_url[N_FONT_ROLES], font_fam[N_FONT_ROLES];
   int shape_v[8];  // corner, cap, knob, ticks, card, indicator, icons: -1 = not set; [7] snap: -1 / 0 / 1
   Authored part[N_PARTS];
   Edge pack[MAX_EDGES];  // compile: the edge pool in canonical order (part, then state)
@@ -731,8 +733,49 @@ bool phase1(const Doc &d, Errs &E, Model &M, Reader &R) {
         const std::string tk = d.key(t), at = "font." + tk;
         const int ri = find(G::FONT_ROLES, G::N_FONT_ROLES, tk.c_str());
         if (ri < 0) { E.add(at, "not a font role (" + list(G::FONT_ROLES, G::N_FONT_ROLES) + ")", t); continue; }
-        const int fi = d.at(t).t == J_STR ? find(G::FAMILIES, G::N_FAMILIES, d.s_of(t)) : -1;
-        if (fi < 0) { E.add(at, shown(d, t) + " is not in this panel's build (" + list(G::FAMILIES, G::N_FAMILIES) + ")", t); continue; }
+        // a family id (built in), or {family, source: builtin | download, url, fallback}
+        int fv = t;
+        bool dl = false;
+        if (d.at(t).t == J_OBJ) {
+          int src = -1, url = -1, fb = -1;
+          fv = -1;
+          for (int q = d.at(t).first; q >= 0; q = d.at(q).next) {
+            const std::string qk = d.key(q);
+            if (qk == "family") fv = q;
+            else if (qk == "source") src = q;
+            else if (qk == "url") url = q;
+            else if (qk == "fallback") fb = q;
+            else E.add(at + "." + qk, "unknown key (family, source, url, fallback)", q);
+          }
+          if (fv < 0) { E.add(at, "needs a family", t); continue; }
+          if (src >= 0 && R.need(src, J_STR, at + ".source")) {
+            const std::string sv = d.s_of(src);
+            if (sv == "download") dl = true;
+            else if (sv != "builtin") { E.add(at + ".source", shown(d, src) + " is not a source (builtin, download)", src); continue; }
+          }
+          if (dl) {
+            if (url < 0) { E.add(at, "a downloaded font needs its url", t); continue; }
+            if (!R.need(url, J_STR, at + ".url")) continue;
+            const std::string u = d.s_of(url);
+            bool ok = u.rfind("https://", 0) == 0 && u.size() > 8 && u.size() <= 160;
+            for (char ch : u) if ((unsigned char) ch <= ' ' || ch == '"' || ch == '\\' || (unsigned char) ch >= 127) ok = false;
+            if (!ok) { E.add(at + ".url", shown(d, url) + " is not an https URL of at most 160 characters", url); continue; }
+            M.font_url[ri] = u;
+            if (fb >= 0 && R.need(fb, J_BOOL, at + ".fallback")) M.font_fb[ri] = d.at(fb).b ? 1 : 0;
+          } else if (fb >= 0) { E.add(at + ".fallback", "only a downloaded font has a fallback setting (a built-in one's is in fonts/fonts.json)", fb); continue; }
+          else if (url >= 0) { E.add(at + ".url", "only a downloaded font has a url", url); continue; }
+        }
+        if (!R.need(fv, J_STR, at + (fv == t ? "" : ".family"))) continue;
+        if (dl) {  // any family id: the panel fetches the file; the built-in fallback draws until then
+          const std::string fam = d.s_of(fv);
+          bool ok = !fam.empty() && fam.size() <= 32;
+          for (char ch : fam) if (!((ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9') || ch == '-')) ok = false;
+          if (!ok) { E.add(at + ".family", shown(d, fv) + " is not a family id (1 to 32 of a-z 0-9 -)", fv); continue; }
+          M.font_src[ri] = 1; M.font_fam[ri] = fam;
+          continue;
+        }
+        const int fi = find(G::FAMILIES, G::N_FAMILIES, d.s_of(fv));
+        if (fi < 0) { E.add(at + (fv == t ? "" : ".family"), shown(d, fv) + " is not in this panel's build (" + list(G::FAMILIES, G::N_FAMILIES) + "; or source: download)", fv); continue; }
         M.font[ri] = fi;
       }
     } else if (k == "shape") {
@@ -856,7 +899,12 @@ void compile(Model &M, Skin &S, Errs &E) {
   }
   for (int i = 0; i < N_SIZES; i++) for (int d = 0; d < 2; d++) S.size[d][i] = M.size_set[i] ? M.size_v[i][d] : G::SIZES[i].v[d];
   for (int i = 0; i < N_TYPES; i++) for (int d = 0; d < 2; d++) S.type[d][i] = M.type_set[i] ? M.type_v[i][d] : G::TYPES[i].size[d];
-  for (int r = 0; r < N_FONT_ROLES; r++) S.font[r] = (uint8_t) (M.font[r] >= 0 ? M.font[r] : G::FONT_DEFAULT[r]);
+  for (int r = 0; r < N_FONT_ROLES; r++) {
+    S.font[r] = (uint8_t) (M.font[r] >= 0 ? M.font[r] : G::FONT_DEFAULT[r]);
+    S.font_src[r] = (uint8_t) M.font_src[r]; S.font_fallback[r] = (uint8_t) M.font_fb[r];
+    snprintf(S.font_url[r], sizeof S.font_url[r], "%s", M.font_url[r].c_str());
+    snprintf(S.font_family[r], sizeof S.font_family[r], "%s", M.font_fam[r].c_str());
+  }
   uint8_t *sh[] = {&S.corner, &S.cap, &S.knob, &S.ticks, &S.card, &S.indicator, &S.icons, &S.snap};
   for (int i = 0; i < 8; i++) *sh[i] = (uint8_t) (M.shape_v[i] > 0 ? M.shape_v[i] : 0);
   if (!presets(M, S, E)) return;

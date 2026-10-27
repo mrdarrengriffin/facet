@@ -167,9 +167,26 @@ export default {
       t.eq(dump(t, { ...T0, type: { title: [32, 21] } }).type.title, [32, 21], 'title one step bigger in the same line box (as Large text)');
     } },
     { name: 'font: a role and a family of this build', mount: M, run(t) {
-      refused(t, { ...T0, font: { body: 'comic-sans' } }, 'font.body', /is not in this panel's build \(inter, jetbrains-mono\)/, 'an unknown family');
+      refused(t, { ...T0, font: { body: 'comic-sans' } }, 'font.body', /is not in this panel's build \(inter, jetbrains-mono, monocraft, w95fa; or source: download\)/, 'an unknown family');
       refused(t, { ...T0, font: { heading: 'inter' } }, 'font.heading', /not a font role \(display, body, label, mono\)/, 'an unknown role');
       t.eq(dump(t, { ...T0, font: { body: 'jetbrains-mono' } }).font.body, 'jetbrains-mono', 'a family of the build');
+      t.eq(dump(t, { ...T0, font: { body: 'monocraft' } }).font.body, 'monocraft', 'a theme family of the registry (fonts/fonts.json)');
+      t.eq(dump(t, { ...T0, font: { body: { family: 'w95fa', source: 'builtin' } } }).font.body, 'w95fa', 'the object form, built in');
+    } },
+    { name: 'font source download: the panel fetches it; url, family id and keys checked; the fallback is the built-in family', mount: M, run(t) {
+      const U = 'https://fonts.example.org/PressStart2P.ttf';
+      t.eq(dump(t, { ...T0, font: { body: { family: 'press-start-2p', source: 'download', url: U } } }).font.body, 'inter', 'a download: the Skin keeps the built-in fallback for the role');
+      t.eq(dump(t, { ...T0, font: { label: { family: 'press-start-2p', source: 'download', url: U, fallback: true } } }).font.label, 'jetbrains-mono', 'fallback: true is allowed on a download');
+      refused(t, { ...T0, font: { body: { family: 'x', source: 'download' } } }, 'font.body', /a downloaded font needs its url/, 'no url');
+      refused(t, { ...T0, font: { body: { family: 'x', source: 'download', url: 'http://a.b/x.ttf' } } }, 'font.body.url', /is not an https URL of at most 160 characters/, 'plain http');
+      refused(t, { ...T0, font: { body: { family: 'x', source: 'download', url: 'https://a.b/' + 'x'.repeat(160) } } }, 'font.body.url', /at most 160/, 'a URL too long');
+      refused(t, { ...T0, font: { body: { family: 'Press Start', source: 'download', url: U } } }, 'font.body.family', /is not a family id \(1 to 32 of a-z 0-9 -\)/, 'a family name, not an id');
+      refused(t, { ...T0, font: { body: { family: 'x', source: 'cdn', url: U } } }, 'font.body.source', /is not a source \(builtin, download\)/, 'an unknown source');
+      refused(t, { ...T0, font: { body: { family: 'x', source: 'download', url: U, size: 3 } } }, 'font.body.size', /unknown key \(family, source, url, fallback\)/, 'an unknown key');
+      refused(t, { ...T0, font: { body: { family: 'inter', fallback: true } } }, 'font.body.fallback', /only a downloaded font has a fallback setting/, 'fallback on a built-in family');
+      refused(t, { ...T0, font: { body: { family: 'inter', url: U } } }, 'font.body.url', /only a downloaded font has a url/, 'a url on a built-in family');
+      refused(t, { ...T0, font: { body: { source: 'download', url: U } } }, 'font.body', /needs a family/, 'no family');
+      refused(t, { ...T0, font: { body: { family: 'comic-sans' } } }, 'font.body.family', /is not in this panel's build/, 'object form, unknown family');
     } },
     { name: 'shape: unknown key and value; Facet\'s values expand to nothing; presets fill what parts leave unset', mount: M, run(t) {
       refused(t, { ...T0, shape: { knob: 'star' } }, 'shape.knob', /is not a knob \(circle, square, diamond, ring, pixel\)/, 'a knob shape');

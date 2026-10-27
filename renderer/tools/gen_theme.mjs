@@ -46,7 +46,10 @@ export function schema() {
   });
   // font families: type.json families, by id (lower case, dashes); Facet's family per role = the one its styles use
   const famId = (f) => f.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-  const families = Object.entries(ty.families).map(([k, f]) => ({ key: k, id: famId(f.family), name: f.family }));
+  // + the theme families of the font registry (fonts/fonts.json, C49): built in where a built-in theme names them
+  const reg = rd('fonts/fonts.json');
+  const families = [...Object.entries(ty.families).map(([k, f]) => ({ key: k, id: famId(f.family), name: f.family })),
+    ...Object.entries(reg).filter(([k]) => k !== 'about' && !k.startsWith('$')).map(([k, f]) => ({ key: k, id: k, name: f.family }))];
   const fontOf = {};
   for (const r of th.roles.list) {
     const t = types.find((x) => x.role === r);
@@ -192,6 +195,13 @@ export function header(S = schema()) {
   ];
   for (const [k, v] of Object.entries(th.shape)) if (k !== 'about') L.push(`constexpr const char *SHAPE_${k.toUpperCase()}[] = {${v.map(cs).join(', ')}};`, `constexpr int N_SHAPE_${k.toUpperCase()} = ${v.length};`);
   for (const [k, v] of Object.entries(th.values)) if (k !== 'about') L.push(`constexpr const char *${k.toUpperCase()}[] = {${v.map(cs).join(', ')}};`, `constexpr int N_${k.toUpperCase()} = ${v.length};`);
+  // pixel icons (shape.icons pixel): tokens/icons.json "pixel" = 8 rows of hex, high bit = left
+  const px = rd('tokens/icons.json').icons.filter((i) => i.pixel);
+  for (const i of px) if (i.pixel.length !== 8 || i.pixel.some((r) => !/^[0-9A-Fa-f]{2}$/.test(r))) die(`icons.json ${i.name}: pixel = 8 rows of 2 hex digits`);
+  L.push('// pixel icons (shape.icons pixel, tokens/icons.json "pixel"): 8 x 8, rows top down, bit 7 = left; sorted by name',
+    'struct PixelIcon { const char *name; uint8_t rows[8]; };',
+    `constexpr PixelIcon PIXEL_ICONS[] = {${[...px].sort((a, b) => (a.name < b.name ? -1 : 1)).map((i) => `{${cs(i.name)}, {${i.pixel.map((r) => '0x' + r.toUpperCase()).join(', ')}}}`).join(',\n  ')}};`,
+    `constexpr int N_PIXEL_ICONS = ${px.length};`);
   L.push('// the built-in themes (themes/*.json, facet first): each is validated when the build runs (tools/theme_check.mjs)',
     `constexpr int N_BUILTINS = ${builtins.length};`, 'struct Builtin { const char *id; const char *json; };',
     `constexpr Builtin BUILTINS[] = {${builtins.map((f) => `{${cs(f.replace(/\.json$/, ''))}, ${cRaw(readFileSync(join(THEMES, f), 'utf8'))}}`).join(',\n  ')}};`,

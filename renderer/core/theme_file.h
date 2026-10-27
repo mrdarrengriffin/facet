@@ -74,6 +74,13 @@ struct Skin {
   Buttons buttons;
   Scrollbar scrollbar;
   uint32_t checks;  // guard checks this Skin passed
+  // theme fonts (C49, Appendix A font): per role where its family comes from. 0 = built in (font[] is the family);
+  // 1 = downloaded by the panel itself (core/font_store.h: fetched once, kept in flash, checked there): font[] is
+  // then the built-in fallback drawn until the file is there (or if it is refused)
+  uint8_t font_src[N_FONT_ROLES];
+  uint8_t font_fallback[N_FONT_ROLES];   // download: glyphs the file lacks are drawn by the fallback (else refused)
+  char font_url[N_FONT_ROLES][161];      // download: the https URL of the TTF (SIL OFL only, checked on the panel)
+  char font_family[N_FONT_ROLES][33];    // download: the family's id as the theme names it (for status and reports)
 
   int mode(int light) const { return (modes >> (light ? 1 : 0)) & 1 ? (light ? 1 : 0) : (light ? 0 : 1); }  // a one-mode theme keeps its mode
   int set(int i) const { return i >= 0 && i < n_sets ? i : 0; }                                             // an accent index out of range = the first set

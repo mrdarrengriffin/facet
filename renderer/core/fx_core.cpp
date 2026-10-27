@@ -19,11 +19,17 @@
 #include <string>
 #include <vector>
 
-namespace fw { void text_metrics(ty::Id s, int &line_space, int &pad_top, int &pad_bottom, int &translate_y); }
+namespace fw {
+void text_metrics(ty::Id s, int &line_space, int &pad_top, int &pad_bottom, int &translate_y);
+const lv_font_t *theme_font(const char *family, int style, int px, bool *exact = nullptr);  // core/fonts.cpp: a built-in theme family's font
+int style_role(int style);                                          // the font role a type style is drawn in
+uint32_t role_glyph(int role, int i);                               // the code points the role's styles draw (0 = end)
+}
+#include "font_store.h"
 
 namespace {
 enum Kind { FG, BG, BORDER, LINE, INK, PAD, GAP, PADX, RADIUS, HEIGHT, MAXH, MINW, MAXW, WIDTH, TYPE, SHAPE, DERIVED,
-            TINT, OUTLINE, DIGIT, COLON, RAISE, BASE, PART, PTEXT };
+            TINT, OUTLINE, DIGIT, COLON, RAISE, BASE, PART, PTEXT, ICONPX };
 namespace G = fx::tgen;
 namespace S = fx::skin;
 #ifdef FW_1X
@@ -59,7 +65,7 @@ const char *const DERIVED_N[] = {"dial-wing-up", "dial-wing-down", "dial-slot", 
 // palette for that mode x set = th, the colours every contract style reads; Facet's Skin = Facet's colours, so th == *t)
 // and its generation (gen: a theme apply bumps it, the look repaints; never by Skin pointer, a freed one's address can
 // come back). Legacy components keep fw::T (Facet's palette): never half-themed (theme-engine design 8).
-struct Look { lv_display_t *d; const fw::Theme *t = nullptr; int large = -1; uint32_t gen = 0; std::shared_ptr<const fx::Skin> skin;
+struct Look { lv_display_t *d; const fw::Theme *t = nullptr; int large = -1; uint32_t gen = 0, fgen = 0; std::shared_ptr<const fx::Skin> skin;
               fw::Theme th; std::vector<lv_style_t> s; };
 // parts (C46, tokens/theme.json parts): "part:<p>" = 16 shared styles, one per combination of on / focus / pressed /
 // disabled (bit i = state i, the merge order), each the part's MERGED block for that combination (Skin::merged), attached
@@ -68,6 +74,10 @@ struct Look { lv_display_t *d; const fw::Theme *t = nullptr; int large = -1; uin
 // (design 3.4). "ptext:<p>" = the same 16 with only the part's text ink: on every text and icon ink inside the part.
 int part_def[G::N_PARTS][16], ptext_def[G::N_PARTS][16];
 int skin_ix[256];          // fx colour token -> Skin palette index (by name)
+int size_ix[512];          // fx size token -> Skin size index (by name; -1 none)
+int type_ti[128];          // type style -> themeable type index (tokens/theme.json type; -1 = not themeable)
+int ix_pixel = -1;         // the Skin size index of stroke:pixel (the snapped cell, C29)
+const fx::Skin *live_raw = nullptr;  // the Skin the looks were last painted with (fx::size reads its look sizes)
 int type_part[64];         // fx type style -> its text part (tokens/theme.json parts of kind text)
 bool boxy(int p) { const char *k = G::PARTS[p].kind; return !strcmp(k, "box") || !strcmp(k, "header") || !strcmp(k, "frame") || !strcmp(k, "caption"); }
 bool styled(int p) { const char *k = G::PARTS[p].kind; return boxy(p) || !strcmp(k, "text") || !strcmp(k, "icon"); }
@@ -82,9 +92,9 @@ int combo(lv_obj_t *o) {  // the object's states as a part combination
 std::vector<Look *> looks;
 #ifndef ESP_PLATFORM
 bool stale = false;  // break-it (fx::break_stale): looks ignore the theme generation, so a live switch never repaints
-#define GEN_OLD(L) (!stale && (L)->gen != fx::theme_generation())
+#define GEN_OLD(L) (!stale && ((L)->gen != fx::theme_generation() || (L)->fgen != fx::fonts::generation()))
 #else
-#define GEN_OLD(L) ((L)->gen != fx::theme_generation())
+#define GEN_OLD(L) ((L)->gen != fx::theme_generation() || (L)->fgen != fx::fonts::generation())
 #endif
 
 void init_defs() {
@@ -124,6 +134,7 @@ void init_defs() {
   }
   for (int i = 0; i < (int) (sizeof(BASES) / sizeof(BASES[0])); i++)
     defs.push_back({std::string("baseline:") + type_name(BASES[i].a) + ":" + type_name(BASES[i].b), BASE, i});
+  defs.push_back({"icon-px", ICONPX, 0});  // an icon layer that has pixel art: hidden while the theme draws pixel icons
   for (int p = 0; p < G::N_PARTS; p++) {  // "part:card", then "part:card~1" .. "~f" (the combinations, attached together)
     if (!styled(p)) continue;  // drawn parts (knob, tick, arc) are the Pen's, read at draw time
     for (int m = 0; m < 16; m++) {
@@ -138,7 +149,7 @@ void init_defs() {
   for (size_t i = 0; i < defs.size(); i++)
     if (defs[i].k == PART) part_def[defs[i].i / 16][defs[i].i % 16] = (int) i;
     else if (defs[i].k == PTEXT) ptext_def[defs[i].i / 16][defs[i].i % 16] = (int) i;
-  static_assert(fx::gen::N_COLOURS <= 256 && fx::gen::N_TYPES <= 64, "skin_ix / type_part");
+  static_assert(fx::gen::N_COLOURS <= 256 && fx::gen::N_TYPES <= 64 && fx::gen::N_SIZES <= 512 && fw::ty::N <= 128, "skin_ix / type_part / size_ix / type_ti");
   for (int i = 0; i < fx::gen::N_COLOURS; i++) {
     skin_ix[i] = -1;
     for (int c = 0; c < G::N_COLOURS; c++) if (!strcmp(G::COLOURS[c], fx::gen::COLOURS[i].name)) skin_ix[i] = c;
@@ -156,6 +167,15 @@ void init_defs() {
       else if (n.find("body") != std::string::npos) q = "body";
     }
     type_part[i] = part_ix(q);
+  }
+  for (int i = 0; i < fx::gen::N_SIZES; i++) {  // fx size token -> the Skin's size index (look sizes come from the theme)
+    size_ix[i] = -1;
+    for (int j = 0; j < G::N_SIZES; j++) if (!strcmp(G::SIZES[j].name, fx::gen::SIZES[i].name)) size_ix[i] = j;
+  }
+  for (int j = 0; j < G::N_SIZES; j++) if (!strcmp(G::SIZES[j].name, "stroke:pixel")) ix_pixel = j;
+  for (int i = 0; i < fw::ty::N; i++) {  // type style -> its themeable index (tokens/theme.json type), -1 = Facet's size
+    type_ti[i] = -1;
+    for (int j = 0; j < G::N_TYPES; j++) if (!strcmp(G::TYPES[j].name, fw::ty::STYLES[i].name)) type_ti[i] = j;
   }
 }
 int index_of(const char *n) {
@@ -273,6 +293,43 @@ lv_color_t colour(int i, const fw::Theme *t) {  // a colour token or a state rol
 }
 int box_of(fw::ty::Id id) { return fw::ty::STYLES[id].box; }
 lv_color_t hex(uint32_t c) { return lv_color_hex(c); }
+// ---- theme fonts (C49): a type style's font in a Skin. Its font role's family at the theme's size for the style
+// (themeable styles, within [floor, box]) else Facet's; built in (core/fonts.cpp THEME_FONTS) or downloaded by the panel
+// (core/font_store.h: until the file is there, the built-in fallback draws). Facet's family at Facet's size = fw::font
+// (so Large text and S1 hold). The line box never changes (C45): only the font inside it.
+const std::vector<uint32_t> &role_need(int r) {  // the code points the role's styles draw (a download's coverage check)
+  static std::vector<uint32_t> need[S::N_FONT_ROLES];
+  if (need[r].empty()) for (int i = 0;; i++) { const uint32_t c = fw::role_glyph(r, i); if (!c) break; need[r].push_back(c); }
+  return need[r];
+}
+const lv_font_t *skin_font(const S::Skin *k, fw::ty::Id id) {
+  const lv_font_t *facet = fw::font(id);
+  if (!k || id < 0 || id >= fw::ty::N) return facet;
+  const int r = fw::style_role(id), ti = type_ti[id];
+  const int px = ti >= 0 ? k->type[DN][ti] : fw::ty::STYLES[id].size;
+  const lv_font_t *f = k->font[r] == G::FONT_DEFAULT[r] && px == fw::ty::STYLES[id].size ? facet : fw::theme_font(G::FAMILIES[k->font[r]], id, px);
+  if (!f) f = facet;  // a size this build lacks (a sent theme): Facet's font in the same box
+  if (k->font_src[r])
+    if (const lv_font_t *d = fx::fonts::get(k->font_url[r], k->font_family[r], px, role_need(r), k->font_fallback[r], f)) return d;
+  return f;
+}
+int cap_px(const lv_font_t *f) {  // as core/fw_core.cpp: cap height above the baseline ('H', else '0')
+  lv_font_glyph_dsc_t g;
+  for (uint32_t c : {(uint32_t) 'H', (uint32_t) '0'})
+    if (lv_font_get_glyph_dsc(f, &g, c, 0) && g.box_h > 0) return g.box_h + g.ofs_y;
+  return (int) lroundf(lv_font_get_line_height(f) * 0.6f);
+}
+// fw::text_metrics for any font: the caps centred in the style's fixed line box (the text-box rule)
+void metrics(fw::ty::Id s, const lv_font_t *f, int &line_space, int &pad_top, int &pad_bottom, int &translate_y) {
+  if (f == fw::font(s)) { fw::text_metrics(s, line_space, pad_top, pad_bottom, translate_y); return; }
+  const int box = fw::ty::STYLES[s].box, lh = lv_font_get_line_height(f), asc = lh - f->base_line;
+  const int off = (int) lroundf((box + cap_px(f)) / 2.0f) - asc;
+  line_space = box - lh;
+  pad_top = off > 0 ? off : 0;
+  pad_bottom = -(std::max(0, pad_top + lh - box) + 2);
+  translate_y = off < 0 ? off : 0;
+}
+int snap_cell(const S::Skin *k) { return k && k->snap && ix_pixel >= 0 ? std::max<int>(1, k->size[DN][ix_pixel]) : 0; }
 // a part's style for one combination: what its merged block sets, nothing else (text = only the text ink)
 void part_style(Look *L, lv_style_t *s, int p, int m, bool text_only) {
   lv_style_reset(s);  // a key the new theme does not set must go
@@ -298,7 +355,8 @@ void part_style(Look *L, lv_style_t *s, int p, int m, bool text_only) {
   if (b.has & S::K_EDGES) lv_style_set_border_opa(s, LV_OPA_TRANSP);
 }
 void palette(Look *L, const fw::Theme *t) {  // th = t's colours through the live Skin (mode x accent set)
-  L->skin = fx::theme_live(); L->gen = fx::theme_generation();
+  L->skin = fx::theme_live(); L->gen = fx::theme_generation(); L->fgen = fx::fonts::generation();
+  live_raw = L->skin.get();
   L->th = *t;
   for (int i = 0; i < fx::gen::N_COLOURS; i++) L->th.*fx::gen::COLOURS[i].f = hex(L->skin->rgb(t->light, t->accent_set, skin_ix[i]));
 }
@@ -311,6 +369,7 @@ void paint(Look *L, const fw::Theme *t, int only = -1) {  // colours from the th
     lv_style_t *s = &L->s[i];
     const Def &d = defs[i];
     if (d.k == PART || d.k == PTEXT) { part_style(L, s, d.i / 16, d.i % 16, d.k == PTEXT); continue; }
+    if (d.k == ICONPX) { lv_style_reset(s); lv_style_init(s); if (L->skin->icons == 1) lv_style_set_opa(s, LV_OPA_TRANSP); continue; }
     if (d.k == DERIVED) {
       // dial-wing: the Dial's centre column is wing + value + wing, so the value's middle is the dial's middle (the
       // approved geometry). Above: caption + space 7; below: space 2 + unit + space 9 + the button. Both wings take
@@ -360,7 +419,7 @@ void paint(Look *L, const fw::Theme *t, int only = -1) {  // colours from the th
       const fw::ty::Style &st = fw::ty::STYLES[k.style];
       if (d.k == RAISE) {
         int ls, pt, pb, ty;
-        fw::text_metrics(k.style, ls, pt, pb, ty);
+        metrics(k.style, skin_font(L->skin.get(), k.style), ls, pt, pb, ty);
         lv_style_set_translate_y(s, ty + (int) lroundf(k.colon_y * st.size));
       } else {
         lv_style_set_width(s, (int) lroundf((d.k == COLON ? k.colon : k.digit) * st.size)); lv_style_set_height(s, st.box);
@@ -370,8 +429,8 @@ void paint(Look *L, const fw::Theme *t, int only = -1) {  // colours from the th
     }
     if (d.k == BASE) {  // where b's figures end below its box top, against a's (cap height centred in the box)
       const Base &b = BASES[d.i];
-      auto cap_bottom = [](fw::ty::Id id, uint32_t ch) {
-        const lv_font_t *f = fw::font(id);
+      auto cap_bottom = [L](fw::ty::Id id, uint32_t ch) {
+        const lv_font_t *f = skin_font(L->skin.get(), id);
         lv_font_glyph_dsc_t g;
         const int cap = lv_font_get_glyph_dsc(f, &g, ch, 0) ? g.box_h : f->line_height / 2;
         return (fw::ty::STYLES[id].box + cap) / 2;
@@ -391,8 +450,9 @@ void paint(Look *L, const fw::Theme *t, int only = -1) {  // colours from the th
     } else if (d.k == TYPE) {
       const fw::ty::Id id = fx::gen::TYPES[d.i].id;
       int ls, pt, pb, ty;
-      fw::text_metrics(id, ls, pt, pb, ty);
-      lv_style_set_text_font(s, fw::font(id));
+      const lv_font_t *f = skin_font(L->skin.get(), id);
+      metrics(id, f, ls, pt, pb, ty);
+      lv_style_set_text_font(s, f);
       lv_style_set_text_letter_space(s, fw::ty::STYLES[id].letter_space);
       lv_style_set_text_line_space(s, ls); lv_style_set_pad_top(s, pt); lv_style_set_pad_bottom(s, pb);
       lv_style_set_translate_y(s, ty); lv_style_set_height(s, fw::ty::STYLES[id].box);
@@ -414,6 +474,7 @@ void sized(lv_style_t *s, const Def &d) {  // the size + structure styles (densi
 }
 Look *make(lv_display_t *d, const fw::Theme *t) {
   init_defs();
+  fx::fonts::on_change(fx::restyle);  // a downloaded theme font landed (or was refused): every look repaints live
   Look *L = new Look;
   L->d = d;
   L->s.resize(defs.size());  // never resized again: objects hold these addresses
@@ -496,6 +557,12 @@ void draw_edges(lv_layer_t *ly, const lv_area_t &A, const S::Skin &k, const S::B
     if (sd & S::SIDE_RIGHT) edge_bar(ly, a.x2 - w + 1, a.y1, a.x2, a.y2, c, e.dotted);
   }
 }
+int snap_cell(const S::Skin *k);
+int bold_cell(const S::Skin &k) { return std::max(1, snap_cell(&k)); }
+int bold_reach(const S::Skin &k, int p) {  // a bold part draws one cell past its text
+  for (int m = 0; m < 16; m++) { const S::Block b = k.merged(p, m); if ((b.has & S::K_WEIGHT) && b.bold) return bold_cell(k); }
+  return 0;
+}
 int shadow_reach(const S::Skin &k, int p) {  // the farthest any combination's shadow reaches outside the box
   int r = 0;
   for (int m = 0; m < 16; m++) {
@@ -551,18 +618,26 @@ void text_shadow(lv_event_t *e) {
   const int p = (int) (intptr_t) lv_event_get_user_data(e);
   Look *L = look_of(o);
   const S::Block b = L->skin->merged(p, combo(o));
-  if (lv_event_get_code(e) == LV_EVENT_REFR_EXT_DRAW_SIZE) { lv_event_set_ext_draw_size(e, shadow_reach(*L->skin, p)); return; }
-  if (in_shadow || !(b.has & S::K_SHADOW)) return;
+  if (lv_event_get_code(e) == LV_EVENT_REFR_EXT_DRAW_SIZE) { lv_event_set_ext_draw_size(e, shadow_reach(*L->skin, p) + bold_reach(*L->skin, p)); return; }
+  const bool sh = b.has & S::K_SHADOW, bo = (b.has & S::K_WEIGHT) && b.bold;
+  if (in_shadow || (!sh && !bo)) return;
   lv_draw_task_t *t = lv_event_get_draw_task(e);
   if (t->type != LV_DRAW_TASK_TYPE_LABEL) return;
   auto *dsc = (lv_draw_label_dsc_t *) t->draw_dsc;
   lv_draw_label_dsc_t top = *dsc;
   const lv_area_t at = t->area;
-  dsc->color = hex(L->skin->ink(b.shadow.ink, L->th.light, L->th.accent_set));
-  const int dx = b.shadow.dx.px[DN], dy = b.shadow.dy.px[DN];
-  lv_area_move(&t->area, dx, dy); lv_area_move(&t->_real_area, dx, dy);
+  const int cell = bold_cell(*L->skin);
   in_shadow = true;
-  lv_draw_label(t->target_layer, &top, &at);
+  if (sh) {  // the task becomes the shadow; the text again on top (and a bold shadow its own second copy)
+    dsc->color = hex(L->skin->ink(b.shadow.ink, L->th.light, L->th.accent_set));
+    const int dx = b.shadow.dx.px[DN], dy = b.shadow.dy.px[DN];
+    lv_area_move(&t->area, dx, dy); lv_area_move(&t->_real_area, dx, dy);
+    if (bo) { lv_draw_label_dsc_t sd = *dsc; lv_area_t a = t->area; lv_area_move(&a, cell, 0); lv_draw_label(t->target_layer, &sd, &a); }
+    lv_draw_label(t->target_layer, &top, &at);
+  }
+  // synthetic bold (Appendix A weight: bold): the text again a cell to the right (1 px, or the snapped cell), the
+  // way 1998 GDI made bold of a bitmap font; the text box does not move (C45), the extra column is ext draw
+  if (bo) { lv_area_t a = at; lv_area_move(&a, cell, 0); lv_draw_label(t->target_layer, &top, &a); }
   in_shadow = false;
 }
 // a text's parts: its type's text part, then the nearest box part round it (its text ink wins: the part's face is under it)
@@ -604,6 +679,136 @@ void square(lv_obj_t *o, int &cx, int &cy, int &half) {
   const int w = lv_area_get_width(&c), h = lv_area_get_height(&c), m = w < h ? w : h;
   cx = c.x1 + w / 2; cy = c.y1 + h / 2; half = (m - 1) / 2;
 }
+// ---- pixel icons (shape.icons pixel): the icon's 8 x 8 art (tokens/icons.json "pixel") in whole cells, centred in its
+// box, in its ink layer's colour (state and the theme's text ink included); snapped themes: cells of stroke:pixel on
+// the screen grid. The line layers are hidden by the shared style icon-px, so a theme switch needs no rebuild (C44).
+int gdown(int v, int cs);
+void icon_pixels(lv_event_t *e) {
+  lv_obj_t *o = (lv_obj_t *) lv_event_get_current_target(e);
+  Look *L = look_of(o);
+  if (!L || !L->skin || L->skin->icons != 1) return;
+  const auto *pi = (const G::PixelIcon *) lv_event_get_user_data(e);
+  lv_obj_t *ink_layer = nullptr;
+  for (uint32_t i = 0; i < lv_obj_get_child_count(o) && !ink_layer; i++)
+    if ((uintptr_t) lv_obj_get_user_data(lv_obj_get_child(o, (int32_t) i)) == fw::ic::R_ink) ink_layer = lv_obj_get_child(o, (int32_t) i);
+  const lv_color_t c = ink_layer ? lv_obj_get_style_image_recolor(ink_layer, LV_PART_MAIN) : lv_obj_get_style_text_color(o, LV_PART_MAIN);
+  lv_area_t a;
+  lv_obj_get_coords(o, &a);
+  const int w = lv_area_get_width(&a), h = lv_area_get_height(&a), pc = snap_cell(L->skin.get());
+  int cs = std::max(1, std::min(w, h) / 8), ox = a.x1 + (w - 8 * cs) / 2, oy = a.y1 + (h - 8 * cs) / 2;
+  if (pc) {  // whole cells of stroke:pixel; on the screen grid when the art fits inside its box there, else on the box's
+    // own grid (an icon box exactly 8 cells tall off the screen grid: clipped part cells would be worse than an offset)
+    cs = std::max(1, std::min(w, h) / 8 / pc) * pc;
+    ox = a.x1 + (w - 8 * cs) / 2; oy = a.y1 + (h - 8 * cs) / 2;
+    const int gx = gdown(ox + pc - 1, pc) <= a.x2 + 1 - 8 * cs ? gdown(ox + pc - 1, pc) : gdown(ox, pc);
+    const int gy = gdown(oy + pc - 1, pc) <= a.y2 + 1 - 8 * cs ? gdown(oy + pc - 1, pc) : gdown(oy, pc);
+    if (gx >= a.x1 && gx + 8 * cs - 1 <= a.x2) ox = gx;
+    if (gy >= a.y1 && gy + 8 * cs - 1 <= a.y2) oy = gy;
+  }
+  lv_layer_t *ly = lv_event_get_layer(e);
+  lv_draw_rect_dsc_t d;
+  lv_draw_rect_dsc_init(&d);
+  d.bg_color = c; d.bg_opa = LV_OPA_COVER; d.radius = 0;
+  for (int r = 0; r < 8; r++)
+    for (int x = 0; x < 8;) {
+      if (!(pi->rows[r] & (0x80 >> x))) { x++; continue; }
+      const int x0 = x;
+      while (x < 8 && (pi->rows[r] & (0x80 >> x))) x++;
+      const lv_area_t q = {ox + x0 * cs, oy + r * cs, ox + x * cs - 1, oy + r * cs + cs - 1};
+      lv_draw_rect(ly, &d, &q);
+    }
+}
+const G::PixelIcon *pixel_icon(const char *name) {
+  int lo = 0, hi = G::N_PIXEL_ICONS - 1;
+  while (lo <= hi) {
+    const int m = (lo + hi) / 2, c = strcmp(G::PIXEL_ICONS[m].name, name);
+    if (!c) return &G::PIXEL_ICONS[m];
+    if (c < 0) lo = m + 1; else hi = m - 1;
+  }
+  return nullptr;
+}
+// ---- snapped drawing (C29, shape.snap): every Pen primitive as whole cells of stroke:pixel on a grid fixed to the
+// screen, no anti-aliasing, one rect per run. The Pen's centre is a CELL centre (so a shape centred on it is symmetric
+// in cells), a knob and its arc are judged at the same cell centres (they share cells), a one-cell line is Bresenham on
+// the cell grid, a thicker line k whole cells across its minor axis (never a blob), an icon in whole cells
+// (facet-201 faults; tests/functional/theme_snap.test.mjs).
+struct Shp { enum K { DISC, SQUARE, DIAMOND, RING, SEG, SECTOR } k; float x, y, r, r2 = 0, x2 = 0, y2 = 0, a0 = 0, a1 = 0; };
+bool inside(const Shp &s, float px, float py) {
+  const float dx = px - s.x, dy = py - s.y;
+  switch (s.k) {
+    case Shp::DISC: return dx * dx + dy * dy <= s.r * s.r;
+    case Shp::SQUARE: return fabsf(dx) <= s.r && fabsf(dy) <= s.r;
+    case Shp::DIAMOND: return fabsf(dx) + fabsf(dy) <= s.r;
+    case Shp::RING: { const float d2 = dx * dx + dy * dy; return d2 <= s.r * s.r && d2 >= s.r2 * s.r2; }
+    case Shp::SEG: {
+      const float vx = s.x2 - s.x, vy = s.y2 - s.y, l = vx * vx + vy * vy;
+      float t = l > 0 ? (dx * vx + dy * vy) / l : 0;
+      t = fmaxf(0, fminf(1, t));
+      const float qx = s.x + t * vx - px, qy = s.y + t * vy - py;
+      return qx * qx + qy * qy <= s.r * s.r;
+    }
+    case Shp::SECTOR: {
+      const float d2 = dx * dx + dy * dy;
+      if (d2 > s.r * s.r || d2 < s.r2 * s.r2) return false;
+      const float a = fmodf(atan2f(dy, dx) * 57.29578f + 360, 360);
+      return fmodf(a - s.a0 + 720, 360) <= s.a1 - s.a0;
+    }
+  }
+  return false;
+}
+int gdown(int v, int cs) { return (v >= 0 ? v / cs : (v - cs + 1) / cs) * cs; }
+struct Grid {  // the Pen's frame on the cell grid: shapes are given relative to the Pen centre, in px
+  int cs; float ox, oy;  // the centre cell's middle, screen px
+  int gx0, gy0, gx1, gy1;  // the whole cells inside the drawing object: a cell partly outside is not drawn (no part cells)
+  Grid(const fx::Pen &p, int c) : cs(c), ox(gdown(p.cx, c) + c / 2.0f), oy(gdown(p.cy, c) + c / 2.0f) {
+    lv_area_t b;
+    lv_obj_get_coords(p.obj, &b);
+    gx0 = gdown(b.x1 + c - 1, c) / c; gy0 = gdown(b.y1 + c - 1, c) / c; gx1 = gdown(b.x2 + 1, c) / c - 1; gy1 = gdown(b.y2 + 1, c) / c - 1;
+  }
+  int cell(float rel, float o) const { return (int) floorf((o + rel) / cs); }  // the cell index of a relative px
+};
+void fill_cells(lv_layer_t *ly, const Grid &g, lv_color_t c, int cx1, int cy1, int cx2, int cy2) {  // cells, inclusive
+  cx1 = std::max(cx1, g.gx0); cy1 = std::max(cy1, g.gy0); cx2 = std::min(cx2, g.gx1); cy2 = std::min(cy2, g.gy1);
+  if (cx1 > cx2 || cy1 > cy2) return;
+  lv_draw_rect_dsc_t d;
+  lv_draw_rect_dsc_init(&d);
+  d.bg_color = c; d.bg_opa = LV_OPA_COVER; d.radius = 0;
+  const lv_area_t a = {cx1 * g.cs, cy1 * g.cs, cx2 * g.cs + g.cs - 1, cy2 * g.cs + g.cs - 1};
+  lv_draw_rect(ly, &d, &a);
+}
+void cells(const fx::Pen &p, const Grid &g, const Shp &s, lv_color_t c) {  // the shape's cells (centre inside), as runs
+  float x1 = s.x - s.r, x2 = s.x + s.r, y1 = s.y - s.r, y2 = s.y + s.r;
+  if (s.k == Shp::SEG) { x1 = fminf(s.x, s.x2) - s.r; x2 = fmaxf(s.x, s.x2) + s.r; y1 = fminf(s.y, s.y2) - s.r; y2 = fmaxf(s.y, s.y2) + s.r; }
+  const int cs = g.cs, gx0 = g.cell(x1, g.ox) - 1, gx1 = g.cell(x2, g.ox) + 1, gy0 = g.cell(y1, g.oy) - 1, gy1 = g.cell(y2, g.oy) + 1;
+  const lv_area_t &clip = p.layer->_clip_area;
+  for (int gy = gy0; gy <= gy1; gy++) {
+    if (gy * cs + cs - 1 < clip.y1 || gy * cs > clip.y2) continue;
+    int run = INT32_MIN;
+    for (int gx = gx0; gx <= gx1 + 1; gx++) {
+      const bool in = gx <= gx1 && inside(s, gx * cs + cs / 2.0f - g.ox, gy * cs + cs / 2.0f - g.oy);
+      if (in && run == INT32_MIN) run = gx;
+      if (!in && run != INT32_MIN) { fill_cells(p.layer, g, c, run, gy, gx - 1, gy); run = INT32_MIN; }
+    }
+  }
+}
+// a line k cells thick: Bresenham on the cell grid, repeated across the minor axis (every step the same k cells)
+void cell_line(const fx::Pen &p, const Grid &g, float x1, float y1, float x2, float y2, int k, lv_color_t c) {
+  int ax = g.cell(x1, g.ox), ay = g.cell(y1, g.oy);
+  const int bx = g.cell(x2, g.ox), by = g.cell(y2, g.oy);
+  const int dx = abs(bx - ax), dy = -abs(by - ay), sx = ax < bx ? 1 : -1, sy = ay < by ? 1 : -1;
+  const bool hor = dx >= -dy;
+  const int lo = -(k - 1) / 2, hi = k / 2;  // the k cells across, centred on the line
+  int err = dx + dy;
+  for (;;) {
+    if (hor) fill_cells(p.layer, g, c, ax, ay + lo, ax, ay + hi);
+    else fill_cells(p.layer, g, c, ax + lo, ay, ax + hi, ay);
+    if (ax == bx && ay == by) break;
+    const int e2 = 2 * err;
+    if (e2 >= dy) { err += dy; ax += sx; }
+    if (e2 <= dx) { err += dx; ay += sy; }
+  }
+}
+int cells_of(int px, int cs) { return std::max(1, (int) lroundf((float) px / cs)); }  // a stroke in whole cells
 void on_draw(lv_event_t *e) {
   lv_obj_t *o = (lv_obj_t *) lv_event_get_current_target(e);
   fx::Pen p{lv_event_get_layer(e), o, 0, 0, 0};
@@ -637,6 +842,28 @@ void restyle() {  // a theme was applied: every look whose generation is old rep
 #ifndef ESP_PLATFORM
 void break_stale(bool on) { stale = on; }
 #endif
+int pen_cell() { return snap_cell(fx::theme_live().get()); }
+// the font a type token draws now (the workbench Type page, tests/functional/theme_fonts.test.mjs): its px, line
+// height, and whether it is Facet's own, a built-in theme font or a downloaded one
+std::string type_font_info(const char *type) {
+  const int i = index_of(type);
+  if (i < 0 || defs[i].k != TYPE) return "{\"error\":\"not a type token\"}";
+  const fw::ty::Id id = fx::gen::TYPES[defs[i].i].id;
+  const auto sk = fx::theme_live();
+  const lv_font_t *f = skin_font(sk.get(), id);
+  const int r = fw::style_role(id);
+  const int px = type_ti[id] >= 0 ? sk->type[DN][type_ti[id]] : fw::ty::STYLES[id].size;
+  bool exact = false;
+  const lv_font_t *bf = fw::theme_font(G::FAMILIES[sk->font[r]], id, px, &exact);
+  const bool dl = sk->font_src[r] && f != fw::font(id) && f != bf;
+  if (f == fw::font(id)) exact = px == fw::ty::STYLES[id].size || f == bf;  // Facet's own font at its own size
+  lv_font_glyph_dsc_t g;
+  const int adv = lv_font_get_glyph_dsc(f, &g, 'M', 0) ? g.adv_w : 0;
+  char b[200];
+  snprintf(b, sizeof b, "{\"px\":%d,\"line_height\":%d,\"adv_M\":%d,\"facet\":%s,\"download\":%s,\"exact\":%s,\"role\":%d}", px,
+           (int) lv_font_get_line_height(f), adv, f == fw::font(id) ? "true" : "false", dl ? "true" : "false", exact || dl ? "true" : "false", r);
+  return b;
+}
 lv_color_t bg(lv_display_t *d) {  // the canvas under a contract page: bg in the live theme (fw::T's mode + accent)
   if (fw::T) look(d, fw::T);
   for (Look *L : looks) if (L->d == d) return L->th.bg;
@@ -727,6 +954,10 @@ lv_obj_t *icon(lv_obj_t *p, const char *name, const char *size, const char *ink)
             : role == fw::ic::R_steel ? "ink:steel" : (std::string("ink:") + (strchr(ink, ':') + 1)).c_str());
     if (role == fw::ic::R_ink) text_parts(im, look_of(im), part_ix("icon"), false);  // the ink layers: the icon part + the box's text ink
   }
+  if (const G::PixelIcon *pi = pixel_icon(name)) {  // pixel art: drawn instead of the line layers while the theme says so
+    for (uint32_t i = 0; i < lv_obj_get_child_count(b); i++) use(lv_obj_get_child(b, (int32_t) i), "icon-px");
+    lv_obj_add_event_cb(b, icon_pixels, LV_EVENT_DRAW_MAIN, (void *) pi);
+  }
   return b;
 }
 void icon_use(lv_obj_t *icon, const char *token, lv_style_selector_t sel) {
@@ -760,6 +991,21 @@ void fit_grid(lv_obj_t *l) {  // the label's box = its text's width rounded up t
     lv_obj_set_width(l, (lv_obj_get_width(l) + fw::sp::GRID - 1) / fw::sp::GRID * fw::sp::GRID);
     return;
   }
+  // a theme can change the label's font live (C49): its width follows on every style change, not only at build
+  struct R { static void refit(lv_event_t *e) {
+    static bool busy = false;
+    lv_obj_t *o = (lv_obj_t *) lv_event_get_current_target(e);
+    if (busy) return;
+    lv_point_t sz;
+    lv_text_get_size(&sz, lv_label_get_text(o), lv_obj_get_style_text_font(o, LV_PART_MAIN), lv_obj_get_style_text_letter_space(o, LV_PART_MAIN), 0,
+                     LV_COORD_MAX, LV_TEXT_FLAG_NONE);
+    const int w = (sz.x + fw::sp::GRID - 1) / fw::sp::GRID * fw::sp::GRID;
+    if (lv_obj_get_style_width(o, LV_PART_MAIN) == w) return;
+    busy = true; lv_obj_set_width(o, w); busy = false;
+  } };
+  bool has = false;
+  for (uint32_t i = 0; i < lv_obj_get_event_count(l) && !has; i++) has = lv_event_dsc_get_cb(lv_obj_get_event_dsc(l, i)) == R::refit;
+  if (!has) lv_obj_add_event_cb(l, R::refit, LV_EVENT_STYLE_CHANGED, nullptr);
   lv_point_t sz;
   lv_text_get_size(&sz, lv_label_get_text(l), lv_obj_get_style_text_font(l, LV_PART_MAIN), lv_obj_get_style_text_letter_space(l, LV_PART_MAIN), 0,
                    LV_COORD_MAX, LV_TEXT_FLAG_NONE);
@@ -767,8 +1013,11 @@ void fit_grid(lv_obj_t *l) {  // the label's box = its text's width rounded up t
 }
 void name(lv_obj_t *o, const char *n) { if (!names.count(o)) lv_obj_add_event_cb(o, forget, LV_EVENT_DELETE, nullptr); names[o] = n; }
 int type_box(const char *type) { return box_of(type_id(type)); }
-int size(const char *t) {
-  for (int i = 0; i < gen::N_SIZES; i++) if (!strcmp(gen::SIZES[i].name, t)) return tok(t, gen::SIZES[i].v);
+int size(const char *t) {  // a size token now: tuned (the lab) > the live theme's look size (C19) > Facet's
+  for (int i = 0; i < gen::N_SIZES; i++) if (!strcmp(gen::SIZES[i].name, t)) {
+    const int si = size_ix[i];
+    return tok(t, si >= 0 && live_raw && G::SIZES[si].look ? live_raw->size[DN][si] : gen::SIZES[i].v);
+  }
   abort();
 }
 bool Pen::sees(int x1, int y1, int x2, int y2) const {
@@ -778,6 +1027,7 @@ bool Pen::sees(int x1, int y1, int x2, int y2) const {
 void Pen::line(int x1, int y1, int x2, int y2, const char *stroke, const char *k, bool round) const {
   const int w = size(stroke);
   if (!sees(std::min(x1, x2) - w, std::min(y1, y2) - w, std::max(x1, x2) + w, std::max(y1, y2) + w)) return;
+  if (const int cs = snap_cell(look_of(obj)->skin.get())) { cell_line(*this, Grid(*this, cs), x1, y1, x2, y2, cells_of(w, cs), ink(obj, k)); return; }
   lv_draw_line_dsc_t d;
   lv_draw_line_dsc_init(&d);
   d.p1.x = cx + x1; d.p1.y = cy + y1; d.p2.x = cx + x2; d.p2.y = cy + y2;
@@ -791,14 +1041,26 @@ void Pen::arc(int r, float a0, float a1, const char *stroke, const char *k, bool
   const int w = size(stroke);
   if (!sees(-r - w, -r - w, r + w, r + w)) return;
   const PenPart pp = part ? pen_part(obj, part_ix(part)) : PenPart{S::Block(), look_of(obj)->skin.get(), 0, 0, false};
+  const lv_color_t col = pp.ink ? hex(pp.k->ink(pp.b.ink, pp.lt, pp.set)) : ink(obj, k);
+  if (const int cs = snap_cell(pp.k)) {  // the band in whole cells, judged at cell centres round the centre cell
+    const float hw = cells_of(w, cs) * cs / 2.0f, s0 = fmodf(a0, 360);
+    Shp sh{Shp::SECTOR, 0, 0, r + hw, std::max(0.0f, r - hw), 0, 0, s0, s0 + std::min(360.0f, a1 - a0)};
+    cells(*this, Grid(*this, cs), sh, col);
+    return;
+  }
   d.center.x = cx; d.center.y = cy; d.radius = r + w / 2; d.width = w; d.rounded = round && !pp.k->cap;  // shape.cap square: butt ends
   d.start_angle = fmodf(a0, 360); d.end_angle = fmodf(a1, 360);
-  d.color = pp.ink ? hex(pp.k->ink(pp.b.ink, pp.lt, pp.set)) : ink(obj, k); d.opa = LV_OPA_COVER;
+  d.color = col; d.opa = LV_OPA_COVER;
   lv_draw_arc(layer, &d);
 }
 void Pen::dot(int x, int y, const char *diameter, const char *k) const {
   const int dm = size(diameter);
   if (!sees(x - dm, y - dm, x + dm, y + dm)) return;
+  if (const int cs = snap_cell(look_of(obj)->skin.get())) {
+    Shp sh{Shp::DISC, roundf((float) x / cs) * cs, roundf((float) y / cs) * cs, cells_of(dm, cs) * cs / 2.0f};
+    cells(*this, Grid(*this, cs), sh, ink(obj, k));
+    return;
+  }
   lv_draw_rect_dsc_t d;
   lv_draw_rect_dsc_init(&d);
   d.radius = LV_RADIUS_CIRCLE; d.bg_color = ink(obj, k); d.bg_opa = LV_OPA_COVER;
@@ -817,6 +1079,14 @@ void Pen::tick(float deg, const char *length, const char *stroke, const char *k,
   const lv_color_t col = pp.ink ? hex(pp.k->ink(pp.b.ink, pp.lt, pp.set)) : ink(obj, k);
   const int shp = pp.b.has & S::K_SHAPE ? pp.b.shape : 0;  // tokens/theme.json shape.ticks: lines, dots, blocks, none
   if (shp == 3) return;
+  if (const int cs = snap_cell(pp.k)) {  // lines: k whole cells across, Bresenham (no thick blob); dots / blocks: a cell shape
+    const Grid g(*this, cs);
+    if (shp == 1 || shp == 2) {
+      Shp sh{shp == 1 ? Shp::DISC : Shp::SQUARE, roundf((x1 + x2) / 2.0f / cs) * cs, roundf((y1 + y2) / 2.0f / cs) * cs, cells_of(2 * w, cs) * cs / 2.0f};
+      cells(*this, g, sh, col);
+    } else cell_line(*this, g, (float) x1, (float) y1, (float) x2, (float) y2, cells_of(w, cs), col);
+    return;
+  }
   if (shp == 1 || shp == 2) {  // a dot / a square block at the mark's middle, as wide as twice its stroke
     const int mx = cx + (x1 + x2) / 2, my = cy + (y1 + y2) / 2, dm = 2 * w;
     lv_draw_rect_dsc_t r;
@@ -839,6 +1109,30 @@ void Pen::knob(int x, int y, const char *sz, const char *k, const char *halo, co
   if (!sees(x - dm - sh, y - dm - sh, x + dm + sh, y + dm + sh)) return;
   const int shp = pp.b.has & S::K_SHAPE ? pp.b.shape : 0;  // shape.knob: circle, square, diamond, ring, pixel (T3: snapped)
   const lv_color_t c = pp.ink ? hex(pp.k->ink(pp.b.ink, pp.lt, pp.set)) : ink(obj, k), h = ink(obj, halo);
+  if (const int cs = snap_cell(pp.k)) {  // an odd number of whole cells, centred on a cell centre on the arc's grid
+    const Grid g(*this, cs);
+    const float X = roundf((float) x / cs) * cs, Y = roundf((float) y / cs) * cs;
+    const int n = cells_of(dm, cs) | 1, nh = rw > 0 ? cells_of(rw, cs) : 0;
+    const Shp::K K = shp == 0 || shp == 3 ? Shp::DISC : shp == 2 ? Shp::DIAMOND : Shp::SQUARE;
+    const float R = n * cs / 2.0f, RD = K == Shp::DIAMOND ? R * 1.0f : R;
+    if (sh) {
+      const float sx = roundf((float) pp.b.shadow.dx.px[DN] / cs) * cs, sy = roundf((float) pp.b.shadow.dy.px[DN] / cs) * cs;
+      cells(*this, g, Shp{K, X + sx, Y + sy, RD + nh * cs}, hex(pp.k->ink(pp.b.shadow.ink, pp.lt, pp.set)));
+    }
+    if (shp == 3) {  // a ring: the ink round the halo
+      cells(*this, g, Shp{Shp::DISC, X, Y, R}, c);
+      cells(*this, g, Shp{Shp::DISC, X, Y, R - std::max(1, cells_of(std::max(rw, dm / 4), cs)) * cs}, h);
+    } else {
+      if (nh) cells(*this, g, Shp{K, X, Y, RD + nh * cs}, h);
+      cells(*this, g, Shp{K, X, Y, RD}, c);
+    }
+    if (pp.b.has & S::K_EDGES) {  // bevels on the handle's cells
+      const int gx = g.cell(X, g.ox), gy = g.cell(Y, g.oy);
+      const lv_area_t in = {(gx - n / 2) * cs, (gy - n / 2) * cs, (gx + n / 2) * cs + cs - 1, (gy + n / 2) * cs + cs - 1};
+      draw_edges(layer, in, *pp.k, pp.b, pp.lt, pp.set, 0);
+    }
+    return;
+  }
   lv_area_t a = {cx + x - dm / 2, cy + y - dm / 2, cx + x - dm / 2 + dm - 1, cy + y - dm / 2 + dm - 1};
   lv_draw_rect_dsc_t d;
   lv_draw_rect_dsc_init(&d);
@@ -875,7 +1169,7 @@ void Pen::knob(int x, int y, const char *sz, const char *k, const char *halo, co
 }
 void Pen::text(int x, int y, const char *s, const char *type, const char *k) const {
   const fw::ty::Id id = type_id(type);
-  const lv_font_t *f = fw::font(id);
+  const lv_font_t *f = skin_font(look_of(obj)->skin.get(), id);  // the theme's font for the style (C49)
   const int ls = fw::ty::STYLES[id].letter_space;
   lv_point_t sz;
   lv_text_get_size(&sz, s, f, ls, 0, LV_COORD_MAX, LV_TEXT_FLAG_NONE);
@@ -886,7 +1180,7 @@ void Pen::text(int x, int y, const char *s, const char *type, const char *k) con
   const PenPart pp = pen_part(obj, type_part[defs[ix(type)].i]);  // the text part of its type (ink, shadow)
   const int sx = pp.b.has & S::K_SHADOW ? pp.b.shadow.dx.px[DN] : 0, sy = pp.b.has & S::K_SHADOW ? pp.b.shadow.dy.px[DN] : 0;
   // a partial redraw that crosses only its shadow draws it too (else the shadow there is wiped)
-  if (!sees(x0 + std::min(0, sx), y0 + std::min(0, sy), x0 + sz.x + std::max(0, sx), y0 + f->line_height + std::max(0, sy))) return;
+  if (!sees(x0 + std::min(0, sx), y0 + std::min(0, sy), x0 + sz.x + std::max(0, sx) + bold_cell(*look_of(obj)->skin), y0 + f->line_height + std::max(0, sy))) return;
   lv_draw_label_dsc_t d;
   lv_draw_label_dsc_init(&d);
   d.font = f; d.color = pp.b.has & S::K_TEXT && (!(combo(obj) & S::DISABLED) || (pp.k->state[type_part[defs[ix(type)].i]][1 + G::ST_DISABLED].has & S::K_TEXT))
@@ -901,6 +1195,7 @@ void Pen::text(int x, int y, const char *s, const char *type, const char *k) con
     lv_draw_label(layer, &sd, &sa);
   }
   lv_draw_label(layer, &d, &a);
+  if ((pp.b.has & S::K_WEIGHT) && pp.b.bold) { lv_area_move(&a, bold_cell(*pp.k), 0); lv_draw_label(layer, &d, &a); }  // synthetic bold
 }
 lv_obj_t *drawn(lv_obj_t *parent, void (*draw)(const Pen &), const char *layout) {
   lv_obj_t *o = box(parent, layout);
@@ -913,7 +1208,8 @@ lv_obj_t *drawn(lv_obj_t *parent, void (*draw)(const Pen &), const char *layout)
 void redraw(lv_obj_t *o, int x, int y, int w, int h) {
   int cx, cy, half;
   square(o, cx, cy, half);
-  lv_area_t a = {cx + x, cy + y, cx + x + w - 1, cy + y + h - 1};
+  const int m = 2 * snap_cell(look_of(o)->skin.get());  // snapped: shapes sit up to a cell off, thick runs a cell more
+  lv_area_t a = {cx + x - m, cy + y - m, cx + x + w - 1 + m, cy + y + h - 1 + m};
   lv_obj_invalidate_area(o, &a);
 }
 void at(float deg, int r, int *x, int *y) {

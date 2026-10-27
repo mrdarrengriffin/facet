@@ -10,6 +10,15 @@ TTFs: `<FW_TTF>/<Family>@<weight>@False@v1.ttf` (ESPHome's Google Fonts cache na
 Tabular styles (type.json "tabular"): digits 0-9 get one advance (the widest digit), glyph centred in it.
 The header defines fw::gen::FacetFont F_<id> per font, STYLE_FONT[] (one per style, styles order) and FONTS[] (memory
 report for the Type page).
+
+Theme fonts (renderer/CONTRACT.md C49, fonts/fonts.json): every family a built-in theme (themes/*.json) names with
+`source: builtin` (or a plain family id) is built for every style of that font role, at the theme's type size for the
+style (tokens/theme.json type styles, within [floor, line box]) or else Facet's, at the family's nearest weight, with
+the style's glyph set. A glyph the family lacks fails the build unless the registry says `fallback: true` (then
+Facet's font draws it: LVGL fallback, listed in the report). A family without its licence file fails the build.
+1 bpp (crisp) where the family is a pixel font (`grid` = pixels per em) and the size is a whole multiple of its grid,
+else 4 bpp. Out: THEME_FONTS[] (family, style, size, font), STYLE_ROLE[] (the font role each style is drawn in) and
+<out>.json (bytes per font, family and theme: the flash report).
 """
 import functools
 import hashlib
@@ -23,7 +32,11 @@ HERE = Path(__file__).resolve().parent
 SRC = HERE.parent / "tokens" / "type.json"
 den, out = sys.argv[1], Path(sys.argv[2])
 TTF = Path(os.environ.get("FW_TTF", ""))
-stamp = hashlib.sha1(SRC.read_bytes() + Path(__file__).read_bytes() + den.encode()).hexdigest()[:12]
+REG = HERE.parent / "fonts" / "fonts.json"
+THEMES = sorted((HERE.parent / "themes").glob("*.json"))
+TH = HERE.parent / "tokens" / "theme.json"
+stamp = hashlib.sha1(SRC.read_bytes() + Path(__file__).read_bytes() + den.encode() + REG.read_bytes() + TH.read_bytes()
+                     + (HERE / "facet_font.inc").read_bytes() + b"".join(f.read_bytes() for f in THEMES)).hexdigest()[:12]
 if out.exists() and out.open().readline().strip().endswith(stamp):
     sys.exit(0)  # unchanged: skip the (slow) rasterising
 
@@ -110,6 +123,136 @@ for fid, f in fonts.items():
     H.append(f"inline FacetFont F_{fid}{{{fid}_glyphs, {len(infos)}, {pt_to_px(face.size.ascender)}, "
              f"{pt_to_px(face.size.height)}, {bpp}}};")
     H.append("")
+# ---- theme fonts (C49)
+reg = {k: v for k, v in json.loads(REG.read_text()).items() if not k.startswith("$") and k != "about"}
+thj = json.loads(TH.read_text())
+roles = thj["roles"]["list"]
+themeable = thj["type"]["styles"]
+di = 1 if den == "1x" else 0
+
+
+def famid(name: str) -> str:
+    return name.lower().replace(" ", "-")
+
+
+def role_of(name: str, s: dict) -> str:
+    """the font role a style is drawn in: a themeable style's own (tokens/theme.json), else mono for the mono family,
+    body for running text, display for numbers and clocks (core/fx_core.cpp reads STYLE_ROLE, never guesses)"""
+    if name in themeable:
+        return themeable[name]["role"]
+    if s["font"] == "mono":
+        return "mono"
+    return "body" if any(w in name for w in ("title", "body", "tile", "date")) else "display"
+
+
+facet_role = {}  # Facet's family per role (the style that has the role's name, as tools/gen_theme.mjs)
+for r in roles:
+    st = t["styles"].get(r)
+    facet_role[r] = famid(t["families"][st["font"] if st else ("mono" if r == "mono" else "sans")]["family"])
+style_role = [roles.index(role_of(n, s)) for n, s in t["styles"].items()]
+# the styles a theme can reach: those the contract components name (a theme styles contract components only; a
+# legacy screen stays Facet whole, theme engine design 8). "type:clock-" + x in code = every style with that prefix.
+import re  # noqa: E402
+used = set()
+for src in [*(HERE.parent / "components").glob("*.cpp"), *(HERE.parent / "screens").glob("*.cpp")]:
+    txt = src.read_text()
+    if re.search(r'"contract":\s*2', txt):
+        for m in re.findall(r'type:([a-z0-9-]+)', txt):
+            used |= {n for n in t["styles"] if n == m or (m.endswith("-") and n.startswith(m))}
+used |= set(themeable)
+names = list(t["styles"].keys())
+theme_fonts = []  # (family, style index, size, font id)
+tf_report = []
+for thf in THEMES:
+    th = json.loads(thf.read_text())
+    for r, v in (th.get("font") or {}).items():
+        fam = v if isinstance(v, str) else v.get("family")
+        if isinstance(v, dict) and v.get("source", "builtin") != "builtin":
+            continue  # downloaded by the panel itself (core/font_store.cpp), not built in
+        if fam == facet_role.get(r):
+            continue
+        if fam not in reg:
+            raise SystemExit(f"gen_fonts: themes/{thf.name} font.{r}: {fam} is not in fonts/fonts.json")
+        R = reg[fam]
+        if not (REG.parent / R["licence"]).exists():
+            raise SystemExit(f"gen_fonts: fonts/{R['licence']} missing: every family ships its licence (OFL)")
+        ttf = REG.parent / R["file"]
+        face = faces.setdefault(str(ttf), Face(str(ttf)))
+        for si, (n, s) in enumerate(t["styles"].items()):
+            if roles[style_role[si]] != r or n not in used:
+                continue
+            rs = resolved(s)
+            px = th.get("type", {}).get(n, [None, None])[di] if n in themeable else None
+            px = px or rs["size"]
+            w = min(R["weights"], key=lambda x: abs(x - rs["weight"]))
+            key = px  # the size the theme asks for (THEME_FONTS key); the font may be smaller to fit fixed digit cells
+            cells = s.get("cells")
+            if cells:  # clock digits sit in fixed cells (em of Facet's size, layout): the largest size whose digits fit
+                cw, cc = round(cells["digit"] * rs["size"]), round(cells["colon"] * rs["size"])
+
+                def adv(q, ch):
+                    face.set_pixel_sizes(q, 0)
+                    face.load_char(ch)
+                    return face.glyph.advance.x / 64
+
+                q = px
+                while q > 8 and (max(adv(q, d) for d in "0123456789") > cw or adv(q, ":") > cc):
+                    q -= 1
+                g = R.get("grid")
+                if g and q % g and q - q % g >= 0.85 * q:
+                    q -= q % g  # a whole pixel-font scale when that costs little
+                px = q
+            bpp = 1 if R.get("grid") and px % R["grid"] == 0 else 4
+            fid = f"{famid(fam).replace('-', '_')}_{w}_{px}"
+            f = fonts.get(fid)
+            if f is None:
+                f = fonts[fid] = {"family": R["family"], "mono": False, "weight": w, "size": px, "tabular": False,
+                                  "chars": set(), "styles": [], "theme": True, "file": ttf, "bpp": bpp, "fam": fam,
+                                  "themes": set()}
+            f["chars"] |= chars(rs["glyphs"])
+            f["styles"].append(n)
+            f["themes"].add(th["id"])
+            theme_fonts.append((fam, si, key, fid))
+for fid, f in fonts.items():
+    if not f.get("theme") or f.get("done"):
+        continue
+    f["done"] = True
+    face = faces[str(f["file"])]
+    cps = sorted(f["chars"], key=functools.cmp_to_key(glyph_comparator))
+    have = [c for c in cps if face.get_char_index(ord(c))]
+    miss = [c for c in cps if not face.get_char_index(ord(c))]
+    if miss and not reg[f["fam"]].get("fallback"):
+        raise SystemExit(f"gen_fonts: {f['family']} lacks {len(miss)} glyphs of {', '.join(f['styles'])} "
+                         f"({''.join(miss[:12])}...): add them or set fallback: true in fonts/fonts.json")
+    size, bpp = f["size"], f["bpp"]
+    infos = [g for g in (glyph_to_glyphinfo(c, face, size, bpp) for c in have) if g is not None]
+    data = [b for g in infos for b in g.bitmap_data]
+    nbytes = len(data) + 20 * len(infos)
+    tf_report.append({"id": fid, "family": f["fam"], "size": size, "bpp": bpp, "glyphs": len(infos), "missing": len(miss),
+                      "bytes": nbytes, "styles": f["styles"], "themes": sorted(f["themes"])})
+    H.append(f"// theme font {fid}: {f['family']} {f['weight']} {size} px {bpp} bpp, {len(infos)} glyphs "
+             f"({len(miss)} drawn by the fallback), {nbytes} B; styles {', '.join(f['styles'])}")
+    H.append(f"static const uint8_t {fid}_data[] = {{")
+    for i in range(0, len(data), 32):
+        H.append("  " + ",".join(f"0x{b:02X}" for b in data[i:i + 32]) + ",")
+    H.append("};")
+    H.append(f"static const FacetGlyph {fid}_glyphs[] = {{")
+    for g, end in zip(infos, accumulate(len(g.bitmap_data) for g in infos)):
+        H.append(f"  {{{g.glyph}, {fid}_data + {end - len(g.bitmap_data)}, {g.advance}, {g.offset_x}, {g.offset_y}, {g.width}, {g.height}}},")
+    H.append("};")
+    H.append(f"inline FacetFont F_{fid}{{{fid}_glyphs, {len(infos)}, {pt_to_px(face.size.ascender)}, "
+             f"{pt_to_px(face.size.height)}, {bpp}}};")
+    H.append("")
+H.append("// the font role each style is drawn in (tokens/theme.json roles: display, body, label, mono)")
+H.append(f"inline const int8_t STYLE_ROLE[] = {{{', '.join(map(str, style_role))}}};")
+H.append("// theme fonts: per family the font of each style it is built for (THEME_FONTS sorted by family, style)")
+H.append("struct ThemeFont { const char *family; int style, size; bool fallback; FacetFont *f; };")
+H.append("inline const ThemeFont THEME_FONTS[] = {")
+for fam, si, px, fid in sorted(set(theme_fonts)):
+    H.append(f'  {{"{fam}", {si}, {px}, {str(bool(reg[fam].get("fallback"))).lower()}, &F_{fid}}},  // {names[si]}')
+H.append("  {nullptr, -1, 0, false, nullptr}};")
+H.append(f"constexpr int N_THEME_FONTS = {len(set(theme_fonts))};")
+H.append(f"constexpr int THEME_FONT_BYTES = {sum(r['bytes'] for r in tf_report)};")
 H.append("// one font per style (tokens/type.json styles order)")
 H.append(f"inline FacetFont *const STYLE_FONT[] = {{{', '.join('&F_' + x for x in style_font)}}};")
 H.append("// Large text: per style the bigger font (nullptr = unchanged), fw::font() when Settings > Text size = Large")
@@ -124,4 +267,14 @@ H += ["};", f"constexpr int N_FONTS = {len(report)};", f"constexpr int FONT_BYTE
 tmp = out.with_suffix(f".{os.getpid()}")
 tmp.write_text("\n".join(H))
 tmp.replace(out)
-print(f"gen {out.name} ({den}: {len(report)} fonts, {total // 1024} KB)")
+fam_bytes = {}
+for r in tf_report:
+    fam_bytes[r["family"]] = fam_bytes.get(r["family"], 0) + r["bytes"]
+theme_bytes = {}
+for r in tf_report:
+    for th in r["themes"]:
+        theme_bytes[th] = theme_bytes.get(th, 0) + r["bytes"]
+out.with_suffix(".json").write_text(json.dumps({"density": den, "facet_bytes": total, "facet_fonts": len(report),
+    "theme_fonts": tf_report, "family_bytes": fam_bytes, "theme_bytes": theme_bytes}, indent=1))
+print(f"gen {out.name} ({den}: {len(report)} fonts, {total // 1024} KB; theme fonts {len(tf_report)}, "
+      f"{sum(fam_bytes.values()) // 1024} KB: " + ", ".join(f"{k} {v // 1024} KB" for k, v in fam_bytes.items()) + ")")

@@ -271,9 +271,12 @@ dithered, faint tints land on whole 565 steps.
 on 565 values (`tools/contrast.mjs`).
 
 **C29. Snapped themes draw on the cell grid with no anti-aliasing.** With `shape.snap`, every Pen and core primitive
-is whole cells of the `stroke:pixel` token on a screen-fixed grid.
-*Why:* a retro theme with anti-aliased edges looks broken. *Check:* **TODO** palette proof (no rendered pixel outside
-the theme's palette except gradient faces and rounded corners) when the theme engine lands (C44).
+is whole cells of the `stroke:pixel` token on a screen-fixed grid: the Pen's centre is a cell centre, a knob is an odd
+number of cells on its arc's cells, a line k cells thick is k whole cells across at every step, a cell partly outside
+its object is not drawn, and a pixel icon (`shape.icons: pixel`) is its 8 x 8 art in whole cells.
+*Why:* a retro theme with anti-aliased edges looks broken. *Check:* `theme_snap` (a probe of every Pen primitive at
+odd screen offsets: whole cells on the screen grid, centre, knob on the arc, k cells across, the pixel icon, and the
+palette proof: no pixel outside the theme's palette and inks; each with Facet as its break-it).
 
 **C30. Drawing never computes a negative or zero geometry it then uses.** Radii, lengths and diameters derived from
 the box are clamped; a box with `half < 1` draws nothing (core guard in `on_draw`).
@@ -359,8 +362,8 @@ Card's fuzz covers sizes at or above its minimum only).
 Status: the renderer applies colour themes and accents live today (`fx::look`). Theme FILES are read, checked and
 compiled by the renderer (`core/theme_file.{h,cpp}`): a file becomes an immutable compiled theme (a Skin) or is
 refused whole, with every error's path; the static guards (contrast, press feedback, geometry) run there. Applying a
-Skin to the shared styles (parts, edges, shadows), theme fonts and snapped drawing land next; their checks are TODO
-until then.
+Skin to the shared styles (parts, edges, shadows), theme fonts (built in or downloaded by the panel) and snapped
+drawing are in; what is still TODO is marked at its rule.
 
 **C44. A theme is one data file applied live.** `themes/<id>.json`, parsed at run time, applied as one style change
 (`fx::look`): every shared style is rewritten; components are never rebuilt and never told. A key left out inherits
@@ -381,7 +384,7 @@ no repaint) turns the live = fresh proof red.
 ranges (C19). Layout sizes are not in a theme's reach (C18).
 *Why:* layout is proven once, for every theme. *Check:* P4 per theme (`theme_apply`); part styles set only paint
 keys (face, radius within its look range, the border's ink, never its width: `part_style` in `core/fx_core.cpp`);
-**TODO** P2 (bounds) per theme.
+P2 per theme (`theme_apply` "P2 + P6 per theme": no object outside its parent in any built-in theme).
 
 **C46. A theme styles a fixed list of parts** (Appendix A): each with face, edges (up to 8 layers), shadow, text
 colour and weight, and state overrides (on < focus < pressed < disabled). A component makes an object a box part only
@@ -398,7 +401,8 @@ compiles every combination (`Skin::merged`; `theme_parse` "state merge"); the co
 styles + one draw callback for edges, shadow and pattern faces; the Pen reads knob, tick and arc blocks at draw time;
 text parts by type, their shadow drawn from the label's own draw task); each component's meta lists its parts and
 the lint (rule `parts`) holds the list to the code; `theme_apply` "parts drawn" checks pixels of a card edge and a
-header gradient. **TODO** P3 per part; the header's caption buttons, the scrollbar, `track` parts and text weight.
+header gradient; text weight `bold` (synthetic: the text again one cell right, in the same box; `theme_fonts` "bold").
+**TODO** P3 per part; the header's caption buttons, the scrollbar and `track` parts.
 
 **C47. The look is free; only usability is guarded.** A theme is refused if it fails a guardrail (Appendix A):
 contrast in every mode, accent, state and every stop of a gradient or pattern; press feedback (C36: a part whose
@@ -407,17 +411,26 @@ padding; nothing outside its parent; no stale paint.
 *Why:* taste is the theme author's; usability is everyone's; a theme that sets a face and no pressed face would
 otherwise silently remove press feedback. *Check:* the static guards in the parser (contrast on the exact and the
 RGB565 values, press feedback, geometry; `theme_parse` tests, `tools/contrast.mjs --theme <id>`); the real pixels of
-every contract component in every built-in theme (`tools/pixel_contrast.mjs --theme all`, in the build); **TODO** fit
-and bounds per theme (P2, P6).
+every contract component in every built-in theme (`tools/pixel_contrast.mjs --theme all`, in the build); fit and
+bounds per theme (`theme_apply` "P2 + P6 per theme": no text cut that Facet does not cut).
 
 **C48. Technical caps exist only for performance or memory** (8 edge layers per block). No other limit on looks.
 *Why:* caps for taste are not the contract's job. *Check:* review.
 
-**C49. Fonts are data.** A font is a family in the registry (`fonts/fonts.json`) built at every size a type token or
-theme names; a component never names a font (C16).
+**C49. Fonts are data.** A font is a family in the registry (`fonts/fonts.json`: file, licence, weights, pixel grid,
+fallback) built into the firmware at every size a built-in theme's type styles need (`tools/gen_fonts.py`), or a
+font the panel downloads itself (`source: download`, `core/font_store.h`: fetched once, checked on the panel for
+structure, SIL OFL and glyph coverage, kept in flash, drawn by TinyTTF; the built-in fallback draws until it arrives
+and when it is refused). A component never names a font (C16). A theme font sits in its style's fixed line box (C45);
+in fixed digit cells it is built at the largest size whose digits fit the cell.
 *Why:* a hard-coded font whitelist blocked a theme's font (L8). *Check:* the parser accepts only a family this build
-has (`font.body: "x" is not in this panel's build (...)`); **TODO** every type token's family is built at its size
-(theme fonts).
+has or a download with an https URL (`theme_parse` "font"); the build fails on a family without its licence, a glyph
+the family lacks (unless `fallback`) or a theme naming a family not in the registry; `theme_fonts`: every type style a
+contract component uses is drawn in the theme's family at its size (none falls back), the theme size is drawn, bold,
+and the download path (fallback first, live restyle when it lands = a fresh build, flash after a reboot with no fetch,
+offline first use and retry, refusals for 404 / oversize / corrupt / not OFL / missing glyphs, a corrupt stored file
+refetched, the file check fuzzed). **TODO** the panel's HTTPS + LittleFS backend and `LV_USE_TINY_TTF` in the
+firmware (the WASM build simulates both).
 
 ## 11. Proofs
 
@@ -601,14 +614,13 @@ Rules whose check is TODO (each is a gate item; until it exists, review checks t
 | C13 | test: each bleed reaches exactly the page edge; lint: `transform_width` / negative margin outside the core |
 | C14 | pixel check outside the box (`fx::focus_ring` is the decor API, 2026-10-27) |
 | C16 | lint: `theme.h`, `th::` (`lv_font_*`, `LV_SYMBOL_*`, `lv_color_t` and fixed `lay::` / `sp::` / `ic::` numbers: lint rules `font`, `fixed`, 2026-10-27) |
-| C44-C47 | per-theme P2 / P6 (bounds, fit); caption buttons, scrollbar, `track` parts, text weight (the apply path, P4 and pixel contrast per theme are in) |
-| C49 | every type token's family built at its size (theme fonts) |
+| C44-C47 | caption buttons, scrollbar, `track` parts; P3 per part (the apply path, P2 / P4 / P6 and pixel contrast per theme, text weight are in) |
+| C49 | the panel's download backend (HTTPS + LittleFS) and TinyTTF in the firmware (the WASM build simulates them) |
 | C20 | `gen_layout.mjs`: header row >= `touch:min`, gutter <= inset, row heights >= `touch:min` |
 | C21, C22 | lint: `fx::size` / `fx::type_box` outside draw and hit code |
 | C23 / P3 | a component whose tokens show only inside a Page (the Header row: alone on a stage it is centred) is checked by its own test, not the loop |
 | C24 | lint: `LV_EVENT_DRAW_*` callbacks and `lv_canvas_*` in components |
 | C26 / P10 | dirty-area test per drawn component |
-| C29 | palette proof for snapped themes |
 | C32 / P5 | touch-target size check in the lab proof |
 | C33 | per-binding test: every emitted event maps to an HA call |
 | C34 | generic test: mount every component and screen, zero events and HA calls |
@@ -648,7 +660,7 @@ Rules whose check is TODO (each is a gate item; until it exists, review checks t
 | `accents` | 1 to 8 accent sets: an `id`, a `label`, and all 5 roles (`accent`, `accent-press`, `accent-dim`, `accent-text`, `on-accent`) for every mode the theme has |
 | `size` | look sizes only (`radius:*`, `stroke:*`, `stroke:pixel`) at [1.5x, 1x], within their ranges (C19: refused outside); layout sizes are refused (C18) |
 | `type` | sizes at [1.5x, 1x] of `display`, `hero`, `value`, `headline`, `title`, `body`, `label`, each within [floor, the style's line box]; the box, case and letter spacing stay Facet's, so no line moves (C45) |
-| `font` | a family per role (`display`, `body`, `label`, `mono`) of this build (`fonts/fonts.json` once theme fonts land; today `inter`, `jetbrains-mono`) |
+| `font` | a family per role (`display`, `body`, `label`, `mono`): a family id of this build (`inter`, `jetbrains-mono`, and `fonts/fonts.json`: `monocraft`, `w95fa`), or `{family, source: "builtin" \| "download", url, fallback}`; a download is an https TTF (SIL OFL) the panel fetches and keeps, the role's built-in family drawing until it is there (C49) |
 | `parts` | style blocks per part (below); merge over the presets |
 | `shape.corner` | preset: `round` or `square` for cards and controls |
 | `shape.cap` | `round` or `square` for arcs, lines, tracks, the scrollbar |
@@ -714,7 +726,9 @@ token name, or `[1.5x, 1x]` px.
   a cell for its fill; every radius <= half the height it rounds, in every state; a checker or blocks face needs
   square corners.
 - **Fit, bounds, colour, pixels:** P2, P4 and P6 pass for the theme on the live page.
-- **Fonts:** every type token's family is built at its size.
+- **Fonts:** every type token's family is built at its size (built-in themes, at build time); a downloaded file is
+  checked on the panel (structure, SIL OFL, size cap 512 KB, printable ASCII and, without `fallback`, every glyph the
+  styles draw) and refused whole if it fails, the built-in family staying.
 
 Not expressible (by design, for now): bitmaps and textures beyond the listed patterns, opacity, per-part font
 families, moving text, blurred shadows or glows, non-box shapes for box parts, rounded patterned faces.

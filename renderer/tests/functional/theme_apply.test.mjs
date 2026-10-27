@@ -70,6 +70,22 @@ export default {
       use(t, 'facet');
       t.eq(out.slice(0, 6), [], 'A -> B -> A live = fresh A');
     } },
+    { name: 'P2 + P6 per theme: no object outside its parent and no text cut that Facet does not cut (theme fonts and sizes included)', mount: M, async run(t) {
+      const out = [];
+      const proof = (t) => JSON.parse(t.b.str('proof', (c) => t.b.str('', (a) => t.b.m.UTF8ToString(t.b.m._fw_lab(t.b.stage, c, a)))));
+      for (const c of cases(t)) {
+        await build(t, c, 0, 'facet');
+        const f = proof(t), cut = new Set(f.trunc.map((x) => x.why.replace(/ needs .*/, '')));
+        for (const th of THEMES) {
+          await build(t, c, 0, th);
+          const p = proof(t);
+          for (const b of p.bounds.slice(0, 2)) out.push(`${th} ${c.name}: ${b.why}`);
+          for (const x of p.trunc) if (!cut.has(x.why.replace(/ needs .*/, ''))) out.push(`${th} ${c.name}: ${x.why}`);
+        }
+      }
+      use(t, 'facet');
+      t.eq(out.slice(0, 8), [], 'bounds and fit as Facet');
+    } },
     { name: 'reach: every theme changes every contract component and the Light screen', mount: M, async run(t) {
       const out = [];
       for (const c of cases(t)) {

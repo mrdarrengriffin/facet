@@ -37,6 +37,8 @@ extern "C" int32_t lv_obj_get_ext_draw_size(const lv_obj_t *obj);
 #include "core/lv_obj_private.h"  // ext_click_pad (audit)
 #include "misc/lv_text_private.h"  // lv_text_encoded_next (audit)
 namespace fx { std::string theme_lab(const std::string &cmd, const std::string &arg); }  // core/theme_lab.cpp (fw_lab theme_*)
+namespace fx { std::string font_lab(const std::string &cmd, const std::string &arg); }   // core/font_lab.cpp (fw_lab font_*)
+namespace fx { std::string pen_lab(lv_display_t *d, const std::string &cmd, const std::string &arg); }  // core/pen_lab.cpp (fw_lab pen_*)
 
 
 namespace {
@@ -487,6 +489,8 @@ EMSCRIPTEN_KEEPALIVE const char *fw_lab(int id, const char *cmd, const char *arg
   out.clear();
   const std::string c = cmd, a = arg ? arg : "";
   if (!c.compare(0, 6, "theme_")) { out = fx::theme_lab(c, a); return out.c_str(); }  // theme files (core/theme_lab.cpp)
+  if (!c.compare(0, 5, "font_")) { out = fx::font_lab(c, a); return out.c_str(); }    // downloaded fonts (core/font_lab.cpp)
+  if (!c.compare(0, 4, "pen_")) { Stage *s = get(id); out = fx::pen_lab(s ? s->d : lv_display_get_default(), c, a); return out.c_str(); }  // snapped drawing probe (core/pen_lab.cpp)
   if (c == "tokens") { out = fx::tunables(); return out.c_str(); }
   if (c == "tune") {
     const size_t eq = a.find('=');

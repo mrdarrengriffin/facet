@@ -57,6 +57,8 @@ SKIP=" "; [ -z "$FEAT" ] || SKIP=" $(node "$HERE/tools/features.mjs" exclude "$F
   echo '#define LV_TXT_BREAK_CHARS " ,.;:_)}"'
   echo '#define LV_CONF_H'
   echo '#define LV_USE_OS LV_OS_NONE'
+  # theme fonts the panel downloads (core/font_store.cpp) are drawn by TinyTTF; the panel firmware needs the same flag
+  echo '#undef LV_USE_TINY_TTF'; echo '#define LV_USE_TINY_TTF 1'; echo '#undef LV_TINY_TTF_FILE_SUPPORT'; echo '#define LV_TINY_TTF_FILE_SUPPORT 0'
   echo '#define LV_ASSERT_HANDLER_INCLUDE <stdlib.h>'
   echo '#define LV_ASSERT_HANDLER abort();'
 } > "$GEN/lv_conf.h.$DEN"
