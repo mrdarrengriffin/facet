@@ -378,8 +378,8 @@ full bar: the Facet release gate (sections 1-10). Helpers: `tests/functional/_re
 |---|---|---|---|
 | P1 | Lint | `tools/contract_lint.mjs` (rules `width`, `theme`, `draw`, `local`) fails the build for a component | enforced; rule gaps in section 15 |
 | P2 | Bounds | every object inside its parent's content box (bleed skipped): 720 and 480, insets 0..64, odd and wide parents, squeezed to the declared minimum; FAILS below it. `fw_test("bounds")`, `bounds(t, insets)`, `stage`, `boundsAll` | Card, Dial |
-| P3 | Live token propagation | every size / radius / stroke / colour token the component reads (`fx::uses`) changes its pixels live and back (`fw_lab` `uses`, `probe`, `tune`) | Card (`tools/lab_test.mjs`); TODO all |
-| P4 | Colour + pixel | after every theme x mode x accent switch, live (`fw_test("look")`), with states set BEFORE the switch (pressed, on, released): every resolved colour equals a fresh build's and is a current token, and the RGB565 frame equals a fresh build's, every pixel (`frame565`, `diff565`) | Card; TODO all |
+| P3 | Live token propagation | every size / radius / stroke / colour token the component reads (`fx::uses`) changes its pixels live and back (`fw_lab` `uses`, `probe`, `tune`); every contract component lists at least one | all contract components (`tools/lab_test.mjs`, fails the build) |
+| P4 | Colour + pixel | after every theme x mode x accent switch, live (`fw_test("look")`), with states set BEFORE the switch (pressed, on, released): every resolved colour equals a fresh build's and is a current token, and the RGB565 frame equals a fresh build's, every pixel (`frame565`, `diff565`); and the PIXEL contrast of every shown text / icon on what is really behind it, built and switched live (`tools/pixel_contrast.mjs`, every contract component, fails the build) | Card, Header, Icon button, Status chip, Time (`liveLook`); TODO all |
 | P5 | Hit areas | no overlapping clickable areas (`fw_lab(id, "proof")` -> `overlap`); targets >= `touch:min` | Card; TODO size check |
 | P6 | Text fit | no text cut except by its rule (`proof` -> `trunc`) with `fixtures` | Card |
 | P7 | Goldens | every state x step x density (x theme when themes land), RGB565, reviewed by a person, never auto-accepted (`golden`; `FW_GOLDEN_ACCEPT=1` only after review) | Card |
@@ -549,12 +549,12 @@ Rules whose check is TODO (each is a gate item; until it exists, review checks t
 | C11 | generator: each `w:` token inside a component <= its declared min width |
 | C12 | `fx` API for an object placed by data |
 | C13 | test: each bleed reaches exactly the page edge; lint: `transform_width` / negative margin outside the core |
-| C14 | `fx` decor API marked for P2; pixel check outside the box |
-| C16 | lint: `lv_font`, `LV_SYMBOL`, `theme.h`, `th::`, `lv_color_t` members |
+| C14 | pixel check outside the box (`fx::focus_ring` is the decor API, 2026-10-27) |
+| C16 | lint: `theme.h`, `th::` (`lv_font_*`, `LV_SYMBOL_*`, `lv_color_t` and fixed `lay::` / `sp::` / `ic::` numbers: lint rules `font`, `fixed`, 2026-10-27) |
 | C18, C44-C47, C49 | theme engine in the renderer: validation, parts, guardrails, font build check |
 | C20 | `gen_layout.mjs`: header row >= `touch:min`, gutter <= inset, row heights >= `touch:min` |
 | C21, C22 | lint: `fx::size` / `fx::type_box` outside draw and hit code |
-| C23 / P3 | live token propagation loop for every component (today: Card) |
+| C23 / P3 | a component whose tokens show only inside a Page (the Header row: alone on a stage it is centred) is checked by its own test, not the loop |
 | C24 | lint: `LV_EVENT_DRAW_*` callbacks and `lv_canvas_*` in components |
 | C26 / P10 | dirty-area test per drawn component |
 | C29 | palette proof for snapped themes |

@@ -9,16 +9,24 @@
 //   fw_test("inset", "px")        -> "" : the page inset as if its token said px (fx::inset; "-1" = the token)
 //   fw_test("bounds", ""|"all")   -> JSON ["..."] every object in a Page body (the contract part of a screen) that is
 //                                    not inside its parent's content box (bleed skipped): the bounds proof
+//   fw_test("inks", "")          -> JSON [{x, y, w, h, k, min, s}] every shown text (k "text") and icon layer (k "ui")
+//                                    on the active screen, tree order; min = the WCAG minimum it must meet (text 4.5,
+//                                    large text >= 24 px or bold >= 18.66 px 3, ui 3, disabled (fw::st::OFF) 3); the
+//                                    pixel contrast proof (tools/pixel_contrast.mjs) veils each one and compares pixels
+//   fw_test("veil", "i,1|0")     -> "" : item i of the last "inks" list drawn fully transparent (1) or as before (0);
+//                                    no layout change, only its own pixels go
 //   fw_test("scrolls", "")        -> JSON [{x, y, w, h, sx, sy, t, b, l, r, dir}] every shown object that can scroll
 //                                    (scrollable flag + room to scroll or scrolled), screen then top layer, tree order
 #include <emscripten.h>
 #include <string>
+#include <vector>
 #include "fw.h"
 #include "device.h"
 #include "fx.h"
 #include "core/lv_obj_private.h"  // the style list (the bounds proof names the token styles)
 #include "core/lv_obj_style_private.h"
 
+namespace fw { const Component *owner_of(lv_obj_t *o); bool in_legacy(lv_obj_t *o); }  // core/fw_core.cpp (hosts only)
 namespace {
 void scrolls(lv_obj_t *o, ArduinoJson::JsonArray arr) {
   for (uint32_t i = 0; i < lv_obj_get_child_count(o); i++) {
@@ -65,6 +73,48 @@ void bounds(lv_obj_t *o, bool in_body, ArduinoJson::JsonArray arr) {
     bounds(c, body, arr);
   }
 }
+std::vector<lv_obj_t *> ink_objs;
+void forget_ink(lv_event_t *e) {
+  for (auto &o : ink_objs) if (o == lv_event_get_current_target(e)) o = nullptr;
+}
+float wcag_min(lv_obj_t *o, bool text) {
+  for (lv_obj_t *a = o; a; a = lv_obj_get_parent(a)) if (lv_obj_has_state(a, fw::st::OFF)) return 3;  // disabled / unavailable
+  if (!text) return 3;
+  const lv_font_t *f = lv_obj_get_style_text_font(o, LV_PART_MAIN);
+  for (int i = 0; i < fw::ty::N; i++)
+    if (fw::font((fw::ty::Id) i) == f) {
+      const fw::ty::Style &st = fw::ty::STYLES[i];
+      return st.size >= 24 || (st.weight >= 700 && st.size * 3 >= 56) ? 3 : 4.5f;
+    }
+  return 4.5f;
+}
+void inks(lv_obj_t *o, ArduinoJson::JsonArray arr) {
+  for (uint32_t i = 0; i < lv_obj_get_child_count(o); i++) {
+    lv_obj_t *c = lv_obj_get_child(o, i);
+    if (lv_obj_has_flag(c, LV_OBJ_FLAG_HIDDEN) || lv_obj_get_style_opa_recursive(c, LV_PART_MAIN) <= LV_OPA_MIN) continue;
+    const bool text = lv_obj_check_type(c, &lv_label_class), img = lv_obj_check_type(c, &lv_image_class);
+    lv_area_t a;
+    lv_obj_get_coords(c, &a);
+    if ((text && *lv_label_get_text(c)) || img) {
+      if (lv_area_get_width(&a) > 0 && lv_area_get_height(&a) > 0) {
+        auto r = arr.add<ArduinoJson::JsonObject>();
+        r["i"] = (int) ink_objs.size(); r["x"] = a.x1; r["y"] = a.y1; r["w"] = lv_area_get_width(&a); r["h"] = lv_area_get_height(&a);
+        r["k"] = text ? "text" : "ui"; r["min"] = wcag_min(c, text);
+        if (img) r["grp"] = (double) (uintptr_t) lv_obj_get_parent(c);  // an icon's layers: what is behind = the icon veiled
+        if (text) r["s"] = lv_label_get_text(c);
+        // the colour it draws in (RGB565 word): text colour, or an icon layer's recolour (-1 = a picture's own colours)
+        const lv_color_t k = text ? lv_obj_get_style_text_color(c, LV_PART_MAIN) : lv_obj_get_style_image_recolor(c, LV_PART_MAIN);
+        r["ink"] = !text && lv_obj_get_style_image_recolor_opa(c, LV_PART_MAIN) < LV_OPA_COVER ? -1 : (int) (((k.red >> 3) << 11) | ((k.green >> 2) << 5) | (k.blue >> 3));
+        const fw::Component *ow = fw::owner_of(c);  // the innermost component that built it
+        r["c"] = ow ? ow->id : "";
+        r["legacy"] = !fx::migrated(ow) || fw::in_legacy(c);
+        ink_objs.push_back(c);
+        lv_obj_add_event_cb(c, forget_ink, LV_EVENT_DELETE, nullptr);
+      }
+    }
+    inks(c, arr);
+  }
+}
 }  // namespace
 
 extern "C" EMSCRIPTEN_KEEPALIVE const char *fw_test(const char *cmd, const char *arg) {
@@ -103,7 +153,19 @@ extern "C" EMSCRIPTEN_KEEPALIVE const char *fw_test(const char *cmd, const char 
     lv_display_t *disp = lv_display_get_default();
     ArduinoJson::JsonArray arr = d.to<ArduinoJson::JsonArray>();
     if (disp) { lv_obj_update_layout(lv_display_get_screen_active(disp)); bounds(lv_display_get_screen_active(disp), a == "all", arr); }  // "all" = a component mounted alone: the whole screen is its parent
-  } else return "stack | setting | scrolls | look | inset | bounds";
+  } else if (c == "inks") {
+    for (lv_obj_t *o : ink_objs) if (o) lv_obj_remove_event_cb(o, forget_ink);
+    ink_objs.clear();
+    lv_display_t *disp = lv_display_get_default();
+    ArduinoJson::JsonArray arr = d.to<ArduinoJson::JsonArray>();
+    if (disp) { lv_obj_update_layout(lv_display_get_screen_active(disp)); inks(lv_display_get_screen_active(disp), arr); }
+  } else if (c == "veil") {
+    const int i = atoi(a.c_str()), on = a.find(",1") != std::string::npos;
+    if (i < 0 || i >= (int) ink_objs.size() || !ink_objs[i]) return "gone";
+    if (on) lv_obj_set_style_opa(ink_objs[i], LV_OPA_TRANSP, 0); else lv_obj_remove_local_style_prop(ink_objs[i], LV_STYLE_OPA, 0);
+    lv_obj_invalidate(ink_objs[i]);
+    return "";
+  } else return "stack | setting | scrolls | look | inset | bounds | inks | veil";
   serializeJson(d, out);
   return out.c_str();
 }

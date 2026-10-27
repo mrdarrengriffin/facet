@@ -8,6 +8,9 @@
 #include "lightning.h"
 #include "previews.h"
 
+#ifndef ESP_PLATFORM
+namespace fw::qa { void legacy(lv_obj_t *o, const char *why); }  // core/fw_core.cpp: the pixel contrast proof
+#endif
 namespace fw {
 namespace {
 int S() { return ic::PX[ic::card]; }
@@ -235,6 +238,9 @@ lv_obj_t *card_preview(lv_obj_t *parent, const char *kind, Props p) {
   lv_obj_t *root = box(parent);
   lv_obj_set_size(root, S(), S());
   lv_obj_set_user_data(root, (void *) (intptr_t) (kind_index(kind) + 1));
+#ifndef ESP_PLATFORM
+  fw::qa::legacy(root, "the card preview artwork is not on the contract yet (its own piece)");
+#endif
   lv_obj_t *body = box(root);
   lv_obj_set_size(body, S(), S());
   build_kind(body, kind, p);

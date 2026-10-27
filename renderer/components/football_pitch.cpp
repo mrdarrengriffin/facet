@@ -184,6 +184,7 @@ void apply_feed(lv_obj_t *root, View &v, ArduinoJson::JsonVariantConst f, bool l
     const int before = v.n_events;
     v.n_events = ne;
     lv_obj_clean(v.marks);
+    lv_obj_update_layout(v.marks);  // its size before the first layout pass (it relied on a layout the old Status chip forced)
     const int span = 90 + (int) (clk["period"] == 2 ? (clk["added_total"] | 0) : 0);
     const int lw = lv_obj_get_width(v.marks), mid = lv_obj_get_height(v.marks) / 2, me = fw::ic::PX[fw::ic::small];
     // the line + half time

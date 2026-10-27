@@ -256,7 +256,7 @@ void speaker_header(lv_obj_t *root) {
   if (!hdr) return;
   MV *m = of(root);
   // docs header clock: false: the button takes the time's place
-  if (lv_obj_get_child_count(hdr)) lv_obj_add_flag(lv_obj_get_child(hdr, -1), LV_OBJ_FLAG_HIDDEN);
+  fw::spec::header_hide_time(hdr);
   ArduinoJson::JsonDocument bp;
   bp["name"] = spk_name(m, m->speaker), bp["playing"] = m->st == "playing";
   m->spk = build("speaker_button", hdr, bp);

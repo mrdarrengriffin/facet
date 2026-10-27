@@ -17,14 +17,32 @@
 namespace fw { void text_metrics(ty::Id s, int &line_space, int &pad_top, int &pad_bottom, int &translate_y); }
 
 namespace {
-enum Kind { FG, BG, BORDER, LINE, INK, PAD, GAP, PADX, RADIUS, HEIGHT, MAXH, MINW, MAXW, WIDTH, TYPE, SHAPE, DERIVED };
+enum Kind { FG, BG, BORDER, LINE, INK, PAD, GAP, PADX, RADIUS, HEIGHT, MAXH, MINW, MAXW, WIDTH, TYPE, SHAPE, DERIVED,
+            TINT, OUTLINE, DIGIT, COLON, RAISE, BASE };
 struct Def { std::string name; Kind k; int i; };
 std::vector<Def> defs;  // sorted by name
 const char *const SHAPES[] = {"box", "col", "row", "stack", "centre", "cell", "grow", "free", "page", "page-head", "body",
                               "body:list", "body:cards", "body:center", "body:page", "bleed", "bg-none", "fit",
-                              "fill", "fill-w", "row-top", "fade-press", "fade-release", "gap:gutter", "pair", "wrap"};
+                              "fill", "fill-w", "row-top", "fade-press", "fade-release", "gap:gutter", "pair", "wrap",
+                              "header", "header-back", "header-title", "header-label", "header-end", "header-time",
+                              "hug", "over", "over-cell", "transp", "opaque", "fade-press-ink", "fade-release-ink", "no-outline", "cells", "cell-text",
+                              "square:ibtn-play", "square:ibtn-round", "square:ibtn-square", "tall:chip-h"};
+// tint:<c> = the colour at chip.tint over what is behind (Status chip; colour.json mixes chip-<tone>); outline:<c> = the
+// focus ring (states.json focus: stroke focus, touch focus-offset outside the box)
+const char *const TINTS[] = {"ok", "warn", "error", "accent", "blue", "text-dim"};
+const char *const OUTLINES[] = {"focus-ring"};
+// baseline:<a>:<b>: text b's figures (its glyph `ch`) on text a's baseline (a margin top), the Time's AM / PM + seconds
+struct Base { fw::ty::Id a, b; uint32_t ch; };
+const Base BASES[] = {{fw::ty::clock_hero_mono, fw::ty::clock_seconds_mono, '0'}, {fw::ty::clock_hero, fw::ty::clock_seconds, '0'},
+  {fw::ty::clock_hero_mono, fw::ty::clock_ampm_mono, 'M'}, {fw::ty::clock_hero, fw::ty::clock_ampm, 'M'},
+  {fw::ty::clock_mid_mono, fw::ty::clock_ampm_mono, 'M'}, {fw::ty::clock_mid, fw::ty::clock_ampm, 'M'},
+  {fw::ty::clock_compact_mono, fw::ty::clock_ampm_sm, 'M'}, {fw::ty::clock_compact, fw::ty::clock_ampm_sm, 'M'}};
+const char *type_name(fw::ty::Id id) {
+  for (int i = 0; i < fx::gen::N_TYPES; i++) if (fx::gen::TYPES[i].id == id) return fx::gen::TYPES[i].name;
+  abort();
+}
 // derived sizes: one value worked out from other tokens, so a component never does the sum (paint() says how)
-const char *const DERIVED_N[] = {"dial-wing-up", "dial-wing-down", "dial-slot", "card-pad", "card-text", "card-gap", "card-gap-s", "card-row", "pair-rule"};
+const char *const DERIVED_N[] = {"dial-wing-up", "dial-wing-down", "dial-slot", "card-pad", "card-text", "card-gap", "card-gap-s", "card-row", "pair-rule", "label-row"};
 struct Look { lv_display_t *d; const fw::Theme *t = nullptr; int large = -1; std::vector<lv_style_t> s; };
 std::vector<Look *> looks;
 
@@ -52,6 +70,19 @@ void init_defs() {
   for (int i = 0; i < fx::gen::N_TYPES; i++) defs.push_back({std::string("type:") + fx::gen::TYPES[i].name, TYPE, i});
   for (int i = 0; i < (int) (sizeof(SHAPES) / sizeof(SHAPES[0])); i++) defs.push_back({SHAPES[i], SHAPE, i});
   for (int i = 0; i < (int) (sizeof(DERIVED_N) / sizeof(DERIVED_N[0])); i++) defs.push_back({DERIVED_N[i], DERIVED, i});
+  auto colour_ix = [](const char *c) {
+    for (int i = 0; i < fx::gen::N_COLOURS; i++) if (!strcmp(fx::gen::COLOURS[i].name, c)) return i;
+    for (int i = 0; i < fx::gen::N_ROLES; i++) if (!strcmp(fx::gen::ROLES[i].name, c)) return fx::gen::N_COLOURS + i;
+    abort();
+  };
+  for (const char *c : TINTS) defs.push_back({std::string("tint:") + c, TINT, colour_ix(c)});
+  for (const char *c : OUTLINES) defs.push_back({std::string("outline:") + c, OUTLINE, colour_ix(c)});
+  for (int i = 0; i < (int) (sizeof(fw::ty::CELLS) / sizeof(fw::ty::CELLS[0])); i++) {
+    const std::string n = type_name(fw::ty::CELLS[i].style);
+    defs.push_back({"digit:" + n, DIGIT, i}); defs.push_back({"colon:" + n, COLON, i}); defs.push_back({"colon-raise:" + n, RAISE, i});
+  }
+  for (int i = 0; i < (int) (sizeof(BASES) / sizeof(BASES[0])); i++)
+    defs.push_back({std::string("baseline:") + type_name(BASES[i].a) + ":" + type_name(BASES[i].b), BASE, i});
   std::sort(defs.begin(), defs.end(), [](const Def &a, const Def &b) { return a.name < b.name; });
   for (size_t i = 1; i < defs.size(); i++) if (defs[i].name == defs[i - 1].name) abort();  // a name made twice
 }
@@ -77,6 +108,8 @@ void shape(lv_style_t *s, const char *n) {  // the structure styles: density onl
   const auto TOP = [] { return tok("layout:top", lay::top); };
   const auto HGAP = [] { return tok("layout:header-gap", lay::header_gap); };
   const auto SQ = [] { return tok("squeeze", -1); };
+  const auto ROW = [] { return tok("layout:row", lay::row); };  // the header row (layout.json header)
+  const auto IGAP = [] { return tok("layout:header-item-gap", lay::header_item_gap); };
   const auto S = LV_FLEX_ALIGN_START, C = LV_FLEX_ALIGN_CENTER;
   const std::string k = n;
   if (k == "box") { lv_style_set_width(s, lv_pct(100)); lv_style_set_height(s, LV_SIZE_CONTENT); }
@@ -107,6 +140,51 @@ void shape(lv_style_t *s, const char *n) {  // the structure styles: density onl
   else if (k == "row-top") flex(s, LV_FLEX_FLOW_ROW, S, S, S);  // a row, top-aligned, no gap
   else if (k == "wrap") flex(s, LV_FLEX_FLOW_ROW_WRAP, S, S, S);  // rows that wrap: a growing child counts its min-w
   else if (k == "gap:gutter") { lv_style_set_pad_row(s, GUT()); lv_style_set_pad_column(s, GUT()); }  // gutter both ways
+  else if (k == "header") {  // the Header row (components/header.cpp): the row tall, up to its max width, items centred;
+    // the gaps are its parts' margins (back-gap after Back, the item gap before the end slot and before the Time), so
+    // a hidden part takes its gap with it and no gap is a difference of two tokens
+    lv_style_set_width(s, lv_pct(100)); lv_style_set_max_width(s, tok("layout:header-max-w", lay::header_max_w)); lv_style_set_height(s, ROW());
+    flex(s, LV_FLEX_FLOW_ROW, S, C, C);
+  } else if (k == "header-back" || k == "header-end") {  // natural size, the item gap between its items
+    lv_style_set_width(s, LV_SIZE_CONTENT); lv_style_set_height(s, LV_SIZE_CONTENT);
+    flex(s, LV_FLEX_FLOW_ROW, S, C, C); lv_style_set_pad_column(s, IGAP());
+    if (k == "header-back") lv_style_set_margin_right(s, tok("layout:back-gap", lay::back_gap));  // back-gap to the title
+    else lv_style_set_margin_left(s, IGAP());
+  } else if (k == "header-time") {  // the time's place: the row tall (a long press there is a full touch target)
+    lv_style_set_width(s, LV_SIZE_CONTENT); lv_style_set_height(s, ROW()); flex(s, LV_FLEX_FLOW_COLUMN, C, C, C);
+    lv_style_set_margin_left(s, IGAP());
+  } else if (k == "header-title") {  // the rest of the row: grows from 0, never below its content's minimum (min-w
+    // content = the flex minimum of its items: a node at its natural size, the label 0), so the label ellipsises
+    // before the end slot and a node in the title hugs (an overfull row is the bounds proof's to report, C11)
+    lv_style_set_width(s, 0); lv_style_set_min_width(s, LV_SIZE_CONTENT); lv_style_set_flex_grow(s, 1);
+    // the row's height, its items centred on it (a content height would follow the label's text-box translate)
+    lv_style_set_height(s, lv_pct(100)); flex(s, LV_FLEX_FLOW_ROW, S, C, C);
+  } else if (k == "header-label") {  // the title's label: the title's room (grows from 0, so its minimum is 0)
+    lv_style_set_width(s, 0); lv_style_set_flex_grow(s, 1);
+  }
+  else if (k == "hug") { lv_style_set_width(s, LV_SIZE_CONTENT); lv_style_set_height(s, LV_SIZE_CONTENT); }  // its content's size
+  else if (k == "over") flex(s, LV_FLEX_FLOW_COLUMN, C, C, C);  // its children centred (one glyph)
+  else if (k == "over-cell") lv_style_set_align(s, LV_ALIGN_CENTER);  // a child taken out of the layout, centred: two glyphs on top of each other
+  else if (k.rfind("square:", 0) == 0 || k.rfind("tall:", 0) == 0) {  // exactly a layout token: a button's square, a chip's
+    // height (a min size alone leaves a flex row's items at the top of the extra room)
+    const bool sq = k[0] == 's';
+    const std::string t = "layout:" + k.substr(sq ? 7 : 5);
+    int v = 0;
+    for (int i = 0; i < fx::gen::N_SIZES; i++) if (t == fx::gen::SIZES[i].name) v = tok(t.c_str(), fx::gen::SIZES[i].v);
+    lv_style_set_height(s, v);
+    if (sq) lv_style_set_width(s, v);
+  }
+  else if (k == "cell-text") { lv_style_set_width(s, lv_pct(100)); lv_style_set_text_align(s, LV_TEXT_ALIGN_CENTER); }  // a digit in its cell
+  else if (k == "cells") flex(s, LV_FLEX_FLOW_ROW, C, S, S);  // a row of fixed boxes centred in it, no gap (the Time)
+  else if (k == "no-outline") { lv_style_set_outline_width(s, 0); lv_style_set_outline_opa(s, LV_OPA_TRANSP); }
+  else if (k == "transp" || k == "opaque") lv_style_set_opa(s, k == "transp" ? LV_OPA_TRANSP : LV_OPA_COVER);  // a part shown per state
+  else if (k == "fade-press-ink" || k == "fade-release-ink") {  // the press fade of an icon's ink (states.json pressed motion)
+    static lv_style_transition_dsc_t d[2];
+    static const lv_style_prop_t P[] = {LV_STYLE_IMAGE_RECOLOR, LV_STYLE_PROP_INV};
+    static bool ready = false;
+    if (!ready) { fw::st::press_transitions(d, P); ready = true; }
+    lv_style_set_transition(s, &d[k == "fade-press-ink"]);
+  }
   else if (k == "pair") {  // two halves sharing a cell (a grow between them): the first at its top, the second on its bottom
     lv_style_set_width(s, lv_pct(100)); lv_style_set_height(s, lv_pct(100)); flex(s, LV_FLEX_FLOW_COLUMN, S, S, S);
   }
@@ -143,6 +221,10 @@ void paint(Look *L, const fw::Theme *t, int only = -1) {  // colours from the th
         lv_style_set_width(s, lv_pct(100)); lv_style_set_height(s, tok("stroke:hair", stroke::hair));
         lv_style_set_pad_hor(s, tok("layout:card-pad", lay::card_pad)); continue;
       }
+      if (d.i == 9) {  // label-row: at least the label type's box tall (a hugging box around one label: its caps translate
+        // would otherwise take a pixel off the box, off the grid)
+        lv_style_set_min_height(s, box_of(ty::label)); continue;
+      }
       if (d.i == 7) {  // card-row: the label row is at least the label's type box tall (its caps translate stays inside)
         lv_style_set_min_height(s, box_of(ty::label)); continue;
       }
@@ -160,6 +242,36 @@ void paint(Look *L, const fw::Theme *t, int only = -1) {  // colours from the th
       lv_style_set_width(s, lv_pct(100)); lv_style_set_height(s, up > down ? up : down);
       flex(s, LV_FLEX_FLOW_COLUMN, top ? LV_FLEX_ALIGN_END : LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
       if (top) lv_style_set_pad_bottom(s, s7); else { lv_style_set_pad_top(s, s2); lv_style_set_pad_row(s, s9); }
+      continue;
+    }
+    if (d.k == TINT) { lv_style_set_bg_color(s, colour(d.i, t)); lv_style_set_bg_opa(s, (lv_opa_t) lroundf(fw::tokens::comp::chip_tint * 255)); continue; }
+    if (d.k == OUTLINE) {
+      lv_style_set_outline_color(s, colour(d.i, t)); lv_style_set_outline_opa(s, LV_OPA_COVER);
+      lv_style_set_outline_width(s, tok("stroke:focus", fw::stroke::focus)); lv_style_set_outline_pad(s, tok("touch:focus-offset", fw::touch::focus_offset) - tok("stroke:focus", fw::stroke::focus));  // the ring's outer edge at the offset
+      continue;
+    }
+    if (d.k == DIGIT || d.k == COLON || d.k == RAISE) {  // type.json cells: em of the type's size
+      const fw::ty::Cells &k = fw::ty::CELLS[d.i];
+      const fw::ty::Style &st = fw::ty::STYLES[k.style];
+      if (d.k == RAISE) {
+        int ls, pt, pb, ty;
+        fw::text_metrics(k.style, ls, pt, pb, ty);
+        lv_style_set_translate_y(s, ty + (int) lroundf(k.colon_y * st.size));
+      } else {
+        lv_style_set_width(s, (int) lroundf((d.k == COLON ? k.colon : k.digit) * st.size)); lv_style_set_height(s, st.box);
+        flex(s, LV_FLEX_FLOW_ROW, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
+      }
+      continue;
+    }
+    if (d.k == BASE) {  // where b's figures end below its box top, against a's (cap height centred in the box)
+      const Base &b = BASES[d.i];
+      auto cap_bottom = [](fw::ty::Id id, uint32_t ch) {
+        const lv_font_t *f = fw::font(id);
+        lv_font_glyph_dsc_t g;
+        const int cap = lv_font_get_glyph_dsc(f, &g, ch, 0) ? g.box_h : f->line_height / 2;
+        return (fw::ty::STYLES[id].box + cap) / 2;
+      };
+      lv_style_set_margin_top(s, cap_bottom(b.a, '0') - cap_bottom(b.b, b.ch));
       continue;
     }
     if (d.k <= INK) {
@@ -302,7 +414,8 @@ void state(lv_obj_t *o, lv_state_t s, bool on) {
 }
 lv_obj_t *row(lv_obj_t *p) { return box(p, "row"); }
 lv_obj_t *icon(lv_obj_t *p, const char *name, const char *size, const char *ink) {
-  const fw::ic::Size sz = !strcmp(size, "card") ? fw::ic::card : fw::ic::icon;
+  const fw::ic::Size sz = !strcmp(size, "card") ? fw::ic::card : !strcmp(size, "glyph") ? fw::ic::glyph
+                         : !strcmp(size, "feature") ? fw::ic::feature : fw::ic::icon;
   lv_obj_t *b = fw::icon(p, name, sz, lv_color_black());
   if (!b) return nullptr;
   lv_obj_add_flag(b, LV_OBJ_FLAG_EVENT_BUBBLE);
@@ -316,9 +429,37 @@ lv_obj_t *icon(lv_obj_t *p, const char *name, const char *size, const char *ink)
   }
   return b;
 }
+void icon_use(lv_obj_t *icon, const char *token, lv_style_selector_t sel) {
+  for (uint32_t i = 0; icon && i < lv_obj_get_child_count(icon); i++) {
+    lv_obj_t *im = lv_obj_get_child(icon, (int32_t) i);
+    if ((uintptr_t) lv_obj_get_user_data(im) == fw::ic::R_ink) use(im, token, sel);
+  }
+}
+bool icon_multi(lv_obj_t *icon) {
+  for (uint32_t i = 0; icon && i < lv_obj_get_child_count(icon); i++)
+    if ((uintptr_t) lv_obj_get_user_data(lv_obj_get_child(icon, (int32_t) i)) != fw::ic::R_ink) return true;
+  return false;
+}
+void focus_ring(lv_obj_t *o, lv_style_selector_t show) {  // decor (C14): the one ring outside the box, a shared style
+  use(o, "outline:focus-ring", show);
+  use(o, "no-outline", fw::st::OFF);  // disabled / unavailable hide it, even when active
+  fw::bleed(o, fw::touch::focus_offset);  // the audit / bounds proof: this object's ink may reach that far outside it
+}
+void pulse(lv_obj_t *o) {
+  fw::Anim a{[](void *x, int32_t v) { lv_obj_set_style_opa((lv_obj_t *) x, (lv_opa_t) v, 0); }, LV_OPA_COVER,
+             (int32_t) lroundf(fw::mo::OPA_PULSE_MIN * 255), fw::mo::OPA};
+  a.loop = true;
+  fw::animate(o, fw::mo::pulse, a);
+}
 lv_obj_t *cell(lv_obj_t *r) { lv_obj_t *c = box(r, "col"); use(c, "cell"); return c; }
 void bleed(lv_obj_t *o) { use(o, "bleed"); }
 void fit_grid(lv_obj_t *l) {  // the label's box = its text's width rounded up to the 4 px grid (docs fit8)
+  if (!lv_obj_check_type(l, &lv_label_class)) {  // a row of fixed boxes: their sum, rounded up
+    lv_obj_set_width(l, LV_SIZE_CONTENT);
+    lv_obj_update_layout(l);
+    lv_obj_set_width(l, (lv_obj_get_width(l) + fw::sp::GRID - 1) / fw::sp::GRID * fw::sp::GRID);
+    return;
+  }
   lv_point_t sz;
   lv_text_get_size(&sz, lv_label_get_text(l), lv_obj_get_style_text_font(l, LV_PART_MAIN), lv_obj_get_style_text_letter_space(l, LV_PART_MAIN), 0,
                    LV_COORD_MAX, LV_TEXT_FLAG_NONE);
@@ -482,7 +623,8 @@ std::string tunables() {  // [[name, token px, now px, kind, lo, hi]]: every siz
   for (int i = 0; i < gen::N_SIZES; i++) base[gen::SIZES[i].name] = gen::SIZES[i].v;
   using namespace fw;
   const std::pair<const char *, int> extra[] = {{"layout:inset", lay::inset}, {"layout:gutter", lay::gutter}, {"layout:top", lay::top},
-    {"layout:header-gap", lay::header_gap}, {"space:2", sp::s2}, {"space:7", sp::s7}, {"space:9", sp::s9}, {"touch:button-h", touch::button_h}};
+    {"layout:header-gap", lay::header_gap}, {"layout:row", lay::row}, {"layout:back-gap", lay::back_gap},
+    {"layout:header-item-gap", lay::header_item_gap}, {"layout:header-max-w", lay::header_max_w}, {"space:2", sp::s2}, {"space:7", sp::s7}, {"space:9", sp::s9}, {"touch:button-h", touch::button_h}};
   for (auto &e : extra) base.emplace(e.first, e.second);
   std::string o = "[";
   // [name, token px, now px, "look" | "fixed", lo, hi]: look = themeable within lo..hi, fixed = a layout size

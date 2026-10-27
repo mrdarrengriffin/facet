@@ -5,6 +5,7 @@
 #include <string>
 #include <strings.h>
 #include <vector>
+namespace fw::spec { lv_obj_t *header_slot(lv_obj_t *header, const char *name); void header_hide_time(lv_obj_t *o); }  // components/header.cpp
 
 namespace fw::sport {
 namespace {
@@ -479,18 +480,21 @@ Picker *picker_attach(lv_obj_t *root, lv_obj_t *header, char sport, fw::Props p)
   k->root = root, k->sport = sport;
   take(k, p);
 
-  // the button in the time's place (docs header clock: false, as Media): the chrome stays the last child, hidden
-  lv_obj_t *chrome = lv_obj_get_child_count(header) ? lv_obj_get_child(header, -1) : nullptr;
+  // the button in the time's place (docs header clock: false, as Media): into the Header's END slot, the Header's
+  // fixed Time hidden (never the Header row itself, whose parts are its layout)
+  lv_obj_t *end = fw::spec::header_slot(header, "end");
+  if (!end) end = header;  // not a Header (a bare row): its own children, as before the slots
+  lv_obj_remove_flag(end, LV_OBJ_FLAG_HIDDEN);  // an empty end slot is hidden (no clock): the button fills it
   Doc bp;
   bp["name"] = k->pick.empty() ? "sample" : k->pick.c_str();
   bp["playing"] = false;
   bp["icon"] = sport == 't' ? "sport-tennis-ball" : "sport-goal";
-  k->btn = build("speaker_button", header, bp);
-  if (chrome) { lv_obj_add_flag(chrome, LV_OBJ_FLAG_HIDDEN); lv_obj_move_to_index(chrome, -1); }
+  k->btn = build("speaker_button", end, bp);
+  fw::spec::header_hide_time(header);  // the button in the time's place
   // the paused state (TV sync): a Status chip before the button, hidden unless paused
   Doc cp;
   cp["tone"] = "warn", cp["text"] = "paused +0 s";
-  if ((k->chip = build("status_chip", header, cp))) {
+  if ((k->chip = build("status_chip", end, cp))) {
     lv_obj_add_flag(k->chip, LV_OBJ_FLAG_HIDDEN);
     if (k->btn) lv_obj_move_to_index(k->chip, lv_obj_get_index(k->btn));
   }

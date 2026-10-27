@@ -4,7 +4,10 @@
 // state role> (a role = "<state>-<role>" from tokens/states.json: fg:disabled-ink, bg:pressed-surface), pad:/gap:/pad-x:
 // <space step>, radius:<r>, h:<layout token> (min height), max-w:<layout token> (a cap: fills its parent up to it),
 // min-w:<layout token> (a floor: fills its parent, never narrower), max-h:<layout token> (with h: = exactly that tall), gap:<layout token> / gap:gutter (between children),
-// type:<type style>, plus the structure styles below and derived ones ("dial-wing": core/fx_core.cpp says how).
+// type:<type style>, tint:<status colour> (the colour at chip.tint over whatever is behind), outline:focus-ring (the
+// focus ring outside the box: stroke focus, touch focus-offset), digit:/colon:/colon-raise:<clock type> (a digit cell,
+// the colon cell, the colon's raise: type.json cells), baseline:<type>:<small type> (a smaller text's figures on the
+// bigger one's baseline), plus the structure styles below and derived ones ("dial-wing": core/fx_core.cpp says how).
 #pragma once
 #include "lvgl.h"
 #include <string>
@@ -22,12 +25,23 @@ void set_text(lv_obj_t *label, const char *s, const char *type);  // new words, 
 // workbench, never a silent default).
 void use(lv_obj_t *o, const char *token, lv_style_selector_t sel = 0);
 void state(lv_obj_t *o, lv_state_t s, bool on);  // o and everything inside it (the styles follow the state)
-// A screen / status icon (icons.json) at the icon size "icon" or "card", each layer inked by a shared style: the ink
-// named ("fg:text-dim" -> its colour), role layers (accent, text-dim, blue, steel) their own token. Follows a live theme switch.
+// A screen / status icon (icons.json) at the icon size "icon", "card", "glyph" (a control's glyph) or "feature" (the
+// play / pause glyph), each layer inked by a shared style: the ink named ("fg:text-dim" -> its colour), role layers
+// (accent, text-dim, blue, steel) their own token. Follows a live theme switch. The icon box trickles its parent's
+// states to its layers.
 lv_obj_t *icon(lv_obj_t *parent, const char *name, const char *size, const char *ink);
+// a token on every INK layer of an icon (role layers keep their own colours), per state: "ink:on-ink" on CHECKED,
+// "fade-press-ink" on PRESSED (the ink's press fade)
+void icon_use(lv_obj_t *icon, const char *token, lv_style_selector_t sel = 0);
+bool icon_multi(lv_obj_t *icon);  // the icon has role layers (an accent part): its ink alone must not show a state
+void pulse(lv_obj_t *o);
+// decor (C14): the focus ring (states.json focus: stroke focus, its outer edge touch:focus-offset outside the box) in
+// state `show`, hidden by fw::st::OFF; a shared style, so a theme switch repaints it
+void focus_ring(lv_obj_t *o, lv_style_selector_t show = LV_STATE_CHECKED);          // Motion pattern "pulse" on o's opacity (forever; reduced motion = still)
 lv_obj_t *row(lv_obj_t *parent);   // equal cells with the gutter between: row(), then one cell() per item
 lv_obj_t *cell(lv_obj_t *row);
-void fit_grid(lv_obj_t *label);  // a one-line text whose box ends on the 4 px grid (what follows it lands on the grid)
+// a one-line text (or a row of fixed boxes) whose box ends on the 4 px grid (what follows it lands on the grid)
+void fit_grid(lv_obj_t *label);
 void bleed(lv_obj_t *o);           // the one escape: o's background reaches the page edge (the "bleed" style marks it)
 void name(lv_obj_t *o, const char *n);  // a component root's name for the inspector
 int size(const char *token);       // a size token ("stroke:hair", "layout:dial-tick") for DRAWING only

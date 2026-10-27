@@ -1,0 +1,107 @@
+#!/usr/bin/env node
+// Pixel contrast proof (renderer/CONTRACT.md C15-C17, P4; Facet release gate section 4). tools/contrast.mjs checks the
+// DECLARED colour pairs; this one checks what is really on the pixels. For every contract component (meta "contract":
+// 2, or --ids any) x every meta variant x density, in four looks: built dark, switched LIVE to light, built light,
+// switched LIVE to dark (a component that holds a colour from build time fails the live ones). In each look every shown
+// text and icon layer (fw_test "inks") is veiled (drawn transparent, nothing moves) and the frame compared: the pixels
+// that change are its ink, the veiled frame is what lies behind it. Its contrast = its own drawn colour (text colour /
+// icon recolour, RGB565 as the panel shows it) against the commonest pixel really behind its ink, or the best ink pixel
+// vs the pixel behind it if higher (a picture with its own colours: that alone); relative luminance as WCAG 2.x. Minimum: text 4.5, large text 3, icons 3, disabled (fw::st::OFF) 3.
+// A text that changes no pixel when veiled is invisible: ratio 1, a failure. Exit 1 on any failure. A failing item
+// that a LEGACY component built (one not on the contract, inside a contract one: the Segmented in a Header) is listed
+// as LEGACY and counted, not failed: its migration piece fixes it.
+//   node tools/pixel_contrast.mjs [--den 1x|1.5x] [--ids a,b] [--build <FW_OUT>] [-v]
+import { readFileSync, existsSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { instance } from './lib/fwbench.mjs';
+
+const HERE = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const env = (() => { try { return Object.fromEntries(readFileSync(join(HERE, '..', 'local.env'), 'utf8').split('\n').map((l) => l.match(/^([A-Z_]+)=(.*)$/)).filter(Boolean).map((m) => [m[1], m[2]])); } catch { return {}; } })();
+const arg = (n) => { const i = process.argv.indexOf(n); return i > 0 ? process.argv[i + 1] : null; };
+const BUILD = arg('--build') || process.env.FW_OUT || env.FW_OUT || join(HERE, 'out');
+const DENS = arg('--den') ? [arg('--den')] : ['1x', '1.5x'].filter((d) => existsSync(join(BUILD, d, 'fw.mjs')));
+const IDS = arg('--ids') ? arg('--ids').split(',') : null;
+const V = process.argv.includes('-v');
+const TICK = 16;
+
+const lin = (c) => { c /= 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
+const LUM = new Float64Array(65536);
+for (let w = 0; w < 65536; w++) LUM[w] = 0.2126 * lin((w >> 11) << 3) + 0.7152 * lin(((w >> 5) & 63) << 2) + 0.0722 * lin((w & 31) << 3);
+const ratio = (a, b) => { const x = LUM[a], y = LUM[b]; return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+
+let checks = 0, fails = 0, legacy = 0;
+const out = [];
+for (const den of DENS) {
+  const D = den === '1x' ? 1 : 1.5;
+  let m = await instance(den, BUILD);
+  const metas = JSON.parse(m.UTF8ToString(m._fw_meta())).map((c) => ({ ...c, meta: typeof c.meta === 'string' ? JSON.parse(c.meta) : c.meta }));
+  const comps = metas.filter((c) => c.section !== 'screens' && (IDS ? IDS.includes(c.id) : c.meta && c.meta.contract === 2));
+  for (const c of comps) {
+    m = await instance(den, BUILD);  // a fresh module per component (one per render runs the heap out)
+    const SS = den === '1x' ? 480 : 720, [fw, fh] = c.meta.frame || [SS / D, SS / D];  // as tools/visual.mjs
+    const W = Math.round(fw * D), H = fh ? Math.round(fh * D) : SS;
+    for (const v of c.meta.variants?.length ? c.meta.variants : [{ label: 'default', props: {} }]) {
+      for (const [first, then] of [[0, 1], [1, 0]]) {
+        let t = m.__t || 0;
+        const S = (s, f) => { const p = m.stringToNewUTF8(s); try { return f(p); } finally { m._free(p); } };
+        const test = (cmd, a = '') => S(cmd, (pc) => S(a, (pa) => m.UTF8ToString(m._fw_test(pc, pa))));
+        const tick = (n = 1) => { for (let i = 0; i < n; i++) { t += TICK; m._fw_tick(t); } m._fw_events(); };
+        const settle = () => { for (let i = 0, calm = 0; i < 120 && calm < 3; i++) { tick(); calm = m._fw_anims() ? 0 : calm + 1; } };
+        const st = m._fw_stage(W, H);
+        tick(2);
+        if (process.env.PC_TRACE) console.error(`render ${den} ${c.id} "${v.label}" ${first}`);
+        const e = S(c.id, (pc) => S(JSON.stringify(v.props || {}), (pp) => m.UTF8ToString(m._fw_render(st, pc, pp, first, 0))));
+        if (e) { m._fw_stage_free(st); out.push(`skip ${den} ${c.id} "${v.label}": ${e}`); continue; }
+        settle();
+        const frame = () => {
+          m._fw_refresh(st);
+          const p = m._fw_frame(st), h = m.HEAPU8, w = new Uint16Array(W * H);
+          for (let i = 0; i < W * H; i++) { const q = p + i * 4; w[i] = ((h[q] >> 3) << 11) | ((h[q + 1] >> 2) << 5) | (h[q + 2] >> 3); }
+          return w;
+        };
+        const measure = (look) => {
+          const items = JSON.parse(test('inks') || '[]'), base = frame();
+          for (const it of items) {
+            if (it.k === 'text' && !String(it.s).trim()) continue;
+            test('veil', `${it.i},1`);
+            const only = frame();  // its own pixels: what changes when it alone goes
+            // what is behind it: for an icon layer, the whole icon veiled (its other parts are the icon, not its background)
+            const grp = it.k === 'ui' ? items.filter((o) => o.grp === it.grp && o.i !== it.i) : [];
+            for (const o of grp) test('veil', `${o.i},1`);
+            const bg = grp.length ? frame() : only;
+            for (const o of grp) test('veil', `${o.i},0`);
+            test('veil', `${it.i},0`);
+            // the pixels it changes = its ink on screen; the veiled frame there = what is really behind it
+            let best = 0, n = 0;
+            const behind = new Map();
+            for (let y = Math.max(0, it.y); y < Math.min(H, it.y + it.h); y++)
+              for (let x = Math.max(0, it.x); x < Math.min(W, it.x + it.w); x++) {
+                const k = y * W + x;
+                if (base[k] !== only[k]) { n++; const r = ratio(base[k], bg[k]); if (r > best) best = r; behind.set(bg[k], (behind.get(bg[k]) || 0) + 1); }
+              }
+            // its colour (as the panel shows it) against the commonest pixel behind its ink: a thin anti-aliased stroke
+            // never covers a whole pixel, so its pixels alone under-read a correct colour; a stale colour reads stale
+            if (n && it.ink >= 0) { const b0 = [...behind].sort((a, b) => b[1] - a[1])[0][0]; best = Math.max(best, ratio(it.ink, b0)); }
+            if (!n && it.k === 'ui') continue;  // an icon layer with nothing of its own on screen (covered, or empty here)
+            if (!n) best = 1;  // a text that changes no pixel: invisible
+            checks++;
+            const what = it.k === 'text' ? `"${String(it.s).slice(0, 28)}"` : `icon layer ${it.w}x${it.h}@${it.x},${it.y}`;
+            const line = `${den} ${c.id} "${v.label}" ${look}: ${what} ${best.toFixed(2)} / ${it.min}`;
+            if (best + 1e-9 < it.min && it.legacy && c.meta.contract === 2) {  // a legacy component under test (--ids) is never excused
+ legacy++; out.push(`LEGACY ${line} (inside ${it.c}, not on the contract yet: reported, not failed)`); }
+            else if (best + 1e-9 < it.min) { fails++; out.push(`FAIL ${line}`); } else if (V) out.push(`ok   ${line}`);
+          }
+        };
+        measure(first ? 'built light' : 'built dark');
+        test('look', `${then},-1`); settle();
+        measure(then ? 'dark -> light live' : 'light -> dark live');
+        m._fw_stage_free(st);
+        m.__t = t;
+      }
+    }
+  }
+}
+for (const l of out) console.log(l);
+console.log(`pixel contrast: ${checks} checks, ${fails} failed, ${legacy} in legacy parts (${DENS.join(' + ')}${IDS ? `, ${IDS.join(',')}` : ', every contract component'})`);
+process.exit(fails ? 1 : 0);

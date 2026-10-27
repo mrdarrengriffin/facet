@@ -135,6 +135,7 @@
 
 namespace fw {
 namespace spec {
+bool header_slot_ok(const char *name);  // components/header.cpp SLOTS: the slots a spec node may name
 // set by the device runtime while it builds the root of its stack (core/device.cpp show): the root screen has no Back
 // (nowhere to go back to; the panel's root is Home, which has none anyway; the docs demo a screen as a device's root)
 inline bool at_root = false;
@@ -480,7 +481,10 @@ inline void check_screen(ArduinoJson::JsonVariantConst s, size_t bytes, Errs &e)
     const std::string c = n["c"] | "";
     if (n["in"].is<const char *>()) {  // into the header row
       if (strcmp(n["in"] | "", "header")) err(e, p + ".in", "bad_in", "in: \"header\" or an earlier layout node");
-      if (!n["slot"].isNull()) err(e, p + ".slot", "bad_in", "the header has no slots");
+      const std::string hs = n["slot"] | "";
+      if (!n["slot"].isNull() && !header_slot_ok(hs.c_str()))
+        err(e, p + ".slot", "bad_in", hs == "start" ? "the header has no start slot (Back is fixed at the start): use slot end"
+                                                   : "the header's slots are title and end");
     } else if (!n["in"].isNull()) {  // into an earlier layout node's slot
       const int k = n["in"] | -1, sl = n["slot"] | 0;
       const std::string kc = k >= 0 && k < i - 1 ? (nodes[k]["c"] | "") : "";
@@ -1328,15 +1332,26 @@ inline lv_obj_t *box(lv_obj_t *parent) {
 // the header row of the spec screen being built (nullptr outside a build): a node may put its own controls in it,
 // before the screen chrome, while it builds (docs header({right: [...]}): the Calendar's Agenda | Month + calendars
 // button). Only during its build; the header is the screen's, so they go with the screen.
+// the Header's slot "title" | "end" (components/header.cpp SLOTS; nullptr if `header` is not a Header or no such slot)
+lv_obj_t *header_slot(lv_obj_t *header, const char *name);
+int header_tail(lv_obj_t *end);       // how many of the end slot's last items the Header built itself (Home's settings ...)
+void header_hide_time(lv_obj_t *o);   // a control takes the time's place (o = the Header or its end slot)
+// the Header itself while a spec screen builds (building_header() = its END slot, where C++ views put their controls)
+inline lv_obj_t *&building_header_root() {
+  static lv_obj_t *h = nullptr;
+  return h;
+}
 inline lv_obj_t *&building_header() {
   static lv_obj_t *h = nullptr;
   return h;
 }
-// `item`, just built into building_header(), goes before the screen chrome (the time stays at the right edge)
+// `item`, just built into building_header() (the end slot), goes before the Header's own end items (Home's settings
+// button, header actions); the time is after the slot anyway
 inline void header_place(lv_obj_t *item) {
-  lv_obj_t *h = item ? lv_obj_get_parent(item) : nullptr;
-  const uint32_t n = h ? lv_obj_get_child_count(h) : 0;
-  if (n >= 2) lv_obj_move_to_index(item, (int32_t) n - 2);
+  lv_obj_t *e = item ? lv_obj_get_parent(item) : nullptr;
+  const int n = e ? (int) lv_obj_get_child_count(e) : 0, k = n - 1 - header_tail(e);
+  if (k >= 0 && k < n - 1) lv_obj_move_to_index(item, k);
+  if (e) lv_obj_remove_flag(e, LV_OBJ_FLAG_HIDDEN);  // an empty end slot is hidden (no gap): it has an item now
 }
 // a header label's width = its text rounded up to the grid (docs fit8), so what follows it stays on the grid; measured
 // from the text (the header is not laid out yet while the screen builds)
@@ -1477,7 +1492,7 @@ inline lv_obj_t *build(lv_obj_t *parent, const std::string &id, Props opened, st
   const std::string layout = doc["layout"] | "list";
   const fx::Page pg = fx::page(s->root, layout == "center" ? "center" : layout == "cards" ? "cards" : "list");
   if (lv_obj_t *h = ha::bound(pg.head, "header", hd.as<Props>()))  // a bound label follows the entity's name
-    building_header() = h;
+  { building_header_root() = h; building_header() = header_slot(h, "end"); }
   lv_obj_t *c = pg.body;
   size_t ni = 0;
   bool prev_row = true;  // the last node placed straight in the list column was a row
@@ -1503,13 +1518,22 @@ inline lv_obj_t *build(lv_obj_t *parent, const std::string &id, Props opened, st
     }
     lv_obj_t *into = c;  // "in": an earlier layout node's slot, or the header row
     const bool in_hdr = nd["in"].is<const char *>() && building_header();
-    if (in_hdr) into = building_header();
+    const std::string hslot = nd["slot"] | "end";  // "in": "header" with no slot = the end slot, before the chrome
+    if (in_hdr) {
+      into = header_slot(building_header_root(), hslot.c_str());
+      if (!into) into = building_header();
+      if (hslot == "title")  // a node in the title REPLACES the label (the first one only removes it)
+        if (lv_obj_t *l = lv_obj_get_child(into, 0)) if (lv_obj_check_type(l, &lv_label_class)) lv_obj_delete(l);
+    }
     const int k = nd["in"] | -1;
     if (k >= 0 && k < n_orig && orig_obj[k])
       if (lv_obj_t *sl = slot_of(orig_obj[k], nd["slot"] | 0)) into = sl;
     n.obj = ha::bound(into, n.comp.c_str(), p.as<Props>());
     if (!n.obj) continue;
-    if (in_hdr) header_place(n.obj);
+    if (in_hdr) {
+      if (hslot == "end") header_place(n.obj);
+      lv_obj_remove_flag(into, LV_OBJ_FLAG_HIDDEN);  // an empty start / end slot is hidden (no gap)
+    }
     if (ni - 1 < orig.size()) orig_obj[orig[ni - 1]] = n.obj;
     if (into != c && !in_hdr) {  // a full-width node (list row, section header) in a narrower slot: the slot's width
       const int32_t sw = lv_obj_get_style_width(into, LV_PART_MAIN), w = lv_obj_get_style_width(n.obj, LV_PART_MAIN);
@@ -1544,6 +1568,7 @@ inline lv_obj_t *build(lv_obj_t *parent, const std::string &id, Props opened, st
     s->nodes.push_back(std::move(n));
   }
   building_header() = nullptr;
+  building_header_root() = nullptr;
   s->timer = lv_timer_create(tick, 20, s);
   return s->root;
 }

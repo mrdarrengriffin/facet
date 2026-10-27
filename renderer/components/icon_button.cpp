@@ -1,170 +1,133 @@
-// Icon button: the Facet icon-only button (docs: Components > Buttons > Icon button, @facet/ui iconButton()). Three
-// styles, each its own size (layout tokens in space.json, glyph = an icon size token the manifest ships, never scaled):
-//   play    lay::ibtn_play (96 / 64) round, accent fill, on-accent glyph ic::feature (48 / 32); pressed = accent-press;
-//           active (= playing) = the pause glyph + a stroke::focus accent ring touch::focus_offset outside (docs
-//           focus-offset-play 8 / 4 = the same values). The play style always shows play / pause (only they ship at
-//           ic::feature); a tap toggles active: event "toggle" play / pause + sound toggle-on / toggle-off.
-//   round   lay::ibtn_round (80 / 52) round, surface + 1 px line border, text glyph ic::glyph (32 / 20); pressed =
-//           surface-press + line-hi; active = line-hi border + accent-text glyph
-//   square  lay::ibtn_square (48 / 32 = touch::min) radius rad::square, look as round (active too: line-hi + accent-text,
-//           Darren 2026-10-21)
-// disabled (USER_1, Button rule): play = accent-dim fill + text-dim glyph (as Button primary; docs text-mute fails
-// 3:1 there), round / square = text-mute glyph; no press look, no ring; finger down = "blocked" + sound error.
-// Unavailable (states.json): the same disabled look (an icon button has no room for the word), blocked detail
-// "unavailable".
-// Same press / sound / state model as Button: CHECKED = active, Motion press / release colour transitions, sounds only
-// on a real tap (CLICKED). Tap (round / square) = event "tap" (detail = icon) + sound tap.
-// Internal prop `role` (not in the playground): "back" = the Back button (components/back_button.cpp builds this
-// component): side touch::back, event "back" + sound back. "settings" = the Settings button of the screen chrome
-// (components/screen_chrome.cpp): square, side lay::chrome_btn, the screen-settings icon at ic::icon (docs Home
-// settingsButton(): screenIcon('settings', 24) in the 48 square), tap = event "navigate" (detail settings) + sound open;
-// "shortcut" = the same square holding another screen (a Home's header actions, e.g. the Timer): internal props icon
-// (a screen icon at ic::icon, "screen-timer") and to (the page id), tap = event "navigate" (detail = to) + sound open.
-// active = "you are in Settings" (the square's active border; the icon keeps its Icons-page look, see glyph()). Hit area: at least touch::min each way (ext click area when
-// the drawn box is smaller; no style is today). Pairs: colour.json contrast section "icon_button".
+// Icon button: the Facet icon-only button (docs: Components > Buttons > Icon button, @facet/ui iconButton()). CONTRACT
+// v2 (renderer/CONTRACT.md, Header round 3, 2026-10-27): token names only through core/fx.h. Three styles, each its own
+// size (square:<layout token> = exactly that square, a touch target; C7 note below):
+//   play    layout:ibtn-play (96 / 64) round, bg:accent, glyph "feature" (48 / 32) in on-accent; pressed =
+//           pressed-accent; active (= playing) = the pause glyph + outline:focus-ring (stroke focus, touch focus-offset
+//           outside the box: decor, C14). The play style always shows play / pause; a tap toggles active: event
+//           "toggle" play / pause + sound toggle-on / toggle-off.
+//   round   layout:ibtn-round (80 / 52) round, bg:surface + border:line, glyph "glyph" (32 / 20) in text; pressed =
+//           pressed-surface + pressed-line; active = on-line border + on-ink glyph
+//   square  layout:ibtn-square (48 / 32 = touch:min) radius:square, look as round (active too, Darren 2026-10-21)
+// A screen icon (icon "settings" = screen-settings, any "screen-*") sits at the icon size (24 / 16) in the square
+// (docs Home settingsButton()). A multi-part icon (an accent part) looks exactly as on the Icons page in every state:
+// its ink follows rest / pressed / disabled, active shows by the border alone (the active ink would merge with the
+// accent part), pressed = bg:pressed-tint (the accent part keeps 3:1 on it).
+// disabled (fw::st::OFF): play = disabled-accent fill + disabled-on-fill glyph; round / square = disabled-ink glyph; no
+// press look, no ring; finger down = "blocked" + sound error. Unavailable = the same look (no room for the word),
+// blocked detail "unavailable".
+// Taps: fw::st::on_tap; round / square = event "tap" (detail = icon) + sound tap. Internal prop `role` (not in the
+// playground): "back" (components/back_button.cpp: the Header's Back) = event "back" + sound back; "settings" = event
+// "navigate" settings + sound open (Home's settings Icon button in the Header's end slot); "shortcut" = navigate `to`
+// + sound open (a Home's header shortcut, icon screen-<kind>).
+// C7 note: a button is a fixed touch target by design: its root is exactly its style's square (a layout token through
+// a shared style, so fx::tune and the Layout lab move it), never a width from its parent, never a call.
+// Steps: none. Bleed: none. States: default, pressed, active, active-pressed, disabled, unavailable; n/a: loading,
+// unknown, empty, error (no data of its own). Update path: the state in place (LVGL state transitions, silent);
+// style / icon / role = the contents again (fw::refill). Pairs: colour.json contrast section "icon_button".
 #include "fw.h"
+#include "fx.h"
 
 namespace {
 constexpr lv_state_t ST_OFF = fw::st::OFF;  // disabled (LVGL sends no events to LV_STATE_DISABLED; see Button)
-
-struct Look { lv_color_t bg; lv_opa_t bd_opa; lv_color_t bd; lv_color_t fg; };
-struct Style { Look normal, pressed, active, active_pressed, off; };
-
-// state colours = the roles of tokens/states.json (fw::st::<state>_<role>), resting looks = colour tokens
-Style style_of(bool play, bool square) {
-  using namespace fw::st;
-  const fw::Theme &t = *fw::T;
-  const lv_opa_t C = LV_OPA_COVER, N = LV_OPA_TRANSP;
-  if (play)
-    return {{t.accent, N, t.accent, t.on_accent}, {pressed_accent(t), N, t.accent, t.on_accent},
-            {t.accent, N, t.accent, t.on_accent}, {pressed_accent(t), N, t.accent, t.on_accent},
-            {disabled_accent(t), N, t.accent, disabled_on_fill(t)}};
-  return {{t.surface, C, t.line, t.text}, {pressed_surface(t), C, pressed_line(t), t.text},
-          {t.surface, C, on_line(t), on_ink(t)}, {pressed_surface(t), C, pressed_line(t), on_ink(t)},  // square too (Darren 2026-10-21)
-          {t.surface, C, t.line, disabled_ink(t)}};
-}
-
-const lv_style_prop_t TR_PROPS[] = {LV_STYLE_BG_COLOR, LV_STYLE_BORDER_COLOR, LV_STYLE_IMAGE_RECOLOR, LV_STYLE_PROP_INV};
-const lv_style_transition_dsc_t *tr(bool pressed) {  // LVGL runs the transition of the state being entered
-  static lv_style_transition_dsc_t d[2];
-  static bool ready = false;
-  if (!ready) { fw::st::press_transitions(d, TR_PROPS); ready = true; }  // states.json pressed motion
-  return &d[pressed];
-}
-const lv_style_selector_t SEL[5] = {0, LV_STATE_PRESSED, LV_STATE_CHECKED, LV_STATE_CHECKED | LV_STATE_PRESSED, ST_OFF};
-const bool PRESSED_SEL[5] = {false, true, false, true, false};
-const Look &look(const Style &s, int i) {
-  const Look *l[5] = {&s.normal, &s.pressed, &s.active, &s.active_pressed, &s.off};
-  return *l[i];
-}
-
-// a multi-part icon (a screen icon's accent part, weather colours): it looks exactly as on the Icons page in every
-// state (Darren 2026-10-22: never a flat recolour). Its own parts keep their colours (fw::icon); the ink follows the
-// button's rest / pressed / disabled ink, but active keeps the resting ink: the active accent-text ink would merge
-// with the accent part into one flat colour, so active shows by the border alone
-bool multi_part(lv_obj_t *icon) {
-  for (uint32_t i = 0; icon && i < lv_obj_get_child_count(icon); i++)
-    if ((uintptr_t) lv_obj_get_user_data(lv_obj_get_child(icon, (int32_t) i)) != fw::ic::R_ink) return true;
-  return false;
-}
-lv_obj_t *glyph(lv_obj_t *b, const char *name, fw::ic::Size size, const Style &s) {
-  lv_obj_t *o = fw::icon(b, name, size, s.normal.fg);
-  const bool multi = multi_part(o);
-  for (int i = 0; o && i < 5; i++) {
-    const int k = multi && i == 2 ? 0 : multi && i == 3 ? 1 : i;  // active (+ pressed) -> rest (+ pressed) ink
-    fw::icon_colour(o, look(s, k).fg, SEL[i], tr(PRESSED_SEL[i]));
-  }
-  if (o) lv_obj_remove_flag(o, LV_OBJ_FLAG_CLICKABLE);
-  return o;
-}
+constexpr lv_state_t P = LV_STATE_PRESSED, C = LV_STATE_CHECKED;
 
 enum Role : uint8_t { R_TAP, R_PLAY, R_BACK, R_SETTINGS, R_SHORTCUT };
 struct Data { Role role; char icon[24]; char to[16]; };
-}  // namespace
 
-namespace {
-// structural props (a change = the contents again, fw::refill); the state moves in place
 std::string sig(fw::Props p) {
   return std::string(p["style"] | "round") + "|" + (p["icon"] | "next") + "|" + (p["role"] | "");
 }
-// the forced state from props; animate = the state looks fade (fw::st::set_state; a forced press shows at once).
-// unavailable: states.json, no room for the word, so the disabled look
 void set_state(lv_obj_t *b, const char *state, bool animate) {
   const bool pressed = !strcmp(state, "pressed") || !strcmp(state, "active-pressed");
   const bool active = !strcmp(state, "active") || !strcmp(state, "active-pressed");
-  if (pressed != lv_obj_has_state(b, LV_STATE_PRESSED)) lv_obj_set_state(b, LV_STATE_PRESSED, pressed);
-  fw::st::set_state(b, LV_STATE_CHECKED, active, animate);
+  if (pressed != lv_obj_has_state(b, P)) lv_obj_set_state(b, P, pressed);
+  fw::st::set_state(b, C, active, animate);
   fw::st::set_state(b, ST_OFF, !strcmp(state, "unavailable") || !strcmp(state, "disabled"), animate);
 }
-// what a tap reports (user data, made once in build)
+const char *role_of(fw::Props p) { return p["role"] | ""; }
+std::string icon_of(fw::Props p) {  // the icon this button shows
+  const std::string r = role_of(p), ic = p["icon"] | "next";
+  if (r == "back") return "back";
+  if (r == "settings" || ic == "settings") return "screen-settings";
+  if (r == "shortcut") return ic.rfind("screen-", 0) == 0 ? ic : "screen-timer";
+  return ic;
+}
 void data(lv_obj_t *b, fw::Props p) {
   auto *d = (Data *) lv_obj_get_user_data(b);
   if (!d) return;
-  const bool back = !strcmp(p["role"] | "", "back"), set = !strcmp(p["role"] | "", "settings"), sc = !strcmp(p["role"] | "", "shortcut");
-  const bool play = !back && !set && !sc && !strcmp(p["style"] | "round", "play");
-  const char *ic = back ? "back" : set ? "settings" : (p["icon"] | "next");
-  d->role = back ? R_BACK : set ? R_SETTINGS : sc ? R_SHORTCUT : play ? R_PLAY : R_TAP;
+  const std::string r = role_of(p);
+  const bool play = r.empty() && !strcmp(p["style"] | "round", "play");
+  d->role = r == "back" ? R_BACK : r == "settings" ? R_SETTINGS : r == "shortcut" ? R_SHORTCUT : play ? R_PLAY : R_TAP;
   snprintf(d->to, sizeof d->to, "%s", p["to"] | "");
-  snprintf(d->icon, sizeof d->icon, "%s", !strcmp(p["state"] | "default", "unavailable") ? "unavailable" : play && !back ? "play" : ic);
+  const std::string ic = icon_of(p);
+  snprintf(d->icon, sizeof d->icon, "%s", !strcmp(p["state"] | "default", "unavailable") ? "unavailable" : play ? "play"
+           : ic == "screen-settings" ? "settings" : ic.c_str());
+}
+// the glyph: an icon centred in the button (play and pause on top of each other), its ink per state
+lv_obj_t *glyph(lv_obj_t *b, const char *name, const char *size, bool play) {
+  lv_obj_t *g = fx::icon(b, name, size, play ? "fg:on-accent" : "fg:text");
+  if (!g) return nullptr;
+  fx::use(g, "over-cell");
+  lv_obj_remove_flag(g, LV_OBJ_FLAG_CLICKABLE);
+  const bool multi = fx::icon_multi(g);
+  fx::icon_use(g, "fade-release-ink");
+  fx::icon_use(g, "fade-press-ink", P);
+  if (!play && !multi) { fx::icon_use(g, "ink:on-ink", C); fx::icon_use(g, "ink:text", C | P); }
+  fx::icon_use(g, play ? "ink:disabled-on-fill" : "ink:disabled-ink", ST_OFF);
+  return g;
 }
 void fill(lv_obj_t *b, fw::Props p) {
-  const char *st = p["style"] | "round";
-  const char *state = p["state"] | "default";
-  const char *role = p["role"] | "";
-  const bool sc = !strcmp(role, "shortcut"), set = !strcmp(role, "settings") || sc;  // a shortcut = the settings square
-  const bool back = !strcmp(role, "back") || set;  // all: the header's squares
-  const bool play = !strcmp(st, "play"), square = back || !strcmp(st, "square");
-  const char *ic = sc ? (p["icon"] | "screen-timer") : set ? "screen-settings" : back ? "back" : (p["icon"] | "next");
-  const Style s = style_of(play && !back, square);
-  const int side = set ? fw::lay::chrome_btn : back ? fw::touch::back : play ? fw::lay::ibtn_play : square ? fw::lay::ibtn_square : fw::lay::ibtn_round;
+  const std::string r = role_of(p), ic = icon_of(p);
+  const bool play = r.empty() && !strcmp(p["style"] | "round", "play");
+  const bool square = !r.empty() || !strcmp(p["style"] | "round", "square");
+  const char *side = play ? "ibtn-play" : square ? "ibtn-square" : "ibtn-round";
 
   lv_obj_remove_style_all(b);
   fw::shape(b, sig(p));
   lv_obj_add_flag(b, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_STATE_TRICKLE));
   lv_obj_remove_flag(b, LV_OBJ_FLAG_SCROLLABLE);
-  lv_obj_set_size(b, side, side);
-  if (side < fw::touch::min) lv_obj_set_ext_click_area(b, (fw::touch::min - side + 1) / 2);
-  lv_obj_set_style_radius(b, square ? fw::rad::square : fw::rad::round, 0);
-  lv_obj_set_style_border_width(b, fw::stroke::hair, 0);  // 1 px border on every style (transparent on play)
-  lv_obj_set_style_bg_opa(b, LV_OPA_COVER, 0);
-  for (int i = 0; i < 5; i++) {
-    const Look &l = look(s, i);
-    lv_obj_set_style_bg_color(b, l.bg, SEL[i]);
-    lv_obj_set_style_border_color(b, l.bd, SEL[i]);
-    lv_obj_set_style_border_opa(b, l.bd_opa, SEL[i]);
-    lv_obj_set_style_transition(b, tr(PRESSED_SEL[i]), SEL[i]);
+  for (const char *t : {"hug", "over", "fade-release"}) fx::use(b, t);
+  fx::use(b, (std::string("square:") + side).c_str());  // exactly the style's square (layout token)
+  fx::use(b, square ? "radius:square" : "radius:round");
+  fx::use(b, "fade-press", P);
+  if (play) {
+    fx::use(b, "bg:accent");
+    fx::use(b, "bg:pressed-accent", P);
+    fx::focus_ring(b);  // active: the focus ring outside the box (decor, C14), hidden while disabled
+    fx::use(b, "bg:disabled-accent", ST_OFF);
+  } else {
+    fx::use(b, "bg:surface");
+    fx::use(b, "border:line");
+    fx::use(b, "bg:pressed-surface", P);
+    fx::use(b, "border:pressed-line", P);
+    fx::use(b, "border:on-line", C);
+    fx::use(b, "bg:pressed-surface", C | P);
+    fx::use(b, "border:pressed-line", C | P);
+    fx::use(b, "bg:surface", ST_OFF);
+    fx::use(b, "border:line", ST_OFF);
   }
-  if (play && !back) {  // active: the focus ring outside the box (states.json focus, Button primary's ring)
-    fw::focus_ring(b);  // the focus ring atom (core/atoms.h): shown while CHECKED, hidden when disabled / unavailable
+  if (play) {  // play shows play, active (CHECKED, trickled) swaps to pause by opacity (no rebuild on a tap)
+    lv_obj_t *pl = glyph(b, "play", "feature", true), *pa = glyph(b, "pause", "feature", true);
+    for (lv_obj_t *o : {pl, pa}) if (o) lv_obj_add_flag(o, LV_OBJ_FLAG_IGNORE_LAYOUT);  // on top of each other ("over-cell")
+    if (pl) { fx::use(pl, "transp", C); fx::use(pl, "opaque", ST_OFF); }
+    if (pa) { fx::use(pa, "transp"); fx::use(pa, "opaque", C); fx::use(pa, "transp", ST_OFF); }
+  } else if (lv_obj_t *g = glyph(b, ic.c_str(), ic.rfind("screen-", 0) == 0 ? "icon" : "glyph", false)) {
+    if (fx::icon_multi(g)) { fx::use(b, "bg:pressed-tint", P); fx::use(b, "bg:pressed-tint", C | P); }
   }
-
-  // glyph centred; play shows play, active (CHECKED, trickled) swaps to pause by opacity (no rebuild on a tap)
-  if (play && !back) {
-    lv_obj_t *pl = glyph(b, "play", fw::ic::feature, s), *pa = glyph(b, "pause", fw::ic::feature, s);
-    if (pl) { lv_obj_center(pl); lv_obj_set_style_opa(pl, LV_OPA_TRANSP, LV_STATE_CHECKED); lv_obj_set_style_opa(pl, LV_OPA_COVER, ST_OFF); }
-    if (pa) { lv_obj_center(pa); lv_obj_set_style_opa(pa, LV_OPA_TRANSP, 0); lv_obj_set_style_opa(pa, LV_OPA_COVER, LV_STATE_CHECKED); lv_obj_set_style_opa(pa, LV_OPA_TRANSP, ST_OFF); }
-  } else if (lv_obj_t *g = glyph(b, ic, set ? fw::ic::icon : fw::ic::glyph, s)) {
-    lv_obj_center(g);
-    if (multi_part(g)) {  // pressed = the press tint (Card / List row fill): the accent part keeps 3:1 on it
-      lv_obj_set_style_bg_color(b, fw::st::pressed_tint(*fw::T), LV_STATE_PRESSED);
-      lv_obj_set_style_bg_color(b, fw::st::pressed_tint(*fw::T), LV_STATE_CHECKED | LV_STATE_PRESSED);
-    }
-  }
-
-  set_state(b, state, false);
+  set_state(b, p["state"] | "default", false);
   data(b, p);
-
-
 }
 }  // namespace
 
 FW_COMPONENT(icon_button, "Icon button", "components", R"({
   "about": "A button that is only an icon: a round play/pause button, or round and square icon buttons.",
+  "contract": 2,
   "frame": [160, 128],
-  "icons": ["play@feature", "pause@feature", "play@glyph", "next@glyph", "prev@glyph", "plus@glyph", "close@glyph", "check@glyph", "back@glyph"],
+  "min": ["layout:ibtn-square", "layout:ibtn-square"],
+  "icons": ["play@feature", "pause@feature", "play@glyph", "next@glyph", "prev@glyph", "plus@glyph", "close@glyph", "check@glyph", "back@glyph", "screen-settings@icon", "screen-timer@icon"],
   "props": [
     {"name": "style", "about": "The button's shape: play is the large round play and pause button, round is a smaller circle, square has rounded corners.", "type": "select", "options": ["play", "round", "square"], "default": "round"},
-    {"name": "icon", "about": "The icon on the button, such as next, previous, play or close.", "type": "select", "options": ["next", "prev", "play", "plus", "close", "check", "back"], "default": "next"},
+    {"name": "icon", "about": "The icon on the button, such as next, previous, play or close.", "type": "select", "options": ["next", "prev", "play", "plus", "close", "check", "back", "settings"], "default": "next"},
     {"name": "state", "about": "How the button looks: default ready to tap, pressed while held, active when it is switched on, active-pressed while the active one is held, disabled when it cannot be used, or unavailable when its device cannot be reached.", "type": "select", "options": ["default", "pressed", "active", "active-pressed", "disabled", "unavailable"], "default": "default"}
   ],
   "variants": [
@@ -186,11 +149,15 @@ FW_COMPONENT(icon_button, "Icon button", "components", R"({
     {"label": "square · disabled", "props": {"style": "square", "icon": "plus", "state": "disabled"}},
     {"label": "square · close", "props": {"style": "square", "icon": "close"}},
     {"label": "play · unavailable", "props": {"style": "play", "state": "unavailable"}},
-    {"label": "round · unavailable", "props": {"state": "unavailable"}}
+    {"label": "round · unavailable", "props": {"state": "unavailable"}},
+    {"label": "square · settings", "props": {"style": "square", "icon": "settings"}},
+    {"label": "square · settings · pressed", "props": {"style": "square", "icon": "settings", "state": "pressed"}},
+    {"label": "square · back", "props": {"style": "square", "icon": "back"}}
   ]
 })") {
   lv_obj_t *b = lv_obj_create(parent);
-  auto *d = new Data{R_TAP, {}};
+  fx::name(b, "icon_button");
+  auto *d = new Data{R_TAP, {}, {}};
   lv_obj_set_user_data(b, d);
   fill(b, p);
   fw::st::on_tap(b, [](lv_event_t *e) {  // blocked on finger down, a real tap on CLICKED (states.json)

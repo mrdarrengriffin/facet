@@ -159,11 +159,15 @@ void fill(lv_obj_t *box, fw::Props p) {
     lv_obj_remove_style_all(s);
     lv_obj_add_flag(s, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_STATE_TRICKLE));
     lv_obj_remove_flag(s, LV_OBJ_FLAG_SCROLLABLE);
-    if (i > 0) {  // the separator (docs border-left)
-      lv_obj_set_style_border_width(s, hair, 0);
-      lv_obj_set_style_border_side(s, LV_BORDER_SIDE_LEFT, 0);
-      lv_obj_set_style_border_color(s, t.line, 0);
-      lv_obj_set_style_border_opa(s, LV_OPA_COVER, 0);
+    if (i > 0) {  // the separator (docs border-left): a hairline child at the segment's left edge, under the plates
+      // (a border would shrink the segment's content box and put the plates, which cover it, outside it: P2)
+      lv_obj_t *sep = lv_obj_create(s);
+      lv_obj_remove_style_all(sep);
+      lv_obj_remove_flag(sep, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
+      lv_obj_add_flag(sep, LV_OBJ_FLAG_IGNORE_LAYOUT);
+      lv_obj_set_size(sep, hair, h);
+      lv_obj_set_style_bg_color(sep, t.line, 0);
+      lv_obj_set_style_bg_opa(sep, LV_OPA_COVER, 0);
     }
     lv_obj_t *l = fw::text(s, fw::ty::label, labels[i].c_str(), t.text_dim);
     lv_obj_remove_flag(l, LV_OBJ_FLAG_CLICKABLE);
@@ -193,11 +197,13 @@ void fill(lv_obj_t *box, fw::Props p) {
     lv_obj_t *s = segs[i];
     lv_obj_set_pos(s, x, 0);
     lv_obj_set_size(s, w, h);
-    lv_obj_center(labs[i]);
-    // plates cover the whole segment incl. its separator (children start after the separator: x = -hair). On the
+    // centred in the room right of the separator (as with the docs border-left): hair + (w - hair) / 2 from the left
+    const int sx = i > 0 ? hair : 0;
+    lv_obj_align(labs[i], LV_ALIGN_CENTER, sx + (w - sx) / 2 - w / 2, 0);
+    // plates cover the whole segment incl. its separator (drawn under them at x = 0). On the
     // box's outer sides the line-hi ring is 2 hairlines wide: the box line covers the outer one, so the chosen ring
     // shows just inside the box line (docs outline-offset -hair); on the separator sides it is 1 hairline
-    const int px0 = i > 0 ? -hair : 0, pw = w;
+    const int px0 = 0, pw = w;
     const auto TB = (lv_border_side_t) (LV_BORDER_SIDE_TOP | LV_BORDER_SIDE_BOTTOM);
     if (n == 1) plate(s, px0, pw, h, R, LV_BORDER_SIDE_FULL, ring, true);
     else if (i == 0) {

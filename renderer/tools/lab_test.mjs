@@ -12,12 +12,26 @@ const i = process.argv.indexOf('--build');
 const BUILD = i > 0 ? process.argv[i + 1] : process.env.FW_OUT || env.FW_OUT || join(HERE, 'out');
 const CARD = ['layout:card-pad', 'radius:card', 'stroke:hair'];   // must repaint the Card
 const PAGE = ['layout:inset', 'layout:gutter', 'layout:top', 'layout:header-gap', 'squeeze'];  // page only
-// each mounted contract component: the tokens that must repaint it live, the ones that must not be listed for it
-const MOUNTS = [['card', { opening: false }, CARD, PAGE],
-  ['cells', { cells: 'c,c,c,c,c' }, ['layout:gutter', 'layout:tile-w', 'layout:tile-h', ...CARD], ['layout:inset', 'layout:top', 'layout:header-gap', 'squeeze']]];
+// Header round 3 (2026-10-27): EVERY contract component (meta "contract": 2) is mounted and must list >= 1 tunable token
+// that visibly changes it, and each listed token must repaint it live and come back (C23 / P3 for all). Some have
+// extra must / must-not lists (below); props = what the mount needs to show the parts that read the tokens.
+// layout:row: read, but alone on a stage the row is centred (only a Page's head shows it): header.test.mjs checks it
+const HEADER = ['layout:back-gap', 'layout:header-item-gap'];
+const EXTRA = { card: [{ opening: false }, CARD, PAGE],
+  cells: [{ cells: 'c,c,c,c,c' }, ['layout:gutter', 'layout:tile-w', 'layout:tile-h', ...CARD], ['layout:inset', 'layout:top', 'layout:header-gap', 'squeeze']],
+  header: [{ label: 'Weather', settings: true, sample: 'end-buttons' }, HEADER, PAGE],
+  icon_button: [{ style: 'square', icon: 'plus' }, ['layout:ibtn-square', 'radius:square', 'stroke:hair'], PAGE],
+  status_chip: [{}, ['layout:chip-h', 'radius:chip', 'space:2'], PAGE],
+  time: [{ time: '14:52', format: '12h' }, ['space:2'], PAGE] };
+const di = process.argv.indexOf('--den');
+const m0 = await (await import(pathToFileURL(join(BUILD, di > 0 ? process.argv[di + 1] : '1.5x', 'fw.mjs')).href)).default();
+m0._fw_init();
+const CONTRACT = JSON.parse(m0.UTF8ToString(m0._fw_meta())).map((c) => ({ ...c, meta: typeof c.meta === 'string' ? JSON.parse(c.meta) : c.meta }))
+  .filter((c) => c.section !== 'screens' && c.meta?.contract === 2).map((c) => c.id);
+const MOUNTS = CONTRACT.map((id) => [id, ...(EXTRA[id] || [{}, [], PAGE])]);
 let fails = 0;
 const ok = (cond, what) => { if (!cond) fails++; if (!cond || process.argv.includes('-v')) console.log(`${cond ? 'pass' : 'FAIL'}  ${what}`); };
-for (const den of ['1x', '1.5x']) {
+for (const den of di > 0 ? [process.argv[di + 1]] : ['1x', '1.5x']) {
   const m = await (await import(pathToFileURL(join(BUILD, den, 'fw.mjs')).href)).default();
   m._fw_init();
   const W = 480, H = 360, st = m._fw_stage(W, H);
@@ -36,6 +50,7 @@ for (const den of ['1x', '1.5x']) {
   tick();
   ok(hash() === base, `${den} ${id} uses + probe leave the mounted component as it was`);
   const listed = uses.filter((n) => seen[n] === 1), quiet = uses.filter((n) => seen[n] !== 1);
+  ok(listed.filter((n) => n !== 'squeeze').length >= 1, `${den} ${id} lists >= 1 tunable token that visibly changes it (${listed.join(', ') || 'none'})`);
   for (const n of MUST) ok(listed.includes(n), `${den} ${id} ${n}: listed`);
   for (const n of NOT) ok(!listed.includes(n), `${den} ${id} ${n}: page only, not listed`);
   if (quiet.length) console.log(`note  ${den} ${id} read but no visible change here: ${quiet.join(', ')}`);
@@ -43,7 +58,7 @@ for (const den of ['1x', '1.5x']) {
   for (const n of listed.filter((x) => x !== 'squeeze')) {
     const [, , now, kind, lo, hi] = toks.get(n);
     // a fixed size: up by half, else down by a quarter (a floor such as a Cells min-w shows only when it crosses a column)
-    const vs = kind === 'look' ? [now < hi ? hi : lo] : [now + Math.max(4, now >> 1), Math.max(4, now - Math.max(4, now >> 2))];
+    const vs = kind === 'look' ? [now < hi ? hi : lo] : [now + Math.max(4, now >> 1), Math.max(4, now - Math.max(4, now >> 2)), Math.max(4, (now >> 3) << 2)];  // up by half, down a quarter, half (a cap such as a max width shows only below the stage)
     let moved = '';
     for (const v of vs) {
       lab('tune', `${n}=${v}`); tick();

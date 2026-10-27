@@ -648,10 +648,21 @@ int label_cut(lv_obj_t *l, int *right) {
     const int bottom = c.y1 + line * pitch + asc - g.ofs_y;  // the glyph's lowest ink row + 1
     cut = LV_MAX(cut, bottom - (LV_MAX(a.y2, c.y2) + 1));  // LVGL cuts at the content box bottom (fw::text_style)
   }
-  if (lv_label_get_long_mode(l) == LV_LABEL_LONG_MODE_CLIP) {
+  if (lv_label_get_long_mode(l) == LV_LABEL_LONG_MODE_CLIP) {  // the INK cut at either side (a glyph's advance may be
+    // wider than its box, as the Time's colon cell: its ink is what must fit), the line placed by its text align
     lv_point_t sz;
-    lv_text_get_size(&sz, t, f, lv_obj_get_style_text_letter_space(l, LV_PART_MAIN), 0, LV_COORD_MAX, LV_TEXT_FLAG_NONE);
-    *right = LV_MAX(0, sz.x - lv_area_get_width(&c));
+    const int ls = lv_obj_get_style_text_letter_space(l, LV_PART_MAIN), w = lv_area_get_width(&c);
+    lv_text_get_size(&sz, t, f, ls, 0, LV_COORD_MAX, LV_TEXT_FLAG_NONE);
+    const lv_text_align_t al = lv_obj_get_style_text_align(l, LV_PART_MAIN);
+    int x = al == LV_TEXT_ALIGN_CENTER ? (w - sz.x) / 2 : al == LV_TEXT_ALIGN_RIGHT ? w - sz.x : 0, lo = 0, hi = 0;
+    for (uint32_t k = 0; t[k];) {
+      const uint32_t ch = lv_text_encoded_next(t, &k);
+      if (lv_font_get_glyph_dsc(f, &g, ch, 0)) {
+        if (g.box_w) { lo = LV_MIN(lo, x + g.ofs_x); hi = LV_MAX(hi, x + g.ofs_x + g.box_w - w); }
+        x += g.adv_w + ls;
+      }
+    }
+    *right = LV_MAX(0, LV_MAX(hi, -lo));
   }
   return cut;
 }

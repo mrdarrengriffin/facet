@@ -37,6 +37,8 @@ function ringDrag(t, f0, f1, ms) {
 }
 const deck = (tap = 'detail') => ({ v: 2, rev: 9, start: 'p', pages: [{ id: 'p', kind: 'home', name: 'Test', cards: [{ t: 'light', e: E, size: 's', tap, label: 'Desk lamp' }] }] });
 
+// the live clock's place, as the old Screen chrome box masked it (header-time-w x the header row, ending on the content edge)
+const clockMask = (t, den) => { const c = t.part('time'), h = t.part('header'), w = den === '1x' ? 48 : 72; return c && h ? { x: c.x + c.w - w, y: h.y, w, h: h.h } : null; };
 export default {
   id: 'light_screen', family: 'screens', about: 'The Light screen: header + the dial centred; states, HA calls, hold-off, flows, proofs.',
   tests: [
@@ -194,7 +196,7 @@ export default {
         ['onoff', ONOFF, { '': 'on', friendly_name: 'Hall', supported_color_modes: '["onoff"]' }], ['missing', 'light.nope', { '': '' }]];
       for (const light of [0, 1]) for (const [n, e, s] of cases) {
         t.ha.s[e] = { ...s }; await t.b.render('spec', { screen: 'light', entity: e, opening: false }, light); t.b.settle(1500); t.ha.push(); t.b.settle(1500);
-        out.push(...golden(t, 'light_screen', `${n}-${light ? 'light' : 'dark'}`, den, [t.part('screen_chrome')].filter(Boolean)));  // the live clock masked
+        out.push(...golden(t, 'light_screen', `${n}-${light ? 'light' : 'dark'}`, den, [clockMask(t, den)].filter(Boolean)));  // the live clock masked
       }
       t.eq(out, [], 'goldens');
     } },

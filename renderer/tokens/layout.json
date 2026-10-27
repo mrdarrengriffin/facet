@@ -72,6 +72,8 @@
         "1x": 48,
         "use": "the time slot at the header's right edge (docs layout clock-w)"
       },
+      "header-item-gap": {"v": 16, "1x": 16, "use": "between the header's items: title, the end items, the time (= the gutter today; its own token so a lab drag moves only the header)"},
+      "header-max-w": {"v": 656, "1x": 440, "use": "the widest the header row gets (= the content width: screen less 2 x inset; checked by gen_layout.mjs)"},
       "chrome-btn": {
         "v": 48,
         "1x": 32,
@@ -365,11 +367,7 @@
       },
       {
         "id": "header",
-        "size": "lay::content_w x lay::row at (inset, inset); Back button + lay::back_gap; the Screen chrome (lay::chrome_w) at the right end"
-      },
-      {
-        "id": "screen_chrome",
-        "size": "lay::header_time_w x lay::row, or with the settings button (Home) lay::chrome_w (derived: chrome-btn + gutter + header-time-w = 136 / 96); settings button lay::chrome_btn (48 / 32) square, icon ic::icon; time slot lay::header_time_w"
+        "size": "up to layout:header-max-w (= the content width) x layout:row at (inset, inset); Back (an Icon button) + layout:back-gap; the title; the end slot (any number of items, layout:header-item-gap apart); the Time (size header) last"
       },
       {
         "id": "card",

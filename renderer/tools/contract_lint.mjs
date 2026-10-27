@@ -13,6 +13,10 @@ const RULES = {
   theme: /\bfw::T\b|\bT->|\btheme_of\(|\bfw::Theme\b|\blv_color_(hex|make)\(/,
   draw: /\blv_draw_/,
   local: /\blv_obj_set_style_|\blv_style_init\(|\blv_obj_set_(size|width|height|pos|x|y)\(/,
+  // Header round 3 (2026-10-27): no colour / font / symbol types (C16) and no fixed size numbers (sizes are token
+  // NAMES through fx, so fx::tune and the Layout lab move them: C21, C23)
+  font: /\blv_font_|\bLV_SYMBOL_|\blv_color_t\b|\blv_color_(white|black|mix)\(/,
+  fixed: /\b(fw::)?(lay|sp|rad|stroke|touch|ic|ty)::[a-zA-Z_]/,
 };
 const mode = process.argv[2] || '--summary';
 const bad = [], legacy = {}, perComp = [];
