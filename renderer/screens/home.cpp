@@ -166,7 +166,6 @@ char card_node(Var cd, Var pages, int slot, ArduinoJson::JsonArray nodes) {
     }
     if (t != "page") bind(p, "state", e, "avail");
   } else if (comp_s == "readout") {
-    p["half"] = true;
     bind(p, "state", e, "state");
     sensor_icon(p, e);
     ArduinoJson::JsonObject tone = p["tone"].to<ArduinoJson::JsonObject>();

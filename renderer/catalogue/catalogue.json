@@ -4728,12 +4728,6 @@
      "about": "The colour of the state: text for normal, accent for something notable, warn for something to check, mute for quiet."
     },
     {
-     "name": "half",
-     "type": "bool",
-     "bindable": true,
-     "about": "Shows one readout on its own in half a card slot."
-    },
-    {
      "name": "bottom",
      "type": "select",
      "bindable": true,
@@ -4760,8 +4754,8 @@
     ]
    },
    "cost": {
-    "objects": 20,
-    "bytes_est": 3200
+    "objects": 22,
+    "bytes_est": 3520
    }
   },
   "room_tile": {
@@ -6533,5 +6527,5 @@
    }
   }
  },
- "hash": "969894e6"
+ "hash": "bcb99bfe"
 }
