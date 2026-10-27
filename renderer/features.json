@@ -94,10 +94,17 @@
     },
     {
       "id": "wip_parts",
-      "label": "Layout and status parts (in progress)",
+      "label": "Status parts (in progress)",
       "docs": false, "status": "wip", "firmware": false,
-      "components": ["split", "group", "column", "status_block", "level_bar", "placeholder"],
-      "roadmap": ["Split / Group layouts", "Status block", "Placeholder", "Level bar"]
+      "components": ["status_block", "level_bar", "placeholder"],
+      "roadmap": ["Status block", "Placeholder", "Level bar"]
+    },
+    {
+      "id": "retired",
+      "label": "Retired parts",
+      "docs": false, "status": "wip", "firmware": false,
+      "about": "Kept for reference, not shipped: Card grid (the Cells layout is the Home grid, Darren 2026-10-27).",
+      "components": ["card_grid"]
     },
     {
       "id": "thermostat",
