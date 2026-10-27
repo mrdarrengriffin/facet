@@ -364,7 +364,9 @@ void shape(lv_style_t *s, const char *n) {  // the structure styles: density onl
   } else if (k == "seg-part") {  // one segment: the box's height, its label + space 7 each side, the label centred
     // (the room is the label's margin, so the plates and the separator, which fill the segment, cover it all)
     lv_style_set_width(s, LV_SIZE_CONTENT); lv_style_set_height(s, lv_pct(100)); flex(s, LV_FLEX_FLOW_ROW, C, C, C);
-  } else if (k == "seg-label") { lv_style_set_margin_left(s, tok("space:7", sp::s7)); lv_style_set_margin_right(s, tok("space:7", sp::s7));
+  } else if (k == "seg-label") {  // space 7 each side; its text centred in its grid-rounded box (fx::fit_grid)
+    lv_style_set_margin_left(s, tok("space:7", sp::s7)); lv_style_set_margin_right(s, tok("space:7", sp::s7));
+    lv_style_set_text_align(s, LV_TEXT_ALIGN_CENTER);
   } else if (k == "seg-grow") { lv_style_set_width(s, 0); lv_style_set_flex_grow(s, 1); }  // width fill: equal segments
   else if (k == "seg-sep") { lv_style_set_width(s, HAIR()); lv_style_set_height(s, lv_pct(100)); }  // the separator line (out of the layout)
   else if (k == "seg-plate") { lv_style_set_width(s, lv_pct(100)); lv_style_set_height(s, lv_pct(100)); }
