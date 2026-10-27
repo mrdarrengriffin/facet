@@ -303,8 +303,8 @@
     ]
    },
    "cost": {
-    "objects": 60,
-    "bytes_est": 9600
+    "objects": 66,
+    "bytes_est": 10560
    }
   },
   "bottom_sheet": {
@@ -358,8 +358,8 @@
     ]
    },
    "cost": {
-    "objects": 95,
-    "bytes_est": 15200
+    "objects": 104,
+    "bytes_est": 16640
    }
   },
   "button": {
@@ -3518,8 +3518,8 @@
     ]
    },
    "cost": {
-    "objects": 5,
-    "bytes_est": 800
+    "objects": 6,
+    "bytes_est": 960
    }
   },
   "lock_ring": {
@@ -4123,8 +4123,8 @@
     ]
    },
    "cost": {
-    "objects": 39,
-    "bytes_est": 6240
+    "objects": 41,
+    "bytes_est": 6560
    }
   },
   "picker_row": {
@@ -4222,8 +4222,8 @@
     ]
    },
    "cost": {
-    "objects": 7,
-    "bytes_est": 1120
+    "objects": 8,
+    "bytes_est": 1280
    }
   },
   "placeholder": {
@@ -4356,8 +4356,8 @@
     ]
    },
    "cost": {
-    "objects": 11,
-    "bytes_est": 1760
+    "objects": 12,
+    "bytes_est": 1920
    }
   },
   "pr_row": {
@@ -6136,8 +6136,8 @@
     ]
    },
    "cost": {
-    "objects": 52,
-    "bytes_est": 8320
+    "objects": 58,
+    "bytes_est": 9280
    }
   },
   "toggle": {
@@ -6244,8 +6244,8 @@
     ]
    },
    "cost": {
-    "objects": 17,
-    "bytes_est": 2720
+    "objects": 18,
+    "bytes_est": 2880
    }
   },
   "weather_days": {

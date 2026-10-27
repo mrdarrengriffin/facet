@@ -21,6 +21,7 @@ const EXTRA = { card: [{ opening: false }, CARD, PAGE],
   cells: [{ cells: 'c,c,c,c,c' }, ['layout:gutter', 'layout:tile-w', 'layout:tile-h', ...CARD], ['layout:inset', 'layout:top', 'layout:header-gap', 'squeeze']],
   header: [{ label: 'Weather', settings: true, sample: 'end-buttons' }, HEADER, PAGE],
   icon_button: [{ style: 'square', icon: 'plus' }, ['layout:ibtn-square', 'radius:square', 'stroke:hair'], PAGE],
+  section_header: [{ title: 'Needs you', count: 3, meta: 'updated 2m' }, ['space:5'], PAGE],
   status_chip: [{}, ['layout:chip-h', 'radius:chip', 'space:2'], PAGE],
   time: [{ time: '14:52', format: '12h' }, ['space:2'], PAGE] };
 const di = process.argv.indexOf('--den');

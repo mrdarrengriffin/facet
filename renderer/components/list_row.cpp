@@ -1,42 +1,37 @@
-// List row: the Facet hairline row (docs: Settings rows .fs-set, picker rows .f-prow / pickerRow(), sheet rows). Rows
-// are not boxed: they sit on the screen background and a 1 px line hairline on top separates them (docs "rows
-// separated by hairlines rather than boxes"); a stack of rows = a list with a divider between each.
-//   height   lay::list_row_h (docs layout sheet-row-h: 96 at 720, 64 at 480), one line or title + sub line
-//   width    the screen content width = 2 x card-w + gutter (656 / 440), i.e. inset to inset
-//   padding  space 4 left and right (16 / 8, docs row-pad 16) so the press fill does not run into the text
-// Layout (flex row, centred vertically, gap space 4; nothing hand-placed):
-//   icon     optional, ic::icon (24 / 16: the Facet icon manifest ships row icons at this size, "picker rows 24";
-//            only icon@size pairs that exist are drawn, never scaled), text-dim
-//   text     grows: an optional over line (prop over: type label, text-dim, caps; the panel lab's row3 label above the
-//            title, e.g. Overhead's "B763 · 21,000 FT · 22 KM S"), the title (type title, 40 / 28 box, text, one line,
-//            ellipsis) and an optional sub (type body, text-dim)
-//            (40 + 32 = 72 in 96, 28 + 20 = 48 in 64: both lines sit on the 4 px grid)
-//   trailing none | value (type body, text-dim, = docs .fs-set-val) | chevron (ic::icon 24 / 16) | value + chevron
-//            (= a Settings row that opens a picker) | toggle (the Toggle component itself, built through fw::find)
-// 4 px grid at both densities: a part centred in the row lands on the grid only when row - part is a multiple of 8, so
-// each text part sits in a slot grown to that (480: title box 28 -> 32, body box 20 -> 24) with the text at the slot
-// top; every box top then lands on the grid (480: 16 / 20 / 24, 720: the boxes already fit). With the divider the
-// content box is row - hair; LVGL's floor + the hair gives the same tops.
-// Playground: trailing "none" with a value typed in shows the value; "on" with trailing none shows a toggle, so every
-// control changes a fresh row; a value kind with no value shows an em dash.
-// Chevron colour: the docs use text-mute; here text-dim, because text-mute is for disabled only (contrast rule).
-// Pressed (Motion press / release): the Card press approach and token: fill = mix press-tint (the greyed accent tint
-// Darren picked for Card, over the surface). Tried first: the same tint over the canvas (bg) as its own mix; on RGB565
-// it either vanishes on the dark canvas (#000 + 4-5 % = the same 5/6-bit step) or, strong enough to show, drops the
-// accent toggle track under 3:1 on the light canvas. press-tint shows in both and keeps every pair at 0 fails.
-// Disabled (Button rule, USER_1): icon, title, value and chevron text-mute, a trailing toggle shows its own disabled
-// look; no press look; a tap emits "blocked" + plays error. Unavailable (Card rule: the entity is gone): icon + title
-// text-mute, the trailing part replaced by "Unavailable" (body, text-dim), no sub; tap = blocked + error too.
-// Tap = a real CLICKED: chevron rows emit "tap" (detail = title) + sound "open" (they navigate); a toggle row hands
-// the tap to its toggle (whole row = hit area: the toggle slides, emits tap on/off, plays toggle-on / toggle-off);
-// other rows emit "tap" + sound "tap".
-// Stack (list: stack, 2026-10-26 real rows): one row per item of items (core/items.h, the Grid's model: a comma list or
-// a JSON list, usually bound to an entity attribute). A row = this node's props with "$item" / "$item.key" filled; a
-// prop that does not name $item comes from an object item's field of the same name (title also from its name / id),
-// a plain-text item is the title. rows caps the list (a last "+N" row for the rest); no items = the empty words.
-// Nothing demo: the sample rows live in the variants. Update: the same row count = each row's own update path (texts
-// in place, a toggle slides); another count = the rows again. Contrast pairs: tokens/colour.json section "list_row" (+ toggle, card).
+// List row: the Facet hairline row (docs: Settings rows .fs-set, picker rows .f-prow / pickerRow(), sheet rows), on the
+// contract (renderer/CONTRACT.md, "contract": 2). Rows are not boxed: they sit on what is behind them and a hairline
+// on top separates them (docs "rows separated by hairlines rather than boxes"); a stack of rows = a list.
+//   size     fills its parent's width (C5; in a list Body that is inset to inset, as before); h:list-row-h tall (96 /
+//            64); pad-x:4 (16 / 8) so the press fill does not run into the text; gap:4 between the parts
+//   minimum  layout:card-min-w x layout:list-row-h. Steps: one (the text column takes the free width and ends in "...")
+// Parts (a flex row, centred; nothing placed by hand):
+//   icon     optional, the icon size (24 / 16), text-dim
+//   text     list-text-* (the free width): an optional over line (type label, caps, text-dim), the title (type title,
+//            text, one line, "...") and an optional sub (type body, text-dim). Its height is grown so that, centred in the
+//            row, every box top lands on the 4 px grid (a derived style: core/fx_core.cpp list-text-*, list-slot)
+//   end      a SLOT (meta "slots": "end", C8a): what the props put there (trailing value = type body text-dim in a
+//            list-slot, chevron icon, value + chevron, or the Toggle component itself) and/or ONE component a spec puts
+//            in it ("in": k, "slot": 0). Empty = hidden (no gap). Callers that append to the root (Picker row's radio,
+//            Accent swatches) still land after it, as before.
+// Playground: trailing "none" with a value typed in shows the value; "on" with trailing none shows a toggle; a value
+// kind with no value shows an em dash (in text: a thin dash in text-dim measures under 4.5:1 at 1x).
+// States (tokens per state, C17): default; pressed (fill pressed-tint fading in over nothing: fade-press-fill); on (the
+// toggle's); disabled (fw::st::OFF: icon, title, sub, value, chevron disabled-ink, no press look, the toggle's own
+// disabled look, a tap = "blocked" + error); unavailable (OFF too: icon + title disabled-ink, no sub, the end = the word
+// Unavailable in unavailable-note). n/a: loading, unknown, empty, error (no data of its own: the binding maps those to
+// unavailable); a stack with no items = its empty words.
+// Tap = a real CLICKED: chevron rows emit "tap" (detail = title) + sound "open"; a toggle row hands the tap to its toggle
+// (whole row = hit area); other rows emit "tap" + sound "tap". Bleed: none.
+// Stack (list: stack): one row per item of items (core/items.h, the Grid's model). A row = this node's props with
+// "$item" / "$item.key" filled; a prop that does not name $item comes from an object item's field of the same name, a
+// plain-text item is the title. rows caps the list (a last "+N" row for the rest); no items = the empty words.
+// Update: the same structure = texts in place, a toggle slides (its own update), pressed fades; another structure =
+// the contents again (fw::refill, snap; disabled / unavailable in or out fades in). Silent.
+// Contrast pairs: tokens/colour.json section "list_row" (+ toggle, card).
+// Still legacy inside: the Toggle (built through fw::find).
 #include "fw.h"
+#include "fx.h"
+#include "spec.h"
 #include "items.h"
 
 namespace {
@@ -57,36 +52,6 @@ struct Row {
   lv_obj_t *ti = nullptr, *su = nullptr, *val = nullptr, *ov = nullptr;  // title, sub, value, over labels (the update path sets their text)
   std::string title;
 };
-
-const lv_style_prop_t TR_PROPS[] = {LV_STYLE_BG_OPA, LV_STYLE_PROP_INV};
-const lv_style_transition_dsc_t *tr(bool pressed) {
-  static lv_style_transition_dsc_t d[2];
-  static bool ready = false;
-  if (!ready) { fw::st::press_transitions(d, TR_PROPS); ready = true; }  // states.json pressed motion
-  return &d[pressed];
-}
-
-lv_obj_t *box(lv_obj_t *parent) {
-  lv_obj_t *o = lv_obj_create(parent);
-  lv_obj_remove_style_all(o);
-  lv_obj_remove_flag(o, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
-  return o;
-}
-
-lv_obj_t *label(lv_obj_t *parent, fw::ty::Id s, const char *txt, lv_color_t c) {
-  lv_obj_t *l = fw::text(parent, s, txt, c);
-  lv_obj_remove_flag(l, LV_OBJ_FLAG_CLICKABLE);
-  return l;
-}
-
-// h grown so that (row height - h) is a multiple of 2 x grid: centred, its top is on the grid (see the grid note above)
-int on_grid(int h) { return h + ((fw::lay::list_row_h - h) % (2 * fw::sp::s1) + 2 * fw::sp::s1) % (2 * fw::sp::s1); }
-// a slot of that height; the label keeps its own box at the slot top
-lv_obj_t *slot(lv_obj_t *parent, int h) {
-  lv_obj_t *b = box(parent);
-  lv_obj_set_size(b, LV_SIZE_CONTENT, on_grid(h));
-  return b;
-}
 
 struct Spec {
   const char *title, *icon, *sub, *trailing, *value, *state;
@@ -115,88 +80,82 @@ Kind effective(const Spec &s) {
   return kind;
 }
 
-// the row's look and contents on r (build: a new object; update: the same root after fw::refill)
+// one line of the text column: its type, its ink (+ disabled-ink when OFF), one line ending in "..."
+lv_obj_t *line(lv_obj_t *col, const char *txt, const char *type, const char *fg) {
+  lv_obj_t *l = fx::text(col, txt, type, fg);
+  fx::use(l, "fill-w");
+  fx::use(l, "fg:disabled-ink", ST_OFF);
+  lv_label_set_long_mode(l, LV_LABEL_LONG_MODE_DOTS);
+  return l;
+}
+// a word in the end slot, in a body slot on the grid
+lv_obj_t *word(lv_obj_t *end, const char *txt, const char *fg) {
+  lv_obj_t *b = fx::box(end, "free");
+  fx::use(b, "list-slot");
+  lv_obj_t *l = fx::text(b, txt, "type:body", fg);
+  fx::use(l, "fg:disabled-ink", ST_OFF);
+  return l;
+}
+void show_end(lv_obj_t *en) {
+  if (lv_obj_get_child_count(en)) lv_obj_remove_flag(en, LV_OBJ_FLAG_HIDDEN); else lv_obj_add_flag(en, LV_OBJ_FLAG_HIDDEN);
+}
+
+// the row's look and contents on r (build: a new root; update: the same root after fw::refill)
 void fill(lv_obj_t *r, const Spec &s, Row *d) {
-  const fw::Theme &t = *fw::T;
   const bool unavail = !strcmp(s.state, "unavailable"), off = unavail || !strcmp(s.state, "disabled");
   const Kind kind = effective(s);
-  const lv_color_t ink = off ? fw::st::disabled_ink(t) : t.text, dim = off ? fw::st::disabled_ink(t) : t.text_dim;
 
-  lv_obj_remove_style_all(r);
+  for (const char *t : {"box", "row-mid", "gap:4", "pad-x:4", "tall:list-row-h", "bg:pressed-tint", "bg-none", "fade-release-fill"}) fx::use(r, t);
+  if (s.divider) { fx::use(r, "line:line"); fx::use(r, "rule-top"); }
+  fx::use(r, "bg:pressed-tint", LV_STATE_PRESSED);
+  fx::use(r, "fade-press-fill", LV_STATE_PRESSED);
+  fx::use(r, "bg-none", ST_OFF);                      // no press look when disabled / unavailable
+  fx::use(r, "bg-none", ST_OFF | LV_STATE_PRESSED);
   lv_obj_add_flag(r, LV_OBJ_FLAG_CLICKABLE);
-  lv_obj_remove_flag(r, LV_OBJ_FLAG_SCROLLABLE);
-  lv_obj_set_size(r, 2 * fw::lay::card_w + fw::lay::gutter, fw::lay::list_row_h);
-  lv_obj_set_style_pad_hor(r, fw::sp::s4, 0);
-  if (s.divider) {  // hairline on top; children start below it, and the same inset at the bottom keeps the content box
-                   // centred on the row, so a centred child (a slot, the toggle) still lands on the 4 px grid
-    lv_obj_set_style_border_side(r, LV_BORDER_SIDE_TOP, 0);
-    lv_obj_set_style_border_width(r, fw::stroke::hair, 0);
-    lv_obj_set_style_pad_bottom(r, fw::stroke::hair, 0);
-    lv_obj_set_style_border_color(r, t.line, 0);
-  }
-  lv_obj_set_style_bg_color(r, fw::st::pressed_tint(t), 0);  // states.json pressed tint
-  lv_obj_set_style_bg_opa(r, LV_OPA_TRANSP, 0);
-  lv_obj_set_style_transition(r, tr(false), 0);
-  lv_obj_set_style_bg_opa(r, LV_OPA_COVER, LV_STATE_PRESSED);
-  lv_obj_set_style_transition(r, tr(true), LV_STATE_PRESSED);
-  lv_obj_set_style_bg_opa(r, LV_OPA_TRANSP, ST_OFF);  // no press look when disabled / unavailable
-  lv_obj_set_flex_flow(r, LV_FLEX_FLOW_ROW);
-  lv_obj_set_flex_align(r, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-  lv_obj_set_style_pad_column(r, fw::sp::s4, 0);
 
-  if (strcmp(s.icon, "none")) fw::icon(r, s.icon, fw::ic::icon, dim);
+  if (strcmp(s.icon, "none")) fx::icon_use(fx::icon(r, s.icon, "icon", "fg:text-dim"), "ink:disabled-ink", ST_OFF);
 
-  lv_obj_t *col = box(r);
-  const int col_h = fw::style(fw::ty::title).box + (!unavail && s.sub[0] ? fw::style(fw::ty::body).box : 0) +
-                    (s.over[0] ? fw::style(fw::ty::label).box : 0);
-  lv_obj_set_size(col, 0, on_grid(col_h));  // width from flex grow; text ellipsises instead of pushing the trailing
-  lv_obj_set_flex_grow(col, 1);
-  lv_obj_set_flex_flow(col, LV_FLEX_FLOW_COLUMN);
-  d->ov = nullptr;
-  if (s.over[0]) {
-    lv_obj_t *ov = d->ov = label(col, fw::ty::label, caps(s.over).c_str(), dim);
-    lv_label_set_long_mode(ov, LV_LABEL_LONG_MODE_DOTS);
-    lv_obj_set_width(ov, LV_PCT(100));
-    lv_obj_set_height(ov, fw::style(fw::ty::label).box);
-  }
-  lv_obj_t *ti = d->ti = label(col, fw::ty::title, s.title, ink);
-  d->su = d->val = nullptr;
-  lv_label_set_long_mode(ti, LV_LABEL_LONG_MODE_DOTS);
-  lv_obj_set_width(ti, LV_PCT(100));
-  lv_obj_set_height(ti, fw::style(fw::ty::title).box);  // set_long_mode resets the text-box height
-  if (!unavail && s.sub[0]) {
-    lv_obj_t *su = d->su = label(col, fw::ty::body, s.sub, off ? fw::st::disabled_ink(t) : t.text_dim);
-    lv_label_set_long_mode(su, LV_LABEL_LONG_MODE_DOTS);
-    lv_obj_set_width(su, LV_PCT(100));
-    lv_obj_set_height(su, fw::style(fw::ty::body).box);
-  }
+  const bool sub = !unavail && s.sub[0], over = s.over[0];
+  lv_obj_t *col = fx::box(r, "free");
+  fx::use(col, over ? (sub ? "list-text-ots" : "list-text-ot") : (sub ? "list-text-ts" : "list-text-t"));
+  d->ov = over ? line(col, caps(s.over).c_str(), "type:label", "fg:text-dim") : nullptr;
+  d->ti = line(col, s.title, "type:title", "fg:text");
+  d->su = sub ? line(col, s.sub, "type:body", "fg:text-dim") : nullptr;
+
+  lv_obj_t *en = fx::box(r, "free");  // the end slot (meta "slots": end)
+  for (const char *t : {"row-end", "gap:4"}) fx::use(en, t);
+  lv_obj_add_flag(en, fw::spec::SLOT);
+  lv_obj_add_event_cb(en, [](lv_event_t *e) { show_end((lv_obj_t *) lv_event_get_current_target(e)); }, LV_EVENT_CHILD_CHANGED, nullptr);
 
   d->kind = kind;
   d->title = s.title;
   d->toggle = nullptr;
-  const int body_h = fw::style(fw::ty::body).box;
-  if (unavail) label(slot(r, body_h), fw::ty::body, fw::st::UNAVAILABLE_TEXT, fw::st::unavailable_note(t));
-  // empty = the placeholder em dash, in text: a thin 1 px dash in text-dim measures under 4.5:1 at 1x (anti-aliased)
-  if (kind == K_VALUE || kind == K_VALUE_CHEVRON) d->val = label(slot(r, body_h), fw::ty::body, s.value[0] ? s.value : fw::st::PLACEHOLDER, s.value[0] || off ? dim : t.text);
-  if (kind == K_CHEVRON || kind == K_VALUE_CHEVRON) fw::icon(r, "chevron", fw::ic::icon, dim);
+  d->val = nullptr;
+  if (unavail) word(en, fw::st::UNAVAILABLE_TEXT, "fg:unavailable-note");
+  if (kind == K_VALUE || kind == K_VALUE_CHEVRON) d->val = word(en, s.value[0] ? s.value : fw::st::PLACEHOLDER, s.value[0] ? "fg:text-dim" : "fg:text");
+  if (kind == K_CHEVRON || kind == K_VALUE_CHEVRON) fx::icon_use(fx::icon(en, "chevron", "icon", "fg:text-dim"), "ink:disabled-ink", ST_OFF);
   if (kind == K_TOGGLE) {
     if (const fw::Component *tc = fw::find("toggle")) {  // the Toggle component itself, not a copy
       ArduinoJson::JsonDocument tp;
       tp["on"] = s.on;
       tp["state"] = off ? "disabled" : "default";
-      tc->build(r, tp.as<fw::Props>());
-      d->toggle = lv_obj_get_child(r, -1);
+      tc->build(en, tp.as<fw::Props>());
+      d->toggle = lv_obj_get_child(en, -1);
       lv_obj_remove_flag(d->toggle, LV_OBJ_FLAG_CLICKABLE);  // the row is the hit area and hands the tap on
     }
   }
+  show_end(en);
 
   if (!strcmp(s.state, "pressed")) lv_obj_add_state(r, LV_STATE_PRESSED);
-  if (off) lv_obj_add_state(r, ST_OFF);
+  if (off) fx::state(r, ST_OFF, true);
 }
 
-// the root (made once): the Row + the tap handler; stack = the same root as a column of fixed demo rows
+// the root (made once): the Row + the tap handler
 lv_obj_t *root(lv_obj_t *parent) {
-  lv_obj_t *r = lv_obj_create(parent);
+  lv_obj_t *r = lv_obj_create(parent);  // styles: fill() (an update refills the same root)
+  lv_obj_remove_style_all(r);
+  lv_obj_remove_flag(r, LV_OBJ_FLAG_SCROLLABLE);
+  fx::name(r, "list_row");
   auto *d = new Row;
   lv_obj_add_event_cb(r, row_free, LV_EVENT_DELETE, d);
   fw::st::on_tap(r, [](lv_event_t *e) {  // blocked on finger down, a real tap on CLICKED (states.json)
@@ -208,11 +167,6 @@ lv_obj_t *root(lv_obj_t *parent) {
     fw::emit(o, "tap", d->title.c_str());
     fw::sound(o, d->kind == K_CHEVRON || d->kind == K_VALUE_CHEVRON ? "open" : "tap");
   }, d);
-  return r;
-}
-lv_obj_t *row(lv_obj_t *parent, const Spec &s) {
-  lv_obj_t *r = root(parent);
-  fill(r, s, row_of(r));
   return r;
 }
 
@@ -264,20 +218,15 @@ std::vector<ArduinoJson::JsonDocument> stack_rows(fw::Props p) {
 // the stack's signature part: its row count (texts and toggles of the same rows move in place)
 std::string stack_sig(fw::Props p) { return std::to_string(stack_rows(p).size()) + "|" + (p["empty"] | ""); }
 void empty_row(lv_obj_t *r, const char *txt) {
-  lv_obj_t *b = box(r);
-  lv_obj_set_size(b, 2 * fw::lay::card_w + fw::lay::gutter, fw::lay::list_row_h);
-  lv_obj_set_style_pad_hor(b, fw::sp::s4, 0);
-  lv_obj_set_flex_flow(b, LV_FLEX_FLOW_ROW);
-  lv_obj_set_flex_align(b, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-  label(slot(b, fw::style(fw::ty::body).box), fw::ty::body, txt, fw::T->text_dim);
+  lv_obj_t *b = fx::box(r, "row-mid");
+  for (const char *t : {"gap:4", "pad-x:4", "tall:list-row-h"}) fx::use(b, t);
+  word(b, txt, "fg:text-dim");
 }
 void fill_props(lv_obj_t *r, fw::Props p) {
   fw::shape(r, sig(p));
   if (!strcmp(p["list"] | "single", "stack")) {  // a list: rows touch, the hairline on top of each = the divider
-    lv_obj_remove_style_all(r);
-    lv_obj_remove_flag(r, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
-    lv_obj_set_size(r, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
-    lv_obj_set_flex_flow(r, LV_FLEX_FLOW_COLUMN);
+    for (const char *t : {"box", "col"}) fx::use(r, t);
+    lv_obj_remove_flag(r, LV_OBJ_FLAG_CLICKABLE);
     std::vector<ArduinoJson::JsonDocument> rows = stack_rows(p);
     if (rows.empty()) empty_row(r, p["empty"] | "Nothing here");
     for (ArduinoJson::JsonDocument &d : rows) fill_props(root(r), d.as<fw::Props>());
@@ -288,7 +237,12 @@ void fill_props(lv_obj_t *r, fw::Props p) {
 }  // namespace
 
 FW_COMPONENT(list_row, "List row", "components", R"({
-  "about": "A full-width row in a list or settings page, with an optional icon, a title and sub line, and a value, chevron or toggle.",
+  "about": "A full-width row in a list or settings page, with an optional icon, a title and sub line, and a value, chevron or toggle at the end. A screen can put one more component in the end slot.",
+  "contract": 2,
+  "min": ["layout:card-min-w", "layout:list-row-h"],
+  "slots": [
+    {"name": "end", "count": 1, "about": "One component at the right end, after the value, chevron or toggle the props put there (in + slot 0).", "accepts": ["toggle", "status_chip", "count_badge", "status_dot", "icon_button", "button", "label"], "max": 1}
+  ],
   "audit": {"base": {"trailing": "toggle"}},
   "frame": [448, 0],
   "icons": ["bulb@icon", "speaker@icon", "tv@icon", "volume@icon", "power@icon", "house@icon", "chevron@icon"],
@@ -345,13 +299,12 @@ FW_UPDATE(list_row) {
     }
     if (pr != lv_obj_has_state(root, LV_STATE_PRESSED)) lv_obj_set_state(root, LV_STATE_PRESSED, pr);
     const Spec sp = spec_of(p);
-    auto put = [](lv_obj_t *l, fw::ty::Id st, const char *t) { if (l && strcmp(lv_label_get_text(l), t)) fw::set_text(l, st, t); };
-    put(d->ti, fw::ty::title, sp.title);
+    auto put = [](lv_obj_t *l, const char *type, const char *t) { if (l) fx::set_text(l, t, type); };
+    put(d->ti, "type:title", sp.title);
     d->title = sp.title;
-    put(d->su, fw::ty::body, sp.sub);
-    if (d->ov) put(d->ov, fw::ty::label, caps(sp.over).c_str());
-    put(d->val, fw::ty::body, sp.value[0] ? sp.value : fw::st::PLACEHOLDER);
-    if (d->val && !lv_obj_has_state(root, ST_OFF)) lv_obj_set_style_text_color(d->val, sp.value[0] ? fw::T->text_dim : fw::T->text, 0);
+    put(d->su, "type:body", sp.sub);
+    put(d->ov, "type:label", caps(sp.over).c_str());
+    put(d->val, "type:body", sp.value[0] ? sp.value : fw::st::PLACEHOLDER);  // empty <-> a value is structure (sig)
     if (d->toggle) {
       ArduinoJson::JsonDocument tp;
       tp["on"] = p["on"] | false;

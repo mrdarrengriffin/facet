@@ -122,6 +122,7 @@
       "check-row-h": { "v": 32, "1x": 20, "use": "Check row height (docs size check-row-h 32 / layout 1x 20)" },
       "check-state-w": { "v": 64, "1x": 44, "use": "Check row: the state word's right-aligned slot (docs 64)" },
       "empty-h": { "v": 136, "1x": 92, "use": "Empty state box height (docs 136)" },
+      "empty-pad": { "v": 16, "1x": 16, "use": "Empty state padding from its outer edge, the border hair inside it (docs: the gutter, 16; its own token so the box never reads a page token)" },
       "qr": { "v": 176, "1x": 116, "use": "QR block: the code's square (docs size qr 176)" },
       "qr-block-w": { "v": 208, "1x": 140, "use": "QR block width: the code + the gutter each side (docs size qr-block-w 208)" },
       "radar": { "v": 384, "1x": 256, "use": "Lightning radar: the square (docs 384); rings sit at the outer radius x sqrt(km / outer km), on the grid" },

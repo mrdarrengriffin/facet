@@ -27,7 +27,8 @@ const char *const SHAPES[] = {"box", "col", "row", "stack", "centre", "cell", "g
                               "fill", "fill-w", "row-top", "fade-press", "fade-release", "gap:gutter", "pair", "wrap",
                               "header", "header-back", "header-title", "header-label", "header-end", "header-time",
                               "hug", "over", "over-cell", "transp", "opaque", "fade-press-ink", "fade-release-ink", "no-outline", "cells", "cell-text",
-                              "square:ibtn-play", "square:ibtn-round", "square:ibtn-square", "tall:chip-h"};
+                              "rule-top", "row-mid", "row-end", "fade-press-fill", "fade-release-fill",
+                              "square:ibtn-play", "square:ibtn-round", "square:ibtn-square", "tall:chip-h", "tall:list-row-h"};
 // tint:<c> = the colour at chip.tint over what is behind (Status chip; colour.json mixes chip-<tone>); outline:<c> = the
 // focus ring (states.json focus: stroke focus, touch focus-offset outside the box)
 const char *const TINTS[] = {"ok", "warn", "error", "accent", "blue", "text-dim"};
@@ -43,7 +44,8 @@ const char *type_name(fw::ty::Id id) {
   abort();
 }
 // derived sizes: one value worked out from other tokens, so a component never does the sum (paint() says how)
-const char *const DERIVED_N[] = {"dial-wing-up", "dial-wing-down", "dial-slot", "card-pad", "card-text", "card-gap", "card-gap-s", "card-row", "pair-rule", "label-row"};
+const char *const DERIVED_N[] = {"dial-wing-up", "dial-wing-down", "dial-slot", "card-pad", "card-text", "card-gap", "card-gap-s", "card-row", "pair-rule", "label-row",
+                                 "list-text-t", "list-text-ts", "list-text-ot", "list-text-ots", "list-slot", "section-label", "empty-pad"};
 struct Look { lv_display_t *d; const fw::Theme *t = nullptr; int large = -1; std::vector<lv_style_t> s; };
 std::vector<Look *> looks;
 
@@ -189,6 +191,23 @@ void shape(lv_style_t *s, const char *n) {  // the structure styles: density onl
   else if (k == "pair") {  // two halves sharing a cell (a grow between them): the first at its top, the second on its bottom
     lv_style_set_width(s, lv_pct(100)); lv_style_set_height(s, lv_pct(100)); flex(s, LV_FLEX_FLOW_COLUMN, S, S, S);
   }
+  else if (k == "row-mid") flex(s, LV_FLEX_FLOW_ROW, S, C, C);  // a row, items centred on it, no gap of its own (a gap:<n> sets it)
+  else if (k == "row-end") {  // a row's end part (the List row's end slot): its content's width, the row's full content
+    // height, its items centred on it one by one (as if they sat in the row itself: each lands where the row centres it)
+    lv_style_set_width(s, LV_SIZE_CONTENT); lv_style_set_height(s, lv_pct(100)); flex(s, LV_FLEX_FLOW_ROW, S, C, C);
+  }
+  else if (k == "rule-top") {  // the List row's hairline on TOP (after a line:<c>, which draws it at the bottom); the same
+    // inset at the bottom keeps the content box centred on the row (centred parts stay on the 4 px grid)
+    lv_style_set_border_side(s, LV_BORDER_SIDE_TOP); lv_style_set_pad_bottom(s, tok("stroke:hair", stroke::hair));
+  }
+  else if (k == "fade-press-fill" || k == "fade-release-fill") {  // a press fill over nothing (List row, Section header
+    // action): the fill's opacity fades in / out (states.json pressed motion)
+    static lv_style_transition_dsc_t d[2];
+    static const lv_style_prop_t P[] = {LV_STYLE_BG_OPA, LV_STYLE_PROP_INV};
+    static bool ready = false;
+    if (!ready) { fw::st::press_transitions(d, P); ready = true; }
+    lv_style_set_transition(s, &d[k == "fade-press-fill"]);
+  }
   else if (k == "fade-press" || k == "fade-release") {  // states.json pressed motion: the bg / border fade of a press
     static lv_style_transition_dsc_t d[2];
     static const lv_style_prop_t P[] = {LV_STYLE_BG_COLOR, LV_STYLE_BORDER_COLOR, LV_STYLE_PROP_INV};
@@ -221,6 +240,24 @@ void paint(Look *L, const fw::Theme *t, int only = -1) {  // colours from the th
       if (d.i == 8) {  // pair-rule: the hairline between two halves, inset by the card padding (its child = the ink)
         lv_style_set_width(s, lv_pct(100)); lv_style_set_height(s, tok("stroke:hair", stroke::hair));
         lv_style_set_pad_hor(s, tok("layout:card-pad", lay::card_pad)); continue;
+      }
+      if (d.i >= 10 && d.i <= 14) {  // list-text-* / list-slot (List row): the text column (title, + sub / over line) or a
+        // body slot, grown so that (row - it) is a multiple of 2 x space 1: centred in the row, every box top lands on
+        // the 4 px grid (480: title 28 -> 32, body 20 -> 24)
+        const int row = tok("layout:list-row-h", lay::list_row_h), g = std::max(1, 2 * tok("space:1", sp::s1));  // a lab drag to 0: no grid
+        const int h = d.i == 14 ? box_of(ty::body) : box_of(ty::title) + (d.i == 11 || d.i == 13 ? box_of(ty::body) : 0) +
+                                                      (d.i == 12 || d.i == 13 ? box_of(ty::label) : 0);
+        lv_style_set_height(s, h + ((row - h) % g + g) % g);
+        if (d.i == 14) { lv_style_set_width(s, LV_SIZE_CONTENT); continue; }
+        lv_style_set_width(s, 0); lv_style_set_flex_grow(s, 1);  // the free width: the text ellipsises, never pushes the end
+        flex(s, LV_FLEX_FLOW_COLUMN, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START); continue;
+      }
+      if (d.i == 15) {  // section-label: a Section header in the screen label type: its box + space 2 to the rows, at the top
+        lv_style_set_height(s, box_of(ty::label) + tok("space:2", sp::s2));
+        flex(s, LV_FLEX_FLOW_ROW, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START); continue;
+      }
+      if (d.i == 16) {  // empty-pad: the Empty state's padding from the outer edge (less the border hair)
+        lv_style_set_pad_all(s, tok("layout:empty-pad", lay::empty_pad) - tok("stroke:hair", stroke::hair)); continue;
       }
       if (d.i == 9) {  // label-row: at least the label type's box tall (a hugging box around one label: its caps translate
         // would otherwise take a pixel off the box, off the grid)
