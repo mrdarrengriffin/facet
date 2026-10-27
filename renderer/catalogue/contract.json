@@ -1,4 +1,8 @@
 {
+  "components/button": {
+    "commit": "7bbc138",
+    "at": "2026-10-27T11:41:31.000Z"
+  },
   "components/card": {
     "commit": "5614a09",
     "at": "2026-10-26T23:46:11.000Z"
@@ -6,6 +10,10 @@
   "components/cells": {
     "commit": "5614a09",
     "at": "2026-10-26T23:46:11.000Z"
+  },
+  "components/count_badge": {
+    "commit": "7bbc138",
+    "at": "2026-10-27T11:41:31.000Z"
   },
   "components/dial": {
     "commit": "5614a09",
@@ -26,6 +34,18 @@
   "components/section_header": {
     "commit": "753567b",
     "at": "2026-10-27T11:10:46.000Z"
+  },
+  "components/segmented": {
+    "commit": "7bbc138",
+    "at": "2026-10-27T11:41:31.000Z"
+  },
+  "components/slider": {
+    "commit": "7bbc138",
+    "at": "2026-10-27T11:41:31.000Z"
+  },
+  "components/toggle": {
+    "commit": "7bbc138",
+    "at": "2026-10-27T11:41:31.000Z"
   },
   "screens/light": {
     "commit": "5614a09",
