@@ -45,6 +45,12 @@ for (const s of nm)
 L.push('', 'text_sensor:', '  - platform: homeassistant', '    id: facet_sun', '    entity_id: sun.sun', '    internal: true',
   '    on_value:', `      - lambda: 'fw::dev::set_daylight(x == "above_horizon" ? 1 : x == "below_horizon" ? 0 : -1);'`);
 
+// facet_theme (theme engine T4, fw_device.h theme_from_ha): a theme file from Home Assistant, guarded on the panel;
+// the answer = {ok, id, errors[..4], n_errors, stored, live}. An api.actions list in a package is appended to the
+// config's own (ESPHome package merge), so this works next to any other actions.
+L.push('', 'api:', '  actions:', '    - action: facet_theme', '      supports_response: optional', '      variables:', '        theme: string', '      then:',
+  '        - api.respond:', "            data: !lambda 'fw::device::theme_from_ha(theme, root);'");
+
 // a change from anywhere but the entity itself -> move the entity (it publishes to HA and saves to NVS)
 L.push('', 'esphome:', '  on_boot:', '    - priority: -100', '      then:', '        - lambda: |-',
   '            fw::dev::observe([](const char *k, const char *v, fw::dev::From from) {',

@@ -78,6 +78,7 @@
 #include "ha.h"
 #include "spec.h"
 #include "nvs.h"
+#include "theme_slot.h"
 #ifdef USE_API
 #include "esphome/components/api/api_server.h"
 #endif
@@ -553,6 +554,7 @@ inline void spec_hello(ArduinoJson::JsonObject out) {
   ArduinoJson::JsonDocument info;
   if (!deserializeJson(info, fw::bundle::INFO)) out["core"] = info["core"];
   heap(out["heap"].to<ArduinoJson::JsonObject>());
+  fx::theme_status(out["theme"].to<ArduinoJson::JsonObject>());  // look, live, the sent slot, the boot restore
 }
 // kind screen | deck: json = the spec; revert: json = the id (| deck | all)
 inline void spec_apply(const char *kind, const std::string &json, ArduinoJson::JsonObject out) {
@@ -564,6 +566,44 @@ inline void spec_apply(const char *kind, const std::string &json, ArduinoJson::J
   lv_obj_delete(dry);
   out["ms"] = (int) ((esp_timer_get_time() - t0) / 1000);
   ESP_LOGW("facet_wb", "spec %s %s rev %d: %s", kind, (const char *) (out["id"] | ""), (int) (out["rev"] | -1), (const char *) (out["status"] | ""));
+}
+
+// ---------------------------------------------------------------- themes from Home Assistant (theme engine T4)
+// The ESPHome action facet_theme {theme: the theme file as a JSON string} (settings.yaml from firmware/settings_yaml.mjs)
+// -> fx::theme_send (core/theme_slot.h): the PANEL parses + guards the file itself (no hub in the product path);
+// refused = the answer {ok: false, errors: [{path, msg, line}] (first 4), n_errors} + a log line, the live look and
+// the stored copy unchanged; accepted = stored as the one sent slot's last-good copy (NVS "facet_theme"/"sent": "FXT1"
+// + CRC32 + JSON, one key = one atomic write) and the Theme (look) select moves to Sent. theme = "" drops it.
+// Boot: theme_storage() restores it (a damaged record = erased + Facet; a refused one = kept + Facet; both logged).
+inline void theme_storage() {
+  fx::SlotIO io;
+  auto nvs = [] {
+    static nvs_handle_t h = 0;
+    static bool tried = false;
+    if (!tried) { tried = true; if (nvs_open("facet_theme", NVS_READWRITE, &h) != ESP_OK) { h = 0; ESP_LOGE("facet_wb", "theme NVS: cannot open"); } }
+    return h;
+  };
+  io.load = [nvs](std::string &out) {
+    nvs_handle_t h = nvs();
+    size_t n = 0;
+    if (!h || nvs_get_blob(h, "sent", nullptr, &n) != ESP_OK) return false;
+    if (n > fx::SLOT_MAX) { out.assign(n > fx::SLOT_MAX + 1 ? fx::SLOT_MAX + 1 : n, '\0'); return true; }  // too long: unpack says corrupt
+    out.resize(n);
+    return nvs_get_blob(h, "sent", out.data(), &n) == ESP_OK;
+  };
+  io.save = [nvs](const std::string &r) { nvs_handle_t h = nvs(); return h && nvs_set_blob(h, "sent", r.data(), r.size()) == ESP_OK && nvs_commit(h) == ESP_OK; };
+  io.erase = [nvs] { if (nvs_handle_t h = nvs()) { nvs_erase_key(h, "sent"); nvs_commit(h); } };
+  fx::theme_storage(std::move(io));
+  ArduinoJson::JsonDocument st;
+  fx::theme_status(st.to<ArduinoJson::JsonObject>());
+  ESP_LOGW("facet_wb", "theme boot: %s (look %s, live %s)", (const char *) (st["boot"] | ""), (const char *) (st["look"] | ""), (const char *) (st["live"] | ""));
+}
+inline void theme_from_ha(const std::string &json, ArduinoJson::JsonObject out) {
+  const int64_t t0 = esp_timer_get_time();
+  fx::theme_send(json.data(), json.size(), out);
+  out["ms"] = (int) ((esp_timer_get_time() - t0) / 1000);
+  if (out["ok"] | false) ESP_LOGW("facet_wb", "theme sent: %s (%d bytes, stored %d, %d ms)", (const char *) (out["id"] | (out["dropped"] | false ? "(dropped)" : "")), (int) (out["bytes"] | 0), (int) (out["stored"] | false), (int) (out["ms"] | 0));
+  else ESP_LOGW("facet_wb", "theme refused (%d errors): %s %s", (int) (out["n_errors"] | 0), (const char *) (out["errors"][0]["path"] | ""), (const char *) (out["errors"][0]["msg"] | ""));
 }
 
 // ---------------------------------------------------------------- Screen (the host's Home Assistant select)
@@ -1112,6 +1152,7 @@ inline void setup() {
   S.scr = lv_obj_create(nullptr);
   lv_screen_load(S.scr);
   spec_storage();     // screen specs: the overrides from NVS (each falls back to its last good copy, then factory)
+  theme_storage();    // the sent theme: its last-good copy from NVS (theme engine T4)
   agent::setup();     // AI agents: the token (NVS) + the setting (facet-163)
   fw::spec::load();
   for (const auto &x : fw::spec::S().log) ESP_LOGW("facet_wb", "spec boot: %s", x.c_str());

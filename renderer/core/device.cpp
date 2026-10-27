@@ -7,6 +7,7 @@
 #include <vector>
 #include "spec.h"
 #include "toasts.h"
+#include "theme_slot.h"
 #include "settings_gen.h"
 
 namespace fw {
@@ -77,7 +78,10 @@ bool show(Device *d, const std::string &id, std::vector<lv_obj_t *> &items) {
   d->builds++;
   d->screen = box(d->root);
   lv_obj_set_size(d->screen, lay::screen_w, lay::screen_h);
-  lv_obj_set_style_bg_color(d->screen, T->bg, 0);
+  // the panel's own canvas: the live theme's bg under a contract or spec screen (fx::bg, Facet's bg for the Facet
+  // Skin), Facet's under a legacy screen (no half-themed screens: its parts keep Facet's palette)
+  const bool themed = from_spec || (c && c->meta && (strstr(c->meta, "\"contract\": 2") || strstr(c->meta, "\"contract\":2")));
+  lv_obj_set_style_bg_color(d->screen, themed ? fx::bg(lv_obj_get_display(d->root)) : T->bg, 0);
   lv_obj_set_style_bg_opa(d->screen, LV_OPA_COVER, 0);
   if (from_spec || !strcmp(c->section, "screens")) {
     lv_obj_t *s = from_spec ? spec::build(d->screen, base_of(id), none.as<Props>()) : build_into(d->screen, c, none.as<Props>());
@@ -297,7 +301,14 @@ void apply(int k, From from) {
   const char *id = set::SETTINGS[k].id;
   const bool text_ = !strcmp(id, "textSize");  // Large text: other fonts, every device builds its screen again
   if (text_) set_text_large_default(store().v[k] == "large");
-  const bool look_ = !strcmp(id, "theme") || !strcmp(id, "accent") || text_;
+  // look (theme engine T4, core/theme_slot.h): the theme file live first (refused / missing = Facet, said in the
+  // status), then every device rebuilt in it (legacy parts keep Facet's palette, contract parts follow the Skin)
+  const bool file_ = !strcmp(id, "look");
+  if (file_) {
+    std::string why;
+    if (!fx::theme_select(store().v[k], why)) fprintf(stderr, "facet look %s: %s\n", store().v[k].c_str(), why.c_str());
+  }
+  const bool look_ = !strcmp(id, "theme") || !strcmp(id, "accent") || text_ || file_;
   if (look_ && store().look_hook) store().look_hook();
   for (Device *d : devices) {
     if (text_) {
@@ -307,7 +318,7 @@ void apply(int k, From from) {
     }
     if (look_) {
       const Theme *t = look(d->stage);
-      if (t != d->theme) {
+      if (t != d->theme || file_) {
         d->theme = t;
         if (devices.size() == 1) T = t;  // taps / fades paint from fw::T after the build: the panel's look now
         if (!d->restyle) d->restyle = lv_timer_create(restyle_tick, 30, d);
@@ -462,6 +473,7 @@ const char *option_label(const char *id, const char *value) {
 }
 void observe(Observer cb) { store().obs.push_back(cb); }
 void on_look(void (*cb)()) { store().look_hook = cb; }
+void refresh_look() { const int k = index_of("look"); if (k >= 0) apply(k, HOST); }
 void settings_json(std::string &out) {
   ArduinoJson::JsonDocument d;
   d["facet"] = "settings";

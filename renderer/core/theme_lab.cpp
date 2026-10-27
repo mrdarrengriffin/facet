@@ -17,6 +17,7 @@
 #include "fx.h"
 #include "theme_file.h"
 #include "theme_gen.h"
+#include "theme_slot.h"
 
 namespace fx {
 namespace {
@@ -119,6 +120,7 @@ void dump(ArduinoJson::JsonObject o, const Skin &s) {
 }  // namespace
 
 std::string theme_lab(const std::string &c, const std::string &a) {
+  if (!c.compare(0, 11, "theme_slot_")) return theme_lab_slot(c, a);  // the sent-theme slot (core/theme_slot.cpp, T4)
   ArduinoJson::JsonDocument d;
   std::vector<ThemeError> err;
   if (c == "theme_load" || c == "theme_dump" || c == "theme_contrast") {
