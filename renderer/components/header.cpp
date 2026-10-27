@@ -131,6 +131,7 @@ void samples(lv_obj_t *h, const std::string &s) {
 void fill(lv_obj_t *h, fw::Props p) {
   fx::name(h, "header");
   fw::shape(h, sig(p));
+  fx::use(h, "part:header");  // the theme's header (C46): face, edges, the text ink of its title
   lv_obj_t *bk = fx::box(h, "header-back"), *ti = fx::box(h, "header-title"), *en = fx::box(h, "header-end"),
            *tm = fx::box(h, "header-time");
   lv_obj_add_event_cb(en, [](lv_event_t *e) { own_tail.erase((lv_obj_t *) lv_event_get_current_target(e)); }, LV_EVENT_DELETE, nullptr);
@@ -182,6 +183,7 @@ void header_hide_time(lv_obj_t *o) {  // and shows the end slot: the control tha
 FW_COMPONENT(header, "Header", "components", R"({
   "about": "The row at the top of every screen: the back button (when there is somewhere to go back to), the screen's name, the end slot, then the time. A screen can put any component in the title slot (it replaces the name and keeps its own width) and any number of components in the end slot (Home puts its settings button there); a long name shortens with an ellipsis, so the end slot always fits.",
   "contract": 2,
+  "parts": ["header"],
   "frame": [480, 80],
   "min": ["layout:ibtn-square", "layout:ibtn-square"],
   "slots": [

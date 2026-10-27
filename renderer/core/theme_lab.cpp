@@ -3,6 +3,8 @@
 //   theme_load <json>      {ok, id, label, bytes, checks, digest, peak, modes, sets, errors: [{path, msg, line}]}
 //   theme_apply <json>     theme_load + {live, gen}: the live slot (fx::theme_apply; a refusal changes nothing)
 //   theme_live             {id, digest, gen}        theme_reset   back to Facet (new generation)
+//   theme_use <id>         a built-in theme (themes/<id>.json) made live, as theme_apply; "" = Facet
+//   (theme_apply / theme_use / theme_reset repaint every look live: fx::restyle, then the default display's stage bg)
 //   theme_break <partial|> the break-it switch (fx::theme_break_partial)
 //   theme_dump <json>      the compiled Skin: each part's merged block per combination of states (inks by name, lengths in px at
 //                          [1.5x, 1x]), look sizes, type, fonts, shapes, the palette of accent set 0 per mode
@@ -12,6 +14,7 @@
 #include <string>
 #include <vector>
 #include "fw.h"
+#include "fx.h"
 #include "theme_file.h"
 #include "theme_gen.h"
 
@@ -19,6 +22,11 @@ namespace fx {
 namespace {
 namespace G = fx::tgen;
 using namespace fx::skin;
+void relook() {  // a live theme switch: the looks, then the stage's canvas (a host stage paints its own bg)
+  fx::restyle();
+  if (lv_display_t *d = lv_display_get_default())
+    if (lv_obj_t *scr = lv_display_get_screen_active(d)) { lv_obj_set_style_bg_color(scr, fx::bg(d), 0); lv_obj_invalidate(scr); }
+}
 std::string hexs(uint64_t v, int w) { char b[24]; snprintf(b, sizeof b, "%0*llx", w, (unsigned long long) v); return b; }
 std::string rgbs(uint32_t c) { char b[12]; snprintf(b, sizeof b, "#%06X", (unsigned) c); return b; }
 std::string ink_name(const Ink &k) {
@@ -128,18 +136,27 @@ std::string theme_lab(const std::string &c, const std::string &a) {
         x.add(r.exact); x.add(r.panel); x.add(r.min); x.add(r.pass);
       }
     }
-  } else if (c == "theme_apply") {
-    theme_apply(a.data(), a.size(), err);
+  } else if (c == "theme_apply" || c == "theme_use") {
+    if (c == "theme_apply") theme_apply(a.data(), a.size(), err);
+    else {
+      int f = -1;
+      for (int i = 0; i < theme_builtins(); i++) if (a == theme_builtin_id(i)) f = i;
+      if (a.empty() || a == "facet") theme_reset();
+      else if (f < 0) err.push_back({"", "no built-in theme \"" + a + "\"", 0});
+      else theme_apply(theme_builtin_json(f), strlen(theme_builtin_json(f)), err);
+    }
+    relook();
     auto o = d.to<ArduinoJson::JsonObject>();
     o["ok"] = err.empty();
     errors(o["errors"].to<ArduinoJson::JsonArray>(), err);
     o["live"] = hexs(theme_live()->digest(), 16); o["id"] = std::string(theme_live()->id); o["gen"] = theme_generation();
   } else if (c == "theme_live" || c == "theme_reset") {
-    if (c == "theme_reset") theme_reset();
+    if (c == "theme_reset") { theme_reset(); relook(); }
     d["live"] = hexs(theme_live()->digest(), 16); d["id"] = std::string(theme_live()->id); d["gen"] = theme_generation();
   } else if (c == "theme_break") {
     theme_break_partial(a == "partial");
-    d["partial"] = a == "partial";
+    fx::break_stale(a == "stale");
+    d["partial"] = a == "partial"; d["stale"] = a == "stale";
   } else if (c == "theme_builtins") {
     auto arr = d.to<ArduinoJson::JsonArray>();
     for (int i = 0; i < theme_builtins(); i++) {
@@ -155,7 +172,7 @@ std::string theme_lab(const std::string &c, const std::string &a) {
     d["schema"] = G::SCHEMA; d["max_bytes"] = G::MAX_BYTES; d["max_values"] = G::MAX_VALUES; d["skin_bytes"] = sizeof(Skin);
     auto l = d["looks"].to<ArduinoJson::JsonArray>();
     for (int i = 0; i < G::N_SIZES; i++) if (G::SIZES[i].look) { auto x = l.add<ArduinoJson::JsonArray>(); x.add(G::SIZES[i].name); x.add(G::SIZES[i].lo[0]); x.add(G::SIZES[i].hi[0]); x.add(G::SIZES[i].lo[1]); x.add(G::SIZES[i].hi[1]); }
-  } else return "theme_load | theme_apply | theme_live | theme_reset | theme_break | theme_dump | theme_contrast | theme_builtins | theme_facet | theme_info";
+  } else return "theme_load | theme_apply | theme_use | theme_live | theme_reset | theme_break | theme_dump | theme_contrast | theme_builtins | theme_facet | theme_info";
   std::string out;
   serializeJson(d, out);
   return out;

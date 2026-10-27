@@ -2,7 +2,8 @@
 // Contract lint (renderer/CONTRACT.md). A component whose meta says "contract": 2 is MIGRATED: it may not know the
 // screen or card width, hold or resolve a colour, draw outside the pen, or set local styles / sizes (it fills its
 // parent through core/fx.h). A violation in a migrated component fails (build.sh, facet-gate). Unmarked components are
-// legacy: counted per rule = the migration backlog, never a failure.
+// legacy: counted per rule = the migration backlog, never a failure. Rule parts: a migrated component's meta "parts" =
+// the parts its code attaches / draws (C46).
 //   node tools/contract_lint.mjs [--summary | --list]   (--list = the legacy backlog per component)
 import { readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -34,6 +35,19 @@ for (const f of readdirSync(DIR).filter((x) => x.endsWith('.cpp')).sort()) {
       if (isV2) bad.push(`${f}:${i + 1}: ${r}: ${line.trim().slice(0, 120)}`);
     }
   });
+  // parts (C46): the parts a migrated component names (fx::use "part:<p>", the Pen's knob / tick / arc parts) = its meta
+  // "parts" list, so docs and the theme guards know which component has which part (text + icon parts are the core's)
+  if (isV2) {
+    const code = src.replace(/\/\/.*$/gm, ''), used = new Set([...code.matchAll(/"part:([a-z-]+)"/g)].map((m) => m[1]));
+    if (/\.knob\(/.test(code)) used.add('knob');
+    if (/\.tick\(/.test(code)) { used.add('tick'); if (/"tick-major"/.test(code)) used.add('tick-major'); }
+    for (const a of ['arc', 'arc-fill']) if (new RegExp(`\\.arc\\([^;]*"${a}"\\)`).test(code)) used.add(a);
+    const meta = src.match(/"parts":\s*\[([^\]]*)\]/);
+    const said = new Set(meta ? [...meta[1].matchAll(/"([a-z-]+)"/g)].map((m) => m[1]) : []);
+    const diff = [...used].filter((x) => !said.has(x)).concat([...said].filter((x) => !used.has(x)));
+    if (!meta) bad.push(`${f}: parts: no meta "parts" list (C46)`);
+    else if (diff.length) bad.push(`${f}: parts: meta "parts" [${[...said]}] != the parts it uses [${[...used]}]`);
+  }
   if (!isV2 && Object.keys(hits).length) {
     perComp.push(`${f.replace('.cpp', '')} ${Object.entries(hits).map(([k, v]) => `${k}=${v}`).join(' ')}`);
     for (const [k, v] of Object.entries(hits)) { legacy[k] = legacy[k] || { comps: 0, lines: 0 }; legacy[k].comps++; legacy[k].lines += v; }

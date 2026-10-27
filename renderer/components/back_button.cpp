@@ -21,6 +21,7 @@ void props(fw::Props p, ArduinoJson::JsonDocument &bp) {  // the Icon button's p
 FW_COMPONENT(back_button, "Back button", "components", R"({
   "about": "The square back arrow at the start of a screen's header.",
   "contract": 2,
+  "parts": [],
   "min": ["layout:ibtn-square", "layout:ibtn-square"],
   "frame": [96, 96],
   "icons": ["back@glyph"],

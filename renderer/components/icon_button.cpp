@@ -114,6 +114,7 @@ void fill(lv_obj_t *b, fw::Props p) {
   } else if (lv_obj_t *g = glyph(b, ic.c_str(), ic.rfind("screen-", 0) == 0 ? "icon" : "glyph", false)) {
     if (fx::icon_multi(g)) { fx::use(b, "bg:pressed-tint", P); fx::use(b, "bg:pressed-tint", C | P); }
   }
+  if (!play) fx::use(b, "part:control");  // the theme's control (C46), last; play is the accent action (its own fill)
   set_state(b, p["state"] | "default", false);
   data(b, p);
 }
@@ -122,6 +123,7 @@ void fill(lv_obj_t *b, fw::Props p) {
 FW_COMPONENT(icon_button, "Icon button", "components", R"({
   "about": "A button that is only an icon: a round play/pause button, or round and square icon buttons.",
   "contract": 2,
+  "parts": ["control"],
   "frame": [160, 128],
   "min": ["layout:ibtn-square", "layout:ibtn-square"],
   "icons": ["play@feature", "pause@feature", "play@glyph", "next@glyph", "prev@glyph", "plus@glyph", "close@glyph", "check@glyph", "back@glyph", "screen-settings@icon", "screen-timer@icon"],

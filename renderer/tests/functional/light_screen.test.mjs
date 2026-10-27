@@ -185,7 +185,7 @@ export default {
       }
       t.eq(bad, [], 'live switch = fresh build');
     } },
-    { name: 'colour + pixel proof: the whole screen switched live = a fresh build', xfail: 'the Header is not on the contract yet (it holds its colours): next slice', async run(t) {
+    { name: 'colour + pixel proof: the whole screen switched live = a fresh build', async run(t) {
       await open(t); look(t, 1, 2); const live = frame565(t);
       await t.b.render('spec', { screen: 'light', entity: E }, 1); t.b.str('spec', (c) => t.b.str(JSON.stringify({ screen: 'light', entity: E }), (p) => t.b.m._fw_render(t.b.stage, c, p, 1, 2)));
       t.ha.push(); t.b.settle(1500); t.eq(diff565(live, frame565(t)), 0, 'px differ');

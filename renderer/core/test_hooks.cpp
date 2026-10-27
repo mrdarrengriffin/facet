@@ -141,7 +141,7 @@ extern "C" EMSCRIPTEN_KEEPALIVE const char *fw_test(const char *cmd, const char 
     if (lv_display_t *disp = lv_display_get_default()) {
       fx::look(disp, fw::T);
       // the stage is the host's canvas (a workbench stage paints its own bg); a panel Page paints bg:bg as a token
-      lv_obj_set_style_bg_color(lv_display_get_screen_active(disp), fw::T->bg, 0);
+      lv_obj_set_style_bg_color(lv_display_get_screen_active(disp), fx::bg(disp), 0);  // = T->bg in Facet
       lv_obj_invalidate(lv_display_get_screen_active(disp));
     }
     return "";

@@ -10,7 +10,9 @@
 // A text that changes no pixel when veiled is invisible: ratio 1, a failure. Exit 1 on any failure. A failing item
 // that a LEGACY component built (one not on the contract, inside a contract one: the Segmented in a Header) is listed
 // as LEGACY and counted, not failed: its migration piece fixes it.
-//   node tools/pixel_contrast.mjs [--den 1x|1.5x] [--ids a,b] [--build <FW_OUT>] [-v]
+// --theme <id,id|all>: the same in each theme (theme engine T2: themes/<id>.json made live before every build, then the
+// live mode switch as above); all = facet + every built-in theme. Default facet.
+//   node tools/pixel_contrast.mjs [--den 1x|1.5x] [--ids a,b] [--theme all] [--build <FW_OUT>] [-v]
 import { readFileSync, existsSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -22,6 +24,7 @@ const arg = (n) => { const i = process.argv.indexOf(n); return i > 0 ? process.a
 const BUILD = arg('--build') || process.env.FW_OUT || env.FW_OUT || join(HERE, 'out');
 const DENS = arg('--den') ? [arg('--den')] : ['1x', '1.5x'].filter((d) => existsSync(join(BUILD, d, 'fw.mjs')));
 const IDS = arg('--ids') ? arg('--ids').split(',') : null;
+const THEME_ARG = arg('--theme') || 'facet';
 const V = process.argv.includes('-v');
 const TICK = 16;
 
@@ -37,8 +40,10 @@ for (const den of DENS) {
   let m = await instance(den, BUILD);
   const metas = JSON.parse(m.UTF8ToString(m._fw_meta())).map((c) => ({ ...c, meta: typeof c.meta === 'string' ? JSON.parse(c.meta) : c.meta }));
   const comps = metas.filter((c) => c.section !== 'screens' && (IDS ? IDS.includes(c.id) : c.meta && c.meta.contract === 2));
-  for (const c of comps) {
+  const THEMES = THEME_ARG === 'all' ? ['facet', ...JSON.parse(m.UTF8ToString(m._fw_lab(-1, m.stringToNewUTF8('theme_builtins'), m.stringToNewUTF8('')))).map((x) => x.id).filter((x) => x !== 'facet')] : THEME_ARG.split(',');
+  for (const theme of THEMES) for (const c of comps) {
     m = await instance(den, BUILD);  // a fresh module per component (one per render runs the heap out)
+    if (theme !== 'facet') { const r = JSON.parse(m.UTF8ToString(m._fw_lab(-1, m.stringToNewUTF8('theme_use'), m.stringToNewUTF8(theme)))); if (!r.ok) { fails++; out.push(`FAIL theme ${theme}: refused ${JSON.stringify(r.errors).slice(0, 200)}`); continue; } }
     const SS = den === '1x' ? 480 : 720, [fw, fh] = c.meta.frame || [SS / D, SS / D];  // as tools/visual.mjs
     const W = Math.round(fw * D), H = fh ? Math.round(fh * D) : SS;
     for (const v of c.meta.variants?.length ? c.meta.variants : [{ label: 'default', props: {} }]) {
@@ -87,7 +92,7 @@ for (const den of DENS) {
             if (!n) best = 1;  // a text that changes no pixel: invisible
             checks++;
             const what = it.k === 'text' ? `"${String(it.s).slice(0, 28)}"` : `icon layer ${it.w}x${it.h}@${it.x},${it.y}`;
-            const line = `${den} ${c.id} "${v.label}" ${look}: ${what} ${best.toFixed(2)} / ${it.min}`;
+            const line = `${den}${theme === 'facet' ? '' : ' ' + theme} ${c.id} "${v.label}" ${look}: ${what} ${best.toFixed(2)} / ${it.min}`;
             if (best + 1e-9 < it.min && it.legacy && c.meta.contract === 2) {  // a legacy component under test (--ids) is never excused
  legacy++; out.push(`LEGACY ${line} (inside ${it.c}, not on the contract yet: reported, not failed)`); }
             else if (best + 1e-9 < it.min) { fails++; out.push(`FAIL ${line}`); } else if (V) out.push(`ok   ${line}`);
@@ -103,5 +108,5 @@ for (const den of DENS) {
   }
 }
 for (const l of out) console.log(l);
-console.log(`pixel contrast: ${checks} checks, ${fails} failed, ${legacy} in legacy parts (${DENS.join(' + ')}${IDS ? `, ${IDS.join(',')}` : ', every contract component'})`);
+console.log(`pixel contrast: ${checks} checks, ${fails} failed, ${legacy} in legacy parts (${DENS.join(' + ')}, themes ${THEME_ARG}${IDS ? `, ${IDS.join(',')}` : ', every contract component'})`);
 process.exit(fails ? 1 : 0);

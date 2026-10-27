@@ -69,11 +69,14 @@ struct Pen {
   lv_layer_t *layer; lv_obj_t *obj; int cx, cy, half;
   void line(int x1, int y1, int x2, int y2, const char *stroke, const char *ink, bool round = false) const;
   // r = the stroke's middle line; 0 deg = 3 o'clock, clockwise; round = round caps
-  void arc(int r, float deg0, float deg1, const char *stroke, const char *ink, bool round = true) const;
+  // part = the drawn part it is (C46: "arc" the track, "arc-fill" the value; nullptr = none): a theme's ink and cap
+  void arc(int r, float deg0, float deg1, const char *stroke, const char *ink, bool round = true, const char *part = nullptr) const;
   void dot(int x, int y, const char *diameter, const char *ink) const;
   // a scale mark at deg, from the box edge inward `length` long (a size token), butt ends kept on the circle
-  void tick(float deg, const char *length, const char *stroke, const char *ink) const;
-  // a round handle of diameter `size` centred on x, y, with a `ring` stroke in `halo` (the canvas colour) round it
+  // part "tick" or "tick-major": a theme's ink and mark shape (lines, dots, blocks, none)
+  void tick(float deg, const char *length, const char *stroke, const char *ink, const char *part = "tick") const;
+  // a round handle of diameter `size` centred on x, y, with a `ring` stroke in `halo` (the canvas colour) round it; the
+  // part "knob": a theme's ink, shape, bevels and shadow
   void knob(int x, int y, const char *size, const char *ink, const char *halo, const char *ring) const;
   // a short text centred on x, y (its digits' visual middle on y: the text-box rule), in a type style and ink
   void text(int x, int y, const char *s, const char *type, const char *ink) const;
@@ -95,6 +98,13 @@ void pointer(lv_obj_t *o, float *deg, int *dist, int *half);
 // The look of a display: its shared styles painted from theme t (+ the type fonts of the text-size setting). The ONE
 // place a theme / accent / text-size change lands: repaints that display's styles, one report_style_change.
 void look(lv_display_t *d, const fw::Theme *t);
+// a theme was applied (fx::theme_apply / theme_reset, core/theme_file.h): every display's look repaints from the live
+// Skin when its generation is old (one style change; no component rebuilt or told, C44)
+void restyle();
+lv_color_t bg(lv_display_t *d);
+#ifndef ESP_PLATFORM
+void break_stale(bool on);  // break-it (tests only): a live theme switch repaints nothing; the live = fresh proof must go red
+#endif  // the canvas colour under a contract page in the live theme (the stage / screen bg)
 // Screen > Page > Header slot + Body. head = inset top/sides, lay::top tall (the Header
 // component sits at its content origin); body = the rest, inset padding INSIDE it. body: "list" (scrolling column,
 // rows touch), "cards" (scrolling wrap, gutter both ways), "center" (one node centred, no scroll), "page" (scrolling

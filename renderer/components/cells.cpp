@@ -89,6 +89,7 @@ lv_obj_t *make(lv_obj_t *g, const Cells &k, char kind) {
       lv_obj_t *ink = fx::box(r, "free");
       fx::use(ink, "fill");
       fx::use(ink, "bg:line");
+      fx::use(ink, "part:rule");  // the theme's rule (C46)
     }
     lv_obj_t *h = slot(fx::box(pr, "col"));
     fx::use(h, "h:pair-h");
@@ -147,6 +148,7 @@ Cells read(fw::Props p) {
 FW_COMPONENT(cells, "Cells", "components", R"({
   "about": "A layout: rows of equal cells, one component in each. As many columns as cells of the minimum width fit; the cells share the rest. The Home grid.",
   "contract": 2,
+  "parts": ["rule"],
   "frame": [480, 0],
   "min": ["layout:tile-w", "layout:tile-h"],
   "slots": 24,

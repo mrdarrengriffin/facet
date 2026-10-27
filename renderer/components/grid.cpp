@@ -145,6 +145,7 @@ void on_cols(lv_event_t *e) {
 FW_COMPONENT(grid, "Grid", "components", R"({
   "about": "A layout of equal cells in columns: a fixed number of columns, or as many as fit a minimum cell size. Put other components in its cells (in + slot, a node may span several cells), or give it a list of items to repeat one cell per item, such as an icon per item in an entity attribute.",
   "contract": 2,
+  "parts": [],
   "frame": [480, 360],
   "min": ["layout:tile-w", "layout:tile-w"],
   "slots": [

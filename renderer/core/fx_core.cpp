@@ -6,6 +6,10 @@
 #include "fw.h"
 #include "fx_gen.h"
 #include "spec.h"  // spec::SLOT: a Grid cell is a slot
+#include "theme_file.h"  // the live Skin (core only, C44): its palette, parts, shapes
+#include "theme_gen.h"   // the part list (tokens/theme.json)
+#include "draw/lv_draw_private.h"  // a text part's shadow: its label task drawn twice (core/fx_core.cpp text_shadow)
+#include <memory>
 #include "core/lv_obj_private.h"  // fx::uses walks o->styles
 #include "core/lv_obj_style_private.h"
 #include "display/lv_display_private.h"  // a display going away: its objects first, then its look (no leak)
@@ -19,7 +23,14 @@ namespace fw { void text_metrics(ty::Id s, int &line_space, int &pad_top, int &p
 
 namespace {
 enum Kind { FG, BG, BORDER, LINE, INK, PAD, GAP, PADX, RADIUS, HEIGHT, MAXH, MINW, MAXW, WIDTH, TYPE, SHAPE, DERIVED,
-            TINT, OUTLINE, DIGIT, COLON, RAISE, BASE };
+            TINT, OUTLINE, DIGIT, COLON, RAISE, BASE, PART, PTEXT };
+namespace G = fx::tgen;
+namespace S = fx::skin;
+#ifdef FW_1X
+constexpr int DN = 1;  // a Skin length's px at this density ([1.5x, 1x])
+#else
+constexpr int DN = 0;
+#endif
 struct Def { std::string name; Kind k; int i; };
 std::vector<Def> defs;  // sorted by name
 const char *const SHAPES[] = {"box", "col", "row", "stack", "centre", "cell", "grow", "free", "page", "page-head", "body",
@@ -44,8 +55,37 @@ const char *type_name(fw::ty::Id id) {
 }
 // derived sizes: one value worked out from other tokens, so a component never does the sum (paint() says how)
 const char *const DERIVED_N[] = {"dial-wing-up", "dial-wing-down", "dial-slot", "card-pad", "card-text", "card-gap", "card-gap-s", "card-row", "pair-rule", "label-row"};
-struct Look { lv_display_t *d; const fw::Theme *t = nullptr; int large = -1; std::vector<lv_style_t> s; };
+// A display's look: its shared styles painted from theme t (mode + accent set) through the live Skin (theme_live: its
+// palette for that mode x set = th, the colours every contract style reads; Facet's Skin = Facet's colours, so th == *t)
+// and its generation (gen: a theme apply bumps it, the look repaints; never by Skin pointer, a freed one's address can
+// come back). Legacy components keep fw::T (Facet's palette): never half-themed (theme-engine design 8).
+struct Look { lv_display_t *d; const fw::Theme *t = nullptr; int large = -1; uint32_t gen = 0; std::shared_ptr<const fx::Skin> skin;
+              fw::Theme th; std::vector<lv_style_t> s; };
+// parts (C46, tokens/theme.json parts): "part:<p>" = 16 shared styles, one per combination of on / focus / pressed /
+// disabled (bit i = state i, the merge order), each the part's MERGED block for that combination (Skin::merged), attached
+// last at exactly that selector: LVGL takes each property from the matching style with the largest state, newest first
+// at equal state, so the theme's block wins at its own weight and a key it does not set lets the component's token show
+// (design 3.4). "ptext:<p>" = the same 16 with only the part's text ink: on every text and icon ink inside the part.
+int part_def[G::N_PARTS][16], ptext_def[G::N_PARTS][16];
+int skin_ix[256];          // fx colour token -> Skin palette index (by name)
+int type_part[64];         // fx type style -> its text part (tokens/theme.json parts of kind text)
+bool boxy(int p) { const char *k = G::PARTS[p].kind; return !strcmp(k, "box") || !strcmp(k, "header") || !strcmp(k, "frame") || !strcmp(k, "caption"); }
+bool styled(int p) { const char *k = G::PARTS[p].kind; return boxy(p) || !strcmp(k, "text") || !strcmp(k, "icon"); }
+int part_ix(const char *n) { for (int p = 0; p < G::N_PARTS; p++) if (!strcmp(G::PARTS[p].name, n)) return p; abort(); }
+lv_style_selector_t sel_of(int m) {
+  return (m & S::ON ? LV_STATE_CHECKED : 0) | (m & S::FOCUS ? LV_STATE_FOCUSED : 0) | (m & S::PRESSED ? LV_STATE_PRESSED : 0) | (m & S::DISABLED ? fw::st::OFF : 0);
+}
+int combo(lv_obj_t *o) {  // the object's states as a part combination
+  const lv_state_t s = lv_obj_get_state(o);
+  return (s & LV_STATE_CHECKED ? S::ON : 0) | (s & LV_STATE_FOCUSED ? S::FOCUS : 0) | (s & LV_STATE_PRESSED ? S::PRESSED : 0) | (s & fw::st::OFF ? S::DISABLED : 0);
+}
 std::vector<Look *> looks;
+#ifndef ESP_PLATFORM
+bool stale = false;  // break-it (fx::break_stale): looks ignore the theme generation, so a live switch never repaints
+#define GEN_OLD(L) (!stale && (L)->gen != fx::theme_generation())
+#else
+#define GEN_OLD(L) ((L)->gen != fx::theme_generation())
+#endif
 
 void init_defs() {
   if (!defs.empty()) return;
@@ -84,8 +124,39 @@ void init_defs() {
   }
   for (int i = 0; i < (int) (sizeof(BASES) / sizeof(BASES[0])); i++)
     defs.push_back({std::string("baseline:") + type_name(BASES[i].a) + ":" + type_name(BASES[i].b), BASE, i});
+  for (int p = 0; p < G::N_PARTS; p++) {  // "part:card", then "part:card~1" .. "~f" (the combinations, attached together)
+    if (!styled(p)) continue;  // drawn parts (knob, tick, arc) are the Pen's, read at draw time
+    for (int m = 0; m < 16; m++) {
+      static const char HEX[] = "0123456789abcdef";
+      const std::string sfx = m ? std::string("~") + HEX[m] : "";
+      defs.push_back({std::string("part:") + G::PARTS[p].name + sfx, PART, p * 16 + m});
+      if (boxy(p)) defs.push_back({std::string("ptext:") + G::PARTS[p].name + sfx, PTEXT, p * 16 + m});
+    }
+  }
   std::sort(defs.begin(), defs.end(), [](const Def &a, const Def &b) { return a.name < b.name; });
   for (size_t i = 1; i < defs.size(); i++) if (defs[i].name == defs[i - 1].name) abort();  // a name made twice
+  for (size_t i = 0; i < defs.size(); i++)
+    if (defs[i].k == PART) part_def[defs[i].i / 16][defs[i].i % 16] = (int) i;
+    else if (defs[i].k == PTEXT) ptext_def[defs[i].i / 16][defs[i].i % 16] = (int) i;
+  static_assert(fx::gen::N_COLOURS <= 256 && fx::gen::N_TYPES <= 64, "skin_ix / type_part");
+  for (int i = 0; i < fx::gen::N_COLOURS; i++) {
+    skin_ix[i] = -1;
+    for (int c = 0; c < G::N_COLOURS; c++) if (!strcmp(G::COLOURS[c], fx::gen::COLOURS[i].name)) skin_ix[i] = c;
+    if (skin_ix[i] < 0) abort();  // a colour token the theme schema does not have: gen_theme.mjs is out of date
+  }
+  // a type style's text part: its own name (title, body, label, value, display), else the nearest kind of text
+  for (int i = 0; i < fx::gen::N_TYPES; i++) {
+    const std::string n = fx::gen::TYPES[i].name;
+    const char *q = "label";
+    for (const char *t : {"title", "body", "label", "value", "display"}) if (n == t) q = t;
+    if (q == std::string("label")) {
+      if (n == "hero" || n == "headline" || n.find("clock") != std::string::npos) q = "display";
+      else if (n.find("title") != std::string::npos) q = "title";
+      else if (n.find("number") != std::string::npos || n.find("value") != std::string::npos) q = "value";
+      else if (n.find("body") != std::string::npos) q = "body";
+    }
+    type_part[i] = part_ix(q);
+  }
 }
 int index_of(const char *n) {
   init_defs();
@@ -201,12 +272,45 @@ lv_color_t colour(int i, const fw::Theme *t) {  // a colour token or a state rol
   return i < fx::gen::N_COLOURS ? t->*fx::gen::COLOURS[i].f : fx::gen::ROLES[i - fx::gen::N_COLOURS].f(*t);
 }
 int box_of(fw::ty::Id id) { return fw::ty::STYLES[id].box; }
+lv_color_t hex(uint32_t c) { return lv_color_hex(c); }
+// a part's style for one combination: what its merged block sets, nothing else (text = only the text ink)
+void part_style(Look *L, lv_style_t *s, int p, int m, bool text_only) {
+  lv_style_reset(s);  // a key the new theme does not set must go
+  lv_style_init(s);
+  const S::Skin &k = *L->skin;
+  const S::Block b = k.merged(p, m);
+  const int lt = L->th.light, set = L->th.accent_set;
+  auto ink = [&](const S::Ink &i) { return hex(k.ink(i, lt, set)); };
+  if (text_only || !boxy(p)) {  // a text / icon part, or the text ink of a box part: labels and icon ink layers take it
+    if (b.has & S::K_TEXT) {
+      lv_style_set_text_color(s, ink(b.text));
+      lv_style_set_image_recolor(s, ink(b.text)); lv_style_set_image_recolor_opa(s, LV_OPA_COVER);
+    }
+    return;
+  }
+  if (b.has & S::K_FACE) {  // the face replaces the component's fill (a pattern's second ink: drawn by part_draw)
+    lv_style_set_bg_color(s, ink(b.face.a)); lv_style_set_bg_opa(s, LV_OPA_COVER);
+    if (b.face.fill == S::FILL_GRADIENT) { lv_style_set_bg_grad_color(s, ink(b.face.b)); lv_style_set_bg_grad_dir(s, b.face.down ? LV_GRAD_DIR_VER : LV_GRAD_DIR_HOR); }
+    else lv_style_set_bg_grad_dir(s, LV_GRAD_DIR_NONE);
+  }
+  if (b.has & S::K_RADIUS) lv_style_set_radius(s, b.radius.px[DN]);
+  // the theme's edges replace the component's border (drawn by part_draw); its width stays, so nothing moves (C45)
+  if (b.has & S::K_EDGES) lv_style_set_border_opa(s, LV_OPA_TRANSP);
+}
+void palette(Look *L, const fw::Theme *t) {  // th = t's colours through the live Skin (mode x accent set)
+  L->skin = fx::theme_live(); L->gen = fx::theme_generation();
+  L->th = *t;
+  for (int i = 0; i < fx::gen::N_COLOURS; i++) L->th.*fx::gen::COLOURS[i].f = hex(L->skin->rgb(t->light, t->accent_set, skin_ix[i]));
+}
 void paint(Look *L, const fw::Theme *t, int only = -1) {  // colours from the theme, type from the text-size setting (only = one def)
   L->t = t; L->large = fw::text_large();
+  if (only < 0 || !L->skin) palette(L, t);
+  const fw::Theme *th = &L->th;  // every colour below: the skinned palette
   for (size_t i = 0; i < defs.size(); i++) {
     if (only >= 0 && (int) i != only) continue;
     lv_style_t *s = &L->s[i];
     const Def &d = defs[i];
+    if (d.k == PART || d.k == PTEXT) { part_style(L, s, d.i / 16, d.i % 16, d.k == PTEXT); continue; }
     if (d.k == DERIVED) {
       // dial-wing: the Dial's centre column is wing + value + wing, so the value's middle is the dial's middle (the
       // approved geometry). Above: caption + space 7; below: space 2 + unit + space 9 + the button. Both wings take
@@ -245,9 +349,9 @@ void paint(Look *L, const fw::Theme *t, int only = -1) {  // colours from the th
       if (top) lv_style_set_pad_bottom(s, s7); else { lv_style_set_pad_top(s, s2); lv_style_set_pad_row(s, s9); }
       continue;
     }
-    if (d.k == TINT) { lv_style_set_bg_color(s, colour(d.i, t)); lv_style_set_bg_opa(s, (lv_opa_t) lroundf(fw::tokens::comp::chip_tint * 255)); continue; }
+    if (d.k == TINT) { lv_style_set_bg_color(s, colour(d.i, th)); lv_style_set_bg_opa(s, (lv_opa_t) lroundf(fw::tokens::comp::chip_tint * 255)); continue; }
     if (d.k == OUTLINE) {
-      lv_style_set_outline_color(s, colour(d.i, t)); lv_style_set_outline_opa(s, LV_OPA_COVER);
+      lv_style_set_outline_color(s, colour(d.i, th)); lv_style_set_outline_opa(s, LV_OPA_COVER);
       lv_style_set_outline_width(s, tok("stroke:focus", fw::stroke::focus)); lv_style_set_outline_pad(s, tok("touch:focus-offset", fw::touch::focus_offset) - tok("stroke:focus", fw::stroke::focus));  // the ring's outer edge at the offset
       continue;
     }
@@ -276,7 +380,7 @@ void paint(Look *L, const fw::Theme *t, int only = -1) {  // colours from the th
       continue;
     }
     if (d.k <= INK) {
-      const lv_color_t c = colour(d.i, t);
+      const lv_color_t c = colour(d.i, th);
       if (d.k == FG) lv_style_set_text_color(s, c);
       else if (d.k == INK) { lv_style_set_image_recolor(s, c); lv_style_set_image_recolor_opa(s, LV_OPA_COVER); }
       else if (d.k == BG) { lv_style_set_bg_color(s, c); lv_style_set_bg_opa(s, LV_OPA_COVER); }
@@ -338,7 +442,7 @@ Look *look_of(lv_obj_t *o) {
   lv_display_t *d = o ? lv_obj_get_display(o) : nullptr;
   if (!d) d = lv_display_get_default();
   for (Look *L : looks) if (L->d == d) {
-    if (fw::T && (L->t != fw::T || L->large != (int) fw::text_large())) { paint(L, fw::T); lv_obj_report_style_change(nullptr); }
+    if (fw::T && (L->t != fw::T || L->large != (int) fw::text_large() || GEN_OLD(L))) { paint(L, fw::T); lv_obj_report_style_change(nullptr); }
     return L;
   }
   return make(d, fw::T ? fw::T : fw::theme(false));
@@ -347,7 +451,145 @@ Look *look_of(lv_obj_t *o) {
 lv_color_t ink(lv_obj_t *o, const char *n) {
   const int i = ix(n);
   if (defs[i].k > LINE) abort();
-  return colour(defs[i].i, look_of(o)->t);
+  return colour(defs[i].i, &look_of(o)->th);
+}
+// ---- parts at draw time: edges, shadows, pattern faces (box parts) and text shadows; no extra objects (C24 core-only)
+std::map<lv_obj_t *, int> part_of;  // an object -> the box part on it (its texts and icon inks take the part's text ink)
+void edge_bar(lv_layer_t *ly, int x1, int y1, int x2, int y2, lv_color_t c, bool dotted) {
+  if (x2 < x1 || y2 < y1) return;
+  if (dotted) {  // every other cell of its width (a dashed line along the bar)
+    const bool hor = x2 - x1 >= y2 - y1;
+    const int w = hor ? y2 - y1 + 1 : x2 - x1 + 1;
+    lv_draw_line_dsc_t d;
+    lv_draw_line_dsc_init(&d);
+    d.color = c; d.width = w; d.dash_width = w; d.dash_gap = w; d.opa = LV_OPA_COVER;
+    if (hor) { d.p1.x = x1; d.p2.x = x2 + 1; d.p1.y = d.p2.y = y1 + w / 2; } else { d.p1.y = y1; d.p2.y = y2 + 1; d.p1.x = d.p2.x = x1 + w / 2; }
+    lv_draw_line(ly, &d);
+    return;
+  }
+  lv_draw_rect_dsc_t d;
+  lv_draw_rect_dsc_init(&d);
+  d.bg_color = c; d.bg_opa = LV_OPA_COVER;
+  const lv_area_t a = {x1, y1, x2, y2};
+  lv_draw_rect(ly, &d, &a);
+}
+// a block's edge layers inside area A (outermost first, each inset from A's edge; later layers on top)
+void draw_edges(lv_layer_t *ly, const lv_area_t &A, const S::Skin &k, const S::Block &b, int lt, int set, int radius) {
+  for (int i = 0; i < b.n_edges; i++) {
+    const S::Edge &e = k.edges[b.edge0 + i];
+    const int w = e.w.px[DN], in = e.inset.px[DN];
+    if (w <= 0) continue;
+    const lv_area_t a = {A.x1 + in, A.y1 + in, A.x2 - in, A.y2 - in};
+    if (a.x2 - a.x1 < 2 * w || a.y2 - a.y1 < 2 * w) continue;
+    const lv_color_t c = hex(k.ink(e.ink, lt, set));
+    if (e.side == S::SIDE_ALL && !e.dotted && radius > in) {  // a round box: one ring
+      lv_draw_rect_dsc_t d;
+      lv_draw_rect_dsc_init(&d);
+      d.bg_opa = LV_OPA_TRANSP; d.border_color = c; d.border_width = w; d.border_opa = LV_OPA_COVER; d.radius = radius - in;
+      lv_draw_rect(ly, &d, &a);
+      continue;
+    }
+    const int sd = e.side == S::SIDE_TL ? (S::SIDE_TOP | S::SIDE_LEFT) : e.side == S::SIDE_BR ? (S::SIDE_BOTTOM | S::SIDE_RIGHT) : e.side;
+    if (sd & S::SIDE_TOP) edge_bar(ly, a.x1, a.y1, a.x2, a.y1 + w - 1, c, e.dotted);
+    if (sd & S::SIDE_LEFT) edge_bar(ly, a.x1, a.y1, a.x1 + w - 1, a.y2, c, e.dotted);
+    if (sd & S::SIDE_BOTTOM) edge_bar(ly, a.x1, a.y2 - w + 1, a.x2, a.y2, c, e.dotted);
+    if (sd & S::SIDE_RIGHT) edge_bar(ly, a.x2 - w + 1, a.y1, a.x2, a.y2, c, e.dotted);
+  }
+}
+int shadow_reach(const S::Skin &k, int p) {  // the farthest any combination's shadow reaches outside the box
+  int r = 0;
+  for (int m = 0; m < 16; m++) {
+    const S::Block b = k.merged(p, m);
+    if (b.has & S::K_SHADOW) r = std::max(r, std::max(abs(b.shadow.dx.px[DN]), abs(b.shadow.dy.px[DN])));
+  }
+  return r;
+}
+Look *look_of(lv_obj_t *o);
+void part_draw(lv_event_t *e) {  // a box part: shadow under it (MAIN_BEGIN), pattern face + edges over its fill (MAIN_END)
+  lv_obj_t *o = (lv_obj_t *) lv_event_get_current_target(e);
+  const int p = (int) (intptr_t) lv_event_get_user_data(e);
+  Look *L = look_of(o);
+  const S::Skin &k = *L->skin;
+  if (lv_event_get_code(e) == LV_EVENT_REFR_EXT_DRAW_SIZE) { lv_event_set_ext_draw_size(e, shadow_reach(k, p)); return; }
+  const S::Block b = k.merged(p, combo(o));
+  if (!(b.has & (S::K_SHADOW | S::K_EDGES | S::K_FACE))) return;  // Facet: nothing (no draw call, S1)
+  lv_layer_t *ly = lv_event_get_layer(e);
+  const int lt = L->th.light, set = L->th.accent_set, radius = lv_obj_get_style_radius(o, LV_PART_MAIN);
+  lv_area_t A;
+  lv_obj_get_coords(o, &A);
+  if (lv_event_get_code(e) == LV_EVENT_DRAW_MAIN_BEGIN) {
+    if (!(b.has & S::K_SHADOW)) return;
+    lv_draw_rect_dsc_t d;
+    lv_draw_rect_dsc_init(&d);
+    d.bg_color = hex(k.ink(b.shadow.ink, lt, set)); d.bg_opa = LV_OPA_COVER; d.radius = radius;
+    lv_area_move(&A, b.shadow.dx.px[DN], b.shadow.dy.px[DN]);
+    lv_draw_rect(ly, &d, &A);
+    return;
+  }
+  if ((b.has & S::K_FACE) && (b.face.fill == S::FILL_CHECKER || b.face.fill == S::FILL_BLOCKS)) {
+    // the second ink in cells over the first (the bg): checker = alternate cells of stroke:pixel (or the run), blocks
+    // = run-wide blocks with gap between, rows of run with gap rows between; one dashed line per row of cells
+    const bool chk = b.face.fill == S::FILL_CHECKER;
+    const int px = std::max(1, (int) fx::size("stroke:pixel"));
+    const int run = std::max(1, b.face.run.px[DN] > 0 ? (int) b.face.run.px[DN] : px), gap = chk ? run : std::max(1, (int) b.face.gap.px[DN]);
+    const lv_color_t c = hex(k.ink(b.face.b, lt, set));
+    for (int y = A.y1, row = 0; y <= A.y2; y += chk ? run : run + gap, row++) {
+      lv_draw_line_dsc_t d;
+      lv_draw_line_dsc_init(&d);
+      d.color = c; d.opa = LV_OPA_COVER; d.width = std::min(run, A.y2 - y + 1); d.dash_width = run; d.dash_gap = gap;
+      d.p1.x = A.x1 + (chk && (row & 1) ? run : 0); d.p2.x = A.x2 + 1; d.p1.y = d.p2.y = y + d.width / 2;
+      if (d.p1.x <= A.x2) lv_draw_line(ly, &d);
+    }
+  }
+  if (b.has & S::K_EDGES) draw_edges(ly, A, k, b, lt, set, radius);
+}
+// a text part's shadow: the label's own draw task becomes the shadow (moved, in the shadow ink) and the text is drawn
+// again on top, so the text keeps its exact layout (ellipsis, alignment) with no copy of the label code
+bool in_shadow = false;
+void text_shadow(lv_event_t *e) {
+  lv_obj_t *o = (lv_obj_t *) lv_event_get_current_target(e);
+  const int p = (int) (intptr_t) lv_event_get_user_data(e);
+  Look *L = look_of(o);
+  const S::Block b = L->skin->merged(p, combo(o));
+  if (lv_event_get_code(e) == LV_EVENT_REFR_EXT_DRAW_SIZE) { lv_event_set_ext_draw_size(e, shadow_reach(*L->skin, p)); return; }
+  if (in_shadow || !(b.has & S::K_SHADOW)) return;
+  lv_draw_task_t *t = lv_event_get_draw_task(e);
+  if (t->type != LV_DRAW_TASK_TYPE_LABEL) return;
+  auto *dsc = (lv_draw_label_dsc_t *) t->draw_dsc;
+  lv_draw_label_dsc_t top = *dsc;
+  const lv_area_t at = t->area;
+  dsc->color = hex(L->skin->ink(b.shadow.ink, L->th.light, L->th.accent_set));
+  const int dx = b.shadow.dx.px[DN], dy = b.shadow.dy.px[DN];
+  lv_area_move(&t->area, dx, dy); lv_area_move(&t->_real_area, dx, dy);
+  in_shadow = true;
+  lv_draw_label(t->target_layer, &top, &at);
+  in_shadow = false;
+}
+// a text's parts: its type's text part, then the nearest box part round it (its text ink wins: the part's face is under it)
+void text_parts(lv_obj_t *o, Look *L, int tp, bool label) {
+  if (label) {  // the shadow callbacks first: adding the styles below then sizes the label's ext draw area (shadow reach)
+    lv_obj_add_flag(o, LV_OBJ_FLAG_SEND_DRAW_TASK_EVENTS);
+    lv_obj_add_event_cb(o, text_shadow, LV_EVENT_DRAW_TASK_ADDED, (void *) (intptr_t) tp);
+    lv_obj_add_event_cb(o, text_shadow, LV_EVENT_REFR_EXT_DRAW_SIZE, (void *) (intptr_t) tp);
+  }
+  for (int m = 0; m < 16; m++) lv_obj_add_style(o, &L->s[part_def[tp][m]], sel_of(m));
+  for (lv_obj_t *a = lv_obj_get_parent(o); a; a = lv_obj_get_parent(a)) {
+    auto it = part_of.find(a);
+    if (it == part_of.end()) continue;
+    for (int m = 0; m < 16; m++) lv_obj_add_style(o, &L->s[ptext_def[it->second][m]], sel_of(m));
+    break;
+  }
+  if (label) lv_obj_refresh_ext_draw_size(o);
+}
+// a drawn part's block now (the Pen's object's states); ink = the theme's ink for it, unless the component shows a
+// state the theme says nothing about (disabled with no disabled ink keeps the component's dimmed ink)
+struct PenPart { S::Block b; const S::Skin *k; int lt, set; bool ink; };
+PenPart pen_part(lv_obj_t *o, int p) {
+  Look *L = look_of(o);
+  const int m = combo(o);
+  PenPart r{L->skin->merged(p, m), L->skin.get(), L->th.light, L->th.accent_set, false};
+  r.ink = (r.b.has & S::K_INK) && (!(m & S::DISABLED) || (L->skin->state[p][1 + G::ST_DISABLED].has & S::K_INK));
+  return r;
 }
 std::map<lv_obj_t *, const char *> names;
 void forget(lv_event_t *e) { names.erase((lv_obj_t *) lv_event_get_current_target(e)); }
@@ -382,12 +624,67 @@ void on_size(lv_event_t *e) {  // a drawn box: content height >= content width
 namespace fx {
 void look(lv_display_t *d, const fw::Theme *t) {
   for (Look *L : looks) if (L->d == d) {
-    if (L->t != t || L->large != (int) fw::text_large()) { paint(L, t); lv_obj_report_style_change(nullptr); }
+    if (L->t != t || L->large != (int) fw::text_large() || GEN_OLD(L)) { paint(L, t); lv_obj_report_style_change(nullptr); }
     return;
   }
   make(d, t);
 }
-void use(lv_obj_t *o, const char *t, lv_style_selector_t sel) { lv_obj_add_style(o, &look_of(o)->s[ix(t)], sel); }
+void restyle() {  // a theme was applied: every look whose generation is old repaints, one style change for all
+  bool any = false;
+  for (Look *L : looks) if (GEN_OLD(L)) { paint(L, L->t); any = true; }
+  if (any) lv_obj_report_style_change(nullptr);
+}
+#ifndef ESP_PLATFORM
+void break_stale(bool on) { stale = on; }
+#endif
+lv_color_t bg(lv_display_t *d) {  // the canvas under a contract page: bg in the live theme (fw::T's mode + accent)
+  if (fw::T) look(d, fw::T);
+  for (Look *L : looks) if (L->d == d) return L->th.bg;
+  return make(d, fw::T ? fw::T : fw::theme(false))->th.bg;
+}
+void use(lv_obj_t *o, const char *t, lv_style_selector_t sel) {
+  Look *L = look_of(o);
+  const int i = ix(t);
+  if (defs[i].k == PTEXT) abort();  // the core's own (text_parts)
+  if (defs[i].k != PART) { lv_obj_add_style(o, &L->s[i], sel); return; }
+  // a part (C46): its 16 combinations, last (after the component's own state tokens); a box part also draws its edges,
+  // shadow and pattern (once per object: a refill re-adds the styles, the callbacks stay) and tints the texts inside
+  const int p = defs[i].i / 16;
+  if (sel || defs[i].i % 16) abort();  // a part is attached whole, at every state
+  if (boxy(p) && !part_of.count(o)) {  // its draw callbacks first (once per object): the styles below then size its ext area
+    lv_obj_add_event_cb(o, part_draw, LV_EVENT_DRAW_MAIN_BEGIN, (void *) (intptr_t) p);
+    lv_obj_add_event_cb(o, part_draw, LV_EVENT_DRAW_MAIN_END, (void *) (intptr_t) p);
+    lv_obj_add_event_cb(o, part_draw, LV_EVENT_REFR_EXT_DRAW_SIZE, (void *) (intptr_t) p);
+    lv_obj_add_event_cb(o, [](lv_event_t *e) { part_of.erase((lv_obj_t *) lv_event_get_current_target(e)); }, LV_EVENT_DELETE, nullptr);
+  }
+  for (int m = 0; m < 16; m++) lv_obj_add_style(o, &L->s[part_def[p][m]], sel_of(m));
+  if (!boxy(p)) return;
+  // texts and icon inks already inside (built before the part was attached) take its text ink now; a part inside owns its own
+  std::vector<lv_obj_t *> todo;
+  for (uint32_t c = 0; c < lv_obj_get_child_count(o); c++) todo.push_back(lv_obj_get_child(o, (int32_t) c));
+  while (!todo.empty()) {
+    lv_obj_t *x = todo.back();
+    todo.pop_back();
+    if (part_of.count(x)) continue;
+    bool texty = false;
+    for (uint32_t k = 0; k < x->style_cnt && !texty; k++) {
+      const lv_style_t *st = x->styles[k].style;
+      if (st >= L->s.data() && st < L->s.data() + L->s.size()) { const Def &dd = defs[st - L->s.data()]; texty = dd.k == PART && !boxy(dd.i / 16); }
+    }
+    if (texty) {  // this part is now its nearest: an outer part's text ink goes (an icon in a header's button)
+      std::vector<lv_style_t *> old;
+      for (uint32_t k = 0; k < x->style_cnt; k++) {
+        const lv_style_t *st = x->styles[k].style;
+        if (st >= L->s.data() && st < L->s.data() + L->s.size() && defs[st - L->s.data()].k == PTEXT) old.push_back(&L->s[st - L->s.data()]);
+      }
+      for (lv_style_t *st : old) lv_obj_remove_style(x, st, (lv_style_selector_t) (LV_PART_ANY | LV_STATE_ANY));
+      for (int m = 0; m < 16; m++) lv_obj_add_style(x, &L->s[ptext_def[p][m]], sel_of(m));
+    }
+    for (uint32_t c = 0; c < lv_obj_get_child_count(x); c++) todo.push_back(lv_obj_get_child(x, (int32_t) c));
+  }
+  part_of[o] = p;
+  lv_obj_refresh_ext_draw_size(o);
+}
 lv_obj_t *box(lv_obj_t *p, const char *layout) {
   lv_obj_t *o = lv_obj_create(p);
   lv_obj_remove_style_all(o);
@@ -402,6 +699,7 @@ lv_obj_t *text(lv_obj_t *p, const char *s, const char *type, const char *fg) {
   lv_obj_remove_style_all(o);
   lv_obj_remove_flag(o, LV_OBJ_FLAG_CLICKABLE);
   use(o, type); use(o, fg);
+  text_parts(o, look_of(o), type_part[defs[ix(type)].i], true);  // the theme's text parts, last
   lv_label_set_text(o, fw::cased(type_id(type), s).c_str());
   return o;
 }
@@ -427,6 +725,7 @@ lv_obj_t *icon(lv_obj_t *p, const char *name, const char *size, const char *ink)
     lv_obj_remove_local_style_prop(im, LV_STYLE_IMAGE_RECOLOR_OPA, 0);
     use(im, role == fw::ic::R_accent ? "ink:accent" : role == fw::ic::R_text_dim ? "ink:text-dim" : role == fw::ic::R_blue ? "ink:blue"
             : role == fw::ic::R_steel ? "ink:steel" : (std::string("ink:") + (strchr(ink, ':') + 1)).c_str());
+    if (role == fw::ic::R_ink) text_parts(im, look_of(im), part_ix("icon"), false);  // the ink layers: the icon part + the box's text ink
   }
   return b;
 }
@@ -482,18 +781,19 @@ void Pen::line(int x1, int y1, int x2, int y2, const char *stroke, const char *k
   lv_draw_line_dsc_t d;
   lv_draw_line_dsc_init(&d);
   d.p1.x = cx + x1; d.p1.y = cy + y1; d.p2.x = cx + x2; d.p2.y = cy + y2;
-  d.width = w; d.color = ink(obj, k); d.opa = LV_OPA_COVER; d.round_start = d.round_end = round;
+  d.width = w; d.color = ink(obj, k); d.opa = LV_OPA_COVER; d.round_start = d.round_end = round && !look_of(obj)->skin->cap;
   lv_draw_line(layer, &d);
 }
-void Pen::arc(int r, float a0, float a1, const char *stroke, const char *k, bool round) const {
+void Pen::arc(int r, float a0, float a1, const char *stroke, const char *k, bool round, const char *part) const {
   if (r < 1 || a1 - a0 < 0.5f) return;
   lv_draw_arc_dsc_t d;
   lv_draw_arc_dsc_init(&d);
   const int w = size(stroke);
   if (!sees(-r - w, -r - w, r + w, r + w)) return;
-  d.center.x = cx; d.center.y = cy; d.radius = r + w / 2; d.width = w; d.rounded = round;
+  const PenPart pp = part ? pen_part(obj, part_ix(part)) : PenPart{S::Block(), look_of(obj)->skin.get(), 0, 0, false};
+  d.center.x = cx; d.center.y = cy; d.radius = r + w / 2; d.width = w; d.rounded = round && !pp.k->cap;  // shape.cap square: butt ends
   d.start_angle = fmodf(a0, 360); d.end_angle = fmodf(a1, 360);
-  d.color = ink(obj, k); d.opa = LV_OPA_COVER;
+  d.color = pp.ink ? hex(pp.k->ink(pp.b.ink, pp.lt, pp.set)) : ink(obj, k); d.opa = LV_OPA_COVER;
   lv_draw_arc(layer, &d);
 }
 void Pen::dot(int x, int y, const char *diameter, const char *k) const {
@@ -505,7 +805,7 @@ void Pen::dot(int x, int y, const char *diameter, const char *k) const {
   lv_area_t a = {cx + x - dm / 2, cy + y - dm / 2, cx + x - dm / 2 + dm - 1, cy + y - dm / 2 + dm - 1};
   lv_draw_rect(layer, &d, &a);
 }
-void Pen::tick(float deg, const char *length, const char *stroke, const char *k) const {
+void Pen::tick(float deg, const char *length, const char *stroke, const char *k, const char *part) const {
   // the tick ring rule (core/atoms.cpp ring_draw): ends rounded from the edge-grid position, the outer end pulled in
   // so a slanted butt end's corners stay on the circle
   const int w = size(stroke), len = size(length);
@@ -513,21 +813,65 @@ void Pen::tick(float deg, const char *length, const char *stroke, const char *k)
   const float Ro = sqrtf(std::max(0.0f, (R - 0.5f) * (R - 0.5f) - w * w / 4.0f));
   const int x1 = (int) lroundf(c * Ro), y1 = (int) lroundf(s * Ro), x2 = (int) lroundf(c * (R - len)), y2 = (int) lroundf(s * (R - len));
   if (!sees(std::min(x1, x2) - w, std::min(y1, y2) - w, std::max(x1, x2) + w, std::max(y1, y2) + w)) return;
+  const PenPart pp = pen_part(obj, part_ix(part));
+  const lv_color_t col = pp.ink ? hex(pp.k->ink(pp.b.ink, pp.lt, pp.set)) : ink(obj, k);
+  const int shp = pp.b.has & S::K_SHAPE ? pp.b.shape : 0;  // tokens/theme.json shape.ticks: lines, dots, blocks, none
+  if (shp == 3) return;
+  if (shp == 1 || shp == 2) {  // a dot / a square block at the mark's middle, as wide as twice its stroke
+    const int mx = cx + (x1 + x2) / 2, my = cy + (y1 + y2) / 2, dm = 2 * w;
+    lv_draw_rect_dsc_t r;
+    lv_draw_rect_dsc_init(&r);
+    r.bg_color = col; r.bg_opa = LV_OPA_COVER; r.radius = shp == 1 ? LV_RADIUS_CIRCLE : 0;
+    const lv_area_t a = {mx - dm / 2, my - dm / 2, mx - dm / 2 + dm - 1, my - dm / 2 + dm - 1};
+    lv_draw_rect(layer, &r, &a);
+    return;
+  }
   lv_draw_line_dsc_t d;
   lv_draw_line_dsc_init(&d);
   d.p1.x = cx + x1; d.p1.y = cy + y1; d.p2.x = cx + x2; d.p2.y = cy + y2;
-  d.width = w; d.color = ink(obj, k); d.opa = LV_OPA_COVER;
+  d.width = w; d.color = col; d.opa = LV_OPA_COVER;
   lv_draw_line(layer, &d);
 }
 void Pen::knob(int x, int y, const char *sz, const char *k, const char *halo, const char *ring) const {
   const int dm = size(sz), rw = size(ring);
-  if (!sees(x - dm, y - dm, x + dm, y + dm)) return;
+  const PenPart pp = pen_part(obj, G::P_KNOB);
+  const int sh = pp.b.has & S::K_SHADOW ? std::max(abs(pp.b.shadow.dx.px[DN]), abs(pp.b.shadow.dy.px[DN])) : 0;
+  if (!sees(x - dm - sh, y - dm - sh, x + dm + sh, y + dm + sh)) return;
+  const int shp = pp.b.has & S::K_SHAPE ? pp.b.shape : 0;  // shape.knob: circle, square, diamond, ring, pixel (T3: snapped)
+  const lv_color_t c = pp.ink ? hex(pp.k->ink(pp.b.ink, pp.lt, pp.set)) : ink(obj, k), h = ink(obj, halo);
+  lv_area_t a = {cx + x - dm / 2, cy + y - dm / 2, cx + x - dm / 2 + dm - 1, cy + y - dm / 2 + dm - 1};
   lv_draw_rect_dsc_t d;
   lv_draw_rect_dsc_init(&d);
-  d.radius = LV_RADIUS_CIRCLE; d.bg_color = ink(obj, k); d.bg_opa = LV_OPA_COVER;
-  d.border_width = rw; d.border_color = ink(obj, halo); d.border_opa = LV_OPA_COVER;
-  lv_area_t a = {cx + x - dm / 2, cy + y - dm / 2, cx + x - dm / 2 + dm - 1, cy + y - dm / 2 + dm - 1};
-  lv_draw_rect(layer, &d, &a);
+  if (sh) {  // its shadow first
+    d.bg_color = hex(pp.k->ink(pp.b.shadow.ink, pp.lt, pp.set)); d.bg_opa = LV_OPA_COVER; d.radius = shp == 0 || shp == 3 ? LV_RADIUS_CIRCLE : 0;
+    lv_area_t s = a;
+    lv_area_move(&s, pp.b.shadow.dx.px[DN], pp.b.shadow.dy.px[DN]);
+    if (shp != 2) lv_draw_rect(layer, &d, &s);
+    lv_draw_rect_dsc_init(&d);
+  }
+  if (shp == 2) {  // a diamond: two triangles, the halo ring round it as a bigger diamond under
+    for (int pass = 0; pass < 2; pass++) {
+      const int r = dm / 2 + (pass ? 0 : rw);
+      lv_draw_triangle_dsc_t t;
+      lv_draw_triangle_dsc_init(&t);
+      t.color = pass ? c : h; t.opa = LV_OPA_COVER;
+      const int X = cx + x, Y = cy + y;
+      t.p[0] = {(lv_value_precise_t) (X - r), (lv_value_precise_t) Y}; t.p[1] = {(lv_value_precise_t) X, (lv_value_precise_t) (Y - r)}; t.p[2] = {(lv_value_precise_t) (X + r), (lv_value_precise_t) Y};
+      lv_draw_triangle(layer, &t);
+      t.p[1] = {(lv_value_precise_t) X, (lv_value_precise_t) (Y + r)};
+      lv_draw_triangle(layer, &t);
+    }
+  } else {
+    d.radius = shp == 1 || shp == 4 ? 0 : LV_RADIUS_CIRCLE;
+    d.bg_color = shp == 3 ? h : c; d.bg_opa = LV_OPA_COVER;  // a ring: the ink as a thick border round the halo
+    d.border_width = shp == 3 ? std::max(rw, dm / 4) : rw; d.border_color = shp == 3 ? c : h; d.border_opa = LV_OPA_COVER;
+    lv_draw_rect(layer, &d, &a);
+  }
+  if (pp.b.has & S::K_EDGES) {  // bevels on the handle (inside its ring)
+    lv_area_t in = a;
+    lv_area_increase(&in, -rw, -rw);
+    draw_edges(layer, in, *pp.k, pp.b, pp.lt, pp.set, shp == 0 || shp == 3 ? dm / 2 : 0);
+  }
 }
 void Pen::text(int x, int y, const char *s, const char *type, const char *k) const {
   const fw::ty::Id id = type_id(type);
@@ -539,11 +883,23 @@ void Pen::text(int x, int y, const char *s, const char *type, const char *k) con
   float mid = f->line_height / 2.0f;
   if (lv_font_get_glyph_dsc(f, &g, '0', 0)) mid = (f->line_height - f->base_line) - (g.ofs_y + g.box_h / 2.0f);
   const int x0 = x - (int) lroundf(sz.x / 2.0f), y0 = y - (int) lroundf(mid);
-  if (!sees(x0, y0, x0 + sz.x, y0 + f->line_height)) return;
+  const PenPart pp = pen_part(obj, type_part[defs[ix(type)].i]);  // the text part of its type (ink, shadow)
+  const int sx = pp.b.has & S::K_SHADOW ? pp.b.shadow.dx.px[DN] : 0, sy = pp.b.has & S::K_SHADOW ? pp.b.shadow.dy.px[DN] : 0;
+  // a partial redraw that crosses only its shadow draws it too (else the shadow there is wiped)
+  if (!sees(x0 + std::min(0, sx), y0 + std::min(0, sy), x0 + sz.x + std::max(0, sx), y0 + f->line_height + std::max(0, sy))) return;
   lv_draw_label_dsc_t d;
   lv_draw_label_dsc_init(&d);
-  d.font = f; d.color = ink(obj, k); d.letter_space = ls; d.text = s; d.text_local = 1;
+  d.font = f; d.color = pp.b.has & S::K_TEXT && (!(combo(obj) & S::DISABLED) || (pp.k->state[type_part[defs[ix(type)].i]][1 + G::ST_DISABLED].has & S::K_TEXT))
+                         ? hex(pp.k->ink(pp.b.text, pp.lt, pp.set)) : ink(obj, k);
+  d.letter_space = ls; d.text = s; d.text_local = 1;
   lv_area_t a = {cx + x0, cy + y0, cx + x0 + sz.x, cy + y0 + f->line_height};
+  if (pp.b.has & S::K_SHADOW) {
+    lv_draw_label_dsc_t sd = d;
+    sd.color = hex(pp.k->ink(pp.b.shadow.ink, pp.lt, pp.set));
+    lv_area_t sa = a;
+    lv_area_move(&sa, pp.b.shadow.dx.px[DN], pp.b.shadow.dy.px[DN]);
+    lv_draw_label(layer, &sd, &sa);
+  }
   lv_draw_label(layer, &d, &a);
 }
 lv_obj_t *drawn(lv_obj_t *parent, void (*draw)(const Pen &), const char *layout) {
@@ -588,6 +944,7 @@ void pointer(lv_obj_t *o, float *deg, int *dist, int *half) {
 Page page(lv_obj_t *pg, const char *kind) {
   Page p{pg, nullptr, nullptr};
   use(pg, "page");
+  use(pg, "part:page");  // the theme's page frame (face + edges)
   lv_obj_remove_flag(pg, LV_OBJ_FLAG_SCROLLABLE);
   p.head = lv_obj_create(pg);
   lv_obj_remove_style_all(p.head);

@@ -162,6 +162,7 @@ void fill(lv_obj_t *root, fw::Props p) {
 FW_COMPONENT(time, "Time", "components", R"({
   "about": "The time in fixed-width digit cells, so it never shifts as it changes.",
   "contract": 2,
+  "parts": [],
   "min": ["layout:dot", "layout:dot"],
   "frame": [480, 160],
   "props": [

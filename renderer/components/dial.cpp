@@ -70,7 +70,7 @@ void draw(const fx::Pen &p) {
     const double v = k * d->minor;
     const bool maj = sub > 0 && ((k % sub) + sub) % sub == 0;
     const float deg = START + (float) ((v - d->min) / (d->max - d->min)) * RANGE;
-    p.tick(deg, maj ? "layout:dial-tick-major" : "layout:dial-tick", "stroke:tick", maj ? (dim ? "fg:disabled-ink" : "fg:blue") : "fg:line-hi");
+    p.tick(deg, maj ? "layout:dial-tick-major" : "layout:dial-tick", "stroke:tick", maj ? (dim ? "fg:disabled-ink" : "fg:blue") : "fg:line-hi", maj ? "tick-major" : "tick");
     if (!maj) continue;
     char b[16];
     snprintf(b, sizeof b, "%.*f", d->num_dec, std::fabs(v) < 1e-9 ? 0.0 : v);
@@ -80,9 +80,9 @@ void draw(const fx::Pen &p) {
   }
   if (d->state >= 2) return;  // unavailable / missing: the scale only
   const int ra = arc_out(p.half), te = fx::size("stroke:edge"), ti = fx::size("stroke:indicator");
-  p.arc(ra - te / 2, START, START + RANGE, "stroke:edge", "fg:line", false);
+  p.arc(ra - te / 2, START, START + RANGE, "stroke:edge", "fg:line", false, "arc");
   const float a1 = angle(d, d->shown);
-  p.arc(ra - ti / 2, START, a1, "stroke:indicator", dim ? "fg:disabled-ink" : "fg:on-fill");
+  p.arc(ra - ti / 2, START, a1, "stroke:indicator", dim ? "fg:disabled-ink" : "fg:on-fill", true, "arc-fill");
   if (!d->dimmable) return;  // an on / off light: no handle
   int x, y;
   fx::at(a1, knob_r(p.half), &x, &y);
@@ -187,6 +187,7 @@ lv_obj_t *button(lv_obj_t *parent, lv_obj_t *s) {
   fx::use(b, "bg:pressed-outline", LV_STATE_CHECKED | LV_STATE_PRESSED);
   fx::use(b, "border:accent", LV_STATE_CHECKED | LV_STATE_PRESSED);
   fx::use(b, "border:disabled-accent", LV_STATE_CHECKED | fw::st::OFF);
+  fx::use(b, "part:control");  // the theme's control (C46), last
   lv_obj_add_flag(b, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_STATE_TRICKLE));
   lv_obj_remove_flag(b, LV_OBJ_FLAG_EVENT_BUBBLE);  // the ring never sees the button's press
   d->btn_txt = fx::text(b, "ON", "type:c-label", "fg:text");
@@ -296,6 +297,7 @@ void ring(lv_event_t *e) {
 FW_COMPONENT(dial, "Dial", "components", R"({
   "about": "A large circular control for a value such as brightness or temperature, with an on/off button in the centre.",
   "contract": 2,
+  "parts": ["control", "knob", "tick", "tick-major", "arc", "arc-fill"],
   "frame": [384, 384],
   "props": [
     {"name": "value", "about": "The value the dial is set to, between its lowest and highest.", "type": "range", "min": -20, "max": 200, "step": 0.5, "default": 64},

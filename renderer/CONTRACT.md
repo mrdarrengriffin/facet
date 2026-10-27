@@ -372,11 +372,16 @@ Mode setting (`theme`) and Theme setting (`look`) are separate (section 2 Words)
 *Why:* a theme must never need component code, and a half-read file must never reach the screen. *Check:* P4;
 `theme_parse` tests (one per error class: refused, its path, the live theme and the frame unchanged; never-partial
 apply and its break-it), `theme_fuzz` (10k seeded mutations, WASM) and `tools/theme_fuzz.sh` (100k under ASan + UBSan);
-built-in themes are checked when the build runs (`tools/theme_check.mjs`), so the panel never meets a bad one.
+built-in themes are checked when the build runs (`tools/theme_check.mjs`), so the panel never meets a bad one;
+`theme_apply` tests: Facet after any theme = the frame before (S1), each built-in theme switched live = a fresh build
+in it (and theme to theme), a refused file leaves every pixel and the generation, and the break-it (`fx::break_stale`,
+no repaint) turns the live = fresh proof red.
 
 **C45. Themes paint; they never lay out.** A theme MUST NOT move, hide, reorder or resize anything beyond the look
 ranges (C19). Layout sizes are not in a theme's reach (C18).
-*Why:* layout is proven once, for every theme. *Check:* P2 and P4 run per theme; **TODO**.
+*Why:* layout is proven once, for every theme. *Check:* P4 per theme (`theme_apply`); part styles set only paint
+keys (face, radius within its look range, the border's ink, never its width: `part_style` in `core/fx_core.cpp`);
+**TODO** P2 (bounds) per theme.
 
 **C46. A theme styles a fixed list of parts** (Appendix A): each with face, edges (up to 8 layers), shadow, text
 colour and weight, and state overrides (on < focus < pressed < disabled). A component makes an object a box part only
@@ -389,7 +394,11 @@ object: on + focus must keep the on look). A key the theme leaves out is absent 
 through.
 *Why:* a fixed list is what a theme author and the guardrails can rely on; a block attached only at the base state
 would lose to a component's pressed token, and a block per single state would let focus hide on. *Check:* the parser
-compiles every combination (`Skin::merged`; `theme_parse` "state merge"); **TODO** the apply path and P3 per part.
+compiles every combination (`Skin::merged`; `theme_parse` "state merge"); the core applies them (`part:*` = 16 shared
+styles + one draw callback for edges, shadow and pattern faces; the Pen reads knob, tick and arc blocks at draw time;
+text parts by type, their shadow drawn from the label's own draw task); each component's meta lists its parts and
+the lint (rule `parts`) holds the list to the code; `theme_apply` "parts drawn" checks pixels of a card edge and a
+header gradient. **TODO** P3 per part; the header's caption buttons, the scrollbar, `track` parts and text weight.
 
 **C47. The look is free; only usability is guarded.** A theme is refused if it fails a guardrail (Appendix A):
 contrast in every mode, accent, state and every stop of a gradient or pattern; press feedback (C36: a part whose
@@ -397,8 +406,9 @@ theme fixes its face still looks different pressed); touch targets; readable typ
 padding; nothing outside its parent; no stale paint.
 *Why:* taste is the theme author's; usability is everyone's; a theme that sets a face and no pressed face would
 otherwise silently remove press feedback. *Check:* the static guards in the parser (contrast on the exact and the
-RGB565 values, press feedback, geometry; `theme_parse` tests, `tools/contrast.mjs --theme <id>`); **TODO** fit,
-bounds and pixels per theme (P2, P4, P6) with the apply path.
+RGB565 values, press feedback, geometry; `theme_parse` tests, `tools/contrast.mjs --theme <id>`); the real pixels of
+every contract component in every built-in theme (`tools/pixel_contrast.mjs --theme all`, in the build); **TODO** fit
+and bounds per theme (P2, P6).
 
 **C48. Technical caps exist only for performance or memory** (8 edge layers per block). No other limit on looks.
 *Why:* caps for taste are not the contract's job. *Check:* review.
@@ -591,7 +601,7 @@ Rules whose check is TODO (each is a gate item; until it exists, review checks t
 | C13 | test: each bleed reaches exactly the page edge; lint: `transform_width` / negative margin outside the core |
 | C14 | pixel check outside the box (`fx::focus_ring` is the decor API, 2026-10-27) |
 | C16 | lint: `theme.h`, `th::` (`lv_font_*`, `LV_SYMBOL_*`, `lv_color_t` and fixed `lay::` / `sp::` / `ic::` numbers: lint rules `font`, `fixed`, 2026-10-27) |
-| C44-C47 | the apply path: parts on the shared styles, edges and shadows, per-theme P2 / P4 / P6 (the parser and its static guards are in) |
+| C44-C47 | per-theme P2 / P6 (bounds, fit); caption buttons, scrollbar, `track` parts, text weight (the apply path, P4 and pixel contrast per theme are in) |
 | C49 | every type token's family built at its size (theme fonts) |
 | C20 | `gen_layout.mjs`: header row >= `touch:min`, gutter <= inset, row heights >= `touch:min` |
 | C21, C22 | lint: `fx::size` / `fx::type_box` outside draw and hit code |
@@ -617,6 +627,7 @@ Rules whose check is TODO (each is a gate item; until it exists, review checks t
 | `tools/lab_test.mjs` | live token propagation (P3), run by `build.sh` |
 | `core/test_hooks.cpp` | `fw_test`: `look`, `inset`, `bounds`, `stack`, `scrolls` |
 | `core/main.cpp` | `fw_lab`: `tokens`, `tune`, `uses`, `probe`, `proof`, `theme_*` (`core/theme_lab.cpp`) |
+| `tests/functional/theme_apply.test.mjs` | the apply path per theme: Facet no-op, live = fresh, reach, refusals, break-it, golden candidates |
 | `core/theme_file.h`, `core/theme_file.cpp` | theme files -> Skin: strict JSON, the schema, compile, the static guards, the live slot |
 | `tokens/theme.json`, `tools/gen_theme.mjs` | the theme schema as data -> `themes/facet.json` (Facet's values: what every theme inherits) + `theme_gen.h` |
 | `tools/lib/looks.mjs` | the one list of look sizes and their ranges (C18, C19) |

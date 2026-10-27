@@ -56,6 +56,7 @@ void fill(lv_obj_t *c, fw::Props p) {
 FW_COMPONENT(status_chip, "Status chip", "components", R"({
   "about": "A small tinted pill with a status dot and a short caps label.",
   "contract": 2,
+  "parts": [],
   "min": ["layout:chip-h", "layout:chip-h"],
   "frame": [240, 64],
   "props": [

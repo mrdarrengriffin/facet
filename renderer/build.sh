@@ -139,9 +139,9 @@ echo "[$DEN] built in ${S}s${FEAT:+ ($FEAT features)}"
 # size, ring symmetry, motion paths, for every component / screen x variant x theme at this density. The new build is
 # already in place (the page still reloads); errors fail the build so they are seen. Cached per component.
 node "$HERE/tools/audit.mjs" --den "$DEN" --quiet --build "${FW_OUT:-$HERE/out}" | sed "s/^/[$DEN] /" ; [ "${PIPESTATUS[0]}" = 0 ] || { echo "[$DEN] audit: errors above"; exit 1; }
-# pixel contrast (tools/pixel_contrast.mjs): every contract component x variant, dark / light, built and switched live,
+# pixel contrast (tools/pixel_contrast.mjs): every contract component x variant, dark / light, built and switched live, in Facet and every built-in theme (--theme all),
 # the real text + icon pixels against what is behind them (WCAG 4.5 text, 3 large text / icons / disabled); fails the build
-node "$HERE/tools/pixel_contrast.mjs" --den "$DEN" --build "${FW_OUT:-$HERE/out}" | grep -E '^FAIL|^LEGACY|^pixel contrast' | head -12 | sed "s/^/[$DEN] /"; [ "${PIPESTATUS[0]}" = 0 ] || { echo "[$DEN] pixel contrast: failures above"; exit 1; }
+node "$HERE/tools/pixel_contrast.mjs" --den "$DEN" --theme all --build "${FW_OUT:-$HERE/out}" | grep -E '^FAIL|^pixel contrast' | tail -12 | sed "s/^/[$DEN] /"; [ "${PIPESTATUS[0]}" = 0 ] || { echo "[$DEN] pixel contrast: failures above"; exit 1; }
 # every contract component: >= 1 tunable token, each repaints it live (C23 / P3), at this density; fails the build
 node "$HERE/tools/lab_test.mjs" --den "$DEN" --build "${FW_OUT:-$HERE/out}" | grep -E '^FAIL|lab_test' | head -12 | sed "s/^/[$DEN] /"; [ "${PIPESTATUS[0]}" = 0 ] || { echo "[$DEN] lab_test: failures above"; exit 1; }
 # the spec catalogue + JSON Schema (core/spec.h; catalogue/) and the spec store test (power loss, refusals)

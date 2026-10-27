@@ -422,7 +422,7 @@ const char *render(lv_obj_t *scr, const char *comp, const char *props, bool ligh
   demo_clear(scr);  // (before the clean: the demos' DELETE events find no set)
   lv_obj_clean(scr);
   lv_obj_remove_style_all(scr);
-  lv_obj_set_style_bg_color(scr, T->bg, 0);
+  lv_obj_set_style_bg_color(scr, fx::migrated(c) ? fx::bg(lv_obj_get_display(scr)) : T->bg, 0);  // a contract one: the live theme's canvas
   lv_obj_set_style_bg_opa(scr, LV_OPA_COVER, 0);
   lv_obj_set_flex_flow(scr, LV_FLEX_FLOW_COLUMN);
   lv_obj_set_flex_align(scr, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
