@@ -50,6 +50,9 @@ release gate (section 13).
 | shared style | One `lv_style_t` per token per display, owned by the core (`core/fx_core.cpp`), attached by name with `fx::use`. |
 | layout size | A size token in `space:`, `layout:`, `touch:` and `radius:round`. Fixed by Facet. |
 | look size | A size token in `radius:*` (except `round`) and `stroke:*`. Themeable within a range. |
+| theme | A theme file (`themes/<id>.json`, C44): the look of the contract components. The panel setting `look`, labelled Theme, chooses it. |
+| mode | Dark, light or auto: the panel setting `theme` (ESPHome `theme_select`; the id is kept so automations keep working), labelled Mode. A one-mode theme fixes it. |
+| part | A themeable element from the fixed list (Appendix A Parts), attached through a `part:*` token (C46). |
 | step | One of a component's fixed arrangements (full, compact, ...), chosen from its own content box. |
 | minimum | The smallest parent content box a component works in, declared in its meta `"min"`. |
 | Pen | `fx::Pen`: the only way a component draws pixels itself. |
@@ -199,15 +202,18 @@ before the switch.
 **C18. Layout sizes are fixed by Facet and not themeable.** Everything in `space`, `layout`, `touch` and
 `radius:round` comes from the 4 px grid, the size class (density) and the type scale. A theme MUST NOT change them;
 `fx::tune` moves them only for proofs and the workbench Layout lab, never as a product setting.
-*Why:* themeable spacing lets a theme break layouts the proofs were run on. *Check:* `tools/gen_fx.mjs` marks each
-size `look` or not; `fx::tunables()` reports `"fixed"`; **TODO** theme validation rejects a layout size (lands with
-the theme engine, C44).
+*Why:* themeable spacing lets a theme break layouts the proofs were run on. *Check:* `tools/lib/looks.mjs` (read by
+`gen_fx.mjs` and `gen_theme.mjs`) marks each size `look` or not; `fx::tunables()` reports `"fixed"`; the theme parser
+refuses a layout size (`size.layout:inset: layout sizes are fixed by Facet (C18)`; `theme_parse` tests).
 
 **C19. Look sizes are themeable within ranges.** `radius:*` within 0 .. max(2 x token, 16); `stroke:*` within 1 ..
-max(2 x token, 2). `fx::tune` clamps to the range; a theme value outside it is clamped the same way. A look size
-changes how a thing looks, never where anything goes.
-*Why:* corners and edges are taste; positions are usability. *Check:* `gen_fx.mjs` ranges; `fx::tune` clamp;
-`tools/lab_test.mjs`.
+max(2 x token, 2); `stroke:pixel` (the cell of a snapped theme, C29) within 1 .. 4. `fx::tune` clamps to the range
+(proofs, the Layout lab); a theme value outside it is refused with the range (`size.radius:card: 40 at 1.5x is outside
+0 .. 16`), so an author never ships a value they did not get. A look size changes how a thing looks, never where
+anything goes.
+*Why:* corners and edges are taste; positions are usability; a silent clamp hides a change from the author.
+*Check:* `tools/lib/looks.mjs` (the one list); `fx::tune` clamp; `tools/lab_test.mjs`; `theme_parse` test "look
+ranges are the one list" (every look size: the parser's range = `fx::tune`'s, hi loads, hi + 1 refused).
 
 **C20. Token relationships are enforced by generators and tests, never by convention.** Today: every spacing,
 layout, radius and touch value is a multiple of 4 (`tools/gen_space.mjs`); 2 cards / 3 tiles + gutters + insets fill
@@ -265,7 +271,7 @@ dithered, faint tints land on whole 565 steps.
 on 565 values (`tools/contrast.mjs`).
 
 **C29. Snapped themes draw on the cell grid with no anti-aliasing.** With `shape.snap`, every Pen and core primitive
-is whole cells of the `pixel` token on a screen-fixed grid.
+is whole cells of the `stroke:pixel` token on a screen-fixed grid.
 *Why:* a retro theme with anti-aliased edges looks broken. *Check:* **TODO** palette proof (no rendered pixel outside
 the theme's palette except gradient faces and rounded corners) when the theme engine lands (C44).
 
@@ -350,37 +356,58 @@ Card's fuzz covers sizes at or above its minimum only).
 
 ## 10. Themes and parts
 
-Status: the renderer applies colour themes and accents live today (`fx::look`). The theme FILE engine (parts, edges,
-shadows, presets, guardrails) is specified here and in Appendix A and proven in the fresh-start experiment; until it
-lands in the renderer, its checks are TODO.
+Status: the renderer applies colour themes and accents live today (`fx::look`). Theme FILES are read, checked and
+compiled by the renderer (`core/theme_file.{h,cpp}`): a file becomes an immutable compiled theme (a Skin) or is
+refused whole, with every error's path; the static guards (contrast, press feedback, geometry) run there. Applying a
+Skin to the shared styles (parts, edges, shadows), theme fonts and snapped drawing land next; their checks are TODO
+until then.
 
 **C44. A theme is one data file applied live.** `themes/<id>.json`, parsed at run time, applied as one style change
 (`fx::look`): every shared style is rewritten; components are never rebuilt and never told. A key left out inherits
 Facet's value; an unknown key, token, family or value rejects the whole file with an error naming the path
-(`parts.card.pressed.edges[1].side: ...`).
-*Why:* a theme must never need component code. *Check:* P4; **TODO** theme validation tests.
+(`parts.card.pressed.edges[1].side: ...`). A refused file is never partly applied: a load builds a new immutable
+Skin, the live one is swapped by pointer only when the new one is complete and guarded, and the apply path repaints
+when a generation counter changes, never on pointer identity (a freed Skin's address can be reused). The panel's
+Mode setting (`theme`) and Theme setting (`look`) are separate (section 2 Words).
+*Why:* a theme must never need component code, and a half-read file must never reach the screen. *Check:* P4;
+`theme_parse` tests (one per error class: refused, its path, the live theme and the frame unchanged; never-partial
+apply and its break-it), `theme_fuzz` (10k seeded mutations, WASM) and `tools/theme_fuzz.sh` (100k under ASan + UBSan);
+built-in themes are checked when the build runs (`tools/theme_check.mjs`), so the panel never meets a bad one.
 
 **C45. Themes paint; they never lay out.** A theme MUST NOT move, hide, reorder or resize anything beyond the look
 ranges (C19). Layout sizes are not in a theme's reach (C18).
 *Why:* layout is proven once, for every theme. *Check:* P2 and P4 run per theme; **TODO**.
 
 **C46. A theme styles a fixed list of parts** (Appendix A): each with face, edges (up to 8 layers), shadow, text
-colour and weight, and state overrides (on < focus < pressed < disabled). A component makes an object a part only
-through its token (`shape:card`, `h:row`, ...), never by naming a theme.
-*Why:* a fixed list is what a theme author and the guardrails can rely on. *Check:* **TODO**.
+colour and weight, and state overrides (on < focus < pressed < disabled). A component makes an object a box part only
+through its `part:*` token (`fx::use(o, "part:card")`), never by naming a theme; drawn parts (knob, ticks, arcs) are
+the Pen's, text parts follow their type token, the icon is `fx::icon`'s. The core attaches a part's MERGED block
+(base <- on <- focus <- pressed <- disabled for the states set) for every combination of the four states (16), after
+the component's own tokens: LVGL takes each property from the matching style with the largest state and, at equal
+state, the style added last, so only the exact combination's block is always right (a tap focuses a focusable
+object: on + focus must keep the on look). A key the theme leaves out is absent and the component's token shows
+through.
+*Why:* a fixed list is what a theme author and the guardrails can rely on; a block attached only at the base state
+would lose to a component's pressed token, and a block per single state would let focus hide on. *Check:* the parser
+compiles every combination (`Skin::merged`; `theme_parse` "state merge"); **TODO** the apply path and P3 per part.
 
 **C47. The look is free; only usability is guarded.** A theme is refused if it fails a guardrail (Appendix A):
-contrast in every mode, accent, state and every stop of a gradient or pattern; touch targets; readable type floors;
-text fits; edges inside padding; nothing outside its parent; no stale paint.
-*Why:* taste is the theme author's; usability is everyone's. *Check:* **TODO** `guard` per theme.
+contrast in every mode, accent, state and every stop of a gradient or pattern; press feedback (C36: a part whose
+theme fixes its face still looks different pressed); touch targets; readable type floors; text fits; edges inside
+padding; nothing outside its parent; no stale paint.
+*Why:* taste is the theme author's; usability is everyone's; a theme that sets a face and no pressed face would
+otherwise silently remove press feedback. *Check:* the static guards in the parser (contrast on the exact and the
+RGB565 values, press feedback, geometry; `theme_parse` tests, `tools/contrast.mjs --theme <id>`); **TODO** fit,
+bounds and pixels per theme (P2, P4, P6) with the apply path.
 
 **C48. Technical caps exist only for performance or memory** (8 edge layers per block). No other limit on looks.
 *Why:* caps for taste are not the contract's job. *Check:* review.
 
 **C49. Fonts are data.** A font is a family in the registry (`fonts/fonts.json`) built at every size a type token or
 theme names; a component never names a font (C16).
-*Why:* a hard-coded font whitelist blocked a theme's font (L8). *Check:* **TODO** every type token's family is built
-at its size.
+*Why:* a hard-coded font whitelist blocked a theme's font (L8). *Check:* the parser accepts only a family this build
+has (`font.body: "x" is not in this panel's build (...)`); **TODO** every type token's family is built at its size
+(theme fonts).
 
 ## 11. Proofs
 
@@ -564,7 +591,8 @@ Rules whose check is TODO (each is a gate item; until it exists, review checks t
 | C13 | test: each bleed reaches exactly the page edge; lint: `transform_width` / negative margin outside the core |
 | C14 | pixel check outside the box (`fx::focus_ring` is the decor API, 2026-10-27) |
 | C16 | lint: `theme.h`, `th::` (`lv_font_*`, `LV_SYMBOL_*`, `lv_color_t` and fixed `lay::` / `sp::` / `ic::` numbers: lint rules `font`, `fixed`, 2026-10-27) |
-| C18, C44-C47, C49 | theme engine in the renderer: validation, parts, guardrails, font build check |
+| C44-C47 | the apply path: parts on the shared styles, edges and shadows, per-theme P2 / P4 / P6 (the parser and its static guards are in) |
+| C49 | every type token's family built at its size (theme fonts) |
 | C20 | `gen_layout.mjs`: header row >= `touch:min`, gutter <= inset, row heights >= `touch:min` |
 | C21, C22 | lint: `fx::size` / `fx::type_box` outside draw and hit code |
 | C23 / P3 | a component whose tokens show only inside a Page (the Header row: alone on a stage it is centred) is checked by its own test, not the loop |
@@ -588,7 +616,11 @@ Rules whose check is TODO (each is a gate item; until it exists, review checks t
 | `tools/contract_lint.mjs` | the lint (P1), run by `build.sh` |
 | `tools/lab_test.mjs` | live token propagation (P3), run by `build.sh` |
 | `core/test_hooks.cpp` | `fw_test`: `look`, `inset`, `bounds`, `stack`, `scrolls` |
-| `core/main.cpp` | `fw_lab`: `tokens`, `tune`, `uses`, `probe`, `proof` |
+| `core/main.cpp` | `fw_lab`: `tokens`, `tune`, `uses`, `probe`, `proof`, `theme_*` (`core/theme_lab.cpp`) |
+| `core/theme_file.h`, `core/theme_file.cpp` | theme files -> Skin: strict JSON, the schema, compile, the static guards, the live slot |
+| `tokens/theme.json`, `tools/gen_theme.mjs` | the theme schema as data -> `themes/facet.json` (Facet's values: what every theme inherits) + `theme_gen.h` |
+| `tools/lib/looks.mjs` | the one list of look sizes and their ranges (C18, C19) |
+| `tools/theme_check.mjs`, `tools/theme_fuzz.sh` | built-in themes checked at build time; the parser fuzzed under ASan + UBSan |
 | `tests/functional/_release.mjs` | gate helpers: bounds, stage, look, frame565, golden, faults, fuzz, monkey, leak, frames |
 | `components/card.cpp`, `components/dial.cpp` | the reference components (box + steps; drawn + partial redraw) |
 
@@ -598,12 +630,14 @@ Rules whose check is TODO (each is a gate item; until it exists, review checks t
 
 | Key | What |
 |---|---|
+| `schema` | required: `1`. A newer schema is refused (`schema: 2 is newer than this panel (1)`); an older one is upgraded first |
+| `id`, `label`, `about` | `id` required, 1 to 32 of `a-z 0-9 -`; `label` up to 48 characters (default the id); `about` up to 1000 |
 | `modes` | `["dark", "light"]` or one of them |
 | `colour` | the colour tokens per mode |
-| `accents` | 1 to 8 accent sets: `accent`, `accent-ink`, `on-accent` per mode |
-| `size` | look sizes only (`radius:*`, `stroke:*`) within their ranges (C19); layout sizes are refused (C18) |
-| `type` | type sizes at [1.5x, 1x], at or above the floors |
-| `font` | a family per role (`display`, `body`, `label`, `mono`) from `fonts/fonts.json` |
+| `accents` | 1 to 8 accent sets: an `id`, a `label`, and all 5 roles (`accent`, `accent-press`, `accent-dim`, `accent-text`, `on-accent`) for every mode the theme has |
+| `size` | look sizes only (`radius:*`, `stroke:*`, `stroke:pixel`) at [1.5x, 1x], within their ranges (C19: refused outside); layout sizes are refused (C18) |
+| `type` | sizes at [1.5x, 1x] of `display`, `hero`, `value`, `headline`, `title`, `body`, `label`, each within [floor, the style's line box]; the box, case and letter spacing stay Facet's, so no line moves (C45) |
+| `font` | a family per role (`display`, `body`, `label`, `mono`) of this build (`fonts/fonts.json` once theme fonts land; today `inter`, `jetbrains-mono`) |
 | `parts` | style blocks per part (below); merge over the presets |
 | `shape.corner` | preset: `round` or `square` for cards and controls |
 | `shape.cap` | `round` or `square` for arcs, lines, tracks, the scrollbar |
@@ -612,17 +646,21 @@ Rules whose check is TODO (each is a gate item; until it exists, review checks t
 | `shape.card` | preset: `fill`, `outline`, `double` |
 | `shape.indicator` | preset: how an on tile shows besides its accent: `text`, `border`, `bar` |
 | `shape.icons` | `line` or `pixel` (8 x 8 cells) |
-| `shape.snap` | `true`: every drawn primitive in whole cells of the `pixel` token (C29) |
+| `shape.snap` | `true`: every drawn primitive in whole cells of the `stroke:pixel` token (C29) |
+
+Every key but `schema` and `id` is optional; what a file leaves out is Facet's (`themes/facet.json`, generated from the
+tokens). A preset at Facet's value (the first of each list) adds nothing. Caps (C48): 16 KB a file, 8 levels deep,
+1400 values, 8 edge layers a block and 128 a theme; at most 32 errors are listed.
 
 ### Parts
 
 | Part | The token that makes an object the part |
 |---|---|
-| `card` | `shape:card` |
-| `control` | `shape:control` (buttons) |
-| `track`, `track-fill` | `track`, `bar` |
-| `header`, `list-row` | `h:header`, `h:row` |
-| `page`, `rule` | the Page frame; `line:bottom` not in a row |
+| `card` | `part:card` |
+| `control` | `part:control` (buttons) |
+| `track`, `track-fill` | `part:track`, `part:track-fill` |
+| `header`, `list-row` | `part:header`, `part:list-row` |
+| `page`, `rule` | `part:page` (the Page frame), `part:rule` (a rule not in a row) |
 | `caption` | the header's caption buttons and the scrollbar's arrows (drawn by the core) |
 | `scrollbar` | the Body's scrollbar: thumb, optional lane and arrows |
 | `knob`, `tick`, `tick-major`, `arc`, `arc-fill` | the Pen's handle, scale marks and arcs |
@@ -644,20 +682,26 @@ Rules whose check is TODO (each is a gate item; until it exists, review checks t
 | `w`, `lane`, `arrows` | scrollbar | width; lane face (the Body's right padding grows by it); arrow buttons |
 | `on`, `focus`, `pressed`, `disabled` | any part | a block merged over the base, in that order; a list is replaced whole |
 
-An ink is a colour token, `accent` / `accent-ink` / `on-accent`, or `"#RRGGBB"`. A length is pixel cells, a size
+An ink is a colour token, an accent role (`accent`, `accent-press`, `accent-dim`, `accent-text`, `on-accent`), or
+`"#RRGGBB"`. A length is pixel cells (of `stroke:pixel`), a size
 token name, or `[1.5x, 1x]` px.
 
 ### Guardrails (a theme that fails one is refused)
 
-- **Contrast (WCAG), every mode, accent and state:** text and text-dim on every face and every stop of a gradient or
-  pattern 4.5 (large header text 3.0); on-accent on accent 4.5; accent, outer edges of cards and controls, knob,
-  major ticks, arc span and scrollbar thumb on their background 3.0. A shadow never counts as contrast. Hairlines and
-  minor ticks are decoration.
+- **Contrast (WCAG), every mode, accent and state, on the exact and the RGB565 values (the worse decides):** every
+  declared pair (`tokens/colour.json` `contrast.pairs`) of the foundations and of every contract component, on the
+  theme's palette; text and text-dim on every face and every stop of a gradient or pattern, in every combination of
+  states, 4.5 (large header text 3.0; disabled states: text-mute 3.0; pressed + disabled is never shown, C36); on-accent on accent 4.5; accent, outer edges of cards and controls, knob,
+  major ticks, arc span and scrollbar thumb on their background 3.0 (the strongest outer layer counts). A shadow
+  never counts as contrast. Hairlines and minor ticks are decoration.
+- **Press feedback (C36):** a pressable part (card, control, list row) whose theme fixes its face looks different
+  pressed (face, edges, text or shadow), at rest and on, in every mode and accent.
 - **Touch:** `touch:min` and row heights unchanged (they are layout sizes).
-- **Type floors (1.5x / 1x):** title 24 / 16, body 20 / 14, small 16 / 12, icon 24 / 16, display 32 / 24,
-  value 20 / 14.
+- **Type floors (1.5x / 1x):** display 32 / 24, hero 32 / 24, headline 24 / 16, title 24 / 16, value 20 / 14,
+  body 20 / 14, label 16 / 12; and at most the style's line box. Icons are sized by the Icons foundation, not a theme.
 - **Geometry:** a part's edges fit inside its padding; the page's edges fit inside the inset; a track's edges leave
-  a cell for its fill; every radius <= half the height it rounds, in every state.
+  a cell for its fill; every radius <= half the height it rounds, in every state; a checker or blocks face needs
+  square corners.
 - **Fit, bounds, colour, pixels:** P2, P4 and P6 pass for the theme on the live page.
 - **Fonts:** every type token's family is built at its size.
 
