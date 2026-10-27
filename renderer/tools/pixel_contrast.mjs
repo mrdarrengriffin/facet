@@ -9,7 +9,8 @@
 // vs the pixel behind it if higher (a picture with its own colours: that alone); relative luminance as WCAG 2.x. Minimum: text 4.5, large text 3, icons 3, disabled (fw::st::OFF) 3.
 // Disabled graphics (inactive components: WCAG 1.4.11 exempts them) 1.5:1: still visible, not 3:1.
 // Graphical objects (WCAG 1.4.11): the toggle knob, the chosen segment and the Pen's drawn knob / fill, 3:1 against
-// what is behind them, in every variant, look and theme (fw_test gfx + veil_part); a knob also against everything
+// what is behind them, in every variant, look and theme (fw_test gfx + veil_part): its face, or a colour drawing a whole
+// side of it (its outline: Win98's sunken chosen segment, black / white edges on a lighter grey face); a knob also against everything
 // round it (track, fill AND page: see the knob block below); a Win98-style checkbox's tick = the drawn part "switch".
 // No exemption list: a failing graphic fails the build (renderer/CONTRACT.md C17).
 // A text that changes no pixel when veiled is invisible: ratio 1, a failure. Exit 1 on any failure. A failing item
@@ -127,7 +128,22 @@ for (const den of DENS) {
             for (let k = 0; k < W * H; k++) if (before[k] !== after[k]) { n++; own.set(before[k], (own.get(before[k]) || 0) + 1); behind.set(after[k], (behind.get(after[k]) || 0) + 1); }
             if (!n && !shown) return;  // a drawn part not drawn in this variant
             let best = 1;  // a shown object that changes no pixel: invisible (the same colour as what is behind it)
-            if (n) { const b0 = [...behind].sort((a, b) => b[1] - a[1])[0][0]; for (const [col, cnt] of own) if (cnt >= n * 0.03) best = Math.max(best, ratio(col, b0)); }
+            if (n) { const b0 = [...behind].sort((a, b) => b[1] - a[1])[0][0]; for (const [col, cnt] of own) if (cnt >= n * 0.03) best = Math.max(best, ratio(col, b0));
+              // its outline counts too (WCAG 1.4.11: a boundary is a state indicator): a colour that draws a whole side
+              // of the object (>= 90% of one of its two outermost lines, a box's edge: Win98's sunken chosen segment)
+              // is one of its own colours however few pixels that is; a round object (a knob) has no straight side
+              if (!/knob/.test(name)) {
+                let x0 = W, y0 = H, x1 = -1, y1 = -1;
+                for (let k = 0; k < W * H; k++) if (before[k] !== after[k]) { const x = k % W, y = (k - x) / W; x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+                const side = (pts) => { const c = new Map(); for (const k of pts) c.set(before[k], (c.get(before[k]) || 0) + 1); for (const [col, cnt] of c) if (cnt >= pts.length * 0.9) best = Math.max(best, ratio(col, b0)); };
+                for (let d = 0; d < 2 && x1 - x0 > 2 * d + 4 && y1 - y0 > 2 * d + 4; d++) {
+                  const T = [], B = [], L = [], R2 = [];
+                  for (let x = x0 + d; x <= x1 - d; x++) { T.push((y0 + d) * W + x); B.push((y1 - d) * W + x); }
+                  for (let y = y0 + d; y <= y1 - d; y++) { L.push(y * W + x0 + d); R2.push(y * W + x1 - d); }
+                  for (const pts of [T, B, L, R2]) side(pts);
+                }
+              }
+            }
             // a knob (the Pen's, the Toggle's): 3:1 against EVERYTHING round it, not just the commonest pixel behind:
             // the track, the fill AND the page or card round it (a knob the colour of the page, or of its own fill,
             // fails). Its footprint = the rows of pixels it changes, filled across (a part of it the colour of what is

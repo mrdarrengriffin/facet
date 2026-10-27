@@ -97,14 +97,15 @@ void fill(lv_obj_t *b, fw::Props p) {
   if (!strcmp(kn, "primary")) fx::focus_ring(b);  // active: the focus ring (decor, C14)
   if (u) fx::use(u, "bg:on-mark", LV_STATE_CHECKED);
   if (!strcmp(kn, "secondary")) fw::corner_ticks(b, fw::Corners::all);  // active: corner ticks (core atom)
-  if (!strcmp(kn, "secondary")) fx::use(b, "part:control");  // the theme's control (C46), last; primary / outline / ghost keep their own look
+  if (!strcmp(kn, "secondary")) fx::use(b, "part:control");  // the theme's control (C46), last; outline / ghost keep their own look
+  if (!strcmp(kn, "primary")) fx::use(b, "part:button-primary");  // the theme's primary button (C46), last (Win98: the grey control look)
 }
 }  // namespace
 
 FW_COMPONENT(button, "Button", "components", R"({
   "about": "A text button in four kinds (primary, secondary, outline, ghost), with an optional icon.",
   "contract": 2,
-  "parts": ["control"],
+  "parts": ["control", "button-primary"],
   "min": ["touch:button-h", "touch:button-h"],
   "audit": {"snaps": {"kind": "another kind of button is another button: structure"}},
   "frame": [240, 112],

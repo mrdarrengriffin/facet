@@ -691,7 +691,8 @@ tokens). A preset at Facet's value (the first of each list) adds nothing. Caps (
 | Part | The token that makes an object the part |
 |---|---|
 | `card` | `part:card` |
-| `control` | `part:control` (buttons) |
+| `control` | `part:control` (buttons: the secondary Button, icon buttons, the Dial) |
+| `button-primary` | `part:button-primary` (the primary Button; unset = the accent fill; a theme may give it the control look, Win98) |
 | `track`, `track-fill` | `part:track`, `part:track-fill` |
 | `header`, `list-row` | `part:header`, `part:list-row` |
 | `card-head` | `part:card-head` (the Card's top row: icon, label, preview) |
