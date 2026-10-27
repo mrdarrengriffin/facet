@@ -796,7 +796,8 @@ void part_draw(lv_event_t *e) {  // a box part: shadow under it (MAIN_BEGIN), pa
   const S::Block b = k.merged(p, combo(o));
   if (!(b.has & (S::K_SHADOW | S::K_EDGES | S::K_FACE))) return;  // Facet: nothing (no draw call, S1)
   if (is_check(o)) return;  // the theme draws this switch as a checkbox (switch_draw): its track part goes
-  if (p == G::P_CONTROL && seg_box(o, L)) return;  // the theme draws each segment (part segment): the Segmented's box edges go
+  if (p == G::P_CONTROL && seg_box(o, L)) return;
+  if (lv_obj_get_style_opa_recursive(o, LV_PART_MAIN) <= LV_OPA_MIN) return;  // a transparent object draws none of its part (as LVGL its own styles)  // the theme draws each segment (part segment): the Segmented's box edges go
   lv_layer_t *ly = lv_event_get_layer(e);
   const int lt = L->th.light, set = L->th.accent_set, radius = lv_obj_get_style_radius(o, LV_PART_MAIN);
   lv_area_t A;
