@@ -48,7 +48,10 @@ void fill(lv_obj_t *r, fw::Props p) {
   lv_obj_set_flag(r, LV_OBJ_FLAG_CLICKABLE, live);
   lv_obj_add_flag(r, LV_OBJ_FLAG_STATE_TRICKLE);  // the states reach the box, dot, check and label
 
-  lv_obj_t *b = fx::box(r, "free");  // the box
+  lv_obj_t *hold = fx::box(r, "free");  // the box and the check on top of it (the check covers the box's border, like the docs SVG)
+  for (const char *t : {"w:checkbox", "h:checkbox"}) fx::use(hold, t);
+  lv_obj_add_flag(hold, LV_OBJ_FLAG_STATE_TRICKLE);
+  lv_obj_t *b = fx::box(hold, "free");  // the box
   lv_obj_add_flag(b, LV_OBJ_FLAG_STATE_TRICKLE);
   fx::use(b, "border:text-dim");
   fx::use(b, "border:on-mark", ST_DOING);
@@ -69,8 +72,8 @@ void fill(lv_obj_t *r, fw::Props p) {
   fx::use(k, "bg:disabled-ink", ST_OFF | ST_DOING);
   fades(k);
 
-  // done: the check (Icons foundation, icon size = the box; the box's border is drawn over its edge, like the docs SVG)
-  if (lv_obj_t *ic = fx::icon(b, "check", "checkbox", "fg:on-label")) {
+  // done: the check (Icons foundation, icon size = the box), over the box in its holder
+  if (lv_obj_t *ic = fx::icon(hold, "check", "checkbox", "fg:on-label")) {
     lv_obj_add_flag(ic, LV_OBJ_FLAG_IGNORE_LAYOUT);
     fx::use(ic, "over-cell");
     fx::use(ic, "transp");
