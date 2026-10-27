@@ -76,7 +76,9 @@ const char *const DERIVED_N[] = {"dial-wing-up", "dial-wing-down", "dial-slot", 
                                  // 17-23: padding a theme moves (C45: a flush bar), 24: the Segmented's own layers (a theme that styles the segment part draws it)
                                  "page-move", "head-move", "body-move", "header-move", "card-move", "card-head-move", "card-body-move", "seg-layer",
                                  // 25: the More row (its height + the top space that puts its label on the rows' 24 / 16 line)
-                                 "more-row"};
+                                 "more-row",
+                                 // 26-27: the Entity tile's name (two body lines, a fixed box) and its status (space 5 above)
+                                 "tile-text", "tile-status"};
 // A display's look: its shared styles painted from theme t (mode + accent set) through the live Skin (theme_live: its
 // palette for that mode x set = th, the colours every contract style reads; Facet's Skin = Facet's colours, so th == *t)
 // and its generation (gen: a theme apply bumps it, the look repaints; never by Skin pointer, a freed one's address can
@@ -580,6 +582,13 @@ void paint(Look *L, const fw::Theme *t, int only = -1) {  // colours from the th
       if (d.i == 25) {  // more-row: more-row-h tall; top space 7 less the hairline on top (LVGL counts the border in the content offset)
         lv_style_set_height(s, tok("layout:more-row-h", lay::more_row_h));
         lv_style_set_pad_top(s, tok("space:7", sp::s7) - tok("stroke:hair", stroke::hair)); continue;
+      }
+      if (d.i == 26) {  // tile-text: two lines of type body in a fixed box (the status below never moves)
+        lv_style_set_width(s, lv_pct(100)); lv_style_set_height(s, 2 * box_of(ty::body)); continue;
+      }
+      if (d.i == 27) {  // tile-status: one line of type label, space 5 above it
+        lv_style_set_width(s, lv_pct(100)); lv_style_set_height(s, box_of(ty::label));
+        lv_style_set_margin_top(s, tok("space:5", sp::s5)); continue;
       }
       if (d.i == 16) {  // empty-pad: the Empty state's padding from the outer edge (less the border hair)
         lv_style_set_pad_all(s, tok("layout:empty-pad", lay::empty_pad) - tok("stroke:hair", stroke::hair)); continue;

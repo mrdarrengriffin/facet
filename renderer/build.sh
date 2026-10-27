@@ -28,6 +28,9 @@ if [ $# -eq 0 ]; then
   "$0" 1.5x & a=$!; "$0" 1x & b=$!; wait $a; ra=$?; wait $b; rb=$?; exit $(( ra | rb ))
 fi
 DEN=$1
+# one build per density at a time (the watcher and a manual build wrote the same fw.wasm at once: a torn module, and
+# theme_check hung on it): a second build waits for the first
+mkdir -p "${FW_CACHE:-$HERE/.cache}"; exec 8>"${FW_CACHE:-$HERE/.cache}/.build-$DEN.lock"; flock 8
 . ~/emsdk/emsdk_env.sh >/dev/null 2>&1
 PB=${PANEL_BUILD:-$HOME/.esphome-build/waveshare-p4-86-panel}
 L=$PB/managed_components/lvgl__lvgl

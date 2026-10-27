@@ -839,47 +839,6 @@
     "bytes_est": 6400
    }
   },
-  "check_row": {
-   "name": "Check row",
-   "update": true,
-   "props": [
-    {
-     "name": "name",
-     "type": "text",
-     "bindable": true,
-     "about": "The name of the check, such as test or build."
-    },
-    {
-     "name": "state",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "pass",
-      "fail",
-      "pending",
-      "skipped"
-     ],
-     "about": "How the check went: pass, fail, pending while it still runs, or skipped. The dot and the word change to match."
-    },
-    {
-     "name": "width",
-     "type": "range",
-     "bindable": true,
-     "min": 160,
-     "max": 440,
-     "about": "How wide the row is, in pixels."
-    }
-   ],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 4,
-    "bytes_est": 640
-   }
-  },
   "checkbox": {
    "name": "Checkbox",
    "update": true,
@@ -926,6 +885,47 @@
    "cost": {
     "objects": 6,
     "bytes_est": 960
+   }
+  },
+  "check_row": {
+   "name": "Check row",
+   "update": true,
+   "props": [
+    {
+     "name": "name",
+     "type": "text",
+     "bindable": true,
+     "about": "The name of the check, such as test or build."
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "pass",
+      "fail",
+      "pending",
+      "skipped"
+     ],
+     "about": "How the check went: pass, fail, pending while it still runs, or skipped. The dot and the word change to match."
+    },
+    {
+     "name": "width",
+     "type": "range",
+     "bindable": true,
+     "min": 160,
+     "max": 440,
+     "about": "How wide the row is, in pixels."
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 4,
+    "bytes_est": 640
    }
   },
   "clock_face": {
@@ -1130,73 +1130,6 @@
     "bytes_est": 320
    }
   },
-  "cover_visual": {
-   "name": "Cover visual",
-   "update": true,
-   "props": [
-    {
-     "name": "kind",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "roller",
-      "venetian",
-      "curtain"
-     ],
-     "about": "What hangs in the window: a roller blind, a Venetian blind with slats, or a pair of curtains."
-    },
-    {
-     "name": "position",
-     "type": "range",
-     "bindable": true,
-     "min": 0,
-     "max": 100,
-     "about": "How open the cover is, from 0 (closed) to 100 (fully open)."
-    },
-    {
-     "name": "tilt",
-     "type": "range",
-     "bindable": true,
-     "min": 0,
-     "max": 100,
-     "about": "For Venetian blinds: how far the slats are turned, from 0 (shut) to 100 (fully open)."
-    },
-    {
-     "name": "heading",
-     "type": "range",
-     "bindable": true,
-     "min": -1,
-     "max": 100,
-     "about": "Where the cover is moving to while it moves, from 0 to 100, shown as a faint target. -1 means it is not moving."
-    },
-    {
-     "name": "draggable",
-     "type": "bool",
-     "bindable": true,
-     "about": "Lets you drag the blind's edge, or the curtains sideways, to move the cover."
-    },
-    {
-     "name": "state",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "default",
-      "disabled",
-      "unavailable"
-     ],
-     "about": "default can be dragged; disabled cannot be moved; unavailable shows the cover cannot be reached."
-    }
-   ],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 6,
-    "bytes_est": 960
-   }
-  },
   "covers_view": {
    "name": "Covers view",
    "update": true,
@@ -1274,6 +1207,73 @@
    "cost": {
     "objects": 37,
     "bytes_est": 5920
+   }
+  },
+  "cover_visual": {
+   "name": "Cover visual",
+   "update": true,
+   "props": [
+    {
+     "name": "kind",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "roller",
+      "venetian",
+      "curtain"
+     ],
+     "about": "What hangs in the window: a roller blind, a Venetian blind with slats, or a pair of curtains."
+    },
+    {
+     "name": "position",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 100,
+     "about": "How open the cover is, from 0 (closed) to 100 (fully open)."
+    },
+    {
+     "name": "tilt",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 100,
+     "about": "For Venetian blinds: how far the slats are turned, from 0 (shut) to 100 (fully open)."
+    },
+    {
+     "name": "heading",
+     "type": "range",
+     "bindable": true,
+     "min": -1,
+     "max": 100,
+     "about": "Where the cover is moving to while it moves, from 0 to 100, shown as a faint target. -1 means it is not moving."
+    },
+    {
+     "name": "draggable",
+     "type": "bool",
+     "bindable": true,
+     "about": "Lets you drag the blind's edge, or the curtains sideways, to move the cover."
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "default",
+      "disabled",
+      "unavailable"
+     ],
+     "about": "default can be dragged; disabled cannot be moved; unavailable shows the cover cannot be reached."
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 6,
+    "bytes_est": 960
    }
   },
   "date_line": {
@@ -1613,8 +1613,8 @@
     ]
    },
    "cost": {
-    "objects": 7,
-    "bytes_est": 1120
+    "objects": 6,
+    "bytes_est": 960
    }
   },
   "event_row": {
@@ -2774,6 +2774,62 @@
     "bytes_est": 1120
    }
   },
+  "icon_button": {
+   "name": "Icon button",
+   "update": true,
+   "props": [
+    {
+     "name": "style",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "play",
+      "round",
+      "square"
+     ],
+     "about": "The button's shape: play is the large round play and pause button, round is a smaller circle, square has rounded corners."
+    },
+    {
+     "name": "icon",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "next",
+      "prev",
+      "play",
+      "plus",
+      "close",
+      "check",
+      "back",
+      "settings"
+     ],
+     "about": "The icon on the button, such as next, previous, play or close."
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "default",
+      "pressed",
+      "active",
+      "active-pressed",
+      "disabled",
+      "unavailable"
+     ],
+     "about": "How the button looks: default ready to tap, pressed while held, active when it is switched on, active-pressed while the active one is held, disabled when it cannot be used, or unavailable when its device cannot be reached."
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 3,
+    "bytes_est": 480
+   }
+  },
   "icon": {
    "name": "Icon",
    "update": true,
@@ -2906,62 +2962,6 @@
       "info"
      ],
      "about": "The icon's colour by what it means: ink for normal, dim for quiet, accent for the screen's colour, ok, warn, error or info for a status."
-    }
-   ],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 3,
-    "bytes_est": 480
-   }
-  },
-  "icon_button": {
-   "name": "Icon button",
-   "update": true,
-   "props": [
-    {
-     "name": "style",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "play",
-      "round",
-      "square"
-     ],
-     "about": "The button's shape: play is the large round play and pause button, round is a smaller circle, square has rounded corners."
-    },
-    {
-     "name": "icon",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "next",
-      "prev",
-      "play",
-      "plus",
-      "close",
-      "check",
-      "back",
-      "settings"
-     ],
-     "about": "The icon on the button, such as next, previous, play or close."
-    },
-    {
-     "name": "state",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "default",
-      "pressed",
-      "active",
-      "active-pressed",
-      "disabled",
-      "unavailable"
-     ],
-     "about": "How the button looks: default ready to tap, pressed while held, active when it is switched on, active-pressed while the active one is held, disabled when it cannot be used, or unavailable when its device cannot be reached."
     }
    ],
    "events": {
@@ -4388,75 +4388,6 @@
     "bytes_est": 1920
    }
   },
-  "pr_row": {
-   "name": "Pull request row",
-   "update": true,
-   "props": [
-    {
-     "name": "repo",
-     "type": "text",
-     "bindable": true,
-     "about": "The repository the pull request is in."
-    },
-    {
-     "name": "number",
-     "type": "range",
-     "bindable": true,
-     "min": 1,
-     "max": 9999,
-     "about": "The pull request's number."
-    },
-    {
-     "name": "title",
-     "type": "text",
-     "bindable": true,
-     "about": "The pull request's title, over up to two lines."
-    },
-    {
-     "name": "age",
-     "type": "text",
-     "bindable": true,
-     "about": "How long ago it was opened or last changed, such as 5h."
-    },
-    {
-     "name": "draft",
-     "type": "bool",
-     "bindable": true,
-     "about": "Marks it as a draft that is not ready for review yet."
-    },
-    {
-     "name": "ci",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "pass",
-      "fail",
-      "pending",
-      "none"
-     ],
-     "about": "How its automatic checks went: pass, fail, pending, or none when it has no checks."
-    },
-    {
-     "name": "state",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "default",
-      "pressed"
-     ],
-     "about": "default ready to tap; pressed while held."
-    }
-   ],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 13,
-    "bytes_est": 2080
-   }
-  },
   "print_model": {
    "name": "3D print model",
    "update": true,
@@ -4562,6 +4493,75 @@
    "cost": {
     "objects": 9,
     "bytes_est": 1440
+   }
+  },
+  "pr_row": {
+   "name": "Pull request row",
+   "update": true,
+   "props": [
+    {
+     "name": "repo",
+     "type": "text",
+     "bindable": true,
+     "about": "The repository the pull request is in."
+    },
+    {
+     "name": "number",
+     "type": "range",
+     "bindable": true,
+     "min": 1,
+     "max": 9999,
+     "about": "The pull request's number."
+    },
+    {
+     "name": "title",
+     "type": "text",
+     "bindable": true,
+     "about": "The pull request's title, over up to two lines."
+    },
+    {
+     "name": "age",
+     "type": "text",
+     "bindable": true,
+     "about": "How long ago it was opened or last changed, such as 5h."
+    },
+    {
+     "name": "draft",
+     "type": "bool",
+     "bindable": true,
+     "about": "Marks it as a draft that is not ready for review yet."
+    },
+    {
+     "name": "ci",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "pass",
+      "fail",
+      "pending",
+      "none"
+     ],
+     "about": "How its automatic checks went: pass, fail, pending, or none when it has no checks."
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "default",
+      "pressed"
+     ],
+     "about": "default ready to tap; pressed while held."
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 13,
+    "bytes_est": 2080
    }
   },
   "qr_block": {
@@ -6533,5 +6533,5 @@
    }
   }
  },
- "hash": "4c7b2ac3"
+ "hash": "969894e6"
 }

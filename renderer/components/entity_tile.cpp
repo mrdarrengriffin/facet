@@ -1,119 +1,94 @@
-// Entity tile: a Home card at size s (screen model §4: the tile, three across). One thing in the room at a glance:
-// its icon, its name and its state, and a tap that does the one thing (toggle a light, open its screen). Built like the
-// agent Tile (the same box, padding, press look and two-line title), with an entity icon in place of the mascot.
-//   box      lay::tile_w x tile_h (208 x 208 / 136 x 136), surface fill, 1 px line border, radius rad::tile,
-//            padding lay::tile_pad - hair (children count from the outer edge, as the Tile); flex column
-//   icon     ic::icon (24 / 16): text-dim, or st::on_mark (accent) while on; top-left on the padding line
+// Entity tile: a Home card at size s (screen model §4: the tile, three across), on the contract (renderer/CONTRACT.md,
+// "contract": 2). One thing in the room at a glance: its icon, its name and its state, and a tap that does the one
+// thing (toggle a light, open its screen). The Card's look (the same tokens and the theme's card part), with an entity
+// icon on top and the name + state at the bottom.
+//   box      fills its parent (a Home grid cell; meta min layout:tile-w x tile-h, 208 / 136 square), bg:surface,
+//            border:line, radius:tile, card-pad (children count from the outer edge); a column; part:card
+//   icon     icon size (24 / 16): text-dim, on-mark (accent) while on; top-left on the padding line
 //   (grow)
-//   label    screen type body, text, up to two lines in a box of 2 x the body box (Tile title), ellipsis
-//   gap      space 5 (16 / 12, Tile)
-//   status   type label (caps), one line, a fixed box: the state ("Off", "64%", "Open"); st::on_ink (accent-text) while
-//            on, else text-dim
+//   label    type body, text, up to two lines in a fixed box of two body lines (tile-text), "..."
+//   status   type label (caps), one line, space 5 above (tile-status): the state ("Off", "64%", "Open"); on-ink
+//            (accent-text) while on, else text-dim
 // Props: icon (a UI or screen icon name), label, status, on (bool), act toggle | open | none (what a tap does: the
-// sound and the instant look; none = read-only, a Home sensor tile: not clickable, no press look), state default | pressed | unavailable.
-// Tap (states.json): act toggle = the tile shows the other side at once (Motion toggle fade, like a tap on a Toggle)
-// + sound toggle-on / toggle-off + event "tap" (the Home's spec sends the toggle; HA's answer settles it); act open =
-// sound open + event "tap" (the Home opens the screen). Pressed = the Card press (states.json pressed.style).
-// Unavailable: icon + label text-mute, status "Unavailable" text-dim, no press look; a tap = blocked + error.
-// Update path: label / status texts in place (fixed boxes), on / off fades the icon and status colours (silent);
-// unavailable <-> default builds the contents again with a fade. Contrast pairs: tokens/colour.json "entity_tile".
+// sound and the instant look; none = read-only, a Home sensor tile: not clickable, no press look), state default |
+// pressed | unavailable, press (the Card's press styles).
+// States (tokens per state, C17): on = LV_STATE_USER_2 (not CHECKED: the theme's card part has no "on" look of its
+// own), fading with Motion toggle (fade-switch); pressed = the Card press (fade-press / fade-release); unavailable
+// (fw::st::OFF): icon + label unavailable-ink, status "Unavailable" in unavailable-note, no press look; a tap = blocked
+// + error. n/a: loading, unknown, empty, error (the binding maps those to unavailable).
+// Tap (states.json): act toggle = the tile shows the other side at once (like a tap on a Toggle) + sound toggle-on /
+// toggle-off + event "tap" (the Home's spec sends the toggle; HA's answer settles it); act open = sound open + event
+// "tap" (the Home opens the screen). Update path: label / status texts in place, on / off fades (silent); icon or
+// unavailable <-> default = the contents again, faded in. Bleed: none. Contrast pairs: tokens/colour.json "entity_tile".
 #include "fw.h"
+#include "fx.h"
 
 namespace {
-constexpr lv_state_t ST_OFF = fw::st::OFF;
-
-const lv_style_prop_t TR_PROPS[] = {LV_STYLE_BG_COLOR, LV_STYLE_BORDER_COLOR, LV_STYLE_PROP_INV};
-const lv_style_transition_dsc_t *tr(bool pressed) {
-  static lv_style_transition_dsc_t d[2];
-  static bool ready = false;
-  if (!ready) { fw::st::press_transitions(d, TR_PROPS); ready = true; }
-  return &d[pressed];
-}
-lv_obj_t *box(lv_obj_t *parent) {
-  lv_obj_t *o = lv_obj_create(parent);
-  lv_obj_remove_style_all(o);
-  lv_obj_remove_flag(o, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
-  return o;
-}
-// parts (fill order): 0 icon, 1 grow, 2 label, 3 gap, 4 status
-lv_obj_t *part(lv_obj_t *c, int i) { return lv_obj_get_child(c, i); }
-// the look the props ask for: user flag USER_3 = on
-bool is_on(lv_obj_t *c) { return lv_obj_has_flag(c, LV_OBJ_FLAG_USER_3); }
-void paint(lv_obj_t *c, bool on, bool quiet) {
-  const fw::Theme &t = *fw::theme_of(c);  // a tap / update paints after the build: the tile's own theme, not fw::T
-  lv_obj_set_flag(c, LV_OBJ_FLAG_USER_3, on);
-  if (lv_obj_has_state(c, ST_OFF)) return;
-  const lv_color_t ic = on ? fw::st::on_mark(t) : t.text_dim, tx = on ? fw::st::on_ink(t) : t.text_dim;
-  if (quiet) {
-    fw::icon_colour(part(c, 0), ic);
-    lv_obj_set_style_text_color(part(c, 4), tx, 0);
-    return;
+constexpr lv_state_t ST_OFF = fw::st::OFF, ST_ON = LV_STATE_USER_2;
+constexpr lv_obj_flag_t TOGGLES = LV_OBJ_FLAG_USER_4;  // a tap toggles (else opens)
+struct Tile { lv_obj_t *label = nullptr, *status = nullptr; };
+void tile_free(lv_event_t *e) { delete (Tile *) lv_event_get_user_data(e); }
+Tile *tile_of(lv_obj_t *r) {  // the Tile rides on the root's DELETE event
+  for (uint32_t i = 0, n = lv_obj_get_event_count(r); i < n; i++) {
+    lv_event_dsc_t *d = lv_obj_get_event_dsc(r, i);
+    if (lv_event_dsc_get_cb(d) == tile_free) return (Tile *) lv_event_dsc_get_user_data(d);
   }
-  fw::st::restyle(c, [&] {
-    fw::icon_colour(part(c, 0), ic);
-    lv_obj_set_style_text_color(part(c, 4), tx, 0);
-  });
+  return nullptr;
+}
+void fades(lv_obj_t *o) {  // the Motion toggle fade on the states the part changes in
+  for (lv_state_t st : {(lv_state_t) 0, ST_ON}) fx::use(o, "fade-switch", st);
 }
 // on: a bool, or a state word "on" (a bind's map: a cover's open)
 bool on_of(fw::Props p) { return p["on"].is<bool>() ? p["on"].as<bool>() : !strcmp(p["on"] | "", "on"); }
-std::string sig(fw::Props p) {  // what needs a rebuild: the icon, unavailable (texts and on move in place)
-  return std::string(p["icon"] | "bulb") + "|" + (strcmp(p["state"] | "default", "unavailable") ? "" : "off");
+std::string sig(fw::Props p) {  // what needs a rebuild: the icon, unavailable, the press style (texts and on move in place)
+  return std::string(p["icon"] | "bulb") + "|" + (strcmp(p["state"] | "default", "unavailable") ? "" : "off") + "|" + (p["press"] | "");
 }
 void fill(lv_obj_t *c, fw::Props p) {
-  const fw::Theme &t = *fw::T;
+  Tile *k = tile_of(c);
   const char *state = p["state"] | "default";
   const bool off = !strcmp(state, "unavailable");
-  lv_obj_remove_style_all(c);
   fw::shape(c, sig(p));
-  lv_obj_add_flag(c, LV_OBJ_FLAG_CLICKABLE);
-  lv_obj_remove_flag(c, LV_OBJ_FLAG_SCROLLABLE);
-  lv_obj_set_size(c, fw::lay::tile_w, fw::lay::tile_h);
-  lv_obj_set_style_radius(c, fw::rad::tile, 0);
-  lv_obj_set_style_bg_opa(c, LV_OPA_COVER, 0);
-  lv_obj_set_style_border_width(c, fw::stroke::hair, 0);
-  lv_obj_set_style_pad_all(c, fw::lay::tile_pad - fw::stroke::hair, 0);
-  lv_obj_set_flex_flow(c, LV_FLEX_FLOW_COLUMN);
-  const lv_style_selector_t SEL[3] = {0, LV_STATE_PRESSED, ST_OFF};
+  for (const char *t : {"fill", "col", "radius:tile", "card-pad", "bg:surface", "border:line", "fade-release"}) fx::use(c, t);
   const char *press = p["press"] | fw::st::PRESS_STYLE;
   const bool p_fill = strcmp(press, "border") != 0, p_border = strcmp(press, "fill") != 0;
-  const lv_color_t BG[3] = {t.surface, p_fill ? fw::st::pressed_tint(t) : t.surface, t.surface};
-  const lv_color_t BD[3] = {t.line, p_border ? fw::st::pressed_tint_line(t) : fw::st::pressed_line(t), t.line};
-  for (int i = 0; i < 3; i++) {
-    lv_obj_set_style_bg_color(c, BG[i], SEL[i]);
-    lv_obj_set_style_border_color(c, BD[i], SEL[i]);
-    lv_obj_set_style_transition(c, tr(i == 1), SEL[i]);
-  }
-  const lv_color_t mute = fw::st::unavailable_ink(t);
-  fw::icon(c, p["icon"] | "bulb", fw::ic::icon, off ? mute : t.text_dim);
-  lv_obj_t *grow = box(c);
-  lv_obj_set_width(grow, 1);
-  lv_obj_set_flex_grow(grow, 1);
-  const int inner = fw::lay::tile_w - 2 * fw::lay::tile_pad;
-  lv_obj_t *ti = fw::text(c, fw::ty::body, p["label"] | "", off ? mute : t.text, inner);
-  lv_obj_remove_flag(ti, LV_OBJ_FLAG_CLICKABLE);
-  lv_label_set_long_mode(ti, LV_LABEL_LONG_MODE_DOTS);
-  lv_obj_set_size(ti, inner, 2 * fw::style(fw::ty::body).box);
-  lv_obj_t *gap = box(c);
-  lv_obj_set_size(gap, 1, fw::sp::s5);
-  lv_obj_t *st = fw::text(c, fw::ty::label, off ? fw::st::UNAVAILABLE_TEXT : (p["status"] | ""), off ? fw::st::unavailable_note(t) : t.text_dim);
-  lv_obj_remove_flag(st, LV_OBJ_FLAG_CLICKABLE);
-  lv_label_set_long_mode(st, LV_LABEL_LONG_MODE_DOTS);
-  lv_obj_set_size(st, inner, fw::style(fw::ty::label).box);
+  fx::use(c, p_fill ? "bg:pressed-tint" : "bg:surface", LV_STATE_PRESSED);
+  fx::use(c, p_border ? "border:pressed-tint-line" : "border:pressed-line", LV_STATE_PRESSED);
+  fx::use(c, "fade-press", LV_STATE_PRESSED);
+  fx::use(c, "bg:surface", ST_OFF);  // no press look when unavailable
+  fx::use(c, "border:line", ST_OFF);
+  fx::use(c, "part:card");  // the theme's card (C46), after the tile's own state tokens
+
+  lv_obj_t *ic = fx::icon(c, p["icon"] | "bulb", "icon", "fg:text-dim");
+  fx::icon_use(ic, "ink:on-mark", ST_ON);
+  fx::icon_use(ic, "ink:unavailable-ink", ST_OFF);
+  for (lv_state_t st : {(lv_state_t) 0, ST_ON}) fx::icon_use(ic, "fade-switch", st);
+  fx::use(fx::box(c, "free"), "grow");
+  k->label = fx::text(c, p["label"] | "", "type:body", off ? "fg:unavailable-ink" : "fg:text");
+  fx::use(k->label, "tile-text");
+  lv_label_set_long_mode(k->label, LV_LABEL_LONG_MODE_DOTS);  // two lines, then "..."
+  k->status = fx::text(c, off ? fw::st::UNAVAILABLE_TEXT : (p["status"] | ""), "type:label", off ? "fg:unavailable-note" : "fg:text-dim");
+  fx::use(k->status, "tile-status");
+  if (!off) fx::use(k->status, "fg:on-ink", ST_ON);
+  fades(k->status);
+
   const bool pressed = !strcmp(state, "pressed");
   if (pressed != lv_obj_has_state(c, LV_STATE_PRESSED)) lv_obj_set_state(c, LV_STATE_PRESSED, pressed);
-  if (off) lv_obj_add_state(c, ST_OFF);
-  paint(c, !off && on_of(p), true);
-  lv_obj_set_flag(c, LV_OBJ_FLAG_USER_4, !strcmp(p["act"] | "toggle", "toggle"));  // a tap toggles (else opens)
+  if (off) fx::state(c, ST_OFF, true);
+  fw::st::set_state(c, ST_ON, !off && on_of(p), false);
+  lv_obj_set_flag(c, TOGGLES, !strcmp(p["act"] | "toggle", "toggle"));
   lv_obj_set_flag(c, LV_OBJ_FLAG_CLICKABLE, strcmp(p["act"] | "toggle", "none") != 0);  // none: read-only
 }
 // a text only when it changes (an update with the same props redraws nothing)
-void put(lv_obj_t *l, fw::ty::Id ty, const char *txt) {
-  if (fw::cased(ty, txt) != lv_label_get_text(l)) fw::set_text(l, ty, txt);
+void put(lv_obj_t *l, const char *type, const char *txt) {
+  if (l && strcmp(lv_label_get_text(l), txt)) fx::set_text(l, txt, type);
 }
 }  // namespace
 
 FW_COMPONENT(entity_tile, "Entity tile", "components", R"({
   "about": "A Home tile for one thing in the room: its icon, name and state; a tap toggles it or opens its screen.",
+  "contract": 2,
+  "parts": ["card"],
+  "min": ["layout:tile-w", "layout:tile-h"],
   "frame": [240, 240],
   "icons": ["bulb@icon", "power@icon", "screen-covers@icon", "screen-timer@icon", "screen-media@icon", "screen-weather@icon", "thermometer@icon", "door@icon", "window@icon", "person@icon", "alert@icon", "bolt@icon", "house@icon"],
   "props": [
@@ -136,16 +111,20 @@ FW_COMPONENT(entity_tile, "Entity tile", "components", R"({
     {"label": "unavailable", "props": {"label": "Chair", "state": "unavailable"}}
   ]
 })") {
-  lv_obj_t *c = lv_obj_create(parent);
+  lv_obj_t *c = lv_obj_create(parent);  // styles: fill() (an update refills the same root)
+  lv_obj_remove_style_all(c);
+  lv_obj_remove_flag(c, LV_OBJ_FLAG_SCROLLABLE);
+  fx::name(c, "entity_tile");
+  lv_obj_add_event_cb(c, tile_free, LV_EVENT_DELETE, new Tile);
   fill(c, p);
   fw::st::on_tap(c, [](lv_event_t *e) {
     if (!fw::st::tap_now(e)) return;
     auto *o = (lv_obj_t *) lv_event_get_current_target(e);
-    const char *d = lv_label_get_text(part(o, 2));
+    const char *d = lv_label_get_text(tile_of(o)->label);
     if (lv_obj_has_state(o, ST_OFF)) { fw::st::blocked(o, d); return; }
-    if (lv_obj_has_flag(o, LV_OBJ_FLAG_USER_4)) {  // toggle: the other side at once (HA settles it)
-      const bool on = !is_on(o);
-      paint(o, on, false);
+    if (lv_obj_has_flag(o, TOGGLES)) {  // toggle: the other side at once (HA settles it)
+      const bool on = !lv_obj_has_state(o, ST_ON);
+      fw::st::set_state(o, ST_ON, on, true);
       fw::sound(o, on ? fw::st::ON_SOUND : fw::st::OFF_SOUND);
     } else fw::sound(o, "open");
     fw::emit(o, "tap", d);
@@ -153,16 +132,18 @@ FW_COMPONENT(entity_tile, "Entity tile", "components", R"({
 }
 
 // Update path: same icon + availability = texts in place and on / off as a fade (silent, like a tap); otherwise the
-// contents again (default <-> unavailable fades them in).
+// contents again (fw::refill; default <-> unavailable fades them in).
 FW_UPDATE(entity_tile) {
+  Tile *k = tile_of(root);
+  if (!k) return false;
   const char *state = p["state"] | "default";
   const bool was_off = lv_obj_has_state(root, ST_OFF), off = !strcmp(state, "unavailable");
-  if (fw::shape(root, sig(p)) && was_off == off) {
-    put(part(root, 2), fw::ty::body, p["label"] | "");
-    if (!off) put(part(root, 4), fw::ty::label, p["status"] | "");
+  if (fw::shape(root, sig(p))) {
+    put(k->label, "type:body", p["label"] | "");
+    if (!off) put(k->status, "type:label", p["status"] | "");
     const bool on = !off && on_of(p);
-    if (on != is_on(root)) paint(root, on, false);
-    lv_obj_set_flag(root, LV_OBJ_FLAG_USER_4, !strcmp(p["act"] | "toggle", "toggle"));
+    if (on != lv_obj_has_state(root, ST_ON)) fw::st::set_state(root, ST_ON, on, true);
+    lv_obj_set_flag(root, TOGGLES, !strcmp(p["act"] | "toggle", "toggle"));
     lv_obj_set_flag(root, LV_OBJ_FLAG_CLICKABLE, strcmp(p["act"] | "toggle", "none") != 0);
     const bool pr = !strcmp(state, "pressed");
     if (pr != lv_obj_has_state(root, LV_STATE_PRESSED)) lv_obj_set_state(root, LV_STATE_PRESSED, pr);
