@@ -81,9 +81,12 @@ void fill(lv_obj_t *c, fw::Props p) {
   fx::use(c, "bg:surface", ST_OFF);
   fx::use(c, "border:line", ST_OFF);
   fx::use(c, "part:card");  // the theme's card (C46), after the card's own state tokens
+  fx::use(c, "card-move");  // a flush card head (C45): the card keeps only what its edges need (empty in Facet)
 
   // top row: icon + label + dot, the preview at the right edge (top-aligned: the label row sits on the padding line)
   lv_obj_t *top = fx::box(c, "row-top");
+  fx::use(top, "part:card-head");  // the theme's card head (C46): Win98 = the title bar
+  fx::use(top, "card-head-move");
   lv_obj_t *lab = fx::box(top, "row");
   fx::use(lab, "gap:2");
   fx::use(lab, "cell");
@@ -102,18 +105,22 @@ void fill(lv_obj_t *c, fw::Props p) {
   if (!off && full && fw::is_preview(pv)) fw::card_preview(top, pv, p);  // the card artwork (legacy, components/card_previews.cpp)
   else if (!off && full && strcmp(pv, "none")) fx::icon(top, pv, "card", "fg:text-dim");
 
-  lv_obj_t *grow = fx::box(c, "free");
+  // the body: everything under the head (Facet: no padding of its own, so it is the card's content box as before)
+  lv_obj_t *body = fx::box(c, "col");
+  fx::use(body, "grow");
+  fx::use(body, "card-body-move");
+  lv_obj_t *grow = fx::box(body, "free");
   fx::use(grow, "grow");
 
   if (text_mode && !off) {  // up to two lines of title, bottom-aligned (the grow above pushes it down); compact: one
-    lv_obj_t *tx = line(c, p["text"] | "", "type:title", "fg:text");
+    lv_obj_t *tx = line(body, p["text"] | "", "type:title", "fg:text");
     if (full) fx::use(tx, "card-text");
   } else {
-    line(c, off ? fw::st::PLACEHOLDER : (p["value"] | ""), full ? "type:value" : "type:title",
+    line(body, off ? fw::st::PLACEHOLDER : (p["value"] | ""), full ? "type:value" : "type:title",
          off ? "fg:unavailable-ink" : accent ? "fg:accent-text" : "fg:text");
   }
-  fx::use(fx::box(c, "free"), full ? "card-gap" : "card-gap-s");
-  line(c, off ? fw::st::UNAVAILABLE_TEXT : (p["sub"] | ""), "type:body", off ? "fg:unavailable-note" : tone(p["tone"] | "dim"));
+  fx::use(fx::box(body, "free"), full ? "card-gap" : "card-gap-s");
+  line(body, off ? fw::st::UNAVAILABLE_TEXT : (p["sub"] | ""), "type:body", off ? "fg:unavailable-note" : tone(p["tone"] | "dim"));
 
   if (!strcmp(state, "pressed") != lv_obj_has_state(c, LV_STATE_PRESSED)) lv_obj_set_state(c, LV_STATE_PRESSED, !strcmp(state, "pressed"));
   if (off) lv_obj_add_state(c, ST_OFF);
@@ -143,11 +150,15 @@ void check(void *v) {
   Card &k = it->second;
   k.queued = false;
   lv_obj_update_layout(c);
-  lv_area_t cb, lb;
+  lv_area_t cb, lb, bb;
   lv_obj_get_content_coords(c, &cb);
-  lv_obj_t *top = lv_obj_get_child(c, 0), *lab = top ? lv_obj_get_child(top, 0) : nullptr;
+  lv_obj_t *top = lv_obj_get_child(c, 0), *lab = top ? lv_obj_get_child(top, 0) : nullptr, *body = lv_obj_get_child(c, 1);
   bool tall = false, wide = false;
   for (uint32_t i = 0; i < lv_obj_get_child_count(c); i++) if (outside(lv_obj_get_child(c, (int32_t) i), cb)) tall = true;
+  if (body) {  // the body's lines inside its own content box (the head and the body share the card's)
+    lv_obj_get_content_coords(body, &bb);
+    for (uint32_t i = 0; i < lv_obj_get_child_count(body); i++) if (outside(lv_obj_get_child(body, (int32_t) i), bb)) tall = true;
+  }
   if (lab) {
     lv_obj_get_content_coords(lab, &lb);
     for (uint32_t i = 0; i < lv_obj_get_child_count(lab); i++) if (outside(lv_obj_get_child(lab, (int32_t) i), lb)) wide = true;
@@ -180,7 +191,7 @@ void on_delete(lv_event_t *e) {
 FW_COMPONENT(card, "Card", "components", R"({
   "about": "A tappable Home card: an icon and label, a value or short text, and a supporting line.",
   "contract": 2,
-  "parts": ["card"],
+  "parts": ["card", "card-head"],
   "frame": [256, 184],
   "min": ["layout:card-min-w", "layout:card-min-h"],
   "icons": ["screen-weather@icon", "screen-media@icon", "screen-timer@icon", "screen-energy@icon", "screen-light@icon",

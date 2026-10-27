@@ -31,7 +31,7 @@ static_assert(G::N_COLOURS == N_COLOURS && G::N_ROLES == N_ROLES && G::N_SIZES =
               G::ST_ON == 0 && G::ST_FOCUS == 1 && G::ST_PRESSED == 2 && G::ST_DISABLED == 3 && G::ACCENTS_MAX <= MAX_SETS && G::MAX_EDGES_TOTAL <= MAX_EDGES &&
               G::MAX_BUTTONS <= MAX_BUTTONS && G::N_SETS <= MAX_SETS,
               "theme_file.h sizes no longer match the generated theme schema (tools/gen_theme.mjs): update theme_file.h");
-static_assert(G::N_KEYS == 13, "theme_file.h Key bits no longer match tokens/theme.json keys");
+static_assert(G::N_KEYS == 14, "theme_file.h Key bits no longer match tokens/theme.json keys");
 static_assert(std::is_trivially_copyable<Skin>::value, "Skin must stay plain data (digest, memset)");
 constexpr int MAX_NODES = G::MAX_VALUES;  // tokens/theme.json limits.values: nodes x 24 B + the arena (<= the file + 1 per string) + the model < 64 KB
 
@@ -512,7 +512,7 @@ struct Reader {
       if (bit == K_FACE) ok = face(c, at, b.face, !strcmp(P.name, "scrollbar"));
       else if (bit == K_RADIUS) ok = len(c, at, b.radius);
       else if (bit == K_PAD) {
-        if (!P.pad) E.add(at, "padding is layout (C45): a theme may pad only a part with no content (track, track-fill)", c);
+        if (!P.pad) E.add(at, "padding is layout (C45): a theme may pad only a part with no content (track, track-fill) or a flush bar (header, card-head)", c);
         else ok = len(c, at, b.pad);
       }
       else if (bit == K_EDGES) ok = edge_list(c, at, b);
@@ -565,6 +565,7 @@ struct Reader {
       } else if (bit == K_W) ok = len(c, at, S.scrollbar.w);
       else if (bit == K_LANE) { ok = face(c, at, S.scrollbar.lane, false); S.scrollbar.has_lane = ok; }
       else if (bit == K_ARROWS) { if (need(c, J_BOOL, at)) { S.scrollbar.arrows = d.at(c).b; ok = true; } }
+      else if (bit == K_FLUSH) { if (need(c, J_BOOL, at)) { b.flush = d.at(c).b ? 1 : 0; ok = true; } }
       if (ok) b.has |= bit;
     }
   }
@@ -926,6 +927,15 @@ void compile(Model &M, Skin &S, Errs &E) {
   }
   for (auto &p : M.part) for (Block &b : p.b) resolve(b, S);
   resolve(S.buttons.w, S); resolve(S.buttons.h, S); resolve(S.buttons.gap, S); resolve(S.scrollbar.w, S); resolve(S.scrollbar.lane, S);
+  // how far a part's solid edge layers reach in, over its blocks (a flush bar sits just inside its frame's edges, C45)
+  auto solid_reach = [&](int p, int d) {
+    int r = 0;
+    for (const Block &b : M.part[p].b)
+      for (int k = 0; (b.has & K_EDGES) && k < b.n_edges; k++) { const Edge &e = S.edges[b.edge0 + k]; if (!e.dotted) r = std::max(r, e.inset.px[d] + e.w.px[d]); }
+    return r;
+  };
+  for (int d = 0; d < 2; d++)  // a flush header: the page's edges fit inside the inset that moves into the bar (the geometry guard proves it on the Skin too)
+    if (M.part[G::P_HEADER].b[0].flush && solid_reach(G::P_PAGE, d) > S.size[d][G::SZ_INSET]) E.add("parts.header.flush", "the page's edges reach past layout:inset at " + std::string(DEN[d]));
   // authored checks, with the path the author wrote
   for (int p = 0; p < N_PARTS; p++) {
     const G::Part &P = G::PARTS[p];
@@ -939,10 +949,16 @@ void compile(Model &M, Skin &S, Errs &E) {
           if (v < z.lo[d] || v > z.hi[d]) E.add(at + ".radius", std::to_string(v) + " at " + DEN[d] + " is outside " + std::to_string(z.lo[d]) + " .. " + std::to_string(z.hi[d]) + " (the range of " + z.name + ", C19)");
           else if (P.height >= 0 && 2 * v > S.size[d][P.height]) E.add(at + ".radius", std::to_string(v) + " at " + DEN[d] + " is more than half of " + G::SIZES[P.height].name + " " + std::to_string(S.size[d][P.height]));
         }
-        if (b.has & K_PAD) {  // a track's padding insets its fill: whole cells, within the edge cap
+        if (b.has & K_PAD) {  // a track's padding insets its fill; a bar's is moved padding (C45): whole cells, within the edge cap
           const int v = b.pad.px[d], cell = S.size[d][G::SZ_PIXEL];
+          const bool bar = p == G::P_HEADER || p == G::P_CARD_HEAD;
+          int most = G::EDGE_PX[d];
+          std::string why = "px (C48)";
+          if (bar && !M.part[p].b[0].flush) { E.add(at + ".pad", "a bar is padded only with flush: true (its padding is moved out of its frame, C45)"); break; }
+          if (p == G::P_HEADER) { most = (S.size[d][G::SZ_TOP] - S.size[d][G::SZ_INSET] - S.size[d][G::SZ_ROW]) / 2; why = "px: half the header gap it is taken from (layout:top less inset and row, C45)"; }
+          if (p == G::P_CARD_HEAD) { most = (S.size[d][G::SZ_CARD_PAD] - S.size[d][G::SZ_HAIR] - solid_reach(G::P_CARD, d)) / 2; why = "px: half the card padding left inside the card's edges (C45)"; }
           if (v % cell) E.add(at + ".pad", std::to_string(v) + " at " + DEN[d] + " is not whole pixel cells (" + std::to_string(cell) + ")");
-          else if (v > G::EDGE_PX[d]) E.add(at + ".pad", std::to_string(v) + " at " + DEN[d] + " is more than " + std::to_string(G::EDGE_PX[d]) + " px (C48)");
+          else if (v < 0 || v > most) E.add(at + ".pad", std::to_string(v) + " at " + DEN[d] + " is more than " + std::to_string(most) + " " + why);
         }
         if (b.has & K_SHADOW) {
           const int dx = b.shadow.dx.px[d], dy = b.shadow.dy.px[d], c = G::SHADOW_PX[d];

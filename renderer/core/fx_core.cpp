@@ -68,7 +68,9 @@ const char *type_name(fw::ty::Id id) {
 }
 // derived sizes: one value worked out from other tokens, so a component never does the sum (paint() says how)
 const char *const DERIVED_N[] = {"dial-wing-up", "dial-wing-down", "dial-slot", "card-pad", "card-text", "card-gap", "card-gap-s", "card-row", "pair-rule", "label-row",
-                                 "list-text-t", "list-text-ts", "list-text-ot", "list-text-ots", "list-slot", "section-label", "empty-pad"};
+                                 "list-text-t", "list-text-ts", "list-text-ot", "list-text-ots", "list-slot", "section-label", "empty-pad",
+                                 // 17-23: padding a theme moves (C45: a flush bar), 24: the Segmented's own layers (a theme that styles the segment part draws it)
+                                 "page-move", "head-move", "body-move", "header-move", "card-move", "card-head-move", "card-body-move", "seg-layer"};
 // A display's look: its shared styles painted from theme t (mode + accent set) through the live Skin (theme_live: its
 // palette for that mode x set = th, the colours every contract style reads; Facet's Skin = Facet's colours, so th == *t)
 // and its generation (gen: a theme apply bumps it, the look repaints; never by Skin pointer, a freed one's address can
@@ -87,7 +89,7 @@ int type_ti[128];          // type style -> themeable type index (tokens/theme.j
 int ix_pixel = -1;         // the Skin size index of stroke:pixel (the snapped cell, C29)
 const fx::Skin *live_raw = nullptr;  // the Skin the looks were last painted with (fx::size reads its look sizes)
 int type_part[64];         // fx type style -> its text part (tokens/theme.json parts of kind text)
-bool boxy(int p) { const char *k = G::PARTS[p].kind; return !strcmp(k, "box") || !strcmp(k, "header") || !strcmp(k, "frame") || !strcmp(k, "caption"); }
+bool boxy(int p) { const char *k = G::PARTS[p].kind; return !strcmp(k, "box") || !strcmp(k, "header") || !strcmp(k, "bar") || !strcmp(k, "frame") || !strcmp(k, "caption"); }
 bool styled(int p) { const char *k = G::PARTS[p].kind; return boxy(p) || !strcmp(k, "text") || !strcmp(k, "icon") || p == G::P_SWITCH; }
 int part_ix(const char *n) { for (int p = 0; p < G::N_PARTS; p++) if (!strcmp(G::PARTS[p].name, n)) return p; abort(); }
 lv_style_selector_t sel_of(int m) {
@@ -426,6 +428,46 @@ void metrics(fw::ty::Id s, const lv_font_t *f, int &line_space, int &pad_top, in
   translate_y = off < 0 ? off : 0;
 }
 int snap_cell(const S::Skin *k) { return k && k->snap && ix_pixel >= 0 ? std::max<int>(1, k->size[DN][ix_pixel]) : 0; }
+// how far a part's solid edge layers reach in, over its blocks (the dotted focus rectangle is drawn inside: not counted)
+int solid_reach(const S::Skin &k, int p) {
+  int r = 0;
+  for (const S::Block &b : k.state[p])
+    for (int i = 0; (b.has & S::K_EDGES) && i < b.n_edges; i++) { const S::Edge &e = k.edges[b.edge0 + i]; if (!e.dotted) r = std::max(r, e.inset.px[DN] + e.w.px[DN]); }
+  return r;
+}
+// C45 moved padding: a flush bar (parts.header / parts.card-head flush) runs to its frame's edges. The frame keeps only
+// what its edges need (e); the rest of its padding moves into the bar (sides) and into the body (top / sides / bottom);
+// the bar's own vertical padding (pad, v) is taken from the gap under it. Every sum stays, so the content box of the
+// header row, the body and the card's content are exactly Facet's (the theme guard bounds v; P2 / P6 prove the fit).
+void moves(Look *L, lv_style_t *s, int i) {
+  using namespace fw;
+  const S::Skin &k = *L->skin;
+  if (i == 24) {  // the Segmented's plates, separators and ring: gone when the theme draws the segment part itself
+    const S::Block b = k.merged(G::P_SEGMENT, 0);
+    if (b.has & (S::K_FACE | S::K_EDGES)) lv_style_set_opa(s, LV_OPA_TRANSP);
+    return;
+  }
+  const bool card = i >= 21;
+  const S::Block &h = k.state[card ? G::P_CARD_HEAD : G::P_HEADER][0];
+  if (!h.flush) return;
+  const int v = (h.has & S::K_PAD) ? h.pad.px[DN] : 0;
+  if (card) {
+    const int P = tok("layout:card-pad", lay::card_pad) - tok("stroke:hair", stroke::hair), e = solid_reach(k, G::P_CARD);
+    if (i == 21) lv_style_set_pad_all(s, e);                                                             // the card: its edges only
+    else if (i == 22) { lv_style_set_pad_hor(s, P - e); lv_style_set_pad_ver(s, v); }                   // the head bar
+    else { lv_style_set_pad_hor(s, P - e); lv_style_set_pad_bottom(s, P - e); lv_style_set_pad_top(s, P - e - 2 * v); }  // the body
+    return;
+  }
+  const int inset = tok("layout:inset", lay::inset), hgap = tok("layout:header-gap", lay::header_gap), e = solid_reach(k, G::P_PAGE);
+  if (i == 17) lv_style_set_pad_top(s, e);  // the page: its frame edges only
+  else if (i == 18) {                       // the head: the bar's region, its gap less the bar's padding
+    lv_style_set_pad_hor(s, e); lv_style_set_height(s, tok("layout:top", lay::top) - inset - hgap + 2 * v); lv_style_set_margin_bottom(s, hgap - 2 * v);
+  } else if (i == 19) lv_style_set_pad_top(s, inset - e);  // the body: the inset the page gave up
+  else {                                                     // the Header bar: the side insets inside it, v above and below
+    lv_style_set_pad_hor(s, inset - e); lv_style_set_pad_ver(s, v); lv_style_set_height(s, tok("layout:row", lay::row) + 2 * v);
+    lv_style_set_max_width(s, tok("layout:header-max-w", lay::header_max_w) + 2 * (inset - e));
+  }
+}
 // a part's style for one combination: what its merged block sets, nothing else (text = only the text ink)
 void part_style(Look *L, lv_style_t *s, int p, int m, bool text_only) {
   lv_style_reset(s);  // a key the new theme does not set must go
@@ -475,6 +517,7 @@ void paint(Look *L, const fw::Theme *t, int only = -1) {  // colours from the th
       // approved geometry). Above: caption + space 7; below: space 2 + unit + space 9 + the button. Both wings take
       // the larger, the caption sits at the top wing's foot and the unit row at the bottom wing's head.
       using namespace fw;
+      if (d.i >= 17) { lv_style_reset(s); lv_style_init(s); moves(L, s, d.i); continue; }  // they follow the live theme
       if (d.i == 3) {  // card-pad: children count from the outer edge (layout:card-pad less the border hair, = docs)
         lv_style_set_pad_all(s, tok("layout:card-pad", lay::card_pad) - tok("stroke:hair", stroke::hair)); continue;
       }
@@ -1116,6 +1159,13 @@ void state(lv_obj_t *o, lv_state_t s, bool on) {
   for (uint32_t i = 0; i < lv_obj_get_child_count(o); i++) state(lv_obj_get_child(o, (int32_t) i), s, on);
 }
 lv_obj_t *row(lv_obj_t *p) { return box(p, "row"); }
+bool in_bar(lv_obj_t *o) {  // the nearest box part round o is a bar (card-head): its face is a title bar, so a theme's text ink colours all of an icon
+  for (lv_obj_t *a = lv_obj_get_parent(o); a; a = lv_obj_get_parent(a)) {
+    auto it = part_of.find(a);
+    if (it != part_of.end()) return !strcmp(G::PARTS[it->second].kind, "bar");
+  }
+  return false;
+}
 lv_obj_t *icon(lv_obj_t *p, const char *name, const char *size, const char *ink) {
   const fw::ic::Size sz = !strcmp(size, "card") ? fw::ic::card : !strcmp(size, "glyph") ? fw::ic::glyph
                          : !strcmp(size, "feature") ? fw::ic::feature : fw::ic::icon;
@@ -1130,6 +1180,7 @@ lv_obj_t *icon(lv_obj_t *p, const char *name, const char *size, const char *ink)
     use(im, role == fw::ic::R_accent ? "ink:accent" : role == fw::ic::R_text_dim ? "ink:text-dim" : role == fw::ic::R_blue ? "ink:blue"
             : role == fw::ic::R_steel ? "ink:steel" : (std::string("ink:") + (strchr(ink, ':') + 1)).c_str());
     if (role == fw::ic::R_ink) text_parts(im, look_of(im), part_ix("icon"), false);  // the ink layers: the icon part + the box's text ink
+    else if (in_bar(im)) text_parts(im, look_of(im), part_ix("icon"), false);  // a bar (card head) draws every layer in its text ink
   }
   if (const G::PixelIcon *pi = pixel_icon(name)) {  // pixel art: drawn instead of the line layers while the theme says so
     for (uint32_t i = 0; i < lv_obj_get_child_count(b); i++) use(lv_obj_get_child(b, (int32_t) i), "icon-px");
@@ -1475,10 +1526,13 @@ Page page(lv_obj_t *pg, const char *kind) {
   lv_obj_remove_style_all(p.head);
   lv_obj_remove_flag(p.head, (lv_obj_flag_t) (LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_CLICKABLE));
   use(p.head, "page-head");
+  use(p.head, "head-move");  // C45: a flush header bar (empty in Facet)
   p.body = lv_obj_create(pg);
   lv_obj_remove_style_all(p.body);
   use(p.body, "body");
   use(p.body, (std::string("body:") + kind).c_str());
+  use(p.body, "body-move");
+  use(pg, "page-move");
   if (!strcmp(kind, "center")) lv_obj_remove_flag(p.body, (lv_obj_flag_t) (LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_CLICKABLE));
   else {
     lv_obj_add_flag(p.body, (lv_obj_flag_t) (LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_CLICKABLE));  // a drag on plain text scrolls too

@@ -132,6 +132,7 @@ void fill(lv_obj_t *h, fw::Props p) {
   fx::name(h, "header");
   fw::shape(h, sig(p));
   fx::use(h, "part:header");  // the theme's header (C46): face, edges, the text ink of its title
+  fx::use(h, "header-move");  // a flush header bar (C45): the page's insets inside the bar (empty in Facet)
   lv_obj_t *bk = fx::box(h, "header-back"), *ti = fx::box(h, "header-title"), *en = fx::box(h, "header-end"),
            *tm = fx::box(h, "header-time");
   lv_obj_add_event_cb(en, [](lv_event_t *e) { own_tail.erase((lv_obj_t *) lv_event_get_current_target(e)); }, LV_EVENT_DELETE, nullptr);

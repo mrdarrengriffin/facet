@@ -384,10 +384,18 @@ in it (and theme to theme), a refused file leaves every pixel and the generation
 no repaint) turns the live = fresh proof red.
 
 **C45. Themes paint; they never lay out.** A theme MUST NOT move, hide, reorder or resize anything beyond the look
-ranges (C19). Layout sizes are not in a theme's reach (C18).
-*Why:* layout is proven once, for every theme. *Check:* P4 per theme (`theme_apply`); part styles set only paint
-keys (face, radius within its look range, the border's ink, never its width: `part_style` in `core/fx_core.cpp`);
-P2 per theme (`theme_apply` "P2 + P6 per theme": no object outside its parent in any built-in theme).
+ranges (C19). Layout sizes are not in a theme's reach (C18). One exception, padding that MOVES: a theme MAY move
+padding between a frame and the bar at its top (`flush` on `parts.header`: the Page frame, its head and body;
+`parts.card-head`: the card and its body), so the bar runs to the frame's edges and the body takes the padding the
+frame gave up. The frame keeps exactly what its own edges reach; the bar's own vertical padding (`pad`) is taken from
+the gap under it (header: the header gap; card: the card padding), within bounds the theme file guard checks
+(Appendix A). Every sum stays, so the content box the contract sizes (the header row, the body, the card's content)
+is exactly Facet's; a theme never adds or removes padding, only moves it.
+*Why:* layout is proven once, for every theme; a moved padding keeps every proven box. *Check:* P4 per theme
+(`theme_apply`); part styles set only paint keys (face, radius within its look range, the border's ink, never its
+width: `part_style` in `core/fx_core.cpp`); moved padding only through the core's `*-move` styles (`moves` in
+`core/fx_core.cpp`), the bar padding refused out of range (`theme_load`); P2 + P6 per theme (`theme_apply` "P2 + P6
+per theme": no object outside its parent, no text cut, in any built-in theme).
 
 **C46. A theme styles a fixed list of parts** (Appendix A): each with face, edges (up to 8 layers), shadow, text
 colour and weight, and state overrides (on < focus < pressed < disabled). A component makes an object a box part only
@@ -686,6 +694,8 @@ tokens). A preset at Facet's value (the first of each list) adds nothing. Caps (
 | `control` | `part:control` (buttons) |
 | `track`, `track-fill` | `part:track`, `part:track-fill` |
 | `header`, `list-row` | `part:header`, `part:list-row` |
+| `card-head` | `part:card-head` (the Card's top row: icon, label, preview) |
+| `segment` | `part:segment` (one segment of a Segmented; a theme that gives it a face or edges draws the segments itself, the Segmented's own plates and ring go) |
 | `page`, `rule` | `part:page` (the Page frame), `part:rule` (a rule not in a row) |
 | `caption` | the header's caption buttons and the scrollbar's arrows (drawn by the core) |
 | `scrollbar` | the Body's scrollbar: thumb, optional lane and arrows |
@@ -698,13 +708,14 @@ tokens). A preset at Facet's value (the first of each list) adds nothing. Caps (
 | Key | Applies to | What |
 |---|---|---|
 | `face` | box parts, caption, scrollbar thumb | an ink, a two-stop gradient (dithered 4 x 4), a checker or blocks pattern |
-| `radius`, `pad` | box parts | within the look range; padding on the 4 px grid (or whole cells inside) |
+| `radius`, `pad` | box parts | within the look range; `pad` only on a part with no content (track, track-fill: whole cells, at most the edge cap) or a flush bar (header: at most half the header gap; card-head: at most half the card padding left inside the card's edges), whole cells |
 | `text`, `weight` | box parts (their texts), text parts, icon | an ink; `bold` (synthetic) or `regular` |
 | `ink` | knob, ticks, arcs | the drawn colour |
 | `edges` | box parts, knob, caption, scrollbar thumb, arc | up to 8 layers `{side, w, inset, ink, style}`; the first plain layer at inset 0 is the border |
 | `shadow` | box parts, text, icon | `{dx, dy, ink}`, no blur |
 | `shape` | knob, ticks | as the presets |
 | `buttons` | header | decorative caption buttons, drawn only where the header's own content leaves room |
+| `flush` | header, card-head (base only) | `true`: the bar runs to its frame's edges; the frame's padding moves into the bar and the body (C45) |
 | `w`, `lane`, `arrows` | scrollbar | width; lane face (the Body's right padding grows by it); arrow buttons |
 | `on`, `focus`, `pressed`, `disabled` | any part | a block merged over the base, in that order; a list is replaced whole |
 
@@ -723,6 +734,8 @@ token name, or `[1.5x, 1x]` px.
 - **Press feedback (C36):** a pressable part (card, control, list row) whose theme fixes its face looks different
   pressed (face, edges, text or shadow), at rest and on, in every mode and accent.
 - **Touch:** `touch:min` and row heights unchanged (they are layout sizes).
+- **Moved padding (C45):** a bar is padded only with `flush`; its pad within the bounds above; a flush header needs the
+  page's edges inside `layout:inset`.
 - **Type floors (1.5x / 1x):** display 32 / 24, hero 32 / 24, headline 24 / 16, title 24 / 16, value 20 / 14,
   body 20 / 14, label 16 / 12; and at most the style's line box. Icons are sized by the Icons foundation, not a theme.
 - **Geometry:** a part's edges fit inside its padding; the page's edges fit inside the inset; a track's edges leave

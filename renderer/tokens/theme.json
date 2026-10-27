@@ -45,7 +45,8 @@
   "keys": {
     "about": "Style block keys (Appendix A Style block) and the part kinds that take them.",
     "box": ["face", "radius", "pad", "edges", "shadow", "text"],
-    "header": ["face", "radius", "pad", "edges", "shadow", "text", "buttons"],
+    "header": ["face", "radius", "pad", "edges", "shadow", "text", "buttons", "flush"],
+    "bar": ["face", "radius", "pad", "edges", "shadow", "text", "flush"],
     "frame": ["face", "edges"],
     "caption": ["face", "edges", "text"],
     "scrollbar": ["face", "radius", "edges", "w", "lane", "arrows"],
@@ -55,15 +56,15 @@
     "switch": ["shape", "face", "edges", "ink"],
     "text": ["text", "weight", "shadow"],
     "icon": ["text", "shadow"],
-    "base_only": ["buttons", "w", "lane", "arrows"]
+    "base_only": ["buttons", "w", "lane", "arrows", "flush"]
   },
   "parts": {
-    "about": "The fixed list of parts (C46). keys = which style keys it takes; sits_on = the colour token under it (its outer edges and drawn ink are checked against it, C47); face = the colour token its face replaces (what the component paints there without a theme; a drawn part: the ink the component draws it in, which counts with its outer edges); texts = what is written on its face (checked on every face stop, 4.5, or the part's own text ink); press = the look keys its component changes when pressed (C36: if the theme fixes all of them, its pressed block must differ); radius = the size token whose look range a part radius must stay in; height = the size token a radius is at most half of; room = how far in its edge layers may reach (pad: the part's padding token; height + less: half of the height minus that type style's line box, so edges never reach the content; stroke: leave a pixel cell of that stroke for the part itself; buttons / width: half the caption button height / the scrollbar width; null = limits.edge_px); pad = whether a theme may pad it (only parts with no content: the padding insets the fill and moves nothing, C45).",
+    "about": "The fixed list of parts (C46). keys = which style keys it takes; sits_on = the colour token under it (its outer edges and drawn ink are checked against it, C47); face = the colour token its face replaces (what the component paints there without a theme; a drawn part: the ink the component draws it in, which counts with its outer edges); texts = what is written on its face (checked on every face stop, 4.5, or the part's own text ink); press = the look keys its component changes when pressed (C36: if the theme fixes all of them, its pressed block must differ); radius = the size token whose look range a part radius must stay in; height = the size token a radius is at most half of; room = how far in its edge layers may reach (pad: the part's padding token; height + less: half of the height minus that type style's line box, so edges never reach the content; stroke: leave a pixel cell of that stroke for the part itself; buttons / width: half the caption button height / the scrollbar width; null = limits.edge_px); pad = whether a theme may pad it: a part with no content (track, track-fill: the padding insets the fill, nothing moves) or a bar (header, card-head: its vertical padding, only with flush: the frame's padding moves into the bar and the body, the content box stays, C45).",
     "card": {"keys": "box", "sits_on": "bg", "face": "surface", "texts": ["text", "text-dim", "accent-text"], "press": ["face"], "radius": "radius:card", "height": "layout:card-min-h", "room": {"pad": "layout:card-pad"}, "pad": false},
     "control": {"keys": "box", "sits_on": "bg", "face": "surface", "texts": ["text"], "press": ["face"], "radius": "radius:button", "height": "touch:button-h", "room": {"height": "touch:button-h", "less": "label"}, "pad": false},
     "track": {"keys": "box", "sits_on": "bg", "face": "line", "texts": [], "press": [], "radius": "radius:part", "height": null, "room": null, "pad": true},
     "track-fill": {"keys": "box", "sits_on": "line", "face": "accent", "texts": [], "press": [], "radius": "radius:part", "height": null, "room": null, "pad": true},
-    "header": {"keys": "header", "sits_on": "bg", "face": "bg", "texts": ["text", "text-dim"], "press": [], "radius": "radius:card", "height": "layout:row", "room": {"height": "layout:row", "less": "label"}, "pad": false},
+    "header": {"keys": "header", "sits_on": "bg", "face": "bg", "texts": ["text", "text-dim"], "press": [], "radius": "radius:card", "height": "layout:row", "room": {"height": "layout:row", "less": "label"}, "pad": true},
     "list-row": {"keys": "box", "sits_on": "bg", "face": "bg", "texts": ["text", "text-dim"], "press": ["face"], "radius": "radius:card", "height": "layout:list-row-h", "room": {"pad": "layout:row-pad"}, "pad": false},
     "page": {"keys": "frame", "sits_on": "bg", "face": "bg", "texts": ["text", "text-dim"], "press": [], "radius": null, "height": null, "room": {"pad": "layout:inset"}, "pad": false},
     "rule": {"keys": "frame", "sits_on": "bg", "face": null, "texts": [], "press": [], "radius": null, "height": null, "room": null, "pad": false},
@@ -80,7 +81,9 @@
     "label": {"keys": "text", "sits_on": "bg", "face": null, "texts": [], "press": [], "radius": null, "height": null, "room": null, "pad": false},
     "value": {"keys": "text", "sits_on": "bg", "face": null, "texts": [], "press": [], "radius": null, "height": null, "room": null, "pad": false},
     "display": {"keys": "text", "sits_on": "bg", "face": null, "texts": [], "press": [], "radius": null, "height": null, "room": null, "pad": false},
-    "icon": {"keys": "icon", "sits_on": "bg", "face": null, "texts": [], "press": [], "radius": null, "height": null, "room": null, "pad": false}
+    "icon": {"keys": "icon", "sits_on": "bg", "face": null, "texts": [], "press": [], "radius": null, "height": null, "room": null, "pad": false},
+    "card-head": {"keys": "bar", "sits_on": "surface", "face": "surface", "texts": ["text", "text-dim", "accent-text"], "press": [], "radius": "radius:card", "height": null, "room": {"pad": "layout:card-pad"}, "pad": true},
+    "segment": {"keys": "box", "sits_on": "surface", "face": "surface", "texts": ["text", "text-dim"], "press": ["face"], "radius": "radius:button", "height": "touch:min", "room": {"height": "touch:min", "less": "label"}, "pad": false}
   },
   "contrast": {
     "about": "C47 contrast guard. Every declared pair (colour.json contrast.pairs) of these foundation sections and of every component and screen on the contract (catalogue/contract.json) is checked on the theme's palette, every mode x accent, on the exact and the RGB565 values (the worse decides), plus the part pairs. Part pairs: texts on every face stop 4.5 (disabled selectors: text-mute 3.0); a part's own text ink 4.5 on its face (caption 3.0: glyphs); outer edges of card and control, the knob, major ticks and the arc fill on what they sit on 3.0 (the strongest outer layer counts); the scrollbar thumb on its lane 3.0. Shadows never count.",

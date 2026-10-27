@@ -24,7 +24,7 @@ struct ThemeError {
 namespace skin {
 // sizes of the generated schema (tools/gen_theme.mjs -> theme_gen.h); theme_file.cpp static_asserts they match, so a
 // token added to the schema fails the build here until this header follows
-constexpr int N_COLOURS = 90, N_ROLES = 5, N_SIZES = 199, N_TYPES = 7, N_FONT_ROLES = 4, N_PARTS = 22, N_STATES = 4,
+constexpr int N_COLOURS = 90, N_ROLES = 5, N_SIZES = 199, N_TYPES = 7, N_FONT_ROLES = 4, N_PARTS = 24, N_STATES = 4,
               N_COMBOS = 1 << N_STATES, MAX_SETS = 8, MAX_EDGES = 128, MAX_BUTTONS = 8;
 // states (tokens/theme.json, merge order): bit i of a combination = state i
 enum State : uint8_t { ON = 1, FOCUS = 2, PRESSED = 4, DISABLED = 8 };
@@ -43,7 +43,7 @@ struct Edge { uint8_t side = SIDE_ALL, dotted = 0, pad_[2] = {0, 0}; Len w, inse
 struct Shadow { Len dx, dy; Ink ink; };
 // key bits (tokens/theme.json keys, generated order): what a block sets; a key not set = the component's own look
 enum Key : uint16_t { K_FACE = 1, K_RADIUS = 2, K_PAD = 4, K_EDGES = 8, K_SHADOW = 16, K_TEXT = 32, K_WEIGHT = 64,
-                      K_INK = 128, K_SHAPE = 256, K_BUTTONS = 512, K_W = 1024, K_LANE = 2048, K_ARROWS = 4096 };
+                      K_INK = 128, K_SHAPE = 256, K_BUTTONS = 512, K_W = 1024, K_LANE = 2048, K_ARROWS = 4096, K_FLUSH = 8192 };
 struct Block {
   uint16_t has = 0;           // Key bits
   uint8_t bold = 0, shape = 0;  // weight; knob / tick shape (index into the knob or tick shape list)
@@ -52,7 +52,7 @@ struct Block {
   Ink text, ink;
   Shadow shadow;
   uint16_t edge0 = 0;  // edges: Skin::edges[edge0 .. edge0 + n_edges)
-  uint8_t n_edges = 0, pad_ = 0;
+  uint8_t n_edges = 0, flush = 0;  // flush (header, card-head; base only): the bar runs to its frame's edges (C45)
 };
 // the header's decorative caption buttons and the scrollbar's extras (base block only)
 struct Buttons { uint8_t names[MAX_BUTTONS] = {}; uint8_t n = 0, pad_[3] = {0, 0, 0}; Len w, h, gap; };

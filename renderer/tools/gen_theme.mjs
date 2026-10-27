@@ -126,7 +126,7 @@ export function header(S = schema()) {
   const inkIdx = (n) => { const c = colours.indexOf(n); if (c >= 0) return c; const m = mixes.findIndex((x) => x.name === n); if (m < 0) die(`ink ${n}`); return colours.length + m; };
   const sIdx = (n) => (n ? sizeList.findIndex((s) => s.name === n) : -1);
   const kindsList = Object.keys(S.kinds);
-  const keyBits = ['face', 'radius', 'pad', 'edges', 'shadow', 'text', 'weight', 'ink', 'shape', 'buttons', 'w', 'lane', 'arrows'];
+  const keyBits = ['face', 'radius', 'pad', 'edges', 'shadow', 'text', 'weight', 'ink', 'shape', 'buttons', 'w', 'lane', 'arrows', 'flush'];
   const mask = (ks) => ks.reduce((m, k) => { const i = keyBits.indexOf(k); if (i < 0) die(`key ${k}`); return m | (1 << i); }, 0);
   const lim = th.limits;
   const builtins = readdirSync(THEMES).filter((f) => f.endsWith('.json')).sort((a, b) => (a === 'facet.json' ? -1 : b === 'facet.json' ? 1 : a < b ? -1 : 1));
@@ -179,9 +179,9 @@ export function header(S = schema()) {
       return `{${cs(p.name)}, ${cs(Object.entries(th.parts).find(([q]) => q === p.name)[1].keys)}, ${mask(p.keys)}, ${colours.indexOf(p.sits_on)}, ${p.face ? colours.indexOf(p.face) : -1}, {${[0, 1, 2].map((i) => (p.texts[i] ? colours.indexOf(p.texts[i]) : -1))}}, ${p.texts.length}, ${mask(p.press)}, ${sIdx(p.radius)}, ${sIdx(p.height)}, ${k}, ${sIdx(r.pad || r.height || r.stroke)}, ${r.less ? types.findIndex((x) => x.name === r.less) : -1}, ${!!p.pad}}`; }).join(',\n  ')}};`,
     `constexpr int EDGE_PX[2] = {${lim.edge_px}}, SHADOW_PX[2] = {${lim.shadow_px}};`,
     '// the names the parser itself relies on, resolved here (the generator fails if one goes): never looked up at run time',
-    ...[['SZ_PIXEL', sIdx('stroke:pixel')], ['SZ_EDGE', sIdx('stroke:edge')], ['SZ_INDICATOR', sIdx('stroke:indicator')], ['SZ_ROW', sIdx('layout:row')], ['SZ_TOUCH', sIdx('touch:min')],
+    ...[['SZ_PIXEL', sIdx('stroke:pixel')], ['SZ_EDGE', sIdx('stroke:edge')], ['SZ_INDICATOR', sIdx('stroke:indicator')], ['SZ_ROW', sIdx('layout:row')], ['SZ_TOUCH', sIdx('touch:min')], ['SZ_TOP', sIdx('layout:top')], ['SZ_INSET', sIdx('layout:inset')], ['SZ_CARD_PAD', sIdx('layout:card-pad')], ['SZ_HAIR', sIdx('stroke:hair')],
       ['C_BG', colours.indexOf('bg')], ['C_SURFACE', colours.indexOf('surface')], ['C_TEXT_DIM', colours.indexOf('text-dim')], ['C_TEXT_MUTE', colours.indexOf('text-mute')],
-      ['R_ACCENT', roles.indexOf('accent')], ...['card', 'control', 'knob', 'tick', 'tick-major', 'scrollbar', 'caption', 'header', 'switch'].map((n) => [`P_${n.toUpperCase().replace('-', '_')}`, parts.findIndex((x) => x.name === n)]),
+      ['R_ACCENT', roles.indexOf('accent')], ...['card', 'control', 'knob', 'tick', 'tick-major', 'scrollbar', 'caption', 'header', 'switch', 'page', 'card-head', 'segment'].map((n) => [`P_${n.toUpperCase().replace('-', '_')}`, parts.findIndex((x) => x.name === n)]),
       ...th.states.list.map((s) => [`ST_${s.toUpperCase()}`, th.states.list.indexOf(s)])].map(([n, v]) => { if (v < 0) die(`the parser needs ${n}`); return `constexpr int ${n} = ${v};`; }),
     `constexpr const char *OUTER[] = {${th.contrast.outer.map(cs).join(', ')}};`,
     `constexpr int N_OUTER = ${th.contrast.outer.length};`,

@@ -675,8 +675,8 @@
     ]
    },
    "cost": {
-    "objects": 11,
-    "bytes_est": 1760
+    "objects": 12,
+    "bytes_est": 1920
    }
   },
   "card_grid": {
@@ -825,8 +825,8 @@
     ]
    },
    "cost": {
-    "objects": 37,
-    "bytes_est": 5920
+    "objects": 40,
+    "bytes_est": 6400
    }
   },
   "check_row": {

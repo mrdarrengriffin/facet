@@ -46,6 +46,7 @@ lv_obj_t *plate(lv_obj_t *seg, const char *place, bool round, const char *ring, 
   lv_obj_t *o = fx::box(seg, "free");
   lv_obj_add_flag(o, LV_OBJ_FLAG_IGNORE_LAYOUT);
   fx::use(o, place);
+  fx::use(o, "seg-layer");  // gone when the theme draws the segment part (C46)
   if (round) fx::use(o, "radius:button");
   if (fill) {
     for (const char *t : {"bg:pressed-surface", "bg-none", "fade-release-fill"}) fx::use(o, t);
@@ -124,6 +125,7 @@ void fill(lv_obj_t *box, fw::Props p) {
       lv_obj_add_flag(sep, LV_OBJ_FLAG_IGNORE_LAYOUT);
       fx::use(sep, "seg-sep");
       fx::use(sep, "bg:line");
+      fx::use(sep, "seg-layer");
     }
     // plates cover the whole segment incl. its separator; on the box's outer sides the ring is 2 hairlines
     if (n == 1) plate(s, "seg-plate", true, "ring-full-2", true);
@@ -132,6 +134,7 @@ void fill(lv_obj_t *box, fw::Props p) {
     else plate(s, "seg-plate", false, "ring-tb-2", true);
     if (n > 1) plate(s, "seg-plate", false, i == 0 ? "ring-r" : i == n - 1 ? "ring-l" : "ring-lr", false);  // separator sides, 1 hairline
 
+    fx::use(s, "part:segment");  // the theme's segment (C46): a theme that styles it draws each segment (Win98: raised, the chosen one sunken)
     lv_obj_t *l = fx::text(s, labels[i].c_str(), "type:label", "fg:text-dim");
     fx::use(l, "fg:text", ST_ON);  // chosen = full text colour (docs)
     fx::use(l, "fg:disabled-ink", ST_OFF);
@@ -159,7 +162,7 @@ void fill(lv_obj_t *box, fw::Props p) {
   // the box line: a ring on the box edge over the segments (their press / chosen fill runs under it)
   lv_obj_t *rg = fx::box(box, "free");
   lv_obj_add_flag(rg, LV_OBJ_FLAG_IGNORE_LAYOUT);
-  for (const char *t : {"seg-plate", "border:line", "radius:button"}) fx::use(rg, t);
+  for (const char *t : {"seg-plate", "border:line", "radius:button", "seg-layer"}) fx::use(rg, t);
   choose(box, d->chosen);
 }
 }  // namespace
@@ -167,7 +170,7 @@ void fill(lv_obj_t *box, fw::Props p) {
 FW_COMPONENT(segmented, "Segmented", "components", R"({
   "about": "One choice out of a few, side by side: a setting with up to 3 options, or the view tabs of a screen.",
   "contract": 2,
-  "parts": ["control"],
+  "parts": ["control", "segment"],
   "min": ["touch:min", "touch:min"],
   "frame": [480, 96],
   "props": [
