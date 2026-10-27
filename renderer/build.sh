@@ -129,9 +129,13 @@ done
 while [ "$(jobs -rp | wc -l)" -gt 0 ]; do wait -n || CC_FAIL=1; done
 [ "${CC_FAIL:-0}" = 0 ] || exit 1
 # objects of deleted components must not linger in the link: OBJS lists only live sources
+mkdir -p "$OUT/.link"
 em++ $OPT $LVGL_OBJS $OBJS -sALLOW_MEMORY_GROWTH=1 -sMODULARIZE=1 -sEXPORT_ES6=1 -sENVIRONMENT=web,node \
   -sEXPORTED_FUNCTIONS='["_fw_init","_fw_meta","_fw_stage","_fw_stage_free","_fw_render","_fw_update","_fw_demo_state","_fw_tokens","_fw_content_h","_fw_stage_resize","_fw_touch","_fw_tick","_fw_dirty","_fw_frame","_fw_areas","_fw_events","_fw_ha_wants","_fw_ha_put","_fw_img_wants","_fw_img_put","_fw_img_fail","_fw_img_stats","_fw_setting","_fw_spec","_fw_catalogue","_fw_spec_storage","_fw_anims","_fw_rects","_fw_comps","_fw_hits","_fw_hit","_fw_lab","_malloc","_free"]' \
-  -sEXPORTED_RUNTIME_METHODS='["HEAPU8","UTF8ToString","stringToNewUTF8"]' -o "$OUT/fw.mjs"
+  -sEXPORTED_RUNTIME_METHODS='["HEAPU8","UTF8ToString","stringToNewUTF8"]' -o "$OUT/.link/fw.mjs"
+# swap the new pair in by rename (link into $OUT/.link first): a page loading mid-build never reads a half-written
+# fw.wasm ("CompileError: section extends past end of the module", 2026-10-27). wasm first: the old fw.mjs loads either
+mv -f "$OUT/.link/fw.wasm" "$OUT/fw.wasm" && mv -f "$OUT/.link/fw.mjs" "$OUT/fw.mjs"
 S=$(awk "BEGIN{printf \"%.1f\", $(date +%s.%N) - $t0}")
 printf '{"built": "%s", "density": "%s", "opt": "%s", "build_s": %s, "wasm_bytes": %s}\n' "$(date -Is)" "$DEN" "$OPT" "$S" "$(stat -c %s "$OUT/fw.wasm")" > "$OUT/manifest.json"
 node -e 'const fs=require("fs"),o=process.argv[1];import(process.argv[2]).then((F)=>{const t=JSON.stringify({flavour:process.env.FW_FEATURES||"all",ids:F.byId()});if(!fs.existsSync(o)||fs.readFileSync(o,"utf8")!==t)fs.writeFileSync(o,t)})' "$OUT/features.json" "$HERE/tools/features.mjs"  # id -> feature, docs, status, firmware (workbench nav)
