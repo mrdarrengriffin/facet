@@ -240,7 +240,9 @@ void build_sun(lv_obj_t *root, lv_obj_t *v) {
   for (lv_obj_t *&s : w->s_stats) {
     ArduinoJson::JsonDocument p;
     p["label"] = "--", p["value"] = "--", p["tone"] = "text";
-    s = build("stat", grid, p);
+    lv_obj_t *cell = box(grid);  // Home columns: the contract Stat fills its parent (C5)
+    lv_obj_set_size(cell, fw::lay::card_w, LV_SIZE_CONTENT);
+    s = build("stat", cell, p);
   }
 }
 

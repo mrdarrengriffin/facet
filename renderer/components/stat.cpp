@@ -2,48 +2,39 @@
 // over one line of body text: "trend / 48 km/h", "lit / 63%". Screens lay stats out in columns; a stat fills the width
 // its parent gives it.
 //   box      flex column, gap space 2: label box + 8 + title box = 24 + 8 + 40 = 72 at 720, 16 + 4 + title 1x box
-//            at 480; width lay::card_w (one Home column, 320 / 212), or the parent's width with the internal prop
-//            "fill" (not in the playground; a screen's column passes it), so the value ellipsises in its column
+//            at 480; contract (C5): fills its parent's width, so the value ellipsises in its column (a caller that
+//            wants Home columns gives each Stat a card-w cell; the old internal prop "fill" is ignored)
 //   label    screen type label (caps), text-dim (docs text-mute: disabled only here, the contrast rule)
 //   value    screen type title (heavier than the docs body: the value is what you read), one line, ellipsis; tone dim (default, docs) = text-dim, text = text (docs moon facts
 //            pass 'text'), warn = warn, ok = ok
-// Unavailable (states.json; a stat often shows one device value): label text-mute, value = "Unavailable" in
+// Unavailable (states.json; a stat often shows one device value): label stays text-dim (4.5:1), value = "Unavailable" in
 // st::unavailable_note. Static: no press, no events, no sound (docs). The docs explorer sample is 240 px wide. Contrast pairs: tokens/colour.json section "stat".
 #include "fw.h"
+#include "fx.h"
 
 namespace {
-lv_obj_t *line(lv_obj_t *parent, fw::ty::Id s, const char *txt, lv_color_t c) {
-  lv_obj_t *l = fw::text(parent, s, txt, c);
-  lv_obj_remove_flag(l, LV_OBJ_FLAG_CLICKABLE);
+const char *tone(const char *t) {
+  return !strcmp(t, "text") ? "fg:text" : !strcmp(t, "warn") ? "fg:warn" : !strcmp(t, "ok") ? "fg:ok" : "fg:text-dim";
+}
+void line(lv_obj_t *s, const char *type, const char *txt, const char *fg) {
+  lv_obj_t *l = fx::text(s, txt, type, fg);
+  fx::use(l, "fill-w");
   lv_label_set_long_mode(l, LV_LABEL_LONG_MODE_DOTS);
-  lv_obj_set_width(l, LV_PCT(100));
-  lv_obj_set_height(l, fw::style(s).box);  // set_long_mode resets the text-box height
-  return l;
 }
-lv_color_t tone(const char *t) {
-  if (!strcmp(t, "text")) return fw::T->text;
-  if (!strcmp(t, "warn")) return fw::T->warn;
-  if (!strcmp(t, "ok")) return fw::T->ok;
-  return fw::T->text_dim;
-}
-}  // namespace
-
-namespace {
 void fill(lv_obj_t *s, fw::Props p) {
-  const fw::Theme &t = *fw::T;
   const bool off = !strcmp(p["state"] | "default", "unavailable");
-  lv_obj_remove_style_all(s);
-  lv_obj_remove_flag(s, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
-  lv_obj_set_size(s, (p["fill"] | false) ? LV_PCT(100) : fw::lay::card_w, LV_SIZE_CONTENT);
-  lv_obj_set_flex_flow(s, LV_FLEX_FLOW_COLUMN);
-  lv_obj_set_style_pad_row(s, fw::sp::s2, 0);
-  line(s, fw::ty::label, p["label"] | "", off ? fw::st::unavailable_ink(t) : t.text_dim);
-  line(s, fw::ty::title, off ? fw::st::UNAVAILABLE_TEXT : (p["value"] | ""), off ? fw::st::unavailable_note(t) : tone(p["tone"] | "dim"));
+  for (const char *t : {"box", "col", "fill-w", "gap:2"}) fx::use(s, t);
+  fx::name(s, "stat");
+  line(s, "type:label", p["label"] | "", "fg:text-dim");  // unavailable keeps the label readable (4.5:1, C15); the value says so
+  line(s, "type:title", off ? fw::st::UNAVAILABLE_TEXT : (p["value"] | ""), off ? "fg:unavailable-note" : tone(p["tone"] | "dim"));
 }
 }  // namespace
 
 FW_COMPONENT(stat, "Stat", "components", R"({
   "about": "A caps label over one line of text: one fact in a column of facts.",
+  "contract": 2,
+  "parts": [],
+  "min": ["layout:card-min-w"],
   "frame": [240, 64],
   "props": [
     {"name": "label", "about": "The small capitals line that says what the fact is, such as trend.", "type": "text", "default": "trend"},
@@ -60,11 +51,14 @@ FW_COMPONENT(stat, "Stat", "components", R"({
     {"label": "unavailable", "props": {"label": "outside", "value": "12°", "state": "unavailable"}}
   ]
 })") {
-  fill(lv_obj_create(parent), p);
+  lv_obj_t *s = lv_obj_create(parent);  // styles: fill() (an update refills the same root)
+  lv_obj_remove_style_all(s);
+  lv_obj_remove_flag(s, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
+  fill(s, p);
 }
 
 // Update path: label, value, tone and unavailable snap in the same root (fw::refill), silent.
 FW_UPDATE(stat) {
-  fw::st::refill_fade(root, [&] { fw::refill(root); fill(root, p); });  // a new tone / mark fades (an update animates like a tap)
+  fw::st::refill_fade(root, [&] { fw::refill(root); fill(root, p); }, true, true);  // a new tone / mark fades (an update animates like a tap)
   return true;
 }

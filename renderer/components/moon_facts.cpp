@@ -72,7 +72,9 @@ void fill(lv_obj_t *root, fw::Props p) {
     for (int i = 0; i < 6; i++) {
       ArduinoJson::JsonDocument d;
       stat_props(f, i, d);
-      sc->build(grid, d.as<fw::Props>());
+      lv_obj_t *cell = box(grid);  // Home columns: the contract Stat fills its parent (C5)
+      lv_obj_set_size(cell, fw::lay::card_w, LV_SIZE_CONTENT);
+      sc->build(cell, d.as<fw::Props>());
     }
 }
 }  // namespace
@@ -104,7 +106,7 @@ FW_UPDATE(moon_facts) {
   for (int i = 0; i < 6; i++) {
     ArduinoJson::JsonDocument d;
     stat_props(f, i, d);
-    fw::update_child(fw::find("stat"), lv_obj_get_child(grid, i), d.as<fw::Props>());
+    fw::update_child(fw::find("stat"), lv_obj_get_child(lv_obj_get_child(grid, i), 0), d.as<fw::Props>());
   }
   return true;
 }
