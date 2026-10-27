@@ -160,7 +160,10 @@ lv_obj_t *header(lv_obj_t *s, const char *label, bool back = true) {
   lv_obj_set_style_text_align(t, LV_TEXT_ALIGN_RIGHT, 0);
   return h;
 }
-// Home: four real Cards, card-w x card-h, a gutter apart, from y = top (flex wrap; overflow shows past the content)
+// Home: four real Cards, card-w x card-h, a gutter apart, from y = top (flex wrap; overflow shows past the content).
+// Each Card fills its parent (fx "fill", as in a Home cell), so each gets a fixed card-w x card-h cell here: a Card
+// straight in the content-height wrap row would be 100% of a parent sized by its children, and LVGL's layout pass
+// never settles (the 2026-10-27 ASan hang; tests/functional/layout.test.mjs)
 lv_obj_t *home_cards(lv_obj_t *s) {
   lv_obj_t *g = rect(s, lay::inset, lay::top, lay::content_w, LV_SIZE_CONTENT);
   lv_obj_add_flag(g, LV_OBJ_FLAG_OVERFLOW_VISIBLE);
@@ -177,7 +180,9 @@ lv_obj_t *home_cards(lv_obj_t *s) {
     Doc d;
     d["label"] = c.label, d["icon"] = c.icon, d["preview"] = c.preview, d["mode"] = c.mode;
     d["value"] = c.value, d["text"] = c.text, d["sub"] = c.sub;
-    comp(g, "card", d);
+    lv_obj_t *cell = box(g);
+    lv_obj_set_size(cell, lay::card_w, lay::card_h);
+    comp(cell, "card", d);
   }
   return g;
 }

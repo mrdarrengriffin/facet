@@ -2,7 +2,7 @@
 // mounted Card LIVE (fx::tune -> shared token styles -> every stage), and the page-level tokens are reported "page
 // only" (a component mounted alone has no Page). Darren 2026-10-26: "changed every lab setting, nothing changed".
 //   node tools/lab_test.mjs [--build <FW_OUT>]
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -17,7 +17,8 @@ const MOUNTS = [['card', { opening: false }, CARD, PAGE],
   ['cells', { cells: 'c,c,c,c,c' }, ['layout:gutter', 'layout:tile-w', 'layout:tile-h', ...CARD], ['layout:inset', 'layout:top', 'layout:header-gap', 'squeeze']]];
 let fails = 0;
 const ok = (cond, what) => { if (!cond) fails++; if (!cond || process.argv.includes('-v')) console.log(`${cond ? 'pass' : 'FAIL'}  ${what}`); };
-for (const den of ['1x', '1.5x']) {
+// a density not built yet (a fresh worktree's first 1.5x build) is skipped, not an import error
+for (const den of ['1x', '1.5x'].filter((d) => existsSync(join(BUILD, d, 'fw.mjs')))) {
   const m = await (await import(pathToFileURL(join(BUILD, den, 'fw.mjs')).href)).default();
   m._fw_init();
   const W = 480, H = 360, st = m._fw_stage(W, H);
