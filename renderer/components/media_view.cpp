@@ -432,6 +432,7 @@ FW_COMPONENT(media_view, "Media view", "components", R"({
   ArduinoJson::JsonDocument sp;
   sp["value"] = p["volume"] | 42, sp["width"] = vol_track_dp();
   m->slider = build("slider", vol, sp);
+  if (m->slider) lv_obj_set_width(m->slider, fw::px((float) vol_track_dp()) + fw::lay::slider_knob);  // track + a knob
   m->vlab = fw::text(vol, fw::ty::label, "--", t.text, fw::lay::m_vol_label);
   lv_obj_set_style_text_align(m->vlab, LV_TEXT_ALIGN_RIGHT, 0);
   fw::listen(vol, [](lv_obj_t *, const char *name, const char *detail, void *user) {

@@ -265,6 +265,7 @@ void build_bar(Picker *k) {
   Doc b;
   pause_props(k, b);
   k->pause_btn = build("button", bar, b);
+  if (k->pause_btn) lv_obj_set_width(k->pause_btn, fw::px(88.f));  // Play / Pause share one width (the Button hugs)
   k->readout = fw::text(bar, fw::ty::label, delay_text(k).c_str(), t.text);
   lv_obj_set_width(k->readout, 0);
   lv_obj_set_flex_grow(k->readout, 1);

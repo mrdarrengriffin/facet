@@ -28,7 +28,13 @@ const char *const SHAPES[] = {"box", "col", "row", "stack", "centre", "cell", "g
                               "header", "header-back", "header-title", "header-label", "header-end", "header-time",
                               "hug", "over", "over-cell", "transp", "opaque", "fade-press-ink", "fade-release-ink", "no-outline", "cells", "cell-text",
                               "rule-top", "row-mid", "row-end", "fade-press-fill", "fade-release-fill",
-                              "square:ibtn-play", "square:ibtn-round", "square:ibtn-square", "tall:chip-h", "tall:list-row-h"};
+                              "square:ibtn-play", "square:ibtn-round", "square:ibtn-square", "tall:chip-h", "tall:list-row-h",
+                              // the controls (Toggle, Count badge, Button, Segmented, Slider): their parts' sizes
+                              "toggle", "toggle-off-pad", "toggle-knob", "toggle-knob-on", "toggle-slide", "word-slot",
+                              "badge", "badge-num", "button", "button-fill", "border-clear", "fade-press-all",
+                              "fade-release-all", "btn-underline", "seg", "seg-part", "seg-label", "seg-grow", "seg-sep", "seg-plate",
+                              "seg-half-l", "seg-half-r", "ring-full-2", "ring-tb-2", "ring-l", "ring-r", "ring-lr",
+                              "slider", "slider-word", "text-mid"};
 // tint:<c> = the colour at chip.tint over what is behind (Status chip; colour.json mixes chip-<tone>); outline:<c> = the
 // focus ring (states.json focus: stroke focus, touch focus-offset outside the box)
 const char *const TINTS[] = {"ok", "warn", "error", "accent", "blue", "text-dim"};
@@ -215,6 +221,77 @@ void shape(lv_style_t *s, const char *n) {  // the structure styles: density onl
     if (!ready) { fw::st::press_transitions(d, P); ready = true; }
     lv_style_set_transition(s, &d[k == "fade-press"]);
   }  // a drawn box never outgrows its parent's height  // a state with no fill (an outline button)
+  // ---- the controls (renderer/CONTRACT.md: fixed touch sizes from tokens; their colours are the colour styles) ----
+  const auto HAIR = [] { return tok("stroke:hair", stroke::hair); };
+  const auto TMIN = [] { return tok("touch:min", touch::min); };
+  const auto S2 = [] { return tok("space:2", sp::s2); };
+  if (k == "toggle") {  // the Toggle track: toggle-w x touch:min, a pill, the knob inset space 2 all round
+    lv_style_set_width(s, tok("layout:toggle-w", lay::toggle_w)); lv_style_set_height(s, TMIN());
+    lv_style_set_radius(s, LV_RADIUS_CIRCLE); lv_style_set_pad_all(s, S2());
+  } else if (k == "toggle-off-pad") lv_style_set_pad_all(s, S2() - HAIR());  // disabled off: the hair border is inside, the knob keeps its place
+  else if (k == "toggle-knob") {
+    const int kn = tok("layout:toggle-knob", lay::toggle_knob);
+    lv_style_set_width(s, kn); lv_style_set_height(s, kn); lv_style_set_radius(s, LV_RADIUS_CIRCLE);
+  } else if (k == "toggle-knob-on") {  // on: the knob moved by the travel (track - knob - 2 x inset)
+    lv_style_set_translate_x(s, tok("layout:toggle-w", lay::toggle_w) - tok("layout:toggle-knob", lay::toggle_knob) - 2 * S2());
+  } else if (k == "toggle-slide") {  // Motion pattern "toggle": the knob slides and the colours fade together
+    static lv_style_transition_dsc_t d;
+    static const lv_style_prop_t P[] = {LV_STYLE_BG_COLOR, LV_STYLE_BORDER_COLOR, LV_STYLE_TRANSLATE_X, LV_STYLE_PROP_INV};
+    static bool ready = false;
+    if (!ready) { mo::transition(&d, st::SWITCH, P); ready = true; }
+    lv_style_set_transition(s, &d);
+  } else if (k == "word-slot") {  // the word Unavailable in place of a control: its width, touch:min tall, centred
+    lv_style_set_width(s, LV_SIZE_CONTENT); lv_style_set_height(s, TMIN()); flex(s, LV_FLEX_FLOW_ROW, S, C, C);
+  } else if (k == "badge") {  // the Count badge pill: badge-h tall and at least as wide (one digit = a circle)
+    const int bh = tok("layout:badge-h", lay::badge_h);
+    lv_style_set_width(s, LV_SIZE_CONTENT); lv_style_set_height(s, bh); lv_style_set_min_width(s, bh);
+    lv_style_set_pad_hor(s, S2()); lv_style_set_radius(s, LV_RADIUS_CIRCLE); flex(s, LV_FLEX_FLOW_ROW, C, C, C);
+  } else if (k == "badge-num") {  // the number: at least the pill's inner square (badge-h - 2 x space 2), centred
+    lv_style_set_min_width(s, tok("layout:badge-h", lay::badge_h) - 2 * S2()); lv_style_set_text_align(s, LV_TEXT_ALIGN_CENTER);
+  } else if (k == "button") {  // the Button: touch:button-h tall, its label's width, the label space 7 in from the
+    // outer edge (the hair border on every kind is inside), icon to label space 2
+    lv_style_set_width(s, LV_SIZE_CONTENT); lv_style_set_height(s, tok("touch:button-h", touch::button_h));
+    lv_style_set_pad_hor(s, tok("space:7", sp::s7) - HAIR()); lv_style_set_pad_column(s, S2());
+    flex(s, LV_FLEX_FLOW_ROW, C, C, C);
+  } else if (k == "button-fill") lv_style_set_width(s, lv_pct(100));
+  else if (k == "border-clear") {  // a hair border that does not show (primary / ghost): the boxes stay the same
+    lv_style_set_border_width(s, HAIR()); lv_style_set_border_opa(s, LV_OPA_TRANSP); lv_style_set_border_side(s, LV_BORDER_SIDE_FULL);
+  } else if (k == "fade-press-all" || k == "fade-release-all") {  // the Button's press fade: fill, edge, label, icon
+    static lv_style_transition_dsc_t d[2];
+    static const lv_style_prop_t P[] = {LV_STYLE_BG_COLOR, LV_STYLE_BG_OPA, LV_STYLE_BORDER_COLOR, LV_STYLE_BORDER_OPA,
+                                        LV_STYLE_TEXT_COLOR, LV_STYLE_IMAGE_RECOLOR, LV_STYLE_PROP_INV};
+    static bool ready = false;
+    if (!ready) { st::press_transitions(d, P); ready = true; }
+    lv_style_set_transition(s, &d[k == "fade-press-all"]);
+  } else if (k == "btn-underline") {  // the ghost Button's active mark: space 9 x stroke edge, space 2 above the content bottom
+    lv_style_set_width(s, tok("space:9", sp::s9)); lv_style_set_height(s, tok("stroke:edge", stroke::edge));
+    lv_style_set_align(s, LV_ALIGN_BOTTOM_MID); lv_style_set_translate_y(s, -S2());
+  } else if (k == "seg") {  // the Segmented box: touch:min tall, the segments side by side (no gap)
+    lv_style_set_height(s, TMIN()); flex(s, LV_FLEX_FLOW_ROW, S, S, S);
+  } else if (k == "seg-part") {  // one segment: the box's height, its label + space 7 each side, the label centred
+    // (the room is the label's margin, so the plates and the separator, which fill the segment, cover it all)
+    lv_style_set_width(s, LV_SIZE_CONTENT); lv_style_set_height(s, lv_pct(100)); flex(s, LV_FLEX_FLOW_ROW, C, C, C);
+  } else if (k == "seg-label") { lv_style_set_margin_left(s, tok("space:7", sp::s7)); lv_style_set_margin_right(s, tok("space:7", sp::s7));
+  } else if (k == "seg-grow") { lv_style_set_width(s, 0); lv_style_set_flex_grow(s, 1); }  // width fill: equal segments
+  else if (k == "seg-sep") { lv_style_set_width(s, HAIR()); lv_style_set_height(s, lv_pct(100)); }  // the separator line (out of the layout)
+  else if (k == "seg-plate") { lv_style_set_width(s, lv_pct(100)); lv_style_set_height(s, lv_pct(100)); }
+  else if (k == "seg-half-l" || k == "seg-half-r") {  // an end plate's square inner edge (LVGL: one radius per box):
+    // a radius:button wide strip on the segment's inner side over the rounded plate's corners (on the grid)
+    lv_style_set_width(s, tok("radius:button", rad::button)); lv_style_set_height(s, lv_pct(100));
+    lv_style_set_align(s, k == "seg-half-l" ? LV_ALIGN_LEFT_MID : LV_ALIGN_RIGHT_MID);
+  } else if (k.rfind("ring-", 0) == 0) {  // the chosen segment's line-hi ring: 2 hairlines on the box's outer sides (the
+    // box line covers the outer one: the ring shows just inside it), 1 on the separator sides
+    const bool two = k == "ring-full-2" || k == "ring-tb-2";
+    lv_style_set_border_width(s, two ? 2 * HAIR() : HAIR());
+    lv_style_set_border_side(s, k == "ring-full-2" ? LV_BORDER_SIDE_FULL : k == "ring-tb-2" ? (lv_border_side_t) (LV_BORDER_SIDE_TOP | LV_BORDER_SIDE_BOTTOM)
+                                : k == "ring-l" ? LV_BORDER_SIDE_LEFT : k == "ring-r" ? LV_BORDER_SIDE_RIGHT
+                                : (lv_border_side_t) (LV_BORDER_SIDE_LEFT | LV_BORDER_SIDE_RIGHT));
+  } else if (k == "slider") {  // the Slider: its parent's width, exactly touch:min tall (the Pen draws in it)
+    lv_style_set_width(s, lv_pct(100)); lv_style_set_height(s, TMIN());
+  } else if (k == "text-mid") lv_style_set_text_align(s, LV_TEXT_ALIGN_CENTER);
+  else if (k == "slider-word") {  // the word Unavailable where the track starts (half a knob in)
+    lv_style_set_align(s, LV_ALIGN_LEFT_MID); lv_style_set_translate_x(s, tok("layout:slider-knob", lay::slider_knob) / 2);
+  }
 }
 lv_color_t colour(int i, const fw::Theme *t) {  // a colour token or a state role, resolved in theme t
   return i < fx::gen::N_COLOURS ? t->*fx::gen::COLOURS[i].f : fx::gen::ROLES[i - fx::gen::N_COLOURS].f(*t);
@@ -403,6 +480,7 @@ void on_draw(lv_event_t *e) {
   lv_obj_t *o = (lv_obj_t *) lv_event_get_current_target(e);
   fx::Pen p{lv_event_get_layer(e), o, 0, 0, 0};
   square(o, p.cx, p.cy, p.half);
+  p.w = lv_obj_get_content_width(o); p.h = lv_obj_get_content_height(o);
   if (p.half < 1) return;  // a parent with no room (the Layout lab's squeeze): nothing to draw, never a negative radius
   ((void (*)(const fx::Pen &)) lv_event_get_user_data(e))(p);
 }
@@ -503,6 +581,21 @@ void fit_grid(lv_obj_t *l) {  // the label's box = its text's width rounded up t
                    LV_COORD_MAX, LV_TEXT_FLAG_NONE);
   lv_obj_set_width(l, (sz.x + fw::sp::GRID - 1) / fw::sp::GRID * fw::sp::GRID);
 }
+void equal(lv_obj_t *row) {  // the children (not out of the layout) share row's content width on the 4 px grid
+  auto place = [](lv_event_t *e) {
+    lv_obj_t *r = (lv_obj_t *) lv_event_get_current_target(e);
+    std::vector<lv_obj_t *> kids;
+    for (uint32_t i = 0; i < lv_obj_get_child_count(r); i++) {
+      lv_obj_t *c = lv_obj_get_child(r, (int32_t) i);
+      if (!lv_obj_has_flag(c, LV_OBJ_FLAG_IGNORE_LAYOUT)) kids.push_back(c);
+    }
+    if (kids.empty()) return;
+    const int G = fw::sp::GRID, cw = lv_obj_get_content_width(r), n = (int) kids.size(), each = std::max(0, cw / n / G * G);
+    for (int i = 0; i < n; i++) lv_obj_set_width(kids[i], i < n - 1 ? each : std::max(0, cw - each * (n - 1)));
+  };
+  lv_obj_add_event_cb(row, place, LV_EVENT_SIZE_CHANGED, nullptr);
+  lv_obj_send_event(row, LV_EVENT_SIZE_CHANGED, nullptr);
+}
 void name(lv_obj_t *o, const char *n) { if (!names.count(o)) lv_obj_add_event_cb(o, forget, LV_EVENT_DELETE, nullptr); names[o] = n; }
 int type_box(const char *type) { return box_of(type_id(type)); }
 int size(const char *t) {
@@ -589,6 +682,12 @@ lv_obj_t *drawn(lv_obj_t *parent, void (*draw)(const Pen &), const char *layout)
   lv_obj_add_event_cb(o, on_draw, LV_EVENT_DRAW_MAIN, (void *) draw);
   lv_obj_add_event_cb(o, on_size, LV_EVENT_GET_SELF_SIZE, nullptr);
   lv_obj_add_event_cb(o, on_size, LV_EVENT_SIZE_CHANGED, nullptr);
+  return o;
+}
+lv_obj_t *strip(lv_obj_t *parent, void (*draw)(const Pen &), const char *look) {
+  lv_obj_t *o = box(parent, "free");
+  use(o, look);
+  lv_obj_add_event_cb(o, on_draw, LV_EVENT_DRAW_MAIN, (void *) draw);
   return o;
 }
 void redraw(lv_obj_t *o, int x, int y, int w, int h) {

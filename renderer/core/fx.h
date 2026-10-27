@@ -42,6 +42,9 @@ lv_obj_t *row(lv_obj_t *parent);   // equal cells with the gutter between: row()
 lv_obj_t *cell(lv_obj_t *row);
 // a one-line text (or a row of fixed boxes) whose box ends on the 4 px grid (what follows it lands on the grid)
 void fit_grid(lv_obj_t *label);
+// equal parts (a Segmented "fill"): row's children share its content width, each on the 4 px grid, the last takes the
+// remainder; again on every size change of row (the sums live here, C8)
+void equal(lv_obj_t *row);
 // The Grid layout's geometry (C8: a layout arranges; the sums live here so the component holds no size). grid() makes
 // `root` a grid of equal cells: `cols` columns, or min = an icon size name ("glyph", "icon" ...): as many min-wide cells
 // + gaps as fit, at most 12 ("none" = cols); gap "none" | "near" (space:3) | "group" (layout:gutter) | "block"
@@ -67,6 +70,7 @@ int type_box(const char *type);    // a type style's line box ("type:c-meta"), f
 // marks one area; never lv_obj_invalidate on a moving part.
 struct Pen {
   lv_layer_t *layer; lv_obj_t *obj; int cx, cy, half;
+  int w = 0, h = 0;  // the box's content width and height (a strip: the centre is (cx, cy), x runs -w / 2 .. w / 2)
   void line(int x1, int y1, int x2, int y2, const char *stroke, const char *ink, bool round = false) const;
   // r = the stroke's middle line; 0 deg = 3 o'clock, clockwise; round = round caps
   void arc(int r, float deg0, float deg1, const char *stroke, const char *ink, bool round = true) const;
@@ -83,6 +87,9 @@ struct Pen {
   bool sees(int x1, int y1, int x2, int y2) const;
 };
 lv_obj_t *drawn(lv_obj_t *parent, void (*draw)(const Pen &), const char *layout = "col");
+// a drawn strip (the Slider): a box styled by `look` (a structure style that gives its size, "slider"), the Pen on
+// its content box centre; Pen::w / h = the content size (Pen::half = the largest centred square's half, as drawn())
+lv_obj_t *strip(lv_obj_t *parent, void (*draw)(const Pen &), const char *look);
 void redraw(lv_obj_t *drawn_box, int x, int y, int w, int h);
 // mark only the span of a ring between deg0 and deg1 (either order) at radius r, widened by `pad` px each side (the
 // knob's and the stroke's reach): what a moving arc end + knob needs, never the whole box

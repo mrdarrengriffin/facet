@@ -325,23 +325,14 @@ void row_for(Screen *scr, lv_obj_t *col, const fw::set::Setting &s) {
       lv_obj_set_height(sr->value, fw::style(fw::ty::body).box);
       sr->slider = scr->ctrl[k] = build("slider", r, d);
       lv_obj_add_event_cb(r, [](lv_event_t *e) { delete (SliderRow *) lv_event_get_user_data(e); }, LV_EVENT_DELETE, sr);
-      // the value follows the knob: the fill (track child 0) resizes with every drawn position (a finger, or the
+      // the value follows the knob: the Slider's live "input" (every step the shown value crosses: a finger, or the
       // update path's quiet sweep)
-      if (sr->slider && lv_obj_get_child_count(sr->slider) > 0) {
-        lv_obj_t *track = lv_obj_get_child(sr->slider, 0);
-        if (lv_obj_t *fill = lv_obj_get_child(track, 0))
-          lv_obj_add_event_cb(fill, [](lv_event_t *e) {
-            auto *sr = (SliderRow *) lv_event_get_user_data(e);
-            lv_obj_t *fill = (lv_obj_t *) lv_event_get_current_target(e);
-            const int w = lv_obj_get_width(lv_obj_get_parent(fill));
-            if (w <= 0) return;
-            const fw::set::Setting &s = *sr->s;
-            const double n = (s.max - s.min) / s.step;
-            const double v = s.min + std::lround((double) lv_obj_get_width(fill) / w * n) * s.step;
-            const std::string txt = format_number(s, v);
-            if (strcmp(lv_label_get_text(sr->value), txt.c_str())) fw::set_text(sr->value, fw::ty::body, txt.c_str());
-          }, LV_EVENT_SIZE_CHANGED, sr);
-      }
+      fw::listen(r, [](lv_obj_t *, const char *name, const char *detail, void *user) {
+        if (strcmp(name, "input")) return;
+        auto *sr = (SliderRow *) user;
+        const std::string txt = format_number(*sr->s, atof(detail));
+        if (strcmp(lv_label_get_text(sr->value), txt.c_str())) fw::set_text(sr->value, fw::ty::body, txt.c_str());
+      }, sr);
       return;
     }
   }
