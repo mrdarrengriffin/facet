@@ -28,6 +28,9 @@ lv_obj_t *icon(lv_obj_t *parent, const char *name, const char *size, const char 
 lv_obj_t *row(lv_obj_t *parent);   // equal cells with the gutter between: row(), then one cell() per item
 lv_obj_t *cell(lv_obj_t *row);
 void fit_grid(lv_obj_t *label);  // a one-line text whose box ends on the 4 px grid (what follows it lands on the grid)
+void pair_split(lv_obj_t *pair);  // a "pair" box: its halves (children 0, 2) share its height in equal grid steps, the
+                                  // rule between (child 1); follows the pair's size (Cells). split = once more (a tuned token)
+void split(lv_obj_t *pair);
 void bleed(lv_obj_t *o);           // the one escape: o's background reaches the page edge (the "bleed" style marks it)
 void name(lv_obj_t *o, const char *n);  // a component root's name for the inspector
 int size(const char *token);       // a size token ("stroke:hair", "layout:dial-tick") for DRAWING only

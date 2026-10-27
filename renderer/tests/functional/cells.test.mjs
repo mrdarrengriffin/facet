@@ -77,6 +77,34 @@ export default {
       t.eq([ys[0], ys[ys.length - 1] + tk(t, 'pair-h')], [c.y, c.y + tk(t, 'card-h')], 'top at the cell top, bottom on the cell bottom');
       t.eq(ys.every((y) => (y - c.y) % grid(t) === 0), true, 'halves on the grid');
     } },
+    { name: 'a pair fits its cell at every min-h: equal halves splitting the cell on the grid, the hairline between, text inside', async run(t) {
+      // Darren 2026-10-27: tile-w columns with a shorter min-h left the second half past the cell bottom, its text cut,
+      // the hairline 0 px. Each pair is checked against ITS cell's rect (column and row from the geometry), so a half
+      // that spills into the gutter or the next row is caught (a text-y row guess was not).
+      for (const minw of ['tile-w', 'home-card-min-w']) for (const minh of ['tile-h', 'card-h', 'card-min-h']) {
+        const at_ = `${minw} x ${minh}`, kinds = 'cppcpp';
+        await at(t, { 'min-w': minw, 'min-h': minh, cells: [...kinds].join(',') });
+        const n = Math.max(1, Math.floor((CW(t) + GUT(t)) / (tk(t, minw) + GUT(t)))), w = (CW(t) - (n - 1) * GUT(t)) / n, h = tk(t, minh);
+        const c0 = cards(t)[0], objs = t.objs(), hs = halves(t);
+        t.eq(hs.length, 8, `${at_}: eight halves`);
+        const bad = [];
+        [...kinds].forEach((k, i) => {
+          if (k !== 'p') return;
+          const x = c0.x + (i % n) * (w + GUT(t)), y = c0.y + Math.floor(i / n) * (h + GUT(t));
+          const inside = (o) => o.x >= x && o.x + o.w <= x + w && o.y >= y && o.y + o.h <= y + h;
+          const tx = hs.filter((o) => o.x >= x && o.x < x + w && o.y + o.h > y && o.y < y + h + GUT(t)).sort((p, q) => p.y - q.y);
+          if (tx.length !== 2 || !tx.every(inside)) bad.push(`cell ${i}: texts ${JSON.stringify(tx.map((o) => [o.y - y, o.h]))}`);
+          const boxes = objs.filter((o) => !o.text && o.x === x && o.w === w && o.h < h && inside(o) && tx.some((q) => q.y >= o.y && q.y + q.h <= o.y + o.h));  // the halves (+ their outlines)
+          const hh = [...new Set(boxes.map((o) => o.h))], top = Math.min(...boxes.map((o) => o.y)), bot = Math.max(...boxes.map((o) => o.y + o.h));
+          if (hh.length !== 1 || hh[0] % grid(t) || top !== y || bot !== y + h) bad.push(`cell ${i}: halves ${JSON.stringify(boxes.map((o) => [o.y - y, o.h]))}`);
+          const rule = objs.filter((o) => !o.text && o.x === x && o.w === w && o.h >= 1 && o.h <= 2 && inside(o));
+          if (rule.length !== 1 || !(tx.length === 2 && rule[0].y >= tx[0].y + tx[0].h && rule[0].y + rule[0].h <= tx[1].y)
+            || !(hh.length === 1 && rule[0].y > y + hh[0] && rule[0].y + rule[0].h < y + h - hh[0])) bad.push(`cell ${i}: rule ${JSON.stringify(rule.map((o) => [o.y - y, o.h]))}`);
+        });
+        t.eq(bad, [], `${at_}: every pair inside its own cell (cell ${w}x${h})`);
+        t.eq(boundsAll(t), [], `${at_}: bounds`);
+      }
+    } },
     { name: 'bounds proof: 0 fails for tiles, cards, pairs at full, odd, wide and minimum parents', async run(t) {
       const bad = [];
       for (const p of [{ ...TILES, cells: 'c,c,c,c' }, { ...CARDS, cells: 'c,p,c' }, { ...CARDS, cells: 'c', wide: true }])

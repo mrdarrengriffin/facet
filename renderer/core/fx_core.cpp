@@ -324,6 +324,22 @@ void fit_grid(lv_obj_t *l) {  // the label's box = its text's width rounded up t
                    LV_COORD_MAX, LV_TEXT_FLAG_NONE);
   lv_obj_set_width(l, (sz.x + fw::sp::GRID - 1) / fw::sp::GRID * fw::sp::GRID);
 }
+// a "pair" box (Cells, Darren 2026-10-27): its halves (children 0 and 2) split its OWN content height (C6, C9), equal,
+// each the largest grid multiple that leaves the rule's box (child 1's child) between them, capped by their max-h; the
+// space left (child 1, grow) holds the rule centred. Follows the pair's size inside the layout pass (no wrong frame).
+void split(lv_obj_t *pr) {
+  lv_obj_t *a = lv_obj_get_child(pr, 0), *gap = lv_obj_get_child(pr, 1), *b = lv_obj_get_child(pr, 2);
+  if (!a || !gap || !b || !lv_obj_get_child(gap, 0)) return;
+  const int room = lv_obj_get_content_height(pr) - lv_obj_get_style_height(lv_obj_get_child(gap, 0), LV_PART_MAIN);
+  int h = room > 0 ? room / 2 / fw::sp::GRID * fw::sp::GRID : 0;
+  const int cap = lv_obj_get_style_max_height(a, LV_PART_MAIN);
+  if (h > cap) h = cap;
+  for (lv_obj_t *o : {a, b}) if (lv_obj_get_style_height(o, LV_PART_MAIN) != h) lv_obj_set_height(o, h);
+}
+void pair_split(lv_obj_t *pr) {
+  lv_obj_add_event_cb(pr, [](lv_event_t *e) { split((lv_obj_t *) lv_event_get_current_target(e)); }, LV_EVENT_SIZE_CHANGED, nullptr);
+  split(pr);
+}
 void name(lv_obj_t *o, const char *n) { if (!names.count(o)) lv_obj_add_event_cb(o, forget, LV_EVENT_DELETE, nullptr); names[o] = n; }
 int type_box(const char *type) { return box_of(type_id(type)); }
 int size(const char *t) {

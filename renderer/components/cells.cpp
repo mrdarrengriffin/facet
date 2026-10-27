@@ -13,9 +13,13 @@
 //             2026-10-26); the default "column" keeps them the column width (tiles, readouts).
 //   height    every cell is exactly the min-h token tall (h: + max-h:, so a child that fills, the Card, is the cell and
 //             follows the token both ways); a child taller than that overflows and the bounds proof reports it (C11).
-//   pair      a "p" cell holds two half-height slots (two readouts sharing a card slot, Darren 2026-10-26): each
-//             pair-h tall, the first at the cell's top, the second ending on its bottom, a hairline (bg:line) between
-//             them inset by the card padding, centred in the space left (decor).
+//   pair      a "p" cell holds two half-height slots (two readouts sharing a card slot, Darren 2026-10-26): they split
+//             the pair's OWN content height (C6, at every min-h, Darren 2026-10-27), equal, each the largest grid step
+//             that still leaves the hairline room between them (at most pair-h: at card-h exactly pair-h, 2 x pair-h +
+//             8 = card-h); the first at the cell's top, the second ending on its bottom, the hairline (bg:line) inset
+//             by the card padding, centred in the space left (decor; at least one grid step, the cells being on it).
+//             Sized by core fx::pair_split (a migrated component sets no sizes) when the pair's size changes (inside
+//             the layout pass: no frame at a wrong size) and again after a token is tuned (the fillers' pass).
 // Steps: the column count (the flex, both ways); the fillers follow it after the layout (the Card's measure-later
 // pattern: an async check on a size or token change). Declared minimum: one cell
 // (meta "min" = the default min-w x min-h); below it the bounds proof FAILS by design (the one cell is wider than the
@@ -91,10 +95,10 @@ lv_obj_t *make(lv_obj_t *g, const Cells &k, char kind) {
       fx::use(ink, "bg:line");
     }
     lv_obj_t *h = slot(fx::box(pr, "col"));
-    fx::use(h, "h:pair-h");
-    fx::use(h, "max-h:pair-h");
+    fx::use(h, "max-h:pair-h");  // the readout's designed height: a half never grows past it (fx::pair_split sets it)
     if (k.sample) sample_half(h);
   }
+  fx::pair_split(pr);  // the halves share the pair's own height (core fx: sizes are set only there)
   return c;
 }
 
@@ -103,8 +107,10 @@ lv_obj_t *make(lv_obj_t *g, const Cells &k, char kind) {
 void fillers(lv_obj_t *g) {
   Cells &k = all[g];
   size_t want = 0;
+  lv_obj_update_layout(g);  // the own content box after layout (C6, C9)
+  for (size_t i = 0; i < k.cells.size(); i++)  // a tuned token (the rule, the grid's sizes) without a new pair size
+    if (k.kinds[i] == 'p') fx::split(lv_obj_get_child(k.cells[i], 0));
   if (!k.cells.empty() && !k.wide && !k.fill) {
-    lv_obj_update_layout(g);  // the own content box after layout (C6, C9)
     const int w = lv_obj_get_content_width(g), m = lv_obj_get_style_min_width(k.cells[0], LV_PART_MAIN);
     const int gap = lv_obj_get_style_pad_column(g, LV_PART_MAIN);
     int n = (w + gap) / (m + gap > 0 ? m + gap : 1);
