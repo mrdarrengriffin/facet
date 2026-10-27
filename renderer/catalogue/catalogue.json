@@ -924,8 +924,8 @@
     ]
    },
    "cost": {
-    "objects": 5,
-    "bytes_est": 800
+    "objects": 6,
+    "bytes_est": 960
    }
   },
   "clock_face": {
@@ -3434,6 +3434,22 @@
      "about": "A quieter second line under the title. Leave empty for none."
     },
     {
+     "name": "under",
+     "type": "text",
+     "bindable": true,
+     "about": "A small capitals line under the title, such as a speaker's status in a choose-one list. A sub line takes its place."
+    },
+    {
+     "name": "tone",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "dim",
+      "working"
+     ],
+     "about": "The icon and under line colour: dim for normal, working for something going on now, such as playing."
+    },
+    {
      "name": "over",
      "type": "text",
      "bindable": true,
@@ -3496,7 +3512,7 @@
      "name": "items",
      "type": "text",
      "bindable": true,
-     "about": "With list stack: the rows, a comma list or a JSON list, usually bound to an entity attribute. Each row is this node's props with $item (or $item.field) filled in; a plain item is the row's title, and an object item's title (or name), icon, sub, over, trailing, value, on and state fields fill the props that do not name $item. No items shows the empty words, never sample rows."
+     "about": "With list stack: the rows, a comma list or a JSON list, usually bound to an entity attribute. Each row is this node's props with $item (or $item.field) filled in; a plain item is the row's title, and an object item's title (or name), icon, sub, over, under, tone, trailing, value, on and state fields fill the props that do not name $item. No items shows the empty words, never sample rows."
     },
     {
      "name": "rows",
@@ -6517,5 +6533,5 @@
    }
   }
  },
- "hash": "e5be0420"
+ "hash": "4c7b2ac3"
 }

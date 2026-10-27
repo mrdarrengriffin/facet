@@ -1,26 +1,21 @@
 // Picker row: the Facet picker row (docs: Components > Pickers > Picker row, @facet/ui pickers.ts pickerRow(), CSS
-// .f-prow): one option of a "choose one" list (a speaker, a theme, a sound pack), in a Bottom sheet or a settings page.
-// Built from the approved parts, never a copy of their drawing (Darren 2026-10-21 "Examples use the real components"):
-//   row      the List row component itself (fw::find("list_row")): hairline on top, height lay::list_row_h (96 / 64 =
-//            layout.json overlay sheet-row-h, static_assert), content width, side padding, icon, name = its title,
-//            pressed = its press-tint fill, disabled / unavailable = its looks + "blocked" + error, tap = its "tap"
-//            (detail = name) + sound tap (a pick is an in-place choice; docs: the default tap sound)
-//   icon     the List row's icon slot, ic::icon (24 / 16). Docs draw it at layout sheet-icon (32 / 20), but the icon
-//            manifest ships the picker-row icons (speaker, speakers, tv, stream, auto) at icon size only ("picker rows
-//            24"), and icons are never scaled: icons.json wins (open question for Darren)
-//   status   under the name, screen type label (caps, mono; docs .fst-label), one line, ellipsis. The text slot grows
-//            so it centres on the 4 px grid (List row rule): 720 40 + 24 = 64 in 96, 480 28 + 16 = 44 -> 48 in 64
-//   tone     dim = icon + status text-dim (docs text-mute, which is disabled-only here); working (something plays) =
-//            icon + status accent-text (docs --tone-text)
-//   radio    the Radio component (fw::find("radio")) as the trailing part, made non-clickable: the whole row is the
+// .f-prow), on the contract (renderer/CONTRACT.md, "contract": 2): one option of a "choose one" list (a speaker, a
+// theme, a sound pack), in a Bottom sheet or a settings page. Made of the real components (C8b), nothing drawn here:
+//   row      the List row (fw::find("list_row")): hairline, list-row-h tall (layout.json sheet-row-h is the same),
+//            icon, name = its title, status = its under line (caps label, text-dim), tone = its tone (working = icon +
+//            status accent-text), pressed / disabled / unavailable = its looks, tap = its "tap" (detail = name) + sound
+//            tap. Icons at icon size (docs draw them at sheet-icon 32 / 20, but the icon manifest ships the picker-row
+//            icons at icon size only and icons are never scaled)
+//   radio    the Radio (fw::find("radio")) in the List row's end slot, made non-clickable: the whole row is the
 //            target. Selected = radio on (docs: "Selected = radio only", no row highlight)
 // Choice: picker rows that share a parent are one group. A real tap on an enabled row turns its radio on and the
-// radios of its sibling picker rows off (rows are marked with LV_OBJ_FLAG_USER_1), so a list needs no glue code; the
-// Bottom sheet only adds "close after a pick". Contrast pairs: tokens/colour.json section "picker_row" (+ list_row, radio).
+// radios of its sibling picker rows off (rows are marked with LV_OBJ_FLAG_USER_1; the List row root's user data is its
+// caller's = the radio), so a list needs no glue code; the Bottom sheet only adds "close after a pick". Themed through
+// the List row's list-row part and the live palette. Contrast pairs: tokens/colour.json section "picker_row" (+
+// list_row, radio).
 #include "fw.h"
+#include "fx.h"
 #include "items.h"
-
-static_assert(fw::lay::sheet_row_h == fw::lay::list_row_h, "a picker row is a List row: sheet-row-h must equal list-row-h");
 
 namespace {
 constexpr lv_state_t ST_ON = fw::st::ON, ST_OFF = fw::st::OFF;
@@ -33,9 +28,6 @@ lv_obj_t *build(const char *id, lv_obj_t *parent, ArduinoJson::JsonDocument &pro
   c->build(parent, props.as<fw::Props>());
   return lv_obj_get_child_count(parent) > before ? lv_obj_get_child(parent, -1) : nullptr;
 }
-// h grown so (row - h) is a multiple of 2 x grid: centred in the row, its top lands on the 4 px grid (List row rule)
-int on_grid(int h) { return h + ((fw::lay::list_row_h - h) % (2 * fw::sp::s1) + 2 * fw::sp::s1) % (2 * fw::sp::s1); }
-
 // the row's radio (its last child when it has one)
 lv_obj_t *radio_of(lv_obj_t *row) {
   if (!lv_obj_has_flag(row, PICKER)) return nullptr;
@@ -62,6 +54,8 @@ void pick_cb(lv_event_t *e) {
 void list_props(const Spec &s, ArduinoJson::JsonDocument &d) {  // the List row underneath
   d["title"] = s.name;
   d["icon"] = s.icon;
+  d["under"] = !strcmp(s.state, "unavailable") ? "" : s.status;
+  d["tone"] = !strcmp(s.tone, "working") && strcmp(s.state, "disabled") && strcmp(s.state, "unavailable") ? "working" : "dim";
   d["trailing"] = "none";
   d["state"] = s.state;
 }
@@ -71,34 +65,14 @@ void radio_props(const Spec &s, ArduinoJson::JsonDocument &rp) {
   rp["state"] = off ? "disabled" : "default";
 }
 
-// the picker's parts on a List row r: the caps status under the title, the radio, the PICKER mark + tap handler
+// the picker's parts on a List row r: the radio in its end slot, the PICKER mark + tap handler
 void decorate(lv_obj_t *r, const Spec &s) {
-  const fw::Theme &t = *fw::T;
-  const bool unavail = !strcmp(s.state, "unavailable"), off = unavail || !strcmp(s.state, "disabled");
-  const bool working = !strcmp(s.tone, "working") && !off;
-  // the List row's parts: [icon] text column (the one that grows) [Unavailable]
-  lv_obj_t *icon = nullptr, *col = nullptr;
-  for (uint32_t i = 0; i < lv_obj_get_child_count(r); i++) {
-    lv_obj_t *c = lv_obj_get_child(r, i);
-    if (lv_obj_get_style_flex_grow(c, LV_PART_MAIN) == 1) { col = c; break; }
-    icon = c;
-  }
-  if (icon && working) fw::icon_colour(icon, t.accent_text);
-  if (col && !unavail && s.status[0]) {
-    const lv_color_t c = off ? fw::st::disabled_ink(t) : working ? t.accent_text : t.text_dim;
-    lv_obj_t *l = fw::text(col, fw::ty::label, s.status, c);
-    lv_obj_remove_flag(l, LV_OBJ_FLAG_CLICKABLE);
-    lv_label_set_long_mode(l, LV_LABEL_LONG_MODE_DOTS);
-    lv_obj_set_width(l, LV_PCT(100));
-    lv_obj_set_height(l, fw::style(fw::ty::label).box);  // set_long_mode resets the text-box height
-    lv_obj_set_height(col, on_grid(fw::style(fw::ty::title).box + fw::style(fw::ty::label).box));
-  }
-
   lv_obj_t *radio = nullptr;
-  if (!unavail) {
+  if (strcmp(s.state, "unavailable")) {
     ArduinoJson::JsonDocument rp;
     radio_props(s, rp);
-    radio = build("radio", r, rp);
+    lv_obj_t *en = lv_obj_get_child(r, -1);  // the List row's end slot (its last part)
+    radio = build("radio", en, rp);
     if (radio) lv_obj_remove_flag(radio, LV_OBJ_FLAG_CLICKABLE);  // the row is the target
   }
   lv_obj_add_flag(r, PICKER);
@@ -165,6 +139,9 @@ std::string sig(fw::Props p) {
 
 FW_COMPONENT(picker_row, "Picker row", "components", R"({
   "about": "One option of a choose-one list: an icon, the name over a caps status, and a radio; tapping it moves the choice.",
+  "contract": 2,
+  "parts": [],
+  "min": ["layout:card-min-w", "layout:list-row-h"],
   "frame": [448, 288],
   "icons": ["speaker@icon", "speakers@icon", "tv@icon", "stream@icon", "auto@icon"],
   "props": [
@@ -232,7 +209,7 @@ FW_UPDATE(picker_row) {
   const bool was_off = lv_obj_has_state(root, ST_OFF);
   fw::shape(root, "");  // the List row's stored props: forget them, so its update builds its contents again
   bool ok = true;
-  fw::st::refill_fade(root, [&] {  // a new tone fades (like a tap)
+  fw::st::refill_fade(root, [&] {  // a new tone fades (like a tap; shared styles too)
   ok = fw::update_child(fw::find("list_row"), root, lp.as<fw::Props>());
   if (!ok) return;
   if (grp) {
@@ -246,7 +223,7 @@ FW_UPDATE(picker_row) {
   } else {
     decorate(root, s);
   }
-  });
+  }, true, true);
   if (!ok) return false;
   if (was_off != lv_obj_has_state(root, ST_OFF)) fw::st::fade_in_children(root);
   return true;

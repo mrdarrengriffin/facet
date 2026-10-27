@@ -61,7 +61,7 @@ for (const den of (di > 0 ? [process.argv[di + 1]] : ['1x', '1.5x']).filter((d) 
   for (const n of listed.filter((x) => x !== 'squeeze')) {
     const [, , now, kind, lo, hi] = toks.get(n);
     // a fixed size: up by half, else down by a quarter (a floor such as a Cells min-w shows only when it crosses a column)
-    const vs = kind === 'look' ? [now < hi ? hi : lo] : [now + Math.max(4, now >> 1), Math.max(4, now - Math.max(4, now >> 2)), Math.max(4, (now >> 3) << 2)];  // up by half, down a quarter, half (a cap such as a max width shows only below the stage)
+    const vs = kind === 'look' ? [now < hi ? hi : lo] : [now + Math.max(4, now >> 1), Math.max(4, now - Math.max(4, now >> 2)), Math.max(4, (now >> 3) << 2), now * 3];  // up by half, down a quarter, half (a cap such as a max width shows only below the stage), x3 (a grid-rounded size can land on the same step at x1.5)
     let moved = '';
     for (const v of vs) {
       lab('tune', `${n}=${v}`); tick();

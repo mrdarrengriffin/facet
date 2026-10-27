@@ -53,7 +53,9 @@ const char *const SHAPES[] = {"box", "col", "row", "stack", "centre", "cell", "g
                               "seg-half-l", "seg-half-r", "ring-full-2", "ring-tb-2", "ring-l", "ring-r", "ring-lr",
                               "slider", "slider-word", "text-mid", "grow-w", "button-sm",
                               // the Checkbox: its box, the in-progress dot, a done label, the Motion toggle fade
-                              "checkbox", "checkbox-dot", "strike", "fade-switch"};
+                              "checkbox", "checkbox-dot", "strike", "fade-switch",
+                              // the Radio: its ring and the chosen dot
+                              "radio", "radio-dot"};
 // tint:<c> = the colour at chip.tint over what is behind (Status chip; colour.json mixes chip-<tone>); outline:<c> = the
 // focus ring (states.json focus: stroke focus, touch focus-offset outside the box)
 const char *const TINTS[] = {"ok", "warn", "error", "accent", "blue", "text-dim"};
@@ -230,6 +232,13 @@ void shape(lv_style_t *s, const char *n) {  // the structure styles: density onl
     lv_style_set_border_width(s, tok("stroke:edge", stroke::edge)); lv_style_set_border_side(s, LV_BORDER_SIDE_FULL);
   } else if (k == "checkbox-dot") {  // in progress: a round dot layout:checkbox-dot across, centred in the box
     const int d = tok("layout:checkbox-dot", lay::checkbox_dot);
+    lv_style_set_width(s, d); lv_style_set_height(s, d); lv_style_set_radius(s, LV_RADIUS_CIRCLE); lv_style_set_align(s, LV_ALIGN_CENTER);
+  } else if (k == "radio") {  // the ring: layout:radio round, a stroke:edge border all round
+    const int b = tok("layout:radio", lay::radio);
+    lv_style_set_width(s, b); lv_style_set_height(s, b); lv_style_set_radius(s, LV_RADIUS_CIRCLE);
+    lv_style_set_border_width(s, tok("stroke:edge", stroke::edge)); lv_style_set_border_side(s, LV_BORDER_SIDE_FULL);
+  } else if (k == "radio-dot") {  // chosen: a round dot layout:radio-dot across, centred in the ring
+    const int d = tok("layout:radio-dot", lay::radio_dot);
     lv_style_set_width(s, d); lv_style_set_height(s, d); lv_style_set_radius(s, LV_RADIUS_CIRCLE); lv_style_set_align(s, LV_ALIGN_CENTER);
   } else if (k == "strike") lv_style_set_text_decor(s, LV_TEXT_DECOR_STRIKETHROUGH);  // a done item, struck through
   else if (k == "fade-switch") {  // Motion pattern "toggle" without a slide: colours and opacities fade, nothing moves

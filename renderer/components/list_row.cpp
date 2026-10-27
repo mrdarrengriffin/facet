@@ -7,7 +7,8 @@
 // Parts (a flex row, centred; nothing placed by hand):
 //   icon     optional, the icon size (24 / 16), text-dim
 //   text     list-text-* (the free width): an optional over line (type label, caps, text-dim), the title (type title,
-//            text, one line, "...") and an optional sub (type body, text-dim). Its height is grown so that, centred in the
+//            text, one line, "...") and an optional sub (type body, text-dim) or under line (type label, caps, text-dim;
+//            a choice's status, the Picker row's; sub wins). tone working = icon + under in accent-text. Its height is grown so that, centred in the
 //            row, every box top lands on the 4 px grid (a derived style: core/fx_core.cpp list-text-*, list-slot)
 //   end      a SLOT (meta "slots": "end", C8a): what the props put there (trailing value = type body text-dim in a
 //            list-slot, chevron icon, value + chevron, or the Toggle component itself) and/or ONE component a spec puts
@@ -49,14 +50,14 @@ Kind kind_of(const char *s) {
 struct Row {
   Kind kind = K_NONE;
   lv_obj_t *toggle = nullptr;
-  lv_obj_t *ti = nullptr, *su = nullptr, *val = nullptr, *ov = nullptr;  // title, sub, value, over labels (the update path sets their text)
+  lv_obj_t *ti = nullptr, *su = nullptr, *val = nullptr, *ov = nullptr, *un = nullptr;  // title, sub, value, over, under labels (the update path sets their text)
   std::string title;
 };
 
 struct Spec {
   const char *title, *icon, *sub, *trailing, *value, *state;
   bool on, divider;
-  const char *over = "";
+  const char *over = "", *under = "", *tone = "dim";
 };
 std::string caps(const char *s) {
   std::string o(s);
@@ -114,14 +115,16 @@ void fill(lv_obj_t *r, const Spec &s, Row *d) {
   fx::use(r, "part:list-row");  // the theme's list row (C46), after the row's own state tokens
   lv_obj_add_flag(r, LV_OBJ_FLAG_CLICKABLE);
 
-  if (strcmp(s.icon, "none")) fx::icon_use(fx::icon(r, s.icon, "icon", "fg:text-dim"), "ink:disabled-ink", ST_OFF);
+  const bool working = !strcmp(s.tone, "working");
+  if (strcmp(s.icon, "none")) fx::icon_use(fx::icon(r, s.icon, "icon", working ? "fg:accent-text" : "fg:text-dim"), "ink:disabled-ink", ST_OFF);
 
-  const bool sub = !unavail && s.sub[0], over = s.over[0];
-  lv_obj_t *col = fx::box(r, "free");
-  fx::use(col, over ? (sub ? "list-text-ots" : "list-text-ot") : (sub ? "list-text-ts" : "list-text-t"));
+  const bool sub = !unavail && s.sub[0], over = s.over[0], under = !unavail && !sub && s.under[0];
+  lv_obj_t *col = fx::box(r, "free");  // an under line is a label, like an over line: the same column height
+  fx::use(col, over ? (sub || under ? "list-text-ots" : "list-text-ot") : (sub ? "list-text-ts" : under ? "list-text-ot" : "list-text-t"));
   d->ov = over ? line(col, caps(s.over).c_str(), "type:label", "fg:text-dim") : nullptr;
   d->ti = line(col, s.title, "type:title", "fg:text");
   d->su = sub ? line(col, s.sub, "type:body", "fg:text-dim") : nullptr;
+  d->un = under ? line(col, caps(s.under).c_str(), "type:label", working ? "fg:accent-text" : "fg:text-dim") : nullptr;
 
   lv_obj_t *en = fx::box(r, "free");  // the end slot (meta "slots": end)
   fx::slot(en, "end");
@@ -181,7 +184,7 @@ lv_obj_t *root(lv_obj_t *parent) {
 
 Spec spec_of(fw::Props p) {
   return {p["title"] | "", p["icon"] | "bulb", p["sub"] | "", p["trailing"] | "none", p["value"] | "",
-          p["state"] | "default", p["on"] | false, p["divider"] | true, p["over"] | ""};
+          p["state"] | "default", p["on"] | false, p["divider"] | true, p["over"] | "", p["under"] | "", p["tone"] | "dim"};
 }
 std::string stack_sig(fw::Props p);  // below: a stack's row count
 // the props that need the contents again: all but a pressed state and a toggle's on (those move in place)
@@ -196,13 +199,14 @@ std::string sig(fw::Props p) {
   r["title"] = "";
   r["sub"] = (p["sub"] | "")[0] ? "sub" : "";
   r["over"] = (p["over"] | "")[0] ? "over" : "";
+  r["under"] = (p["under"] | "")[0] ? "under" : "";
   if (r["value"].is<const char *>()) r["value"] = (p["value"] | "")[0] ? "value" : "";
   std::string s;
   serializeJson(r, s);
   return s;
 }
 constexpr int LIST_MAX = 24;  // list_items: rows a stack makes at most
-const char *const ROW_FIELDS[] = {"title", "icon", "sub", "over", "trailing", "value", "on", "state"};
+const char *const ROW_FIELDS[] = {"title", "icon", "sub", "over", "under", "tone", "trailing", "value", "on", "state"};
 const char *const ROW_SKIP[] = {"list", "items", "rows", "empty", "_items"};
 // the stack's rows: the props of each item that fits, then a "+N" row for the rest
 std::vector<ArduinoJson::JsonDocument> stack_rows(fw::Props p) {
@@ -213,7 +217,7 @@ std::vector<ArduinoJson::JsonDocument> stack_rows(fw::Props p) {
   for (int i = 0; i < n; i++) {
     out.emplace_back();
     ArduinoJson::JsonDocument &d = out.back();
-    fw::items::row_props(p, all[i], ROW_FIELDS, 8, ROW_SKIP, 5, d);
+    fw::items::row_props(p, all[i], ROW_FIELDS, 10, ROW_SKIP, 5, d);
     if (d["on"].is<const char *>()) d["on"] = !strcmp(d["on"] | "", "on") || !strcmp(d["on"] | "", "true");  // an HA state
   }
   if ((int) all.size() > n) {
@@ -260,6 +264,8 @@ FW_COMPONENT(list_row, "List row", "components", R"({
     {"name": "title", "about": "The main words of the row.", "type": "text", "default": "Lights"},
     {"name": "icon", "about": "The icon at the start of the row, or none.", "type": "select", "options": ["none", "bulb", "speaker", "tv", "volume", "power", "house"], "default": "bulb"},
     {"name": "sub", "about": "A quieter second line under the title. Leave empty for none.", "type": "text", "default": ""},
+    {"name": "under", "about": "A small capitals line under the title, such as a speaker's status in a choose-one list. A sub line takes its place.", "type": "text", "default": ""},
+    {"name": "tone", "about": "The icon and under line colour: dim for normal, working for something going on now, such as playing.", "type": "select", "options": ["dim", "working"], "default": "dim"},
     {"name": "over", "about": "A small line above the title, for extra detail such as a flight's height and distance. Leave empty for none.", "type": "text", "default": ""},
     {"name": "trailing", "about": "What sits at the right end: none, a value, a chevron to show it opens more, a value and a chevron, or an on/off switch.", "type": "select", "options": ["none", "value", "chevron", "value-chevron", "toggle"], "default": "none"},
     {"name": "value", "about": "The value shown at the right end when there is one, such as 42%.", "type": "text", "default": ""},
@@ -267,7 +273,7 @@ FW_COMPONENT(list_row, "List row", "components", R"({
     {"name": "state", "about": "How the row looks: default ready to tap, pressed while held, disabled when it cannot be used, or unavailable when its device cannot be reached.", "type": "select", "options": ["default", "pressed", "disabled", "unavailable"], "default": "default"},
     {"name": "divider", "about": "Draws a thin line under the row to separate it from the next.", "type": "bool", "default": true},
     {"name": "list", "about": "single is one row on its own; stack is a list of rows touching, with lines between them, one row per item of items.", "type": "select", "options": ["single", "stack"], "default": "single"},
-    {"name": "items", "about": "With list stack: the rows, a comma list or a JSON list, usually bound to an entity attribute. Each row is this node's props with $item (or $item.field) filled in; a plain item is the row's title, and an object item's title (or name), icon, sub, over, trailing, value, on and state fields fill the props that do not name $item. No items shows the empty words, never sample rows.", "type": "text", "default": ""},
+    {"name": "items", "about": "With list stack: the rows, a comma list or a JSON list, usually bound to an entity attribute. Each row is this node's props with $item (or $item.field) filled in; a plain item is the row's title, and an object item's title (or name), icon, sub, over, under, tone, trailing, value, on and state fields fill the props that do not name $item. No items shows the empty words, never sample rows.", "type": "text", "default": ""},
     {"name": "rows", "about": "With list stack: at most this many rows; 0 for up to 24. A longer list ends with a +N row for the rest.", "type": "range", "min": 0, "max": 24, "step": 1, "default": 0},
     {"name": "empty", "about": "With list stack: the words shown when items is empty.", "type": "text", "default": "Nothing here"}
   ],
@@ -294,8 +300,9 @@ FW_COMPONENT(list_row, "List row", "components", R"({
 }
 
 // Update path: default <-> pressed = the press fade in place, a toggle row's on = the Toggle's own update (the knob
-// slides, silent); any other prop (title, icon, trailing, value, disabled / unavailable, stack) = the contents again
-// in the same root (fw::refill, snap; disabled / unavailable in or out fades them in). Silent.
+// slides, silent); any other prop (title, icon, trailing, value, tone, disabled / unavailable, stack) = the contents
+// again in the same root (fw::refill; colours that change fade like a tap; disabled / unavailable in or out fades them
+// in). Silent.
 FW_UPDATE(list_row) {
   Row *d = row_of(root);
   if (!d) return false;
@@ -314,6 +321,7 @@ FW_UPDATE(list_row) {
     d->title = sp.title;
     put(d->su, "type:body", sp.sub);
     put(d->ov, "type:label", caps(sp.over).c_str());
+    put(d->un, "type:label", caps(sp.under).c_str());
     put(d->val, "type:body", sp.value[0] ? sp.value : fw::st::PLACEHOLDER);  // empty <-> a value is structure (sig)
     if (d->toggle) {
       ArduinoJson::JsonDocument tp;
@@ -324,8 +332,7 @@ FW_UPDATE(list_row) {
     return true;
   }
   const bool was_off = lv_obj_has_state(root, ST_OFF);
-  fw::refill(root);
-  fill_props(root, p);
+  fw::st::refill_fade(root, [&] { fw::refill(root); fill_props(root, p); }, true, true);  // a new tone fades like a tap (shared styles too)
   if (pr != lv_obj_has_state(root, LV_STATE_PRESSED)) lv_obj_set_state(root, LV_STATE_PRESSED, pr);
   if (was_off != lv_obj_has_state(root, ST_OFF)) fw::st::fade_in_children(root);
   return true;
