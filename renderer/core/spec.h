@@ -508,7 +508,9 @@ inline void check_screen(ArduinoJson::JsonVariantConst s, size_t bytes, Errs &e)
   ArduinoJson::JsonArrayConst nodes = s["nodes"].as<ArduinoJson::JsonArrayConst>();
   if (nodes.isNull()) { err(e, ".nodes", "bad_nodes", "nodes is a list"); return; }
   if ((int) nodes.size() > budget().nodes) err(e, ".nodes", "over_budget", "more than " + std::to_string(budget().nodes) + " nodes");
-  if (!strcmp(s["layout"] | "", "center") && nodes.size() != 1) err(e, ".nodes", "bad_nodes", "a center layout has one node");
+  int body = 0;  // nodes in the body: one placed in another's slot ("in": k | "header") isn't laid out by the body
+  for (ArduinoJson::JsonVariantConst n : nodes) body += n["in"].isNull();
+  if (!strcmp(s["layout"] | "", "center") && body != 1) err(e, ".nodes", "bad_nodes", "a center layout has one node (not counting slot items)");
   int binds = 0, i = 0;
   // items per slot so far; the header's end slot starts with its own items (settings, a shortcut, the timer status)
   std::map<std::string, int> fill;
