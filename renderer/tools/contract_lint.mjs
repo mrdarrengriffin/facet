@@ -21,7 +21,7 @@ const RULES = {
   fixed: /\b(fw::)?(lay|sp|rad|stroke|touch|ic|ty)::[a-zA-Z_]/,
 };
 const mode = process.argv[2] || '--summary';
-const bad = [], legacy = {}, perComp = [];
+const bad = [], debts = [], legacy = {}, perComp = [];
 let migrated = 0;
 for (const f of readdirSync(DIR).filter((x) => x.endsWith('.cpp')).sort()) {
   const src = readFileSync(join(DIR, f), 'utf8');
@@ -46,6 +46,18 @@ for (const f of readdirSync(DIR).filter((x) => x.endsWith('.cpp')).sort()) {
     const meta = src.match(/"parts":\s*\[([^\]]*)\]/);
     const said = new Set(meta ? [...meta[1].matchAll(/"([a-z-]+)"/g)].map((m) => m[1]) : []);
     const diff = [...used].filter((x) => !said.has(x)).concat([...said].filter((x) => !used.has(x)));
+    // C8b: a tap target inside a component is another component (fw::find), never a hand-built one: a box this file
+    // makes (fx::box) that takes taps or a press look is a copied control. A real part of one control (a Segmented's
+    // segment) says so on that line: `// part: <why>`.
+    const boxes = new Set([...code.matchAll(/\b(\w+)\s*=\s*fx::box\(/g)].map((m) => m[1]));
+    src.split('\n').forEach((line, i) => {
+      if (/\/\/\s*part:/.test(line)) return;
+      const debt = /\/\/\s*debt:/.test(line);  // a known C8b gap: listed on every run, never hidden
+      const c = line.replace(/\/\/.*$/, '');
+      const m = c.match(/fw::st::on_tap\((\w+)|lv_obj_(?:add|set)_flag\((\w+),[^;]*CLICKABLE|fx::use\((\w+), "(?:bg:pressed-tint|fade-press[a-z-]*)", LV_STATE_PRESSED/);
+      const v = m && (m[1] || m[2] || m[3]);
+      if (v && boxes.has(v)) (debt ? debts : bad).push(`${f}:${i + 1}: control: a hand-built tap target (${v}); use the component (fw::find), C8b: ${line.trim().slice(0, 100)}`);
+    });
     if (!meta) bad.push(`${f}: parts: no meta "parts" list (C46)`);
     else if (diff.length) bad.push(`${f}: parts: meta "parts" [${[...said]}] != the parts it uses [${[...used]}]`);
   }
@@ -57,5 +69,6 @@ for (const f of readdirSync(DIR).filter((x) => x.endsWith('.cpp')).sort()) {
 const sum = Object.entries(legacy).map(([k, v]) => `${k} ${v.comps} comps/${v.lines} lines`).join(', ');
 console.log(`contract lint: ${migrated} migrated, ${bad.length} violation(s); legacy backlog: ${perComp.length} components (${sum})`);
 if (mode === '--list') perComp.forEach((l) => console.log('  ' + l));
+debts.forEach((l) => console.log('DEBT ' + l));
 bad.forEach((l) => console.log('FAIL ' + l));
 process.exit(bad.length ? 1 : 0);

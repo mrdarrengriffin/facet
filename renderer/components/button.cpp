@@ -71,6 +71,7 @@ void fill(lv_obj_t *b, fw::Props p) {
   lv_obj_remove_flag(b, LV_OBJ_FLAG_SCROLLABLE);
   fx::use(b, "button");
   fx::use(b, "radius:button");
+  if (!strcmp(p["size"] | "normal", "small")) fx::use(b, "button-sm");  // a row's action (Section header): touch:min tall
   if (p["width"].is<const char *>() && !strcmp(p["width"] | "", "fill")) fx::use(b, "button-fill");
   // the parts first, then the state, then the state looks + their fades: building never fades (C34)
   const char *ic = p["icon"] | "none";
@@ -115,11 +116,13 @@ FW_COMPONENT(button, "Button", "components", R"({
     {"name": "label", "about": "The words on the button.", "type": "text", "default": "Start"},
     {"name": "state", "about": "How the button looks: default ready to tap, pressed while held, active when it is the chosen one, active-pressed while the chosen one is held, or disabled when it cannot be used.", "type": "select", "options": ["default", "pressed", "active", "active-pressed", "disabled"], "default": "default"},
     {"name": "icon", "about": "An icon shown before the words, or none for words only.", "type": "select", "options": ["none", "plus", "check", "close"], "default": "none"},
+    {"name": "size", "about": "normal is the full button height; small is the smallest touch height with less padding, for an action inside a row such as a section header's See all.", "type": "select", "options": ["normal", "small"], "default": "normal"},
     {"name": "width", "about": "hug fits the button to its words; fill stretches it across the space it is in, with the words centred.", "type": "select", "options": ["hug", "fill"], "default": "hug"}
   ],
   "variants": [
     {"label": "primary · default", "props": {}},
     {"label": "primary · pressed", "props": {"state": "pressed"}},
+    {"label": "ghost · small", "props": {"kind": "ghost", "size": "small", "label": "See all"}},
     {"label": "primary · active", "props": {"state": "active"}},
     {"label": "primary · active + pressed", "props": {"state": "active-pressed"}},
     {"label": "primary · disabled", "props": {"state": "disabled"}},

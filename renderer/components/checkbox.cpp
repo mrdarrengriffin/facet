@@ -1,36 +1,28 @@
-// Checkbox: the Facet checkbox (docs: Components > Pickers > Checkbox, @facet/ui checkbox.ts, CSS .f-checkbox): a small
-// rounded box that is open, in progress (an accent dot) or done (filled accent with a check), with an optional label.
-// Read-only unless interactive: a tap cycles open -> done and doing -> done, done -> open (docs).
-//   box     lay::checkbox (24 / 20, the check at icon / glyph size; docs 20 at the docs site size: = the Radio and the check icon's own icon size, so the
-//           check fills the box exactly as the docs SVG does), stroke::edge border, rad::chip (8 / 4; docs 6)
+// Checkbox: the Facet checkbox (docs: Components > Pickers > Checkbox, @facet/ui checkbox.ts, CSS .f-checkbox), on the
+// contract (renderer/CONTRACT.md, "contract": 2): a small rounded box that is open, in progress (an accent dot) or done
+// (filled accent with a check), with an optional label. Read-only unless interactive: a tap cycles open -> done and
+// doing -> done, done -> open (docs).
+//   box     checkbox (layout:checkbox 24 / 20 square = the check icon at icon / glyph size, so the check fills it; radius
+//           chip; a stroke:edge border)
 //   open    border text-dim (a control boundary, ui 3:1), no fill
-//   doing   border + lay::checkbox_dot (8) dot st::on_mark (accent), centred on the grid
-//   done    fill + border st::on_fill (accent), the Icons foundation "check" at ic::icon in st::on_label (on-accent)
-//   label   type body, text; done = text-dim (docs) + struck through (a ticked list item); sp::s2 after the box, the box centred on the label's line box
-// States (states.json): disabled (st::OFF) = box, fill and label text-mute (st::disabled_ink), the check in bg on the
-// muted fill; a tap = "blocked" + error on finger down. A read-only checkbox takes no touch at all (docs aria-readonly).
+//   doing   border on-mark + a checkbox-dot (layout:checkbox-dot 8 / 4) dot in on-mark, centred on the grid
+//   done    fill + border on-fill, the check icon in on-label
+//   label   type body, text, its box rounded up to the grid (fx::fit_grid); done = text-dim + struck through (a ticked
+//           list item); gap:2 after the box, the box centred on the label's line box
+//   minimum the box (+ the label, which does not shrink). Steps: one
+// States: open / doing / done (st::ON = done, USER_2 = doing); disabled (fw::st::OFF: box, fill, label disabled-ink, the
+// check in bg on the muted fill; a tap = "blocked" + error on finger down). n/a: pressed (no press look: the tick is
+// the feedback), unavailable, loading, unknown, empty, error. A read-only checkbox takes no touch at all (docs
+// aria-readonly). Themed through the live palette and radius:chip (no part: the theme engine has no checkbox part yet).
 // Tap (interactive): event "toggle" (detail = the new state) + sound toggle-on (to done) / toggle-off (to open); the
-// look switches with Motion toggle (colour / opacity fades, nothing moves). Hit area: at least touch::min tall.
-// Update path: the state (open / doing / done) and disabled fade in place (LVGL state styles: st::ON = done, USER_2 =
-// doing); label / interactive refill (snap). Contrast pairs: tokens/colour.json section "checkbox".
+// look switches with Motion toggle (fade-switch: colours and opacities fade, nothing moves). Hit area: at least touch::min
+// tall. Update path: the state and disabled fade in place; label / interactive refill (snap). Bleed: none.
+// Contrast pairs: tokens/colour.json section "checkbox".
 #include "fw.h"
+#include "fx.h"
 
 namespace {
 constexpr lv_state_t ST_DONE = fw::st::ON, ST_DOING = LV_STATE_USER_2, ST_OFF = fw::st::OFF;
-const lv_style_prop_t BOX_PROPS[] = {LV_STYLE_BORDER_COLOR, LV_STYLE_BG_OPA, LV_STYLE_BG_COLOR, LV_STYLE_PROP_INV};
-const lv_style_prop_t OPA_PROPS[] = {LV_STYLE_BG_OPA, LV_STYLE_IMAGE_OPA, LV_STYLE_OPA, LV_STYLE_PROP_INV};
-const lv_style_prop_t TEXT_PROPS[] = {LV_STYLE_TEXT_COLOR, LV_STYLE_PROP_INV};
-const lv_style_transition_dsc_t *tr(int i) {
-  static lv_style_transition_dsc_t d[3];
-  static bool ready = false;
-  if (!ready) {  // states.json on: Motion toggle
-    fw::mo::transition(&d[0], fw::st::SWITCH, BOX_PROPS);
-    fw::mo::transition(&d[1], fw::st::SWITCH, OPA_PROPS);
-    fw::mo::transition(&d[2], fw::st::SWITCH, TEXT_PROPS);
-    ready = true;
-  }
-  return &d[i];
-}
 int check_of(fw::Props p) {
   const char *c = p["check"] | "done";
   return !strcmp(c, "open") ? 0 : !strcmp(c, "doing") ? 1 : 2;
@@ -42,84 +34,69 @@ void set_check(lv_obj_t *o, int c, bool animate) {
   fw::st::set_state(o, ST_DONE, c == 2, animate);
   fw::st::set_state(o, ST_DOING, c == 1, animate);
 }
-void transitions(lv_obj_t *o, int i) {
-  for (lv_style_selector_t s : {(lv_style_selector_t) 0, (lv_style_selector_t) ST_DONE, (lv_style_selector_t) ST_DOING})
-    lv_obj_set_style_transition(o, tr(i), s);
+// the Motion toggle fade on every state the part changes in
+void fades(lv_obj_t *o) {
+  for (lv_state_t st : {(lv_state_t) 0, ST_DONE, ST_DOING, ST_OFF}) fx::use(o, "fade-switch", st);
 }
 
 void fill(lv_obj_t *r, fw::Props p) {
-  const fw::Theme &t = *fw::T;
   const bool live = p["interactive"] | true;
   const char *label = p["label"] | "";
-  const int B = fw::lay::checkbox, dot = fw::lay::checkbox_dot;
-  static_assert((fw::lay::checkbox - fw::lay::checkbox_dot) % 8 == 0, "the checkbox dot must centre on the 4 px grid");
 
-  lv_obj_remove_style_all(r);
-  lv_obj_remove_flag(r, LV_OBJ_FLAG_SCROLLABLE);
+  for (const char *t : {"box", "row-mid", "gap:2"}) fx::use(r, t);
+  fx::name(r, "checkbox");
   lv_obj_set_flag(r, LV_OBJ_FLAG_CLICKABLE, live);
-  lv_obj_set_size(r, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
-  lv_obj_set_flex_flow(r, LV_FLEX_FLOW_ROW);
-  lv_obj_set_flex_align(r, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-  lv_obj_set_style_pad_column(r, fw::sp::s2, 0);
-  const int lh = *label ? fw::style(fw::ty::body).box : B;
-  lv_obj_set_ext_click_area(r, std::max(0, (fw::touch::min - std::max(lh, B)) / 2));
+  lv_obj_add_flag(r, LV_OBJ_FLAG_STATE_TRICKLE);  // the states reach the box, dot, check and label
 
-  lv_obj_t *b = lv_obj_create(r);  // the box
-  lv_obj_remove_style_all(b);
-  lv_obj_remove_flag(b, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
-  lv_obj_set_size(b, B, B);
-  lv_obj_set_style_radius(b, fw::rad::chip, 0);
-  lv_obj_set_style_border_width(b, fw::stroke::edge, 0);
-  lv_obj_set_style_border_color(b, t.text_dim, 0);
-  lv_obj_set_style_border_color(b, fw::st::on_mark(t), ST_DOING);
-  lv_obj_set_style_border_color(b, fw::st::on_fill(t), ST_DONE);
-  lv_obj_set_style_border_color(b, fw::st::disabled_ink(t), ST_OFF);
-  lv_obj_set_style_border_color(b, fw::st::disabled_ink(t), ST_OFF | ST_DOING);
-  lv_obj_set_style_border_color(b, fw::st::disabled_ink(t), ST_OFF | ST_DONE);
-  lv_obj_set_style_bg_color(b, fw::st::on_fill(t), 0);
-  lv_obj_set_style_bg_color(b, fw::st::disabled_ink(t), ST_OFF | ST_DONE);
-  lv_obj_set_style_bg_opa(b, LV_OPA_TRANSP, 0);
-  lv_obj_set_style_bg_opa(b, LV_OPA_COVER, ST_DONE);
-  transitions(b, 0);
+  lv_obj_t *b = fx::box(r, "free");  // the box
+  lv_obj_add_flag(b, LV_OBJ_FLAG_STATE_TRICKLE);
+  fx::use(b, "border:text-dim");
+  fx::use(b, "border:on-mark", ST_DOING);
+  fx::use(b, "border:on-fill", ST_DONE);
+  fx::use(b, "bg:on-fill", ST_DONE);
+  for (lv_state_t st : {ST_OFF, (lv_state_t) (ST_OFF | ST_DOING), (lv_state_t) (ST_OFF | ST_DONE)}) fx::use(b, "border:disabled-ink", st);
+  fx::use(b, "bg:disabled-ink", ST_OFF | ST_DONE);
+  // the box's size, radius and edge width last at each state: a border:<c> token draws a hairline
+  for (lv_state_t st : {(lv_state_t) 0, ST_DOING, ST_DONE, ST_OFF, (lv_state_t) (ST_OFF | ST_DOING), (lv_state_t) (ST_OFF | ST_DONE)})
+    fx::use(b, "checkbox", st);
+  fades(b);
 
-  lv_obj_t *k = lv_obj_create(b);  // doing: the dot
-  lv_obj_remove_style_all(k);
-  lv_obj_remove_flag(k, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
-  lv_obj_set_size(k, dot, dot);
-  lv_obj_align(k, LV_ALIGN_CENTER, 0, 0);
-  lv_obj_set_style_radius(k, LV_RADIUS_CIRCLE, 0);
-  lv_obj_set_style_bg_color(k, fw::st::on_mark(t), 0);
-  lv_obj_set_style_bg_color(k, fw::st::disabled_ink(t), ST_OFF | ST_DOING);
-  lv_obj_set_style_bg_opa(k, LV_OPA_TRANSP, 0);
-  lv_obj_set_style_bg_opa(k, LV_OPA_COVER, ST_DOING);
-  transitions(k, 1);
+  lv_obj_t *k = fx::box(b, "free");  // doing: the dot
+  fx::use(k, "checkbox-dot");
+  fx::use(k, "transp");
+  fx::use(k, "bg:on-mark");
+  fx::use(k, "opaque", ST_DOING);
+  fx::use(k, "bg:disabled-ink", ST_OFF | ST_DOING);
+  fades(k);
 
   // done: the check (Icons foundation, icon size = the box; the box's border is drawn over its edge, like the docs SVG)
-  if (lv_obj_t *ic = fw::icon(b, "check", fw::ic::PX[fw::ic::icon] == B ? fw::ic::icon : fw::ic::glyph, fw::st::on_label(t))) {
+  if (lv_obj_t *ic = fx::icon(b, "check", "checkbox", "fg:on-label")) {
     lv_obj_add_flag(ic, LV_OBJ_FLAG_IGNORE_LAYOUT);
-    lv_obj_align(ic, LV_ALIGN_CENTER, 0, 0);
-    fw::icon_colour(ic, t.bg, ST_OFF | ST_DONE);
-    lv_obj_set_style_opa(ic, LV_OPA_TRANSP, 0);
-    lv_obj_set_style_opa(ic, LV_OPA_COVER, ST_DONE);
-    transitions(ic, 1);
+    fx::use(ic, "over-cell");
+    fx::use(ic, "transp");
+    fx::use(ic, "opaque", ST_DONE);
+    fx::icon_use(ic, "ink:bg", ST_OFF | ST_DONE);
+    fades(ic);
   }
   if (*label) {
-    lv_obj_t *l = fw::text(r, fw::ty::body, label, t.text);
-    lv_obj_set_height(l, fw::style(fw::ty::body).box);
-    lv_obj_update_layout(l);  // the label's box rounded up to the grid (Label fit8), so the checkbox is on the grid
-    lv_obj_set_width(l, (lv_obj_get_width(l) + fw::sp::GRID - 1) / fw::sp::GRID * fw::sp::GRID);
-    lv_obj_set_style_text_color(l, t.text_dim, ST_DONE);
-    lv_obj_set_style_text_decor(l, LV_TEXT_DECOR_STRIKETHROUGH, ST_DONE);  // ticked = struck through (a done list item)
-    lv_obj_set_style_text_color(l, fw::st::disabled_ink(t), ST_OFF);
-    lv_obj_set_style_text_color(l, fw::st::disabled_ink(t), ST_OFF | ST_DONE);
-    transitions(l, 2);
+    lv_obj_t *l = fx::text(r, label, "type:body", "fg:text");
+    fx::fit_grid(l);  // the label's box rounded up to the grid, so the checkbox is on the grid
+    fx::use(l, "fg:text-dim", ST_DONE);
+    fx::use(l, "strike", ST_DONE);  // ticked = struck through (a done list item)
+    fx::use(l, "fg:disabled-ink", ST_OFF);
+    fx::use(l, "fg:disabled-ink", ST_OFF | ST_DONE);
+    fades(l);
   }
+  fx::hit(r);
   fw::shape(r, sig_of(p));
 }
 }  // namespace
 
 FW_COMPONENT(checkbox, "Checkbox", "components", R"({
   "about": "A small rounded box: open, in progress (an accent dot) or done (filled with a check). Tapping cycles open and done unless it is read-only.",
+  "contract": 2,
+  "parts": [],
+  "min": ["layout:checkbox"],
   "frame": [400, 96],
   "icons": ["check@icon"],
   "props": [
@@ -138,6 +115,8 @@ FW_COMPONENT(checkbox, "Checkbox", "components", R"({
   ]
 })") {
   lv_obj_t *r = lv_obj_create(parent);
+  lv_obj_remove_style_all(r);
+  lv_obj_remove_flag(r, LV_OBJ_FLAG_SCROLLABLE);
   fill(r, p);
   set_check(r, check_of(p), false);
   if (!strcmp(p["state"] | "default", "disabled")) fw::st::set_off(r, true, false);

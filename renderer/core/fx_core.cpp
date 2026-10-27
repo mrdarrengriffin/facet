@@ -51,7 +51,9 @@ const char *const SHAPES[] = {"box", "col", "row", "stack", "centre", "cell", "g
                               "badge", "badge-num", "button", "button-fill", "border-clear", "fade-press-all",
                               "fade-release-all", "btn-underline", "seg", "seg-part", "seg-label", "seg-grow", "seg-sep", "seg-plate",
                               "seg-half-l", "seg-half-r", "ring-full-2", "ring-tb-2", "ring-l", "ring-r", "ring-lr",
-                              "slider", "slider-word", "text-mid", "grow-w"};
+                              "slider", "slider-word", "text-mid", "grow-w", "button-sm",
+                              // the Checkbox: its box, the in-progress dot, a done label, the Motion toggle fade
+                              "checkbox", "checkbox-dot", "strike", "fade-switch"};
 // tint:<c> = the colour at chip.tint over what is behind (Status chip; colour.json mixes chip-<tone>); outline:<c> = the
 // focus ring (states.json focus: stroke focus, touch focus-offset outside the box)
 const char *const TINTS[] = {"ok", "warn", "error", "accent", "blue", "text-dim"};
@@ -222,6 +224,22 @@ void shape(lv_style_t *s, const char *n) {  // the structure styles: density onl
   else if (k == "stack") { flex(s, LV_FLEX_FLOW_COLUMN, S, S, S); lv_style_set_pad_row(s, tok("space:2", sp::s2)); }
   else if (k == "centre") { flex(s, LV_FLEX_FLOW_COLUMN, C, C, C); }
   else if (k == "cell" || k == "grow") lv_style_set_flex_grow(s, 1);
+  else if (k == "checkbox") {  // the box: layout:checkbox square, radius chip, a stroke:edge border all round
+    const int b = tok("layout:checkbox", lay::checkbox);
+    lv_style_set_width(s, b); lv_style_set_height(s, b); lv_style_set_radius(s, tok("radius:chip", rad::chip));
+    lv_style_set_border_width(s, tok("stroke:edge", stroke::edge)); lv_style_set_border_side(s, LV_BORDER_SIDE_FULL);
+  } else if (k == "checkbox-dot") {  // in progress: a round dot layout:checkbox-dot across, centred in the box
+    const int d = tok("layout:checkbox-dot", lay::checkbox_dot);
+    lv_style_set_width(s, d); lv_style_set_height(s, d); lv_style_set_radius(s, LV_RADIUS_CIRCLE); lv_style_set_align(s, LV_ALIGN_CENTER);
+  } else if (k == "strike") lv_style_set_text_decor(s, LV_TEXT_DECOR_STRIKETHROUGH);  // a done item, struck through
+  else if (k == "fade-switch") {  // Motion pattern "toggle" without a slide: colours and opacities fade, nothing moves
+    static lv_style_transition_dsc_t d;
+    static const lv_style_prop_t P[] = {LV_STYLE_BG_COLOR, LV_STYLE_BG_OPA, LV_STYLE_BORDER_COLOR, LV_STYLE_OPA, LV_STYLE_TEXT_COLOR,
+                                        LV_STYLE_IMAGE_RECOLOR, LV_STYLE_PROP_INV};
+    static bool ready = false;
+    if (!ready) { mo::transition(&d, st::SWITCH, P); ready = true; }
+    lv_style_set_transition(s, &d);
+  }
   else if (k == "grow-w") { lv_style_set_width(s, 0); lv_style_set_flex_grow(s, 1); }  // the free width in a row: a text in it ends in "...", never pushes what follows
   else if (k == "page") {  // the inset above the header is the page's; the header gap is the head's margin
     lv_style_set_width(s, lv_pct(100)); lv_style_set_height(s, lv_pct(100)); flex(s, LV_FLEX_FLOW_COLUMN, S, S, S);
@@ -344,6 +362,8 @@ void shape(lv_style_t *s, const char *n) {  // the structure styles: density onl
     lv_style_set_pad_hor(s, S2()); lv_style_set_radius(s, LV_RADIUS_CIRCLE); flex(s, LV_FLEX_FLOW_ROW, C, C, C);
   } else if (k == "badge-num") {  // the number: at least the pill's inner square (badge-h - 2 x space 2), centred
     lv_style_set_min_width(s, tok("layout:badge-h", lay::badge_h) - 2 * S2()); lv_style_set_text_align(s, LV_TEXT_ALIGN_CENTER);
+  } else if (k == "button-sm") {  // the small Button (after "button"): touch:min tall, the label space 4 in from the outer edge
+    lv_style_set_height(s, TMIN()); lv_style_set_pad_hor(s, tok("space:4", sp::s4) - HAIR());
   } else if (k == "button") {  // the Button: touch:button-h tall, its label's width, the label space 7 in from the
     // outer edge (the hair border on every kind is inside), icon to label space 2
     lv_style_set_width(s, LV_SIZE_CONTENT); lv_style_set_height(s, tok("touch:button-h", touch::button_h));
@@ -1184,9 +1204,16 @@ bool in_bar(lv_obj_t *o) {  // the nearest box part round o is a bar (card-head)
   }
   return false;
 }
+void hit(lv_obj_t *o) {  // C32: the hit area at least touch:min tall around o as laid out now
+  lv_obj_update_layout(o);
+  lv_obj_set_ext_click_area(o, std::max(0, (tok("touch:min", fw::touch::min) - (int) lv_obj_get_height(o)) / 2));
+}
+
 lv_obj_t *icon(lv_obj_t *p, const char *name, const char *size, const char *ink) {
   const fw::ic::Size sz = !strcmp(size, "card") ? fw::ic::card : !strcmp(size, "glyph") ? fw::ic::glyph
-                         : !strcmp(size, "feature") ? fw::ic::feature : fw::ic::icon;
+                         : !strcmp(size, "feature") ? fw::ic::feature
+                         : !strcmp(size, "checkbox") ? (fw::ic::PX[fw::ic::icon] == fw::lay::checkbox ? fw::ic::icon : fw::ic::glyph)  // the size that fills the box
+                         : fw::ic::icon;
   lv_obj_t *b = fw::icon(p, name, sz, lv_color_black());
   if (!b) return nullptr;
   lv_obj_add_flag(b, LV_OBJ_FLAG_EVENT_BUBBLE);

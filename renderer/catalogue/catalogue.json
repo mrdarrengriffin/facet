@@ -410,6 +410,16 @@
      "about": "An icon shown before the words, or none for words only."
     },
     {
+     "name": "size",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "normal",
+      "small"
+     ],
+     "about": "normal is the full button height; small is the smallest touch height with less padding, for an action inside a row such as a section header's See all."
+    },
+    {
      "name": "width",
      "type": "select",
      "bindable": true,
@@ -3880,8 +3890,8 @@
     ]
    },
    "cost": {
-    "objects": 26,
-    "bytes_est": 4160
+    "objects": 32,
+    "bytes_est": 5120
    }
   },
   "moon_icon": {
@@ -6388,8 +6398,8 @@
     ]
    },
    "cost": {
-    "objects": 170,
-    "bytes_est": 27200
+    "objects": 174,
+    "bytes_est": 27840
    }
   }
  },
@@ -6507,5 +6517,5 @@
    }
   }
  },
- "hash": "dd66e002"
+ "hash": "e5be0420"
 }

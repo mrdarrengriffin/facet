@@ -188,7 +188,7 @@ lv_obj_t *button(lv_obj_t *parent, lv_obj_t *s) {
   fx::use(b, "border:accent", LV_STATE_CHECKED | LV_STATE_PRESSED);
   fx::use(b, "border:disabled-accent", LV_STATE_CHECKED | fw::st::OFF);
   fx::use(b, "part:control");  // the theme's control (C46), last
-  lv_obj_add_flag(b, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_STATE_TRICKLE));
+  lv_obj_add_flag(b, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_STATE_TRICKLE));  // debt: the Dial's button is hand-built: should be the Icon button component (C8b)
   lv_obj_remove_flag(b, LV_OBJ_FLAG_EVENT_BUBBLE);  // the ring never sees the button's press
   d->btn_txt = fx::text(b, "ON", "type:c-label", "fg:text");
   fx::use(d->btn_txt, "fg:accent-text", LV_STATE_CHECKED);

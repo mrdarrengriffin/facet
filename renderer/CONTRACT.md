@@ -132,6 +132,17 @@ bounds failure (C11). A bare count (`"slots": 4`) is the legacy form: that many 
 the docs can never disagree. *Check:* the spec checker (`core/spec.h` `slot_decls`); each slotted component's
 functional test has a refusal case per rule and checks every accepted id is a real component.
 
+**C8b. A component never rebuilds another component.** Anything inside a component that already exists as a component
+(a button, an icon button, a toggle, a badge, a chip, a time) MUST be that component, built through `fw::find`, with
+its props. It never gets a hand-made copy of the look (a box with a press tint and a tap handler is a hand-made
+button). If the real one does not fit (too tall, wrong padding), give that component a new prop or size and use it;
+never copy it. Its own parts that no other component has (a Segmented's segment) are not components and say so on
+the line: `// part: <why>`. A known gap is marked `// debt: <what it should be>`, which the lint lists on every run.
+*Why:* a copy drifts from the real one (alignment, states, sounds, theming), and the contract stops being the single
+source of how a thing looks and behaves (Darren 2026-10-27, Section header "See all").
+*Check:* lint `control` (tools/contract_lint.mjs): in a contract component, a box it makes with `fx::box` that takes
+taps (`on_tap`, CLICKABLE) or a press look fails the build unless it is marked `part:` or `debt:`.
+
 **C9. A component declares its minimum and scales above it in steps.**
 - Meta `"min": ["layout:<w>", "layout:<h>"]`: layout tokens, so the minimum is on the fixed grid.
 - Between the minimum and any larger parent it changes only by **steps**: fixed arrangements made of tokens, chosen

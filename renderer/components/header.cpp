@@ -149,7 +149,7 @@ void fill(lv_obj_t *h, fw::Props p) {
     time_props(p, tp);
     build("time", tm, tp);
     if (*(p["actions"]["shortcut"] | "")) {  // with a shortcut, a long press on the time opens Settings too
-      lv_obj_add_flag(tm, LV_OBJ_FLAG_CLICKABLE);
+      lv_obj_add_flag(tm, LV_OBJ_FLAG_CLICKABLE);  // part: the Time component's holder takes the long press (no press look)
       lv_obj_add_event_cb(tm, [](lv_event_t *e) {
         auto *o = (lv_obj_t *) lv_event_get_current_target(e);
         if (lv_indev_t *in = lv_indev_active()) lv_indev_wait_release(in);

@@ -8,15 +8,14 @@
 //            section-label tall (label box + space 2 to the rows), items at the top (the panel lab's Door lock "last 24 h")
 //   count    the Count badge component (prop "badge"; count / tone / zero passed on: 0 = muted or hidden)
 //   right    none | meta (type c-meta, text-dim: docs .f-section-meta is text-mute, which is disabled-only here) |
-//            action (a text button: c-caps-sm accent-text)
-// Action: a hit box section-h tall (= touch min), pad-x:2 inside it, radius chip; its text ends space 2 inside the
-// content edge (the legacy build nudged it out by that padding with a bleed: an escape the contract does not allow, C13).
-// States: default; pressed (fill pressed-tint fading in over nothing); disabled (fw::st::OFF: disabled-ink, no press
-// look, tap = "blocked" + error). n/a: on, unavailable, loading, unknown, empty, error (a caption: no data of its own;
-// the count badge shows its own zero). Tap = a real CLICKED: "tap" (detail = the action text) + sound "tap". The title,
+//            action (the Button component, ghost small: see Action)
+// Action: the Button component (C8b), ghost, size small (touch:min tall = section-h, its label space 4 in from its
+// edge, lined up with the List rows' values and chevrons below); its press, disabled, tap and sound are the Button's.
+// States: the action's are the Button's (default, pressed, disabled = "blocked" + error). n/a: on, unavailable,
+// loading, unknown, empty, error (a caption: no data of its own; the count badge shows its own zero). The title,
 // badge and meta are static (no events). Bleed: none.
 // Contrast pairs: tokens/colour.json section "section_header" (+ label, count_badge).
-// Still legacy inside: the Count badge (built through fw::find).
+// Built inside: the Count badge and the Button (fw::find).
 #include "fw.h"
 #include "fx.h"
 
@@ -55,29 +54,13 @@ void fill(lv_obj_t *h, fw::Props p) {
   const char *right = p["right"] | "meta";
   if (!strcmp(right, "meta") && (p["meta"] | "")[0]) {  // an empty meta draws nothing (not the label's sample)
     words(h, p["meta"] | "", "type:c-meta", "fg:text-dim");
-  } else if (!strcmp(right, "action")) {
-    const char *state = p["state"] | "default";
-    lv_obj_t *a = fx::box(h, "free");
-    for (const char *t : {"hug", "row-mid", "pad-x:2", "h:section-h", "radius:chip", "bg:pressed-tint", "bg-none", "fade-release-fill"}) fx::use(a, t);
-    fx::use(a, "bg:pressed-tint", LV_STATE_PRESSED);
-    fx::use(a, "fade-press-fill", LV_STATE_PRESSED);
-    fx::use(a, "bg-none", ST_OFF);
-    fx::use(a, "bg-none", ST_OFF | LV_STATE_PRESSED);
-    lv_obj_add_flag(a, LV_OBJ_FLAG_CLICKABLE);
-    lv_obj_remove_flag(a, LV_OBJ_FLAG_EVENT_BUBBLE);
-    lv_obj_t *l = fx::text(a, p["action"] | "", "type:c-caps-sm", "fg:accent-text");
-    fx::fit_grid(l);  // the hit box's width on the grid
-    fx::use(l, "fg:disabled-ink", ST_OFF);
-    if (!strcmp(state, "pressed")) lv_obj_add_state(a, LV_STATE_PRESSED);
-    if (!strcmp(state, "disabled")) fx::state(a, ST_OFF, true);
-    fw::st::on_tap(a, [](lv_event_t *e) {  // blocked on finger down, a real tap on CLICKED (states.json)
-      if (!fw::st::tap_now(e)) return;
-      auto *o = (lv_obj_t *) lv_event_get_current_target(e);
-      auto *l = (lv_obj_t *) lv_event_get_user_data(e);
-      const char *d = l ? lv_label_get_text(l) : "";
-      if (lv_obj_has_state(o, ST_OFF)) fw::st::blocked(o, d);
-      else { fw::emit(o, "tap", d); fw::sound(o, "tap"); }
-    }, l);
+  } else if (!strcmp(right, "action")) {  // the Button component itself (C8b): ghost, small (touch:min = the row's height)
+    ArduinoJson::JsonDocument bp;
+    bp["kind"] = "ghost";
+    bp["size"] = "small";
+    bp["label"] = p["action"] | "";
+    bp["state"] = p["state"] | "default";
+    build("button", h, bp);
   }
 }
 }  // namespace

@@ -51,7 +51,7 @@ lv_obj_t *plate(lv_obj_t *seg, const char *place, bool round, const char *ring, 
   if (fill) {
     for (const char *t : {"bg:pressed-surface", "bg-none", "fade-release-fill"}) fx::use(o, t);
     fx::use(o, "bg:pressed-surface", LV_STATE_PRESSED);
-    fx::use(o, "fade-press-fill", LV_STATE_PRESSED);
+    fx::use(o, "fade-press-fill", LV_STATE_PRESSED);  // part: a segment is the Segmented's own part, not a component of its own
     fx::use(o, "bg:pressed-surface", ST_ON);
     fx::use(o, "bg-none", ST_OFF);                         // disabled: no press look
     fx::use(o, "bg-none", ST_OFF | LV_STATE_PRESSED);
@@ -117,7 +117,7 @@ void fill(lv_obj_t *box, fw::Props p) {
 
   for (int i = 0; i < n; i++) {
     lv_obj_t *s = fx::box(box, "free");
-    lv_obj_add_flag(s, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_STATE_TRICKLE));
+    lv_obj_add_flag(s, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_STATE_TRICKLE));  // part: a segment is the Segmented's own part
     lv_obj_remove_flag(s, LV_OBJ_FLAG_EVENT_BUBBLE);
     fx::use(s, "seg-part");
     if (i > 0) {  // the separator (docs border-left): a hairline child at the segment's left edge, under the plates
@@ -144,7 +144,7 @@ void fill(lv_obj_t *box, fw::Props p) {
     if (fill_w) lv_label_set_long_mode(l, LV_LABEL_LONG_MODE_DOTS);
     if (off) fx::state(s, ST_OFF, true);
 
-    fw::st::on_tap(s, [](lv_event_t *e) {  // blocked on finger down, a real tap on CLICKED (states.json)
+    fw::st::on_tap(s, [](lv_event_t *e) {  // part: a segment's tap (blocked on finger down, a real tap on CLICKED)
       if (!fw::st::tap_now(e)) return;
       auto *o = (lv_obj_t *) lv_event_get_current_target(e);
       lv_obj_t *b = lv_obj_get_parent(o);
