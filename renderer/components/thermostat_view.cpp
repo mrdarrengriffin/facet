@@ -185,6 +185,7 @@ void build_row(lv_obj_t *root) {  // the modes + Presets (again when the list of
     bp["kind"] = "secondary", bp["label"] = mode_text(v->mode_ids[i]), bp["width"] = (int) std::lround(fw::lay::thermo_mode_w / fw::D);  // Button takes dp
     lv_obj_t *b = build("button", left, bp);
     if (!b) continue;
+    lv_obj_set_width(b, fw::lay::thermo_mode_w);  // the Button hugs its words; the modes share one width
     lv_obj_set_user_data(b, (void *) (intptr_t) i);
     lv_obj_add_event_cb(b, [](lv_event_t *e) {
       auto *root = (lv_obj_t *) lv_event_get_user_data(e);

@@ -36,6 +36,9 @@ extern "C" int32_t lv_obj_get_ext_draw_size(const lv_obj_t *obj);
 #include <map>
 #include "core/lv_obj_private.h"  // ext_click_pad (audit)
 #include "misc/lv_text_private.h"  // lv_text_encoded_next (audit)
+namespace fx { std::string theme_lab(const std::string &cmd, const std::string &arg); }  // core/theme_lab.cpp (fw_lab theme_*)
+namespace fx { std::string font_lab(const std::string &cmd, const std::string &arg); }   // core/font_lab.cpp (fw_lab font_*)
+namespace fx { std::string pen_lab(lv_display_t *d, const std::string &cmd, const std::string &arg); }  // core/pen_lab.cpp (fw_lab pen_*)
 
 
 namespace {
@@ -435,6 +438,7 @@ EMSCRIPTEN_KEEPALIVE const char *fw_hit(int id, int x, int y) {
 //                             drawing; page ones only with a Page on it): the lab shows exactly these
 //   "probe", "<squeeze>"   -> {name: 1 | 0}: which size tokens (+ "squeeze") change stage id's pixels (each moved
 //                             and put back, rendered synchronously): the lab shows what this component really uses
+//   "theme_*", <json>      -> the theme engine: load, apply, dump, contrast, builtins (core/theme_lab.cpp)
 //   "proof", ""            -> {bounds, overlap, trunc: [{x, y, w, h, why}]} for stage id: Body objects outside their
 //                             parent's content box (bleed skipped), clickable areas that overlap (not nested), text
 //                             wider than its label (cut to "...")
@@ -484,6 +488,9 @@ bool lab_inside(lv_obj_t *o, lv_obj_t *anc) { for (; o; o = lv_obj_get_parent(o)
 EMSCRIPTEN_KEEPALIVE const char *fw_lab(int id, const char *cmd, const char *arg) {
   out.clear();
   const std::string c = cmd, a = arg ? arg : "";
+  if (!c.compare(0, 6, "theme_")) { out = fx::theme_lab(c, a); return out.c_str(); }  // theme files (core/theme_lab.cpp)
+  if (!c.compare(0, 5, "font_")) { out = fx::font_lab(c, a); return out.c_str(); }    // downloaded fonts (core/font_lab.cpp)
+  if (!c.compare(0, 4, "pen_")) { Stage *s = get(id); out = fx::pen_lab(s ? s->d : lv_display_get_default(), c, a); return out.c_str(); }  // snapped drawing probe (core/pen_lab.cpp)
   if (c == "tokens") { out = fx::tunables(); return out.c_str(); }
   if (c == "tune") {
     const size_t eq = a.find('=');
@@ -525,7 +532,7 @@ EMSCRIPTEN_KEEPALIVE const char *fw_lab(int id, const char *cmd, const char *arg
     serializeJson(doc, out);
     return out.c_str();
   }
-  if (c != "proof") return "tokens | tune | uses | probe | proof";
+  if (c != "proof") return "tokens | tune | uses | probe | proof | theme_*";
   Stage *s = get(id);
   if (!s) return "{}";
   lv_obj_t *scr = lv_display_get_screen_active(s->d);
@@ -648,10 +655,21 @@ int label_cut(lv_obj_t *l, int *right) {
     const int bottom = c.y1 + line * pitch + asc - g.ofs_y;  // the glyph's lowest ink row + 1
     cut = LV_MAX(cut, bottom - (LV_MAX(a.y2, c.y2) + 1));  // LVGL cuts at the content box bottom (fw::text_style)
   }
-  if (lv_label_get_long_mode(l) == LV_LABEL_LONG_MODE_CLIP) {
+  if (lv_label_get_long_mode(l) == LV_LABEL_LONG_MODE_CLIP) {  // the INK cut at either side (a glyph's advance may be
+    // wider than its box, as the Time's colon cell: its ink is what must fit), the line placed by its text align
     lv_point_t sz;
-    lv_text_get_size(&sz, t, f, lv_obj_get_style_text_letter_space(l, LV_PART_MAIN), 0, LV_COORD_MAX, LV_TEXT_FLAG_NONE);
-    *right = LV_MAX(0, sz.x - lv_area_get_width(&c));
+    const int ls = lv_obj_get_style_text_letter_space(l, LV_PART_MAIN), w = lv_area_get_width(&c);
+    lv_text_get_size(&sz, t, f, ls, 0, LV_COORD_MAX, LV_TEXT_FLAG_NONE);
+    const lv_text_align_t al = lv_obj_get_style_text_align(l, LV_PART_MAIN);
+    int x = al == LV_TEXT_ALIGN_CENTER ? (w - sz.x) / 2 : al == LV_TEXT_ALIGN_RIGHT ? w - sz.x : 0, lo = 0, hi = 0;
+    for (uint32_t k = 0; t[k];) {
+      const uint32_t ch = lv_text_encoded_next(t, &k);
+      if (lv_font_get_glyph_dsc(f, &g, ch, 0)) {
+        if (g.box_w) { lo = LV_MIN(lo, x + g.ofs_x); hi = LV_MAX(hi, x + g.ofs_x + g.box_w - w); }
+        x += g.adv_w + ls;
+      }
+    }
+    *right = LV_MAX(0, LV_MAX(hi, -lo));
   }
   return cut;
 }

@@ -303,8 +303,8 @@
     ]
    },
    "cost": {
-    "objects": 60,
-    "bytes_est": 9600
+    "objects": 66,
+    "bytes_est": 10560
    }
   },
   "bottom_sheet": {
@@ -358,8 +358,8 @@
     ]
    },
    "cost": {
-    "objects": 91,
-    "bytes_est": 14560
+    "objects": 104,
+    "bytes_est": 16640
    }
   },
   "button": {
@@ -411,11 +411,13 @@
     },
     {
      "name": "width",
-     "type": "range",
+     "type": "select",
      "bindable": true,
-     "min": 0,
-     "max": 224,
-     "about": "How wide the button is, in pixels. 0 lets it fit its words."
+     "options": [
+      "hug",
+      "fill"
+     ],
+     "about": "hug fits the button to its words; fill stretches it across the space it is in, with the words centred."
     }
    ],
    "events": {
@@ -461,8 +463,8 @@
     ]
    },
    "cost": {
-    "objects": 335,
-    "bytes_est": 53600
+    "objects": 339,
+    "bytes_est": 54240
    }
   },
   "camera_tile": {
@@ -1260,8 +1262,8 @@
     ]
    },
    "cost": {
-    "objects": 40,
-    "bytes_est": 6400
+    "objects": 37,
+    "bytes_est": 5920
    }
   },
   "date_line": {
@@ -2577,7 +2579,7 @@
      "name": "label",
      "type": "text",
      "bindable": true,
-     "about": "The screen's name, shown after the back button."
+     "about": "The screen's name, in the title slot; a long one ends in an ellipsis. A component a screen puts in the title replaces it."
     },
     {
      "name": "back",
@@ -2601,13 +2603,20 @@
      "name": "settings",
      "type": "bool",
      "bindable": true,
-     "about": "Shows the settings button before the time, as on Home."
+     "about": "Puts the settings button in the end slot, before the time, as on Home."
     },
     {
-     "name": "chip",
-     "type": "bool",
+     "name": "sample",
+     "type": "select",
      "bindable": true,
-     "about": "For previews only: shows a sample status tag in the row, to see how extra items fit."
+     "options": [
+      "none",
+      "end-chip",
+      "end-buttons",
+      "title-segmented",
+      "full-end"
+     ],
+     "about": "For previews only: fills a slot with real components to see how the row fits them (a screen places its own)."
     }
    ],
    "events": {
@@ -2616,8 +2625,8 @@
     ]
    },
    "cost": {
-    "objects": 7,
-    "bytes_est": 1120
+    "objects": 11,
+    "bytes_est": 1760
    }
   },
   "hero_block": {
@@ -2925,7 +2934,8 @@
       "plus",
       "close",
       "check",
-      "back"
+      "back",
+      "settings"
      ],
      "about": "The icon on the button, such as next, previous, play or close."
     },
@@ -3510,8 +3520,8 @@
     ]
    },
    "cost": {
-    "objects": 5,
-    "bytes_est": 800
+    "objects": 6,
+    "bytes_est": 960
    }
   },
   "lock_ring": {
@@ -3779,8 +3789,8 @@
     ]
    },
    "cost": {
-    "objects": 35,
-    "bytes_est": 5600
+    "objects": 32,
+    "bytes_est": 5120
    }
   },
   "media_visual": {
@@ -4115,8 +4125,8 @@
     ]
    },
    "cost": {
-    "objects": 39,
-    "bytes_est": 6240
+    "objects": 41,
+    "bytes_est": 6560
    }
   },
   "picker_row": {
@@ -4214,8 +4224,8 @@
     ]
    },
    "cost": {
-    "objects": 7,
-    "bytes_est": 1120
+    "objects": 8,
+    "bytes_est": 1280
    }
   },
   "placeholder": {
@@ -4348,8 +4358,8 @@
     ]
    },
    "cost": {
-    "objects": 11,
-    "bytes_est": 1760
+    "objects": 12,
+    "bytes_est": 1920
    }
   },
   "pr_row": {
@@ -4774,67 +4784,6 @@
     "bytes_est": 480
    }
   },
-  "screen_chrome": {
-   "name": "Screen chrome",
-   "update": true,
-   "props": [
-    {
-     "name": "time",
-     "type": "text",
-     "bindable": true,
-     "about": "For previews only: a fixed time to show, like 21:42. Leave empty for the real time."
-    },
-    {
-     "name": "settings",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "none",
-      "button",
-      "here"
-     ],
-     "about": "The settings button: none hides it, button shows it, here shows it as the screen you are on."
-    },
-    {
-     "name": "shortcut",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "",
-      "timer",
-      "media",
-      "weather",
-      "calendar"
-     ],
-     "about": "A shortcut button to another screen, such as the timer or media, or empty for none."
-    },
-    {
-     "name": "to",
-     "type": "text",
-     "bindable": true,
-     "about": "The screen the shortcut opens."
-    },
-    {
-     "name": "status",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "none",
-      "timer"
-     ],
-     "about": "Extra status before the time: none, or timer to show the time left on a running timer."
-    }
-   ],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 2,
-    "bytes_est": 320
-   }
-  },
   "scroll_track": {
    "name": "Scroll track",
    "update": true,
@@ -5021,8 +4970,8 @@
     ]
    },
    "cost": {
-    "objects": 16,
-    "bytes_est": 2560
+    "objects": 18,
+    "bytes_est": 2880
    }
   },
   "slider": {
@@ -5062,14 +5011,6 @@
      "about": "How much the value changes from one position to the next."
     },
     {
-     "name": "width",
-     "type": "range",
-     "bindable": true,
-     "min": 0,
-     "max": 288,
-     "about": "How long the slider is, in pixels; 0 fills the space it is in."
-    },
-    {
      "name": "state",
      "type": "select",
      "bindable": true,
@@ -5093,8 +5034,8 @@
     ]
    },
    "cost": {
-    "objects": 5,
-    "bytes_est": 800
+    "objects": 2,
+    "bytes_est": 320
    }
   },
   "sparkline": {
@@ -5947,11 +5888,12 @@
      "type": "select",
      "bindable": true,
      "options": [
+      "header",
       "compact",
       "mid",
       "hero"
      ],
-     "about": "How big the digits are: compact for a header, mid for a card, hero for a screen's main figure."
+     "about": "How big the digits are: header for the time at the end of every screen's header (small caps, dim), compact for a small clock, mid for a card, hero for a screen's main figure."
     },
     {
      "name": "font",
@@ -6188,8 +6130,8 @@
     ]
    },
    "cost": {
-    "objects": 48,
-    "bytes_est": 7680
+    "objects": 58,
+    "bytes_est": 9280
    }
   },
   "toggle": {
@@ -6296,8 +6238,8 @@
     ]
    },
    "cost": {
-    "objects": 17,
-    "bytes_est": 2720
+    "objects": 18,
+    "bytes_est": 2880
    }
   },
   "weather_days": {
@@ -6446,8 +6388,8 @@
     ]
    },
    "cost": {
-    "objects": 167,
-    "bytes_est": 26720
+    "objects": 170,
+    "bytes_est": 27200
    }
   }
  },
@@ -6565,5 +6507,5 @@
    }
   }
  },
- "hash": "777f7413"
+ "hash": "dd66e002"
 }

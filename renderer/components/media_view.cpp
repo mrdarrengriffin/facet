@@ -256,7 +256,7 @@ void speaker_header(lv_obj_t *root) {
   if (!hdr) return;
   MV *m = of(root);
   // docs header clock: false: the button takes the time's place
-  if (lv_obj_get_child_count(hdr)) lv_obj_add_flag(lv_obj_get_child(hdr, -1), LV_OBJ_FLAG_HIDDEN);
+  fw::spec::header_hide_time(hdr);
   ArduinoJson::JsonDocument bp;
   bp["name"] = spk_name(m, m->speaker), bp["playing"] = m->st == "playing";
   m->spk = build("speaker_button", hdr, bp);
@@ -432,6 +432,7 @@ FW_COMPONENT(media_view, "Media view", "components", R"({
   ArduinoJson::JsonDocument sp;
   sp["value"] = p["volume"] | 42, sp["width"] = vol_track_dp();
   m->slider = build("slider", vol, sp);
+  if (m->slider) lv_obj_set_width(m->slider, fw::px((float) vol_track_dp()) + fw::lay::slider_knob);  // track + a knob
   m->vlab = fw::text(vol, fw::ty::label, "--", t.text, fw::lay::m_vol_label);
   lv_obj_set_style_text_align(m->vlab, LV_TEXT_ALIGN_RIGHT, 0);
   fw::listen(vol, [](lv_obj_t *, const char *name, const char *detail, void *user) {
@@ -439,7 +440,9 @@ FW_COMPONENT(media_view, "Media view", "components", R"({
     MV *m = of(root);
     const int v = atoi(detail);
     if (!strcmp(name, "change")) { m->volume = v; send_volume(root, v); render(root); return; }
-    if (strcmp(name, "input")) return;
+    // "input" = the slider's live value while it moves, also during a tap's or an update's sweep: only a finger on it sends
+    // (a tap jumps: its sweep runs under the finger too, the release sends once): a drag = pressed with no sweep running
+    if (strcmp(name, "input") || !m->slider || !lv_obj_has_state(m->slider, LV_STATE_PRESSED) || lv_anim_get(m->slider, nullptr)) return;
     m->volume = v;  // live: the label follows, a send at most every 200 ms + a trailing one (docs volumeControl)
     m->hold_until = lv_tick_get() + 2500;
     char b[8];

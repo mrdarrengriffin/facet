@@ -92,6 +92,27 @@ void comps(lv_obj_t *o, int depth, ArduinoJson::JsonArray arr) {
   }
 }
 }  // namespace
+// fw::qa::legacy: a subtree a contract component hosts but legacy code drew (the Card's preview artwork): the pixel
+// contrast proof reports what fails inside it as LEGACY (its own migration piece), never as passing
+std::vector<lv_obj_t *> &legacy_roots() { static std::vector<lv_obj_t *> v; return v; }
+namespace qa {
+void legacy(lv_obj_t *o, const char *) {
+  legacy_roots().push_back(o);
+  lv_obj_add_event_cb(o, [](lv_event_t *e) {
+    auto &v = legacy_roots();
+    v.erase(std::remove(v.begin(), v.end(), (lv_obj_t *) lv_event_get_current_target(e)), v.end());
+  }, LV_EVENT_DELETE, nullptr);
+}
+}  // namespace qa
+bool in_legacy(lv_obj_t *o) {
+  for (; o; o = lv_obj_get_parent(o)) if (std::find(legacy_roots().begin(), legacy_roots().end(), o) != legacy_roots().end()) return true;
+  return false;
+}
+const Component *owner_of(lv_obj_t *o) {  // the innermost component that built o (or an ancestor of it)
+  for (; o; o = lv_obj_get_parent(o))
+    if (std::vector<int> *v = tags_of(o)) if (!v->empty() && v->front() < (int) reg().size()) return &reg()[v->front()];
+  return nullptr;
+}
 void comps_json(lv_obj_t *scr, std::string &out) {
   ArduinoJson::JsonDocument doc;
   comps(scr, 1, doc.to<ArduinoJson::JsonArray>());
@@ -401,7 +422,7 @@ const char *render(lv_obj_t *scr, const char *comp, const char *props, bool ligh
   demo_clear(scr);  // (before the clean: the demos' DELETE events find no set)
   lv_obj_clean(scr);
   lv_obj_remove_style_all(scr);
-  lv_obj_set_style_bg_color(scr, T->bg, 0);
+  lv_obj_set_style_bg_color(scr, fx::migrated(c) ? fx::bg(lv_obj_get_display(scr)) : T->bg, 0);  // a contract one: the live theme's canvas
   lv_obj_set_style_bg_opa(scr, LV_OPA_COVER, 0);
   lv_obj_set_flex_flow(scr, LV_FLEX_FLOW_COLUMN);
   lv_obj_set_flex_align(scr, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);

@@ -62,7 +62,7 @@ FW_COMPONENT(plant_row, "Plant row", "components", R"({
   lv_obj_t *root = lv_obj_create(parent);
   lv_obj_remove_style_all(root);
   lv_obj_remove_flag(root, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
-  lv_obj_set_size(root, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+  lv_obj_set_size(root, LV_PCT(100), LV_SIZE_CONTENT);  // the List row fills its parent's width (contract C5)
   lv_obj_set_user_data(root, c);
   lv_obj_add_event_cb(root, [](lv_event_t *e) { delete (PR *) lv_event_get_user_data(e); }, LV_EVENT_DELETE, c);
   c->entity = p["entity"] | "";

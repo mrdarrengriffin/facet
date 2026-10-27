@@ -14,6 +14,7 @@ const char *height_of(const char *h) { return !strcmp(h, "tile") ? "h:tile-h" : 
 FW_COMPONENT(placeholder, "Placeholder", "components", R"({
   "about": "A part that isn't built yet: a plain outline with its name and one line, never a look-alike.",
   "contract": 2,
+  "parts": [],
   "frame": [480, 0],
   "props": [
     {"name": "label", "about": "The name of the part that is not built yet.", "type": "text", "default": "map"},

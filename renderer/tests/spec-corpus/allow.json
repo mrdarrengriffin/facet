@@ -118,7 +118,6 @@
   ]
  },
  "pattern": {
-  "screen_chrome": "^\\d{1,2}:\\d{2}$",
   "header": "^\\d{1,2}:\\d{2}$|^\\d+ W NOW$",
   "timer_view": "^\\d+:\\d{2}$|^\\d+ MIN$|^of \\d+ min · ends \\d{1,2}:\\d{2}$",
   "thermostat_view": "^set \\d+(\\.\\d)?°$",

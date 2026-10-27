@@ -1,0 +1,56 @@
+{
+ "schema": 1,
+ "id": "win98",
+ "label": "Windows 98",
+ "about": "The 1998 desktop, light only. A window: the page is its frame, the header its title bar (navy to blue, dithered for RGB565, white bold title, minimize / maximize / close drawn as caption buttons). #C0C0C0 face and the four-shade bevel (white / #DFDFDF light, #808080 / black shadow) on tiles and buttons: pressed = sunken with the dotted focus rectangle, on = latched (sunken on the white-grey checker). Rows are etched, a pressed row is the navy selection. The Days are trackbar channels with a navy selection range; the Dial is a sunken groove with black ticks and the pointer thumb. On an exact pixel grid; its font (W95FA, SIL OFL 1.1) arrives with the theme fonts, Facet's draws it until then.",
+ "modes": ["light"],
+ "colour": {
+  "bg": {"light": "#C0C0C0"},
+  "surface": {"light": "#C0C0C0"},
+  "surface-press": {"light": "#C0C0C0"},
+  "line": {"light": "#808080"},
+  "line-hi": {"light": "#FFFFFF"},
+  "text": {"light": "#000000"},
+  "text-dim": {"light": "#000000"},
+  "blue": {"light": "#000080"},
+  "text-mute": {"light": "#505050"},
+  "ok": {"light": "#004D00"},
+  "warn": {"light": "#5C3F00"},
+  "error": {"light": "#8B0000"},
+  "steel": {"light": "#2F4F6F"}
+ },
+ "accents": [
+  {"id": "navy", "label": "Highlight navy", "light": {"accent": "#000080", "accent-press": "#000076", "accent-dim": "#8686AD", "accent-text": "#000080", "on-accent": "#FFFFFF"}},
+  {"id": "teal", "label": "Desktop teal", "light": {"accent": "#006A6A", "accent-press": "#006262", "accent-dim": "#86A6A6", "accent-text": "#004E4E", "on-accent": "#FFFFFF"}},
+  {"id": "maroon", "label": "Maroon", "light": {"accent": "#800000", "accent-press": "#760000", "accent-dim": "#AD8686", "accent-text": "#800000", "on-accent": "#FFFFFF"}},
+  {"id": "green", "label": "Green", "light": {"accent": "#006400", "accent-press": "#005C00", "accent-dim": "#86A486", "accent-text": "#004B00", "on-accent": "#FFFFFF"}},
+  {"id": "purple", "label": "Purple", "light": {"accent": "#800080", "accent-press": "#760076", "accent-dim": "#AD86AD", "accent-text": "#800080", "on-accent": "#FFFFFF"}}
+ ],
+ "size": {
+  "stroke:pixel": [3, 2],
+  "stroke:hair": [2, 2],
+  "stroke:tick": [3, 2],
+  "stroke:arc": [3, 2],
+  "stroke:knob": [3, 2],
+  "stroke:indicator": [6, 4]
+ },
+ "font": {"display": "w95fa", "body": "w95fa", "label": "w95fa", "mono": "w95fa"},
+ "type": {"display": [144, 96], "hero": [96, 48], "value": [36, 24], "headline": [36, 24], "title": [36, 24], "body": [24, 18], "label": [24, 12]},
+ "shape": {"cap": "square", "ticks": "lines", "icons": "pixel", "snap": true},
+ "parts": {
+  "page": {"edges": [{"side": "top-left", "w": 1, "ink": "#DFDFDF"}, {"side": "bottom-right", "w": 1, "ink": "#0A0A0A"}, {"side": "top-left", "w": 1, "inset": 1, "ink": "line-hi"}, {"side": "bottom-right", "w": 1, "inset": 1, "ink": "line"}]},
+  "header": {"face": {"from": "blue", "to": "#0A5E9E", "dir": "right"}, "text": "line-hi", "buttons": {"names": ["minimize", "maximize", "gap", "close", "gap"], "w": 16, "h": 14, "gap": 2}},
+  "title": {"weight": "bold"},
+  "caption": {"face": "surface", "text": "text", "edges": [{"side": "top-left", "w": 1, "ink": "line-hi"}, {"side": "bottom-right", "w": 1, "ink": "#0A0A0A"}, {"side": "top-left", "w": 1, "inset": 1, "ink": "#DFDFDF"}, {"side": "bottom-right", "w": 1, "inset": 1, "ink": "line"}]},
+  "card": {"radius": 0, "edges": [{"side": "top-left", "w": 1, "ink": "line-hi"}, {"side": "bottom-right", "w": 1, "ink": "#0A0A0A"}, {"side": "top-left", "w": 1, "inset": 1, "ink": "#DFDFDF"}, {"side": "bottom-right", "w": 1, "inset": 1, "ink": "line"}], "on": {"face": {"checker": ["line-hi", "surface"]}, "edges": [{"side": "top-left", "w": 1, "ink": "#0A0A0A"}, {"side": "bottom-right", "w": 1, "ink": "line-hi"}, {"side": "top-left", "w": 1, "inset": 1, "ink": "line"}, {"side": "bottom-right", "w": 1, "inset": 1, "ink": "#DFDFDF"}]}, "pressed": {"edges": [{"side": "top-left", "w": 1, "ink": "#0A0A0A"}, {"side": "bottom-right", "w": 1, "ink": "line-hi"}, {"side": "top-left", "w": 1, "inset": 1, "ink": "line"}, {"side": "bottom-right", "w": 1, "inset": 1, "ink": "#DFDFDF"}, {"side": "all", "w": 1, "inset": 4, "ink": "text", "style": "dotted"}]}},
+  "control": {"radius": 0, "face": "surface", "edges": [{"side": "top-left", "w": 1, "ink": "line-hi"}, {"side": "bottom-right", "w": 1, "ink": "#0A0A0A"}, {"side": "top-left", "w": 1, "inset": 1, "ink": "#DFDFDF"}, {"side": "bottom-right", "w": 1, "inset": 1, "ink": "line"}], "pressed": {"edges": [{"side": "top-left", "w": 1, "ink": "#0A0A0A"}, {"side": "bottom-right", "w": 1, "ink": "line-hi"}, {"side": "top-left", "w": 1, "inset": 1, "ink": "line"}, {"side": "bottom-right", "w": 1, "inset": 1, "ink": "#DFDFDF"}, {"side": "all", "w": 1, "inset": 4, "ink": "text", "style": "dotted"}]}},
+  "list-row": {"edges": [{"side": "bottom", "w": 2, "ink": "line-hi"}, {"side": "bottom", "w": 1, "inset": 1, "ink": "line"}], "pressed": {"face": "blue", "text": "line-hi"}},
+  "rule": {"edges": [{"side": "bottom", "w": 2, "ink": "line-hi"}, {"side": "top", "w": 1, "ink": "line"}]},
+  "track": {"radius": 0, "pad": 2, "face": "line-hi", "edges": [{"side": "top-left", "w": 1, "ink": "line"}, {"side": "bottom-right", "w": 1, "ink": "line-hi"}, {"side": "top-left", "w": 1, "inset": 1, "ink": "#0A0A0A"}, {"side": "bottom-right", "w": 1, "inset": 1, "ink": "#DFDFDF"}]},
+  "track-fill": {"radius": 0},
+  "knob": {"shape": "pointer", "ink": "surface", "edges": [{"side": "top-left", "w": 1, "ink": "line-hi"}, {"side": "bottom-right", "w": 1, "ink": "#0A0A0A"}, {"side": "bottom-right", "w": 1, "inset": 1, "ink": "line"}]},
+  "scrollbar": {"w": 16, "face": "surface", "lane": {"checker": ["line-hi", "surface"]}, "arrows": true, "edges": [{"side": "top-left", "w": 1, "ink": "#DFDFDF"}, {"side": "bottom-right", "w": 1, "ink": "#0A0A0A"}, {"side": "top-left", "w": 1, "inset": 1, "ink": "line-hi"}, {"side": "bottom-right", "w": 1, "inset": 1, "ink": "line"}]},
+  "tick": {"ink": "text"},
+  "tick-major": {"ink": "text"}
+ }
+}

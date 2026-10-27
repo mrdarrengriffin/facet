@@ -66,7 +66,8 @@ std::string restore(const char *json, From from);  // a backup's values through 
 void set_daylight(int day);                          // the sun for theme auto: 1 day, 0 night, -1 unknown
 const Theme *look(const Theme *stage);               // the theme the device shows over a stage theme
 const Theme *theme_at(lv_obj_t *o);                  // o is a device root: the look it is built in, else nullptr
-void on_look(void (*cb)());  // the look may have changed (theme / accent set, the sun): hosts redraw what they show
+void on_look(void (*cb)());
+void refresh_look();  // the look's theme changed under the same setting (a new sent theme): select it again + rebuild  // the look may have changed (theme / accent set, the sun): hosts redraw what they show
 
 // hardware button (a panel's physical key, e.g. the Waveshare's BOOT key; Darren 2026-10-24): the "Contextual" action.
 // A part that has something to do with the key claims it while it lives: claim_button(obj, level, fn, user). A press

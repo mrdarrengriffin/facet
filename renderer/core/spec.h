@@ -199,12 +199,52 @@ inline lv_obj_t *slot_of(lv_obj_t *o, int n) {  // the layout node itself may be
   if (lv_obj_has_flag(o, SLOT) && n-- == 0) return o;
   return slot(o, n);
 }
-// a component's slots (its meta "slots"), 0 = not a layout
-inline int slots_of(const char *comp) {
+// Slots with allowed components (facet-205, CONTRACT.md C8a): a component's meta "slots" declares every place a spec
+// may put other components. Either a count (legacy layouts: N numbered slots, any component, any number) or a list of
+// declarations, one per slot: {"name", "about", "accepts": [component ids] | "any", "max": n (0 = no limit),
+// "count": n (n numbered slots of this kind: "in": k, "slot": i), "template": true (the Grid's "cell" template)}. A
+// declaration with no count and no template is a NAMED slot (the Header's title / end: "in": "header", "slot": name).
+// check_screen enforces accepts and max with a path error ("bad_slot"); the workbench / editor read the same meta.
+struct SlotDecl { std::string name; std::vector<std::string> accepts; int count = 0, max = 0; bool any = true, tmpl = false; };
+inline const std::vector<SlotDecl> &slot_decls(const char *comp) {
+  static std::map<std::string, std::vector<SlotDecl>> cache;  // metas are constant: parsed once per component
+  auto it = cache.find(comp);
+  if (it != cache.end()) return it->second;
+  std::vector<SlotDecl> &v = cache[comp];
   const Component *c = find(comp);
-  if (!c || !c->meta) return 0;
-  const char *m = strstr(c->meta, "\"slots\":");
-  return m ? atoi(m + 8) : 0;
+  ArduinoJson::JsonDocument d;
+  if (!c || !c->meta || deserializeJson(d, c->meta)) return v;
+  if (d["slots"].is<int>()) { SlotDecl s; s.count = d["slots"] | 0; v.push_back(s); return v; }
+  for (ArduinoJson::JsonObjectConst o : d["slots"].as<ArduinoJson::JsonArrayConst>()) {
+    SlotDecl s;
+    s.name = o["name"] | ""; s.count = o["count"] | 0; s.max = o["max"] | 0; s.tmpl = o["template"] | false;
+    if (o["accepts"].is<ArduinoJson::JsonArrayConst>()) {
+      s.any = false;
+      for (ArduinoJson::JsonVariantConst a : o["accepts"].as<ArduinoJson::JsonArrayConst>()) s.accepts.push_back(a | "");
+    }
+    v.push_back(s);
+  }
+  return v;
+}
+// a component's numbered slots ("in": k, "slot": i), 0 = not a layout
+inline int slots_of(const char *comp) {
+  int n = 0;
+  for (const SlotDecl &s : slot_decls(comp)) n += s.tmpl ? 0 : s.count;
+  return n;
+}
+inline const SlotDecl *slot_named(const char *comp, const std::string &name) {  // a named slot (count 0) or the template
+  for (const SlotDecl &s : slot_decls(comp)) if (!s.count && s.name == name) return &s;
+  return nullptr;
+}
+inline const SlotDecl *slot_at(const char *comp, int i) {  // numbered slot i
+  for (const SlotDecl &s : slot_decls(comp)) if (!s.tmpl && s.count) { if (i < s.count) return &s; i -= s.count; }
+  return nullptr;
+}
+inline bool slot_takes(const SlotDecl &s, const std::string &c) { return s.any || std::find(s.accepts.begin(), s.accepts.end(), c) != s.accepts.end(); }
+inline std::string slot_list(const SlotDecl &s) {  // "icon_button, status_chip or segmented"
+  std::string o;
+  for (size_t i = 0; i < s.accepts.size(); i++) o += (i ? (i + 1 == s.accepts.size() ? " or " : ", ") : "") + s.accepts[i];
+  return o;
 }
 constexpr const char *PARAM_TYPES[] = {"text", "select", "entity", "entities", "toggle", "hidden"};
 constexpr const char *ROLES[] = {"page", "detail", "both"};
@@ -424,6 +464,8 @@ inline void check_grid(ArduinoJson::JsonVariantConst n, ArduinoJson::JsonArrayCo
   const std::vector<PropInfo> *cps = props_of(cc.c_str());
   if (!cn.is<ArduinoJson::JsonObjectConst>() || !cps) { err(e, p + ".cell", "bad_cell", "cell is one node {c, p} of a component"); return; }
   if (slots_of(cc.c_str())) { err(e, p + ".cell.c", "bad_cell", "a cell can't be a layout (no grids in grids)"); return; }
+  if (const SlotDecl *t = slot_named("grid", "item"); t && !slot_takes(*t, cc))
+    err(e, p + ".cell.c", "bad_slot", "a grid's item cell takes " + slot_list(*t) + ", not " + cc);
   static const char *const CK[] = {"c", "p"};
   check_keys(cn.as<ArduinoJson::JsonObjectConst>(), CK, 2, p + ".cell", e);
   for (ArduinoJson::JsonPairConst kv : cn["p"].as<ArduinoJson::JsonObjectConst>()) {
@@ -468,6 +510,11 @@ inline void check_screen(ArduinoJson::JsonVariantConst s, size_t bytes, Errs &e)
   if ((int) nodes.size() > budget().nodes) err(e, ".nodes", "over_budget", "more than " + std::to_string(budget().nodes) + " nodes");
   if (!strcmp(s["layout"] | "", "center") && nodes.size() != 1) err(e, ".nodes", "bad_nodes", "a center layout has one node");
   int binds = 0, i = 0;
+  // items per slot so far; the header's end slot starts with its own items (settings, a shortcut, the timer status)
+  std::map<std::string, int> fill;
+  ArduinoJson::JsonVariantConst hd = s["header"];
+  const int fill0 = ((hd["settings"] | false) ? 1 : 0) + (*(hd["actions"]["shortcut"] | "") ? 1 : 0) + (!strcmp(hd["actions"]["status"] | "", "timer") ? 1 : 0);
+  fill["header's end"] = fill0;
   for (ArduinoJson::JsonVariantConst n : nodes) {
     const std::string p = ".nodes[" + std::to_string(i++) + "]";
     if (!n.is<ArduinoJson::JsonObjectConst>()) { err(e, p, "bad_node", "a node is an object {c, p, on}"); continue; }
@@ -478,9 +525,16 @@ inline void check_screen(ArduinoJson::JsonVariantConst s, size_t bytes, Errs &e)
       else { PropInfo si; si.name = "show"; si.type = "text"; check_value(si, n["show"], p + ".show", e, binds); }
     }
     const std::string c = n["c"] | "";
+    const SlotDecl *sd = nullptr;  // the slot this node goes in (its declaration), its fill key and its words
+    std::string sk, sw;
     if (n["in"].is<const char *>()) {  // into the header row
       if (strcmp(n["in"] | "", "header")) err(e, p + ".in", "bad_in", "in: \"header\" or an earlier layout node");
-      if (!n["slot"].isNull()) err(e, p + ".slot", "bad_in", "the header has no slots");
+      const std::string hs = n["slot"] | "end";
+      sd = n["slot"].isNull() || n["slot"].is<const char *>() ? slot_named("header", hs) : nullptr;
+      if (!sd)
+        err(e, p + ".slot", "bad_in", hs == "start" ? "the header has no start slot (Back is fixed at the start): use slot end"
+                                                   : "the header's slots are title and end");
+      else { sk = "header's " + hs; sw = "the header's " + hs + " slot"; }
     } else if (!n["in"].isNull()) {  // into an earlier layout node's slot
       const int k = n["in"] | -1, sl = n["slot"] | 0;
       const std::string kc = k >= 0 && k < i - 1 ? (nodes[k]["c"] | "") : "";
@@ -488,6 +542,7 @@ inline void check_screen(ArduinoJson::JsonVariantConst s, size_t bytes, Errs &e)
       if (k < 0 || k >= i - 1 || !ns) err(e, p + ".in", "bad_in", "in: an earlier node that is a layout (has slots)");
       else if (!nodes[k]["each"].isNull()) err(e, p + ".in", "bad_in", "a repeated (each) node can't hold others");
       else if (!n["slot"].isNull() && (!n["slot"].is<int>() || sl < 0 || sl >= ns)) err(e, p + ".slot", "bad_in", kc + " has slots 0.." + std::to_string(ns - 1));
+      else if ((sd = slot_at(kc.c_str(), sl))) { sk = std::to_string(k) + "." + std::to_string(sl); sw = kc + "'s " + (sd->name.empty() ? "slot" : sd->name) + " " + std::to_string(sl); }
     } else if (!n["slot"].isNull()) err(e, p + ".slot", "bad_in", "slot goes with in");
     if (!n["each"].isNull() && !id_ok(n["each"] | "")) err(e, p + ".each", "bad_each", "each: a screen parameter (a comma list)");
     if (!n["sample"].isNull()) {
@@ -497,6 +552,12 @@ inline void check_screen(ArduinoJson::JsonVariantConst s, size_t bytes, Errs &e)
     const std::vector<PropInfo> *pis = props_of(c.c_str());
     const Component *comp = find(c.c_str());
     if (!pis || !comp || strcmp(comp->section, "components")) { err(e, p + ".c", "unknown_component", "no component " + c + " in this build"); continue; }
+    if (sd) {  // the slot's allow list and max count (facet-205)
+      if (!slot_takes(*sd, c)) err(e, p + ".c", "bad_slot", sw + " takes " + slot_list(*sd) + ", not " + c);
+      if (sd->max && !n["each"].isNull()) err(e, p + ".each", "bad_slot", sw + " holds at most " + std::to_string(sd->max) + ": a repeated (each) node can't go in it");
+      else if (sd->max && ++fill[sk] > sd->max)
+        err(e, p + ".in", "bad_slot", sw + " holds at most " + std::to_string(sd->max) + (sk == "header's end" && fill0 ? " (the header's own settings / actions count)" : "") + ": this is item " + std::to_string(fill[sk]));
+    }
     for (ArduinoJson::JsonPairConst kv : n["p"].as<ArduinoJson::JsonObjectConst>()) {
       const std::string k = kv.key().c_str();
       auto it = std::find_if(pis->begin(), pis->end(), [&](const PropInfo &x) { return x.name == k; });
@@ -1328,15 +1389,26 @@ inline lv_obj_t *box(lv_obj_t *parent) {
 // the header row of the spec screen being built (nullptr outside a build): a node may put its own controls in it,
 // before the screen chrome, while it builds (docs header({right: [...]}): the Calendar's Agenda | Month + calendars
 // button). Only during its build; the header is the screen's, so they go with the screen.
+// the Header's slot "title" | "end" (components/header.cpp SLOTS; nullptr if `header` is not a Header or no such slot)
+lv_obj_t *header_slot(lv_obj_t *header, const char *name);
+int header_tail(lv_obj_t *end);       // how many of the end slot's last items the Header built itself (Home's settings ...)
+void header_hide_time(lv_obj_t *o);   // a control takes the time's place (o = the Header or its end slot)
+// the Header itself while a spec screen builds (building_header() = its END slot, where C++ views put their controls)
+inline lv_obj_t *&building_header_root() {
+  static lv_obj_t *h = nullptr;
+  return h;
+}
 inline lv_obj_t *&building_header() {
   static lv_obj_t *h = nullptr;
   return h;
 }
-// `item`, just built into building_header(), goes before the screen chrome (the time stays at the right edge)
+// `item`, just built into building_header() (the end slot), goes before the Header's own end items (Home's settings
+// button, header actions); the time is after the slot anyway
 inline void header_place(lv_obj_t *item) {
-  lv_obj_t *h = item ? lv_obj_get_parent(item) : nullptr;
-  const uint32_t n = h ? lv_obj_get_child_count(h) : 0;
-  if (n >= 2) lv_obj_move_to_index(item, (int32_t) n - 2);
+  lv_obj_t *e = item ? lv_obj_get_parent(item) : nullptr;
+  const int n = e ? (int) lv_obj_get_child_count(e) : 0, k = n - 1 - header_tail(e);
+  if (k >= 0 && k < n - 1) lv_obj_move_to_index(item, k);
+  if (e) lv_obj_remove_flag(e, LV_OBJ_FLAG_HIDDEN);  // an empty end slot is hidden (no gap): it has an item now
 }
 // a header label's width = its text rounded up to the grid (docs fit8), so what follows it stays on the grid; measured
 // from the text (the header is not laid out yet while the screen builds)
@@ -1477,7 +1549,7 @@ inline lv_obj_t *build(lv_obj_t *parent, const std::string &id, Props opened, st
   const std::string layout = doc["layout"] | "list";
   const fx::Page pg = fx::page(s->root, layout == "center" ? "center" : layout == "cards" ? "cards" : "list");
   if (lv_obj_t *h = ha::bound(pg.head, "header", hd.as<Props>()))  // a bound label follows the entity's name
-    building_header() = h;
+  { building_header_root() = h; building_header() = header_slot(h, "end"); }
   lv_obj_t *c = pg.body;
   size_t ni = 0;
   bool prev_row = true;  // the last node placed straight in the list column was a row
@@ -1503,13 +1575,22 @@ inline lv_obj_t *build(lv_obj_t *parent, const std::string &id, Props opened, st
     }
     lv_obj_t *into = c;  // "in": an earlier layout node's slot, or the header row
     const bool in_hdr = nd["in"].is<const char *>() && building_header();
-    if (in_hdr) into = building_header();
+    const std::string hslot = nd["slot"] | "end";  // "in": "header" with no slot = the end slot, before the chrome
+    if (in_hdr) {
+      into = header_slot(building_header_root(), hslot.c_str());
+      if (!into) into = building_header();
+      if (hslot == "title")  // a node in the title REPLACES the label (the first one only removes it)
+        if (lv_obj_t *l = lv_obj_get_child(into, 0)) if (lv_obj_check_type(l, &lv_label_class)) lv_obj_delete(l);
+    }
     const int k = nd["in"] | -1;
     if (k >= 0 && k < n_orig && orig_obj[k])
       if (lv_obj_t *sl = slot_of(orig_obj[k], nd["slot"] | 0)) into = sl;
     n.obj = ha::bound(into, n.comp.c_str(), p.as<Props>());
     if (!n.obj) continue;
-    if (in_hdr) header_place(n.obj);
+    if (in_hdr) {
+      if (hslot == "end") header_place(n.obj);
+      lv_obj_remove_flag(into, LV_OBJ_FLAG_HIDDEN);  // an empty start / end slot is hidden (no gap)
+    }
     if (ni - 1 < orig.size()) orig_obj[orig[ni - 1]] = n.obj;
     if (into != c && !in_hdr) {  // a full-width node (list row, section header) in a narrower slot: the slot's width
       const int32_t sw = lv_obj_get_style_width(into, LV_PART_MAIN), w = lv_obj_get_style_width(n.obj, LV_PART_MAIN);
@@ -1544,6 +1625,7 @@ inline lv_obj_t *build(lv_obj_t *parent, const std::string &id, Props opened, st
     s->nodes.push_back(std::move(n));
   }
   building_header() = nullptr;
+  building_header_root() = nullptr;
   s->timer = lv_timer_create(tick, 20, s);
   return s->root;
 }

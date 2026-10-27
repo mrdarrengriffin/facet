@@ -80,6 +80,7 @@ void fill(lv_obj_t *c, fw::Props p) {
   fx::use(c, "fade-press", LV_STATE_PRESSED);
   fx::use(c, "bg:surface", ST_OFF);
   fx::use(c, "border:line", ST_OFF);
+  fx::use(c, "part:card");  // the theme's card (C46), after the card's own state tokens
 
   // top row: icon + label + dot, the preview at the right edge (top-aligned: the label row sits on the padding line)
   lv_obj_t *top = fx::box(c, "row-top");
@@ -179,6 +180,7 @@ void on_delete(lv_event_t *e) {
 FW_COMPONENT(card, "Card", "components", R"({
   "about": "A tappable Home card: an icon and label, a value or short text, and a supporting line.",
   "contract": 2,
+  "parts": ["card"],
   "frame": [256, 184],
   "min": ["layout:card-min-w", "layout:card-min-h"],
   "icons": ["screen-weather@icon", "screen-media@icon", "screen-timer@icon", "screen-energy@icon", "screen-light@icon",

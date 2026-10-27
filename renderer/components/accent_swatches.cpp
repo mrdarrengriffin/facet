@@ -174,7 +174,8 @@ int chosen_of(fw::Props p) {
 void fill(lv_obj_t *w, fw::Props p) {
   lv_obj_remove_style_all(w);
   lv_obj_remove_flag(w, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
-  lv_obj_set_size(w, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+  // a settings row = the List row, which fills its parent's width (contract C5): the wrapper takes that width too
+  lv_obj_set_size(w, strcmp(p["context"] | "alone", "settings-row") ? LV_SIZE_CONTENT : LV_PCT(100), LV_SIZE_CONTENT);
   fw::shape(w, sig(p));
   const char *state = p["state"] | "default";
   const bool unavail = !strcmp(state, "unavailable"), off = !strcmp(state, "disabled");

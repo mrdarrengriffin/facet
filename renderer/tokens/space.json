@@ -32,6 +32,9 @@
       "tile-w": { "v": 208, "1x": 136, "use": "tile width (3 columns)" },
       "tile-h": { "v": 208, "1x": 136, "use": "tile height" },
       "tile-pad": { "v": 24, "1x": 16, "use": "padding inside a tile" },
+      "toggle-w": { "v": 80, "1x": 56, "use": "Toggle: the track width = 2 x toggle-knob + 2 x space 2 (the travel = the knob)" },
+      "toggle-knob": { "v": 32, "1x": 24, "use": "Toggle: the knob = touch min - 2 x space 2 (inset space 2 all round)" },
+      "slider-knob": { "v": 24, "1x": 16, "use": "Slider: the knob = touch min / 2 (docs slider-knob)" },
       "list-row-h": { "v": 96, "1x": 64, "use": "List row height (docs layout sheet-row-h: settings, picker and sheet rows); one line or title + sub line" },
       "dial-scale": { "v": 560, "1x": 376, "use": "Dial: the square of the tick scale (docs size dial-scale 560; 1x = x 2/3 to an 8 px multiple so the centre lands on the grid)" },
       "dial-arc": { "v": 432, "1x": 288, "use": "Dial: the value arc square, centred in the scale (docs size dial-arc 432; 1x = x 2/3)" },
@@ -122,6 +125,7 @@
       "check-row-h": { "v": 32, "1x": 20, "use": "Check row height (docs size check-row-h 32 / layout 1x 20)" },
       "check-state-w": { "v": 64, "1x": 44, "use": "Check row: the state word's right-aligned slot (docs 64)" },
       "empty-h": { "v": 136, "1x": 92, "use": "Empty state box height (docs 136)" },
+      "empty-pad": { "v": 16, "1x": 16, "use": "Empty state padding from its outer edge, the border hair inside it (docs: the gutter, 16; its own token so the box never reads a page token)" },
       "qr": { "v": 176, "1x": 116, "use": "QR block: the code's square (docs size qr 176)" },
       "qr-block-w": { "v": 208, "1x": 140, "use": "QR block width: the code + the gutter each side (docs size qr-block-w 208)" },
       "radar": { "v": 384, "1x": 256, "use": "Lightning radar: the square (docs 384); rings sit at the outer radius x sqrt(km / outer km), on the grid" },
@@ -184,7 +188,8 @@
       "arc": { "v": 4, "1x": 2, "use": "dial and progress arcs" },
       "knob": { "v": 4, "1x": 2, "use": "slider and dial knob outline" },
       "indicator": { "v": 6, "1x": 4, "use": "value indicators, active bars" },
-      "track": { "v": 6, "1x": 4, "use": "Sport: the circuit line" }
+      "track": { "v": 6, "1x": 4, "use": "Sport: the circuit line" },
+      "pixel": { "v": 1, "1x": 1, "use": "the cell of a snapped theme (CONTRACT.md C29): a theme length given in cells is a multiple of it; Facet itself is not snapped, a theme may set it 1 .. 4" }
     },
     "touch": {
       "target": { "v": 64, "1x": 44, "use": "standard touch target (buttons, rows)" },

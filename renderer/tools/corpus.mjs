@@ -81,7 +81,7 @@ function png(px, W, H) {
 }
 const strings = (v, acc = []) => { if (typeof v === 'string' || typeof v === 'number') acc.push(String(v)); else if (v && typeof v === 'object') for (const x of Object.values(v)) strings(x, acc); return acc; };
 const ROW = (c) => /_row$/.test(c) || c === 'section_header';
-const CHROME = new Set(['header', 'screen_chrome', 'back_button', 'toast_layer', 'bottom_sheet']);
+const CHROME = new Set(['header', 'back_button', 'toast_layer', 'bottom_sheet']);
 const inside = (o, b) => o.x >= b.x && o.y >= b.y && o.x + o.w <= b.x + b.w && o.y + o.h <= b.y + b.h;
 const meets = (a, b) => Math.min(a.x + a.w, b.x + b.w) > Math.max(a.x, b.x) && Math.min(a.y + a.h, b.y + b.h) > Math.max(a.y, b.y);
 

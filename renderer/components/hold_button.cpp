@@ -81,6 +81,7 @@ FW_COMPONENT(hold_button, "Hold button", "components", R"({
   if (const fw::Component *b = fw::find("button")) b->build(root, d.as<fw::Props>());
   h->btn = lv_obj_get_child_count(root) ? lv_obj_get_child(root, 0) : nullptr;
   if (!h->btn) return;
+  if (const int w = width_dp(root, h)) lv_obj_set_width(h->btn, fw::px((float) w));  // fill: the Button fills what it is given
   // the fill: drawn on the Button itself (no child object, one invalidation a frame), between its fill and its label,
   // the button's rounded shape clipped to the held share
   lv_obj_add_event_cb(h->btn, [](lv_event_t *e) {

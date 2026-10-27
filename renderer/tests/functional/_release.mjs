@@ -157,3 +157,24 @@ export function frames(t, fn) {
   const q = (xs, f) => (xs.length ? xs[Math.min(xs.length - 1, Math.floor(xs.length * f))] : 0);
   return { n: rec.length, ms50: q(ms, 0.5), ms95: q(ms, 0.95), px50: q([...px].sort((a, b) => a - b), 0.5), pxMax: Math.max(0, ...px), full: rec.filter((r) => r.full).length };
 }
+
+// P4 for a component mounted alone at w x h: built in one mode then switched LIVE (fw_test look, accents 0 and 2)
+// must equal a fresh build in the other mode, every RGB565 pixel (a colour held from build time shows here).
+// set(t) runs after each build (press a state, wait for a fade). Returns failures.
+export async function liveLook(t, comp, props, w, h, set = () => {}) {
+  const out = [];
+  const build = async (light, acc) => {
+    t.b.W = t.b.H = undefined; await t.b.render(comp, props, light);
+    t.b.str(comp, (c) => t.b.str(JSON.stringify(props), (p) => t.b.m._fw_render(t.b.stage, c, p, light, acc)));
+    stage(t, w, h); t.b.settle(800); set(t); t.b.settle(800);
+  };
+  for (const [a, b] of [[0, 1], [1, 0]]) for (const acc of [0, 2]) {
+    await build(a, 0); look(t, b, acc); t.b.settle(800); const live = frame565(t);
+    await build(b, acc); const n = diff565(live, frame565(t));
+    if (n) out.push(`${comp} ${JSON.stringify(props).slice(0, 60)} ${a ? 'light' : 'dark'} -> ${b ? 'light' : 'dark'} live, accent ${acc}: ${n} px differ from a fresh build`);
+  }
+  return out;
+}
+// the Layout lab on the mounted stage: its token list, and a tune (px < 0 = back to the token)
+export const lab = (t, cmd, arg = '') => t.b.str(cmd, (c) => t.b.str(arg, (a) => t.b.m.UTF8ToString(t.b.m._fw_lab(t.b.stage, c, a))));
+export const tune = (t, name, px) => { lab(t, 'tune', `${name}=${px < 0 ? '' : px}`); t.b.tick(3); };

@@ -4,7 +4,7 @@
 // variants, defaults are valid, presets inside min..max. Also emits the Settings screen's playground props (one per
 // setting, the value) as JSON. Writes only when the output changes (an unchanged schema rebuilds nothing).
 // Usage: node gen_settings.mjs <out.h>
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -21,6 +21,7 @@ const KINDS = { select: 'SELECT', switch: 'SWITCH', number: 'NUMBER' };
 const CONTROLS = { segmented: 'SEGMENTED', swatches: 'SWATCHES', toggle: 'TOGGLE', sheet: 'SHEET', presets: 'PRESETS', slider: 'SLIDER' };
 const accentIds = colour.accent.sets.map((s) => s.id);
 const packIds = sound.variants.map((v) => (typeof v === 'string' ? v : v.id));
+const lookIds = readdirSync(join(HERE, '..', 'themes')).filter((f) => f.endsWith('.json') && f !== 'facet.json').map((f) => f.slice(0, -5)).sort();
 const groups = S.groups.map((g) => g.id);
 const q = (s) => JSON.stringify(s ?? '');
 
@@ -32,6 +33,8 @@ for (const s of S.settings) {
   if (s.kind === 'select' && !ids.includes(s.default)) fail(`${s.id}: default ${s.default} is not an option`);
   if (s.id === 'accent' && ids.join() !== accentIds.join()) fail(`accent options ${ids} != colour.json accent sets ${accentIds}`);
   if (s.id === 'soundPack' && ids.join() !== packIds.join()) fail(`soundPack options ${ids} != sound.json variants ${packIds}`);
+  // look (theme engine T4): facet, every built-in theme file (themes/*.json), sent: the one list the panel can show
+  if (s.id === 'look' && ids.join() !== ['facet', ...lookIds, 'sent'].join()) fail(`look options ${ids} != facet + themes/*.json ${lookIds} + sent`);
   if (s.kind === 'number') {
     if (s.default < s.min || s.default > s.max) fail(`${s.id}: default outside ${s.min}..${s.max}`);
     for (const p of s.presets ?? []) if (p < s.min || p > s.max) fail(`${s.id}: preset ${p} outside ${s.min}..${s.max}`);

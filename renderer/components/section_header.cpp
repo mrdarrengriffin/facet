@@ -1,31 +1,27 @@
 // Section header: the Facet section header (docs: @facet/ui lists.ts sectionHeader({title, count, tone, right}), CSS
-// .f-section): a caps title, an optional count badge, and an optional right side, above a group of rows.
-//   box      height lay::section_h (48 / 32, = touch min), width = the screen content width (2 x card-w + gutter,
-//            656 / 440, = List row), flex row centred, gap space 5 (16 / 12 = docs gutter at both densities)
-//   title    the Label component, type caps-sm, text-dim (= docs .f-section-title); size label = the screen label
-//            type instead (the panel lab's Door lock "last 24 h")
+// .f-section), on the contract (renderer/CONTRACT.md, "contract": 2): a caps title, an optional count badge, and an
+// optional right side, above a group of rows.
+//   size     fills its parent's width (C5; in a list Body = inset to inset, as before), h:section-h tall (48 / 32,
+//            = touch min), a flex row centred, gap:5 (16 / 12 = docs gutter at both densities)
+//   minimum  layout:card-min-w x layout:section-h. Steps: one (the title ends in "..." before the right side)
+//   title    type c-caps-sm, text-dim (= docs .f-section-title); size label = the screen label type, the row then
+//            section-label tall (label box + space 2 to the rows), items at the top (the panel lab's Door lock "last 24 h")
 //   count    the Count badge component (prop "badge"; count / tone / zero passed on: 0 = muted or hidden)
-//   right    none | meta (the Label, type meta, text-dim: docs .f-section-meta is text-mute, which is disabled-only
-//            here) | action (a text button: caps-sm accent-text, not in the docs atom; the board asked for "count or
-//            action")
-// Action: a hit box section_h tall (= touch min) with space 2 padding, nudged right by that padding (translate) so its
-// text ends on the content edge like the meta does; pressed = Card / List row press: mix press-tint fill (Motion press /
-// release), radius rad::chip; disabled (Button rule, USER_1) = text-mute, no press look, tap = "blocked" + error.
-// Tap = a real CLICKED: "tap" (detail = the action text) + sound "tap" (an in-place action such as Clear; a header
-// action that opens a screen could play "open" later). The title, badge and meta are static (no events).
+//   right    none | meta (type c-meta, text-dim: docs .f-section-meta is text-mute, which is disabled-only here) |
+//            action (a text button: c-caps-sm accent-text)
+// Action: a hit box section-h tall (= touch min), pad-x:2 inside it, radius chip; its text ends space 2 inside the
+// content edge (the legacy build nudged it out by that padding with a bleed: an escape the contract does not allow, C13).
+// States: default; pressed (fill pressed-tint fading in over nothing); disabled (fw::st::OFF: disabled-ink, no press
+// look, tap = "blocked" + error). n/a: on, unavailable, loading, unknown, empty, error (a caption: no data of its own;
+// the count badge shows its own zero). Tap = a real CLICKED: "tap" (detail = the action text) + sound "tap". The title,
+// badge and meta are static (no events). Bleed: none.
 // Contrast pairs: tokens/colour.json section "section_header" (+ label, count_badge).
+// Still legacy inside: the Count badge (built through fw::find).
 #include "fw.h"
+#include "fx.h"
 
 namespace {
 constexpr lv_state_t ST_OFF = fw::st::OFF;  // disabled (LVGL sends no events to LV_STATE_DISABLED; see Button)
-
-const lv_style_prop_t TR_PROPS[] = {LV_STYLE_BG_OPA, LV_STYLE_PROP_INV};
-const lv_style_transition_dsc_t *tr(bool pressed) {
-  static lv_style_transition_dsc_t d[2];
-  static bool ready = false;
-  if (!ready) { fw::st::press_transitions(d, TR_PROPS); ready = true; }  // states.json pressed motion
-  return &d[pressed];
-}
 
 lv_obj_t *build(const char *id, lv_obj_t *parent, ArduinoJson::JsonDocument &props) {
   const fw::Component *c = fw::find(id);
@@ -34,30 +30,17 @@ lv_obj_t *build(const char *id, lv_obj_t *parent, ArduinoJson::JsonDocument &pro
   c->build(parent, props.as<fw::Props>());
   return lv_obj_get_child_count(parent) > before ? lv_obj_get_child(parent, -1) : nullptr;
 }
-}  // namespace
+lv_obj_t *words(lv_obj_t *h, const char *s, const char *type, const char *fg) {
+  lv_obj_t *l = fx::text(h, s, type, fg);
+  lv_label_set_long_mode(l, LV_LABEL_LONG_MODE_DOTS);
+  return l;
+}
 
-namespace {
 void fill(lv_obj_t *h, fw::Props p) {
-  const fw::Theme &t = *fw::T;
-  lv_obj_remove_style_all(h);
-  lv_obj_remove_flag(h, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
-  lv_obj_set_size(h, 2 * fw::lay::card_w + fw::lay::gutter, fw::lay::section_h);
-  lv_obj_set_flex_flow(h, LV_FLEX_FLOW_ROW);
-  lv_obj_set_flex_align(h, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-  lv_obj_set_style_pad_column(h, fw::sp::s5, 0);
-
-  if (!strcmp(p["size"] | "sm", "label")) {  // the screen label type (the panel lab's lock "last 24 h" heading):
-    lv_obj_set_height(h, fw::style(fw::ty::label).box + fw::sp::s2);  // its box + sp::s2 to the rows, at the top
-    lv_obj_set_flex_align(h, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
-    lv_obj_t *l = fw::text(h, fw::ty::label, p["title"] | "", t.text_dim);
-    lv_obj_set_height(l, fw::style(fw::ty::label).box);
-  } else {
-    ArduinoJson::JsonDocument tp;
-    tp["text"] = p["title"] | "";
-    tp["type"] = "caps-sm";
-    tp["colour"] = "text-dim";
-    build("label", h, tp);
-  }
+  const bool big = !strcmp(p["size"] | "sm", "label");
+  for (const char *t : {"box", "row-mid", "gap:5", big ? "section-label" : "h:section-h"}) fx::use(h, t);
+  fx::name(h, "section_header");
+  fx::fit_grid(words(h, p["title"] | "", big ? "type:label" : "type:c-caps-sm", "fg:text-dim"));  // the badge after it on the grid
 
   if (p["badge"].is<bool>() ? (bool) p["badge"] : !p["count"].isNull()) {  // no count asked for = no badge
     ArduinoJson::JsonDocument bp;
@@ -67,48 +50,26 @@ void fill(lv_obj_t *h, fw::Props p) {
     build("count_badge", h, bp);
   }
 
-  lv_obj_t *grow = lv_obj_create(h);
-  lv_obj_remove_style_all(grow);
-  lv_obj_remove_flag(grow, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
-  lv_obj_set_size(grow, 0, 0);
-  lv_obj_set_flex_grow(grow, 1);
+  fx::use(fx::box(h, "free"), "grow");  // the free room between the left and the right side
 
   const char *right = p["right"] | "meta";
   if (!strcmp(right, "meta") && (p["meta"] | "")[0]) {  // an empty meta draws nothing (not the label's sample)
-    ArduinoJson::JsonDocument mp;
-    mp["text"] = p["meta"] | "";
-    mp["type"] = "meta";
-    mp["colour"] = "text-dim";
-    build("label", h, mp);
+    words(h, p["meta"] | "", "type:c-meta", "fg:text-dim");
   } else if (!strcmp(right, "action")) {
     const char *state = p["state"] | "default";
-    const bool off = !strcmp(state, "disabled");
-    lv_obj_t *a = lv_obj_create(h);
-    lv_obj_remove_style_all(a);
+    lv_obj_t *a = fx::box(h, "free");
+    for (const char *t : {"hug", "row-mid", "pad-x:2", "h:section-h", "radius:chip", "bg:pressed-tint", "bg-none", "fade-release-fill"}) fx::use(a, t);
+    fx::use(a, "bg:pressed-tint", LV_STATE_PRESSED);
+    fx::use(a, "fade-press-fill", LV_STATE_PRESSED);
+    fx::use(a, "bg-none", ST_OFF);
+    fx::use(a, "bg-none", ST_OFF | LV_STATE_PRESSED);
     lv_obj_add_flag(a, LV_OBJ_FLAG_CLICKABLE);
-    lv_obj_remove_flag(a, LV_OBJ_FLAG_SCROLLABLE);
-    lv_obj_set_size(a, LV_SIZE_CONTENT, fw::lay::section_h);
-    lv_obj_set_style_pad_hor(a, fw::sp::s2, 0);
-    lv_obj_set_style_translate_x(a, fw::sp::s2, 0);  // text ends on the content edge; the press fill overhangs it
-    fw::bleed(a, fw::sp::s2);  // the overhang draws outside the header box (else LVGL clips the fill's right end)
-    lv_obj_set_style_radius(a, fw::rad::chip, 0);
-    lv_obj_set_flex_flow(a, LV_FLEX_FLOW_ROW);
-    lv_obj_set_flex_align(a, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    lv_obj_set_style_bg_color(a, fw::st::pressed_tint(t), 0);  // states.json pressed tint
-    lv_obj_set_style_bg_opa(a, LV_OPA_TRANSP, 0);
-    lv_obj_set_style_bg_opa(a, LV_OPA_COVER, LV_STATE_PRESSED);
-    lv_obj_set_style_bg_opa(a, LV_OPA_TRANSP, ST_OFF | LV_STATE_PRESSED);
-    lv_obj_set_style_transition(a, tr(false), 0);
-    lv_obj_set_style_transition(a, tr(true), LV_STATE_PRESSED);
-
-    ArduinoJson::JsonDocument ap;
-    ap["text"] = p["action"] | "";
-    ap["type"] = "caps-sm";
-    ap["colour"] = off ? "disabled" : "accent-text";
-    lv_obj_t *l = build("label", a, ap);
-
+    lv_obj_remove_flag(a, LV_OBJ_FLAG_EVENT_BUBBLE);
+    lv_obj_t *l = fx::text(a, p["action"] | "", "type:c-caps-sm", "fg:accent-text");
+    fx::fit_grid(l);  // the hit box's width on the grid
+    fx::use(l, "fg:disabled-ink", ST_OFF);
     if (!strcmp(state, "pressed")) lv_obj_add_state(a, LV_STATE_PRESSED);
-    if (off) lv_obj_add_state(a, ST_OFF);
+    if (!strcmp(state, "disabled")) fx::state(a, ST_OFF, true);
     fw::st::on_tap(a, [](lv_event_t *e) {  // blocked on finger down, a real tap on CLICKED (states.json)
       if (!fw::st::tap_now(e)) return;
       auto *o = (lv_obj_t *) lv_event_get_current_target(e);
@@ -123,6 +84,9 @@ void fill(lv_obj_t *h, fw::Props p) {
 
 FW_COMPONENT(section_header, "Section header", "components", R"({
   "about": "A caption that starts a group of content, with an optional count and a meta text or action on the right.",
+  "contract": 2,
+  "parts": [],
+  "min": ["layout:card-min-w", "layout:section-h"],
   "audit": {"snaps": {"count": "the Count badge's count changes like text"}},
   "frame": [480, 96],
   "props": [
@@ -148,7 +112,9 @@ FW_COMPONENT(section_header, "Section header", "components", R"({
     {"label": "action · disabled", "props": {"title": "Notifications", "badge": false, "right": "action", "action": "Clear", "state": "disabled"}}
   ]
 })") {
-  lv_obj_t *h = lv_obj_create(parent);
+  lv_obj_t *h = lv_obj_create(parent);  // styles: fill() (an update refills the same root)
+  lv_obj_remove_style_all(h);
+  lv_obj_remove_flag(h, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
   fill(h, p);
   fw::st::built(h, p);
 }
@@ -171,7 +137,7 @@ FW_UPDATE(section_header) {
       lv_obj_set_state(a, LV_STATE_PRESSED, pr);
     return true;
   }
-  fw::st::refill_fade(root, [&] { fw::refill(root); fill(root, p); });  // a new tone fades (like a tap)
+  fw::st::refill_fade(root, [&] { fw::refill(root); fill(root, p); }, true, true);  // a new tone fades like a tap (shared styles too)
   const bool off = !strcmp(p["right"] | "meta", "action") && !strcmp(p["state"] | "default", "disabled");
   if (off != was_off) fw::st::fade_in_children(lv_obj_get_child(root, -1));
   return true;

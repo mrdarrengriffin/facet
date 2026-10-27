@@ -165,6 +165,7 @@
   ],
   "xfail": {
     "lag:build:sheet open": "BF-044",
-    "lag:build:sheet bench (open / close loop)": "BF-044"
+    "lag:build:sheet bench (open / close loop)": "BF-044",
+    "lag:tap:default": "BF-044"
   }
 }

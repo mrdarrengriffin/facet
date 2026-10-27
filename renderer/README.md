@@ -679,6 +679,20 @@ reset (no reset step: the replay plays straight away). `fw::demo_away(obj, away)
 (hub workbench + `site/src/lib/engine.ts`). Charts (Motion page): Line draws in and the same bars growing again stay at
 the preset; new readings, a morph, a new gauge value or another day of bars move away.
 
+## Theme files (WIP: parser and guards; applying them lands next)
+
+A theme is one JSON file, `renderer/themes/<id>.json` (CONTRACT.md section 10 + Appendix A). `tokens/theme.json` holds
+the schema as data; `tools/gen_theme.mjs` (build.sh) writes `themes/facet.json` (every key at Facet's value: what any
+theme inherits; never hand-edited, `--check` fails when stale) and `theme_gen.h` (the parser's tables + the built-in
+themes). `core/theme_file.{h,cpp}` (core only, no LVGL): strict JSON -> schema check with paths -> compile (presets,
+state merge per selector, lengths at both densities, palettes per mode x accent) -> static guards (contrast on exact +
+RGB565, press feedback, geometry) -> an immutable Skin, or the file refused whole; `theme_apply` swaps the live Skin
+only on success and bumps a generation. Built-ins: facet, blockcraft, win98 (ported from the fresh-start prototype:
+layout keys dropped, look sizes inside their ranges; their fonts arrive with the theme fonts).
+`node tools/contrast.mjs --theme <id | file>` = a theme's contrast guard; `fw_lab(-1, "theme_load" | "theme_dump" |
+"theme_contrast" | ..., json)` (core/theme_lab.cpp); tests `tests/functional/theme_parse.test.mjs`, `theme_fuzz.test.mjs`;
+`tools/theme_check.mjs` (build.sh: built-ins load); `tools/theme_fuzz.sh [N]` (the parser under ASan + UBSan, 100k).
+
 ## ASan check
 
 `renderer/tools/asan.sh [1x|1.5x] [id '<props>' ...]` compiles the same core, foundations, components and screens

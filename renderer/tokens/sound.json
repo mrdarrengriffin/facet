@@ -1473,7 +1473,6 @@
     "icon_button": "Play: toggle-on when it starts playing, toggle-off when it pauses. Round / square: tap. Back role: back. Disabled / unavailable: error.",
     "back_button": "The Icon button in its back role: back. Disabled: error.",
     "header": "Through its Back button: back; through the Screen chrome's settings button: open.",
-    "screen_chrome": "The settings button (an Icon button in its settings role): open, going to Settings.",
     "toggle": "Tap: toggle-on / toggle-off by the new state. Disabled / unavailable: error.",
     "slider": "Drag or a tap on the track: step ticks (slider-tick, slider-landmark at the ends, pitched by the value). Disabled / unavailable: error once on press.",
     "dial": "Drag or a ring tap: step ticks (silent during the opening sweep). ON / OFF button: toggle-on / toggle-off. Disabled / unavailable: error once on press.",

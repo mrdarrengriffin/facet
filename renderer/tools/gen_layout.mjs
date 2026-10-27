@@ -59,6 +59,12 @@ for (const d of dens) {
   const chrome = V('chrome-btn', d) + V('gutter', d) + V('header-time-w', d);
   if (V('chrome-btn', d) !== V('row', d)) bad.push(`${d}: chrome-btn must be the header row (a square in the row)`);
   if (V('row', d) + V('back-gap', d) + 2 * V('gutter', d) + chrome > cw) bad.push(`${d}: header items do not fit the content width`);
+  // C20: the header row is a touch target (>= touch:min, tokens/space.json)
+  { const TM = JSON.parse(readFileSync(new URL('../tokens/space.json', import.meta.url), 'utf8')).tokens.touch.min;
+    const tm = d === '1x' ? TM['1x'] : TM.v;
+    if (V('row', d) < tm) bad.push(`${d}: the header row (${V('row', d)}) is under touch:min (${tm})`); }
+  if (V('header-max-w', d) !== cw) bad.push(`${d}: header-max-w (${V('header-max-w', d)}) must be the content width (${cw})`);
+  if (V('header-item-gap', d) > V('inset', d)) bad.push(`${d}: header-item-gap is wider than the inset`);
   if (V('toast-top', d) + V('toast-h', d) > S.h - V('inset', d)) bad.push(`${d}: a toast at toast-top runs past the bottom inset`);
   derived[d] = { screen_w: S.w, screen_h: S.h, content_w: cw, content_h: ch, header_gap: gap, chrome_w: chrome };
 }

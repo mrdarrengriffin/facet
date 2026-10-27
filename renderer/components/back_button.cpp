@@ -1,20 +1,18 @@
-// Back button: the Facet header back button (docs: Components > Buttons > Back button, @facet/ui backButton()): a
-// square icon button with the back arrow and no label; the header puts the screen name next to it (lay::back_gap).
-// Built by the Icon button component itself (fw::find("icon_button"), style square, internal role "back"), so look,
-// press and disabled rules are the Icon button's: surface + 1 px line border, radius rad::square, text glyph back at
-// ic::glyph (32 / 20); pressed = surface-press + line-hi (Motion press / release); disabled = text-mute glyph.
-// Size: touch::back (48 / 32) = the header row (layout.json header row, checked at compile time) = touch::min, so it
-// fits the 48 px header exactly and is a full touch target. Tap = event "back" + sound back (sound.json: the falling
-// mirror of Open); hold (LVGL long press) = event "home" + sound back (the device goes straight Home, facet-188; the
-// tap after the hold is swallowed); disabled = "blocked" + error. Pairs: colour.json contrast section "icon_button" (shared).
+// Back button: the Facet header back button (docs: Components > Buttons > Back button, @facet/ui backButton()). A thin
+// wrapper (Header round 3, 2026-10-27): it IS the Icon button (components/icon_button.cpp, contract v2) in style square
+// with the back icon and its internal role "back", so look, press, disabled, size (layout:ibtn-square = touch:min = the
+// header row) and the update path are the Icon button's. The wrapper adds what only Back does: tap = event "back" +
+// sound back (the role); hold (LVGL long press) = event "home" + sound back (the device goes straight Home, facet-188;
+// the tap after the hold is swallowed); disabled = "blocked" + error. The Header builds it (fixed, first, shown only
+// when the screen has somewhere to go back to). Kept as its own id: screens, specs and the catalogue name it.
+// Steps / bleed: none. States: default, pressed, disabled (the Icon button's). Pairs: colour.json "icon_button".
 #include "fw.h"
 
-static_assert(fw::touch::back == fw::lay::row, "back button must fill the header row (space.json touch back = layout.json header row)");
-static_assert(fw::touch::back >= fw::touch::min, "back button below the touch minimum");
 
 namespace {
 void props(fw::Props p, ArduinoJson::JsonDocument &bp) {  // the Icon button's props
   bp["style"] = "square";
+  bp["icon"] = "back";
   bp["role"] = "back";
   bp["state"] = p["state"] | "default";
 }
@@ -22,6 +20,9 @@ void props(fw::Props p, ArduinoJson::JsonDocument &bp) {  // the Icon button's p
 
 FW_COMPONENT(back_button, "Back button", "components", R"({
   "about": "The square back arrow at the start of a screen's header.",
+  "contract": 2,
+  "parts": [],
+  "min": ["layout:ibtn-square", "layout:ibtn-square"],
   "frame": [96, 96],
   "icons": ["back@glyph"],
   "props": [

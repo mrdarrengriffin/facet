@@ -31,7 +31,7 @@
     {
       "id": "theme", "help": "Whether the panel is light or dark. Auto is light while the sun is up and dark after sunset.",
       "group": "look",
-      "label": "Theme",
+      "label": "Mode",
       "kind": "select",
       "control": "segmented",
       "default": "auto",
@@ -54,6 +54,39 @@
         "id": "theme_select",
         "name": "Theme",
         "icon": "mdi:theme-light-dark"
+      }
+    },
+    {
+      "id": "look", "help": "The panel's theme: Facet, a theme built into the panel, or the one Home Assistant sent (facet_theme). A theme the panel refuses is never shown: Facet stays.",
+      "group": "look",
+      "label": "Theme",
+      "kind": "select",
+      "control": "sheet",
+      "default": "facet",
+      "about": "Themes change the look only (colours, faces, edges, shapes); sizes, layout and touch targets stay Facet's. Every theme passes the same guards as Facet: structure, ranges, contrast in every mode and accent, press feedback.",
+      "options": [
+        {
+          "id": "facet",
+          "label": "Facet"
+        },
+        {
+          "id": "blockcraft",
+          "label": "Blockcraft"
+        },
+        {
+          "id": "win98",
+          "label": "Win98"
+        },
+        {
+          "id": "sent",
+          "label": "Sent",
+          "hint": "the theme Home Assistant sent"
+        }
+      ],
+      "esphome": {
+        "id": "look_select",
+        "name": "Look",
+        "icon": "mdi:palette-swatch-outline"
       }
     },
     {

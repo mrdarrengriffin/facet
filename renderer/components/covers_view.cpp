@@ -109,7 +109,7 @@ void render(lv_obj_t *root) {
   for (int i = 0; i < 3; i++) {
     if (!c->btn[i] || off == lv_obj_has_state(c->btn[i], fw::st::OFF)) continue;
     ArduinoJson::JsonDocument bp;
-    bp["kind"] = "secondary", bp["label"] = LABEL[i], bp["width"] = c->btn_w, bp["state"] = off ? "disabled" : "default";
+    bp["kind"] = "secondary", bp["label"] = LABEL[i], bp["width"] = "fill", bp["state"] = off ? "disabled" : "default";
     fw::update_child(fw::find("button"), c->btn[i], bp.as<fw::Props>());
   }
 }
@@ -312,6 +312,7 @@ FW_COMPONENT(covers_view, "Covers view", "components", R"({
   ArduinoJson::JsonDocument sp;
   sp["value"] = num_or(p, "tilt", 50), sp["width"] = track_dp();
   c->slider = build("slider", c->tilt_box, sp);
+  if (c->slider) lv_obj_set_width(c->slider, col_w());  // the Slider fills what it is given: the column (track + a knob)
   fw::listen(c->tilt_box, [](lv_obj_t *, const char *name, const char *detail, void *user) {
     if (strcmp(name, "change")) return;
     auto *root = (lv_obj_t *) user;
@@ -330,10 +331,10 @@ FW_COMPONENT(covers_view, "Covers view", "components", R"({
   static const char *const CMD[3][2] = {{"Open", "open"}, {"Stop", "stop"}, {"Close", "close"}};
   for (int i = 0; i < 3; i++) {
     ArduinoJson::JsonDocument bp;
-    bp["kind"] = "secondary", bp["label"] = CMD[i][0], bp["width"] = (int) std::lround(W / fw::D);
+    bp["kind"] = "secondary", bp["label"] = CMD[i][0], bp["width"] = "fill";
     lv_obj_t *b = build("button", btns, bp);
     if (!b) continue;
-    c->btn[i] = b, c->btn_w = bp["width"];
+    c->btn[i] = b;
     lv_obj_set_user_data(b, (void *) CMD[i][1]);
     lv_obj_add_event_cb(b, [](lv_event_t *e) {
       auto *root = (lv_obj_t *) lv_event_get_user_data(e);
