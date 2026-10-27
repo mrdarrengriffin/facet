@@ -2,7 +2,7 @@
 // it gets a parent, token NAMES and layout; nothing about the screen, the card it sits in, the theme or the accent.
 // Tokens are shared lv_style_t per display, named like the tokens (tools/gen_fx.mjs): fg:/bg:/border:/line:<colour or
 // state role> (a role = "<state>-<role>" from tokens/states.json: fg:disabled-ink, bg:pressed-surface), pad:/gap:/pad-x:
-// <space step>, radius:<r>, h:<layout token> (min height), max-w:<layout token> (a cap: fills its parent up to it),
+// <space step>, above:<space step or layout token> (space above a block: margin top), radius:<r>, h:<layout token> (min height), max-w:<layout token> (a cap: fills its parent up to it),
 // min-w:<layout token> (a floor: fills its parent, never narrower), max-h:<layout token> (with h: = exactly that tall), gap:<layout token> / gap:gutter (between children),
 // type:<type style>, tint:<status colour> (the colour at chip.tint over whatever is behind), outline:focus-ring (the
 // focus ring outside the box: stroke focus, touch focus-offset), digit:/colon:/colon-raise:<clock type> (a digit cell,

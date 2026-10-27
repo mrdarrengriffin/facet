@@ -30,6 +30,7 @@
 #include "device.h"
 #include "images.h"
 #include "fx.h"
+#include "sheet.h"
 #include "core/lv_obj_style_private.h"  // the style list (fw_lab names the token styles)
 // LVGL private (src/core/lv_obj_draw_private.h): the ext draw size an object holds (fw::bleed sets it)
 extern "C" int32_t lv_obj_get_ext_draw_size(const lv_obj_t *obj);
@@ -483,7 +484,7 @@ void lab_walk(lv_obj_t *o, bool in_body, ArduinoJson::JsonArray bounds, ArduinoJ
     lv_area_t a;
     lv_obj_get_coords(c, &a);
     if (lv_obj_check_type(c, &lv_label_class)) { const int32_t ty = lv_obj_get_style_translate_y(c, LV_PART_MAIN); a.y1 -= ty; a.y2 -= ty; }  // text-box translate is not layout
-    if (in_body && !lab_has(c, "bleed")) {
+    if (in_body && !lab_has(c, "bleed") && fw::sheet::panel(o) != c) {  // a sheet's panel overhangs the screen edges on purpose (core/sheet.h)
       lv_area_t p;
       lv_obj_get_content_coords(o, &p);
       if (a.x1 < p.x1 || a.y1 < p.y1 || a.x2 > p.x2 || a.y2 > p.y2)

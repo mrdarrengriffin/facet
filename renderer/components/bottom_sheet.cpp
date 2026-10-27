@@ -216,15 +216,11 @@ Sheet *fill(lv_obj_t *parent, lv_obj_t *root, fw::Props p) {
     fx::name(host, "bottom_sheet");
     fw::shape(host, sig(p));
     if (p["screen"] | true) {
-      lv_obj_t *page = fx::box(host, "free");
-      fx::use(page, "page");
-      lv_obj_t *ph = fx::box(page, "free");
-      fx::use(ph, "page-head");
+      const fx::Page pg = fx::page(fx::box(host, "free"), "list");  // the Page structure (C1-C3; a theme's flush header)
       Doc hd;
       hd["label"] = "Settings";
-      build("header", ph, hd);
-      lv_obj_t *body = fx::box(page, "free");
-      for (const char *t : {"body", "body:list"}) fx::use(body, t);
+      build("header", pg.head, hd);
+      lv_obj_t *body = pg.body;
       const int sel = p["selected"] | 0;
       for (int i = 0; i < 4; i++) {
         Doc d;

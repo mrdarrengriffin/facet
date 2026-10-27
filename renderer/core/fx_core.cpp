@@ -28,7 +28,7 @@ uint32_t role_glyph(int role, int i);                               // the code 
 #include "font_store.h"
 
 namespace {
-enum Kind { FG, BG, BORDER, LINE, INK, PAD, GAP, PADX, RADIUS, HEIGHT, MAXH, MINW, MAXW, WIDTH, TYPE, SHAPE, DERIVED,
+enum Kind { FG, BG, BORDER, LINE, INK, PAD, GAP, PADX, RADIUS, HEIGHT, MAXH, MINW, MAXW, ABOVE, WIDTH, TYPE, SHAPE, DERIVED,
             TINT, OUTLINE, DIGIT, COLON, RAISE, BASE, PART, PTEXT, ICONPX };
 namespace G = fx::tgen;
 namespace S = fx::skin;
@@ -54,6 +54,8 @@ const char *const SHAPES[] = {"box", "col", "row", "stack", "centre", "cell", "g
                               "slider", "slider-word", "text-mid", "grow-w", "button-sm",
                               // the Checkbox: its box, the in-progress dot, a done label, the Motion toggle fade
                               "checkbox", "checkbox-dot", "strike", "fade-switch",
+                              // a Group of buttons that lines up from the end (right), centred across
+                              "wrap-end",
                               // the Radio: its ring and the chosen dot
                               "radio", "radio-dot"};
 // tint:<c> = the colour at chip.tint over what is behind (Status chip; colour.json mixes chip-<tone>); outline:<c> = the
@@ -78,7 +80,10 @@ const char *const DERIVED_N[] = {"dial-wing-up", "dial-wing-down", "dial-slot", 
                                  // 25: the More row (its height + the top space that puts its label on the rows' 24 / 16 line)
                                  "more-row",
                                  // 26-27: the Entity tile's name (two body lines, a fixed box) and its status (space 5 above)
-                                 "tile-text", "tile-status"};
+                                 "tile-text", "tile-status",
+                                 // 28: the State readout's padding: card-pad from the top and sides, none below (a half
+                                 // is taller than its content; a bigger theme font may use the space under it)
+                                 "readout-pad"};
 // A display's look: its shared styles painted from theme t (mode + accent set) through the live Skin (theme_live: its
 // palette for that mode x set = th, the colours every contract style reads; Facet's Skin = Facet's colours, so th == *t)
 // and its generation (gen: a theme apply bumps it, the look repaints; never by Skin pointer, a freed one's address can
@@ -127,13 +132,14 @@ void init_defs() {
     const std::string n = fx::gen::SIZES[i].name;
     const size_t c = n.find(':');
     const std::string g = n.substr(0, c), v = n.substr(c + 1);
-    if (g == "space") { defs.push_back({"pad:" + v, PAD, i}); defs.push_back({"gap:" + v, GAP, i}); defs.push_back({"pad-x:" + v, PADX, i}); }
+    if (g == "space") { defs.push_back({"pad:" + v, PAD, i}); defs.push_back({"gap:" + v, GAP, i}); defs.push_back({"pad-x:" + v, PADX, i}); defs.push_back({"above:" + v, ABOVE, i}); }
     else if (g == "radius") defs.push_back({"radius:" + v, RADIUS, i});
     else if (g == "layout" || g == "touch") {
       defs.push_back({"h:" + v, HEIGHT, i}); defs.push_back({"max-w:" + v, MAXW, i}); defs.push_back({"w:" + v, WIDTH, i});
       defs.push_back({"min-w:" + v, MINW, i});  // a floor: fills its parent but never narrower (a Cells cell)
       defs.push_back({"max-h:" + v, MAXH, i});  // a ceiling: with h: of the same token = exactly that tall (a Cells cell)
       if (g == "layout") defs.push_back({"gap:" + v, GAP, i});  // gap between children = a layout token
+      if (g == "layout") defs.push_back({"above:" + v, ABOVE, i});  // space above a block (a Group after a block)
     }
   }
   for (int i = 0; i < fx::gen::N_TYPES; i++) defs.push_back({std::string("type:") + fx::gen::TYPES[i].name, TYPE, i});
@@ -272,7 +278,8 @@ void shape(lv_style_t *s, const char *n) {  // the structure styles: density onl
   else if (k == "fill") { lv_style_set_width(s, lv_pct(100)); lv_style_set_height(s, lv_pct(100)); }  // a component that IS its parent's size (Card)
   else if (k == "fill-w") lv_style_set_width(s, lv_pct(100));
   else if (k == "row-top") flex(s, LV_FLEX_FLOW_ROW, S, S, S);  // a row, top-aligned, no gap
-  else if (k == "wrap") flex(s, LV_FLEX_FLOW_ROW_WRAP, S, S, S);  // rows that wrap: a growing child counts its min-w
+  else if (k == "wrap") flex(s, LV_FLEX_FLOW_ROW_WRAP, S, S, S);
+  else if (k == "wrap-end") flex(s, LV_FLEX_FLOW_ROW_WRAP, LV_FLEX_ALIGN_END, C, S);  // rows that wrap: a growing child counts its min-w
   else if (k == "gap:gutter") { lv_style_set_pad_row(s, GUT()); lv_style_set_pad_column(s, GUT()); }  // gutter both ways
   else if (k == "header") {  // the Header row (components/header.cpp): the row tall, up to its max width, items centred;
     // the gaps are its parts' margins (back-gap after Back, the item gap before the end slot and before the Time), so
@@ -590,6 +597,10 @@ void paint(Look *L, const fw::Theme *t, int only = -1) {  // colours from the th
         lv_style_set_width(s, lv_pct(100)); lv_style_set_height(s, box_of(ty::label));
         lv_style_set_margin_top(s, tok("space:5", sp::s5)); continue;
       }
+      if (d.i == 28) {  // readout-pad: layout:card-pad top and sides, nothing at the bottom
+        const int P = tok("layout:card-pad", lay::card_pad);
+        lv_style_set_pad_top(s, P); lv_style_set_pad_hor(s, P); lv_style_set_pad_bottom(s, 0); continue;
+      }
       if (d.i == 16) {  // empty-pad: the Empty state's padding from the outer edge (less the border hair)
         lv_style_set_pad_all(s, tok("layout:empty-pad", lay::empty_pad) - tok("stroke:hair", stroke::hair)); continue;
       }
@@ -678,6 +689,7 @@ void sized(lv_style_t *s, const Def &d) {  // the size + structure styles (densi
   else if (d.k == MINW) lv_style_set_min_width(s, v);
   else if (d.k == MAXW) lv_style_set_max_width(s, v);
   else if (d.k == WIDTH) lv_style_set_width(s, v);
+  else if (d.k == ABOVE) lv_style_set_margin_top(s, v);
   else if (d.k == SHAPE) shape(s, d.name.c_str());
 }
 Look *make(lv_display_t *d, const fw::Theme *t) {

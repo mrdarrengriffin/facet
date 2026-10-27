@@ -4,7 +4,8 @@
 // no box is a readout: on the canvas, no fill, no press, no sound, no chevron, a tap does nothing. It fills its parent
 // (meta min layout:card-min-w x pair-h); two share one Home card cell (the Cells layout's pair: equal halves, a
 // hairline between them inset by the card padding).
-//   one     padding card-pad (from the top and sides; the half is taller than its content), a column card-pad apart:
+//   one     padding readout-pad (card-pad from the top and sides, none below: the half is taller than its content),
+//           a column card-pad apart:
 //           the top row (at least the label box tall: the icon at icon size text-dim, the caps label (type label,
 //           text-dim, its box on the grid), space 2 apart; the Status dot (working) after it, shown only when the
 //           state matters (accent)), then the state (type title) and the detail (type body, text-dim, "...") centred on
@@ -43,7 +44,7 @@ const Ro *find_ro(const char *id) {
 void one(lv_obj_t *o, const Ro &r) {
   const bool mute = !strcmp(r.tone, "mute"), accent = !strcmp(r.tone, "accent");
   const char *dim = mute ? "fg:unavailable-ink" : "fg:text-dim";
-  for (const char *t : {"fill", "card-pad", "gap:card-pad"}) fx::use(o, t);
+  for (const char *t : {"fill", "readout-pad", "gap:card-pad"}) fx::use(o, t);
   lv_obj_t *top = fx::box(o, "row");
   for (const char *t : {"gap:2", "label-row"}) fx::use(top, t);
   fx::icon(top, r.icon, "icon", dim);

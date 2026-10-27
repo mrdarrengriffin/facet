@@ -62,7 +62,7 @@ void bounds(lv_obj_t *o, bool in_body, ArduinoJson::JsonArray arr) {
     lv_obj_t *c = lv_obj_get_child(o, i);
     if (lv_obj_has_flag(c, LV_OBJ_FLAG_HIDDEN)) continue;
     const bool body = in_body || has_style(c, "body");
-    if (in_body && !has_style(c, "bleed")) {
+    if (in_body && !has_style(c, "bleed") && fw::sheet::panel(o) != c) {  // a sheet's panel overhangs on purpose
       lv_area_t a, p;
       lv_obj_get_coords(c, &a);
       if (lv_obj_check_type(c, &lv_label_class)) { const int32_t ty = lv_obj_get_style_translate_y(c, LV_PART_MAIN); a.y1 -= ty; a.y2 -= ty; }  // the type's text-box translate is not layout
