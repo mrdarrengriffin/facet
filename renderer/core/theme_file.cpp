@@ -523,10 +523,10 @@ struct Reader {
         if (v < 0) E.add(at, shown(d, c) + " is not a weight (" + list(G::WEIGHTS, G::N_WEIGHTS) + ")", c);
         else { b.bold = (uint8_t) v; ok = true; }
       } else if (bit == K_SHAPE) {
-        const bool knob = !strcmp(P.kind, "knob");
-        const char *const *v = knob ? G::KNOB_SHAPES : G::TICK_SHAPES;
-        const int nv = knob ? G::N_KNOB_SHAPES : G::N_TICK_SHAPES, x = d.at(c).t == J_STR ? find(v, nv, d.s_of(c)) : -1;
-        if (x < 0) E.add(at, shown(d, c) + " is not a " + (knob ? "knob" : "tick") + " shape (" + list(v, nv) + ")", c);
+        const bool knob = !strcmp(P.kind, "knob"), sw = !strcmp(P.kind, "switch");
+        const char *const *v = knob ? G::KNOB_SHAPES : sw ? G::SWITCH_SHAPES : G::TICK_SHAPES;
+        const int nv = knob ? G::N_KNOB_SHAPES : sw ? G::N_SWITCH_SHAPES : G::N_TICK_SHAPES, x = d.at(c).t == J_STR ? find(v, nv, d.s_of(c)) : -1;
+        if (x < 0) E.add(at, shown(d, c) + " is not a " + (knob ? "knob" : sw ? "switch" : "tick") + " shape (" + list(v, nv) + ")", c);
         else { b.shape = (uint8_t) x; ok = true; }
       } else if (bit == K_SHADOW) {
         if (need(c, J_OBJ, at)) {

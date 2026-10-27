@@ -15,11 +15,11 @@ const at = (g, f) => g.x0 + (g.x1 - g.x0) * f;
 export default {
   id: 'slider', family: 'controls', about: 'Horizontal slider: drag or tap-to-jump, value on release, clamps and snaps.',
   tests: [
-    { name: 'fill and knob are the accent (the lit-tile colour)', mount: ['slider', { value: 40 }], run(t, { den }) {
+    { name: 'fill and knob are accent-text (3:1 on the track, WCAG 1.4.11)', mount: ['slider', { value: 40 }], run(t, { den }) {
       const g = geo(t, den), boxes = t.objs().filter((o) => o.bg && t.visible(o) && inBox(o, g.b) && o.w < g.b.w);
-      t.ok(g.knob && is(boxes.find((o) => o.x === g.knob.x && o.w === g.knob.w)?.bg, 'accent'), 'knob accent');
+      t.ok(g.knob && is(boxes.find((o) => o.x === g.knob.x && o.w === g.knob.w)?.bg, 'accent-text'), 'knob accent-text');
       const fill = boxes.filter((o) => o !== g.knob && o.h < KNOB[den] && o.w > 0 && o.w < g.b.w - KNOB[den]);
-      t.ok(fill.some((o) => is(o.bg, 'accent')), `fill accent (${fill.map((o) => o.bg).join()})`);
+      t.ok(fill.some((o) => is(o.bg, 'accent-text')), `fill accent-text (${fill.map((o) => o.bg).join()})`);
       t.ok(!fill.some((o) => is(o.bg, 'blue')), 'no blue fill');
     } },
     { name: 'knob sits on the value at rest', mount: ['slider', { value: 40 }], run(t, { den }) {

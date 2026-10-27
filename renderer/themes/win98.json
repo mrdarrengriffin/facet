@@ -2,7 +2,7 @@
  "schema": 1,
  "id": "win98",
  "label": "Windows 98",
- "about": "The 1998 desktop, light only. A window: the page is its frame, the header its title bar (navy to blue, dithered for RGB565, white bold title, minimize / maximize / close drawn as caption buttons). #C0C0C0 face and the four-shade bevel (white / #DFDFDF light, #808080 / black shadow) on tiles and buttons: pressed = sunken with the dotted focus rectangle, on = latched (sunken on the white-grey checker). Rows are etched, a pressed row is the navy selection. The Days are trackbar channels with a navy selection range; the Dial is a sunken groove with black ticks and the pointer thumb. On an exact pixel grid; its font (W95FA, SIL OFL 1.1) arrives with the theme fonts, Facet's draws it until then.",
+ "about": "The 1998 desktop, light only. A window: the page is its frame, the header its title bar (navy to blue, dithered for RGB565, white bold title, minimize / maximize / close drawn as caption buttons). #C0C0C0 face and the four-shade bevel (white / #DFDFDF light, #808080 / black shadow) on tiles and buttons: pressed = sunken with the dotted focus rectangle, on = latched (sunken on the white-grey checker). Rows are etched, a pressed row is the navy selection. The Toggle is the classic checkbox (a white sunken square, a black tick when on). The Days are trackbar channels with a navy selection range; the Dial is a sunken groove with black ticks and the pointer thumb. On an exact pixel grid; its font (W95FA, SIL OFL 1.1) arrives with the theme fonts, Facet's draws it until then.",
  "modes": ["light"],
  "colour": {
   "bg": {"light": "#C0C0C0"},
@@ -48,7 +48,8 @@
   "rule": {"edges": [{"side": "bottom", "w": 2, "ink": "line-hi"}, {"side": "top", "w": 1, "ink": "line"}]},
   "track": {"radius": 0, "pad": 2, "face": "line-hi", "edges": [{"side": "top-left", "w": 1, "ink": "line"}, {"side": "bottom-right", "w": 1, "ink": "line-hi"}, {"side": "top-left", "w": 1, "inset": 1, "ink": "#0A0A0A"}, {"side": "bottom-right", "w": 1, "inset": 1, "ink": "#DFDFDF"}], "on": {"face": "accent"}, "disabled": {"face": "line-hi"}},
   "track-fill": {"radius": 0},
-  "knob": {"shape": "pointer", "ink": "surface", "edges": [{"side": "top-left", "w": 1, "ink": "line-hi"}, {"side": "bottom-right", "w": 1, "ink": "#0A0A0A"}, {"side": "bottom-right", "w": 1, "inset": 1, "ink": "line"}]},
+  "switch": {"shape": "check", "face": "line-hi", "ink": "text", "edges": [{"side": "top-left", "w": 1, "ink": "line"}, {"side": "bottom-right", "w": 1, "ink": "line-hi"}, {"side": "top-left", "w": 1, "inset": 1, "ink": "#0A0A0A"}, {"side": "bottom-right", "w": 1, "inset": 1, "ink": "#DFDFDF"}], "disabled": {"face": "surface", "ink": "text-mute"}},
+  "knob": {"shape": "pointer", "ink": "surface", "edges": [{"side": "all", "w": 1, "ink": "#0A0A0A"}, {"side": "top-left", "w": 1, "inset": 1, "ink": "line-hi"}, {"side": "bottom-right", "w": 1, "inset": 1, "ink": "line"}]},
   "scrollbar": {"w": 16, "face": "surface", "lane": {"checker": ["line-hi", "surface"]}, "arrows": true, "edges": [{"side": "top-left", "w": 1, "ink": "#DFDFDF"}, {"side": "bottom-right", "w": 1, "ink": "#0A0A0A"}, {"side": "top-left", "w": 1, "inset": 1, "ink": "line-hi"}, {"side": "bottom-right", "w": 1, "inset": 1, "ink": "line"}]},
   "tick": {"ink": "text"},
   "tick-major": {"ink": "text"}

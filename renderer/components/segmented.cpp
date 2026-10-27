@@ -56,9 +56,9 @@ lv_obj_t *plate(lv_obj_t *seg, const char *place, bool round, const char *ring, 
     fx::use(o, "bg-none", ST_OFF | LV_STATE_PRESSED);
     fx::use(o, "bg:pressed-surface", ST_ON | ST_OFF);      // ...but the choice still shows
   }
-  fx::use(o, "border:on-line", ST_ON);
+  fx::use(o, "border:text-dim", ST_ON);  // 3:1 on the box (WCAG 1.4.11): the chosen segment's outline
   fx::use(o, ring, ST_ON);
-  fx::use(o, "border:disabled-line", ST_ON | ST_OFF);
+  fx::use(o, "border:disabled-ink", ST_ON | ST_OFF);
   fx::use(o, ring, ST_ON | ST_OFF);
   return o;
 }

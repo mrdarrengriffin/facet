@@ -52,9 +52,9 @@ void draw(const fx::Pen &p) {
   if (!d || d->unavail) return;
   const bool off = lv_obj_has_state(p.obj, ST_OFF);
   const int w = std::max(0, p.w - knob()), x0 = -w / 2, x = knob_x(p.obj, d->shown);
-  p.line(x0, 0, x0 + w, 0, "space:1", off ? "fg:disabled-line" : "fg:line-hi", true, "track");
-  if (x > x0) p.line(x0, 0, x, 0, "space:1", off ? "fg:disabled-ink" : "fg:on-fill", true, "track-fill");
-  p.dot(x, 0, "layout:slider-knob", off ? "fg:disabled-knob" : "fg:accent", "knob");  // the theme parts (C46)
+  p.line(x0, 0, x0 + w, 0, "space:1", off ? "fg:disabled-line" : "fg:line", true, "track");  // line: the fill + knob 3:1 on it (WCAG 1.4.11)
+  if (x > x0) p.line(x0, 0, x, 0, "space:1", off ? "fg:disabled-ink" : "fg:accent-text", true, "track-fill");
+  p.knob(x, 0, "layout:slider-knob", off ? "fg:disabled-knob" : "fg:accent-text", "fg:bg", "stroke:knob");  // the theme parts (C46); the canvas halo parts it from the fill (3:1, as the Dial)
 }
 
 std::string fmt(const Slider *d, int i) {

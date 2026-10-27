@@ -181,7 +181,7 @@ export function header(S = schema()) {
     '// the names the parser itself relies on, resolved here (the generator fails if one goes): never looked up at run time',
     ...[['SZ_PIXEL', sIdx('stroke:pixel')], ['SZ_EDGE', sIdx('stroke:edge')], ['SZ_INDICATOR', sIdx('stroke:indicator')], ['SZ_ROW', sIdx('layout:row')], ['SZ_TOUCH', sIdx('touch:min')],
       ['C_BG', colours.indexOf('bg')], ['C_SURFACE', colours.indexOf('surface')], ['C_TEXT_DIM', colours.indexOf('text-dim')], ['C_TEXT_MUTE', colours.indexOf('text-mute')],
-      ['R_ACCENT', roles.indexOf('accent')], ...['card', 'control', 'knob', 'tick', 'tick-major', 'scrollbar', 'caption', 'header'].map((n) => [`P_${n.toUpperCase().replace('-', '_')}`, parts.findIndex((x) => x.name === n)]),
+      ['R_ACCENT', roles.indexOf('accent')], ...['card', 'control', 'knob', 'tick', 'tick-major', 'scrollbar', 'caption', 'header', 'switch'].map((n) => [`P_${n.toUpperCase().replace('-', '_')}`, parts.findIndex((x) => x.name === n)]),
       ...th.states.list.map((s) => [`ST_${s.toUpperCase()}`, th.states.list.indexOf(s)])].map(([n, v]) => { if (v < 0) die(`the parser needs ${n}`); return `constexpr int ${n} = ${v};`; }),
     `constexpr const char *OUTER[] = {${th.contrast.outer.map(cs).join(', ')}};`,
     `constexpr int N_OUTER = ${th.contrast.outer.length};`,

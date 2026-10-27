@@ -125,6 +125,8 @@ void gfx(lv_obj_t *o, ArduinoJson::JsonArray arr) {
   for (uint32_t i = 0; i < lv_obj_get_child_count(o); i++) {
     lv_obj_t *c = lv_obj_get_child(o, i);
     if (lv_obj_has_flag(c, LV_OBJ_FLAG_HIDDEN) || lv_obj_get_style_opa_recursive(c, LV_PART_MAIN) <= LV_OPA_MIN) continue;
+    // a knob the theme took away (switch shape check: the checkbox's tick is checked as the drawn part "switch")
+    if (has_style(c, "toggle-knob") && lv_obj_get_style_bg_opa(c, LV_PART_MAIN) <= LV_OPA_MIN) continue;
     for (const char *g : GFX)
       if (has_style(c, g)) {
         lv_area_t a;

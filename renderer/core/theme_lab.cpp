@@ -77,7 +77,7 @@ void dump(ArduinoJson::JsonObject o, const Skin &s) {
       if (b.has & K_TEXT) bo["text"] = ink_name(b.text);
       if (b.has & K_INK) bo["ink"] = ink_name(b.ink);
       if (b.has & K_WEIGHT) bo["weight"] = G::WEIGHTS[b.bold];
-      if (b.has & K_SHAPE) bo["shape"] = !strcmp(G::PARTS[p].kind, "knob") ? G::KNOB_SHAPES[b.shape] : G::TICK_SHAPES[b.shape];
+      if (b.has & K_SHAPE) bo["shape"] = !strcmp(G::PARTS[p].kind, "knob") ? G::KNOB_SHAPES[b.shape] : !strcmp(G::PARTS[p].kind, "switch") ? G::SWITCH_SHAPES[b.shape] : G::TICK_SHAPES[b.shape];
       if (b.has & K_SHADOW) { auto sh = bo["shadow"].to<ArduinoJson::JsonObject>(); len(sh["dx"].to<ArduinoJson::JsonArray>(), b.shadow.dx); len(sh["dy"].to<ArduinoJson::JsonArray>(), b.shadow.dy); sh["ink"] = ink_name(b.shadow.ink); }
       if (b.has & K_EDGES) {
         auto ea = bo["edges"].to<ArduinoJson::JsonArray>();

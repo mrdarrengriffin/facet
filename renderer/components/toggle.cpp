@@ -5,6 +5,8 @@
 //            layout:toggle-knob (32 / 24) inset space 2 (8 / 4), travel = the knob (core/fx_core.cpp "toggle*")
 //   minimum  layout:toggle-w x touch:min. Steps: one
 //   off  line track, text-dim knob          on  on-fill track, on-label knob, moved right by the travel
+// A theme's switch part with shape "check" (Win98) makes it a classic checkbox: the track and knob go, the core draws
+// a square the switch's height at its right end (the part's face + edges) with a tick when on; the tap area is unchanged.
 // The docs define no pressed look (the knob moving IS the feedback) and no visible label (a labelled row = List row).
 // States (a token per state, C17; LVGL CHECKED = on, fw::st::OFF = disabled):
 //   off · disabled  hollow track (hair border disabled-line, no fill), disabled-knob knob (the inset less the hair)
@@ -49,6 +51,7 @@ void fill(lv_obj_t *t, fw::Props p) {
   fx::use(t, "border:disabled-accent", ST_OFF | ST_ON);
   if (slide) { fx::use(t, "toggle-slide"); fx::use(t, "toggle-slide", ST_ON); }
   fx::use(t, "part:track");  // the theme's track (C46), after the track's own state tokens
+  fx::use(t, "part:switch");  // the theme's switch shape (C46): pill = this; check = a checkbox the core draws
 
   fx::use(kn, "toggle-knob");
   fx::use(kn, "bg:text-dim");
@@ -57,13 +60,14 @@ void fill(lv_obj_t *t, fw::Props p) {
   fx::use(kn, "bg:disabled-knob", ST_OFF);
   fx::use(kn, "bg:disabled-on-fill", ST_OFF | ST_ON);
   if (slide) { fx::use(kn, "toggle-slide"); fx::use(kn, "toggle-slide", ST_ON); }
+  fx::use(kn, "part:switch");  // a checkbox has no knob
 }
 }  // namespace
 
 FW_COMPONENT(toggle, "Toggle", "components", R"({
   "about": "An on/off switch.",
   "contract": 2,
-  "parts": ["track"],
+  "parts": ["track", "switch"],
   "min": ["layout:toggle-w", "touch:min"],
   "frame": [160, 96],
   "props": [

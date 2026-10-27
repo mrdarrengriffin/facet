@@ -198,6 +198,9 @@ unavailable) are set with `lv_obj_add_state` / `fx::state(obj, state, on)`, and 
 `fx::use(obj, token, LV_STATE_...)`. A component MUST NOT swap styles or colours in an event handler to show a state.
 *Why:* a tap and a theme switch can then never disagree (the tile accent bug, L5). *Check:* P4 with states set
 before the switch.
+State graphics (WCAG 1.4.11) MUST show at 3:1 on the real pixels: the chosen segment, a fill on its track, a knob
+against everything round it (track, fill AND the page or card); disabled ones (inactive, which WCAG exempts) at 1.5:1,
+still visible. *Check:* `tools/pixel_contrast.mjs --theme all` (no exemption list).
 
 **C18. Layout sizes are fixed by Facet and not themeable.** Everything in `space`, `layout`, `touch` and
 `radius:round` comes from the 4 px grid, the size class (density) and the type scale. A theme MUST NOT change them;

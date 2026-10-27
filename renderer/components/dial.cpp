@@ -86,7 +86,7 @@ void draw(const fx::Pen &p) {
   if (!d->dimmable) return;  // an on / off light: no handle
   int x, y;
   fx::at(a1, knob_r(p.half), &x, &y);
-  p.knob(x, y, "layout:dial-knob", dim ? "fg:disabled-knob" : "fg:accent", "fg:bg", "stroke:knob");
+  p.knob(x, y, "layout:dial-knob", dim ? "fg:disabled-knob" : "fg:accent-text", "fg:bg", "stroke:knob");  // accent-text: 3:1 on the track too (light)
 }
 
 void show(void *o, int32_t v) {

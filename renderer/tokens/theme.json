@@ -52,6 +52,7 @@
     "knob": ["shape", "edges", "ink", "shadow"],
     "tick": ["shape", "ink"],
     "arc": ["edges", "ink"],
+    "switch": ["shape", "face", "edges", "ink"],
     "text": ["text", "weight", "shadow"],
     "icon": ["text", "shadow"],
     "base_only": ["buttons", "w", "lane", "arrows"]
@@ -73,6 +74,7 @@
     "tick-major": {"keys": "tick", "sits_on": "bg", "face": "blue", "texts": [], "press": [], "radius": null, "height": null, "room": null, "pad": false},
     "arc": {"keys": "arc", "sits_on": "bg", "face": "line", "texts": [], "press": [], "radius": null, "height": null, "room": {"stroke": "stroke:edge"}, "pad": false},
     "arc-fill": {"keys": "arc", "sits_on": "bg", "face": "accent", "texts": [], "press": [], "radius": null, "height": null, "room": {"stroke": "stroke:indicator"}, "pad": false},
+    "switch": {"keys": "switch", "sits_on": "bg", "face": null, "texts": [], "press": [], "radius": null, "height": null, "room": null, "pad": false},
     "title": {"keys": "text", "sits_on": "bg", "face": null, "texts": [], "press": [], "radius": null, "height": null, "room": null, "pad": false},
     "body": {"keys": "text", "sits_on": "bg", "face": null, "texts": [], "press": [], "radius": null, "height": null, "room": null, "pad": false},
     "label": {"keys": "text", "sits_on": "bg", "face": null, "texts": [], "press": [], "radius": null, "height": null, "room": null, "pad": false},
@@ -106,6 +108,7 @@
     "weights": ["regular", "bold"],
     "knob_shapes": ["circle", "square", "diamond", "ring", "pixel", "pointer"],
     "tick_shapes": ["lines", "dots", "blocks", "none"],
+    "switch_shapes": ["pill", "check"],
     "dirs": ["right", "down"],
     "glyphs": ["minimize", "maximize", "restore", "help", "close", "gap"]
   }

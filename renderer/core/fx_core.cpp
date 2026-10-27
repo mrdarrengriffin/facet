@@ -88,7 +88,7 @@ int ix_pixel = -1;         // the Skin size index of stroke:pixel (the snapped c
 const fx::Skin *live_raw = nullptr;  // the Skin the looks were last painted with (fx::size reads its look sizes)
 int type_part[64];         // fx type style -> its text part (tokens/theme.json parts of kind text)
 bool boxy(int p) { const char *k = G::PARTS[p].kind; return !strcmp(k, "box") || !strcmp(k, "header") || !strcmp(k, "frame") || !strcmp(k, "caption"); }
-bool styled(int p) { const char *k = G::PARTS[p].kind; return boxy(p) || !strcmp(k, "text") || !strcmp(k, "icon"); }
+bool styled(int p) { const char *k = G::PARTS[p].kind; return boxy(p) || !strcmp(k, "text") || !strcmp(k, "icon") || p == G::P_SWITCH; }
 int part_ix(const char *n) { for (int p = 0; p < G::N_PARTS; p++) if (!strcmp(G::PARTS[p].name, n)) return p; abort(); }
 lv_style_selector_t sel_of(int m) {
   return (m & S::ON ? LV_STATE_CHECKED : 0) | (m & S::FOCUS ? LV_STATE_FOCUSED : 0) | (m & S::PRESSED ? LV_STATE_PRESSED : 0) | (m & S::DISABLED ? fw::st::OFF : 0);
@@ -434,6 +434,10 @@ void part_style(Look *L, lv_style_t *s, int p, int m, bool text_only) {
   const S::Block b = k.merged(p, m);
   const int lt = L->th.light, set = L->th.accent_set;
   auto ink = [&](const S::Ink &i) { return hex(k.ink(i, lt, set)); };
+  if (p == G::P_SWITCH) {  // shape check: the switch's own track + knob go; the core draws the box + tick (switch_draw)
+    if ((b.has & S::K_SHAPE) && b.shape == 1) { lv_style_set_bg_opa(s, LV_OPA_TRANSP); lv_style_set_border_opa(s, LV_OPA_TRANSP); lv_style_set_shadow_opa(s, LV_OPA_TRANSP); }
+    return;
+  }
   if (text_only || !boxy(p)) {  // a text / icon part, or the text ink of a box part: labels and icon ink layers take it
     if (b.has & S::K_TEXT) {
       lv_style_set_text_color(s, ink(b.text));
@@ -686,6 +690,53 @@ int shadow_reach(const S::Skin &k, int p) {  // the farthest any combination's s
   return r;
 }
 Look *look_of(lv_obj_t *o);
+std::map<lv_obj_t *, bool> switch_of;  // an object with the switch part -> it draws (the root; false = its knob)
+bool is_check(lv_obj_t *o) {  // the live theme's switch part has shape check on this switch root
+  if (!switch_of.count(o)) return false;
+  const S::Block b = look_of(o)->skin->merged(G::P_SWITCH, combo(o));
+  return (b.has & S::K_SHAPE) && b.shape == 1;
+}
+// switch part shape check (a theme's classic checkbox): a square the switch's height at its right end (the tap area
+// stays the switch), the part's face + edges, and when on a 7 x 7 cell tick in the part's ink (cell = the square / 13,
+// the classic proportion). Read at draw time, so a live theme switch repaints it (C44)
+void switch_draw(lv_event_t *e) {
+  lv_obj_t *o = (lv_obj_t *) lv_event_get_current_target(e);
+  if (!is_check(o)) return;
+  Look *L = look_of(o);
+  const S::Skin &k = *L->skin;
+  const int m = combo(o), lt = L->th.light, set = L->th.accent_set;
+  const S::Block b = k.merged(G::P_SWITCH, m);
+  lv_layer_t *ly = lv_event_get_layer(e);
+  lv_area_t A;
+  lv_obj_get_coords(o, &A);
+  const int side = lv_area_get_height(&A);
+  const lv_area_t q = {A.x2 - side + 1, A.y1, A.x2, A.y2};
+  if (b.has & S::K_FACE) {
+    lv_draw_rect_dsc_t d;
+    lv_draw_rect_dsc_init(&d);
+    d.bg_color = hex(k.ink(b.face.a, lt, set)); d.bg_opa = LV_OPA_COVER;
+    lv_draw_rect(ly, &d, &q);
+  }
+  if (b.has & S::K_EDGES) draw_edges(ly, q, k, b, lt, set, 0);
+  if (!(m & S::ON)) return;
+#ifndef ESP_PLATFORM
+  if (fx::pen_veil == "switch") return;  // tests: the tick veiled (pixel contrast)
+#endif
+  static const char *const TICK[7] = {"......#", ".....##", "#...###", "##.###.", "#####..", ".###...", "..#...."};
+  const int cs = std::max(1, side / 13), x0 = q.x1 + (side - 7 * cs) / 2, y0 = q.y1 + (side - 7 * cs) / 2;
+  lv_draw_rect_dsc_t d;
+  lv_draw_rect_dsc_init(&d);
+  d.bg_color = hex(b.has & S::K_INK ? k.ink(b.ink, lt, set) : k.rgb(lt, set, G::C_TEXT_DIM)); d.bg_opa = LV_OPA_COVER;
+  for (int r = 0; r < 7; r++)
+    for (int c0 = 0; c0 < 7; c0++) {
+      if (TICK[r][c0] != '#') continue;
+      int c1 = c0;
+      while (c1 + 1 < 7 && TICK[r][c1 + 1] == '#') c1++;
+      const lv_area_t a = {x0 + c0 * cs, y0 + r * cs, x0 + (c1 + 1) * cs - 1, y0 + (r + 1) * cs - 1};
+      lv_draw_rect(ly, &d, &a);
+      c0 = c1;
+    }
+}
 void part_draw(lv_event_t *e) {  // a box part: shadow under it (MAIN_BEGIN), pattern face + edges over its fill (MAIN_END)
   lv_obj_t *o = (lv_obj_t *) lv_event_get_current_target(e);
   const int p = (int) (intptr_t) lv_event_get_user_data(e);
@@ -694,6 +745,7 @@ void part_draw(lv_event_t *e) {  // a box part: shadow under it (MAIN_BEGIN), pa
   if (lv_event_get_code(e) == LV_EVENT_REFR_EXT_DRAW_SIZE) { lv_event_set_ext_draw_size(e, shadow_reach(k, p)); return; }
   const S::Block b = k.merged(p, combo(o));
   if (!(b.has & (S::K_SHADOW | S::K_EDGES | S::K_FACE))) return;  // Facet: nothing (no draw call, S1)
+  if (is_check(o)) return;  // the theme draws this switch as a checkbox (switch_draw): its track part goes
   lv_layer_t *ly = lv_event_get_layer(e);
   const int lt = L->th.light, set = L->th.accent_set, radius = lv_obj_get_style_radius(o, LV_PART_MAIN);
   lv_area_t A;
@@ -1004,6 +1056,12 @@ void use(lv_obj_t *o, const char *t, lv_style_selector_t sel) {
     lv_obj_add_event_cb(o, [](lv_event_t *e) { part_of.erase((lv_obj_t *) lv_event_get_current_target(e)); }, LV_EVENT_DELETE, nullptr);
   }
   for (int m = 0; m < 16; m++) lv_obj_add_style(o, &L->s[part_def[p][m]], sel_of(m));
+  if (p == G::P_SWITCH && !switch_of.count(o)) {  // the switch root draws the checkbox; a part inside it (its knob) only hides
+    const bool root = !switch_of.count(lv_obj_get_parent(o));
+    switch_of[o] = root;
+    if (root) lv_obj_add_event_cb(o, switch_draw, LV_EVENT_DRAW_MAIN_END, nullptr);
+    lv_obj_add_event_cb(o, [](lv_event_t *e) { switch_of.erase((lv_obj_t *) lv_event_get_current_target(e)); }, LV_EVENT_DELETE, nullptr);
+  }
   if (!boxy(p)) return;
   // texts and icon inks already inside (built before the part was attached) take its text ink now; a part inside owns its own
   std::vector<lv_obj_t *> todo;
