@@ -411,6 +411,14 @@ EMSCRIPTEN_KEEPALIVE const char *fw_comps(int id) {
   return out.c_str();
 }
 
+// the workbench Components view: every meta slot (C8a) shown on stage `id`, [{n, x, y, w, h}] (fx::slot)
+EMSCRIPTEN_KEEPALIVE const char *fw_slots(int id) {
+  Stage *s = get(id);
+  if (!s) return "[]";
+  out = fx::slots_json(lv_display_get_screen_active(s->d));
+  return out.c_str();
+}
+
 // the editor's click-to-edit (core/spec.h anchors): every anchored region of the spec screen on stage `id`
 // [{n, c, prop?, params, x, y, w, h}] (device px, as drawn); fw_hit = the smallest one at (x, y), "null" if none
 EMSCRIPTEN_KEEPALIVE const char *fw_hits(int id) {

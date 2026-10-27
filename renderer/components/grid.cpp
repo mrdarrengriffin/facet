@@ -76,6 +76,7 @@ void build_static(lv_obj_t *r, Props p) {
   const bool row = !strcmp(p["aspect"] | "square", "row");
   for (int i = 0; i < n; i++) {
     lv_obj_t *c = fx::grid_cell(r, spans[i].first, spans[i].second);
+    fx::slot(c, "cell");
     if (!outline) continue;
     // the workbench sample: each cell a named outline
     if (row) fx::use(c, "h:list-row-h");
@@ -98,6 +99,7 @@ void on_pick(lv_event_t *e) {
 }
 lv_obj_t *item_cell(lv_obj_t *r, const G &g, const std::string &item) {
   lv_obj_t *c = fx::grid_cell(r, 1, 1, true);  // clickable only while it is a touch target (core)
+  fx::slot(c, "item");
   lv_obj_add_event_cb(c, on_pick, LV_EVENT_CLICKED, nullptr);
   std::string comp;
   ArduinoJson::JsonDocument cp;

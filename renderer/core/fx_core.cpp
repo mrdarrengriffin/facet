@@ -1282,6 +1282,30 @@ void pair_split(lv_obj_t *pr) {
   split(pr);
 }
 void name(lv_obj_t *o, const char *n) { if (!names.count(o)) lv_obj_add_event_cb(o, forget, LV_EVENT_DELETE, nullptr); names[o] = n; }
+#ifndef ESP_PLATFORM
+static std::map<lv_obj_t *, const char *> &slot_marks() { static std::map<lv_obj_t *, const char *> m; return m; }
+void slot(lv_obj_t *o, const char *n) {
+  if (!slot_marks().count(o)) lv_obj_add_event_cb(o, [](lv_event_t *e) { slot_marks().erase((lv_obj_t *) lv_event_get_current_target(e)); }, LV_EVENT_DELETE, nullptr);
+  slot_marks()[o] = n;
+}
+std::string slots_json(lv_obj_t *scr) {
+  ArduinoJson::JsonDocument doc;
+  ArduinoJson::JsonArray a = doc.to<ArduinoJson::JsonArray>();
+  for (auto &[o, n] : slot_marks()) {
+    if (lv_obj_get_screen(o) != scr || lv_obj_has_flag(o, LV_OBJ_FLAG_HIDDEN)) continue;
+    lv_area_t r;
+    lv_obj_get_coords(o, &r);
+    ArduinoJson::JsonObject b = a.add<ArduinoJson::JsonObject>();
+    b["n"] = n, b["x"] = r.x1, b["y"] = r.y1, b["w"] = lv_area_get_width(&r), b["h"] = lv_area_get_height(&r);
+  }
+  std::string out;
+  serializeJson(doc, out);
+  return out;
+}
+#else
+void slot(lv_obj_t *, const char *) {}
+std::string slots_json(lv_obj_t *) { return "[]"; }
+#endif
 int type_box(const char *type) { return box_of(type_id(type)); }
 int size(const char *t) {  // a size token now: tuned (the lab) > the live theme's look size (C19) > Facet's
   for (int i = 0; i < gen::N_SIZES; i++) if (!strcmp(gen::SIZES[i].name, t)) {

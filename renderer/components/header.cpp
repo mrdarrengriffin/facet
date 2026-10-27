@@ -135,6 +135,7 @@ void fill(lv_obj_t *h, fw::Props p) {
   fx::use(h, "header-move");  // a flush header bar (C45): the page's insets inside the bar (empty in Facet)
   lv_obj_t *bk = fx::box(h, "header-back"), *ti = fx::box(h, "header-title"), *en = fx::box(h, "header-end"),
            *tm = fx::box(h, "header-time");
+  for (const Slot &s : SLOTS) fx::slot(lv_obj_get_child(h, s.child), s.name);  // the workbench outlines them
   lv_obj_add_event_cb(en, [](lv_event_t *e) { own_tail.erase((lv_obj_t *) lv_event_get_current_target(e)); }, LV_EVENT_DELETE, nullptr);
   lv_obj_add_event_cb(en, [](lv_event_t *e) {  // a C++ screen adding to the end slot (building_header()) shows it
     auto *o = (lv_obj_t *) lv_event_get_current_target(e);

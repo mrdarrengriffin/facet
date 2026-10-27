@@ -124,6 +124,7 @@ void fill(lv_obj_t *r, const Spec &s, Row *d) {
   d->su = sub ? line(col, s.sub, "type:body", "fg:text-dim") : nullptr;
 
   lv_obj_t *en = fx::box(r, "free");  // the end slot (meta "slots": end)
+  fx::slot(en, "end");
   for (const char *t : {"row-end", "gap:4"}) fx::use(en, t);
   lv_obj_add_flag(en, fw::spec::SLOT);
   lv_obj_add_event_cb(en, [](lv_event_t *e) { show_end((lv_obj_t *) lv_event_get_current_target(e)); }, LV_EVENT_CHILD_CHANGED, nullptr);

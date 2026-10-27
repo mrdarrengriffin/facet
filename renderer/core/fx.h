@@ -63,6 +63,8 @@ void pair_split(lv_obj_t *pair);  // a "pair" box: its halves (children 0, 2) sh
 void split(lv_obj_t *pair);
 void bleed(lv_obj_t *o);           // the one escape: o's background reaches the page edge (the "bleed" style marks it)
 void name(lv_obj_t *o, const char *n);  // a component root's name for the inspector
+void slot(lv_obj_t *o, const char *n);  // o holds the meta slot n (C8a): the workbench outlines it (hosts only, no-op on a panel)
+std::string slots_json(lv_obj_t *scr);  // [{n, x, y, w, h}] every marked slot shown on scr (device px)
 int size(const char *token);       // a size token ("stroke:hair", "layout:dial-tick") for DRAWING only
 int type_box(const char *type);    // a type style's line box ("type:c-meta"), for placing drawn text only
 
