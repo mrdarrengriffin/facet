@@ -1292,11 +1292,26 @@ std::string slots_json(lv_obj_t *scr) {
   ArduinoJson::JsonDocument doc;
   ArduinoJson::JsonArray a = doc.to<ArduinoJson::JsonArray>();
   for (auto &[o, n] : slot_marks()) {
-    if (lv_obj_get_screen(o) != scr || lv_obj_has_flag(o, LV_OBJ_FLAG_HIDDEN)) continue;
+    if (lv_obj_get_screen(o) != scr) continue;
+    lv_obj_t *par = lv_obj_get_parent(o);
+    if (!par || lv_obj_has_flag(par, LV_OBJ_FLAG_HIDDEN)) continue;
     lv_area_t r;
     lv_obj_get_coords(o, &r);
     ArduinoJson::JsonObject b = a.add<ArduinoJson::JsonObject>();
-    b["n"] = n, b["x"] = r.x1, b["y"] = r.y1, b["w"] = lv_area_get_width(&r), b["h"] = lv_area_get_height(&r);
+    if (lv_obj_has_flag(o, LV_OBJ_FLAG_HIDDEN)) {  // an empty slot takes no space: where it would open = just after the
+      lv_area_t pr;                                // last shown sibling before it, the parent's height (w 0, "empty")
+      lv_obj_get_coords(par, &pr);
+      int32_t x = pr.x1 + lv_obj_get_style_pad_left(par, LV_PART_MAIN);
+      for (int32_t i = lv_obj_get_index(o) - 1; i >= 0; i--) {
+        lv_obj_t *sib = lv_obj_get_child(par, i);
+        if (lv_obj_has_flag(sib, LV_OBJ_FLAG_HIDDEN)) continue;
+        lv_area_t sr;
+        lv_obj_get_coords(sib, &sr);
+        x = sr.x2 + 1;
+        break;
+      }
+      b["n"] = n, b["x"] = x, b["y"] = pr.y1, b["w"] = 0, b["h"] = lv_area_get_height(&pr), b["empty"] = true;
+    } else b["n"] = n, b["x"] = r.x1, b["y"] = r.y1, b["w"] = lv_area_get_width(&r), b["h"] = lv_area_get_height(&r);
   }
   std::string out;
   serializeJson(doc, out);
