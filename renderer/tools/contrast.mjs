@@ -8,10 +8,13 @@
 //   node tools/contrast.mjs --all      every combination
 //   node tools/contrast.mjs --json     the expanded matrix as JSON
 //   node tools/contrast.mjs --summary  one line (build.sh)
+//   node tools/contrast.mjs --theme <id | file.json> [--all]   a theme file's contrast guard (C47): the declared pairs
+//       of the theme scope + the part pairs, every mode x accent, on the theme's palette. The same code as the panel's
+//       parser (core/theme_file.cpp through the WASM build in FW_OUT): what it lists is exactly what refuses the file
 // Also imported by gen_colour.mjs (expand(), the C++ table for the Colour page).
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 export const SRC = join(HERE, '..', 'tokens', 'colour.json');
@@ -75,7 +78,28 @@ export function expand(t) {
   return rows;
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+async function themeGuard(which, all) {
+  const R = join(HERE, '..'), env = {};
+  const le = join(R, '..', 'local.env');
+  if (existsSync(le)) for (const l of readFileSync(le, 'utf8').split('\n')) { const m = l.match(/^(\w+)=(.*)$/); if (m) env[m[1]] = m[2]; }
+  const build = process.env.FW_OUT || env.FW_OUT || join(R, 'out'), den = existsSync(join(build, '1.5x', 'fw.mjs')) ? '1.5x' : '1x';
+  const file = existsSync(which) ? which : join(R, 'themes', `${which}.json`);
+  const m = await (await import(pathToFileURL(join(build, den, 'fw.mjs')).href)).default();
+  m._fw_init();
+  const S = (p, f) => { const q = m.stringToNewUTF8(p); try { return f(q); } finally { m._free(q); } };
+  const r = JSON.parse(S('theme_contrast', (c) => S(readFileSync(file, 'utf8'), (a) => m.UTF8ToString(m._fw_lab(-1, c, a)))));
+  const f2 = (x) => x.toFixed(2).padStart(5);
+  if (!r.ok) {  // refused: the guard's own errors (contrast, press feedback, geometry, or the file's structure)
+    for (const e of r.errors) console.log(`FAIL ${e.path}${e.path ? ': ' : ''}${e.msg}`);
+    console.log(`contrast --theme ${which}: REFUSED (${r.errors.length} errors${r.errors.length >= 32 ? ', the first 32' : ''})`);
+    process.exit(1);
+  }
+  for (const x of r.rows) if (all || !x[9]) console.log(`${x[9] ? 'ok  ' : 'FAIL'} ${x[5].padEnd(8)} ${x[4].padEnd(5)} ${f2(Math.min(x[6], x[7]))} / ${x[8]}  ${x[3].padEnd(8)} ${x[1]} on ${x[2]}  (${x[0]})`);
+  console.log(`contrast --theme ${r.id}: ${r.rows.length} checks (${r.modes.join(' + ')} x ${r.sets.length} accents, declared + part pairs), 0 fail`);
+}
+
+if (process.argv[1] === fileURLToPath(import.meta.url) && process.argv[2] === '--theme') await themeGuard(process.argv[3], process.argv.includes('--all'));
+else if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const t = JSON.parse(readFileSync(SRC, 'utf8'));
   const rows = expand(t), fails = rows.filter((r) => !r.pass);
   const arg = process.argv[2] ?? '';

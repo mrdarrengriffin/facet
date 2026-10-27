@@ -36,6 +36,7 @@ extern "C" int32_t lv_obj_get_ext_draw_size(const lv_obj_t *obj);
 #include <map>
 #include "core/lv_obj_private.h"  // ext_click_pad (audit)
 #include "misc/lv_text_private.h"  // lv_text_encoded_next (audit)
+namespace fx { std::string theme_lab(const std::string &cmd, const std::string &arg); }  // core/theme_lab.cpp (fw_lab theme_*)
 
 
 namespace {
@@ -435,6 +436,7 @@ EMSCRIPTEN_KEEPALIVE const char *fw_hit(int id, int x, int y) {
 //                             drawing; page ones only with a Page on it): the lab shows exactly these
 //   "probe", "<squeeze>"   -> {name: 1 | 0}: which size tokens (+ "squeeze") change stage id's pixels (each moved
 //                             and put back, rendered synchronously): the lab shows what this component really uses
+//   "theme_*", <json>      -> the theme engine: load, apply, dump, contrast, builtins (core/theme_lab.cpp)
 //   "proof", ""            -> {bounds, overlap, trunc: [{x, y, w, h, why}]} for stage id: Body objects outside their
 //                             parent's content box (bleed skipped), clickable areas that overlap (not nested), text
 //                             wider than its label (cut to "...")
@@ -484,6 +486,7 @@ bool lab_inside(lv_obj_t *o, lv_obj_t *anc) { for (; o; o = lv_obj_get_parent(o)
 EMSCRIPTEN_KEEPALIVE const char *fw_lab(int id, const char *cmd, const char *arg) {
   out.clear();
   const std::string c = cmd, a = arg ? arg : "";
+  if (!c.compare(0, 6, "theme_")) { out = fx::theme_lab(c, a); return out.c_str(); }  // theme files (core/theme_lab.cpp)
   if (c == "tokens") { out = fx::tunables(); return out.c_str(); }
   if (c == "tune") {
     const size_t eq = a.find('=');
@@ -525,7 +528,7 @@ EMSCRIPTEN_KEEPALIVE const char *fw_lab(int id, const char *cmd, const char *arg
     serializeJson(doc, out);
     return out.c_str();
   }
-  if (c != "proof") return "tokens | tune | uses | probe | proof";
+  if (c != "proof") return "tokens | tune | uses | probe | proof | theme_*";
   Stage *s = get(id);
   if (!s) return "{}";
   lv_obj_t *scr = lv_display_get_screen_active(s->d);

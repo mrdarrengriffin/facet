@@ -10,7 +10,8 @@ import { fileURLToPath } from 'node:url';
 const DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'components');
 const RULES = {
   width: /\blay::(screen_w|screen_h|card_w|content_w)\b/,
-  theme: /\bfw::T\b|\bT->|\btheme_of\(|\bfw::Theme\b|\blv_color_(hex|make)\(/,
+  // + the theme file engine is core only (C44): a component never sees a Skin, a theme file or the live theme
+  theme: /\bfw::T\b|\bT->|\btheme_of\(|\bfw::Theme\b|\blv_color_(hex|make)\(|theme_file\.h|\bSkin\b|\bskin::|\btheme_(load|live|apply|facet|generation)\(/,
   draw: /\blv_draw_/,
   local: /\blv_obj_set_style_|\blv_style_init\(|\blv_obj_set_(size|width|height|pos|x|y)\(/,
 };

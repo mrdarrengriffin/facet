@@ -1,0 +1,112 @@
+{
+  "$comment": "The theme file schema (renderer/CONTRACT.md section 10 + Appendix A): the rules a theme file is read and guarded by, as data. tools/gen_theme.mjs reads this with colour.json, space.json, layout.json, type.json and catalogue/contract.json and writes themes/facet.json (the schema with Facet's values: the defaults every theme inherits) and theme_gen.h (the tables core/theme_file.cpp parses and guards with). Values here are rules, not looks: a theme never changes them.",
+  "schema": 1,
+  "limits": {
+    "about": "Caps for memory and performance only (C48). A file over a cap is refused whole. edge_px: how far in an edge layer may reach on a part with no room of its own (drawn on every redraw); shadow_px: the largest shadow offset (a shadow is drawn outside its box). values: the JSON values a file may hold (the parse reserves its memory once: values x 24 B + the file + the scratch model stay under 64 KB, theme engine S6).",
+    "bytes": 16384,
+    "depth": 8,
+    "errors": 32,
+    "values": 1400,
+    "edges_per_block": 8,
+    "edges_total": 128,
+    "accents_min": 1,
+    "accents_max": 8,
+    "id_chars": 32,
+    "label_chars": 48,
+    "about_chars": 1000,
+    "buttons": 8,
+    "edge_px": [24, 16],
+    "shadow_px": [6, 4]
+  },
+  "modes": ["dark", "light"],
+  "roles": {
+    "about": "Font roles (C49): a theme names a family per role. A type style's role decides its family.",
+    "list": ["display", "body", "label", "mono"]
+  },
+  "type": {
+    "about": "The type styles a theme may size, each within [floor, the style's line box] at each density (Appendix A type): the box, case and letter spacing stay Facet's, so no line moves (C45). Floors are [1.5x, 1x] px; role = the font role whose family draws it.",
+    "styles": {
+      "display": {"floor": [32, 24], "role": "display"},
+      "hero": {"floor": [32, 24], "role": "display"},
+      "value": {"floor": [20, 14], "role": "display"},
+      "headline": {"floor": [24, 16], "role": "display"},
+      "title": {"floor": [24, 16], "role": "body"},
+      "body": {"floor": [20, 14], "role": "body"},
+      "label": {"floor": [16, 12], "role": "label"}
+    }
+  },
+  "states": {
+    "about": "State blocks merge over the base in this order (later wins). LVGL resolves the same order natively (theme-engine design 3.4): CHECKED < FOCUSED < PRESSED < fw::st::OFF.",
+    "list": ["on", "focus", "pressed", "disabled"]
+  },
+  "combinations": {
+    "about": "A part's look is compiled for every combination of its states (16: on, focus, pressed, disabled in any mix): merged = base <- on <- focus <- pressed <- disabled for the states set. LVGL picks each property from the matching style with the largest state, so only a block for the exact combination is always right (on + focus, which a tap gives a focusable object, included). The guards check them all, except pressed + disabled for contrast: a disabled part takes no press (C36)."
+  },
+  "keys": {
+    "about": "Style block keys (Appendix A Style block) and the part kinds that take them.",
+    "box": ["face", "radius", "pad", "edges", "shadow", "text"],
+    "header": ["face", "radius", "pad", "edges", "shadow", "text", "buttons"],
+    "frame": ["face", "edges"],
+    "caption": ["face", "edges", "text"],
+    "scrollbar": ["face", "radius", "edges", "w", "lane", "arrows"],
+    "knob": ["shape", "edges", "ink", "shadow"],
+    "tick": ["shape", "ink"],
+    "arc": ["edges", "ink"],
+    "text": ["text", "weight", "shadow"],
+    "icon": ["text", "shadow"],
+    "base_only": ["buttons", "w", "lane", "arrows"]
+  },
+  "parts": {
+    "about": "The fixed list of parts (C46). keys = which style keys it takes; sits_on = the colour token under it (its outer edges and drawn ink are checked against it, C47); face = the colour token its face replaces (what the component paints there without a theme; a drawn part: the ink the component draws it in, which counts with its outer edges); texts = what is written on its face (checked on every face stop, 4.5, or the part's own text ink); press = the look keys its component changes when pressed (C36: if the theme fixes all of them, its pressed block must differ); radius = the size token whose look range a part radius must stay in; height = the size token a radius is at most half of; room = how far in its edge layers may reach (pad: the part's padding token; height + less: half of the height minus that type style's line box, so edges never reach the content; stroke: leave a pixel cell of that stroke for the part itself; buttons / width: half the caption button height / the scrollbar width; null = limits.edge_px); pad = whether a theme may pad it (only parts with no content: the padding insets the fill and moves nothing, C45).",
+    "card": {"keys": "box", "sits_on": "bg", "face": "surface", "texts": ["text", "text-dim", "accent-text"], "press": ["face"], "radius": "radius:card", "height": "layout:card-min-h", "room": {"pad": "layout:card-pad"}, "pad": false},
+    "control": {"keys": "box", "sits_on": "bg", "face": "surface", "texts": ["text"], "press": ["face"], "radius": "radius:button", "height": "touch:button-h", "room": {"height": "touch:button-h", "less": "label"}, "pad": false},
+    "track": {"keys": "box", "sits_on": "bg", "face": "line", "texts": [], "press": [], "radius": "radius:part", "height": null, "room": null, "pad": true},
+    "track-fill": {"keys": "box", "sits_on": "line", "face": "accent", "texts": [], "press": [], "radius": "radius:part", "height": null, "room": null, "pad": true},
+    "header": {"keys": "header", "sits_on": "bg", "face": "bg", "texts": ["text", "text-dim"], "press": [], "radius": "radius:card", "height": "layout:row", "room": {"height": "layout:row", "less": "label"}, "pad": false},
+    "list-row": {"keys": "box", "sits_on": "bg", "face": "bg", "texts": ["text", "text-dim"], "press": ["face"], "radius": "radius:card", "height": "layout:list-row-h", "room": {"pad": "layout:row-pad"}, "pad": false},
+    "page": {"keys": "frame", "sits_on": "bg", "face": "bg", "texts": ["text", "text-dim"], "press": [], "radius": null, "height": null, "room": {"pad": "layout:inset"}, "pad": false},
+    "rule": {"keys": "frame", "sits_on": "bg", "face": null, "texts": [], "press": [], "radius": null, "height": null, "room": null, "pad": false},
+    "caption": {"keys": "caption", "sits_on": "bg", "face": "surface", "texts": ["text"], "press": [], "radius": null, "height": null, "room": {"buttons": true}, "pad": false},
+    "scrollbar": {"keys": "scrollbar", "sits_on": "bg", "face": "line-hi", "texts": [], "press": [], "radius": "radius:part", "height": null, "room": {"width": true}, "pad": false},
+    "knob": {"keys": "knob", "sits_on": "bg", "face": "accent", "texts": [], "press": [], "radius": null, "height": null, "room": {"height": "layout:dial-knob"}, "pad": false},
+    "tick": {"keys": "tick", "sits_on": "bg", "face": "line-hi", "texts": [], "press": [], "radius": null, "height": null, "room": null, "pad": false},
+    "tick-major": {"keys": "tick", "sits_on": "bg", "face": "blue", "texts": [], "press": [], "radius": null, "height": null, "room": null, "pad": false},
+    "arc": {"keys": "arc", "sits_on": "bg", "face": "line", "texts": [], "press": [], "radius": null, "height": null, "room": {"stroke": "stroke:edge"}, "pad": false},
+    "arc-fill": {"keys": "arc", "sits_on": "bg", "face": "accent", "texts": [], "press": [], "radius": null, "height": null, "room": {"stroke": "stroke:indicator"}, "pad": false},
+    "title": {"keys": "text", "sits_on": "bg", "face": null, "texts": [], "press": [], "radius": null, "height": null, "room": null, "pad": false},
+    "body": {"keys": "text", "sits_on": "bg", "face": null, "texts": [], "press": [], "radius": null, "height": null, "room": null, "pad": false},
+    "label": {"keys": "text", "sits_on": "bg", "face": null, "texts": [], "press": [], "radius": null, "height": null, "room": null, "pad": false},
+    "value": {"keys": "text", "sits_on": "bg", "face": null, "texts": [], "press": [], "radius": null, "height": null, "room": null, "pad": false},
+    "display": {"keys": "text", "sits_on": "bg", "face": null, "texts": [], "press": [], "radius": null, "height": null, "room": null, "pad": false},
+    "icon": {"keys": "icon", "sits_on": "bg", "face": null, "texts": [], "press": [], "radius": null, "height": null, "room": null, "pad": false}
+  },
+  "contrast": {
+    "about": "C47 contrast guard. Every declared pair (colour.json contrast.pairs) of these foundation sections and of every component and screen on the contract (catalogue/contract.json) is checked on the theme's palette, every mode x accent, on the exact and the RGB565 values (the worse decides), plus the part pairs. Part pairs: texts on every face stop 4.5 (disabled selectors: text-mute 3.0); a part's own text ink 4.5 on its face (caption 3.0: glyphs); outer edges of card and control, the knob, major ticks and the arc fill on what they sit on 3.0 (the strongest outer layer counts); the scrollbar thumb on its lane 3.0. Shadows never count.",
+    "sections": ["text", "accent", "status", "lines", "icons", "icon"],
+    "text": 4.5,
+    "large": 3.0,
+    "ui": 3.0,
+    "disabled": 3.0,
+    "outer": ["card", "control", "knob", "tick-major", "arc-fill"]
+  },
+  "shape": {
+    "about": "Presets (Appendix A shape.*): each value expands to part blocks; the first value of each list is Facet's and expands to nothing, so a theme that names it changes nothing.",
+    "corner": ["round", "square"],
+    "cap": ["round", "square"],
+    "knob": ["circle", "square", "diamond", "ring", "pixel"],
+    "ticks": ["lines", "dots", "blocks", "none"],
+    "card": ["fill", "outline", "double"],
+    "indicator": ["text", "border", "bar"],
+    "icons": ["line", "pixel"]
+  },
+  "values": {
+    "about": "The words a style block takes.",
+    "sides": ["all", "top", "right", "bottom", "left", "top-left", "bottom-right"],
+    "edge_styles": ["solid", "dotted"],
+    "weights": ["regular", "bold"],
+    "knob_shapes": ["circle", "square", "diamond", "ring", "pixel", "pointer"],
+    "tick_shapes": ["lines", "dots", "blocks", "none"],
+    "dirs": ["right", "down"],
+    "glyphs": ["minimize", "maximize", "restore", "help", "close", "gap"]
+  }
+}

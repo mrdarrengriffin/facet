@@ -461,8 +461,8 @@
     ]
    },
    "cost": {
-    "objects": 335,
-    "bytes_est": 53600
+    "objects": 334,
+    "bytes_est": 53440
    }
   },
   "camera_tile": {

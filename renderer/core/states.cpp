@@ -95,8 +95,9 @@ struct Fade {
   lv_part_t part;
   lv_style_prop_t prop;
   lv_style_value_t from, to;
+  bool colour;  // before `shared`: Fade{obj, part, prop, from, to, colour} fills these in order (2026-10-27: with
+                // `shared` first, a colour fade set shared and left colour unset, so colours blended as numbers)
   bool shared = false;  // the value is a shared token style's (contract): the local copy goes when the fade ends
-  bool colour;
 };
 std::vector<Fade *> g_fades;
 void fade_free(lv_anim_t *a) {

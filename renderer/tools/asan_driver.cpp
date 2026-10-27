@@ -3,7 +3,9 @@
 // runs 400 frames, presses / drags / releases, takes an update with empty props, frees the stage. Any memory error
 // aborts with the sanitizer's report. Usage: fw-asan-<den> [id '<props json>' ...]
 #include <cstdint>
+#include <csignal>
 #include <cstdio>
+#include <unistd.h>
 #include <string>
 #include "ArduinoJson.h"
 extern "C" {
@@ -19,8 +21,19 @@ const char *fw_update(int, const char *, const char *, int, int);
 }
 static uint32_t t = 0;
 static void tick(int n) { for (int i = 0; i < n; i++) { t += 16; fw_tick(t); fw_events(); } }
+// a time bound per item: a render that never returns (a layout pass that never settles: the 2026-10-27 Layout page,
+// hours at 100% CPU) fails the run with its name instead of holding the box's job queue. Normal items take seconds.
+constexpr unsigned ITEM_S = 300;  // the slowest item today (icons, all) takes well under a minute under ASan
+static const char *g_item = "";
+static void on_alarm(int) {
+  fprintf(stderr, "asan: %s did not finish within %d s (an endless loop, e.g. a layout that never settles)\n", g_item, ITEM_S);
+  _exit(3);
+}
 static void run(const char *id, const char *props, int S) {
   fprintf(stderr, "== %s %s\n", id, props);
+  g_item = id;
+  signal(SIGALRM, on_alarm);
+  alarm(ITEM_S);
   for (int light = 0; light < 2; light++) {
     const int st = fw_stage(S, S);
     const char *e = fw_render(st, id, props, light, 0);
@@ -33,6 +46,7 @@ static void run(const char *id, const char *props, int S) {
     fw_update(st, id, "{}", light, 0); tick(60);
     fw_stage_free(st);
   }
+  alarm(0);
 }
 int main(int argc, char **argv) {
   fw_init();

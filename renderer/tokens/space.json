@@ -184,7 +184,8 @@
       "arc": { "v": 4, "1x": 2, "use": "dial and progress arcs" },
       "knob": { "v": 4, "1x": 2, "use": "slider and dial knob outline" },
       "indicator": { "v": 6, "1x": 4, "use": "value indicators, active bars" },
-      "track": { "v": 6, "1x": 4, "use": "Sport: the circuit line" }
+      "track": { "v": 6, "1x": 4, "use": "Sport: the circuit line" },
+      "pixel": { "v": 1, "1x": 1, "use": "the cell of a snapped theme (CONTRACT.md C29): a theme length given in cells is a multiple of it; Facet itself is not snapped, a theme may set it 1 .. 4" }
     },
     "touch": {
       "target": { "v": 64, "1x": 44, "use": "standard touch target (buttons, rows)" },

@@ -1,0 +1,48 @@
+{
+ "schema": 1,
+ "id": "blockcraft",
+ "label": "Blockcraft",
+ "about": "A block-game inventory GUI, in theme data only: on a pixel grid with a drop shadow (its font, Monocraft (OFL), arrives with the theme fonts), light-grey panels with a one-cell outer edge and a mitred bevel (white top-left, grey bottom-right) that inverts when pressed, grey bevel buttons, sunken slots, a bevelled block knob on a chunky pixel arc, block ticks, pixel icons. Gem and ore accents. Light is the inventory panel, dark a deep-slate GUI pack.",
+ "modes": ["dark"],
+ "colour": {
+  "bg": {"dark": "#141417"},
+  "surface": {"dark": "#34343A"},
+  "surface-press": {"dark": "#26262B"},
+  "line": {"dark": "#1E1E22"},
+  "line-hi": {"dark": "#5A5A64"},
+  "text": {"dark": "#F2F2F2"},
+  "text-dim": {"dark": "#B4B4BC"},
+  "blue": {"dark": "#7FB2FF"},
+  "text-mute": {"dark": "#8A8A94"},
+  "error": {"dark": "#FF8080"},
+  "steel": {"dark": "#8AA8C8"}
+ },
+ "accents": [
+  {"id": "emerald", "label": "Emerald", "dark": {"accent": "#17DD62", "accent-press": "#15CB5A", "accent-dim": "#15502E", "accent-text": "#17DD62", "on-accent": "#141417"}},
+  {"id": "redstone", "label": "Redstone", "dark": {"accent": "#FF4040", "accent-press": "#FF4F4F", "accent-dim": "#5A2123", "accent-text": "#FF8080", "on-accent": "#141417"}},
+  {"id": "lapis", "label": "Lapis", "dark": {"accent": "#5B8CFF", "accent-press": "#5481EB", "accent-dim": "#29385D", "accent-text": "#7FA6FF", "on-accent": "#141417"}},
+  {"id": "gold", "label": "Gold", "dark": {"accent": "#F5C518", "accent-press": "#E1B516", "accent-dim": "#584917", "accent-text": "#F5C518", "on-accent": "#141417"}},
+  {"id": "diamond", "label": "Diamond", "dark": {"accent": "#4AEDD9", "accent-press": "#44DAC8", "accent-dim": "#245551", "accent-text": "#4AEDD9", "on-accent": "#141417"}}
+ ],
+ "size": {
+  "stroke:hair": [2, 2],
+  "stroke:tick": [4, 4],
+  "stroke:arc": [6, 4],
+  "stroke:knob": [6, 4],
+  "stroke:indicator": [12, 8],
+  "stroke:pixel": [3, 2]
+ },
+ "shape": {"cap": "square", "ticks": "blocks", "icons": "pixel", "snap": true},
+ "parts": {
+  "card": {"radius": 0, "edges": [{"side": "all", "w": 1, "ink": "#6C6C76"}, {"side": "top-left", "w": 1, "inset": 1, "ink": "line-hi"}, {"side": "bottom-right", "w": 1, "inset": 1, "ink": "line"}], "pressed": {"edges": [{"side": "all", "w": 1, "ink": "#6C6C76"}, {"side": "top-left", "w": 1, "inset": 1, "ink": "line"}, {"side": "bottom-right", "w": 1, "inset": 1, "ink": "line-hi"}]}, "on": {"edges": [{"side": "all", "w": 1, "ink": "accent"}, {"side": "top-left", "w": 1, "inset": 1, "ink": "line-hi"}, {"side": "bottom-right", "w": 1, "inset": 1, "ink": "line"}]}},
+  "control": {"radius": 0, "face": "surface-press", "edges": [{"side": "all", "w": 1, "ink": "#6C6C76"}, {"side": "top-left", "w": 1, "inset": 1, "ink": "line-hi"}, {"side": "bottom-right", "w": 1, "inset": 1, "ink": "line"}], "pressed": {"edges": [{"side": "all", "w": 1, "ink": "#6C6C76"}, {"side": "top-left", "w": 1, "inset": 1, "ink": "line"}, {"side": "bottom-right", "w": 1, "inset": 1, "ink": "line-hi"}]}},
+  "track": {"radius": 0, "pad": 1, "edges": [{"side": "top-left", "w": 1, "ink": "#08080A"}, {"side": "bottom-right", "w": 1, "ink": "line-hi"}]},
+  "track-fill": {"radius": 0},
+  "knob": {"shape": "square", "edges": [{"side": "top-left", "w": 1, "ink": "line-hi"}, {"side": "bottom-right", "w": 1, "ink": "line"}]},
+  "title": {"shadow": {"dx": 1, "dy": 1, "ink": "#08080A"}},
+  "body": {"shadow": {"dx": 1, "dy": 1, "ink": "#08080A"}},
+  "label": {"shadow": {"dx": 1, "dy": 1, "ink": "#08080A"}},
+  "value": {"shadow": {"dx": 1, "dy": 1, "ink": "#08080A"}},
+  "display": {"shadow": {"dx": 1, "dy": 1, "ink": "#08080A"}}
+ }
+}
