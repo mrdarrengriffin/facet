@@ -7,6 +7,8 @@
 // that change are its ink, the veiled frame is what lies behind it. Its contrast = its own drawn colour (text colour /
 // icon recolour, RGB565 as the panel shows it) against the commonest pixel really behind its ink, or the best ink pixel
 // vs the pixel behind it if higher (a picture with its own colours: that alone); relative luminance as WCAG 2.x. Minimum: text 4.5, large text 3, icons 3, disabled (fw::st::OFF) 3.
+// Graphical objects (WCAG 1.4.11): the toggle knob, the chosen segment and the Pen's drawn knob / fill, 3:1 against
+// what is behind them, in every variant, look and theme (fw_test gfx + veil_part).
 // A text that changes no pixel when veiled is invisible: ratio 1, a failure. Exit 1 on any failure. A failing item
 // that a LEGACY component built (one not on the contract, inside a contract one: the Segmented in a Header) is listed
 // as LEGACY and counted, not failed: its migration piece fixes it.
@@ -33,7 +35,12 @@ const LUM = new Float64Array(65536);
 for (let w = 0; w < 65536; w++) LUM[w] = 0.2126 * lin((w >> 11) << 3) + 0.7152 * lin(((w >> 5) & 63) << 2) + 0.0722 * lin((w & 31) << 3);
 const ratio = (a, b) => { const x = LUM[a], y = LUM[b]; return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
 
-let checks = 0, fails = 0, legacy = 0;
+let checks = 0, fails = 0, legacy = 0, known = 0;
+// graphical-object failures that were there when the check came in (2026-10-27): listed for a design decision, reported
+// as KNOWN and counted, not failed; anything else fails. [theme, component, part, variant label]
+const KNOWN = [['facet', 'segmented', 'seg-part', '*'], ['facet', 'header', 'seg-part', '*'], ['facet', 'slider', 'track-fill', '*'],
+  ['win98', 'slider', 'knob', 'min · 0'], ['win98', 'slider', 'track-fill', 'disabled · 40'],
+  ['blockcraft', 'segmented', 'seg-part', 'tabs · fill'], ['win98', 'dial', 'arc-fill', 'disabled · 64']];
 const out = [];
 for (const den of DENS) {
   const D = den === '1x' ? 1 : 1.5;
@@ -97,6 +104,28 @@ for (const den of DENS) {
  legacy++; out.push(`LEGACY ${line} (inside ${it.c}, not on the contract yet: reported, not failed)`); }
             else if (best + 1e-9 < it.min) { fails++; out.push(`FAIL ${line}`); } else if (V) out.push(`ok   ${line}`);
           }
+          // graphical objects (WCAG 1.4.11, 3:1): what shows the state (toggle knob on its track, the chosen segment,
+          // a drawn knob / fill on its track). Veil it: the pixels that change are it, the veiled frame is behind it;
+          // its contrast = the best of its own colours (any covering >= 3% of it: a face, or a ring round it) against the
+          // commonest pixel behind. Objects: fw_test "gfx"; drawn parts: fw_test "veil_part" (the Pen skips that part)
+          const gfx = (name, veil, unveil, min, shown) => {
+            const before = frame(); veil(); const after = frame(); unveil();
+            const own = new Map(), behind = new Map(); let n = 0;
+            for (let k = 0; k < W * H; k++) if (before[k] !== after[k]) { n++; own.set(before[k], (own.get(before[k]) || 0) + 1); behind.set(after[k], (behind.get(after[k]) || 0) + 1); }
+            if (!n && !shown) return;  // a drawn part not drawn in this variant
+            let best = 1;  // a shown object that changes no pixel: invisible (the same colour as what is behind it)
+            if (n) { const b0 = [...behind].sort((a, b) => b[1] - a[1])[0][0]; for (const [col, cnt] of own) if (cnt >= n * 0.03) best = Math.max(best, ratio(col, b0)); }
+            checks++;
+            const line = `${den}${theme === 'facet' ? '' : ' ' + theme} ${c.id} "${v.label}" ${look}: graphic ${name} ${best.toFixed(2)} / ${min}`;
+            const kn = KNOWN.some(([t, id, p, l]) => t === theme && id === c.id && p === name && (l === '*' || l === v.label));
+            if (best + 1e-9 < min && kn) { known++; out.push(`KNOWN ${line} (listed in KNOWN: a design decision pending)`); }
+            else if (best + 1e-9 < min) { fails++; out.push(`FAIL ${line}`); } else if (V) out.push(`ok   ${line}`);
+          };
+          for (const g of JSON.parse(test('gfx') || '[]')) {
+            if (g.s === 'seg-part' && !g.on) continue;  // an unchosen segment shows no state of its own
+            gfx(g.s, () => test('veil', `${g.i},1`), () => test('veil', `${g.i},0`), g.min, g.w > 0 && g.h > 0);
+          }
+          for (const part of ['knob', 'track-fill', 'arc-fill']) gfx(part, () => test('veil_part', part), () => test('veil_part', ''), 3);
         };
         measure(first ? 'built light' : 'built dark');
         test('look', `${then},-1`); settle();
@@ -108,5 +137,5 @@ for (const den of DENS) {
   }
 }
 for (const l of out) console.log(l);
-console.log(`pixel contrast: ${checks} checks, ${fails} failed, ${legacy} in legacy parts (${DENS.join(' + ')}, themes ${THEME_ARG}${IDS ? `, ${IDS.join(',')}` : ', every contract component'})`);
+console.log(`pixel contrast: ${checks} checks, ${fails} failed, ${legacy} in legacy parts, ${known} known graphic (${DENS.join(' + ')}, themes ${THEME_ARG}${IDS ? `, ${IDS.join(',')}` : ', every contract component'})`);
 process.exit(fails ? 1 : 0);

@@ -113,6 +113,7 @@ void look(lv_display_t *d, const fw::Theme *t);
 void restyle();
 lv_color_t bg(lv_display_t *d);
 #ifndef ESP_PLATFORM
+extern std::string pen_veil;  // tests only (fw_test "veil_part"): the drawn part the Pen skips ("" = none)
 void break_stale(bool on);  // break-it (tests only): a live theme switch repaints nothing; the live = fresh proof must go red
 #endif  // the canvas colour under a contract page in the live theme (the stage / screen bg)
 // Screen > Page > Header slot + Body. head = inset top/sides, lay::top tall (the Header

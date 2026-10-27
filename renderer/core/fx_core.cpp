@@ -956,6 +956,10 @@ void restyle() {  // a theme was applied: every look whose generation is old rep
 }
 #ifndef ESP_PLATFORM
 void break_stale(bool on) { stale = on; }
+std::string pen_veil;  // tests only (fw_test "veil_part"): the drawn part (knob, track-fill, arc-fill) the Pen skips
+#define PEN_VEILED(p) ((p) && !pen_veil.empty() && pen_veil == (p))
+#else
+#define PEN_VEILED(p) false
 #endif
 int pen_cell() { return snap_cell(fx::theme_live().get()); }
 // the font a type token draws now (the workbench Type page, tests/functional/theme_fonts.test.mjs): its px, line
@@ -1180,6 +1184,7 @@ lv_color_t part_ink(lv_obj_t *o, const char *part, const char *k) {
   return pp.ink ? hex(pp.k->ink(pp.b.ink, pp.lt, pp.set)) : ink(o, k);
 }
 void Pen::line(int x1, int y1, int x2, int y2, const char *stroke, const char *k, bool round, const char *part) const {
+  if (PEN_VEILED(part)) return;
   const int w = size(stroke);
   if (!sees(std::min(x1, x2) - w, std::min(y1, y2) - w, std::max(x1, x2) + w, std::max(y1, y2) + w)) return;
   const lv_color_t col = part_ink(obj, part, k);
@@ -1191,6 +1196,7 @@ void Pen::line(int x1, int y1, int x2, int y2, const char *stroke, const char *k
   lv_draw_line(layer, &d);
 }
 void Pen::arc(int r, float a0, float a1, const char *stroke, const char *k, bool round, const char *part) const {
+  if (PEN_VEILED(part)) return;
   if (r < 1 || a1 - a0 < 0.5f) return;
   lv_draw_arc_dsc_t d;
   lv_draw_arc_dsc_init(&d);
@@ -1210,6 +1216,7 @@ void Pen::arc(int r, float a0, float a1, const char *stroke, const char *k, bool
   lv_draw_arc(layer, &d);
 }
 void Pen::dot(int x, int y, const char *diameter, const char *k0, const char *part) const {
+  if (PEN_VEILED(part)) return;
   const int dm = size(diameter);
   const lv_color_t col = part_ink(obj, part, k0);
   if (!sees(x - dm, y - dm, x + dm, y + dm)) return;
@@ -1260,6 +1267,7 @@ void Pen::tick(float deg, const char *length, const char *stroke, const char *k,
   lv_draw_line(layer, &d);
 }
 void Pen::knob(int x, int y, const char *sz, const char *k, const char *halo, const char *ring) const {
+  if (PEN_VEILED("knob")) return;
   const int dm = size(sz), rw = size(ring);
   const PenPart pp = pen_part(obj, G::P_KNOB);
   const int sh = pp.b.has & S::K_SHADOW ? std::max(abs(pp.b.shadow.dx.px[DN]), abs(pp.b.shadow.dy.px[DN])) : 0;
