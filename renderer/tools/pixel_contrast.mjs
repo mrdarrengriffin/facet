@@ -123,7 +123,9 @@ for (const den of DENS) {
           // commonest pixel behind. Objects: fw_test "gfx"; drawn parts: fw_test "veil_part" (the Pen skips that part)
           const gfx = (name, veil, unveil, min, shown) => {
             if (dis) min = Math.min(min, 1.5);
-            const before = frame(); veil(); const after = frame(); unveil();
+            // both frames full redraws (veil_part repaints the whole screen): a partial repaint after the text veils above
+            // can differ from a full one over a theme's pattern face (Blockcraft: a hardening item), which is not this object
+            test('veil_part', ''); const before = frame(); veil(); const after = frame(); unveil();
             const own = new Map(), behind = new Map(); let n = 0;
             for (let k = 0; k < W * H; k++) if (before[k] !== after[k]) { n++; own.set(before[k], (own.get(before[k]) || 0) + 1); behind.set(after[k], (behind.get(after[k]) || 0) + 1); }
             if (!n && !shown) return;  // a drawn part not drawn in this variant

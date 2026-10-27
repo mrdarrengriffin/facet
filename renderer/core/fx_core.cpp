@@ -83,7 +83,12 @@ const char *const DERIVED_N[] = {"dial-wing-up", "dial-wing-down", "dial-slot", 
                                  "tile-text", "tile-status",
                                  // 28: the State readout's padding: card-pad from the top and sides, none below (a half
                                  // is taller than its content; a bigger theme font may use the space under it)
-                                 "readout-pad"};
+                                 "readout-pad",
+                                 // 29-30: the Hero block's text column beside the number (label or title type over a
+                                 // body line, space 2 apart), centred on the hero type box
+                                 "hero-col", "hero-col-title",
+                                 // 31-32: the Hero block's row: a top-aligned row, the gutter apart, as tall as its number's type box
+                                 "hero-row", "hero-row-display"};
 // A display's look: its shared styles painted from theme t (mode + accent set) through the live Skin (theme_live: its
 // palette for that mode x set = th, the colours every contract style reads; Facet's Skin = Facet's colours, so th == *t)
 // and its generation (gen: a theme apply bumps it, the look repaints; never by Skin pointer, a freed one's address can
@@ -600,6 +605,17 @@ void paint(Look *L, const fw::Theme *t, int only = -1) {  // colours from the th
       if (d.i == 28) {  // readout-pad: layout:card-pad top and sides, nothing at the bottom
         const int P = tok("layout:card-pad", lay::card_pad);
         lv_style_set_pad_top(s, P); lv_style_set_pad_hor(s, P); lv_style_set_pad_bottom(s, 0); continue;
+      }
+      if (d.i == 29 || d.i == 30) {  // hero-col(-title): the free width, its lines space 2 apart, centred on the hero box
+        const int s2 = tok("space:2", sp::s2), h = box_of(d.i == 30 ? ty::title : ty::label) + s2 + box_of(ty::body);
+        lv_style_set_width(s, 0); lv_style_set_flex_grow(s, 1); lv_style_set_height(s, LV_SIZE_CONTENT);  // a theme's taller type grows it
+        flex(s, LV_FLEX_FLOW_COLUMN, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
+        lv_style_set_pad_row(s, s2); lv_style_set_margin_top(s, (box_of(ty::hero) - h) / 2); continue;
+      }
+      if (d.i == 31 || d.i == 32) {  // hero-row(-display): the row the number's type box tall (hero / display)
+        lv_style_set_height(s, box_of(d.i == 32 ? ty::display : ty::hero));
+        flex(s, LV_FLEX_FLOW_ROW, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
+        lv_style_set_pad_column(s, tok("layout:gutter", lay::gutter)); continue;
       }
       if (d.i == 16) {  // empty-pad: the Empty state's padding from the outer edge (less the border hair)
         lv_style_set_pad_all(s, tok("layout:empty-pad", lay::empty_pad) - tok("stroke:hair", stroke::hair)); continue;
@@ -1294,7 +1310,7 @@ void fit_grid(lv_obj_t *l) {  // the label's box = its text's width rounded up t
     lv_obj_set_width(l, (lv_obj_get_width(l) + fw::sp::GRID - 1) / fw::sp::GRID * fw::sp::GRID);
     return;
   }
-  // a theme can change the label's font live (C49): its width follows on every style change, not only at build
+  // a theme can change the label's font live (C49): its width follows on every style or state change, not only at build
   struct R { static void refit(lv_event_t *e) {
     static bool busy = false;
     lv_obj_t *o = (lv_obj_t *) lv_event_get_current_target(e);
@@ -1308,7 +1324,10 @@ void fit_grid(lv_obj_t *l) {  // the label's box = its text's width rounded up t
   } };
   bool has = false;
   for (uint32_t i = 0; i < lv_obj_get_event_count(l) && !has; i++) has = lv_event_dsc_get_cb(lv_obj_get_event_dsc(l, i)) == R::refit;
-  if (!has) lv_obj_add_event_cb(l, R::refit, LV_EVENT_STYLE_CHANGED, nullptr);
+  if (!has) {  // a state can switch the font too (a theme's disabled text look): refit then as well
+    lv_obj_add_event_cb(l, R::refit, LV_EVENT_STYLE_CHANGED, nullptr);
+    lv_obj_add_event_cb(l, R::refit, LV_EVENT_STATE_CHANGED, nullptr);
+  }
   lv_point_t sz;
   lv_text_get_size(&sz, lv_label_get_text(l), lv_obj_get_style_text_font(l, LV_PART_MAIN), lv_obj_get_style_text_letter_space(l, LV_PART_MAIN), 0,
                    LV_COORD_MAX, LV_TEXT_FLAG_NONE);

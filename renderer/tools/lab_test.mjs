@@ -28,7 +28,8 @@ const EXTRA = { card: [{ opening: false }, CARD, PAGE],
   // a whole screen (meta stage: screen): its own Page, so the page tokens are its own
   bottom_sheet: [{}, ['layout:inset'], []],
   // a layout whose parts sit a gutter apart (the gutter is its own, not the page's)
-  group: [{ sample: 4 }, ['layout:gutter'], PAGE.filter((n) => n !== 'layout:gutter')] };
+  group: [{ sample: 4 }, ['layout:gutter'], PAGE.filter((n) => n !== 'layout:gutter')],
+  hero_block: [{ n: '3', label: 'need you', line: '2 reviews' }, ['layout:gutter', 'space:2'], PAGE.filter((n) => n !== 'layout:gutter')] };
 const di = process.argv.indexOf('--den');
 const m0 = await (await import(pathToFileURL(join(BUILD, di > 0 ? process.argv[di + 1] : ['1.5x', '1x'].find((d) => existsSync(join(BUILD, d, 'fw.mjs'))) || '1.5x', 'fw.mjs')).href)).default();
 m0._fw_init();
