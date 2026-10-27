@@ -24,7 +24,9 @@ const EXTRA = { card: [{ opening: false }, CARD, PAGE],
   section_header: [{ title: 'Needs you', count: 3, meta: 'updated 2m' }, ['space:5'], PAGE],
   status_chip: [{}, ['layout:chip-h', 'radius:chip', 'space:2'], PAGE],
   time: [{ time: '14:52', format: '12h' }, ['space:2'], PAGE],
-  stat: [{ label: 'lit', value: '63%', tone: 'text' }, ['space:2'], PAGE] };
+  stat: [{ label: 'lit', value: '63%', tone: 'text' }, ['space:2'], PAGE],
+  // a whole screen (meta stage: screen): its own Page, so the page tokens are its own
+  bottom_sheet: [{}, ['layout:inset'], []] };
 const di = process.argv.indexOf('--den');
 const m0 = await (await import(pathToFileURL(join(BUILD, di > 0 ? process.argv[di + 1] : ['1.5x', '1x'].find((d) => existsSync(join(BUILD, d, 'fw.mjs'))) || '1.5x', 'fw.mjs')).href)).default();
 m0._fw_init();

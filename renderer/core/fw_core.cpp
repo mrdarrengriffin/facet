@@ -428,7 +428,8 @@ const char *render(lv_obj_t *scr, const char *comp, const char *props, bool ligh
   lv_obj_set_flex_align(scr, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
   lv_obj_remove_flag(scr, LV_OBJ_FLAG_SCROLLABLE);
   fx::look(lv_obj_get_display(scr), T);  // the contract's shared styles for this display (CONTRACT.md)
-  if (fx::migrated(c)) lv_obj_set_style_pad_hor(scr, lay::inset, 0);  // a migrated component fills a page's content box
+  // a migrated component fills a page's content box; meta "stage": "screen" = it is a whole screen (its own Page)
+  if (fx::migrated(c) && !strstr(c->meta, "\"stage\": \"screen\"")) lv_obj_set_style_pad_hor(scr, lay::inset, 0);
   c->build(scr, doc.as<ArduinoJson::JsonObjectConst>());
   // the update path needs exactly one root object (a component that puts several objects on the screen has none)
   if (lv_obj_get_child_count(scr) == 1) {

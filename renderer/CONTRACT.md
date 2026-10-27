@@ -87,8 +87,9 @@ specs (`core/spec.h`) create only components inside a Page body.
 - An overlay closes completely: after close, object count and animations are back to the baseline.
 - At most one modal overlay at a time; toasts stack within their layer's `layout.json` `toast` limits.
 *Why:* overlays that sat in the layout pushed content and leaked objects. *Check:* `audit_screens.mjs` overlay marking
-(`fw::qa::free(obj, "overlay: ...")`); leak proof P9 on open/close; **TODO** bounds proof P2 for overlay panels (the
-Bottom sheet and Toast layer are not on the contract yet).
+(`fw::qa::free(obj, "overlay: ...")`); leak proof P9 on open/close; **TODO** bounds proof P2 for overlay panels. The
+Bottom sheet's layer is core (`core/sheet.h`); the pixel contrast proof measures only an open sheet (what is under the
+scrim is dimmed on purpose). The Toast layer is not on the contract yet.
 
 ## 4. Size and placement
 

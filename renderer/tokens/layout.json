@@ -106,7 +106,7 @@
       "sheet-row-h": {
         "v": 96,
         "1x": 64,
-        "use": "a picker row in a sheet (docs layout sheet-row-h); = space.json list-row-h (the Picker row is a List row; static_assert in picker_row.cpp)"
+        "use": "a picker row in a sheet (docs layout sheet-row-h); = space.json list-row-h (the Picker row is a List row)"
       },
       "toast-top": {
         "v": 96,

@@ -10,7 +10,7 @@
 //   fw_test("bounds", ""|"all")   -> JSON ["..."] every object in a Page body (the contract part of a screen) that is
 //                                    not inside its parent's content box (bleed skipped): the bounds proof
 //   fw_test("inks", "")          -> JSON [{x, y, w, h, k, min, s}] every shown text (k "text") and icon layer (k "ui")
-//                                    on the active screen, tree order; min = the WCAG minimum it must meet (text 4.5,
+//                                    on the active screen (an open sheet: only its overlay), tree order; min = the WCAG minimum it must meet (text 4.5,
 //                                    large text >= 24 px or bold >= 18.66 px 3, ui 3, disabled (fw::st::OFF) 3); the
 //                                    pixel contrast proof (tools/pixel_contrast.mjs) veils each one and compares pixels
 //   fw_test("veil", "i,1|0")     -> "" : item i of the last "inks" list drawn fully transparent (1) or as before (0);
@@ -28,6 +28,7 @@
 #include "fw.h"
 #include "device.h"
 #include "fx.h"
+#include "sheet.h"
 #include "core/lv_obj_private.h"  // the style list (the bounds proof names the token styles)
 #include "core/lv_obj_style_private.h"
 
@@ -184,11 +185,21 @@ extern "C" EMSCRIPTEN_KEEPALIVE const char *fw_test(const char *cmd, const char 
     ink_objs.clear();
     lv_display_t *disp = lv_display_get_default();
     ArduinoJson::JsonArray arr = d.to<ArduinoJson::JsonArray>();
-    if (disp) { lv_obj_update_layout(lv_display_get_screen_active(disp)); inks(lv_display_get_screen_active(disp), arr); }
+    if (disp) {  // an open sheet: only its overlay (the screen under the scrim is dimmed on purpose, C4)
+      lv_obj_t *scr = lv_display_get_screen_active(disp);
+      lv_obj_update_layout(scr);
+      lv_obj_t *ov = fw::sheet::open_on(scr);
+      inks(ov ? ov : scr, arr);
+    }
   } else if (c == "gfx") {  // appends to the "inks" list (call "inks" first: it clears it)
     lv_display_t *disp = lv_display_get_default();
     ArduinoJson::JsonArray arr = d.to<ArduinoJson::JsonArray>();
-    if (disp) { lv_obj_update_layout(lv_display_get_screen_active(disp)); gfx(lv_display_get_screen_active(disp), arr); }
+    if (disp) {
+      lv_obj_t *scr = lv_display_get_screen_active(disp);
+      lv_obj_update_layout(scr);
+      lv_obj_t *ov = fw::sheet::open_on(scr);
+      gfx(ov ? ov : scr, arr);
+    }
   } else if (c == "veil_part") {
     fx::pen_veil = a;
     if (lv_display_t *disp = lv_display_get_default()) lv_obj_invalidate(lv_display_get_screen_active(disp));

@@ -358,8 +358,8 @@
     ]
    },
    "cost": {
-    "objects": 104,
-    "bytes_est": 16640
+    "objects": 105,
+    "bytes_est": 16800
    }
   },
   "button": {
@@ -473,8 +473,8 @@
     ]
    },
    "cost": {
-    "objects": 339,
-    "bytes_est": 54240
+    "objects": 337,
+    "bytes_est": 53920
    }
   },
   "camera_tile": {
@@ -5771,8 +5771,8 @@
     ]
    },
    "cost": {
-    "objects": 55,
-    "bytes_est": 8800
+    "objects": 54,
+    "bytes_est": 8640
    }
   },
   "tick_ring": {
@@ -6264,8 +6264,8 @@
     ]
    },
    "cost": {
-    "objects": 18,
-    "bytes_est": 2880
+    "objects": 17,
+    "bytes_est": 2720
    }
   },
   "weather_days": {

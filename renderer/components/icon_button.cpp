@@ -18,7 +18,8 @@
 // Taps: fw::st::on_tap; round / square = event "tap" (detail = icon) + sound tap. Internal prop `role` (not in the
 // playground): "back" (components/back_button.cpp: the Header's Back) = event "back" + sound back; "settings" = event
 // "navigate" settings + sound open (Home's settings Icon button in the Header's end slot); "shortcut" = navigate `to`
-// + sound open (a Home's header shortcut, icon screen-<kind>).
+// + sound open (a Home's header shortcut, icon screen-<kind>); "close" = icon close, event "close" detail "close" +
+// sound back (the Bottom sheet's Close).
 // C7 note: a button is a fixed touch target by design: its root is exactly its style's square (a layout token through
 // a shared style, so fx::tune and the Layout lab move it), never a width from its parent, never a call.
 // Steps: none. Bleed: none. States: default, pressed, active, active-pressed, disabled, unavailable; n/a: loading,
@@ -31,7 +32,7 @@ namespace {
 constexpr lv_state_t ST_OFF = fw::st::OFF;  // disabled (LVGL sends no events to LV_STATE_DISABLED; see Button)
 constexpr lv_state_t P = LV_STATE_PRESSED, C = LV_STATE_CHECKED;
 
-enum Role : uint8_t { R_TAP, R_PLAY, R_BACK, R_SETTINGS, R_SHORTCUT };
+enum Role : uint8_t { R_TAP, R_PLAY, R_BACK, R_SETTINGS, R_SHORTCUT, R_CLOSE };
 struct Data { Role role; char icon[24]; char to[16]; };
 
 std::string sig(fw::Props p) {
@@ -48,6 +49,7 @@ const char *role_of(fw::Props p) { return p["role"] | ""; }
 std::string icon_of(fw::Props p) {  // the icon this button shows
   const std::string r = role_of(p), ic = p["icon"] | "next";
   if (r == "back") return "back";
+  if (r == "close") return "close";
   if (r == "settings" || ic == "settings") return "screen-settings";
   if (r == "shortcut") return ic.rfind("screen-", 0) == 0 ? ic : "screen-timer";
   return ic;
@@ -57,7 +59,7 @@ void data(lv_obj_t *b, fw::Props p) {
   if (!d) return;
   const std::string r = role_of(p);
   const bool play = r.empty() && !strcmp(p["style"] | "round", "play");
-  d->role = r == "back" ? R_BACK : r == "settings" ? R_SETTINGS : r == "shortcut" ? R_SHORTCUT : play ? R_PLAY : R_TAP;
+  d->role = r == "back" ? R_BACK : r == "settings" ? R_SETTINGS : r == "shortcut" ? R_SHORTCUT : r == "close" ? R_CLOSE : play ? R_PLAY : R_TAP;
   snprintf(d->to, sizeof d->to, "%s", p["to"] | "");
   const std::string ic = icon_of(p);
   snprintf(d->icon, sizeof d->icon, "%s", !strcmp(p["state"] | "default", "unavailable") ? "unavailable" : play ? "play"
@@ -168,6 +170,7 @@ FW_COMPONENT(icon_button, "Icon button", "components", R"({
     auto *d = (Data *) lv_event_get_user_data(e);
     if (lv_obj_has_state(o, ST_OFF)) { fw::st::blocked(o, d->icon); return; }
     if (d->role == R_BACK) { fw::emit(o, "back"); fw::sound(o, "back"); return; }
+    if (d->role == R_CLOSE) { fw::emit(o, "close", "close"); fw::sound(o, "back"); return; }
     if (d->role == R_SETTINGS) { fw::emit(o, "navigate", "settings"); fw::sound(o, "open"); return; }
     if (d->role == R_SHORTCUT) { fw::emit(o, "navigate", d->to); fw::sound(o, "open"); return; }
     if (d->role == R_PLAY) {

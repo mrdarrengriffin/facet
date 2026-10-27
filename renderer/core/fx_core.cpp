@@ -199,7 +199,7 @@ int index_of(const char *n) {
   auto it = std::lower_bound(defs.begin(), defs.end(), n, [](const Def &d, const char *k) { return d.name < k; });
   return it != defs.end() && it->name == n ? (int) (it - defs.begin()) : -1;
 }
-int ix(const char *n) { const int i = index_of(n); if (i < 0) abort(); return i; }
+int ix(const char *n) { const int i = index_of(n); if (i < 0) { fprintf(stderr, "fx: unknown token %s\n", n); abort(); } return i; }
 void flex(lv_style_t *s, lv_flex_flow_t f, lv_flex_align_t main, lv_flex_align_t cross, lv_flex_align_t track) {
   lv_style_set_layout(s, LV_LAYOUT_FLEX); lv_style_set_flex_flow(s, f);
   lv_style_set_flex_main_place(s, main); lv_style_set_flex_cross_place(s, cross); lv_style_set_flex_track_place(s, track);
