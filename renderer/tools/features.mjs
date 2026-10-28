@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Feature flags (README "Feature flags"): reads renderer/features.json, the one manifest of what ships where.
 // Build-time only (no flags on the device): the flavour of a build is the env FW_FEATURES = docs | firmware | panel
-// (unset = everything, the WASM workbench). panel = the workbench panel firmware (`firmware/bundle.mjs --all`): every
+// (unset = everything, the WASM workbench), contract = a panel build of the contract features only (load()). panel = the workbench panel firmware (`firmware/bundle.mjs --all`): every
 // feature except one marked "panel": false (Darren 2026-10-26: Lightning is on NO firmware, not even his own panels). Used by build.sh, tools/gen_specs.mjs, tools/gen_icons.mjs, firmware/bundle.mjs and
 // site/scripts/extract.mjs.
 //   node tools/features.mjs check            fail (exit 1) when a source belongs to no feature (or two), a listed id
@@ -15,6 +15,7 @@ import { fileURLToPath } from 'node:url';
 
 export const R = join(dirname(fileURLToPath(import.meta.url)), '..');
 export const FLAGS = ['docs', 'firmware', 'panel'];
+export const FLAVOURS = [...FLAGS, 'contract'];  // contract: derived in load() (a flavour, not a features.json key)
 const KINDS = ['screens', 'components', 'foundations', 'bench'];
 // spec screens have their own id space (a spec and a component may share a name: weather_days): key spec:<id>
 const screenKey = (id) => (existsSync(join(R, 'specs', `${id}.json`)) ? `spec:${id}` : id);
@@ -68,8 +69,14 @@ export function load() {
   // components / foundations listed nowhere = the library (shipped); screens, specs and bench items must be listed
   const lib = man.library;
   const features = [lib, ...man.features];
+  // contract (derived, not in features.json; Darren 2026-10-28 "only the new stuff for now"): a panel build of the
+  // features whose every component is on the contract ("contract": 2) and whose spec screens use only such components;
+  // the library (unused legacy parts are linked but unreachable) and system (the panel's own screens) always
+  const v2 = (id) => { const f = join(R, 'components', `${id}.cpp`); return existsSync(f) && /"contract":\s*2\b/.test(readFileSync(f, 'utf8')); };
+  const specOk = (id) => { const f = join(R, 'specs', `${id}.json`); if (!existsSync(f)) return false; return [...readFileSync(f, 'utf8').matchAll(/"c":\s*"([a-z0-9_]+)"/g)].every((m) => v2(m[1])); };
   for (const ft of features) {
     ft.panel ??= true;  // the workbench panel firmware: everything unless a feature opts out
+    ft.contract = ft.panel && (ft === lib || ft.id === 'system' || ((ft.components ?? []).length + (ft.screens ?? []).length > 0 && (ft.components ?? []).every(v2) && (ft.screens ?? []).every(specOk)));
     if (ft.firmware && !ft.panel) errors.push(`${ft.id}: firmware true needs panel true (the release is a subset of the workbench firmware)`);
     // wip must not leak into the release firmware (facet-184): a feature ships on firmware only when it is done
     if (ft.firmware && ft.status === 'wip') errors.push(`${ft.id}: status wip with firmware true: wip features stay off the firmware`);
@@ -145,7 +152,7 @@ export function byId(L = load()) {
 /** the flavour this process builds (env FW_FEATURES), checked */
 export function flavour() {
   const f = process.env.FW_FEATURES || '';
-  if (f && !FLAGS.includes(f)) { console.error(`FW_FEATURES=${f}: docs | firmware | unset`); process.exit(2); }
+  if (f && !FLAVOURS.includes(f)) { console.error(`FW_FEATURES=${f}: ${FLAVOURS.join(' | ')} | unset`); process.exit(2); }
   return f;
 }
 

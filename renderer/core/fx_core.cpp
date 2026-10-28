@@ -914,7 +914,7 @@ void part_draw(lv_event_t *e) {  // a box part: shadow under it (MAIN_BEGIN), pa
     for (int y = A.y1, row = 0; y <= A.y2; y += chk ? run : run + gap, row++) {
       lv_draw_line_dsc_t d;
       lv_draw_line_dsc_init(&d);
-      d.color = c; d.opa = LV_OPA_COVER; d.width = std::min(run, A.y2 - y + 1); d.dash_width = run; d.dash_gap = gap;
+      d.color = c; d.opa = LV_OPA_COVER; d.width = std::min<int32_t>(run, A.y2 - y + 1); d.dash_width = run; d.dash_gap = gap;
       d.p1.x = A.x1 + (chk && (row & 1) ? run : 0); d.p2.x = A.x2 + 1; d.p1.y = d.p2.y = y + d.width / 2;
       if (d.p1.x <= A.x2) lv_draw_line(ly, &d);
     }
@@ -1639,7 +1639,7 @@ void Pen::rect(int x, int y, int w, int h, const char *k, int radius, int border
   else { d.bg_color = ink(obj, k); d.bg_opa = LV_OPA_COVER; }
   lv_area_t a = {cx + x, cy + y, cx + x + w - 1, cy + y + h - 1 + (foot ? radius : 0)};
   const lv_area_t clip = layer->_clip_area;
-  if (foot) layer->_clip_area.y2 = std::min(layer->_clip_area.y2, cy + y + h - 1);
+  if (foot) layer->_clip_area.y2 = std::min<int32_t>(layer->_clip_area.y2, cy + y + h - 1);
   if (layer->_clip_area.y2 >= layer->_clip_area.y1) lv_draw_rect(layer, &d, &a);
   layer->_clip_area = clip;
 }

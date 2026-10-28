@@ -4,6 +4,7 @@
 //   node firmware/bundle.mjs --density 1x|1.5x --out <dir>   write <dir>/facet_wb/ (flat: ESPHome compiles only the
 //                                                          component's top-level files)
 //   node firmware/bundle.mjs --density 1x|1.5x --hashes      print the source hashes as JSON (no files written)
+//   --contract  a workbench build of only the features fully on the contract (Darren 2026-10-28)
 //   --all  every feature (a workbench / Show on device build); default = the release: features with firmware off in
 //          renderer/features.json are left out (their sources, specs, deck pages, Home cards, icons; tools/features.mjs)
 // Hashes (sha1, 12 hex) let the workbench tell whether a device runs the current code: `core` covers everything every
@@ -35,7 +36,7 @@ if (existsSync(join(ROOT, 'local.env')))
   for (const l of readFileSync(join(ROOT, 'local.env'), 'utf8').split('\n')) { const m = l.match(/^([A-Z_]+)=(.*)$/); if (m) env[m[1]] = m[2]; }
 
 // release flavour (renderer/features.json firmware flags); the generators below read FW_FEATURES too
-const FLAV = process.argv.includes('--all') ? 'panel' : 'firmware';  // --all = every feature with panel on (features.json)
+const FLAV = process.argv.includes('--contract') ? 'contract' : process.argv.includes('--all') ? 'panel' : 'firmware';  // --all = every feature with panel on (features.json); --contract = only the features fully on the contract (tools/features.mjs)
 process.env.FW_FEATURES = FLAV;
 const OFF = new Set(excluded(FLAV));
 const sha = (...bufs) => { const h = createHash('sha1'); for (const b of bufs) h.update(b); return h.digest('hex').slice(0, 12); };
@@ -45,8 +46,8 @@ const ls = (d, ext) => (existsSync(join(HERE, d)) ? readdirSync(join(HERE, d)).f
 const lsr = (d) => (existsSync(join(HERE, d)) ? readdirSync(join(HERE, d), { recursive: true }).filter((f) => f.endsWith('.svg')).sort().map((f) => `${d}/${f}`) : []);
 // core .cpp files the list below doesn't name (sport.cpp, ...): bundled as they are (not main.cpp / bench.cpp /
 // test_hooks.cpp: WASM host + test builds only)
-const coreExtra = ls('core', '.cpp').filter((f) => !OFF.has(f) && !['core/fw_core.cpp', 'core/fx_core.cpp', 'core/motion.cpp', 'core/atoms.cpp', 'core/states.cpp', 'core/mascot.cpp', 'core/device.cpp', 'core/fonts.cpp', 'core/icons.cpp', 'core/main.cpp', 'core/bench.cpp', 'core/test_hooks.cpp'].includes(f));
-const coreFiles = [...ls('core', '.h'), ...coreExtra, 'core/fw_core.cpp', 'core/fx_core.cpp', 'core/motion.cpp', 'core/atoms.cpp', 'core/states.cpp', 'core/mascot.cpp', 'core/device.cpp', 'core/fonts.cpp', 'core/icons.cpp', ...ls('tokens', '.json'), 'tools/gen_colour.mjs', 'tools/gen_type.mjs', 'tools/gen_space.mjs', 'tools/gen_fx.mjs', 'tools/gen_layout.mjs', 'tools/gen_motion.mjs', 'tools/gen_states.mjs', 'tools/gen_mascot.mjs', 'tools/gen_chart.mjs', 'tools/gen_surfaces.mjs', 'tools/gen_floorplan.mjs', 'tools/gen_settings.mjs', 'tools/gen_specs.mjs', ...ls('specs', '.json'), 'sources/sources.json', 'tools/gen_fonts.py', 'tools/facet_font.inc', 'tools/gen_icons.mjs', ...lsr('icons')];
+const coreExtra = ls('core', '.cpp').filter((f) => !OFF.has(f) && !['core/fw_core.cpp', 'core/fx_core.cpp', 'core/motion.cpp', 'core/atoms.cpp', 'core/states.cpp', 'core/mascot.cpp', 'core/device.cpp', 'core/fonts.cpp', 'core/icons.cpp', 'core/main.cpp', 'core/bench.cpp', 'core/test_hooks.cpp'].includes(f) && !f.endsWith('_lab.cpp'));  // *_lab.cpp: the workbench's fw_lab commands (main.cpp only)
+const coreFiles = [...ls('core', '.h'), ...coreExtra, 'core/fw_core.cpp', 'core/fx_core.cpp', 'core/motion.cpp', 'core/atoms.cpp', 'core/states.cpp', 'core/mascot.cpp', 'core/device.cpp', 'core/fonts.cpp', 'core/icons.cpp', ...ls('tokens', '.json'), 'tools/gen_colour.mjs', 'tools/gen_type.mjs', 'tools/gen_space.mjs', 'tools/gen_fx.mjs', 'tools/gen_layout.mjs', 'tools/gen_motion.mjs', 'tools/gen_states.mjs', 'tools/gen_mascot.mjs', 'tools/gen_chart.mjs', 'tools/gen_theme.mjs', ...ls('themes', '.json'), 'catalogue/contract.json', 'tools/lib/looks.mjs', 'tools/gen_surfaces.mjs', 'tools/gen_floorplan.mjs', 'tools/gen_settings.mjs', 'tools/gen_specs.mjs', ...ls('specs', '.json'), 'sources/sources.json', 'tools/gen_fonts.py', 'tools/facet_font.inc', 'tools/gen_icons.mjs', ...lsr('icons')];
 const imgFiles = ['fw_images.h', 'fw_imgdec.h', 'fw_tjpgd.h', 'fw_tjpgd.c', 'fw_pngle.h', 'fw_pngle.c', 'fw_miniz.c'];  // the panel's image fetch + decoders (fw_images.h)
 const glueFiles = [...imgFiles.map((f) => 'firmware/' + f), 'firmware/fw_device.h', 'firmware/fw_bench.h', 'firmware/esphome_init.py', 'firmware/bundle.mjs', 'renderer/tools/gen_agents.mjs'];  // relative to ROOT
 const srcFiles = [...ls('foundations', '.cpp'), ...ls('components', '.cpp'), ...ls('screens', '.cpp'), ...ls('bench', '.cpp')].filter((f) => !OFF.has(f));  // bench = the stress item (facet-153)
@@ -101,6 +102,9 @@ execFileSync('node', [join(HERE, 'tools/gen_mascot.mjs'), join(C, 'mascot_gen.h'
 wrote.add('mascot_gen.h');
 execFileSync('node', [join(HERE, 'tools/gen_chart.mjs'), join(C, 'chart_gen.h')]);
 wrote.add('chart_gen.h');
+// the theme engine's tables (theme schema, the built-in themes/*.json; core/theme_file.cpp): build.sh makes it too
+execFileSync('node', [join(HERE, 'tools/gen_theme.mjs'), join(C, 'theme_gen.h')]);
+wrote.add('theme_gen.h');
 execFileSync('node', [join(HERE, 'tools/gen_surfaces.mjs'), join(C, 'surfaces_gen.h')]);
 wrote.add('surfaces_gen.h');
 execFileSync('node', [join(HERE, 'tools/gen_floorplan.mjs'), join(C, 'floorplan_gen.h')]);
@@ -124,6 +128,7 @@ mkdirSync(fontDir, { recursive: true });
 const fontH = join(fontDir, density === '1x' ? 'facet_fonts_1x.h' : 'facet_fonts.h');
 execFileSync(FONT_PY, [join(HERE, 'tools/gen_fonts.py'), density, fontH], { env: { ...process.env, FW_TTF }, stdio: ['ignore', 'ignore', 'inherit'] });
 put('fw_core.cpp', read('core/fw_core.cpp'));
+put('fx_core.cpp', read('core/fx_core.cpp'));  // the contract core (core/fx.h): shared token styles, the Pen
 put('motion.cpp', read('core/motion.cpp'));
 put('atoms.cpp', read('core/atoms.cpp'));
 put('states.cpp', read('core/states.cpp'));

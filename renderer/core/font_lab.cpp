@@ -47,6 +47,7 @@ void relook() {
 std::string font_lab(const std::string &cmd, const std::string &arg) {
   using namespace fonts;
   ArduinoJson::JsonDocument o;
+#ifndef ESP_PLATFORM  // the simulated network + flash are the workbench's (core/font_store.h); a panel has the real ones
   if (cmd == "font_sim") { sim_install(); sim_offline(false); sim_store_clear(); reset(); relook(); return "{}"; }
   if (cmd == "font_serve") {
     ArduinoJson::JsonDocument a;
@@ -57,10 +58,14 @@ std::string font_lab(const std::string &cmd, const std::string &arg) {
     return "{}";
   }
   if (cmd == "font_offline") { sim_offline(arg == "1"); return "{}"; }
+#endif
   if (cmd == "font_reboot") { reset(); relook(); return "{}"; }
+#ifndef ESP_PLATFORM
   if (cmd == "font_corrupt") { o["ok"] = sim_store_corrupt(arg); }
   else if (cmd == "font_store") { o["files"] = sim_store_files(); }
-  else if (cmd == "font_status") {
+  else
+#endif
+  if (cmd == "font_status") {
     std::vector<Status> st;
     status(st);
     static const char *const NAMES[] = {"none", "loading", "waiting", "ready", "refused"};
