@@ -13,6 +13,10 @@
 //           baseline; each second only the seconds cell that changed redraws, the layout never shifts
 //   time    prop "time" = a fixed "HH:MM[:SS]" that runs on from there (docs, tests); empty = live: localtime, checked
 //           every second, a cell changes only when its digit does; the placeholder until the device has the time
+//   date    prop (Darren 2026-10-27: the Date line folded in): none (default), short = MON 19 OCT (c-date, mono caps,
+//           tracked), long = Monday 19 October (date-long, Inter light), text-dim, centred under the digits gap:<n>
+//           apart (hero 8, mid 7, compact 5: the old faces' spacing); prop "day" = a fixed "YYYY-MM-DD" (previews);
+//           header stays time-only. digits:false = the date alone (the analogue face's date window)
 // Steps: none (it hugs its digits; C7 note: a time is as wide as its figures). Bleed: none. States: n/a (static: no
 // touch, no sound; the placeholder is its "unknown"). Update path: a new time changes the changed cells in place;
 // size / font / format / seconds = the contents again. Contrast pairs: colour.json sections "clock", "header".
@@ -23,11 +27,11 @@
 namespace {
 struct TimeT {
   std::string type, ap_type, sec_type;  // "type:clock-mid-mono" ... ; header: type = "type:label", no cells
-  bool h12 = false, secs = false, header = false;
-  std::string fixed, shown;
+  bool h12 = false, secs = false, header = false, digits = true;
+  std::string fixed, shown, day, date_type, date_shown;  // date_type "" = no date
   long base_s = -1;    // a fixed time: seconds of the day at t0 (it runs on from there)
   uint32_t t0 = 0;
-  lv_obj_t *row = nullptr, *srow = nullptr, *ampm = nullptr, *label = nullptr;
+  lv_obj_t *row = nullptr, *srow = nullptr, *ampm = nullptr, *label = nullptr, *date = nullptr;
   lv_timer_t *timer = nullptr;
 };
 TimeT *of(lv_obj_t *o) { return (TimeT *) lv_obj_get_user_data(o); }
@@ -51,6 +55,34 @@ void parts(const TimeT *d, std::string *hhmm, std::string *ss, std::string *ap) 
   *hhmm = b;
   snprintf(b, sizeof b, ":%02d", s);
   *ss = d->secs ? b : "";
+}
+const char *DAYS[] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
+const char *MONTHS[] = {"January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"};
+std::string date_text(const TimeT *d) {
+  struct tm tm = {};
+  if (!d->day.empty()) {
+    int y = 2026, m = 10, dd = 19;
+    sscanf(d->day.c_str(), "%d-%d-%d", &y, &m, &dd);
+    tm.tm_year = y - 1900, tm.tm_mon = m - 1, tm.tm_mday = dd, tm.tm_hour = 12;
+    tm.tm_isdst = -1;
+    mktime(&tm);  // fills in the weekday (noon, so the zone never changes the day; timegm is not in ESP-IDF newlib)
+  } else {
+    const time_t now = time(nullptr);
+    localtime_r(&now, &tm);
+    if (tm.tm_year + 1900 < 2020) return fw::st::PLACEHOLDER;
+  }
+  char b[48];
+  if (d->date_type == "type:date-long") snprintf(b, sizeof b, "%s %d %s", DAYS[tm.tm_wday], tm.tm_mday, MONTHS[tm.tm_mon]);
+  else snprintf(b, sizeof b, "%.3s %d %.3s", DAYS[tm.tm_wday], tm.tm_mday, MONTHS[tm.tm_mon]);  // cased by the style
+  return b;
+}
+void set_date(TimeT *d) {
+  if (!d->date) return;
+  const std::string s = date_text(d);
+  if (s == d->date_shown) return;
+  fx::set_text(d->date, s.c_str(), d->date_type.c_str());
+  fx::fit_grid(d->date);
+  d->date_shown = s;
 }
 std::vector<std::string> chars(const std::string &s) {  // UTF-8 -> characters
   std::vector<std::string> v;
@@ -86,6 +118,8 @@ void cells(lv_obj_t *row, const std::string &type, const std::string &t, const s
 }
 void set(lv_obj_t *root) {
   auto *d = of(root);
+  set_date(d);
+  if (!d->digits) return;
   std::string t, ss, ap;
   parts(d, &t, &ss, &ap);
   const std::string key = t + "|" + ss + "|" + ap;
@@ -115,9 +149,14 @@ void fixed_from(TimeT *d, const std::string &f) {
   d->base_s = (h * 60L + m) * 60 + sec;
   d->t0 = lv_tick_get();
 }
+std::string date_of(fw::Props p) {  // "" | "short" | "long" (the header is time-only)
+  const std::string dt = p["date"] | "none";
+  return !strcmp(p["size"] | "mid", "header") || (dt != "short" && dt != "long") ? "" : dt;
+}
 std::string sig(fw::Props p) {
   return std::string(p["size"] | "mid") + "|" + (strcmp(p["font"] | "mono", "inter") ? "m" : "i") + "|" +
-         (strcmp(p["format"] | "24h", "12h") ? "24" : "12") + "|" + ((p["seconds"] | false) ? "s" : "");
+         (strcmp(p["format"] | "24h", "12h") ? "24" : "12") + "|" + ((p["seconds"] | false) ? "s" : "") + "|" +
+         date_of(p) + "|" + ((p["digits"] | true) ? "d" : "");
 }
 void fill(lv_obj_t *root, fw::Props p) {
   auto *d = of(root);
@@ -131,29 +170,41 @@ void fill(lv_obj_t *root, fw::Props p) {
   d->secs = p["seconds"] | false;
   d->sec_type = size == "hero" ? "type:clock-seconds" + f : d->type;  // beside the hero: HH:MM:SS at 180 px would not fit
   fixed_from(d, p["time"] | "");
+  const std::string dt = date_of(p);
+  d->date_type = dt.empty() ? "" : dt == "long" ? "type:date-long" : "type:c-date";
+  d->digits = (p["digits"] | true) || dt.empty();  // no date: the digits always
+  d->day = p["day"] | "";
   d->shown.clear();
+  d->date_shown.clear();
   lv_obj_remove_style_all(root);
   lv_obj_remove_flag(root, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
   lv_obj_add_flag(root, LV_OBJ_FLAG_EVENT_BUBBLE);
   fw::shape(root, sig(p));
-  for (const char *t : {"box", "row-top", "hug", "gap:2"}) fx::use(root, t);
-  d->row = d->srow = d->ampm = d->label = nullptr;
-  if (d->header) {
+  d->row = d->srow = d->ampm = d->label = d->date = nullptr;
+  lv_obj_t *line = root;  // the time's row: the root, or with a date the first line of a centred column
+  if (!d->date_type.empty()) {
+    for (const char *t : {"box", "centre", "hug", size == "hero" ? "gap:8" : size == "compact" ? "gap:5" : "gap:7"}) fx::use(root, t);
+    line = d->digits ? fx::box(root, "row-top") : nullptr;
+  }
+  if (line) for (const char *t : {"box", "row-top", "hug", "gap:2"}) fx::use(line, t);
+  if (!d->digits) {
+  } else if (d->header) {
     fx::use(root, "label-row");  // the label's box tall (its text-box translate never shortens the root)
     d->label = fx::text(root, "", "type:label", "fg:text-dim");
   } else {
-    d->row = fx::box(root, "cells");  // a row, its cells centred in it (fit_grid rounds it up to the grid)
+    d->row = fx::box(line, "cells");  // a row, its cells centred in it (fit_grid rounds it up to the grid)
     fx::use(d->row, "hug");
     if (d->secs && d->sec_type != d->type) {  // smaller seconds, their figures on the time's baseline
-      d->srow = fx::box(root, "row-top");
+      d->srow = fx::box(line, "row-top");
       fx::use(d->srow, "hug");
       fx::use(d->srow, ("baseline:" + strip(d->type) + ":" + strip(d->sec_type)).c_str());
     }
     if (d->h12) {
-      d->ampm = fx::text(root, "PM", d->ap_type.c_str(), "fg:text-dim");
+      d->ampm = fx::text(line, "PM", d->ap_type.c_str(), "fg:text-dim");
       fx::use(d->ampm, ("baseline:" + strip(d->type) + ":" + strip(d->ap_type)).c_str());
     }
   }
+  if (!d->date_type.empty()) d->date = fx::text(root, "", d->date_type.c_str(), "fg:text-dim");
   set(root);
   if (!d->timer) d->timer = lv_timer_create([](lv_timer_t *t) { set((lv_obj_t *) lv_timer_get_user_data(t)); }, 1000, root);
 }
@@ -170,7 +221,10 @@ FW_COMPONENT(time, "Time", "components", R"({
     {"name": "font", "about": "The typeface of the digits: mono is the fixed-width face, inter the rounder everyday face.", "type": "select", "options": ["mono", "inter"], "default": "mono"},
     {"name": "format", "about": "24h shows 13:00; 12h shows 1:00 with AM or PM.", "type": "select", "options": ["24h", "12h"], "default": "24h"},
     {"name": "seconds", "about": "Shows the seconds as well as hours and minutes.", "type": "bool", "default": false},
-    {"name": "time", "about": "For previews only: a fixed time to show, like 14:52:20. Leave empty for the real time.", "type": "text", "default": ""}
+    {"name": "date", "about": "The date under the time: none, short like MON 19 OCT, or long like Monday 19 October. The header size never shows one.", "type": "select", "options": ["none", "short", "long"], "default": "none"},
+    {"name": "digits", "about": "Shows the time itself. Off leaves the date alone, for a face that tells the time another way.", "type": "bool", "default": true},
+    {"name": "time", "about": "For previews only: a fixed time to show, like 14:52:20. Leave empty for the real time.", "type": "text", "default": ""},
+    {"name": "day", "about": "For previews only: a fixed date to show, like 2026-10-19. Leave empty for today.", "type": "text", "default": ""}
   ],
   "variants": [
     {"label": "mid · mono · 14:52", "props": {"time": "14:52"}},
@@ -185,7 +239,12 @@ FW_COMPONENT(time, "Time", "components", R"({
     {"label": "mid · seconds · inter · 12h", "props": {"time": "14:52:07", "seconds": true, "font": "inter", "format": "12h"}},
     {"label": "compact · seconds", "props": {"time": "09:05:30", "size": "compact", "seconds": true}},
     {"label": "hero · seconds", "props": {"time": "10:08:30", "size": "hero", "seconds": true}},
-    {"label": "hero · seconds · inter · 12h", "props": {"time": "22:08:30", "size": "hero", "seconds": true, "font": "inter", "format": "12h"}}
+    {"label": "hero · seconds · inter · 12h", "props": {"time": "22:08:30", "size": "hero", "seconds": true, "font": "inter", "format": "12h"}},
+    {"label": "mid · short date", "props": {"time": "10:08", "date": "short", "day": "2026-10-19"}},
+    {"label": "mid · inter · 12h · long date", "props": {"time": "21:47", "date": "long", "day": "2026-10-19", "font": "inter", "format": "12h"}},
+    {"label": "hero · short date", "props": {"time": "14:52", "size": "hero", "date": "short", "day": "2026-10-19"}},
+    {"label": "date only · short", "props": {"digits": false, "date": "short", "day": "2026-10-19"}},
+    {"label": "date only · long", "props": {"digits": false, "date": "long", "day": "2026-10-19"}}
   ]
 })") {
   auto *d = new TimeT;
@@ -210,6 +269,7 @@ FW_UPDATE(time) {
   }
   const std::string fixed = p["time"] | "";
   if (fixed != d->fixed) fixed_from(d, fixed);
+  d->day = p["day"] | "";
   set(root);
   return true;
 }

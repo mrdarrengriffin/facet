@@ -1,5 +1,5 @@
 // Clock faces: the Facet clock family (docs: Components > Clock > Clock faces, @facet/ui clocks.ts clockHero / clockRing /
-// clockAnalogue / clockCompact): whole-screen faces built from the real Time and Date line components (fw::find) and the
+// clockAnalogue / clockCompact): whole-screen faces built from the real Time component (fw::find; its date prop is the date line) and the
 // core tick ring (fw::tick_ring), so a face is the same parts as everywhere else.
 //   hero      Time (hero) over the Date line and a seconds strip, a column centred on the screen, sp::s8 apart (docs
 //             238 / 446 / 500 at 720): the strip = lay::clock_secbar x stroke::edge, line track, accent fill growing
@@ -30,7 +30,7 @@
 // second (nothing sweeps). Static to touch. Update path: font / format / date / time move in place (the children's own
 // updates); another face refills. Contrast pairs: colour.json section "clock".
 #include <ctime>
-// audit deps: date_line, time
+// audit deps: time
 #include "fw.h"
 #include "weather.h"
 
@@ -47,7 +47,7 @@ struct Clock {
   lv_obj_t *wx = nullptr, *orb[3] = {};  // orbit face: the weather line, the three dots
   int orb_r[3] = {}, oc = 0;              // their radii, the ring centre (root px)
   lv_timer_t *timer = nullptr;
-  std::string font, format, datestyle, fixed;
+  std::string font, format, datestyle, fixed, day;
   bool seconds = false;
 };
 Clock *of(lv_obj_t *o) { return (Clock *) lv_obj_get_user_data(o); }
@@ -90,10 +90,21 @@ void time_props(const Clock *d, const char *size, ArduinoJson::JsonDocument &cp)
   cp["time"] = d->fixed.empty() ? "" : hhmm(now_ms(d));  // a fixed time runs on (the Time child shows it); live = its own
   // seconds on the faces that have no seconds of their own (hero has a strip, but digits were asked for; compact)
   cp["seconds"] = d->seconds && (d->face == HERO || d->face == COMPACT);
+  cp["date"] = d->face == COMPACT ? "none" : d->datestyle;  // the date under the digits is the Time's own (date prop)
+  cp["day"] = d->day;
 }
-void date_props(const Clock *d, ArduinoJson::JsonDocument &cp, const char *date) {
-  cp["style"] = d->datestyle;
-  cp["date"] = date;
+// the analogue face's date window: the Time with no digits (the hands tell the time)
+void date_props(const Clock *d, ArduinoJson::JsonDocument &cp) {
+  cp["digits"] = false;
+  cp["date"] = d->datestyle;
+  cp["day"] = d->day;
+}
+// ring: the digits on the centre (the Time block is digits + gap + date; its first line is the digits)
+void ring_place(lv_obj_t *root, lv_obj_t *time) {
+  lv_obj_update_layout(root);
+  lv_obj_t *line = lv_obj_get_child(time, 0);
+  const int32_t off = line ? (lv_obj_get_height(time) - lv_obj_get_height(line)) / 2 : 0;
+  lv_obj_align(time, LV_ALIGN_CENTER, 0, off);
 }
 
 // ---- analogue hands (one draw event, each a line from the centre)
@@ -256,6 +267,7 @@ void fill(lv_obj_t *root, fw::Props p) {
   d->font = p["font"] | "mono";
   d->format = p["format"] | "24h";
   d->datestyle = p["date"] | "short";
+  d->day = p["day"] | "";
   d->fixed = p["time"] | "";
   d->seconds = p["seconds"] | false;
   d->base_ms = day_ms(p);
@@ -269,9 +281,8 @@ void fill(lv_obj_t *root, fw::Props p) {
   lv_obj_remove_flag(root, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
   if (d->face == ORBIT) lv_obj_set_size(root, fw::lay::content_w, fw::lay::content_h);  // a screen body
   else lv_obj_set_size(root, S, S);
-  const char *date = p["day"] | "";
   ArduinoJson::JsonDocument tp, dp;
-  date_props(d, dp, date);
+  date_props(d, dp);
   if (d->face == HERO) {
     lv_obj_t *col = box(root);
     lv_obj_set_size(col, S, LV_SIZE_CONTENT);
@@ -280,7 +291,6 @@ void fill(lv_obj_t *root, fw::Props p) {
     lv_obj_set_style_pad_row(col, fw::sp::s8, 0);
     time_props(d, "hero", tp);
     d->time = child(col, "time", tp);
-    d->date = child(col, "date_line", dp);
     lv_obj_t *bar = d->bar = box(col);  // the seconds strip: track + fill
     lv_obj_set_size(bar, fw::lay::clock_secbar, fw::stroke::edge);
     lv_obj_set_style_bg_color(bar, t.line, 0);
@@ -303,10 +313,7 @@ void fill(lv_obj_t *root, fw::Props p) {
     lv_obj_center(fw::tick_ring(root, fw::lay::clock_ring_inner, ticks));
     time_props(d, "mid", tp);
     d->time = child(root, "time", tp);
-    lv_obj_align(d->time, LV_ALIGN_CENTER, 0, 0);  // the digits on the centre
-    d->date = child(root, "date_line", dp);
-    lv_obj_update_layout(root);  // the Time's size before the date is placed under it
-    lv_obj_align_to(d->date, d->time, LV_ALIGN_OUT_BOTTOM_MID, 0, fw::sp::s7);
+    ring_place(root, d->time);
     lv_obj_t *dot = d->orbit = box(root);
     lv_obj_set_size(dot, fw::lay::clock_orbit_dot, fw::lay::clock_orbit_dot);
     lv_obj_set_style_radius(dot, LV_RADIUS_CIRCLE, 0);
@@ -331,7 +338,7 @@ void fill(lv_obj_t *root, fw::Props p) {
       const fw::StrokePt c = fw::polar((float) C, (float) C, (float) fw::lay::clock_numeral_r, 270.0f + k * 90.0f);
       lv_obj_set_pos(l, (int32_t) std::lround(c.x - lv_obj_get_width(l) / 2.0f), (int32_t) std::lround(c.y - fw::style(ns).box / 2.0f));
     }
-    d->date = child(root, "date_line", dp);
+    d->date = child(root, "time", dp);
     lv_obj_align(d->date, LV_ALIGN_TOP_MID, 0, C + fw::lay::clock_date_y);
     d->hands = box(root);
     lv_obj_set_size(d->hands, S, S);
@@ -369,7 +376,6 @@ void fill(lv_obj_t *root, fw::Props p) {
     lv_obj_set_style_pad_row(col, fw::sp::s5, 0);
     time_props(d, "mid", tp);
     d->time = child(col, "time", tp);
-    d->date = child(col, "date_line", dp);
     const std::string w = wx_line(p);
     d->wx = fw::text(col, fw::ty::c_weather, w.c_str(), t.text_dim);
     lv_obj_set_style_opa(d->wx, w.empty() ? LV_OPA_TRANSP : LV_OPA_COVER, 0);  // always there: an update fades it
@@ -439,6 +445,7 @@ FW_UPDATE(clock_face) {
   }
   d->format = p["format"] | "24h";
   d->datestyle = p["date"] | "short";
+  d->day = p["day"] | "";
   d->seconds = p["seconds"] | false;
   const std::string fixed = p["time"] | "";
   if (fixed != d->fixed) {  // a new time: the hands step there, the seconds pick up from it
@@ -452,12 +459,12 @@ FW_UPDATE(clock_face) {
     ArduinoJson::JsonDocument cp;
     time_props(d, d->face == HERO ? "hero" : d->face == COMPACT ? "compact" : "mid", cp);
     if (!fw::update_child(fw::find("time"), d->time, cp.as<fw::Props>())) { fw::refill(root); fill(root, p); return true; }
+    if (d->face == RING) ring_place(root, d->time);
   }
   if (d->date) {
     ArduinoJson::JsonDocument cp;
-    date_props(d, cp, p["day"] | "");
-    if (!fw::update_child(fw::find("date_line"), d->date, cp.as<fw::Props>())) { fw::refill(root); fill(root, p); return true; }
-    if (d->face == RING && d->time) lv_obj_align_to(d->date, d->time, LV_ALIGN_OUT_BOTTOM_MID, 0, fw::sp::s7);
+    date_props(d, cp);
+    if (!fw::update_child(fw::find("time"), d->date, cp.as<fw::Props>())) { fw::refill(root); fill(root, p); return true; }
   }
   if (d->wx) {  // the weather line: text in place, shown / hidden by opacity
     const std::string w = wx_line(p);
