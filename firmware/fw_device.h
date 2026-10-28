@@ -17,6 +17,9 @@
 //   POST /fw/bench  a batch of bench cases the panel runs on its own screen (fw_bench.h); GET /fw/bench = the report
 //   POST /fw/show   {screen: <deck page id | screen id | name>} opens that screen on the device (agents)
 //   POST /fw/spec   kind check | check_deck = validate (+ build off screen) only, nothing stored
+//   GET  /fw/act    every action of the closed list (core/spec.h ACTION_DOCS: fields, limits, one example each)
+//   POST /fw/act    {do, ...fields} -> {ok, why?, state?}: one action, checked + run like a spec tap (fw::spec::act,
+//                   CONTRACT.md C50; HA's facet_act does the same: act_from_ha)
 //   GET  /llms.txt, /agents.md   the agent docs (bundle fw_docs_gen.h from tools/gen_agents.mjs; open)
 // AI agents (facet-163, Darren 2026-10-25): every POST under /fw/ and every GET /fw/ha (it shows the subscribed HA
 // values; the editor's ?want= subscribes too) go through agent::allow():
@@ -737,36 +740,56 @@ inline void timers_setup() {
   });
   if (timers_hook) timers_hook();  // the first state (none): HA reads unknown / 0 / []
 }
-// the last answer: ESPHome evaluates api.respond's data only when the caller asked for a response, so the YAML runs
-// timer_from_ha() in a lambda step and answers with timer_answer() after it (2026-10-28: a call without
-// return_response did nothing while the work sat in the respond lambda)
-inline ArduinoJson::JsonDocument &timer_last() { static ArduinoJson::JsonDocument d; return d; }
-inline void timer_answer(ArduinoJson::JsonObject out) {
-  for (ArduinoJson::JsonPair kv : timer_last().as<ArduinoJson::JsonObject>()) out[kv.key()] = kv.value();
+// Actions from Home Assistant (CONTRACT.md C50): facet_act {action: JSON} runs ONE action of the closed list through
+// fw::spec::act (the same checks and code path as a spec tap, POST /fw/act); the friendly facet_timer_start / _extend
+// / _cancel build that action. ESPHome evaluates api.respond's data only when the caller asked for a response, so the
+// YAML does the work in a lambda step (act_from_ha / timer_from_ha) and answers with act_answer() after it (2026-10-28:
+// a call without return_response did nothing while the work sat in the respond lambda). Main loop.
+inline ArduinoJson::JsonDocument &act_last() { static ArduinoJson::JsonDocument d; return d; }
+inline void act_answer(ArduinoJson::JsonObject out) {
+  for (ArduinoJson::JsonPair kv : act_last().as<ArduinoJson::JsonObject>()) out[kv.key()] = kv.value();
+}
+inline void timer_answer(ArduinoJson::JsonObject out) { act_answer(out); }
+inline bool act_run(ArduinoJson::JsonVariantConst a, const char *from) {
+  act_last().clear();
+  ArduinoJson::JsonObject out = act_last().to<ArduinoJson::JsonObject>();
+  std::string why;
+  ArduinoJson::JsonDocument st;
+  const bool ok = fw::spec::act(a, why, st.to<ArduinoJson::JsonObject>());
+  out["ok"] = ok;
+  if (!why.empty()) { out["why"] = why; ESP_LOGW("facet_wb", "%s %s: %s", from, a["do"] | "?", why.c_str()); }
+  if (st.size()) out["state"] = st;
+  return ok;
+}
+inline void act_from_ha(const std::string &json) {
+  ArduinoJson::JsonDocument a;
+  if (json.size() > 1024 || deserializeJson(a, json)) {
+    act_last().clear();
+    act_last()["ok"] = false;
+    act_last()["why"] = "action: not JSON (an object {\"do\": ..., ...}, at most 1 KB)";
+    return;
+  }
+  act_run(a.as<ArduinoJson::JsonVariantConst>(), "facet_act");
 }
 inline void timer_from_ha(const char *op, const std::string &name, int seconds) {
-  timer_last().clear();
-  ArduinoJson::JsonObject out = timer_last().to<ArduinoJson::JsonObject>();
-  namespace tm = fw::dev::timers;
-  const char *why = "";
-  int id = 0;
-  if (!strcmp(op, "start")) {
-    why = tm::start(name.c_str(), seconds, &id);
-    if (*why) {
-      ArduinoJson::JsonDocument t;
-      t["tone"] = "warn"; t["icon"] = "timer"; t["title"] = "No timer started"; t["body"] = why;
-      fw::dev::toast(t.as<fw::Props>());
-    }
-  } else {
-    id = name.empty() ? (tm::shown() ? tm::shown()->id : 0) : tm::find(name.c_str());
-    if (!id) why = name.empty() ? "no timer" : "no timer by that name";
-    else if (!strcmp(op, "extend")) why = tm::extend(id, seconds);
-    else why = tm::cancel(id);
+  ArduinoJson::JsonDocument a;
+  a["do"] = std::string("timer.") + op;
+  if (!strcmp(op, "start")) a["seconds"] = seconds;
+  if (!strcmp(op, "extend")) a["s"] = seconds;
+  if (!name.empty()) a["name"] = name;
+  const bool ok = act_run(a.as<ArduinoJson::JsonVariantConst>(), "facet_timer");
+  ArduinoJson::JsonObject out = act_last().as<ArduinoJson::JsonObject>();
+  if (!ok) out["error"] = out["why"];  // the facet_timer_* answer kept its "error" (2026-10-28)
+  if (!ok && !strcmp(op, "start")) {  // a refused start from HA: say so where the person is looking
+    ArduinoJson::JsonDocument t;
+    t["tone"] = "warn"; t["icon"] = "timer"; t["title"] = "No timer started"; t["body"] = out["why"] | "";
+    fw::dev::toast(t.as<fw::Props>());
   }
-  out["ok"] = !*why;
-  if (*why) out["error"] = why;
+  namespace tm = fw::dev::timers;
+  int id = 0;
+  if (ok && !strcmp(op, "start")) for (const fw::dev::TimerItem &t : tm::all()) id = std::max(id, t.id);  // the newest
+  else if (ok) id = name.empty() ? (tm::shown() ? tm::shown()->id : 0) : tm::find(name.c_str());
   if (const fw::dev::TimerItem *t = tm::get(id)) out["name"] = t->name;
-  if (*why) ESP_LOGW("facet_wb", "timer %s %s: %s", op, name.c_str(), why);
 }
 
 // ---------------------------------------------------------------- screen specs (core/spec.h)
@@ -1315,6 +1338,17 @@ class Handler : public AsyncWebHandler {
         d["bound"] = (int) fw::ha::S().bounds.size();
       }, 2000);
       serializeJson(d, s);
+    } else if (path == "/fw/act" && post) {  // one action of the closed list (CONTRACT.md C50; act_run)
+      ArduinoJson::JsonDocument body;
+      bool ok = false;
+      if (too_big_ || body_.empty() || deserializeJson(body, body_)) { code = 400; s = R"({"ok":false,"why":"body is not JSON: {\"do\": \"<action>\", ...} (GET /fw/act lists them)"})"; }
+      else if (!in_loop([&] { ok = act_run(body.as<ArduinoJson::JsonVariantConst>(), "/fw/act"); serializeJson(act_last(), s); }, 3000)) { code = 503; s = R"({"ok":false,"why":"the main loop did not answer in time"})"; }
+      else if (!ok) code = 400;
+    } else if (path == "/fw/act") {  // the list: every action, its fields, limits, one example (core/spec.h ACTION_DOCS)
+      ArduinoJson::JsonDocument d;
+      d["usage"] = "POST /fw/act {\"do\": \"<action>\", ...fields} with Authorization: Bearer <agent token> -> {ok, why?, state?}";
+      fw::spec::actions_json(d["actions"].to<ArduinoJson::JsonArray>());
+      serializeJson(d, s);
     } else if (path == "/fw/settings") {
       ArduinoJson::JsonDocument d;
       std::string e, cur;
@@ -1361,7 +1395,7 @@ class Handler : public AsyncWebHandler {
       }
     } else {
       code = 404;
-      s = R"({"ok":false,"error":"docs: /llms.txt /agents.md; GET /fw/info, GET /fw/meta, GET /fw/perf[?reset=1], POST /fw/show, GET|POST /fw/settings, GET|POST /fw/spec, GET /fw/deck, GET /fw/ha, POST|GET /fw/bench"})";
+      s = R"({"ok":false,"error":"docs: /llms.txt /agents.md; GET /fw/info, GET /fw/meta, GET /fw/perf[?reset=1], POST /fw/show, GET|POST /fw/act, GET|POST /fw/settings, GET|POST /fw/spec, GET /fw/deck, GET /fw/ha, POST|GET /fw/bench"})";
     }
     body_.clear();  // a body is only delivered for some content types: never reuse the previous request's
     too_big_ = false;

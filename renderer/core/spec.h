@@ -201,6 +201,42 @@ constexpr Rule RULES[] = {
 constexpr const char *ACTIONS[] = {"light.switch", "light.toggle", "light.brightness", "climate.set_temperature",
                                    "climate.set_hvac_mode", "climate.set_preset_mode", "media.control", "cover.control", "lock.control", "vacuum.control", "screen.toggle", "screen.param",
                                    "nav.open", "nav.back", "timer.start", "timer.extend", "timer.cancel", "timer.stop", "timer.select", "timer.new", "timer.back"};
+// The one closed action list, documented (CONTRACT.md C50): every action a spec node, an agent (POST /fw/act) or Home
+// Assistant (facet_act) can run, with its fields and one example. GET /fw/act, the catalogue's "act" and the agent docs
+// are generated from it; act() checks "value" against `value` (outside a spec the value a component's event would give
+// is a field). fields = "name|type|need|limits" joined by ';'. value = alternatives joined by '|': a word, "word #a..b"
+// (the word, a space, a number a..b), "#a..b" (a number), "*n" (a short name: letters, digits, space, _ or -, at most
+// n); "" = no value. screen = needs a spec screen (its parameters): a spec node only.
+struct ActionDoc { const char *id, *about, *fields, *value, *example; bool screen; };
+constexpr ActionDoc ACTION_DOCS[] = {
+    {"light.switch", "Turn a light on or off.", "e|entity|required|light.x", "on|off", R"({"do":"light.switch","e":"light.office","value":"on"})", false},
+    {"light.toggle", "Toggle a light.", "e|entity|required|light.x", "", R"({"do":"light.toggle","e":"light.office"})", false},
+    {"light.brightness", "Set a light's brightness in percent (0 = off).", "e|entity|required|light.x", "#0..100", R"({"do":"light.brightness","e":"light.office","value":"40"})", false},
+    {"climate.set_temperature", "Set a thermostat's target (kept inside the entity's range and step).", "e|entity|required|climate.x", "#0..50", R"({"do":"climate.set_temperature","e":"climate.hall","value":"20.5"})", false},
+    {"climate.set_hvac_mode", "Set a thermostat's mode.", "e|entity|required|climate.x", "off|heat|cool|heat_cool|auto|dry|fan_only", R"({"do":"climate.set_hvac_mode","e":"climate.hall","value":"heat"})", false},
+    {"climate.set_preset_mode", "Set a thermostat's preset.", "e|entity|required|climate.x", "*32", R"({"do":"climate.set_preset_mode","e":"climate.hall","value":"eco"})", false},
+    {"media.control", "Control a media player (volume in percent).", "e|entity|required|media_player.x", "previous|play_pause|next|volume #0..100", R"({"do":"media.control","e":"media_player.kitchen","value":"volume 30"})", false},
+    {"cover.control", "Open, close or stop a cover, or set its position / tilt in percent.", "e|entity|required|cover.x", "open|close|stop|position #0..100|tilt #0..100", R"({"do":"cover.control","e":"cover.office_blind","value":"position 50"})", false},
+    {"lock.control", "Lock, unlock or open a lock.", "e|entity|required|lock.x", "lock|unlock|open", R"({"do":"lock.control","e":"lock.front_door","value":"lock"})", false},
+    {"vacuum.control", "Start (optionally some rooms), pause, resume or dock a vacuum.", "e|entity|required|vacuum.x;rooms|text|optional|segment ids, a comma list (with clean)", "clean|start|resume|pause|dock", R"({"do":"vacuum.control","e":"vacuum.robot","value":"clean","rooms":"1,3"})", false},
+    {"screen.toggle", "A spec screen's tapped item in / out of a comma list parameter (spec nodes only).", "param|id|required|the screen parameter", "", R"({"do":"screen.toggle","param":"rooms"})", true},
+    {"screen.param", "Set a spec screen's parameter to the picked value (spec nodes only).", "param|id|required|the screen parameter;from|id|optional|the parameter holding the allowed values;auto|id|optional|the parameter Auto follows", "", R"({"do":"screen.param","param":"speaker","from":"speakers"})", true},
+    {"nav.open", "Open a screen.", "screen|id|required|a screen id (a-z, 0-9, _, at most 12);params|object|optional|the screen's parameters", "", R"({"do":"nav.open","screen":"timer"})", false},
+    {"nav.back", "Go back one screen.", "", "", R"({"do":"nav.back"})", false},
+    {"timer.start", "Start a timer (at most 4 at once).", "seconds|int|required|1..86400;name|text|optional|at most 24", "", R"({"do":"timer.start","seconds":300,"name":"Pasta"})", false},
+    {"timer.extend", "Add time to a timer (none named = the one shown).", "s|int|required|1..86400;id|text|optional|a timer id;name|text|optional|a timer name, at most 24", "", R"({"do":"timer.extend","name":"Pasta","s":60})", false},
+    {"timer.cancel", "Cancel a timer, running or done (none named = the one shown).", "id|text|optional|a timer id;name|text|optional|a timer name, at most 24", "", R"({"do":"timer.cancel","name":"Pasta"})", false},
+    {"timer.stop", "Clear a timer that is done (none named = the one shown).", "id|text|optional|a timer id;name|text|optional|a timer name, at most 24", "", R"({"do":"timer.stop","name":"Pasta"})", false},
+    {"timer.select", "Show that timer on the Timer screen.", "id|text|optional|a timer id;name|text|optional|a timer name, at most 24", "", R"({"do":"timer.select","name":"Pasta"})", false},
+    {"timer.new", "Show the Timer screen's length picker.", "", "", R"({"do":"timer.new"})", false},
+    {"timer.back", "Leave the length picker.", "", "", R"({"do":"timer.back"})", false},
+};
+static_assert(sizeof ACTION_DOCS / sizeof ACTION_DOCS[0] == sizeof ACTIONS / sizeof ACTIONS[0], "every action has its ACTION_DOCS row (CONTRACT.md C50)");
+inline const ActionDoc *action_doc(const std::string &d) {
+  for (const ActionDoc &a : ACTION_DOCS)
+    if (d == a.id) return &a;
+  return nullptr;
+}
 constexpr const char *FMTS[] = {"", "on", "pct", "avail", "light", "name", "num", "frac", "count", "time", "day", "level", "state", "dim"};
 constexpr uint32_t CLIMATE_THROTTLE_MS = 250;  // like light-throttle-ms: a set point while dragging at most this often
 constexpr const char *LAYOUTS[] = {"list", "center", "cards"};
@@ -377,12 +413,15 @@ inline void check_keys(ArduinoJson::JsonObjectConst o, const char *const *keys, 
 }
 inline void check_action(ArduinoJson::JsonVariantConst a, const char *comp, const char *event, const std::string &path, Errs &e) {
   if (!a.is<ArduinoJson::JsonObjectConst>()) { err(e, path, "bad_action", "an action is an object {do, ...}"); return; }
-  static const char *const K[] = {"do", "e", "screen", "params", "param", "from", "auto", "rooms", "mode", "mop", "seconds", "name", "s", "id"};
-  check_keys(a.as<ArduinoJson::JsonObjectConst>(), K, 14, path, e);
+  static const char *const K[] = {"do", "e", "screen", "params", "param", "from", "auto", "rooms", "mode", "mop", "seconds", "name", "s", "id", "value"};
+  check_keys(a.as<ArduinoJson::JsonObjectConst>(), K, 15, path, e);
   const std::string d = a["do"] | "";
   if (!one_of(ACTIONS, d)) { err(e, path + ".do", "bad_action", "unknown action " + d); return; }
-  const char *ok = allowed(comp, event);
-  if (!ok || !in_list(ok, d)) err(e, path + ".do", "not_allowed", std::string(comp) + " " + event + " allows " + (ok ? ok : "no action"));
+  if (comp) {  // a spec node: its component's event allows it; nullptr = act() (an agent, HA: no component)
+    const char *ok = allowed(comp, event);
+    if (!ok || !in_list(ok, d)) err(e, path + ".do", "not_allowed", std::string(comp) + " " + event + " allows " + (ok ? ok : "no action"));
+    if (!a["value"].isNull()) err(e, path + ".value", "bad_action", "value: in a spec the component's event gives it (value is for /fw/act and facet_act)");
+  }
   if (d.rfind("light.", 0) == 0) {
     const std::string en = a["e"] | "";
     if (!entity_ok(en) || (en[0] != '$' && en.rfind("light.", 0) != 0)) err(e, path + ".e", "bad_entity", "a light entity (light.x or $param)");
@@ -1050,11 +1089,18 @@ inline Node *node_of(Screen *s, lv_obj_t *o) {
       if (n.obj == o) return &n;
   return nullptr;
 }
+// every HA call a node's action makes goes through here: a refusal's reason is kept for act() (fw::spec::act answers it)
+inline std::string &act_why() { static std::string w; return w; }
+inline const char *ha_act(Node &n, const char *service, const char *entity, const char *data_json = "") {
+  const char *w = ha::act(n.obj, service, entity, data_json);
+  if (*w) act_why() = w;
+  return w;
+}
 inline void send_brightness(Node &n, int v) {
   if (v == n.sent) return;
   char data[40];
   snprintf(data, sizeof data, "{\"brightness_pct\":%d}", v);
-  if (*(v > 0 ? ha::act(n.obj, "light.turn_on", n.entity.c_str(), data) : ha::act(n.obj, "light.turn_off", n.entity.c_str()))) return;
+  if (*(v > 0 ? ha_act(n, "light.turn_on", n.entity.c_str(), data) : ha_act(n, "light.turn_off", n.entity.c_str()))) return;
   n.sent = v;
   n.sent_at = lv_tick_get();
 }
@@ -1069,7 +1115,7 @@ inline void send_temperature(Node &n, double v) {
   if (std::isfinite(n.c_sent) && std::fabs(v - n.c_sent) < 1e-6) return;
   char data[48];
   snprintf(data, sizeof data, "{\"temperature\":%g}", v);
-  if (*ha::act(n.obj, "climate.set_temperature", n.entity.c_str(), data)) return;
+  if (*ha_act(n, "climate.set_temperature", n.entity.c_str(), data)) return;
   n.c_sent = v;
   n.c_at = lv_tick_get();
 }
@@ -1082,7 +1128,7 @@ inline void tick(lv_timer_t *t) {
   for (Node &n : s->nodes) {
     if (n.want == ON_ONLY && lv_tick_diff(now, n.sent_at) >= 300) {
       n.want = -1;
-      if (!*ha::act(n.obj, "light.turn_on", n.entity.c_str())) { n.sent = -1; n.sent_at = now; }
+      if (!*ha_act(n, "light.turn_on", n.entity.c_str())) { n.sent = -1; n.sent_at = now; }
       ha::hold(n.obj, LIGHT_HOLD_MS, n.entity, "", "on");
     } else if (n.want >= 0 && n.want != ON_ONLY && lv_tick_diff(now, n.sent_at) >= LIGHT_THROTTLE_MS) {
       send_brightness(n, n.want);
@@ -1192,13 +1238,12 @@ inline void follow_now(Screen *s) {
   if (!entity_ok(*v) || (*v)[0] == '$' || v->substr(0, v->find('.')) != cur.substr(0, cur.find('.'))) return;
   set_param(s, s->follow_param, "", *v);
 }
-// an event from inside node n -> its action (the whitelist was checked when the spec was accepted)
-inline bool run(Screen *s, Node &n, const char *event, const char *detail) {
-  ArduinoJson::JsonDocument on;
-  deserializeJson(on, n.on);
-  ArduinoJson::JsonVariantConst a = on[event];
-  if (a.isNull()) return false;
+// one checked action `a` for node n (an event's detail = its value): THE code path of every action, a spec tap (run)
+// and act() alike (CONTRACT.md C50). why = nullptr: a spec tap (a refused timer says so in a toast); else act() wants
+// the reason a refusal has ("" = done)
+inline bool run_action(Screen *s, Node &n, ArduinoJson::JsonVariantConst a, const char *event, const char *detail, std::string *why_out) {
   const std::string d = a["do"] | "";
+  auto refuse = [&](const char *w) { if (why_out && why_out->empty()) *why_out = w; return true; };
   if (d == "nav.back") { emit(n.obj, "back"); return true; }
   if (d.rfind("timer.", 0) == 0) {  // the panel's timers (core/device.h): which one = id / name, a chip's detail, the shown
     namespace tm = dev::timers;
@@ -1211,12 +1256,13 @@ inline bool run(Screen *s, Node &n, const char *event, const char *detail) {
       else if (a["name"].is<const char *>()) id = tm::find(a["name"] | "");
       else if (!strcmp(event, "select") || !strcmp(event, "stop")) id = tm::find(detail);
       else if (const dev::TimerItem *t = tm::shown()) id = t->id;
-      if (!id) return true;
+      if (!id) return refuse(a["id"].isNull() && a["name"].isNull() ? "no timer" : "no timer by that name");
       if (d == "timer.extend") why = tm::extend(id, a["s"] | 60);
       else if (d == "timer.cancel") why = tm::cancel(id);
       else if (d == "timer.stop") why = tm::stop(id);
       else why = tm::select(id);
     }
+    if (*why && why_out) return refuse(why);  // act(): the caller hears why
     if (*why && d == "timer.start") {  // full / a bad length: say so where the person is looking
       ArduinoJson::JsonDocument t;
       t["tone"] = "warn"; t["icon"] = "timer"; t["title"] = "No timer started"; t["body"] = why;
@@ -1227,8 +1273,8 @@ inline bool run(Screen *s, Node &n, const char *event, const char *detail) {
   if (d == "nav.open") {
     std::string id = a["screen"] | "";
     if (id.empty()) id = detail;  // the component's own "open": its detail is "<screen>[?{params}]"
-    if (id.empty() || !id_ok(id.substr(0, id.find('?')))) return true;
-    if (!opens_known(id.substr(0, id.find('?')))) return true;  // a screen this build lacks (its feature is off): nothing opens
+    if (id.empty() || !id_ok(id.substr(0, id.find('?')))) return refuse("no screen id");
+    if (!opens_known(id.substr(0, id.find('?')))) return refuse("no such screen on this panel");  // a screen this build lacks (its feature is off): nothing opens
     if (a["params"].is<ArduinoJson::JsonObjectConst>()) {
       std::string pj;
       serializeJson(a["params"], pj);
@@ -1243,18 +1289,18 @@ inline bool run(Screen *s, Node &n, const char *event, const char *detail) {
   static const char *const HA_DOS[] = {"media.", "cover.", "vacuum.", "lock.", "light.", "climate."};  // (light.toggle covers switches)
   if (std::any_of(std::begin(HA_DOS), std::end(HA_DOS), [&](const char *p) { return d.rfind(p, 0) == 0; })) {
     const std::string *es = ha::get(n.entity);
-    if (es && (*es == "unavailable" || *es == "unknown")) { emit(n.obj, st::BLOCKED_EVENT, "unavailable"); return true; }
+    if (es && (*es == "unavailable" || *es == "unknown")) { emit(n.obj, st::BLOCKED_EVENT, "unavailable"); return refuse("the entity is unavailable"); }
   }
   if (d == "media.control") {  // previous | play_pause | next | volume 0-100 (the view shows it at once itself)
     static const char *const CMD[][2] = {{"previous", "media_player.media_previous_track"},
                                          {"play_pause", "media_player.media_play_pause"},
                                          {"next", "media_player.media_next_track"}};
     for (auto &c : CMD)
-      if (!strcmp(detail, c[0])) { ha::act(n.obj, c[1], n.entity.c_str()); return true; }
+      if (!strcmp(detail, c[0])) { ha_act(n, c[1], n.entity.c_str()); return true; }
     if (!strncmp(detail, "volume ", 7)) {
       char data[40];
       snprintf(data, sizeof data, "{\"volume_level\":%.2f}", LV_CLAMP(0, atoi(detail + 7), 100) / 100.0);
-      ha::act(n.obj, "media_player.volume_set", n.entity.c_str(), data);
+      ha_act(n, "media_player.volume_set", n.entity.c_str(), data);
     }
     return true;
   }
@@ -1262,13 +1308,13 @@ inline bool run(Screen *s, Node &n, const char *event, const char *detail) {
     char data[40];
     if (!strncmp(detail, "position ", 9)) {
       snprintf(data, sizeof data, "{\"position\":%d}", (int) LV_CLAMP(0, atoi(detail + 9), 100));
-      ha::act(n.obj, "cover.set_cover_position", n.entity.c_str(), data);
+      ha_act(n, "cover.set_cover_position", n.entity.c_str(), data);
     } else if (!strncmp(detail, "tilt ", 5)) {
       snprintf(data, sizeof data, "{\"tilt_position\":%d}", (int) LV_CLAMP(0, atoi(detail + 5), 100));
-      ha::act(n.obj, "cover.set_cover_tilt_position", n.entity.c_str(), data);
-    } else if (!strcmp(detail, "open")) ha::act(n.obj, "cover.open_cover", n.entity.c_str());
-    else if (!strcmp(detail, "close")) ha::act(n.obj, "cover.close_cover", n.entity.c_str());
-    else if (!strcmp(detail, "stop")) ha::act(n.obj, "cover.stop_cover", n.entity.c_str());
+      ha_act(n, "cover.set_cover_tilt_position", n.entity.c_str(), data);
+    } else if (!strcmp(detail, "open")) ha_act(n, "cover.open_cover", n.entity.c_str());
+    else if (!strcmp(detail, "close")) ha_act(n, "cover.close_cover", n.entity.c_str());
+    else if (!strcmp(detail, "stop")) ha_act(n, "cover.stop_cover", n.entity.c_str());
     return true;
   }
   if (d == "vacuum.control") {  // a Button's label (Clean / Start / Resume, Pause, Dock; any case) or a Segmented's
@@ -1286,7 +1332,7 @@ inline bool run(Screen *s, Node &n, const char *event, const char *detail) {
           od["option"] = opt;
           std::string data;
           serializeJson(od, data);
-          ha::act(n.obj, "select.select_option", sel.c_str(), data.c_str());
+          ha_act(n, "select.select_option", sel.c_str(), data.c_str());
           return true;
         }
         if (key != "fan") return true;
@@ -1296,7 +1342,7 @@ inline bool run(Screen *s, Node &n, const char *event, const char *detail) {
       fd["fan_speed"] = w;
       std::string data;
       serializeJson(fd, data);
-      ha::act(n.obj, "vacuum.set_fan_speed", n.entity.c_str(), data.c_str());
+      ha_act(n, "vacuum.set_fan_speed", n.entity.c_str(), data.c_str());
       return true;
     }
     const std::string rooms = a["rooms"] | "";
@@ -1313,12 +1359,12 @@ inline bool run(Screen *s, Node &n, const char *event, const char *detail) {
         if (*q) segs += (segs.empty() ? "" : ",") + std::to_string(atoi(q));
         i = j + 1;
       }
-      if (segs.empty()) { ha::act(n.obj, "vacuum.start", n.entity.c_str()); return true; }
+      if (segs.empty()) { ha_act(n, "vacuum.start", n.entity.c_str()); return true; }
       const std::string data = "{\"command\":\"app_segment_clean\",\"params\":[{\"segments\":[" + segs + "],\"repeat\":1}]}";
-      ha::act(n.obj, "vacuum.send_command", n.entity.c_str(), data.c_str());
-    } else if (w == "resume") ha::act(n.obj, "vacuum.start", n.entity.c_str());
-    else if (w == "pause") ha::act(n.obj, "vacuum.pause", n.entity.c_str());
-    else if (w == "dock") ha::act(n.obj, "vacuum.return_to_base", n.entity.c_str());
+      ha_act(n, "vacuum.send_command", n.entity.c_str(), data.c_str());
+    } else if (w == "resume") ha_act(n, "vacuum.start", n.entity.c_str());
+    else if (w == "pause") ha_act(n, "vacuum.pause", n.entity.c_str());
+    else if (w == "dock") ha_act(n, "vacuum.return_to_base", n.entity.c_str());
     return true;
   }
   if (d == "screen.toggle") {  // the detail in / out of the comma list parameter, then every node bound again
@@ -1344,9 +1390,9 @@ inline bool run(Screen *s, Node &n, const char *event, const char *detail) {
     return true;
   }
   if (d == "lock.control") {  // lock | unlock | open: the view sends unlock / open only after its hold (the confirm step)
-    if (!strcmp(detail, "lock")) ha::act(n.obj, "lock.lock", n.entity.c_str());
-    else if (!strcmp(detail, "unlock")) ha::act(n.obj, "lock.unlock", n.entity.c_str());
-    else if (!strcmp(detail, "open")) ha::act(n.obj, "lock.open", n.entity.c_str());
+    if (!strcmp(detail, "lock")) ha_act(n, "lock.lock", n.entity.c_str());
+    else if (!strcmp(detail, "unlock")) ha_act(n, "lock.unlock", n.entity.c_str());
+    else if (!strcmp(detail, "open")) ha_act(n, "lock.open", n.entity.c_str());
     return true;
   }
   if (d == "screen.param") {
@@ -1381,7 +1427,7 @@ inline bool run(Screen *s, Node &n, const char *event, const char *detail) {
     // hold for HA's answer = the other side (facet-181: a bare hold kept HA's answer off the card's state line)
     const std::string *cur = ha::get(n.entity, "");
     const std::string want = cur && *cur == "on" ? "off" : "on";
-    if (!*ha::act(n.obj, svc, n.entity.c_str())) ha::hold(n.obj, PENDING_MS, n.entity, "", want);
+    if (!*ha_act(n, svc, n.entity.c_str())) ha::hold(n.obj, PENDING_MS, n.entity, "", want);
     return true;
   }
   if (d == "light.switch") {
@@ -1389,7 +1435,7 @@ inline bool run(Screen *s, Node &n, const char *event, const char *detail) {
     const bool sw = n.entity.rfind("switch.", 0) == 0;  // the light screen takes switch.* too (an on / off dial)
     if (v && n.has_brightness && !sw) { n.want = ON_ONLY; n.sent_at = lv_tick_get(); return true; }  // a drag may follow
     if (!v && n.has_brightness && n.sent == 0) return true;                                   // the released 0 did it
-    if (*ha::act(n.obj, sw ? (v ? "switch.turn_on" : "switch.turn_off") : v ? "light.turn_on" : "light.turn_off", n.entity.c_str())) return true;
+    if (*ha_act(n, sw ? (v ? "switch.turn_on" : "switch.turn_off") : v ? "light.turn_on" : "light.turn_off", n.entity.c_str())) return true;
     if (n.has_brightness) n.sent = v ? -1 : 0;
     n.sent_at = lv_tick_get();
     ha::hold(n.obj, LIGHT_HOLD_MS, n.entity, "", v ? "on" : "off");
@@ -1417,7 +1463,7 @@ inline bool run(Screen *s, Node &n, const char *event, const char *detail) {
     data[hvac ? "hvac_mode" : "preset_mode"] = detail;
     std::string ds;
     serializeJson(data, ds);
-    if (!*ha::act(n.obj, d.c_str(), n.entity.c_str(), ds.c_str()))
+    if (!*ha_act(n, d.c_str(), n.entity.c_str(), ds.c_str()))
       ha::hold(n.obj, PENDING_MS, n.entity, hvac ? "" : "preset_mode", detail);  // the state = the hvac mode in HA
     return true;
   }
@@ -1439,6 +1485,122 @@ inline bool run(Screen *s, Node &n, const char *event, const char *detail) {
     return true;
   }
   return false;
+}
+// an event from inside node n -> its action (the whitelist was checked when the spec was accepted)
+inline bool run(Screen *s, Node &n, const char *event, const char *detail) {
+  ArduinoJson::JsonDocument on;
+  deserializeJson(on, n.on);
+  ArduinoJson::JsonVariantConst a = on[event];
+  if (a.isNull()) return false;
+  return run_action(s, n, a, event, detail, nullptr);
+}
+// ---- act (CONTRACT.md C50): ONE action from outside a spec (an agent's POST /fw/act, Home Assistant's facet_act).
+// Checked exactly like a spec node's action (check_action with no component: every action of the list), plus its
+// "value" against ACTION_DOCS (what a component's event would give), then run through run_action() like a tap. Spec-
+// only actions (ACTION_DOCS screen) and $param entities are refused (no screen here). true = done; else why says why.
+// state (optional) = what it acted on now: the timers for timer.*, the entity's state, the screen opened.
+inline bool value_ok(const char *g, const std::string &v) {
+  auto num = [](const std::string &x, double lo, double hi) {
+    if (x.empty() || x.size() > 12) return false;
+    char *end = nullptr;
+    const double d = strtod(x.c_str(), &end);
+    return end && !*end && std::isfinite(d) && d >= lo && d <= hi;
+  };
+  for (const char *p = g; *p;) {
+    const char *bar = strchr(p, '|');
+    const std::string alt(p, bar ? bar - p : strlen(p));
+    p = bar ? bar + 1 : p + alt.size();
+    const size_t hash = alt.find('#');
+    if (alt[0] == '*') {  // a short name
+      const size_t cap = (size_t) atoi(alt.c_str() + 1);
+      if (v.empty() || v.size() > cap) continue;
+      if (std::all_of(v.begin(), v.end(), [](char c) { return isalnum((unsigned char) c) || c == '_' || c == ' ' || c == '-'; })) return true;
+    } else if (hash != std::string::npos) {  // [word ]#lo..hi
+      const std::string word = alt.substr(0, hash);
+      const double lo = atof(alt.c_str() + hash + 1), hi = atof(alt.c_str() + alt.find("..") + 2);
+      if (v.compare(0, word.size(), word) == 0 && num(v.substr(word.size()), lo, hi)) return true;
+    } else if (v == alt) return true;
+  }
+  return false;
+}
+inline bool act(ArduinoJson::JsonVariantConst a, std::string &why, ArduinoJson::JsonObject state = ArduinoJson::JsonObject()) {
+  why.clear();
+  Errs e;
+  check_action(a, nullptr, "act", "", e);
+  if (!e.empty()) { why = e[0].msg; return false; }
+  const std::string d = a["do"] | "";
+  const ActionDoc *doc = action_doc(d);
+  if (doc->screen) { why = d + " needs a spec screen (its parameters): it runs from a spec node's event only"; return false; }
+  for (const char *k : {"e", "rooms", "mode", "mop", "screen", "name", "id"})
+    if ((a[k] | "")[0] == '$') { why = std::string(k) + ": no screen parameters outside a spec (name it)"; return false; }
+  std::string v;
+  if (a["value"].is<const char *>()) v = a["value"].as<const char *>();
+  else if (a["value"].is<double>()) { char b[24]; snprintf(b, sizeof b, "%g", a["value"].as<double>()); v = b; }
+  else if (!a["value"].isNull()) { why = "value: text (or a number)"; return false; }
+  if (*doc->value && !value_ok(doc->value, v)) { why = std::string("value: one of ") + doc->value; return false; }
+  if (!*doc->value && !a["value"].isNull()) { why = d + " takes no value"; return false; }
+  Node n;
+  n.obj = dev::first_root();  // the panel's screen stack (nav.*); HA calls emit their "ha" event from it
+  n.entity = a["e"] | "";
+  if (d.rfind("nav.", 0) == 0 && !n.obj) { why = "no panel screen is shown"; return false; }
+  act_why().clear();
+  run_action(nullptr, n, a, "act", v.c_str(), &why);
+  if (why.empty()) why = act_why();
+  if (!state.isNull()) {
+    if (d.rfind("timer.", 0) == 0) {
+      ArduinoJson::JsonArray ts = state["timers"].to<ArduinoJson::JsonArray>();
+      for (const dev::TimerItem &t : dev::timers::all()) {
+        ArduinoJson::JsonObject j = ts.add<ArduinoJson::JsonObject>();
+        j["id"] = std::to_string(t.id);
+        j["name"] = t.named ? t.name : dev::timers::length_name(t.total);
+        j["left"] = dev::timers::left(t);
+        j["total"] = t.total;
+        j["state"] = t.state == 1 ? "running" : "done";
+      }
+      if (const dev::TimerItem *t = dev::timers::shown()) state["shown"] = std::to_string(t->id);
+    } else if (!n.entity.empty()) {
+      state["entity"] = n.entity;
+      if (const std::string *st = ha::get(n.entity)) state["state"] = *st;
+    } else if (d == "nav.open") state["screen"] = a["screen"] | "";
+  }
+  return why.empty();
+}
+inline bool act(const std::string &json, std::string &why, ArduinoJson::JsonObject state = ArduinoJson::JsonObject()) {
+  ArduinoJson::JsonDocument a;
+  if (json.size() > 1024 || deserializeJson(a, json)) { why = "not JSON (an action is an object {\"do\": ..., ...}, at most 1 KB)"; return false; }
+  return act(a.as<ArduinoJson::JsonVariantConst>(), why, state);
+}
+// every action of the list with its fields, value, example (GET /fw/act, the catalogue's "act", the agent docs)
+inline void actions_json(ArduinoJson::JsonArray out) {
+  for (const ActionDoc &x : ACTION_DOCS) {
+    ArduinoJson::JsonObject o = out.add<ArduinoJson::JsonObject>();
+    o["do"] = x.id;
+    o["about"] = x.about;
+    ArduinoJson::JsonArray fs = o["fields"].to<ArduinoJson::JsonArray>();
+    for (const char *p = x.fields; *p;) {
+      const char *sc = strchr(p, ';');
+      const std::string f(p, sc ? sc - p : strlen(p));
+      p = sc ? sc + 1 : p + f.size();
+      ArduinoJson::JsonObject fo = fs.add<ArduinoJson::JsonObject>();
+      const char *keys[] = {"name", "type", "need", "limits"};
+      size_t i = 0;
+      for (const char *k : keys) {
+        const size_t j = f.find('|', i);
+        fo[k] = f.substr(i, j == std::string::npos ? std::string::npos : j - i);
+        if (j == std::string::npos) break;
+        i = j + 1;
+      }
+    }
+    if (*x.value) {
+      ArduinoJson::JsonObject fo = fs.add<ArduinoJson::JsonObject>();
+      fo["name"] = "value"; fo["type"] = "text"; fo["need"] = "required";
+      fo["limits"] = x.value;
+    }
+    if (x.screen) o["spec_only"] = true;
+    ArduinoJson::JsonDocument ex;
+    deserializeJson(ex, x.example);
+    o["example"] = ex;
+  }
 }
 inline lv_obj_t *box(lv_obj_t *parent) {
   lv_obj_t *o = lv_obj_create(parent);
@@ -1884,6 +2046,7 @@ inline void catalogue(ArduinoJson::JsonObject out) {
   }
   auto acts = out["actions"].to<ArduinoJson::JsonArray>();
   for (const char *a : ACTIONS) acts.add(a);
+  actions_json(out["act"].to<ArduinoJson::JsonArray>());  // the documented list (C50): /fw/act, the agent docs
   auto fmts = out["fmt"].to<ArduinoJson::JsonArray>();
   for (const char *f : FMTS) if (*f) fmts.add(f);
   auto lays = out["layouts"].to<ArduinoJson::JsonArray>();

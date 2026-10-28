@@ -155,7 +155,8 @@ EMSCRIPTEN_KEEPALIVE const char *fw_setting(const char *id, const char *value) {
 
 // Screen specs (core/spec.h): fw_spec(cmd, arg) -> JSON. cmd: check (a screen or deck spec: the errors, the
 // components it uses, nodes, binds), screen / deck (apply: validate, build once off screen, store, swap), revert
-// (arg = id | deck | all), hello, list (every live spec). Storage here = memory (fw_spec_storage: fault injection +
+// (arg = id | deck | all), hello, act (arg = one action JSON: {ok, why?, state?}, CONTRACT.md C50), actions (the documented
+// action list), list (every live spec). Storage here = memory (fw_spec_storage: fault injection +
 // reboot for the power-loss test, tools/spec_test.mjs).
 namespace {
 std::map<std::string, std::string> mem_store;
@@ -210,11 +211,18 @@ EMSCRIPTEN_KEEPALIVE const char *fw_spec(const char *cmd, const char *arg) {
     if (dry) lv_obj_delete(dry);
   } else if (c == "revert") fw::spec::revert(a.empty() ? "all" : a, o);
   else if (c == "hello") fw::spec::hello(o);
+  else if (c == "act") {  // one action from outside a spec (CONTRACT.md C50: the same as POST /fw/act, facet_act)
+    std::string why;
+    ArduinoJson::JsonDocument st;
+    o["ok"] = fw::spec::act(a, why, st.to<ArduinoJson::JsonObject>());
+    if (!why.empty()) o["why"] = why;
+    if (st.size()) o["state"] = st;
+  } else if (c == "actions") fw::spec::actions_json(o["actions"].to<ArduinoJson::JsonArray>());
   else if (c == "list") {
     for (const auto &f : fw::spec::FACTORY) o["screens"][f.id] = fw::spec::screen_json(f.id);
     for (const auto &kv : fw::spec::S().over) o["screens"][kv.first] = kv.second;
     o["deck"] = fw::spec::deck_json();
-  } else { o["ok"] = false; o["error"] = "check | screen | deck | revert | hello | list"; }
+  } else { o["ok"] = false; o["error"] = "check | screen | deck | revert | hello | act | actions | list"; }
   out.clear();
   serializeJson(d, out);
   return out.c_str();

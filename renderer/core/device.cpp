@@ -425,6 +425,7 @@ void go(lv_obj_t *in, const char *id) { queue(in, GO, id); }
 void back(lv_obj_t *in) { queue(in, BACK, nullptr); }
 void home(lv_obj_t *in) { queue(in, HOME, nullptr); }
 bool in_device(lv_obj_t *obj) { return of(obj) != nullptr; }
+lv_obj_t *first_root() { return devices.empty() ? nullptr : devices.front()->root; }
 const char *current(lv_obj_t *in) {
   Device *d = of(in);
   return d && !d->stack.empty() ? d->stack.back().c_str() : "";

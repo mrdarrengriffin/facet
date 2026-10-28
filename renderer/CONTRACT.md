@@ -340,6 +340,17 @@ nothing).
 down, a real tap on `CLICKED`); dragging off cancels.
 *Why:* every component then feels the same. *Check:* behaviour (slide-off cancel); functional tap tests.
 
+**C50. Every feature is data + actions; its actions are in the one closed list.** What a feature can DO is an
+action of `ACTIONS` in `core/spec.h`, with its row in `ACTION_DOCS` (about, fields, value, one example). The same
+action is reachable from a spec node's event, an agent (`POST /fw/act`) and Home Assistant (`facet_act`), all through
+`fw::spec::act` / `run_action` (one check: `check_action`; one code path: the tap's), and documented from the list
+(`GET /fw/act`, the catalogue's `act`, `/agents.md` "Doing things", `/llms.txt`). No feature adds its own HA action,
+endpoint or parser for something the list could carry (friendly wrappers such as `facet_timer_*` build a list action);
+actions needing a spec screen (`screen.*`) say so and are refused outside one.
+*Why:* one list means a new feature is controllable by people, agents and HA at once, with the same limits, and the
+docs cannot drift from what runs. *Check:* `static_assert` (one `ACTION_DOCS` row per `ACTIONS` entry); functional
+test `act` "C50" (every row has about, typed fields and an example that `act()` runs; spec-only rows refused).
+
 ## 9. Robustness
 
 **C38. Every state is handled:** normal, pressed, on, off, disabled, loading, unavailable, unknown, empty, error.

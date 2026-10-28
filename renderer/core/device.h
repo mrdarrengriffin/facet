@@ -124,5 +124,6 @@ void reset();  // tests: every timer gone, no observer call
 struct Timer { int state = 0; long long ends = 0; int total = 0; std::string label; };
 Timer &timer();  // legacy view of the list (above): the soonest running, else the first done
 bool in_device(lv_obj_t *obj);  // obj is part of a mounted device (the panel), not a workbench page alone
+lv_obj_t *first_root();  // the first mounted device's root, nullptr = none (fw::spec::act: nav.* from an agent / HA)
 }  // namespace dev
 }  // namespace fw

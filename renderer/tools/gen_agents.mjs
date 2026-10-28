@@ -20,6 +20,10 @@ const comps = Object.entries(C.components).filter(([id]) => !hidden.has(id)).sor
 const cards = Object.entries(C.cards ?? {}).filter(([t]) => !hiddenC.has(t));
 const agents = S.settings.find((s) => s.id === 'aiAgents');
 const B = C.budget;
+// "Doing things" (CONTRACT.md C50): the closed action list as the catalogue carries it (core/spec.h ACTION_DOCS)
+const ACT = (C.act ?? []).filter((x) => !x.spec_only);
+const val = (g) => g.split('|').map((a) => a[0] === '*' ? `a short name (at most ${a.slice(1)})` : a.replace(/#(\S+)/, (_, r) => `<${r}>`)).join(' | ');
+const actLines = ACT.map((x) => { const f = (x.fields ?? []).map((f) => `\`${f.name}\`${f.need === 'required' ? '' : '?'} (${f.name === 'value' ? val(f.limits) : f.limits})`).join(', '); return `- \`${x.do}\`: ${x.about}${f ? ' ' + f + '.' : ''} e.g. \`${JSON.stringify(x.example)}\``; }).join('\n');
 
 const llms = `# Facet panel
 
@@ -38,6 +42,10 @@ Everything below is served by this panel itself and matches its firmware (catalo
 - POST /fw/spec {"kind":"deck","spec":{...}}: replace the page list; {"kind":"revert","id":"<id>|all"} undoes
 - POST /fw/show {"screen":"<id>"}: open a screen
 - GET /fw/deck: the pages this panel runs; GET /fw/info: firmware build; GET /screenshot: the screen as a BMP
+
+## Doing things
+- GET /fw/act: every action this panel can run (fields, limits, one example each)
+- POST /fw/act {"do":"timer.start","seconds":300}: run one (lights, climate, media, covers, locks, vacuum, timers, opening screens) -> {ok, why?, state?}
 
 ## Access
 Writes need the panel setting "${agents.label}" (off by default; the owner turns it on on the panel or in Home
@@ -145,6 +153,18 @@ curl -s -o shot.bmp $P/screenshot                    # what the glass shows (16-
 Errors carry a path (\`nodes[2].p.label\`) and a code (unknown_component, unknown_prop, bad_prop, bad_bind,
 bad_action, over_budget, style_key, build ...): fix that node and check again. With Home Assistant access instead of
 the panel's HTTP: the ESPHome actions \`esphome.<node>_facet_screen\` / \`_facet_deck\` / \`_facet_revert\` do the same.
+
+## Doing things
+One closed list of actions runs everywhere: a spec node's event, \`POST /fw/act\` (agents) and the Home Assistant
+action \`esphome.<node>_facet_act\` \`{"action": "<the same JSON as a string>"}\` take the same actions with the same checks
+and limits. Outside a spec the value a component's event would give is the \`value\` field. GET /fw/act lists them as
+JSON. Answer: \`{"ok": true, "state": {...}}\` (the timers, the entity's state, the screen) or \`{"ok": false, "why": "..."}\`
+(HTTP 400). Writes need the agent token, as above.
+\`\`\`sh
+curl -s -H "Authorization: Bearer $T" -H 'Content-Type: application/json' \\
+  -d '{"do":"timer.start","seconds":300,"name":"Pasta"}' $P/fw/act
+\`\`\`
+${actLines}
 
 ## Components (${comps.length})
 ${compLines.join('\n\n')}
