@@ -86,6 +86,8 @@
       "clock-orbit-tick": { "v": 8, "1x": 4, "use": "Clock / Orbit: the every-10th tick of the 120 (docs 6, onto the grid)" },
       "timer-ring": { "v": 432, "1x": 288, "use": "Timer: the ring that empties as it runs (docs 432)" },
       "timer-ring-hole": { "v": 296, "1x": 196, "use": "Progress ring: the widest its centre slot gets (the square inside the ring's inner edge, 432 - 2 x 6 = 420 / sqrt 2, onto the grid)" },
+      "timer-ring-sm": { "v": 336, "1x": 224, "use": "Progress ring compact (the Timer with 2+ timers: room for the bar and the buttons)" },
+      "timer-ring-sm-hole": { "v": 228, "1x": 152, "use": "Progress ring compact: the widest its centre slot gets (336 - 2 x 6 = 324 / sqrt 2, on the grid; 1x 224 - 2 x 4 = 216 / sqrt 2)" },
       "timer-chip-ring": { "v": 24, "1x": 16, "use": "Timer chip: the mini progress ring and the done disc (concept T1 chips 26, onto the grid: centred in touch:min inside the hair edge on the 4 px grid)" },
       "moon-hero": { "v": 384, "1x": 256, "use": "Moon: the moon itself, the screen's hero (docs 384)" },
       "lx-col": { "v": 240, "1x": 160, "use": "Lightning: the left column beside the radar (nearest strike + stats; docs 240)" },

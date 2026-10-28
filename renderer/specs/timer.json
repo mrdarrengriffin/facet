@@ -2,7 +2,7 @@
  "v": 1,
  "id": "timer",
  "name": "Timer",
- "rev": 2,
+ "rev": 3,
  "role": "page",
  "header": {
   "label": "Timer",
@@ -24,6 +24,14 @@
     "value": {
      "e": "panel.timer",
      "a": "share"
+    },
+    "size": {
+     "e": "panel.timer",
+     "a": "bar",
+     "map": {
+      "1": "compact"
+     },
+     "else": "normal"
     }
    },
    "in": 0,
@@ -52,6 +60,24 @@
    "slot": 0
   },
   {
+   "c": "group",
+   "p": {
+    "flow": "wrap",
+    "space": "block",
+    "align": "centre"
+   },
+   "in": 0,
+   "slot": 0,
+   "show": {
+    "e": "panel.timer",
+    "a": "bar",
+    "map": {
+     "1": "1"
+    },
+    "else": ""
+   }
+  },
+  {
    "c": "grid",
    "p": {
     "cols": 4,
@@ -74,16 +100,6 @@
      "active": "$item.active"
     }
    },
-   "in": 0,
-   "slot": 0,
-   "show": {
-    "e": "panel.timer",
-    "a": "bar",
-    "map": {
-     "1": "1"
-    },
-    "else": ""
-   },
    "on": {
     "select": {
      "do": "timer.select"
@@ -91,7 +107,9 @@
     "stop": {
      "do": "timer.stop"
     }
-   }
+   },
+   "in": 3,
+   "slot": 0
   },
   {
    "c": "group",
@@ -123,7 +141,7 @@
      "seconds": 180
     }
    },
-   "in": 4,
+   "in": 5,
    "slot": 0
   },
   {
@@ -138,7 +156,7 @@
      "seconds": 300
     }
    },
-   "in": 4,
+   "in": 5,
    "slot": 0
   },
   {
@@ -153,7 +171,7 @@
      "seconds": 600
     }
    },
-   "in": 4,
+   "in": 5,
    "slot": 0
   },
   {
@@ -168,7 +186,38 @@
      "seconds": 1200
     }
    },
-   "in": 4,
+   "in": 5,
+   "slot": 0
+  },
+  {
+   "c": "group",
+   "p": {
+    "flow": "wrap",
+    "space": "none",
+    "align": "centre"
+   },
+   "in": 0,
+   "slot": 0,
+   "show": {
+    "e": "panel.timer",
+    "map": {
+     "picking": "1"
+    },
+    "else": ""
+   }
+  },
+  {
+   "c": "button",
+   "p": {
+    "kind": "ghost",
+    "label": "Cancel"
+   },
+   "on": {
+    "tap": {
+     "do": "timer.back"
+    }
+   },
+   "in": 10,
    "slot": 0
   },
   {
@@ -200,7 +249,7 @@
      "s": 60
     }
    },
-   "in": 9,
+   "in": 12,
    "slot": 0
   },
   {
@@ -214,7 +263,7 @@
      "do": "timer.cancel"
     }
    },
-   "in": 9,
+   "in": 12,
    "slot": 0
   },
   {
@@ -228,7 +277,7 @@
      "do": "timer.new"
     }
    },
-   "in": 9,
+   "in": 12,
    "slot": 0
   },
   {
@@ -259,38 +308,7 @@
      "do": "timer.stop"
     }
    },
-   "in": 13,
-   "slot": 0
-  },
-  {
-   "c": "group",
-   "p": {
-    "flow": "wrap",
-    "space": "none",
-    "align": "centre"
-   },
-   "in": 0,
-   "slot": 0,
-   "show": {
-    "e": "panel.timer",
-    "map": {
-     "picking": "1"
-    },
-    "else": ""
-   }
-  },
-  {
-   "c": "button",
-   "p": {
-    "kind": "ghost",
-    "label": "Cancel"
-   },
-   "on": {
-    "tap": {
-     "do": "timer.back"
-    }
-   },
-   "in": 15,
+   "in": 16,
    "slot": 0
   }
  ]

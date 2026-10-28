@@ -67,6 +67,14 @@ export default {
       t.tap(/^cancel$/i); t.wait(300);
       t.eq(list(t).map((x) => String(x.id)), [String(ring)], 'Cancel removed the shown one, the other stays');
     } },
+    { name: 'Darren\'s freeze (2026-10-28 21:36): 10 min, + New, 3 min, + New, 20 min stays responsive', async run(t) {
+      await open(t);
+      for (const step of [/^10 min$/i, /^\+ new$/i, /^3 min$/i, /^\+ new$/i, /^20 min$/i]) { t.tap(step); t.wait(400); }
+      t.eq(list(t).length, 3, 'three timers');
+      t.eq(chips(t).length, 3, 'three chips in the bar');
+      t.wait(3000);
+      t.ok(has(t, /^\+1 min$/i), 'still drawing and answering after 3 s');
+    } },
     { name: 'a done timer: Stop removes it', async run(t) {
       await open(t); tm(t, { op: 'start', seconds: 1 }); t.wait(2500);
       t.ok(has(t, /^stop$/i), 'done: Stop shown');

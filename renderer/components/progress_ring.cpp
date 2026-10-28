@@ -81,9 +81,12 @@ void sample(lv_obj_t *slot, const char *kind) {
   if (off) d["state"] = "unavailable";
   c->build(slot, d.as<fw::Props>());
 }
+constexpr lv_state_t ST_SM = LV_STATE_USER_3;  // size compact: the smaller ring (a state, so an update switches it in place)
 void style(lv_obj_t *s) {
   for (const char *t : {"box", "centre", "fit", "max-w:timer-ring"}) fx::use(s, t);
+  fx::use(s, "max-w:timer-ring-sm", ST_SM);
 }
+bool compact(fw::Props p) { return !strcmp(p["size"] | "normal", "compact"); }
 }  // namespace
 
 FW_COMPONENT(progress_ring, "Progress ring", "components", R"({
@@ -98,6 +101,7 @@ FW_COMPONENT(progress_ring, "Progress ring", "components", R"({
   "props": [
     {"name": "value", "about": "How much is left: out of 1000, or out of max when max is set (such as seconds left of the timer's length).", "type": "range", "min": 0, "max": 1000, "step": 1, "default": 0},
     {"name": "max", "about": "What value counts up to, such as the timer's length in seconds. 0 means value is out of 1000.", "type": "range", "min": 0, "max": 3600, "step": 1, "default": 0},
+    {"name": "size", "about": "normal is the full ring; compact is smaller, to leave room under it (the Timer with several timers).", "type": "select", "options": ["normal", "compact"], "default": "normal"},
     {"name": "state", "about": "default shows how much is left; unavailable shows the empty track when the value cannot be read.", "type": "select", "options": ["default", "unavailable"], "default": "default"},
     {"name": "sample", "about": "For previews only: a made-up Hero block in the centre (running, done or unavailable), or none for the empty slot.", "type": "select", "options": ["none", "running", "done", "unavailable"], "default": "none"}
   ],
@@ -105,6 +109,7 @@ FW_COMPONENT(progress_ring, "Progress ring", "components", R"({
     {"label": "running · 4:32 of 10 min", "props": {"value": 272, "max": 600, "sample": "running"}},
     {"label": "nearly done", "props": {"value": 40, "sample": "running"}},
     {"label": "full", "props": {"value": 1000, "sample": "running"}},
+    {"label": "compact", "props": {"value": 272, "max": 600, "sample": "running", "size": "compact"}},
     {"label": "done", "props": {"value": 0, "sample": "done"}},
     {"label": "unavailable", "props": {"state": "unavailable", "sample": "unavailable"}},
     {"label": "empty slot", "props": {"value": 600}}
@@ -119,6 +124,8 @@ FW_COMPONENT(progress_ring, "Progress ring", "components", R"({
   style(s);
   r->slot = fx::box(s, "centre");  // the centre slot (meta "slots": centre)
   fx::use(r->slot, "max-w:timer-ring-hole");
+  fx::use(r->slot, "max-w:timer-ring-sm-hole", ST_SM);
+  if (compact(p)) fx::state(s, ST_SM, true);
   fx::slot(r->slot, "centre");
   lv_obj_add_flag(r->slot, fw::spec::SLOT);
   fw::shape(s, p["sample"] | "none");
@@ -134,6 +141,7 @@ FW_UPDATE(progress_ring) {
   Ring *r = of(root);
   if (!r) return false;
   if (!fw::shape(root, p["sample"] | "none")) sample(r->slot, p["sample"] | "none");
+  if (compact(p) != lv_obj_has_state(root, ST_SM)) { fx::state(root, ST_SM, compact(p)); lv_obj_invalidate(root); }  // a new size: restyled in place
   const bool off = off_of(p);
   if (off != r->off) {
     lv_anim_delete(root, (lv_anim_exec_xcb_t) show);
