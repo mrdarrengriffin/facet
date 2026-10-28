@@ -2,7 +2,7 @@
 // .fch-spark): a thin line over the values (oldest first) with a dot on the latest, over a faint dotted baseline.
 // On the contract (renderer/CONTRACT.md, "contract": 2): built with the Charts foundation's line chart (core/chart.h
 // fw::chart::line_chart) in colour token names (LineOpts ink: shared styles, a theme switch repaints it): the line is the smooth A8 stroke
-// at ch::line_thin, the end dot ch::dot, no grid, the dotted baseline (docs: a 1 / 3 dash at the bottom), the scale
+// at chart:line-thin, the end dot chart:dot, no grid, the dotted baseline (docs: a 1 / 3 dash at the bottom), the scale
 // from the values themselves (docs min / max) with the plot's own top / bottom room (chart.json plot-top / -bottom).
 //   colour  steel / blue (series 1) / accent (highlight) / text-dim (docs choices); any of them passes 3:1 on bg and
 //           surface (colour.json section chart)
@@ -31,18 +31,54 @@ std::string sig_of(fw::Props p) {
   snprintf(b, sizeof b, "%s|%d|%d", p["colour"] | "steel", (int) (p["width"] | 148), (int) (p["dot"] | true));
   return b;
 }
+// the chart tokens the line is rastered at: a tune / theme that moves one (STYLE_CHANGED) rebuilds it at its values
+std::string geo() {
+  std::string g;
+  for (const char *t : {"chart:spark-h", "chart:line-thin", "chart:dot", "chart:ping", "chart:plot-top", "chart:plot-bottom", "chart:dash", "chart:dash-gap", "chart:grid", "stroke:edge"})
+    g += std::to_string(fx::size(t)) + ",";
+  return g;
+}
+struct Spark { int width = 148; bool dot = true; std::string colour = "steel", geo; };
+void spark_free(lv_event_t *e) { delete (Spark *) lv_event_get_user_data(e); }
+Spark *spark_of(lv_obj_t *root) {
+  for (uint32_t i = 0, n = lv_obj_get_event_count(root); i < n; i++) {
+    lv_event_dsc_t *d = lv_obj_get_event_dsc(root, i);
+    if (lv_event_dsc_get_cb(d) == spark_free) return (Spark *) lv_event_dsc_get_user_data(d);
+  }
+  return nullptr;
+}
 fw::chart::Line *of(lv_obj_t *root) {
   lv_obj_t *c = lv_obj_get_child(root, 0);
   return c ? (fw::chart::Line *) lv_obj_get_user_data(c) : nullptr;
 }
-void fill(lv_obj_t *root, fw::Props p, bool opening) {
+void draw(lv_obj_t *root, const Spark &k, std::vector<float> v, bool opening) {
   for (const char *t : {"box", "hug"}) fx::use(root, t);
-  fw::chart::LineOpts o{fw::px((float) (p["width"] | 148)), fw::ch::spark_h, fw::chart::values(p, "values", DEF)};
+  fw::chart::LineOpts o{fw::px((float) k.width), fx::size("chart:spark-h"), std::move(v)};
   range(o.v, &o.lo, &o.hi);
-  o.weight = fw::ch::line_thin, o.grid = false, o.baseline_dots = true, o.dot = p["dot"] | true;
-  o.ink = ink_of(p["colour"] | "steel");
+  o.weight = fx::size("chart:line-thin"), o.grid = false, o.baseline_dots = true, o.dot = k.dot;
+  o.ink = ink_of(k.colour.c_str());
   fw::chart::Line *L = fw::chart::line_chart(root, o);
   if (opening) fw::chart::draw_in(L);
+}
+void retune(lv_event_t *e) {
+  lv_obj_t *root = (lv_obj_t *) lv_event_get_current_target(e);
+  Spark *k = spark_of(root);
+  fw::chart::Line *L = of(root);
+  if (!k || !L || lv_event_get_target(e) != root || k->geo == geo()) return;
+  k->geo = geo();
+  const std::vector<float> v = L->v;
+  fw::refill(root);
+  draw(root, *k, v, false);
+}
+void fill(lv_obj_t *root, fw::Props p, bool opening) {
+  Spark *k = spark_of(root);
+  if (!k) {
+    k = new Spark();
+    lv_obj_add_event_cb(root, spark_free, LV_EVENT_DELETE, k);
+    lv_obj_add_event_cb(root, retune, LV_EVENT_STYLE_CHANGED, nullptr);
+  }
+  k->width = p["width"] | 148, k->dot = p["dot"] | true, k->colour = p["colour"] | "steel", k->geo = geo();
+  draw(root, *k, fw::chart::values(p, "values", DEF), opening);
   fw::shape(root, sig_of(p));
 }
 }  // namespace

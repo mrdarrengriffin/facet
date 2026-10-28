@@ -160,11 +160,11 @@ std::vector<float> day(int n, int seed = 0) {
 
 namespace fw::chart {
 // ---------------------------------------------------------------- the line chart (struct Line: core/chart.h)
-int gt(const Line *L) { return std::min(ch::plot_top, L->h / 4); }
-int gb(const Line *L) { return L->h - std::min(ch::plot_bottom, L->h / 8); }
+int gt(const Line *L) { return std::min(fx::size("chart:plot-top"), L->h / 4); }
+int gb(const Line *L) { return L->h - std::min(fx::size("chart:plot-bottom"), L->h / 8); }
 int plot_top(const Line *L) { return gt(L); }
 int plot_bottom(const Line *L) { return gb(L); }
-float pad_r(const Line *L) { return L->dot_on ? ch::dot / 2.f + 1 : L->weight / 2.f + 1; }
+float pad_r(const Line *L) { return L->dot_on ? fx::size("chart:dot") / 2.f + 1 : L->weight / 2.f + 1; }
 float slot(const Line *L, int n) { return n > 1 ? (L->w - pad_r(L)) / (n - 1) : 0; }
 float X(const Line *L, int i, int n) { return i * slot(L, n); }
 float Y(const Line *L, float v) { return gt(L) + (1 - (v - L->lo) / (L->hi - L->lo)) * (gb(L) - gt(L)); }
@@ -180,7 +180,7 @@ lv_draw_buf_t *raster_line(const Line *L, const float *v, int n) {
   std::vector<StrokePt> e;
   auto seg = [&](StrokePt a, StrokePt b) { e.push_back(a), e.push_back(b); };
   float run = 0;  // dash phase along the length
-  const float on = ch::compare_dash, off = ch::compare_gap;
+  const float on = fx::size("chart:compare-dash"), off = fx::size("chart:compare-gap");
   for (int i = 0; i < n; i++) {
     if (!std::isfinite(v[i])) continue;
     const StrokePt p = {X(L, i, L->v.size()), Y(L, v[i])};
@@ -239,7 +239,7 @@ void raster(Line *L, const float *v, int n) {
 lv_color_t ink(const Line *L) { return L->unavailable ? ch::ink::unavailable(*L->t) : L->has_colour ? L->colour_override : ch::series(*L->t, L->series); }
 void place_dot(Line *L, float x, float y) {
   if (!L->dot) return;
-  lv_obj_set_pos(L->dot, (int) std::lround(x - ch::dot / 2.f), (int) std::lround(y - ch::dot / 2.f));
+  lv_obj_set_pos(L->dot, (int) std::lround(x - fx::size("chart:dot") / 2.f), (int) std::lround(y - fx::size("chart:dot") / 2.f));
 }
 void dot_rest(Line *L) {
   const int i = last_ok(L->v);
@@ -262,9 +262,9 @@ float y_at(const Line *L, float x) {  // the line's y at x (for the pen tip duri
 // ping: one ring out of the end dot (small: only the ring's box repaints)
 void ping_exec(void *o, int32_t p) {
   auto *L = (Line *) lv_obj_get_user_data((lv_obj_t *) o);
-  const int d = ch::dot + (ch::ping - ch::dot) * p / 1024;
+  const int d = fx::size("chart:dot") + (fx::size("chart:ping") - fx::size("chart:dot")) * p / 1024;
   lv_obj_set_size(L->ping, d, d);
-  lv_obj_set_pos(L->ping, lv_obj_get_x(L->dot) + ch::dot / 2 - d / 2, lv_obj_get_y(L->dot) + ch::dot / 2 - d / 2);
+  lv_obj_set_pos(L->ping, lv_obj_get_x(L->dot) + fx::size("chart:dot") / 2 - d / 2, lv_obj_get_y(L->dot) + fx::size("chart:dot") / 2 - d / 2);
   lv_obj_set_style_opa(L->ping, (lv_opa_t) (255 - 255 * p / 1024), 0);
 }
 void ping(Line *L) {
@@ -443,12 +443,12 @@ void scrub_cb(lv_event_t *e) {
 }
 
 void dotted_v(lv_obj_t *parent, const Theme &t, int x, int y0, int y1) {  // the dotted now marker (vertical: crisp)
-  for (int y = y0; y < y1; y += ch::dash + ch::dash_gap) rect(parent, x, y, ch::grid, std::min(ch::dash, y1 - y), ch::ink::cursor(t));
+  for (int y = y0; y < y1; y += fx::size("chart:dash") + fx::size("chart:dash-gap")) rect(parent, x, y, fx::size("chart:grid"), std::min(fx::size("chart:dash"), y1 - y), ch::ink::cursor(t));
 }
 void grid_lines(lv_obj_t *root, const Theme &t, int w, int top, int bot) {
   for (int k = 0; k < ch::GRID_LINES; k++) {
     const int y = top + (bot - top) * k / (ch::GRID_LINES - 1);
-    rect(root, 0, y, w, ch::grid, k == ch::GRID_LINES - 1 ? ch::ink::baseline(t) : ch::ink::grid(t));
+    rect(root, 0, y, w, fx::size("chart:grid"), k == ch::GRID_LINES - 1 ? ch::ink::baseline(t) : ch::ink::grid(t));
   }
 }
 Line *line_chart(lv_obj_t *parent, const Theme &t, const LineOpts &o) {
@@ -471,11 +471,11 @@ Line *line_chart(lv_obj_t *parent, const Theme &t, const LineOpts &o) {
     if (o.ink) {  // token inks: the dashes through the Pen, stroke:hair thick in fg:line (a theme / tune repaints them)
       lv_obj_t *b = fx::strip(L->root, [](const fx::Pen &p) {
         const int t = fx::size("stroke:hair"), L0 = -(p.w / 2), y = p.h - p.h / 2 - t;
-        for (int x = 0; x < p.w; x += ch::dash + ch::dash_gap) p.rect(L0 + x, y, std::min(ch::dash, p.w - x), t, "fg:line");
+        for (int x = 0; x < p.w; x += fx::size("chart:dash") + fx::size("chart:dash-gap")) p.rect(L0 + x, y, std::min(fx::size("chart:dash"), p.w - x), t, "fg:line");
       }, "free");
       lv_obj_set_size(b, o.w, o.h);
     } else
-      for (int x = 0; x < o.w; x += ch::dash + ch::dash_gap) rect(L->root, x, o.h - ch::grid, std::min(ch::dash, o.w - x), ch::grid, ch::ink::grid(t));
+      for (int x = 0; x < o.w; x += fx::size("chart:dash") + fx::size("chart:dash-gap")) rect(L->root, x, o.h - fx::size("chart:grid"), std::min(fx::size("chart:dash"), o.w - x), fx::size("chart:grid"), ch::ink::grid(t));
   const int n = std::max<int>(2, L->v.size());
   L->tw = L->v.size() < 2 ? o.w : o.w + (int) std::ceil(slot(L, n)) + L->weight + 2;  // room for one more point (shift)
   L->track = box(L->root);
@@ -498,30 +498,30 @@ Line *line_chart(lv_obj_t *parent, const Theme &t, const LineOpts &o) {
   if (o.dot && !o.unavailable) {
     L->ping = box(L->root);
     lv_obj_set_style_radius(L->ping, LV_RADIUS_CIRCLE, 0);
-    outline(L->ping, ink(L), stroke::edge);
+    outline(L->ping, ink(L), fx::size("stroke:edge"));
     lv_obj_add_flag(L->ping, LV_OBJ_FLAG_HIDDEN);
     lv_obj_set_user_data(L->ping, L);
     L->dot = box(L->root);
     fw::qa::free(L->dot, "the end dot sits on the latest value");
     fw::qa::free(L->ping, "the ping rings out from the end dot");
-    lv_obj_set_size(L->dot, ch::dot, ch::dot);
+    lv_obj_set_size(L->dot, fx::size("chart:dot"), fx::size("chart:dot"));
     lv_obj_set_style_radius(L->dot, LV_RADIUS_CIRCLE, 0);
     fill(L->dot, ink(L));
     dot_rest(L);
   }
   if (o.scrub) {
-    L->cur = rect(L->root, 0, 0, ch::grid, gb(L), ch::ink::cursor(t));
-    const int sd = ch::dot + 2 * ch::dot_ring;
+    L->cur = rect(L->root, 0, 0, fx::size("chart:grid"), gb(L), ch::ink::cursor(t));
+    const int sd = fx::size("chart:dot") + 2 * fx::size("chart:dot-ring");
     L->sdot = box(L->root);
     fw::qa::free(L->sdot, "the scrub dot follows the finger");
     fw::qa::free(L->cur, "the scrub cursor follows the finger");
     lv_obj_set_size(L->sdot, sd, sd);
     lv_obj_set_style_radius(L->sdot, LV_RADIUS_CIRCLE, 0);
     fill(L->sdot, ch::ink::select(t));
-    outline(L->sdot, t.surface, ch::dot_ring);
+    outline(L->sdot, t.surface, fx::size("chart:dot-ring"));
     L->read = text(L->root, ty::c_meta, "", t.text);
     fill(L->read, t.surface);
-    lv_obj_set_style_pad_hor(L->read, sp::s1, 0);
+    lv_obj_set_style_pad_hor(L->read, fx::size("space:1"), 0);
     lv_obj_t *parts[3] = {L->cur, L->sdot, L->read};
     for (lv_obj_t *p : parts) lv_obj_set_style_opa(p, 0, 0), lv_obj_add_flag(p, LV_OBJ_FLAG_HIDDEN);
     lv_obj_add_flag(L->root, LV_OBJ_FLAG_CLICKABLE);
@@ -818,9 +818,10 @@ struct TB {
   std::vector<int> shown;        // each bar's drawn height now (px)
   float max = 1;
   int n = 0, bw = 0, gap = 0, spread = 0, w = 0, h = 0, top = 0, bot = 0, now = -1, sel = -1, ticks = 0, dec = 2, first_hour = 0;
-  bool scrub = true, fill = false, faded = false;
+  bool scrub = true, fill = false, faded = false, busy = false;
   int w_dp = 0, h_dp = 80;
   std::string unit;
+  lv_obj_t *axis = nullptr;  // the hour axis (ticks), placed from the bars
 };
 void tb_free(lv_event_t *e) { delete (TB *) lv_event_get_user_data(e); }
 TB *tb_of(lv_obj_t *s) {
@@ -833,7 +834,7 @@ TB *tb_of(lv_obj_t *s) {
 }
 int tb_h(const TB *B, float v) {
   if (!std::isfinite(v) || v <= 0) return 0;
-  return std::max(ch::bar_min, (int) std::lround(v / B->max * (B->bot - B->top)));
+  return std::max(fx::size("chart:bar-min"), (int) std::lround(v / B->max * (B->bot - B->top)));
 }
 int tb_x(const TB *B, int i) {
   const int sp = B->spread && B->n > 1 ? (int) ((int64_t) i * B->spread / (B->n - 1)) : 0;
@@ -852,13 +853,14 @@ void tb_draw(const fx::Pen &p) {
     const int hp = B->shown[i];
     if (hp <= 0) continue;
     const bool outline = B->kind[i] == 2 && i != B->sel;
-    p.rect(L + tb_x(B, i), T + B->bot - hp, B->bw, hp, tb_ink(B, i), ch::bar_radius, outline ? fx::size("stroke:hair") : 0, 1);
+    p.rect(L + tb_x(B, i), T + B->bot - hp, B->bw, hp, tb_ink(B, i), fx::size("chart:bar-radius"), outline ? fx::size("stroke:hair") : 0, 1);
   }
   const int cw = B->n ? tb_x(B, B->n - 1) + B->bw : B->w;
-  p.rect(L, T + B->bot, cw, ch::grid, "fg:line-hi");  // the baseline
+  const int grid = fx::size("chart:grid"), dash = fx::size("chart:dash"), dash_gap = fx::size("chart:dash-gap");
+  p.rect(L, T + B->bot, cw, grid, "fg:line-hi");  // the baseline
   if (B->now >= 0 && B->now < B->n)  // the dotted now marker (ch::ink::cursor)
-    for (int y = B->top; y < B->bot; y += ch::dash + ch::dash_gap)
-      p.rect(L + tb_x(B, B->now) + B->bw / 2, T + y, ch::grid, std::min(ch::dash, B->bot - y), "fg:text-dim");
+    for (int y = B->top; y < B->bot; y += dash + dash_gap)
+      p.rect(L + tb_x(B, B->now) + B->bw / 2, T + y, grid, std::min(dash, B->bot - y), "fg:text-dim");
   char b[64];
   if (B->sel >= 0) {  // the readout over the bars: "<value> <unit>  <hh>:00", inside the chart
     snprintf(b, sizeof b, "%.*f %s  %02d:00", B->dec, B->v[B->sel], B->unit.c_str(), (B->first_hour + B->sel) % 24);
@@ -866,7 +868,7 @@ void tb_draw(const fx::Pen &p) {
     p.text(L + x + rw / 2, T + fx::type_box("type:c-meta") / 2, b, "type:c-meta", "fg:text");
   }
 }
-void tb_redraw(TB *B) { fx::redraw(B->s, -(lv_obj_get_content_width(B->s) / 2), -(lv_obj_get_content_height(B->s) / 2), lv_obj_get_content_width(B->s), B->bot + ch::grid + 1); }
+void tb_redraw(TB *B) { fx::redraw(B->s, -(lv_obj_get_content_width(B->s) / 2), -(lv_obj_get_content_height(B->s) / 2), lv_obj_get_content_width(B->s), B->bot + fx::size("chart:grid") + 1); }
 void tb_exec(void *o, int32_t ms) {  // one animation for every bar: each starts a stagger later
   TB *B = tb_of((lv_obj_t *) o);
   if (!B) return;
@@ -929,18 +931,42 @@ void tb_cb(lv_event_t *e) {
 // geometry from the opts and the room: the bar width snapped to the grid, the chart hugs them (fill: spans the parent)
 void tb_size(TB *B, lv_obj_t *parent) {
   if (B->w_dp > 0) B->w = px((float) B->w_dp);
-  else { lv_obj_update_layout(parent); B->w = lv_obj_get_content_width(parent); }
+  else { if (!B->busy) lv_obj_update_layout(parent); B->w = lv_obj_get_content_width(parent); }
   B->fill = B->w_dp <= 0;
   B->h = px((float) B->h_dp);
-  B->gap = ch::bar_gap;
+  B->gap = fx::size("chart:bar-gap");
   const int avail = B->w - (B->n - 1) * B->gap;
   B->bw = std::max(4, (avail / std::max(1, B->n)) / 4 * 4);
   B->spread = B->fill && B->n > 1 ? std::max(0, B->w - (B->n * B->bw + (B->n - 1) * B->gap)) : 0;
-  B->top = ch::plot_top + fx::type_box("type:c-meta");  // room for the readout over the bars
-  B->bot = B->h - ch::plot_bottom;
+  B->top = fx::size("chart:plot-top") + fx::type_box("type:c-meta");  // room for the readout over the bars
+  B->bot = B->h - fx::size("chart:plot-bottom");
   const int cw = B->n ? tb_x(B, B->n - 1) + B->bw : B->w;
   lv_obj_set_size(B->s, cw, B->h);
   B->shown.assign(B->n, 0);
+}
+void tb_place_axis(TB *B) {  // the labels under their bar's centre, kept inside the chart's width
+  if (!B->axis) return;
+  const int cw = B->n ? tb_x(B, B->n - 1) + B->bw : B->w;
+  lv_obj_set_size(B->axis, cw, fx::type_box("type:c-meta-sm"));
+  lv_obj_set_style_margin_top(B->axis, fx::size("space:1"), 0);
+  for (uint32_t k = 0; k < lv_obj_get_child_count(B->axis); k++) {
+    lv_obj_t *l = lv_obj_get_child(B->axis, k);
+    const int i = (int) (intptr_t) lv_obj_get_user_data(l);
+    lv_obj_update_layout(l);
+    const int lw = lv_obj_get_width(l);
+    lv_obj_set_x(l, std::clamp(tb_x(B, i) + B->bw / 2 - lw / 2, 0, std::max(0, cw - lw)));
+  }
+}
+// a token tuned or a theme switched (fx::tune -> every object's STYLE_CHANGED): the bars, gaps and axis re-measured
+// from the live chart:* / space:* tokens, the bars at their values (no replay)
+void tb_retune(lv_event_t *e) {
+  TB *B = (TB *) lv_event_get_user_data(e);
+  if (B->busy || lv_event_get_target(e) != B->s) return;
+  B->busy = true;
+  tb_size(B, lv_obj_get_parent(B->s));
+  tb_place_axis(B);
+  tb_exec(B->s, ch::MOTION[ch::M_bars].ms + ch::MOTION[ch::M_bars].stagger * B->n);
+  B->busy = false;
 }
 // the hour axis: "00" "06" ... under their bar's centre, space 1 below the chart, kept inside its width (Charts axis
 // ink + type; real labels, so a spec's texts and the tests read them)
@@ -949,17 +975,15 @@ void tb_axis(TB *B, lv_obj_t *parent) {
   lv_obj_t *a = lv_obj_create(parent);
   lv_obj_remove_style_all(a);
   lv_obj_remove_flag(a, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
-  lv_obj_set_size(a, cw, fx::type_box("type:c-meta-sm"));
-  lv_obj_set_style_margin_top(a, sp::s1, 0);
+  (void) cw;
+  B->axis = a;
   for (int i = 0; i < B->n; i++) {
     if ((B->first_hour + i) % B->ticks) continue;
     char hh[4];
     snprintf(hh, sizeof hh, "%02d", (B->first_hour + i) % 24);
-    lv_obj_t *l = fx::text(a, hh, "type:c-meta-sm", "fg:text-dim");
-    lv_obj_update_layout(l);
-    const int lw = lv_obj_get_width(l);
-    lv_obj_set_x(l, std::clamp(tb_x(B, i) + B->bw / 2 - lw / 2, 0, std::max(0, cw - lw)));
+    lv_obj_set_user_data(fx::text(a, hh, "type:c-meta-sm", "fg:text-dim"), (void *) (intptr_t) i);
   }
+  tb_place_axis(B);
 }
 }  // namespace
 
@@ -982,6 +1006,7 @@ lv_obj_t *token_bars(lv_obj_t *parent, const TokenBars &o, bool opening) {
       lv_obj_add_event_cb(B->s, tb_cb, c, B);
   }
   if (B->ticks > 0) tb_axis(B, parent);
+  lv_obj_add_event_cb(B->s, tb_retune, LV_EVENT_STYLE_CHANGED, B);
   if (opening) tb_play(B, nullptr);
   else tb_exec(B->s, ch::MOTION[ch::M_bars].ms + ch::MOTION[ch::M_bars].stagger * B->n);
   return B->s;

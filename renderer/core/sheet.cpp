@@ -20,8 +20,18 @@ struct Layer {
   lv_obj_t *host = nullptr, *ov = nullptr, *scrim = nullptr, *panel = nullptr;
   lv_obj_t *snap = nullptr;  // flatten: the screen under the sheet as one image while it animates
   lv_draw_buf_t *buf = nullptr;
-  bool open = false, flatten = false, solid = false;
+  bool open = false, flatten = false, solid = false, busy = false;
+  int rows = 0, row_h = 0;  // the last fit (a retune fits again)
 };
+// one hair past the left / right edges and the ring radius past the bottom: the full hair edge with its rounded top
+// corners shows, its sides and bottom fall off the screen (Darren 2026-10-22: a top-only border drew square corners)
+void pads(Layer *L) {
+  const int in = fx::size("layout:inset"), hair = fx::size("stroke:hair");
+  lv_obj_set_style_pad_top(L->panel, in - hair, 0);
+  lv_obj_set_style_pad_hor(L->panel, in, 0);
+  lv_obj_set_style_pad_bottom(L->panel, in + fx::size("radius:ring") - hair, 0);  // + the (off-screen) bottom edge
+  lv_obj_set_style_pad_row(L->panel, fx::size("layout:gutter"), 0);
+}
 void layer_free(lv_event_t *e) {
   auto *L = (Layer *) lv_event_get_user_data(e);
   lv_anim_delete(L->scrim, nullptr);
@@ -120,15 +130,19 @@ lv_obj_t *make(lv_obj_t *host, bool flat, bool solid) {
   fx::use(L->panel, "bg:bg");
   fx::use(L->panel, "border:line-hi");
   fx::use(L->panel, "radius:ring");
-  // one hair past the left / right edges and the ring radius past the bottom: the full hair edge with its rounded top
-  // corners shows, its sides and bottom fall off the screen (Darren 2026-10-22: a top-only border drew square corners)
-  lv_obj_set_style_pad_top(L->panel, fw::lay::inset - fw::stroke::hair, 0);
-  lv_obj_set_style_pad_hor(L->panel, fw::lay::inset, 0);
-  lv_obj_set_style_pad_bottom(L->panel, fw::lay::inset + fw::rad::ring - fw::stroke::hair, 0);  // + the (off-screen) bottom edge
+  pads(L);
   lv_obj_set_flex_flow(L->panel, LV_FLEX_FLOW_COLUMN);
-  lv_obj_set_style_pad_row(L->panel, fw::lay::gutter, 0);
   lv_obj_set_style_opa(L->panel, LV_OPA_TRANSP, 0);
   fit(L->ov, 0);
+  // a token tuned / a theme switched: the panel's padding and height again from the live tokens
+  lv_obj_add_event_cb(L->ov, [](lv_event_t *e) {
+    auto *L = (Layer *) lv_event_get_user_data(e);
+    if (lv_event_get_target(e) != L->ov || L->busy) return;
+    L->busy = true;
+    pads(L);
+    fit(L->ov, L->rows, L->row_h);
+    L->busy = false;
+  }, LV_EVENT_STYLE_CHANGED, L);
   return L->ov;
 }
 
@@ -150,14 +164,16 @@ int open_close_ms() { return fw::mo::ms::sheet_in + fw::mo::ms::sheet_out; }
 void fit(lv_obj_t *ov, int rows, int row_h) {
   Layer *L = of(ov);
   if (!L) return;
-  lv_obj_update_layout(L->host);
-  const int H = lv_obj_get_height(L->ov), max_h = H - fw::lay::sheet_top + fw::rad::ring;
-  lv_obj_set_width(L->panel, lv_obj_get_width(L->ov) + 2 * fw::stroke::hair);
-  lv_obj_set_x(L->panel, -fw::stroke::hair);
-  const int need = 2 * fw::lay::inset + fw::lay::row + fw::lay::gutter + rows * (row_h > 0 ? row_h : fw::lay::sheet_row_h) + fw::rad::ring;
+  L->rows = rows, L->row_h = row_h;
+  if (!L->busy) lv_obj_update_layout(L->host);
+  const int ring = fx::size("radius:ring"), hair = fx::size("stroke:hair"), in = fx::size("layout:inset");
+  const int H = lv_obj_get_height(L->ov), max_h = H - fx::size("layout:sheet-top") + ring;
+  lv_obj_set_width(L->panel, lv_obj_get_width(L->ov) + 2 * hair);
+  lv_obj_set_x(L->panel, -hair);
+  const int need = 2 * in + fx::size("layout:row") + fx::size("layout:gutter") + rows * (row_h > 0 ? row_h : fx::size("layout:sheet-row-h")) + ring;
   const int h = std::min(max_h, need);
   lv_obj_set_height(L->panel, h);
-  lv_obj_set_y(L->panel, H + fw::rad::ring - h);
+  lv_obj_set_y(L->panel, H + ring - h);
 }
 
 void open(lv_obj_t *ov, bool still) {

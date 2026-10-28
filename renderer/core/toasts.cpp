@@ -6,6 +6,7 @@
 #include "fw.h"
 #include "device.h"
 #include "toasts.h"
+#include "fx.h"
 
 namespace fw {
 namespace toasts {
@@ -17,7 +18,7 @@ struct Toast {
   lv_obj_t *o = nullptr, *bar = nullptr;
   int bar_w = 0;
   uint32_t life = 0;
-  bool timer = false, layer = false, top = toast::top, closed = false, down = false, dragged = false;
+  bool timer = false, layer = false, top = toast::top, closed = false, down = false, dragged = false, busy = false;
   int32_t x0 = 0, dx = 0;
 };
 void toast_free(lv_event_t *e) {
@@ -126,10 +127,11 @@ void on_pointer(lv_event_t *e) {
 }
 
 // ---- the layer
+void fit_bar(Toast *t, int32_t w);
 struct Layer {
   lv_obj_t *ov = nullptr;
   std::vector<lv_obj_t *> shown;  // newest first
-  bool top = toast::top, still = false;
+  bool top = toast::top, still = false, busy = false;
 };
 std::vector<Layer *> layers;  // live layers (the contrast proofs ask what a toast covers: under())
 void layer_free(lv_event_t *e) {
@@ -147,10 +149,15 @@ Layer *layer_of(lv_obj_t *ov) {
 }
 // slot i's top in the overlay's own box (a caller may give it any size: the screen, or a workbench frame)
 int slot_y(const Layer *L, int i) {
-  const int step = lay::toast_h + lay::gutter;
-  return L->top ? lay::toast_top + i * step : lv_obj_get_height(L->ov) - lay::inset - lay::toast_h - i * step;
+  const int h = fx::size("layout:toast-h"), step = h + fx::size("layout:gutter");
+  return L->top ? fx::size("layout:toast-top") + i * step : lv_obj_get_height(L->ov) - fx::size("layout:inset") - h - i * step;
 }
 void set_y(void *o, int32_t v) { lv_obj_set_y((lv_obj_t *) o, v); }
+void fit(const Layer *L, lv_obj_t *t) {  // inset to inset (the content width on a screen)
+  const int in = fx::size("layout:inset");
+  lv_obj_set_width(t, lv_obj_get_width(L->ov) - 2 * in);
+  lv_obj_set_x(t, in);
+}
 // every shown toast to its slot (Motion toast-in on y: the docs' CSS transition on top)
 void restack(Layer *L) {
   for (size_t i = 0; i < L->shown.size(); i++) {
@@ -179,6 +186,15 @@ void own(lv_obj_t *o) {
   }, t);
   // pushed out by a newer toast (the layer; param 1 = a quiet push: no event)
   lv_obj_add_event_cb(o, [](lv_event_t *e) { dismiss((Toast *) lv_event_get_user_data(e), "pushed", lv_event_get_param(e) != nullptr); }, LV_EVENT_CANCEL, t);
+  // a token tuned / a theme switched: the bar refitted from the live stroke tokens (its running shrink keeps going)
+  lv_obj_add_event_cb(o, [](lv_event_t *e) {
+    auto *t = (Toast *) lv_event_get_user_data(e);
+    if (lv_event_get_target(e) != t->o || !t->bar || t->busy) return;
+    t->busy = true;
+    const int32_t w = lv_obj_get_style_width(t->bar, LV_PART_MAIN);  // as set (the coords lag until the next layout)
+    fit_bar(t, w < t->bar_w ? w : INT32_MAX);  // a full bar stays full, a shrinking one keeps its width
+    t->busy = false;
+  }, LV_EVENT_STYLE_CHANGED, t);
 }
 
 int32_t left(lv_obj_t *o, bool timer, bool urgent) {
@@ -186,11 +202,21 @@ int32_t left(lv_obj_t *o, bool timer, bool urgent) {
   if (!t) return -1;
   bar_pause(t);
   const uint32_t life = urgent ? toast::life_urgent : toast::life;
-  if (!t->bar || timer != t->timer || life != t->life || t->closed) return -1;
-  return lv_obj_get_style_width(t->bar, LV_PART_MAIN);
+  const int32_t w = !t->bar || timer != t->timer || life != t->life || t->closed ? -1 : lv_obj_get_style_width(t->bar, LV_PART_MAIN);
+  t->bar = nullptr;  // the refill deletes it (its STYLE_CHANGED must not refit a deleted bar); again() gives the new one
+  return w;
 }
 
 namespace {
+// the bar's box from the live tokens (stroke:hair in from the edge, stroke:edge tall), at most w wide
+void fit_bar(Toast *t, int32_t w) {
+  lv_obj_update_layout(t->o);
+  const int hair = fx::size("stroke:hair"), edge = fx::size("stroke:edge");
+  const int sl = lv_obj_get_style_space_left(t->o, LV_PART_MAIN), st = lv_obj_get_style_space_top(t->o, LV_PART_MAIN);
+  t->bar_w = lv_obj_get_width(t->o) - 2 * hair;
+  lv_obj_set_size(t->bar, std::min<int32_t>(w, t->bar_w), edge);
+  lv_obj_set_pos(t->bar, hair - sl, lv_obj_get_height(t->o) - hair - edge - st);
+}
 void place(Toast *t, lv_obj_t *bar, bool timer, bool urgent, int32_t keep_w) {
   bar_pause(t);
   lv_anim_delete(t->o, set_tx);
@@ -203,13 +229,9 @@ void place(Toast *t, lv_obj_t *bar, bool timer, bool urgent, int32_t keep_w) {
   // the bar along the bottom inside the edge (children are placed from the content box: step back by pad + edge)
   t->bar = bar;
   if (!bar) return;
-  lv_obj_update_layout(t->o);
-  const int sl = lv_obj_get_style_space_left(t->o, LV_PART_MAIN), st = lv_obj_get_style_space_top(t->o, LV_PART_MAIN);
-  t->bar_w = lv_obj_get_width(t->o) - 2 * stroke::hair;
   qa::free(bar, "the timer bar shrinks with the time left");
   lv_obj_add_flag(bar, LV_OBJ_FLAG_IGNORE_LAYOUT);
-  lv_obj_set_size(bar, keep_w >= 0 ? std::min<int32_t>(keep_w, t->bar_w) : t->bar_w, stroke::edge);
-  lv_obj_set_pos(bar, stroke::hair - sl, lv_obj_get_height(t->o) - stroke::hair - stroke::edge - st);
+  fit_bar(t, keep_w >= 0 ? keep_w : INT32_MAX);
 }
 }  // namespace
 
@@ -249,6 +271,14 @@ lv_obj_t *layer(lv_obj_t *host, bool top, bool still) {
   lv_obj_set_pos(L->ov, 0, 0);
   qa::free(L->ov, "overlay: toast layer");  // sits over the screen on purpose (tools/audit_screens.mjs skips it)
   lv_obj_add_event_cb(L->ov, layer_free, LV_EVENT_DELETE, L);
+  // a token tuned / a theme switched: every shown toast to its width and slot from the live layout tokens (no motion)
+  lv_obj_add_event_cb(L->ov, [](lv_event_t *e) {
+    auto *L = (Layer *) lv_event_get_user_data(e);
+    if (lv_event_get_target(e) != L->ov || L->busy) return;
+    L->busy = true;
+    for (size_t i = 0; i < L->shown.size(); i++) { fit(L, L->shown[i]); lv_anim_delete(L->shown[i], set_y); lv_obj_set_y(L->shown[i], slot_y(L, (int) i)); }
+    L->busy = false;
+  }, LV_EVENT_STYLE_CHANGED, L);
   layers.push_back(L);
   return L->ov;
 }
@@ -267,8 +297,8 @@ lv_obj_t *show(lv_obj_t *ov, Props p, const char *detail) {
   lv_obj_t *t = lv_obj_get_child(ov, -1);
   if (Toast *s = of(t)) s->layer = true, s->top = L->top;
   lv_obj_add_flag(t, LV_OBJ_FLAG_IGNORE_LAYOUT);
-  lv_obj_set_width(t, lv_obj_get_width(ov) - 2 * lay::inset);  // inset to inset (the content width on a screen)
-  lv_obj_set_pos(t, lay::inset, slot_y(L, 0));
+  fit(L, t);
+  lv_obj_set_y(t, slot_y(L, 0));
   if (Toast *s = of(t)) arm(t, s->bar, s->timer, s->life == toast::life_urgent);  // the bar again at the toast's width
   // dismissed: out of the stack, the rest move up; gone (its leave finished): delete it
   lv_obj_add_event_cb(t, [](lv_event_t *e) {

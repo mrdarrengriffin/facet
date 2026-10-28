@@ -223,6 +223,14 @@ void flex(lv_style_t *s, lv_flex_flow_t f, lv_flex_align_t main, lv_flex_align_t
 // fx::tune (the proofs, the workbench Layout lab): a size token as if it said px; "squeeze" = the Body's max width
 std::map<std::string, int> tuned;
 std::set<std::string> *reads = nullptr;  // fx::uses: the size tokens read while on (styles + pen)
+// the structure sizes (layout.json, not in space.json) the core reads live: page, header, overlays (toast, sheet).
+// Listed in the lab (tunables) and read by fx::size, so what the core places from them follows a tune too
+const std::pair<const char *, int> STRUCTURE[] = {{"layout:inset", fw::lay::inset}, {"layout:gutter", fw::lay::gutter}, {"layout:group", fw::lay::group},
+  {"space:3", fw::sp::s3}, {"layout:top", fw::lay::top}, {"layout:header-gap", fw::lay::header_gap}, {"layout:row", fw::lay::row},
+  {"layout:back-gap", fw::lay::back_gap}, {"layout:header-item-gap", fw::lay::header_item_gap}, {"layout:header-max-w", fw::lay::header_max_w},
+  {"space:2", fw::sp::s2}, {"space:7", fw::sp::s7}, {"space:9", fw::sp::s9}, {"touch:button-h", fw::touch::button_h},
+  {"layout:toast-h", fw::lay::toast_h}, {"layout:toast-pad", fw::lay::toast_pad}, {"layout:toast-top", fw::lay::toast_top},
+  {"layout:sheet-top", fw::lay::sheet_top}, {"layout:sheet-row-h", fw::lay::sheet_row_h}};
 int tok(const char *n, int v) { if (reads) reads->insert(n); auto it = tuned.find(n); return it == tuned.end() ? v : it->second; }
 void shape(lv_style_t *s, const char *n) {  // the structure styles: density only, set once per look
   using namespace fw;
@@ -1420,6 +1428,7 @@ int size(const char *t) {  // a size token now: tuned (the lab) > the live theme
     const int si = size_ix[i];
     return tok(t, si >= 0 && live_raw && G::SIZES[si].look ? live_raw->size[DN][si] : gen::SIZES[i].v);
   }
+  for (auto &e : STRUCTURE) if (!strcmp(e.first, t)) return tok(t, e.second);  // a structure size (layout.json)
   abort();
 }
 bool Pen::sees(int x1, int y1, int x2, int y2) const {
@@ -1720,11 +1729,7 @@ void inset(int px) { tune("layout:inset", px); }
 std::string tunables() {  // [[name, token px, now px, kind, lo, hi]]: every size token + the structure ones the page styles read
   std::map<std::string, int> base;
   for (int i = 0; i < gen::N_SIZES; i++) base[gen::SIZES[i].name] = gen::SIZES[i].v;
-  using namespace fw;
-  const std::pair<const char *, int> extra[] = {{"layout:inset", lay::inset}, {"layout:gutter", lay::gutter}, {"layout:group", lay::group}, {"space:3", sp::s3}, {"layout:top", lay::top},
-    {"layout:header-gap", lay::header_gap}, {"layout:row", lay::row}, {"layout:back-gap", lay::back_gap},
-    {"layout:header-item-gap", lay::header_item_gap}, {"layout:header-max-w", lay::header_max_w}, {"space:2", sp::s2}, {"space:7", sp::s7}, {"space:9", sp::s9}, {"touch:button-h", touch::button_h}};
-  for (auto &e : extra) base.emplace(e.first, e.second);
+  for (auto &e : STRUCTURE) base.emplace(e.first, e.second);
   std::string o = "[";
   // [name, token px, now px, "look" | "fixed", lo, hi]: look = themeable within lo..hi, fixed = a layout size
   for (auto &b : base) {
@@ -1754,6 +1759,9 @@ std::string uses(lv_display_t *d) {  // the size tokens what is on display d rea
       sized(&L->s[k], defs[k]);  // the same values again: only the reads are new
       paint(L, L->t, k);
     }
+    // what the core places from live tokens on a tune (a chart's bars, a toast's slot, a sheet's padding) re-reads them
+    // here with the same values: those tokens are listed too
+    lv_obj_send_event(o, LV_EVENT_STYLE_CHANGED, nullptr);
     for (uint32_t i = 0; i < lv_obj_get_child_count(o); i++) todo.push_back(lv_obj_get_child(o, i));
   }
   lv_obj_invalidate(scr);

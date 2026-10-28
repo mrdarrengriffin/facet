@@ -26,13 +26,16 @@ const EXTRA = { card: [{ opening: false }, CARD, PAGE],
   time: [{ time: '14:52', format: '12h' }, ['space:2'], PAGE],
   stat: [{ label: 'lit', value: '63%', tone: 'text' }, ['space:2'], PAGE],
   // a whole screen (meta stage: screen): its own Page, so the page tokens are its own
-  bottom_sheet: [{}, ['layout:inset'], []],
-  toast_layer: [{ timer: false }, ['layout:inset'], []],
-  // later bars are outlines (stroke:hair); still (opening false: no growth while it is probed)
-  bar_chart: [{ colour: 'series', opening: false }, ['stroke:hair'], PAGE],
-  sparkline: [{ opening: false }, ['stroke:hair'], PAGE],  // the dotted baseline
+  bottom_sheet: [{}, ['layout:inset', 'radius:ring'], []],
+  toast_layer: [{ timer: false }, ['layout:inset', 'layout:toast-h', 'layout:toast-pad', 'layout:toast-top'], []],
+  toast: [{ timer: false }, ['layout:toast-h', 'layout:toast-pad', 'stroke:edge'], PAGE],
+  // later bars are outlines (stroke:hair); still (opening false: no growth while it is probed); every drawn size is a
+  // chart:* token (chart.json geometry), so the lab has a slider for each
+  bar_chart: [{ colour: 'series', opening: false }, ['stroke:hair', 'chart:bar-gap', 'chart:bar-radius', 'chart:plot-top', 'chart:plot-bottom', 'chart:grid'], PAGE],
+  sparkline: [{ opening: false }, ['stroke:hair', 'chart:spark-h', 'chart:line-thin', 'chart:dot'], PAGE],  // stroke:hair = the dotted baseline
   // a layout whose parts sit a gutter apart (the gutter is its own, not the page's)
   group: [{ sample: 4 }, ['layout:gutter'], PAGE.filter((n) => n !== 'layout:gutter')],
+  grid: [{}, ['layout:gutter'], PAGE.filter((n) => n !== 'layout:gutter')],
   hero_block: [{ n: '3', label: 'need you', line: '2 reviews' }, ['layout:gutter', 'space:2'], PAGE.filter((n) => n !== 'layout:gutter')] };
 const di = process.argv.indexOf('--den');
 const m0 = await (await import(pathToFileURL(join(BUILD, di > 0 ? process.argv[di + 1] : ['1.5x', '1x'].find((d) => existsSync(join(BUILD, d, 'fw.mjs'))) || '1.5x', 'fw.mjs')).href)).default();
@@ -70,7 +73,7 @@ for (const den of (di > 0 ? [process.argv[di + 1]] : ['1x', '1.5x']).filter((d) 
   for (const n of listed.filter((x) => x !== 'squeeze')) {
     const [, , now, kind, lo, hi] = toks.get(n);
     // a fixed size: up by half, else down by a quarter (a floor such as a Cells min-w shows only when it crosses a column)
-    const vs = kind === 'look' ? [now < hi ? hi : lo] : [now + Math.max(4, now >> 1), Math.max(4, now - Math.max(4, now >> 2)), Math.max(4, (now >> 3) << 2), now * 3];  // up by half, down a quarter, half (a cap such as a max width shows only below the stage), x3 (a grid-rounded size can land on the same step at x1.5)
+    const vs = kind === 'look' ? [now < hi ? hi : lo] : [now + Math.max(4, now >> 1), Math.max(4, now - Math.max(4, now >> 2)), Math.max(4, (now >> 3) << 2), now * 3, Math.max(0, now - Math.max(4, now >> 1))];  // the probe's own down step last (a size capped above: a 4 px bar radius on a narrow bar shows only going down); up by half, down a quarter, half (a cap such as a max width shows only below the stage), x3 (a grid-rounded size can land on the same step at x1.5)
     let moved = '';
     for (const v of vs) {
       lab('tune', `${n}=${v}`); tick();

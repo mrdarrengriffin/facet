@@ -19,9 +19,30 @@ const RULES = {
   // NAMES through fx, so fx::tune and the Layout lab move them: C21, C23)
   font: /\blv_font_|\bLV_SYMBOL_|\blv_color_t\b|\blv_color_(white|black|mix)\(/,
   fixed: /\b(fw::)?(lay|sp|rad|stroke|touch|ic|ty)::[a-zA-Z_]/,
+  // chart.json geometry is a size token too (chart:bar-gap ...): fx::size, never the compiled fw::ch:: number
+  chart: new RegExp(`\\b(fw::)?ch::(${Object.keys(JSON.parse(readFileSync(join(DIR, '..', 'tokens', 'chart.json'), 'utf8')).geometry).map((n) => n.replace(/-/g, '_')).join('|')})\\b`),
 };
+// the CORE code a migrated component's sizes come from (2026-10-28: Toast, Bottom sheet, Bar chart and Sparkline were
+// migrated while the core placed / drew them at compiled sizes, so the Layout lab had no slider for them): here a
+// size is read live (fx::size("layout:inset"), re-placed on LV_EVENT_STYLE_CHANGED), never a compiled constant.
+// [file, first line of the section | null = whole file, the next section's line]
+const CORE = [['core/toasts.cpp'], ['core/sheet.cpp'],
+  ['foundations/chart.cpp', '// ---------------------------------------------------------------- the line chart', '// ---------------------------------------------------------------- bars'],
+  ['foundations/chart.cpp', '// ---------------------------------------------------------------- token bars', '// ---------------------------------------------------------------- page sections']];
+const SIZE_NS = /\b(fw::)?(lay|sp|rad|stroke|touch)::[a-zA-Z_]/;  // sizes (type and icon styles are not slider sizes)
+const coreBad = [];
+for (const [f, from, to] of CORE) {
+  const all = readFileSync(join(DIR, '..', f), 'utf8');
+  const a = from ? all.indexOf(from) : 0, b = to ? all.indexOf(to, a) : all.length;
+  if (a < 0 || b < 0) { coreBad.push(`${f}: core section "${from}" .. "${to}" not found (renamed? update CORE in tools/contract_lint.mjs)`); continue; }
+  const first = all.slice(0, a).split('\n').length;
+  all.slice(a, b).split('\n').forEach((line, i) => {
+    const code = line.replace(/\/\/.*$/, '');
+    for (const [r, re] of [['fixed', SIZE_NS], ['chart', RULES.chart]]) if (re.test(code)) coreBad.push(`${f}:${first + i}: core ${r}: a compiled size where a migrated component's size comes from; fx::size("<token>"): ${line.trim().slice(0, 100)}`);
+  });
+}
 const mode = process.argv[2] || '--summary';
-const bad = [], debts = [], legacy = {}, perComp = [];
+const bad = [...coreBad], debts = [], legacy = {}, perComp = [];
 let migrated = 0;
 for (const f of readdirSync(DIR).filter((x) => x.endsWith('.cpp')).sort()) {
   const src = readFileSync(join(DIR, f), 'utf8');
