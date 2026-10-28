@@ -74,6 +74,10 @@
           "label": "Blockcraft"
         },
         {
+          "id": "phosphor",
+          "label": "Phosphor"
+        },
+        {
           "id": "win98",
           "label": "Win98"
         },

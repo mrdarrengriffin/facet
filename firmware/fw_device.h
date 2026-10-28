@@ -152,7 +152,7 @@ inline bool in_loop(std::function<void()> fn, uint32_t ms = 6000) {
 }
 
 // ---------------------------------------------------------------- frame stats (Motion: frame-rate check)
-// Counted only while an LVGL animation runs: each rendered frame's start (interval = frame time) and its render +
+// Counted while an LVGL animation runs or a finger is down (a drag): each rendered frame's start (interval = frame time) and its render +
 // flush time. Gaps over 100 ms start a new segment (a pause between animations, not a dropped frame). slow = frames
 // that came later than 1.5 refresh periods after the previous one (a missed refresh slot = a dropped frame).
 struct Perf {
@@ -165,7 +165,11 @@ inline void perf_reset() { P = Perf{}; }
 inline void perf_event(lv_event_t *e) {
   const int64_t t = esp_timer_get_time();
   if (lv_event_get_code(e) == LV_EVENT_RENDER_START) {
-    P.counting = lv_anim_count_running() > 0;
+    // a drag repaints with no animation running (a dial, a slider): a pressed pointer counts too
+    bool down = false;
+    for (lv_indev_t *i = lv_indev_get_next(nullptr); i && !down; i = lv_indev_get_next(i))
+      down = lv_indev_get_type(i) == LV_INDEV_TYPE_POINTER && lv_indev_get_state(i) == LV_INDEV_STATE_PRESSED;
+    P.counting = lv_anim_count_running() > 0 || down;
     if (!P.counting) return;
     P.start = t;
     const int64_t gap = P.last ? t - P.last : 0;

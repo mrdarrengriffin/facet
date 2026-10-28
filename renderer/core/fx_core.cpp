@@ -1464,6 +1464,15 @@ void Pen::arc(int r, float a0, float a1, const char *stroke, const char *k, bool
   lv_draw_arc_dsc_init(&d);
   const int w = size(stroke);
   if (!sees(-r - w, -r - w, r + w, r + w)) return;
+  // a partial redraw wholly inside the band's hole (a dial's value text in the middle of its ring) can't touch it:
+  // skip it, as LVGL's arc renderer would work its circle masks over every pixel of that area for nothing (a dial
+  // drag repainted its number at ~86 ms a frame on the Waveshare P4, 2026-10-28)
+  {
+    const lv_area_t &c = layer->_clip_area;
+    const int64_t in = std::max(0, r - w / 2 - 2), in2 = in * in;
+    auto inside = [&](int32_t x, int32_t y) { const int64_t dx = x - cx, dy = y - cy; return dx * dx + dy * dy < in2; };
+    if (inside(c.x1, c.y1) && inside(c.x2, c.y1) && inside(c.x1, c.y2) && inside(c.x2, c.y2)) return;
+  }
   const PenPart pp = part ? pen_part(obj, part_ix(part)) : PenPart{S::Block(), look_of(obj)->skin.get(), 0, 0, false};
   const lv_color_t col = pp.ink ? hex(pp.k->ink(pp.b.ink, pp.lt, pp.set)) : ink(obj, k);
   if (const int cs = snap_cell(pp.k)) {  // the band in whole cells, judged at cell centres round the centre cell
