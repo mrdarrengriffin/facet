@@ -29,8 +29,26 @@ static void on_alarm(int) {
   fprintf(stderr, "asan: %s did not finish within %d s (an endless loop, e.g. a layout that never settles)\n", g_item, ITEM_S);
   _exit(3);
 }
+// "taps:<comp>" = random taps for a screen's flows (Darren 2026-10-28: the Timer crashed the panel while tapping): 400 taps
+// over the lower part of the stage (where a page's buttons and chips are), a few with time jumps so timers run out and
+// the done / stop paths run too; deterministic (an LCG), so a report repeats
+static void taps(const char *id, const char *props, int S) {
+  uint32_t r = 12345;
+  auto rnd = [&](int n) { r = r * 1103515245u + 12345u; return (int) ((r >> 8) % (uint32_t) n); };
+  const int st = fw_stage(S, S);
+  const char *e = fw_render(st, id, props, 0, 0);
+  if (e && *e) fprintf(stderr, "   render: %s\n", e);
+  tick(60);
+  for (int i = 0; i < 400; i++) {
+    const int x = S / 8 + rnd(S * 3 / 4), y = S * 2 / 3 + rnd(S / 3 - S / 30);
+    fw_touch(st, x, y, 1); tick(6); fw_touch(st, x, y, 0); tick(30);
+    if (rnd(10) == 0) { t += 1000u * (uint32_t) (30 + rnd(900)); tick(10); }  // a time jump: timers tick, some run out
+  }
+  fw_stage_free(st);
+}
 static void run(const char *id, const char *props, int S) {
   fprintf(stderr, "== %s %s\n", id, props);
+  if (!strncmp(id, "taps:", 5)) { g_item = id; signal(SIGALRM, on_alarm); alarm(ITEM_S); taps(id + 5, props, S); alarm(0); return; }
   g_item = id;
   signal(SIGALRM, on_alarm);
   alarm(ITEM_S);

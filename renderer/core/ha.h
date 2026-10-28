@@ -325,7 +325,10 @@ inline void refresh(Bound *b) {
 }
 inline void tick(lv_timer_t *) {
   const uint32_t now = lv_tick_get();
+  // a refresh can delete other bound objects (an items Grid rebuilds its cells: their Bounds are freed), so each one in
+  // the copy is checked to be still live before it is touched (2026-10-28: the Timer chips crashed the panel)
   for (Bound *b : std::vector<Bound *>(S().bounds)) {
+    if (std::find(S().bounds.begin(), S().bounds.end(), b) == S().bounds.end()) continue;
     if (b->hold_until && (int32_t) (now - b->hold_until) >= 0) { b->hold_until = 0; b->dirty = true; }
     if (b->dirty && !b->hold_until) refresh(b);
   }
