@@ -65,6 +65,7 @@ struct State {
   ActSink act_sink = nullptr;
   std::vector<void (*)(const std::string &e, const std::string &a, const std::string &v)> put_hooks;  // on_put
   lv_timer_t *timer = nullptr;
+  std::vector<std::pair<std::string, void (*)()>> locals;  // on_local: entity -> its source's fresh()
 };
 inline State &S() {
   static State s;
@@ -75,8 +76,19 @@ inline const std::string *get(const std::string &e, const std::string &a = "") {
   auto it = S().store.find({e, a});
   return it == S().store.end() ? nullptr : &it->second;
 }
+// local sources (2026-10-28): an entity the panel fills itself, never Home Assistant (the timers: "panel.timer",
+// core/device.h). want() never passes it to a host (no subscription, not in wants()); a bind that reads it first asks
+// the source to put its current values (fresh(): a screen built now never shows a stale second)
+inline void (*local(const std::string &e))() {
+  for (auto &l : S().locals)
+    if (l.first == e) return l.second;
+  return nullptr;
+}
+inline void on_local(const char *entity, void (*fresh)()) {
+  if (!local(entity)) S().locals.push_back({entity, fresh});
+}
 inline void want(const std::string &e, const std::string &a = "") {
-  if (e.empty()) return;
+  if (e.empty() || local(e)) return;
   State &s = S();
   if (std::find(s.wants.begin(), s.wants.end(), Pair{e, a}) != s.wants.end()) return;
   s.wants.push_back({e, a});
@@ -217,6 +229,7 @@ inline std::string words(const std::string &e) {
 }
 inline void bind_raw(ArduinoJson::JsonVariantConst b, ArduinoJson::JsonObject out, const char *key, std::vector<Pair> *pairs) {
   const std::string e = b["e"] | "", a = b["a"] | "", fmt = b["fmt"] | "";
+  if (void (*fresh)() = local(e)) fresh();
   auto use = [&](const std::string &aa) { if (pairs && std::find(pairs->begin(), pairs->end(), Pair{e, aa}) == pairs->end()) pairs->push_back({e, aa}); };
   const std::string *st = get(e, "");
   const bool on = st && *st == "on";
@@ -329,6 +342,13 @@ inline bool matches(const Bound *b, const std::string &v) {
   }
   const double x = num(&v);
   return std::isfinite(x) && (int) std::lround(LV_CLAMP(0.0, x, 255.0) * 100 / 255) == atoi(b->expect.c_str());
+}
+// something built reads entity e (a local source ticks only then)
+inline bool watched(const std::string &e) {
+  for (const Bound *b : S().bounds)
+    for (const Pair &p : b->pairs)
+      if (p.first == e) return true;
+  return false;
 }
 // the host's new value: kept; bound components that read it repaint on the next tick (from a shallow stack)
 inline void put(const std::string &e, const std::string &a, const std::string &v) {

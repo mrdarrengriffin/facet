@@ -84,9 +84,26 @@
 //                list whose state is playing (none playing = it stays where it is); Auto is offered whenever the
 //                sensor is set or that list has entities)
 //              {"do": "nav.open", "screen": "<id>", "params"?: {k: v}}    {"do": "nav.back"}
+//              timers (2026-10-28, the panel's own: core/device.h "the panel's timers"; no entity):
+//              {"do": "timer.start", "seconds": 300, "name"?: "Pasta"}  (no name = its length, "5 min"; a 5th timer is
+//                refused: a warn toast says why)
+//              {"do": "timer.extend", "s": 60}  {"do": "timer.cancel"}  {"do": "timer.stop"}  (stop = a done one)
+//              {"do": "timer.select", "name"?: "Pasta" | "id"?: "2"}  (the one the ring shows)
+//                Which timer: the action's "id" / "name", else the event's detail for a Timer chip's "select" / "stop"
+//                (detail = its name; also from chips in an items Grid), else the shown one. Button "tap" takes any of
+//                them; timer_chip select -> timer.select, stop -> timer.stop.
 //              on "open" (any component's own open event): {"do": "nav.open"} = the screen its detail names
 //              The closed whitelist: each component + event allows only the actions in RULES (the catalogue).
 //   pending    while a light.switch waits for HA: the prop shows on / off text (a List row's sub "Turning on")
+// local       (2026-10-28) an entity the panel fills itself, bound like any other (core/ha.h "local sources"; never
+//  sources    sent to or asked of Home Assistant). "panel.timer" = the panel's timers (core/device.h): its state =
+//              the shown timer's running | done | idle (none); attributes: name, left ("4:32" / "1:02:05"), left_s,
+//              total (s), share (time left 0..1000: a Progress ring's value), line ("of 10 min · ends 14:52",
+//              "of 10 min · done"), id, count (timers), running, free (TIMERS_MAX - count: "show" the presets while
+//              there is room), others (a JSON list of the OTHER timers, soonest first, for a Grid's items:
+//              [{"id", "name", "left" s, "total" s, "state" running | done, "time" "4:32" | "done"}]).
+//              e.g. {"e": "panel.timer", "a": "left"}; show while one runs: {"e": "panel.timer", "map": {"running":
+//              "1"}, "else": ""}. Moving values (left, share, others) are put once a second only while a bind reads it.
 // Spec role   "role": "page" | "detail" | "both" (default page; screen model 2026-10-23): a page is a place in the deck
 //              (Home links to it); a detail screen is opened from something on a page, for one entity (Light,
 //              Blinds), never in the deck; both = either (Media, Thermostat). Built-in screens: "home" is a page
@@ -134,6 +151,7 @@
 #include "fw.h"
 #include "fx.h"
 #include "ha.h"
+#include "device.h"
 #include "specs_gen.h"
 
 namespace fw {
@@ -171,7 +189,9 @@ constexpr Rule RULES[] = {
     {"media_view", "media", "media.control"},        {"media_view", "speaker", "screen.param"},
     {"covers_view", "cover", "cover.control"},       {"covers_view", "window", "screen.param"},
     {"lock_ring", "lock", "lock.control"},           {"button", "confirm", "lock.control"},
-    {"room_tile", "pick", "screen.toggle"},          {"camera_tile", "tap", "nav.back"},          {"tile", "tap", "nav.open"},          {"button", "tap", "nav.open,nav.back,light.toggle,vacuum.control"},
+    {"room_tile", "pick", "screen.toggle"},          {"camera_tile", "tap", "nav.back"},          {"tile", "tap", "nav.open"},          {"button", "tap", "nav.open,nav.back,light.toggle,vacuum.control,timer.start,timer.extend,timer.cancel,timer.stop,timer.select"},
+    {"timer_chip", "select", "timer.select"},       {"timer_chip", "stop", "timer.stop"},
+    {"grid", "select", "timer.select"},             {"grid", "stop", "timer.stop"},  // Timer chips in an items Grid
     {"segmented", "change", "vacuum.control,screen.param"}, {"iso_floorplan", "pick", "screen.toggle"},
     {"vacuum_mode", "change", "vacuum.control"},     {"grid", "pick", "screen.param,nav.open"},        // a link to a sub-view spec (moon -> moon_details -> ...)
     {"*", "open", "nav.open"},                       // any component's own "open" (a tapped calendar day, a PR):
@@ -179,7 +199,7 @@ constexpr Rule RULES[] = {
 };
 constexpr const char *ACTIONS[] = {"light.switch", "light.toggle", "light.brightness", "climate.set_temperature",
                                    "climate.set_hvac_mode", "climate.set_preset_mode", "media.control", "cover.control", "lock.control", "vacuum.control", "screen.toggle", "screen.param",
-                                   "nav.open", "nav.back"};
+                                   "nav.open", "nav.back", "timer.start", "timer.extend", "timer.cancel", "timer.stop", "timer.select"};
 constexpr const char *FMTS[] = {"", "on", "pct", "avail", "light", "name", "num", "frac", "count", "time", "day", "level", "state", "dim"};
 constexpr uint32_t CLIMATE_THROTTLE_MS = 250;  // like light-throttle-ms: a set point while dragging at most this often
 constexpr const char *LAYOUTS[] = {"list", "center", "cards"};
@@ -356,8 +376,8 @@ inline void check_keys(ArduinoJson::JsonObjectConst o, const char *const *keys, 
 }
 inline void check_action(ArduinoJson::JsonVariantConst a, const char *comp, const char *event, const std::string &path, Errs &e) {
   if (!a.is<ArduinoJson::JsonObjectConst>()) { err(e, path, "bad_action", "an action is an object {do, ...}"); return; }
-  static const char *const K[] = {"do", "e", "screen", "params", "param", "from", "auto", "rooms", "mode", "mop"};
-  check_keys(a.as<ArduinoJson::JsonObjectConst>(), K, 10, path, e);
+  static const char *const K[] = {"do", "e", "screen", "params", "param", "from", "auto", "rooms", "mode", "mop", "seconds", "name", "s", "id"};
+  check_keys(a.as<ArduinoJson::JsonObjectConst>(), K, 14, path, e);
   const std::string d = a["do"] | "";
   if (!one_of(ACTIONS, d)) { err(e, path + ".do", "bad_action", "unknown action " + d); return; }
   const char *ok = allowed(comp, event);
@@ -388,6 +408,17 @@ inline void check_action(ArduinoJson::JsonVariantConst a, const char *comp, cons
         if (!entity_ok(sel) || (sel[0] != '$' && sel.rfind("select.", 0) != 0)) err(e, path + "." + k, "bad_entity", std::string(k) + ": a select entity (select.x or $param)");
       }
   }
+  if (d == "timer.start" && !(a["seconds"].is<int>() && (int) a["seconds"] >= 1 && (int) a["seconds"] <= 86400))
+    err(e, path + ".seconds", "bad_action", "seconds: the timer's length, 1 to 86400");
+  if (d == "timer.extend" && !(a["s"].is<int>() && (int) a["s"] >= 1 && (int) a["s"] <= 86400))
+    err(e, path + ".s", "bad_action", "s: seconds to add, 1 to 86400");
+  for (const char *k : {"name", "id"}) {
+    if (a[k].isNull()) continue;
+    const bool here = d.rfind("timer.", 0) == 0 && !(!strcmp(k, "id") && d == "timer.start");  // a new timer has no id yet
+    if (!here || !a[k].is<const char *>() || strlen(a[k] | "") > 24)
+      err(e, path + "." + k, "bad_action", std::string(k) + ": a timer's " + k + " (text, at most 24), on a timer action");
+  }
+  if (d.rfind("timer.", 0) != 0 && (!a["seconds"].isNull() || !a["s"].isNull())) err(e, path, "bad_action", "seconds / s go on timer actions");
   if (d == "screen.toggle" && !id_ok(a["param"] | "")) err(e, path + ".param", "bad_action", "param: the screen parameter to toggle the detail in (a-z, 0-9, _)");
   if (d == "lock.control") {
     const std::string en = a["e"] | "";
@@ -1168,6 +1199,29 @@ inline bool run(Screen *s, Node &n, const char *event, const char *detail) {
   if (a.isNull()) return false;
   const std::string d = a["do"] | "";
   if (d == "nav.back") { emit(n.obj, "back"); return true; }
+  if (d.rfind("timer.", 0) == 0) {  // the panel's timers (core/device.h): which one = id / name, a chip's detail, the shown
+    namespace tm = dev::timers;
+    const char *why = "";
+    if (d == "timer.start") why = tm::start(a["name"] | "", a["seconds"] | 0);
+    else {
+      int id = 0;
+      if (a["id"].is<const char *>()) id = tm::find(a["id"] | "");
+      else if (a["name"].is<const char *>()) id = tm::find(a["name"] | "");
+      else if (!strcmp(event, "select") || !strcmp(event, "stop")) id = tm::find(detail);
+      else if (const dev::TimerItem *t = tm::shown()) id = t->id;
+      if (!id) return true;
+      if (d == "timer.extend") why = tm::extend(id, a["s"] | 60);
+      else if (d == "timer.cancel") why = tm::cancel(id);
+      else if (d == "timer.stop") why = tm::stop(id);
+      else why = tm::select(id);
+    }
+    if (*why && d == "timer.start") {  // full / a bad length: say so where the person is looking
+      ArduinoJson::JsonDocument t;
+      t["tone"] = "warn"; t["icon"] = "timer"; t["title"] = "No timer started"; t["body"] = why;
+      dev::toast(t.as<Props>());
+    }
+    return true;
+  }
   if (d == "nav.open") {
     std::string id = a["screen"] | "";
     if (id.empty()) id = detail;  // the component's own "open": its detail is "<screen>[?{params}]"

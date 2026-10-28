@@ -37,6 +37,8 @@
 //              must differ (include an id or the time), an unchanged value is no new toast.
 // TODO (with the panel host): idle -> clock, as createDevice; Text size (a type-scale rebuild).
 #pragma once
+#include <string>
+#include <vector>
 #include "fw.h"
 
 namespace fw {
@@ -80,11 +82,45 @@ using ButtonFn = bool (*)(void *user, const char *press);
 void claim_button(lv_obj_t *obj, ButtonLevel level, ButtonFn fn, void *user);
 const char *button(const char *press);  // the host's key press: "" = nothing took it, else the taker's object kind ("alert" ...)
 
-// the panel's own timer (one per panel, Darren 2026-10-25): the Timer view inside a device runs it and keeps it here, so
-// it survives leaving the screen and a Home's header actions can show its time left. state 0 idle, 1 running, 2 done;
-// ends = wall-clock seconds (time()). Views shown alone (workbench pages, tests) never touch it.
+// the panel's timers (Darren 2026-10-28, notes timer.md; core/timers.cpp): a list of up to TIMERS_MAX, kept here so
+// they run whatever screen shows. Each {id, name, total s, ends (lv_tick ms), state running | done}. A name is unique
+// on the panel: a preset's is its length ("5 min", core length_name), a second "5 min" becomes "5 min 2"; HA / voice
+// name their own ("Pasta"). Running out = state done + the timer-done sound ONCE (whatever screen shows), until it is
+// stopped (stop / cancel remove it). Order = all(): soonest first (running by time left, then the done ones).
+// The shown one (the Timer page's ring) = the selected one while it exists, else the soonest running, else the first
+// done. A 5th start is refused: start() returns the reason ("" = started) and the panel shows it as a warn toast.
+// extend on a done timer starts it again with s left (+1 min after it rang). Hosts listen with observe(): one call
+// per change (start, extend, cancel, stop, done, select), never per second (the panel publishes its HA entities).
+// Data source: the reserved entity TIMER_ENTITY ("panel.timer", core/spec.h "local sources") in the HA store, filled
+// by the list itself (never by Home Assistant): binds read it like an entity; values that move each second are put
+// once a second only while something bound to it is built. Legacy: timer() = the soonest running as the old one-timer
+// struct (state 0 idle, 1 running, 2 done; ends = wall-clock seconds) for the Home header's time left + Timer view.
+constexpr int TIMERS_MAX = 4;
+constexpr const char *TIMER_ENTITY = "panel.timer";
+struct TimerItem { int id = 0; std::string name; int total = 0; uint32_t ends = 0; int state = 1; };  // state 1 running, 2 done
+namespace timers {
+enum Change : uint8_t { START, EXTEND, CANCEL, STOP, DONE, SELECT };
+const char *start(const char *name, int seconds, int *id_out = nullptr);  // "" = started, else why not (full, bad length)
+const char *extend(int id, int seconds);
+const char *cancel(int id);  // a running or a done one: removed
+const char *stop(int id);    // a done one: removed (a running one: "not done")
+const char *select(int id);  // the shown one
+int find(const char *name_or_id);  // by name (any case), else by id ("3"); 0 = none
+int left(const TimerItem &t);       // seconds left, rounded up (0:00 only when it ran out); done = 0
+long long ends_at(const TimerItem &t);  // wall-clock end (time()); 0 = done / the clock is not set
+std::vector<TimerItem> all();       // soonest first
+const TimerItem *get(int id);
+const TimerItem *shown();
+int running();
+std::string length_name(int seconds);  // "5 min", "1 h 30 min", "45 s"
+std::string countdown(int seconds);    // "4:32", "1:02:05"
+void list_json(std::string &out);      // HA's Timers list: [[name, ends epoch, total s, "running" | "done"], ...]
+using Observer = void (*)(Change what, const TimerItem &t);
+void observe(Observer cb);
+void reset();  // tests: every timer gone, no observer call
+}  // namespace timers
 struct Timer { int state = 0; long long ends = 0; int total = 0; std::string label; };
-Timer &timer();
+Timer &timer();  // legacy view of the list (above): the soonest running, else the first done
 bool in_device(lv_obj_t *obj);  // obj is part of a mounted device (the panel), not a workbench page alone
 }  // namespace dev
 }  // namespace fw

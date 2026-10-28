@@ -20,6 +20,10 @@
 //                                    (WCAG 1.4.11, the graphical-object half of tools/pixel_contrast.mjs)
 //   fw_test("veil_part", "knob") -> "" : the Pen skips that drawn part (knob, track-fill, arc-fill; "" = none) and the
 //                                    screen repaints: the drawn half of the same proof
+//   fw_test("timer", "{op, name?, seconds?, id?}") -> JSON {why, timers: [{id, name, left, total, state}] soonest first,
+//                                    shown: id, store: {attr: value} (the panel.timer pairs), changes: ["start Pasta", ...]
+//                                    since the last call}; op = start | extend | cancel | stop | select | find | reset |
+//                                    list (core/device.h "the panel's timers")
 //   fw_test("scrolls", "")        -> JSON [{x, y, w, h, sx, sy, t, b, l, r, dir}] every shown object that can scroll
 //                                    (scrollable flag + room to scroll or scrolled), screen then top layer, tree order
 #include <emscripten.h>
@@ -30,6 +34,7 @@
 #include "fx.h"
 #include "sheet.h"
 #include "toasts.h"
+#include "ha.h"
 #include "core/lv_obj_private.h"  // the style list (the bounds proof names the token styles)
 #include "core/lv_obj_style_private.h"
 
@@ -147,6 +152,46 @@ void gfx(lv_obj_t *o, ArduinoJson::JsonArray arr) {
     gfx(c, arr);
   }
 }
+std::vector<std::string> timer_changes;
+void timer_seen(fw::dev::timers::Change w, const fw::dev::TimerItem &t) {
+  static const char *const N[] = {"start", "extend", "cancel", "stop", "done", "select"};
+  timer_changes.push_back(std::string(N[w]) + " " + t.name);
+}
+void timer_cmd(const std::string &a, ArduinoJson::JsonDocument &d) {
+  namespace tm = fw::dev::timers;
+  static bool seen = false;
+  if (!seen) { seen = true; tm::observe(timer_seen); }
+  ArduinoJson::JsonDocument q;
+  deserializeJson(q, a);
+  const std::string op = q["op"] | "list";
+  const int id = q["id"].is<int>() ? (int) q["id"] : tm::find(q["name"] | "");
+  const char *why = "";
+  if (op == "start") why = tm::start(q["name"] | "", q["seconds"] | 0);
+  else if (op == "extend") why = tm::extend(id, q["seconds"] | 60);
+  else if (op == "cancel") why = tm::cancel(id);
+  else if (op == "stop") why = tm::stop(id);
+  else if (op == "select") why = tm::select(id);
+  else if (op == "reset") { tm::reset(); timer_changes.clear(); }
+  d["why"] = why;
+  d["found"] = id;
+  ArduinoJson::JsonArray arr = d["timers"].to<ArduinoJson::JsonArray>();
+  for (const fw::dev::TimerItem &t : tm::all()) {
+    ArduinoJson::JsonObject j = arr.add<ArduinoJson::JsonObject>();
+    j["id"] = t.id, j["name"] = t.name, j["left"] = tm::left(t), j["total"] = t.total, j["state"] = t.state == 1 ? "running" : "done";
+  }
+  const fw::dev::TimerItem *sh = tm::shown();
+  d["shown"] = sh ? sh->id : 0;
+  for (const char *k : {"", "id", "name", "left", "left_s", "total", "share", "line", "count", "running", "free", "others"})
+    if (const std::string *v = fw::ha::get(fw::dev::TIMER_ENTITY, k)) d["store"][*k ? k : "state"] = *v;
+  std::string lj;
+  tm::list_json(lj);
+  d["ha_list"] = lj;
+  const fw::dev::Timer &g = fw::dev::timer();
+  d["legacy"]["state"] = g.state, d["legacy"]["label"] = g.label;
+  ArduinoJson::JsonArray ch = d["changes"].to<ArduinoJson::JsonArray>();
+  for (const std::string &c : timer_changes) ch.add(c);
+  timer_changes.clear();
+}
 }  // namespace
 
 extern "C" EMSCRIPTEN_KEEPALIVE const char *fw_test(const char *cmd, const char *arg) {
@@ -155,6 +200,7 @@ extern "C" EMSCRIPTEN_KEEPALIVE const char *fw_test(const char *cmd, const char 
   const std::string c = cmd ? cmd : "", a = arg ? arg : "";
   ArduinoJson::JsonDocument d;
   if (c == "stack") fw::dev::state(d.to<ArduinoJson::JsonArray>());
+  else if (c == "timer") timer_cmd(a, d);
   else if (c == "setting") {
     const size_t eq = a.find('=');
     if (eq == std::string::npos) return "id=value";
@@ -215,7 +261,7 @@ extern "C" EMSCRIPTEN_KEEPALIVE const char *fw_test(const char *cmd, const char 
     if (on) lv_obj_set_style_opa(ink_objs[i], LV_OPA_TRANSP, 0); else lv_obj_remove_local_style_prop(ink_objs[i], LV_STYLE_OPA, 0);
     lv_obj_invalidate(ink_objs[i]);
     return "";
-  } else return "stack | setting | scrolls | look | inset | bounds | inks | gfx | veil | veil_part";
+  } else return "stack | timer | setting | scrolls | look | inset | bounds | inks | gfx | veil | veil_part";
   serializeJson(d, out);
   return out.c_str();
 }

@@ -50,6 +50,7 @@
 #include <atomic>
 #include <vector>
 #include <cstring>
+#include <ctime>
 #include <deque>
 #include <functional>
 #include <mutex>
@@ -695,6 +696,77 @@ inline void toast_from_ha(const std::string &title, const std::string &body, con
   serializeJson(t, j);
   fw::ha::put(fw::dev::TOAST_PAIR, "", j);
   ESP_LOGI("facet_wb", "toast from HA: %s", j.c_str());
+}
+
+// ---------------------------------------------------------------- timers (core/device.h "the panel's timers")
+// Home Assistant sees the panel's timers through the host's entities (workbench.yaml): Next timer ends (a timestamp
+// text sensor: ISO UTC, "" = unknown when none runs; a numeric ESPHome sensor is a 32-bit float = 128 s steps for an
+// epoch, too coarse for a timer), Timers (count running), Timers list (JSON text: ESPHome sensors have no attributes;
+// [[name, ends epoch, total s, "running" | "done"], ...] soonest first, fits HA's 255), Timer finished (event,
+// finished) + Last timer finished (the name: ESPHome events carry no data; published BEFORE the event fires).
+// timers_hook / timer_done_hook are set by the host before setup(); called on start / extend / cancel / stop / done
+// only, never per second. The HA actions (facet_timer_start / _extend / _cancel) go through timer_from_ha(): a name ""
+// = the shown timer (extend / cancel); a refused start answers why and shows it as a warn toast. Main loop.
+inline void (*timers_hook)() = nullptr;
+inline void (*timer_done_hook)(const std::string &name) = nullptr;
+inline std::string timers_next_iso() {
+  long long best = 0;
+  for (const fw::dev::TimerItem &t : fw::dev::timers::all()) {
+    const long long e = fw::dev::timers::ends_at(t);
+    if (e && (!best || e < best)) best = e;
+  }
+  if (!best) return "";
+  const time_t e = (time_t) best;
+  struct tm tm;
+  gmtime_r(&e, &tm);
+  char b[32];
+  strftime(b, sizeof b, "%Y-%m-%dT%H:%M:%S+00:00", &tm);
+  return b;
+}
+inline std::string timers_list() {
+  std::string j;
+  fw::dev::timers::list_json(j);
+  return j;
+}
+inline void timers_setup() {
+  fw::dev::timers::observe([](fw::dev::timers::Change w, const fw::dev::TimerItem &t) {
+    ESP_LOGI("facet_wb", "timer %d %s (%d s)", (int) w, t.name.c_str(), t.total);
+    if (w == fw::dev::timers::SELECT) return;  // which one the ring shows: nothing HA sees
+    if (w == fw::dev::timers::DONE && timer_done_hook) timer_done_hook(t.name);
+    if (timers_hook) timers_hook();
+  });
+  if (timers_hook) timers_hook();  // the first state (none): HA reads unknown / 0 / []
+}
+// the last answer: ESPHome evaluates api.respond's data only when the caller asked for a response, so the YAML runs
+// timer_from_ha() in a lambda step and answers with timer_answer() after it (2026-10-28: a call without
+// return_response did nothing while the work sat in the respond lambda)
+inline ArduinoJson::JsonDocument &timer_last() { static ArduinoJson::JsonDocument d; return d; }
+inline void timer_answer(ArduinoJson::JsonObject out) {
+  for (ArduinoJson::JsonPair kv : timer_last().as<ArduinoJson::JsonObject>()) out[kv.key()] = kv.value();
+}
+inline void timer_from_ha(const char *op, const std::string &name, int seconds) {
+  timer_last().clear();
+  ArduinoJson::JsonObject out = timer_last().to<ArduinoJson::JsonObject>();
+  namespace tm = fw::dev::timers;
+  const char *why = "";
+  int id = 0;
+  if (!strcmp(op, "start")) {
+    why = tm::start(name.c_str(), seconds, &id);
+    if (*why) {
+      ArduinoJson::JsonDocument t;
+      t["tone"] = "warn"; t["icon"] = "timer"; t["title"] = "No timer started"; t["body"] = why;
+      fw::dev::toast(t.as<fw::Props>());
+    }
+  } else {
+    id = name.empty() ? (tm::shown() ? tm::shown()->id : 0) : tm::find(name.c_str());
+    if (!id) why = name.empty() ? "no timer" : "no timer by that name";
+    else if (!strcmp(op, "extend")) why = tm::extend(id, seconds);
+    else why = tm::cancel(id);
+  }
+  out["ok"] = !*why;
+  if (*why) out["error"] = why;
+  if (const fw::dev::TimerItem *t = tm::get(id)) out["name"] = t->name;
+  if (*why) ESP_LOGW("facet_wb", "timer %s %s: %s", op, name.c_str(), why);
 }
 
 // ---------------------------------------------------------------- screen specs (core/spec.h)
@@ -1367,6 +1439,7 @@ inline void setup() {
     reshow_later(true);
     PR.shown = -2;
   });
+  timers_setup();    // the panel's timers -> the host's HA entities (timers_hook)
   apply_rotation();  // the restored Rotate screen (the select restored it before on_boot)
   probation_start();
   dbg::D.ready = true;  // the Debug overlay select restored its value before LVGL was up

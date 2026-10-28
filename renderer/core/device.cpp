@@ -424,10 +424,6 @@ void state(ArduinoJson::JsonArray out) {
 void go(lv_obj_t *in, const char *id) { queue(in, GO, id); }
 void back(lv_obj_t *in) { queue(in, BACK, nullptr); }
 void home(lv_obj_t *in) { queue(in, HOME, nullptr); }
-Timer &timer() {
-  static Timer t;
-  return t;
-}
 bool in_device(lv_obj_t *obj) { return of(obj) != nullptr; }
 const char *current(lv_obj_t *in) {
   Device *d = of(in);

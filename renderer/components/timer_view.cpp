@@ -13,9 +13,10 @@
 // itself, once a second (the ring steps with it). Taps work on their own too (the panel's local timer, like the docs
 // actions): a preset starts one, "+1 min" adds a minute, Cancel stops it; each emits "timer" (start <s> | extend 60 |
 // cancel) for a host to mirror. Running out plays the timer-done sound and shows "done" until the next one.
-// Inside a device (the panel) the view keeps the panel's one timer (core/device.h fw::dev::timer) in step, so a timer
-// keeps running after leaving the screen, an idle view opened later picks it up, and a Home's header actions show its
-// time left. Shown alone (workbench, tests) it never touches it.
+// Inside a device (the panel) the view runs one of the panel's timers (core/device.h fw::dev::timers: a preset starts
+// one there, +1 min / Cancel / the key's dismiss act on it, the view follows it), so a timer keeps running after
+// leaving the screen, an idle view opened later picks up the shown one, and a Home's header actions show its time
+// left; the list plays the done sound. Shown alone (workbench, tests) it never touches it.
 // Update path: state / left / total / label move in place (the ring steps to the new share, silently); the button
 // rows swap with Motion fade (both always built). Contrast: tokens/colour.json section "timer" (+ button).
 #include <ctime>
@@ -33,9 +34,11 @@ struct TV {
   uint32_t ends = 0;      // lv_tick of the end (running)
   int state = 0;          // 0 idle, 1 running, 2 done
   int shown = -1;         // seconds left shown
+  int tid = 0;            // inside a device: the panel timer (core/device.h fw::dev::timers) this view shows
   fw::ty::Id left_style = fw::ty::display;
 };
 TV *of(lv_obj_t *o) { return (TV *) lv_obj_get_user_data(o); }
+void rows(TV *t, bool animate = true);
 lv_obj_t *box(lv_obj_t *parent) {
   lv_obj_t *o = lv_obj_create(parent);
   lv_obj_remove_style_all(o);
@@ -63,20 +66,23 @@ int left_s(const TV *t) {
   const int32_t ms = (int32_t) (t->ends - lv_tick_get());
   return ms <= 0 ? 0 : (ms + 999) / 1000;
 }
-// the panel's timer (core/device.h fw::dev::timer): kept in step while this view runs inside a device
-void publish(lv_obj_t *root) {
-  if (!fw::dev::in_device(root)) return;
-  const TV *t = of(root);
-  fw::dev::Timer &g = fw::dev::timer();
-  g.state = t->state;
-  g.total = t->total;
-  g.label = t->label;
-  g.ends = t->state == 1 ? (long long) time(nullptr) + left_s(t) : 0;
+// inside a device the view shows one of the panel's timers (core/device.h fw::dev::timers): it follows that timer
+// (extended / cancelled / done elsewhere: HA, the list's own done sound), true = it is the panel's
+bool follow(lv_obj_t *root) {
+  TV *t = of(root);
+  if (!t->tid || !fw::dev::in_device(root)) return false;
+  const fw::dev::TimerItem *g = fw::dev::timers::get(t->tid);
+  if (!g) { t->tid = 0; t->state = 0; rows(t); return true; }
+  t->label = g->name;
+  t->total = g->total;
+  t->ends = g->ends;
+  if (g->state != t->state) { t->state = g->state; rows(t); }
+  return true;
 }
 void opa_exec(void *o, int32_t v) { lv_obj_set_style_opa((lv_obj_t *) o, (lv_opa_t) v, 0); }
 // the running buttons or the presets: both built in one place, one shown (and touchable); a change fades them like a
 // tap would (Motion fade), the first build is at rest
-void rows(TV *t, bool animate = true) {
+void rows(TV *t, bool animate) {
   const bool on = t->state == 1;
   lv_obj_t *in = on ? t->run_row : t->pre_row, *out = on ? t->pre_row : t->run_row;
   lv_obj_add_flag(out, LV_OBJ_FLAG_HIDDEN);  // out of the way of the finger at once
@@ -88,12 +94,15 @@ void rows(TV *t, bool animate = true) {
 void render(lv_obj_t *root, bool force = false) {
   TV *t = of(root);
   const fw::Theme &th = *fw::T;
+  const int was = t->state;
+  if (follow(root)) {  // the panel's timer ran out: the list played the sound
+    if (was != t->state) { force = true; if (t->state == 2) fw::emit(root, "timer", "done"); }
+  }
   int s = left_s(t);
-  if (t->state == 1 && s == 0) {  // ran out
+  if (t->state == 1 && s == 0) {  // ran out (shown alone: the view's own timer)
     t->state = 2;
     fw::sound(root, "timer-done");
     fw::emit(root, "timer", "done");
-    publish(root);
     rows(t);
     force = true;
   }
@@ -127,9 +136,17 @@ void start(lv_obj_t *root, int secs, const char *label) {
   t->total = secs;
   t->label = label;
   t->ends = lv_tick_get() + (uint32_t) secs * 1000;
+  if (fw::dev::in_device(root)) {  // the panel's list: a 5th is refused (a warn toast says why)
+    const char *why = fw::dev::timers::start(label, secs, &t->tid);
+    if (*why) {
+      t->state = 0;
+      ArduinoJson::JsonDocument d;
+      d["tone"] = "warn"; d["icon"] = "timer"; d["title"] = "No timer started"; d["body"] = why;
+      fw::dev::toast(d.as<fw::Props>());
+    }
+  }
   rows(t);
   render(root, true);
-  publish(root);
 }
 void fill(lv_obj_t *root, fw::Props p) {
   const fw::Theme &th = *fw::T;
@@ -181,19 +198,20 @@ void fill(lv_obj_t *root, fw::Props p) {
       if (t->state != 1) return;
       t->ends += 60000;
       t->total += 60;
+      if (t->tid && fw::dev::in_device(root)) fw::dev::timers::extend(t->tid, 60);
       fw::emit(root, "timer", "extend 60");
       render(root, true);
-      publish(root);
     }, LV_EVENT_CLICKED, root);
   if (lv_obj_t *b = button(t->run_row, "outline", "Cancel"))
     lv_obj_add_event_cb(b, [](lv_event_t *e) {
       auto *root = (lv_obj_t *) lv_event_get_user_data(e);
       TV *t = of(root);
       t->state = 0;
+      if (t->tid && fw::dev::in_device(root)) fw::dev::timers::cancel(t->tid);
+      t->tid = 0;
       fw::emit(root, "timer", "cancel");
       rows(t);
       render(root, true);
-      publish(root);
     }, LV_EVENT_CLICKED, root);
   for (int m : PRESETS) {
     char lab[16];
@@ -204,7 +222,7 @@ void fill(lv_obj_t *root, fw::Props p) {
         auto *root = (lv_obj_t *) lv_event_get_user_data(e);
         const int m = (int) (intptr_t) lv_obj_get_user_data((lv_obj_t *) lv_event_get_current_target(e));
         char lab[24], det[24];
-        snprintf(lab, sizeof lab, "%d min timer", m);
+        snprintf(lab, sizeof lab, "%d min", m);  // a preset is named by its length (Darren 2026-10-28)
         snprintf(det, sizeof det, "start %d", m * 60);
         fw::emit(root, "timer", det);
         start(root, m * 60, lab);
@@ -253,10 +271,11 @@ FW_COMPONENT(timer_view, "Timer view", "components", R"({
     TV *t = of(root);
     if (!t || t->state != 2 || strcmp(press, "single")) return false;
     t->state = 0;
+    if (t->tid && fw::dev::in_device(root)) fw::dev::timers::cancel(t->tid);
+    t->tid = 0;
     fw::emit(root, "timer", "dismiss");
     rows(t);
     render(root, true);
-    publish(root);
     return true;
   }, root);
   lv_obj_add_event_cb(root, [](lv_event_t *e) {
@@ -266,13 +285,11 @@ FW_COMPONENT(timer_view, "Timer view", "components", R"({
   }, LV_EVENT_DELETE, t);
   fill(root, p);
   take(root, p, false);
-  const fw::dev::Timer &g = fw::dev::timer();  // inside a device, an idle view picks up the panel's running timer
-  const long long now = (long long) time(nullptr);
-  if (t->state == 0 && fw::dev::in_device(root) && g.state == 1 && g.ends > now) {
-    t->state = 1;
-    t->total = g.total;
-    t->label = g.label;
-    t->ends = lv_tick_get() + (uint32_t) (g.ends - now) * 1000;
+  // inside a device, an idle view picks up the panel's shown timer (the soonest running: core/device.h timers)
+  const fw::dev::TimerItem *g = fw::dev::in_device(root) ? fw::dev::timers::shown() : nullptr;
+  if (t->state == 0 && g && g->state == 1) {
+    t->tid = g->id;
+    follow(root);
     rows(t, false);
     render(root, true);
   }
