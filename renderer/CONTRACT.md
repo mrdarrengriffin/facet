@@ -620,6 +620,15 @@ Ways to follow the letter and still ship something broken. Each is a violation o
     checked before reporting).
 11. **Legacy marked as migrated, or migrated without the meta.** A component without `"contract": 2` is not linted.
     Closed by section 2: without the meta it is legacy and counts as not passing.
+12. **Fixed sizes hidden in the core.** A component can pass lint while the core helper it calls (a chart, the toast
+    stack, the bottom sheet) places or draws it at compiled sizes, so no theme or tune ever moves it. Closed by the
+    contract lint's core sections (`tools/contract_lint.mjs` CORE: sizes there are `fx::size` reads, re-placed on
+    LV_EVENT_STYLE_CHANGED) and by `tools/lab_test.mjs` (every visible size is listed, and a no-op update leaves every
+    object in place).
+13. **A partial redraw smaller than what the theme draws.** A moving part (a knob) that repaints only its own nominal
+    size leaves the theme's halo, edges or snapped cells behind as ghosts on the glass (a full-screen screenshot
+    redraws everything, so it hides them). Closed by `fx::knob_reach`: a moving knob repaints as far as the live theme
+    draws it.
 
 ## 15. Check status
 
