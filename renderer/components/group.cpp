@@ -27,7 +27,7 @@ FW_COMPONENT(group, "Group", "components", R"({
   "frame": [480, 0],
   "slots": 1,
   "props": [
-    {"name": "align", "about": "Which side the parts line up from: start is the left, end is the right.", "type": "select", "options": ["start", "end"], "default": "start"},
+    {"name": "align", "about": "Where the parts line up: start is the left, centre is the middle (a stack centres each part), end is the right.", "type": "select", "options": ["start", "centre", "end"], "default": "start"},
     {"name": "flow", "about": "wrap lays the parts side by side and starts a new line when the row is full; stack puts each part under the last.", "type": "select", "options": ["wrap", "stack"], "default": "wrap"},
     {"name": "space", "about": "The gap between the parts: none, group for related parts, block for separate blocks, near for parts that belong tightly together.", "type": "select", "options": ["none", "group", "block", "near"], "default": "none"},
     {"name": "sample", "about": "For previews only: how many made-up tiles fill the row. 0 shows the empty layout.", "type": "range", "min": 0, "max": 6, "step": 1, "default": 0}
@@ -37,9 +37,10 @@ FW_COMPONENT(group, "Group", "components", R"({
     {"label": "end · two", "props": {"sample": 2, "align": "end"}}
   ]
 })") {
-  const bool stack = !strcmp(p["flow"] | "wrap", "stack"), end = !strcmp(p["align"] | "start", "end");
-  lv_obj_t *g = fx::box(parent, stack ? "col" : "free");
-  if (!stack) for (const char *t : {end ? "wrap-end" : "wrap", "gap:gutter"}) fx::use(g, t);
+  const bool stack = !strcmp(p["flow"] | "wrap", "stack"), end = !strcmp(p["align"] | "start", "end"),
+             mid = !strcmp(p["align"] | "start", "centre");
+  lv_obj_t *g = fx::box(parent, stack ? (mid ? "col-centre" : "col") : "free");
+  if (!stack) for (const char *t : {end ? "wrap-end" : mid ? "wrap-centre" : "wrap", "gap:gutter"}) fx::use(g, t);
   fx::name(g, "group");
   fw::shape(g, sig(p));
   lv_obj_add_flag(g, fw::spec::SLOT);

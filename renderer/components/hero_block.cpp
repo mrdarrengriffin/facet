@@ -64,7 +64,11 @@ void fill(lv_obj_t *h, fw::Props p, bool opening) {
   const bool accent = !off && (p["accent"] | false);
   const bool display = !strcmp(p["role"] | "hero", "display");
   fx::use(h, "box");  // again after an update's refill (it takes every style off the root): the full width
-  fx::use(h, display ? "hero-row-display" : "hero-row");
+  // layout stack (the Timer's ring, Darren 2026-10-28): label over the number over the line, centred, in one column
+  const bool stack = !strcmp(p["layout"] | "row", "stack");
+  fx::use(h, stack ? "hero-stack" : display ? "hero-row-display" : "hero-row");
+  const bool title0 = !strcmp(p["label_type"] | "label", "title");
+  if (stack) fx::text(h, p["label"] | "", title0 ? "type:title" : "type:label", off ? "fg:unavailable-ink" : "fg:text-dim");
   const char *n = off ? fw::st::PLACEHOLDER : (p["n"] | "");
   const char *type = display ? "type:display" : "type:hero";
   const char *unit = off ? "" : (p["unit"] | "");
@@ -96,7 +100,12 @@ void fill(lv_obj_t *h, fw::Props p, bool opening) {
     }
   } else if (c) c->on = false;
   // label type: caps label (default) or title (the Calendar hero: the event's name as written, docs .fs-cal-htitle)
-  const bool title = !strcmp(p["label_type"] | "label", "title");
+  const bool title = title0;
+  if (stack) {  // the line under the number, centred (the label is above it)
+    fx::text(h, off ? fw::st::UNAVAILABLE_TEXT : (p["line"] | ""), "type:body", off ? "fg:unavailable-note" : "fg:text-dim");
+    if (off) fx::state(h, fw::st::OFF, true);
+    return;
+  }
   lv_obj_t *col = fx::box(h, "free");
   fx::use(col, title ? "hero-col-title" : "hero-col");
   fx::use(fx::text(col, p["label"] | "", title ? "type:title" : "type:label", off ? "fg:unavailable-ink" : "fg:text"), "fill-w");
@@ -119,6 +128,7 @@ FW_COMPONENT(hero_block, "Hero block", "components", R"({
     {"name": "line", "about": "One quieter line with the detail, under the label.", "type": "text", "default": "2 reviews · 2 assigned"},
     {"name": "accent", "about": "Draws the number in the accent colour, for when it matters now.", "type": "bool", "default": true},
     {"name": "role", "about": "hero is the largest number for a screen's main figure; display is a step smaller.", "type": "select", "options": ["hero", "display"], "default": "hero"},
+    {"name": "layout", "about": "row puts the label and line beside the number; stack puts the label above it and the line under it, centred, such as inside a ring.", "type": "select", "options": ["row", "stack"], "default": "row"},
     {"name": "label_type", "about": "How the words next to the number are written: label in small capitals, or title in larger plain text.", "type": "select", "options": ["label", "title"], "default": "label"},
     {"name": "state", "about": "default shows the number; unavailable shows a dash when the value cannot be read.", "type": "select", "options": ["default", "unavailable"], "default": "default"}
   ],

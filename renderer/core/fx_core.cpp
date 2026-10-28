@@ -57,7 +57,7 @@ const char *const SHAPES[] = {"box", "col", "row", "stack", "centre", "cell", "g
                               // the Checkbox: its box, the in-progress dot, a done label, the Motion toggle fade
                               "checkbox", "checkbox-dot", "strike", "fade-switch",
                               // a Group of buttons that lines up from the end (right), centred across
-                              "wrap-end",
+                              "wrap-end", "hero-stack", "wrap-centre", "col-centre",
                               // the Radio: its ring and the chosen dot
                               "radio", "radio-dot"};
 // tint:<c> = the colour at chip.tint over what is behind (Status chip; colour.json mixes chip-<tone>); outline:<c> = the
@@ -249,6 +249,7 @@ void shape(lv_style_t *s, const char *n) {  // the structure styles: density onl
   const std::string k = n;
   if (k == "box") { lv_style_set_width(s, lv_pct(100)); lv_style_set_height(s, LV_SIZE_CONTENT); }
   else if (k == "col") flex(s, LV_FLEX_FLOW_COLUMN, S, S, S);
+  else if (k == "col-centre") flex(s, LV_FLEX_FLOW_COLUMN, S, C, C);  // a column whose parts are centred across (a Group stack, centre)
   else if (k == "row") { flex(s, LV_FLEX_FLOW_ROW, S, C, C); lv_style_set_pad_column(s, GUT()); }
   else if (k == "stack") { flex(s, LV_FLEX_FLOW_COLUMN, S, S, S); lv_style_set_pad_row(s, tok("space:2", sp::s2)); }
   else if (k == "centre") { flex(s, LV_FLEX_FLOW_COLUMN, C, C, C); }
@@ -298,7 +299,8 @@ void shape(lv_style_t *s, const char *n) {  // the structure styles: density onl
   else if (k == "fill-w") lv_style_set_width(s, lv_pct(100));
   else if (k == "row-top") flex(s, LV_FLEX_FLOW_ROW, S, S, S);  // a row, top-aligned, no gap
   else if (k == "wrap") flex(s, LV_FLEX_FLOW_ROW_WRAP, S, S, S);
-  else if (k == "wrap-end") flex(s, LV_FLEX_FLOW_ROW_WRAP, LV_FLEX_ALIGN_END, C, S);  // rows that wrap: a growing child counts its min-w
+  else if (k == "wrap-end") flex(s, LV_FLEX_FLOW_ROW_WRAP, LV_FLEX_ALIGN_END, C, S);
+  else if (k == "wrap-centre") flex(s, LV_FLEX_FLOW_ROW_WRAP, C, C, C);  // a Group aligned centre: its rows centred  // rows that wrap: a growing child counts its min-w
   else if (k == "gap:gutter") { lv_style_set_pad_row(s, GUT()); lv_style_set_pad_column(s, GUT()); }  // gutter both ways
   else if (k == "header") {  // the Header row (components/header.cpp): the row tall, up to its max width, items centred;
     // the gaps are its parts' margins (back-gap after Back, the item gap before the end slot and before the Time), so
@@ -399,9 +401,13 @@ void shape(lv_style_t *s, const char *n) {  // the structure styles: density onl
     lv_style_set_pad_hor(s, S2()); lv_style_set_radius(s, LV_RADIUS_CIRCLE); flex(s, LV_FLEX_FLOW_ROW, C, C, C);
   } else if (k == "badge-num") {  // the number: at least the pill's inner square (badge-h - 2 x space 2), centred
     lv_style_set_min_width(s, tok("layout:badge-h", lay::badge_h) - 2 * S2()); lv_style_set_text_align(s, LV_TEXT_ALIGN_CENTER);
+  } else if (k == "hero-stack") {  // the Hero block stacked (layout stack): one centred column, space 2 between
+    lv_style_set_width(s, lv_pct(100)); lv_style_set_height(s, LV_SIZE_CONTENT); lv_style_set_pad_row(s, S2());
+    flex(s, LV_FLEX_FLOW_COLUMN, C, C, C);
   } else if (k == "timer-chip") {  // the Timer chip: hugs, at least touch:min tall, space 3 in from the outer edge (its hair
     // edge inside, so the contents land on the grid), space 3 between, a row centred across
-    lv_style_set_width(s, LV_SIZE_CONTENT); lv_style_set_height(s, LV_SIZE_CONTENT); lv_style_set_min_height(s, TMIN());
+    // exactly touch:min tall (a min height alone leaves LVGL's flex track at the content's height: the row sat at the top)
+    lv_style_set_width(s, LV_SIZE_CONTENT); lv_style_set_height(s, TMIN());
     lv_style_set_pad_hor(s, tok("space:3", sp::s3) - HAIR()); lv_style_set_pad_ver(s, 0); lv_style_set_pad_column(s, tok("space:3", sp::s3));
     flex(s, LV_FLEX_FLOW_ROW, S, C, C);
   } else if (k == "button-sm") {  // the small Button (after "button"): touch:min tall, the label space 4 in from the outer edge
@@ -1605,7 +1611,8 @@ void Pen::arc(int r, float a0, float a1, const char *stroke, const char *k, bool
     return;
   }
   d.center.x = cx; d.center.y = cy; d.radius = r + w / 2; d.width = w; d.rounded = round && !pp.k->cap;  // shape.cap square: butt ends
-  d.start_angle = fmodf(a0, 360); d.end_angle = fmodf(a1, 360);
+  // a full turn stays a full turn (fmod would make 0..360 into 0..0: nothing drawn; the Progress ring's track)
+  d.start_angle = fmodf(a0, 360); d.end_angle = a1 - a0 >= 360 ? d.start_angle + 360 : fmodf(a1, 360);
   d.color = col; d.opa = LV_OPA_COVER;
   lv_draw_arc(layer, &d);
 }

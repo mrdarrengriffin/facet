@@ -34,7 +34,7 @@ double num(fw::Props p, const char *k, double d) {
   return p[k] | d;
 }
 int32_t share_of(fw::Props p) {
-  double v = num(p, "value", 453), mx = num(p, "max", 0);
+  double v = num(p, "value", 0), mx = num(p, "max", 0);
   if (mx > 0) v = v / mx * N;
   if (!std::isfinite(v)) v = 0;
   return (int32_t) LV_CLAMP(0, std::lround(v), N);
@@ -95,7 +95,7 @@ FW_COMPONENT(progress_ring, "Progress ring", "components", R"({
   ],
   "frame": [448, 448],
   "props": [
-    {"name": "value", "about": "How much is left: out of 1000, or out of max when max is set (such as seconds left of the timer's length).", "type": "range", "min": 0, "max": 1000, "step": 1, "default": 453},
+    {"name": "value", "about": "How much is left: out of 1000, or out of max when max is set (such as seconds left of the timer's length).", "type": "range", "min": 0, "max": 1000, "step": 1, "default": 0},
     {"name": "max", "about": "What value counts up to, such as the timer's length in seconds. 0 means value is out of 1000.", "type": "range", "min": 0, "max": 3600, "step": 1, "default": 0},
     {"name": "state", "about": "default shows how much is left; unavailable shows the empty track when the value cannot be read.", "type": "select", "options": ["default", "unavailable"], "default": "default"},
     {"name": "sample", "about": "For previews only: a made-up Hero block in the centre (running, done or unavailable), or none for the empty slot.", "type": "select", "options": ["none", "running", "done", "unavailable"], "default": "none"}

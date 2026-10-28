@@ -2,7 +2,7 @@
  "v": 1,
  "id": "timer",
  "name": "Timer",
- "rev": 1,
+ "rev": 2,
  "role": "page",
  "header": {
   "label": "Timer",
@@ -11,10 +11,248 @@
  "layout": "center",
  "nodes": [
   {
-   "c": "timer_view",
+   "c": "group",
    "p": {
-    "state": "idle"
+    "flow": "stack",
+    "space": "none",
+    "align": "centre"
    }
+  },
+  {
+   "c": "progress_ring",
+   "p": {
+    "value": {
+     "e": "panel.timer",
+     "a": "share"
+    }
+   },
+   "in": 0,
+   "slot": 0
+  },
+  {
+   "c": "hero_block",
+   "p": {
+    "n": {
+     "e": "panel.timer",
+     "a": "left"
+    },
+    "label": {
+     "e": "panel.timer",
+     "a": "name"
+    },
+    "line": {
+     "e": "panel.timer",
+     "a": "line"
+    },
+    "accent": false,
+    "role": "hero",
+    "layout": "stack"
+   },
+   "in": 1,
+   "slot": 0
+  },
+  {
+   "c": "grid",
+   "p": {
+    "cols": 3,
+    "gap": "near",
+    "aspect": "row",
+    "items": {
+     "e": "panel.timer",
+     "a": "others"
+    },
+    "empty": ""
+   },
+   "cell": {
+    "c": "timer_chip",
+    "p": {
+     "name": "$item.name",
+     "left": "$item.left",
+     "total": "$item.total",
+     "state": "$item.state"
+    }
+   },
+   "in": 0,
+   "slot": 0,
+   "show": {
+    "e": "panel.timer",
+    "a": "count",
+    "map": {
+     "2": "1",
+     "3": "1",
+     "4": "1"
+    },
+    "else": ""
+   }
+  },
+  {
+   "c": "group",
+   "p": {
+    "flow": "wrap",
+    "space": "block",
+    "align": "centre"
+   },
+   "in": 0,
+   "slot": 0,
+   "show": {
+    "e": "panel.timer",
+    "map": {
+     "idle": "1"
+    },
+    "else": ""
+   }
+  },
+  {
+   "c": "button",
+   "p": {
+    "kind": "secondary",
+    "label": "3 min"
+   },
+   "on": {
+    "tap": {
+     "do": "timer.start",
+     "seconds": 180
+    }
+   },
+   "in": 4,
+   "slot": 0
+  },
+  {
+   "c": "button",
+   "p": {
+    "kind": "primary",
+    "label": "5 min"
+   },
+   "on": {
+    "tap": {
+     "do": "timer.start",
+     "seconds": 300
+    }
+   },
+   "in": 4,
+   "slot": 0
+  },
+  {
+   "c": "button",
+   "p": {
+    "kind": "secondary",
+    "label": "10 min"
+   },
+   "on": {
+    "tap": {
+     "do": "timer.start",
+     "seconds": 600
+    }
+   },
+   "in": 4,
+   "slot": 0
+  },
+  {
+   "c": "button",
+   "p": {
+    "kind": "secondary",
+    "label": "20 min"
+   },
+   "on": {
+    "tap": {
+     "do": "timer.start",
+     "seconds": 1200
+    }
+   },
+   "in": 4,
+   "slot": 0
+  },
+  {
+   "c": "group",
+   "p": {
+    "flow": "wrap",
+    "space": "block",
+    "align": "centre"
+   },
+   "in": 0,
+   "slot": 0,
+   "show": {
+    "e": "panel.timer",
+    "map": {
+     "running": "1"
+    },
+    "else": ""
+   }
+  },
+  {
+   "c": "button",
+   "p": {
+    "kind": "secondary",
+    "label": "+1 min"
+   },
+   "on": {
+    "tap": {
+     "do": "timer.extend",
+     "s": 60
+    }
+   },
+   "in": 9,
+   "slot": 0
+  },
+  {
+   "c": "button",
+   "p": {
+    "kind": "outline",
+    "label": "Cancel"
+   },
+   "on": {
+    "tap": {
+     "do": "timer.cancel"
+    }
+   },
+   "in": 9,
+   "slot": 0
+  },
+  {
+   "c": "button",
+   "p": {
+    "kind": "ghost",
+    "label": "+ New"
+   },
+   "on": {
+    "tap": {
+     "do": "timer.start",
+     "seconds": 300
+    }
+   },
+   "in": 9,
+   "slot": 0
+  },
+  {
+   "c": "group",
+   "p": {
+    "flow": "wrap",
+    "space": "block",
+    "align": "centre"
+   },
+   "in": 0,
+   "slot": 0,
+   "show": {
+    "e": "panel.timer",
+    "map": {
+     "done": "1"
+    },
+    "else": ""
+   }
+  },
+  {
+   "c": "button",
+   "p": {
+    "kind": "primary",
+    "label": "Stop"
+   },
+   "on": {
+    "tap": {
+     "do": "timer.stop"
+    }
+   },
+   "in": 13,
+   "slot": 0
   }
  ]
 }
