@@ -1614,6 +1614,25 @@ void Pen::text(int x, int y, const char *s, const char *type, const char *k) con
   lv_draw_label(layer, &d, &a);
   if ((pp.b.has & S::K_WEIGHT) && pp.b.bold) { lv_area_move(&a, bold_cell(*pp.k), 0); lv_draw_label(layer, &d, &a); }  // synthetic bold
 }
+int Pen::text_w(const char *s, const char *type) const {
+  const fw::ty::Id id = type_id(type);
+  lv_point_t sz;
+  lv_text_get_size(&sz, s, skin_font(look_of(obj)->skin.get(), id), fw::ty::STYLES[id].letter_space, 0, LV_COORD_MAX, LV_TEXT_FLAG_NONE);
+  return sz.x;
+}
+void Pen::rect(int x, int y, int w, int h, const char *k, int radius, int border, int foot) const {
+  if (w <= 0 || h <= 0 || !sees(x, y, x + w - 1, y + h - 1)) return;
+  lv_draw_rect_dsc_t d;
+  lv_draw_rect_dsc_init(&d);
+  d.radius = radius;
+  if (border > 0) { d.bg_opa = LV_OPA_TRANSP; d.border_color = ink(obj, k); d.border_width = border; d.border_opa = LV_OPA_COVER; }
+  else { d.bg_color = ink(obj, k); d.bg_opa = LV_OPA_COVER; }
+  lv_area_t a = {cx + x, cy + y, cx + x + w - 1, cy + y + h - 1 + (foot ? radius : 0)};
+  const lv_area_t clip = layer->_clip_area;
+  if (foot) layer->_clip_area.y2 = std::min(layer->_clip_area.y2, cy + y + h - 1);
+  if (layer->_clip_area.y2 >= layer->_clip_area.y1) lv_draw_rect(layer, &d, &a);
+  layer->_clip_area = clip;
+}
 lv_obj_t *drawn(lv_obj_t *parent, void (*draw)(const Pen &), const char *layout) {
   lv_obj_t *o = box(parent, layout);
   use(o, "fit");  // as tall as wide, but never taller than its parent: the Pen takes the largest square that fits

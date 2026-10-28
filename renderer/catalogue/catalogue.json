@@ -215,8 +215,8 @@
     ]
    },
    "cost": {
-    "objects": 40,
-    "bytes_est": 6400
+    "objects": 2,
+    "bytes_est": 320
    }
   },
   "big_number": {
@@ -1508,8 +1508,8 @@
     ]
    },
    "cost": {
-    "objects": 95,
-    "bytes_est": 15200
+    "objects": 23,
+    "bytes_est": 3680
    }
   },
   "energy_week": {

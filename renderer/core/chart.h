@@ -84,6 +84,20 @@ Bars *bars(lv_obj_t *parent, const Theme &t, const BarOpts &o);
 void bars_play(Bars *B, const std::vector<float> *nv = nullptr);  // grow from the baseline, or move to new heights
 int bar_x(const Bars *B, int i);  // a bar's left edge in the chart
 
+// ---- token bars (the Bar chart on the contract): the bars above drawn through the Pen in one strip, inks = colour token
+// names ("fg:blue"), so a theme switch repaints them; the readout and the hour axis are Pen text. w_dp 0 = the parent's
+// content width (the gaps share what the grid-snapped bars leave). Returns the strip (made on parent).
+struct TokenBars {
+  std::vector<float> v;             // NAN = no data
+  std::vector<std::string> ink;     // per bar (empty = by kind)
+  std::vector<uint8_t> kind;        // 0 series, 1 highlight, 2 compare (outline only)
+  int w_dp = 0, h_dp = 80, now = -1, ticks = 0, dec = 2, first_hour = 0;
+  bool scrub = true;
+  std::string unit = "kWh";
+};
+lv_obj_t *token_bars(lv_obj_t *parent, const TokenBars &o, bool opening);
+bool token_bars_move(lv_obj_t *strip, const std::vector<float> &nv);  // same count: the heights move (false = rebuild)
+
 // ---- gauge
 struct Gauge { lv_obj_t *root = nullptr, *arc = nullptr, *num = nullptr; float lo = 0, hi = 100, v = 0, shown = 0, start = 0; };
 Gauge *gauge(lv_obj_t *parent, const Theme &t, float v, const char *unit);

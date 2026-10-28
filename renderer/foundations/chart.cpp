@@ -13,6 +13,7 @@
 #include <cmath>
 #include <cstdio>
 #include "fw.h"
+#include "fx.h"
 #include "chart_gen.h"
 #include "chart.h"  // the library this page shows (core/chart.h): Line, Bars, Gauge, legend, axis, big number
 extern "C" void lv_image_cache_drop(const void *src);  // LVGL 9 (misc/cache/instance/lv_image_cache.h, not in lvgl.h)
@@ -785,6 +786,204 @@ lv_obj_t *big_number(lv_obj_t *parent, const Theme &t, const char *label, const 
   lv_obj_t *v = text(r, ty::c_number, value, t.text);
   text(r, ty::c_subtitle, unit, t.text_dim);
   return v;
+}
+
+
+// ---------------------------------------------------------------- token bars (the Bar chart on the contract)
+// The same bars as bars() above (geometry, colours, motion, scrub), drawn through the Pen in one strip with colour
+// token NAMES, so a theme / accent switch repaints them with no rebuild (C24, C44). The strip holds the plot (the
+// readout row over the bars, the bars, the baseline, the dotted now marker) and, with ticks, the hour axis under it.
+namespace {
+struct TB {
+  lv_obj_t *s = nullptr;
+  std::vector<float> v, from;
+  std::vector<std::string> ink;  // per bar ("fg:blue"); empty = by kind
+  std::vector<uint8_t> kind;
+  std::vector<int> shown;        // each bar's drawn height now (px)
+  float max = 1;
+  int n = 0, bw = 0, gap = 0, spread = 0, w = 0, h = 0, top = 0, bot = 0, now = -1, sel = -1, ticks = 0, dec = 2, first_hour = 0;
+  bool scrub = true, fill = false, faded = false;
+  int w_dp = 0, h_dp = 80;
+  std::string unit;
+};
+void tb_free(lv_event_t *e) { delete (TB *) lv_event_get_user_data(e); }
+TB *tb_of(lv_obj_t *s) {
+  if (!s) return nullptr;
+  for (uint32_t i = 0, n = lv_obj_get_event_count(s); i < n; i++) {
+    lv_event_dsc_t *d = lv_obj_get_event_dsc(s, i);
+    if (lv_event_dsc_get_cb(d) == tb_free) return (TB *) lv_event_dsc_get_user_data(d);
+  }
+  return nullptr;
+}
+int tb_h(const TB *B, float v) {
+  if (!std::isfinite(v) || v <= 0) return 0;
+  return std::max(ch::bar_min, (int) std::lround(v / B->max * (B->bot - B->top)));
+}
+int tb_x(const TB *B, int i) {
+  const int sp = B->spread && B->n > 1 ? (int) ((int64_t) i * B->spread / (B->n - 1)) : 0;
+  return i * (B->bw + B->gap) + sp;
+}
+const char *tb_ink(const TB *B, int i) {
+  if (i == B->sel) return "fg:text";  // ch::ink::select
+  if ((size_t) i < B->ink.size() && !B->ink[i].empty()) return B->ink[i].c_str();
+  return B->kind[i] == 1 ? "fg:accent" : B->kind[i] == 2 ? "fg:line-hi" : "fg:text-dim";  // highlight, series 3, series 2
+}
+void tb_draw(const fx::Pen &p) {
+  const TB *B = tb_of(p.obj);
+  if (!B) return;
+  const int L = -(p.w / 2), T = -(p.h / 2);
+  for (int i = 0; i < B->n; i++) {
+    const int hp = B->shown[i];
+    if (hp <= 0) continue;
+    const bool outline = B->kind[i] == 2 && i != B->sel;
+    p.rect(L + tb_x(B, i), T + B->bot - hp, B->bw, hp, tb_ink(B, i), ch::bar_radius, outline ? fx::size("stroke:hair") : 0, 1);
+  }
+  const int cw = B->n ? tb_x(B, B->n - 1) + B->bw : B->w;
+  p.rect(L, T + B->bot, cw, ch::grid, "fg:line-hi");  // the baseline
+  if (B->now >= 0 && B->now < B->n)  // the dotted now marker (ch::ink::cursor)
+    for (int y = B->top; y < B->bot; y += ch::dash + ch::dash_gap)
+      p.rect(L + tb_x(B, B->now) + B->bw / 2, T + y, ch::grid, std::min(ch::dash, B->bot - y), "fg:text-dim");
+  char b[64];
+  if (B->sel >= 0) {  // the readout over the bars: "<value> <unit>  <hh>:00", inside the chart
+    snprintf(b, sizeof b, "%.*f %s  %02d:00", B->dec, B->v[B->sel], B->unit.c_str(), (B->first_hour + B->sel) % 24);
+    const int rw = p.text_w(b, "type:c-meta"), x = std::clamp(tb_x(B, B->sel) + B->bw / 2 - rw / 2, 0, std::max(0, cw - rw));
+    p.text(L + x + rw / 2, T + fx::type_box("type:c-meta") / 2, b, "type:c-meta", "fg:text");
+  }
+}
+void tb_redraw(TB *B) { fx::redraw(B->s, -(lv_obj_get_content_width(B->s) / 2), -(lv_obj_get_content_height(B->s) / 2), lv_obj_get_content_width(B->s), B->bot + ch::grid + 1); }
+void tb_exec(void *o, int32_t ms) {  // one animation for every bar: each starts a stagger later
+  TB *B = tb_of((lv_obj_t *) o);
+  if (!B) return;
+  const ch::Motion &k = ch::MOTION[ch::M_bars];
+  const bool together = B->from.size() == B->v.size() && !B->from.empty() && B->from[0] >= 0;
+  for (int i = 0; i < B->n; i++) {
+    const int32_t local = together ? ms : std::clamp<int32_t>(ms - (int32_t) (i * k.stagger), 0, k.ms);
+    const int32_t e = ease(ch::M_bars, local * 1024 / k.ms);
+    const int h0 = together ? tb_h(B, B->from[i]) : 0, h1 = tb_h(B, B->v[i]);
+    B->shown[i] = h0 + (h1 - h0) * e / 1024;
+  }
+  tb_redraw(B);  // the plot only (one area: many bars never pass LVGL's 32 dirty areas)
+}
+void tb_play(TB *B, const std::vector<float> *nv) {
+  const ch::Motion &k = ch::MOTION[ch::M_bars];
+  if (nv) B->from = B->v, B->v = *nv;
+  else B->from.assign(1, -1);  // grow from the baseline
+  const uint32_t total = nv ? k.ms : k.ms + k.stagger * (B->n - 1);
+  lv_anim_delete(B->s, tb_exec);
+  if (mo::reduced(B->s) && !nv) {  // reduced: the bars fade in at their heights
+    tb_exec(B->s, total);
+    lv_obj_set_style_opa(B->s, 0, 0);
+    fw::Anim a{set_opa, 0, 255, mo::OPA};
+    fw::animate(B->s, mo::fade, a);
+    return;
+  }
+  if ((mo::reduced(B->s) && k.reduced != mo::R_keep) || (lite() && k.lite == ch::L_instant)) { tb_exec(B->s, total); return; }
+  if (!nv) tb_exec(B->s, 0);
+  lv_anim_t a;  // the anim's values are ms on a linear clock; each bar eases on its own (tb_exec)
+  lv_anim_init(&a);
+  lv_anim_set_var(&a, B->s);
+  lv_anim_set_exec_cb(&a, tb_exec);
+  lv_anim_set_values(&a, 0, nv ? k.ms : total);
+  lv_anim_set_duration(&a, total);
+  lv_anim_set_path_cb(&a, lv_anim_path_linear);
+  lv_anim_start(&a);
+}
+void tb_cb(lv_event_t *e) {
+  TB *B = (TB *) lv_event_get_user_data(e);
+  const lv_event_code_t c = lv_event_get_code(e);
+  if (c == LV_EVENT_RELEASED || c == LV_EVENT_PRESS_LOST) {
+    const int s = B->sel;
+    if (s >= 0) { char d[24]; snprintf(d, sizeof d, "%d %.*f", s, B->dec, B->v[s]); emit(B->s, "scrub", d); }
+    B->sel = -1;
+    if (s >= 0) tb_redraw(B);
+    return;
+  }
+  lv_point_t p;
+  lv_indev_get_point(lv_indev_active(), &p);
+  lv_area_t r;
+  lv_obj_get_content_coords(B->s, &r);
+  int i = 0;  // the bar whose slot holds the finger
+  for (int k = 1; k < B->n; k++) if (p.x - r.x1 >= tb_x(B, k) - (B->gap + 1) / 2) i = k;
+  if (i == B->sel || !std::isfinite(B->v[i])) return;
+  const int old = B->sel;
+  B->sel = i;
+  if (old >= 0) step_ticks(B->s, old, i, B->n - 1);
+  tb_redraw(B);
+}
+// geometry from the opts and the room: the bar width snapped to the grid, the chart hugs them (fill: spans the parent)
+void tb_size(TB *B, lv_obj_t *parent) {
+  if (B->w_dp > 0) B->w = px((float) B->w_dp);
+  else { lv_obj_update_layout(parent); B->w = lv_obj_get_content_width(parent); }
+  B->fill = B->w_dp <= 0;
+  B->h = px((float) B->h_dp);
+  B->gap = ch::bar_gap;
+  const int avail = B->w - (B->n - 1) * B->gap;
+  B->bw = std::max(4, (avail / std::max(1, B->n)) / 4 * 4);
+  B->spread = B->fill && B->n > 1 ? std::max(0, B->w - (B->n * B->bw + (B->n - 1) * B->gap)) : 0;
+  B->top = ch::plot_top + fx::type_box("type:c-meta");  // room for the readout over the bars
+  B->bot = B->h - ch::plot_bottom;
+  const int cw = B->n ? tb_x(B, B->n - 1) + B->bw : B->w;
+  lv_obj_set_size(B->s, cw, B->h);
+  B->shown.assign(B->n, 0);
+}
+// the hour axis: "00" "06" ... under their bar's centre, space 1 below the chart, kept inside its width (Charts axis
+// ink + type; real labels, so a spec's texts and the tests read them)
+void tb_axis(TB *B, lv_obj_t *parent) {
+  const int cw = B->n ? tb_x(B, B->n - 1) + B->bw : B->w;
+  lv_obj_t *a = lv_obj_create(parent);
+  lv_obj_remove_style_all(a);
+  lv_obj_remove_flag(a, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
+  lv_obj_set_size(a, cw, fx::type_box("type:c-meta-sm"));
+  lv_obj_set_style_margin_top(a, sp::s1, 0);
+  for (int i = 0; i < B->n; i++) {
+    if ((B->first_hour + i) % B->ticks) continue;
+    char hh[4];
+    snprintf(hh, sizeof hh, "%02d", (B->first_hour + i) % 24);
+    lv_obj_t *l = fx::text(a, hh, "type:c-meta-sm", "fg:text-dim");
+    lv_obj_update_layout(l);
+    const int lw = lv_obj_get_width(l);
+    lv_obj_set_x(l, std::clamp(tb_x(B, i) + B->bw / 2 - lw / 2, 0, std::max(0, cw - lw)));
+  }
+}
+}  // namespace
+
+lv_obj_t *token_bars(lv_obj_t *parent, const TokenBars &o, bool opening) {
+  auto *B = new TB();
+  B->v = o.v, B->n = (int) o.v.size(), B->ink = o.ink, B->kind = o.kind, B->now = o.now, B->ticks = o.ticks;
+  B->kind.resize(B->n, 0);
+  B->scrub = o.scrub, B->dec = o.dec, B->first_hour = o.first_hour, B->unit = o.unit, B->w_dp = o.w_dp, B->h_dp = o.h_dp;
+  float mx = 0;
+  for (float x : o.v) if (std::isfinite(x)) mx = std::max(mx, x);
+  B->max = mx > 0 ? mx : 1;
+  B->s = fx::strip(parent, tb_draw, "free");
+  lv_obj_add_event_cb(B->s, tb_free, LV_EVENT_DELETE, B);
+  qa::free(B->s, "bars: sized by their values (the chart hugs its bars)");
+  tb_size(B, parent);
+  if (B->scrub) {
+    lv_obj_add_flag(B->s, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_PRESS_LOCK));
+    lv_obj_remove_flag(B->s, (lv_obj_flag_t) (LV_OBJ_FLAG_SCROLL_CHAIN_HOR | LV_OBJ_FLAG_SCROLL_CHAIN_VER));
+    for (lv_event_code_t c : {LV_EVENT_PRESSED, LV_EVENT_PRESSING, LV_EVENT_RELEASED, LV_EVENT_PRESS_LOST})
+      lv_obj_add_event_cb(B->s, tb_cb, c, B);
+  }
+  if (B->ticks > 0) tb_axis(B, parent);
+  if (opening) tb_play(B, nullptr);
+  else tb_exec(B->s, ch::MOTION[ch::M_bars].ms + ch::MOTION[ch::M_bars].stagger * B->n);
+  return B->s;
+}
+bool token_bars_move(lv_obj_t *s, const std::vector<float> &nv) {
+  TB *B = tb_of(s);
+  if (!B || (int) nv.size() != B->n) return false;
+  bool same = true;
+  for (size_t i = 0; i < nv.size(); i++) same = same && ((std::isnan(nv[i]) && std::isnan(B->v[i])) || nv[i] == B->v[i]);
+  if (same) return true;
+  // a new largest value rescales the chart: keep the old bars' heights where they are (their values scaled into the
+  // new max), then every height moves together (chart motion bars)
+  float mx = 0;
+  for (float x : nv) if (std::isfinite(x)) mx = std::max(mx, x);
+  mx = mx > 0 ? mx : 1;
+  if (mx != B->max) { for (float &x : B->v) x *= mx / B->max; B->max = mx; }
+  tb_play(B, &nv);
+  return true;
 }
 
 }  // namespace fw::chart

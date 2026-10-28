@@ -93,6 +93,10 @@ struct Pen {
   void knob(int x, int y, const char *size, const char *ink, const char *halo, const char *ring) const;
   // a short text centred on x, y (its digits' visual middle on y: the text-box rule), in a type style and ink
   void text(int x, int y, const char *s, const char *type, const char *ink) const;
+  int text_w(const char *s, const char *type) const;  // how wide text() draws s (to keep it inside a box)
+  // a filled box x, y (its top-left) w x h with `radius` px corners; border > 0 = only a border that wide (an outline);
+  // foot = clip it at y + h: the corners below are cut off (a bar's square foot under a rounded data end). Core only.
+  void rect(int x, int y, int w, int h, const char *ink, int radius = 0, int border = 0, int foot = 0) const;
   // false when the box x1..x2, y1..y2 (centre-relative) is outside what this redraw repaints: every primitive above
   // skips itself then, so a partial redraw (redraw / redraw_arc) costs only what crosses it (the static scale is not
   // drawn again while a knob moves)

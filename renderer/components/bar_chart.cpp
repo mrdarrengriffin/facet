@@ -1,7 +1,8 @@
-// Bar chart: the Facet bar chart (docs: Components > Charts > Bar chart, @facet/ui charts.ts barChart(), CSS .fch-bars):
-// bars on a baseline, coloured by token, with a dotted now marker; press and drag to read a bar; bars grow from the
-// baseline when shown. Built with the Charts foundation's bars (core/chart.h fw::chart::bars, the same bars the
-// Charts page shows): rounded data end (ch::bar_radius) with a square foot, ch::bar_gap between bars, the bar width
+// Bar chart: the Facet bar chart (docs: Components > Charts > Bar chart, @facet/ui charts.ts barChart(), CSS .fch-bars),
+// on the contract (renderer/CONTRACT.md, "contract": 2): bars on a baseline, coloured by token, with a dotted now
+// marker; press and drag to read a bar; bars grow from the baseline when shown. Built with the Charts foundation's
+// token bars (core/chart.h fw::chart::token_bars: the Charts page's bars drawn through the Pen with colour token
+// names, so a theme switch repaints them): rounded data end (ch::bar_radius) with a square foot, ch::bar_gap between bars, the bar width
 // snapped to the grid and the chart hugging its bars, ch::bar_min for the smallest non-zero bar, baseline line-hi,
 // now marker = the dotted cursor (text-dim).
 //   colour   bands (default, the docs explorer: each bar in its price band's colour, BAND_COLOUR cheap blue / normal
@@ -15,16 +16,15 @@
 //   motion   chart motion "bars": they grow up one after another (stagger), new values move every height together
 //            (the update path), reduced = a fade at their heights; workbench "opening": false = a rebuild, no growth
 // No data = NAN / "-" in values (an empty slot). Update path: same number of bars + same shape = the heights move
-// (chart motion bars, silent); anything else (count, colour mode, bands, now, size) refills (snap).
-// Contrast pairs: colour.json section "chart" (series, highlight, select, baseline, cursor) + "rate_strip" (bands).
-#include "fw.h"
+// (chart motion bars, silent); anything else (count, colour mode, bands, now, siz#include "fw.h"
+#include "fx.h"
 #include "chart.h"
 
 namespace {
 const char *DEF_VALUES = "0.3,0.2,0.2,0.2,0.3,0.4,0.9,1.2,0.8,0.5,0.4,0.6,0.7,0.5,0.6,1.1,1.6,1.9,1.4,1.0,0.8,0.6,0.4,0.3";
 const char *DEF_BANDS = "cheap,cheap,cheap,cheap,cheap,cheap,normal,normal,normal,normal,normal,normal,normal,normal,normal,normal,peak,peak,peak,normal,normal,normal,cheap,cheap";
-lv_color_t band_colour(const fw::Theme &t, const std::string &b) {  // docs BAND_COLOUR
-  return b == "peak" ? fw::ch::ink::highlight(t) : b == "cheap" ? t.blue : t.band_normal;
+const char *band_ink(const std::string &b) {  // docs BAND_COLOUR: peak = the chart highlight (accent)
+  return b == "peak" ? "fg:accent" : b == "cheap" ? "fg:blue" : "fg:band-normal";
 }
 int now_of(fw::Props p) {  // a number, or a bound Home Assistant state (text: "10")
   return p["now"].is<const char *>() ? atoi(p["now"].as<const char *>()) : (int) lround(p["now"] | 14.0);  // binds give doubles
@@ -35,63 +35,33 @@ std::string sig_of(fw::Props p, size_t n) {
            (int) (p["height"] | 80), (int) (p["scrub"] | true) + 2 * (int) (p["ticks"] | 0));
   return std::string(b) + (p["bands"] | DEF_BANDS);
 }
-fw::chart::Bars *of(lv_obj_t *root) {
-  lv_obj_t *b = lv_obj_get_child(root, 0);
-  return b ? (fw::chart::Bars *) lv_obj_get_user_data(b) : nullptr;
-}
 void fill(lv_obj_t *root, fw::Props p, bool opening) {
-  const fw::Theme &t = *fw::T;
-  lv_obj_remove_style_all(root);
-  lv_obj_remove_flag(root, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
-  lv_obj_set_size(root, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
-  fw::chart::BarOpts o;
-  const int wdp = p["width"] | 320;  // 0 = its parent's content width (the bars still snap to the grid and hug)
-  if (wdp > 0) o.w = fw::px((float) wdp);
-  else { lv_obj_update_layout(lv_obj_get_parent(root)); o.w = lv_obj_get_content_width(lv_obj_get_parent(root)); o.fill = true; }
-  o.h = fw::px((float) (p["height"] | 80));
+  fw::chart::TokenBars o;
+  o.w_dp = p["width"] | 320;  // 0 = its parent's content width (the bars still snap to the grid)
+  for (const char *t : {"box", "col"}) fx::use(root, t);
+  if (o.w_dp > 0) fx::use(root, "hug");  // else the full width it is given (the bars span it)
+  o.h_dp = p["height"] | 80;
   o.v = fw::chart::values(p, "values", DEF_VALUES);
   const int n = (int) o.v.size(), now = now_of(p);
   o.now = now < n ? now : -1;
   o.scrub = p["scrub"] | true;
-  o.unit = "kWh", o.dec = 2, o.first_hour = 0;
+  o.ticks = p["ticks"] | 0;
   if (!strcmp(p["colour"] | "bands", "series")) {
     o.kind.assign(n, 0);
     for (int i = 0; i < n; i++) o.kind[i] = now < 0 ? 0 : i == now ? 1 : i > now ? 2 : 0;
   } else {
     const std::vector<std::string> bands = fw::chart::words(p, "bands", DEF_BANDS);
-    for (int i = 0; i < n; i++) o.col.push_back(band_colour(t, i < (int) bands.size() ? bands[i] : "normal"));
+    for (int i = 0; i < n; i++) o.ink.push_back(band_ink(i < (int) bands.size() ? bands[i] : "normal"));
   }
-  const int ticks = p["ticks"] | 0;  // hours between axis labels (0 = no axis)
-  if (ticks > 0) {
-    lv_obj_set_flex_flow(root, LV_FLEX_FLOW_COLUMN);
-    lv_obj_set_style_pad_row(root, fw::sp::s1, 0);
-  }
-  fw::chart::Bars *B = fw::chart::bars(root, t, o);
-  if (opening) fw::chart::bars_play(B);
-  if (ticks > 0) {  // the hour under its bar's centre ("06"), kept inside the chart's width (Charts axis ink + type)
-    lv_obj_update_layout(B->root);
-    const int cw = lv_obj_get_width(B->root);
-    lv_obj_t *a = lv_obj_create(root);
-    lv_obj_remove_style_all(a);
-    lv_obj_remove_flag(a, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
-    lv_obj_set_size(a, cw, fw::style(fw::ty::c_meta_sm).box);
-    for (int i = 0; i < n; i++) {
-      if ((o.first_hour + i) % ticks) continue;
-      char hh[4];
-      snprintf(hh, sizeof hh, "%02d", (o.first_hour + i) % 24);
-      lv_obj_t *l = fw::text(a, fw::ty::c_meta_sm, hh, fw::ch::ink::axis(t));
-      lv_obj_remove_flag(l, LV_OBJ_FLAG_CLICKABLE);
-      lv_obj_update_layout(l);
-      const int lw = lv_obj_get_width(l);
-      lv_obj_set_x(l, LV_CLAMP(0, fw::chart::bar_x(B, i) + B->bw / 2 - lw / 2, cw - lw));
-    }
-  }
+  fw::chart::token_bars(root, o, opening);
   fw::shape(root, sig_of(p, o.v.size()));
 }
 }  // namespace
 
 FW_COMPONENT(bar_chart, "Bar chart", "components", R"({
   "about": "Bars on a baseline, coloured by token, with a dotted now marker. Press and drag to read a bar; they grow from the baseline when shown.",
+  "contract": 2,
+  "parts": [],
   "frame": [448, 160],
   "props": [
     {"name": "values", "about": "The height of each bar, as numbers separated by commas, one bar per number from left to right.", "type": "text", "default": "0.3,0.2,0.2,0.2,0.3,0.4,0.9,1.2,0.8,0.5,0.4,0.6,0.7,0.5,0.6,1.1,1.6,1.9,1.4,1.0,0.8,0.6,0.4,0.3"},
@@ -111,27 +81,19 @@ FW_COMPONENT(bar_chart, "Bar chart", "components", R"({
   ]
 })") {
   lv_obj_t *root = lv_obj_create(parent);
+  lv_obj_remove_style_all(root);
+  lv_obj_remove_flag(root, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
+  fx::name(root, "bar_chart");
   fill(root, p, p["opening"] | true);
 }
 
+// Update path: same number of bars + same shape = the heights move (chart motion bars, silent); anything else refills (snap).
 FW_UPDATE(bar_chart) {
-  fw::chart::Bars *B = of(root);
-  const std::vector<float> nv = fw::chart::values(p, "values", DEF_VALUES);
-  if (!B || !fw::shape(root, sig_of(p, nv.size()))) {
+  lv_obj_t *s = lv_obj_get_child(root, 0);
+  if (!s || !fw::shape(root, sig_of(p, fw::chart::values(p, "values", DEF_VALUES).size())) ||
+      !fw::chart::token_bars_move(s, fw::chart::values(p, "values", DEF_VALUES))) {
     fw::refill(root);
     fill(root, p, false);
-    return true;
-  }
-  bool same = true;
-  for (size_t i = 0; i < nv.size(); i++) same = same && ((std::isnan(nv[i]) && std::isnan(B->v[i])) || nv[i] == B->v[i]);
-  if (!same) {
-    // a new largest value rescales the chart: keep the old bars' heights where they are (their values scaled into the
-    // new max), then every height moves together (chart motion bars)
-    float mx = 0;
-    for (float x : nv) if (std::isfinite(x)) mx = std::max(mx, x);
-    mx = mx > 0 ? mx : 1;
-    if (mx != B->max) { for (float &x : B->v) x *= mx / B->max; B->max = mx; }
-    fw::chart::bars_play(B, &nv);
   }
   return true;
 }
