@@ -1828,7 +1828,7 @@ void pointer(lv_obj_t *o, float *deg, int *dist, int *half) {
   *deg = fmodf(atan2f(dy, dx) * 57.29578f + 360, 360);
   *dist = (int) lroundf(sqrtf(dx * dx + dy * dy));
 }
-// o lets its children draw past its box (C14-style overhang: a round Icon button taller than the Header): the flag
+// o lets its children draw (and take taps) past its box (C14-style overhang: a round Icon button taller than the Header): the flag
 // alone draws 0 px outside (LVGL clips to the box grown by its ext draw size), so the ext draw size follows the
 // children's overhang (their own reach included), measured again when they change
 void overflow(lv_obj_t *o) {
@@ -1845,7 +1845,9 @@ void overflow(lv_obj_t *o) {
       if (lv_obj_has_flag(c, LV_OBJ_FLAG_HIDDEN)) continue;
       lv_area_t b;
       lv_obj_get_coords(c, &b);
-      const int32_t x = lv_obj_get_ext_draw_size(c);
+      // its reach = what it draws past its box OR where it takes taps past it (LVGL searches an overflowing box for a
+      // tap target only inside the box grown by this: a Back button's wider hit area must fit in it)
+      const int32_t x = LV_MAX(lv_obj_get_ext_draw_size(c), c->spec_attr ? c->spec_attr->ext_click_pad : 0);
       m = LV_MAX(m, LV_MAX(LV_MAX(a.x1 - b.x1, b.x2 - a.x2), LV_MAX(a.y1 - b.y1, b.y2 - a.y2)) + x);
     }
     lv_event_set_ext_draw_size(e, m);

@@ -180,6 +180,16 @@ export default {
       await at(t, { label: 'Vacuum', sample: 'title-segmented' }); t.b.update('header', { time: '21:42', label: 'Other', sample: 'title-segmented' }); t.b.settle(800);
       t.eq([label(t, /^other$/i), comp(t, 'segmented').length], [undefined, 1], 'a replaced title keeps its node');
     } },
+    { name: 'Back takes a tap a little outside its square (hit area space 4 past it) and none far outside', async run(t) {
+      await at(t, { label: 'Weather' });
+      const b = comp(t, 'back_button')[0], cx = b.x + b.w / 2, cy = b.y + b.h / 2, off = b.w / 2 + Math.round(b.w * 0.2);
+      const names = (ev) => ev.filter((e) => e.kind !== 'sound').map((e) => e.name).join(',');
+      const centre = names(t.tap({ at: [cx, cy] }));
+      t.ok(centre.length > 0, 'a tap on the square acts');
+      for (const [dx, dy, w] of [[-off, 0, 'left'], [0, -off, 'above'], [off, 0, 'right'], [-off, -off, 'the corner']])
+        t.eq(names(t.tap({ at: [cx + dx, cy + dy] })), centre, `a tap just ${w} of it acts the same`);
+      t.eq(names(t.tap({ at: [cx + b.w * 1.5, cy] })), '', 'a tap far right of it does nothing');
+    } },
     { name: 'Home end items: settings = navigate(settings) + open; a shortcut = navigate(to); a long press on the time = settings', async run(t) {
       await at(t, { label: 'Home', back: false, settings: true, actions: { shortcut: 'timer', to: 'timer' } });
       const [sc, set] = comp(t, 'icon_button'), tm = comp(t, 'time')[0];
