@@ -18,7 +18,7 @@
 #include "chart.h"
 #include "energy.h"
 #include "spec.h"
-// audit deps: bar_chart, more_row, rate_strip, status_dot
+// audit deps: bar_chart, more_row, rate_strip, status_chip
 #include "fw.h"
 
 namespace {
@@ -95,7 +95,8 @@ void render(lv_obj_t *root) {
   fw::set_text(e->line, fw::ty::body, b);
   ArduinoJson::JsonDocument dp;
   dp["tone"] = d.band == en::PEAK ? "working" : d.band == en::CHEAP ? "info" : "idle";
-  fw::update_child(fw::find("status_dot"), e->dot, dp.as<fw::Props>());
+  dp["size"] = "dot";
+  fw::update_child(fw::find("status_chip"), e->dot, dp.as<fw::Props>());
   std::string name = en::BAND_ID[d.band];
   name[0] = (char) toupper((unsigned char) name[0]);
   snprintf(b, sizeof b, "%s %s until %s, then %s", name.c_str(), en::pence(en::RATE[d.band]).c_str(), hm(d.until).c_str(), en::pence(en::RATE[d.next_band]).c_str());
@@ -149,7 +150,8 @@ FW_COMPONENT(energy_view, "Energy view", "components", R"({
   lv_obj_set_style_pad_column(rr, fw::sp::s3, 0);
   ArduinoJson::JsonDocument dp;
   dp["tone"] = "idle";
-  e->dot = build("status_dot", rr, dp);
+  dp["size"] = "dot";
+  e->dot = build("status_chip", rr, dp);
   e->rate = fw::text(rr, fw::ty::body, "", t.text);
   lv_obj_t *chart = box(root);  // the chart, its strip and the hour axis
   lv_obj_set_size(chart, fw::lay::content_w, LV_SIZE_CONTENT);

@@ -11,6 +11,9 @@
 //            light); prop pulse = the Motion pulse (fx::pulse)
 //   text     type:c-caps-sm, fg:text (the docs colour it in the tone; on its own tint the status colours drop under
 //            4.5:1 in light, so the tone is carried by the dot + fill and the words stay readable). One line, its box fitted up to the 4 px grid.
+//   size     chip (default) or dot (Darren 2026-10-27: the Status dot folded in): the dot alone, no fill or words, the
+//            smallest way to show state (next to a label, in a row's end, on a card): w:dot round, on the canvas so
+//            working is the accent itself (lay::dot: 8 at 720, 4 at 480)
 // Tones: ok / warn / error / working (accent) / info (blue) / idle (text-dim). Changes against a reference ("▲ 12% vs
 // yday") are plain Status chips: fw::chart::delta() (core/chart.h) gives the tone + words.
 // Steps: none (it hugs; a parent narrower than its words is the bounds proof's to report). Bleed: none. States: n/a
@@ -28,25 +31,32 @@ const char *fill_of(const char *t) {
   if (!strcmp(t, "info")) return "tint:blue";
   return "tint:text-dim";  // idle (text-mute is for disabled only, Darren 2026-10-21)
 }
-const char *dot_of(const char *t) {
+const char *dot_of(const char *t, bool alone) {
   if (!strcmp(t, "ok")) return "bg:ok";
   if (!strcmp(t, "warn")) return "bg:warn";
   if (!strcmp(t, "error")) return "bg:error";
-  if (!strcmp(t, "working")) return "bg:accent-text";
+  if (!strcmp(t, "working")) return alone ? "bg:accent" : "bg:accent-text";  // on its own tint the accent drops under 3:1
   if (!strcmp(t, "info")) return "bg:blue";
   return "bg:text-dim";
 }
-std::string sig(fw::Props p) { return std::string(p["tone"] | "working") + ((p["pulse"] | false) ? "|p" : ""); }
+bool alone(fw::Props p) { return !strcmp(p["size"] | "chip", "dot"); }
+std::string sig(fw::Props p) { return std::string(p["tone"] | "working") + ((p["pulse"] | false) ? "|p" : "") + (alone(p) ? "|dot" : ""); }
 void fill(lv_obj_t *c, fw::Props p) {
   const char *tone = p["tone"] | "working";
   lv_obj_remove_style_all(c);
   lv_obj_remove_flag(c, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
   fw::shape(c, sig(p), "chip");
+  if (alone(p)) {  // the dot alone: the root is the dot
+    for (const char *t : {"hug", "w:dot", "h:dot", "radius:round"}) fx::use(c, t);
+    fx::use(c, dot_of(tone, true));
+    if (p["pulse"] | false) fx::pulse(c);
+    return;
+  }
   for (const char *t : {"box", "row", "hug", "tall:chip-h", "pad-x:2", "gap:2", "radius:chip"}) fx::use(c, t);
   fx::use(c, fill_of(tone));
   lv_obj_t *d = fx::box(c, "free");
   for (const char *t : {"w:dot", "h:dot", "radius:round"}) fx::use(d, t);
-  fx::use(d, dot_of(tone));
+  fx::use(d, dot_of(tone, false));
   if (p["pulse"] | false) fx::pulse(d);
   lv_obj_t *l = fx::text(c, p["text"] | "", "type:c-caps-sm", "fg:text");
   fx::fit_grid(l);  // the chip's width on the 4 px grid (the Label rule, docs fit8)
@@ -54,7 +64,7 @@ void fill(lv_obj_t *c, fw::Props p) {
 }  // namespace
 
 FW_COMPONENT(status_chip, "Status chip", "components", R"({
-  "about": "A small tinted pill with a status dot and a short caps label.",
+  "about": "A small tinted pill with a status dot and a short caps label, or the dot alone.",
   "contract": 2,
   "parts": [],
   "min": ["layout:chip-h", "layout:chip-h"],
@@ -62,6 +72,7 @@ FW_COMPONENT(status_chip, "Status chip", "components", R"({
   "props": [
     {"name": "tone", "about": "The chip's colour, by what it reports: ok, warn, error, working, info or idle.", "type": "select", "options": ["ok", "warn", "error", "working", "info", "idle"], "default": "working"},
     {"name": "text", "about": "The short words on the chip.", "type": "text", "default": "3 working"},
+    {"name": "size", "about": "chip is the pill with its words; dot is the coloured dot alone, the smallest way to show a state.", "type": "select", "options": ["chip", "dot"], "default": "chip"},
     {"name": "pulse", "about": "Makes the dot pulse gently, for something happening now.", "type": "bool", "default": false}
   ],
   "variants": [
@@ -75,7 +86,14 @@ FW_COMPONENT(status_chip, "Status chip", "components", R"({
     {"label": "delta · down, down is good", "props": {"tone": "ok", "text": "▼ 12% vs yday"}},
     {"label": "delta · up, up is bad", "props": {"tone": "warn", "text": "▲ 18% vs yday"}},
     {"label": "delta · up, up is good", "props": {"tone": "ok", "text": "▲ 18% vs yday"}},
-    {"label": "delta · flat", "props": {"tone": "idle", "text": "= 0% vs yday"}}
+    {"label": "delta · flat", "props": {"tone": "idle", "text": "= 0% vs yday"}},
+    {"label": "dot · ok", "props": {"size": "dot", "tone": "ok"}},
+    {"label": "dot · warn", "props": {"size": "dot", "tone": "warn"}},
+    {"label": "dot · error", "props": {"size": "dot", "tone": "error"}},
+    {"label": "dot · working", "props": {"size": "dot", "tone": "working"}},
+    {"label": "dot · info", "props": {"size": "dot", "tone": "info"}},
+    {"label": "dot · idle", "props": {"size": "dot", "tone": "idle"}},
+    {"label": "dot · working · pulse", "props": {"size": "dot", "tone": "working", "pulse": true}}
   ]
 })") {
   lv_obj_t *c = lv_obj_create(parent);

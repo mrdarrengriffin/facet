@@ -27,7 +27,7 @@
 #include <strings.h>
 #include "spec.h"
 #include <ctime>
-// audit deps: lightning_view, moon_view, more_row, segmented, stat, status_dot
+// audit deps: lightning_view, moon_view, more_row, segmented, stat, status_chip
 #include "fw.h"
 #include "sun.h"
 #include "weather.h"
@@ -122,12 +122,13 @@ void render_weather(lv_obj_t *root) {
   fw::set_text(w->rain, fw::ty::body, b);
   ArduinoJson::JsonDocument dp;
   dp["tone"] = std::isnan(d.rain_from) ? "idle" : "info";
-  if (w->dot_built) fw::update_child(fw::find("status_dot"), w->dot, dp.as<fw::Props>());
+  dp["size"] = "dot";
+  if (w->dot_built) fw::update_child(fw::find("status_chip"), w->dot, dp.as<fw::Props>());
   else {  // the first render builds the dot in its tone: a build appears at rest (no tone fade at the build)
     lv_obj_t *par = lv_obj_get_parent(w->dot);
     const int32_t at = lv_obj_get_index(w->dot);
     lv_obj_delete(w->dot);
-    w->dot = build("status_dot", par, dp);
+    w->dot = build("status_chip", par, dp);
     if (w->dot) lv_obj_move_to_index(w->dot, at);
     w->dot_built = true;
   }
@@ -158,7 +159,8 @@ void build_weather(lv_obj_t *root, lv_obj_t *v) {
   lv_obj_set_style_pad_column(rr, fw::sp::s3, 0);
   ArduinoJson::JsonDocument dp;
   dp["tone"] = "idle";
-  w->dot = build("status_dot", rr, dp);
+  dp["size"] = "dot";
+  w->dot = build("status_chip", rr, dp);
   w->rain = fw::text(rr, fw::ty::body, "", t.text);
   lv_obj_t *strip = box(col);
   lv_obj_set_size(strip, fw::lay::content_w, LV_SIZE_CONTENT);

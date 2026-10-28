@@ -255,7 +255,7 @@ FW_COMPONENT(list_row, "List row", "components", R"({
   "parts": ["list-row"],
   "min": ["layout:card-min-w", "layout:list-row-h"],
   "slots": [
-    {"name": "end", "count": 1, "about": "One component at the right end, after the value, chevron or toggle the props put there (in + slot 0).", "accepts": ["toggle", "status_chip", "count_badge", "status_dot", "icon_button", "button", "label"], "max": 1}
+    {"name": "end", "count": 1, "about": "One component at the right end, after the value, chevron or toggle the props put there (in + slot 0).", "accepts": ["toggle", "status_chip", "count_badge", "icon_button", "button", "label"], "max": 1}
   ],
   "audit": {"base": {"trailing": "toggle"}},
   "frame": [448, 0],

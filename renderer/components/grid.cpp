@@ -151,8 +151,8 @@ FW_COMPONENT(grid, "Grid", "components", R"({
   "frame": [480, 360],
   "min": ["layout:tile-w", "layout:tile-w"],
   "slots": [
-    {"name": "cell", "count": 64, "about": "One component per cell, in reading order (in + slot); a node may span several cells.", "accepts": ["icon", "image", "stat", "readout", "big_number", "tile", "entity_tile", "room_tile", "camera_tile", "checkbox", "toggle", "button", "icon_button", "status_chip", "status_dot", "count_badge", "arc", "donut", "level_bar", "sparkline", "weather_icon", "label"], "max": 1},
-    {"name": "item", "template": true, "about": "With items: the one component repeated per item (the node's cell), $item filled in.", "accepts": ["icon", "image", "checkbox", "status_dot", "weather_icon", "stat", "readout", "label", "tile", "entity_tile"]}
+    {"name": "cell", "count": 64, "about": "One component per cell, in reading order (in + slot); a node may span several cells.", "accepts": ["icon", "image", "stat", "readout", "big_number", "tile", "entity_tile", "room_tile", "camera_tile", "checkbox", "toggle", "button", "icon_button", "status_chip", "count_badge", "arc", "donut", "level_bar", "sparkline", "weather_icon", "label"], "max": 1},
+    {"name": "item", "template": true, "about": "With items: the one component repeated per item (the node's cell), $item filled in.", "accepts": ["icon", "image", "checkbox", "status_chip", "weather_icon", "stat", "readout", "label", "tile", "entity_tile"]}
   ],
   "props": [
     {"name": "cols", "about": "How many columns, 1 to 8. Leave it out when min is set.", "type": "range", "min": 1, "max": 8, "step": 1, "default": 3},

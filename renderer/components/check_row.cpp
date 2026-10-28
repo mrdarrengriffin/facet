@@ -1,5 +1,5 @@
 // Check row: the Facet check row (docs: Components > Lists > Check row, @facet/ui lists.ts checkRow()): one CI check in
-// lay::check_row_h (32 / 20): a Status dot (fw::find("status_dot")) in the tone, the name (c-meta, text, grows,
+// lay::check_row_h (32 / 20): a Status chip dot (fw::find("status_chip")) in the tone, the name (c-meta, text, grows,
 // ellipsis) and the state word (c-caps-sm, the tone's text colour, right-aligned in lay::check_state_w), sp::s2 apart.
 // pass ok, fail error, pending working (accent-text), skipped idle (text-dim). Width: the prop (dp), default a card.
 // Static. Update path: refills (snap). Contrast pairs: colour.json section "check_row".
@@ -19,9 +19,10 @@ void fill(lv_obj_t *r, fw::Props p) {
   lv_obj_set_flex_flow(r, LV_FLEX_FLOW_ROW);
   lv_obj_set_flex_align(r, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
   lv_obj_set_style_pad_column(r, fw::sp::s2, 0);
-  if (const fw::Component *c = fw::find("status_dot")) {
+  if (const fw::Component *c = fw::find("status_chip")) {
     ArduinoJson::JsonDocument dp;
     dp["tone"] = tone_of(st);
+    dp["size"] = "dot";
     c->build(r, dp.as<fw::Props>());
   }
   lv_obj_t *n = fw::text(r, fw::ty::c_meta, p["name"] | "test", t.text);

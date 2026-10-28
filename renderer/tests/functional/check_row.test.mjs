@@ -4,7 +4,7 @@ export default {
   id: 'check_row', family: 'controls', about: 'A CI check line: name, dot and pass / fail / pending / skipped.',
   tests: [
     ...[['pass', 'PASS'], ['fail', 'FAIL'], ['pending', 'PENDING'], ['skipped', 'SKIPPED']].map(([state, w]) => ({ name: `${state}: name + ${w} + a dot`, mount: ['check_row', { name: 'build', state }], run(t) {
-      t.has(t.texts(), 'build', 'name'); t.has(t.texts(), w, 'word'); t.ok(t.comps().some((c) => c.ids.at(-1) === 'status_dot'), 'dot');
+      t.has(t.texts(), 'build', 'name'); t.has(t.texts(), w, 'word'); t.ok(t.comps().some((c) => c.ids.at(-1) === 'status_chip'), 'dot');
     } })),
     { name: 'read-only: a tap does nothing', mount: ['check_row', { name: 'build', state: 'fail' }], run(t) { const ev = t.tap('build'); t.silent(ev); t.eq(ev.filter((e) => e.kind === 'event').length, 0, 'events'); } },
     { name: 'width prop sets the row width', async run(t, { den }) {

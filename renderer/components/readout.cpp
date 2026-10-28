@@ -7,7 +7,7 @@
 //   one     padding readout-pad (card-pad from the top and sides, none below: the half is taller than its content),
 //           a column card-pad apart:
 //           the top row (at least the label box tall: the icon at icon size text-dim, the caps label (type label,
-//           text-dim, its box on the grid), space 2 apart; the Status dot (working) after it, shown only when the
+//           text-dim, its box on the grid), space 2 apart; the Status chip dot (size dot, working) after it, shown only when the
 //           state matters (accent)), then the state (type title) and the detail (type body, text-dim, "...") centred on
 //           one line, space 3 apart (= the docs' shared baseline: the body box sits half the difference up)
 //   tones   text (default) · accent = it matters (accent-text + the dot) · warn = out of range · mute = offline
@@ -49,9 +49,10 @@ void one(lv_obj_t *o, const Ro &r) {
   for (const char *t : {"gap:2", "label-row"}) fx::use(top, t);
   fx::icon(top, r.icon, "icon", dim);
   fx::fit_grid(fx::text(top, r.label, "type:label", dim));  // the label box on the grid, so the dot after it is too
-  if (const fw::Component *dc = fw::find("status_dot")) {  // the dot: always there, shown when it matters (fades)
+  if (const fw::Component *dc = fw::find("status_chip")) {  // the dot (Status chip size dot): always there, shown when it matters (fades)
     ArduinoJson::JsonDocument dp;
     dp["tone"] = "working";
+    dp["size"] = "dot";
     const uint32_t n = lv_obj_get_child_count(top);
     dc->build(top, dp.as<fw::Props>());
     if (!accent && lv_obj_get_child_count(top) > n) fx::use(lv_obj_get_child(top, -1), "transp");
