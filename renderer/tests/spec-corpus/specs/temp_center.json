@@ -11,16 +11,18 @@
  "layout": "center",
  "nodes": [
   {
-   "c": "big_number",
+   "c": "hero_block",
    "p": {
-    "label": "Outside",
-    "value": {
+    "n": {
      "e": "$entity",
      "fmt": "num",
      "s": "12"
     },
     "unit": "°C",
-    "decimals": 0
+    "label": "outside",
+    "line": "",
+    "accent": false,
+    "count": true
    }
   }
  ],

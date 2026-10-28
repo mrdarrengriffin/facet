@@ -67,7 +67,8 @@ struct Base { fw::ty::Id a, b; uint32_t ch; };
 const Base BASES[] = {{fw::ty::clock_hero_mono, fw::ty::clock_seconds_mono, '0'}, {fw::ty::clock_hero, fw::ty::clock_seconds, '0'},
   {fw::ty::clock_hero_mono, fw::ty::clock_ampm_mono, 'M'}, {fw::ty::clock_hero, fw::ty::clock_ampm, 'M'},
   {fw::ty::clock_mid_mono, fw::ty::clock_ampm_mono, 'M'}, {fw::ty::clock_mid, fw::ty::clock_ampm, 'M'},
-  {fw::ty::clock_compact_mono, fw::ty::clock_ampm_sm, 'M'}, {fw::ty::clock_compact, fw::ty::clock_ampm_sm, 'M'}};
+  {fw::ty::clock_compact_mono, fw::ty::clock_ampm_sm, 'M'}, {fw::ty::clock_compact, fw::ty::clock_ampm_sm, 'M'},
+  {fw::ty::hero, fw::ty::title, '0'}, {fw::ty::display, fw::ty::title, '0'}};  // the Hero block's unit on its number's baseline
 const char *type_name(fw::ty::Id id) {
   for (int i = 0; i < fx::gen::N_TYPES; i++) if (fx::gen::TYPES[i].id == id) return fx::gen::TYPES[i].name;
   abort();

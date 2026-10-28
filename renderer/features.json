@@ -103,8 +103,8 @@
       "id": "retired",
       "label": "Retired parts",
       "docs": false, "status": "wip", "firmware": false,
-      "about": "Kept for reference, not shipped: Card grid (the Cells layout is the Home grid, Darren 2026-10-27); Date line (the Time's date prop, Darren 2026-10-27); Status dot (the Status chip's dot size, Darren 2026-10-27).",
-      "components": ["card_grid", "date_line", "status_dot"]
+      "about": "Kept for reference, not shipped: Card grid (the Cells layout is the Home grid, Darren 2026-10-27); Date line (the Time's date prop, Darren 2026-10-27); Status dot (the Status chip's dot size, Darren 2026-10-27). Big number (the Hero block's unit + count, Darren 2026-10-28).",
+      "components": ["card_grid", "date_line", "status_dot", "big_number"]
     },
     {
       "id": "thermostat",

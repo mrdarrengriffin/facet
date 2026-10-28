@@ -2650,6 +2650,18 @@
      "about": "The big number, such as how many things need you."
     },
     {
+     "name": "unit",
+     "type": "text",
+     "bindable": true,
+     "about": "A unit shown after the number, such as kWh or °C. Leave empty for none."
+    },
+    {
+     "name": "count",
+     "type": "bool",
+     "bindable": true,
+     "about": "Counts the number up from 0 when it first shows, and from the old value when it changes."
+    },
+    {
      "name": "label",
      "type": "text",
      "bindable": true,
@@ -6560,5 +6572,5 @@
    }
   }
  },
- "hash": "5b700c30"
+ "hash": "3d0ba0de"
 }

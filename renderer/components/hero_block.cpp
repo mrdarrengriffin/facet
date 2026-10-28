@@ -5,7 +5,11 @@
 //            as the number's type box (hero 96 / 64; role display 144 / 96): hero-row(-display), a row, top-aligned,
 //            the gutter apart (16)
 //   number   type hero (or display), text; accent = accent-text (docs .is-accent); its box on the grid (fx::fit_grid,
-//            docs fit8), so the column after it starts on the grid
+//            docs fit8), so the column after it starts on the grid. unit: after it (type title, text-dim, space 2
+//            apart, its figures on the number's baseline: baseline:hero:title); the number + unit box is what fits the
+//            grid. count: a number (an optional prefix such as £, then digits) counts up from 0 when shown and from
+//            the shown value on an update (Motion value, the Big number's count, which this replaces: 2026-10-28);
+//            its box is fitted at the final value first, so the count never moves the column; reduced = at once
 //   column   hero-col (the free width): label (type label, caps, text) over the line (type body, text-dim, one line,
 //            "..."), space 2 apart, centred on the hero type box ((96 - (24 + 8 + 32)) / 2 = 16 = the docs padding-top
 //            16 at 720, 12 at 480; a derived style, no literal). With role display it stays on the hero box offset
@@ -19,17 +23,78 @@
 // Contrast pairs: tokens/colour.json section "hero_block".
 #include "fw.h"
 #include "fx.h"
+#include <cmath>
+#include <cstdlib>
+#include <string>
 
 namespace {
-void fill(lv_obj_t *h, fw::Props p) {
+// the count: kept on the root (a DELETE event's user data), so it lives through the update path's refill
+struct Count { lv_obj_t *num = nullptr; std::string prefix, type; int dec = 0; double shown = 0, target = 0; bool on = false; };
+void count_free(lv_event_t *e) { delete (Count *) lv_event_get_user_data(e); }
+Count *count_of(lv_obj_t *h) {
+  for (uint32_t i = 0, n = lv_obj_get_event_count(h); i < n; i++) {
+    lv_event_dsc_t *d = lv_obj_get_event_dsc(h, i);
+    if (lv_event_dsc_get_cb(d) == count_free) return (Count *) lv_event_dsc_get_user_data(d);
+  }
+  return nullptr;
+}
+// "£2.42" -> prefix "£", 2.42, 2 decimals; false = not a number (counted text stays as written)
+bool parse(const char *s, std::string *prefix, double *v, int *dec) {
+  const char *d = s;
+  while (*d && !(*d >= '0' && *d <= '9') && !(*d == '-' && d[1] >= '0' && d[1] <= '9')) d++;
+  if (!*d) return false;
+  char *end = nullptr;
+  const double x = strtod(d, &end);
+  if (end == d || *end || !std::isfinite(x)) return false;
+  const char *dot = strchr(d, '.');
+  *prefix = std::string(s, d - s), *v = x, *dec = dot ? (int) (end - dot - 1) : 0;
+  return true;
+}
+void count_show(void *o, int32_t k) {  // k = 0..1024 of the way from the shown value to the target
+  Count *c = count_of((lv_obj_t *) o);
+  if (!c || !c->num) return;
+  const double v = c->shown + (c->target - c->shown) * k / 1024.0;
+  char b[48];
+  snprintf(b, sizeof b, "%s%.*f", c->prefix.c_str(), c->dec, v);
+  if (strcmp(b, lv_label_get_text(c->num))) fx::set_text(c->num, b, c->type.c_str());
+  if (k == 1024) c->shown = c->target;
+}
+void fill(lv_obj_t *h, fw::Props p, bool opening) {
   const bool off = !strcmp(p["state"] | "default", "unavailable");
   const bool accent = !off && (p["accent"] | false);
   const bool display = !strcmp(p["role"] | "hero", "display");
+  fx::use(h, "box");  // again after an update's refill (it takes every style off the root): the full width
   fx::use(h, display ? "hero-row-display" : "hero-row");
   const char *n = off ? fw::st::PLACEHOLDER : (p["n"] | "");
-  lv_obj_t *num = fx::text(h, n, display ? "type:display" : "type:hero",
-                           off ? "fg:unavailable-ink" : accent ? "fg:accent-text" : "fg:text");
-  fx::fit_grid(num);  // fit8: the box on the grid, the text at its left
+  const char *type = display ? "type:display" : "type:hero";
+  const char *unit = off ? "" : (p["unit"] | "");
+  lv_obj_t *line = h;
+  if (*unit) {  // number + unit in one box on the grid
+    line = fx::box(h, "row-top");
+    fx::use(line, "hug");
+    fx::use(line, "gap:2");
+  }
+  lv_obj_t *num = fx::text(line, n, type, off ? "fg:unavailable-ink" : accent ? "fg:accent-text" : "fg:text");
+  if (*unit) {
+    fx::use(fx::text(line, unit, "type:title", "fg:text-dim"), display ? "baseline:display:title" : "baseline:hero:title");
+    fx::fit_grid(line);
+  } else fx::fit_grid(num);  // fit8: the box on the grid, the text at its left
+  Count *c = count_of(h);
+  if (p["count"] | false) {
+    if (!c) { c = new Count; lv_obj_add_event_cb(h, count_free, LV_EVENT_DELETE, c); }
+    std::string pre;
+    double v;
+    int dec;
+    const bool was = c->on;
+    c->on = !off && parse(n, &pre, &v, &dec);
+    if (c->on) {
+      c->num = num, c->prefix = pre, c->dec = dec, c->type = type;
+      if (!was) c->shown = 0;  // shown for the first time (or a number again): from 0
+      c->target = v;
+      if (!opening && !was) c->shown = v;
+      if (c->shown != c->target) { count_show(h, 0); fw::animate(h, fw::st::SWEEP, {count_show, 0, 1024, fw::mo::VALUE}); }
+    }
+  } else if (c) c->on = false;
   // label type: caps label (default) or title (the Calendar hero: the event's name as written, docs .fs-cal-htitle)
   const bool title = !strcmp(p["label_type"] | "label", "title");
   lv_obj_t *col = fx::box(h, "free");
@@ -48,6 +113,8 @@ FW_COMPONENT(hero_block, "Hero block", "components", R"({
   "frame": [480, 112],
   "props": [
     {"name": "n", "about": "The big number, such as how many things need you.", "type": "text", "default": "3"},
+    {"name": "unit", "about": "A unit shown after the number, such as kWh or °C. Leave empty for none.", "type": "text", "default": ""},
+    {"name": "count", "about": "Counts the number up from 0 when it first shows, and from the old value when it changes.", "type": "bool", "default": false},
     {"name": "label", "about": "The words next to the number that say what it counts.", "type": "text", "default": "need you"},
     {"name": "line", "about": "One quieter line with the detail, under the label.", "type": "text", "default": "2 reviews · 2 assigned"},
     {"name": "accent", "about": "Draws the number in the accent colour, for when it matters now.", "type": "bool", "default": true},
@@ -62,17 +129,27 @@ FW_COMPONENT(hero_block, "Hero block", "components", R"({
     {"label": "display role", "props": {"n": "21", "label": "inside", "line": "Feels like 19 · heating off", "accent": false, "role": "display"}},
     {"label": "title label · calendar", "props": {"n": "16:50", "label": "Pottery class", "line": "today · Larkfield studio · Family", "accent": false, "label_type": "title"}},
     {"label": "long line", "props": {"n": "7", "label": "strikes", "line": "nearest 14 km north-east, moving away at 30 km/h", "accent": true}},
-    {"label": "unavailable", "props": {"n": "21", "label": "inside", "line": "", "accent": false, "state": "unavailable"}}
-  ]
+    {"label": "unavailable", "props": {"n": "21", "label": "inside", "line": "", "accent": false, "state": "unavailable"}},
+    {"label": "unit · counts up", "props": {"n": "8.69", "unit": "kWh", "label": "today · so far", "line": "cheaper than yesterday", "accent": false, "count": true}},
+    {"label": "£ · counts up", "props": {"n": "£2.43", "label": "cost today", "line": "8.4 kWh", "accent": false, "count": true}}
+  ],
+  "opening": "With count on, showing it counts the number up from 0 (Motion value)."
 })") {
   lv_obj_t *h = fx::box(parent, "free");
   fx::name(h, "hero_block");
-  fill(h, p);
+  fill(h, p, p["opening"] | true);
 }
 
 // Update path: number, label, line, accent, role and unavailable in the same root (fw::refill), colours fading like a
 // tap (shared styles), silent.
 FW_UPDATE(hero_block) {
-  fw::st::refill_fade(root, [&] { fw::refill(root); fill(root, p); }, true, true);
+  if (Count *c = count_of(root)) {  // the count goes on from the value on screen (a count still running stops there)
+    std::string pre;
+    int dec;
+    if (c->num && c->on) parse(lv_label_get_text(c->num), &pre, &c->shown, &dec);
+    lv_anim_delete(root, count_show);
+    c->num = nullptr;
+  }
+  fw::st::refill_fade(root, [&] { fw::refill(root); fill(root, p, false); }, true, true);
   return true;
 }
