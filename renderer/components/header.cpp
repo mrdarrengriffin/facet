@@ -136,7 +136,7 @@ void fill(lv_obj_t *h, fw::Props p) {
   lv_obj_t *bk = fx::box(h, "header-back"), *ti = fx::box(h, "header-title"), *en = fx::box(h, "header-end"),
            *tm = fx::box(h, "header-time");
   for (const Slot &s : SLOTS) fx::slot(lv_obj_get_child(h, s.child), s.name);  // the workbench outlines them
-  for (lv_obj_t *o : {h, ti, en}) lv_obj_add_flag(o, LV_OBJ_FLAG_OVERFLOW_VISIBLE);  // a bigger item (a round Icon button) shows whole, not clipped (Darren 2026-10-28)
+  for (lv_obj_t *o : {h, ti, en}) fx::overflow(o);  // a bigger item (a round Icon button) shows whole, not clipped (Darren 2026-10-28)
   lv_obj_add_event_cb(en, [](lv_event_t *e) { own_tail.erase((lv_obj_t *) lv_event_get_current_target(e)); }, LV_EVENT_DELETE, nullptr);
   lv_obj_add_event_cb(en, [](lv_event_t *e) {  // a C++ screen adding to the end slot (building_header()) shows it
     auto *o = (lv_obj_t *) lv_event_get_current_target(e);

@@ -4,6 +4,7 @@
 // style change: no object holds a colour, so none can keep an old one.
 #include "fx.h"
 #include "core/lv_refr_private.h"  // lv_refr_get_disp_refreshing: is a redraw running (look_of)
+#include "core/lv_obj_draw_private.h"  // lv_obj_get_ext_draw_size: a child's reach (fx::overflow)
 #include "fw.h"
 #include "fx_gen.h"
 #include "spec.h"  // spec::SLOT: a Grid cell is a slot
@@ -1817,6 +1818,29 @@ void pointer(lv_obj_t *o, float *deg, int *dist, int *half) {
   *deg = fmodf(atan2f(dy, dx) * 57.29578f + 360, 360);
   *dist = (int) lroundf(sqrtf(dx * dx + dy * dy));
 }
+// o lets its children draw past its box (C14-style overhang: a round Icon button taller than the Header): the flag
+// alone draws 0 px outside (LVGL clips to the box grown by its ext draw size), so the ext draw size follows the
+// children's overhang (their own reach included), measured again when they change
+void overflow(lv_obj_t *o) {
+  lv_obj_add_flag(o, LV_OBJ_FLAG_OVERFLOW_VISIBLE);
+  for (lv_event_code_t c : {LV_EVENT_LAYOUT_CHANGED, LV_EVENT_CHILD_CHANGED, LV_EVENT_SIZE_CHANGED})
+    lv_obj_add_event_cb(o, [](lv_event_t *e) { lv_obj_refresh_ext_draw_size((lv_obj_t *) lv_event_get_current_target(e)); }, c, nullptr);
+  lv_obj_add_event_cb(o, [](lv_event_t *e) {
+    auto *o = (lv_obj_t *) lv_event_get_current_target(e);
+    lv_area_t a;
+    lv_obj_get_coords(o, &a);
+    int32_t m = 0;
+    for (uint32_t i = 0, n = lv_obj_get_child_count(o); i < n; i++) {
+      lv_obj_t *c = lv_obj_get_child(o, i);
+      if (lv_obj_has_flag(c, LV_OBJ_FLAG_HIDDEN)) continue;
+      lv_area_t b;
+      lv_obj_get_coords(c, &b);
+      const int32_t x = lv_obj_get_ext_draw_size(c);
+      m = LV_MAX(m, LV_MAX(LV_MAX(a.x1 - b.x1, b.x2 - a.x2), LV_MAX(a.y1 - b.y1, b.y2 - a.y2)) + x);
+    }
+    lv_event_set_ext_draw_size(e, m);
+  }, LV_EVENT_REFR_EXT_DRAW_SIZE, nullptr);
+}
 Page page(lv_obj_t *pg, const char *kind) {
   Page p{pg, nullptr, nullptr};
   use(pg, "page");
@@ -1825,7 +1849,7 @@ Page page(lv_obj_t *pg, const char *kind) {
   p.head = lv_obj_create(pg);
   lv_obj_remove_style_all(p.head);
   lv_obj_remove_flag(p.head, (lv_obj_flag_t) (LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_CLICKABLE));
-  lv_obj_add_flag(p.head, LV_OBJ_FLAG_OVERFLOW_VISIBLE);  // the Header's items may outgrow its bar (a round Icon button): never clipped
+  overflow(p.head);  // the Header's items may outgrow its bar (a round Icon button): never clipped
   use(p.head, "page-head");
   use(p.head, "head-move");  // C45: a flush header bar (empty in Facet)
   p.body = lv_obj_create(pg);

@@ -69,7 +69,8 @@ int grid_cols(lv_obj_t *root);
 void pair_split(lv_obj_t *pair);  // a "pair" box: its halves (children 0, 2) share its height in equal grid steps, the
                                   // rule between (child 1); follows the pair's size (Cells). split = once more (a tuned token)
 void split(lv_obj_t *pair);
-void bleed(lv_obj_t *o);           // the one escape: o's background reaches the page edge (the "bleed" style marks it)
+void bleed(lv_obj_t *o);
+void overflow(lv_obj_t *o);  // o's children may draw past its box (their overhang is drawn, never clipped)           // the one escape: o's background reaches the page edge (the "bleed" style marks it)
 void name(lv_obj_t *o, const char *n);  // a component root's name for the inspector
 void slot(lv_obj_t *o, const char *n);  // o holds the meta slot n (C8a): the workbench outlines it (hosts only, no-op on a panel)
 // [{n, x, y, w, h, empty?, in?}] every marked slot on scr (device px; an empty one = where its first item would go);
