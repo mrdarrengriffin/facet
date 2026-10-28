@@ -468,7 +468,14 @@ Line *line_chart(lv_obj_t *parent, const Theme &t, const LineOpts &o) {
   if (o.grid) grid_lines(L->root, t, o.w, gt(L), gb(L));
   if (o.baseline_dots)  // the docs sparkline: a dotted baseline on the box's bottom edge (docs y = h - 0.5), under the
     // lowest point, no grid (2026-10-22 reference check: it sat on the plot bottom and the line ran through its dots)
-    for (int x = 0; x < o.w; x += ch::dash + ch::dash_gap) rect(L->root, x, o.h - ch::grid, std::min(ch::dash, o.w - x), ch::grid, ch::ink::grid(t));
+    if (o.ink) {  // token inks: the dashes through the Pen, stroke:hair thick in fg:line (a theme / tune repaints them)
+      lv_obj_t *b = fx::strip(L->root, [](const fx::Pen &p) {
+        const int t = fx::size("stroke:hair"), L0 = -(p.w / 2), y = p.h - p.h / 2 - t;
+        for (int x = 0; x < p.w; x += ch::dash + ch::dash_gap) p.rect(L0 + x, y, std::min(ch::dash, p.w - x), t, "fg:line");
+      }, "free");
+      lv_obj_set_size(b, o.w, o.h);
+    } else
+      for (int x = 0; x < o.w; x += ch::dash + ch::dash_gap) rect(L->root, x, o.h - ch::grid, std::min(ch::dash, o.w - x), ch::grid, ch::ink::grid(t));
   const int n = std::max<int>(2, L->v.size());
   L->tw = L->v.size() < 2 ? o.w : o.w + (int) std::ceil(slot(L, n)) + L->weight + 2;  // room for one more point (shift)
   L->track = box(L->root);
@@ -523,8 +530,17 @@ Line *line_chart(lv_obj_t *parent, const Theme &t, const LineOpts &o) {
     for (lv_event_code_t c : {LV_EVENT_PRESSED, LV_EVENT_PRESSING, LV_EVENT_RELEASED, LV_EVENT_PRESS_LOST})
       lv_obj_add_event_cb(L->root, scrub_cb, c, L);
   }
+  if (o.ink) {  // token inks: shared styles (a local colour would outrank them)
+    const std::string k = o.ink;
+    lv_obj_remove_local_style_prop(L->stroke, LV_STYLE_IMAGE_RECOLOR, 0);
+    fx::use(L->stroke, ("ink:" + k).c_str());
+    if (L->dot) { lv_obj_remove_local_style_prop(L->dot, LV_STYLE_BG_COLOR, 0); fx::use(L->dot, ("bg:" + k).c_str()); }
+    if (L->ping) { lv_obj_remove_local_style_prop(L->ping, LV_STYLE_BORDER_COLOR, 0); fx::use(L->ping, ("border:" + k).c_str()); }
+  }
   return L;
 }
+
+Line *line_chart(lv_obj_t *parent, const LineOpts &o) { return line_chart(parent, *T, o); }
 
 // ---------------------------------------------------------------- bars
 int bar_h(const Bars *B, float v) {

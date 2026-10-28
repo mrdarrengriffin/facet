@@ -5101,8 +5101,8 @@
     ]
    },
    "cost": {
-    "objects": 34,
-    "bytes_est": 5440
+    "objects": 7,
+    "bytes_est": 1120
    }
   },
   "speaker_button": {

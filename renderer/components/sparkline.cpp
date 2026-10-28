@@ -1,6 +1,7 @@
 // Sparkline: the Facet sparkline (docs: Components > Charts > Sparkline, @facet/ui charts.ts sparkline(), CSS
 // .fch-spark): a thin line over the values (oldest first) with a dot on the latest, over a faint dotted baseline.
-// Built with the Charts foundation's line chart (core/chart.h fw::chart::line_chart): the line is the smooth A8 stroke
+// On the contract (renderer/CONTRACT.md, "contract": 2): built with the Charts foundation's line chart (core/chart.h
+// fw::chart::line_chart) in colour token names (LineOpts ink: shared styles, a theme switch repaints it): the line is the smooth A8 stroke
 // at ch::line_thin, the end dot ch::dot, no grid, the dotted baseline (docs: a 1 / 3 dash at the bottom), the scale
 // from the values themselves (docs min / max) with the plot's own top / bottom room (chart.json plot-top / -bottom).
 //   colour  steel / blue (series 1) / accent (highlight) / text-dim (docs choices); any of them passes 3:1 on bg and
@@ -10,13 +11,14 @@
 //           different set of the same length = "morph", anything else refills (snap)
 // A read-out (docs: no touch): no events, no sound. Contrast pairs: colour.json section "chart".
 #include "fw.h"
+#include "fx.h"
 #include "chart.h"
 
 namespace {
 const char *DEF = "320,300,420,380,900,1200,640,410,380,450,300,299";
-lv_color_t colour_of(const fw::Theme &t, const char *c) {
-  return !strcmp(c, "blue") ? fw::ch::series(t, 0) : !strcmp(c, "accent") ? fw::ch::ink::highlight(t)
-       : !strcmp(c, "text-dim") ? fw::ch::series(t, 2) : fw::ch::series(t, 1);  // steel = series 2
+const char *ink_of(const char *c) {  // the docs choices as colour tokens: steel (series 2), blue (series 1), accent (highlight), text-dim
+  for (const char *k : {"blue", "accent", "text-dim"}) if (!strcmp(c, k)) return k;
+  return "steel";
 }
 void range(const std::vector<float> &v, float *lo, float *hi) {
   *lo = INFINITY, *hi = -INFINITY;
@@ -34,15 +36,12 @@ fw::chart::Line *of(lv_obj_t *root) {
   return c ? (fw::chart::Line *) lv_obj_get_user_data(c) : nullptr;
 }
 void fill(lv_obj_t *root, fw::Props p, bool opening) {
-  const fw::Theme &t = *fw::T;
-  lv_obj_remove_style_all(root);
-  lv_obj_remove_flag(root, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
-  lv_obj_set_size(root, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+  for (const char *t : {"box", "hug"}) fx::use(root, t);
   fw::chart::LineOpts o{fw::px((float) (p["width"] | 148)), fw::ch::spark_h, fw::chart::values(p, "values", DEF)};
   range(o.v, &o.lo, &o.hi);
   o.weight = fw::ch::line_thin, o.grid = false, o.baseline_dots = true, o.dot = p["dot"] | true;
-  o.has_colour = true, o.colour = colour_of(t, p["colour"] | "steel");
-  fw::chart::Line *L = fw::chart::line_chart(root, t, o);
+  o.ink = ink_of(p["colour"] | "steel");
+  fw::chart::Line *L = fw::chart::line_chart(root, o);
   if (opening) fw::chart::draw_in(L);
   fw::shape(root, sig_of(p));
 }
@@ -50,6 +49,8 @@ void fill(lv_obj_t *root, fw::Props p, bool opening) {
 
 FW_COMPONENT(sparkline, "Sparkline", "components", R"({
   "about": "A thin line over the recent values with a dot on the latest one.",
+  "contract": 2,
+  "parts": [],
   "frame": [240, 64],
   "props": [
     {"name": "values", "about": "The recent values, as numbers separated by commas, oldest first.", "type": "text", "default": "320,300,420,380,900,1200,640,410,380,450,300,299"},
@@ -67,6 +68,9 @@ FW_COMPONENT(sparkline, "Sparkline", "components", R"({
   ]
 })") {
   lv_obj_t *root = lv_obj_create(parent);
+  lv_obj_remove_style_all(root);
+  lv_obj_remove_flag(root, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
+  fx::name(root, "sparkline");
   fill(root, p, p["opening"] | true);
 }
 

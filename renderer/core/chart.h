@@ -39,8 +39,12 @@ struct LineOpts {
   bool baseline_dots = false;  // a dotted baseline instead of the grid (the docs sparkline)
   bool has_colour = false;     // colour instead of the series colour
   lv_color_t colour;
+  // a colour token name ("steel") instead: the line, end dot and ping take it as shared styles (ink: / bg: / border:)
+  // and the dotted baseline bg:line, so a theme / accent switch repaints them (the Sparkline on the contract)
+  const char *ink = nullptr;
 };
 Line *line_chart(lv_obj_t *parent, const Theme &t, const LineOpts &o);
+Line *line_chart(lv_obj_t *parent, const LineOpts &o);  // in the live palette (a contract component: inks by o.ink)
 void draw_in(Line *L);                             // the line draws itself left to right (chart motion draw)
 void push(Line *L, float nv);                      // a new reading slides in (shift + ping)
 void morph(Line *L, const std::vector<float> &nv); // every point moves (same length)
