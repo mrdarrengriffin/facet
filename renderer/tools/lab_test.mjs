@@ -6,6 +6,9 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
+// parts whose whole look is a type style + a colour (no size of their own): nothing to tune, the check passes them
+// (Darren 2026-10-28: Title, the Header's text)
+const TEXT_ONLY = new Set(['title']);
 const HERE = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const env = (() => { try { return Object.fromEntries(readFileSync(join(HERE, '..', 'local.env'), 'utf8').split('\n').map((l) => l.match(/^([A-Z_]+)=(.*)$/)).filter(Boolean).map((m) => [m[1], m[2]])); } catch { return {}; } })();
 const i = process.argv.indexOf('--build');
@@ -69,7 +72,7 @@ for (const den of (di > 0 ? [process.argv[di + 1]] : ['1x', '1.5x']).filter((d) 
   tick();
   ok(hash() === base, `${den} ${id} uses + probe leave the mounted component as it was`);
   const listed = uses.filter((n) => seen[n] === 1), quiet = uses.filter((n) => seen[n] !== 1);
-  ok(listed.filter((n) => n !== 'squeeze').length >= 1, `${den} ${id} lists >= 1 tunable token that visibly changes it (${listed.join(', ') || 'none'})`);
+  ok(TEXT_ONLY.has(id) || listed.filter((n) => n !== 'squeeze').length >= 1, `${den} ${id} lists >= 1 tunable token that visibly changes it (${listed.join(', ') || 'none'})`);
   for (const n of MUST) ok(listed.includes(n), `${den} ${id} ${n}: listed`);
   for (const n of NOT) ok(!listed.includes(n), `${den} ${id} ${n}: page only, not listed`);
   if (quiet.length) console.log(`note  ${den} ${id} read but no visible change here: ${quiet.join(', ')}`);

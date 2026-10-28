@@ -1538,8 +1538,10 @@ inline lv_obj_t *build(lv_obj_t *parent, const std::string &id, Props opened, st
   }, s);
   // header (the Header component + the screen chrome)
   ArduinoJson::JsonDocument hd;
+  // no label key = no title (the Title is a part the editor removes, Darren 2026-10-28); a label left empty by its
+  // parameter ("$name" with no name given) = the spec's name, as before
   const char *hl = doc["header"]["label"] | "";
-  hd["label"] = *hl ? hl : (doc["name"] | "");  // "$name" left empty = the spec's name
+  hd["label"] = doc["header"]["label"].isNull() ? "" : *hl ? hl : (doc["name"] | "");
   hd["back"] = !at_root;  // the renderer owns Back (facet-188): a spec cannot remove it
   hd["settings"] = doc["header"]["settings"] | false;  // the settings button in the chrome (Home)
   if (doc["header"]["actions"].is<ArduinoJson::JsonObjectConst>()) hd["actions"] = doc["header"]["actions"];  // a Home's header actions
