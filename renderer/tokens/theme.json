@@ -84,7 +84,8 @@
     "icon": {"keys": "icon", "sits_on": "bg", "face": null, "texts": [], "press": [], "radius": null, "height": null, "room": null, "pad": false},
     "card-head": {"keys": "bar", "sits_on": "surface", "face": "surface", "texts": ["text", "text-dim", "accent-text"], "press": [], "radius": "radius:card", "height": null, "room": {"pad": "layout:card-pad"}, "pad": true},
     "segment": {"keys": "box", "sits_on": "surface", "face": "surface", "texts": ["text", "text-dim"], "press": ["face"], "radius": "radius:button", "height": "touch:min", "room": {"height": "touch:min", "less": "label"}, "pad": false},
-    "button-primary": {"keys": "box", "sits_on": "bg", "face": "accent", "texts": ["on-accent"], "press": ["face"], "radius": "radius:button", "height": "touch:button-h", "room": {"height": "touch:button-h", "less": "label"}, "pad": false}
+    "button-primary": {"keys": "box", "sits_on": "bg", "face": "accent", "texts": ["on-accent"], "press": ["face"], "radius": "radius:button", "height": "touch:button-h", "room": {"height": "touch:button-h", "less": "label"}, "pad": false},
+    "button-outline": {"keys": "box", "sits_on": "bg", "face": null, "texts": ["accent-text"], "press": ["face"], "radius": "radius:button", "height": "touch:button-h", "room": {"height": "touch:button-h", "less": "label"}, "pad": false}
   },
   "contrast": {
     "about": "C47 contrast guard. Every declared pair (colour.json contrast.pairs) of these foundation sections and of every component and screen on the contract (catalogue/contract.json) is checked on the theme's palette, every mode x accent, on the exact and the RGB565 values (the worse decides), plus the part pairs. Part pairs: texts on every face stop 4.5 (disabled selectors: text-mute 3.0); a part's own text ink 4.5 on its face (caption 3.0: glyphs); outer edges of card and control, the knob, major ticks and the arc fill on what they sit on 3.0 (the strongest outer layer counts); the scrollbar thumb on its lane 3.0. Shadows never count.",
@@ -93,7 +94,7 @@
     "large": 3.0,
     "ui": 3.0,
     "disabled": 3.0,
-    "outer": ["card", "control", "button-primary", "knob", "tick-major", "arc-fill"]
+    "outer": ["card", "control", "button-primary", "button-outline", "knob", "tick-major", "arc-fill"]
   },
   "shape": {
     "about": "Presets (Appendix A shape.*): each value expands to part blocks; the first value of each list is Facet's and expands to nothing, so a theme that names it changes nothing.",
