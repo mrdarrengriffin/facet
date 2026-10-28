@@ -119,6 +119,10 @@
     "commit": "6fbe138",
     "at": "2026-10-27T17:19:18.000Z"
   },
+  "components/title": {
+    "commit": "8e7a123",
+    "at": "2026-10-28T17:45:29.000Z"
+  },
   "components/toast": {
     "commit": "9c87048",
     "at": "2026-10-28T01:14:01.000Z"
