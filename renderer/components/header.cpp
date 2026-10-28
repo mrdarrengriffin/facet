@@ -4,8 +4,10 @@
 //   Back   fixed, built by the Header: the Back button component (an Icon button, back icon), shown only when the
 //          screen has somewhere to go back to (prop back; a spec cannot set it: the renderer owns Back). A back-gap
 //          (layout:back-gap) to the title; no back = no room, no gap.
-//   title  a SLOT: the screen's label (caps, mono, text-dim, one line). A node a spec puts in slot "title" REPLACES the
-//          label (a Segmented, a picker) and HUGS its natural width, left-aligned after Back. The title takes the room
+//   title  a SLOT that only ever holds parts: the Title component (components/title.cpp: caps, mono, text-dim, one
+//          line), which the Header builds from prop label (the shorthand; empty = no title), or a node a spec puts in
+//          slot "title" (an explicit Title, a Segmented): it REPLACES the Header's own Title; a Segmented HUGS its
+//          natural width, left-aligned after Back. The title takes the room
 //          the end slot leaves: the label ellipsises and never pushes an end item off the row (flex grow from width
 //          0); a title node too wide for the row is overfull and reported by the bounds proof (C11).
 //   end    a SLOT: up to 4 items in spec order, Icon buttons, Status chips or a Segmented (facet-205; the header's own
@@ -26,11 +28,12 @@
 // Slots for code: fw::spec::building_header() = the END slot (C++ screens place their controls there with
 // header_place: before the header's own end items); fw::spec::header_slot(root, "title" | "end");
 // fw::spec::header_hide_time(header or end slot) = a control takes the time's place (Media, sport).
-// Update path: label and time in place (a title replaced by a node keeps it); back, clock, settings, actions or the
+// Update path: label (the own Title's text) and time in place (a title replaced by a node keeps it); back, clock, settings, actions or the
 // preview sample = the row again (fw::refill, snap; nodes a spec placed go with it, as before). Silent.
 // Contrast pairs: tokens/colour.json section "header" (+ icon_button, status_chip, clock).
 #include <ctime>
 #include <map>
+#include <set>
 #include "fw.h"
 #include "fx.h"
 #include "device.h"
@@ -41,7 +44,8 @@ struct Slot { const char *name; int child; };
 constexpr Slot SLOTS[] = {{"title", 1}, {"end", 2}};
 enum Child { BACK = 0, TITLE = 1, END = 2, TIME = 3, N_CHILD = 4 };
 
-std::map<lv_obj_t *, int> own_tail;  // end slot -> how many of its last items the header itself built (settings, ...)
+std::map<lv_obj_t *, int> own_tail;
+std::set<lv_obj_t *> own_title;  // the Title the Header built from its label (a spec's title node is not one)  // end slot -> how many of its last items the header itself built (settings, ...)
 
 lv_obj_t *build(const char *id, lv_obj_t *parent, ArduinoJson::JsonDocument &props) {
   const fw::Component *c = fw::find(id);
@@ -64,9 +68,18 @@ lv_obj_t *slot(lv_obj_t *h, int i) { return lv_obj_get_child(h, i); }
 void show(lv_obj_t *s, bool on) {  // a part with nothing in it takes no room (no gap either)
   if (on) lv_obj_remove_flag(s, LV_OBJ_FLAG_HIDDEN); else lv_obj_add_flag(s, LV_OBJ_FLAG_HIDDEN);
 }
-lv_obj_t *label_of(lv_obj_t *h) {  // the title's own label, or nullptr when a node replaced it
+lv_obj_t *title_of(lv_obj_t *h) {  // the Header's own Title, or nullptr (no label, or a node replaced it)
   lv_obj_t *t = slot(h, TITLE), *l = t ? lv_obj_get_child(t, 0) : nullptr;
-  return l && lv_obj_check_type(l, &lv_label_class) ? l : nullptr;
+  return l && own_title.count(l) ? l : nullptr;
+}
+void own_title_of(lv_obj_t *ti, const char *label) {  // the shorthand: prop label -> a Title component in the slot
+  if (!*label) return;
+  ArduinoJson::JsonDocument q;
+  q["text"] = label;
+  if (lv_obj_t *o = build("title", ti, q)) {
+    own_title.insert(o);
+    lv_obj_add_event_cb(o, [](lv_event_t *e) { own_title.erase((lv_obj_t *) lv_event_get_current_target(e)); }, LV_EVENT_DELETE, nullptr);
+  }
 }
 void time_props(fw::Props p, ArduinoJson::JsonDocument &tp) { tp["size"] = "header"; tp["time"] = p["time"] | ""; }
 
@@ -143,7 +156,7 @@ void fill(lv_obj_t *h, fw::Props p) {
     if (lv_obj_get_child_count(o)) lv_obj_remove_flag(o, LV_OBJ_FLAG_HIDDEN);
   }, LV_EVENT_CHILD_CHANGED, nullptr);
   if (p["back"] | true) { ArduinoJson::JsonDocument bp; build("back_button", bk, bp); }
-  fx::use(fx::text(ti, p["label"] | "", "type:label", "fg:text-dim"), "header-label");
+  own_title_of(ti, p["label"] | "");
   own_tail[en] = own_items(en, p);
   if (p["clock"] | true) {
     ArduinoJson::JsonDocument tp;
@@ -184,18 +197,18 @@ void header_hide_time(lv_obj_t *o) {  // and shows the end slot: the control tha
 }  // namespace fw::spec
 
 FW_COMPONENT(header, "Header", "components", R"({
-  "about": "The row at the top of every screen: the back button (when there is somewhere to go back to), the screen's name, the end slot, then the time. A screen can put any component in the title slot (it replaces the name and keeps its own width) and any number of components in the end slot (Home puts its settings button there); a long name shortens with an ellipsis, so the end slot always fits.",
+  "about": "The row at the top of every screen: the back button (when there is somewhere to go back to), the title slot with the screen's name, the end slot, then the time. The name is a Title component the header makes from its label; a screen can put its own Title or a segmented control in the title slot instead (a segmented control keeps its own width) and any number of components in the end slot (Home puts its settings button there); a long name shortens with an ellipsis, so the end slot always fits.",
   "contract": 2,
   "parts": ["header"],
   "frame": [480, 80],
   "min": ["layout:ibtn-square", "layout:ibtn-square"],
   "slots": [
-    {"name": "title", "about": "Replaces the screen's name; keeps its own width, just after the back button.", "accepts": ["segmented"], "max": 1},
+    {"name": "title", "about": "The screen's name: a Title (made from the label when the screen puts none here) or a segmented control, just after the back button.", "accepts": ["title", "segmented"], "max": 1},
     {"name": "end", "about": "Up to four items before the time, in order: buttons, status chips or a segmented control. The header's own settings button, shortcut and timer count as items.", "accepts": ["icon_button", "status_chip", "segmented"], "max": 4}
   ],
   "icons": ["back@glyph", "screen-settings@icon", "screen-timer@icon", "plus@glyph", "close@glyph", "check@glyph"],
   "props": [
-    {"name": "label", "about": "The screen's name, in the title slot; a long one ends in an ellipsis. A component a screen puts in the title replaces it.", "type": "text", "default": "Weather"},
+    {"name": "label", "about": "The screen's name: the header puts a Title with these words in the title slot (empty = no title); a long one ends in an ellipsis. A component a screen puts in the title replaces it.", "type": "text", "default": "Weather"},
     {"name": "back", "about": "Shows the back button at the start, to return to the screen before.", "type": "bool", "default": true},
     {"name": "clock", "about": "Shows the time at the end of the row.", "type": "bool", "default": true},
     {"name": "time", "about": "For previews only: a fixed time to show, like 21:42. Leave empty for the real time.", "type": "text", "default": "21:42"},
@@ -224,7 +237,11 @@ FW_UPDATE(header) {
     fill(root, p);
     return true;
   }
-  if (lv_obj_t *l = label_of(root)) fx::set_text(l, p["label"] | "", "type:label");
+  const char *lb = p["label"] | "";
+  if (lv_obj_t *l = title_of(root)) {  // the Header's own Title: new words in place, no label = no title
+    if (!*lb) lv_obj_delete(l);
+    else { ArduinoJson::JsonDocument q; q["text"] = lb; fw::update_child(fw::find("title"), l, q.as<fw::Props>()); }
+  } else if (!lv_obj_get_child_count(slot(root, TITLE))) own_title_of(slot(root, TITLE), lb);  // a label again (a node keeps its place)
   if (lv_obj_t *t = lv_obj_get_child(slot(root, TIME), 0)) {
     ArduinoJson::JsonDocument tp;
     time_props(p, tp);

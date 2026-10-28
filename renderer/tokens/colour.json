@@ -314,6 +314,7 @@
       {"section": "header", "fg": "line-hi", "bg": ["bg"], "kind": "decor", "use": "settings button on Settings (here = active): border; the icon keeps its own colours"},
       {"section": "header", "fg": "line", "bg": ["bg"], "kind": "decor", "use": "settings button: 1 px border (line-hi when pressed / here)"},
       {"section": "header", "fg": "accent-text", "bg": ["bg"], "kind": "text", "use": "header actions: the status beside the time (a timer's time left)"},
+      {"section": "title", "fg": "text-dim", "bg": ["bg"], "kind": "text", "use": "the screen's name in the header's title slot (type label, caps)"},
       {"section": "settings", "fg": "text-dim", "bg": ["bg"], "kind": "text", "use": "group labels (Look, Sound, ...): screen type label, caps (docs .fs-set-glabel; docs text-mute is disabled-only here)"},
       {"section": "entity_tile", "fg": "text", "bg": ["surface", "press-tint"], "kind": "text", "use": "the name (type body, two lines)"},
       {"section": "entity_tile", "fg": "text-dim", "bg": ["surface", "press-tint"], "kind": "text", "use": "the state while off; the word Unavailable"},

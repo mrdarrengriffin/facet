@@ -23,6 +23,9 @@
 //              Re-read with the node's binds (a hidden node takes no room in its column).
 //   in header  (2026-10-24) "in": "header" builds the node into the screen's header row, before the screen chrome
 //              (docs header({right: [...]}): the Vacuum's Rooms | Map Segmented)
+//              slot "title" holds one part (2026-10-28): header.label is the shorthand (the Header builds a Title from
+//              it; a bound label follows the entity), {"c": "title", "p": {"text": ...}, "in": "header", "slot":
+//              "title"} the explicit form (or a Segmented); a node there replaces the label's Title
 //   in / slot  (2026-10-23, pages from components only) build this node into slot n (default 0) of node k (an earlier
 //              node whose component is a LAYOUT: its meta says "slots": N and it marks its slot objects with
 //              fw::spec::SLOT, in order) instead of the screen's content box: Split = two columns, Group = a wrapping
@@ -1581,8 +1584,8 @@ inline lv_obj_t *build(lv_obj_t *parent, const std::string &id, Props opened, st
     if (in_hdr) {
       into = header_slot(building_header_root(), hslot.c_str());
       if (!into) into = building_header();
-      if (hslot == "title")  // a node in the title REPLACES the label (the first one only removes it)
-        if (lv_obj_t *l = lv_obj_get_child(into, 0)) if (lv_obj_check_type(l, &lv_label_class)) lv_obj_delete(l);
+      if (hslot == "title")  // a node in the title REPLACES the Header's own Title (header.label's; max 1: C8a)
+        lv_obj_clean(into);
     }
     const int k = nd["in"] | -1;
     if (k >= 0 && k < n_orig && orig_obj[k])

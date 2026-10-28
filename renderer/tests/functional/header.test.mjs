@@ -88,7 +88,7 @@ export default {
       await at(t, {});
       const meta = JSON.parse(t.b.m.UTF8ToString(t.b.m._fw_meta())).find((c) => c.id === 'header');
       const m = typeof meta.meta === 'string' ? JSON.parse(meta.meta) : meta.meta;
-      t.eq(m.slots.map((s) => [s.name, s.accepts, s.max]), [['title', ['segmented'], 1], ['end', ['icon_button', 'status_chip', 'segmented'], 4]], 'meta slots: allow lists + max');
+      t.eq(m.slots.map((s) => [s.name, s.accepts, s.max]), [['title', ['title', 'segmented'], 1], ['end', ['icon_button', 'status_chip', 'segmented'], 4]], 'meta slots: allow lists + max');
       const spec = (slot) => ({ v: 1, id: 'hdrslots', rev: 1, name: 'Slots', layout: 'list', nodes: [{ c: 'status_chip', p: {}, in: 'header', ...(slot ? { slot } : {}) }] });
       await t.device();
       const bad = JSON.stringify(JSON.parse(t.b.spec('check', spec('start')) || '{}'));
@@ -122,6 +122,29 @@ export default {
       const ib = comp(t, 'icon_button').find((o) => o.y < h.y + h.h && !o.ids.includes('back_button')), tm = comp(t, 'time')[0], b = comp(t, 'back_button')[0];
       t.eq(label(t, /^slots$/i), undefined, 'title: the segmented replaced the label');
       t.ok(b && sg && ok && ib && tm && b.x < sg.x && sg.x + sg.w < ok.x && ok.x < ib.x && ib.x + ib.w < tm.x, 'Back, title, end in spec order, Time');
+      t.eq(boundsAll(t).length, 0, 'bounds');
+    } },
+    { name: 'title slot holds parts: the label is a Title component; no label = no Title; update "" removes it, a label builds it again', async run(t) {
+      await at(t, { label: 'Weather' }); const ti = comp(t, 'title');
+      t.eq(ti.length, 1, 'one Title component'); t.ok(/weather/i.test(label(t, /weather/i)?.text || ''), 'it shows the label');
+      t.ok(comp(t, 'title')[0].x === label(t, /weather/i).x, 'the label IS the Title');
+      await at(t, { label: '' }); t.eq(comp(t, 'title').length, 0, 'empty label: no Title');
+      await at(t, { label: 'Lights' }); t.b.update('header', { time: '21:42', label: '' }); t.b.settle(400); t.eq(comp(t, 'title').length, 0, 'update to "": removed');
+      t.b.update('header', { time: '21:42', label: 'Again' }); t.b.settle(400); t.eq([comp(t, 'title').length, !!label(t, /again/i)], [1, true], 'a label again: the Title back');
+      t.eq(boundsAll(t), [], 'bounds');
+    } },
+    { name: 'spec: header.label = an implicit Title; an explicit Title node replaces it; a Title + a Segmented refused; no label = the spec name', async run(t) {
+      await t.device();
+      const sp = (header, nodes) => ({ v: 1, id: 'hdrtitle', rev: 1, name: 'T', ...(header ? { header } : {}), layout: 'list', nodes: [...nodes, { c: 'status_chip', p: { tone: 'idle', text: 'body' } }] });
+      const tn = { c: 'title', p: { text: 'Explicit' }, in: 'header', slot: 'title' };
+      const go = (s) => { t.eq(t.send(s).status, 'applied', 'applied'); t.show('hdrtitle'); t.b.settle(1200); };
+      go(sp({ label: 'Implicit' }, [])); t.eq([comp(t, 'title').length, !!label(t, /^implicit$/i)], [1, true], 'label: a Title');
+      go(sp({ label: 'Implicit' }, [tn])); t.eq([comp(t, 'title').length, !!label(t, /^explicit$/i), !!label(t, /^implicit$/i)], [1, true, false], 'explicit node replaces it');
+      const b = comp(t, 'back_button')[0], ex = comp(t, 'title')[0]; if (b) t.eq(ex.x - (b.x + b.w), lay(t, 'back-gap'), 'a back-gap after Back');
+      go(sp(null, [tn])); t.eq(comp(t, 'title').length, 1, 'explicit node with no header label');
+      const r = JSON.stringify(JSON.parse(t.b.spec('check', sp({ label: 'X' }, [tn, { c: 'segmented', p: { options: 'A, B', selected: 'a' }, in: 'header', slot: 'title' }])) || '{}'));
+      t.ok(r.includes('bad_slot') && r.includes('.nodes[1].in'), `Title + Segmented refused: ${r.slice(0, 160)}`);
+      go(sp({ label: '' }, [])); t.eq([comp(t, 'title').length, !!label(t, /^t$/i)], [1, true], 'empty label, no node: the spec name (existing fallback, core/spec.h)');
       t.eq(boundsAll(t).length, 0, 'bounds');
     } },
     // ---------------------------------------------------------------- tunables (Layout lab)
