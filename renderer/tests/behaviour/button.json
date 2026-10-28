@@ -58,6 +58,105 @@
       "expect": {
         "silent": true
       }
+    },
+    {
+      "name": "hold confirms",
+      "kind": "interaction",
+      "props": {
+        "kind": "secondary",
+        "label": "Hold to open",
+        "value": "open",
+        "hold": true,
+        "width": "fill"
+      },
+      "steps": [
+        {
+          "press": {
+            "clk": 0
+          }
+        },
+        {
+          "wait": 1400
+        },
+        {
+          "release": {
+            "clk": 0
+          }
+        }
+      ],
+      "expect": {
+        "events": [
+          [
+            "confirm",
+            "open"
+          ]
+        ],
+        "sounds": [
+          "confirm"
+        ],
+        "no_events": [
+          "tap"
+        ]
+      }
+    },
+    {
+      "name": "hold: let go early, no confirm",
+      "kind": "interaction",
+      "props": {
+        "kind": "secondary",
+        "label": "Hold to open",
+        "value": "open",
+        "hold": true,
+        "width": "fill"
+      },
+      "steps": [
+        {
+          "press": {
+            "clk": 0
+          }
+        },
+        {
+          "wait": 500
+        },
+        {
+          "release": {
+            "clk": 0
+          }
+        }
+      ],
+      "expect": {
+        "no_events": [
+          "confirm",
+          "tap"
+        ]
+      }
+    },
+    {
+      "name": "hold disabled: blocked",
+      "kind": "interaction",
+      "props": {
+        "kind": "secondary",
+        "label": "Hold to open",
+        "value": "open",
+        "hold": true,
+        "width": "fill",
+        "state": "disabled"
+      },
+      "steps": [
+        {
+          "tap": {
+            "clk": 0
+          }
+        }
+      ],
+      "expect": {
+        "no_events": [
+          "confirm"
+        ],
+        "sounds": [
+          "error"
+        ]
+      }
     }
   ],
   "xfail": {}

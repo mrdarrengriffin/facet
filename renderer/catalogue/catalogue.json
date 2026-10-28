@@ -428,9 +428,38 @@
       "fill"
      ],
      "about": "hug fits the button to its words; fill stretches it across the space it is in, with the words centred."
+    },
+    {
+     "name": "hold",
+     "type": "bool",
+     "bindable": true,
+     "about": "Hold to confirm, for an action that must not happen by accident such as opening a door: a tap does nothing; the button fills while held and acts only when full."
+    },
+    {
+     "name": "hold_label",
+     "type": "text",
+     "bindable": true,
+     "about": "The words shown while the button is held, such as Opening. Empty keeps the label."
+    },
+    {
+     "name": "hold_time",
+     "type": "range",
+     "bindable": true,
+     "min": 400,
+     "max": 4000,
+     "about": "How long a hold takes to confirm, in milliseconds."
+    },
+    {
+     "name": "value",
+     "type": "text",
+     "bindable": true,
+     "about": "What a completed hold sends, such as open. Empty sends the label."
     }
    ],
    "events": {
+    "confirm": [
+     "lock.control"
+    ],
     "tap": [
      "nav.open",
      "nav.back",
@@ -2774,9 +2803,6 @@
     }
    ],
    "events": {
-    "confirm": [
-     "lock.control"
-    ],
     "open": [
      "nav.open"
     ]
@@ -6572,5 +6598,5 @@
    }
   }
  },
- "hash": "3d0ba0de"
+ "hash": "0ae6be0b"
 }

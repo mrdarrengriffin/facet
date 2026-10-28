@@ -550,7 +550,7 @@
       {"section": "lock_ring", "fg": "text-mute", "bg": ["surface"], "kind": "disabled", "use": "the padlock, offline"},
       {"section": "lock_ring", "fg": "text-dim", "bg": ["bg"], "kind": "text", "use": "the hint under the ring"},
       {"section": "lock_ring", "fg": "error", "bg": ["bg"], "kind": "text", "use": "the hint, jammed"},
-      {"section": "hold_button", "fg": "text", "bg": ["accent-dim"], "kind": "text", "use": "the Button's label over the hold fill"},
+      {"section": "button", "fg": "text", "bg": ["accent-dim"], "kind": "text", "use": "hold (secondary / outline / ghost, pressed label = text): the label over the hold fill"},
       {"section": "status_block", "fg": "text-dim", "bg": ["bg"], "kind": "text", "use": "caption (dim / off) and the line"},
       {"section": "status_block", "fg": "accent-text", "bg": ["bg"], "kind": "text", "use": "caption: needs a look"},
       {"section": "status_block", "fg": "ok", "bg": ["bg"], "kind": "text", "use": "caption: ok"},

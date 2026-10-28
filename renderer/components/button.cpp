@@ -16,6 +16,12 @@
 // Press feedback = Motion press / release as style transitions ("fade-press-all", 80 ms ease-out; reduced motion
 // keeps them: colour only). Tap = "tap" + sound tap (disabled: "blocked" + error on finger down). Bleed: the focus
 // ring (decor, C14). Contrast pairs: tokens/colour.json section "button".
+// hold (2026-10-28, was the Hold button): a confirm step (open the door's latch). No tap; a press fills the button with
+// accent-dim from the left (core fx::hold: drawn on the Button, no extra object) over hold_time (Motion hold-confirm);
+// let go early = it drains (Motion release), nothing happens; full = sound confirm + event "confirm" (detail = value,
+// else the label), and letting go after is not a tap. hold_label = the words while held (silent). Disabled = blocked +
+// error. Kinds: secondary, outline, ghost (their pressed label is text over accent-dim, contrast section "button");
+// a primary hold button is drawn as secondary (on-accent over accent-dim fails in dark).
 // Still legacy inside: the secondary kind's corner ticks (the core atom fw::corner_ticks).
 #include "fw.h"
 #include "fx.h"
@@ -45,10 +51,27 @@ const Kind &kind_of(const char *k) {
   return KINDS[0];
 }
 std::string ink(const char *fg) { return std::string("ink:") + (strchr(fg, ':') + 1); }
+bool hold_on(fw::Props p) { return p["hold"] | false; }
+const char *kind_name(fw::Props p) {  // a primary hold button is drawn as secondary (contrast: see the top)
+  const char *k = p["kind"] | "primary";
+  return hold_on(p) && !strcmp(k, "primary") ? "secondary" : k;
+}
+// the hold's words (behaviour state on the root: rides on its DELETE event, like core/sheet.cpp)
+struct Held { std::string label, held, value; };
+void held_free(lv_event_t *e) { delete (Held *) lv_event_get_user_data(e); }
+Held *held_of(lv_obj_t *b) {
+  for (uint32_t i = 0, n = lv_obj_get_event_count(b); i < n; i++) {
+    lv_event_dsc_t *d = lv_obj_get_event_dsc(b, i);
+    if (lv_event_dsc_get_cb(d) == held_free) return (Held *) lv_event_dsc_get_user_data(d);
+  }
+  Held *h = new Held;
+  lv_obj_add_event_cb(b, held_free, LV_EVENT_DELETE, h);
+  return h;
+}
 
 // structural props (a change = the contents again, fw::refill); state + label move in place
 std::string sig(fw::Props p) {
-  return std::string(p["kind"] | "primary") + "|" + (p["icon"] | "none") + "|" + (p["width"].is<const char *>() ? p["width"] | "hug" : "hug");
+  return std::string(kind_name(p)) + "|" + (p["icon"] | "none") + "|" + (p["width"].is<const char *>() ? p["width"] | "hug" : "hug");
 }
 lv_obj_t *label_of(lv_obj_t *b) {
   for (int i = (int) lv_obj_get_child_count(b) - 1; i >= 0; i--)
@@ -63,8 +86,27 @@ void set_state(lv_obj_t *b, const char *state, bool animate) {
   fw::st::set_state(b, LV_STATE_CHECKED, active, animate);
   fw::st::set_state(b, ST_OFF, !strcmp(state, "disabled"), animate);
 }
+void set_words(lv_obj_t *b, const char *txt) {
+  if (lv_obj_t *l = label_of(b)) { fx::set_text(l, txt, "type:c-label"); fx::fit_grid(l); }  // a hug button re-fits its grid width
+}
+// phase 0 held (the hold words), 1 let go early, 2 full (confirm)
+void on_hold(lv_obj_t *b, int phase) {
+  Held *h = held_of(b);
+  set_words(b, (phase ? h->label : h->held).c_str());
+  if (phase != 2) return;
+  fw::sound(b, "confirm");
+  fw::emit(b, "confirm", (h->value.empty() ? h->label : h->value).c_str());
+}
+void take_hold(lv_obj_t *b, fw::Props p) {
+  Held *h = held_of(b);
+  h->label = p["label"] | "Start";
+  h->held = p["hold_label"] | "";
+  if (h->held.empty()) h->held = h->label;
+  h->value = p["value"] | "";
+  fx::hold(b, hold_on(p) ? (int) (p["hold_time"] | (double) fw::mo::ms::hold_confirm) : 0, on_hold);
+}
 void fill(lv_obj_t *b, fw::Props p) {
-  const char *kn = p["kind"] | "primary";
+  const char *kn = kind_name(p);
   const Kind &k = kind_of(kn);
   fw::shape(b, sig(p));
   lv_obj_add_flag(b, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_STATE_TRICKLE));
@@ -100,6 +142,7 @@ void fill(lv_obj_t *b, fw::Props p) {
   if (!strcmp(kn, "secondary")) fw::corner_ticks(b, fw::Corners::all);  // active: corner ticks (core atom)
   if (!strcmp(kn, "secondary")) fx::use(b, "part:control");  // the theme's control (C46), last; outline / ghost keep their own look
   if (!strcmp(kn, "primary")) fx::use(b, "part:button-primary");  // the theme's primary button (C46), last (Win98: the grey control look)
+  take_hold(b, p);
 }
 }  // namespace
 
@@ -117,7 +160,11 @@ FW_COMPONENT(button, "Button", "components", R"({
     {"name": "state", "about": "How the button looks: default ready to tap, pressed while held, active when it is the chosen one, active-pressed while the chosen one is held, or disabled when it cannot be used.", "type": "select", "options": ["default", "pressed", "active", "active-pressed", "disabled"], "default": "default"},
     {"name": "icon", "about": "An icon shown before the words, or none for words only.", "type": "select", "options": ["none", "plus", "check", "close"], "default": "none"},
     {"name": "size", "about": "normal is the full button height; small is the smallest touch height with less padding, for an action inside a row such as a section header's See all.", "type": "select", "options": ["normal", "small"], "default": "normal"},
-    {"name": "width", "about": "hug fits the button to its words; fill stretches it across the space it is in, with the words centred.", "type": "select", "options": ["hug", "fill"], "default": "hug"}
+    {"name": "width", "about": "hug fits the button to its words; fill stretches it across the space it is in, with the words centred.", "type": "select", "options": ["hug", "fill"], "default": "hug"},
+    {"name": "hold", "about": "Hold to confirm, for an action that must not happen by accident such as opening a door: a tap does nothing; the button fills while held and acts only when full.", "type": "bool", "default": false},
+    {"name": "hold_label", "about": "The words shown while the button is held, such as Opening. Empty keeps the label.", "type": "text", "default": ""},
+    {"name": "hold_time", "about": "How long a hold takes to confirm, in milliseconds.", "type": "range", "min": 400, "max": 4000, "step": 100, "default": 1200},
+    {"name": "value", "about": "What a completed hold sends, such as open. Empty sends the label.", "type": "text", "default": ""}
   ],
   "variants": [
     {"label": "primary · default", "props": {}},
@@ -144,7 +191,9 @@ FW_COMPONENT(button, "Button", "components", R"({
     {"label": "primary · icon", "props": {"label": "Add", "icon": "plus"}},
     {"label": "secondary · icon", "props": {"kind": "secondary", "label": "Done", "icon": "check"}},
     {"label": "outline · icon", "props": {"kind": "outline", "label": "Clear", "icon": "close"}},
-    {"label": "primary · fill", "props": {"width": "fill"}}
+    {"label": "primary · fill", "props": {"width": "fill"}},
+    {"label": "secondary · hold", "props": {"kind": "secondary", "label": "Hold to open", "hold_label": "Keep holding", "value": "open", "hold": true, "width": "fill"}},
+    {"label": "secondary · hold · disabled", "props": {"kind": "secondary", "label": "Hold to open", "hold": true, "width": "fill", "state": "disabled"}}
   ]
 })") {
   lv_obj_t *b = lv_obj_create(parent);
@@ -152,37 +201,29 @@ FW_COMPONENT(button, "Button", "components", R"({
   fx::name(b, "button");
   fill(b, p);
 
-  // a real tap (LVGL drops CLICKED after a scroll, like the docs' "moved > 8 px stays silent")
-  // internal prop tap false (Hold button): no tap of its own, only press / release (the hold acts, facet-187)
-  if (!(p["tap"] | true)) {
-    fw::st::on_tap(b, [](lv_event_t *e) {  // disabled still says so (blocked + error); enabled = nothing
-      if (!fw::st::tap_now(e)) return;
-      auto *o = (lv_obj_t *) lv_event_get_current_target(e);
-      if (lv_obj_has_state(o, ST_OFF)) fw::st::blocked(o, lv_label_get_text(label_of(o)));
-    }, nullptr);
-    return;
-  }
+  // a real tap (LVGL drops CLICKED after a scroll, like the docs' "moved > 8 px stays silent"); a hold button has no
+  // tap of its own (fx::hold acts), disabled still says so
   fw::st::on_tap(b, [](lv_event_t *e) {  // blocked on finger down, a real tap on CLICKED (states.json)
     if (!fw::st::tap_now(e)) return;
     auto *o = (lv_obj_t *) lv_event_get_current_target(e);
     const char *d = lv_label_get_text(label_of(o));  // looked up: an update may have made the label again
     if (lv_obj_has_state(o, ST_OFF)) fw::st::blocked(o, d);
-    else { fw::emit(o, "tap", d); fw::sound(o, "tap"); }
+    else if (!fx::holds(o)) { fw::emit(o, "tap", d); fw::sound(o, "tap"); }
   }, nullptr);
 }
 
 // Update path: state (default / pressed / active / disabled) fades in place through fw::st::set_state, a new label
 // text is set in place (a hug button re-fits its grid width); kind, icon or width = the contents again (fw::refill,
-// snap). Silent.
+// snap); hold, hold_label, hold_time, value in place (hold on / off from primary = another kind: the contents again). Silent.
 FW_UPDATE(button) {
   if (!fw::shape(root, sig(p))) {
+    fx::hold(root, 0, nullptr);  // no fill left over from a hold the refill cut short
     fw::refill(root);
     fill(root, p);
     return true;
   }
-  lv_obj_t *l = label_of(root);
-  const char *txt = p["label"] | "Start";
-  if (l) { fx::set_text(l, txt, "type:c-label"); fx::fit_grid(l); }  // a hug button re-fits its grid width
+  set_words(root, p["label"] | "Start");
   set_state(root, p["state"] | "default", true);
+  take_hold(root, p);
   return true;
 }

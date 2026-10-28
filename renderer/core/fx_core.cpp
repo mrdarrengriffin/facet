@@ -1313,6 +1313,100 @@ void focus_ring(lv_obj_t *o, lv_style_selector_t show) {  // decor (C14): the on
   use(o, "no-outline", fw::st::OFF);  // disabled / unavailable hide it, even when active
   fw::bleed(o, fw::touch::focus_offset);  // the audit / bounds proof: this object's ink may reach that far outside it
 }
+// ---------------------------------------------------------------- hold to confirm
+namespace {
+struct Hold { lv_obj_t *o; int ms = 0, prog = 0; bool holding = false; void (*on)(lv_obj_t *, int) = nullptr; };  // prog 0..1000
+void hold_set(void *v, int32_t x);
+void hold_free(lv_event_t *e) {
+  auto *h = (Hold *) lv_event_get_user_data(e);
+  lv_anim_delete(h->o, hold_set);
+  delete h;
+}
+Hold *hold_of(lv_obj_t *o) {  // the Hold rides on o's DELETE event (o's user data is the component's)
+  for (uint32_t i = 0, n = o ? lv_obj_get_event_count(o) : 0; i < n; i++) {
+    lv_event_dsc_t *d = lv_obj_get_event_dsc(o, i);
+    if (lv_event_dsc_get_cb(d) == hold_free) return (Hold *) lv_event_dsc_get_user_data(d);
+  }
+  return nullptr;
+}
+void hold_set(void *v, int32_t x) {
+  auto *o = (lv_obj_t *) v;
+  if (Hold *h = hold_of(o)) h->prog = x;
+  lv_obj_invalidate(o);
+}
+void hold_draw(lv_event_t *e) {  // after o's fill + border, before its label: o's rounded shape clipped to the held share
+  auto *h = (Hold *) lv_event_get_user_data(e);
+  if (h->ms <= 0 || h->prog <= 0) return;
+  lv_layer_t *layer = lv_event_get_layer(e);
+  lv_area_t a, part, clip;
+  lv_obj_get_coords(h->o, &a);
+  part = a;
+  part.x2 = a.x1 + (int32_t) ((int64_t) lv_area_get_width(&a) * h->prog / 1000) - 1;
+  const lv_area_t &lc = layer->_clip_area;
+  clip = {LV_MAX(part.x1, lc.x1), LV_MAX(part.y1, lc.y1), LV_MIN(part.x2, lc.x2), LV_MIN(part.y2, lc.y2)};
+  if (clip.x1 > clip.x2 || clip.y1 > clip.y2) return;
+  const lv_area_t keep = layer->_clip_area;
+  layer->_clip_area = clip;
+  lv_draw_rect_dsc_t d;
+  lv_draw_rect_dsc_init(&d);
+  d.bg_color = ink(h->o, "bg:accent-dim"), d.bg_opa = LV_OPA_COVER, d.radius = lv_obj_get_style_radius(h->o, LV_PART_MAIN);
+  lv_draw_rect(layer, &d, &a);
+  layer->_clip_area = keep;
+}
+void hold_full(lv_anim_t *a) {
+  auto *o = (lv_obj_t *) a->var;
+  Hold *h = hold_of(o);
+  if (!h) return;
+  h->holding = false, h->prog = 0;
+  lv_obj_invalidate(o);
+  if (h->on) h->on(o, 2);
+  for (lv_indev_t *in = lv_indev_get_next(nullptr); in; in = lv_indev_get_next(in))  // letting go now is not also a tap
+    if (lv_indev_get_type(in) == LV_INDEV_TYPE_POINTER) lv_indev_wait_release(in);
+}
+void hold_ev(lv_event_t *e) {
+  auto *h = (Hold *) lv_event_get_user_data(e);
+  lv_obj_t *o = h->o;
+  const lv_event_code_t code = lv_event_get_code(e);
+  if (h->ms <= 0) return;
+  if (code == LV_EVENT_PRESSED && !lv_obj_has_state(o, fw::st::OFF)) {
+    h->holding = true;
+    lv_anim_delete(o, hold_set);  // a drain still running: the fill grows again from where it is
+    if (h->on) h->on(o, 0);
+    lv_anim_t a;
+    lv_anim_init(&a);
+    lv_anim_set_var(&a, o);
+    lv_anim_set_values(&a, h->prog, 1000);
+    lv_anim_set_duration(&a, (uint32_t) std::max(1, h->ms * (1000 - h->prog) / 1000));
+    lv_anim_set_path_cb(&a, fw::mo::ease::linear);
+    lv_anim_set_exec_cb(&a, hold_set);
+    lv_anim_set_completed_cb(&a, hold_full);
+    lv_anim_start(&a);
+  } else if ((code == LV_EVENT_RELEASED || code == LV_EVENT_PRESS_LOST) && h->holding) {
+    h->holding = false;
+    lv_anim_delete(o, hold_set);
+    if (h->on) h->on(o, 1);
+    if (h->prog > 0) fw::animate(o, fw::mo::release, {hold_set, h->prog, 0, fw::mo::VALUE});
+  }
+}
+}  // namespace
+void hold(lv_obj_t *o, int ms, void (*on)(lv_obj_t *o, int phase)) {
+  Hold *h = hold_of(o);
+  if (!h) {
+    if (ms <= 0) return;
+    h = new Hold;
+    h->o = o;
+    lv_obj_add_event_cb(o, hold_free, LV_EVENT_DELETE, h);
+    lv_obj_add_event_cb(o, hold_draw, LV_EVENT_DRAW_MAIN, h);
+    for (lv_event_code_t ev : {LV_EVENT_PRESSED, LV_EVENT_RELEASED, LV_EVENT_PRESS_LOST}) lv_obj_add_event_cb(o, hold_ev, ev, h);
+  }
+  if (ms <= 0 || h->ms <= 0) {  // off, or on again: no fill left over
+    lv_anim_delete(o, hold_set);
+    h->prog = 0, h->holding = false;
+    lv_obj_invalidate(o);
+  }
+  h->ms = ms, h->on = on;
+}
+bool holds(lv_obj_t *o) { const Hold *h = hold_of(o); return h && h->ms > 0; }
 void pulse(lv_obj_t *o) {
   fw::Anim a{[](void *x, int32_t v) { lv_obj_set_style_opa((lv_obj_t *) x, (lv_opa_t) v, 0); }, LV_OPA_COVER,
              (int32_t) lroundf(fw::mo::OPA_PULSE_MIN * 255), fw::mo::OPA};

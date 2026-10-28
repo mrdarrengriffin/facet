@@ -61,19 +61,21 @@
    }
   },
   {
-   "c": "hold_button",
+   "c": "button",
    "in": 0,
    "slot": 1,
+   "show": {
+    "e": "$entity",
+    "a": "supported_features",
+    "fmt": "num",
+    "s": "1"
+   },
    "p": {
     "label": "Hold to open door",
     "value": "open",
-    "mask": 1,
-    "features": {
-     "e": "$entity",
-     "a": "supported_features",
-     "fmt": "num",
-     "s": "1"
-    },
+    "kind": "secondary",
+    "width": "fill",
+    "hold": true,
     "state": {
      "e": "$entity",
      "s": "$demo",

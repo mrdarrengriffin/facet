@@ -40,6 +40,12 @@ void pulse(lv_obj_t *o);
 // decor (C14): the focus ring (states.json focus: stroke focus, its outer edge touch:focus-offset outside the box) in
 // state `show`, hidden by fw::st::OFF; a shared style, so a theme switch repaints it
 void focus_ring(lv_obj_t *o, lv_style_selector_t show = LV_STATE_CHECKED);          // Motion pattern "pulse" on o's opacity (forever; reduced motion = still)
+// hold to confirm (the Button's hold prop): while o is pressed it fills from the left with bg:accent-dim (drawn on o
+// at draw time in o's own radius, the theme's ink read then: no extra object) over ms, linear; let go early = it drains
+// (Motion release). on(o, phase): 0 = a hold started, 1 = let go early, 2 = full (the finger then has to lift: no tap
+// follows). Disabled (fw::st::OFF) never starts. ms <= 0 = off (the fill gone). Called again = new ms / on, in place.
+void hold(lv_obj_t *o, int ms, void (*on)(lv_obj_t *o, int phase));
+bool holds(lv_obj_t *o);  // o is a hold control (fx::hold on)
 lv_obj_t *row(lv_obj_t *parent);   // equal cells with the gutter between: row(), then one cell() per item
 lv_obj_t *cell(lv_obj_t *row);
 // a one-line text (or a row of fixed boxes) whose box ends on the 4 px grid (what follows it lands on the grid)

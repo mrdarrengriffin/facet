@@ -342,7 +342,7 @@
       "steps": [
         {
           "press": {
-            "hit": "hold_button"
+            "hit": "button"
           }
         },
         {
@@ -350,7 +350,7 @@
         },
         {
           "release": {
-            "hit": "hold_button"
+            "hit": "button"
           }
         }
       ],

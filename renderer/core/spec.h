@@ -167,7 +167,7 @@ constexpr Rule RULES[] = {
     {"thermostat_view", "preset", "climate.set_preset_mode"},
     {"media_view", "media", "media.control"},        {"media_view", "speaker", "screen.param"},
     {"covers_view", "cover", "cover.control"},       {"covers_view", "window", "screen.param"},
-    {"lock_ring", "lock", "lock.control"},           {"hold_button", "confirm", "lock.control"},
+    {"lock_ring", "lock", "lock.control"},           {"button", "confirm", "lock.control"},
     {"room_tile", "pick", "screen.toggle"},          {"camera_tile", "tap", "nav.back"},          {"tile", "tap", "nav.open"},          {"button", "tap", "nav.open,nav.back,light.toggle,vacuum.control"},
     {"segmented", "change", "vacuum.control,screen.param"}, {"iso_floorplan", "pick", "screen.toggle"},
     {"vacuum_mode", "change", "vacuum.control"},     {"grid", "pick", "screen.param,nav.open"},        // a link to a sub-view spec (moon -> moon_details -> ...)

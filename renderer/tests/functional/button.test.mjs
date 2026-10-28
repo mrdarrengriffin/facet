@@ -1,4 +1,7 @@
-// Button (components/button.cpp): tap, hold, slide-off, disabled, kinds, icon, width, update path.
+// Button (components/button.cpp): tap, hold, slide-off, disabled, kinds, icon, width, update path; the hold prop
+// (was the Hold button): hold for hold_time = confirm(value) + sound confirm, let go early = nothing, disabled blocks.
+const HL = 'HOLD TO OPEN', HP = { kind: 'secondary', label: 'Hold to open', value: 'open', hold: true, width: 'fill' };
+const confirms = (ev) => ev.filter((e) => e.kind === 'event' && e.name === 'confirm').length;
 const one = (evs) => evs.filter((e) => e.kind === 'event' && e.name === 'tap').length;
 const H = { '1.5x': 64, '1x': 44 };  // touch button-h
 export default {
@@ -55,6 +58,35 @@ export default {
     } },
     { name: 'active state still taps', mount: ['button', { label: 'Start', state: 'active' }], run(t) {
       t.emitted(t.tap('START'), 'tap');
+    } },
+    { name: 'hold: 1.5 s = one confirm(value) + confirm sound, no tap', mount: ['button', HP], run(t) {
+      const ev = t.hold(HL, 1500); t.emitted(ev, 'confirm', 'open'); t.eq(confirms(ev), 1, 'confirm count'); t.sounds(ev, ['confirm']); t.notEmitted(ev, 'tap');
+    } },
+    { name: 'hold: 4 s is still exactly one confirm', mount: ['button', HP], run(t) { t.eq(confirms(t.hold(HL, 4000)), 1, 'confirm count'); } },
+    { name: 'hold: a plain tap does nothing (no tap event, no sound)', mount: ['button', HP], run(t) { const ev = t.tap(HL); t.notEmitted(ev, 'confirm'); t.notEmitted(ev, 'tap'); t.silent(ev); } },
+    { name: 'hold: let go at 0.8 s = nothing, the next full hold still confirms', mount: ['button', HP], run(t) {
+      const ev = t.hold(HL, 800); t.notEmitted(ev, 'confirm', 'early'); t.hasNot(ev.filter((e) => e.kind === 'sound').map((e) => e.name), 'confirm', 'no confirm sound');
+      t.emitted(t.hold(HL, 1500), 'confirm', 'open', 'full hold after');
+    } },
+    { name: 'hold: no value = the label is the confirm detail', mount: ['button', { ...HP, value: '' }], run(t) { t.emitted(t.hold(HL, 1500), 'confirm', 'Hold to open'); } },
+    { name: 'hold: hold_time 3000 = no confirm at 1.5 s, one at 3.5 s', mount: ['button', { ...HP, hold_time: 3000 }], run(t) {
+      t.notEmitted(t.hold(HL, 1500), 'confirm', 'at 1.5 s'); t.emitted(t.hold(HL, 3500), 'confirm', 'open', 'at 3.5 s');
+    } },
+    { name: 'hold: disabled = blocked + error, no confirm', mount: ['button', { ...HP, state: 'disabled' }], run(t) {
+      const ev = t.hold(HL, 1500); t.notEmitted(ev, 'confirm'); t.emitted(ev, 'blocked'); t.sounds(ev, ['error']);
+    } },
+    { name: 'hold: hold_label shows while held, the label is back after', mount: ['button', { ...HP, hold_label: 'Keep holding' }], run(t) {
+      const o = t.find(HL), x = o.x + o.w / 2, y = o.y + o.h / 2;
+      t.b.touch(x, y, 1); t.wait(300); t.has(t.texts(), 'KEEP HOLDING', 'held words'); t.b.touch(x, y, 0);
+      const ev = t.wait(600); t.has(t.texts(), HL, 'label back'); t.notEmitted(ev, 'confirm', 'early'); t.emitted(t.hold(HL, 1500), 'confirm', 'open', 'still confirms');
+    } },
+    { name: 'hold: update on / off in place, silent', mount: ['button', { kind: 'secondary', label: 'Open' }], run(t) {
+      t.silent(t.update({ hold: true, value: 'open' }), 'on'); t.notEmitted(t.tap('OPEN'), 'tap', 'no tap when hold'); t.emitted(t.hold('OPEN', 1500), 'confirm', 'open');
+      t.silent(t.update({ hold: false }), 'off'); t.emitted(t.tap('OPEN'), 'tap', 'OPEN', 'taps again');
+    } },
+    { name: 'hold: a primary hold button is drawn as secondary', async run(t) {
+      await t.mount('button', { label: 'Go', kind: 'secondary', hold: true }); const s = t.part('button').w;
+      await t.mount('button', { label: 'Go', hold: true }); t.eq(t.part('button').w, s, 'same width'); t.emitted(t.hold('GO', 1500), 'confirm', 'Go');
     } },
   ],
 };
