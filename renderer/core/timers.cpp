@@ -95,6 +95,7 @@ void fresh() {
     put("left", "0:00");
   }
   put("count", std::to_string(v.size()));
+  put("bar", v.size() >= 2 && !L().pick ? "1" : "");  // the Timer bar: 2+ timers, not while picking a length
   put("running", std::to_string(running()));
   put("free", std::to_string(TIMERS_MAX - (int) v.size()));
   ArduinoJson::JsonDocument d;
@@ -102,7 +103,7 @@ void fresh() {
   for (const TimerItem &t : v) {
     if (s && t.id == s->id) continue;
     ArduinoJson::JsonObject j = o.add<ArduinoJson::JsonObject>();
-    j["id"] = t.id;
+    j["id"] = std::to_string(t.id);  // text: a spec fills "$item.id" into a text prop (a Timer chip's key)
     j["name"] = t.named ? t.name : length_name(t.total);
     j["left"] = left(t);
     j["total"] = t.total;
@@ -112,6 +113,21 @@ void fresh() {
   std::string js;
   serializeJson(d, js);
   put("others", js);
+  // every timer (the Timer bar: with 2+ all of them, the one in the ring active), in the list's order
+  ArduinoJson::JsonDocument da;
+  ArduinoJson::JsonArray oa = da.to<ArduinoJson::JsonArray>();
+  for (const TimerItem &t : v) {
+    ArduinoJson::JsonObject j = oa.add<ArduinoJson::JsonObject>();
+    j["id"] = std::to_string(t.id);
+    j["name"] = t.named ? t.name : length_name(t.total);
+    j["left"] = left(t);
+    j["total"] = t.total;
+    j["state"] = t.state == 1 ? "running" : "done";
+    j["active"] = s && t.id == s->id ? "1" : "";
+  }
+  js.clear();
+  serializeJson(da, js);
+  put("all", js);
 }
 [[maybe_unused]] const bool registered = (ha::on_local(TIMER_ENTITY, fresh), true);  // binds on panel.timer never reach a host
 }  // namespace

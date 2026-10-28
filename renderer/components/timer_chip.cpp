@@ -34,10 +34,13 @@ struct Chip {
   int state = RUNNING;
   bool active = false, off = false;
   int32_t shown = 0;
-  std::string name;
+  std::string name, key;
+  const char *type = "type:c-meta";  // the time's type: c-body when it is the only text  // key = what a tap sends (the timer's id in a spec; default the name)
   lv_obj_t *ring = nullptr, *left = nullptr, *nm = nullptr;
 };
 void chip_free(lv_event_t *e) { delete (Chip *) lv_event_get_user_data(e); }
+// a bool prop that may come as text from a spec ("$item.active" = "1" / "")
+bool on(ArduinoJson::JsonVariantConst v) { return v.is<bool>() ? v.as<bool>() : v.is<const char *>() ? (!strcmp(v | "", "1") || !strcmp(v | "", "true")) : (v | 0) != 0; }
 Chip *of(lv_obj_t *o) {  // rides on the root's DELETE event (refill keeps event callbacks)
   for (uint32_t i = 0, n = lv_obj_get_event_count(o); i < n; i++) {
     lv_event_dsc_t *d = lv_obj_get_event_dsc(o, i);
@@ -97,23 +100,24 @@ void tap(lv_event_t *e) {
   Chip *c = of(o);
   if (!c) return;
   if (lv_obj_has_state(o, fw::st::OFF)) { fw::st::blocked(o, c->name.c_str()); return; }
-  if (c->state == DONE) { fw::emit(o, "stop", c->name.c_str()); fw::sound(o, fw::st::OFF_SOUND); return; }
-  fw::emit(o, "select", c->name.c_str());
+  if (c->state == DONE) { fw::emit(o, "stop", c->key.c_str()); fw::sound(o, fw::st::OFF_SOUND); return; }
+  fw::emit(o, "select", c->key.c_str());
   fw::sound(o, fw::st::TAP_SOUND);
 }
 
 void fill(lv_obj_t *b, fw::Props p) {
   Chip *c = of(b);
   c->state = state_of(p);
-  c->active = p["active"] | false;
+  c->active = on(p["active"]);
   c->off = p["unavailable"] | false;
-  c->name = p["name"] | "Eggs";
+  c->name = p["name"] | "";
+  c->key = p["key"] | ""; if (c->key.empty()) c->key = c->name;
   const bool done = c->state == DONE;
   constexpr lv_state_t P = LV_STATE_PRESSED, C = LV_STATE_CHECKED, O = fw::st::OFF;
   for (const char *t : {"timer-chip", "radius:chip", "fade-release"}) fx::use(b, t);
   fx::use(b, done ? "bg:accent-dim" : "bg:surface");
   fx::use(b, done ? "border:accent" : "border:line");
-  fx::use(b, "border:on-line", C);
+  fx::use(b, "border:accent", C);  // active (the one in the ring): the accent edge
   fx::use(b, "fade-press", P);
   fx::use(b, "bg:pressed-surface", P);
   fx::use(b, "border:pressed-line", P);
@@ -136,17 +140,19 @@ void fill(lv_obj_t *b, fw::Props p) {
     for (const char *t : {"w:timer-chip-ring", "h:timer-chip-ring", "max-h:timer-chip-ring"}) fx::use(c->ring, t);
     c->shown = share_of(p);
   }
-  c->nm = fx::text(b, c->name.c_str(), "type:c-body", "fg:text");
-  fx::use(c->nm, "fg:disabled-ink", O);
-  fx::fit_grid(c->nm);
-  c->left = fx::text(b, done ? "DONE" : countdown(left_of(p)).c_str(), "type:c-meta", done ? "fg:text" : "fg:text-dim");
+  // no name (the Timer bar, Darren 2026-10-28): the countdown is the chip's main text
+  const bool named = !c->name.empty();
+  c->nm = named ? fx::text(b, c->name.c_str(), "type:c-body", "fg:text") : nullptr;
+  if (c->nm) { fx::use(c->nm, "fg:disabled-ink", O); fx::fit_grid(c->nm); }
+  c->type = named ? "type:c-meta" : "type:c-body";
+  c->left = fx::text(b, done ? "DONE" : countdown(left_of(p)).c_str(), c->type, done || !named ? "fg:text" : "fg:text-dim");
   fx::use(c->left, "fg:disabled-ink", O);
   fx::fit_grid(c->left);
   fx::use(b, "part:control");  // the theme's control (C46), last
   if (c->active) lv_obj_add_state(b, C);
   if (c->off) fx::state(b, O, true);
 }
-std::string sig(fw::Props p) { return std::to_string(state_of(p)) + ((p["active"] | false) ? "a" : "") + ((p["unavailable"] | false) ? "u" : ""); }
+std::string sig(fw::Props p) { return std::to_string(state_of(p)) + (on(p["active"]) ? "a" : "") + (*(p["name"] | "") ? "n" : "") + ((p["unavailable"] | false) ? "u" : ""); }
 }  // namespace
 
 FW_COMPONENT(timer_chip, "Timer chip", "components", R"({
@@ -157,7 +163,8 @@ FW_COMPONENT(timer_chip, "Timer chip", "components", R"({
   "frame": [320, 64],
   "icons": ["check@icon"],
   "props": [
-    {"name": "name", "about": "The timer's name, such as Eggs.", "type": "text", "default": "Eggs"},
+    {"name": "name", "about": "The timer's name, such as Eggs. Empty leaves the name out and makes the countdown the main text (the Timer bar).", "type": "text", "default": "Eggs"},
+    {"name": "key", "about": "What a tap sends to say which timer it is, such as its id. Empty sends the name.", "type": "text", "default": ""},
     {"name": "left", "about": "Seconds left on the timer.", "type": "range", "min": 0, "max": 3600, "step": 1, "default": 430},
     {"name": "total", "about": "The timer's whole length in seconds; the mini ring shows left out of it.", "type": "range", "min": 1, "max": 3600, "step": 1, "default": 480},
     {"name": "state", "about": "running counts down; idle is set but not running; done has run out and shows DONE in the accent (a tap stops it).", "type": "select", "options": ["running", "idle", "done"], "default": "running"},
@@ -194,8 +201,9 @@ FW_UPDATE(timer_chip) {
   }
   const char *nm = p["name"] | "Eggs";  // in place: no style is added again (that repaints the whole chip)
   if (c->nm && c->name != nm) { c->name = nm; fx::set_text(c->nm, nm, "type:c-body"); }
+  c->key = p["key"] | ""; if (c->key.empty()) c->key = c->name;
   if (c->state != DONE) {
-    if (c->left) fx::set_text(c->left, countdown(left_of(p)).c_str(), "type:c-meta");
+    if (c->left) fx::set_text(c->left, countdown(left_of(p)).c_str(), c->type);
     show(root, share_of(p));
   }
   return true;

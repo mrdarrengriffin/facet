@@ -25,7 +25,7 @@
  "shape": {"corner": "square", "cap": "square", "knob": "square", "ticks": "lines", "snap": true},
  "parts": {
   "card": {"radius": 0, "edges": [{"side": "all", "w": 1, "ink": "line-hi"}]},
-  "arc-fill": {"ink": "line-hi"},
+  "arc-fill": {"ink": "text-mute"},
   "knob": {"shape": "square", "edges": [{"side": "all", "w": 1, "ink": "bg"}]},
   "control": {"radius": 0, "face": "surface", "edges": [{"side": "all", "w": 1, "ink": "text-dim"}], "pressed": {"face": "surface-press", "edges": [{"side": "all", "w": 1, "ink": "text"}]}},
   "display": {"shadow": {"dx": 1, "dy": 1, "ink": "#14501F"}},

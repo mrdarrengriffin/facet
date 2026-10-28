@@ -181,7 +181,7 @@ void timer_cmd(const std::string &a, ArduinoJson::JsonDocument &d) {
   }
   const fw::dev::TimerItem *sh = tm::shown();
   d["shown"] = sh ? sh->id : 0;
-  for (const char *k : {"", "id", "name", "left", "left_s", "total", "share", "line", "count", "running", "free", "others"})
+  for (const char *k : {"", "id", "name", "left", "left_s", "total", "share", "line", "count", "running", "free", "others", "all", "bar"})
     if (const std::string *v = fw::ha::get(fw::dev::TIMER_ENTITY, k)) d["store"][*k ? k : "state"] = *v;
   std::string lj;
   tm::list_json(lj);

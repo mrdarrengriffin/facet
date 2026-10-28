@@ -47,7 +47,7 @@ void draw(const fx::Pen &p) {
   const int te = fx::size("stroke:arc"), ti = fx::size("stroke:indicator");
   p.arc(p.half - te / 2, 0.0f, 360.0f, "stroke:arc", "fg:line", false, "arc");
   if (r->off || r->shown <= 0) return;  // done / unavailable: the track only
-  p.arc(p.half - ti / 2, START, angle(r->shown), "stroke:indicator", "fg:accent", true, "arc-fill");
+  p.arc(p.half - ti / 2, START, angle(r->shown), "stroke:indicator", "fg:accent-text", true, "arc-fill");  // accent-text: 3:1 on the light canvas too
 }
 void show(void *o, int32_t v) {
   auto *s = (lv_obj_t *) o;
@@ -75,6 +75,7 @@ void sample(lv_obj_t *slot, const char *kind) {
   ArduinoJson::JsonDocument d;
   d["n"] = done ? "0:00" : "4:32";
   d["label"] = "pasta";
+  d["layout"] = "stack";  // as on the Timer page: label over the time over the line
   d["line"] = done ? "done" : "ends 14:52";
   d["accent"] = done;
   if (off) d["state"] = "unavailable";

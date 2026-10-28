@@ -73,7 +73,7 @@ void build_static(lv_obj_t *r, Props p) {
     if (i >= 0 && i < n) spans[i] = {kv.value()[0] | 1, kv.value()[1] | 1};
   }
   const bool outline = (p["outline"] | false) || !spec::building_header();
-  const bool row = !strcmp(p["aspect"] | "square", "row");
+  const bool row = !strcmp(p["aspect"] | "square", "row") || !strcmp(p["aspect"] | "square", "hug");
   for (int i = 0; i < n; i++) {
     lv_obj_t *c = fx::grid_cell(r, spans[i].first, spans[i].second);
     fx::slot(c, "cell");
@@ -158,7 +158,7 @@ FW_COMPONENT(grid, "Grid", "components", R"({
     {"name": "cols", "about": "How many columns, 1 to 8. Leave it out when min is set.", "type": "range", "min": 1, "max": 8, "step": 1, "default": 3},
     {"name": "min", "about": "Instead of cols: the smallest cell, as an icon size step; the grid fits as many columns as it can, so a bigger screen gets more columns. none uses cols.", "type": "select", "options": )" FW_ICON_MIN_IDS R"(, "default": "none"},
     {"name": "gap", "about": "The space between cells: none, near, group or block (from tight to roomy).", "type": "select", "options": ["none", "near", "group", "block"], "default": "group"},
-    {"name": "aspect", "about": "The cell shape: square, wide (16 by 9), or row (as tall as what is inside, for text like stats).", "type": "select", "options": ["square", "wide", "row"], "default": "square"},
+    {"name": "aspect", "about": "The cell shape: square, wide (16 by 9), row (as tall as what is inside, for text like stats), or hug (each cell as wide as what is inside, the row centred, like a bar of chips).", "type": "select", "options": ["square", "wide", "row", "hug"], "default": "square"},
     {"name": "rows", "about": "At most this many rows; 0 for no limit. A list of items that does not fit shows a last cell with +N for the rest.", "type": "range", "min": 0, "max": 8, "step": 1, "default": 0},
     {"name": "items", "about": "The list to repeat one cell per item: a comma list or a JSON list, usually bound to an entity attribute. Each cell is the node's cell template with $item (or $item.field) filled in; without a template, an icon named by the item.", "type": "text", "default": ""},
     {"name": "empty", "about": "The words shown when the items list is empty.", "type": "text", "default": "Nothing here"},
