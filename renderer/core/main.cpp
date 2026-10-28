@@ -476,6 +476,7 @@ std::string lab_name(lv_obj_t *o) {
   for (uint32_t i = 0; i < o->style_cnt; i++) if (const char *n = fx::style_name(o->styles[i].style)) return std::string("[") + n + "]";
   return "object";
 }
+bool qa_clips_on_purpose(lv_obj_t *o);  // fw::qa::clips(o, why): o clips its children on purpose (below)
 void lab_walk(lv_obj_t *o, bool in_body, ArduinoJson::JsonArray bounds, ArduinoJson::JsonArray trunc, std::vector<lv_obj_t *> &clicks) {
   for (uint32_t i = 0; i < lv_obj_get_child_count(o); i++) {
     lv_obj_t *c = lv_obj_get_child(o, i);
@@ -485,9 +486,14 @@ void lab_walk(lv_obj_t *o, bool in_body, ArduinoJson::JsonArray bounds, ArduinoJ
     lv_obj_get_coords(c, &a);
     if (lv_obj_check_type(c, &lv_label_class)) { const int32_t ty = lv_obj_get_style_translate_y(c, LV_PART_MAIN); a.y1 -= ty; a.y2 -= ty; }  // text-box translate is not layout
     if (in_body && !lab_has(c, "bleed") && fw::sheet::panel(o) != c) {  // a sheet's panel overhangs the screen edges on purpose (core/sheet.h)
-      lv_area_t p;
+      lv_area_t p, bb;
       lv_obj_get_content_coords(o, &p);
-      if (a.x1 < p.x1 || a.y1 < p.y1 || a.x2 > p.x2 || a.y2 > p.y2)
+      lv_obj_get_coords(o, &bb);
+      // the same rules as the audit's bounds proof (core/test_hooks.cpp): a floating mark inside its parent's border
+      // box (corner ticks, a toast's timer bar) is inside; a parent that clips on purpose (qa::clips: a sparkline's
+      // track one slot past its box for the shift) shows only its own box
+      const bool edge_mark = lv_obj_has_flag(c, LV_OBJ_FLAG_IGNORE_LAYOUT) && a.x1 >= bb.x1 && a.y1 >= bb.y1 && a.x2 <= bb.x2 && a.y2 <= bb.y2;
+      if (!edge_mark && !qa_clips_on_purpose(o) && (a.x1 < p.x1 || a.y1 < p.y1 || a.x2 > p.x2 || a.y2 > p.y2))
         lab_box(bounds, a, lab_name(c) + " " + std::to_string(lv_area_get_width(&a)) + "x" + std::to_string(lv_area_get_height(&a)) +
                 " outside its parent's content box " + std::to_string(lv_area_get_width(&p)) + "x" + std::to_string(lv_area_get_height(&p)));
     }
@@ -635,6 +641,9 @@ struct Mark {
   float cx = 0, cy = 0, r = 0;
 };
 std::map<const lv_obj_t *, Mark> marks;
+}  // namespace
+extern "C" bool qa_clips_on_purpose(lv_obj_t *o) { auto it = marks.find(o); return it != marks.end() && !it->second.clip_why.empty(); }
+namespace {
 Mark &mark(lv_obj_t *o) {
   auto it = marks.find(o);
   if (it == marks.end()) {

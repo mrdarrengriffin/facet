@@ -52,7 +52,7 @@ export class Bench {  // one module instance, one stage at a time
     this.m = await instance(this.den, this.build);
     this.hasTest = !!this.m._fw_test; this.hasBench = !!this.m._fw_bench_take;
     this.t = 0;
-    this.stage = this.m._fw_stage(this.S, this.S);
+    this.stage = this.frame ? this.m._fw_stage(this.frame[0], this.frame[1]) : this.m._fw_stage(this.S, this.S);  // frame: behaviour spec "frame"
     if (this.hasBench) this.m._fw_bench_attach();  // hooks the new display (idempotent), zeroes the counters
     const rec = this.rec; this.rec = null; this.tick(2); this.rec = rec;
     this.events();

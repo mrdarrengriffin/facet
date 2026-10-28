@@ -480,6 +480,7 @@ Line *line_chart(lv_obj_t *parent, const Theme &t, const LineOpts &o) {
   L->tw = L->v.size() < 2 ? o.w : o.w + (int) std::ceil(slot(L, n)) + L->weight + 2;  // room for one more point (shift)
   L->track = box(L->root);
   lv_obj_set_size(L->track, L->tw, o.h);
+  fw::qa::clips(L->root, "the line's track runs one slot past the box: a new reading slides in from there");
   lv_obj_add_event_cb(L->track, [](lv_event_t *e) {
     auto *L = (Line *) lv_event_get_user_data(e);
     if (L->reveal < 0) return;

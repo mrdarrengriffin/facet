@@ -37,11 +37,15 @@ const EXTRA = { card: [{ opening: false }, CARD, PAGE],
   group: [{ sample: 4 }, ['layout:gutter'], PAGE.filter((n) => n !== 'layout:gutter')],
   grid: [{}, ['layout:gutter'], PAGE.filter((n) => n !== 'layout:gutter')],
   hero_block: [{ n: '3', label: 'need you', line: '2 reviews' }, ['layout:gutter', 'space:2'], PAGE.filter((n) => n !== 'layout:gutter')] };
+// the wall clock pinned (a screen's Header shows the live time: a minute ticking over between a tune and its "and back"
+// changed the pixels, a flaky fail, 2026-10-28); the module reads it through Date.now (emscripten_date_now)
+const PINNED = Date.UTC(2026, 9, 28, 9, 41, 0);
+Date.now = () => PINNED;
 const di = process.argv.indexOf('--den');
 const m0 = await (await import(pathToFileURL(join(BUILD, di > 0 ? process.argv[di + 1] : ['1.5x', '1x'].find((d) => existsSync(join(BUILD, d, 'fw.mjs'))) || '1.5x', 'fw.mjs')).href)).default();
 m0._fw_init();
-const CONTRACT = JSON.parse(m0.UTF8ToString(m0._fw_meta())).map((c) => ({ ...c, meta: typeof c.meta === 'string' ? JSON.parse(c.meta) : c.meta }))
-  .filter((c) => c.section !== 'screens' && c.meta?.contract === 2).map((c) => c.id);
+const META = JSON.parse(m0.UTF8ToString(m0._fw_meta())).map((c) => ({ ...c, meta: typeof c.meta === 'string' ? JSON.parse(c.meta) : c.meta }));
+const CONTRACT = META.filter((c) => c.section !== 'screens' && c.meta?.contract === 2).map((c) => c.id);
 const MOUNTS = CONTRACT.map((id) => [id, ...(EXTRA[id] || [{}, [], PAGE])]);
 let fails = 0;
 const ok = (cond, what) => { if (!cond) fails++; if (!cond || process.argv.includes('-v')) console.log(`${cond ? 'pass' : 'FAIL'}  ${what}`); };
@@ -83,6 +87,20 @@ for (const den of (di > 0 ? [process.argv[di + 1]] : ['1x', '1.5x']).filter((d) 
     }
     ok(moved, `${den} ${id} ${n} ${now} -> ${moved || vs.join(' / ')}: repaints live`);
   }
+  }
+  // an update that changes nothing (the same props + one unknown key, so the update path runs) leaves every object
+  // where it was, in every variant: an update path that drops a root style (2026-10-28: the Hero block's refill took
+  // its box style off and it shrank to its text) fails here, whatever the audit's frame count sees
+  for (const id of CONTRACT) {
+    const c = META.find((x) => x.id === id);
+    for (const v of [{ label: 'default', props: {} }, ...(c.meta.variants || [])]) {
+      const s2 = m._fw_stage(720, 720), p = { ...v.props, opening: false, timer: false };
+      S(id, (pc) => S(JSON.stringify(p), (pp) => m._fw_render(s2, pc, pp, 0, 0))); tick(60);
+      const r0 = m.UTF8ToString(m._fw_rects(s2));
+      S(id, (pc) => S(JSON.stringify({ ...p, _noop: 1 }), (pp) => m._fw_update(s2, pc, pp, 0, 0))); tick(60);
+      ok(m.UTF8ToString(m._fw_rects(s2)) === r0, `${den} ${id} [${v.label}] a no-op update leaves every object in place`);
+      m._fw_stage_free(s2);
+    }
   }
 }
 console.log(fails ? `lab_test: ${fails} failed` : 'lab_test: all passed');

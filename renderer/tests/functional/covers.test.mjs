@@ -4,7 +4,8 @@
 const E = 'cover.study_blind';
 const screen = (extra = {}) => ['spec', { screen: 'covers', entity: E, covers: `${E},cover.office_curtains`, live: true, ...extra }];
 const last = (t, service) => t.ha.calls.filter((c) => c.service === service).at(-1);
-const hero = (t) => t.part('covers_view')?.texts || [];
+// the screen's texts: by their centre (a label type's text box may start a hair above the screen's box at 1x)
+const hero = (t) => { const b = t.part('covers_view'); return b ? t.objs().filter((o) => o.text && t.visible(o) && o.x + o.w / 2 >= b.x && o.x + o.w / 2 <= b.x + b.w && o.y + o.h / 2 >= b.y && o.y + o.h / 2 <= b.y + b.h).map((o) => o.text) : []; };
 // one pixel of the stage (r,g,b): the ghost bar / curtain fabric are drawn, not objects
 const px = (t, x, y) => { const b = t.b; b.m._fw_refresh(b.stage); const p = b.m._fw_frame(b.stage) + (Math.round(y) * b.S + Math.round(x)) * 4; return Array.from(b.m.HEAPU8.slice(p, p + 3)).join(','); };
 // drag the roller from the top of its glass halfway down; HA does not react (the ghost waits)

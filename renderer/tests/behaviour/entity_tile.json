@@ -1,5 +1,6 @@
 {
   "id": "entity_tile",
+  "frame": true,
   "tests": [
     {"name": "toggle: off at once, toggle-off sound, tap event", "kind": "interaction",
      "steps": [{"tap": {"clk": 0}}], "expect": {"events": [["tap", "Sofa table"]], "sounds": ["toggle-off"]}},

@@ -171,6 +171,10 @@ async function autoTests(c, den, spec, specs) {
   const m = await instance(den);
   const b = new Bench(m, den);
   const S = b.S;
+  // spec "frame": true = mounted at its meta frame (the size it has on a screen), not filling the whole stage: a tile
+  // fills its parent (C5), so on a bare screen-sized stage its tap fade covered the screen (2026-10-28: the Entity
+  // tile's lag-heavy, a tile is a Home grid cell on a panel). The lag budget is still a share of the SCREEN (S x S).
+  if (spec.frame && c.meta.frame) { const D = den === '1x' ? 1 : 1.5; b.frame = c.meta.frame.map((v) => Math.round(v * D)); }
   const liveId = !!spec.live || !!c.meta.motion;  // live data or meta "motion" (moves by design): may redraw while idle
   const lagOn = KINDS.includes('lag') && den === '1x';
   const variants = id === 'spec' ? (c.meta.variants || []) : pickVariants(c);

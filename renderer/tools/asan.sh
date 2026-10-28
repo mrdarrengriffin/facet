@@ -15,7 +15,10 @@ AJ=$PB/managed_components/bblanchon__arduinojson/src
 C=${FW_CACHE:-$HERE/.cache}
 G=$C/gen  # generated token headers + lv_conf from the last WASM build (build.sh)
 [ -f "$G/lv_conf.h" ] || { echo "run build.sh once first (generated headers in $G)"; exit 1; }
-O=$C/asan-$DEN; mkdir -p "$O/lv" "$O/obj" "$O/shim"
+O=$C/asan-$DEN
+# LVGL's objects per lv_conf (its md5, as build.sh): a config change (2026-10-28: TinyTTF on for theme fonts) rebuilds
+# them; a stale cache had TinyTTF compiled out and the link failed
+LV=$O/lv-$(md5sum "$G/lv_conf.h" | cut -c1-8); mkdir -p "$LV" "$O/obj" "$O/shim"
 cat > "$O/shim/emscripten.h" <<'H'
 #pragma once
 #include <ctime>
@@ -25,14 +28,14 @@ H
 SAN="-fsanitize=address,undefined -fno-omit-frame-pointer -fno-sanitize-recover=undefined"
 FL="-O1 -g $SAN -DLV_CONF_INCLUDE_SIMPLE -I$G -I$L -I$L/src"
 V=; [ "$DEN" = 1x ] && V=-DFW_1X
-find "$L/src" -name '*.c' | xargs -P2 -I{} sh -c 'o='"$O"'/lv/$(echo "{}" | md5sum | cut -c1-12).o; [ -f $o ] || gcc '"$FL"' -c {} -o $o' 
+find "$L/src" -name '*.c' | xargs -P2 -I{} sh -c 'o='"$LV"'/$(echo "{}" | md5sum | cut -c1-12).o; [ -f $o ] || gcc '"$FL"' -c {} -o $o' 
 OBJS=
 for f in "$HERE"/core/*.cpp "$HERE"/foundations/*.cpp "$HERE"/components/*.cpp "$HERE"/screens/*.cpp "$HERE"/tools/asan_driver.cpp; do
   [ -f "$f" ] || continue
   o="$O/obj/$(basename "$(dirname "$f")")_$(basename "$f" .cpp).o"; OBJS="$OBJS $o"
   stale=0; [ -f "$o" ] || stale=1
-  for d in "$f" "$HERE"/core/*.h "$G"/*_gen.h "$G"/facet_*.h; do [ "$d" -nt "$o" ] && stale=1; done
+  for d in "$f" "$HERE"/core/*.h "$G"/*_gen.h "$G"/facet_*.h "$G"/lv_conf.h; do [ "$d" -nt "$o" ] && stale=1; done
   [ $stale = 1 ] && { echo "cc $(basename "$f")"; g++ $FL $V -std=c++17 -I"$O/shim" -I"$HERE/core" -I"$AJ" -c "$f" -o "$o"; }
 done
-g++ $SAN "$O"/lv/*.o $OBJS -o "$O/fw-asan" -lm
+g++ $SAN "$LV"/*.o $OBJS -o "$O/fw-asan" -lm
 exec "$O/fw-asan" "$@"

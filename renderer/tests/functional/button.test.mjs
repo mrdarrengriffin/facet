@@ -32,9 +32,11 @@ export default {
       t.ok(b.w % 4 === 0, `width ${b.w} not on the 4 px grid`); t.ok(b.w > l.w, `width ${b.w} <= label ${l.w}`);
       t.ok(Math.abs((l.x + l.w / 2) - (b.x + b.w / 2)) <= 1, 'label centred');
     } },
-    { name: 'fixed width prop sets the box, label centred', mount: ['button', { label: 'Ok', width: 160 }], run(t, { den }) {
-      const b = t.part('button'), l = t.find('OK');
-      t.eq(b.w, Math.round(160 * (den === '1x' ? 1 : 1.5) / 4) * 4, 'width'); t.ok(Math.abs((l.x + l.w / 2) - (b.x + b.w / 2)) <= 1, 'label centred');
+    // (contract v2: width is hug | fill, no pixel width; a set width = the parent's box, C5)
+    { name: 'width fill spans the space it is in, label centred', async run(t) {
+      await t.mount('button', { label: 'Ok' }); const hug = t.part('button').w;
+      await t.mount('button', { label: 'Ok', width: 'fill' }); const b = t.part('button'), l = t.find('OK');
+      t.ok(b.w > hug * 2, `fill ${b.w} wider than hug ${hug}`); t.ok(Math.abs((l.x + l.w / 2) - (b.x + b.w / 2)) <= 1, 'label centred');
     } },
     { name: 'icon adds width before the label', async run(t) {
       await t.mount('button', { label: 'Add' }); const w0 = t.part('button').w;
