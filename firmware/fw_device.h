@@ -407,6 +407,180 @@ inline void ota_error() {
   }, 6000, nullptr);
 }
 
+// ---------------------------------------------------------------- Debug overlay (HA select "Debug overlay")
+// Tap areas and / or component outlines drawn over the current screen, the panel side of the workbench Tap areas
+// (hub src/wasm/taps.ts) and Components views. Firmware glue, not a contract component: one non-clickable full-screen
+// object on the top layer that draws with lv_draw_*; boxes collected every 500 ms and after each show (redrawn only
+// when they changed). Tap areas: every visible clickable object, hit area = coords grown by ext_click_pad (scroll
+// containers with children skipped), green fill + outline = at least touch:min both ways, red = smaller, the drawn box
+// dashed inside, "WxH" (device px). Components: thin cyan outlines + the component id where it fits; tagging
+// (fw::comp_tags) runs only while this mode is on, and the shown page is built again when it turns on. Off = the
+// object and timer deleted, tagging off: zero cost.
+namespace dbg {
+enum { OFF = 0, TAPS = 1, COMPS = 2 };  // bit mask: "Both" = 3
+struct Box {
+  lv_area_t a, b;  // tap: hit area + drawn box; component: a = its box
+  bool tap, ok;
+  std::string txt;
+  bool operator==(const Box &o) const {
+    return tap == o.tap && ok == o.ok && txt == o.txt && !memcmp(&a, &o.a, sizeof a) && !memcmp(&b, &o.b, sizeof b);
+  }
+};
+struct State {
+  int mode = OFF;
+  bool ready = false;  // fw::device setup ran (the select restores before LVGL is up)
+  lv_obj_t *o = nullptr;
+  lv_timer_t *t = nullptr;
+  std::vector<Box> boxes;
+};
+inline State D;
+inline bool cut(lv_area_t *r, const lv_area_t *a, const lv_area_t *b) {  // lv_area_intersect is private in this LVGL
+  *r = {LV_MAX(a->x1, b->x1), LV_MAX(a->y1, b->y1), LV_MIN(a->x2, b->x2), LV_MIN(a->y2, b->y2)};
+  return r->x1 <= r->x2 && r->y1 <= r->y2;
+}
+// what is on screen of `c`: its coords clipped by every ancestor (scrolled-away content draws nothing)
+inline void taps(lv_obj_t *o, const lv_area_t &clip, std::vector<Box> &out) {
+  const int32_t min = fx::size("touch:min");
+  for (uint32_t i = 0; i < lv_obj_get_child_count(o); i++) {
+    lv_obj_t *c = lv_obj_get_child(o, (int32_t) i);
+    if (lv_obj_has_flag(c, LV_OBJ_FLAG_HIDDEN)) continue;
+    lv_area_t a, vis;
+    lv_obj_get_coords(c, &a);
+    if (!cut(&vis, &a, &clip)) continue;
+    if (lv_obj_has_flag(c, LV_OBJ_FLAG_CLICKABLE) && !(lv_obj_has_flag(c, LV_OBJ_FLAG_SCROLLABLE) && lv_obj_get_child_count(c))) {
+      Box b{};
+      b.tap = true;
+      b.b = a;
+      lv_obj_get_click_area(c, &b.a);  // coords grown by ext_click_pad
+      const int32_t w = lv_area_get_width(&b.a), h = lv_area_get_height(&b.a);
+      b.ok = w >= min && h >= min;
+      b.txt = std::to_string(w) + "x" + std::to_string(h);
+      out.push_back(std::move(b));
+    }
+    taps(c, vis, out);
+  }
+}
+inline const lv_font_t *font() { return fw::font(11.0f, true); }
+inline void collect(std::vector<Box> &out) {
+  lv_obj_t *scr = lv_screen_active();
+  if (!scr) return;
+  lv_area_t all;
+  lv_obj_get_coords(scr, &all);
+  if (D.mode & COMPS)
+    fw::comps_each(scr, [&](lv_obj_t *c, const char *id, int) {
+      Box b{};
+      lv_obj_get_coords(c, &b.a);
+      lv_area_t vis;
+      if (!cut(&vis, &b.a, &all)) return;
+      b.txt = id;
+      out.push_back(std::move(b));
+    });
+  if (D.mode & TAPS) taps(scr, all, out);
+}
+inline void label(lv_layer_t *layer, const lv_area_t &box, const std::string &txt, lv_color_t col) {
+  const lv_font_t *f = font();
+  lv_point_t sz;
+  lv_text_get_size(&sz, txt.c_str(), f, 0, 0, LV_COORD_MAX, LV_TEXT_FLAG_NONE);
+  const int32_t pad = fw::sp::s1;
+  if (lv_area_get_width(&box) < sz.x + 2 * pad || lv_area_get_height(&box) < sz.y + 2 * pad) return;  // does not fit
+  lv_area_t r = {box.x1 + pad, box.y1 + pad, box.x1 + pad + sz.x - 1, box.y1 + pad + sz.y - 1};
+  lv_draw_rect_dsc_t bg;
+  lv_draw_rect_dsc_init(&bg);
+  bg.bg_color = lv_color_black();
+  bg.bg_opa = LV_OPA_60;
+  lv_draw_rect(layer, &bg, &r);
+  lv_draw_label_dsc_t t;
+  lv_draw_label_dsc_init(&t);
+  t.font = f;
+  t.color = col;
+  t.text = txt.c_str();  // D.boxes outlives the draw (rebuilt only before an invalidate)
+  lv_draw_label(layer, &t, &r);
+}
+inline void dashed(lv_layer_t *layer, const lv_area_t &a, lv_color_t col) {
+  lv_draw_line_dsc_t l;
+  lv_draw_line_dsc_init(&l);
+  l.color = col;
+  l.width = fw::stroke::hair;
+  l.dash_width = fw::sp::s1;
+  l.dash_gap = fw::sp::s1;
+  const lv_value_precise_t x1 = a.x1, y1 = a.y1, x2 = a.x2, y2 = a.y2;
+  const lv_value_precise_t pts[4][4] = {{x1, y1, x2, y1}, {x2, y1, x2, y2}, {x2, y2, x1, y2}, {x1, y2, x1, y1}};
+  for (auto &p : pts) {
+    l.p1 = {p[0], p[1]};
+    l.p2 = {p[2], p[3]};
+    lv_draw_line(layer, &l);
+  }
+}
+inline void draw(lv_event_t *e) {
+  lv_layer_t *layer = lv_event_get_layer(e);
+  const lv_color_t cyan = lv_color_hex(0x22d3ee), green = lv_color_hex(0x22c55e), red = lv_color_hex(0xef4444);
+  for (const Box &b : D.boxes) {
+    lv_draw_rect_dsc_t r;
+    lv_draw_rect_dsc_init(&r);
+    r.border_width = fw::stroke::hair;
+    r.border_opa = LV_OPA_COVER;
+    if (b.tap) {
+      const lv_color_t c = b.ok ? green : red;
+      r.bg_color = c;
+      r.bg_opa = LV_OPA_20;
+      r.border_color = c;
+      lv_draw_rect(layer, &r, &b.a);
+      if (memcmp(&b.a, &b.b, sizeof b.a)) dashed(layer, b.b, c);
+      label(layer, b.a, b.txt, c);
+    } else {
+      r.bg_opa = LV_OPA_TRANSP;
+      r.border_color = cyan;
+      lv_draw_rect(layer, &r, &b.a);
+      label(layer, b.a, b.txt, cyan);
+    }
+  }
+}
+// the shown page built again (the components on it tagged now); the device home too (reshow leaves it alone)
+inline void rebuild() {
+  ArduinoJson::JsonDocument req, out;
+  if (deserializeJson(req, S.shown) || !req["id"].is<const char *>()) return;
+  show(req.as<ArduinoJson::JsonObjectConst>(), out.to<ArduinoJson::JsonObject>());
+}
+inline void refresh() {
+  if (!D.o) return;
+  std::vector<Box> now;
+  collect(now);
+  if (now == D.boxes) return;
+  D.boxes = std::move(now);
+  lv_obj_invalidate(D.o);
+}
+inline void apply() {
+  fw::comp_tags(D.mode & COMPS);
+  if (D.mode == OFF) {
+    if (D.t) lv_timer_delete(D.t);
+    if (D.o) lv_obj_delete(D.o);
+    D.t = nullptr;
+    D.o = nullptr;
+    D.boxes.clear();
+    return;
+  }
+  if (!D.o) {
+    D.o = lv_obj_create(lv_layer_top());
+    lv_obj_remove_style_all(D.o);
+    lv_obj_remove_flag(D.o, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_CLICK_FOCUSABLE));
+    lv_obj_add_flag(D.o, (lv_obj_flag_t) (LV_OBJ_FLAG_IGNORE_LAYOUT | LV_OBJ_FLAG_FLOATING));
+    lv_obj_set_size(D.o, LV_PCT(100), LV_PCT(100));
+    lv_obj_add_event_cb(D.o, draw, LV_EVENT_DRAW_MAIN, nullptr);
+    D.t = lv_timer_create([](lv_timer_t *) { refresh(); }, 500, nullptr);
+  }
+  D.boxes.clear();
+  refresh();
+}
+}  // namespace dbg
+// the HA select: 0 Off, 1 Tap areas, 2 Components, 3 Both
+inline void debug_overlay(int mode) {
+  const int was = dbg::D.mode;
+  dbg::D.mode = mode & 3;
+  if (!dbg::D.ready) return;
+  dbg::apply();
+  if ((dbg::D.mode & dbg::COMPS) && !(was & dbg::COMPS)) { dbg::rebuild(); dbg::refresh(); }  // built again, now tagged
+}
+
 // ---------------------------------------------------------------- settings changed: the shown page follows
 // A setting changed (any source: the screen, HA, POST /fw/settings, the sun for Theme auto). The device runtime restyles
 // itself (core/device.cpp); a page shown on its own (POST /fw/show {"id": "settings"} and the like) is drawn again
@@ -441,6 +615,7 @@ inline void reshow_tick(lv_timer_t *t) {
   }
   RS.look = false;
   show(req.as<ArduinoJson::JsonObjectConst>(), out.to<ArduinoJson::JsonObject>());
+  dbg::refresh();  // the Debug overlay follows the new page
 }
 inline void reshow_later(bool look) {
   RS.look = RS.look || look;
@@ -1194,6 +1369,8 @@ inline void setup() {
   });
   apply_rotation();  // the restored Rotate screen (the select restored it before on_boot)
   probation_start();
+  dbg::D.ready = true;  // the Debug overlay select restored its value before LVGL was up
+  if (dbg::D.mode) { dbg::apply(); if (dbg::D.mode & dbg::COMPS) { dbg::rebuild(); dbg::refresh(); } }
   if (auto *ws = esphome::web_server_base::global_web_server_base) {
     ws->add_handler(new Handler());
     ws->add_handler(new shot::Handler());  // GET /screenshot

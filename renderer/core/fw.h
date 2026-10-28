@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstring>
+#include <functional>
 #include <string>
 #include <vector>
 #include "lvgl.h"
@@ -173,6 +174,11 @@ int add(const Component &c);
 int set_update(const char *id, Update u);  // FW_UPDATE registers through this
 std::vector<Component> &reg();            // every registered component (registration order)
 const Component *find(const char *id);    // nullptr = not in this build
+// Component tags (introspection): hosts always tag; a panel only while comp_tags(true) (its Debug overlay), and a
+// screen built before that has no tags until it is built again. comps_each = every tagged instance under `scr`, depth
+// first (1 = outermost), with its outermost component id.
+void comp_tags(bool on);
+void comps_each(lv_obj_t *scr, const std::function<void(lv_obj_t *o, const char *id, int depth)> &fn);
 #ifndef ESP_PLATFORM
 // Host introspection, not on panels (workbench "Components" view): every component instance under `scr`, depth first, as JSON
 // [{d: nesting depth (1 = outermost), ids: [outer..inner] (several = built on another's root), x, y, w, h}] device px
