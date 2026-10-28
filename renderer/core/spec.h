@@ -89,6 +89,7 @@
 //                refused: a warn toast says why)
 //              {"do": "timer.extend", "s": 60}  {"do": "timer.cancel"}  {"do": "timer.stop"}  (stop = a done one)
 //              {"do": "timer.select", "name"?: "Pasta" | "id"?: "2"}  (the one the ring shows)
+//              {"do": "timer.new"} / {"do": "timer.back"}  (+ New: panel.timer reads "picking" until a start / back)
 //                Which timer: the action's "id" / "name", else the event's detail for a Timer chip's "select" / "stop"
 //                (detail = its name; also from chips in an items Grid), else the shown one. Button "tap" takes any of
 //                them; timer_chip select -> timer.select, stop -> timer.stop.
@@ -189,7 +190,7 @@ constexpr Rule RULES[] = {
     {"media_view", "media", "media.control"},        {"media_view", "speaker", "screen.param"},
     {"covers_view", "cover", "cover.control"},       {"covers_view", "window", "screen.param"},
     {"lock_ring", "lock", "lock.control"},           {"button", "confirm", "lock.control"},
-    {"room_tile", "pick", "screen.toggle"},          {"camera_tile", "tap", "nav.back"},          {"tile", "tap", "nav.open"},          {"button", "tap", "nav.open,nav.back,light.toggle,vacuum.control,timer.start,timer.extend,timer.cancel,timer.stop,timer.select"},
+    {"room_tile", "pick", "screen.toggle"},          {"camera_tile", "tap", "nav.back"},          {"tile", "tap", "nav.open"},          {"button", "tap", "nav.open,nav.back,light.toggle,vacuum.control,timer.start,timer.extend,timer.cancel,timer.stop,timer.select,timer.new,timer.back"},
     {"timer_chip", "select", "timer.select"},       {"timer_chip", "stop", "timer.stop"},
     {"grid", "select", "timer.select"},             {"grid", "stop", "timer.stop"},  // Timer chips in an items Grid
     {"segmented", "change", "vacuum.control,screen.param"}, {"iso_floorplan", "pick", "screen.toggle"},
@@ -199,7 +200,7 @@ constexpr Rule RULES[] = {
 };
 constexpr const char *ACTIONS[] = {"light.switch", "light.toggle", "light.brightness", "climate.set_temperature",
                                    "climate.set_hvac_mode", "climate.set_preset_mode", "media.control", "cover.control", "lock.control", "vacuum.control", "screen.toggle", "screen.param",
-                                   "nav.open", "nav.back", "timer.start", "timer.extend", "timer.cancel", "timer.stop", "timer.select"};
+                                   "nav.open", "nav.back", "timer.start", "timer.extend", "timer.cancel", "timer.stop", "timer.select", "timer.new", "timer.back"};
 constexpr const char *FMTS[] = {"", "on", "pct", "avail", "light", "name", "num", "frac", "count", "time", "day", "level", "state", "dim"};
 constexpr uint32_t CLIMATE_THROTTLE_MS = 250;  // like light-throttle-ms: a set point while dragging at most this often
 constexpr const char *LAYOUTS[] = {"list", "center", "cards"};
@@ -1203,6 +1204,7 @@ inline bool run(Screen *s, Node &n, const char *event, const char *detail) {
     namespace tm = dev::timers;
     const char *why = "";
     if (d == "timer.start") why = tm::start(a["name"] | "", a["seconds"] | 0);
+    else if (d == "timer.new" || d == "timer.back") tm::picking(d == "timer.new");  // + New: the lengths; back: cancel that
     else {
       int id = 0;
       if (a["id"].is<const char *>()) id = tm::find(a["id"] | "");

@@ -97,7 +97,7 @@ const char *button(const char *press);  // the host's key press: "" = nothing to
 // struct (state 0 idle, 1 running, 2 done; ends = wall-clock seconds) for the Home header's time left + Timer view.
 constexpr int TIMERS_MAX = 4;
 constexpr const char *TIMER_ENTITY = "panel.timer";
-struct TimerItem { int id = 0; std::string name; int total = 0; uint32_t ends = 0; int state = 1; };  // state 1 running, 2 done
+struct TimerItem { int id = 0; std::string name; int total = 0; uint32_t ends = 0; int state = 1; bool named = false; };  // named = given a name (HA / voice); else it shows as its length  // state 1 running, 2 done
 namespace timers {
 enum Change : uint8_t { START, EXTEND, CANCEL, STOP, DONE, SELECT };
 const char *start(const char *name, int seconds, int *id_out = nullptr);  // "" = started, else why not (full, bad length)
@@ -105,6 +105,8 @@ const char *extend(int id, int seconds);
 const char *cancel(int id);  // a running or a done one: removed
 const char *stop(int id);    // a done one: removed (a running one: "not done")
 const char *select(int id);  // the shown one
+// picking a length for a new timer (the page's + New): the panel.timer state reads "picking" until a start or back
+void picking(bool on);
 int find(const char *name_or_id);  // by name (any case), else by id ("3"); 0 = none
 int left(const TimerItem &t);       // seconds left, rounded up (0:00 only when it ran out); done = 0
 long long ends_at(const TimerItem &t);  // wall-clock end (time()); 0 = done / the clock is not set

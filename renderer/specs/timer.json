@@ -97,7 +97,8 @@
    "show": {
     "e": "panel.timer",
     "map": {
-     "idle": "1"
+     "idle": "1",
+     "picking": "1"
     },
     "else": ""
    }
@@ -216,8 +217,7 @@
    },
    "on": {
     "tap": {
-     "do": "timer.start",
-     "seconds": 300
+     "do": "timer.new"
     }
    },
    "in": 9,
@@ -252,6 +252,37 @@
     }
    },
    "in": 13,
+   "slot": 0
+  },
+  {
+   "c": "group",
+   "p": {
+    "flow": "wrap",
+    "space": "none",
+    "align": "centre"
+   },
+   "in": 0,
+   "slot": 0,
+   "show": {
+    "e": "panel.timer",
+    "map": {
+     "picking": "1"
+    },
+    "else": ""
+   }
+  },
+  {
+   "c": "button",
+   "p": {
+    "kind": "ghost",
+    "label": "Cancel"
+   },
+   "on": {
+    "tap": {
+     "do": "timer.back"
+    }
+   },
+   "in": 15,
    "slot": 0
   }
  ]

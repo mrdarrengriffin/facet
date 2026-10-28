@@ -16,6 +16,7 @@ constexpr int NAME_CHARS = 24;      // characters kept of a given name (HA's Tim
 struct List {
   std::vector<TimerItem> items;  // in start order
   int next = 1, sel = 0;
+  bool pick = false;  // + New: the page shows the lengths (state "picking")
   std::vector<Observer> obs;
   lv_timer_t *tick = nullptr;
 };
@@ -70,9 +71,9 @@ void fresh() {
   auto put = [](const char *a, const std::string &x) { ha::put(TIMER_ENTITY, a, x); };
   if (s) {
     const int lf = left(*s);
-    put("", s->state == 1 ? "running" : "done");
+    put("", L().pick ? "picking" : s->state == 1 ? "running" : "done");
     put("id", std::to_string(s->id));
-    put("name", s->name);
+    put("name", s->named ? s->name : length_name(s->total));  // no name typed on a panel: its length (Darren 2026-10-28)
     put("left", countdown(lf));
     put("left_s", std::to_string(lf));
     put("total", std::to_string(s->total));
@@ -90,7 +91,7 @@ void fresh() {
     put("line", line);
   } else {
     for (const char *a : {"id", "name", "left_s", "total", "share", "line"}) put(a, "");
-    put("", "idle");
+    put("", L().pick ? "picking" : "idle");
     put("left", "0:00");
   }
   put("count", std::to_string(v.size()));
@@ -102,7 +103,7 @@ void fresh() {
     if (s && t.id == s->id) continue;
     ArduinoJson::JsonObject j = o.add<ArduinoJson::JsonObject>();
     j["id"] = t.id;
-    j["name"] = t.name;
+    j["name"] = t.named ? t.name : length_name(t.total);
     j["left"] = left(t);
     j["total"] = t.total;
     j["state"] = t.state == 1 ? "running" : "done";
@@ -180,6 +181,7 @@ const char *start(const char *name, int seconds, int *id_out) {
   std::string n = name ? name : "";
   while (!n.empty() && isspace((unsigned char) n.back())) n.pop_back();
   while (!n.empty() && isspace((unsigned char) n[0])) n.erase(0, 1);
+  const bool named = !n.empty();
   if (n.empty()) n = length_name(seconds);
   if (n.size() > NAME_CHARS) n.resize(NAME_CHARS);
   if (taken(n)) {  // "5 min" twice = "5 min 2": every timer has its own name (HA cancels by name)
@@ -192,6 +194,8 @@ const char *start(const char *name, int seconds, int *id_out) {
   t.id = l.next++;
   t.name = n;
   t.total = seconds;
+  t.named = named;
+  l.pick = false;
   t.ends = lv_tick_get() + (uint32_t) seconds * 1000;
   l.items.push_back(t);
   if (id_out) *id_out = t.id;
@@ -227,6 +231,11 @@ const char *remove(int id, Change why) {
   return "";
 }
 }  // namespace
+void picking(bool on) {
+  if (L().pick == on) return;
+  L().pick = on;
+  fresh();
+}
 const char *cancel(int id) { return remove(id, CANCEL); }
 const char *stop(int id) {
   const TimerItem *t = mut(id);
