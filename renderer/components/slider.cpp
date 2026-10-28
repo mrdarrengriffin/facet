@@ -67,7 +67,7 @@ void show(void *o, int32_t v) {
   auto *s = (lv_obj_t *) o;
   auto *d = of(s);
   v = LV_CLAMP(0, v, d->n * FP);
-  const int a = knob_x(s, d->shown), b = knob_x(s, v), k = knob();
+  const int a = knob_x(s, d->shown), b = knob_x(s, v), k = std::max(knob(), fx::knob_reach(s, "layout:slider-knob", "stroke:knob"));
   d->shown = v;
   fx::redraw(s, std::min(a, b) - k, -k, std::abs(b - a) + 2 * k + 1, 2 * k + 1);
   const int i = (v + FP / 2) / FP;

@@ -1678,6 +1678,18 @@ void at(float deg, int r, int *x, int *y) {
   *x = (int) lroundf(cosf(a) * r); *y = (int) lroundf(sinf(a) * r);
 }
 int half(lv_obj_t *o) { int cx, cy, h; square(o, cx, cy, h); return h; }
+// how far a Pen knob reaches from its centre in the live theme: the knob, its halo ring (snapped: whole cells round
+// it), the half cell a snapped knob moves to its grid, edges, a shadow, the AA fringe. A moving knob repaints this
+// much round its path (2026-10-28: Phosphor's snapped knob + halo outran the dial's knob/2 + 2: ghost edges stayed)
+int knob_reach(lv_obj_t *o, const char *sz, const char *ring) {
+  const int dm = size(sz), rw = size(ring);
+  const PenPart pp = pen_part(o, G::P_KNOB);
+  const int sh = pp.b.has & S::K_SHADOW ? std::max(abs(pp.b.shadow.dx.px[DN]), abs(pp.b.shadow.dy.px[DN])) : 0;
+  int half = dm / 2 + 1;
+  if (const int cs = snap_cell(pp.k)) half = (cells_of(dm, cs) | 1) * cs / 2 + (rw > 0 ? cells_of(rw, cs) : 0) * cs + cs;
+  if (pp.b.has & S::K_EDGES) half += 2;
+  return half + sh + 2;
+}
 void redraw_arc(lv_obj_t *o, int r, float a0, float a1, int pad) {
   if (a1 < a0) std::swap(a0, a1);
   int x, y, x1 = INT32_MAX, y1 = INT32_MAX, x2 = INT32_MIN, y2 = INT32_MIN;

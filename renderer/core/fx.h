@@ -110,6 +110,7 @@ void redraw(lv_obj_t *drawn_box, int x, int y, int w, int h);
 // mark only the span of a ring between deg0 and deg1 (either order) at radius r, widened by `pad` px each side (the
 // knob's and the stroke's reach): what a moving arc end + knob needs, never the whole box
 void redraw_arc(lv_obj_t *drawn_box, int r, float deg0, float deg1, int pad);
+int knob_reach(lv_obj_t *drawn_box, const char *size, const char *ring);  // a Pen knob's reach from its centre (theme halo, snap, edges, shadow)
 void at(float deg, int r, int *x, int *y);  // the point at deg (0 = 3 o'clock, clockwise) and radius r, centre-relative
 int half(lv_obj_t *drawn_box);              // the Pen's half for this box now (the hit geometry matches the drawing)
 void pointer(lv_obj_t *o, float *deg, int *dist, int *half);

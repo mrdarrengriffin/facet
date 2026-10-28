@@ -95,7 +95,7 @@ void show(void *o, int32_t v) {
   v = LV_CLAMP(0, v, d->n * FP);
   if (v != d->shown) {  // only the span between the old and new end + the knob's reach repaints
     const int h = fx::half(s);
-    fx::redraw_arc(s, knob_r(h), angle(d, d->shown), angle(d, v), fx::size("layout:dial-knob") / 2 + 2);  // + AA fringe
+    fx::redraw_arc(s, knob_r(h), angle(d, d->shown), angle(d, v), fx::knob_reach(s, "layout:dial-knob", "stroke:knob"));  // the knob as the theme draws it (halo, snap, edges)
   }
   d->shown = v;
   const int i = (v + FP / 2) / FP;
