@@ -3,6 +3,7 @@
 // (tools/gen_fx.mjs -> fx_gen.h). A theme / accent / text-size change repaints the display's set and reports one
 // style change: no object holds a colour, so none can keep an old one.
 #include "fx.h"
+#include "core/lv_refr_private.h"  // lv_refr_get_disp_refreshing: is a redraw running (look_of)
 #include "fw.h"
 #include "fx_gen.h"
 #include "spec.h"  // spec::SLOT: a Grid cell is a slot
@@ -753,11 +754,23 @@ Look *make(lv_display_t *d, const fw::Theme *t) {
   }, LV_EVENT_DELETE, L);
   return L;
 }
+// a look whose theme changed (accent, light / dark, a theme file) repaints its shared styles and reports the change to
+// every object. Never during a redraw: a Pen part reads its ink here while the display renders, and invalidating every
+// object mid-render makes LVGL refuse (and log) each one: on a panel that stalled the LVGL task until the watchdog reset
+// it (2026-10-28, an accent tap with a sent theme). Mid-render it is queued for straight after the frame instead.
+void repaint_look(Look *L) {
+  if (fw::T && (L->t != fw::T || L->large != (int) fw::text_large() || GEN_OLD(L))) { paint(L, fw::T); lv_obj_report_style_change(nullptr); }
+}
 Look *look_of(lv_obj_t *o) {
   lv_display_t *d = o ? lv_obj_get_display(o) : nullptr;
   if (!d) d = lv_display_get_default();
   for (Look *L : looks) if (L->d == d) {
-    if (fw::T && (L->t != fw::T || L->large != (int) fw::text_large() || GEN_OLD(L))) { paint(L, fw::T); lv_obj_report_style_change(nullptr); }
+    if (fw::T && (L->t != fw::T || L->large != (int) fw::text_large() || GEN_OLD(L))) {
+      if (lv_refr_get_disp_refreshing()) {
+        static bool queued = false;
+        if (!queued) { queued = true; lv_async_call([](void *l) { queued = false; for (Look *x : looks) if (x == l) repaint_look(x); }, L); }
+      } else repaint_look(L);
+    }
     return L;
   }
   return make(d, fw::T ? fw::T : fw::theme(false));
@@ -1812,6 +1825,7 @@ Page page(lv_obj_t *pg, const char *kind) {
   p.head = lv_obj_create(pg);
   lv_obj_remove_style_all(p.head);
   lv_obj_remove_flag(p.head, (lv_obj_flag_t) (LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_CLICKABLE));
+  lv_obj_add_flag(p.head, LV_OBJ_FLAG_OVERFLOW_VISIBLE);  // the Header's items may outgrow its bar (a round Icon button): never clipped
   use(p.head, "page-head");
   use(p.head, "head-move");  // C45: a flush header bar (empty in Facet)
   p.body = lv_obj_create(pg);

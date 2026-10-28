@@ -54,7 +54,7 @@ std::string opt(fw::Props p, const char *name, const char *def, std::initializer
   for (const char *o : ok) if (!strcmp(o, v)) return v;
   return def;
 }
-lv_obj_t *slot(lv_obj_t *o) { lv_obj_add_flag(o, fw::spec::SLOT); return o; }
+lv_obj_t *slot(lv_obj_t *o, const char *n) { lv_obj_add_flag(o, fw::spec::SLOT); fx::slot(o, n); return o; }  // n: the editor's outline
 lv_obj_t *cell(lv_obj_t *g, const Cells &k) {  // an empty cell (a filler, or a real one before its contents)
   lv_obj_t *c = fx::box(g, "col");
   fx::use(c, "grow");
@@ -78,7 +78,7 @@ void sample_card(lv_obj_t *s) {
 lv_obj_t *make(lv_obj_t *g, const Cells &k, char kind) {
   lv_obj_t *c = cell(g, k);
   if (kind == 'c') {
-    slot(c);
+    slot(c, "cell");
     if (k.sample) sample_card(c);
     return c;
   }
@@ -95,7 +95,7 @@ lv_obj_t *make(lv_obj_t *g, const Cells &k, char kind) {
       fx::use(ink, "bg:line");
       fx::use(ink, "part:rule");  // the theme's rule (C46)
     }
-    lv_obj_t *h = slot(fx::box(pr, "col"));
+    lv_obj_t *h = slot(fx::box(pr, "col"), "half");
     fx::use(h, "max-h:pair-h");  // the readout's designed height: a half never grows past it (fx::pair_split sets it)
     if (k.sample) sample_half(h);
   }
