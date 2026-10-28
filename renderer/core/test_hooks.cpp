@@ -68,7 +68,11 @@ void bounds(lv_obj_t *o, bool in_body, ArduinoJson::JsonArray arr) {
       lv_obj_get_coords(c, &a);
       if (lv_obj_check_type(c, &lv_label_class)) { const int32_t ty = lv_obj_get_style_translate_y(c, LV_PART_MAIN); a.y1 -= ty; a.y2 -= ty; }  // the type's text-box translate is not layout
       lv_obj_get_content_coords(o, &p);
-      if (a.x1 < p.x1 || a.y1 < p.y1 || a.x2 > p.x2 || a.y2 > p.y2) {
+      // a floating mark on its parent's edge (the secondary Button's corner ticks): inside the border box is inside
+      lv_area_t bb;
+      lv_obj_get_coords(o, &bb);
+      const bool edge_mark = lv_obj_has_flag(c, LV_OBJ_FLAG_IGNORE_LAYOUT) && a.x1 >= bb.x1 && a.y1 >= bb.y1 && a.x2 <= bb.x2 && a.y2 <= bb.y2;
+      if (!edge_mark && (a.x1 < p.x1 || a.y1 < p.y1 || a.x2 > p.x2 || a.y2 > p.y2)) {
         char b[200];
         snprintf(b, sizeof b, "%dx%d at %d,%d not inside its parent's content box %dx%d at %d,%d%s%s",
                  (int) lv_area_get_width(&a), (int) lv_area_get_height(&a), (int) a.x1, (int) a.y1, (int) lv_area_get_width(&p),

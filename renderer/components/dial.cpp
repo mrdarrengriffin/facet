@@ -9,9 +9,9 @@
 //   arc     outer edge (dial-scale - dial-arc) / 2 inside the scale: track stroke:edge line, value stroke:indicator
 //           on-fill with round caps, knob layout:dial-knob accent ringed stroke:knob in the canvas colour (bg)
 //   centre  wing + value + wing (derived dial-wing-up / -down: the value's middle is the dial's middle): caption
-//           (type label, text-dim) / value (display, text) / unit (body, text-dim) and the ON / OFF button
-//           (w:dial-toggle-w x h:button-h, radius button: outline ON = accent edge + accent-text label, secondary OFF =
-//           surface + line edge; pressed + disabled = the state roles)
+//           (type label, text-dim) / value (display, text) / unit (body, text-dim) and the ON / OFF button = the
+//           Button (fw::find, C8b; width fill in a w:dial-toggle-w holder): outline when on, secondary when off; its
+//           own press, disabled and theme looks; its tap sound stays quiet (the on / off sound is the gesture's)
 // Value model (as before): a step index of min / max / step; drawn position in 1/256 steps; press on the knob = grab,
 // elsewhere on the ring = jump with a sweep (Motion value); the centre (inside the arc by more than touch:target) is
 // free, so the ring and the button never share a point (the Fresh -/+ bug: tests/functional/light_screen.test.mjs).
@@ -41,7 +41,7 @@ struct Dial {
   int32_t shown = 0;
   int shown_idx = 0, shown_val = -1;
   lv_point_t press_pt = {0, 0};
-  lv_obj_t *val = nullptr, *btn = nullptr, *btn_txt = nullptr, *cap = nullptr, *unit = nullptr;
+  lv_obj_t *val = nullptr, *btn = nullptr, *cap = nullptr, *unit = nullptr;
 };
 
 Dial *of(lv_obj_t *o) { return (Dial *) lv_obj_get_user_data(o); }
@@ -114,12 +114,19 @@ void sweep_quiet(lv_obj_t *s, int32_t from, int32_t to) {
 }
 int32_t target_of(const Dial *d) { return d->on ? (d->dimmable ? d->idx * FP : d->n * FP) : 0; }
 
+// the ON / OFF button = the Button (fw::find, C8b): outline when on, secondary when off, the holder's width
+void button_props(bool on, ArduinoJson::JsonDocument &bp) {
+  bp["kind"] = on ? "outline" : "secondary";
+  bp["label"] = on ? "ON" : "OFF";
+  bp["width"] = "fill";
+}
 void set_on(lv_obj_t *s, bool on) {
   auto *d = of(s);
   d->on = on;
   if (d->btn) {
-    if (on) lv_obj_add_state(d->btn, LV_STATE_CHECKED); else lv_obj_remove_state(d->btn, LV_STATE_CHECKED);
-    fx::set_text(d->btn_txt, on ? "ON" : "OFF", "type:c-label");
+    ArduinoJson::JsonDocument bp;
+    button_props(on, bp);
+    fw::update_child(fw::find("button"), d->btn, bp.as<fw::Props>());
   }
   if (!d->dimmable && d->val) fx::set_text(d->val, on ? "On" : "Off", "type:display");
 }
@@ -157,15 +164,15 @@ int state_of(fw::Props p) {
   return !strcmp(st, "missing") ? 3 : !strcmp(st, "unavailable") ? 2 : !strcmp(st, "disabled") ? 1 : 0;
 }
 
+// a tap on the button: the Button's own tap sound stays quiet (the toggle's on / off sound is the one sound of the
+// gesture); disabled = the Button's own blocked + error
+fw::Quiet *btn_quiet = nullptr;
 void tap_button(lv_event_t *e) {
+  delete btn_quiet;
+  btn_quiet = nullptr;
   auto *s = (lv_obj_t *) lv_event_get_user_data(e);
   auto *d = of(s);
-  const lv_event_code_t code = lv_event_get_code(e);
-  if (lv_obj_has_state(s, fw::st::OFF)) {
-    if (code == LV_EVENT_PRESSED) fw::st::blocked(s, d->on ? "on" : "off");
-    return;
-  }
-  if (code != LV_EVENT_CLICKED) return;
+  if (lv_obj_has_state(s, fw::st::OFF)) return;
   stop_sweep(s);
   if (d->on) { if (d->idx) d->last_on = d->idx; }
   else if (d->dimmable) d->idx = d->last_on ? d->last_on : d->n;
@@ -175,26 +182,20 @@ void tap_button(lv_event_t *e) {
   sweep_quiet(s, d->shown, target_of(d));
 }
 
-// the ON / OFF button: one box whose looks follow its states (CHECKED = on = outline; PRESSED; USER_1 = disabled)
+// the button in a holder dial-toggle-w wide (the Button fills it: ON and OFF the same width)
 lv_obj_t *button(lv_obj_t *parent, lv_obj_t *s) {
-  auto *d = of(s);
-  lv_obj_t *b = fx::box(parent, "centre");
-  for (const char *t : {"w:dial-toggle-w", "h:button-h", "radius:button", "bg:surface", "border:line"}) fx::use(b, t);
-  fx::use(b, "bg:pressed-surface", LV_STATE_PRESSED);
-  fx::use(b, "border:pressed-line", LV_STATE_PRESSED);
-  fx::use(b, "bg-none", LV_STATE_CHECKED);
-  fx::use(b, "border:accent", LV_STATE_CHECKED);
-  fx::use(b, "bg:pressed-outline", LV_STATE_CHECKED | LV_STATE_PRESSED);
-  fx::use(b, "border:accent", LV_STATE_CHECKED | LV_STATE_PRESSED);
-  fx::use(b, "border:disabled-accent", LV_STATE_CHECKED | fw::st::OFF);
-  fx::use(b, "part:control");  // the theme's control (C46), last
-  lv_obj_add_flag(b, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_STATE_TRICKLE));  // debt: the Dial's button is hand-built: should be the Icon button component (C8b)
-  lv_obj_remove_flag(b, LV_OBJ_FLAG_EVENT_BUBBLE);  // the ring never sees the button's press
-  d->btn_txt = fx::text(b, "ON", "type:c-label", "fg:text");
-  fx::use(d->btn_txt, "fg:accent-text", LV_STATE_CHECKED);
-  fx::use(d->btn_txt, "fg:pressed-ink", LV_STATE_CHECKED | LV_STATE_PRESSED);
-  fx::use(d->btn_txt, "fg:disabled-ink", fw::st::OFF);
-  lv_obj_add_event_cb(b, tap_button, LV_EVENT_ALL, s);
+  lv_obj_t *h = fx::box(parent, "free");
+  for (const char *t : {"hug", "w:dial-toggle-w"}) fx::use(h, t);
+  const fw::Component *c = fw::find("button");
+  if (!c) return nullptr;
+  ArduinoJson::JsonDocument bp;
+  button_props(of(s)->on, bp);
+  c->build(h, bp.as<fw::Props>());
+  lv_obj_t *b = lv_obj_get_child(h, -1);
+  if (!b) return nullptr;
+  lv_obj_add_event_cb(b, [](lv_event_t *) { if (!btn_quiet) btn_quiet = new fw::Quiet; },
+                      (lv_event_code_t) (LV_EVENT_CLICKED | LV_EVENT_PREPROCESS), nullptr);
+  lv_obj_add_event_cb(b, tap_button, LV_EVENT_CLICKED, s);
   return b;
 }
 
@@ -297,7 +298,7 @@ void ring(lv_event_t *e) {
 FW_COMPONENT(dial, "Dial", "components", R"({
   "about": "A large circular control for a value such as brightness or temperature, with an on/off button in the centre.",
   "contract": 2,
-  "parts": ["control", "knob", "tick", "tick-major", "arc", "arc-fill"],
+  "parts": ["knob", "tick", "tick-major", "arc", "arc-fill"],
   "frame": [384, 384],
   "props": [
     {"name": "value", "about": "The value the dial is set to, between its lowest and highest.", "type": "range", "min": -20, "max": 200, "step": 0.5, "default": 64},
