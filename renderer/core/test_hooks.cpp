@@ -29,6 +29,7 @@
 #include "device.h"
 #include "fx.h"
 #include "sheet.h"
+#include "toasts.h"
 #include "core/lv_obj_private.h"  // the style list (the bounds proof names the token styles)
 #include "core/lv_obj_style_private.h"
 
@@ -101,7 +102,7 @@ void inks(lv_obj_t *o, ArduinoJson::JsonArray arr) {
     const bool text = lv_obj_check_type(c, &lv_label_class), img = lv_obj_check_type(c, &lv_image_class);
     lv_area_t a;
     lv_obj_get_coords(c, &a);
-    if ((text && *lv_label_get_text(c)) || img) {
+    if (((text && *lv_label_get_text(c)) || img) && !fw::toasts::under(c)) {
       if (lv_area_get_width(&a) > 0 && lv_area_get_height(&a) > 0) {
         auto r = arr.add<ArduinoJson::JsonObject>();
         r["i"] = (int) ink_objs.size(); r["x"] = a.x1; r["y"] = a.y1; r["w"] = lv_area_get_width(&a); r["h"] = lv_area_get_height(&a);
@@ -129,7 +130,7 @@ void gfx(lv_obj_t *o, ArduinoJson::JsonArray arr) {
     // a knob the theme took away (switch shape check: the checkbox's tick is checked as the drawn part "switch")
     if (has_style(c, "toggle-knob") && lv_obj_get_style_bg_opa(c, LV_PART_MAIN) <= LV_OPA_MIN) continue;
     for (const char *g : GFX)
-      if (has_style(c, g)) {
+      if (has_style(c, g) && !fw::toasts::under(c)) {
         lv_area_t a;
         lv_obj_get_coords(c, &a);
         auto r = arr.add<ArduinoJson::JsonObject>();

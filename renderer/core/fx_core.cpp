@@ -88,7 +88,10 @@ const char *const DERIVED_N[] = {"dial-wing-up", "dial-wing-down", "dial-slot", 
                                  // body line, space 2 apart), centred on the hero type box
                                  "hero-col", "hero-col-title",
                                  // 31-32: the Hero block's row: a top-aligned row, the gutter apart, as tall as its number's type box
-                                 "hero-row", "hero-row-display"};
+                                 "hero-row", "hero-row-display",
+                                 // 33: the Toast's box: the overlay's toast-h tall, toast-pad in (less the edge hair) and
+                                 // between its items, a row centred on its height
+                                 "toast"};
 // A display's look: its shared styles painted from theme t (mode + accent set) through the live Skin (theme_live: its
 // palette for that mode x set = th, the colours every contract style reads; Facet's Skin = Facet's colours, so th == *t)
 // and its generation (gen: a theme apply bumps it, the look repaints; never by Skin pointer, a freed one's address can
@@ -616,6 +619,12 @@ void paint(Look *L, const fw::Theme *t, int only = -1) {  // colours from the th
         lv_style_set_height(s, box_of(d.i == 32 ? ty::display : ty::hero));
         flex(s, LV_FLEX_FLOW_ROW, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
         lv_style_set_pad_column(s, tok("layout:gutter", lay::gutter)); continue;
+      }
+      if (d.i == 33) {  // toast: layout toast-h tall, the full width it is given; padding toast-pad less the edge hair
+        const int P = tok("layout:toast-pad", lay::toast_pad);
+        lv_style_set_width(s, lv_pct(100)); lv_style_set_height(s, tok("layout:toast-h", lay::toast_h));
+        lv_style_set_pad_all(s, P - tok("stroke:hair", stroke::hair)); lv_style_set_pad_column(s, P);
+        flex(s, LV_FLEX_FLOW_ROW, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER); continue;
       }
       if (d.i == 16) {  // empty-pad: the Empty state's padding from the outer edge (less the border hair)
         lv_style_set_pad_all(s, tok("layout:empty-pad", lay::empty_pad) - tok("stroke:hair", stroke::hair)); continue;

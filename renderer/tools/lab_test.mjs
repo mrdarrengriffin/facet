@@ -27,6 +27,7 @@ const EXTRA = { card: [{ opening: false }, CARD, PAGE],
   stat: [{ label: 'lit', value: '63%', tone: 'text' }, ['space:2'], PAGE],
   // a whole screen (meta stage: screen): its own Page, so the page tokens are its own
   bottom_sheet: [{}, ['layout:inset'], []],
+  toast_layer: [{ timer: false }, ['layout:inset'], []],
   // a layout whose parts sit a gutter apart (the gutter is its own, not the page's)
   group: [{ sample: 4 }, ['layout:gutter'], PAGE.filter((n) => n !== 'layout:gutter')],
   hero_block: [{ n: '3', label: 'need you', line: '2 reviews' }, ['layout:gutter', 'space:2'], PAGE.filter((n) => n !== 'layout:gutter')] };

@@ -1,5 +1,7 @@
 // Toast layer: the stack of toasts over a screen (docs: Components > Toasts > Toast layer, @facet/ui toast.ts
-// toastLayer(), CSS .f-toasts; createDevice() puts one over every screen).
+// toastLayer(), CSS .f-toasts; createDevice() puts one over every screen), on the contract (renderer/CONTRACT.md,
+// "contract": 2). The layer itself (geometry, stacking, motion, the arrival's sound) is the core's: core/toasts.h.
+// This file is the workbench page: the sample toasts and the screen under them.
 //   layer    covers the screen it is built on (floating, ignores the screen's layout), NOT clickable: only the toasts
 //            take taps, everything else reaches the screen under it (docs pointer-events none on the layer)
 //   stack    up to toast.max (2) Toast components (fw::find("toast"), internal props layer + edge), newest nearest the
@@ -15,26 +17,21 @@
 // arriving / leaving toast redraws its own box (~656 x 120 / 440 x 80 + the offset) while it fades (opacity under
 // 100 % = one layer the size of the toast); a restack moves whole toasts by y (two boxes per frame, no opacity).
 // Nothing full-screen: no scrim, the screen under it is never touched except where a toast was.
-// Workbench page: the layer over a real-component screen at device size (the Header "Toasts" + six List rows, one per
-// tone: a tap on a row pushes that tone's toast). Props: position, push (the toast that arrives on build, so the
+// Workbench page (meta "stage": "screen"): the layer over a Page of real components (the Header "Toasts" + six List
+// rows, one per tone: a tap on a row pushes that tone's toast). Props: position, push (the toast that arrives on build, so the
 // 1.8 s demo reset replays it; none = start empty), stack (how many arrive on build, toast-in apart: 3 shows the
 // oldest pushed out), timer (off = they stay until tapped or swiped: the variants, so the grid does not empty
 // itself), action (the warn toast gets the docs' "View" button), screen. Internal: `overlay` (only the layer + its
 // toasts, built into the caller's screen; the Layout foundation's overlay sample) with `still` (no motion, no timer);
 // `loop` (a new toast every toast-in + toast-out, quietly: the frame-rate bench).
 // Contrast pairs: tokens/colour.json section "toast" (+ header, list_row, button).
-#include <vector>
 #include "fw.h"
+#include "fx.h"
+#include "toasts.h"
 
 namespace {
 using Doc = ArduinoJson::JsonDocument;
 
-lv_obj_t *box(lv_obj_t *parent) {
-  lv_obj_t *o = lv_obj_create(parent);
-  lv_obj_remove_style_all(o);
-  lv_obj_remove_flag(o, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
-  return o;
-}
 lv_obj_t *build(const char *id, lv_obj_t *parent, Doc &props) {
   const fw::Component *c = fw::find(id);
   if (!c) return nullptr;
@@ -60,183 +57,122 @@ int sample_of(const char *tone) {
   return -1;
 }
 
-struct Layer {
+// the workbench's own state, on the overlay's user data (the core's layer rides on its DELETE event)
+struct Demo {
   lv_obj_t *ov = nullptr;
-  std::vector<lv_obj_t *> shown;  // newest first
-  bool top = true, timer = true, action = true, still = false;
+  bool timer = true, action = true;
   lv_timer_t *stagger = nullptr, *loop = nullptr;
   int next = 0, left = 0;  // build-time pushes still to come (stack): `left` more, sample `next` first
 };
 
-int slot_y(const Layer *L, int i) {
-  const int step = fw::lay::toast_h + fw::lay::gutter;
-  return L->top ? fw::lay::toast_top + i * step : fw::lay::screen_h - fw::lay::inset - fw::lay::toast_h - i * step;
-}
-void set_y(void *o, int32_t v) { lv_obj_set_y((lv_obj_t *) o, v); }
-
-// every shown toast to its slot (Motion toast-in on y: the docs' CSS transition on top)
-void restack(Layer *L) {
-  for (size_t i = 0; i < L->shown.size(); i++) {
-    lv_obj_t *t = L->shown[i];
-    const int32_t from = lv_obj_get_y(t), to = slot_y(L, (int) i);
-    if (from == to) continue;
-    if (L->still) { lv_obj_set_y(t, to); continue; }
-    fw::animate(t, fw::mo::toast_in, {set_y, from, to, fw::mo::MOVE});
-  }
-}
-
 // quiet = a build-time follow-up (stack > 1): no event, no sound, and the toast it pushes out leaves silently too, so a
 // workbench sample's arrival never re-arms its demo reset (the hub mutes only the first 250 ms of a rebuild)
-void push_one(Layer *L, const Sample &s, bool quiet) {
+void push(Demo *D, int si, bool quiet = false) {
+  if (si < 0 || si >= N_SAMPLES) return;
+  const Sample &s = SAMPLES[si];
   Doc d;
   d["icon"] = s.icon, d["tone"] = s.tone, d["title"] = s.title, d["body"] = s.body;
-  d["action"] = L->action ? s.action : "";
+  d["action"] = D->action ? s.action : "";
   d["life"] = s.urgent ? "urgent" : "normal";
-  d["timer"] = L->timer && !L->still;
-  d["layer"] = true;
-  d["edge"] = L->top ? "top" : "bottom";
-  lv_obj_t *t = build("toast", L->ov, d);
-  if (!t) return;
-  lv_obj_add_flag(t, LV_OBJ_FLAG_IGNORE_LAYOUT);
-  lv_obj_set_pos(t, fw::lay::inset, slot_y(L, 0));
-  // dismissed: out of the stack, the rest move up; gone (its leave finished): delete it
-  lv_obj_add_event_cb(t, [](lv_event_t *e) {
-    auto *L = (Layer *) lv_event_get_user_data(e);
-    auto *t = (lv_obj_t *) lv_event_get_current_target(e);
-    for (size_t i = 0; i < L->shown.size(); i++)
-      if (L->shown[i] == t) { L->shown.erase(L->shown.begin() + i); restack(L); break; }
-  }, LV_EVENT_VALUE_CHANGED, L);
-  lv_obj_add_event_cb(t, [](lv_event_t *e) { lv_obj_delete_async((lv_obj_t *) lv_event_get_current_target(e)); }, LV_EVENT_READY, nullptr);
-  L->shown.insert(L->shown.begin(), t);
-  // over the max: the oldest leaves (it sends VALUE_CHANGED, which takes it out of `shown`)
-  while ((int) L->shown.size() > fw::toast::max) {
-    lv_obj_t *old = L->shown.back();
-    L->shown.pop_back();
-    lv_obj_send_event(old, LV_EVENT_CANCEL, quiet ? (void *) 1 : nullptr);
-  }
-  restack(L);
-  if (!L->still) {
-    lv_obj_set_style_opa(t, LV_OPA_TRANSP, 0);
-    fw::appear(t, fw::mo::toast_in, true, L->top ? -1 : 1);
-  }
-  if (!L->still && !quiet) {
-    // detail "<tone> <icon> <life>: <title>" (functional tests read what arrived; toast_ha.test.mjs)
-    char d[160];
-    snprintf(d, sizeof d, "%s %s %s: %s", s.tone, s.icon, s.urgent ? "urgent" : "normal", s.title);
-    fw::emit(t, "toast", d);
-    fw::sound(t, fw::toast::sound);
-  }
-}
-void push(Layer *L, int si, bool quiet = false) {
-  if (si >= 0 && si < N_SAMPLES) push_one(L, SAMPLES[si], quiet);
+  d["timer"] = D->timer;
+  // detail "<tone> <icon> <life>: <title>" (functional tests read what arrived; toast_ha.test.mjs)
+  char det[160];
+  snprintf(det, sizeof det, "%s %s %s: %s", s.tone, s.icon, s.urgent ? "urgent" : "normal", s.title);
+  fw::toasts::show(D->ov, d.as<fw::Props>(), quiet ? nullptr : det);
 }
 
-Layer *layer(lv_obj_t *host, fw::Props p) {
-  auto *L = new Layer;
-  L->top = strcmp(p["position"] | (fw::toast::top ? "top" : "bottom"), "bottom") != 0;
-  L->timer = p["timer"] | true;
-  L->action = p["action"] | true;
-  L->still = p["still"] | false;
-  L->ov = box(host);
-  lv_obj_add_flag(L->ov, (lv_obj_flag_t) (LV_OBJ_FLAG_FLOATING | LV_OBJ_FLAG_IGNORE_LAYOUT | LV_OBJ_FLAG_USER_4));
-  lv_obj_set_user_data(L->ov, L);  // the update path finds the layer here (USER_4 marks the overlay)
-  lv_obj_set_size(L->ov, LV_PCT(100), LV_PCT(100));
-  lv_obj_set_pos(L->ov, 0, 0);
-  fw::qa::free(L->ov, "overlay: toast layer");  // sits over the screen on purpose (tools/audit_screens.mjs skips it)
-  lv_obj_add_event_cb(L->ov, [](lv_event_t *e) {
-    auto *L = (Layer *) lv_event_get_user_data(e);
-    if (L->stagger) lv_timer_delete(L->stagger);
-    if (L->loop) lv_timer_delete(L->loop);
-    delete L;
-  }, LV_EVENT_DELETE, L);
-  return L;
+Demo *demo(lv_obj_t *host, fw::Props p) {
+  auto *D = new Demo;
+  D->timer = p["timer"] | true;
+  D->action = p["action"] | true;
+  D->ov = fw::toasts::layer(host, strcmp(p["position"] | (fw::toast::top ? "top" : "bottom"), "bottom") != 0, p["still"] | false);
+  lv_obj_set_user_data(D->ov, D);  // the update path finds the demo here (USER_4 marks the overlay)
+  lv_obj_add_event_cb(D->ov, [](lv_event_t *e) {
+    auto *D = (Demo *) lv_event_get_user_data(e);
+    if (D->stagger) lv_timer_delete(D->stagger);
+    if (D->loop) lv_timer_delete(D->loop);
+    delete D;
+  }, LV_EVENT_DELETE, D);
+  return D;
 }
-}  // namespace
 
-namespace {
 // the pushes a build makes: `push` arrives now (quiet = no event / sound: an update), with stack > 1 the next tones
 // follow, toast-in apart (always quiet)
-void pushes(Layer *L, fw::Props p, bool quiet) {
+void pushes(Demo *D, fw::Props p, bool quiet) {
   const int first = sample_of(p["push"] | "ok");
   const int stack = std::min(std::max((int) (p["stack"] | 1), 1), N_SAMPLES);
   if (first < 0) return;
-  push(L, first, quiet);
-  L->next = first + 1;
-  L->left = stack - 1;
-  if (L->still)
-    for (; L->left > 0; L->left--) push(L, L->next++ % N_SAMPLES, true);
-  if (L->left > 0)
-    L->stagger = lv_timer_create([](lv_timer_t *tm) {
-      auto *L = (Layer *) lv_timer_get_user_data(tm);
-      push(L, L->next++ % N_SAMPLES, true);
-      if (--L->left <= 0) { L->stagger = nullptr; lv_timer_delete(tm); }
-    }, fw::mo::ms::toast_in, L);
+  push(D, first, quiet);
+  D->next = first + 1;
+  D->left = stack - 1;
+  if (p["still"] | false)
+    for (; D->left > 0; D->left--) push(D, D->next++ % N_SAMPLES, true);
+  if (D->left > 0)
+    D->stagger = lv_timer_create([](lv_timer_t *tm) {
+      auto *D = (Demo *) lv_timer_get_user_data(tm);
+      push(D, D->next++ % N_SAMPLES, true);
+      if (--D->left <= 0) { D->stagger = nullptr; lv_timer_delete(tm); }
+    }, fw::mo::ms::toast_in, D);
 }
 // what needs the screen again (fw::refill): the rest (push, stack, timer, action) moves in place
 std::string sig(fw::Props p) {
   return std::string(p["position"] | (fw::toast::top ? "top" : "bottom")) + "|" + ((p["screen"] | true) ? "s" : "") + "|" +
          ((p["loop"] | false) ? "l" : "") + ((p["still"] | false) ? "t" : "");
 }
-// the screen (root = its box; nullptr = make it on parent) + the layer; returns the layer
-Layer *fill(lv_obj_t *parent, lv_obj_t *root, fw::Props p) {
-  const fw::Theme &t = *fw::T;
+// the screen (root = its box; nullptr = make it on parent) + the layer; returns the demo
+Demo *fill(lv_obj_t *parent, lv_obj_t *root, fw::Props p) {
   const bool overlay = p["overlay"] | false;
   lv_obj_t *host = parent;
   lv_obj_t *rows[N_SAMPLES] = {};
   if (!overlay) {
-    host = root ? root : box(parent);
-    lv_obj_remove_style_all(host);
-    lv_obj_remove_flag(host, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
+    host = root ? root : fx::box(parent, "free");  // the screen: the Page, then the overlay over all of it
+    for (const char *t : {"fill", "bg:bg"}) fx::use(host, t);
+    fx::name(host, "toast_layer");
     fw::shape(host, sig(p));
-    lv_obj_set_size(host, fw::lay::screen_w, fw::lay::screen_h);
-    lv_obj_set_style_bg_color(host, t.bg, 0);
-    lv_obj_set_style_bg_opa(host, LV_OPA_COVER, 0);
     if (p["screen"] | true) {
+      const fx::Page pg = fx::page(fx::box(host, "free"), "list");  // the Page structure (C1-C3)
       Doc hd;
       hd["label"] = "Toasts";
-      if (lv_obj_t *h = build("header", host, hd)) lv_obj_set_pos(h, fw::lay::inset, fw::lay::inset);
-      lv_obj_t *c = box(host);
-      lv_obj_set_pos(c, fw::lay::inset, fw::lay::top);
-      lv_obj_set_size(c, fw::lay::content_w, LV_SIZE_CONTENT);
-      lv_obj_set_flex_flow(c, LV_FLEX_FLOW_COLUMN);
-      // six rows fill the content height at both densities (6 x 96 = 576 of 576; 6 x 64 = 384 of 388)
-      static_assert(N_SAMPLES * fw::lay::list_row_h <= fw::lay::content_h, "the tone rows must fit the content area");
-      for (int i = 0; i < N_SAMPLES; i++) {
+      build("header", pg.head, hd);
+      for (int i = 0; i < N_SAMPLES; i++) {  // six rows fill the content height at both densities
         Doc d;
         d["title"] = SAMPLES[i].row;
         d["icon"] = "none";
         d["trailing"] = "value";
         d["value"] = SAMPLES[i].tone;
-        rows[i] = build("list_row", c, d);
+        rows[i] = build("list_row", pg.body, d);
       }
     }
   }
-  Layer *L = layer(host, p);
+  Demo *D = demo(host, p);
   // a tap on a tone row pushes its toast: the List row's own tap event goes out, its tap sound does not (the toast's
   // notify is the one sound of the gesture, as when HA sends one: BF-034). Preprocess = before the row's handler.
   static fw::Quiet *row_quiet = nullptr;
   for (int i = 0; i < N_SAMPLES; i++) {
     if (!rows[i]) continue;
-    lv_obj_set_user_data(rows[i], (void *) (intptr_t) i);
     lv_obj_add_event_cb(rows[i], [](lv_event_t *) { if (!row_quiet) row_quiet = new fw::Quiet; },
                         (lv_event_code_t) (LV_EVENT_CLICKED | LV_EVENT_PREPROCESS), nullptr);
     lv_obj_add_event_cb(rows[i], [](lv_event_t *e) {
       delete row_quiet;
       row_quiet = nullptr;
-      push((Layer *) lv_event_get_user_data(e), (int) (intptr_t) lv_obj_get_user_data((lv_obj_t *) lv_event_get_current_target(e)));
-    }, LV_EVENT_CLICKED, L);
+      auto *D = (Demo *) lv_event_get_user_data(e);
+      push(D, (int) lv_obj_get_index((lv_obj_t *) lv_event_get_current_target(e)));
+    }, LV_EVENT_CLICKED, D);
   }
   if (p["loop"] | false)  // frame-rate bench: a new toast every toast-in + toast-out (arrive, restack, push the oldest out)
-    L->loop = lv_timer_create([](lv_timer_t *tm) {
-      auto *L = (Layer *) lv_timer_get_user_data(tm);
-      push(L, L->next++ % N_SAMPLES, true);
-    }, fw::mo::ms::toast_in + fw::mo::ms::toast_out, L);
-  return L;
+    D->loop = lv_timer_create([](lv_timer_t *tm) {
+      auto *D = (Demo *) lv_timer_get_user_data(tm);
+      push(D, D->next++ % N_SAMPLES, true);
+    }, fw::mo::ms::toast_in + fw::mo::ms::toast_out, D);
+  return D;
 }
 }  // namespace
 
 FW_COMPONENT(toast_layer, "Toast layer", "components", R"({
   "about": "The layer that stacks toasts over any screen (two at most), animates them in and out and plays the notify sound. Tap a row to send that tone's toast.",
+  "contract": 2,
+  "parts": [],
+  "stage": "screen",
   "frame": [480, 480],
   "icons": ["timer@glyph", "person@glyph", "alert@glyph", "agent@glyph", "washer@glyph", "vacuum@glyph", "back@glyph"],
   "props": [
@@ -258,8 +194,7 @@ FW_COMPONENT(toast_layer, "Toast layer", "components", R"({
     {"label": "reduced motion", "props": {"push": "idle", "stack": 2, "timer": false, "reduced_motion": true}}
   ]
 })") {
-  Layer *L = fill(parent, nullptr, p);
-  pushes(L, p, false);
+  pushes(fill(parent, nullptr, p), p, false);
 }
 
 // Update path: the layer's root = the screen box (the overlay itself when built as an overlay). push / stack / timer /
@@ -268,53 +203,17 @@ FW_COMPONENT(toast_layer, "Toast layer", "components", R"({
 FW_UPDATE(toast_layer) {
   lv_obj_t *ov = lv_obj_has_flag(root, LV_OBJ_FLAG_USER_4) ? root : lv_obj_get_child(root, -1);
   if (!ov || !lv_obj_has_flag(ov, LV_OBJ_FLAG_USER_4)) return false;
-  Layer *L = (Layer *) lv_obj_get_user_data(ov);
   if (ov != root && !fw::shape(root, sig(p))) {
     fw::refill(root);  // the old overlay goes with it (its DELETE frees the layer and its timers)
     pushes(fill(nullptr, root, p), p, true);
     return true;
   }
-  if (L->stagger) { lv_timer_delete(L->stagger); L->stagger = nullptr; }
-  L->timer = p["timer"] | true;
-  L->action = p["action"] | true;
-  L->left = 0;
-  while (!L->shown.empty()) {  // every toast showing leaves quietly (it takes itself out of `shown`)
-    lv_obj_t *old = L->shown.back();
-    L->shown.pop_back();
-    lv_obj_send_event(old, LV_EVENT_CANCEL, (void *) 1);
-  }
-  pushes(L, p, true);
+  auto *D = (Demo *) lv_obj_get_user_data(ov);
+  if (D->stagger) { lv_timer_delete(D->stagger); D->stagger = nullptr; }
+  D->timer = p["timer"] | true;
+  D->action = p["action"] | true;
+  D->left = 0;
+  fw::toasts::clear(ov);
+  pushes(D, p, true);
   return true;
 }
-
-// The device's toast layer (core/toasts.h): core/device.cpp puts one over every screen of a mounted device (on the
-// display's top layer) and pushes the toasts Home Assistant sends (fw::dev::toast). A pushed toast = the same Toast
-// and the same arrival as the samples above: event "toast" + sound notify, timer on, the oldest pushed out over
-// toast.max. Position = Settings > Toasts (top / bottom), taken when no toast is showing (a stack never flips).
-namespace fw {
-namespace toasts {
-lv_obj_t *layer(lv_obj_t *host) {
-  Doc d;
-  return ::layer(host, d.as<fw::Props>())->ov;
-}
-void push(lv_obj_t *ov, fw::Props t, bool top) {
-  auto *L = ov ? (Layer *) lv_obj_get_user_data(ov) : nullptr;
-  if (!L) return;
-  if (L->shown.empty()) L->top = top;
-  // an unknown tone = info; an unknown or empty icon = the tone's own (ok done, warn / error alert, working agent, else bell)
-  static const char *TONES[] = {"ok", "warn", "error", "working", "info", "idle"};
-  static const char *ICONS[] = {"timer", "agent", "person", "washer", "vacuum", "bolt", "alert", "done", "bell", "check", "pr"};
-  auto known = [](const char *v, const char *const *list, size_t n) -> const char * {
-    for (size_t i = 0; v && i < n; i++) if (!strcmp(v, list[i])) return list[i];
-    return nullptr;
-  };
-  const char *tn = known(t["tone"] | "", TONES, sizeof TONES / sizeof *TONES);
-  const std::string tone = tn ? tn : "info";
-  const char *icon = tone == "ok" ? "done" : tone == "warn" || tone == "error" ? "alert" : tone == "working" ? "agent" : "bell";
-  const char *ic = known(t["icon"] | "", ICONS, sizeof ICONS / sizeof *ICONS);
-  const Sample s{tn ? tn : "info", "", ic ? ic : icon, t["title"] | "", t["body"] | "", t["action"] | "",
-                 !strcmp(t["life"] | "normal", "urgent")};
-  push_one(L, s, false);
-}
-}  // namespace toasts
-}  // namespace fw
