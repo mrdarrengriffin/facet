@@ -1341,7 +1341,7 @@ class Handler : public AsyncWebHandler {
     } else if (path == "/fw/act" && post) {  // one action of the closed list (CONTRACT.md C50; act_run)
       ArduinoJson::JsonDocument body;
       bool ok = false;
-      if (too_big_ || body_.empty() || deserializeJson(body, body_)) { code = 400; s = R"({"ok":false,"why":"body is not JSON: {\"do\": \"<action>\", ...} (GET /fw/act lists them)"})"; }
+      if (too_big_ || body_.empty() || deserializeJson(body, body_)) { code = 400; s = R"J({"ok":false,"why":"body is not JSON: {\"do\": \"<action>\", ...} (GET /fw/act lists them)"})J"; }
       else if (!in_loop([&] { ok = act_run(body.as<ArduinoJson::JsonVariantConst>(), "/fw/act"); serializeJson(act_last(), s); }, 3000)) { code = 503; s = R"({"ok":false,"why":"the main loop did not answer in time"})"; }
       else if (!ok) code = 400;
     } else if (path == "/fw/act") {  // the list: every action, its fields, limits, one example (core/spec.h ACTION_DOCS)
