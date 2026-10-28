@@ -53,7 +53,7 @@ const char *const SHAPES[] = {"box", "col", "row", "stack", "centre", "cell", "g
                               "badge", "badge-num", "button", "button-fill", "border-clear", "fade-press-all",
                               "fade-release-all", "btn-underline", "seg", "seg-part", "seg-label", "seg-grow", "seg-sep", "seg-plate",
                               "seg-half-l", "seg-half-r", "ring-full-2", "ring-tb-2", "ring-l", "ring-r", "ring-lr",
-                              "slider", "slider-word", "text-mid", "grow-w", "button-sm",
+                              "slider", "slider-word", "text-mid", "grow-w", "button-sm", "timer-chip",
                               // the Checkbox: its box, the in-progress dot, a done label, the Motion toggle fade
                               "checkbox", "checkbox-dot", "strike", "fade-switch",
                               // a Group of buttons that lines up from the end (right), centred across
@@ -399,6 +399,11 @@ void shape(lv_style_t *s, const char *n) {  // the structure styles: density onl
     lv_style_set_pad_hor(s, S2()); lv_style_set_radius(s, LV_RADIUS_CIRCLE); flex(s, LV_FLEX_FLOW_ROW, C, C, C);
   } else if (k == "badge-num") {  // the number: at least the pill's inner square (badge-h - 2 x space 2), centred
     lv_style_set_min_width(s, tok("layout:badge-h", lay::badge_h) - 2 * S2()); lv_style_set_text_align(s, LV_TEXT_ALIGN_CENTER);
+  } else if (k == "timer-chip") {  // the Timer chip: hugs, at least touch:min tall, space 3 in from the outer edge (its hair
+    // edge inside, so the contents land on the grid), space 3 between, a row centred across
+    lv_style_set_width(s, LV_SIZE_CONTENT); lv_style_set_height(s, LV_SIZE_CONTENT); lv_style_set_min_height(s, TMIN());
+    lv_style_set_pad_hor(s, tok("space:3", sp::s3) - HAIR()); lv_style_set_pad_ver(s, 0); lv_style_set_pad_column(s, tok("space:3", sp::s3));
+    flex(s, LV_FLEX_FLOW_ROW, S, C, C);
   } else if (k == "button-sm") {  // the small Button (after "button"): touch:min tall, the label space 4 in from the outer edge
     lv_style_set_height(s, TMIN()); lv_style_set_pad_hor(s, tok("space:4", sp::s4) - HAIR());
   } else if (k == "button") {  // the Button: touch:button-h tall, its label's width, the label space 7 in from the

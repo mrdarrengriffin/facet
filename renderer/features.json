@@ -36,7 +36,7 @@
       "label": "Timer",
       "docs": true, "status": "done", "firmware": true,
       "screens": ["timer"],
-      "components": ["timer_view"]
+      "components": ["timer_view", "progress_ring", "timer_chip"]
     },
     {
       "id": "lights",
