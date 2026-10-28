@@ -393,6 +393,37 @@ void rects(lv_obj_t *o, int depth, ArduinoJson::JsonArray arr) {
   }
 }
 }  // namespace
+// every tap target on stage `id`'s screen (the workbench "Tap areas" view, hub src/wasm/taps.ts): each visible clickable
+// object with its hit area = its box grown by the ext click area (fx::hit, C32): [{x, y, w, h, bx, by, bw, bh, min}]
+// in device px (b* = the drawn box), min = touch:min now, so the page marks a target smaller than it
+namespace {
+void taps(lv_obj_t *o, ArduinoJson::JsonArray arr) {
+  for (uint32_t i = 0; i < lv_obj_get_child_count(o); i++) {
+    lv_obj_t *c = lv_obj_get_child(o, i);
+    if (lv_obj_has_flag(c, LV_OBJ_FLAG_HIDDEN)) continue;
+    // a scrolling container (the Body) is clickable only so a drag scrolls: not a tap target
+    if (lv_obj_has_flag(c, LV_OBJ_FLAG_CLICKABLE) && !(lv_obj_has_flag(c, LV_OBJ_FLAG_SCROLLABLE) && lv_obj_get_child_count(c))) {
+      lv_area_t a;
+      lv_obj_get_coords(c, &a);
+      const int32_t e = c->spec_attr ? c->spec_attr->ext_click_pad : 0;
+      auto r = arr.add<ArduinoJson::JsonObject>();
+      r["x"] = a.x1 - e; r["y"] = a.y1 - e; r["w"] = lv_area_get_width(&a) + 2 * e; r["h"] = lv_area_get_height(&a) + 2 * e;
+      r["bx"] = a.x1; r["by"] = a.y1; r["bw"] = lv_area_get_width(&a); r["bh"] = lv_area_get_height(&a);
+      r["min"] = fx::size("touch:min");
+    }
+    taps(c, arr);
+  }
+}
+}  // namespace
+EMSCRIPTEN_KEEPALIVE const char *fw_taps(int id) {
+  out.clear();
+  Stage *s = get(id);
+  if (!s) return "[]";
+  ArduinoJson::JsonDocument doc;
+  taps(lv_display_get_screen_active(s->d), doc.to<ArduinoJson::JsonArray>());
+  serializeJson(doc, out);
+  return out.c_str();
+}
 EMSCRIPTEN_KEEPALIVE const char *fw_rects(int id) {
   out.clear();
   Stage *s = get(id);

@@ -157,7 +157,9 @@ FW_COMPONENT(cells, "Cells", "components", R"({
   "parts": ["rule"],
   "frame": [480, 0],
   "min": ["layout:tile-w", "layout:tile-h"],
-  "slots": 24,
+  "slots": [
+    {"name": "cell", "count": 24, "about": "One card or tile per cell (a pair cell holds two read-outs, one above the other).", "accepts": ["card", "entity_tile", "readout", "stat", "tile", "room_tile", "camera_tile"], "max": 1}
+  ],
   "props": [
     {"name": "cells", "about": "The cells in order, separated by commas: c holds one component; p holds two half-height readouts, one above the other.", "type": "text", "default": "c,c,c"},
     {"name": "min-w", "about": "The narrowest a cell gets: tile-w for tiles (three to a row), home-card-min-w for Home cards (two to a row).", "type": "select", "options": ["tile-w", "home-card-min-w", "card-min-w"], "default": "tile-w"},

@@ -7,6 +7,7 @@
 // when the screen has somewhere to go back to). Kept as its own id: screens, specs and the catalogue name it.
 // Steps / bleed: none. States: default, pressed, disabled (the Icon button's). Pairs: colour.json "icon_button".
 #include "fw.h"
+#include "fx.h"
 
 
 namespace {
@@ -41,6 +42,7 @@ FW_COMPONENT(back_button, "Back button", "components", R"({
   ib->build(parent, bp.as<fw::Props>());
   lv_obj_t *b = lv_obj_get_child(parent, -1);  // the Icon button just built
   if (!b) return;
+  fx::reach(b, "space:4");  // a corner target: a tap up to space 4 off it still counts (48 -> 80 px, Darren 2026-10-28)
   lv_obj_add_event_cb(b, [](lv_event_t *e) {
     auto *o = (lv_obj_t *) lv_event_get_current_target(e);
     if (lv_obj_has_state(o, fw::st::OFF)) return;  // disabled: the tap's own blocked feedback

@@ -1287,6 +1287,16 @@ void hit(lv_obj_t *o) {  // C32: the hit area at least touch:min tall around o a
   lv_obj_set_ext_click_area(o, std::max(0, (tok("touch:min", fw::touch::min) - (int) lv_obj_get_height(o)) / 2));
 }
 
+// o's hit area reaches `pad` (a size token) past its box on every side, on top of what C32 needs: a small target at a
+// screen edge or corner (the Back button) catches a finger that lands a little off it. Again after a token is tuned.
+void reach(lv_obj_t *o, const char *pad) {
+  lv_obj_set_ext_click_area(o, std::max(0, size(pad)));
+  lv_obj_add_event_cb(o, [](lv_event_t *e) {
+    auto *o = (lv_obj_t *) lv_event_get_current_target(e);
+    lv_obj_set_ext_click_area(o, std::max<int32_t>(0, size((const char *) lv_event_get_user_data(e))));
+  }, LV_EVENT_STYLE_CHANGED, (void *) pad);
+}
+
 lv_obj_t *icon(lv_obj_t *p, const char *name, const char *size, const char *ink) {
   const fw::ic::Size sz = !strcmp(size, "card") ? fw::ic::card : !strcmp(size, "glyph") ? fw::ic::glyph
                          : !strcmp(size, "feature") ? fw::ic::feature

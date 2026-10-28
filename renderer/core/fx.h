@@ -31,7 +31,8 @@ void state(lv_obj_t *o, lv_state_t s, bool on);  // o and everything inside it (
 // (accent, text-dim, blue, steel) their own token. Follows a live theme switch. The icon box trickles its parent's
 // states to its layers.
 lv_obj_t *icon(lv_obj_t *parent, const char *name, const char *size, const char *ink);  // size: icon | glyph | card | feature | checkbox (the one that fills the Checkbox box)
-void hit(lv_obj_t *o);  // C32: o's hit area grown to at least touch:min tall (after its contents are made)
+void hit(lv_obj_t *o);
+void reach(lv_obj_t *o, const char *pad);  // o's hit area `pad` (a size token) past its box every side (a corner target: Back)  // C32: o's hit area grown to at least touch:min tall (after its contents are made)
 // a token on every INK layer of an icon (role layers keep their own colours), per state: "ink:on-ink" on CHECKED,
 // "fade-press-ink" on PRESSED (the ink's press fade)
 void icon_use(lv_obj_t *icon, const char *token, lv_style_selector_t sel = 0);
