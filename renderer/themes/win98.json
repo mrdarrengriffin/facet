@@ -17,14 +17,15 @@
   "ok": {"light": "#004D00"},
   "warn": {"light": "#5C3F00"},
   "error": {"light": "#8B0000"},
-  "steel": {"light": "#2F4F6F"}
+  "steel": {"light": "#2F4F6F"},
+  "band-normal": {"light": "#606060"}
  },
  "accents": [
   {"id": "navy", "label": "Highlight navy", "light": {"accent": "#000080", "accent-press": "#000076", "accent-dim": "#8686AD", "accent-text": "#000080", "on-accent": "#FFFFFF"}},
   {"id": "teal", "label": "Desktop teal", "light": {"accent": "#006A6A", "accent-press": "#006262", "accent-dim": "#86A6A6", "accent-text": "#004E4E", "on-accent": "#FFFFFF"}},
   {"id": "maroon", "label": "Maroon", "light": {"accent": "#800000", "accent-press": "#760000", "accent-dim": "#AD8686", "accent-text": "#800000", "on-accent": "#FFFFFF"}},
   {"id": "green", "label": "Green", "light": {"accent": "#006400", "accent-press": "#005C00", "accent-dim": "#86A486", "accent-text": "#004B00", "on-accent": "#FFFFFF"}},
-  {"id": "purple", "label": "Purple", "light": {"accent": "#800080", "accent-press": "#760076", "accent-dim": "#AD86AD", "accent-text": "#800080", "on-accent": "#FFFFFF"}}
+  {"id": "purple", "label": "Purple", "light": {"accent": "#800080", "accent-press": "#760076", "accent-dim": "#B38EB3", "accent-text": "#800080", "on-accent": "#FFFFFF"}}
  ],
  "size": {
   "stroke:pixel": [3, 2],
