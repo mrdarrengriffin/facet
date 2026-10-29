@@ -1949,14 +1949,21 @@ inline Reload &reload_hook() {
 // out: {ok, status: applied|unchanged|refused, id, rev, errors?}; dry = a hidden parent for the off-screen build
 // kind "check" / "check_deck" (facet-163, agents): validate (+ the off-screen build for a screen) and answer, store
 // nothing: {ok, status: valid|refused, id, rev, errors?}
+// built-in screens (Darren 2026-10-29, facet-209): a sent screen may be anything an agent wants, under its own id; a
+// factory id is refused (built_in: a built-in only takes a theme). kind "screen_dev" / "check_dev" = the hub's own dev
+// path (Send specs, the house's copies, the tests), which may still replace a built-in without a firmware build.
+inline void no_built_in(const std::string &id, bool dev, Errs &e) {
+  if (!dev && !id.empty() && factory(id)) err(e, ".id", "built_in", "a built-in screen can't be replaced: send yours under its own id (built-ins only take a theme)");
+}
 inline bool apply(const char *kind, const std::string &json, lv_obj_t *dry, ArduinoJson::JsonObject out, bool quiet = false) {
-  const bool only_check = !strcmp(kind, "check") || !strcmp(kind, "check_deck");
+  const bool only_check = !strcmp(kind, "check") || !strcmp(kind, "check_deck") || !strcmp(kind, "check_dev");
   const bool deck = !strcmp(kind, "deck") || !strcmp(kind, "check_deck");
+  const bool dev = !strcmp(kind, "screen_dev") || !strcmp(kind, "check_dev");
   ArduinoJson::JsonDocument d;
   Errs e;
   if (deserializeJson(d, json)) err(e, "", "bad_json", "not JSON");
   else if (deck) check_deck(d.as<ArduinoJson::JsonVariantConst>(), json.size(), e);
-  else check_screen(d.as<ArduinoJson::JsonVariantConst>(), json.size(), e);
+  else { check_screen(d.as<ArduinoJson::JsonVariantConst>(), json.size(), e); no_built_in(d["id"] | "", dev, e); }
   const std::string id = deck ? "deck" : (d["id"] | "");
   out["id"] = id;
   out["rev"] = d["rev"] | -1;

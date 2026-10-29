@@ -3,7 +3,7 @@
 // the same validation the panel runs (core/spec.h), then the screen built at the target density with the panel's
 // builder: build errors, its objects, anything outside the screen. Reads the spec on stdin.
 // --known a,b: screens the target already has (its hello): a deck naming them is fine although this build lacks them.
-// Usage: node tools/spec.mjs [--den 1x|1.5x] [--build <dir>] [--known ids] < spec.json   -> JSON {ok, kind, errors, components, nodes,
+// Usage: node tools/spec.mjs [--dev] [--den 1x|1.5x] [--build <dir>] [--known ids] < spec.json   -> JSON {ok, kind, errors, components, nodes,
 //        binds, render?: {error, objects, outside}}; exit 0 (the answer says ok or not)
 import { readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -20,7 +20,8 @@ m._fw_init();
 const W = den === '1x' ? 480 : 720, st = m._fw_stage(W, W);
 const S = (p, f) => { const q = m.stringToNewUTF8(p); try { return f(q); } finally { m._free(q); } };
 const spec = (c, a) => S(c, (pc) => S(a, (pa) => JSON.parse(m.UTF8ToString(m._fw_spec(pc, pa)))));
-const out = spec('check', text);
+const dev = process.argv.includes('--dev');  // the hub's dev path: may replace a built-in screen (core/spec.h no_built_in)
+const out = spec(dev ? 'check_dev' : 'check', text);
 let parsed = null;
 try { parsed = JSON.parse(text); } catch { /* the check said so */ }
 out.kind = parsed && (Array.isArray(parsed.pages) || Array.isArray(parsed.screens)) ? 'deck' : 'screen';
@@ -30,7 +31,7 @@ if (out.kind === 'deck' && known.length) {
   out.ok = out.errors.length === 0;
 }
 if (out.ok && out.kind === 'screen') {
-  const ap = spec('screen', text);  // into this run's memory store, built once off screen, then shown here
+  const ap = spec(dev ? 'screen_dev' : 'screen', text);  // into this run's memory store, built once off screen, then shown here
   if (!ap.ok) { out.ok = false; out.errors = ap.errors ?? [{ code: ap.status, msg: 'refused' }]; }
   else {
     const e = S('spec', (pc) => S(JSON.stringify({ screen: parsed.id }), (pp) => m.UTF8ToString(m._fw_render(st, pc, pp, 0, -1))));

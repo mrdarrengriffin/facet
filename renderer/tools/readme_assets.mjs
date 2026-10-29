@@ -86,7 +86,7 @@ if (process.argv.includes('--ai-examples')) {
   // only the examples the docs list (site/src/lib/ai-examples.json): a held one (unreleased component) gets no shot
   const ex = JSON.parse(readFileSync(join(ROOT, 'site', 'src', 'lib', 'ai-examples.json'), 'utf8')).map((e) => e.id).sort();
   for (const id of ex) {
-    const r = JSON.parse(str('screen', (kp) => str(readFileSync(join(dir, `${id}.json`), 'utf8'), (sp) => m.UTF8ToString(m._fw_spec(kp, sp)))));
+    const r = JSON.parse(str('screen_dev', (kp) => str(readFileSync(join(dir, `${id}.json`), 'utf8'), (sp) => m.UTF8ToString(m._fw_spec(kp, sp)))));
     if (!r.ok) throw new Error(`${id}: spec ${JSON.stringify(r.errors ?? r.status)}`);
     for (const theme of ['dark', 'light']) writeFileSync(join(out, `${id}-${theme}.png`), png(render(`spec:${id}`, theme === 'light'), H, H));
   }

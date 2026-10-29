@@ -141,7 +141,7 @@ class Ctx {
   }
   // -- the device's navigation (facet-188): send a spec (stored, never shown), show a screen (= POST /fw/show), the stack
   send(spec) {
-    const r = JSON.parse(this.b.spec('screen', spec) || '{}'); this.b.settle(1500); this.b.events();
+    const r = JSON.parse(this.b.spec('screen_dev', spec) || '{}'); this.b.settle(1500); this.b.events();
     this.log.push(`send ${spec.id}: ${r.status}${r.errors ? ' ' + JSON.stringify(r.errors).slice(0, 160) : ''}`);
     return r;
   }

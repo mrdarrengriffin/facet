@@ -181,8 +181,8 @@ EMSCRIPTEN_KEEPALIVE const char *fw_setting(const char *id, const char *value) {
   return out.c_str();
 }
 
-// Screen specs (core/spec.h): fw_spec(cmd, arg) -> JSON. cmd: check (a screen or deck spec: the errors, the
-// components it uses, nodes, binds), screen / deck (apply: validate, build once off screen, store, swap), revert
+// Screen specs (core/spec.h): fw_spec(cmd, arg) -> JSON. cmd: check / check_dev (a screen or deck spec: the errors, the
+// components it uses, nodes, binds), screen / screen_dev (dev = may replace a built-in) / deck (apply: validate, build once off screen, store, swap), revert
 // (arg = id | deck | all), hello, act (arg = one action JSON: {ok, why?, state?}, CONTRACT.md C50), actions (the documented
 // action list), list (every live spec). Storage here = memory (fw_spec_storage: fault injection +
 // reboot for the power-loss test, tools/spec_test.mjs).
@@ -211,12 +211,12 @@ EMSCRIPTEN_KEEPALIVE const char *fw_spec(const char *cmd, const char *arg) {
   ArduinoJson::JsonDocument d;
   ArduinoJson::JsonObject o = d.to<ArduinoJson::JsonObject>();
   const std::string c = cmd ? cmd : "", a = arg ? arg : "";
-  if (c == "check") {
+  if (c == "check" || c == "check_dev") {
     ArduinoJson::JsonDocument s;
     fw::spec::Errs e;
     if (deserializeJson(s, a)) fw::spec::err(e, "", "bad_json", "not JSON");
     else if (s["pages"].is<ArduinoJson::JsonArray>() || s["screens"].is<ArduinoJson::JsonArray>()) fw::spec::check_deck(s.as<ArduinoJson::JsonVariantConst>(), a.size(), e);
-    else fw::spec::check_screen(s.as<ArduinoJson::JsonVariantConst>(), a.size(), e);
+    else { fw::spec::check_screen(s.as<ArduinoJson::JsonVariantConst>(), a.size(), e); fw::spec::no_built_in(s["id"] | "", c == "check_dev", e); }
     ArduinoJson::JsonDocument ed;
     deserializeJson(ed, fw::spec::errs_json(e));
     o["ok"] = e.empty();
@@ -231,7 +231,7 @@ EMSCRIPTEN_KEEPALIVE const char *fw_spec(const char *cmd, const char *arg) {
     }
     o["nodes"] = s["nodes"].size();
     o["binds"] = binds;
-  } else if (c == "screen" || c == "deck") {
+  } else if (c == "screen" || c == "screen_dev" || c == "deck") {
     lv_display_t *disp = lv_display_get_default();
     lv_obj_t *dry = disp ? lv_obj_create(lv_display_get_screen_active(disp)) : nullptr;
     if (dry) { lv_obj_add_flag(dry, LV_OBJ_FLAG_HIDDEN); }

@@ -137,7 +137,7 @@ async function run(item, den) {
   if (bytes > (item.deck ? B.deck_bytes : B.bytes)) add('budget', `${bytes} bytes > ${item.deck ? B.deck_bytes : B.bytes}`);
   if (!item.deck) { if (chk.nodes > B.nodes) add('budget', `${chk.nodes} nodes > ${B.nodes}`); if (chk.binds > B.binds) add('budget', `${chk.binds} binds > ${B.binds}`); }
   if (!chk.ok || item.deck) return { fails };
-  const ap = JSON.parse(call(m, '_fw_spec', 'screen', text));
+  const ap = JSON.parse(call(m, '_fw_spec', 'screen_dev', text));
   if (!ap.ok) { add('valid', `apply: ${JSON.stringify(ap.errors || ap.status)}`); return { fails }; }
   const nodeComps = new Set((spec.nodes || []).map((n) => n.c));
   const numDefaults = [...nodeComps].flatMap((c) => (m.meta[c]?.props || []).filter((p) => p.type !== 'text' && p.default !== undefined).map((p) => p.default));
