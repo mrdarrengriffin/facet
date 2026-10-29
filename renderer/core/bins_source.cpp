@@ -17,8 +17,11 @@
 //   sample    the docs week (today Fri 23 Oct 2026, real weekdays; setting sample: tonight | today | collected | later | two | none)
 //   calendar  any Home Assistant calendar whose events name the bins ("Green Bin", "Black Bin, Brown Bin"): Waste
 //             Collection Schedule (HACS), the UK Bin Collection integration, a council iCal added to HA (setting
-//             calendar = its entity). Read with calendar.get_events (core/ha.h ask) on build, every 30 minutes and
-//             on a new day; the bin's colour from its name (a colour word, else "general / refuse / rubbish" black,
+//             calendar = its entity). The next collection = the calendar entity itself (its message + start_time
+//             attributes, a live subscription like any bind: native, works on every panel); the weeks after it come
+//             from calendar.get_events (core/ha.h ask) on build, every 30 minutes and on a new day, when the build has
+//             action responses (without them, or when the ask fails, Bins shows the next collection only, never an
+//             error: Darren 2026-10-29). The bin's colour from its name (a colour word, else "general / refuse / rubbish" black,
 //             "recycl" blue, "garden / food" green / brown, else grey).
 // More adapters (a council iCal link fetched by the panel itself, other countries' APIs) = more rows here, no screen
 // change.
@@ -200,7 +203,7 @@ void sample(const std::string &s) {
   put_model(M);
 }
 
-// ---- adapter: calendar (a Home Assistant calendar's events, calendar.get_events)
+// ---- adapter: calendar (the calendar entity's next event + calendar.get_events for the rest)
 long today_local(int *hour) {
   const time_t t = time(nullptr);
   struct tm tm;
@@ -223,15 +226,32 @@ void events_into(Model &M, ArduinoJson::JsonVariantConst v, int depth = 0) {  //
     }
   }
 }
+std::string cal_now;    // the calendar the adapter reads ("" = not the calendar source)
+Model asked;            // the last get_events reply's collections (empty until one lands)
+// the feed from what is known: the entity's next event (attributes) + the asked weeks; loading until the entity's
+// state arrives (an empty calendar: a state, no start_time = none)
+void rebuild() {
+  if (cal_now.empty()) return;
+  Model M = asked;
+  M.today = today_local(&M.hour);
+  const std::string *state = ha::get(cal_now), *st = ha::get(cal_now, "start_time"), *msg = ha::get(cal_now, "message");
+  int y, m, d;
+  if (st && msg && st->size() >= 10 && sscanf(st->c_str(), "%d-%d-%d", &y, &m, &d) == 3) add(M, days_from_civil(y, m, d), *msg);
+  if (!state && M.colls.empty()) { ha::put(E, "", "loading"); return; }
+  put_model(M);
+}
 void answered(void *, bool ok, const std::string &json) {
   waiting = false;
-  if (!ok) { ha::put(E, "", "error"); return; }
   ArduinoJson::JsonDocument d;
-  if (deserializeJson(d, json)) { ha::put(E, "", "error"); return; }
-  Model M;
-  M.today = today_local(&M.hour);
-  events_into(M, d.as<ArduinoJson::JsonVariantConst>());
-  put_model(M);
+  if (ok && !deserializeJson(d, json)) {
+    Model M;
+    events_into(M, d.as<ArduinoJson::JsonVariantConst>());
+    asked = M;
+  }
+  rebuild();  // a failed ask keeps what the entity says
+}
+void entity_put(const std::string &e, const std::string &a, const std::string &) {
+  if (!cal_now.empty() && e == cal_now && (a.empty() || a == "start_time" || a == "message")) rebuild();
 }
 void fetch(const std::string &cal) {
   int hour;
@@ -250,7 +270,7 @@ void fetch(const std::string &cal) {
   waiting = true;  // before the ask: a host may answer at once
   fetched_day = today, fetched_at = lv_tick_get();
   const char *why = ha::ask("calendar.get_events", qs.c_str(), answered, nullptr);
-  if (*why) { waiting = false; ha::put(E, "", "error"); }
+  if (*why) { waiting = false; rebuild(); }
 }
 
 void fresh() {
@@ -261,11 +281,17 @@ void fresh() {
   const std::string src = c["source"] | "sample", cal = c["calendar"] | "";
   const bool changed = cfg != cfg_seen;
   cfg_seen = cfg;
+  static const bool hooked = (ha::on_put(entity_put), true);
+  (void) hooked;
   if (src == "calendar" && cal.rfind("calendar.", 0) == 0) {
-    if (changed) { fetched_day = -1; ha::put(E, "", "loading"); }
+    if (changed || cal != cal_now) {
+      fetched_day = -1, asked = Model{}, cal_now = cal;
+      for (const char *a : {"", "start_time", "message"}) ha::want(cal, a);  // the next event, live
+    }
+    rebuild();
     const long today = today_local(nullptr);
     if (changed || today != fetched_day || lv_tick_elaps(fetched_at) > 30 * 60000u) fetch(cal);
-  } else sample(c["sample"] | "tonight");
+  } else { cal_now.clear(); sample(c["sample"] | "tonight"); }
 }
 [[maybe_unused]] const bool registered = (ha::on_local(E, fresh), true);  // binds on panel.bins never reach a host
 }  // namespace
