@@ -174,5 +174,13 @@
   "components/bins_next": {
     "commit": "548006b",
     "at": "2026-10-29T11:43:20.000Z"
+  },
+  "screens/weather": {
+    "commit": "86c2b45",
+    "at": "2026-10-29T18:36:44.000Z"
+  },
+  "components/weather_icon": {
+    "commit": "86c2b45",
+    "at": "2026-10-29T18:36:44.000Z"
   }
 }
