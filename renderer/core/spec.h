@@ -187,6 +187,7 @@ constexpr Rule RULES[] = {
     {"list_row", "long", "nav.open"},                {"card", "tap", "nav.open,light.toggle"},
     {"card", "long", "nav.open"},                    {"dial", "change", "light.brightness"},
     {"entity_tile", "tap", "nav.open,light.toggle"},
+    {"icon_button", "tap", "nav.open,nav.back"},     // 2026-10-29: a header's settings / shortcut icon (the end slot takes icon buttons only)
     {"dial", "input", "light.brightness"},           {"dial", "toggle", "light.switch"},
     {"slider", "change", "light.brightness"},        {"slider", "input", "light.brightness"},
     {"toggle", "toggle", "light.switch"},
