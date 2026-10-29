@@ -170,5 +170,9 @@
   "screens/bins": {
     "commit": "c90b000",
     "at": "2026-10-29T11:16:45.000Z"
+  },
+  "components/bins_next": {
+    "commit": "548006b",
+    "at": "2026-10-29T11:43:20.000Z"
   }
 }
