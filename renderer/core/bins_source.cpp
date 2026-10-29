@@ -3,7 +3,7 @@
 //   state    the moment: tonight (collection tomorrow, after 12:00) | today (collection today, before 12:00) |
 //            collected (today, after 12:00) | later | none (no collections) | loading | error
 //   caption  "put out tonight" / "collection today" / "collected today · bring it in" / "next collection"
-//   accent   "on" for tonight / today (the moments that matter), else "off" (bind with fmt on); tone: the same as a
+//   accent   "on" for tonight / today (the moments that matter), else "off"; tone: the same as a
 //            status tone (working / idle: a Status line's dot)
 //   when     "Tomorrow" / "Today" / the weekday ("Thursday")
 //   bins     the next collection's bins: "Green bin + Black bin"; colours: their colours, "green,black" (bins

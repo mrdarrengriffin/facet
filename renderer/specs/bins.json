@@ -2,7 +2,7 @@
  "v": 1,
  "id": "bins",
  "name": "Bins",
- "rev": 2,
+ "rev": 3,
  "role": "page",
  "params": {
   "source": {
@@ -51,11 +51,32 @@
  "layout": "list",
  "nodes": [
   {
-   "c": "group",
+   "c": "bins_next",
    "p": {
-    "flow": "wrap",
-    "space": "block",
-    "align": "start"
+    "colours": {
+     "e": "panel.bins",
+     "a": "colours"
+    },
+    "caption": {
+     "e": "panel.bins",
+     "a": "caption"
+    },
+    "accent": {
+     "e": "panel.bins",
+     "a": "accent"
+    },
+    "when": {
+     "e": "panel.bins",
+     "a": "when"
+    },
+    "bins": {
+     "e": "panel.bins",
+     "a": "bins"
+    },
+    "line": {
+     "e": "panel.bins",
+     "a": "line"
+    }
    },
    "show": {
     "e": "panel.bins",
@@ -66,68 +87,6 @@
     },
     "else": "1"
    }
-  },
-  {
-   "c": "bins_art",
-   "p": {
-    "colours": {
-     "e": "panel.bins",
-     "a": "colours"
-    }
-   },
-   "in": 0,
-   "slot": 0
-  },
-  {
-   "c": "group",
-   "p": {
-    "flow": "stack",
-    "space": "near",
-    "align": "start"
-   },
-   "in": 0,
-   "slot": 0
-  },
-  {
-   "c": "hero_block",
-   "p": {
-    "label": {
-     "e": "panel.bins",
-     "a": "caption"
-    },
-    "n": {
-     "e": "panel.bins",
-     "a": "when"
-    },
-    "line": {
-     "e": "panel.bins",
-     "a": "bins"
-    },
-    "accent": {
-     "e": "panel.bins",
-     "a": "accent",
-     "fmt": "on"
-    },
-    "role": "display",
-    "layout": "stack"
-   },
-   "in": 2,
-   "slot": 0
-  },
-  {
-   "c": "status_line",
-   "p": {
-    "text": {
-     "e": "panel.bins",
-     "a": "line"
-    },
-    "tone": {
-     "e": "panel.bins",
-     "a": "tone"
-    }
-   },
-   "in": 2,
-   "slot": 0
   },
   {
    "c": "section_header",
@@ -154,7 +113,8 @@
      "e": "panel.bins",
      "a": "coming"
     },
-    "empty": "Nothing else in the next six weeks"
+    "empty": "Nothing else in the next six weeks",
+    "icon": "none"
    },
    "show": {
     "e": "panel.bins",
@@ -190,7 +150,8 @@
     "items": {
      "e": "panel.bins",
      "a": "yours"
-    }
+    },
+    "icon": "none"
    },
    "show": {
     "e": "panel.bins",

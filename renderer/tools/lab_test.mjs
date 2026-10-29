@@ -38,6 +38,7 @@ const EXTRA = { card: [{ opening: false }, CARD, PAGE],
   rate_strip: [{ ticks: 6 }, ['chart:strip-h', 'chart:bar-radius', 'stroke:edge', 'space:1'], PAGE],
   status_line: [{}, ['space:2'], PAGE],
   bins_art: [{ colours: 'black,green' }, ['layout:bin-hero', 'stroke:edge'], PAGE],
+  bins_next: [{}, ['layout:bin-hero'], ['layout:inset', 'layout:top', 'layout:header-gap', 'squeeze']],
   sparkline: [{ opening: false }, ['stroke:hair', 'chart:spark-h', 'chart:line-thin', 'chart:dot'], PAGE],  // stroke:hair = the dotted baseline
   // a layout whose parts sit a gutter apart (the gutter is its own, not the page's)
   group: [{ sample: 4 }, ['layout:gutter'], PAGE.filter((n) => n !== 'layout:gutter')],
