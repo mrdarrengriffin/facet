@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Facet WASM workbench watcher: rebuilds (build.sh, both densities, incremental) when a .cpp/.h in components/ or core/
+// Facet WASM workbench watcher: rebuilds (FW_DEV=1 build.sh: compile only, 1.5x then 1x, incremental) when a .cpp/.h in components/ or core/
 // changes, or tokens/*.json (colour tokens -> generated header); the workbench page polls the build manifest and re-renders by itself. Run: `node watch.mjs`. Ctrl-C to stop.
 // After every green build the docs site (../site, when present) is rebuilt too: extract + astro build into dist.next,
 // then swapped in as dist (~5 s). Debounced, at most one queued; it never blocks or breaks the WASM watch (failures are logged).
@@ -53,7 +53,8 @@ function build(why) {
   running = true;
   const t0 = Date.now();
   console.log(`\n${new Date().toLocaleTimeString()} build (${why})`);
-  const p = spawn(join(HERE, 'build.sh'), { stdio: ['ignore', 'pipe', 'pipe'] });
+  // dev build (FW_DEV=1, no checks): 720 first so the page reloads in seconds, then 480; checks = facet-gate / a normal build
+  const p = spawn('/bin/sh', ['-c', `FW_DEV=1 '${join(HERE, 'build.sh')}' 1.5x && FW_DEV=1 '${join(HERE, 'build.sh')}' 1x`], { stdio: ['ignore', 'pipe', 'pipe'] });
   let err = '';
   p.stdout.on('data', (d) => process.stdout.write(d));
   p.stderr.on('data', (d) => { err += d; });

@@ -17,6 +17,8 @@
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd)
 [ -f "$HERE/../local.env" ] && . "$HERE/../local.env"
+# FW_DEV=1 = dev build (Darren 2026-10-29: "migrate in seconds"): compile + link + the catalogue only; no contrast,
+# lint, audit, pixel contrast, lab_test, spec_test, theme_check or floorplan checks (run a normal build / facet-gate for those)
 # BUILD_JOBS = compiles at once (LVGL and the renderer's own files): default 2 in the quiet hours (00-06: the box is
 # shared and heavy caps a job at 3 GB; a cold build of every file at once was OOM-killed) else half the cores
 if [ -z "${BUILD_JOBS:-}" ]; then h=$(date +%-H); if [ "$h" -lt 6 ]; then BUILD_JOBS=2; else BUILD_JOBS=$(( $(nproc) / 2 )); fi; fi
@@ -47,7 +49,7 @@ mkdir -p "$C/lvgl$OPT" "$O" "$OUT" "$GEN"
 [ -f "$PB/src/lv_conf.h" ] && [ -d "$L/src" ] || { echo "no panel build in $PB (build the panel firmware once)"; exit 1; }
 t0=$(date +%s.%N)
 # feature flags: every source in one feature, no shown feature needing a hidden one (fails the build)
-node "$HERE/tools/features.mjs" check | sed "s/^/[$DEN] /"; [ "${PIPESTATUS[0]}" = 0 ] || exit 1
+[ -n "${FW_DEV:-}" ] || node "$HERE/tools/features.mjs" check | sed "s/^/[$DEN] /"; [ "${PIPESTATUS[0]}" = 0 ] || exit 1
 SKIP=" "; [ -z "$FEAT" ] || SKIP=" $(node "$HERE/tools/features.mjs" exclude "$FEAT" | tr '\n' ' ') "
 
 # lv_conf = the panel's + host patches; rewritten only on change
@@ -70,14 +72,19 @@ CONF_SUM=$(md5sum "$GEN/lv_conf.h" | cut -c1-8)
 FL="$OPT -DLV_CONF_INCLUDE_SIMPLE -I$GEN -I$L -I$L/src"
 
 # LVGL: one cache for both densities (density-free)
+# dev: the object list of a finished LVGL build is kept per lv_conf (hashing ~1000 paths takes ~6 s)
+LVGL_LIST=$C/lvgl$OPT-$CONF_SUM.list
+if [ -n "${FW_DEV:-}" ] && [ -s "$LVGL_LIST" ]; then LVGL_OBJS=$(cat "$LVGL_LIST"); else
 LVGL_OBJS=$(find "$L/src" -name '*.c' | while read -r f; do echo "$C/lvgl$OPT/$(echo "$f $CONF_SUM" | md5sum | cut -c1-12).o"; done)
 find "$L/src" -name '*.c' | xargs -P"$BUILD_JOBS" -I{} sh -c \
-  'o='"$C/lvgl$OPT"'/$(echo "{} '"$CONF_SUM"'" | md5sum | cut -c1-12).o; [ -f $o ] || { emcc '"$FL"' -c {} -o $o.$$ && mv $o.$$ $o; }'
+  'o='"$C/lvgl$OPT"'/$(echo "{} '"$CONF_SUM"'" | md5sum | cut -c1-12).o; [ -f $o ] || { emcc '"$FL"' -c {} -o $o.$$ && mv $o.$$ $o; }' \
+  && echo "$LVGL_OBJS" > "$LVGL_LIST"
+fi
 
 # colour tokens: tokens/colour.json -> colour_gen.h (written only when it changes, so an unchanged JSON rebuilds nothing)
 node "$HERE/tools/gen_colour.mjs" "$GEN/colour_gen.h"
 # contrast test (tools/contrast.mjs): every declared pair x theme x accent set; reported, never fails the build
-[ "$DEN" = 1x ] || node "$HERE/tools/contrast.mjs" --summary || true
+[ "$DEN" = 1x ] || [ -n "${FW_DEV:-}" ] || node "$HERE/tools/contrast.mjs" --summary || true
 # type tokens: tokens/type.json -> type_gen.h (styles) + this density's bitmap fonts (only the sizes/glyphs the styles use)
 node "$HERE/tools/gen_type.mjs" "$GEN/type_gen.h"
 # space tokens: tokens/space.json -> space_gen.h (fw::sp::, fw::lay::, fw::rad::, fw::stroke::, fw::touch::)
@@ -85,7 +92,7 @@ node "$HERE/tools/gen_space.mjs" "$GEN/space_gen.h"
 # contract core: colour + space + type token names -> fx_gen.h (core/fx_core.cpp: shared token styles, CONTRACT.md)
 node "$HERE/tools/gen_fx.mjs" "$GEN/fx_gen.h"
 # contract lint (tools/contract_lint.mjs): a migrated component (meta "contract": 2) that breaks the contract fails the build
-[ "$DEN" = 1x ] || node "$HERE/tools/contract_lint.mjs" --summary || exit 1
+[ "$DEN" = 1x ] || [ -n "${FW_DEV:-}" ] || node "$HERE/tools/contract_lint.mjs" --summary || exit 1
 # layout tokens: tokens/layout.json -> layout_gen.h (fw::lay:: screen geometry, fw::lyt:: devices / size classes / density)
 node "$HERE/tools/gen_layout.mjs" "$GEN/layout_gen.h"
 # motion tokens: tokens/motion.json -> motion_gen.h (fw::mo:: durations, easings, patterns)
@@ -109,9 +116,17 @@ node "$HERE/tools/gen_theme.mjs" "$GEN/theme_gen.h" || exit 1
 # resvg: `cd tools && npm install` once; FW_ICONS=used in local.env = only the icons components declare)
 node "$HERE/tools/gen_icons.mjs" --meta "$GEN/icons_gen.h"
 ICONS_H=$GEN/facet_icons.h; [ "$DEN" = 1x ] && ICONS_H=$GEN/facet_icons_1x.h
-FW_ICONS=${FW_ICONS:-all} node "$HERE/tools/gen_icons.mjs" --data "$DEN" "$ICONS_H"
+# dev: the icon masks only when an input is newer than the header (~4 s)
+if [ -z "${FW_DEV:-}" ] || [ ! -f "$ICONS_H" ] || [ -n "$(find "$HERE/tools/gen_icons.mjs" "$HERE/tokens" "$HERE/icons" -newer "$ICONS_H" -print -quit 2>/dev/null)" ]; then
+  FW_ICONS=${FW_ICONS:-all} node "$HERE/tools/gen_icons.mjs" --data "$DEN" "$ICONS_H"
+  touch "$ICONS_H"  # the generator keeps an unchanged file; the stamp is what the dev check reads
+fi
 FONTS_H=$GEN/facet_fonts.h; [ "$DEN" = 1x ] && FONTS_H=$GEN/facet_fonts_1x.h
-FW_TTF=${FW_TTF:?set FW_TTF (dir of the TTFs) in local.env} "${FW_FONT_PY:?set FW_FONT_PY in local.env}" "$HERE/tools/gen_fonts.py" "$DEN" "$FONTS_H"
+# dev: the fonts only when an input is newer than the header (the rasteriser takes ~5 s)
+if [ -z "${FW_DEV:-}" ] || [ ! -f "$FONTS_H" ] || [ -n "$(find "$HERE/tools/gen_fonts.py" "$HERE/tokens" "$HERE/fonts" -newer "$FONTS_H" -print -quit 2>/dev/null)" ]; then
+  FW_TTF=${FW_TTF:?set FW_TTF (dir of the TTFs) in local.env} "${FW_FONT_PY:?set FW_FONT_PY in local.env}" "$HERE/tools/gen_fonts.py" "$DEN" "$FONTS_H"
+  touch "$FONTS_H"
+fi
 
 # workbench + foundations + components: recompile when the source, a core header, a token header or (fonts) the font header is newer
 CXX="em++ $FL $VFLAG -std=c++17 -I$HERE/core -I$AJ"
@@ -133,7 +148,9 @@ while [ "$(jobs -rp | wc -l)" -gt 0 ]; do wait -n || CC_FAIL=1; done
 [ "${CC_FAIL:-0}" = 0 ] || exit 1
 # objects of deleted components must not linger in the link: OBJS lists only live sources
 mkdir -p "$OUT/.link"
-em++ $OPT $LVGL_OBJS $OBJS -sALLOW_MEMORY_GROWTH=1 -sMODULARIZE=1 -sEXPORT_ES6=1 -sENVIRONMENT=web,node \
+# dev: link without binaryen optimisation (the objects stay -O2; ~9 s -> ~2 s)
+LINKOPT=$OPT; [ -n "${FW_DEV:-}" ] && LINKOPT=-O0
+em++ $LINKOPT $LVGL_OBJS $OBJS -sALLOW_MEMORY_GROWTH=1 -sMODULARIZE=1 -sEXPORT_ES6=1 -sENVIRONMENT=web,node \
   -sEXPORTED_FUNCTIONS='["_fw_init","_fw_meta","_fw_stage","_fw_stage_free","_fw_render","_fw_update","_fw_demo_state","_fw_tokens","_fw_content_h","_fw_stage_resize","_fw_touch","_fw_tick","_fw_dirty","_fw_frame","_fw_areas","_fw_events","_fw_ha_wants","_fw_ha_put","_fw_ha_asks","_fw_ha_answer","_fw_img_wants","_fw_img_put","_fw_img_fail","_fw_img_stats","_fw_setting","_fw_spec","_fw_catalogue","_fw_spec_storage","_fw_anims","_fw_rects","_fw_taps","_fw_comps","_fw_slots","_fw_hits","_fw_hit","_fw_lab","_malloc","_free"]' \
   -sEXPORTED_RUNTIME_METHODS='["HEAPU8","UTF8ToString","stringToNewUTF8"]' -o "$OUT/.link/fw.mjs"
 # swap the new pair in by rename (link into $OUT/.link first): a page loading mid-build never reads a half-written
@@ -144,6 +161,7 @@ printf '{"built": "%s", "density": "%s", "opt": "%s", "build_s": %s, "wasm_bytes
 node -e 'const fs=require("fs"),o=process.argv[1];import(process.argv[2]).then((F)=>{const t=JSON.stringify({flavour:process.env.FW_FEATURES||"all",ids:F.byId()});if(!fs.existsSync(o)||fs.readFileSync(o,"utf8")!==t)fs.writeFileSync(o,t)})' "$OUT/features.json" "$HERE/tools/features.mjs"  # id -> feature, docs, status, firmware (workbench nav)
 echo "[$DEN] built in ${S}s${FEAT:+ ($FEAT features)}"
 [ -z "$FEAT" ] || exit 0  # a flavour build: the audits below ran on the full build
+if [ -n "${FW_DEV:-}" ]; then [ "$DEN" = 1x ] || node "$HERE/tools/gen_catalogue.mjs" --build "${FW_OUT:-$HERE/out}" | sed "s/^/[$DEN] /"; exit 0; fi
 # component audit (tools/audit.mjs, README "Audit"; Darren 2026-10-22): clipping, stale pixels, grid, text cut off, touch
 # size, ring symmetry, motion paths, for every component / screen x variant x theme at this density. The new build is
 # already in place (the page still reloads); errors fail the build so they are seen. Cached per component.
