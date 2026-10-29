@@ -367,6 +367,15 @@ the editor). A new source = a new adapter + its row: no screen, spec or componen
 one integration's fields only works in the homes that have it. *Check:* TODO (lint: a contract spec's binds name
 `panel.*` feeds or the screen's own params; each feed's adapters in sources.json exist in code).
 
+**C52. Every screen comes with its Home card.** A screen's spec carries `"card"`: the Card a Home page card for it
+shows (icon = the screen's icon top left, preview artwork top right, the value or words that matter now, the sub
+line), bound to the SAME feeds as the screen (C51); Home applies the page's feed settings, so the card and the screen
+never disagree. A screen is not done until its card shows the right information in every state its feed has
+(including none, loading and error). Preview artwork is a real contract component at the card's size (Bins art
+`size: card`), never a copy.
+*Why:* people put screens on Home as cards; a card that shows only a name, or different data from its screen, fails
+them. *Check:* TODO (lint: every `"role": "page"` spec has a card; screen audit renders each card per feed state).
+
 ## 9. Robustness
 
 **C38. Every state is handled:** normal, pressed, on, off, disabled, loading, unavailable, unknown, empty, error.
@@ -686,6 +695,7 @@ Rules whose check is TODO (each is a gate item; until it exists, review checks t
 | C38 | lint: states covered by meta options or the header's n/a list |
 | C42 | test: theme switch during a drag |
 | C43 | fuzz sizes 0 x 0 .. minimum |
+| C52 | lint: every page spec has a `card`; the screen audit renders each card in every feed state |
 | C51 | lint: contract spec binds name only `panel.*` feeds or the screen's params; every adapter listed in sources.json exists in code |
 
 ## 16. Files

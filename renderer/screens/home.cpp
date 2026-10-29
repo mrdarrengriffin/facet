@@ -81,6 +81,38 @@ void sensor_icon(ArduinoJson::JsonObject p, const std::string &e) {
   ic["else"] = "house";
 }
 
+// the page's feed settings (its spec's "feeds", "$param" = the page's parameters over the spec's defaults)
+std::map<std::string, std::string> page_params(Var sp, Var page) {
+  std::map<std::string, std::string> pm;
+  for (ArduinoJson::JsonPairConst kv : sp["params"].as<ArduinoJson::JsonObjectConst>()) pm[kv.key().c_str()] = fw::spec::param_default(kv.value());
+  for (ArduinoJson::JsonPairConst kv : page["params"].as<ArduinoJson::JsonObjectConst>())
+    if (kv.value().is<const char *>()) pm[kv.key().c_str()] = kv.value().as<std::string>();
+  return pm;
+}
+void page_card_feeds(const Doc &sp, Var page) {
+  const std::map<std::string, std::string> pm = page_params(sp.as<Var>(), page);
+  for (ArduinoJson::JsonPairConst kv : sp["feeds"].as<ArduinoJson::JsonObjectConst>()) {
+    Doc fc;
+    for (ArduinoJson::JsonPairConst f : kv.value().as<ArduinoJson::JsonObjectConst>()) fc[f.key().c_str()] = fw::spec::subst(f.value() | "", pm);
+    std::string cfg;
+    serializeJson(fc, cfg);
+    fw::ha::set_feed_config(kv.key().c_str(), cfg);
+  }
+}
+// a page card = the screen's own Home card (its spec's "card": Card props bound to its feeds, "$param" = the page's
+// parameters) and the page's feed settings applied (its spec's "feeds"), so the card shows what the screen shows
+void page_card(ArduinoJson::JsonObject p, Var page, const std::string &kind) {
+  Doc sp;
+  const char *j = fw::spec::screen_json(kind);
+  if (!j || deserializeJson(sp, j) || !sp["card"].is<ArduinoJson::JsonObjectConst>()) return;
+  const std::map<std::string, std::string> pm = page_params(sp.as<Var>(), page);
+  for (ArduinoJson::JsonPairConst kv : sp["card"].as<ArduinoJson::JsonObjectConst>()) {
+    if (kv.value().is<const char *>()) p[kv.key().c_str()] = fw::spec::subst(kv.value().as<std::string>(), pm);
+    else p[kv.key().c_str()] = kv.value();
+  }
+  page_card_feeds(sp, page);
+}
+
 // one deck card -> one spec node in slot `slot` of node 0 (the Card grid); returns its cell size ('s', 'm', 'l', 'h')
 char card_node(Var cd, Var pages, int slot, ArduinoJson::JsonArray nodes) {
   const std::string t = cd["t"] | "", e = cd["e"] | "", size = cd["size"] | "m", label = cd["label"] | "";
@@ -125,6 +157,14 @@ char card_node(Var cd, Var pages, int slot, ArduinoJson::JsonArray nodes) {
     } else if (t == "page") {
       p["icon"] = has_icon(kind) ? "screen-" + kind : std::string("screen-home");
       p["status"] = "";
+      {  // the screen's card's main value (its spec "card" text / value) as the small tile's status (C52)
+        Doc sp;
+        const char *j = fw::spec::screen_json(kind);
+        if (j && !deserializeJson(sp, j)) {
+          Var main = !sp["card"]["text"].isNull() ? sp["card"]["text"] : sp["card"]["value"];
+          if (!main.isNull()) { p["status"] = main; page_card_feeds(sp, target); }
+        }
+      }
       p["on"] = false;
     } else if (t == "cover") {
       p["icon"] = "screen-covers";
@@ -146,8 +186,10 @@ char card_node(Var cd, Var pages, int slot, ArduinoJson::JsonArray nodes) {
     p["sub"] = "";
     p["value"] = "";
     p["mode"] = "value";
-    if (t == "page") p["icon"] = has_icon(kind) ? kind : std::string("none");
-    else if (t == "light") { p["icon"] = "light"; bind(p, "value", e, "level"); bind(p, "accent", e, "on"); }
+    if (t == "page") {
+      p["icon"] = has_icon(kind) ? kind : std::string("none");
+      page_card(p, target, kind);  // the screen's own card (its spec's "card", on its feeds), when it has one
+    } else if (t == "light") { p["icon"] = "light"; bind(p, "value", e, "level"); bind(p, "accent", e, "on"); }
     else if (t == "cover") {
       p["icon"] = "covers";
       bind(p, "value", e, "num", "current_position");

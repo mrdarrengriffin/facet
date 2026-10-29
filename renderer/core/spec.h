@@ -108,6 +108,10 @@
 // feeds       (2026-10-29, CONTRACT.md C51) "feeds": {"panel.bins": {"source": "calendar", "calendar": "$calendar"}}:
 //              which adapter fills each feed this screen reads, and its settings (texts; "$param" = the screen's
 //              parameter). Applied when the screen is built (fw::ha::set_feed_config: the adapter refetches on a change).
+// card        (2026-10-29, Darren: every screen comes with its Home card) "card": {"icon": "bins", "preview": "bins",
+//              "text": {"e": "panel.bins", "a": "when"}, ...}: the Card a Home page card for this screen shows (the
+//              Card's props; binds on the screen's feeds). Home applies the page's "feeds" too, so the card shows the
+//              same data as the screen. No card = the icon + the page's name only.
 // Spec role   "role": "page" | "detail" | "both" (default page; screen model 2026-10-23): a page is a place in the deck
 //              (Home links to it); a detail screen is opened from something on a page, for one entity (Light,
 //              Blinds), never in the deck; both = either (Media, Thermostat). Built-in screens: "home" is a page
@@ -555,8 +559,8 @@ inline void check_grid(ArduinoJson::JsonVariantConst n, ArduinoJson::JsonArrayCo
 }
 inline void check_screen(ArduinoJson::JsonVariantConst s, size_t bytes, Errs &e) {
   if (!s.is<ArduinoJson::JsonObjectConst>()) { err(e, "", "bad_spec", "a screen spec is an object"); return; }
-  static const char *const K[] = {"v", "id", "name", "rev", "role", "params", "header", "layout", "nodes", "feeds"};
-  check_keys(s.as<ArduinoJson::JsonObjectConst>(), K, 10, "", e);
+  static const char *const K[] = {"v", "id", "name", "rev", "role", "params", "header", "layout", "nodes", "feeds", "card"};
+  check_keys(s.as<ArduinoJson::JsonObjectConst>(), K, 11, "", e);
   if (!s["feeds"].isNull()) {  // {"panel.<feed>": {"source": "<adapter>", <text settings, "$param" allowed>}} (C51)
     if (!s["feeds"].is<ArduinoJson::JsonObjectConst>()) err(e, ".feeds", "bad_feeds", "feeds is an object: feed entity -> its settings");
     else for (ArduinoJson::JsonPairConst kv : s["feeds"].as<ArduinoJson::JsonObjectConst>()) {
@@ -599,6 +603,16 @@ inline void check_screen(ArduinoJson::JsonVariantConst s, size_t bytes, Errs &e)
   for (ArduinoJson::JsonVariantConst n : nodes) body += n["in"].isNull();
   if (!strcmp(s["layout"] | "", "center") && body != 1) err(e, ".nodes", "bad_nodes", "a center layout has one node (not counting slot items)");
   int binds = 0, i = 0;
+  if (!s["card"].isNull()) {  // the screen's Home card: Card props (binds on its feeds), checked like a node's
+    const std::vector<PropInfo> *cps = props_of("card");
+    if (!s["card"].is<ArduinoJson::JsonObjectConst>() || !cps) err(e, ".card", "bad_card", "card is the Card's props {label?, icon, preview, value, sub, ...}");
+    else for (ArduinoJson::JsonPairConst kv : s["card"].as<ArduinoJson::JsonObjectConst>()) {
+      const std::string k = kv.key().c_str();
+      auto it = std::find_if(cps->begin(), cps->end(), [&](const PropInfo &x) { return x.name == k; });
+      if (it == cps->end()) err(e, ".card." + k, one_of(STYLE_KEYS, k) ? "style_key" : "unknown_prop", "card has no prop " + k);
+      else check_value(*it, kv.value(), ".card." + k, e, binds);
+    }
+  }
   // items per slot so far; the header's end slot starts with its own items (settings, a shortcut, the timer status)
   std::map<std::string, int> fill;
   ArduinoJson::JsonVariantConst hd = s["header"];

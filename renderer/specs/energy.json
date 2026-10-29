@@ -2,13 +2,26 @@
  "v": 1,
  "id": "energy",
  "name": "Energy",
- "rev": 2,
+ "rev": 3,
  "role": "page",
  "header": {
   "label": "Energy",
   "back": true
  },
  "layout": "center",
+ "card": {
+  "icon": "energy",
+  "preview": "energy",
+  "mode": "value",
+  "value": {
+   "e": "panel.energy",
+   "a": "cost"
+  },
+  "sub": {
+   "e": "panel.energy",
+   "a": "watts"
+  }
+ },
  "nodes": [
   {
    "c": "status_chip",

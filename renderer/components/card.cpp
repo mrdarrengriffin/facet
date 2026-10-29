@@ -64,7 +64,7 @@ void fill(lv_obj_t *c, fw::Props p) {
   serializeJson(p, k.props);
   const char *state = p["state"] | "default";
   const bool off = !strcmp(state, "unavailable");
-  const bool accent = !off && (p["accent"] | false);
+  const bool accent = !off && (p["accent"].is<const char *>() ? !strcmp(p["accent"] | "", "on") : (p["accent"] | false));  // a feed bind gives "on" / "off"
   const bool text_mode = !strcmp(p["mode"] | "value", "text");
   const bool full = k.step == 0;
   const char *dim = off ? "fg:unavailable-ink" : "fg:text-dim";
@@ -102,7 +102,11 @@ void fill(lv_obj_t *c, fw::Props p) {
     for (const char *s : {"w:dot", "h:dot", "radius:round", "bg:accent"}) fx::use(dot, s);
   }
   const char *pv = p["preview"] | "none";
-  if (!off && full && fw::is_preview(pv)) fw::card_preview(top, pv, p);  // the card artwork (legacy, components/card_previews.cpp)
+  if (!off && full && !strcmp(pv, "bins")) {  // the real Bins art at card size (C8b; contract, unlike the legacy previews)
+    ArduinoJson::JsonDocument bd;
+    bd["colours"] = p["colours"] | "black", bd["size"] = "card";
+    fw::find("bins_art")->build(top, bd.as<fw::Props>());
+  } else if (!off && full && fw::is_preview(pv)) fw::card_preview(top, pv, p);  // the card artwork (legacy, components/card_previews.cpp)
   else if (!off && full && strcmp(pv, "none")) fx::icon(top, pv, "card", "fg:text-dim");
 
   // the body: everything under the head (Facet: no padding of its own, so it is the card's content box as before)
@@ -199,8 +203,9 @@ FW_COMPONENT(card, "Card", "components", R"({
             "partly-day@card", "rain-light@card", "clear-night@card"],
   "props": [
     {"name": "label", "about": "The card's name, shown next to its icon at the top.", "type": "text", "default": "Weather"},
-    {"name": "icon", "about": "The small icon before the name, or none.", "type": "select", "options": ["none", "weather", "media", "timer", "energy", "light", "thermostat", "covers", "calendar", "clock", "switch"], "default": "weather"},
-    {"name": "preview", "about": "The small picture at the top right of the card, such as the weather now or the record that is playing, or none.", "type": "select", "options": ["none", "partly-day", "rain-light", "clear-night", "agents", "media", "dial", "switch", "clock", "timer", "github", "energy", "lightning"], "default": "partly-day"},
+    {"name": "icon", "about": "The small icon before the name, or none.", "type": "select", "options": ["none", "weather", "media", "timer", "energy", "light", "thermostat", "covers", "calendar", "clock", "switch", "agents", "github", "moon", "lightning", "overhead", "bins", "print", "home"], "default": "weather"},
+    {"name": "preview", "about": "The small picture at the top right of the card, such as the weather now or the record that is playing, or none.", "type": "select", "options": ["none", "partly-day", "rain-light", "clear-night", "agents", "media", "dial", "switch", "clock", "timer", "github", "energy", "lightning", "bins"], "default": "partly-day"},
+    {"name": "colours", "about": "With the bins preview: the bins' colours, separated by commas, the first in front.", "type": "text", "default": "black"},
     {"name": "mode", "about": "What the middle of the card shows: value is a big short value such as 13°; text is a line of words such as the song playing.", "type": "select", "options": ["value", "text"], "default": "value"},
     {"name": "value", "about": "The big value shown in the middle when the mode is value.", "type": "text", "default": "13°"},
     {"name": "text", "about": "The words shown in the middle when the mode is text, such as a song title.", "type": "text", "default": "Paper Lanterns on a Quiet Evening"},

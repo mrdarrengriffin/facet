@@ -2,7 +2,7 @@
  "v": 1,
  "id": "bins",
  "name": "Bins",
- "rev": 3,
+ "rev": 4,
  "role": "page",
  "params": {
   "source": {
@@ -42,6 +42,27 @@
    "source": "$source",
    "calendar": "$calendar",
    "sample": "$sample"
+  }
+ },
+ "card": {
+  "icon": "bins",
+  "preview": "bins",
+  "colours": {
+   "e": "panel.bins",
+   "a": "colours"
+  },
+  "mode": "text",
+  "text": {
+   "e": "panel.bins",
+   "a": "when"
+  },
+  "sub": {
+   "e": "panel.bins",
+   "a": "bins"
+  },
+  "accent": {
+   "e": "panel.bins",
+   "a": "accent"
   }
  },
  "header": {

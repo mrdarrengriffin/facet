@@ -141,6 +141,7 @@
       "preview-strike": { "v": 4, "1x": 4, "use": "Card preview, lightning: a strike dot (docs 4)" },
       "preview-home": { "v": 8, "1x": 4, "use": "Card previews: the blue centre dot (lightning home, the dial and timer hub; docs 6 / 8, onto the grid)" },
       "bin-hero": { "v": 144, "1x": 96, "use": "Bins: the next collection's bins, this tall (width 4 / 5 of it, on the grid)" },
+      "bin-card": { "v": 72, "1x": 48, "use": "Bins: the bins as a Home card's preview (top right), this tall (= icon size card)" },
       "lock-ring": { "v": 320, "1x": 212, "use": "Door lock: the ring round the padlock, the screen's hero and its control (panel lab 320)" },
       "lock-body-w": { "v": 128, "1x": 84, "use": "Door lock: the padlock body's width (panel lab 128)" },
       "lock-body-h": { "v": 104, "1x": 68, "use": "Door lock: the padlock body's height (panel lab 104)" },
