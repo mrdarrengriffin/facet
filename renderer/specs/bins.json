@@ -1,8 +1,238 @@
-{"v": 1, "id": "bins", "name": "Bins", "rev": 1, "role": "page",
+{
+ "v": 1,
+ "id": "bins",
+ "name": "Bins",
+ "rev": 2,
+ "role": "page",
  "params": {
-  "calendar": {"about": "The calendar your bin collections are on, such as one from your council. Each event names the bins that go out.", "type": "entity", "domain": "calendar", "label": "Bin calendar", "default": ""},
-  "sample": {"about": "For previews only: which made-up collection week to show, such as bins out tonight or collection today.", "type": "select", "options": ["tonight", "today", "collected", "later", "two", "none"], "label": "Sample", "default": "tonight"}
+  "source": {
+   "about": "Where the collections come from: a calendar in Home Assistant (Waste Collection Schedule, a council's iCal), or made-up sample weeks for previews.",
+   "type": "select",
+   "options": [
+    "calendar",
+    "sample"
+   ],
+   "label": "Source",
+   "default": "sample"
+  },
+  "calendar": {
+   "about": "The calendar your bin collections are on, such as one from your council. Each event names the bins that go out.",
+   "type": "entity",
+   "domain": "calendar",
+   "label": "Bin calendar",
+   "default": ""
+  },
+  "sample": {
+   "about": "For previews only: which made-up collection week to show, such as bins out tonight or collection today.",
+   "type": "select",
+   "options": [
+    "tonight",
+    "today",
+    "collected",
+    "later",
+    "two",
+    "none"
+   ],
+   "label": "Sample",
+   "default": "tonight"
+  }
  },
- "header": {"label": "Bins", "back": true},
+ "feeds": {
+  "panel.bins": {
+   "source": "$source",
+   "calendar": "$calendar",
+   "sample": "$sample"
+  }
+ },
+ "header": {
+  "label": "Bins",
+  "back": true
+ },
  "layout": "list",
- "nodes": [{"c": "bins_view", "p": {"sample": "$sample"}}]}
+ "nodes": [
+  {
+   "c": "group",
+   "p": {
+    "flow": "wrap",
+    "space": "block",
+    "align": "start"
+   },
+   "show": {
+    "e": "panel.bins",
+    "map": {
+     "none": "",
+     "loading": "",
+     "error": ""
+    },
+    "else": "1"
+   }
+  },
+  {
+   "c": "bins_art",
+   "p": {
+    "colours": {
+     "e": "panel.bins",
+     "a": "colours"
+    }
+   },
+   "in": 0,
+   "slot": 0
+  },
+  {
+   "c": "group",
+   "p": {
+    "flow": "stack",
+    "space": "near",
+    "align": "start"
+   },
+   "in": 0,
+   "slot": 0
+  },
+  {
+   "c": "hero_block",
+   "p": {
+    "label": {
+     "e": "panel.bins",
+     "a": "caption"
+    },
+    "n": {
+     "e": "panel.bins",
+     "a": "when"
+    },
+    "line": {
+     "e": "panel.bins",
+     "a": "bins"
+    },
+    "accent": {
+     "e": "panel.bins",
+     "a": "accent",
+     "fmt": "on"
+    },
+    "role": "display",
+    "layout": "stack"
+   },
+   "in": 2,
+   "slot": 0
+  },
+  {
+   "c": "status_line",
+   "p": {
+    "text": {
+     "e": "panel.bins",
+     "a": "line"
+    },
+    "tone": {
+     "e": "panel.bins",
+     "a": "tone"
+    }
+   },
+   "in": 2,
+   "slot": 0
+  },
+  {
+   "c": "section_header",
+   "p": {
+    "title": "coming up",
+    "badge": false,
+    "right": "none"
+   },
+   "show": {
+    "e": "panel.bins",
+    "map": {
+     "none": "",
+     "loading": "",
+     "error": ""
+    },
+    "else": "1"
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "list": "stack",
+    "items": {
+     "e": "panel.bins",
+     "a": "coming"
+    },
+    "empty": "Nothing else in the next six weeks"
+   },
+   "show": {
+    "e": "panel.bins",
+    "map": {
+     "none": "",
+     "loading": "",
+     "error": ""
+    },
+    "else": "1"
+   }
+  },
+  {
+   "c": "section_header",
+   "p": {
+    "title": "your bins",
+    "badge": false,
+    "right": "none"
+   },
+   "show": {
+    "e": "panel.bins",
+    "map": {
+     "none": "",
+     "loading": "",
+     "error": ""
+    },
+    "else": "1"
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "list": "stack",
+    "items": {
+     "e": "panel.bins",
+     "a": "yours"
+    }
+   },
+   "show": {
+    "e": "panel.bins",
+    "map": {
+     "none": "",
+     "loading": "",
+     "error": ""
+    },
+    "else": "1"
+   }
+  },
+  {
+   "c": "empty_state",
+   "p": {
+    "icon": "alert",
+    "title": "No collections found",
+    "body": "Pick a bin calendar in Settings > Screens",
+    "tone": "idle"
+   },
+   "show": {
+    "e": "panel.bins",
+    "map": {
+     "none": "1"
+    },
+    "else": ""
+   }
+  },
+  {
+   "c": "empty_state",
+   "p": {
+    "icon": "alert",
+    "title": "Couldn't read the bin calendar",
+    "body": "Check Home Assistant lets this panel perform actions",
+    "tone": "warn"
+   },
+   "show": {
+    "e": "panel.bins",
+    "map": {
+     "error": "1"
+    },
+    "else": ""
+   }
+  }
+ ]
+}

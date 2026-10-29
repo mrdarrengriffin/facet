@@ -172,3 +172,9 @@ inline Delta delta(double pct, bool up_is_good, const char *ref = "vs yday") {
 }
 
 }  // namespace fw::chart
+
+// ---- decor art (core/bins_art.cpp): a collection's wheelie bins, colours ("green", "black", ...) first in front
+namespace fw::art {
+lv_obj_t *bins(lv_obj_t *parent, const std::vector<std::string> &cols);
+bool bins_set(lv_obj_t *s, const std::vector<std::string> &cols);  // false = not one
+}  // namespace fw::art

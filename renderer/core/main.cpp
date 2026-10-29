@@ -15,6 +15,7 @@
 //   fw_anims() -> n                   LVGL animations running (frame stats)
 //   fw_events() -> JSON               events + sound requests since the last call (fw::emit / fw::sound): [{stage,kind,name,detail}] or ""
 //   fw_ha_wants() -> JSON [[e, a]...]  HA pairs the built screens bind (core/ha.h); fw_ha_put(e, a, v) = a value from the host
+//   fw_ha_asks() -> JSON [{id, service, data}]  HA actions an adapter wants the reply of (drained); fw_ha_answer(id, ok, json)
 //   fw_img_wants() -> JSON [url...]  image URLs to fetch (core/images.h); fw_img_put(url, w, h, rgba) / fw_img_fail(url, why); fw_img_stats() -> JSON
 //   fw_audit(id) -> JSON              every object of the stage for tools/audit.mjs (core/audit.h, README "Audit")
 //   fw_unclip(id)                     let every object draw outside its box (audit: what differs was clipped)
@@ -142,6 +143,33 @@ EMSCRIPTEN_KEEPALIVE const char *fw_img_stats() {
   return out.c_str();
 }
 EMSCRIPTEN_KEEPALIVE void fw_ha_put(const char *e, const char *a, const char *v) { fw::ha::put(e ? e : "", a ? a : "", v ? v : ""); }
+// asks (core/ha.h, CONTRACT.md C51 adapters): the host takes the queued HA actions whose reply an adapter reads
+// (fw_ha_asks -> JSON [{id, service, data}], drained) and hands each reply back (fw_ha_answer(id, ok, json))
+std::vector<std::string> &ask_queue() {
+  static std::vector<std::string> q;
+  static const bool reg = (fw::ha::on_ask([](uint32_t id, const char *svc, const char *data) {
+    ArduinoJson::JsonDocument d;
+    d["id"] = id, d["service"] = svc;
+    ArduinoJson::JsonDocument dd;
+    deserializeJson(dd, data);
+    d["data"] = dd;
+    std::string o;
+    serializeJson(d, o);
+    q.push_back(o);
+  }), true);
+  (void) reg;
+  return q;
+}
+[[maybe_unused]] const bool ask_registered = (ask_queue(), true);
+EMSCRIPTEN_KEEPALIVE const char *fw_ha_asks() {
+  static std::string out;
+  out = "[";
+  for (size_t i = 0; i < ask_queue().size(); i++) out += (i ? "," : "") + ask_queue()[i];
+  out += "]";
+  ask_queue().clear();
+  return out.c_str();
+}
+EMSCRIPTEN_KEEPALIVE void fw_ha_answer(int id, int ok, const char *json) { fw::ha::answer((uint32_t) id, ok != 0, json ? json : ""); }
 
 // One panel setting from the host (the docs site's live demo: its theme / accent / sound prefs and the demo's own
 // Settings stay one value), through the ONE set() path (core/device.h) as HA or the panel API: "" applied, "same",

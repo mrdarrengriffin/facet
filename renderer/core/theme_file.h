@@ -24,7 +24,7 @@ struct ThemeError {
 namespace skin {
 // sizes of the generated schema (tools/gen_theme.mjs -> theme_gen.h); theme_file.cpp static_asserts they match, so a
 // token added to the schema fails the build here until this header follows
-constexpr int N_COLOURS = 90, N_ROLES = 5, N_SIZES = 203, N_TYPES = 7, N_FONT_ROLES = 4, N_PARTS = 26, N_STATES = 4,
+constexpr int N_COLOURS = 98, N_ROLES = 5, N_SIZES = 203, N_TYPES = 7, N_FONT_ROLES = 4, N_PARTS = 26, N_STATES = 4,
               N_COMBOS = 1 << N_STATES, MAX_SETS = 8, MAX_EDGES = 128, MAX_BUTTONS = 8;
 // states (tokens/theme.json, merge order): bit i of a combination = state i
 enum State : uint8_t { ON = 1, FOCUS = 2, PRESSED = 4, DISABLED = 8 };

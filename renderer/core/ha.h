@@ -45,6 +45,11 @@ namespace ha {
 using Pair = std::pair<std::string, std::string>;  // (entity, attribute "" = state)
 using WantSink = void (*)(const std::string &e, const std::string &a);
 using ActSink = void (*)(const char *service, const char *entity, const char *data_json);
+// asks (2026-10-29, CONTRACT.md C51 adapters): an HA action whose REPLY a feed's adapter reads (calendar.get_events:
+// the Bins feed). Closed list (ask()); the host sends it (the panel: an HA action with wants_response over its API;
+// the workbench: the hub's /api/panel/ask) and hands the reply's JSON back with answer(id, ok, json).
+using AskSink = void (*)(uint32_t id, const char *service, const char *data_json);
+using AskDone = void (*)(void *ctx, bool ok, const std::string &json);
 
 struct Bound {
   lv_obj_t *obj = nullptr;
@@ -66,6 +71,10 @@ struct State {
   std::vector<void (*)(const std::string &e, const std::string &a, const std::string &v)> put_hooks;  // on_put
   lv_timer_t *timer = nullptr;
   std::vector<std::pair<std::string, void (*)()>> locals;  // on_local: entity -> its source's fresh()
+  AskSink ask_sink = nullptr;
+  uint32_t next_ask = 1;
+  std::map<uint32_t, std::pair<AskDone, void *>> asks;  // waiting for their answer
+  std::map<std::string, std::string> feeds;  // feed entity -> its settings (JSON: the spec's "feeds", params filled in)
 };
 inline State &S() {
   static State s;
@@ -502,6 +511,50 @@ inline const char *act(lv_obj_t *from, const char *service, const char *entity, 
   if (from) emit(from, "ha", evs.c_str());
   if (S().act_sink) S().act_sink(svc.c_str(), ent.c_str(), ds.c_str());
   return "";
+}
+
+// ---- asks (an adapter's read of an HA action's reply; closed list)
+inline void on_ask(AskSink f) { S().ask_sink = f; }
+// calendar.get_events {"entity_id": "calendar.x", "start_date_time": "...", "end_date_time": "..."} only. Returns ""
+// = sent (done runs once with the reply, or ok false), else why not (done never runs). No host = "no host".
+inline const char *ask(const char *service, const char *data_json, AskDone done, void *ctx) {
+  const std::string svc = service ? service : "";
+  ArduinoJson::JsonDocument d;
+  if (!data_json || deserializeJson(d, data_json) || !d.is<ArduinoJson::JsonObject>()) return "data is not JSON";
+  if (svc != "calendar.get_events") return "ask not allowed";
+  const std::string en = d["entity_id"] | "";
+  if (en.rfind("calendar.", 0) != 0 || en.size() > 96) return "not a calendar";
+  for (ArduinoJson::JsonPairConst kv : d.as<ArduinoJson::JsonObjectConst>()) {
+    const std::string k = kv.key().c_str();
+    if (k != "entity_id" && k != "start_date_time" && k != "end_date_time") return "calendar.get_events takes entity_id, start_date_time, end_date_time";
+    if (!kv.value().is<const char *>() || strlen(kv.value().as<const char *>()) > 96) return "calendar.get_events: text values";
+  }
+  if (!S().ask_sink) return "no host";
+  const uint32_t id = S().next_ask++;
+  S().asks[id] = {done, ctx};
+  std::string ds;
+  serializeJson(d, ds);
+  S().ask_sink(id, svc.c_str(), ds.c_str());
+  return "";
+}
+inline void answer(uint32_t id, bool ok, const std::string &json) {
+  auto it = S().asks.find(id);
+  if (it == S().asks.end()) return;
+  const auto w = it->second;
+  S().asks.erase(it);
+  if (w.first) w.first(w.second, ok, json);
+}
+
+// ---- feed settings (CONTRACT.md C51): which adapter fills a feed and with what (the spec's "feeds", per screen)
+inline const std::string &feed_config(const std::string &e) {
+  static const std::string none;
+  auto it = S().feeds.find(e);
+  return it == S().feeds.end() ? none : it->second;
+}
+inline void set_feed_config(const std::string &e, const std::string &cfg) {
+  if (feed_config(e) == cfg) return;
+  S().feeds[e] = cfg;
+  if (auto f = local(e)) f();  // the adapter reads the new settings at once
 }
 }  // namespace ha
 }  // namespace fw

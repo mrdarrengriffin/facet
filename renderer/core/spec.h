@@ -105,6 +105,9 @@
 //              [{"id", "name", "left" s, "total" s, "state" running | done, "time" "4:32" | "done"}]).
 //              e.g. {"e": "panel.timer", "a": "left"}; show while one runs: {"e": "panel.timer", "map": {"running":
 //              "1"}, "else": ""}. Moving values (left, share, others) are put once a second only while a bind reads it.
+// feeds       (2026-10-29, CONTRACT.md C51) "feeds": {"panel.bins": {"source": "calendar", "calendar": "$calendar"}}:
+//              which adapter fills each feed this screen reads, and its settings (texts; "$param" = the screen's
+//              parameter). Applied when the screen is built (fw::ha::set_feed_config: the adapter refetches on a change).
 // Spec role   "role": "page" | "detail" | "both" (default page; screen model 2026-10-23): a page is a place in the deck
 //              (Home links to it); a detail screen is opened from something on a page, for one entity (Light,
 //              Blinds), never in the deck; both = either (Media, Thermostat). Built-in screens: "home" is a page
@@ -552,8 +555,18 @@ inline void check_grid(ArduinoJson::JsonVariantConst n, ArduinoJson::JsonArrayCo
 }
 inline void check_screen(ArduinoJson::JsonVariantConst s, size_t bytes, Errs &e) {
   if (!s.is<ArduinoJson::JsonObjectConst>()) { err(e, "", "bad_spec", "a screen spec is an object"); return; }
-  static const char *const K[] = {"v", "id", "name", "rev", "role", "params", "header", "layout", "nodes"};
-  check_keys(s.as<ArduinoJson::JsonObjectConst>(), K, 9, "", e);
+  static const char *const K[] = {"v", "id", "name", "rev", "role", "params", "header", "layout", "nodes", "feeds"};
+  check_keys(s.as<ArduinoJson::JsonObjectConst>(), K, 10, "", e);
+  if (!s["feeds"].isNull()) {  // {"panel.<feed>": {"source": "<adapter>", <text settings, "$param" allowed>}} (C51)
+    if (!s["feeds"].is<ArduinoJson::JsonObjectConst>()) err(e, ".feeds", "bad_feeds", "feeds is an object: feed entity -> its settings");
+    else for (ArduinoJson::JsonPairConst kv : s["feeds"].as<ArduinoJson::JsonObjectConst>()) {
+      const std::string fp = std::string(".feeds.") + kv.key().c_str();
+      if (strncmp(kv.key().c_str(), "panel.", 6)) err(e, fp, "bad_feeds", "a feed is a panel.<feed> entity");
+      if (!kv.value().is<ArduinoJson::JsonObjectConst>()) { err(e, fp, "bad_feeds", "a feed's settings are an object of texts"); continue; }
+      for (ArduinoJson::JsonPairConst f : kv.value().as<ArduinoJson::JsonObjectConst>())
+        if (!f.value().is<const char *>()) err(e, fp + "." + f.key().c_str(), "bad_feeds", "a feed setting is text");
+    }
+  }
   if (!s["role"].isNull() && !one_of(ROLES, s["role"] | "")) err(e, ".role", "bad_role", "role is page, detail or both");
   if ((s["v"] | 0) != PROTOCOL) err(e, ".v", "bad_version", "v must be 1");
   if (!id_ok(s["id"] | "")) err(e, ".id", "bad_id", "id: a-z, 0-9, _; at most 12 characters");
@@ -1656,6 +1669,13 @@ inline lv_obj_t *build(lv_obj_t *parent, const std::string &id, Props opened, st
   }
   for (ArduinoJson::JsonPairConst kv : opened)
     if (kv.value().is<const char *>()) s->params[kv.key().c_str()] = kv.value().as<std::string>();
+  for (ArduinoJson::JsonPairConst kv : doc["feeds"].as<ArduinoJson::JsonObjectConst>()) {  // C51: the feeds' adapters + settings
+    ArduinoJson::JsonDocument fc;
+    for (ArduinoJson::JsonPairConst f : kv.value().as<ArduinoJson::JsonObjectConst>()) fc[f.key().c_str()] = subst(f.value() | "", s->params);
+    std::string cfg;
+    serializeJson(fc, cfg);
+    ha::set_feed_config(kv.key().c_str(), cfg);
+  }
   for (ArduinoJson::JsonVariantConst nd : doc["nodes"].as<ArduinoJson::JsonArrayConst>())  // Auto (screen.param "auto")
     for (ArduinoJson::JsonPairConst kv : nd["on"].as<ArduinoJson::JsonObjectConst>()) {
       if (strcmp(kv.value()["do"] | "", "screen.param") || !kv.value()["auto"].is<const char *>()) continue;

@@ -1,5 +1,5 @@
 {
- "$comment": "Where each screen's data can come from (Settings > Screens; ported from the panel lab's screen catalogue). Per screen: needs (the equipment in words, null = every home), sources in order of preference. A source: id, kind (builtin = worked out on the panel, ha = a Home Assistant integration or entity domain, direct = the panel calls a service itself), name, detect (how a host's discovery finds it: integration and / or domain), setup (what a direct source needs first), fills (which screen parameters it fills: domain [+ integration] -> every matching entity (list: true, a comma list) or one). The host (the hub, later a Home Assistant integration) runs discovery and writes the values into the panel's deck.",
+ "$comment": "Where each screen's data can come from (Settings > Screens; ported from the panel lab's screen catalogue). Per screen: needs (the equipment in words, null = every home), sources in order of preference. A source: id, kind (builtin = worked out on the panel, ha = a Home Assistant integration or entity domain, direct = the panel calls a service itself), name, detect (how a host's discovery finds it: integration and / or domain), setup (what a direct source needs first), fills (which screen parameters it fills: domain [+ integration] -> every matching entity (list: true, a comma list) or one). The host (the hub, later a Home Assistant integration) runs discovery and writes the values into the panel's deck. Feeds (CONTRACT.md C51, 2026-10-29): feed = the panel.<feed> entity the screen binds; each source names the adapter that fills it (core/<feed>_source.cpp), set through the feeds settings of the spec.",
  "v": 1,
  "kinds": {"builtin": "Built in", "ha": "Home Assistant", "direct": "Direct"},
  "screens": {
@@ -9,10 +9,15 @@
    {"id": "media_players", "kind": "ha", "name": "HA media players", "detect": {"domain": "media_player"},
     "fills": {"speakers": {"domain": "media_player", "list": true}, "entity": {"domain": "media_player"}}},
    {"id": "spotify", "kind": "direct", "name": "Spotify", "setup": ["Spotify sign-in"]}]},
-  "bins": {"needs": "a bin collection schedule", "sources": [
-   {"id": "waste_collection", "kind": "ha", "name": "Waste Collection Schedule (HACS)", "detect": {"integration": "waste_collection_schedule", "domain": "calendar"},
+  "bins": {"needs": "a bin collection schedule", "feed": "panel.bins", "sources": [
+   {"id": "waste_collection", "kind": "ha", "name": "Waste Collection Schedule (HACS)", "adapter": "calendar", "detect": {"integration": "waste_collection_schedule", "domain": "calendar"},
     "fills": {"calendar": {"domain": "calendar", "integration": "waste_collection_schedule"}}},
-   {"id": "ical", "kind": "direct", "name": "Council calendar link (iCal)", "setup": ["calendar URL"]}]},
+   {"id": "uk_bin_collection", "kind": "ha", "name": "UK Bin Collection Data (HACS)", "adapter": "calendar", "detect": {"integration": "uk_bin_collection", "domain": "calendar"},
+    "fills": {"calendar": {"domain": "calendar", "integration": "uk_bin_collection"}}},
+   {"id": "ha_calendar", "kind": "ha", "name": "Any Home Assistant calendar (a council iCal added as a Remote calendar)", "adapter": "calendar", "detect": {"domain": "calendar"},
+    "fills": {"calendar": {"domain": "calendar"}}},
+   {"id": "ical", "kind": "direct", "name": "Council calendar link (iCal), read by the panel itself (planned)", "adapter": "ical", "setup": ["calendar URL"]},
+   {"id": "sample", "kind": "builtin", "name": "Sample weeks (previews)", "adapter": "sample"}]},
   "calendar": {"needs": "a calendar", "sources": [
    {"id": "ha_calendars", "kind": "ha", "name": "HA calendars", "detect": {"domain": "calendar"}, "fills": {"calendars": {"domain": "calendar", "list": true}}},
    {"id": "ical", "kind": "direct", "name": "Calendar link (iCal)", "setup": ["calendar URL"]}]},

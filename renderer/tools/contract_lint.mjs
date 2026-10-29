@@ -26,7 +26,7 @@ const RULES = {
 // migrated while the core placed / drew them at compiled sizes, so the Layout lab had no slider for them): here a
 // size is read live (fx::size("layout:inset"), re-placed on LV_EVENT_STYLE_CHANGED), never a compiled constant.
 // [file, first line of the section | null = whole file, the next section's line]
-const CORE = [['core/toasts.cpp'], ['core/sheet.cpp'],
+const CORE = [['core/toasts.cpp'], ['core/sheet.cpp'], ['core/bins_art.cpp'],
   ['foundations/chart.cpp', '// ---------------------------------------------------------------- the line chart', '// ---------------------------------------------------------------- bars'],
   ['foundations/chart.cpp', '// ---------------------------------------------------------------- token bars', '// ---------------------------------------------------------------- page sections']];
 const SIZE_NS = /\b(fw::)?(lay|sp|rad|stroke|touch)::[a-zA-Z_]/;  // sizes (type and icon styles are not slider sizes)

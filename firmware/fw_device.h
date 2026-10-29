@@ -679,6 +679,42 @@ inline void ha_action(const char *service, const char *entity, const char *data_
 #endif
 }
 
+// asks (core/ha.h, CONTRACT.md C51 adapters): an HA action whose reply a feed's adapter reads (calendar.get_events for
+// the Bins feed), sent with wants_response; the reply's JSON goes back to fw::ha::answer. Needs the ESPHome build to
+// have action responses (workbench.yaml script facet_ask_enable turns them on); without them the ask fails at once.
+constexpr uint32_t ASK_BASE = 0x40000000u;  // above ESPHome's own call ids (its automations count from 1)
+inline void ha_ask(uint32_t id, const char *service, const char *data_json) {
+#if defined(USE_API_HOMEASSISTANT_SERVICES) && defined(USE_API_HOMEASSISTANT_ACTION_RESPONSES_JSON)
+  auto *api = esphome::api::global_api_server;
+  if (!api) { fw::ha::answer(id, false, ""); return; }
+  std::vector<std::pair<std::string, std::string>> kv;
+  ArduinoJson::JsonDocument d;
+  if (data_json && *data_json && !deserializeJson(d, data_json))
+    for (ArduinoJson::JsonPairConst p : d.as<ArduinoJson::JsonObjectConst>()) kv.push_back({p.key().c_str(), p.value() | ""});
+  const std::string svc = service;
+  esphome::api::HomeassistantActionRequest r;
+  r.service = esphome::StringRef(svc);
+  r.data.init(kv.size());
+  for (auto &x : kv) {
+    auto &m = r.data.emplace_back();
+    m.key = esphome::StringRef(x.first);
+    m.value = esphome::StringRef(x.second);
+  }
+  r.call_id = ASK_BASE + id;
+  r.wants_response = true;
+  api->register_action_response_callback(ASK_BASE + id, [id](const esphome::api::ActionResponse &resp) {
+    std::string js;
+    if (resp.is_success()) serializeJson(resp.get_json(), js);
+    fw::ha::answer(id, resp.is_success(), js);
+  });
+  api->send_homeassistant_action(r);
+  ESP_LOGI("facet_wb", "HA ask %u %s %s", (unsigned) id, service, data_json ? data_json : "");
+#else
+  ESP_LOGW("facet_wb", "HA ask %s: this build has no action responses", service);
+  fw::ha::answer(id, false, "");
+#endif
+}
+
 // ---------------------------------------------------------------- toasts from Home Assistant (facet-190)
 // The ESPHome action facet_toast {title, body, icon, kind, duration (ms)} -> the device runtime's Toast layer: the toast
 // JSON goes on the pseudo pair facet.toast (core/device.h TOAST_PAIR, ha::on_put), the same path the workbench uses.
@@ -1467,6 +1503,7 @@ inline void setup() {
   });
   fw::ha::on_want(ha_subscribe);  // (the pairs wanted so far too)
   fw::ha::on_act(ha_action);
+  fw::ha::on_ask(ha_ask);
   fw::spec::want_all();  // every entity the deck's specs bind (the overrides were loaded before the first show)
   images::setup();       // Image URLs: the panel's own download + decode (fw_images.h)
   fw::dev::on_look([] {  // theme / accent / the sun: draw the page again in the new look (+ the probation chip)
