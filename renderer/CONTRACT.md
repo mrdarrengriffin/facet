@@ -351,6 +351,22 @@ actions needing a spec screen (`screen.*`) say so and are refused outside one.
 docs cannot drift from what runs. *Check:* `static_assert` (one `ACTION_DOCS` row per `ACTIONS` entry); functional
 test `act` "C50" (every row has about, typed fields and an example that `act()` runs; spec-only rows refused).
 
+**C51. Data comes in through feeds; every source has an adapter.** A screen shows one kind of data one way, wherever
+it comes from. Each kind of data (bin collections, energy use, a race, timers, the weather) has ONE Facet feed: a
+reserved local entity (`panel.<feed>`, core/spec.h "local sources") whose attributes are documented once, in Facet's
+words and units (e.g. bins: the next collection's date, its bins with name and colour, the ones after it). Screens
+and components bind ONLY to feed attributes, never to an integration's own entity ids, attribute names or formats.
+A source (a Home Assistant integration such as Waste Collection Schedule, a council's iCal link, another country's
+collection API, a public web API) reaches the feed through an **adapter**: the one piece of code that reads that
+source and converts it into the feed (dates, names, colours, units, missing values). Adapters run on the device by
+default (the panel reads Home Assistant or calls the service itself; a host only on the workbench); the sample data
+previews and tests use is an adapter too, of the same feed. `sources/sources.json` lists, per screen, the feed it
+reads and the adapters that can fill it in order of preference; the person picks one per screen (Settings > Screens,
+the editor). A new source = a new adapter + its row: no screen, spec or component changes.
+*Why:* one way of showing, many places the data lives (countries, councils, integrations, APIs). A screen built on
+one integration's fields only works in the homes that have it. *Check:* TODO (lint: a contract spec's binds name
+`panel.*` feeds or the screen's own params; each feed's adapters in sources.json exist in code).
+
 ## 9. Robustness
 
 **C38. Every state is handled:** normal, pressed, on, off, disabled, loading, unavailable, unknown, empty, error.
@@ -670,6 +686,7 @@ Rules whose check is TODO (each is a gate item; until it exists, review checks t
 | C38 | lint: states covered by meta options or the header's n/a list |
 | C42 | test: theme switch during a drag |
 | C43 | fuzz sizes 0 x 0 .. minimum |
+| C51 | lint: contract spec binds name only `panel.*` feeds or the screen's params; every adapter listed in sources.json exists in code |
 
 ## 16. Files
 
