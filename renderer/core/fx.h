@@ -31,6 +31,13 @@ void state(lv_obj_t *o, lv_state_t s, bool on);  // o and everything inside it (
 // (accent, text-dim, blue, steel) their own token. Follows a live theme switch. The icon box trickles its parent's
 // states to its layers.
 lv_obj_t *icon(lv_obj_t *parent, const char *name, const char *size, const char *ink);  // size: icon | glyph | card | feature | checkbox (the one that fills the Checkbox box)
+// A weather icon (icons.json kind weather) at an icon size ("glyph", "feature", "card", "hero"; the sizes it ships in):
+// the static master = fx::icon (shared ink styles); animated = its parts moving (motion.json weather; reduced motion =
+// the master), each part's ink read at draw time from the master's layer of its role and the cloud fill from the
+// nearest box behind with a background (else the canvas), so a theme switch repaints it with no rebuild. nullptr = no
+// such weather icon at that size. weather_set = another icon / motion in place (same box, same size).
+lv_obj_t *weather(lv_obj_t *parent, const char *name, const char *size, bool animate);
+bool weather_set(lv_obj_t *wx, const char *name, bool animate);
 void hit(lv_obj_t *o);
 void reach(lv_obj_t *o, const char *pad);  // o's hit area `pad` (a size token) past its box every side (a corner target: Back)  // C32: o's hit area grown to at least touch:min tall (after its contents are made)
 // a token on every INK layer of an icon (role layers keep their own colours), per state: "ink:on-ink" on CHECKED,

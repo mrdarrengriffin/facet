@@ -59,12 +59,6 @@
    "tap to lock",
    "tap to lock again"
   ],
-  "weather_view": [
-   "weather",
-   "sun",
-   "moon",
-   "lightning"
-  ],
   "camera_tile": [
    "no still yet"
   ],
@@ -145,8 +139,6 @@
    "lightning_radar",
    "overhead_view",
    "toast_layer",
-   "weather_view",
-   "weather_days",
    "calendar_view",
    "agents_view",
    "bins_view",

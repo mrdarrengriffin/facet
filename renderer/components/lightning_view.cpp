@@ -1,5 +1,5 @@
 // Lightning view: the Lightning screen's body (docs screens/lightning.ts lightningParts; the factory spec
-// renderer/specs/lightning.json adds the header; the Weather view's Lightning tab builds the same): the nearest strike
+// renderer/specs/lightning.json adds the header): the nearest strike
 // of the last 15 minutes as the hero ("Quiet" when there is none), three Stats (strikes in 15 minutes, the trend, the
 // last strike) and the Lightning radar beside them.
 //   box      the content box; a row: the left column (lay::lx_col wide, the docs 240) and the radar (a real Lightning

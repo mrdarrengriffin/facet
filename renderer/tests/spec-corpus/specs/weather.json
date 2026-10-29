@@ -2,7 +2,7 @@
  "v": 1,
  "id": "c_weather",
  "name": "Weather",
- "rev": 1,
+ "rev": 2,
  "role": "both",
  "header": {
   "label": "Weather",
@@ -11,13 +11,14 @@
  "layout": "center",
  "nodes": [
   {
-   "c": "weather_view",
+   "c": "weather_icon",
    "p": {
-    "view": "weather",
-    "condition": "Light rain",
-    "temp": "11°",
-    "feels": "Feels 9°",
-    "place": "Wisbech"
+    "layout": "hero",
+    "icon": "rain-light",
+    "size": "hero",
+    "label": "Light rain",
+    "value": "11°",
+    "line": "Feels 9° · high 13°, low 7°"
    }
   }
  ]

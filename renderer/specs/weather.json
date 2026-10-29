@@ -2,14 +2,48 @@
  "v": 1,
  "id": "weather",
  "name": "Weather",
- "rev": 2,
+ "rev": 3,
  "role": "page",
  "params": {
-  "weather": {"about": "The weather forecast to show.", 
+  "source": {
+   "about": "Where the weather comes from: a weather entity in Home Assistant (its forecast too), or a made-up forecast for previews.",
+   "type": "select",
+   "options": [
+    "ha",
+    "sample"
+   ],
+   "label": "Source",
+   "default": "ha"
+  },
+  "weather": {
+   "about": "The weather forecast to show, such as the one Home Assistant sets up for your home.",
    "type": "entity",
    "domain": "weather",
    "label": "Forecast",
    "default": "weather.forecast_home"
+  }
+ },
+ "feeds": {
+  "panel.weather": {
+   "source": "$source",
+   "weather": "$weather"
+  }
+ },
+ "card": {
+  "icon": "weather",
+  "preview": "weather",
+  "weather": {
+   "e": "panel.weather",
+   "a": "icon"
+  },
+  "mode": "value",
+  "value": {
+   "e": "panel.weather",
+   "a": "temp"
+  },
+  "sub": {
+   "e": "panel.weather",
+   "a": "card"
   }
  },
  "header": {
@@ -19,23 +53,117 @@
  "layout": "center",
  "nodes": [
   {
-   "c": "weather_view",
+   "c": "group",
    "p": {
-    "condition": {
-     "e": "$weather"
+    "flow": "stack",
+    "space": "block",
+    "align": "start"
+   }
+  },
+  {
+   "c": "group",
+   "p": {
+    "flow": "stack",
+    "space": "near",
+    "align": "start"
+   },
+   "in": 0,
+   "slot": 0
+  },
+  {
+   "c": "weather_icon",
+   "p": {
+    "layout": "hero",
+    "icon": {
+     "e": "panel.weather",
+     "a": "icon"
     },
-    "temp": {
-     "e": "$weather",
-     "a": "temperature"
+    "size": "hero",
+    "value": {
+     "e": "panel.weather",
+     "a": "temp"
     },
-    "feels": {
-     "e": "$weather",
-     "a": "apparent_temperature"
+    "label": {
+     "e": "panel.weather",
+     "a": "condition"
+    },
+    "line": {
+     "e": "panel.weather",
+     "a": "line"
     }
    },
+   "in": 1,
+   "slot": 0
+  },
+  {
+   "c": "status_line",
+   "p": {
+    "text": {
+     "e": "panel.weather",
+     "a": "rain"
+    },
+    "tone": {
+     "e": "panel.weather",
+     "a": "rain_tone"
+    }
+   },
+   "in": 1,
+   "slot": 0,
+   "show": {
+    "e": "panel.weather",
+    "a": "rain"
+   }
+  },
+  {
+   "c": "grid",
+   "p": {
+    "cols": 8,
+    "gap": "none",
+    "aspect": "row",
+    "items": {
+     "e": "panel.weather",
+     "a": "hours"
+    },
+    "empty": ""
+   },
+   "in": 0,
+   "slot": 0,
+   "show": {
+    "e": "panel.weather",
+    "a": "has_hours"
+   },
+   "cell": {
+    "c": "weather_icon",
+    "p": {
+     "layout": "column",
+     "size": "glyph",
+     "animated": false,
+     "icon": "$item.icon",
+     "label": "$item.label",
+     "value": "$item.value",
+     "accent": "$item.accent"
+    }
+   }
+  },
+  {
+   "c": "more_row",
+   "p": {
+    "text": "next 5 days"
+   },
+   "in": 0,
+   "slot": 0,
+   "show": {
+    "e": "panel.weather",
+    "a": "has_hours"
+   },
    "on": {
-    "open": {
-     "do": "nav.open"
+    "tap": {
+     "do": "nav.open",
+     "screen": "weather_days",
+     "params": {
+      "source": "$source",
+      "weather": "$weather"
+     }
     }
    }
   }

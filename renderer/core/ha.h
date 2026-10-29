@@ -515,20 +515,25 @@ inline const char *act(lv_obj_t *from, const char *service, const char *entity, 
 
 // ---- asks (an adapter's read of an HA action's reply; closed list)
 inline void on_ask(AskSink f) { S().ask_sink = f; }
-// calendar.get_events {"entity_id": "calendar.x", "start_date_time": "...", "end_date_time": "..."} only. Returns ""
+// calendar.get_events {"entity_id": "calendar.x", "start_date_time": "...", "end_date_time": "..."} (the Bins feed)
+// and weather.get_forecasts {"entity_id": "weather.x", "type": "hourly" | "daily"} (the Weather feed) only. Returns ""
 // = sent (done runs once with the reply, or ok false), else why not (done never runs). No host = "no host".
 inline const char *ask(const char *service, const char *data_json, AskDone done, void *ctx) {
   const std::string svc = service ? service : "";
   ArduinoJson::JsonDocument d;
   if (!data_json || deserializeJson(d, data_json) || !d.is<ArduinoJson::JsonObject>()) return "data is not JSON";
-  if (svc != "calendar.get_events") return "ask not allowed";
+  const bool cal = svc == "calendar.get_events", wx = svc == "weather.get_forecasts";
+  if (!cal && !wx) return "ask not allowed";
   const std::string en = d["entity_id"] | "";
-  if (en.rfind("calendar.", 0) != 0 || en.size() > 96) return "not a calendar";
+  if (cal && (en.rfind("calendar.", 0) != 0 || en.size() > 96)) return "not a calendar";
+  if (wx && (en.rfind("weather.", 0) != 0 || en.size() > 96)) return "not a weather entity";
   for (ArduinoJson::JsonPairConst kv : d.as<ArduinoJson::JsonObjectConst>()) {
     const std::string k = kv.key().c_str();
-    if (k != "entity_id" && k != "start_date_time" && k != "end_date_time") return "calendar.get_events takes entity_id, start_date_time, end_date_time";
-    if (!kv.value().is<const char *>() || strlen(kv.value().as<const char *>()) > 96) return "calendar.get_events: text values";
+    if (cal && k != "entity_id" && k != "start_date_time" && k != "end_date_time") return "calendar.get_events takes entity_id, start_date_time, end_date_time";
+    if (wx && k != "entity_id" && k != "type") return "weather.get_forecasts takes entity_id, type";
+    if (!kv.value().is<const char *>() || strlen(kv.value().as<const char *>()) > 96) return "ask: text values";
   }
+  if (wx && strcmp(d["type"] | "", "hourly") && strcmp(d["type"] | "", "daily") && strcmp(d["type"] | "", "twice_daily")) return "weather.get_forecasts: type hourly, daily or twice_daily";
   if (!S().ask_sink) return "no host";
   const uint32_t id = S().next_ask++;
   S().asks[id] = {done, ctx};

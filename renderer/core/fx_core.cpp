@@ -1309,10 +1309,9 @@ void reach(lv_obj_t *o, const char *pad) {
 }
 
 lv_obj_t *icon(lv_obj_t *p, const char *name, const char *size, const char *ink) {
-  const fw::ic::Size sz = !strcmp(size, "card") ? fw::ic::card : !strcmp(size, "glyph") ? fw::ic::glyph
-                         : !strcmp(size, "feature") ? fw::ic::feature
-                         : !strcmp(size, "checkbox") ? (fw::ic::PX[fw::ic::icon] == fw::lay::checkbox ? fw::ic::icon : fw::ic::glyph)  // the size that fills the box
-                         : fw::ic::icon;
+  fw::ic::Size sz = !strcmp(size, "checkbox") ? (fw::ic::PX[fw::ic::icon] == fw::lay::checkbox ? fw::ic::icon : fw::ic::glyph)  // the size that fills the box
+                   : fw::ic::icon;
+  for (int i = 0; i < fw::ic::N_SIZES; i++) if (!strcmp(fw::ic::SIZE_NAMES[i], size)) sz = (fw::ic::Size) i;  // any icon size by name (hero: fx::weather)
   lv_obj_t *b = fw::icon(p, name, sz, lv_color_black());
   if (!b) return nullptr;
   lv_obj_add_flag(b, LV_OBJ_FLAG_EVENT_BUBBLE);

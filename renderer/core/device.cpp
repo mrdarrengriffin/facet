@@ -116,7 +116,7 @@ bool show(Device *d, const std::string &id, std::vector<lv_obj_t *> &items) {
 }
 
 // Navigation (facet-188, Darren 2026-10-26): a hierarchy, Home (the stack's root) at the bottom, never a long back
-// chain. Back = up one level (Home > Weather > Weather view), hold Back = straight Home ("home" event).
+// chain. Back = up one level (Home > Weather > 5 days), hold Back = straight Home ("home" event).
 //   pages       a page (a deck page id or page kind, from a shortcut or a page card) and a sent screen (spec::sent:
 //               an agent's / the AI's) sit one level above Home: opening one cuts the stack to the root first, so a
 //               sent screen replaces the previous sent screen and its Back = Home. A page opened from a second

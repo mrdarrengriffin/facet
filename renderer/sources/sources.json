@@ -21,9 +21,10 @@
   "calendar": {"needs": "a calendar", "sources": [
    {"id": "ha_calendars", "kind": "ha", "name": "HA calendars", "detect": {"domain": "calendar"}, "fills": {"calendars": {"domain": "calendar", "list": true}}},
    {"id": "ical", "kind": "direct", "name": "Calendar link (iCal)", "setup": ["calendar URL"]}]},
-  "weather": {"needs": null, "sources": [
-   {"id": "ha_weather", "kind": "ha", "name": "HA weather", "detect": {"domain": "weather"}, "fills": {"weather": {"domain": "weather"}}},
-   {"id": "open_meteo", "kind": "direct", "name": "Open-Meteo"}]},
+  "weather": {"needs": null, "feed": "panel.weather", "sources": [
+   {"id": "ha_weather", "kind": "ha", "name": "HA weather (its forecast through weather.get_forecasts)", "adapter": "ha", "detect": {"domain": "weather"}, "fills": {"weather": {"domain": "weather"}}},
+   {"id": "open_meteo", "kind": "direct", "name": "Open-Meteo, called by the panel itself (planned)", "adapter": "open_meteo"},
+   {"id": "sample", "kind": "builtin", "name": "Sample forecast (previews)", "adapter": "sample"}]},
   "energy": {"needs": "a smart meter or tariff", "sources": [
    {"id": "octopus", "kind": "ha", "name": "Octopus Energy", "detect": {"integration": "octopus_energy"}},
    {"id": "ha_energy", "kind": "ha", "name": "HA Energy dashboard", "detect": {"energy": true}},

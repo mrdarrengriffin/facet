@@ -68,7 +68,7 @@
       "label": "Weather",
       "docs": true, "status": "done", "firmware": true,
       "screens": ["weather", "weather_days"],
-      "components": ["weather_view", "weather_days"]
+      "components": []
     },
     {
       "id": "moon",

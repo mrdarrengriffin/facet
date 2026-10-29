@@ -5,6 +5,7 @@
 #include <cmath>
 #include <cstring>
 #include "fw.h"
+#include "fx.h"
 #ifdef FW_1X
 #include "facet_icons_1x.h"
 #else
@@ -209,6 +210,8 @@ struct Wx {
   bool animate, moving = false;
   lv_color_t ink, behind;
   uint32_t t0 = 0;
+  bool live = false;          // fx::weather (contract): inks read at draw time from the master's layers (a theme switch)
+  lv_obj_t *master = nullptr;  // live: the static master (fx::icon), hidden while the parts move
   std::vector<WxPart> parts;
 };
 void wx_clock(void *var, int32_t);
@@ -324,6 +327,24 @@ void wx_clock(void *var, int32_t) {
   lv_area_move(&u, c.x1, c.y1);
   lv_obj_invalidate_area(box, &u);  // one area per icon per frame
 }
+// live (fx::weather): a part's ink = the master layer of its role (shared ink styles: the theme's, now); the cloud
+// fill = the nearest box behind with a background, else the canvas
+lv_color_t wx_live_colour(lv_obj_t *box, const Wx *w, uint8_t role) {
+  if (role == ic::R_occluder) {
+    for (lv_obj_t *a = lv_obj_get_parent(box); a; a = lv_obj_get_parent(a))
+      if (lv_obj_get_style_bg_opa(a, LV_PART_MAIN) >= LV_OPA_COVER) return lv_obj_get_style_bg_color(a, LV_PART_MAIN);
+    return fx::bg(lv_obj_get_display(box));
+  }
+  lv_obj_t *ink = nullptr;
+  for (uint32_t i = 0; w->master && i < lv_obj_get_child_count(w->master); i++) {
+    lv_obj_t *l = lv_obj_get_child(w->master, (int32_t) i);
+    const uint8_t r = (uint8_t) (uintptr_t) lv_obj_get_user_data(l);
+    if (r == role) return lv_obj_get_style_image_recolor(l, LV_PART_MAIN);
+    if (r == ic::R_ink && !ink) ink = l;
+  }
+  if (ink) return lv_obj_get_style_image_recolor(ink, LV_PART_MAIN);
+  return role_colour(role, w->ink);
+}
 // the parts, in master order (occluders before their cloud), straight from the A8 masks with the image recolour
 void wx_draw(lv_event_t *ev) {
   lv_obj_t *box = (lv_obj_t *) lv_event_get_current_target(ev);
@@ -338,7 +359,7 @@ void wx_draw(lv_event_t *ev) {
     lv_draw_image_dsc_t d;
     lv_draw_image_dsc_init(&d);
     d.src = p.src;
-    d.recolor = p.col;
+    d.recolor = w->live ? wx_live_colour(box, w, p.a->role) : p.col;
     d.recolor_opa = LV_OPA_COVER;
     d.opa = (lv_opa_t) LV_OPA_MIX2(p.opa, base);
     const lv_area_t a{c.x1 + p.bx() + p.dx, c.y1 + p.by() + p.dy, c.x1 + p.bx() + p.dx + p.bw() - 1, c.y1 + p.by() + p.dy + p.bh() - 1};
@@ -361,7 +382,15 @@ void wx_fill(lv_obj_t *box, Wx *w) {
   wx_clear(w);
   const icd::Entry *e = (w->animate && !mo::reduced(box)) ? aentry(w->index, w->size) : nullptr;
   w->moving = e != nullptr;
-  if (!e) {  // the static master, exactly fw::icon
+  if (w->live) {  // the static master through fx::icon (its shared ink styles); hidden under the moving parts
+    w->master = fx::icon(box, ic::ICONS[w->index].name, ic::SIZE_NAMES[w->size], "fg:text");
+    for (uint32_t i = 0; w->master && i < lv_obj_get_child_count(w->master); i++)  // an ink restyled (theme switch): draw again
+      lv_obj_add_event_cb(lv_obj_get_child(w->master, (int32_t) i), [](lv_event_t *ev) {
+        lv_obj_invalidate((lv_obj_t *) lv_event_get_user_data(ev));
+      }, LV_EVENT_STYLE_CHANGED, box);
+    if (!e) return;
+    if (w->master) lv_obj_add_flag(w->master, LV_OBJ_FLAG_HIDDEN);
+  } else if (!e) {  // the static master, exactly fw::icon
     icon(box, ic::ICONS[w->index].name, w->size, w->ink);
     return;
   }
@@ -424,6 +453,27 @@ lv_obj_t *fw::weather_icon(lv_obj_t *parent, const char *name, ic::Size size, bo
   wx_fill(box, w);
   return box;
 }
+
+// the contract weather icon (core/fx.h fx::weather): fw::weather_icon with live inks
+lv_obj_t *fx::weather(lv_obj_t *parent, const char *name, const char *size, bool animate) {
+  int s = -1;
+  for (int i = 0; i < ic::N_SIZES; i++) if (!strcmp(ic::SIZE_NAMES[i], size)) s = i;
+  const int index = icon_index(name);
+  if (s < 0 || index < 0 || strcmp(ic::ICONS[index].kind, "weather") || !entry(index, (ic::Size) s)) return nullptr;
+  lv_obj_t *box = lv_obj_create(parent);
+  lv_obj_remove_style_all(box);
+  lv_obj_remove_flag(box, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
+  lv_obj_add_flag(box, (lv_obj_flag_t) (LV_OBJ_FLAG_STATE_TRICKLE | LV_OBJ_FLAG_OVERFLOW_VISIBLE | LV_OBJ_FLAG_EVENT_BUBBLE));
+  lv_obj_set_size(box, ic::PX[s], ic::PX[s]);
+  Wx *w = new Wx{index, (ic::Size) s, animate, false, lv_color_black(), lv_color_black()};
+  w->live = true;
+  lv_obj_add_event_cb(box, wx_free, LV_EVENT_DELETE, w);
+  lv_obj_add_event_cb(box, wx_draw, LV_EVENT_DRAW_MAIN, nullptr);
+  lv_obj_add_event_cb(box, wx_ext, LV_EVENT_REFR_EXT_DRAW_SIZE, nullptr);
+  wx_fill(box, w);
+  return box;
+}
+bool fx::weather_set(lv_obj_t *box, const char *name, bool animate) { return fw::weather_icon_set(box, name, animate); }
 
 bool fw::weather_icon_set(lv_obj_t *box, const char *name, bool animate) {
   Wx *w = wx_of(box);

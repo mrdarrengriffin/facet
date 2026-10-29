@@ -2,8 +2,33 @@
  "v": 1,
  "id": "weather_days",
  "name": "Weather, 5 days",
- "rev": 1,
+ "rev": 2,
  "role": "detail",
+ "params": {
+  "source": {
+   "about": "Where the weather comes from: a weather entity in Home Assistant (its forecast too), or a made-up forecast for previews.",
+   "type": "select",
+   "options": [
+    "ha",
+    "sample"
+   ],
+   "label": "Source",
+   "default": "ha"
+  },
+  "weather": {
+   "about": "The weather forecast to show, such as the one Home Assistant sets up for your home.",
+   "type": "entity",
+   "domain": "weather",
+   "label": "Forecast",
+   "default": "weather.forecast_home"
+  }
+ },
+ "feeds": {
+  "panel.weather": {
+   "source": "$source",
+   "weather": "$weather"
+  }
+ },
  "header": {
   "label": "5 days",
   "back": true
@@ -11,8 +36,31 @@
  "layout": "list",
  "nodes": [
   {
-   "c": "weather_days",
-   "p": {}
+   "c": "grid",
+   "p": {
+    "cols": 1,
+    "gap": "none",
+    "aspect": "row",
+    "items": {
+     "e": "panel.weather",
+     "a": "days"
+    },
+    "empty": "No forecast yet"
+   },
+   "cell": {
+    "c": "weather_icon",
+    "p": {
+     "layout": "row",
+     "size": "feature",
+     "animated": false,
+     "icon": "$item.icon",
+     "label": "$item.label",
+     "line": "$item.line",
+     "low": "$item.low",
+     "value": "$item.value",
+     "divider": "$item.divider"
+    }
+   }
   }
  ]
 }

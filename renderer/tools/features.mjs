@@ -17,7 +17,7 @@ export const R = join(dirname(fileURLToPath(import.meta.url)), '..');
 export const FLAGS = ['docs', 'firmware', 'panel'];
 export const FLAVOURS = [...FLAGS, 'contract'];  // contract: derived in load() (a flavour, not a features.json key)
 const KINDS = ['screens', 'components', 'foundations', 'bench'];
-// spec screens have their own id space (a spec and a component may share a name: weather_days): key spec:<id>
+// spec screens have their own id space (a spec and a component may share a name): key spec:<id>
 const screenKey = (id) => (existsSync(join(R, 'specs', `${id}.json`)) ? `spec:${id}` : id);
 const SRC_DIRS = { foundations: 'foundations', components: 'components', screens: 'screens', bench: 'bench' };
 
