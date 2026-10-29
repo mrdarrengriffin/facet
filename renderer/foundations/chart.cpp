@@ -823,7 +823,12 @@ struct TB {
   int w_dp = 0, h_dp = 80;
   std::string unit;
   lv_obj_t *axis = nullptr;  // the hour axis (ticks), placed from the bars
+  int group = 1, ggap = 0, leg_h = 0;   // pairs: bars per group, the gap between groups; the legend row's height
+  std::vector<std::string> labels, legend;
+  std::vector<uint8_t> legend_kind;
+  std::vector<lv_obj_t *> leg_words;    // the legend's words (real labels in the strip; the Pen draws their swatches)
 };
+int tb_groups(const TB *B) { return (B->n + B->group - 1) / B->group; }
 void tb_free(lv_event_t *e) { delete (TB *) lv_event_get_user_data(e); }
 TB *tb_of(lv_obj_t *s) {
   if (!s) return nullptr;
@@ -837,9 +842,21 @@ int tb_h(const TB *B, float v) {
   if (!std::isfinite(v) || v <= 0) return 0;
   return std::max(fx::size("chart:bar-min"), (int) std::lround(v / B->max * (B->bot - B->top)));
 }
-int tb_x(const TB *B, int i) {
-  const int sp = B->spread && B->n > 1 ? (int) ((int64_t) i * B->spread / (B->n - 1)) : 0;
-  return i * (B->bw + B->gap) + sp;
+int tb_x(const TB *B, int i) {  // group 1: every bar its own group (ggap = gap)
+  const int g = i / B->group, k = i % B->group, ng = tb_groups(B);
+  const int sp = B->spread && ng > 1 ? (int) ((int64_t) g * B->spread / (ng - 1)) : 0;
+  return g * (B->group * B->bw + (B->group - 1) * B->gap + B->ggap) + k * (B->bw + B->gap) + sp;
+}
+int tb_centre(const TB *B, int g) {  // the middle of group g (an axis word, a label's place)
+  const int first = g * B->group, last = std::min(B->n - 1, first + B->group - 1);
+  return (tb_x(B, first) + tb_x(B, last) + B->bw) / 2;
+}
+// the legend row over the plot: per entry a legend-sw swatch, space 2, its word; space 5 between entries
+int tb_sw_x(const TB *B, size_t k) {
+  int x = 0;
+  for (size_t j = 0; j < k && j < B->leg_words.size(); j++)
+    x += fx::size("chart:legend-sw") + fx::size("space:2") + lv_obj_get_width(B->leg_words[j]) + fx::size("space:5");
+  return x;
 }
 const char *tb_ink(const TB *B, int i) {
   if (i == B->sel) return "fg:text";  // ch::ink::select
@@ -850,6 +867,12 @@ void tb_draw(const fx::Pen &p) {
   const TB *B = tb_of(p.obj);
   if (!B) return;
   const int L = -(p.w / 2), T = -(p.h / 2);
+  for (size_t k = 0; k < B->legend.size(); k++) {  // the legend's swatches, rounded like the bars (their words are labels)
+    const int sw = fx::size("chart:legend-sw");
+    const bool cmp = k < B->legend_kind.size() && B->legend_kind[k] == 2;
+    p.rect(L + tb_sw_x(B, k), T + fx::size("space:2") + (std::max(sw, fx::type_box("type:c-meta-sm")) - sw) / 2, sw, sw, cmp ? "fg:line-hi" : "fg:text-dim", fx::size("chart:bar-radius"),
+           cmp ? fx::size("stroke:hair") : 0);
+  }
   for (int i = 0; i < B->n; i++) {
     const int hp = B->shown[i];
     if (hp <= 0) continue;
@@ -863,10 +886,17 @@ void tb_draw(const fx::Pen &p) {
     for (int y = B->top; y < B->bot; y += dash + dash_gap)
       p.rect(L + tb_x(B, B->now) + B->bw / 2, T + y, grid, std::min(dash, B->bot - y), "fg:text-dim");
   char b[64];
-  if (B->sel >= 0) {  // the readout over the bars: "<value> <unit>  <hh>:00", inside the chart
-    snprintf(b, sizeof b, "%.*f %s  %02d:00", B->dec, B->v[B->sel], B->unit.c_str(), (B->first_hour + B->sel) % 24);
+  if (B->sel >= 0) {  // the readout over the bars: "<value> <unit>  <hh>:00" (labels: "<value> <unit>  <word>"), inside the chart
+    const int g = B->sel / B->group;
+    if (B->labels.empty()) snprintf(b, sizeof b, "%.*f %s  %02d:00", B->dec, B->v[B->sel], B->unit.c_str(), (B->first_hour + B->sel) % 24);
+    else {
+      std::string w = (size_t) g < B->labels.size() ? B->labels[g] : "";
+      for (size_t k = 0; B->group > 1 && k < B->legend.size(); k++)  // which series: the legend word of this bar's kind
+        if (k < B->legend_kind.size() && B->legend_kind[k] == B->kind[B->sel]) { w += " \xC2\xB7 " + B->legend[k]; break; }
+      snprintf(b, sizeof b, "%.*f %s  %s", B->dec, B->v[B->sel], B->unit.c_str(), w.c_str());
+    }
     const int rw = p.text_w(b, "type:c-meta"), x = std::clamp(tb_x(B, B->sel) + B->bw / 2 - rw / 2, 0, std::max(0, cw - rw));
-    p.text(L + x + rw / 2, T + fx::type_box("type:c-meta") / 2, b, "type:c-meta", "fg:text");
+    p.text(L + x + rw / 2, T + B->leg_h + fx::type_box("type:c-meta") / 2, b, "type:c-meta", "fg:text");
   }
 }
 void tb_redraw(TB *B) { fx::redraw(B->s, -(lv_obj_get_content_width(B->s) / 2), -(lv_obj_get_content_height(B->s) / 2), lv_obj_get_content_width(B->s), B->bot + fx::size("chart:grid") + 1); }
@@ -936,26 +966,35 @@ void tb_size(TB *B, lv_obj_t *parent) {
   B->fill = B->w_dp <= 0;
   B->h = px((float) B->h_dp);
   B->gap = fx::size("chart:bar-gap");
-  const int avail = B->w - (B->n - 1) * B->gap;
+  B->ggap = B->group > 1 ? fx::size("chart:group-gap") : B->gap;
+  const int ng = tb_groups(B), inner = ng * (B->group - 1) * B->gap + (ng - 1) * B->ggap;
+  const int avail = B->w - inner;
   B->bw = std::max(4, (avail / std::max(1, B->n)) / 4 * 4);
-  B->spread = B->fill && B->n > 1 ? std::max(0, B->w - (B->n * B->bw + (B->n - 1) * B->gap)) : 0;
-  B->top = fx::size("chart:plot-top") + fx::type_box("type:c-meta");  // room for the readout over the bars
-  B->bot = B->h - fx::size("chart:plot-bottom");
+  B->spread = B->fill && ng > 1 ? std::max(0, B->w - (B->n * B->bw + inner)) : 0;
+  // the legend row: space 2 above it, space 9 under it to the plot (the old WASM week: 4 + 20 at 1x, 8 + 32 at 720)
+  B->leg_h = B->legend.empty() ? 0 : fx::size("space:2") + std::max(fx::size("chart:legend-sw"), fx::type_box("type:c-meta-sm")) + fx::size("space:9");
+  for (size_t k = 0; k < B->leg_words.size(); k++) {  // the words beside their swatches, in the legend row
+    lv_obj_update_layout(B->leg_words[k]);
+    lv_obj_set_pos(B->leg_words[k], tb_sw_x(B, k) + fx::size("chart:legend-sw") + fx::size("space:2"), fx::size("space:2"));
+  }
+  B->top = B->leg_h + fx::size("chart:plot-top") + fx::type_box("type:c-meta");  // the legend, room for the readout over the bars
+  B->bot = B->leg_h + B->h - fx::size("chart:plot-bottom");
   const int cw = B->n ? tb_x(B, B->n - 1) + B->bw : B->w;
-  lv_obj_set_size(B->s, cw, B->h);
+  lv_obj_set_size(B->s, cw, B->leg_h + B->h);
   B->shown.assign(B->n, 0);
 }
 void tb_place_axis(TB *B) {  // the labels under their bar's centre, kept inside the chart's width
   if (!B->axis) return;
   const int cw = B->n ? tb_x(B, B->n - 1) + B->bw : B->w;
   lv_obj_set_size(B->axis, cw, fx::type_box("type:c-meta-sm"));
-  lv_obj_set_style_margin_top(B->axis, fx::size("space:1"), 0);
+  // hour ticks sit space 1 under the plot; day words (labels) space 2, as the old WASM week's axis
+  lv_obj_set_style_margin_top(B->axis, fx::size(B->labels.empty() ? "space:1" : "space:2"), 0);
   for (uint32_t k = 0; k < lv_obj_get_child_count(B->axis); k++) {
     lv_obj_t *l = lv_obj_get_child(B->axis, k);
     const int i = (int) (intptr_t) lv_obj_get_user_data(l);
     lv_obj_update_layout(l);
-    const int lw = lv_obj_get_width(l);
-    lv_obj_set_x(l, std::clamp(tb_x(B, i) + B->bw / 2 - lw / 2, 0, std::max(0, cw - lw)));
+    const int lw = lv_obj_get_width(l), mid = B->labels.empty() ? tb_x(B, i) + B->bw / 2 : tb_centre(B, i);
+    lv_obj_set_x(l, std::clamp(mid - lw / 2, 0, std::max(0, cw - lw)));
   }
 }
 // a token tuned or a theme switched (fx::tune -> every object's STYLE_CHANGED): the bars, gaps and axis re-measured
@@ -978,6 +1017,12 @@ void tb_axis(TB *B, lv_obj_t *parent) {
   lv_obj_remove_flag(a, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
   (void) cw;
   B->axis = a;
+  if (!B->labels.empty()) {  // one word per group (the days of a week), under its centre
+    for (int g = 0; g < tb_groups(B) && (size_t) g < B->labels.size(); g++)
+      lv_obj_set_user_data(fx::text(a, B->labels[g].c_str(), "type:c-meta-sm", "fg:text-dim"), (void *) (intptr_t) g);
+    tb_place_axis(B);
+    return;
+  }
   for (int i = 0; i < B->n; i++) {
     if ((B->first_hour + i) % B->ticks) continue;
     char hh[4];
@@ -993,12 +1038,14 @@ lv_obj_t *token_bars(lv_obj_t *parent, const TokenBars &o, bool opening) {
   B->v = o.v, B->n = (int) o.v.size(), B->ink = o.ink, B->kind = o.kind, B->now = o.now, B->ticks = o.ticks;
   B->kind.resize(B->n, 0);
   B->scrub = o.scrub, B->dec = o.dec, B->first_hour = o.first_hour, B->unit = o.unit, B->w_dp = o.w_dp, B->h_dp = o.h_dp;
+  B->group = std::max(1, o.group), B->labels = o.labels, B->legend = o.legend, B->legend_kind = o.legend_kind;
   float mx = 0;
   for (float x : o.v) if (std::isfinite(x)) mx = std::max(mx, x);
   B->max = mx > 0 ? mx : 1;
   B->s = fx::strip(parent, tb_draw, "free");
   lv_obj_add_event_cb(B->s, tb_free, LV_EVENT_DELETE, B);
   qa::free(B->s, "bars: sized by their values (the chart hugs its bars)");
+  for (const std::string &w : B->legend) B->leg_words.push_back(fx::text(B->s, w.c_str(), "type:c-meta-sm", "fg:text-dim"));
   tb_size(B, parent);
   if (B->scrub) {
     lv_obj_add_flag(B->s, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_PRESS_LOCK));
@@ -1006,7 +1053,7 @@ lv_obj_t *token_bars(lv_obj_t *parent, const TokenBars &o, bool opening) {
     for (lv_event_code_t c : {LV_EVENT_PRESSED, LV_EVENT_PRESSING, LV_EVENT_RELEASED, LV_EVENT_PRESS_LOST})
       lv_obj_add_event_cb(B->s, tb_cb, c, B);
   }
-  if (B->ticks > 0) tb_axis(B, parent);
+  if (B->ticks > 0 || !B->labels.empty()) tb_axis(B, parent);
   lv_obj_add_event_cb(B->s, tb_retune, LV_EVENT_STYLE_CHANGED, B);
   if (opening) tb_play(B, nullptr);
   else tb_exec(B->s, ch::MOTION[ch::M_bars].ms + ch::MOTION[ch::M_bars].stagger * B->n);

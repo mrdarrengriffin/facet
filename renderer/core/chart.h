@@ -98,6 +98,13 @@ struct TokenBars {
   int w_dp = 0, h_dp = 80, now = -1, ticks = 0, dec = 2, first_hour = 0;
   bool scrub = true;
   std::string unit = "kWh";
+  // pairs (2026-10-29, the Energy screen's Week view: docs barChart group 2 / groupGap 16): bars in groups of `group`,
+  // ch bar-gap inside a group, chart:group-gap between groups; labels = one axis word per group under its centre (in
+  // place of the hour ticks; the readout names the group too); legend = the series' words over the plot, each with a
+  // swatch in its kind's ink (legend_kind: 0 solid, 2 compare outline)
+  int group = 1;
+  std::vector<std::string> labels, legend;
+  std::vector<uint8_t> legend_kind;
 };
 lv_obj_t *token_bars(lv_obj_t *parent, const TokenBars &o, bool opening);
 bool token_bars_move(lv_obj_t *strip, const std::vector<float> &nv);  // same count: the heights move (false = rebuild)

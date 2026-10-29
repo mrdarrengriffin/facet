@@ -2,8 +2,15 @@
  "v": 1,
  "id": "energy",
  "name": "Energy",
- "rev": 3,
+ "rev": 4,
  "role": "page",
+ "params": {
+  "view": {
+   "about": "Which view the screen shows: today (the day's half-hours) or the last 7 days against the week before.",
+   "type": "hidden",
+   "default": "today"
+  }
+ },
  "header": {
   "label": "Energy",
   "back": true
@@ -33,7 +40,15 @@
     }
    },
    "in": "header",
-   "slot": "end"
+   "slot": "end",
+   "show": {
+    "e": "",
+    "s": "$view",
+    "map": {
+     "week": ""
+    },
+    "else": "1"
+   }
   },
   {
    "c": "group",
@@ -41,6 +56,14 @@
     "flow": "stack",
     "space": "block",
     "align": "start"
+   },
+   "show": {
+    "e": "",
+    "s": "$view",
+    "map": {
+     "week": ""
+    },
+    "else": "1"
    }
   },
   {
@@ -137,10 +160,88 @@
    "slot": 0,
    "on": {
     "tap": {
-     "do": "nav.open",
-     "screen": "energy_week"
+     "do": "screen.param",
+     "param": "view",
+     "to": "week",
+     "back": true
     }
    }
+  },
+  {
+   "c": "title",
+   "p": {
+    "text": {
+     "e": "",
+     "s": "$view",
+     "map": {
+      "week": "Last 7 days"
+     },
+     "else": "Energy"
+    }
+   },
+   "in": "header",
+   "slot": "title"
+  },
+  {
+   "c": "group",
+   "p": {
+    "flow": "stack",
+    "space": "none",
+    "align": "start"
+   },
+   "show": {
+    "e": "",
+    "s": "$view",
+    "map": {
+     "week": "1"
+    },
+    "else": ""
+   }
+  },
+  {
+   "c": "hero_block",
+   "p": {
+    "n": {
+     "e": "panel.energy",
+     "a": "week_cost"
+    },
+    "label": "this week",
+    "line": {
+     "e": "panel.energy",
+     "a": "week_line"
+    },
+    "accent": false,
+    "role": "hero",
+    "layout": "stack"
+   },
+   "in": 9,
+   "slot": 0
+  },
+  {
+   "c": "bar_chart",
+   "p": {
+    "values": {
+     "e": "panel.energy",
+     "a": "week"
+    },
+    "compare": {
+     "e": "panel.energy",
+     "a": "week_before"
+    },
+    "labels": {
+     "e": "panel.energy",
+     "a": "days"
+    },
+    "legend": "this week,week before",
+    "colour": "series",
+    "now": -1,
+    "width": 0,
+    "height": 132,
+    "scrub": true,
+    "ticks": 0
+   },
+   "in": 9,
+   "slot": 0
   }
  ]
 }

@@ -34,7 +34,7 @@ const EXTRA = { card: [{ opening: false }, CARD, PAGE],
   toast: [{ timer: false }, ['layout:toast-h', 'layout:toast-pad', 'stroke:edge'], PAGE],
   // later bars are outlines (stroke:hair); still (opening false: no growth while it is probed); every drawn size is a
   // chart:* token (chart.json geometry), so the lab has a slider for each
-  bar_chart: [{ colour: 'series', opening: false }, ['stroke:hair', 'chart:bar-gap', 'chart:bar-radius', 'chart:plot-top', 'chart:plot-bottom', 'chart:grid'], PAGE],
+  bar_chart: [{ colour: 'series', opening: false, values: '16.2,17.8,15.1,18.4,16.9,19.2,9.4', compare: '17.4,18.2,16.8,19.0,17.7,18.9,17.1', labels: 'Fri,Sat,Sun,Mon,Tue,Wed,Today', legend: 'this week,week before' }, ['stroke:hair', 'chart:bar-gap', 'chart:bar-radius', 'chart:plot-top', 'chart:plot-bottom', 'chart:grid', 'chart:legend-sw', 'chart:group-gap', 'space:2', 'space:5', 'space:9'], PAGE],
   rate_strip: [{ ticks: 6 }, ['chart:strip-h', 'chart:bar-radius', 'stroke:edge', 'space:1'], PAGE],
   status_line: [{}, ['space:3'], PAGE],
   bins_art: [{ colours: 'black,green' }, ['layout:bin-hero', 'stroke:edge'], PAGE],
