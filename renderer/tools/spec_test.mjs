@@ -53,8 +53,8 @@ ok([3].includes(live().rev), `torn last-good write: live rev ${live().rev} (3)`)
 // refusals and no-ops
 store('reset');
 const bad = (s) => spec('screen_dev', JSON.stringify(s));
-ok(codes(spec('screen', JSON.stringify({ ...factory, rev: 9 }))).includes('built_in') && spec('screen', JSON.stringify({ ...factory, id: 'mine', rev: 9 })).ok, 'a sent screen may not replace a built-in (built_in); under its own id it applies (facet-209)');
 const codes = (r) => (r.errors ?? []).map((e) => e.code);
+ok(codes(spec('screen', JSON.stringify({ ...factory, rev: 9 }))).includes('built_in') && spec('screen', JSON.stringify({ ...factory, id: 'mine', rev: 9 })).ok, 'a sent screen may not replace a built-in (built_in); under its own id it applies (facet-209)');
 ok(codes(bad({ ...factory, rev: 9, colour: 'red' })).includes('style_key'), 'a style key is refused (style_key)');
 ok(codes(bad({ ...factory, rev: 9, nodes: [{ c: 'no_such' }] })).includes('unknown_component'), 'an unknown component is refused');
 ok(codes(bad({ ...factory, rev: 9, nodes: [{ c: 'list_row', on: { tap: { do: 'shell.run' } } }] })).includes('bad_action'), 'an action outside the whitelist is refused');
