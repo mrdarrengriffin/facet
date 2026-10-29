@@ -83,6 +83,9 @@
 //                With that sensor unset, Auto follows what's playing (2026-10-26): the first entity of the "from"
 //                list whose state is playing (none playing = it stays where it is); Auto is offered whenever the
 //                sensor is set or that list has entities)
+//                "to": "week" sets that value instead of the event's (a More row opening a view of the same screen);
+//                "back": true = the screen's Back (the Header's, or a nav.back) first returns the parameter to the
+//                value before (Energy > last 7 days > Back = Energy, the docs subView), then leaves as usual
 //              {"do": "nav.open", "screen": "<id>", "params"?: {k: v}}    {"do": "nav.back"}
 //              timers (2026-10-28, the panel's own: core/device.h "the panel's timers"; no entity):
 //              {"do": "timer.start", "seconds": 300, "name"?: "Pasta"}  (no name = its length, "5 min"; a 5th timer is
@@ -191,7 +194,7 @@ constexpr Rule RULES[] = {
     {"dial", "input", "light.brightness"},           {"dial", "toggle", "light.switch"},
     {"slider", "change", "light.brightness"},        {"slider", "input", "light.brightness"},
     {"toggle", "toggle", "light.switch"},
-    {"more_row", "tap", "nav.open,nav.back"},
+    {"more_row", "tap", "nav.open,nav.back,screen.param"},  // screen.param + to: a view of the same screen (Energy > last 7 days)
     {"thermostat_dial", "change", "climate.set_temperature"}, {"thermostat_dial", "input", "climate.set_temperature"},
     {"thermostat_view", "target", "climate.set_temperature"}, {"thermostat_view", "mode", "climate.set_hvac_mode"},
     {"thermostat_view", "preset", "climate.set_preset_mode"},
@@ -228,7 +231,7 @@ constexpr ActionDoc ACTION_DOCS[] = {
     {"lock.control", "Lock, unlock or open a lock.", "e|entity|required|lock.x", "lock|unlock|open", R"({"do":"lock.control","e":"lock.front_door","value":"lock"})", false},
     {"vacuum.control", "Start (optionally some rooms), pause, resume or dock a vacuum.", "e|entity|required|vacuum.x;rooms|text|optional|segment ids, a comma list (with clean)", "clean|start|resume|pause|dock", R"({"do":"vacuum.control","e":"vacuum.robot","value":"clean","rooms":"1,3"})", false},
     {"screen.toggle", "A spec screen's tapped item in / out of a comma list parameter (spec nodes only).", "param|id|required|the screen parameter", "", R"({"do":"screen.toggle","param":"rooms"})", true},
-    {"screen.param", "Set a spec screen's parameter to the picked value (spec nodes only).", "param|id|required|the screen parameter;from|id|optional|the parameter holding the allowed values;auto|id|optional|the parameter Auto follows", "", R"({"do":"screen.param","param":"speaker","from":"speakers"})", true},
+    {"screen.param", "Set a spec screen's parameter to the picked value (spec nodes only).", "param|id|required|the screen parameter;from|id|optional|the parameter holding the allowed values;auto|id|optional|the parameter Auto follows;to|id|optional|the value to set instead of the event's (a view);back|bool|optional|true = the screen's Back returns to the value before", "", R"({"do":"screen.param","param":"speaker","from":"speakers"})", true},
     {"nav.open", "Open a screen.", "screen|id|required|a screen id (a-z, 0-9, _, at most 12);params|object|optional|the screen's parameters", "", R"({"do":"nav.open","screen":"timer"})", false},
     {"nav.back", "Go back one screen.", "", "", R"({"do":"nav.back"})", false},
     {"timer.start", "Start a timer (at most 4 at once).", "seconds|int|required|1..86400;name|text|optional|at most 24", "", R"({"do":"timer.start","seconds":300,"name":"Pasta"})", false},
@@ -421,8 +424,8 @@ inline void check_keys(ArduinoJson::JsonObjectConst o, const char *const *keys, 
 }
 inline void check_action(ArduinoJson::JsonVariantConst a, const char *comp, const char *event, const std::string &path, Errs &e) {
   if (!a.is<ArduinoJson::JsonObjectConst>()) { err(e, path, "bad_action", "an action is an object {do, ...}"); return; }
-  static const char *const K[] = {"do", "e", "screen", "params", "param", "from", "auto", "rooms", "mode", "mop", "seconds", "name", "s", "id", "value"};
-  check_keys(a.as<ArduinoJson::JsonObjectConst>(), K, 15, path, e);
+  static const char *const K[] = {"do", "e", "screen", "params", "param", "from", "auto", "rooms", "mode", "mop", "seconds", "name", "s", "id", "value", "to", "back"};
+  check_keys(a.as<ArduinoJson::JsonObjectConst>(), K, 17, path, e);
   const std::string d = a["do"] | "";
   if (!one_of(ACTIONS, d)) { err(e, path + ".do", "bad_action", "unknown action " + d); return; }
   if (comp) {  // a spec node: its component's event allows it; nullptr = act() (an agent, HA: no component)
@@ -476,7 +479,9 @@ inline void check_action(ArduinoJson::JsonVariantConst a, const char *comp, cons
     if (!id_ok(a["param"] | "")) err(e, path + ".param", "bad_action", "param: the screen parameter to set (a-z, 0-9, _)");
     if (!a["from"].isNull() && !id_ok(a["from"] | "")) err(e, path + ".from", "bad_action", "from: the parameter holding the allowed values");
     if (!a["auto"].isNull() && !id_ok(a["auto"] | "")) err(e, path + ".auto", "bad_action", "auto: the parameter naming the entity Auto follows");
-  }
+    if (!a["to"].isNull() && !id_ok(a["to"] | "")) err(e, path + ".to", "bad_action", "to: the value to set (a word: a-z, 0-9, _), instead of the event's");
+    if (!a["back"].isNull() && !a["back"].is<bool>()) err(e, path + ".back", "bad_action", "back: true = Back returns to the value before");
+  } else if (!a["to"].isNull() || !a["back"].isNull()) err(e, path, "bad_action", "to / back go on screen.param");
   if (d == "nav.open") {
     const std::string s = a["screen"] | "";
     const bool from_event = !strcmp(event, "open") && a["screen"].isNull();  // the component's "open" names the screen
@@ -997,6 +1002,7 @@ struct Screen {
   // follow_from = the action's "from" list parameter: with no follow_src, Auto follows the first of it that plays
   std::string follow_param, follow_src, follow_from, follow_last, id;
   bool following = false;
+  std::vector<std::pair<std::string, std::string>> undo;  // screen.param "back": (param, value before), Back pops one
 };
 // the spec screens alive now (the editor's hit-test walks them)
 inline std::vector<Screen *> &live() { static std::vector<Screen *> v; return v; }
@@ -1447,7 +1453,14 @@ inline bool run_action(Screen *s, Node &n, ArduinoJson::JsonVariantConst a, cons
       deck_set(s->id, "params." + s->follow_param, kv.as<ArduinoJson::JsonVariantConst>());  // the pick sticks
       return true;
     }
-    if (set_param(s, a["param"] | "", a["from"] | "", detail)) emit(s->root, "param", (std::string(a["param"] | "") + "=" + detail).c_str());  // the host sees it (a view, a speaker)
+    const char *v = a["to"].is<const char *>() ? a["to"].as<const char *>() : detail;  // a fixed value (a view)
+    const std::string param = a["param"] | "";
+    auto cur = s->params.find(param);
+    const std::string before = cur != s->params.end() ? cur->second : "";
+    if (set_param(s, param, a["from"] | "", v)) {
+      if ((a["back"] | false) && before != v) s->undo.push_back({param, before});  // Back returns here first
+      emit(s->root, "param", (param + "=" + v).c_str());  // the host sees it (a view, a speaker)
+    }
     return true;
   }
   if (d == "light.toggle") {  // a light, or a switch (a Home light card takes both)
@@ -1785,6 +1798,14 @@ inline lv_obj_t *build(lv_obj_t *parent, const std::string &id, Props opened, st
   }, LV_EVENT_DELETE, s);
   listen(s->root, [](lv_obj_t *from, const char *name, const char *detail, void *user) {
     auto *s = (Screen *) user;
+    if (!strcmp(name, "back") && !s->undo.empty()) {  // a view opened with screen.param "back": Back closes it first
+      const auto u = s->undo.back();
+      s->undo.pop_back();
+      s->params[u.first] = u.second;
+      rebind_all(s);
+      emit(s->root, "param", (u.first + "=" + u.second).c_str());
+      return;
+    }
     Node *n = node_of(s, from);
     if (n && run(s, *n, name, detail)) return;
     if (lv_obj_t *up = lv_obj_get_parent(s->root)) notify(up, name, detail);  // the Header's back: the device

@@ -89,8 +89,8 @@
       "id": "energy",
       "label": "Energy",
       "docs": true, "status": "done", "firmware": true,
-      "screens": ["energy", "energy_week"],
-      "components": ["energy_view", "energy_week"]
+      "screens": ["energy"],
+      "components": ["energy_view"]
     },
     {
       "id": "wip_parts",

@@ -95,10 +95,6 @@
     "commit": "a91a83b",
     "at": "2026-10-23T19:23:03.000Z"
   },
-  "components/energy_week": {
-    "commit": "a91a83b",
-    "at": "2026-10-23T19:23:03.000Z"
-  },
   "components/f1_car_marker": {
     "commit": "a91a83b",
     "at": "2026-10-23T19:23:03.000Z"
@@ -428,10 +424,6 @@
     "at": "2026-10-23T19:23:03.000Z"
   },
   "screens/energy": {
-    "commit": "a91a83b",
-    "at": "2026-10-23T19:23:03.000Z"
-  },
-  "screens/energy_week": {
     "commit": "a91a83b",
     "at": "2026-10-23T19:23:03.000Z"
   },

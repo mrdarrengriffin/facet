@@ -82,7 +82,7 @@ the `spec` component). Shared helpers for family 1: `_controls.mjs` (pixel reads
 3. **Layout + chrome + device:** device (navigation, Settings, deck changes), header (timer slot collapses with no
    timer: facet-180), screen_chrome, section_header, grid, card_grid, column, split, group, label, icon, time,
    date_line, corner_ticks, tick_ring, arc, legend, card_previews, accent_swatches, mascot_mood.
-4. **Charts + weather + sky:** bar_chart, donut, sparkline, rate_strip, clock_face, energy_week, energy_view,
+4. **Charts + weather + sky:** bar_chart, donut, sparkline, rate_strip, clock_face, energy_view,
    weather_icon, weather_days, weather_view (next 5 days side padding: facet-185), moon_facts, moon_icon,
    moon_phases, moon_range, moon_view, lightning_radar, lightning_view.
 5. **Home domains (HA-driven views):** media_disc, media_view, media_visual (facet-183), cover_visual, covers_view,
