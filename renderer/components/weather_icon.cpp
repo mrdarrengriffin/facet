@@ -7,8 +7,8 @@
 // The words that go with it (the Weather screen, docs screens/weather.ts; layout picks how):
 //   icon     the icon alone, its own size (hug); on card: a Card-coloured surface (bg:surface, radius:card, pad:5)
 //   column   one of the next hours (docs .fs-hour): label over the icon (type:label, fg:text-dim; accent = fg:accent-text,
-//            the hour now), value under it (type:body, fg:text), gap:2, centred across the parent's width (a Grid cell)
-//   row      one of the next days (docs daysView), a List row's height (h:list-row-h, pad-x:4, gap:5; divider = the
+//            the hour now), value under it (type:body, fg:text), gap:2, centred in w:hour-col (a hug Grid centres the eight)
+//   row      one of the next days (docs daysView), a List row's height (tall:list-row-h, pad-x:4, gap:5; divider = the
 //            List row's hairline on top, line:line + rule-top): the day (type:title, fg:text, w:wx-day-name), the icon,
 //            line (type:body, fg:text-dim, the free width, "..."), low (type:body, fg:text-dim), value (type:title)
 //   hero     the weather now (docs .fs-w-now): value (type:display, fg:text) at the start of a row (hero-row-display:
@@ -44,12 +44,12 @@ void fill(lv_obj_t *root, fw::Props p) {
   fw::shape(root, sig(p));
   const char *L = layout_of(p);
   if (!strcmp(L, "column")) {
-    for (const char *t : {"box", "col-centre", "fill-w", "gap:2"}) fx::use(root, t);
+    for (const char *t : {"box", "col-centre", "w:hour-col", "gap:2"}) fx::use(root, t);
     if (*(p["label"] | "")) fx::text(root, p["label"] | "", "type:label", flag(p, "accent", false) ? "fg:accent-text" : "fg:text-dim");
     wx(root, p, p["size"] | "glyph");
     if (*(p["value"] | "")) fx::text(root, p["value"] | "", "type:body", "fg:text");
   } else if (!strcmp(L, "row")) {
-    for (const char *t : {"box", "row-mid", "fill-w", "h:list-row-h", "pad-x:4", "gap:5"}) fx::use(root, t);
+    for (const char *t : {"box", "row-mid", "fill-w", "tall:list-row-h", "pad-x:4", "gap:5"}) fx::use(root, t);
     if (flag(p, "divider", false)) { fx::use(root, "line:line"); fx::use(root, "rule-top"); }
     words(root, p["label"] | "", "type:title", "fg:text", "w:wx-day-name");
     wx(root, p, p["size"] | "feature");

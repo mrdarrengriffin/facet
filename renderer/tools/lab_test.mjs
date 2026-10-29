@@ -36,7 +36,7 @@ const EXTRA = { card: [{ opening: false }, CARD, PAGE],
   // chart:* token (chart.json geometry), so the lab has a slider for each
   bar_chart: [{ colour: 'series', opening: false }, ['stroke:hair', 'chart:bar-gap', 'chart:bar-radius', 'chart:plot-top', 'chart:plot-bottom', 'chart:grid'], PAGE],
   rate_strip: [{ ticks: 6 }, ['chart:strip-h', 'chart:bar-radius', 'stroke:edge', 'space:1'], PAGE],
-  status_line: [{}, ['space:2'], PAGE],
+  status_line: [{}, ['space:3'], PAGE],
   bins_art: [{ colours: 'black,green' }, ['layout:bin-hero', 'stroke:edge'], PAGE],
   bins_next: [{}, ['layout:bin-hero'], ['layout:inset', 'layout:top', 'layout:header-gap', 'squeeze']],
   // a day row (its height, the day column, the gaps) and the hour column / hero gaps; icon sizes are shipped bitmaps

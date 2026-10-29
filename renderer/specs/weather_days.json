@@ -2,7 +2,7 @@
  "v": 1,
  "id": "weather_days",
  "name": "Weather, 5 days",
- "rev": 2,
+ "rev": 3,
  "role": "detail",
  "params": {
   "source": {

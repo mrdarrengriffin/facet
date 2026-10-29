@@ -2,7 +2,7 @@
  "v": 1,
  "id": "weather",
  "name": "Weather",
- "rev": 3,
+ "rev": 4,
  "role": "page",
  "params": {
   "source": {
@@ -53,22 +53,8 @@
  "layout": "center",
  "nodes": [
   {
-   "c": "group",
-   "p": {
-    "flow": "stack",
-    "space": "block",
-    "align": "start"
-   }
-  },
-  {
-   "c": "group",
-   "p": {
-    "flow": "stack",
-    "space": "near",
-    "align": "start"
-   },
-   "in": 0,
-   "slot": 0
+   "c": "column",
+   "p": {}
   },
   {
    "c": "weather_icon",
@@ -92,8 +78,22 @@
      "a": "line"
     }
    },
-   "in": 1,
+   "in": 0,
    "slot": 0
+  },
+  {
+   "c": "group",
+   "p": {
+    "flow": "stack",
+    "space": "line",
+    "align": "start"
+   },
+   "in": 0,
+   "slot": 0,
+   "show": {
+    "e": "panel.weather",
+    "a": "rain"
+   }
   },
   {
    "c": "status_line",
@@ -107,11 +107,21 @@
      "a": "rain_tone"
     }
    },
-   "in": 1,
+   "in": 2,
+   "slot": 0
+  },
+  {
+   "c": "group",
+   "p": {
+    "flow": "stack",
+    "space": "strip",
+    "align": "start"
+   },
+   "in": 0,
    "slot": 0,
    "show": {
     "e": "panel.weather",
-    "a": "rain"
+    "a": "has_hours"
    }
   },
   {
@@ -119,19 +129,15 @@
    "p": {
     "cols": 8,
     "gap": "none",
-    "aspect": "row",
+    "aspect": "hug",
     "items": {
      "e": "panel.weather",
      "a": "hours"
     },
     "empty": ""
    },
-   "in": 0,
+   "in": 4,
    "slot": 0,
-   "show": {
-    "e": "panel.weather",
-    "a": "has_hours"
-   },
    "cell": {
     "c": "weather_icon",
     "p": {
@@ -151,7 +157,7 @@
     "text": "next 5 days"
    },
    "in": 0,
-   "slot": 0,
+   "slot": 1,
    "show": {
     "e": "panel.weather",
     "a": "has_hours"

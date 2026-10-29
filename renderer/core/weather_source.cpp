@@ -82,6 +82,12 @@ const char *keep(const char *c) {  // a condition text that outlives the reply's
   conds.push_back(c);
   return conds.back().c_str();
 }
+double num(const std::string *s) {  // a number attribute; missing, empty, "None" or "unknown" = NAN
+  if (!s || s->empty()) return NAN;
+  char *end = nullptr;
+  const double v = strtod(s->c_str(), &end);
+  return end == s->c_str() ? NAN : v;
+}
 std::string words(const char *c) { return *wx::text(c) ? wx::text(c) : c; }
 std::string lower(std::string s) {
   for (char &ch : s) ch = (char) tolower((unsigned char) ch);
@@ -168,8 +174,8 @@ void rebuild() {
   const double now = now_ms();
   wx::Data d;
   d.condition = keep(state->c_str());
-  d.temp = t && !t->empty() ? strtod(t->c_str(), nullptr) : NAN;
-  d.feels = f && !f->empty() ? strtod(f->c_str(), nullptr) : NAN;
+  d.temp = num(t);
+  d.feels = num(f);  // weather.forecast_home (Met.no) has no apparent_temperature: no "Feels" then
   for (const wx::Hour &h : hours_got) {  // from the hour holding now
     if (h.t + HOUR <= now) continue;
     if (d.n_hourly >= 12) break;

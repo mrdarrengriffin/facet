@@ -2,23 +2,24 @@
 // "contract": 2). The small way to say what is true now under a screen's hero: "Normal 26.2p until 16:00, then 39.4p"
 // (docs screens/energy.ts: the rate line, statusDot(tone) + body text-dim).
 //   dot    a real Status chip at size dot (fw::find("status_chip"), C8b), in the tone
-//   text   type:body, fg:text-dim, one line on the 4 px grid (fx::fit_grid), gap:2 after the dot
+//   text   type:body, fg:text, one line on the 4 px grid (fx::fit_grid), gap:3 after the dot (the WASM originals:
+//          energy_view rate line, weather_view rain line: sp::s3, t.text)
 //   box    a row, items centred on it, hugs its content
 // Steps: none (it hugs). Bleed: none. States: n/a (static: no events, no sound). Update path: the words in place; a new
 // tone updates the dot in place (its own update path: a fade, silent). Always a dot: a line without one would move its
 // words sideways in one frame when the dot came or went.
-// Contrast pairs: tokens/colour.json section "status_chip" (the dot) + text-dim on the canvas.
+// Contrast pairs: tokens/colour.json section "status_chip" (the dot) + text on the canvas.
 #include "fw.h"
 #include "fx.h"
 
 namespace {
 void dot_props(fw::Props p, ArduinoJson::JsonDocument &d) { d["tone"] = p["tone"] | "idle", d["size"] = "dot"; }
 void fill(lv_obj_t *root, fw::Props p) {
-  for (const char *t : {"box", "row-mid", "hug", "gap:2"}) fx::use(root, t);
+  for (const char *t : {"box", "row-mid", "hug", "gap:3"}) fx::use(root, t);
   ArduinoJson::JsonDocument d;
   dot_props(p, d);
   fw::find("status_chip")->build(root, d.as<fw::Props>());
-  fx::fit_grid(fx::text(root, p["text"] | "", "type:body", "fg:text-dim"));
+  fx::fit_grid(fx::text(root, p["text"] | "", "type:body", "fg:text"));
 }
 }  // namespace
 

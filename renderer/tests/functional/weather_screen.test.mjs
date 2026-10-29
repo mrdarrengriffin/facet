@@ -40,6 +40,23 @@ export default {
       t.ha.set(W, 'sunny', { temperature: '21.4' });
       t.has(t.texts(), /^21°$/, 'a new temperature in place'); t.has(t.texts(), /^sunny$/i, 'a new condition in place');
     } },
+    { name: 'ha: no apparent temperature (Met.no) = no Feels part, never Feels 0°', async run(t) {
+      t.ha.s[W] = { '': 'cloudy', temperature: '10.2' };
+      await open(t, { source: 'ha', weather: W });
+      t.has(t.texts(), /^10°$/, 'temperature'); t.hasNot(t.texts(), /feels/i, 'no Feels without the attribute');
+    } },
+    { name: 'layout: the hero starts at the top of the body; the rain line, the hours and next 5 days keep the original rhythm', async run(t) {
+      await open(t, { source: 'sample' });
+      const k = t.b.S > 600 ? { top: 112, line: 12, strip: 28, bottom: 688 } : { top: 72, line: 8, strip: 20, bottom: 460 };
+      const os = t.objs().filter((o) => t.visible(o));
+      const hero = os.find((o) => !o.text && o.w === o.h && o.w === (t.b.S > 600 ? 144 : 96));
+      t.eq(hero.y, k.top, 'the hero icon on the body top');
+      const feels = os.find((o) => /^feels/i.test(o.text || '')), rain = os.find((o) => /^(dry|rain from)/i.test(o.text || '')), now = os.find((o) => /^now$/i.test(o.text || ''));
+      t.eq(rain.y - (feels.y + feels.h), k.line, 'space:3 above the rain line');
+      const col = t.comps().filter((c) => c.ids.includes('weather_icon') && c.w < 100).sort((a, z) => a.y - z.y || a.x - z.x)[0];
+      t.eq(col.y - (rain.y + rain.h), k.strip, 'space:8 above the hours');
+      const more = t.part('more_row'); t.eq(more.y + more.h, k.bottom, 'next 5 days on the body foot');
+    } },
     { name: 'ha: unavailable shows Offline and --°, no hours or rain line', async run(t) {
       t.ha.s[W] = { '': 'unavailable' };
       await open(t, { source: 'ha', weather: W });
