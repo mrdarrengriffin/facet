@@ -43,7 +43,7 @@ struct Def { std::string name; Kind k; int i; };
 std::vector<Def> defs;  // sorted by name
 const char *const SHAPES[] = {"box", "col", "row", "stack", "centre", "cell", "grow", "free", "page", "page-head", "body",
                               "body:list", "body:cards", "body:center", "body:page", "bleed", "bg-none", "fit",
-                              "fill", "fill-w", "row-top", "fade-press", "fade-release", "gap:gutter", "pair", "wrap",
+                              "fill", "fill-w", "row-top", "row-top-rev", "fade-press", "fade-release", "gap:gutter", "pair", "wrap",
                               "header", "header-back", "header-title", "header-label", "header-end", "header-time",
                               "hug", "over", "over-cell", "transp", "opaque", "fade-press-ink", "fade-release-ink", "no-outline", "cells", "cell-text",
                               "rule-top", "row-mid", "row-end", "fade-press-fill", "fade-release-fill",
@@ -57,7 +57,7 @@ const char *const SHAPES[] = {"box", "col", "row", "stack", "centre", "cell", "g
                               // the Checkbox: its box, the in-progress dot, a done label, the Motion toggle fade
                               "checkbox", "checkbox-dot", "strike", "fade-switch",
                               // a Group of buttons that lines up from the end (right), centred across
-                              "wrap-end", "hero-stack", "wrap-centre", "col-centre",
+                              "wrap-end", "hero-stack", "hero-stack-start", "wrap-centre", "col-centre",
                               // the Radio: its ring and the chosen dot
                               "radio", "radio-dot"};
 // tint:<c> = the colour at chip.tint over what is behind (Status chip; colour.json mixes chip-<tone>); outline:<c> = the
@@ -131,10 +131,12 @@ bool stale = false;  // break-it (fx::break_stale): looks ignore the theme gener
 #define GEN_OLD(L) ((L)->gen != fx::theme_generation() || (L)->fgen != fx::fonts::generation())
 #endif
 
+constexpr int N_MIXES = (int) (sizeof(fw::tokens::MIXES) / sizeof(fw::tokens::MIXES[0]));
 void init_defs() {
   if (!defs.empty()) return;
-  for (int i = 0; i < fx::gen::N_COLOURS + fx::gen::N_ROLES; i++) {  // colours, then the state roles
-    const std::string c = i < fx::gen::N_COLOURS ? fx::gen::COLOURS[i].name : fx::gen::ROLES[i - fx::gen::N_COLOURS].name;
+  for (int i = 0; i < fx::gen::N_COLOURS + fx::gen::N_ROLES + N_MIXES; i++) {  // colours, the state roles, the mixes
+    const std::string c = i < fx::gen::N_COLOURS ? fx::gen::COLOURS[i].name : i < fx::gen::N_COLOURS + fx::gen::N_ROLES
+                          ? fx::gen::ROLES[i - fx::gen::N_COLOURS].name : fw::tokens::MIXES[i - fx::gen::N_COLOURS - fx::gen::N_ROLES].name;
     defs.push_back({"fg:" + c, FG, i}); defs.push_back({"bg:" + c, BG, i});
     defs.push_back({"border:" + c, BORDER, i}); defs.push_back({"line:" + c, LINE, i});
     defs.push_back({"ink:" + c, INK, i});  // an icon layer's recolour (fx::icon)
@@ -298,6 +300,7 @@ void shape(lv_style_t *s, const char *n) {  // the structure styles: density onl
   else if (k == "fill") { lv_style_set_width(s, lv_pct(100)); lv_style_set_height(s, lv_pct(100)); }  // a component that IS its parent's size (Card)
   else if (k == "fill-w") lv_style_set_width(s, lv_pct(100));
   else if (k == "row-top") flex(s, LV_FLEX_FLOW_ROW, S, S, S);  // a row, top-aligned, no gap
+  else if (k == "row-top-rev") flex(s, LV_FLEX_FLOW_ROW_REVERSE, S, S, S);  // the same, its first child at the end (Split art right)
   else if (k == "wrap") flex(s, LV_FLEX_FLOW_ROW_WRAP, S, S, S);
   else if (k == "wrap-end") flex(s, LV_FLEX_FLOW_ROW_WRAP, LV_FLEX_ALIGN_END, C, S);
   else if (k == "wrap-centre") flex(s, LV_FLEX_FLOW_ROW_WRAP, C, C, C);  // a Group aligned centre: its rows centred  // rows that wrap: a growing child counts its min-w
@@ -404,6 +407,9 @@ void shape(lv_style_t *s, const char *n) {  // the structure styles: density onl
   } else if (k == "hero-stack") {  // the Hero block stacked (layout stack): one centred column, space 2 between
     lv_style_set_width(s, lv_pct(100)); lv_style_set_height(s, LV_SIZE_CONTENT); lv_style_set_pad_row(s, S2());
     flex(s, LV_FLEX_FLOW_COLUMN, C, C, C);
+  } else if (k == "hero-stack-start") {  // the same column at the start (layout stack-start: the Lightning map's nearest)
+    lv_style_set_width(s, lv_pct(100)); lv_style_set_height(s, LV_SIZE_CONTENT); lv_style_set_pad_row(s, S2());
+    flex(s, LV_FLEX_FLOW_COLUMN, S, S, S);
   } else if (k == "timer-chip") {  // the Timer chip: hugs, at least touch:min tall, space 3 in from the outer edge (its hair
     // edge inside, so the contents land on the grid), space 3 between, a row centred across
     // exactly touch:min tall (a min height alone leaves LVGL's flex track at the content's height: the row sat at the top)
@@ -459,8 +465,12 @@ void shape(lv_style_t *s, const char *n) {  // the structure styles: density onl
     lv_style_set_align(s, LV_ALIGN_LEFT_MID); lv_style_set_translate_x(s, tok("layout:slider-knob", lay::slider_knob) / 2);
   }
 }
-lv_color_t colour(int i, const fw::Theme *t) {  // a colour token or a state role, resolved in theme t
-  return i < fx::gen::N_COLOURS ? t->*fx::gen::COLOURS[i].f : fx::gen::ROLES[i - fx::gen::N_COLOURS].f(*t);
+// a colour token, a state role or a mix (colour.json "derived": a tint at an opacity over a colour, such as lx-old =
+// steel at radar.old over bg), resolved in theme t: a theme's own colours give its own mixes
+lv_color_t colour(int i, const fw::Theme *t) {
+  if (i < fx::gen::N_COLOURS) return t->*fx::gen::COLOURS[i].f;
+  if (i < fx::gen::N_COLOURS + fx::gen::N_ROLES) return fx::gen::ROLES[i - fx::gen::N_COLOURS].f(*t);
+  return fw::tokens::mix(fw::tokens::MIXES[i - fx::gen::N_COLOURS - fx::gen::N_ROLES], *t);
 }
 int box_of(fw::ty::Id id) { return fw::ty::STYLES[id].box; }
 lv_color_t hex(uint32_t c) { return lv_color_hex(c); }

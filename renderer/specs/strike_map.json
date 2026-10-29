@@ -1,0 +1,162 @@
+{
+ "v": 1,
+ "id": "strike_map",
+ "name": "Lightning map",
+ "rev": 2,
+ "role": "page",
+ "header": {
+  "label": "Lightning",
+  "back": true
+ },
+ "layout": "center",
+ "nodes": [
+  {
+   "c": "split",
+   "p": {
+    "art": "right",
+    "art_w": "radar",
+    "art_mid": true
+   }
+  },
+  {
+   "c": "lightning_radar",
+   "p": {
+    "strikes": {
+     "e": "panel.lightning",
+     "a": "strikes"
+    },
+    "demo": false
+   },
+   "in": 0,
+   "slot": 0
+  },
+  {
+   "c": "hero_block",
+   "p": {
+    "n": {
+     "e": "panel.lightning",
+     "a": "n"
+    },
+    "label": "nearest",
+    "line": {
+     "e": "panel.lightning",
+     "a": "where"
+    },
+    "accent": {
+     "e": "panel.lightning",
+     "a": "accent"
+    },
+    "role": {
+     "e": "panel.lightning",
+     "a": "role"
+    },
+    "layout": "stack-start"
+   },
+   "in": 0,
+   "slot": 2
+  },
+  {
+   "c": "group",
+   "p": {
+    "flow": "stack",
+    "space": "block",
+    "align": "start"
+   },
+   "in": 0,
+   "slot": 2
+  },
+  {
+   "c": "stat",
+   "p": {
+    "label": "last 15 min",
+    "value": {
+     "e": "panel.lightning",
+     "a": "count"
+    },
+    "tone": {
+     "e": "panel.lightning",
+     "a": "count_tone"
+    }
+   },
+   "in": 3,
+   "slot": 0
+  },
+  {
+   "c": "group",
+   "p": {
+    "flow": "stack",
+    "space": "near",
+    "align": "start"
+   },
+   "in": 0,
+   "slot": 2
+  },
+  {
+   "c": "stat",
+   "p": {
+    "label": {
+     "e": "panel.lightning",
+     "a": "trend_label"
+    },
+    "value": {
+     "e": "panel.lightning",
+     "a": "trend"
+    },
+    "tone": {
+     "e": "panel.lightning",
+     "a": "trend_tone"
+    }
+   },
+   "in": 5,
+   "slot": 0
+  },
+  {
+   "c": "group",
+   "p": {
+    "flow": "stack",
+    "space": "near",
+    "align": "start"
+   },
+   "in": 0,
+   "slot": 2
+  },
+  {
+   "c": "stat",
+   "p": {
+    "label": "last strike",
+    "value": {
+     "e": "panel.lightning",
+     "a": "last"
+    },
+    "tone": "dim"
+   },
+   "in": 7,
+   "slot": 0
+  }
+ ],
+ "params": {
+  "source": {
+   "about": "Where the strikes come from: a lightning sensor in Home Assistant, or a made-up storm for previews.",
+   "type": "select",
+   "options": [
+    "ha",
+    "sample"
+   ],
+   "label": "Source",
+   "default": "ha"
+  },
+  "sensor": {
+   "about": "The lightning sensor to show, in the panel lightning shape (the strikes as distance, bearing and time).",
+   "type": "entity",
+   "domain": "sensor",
+   "label": "Lightning sensor",
+   "default": "sensor.panel_lightning"
+  }
+ },
+ "feeds": {
+  "panel.lightning": {
+   "source": "$source",
+   "sensor": "$sensor"
+  }
+ }
+}

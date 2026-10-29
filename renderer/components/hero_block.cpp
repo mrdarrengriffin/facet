@@ -65,8 +65,8 @@ void fill(lv_obj_t *h, fw::Props p, bool opening) {
   const bool display = !strcmp(p["role"] | "hero", "display");
   fx::use(h, "box");  // again after an update's refill (it takes every style off the root): the full width
   // layout stack (the Timer's ring, Darren 2026-10-28): label over the number over the line, centred, in one column
-  const bool stack = !strcmp(p["layout"] | "row", "stack");
-  fx::use(h, stack ? "hero-stack" : display ? "hero-row-display" : "hero-row");
+  const bool start = !strcmp(p["layout"] | "row", "stack-start"), stack = start || !strcmp(p["layout"] | "row", "stack");
+  fx::use(h, start ? "hero-stack-start" : stack ? "hero-stack" : display ? "hero-row-display" : "hero-row");
   const bool title0 = !strcmp(p["label_type"] | "label", "title");
   if (stack) fx::text(h, p["label"] | "", title0 ? "type:title" : "type:label", off ? "fg:unavailable-ink" : "fg:text-dim");
   const char *n = off ? fw::st::PLACEHOLDER : (p["n"] | "");
@@ -129,7 +129,7 @@ FW_COMPONENT(hero_block, "Hero block", "components", R"({
     {"name": "line", "about": "One quieter line with the detail, under the label.", "type": "text", "default": "2 reviews · 2 assigned"},
     {"name": "accent", "about": "Draws the number in the accent colour, for when it matters now.", "type": "bool", "default": true},
     {"name": "role", "about": "How big the number is: display is the largest, hero a step smaller for a screen's main figure, value smaller again for a hero inside a small space such as the compact Timer ring.", "type": "select", "options": ["hero", "display", "value"], "default": "hero"},
-    {"name": "layout", "about": "row puts the label and line beside the number; stack puts the label above it and the line under it, centred, such as inside a ring.", "type": "select", "options": ["row", "stack"], "default": "row"},
+    {"name": "layout", "about": "row puts the label and line beside the number; stack puts the label above it and the line under it, centred, such as inside a ring; stack-start is the same column at the start (left), such as beside a picture.", "type": "select", "options": ["row", "stack", "stack-start"], "default": "row"},
     {"name": "label_type", "about": "How the words next to the number are written: label in small capitals, or title in larger plain text.", "type": "select", "options": ["label", "title"], "default": "label"},
     {"name": "state", "about": "default shows the number; unavailable shows a dash when the value cannot be read.", "type": "select", "options": ["default", "unavailable"], "default": "default"}
   ],

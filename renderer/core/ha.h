@@ -296,8 +296,14 @@ inline void bind_raw(ArduinoJson::JsonVariantConst b, ArduinoJson::JsonObject ou
 inline void resolve(Props in, ArduinoJson::JsonDocument &out, std::vector<Pair> *pairs) {
   ArduinoJson::JsonObject o = out.to<ArduinoJson::JsonObject>();
   for (ArduinoJson::JsonPairConst kv : in) {
-    if (is_bind(kv.value())) bind_value(kv.value(), o, kv.key().c_str(), pairs);
-    else o[kv.key()] = kv.value();
+    if (is_bind(kv.value())) {
+      bind_value(kv.value(), o, kv.key().c_str(), pairs);
+      // a bool prop bound to a feed (Hero block accent): the feed's "true" / "false" become a real bool, so
+      // components read p["accent"] | false as they would a literal (2026-10-29)
+      const char *v = o[kv.key()] | "";
+      if (!strcmp(v, "true")) o[kv.key()] = true;
+      else if (!strcmp(v, "false")) o[kv.key()] = false;
+    } else o[kv.key()] = kv.value();
   }
 }
 

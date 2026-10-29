@@ -48,7 +48,7 @@ FW_COMPONENT(group, "Group", "components", R"({
   lv_obj_add_flag(g, fw::spec::SLOT);
   fx::slot(g, "group");
   const char *sp = p["space"] | "none";
-  if (!strcmp(sp, "group")) fx::use(g, "above:group");
+  if (!strcmp(sp, "group")) fx::use(g, "above:10");  // layout:group (48 / 32) is a structure size with no above: token (it aborted); space 10 = 40 / 28 until it gets one
   else if (!strcmp(sp, "block")) fx::use(g, "above:9");
   else if (!strcmp(sp, "near")) fx::use(g, "above:7");
   else if (!strcmp(sp, "line")) fx::use(g, "above:3");
