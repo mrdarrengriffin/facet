@@ -278,6 +278,88 @@
     "bytes_est": 960
    }
   },
+  "bins_art": {
+   "name": "Bins art",
+   "update": true,
+   "props": [
+    {
+     "name": "colours",
+     "type": "text",
+     "bindable": true,
+     "about": "The bins' colours, separated by commas, the first in front: black, green, brown, blue, grey, purple, red or yellow."
+    },
+    {
+     "name": "size",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "hero",
+      "card"
+     ],
+     "about": "hero is the Bins screen's size; card is the small picture at the top right of a Home card."
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 2,
+    "bytes_est": 320
+   }
+  },
+  "bins_next": {
+   "name": "Bins next",
+   "update": true,
+   "props": [
+    {
+     "name": "colours",
+     "type": "text",
+     "bindable": true,
+     "about": "The bins' colours, separated by commas, the first in front."
+    },
+    {
+     "name": "caption",
+     "type": "text",
+     "bindable": true,
+     "about": "The small caption over the day, such as put out tonight."
+    },
+    {
+     "name": "accent",
+     "type": "bool",
+     "bindable": true,
+     "about": "Draws the caption in the accent colour, for when the bins go out tonight or today."
+    },
+    {
+     "name": "when",
+     "type": "text",
+     "bindable": true,
+     "about": "The day of the collection, such as Tomorrow, Today or a weekday."
+    },
+    {
+     "name": "bins",
+     "type": "text",
+     "bindable": true,
+     "about": "Which bins go out, such as Green bin + Black bin."
+    },
+    {
+     "name": "line",
+     "type": "text",
+     "bindable": true,
+     "about": "The date and how often, such as Fri 24 Oct · every 2 weeks."
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 9,
+    "bytes_est": 1440
+   }
+  },
   "bins_view": {
    "name": "Bins view",
    "update": true,
@@ -464,7 +546,14 @@
      "nav.open",
      "nav.back",
      "light.toggle",
-     "vacuum.control"
+     "vacuum.control",
+     "timer.start",
+     "timer.extend",
+     "timer.cancel",
+     "timer.stop",
+     "timer.select",
+     "timer.new",
+     "timer.back"
     ],
     "open": [
      "nav.open"
@@ -502,8 +591,8 @@
     ]
    },
    "cost": {
-    "objects": 336,
-    "bytes_est": 53760
+    "objects": 335,
+    "bytes_est": 53600
    }
   },
   "camera_tile": {
@@ -607,7 +696,15 @@
       "covers",
       "calendar",
       "clock",
-      "switch"
+      "switch",
+      "agents",
+      "github",
+      "moon",
+      "lightning",
+      "overhead",
+      "bins",
+      "print",
+      "home"
      ],
      "about": "The small icon before the name, or none."
     },
@@ -628,9 +725,16 @@
       "timer",
       "github",
       "energy",
-      "lightning"
+      "lightning",
+      "bins"
      ],
      "about": "The small picture at the top right of the card, such as the weather now or the record that is playing, or none."
+    },
+    {
+     "name": "colours",
+     "type": "text",
+     "bindable": true,
+     "about": "With the bins preview: the bins' colours, separated by commas, the first in front."
     },
     {
      "name": "mode",
@@ -868,47 +972,6 @@
     "bytes_est": 6400
    }
   },
-  "check_row": {
-   "name": "Check row",
-   "update": true,
-   "props": [
-    {
-     "name": "name",
-     "type": "text",
-     "bindable": true,
-     "about": "The name of the check, such as test or build."
-    },
-    {
-     "name": "state",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "pass",
-      "fail",
-      "pending",
-      "skipped"
-     ],
-     "about": "How the check went: pass, fail, pending while it still runs, or skipped. The dot and the word change to match."
-    },
-    {
-     "name": "width",
-     "type": "range",
-     "bindable": true,
-     "min": 160,
-     "max": 440,
-     "about": "How wide the row is, in pixels."
-    }
-   ],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 4,
-    "bytes_est": 640
-   }
-  },
   "checkbox": {
    "name": "Checkbox",
    "update": true,
@@ -955,6 +1018,47 @@
    "cost": {
     "objects": 6,
     "bytes_est": 960
+   }
+  },
+  "check_row": {
+   "name": "Check row",
+   "update": true,
+   "props": [
+    {
+     "name": "name",
+     "type": "text",
+     "bindable": true,
+     "about": "The name of the check, such as test or build."
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "pass",
+      "fail",
+      "pending",
+      "skipped"
+     ],
+     "about": "How the check went: pass, fail, pending while it still runs, or skipped. The dot and the word change to match."
+    },
+    {
+     "name": "width",
+     "type": "range",
+     "bindable": true,
+     "min": 160,
+     "max": 440,
+     "about": "How wide the row is, in pixels."
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 4,
+    "bytes_est": 640
    }
   },
   "clock_face": {
@@ -1159,73 +1263,6 @@
     "bytes_est": 320
    }
   },
-  "cover_visual": {
-   "name": "Cover visual",
-   "update": true,
-   "props": [
-    {
-     "name": "kind",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "roller",
-      "venetian",
-      "curtain"
-     ],
-     "about": "What hangs in the window: a roller blind, a Venetian blind with slats, or a pair of curtains."
-    },
-    {
-     "name": "position",
-     "type": "range",
-     "bindable": true,
-     "min": 0,
-     "max": 100,
-     "about": "How open the cover is, from 0 (closed) to 100 (fully open)."
-    },
-    {
-     "name": "tilt",
-     "type": "range",
-     "bindable": true,
-     "min": 0,
-     "max": 100,
-     "about": "For Venetian blinds: how far the slats are turned, from 0 (shut) to 100 (fully open)."
-    },
-    {
-     "name": "heading",
-     "type": "range",
-     "bindable": true,
-     "min": -1,
-     "max": 100,
-     "about": "Where the cover is moving to while it moves, from 0 to 100, shown as a faint target. -1 means it is not moving."
-    },
-    {
-     "name": "draggable",
-     "type": "bool",
-     "bindable": true,
-     "about": "Lets you drag the blind's edge, or the curtains sideways, to move the cover."
-    },
-    {
-     "name": "state",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "default",
-      "disabled",
-      "unavailable"
-     ],
-     "about": "default can be dragged; disabled cannot be moved; unavailable shows the cover cannot be reached."
-    }
-   ],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 6,
-    "bytes_est": 960
-   }
-  },
   "covers_view": {
    "name": "Covers view",
    "update": true,
@@ -1303,6 +1340,73 @@
    "cost": {
     "objects": 37,
     "bytes_est": 5920
+   }
+  },
+  "cover_visual": {
+   "name": "Cover visual",
+   "update": true,
+   "props": [
+    {
+     "name": "kind",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "roller",
+      "venetian",
+      "curtain"
+     ],
+     "about": "What hangs in the window: a roller blind, a Venetian blind with slats, or a pair of curtains."
+    },
+    {
+     "name": "position",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 100,
+     "about": "How open the cover is, from 0 (closed) to 100 (fully open)."
+    },
+    {
+     "name": "tilt",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 100,
+     "about": "For Venetian blinds: how far the slats are turned, from 0 (shut) to 100 (fully open)."
+    },
+    {
+     "name": "heading",
+     "type": "range",
+     "bindable": true,
+     "min": -1,
+     "max": 100,
+     "about": "Where the cover is moving to while it moves, from 0 to 100, shown as a faint target. -1 means it is not moving."
+    },
+    {
+     "name": "draggable",
+     "type": "bool",
+     "bindable": true,
+     "about": "Lets you drag the blind's edge, or the curtains sideways, to move the cover."
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "default",
+      "disabled",
+      "unavailable"
+     ],
+     "about": "default can be dragged; disabled cannot be moved; unavailable shows the cover cannot be reached."
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 6,
+    "bytes_est": 960
    }
   },
   "date_line": {
@@ -1537,8 +1641,8 @@
     ]
    },
    "cost": {
-    "objects": 23,
-    "bytes_est": 3680
+    "objects": 24,
+    "bytes_est": 3840
    }
   },
   "energy_week": {
@@ -2510,9 +2614,10 @@
      "options": [
       "square",
       "wide",
-      "row"
+      "row",
+      "hug"
      ],
-     "about": "The cell shape: square, wide (16 by 9), or row (as tall as what is inside, for text like stats)."
+     "about": "The cell shape: square, wide (16 by 9), row (as tall as what is inside, for text like stats), or hug (each cell as wide as what is inside, the row centred, like a bar of chips)."
     },
     {
      "name": "rows",
@@ -2542,6 +2647,12 @@
     }
    ],
    "events": {
+    "select": [
+     "timer.select"
+    ],
+    "stop": [
+     "timer.stop"
+    ],
     "pick": [
      "screen.param",
      "nav.open"
@@ -2565,9 +2676,10 @@
      "bindable": true,
      "options": [
       "start",
+      "centre",
       "end"
      ],
-     "about": "Which side the parts line up from: start is the left, end is the right."
+     "about": "Where the parts line up: start is the left, centre is the middle (a stack centres each part), end is the right."
     },
     {
      "name": "flow",
@@ -2618,7 +2730,7 @@
      "name": "label",
      "type": "text",
      "bindable": true,
-     "about": "The screen's name, in the title slot; a long one ends in an ellipsis. A component a screen puts in the title replaces it."
+     "about": "The screen's name: the header puts a Title with these words in the title slot (empty = no title); a long one ends in an ellipsis. A component a screen puts in the title replaces it."
     },
     {
      "name": "back",
@@ -2664,8 +2776,8 @@
     ]
    },
    "cost": {
-    "objects": 11,
-    "bytes_est": 1760
+    "objects": 10,
+    "bytes_est": 1600
    }
   },
   "hero_block": {
@@ -2717,6 +2829,16 @@
       "display"
      ],
      "about": "hero is the largest number for a screen's main figure; display is a step smaller."
+    },
+    {
+     "name": "layout",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "row",
+      "stack"
+     ],
+     "about": "row puts the label and line beside the number; stack puts the label above it and the line under it, centred, such as inside a ring."
     },
     {
      "name": "label_type",
@@ -2810,6 +2932,62 @@
    "cost": {
     "objects": 7,
     "bytes_est": 1120
+   }
+  },
+  "icon_button": {
+   "name": "Icon button",
+   "update": true,
+   "props": [
+    {
+     "name": "style",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "play",
+      "round",
+      "square"
+     ],
+     "about": "The button's shape: play is the large round play and pause button, round is a smaller circle, square has rounded corners."
+    },
+    {
+     "name": "icon",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "next",
+      "prev",
+      "play",
+      "plus",
+      "close",
+      "check",
+      "back",
+      "settings"
+     ],
+     "about": "The icon on the button, such as next, previous, play or close."
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "default",
+      "pressed",
+      "active",
+      "active-pressed",
+      "disabled",
+      "unavailable"
+     ],
+     "about": "How the button looks: default ready to tap, pressed while held, active when it is switched on, active-pressed while the active one is held, disabled when it cannot be used, or unavailable when its device cannot be reached."
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 3,
+    "bytes_est": 480
    }
   },
   "icon": {
@@ -2944,62 +3122,6 @@
       "info"
      ],
      "about": "The icon's colour by what it means: ink for normal, dim for quiet, accent for the screen's colour, ok, warn, error or info for a status."
-    }
-   ],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 3,
-    "bytes_est": 480
-   }
-  },
-  "icon_button": {
-   "name": "Icon button",
-   "update": true,
-   "props": [
-    {
-     "name": "style",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "play",
-      "round",
-      "square"
-     ],
-     "about": "The button's shape: play is the large round play and pause button, round is a smaller circle, square has rounded corners."
-    },
-    {
-     "name": "icon",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "next",
-      "prev",
-      "play",
-      "plus",
-      "close",
-      "check",
-      "back",
-      "settings"
-     ],
-     "about": "The icon on the button, such as next, previous, play or close."
-    },
-    {
-     "name": "state",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "default",
-      "pressed",
-      "active",
-      "active-pressed",
-      "disabled",
-      "unavailable"
-     ],
-     "about": "How the button looks: default ready to tap, pressed while held, active when it is switched on, active-pressed while the active one is held, disabled when it cannot be used, or unavailable when its device cannot be reached."
     }
    ],
    "events": {
@@ -4426,75 +4548,6 @@
     "bytes_est": 1920
    }
   },
-  "pr_row": {
-   "name": "Pull request row",
-   "update": true,
-   "props": [
-    {
-     "name": "repo",
-     "type": "text",
-     "bindable": true,
-     "about": "The repository the pull request is in."
-    },
-    {
-     "name": "number",
-     "type": "range",
-     "bindable": true,
-     "min": 1,
-     "max": 9999,
-     "about": "The pull request's number."
-    },
-    {
-     "name": "title",
-     "type": "text",
-     "bindable": true,
-     "about": "The pull request's title, over up to two lines."
-    },
-    {
-     "name": "age",
-     "type": "text",
-     "bindable": true,
-     "about": "How long ago it was opened or last changed, such as 5h."
-    },
-    {
-     "name": "draft",
-     "type": "bool",
-     "bindable": true,
-     "about": "Marks it as a draft that is not ready for review yet."
-    },
-    {
-     "name": "ci",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "pass",
-      "fail",
-      "pending",
-      "none"
-     ],
-     "about": "How its automatic checks went: pass, fail, pending, or none when it has no checks."
-    },
-    {
-     "name": "state",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "default",
-      "pressed"
-     ],
-     "about": "default ready to tap; pressed while held."
-    }
-   ],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 13,
-    "bytes_est": 2080
-   }
-  },
   "print_model": {
    "name": "3D print model",
    "update": true,
@@ -4602,6 +4655,138 @@
     "bytes_est": 1440
    }
   },
+  "progress_ring": {
+   "name": "Progress ring",
+   "update": true,
+   "props": [
+    {
+     "name": "value",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 1000,
+     "about": "How much is left: out of 1000, or out of max when max is set (such as seconds left of the timer's length)."
+    },
+    {
+     "name": "max",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 3600,
+     "about": "What value counts up to, such as the timer's length in seconds. 0 means value is out of 1000."
+    },
+    {
+     "name": "size",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "normal",
+      "compact"
+     ],
+     "about": "normal is the full ring; compact is smaller, to leave room under it (the Timer with several timers)."
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "default",
+      "unavailable"
+     ],
+     "about": "default shows how much is left; unavailable shows the empty track when the value cannot be read."
+    },
+    {
+     "name": "sample",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "none",
+      "running",
+      "done",
+      "unavailable"
+     ],
+     "about": "For previews only: a made-up Hero block in the centre (running, done or unavailable), or none for the empty slot."
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 2,
+    "bytes_est": 320
+   }
+  },
+  "pr_row": {
+   "name": "Pull request row",
+   "update": true,
+   "props": [
+    {
+     "name": "repo",
+     "type": "text",
+     "bindable": true,
+     "about": "The repository the pull request is in."
+    },
+    {
+     "name": "number",
+     "type": "range",
+     "bindable": true,
+     "min": 1,
+     "max": 9999,
+     "about": "The pull request's number."
+    },
+    {
+     "name": "title",
+     "type": "text",
+     "bindable": true,
+     "about": "The pull request's title, over up to two lines."
+    },
+    {
+     "name": "age",
+     "type": "text",
+     "bindable": true,
+     "about": "How long ago it was opened or last changed, such as 5h."
+    },
+    {
+     "name": "draft",
+     "type": "bool",
+     "bindable": true,
+     "about": "Marks it as a draft that is not ready for review yet."
+    },
+    {
+     "name": "ci",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "pass",
+      "fail",
+      "pending",
+      "none"
+     ],
+     "about": "How its automatic checks went: pass, fail, pending, or none when it has no checks."
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "default",
+      "pressed"
+     ],
+     "about": "default ready to tap; pressed while held."
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 13,
+    "bytes_est": 2080
+   }
+  },
   "qr_block": {
    "name": "QR block",
    "update": true,
@@ -4668,23 +4853,31 @@
      "name": "bands",
      "type": "text",
      "bindable": true,
-     "about": "The price band of each hour from midnight, separated by commas: cheap, normal or peak."
+     "about": "The price band of each slot from midnight, separated by commas: cheap, normal or peak. Any number of slots shares the day equally (24 = hours, 48 = half-hours)."
     },
     {
      "name": "now",
      "type": "range",
      "bindable": true,
      "min": -1,
-     "max": 23,
-     "about": "Which hour is now, counting from 0; it gets the tick. -1 shows no tick."
+     "max": 47,
+     "about": "Which slot is now, counting from 0; it gets the notch. -1 shows no notch."
     },
     {
      "name": "width",
      "type": "range",
      "bindable": true,
-     "min": 160,
+     "min": 0,
      "max": 440,
-     "about": "How wide the strip is, in pixels."
+     "about": "How wide the strip is, in pixels; 0 fills the space it is in."
+    },
+    {
+     "name": "ticks",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 12,
+     "about": "Hour labels under the strip, every this many hours (6 = 00, 06, 12, 18, 24); 0 shows none."
     }
    ],
    "events": {
@@ -4693,8 +4886,8 @@
     ]
    },
    "cost": {
-    "objects": 1,
-    "bytes_est": 160
+    "objects": 2,
+    "bytes_est": 320
    }
   },
   "readout": {
@@ -5431,6 +5624,41 @@
     "bytes_est": 160
    }
   },
+  "status_line": {
+   "name": "Status line",
+   "update": true,
+   "props": [
+    {
+     "name": "text",
+     "type": "text",
+     "bindable": true,
+     "about": "The words of the line."
+    },
+    {
+     "name": "tone",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "ok",
+      "warn",
+      "error",
+      "working",
+      "info",
+      "idle"
+     ],
+     "about": "The dot's colour, by what the line reports: ok, warn, error, working, info or idle."
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 3,
+    "bytes_est": 480
+   }
+  },
   "tennis_court": {
    "name": "Tennis court",
    "update": true,
@@ -6029,6 +6257,78 @@
     "bytes_est": 1920
    }
   },
+  "timer_chip": {
+   "name": "Timer chip",
+   "update": true,
+   "props": [
+    {
+     "name": "name",
+     "type": "text",
+     "bindable": true,
+     "about": "The timer's name, such as Eggs. Empty leaves the name out and makes the countdown the main text (the Timer bar)."
+    },
+    {
+     "name": "key",
+     "type": "text",
+     "bindable": true,
+     "about": "What a tap sends to say which timer it is, such as its id. Empty sends the name."
+    },
+    {
+     "name": "left",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 3600,
+     "about": "Seconds left on the timer."
+    },
+    {
+     "name": "total",
+     "type": "range",
+     "bindable": true,
+     "min": 1,
+     "max": 3600,
+     "about": "The timer's whole length in seconds; the mini ring shows left out of it."
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "running",
+      "idle",
+      "done"
+     ],
+     "about": "running counts down; idle is set but not running; done has run out and shows DONE in the accent (a tap stops it)."
+    },
+    {
+     "name": "active",
+     "type": "bool",
+     "bindable": true,
+     "about": "Marks the chip whose timer is shown in the big ring."
+    },
+    {
+     "name": "unavailable",
+     "type": "bool",
+     "bindable": true,
+     "about": "Shows the chip greyed out when the timer cannot be read; a tap does nothing but say so."
+    }
+   ],
+   "events": {
+    "select": [
+     "timer.select"
+    ],
+    "stop": [
+     "timer.stop"
+    ],
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 3,
+    "bytes_est": 480
+   }
+  },
   "timer_view": {
    "name": "Timer view",
    "update": true,
@@ -6075,6 +6375,27 @@
    "cost": {
     "objects": 39,
     "bytes_est": 6240
+   }
+  },
+  "title": {
+   "name": "Title",
+   "update": true,
+   "props": [
+    {
+     "name": "text",
+     "type": "text",
+     "bindable": true,
+     "about": "The words to show, like Living room. It can follow an entity's name."
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 1,
+    "bytes_est": 160
    }
   },
   "toast": {
@@ -6498,7 +6819,457 @@
   "screen.toggle",
   "screen.param",
   "nav.open",
-  "nav.back"
+  "nav.back",
+  "timer.start",
+  "timer.extend",
+  "timer.cancel",
+  "timer.stop",
+  "timer.select",
+  "timer.new",
+  "timer.back"
+ ],
+ "act": [
+  {
+   "do": "light.switch",
+   "about": "Turn a light on or off.",
+   "fields": [
+    {
+     "name": "e",
+     "type": "entity",
+     "need": "required",
+     "limits": "light.x"
+    },
+    {
+     "name": "value",
+     "type": "text",
+     "need": "required",
+     "limits": "on|off"
+    }
+   ],
+   "example": {
+    "do": "light.switch",
+    "e": "light.office",
+    "value": "on"
+   }
+  },
+  {
+   "do": "light.toggle",
+   "about": "Toggle a light.",
+   "fields": [
+    {
+     "name": "e",
+     "type": "entity",
+     "need": "required",
+     "limits": "light.x"
+    }
+   ],
+   "example": {
+    "do": "light.toggle",
+    "e": "light.office"
+   }
+  },
+  {
+   "do": "light.brightness",
+   "about": "Set a light's brightness in percent (0 = off).",
+   "fields": [
+    {
+     "name": "e",
+     "type": "entity",
+     "need": "required",
+     "limits": "light.x"
+    },
+    {
+     "name": "value",
+     "type": "text",
+     "need": "required",
+     "limits": "#0..100"
+    }
+   ],
+   "example": {
+    "do": "light.brightness",
+    "e": "light.office",
+    "value": "40"
+   }
+  },
+  {
+   "do": "climate.set_temperature",
+   "about": "Set a thermostat's target (kept inside the entity's range and step).",
+   "fields": [
+    {
+     "name": "e",
+     "type": "entity",
+     "need": "required",
+     "limits": "climate.x"
+    },
+    {
+     "name": "value",
+     "type": "text",
+     "need": "required",
+     "limits": "#0..50"
+    }
+   ],
+   "example": {
+    "do": "climate.set_temperature",
+    "e": "climate.hall",
+    "value": "20.5"
+   }
+  },
+  {
+   "do": "climate.set_hvac_mode",
+   "about": "Set a thermostat's mode.",
+   "fields": [
+    {
+     "name": "e",
+     "type": "entity",
+     "need": "required",
+     "limits": "climate.x"
+    },
+    {
+     "name": "value",
+     "type": "text",
+     "need": "required",
+     "limits": "off|heat|cool|heat_cool|auto|dry|fan_only"
+    }
+   ],
+   "example": {
+    "do": "climate.set_hvac_mode",
+    "e": "climate.hall",
+    "value": "heat"
+   }
+  },
+  {
+   "do": "climate.set_preset_mode",
+   "about": "Set a thermostat's preset.",
+   "fields": [
+    {
+     "name": "e",
+     "type": "entity",
+     "need": "required",
+     "limits": "climate.x"
+    },
+    {
+     "name": "value",
+     "type": "text",
+     "need": "required",
+     "limits": "*32"
+    }
+   ],
+   "example": {
+    "do": "climate.set_preset_mode",
+    "e": "climate.hall",
+    "value": "eco"
+   }
+  },
+  {
+   "do": "media.control",
+   "about": "Control a media player (volume in percent).",
+   "fields": [
+    {
+     "name": "e",
+     "type": "entity",
+     "need": "required",
+     "limits": "media_player.x"
+    },
+    {
+     "name": "value",
+     "type": "text",
+     "need": "required",
+     "limits": "previous|play_pause|next|volume #0..100"
+    }
+   ],
+   "example": {
+    "do": "media.control",
+    "e": "media_player.kitchen",
+    "value": "volume 30"
+   }
+  },
+  {
+   "do": "cover.control",
+   "about": "Open, close or stop a cover, or set its position / tilt in percent.",
+   "fields": [
+    {
+     "name": "e",
+     "type": "entity",
+     "need": "required",
+     "limits": "cover.x"
+    },
+    {
+     "name": "value",
+     "type": "text",
+     "need": "required",
+     "limits": "open|close|stop|position #0..100|tilt #0..100"
+    }
+   ],
+   "example": {
+    "do": "cover.control",
+    "e": "cover.office_blind",
+    "value": "position 50"
+   }
+  },
+  {
+   "do": "lock.control",
+   "about": "Lock, unlock or open a lock.",
+   "fields": [
+    {
+     "name": "e",
+     "type": "entity",
+     "need": "required",
+     "limits": "lock.x"
+    },
+    {
+     "name": "value",
+     "type": "text",
+     "need": "required",
+     "limits": "lock|unlock|open"
+    }
+   ],
+   "example": {
+    "do": "lock.control",
+    "e": "lock.front_door",
+    "value": "lock"
+   }
+  },
+  {
+   "do": "vacuum.control",
+   "about": "Start (optionally some rooms), pause, resume or dock a vacuum.",
+   "fields": [
+    {
+     "name": "e",
+     "type": "entity",
+     "need": "required",
+     "limits": "vacuum.x"
+    },
+    {
+     "name": "rooms",
+     "type": "text",
+     "need": "optional",
+     "limits": "segment ids, a comma list (with clean)"
+    },
+    {
+     "name": "value",
+     "type": "text",
+     "need": "required",
+     "limits": "clean|start|resume|pause|dock"
+    }
+   ],
+   "example": {
+    "do": "vacuum.control",
+    "e": "vacuum.robot",
+    "value": "clean",
+    "rooms": "1,3"
+   }
+  },
+  {
+   "do": "screen.toggle",
+   "about": "A spec screen's tapped item in / out of a comma list parameter (spec nodes only).",
+   "fields": [
+    {
+     "name": "param",
+     "type": "id",
+     "need": "required",
+     "limits": "the screen parameter"
+    }
+   ],
+   "spec_only": true,
+   "example": {
+    "do": "screen.toggle",
+    "param": "rooms"
+   }
+  },
+  {
+   "do": "screen.param",
+   "about": "Set a spec screen's parameter to the picked value (spec nodes only).",
+   "fields": [
+    {
+     "name": "param",
+     "type": "id",
+     "need": "required",
+     "limits": "the screen parameter"
+    },
+    {
+     "name": "from",
+     "type": "id",
+     "need": "optional",
+     "limits": "the parameter holding the allowed values"
+    },
+    {
+     "name": "auto",
+     "type": "id",
+     "need": "optional",
+     "limits": "the parameter Auto follows"
+    }
+   ],
+   "spec_only": true,
+   "example": {
+    "do": "screen.param",
+    "param": "speaker",
+    "from": "speakers"
+   }
+  },
+  {
+   "do": "nav.open",
+   "about": "Open a screen.",
+   "fields": [
+    {
+     "name": "screen",
+     "type": "id",
+     "need": "required",
+     "limits": "a screen id (a-z, 0-9, _, at most 12)"
+    },
+    {
+     "name": "params",
+     "type": "object",
+     "need": "optional",
+     "limits": "the screen's parameters"
+    }
+   ],
+   "example": {
+    "do": "nav.open",
+    "screen": "timer"
+   }
+  },
+  {
+   "do": "nav.back",
+   "about": "Go back one screen.",
+   "fields": [],
+   "example": {
+    "do": "nav.back"
+   }
+  },
+  {
+   "do": "timer.start",
+   "about": "Start a timer (at most 4 at once).",
+   "fields": [
+    {
+     "name": "seconds",
+     "type": "int",
+     "need": "required",
+     "limits": "1..86400"
+    },
+    {
+     "name": "name",
+     "type": "text",
+     "need": "optional",
+     "limits": "at most 24"
+    }
+   ],
+   "example": {
+    "do": "timer.start",
+    "seconds": 300,
+    "name": "Pasta"
+   }
+  },
+  {
+   "do": "timer.extend",
+   "about": "Add time to a timer (none named = the one shown).",
+   "fields": [
+    {
+     "name": "s",
+     "type": "int",
+     "need": "required",
+     "limits": "1..86400"
+    },
+    {
+     "name": "id",
+     "type": "text",
+     "need": "optional",
+     "limits": "a timer id"
+    },
+    {
+     "name": "name",
+     "type": "text",
+     "need": "optional",
+     "limits": "a timer name, at most 24"
+    }
+   ],
+   "example": {
+    "do": "timer.extend",
+    "name": "Pasta",
+    "s": 60
+   }
+  },
+  {
+   "do": "timer.cancel",
+   "about": "Cancel a timer, running or done (none named = the one shown).",
+   "fields": [
+    {
+     "name": "id",
+     "type": "text",
+     "need": "optional",
+     "limits": "a timer id"
+    },
+    {
+     "name": "name",
+     "type": "text",
+     "need": "optional",
+     "limits": "a timer name, at most 24"
+    }
+   ],
+   "example": {
+    "do": "timer.cancel",
+    "name": "Pasta"
+   }
+  },
+  {
+   "do": "timer.stop",
+   "about": "Clear a timer that is done (none named = the one shown).",
+   "fields": [
+    {
+     "name": "id",
+     "type": "text",
+     "need": "optional",
+     "limits": "a timer id"
+    },
+    {
+     "name": "name",
+     "type": "text",
+     "need": "optional",
+     "limits": "a timer name, at most 24"
+    }
+   ],
+   "example": {
+    "do": "timer.stop",
+    "name": "Pasta"
+   }
+  },
+  {
+   "do": "timer.select",
+   "about": "Show that timer on the Timer screen.",
+   "fields": [
+    {
+     "name": "id",
+     "type": "text",
+     "need": "optional",
+     "limits": "a timer id"
+    },
+    {
+     "name": "name",
+     "type": "text",
+     "need": "optional",
+     "limits": "a timer name, at most 24"
+    }
+   ],
+   "example": {
+    "do": "timer.select",
+    "name": "Pasta"
+   }
+  },
+  {
+   "do": "timer.new",
+   "about": "Show the Timer screen's length picker.",
+   "fields": [],
+   "example": {
+    "do": "timer.new"
+   }
+  },
+  {
+   "do": "timer.back",
+   "about": "Leave the length picker.",
+   "fields": [],
+   "example": {
+    "do": "timer.back"
+   }
+  }
  ],
  "fmt": [
   "on",
@@ -6598,5 +7369,5 @@
    }
   }
  },
- "hash": "0ae6be0b"
+ "hash": "e8d0a633"
 }
