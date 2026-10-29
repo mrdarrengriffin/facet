@@ -136,7 +136,7 @@ for f in "$HERE"/core/*.cpp "$HERE"/foundations/*.cpp "$HERE"/components/*.cpp "
   case "$SKIP" in *" ${f#$HERE/} "*) continue ;; esac  # a hidden feature's source (FW_FEATURES)
   o="$O/$(basename "$(dirname "$f")")_$(basename "$f" .cpp).o"
   OBJS="$OBJS $o"
-  dep="$f $HERE/core/*.h $GEN/colour_gen.h $GEN/type_gen.h $GEN/space_gen.h $GEN/layout_gen.h $GEN/icons_gen.h $GEN/motion_gen.h $GEN/states_gen.h $GEN/mascot_gen.h $GEN/settings_gen.h $GEN/chart_gen.h $GEN/surfaces_gen.h $GEN/floorplan_gen.h $GEN/specs_gen.h"; [ "$(basename "$f")" = fonts.cpp ] && dep="$dep $FONTS_H"; [ "$(basename "$f")" = icons.cpp ] && dep="$dep $ICONS_H"; [ "$(basename "$f")" = floorplans.cpp ] && dep="$dep $GEN/fp_fixture_gen.h"; case "$(basename "$f")" in theme_file.cpp|theme_lab.cpp) dep="$dep $GEN/theme_gen.h" ;; esac
+  dep="$f $HERE/core/*.h $GEN/colour_gen.h $GEN/type_gen.h $GEN/space_gen.h $GEN/layout_gen.h $GEN/icons_gen.h $GEN/motion_gen.h $GEN/states_gen.h $GEN/mascot_gen.h $GEN/settings_gen.h $GEN/chart_gen.h $GEN/surfaces_gen.h $GEN/floorplan_gen.h $GEN/specs_gen.h"; [ "$(basename "$f")" = fonts.cpp ] && dep="$dep $FONTS_H"; [ "$(basename "$f")" = icons.cpp ] && dep="$dep $ICONS_H"; [ "$(basename "$f")" = floorplans.cpp ] && dep="$dep $GEN/fp_fixture_gen.h"; [ "$(basename "$f")" = specs_data.cpp ] && dep="$dep $GEN/specs_gen_data.h"; case "$(basename "$f")" in theme_file.cpp|theme_lab.cpp) dep="$dep $GEN/theme_gen.h" ;; esac
   stale=0; [ -f "$o" ] || stale=1
   [ $stale = 0 ] && for d in $dep; do [ "$d" -nt "$o" ] && stale=1; done
   if [ $stale = 1 ]; then

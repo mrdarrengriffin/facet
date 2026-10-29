@@ -118,6 +118,7 @@ execFileSync('node', [join(HERE, 'tools/gen_settings.mjs'), join(C, 'settings_ge
 wrote.add('settings_gen.h');
 execFileSync('node', [join(HERE, 'tools/gen_specs.mjs'), join(C, 'specs_gen.h')]);  // factory screen specs (core/spec.h)
 wrote.add('specs_gen.h');
+wrote.add('specs_gen_data.h');  // the data: core/specs_data.cpp defines it (FW_SPECS_DATA)
 execFileSync('node', [join(HERE, 'tools/gen_icons.mjs'), '--meta', join(C, 'icons_gen.h')]);
 wrote.add('icons_gen.h');
 // this density's fonts (cached next to the WASM build's; the generator skips work when type.json is unchanged)
