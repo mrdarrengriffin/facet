@@ -2,7 +2,7 @@
  "v": 1,
  "id": "energy",
  "name": "Energy",
- "rev": 1,
+ "rev": 2,
  "role": "page",
  "header": {
   "label": "Energy",
@@ -11,11 +11,121 @@
  "layout": "center",
  "nodes": [
   {
-   "c": "energy_view",
-   "p": {},
+   "c": "status_chip",
+   "p": {
+    "tone": "idle",
+    "text": {
+     "e": "panel.energy",
+     "a": "watts"
+    }
+   },
+   "in": "header",
+   "slot": "end"
+  },
+  {
+   "c": "group",
+   "p": {
+    "flow": "stack",
+    "space": "block",
+    "align": "start"
+   }
+  },
+  {
+   "c": "hero_block",
+   "p": {
+    "n": {
+     "e": "panel.energy",
+     "a": "cost"
+    },
+    "label": "today so far",
+    "line": {
+     "e": "panel.energy",
+     "a": "line"
+    },
+    "accent": false,
+    "role": "hero",
+    "layout": "stack"
+   },
+   "in": 1,
+   "slot": 0
+  },
+  {
+   "c": "status_line",
+   "p": {
+    "text": {
+     "e": "panel.energy",
+     "a": "rate"
+    },
+    "tone": {
+     "e": "panel.energy",
+     "a": "tone"
+    }
+   },
+   "in": 1,
+   "slot": 0
+  },
+  {
+   "c": "group",
+   "p": {
+    "flow": "stack",
+    "space": "near",
+    "align": "start"
+   },
+   "in": 1,
+   "slot": 0
+  },
+  {
+   "c": "bar_chart",
+   "p": {
+    "values": {
+     "e": "panel.energy",
+     "a": "values"
+    },
+    "bands": {
+     "e": "panel.energy",
+     "a": "bands"
+    },
+    "colour": "bands",
+    "now": {
+     "e": "panel.energy",
+     "a": "now"
+    },
+    "width": 0,
+    "height": 132,
+    "scrub": true,
+    "ticks": 0
+   },
+   "in": 4,
+   "slot": 0
+  },
+  {
+   "c": "rate_strip",
+   "p": {
+    "bands": {
+     "e": "panel.energy",
+     "a": "bands"
+    },
+    "now": {
+     "e": "panel.energy",
+     "a": "now"
+    },
+    "width": 0,
+    "ticks": 6
+   },
+   "in": 4,
+   "slot": 0
+  },
+  {
+   "c": "more_row",
+   "p": {
+    "text": "last 7 days"
+   },
+   "in": 1,
+   "slot": 0,
    "on": {
-    "open": {
-     "do": "nav.open"
+    "tap": {
+     "do": "nav.open",
+     "screen": "energy_week"
     }
    }
   }

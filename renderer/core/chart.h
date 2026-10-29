@@ -101,6 +101,10 @@ struct TokenBars {
 };
 lv_obj_t *token_bars(lv_obj_t *parent, const TokenBars &o, bool opening);
 bool token_bars_move(lv_obj_t *strip, const std::vector<float> &nv);  // same count: the heights move (false = rebuild)
+// token strip (the Rate strip on the contract): bands ("cheap" / "normal" / "peak") as runs, a notch at now (-1 = none),
+// an hour axis under it every `ticks` hours (0 = none); w_dp 0 = the parent's content width. Returns the strip.
+lv_obj_t *token_strip(lv_obj_t *parent, const std::vector<std::string> &bands, int now, int w_dp, int ticks);
+bool token_strip_set(lv_obj_t *strip, const std::vector<std::string> &bands, int now, int w_dp, int ticks);  // false = not one
 
 // ---- gauge
 struct Gauge { lv_obj_t *root = nullptr, *arc = nullptr, *num = nullptr; float lo = 0, hi = 100, v = 0, shown = 0, start = 0; };

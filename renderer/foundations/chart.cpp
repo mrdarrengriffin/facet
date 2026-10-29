@@ -1028,6 +1028,89 @@ bool token_bars_move(lv_obj_t *s, const std::vector<float> &nv) {
   return true;
 }
 
+
+// ---- token strip (the Rate strip on the contract): price bands as runs (equal slots, one rounded run per stretch of
+// the same band, stroke:edge between runs), a stroke:edge notch in the canvas colour at the middle of the now slot,
+// and optionally an hour axis under it ("00" ... "24" every `ticks` hours, the first left-, the last right-aligned).
+// All Pen-drawn in one strip, inks by token name: a theme switch repaints it, a tuned token re-sizes it.
+namespace {
+struct TS {
+  lv_obj_t *s = nullptr, *parent = nullptr;
+  std::vector<std::string> bands;
+  int now = -1, ticks = 0, w_dp = 0;
+  bool busy = false;
+};
+void ts_free(lv_event_t *e) { delete (TS *) lv_event_get_user_data(e); }
+TS *ts_of(lv_obj_t *s) {
+  if (!s) return nullptr;
+  for (uint32_t i = 0, n = lv_obj_get_event_count(s); i < n; i++) {
+    lv_event_dsc_t *d = lv_obj_get_event_dsc(s, i);
+    if (lv_event_dsc_get_cb(d) == ts_free) return (TS *) lv_event_dsc_get_user_data(d);
+  }
+  return nullptr;
+}
+const char *ts_ink(const std::string &b) { return b == "peak" ? "fg:accent" : b == "cheap" ? "fg:blue" : "fg:band-normal"; }
+void ts_draw(const fx::Pen &p) {
+  const TS *S = ts_of(p.obj);
+  if (!S) return;
+  const int L = -(p.w / 2), T = -(p.h / 2), W = p.w, H = fx::size("chart:strip-h"), g = fx::size("stroke:edge");
+  const int n = std::max<int>(1, S->bands.size());
+  const float slot = W / (float) n;
+  for (int i = 0; i < (int) S->bands.size();) {
+    int j = i;
+    while (j + 1 < (int) S->bands.size() && S->bands[j + 1] == S->bands[i]) j++;
+    const int x0 = (int) std::lround(i * slot) + (i ? g / 2 : 0);
+    const int x1 = (int) std::lround((j + 1) * slot) - (j < (int) S->bands.size() - 1 ? g - g / 2 : 0);
+    p.rect(L + x0, T, x1 - x0, H, ts_ink(S->bands[i]), fx::size("chart:bar-radius"));
+    i = j + 1;
+  }
+  if (S->now >= 0 && S->now < n) p.rect(L + (int) std::lround((S->now + 0.5f) * slot) - g / 2, T, g, H, "fg:bg");
+  if (S->ticks <= 0) return;
+  const int y = T + H + fx::size("space:1") + fx::type_box("type:c-meta-sm") / 2;
+  for (int h = 0; h <= 24; h += S->ticks) {
+    char hh[4];
+    snprintf(hh, sizeof hh, "%02d", h);
+    const int tw = p.text_w(hh, "type:c-meta-sm");
+    const int x = std::clamp((int) std::lround(W * h / 24.0f), tw / 2, W - (tw + 1) / 2);
+    p.text(L + x, y, hh, "type:c-meta-sm", "fg:text-dim");
+  }
+}
+void ts_size(TS *S) {
+  int w;
+  if (S->w_dp > 0) w = fw::px((float) S->w_dp);
+  else { if (!S->busy) lv_obj_update_layout(S->parent); w = lv_obj_get_content_width(S->parent); }
+  const int h = fx::size("chart:strip-h") + (S->ticks > 0 ? fx::size("space:1") + fx::type_box("type:c-meta-sm") : 0);
+  lv_obj_set_size(S->s, w, h);
+}
+void ts_retune(lv_event_t *e) {
+  TS *S = (TS *) lv_event_get_user_data(e);
+  if (S->busy || lv_event_get_target(e) != S->s) return;
+  S->busy = true;
+  ts_size(S);
+  lv_obj_invalidate(S->s);
+  S->busy = false;
+}
+}  // namespace
+
+lv_obj_t *token_strip(lv_obj_t *parent, const std::vector<std::string> &bands, int now, int w_dp, int ticks) {
+  auto *S = new TS();
+  S->parent = parent, S->bands = bands, S->now = now, S->w_dp = w_dp, S->ticks = ticks;
+  S->s = fx::strip(parent, ts_draw, "free");
+  lv_obj_add_event_cb(S->s, ts_free, LV_EVENT_DELETE, S);
+  ts_size(S);
+  lv_obj_add_event_cb(S->s, ts_retune, LV_EVENT_STYLE_CHANGED, S);
+  return S->s;
+}
+bool token_strip_set(lv_obj_t *s, const std::vector<std::string> &bands, int now, int w_dp, int ticks) {
+  TS *S = ts_of(s);
+  if (!S) return false;
+  const bool resize = w_dp != S->w_dp || ticks != S->ticks;
+  S->bands = bands, S->now = now, S->w_dp = w_dp, S->ticks = ticks;
+  if (resize) ts_size(S);
+  lv_obj_invalidate(s);
+  return true;
+}
+
 }  // namespace fw::chart
 
 namespace {

@@ -35,6 +35,8 @@ const EXTRA = { card: [{ opening: false }, CARD, PAGE],
   // later bars are outlines (stroke:hair); still (opening false: no growth while it is probed); every drawn size is a
   // chart:* token (chart.json geometry), so the lab has a slider for each
   bar_chart: [{ colour: 'series', opening: false }, ['stroke:hair', 'chart:bar-gap', 'chart:bar-radius', 'chart:plot-top', 'chart:plot-bottom', 'chart:grid'], PAGE],
+  rate_strip: [{ ticks: 6 }, ['chart:strip-h', 'chart:bar-radius', 'stroke:edge', 'space:1'], PAGE],
+  status_line: [{}, ['space:2'], PAGE],
   sparkline: [{ opening: false }, ['stroke:hair', 'chart:spark-h', 'chart:line-thin', 'chart:dot'], PAGE],  // stroke:hair = the dotted baseline
   // a layout whose parts sit a gutter apart (the gutter is its own, not the page's)
   group: [{ sample: 4 }, ['layout:gutter'], PAGE.filter((n) => n !== 'layout:gutter')],
