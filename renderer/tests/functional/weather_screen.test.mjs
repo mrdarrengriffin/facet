@@ -70,6 +70,12 @@ export default {
       t.eq(t.where(), 'weather_days', 'the days screen');
       t.has(t.texts(), /^today$/i, 'Today'); t.eq(wxComps(t).length, 5, 'five rows');
     } },
+    { name: '5 days: a condition too long for its room ends in a real ellipsis on one line (never wrapped into a hidden line)', async run(t) {
+      await t.mount('spec', { screen: 'weather_days', source: 'sample' });
+      const o = t.objs().find((x) => /^thunderstorms/i.test(x.text || '')), one = t.b.S > 600 ? 32 : 20;
+      t.ok(o, 'the long condition'); t.eq(o.h, one, 'one body line tall');
+      t.ok(/\.\.\.$|…$/.test(o.text) || /mm$/.test(o.text), 'ends in an ellipsis (or fits whole)');
+    } },
     { name: 'Home card (C52): the weather now on the same feed, the real Weather icon as its preview', async run(t) {
       await t.device(deck({ source: 'sample' }));
       const c = t.part('card');

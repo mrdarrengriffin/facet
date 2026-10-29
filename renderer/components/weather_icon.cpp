@@ -37,8 +37,10 @@ lv_obj_t *wx(lv_obj_t *parent, fw::Props p, const char *size) {
   lv_obj_t *w = fx::weather(parent, p["icon"] | "partly-day", size, p["animated"] | true);
   return w ? w : fx::weather(parent, "cloudy", size, false);  // an unknown name: the cloud (the docs' fallback)
 }
-void words(lv_obj_t *parent, const char *s, const char *type, const char *fg, const char *width) {
-  fx::use(fx::text(parent, s, type, fg), width);
+void words(lv_obj_t *parent, const char *s, const char *type, const char *fg, const char *width) {  // a sized text: one
+  lv_obj_t *t = fx::text(parent, s, type, fg);                                                       // line, "..." when
+  fx::use(t, width);                                                                                  // it doesn't fit
+  lv_label_set_long_mode(t, LV_LABEL_LONG_MODE_DOTS);  // never wrapped into a hidden second line (a hard cut)
 }
 void fill(lv_obj_t *root, fw::Props p) {
   fw::shape(root, sig(p));
