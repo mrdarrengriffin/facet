@@ -2,7 +2,7 @@
  "v": 1,
  "id": "timer",
  "name": "Timer",
- "rev": 3,
+ "rev": 4,
  "role": "page",
  "header": {
   "label": "Timer",
@@ -44,10 +44,7 @@
      "e": "panel.timer",
      "a": "left"
     },
-    "label": {
-     "e": "panel.timer",
-     "a": "name"
-    },
+    "label": "",
     "line": {
      "e": "panel.timer",
      "a": "line"

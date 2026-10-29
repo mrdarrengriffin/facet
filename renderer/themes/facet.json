@@ -116,6 +116,7 @@
   "radius:square": [12,8],
   "radius:tile": [0,0],
   "stroke:arc": [4,2],
+  "stroke:chip-arc": [4,4],
   "stroke:corner-tick": [2,2],
   "stroke:edge": [2,2],
   "stroke:focus": [1,1],

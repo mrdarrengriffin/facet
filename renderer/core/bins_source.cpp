@@ -11,6 +11,8 @@
 //   line     "Fri 24 Oct · every 2 weeks" (the date, and how often its first bin comes when the calendar shows it)
 //   coming   the collections after it, a JSON list of List rows: [{"title": "Black bin", "sub": "Fri 31 Oct",
 //            "trailing": "value", "value": "in 8 days"}]
+//   more     "1" when the weeks after the next collection are known (sample, or a get_events reply), else "": the
+//            screen shows "coming up" only then
 //   yours    every bin seen, a JSON list of List rows: [{"title": "Green bin", "sub": "every 2 weeks", "value":
 //            "next Fri 24 Oct", "trailing": "value"}]
 // Adapters (the feed's settings, the spec's "feeds"; core/ha.h feed_config): source
@@ -37,7 +39,7 @@ namespace {
 constexpr const char *E = "panel.bins";
 struct Bin { std::string name, colour; };
 struct Coll { long day; std::vector<int> bins; };  // day = days since 1970-01-01 (civil)
-struct Model { std::vector<Bin> bins; std::vector<Coll> colls; long today = 0; int hour = 12; };
+struct Model { std::vector<Bin> bins; std::vector<Coll> colls; long today = 0; int hour = 12; bool more = true; };
 const char *const WD[] = {"Thursday", "Friday", "Saturday", "Sunday", "Monday", "Tuesday", "Wednesday"};  // day 0 = Thu 1 Jan 1970
 const char *const WD3[] = {"Thu", "Fri", "Sat", "Sun", "Mon", "Tue", "Wed"};
 const char *const MON[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
@@ -139,6 +141,7 @@ void put_model(Model M) {
   std::sort(M.colls.begin(), M.colls.end(), [](const Coll &a, const Coll &b) { return a.day < b.day; });
   M.colls.erase(std::remove_if(M.colls.begin(), M.colls.end(), [&](const Coll &c) { return c.day < M.today || c.bins.empty(); }), M.colls.end());
   if (M.colls.size() > 8) M.colls.resize(8);
+  put("more", M.more && !M.colls.empty() ? "1" : "");
   if (M.colls.empty()) {
     for (const char *a : {"caption", "when", "bins", "colours", "line"}) put(a, "");
     put("accent", "off");
@@ -228,16 +231,18 @@ void events_into(Model &M, ArduinoJson::JsonVariantConst v, int depth = 0) {  //
 }
 std::string cal_now;    // the calendar the adapter reads ("" = not the calendar source)
 Model asked;            // the last get_events reply's collections (empty until one lands)
+bool asked_ok = false;  // a get_events reply has landed for this calendar
 // the feed from what is known: the entity's next event (attributes) + the asked weeks; loading until the entity's
 // state arrives (an empty calendar: a state, no start_time = none)
 void rebuild() {
   if (cal_now.empty()) return;
   Model M = asked;
+  M.more = asked_ok;
   M.today = today_local(&M.hour);
   const std::string *state = ha::get(cal_now), *st = ha::get(cal_now, "start_time"), *msg = ha::get(cal_now, "message");
   int y, m, d;
   if (st && msg && st->size() >= 10 && sscanf(st->c_str(), "%d-%d-%d", &y, &m, &d) == 3) add(M, days_from_civil(y, m, d), *msg);
-  if (!state && M.colls.empty()) { ha::put(E, "", "loading"); return; }
+  if (!state && M.colls.empty()) { ha::put(E, "more", ""); ha::put(E, "", "loading"); return; }
   put_model(M);
 }
 void answered(void *, bool ok, const std::string &json) {
@@ -246,7 +251,7 @@ void answered(void *, bool ok, const std::string &json) {
   if (ok && !deserializeJson(d, json)) {
     Model M;
     events_into(M, d.as<ArduinoJson::JsonVariantConst>());
-    asked = M;
+    asked = M, asked_ok = true;
   }
   rebuild();  // a failed ask keeps what the entity says
 }
@@ -285,7 +290,7 @@ void fresh() {
   (void) hooked;
   if (src == "calendar" && cal.rfind("calendar.", 0) == 0) {
     if (changed || cal != cal_now) {
-      fetched_day = -1, asked = Model{}, cal_now = cal;
+      fetched_day = -1, asked = Model{}, asked_ok = false, cal_now = cal;
       for (const char *a : {"", "start_time", "message"}) ha::want(cal, a);  // the next event, live
     }
     rebuild();

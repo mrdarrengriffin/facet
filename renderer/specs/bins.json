@@ -2,7 +2,7 @@
  "v": 1,
  "id": "bins",
  "name": "Bins",
- "rev": 4,
+ "rev": 5,
  "role": "page",
  "params": {
   "source": {
@@ -118,12 +118,7 @@
    },
    "show": {
     "e": "panel.bins",
-    "map": {
-     "none": "",
-     "loading": "",
-     "error": ""
-    },
-    "else": "1"
+    "a": "more"
    }
   },
   {
@@ -139,12 +134,7 @@
    },
    "show": {
     "e": "panel.bins",
-    "map": {
-     "none": "",
-     "loading": "",
-     "error": ""
-    },
-    "else": "1"
+    "a": "more"
    }
   },
   {

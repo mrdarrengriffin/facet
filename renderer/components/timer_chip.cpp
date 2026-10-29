@@ -6,7 +6,7 @@
 //            the hit area is >= touch:min both ways: C32), the timer-chip style: space 3 in from the outer edge (inside the hair edge), space 3 apart; radius:chip; face surface, hair edge line
 //            (border:line); the theme's control part (C46 part:control, last), so a theme gives it its control look
 //   ring     a mini progress ring (the Pen, w/h:timer-chip-ring 24 / 16): track stroke:edge in line-hi, the share left
-//            stroke:arc in accent-text (3:1 on the pressed surface too) from 12 o'clock clockwise, round caps (parts "arc" / "arc-fill")
+//            stroke:chip-arc in accent-text (3:1 on the pressed surface too) from 12 o'clock clockwise, round caps (parts "arc" / "arc-fill")
 //   done     instead of the ring a filled accent disc (timer-chip-ring, radius round, bg:accent-text: 3:1 on accent-dim) with the
 //            icons foundation check (icon size, surface); the face accent-dim and the edge accent
 //   name     type c-body, text (the T1 chip: the timer's name as written)
@@ -74,10 +74,10 @@ void draw(const fx::Pen &p) {
   lv_obj_t *root = lv_obj_get_parent(p.obj);
   const Chip *c = root ? of(root) : nullptr;
   if (!c) return;
-  const int te = fx::size("stroke:edge"), ta = fx::size("stroke:arc");
+  const int te = fx::size("stroke:edge"), ta = fx::size("stroke:chip-arc");
   p.arc(p.half - te / 2, 0.0f, 360.0f, "stroke:edge", c->off ? "fg:disabled-ink" : "fg:line-hi", false, "arc");
   if (c->shown <= 0) return;
-  p.arc(p.half - ta / 2, START, angle(c->shown), "stroke:arc", c->off ? "fg:disabled-ink" : "fg:accent-text", true, "arc-fill");
+  p.arc(p.half - ta / 2, START, angle(c->shown), "stroke:chip-arc", c->off ? "fg:disabled-ink" : "fg:accent-text", true, "arc-fill");
 }
 void disc(const fx::Pen &p) {
   lv_obj_t *root = lv_obj_get_parent(p.obj);
@@ -88,7 +88,7 @@ void show(lv_obj_t *root, int32_t v) {
   Chip *c = of(root);
   if (!c || v == c->shown) return;
   if (c->ring) {
-    const int ta = fx::size("stroke:arc");
+    const int ta = fx::size("stroke:chip-arc");
     fx::redraw_arc(c->ring, fx::half(c->ring) - ta / 2, angle(c->shown), angle(v), ta);  // the span + the cap's reach
   }
   c->shown = v;

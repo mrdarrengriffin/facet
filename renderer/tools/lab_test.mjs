@@ -46,7 +46,7 @@ const EXTRA = { card: [{ opening: false }, CARD, PAGE],
   hero_block: [{ n: '3', label: 'need you', line: '2 reviews' }, ['layout:gutter', 'space:2'], PAGE.filter((n) => n !== 'layout:gutter')],
   // the ring + its centre slot (a sample Hero block in it shows the hole's width); the chip: its ring, pad, gap, edge
   progress_ring: [{ value: 272, max: 600, sample: 'running' }, ['layout:timer-ring', 'layout:timer-ring-hole', 'stroke:arc', 'stroke:indicator'], PAGE],
-  timer_chip: [{}, ['layout:timer-chip-ring', 'touch:min', 'space:3', 'radius:chip', 'stroke:hair', 'stroke:edge', 'stroke:arc'], PAGE] };
+  timer_chip: [{}, ['layout:timer-chip-ring', 'touch:min', 'space:3', 'radius:chip', 'stroke:hair', 'stroke:edge', 'stroke:chip-arc'], PAGE] };
 // the wall clock pinned (a screen's Header shows the live time: a minute ticking over between a tune and its "and back"
 // changed the pixels, a flaky fail, 2026-10-28); the module reads it through Date.now (emscripten_date_now)
 const PINNED = Date.UTC(2026, 9, 28, 9, 41, 0);
