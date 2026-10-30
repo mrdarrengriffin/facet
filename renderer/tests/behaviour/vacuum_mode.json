@@ -64,40 +64,6 @@
       }
     },
     {
-      "name": "the map button opens the sheet",
-      "kind": "interaction",
-      "props": {
-        "style": "button"
-      },
-      "steps": [
-        {
-          "tap": {
-            "text": "/TURBO/"
-          }
-        },
-        {
-          "wait": 400
-        },
-        {
-          "tap": {
-            "text": "/^(LOW|Low)$/"
-          }
-        }
-      ],
-      "expect": {
-        "events": [
-          [
-            "change",
-            "mop low"
-          ]
-        ],
-        "sounds": [
-          "open",
-          "tap"
-        ]
-      }
-    },
-    {
       "name": "update is silent",
       "kind": "sound",
       "steps": [

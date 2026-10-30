@@ -174,6 +174,7 @@
       "camera-h": { "v": 180, "1x": 120, "use": "Camera tile: the snapshot's height, card-w wide (16:9 on the grid)" },
       "camera-full-h": { "v": 368, "1x": 248, "use": "Camera tile, full size (the camera's own screen): the still's height, the content width wide (16:9 on the grid)" },
       "level-bar-w": { "v": 96, "1x": 64, "use": "Plant row: the small moisture level bar before the value" },
+      "level-bar-h": { "v": 24, "1x": 12, "use": "Level bar: its box, three space-2 tracks tall (the track in the middle third, the mark the full height)" },
       "sky-radar": { "v": 208, "1x": 136, "use": "Overhead: the sky radar beside the hero aircraft (panel lab 208); rings 5 / 15 / 30 / 50 km on a square-root scale" },
       "sky-plane": { "v": 24, "1x": 16, "use": "Overhead: an aircraft on the sky radar beside the hero, a plane seen from above turned to its track (panel lab 24 grid glyph)" },
       "sky-plane-lg": { "v": 32, "1x": 24, "use": "Overhead: an aircraft on the Radar view's big sky radar (panel lab 32)" },

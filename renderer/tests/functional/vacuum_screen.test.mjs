@@ -1,6 +1,6 @@
-// Robot vacuum screen (specs/vacuum.json: Page > Header (Rooms | Map Segmented) > Body: Column: the Rooms view (the
-// state Status block, the run's Level bar, Room tiles, the Vacuum mode row) or the Map view (a title Status block, the
-// Iso floor plan), the bar at the foot (Vacuum mode button, Dock / Pause / Resume / Clean Buttons)), on the vacuum
+// Robot vacuum screen (specs/vacuum.json: Page > Header > Body: Column: the Rooms view (the state Status block, the
+// run's Level bar, Room tiles, the Vacuum mode row), the bar at the foot (Dock / Pause / Resume / Clean Buttons); the
+// Map view waits for the Iso floor plan on the contract, 2026-10-30), on the vacuum
 // feed panel.vacuum (core/vacuum_source.cpp, CONTRACT.md C51) and its Home card (C52). Home Assistant is faked
 // (tools/functional.mjs FakeHA); V is NOT Darren's entity. Approved original: the panel lab's Vacuum
 // (apps/hub panel/vacuum/screen.ts).

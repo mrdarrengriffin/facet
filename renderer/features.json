@@ -97,8 +97,8 @@
       "id": "wip_parts",
       "label": "Status parts (in progress)",
       "docs": false, "status": "wip", "firmware": false,
-      "components": ["status_block", "level_bar", "placeholder"],
-      "roadmap": ["Status block", "Placeholder", "Level bar"]
+      "components": ["placeholder"],
+      "roadmap": ["Placeholder"]
     },
     {
       "id": "retired",
@@ -129,8 +129,8 @@
       "label": "Robot vacuum",
       "docs": false, "status": "wip", "firmware": false,
       "screens": ["vacuum"],
-      "components": ["room_tile", "vacuum_mode"],
-      "roadmap": ["Robot vacuum", "Room tile"]
+      "components": ["room_tile", "vacuum_mode", "status_block", "level_bar"],
+      "roadmap": ["Robot vacuum", "Room tile", "Status block", "Level bar"]
     },
     {
       "id": "floorplans",

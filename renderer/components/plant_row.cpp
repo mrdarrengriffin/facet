@@ -27,7 +27,7 @@ void row_props(fw::Props p, const Read &r, ArduinoJson::JsonDocument &d) {
   d["value"] = r.m < 0 ? "" : std::to_string(r.m) + "%";
 }
 void bar_props(fw::Props p, const Read &r, ArduinoJson::JsonDocument &d) {
-  d["value"] = r.m, d["mark"] = p["dry"] | 30, d["tone"] = r.tone, d["width"] = (int) std::lround(fw::lay::level_bar_w / fw::D);
+  d["value"] = r.m, d["mark"] = p["dry"] | 30, d["tone"] = r.tone;
 }
 lv_obj_t *build(const char *id, lv_obj_t *parent, ArduinoJson::JsonDocument &d) {
   const uint32_t n = lv_obj_get_child_count(parent);
@@ -75,6 +75,7 @@ FW_COMPONENT(plant_row, "Plant row", "components", R"({
   bar_props(p, r, bp);
   c->bar = build("level_bar", c->row, bp);
   if (c->bar) {
+    lv_obj_set_width(c->bar, fw::lay::level_bar_w);  // the Level bar fills its box (contract): this one is short
     lv_obj_move_to_index(c->bar, (int32_t) lv_obj_get_child_count(c->row) - 2);  // before the value
   }
   clickable(c);

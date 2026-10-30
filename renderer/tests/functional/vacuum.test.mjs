@@ -1,13 +1,13 @@
-// Robot vacuum screen (specs/vacuum.json: segmented Rooms | Map, status_block, room_tile per area, vacuum_mode,
-// iso_floorplan, buttons) on the spec builder, bound to a Roborock-style vacuum in the fake Home Assistant: pick rooms
-// -> a segment clean, Clean all, Pause / Resume / Dock, the mode sheet -> select options. Feature "vacuum" = WIP, not in
-// the firmware (features.json).
+// Robot vacuum screen (specs/vacuum.json: status_block, level_bar, room_tile per area, vacuum_mode, buttons; the Map
+// view waits for the Iso floor plan on the contract) on the spec builder, bound to a Roborock-style vacuum in the fake Home Assistant: pick rooms
+// -> a segment clean, Clean all, Pause / Resume / Dock, the mode sheet -> select options. Feature "vacuum" = WIP, on the contract
+// firmware (features.json: every part "contract": 2).
 const E = 'vacuum.robot', MODE = 'select.robot_mop_mode', MOP = 'select.robot_mop_intensity';
 const screen = (extra = {}) => ['spec', { screen: 'vacuum', source: 'ha', entity: E, live: true, areas: 'Corridor:1,Living room:2,Kitchen:3', modesel: MODE, mopsel: MOP, ...extra }];
 const last = (t, service) => t.ha.calls.filter((c) => c.service === service).at(-1);
 const docked = (t) => { t.ha.set(E, 'docked', { fan_speed: 'balanced' }); t.ha.set(MODE, 'vacuum'); t.ha.set(MOP, 'moderate'); t.wait(600); };
 export default {
-  id: 'vacuum', family: 'home', about: 'Robot vacuum screen: Rooms | Map, pick rooms and clean, Pause / Resume / Dock, mode sheet.',
+  id: 'vacuum', family: 'home', about: 'Robot vacuum screen: pick rooms and clean, Pause / Resume / Dock, mode sheet.',
   tests: [
     { name: 'docked: state, a tile per room', mount: screen(), run(t) {
       docked(t);
@@ -50,10 +50,11 @@ export default {
       t.tap(opt); t.wait(600);
       t.call({ service: 'select.select_option', entity: MODE }, 'mode select');
     } },
-    { name: 'Map view: the floor plan shows', mount: screen(), run(t) {
+    { name: 'contract: no Map view, every part on the contract (no iso_floorplan, no old Vacuum mode button)', mount: screen(), run(t) {
       docked(t);
-      t.tap('MAP'); t.wait(600);
-      t.ok(JSON.stringify(t.comps()).includes('"iso_floorplan"'), 'iso_floorplan on Map');
+      const c = JSON.stringify(t.comps());
+      t.ok(!c.includes('"iso_floorplan"'), 'no floor plan'); t.ok(c.includes('"vacuum_mode"'), 'the mode row');
+      t.ok(!t.texts().some((x) => /^map$/i.test(x)), 'no Map tab');
     } },
   ],
 };
