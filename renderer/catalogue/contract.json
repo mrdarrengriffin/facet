@@ -214,5 +214,17 @@
   "screens/moon": {
     "commit": "34db6fa",
     "at": "2026-10-30T03:51:07.000Z"
+  },
+  "components/github_pr": {
+    "commit": "371f103",
+    "at": "2026-10-30T04:00:35.000Z"
+  },
+  "components/status_row": {
+    "commit": "371f103",
+    "at": "2026-10-30T04:00:35.000Z"
+  },
+  "screens/github": {
+    "commit": "371f103",
+    "at": "2026-10-30T04:00:35.000Z"
   }
 }
