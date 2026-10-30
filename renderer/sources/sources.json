@@ -1,15 +1,15 @@
 {
- "$comment": "Where each screen's data can come from (Settings > Screens; ported from the panel lab's screen catalogue). Per screen: needs (the equipment in words, null = every home), sources in order of preference. A source: id, kind (builtin = worked out on the panel, ha = a Home Assistant integration or entity domain, direct = the panel calls a service itself), name, detect (how a host's discovery finds it: integration and / or domain), setup (what a direct source needs first), fills (which screen parameters it fills: domain [+ integration] -> every matching entity (list: true, a comma list) or one). The host (the hub, later a Home Assistant integration) runs discovery and writes the values into the panel's deck. Feeds (CONTRACT.md C51, 2026-10-29): feed = the panel.<feed> entity the screen binds; each source names the adapter that fills it (core/<feed>_source.cpp), set through the feeds settings of the spec.",
+ "$comment": "Where each screen's data can come from (Settings > Screens; ported from the panel lab's screen catalogue). Per screen: shows (what the screen shows, in words: its settings page opens with it), needs (the equipment in words, null = every home), sources in order of preference. A source: id, kind (builtin = worked out on the panel, ha = a Home Assistant integration or entity domain, direct = the panel calls a service itself), name, detect (how a host's discovery finds it: integration and / or domain), setup (what a direct source needs first), fills (which screen parameters it fills: domain [+ integration] -> every matching entity (list: true, a comma list) or one). The host (the hub, later a Home Assistant integration) runs discovery and writes the values into the panel's deck. Feeds (CONTRACT.md C51, 2026-10-29): feed = the panel.<feed> entity the screen binds; each source names the adapter that fills it (core/<feed>_source.cpp), set through the feeds settings of the spec.",
  "v": 1,
  "kinds": {"builtin": "Built in", "ha": "Home Assistant", "direct": "Direct"},
  "screens": {
-  "media": {"needs": "a speaker or music service", "sources": [
+  "media": {"shows": "What is playing on a speaker: the track, artist and progress, with play, pause, skip and volume.", "needs": "a speaker or music service", "sources": [
    {"id": "music_assistant", "kind": "ha", "name": "Music Assistant", "detect": {"integration": "music_assistant", "domain": "media_player"},
     "fills": {"speakers": {"domain": "media_player", "integration": "music_assistant", "list": true}, "entity": {"domain": "media_player", "integration": "music_assistant"}}},
    {"id": "media_players", "kind": "ha", "name": "HA media players", "detect": {"domain": "media_player"},
     "fills": {"speakers": {"domain": "media_player", "list": true}, "entity": {"domain": "media_player"}}},
    {"id": "spotify", "kind": "direct", "name": "Spotify", "setup": ["Spotify sign-in"]}]},
-  "bins": {"needs": "a bin collection schedule", "feed": "panel.bins", "sources": [
+  "bins": {"shows": "Which bins go out next and when, with the collections after it.", "needs": "a bin collection schedule", "feed": "panel.bins", "sources": [
    {"id": "waste_collection", "kind": "ha", "name": "Waste Collection Schedule (HACS)", "adapter": "calendar", "detect": {"integration": "waste_collection_schedule", "domain": "calendar"},
     "fills": {"calendar": {"domain": "calendar", "integration": "waste_collection_schedule"}}},
    {"id": "uk_bin_collection", "kind": "ha", "name": "UK Bin Collection Data (HACS)", "adapter": "calendar", "detect": {"integration": "uk_bin_collection", "domain": "calendar"},
@@ -18,68 +18,70 @@
     "fills": {"calendar": {"domain": "calendar"}}},
    {"id": "ical", "kind": "direct", "name": "Council calendar link (iCal), read by the panel itself (planned)", "adapter": "ical", "setup": ["calendar URL"]},
    {"id": "sample", "kind": "builtin", "name": "Sample weeks (previews)", "adapter": "sample"}]},
-  "calendar": {"needs": "a calendar", "feed": "panel.calendar", "sources": [
+  "calendar": {"shows": "The events coming up from your calendars, as an agenda or a month.", "needs": "a calendar", "feed": "panel.calendar", "sources": [
    {"id": "ha_calendars", "kind": "ha", "name": "HA calendars (their events through calendar.get_events)", "adapter": "ha", "detect": {"domain": "calendar"}, "fills": {"calendars": {"domain": "calendar", "list": true}}},
    {"id": "ical", "kind": "direct", "name": "Calendar link (iCal), read by the panel itself (planned)", "adapter": "ical", "setup": ["calendar URL"]},
    {"id": "sample", "kind": "builtin", "name": "Sample fortnight (previews)", "adapter": "sample"}]},
-  "weather": {"needs": null, "feed": "panel.weather", "sources": [
+  "weather": {"shows": "The weather now and the forecast for the hours and days ahead.", "needs": null, "feed": "panel.weather", "sources": [
    {"id": "ha_weather", "kind": "ha", "name": "HA weather (its forecast through weather.get_forecasts)", "adapter": "ha", "detect": {"domain": "weather"}, "fills": {"weather": {"domain": "weather"}}},
    {"id": "open_meteo", "kind": "direct", "name": "Open-Meteo, called by the panel itself (planned)", "adapter": "open_meteo"},
    {"id": "sample", "kind": "builtin", "name": "Sample forecast (previews)", "adapter": "sample"}]},
-  "energy": {"needs": "a smart meter or tariff", "feed": "panel.energy", "sources": [
+  "energy": {"shows": "Today's energy use by the half hour with its rates, and the last two weeks.", "needs": "a smart meter or tariff", "feed": "panel.energy", "sources": [
    {"id": "ha_panel_energy", "kind": "ha", "name": "Energy sensors in the panel energy shape (sensor.panel_energy + sensor.panel_energy_days, filled by Home Assistant from a tariff integration such as Octopus Energy)", "adapter": "ha", "detect": {"domain": "sensor"}, "fills": {"sensor": {"domain": "sensor"}, "days": {"domain": "sensor"}}},
    {"id": "octopus", "kind": "ha", "name": "Octopus Energy (read directly, planned)", "detect": {"integration": "octopus_energy"}},
    {"id": "ha_energy", "kind": "ha", "name": "HA Energy dashboard (planned)", "detect": {"energy": true}},
    {"id": "octopus_api", "kind": "direct", "name": "Octopus API (planned)", "setup": ["API key", "account number"]},
    {"id": "sample", "kind": "builtin", "name": "Sample time-of-use day (previews)", "adapter": "sample"}]},
-  "thermostat": {"needs": "a smart thermostat", "sources": [
+  "thermostat": {"shows": "The heating: the room temperature, the target to set, the mode and preset.", "needs": "a smart thermostat", "sources": [
    {"id": "ha_climate", "kind": "ha", "name": "HA climate", "detect": {"domain": "climate"}, "fills": {"entity": {"domain": "climate"}}}]},
-  "covers": {"needs": "a motorised blind or curtain", "sources": [
+  "covers": {"shows": "Your blinds and curtains: how open each one is, to open, close or set.", "needs": "a motorised blind or curtain", "sources": [
    {"id": "ha_covers", "kind": "ha", "name": "HA covers", "detect": {"domain": "cover"},
     "fills": {"covers": {"domain": "cover", "list": true}, "entity": {"domain": "cover"}}}]},
-  "lock": {"needs": "a smart door lock", "sources": [
+  "lock": {"shows": "A door lock: locked or not, to lock and unlock it.", "needs": "a smart door lock", "sources": [
    {"id": "ha_locks", "kind": "ha", "name": "HA locks", "detect": {"domain": "lock"},
     "fills": {"entity": {"domain": "lock"}}}]},
-  "vacuum": {"needs": "a robot vacuum", "feed": "panel.vacuum", "sources": [
+  "vacuum": {"shows": "The robot vacuum: what it is doing, its battery, the room and progress, to start, pause or dock it.", "needs": "a robot vacuum", "feed": "panel.vacuum", "sources": [
    {"id": "roborock", "kind": "ha", "name": "Roborock (its status, error, room, progress, time and area sensors)", "adapter": "ha", "detect": {"integration": "roborock", "domain": "vacuum"}, "fills": {"entity": {"domain": "vacuum", "integration": "roborock"}}},
    {"id": "ha_vacuum", "kind": "ha", "name": "HA vacuums", "adapter": "ha", "detect": {"domain": "vacuum"}, "fills": {"entity": {"domain": "vacuum"}}},
    {"id": "sample", "kind": "builtin", "name": "Sample robot (previews)", "adapter": "sample"}]},
-  "plants": {"needs": "soil moisture sensors", "sources": [
+  "plants": {"shows": "How moist each plant's soil is, and which ones need water.", "needs": "soil moisture sensors", "sources": [
    {"id": "ha_moisture", "kind": "ha", "name": "HA moisture sensors", "detect": {"domain": "sensor"},
     "fills": {"plants": {"domain": "sensor", "list": true}, "entity": {"domain": "sensor"}}}]},
-  "cameras": {"needs": "cameras", "sources": [
+  "cameras": {"shows": "Your cameras' latest pictures and what they detected.", "needs": "cameras", "sources": [
    {"id": "frigate", "kind": "ha", "name": "Frigate", "detect": {"integration": "frigate", "domain": "camera"}, "fills": {"cameras": {"domain": "camera", "integration": "frigate", "list": true}}},
    {"id": "ha_cameras", "kind": "ha", "name": "HA cameras", "detect": {"domain": "camera"}, "fills": {"cameras": {"domain": "camera", "list": true}}}]},
-  "light": {"needs": "a dimmable light", "sources": [
+  "light": {"shows": "One light: on or off and its brightness.", "needs": "a dimmable light", "sources": [
    {"id": "ha_lights", "kind": "ha", "name": "HA lights", "detect": {"domain": "light"}, "fills": {"entity": {"domain": "light"}}}]},
-  "print": {"needs": "a 3D printer", "sources": [
+  "print": {"shows": "The 3D printer: the print, its progress and time left.", "needs": "a 3D printer", "sources": [
    {"id": "bambu_lab", "kind": "ha", "name": "Bambu Lab", "detect": {"integration": "bambu_lab"}},
    {"id": "octoprint", "kind": "ha", "name": "OctoPrint", "detect": {"integration": "octoprint"}},
    {"id": "prusalink", "kind": "ha", "name": "PrusaLink", "detect": {"integration": "prusalink"}},
    {"id": "moonraker", "kind": "ha", "name": "Moonraker (Klipper)", "detect": {"integration": "moonraker"}},
    {"id": "bambu_lan", "kind": "direct", "name": "Bambu printer on the LAN", "setup": ["printer address", "access code"]}]},
-  "lightning": {"needs": null, "sources": [
+  "lightning": {"shows": "A lightning strike: how far away it was and when.", "needs": null, "sources": [
    {"id": "blitzortung", "kind": "ha", "name": "Blitzortung (HA)", "detect": {"integration": "blitzortung"}},
    {"id": "blitzortung_org", "kind": "direct", "name": "Blitzortung.org"}]},
-  "github": {"needs": "a GitHub account", "feed": "panel.github", "sources": [
+  "github": {"shows": "Your pull requests: open, waiting for review and their checks.", "needs": "a GitHub account", "feed": "panel.github", "sources": [
    {"id": "ha_panel_github", "kind": "ha", "name": "A pull request sensor in the panel github shape (filled by Home Assistant from the GitHub API)", "adapter": "ha", "detect": {"domain": "sensor"}, "fills": {"sensor": {"domain": "sensor"}}},
    {"id": "github_api", "kind": "direct", "name": "GitHub API, read by the panel itself (planned: needs the panel's HTTPS client)", "setup": ["GitHub token"]},
    {"id": "ha_github", "kind": "ha", "name": "HA GitHub (planned)", "detect": {"integration": "github"}},
    {"id": "sample", "kind": "builtin", "name": "Sample pull requests (previews)", "adapter": "sample"}]},
-  "timer": {"needs": null, "sources": [
+  "timer": {"shows": "Timers you set on the panel or in Home Assistant, counting down.", "needs": null, "sources": [
    {"id": "ha_timers", "kind": "ha", "name": "HA timer helpers", "detect": {"domain": "timer"}},
    {"id": "panel", "kind": "builtin", "name": "On the panel"}]},
-  "clock": {"needs": null, "sources": [{"id": "panel", "kind": "builtin", "name": "Panel clock"}]},
-  "agents": {"needs": "AI agents that report their status", "sources": [
+  "clock": {"shows": "The time and date, with the weather under it.", "needs": null, "sources": [{"id": "panel", "kind": "builtin", "name": "Panel clock"}]},
+  "agents": {"shows": "What your AI agents are doing: busy, waiting or done.", "needs": "AI agents that report their status", "sources": [
    {"id": "feed", "kind": "direct", "name": "Agent status feed (JSON)", "setup": ["feed URL"]}]},
-  "overhead": {"needs": null, "sources": [
+  "overhead": {"shows": "The aircraft flying over your home right now.", "needs": null, "sources": [
    {"id": "adsb_lol", "kind": "direct", "name": "adsb.lol (open ADS-B, no key)"},
    {"id": "adsb_fi", "kind": "direct", "name": "adsb.fi (open ADS-B, no key)"},
    {"id": "ha_flightradar24", "kind": "ha", "name": "HA Flightradar24", "detect": {"integration": "flightradar24"}}]},
-  "flightradar": {"needs": null, "feed": "panel.flights", "sources": [
+  "flightradar": {"shows": "The aircraft around your home on a radar, with the ones to come.", "needs": null, "feed": "panel.flights", "sources": [
    {"id": "ha_overhead", "kind": "ha", "name": "An aircraft sensor in the panel overhead shape (sensor.panel_overhead, polled by Home Assistant)", "adapter": "ha", "detect": {"domain": "sensor"}, "fills": {"sensor": {"domain": "sensor"}}},
    {"id": "adsb_fi", "kind": "direct", "name": "adsb.fi (open ADS-B, no key), read by the panel itself (planned)", "adapter": "adsb"},
    {"id": "sample", "kind": "builtin", "name": "Sample sky (previews)", "adapter": "sample"}]},
-  "moon": {"needs": null, "sources": [{"id": "panel", "kind": "builtin", "name": "Worked out on the panel"}]}
+  "living_room": {"shows": "The lights of one room, to switch and dim each one.", "needs": "dimmable lights", "sources": []},
+  "strike_map": {"shows": "Lightning strikes near you on a map, the newest brightest.", "needs": null, "feed": "panel.lightning", "sources": []},
+  "moon": {"shows": "The moon tonight: its phase, rise and set, and the next full moon.", "needs": null, "sources": [{"id": "panel", "kind": "builtin", "name": "Worked out on the panel"}]}
  }
 }

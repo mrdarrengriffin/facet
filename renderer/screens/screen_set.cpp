@@ -2,16 +2,22 @@
 // real components, laid out as the Settings screen:
 //   header   the Header (back + the screen's name + the screen chrome)
 //   content  one scrolling column, groups as Settings (label, section-gap, rows; groups lay::group apart):
+//            "shows"    what the screen shows and what it needs, in words (sources.json "shows" + "needs"; body
+//                       text wrapped to the column), so a screen with no options yet still says what it is
 //            "home"     List row "Show on Home" with its Toggle (the whole row): the deck entry's on
 //            "source"   List row "Source" + the source's name (core/sources.h); more than one source = a chevron and
 //                       a tap opens the Bottom sheet with the screen's sources (name; status = the kind, "needs <setup>"
-//                       for a direct source that needs setting up). Built-in screens read "Built in".
+//                       for a direct source that needs setting up). Built-in screens read "Built in". When the
+//                       sources set the spec's "source" parameter (C51: the adapter, core/sources.h adapter()), this
+//                       row is the one Source: a pick keeps "source" and "params.source", a spec with a "sample"
+//                       option and no sample source gets "Sample (previews)", and the parameter is not repeated below.
 //            "options"  one row per typed parameter of the screen's spec (core/spec.h "params", hidden ones left
 //                       out): select = a List row + Segmented (up to 4 options) or the sheet; toggle = a List row
 //                       toggle; entity = its friendly name, and a sheet of the screen's list of the same domain when
 //                       it has one (Media: the Player from the Speakers, Auto first when the spec's screen.param
 //                       follows a sensor: "auto" or nothing picked = Auto); entities = "N chosen"; text = the value.
 //                       Lists of entities and text come from the host's discovery (the hub writes them into the deck).
+//                       No options = one List row "No options yet".
 //   sheet    the Bottom sheet in overlay mode, the screen's last child (one, moved in place per row)
 // Every change is kept in this panel's deck (fw::spec::deck_set: "on", "source", "params.<name>"; stored like a sent
 // deck) and emitted as "deck" "<screen> <key>=<value>" for the host. The screen opens with them next time.
@@ -72,7 +78,7 @@ std::string label_of(const std::string &opt) {  // a select option shown: "cd" -
 }
 
 // what a row picks from the sheet: the source, a select's options, an entity from a list
-struct Pick { std::string key; std::vector<std::string> ids, names, status; lv_obj_t *row = nullptr; std::string title; int sel = 0; };
+struct Pick { std::string key; std::vector<std::string> ids, names, status, sets; lv_obj_t *row = nullptr; std::string title; int sel = 0; };
 struct Page {
   lv_obj_t *root = nullptr, *sheet = nullptr, *home = nullptr;
   std::string id;
@@ -103,11 +109,11 @@ void sheet_props(Page *pg, int k, bool open, Doc &d) {
 
 const char *META = R"({
   "role": "detail",
-  "about": "One screen's settings on this panel: on Home or not, where its data comes from and its own options (Media: the visual, the player).",
+  "about": "One screen's settings on this panel: what it shows, on Home or not, where its data comes from and its own options (Media: the visual, the player). Opened by tapping a screen in Settings > Screens, or nav.open screen_set with params {id}.",
   "frame": [480, 480],
   "icons": ["back@glyph", "chevron@icon", "check@icon", "close@glyph"],
   "props": [
-    {"name": "id", "about": "Which screen's settings to show: media, weather, calendar, energy, thermostat, covers or clock.", "type": "select", "options": ["media", "weather", "calendar", "energy", "thermostat", "covers", "clock"], "default": "media"}
+    {"name": "id", "about": "Which screen's settings to show (a screen id of the deck or the factory).", "type": "select", "options": ["agents", "bins", "calendar", "cameras", "clock", "covers", "energy", "flightradar", "github", "living_room", "media", "moon", "overhead", "plants", "print", "strike_map", "thermostat", "timer", "vacuum", "weather"], "default": "media"}
   ]
 })";
 
@@ -140,8 +146,21 @@ void build_page(lv_obj_t *parent, fw::Props p) {
   lv_obj_set_style_pad_bottom(c, fw::lay::inset, 0);
   lv_obj_set_flex_flow(c, LV_FLEX_FLOW_COLUMN);
 
+  // shows: what the screen is, in words
+  {
+    ArduinoJson::JsonVariantConst sc = cat["screens"][pg->id];
+    std::string about = sc["shows"] | "";
+    const std::string needs = sc["needs"] | "";
+    if (!needs.empty()) about += std::string(about.empty() ? "Needs " : " Needs ") + needs + ".";
+    else if (!about.empty()) about += " Works in every home.";
+    if (!about.empty()) {
+      group(c, "shows", true);
+      lv_obj_t *l = fw::text(c, fw::ty::body, about.c_str(), t.text, fw::lay::content_w);
+      lv_obj_remove_flag(l, LV_OBJ_FLAG_CLICKABLE);
+    }
+  }
   // home
-  group(c, "home", true);
+  group(c, "home", !cat["screens"][pg->id]["shows"].is<const char *>() && !cat["screens"][pg->id]["needs"].is<const char *>());
   Doc hr;
   hr["title"] = "Show on Home", hr["icon"] = "none", hr["trailing"] = "toggle", hr["on"] = fw::spec::deck_on(entry);
   if (lv_obj_t *r = build("list_row", c, hr)) pg->ctrls.push_back({r, "on"});
@@ -149,33 +168,47 @@ void build_page(lv_obj_t *parent, fw::Props p) {
   // source
   group(c, "source", false);
   ArduinoJson::JsonArrayConst srcs = fw::src::of(cat, pg->id);
-  const std::string cur = fw::src::picked(cat, pg->id, entry);
+  ArduinoJson::JsonObjectConst params = spec["params"].as<ArduinoJson::JsonObjectConst>();
+  ArduinoJson::JsonVariantConst sparam = params["source"];
+  const char *sv0 = entry["params"]["source"] | (const char *) nullptr;
+  const std::string sv = sv0 ? std::string(sv0) : fw::spec::param_default(sparam);
+  const std::string cur = fw::src::shown(cat, pg->id, entry, sparam, sv);
+  Pick pk;
+  pk.key = "source", pk.title = "source";
+  bool linked = false, has_sample = false;
+  for (ArduinoJson::JsonVariantConst x : srcs) {
+    pk.ids.push_back(x["id"] | "");
+    pk.names.push_back(x["name"] | "");
+    pk.sets.push_back(fw::src::adapter(x, sparam));
+    linked |= !pk.sets.back().empty();
+    has_sample |= pk.sets.back() == "sample";
+    std::string st = cat["kinds"][x["kind"] | ""] | "";
+    ArduinoJson::JsonArrayConst setup = x["setup"].as<ArduinoJson::JsonArrayConst>();
+    if (setup.size()) {
+      std::string need;
+      for (ArduinoJson::JsonVariantConst s : setup) need += std::string(need.empty() ? "" : " + ") + (s | "");
+      st += " \xC2\xB7 needs " + need;
+    }
+    pk.status.push_back(st);
+  }
+  bool sample_opt = false;
+  for (ArduinoJson::JsonVariantConst o : sparam["options"].as<ArduinoJson::JsonArrayConst>()) sample_opt |= !strcmp(o | "", "sample");
+  if (linked && sample_opt && !has_sample) {  // previews: the spec's sample adapter, not a catalogue source
+    pk.ids.push_back(fw::src::SAMPLE), pk.names.push_back(fw::src::SAMPLE_NAME), pk.sets.push_back("sample");
+    pk.status.push_back(cat["kinds"]["builtin"] | "");
+  }
+  for (size_t i = 0; i < pk.ids.size(); i++) if (pk.ids[i] == cur) pk.sel = (int) i;
   Doc sr;
   sr["title"] = "Source", sr["icon"] = "none";
-  sr["value"] = srcs.size() ? fw::src::name(cat, pg->id, cur).c_str() : "Built in";
-  sr["trailing"] = srcs.size() > 1 ? "value-chevron" : "value";
-  if (lv_obj_t *r = build("list_row", c, sr); r && srcs.size() > 1) {
-    Pick pk;
-    pk.key = "source", pk.row = r, pk.title = "source";
-    for (ArduinoJson::JsonVariantConst x : srcs) {
-      pk.ids.push_back(x["id"] | "");
-      pk.names.push_back(x["name"] | "");
-      std::string st = cat["kinds"][x["kind"] | ""] | "";
-      ArduinoJson::JsonArrayConst setup = x["setup"].as<ArduinoJson::JsonArrayConst>();
-      if (setup.size()) {
-        std::string need;
-        for (ArduinoJson::JsonVariantConst s : setup) need += std::string(need.empty() ? "" : " + ") + (s | "");
-        st += " \xC2\xB7 needs " + need;
-      }
-      pk.status.push_back(st);
-    }
-    for (size_t i = 0; i < pk.ids.size(); i++) if (pk.ids[i] == cur) pk.sel = (int) i;
+  sr["value"] = pk.ids.empty() ? "Built in" : pk.names[pk.sel].c_str();
+  sr["trailing"] = pk.ids.size() > 1 ? "value-chevron" : "value";
+  if (lv_obj_t *r = build("list_row", c, sr); r && pk.ids.size() > 1) {
+    pk.row = r;
     pg->picks.push_back(pk);
   }
 
   // options: the spec's typed parameters
   bool any = false;
-  ArduinoJson::JsonObjectConst params = spec["params"].as<ArduinoJson::JsonObjectConst>();
   auto value = [&](const char *k, ArduinoJson::JsonVariantConst def) {
     const char *v = entry["params"][k] | (const char *) nullptr;
     return v ? std::string(v) : fw::spec::param_default(def);
@@ -184,6 +217,7 @@ void build_page(lv_obj_t *parent, fw::Props p) {
     if (!kv.value().is<ArduinoJson::JsonObjectConst>()) continue;
     const std::string type = kv.value()["type"] | "", key = kv.key().c_str();
     if (type == "hidden" || type.empty()) continue;
+    if (linked && key == "source") continue;  // the Source row above sets it
     if (!any) { group(c, "options", false); any = true; }
     const std::string v = value(kv.key().c_str(), kv.value()), label = kv.value()["label"] | kv.key().c_str();
     Doc rd;
@@ -261,6 +295,13 @@ void build_page(lv_obj_t *parent, fw::Props p) {
     build("list_row", c, rd);
   }
 
+  if (!any) {  // still a page: say so
+    group(c, "options", false);
+    Doc nr;
+    nr["title"] = "No options yet", nr["icon"] = "none", nr["trailing"] = "none";
+    if (lv_obj_t *r = build("list_row", c, nr)) lv_obj_remove_flag(r, LV_OBJ_FLAG_CLICKABLE);
+  }
+
   // the one sheet (over the whole screen)
   Doc sd;
   sheet_props(pg, -1, false, sd);
@@ -288,9 +329,16 @@ void build_page(lv_obj_t *parent, fw::Props p) {
       Doc rp;
       rp["value"] = p.names[i].c_str();
       fw::update_child(fw::find("list_row"), p.row, rp.as<fw::Props>());
-      Doc v;
-      v.set(p.ids[i].c_str());
-      keep(pg, pg->sheet, p.key, v.as<ArduinoJson::JsonVariantConst>());
+      if (p.ids[i] != fw::src::SAMPLE) {
+        Doc v;
+        v.set(p.ids[i].c_str());
+        keep(pg, pg->sheet, p.key, v.as<ArduinoJson::JsonVariantConst>());
+      }
+      if (p.key == "source" && i < (int) p.sets.size() && !p.sets[i].empty()) {  // C51: the adapter it fills the feed with
+        Doc v;
+        v.set(p.sets[i].c_str());
+        keep(pg, pg->sheet, "params.source", v.as<ArduinoJson::JsonVariantConst>());
+      }
     }, LV_EVENT_VALUE_CHANGED, pg);
   fw::listen(pg->root, [](lv_obj_t *from, const char *name, const char *detail, void *user) {
     auto *pg = (Page *) user;

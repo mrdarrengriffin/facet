@@ -13,7 +13,7 @@
     "ha",
     "sample"
    ],
-   "label": "Source",
+   "label": "Weather from",
    "default": "ha"
   },
   "weather": {

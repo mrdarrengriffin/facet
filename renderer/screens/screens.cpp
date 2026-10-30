@@ -101,7 +101,11 @@ void build_screens(lv_obj_t *parent, fw::Props) {
     Doc rd;
     rd["title"] = name_of(id).c_str();
     rd["icon"] = "none";
-    rd["sub"] = fw::src::line(cat, id, x).c_str();
+    Doc sp;  // the spec's source parameter: the source shown is the one the screen really uses (sample or not)
+    if (const char *j = fw::spec::screen_json(id)) deserializeJson(sp, j);
+    ArduinoJson::JsonVariantConst sparam = sp["params"]["source"];
+    const char *sv = x["params"]["source"] | (const char *) nullptr;
+    rd["sub"] = fw::src::line(cat, id, x, sparam, sv ? std::string(sv) : fw::spec::param_default(sparam)).c_str();
     rd["trailing"] = "none";
     lv_obj_t *r = build("list_row", c, rd);
     if (!r) continue;
