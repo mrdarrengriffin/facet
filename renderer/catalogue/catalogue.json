@@ -191,7 +191,7 @@
      "type": "range",
      "bindable": true,
      "min": 48,
-     "max": 136,
+     "max": 240,
      "about": "How tall the tallest bar can be, in pixels."
     },
     {
@@ -225,6 +225,24 @@
      "type": "text",
      "bindable": true,
      "about": "Words naming the series over the bars, each after its swatch: the values first, then the compare period."
+    },
+    {
+     "name": "marks",
+     "type": "text",
+     "bindable": true,
+     "about": "A moon over some bars, one word per bar: full or new (empty = none), such as the full and new moons over their days."
+    },
+    {
+     "name": "names",
+     "type": "text",
+     "bindable": true,
+     "about": "One word per bar that the reading names when you press it, such as its date; empty uses the axis words or the hour."
+    },
+    {
+     "name": "unit",
+     "type": "text",
+     "bindable": true,
+     "about": "The unit after a value when you read a bar, such as kWh or %."
     }
    ],
    "events": {
@@ -454,7 +472,9 @@
    ],
    "events": {
     "close": [
-     "calendar.control"
+     "calendar.control",
+     "media.control",
+     "cover.control"
     ],
     "open": [
      "nav.open"
@@ -574,7 +594,8 @@
      "timer.stop",
      "timer.select",
      "timer.new",
-     "timer.back"
+     "timer.back",
+     "cover.control"
     ],
     "open": [
      "nav.open"
@@ -806,7 +827,8 @@
       "overhead",
       "bins",
       "print",
-      "home"
+      "home",
+      "vacuum"
      ],
      "about": "The small icon before the name, or none."
     },
@@ -830,7 +852,10 @@
       "lightning",
       "bins",
       "weather",
-      "flights"
+      "flights",
+      "covers",
+      "moon",
+      "vacuum"
      ],
      "about": "The small picture at the top right of the card, such as the weather now or the record that is playing, or none."
     },
@@ -839,6 +864,65 @@
      "type": "text",
      "bindable": true,
      "about": "With the weather preview: which weather icon it shows, such as rain-light (the weather now)."
+    },
+    {
+     "name": "visual",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "disc",
+      "cassette",
+      "cd",
+      "vinyl"
+     ],
+     "about": "With the media preview: the picture, as the Media screen shows it (disc, cassette, cd or vinyl)."
+    },
+    {
+     "name": "progress",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 100,
+     "about": "With the media preview: how far through the track it is, from 0 to 100."
+    },
+    {
+     "name": "playing",
+     "type": "bool",
+     "bindable": true,
+     "about": "With the media preview: whether it is playing (the picture turns)."
+    },
+    {
+     "name": "run",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "run",
+      "idle",
+      "off"
+     ],
+     "about": "With the vacuum preview: run while the robot is out cleaning (progress = the run's), idle at rest (progress = the battery), off when it cannot be reached."
+    },
+    {
+     "name": "position",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 100,
+     "about": "With the covers preview: how open the window is, from 0 (closed) to 100 (open)."
+    },
+    {
+     "name": "phase",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 1,
+     "about": "With the moon preview: where the moon is in its month, from 0 (new) through 0.5 (full) to 1."
+    },
+    {
+     "name": "south",
+     "type": "bool",
+     "bindable": true,
+     "about": "With the moon preview: draws the moon as seen from the southern half of the world."
     },
     {
      "name": "planes",
@@ -1088,6 +1172,47 @@
     "bytes_est": 6400
    }
   },
+  "check_row": {
+   "name": "Check row",
+   "update": true,
+   "props": [
+    {
+     "name": "name",
+     "type": "text",
+     "bindable": true,
+     "about": "The name of the check, such as test or build."
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "pass",
+      "fail",
+      "pending",
+      "skipped"
+     ],
+     "about": "How the check went: pass, fail, pending while it still runs, or skipped. The dot and the word change to match."
+    },
+    {
+     "name": "width",
+     "type": "range",
+     "bindable": true,
+     "min": 160,
+     "max": 440,
+     "about": "How wide the row is, in pixels."
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 4,
+    "bytes_est": 640
+   }
+  },
   "checkbox": {
    "name": "Checkbox",
    "update": true,
@@ -1136,47 +1261,6 @@
     "bytes_est": 960
    }
   },
-  "check_row": {
-   "name": "Check row",
-   "update": true,
-   "props": [
-    {
-     "name": "name",
-     "type": "text",
-     "bindable": true,
-     "about": "The name of the check, such as test or build."
-    },
-    {
-     "name": "state",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "pass",
-      "fail",
-      "pending",
-      "skipped"
-     ],
-     "about": "How the check went: pass, fail, pending while it still runs, or skipped. The dot and the word change to match."
-    },
-    {
-     "name": "width",
-     "type": "range",
-     "bindable": true,
-     "min": 160,
-     "max": 440,
-     "about": "How wide the row is, in pixels."
-    }
-   ],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 4,
-    "bytes_est": 640
-   }
-  },
   "clock_face": {
    "name": "Clock faces",
    "update": true,
@@ -1189,10 +1273,9 @@
       "hero",
       "ring",
       "analogue",
-      "compact",
-      "orbit"
+      "compact"
      ],
-     "about": "Which clock to draw: hero is big digits, ring adds a dotted ring with a seconds dot going round, analogue has thin hands, compact is the small time in a header, orbit circles the time with the date."
+     "about": "Which clock to draw: hero is big digits, ring adds a dotted ring with a seconds dot going round, analogue has thin hands, compact is the small time in a header."
     },
     {
      "name": "font",
@@ -1241,18 +1324,6 @@
      "type": "text",
      "bindable": true,
      "about": "For previews only: a fixed date to show, like 2026-10-19. Leave empty for today."
-    },
-    {
-     "name": "condition",
-     "type": "text",
-     "bindable": true,
-     "about": "The weather now, shown beside the time on faces that have room, such as partly-day. Leave empty for none."
-    },
-    {
-     "name": "temp",
-     "type": "text",
-     "bindable": true,
-     "about": "The temperature now, shown with the weather. Leave empty for none."
     }
    ],
    "events": {
@@ -1263,6 +1334,43 @@
    "cost": {
     "objects": 18,
     "bytes_est": 2880
+   }
+  },
+  "clock_orbit": {
+   "name": "Clock orbit",
+   "update": true,
+   "props": [
+    {
+     "name": "time",
+     "type": "text",
+     "bindable": true,
+     "about": "For previews only: a fixed time, like 10:08:30, that the seconds dot starts from. Leave empty for the real time."
+    },
+    {
+     "name": "animated",
+     "type": "bool",
+     "bindable": true,
+     "about": "Moves the dots. Off holds them still where they start: a still picture."
+    },
+    {
+     "name": "sample",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "none",
+      "time"
+     ],
+     "about": "For previews only: the real Time with the date and a weather line in the centre, or none for the empty slot."
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 2,
+    "bytes_est": 320
    }
   },
   "column": {
@@ -1379,85 +1487,6 @@
     "bytes_est": 320
    }
   },
-  "covers_view": {
-   "name": "Covers view",
-   "update": true,
-   "props": [
-    {
-     "name": "kind",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "roller",
-      "venetian",
-      "curtain"
-     ],
-     "about": "What hangs in the window: a roller blind, a Venetian blind with slats, or curtains."
-    },
-    {
-     "name": "position",
-     "type": "range",
-     "bindable": true,
-     "min": 0,
-     "max": 100,
-     "about": "How open the cover is, from 0 (closed) to 100 (fully open)."
-    },
-    {
-     "name": "tilt",
-     "type": "range",
-     "bindable": true,
-     "min": 0,
-     "max": 100,
-     "about": "For Venetian blinds: how far the slats are turned, from 0 (shut) to 100 (fully open)."
-    },
-    {
-     "name": "device_class",
-     "type": "text",
-     "bindable": true,
-     "about": "The kind of cover as Home Assistant names it, such as curtain or blind. When set it picks the drawing: curtain draws curtains, a cover that tilts draws a Venetian blind, anything else a roller blind."
-    },
-    {
-     "name": "cover",
-     "type": "text",
-     "bindable": true,
-     "about": "The cover this screen controls, by its Home Assistant entity id."
-    },
-    {
-     "name": "covers",
-     "type": "text",
-     "bindable": true,
-     "about": "Every cover you can switch between on this screen, as entity ids separated by commas."
-    },
-    {
-     "name": "state",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "open",
-      "closed",
-      "opening",
-      "closing",
-      "unavailable"
-     ],
-     "about": "What the cover is doing: open, closed, opening, closing, or unavailable when it cannot be reached."
-    }
-   ],
-   "events": {
-    "cover": [
-     "cover.control"
-    ],
-    "window": [
-     "screen.param"
-    ],
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 37,
-    "bytes_est": 5920
-   }
-  },
   "cover_visual": {
    "name": "Cover visual",
    "update": true,
@@ -1495,13 +1524,23 @@
      "bindable": true,
      "min": -1,
      "max": 100,
-     "about": "Where the cover is moving to while it moves, from 0 to 100, shown as a faint target. -1 means it is not moving."
+     "about": "Where the cover is moving to while it moves, from 0 to 100, shown as a thin target line. -1 means it is not moving."
     },
     {
      "name": "draggable",
      "type": "bool",
      "bindable": true,
      "about": "Lets you drag the blind's edge, or the curtains sideways, to move the cover."
+    },
+    {
+     "name": "size",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "screen",
+      "card"
+     ],
+     "about": "screen fills the space it is in, the Blinds screen's window; card is the small picture at the top right of a Home card."
     },
     {
      "name": "state",
@@ -1516,13 +1555,16 @@
     }
    ],
    "events": {
+    "change": [
+     "cover.control"
+    ],
     "open": [
      "nav.open"
     ]
    },
    "cost": {
-    "objects": 6,
-    "bytes_est": 960
+    "objects": 1,
+    "bytes_est": 160
    }
   },
   "date_line": {
@@ -2736,37 +2778,45 @@
     "bytes_est": 480
    }
   },
-  "github_list": {
-   "name": "GitHub list",
-   "update": true,
-   "props": [],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 95,
-    "bytes_est": 15200
-   }
-  },
   "github_pr": {
    "name": "GitHub PR",
    "update": true,
    "props": [
     {
-     "name": "pr",
-     "type": "select",
+     "name": "meta",
+     "type": "text",
      "bindable": true,
-     "options": [
-      "n1",
-      "n2",
-      "n3",
-      "m1",
-      "m2",
-      "m3"
-     ],
-     "about": "For previews only: which made-up pull request to show. n1 to n3 are ones that need your review; m1 to m3 are your own."
+     "about": "The small line at the top: the repository and the branches."
+    },
+    {
+     "name": "title",
+     "type": "text",
+     "bindable": true,
+     "about": "The pull request's title, up to two lines."
+    },
+    {
+     "name": "by",
+     "type": "text",
+     "bindable": true,
+     "about": "Who opened it, how long ago and how big it is."
+    },
+    {
+     "name": "statuses",
+     "type": "text",
+     "bindable": true,
+     "about": "Why it needs you, draft and CI: a JSON list of {tone, text}, each shown as a dot and a word."
+    },
+    {
+     "name": "body",
+     "type": "text",
+     "bindable": true,
+     "about": "The start of the description, up to three lines."
+    },
+    {
+     "name": "url",
+     "type": "text",
+     "bindable": true,
+     "about": "The pull request's web address, for the QR code."
     }
    ],
    "events": {
@@ -2775,22 +2825,8 @@
     ]
    },
    "cost": {
-    "objects": 35,
-    "bytes_est": 5600
-   }
-  },
-  "github_view": {
-   "name": "GitHub view",
-   "update": true,
-   "props": [],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 54,
-    "bytes_est": 8640
+    "objects": 11,
+    "bytes_est": 1760
    }
   },
   "grid": {
@@ -2882,7 +2918,8 @@
     "pick": [
      "screen.param",
      "nav.open",
-     "calendar.control"
+     "calendar.control",
+     "media.control"
     ],
     "open": [
      "nav.open"
@@ -2917,6 +2954,17 @@
       "stack"
      ],
      "about": "wrap lays the parts side by side and starts a new line when the row is full; stack puts each part under the last."
+    },
+    {
+     "name": "gap",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "gutter",
+      "group",
+      "near"
+     ],
+     "about": "The room between the parts side by side: gutter, group for a few big controls in a row (the Media screen's previous, play and next), or near for a column of buttons that belong together (the Blinds screen's Open, Stop and Close)."
     },
     {
      "name": "space",
@@ -3165,70 +3213,6 @@
     "bytes_est": 1120
    }
   },
-  "icon_button": {
-   "name": "Icon button",
-   "update": true,
-   "props": [
-    {
-     "name": "style",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "play",
-      "round",
-      "square"
-     ],
-     "about": "The button's shape: play is the large round play and pause button, round is a smaller circle, square has rounded corners."
-    },
-    {
-     "name": "icon",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "next",
-      "prev",
-      "play",
-      "plus",
-      "close",
-      "check",
-      "back",
-      "settings",
-      "chevron",
-      "chevron-left",
-      "calendar"
-     ],
-     "about": "The icon on the button, such as next, previous, play or close."
-    },
-    {
-     "name": "state",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "default",
-      "pressed",
-      "active",
-      "active-pressed",
-      "disabled",
-      "unavailable"
-     ],
-     "about": "How the button looks: default ready to tap, pressed while held, active when it is switched on, active-pressed while the active one is held, disabled when it cannot be used, or unavailable when its device cannot be reached."
-    }
-   ],
-   "events": {
-    "tap": [
-     "nav.open",
-     "nav.back",
-     "calendar.control"
-    ],
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 3,
-    "bytes_est": 480
-   }
-  },
   "icon": {
    "name": "Icon",
    "update": true,
@@ -3302,6 +3286,7 @@
       "screen-thermostat",
       "screen-covers",
       "screen-switch",
+      "screen-vacuum",
       "screen-print",
       "screen-media",
       "screen-settings",
@@ -3364,6 +3349,77 @@
     }
    ],
    "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 3,
+    "bytes_est": 480
+   }
+  },
+  "icon_button": {
+   "name": "Icon button",
+   "update": true,
+   "props": [
+    {
+     "name": "style",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "play",
+      "round",
+      "square"
+     ],
+     "about": "The button's shape: play is the large round play and pause button, round is a smaller circle, square has rounded corners."
+    },
+    {
+     "name": "icon",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "next",
+      "prev",
+      "play",
+      "plus",
+      "close",
+      "check",
+      "back",
+      "settings",
+      "chevron",
+      "chevron-left",
+      "calendar",
+      "speaker",
+      "covers"
+     ],
+     "about": "The icon on the button, such as next, previous, play or close."
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "default",
+      "pressed",
+      "active",
+      "active-pressed",
+      "disabled",
+      "unavailable"
+     ],
+     "about": "How the button looks: default ready to tap, pressed while held, active when it is switched on, active-pressed while the active one is held, disabled when it cannot be used, or unavailable when its device cannot be reached."
+    }
+   ],
+   "events": {
+    "tap": [
+     "nav.open",
+     "nav.back",
+     "calendar.control",
+     "media.control",
+     "cover.control"
+    ],
+    "toggle": [
+     "media.control"
+    ],
     "open": [
      "nav.open"
     ]
@@ -4059,90 +4115,10 @@
     "bytes_est": 2560
    }
   },
-  "media_disc": {
-   "name": "Media disc",
+  "media_hero": {
+   "name": "Media hero",
    "update": true,
    "props": [
-    {
-     "name": "progress",
-     "type": "range",
-     "bindable": true,
-     "min": 0,
-     "max": 100,
-     "about": "How far through the track it is, from 0 to 100, drawn as the accent arc round the record."
-    },
-    {
-     "name": "playing",
-     "type": "bool",
-     "bindable": true,
-     "about": "Whether it is playing. While it plays the blue marker circles the record."
-    },
-    {
-     "name": "size",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "256",
-      "320"
-     ],
-     "about": "How wide the disc is, in pixels: 256 or 320."
-    }
-   ],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 9,
-    "bytes_est": 1440
-   }
-  },
-  "media_view": {
-   "name": "Media view",
-   "update": true,
-   "props": [
-    {
-     "name": "state",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "playing",
-      "paused",
-      "idle",
-      "off",
-      "unavailable"
-     ],
-     "about": "What the player is doing: playing, paused, idle, off, or unavailable when it cannot be reached."
-    },
-    {
-     "name": "title",
-     "type": "text",
-     "bindable": true,
-     "about": "The track title."
-    },
-    {
-     "name": "artist",
-     "type": "text",
-     "bindable": true,
-     "about": "The artist of the track."
-    },
-    {
-     "name": "progress",
-     "type": "range",
-     "bindable": true,
-     "min": 0,
-     "max": 100,
-     "about": "How far through the track it is, from 0 to 100, when the exact position is not known."
-    },
-    {
-     "name": "volume",
-     "type": "range",
-     "bindable": true,
-     "min": 0,
-     "max": 100,
-     "about": "The volume, from 0 to 100, shown on the volume slider."
-    },
     {
      "name": "visual",
      "type": "select",
@@ -4153,68 +4129,59 @@
       "cd",
       "vinyl"
      ],
-     "about": "What is drawn for the music: disc is a plain record with a progress ring; cassette, cd and vinyl are drawn to their real look and turn while playing."
+     "about": "The picture: the plain disc with a progress ring, a cassette, a CD or a vinyl record."
     },
     {
-     "name": "player",
+     "name": "state",
      "type": "text",
      "bindable": true,
-     "about": "The media player this screen controls, by its Home Assistant entity id."
+     "about": "What the player is doing, in small capitals: now playing, paused or idle."
     },
     {
-     "name": "speakers",
-     "type": "text",
-     "bindable": true,
-     "about": "The speakers you can switch between in the speaker picker, as entity ids separated by commas."
-    },
-    {
-     "name": "mode",
+     "name": "tone",
      "type": "select",
      "bindable": true,
      "options": [
-      "",
-      "auto",
-      "manual"
+      "text-dim",
+      "accent-text"
      ],
-     "about": "How the speaker is chosen: auto follows the room you are in, manual keeps the one you picked. Empty hides the Auto choice."
+     "about": "accent-text while it plays, text-dim otherwise."
     },
     {
-     "name": "position",
-     "type": "range",
-     "bindable": true,
-     "min": 0,
-     "max": 86400,
-     "about": "How far into the track it is, in seconds, as the player last reported."
-    },
-    {
-     "name": "duration",
-     "type": "range",
-     "bindable": true,
-     "min": 0,
-     "max": 86400,
-     "about": "How long the track is, in seconds."
-    },
-    {
-     "name": "position_at",
+     "name": "title",
      "type": "text",
      "bindable": true,
-     "about": "When the player reported the position, as a date and time, so the panel can count on from there."
+     "about": "The track, up to two lines."
+    },
+    {
+     "name": "artist",
+     "type": "text",
+     "bindable": true,
+     "about": "The artist, one line."
+    },
+    {
+     "name": "progress",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 100,
+     "about": "How far through the track it is, from 0 to 100."
+    },
+    {
+     "name": "playing",
+     "type": "bool",
+     "bindable": true,
+     "about": "Whether it is playing: the picture turns."
     }
    ],
    "events": {
-    "media": [
-     "media.control"
-    ],
-    "speaker": [
-     "screen.param"
-    ],
     "open": [
      "nav.open"
     ]
    },
    "cost": {
-    "objects": 32,
-    "bytes_est": 5120
+    "objects": 7,
+    "bytes_est": 1120
    }
   },
   "media_visual": {
@@ -4226,11 +4193,22 @@
      "type": "select",
      "bindable": true,
      "options": [
+      "disc",
       "cassette",
       "cd",
       "vinyl"
      ],
-     "about": "What is drawn: a cassette, a CD or a vinyl record."
+     "about": "What is drawn: the plain disc with a progress ring, a cassette, a CD or a vinyl record."
+    },
+    {
+     "name": "size",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "screen",
+      "card"
+     ],
+     "about": "screen is the Media screen's picture; card is the small picture at the top right of its Home card (a square: the right end of a cassette)."
     },
     {
      "name": "progress",
@@ -4269,45 +4247,6 @@
     "bytes_est": 160
    }
   },
-  "moon_facts": {
-   "name": "Moon facts",
-   "update": true,
-   "props": [
-    {
-     "name": "ahead",
-     "type": "range",
-     "bindable": true,
-     "min": 0,
-     "max": 29,
-     "about": "For previews only: how many days ahead of today to work the moon out for. 0 is today."
-    },
-    {
-     "name": "lat",
-     "type": "range",
-     "bindable": true,
-     "min": -60,
-     "max": 65,
-     "about": "Your latitude in degrees, which sets the moonrise and moonset times."
-    },
-    {
-     "name": "lon",
-     "type": "range",
-     "bindable": true,
-     "min": -180,
-     "max": 180,
-     "about": "Your longitude in degrees, which sets the moonrise and moonset times."
-    }
-   ],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 32,
-    "bytes_est": 5120
-   }
-  },
   "moon_icon": {
    "name": "Moon phase",
    "update": true,
@@ -4330,15 +4269,47 @@
       "detail",
       "feature",
       "card",
-      "hero"
+      "hero",
+      "screen",
+      "tab"
      ],
-     "about": "How big the moon is drawn, from the small icon size up to the hero size of a screen."
+     "about": "How big the moon is drawn: the icon sizes, screen for the Moon screen's moon, tab a size down. Empty = card alone, feature in a column, screen as the hero."
     },
     {
      "name": "south",
      "type": "bool",
      "bindable": true,
      "about": "Draws the moon as seen from the southern half of the world, where the lit side is the other way round."
+    },
+    {
+     "name": "layout",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "icon",
+      "column",
+      "hero",
+      "line"
+     ],
+     "about": "How the words sit with the moon: icon alone; column for one of the next phases (the phase and its day under it); hero for the Moon screen (the moon, then the phase and a line under it); line for that line alone."
+    },
+    {
+     "name": "label",
+     "type": "text",
+     "bindable": true,
+     "about": "The main words: the phase under the moon (column) or the phase name (hero), such as Full or Waxing gibbous."
+    },
+    {
+     "name": "value",
+     "type": "text",
+     "bindable": true,
+     "about": "When it comes, under the phase (column), such as Fri or 24 Oct."
+    },
+    {
+     "name": "line",
+     "type": "text",
+     "bindable": true,
+     "about": "The quieter rest of the hero line, such as 78% · full on Fri."
     }
    ],
    "events": {
@@ -4349,113 +4320,6 @@
    "cost": {
     "objects": 5,
     "bytes_est": 800
-   }
-  },
-  "moon_phases": {
-   "name": "Moon phases",
-   "update": true,
-   "props": [
-    {
-     "name": "lat",
-     "type": "range",
-     "bindable": true,
-     "min": -60,
-     "max": 65,
-     "about": "Your latitude in degrees. South of the equator the moons are drawn the other way round."
-    }
-   ],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 29,
-    "bytes_est": 4640
-   }
-  },
-  "moon_range": {
-   "name": "Moon by day",
-   "update": true,
-   "props": [
-    {
-     "name": "start",
-     "type": "text",
-     "bindable": true,
-     "about": "The first evening shown, as a date like 2026-10-15."
-    },
-    {
-     "name": "today",
-     "type": "range",
-     "bindable": true,
-     "min": 0,
-     "max": 30,
-     "about": "Which bar is today, counting from 0 at the left; it gets the dotted line and the moon above it."
-    },
-    {
-     "name": "height",
-     "type": "range",
-     "bindable": true,
-     "min": 80,
-     "max": 160,
-     "about": "How tall the tallest bar can be, in pixels."
-    },
-    {
-     "name": "south",
-     "type": "bool",
-     "bindable": true,
-     "about": "Draws the moons as seen from the southern half of the world."
-    }
-   ],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 137,
-    "bytes_est": 21920
-   }
-  },
-  "moon_view": {
-   "name": "Moon view",
-   "update": true,
-   "props": [
-    {
-     "name": "size",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "screen",
-      "weather"
-     ],
-     "about": "screen fills the Moon screen; weather fits it inside the Weather screen's moon view."
-    },
-    {
-     "name": "lat",
-     "type": "range",
-     "bindable": true,
-     "min": -60,
-     "max": 65,
-     "about": "Your latitude in degrees, used to work out tonight's moon."
-    },
-    {
-     "name": "lon",
-     "type": "range",
-     "bindable": true,
-     "min": -180,
-     "max": 180,
-     "about": "Your longitude in degrees, used to work out tonight's moon."
-    }
-   ],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 9,
-    "bytes_est": 1440
    }
   },
   "more_row": {
@@ -4568,7 +4432,10 @@
       "speakers",
       "tv",
       "stream",
-      "auto"
+      "auto",
+      "roller",
+      "venetian",
+      "curtain"
      ],
      "about": "The icon at the start of the row, such as a speaker or a TV, or none."
     },
@@ -4644,6 +4511,10 @@
     }
    ],
    "events": {
+    "tap": [
+     "media.control",
+     "cover.control"
+    ],
     "open": [
      "nav.open"
     ]
@@ -4785,6 +4656,75 @@
    "cost": {
     "objects": 12,
     "bytes_est": 1920
+   }
+  },
+  "pr_row": {
+   "name": "Pull request row",
+   "update": true,
+   "props": [
+    {
+     "name": "repo",
+     "type": "text",
+     "bindable": true,
+     "about": "The repository the pull request is in."
+    },
+    {
+     "name": "number",
+     "type": "range",
+     "bindable": true,
+     "min": 1,
+     "max": 9999,
+     "about": "The pull request's number."
+    },
+    {
+     "name": "title",
+     "type": "text",
+     "bindable": true,
+     "about": "The pull request's title, over up to two lines."
+    },
+    {
+     "name": "age",
+     "type": "text",
+     "bindable": true,
+     "about": "How long ago it was opened or last changed, such as 5h."
+    },
+    {
+     "name": "draft",
+     "type": "bool",
+     "bindable": true,
+     "about": "Marks it as a draft that is not ready for review yet."
+    },
+    {
+     "name": "ci",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "pass",
+      "fail",
+      "pending",
+      "none"
+     ],
+     "about": "How its automatic checks went: pass, fail, pending, or none when it has no checks."
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "default",
+      "pressed"
+     ],
+     "about": "default ready to tap; pressed while held."
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 13,
+    "bytes_est": 2080
    }
   },
   "print_model": {
@@ -4955,75 +4895,6 @@
    "cost": {
     "objects": 2,
     "bytes_est": 320
-   }
-  },
-  "pr_row": {
-   "name": "Pull request row",
-   "update": true,
-   "props": [
-    {
-     "name": "repo",
-     "type": "text",
-     "bindable": true,
-     "about": "The repository the pull request is in."
-    },
-    {
-     "name": "number",
-     "type": "range",
-     "bindable": true,
-     "min": 1,
-     "max": 9999,
-     "about": "The pull request's number."
-    },
-    {
-     "name": "title",
-     "type": "text",
-     "bindable": true,
-     "about": "The pull request's title, over up to two lines."
-    },
-    {
-     "name": "age",
-     "type": "text",
-     "bindable": true,
-     "about": "How long ago it was opened or last changed, such as 5h."
-    },
-    {
-     "name": "draft",
-     "type": "bool",
-     "bindable": true,
-     "about": "Marks it as a draft that is not ready for review yet."
-    },
-    {
-     "name": "ci",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "pass",
-      "fail",
-      "pending",
-      "none"
-     ],
-     "about": "How its automatic checks went: pass, fail, pending, or none when it has no checks."
-    },
-    {
-     "name": "state",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "default",
-      "pressed"
-     ],
-     "about": "default ready to tap; pressed while held."
-    }
-   ],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 13,
-    "bytes_est": 2080
    }
   },
   "qr_block": {
@@ -5559,7 +5430,8 @@
    ],
    "events": {
     "change": [
-     "light.brightness"
+     "light.brightness",
+     "cover.control"
     ],
     "input": [
      "light.brightness"
@@ -5571,6 +5443,60 @@
    "cost": {
     "objects": 2,
     "bytes_est": 320
+   }
+  },
+  "slider_row": {
+   "name": "Slider row",
+   "update": true,
+   "props": [
+    {
+     "name": "label",
+     "type": "text",
+     "bindable": true,
+     "about": "The name before the slider, in small capitals, such as vol."
+    },
+    {
+     "name": "value",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 100,
+     "about": "Where the slider is, from 0 to 100."
+    },
+    {
+     "name": "text",
+     "type": "text",
+     "bindable": true,
+     "about": "The value shown after the slider, such as 42 (-- when it is not known)."
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "default",
+      "disabled",
+      "unavailable"
+     ],
+     "about": "default can be dragged; disabled cannot be changed; unavailable shows the device cannot be reached."
+    }
+   ],
+   "events": {
+    "change": [
+     "media.control",
+     "cover.control"
+    ],
+    "input": [
+     "media.control",
+     "cover.control"
+    ],
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 6,
+    "bytes_est": 960
    }
   },
   "sparkline": {
@@ -5699,6 +5625,12 @@
      "type": "bool",
      "bindable": true,
      "about": "Centres the picture column's top slot down the screen instead of at the top (the Lightning radar)."
+    },
+    {
+     "name": "art_fill",
+     "type": "bool",
+     "bindable": true,
+     "about": "Makes the picture column's top slot the whole column, for a picture as tall as the screen (the Blinds window)."
     },
     {
      "name": "outline",
@@ -5967,6 +5899,16 @@
       "idle"
      ],
      "about": "The dot's colour, by what the line reports: ok, warn, error, working, info or idle."
+    },
+    {
+     "name": "ink",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "text",
+      "dim"
+     ],
+     "about": "The words' colour: text, or dim for a quieter line, such as a check that passed beside one that failed."
     }
    ],
    "events": {
@@ -5977,6 +5919,53 @@
    "cost": {
     "objects": 3,
     "bytes_est": 480
+   }
+  },
+  "status_row": {
+   "name": "Status row",
+   "update": true,
+   "props": [
+    {
+     "name": "label",
+     "type": "text",
+     "bindable": true,
+     "about": "The small line above the title, such as the repository, number and age."
+    },
+    {
+     "name": "title",
+     "type": "text",
+     "bindable": true,
+     "about": "The main words of the row, one line."
+    },
+    {
+     "name": "status",
+     "type": "text",
+     "bindable": true,
+     "about": "A short status word at the end of the small line, such as review or ci fail. Leave empty for none."
+    },
+    {
+     "name": "tone",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "ok",
+      "warn",
+      "error",
+      "working",
+      "info",
+      "idle"
+     ],
+     "about": "The status dot's colour: ok, warn, error, working, info or idle."
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 5,
+    "bytes_est": 800
    }
   },
   "tennis_court": {
@@ -6549,6 +6538,12 @@
      "about": "The date under the time: none, short like MON 19 OCT, or long like Monday 19 October. The header size never shows one."
     },
     {
+     "name": "line",
+     "type": "text",
+     "bindable": true,
+     "about": "A quieter line under the date, such as the weather now. Only with a date; leave it out for none."
+    },
+    {
      "name": "digits",
      "type": "bool",
      "bindable": true,
@@ -6972,6 +6967,40 @@
    "cost": {
     "objects": 17,
     "bytes_est": 2720
+   }
+  },
+  "vacuum_robot": {
+   "name": "Vacuum robot",
+   "update": true,
+   "props": [
+    {
+     "name": "value",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 100,
+     "about": "How full the ring is, from 0 to 100: the run's progress while it cleans, else the battery."
+    },
+    {
+     "name": "run",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "run",
+      "idle",
+      "off"
+     ],
+     "about": "run while it is out cleaning (the ring and the LiDAR in the accent), idle at rest (the battery in grey), off when it cannot be reached (the empty track)."
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 1,
+    "bytes_est": 160
    }
   },
   "weather_icon": {
@@ -7702,5 +7731,5 @@
    }
   }
  },
- "hash": "10e5e816"
+ "hash": "4a3c2477"
 }
