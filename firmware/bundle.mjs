@@ -135,7 +135,6 @@ put('atoms.cpp', read('core/atoms.cpp'));
 put('states.cpp', read('core/states.cpp'));
 put('mascot.cpp', read('core/mascot.cpp'));
 put('device.cpp', read('core/device.cpp'));  // the device runtime (screen stack, navigation)
-for (const f of coreExtra) put(basename(f), read(f));
 // fonts.cpp with this density's font header inlined (and the #ifdef picking it)
 const fonts = read('core/fonts.cpp').toString().replace(/#ifdef FW_1X\n#include "facet_fonts_1x.h"\n#else\n#include "facet_fonts.h"\n#endif\n/,
   `// ---- inlined ${basename(fontH)} (firmware/bundle.mjs)\n${readFileSync(fontH, 'utf8').replace('#pragma once', '')}\n// ---- end of ${basename(fontH)}\n`);
@@ -143,6 +142,10 @@ if (fonts.includes('#include "facet_fonts')) { console.error('fonts.cpp: font in
 const links = [];
 const link = (name, text) => { links.push(name); return `${text}\n// firmware/bundle.mjs: keeps this object (and its registrations) in the link\nextern "C" void ${name}() {}\n`; };
 put('fonts.cpp', link('fwlink_fonts', fonts));
+// core extras (the feed sources: weather_source.cpp, moon_source.cpp, ...) register themselves from a static
+// initialiser (ha::on_local); nothing else names most of them, so without a link symbol the linker dropped them from
+// the static archive and their feed stayed empty on the panel (Weather showed only its header, 2026-10-30)
+for (const f of coreExtra) put(basename(f), link(`fwlink_k_${basename(f, '.cpp')}`, read(f).toString()));
 // icons.cpp with this density's A8 masks inlined (tools/gen_icons.mjs; FW_ICONS=used = only what components declare)
 const iconsH = join(fontDir, `facet_icons${density === '1x' ? '_1x' : ''}${FLAV ? `_${FLAV}` : ''}.h`);  // own file per flavour (FW_ICONS=used trims by feature)
 execFileSync('node', [join(HERE, 'tools/gen_icons.mjs'), '--data', density, iconsH], { env: { ...process.env, FW_ICONS: process.env.FW_ICONS ?? env.FW_ICONS ?? 'all' }, stdio: ['ignore', 'ignore', 'inherit'] });

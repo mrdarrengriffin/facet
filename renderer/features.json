@@ -29,7 +29,7 @@
       "label": "Clock",
       "docs": true, "status": "done", "firmware": true,
       "screens": ["clock"],
-      "components": ["clock_face", "clock_orbit"],
+      "components": ["clock_orbit"],
       "core": ["clock_source.cpp"]
     },
     {
@@ -61,7 +61,7 @@
       "label": "Media",
       "docs": true, "status": "done", "firmware": true,
       "screens": ["media"],
-      "components": ["media_hero", "media_visual", "slider_row"],
+      "components": ["media_hero", "slider_row"],
       "cards": ["media"]
     },
     {
@@ -91,7 +91,7 @@
       "label": "Energy",
       "docs": true, "status": "done", "firmware": true,
       "screens": ["energy"],
-      "components": ["energy_view"]
+      "components": []
     },
     {
       "id": "wip_parts",
@@ -104,8 +104,8 @@
       "id": "retired",
       "label": "Retired parts",
       "docs": false, "status": "wip", "firmware": false,
-      "about": "Kept for reference, not shipped: Card grid (the Cells layout is the Home grid, Darren 2026-10-27); Date line (the Time's date prop, Darren 2026-10-27); Status dot (the Status chip's dot size, Darren 2026-10-27). Big number (the Hero block's unit + count, Darren 2026-10-28). Hold button (the Button's hold prop, Darren 2026-10-28).",
-      "components": ["card_grid", "date_line", "status_dot", "big_number", "hold_button", "timer_view"]
+      "about": "Kept for reference, not shipped: Card grid (the Cells layout is the Home grid, Darren 2026-10-27); Date line (the Time's date prop, Darren 2026-10-27); Status dot (the Status chip's dot size, Darren 2026-10-27). Big number (the Hero block's unit + count, Darren 2026-10-28). Hold button (the Button's hold prop, Darren 2026-10-28). Clock face, Energy view, Bins view, PR row, Check row (their screens are specs of contract parts now, 2026-10-29 night; left in their features they kept those screens off the contract firmware).",
+      "components": ["card_grid", "date_line", "status_dot", "big_number", "hold_button", "timer_view", "clock_face", "energy_view", "bins_view", "pr_row", "check_row"]
     },
     {
       "id": "thermostat",
@@ -169,7 +169,7 @@
       "label": "Bins",
       "docs": false, "status": "wip", "firmware": false,
       "screens": ["bins"],
-      "components": ["bins_view"],
+      "components": [],
       "colour": ["bins"],
       "roadmap": ["Bins"]
     },
@@ -210,7 +210,7 @@
       "label": "GitHub",
       "docs": false, "status": "wip", "firmware": false,
       "screens": ["github"],
-      "components": ["github_pr", "status_row", "pr_row", "check_row"],
+      "components": ["github_pr", "status_row"],
       "roadmap": ["GitHub", "Pull request row", "Check row"]
     },
     {

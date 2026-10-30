@@ -446,14 +446,12 @@
    }
   },
   {
-   "c": "label",
+   "c": "title",
    "p": {
     "text": {
      "e": "panel.flights",
      "a": "f_src"
-    },
-    "type": "label",
-    "colour": "text-dim"
+    }
    },
    "in": 20
   },
