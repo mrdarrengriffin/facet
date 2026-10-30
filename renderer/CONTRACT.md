@@ -791,7 +791,8 @@ token name, or `[1.5x, 1x]` px.
   theme's palette; text and text-dim on every face and every stop of a gradient or pattern, in every combination of
   states, 4.5 (large header text 3.0; disabled states: text-mute 3.0; pressed + disabled is never shown, C36); on-accent on accent 4.5; accent, outer edges of cards and controls, knob,
   major ticks, arc span and scrollbar thumb on their background 3.0 (the strongest outer layer counts). A shadow
-  never counts as contrast. Hairlines and minor ticks are decoration.
+  never counts as contrast. Hairlines and minor ticks are decoration, and so is the unlit part of a moon or phase
+  picture: its outline carries the shape (3.0 on the background).
 - **Press feedback (C36):** a pressable part (card, control, list row) whose theme fixes its face looks different
   pressed (face, edges, text or shadow), at rest and on, in every mode and accent.
 - **Touch:** `touch:min` and row heights unchanged (they are layout sizes).

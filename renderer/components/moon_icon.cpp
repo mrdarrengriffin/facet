@@ -1,7 +1,7 @@
 // Moon phase: the Facet moon glyph (docs @facet/icons moonIcon(frac, { size, south })), built to the contract
-// (renderer/CONTRACT.md) but NOT yet marked as on it (meta contract 2): in the dark theme its dark side (moon-dark) and outline
-// (moon-edge) are under 3:1 against the canvas (pixel contrast 1.8 / 2.0), the original's colours; which colours
-// change is Darren's call (2026-10-30). Drawn by the core atom fx::moon: disc ink:moon-dark, the lit part
+// (renderer/CONTRACT.md). The outline (moon-edge) carries the shape: 3:1 on bg and surface in both themes (dark #585E68,
+// lighter than the original #3A404A); the unlit part (moon-dark, the original's colour) is decoration (contrast pair
+// kind decor, CONTRACT "Contrast"). Drawn by the core atom fx::moon: disc ink:moon-dark, the lit part
 // ink:moon-lit (lit limb + terminator half ellipse), outline ink:moon-edge at the weather stroke (2 px, 3 from 96);
 // the inks are shared recolour styles, so a theme switch repaints it with no component code. Masks are computed at the
 // exact px (no stored phase frames): a new phase redraws only the lit mask, in place. The words that go with it (the
@@ -20,7 +20,7 @@
 // Feed: on the Moon screen every word binds to panel.moon (core/moon_source.cpp). Static: no touch, no sound. Update
 // path: phase / south redraw the lit mask in place, the words in place; a new layout, size or set of words = refilled
 // (fw::st::refill_fade, silent). States: default only (a picture, no press; loading = the feed's words "Loading").
-// Contrast: section "special" (moon-lit on moon-dark) + text, text-dim on bg.
+// Contrast: section "special" (moon-lit on moon-dark, moon-edge on bg / surface; moon-dark decor) + text, text-dim on bg.
 #include <cstdlib>
 #include "fw.h"
 #include "fx.h"
@@ -90,6 +90,8 @@ void walk(lv_obj_t *o, Props p, std::vector<lv_obj_t *> &texts) {
 
 FW_COMPONENT(moon_icon, "Moon phase", "components", R"({
   "about": "The moon as it looks tonight: a dark disc with the lit part for any point in the month. With its words it is one of the next phases, or the moon itself at the top of the Moon screen.",
+  "contract": 2,
+  "parts": [],
   "audit": {"snaps": {"phase": "the phase moves once a day: a redraw, nothing to animate"}},
   "frame": [480, 360],
   "props": [

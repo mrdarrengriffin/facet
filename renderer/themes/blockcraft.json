@@ -10,6 +10,7 @@
   "surface-press": {"dark": "#26262B"},
   "line": {"dark": "#1E1E22"},
   "line-hi": {"dark": "#5A5A64"},
+  "moon-edge": {"dark": "#787E88"},
   "text": {"dark": "#F2F2F2"},
   "text-dim": {"dark": "#B4B4BC"},
   "blue": {"dark": "#7FB2FF"},

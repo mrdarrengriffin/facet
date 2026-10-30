@@ -23,7 +23,7 @@
   "band-normal": {"dark":"#8A919B","light":"#868C95"},
   "moon-lit": {"dark":"#E9E4D6","light":"#FBF8F0"},
   "moon-dark": {"dark":"#15171C","light":"#5C636D"},
-  "moon-edge": {"dark":"#3A404A","light":"#5C636D"},
+  "moon-edge": {"dark":"#585E68","light":"#5C636D"},
   "qr-bg": {"dark":"#F2F1EE","light":"#FFFFFF"},
   "qr-fg": {"dark":"#000000","light":"#16181C"},
   "disc": {"dark":"#0C0E11","light":"#ECE9E3"},

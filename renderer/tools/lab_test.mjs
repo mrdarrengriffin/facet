@@ -28,6 +28,7 @@ const EXTRA = { card: [{ opening: false }, CARD, PAGE],
   status_chip: [{}, ['layout:chip-h', 'radius:chip', 'space:2'], PAGE],
   time: [{ time: '14:52', format: '12h' }, ['space:2'], PAGE],
   stat: [{ label: 'lit', value: '63%', tone: 'text' }, ['space:2'], PAGE],
+  moon_icon: [{ layout: 'hero', size: 'screen', phase: 0.37, label: 'Waxing gibbous', line: '78% · full on Fri' }, [], PAGE],
   // a whole screen (meta stage: screen): its own Page, so the page tokens are its own
   bottom_sheet: [{}, ['layout:inset', 'radius:ring'], []],
   toast_layer: [{ timer: false }, ['layout:inset', 'layout:toast-h', 'layout:toast-pad', 'layout:toast-top'], []],

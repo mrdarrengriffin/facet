@@ -104,11 +104,19 @@ float wcag_min(lv_obj_t *o, bool text) {
     }
   return 4.5f;
 }
+// icon layers that are decoration (tokens/colour.json contrast pair kind "decor", CONTRACT C17): the unlit part of a
+// moon / phase picture; its outline (moon-edge, kind ui) carries the shape and is measured
+const char *const DECOR_INKS[] = {"ink:moon-dark"};
+bool decor_ink(lv_obj_t *o) {
+  for (const char *n : DECOR_INKS) if (has_style(o, n)) return true;
+  return false;
+}
 void inks(lv_obj_t *o, ArduinoJson::JsonArray arr) {
   for (uint32_t i = 0; i < lv_obj_get_child_count(o); i++) {
     lv_obj_t *c = lv_obj_get_child(o, i);
     if (lv_obj_has_flag(c, LV_OBJ_FLAG_HIDDEN) || lv_obj_get_style_opa_recursive(c, LV_PART_MAIN) <= LV_OPA_MIN) continue;
     const bool text = lv_obj_check_type(c, &lv_label_class), img = lv_obj_check_type(c, &lv_image_class);
+    if (img && decor_ink(c)) continue;  // decoration: no contrast minimum (an image has no children)
     lv_area_t a;
     lv_obj_get_coords(c, &a);
     if (((text && *lv_label_get_text(c)) || img) && !fw::toasts::under(c)) {
