@@ -42,6 +42,8 @@ const EXTRA = { card: [{ opening: false }, CARD, PAGE],
   media_hero: [{ playing: false }, ['layout:m-gap', 'layout:m-col-top', 'layout:m-title-h'], PAGE],  // still: a turning picture repaints between a tune and its "and back"
   slider_row: [{}, ['layout:gutter', 'layout:m-vol-label'], PAGE.filter((n) => n !== 'layout:gutter')],  // its row's gap is its own gutter
   bins_next: [{}, ['layout:bin-hero'], ['layout:inset', 'layout:top', 'layout:header-gap', 'squeeze']],
+  status_row: [{}, ['layout:gh-row-h'], ['layout:inset', 'layout:top', 'layout:header-gap', 'squeeze']],
+  github_pr: [{}, ['layout:pr-col-w', 'layout:pr-title-h', 'layout:pr-body-h'], ['layout:inset', 'layout:top', 'layout:header-gap', 'squeeze']],
   calendar_row: [{}, ['layout:cal-row-h', 'layout:cal-time', 'layout:dot', 'layout:gutter'], ['layout:inset', 'layout:top', 'layout:header-gap', 'squeeze']],
   calendar_month: [{}, ['layout:cal-cell-h', 'layout:cal-grid-y'], ['layout:inset', 'layout:top', 'layout:header-gap', 'squeeze']],
   // a day row (its height, the day column, the gaps) and the hour column / hero gaps; icon sizes are shipped bitmaps

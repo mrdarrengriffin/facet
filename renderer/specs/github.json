@@ -1,4 +1,393 @@
-{"v": 1, "id": "github", "name": "GitHub", "rev": 1, "role": "page",
- "header": {"label": "GitHub", "back": true},
+{
+ "v": 1,
+ "id": "github",
+ "name": "GitHub",
+ "rev": 2,
+ "role": "page",
+ "params": {
+  "source": {
+   "about": "Where the pull requests come from: a sensor in Home Assistant in the panel github shape, or made-up pull requests for previews.",
+   "type": "select",
+   "options": [
+    "ha",
+    "sample"
+   ],
+   "label": "Source",
+   "default": "sample"
+  },
+  "sensor": {
+   "about": "With source ha: the sensor that holds the pull requests (attributes needs, mine and at).",
+   "type": "entity",
+   "domain": "sensor",
+   "label": "Sensor",
+   "default": ""
+  },
+  "view": {
+   "about": "Which view the screen shows: sum (how many need you and the top three) or list (all of them). Set by the screen itself.",
+   "type": "hidden",
+   "default": "sum"
+  },
+  "pr": {
+   "about": "The pull request open on the screen, or none. Set by the screen itself when a row is tapped.",
+   "type": "hidden",
+   "default": "none"
+  }
+ },
+ "feeds": {
+  "panel.github": {
+   "source": "$source",
+   "sensor": "$sensor"
+  }
+ },
+ "card": {
+  "icon": "github",
+  "preview": "github",
+  "mode": "value",
+  "value": {
+   "e": "panel.github",
+   "a": "card_value"
+  },
+  "sub": {
+   "e": "panel.github",
+   "a": "card_sub"
+  },
+  "accent": {
+   "e": "panel.github",
+   "a": "card_accent"
+  }
+ },
+ "header": {
+  "label": "GitHub",
+  "back": true
+ },
  "layout": "list",
- "nodes": [{"c": "github_view", "p": {}, "on": {"open": {"do": "nav.open"}}}]}
+ "nodes": [
+  {
+   "c": "title",
+   "in": "header",
+   "slot": "title",
+   "p": {
+    "text": {
+     "e": "panel.github",
+     "a": "head.$view.$pr"
+    }
+   }
+  },
+  {
+   "c": "group",
+   "p": {
+    "flow": "stack",
+    "space": "none",
+    "align": "start"
+   }
+  },
+  {
+   "c": "group",
+   "p": {
+    "flow": "stack",
+    "space": "none",
+    "align": "start"
+   },
+   "show": {
+    "e": "",
+    "s": "$view$pr",
+    "map": {
+     "sumnone": "1"
+    },
+    "else": ""
+   },
+   "in": 1,
+   "slot": 0
+  },
+  {
+   "c": "group",
+   "p": {
+    "flow": "stack",
+    "space": "group",
+    "align": "start"
+   },
+   "show": {
+    "e": "",
+    "s": "$view$pr",
+    "map": {
+     "sumnone": "1"
+    },
+    "else": ""
+   },
+   "in": 1,
+   "slot": 0
+  },
+  {
+   "c": "group",
+   "p": {
+    "flow": "stack",
+    "space": "none",
+    "align": "start"
+   },
+   "show": {
+    "e": "",
+    "s": "$view$pr",
+    "map": {
+     "listnone": "1"
+    },
+    "else": ""
+   },
+   "in": 1,
+   "slot": 0
+  },
+  {
+   "c": "group",
+   "p": {
+    "flow": "stack",
+    "space": "none",
+    "align": "start"
+   },
+   "show": {
+    "e": "",
+    "s": "$view$pr",
+    "map": {
+     "sumnone": "",
+     "listnone": ""
+    },
+    "else": "1"
+   },
+   "in": 1,
+   "slot": 0
+  },
+  {
+   "c": "hero_block",
+   "in": 2,
+   "slot": 0,
+   "p": {
+    "n": {
+     "e": "panel.github",
+     "a": "hero_n"
+    },
+    "label": {
+     "e": "panel.github",
+     "a": "hero_label"
+    },
+    "line": {
+     "e": "panel.github",
+     "a": "hero_line"
+    },
+    "accent": {
+     "e": "panel.github",
+     "a": "hero_accent"
+    }
+   }
+  },
+  {
+   "c": "grid",
+   "in": 3,
+   "slot": 0,
+   "p": {
+    "cols": 1,
+    "gap": "none",
+    "aspect": "row",
+    "items": {
+     "e": "panel.github",
+     "a": "top"
+    },
+    "empty": "Nothing open."
+   },
+   "cell": {
+    "c": "status_row",
+    "p": {
+     "label": "$item.label",
+     "title": "$item.title",
+     "status": "$item.status",
+     "tone": "$item.tone"
+    }
+   },
+   "on": {
+    "pick": {
+     "do": "screen.param",
+     "param": "pr",
+     "back": true
+    }
+   }
+  },
+  {
+   "c": "more_row",
+   "in": 3,
+   "slot": 0,
+   "p": {
+    "text": {
+     "e": "panel.github",
+     "a": "more"
+    }
+   },
+   "on": {
+    "tap": {
+     "do": "screen.param",
+     "param": "view",
+     "to": "list",
+     "back": true
+    }
+   }
+  },
+  {
+   "c": "section_header",
+   "in": 4,
+   "slot": 0,
+   "p": {
+    "title": {
+     "e": "panel.github",
+     "a": "needs_title"
+    },
+    "badge": false,
+    "right": "none",
+    "size": "label"
+   }
+  },
+  {
+   "c": "grid",
+   "in": 4,
+   "slot": 0,
+   "p": {
+    "cols": 1,
+    "gap": "none",
+    "aspect": "row",
+    "items": {
+     "e": "panel.github",
+     "a": "needs"
+    },
+    "empty": "No review requests or assignments"
+   },
+   "cell": {
+    "c": "status_row",
+    "p": {
+     "label": "$item.label",
+     "title": "$item.title",
+     "status": "$item.status",
+     "tone": "$item.tone"
+    }
+   },
+   "on": {
+    "pick": {
+     "do": "screen.param",
+     "param": "pr",
+     "back": true
+    }
+   }
+  },
+  {
+   "c": "section_header",
+   "in": 4,
+   "slot": 0,
+   "p": {
+    "title": {
+     "e": "panel.github",
+     "a": "mine_title"
+    },
+    "badge": false,
+    "right": "none",
+    "size": "label"
+   }
+  },
+  {
+   "c": "grid",
+   "in": 4,
+   "slot": 0,
+   "p": {
+    "cols": 1,
+    "gap": "none",
+    "aspect": "row",
+    "items": {
+     "e": "panel.github",
+     "a": "mine"
+    },
+    "empty": "Nothing of yours is waiting"
+   },
+   "cell": {
+    "c": "status_row",
+    "p": {
+     "label": "$item.label",
+     "title": "$item.title",
+     "status": "$item.status",
+     "tone": "$item.tone"
+    }
+   },
+   "on": {
+    "pick": {
+     "do": "screen.param",
+     "param": "pr",
+     "back": true
+    }
+   }
+  },
+  {
+   "c": "github_pr",
+   "in": 5,
+   "slot": 0,
+   "p": {
+    "meta": {
+     "e": "panel.github",
+     "a": "$pr.meta"
+    },
+    "title": {
+     "e": "panel.github",
+     "a": "$pr.title"
+    },
+    "by": {
+     "e": "panel.github",
+     "a": "$pr.by"
+    },
+    "statuses": {
+     "e": "panel.github",
+     "a": "$pr.statuses"
+    },
+    "body": {
+     "e": "panel.github",
+     "a": "$pr.body"
+    },
+    "url": {
+     "e": "panel.github",
+     "a": "$pr.url"
+    }
+   }
+  },
+  {
+   "c": "section_header",
+   "in": 5,
+   "slot": 0,
+   "p": {
+    "title": {
+     "e": "panel.github",
+     "a": "$pr.checks_k"
+    },
+    "badge": false,
+    "right": "meta",
+    "meta": {
+     "e": "panel.github",
+     "a": "$pr.checks_more"
+    },
+    "size": "label"
+   }
+  },
+  {
+   "c": "grid",
+   "in": 5,
+   "slot": 0,
+   "p": {
+    "cols": 2,
+    "gap": "none",
+    "aspect": "row",
+    "items": {
+     "e": "panel.github",
+     "a": "$pr.checks"
+    },
+    "empty": "No checks on the head commit."
+   },
+   "cell": {
+    "c": "status_line",
+    "p": {
+     "text": "$item.text",
+     "tone": "$item.tone",
+     "ink": "$item.ink"
+    }
+   }
+  }
+ ]
+}

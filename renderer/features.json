@@ -209,8 +209,8 @@
       "id": "github",
       "label": "GitHub",
       "docs": false, "status": "wip", "firmware": false,
-      "screens": ["github", "github_list", "github_pr"],
-      "components": ["github_view", "github_list", "github_pr", "pr_row", "check_row"],
+      "screens": ["github"],
+      "components": ["github_pr", "status_row", "pr_row", "check_row"],
       "roadmap": ["GitHub", "Pull request row", "Check row"]
     },
     {

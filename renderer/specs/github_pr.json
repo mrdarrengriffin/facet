@@ -1,5 +1,0 @@
-{"v": 1, "id": "github_pr", "name": "Pull request", "rev": 1, "role": "detail",
- "params": {"pr": {"type": "text", "about": "For previews only: which made-up pull request to show. n1 to n3 need your review; m1 to m3 are your own.", "default": "n1"}},
- "header": {"label": "Pull request", "back": true},
- "layout": "center",
- "nodes": [{"c": "github_pr", "p": {"pr": "$pr"}}]}
