@@ -102,7 +102,7 @@ FW_COMPONENT(progress_ring, "Progress ring", "components", R"({
     {"name": "value", "about": "How much is left: out of 1000, or out of max when max is set (such as seconds left of the timer's length).", "type": "range", "min": 0, "max": 1000, "step": 1, "default": 0},
     {"name": "max", "about": "What value counts up to, such as the timer's length in seconds. 0 means value is out of 1000.", "type": "range", "min": 0, "max": 3600, "step": 1, "default": 0},
     {"name": "size", "about": "normal is the full ring; compact is smaller, to leave room under it (the Timer with several timers).", "type": "select", "options": ["normal", "compact"], "default": "normal"},
-    {"name": "state", "about": "default shows how much is left; unavailable shows the empty track when the value cannot be read.", "type": "select", "options": ["default", "unavailable"], "default": "default"},
+    {"name": "state", "debug": true, "about": "default shows how much is left; unavailable shows the empty track when the value cannot be read.", "type": "select", "options": ["default", "unavailable"], "default": "default"},
     {"name": "sample", "about": "For previews only: a made-up Hero block in the centre (running, done or unavailable), or none for the empty slot.", "type": "select", "options": ["none", "running", "done", "unavailable"], "default": "none"}
   ],
   "variants": [

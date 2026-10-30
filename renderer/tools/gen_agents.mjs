@@ -68,7 +68,7 @@ const compLines = comps.map(([id, c]) => {
   if (ev.length) L.push(`- events: ${ev.map(([e, a]) => `\`${e}\` -> ${a.join(', ')}`).join('; ')}`);
   if (typeof c.slots === 'number') L.push(`- layout with ${c.slots} slot(s): later nodes go in with "in": <this node's index>, "slot": n`);
   else if (Array.isArray(c.slots)) for (const s of c.slots) {
-    const takes = Array.isArray(s.accepts) ? s.accepts.join(', ') : 'any component', max = s.max ? `, at most ${s.max}` : '';
+    const takes = Array.isArray(s.accepts) ? s.accepts.map((a) => (typeof a === 'string' ? a : `${a.c}${a.p ? ` (${Object.entries(a.p).map(([k, v]) => `${k} ${v.join(' or ')}`).join(', ')})` : ''}`)).join(', ') : 'any component', max = s.max ? `, at most ${s.max}` : '';
     const how = s.template ? 'the node\'s "cell" template' : s.count ? `${s.count} numbered slots: "in": <this node's index>, "slot": n` : `"in": "${id}", "slot": "${s.name}"`;
     L.push(`- slot ${s.name} (${how}): takes ${takes}${max}${s.about ? `. ${s.about}` : ''}`);
   }

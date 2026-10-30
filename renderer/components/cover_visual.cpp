@@ -301,7 +301,7 @@ FW_COMPONENT(cover_visual, "Cover visual", "components", R"({
     {"name": "heading", "about": "Where the cover is moving to while it moves, from 0 to 100, shown as a thin target line. -1 means it is not moving.", "type": "range", "min": -1, "max": 100, "step": 1, "default": -1},
     {"name": "draggable", "about": "Lets you drag the blind's edge, or the curtains sideways, to move the cover.", "type": "bool", "default": true},
     {"name": "size", "about": "screen fills the space it is in, the Blinds screen's window; card is the small picture at the top right of a Home card.", "type": "select", "options": ["screen", "card"], "default": "screen"},
-    {"name": "state", "about": "default can be dragged; disabled cannot be moved; unavailable shows the cover cannot be reached.", "type": "select", "options": ["default", "disabled", "unavailable"], "default": "default"}
+    {"name": "state", "debug": true, "about": "default can be dragged; disabled cannot be moved; unavailable shows the cover cannot be reached.", "type": "select", "options": ["default", "disabled", "unavailable"], "default": "default"}
   ],
   "variants": [
     {"label": "roller · 40 %", "props": {}},

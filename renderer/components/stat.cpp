@@ -42,7 +42,7 @@ FW_COMPONENT(stat, "Stat", "components", R"({
     {"name": "value", "about": "The fact itself, such as 48 km/h.", "type": "text", "default": "48 km/h"},
     {"name": "tone", "about": "The colour of the value: dim for quiet, text for normal, warn for something to watch, ok for good news.", "type": "select", "options": ["dim", "text", "warn", "ok"], "default": "dim"},
     {"name": "size", "about": "title is the usual value; body is a smaller value, for a row of facts in a narrow column (the Flight radar's hero, docs .fs-stat).", "type": "select", "options": ["title", "body"], "default": "title"},
-    {"name": "state", "about": "default shows the value; unavailable shows a dash when it cannot be read.", "type": "select", "options": ["default", "unavailable"], "default": "default"}
+    {"name": "state", "debug": true, "about": "default shows the value; unavailable shows a dash when it cannot be read.", "type": "select", "options": ["default", "unavailable"], "default": "default"}
   ],
   "variants": [
     {"label": "dim · default", "props": {}},

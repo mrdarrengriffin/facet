@@ -61,7 +61,7 @@ FW_COMPONENT(hold_button, "Hold button", "components", R"({
     {"name": "width", "about": "fill stretches the button across the space it is in; hug fits it to its words.", "type": "select", "options": ["fill", "hug"], "default": "fill"},
     {"name": "features", "about": "What the device can do, as Home Assistant reports it in its supported features number.", "type": "range", "min": 0, "max": 65535, "step": 1, "default": 1},
     {"name": "mask", "about": "The feature this button needs. If the device's features do not include it, the button is hidden. 0 always shows it.", "type": "range", "min": 0, "max": 65535, "step": 1, "default": 0},
-    {"name": "state", "about": "default can be held; disabled is greyed out and cannot be used.", "type": "select", "options": ["default", "disabled"], "default": "default"}
+    {"name": "state", "debug": true, "about": "default can be held; disabled is greyed out and cannot be used.", "type": "select", "options": ["default", "disabled"], "default": "default"}
   ],
   "variants": [
     {"label": "default", "props": {}},

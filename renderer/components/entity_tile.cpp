@@ -97,7 +97,7 @@ FW_COMPONENT(entity_tile, "Entity tile", "components", R"({
     {"name": "status", "about": "The short state under the name, such as 64% or Off.", "type": "text", "default": "64%"},
     {"name": "on", "about": "Whether the thing is on. On tiles are lit in the accent colour.", "type": "bool", "default": true},
     {"name": "act", "about": "What a tap does: toggle switches it on or off, open opens its own screen, none does nothing.", "type": "select", "options": ["toggle", "open", "none"], "default": "toggle"},
-    {"name": "state", "about": "How the tile looks: default ready to tap, pressed while held, or unavailable when the device cannot be reached.", "type": "select", "options": ["default", "pressed", "unavailable"], "default": "default"},
+    {"name": "state", "debug": true, "about": "How the tile looks: default ready to tap, pressed while held, or unavailable when the device cannot be reached.", "type": "select", "options": ["default", "pressed", "unavailable"], "default": "default"},
     {"name": "press", "about": "How the tile shows it is being pressed: fill darkens the whole tile, border lights its edge, border-fill does both.", "type": "select", "options": ["fill", "border", "border-fill"], "default": "fill"}
   ],
   "variants": [

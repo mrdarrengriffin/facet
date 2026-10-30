@@ -81,7 +81,7 @@ FW_COMPONENT(section_header, "Section header", "components", R"({
     {"name": "right", "about": "What sits at the right end: none, meta for a quiet line of text, or action for a tappable link.", "type": "select", "options": ["none", "meta", "action"], "default": "meta"},
     {"name": "meta", "about": "The quiet text at the right end, such as when it was last updated.", "type": "text", "default": "updated 2m"},
     {"name": "action", "about": "The words of the link at the right end, such as See all.", "type": "text", "default": "See all"},
-    {"name": "state", "about": "How the link looks: default ready to tap, pressed while held, or disabled.", "type": "select", "options": ["default", "pressed", "disabled"], "default": "default"},
+    {"name": "state", "debug": true, "about": "How the link looks: default ready to tap, pressed while held, or disabled.", "type": "select", "options": ["default", "pressed", "disabled"], "default": "default"},
     {"name": "size", "about": "sm is the small capitals caption; label is the larger screen label style.", "type": "select", "options": ["sm", "label"], "default": "sm"}
   ],
   "variants": [

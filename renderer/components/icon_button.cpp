@@ -134,7 +134,7 @@ FW_COMPONENT(icon_button, "Icon button", "components", R"({
   "props": [
     {"name": "style", "about": "The button's shape: play is the large round play and pause button, round is a smaller circle, square has rounded corners.", "type": "select", "options": ["play", "round", "square"], "default": "round"},
     {"name": "icon", "about": "The icon on the button, such as next, previous, play or close.", "type": "select", "options": ["next", "prev", "play", "plus", "close", "check", "back", "settings", "chevron", "chevron-left", "calendar", "speaker", "covers"], "default": "next"},
-    {"name": "state", "about": "How the button looks: default ready to tap, pressed while held, active when it is switched on, active-pressed while the active one is held, disabled when it cannot be used, or unavailable when its device cannot be reached.", "type": "select", "options": ["default", "pressed", "active", "active-pressed", "disabled", "unavailable"], "default": "default"}
+    {"name": "state", "debug": true, "about": "How the button looks: default ready to tap, pressed while held, active when it is switched on, active-pressed while the active one is held, disabled when it cannot be used, or unavailable when its device cannot be reached.", "type": "select", "options": ["default", "pressed", "active", "active-pressed", "disabled", "unavailable"], "default": "default"}
   ],
   "variants": [
     {"label": "play · default", "props": {"style": "play"}},

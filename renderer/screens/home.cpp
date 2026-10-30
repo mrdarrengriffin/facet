@@ -12,10 +12,12 @@
 //              sensor  s Entity tile, read-only (act none: the value + label, no press) | m State readout (no box,
 //                      no tap); two m sensors in a row share one card slot
 //              page    s Entity tile / m Card / l wide Card: the page's name (opens it)
+//              action  s Entity tile: a script / scene / automation / button (its icon, Run / Activate / Trigger / Press)
 //            label = the card's label, else the entity's friendly name (a bind). Unavailable entities show the
 //            components' own unavailable look.
 //   taps     toggle = light.toggle (a light or a switch); detail = nav.open of the type's detail screen for that
-//            entity; page = nav.open of that deck page; none = nothing (sensors)
+//            entity; page = nav.open of that deck page; none = nothing (sensors); run = script.run / scene.activate /
+//            automation.trigger / button.press (an action card; its "ask" = the panel asks "Run <name>?" first)
 // Header actions (the deck page's header_actions, screen model §10): button settings (default) or a page id = that
 // page's shortcut, a gutter before the settings button (which always stays; a long press on the time opens Settings
 // too); status timer = the panel's timer, time left beside the time.
@@ -166,6 +168,10 @@ char card_node(Var cd, Var pages, int slot, ArduinoJson::JsonArray nodes) {
         }
       }
       p["on"] = false;
+    } else if (t == "action") {  // run it (2026-10-30): the domain's icon, the verb as the status, no on look
+      p["icon"] = dom == "script" ? "play" : dom == "scene" ? "house" : dom == "automation" ? "auto" : "bolt";
+      p["status"] = dom == "script" ? "Run" : dom == "scene" ? "Activate" : dom == "automation" ? "Trigger" : "Press";
+      p["on"] = false;
     } else if (t == "cover") {
       p["icon"] = "screen-covers";
       bind(p, "status", e, "state");
@@ -227,6 +233,11 @@ char card_node(Var cd, Var pages, int slot, ArduinoJson::JsonArray nodes) {
     a["screen"] = ct->detail;
     a["params"]["entity"] = e;
     if (!label.empty()) a["params"]["name"] = label;
+  } else if (tap == "run") {  // the Action tile: its domain's action; ask = "Run <name>?" on the panel first
+    ArduinoJson::JsonObject a = n["on"]["tap"].to<ArduinoJson::JsonObject>();
+    a["do"] = dom == "script" ? "script.run" : dom == "scene" ? "scene.activate" : dom == "automation" ? "automation.trigger" : "button.press";
+    a["e"] = e;
+    if (cd["ask"] | false) { a["ask"] = true; if (!label.empty()) a["name"] = label; }
   } else if (tap == "page" && !pid.empty()) {
     ArduinoJson::JsonObject a = n["on"]["tap"].to<ArduinoJson::JsonObject>();
     a["do"] = "nav.open";

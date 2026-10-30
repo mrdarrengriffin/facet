@@ -264,7 +264,7 @@ FW_COMPONENT(card, "Card", "components", R"({
     {"name": "sub", "about": "The quieter supporting line at the bottom of the card.", "type": "text", "default": "Dry for the next hour"},
     {"name": "tone", "about": "The colour of the supporting line: dim for normal, ok for good news, warn for something to watch, error for a problem.", "type": "select", "options": ["dim", "ok", "warn", "error"], "default": "dim"},
     {"name": "accent", "about": "Edges the card in the accent colour to show it needs you now, such as a timer that is running.", "type": "bool", "default": false},
-    {"name": "state", "about": "How the card looks: default ready to tap, pressed while held, or unavailable when its device cannot be reached.", "type": "select", "options": ["default", "pressed", "unavailable"], "default": "default"},
+    {"name": "state", "debug": true, "about": "How the card looks: default ready to tap, pressed while held, or unavailable when its device cannot be reached.", "type": "select", "options": ["default", "pressed", "unavailable"], "default": "default"},
     {"name": "press", "about": "How the card shows it is being pressed: fill darkens the whole card, border lights its edge, border-fill does both.", "type": "select", "options": ["fill", "border", "border-fill"], "default": "fill"}
   ],
   "variants": [

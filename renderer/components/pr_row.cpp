@@ -95,7 +95,7 @@ FW_COMPONENT(pr_row, "Pull request row", "components", R"({
     {"name": "age", "about": "How long ago it was opened or last changed, such as 5h.", "type": "text", "default": "5h"},
     {"name": "draft", "about": "Marks it as a draft that is not ready for review yet.", "type": "bool", "default": false},
     {"name": "ci", "about": "How its automatic checks went: pass, fail, pending, or none when it has no checks.", "type": "select", "options": ["pass", "fail", "pending", "none"], "default": "pass"},
-    {"name": "state", "about": "default ready to tap; pressed while held.", "type": "select", "options": ["default", "pressed"], "default": "default"}
+    {"name": "state", "debug": true, "about": "default ready to tap; pressed while held.", "type": "select", "options": ["default", "pressed"], "default": "default"}
   ],
   "variants": [
     {"label": "review · ci pass", "props": {}},

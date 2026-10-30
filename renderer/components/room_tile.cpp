@@ -65,7 +65,7 @@ FW_COMPONENT(room_tile, "Room tile", "components", R"({
     {"name": "room", "about": "The room's name and its number in the vacuum, written as name:number, such as Kitchen:3.", "type": "text", "default": "Kitchen:3"},
     {"name": "picked", "about": "The rooms picked for the next clean, as name:number pairs separated by commas. If this room is among them it is shown picked.", "type": "text", "default": ""},
     {"name": "here", "about": "The room being cleaned now; if it is this one, the tile shows it.", "type": "text", "default": ""},
-    {"name": "state", "about": "default can be tapped to pick the room; disabled cannot be picked.", "type": "select", "options": ["default", "disabled"], "default": "default"}
+    {"name": "state", "debug": true, "about": "default can be tapped to pick the room; disabled cannot be picked.", "type": "select", "options": ["default", "disabled"], "default": "default"}
   ],
   "variants": [
     {"label": "tap to pick", "props": {}},

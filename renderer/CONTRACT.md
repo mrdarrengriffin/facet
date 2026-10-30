@@ -121,13 +121,17 @@ MUST NOT place a sibling, size a sibling, or position anything with coordinates.
 *Why:* one owner for arrangement means one place to prove it. *Check:* lint `local` (no positions); P2.
 
 **C8a. Every slot declares what it accepts and how many.** A component that holds other components (a layout, the
-Header) declares each slot ONCE, in its meta `slots`: `{"name", "about", "accepts": [component ids], "max": n}` (max 0
-= no limit), plus `"count": n` for n numbered slots (`"in": k, "slot": i`) or `"template": true` for a repeated cell
+Header) declares each slot ONCE, in its meta `slots`: `{"name", "about", "accepts": [entries], "max": n}` (max 0
+= no limit); an entry is a component id, or `{"c": id, "p": {prop: [values]}, "editor": false}` to pin a variant
+(the Header's end takes only square icon buttons: a node there must set `style` to one of the values) and/or keep it
+out of the editor (specs may still use it), plus `"count": n` for n numbered slots (`"in": k, "slot": i`) or `"template": true` for a repeated cell
 template (the Grid's `cell`); a slot with neither is a named slot (`"in": "header", "slot": "end"`). A spec that puts a
 component a slot does not accept, more than its max (items the component adds itself count: the Header's settings
 button), or a repeated (`each`) node into a slot with a max is refused at load with a path error (`bad_slot` at
-`.nodes[i].c`, `.nodes[i].in`, `.nodes[i].each` or `.nodes[i].cell.c`), never built and clipped. The editor and the
-workbench offer only what the meta allows. Code (C++ screens) is not capped by the meta; an overfull slot is then a
+`.nodes[i].c`, `.nodes[i].in`, `.nodes[i].each`, `.nodes[i].cell.c` or a pinned `.nodes[i].p.<prop>`), never built
+and clipped. The editor and the
+workbench offer only what the meta allows. A prop marked `"debug": true` in the meta (a look state such as
+pressed / disabled / unavailable, shown for testing) is never offered by the editor; the workbench still shows it. Code (C++ screens) is not capped by the meta; an overfull slot is then a
 bounds failure (C11). A bare count (`"slots": 4`) is the legacy form: that many slots, any component, no max.
 *Why:* a slot that takes anything can be filled into a broken layout; one declaration means the check, the editor and
 the docs can never disagree. *Check:* the spec checker (`core/spec.h` `slot_decls`); each slotted component's
@@ -346,7 +350,10 @@ action is reachable from a spec node's event, an agent (`POST /fw/act`) and Home
 `fw::spec::act` / `run_action` (one check: `check_action`; one code path: the tap's), and documented from the list
 (`GET /fw/act`, the catalogue's `act`, `/agents.md` "Doing things", `/llms.txt`). No feature adds its own HA action,
 endpoint or parser for something the list could carry (friendly wrappers such as `facet_timer_*` build a list action);
-actions needing a spec screen (`screen.*`) say so and are refused outside one.
+actions needing a spec screen (`screen.*`) say so and are refused outside one. Actions that run something in Home Assistant
+(`script.run`, `scene.activate`, `automation.trigger`, `button.press`) take only an entity of their own domain, no
+data, and an optional `ask`: the panel asks "Run <name>?" on its own screen first and never runs unasked when it
+cannot ask.
 *Why:* one list means a new feature is controllable by people, agents and HA at once, with the same limits, and the
 docs cannot drift from what runs. *Check:* `static_assert` (one `ACTION_DOCS` row per `ACTIONS` entry); functional
 test `act` "C50" (every row has about, typed fields and an example that `act()` runs; spec-only rows refused).

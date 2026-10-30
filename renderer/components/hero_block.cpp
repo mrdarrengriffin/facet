@@ -131,7 +131,7 @@ FW_COMPONENT(hero_block, "Hero block", "components", R"({
     {"name": "role", "about": "How big the number is: display is the largest, hero a step smaller for a screen's main figure, value smaller again for a hero inside a small space such as the compact Timer ring.", "type": "select", "options": ["hero", "display", "value"], "default": "hero"},
     {"name": "layout", "about": "row puts the label and line beside the number; stack puts the label above it and the line under it, centred, such as inside a ring; stack-start is the same column at the start (left), such as beside a picture.", "type": "select", "options": ["row", "stack", "stack-start"], "default": "row"},
     {"name": "label_type", "about": "How the words next to the number are written: label in small capitals, or title in larger plain text.", "type": "select", "options": ["label", "title"], "default": "label"},
-    {"name": "state", "about": "default shows the number; unavailable shows a dash when the value cannot be read.", "type": "select", "options": ["default", "unavailable"], "default": "default"}
+    {"name": "state", "debug": true, "about": "default shows the number; unavailable shows a dash when the value cannot be read.", "type": "select", "options": ["default", "unavailable"], "default": "default"}
   ],
   "variants": [
     {"label": "accent · needs you", "props": {}},

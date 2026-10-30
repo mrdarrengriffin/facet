@@ -33,7 +33,7 @@ FW_COMPONENT(radio, "Radio", "components", R"({
   "frame": [160, 96],
   "props": [
     {"name": "on", "about": "Whether this option is the chosen one; the ring fills in.", "type": "bool", "default": true},
-    {"name": "state", "about": "default can be chosen; disabled is greyed out.", "type": "select", "options": ["default", "disabled"], "default": "default"}
+    {"name": "state", "debug": true, "about": "default can be chosen; disabled is greyed out.", "type": "select", "options": ["default", "disabled"], "default": "default"}
   ],
   "variants": [
     {"label": "off", "props": {"on": false}},

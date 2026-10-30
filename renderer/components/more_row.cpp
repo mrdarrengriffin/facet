@@ -50,7 +50,7 @@ FW_COMPONENT(more_row, "More row", "components", R"({
   "icons": ["chevron@icon"],
   "props": [
     {"name": "text", "about": "The words of the row, such as how many more items there are.", "type": "text", "default": "all pull requests · 3 more"},
-    {"name": "state", "about": "How the row looks: default ready to tap, pressed while held, or disabled when there is nothing more to open.", "type": "select", "options": ["default", "pressed", "disabled"], "default": "default"}
+    {"name": "state", "debug": true, "about": "How the row looks: default ready to tap, pressed while held, or disabled when there is nothing more to open.", "type": "select", "options": ["default", "pressed", "disabled"], "default": "default"}
   ],
   "variants": [
     {"label": "default", "props": {}},

@@ -133,7 +133,8 @@
 //              of the kind's sources (renderer/sources/sources.json); params = the page opens with them over the
 //              spec's defaults (a host's discovery fills them). cards only on a home: t = a card type (CARD_TYPES),
 //              e = its entity (a domain the type takes), size s | m | l, tap toggle | detail | page | none (the
-//              type's first by default), page = a page id (t page), label (else the entity's name). A home may set
+//              type's first by default), page = a page id (t page), label (else the entity's name), ask (t action: true =
+//              the panel asks "Run <name>?" first; 2026-10-30). A home may set
 //              header_actions {button: "settings" (default) | a page id (that page's shortcut in the settings
 //              button's place; Settings = a long press on the time), status: "none" | "timer" (the panel's timer,
 //              time left beside the time)}. start = the
@@ -193,8 +194,8 @@ constexpr Rule RULES[] = {
     {"list_row", "toggle", "light.switch"},          {"list_row", "tap", "nav.open,nav.back,light.toggle,flights.select"},
     {"list_row", "long", "nav.open"},                {"card", "tap", "nav.open,light.toggle"},
     {"card", "long", "nav.open"},                    {"dial", "change", "light.brightness"},
-    {"entity_tile", "tap", "nav.open,light.toggle"},
-    {"icon_button", "tap", "nav.open,nav.back,calendar.control,media.control,cover.control"},  {"icon_button", "toggle", "media.control"},  // 2026-10-29: a header's settings / shortcut icon (the end slot takes icon buttons only); the Calendar's calendars button
+    {"entity_tile", "tap", "nav.open,light.toggle,script.run,scene.activate,automation.trigger,button.press"},  // 2026-10-30: the Home Action tile
+    {"icon_button", "tap", "nav.open,nav.back,light.toggle,calendar.control,media.control,cover.control,script.run,scene.activate,automation.trigger,button.press"},  {"icon_button", "toggle", "media.control"},  // 2026-10-29: a header's settings / shortcut icon (the end slot takes icon buttons only); the Calendar's calendars button
     {"dial", "input", "light.brightness"},           {"dial", "toggle", "light.switch"},
     {"slider", "change", "light.brightness,cover.control"}, {"slider", "input", "light.brightness"},
     {"slider_row", "change", "media.control,cover.control"}, {"slider_row", "input", "media.control,cover.control"},
@@ -205,7 +206,7 @@ constexpr Rule RULES[] = {
     {"thermostat_view", "preset", "climate.set_preset_mode"},
     {"cover_visual", "change", "cover.control"},  // the Covers window: a drag released (its position)
     {"lock_ring", "lock", "lock.control"},           {"button", "confirm", "lock.control"},
-    {"room_tile", "pick", "screen.toggle"},          {"camera_tile", "tap", "nav.back"},          {"tile", "tap", "nav.open"},          {"button", "tap", "nav.open,nav.back,light.toggle,vacuum.control,timer.start,timer.extend,timer.cancel,timer.stop,timer.select,timer.new,timer.back,cover.control"},
+    {"room_tile", "pick", "screen.toggle"},          {"camera_tile", "tap", "nav.back"},          {"tile", "tap", "nav.open"},          {"button", "tap", "nav.open,nav.back,light.toggle,vacuum.control,timer.start,timer.extend,timer.cancel,timer.stop,timer.select,timer.new,timer.back,cover.control,script.run,scene.activate,automation.trigger,button.press"},  // 2026-10-30: a button you place says what it does (the editor's On tap)
     {"timer_chip", "select", "timer.select"},       {"timer_chip", "stop", "timer.stop"},
     {"grid", "select", "timer.select"},             {"grid", "stop", "timer.stop"},  // Timer chips in an items Grid
     {"segmented", "change", "vacuum.control,screen.param"}, {"iso_floorplan", "pick", "screen.toggle"},
@@ -219,7 +220,7 @@ constexpr Rule RULES[] = {
 constexpr const char *ACTIONS[] = {"light.switch", "light.toggle", "light.brightness", "climate.set_temperature",
                                    "climate.set_hvac_mode", "climate.set_preset_mode", "media.control", "cover.control", "lock.control", "vacuum.control", "screen.toggle", "screen.param",
                                    "nav.open", "nav.back", "timer.start", "timer.extend", "timer.cancel", "timer.stop", "timer.select", "timer.new", "timer.back",
-                                   "calendar.control", "flights.select"};
+                                   "calendar.control", "flights.select", "script.run", "scene.activate", "automation.trigger", "button.press"};
 // The one closed action list, documented (CONTRACT.md C50): every action a spec node, an agent (POST /fw/act) or Home
 // Assistant (facet_act) can run, with its fields and one example. GET /fw/act, the catalogue's "act" and the agent docs
 // are generated from it; act() checks "value" against `value` (outside a spec the value a component's event would give
@@ -251,6 +252,10 @@ constexpr ActionDoc ACTION_DOCS[] = {
     {"timer.back", "Leave the length picker.", "", "", R"({"do":"timer.back"})", false},
     {"calendar.control", "On the Calendar: show the previous, next or this month, open a day or the calendars sheet, close the sheet, or turn a calendar on or off (its id: the entity without calendar.).", "", "previous|next|today|calendars|close|*48", R"({"do":"calendar.control","value":"day 2026-10-23"})", false},
     {"flights.select", "On the Flight radar: select an aircraft (by hex, callsign or route) so the hero and the card show it; the selected one again opens its details (spec nodes only).", "", "*48", R"({"do":"flights.select"})", true},
+    {"script.run", "Run a Home Assistant script (ask: the panel asks \"Run <name>?\" first).", "e|entity|required|script.x;ask|bool|optional|ask on the panel first;name|text|optional|the name the question shows, at most 32", "", R"({"do":"script.run","e":"script.good_night"})", false},
+    {"scene.activate", "Activate a Home Assistant scene (ask: the panel asks \"Run <name>?\" first).", "e|entity|required|scene.x;ask|bool|optional|ask on the panel first;name|text|optional|the name the question shows, at most 32", "", R"({"do":"scene.activate","e":"scene.movie"})", false},
+    {"automation.trigger", "Trigger a Home Assistant automation now (ask: the panel asks \"Run <name>?\" first).", "e|entity|required|automation.x;ask|bool|optional|ask on the panel first;name|text|optional|the name the question shows, at most 32", "", R"({"do":"automation.trigger","e":"automation.lights_out"})", false},
+    {"button.press", "Press a Home Assistant button entity (ask: the panel asks \"Run <name>?\" first).", "e|entity|required|button.x;ask|bool|optional|ask on the panel first;name|text|optional|the name the question shows, at most 32", "", R"({"do":"button.press","e":"button.doorbell_chime"})", false},
 };
 static_assert(sizeof ACTION_DOCS / sizeof ACTION_DOCS[0] == sizeof ACTIONS / sizeof ACTIONS[0], "every action has its ACTION_DOCS row (CONTRACT.md C50)");
 inline const ActionDoc *action_doc(const std::string &d) {
@@ -286,7 +291,14 @@ inline lv_obj_t *slot_of(lv_obj_t *o, int n) {  // the layout node itself may be
 // "count": n (n numbered slots of this kind: "in": k, "slot": i), "template": true (the Grid's "cell" template)}. A
 // declaration with no count and no template is a NAMED slot (the Header's title / end: "in": "header", "slot": name).
 // check_screen enforces accepts and max with a path error ("bad_slot"); the workbench / editor read the same meta.
-struct SlotDecl { std::string name; std::vector<std::string> accepts; int count = 0, max = 0; bool any = true, tmpl = false; };
+// An accepts entry is a component id, or {"c": id, "p": {prop: [allowed values]}, "editor": false} (Darren 2026-10-30):
+// p pins props to those values in this slot (the Header's end takes only square icon buttons; the node must set each
+// pinned prop to one of them), editor false = specs may put it there but the editor never offers it (a Segmented
+// needs a screen parameter to switch; built-in screens use it in the Header's end).
+struct SlotDecl {
+  std::string name; std::vector<std::string> accepts; int count = 0, max = 0; bool any = true, tmpl = false;
+  std::map<std::string, std::map<std::string, std::vector<std::string>>> pins;  // component -> prop -> allowed values
+};
 inline const std::vector<SlotDecl> &slot_decls(const char *comp) {
   static std::map<std::string, std::vector<SlotDecl>> cache;  // metas are constant: parsed once per component
   auto it = cache.find(comp);
@@ -301,7 +313,12 @@ inline const std::vector<SlotDecl> &slot_decls(const char *comp) {
     s.name = o["name"] | ""; s.count = o["count"] | 0; s.max = o["max"] | 0; s.tmpl = o["template"] | false;
     if (o["accepts"].is<ArduinoJson::JsonArrayConst>()) {
       s.any = false;
-      for (ArduinoJson::JsonVariantConst a : o["accepts"].as<ArduinoJson::JsonArrayConst>()) s.accepts.push_back(a | "");
+      for (ArduinoJson::JsonVariantConst a : o["accepts"].as<ArduinoJson::JsonArrayConst>()) {
+        const std::string id = a.is<const char *>() ? a.as<std::string>() : (a["c"] | "");
+        s.accepts.push_back(id);
+        for (ArduinoJson::JsonPairConst kv : a["p"].as<ArduinoJson::JsonObjectConst>())
+          for (ArduinoJson::JsonVariantConst v : kv.value().as<ArduinoJson::JsonArrayConst>()) s.pins[id][kv.key().c_str()].push_back(v | "");
+      }
     }
     v.push_back(s);
   }
@@ -343,7 +360,8 @@ constexpr CardType CARD_TYPES[] = {
     {"climate", "climate", "m", "detail", "thermostat", "", "card", ""},
     {"media", "media_player", "m,l", "detail,page", "media", "", "card", "card"},
     {"sensor", "sensor,binary_sensor", "s,m", "none", "", "entity_tile", "readout", ""},
-    {"page", "", "s,m,l", "page", "", "entity_tile", "card", "card"}};
+    {"page", "", "s,m,l", "page", "", "entity_tile", "card", "card"},
+    {"action", "script,scene,automation,button", "s", "run", "", "entity_tile", "", ""}};  // 2026-10-30: run it (ask = "Run <name>?" first)
 // a parameter's default: its text, or a typed parameter's "default"
 inline std::string param_default(ArduinoJson::JsonVariantConst v) {
   if (v.is<const char *>()) return v.as<std::string>();
@@ -434,8 +452,8 @@ inline void check_keys(ArduinoJson::JsonObjectConst o, const char *const *keys, 
 }
 inline void check_action(ArduinoJson::JsonVariantConst a, const char *comp, const char *event, const std::string &path, Errs &e) {
   if (!a.is<ArduinoJson::JsonObjectConst>()) { err(e, path, "bad_action", "an action is an object {do, ...}"); return; }
-  static const char *const K[] = {"do", "e", "screen", "params", "param", "from", "auto", "rooms", "mode", "mop", "seconds", "name", "s", "id", "value", "to", "back"};
-  check_keys(a.as<ArduinoJson::JsonObjectConst>(), K, 17, path, e);
+  static const char *const K[] = {"do", "e", "screen", "params", "param", "from", "auto", "rooms", "mode", "mop", "seconds", "name", "s", "id", "value", "to", "back", "ask"};
+  check_keys(a.as<ArduinoJson::JsonObjectConst>(), K, 18, path, e);
   const std::string d = a["do"] | "";
   if (!one_of(ACTIONS, d)) { err(e, path + ".do", "bad_action", "unknown action " + d); return; }
   if (comp) {  // a spec node: its component's event allows it; nullptr = act() (an agent, HA: no component)
@@ -446,6 +464,12 @@ inline void check_action(ArduinoJson::JsonVariantConst a, const char *comp, cons
   if (d.rfind("light.", 0) == 0) {
     const std::string en = a["e"] | "";
     if (!entity_ok(en) || (en[0] != '$' && en.rfind("light.", 0) != 0)) err(e, path + ".e", "bad_entity", "a light entity (light.x or $param)");
+  }
+  if (d == "script.run" || d == "scene.activate" || d == "automation.trigger" || d == "button.press") {  // the Action tile (2026-10-30)
+    const std::string en = a["e"] | "", dom = d.substr(0, d.find('.'));
+    if (!entity_ok(en) || (en[0] != '$' && en.rfind(dom + ".", 0) != 0)) err(e, path + ".e", "bad_entity", "a " + dom + " entity (" + dom + ".x or $param)");
+    if (!a["ask"].isNull() && !a["ask"].is<bool>()) err(e, path + ".ask", "bad_action", "ask: true or false");
+    if (!a["name"].isNull() && (!a["name"].is<const char *>() || strlen(a["name"] | "") > 32)) err(e, path + ".name", "bad_action", "name: text, at most 32");
   }
   if (d.rfind("climate.", 0) == 0) {
     const std::string en = a["e"] | "";
@@ -678,6 +702,15 @@ inline void check_screen(ArduinoJson::JsonVariantConst s, size_t bytes, Errs &e)
     if (!pis || !comp || strcmp(comp->section, "components")) { err(e, p + ".c", "unknown_component", "no component " + c + " in this build"); continue; }
     if (sd) {  // the slot's allow list and max count (facet-205)
       if (!slot_takes(*sd, c)) err(e, p + ".c", "bad_slot", sw + " takes " + slot_list(*sd) + ", not " + c);
+      else if (auto pin = sd->pins.find(c); pin != sd->pins.end())  // a pinned variant (C8a): each pinned prop set to an allowed value
+        for (const auto &pv : pin->second) {
+          const std::string v = n["p"][pv.first].is<const char *>() ? n["p"][pv.first].as<std::string>() : "";
+          if (std::find(pv.second.begin(), pv.second.end(), v) == pv.second.end()) {
+            std::string ok;
+            for (size_t i = 0; i < pv.second.size(); i++) ok += (i ? " or " : "") + pv.second[i];
+            err(e, p + ".p." + pv.first, "bad_slot", sw + " takes a " + c + " with " + pv.first + " " + ok + " only");
+          }
+        }
       if (sd->max && !n["each"].isNull()) err(e, p + ".each", "bad_slot", sw + " holds at most " + std::to_string(sd->max) + ": a repeated (each) node can't go in it");
       else if (sd->max && ++fill[sk] > sd->max)
         err(e, p + ".in", "bad_slot", sw + " holds at most " + std::to_string(sd->max) + (sk == "header's end" && fill0 ? " (the header's own settings / actions count)" : "") + ": this is item " + std::to_string(fill[sk]));
@@ -730,12 +763,12 @@ inline const CardType *card_type(const std::string &t) {
   return nullptr;
 }
 inline void check_card(ArduinoJson::JsonVariantConst c, const std::string &p, const std::set<std::string> &ids, Errs &e) {
-  static const char *const CK[] = {"t", "e", "size", "tap", "page", "label"};
-  if (!c.is<ArduinoJson::JsonObjectConst>()) { err(e, p, "bad_card", "a card is {t, e, size, tap?, page?, label?}"); return; }
-  check_keys(c.as<ArduinoJson::JsonObjectConst>(), CK, 6, p, e);
+  static const char *const CK[] = {"t", "e", "size", "tap", "page", "label", "ask"};
+  if (!c.is<ArduinoJson::JsonObjectConst>()) { err(e, p, "bad_card", "a card is {t, e, size, tap?, page?, label?, ask?}"); return; }
+  check_keys(c.as<ArduinoJson::JsonObjectConst>(), CK, 7, p, e);
   const std::string t = c["t"] | "", ent = c["e"] | "", size = c["size"] | "", tap = c["tap"] | "", pg = c["page"] | "";
   const CardType *ct = card_type(t);
-  if (!ct) { err(e, p + ".t", "bad_card", "t is a card type (light, cover, climate, media, sensor, page)"); return; }
+  if (!ct) { err(e, p + ".t", "bad_card", "t is a card type (light, cover, climate, media, sensor, page, action)"); return; }
   if (*ct->domains) {
     const size_t dot = ent.find('.');
     if (dot == std::string::npos || !csv_has(ct->domains, ent.substr(0, dot))) err(e, p + ".e", "bad_entity", std::string("a ") + t + " card takes " + ct->domains + " entities");
@@ -744,6 +777,7 @@ inline void check_card(ArduinoJson::JsonVariantConst c, const std::string &p, co
   if (!tap.empty() && !csv_has(ct->taps, tap)) err(e, p + ".tap", "bad_tap", std::string("a ") + t + " card's tap is " + ct->taps);
   if (!pg.empty() && !ids.count(pg)) err(e, p + ".page", "bad_page", "no page " + pg + " in this deck");
   if (t == "page" && pg.empty()) err(e, p + ".page", "bad_page", "a page card names a page");
+  if (!c["ask"].isNull() && (t != "action" || !c["ask"].is<bool>())) err(e, p + ".ask", "bad_card", "ask (true / false) is an action card's");
   if (!c["label"].isNull() && (!c["label"].is<const char *>() || strlen(c["label"] | "") > 32)) err(e, p + ".label", "bad_card", "label is text (at most 32)");
 }
 inline void check_deck(ArduinoJson::JsonVariantConst d, size_t bytes, Errs &e) {
@@ -1145,6 +1179,36 @@ inline const char *ha_act(Node &n, const char *service, const char *entity, cons
   if (*w) act_why() = w;
   return w;
 }
+// an Action tile's "ask first" (Darren 2026-10-30): a Bottom sheet over the tile's screen, title "Run <name>?", one row
+// "Run <name>" (a pick runs the service and closes it); Close / the scrim = nothing. One at a time: a new ask replaces
+// the last sheet. No screen (an agent's act with nothing shown) = refused, never run unasked.
+inline void ask_run(Node &n, const char *svc, const std::string &label) {
+  struct Job { std::string svc, entity; };
+  static Job job;
+  static lv_obj_t *sheet = nullptr;
+  lv_obj_t *scr = n.obj ? lv_obj_get_screen(n.obj) : nullptr;
+  const fw::Component *c = fw::find("bottom_sheet");
+  if (!scr || !c) { act_why() = "nothing on the panel's screen to ask on"; return; }
+  if (sheet && lv_obj_is_valid(sheet)) lv_obj_delete(sheet);
+  sheet = nullptr;
+  std::string name = label;
+  if (name.empty()) { const std::string *f = ha::get(n.entity, "friendly_name"); name = f && !f->empty() ? *f : n.entity; }
+  job = {svc, n.entity};
+  ArduinoJson::JsonDocument d;
+  d["overlay"] = true;
+  d["open"] = "open";
+  d["title"] = "Run " + name + "?";
+  d["selected"] = -1;  // a question, not a choice: no radio ringed
+  ArduinoJson::JsonObject it = d["items"].to<ArduinoJson::JsonArray>().add<ArduinoJson::JsonObject>();
+  it["icon"] = "play";
+  it["name"] = "Run " + name;
+  const uint32_t before = lv_obj_get_child_count(scr);
+  c->build(scr, d.as<fw::Props>());
+  if (lv_obj_get_child_count(scr) <= before) return;
+  sheet = lv_obj_get_child(scr, -1);
+  lv_obj_add_event_cb(sheet, [](lv_event_t *e) { ha::act((lv_obj_t *) lv_event_get_current_target(e), job.svc.c_str(), job.entity.c_str()); },
+                      LV_EVENT_VALUE_CHANGED, nullptr);
+}
 inline void send_brightness(Node &n, int v) {
   if (v == n.sent) return;
   char data[40];
@@ -1534,6 +1598,12 @@ inline bool run_action(Screen *s, Node &n, ArduinoJson::JsonVariantConst a, cons
       if ((a["back"] | false) && before != v) s->undo.push_back({param, before});  // Back returns here first
       emit(s->root, "param", (param + "=" + v).c_str());  // the host sees it (a view, a speaker)
     }
+    return true;
+  }
+  if (d == "script.run" || d == "scene.activate" || d == "automation.trigger" || d == "button.press") {  // the Action tile
+    const char *svc = d == "script.run" ? "script.turn_on" : d == "scene.activate" ? "scene.turn_on" : d.c_str();
+    if (a["ask"] | false) ask_run(n, svc, a["name"] | "");  // "Run <name>?" first: a Bottom sheet, its one row runs it
+    else ha_act(n, svc, n.entity.c_str());
     return true;
   }
   if (d == "light.toggle") {  // a light, or a switch (a Home light card takes both)

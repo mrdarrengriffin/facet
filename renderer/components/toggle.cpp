@@ -72,7 +72,7 @@ FW_COMPONENT(toggle, "Toggle", "components", R"({
   "frame": [160, 96],
   "props": [
     {"name": "on", "about": "Whether the switch is on.", "type": "bool", "default": false},
-    {"name": "state", "about": "default can be tapped; disabled cannot be changed; unavailable shows the device cannot be reached.", "type": "select", "options": ["default", "disabled", "unavailable"], "default": "default"}
+    {"name": "state", "debug": true, "about": "default can be tapped; disabled cannot be changed; unavailable shows the device cannot be reached.", "type": "select", "options": ["default", "disabled", "unavailable"], "default": "default"}
   ],
   "variants": [
     {"label": "off", "props": {}},

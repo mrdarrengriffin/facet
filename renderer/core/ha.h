@@ -462,6 +462,8 @@ inline const char *act(lv_obj_t *from, const char *service, const char *entity, 
   if (svc.rfind("lock.", 0) == 0 && ent.rfind("lock.", 0) != 0) return "not a lock";
   if (svc.rfind("vacuum.", 0) == 0 && ent.rfind("vacuum.", 0) != 0) return "not a vacuum";
   if (svc.rfind("switch.", 0) == 0 && ent.rfind("switch.", 0) != 0) return "not a switch";
+  for (const char *dom : {"script.", "scene.", "automation.", "button."})  // the Action tile (2026-10-30): its own domain only
+    if (svc.rfind(dom, 0) == 0 && ent.rfind(dom, 0) != 0) return "not an entity of that service's domain";
   ArduinoJson::JsonDocument data;
   if (data_json && *data_json && deserializeJson(data, data_json)) return "data is not JSON";
   auto only = [&](const char *key) {  // the data holds exactly this one key
@@ -511,7 +513,8 @@ inline const char *act(lv_obj_t *from, const char *service, const char *entity, 
              svc == "vacuum.pause" || svc == "vacuum.return_to_base" ||
              svc == "light.turn_off" || svc == "light.toggle" || svc == "switch.toggle" ||
              svc == "switch.turn_on" || svc == "switch.turn_off" || svc == "media_player.media_play_pause" ||
-             svc == "media_player.media_next_track" || svc == "media_player.media_previous_track") {
+             svc == "media_player.media_next_track" || svc == "media_player.media_previous_track" ||
+             svc == "script.turn_on" || svc == "scene.turn_on" || svc == "automation.trigger" || svc == "button.press") {
     if (data.size()) return "no data for this action";
   } else return "action not allowed";
   ArduinoJson::JsonDocument ev;

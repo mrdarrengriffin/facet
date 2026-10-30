@@ -41,7 +41,7 @@ FW_COMPONENT(slider_row, "Slider row", "components", R"({
     {"name": "label", "about": "The name before the slider, in small capitals, such as vol.", "type": "text", "default": "vol"},
     {"name": "value", "about": "Where the slider is, from 0 to 100.", "type": "range", "min": 0, "max": 100, "step": 1, "default": 42},
     {"name": "text", "about": "The value shown after the slider, such as 42 (-- when it is not known).", "type": "text", "default": "42"},
-    {"name": "state", "about": "default can be dragged; disabled cannot be changed; unavailable shows the device cannot be reached.", "type": "select", "options": ["default", "disabled", "unavailable"], "default": "default"}
+    {"name": "state", "debug": true, "about": "default can be dragged; disabled cannot be changed; unavailable shows the device cannot be reached.", "type": "select", "options": ["default", "disabled", "unavailable"], "default": "default"}
   ],
   "variants": [
     {"label": "volume · 42", "props": {}},

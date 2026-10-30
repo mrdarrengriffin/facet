@@ -46,7 +46,7 @@ export default {
       t.eq(m.slots.map((s) => [s.name, s.count || 0, s.max || 0, !!s.template]), [['cell', 64, 1, false], ['item', 0, 0, true]], 'cell + item declarations');
       for (const comp of ['grid', 'header']) for (const s of metaOf(t, comp).slots) {
         t.ok(Array.isArray(s.accepts) && s.accepts.length > 0, `${comp}.${s.name}: an allow list`);
-        const bad = s.accepts.filter((a) => !ids.has(a)); t.eq(bad, [], `${comp}.${s.name}: every accepted id is a component`);
+        const bad = s.accepts.map((a) => (typeof a === 'string' ? a : a.c)).filter((a) => !ids.has(a)); t.eq(bad, [], `${comp}.${s.name}: every accepted id is a component`);
       }
     } },
     { name: 'slot rules refused at spec load with a path: wrong type in a cell, two in one cell, wrong item template, each into a cell', async run(t) {

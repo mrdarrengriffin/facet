@@ -309,7 +309,7 @@ FW_COMPONENT(dial, "Dial", "components", R"({
     {"name": "unit", "about": "The unit shown after the value, such as % or °.", "type": "text", "default": "%"},
     {"name": "step", "about": "How much one step of the dial changes the value.", "type": "range", "min": 0.5, "max": 25, "step": 0.5, "default": 1},
     {"name": "dimmable", "about": "Whether the value can be set. Off = an on/off light or a switch: the ring shows on or off, only the button in the middle works.", "type": "bool", "default": true},
-    {"name": "state", "about": "default can be turned; disabled cannot be changed; unavailable shows the device cannot be reached; missing shows there is no such device.", "type": "select", "options": ["default", "disabled", "unavailable", "missing"], "default": "default"}
+    {"name": "state", "debug": true, "about": "default can be turned; disabled cannot be changed; unavailable shows the device cannot be reached; missing shows there is no such device.", "type": "select", "options": ["default", "disabled", "unavailable", "missing"], "default": "default"}
   ],
   "opening": "Opening the screen sweeps the arc and number up from 0 (Motion value, 400 ms).",
   "variants": [

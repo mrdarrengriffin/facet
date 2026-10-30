@@ -81,7 +81,7 @@ FW_COMPONENT(big_number, "Big number", "components", R"({
     {"name": "unit", "about": "The unit shown after the number, such as kWh or %. Leave empty for none.", "type": "text", "default": "kWh"},
     {"name": "decimals", "about": "How many digits are shown after the decimal point.", "type": "range", "min": 0, "max": 3, "step": 1, "default": 2},
     {"name": "prefix", "about": "Text shown just before the number, such as a currency sign. Leave empty for none.", "type": "text", "default": ""},
-    {"name": "state", "about": "default shows the number; unavailable shows a dash in place of it when the value cannot be read.", "type": "select", "options": ["default", "unavailable"], "default": "default"}
+    {"name": "state", "debug": true, "about": "default shows the number; unavailable shows a dash in place of it when the value cannot be read.", "type": "select", "options": ["default", "unavailable"], "default": "default"}
   ],
   "opening": "Showing it counts up from 0 (Motion value).",
   "variants": [

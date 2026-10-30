@@ -88,7 +88,7 @@ export default {
       await at(t, {});
       const meta = JSON.parse(t.b.m.UTF8ToString(t.b.m._fw_meta())).find((c) => c.id === 'header');
       const m = typeof meta.meta === 'string' ? JSON.parse(meta.meta) : meta.meta;
-      t.eq(m.slots.map((s) => [s.name, s.accepts, s.max]), [['title', ['title', 'segmented'], 1], ['end', ['icon_button', 'status_chip', 'segmented'], 4]], 'meta slots: allow lists + max');
+      t.eq(m.slots.map((s) => [s.name, s.accepts, s.max]), [['title', ['title', 'segmented'], 1], ['end', [{ c: 'icon_button', p: { style: ['square'] } }, 'status_chip', { c: 'segmented', editor: false }], 4]], 'meta slots: allow lists + max');
       const spec = (slot) => ({ v: 1, id: 'hdrslots', rev: 1, name: 'Slots', layout: 'list', nodes: [{ c: 'status_chip', p: {}, in: 'header', ...(slot ? { slot } : {}) }] });
       await t.device();
       const bad = JSON.stringify(JSON.parse(t.b.spec('check', spec('start')) || '{}'));

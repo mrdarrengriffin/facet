@@ -259,7 +259,7 @@ FW_COMPONENT(thermostat_dial, "Thermostat dial", "components", R"({
     {"name": "min", "about": "The lowest temperature on the ring.", "type": "range", "min": 0, "max": 20, "step": 1, "default": 5},
     {"name": "max", "about": "The highest temperature on the ring.", "type": "range", "min": 20, "max": 40, "step": 1, "default": 30},
     {"name": "step", "about": "How much one step changes the set temperature, in degrees.", "type": "select", "options": ["0.5", "1", "0.1"], "default": "0.5"},
-    {"name": "state", "about": "default can be turned; disabled cannot be changed; unavailable shows the thermostat cannot be reached.", "type": "select", "options": ["default", "disabled", "unavailable"], "default": "default"}
+    {"name": "state", "debug": true, "about": "default can be turned; disabled cannot be changed; unavailable shows the thermostat cannot be reached.", "type": "select", "options": ["default", "disabled", "unavailable"], "default": "default"}
   ],
   "opening": "Opening the screen sweeps the set point up from the minimum (Motion value, 400 ms).",
   "variants": [

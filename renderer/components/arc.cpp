@@ -70,7 +70,7 @@ FW_COMPONENT(arc, "Arc", "components", R"({
     {"name": "value", "about": "How far round the arc is filled, from 0 (empty) to 100 (full).", "type": "range", "min": 0, "max": 100, "step": 1, "default": 62},
     {"name": "size", "about": "How wide the arc is across, in pixels.", "type": "range", "min": 64, "max": 320, "step": 16, "default": 160},
     {"name": "knob", "about": "Shows a round knob at the end of the filled part, the handle you drag on a dial.", "type": "bool", "default": true},
-    {"name": "state", "about": "default draws the arc in the accent colour; disabled greys it out to show it cannot be changed.", "type": "select", "options": ["default", "disabled"], "default": "default"}
+    {"name": "state", "debug": true, "about": "default draws the arc in the accent colour; disabled greys it out to show it cannot be changed.", "type": "select", "options": ["default", "disabled"], "default": "default"}
   ],
   "variants": [
     {"label": "62 · knob", "props": {}},

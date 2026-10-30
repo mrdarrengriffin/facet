@@ -206,7 +206,7 @@ FW_COMPONENT(header, "Header", "components", R"({
   "min": ["layout:ibtn-square", "layout:ibtn-square"],
   "slots": [
     {"name": "title", "about": "The screen's name: a Title (made from the label when the screen puts none here) or a segmented control, just after the back button.", "accepts": ["title", "segmented"], "max": 1},
-    {"name": "end", "about": "Up to four items before the time, in order: buttons, status chips or a segmented control. The header's own settings button, shortcut and timer count as items.", "accepts": ["icon_button", "status_chip", "segmented"], "max": 4}
+    {"name": "end", "about": "Up to four items before the time, in order: square icon buttons or status chips (a built-in screen may put its segmented control here too). The header's own settings button, shortcut and timer count as items.", "accepts": [{"c": "icon_button", "p": {"style": ["square"]}}, "status_chip", {"c": "segmented", "editor": false}], "max": 4}
   ],
   "icons": ["back@glyph", "screen-settings@icon", "screen-timer@icon", "plus@glyph", "close@glyph", "check@glyph"],
   "props": [
