@@ -75,9 +75,11 @@ double iso_ms(const std::string *s) {
   int y, mo, d, h, mi;
   double sec;
   if (sscanf(s->c_str(), "%d-%d-%dT%d:%d:%lf", &y, &mo, &d, &h, &mi, &sec) != 6) return 0;
-  struct tm t = {};
-  t.tm_year = y - 1900, t.tm_mon = mo - 1, t.tm_mday = d, t.tm_hour = h, t.tm_min = mi;
-  return (double) timegm(&t) * 1000 + sec * 1000;
+  y -= mo <= 2;  // days since 1970-01-01 (H. Hinnant; no timegm in newlib, the panels' libc)
+  const long era = (y >= 0 ? y : y - 399) / 400;
+  const unsigned yoe = (unsigned) (y - era * 400), doy = (153 * (mo + (mo > 2 ? -3 : 9)) + 2) / 5 + d - 1;
+  const long days = era * 146097 + (long) (yoe * 365 + yoe / 4 - yoe / 100 + doy) - 719468;
+  return ((double) days * 86400 + h * 3600 + mi * 60) * 1000 + sec * 1000;
 }
 const std::string *attr(const std::string &e, const char *a) { return e.empty() ? nullptr : ha::get(e, a); }
 std::string name_of(const std::string &e) {
