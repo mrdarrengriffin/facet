@@ -103,6 +103,9 @@ namespace media_source { const char *control(const std::string &v, std::string *
 // the Covers feed (core/covers_source.cpp): cover.control on panel.covers; "" = done, else why not; svc = a cover
 // service to call on ent with data ("" = none)
 namespace covers_source { const char *control(const std::string &v, std::string *svc, std::string *ent, std::string *data); }
+// the Vacuum feed (core/vacuum_source.cpp): vacuum.control on panel.vacuum; "" = done, else why not; svc = a vacuum /
+// select service to call on ent with data ("" = none: the sample robot does it)
+namespace vacuum_source { const char *control(const std::string &v, const std::string &rooms, std::string *svc, std::string *ent, std::string *data); }
 // the Flights feed's selection (core/flights_source.cpp): flights.select; true = the lead again (open its details)
 namespace flights_source { bool select(const std::string &d); }
 constexpr int TIMERS_MAX = 4;

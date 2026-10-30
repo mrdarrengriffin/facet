@@ -78,6 +78,7 @@
       "cover-stack": { "v": 16, "1x": 12, "use": "Cover visual: the slat stack a closed-up Venetian blind keeps under the rail (docs 16)" },
       "cover-panel-min": { "v": 24, "1x": 16, "use": "Cover visual: the narrowest a curtain panel folds to when open (docs 24)" },
       "cover-card": { "v": 72, "1x": 48, "use": "Cover visual: the Home card's preview, a small window this size (docs .f-pcover 72 box; = icon size card)" },
+      "vac-card": { "v": 72, "1x": 48, "use": "Vacuum robot: the Home card's preview, the robot in its ring (lab .p3-vp 72 box; = icon size card)" },
       "checkbox": { "v": 24, "1x": 20, "use": "Checkbox: the box (docs 20 at the docs site size; 24 = the check icon at icon size, 1x 20 = at glyph size, so the check fills it; 1x was 16, too small to tick on the 480)" },
       "checkbox-dot": { "v": 8, "1x": 4, "use": "Checkbox in progress: the accent dot (docs 8; centred: (24 - 8) / 2 and (20 - 4) / 2 on the grid)" },
       "clock-ring": { "v": 600, "1x": 400, "use": "Clock / Ring: the dotted seconds ring (docs size clock-ring 600)" },

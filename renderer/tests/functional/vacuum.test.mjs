@@ -3,7 +3,7 @@
 // -> a segment clean, Clean all, Pause / Resume / Dock, the mode sheet -> select options. Feature "vacuum" = WIP, not in
 // the firmware (features.json).
 const E = 'vacuum.robot', MODE = 'select.robot_mop_mode', MOP = 'select.robot_mop_intensity';
-const screen = (extra = {}) => ['spec', { screen: 'vacuum', entity: E, live: true, areas: 'Corridor:1,Living room:2,Kitchen:3', modesel: MODE, mopsel: MOP, ...extra }];
+const screen = (extra = {}) => ['spec', { screen: 'vacuum', source: 'ha', entity: E, live: true, areas: 'Corridor:1,Living room:2,Kitchen:3', modesel: MODE, mopsel: MOP, ...extra }];
 const last = (t, service) => t.ha.calls.filter((c) => c.service === service).at(-1);
 const docked = (t) => { t.ha.set(E, 'docked', { fan_speed: 'balanced' }); t.ha.set(MODE, 'vacuum'); t.ha.set(MOP, 'moderate'); t.wait(600); };
 export default {

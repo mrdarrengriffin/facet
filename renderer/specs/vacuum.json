@@ -2,111 +2,207 @@
  "v": 1,
  "id": "vacuum",
  "name": "Robot vacuum",
- "rev": 4,
+ "rev": 5,
  "role": "both",
  "params": {
-  "entity": {"about": "The robot vacuum this screen controls.", 
+  "source": {
+   "about": "Where the robot vacuum comes from: a vacuum in Home Assistant with its sensors, or a made-up robot for previews.",
+   "type": "select",
+   "options": [
+    "ha",
+    "sample"
+   ],
+   "label": "Source",
+   "default": "sample"
+  },
+  "entity": {
+   "about": "The robot vacuum this screen controls.",
    "type": "entity",
    "domain": "vacuum",
    "label": "Robot vacuum",
    "default": ""
   },
-  "battery": {"about": "The sensor for the robot's battery level, as a percentage.", 
+  "battery": {
+   "about": "The sensor for the robot's battery level, as a percentage.",
    "type": "entity",
    "domain": "sensor",
    "label": "Battery (%)",
    "default": ""
   },
-  "room": {"about": "The sensor for the room the robot is in now.", 
+  "room": {
+   "about": "The sensor for the room the robot is in now.",
    "type": "entity",
    "domain": "sensor",
    "label": "Current room",
    "default": ""
   },
-  "progress": {"about": "The sensor for how much of the current clean is done, as a percentage.", 
+  "progress": {
+   "about": "The sensor for how much of the current clean is done, as a percentage.",
    "type": "entity",
    "domain": "sensor",
    "label": "Cleaning progress (%)",
    "default": ""
   },
-  "time": {"about": "The sensor for how long the current clean has run, in minutes.", 
+  "time": {
+   "about": "The sensor for how long the current clean has run, in minutes.",
    "type": "entity",
    "domain": "sensor",
    "label": "Cleaning time (min)",
    "default": ""
   },
-  "area": {"about": "The sensor for how much floor the current clean has covered, in square metres.", 
+  "area": {
+   "about": "The sensor for how much floor the current clean has covered, in square metres.",
    "type": "entity",
    "domain": "sensor",
    "label": "Cleaning area (m²)",
    "default": ""
   },
-  "last_clean": {"about": "The sensor for when the last clean ended.", 
+  "last_clean": {
+   "about": "The sensor for when the last clean ended.",
    "type": "entity",
    "domain": "sensor",
    "label": "Last clean end",
    "default": ""
   },
-  "modesel": {"about": "The setting that picks the cleaning mode: vacuum, mop or both.", 
+  "status": {
+   "about": "The sensor for what the robot is busy with, in its own words, such as emptying the bin.",
+   "type": "entity",
+   "domain": "sensor",
+   "label": "Robot status",
+   "default": ""
+  },
+  "error": {
+   "about": "The sensor for the robot's error, such as a jammed brush.",
+   "type": "entity",
+   "domain": "sensor",
+   "label": "Robot error",
+   "default": ""
+  },
+  "modesel": {
+   "about": "The setting that picks the cleaning mode: vacuum, mop or both.",
    "type": "entity",
    "domain": "select",
    "label": "Cleaning mode",
    "default": ""
   },
-  "mopsel": {"about": "The setting that picks how much water the mop uses.", 
+  "mopsel": {
+   "about": "The setting that picks how much water the mop uses.",
    "type": "entity",
    "domain": "select",
    "label": "Water (mop intensity)",
    "default": ""
   },
-  "position": {"about": "The sensor for where the robot is on the map, as x and y.", 
+  "position": {
+   "about": "The sensor for where the robot is on the map, as x and y.",
    "type": "entity",
    "domain": "sensor",
    "label": "Robot position (x,y)",
    "default": ""
   },
-  "transform": {"about": "How to turn the robot's own position numbers into metres on the floor plan, as six numbers separated by commas. Leave empty when they already match.", 
+  "transform": {
+   "about": "How to turn the robot's own position numbers into metres on the floor plan, as six numbers separated by commas. Leave empty when they already match.",
    "type": "text",
    "label": "Position to plan metres (a,b,c,d,e,f)",
    "default": ""
   },
-  "path": {"about": "The sensor whose points are the path the robot has taken on this run.", 
+  "path": {
+   "about": "The sensor whose points are the path the robot has taken on this run.",
    "type": "entity",
    "domain": "sensor",
    "label": "Run path (points attribute)",
    "default": ""
   },
-  "areas": {"about": "Your rooms as the vacuum knows them, as name:number pairs separated by commas, such as Kitchen:3.", 
+  "areas": {
+   "about": "Your rooms as the vacuum knows them, as name:number pairs separated by commas, such as Kitchen:3.",
    "type": "text",
    "label": "Rooms (name:segment, comma list)",
    "default": ""
   },
-  "plan": {"about": "The floor plan drawn on the map: each room's name, number, corners and label spot.", 
+  "plan": {
+   "about": "The floor plan drawn on the map: each room's name, number, corners and label spot.",
    "type": "hidden",
    "default": "Dining|2|0,0 3.6,0 3.6,3 0,3|1.8,1.5;Utility||3.7,0 6.4,0 6.4,1.4 3.7,1.4|;Study||3.7,1.5 6.4,1.5 6.4,3 3.7,3|;Lounge|1|0,3.1 3.9,3.1 3.9,7.2 0,7.2|1.95,5.15;Hall|3|4,3.1 6.4,3.1 6.4,5.6 4,5.6|5.2,4.35;Cloakroom||4,5.7 6.4,5.7 6.4,7.2 4,7.2|"
   },
-  "dock": {"about": "Where the charging dock sits on the floor plan and which way it faces.", 
+  "dock": {
+   "about": "Where the charging dock sits on the floor plan and which way it faces.",
    "type": "hidden",
    "default": "0,0.5,0.14,0.8,0.36"
   },
-  "rooms": {"about": "The rooms picked for the next clean.", 
+  "rooms": {
+   "about": "The rooms picked for the next clean.",
    "type": "hidden",
    "default": ""
   },
-  "view": {"about": "Which view the screen opens on: the room list or the map.", 
+  "view": {
+   "about": "Which view the screen opens on: the room list or the map.",
    "type": "hidden",
    "default": "rooms"
   },
-  "demo": {"about": "For previews only: which state the sample robot is in, such as docked or cleaning.", 
+  "demo": {
+   "about": "For previews only: which state the sample robot starts in, such as docked or cleaning.",
    "type": "select",
    "options": [
     "docked",
     "cleaning",
     "paused",
-    "returning"
+    "returning",
+    "idle",
+    "error"
    ],
    "label": "Sample state",
    "default": "docked"
+  }
+ },
+ "feeds": {
+  "panel.vacuum": {
+   "source": "$source",
+   "vacuum": "$entity",
+   "battery": "$battery",
+   "room": "$room",
+   "progress": "$progress",
+   "time": "$time",
+   "area": "$area",
+   "last_clean": "$last_clean",
+   "status": "$status",
+   "error": "$error",
+   "position": "$position",
+   "path": "$path",
+   "mode": "$modesel",
+   "mop": "$mopsel",
+   "sample": "$demo"
+  }
+ },
+ "card": {
+  "label": "Vacuum",
+  "icon": "vacuum",
+  "preview": "vacuum",
+  "progress": {
+   "e": "panel.vacuum",
+   "a": "card_ring"
+  },
+  "run": {
+   "e": "panel.vacuum",
+   "a": "card_run"
+  },
+  "mode": {
+   "e": "panel.vacuum",
+   "a": "card_mode"
+  },
+  "value": {
+   "e": "panel.vacuum",
+   "a": "card_value"
+  },
+  "text": {
+   "e": "panel.vacuum",
+   "a": "card_text"
+  },
+  "sub": {
+   "e": "panel.vacuum",
+   "a": "card_sub"
+  },
+  "accent": {
+   "e": "panel.vacuum",
+   "a": "card_accent"
   }
  },
  "header": {
@@ -156,63 +252,29 @@
     "size": "hero",
     "caption": "",
     "value": {
-     "e": "$entity",
-     "s": "$demo",
-     "map": {
-      "docked": "Docked",
-      "cleaning": "Cleaning",
-      "returning": "Going home",
-      "paused": "Paused",
-      "idle": "Idle",
-      "error": "Stuck"
-     },
-     "else": ""
+     "e": "panel.vacuum",
+     "a": "word"
     },
     "line": {
-     "e": "$battery",
-     "s": "$demo",
-     "map": {
-      "docked": "100",
-      "cleaning": "74",
-      "paused": "71",
-      "returning": "62",
-      "idle": "88",
-      "error": "40"
-     },
-     "tpl": "{}%"
+     "e": "panel.vacuum",
+     "a": "battery"
     },
     "line2": {
-     "e": "$entity",
-     "s": "$demo",
-     "map": {
-      "docked": "charged",
-      "returning": "back to the dock"
-     },
-     "else": ""
+     "e": "panel.vacuum",
+     "a": "rest"
     },
     "line3": {
-     "e": "$last_clean",
-     "fmt": "day",
-     "s": "yesterday 18:42",
-     "tpl": "last run {}"
+     "e": "panel.vacuum",
+     "a": "last"
     },
     "tone": {
-     "e": "$entity",
-     "s": "$demo",
-     "map": {
-      "error": "error"
-     },
-     "else": "dim"
+     "e": "panel.vacuum",
+     "a": "tone"
     }
    },
    "show": {
-    "e": "$entity",
-    "s": "$demo",
-    "map": {
-     "cleaning": "",
-     "paused": ""
-    },
-    "else": "1"
+    "e": "panel.vacuum",
+    "a": "idle_show"
    }
   },
   {
@@ -222,54 +284,33 @@
     "size": "hero",
     "caption": "",
     "value": {
-     "e": "$entity",
-     "s": "$demo",
-     "map": {
-      "docked": "Docked",
-      "cleaning": "Cleaning",
-      "returning": "Going home",
-      "paused": "Paused",
-      "idle": "Idle",
-      "error": "Stuck"
-     },
-     "else": ""
+     "e": "panel.vacuum",
+     "a": "word"
     },
     "line": {
-     "e": "$room",
-     "s": "Lounge"
+     "e": "panel.vacuum",
+     "a": "room"
     },
     "line2": {
-     "e": "$progress",
-     "s": "46",
-     "tpl": "{}%"
+     "e": "panel.vacuum",
+     "a": "progress"
     },
     "line3": {
-     "e": "$time",
-     "s": "9",
-     "tpl": "{} min"
+     "e": "panel.vacuum",
+     "a": "minutes"
     },
     "line4": {
-     "e": "$area",
-     "s": "7.6",
-     "tpl": "{} m²"
+     "e": "panel.vacuum",
+     "a": "area"
     },
     "tone": {
-     "e": "$entity",
-     "s": "$demo",
-     "map": {
-      "cleaning": "accent"
-     },
-     "else": "dim"
+     "e": "panel.vacuum",
+     "a": "tone"
     }
    },
    "show": {
-    "e": "$entity",
-    "s": "$demo",
-    "map": {
-     "cleaning": "1",
-     "paused": "1"
-    },
-    "else": ""
+    "e": "panel.vacuum",
+    "a": "run_show"
    }
   },
   {
@@ -277,21 +318,16 @@
    "in": 2,
    "p": {
     "value": {
-     "e": "$progress",
-     "fmt": "num",
-     "s": "46"
+     "e": "panel.vacuum",
+     "a": "progress_n",
+     "fmt": "num"
     },
     "mark": -1,
     "tone": "accent"
    },
    "show": {
-    "e": "$entity",
-    "s": "$demo",
-    "map": {
-     "cleaning": "1",
-     "paused": "1"
-    },
-    "else": ""
+    "e": "panel.vacuum",
+    "a": "run_show"
    }
   },
   {
@@ -299,16 +335,6 @@
    "in": 2,
    "p": {
     "space": "block"
-   },
-   "show": {
-    "e": "$entity",
-    "s": "$demo",
-    "map": {
-     "cleaning": "",
-     "returning": "",
-     "paused": ""
-    },
-    "else": "1"
    }
   },
   {
@@ -319,18 +345,12 @@
     "room": "$item",
     "picked": "$rooms",
     "here": {
-     "e": "$room",
-     "s": "Lounge"
+     "e": "panel.vacuum",
+     "a": "here"
     },
     "state": {
-     "e": "$entity",
-     "s": "$demo",
-     "map": {
-      "cleaning": "disabled",
-      "returning": "disabled",
-      "paused": "disabled"
-     },
-     "else": "default"
+     "e": "panel.vacuum",
+     "a": "tile_state"
     }
    },
    "sample": [
@@ -356,16 +376,6 @@
    "in": 2,
    "p": {
     "space": "block"
-   },
-   "show": {
-    "e": "$entity",
-    "s": "$demo",
-    "map": {
-     "cleaning": "",
-     "returning": "",
-     "paused": ""
-    },
-    "else": "1"
    }
   },
   {
@@ -374,25 +384,22 @@
    "p": {
     "style": "row",
     "mode": {
-     "e": "$modesel",
-     "s": "vac_and_mop"
+     "e": "panel.vacuum",
+     "a": "mode"
     },
     "fan": {
-     "e": "$entity",
-     "a": "fan_speed",
-     "s": "turbo"
+     "e": "panel.vacuum",
+     "a": "fan"
     },
     "mop": {
-     "e": "$mopsel",
-     "s": "high"
+     "e": "panel.vacuum",
+     "a": "mop"
     }
    },
    "on": {
     "change": {
      "do": "vacuum.control",
-     "e": "$entity",
-     "mode": "$modesel",
-     "mop": "$mopsel"
+     "e": "panel.vacuum"
     }
    }
   },
@@ -419,54 +426,25 @@
     "size": "title",
     "caption": "",
     "value": {
-     "e": "$entity",
-     "s": "$demo",
-     "map": {
-      "docked": "Docked",
-      "cleaning": "Cleaning",
-      "returning": "Going home",
-      "paused": "Paused",
-      "idle": "Idle",
-      "error": "Stuck"
-     },
-     "else": ""
+     "e": "panel.vacuum",
+     "a": "word"
     },
     "value2": {
-     "e": "$battery",
-     "s": "$demo",
-     "map": {
-      "docked": "100",
-      "cleaning": "74",
-      "paused": "71",
-      "returning": "62",
-      "idle": "88",
-      "error": "40"
-     },
-     "tpl": "{}%"
+     "e": "panel.vacuum",
+     "a": "battery"
     },
     "line": {
-     "e": "$last_clean",
-     "fmt": "day",
-     "s": "yesterday 18:42",
-     "tpl": "last run {}"
+     "e": "panel.vacuum",
+     "a": "last"
     },
     "tone": {
-     "e": "$entity",
-     "s": "$demo",
-     "map": {
-      "error": "error"
-     },
-     "else": "dim"
+     "e": "panel.vacuum",
+     "a": "tone"
     }
    },
    "show": {
-    "e": "$entity",
-    "s": "$demo",
-    "map": {
-     "cleaning": "",
-     "paused": ""
-    },
-    "else": "1"
+    "e": "panel.vacuum",
+    "a": "idle_show"
    }
   },
   {
@@ -476,51 +454,33 @@
     "size": "title",
     "caption": "",
     "value": {
-     "e": "$entity",
-     "s": "$demo",
-     "map": {
-      "docked": "Docked",
-      "cleaning": "Cleaning",
-      "returning": "Going home",
-      "paused": "Paused",
-      "idle": "Idle",
-      "error": "Stuck"
-     },
-     "else": ""
+     "e": "panel.vacuum",
+     "a": "word"
     },
     "value2": {
-     "e": "$room",
-     "s": "Lounge"
+     "e": "panel.vacuum",
+     "a": "where"
     },
     "line": {
-     "e": "$progress",
-     "s": "46",
-     "tpl": "{}%"
+     "e": "panel.vacuum",
+     "a": "progress"
     },
     "line2": {
-     "e": "$time",
-     "s": "9",
-     "tpl": "{} min"
+     "e": "panel.vacuum",
+     "a": "minutes"
     },
     "line3": {
-     "e": "$area",
-     "s": "7.6",
-     "tpl": "{} m²"
+     "e": "panel.vacuum",
+     "a": "area"
     },
     "line4": {
-     "e": "$battery",
-     "s": "74",
-     "tpl": "battery {}%"
+     "e": "panel.vacuum",
+     "a": "bat_line"
     }
    },
    "show": {
-    "e": "$entity",
-    "s": "$demo",
-    "map": {
-     "cleaning": "1",
-     "paused": "1"
-    },
-    "else": ""
+    "e": "panel.vacuum",
+    "a": "run_show"
    }
   },
   {
@@ -538,33 +498,20 @@
     "dock": "$dock",
     "transform": "$transform",
     "robot": {
-     "e": "$position",
-     "s": "$demo",
-     "map": {
-      "cleaning": "1.4,4.8",
-      "paused": "1.4,4.8",
-      "returning": "2.0,2.6"
-     }
+     "e": "panel.vacuum",
+     "a": "pos"
     },
     "trail": {
-     "e": "$path",
-     "a": "points",
-     "s": "$demo",
-     "map": {
-      "docked": "0.6,0.7 3.1,0.7 3.1,1.3 0.6,1.3 0.6,1.9 3.1,1.9 3.1,2.5 0.6,2.5",
-      "cleaning": "0.5,3.6 3.4,3.6 3.4,4.2 0.5,4.2 0.5,4.8 1.4,4.8",
-      "paused": "0.5,3.6 3.4,3.6 3.4,4.2 0.5,4.2 0.5,4.8 1.4,4.8"
-     },
-     "else": ""
+     "e": "panel.vacuum",
+     "a": "trail"
     },
     "picked": "$rooms",
     "here": {
-     "e": "$room",
-     "s": "Lounge"
+     "e": "panel.vacuum",
+     "a": "here"
     },
     "state": {
-     "e": "$entity",
-     "s": "$demo"
+     "e": "panel.vacuum"
     }
    },
    "on": {
@@ -589,36 +536,27 @@
     "style": "button",
     "view": "$view",
     "mode": {
-     "e": "$modesel",
-     "s": "vac_and_mop"
+     "e": "panel.vacuum",
+     "a": "mode"
     },
     "fan": {
-     "e": "$entity",
-     "a": "fan_speed",
-     "s": "turbo"
+     "e": "panel.vacuum",
+     "a": "fan"
     },
     "mop": {
-     "e": "$mopsel",
-     "s": "high"
+     "e": "panel.vacuum",
+     "a": "mop"
     }
    },
    "on": {
     "change": {
      "do": "vacuum.control",
-     "e": "$entity",
-     "mode": "$modesel",
-     "mop": "$mopsel"
+     "e": "panel.vacuum"
     }
    },
    "show": {
-    "e": "$entity",
-    "s": "$demo",
-    "map": {
-     "cleaning": "",
-     "returning": "",
-     "paused": ""
-    },
-    "else": "1"
+    "e": "panel.vacuum",
+    "a": "pick_show"
    }
   },
   {
@@ -630,20 +568,13 @@
     "width": 112
    },
    "show": {
-    "e": "$entity",
-    "s": "$demo",
-    "map": {
-     "docked": "",
-     "returning": "",
-     "unavailable": "",
-     "unknown": ""
-    },
-    "else": "1"
+    "e": "panel.vacuum",
+    "a": "dock_show"
    },
    "on": {
     "tap": {
      "do": "vacuum.control",
-     "e": "$entity"
+     "e": "panel.vacuum"
     }
    }
   },
@@ -656,18 +587,13 @@
     "width": 128
    },
    "show": {
-    "e": "$entity",
-    "s": "$demo",
-    "map": {
-     "cleaning": "1",
-     "returning": "1"
-    },
-    "else": ""
+    "e": "panel.vacuum",
+    "a": "pause_show"
    },
    "on": {
     "tap": {
      "do": "vacuum.control",
-     "e": "$entity"
+     "e": "panel.vacuum"
     }
    }
   },
@@ -680,17 +606,13 @@
     "width": 128
    },
    "show": {
-    "e": "$entity",
-    "s": "$demo",
-    "map": {
-     "paused": "1"
-    },
-    "else": ""
+    "e": "panel.vacuum",
+    "a": "resume_show"
    },
    "on": {
     "tap": {
      "do": "vacuum.control",
-     "e": "$entity"
+     "e": "panel.vacuum"
     }
    }
   },
@@ -711,19 +633,13 @@
     }
    },
    "show": {
-    "e": "$entity",
-    "s": "$demo",
-    "map": {
-     "docked": "1",
-     "idle": "1",
-     "error": "1"
-    },
-    "else": ""
+    "e": "panel.vacuum",
+    "a": "clean_show"
    },
    "on": {
     "tap": {
      "do": "vacuum.control",
-     "e": "$entity",
+     "e": "panel.vacuum",
      "rooms": "$rooms"
     }
    }

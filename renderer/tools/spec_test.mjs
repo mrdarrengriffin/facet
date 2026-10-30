@@ -119,7 +119,7 @@ S('vacuum.test', (e) => S('', (a) => S('docked', (v) => m._fw_ha_put(e, a, v))))
 ok(render('spec', { screen: 'vacuum' }) === '' && (tick(40), true), 'the vacuum spec builds');
 let tiles = H2().filter((h) => h.c === 'room_tile' && !h.prop);
 ok(tiles.length === 3, `no rooms from a host = the three sample rooms (${tiles.length})`);
-ok(render('spec', { screen: 'vacuum', entity: 'vacuum.test', areas: 'Kitchen:3, Hall:1' }) === '' && (tick(40), true), 'the vacuum spec builds on a vacuum');
+ok(render('spec', { screen: 'vacuum', source: 'ha', entity: 'vacuum.test', areas: 'Kitchen:3, Hall:1' }) === '' && (tick(40), true), 'the vacuum spec builds on a vacuum');
 tiles = H2().filter((h) => h.c === 'room_tile' && !h.prop).sort((a, b) => a.x - b.x);
 ok(tiles.length === 2, `a room per item of areas (${tiles.length})`);
 evs();

@@ -38,9 +38,10 @@
   "lock": {"needs": "a smart door lock", "sources": [
    {"id": "ha_locks", "kind": "ha", "name": "HA locks", "detect": {"domain": "lock"},
     "fills": {"entity": {"domain": "lock"}}}]},
-  "vacuum": {"needs": "a robot vacuum", "sources": [
-   {"id": "roborock", "kind": "ha", "name": "Roborock", "detect": {"integration": "roborock", "domain": "vacuum"}, "fills": {"entity": {"domain": "vacuum", "integration": "roborock"}}},
-   {"id": "ha_vacuum", "kind": "ha", "name": "HA vacuums", "detect": {"domain": "vacuum"}, "fills": {"entity": {"domain": "vacuum"}}}]},
+  "vacuum": {"needs": "a robot vacuum", "feed": "panel.vacuum", "sources": [
+   {"id": "roborock", "kind": "ha", "name": "Roborock (its status, error, room, progress, time and area sensors)", "adapter": "ha", "detect": {"integration": "roborock", "domain": "vacuum"}, "fills": {"entity": {"domain": "vacuum", "integration": "roborock"}}},
+   {"id": "ha_vacuum", "kind": "ha", "name": "HA vacuums", "adapter": "ha", "detect": {"domain": "vacuum"}, "fills": {"entity": {"domain": "vacuum"}}},
+   {"id": "sample", "kind": "builtin", "name": "Sample robot (previews)", "adapter": "sample"}]},
   "plants": {"needs": "soil moisture sensors", "sources": [
    {"id": "ha_moisture", "kind": "ha", "name": "HA moisture sensors", "detect": {"domain": "sensor"},
     "fills": {"plants": {"domain": "sensor", "list": true}, "entity": {"domain": "sensor"}}}]},

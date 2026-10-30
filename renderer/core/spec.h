@@ -461,7 +461,7 @@ inline void check_action(ArduinoJson::JsonVariantConst a, const char *comp, cons
   }
   if (d == "vacuum.control") {
     const std::string en = a["e"] | "";
-    if (!entity_ok(en) || (en[0] != '$' && en.rfind("vacuum.", 0) != 0)) err(e, path + ".e", "bad_entity", "a vacuum (vacuum.x or $param)");
+    if (!entity_ok(en) || (en[0] != '$' && en != "panel.vacuum" && en.rfind("vacuum.", 0) != 0)) err(e, path + ".e", "bad_entity", "a vacuum (vacuum.x, panel.vacuum or $param)");
     if (!a["rooms"].isNull() && !a["rooms"].is<const char *>()) err(e, path + ".rooms", "bad_action", "rooms: a comma list of segment ids or $param");
     for (const char *k : {"mode", "mop"})
       if (!a[k].isNull()) {
@@ -1414,6 +1414,14 @@ inline bool run_action(Screen *s, Node &n, ArduinoJson::JsonVariantConst a, cons
     } else if (!strcmp(detail, "open")) ha_act(n, "cover.open_cover", n.entity.c_str());
     else if (!strcmp(detail, "close")) ha_act(n, "cover.close_cover", n.entity.c_str());
     else if (!strcmp(detail, "stop")) ha_act(n, "cover.stop_cover", n.entity.c_str());
+    return true;
+  }
+  if (d == "vacuum.control" && n.entity == "panel.vacuum") {  // the vacuum feed (core/vacuum_source.cpp): it shows the
+    // tap at once and names the service to call (none on its sample adapter): a Button's label, a Vacuum mode's change
+    std::string svc, ent, data;
+    const char *why = dev::vacuum_source::control(detail ? detail : "", a["rooms"] | "", &svc, &ent, &data);
+    if (*why) return refuse(why);
+    if (!svc.empty() && !ent.empty()) ha_act(n, svc.c_str(), ent.c_str(), data.c_str());
     return true;
   }
   if (d == "vacuum.control") {  // a Button's label (Clean / Start / Resume, Pause, Dock; any case) or a Segmented's
