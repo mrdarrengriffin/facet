@@ -205,7 +205,7 @@ void rebuild() {
   put_data(d);
 }
 void entity_put(const std::string &e, const std::string &a, const std::string &) {
-  if (!ent_now.empty() && e == ent_now && (a.empty() || a == "needs" || a == "mine" || a == "at")) rebuild();
+  if (!ent_now.empty() && e == ent_now && ha::watched(E) && (a.empty() || a == "needs" || a == "mine" || a == "at")) rebuild();
 }
 
 // ---- adapter: sample (the docs story)
@@ -226,7 +226,7 @@ void sample_now() {
   put_data(d);
 }
 void fresh() {
-  if (!tick) tick = lv_timer_create([](lv_timer_t *) { fresh(); }, 60000, nullptr);  // ages move on
+  if (!tick) tick = lv_timer_create([](lv_timer_t *) { if (ha::watched(E)) fresh(); }, 60000, nullptr);  // ages move on
   const std::string &cfg = ha::feed_config(E);
   Doc c;
   deserializeJson(c, cfg.empty() ? "{}" : cfg.c_str());

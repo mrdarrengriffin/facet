@@ -214,6 +214,7 @@ inline void heap(ArduinoJson::JsonObject o) {
   o["internal_free"] = heap_caps_get_free_size(MALLOC_CAP_INTERNAL);
   o["internal_min"] = heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL);
   o["psram_free"] = heap_caps_get_free_size(MALLOC_CAP_SPIRAM);
+  o["internal_largest"] = heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL);
 }
 // content taller than the screen (doc pages): top-aligned and scrollable instead of centred and clipped
 inline void fit_scroll() {
@@ -1306,8 +1307,19 @@ class Handler : public AsyncWebHandler {
       heap(d["heap"].to<ArduinoJson::JsonObject>());
       std::string sh = "null";
       ArduinoJson::JsonDocument devs;
-      in_loop([&] { sh = S.shown; fw::dev::state(devs.to<ArduinoJson::JsonArray>()); }, 2000);
-      d["devices"] = devs;  // what is on the glass: each mounted device's screen stack (top = shown), builds, objects
+      size_t timers = 0, store = 0, store_bytes = 0, bounds = 0, wants = 0;
+      in_loop([&] {
+        sh = S.shown;
+        fw::dev::state(devs.to<ArduinoJson::JsonArray>());
+        // the loop's own bookkeeping (memory hunts, 2026-10-30): LVGL timers (each object delete walks them all),
+        // the HA store (every feed's attributes), bound components, subscriptions
+        for (lv_timer_t *t = lv_timer_get_next(nullptr); t && timers < 100000; t = lv_timer_get_next(t)) timers++;
+        for (const auto &kv : fw::ha::S().store) store++, store_bytes += kv.first.first.capacity() + kv.first.second.capacity() + kv.second.capacity() + 64;
+        bounds = fw::ha::S().bounds.size(), wants = fw::ha::wants().size();
+      }, 2000);
+      d["devices"] = devs;
+      ArduinoJson::JsonObject lp = d["loop"].to<ArduinoJson::JsonObject>();
+      lp["timers"] = timers, lp["store"] = store, lp["store_bytes"] = store_bytes, lp["bounds"] = bounds, lp["wants"] = wants;  // what is on the glass: each mounted device's screen stack (top = shown), builds, objects
       ArduinoJson::JsonDocument shd;
       if (!deserializeJson(shd, sh)) d["shown"] = shd;
       serializeJson(d, s);

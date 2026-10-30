@@ -109,7 +109,7 @@ void sample_now() {
   put_data(d, d.trend, d.kmh, now);
 }
 void fresh() {
-  if (!tick) tick = lv_timer_create([](lv_timer_t *) { fresh(); }, 60000, nullptr);  // ages move on with no new strike
+  if (!tick) tick = lv_timer_create([](lv_timer_t *) { if (ha::watched(E)) fresh(); }, 60000, nullptr);  // ages move on with no new strike
   static lv_timer_t *fast = nullptr;  // the sample storm moves every 2 s
   const std::string &cfg = ha::feed_config(E);
   ArduinoJson::JsonDocument c;

@@ -211,13 +211,14 @@ void want_all() {
 }
 void entity_put(const std::string &e, const std::string &, const std::string &) {
   St &s = S();
-  if (s.src != "ha") return;
+  if (s.src != "ha" || !ha::watched(E)) return;  // nothing shows the feed: the next bind's fresh() catches up
   if (e == s.player || e == current() || std::find(s.speakers.begin(), s.speakers.end(), e) != s.speakers.end()) rebuild();
 }
 
 void fresh() {
   St &s = S();
-  if (!tick) tick = lv_timer_create([](lv_timer_t *) {  // the progress moves on once a second while playing
+  if (!tick) tick = lv_timer_create([](lv_timer_t *) {  // the progress moves on once a second while playing (while shown)
+    if (!ha::watched(E)) return;
     if (S().src == "ha") rebuild(); else sample_now();
   }, 1000, nullptr);
   static const bool hooked = (ha::on_put(entity_put), true);

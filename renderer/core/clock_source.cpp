@@ -17,7 +17,7 @@ namespace {
 constexpr const char *E = "panel.clock";
 lv_timer_t *tick = nullptr;
 void fresh() {
-  if (!tick) tick = lv_timer_create([](lv_timer_t *) { fresh(); }, 1000, nullptr);
+  if (!tick) tick = lv_timer_create([](lv_timer_t *) { if (ha::watched(E)) fresh(); }, 1000, nullptr);
   const time_t t = time(nullptr);
   struct tm tm {};
   localtime_r(&t, &tm);

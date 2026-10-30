@@ -26,10 +26,12 @@
    {"id": "ha_weather", "kind": "ha", "name": "HA weather (its forecast through weather.get_forecasts)", "adapter": "ha", "detect": {"domain": "weather"}, "fills": {"weather": {"domain": "weather"}}},
    {"id": "open_meteo", "kind": "direct", "name": "Open-Meteo, called by the panel itself (planned)", "adapter": "open_meteo"},
    {"id": "sample", "kind": "builtin", "name": "Sample forecast (previews)", "adapter": "sample"}]},
-  "energy": {"needs": "a smart meter or tariff", "sources": [
-   {"id": "octopus", "kind": "ha", "name": "Octopus Energy", "detect": {"integration": "octopus_energy"}},
-   {"id": "ha_energy", "kind": "ha", "name": "HA Energy dashboard", "detect": {"energy": true}},
-   {"id": "octopus_api", "kind": "direct", "name": "Octopus API", "setup": ["API key", "account number"]}]},
+  "energy": {"needs": "a smart meter or tariff", "feed": "panel.energy", "sources": [
+   {"id": "ha_panel_energy", "kind": "ha", "name": "Energy sensors in the panel energy shape (sensor.panel_energy + sensor.panel_energy_days, filled by Home Assistant from a tariff integration such as Octopus Energy)", "adapter": "ha", "detect": {"domain": "sensor"}, "fills": {"sensor": {"domain": "sensor"}, "days": {"domain": "sensor"}}},
+   {"id": "octopus", "kind": "ha", "name": "Octopus Energy (read directly, planned)", "detect": {"integration": "octopus_energy"}},
+   {"id": "ha_energy", "kind": "ha", "name": "HA Energy dashboard (planned)", "detect": {"energy": true}},
+   {"id": "octopus_api", "kind": "direct", "name": "Octopus API (planned)", "setup": ["API key", "account number"]},
+   {"id": "sample", "kind": "builtin", "name": "Sample time-of-use day (previews)", "adapter": "sample"}]},
   "thermostat": {"needs": "a smart thermostat", "sources": [
    {"id": "ha_climate", "kind": "ha", "name": "HA climate", "detect": {"domain": "climate"}, "fills": {"entity": {"domain": "climate"}}}]},
   "covers": {"needs": "a motorised blind or curtain", "sources": [
@@ -59,9 +61,11 @@
   "lightning": {"needs": null, "sources": [
    {"id": "blitzortung", "kind": "ha", "name": "Blitzortung (HA)", "detect": {"integration": "blitzortung"}},
    {"id": "blitzortung_org", "kind": "direct", "name": "Blitzortung.org"}]},
-  "github": {"needs": "a GitHub account", "sources": [
-   {"id": "github_api", "kind": "direct", "name": "GitHub API", "setup": ["GitHub token"]},
-   {"id": "ha_github", "kind": "ha", "name": "HA GitHub", "detect": {"integration": "github"}}]},
+  "github": {"needs": "a GitHub account", "feed": "panel.github", "sources": [
+   {"id": "ha_panel_github", "kind": "ha", "name": "A pull request sensor in the panel github shape (filled by Home Assistant from the GitHub API)", "adapter": "ha", "detect": {"domain": "sensor"}, "fills": {"sensor": {"domain": "sensor"}}},
+   {"id": "github_api", "kind": "direct", "name": "GitHub API, read by the panel itself (planned: needs the panel's HTTPS client)", "setup": ["GitHub token"]},
+   {"id": "ha_github", "kind": "ha", "name": "HA GitHub (planned)", "detect": {"integration": "github"}},
+   {"id": "sample", "kind": "builtin", "name": "Sample pull requests (previews)", "adapter": "sample"}]},
   "timer": {"needs": null, "sources": [
    {"id": "ha_timers", "kind": "ha", "name": "HA timer helpers", "detect": {"domain": "timer"}},
    {"id": "panel", "kind": "builtin", "name": "On the panel"}]},

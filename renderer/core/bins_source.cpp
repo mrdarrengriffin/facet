@@ -279,7 +279,7 @@ void fetch(const std::string &cal) {
 }
 
 void fresh() {
-  if (!tick) tick = lv_timer_create([](lv_timer_t *) { fresh(); }, 60000, nullptr);
+  if (!tick) tick = lv_timer_create([](lv_timer_t *) { if (ha::watched(E)) fresh(); }, 60000, nullptr);
   const std::string &cfg = ha::feed_config(E);
   ArduinoJson::JsonDocument c;
   deserializeJson(c, cfg.empty() ? "{}" : cfg.c_str());

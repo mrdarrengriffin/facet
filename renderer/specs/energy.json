@@ -2,13 +2,44 @@
  "v": 1,
  "id": "energy",
  "name": "Energy",
- "rev": 4,
+ "rev": 5,
  "role": "page",
  "params": {
+  "source": {
+   "about": "Where the energy use comes from: sensors in Home Assistant in the panel energy shape (today's half-hours with their rates, and the last 14 days), or a made-up time-of-use day for previews.",
+   "type": "select",
+   "options": [
+    "ha",
+    "sample"
+   ],
+   "label": "Source",
+   "default": "sample"
+  },
+  "sensor": {
+   "about": "With source ha: the sensor for today (state = kWh so far; attributes cost, w, rate, band, until, next, next_band and slots, the 48 half-hours).",
+   "type": "entity",
+   "domain": "sensor",
+   "label": "Today",
+   "default": ""
+  },
+  "days": {
+   "about": "With source ha: the sensor for the days before today (attribute days, the last 14, oldest first; yday_now, yesterday's use up to this time of day).",
+   "type": "entity",
+   "domain": "sensor",
+   "label": "Past days",
+   "default": ""
+  },
   "view": {
    "about": "Which view the screen shows: today (the day's half-hours) or the last 7 days against the week before.",
    "type": "hidden",
    "default": "today"
+  }
+ },
+ "feeds": {
+  "panel.energy": {
+   "source": "$source",
+   "sensor": "$sensor",
+   "days": "$days"
   }
  },
  "header": {

@@ -75,6 +75,9 @@ struct State {
   uint32_t next_ask = 1;
   std::map<uint32_t, std::pair<AskDone, void *>> asks;  // waiting for their answer
   std::map<std::string, std::string> feeds;  // feed entity -> its settings (JSON: the spec's "feeds", params filled in)
+  // local sources already asked for their values since the last tick (2026-10-30): a screen's binds read the same feed
+  // dozens of times while it builds; one fresh() each is enough (Moon: 30 binds x its 75-day table = 4 s, a watchdog reset)
+  std::vector<std::string> freshed;
 };
 inline State &S() {
   static State s;
@@ -238,7 +241,10 @@ inline std::string words(const std::string &e) {
 }
 inline void bind_raw(ArduinoJson::JsonVariantConst b, ArduinoJson::JsonObject out, const char *key, std::vector<Pair> *pairs) {
   const std::string e = b["e"] | "", a = b["a"] | "", fmt = b["fmt"] | "";
-  if (void (*fresh)() = local(e)) fresh();
+  if (void (*fresh)() = local(e)) {
+    auto &f = S().freshed;
+    if (std::find(f.begin(), f.end(), e) == f.end()) { f.push_back(e); fresh(); }
+  }
   auto use = [&](const std::string &aa) { if (pairs && std::find(pairs->begin(), pairs->end(), Pair{e, aa}) == pairs->end()) pairs->push_back({e, aa}); };
   const std::string *st = get(e, "");
   const bool on = st && *st == "on";
@@ -339,6 +345,7 @@ inline void refresh(Bound *b) {
   if (lv_obj_get_style_margin_bottom(b->obj, LV_PART_MAIN) != mb) lv_obj_set_style_margin_bottom(b->obj, mb, 0);
 }
 inline void tick(lv_timer_t *) {
+  S().freshed.clear();  // the next build (or re-bind) asks the local sources again
   const uint32_t now = lv_tick_get();
   // a refresh can delete other bound objects (an items Grid rebuilds its cells: their Bounds are freed), so each one in
   // the copy is checked to be still live before it is touched (2026-10-28: the Timer chips crashed the panel)

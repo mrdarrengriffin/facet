@@ -109,7 +109,7 @@ void put_data(double now, double lat, double lon) {
 }
 
 void fresh() {
-  if (!tick) tick = lv_timer_create([](lv_timer_t *) { fresh(); }, 60000, nullptr);  // the moon moves on with the clock
+  if (!tick) tick = lv_timer_create([](lv_timer_t *) { if (ha::watched(E)) fresh(); }, 60000, nullptr);  // the moon moves on with the clock
   const std::string &cfg = ha::feed_config(E);
   ArduinoJson::JsonDocument c;
   deserializeJson(c, cfg.empty() ? "{}" : cfg.c_str());

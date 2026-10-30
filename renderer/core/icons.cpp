@@ -517,7 +517,7 @@ inline float span(float a, float b, int x) {  // length of [a, b] inside pixel c
 }
 float moon_lit_k(float p) { return (1 - cosf(2 * 3.14159265f * p)) / 2; }
 // one mask: span(y) -> up to two [a, b] intervals per sub-row (sign -1 = subtract the second: the outline's hole)
-template <typename F> void moon_mask(int S, uint8_t *out, F spans) {
+template <typename F> void moon_mask(int S, uint32_t stride, uint8_t *out, F spans) {
   std::vector<float> acc(S);
   for (int j = 0; j < S; j++) {
     std::fill(acc.begin(), acc.end(), 0.f);
@@ -530,18 +530,26 @@ template <typename F> void moon_mask(int S, uint8_t *out, F spans) {
       if (n == 2)
         for (int x = std::max(0, (int) floorf(a1)); x < S && x <= (int) b1; x++) acc[x] -= span(a1, b1, x);
     }
-    for (int x = 0; x < S; x++) out[j * S + x] = (uint8_t) std::max(0, std::min(255, (int) lroundf(acc[x] * 255.f / MOON_SUB)));
+    for (int x = 0; x < S; x++) out[j * stride + x] = (uint8_t) std::max(0, std::min(255, (int) lroundf(acc[x] * 255.f / MOON_SUB)));
   }
 }
 struct MoonGeo { float c, r, w; };
 MoonGeo moon_geo(int S) { return {S / 2.f, 20.f * S / 48.f, S >= 96 ? fw::ic::WX_STROKE_96 : fw::ic::WX_STROKE}; }
 float half_chord(float r, float dy) { return dy * dy < r * r ? sqrtf(r * r - dy * dy) : -1; }
-void moon_lit(int S, float frac, bool south, uint8_t *out) {
+// The masks are LVGL draw buffers (A8, LVGL's own stride): an image source LVGL draws straight from. A plain buffer
+// with stride = width was copied into an aligned one on EVERY draw (no image cache on the panels): a hero moon cost
+// three copies of its size per strip of every frame, 4 s per frame on the Waveshare and a watchdog reset (2026-10-30).
+lv_draw_buf_t *moon_buf(int S) {
+  lv_draw_buf_t *b = lv_draw_buf_create(S, S, LV_COLOR_FORMAT_A8, LV_STRIDE_AUTO);
+  if (b) lv_draw_buf_clear(b, nullptr);
+  return b;
+}
+void moon_lit(int S, float frac, bool south, lv_draw_buf_t *buf) {
   const MoonGeo g = moon_geo(S);
   const float p = fmodf(fmodf(frac, 1) + 1, 1), k = moon_lit_k(p);
   const bool right = (p < 0.5f) != south;
   const float rx = g.r * fabsf(2 * k - 1), e = k < 0.5f ? 1.f : -1.f;
-  moon_mask(S, out, [&](float y, float &a0, float &b0, float &, float &) {
+  moon_mask(S, buf->header.stride, buf->data, [&](float y, float &a0, float &b0, float &, float &) {
     const float dy = y - g.c, h = half_chord(g.r, dy);
     if (h < 0 || k < 0.005f) return 0;
     a0 = g.c - h, b0 = g.c + h;
@@ -552,26 +560,18 @@ void moon_lit(int S, float frac, bool south, uint8_t *out) {
     return b0 > a0 ? 1 : 0;
   });
 }
-struct MoonStatic { uint8_t *disc = nullptr, *edge = nullptr; lv_image_dsc_t d_disc, d_edge; };
-MoonStatic &moon_static(int S) {  // disc + outline masks of one size (px), made once per size
-  static MoonStatic m[fw::ic::N_SIZES + 2];
-  static int px[fw::ic::N_SIZES + 2] = {};
-  int k = 0;
-  while (k < fw::ic::N_SIZES + 1 && px[k] && px[k] != S) k++;  // the last slot is shared by any further size
-  MoonStatic &x = m[k];
-  if (x.disc && px[k] == S) return x;
-  if (x.disc) { lv_free(x.disc); lv_free(x.edge); x.disc = x.edge = nullptr; }
-  px[k] = S;
+// disc + outline masks of one size (px), made once per size and kept (moons on screen draw from them); a size past
+// the slots gets none (nullptr): that moon makes its own and frees them with itself (never a buffer a live image uses)
+struct MoonStatic { int px = 0; lv_draw_buf_t *disc = nullptr, *edge = nullptr; };
+void moon_masks(int S, lv_draw_buf_t *disc, lv_draw_buf_t *edge) {
   const MoonGeo g = moon_geo(S);
-  x.disc = (uint8_t *) lv_malloc(S * S);
-  x.edge = (uint8_t *) lv_malloc(S * S);
-  moon_mask(S, x.disc, [&](float y, float &a0, float &b0, float &, float &) {
+  moon_mask(S, disc->header.stride, disc->data, [&](float y, float &a0, float &b0, float &, float &) {
     const float h = half_chord(g.r, y - g.c);
     if (h < 0) return 0;
     a0 = g.c - h, b0 = g.c + h;
     return 1;
   });
-  moon_mask(S, x.edge, [&](float y, float &a0, float &b0, float &a1, float &b1) {
+  moon_mask(S, edge->header.stride, edge->data, [&](float y, float &a0, float &b0, float &a1, float &b1) {
     const float ho = half_chord(g.r + g.w / 2, y - g.c), hi = half_chord(g.r - g.w / 2, y - g.c);
     if (ho < 0) return 0;
     a0 = g.c - ho, b0 = g.c + ho;
@@ -579,22 +579,25 @@ MoonStatic &moon_static(int S) {  // disc + outline masks of one size (px), made
     a1 = g.c - hi, b1 = g.c + hi;
     return 2;
   });
-  return x;
 }
-void a8_dsc(lv_image_dsc_t &x, int S, const uint8_t *data) {
-  memset(&x, 0, sizeof x);
-  x.header.magic = LV_IMAGE_HEADER_MAGIC;
-  x.header.cf = LV_COLOR_FORMAT_A8;
-  x.header.w = S;
-  x.header.h = S;
-  x.header.stride = S;
-  x.data_size = (uint32_t) S * S;
-  x.data = data;
+MoonStatic *moon_static(int S) {
+  static MoonStatic m[fw::ic::N_SIZES + 4];
+  for (MoonStatic &x : m) {
+    if (x.px == S) return &x;
+    if (x.px) continue;
+    x.disc = moon_buf(S), x.edge = moon_buf(S);
+    if (!x.disc || !x.edge) { if (x.disc) lv_draw_buf_destroy(x.disc); if (x.edge) lv_draw_buf_destroy(x.edge); x.disc = x.edge = nullptr; return nullptr; }
+    x.px = S;
+    moon_masks(S, x.disc, x.edge);
+    return &x;
+  }
+  return nullptr;
 }
-struct Moon { int px; float frac; bool south; uint8_t *lit; lv_image_dsc_t dsc; lv_obj_t *im; };
+struct Moon { int px; float frac; bool south; lv_draw_buf_t *lit, *disc, *edge; bool own; lv_obj_t *im; };
 void moon_free(lv_event_t *ev) {
   Moon *m = (Moon *) lv_event_get_user_data(ev);
-  lv_free(m->lit);
+  if (m->lit) lv_draw_buf_destroy(m->lit);
+  if (m->own) { if (m->disc) lv_draw_buf_destroy(m->disc); if (m->edge) lv_draw_buf_destroy(m->edge); }
   delete m;
 }
 Moon *moon_of(lv_obj_t *o) {
@@ -605,7 +608,7 @@ Moon *moon_of(lv_obj_t *o) {
   }
   return nullptr;
 }
-lv_obj_t *moon_layer(lv_obj_t *box, const lv_image_dsc_t *d, const char *ink) {  // ink = a shared recolour style
+lv_obj_t *moon_layer(lv_obj_t *box, const lv_draw_buf_t *d, const char *ink) {  // ink = a shared recolour style
   lv_obj_t *im = lv_image_create(box);                                              // ("ink:moon-lit"): a theme switch
   lv_obj_remove_flag(im, LV_OBJ_FLAG_CLICKABLE);                                    // repaints it (C16, C44)
   lv_image_set_src(im, d);
@@ -622,16 +625,16 @@ lv_obj_t *fw::moon_icon_px(lv_obj_t *parent, float frac, int S, bool south) {
   lv_obj_remove_flag(box, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
   lv_obj_add_flag(box, LV_OBJ_FLAG_STATE_TRICKLE);
   lv_obj_set_size(box, S, S);
-  MoonStatic &st = moon_static(S);
-  a8_dsc(st.d_disc, S, st.disc);
-  a8_dsc(st.d_edge, S, st.edge);
-  Moon *m = new Moon{S, frac, south, (uint8_t *) lv_malloc(S * S), {}, nullptr};
-  moon_lit(S, frac, south, m->lit);
-  a8_dsc(m->dsc, S, m->lit);
+  Moon *m = new Moon{S, frac, south, moon_buf(S), nullptr, nullptr, false, nullptr};
+  if (MoonStatic *st = moon_static(S)) m->disc = st->disc, m->edge = st->edge;
+  else if ((m->disc = moon_buf(S)) && (m->edge = moon_buf(S))) { m->own = true; moon_masks(S, m->disc, m->edge); }
+  else { m->own = true; if (m->disc) lv_draw_buf_destroy(m->disc); m->disc = nullptr; }
   lv_obj_add_event_cb(box, moon_free, LV_EVENT_DELETE, m);
-  moon_layer(box, &st.d_disc, "ink:moon-dark");
-  m->im = moon_layer(box, &m->dsc, "ink:moon-lit");
-  moon_layer(box, &st.d_edge, "ink:moon-edge");
+  if (!m->lit || !m->disc || !m->edge) return box;  // no memory: an empty box of the right size
+  moon_lit(S, frac, south, m->lit);
+  moon_layer(box, m->disc, "ink:moon-dark");
+  m->im = moon_layer(box, m->lit, "ink:moon-lit");
+  moon_layer(box, m->edge, "ink:moon-edge");
   return box;
 }
 lv_obj_t *fx::moon(lv_obj_t *parent, float frac, const char *size, bool south) {
@@ -645,6 +648,8 @@ bool fw::moon_icon_set(lv_obj_t *box, float frac, bool south) {
   if (!m) return false;
   if (fabsf(frac - m->frac) < 0.0005f && south == m->south) return true;
   m->frac = frac, m->south = south;
+  if (!m->lit || !m->im) return true;
+  lv_draw_buf_clear(m->lit, nullptr);
   moon_lit(m->px, frac, south, m->lit);
   lv_obj_invalidate(m->im);
   return true;
