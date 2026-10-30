@@ -19,10 +19,11 @@
 //            components' own unavailable look.
 //   taps     toggle = light.toggle (a light or a switch); detail = nav.open of the type's detail screen for that
 //            entity; page = nav.open of that deck page; none = nothing (sensors); run = script.run / scene.activate /
-//            automation.trigger / button.press (an action card; its "ask" = the panel asks "Run <name>?" first)
+//            automation.trigger / button.press (an action card)
 // Header actions (the deck page's header_actions, screen model §10): button settings (default) or a page id = that
 // page's shortcut, a gutter before the settings button (which always stays; a long press on the time opens Settings
-// too); status timer = the panel's timer, time left beside the time.
+// too); status timer = the panel's timer, time left beside the time; buttons = square Icon buttons in the header's end
+// (each with a card's tap: its entity's domain's, or a page; one whose screen this build lacks is left out).
 // Prop page = the Home's page id ("" = the deck's start page if it is a Home, else the first Home). With no Home in the
 // deck: the header and an empty grid.
 // Update path: the deck changing rebuilds the screen (the device reloads it); entity changes move each card through
@@ -118,6 +119,49 @@ void page_card(ArduinoJson::JsonObject p, Var page, const std::string &kind) {
 }
 
 // one deck card -> one spec node in slot `slot` of node 0 (the Card grid); returns its cell size ('s', 'm', 'l', 'h')
+// a card's (or a header button's) tap as the node's on.tap: toggle, detail (its domain's screen for the entity), run
+// (the domain's action), page (that deck page); none = no tap
+void set_tap(ArduinoJson::JsonObject n, const std::string &tap, const std::string &e, const std::string &detail, const std::string &pid, const std::string &label) {
+  const std::string dom = e.substr(0, e.find('.'));
+  if (tap == "toggle") {
+    ArduinoJson::JsonObject a = n["on"]["tap"].to<ArduinoJson::JsonObject>();
+    a["do"] = dom == "light" || dom == "switch" ? "light.toggle" : "entity.toggle";
+    a["e"] = e;
+  } else if (tap == "detail" && !detail.empty()) {
+    ArduinoJson::JsonObject a = n["on"]["tap"].to<ArduinoJson::JsonObject>();
+    a["do"] = "nav.open";
+    a["screen"] = detail;
+    a["params"]["entity"] = e;
+    if (!label.empty()) a["params"]["name"] = label;
+  } else if (tap == "run") {
+    ArduinoJson::JsonObject a = n["on"]["tap"].to<ArduinoJson::JsonObject>();
+    a["do"] = dom == "script" ? "script.run" : dom == "scene" ? "scene.activate" : dom == "automation" ? "automation.trigger" : "button.press";
+    a["e"] = e;
+  } else if (tap == "page" && !pid.empty()) {
+    ArduinoJson::JsonObject a = n["on"]["tap"].to<ArduinoJson::JsonObject>();
+    a["do"] = "nav.open";
+    a["screen"] = pid;
+  }
+}
+// a header button (header_actions.buttons) as a square Icon button node in the header's end; false = left out (its
+// screen isn't in this build)
+bool button_node(Var b, Var pages, ArduinoJson::JsonArray nodes) {
+  const std::string t = b["t"] | "entity", e = b["e"] | "", pid = b["page"] | "";
+  const fw::spec::DomainTaps &dt = fw::spec::entity_taps(e.substr(0, e.find('.')));
+  std::string tap = t == "page" ? "page" : (b["tap"] | "");
+  if (tap.empty()) tap = std::string(dt.taps).substr(0, std::string(dt.taps).find(','));
+  std::string to = tap == "detail" ? dt.detail : "";
+  if (tap == "page") for (Var pg : pages.as<ArduinoJson::JsonArrayConst>()) if (pid == (pg["id"] | "")) to = pg["kind"] | "";
+  if ((tap == "page" || tap == "detail") && (to.empty() || !fw::spec::screen_known(to))) return false;
+  ArduinoJson::JsonObject n = nodes.add<ArduinoJson::JsonObject>();
+  n["c"] = "icon_button";
+  n["p"]["style"] = "square";
+  n["p"]["icon"] = b["icon"] | "next";
+  n["in"] = "header";
+  n["slot"] = "end";
+  set_tap(n, tap, e, dt.detail, pid, "");
+  return true;
+}
 char card_node(Var cd, Var pages, int slot, ArduinoJson::JsonArray nodes) {
   const std::string t = cd["t"] | "", e = cd["e"] | "", size = cd["size"] | "m", label = cd["label"] | "";
   const fw::spec::CardType *ct = fw::spec::card_type(t);
@@ -238,29 +282,7 @@ char card_node(Var cd, Var pages, int slot, ArduinoJson::JsonArray nodes) {
     tone["map"]["unknown"] = "mute";
     tone["else"] = "text";
   }
-  // the tap
-  const bool ask = t == "entity" && (cd["ask"] | false);  // "Ask first": the panel asks before it runs / toggles
-  if (tap == "toggle") {
-    ArduinoJson::JsonObject a = n["on"]["tap"].to<ArduinoJson::JsonObject>();
-    a["do"] = dom == "light" || dom == "switch" ? "light.toggle" : "entity.toggle";
-    a["e"] = e;
-    if (ask && dom != "light" && dom != "switch") { a["ask"] = true; if (!label.empty()) a["name"] = label; }
-  } else if (tap == "detail" && !detail.empty()) {
-    ArduinoJson::JsonObject a = n["on"]["tap"].to<ArduinoJson::JsonObject>();
-    a["do"] = "nav.open";
-    a["screen"] = detail;
-    a["params"]["entity"] = e;
-    if (!label.empty()) a["params"]["name"] = label;
-  } else if (tap == "run") {  // the Action tile: its domain's action; ask = "Run <name>?" on the panel first
-    ArduinoJson::JsonObject a = n["on"]["tap"].to<ArduinoJson::JsonObject>();
-    a["do"] = dom == "script" ? "script.run" : dom == "scene" ? "scene.activate" : dom == "automation" ? "automation.trigger" : "button.press";
-    a["e"] = e;
-    if (ask) { a["ask"] = true; if (!label.empty()) a["name"] = label; }
-  } else if (tap == "page" && !pid.empty()) {
-    ArduinoJson::JsonObject a = n["on"]["tap"].to<ArduinoJson::JsonObject>();
-    a["do"] = "nav.open";
-    a["screen"] = pid;
-  }
+  set_tap(n, tap, e, detail, pid, label);
   return t == "sensor" && size == "m" ? 'h' : size[0];
 }
 
@@ -340,6 +362,7 @@ void build_home(lv_obj_t *parent, fw::Props props) {
     }
     lay["p"]["cells"] = cells;
   }
+  for (Var b : page["header_actions"]["buttons"].as<ArduinoJson::JsonArrayConst>()) button_node(b, deck["pages"], nodes);
   std::string json, error;
   serializeJson(sp, json);
   Doc none;

@@ -352,8 +352,7 @@ action is reachable from a spec node's event, an agent (`POST /fw/act`) and Home
 endpoint or parser for something the list could carry (friendly wrappers such as `facet_timer_*` build a list action);
 actions needing a spec screen (`screen.*`) say so and are refused outside one. Actions that run something in Home Assistant
 (`script.run`, `scene.activate`, `automation.trigger`, `button.press`) take only an entity of their own domain, no
-data, and an optional `ask`: the panel asks "Run <name>?" on its own screen first and never runs unasked when it
-cannot ask.
+data.
 *Why:* one list means a new feature is controllable by people, agents and HA at once, with the same limits, and the
 docs cannot drift from what runs. *Check:* `static_assert` (one `ACTION_DOCS` row per `ACTIONS` entry); functional
 test `act` "C50" (every row has about, typed fields and an example that `act()` runs; spec-only rows refused).

@@ -133,11 +133,12 @@
 //              of the kind's sources (renderer/sources/sources.json); params = the page opens with them over the
 //              spec's defaults (a host's discovery fills them). cards only on a home: t = a card type (CARD_TYPES),
 //              e = its entity (a domain the type takes), size s | m | l, tap toggle | detail | page | none (the
-//              type's first by default), page = a page id (t page), label (else the entity's name), ask (t entity: true =
-//              the panel asks "Run <name>?" first; 2026-10-30). A home may set
+//              type's first by default), page = a page id (t page), label (else the entity's name). A home may set
 //              header_actions {button: "settings" (default) | a page id (that page's shortcut in the settings
 //              button's place; Settings = a long press on the time), status: "none" | "timer" (the panel's timer,
-//              time left beside the time)}. start = the
+//              time left beside the time), buttons: [{icon, t: entity | page, e, tap, page}] (square icon buttons
+//              in the header's end, in order: icon = one of the Icon button's icons, the tap as a card's; how
+//              many = the header end slot's "max" less the header's own items)}. start = the
 //              page shown first. A v1 deck ({"v": 1, "screens": [...]}) is refused: a panel holding one falls back
 //              to the factory deck. No "on": a page you don't want is not in the deck (Settings > Screens and the
 //              editor list the other page kinds as off; turning one on adds it at the end).
@@ -252,11 +253,11 @@ constexpr ActionDoc ACTION_DOCS[] = {
     {"timer.back", "Leave the length picker.", "", "", R"({"do":"timer.back"})", false},
     {"calendar.control", "On the Calendar: show the previous, next or this month, open a day or the calendars sheet, close the sheet, or turn a calendar on or off (its id: the entity without calendar.).", "", "previous|next|today|calendars|close|*48", R"({"do":"calendar.control","value":"day 2026-10-23"})", false},
     {"flights.select", "On the Flight radar: select an aircraft (by hex, callsign or route) so the hero and the card show it; the selected one again opens its details (spec nodes only).", "", "*48", R"({"do":"flights.select"})", true},
-    {"script.run", "Run a Home Assistant script (ask: the panel asks \"Run <name>?\" first).", "e|entity|required|script.x;ask|bool|optional|ask on the panel first;name|text|optional|the name the question shows, at most 32", "", R"({"do":"script.run","e":"script.good_night"})", false},
-    {"scene.activate", "Activate a Home Assistant scene (ask: the panel asks \"Run <name>?\" first).", "e|entity|required|scene.x;ask|bool|optional|ask on the panel first;name|text|optional|the name the question shows, at most 32", "", R"({"do":"scene.activate","e":"scene.movie"})", false},
-    {"automation.trigger", "Trigger a Home Assistant automation now (ask: the panel asks \"Run <name>?\" first).", "e|entity|required|automation.x;ask|bool|optional|ask on the panel first;name|text|optional|the name the question shows, at most 32", "", R"({"do":"automation.trigger","e":"automation.lights_out"})", false},
-    {"button.press", "Press a Home Assistant button entity (ask: the panel asks \"Run <name>?\" first).", "e|entity|required|button.x;ask|bool|optional|ask on the panel first;name|text|optional|the name the question shows, at most 32", "", R"({"do":"button.press","e":"button.doorbell_chime"})", false},
-    {"entity.toggle", "Toggle a fan, an input boolean or an automation (an automation: enable / disable; ask: the panel asks first).", "e|entity|required|fan.x, input_boolean.x or automation.x;ask|bool|optional|ask on the panel first;name|text|optional|the name the question shows, at most 32", "", R"({"do":"entity.toggle","e":"fan.bedroom"})", false},
+    {"script.run", "Run a Home Assistant script.", "e|entity|required|script.x", "", R"({"do":"script.run","e":"script.good_night"})", false},
+    {"scene.activate", "Activate a Home Assistant scene.", "e|entity|required|scene.x", "", R"({"do":"scene.activate","e":"scene.movie"})", false},
+    {"automation.trigger", "Trigger a Home Assistant automation now.", "e|entity|required|automation.x", "", R"({"do":"automation.trigger","e":"automation.lights_out"})", false},
+    {"button.press", "Press a Home Assistant button entity.", "e|entity|required|button.x", "", R"({"do":"button.press","e":"button.doorbell_chime"})", false},
+    {"entity.toggle", "Toggle a fan, an input boolean or an automation (an automation: enable / disable).", "e|entity|required|fan.x, input_boolean.x or automation.x", "", R"({"do":"entity.toggle","e":"fan.bedroom"})", false},
 };
 static_assert(sizeof ACTION_DOCS / sizeof ACTION_DOCS[0] == sizeof ACTIONS / sizeof ACTIONS[0], "every action has its ACTION_DOCS row (CONTRACT.md C50)");
 inline const ActionDoc *action_doc(const std::string &d) {
@@ -468,8 +469,8 @@ inline void check_keys(ArduinoJson::JsonObjectConst o, const char *const *keys, 
 }
 inline void check_action(ArduinoJson::JsonVariantConst a, const char *comp, const char *event, const std::string &path, Errs &e) {
   if (!a.is<ArduinoJson::JsonObjectConst>()) { err(e, path, "bad_action", "an action is an object {do, ...}"); return; }
-  static const char *const K[] = {"do", "e", "screen", "params", "param", "from", "auto", "rooms", "mode", "mop", "seconds", "name", "s", "id", "value", "to", "back", "ask"};
-  check_keys(a.as<ArduinoJson::JsonObjectConst>(), K, 18, path, e);
+  static const char *const K[] = {"do", "e", "screen", "params", "param", "from", "auto", "rooms", "mode", "mop", "seconds", "name", "s", "id", "value", "to", "back"};
+  check_keys(a.as<ArduinoJson::JsonObjectConst>(), K, 17, path, e);
   const std::string d = a["do"] | "";
   if (!one_of(ACTIONS, d)) { err(e, path + ".do", "bad_action", "unknown action " + d); return; }
   if (comp) {  // a spec node: its component's event allows it; nullptr = act() (an agent, HA: no component)
@@ -488,8 +489,6 @@ inline void check_action(ArduinoJson::JsonVariantConst a, const char *comp, cons
   if (d == "script.run" || d == "scene.activate" || d == "automation.trigger" || d == "button.press" || d == "entity.toggle") {  // the Entity tile (2026-10-30)
     const std::string en = a["e"] | "", dom = d == "entity.toggle" ? en.substr(0, en.find('.')) : d.substr(0, d.find('.'));
     if (!entity_ok(en) || (en[0] != '$' && en.rfind(dom + ".", 0) != 0)) err(e, path + ".e", "bad_entity", "a " + dom + " entity (" + dom + ".x or $param)");
-    if (!a["ask"].isNull() && !a["ask"].is<bool>()) err(e, path + ".ask", "bad_action", "ask: true or false");
-    if (!a["name"].isNull() && (!a["name"].is<const char *>() || strlen(a["name"] | "") > 32)) err(e, path + ".name", "bad_action", "name: text, at most 32");
   }
   if (d.rfind("climate.", 0) == 0) {
     const std::string en = a["e"] | "";
@@ -783,9 +782,9 @@ inline const CardType *card_type(const std::string &t) {
   return nullptr;
 }
 inline void check_card(ArduinoJson::JsonVariantConst c, const std::string &p, const std::set<std::string> &ids, Errs &e) {
-  static const char *const CK[] = {"t", "e", "size", "tap", "page", "label", "ask"};
-  if (!c.is<ArduinoJson::JsonObjectConst>()) { err(e, p, "bad_card", "a card is {t, e, size, tap?, page?, label?, ask?}"); return; }
-  check_keys(c.as<ArduinoJson::JsonObjectConst>(), CK, 7, p, e);
+  static const char *const CK[] = {"t", "e", "size", "tap", "page", "label"};
+  if (!c.is<ArduinoJson::JsonObjectConst>()) { err(e, p, "bad_card", "a card is {t, e, size, tap?, page?, label?}"); return; }
+  check_keys(c.as<ArduinoJson::JsonObjectConst>(), CK, 6, p, e);
   const std::string t = c["t"] | "", ent = c["e"] | "", size = c["size"] | "", tap = c["tap"] | "", pg = c["page"] | "";
   const CardType *ct = card_type(t);
   if (!ct) { err(e, p + ".t", "bad_card", "t is a card type (light, cover, climate, media, sensor, page, entity)"); return; }
@@ -805,8 +804,41 @@ inline void check_card(ArduinoJson::JsonVariantConst c, const std::string &p, co
   if (t != "entity" && !tap.empty() && !csv_has(ct->taps, tap)) err(e, p + ".tap", "bad_tap", std::string("a ") + t + " card's tap is " + ct->taps);
   if (!pg.empty() && !ids.count(pg)) err(e, p + ".page", "bad_page", "no page " + pg + " in this deck");
   if (t == "page" && pg.empty()) err(e, p + ".page", "bad_page", "a page card names a page");
-  if (!c["ask"].isNull() && (t != "entity" || !c["ask"].is<bool>())) err(e, p + ".ask", "bad_card", "ask (true / false) is an entity tile's");
   if (!c["label"].isNull() && (!c["label"].is<const char *>() || strlen(c["label"] | "") > 32)) err(e, p + ".label", "bad_card", "label is text (at most 32)");
+}
+// a Home's header buttons (header_actions.buttons): square Icon buttons in the header's end, each {icon, t, e, tap,
+// page} with a card's taps (t entity: its domain's; t page: opens that page). How many: the header end slot's "max"
+// (the Header's meta, C8a) less the header's own items (own: settings, a shortcut, the timer status).
+inline void check_buttons(ArduinoJson::JsonVariantConst bs, int own, const std::string &p, const std::set<std::string> &ids, Errs &e) {
+  ArduinoJson::JsonArrayConst a = bs.as<ArduinoJson::JsonArrayConst>();
+  if (a.isNull()) { err(e, p, "bad_deck", "buttons is a list"); return; }
+  const SlotDecl *sd = slot_named("header", "end");
+  if (sd && sd->max && (int) a.size() + own > sd->max)
+    err(e, p, "bad_slot", "the header's end holds at most " + std::to_string(sd->max) + " (its own " + std::to_string(own) + " count): " + std::to_string(a.size()) + " buttons");
+  const std::vector<PropInfo> *pis = props_of("icon_button");
+  const PropInfo *ic = nullptr;
+  if (pis) for (const PropInfo &x : *pis) if (x.name == "icon") ic = &x;
+  int k = 0;
+  for (ArduinoJson::JsonVariantConst b : a) {
+    const std::string q = p + "[" + std::to_string(k++) + "]";
+    static const char *const BK[] = {"icon", "t", "e", "tap", "page"};
+    if (!b.is<ArduinoJson::JsonObjectConst>()) { err(e, q, "bad_deck", "a button is {icon, t, e?, tap?, page?}"); continue; }
+    check_keys(b.as<ArduinoJson::JsonObjectConst>(), BK, 5, q, e);
+    const std::string icon = b["icon"] | "", t = b["t"] | "", ent = b["e"] | "", tap = b["tap"] | "", pg = b["page"] | "";
+    if (ic && std::find(ic->options.begin(), ic->options.end(), icon) == ic->options.end()) err(e, q + ".icon", "bad_deck", "icon is one of the Icon button's icons");
+    if (t == "page") {
+      if (!ids.count(pg)) err(e, q + ".page", "bad_page", "a page button names a page of this deck");
+      if (!ent.empty()) err(e, q + ".e", "bad_deck", "a page button has no entity");
+    } else if (t == "entity") {
+      const size_t dot = ent.find('.');
+      if (dot == std::string::npos || !entity_ok(ent) || ent[0] == '$') err(e, q + ".e", "bad_entity", "an entity id (domain.name)");
+      else {
+        const DomainTaps &dt = entity_taps(ent.substr(0, dot));
+        if (!tap.empty() && !csv_has(dt.taps, tap)) err(e, q + ".tap", "bad_tap", "a " + ent.substr(0, dot) + " button's tap is " + dt.taps);
+        if (tap == "detail" && !screen_known(dt.detail)) err(e, q + ".tap", "bad_tap", "this build has no screen for " + ent.substr(0, dot));
+      }
+    } else err(e, q + ".t", "bad_deck", "t is entity or page");
+  }
 }
 inline void check_deck(ArduinoJson::JsonVariantConst d, size_t bytes, Errs &e) {
   if (!d.is<ArduinoJson::JsonObjectConst>()) { err(e, "", "bad_spec", "a deck is an object"); return; }
@@ -847,15 +879,16 @@ inline void check_deck(ArduinoJson::JsonVariantConst d, size_t bytes, Errs &e) {
         if (!kv.value().is<const char *>() || strlen(kv.value().as<const char *>()) > 1024) err(e, p + ".params." + kv.key().c_str(), "bad_deck", "a parameter is text (at most 1024)");
     }
     if (kind == "home") homes++;
-    if (!x["header_actions"].isNull()) {  // a Home's header actions: {button: "settings" | a page id, status: none | timer}
+    if (!x["header_actions"].isNull()) {  // a Home's header actions: {button: "settings" | a page id, status: none | timer, buttons}
       ArduinoJson::JsonVariantConst ha_ = x["header_actions"];
-      static const char *const HK[] = {"button", "status"};
-      if (kind != "home" || !ha_.is<ArduinoJson::JsonObjectConst>()) err(e, p + ".header_actions", "bad_deck", "header_actions is {button?, status?} on a home");
+      static const char *const HK[] = {"button", "status", "buttons"};
+      if (kind != "home" || !ha_.is<ArduinoJson::JsonObjectConst>()) err(e, p + ".header_actions", "bad_deck", "header_actions is {button?, status?, buttons?} on a home");
       else {
-        check_keys(ha_.as<ArduinoJson::JsonObjectConst>(), HK, 2, p + ".header_actions", e);
+        check_keys(ha_.as<ArduinoJson::JsonObjectConst>(), HK, 3, p + ".header_actions", e);
         const std::string b = ha_["button"] | "settings", st = ha_["status"] | "none";
         if (b != "settings" && !ids.count(b)) err(e, p + ".header_actions.button", "bad_page", "button is settings or a page id of this deck");
         if (st != "none" && st != "timer") err(e, p + ".header_actions.status", "bad_deck", "status is none or timer");
+        if (!ha_["buttons"].isNull()) check_buttons(ha_["buttons"], 1 + (b != "settings") + (st == "timer"), p + ".header_actions.buttons", ids, e);
       }
     }
     if (x["cards"].isNull()) continue;
@@ -1206,36 +1239,6 @@ inline const char *ha_act(Node &n, const char *service, const char *entity, cons
   const char *w = ha::act(n.obj, service, entity, data_json);
   if (*w) act_why() = w;
   return w;
-}
-// an Action tile's "ask first" (Darren 2026-10-30): a Bottom sheet over the tile's screen, title "Run <name>?", one row
-// "Run <name>" (a pick runs the service and closes it); Close / the scrim = nothing. One at a time: a new ask replaces
-// the last sheet. No screen (an agent's act with nothing shown) = refused, never run unasked.
-inline void ask_run(Node &n, const char *svc, const std::string &label) {
-  struct Job { std::string svc, entity; };
-  static Job job;
-  static lv_obj_t *sheet = nullptr;
-  lv_obj_t *scr = n.obj ? lv_obj_get_screen(n.obj) : nullptr;
-  const fw::Component *c = fw::find("bottom_sheet");
-  if (!scr || !c) { act_why() = "nothing on the panel's screen to ask on"; return; }
-  if (sheet && lv_obj_is_valid(sheet)) lv_obj_delete(sheet);
-  sheet = nullptr;
-  std::string name = label;
-  if (name.empty()) { const std::string *f = ha::get(n.entity, "friendly_name"); name = f && !f->empty() ? *f : n.entity; }
-  job = {svc, n.entity};
-  ArduinoJson::JsonDocument d;
-  d["overlay"] = true;
-  d["open"] = "open";
-  d["title"] = "Run " + name + "?";
-  d["selected"] = -1;  // a question, not a choice: no radio ringed
-  ArduinoJson::JsonObject it = d["items"].to<ArduinoJson::JsonArray>().add<ArduinoJson::JsonObject>();
-  it["icon"] = "play";
-  it["name"] = "Run " + name;
-  const uint32_t before = lv_obj_get_child_count(scr);
-  c->build(scr, d.as<fw::Props>());
-  if (lv_obj_get_child_count(scr) <= before) return;
-  sheet = lv_obj_get_child(scr, -1);
-  lv_obj_add_event_cb(sheet, [](lv_event_t *e) { ha::act((lv_obj_t *) lv_event_get_current_target(e), job.svc.c_str(), job.entity.c_str()); },
-                      LV_EVENT_VALUE_CHANGED, nullptr);
 }
 inline void send_brightness(Node &n, int v) {
   if (v == n.sent) return;
@@ -1631,8 +1634,7 @@ inline bool run_action(Screen *s, Node &n, ArduinoJson::JsonVariantConst a, cons
   if (d == "script.run" || d == "scene.activate" || d == "automation.trigger" || d == "button.press" || d == "entity.toggle") {  // the Entity tile
     const std::string tg = n.entity.substr(0, n.entity.find('.')) + ".toggle";
     const char *svc = d == "script.run" ? "script.turn_on" : d == "scene.activate" ? "scene.turn_on" : d == "entity.toggle" ? tg.c_str() : d.c_str();
-    if (a["ask"] | false) ask_run(n, svc, a["name"] | "");  // "Run <name>?" first: a Bottom sheet, its one row runs it
-    else ha_act(n, svc, n.entity.c_str());
+    ha_act(n, svc, n.entity.c_str());
     return true;
   }
   if (d == "light.toggle") {  // a light, or a switch (a Home light card takes both)
