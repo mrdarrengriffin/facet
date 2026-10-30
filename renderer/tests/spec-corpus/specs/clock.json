@@ -2,23 +2,69 @@
  "v": 1,
  "id": "c_clock",
  "name": "Clock",
- "rev": 1,
- "role": "both",
+ "rev": 3,
+ "role": "page",
+ "params": {
+  "source": {
+   "about": "Where the weather line under the date comes from: a weather entity in Home Assistant, or a made-up forecast for previews.",
+   "type": "select",
+   "options": [
+    "ha",
+    "sample"
+   ],
+   "label": "Source",
+   "default": "ha"
+  },
+  "weather": {
+   "about": "The weather forecast to show the weather now beside the time.",
+   "type": "entity",
+   "domain": "weather",
+   "label": "Forecast",
+   "default": "weather.forecast_home"
+  }
+ },
+ "feeds": {
+  "panel.weather": {
+   "source": "$source",
+   "weather": "$weather"
+  }
+ },
+ "card": {
+  "icon": "clock",
+  "preview": "clock",
+  "mode": "value",
+  "value": {
+   "e": "panel.clock",
+   "a": "time"
+  },
+  "sub": {
+   "e": "panel.weather",
+   "a": "brief"
+  }
+ },
  "header": {
   "label": "Clock",
-  "back": false
+  "back": true
  },
  "layout": "center",
  "nodes": [
   {
-   "c": "clock_face",
+   "c": "clock_orbit",
+   "p": {}
+  },
+  {
+   "c": "time",
    "p": {
-    "face": "hero",
-    "time": "09:41",
-    "day": "Saturday",
-    "condition": "Sunny",
-    "temp": "14°"
-   }
+    "size": "mid",
+    "font": "inter",
+    "date": "short",
+    "line": {
+     "e": "panel.weather",
+     "a": "brief"
+    }
+   },
+   "in": 0,
+   "slot": 0
   }
  ]
 }

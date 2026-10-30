@@ -1,0 +1,7 @@
+{
+  "id": "clock_orbit",
+  "live": true,
+  "live_why": "a clock: the dots orbit with the seconds",
+  "tests": [],
+  "xfail": {}
+}

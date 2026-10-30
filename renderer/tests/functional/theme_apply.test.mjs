@@ -9,6 +9,13 @@
 //   break  with the repaint switched off (fx::break_stale) the live = fresh proof goes red: the proof can fail
 //   golden one candidate per component x theme x mode (tests/golden/theme): reviewed by a person, never auto-accepted
 import { frame565, diff565, golden, stage } from './_release.mjs';
+import { readFileSync, readdirSync } from 'node:fs';
+
+// live components (tests/behaviour/<id>.json "live": a clock, a spinning disc, moving weather) are compared as still
+// pictures: their own animated / playing props off, so two frames taken at different moments can be compared
+const BEH = new URL('../behaviour/', import.meta.url);
+const LIVE = new Set(readdirSync(BEH).filter((f) => f.endsWith('.json')).map((f) => JSON.parse(readFileSync(new URL(f, BEH), 'utf8'))).filter((j) => j.live).map((j) => j.id));
+const still = (c) => (LIVE.has(c.id) ? Object.fromEntries((c.meta.props || []).filter((q) => q.name === 'animated' || q.name === 'playing').map((q) => [q.name, false])) : {});
 
 const lab = (t, c, a = '') => JSON.parse(t.b.str(c, (pc) => t.b.str(a, (pa) => t.b.m.UTF8ToString(t.b.m._fw_lab(-1, pc, pa)))));
 const THEMES = ['blockcraft', 'win98'];
@@ -22,7 +29,7 @@ function cases(t) {
   for (const c of metas.filter((x) => x.section !== 'screens' && x.meta && x.meta.contract === 2)) {
     const [fw, fh] = c.meta.frame || [t.b.S / D, t.b.S / D];
     for (const v of (c.meta.variants?.length ? c.meta.variants : [{ label: 'default', props: {} }]).slice(0, 2))
-      out.push({ id: c.id, name: `${c.id}-${out.filter((o) => o.id === c.id).length}`, label: v.label, props: v.props || {}, W: Math.round(fw * D), H: fh ? Math.round(fh * D) : t.b.S });
+      out.push({ id: c.id, name: `${c.id}-${out.filter((o) => o.id === c.id).length}`, label: v.label, props: { ...(v.props || {}), ...still(c) }, W: Math.round(fw * D), H: fh ? Math.round(fh * D) : t.b.S });
   }
   out.push({ id: 'spec', name: 'light_screen', label: 'Light screen', props: { screen: 'light', entity: E, opening: false }, W: t.b.S, H: t.b.S, screen: true });
   return out;

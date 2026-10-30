@@ -1,0 +1,7 @@
+{
+  "id": "media_hero",
+  "live": true,
+  "live_why": "its Media visual spins while playing",
+  "tests": [],
+  "xfail": {}
+}

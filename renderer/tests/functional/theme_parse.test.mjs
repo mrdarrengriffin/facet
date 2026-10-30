@@ -34,9 +34,9 @@ export default {
   id: 'theme_parse', family: 'themes', about: 'Theme files: schema, refusals with paths, inheritance, merge, presets, guards, never a partial apply.',
   tests: [
     // ---------------------------------------------------------------- built-ins + schema
-    { name: 'built-ins: facet, blockcraft and win98 load and pass every guard', mount: M, run(t) {
+    { name: 'built-ins: facet, blockcraft, phosphor and win98 load and pass every guard', mount: M, run(t) {
       const b = lab(t, 'theme_builtins');
-      t.eq(b.map((x) => x.id).sort(), ['blockcraft', 'facet', 'win98'], 'the embedded themes');
+      t.eq(b.map((x) => x.id).sort(), ['blockcraft', 'facet', 'phosphor', 'win98'], 'the embedded themes');
       for (const x of b) t.ok(x.ok && x.checks > 500, `${x.id}: ok with ${x.checks} guard checks (${JSON.stringify(x.errors.slice(0, 2))})`);
     } },
     { name: 'facet.json is generated from the tokens and compiles to exactly Facet\'s defaults', mount: M, run(t) {

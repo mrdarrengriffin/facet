@@ -296,7 +296,7 @@ FW_COMPONENT(bottom_sheet, "Bottom sheet", "components", R"({
   "parts": [],
   "stage": "screen",
   "slots": [
-    {"name": "list", "count": 1, "about": "On a spec screen (in overlay): the sheet's list, filled by the spec (in + slot 0); the sheet is as tall as what is in it.", "accepts": ["grid", "list_row", "empty_state", "label"]}
+    {"name": "list", "count": 1, "about": "On a spec screen (in overlay): the sheet's list, filled by the spec (in + slot 0); the sheet is as tall as what is in it.", "accepts": ["grid", "list_row", "picker_row", "empty_state", "label"]}
   ],
   "frame": [480, 480],
   "icons": ["close@glyph", "speaker@icon", "speakers@icon", "tv@icon", "auto@icon", "bulb@icon", "volume@icon", "back@glyph"],

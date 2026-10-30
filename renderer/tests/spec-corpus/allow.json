@@ -107,6 +107,12 @@
   ],
   "plant_row": [
    "needs water"
+  ],
+  "flight_hero": [
+   "distance"
+  ],
+  "github_pr": [
+   "scan to open"
   ]
  },
  "pattern": {
@@ -121,7 +127,8 @@
   "grid": "^\\+\\d+$",
   "count_badge": "^99\\+$",
   "section_header": "^99\\+$",
-  "bar_chart": "^([01]\\d|2[0-3])$"
+  "bar_chart": "^([01]\\d|2[0-3])$",
+  "time": "^\\d{1,2}:\\d{2}$|^(MON|TUE|WED|THU|FRI|SAT|SUN) \\d{1,2} [A-Z]{3}$|^[A-Z][a-z]+day \\d{1,2} [A-Z][a-z]+$"
  },
  "own_data": {
   "about": "Components that draw their own live feed, simulation or built-in sample data (not spec text): leak is not checked inside them.",
@@ -142,7 +149,8 @@
    "energy_view",
    "print_view",
    "card_grid",
-   "bottom_sheet"
+   "bottom_sheet",
+   "clock_orbit"
   ]
  },
  "blank_ok": {

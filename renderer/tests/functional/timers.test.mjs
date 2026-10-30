@@ -80,7 +80,7 @@ export default {
       let r = tm(t, { op: 'list' });
       t.eq([r.timers[0].left <= 121, r.timers[0].left >= 119], [true, true], `ran while away: ${r.timers[0].left}`);
       t.eq([r.legacy.state, r.legacy.label], [1, 'Pasta'], 'legacy timer() = the soonest running');
-      t.show('tmr_t'); t.has(t.texts(), 'Pasta', 'back: the name'); t.ok(t.texts().some((x) => /^left 2:0\d$/.test(x)), `left now: ${t.texts().join('|')}`);
+      t.show('tmr_t'); t.has(t.texts(), 'Pasta', 'back: the name'); t.ok(t.texts().some((x) => /^left (2:0\d|1:5\d)$/.test(x)), `left now: ${t.texts().join('|')}`);
       t.unsend('tmr_t');
     } },
     { name: 'binds: name, left m:ss / h:mm:ss, share, line, show by state, others in a Grid', async run(t) {
