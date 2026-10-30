@@ -109,6 +109,9 @@ struct Pen {
   // a short text centred on x, y (its digits' visual middle on y: the text-box rule), in a type style and ink
   void text(int x, int y, const char *s, const char *type, const char *ink) const;
   int text_w(const char *s, const char *type) const;  // how wide text() draws s (to keep it inside a box)
+  // a turn icon (icons.json "turn": the plane) `size` (a size token) across, centred on x, y, turned clockwise by deg
+  // (0 = nose up), in an ink: the Icons foundation's outline filled at that heading (fw::icon_turned_mask, cached)
+  void turned(int x, int y, const char *icon, const char *size, float deg, const char *ink) const;
   // a filled box x, y (its top-left) w x h with `radius` px corners; border > 0 = only a border that wide (an outline);
   // foot = clip it at y + h: the corners below are cut off (a bar's square foot under a rounded data end). Core only.
   void rect(int x, int y, int w, int h, const char *ink, int radius = 0, int border = 0, int foot = 0) const;

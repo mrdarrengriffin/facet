@@ -70,6 +70,10 @@
    {"id": "adsb_lol", "kind": "direct", "name": "adsb.lol (open ADS-B, no key)"},
    {"id": "adsb_fi", "kind": "direct", "name": "adsb.fi (open ADS-B, no key)"},
    {"id": "ha_flightradar24", "kind": "ha", "name": "HA Flightradar24", "detect": {"integration": "flightradar24"}}]},
+  "flightradar": {"needs": null, "feed": "panel.flights", "sources": [
+   {"id": "ha_overhead", "kind": "ha", "name": "An aircraft sensor in the panel overhead shape (sensor.panel_overhead, polled by Home Assistant)", "adapter": "ha", "detect": {"domain": "sensor"}, "fills": {"sensor": {"domain": "sensor"}}},
+   {"id": "adsb_fi", "kind": "direct", "name": "adsb.fi (open ADS-B, no key), read by the panel itself (planned)", "adapter": "adsb"},
+   {"id": "sample", "kind": "builtin", "name": "Sample sky (previews)", "adapter": "sample"}]},
   "moon": {"needs": null, "sources": [{"id": "panel", "kind": "builtin", "name": "Worked out on the panel"}]}
  }
 }

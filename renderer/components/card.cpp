@@ -106,6 +106,10 @@ void fill(lv_obj_t *c, fw::Props p) {
     ArduinoJson::JsonDocument bd;
     bd["colours"] = p["colours"] | "black", bd["size"] = "card";
     fw::find("bins_art")->build(top, bd.as<fw::Props>());
+  } else if (!off && full && !strcmp(pv, "flights")) {  // the real Sky radar at card size (C8b, C52: the aircraft round home)
+    ArduinoJson::JsonDocument fd;
+    fd["planes"] = p["planes"] | "[]", fd["size"] = "card";
+    fw::find("sky_radar")->build(top, fd.as<fw::Props>());
   } else if (!off && full && !strcmp(pv, "weather")) {  // the real Weather icon at card size (C8b, C52: the weather now)
     ArduinoJson::JsonDocument wd;
     wd["icon"] = p["weather"] | "partly-day", wd["size"] = "card";
@@ -208,8 +212,9 @@ FW_COMPONENT(card, "Card", "components", R"({
   "props": [
     {"name": "label", "about": "The card's name, shown next to its icon at the top.", "type": "text", "default": "Weather"},
     {"name": "icon", "about": "The small icon before the name, or none.", "type": "select", "options": ["none", "weather", "media", "timer", "energy", "light", "thermostat", "covers", "calendar", "clock", "switch", "agents", "github", "moon", "lightning", "overhead", "bins", "print", "home"], "default": "weather"},
-    {"name": "preview", "about": "The small picture at the top right of the card, such as the weather now or the record that is playing, or none.", "type": "select", "options": ["none", "partly-day", "rain-light", "clear-night", "agents", "media", "dial", "switch", "clock", "timer", "github", "energy", "lightning", "bins", "weather"], "default": "partly-day"},
+    {"name": "preview", "about": "The small picture at the top right of the card, such as the weather now or the record that is playing, or none.", "type": "select", "options": ["none", "partly-day", "rain-light", "clear-night", "agents", "media", "dial", "switch", "clock", "timer", "github", "energy", "lightning", "bins", "weather", "flights"], "default": "partly-day"},
     {"name": "weather", "about": "With the weather preview: which weather icon it shows, such as rain-light (the weather now).", "type": "text", "default": "partly-day"},
+    {"name": "planes", "about": "With the flights preview: the aircraft round home, as the flights feed gives them.", "type": "text", "default": "[]"},
     {"name": "colours", "about": "With the bins preview: the bins' colours, separated by commas, the first in front.", "type": "text", "default": "black"},
     {"name": "mode", "about": "What the middle of the card shows: value is a big short value such as 13°; text is a line of words such as the song playing.", "type": "select", "options": ["value", "text"], "default": "value"},
     {"name": "value", "about": "The big value shown in the middle when the mode is value.", "type": "text", "default": "13°"},

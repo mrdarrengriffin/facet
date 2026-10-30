@@ -207,6 +207,24 @@
      "min": 0,
      "max": 12,
      "about": "Hour labels on the axis under the bars, every this many hours (6 = 00, 06, 12, 18); 0 shows none."
+    },
+    {
+     "name": "compare",
+     "type": "text",
+     "bindable": true,
+     "about": "An earlier period to set the values against, one number per value: the bars come in pairs, the earlier one as an outline. Empty shows single bars."
+    },
+    {
+     "name": "labels",
+     "type": "text",
+     "bindable": true,
+     "about": "One word per value (or pair) on the axis under the bars, such as the days of a week; they replace the hour labels."
+    },
+    {
+     "name": "legend",
+     "type": "text",
+     "bindable": true,
+     "about": "Words naming the series over the bars, each after its swatch: the values first, then the compare period."
     }
    ],
    "events": {
@@ -726,9 +744,23 @@
       "github",
       "energy",
       "lightning",
-      "bins"
+      "bins",
+      "weather",
+      "flights"
      ],
      "about": "The small picture at the top right of the card, such as the weather now or the record that is playing, or none."
+    },
+    {
+     "name": "weather",
+     "type": "text",
+     "bindable": true,
+     "about": "With the weather preview: which weather icon it shows, such as rain-light (the weather now)."
+    },
+    {
+     "name": "planes",
+     "type": "text",
+     "bindable": true,
+     "about": "With the flights preview: the aircraft round home, as the flights feed gives them."
     },
     {
      "name": "colours",
@@ -972,6 +1004,47 @@
     "bytes_est": 6400
    }
   },
+  "check_row": {
+   "name": "Check row",
+   "update": true,
+   "props": [
+    {
+     "name": "name",
+     "type": "text",
+     "bindable": true,
+     "about": "The name of the check, such as test or build."
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "pass",
+      "fail",
+      "pending",
+      "skipped"
+     ],
+     "about": "How the check went: pass, fail, pending while it still runs, or skipped. The dot and the word change to match."
+    },
+    {
+     "name": "width",
+     "type": "range",
+     "bindable": true,
+     "min": 160,
+     "max": 440,
+     "about": "How wide the row is, in pixels."
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 4,
+    "bytes_est": 640
+   }
+  },
   "checkbox": {
    "name": "Checkbox",
    "update": true,
@@ -1018,47 +1091,6 @@
    "cost": {
     "objects": 6,
     "bytes_est": 960
-   }
-  },
-  "check_row": {
-   "name": "Check row",
-   "update": true,
-   "props": [
-    {
-     "name": "name",
-     "type": "text",
-     "bindable": true,
-     "about": "The name of the check, such as test or build."
-    },
-    {
-     "name": "state",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "pass",
-      "fail",
-      "pending",
-      "skipped"
-     ],
-     "about": "How the check went: pass, fail, pending while it still runs, or skipped. The dot and the word change to match."
-    },
-    {
-     "name": "width",
-     "type": "range",
-     "bindable": true,
-     "min": 160,
-     "max": 440,
-     "about": "How wide the row is, in pixels."
-    }
-   ],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 4,
-    "bytes_est": 640
    }
   },
   "clock_face": {
@@ -1263,6 +1295,73 @@
     "bytes_est": 320
    }
   },
+  "cover_visual": {
+   "name": "Cover visual",
+   "update": true,
+   "props": [
+    {
+     "name": "kind",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "roller",
+      "venetian",
+      "curtain"
+     ],
+     "about": "What hangs in the window: a roller blind, a Venetian blind with slats, or a pair of curtains."
+    },
+    {
+     "name": "position",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 100,
+     "about": "How open the cover is, from 0 (closed) to 100 (fully open)."
+    },
+    {
+     "name": "tilt",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 100,
+     "about": "For Venetian blinds: how far the slats are turned, from 0 (shut) to 100 (fully open)."
+    },
+    {
+     "name": "heading",
+     "type": "range",
+     "bindable": true,
+     "min": -1,
+     "max": 100,
+     "about": "Where the cover is moving to while it moves, from 0 to 100, shown as a faint target. -1 means it is not moving."
+    },
+    {
+     "name": "draggable",
+     "type": "bool",
+     "bindable": true,
+     "about": "Lets you drag the blind's edge, or the curtains sideways, to move the cover."
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "default",
+      "disabled",
+      "unavailable"
+     ],
+     "about": "default can be dragged; disabled cannot be moved; unavailable shows the cover cannot be reached."
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 6,
+    "bytes_est": 960
+   }
+  },
   "covers_view": {
    "name": "Covers view",
    "update": true,
@@ -1340,73 +1439,6 @@
    "cost": {
     "objects": 37,
     "bytes_est": 5920
-   }
-  },
-  "cover_visual": {
-   "name": "Cover visual",
-   "update": true,
-   "props": [
-    {
-     "name": "kind",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "roller",
-      "venetian",
-      "curtain"
-     ],
-     "about": "What hangs in the window: a roller blind, a Venetian blind with slats, or a pair of curtains."
-    },
-    {
-     "name": "position",
-     "type": "range",
-     "bindable": true,
-     "min": 0,
-     "max": 100,
-     "about": "How open the cover is, from 0 (closed) to 100 (fully open)."
-    },
-    {
-     "name": "tilt",
-     "type": "range",
-     "bindable": true,
-     "min": 0,
-     "max": 100,
-     "about": "For Venetian blinds: how far the slats are turned, from 0 (shut) to 100 (fully open)."
-    },
-    {
-     "name": "heading",
-     "type": "range",
-     "bindable": true,
-     "min": -1,
-     "max": 100,
-     "about": "Where the cover is moving to while it moves, from 0 to 100, shown as a faint target. -1 means it is not moving."
-    },
-    {
-     "name": "draggable",
-     "type": "bool",
-     "bindable": true,
-     "about": "Lets you drag the blind's edge, or the curtains sideways, to move the cover."
-    },
-    {
-     "name": "state",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "default",
-      "disabled",
-      "unavailable"
-     ],
-     "about": "default can be dragged; disabled cannot be moved; unavailable shows the cover cannot be reached."
-    }
-   ],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 6,
-    "bytes_est": 960
    }
   },
   "date_line": {
@@ -1641,22 +1673,8 @@
     ]
    },
    "cost": {
-    "objects": 24,
-    "bytes_est": 3840
-   }
-  },
-  "energy_week": {
-   "name": "Energy week",
-   "update": true,
-   "props": [],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 36,
-    "bytes_est": 5760
+    "objects": 19,
+    "bytes_est": 3040
    }
   },
   "entity_tile": {
@@ -2359,6 +2377,117 @@
     "bytes_est": 9920
    }
   },
+  "flight_hero": {
+   "name": "Flight hero",
+   "update": true,
+   "props": [
+    {
+     "name": "look",
+     "type": "text",
+     "bindable": true,
+     "about": "Where to look, such as high in the NW · 38°."
+    },
+    {
+     "name": "look_tone",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "text-dim",
+      "accent-text"
+     ],
+     "about": "accent-text when the aircraft is high enough to look up at, else text-dim."
+    },
+    {
+     "name": "status",
+     "type": "text",
+     "bindable": true,
+     "about": "A status after the look line: military, helicopter or an emergency squawk. Empty for none."
+    },
+    {
+     "name": "status_tone",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "info",
+      "error",
+      "warn",
+      "ok",
+      "working",
+      "idle"
+     ],
+     "about": "The status dot's colour: error for an emergency, info otherwise."
+    },
+    {
+     "name": "route",
+     "type": "text",
+     "bindable": true,
+     "about": "Where it flies from and to, such as Amsterdam → Edinburgh, or its callsign."
+    },
+    {
+     "name": "who",
+     "type": "text",
+     "bindable": true,
+     "about": "The airline, flight and aircraft, such as easyJet · U245UK · Airbus A320neo."
+    },
+    {
+     "name": "alt_label",
+     "type": "text",
+     "bindable": true,
+     "about": "altitude, or climbing / descending while it does."
+    },
+    {
+     "name": "alt",
+     "type": "text",
+     "bindable": true,
+     "about": "Its height, such as 29,000 ft."
+    },
+    {
+     "name": "speed",
+     "type": "text",
+     "bindable": true,
+     "about": "Its ground speed, such as 529 mph."
+    },
+    {
+     "name": "away",
+     "type": "text",
+     "bindable": true,
+     "about": "How far away and which way, such as 7 km NW."
+    },
+    {
+     "name": "planes",
+     "type": "text",
+     "bindable": true,
+     "about": "The aircraft on the sky radar (the Sky radar's planes)."
+    },
+    {
+     "name": "empty",
+     "type": "bool",
+     "bindable": true,
+     "about": "Shows the quiet words instead of an aircraft, when nothing is flying nearby."
+    },
+    {
+     "name": "empty_title",
+     "type": "text",
+     "bindable": true,
+     "about": "The quiet words' headline, such as Clear skies."
+    },
+    {
+     "name": "empty_body",
+     "type": "text",
+     "bindable": true,
+     "about": "The line under it, such as Nothing flying within 50 km right now."
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 20,
+    "bytes_est": 3200
+   }
+  },
   "focus_ring": {
    "name": "Focus ring",
    "update": true,
@@ -2699,9 +2828,11 @@
       "none",
       "group",
       "block",
-      "near"
+      "near",
+      "line",
+      "strip"
      ],
-     "about": "The gap between the parts: none, group for related parts, block for separate blocks, near for parts that belong tightly together."
+     "about": "The room above the group: none, group for related parts, block for separate blocks, near for parts that belong tightly together, line for a line that belongs to the block above, strip for a strip under a hero and its lines."
     },
     {
      "name": "sample",
@@ -2826,9 +2957,10 @@
      "bindable": true,
      "options": [
       "hero",
-      "display"
+      "display",
+      "value"
      ],
-     "about": "hero is the largest number for a screen's main figure; display is a step smaller."
+     "about": "How big the number is: display is the largest, hero a step smaller for a screen's main figure, value smaller again for a hero inside a small space such as the compact Timer ring."
     },
     {
      "name": "layout",
@@ -2836,9 +2968,10 @@
      "bindable": true,
      "options": [
       "row",
-      "stack"
+      "stack",
+      "stack-start"
      ],
-     "about": "row puts the label and line beside the number; stack puts the label above it and the line under it, centred, such as inside a ring."
+     "about": "row puts the label and line beside the number; stack puts the label above it and the line under it, centred, such as inside a ring; stack-start is the same column at the start (left), such as beside a picture."
     },
     {
      "name": "label_type",
@@ -2932,62 +3065,6 @@
    "cost": {
     "objects": 7,
     "bytes_est": 1120
-   }
-  },
-  "icon_button": {
-   "name": "Icon button",
-   "update": true,
-   "props": [
-    {
-     "name": "style",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "play",
-      "round",
-      "square"
-     ],
-     "about": "The button's shape: play is the large round play and pause button, round is a smaller circle, square has rounded corners."
-    },
-    {
-     "name": "icon",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "next",
-      "prev",
-      "play",
-      "plus",
-      "close",
-      "check",
-      "back",
-      "settings"
-     ],
-     "about": "The icon on the button, such as next, previous, play or close."
-    },
-    {
-     "name": "state",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "default",
-      "pressed",
-      "active",
-      "active-pressed",
-      "disabled",
-      "unavailable"
-     ],
-     "about": "How the button looks: default ready to tap, pressed while held, active when it is switched on, active-pressed while the active one is held, disabled when it cannot be used, or unavailable when its device cannot be reached."
-    }
-   ],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 3,
-    "bytes_est": 480
    }
   },
   "icon": {
@@ -3125,6 +3202,66 @@
     }
    ],
    "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 3,
+    "bytes_est": 480
+   }
+  },
+  "icon_button": {
+   "name": "Icon button",
+   "update": true,
+   "props": [
+    {
+     "name": "style",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "play",
+      "round",
+      "square"
+     ],
+     "about": "The button's shape: play is the large round play and pause button, round is a smaller circle, square has rounded corners."
+    },
+    {
+     "name": "icon",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "next",
+      "prev",
+      "play",
+      "plus",
+      "close",
+      "check",
+      "back",
+      "settings"
+     ],
+     "about": "The icon on the button, such as next, previous, play or close."
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "default",
+      "pressed",
+      "active",
+      "active-pressed",
+      "disabled",
+      "unavailable"
+     ],
+     "about": "How the button looks: default ready to tap, pressed while held, active when it is switched on, active-pressed while the active one is held, disabled when it cannot be used, or unavailable when its device cannot be reached."
+    }
+   ],
+   "events": {
+    "tap": [
+     "nav.open",
+     "nav.back"
+    ],
     "open": [
      "nav.open"
     ]
@@ -3475,6 +3612,12 @@
    "update": true,
    "props": [
     {
+     "name": "strikes",
+     "type": "text",
+     "bindable": true,
+     "about": "The strikes to draw, newest first, as the lightning feed gives them: a list of [km, bearing in degrees, time in ms]. Empty shows the made-up storm."
+    },
+    {
      "name": "demo",
      "type": "bool",
      "bindable": true,
@@ -3485,14 +3628,6 @@
      "type": "bool",
      "bindable": true,
      "about": "For previews only: shows a quiet sky with no recent strikes."
-    },
-    {
-     "name": "size",
-     "type": "range",
-     "bindable": true,
-     "min": 192,
-     "max": 320,
-     "about": "How wide the radar is across, in pixels."
     },
     {
      "name": "unit",
@@ -3511,8 +3646,8 @@
     ]
    },
    "cost": {
-    "objects": 16,
-    "bytes_est": 2560
+    "objects": 1,
+    "bytes_est": 160
    }
   },
   "lightning_view": {
@@ -3558,8 +3693,8 @@
     ]
    },
    "cost": {
-    "objects": 31,
-    "bytes_est": 4960
+    "objects": 16,
+    "bytes_est": 2560
    }
   },
   "list_row": {
@@ -4245,7 +4380,8 @@
    "events": {
     "tap": [
      "nav.open",
-     "nav.back"
+     "nav.back",
+     "screen.param"
     ],
     "open": [
      "nav.open"
@@ -4548,6 +4684,75 @@
     "bytes_est": 1920
    }
   },
+  "pr_row": {
+   "name": "Pull request row",
+   "update": true,
+   "props": [
+    {
+     "name": "repo",
+     "type": "text",
+     "bindable": true,
+     "about": "The repository the pull request is in."
+    },
+    {
+     "name": "number",
+     "type": "range",
+     "bindable": true,
+     "min": 1,
+     "max": 9999,
+     "about": "The pull request's number."
+    },
+    {
+     "name": "title",
+     "type": "text",
+     "bindable": true,
+     "about": "The pull request's title, over up to two lines."
+    },
+    {
+     "name": "age",
+     "type": "text",
+     "bindable": true,
+     "about": "How long ago it was opened or last changed, such as 5h."
+    },
+    {
+     "name": "draft",
+     "type": "bool",
+     "bindable": true,
+     "about": "Marks it as a draft that is not ready for review yet."
+    },
+    {
+     "name": "ci",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "pass",
+      "fail",
+      "pending",
+      "none"
+     ],
+     "about": "How its automatic checks went: pass, fail, pending, or none when it has no checks."
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "default",
+      "pressed"
+     ],
+     "about": "default ready to tap; pressed while held."
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 13,
+    "bytes_est": 2080
+   }
+  },
   "print_model": {
    "name": "3D print model",
    "update": true,
@@ -4716,75 +4921,6 @@
    "cost": {
     "objects": 2,
     "bytes_est": 320
-   }
-  },
-  "pr_row": {
-   "name": "Pull request row",
-   "update": true,
-   "props": [
-    {
-     "name": "repo",
-     "type": "text",
-     "bindable": true,
-     "about": "The repository the pull request is in."
-    },
-    {
-     "name": "number",
-     "type": "range",
-     "bindable": true,
-     "min": 1,
-     "max": 9999,
-     "about": "The pull request's number."
-    },
-    {
-     "name": "title",
-     "type": "text",
-     "bindable": true,
-     "about": "The pull request's title, over up to two lines."
-    },
-    {
-     "name": "age",
-     "type": "text",
-     "bindable": true,
-     "about": "How long ago it was opened or last changed, such as 5h."
-    },
-    {
-     "name": "draft",
-     "type": "bool",
-     "bindable": true,
-     "about": "Marks it as a draft that is not ready for review yet."
-    },
-    {
-     "name": "ci",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "pass",
-      "fail",
-      "pending",
-      "none"
-     ],
-     "about": "How its automatic checks went: pass, fail, pending, or none when it has no checks."
-    },
-    {
-     "name": "state",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "default",
-      "pressed"
-     ],
-     "about": "default ready to tap; pressed while held."
-    }
-   ],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 13,
-    "bytes_est": 2080
    }
   },
   "qr_block": {
@@ -5225,6 +5361,37 @@
     "bytes_est": 2880
    }
   },
+  "sky_radar": {
+   "name": "Sky radar",
+   "update": true,
+   "props": [
+    {
+     "name": "planes",
+     "type": "text",
+     "bindable": true,
+     "about": "The aircraft to draw, as the flights feed gives them: a list of [km, bearing in degrees, track in degrees, mark], mark 1 for the lead one, 2 for an emergency. Empty is a clear sky."
+    },
+    {
+     "name": "size",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "hero",
+      "card"
+     ],
+     "about": "hero is the radar beside the aircraft on the Flight radar; card is the small picture at the top right of a Home card, with dots."
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 1,
+    "bytes_est": 160
+   }
+  },
   "slider": {
    "name": "Slider",
    "update": true,
@@ -5391,6 +5558,32 @@
    "update": true,
    "props": [
     {
+     "name": "art",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "left",
+      "right"
+     ],
+     "about": "Which side the card-wide column for the picture or control is on: left, or right with the words first (the Lightning map). The slots keep their numbers: 0 and 1 are always the picture column."
+    },
+    {
+     "name": "art_w",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "card",
+      "radar"
+     ],
+     "about": "How wide the picture column is: card (a Home card's width) or radar (the Lightning radar's square, wider)."
+    },
+    {
+     "name": "art_mid",
+     "type": "bool",
+     "bindable": true,
+     "about": "Centres the picture column's top slot down the screen instead of at the top (the Lightning radar)."
+    },
+    {
      "name": "outline",
      "type": "bool",
      "bindable": true,
@@ -5434,6 +5627,16 @@
       "ok"
      ],
      "about": "The colour of the value: dim for quiet, text for normal, warn for something to watch, ok for good news."
+    },
+    {
+     "name": "size",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "title",
+      "body"
+     ],
+     "about": "title is the usual value; body is a smaller value, for a row of facts in a narrow column (the Flight radar's hero, docs .fs-stat)."
     },
     {
      "name": "state",
@@ -6654,20 +6857,6 @@
     "bytes_est": 2720
    }
   },
-  "weather_days": {
-   "name": "Weather days",
-   "update": true,
-   "props": [],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 46,
-    "bytes_est": 7360
-   }
-  },
   "weather_icon": {
    "name": "Weather icon",
    "update": true,
@@ -6724,74 +6913,55 @@
       "canvas",
       "card"
      ],
-     "about": "What the icon sits on, so its colours fit: canvas for the screen background, card for a card."
-    }
-   ],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 2,
-    "bytes_est": 320
-   }
-  },
-  "weather_view": {
-   "name": "Weather view",
-   "update": true,
-   "props": [
+     "about": "What the icon alone sits on: canvas for the screen background, card for a Card-coloured surface round it."
+    },
     {
-     "name": "view",
+     "name": "layout",
      "type": "select",
      "bindable": true,
      "options": [
-      "weather",
-      "sun",
-      "moon",
-      "lightning"
+      "icon",
+      "column",
+      "row",
+      "hero"
      ],
-     "about": "Which view to open on: weather with the next hours, sun with sunrise and sunset, moon, or lightning."
+     "about": "How the words sit with the icon: icon alone; column for one of the next hours (the hour over it, the temperature under it); row for one of the next days (day, icon, weather, low, high); hero for the weather now (the temperature with the icon at the end, the condition and a line under it)."
     },
     {
-     "name": "condition",
+     "name": "label",
      "type": "text",
      "bindable": true,
-     "about": "The weather now, such as rainy. Leave empty to use the forecast."
+     "about": "The main words: the hour over the icon (column), the day (row) or the condition (hero), such as now, Saturday or Partly cloudy."
     },
     {
-     "name": "temp",
+     "name": "value",
      "type": "text",
      "bindable": true,
-     "about": "The temperature now. Leave empty to use the forecast."
+     "about": "The temperature: under the icon (column), the high at the end (row), or the big one (hero), such as 13°."
     },
     {
-     "name": "feels",
+     "name": "line",
      "type": "text",
      "bindable": true,
-     "about": "The feels-like temperature. Leave empty to use the forecast."
+     "about": "A quieter line: the day's weather and rain (row), or feels like, high and low (hero)."
     },
     {
-     "name": "place",
+     "name": "low",
      "type": "text",
      "bindable": true,
-     "about": "The place name shown with the weather. Leave empty for none."
+     "about": "The day's low, before its high (row)."
     },
     {
-     "name": "lat",
-     "type": "range",
+     "name": "accent",
+     "type": "bool",
      "bindable": true,
-     "min": -60,
-     "max": 65,
-     "about": "Your latitude in degrees, used for sunrise, sunset and the moon."
+     "about": "Draws the hour in the accent colour: the hour now (column)."
     },
     {
-     "name": "lon",
-     "type": "range",
+     "name": "divider",
+     "type": "bool",
      "bindable": true,
-     "min": -180,
-     "max": 180,
-     "about": "Your longitude in degrees, used for sunrise, sunset and the moon."
+     "about": "Draws the List row's thin line above the row, for every day after the first (row)."
     }
    ],
    "events": {
@@ -6800,8 +6970,8 @@
     ]
    },
    "cost": {
-    "objects": 174,
-    "bytes_est": 27840
+    "objects": 5,
+    "bytes_est": 800
    }
   }
  },
@@ -7097,6 +7267,18 @@
      "type": "id",
      "need": "optional",
      "limits": "the parameter Auto follows"
+    },
+    {
+     "name": "to",
+     "type": "id",
+     "need": "optional",
+     "limits": "the value to set instead of the event's (a view)"
+    },
+    {
+     "name": "back",
+     "type": "bool",
+     "need": "optional",
+     "limits": "true = the screen's Back returns to the value before"
     }
    ],
    "spec_only": true,
@@ -7369,5 +7551,5 @@
    }
   }
  },
- "hash": "e8d0a633"
+ "hash": "411a456f"
 }

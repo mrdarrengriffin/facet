@@ -5,7 +5,8 @@
 // Layout lab restyle it with no code here. Data = core/lightning.h (fw::lx).
 //   box     fills its parent's width up to max-w:radar (384 / 256), square (fx::drawn "fit")
 //   rings   10 / 25 / 50 / 100 km at R x sqrt(km / 100) on the 4 px grid (docs: 64 / 96 / 136 / 192 at 384), stroke:hair
-//           fg:line-hi (part "arc"); the 25 km ring = the alert ring, stroke:tick fg:accent-dim (part "arc-fill").
+//           fg:line-hi (part "arc"); the 25 km ring = the alert ring, stroke:tick fg:warn (part "arc-fill"; docs accent-dim,
+//           under 3:1 on the canvas)
 //           Strikes sit piecewise-linearly between the drawn rings, so a dot always agrees with them (docs rPx)
 //   ticks   every 30 degrees from the edge: minor layout:dial-tick fg:line-hi (part "tick"), N / E / S / W
 //           layout:dial-tick-major fg:steel (part "tick-major"); stroke:tick
@@ -96,9 +97,8 @@ void draw(const fx::Pen &p) {
   if (!x) return;
   const int R = p.half;
   for (int i = 0; i < 4; i++) {
-    const bool alert = RING_KM[i] == 25;
-    const char *st = alert ? "stroke:tick" : "stroke:hair";
-    p.arc(ring_px(R, i) - fx::size(st) / 2, 0.0f, 360.0f, st, alert ? "fg:accent-dim" : "fg:line-hi", false, alert ? "arc-fill" : "arc");
+    if (RING_KM[i] == 25) p.arc(ring_px(R, i) - fx::size("stroke:tick") / 2, 0.0f, 360.0f, "stroke:tick", "fg:warn", false, "arc-fill");
+    else p.arc(ring_px(R, i) - fx::size("stroke:hair") / 2, 0.0f, 360.0f, "stroke:hair", "fg:line-hi", false, "arc");
   }
   for (int a = 0; a < 360; a += 30) {
     const bool major = a % 90 == 0;
@@ -201,8 +201,8 @@ FW_COMPONENT(lightning_radar, "Lightning radar", "components", R"({
   auto *x = new LX;
   lv_obj_t *o = fx::drawn(parent, draw, "centre");
   fx::name(o, "lightning_radar");
-  for (const char *t : {"box", "centre", "w:radar", "h:radar"}) fx::use(o, t);  // its own square (a Split slot hugs its contents)
-  lv_obj_set_style_max_height(o, LV_COORD_MAX, 0);  // drawn()'s "fit" caps it at a hugging parent's height (0)
+  // its own square (a Split slot hugs its contents); max-h:radar lifts drawn()'s "fit" cap (a hugging parent's height, 0)
+  for (const char *t : {"box", "centre", "w:radar", "h:radar", "max-h:radar"}) fx::use(o, t);
   lv_obj_set_user_data(o, x);
   lv_obj_add_event_cb(o, [](lv_event_t *e) {
     auto *x = (LX *) lv_event_get_user_data(e);

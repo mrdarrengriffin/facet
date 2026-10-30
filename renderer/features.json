@@ -177,9 +177,24 @@
       "label": "Lightning",
       "docs": false, "status": "wip", "firmware": false, "panel": false,
       "screens": ["lightning"],
-      "components": ["lightning_view", "lightning_radar"],
+      "components": ["lightning_view"],
+      "roadmap": ["Lightning"]
+    },
+    {
+      "id": "lightning_map",
+      "label": "Lightning map",
+      "docs": false, "status": "wip", "firmware": false,
+      "screens": ["strike_map"],
+      "components": ["lightning_radar"],
       "colour": ["radar"],
-      "roadmap": ["Lightning", "Lightning radar"]
+      "roadmap": ["Lightning radar"]
+    },
+    {
+      "id": "flightradar",
+      "label": "Flight radar",
+      "docs": false, "status": "wip", "firmware": false,
+      "screens": ["flightradar"],
+      "components": ["flight_hero"]
     },
     {
       "id": "overhead",

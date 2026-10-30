@@ -1,0 +1,163 @@
+{
+ "v": 1,
+ "id": "flightradar",
+ "name": "Flight radar",
+ "rev": 1,
+ "role": "page",
+ "card": {
+  "icon": "overhead",
+  "preview": "flights",
+  "planes": {
+   "e": "panel.flights",
+   "a": "planes"
+  },
+  "mode": "text",
+  "text": {
+   "e": "panel.flights",
+   "a": "card_text"
+  },
+  "sub": {
+   "e": "panel.flights",
+   "a": "card_sub"
+  },
+  "accent": {
+   "e": "panel.flights",
+   "a": "card_accent"
+  }
+ },
+ "header": {
+  "label": "Flight radar",
+  "back": true
+ },
+ "layout": "list",
+ "nodes": [
+  {
+   "c": "flight_hero",
+   "p": {
+    "look": {
+     "e": "panel.flights",
+     "a": "look"
+    },
+    "look_tone": {
+     "e": "panel.flights",
+     "a": "look_tone"
+    },
+    "status": {
+     "e": "panel.flights",
+     "a": "status"
+    },
+    "status_tone": {
+     "e": "panel.flights",
+     "a": "status_tone"
+    },
+    "route": {
+     "e": "panel.flights",
+     "a": "route"
+    },
+    "who": {
+     "e": "panel.flights",
+     "a": "who"
+    },
+    "alt_label": {
+     "e": "panel.flights",
+     "a": "alt_label"
+    },
+    "alt": {
+     "e": "panel.flights",
+     "a": "alt"
+    },
+    "speed": {
+     "e": "panel.flights",
+     "a": "speed"
+    },
+    "away": {
+     "e": "panel.flights",
+     "a": "away"
+    },
+    "planes": {
+     "e": "panel.flights",
+     "a": "planes"
+    },
+    "empty": {
+     "e": "panel.flights",
+     "a": "empty"
+    },
+    "empty_title": {
+     "e": "panel.flights",
+     "a": "empty_title"
+    },
+    "empty_body": {
+     "e": "panel.flights",
+     "a": "empty_body"
+    }
+   }
+  },
+  {
+   "c": "section_header",
+   "p": {
+    "title": "also up there",
+    "badge": false,
+    "right": "none"
+   },
+   "show": {
+    "e": "panel.flights",
+    "a": "many"
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "list": "stack",
+    "items": {
+     "e": "panel.flights",
+     "a": "also"
+    },
+    "icon": "none",
+    "trailing": "none",
+    "empty": ""
+   },
+   "show": {
+    "e": "panel.flights",
+    "a": "many"
+   }
+  },
+  {
+   "c": "more_row",
+   "p": {
+    "text": {
+     "e": "panel.flights",
+     "a": "more"
+    }
+   },
+   "show": {
+    "e": "panel.flights",
+    "a": "many"
+   }
+  }
+ ],
+ "params": {
+  "source": {
+   "about": "Where the aircraft come from: an aircraft sensor in Home Assistant, or a made-up sky for previews.",
+   "type": "select",
+   "options": [
+    "ha",
+    "sample"
+   ],
+   "label": "Source",
+   "default": "ha"
+  },
+  "sensor": {
+   "about": "The aircraft sensor to show, in the panel overhead shape (one row per aircraft: distance, bearing, height, route).",
+   "type": "entity",
+   "domain": "sensor",
+   "label": "Aircraft sensor",
+   "default": "sensor.panel_overhead"
+  }
+ },
+ "feeds": {
+  "panel.flights": {
+   "source": "$source",
+   "sensor": "$sensor"
+  }
+ }
+}

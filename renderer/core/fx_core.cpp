@@ -1778,6 +1778,27 @@ int Pen::text_w(const char *s, const char *type) const {
   lv_text_get_size(&sz, s, skin_font(look_of(obj)->skin.get(), id), fw::ty::STYLES[id].letter_space, 0, LV_COORD_MAX, LV_TEXT_FLAG_NONE);
   return sz.x;
 }
+void Pen::turned(int x, int y, const char *icon, const char *sz, float deg, const char *k) const {
+  const int px = size(sz);
+  if (px < 1 || !sees(x - px / 2, y - px / 2, x + px / 2, y + px / 2)) return;
+  // masks by icon, size and whole degree; kept alive because the draw task reads the buffer after this returns
+  struct M { int ic, px, deg; lv_draw_buf_t *b; };
+  static std::vector<M> &cache = *new std::vector<M>;  // never destroyed: the masks stay reachable (no exit-time leak report)
+  const int ic = fw::icon_index(icon), dg = ((int) lroundf(deg) % 360 + 360) % 360;
+  lv_draw_buf_t *b = nullptr;
+  for (const M &m : cache)
+    if (m.ic == ic && m.px == px && m.deg == dg) { b = m.b; break; }
+  if (!b) {
+    if (!(b = fw::icon_turned_mask(ic, px, (float) dg))) return;
+    if (cache.size() >= 96) { fw::icon_mask_free(cache.front().b); cache.erase(cache.begin()); }
+    cache.push_back({ic, px, dg, b});
+  }
+  lv_draw_image_dsc_t d;
+  lv_draw_image_dsc_init(&d);
+  d.src = b; d.recolor = ink(obj, k); d.recolor_opa = LV_OPA_COVER;
+  const lv_area_t a = {cx + x - px / 2, cy + y - px / 2, cx + x - px / 2 + px - 1, cy + y - px / 2 + px - 1};
+  lv_draw_image(layer, &d, &a);
+}
 void Pen::rect(int x, int y, int w, int h, const char *k, int radius, int border, int foot) const {
   if (w <= 0 || h <= 0 || !sees(x, y, x + w - 1, y + h - 1)) return;
   lv_draw_rect_dsc_t d;
