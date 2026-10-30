@@ -64,7 +64,8 @@
 //              {"do": "media.control", "e"}  (a Media view's "media" event: previous | play_pause | next |
 //                                              volume 0-100 -> media_player.media_previous_track / media_play_pause /
 //                                              media_next_track / volume_set)
-//              {"do": "cover.control", "e"}  (a Covers view's "cover": position N | tilt N | open | stop | close ->
+//              {"do": "cover.control", "e"}  (position N | tilt N | open | stop | close -> (on panel.covers: the covers feed,
+//                                              core/covers_source.cpp, says which; the window, the slats, the buttons)
 //                                              cover.set_cover_position / set_cover_tilt_position / open_cover /
 //                                              stop_cover / close_cover)
 //              {"do": "lock.control", "e"}  (a Lock view's "lock": lock | unlock | open -> lock.lock / lock.unlock /
@@ -193,25 +194,25 @@ constexpr Rule RULES[] = {
     {"list_row", "long", "nav.open"},                {"card", "tap", "nav.open,light.toggle"},
     {"card", "long", "nav.open"},                    {"dial", "change", "light.brightness"},
     {"entity_tile", "tap", "nav.open,light.toggle"},
-    {"icon_button", "tap", "nav.open,nav.back,calendar.control,media.control"},  {"icon_button", "toggle", "media.control"},  // 2026-10-29: a header's settings / shortcut icon (the end slot takes icon buttons only); the Calendar's calendars button
+    {"icon_button", "tap", "nav.open,nav.back,calendar.control,media.control,cover.control"},  {"icon_button", "toggle", "media.control"},  // 2026-10-29: a header's settings / shortcut icon (the end slot takes icon buttons only); the Calendar's calendars button
     {"dial", "input", "light.brightness"},           {"dial", "toggle", "light.switch"},
-    {"slider", "change", "light.brightness"},        {"slider", "input", "light.brightness"},
-    {"slider_row", "change", "media.control"},       {"slider_row", "input", "media.control"},
+    {"slider", "change", "light.brightness,cover.control"}, {"slider", "input", "light.brightness"},
+    {"slider_row", "change", "media.control,cover.control"}, {"slider_row", "input", "media.control,cover.control"},
     {"toggle", "toggle", "light.switch"},
     {"more_row", "tap", "nav.open,nav.back,screen.param"},  // screen.param + to: a view of the same screen (Energy > last 7 days)
     {"thermostat_dial", "change", "climate.set_temperature"}, {"thermostat_dial", "input", "climate.set_temperature"},
     {"thermostat_view", "target", "climate.set_temperature"}, {"thermostat_view", "mode", "climate.set_hvac_mode"},
     {"thermostat_view", "preset", "climate.set_preset_mode"},
-    {"covers_view", "cover", "cover.control"},       {"covers_view", "window", "screen.param"},
+    {"cover_visual", "change", "cover.control"},  // the Covers window: a drag released (its position)
     {"lock_ring", "lock", "lock.control"},           {"button", "confirm", "lock.control"},
-    {"room_tile", "pick", "screen.toggle"},          {"camera_tile", "tap", "nav.back"},          {"tile", "tap", "nav.open"},          {"button", "tap", "nav.open,nav.back,light.toggle,vacuum.control,timer.start,timer.extend,timer.cancel,timer.stop,timer.select,timer.new,timer.back"},
+    {"room_tile", "pick", "screen.toggle"},          {"camera_tile", "tap", "nav.back"},          {"tile", "tap", "nav.open"},          {"button", "tap", "nav.open,nav.back,light.toggle,vacuum.control,timer.start,timer.extend,timer.cancel,timer.stop,timer.select,timer.new,timer.back,cover.control"},
     {"timer_chip", "select", "timer.select"},       {"timer_chip", "stop", "timer.stop"},
     {"grid", "select", "timer.select"},             {"grid", "stop", "timer.stop"},  // Timer chips in an items Grid
     {"segmented", "change", "vacuum.control,screen.param"}, {"iso_floorplan", "pick", "screen.toggle"},
     {"vacuum_mode", "change", "vacuum.control"},     {"grid", "pick", "screen.param,nav.open,calendar.control,media.control"},
     {"sky_radar", "pick", "flights.select"},         {"flight_hero", "tap", "flights.select"},  // the Flight radar: a plane / the hero
     {"calendar_month", "pick", "calendar.control"},  {"calendar_month", "month", "calendar.control"},
-    {"bottom_sheet", "close", "calendar.control,media.control"}, {"picker_row", "tap", "media.control"},        // a link to a sub-view spec (moon -> moon_details -> ...)
+    {"bottom_sheet", "close", "calendar.control,media.control,cover.control"}, {"picker_row", "tap", "media.control,cover.control"},        // a link to a sub-view spec (moon -> moon_details -> ...)
     {"*", "open", "nav.open"},                       // any component's own "open" (a tapped calendar day, a PR):
                                                      // its detail = the screen id [+ "?" + params JSON]
 };
@@ -456,7 +457,7 @@ inline void check_action(ArduinoJson::JsonVariantConst a, const char *comp, cons
   }
   if (d == "cover.control") {
     const std::string en = a["e"] | "";
-    if (!entity_ok(en) || (en[0] != '$' && en.rfind("cover.", 0) != 0)) err(e, path + ".e", "bad_entity", "a cover (cover.x or $param)");
+    if (!entity_ok(en) || (en[0] != '$' && en != "panel.covers" && en.rfind("cover.", 0) != 0)) err(e, path + ".e", "bad_entity", "a cover (cover.x, panel.covers or $param)");
   }
   if (d == "vacuum.control") {
     const std::string en = a["e"] | "";
@@ -1386,6 +1387,20 @@ inline bool run_action(Screen *s, Node &n, ArduinoJson::JsonVariantConst a, cons
       snprintf(data, sizeof data, "{\"volume_level\":%.2f}", LV_CLAMP(0, atoi(detail + 7), 100) / 100.0);
       ha_act(n, "media_player.volume_set", n.entity.c_str(), data);
     }
+    return true;
+  }
+  if (d == "cover.control" && n.entity == "panel.covers") {  // the covers feed (core/covers_source.cpp): it shows the
+    // tap at once and names the cover service to call (none on its sample adapter); a tap's event says what
+    const std::string ev = event ? event : "", det = detail ? detail : "";
+    std::string v = ev == "close" ? "sheet_close" : n.comp == "picker_row" ? "pick " + det : n.comp == "icon_button" ? "windows"
+                  : n.comp == "slider_row" || n.comp == "slider" ? (ev == "input" ? "live " : "tilt ") + det
+                  : n.comp == "cover_visual" ? "position " + det : det;
+    for (char &ch : v) ch = (char) tolower((unsigned char) ch);
+    if (n.comp == "picker_row") v = "pick " + det;  // the name as it is
+    std::string svc, ent, data;
+    const char *why = dev::covers_source::control(v, &svc, &ent, &data);
+    if (*why) return refuse(why);
+    if (!svc.empty()) ha_act(n, svc.c_str(), ent.c_str(), data.c_str());
     return true;
   }
   if (d == "cover.control") {  // position N | tilt N | open | stop | close (the view shows it at once itself)

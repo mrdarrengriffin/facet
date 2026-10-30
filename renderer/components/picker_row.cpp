@@ -143,9 +143,9 @@ FW_COMPONENT(picker_row, "Picker row", "components", R"({
   "parts": [],
   "min": ["layout:card-min-w", "layout:list-row-h"],
   "frame": [448, 288],
-  "icons": ["speaker@icon", "speakers@icon", "tv@icon", "stream@icon", "auto@icon"],
+  "icons": ["speaker@icon", "speakers@icon", "tv@icon", "stream@icon", "auto@icon", "roller@icon", "venetian@icon", "curtain@icon"],
   "props": [
-    {"name": "icon", "about": "The icon at the start of the row, such as a speaker or a TV, or none.", "type": "select", "options": ["none", "speaker", "speakers", "tv", "stream", "auto"], "default": "speaker"},
+    {"name": "icon", "about": "The icon at the start of the row, such as a speaker or a TV, or none.", "type": "select", "options": ["none", "speaker", "speakers", "tv", "stream", "auto", "roller", "venetian", "curtain"], "default": "speaker"},
     {"name": "name", "about": "The option's name, such as the speaker's name.", "type": "text", "default": "Kitchen speaker"},
     {"name": "status", "about": "The small capitals line under the name, such as what is playing there.", "type": "text", "default": "playing · Northbound · Marlow & Finch"},
     {"name": "tone", "about": "The status colour: dim for normal, working for something going on now, such as playing.", "type": "select", "options": ["dim", "working"], "default": "dim"},

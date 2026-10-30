@@ -31,7 +31,7 @@ FW_COMPONENT(group, "Group", "components", R"({
   "props": [
     {"name": "align", "about": "Where the parts line up: start is the left, centre is the middle (a stack centres each part), end is the right.", "type": "select", "options": ["start", "centre", "end"], "default": "start"},
     {"name": "flow", "about": "wrap lays the parts side by side and starts a new line when the row is full; stack puts each part under the last.", "type": "select", "options": ["wrap", "stack"], "default": "wrap"},
-    {"name": "gap", "about": "The room between the parts side by side: gutter, or group for a few big controls in a row (the Media screen's previous, play and next).", "type": "select", "options": ["gutter", "group"], "default": "gutter"},
+    {"name": "gap", "about": "The room between the parts side by side: gutter, group for a few big controls in a row (the Media screen's previous, play and next), or near for a column of buttons that belong together (the Blinds screen's Open, Stop and Close).", "type": "select", "options": ["gutter", "group", "near"], "default": "gutter"},
     {"name": "space", "about": "The room above the group: none, group for related parts, block for separate blocks, near for parts that belong tightly together, line for a line that belongs to the block above, strip for a strip under a hero and its lines.", "type": "select", "options": ["none", "group", "block", "near", "line", "strip"], "default": "none"},
     {"name": "sample", "about": "For previews only: how many made-up tiles fill the row. 0 shows the empty layout.", "type": "range", "min": 0, "max": 6, "step": 1, "default": 0}
   ],
@@ -43,8 +43,8 @@ FW_COMPONENT(group, "Group", "components", R"({
   const bool stack = !strcmp(p["flow"] | "wrap", "stack"), end = !strcmp(p["align"] | "start", "end"),
              mid = !strcmp(p["align"] | "start", "centre");
   lv_obj_t *g = fx::box(parent, stack ? (mid ? "col-centre" : "col") : "free");
-  const bool wide = !strcmp(p["gap"] | "gutter", "group");
-  if (!stack) for (const char *t : {end ? "wrap-end" : mid ? "wrap-centre" : "wrap", wide ? "gap:gap-wide" : "gap:gutter"}) fx::use(g, t);
+  const char *gp = p["gap"] | "gutter";
+  if (!stack) for (const char *t : {end ? "wrap-end" : mid ? "wrap-centre" : "wrap", !strcmp(gp, "group") ? "gap:gap-wide" : !strcmp(gp, "near") ? "gap:2" : "gap:gutter"}) fx::use(g, t);
   fx::name(g, "group");
   fw::shape(g, sig(p));
   lv_obj_add_flag(g, fw::spec::SLOT);

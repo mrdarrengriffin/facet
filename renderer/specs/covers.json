@@ -2,11 +2,62 @@
  "v": 1,
  "id": "covers",
  "name": "Blinds and curtains",
- "rev": 2,
- "role": "detail",
+ "rev": 3,
+ "role": "both",
  "params": {
-  "entity": {"about": "The blind or curtain this screen opens on.", "type": "entity", "domain": "cover", "label": "Window", "default": ""},
-  "covers": {"about": "Every blind and curtain you can switch between on this screen.", "type": "entities", "domain": "cover", "label": "Windows", "default": ""}
+  "source": {
+   "about": "Where the blinds and curtains come from: cover entities in Home Assistant, or a made-up house for previews.",
+   "type": "select",
+   "options": [
+    "ha",
+    "sample"
+   ],
+   "label": "Source",
+   "default": "sample"
+  },
+  "entity": {
+   "about": "The blind or curtain this screen opens on.",
+   "type": "entity",
+   "domain": "cover",
+   "label": "Window",
+   "default": ""
+  },
+  "covers": {
+   "about": "Every blind and curtain you can switch between on this screen.",
+   "type": "entities",
+   "domain": "cover",
+   "label": "Windows",
+   "default": ""
+  }
+ },
+ "feeds": {
+  "panel.covers": {
+   "source": "$source",
+   "cover": "$entity",
+   "covers": "$covers"
+  }
+ },
+ "card": {
+  "label": "Blinds",
+  "icon": "covers",
+  "preview": "covers",
+  "position": {
+   "e": "panel.covers",
+   "a": "card_pos"
+  },
+  "mode": "value",
+  "value": {
+   "e": "panel.covers",
+   "a": "card_value"
+  },
+  "sub": {
+   "e": "panel.covers",
+   "a": "card_sub"
+  },
+  "accent": {
+   "e": "panel.covers",
+   "a": "card_accent"
+  }
  },
  "header": {
   "label": "Blinds",
@@ -15,18 +66,278 @@
  "layout": "center",
  "nodes": [
   {
-   "c": "covers_view",
+   "c": "title",
+   "in": "header",
+   "slot": "title",
    "p": {
-    "state": {"e": "$entity"},
-    "position": {"e": "$entity", "a": "current_position", "fmt": "num"},
-    "tilt": {"e": "$entity", "a": "current_tilt_position", "fmt": "num"},
-    "device_class": {"e": "$entity", "a": "device_class"},
-    "cover": "$entity",
-    "covers": "$covers"
+    "text": {
+     "e": "panel.covers",
+     "a": "name"
+    }
+   }
+  },
+  {
+   "c": "icon_button",
+   "in": "header",
+   "slot": "end",
+   "p": {
+    "style": "square",
+    "icon": "covers"
+   },
+   "show": {
+    "e": "panel.covers",
+    "a": "windows_show"
    },
    "on": {
-    "cover": {"do": "cover.control", "e": "$entity"},
-    "window": {"do": "screen.param", "param": "entity", "from": "covers"}
+    "tap": {
+     "do": "cover.control",
+     "e": "panel.covers"
+    }
+   }
+  },
+  {
+   "c": "split",
+   "p": {
+    "art": "left",
+    "art_fill": true
+   }
+  },
+  {
+   "c": "cover_visual",
+   "in": 2,
+   "slot": 0,
+   "p": {
+    "kind": {
+     "e": "panel.covers",
+     "a": "kind"
+    },
+    "position": {
+     "e": "panel.covers",
+     "a": "position"
+    },
+    "tilt": {
+     "e": "panel.covers",
+     "a": "tilt"
+    },
+    "heading": {
+     "e": "panel.covers",
+     "a": "heading"
+    },
+    "draggable": {
+     "e": "panel.covers",
+     "a": "drag"
+    },
+    "state": {
+     "e": "panel.covers",
+     "a": "vis_state"
+    }
+   },
+   "on": {
+    "change": {
+     "do": "cover.control",
+     "e": "panel.covers"
+    }
+   }
+  },
+  {
+   "c": "hero_block",
+   "in": 2,
+   "slot": 2,
+   "p": {
+    "n": {
+     "e": "panel.covers",
+     "a": "value"
+    },
+    "label": {
+     "e": "panel.covers",
+     "a": "cap"
+    },
+    "line": {
+     "e": "panel.covers",
+     "a": "kind_text"
+    },
+    "accent": false,
+    "role": "hero",
+    "layout": "stack-start",
+    "state": {
+     "e": "panel.covers",
+     "a": "value_state"
+    }
+   }
+  },
+  {
+   "c": "group",
+   "in": 2,
+   "slot": 2,
+   "p": {
+    "flow": "stack",
+    "space": "block",
+    "align": "start"
+   },
+   "show": {
+    "e": "panel.covers",
+    "a": "tilt_show"
+   }
+  },
+  {
+   "c": "stat",
+   "in": 5,
+   "slot": 0,
+   "p": {
+    "label": "slats",
+    "value": {
+     "e": "panel.covers",
+     "a": "tilt_text"
+    },
+    "tone": "dim",
+    "size": "body",
+    "state": {
+     "e": "panel.covers",
+     "a": "tilt_state"
+    }
+   }
+  },
+  {
+   "c": "slider",
+   "in": 5,
+   "slot": 0,
+   "p": {
+    "value": {
+     "e": "panel.covers",
+     "a": "tilt"
+    },
+    "min": 0,
+    "max": 100,
+    "step": 1,
+    "state": {
+     "e": "panel.covers",
+     "a": "tilt_state"
+    }
+   },
+   "on": {
+    "change": {
+     "do": "cover.control",
+     "e": "panel.covers"
+    }
+   }
+  },
+  {
+   "c": "group",
+   "in": 2,
+   "slot": 3,
+   "p": {
+    "flow": "wrap",
+    "space": "none",
+    "align": "start",
+    "gap": "near"
+   }
+  },
+  {
+   "c": "button",
+   "in": 8,
+   "slot": 0,
+   "p": {
+    "kind": "secondary",
+    "label": "Open",
+    "width": "fill",
+    "state": {
+     "e": "panel.covers",
+     "a": "open_state"
+    }
+   },
+   "show": {
+    "e": "panel.covers",
+    "a": "open_show"
+   },
+   "on": {
+    "tap": {
+     "do": "cover.control",
+     "e": "panel.covers"
+    }
+   }
+  },
+  {
+   "c": "button",
+   "in": 8,
+   "slot": 0,
+   "p": {
+    "kind": "secondary",
+    "label": "Stop",
+    "width": "fill",
+    "state": {
+     "e": "panel.covers",
+     "a": "stop_state"
+    }
+   },
+   "show": {
+    "e": "panel.covers",
+    "a": "stop_show"
+   },
+   "on": {
+    "tap": {
+     "do": "cover.control",
+     "e": "panel.covers"
+    }
+   }
+  },
+  {
+   "c": "button",
+   "in": 8,
+   "slot": 0,
+   "p": {
+    "kind": "secondary",
+    "label": "Close",
+    "width": "fill",
+    "state": {
+     "e": "panel.covers",
+     "a": "close_state"
+    }
+   },
+   "show": {
+    "e": "panel.covers",
+    "a": "close_show"
+   },
+   "on": {
+    "tap": {
+     "do": "cover.control",
+     "e": "panel.covers"
+    }
+   }
+  },
+  {
+   "c": "bottom_sheet",
+   "in": "overlay",
+   "p": {
+    "title": "windows",
+    "open": {
+     "e": "panel.covers",
+     "a": "sheet"
+    }
+   },
+   "on": {
+    "close": {
+     "do": "cover.control",
+     "e": "panel.covers"
+    }
+   }
+  },
+  {
+   "c": "picker_row",
+   "in": 12,
+   "slot": 0,
+   "p": {
+    "list": "group",
+    "items": {
+     "e": "panel.covers",
+     "a": "windows"
+    },
+    "empty": "No windows picked."
+   },
+   "on": {
+    "tap": {
+     "do": "cover.control",
+     "e": "panel.covers"
+    }
    }
   }
  ]

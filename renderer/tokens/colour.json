@@ -456,6 +456,8 @@
       {"section": "cover_visual", "fg": "bg", "bg": ["steel-dim", "disc", "steel"], "kind": "decor", "use": "the ring around every mark (separates it from the fabric / glass)"},
       {"section": "cover_visual", "fg": "text-dim", "bg": "bg", "kind": "disabled", "use": "disabled: the marks (st::disabled_knob)"},
       {"section": "cover_visual", "fg": "text-dim", "bg": "disc", "kind": "text", "use": "unavailable: the word Unavailable on the glass"},
+      {"section": "cover_visual", "fg": "steel", "bg": ["surface", "steel-dim"], "kind": "decor", "use": "card size (a Home card's picture): the rail over the frame"},
+      {"section": "cover_visual", "fg": "accent", "bg": ["steel-dim", "surface"], "kind": "decor", "use": "card size: the bottom bar (docs .f-pcover-bar; a picture, no touch)"},
       {"section": "media_visual", "fg": "mv-ink", "bg": "mv-paper", "kind": "text", "use": "cassette label: title, artist, side, C60"},
       {"section": "media_visual", "fg": "mv-shell-edge", "bg": "mv-shell", "kind": "decor", "use": "cassette shell outlines"},
       {"section": "media_visual", "fg": "mv-window", "bg": "mv-paper", "kind": "decor", "use": "cassette window in the label"},

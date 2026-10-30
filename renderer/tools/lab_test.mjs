@@ -38,6 +38,7 @@ const EXTRA = { card: [{ opening: false }, CARD, PAGE],
   rate_strip: [{ ticks: 6 }, ['chart:strip-h', 'chart:bar-radius', 'stroke:edge', 'space:1'], PAGE],
   status_line: [{}, ['space:3'], PAGE],
   bins_art: [{ colours: 'black,green' }, ['layout:bin-hero', 'stroke:edge'], PAGE],
+  cover_visual: [{ kind: 'venetian', position: 40, heading: 80 }, ['layout:cover-pad', 'layout:cover-rail', 'layout:cover-bar', 'layout:cover-slat', 'layout:cover-stack', 'stroke:edge', 'space:1'], PAGE],
   media_hero: [{ playing: false }, ['layout:m-gap', 'layout:m-col-top', 'layout:m-title-h'], PAGE],  // still: a turning picture repaints between a tune and its "and back"
   slider_row: [{}, ['layout:gutter', 'layout:m-vol-label'], PAGE.filter((n) => n !== 'layout:gutter')],  // its row's gap is its own gutter
   bins_next: [{}, ['layout:bin-hero'], ['layout:inset', 'layout:top', 'layout:header-gap', 'squeeze']],

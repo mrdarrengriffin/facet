@@ -53,7 +53,7 @@
       "docs": false, "status": "wip", "firmware": false,
       "screens": ["covers"],
       "docs_pages": ["covers"],
-      "components": ["covers_view", "cover_visual"],
+      "components": [],
       "cards": ["cover"]
     },
     {
