@@ -12,7 +12,9 @@
 //              sensor  s Entity tile, read-only (act none: the value + label, no press) | m State readout (no box,
 //                      no tap); two m sensors in a row share one card slot
 //              page    s Entity tile / m Card / l wide Card: the page's name (opens it)
-//              action  s Entity tile: a script / scene / automation / button (its icon, Run / Activate / Trigger / Press)
+//              entity  s Entity tile for ANY entity (after HA's tile card): drawn like its domain's nearest type (light,
+//                      cover, sensor; a script / scene / button with its verb; anything else its state); taps by
+//                      domain (core/spec.h ENTITY_TAPS): toggle, detail (the domain's screen), run, none
 //            label = the card's label, else the entity's friendly name (a bind). Unavailable entities show the
 //            components' own unavailable look.
 //   taps     toggle = light.toggle (a light or a switch); detail = nav.open of the type's detail screen for that
@@ -121,12 +123,15 @@ char card_node(Var cd, Var pages, int slot, ArduinoJson::JsonArray nodes) {
   const fw::spec::CardType *ct = fw::spec::card_type(t);
   if (!ct) return 0;
   std::string tap = cd["tap"] | "";
-  if (tap.empty()) tap = std::string(ct->taps).substr(0, std::string(ct->taps).find(','));
+  const std::string edom = e.substr(0, e.find('.'));
+  const fw::spec::DomainTaps &dt = fw::spec::entity_taps(edom);
+  const std::string taps = t == "entity" ? dt.taps : ct->taps, detail = t == "entity" ? dt.detail : ct->detail;
+  if (tap.empty()) tap = taps.substr(0, taps.find(','));
   const char *comp = size == "s" ? ct->comp_s : size == "l" ? ct->comp_l : ct->comp_m;
   if (!*comp) return 0;
   {  // a card that opens a screen this build lacks (its feature is off, features.json; a custom deck can still name
      // one) is left out, so no card leads nowhere
-    std::string to = tap == "detail" ? ct->detail : "";
+    std::string to = tap == "detail" ? detail : "";
     if (t == "page" || tap == "page") {
       const std::string id = cd["page"] | "";
       to.clear();
@@ -151,8 +156,15 @@ char card_node(Var cd, Var pages, int slot, ArduinoJson::JsonArray nodes) {
   else if (label.empty()) bind(p, "label", e, "name");
   else p["label"] = label;
   const std::string comp_s = comp;
+  // the Entity tile (any entity) draws like the type its domain is closest to: a light / switch / fan / input boolean /
+  // automation as a light (on = accent), a cover as a cover, a sensor as a sensor, a script / scene / button as an
+  // action (its verb), anything else its state
+  const std::string vt = t != "entity" ? t
+      : (edom == "light" || edom == "switch" || edom == "fan" || edom == "input_boolean" || edom == "automation") ? "light"
+      : edom == "cover" ? "cover" : (edom == "sensor" || edom == "binary_sensor") ? "sensor"
+      : (edom == "script" || edom == "scene" || edom == "button") ? "action" : "other";
   if (comp_s == "entity_tile") {
-    if (t == "sensor") {  // read-only: the value as the status, the device class icon, no press (Darren 2026-10-25)
+    if (vt == "sensor") {  // read-only: the value as the status, the device class icon, no press (Darren 2026-10-25)
       sensor_icon(p, e);
       bind(p, "status", e, "state");
       p["on"] = false;
@@ -168,11 +180,15 @@ char card_node(Var cd, Var pages, int slot, ArduinoJson::JsonArray nodes) {
         }
       }
       p["on"] = false;
-    } else if (t == "action") {  // run it (2026-10-30): the domain's icon, the verb as the status, no on look
+    } else if (vt == "action") {  // run it (2026-10-30): the domain's icon, the verb as the status, no on look
       p["icon"] = dom == "script" ? "play" : dom == "scene" ? "house" : dom == "automation" ? "auto" : "bolt";
       p["status"] = dom == "script" ? "Run" : dom == "scene" ? "Activate" : dom == "automation" ? "Trigger" : "Press";
       p["on"] = false;
-    } else if (t == "cover") {
+    } else if (vt == "other") {  // its state (a lock, a climate, a media player, anything else)
+      p["icon"] = dom == "climate" ? "thermometer" : dom == "media_player" ? "speaker" : dom == "lock" ? "door" : dom == "vacuum" ? "vacuum" : "check";
+      bind(p, "status", e, "state");
+      p["on"] = false;
+    } else if (vt == "cover") {
       p["icon"] = "screen-covers";
       bind(p, "status", e, "state");
       ArduinoJson::JsonObject on = p["on"].to<ArduinoJson::JsonObject>();
@@ -181,11 +197,11 @@ char card_node(Var cd, Var pages, int slot, ArduinoJson::JsonArray nodes) {
       on["map"]["opening"] = "on";
       on["else"] = "off";
     } else {
-      p["icon"] = dom == "switch" ? "power" : "bulb";
+      p["icon"] = dom == "light" ? "bulb" : dom == "automation" ? "auto" : "power";
       bind(p, "status", e, "level");
       bind(p, "on", e, "on");
     }
-    p["act"] = t == "sensor" ? "none" : tap == "toggle" ? "toggle" : "open";
+    p["act"] = (t == "sensor" || tap == "none") ? "none" : tap == "toggle" ? "toggle" : "open";
     if (t != "page") bind(p, "state", e, "avail");
   } else if (comp_s == "card") {  // the card fills its cell (no size prop: the Card grid gives it its size)
     p["preview"] = "none";
@@ -223,21 +239,23 @@ char card_node(Var cd, Var pages, int slot, ArduinoJson::JsonArray nodes) {
     tone["else"] = "text";
   }
   // the tap
+  const bool ask = t == "entity" && (cd["ask"] | false);  // "Ask first": the panel asks before it runs / toggles
   if (tap == "toggle") {
     ArduinoJson::JsonObject a = n["on"]["tap"].to<ArduinoJson::JsonObject>();
-    a["do"] = "light.toggle";
+    a["do"] = dom == "light" || dom == "switch" ? "light.toggle" : "entity.toggle";
     a["e"] = e;
-  } else if (tap == "detail" && *ct->detail) {
+    if (ask && dom != "light" && dom != "switch") { a["ask"] = true; if (!label.empty()) a["name"] = label; }
+  } else if (tap == "detail" && !detail.empty()) {
     ArduinoJson::JsonObject a = n["on"]["tap"].to<ArduinoJson::JsonObject>();
     a["do"] = "nav.open";
-    a["screen"] = ct->detail;
+    a["screen"] = detail;
     a["params"]["entity"] = e;
     if (!label.empty()) a["params"]["name"] = label;
   } else if (tap == "run") {  // the Action tile: its domain's action; ask = "Run <name>?" on the panel first
     ArduinoJson::JsonObject a = n["on"]["tap"].to<ArduinoJson::JsonObject>();
     a["do"] = dom == "script" ? "script.run" : dom == "scene" ? "scene.activate" : dom == "automation" ? "automation.trigger" : "button.press";
     a["e"] = e;
-    if (cd["ask"] | false) { a["ask"] = true; if (!label.empty()) a["name"] = label; }
+    if (ask) { a["ask"] = true; if (!label.empty()) a["name"] = label; }
   } else if (tap == "page" && !pid.empty()) {
     ArduinoJson::JsonObject a = n["on"]["tap"].to<ArduinoJson::JsonObject>();
     a["do"] = "nav.open";
