@@ -83,11 +83,10 @@ the `spec` component). Shared helpers for family 1: `_controls.mjs` (pixel reads
    timer: facet-180), screen_chrome, section_header, grid, card_grid, column, split, group, label, icon, time,
    date_line, corner_ticks, tick_ring, arc, legend, card_previews, accent_swatches, mascot_mood.
 4. **Charts + weather + sky:** bar_chart, donut, sparkline, rate_strip, clock_face, energy_view,
-   weather_icon, moon_facts, moon_icon,
-   moon_phases, moon_range, moon_view, lightning_radar, lightning_view.
+   weather_icon, moon_icon, lightning_radar, lightning_view.
 5. **Home domains (HA-driven views):** media_disc, media_view, media_visual (facet-183), cover_visual,
    lock_ring, thermostat_view, vacuum_mode, timer_view, event_row, bins_view, print_model, print_view,
    iso_floorplan, overhead_view, agents_view.
 6. **Feeds + sport:** f1_car_marker, f1_circuit, f1_flag, f1_race_control, f1_race_status, f1_standings,
-   football_pitch, tennis_court, tennis_score, github_list, github_pr, github_view, pr_row.
+   football_pitch, tennis_court, tennis_score, github_pr, status_row, pr_row (+ the GitHub screen: github_screen).
 7. **Spec screens** (renderer/specs/*.json via the device: the screen's HA calls + live values), after 1-6.

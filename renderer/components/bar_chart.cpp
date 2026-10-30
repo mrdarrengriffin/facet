@@ -33,6 +33,9 @@ namespace {
 const char *DEF_VALUES = "0.3,0.2,0.2,0.2,0.3,0.4,0.9,1.2,0.8,0.5,0.4,0.6,0.7,0.5,0.6,1.1,1.6,1.9,1.4,1.0,0.8,0.6,0.4,0.3";
 const char *DEF_BANDS = "cheap,cheap,cheap,cheap,cheap,cheap,normal,normal,normal,normal,normal,normal,normal,normal,normal,normal,peak,peak,peak,normal,normal,normal,cheap,cheap";
 const char *band_ink(const std::string &b) {  // docs BAND_COLOUR: peak = the chart highlight (accent)
+  if (b == "full") return "fg:accent";         // the Moon's days (docs moonRangeChart): a full moon in the highlight,
+  if (b == "past") return "fg:line-hi";        // days before today in line-hi, the rest steel
+  if (b == "day") return "fg:steel";
   return b == "peak" ? "fg:accent" : b == "cheap" ? "fg:blue" : "fg:band-normal";
 }
 int now_of(fw::Props p) {  // a number, or a bound Home Assistant state (text: "10")
@@ -42,7 +45,8 @@ std::string sig_of(fw::Props p, size_t n) {
   char b[96];
   snprintf(b, sizeof b, "%zu|%s|%d|%d|%d|%d|", n, p["colour"] | "bands", now_of(p), (int) (p["width"] | 320),
            (int) (p["height"] | 80), (int) (p["scrub"] | true) + 2 * (int) (p["ticks"] | 0));
-  return std::string(b) + (p["bands"] | DEF_BANDS) + "|" + (*(p["compare"] | "") ? "pairs" : "") + "|" + (p["labels"] | "") + "|" + (p["legend"] | "");
+  return std::string(b) + (p["bands"] | DEF_BANDS) + "|" + (*(p["compare"] | "") ? "pairs" : "") + "|" + (p["labels"] | "") + "|" + (p["legend"] | "") +
+         "|" + (p["marks"] | "") + "|" + (p["names"] | "") + "|" + (p["unit"] | "kWh");
 }
 // the bars as drawn: with compare, pairs (earlier, value) per slot
 std::vector<float> bars_of(fw::Props p) {
@@ -65,6 +69,10 @@ void fill(lv_obj_t *root, fw::Props p, bool opening) {
   o.now = now < n ? now : -1;
   o.scrub = p["scrub"] | true;
   o.ticks = p["ticks"] | 0;
+  o.unit = p["unit"] | "kWh";
+  if (*(p["names"] | "")) o.names = fw::chart::words(p, "names", "");
+  if (*(p["marks"] | ""))
+    for (const std::string &m : fw::chart::words(p, "marks", "")) o.marks.push_back(m == "full" ? 2 : m == "new" ? 1 : 0);
   if (*(p["labels"] | "")) o.labels = fw::chart::words(p, "labels", "");
   if (*(p["legend"] | "")) {
     o.legend = fw::chart::words(p, "legend", "");
@@ -72,7 +80,7 @@ void fill(lv_obj_t *root, fw::Props p, bool opening) {
   }
   float mx = 0;
   for (float x : o.v) if (std::isfinite(x)) mx = std::max(mx, x);
-  o.dec = mx >= 10 ? 1 : 2;  // a day's kWh "16.2", a half-hour's "0.42"
+  o.dec = p["unit"].is<const char *>() && !strcmp(p["unit"] | "", "%") ? 0 : mx >= 10 ? 1 : 2;  // "78 %"; a day's kWh "16.2", a half-hour's "0.42"
   if (pairs) {
     o.group = 2;
     for (int i = 0; i < n; i++) o.kind.push_back(i % 2 ? 0 : 2);  // the earlier period an outline, the value solid
@@ -98,12 +106,15 @@ FW_COMPONENT(bar_chart, "Bar chart", "components", R"({
     {"name": "colour", "about": "How the bars are coloured: bands colours each bar by its price band (cheap, normal, peak); series draws every bar in the one chart colour.", "type": "select", "options": ["bands", "series"], "default": "bands"},
     {"name": "now", "about": "Which bar is now, counting from 0 on the left; it gets the dotted now marker. -1 shows no marker.", "type": "range", "min": -1, "max": 23, "step": 1, "default": 14},
     {"name": "width", "about": "How wide the whole chart is, in pixels; 0 fills the space it is in.", "type": "range", "min": 0, "max": 440, "step": 8, "default": 320},
-    {"name": "height", "about": "How tall the tallest bar can be, in pixels.", "type": "range", "min": 48, "max": 136, "step": 8, "default": 80},
+    {"name": "height", "about": "How tall the tallest bar can be, in pixels.", "type": "range", "min": 48, "max": 240, "step": 8, "default": 80},
     {"name": "scrub", "about": "Lets you press and drag along the chart to read the value of each bar.", "type": "bool", "default": true},
     {"name": "ticks", "about": "Hour labels on the axis under the bars, every this many hours (6 = 00, 06, 12, 18); 0 shows none.", "type": "range", "min": 0, "max": 12, "step": 1, "default": 0},
     {"name": "compare", "about": "An earlier period to set the values against, one number per value: the bars come in pairs, the earlier one as an outline. Empty shows single bars.", "type": "text", "default": ""},
     {"name": "labels", "about": "One word per value (or pair) on the axis under the bars, such as the days of a week; they replace the hour labels.", "type": "text", "default": ""},
-    {"name": "legend", "about": "Words naming the series over the bars, each after its swatch: the values first, then the compare period.", "type": "text", "default": ""}
+    {"name": "legend", "about": "Words naming the series over the bars, each after its swatch: the values first, then the compare period.", "type": "text", "default": ""},
+    {"name": "marks", "about": "A moon over some bars, one word per bar: full or new (empty = none), such as the full and new moons over their days.", "type": "text", "default": ""},
+    {"name": "names", "about": "One word per bar that the reading names when you press it, such as its date; empty uses the axis words or the hour.", "type": "text", "default": ""},
+    {"name": "unit", "about": "The unit after a value when you read a bar, such as kWh or %.", "type": "text", "default": "kWh"}
   ],
   "opening": "Showing the chart grows the bars from the baseline (chart motion bars).",
   "variants": [
@@ -111,6 +122,7 @@ FW_COMPONENT(bar_chart, "Bar chart", "components", R"({
     {"label": "series · now · later as outlines", "props": {"colour": "series"}},
     {"label": "a week", "props": {"values": "8.2,7.4,9.1,6.8,7.7,10.4,9.6", "now": 6, "colour": "series", "width": 200}},
     {"label": "a week against the week before", "props": {"values": "16.2,17.8,15.1,18.4,16.9,19.2,9.4", "compare": "17.4,18.2,16.8,19.0,17.7,18.9,17.1", "labels": "Fri,Sat,Sun,Mon,Tue,Wed,Today", "legend": "this week,week before", "width": 0, "height": 96}},
+    {"label": "the moon's days · marks", "props": {"values": "62,72,81,89,95,99,100,98,93,86,77,67,56,45,34,24,15,8,3,0,1,5,12,21", "bands": "past,past,past,day,day,day,full,day,day,day,day,day,day,day,day,day,day,day,day,day,day,day,day,day", "marks": ",,,,,,full,,,,,,,,,,,,,new", "names": "", "unit": "%", "now": 3, "width": 0, "height": 120}},
     {"label": "no data in places", "props": {"values": "0.4,0.6,-,-,0.9,1.2,0.8,-,0.5,0.7", "now": -1, "colour": "series", "width": 240}}
   ]
 })") {

@@ -4,7 +4,7 @@ export const SCREEN_GROUPS: [string, string[]][] = [
   ['Core', ['home', 'clock', 'timer', 'settings', 'screens', 'screen_set', 'setup']],
   ['Home control', ['living_room', 'light', 'thermostat', 'covers']],
   ['Media', ['media']],
-  ['Weather and sky', ['weather', 'weather_days', 'moon', 'moon_details', 'moon_days', 'lightning']],
+  ['Weather and sky', ['weather', 'weather_days', 'moon', 'lightning']],
   ['Info', ['calendar', 'energy']],
   ['Work', ['github', 'github_list', 'github_pr']],
   ['Making', ['print']],

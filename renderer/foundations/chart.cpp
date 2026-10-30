@@ -827,6 +827,9 @@ struct TB {
   std::vector<std::string> labels, legend;
   std::vector<uint8_t> legend_kind;
   std::vector<lv_obj_t *> leg_words;    // the legend's words (real labels in the strip; the Pen draws their swatches)
+  std::vector<uint8_t> marks;            // per bar: 0 none, 1 new moon, 2 full moon (TokenBars::marks)
+  std::vector<std::string> names;        // per bar: the readout's word (TokenBars::names)
+  int mk_h = 0;                          // the marks row (chart:mark + space 5), under the legend
 };
 int tb_groups(const TB *B) { return (B->n + B->group - 1) / B->group; }
 void tb_free(lv_event_t *e) { delete (TB *) lv_event_get_user_data(e); }
@@ -873,6 +876,15 @@ void tb_draw(const fx::Pen &p) {
     p.rect(L + tb_sw_x(B, k), T + fx::size("space:2") + (std::max(sw, fx::type_box("type:c-meta-sm")) - sw) / 2, sw, sw, cmp ? "fg:line-hi" : "fg:text-dim", fx::size("chart:bar-radius"),
            cmp ? fx::size("stroke:hair") : 0);
   }
+  if (B->mk_h) {  // the marks: a moon disc over its bar (full = moon-lit, new = moon-dark) in a moon-edge outline
+    const int d = fx::size("chart:mark"), cw = B->n ? tb_x(B, B->n - 1) + B->bw : B->w, y = T + B->leg_h - B->mk_h + d / 2;
+    for (int i = 0; i < B->n && i < (int) B->marks.size(); i++) {
+      if (!B->marks[i]) continue;
+      const int x = L + std::clamp(tb_x(B, i) + B->bw / 2, d / 2, std::max(d / 2, cw - d / 2));
+      p.dot(x, y, "chart:mark", "fg:moon-edge");  // the outline, then the disc inside it
+      p.dot(x, y, "chart:mark-fill", B->marks[i] == 2 ? "fg:moon-lit" : "fg:moon-dark");
+    }
+  }
   for (int i = 0; i < B->n; i++) {
     const int hp = B->shown[i];
     if (hp <= 0) continue;
@@ -888,7 +900,8 @@ void tb_draw(const fx::Pen &p) {
   char b[64];
   if (B->sel >= 0) {  // the readout over the bars: "<value> <unit>  <hh>:00" (labels: "<value> <unit>  <word>"), inside the chart
     const int g = B->sel / B->group;
-    if (B->labels.empty()) snprintf(b, sizeof b, "%.*f %s  %02d:00", B->dec, B->v[B->sel], B->unit.c_str(), (B->first_hour + B->sel) % 24);
+    if ((size_t) B->sel < B->names.size()) snprintf(b, sizeof b, "%.*f %s  %s", B->dec, B->v[B->sel], B->unit.c_str(), B->names[B->sel].c_str());
+    else if (B->labels.empty()) snprintf(b, sizeof b, "%.*f %s  %02d:00", B->dec, B->v[B->sel], B->unit.c_str(), (B->first_hour + B->sel) % 24);
     else {
       std::string w = (size_t) g < B->labels.size() ? B->labels[g] : "";
       for (size_t k = 0; B->group > 1 && k < B->legend.size(); k++)  // which series: the legend word of this bar's kind
@@ -973,6 +986,10 @@ void tb_size(TB *B, lv_obj_t *parent) {
   B->spread = B->fill && ng > 1 ? std::max(0, B->w - (B->n * B->bw + inner)) : 0;
   // the legend row: space 2 above it, space 9 under it to the plot (the old WASM week: 4 + 20 at 1x, 8 + 32 at 720)
   B->leg_h = B->legend.empty() ? 0 : fx::size("space:2") + std::max(fx::size("chart:legend-sw"), fx::type_box("type:c-meta-sm")) + fx::size("space:9");
+  bool marked = false;
+  for (uint8_t m : B->marks) marked = marked || m;
+  B->mk_h = marked ? fx::size("chart:mark") + fx::size("space:5") : 0;  // docs: the marks row 24, 16 above the chart
+  B->leg_h += B->mk_h;
   for (size_t k = 0; k < B->leg_words.size(); k++) {  // the words beside their swatches, in the legend row
     lv_obj_update_layout(B->leg_words[k]);
     lv_obj_set_pos(B->leg_words[k], tb_sw_x(B, k) + fx::size("chart:legend-sw") + fx::size("space:2"), fx::size("space:2"));
@@ -1038,7 +1055,7 @@ lv_obj_t *token_bars(lv_obj_t *parent, const TokenBars &o, bool opening) {
   B->v = o.v, B->n = (int) o.v.size(), B->ink = o.ink, B->kind = o.kind, B->now = o.now, B->ticks = o.ticks;
   B->kind.resize(B->n, 0);
   B->scrub = o.scrub, B->dec = o.dec, B->first_hour = o.first_hour, B->unit = o.unit, B->w_dp = o.w_dp, B->h_dp = o.h_dp;
-  B->group = std::max(1, o.group), B->labels = o.labels, B->legend = o.legend, B->legend_kind = o.legend_kind;
+  B->group = std::max(1, o.group), B->labels = o.labels, B->legend = o.legend, B->legend_kind = o.legend_kind, B->marks = o.marks, B->names = o.names;
   float mx = 0;
   for (float x : o.v) if (std::isfinite(x)) mx = std::max(mx, x);
   B->max = mx > 0 ? mx : 1;

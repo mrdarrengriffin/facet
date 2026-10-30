@@ -605,13 +605,12 @@ Moon *moon_of(lv_obj_t *o) {
   }
   return nullptr;
 }
-lv_obj_t *moon_layer(lv_obj_t *box, const lv_image_dsc_t *d, lv_color_t c) {
-  lv_obj_t *im = lv_image_create(box);
-  lv_obj_remove_flag(im, LV_OBJ_FLAG_CLICKABLE);
+lv_obj_t *moon_layer(lv_obj_t *box, const lv_image_dsc_t *d, const char *ink) {  // ink = a shared recolour style
+  lv_obj_t *im = lv_image_create(box);                                              // ("ink:moon-lit"): a theme switch
+  lv_obj_remove_flag(im, LV_OBJ_FLAG_CLICKABLE);                                    // repaints it (C16, C44)
   lv_image_set_src(im, d);
   lv_obj_set_pos(im, 0, 0);
-  lv_obj_set_style_image_recolor(im, c, 0);
-  lv_obj_set_style_image_recolor_opa(im, LV_OPA_COVER, 0);
+  fx::use(im, ink);
   return im;
 }
 }  // namespace
@@ -630,10 +629,16 @@ lv_obj_t *fw::moon_icon_px(lv_obj_t *parent, float frac, int S, bool south) {
   moon_lit(S, frac, south, m->lit);
   a8_dsc(m->dsc, S, m->lit);
   lv_obj_add_event_cb(box, moon_free, LV_EVENT_DELETE, m);
-  moon_layer(box, &st.d_disc, T->moon_dark);
-  m->im = moon_layer(box, &m->dsc, T->moon_lit);
-  moon_layer(box, &st.d_edge, T->moon_edge);
+  moon_layer(box, &st.d_disc, "ink:moon-dark");
+  m->im = moon_layer(box, &m->dsc, "ink:moon-lit");
+  moon_layer(box, &st.d_edge, "ink:moon-edge");
   return box;
+}
+lv_obj_t *fx::moon(lv_obj_t *parent, float frac, const char *size, bool south) {
+  if (!strncmp(size, "layout:", 7)) return fw::moon_icon_px(parent, frac, fx::size(size), south);
+  for (int i = 0; i < fw::ic::N_SIZES; i++)
+    if (!strcmp(fw::ic::SIZE_NAMES[i], size)) return fw::moon_icon(parent, frac, (fw::ic::Size) i, south);
+  return fw::moon_icon(parent, frac, fw::ic::card, south);
 }
 bool fw::moon_icon_set(lv_obj_t *box, float frac, bool south) {
   Moon *m = moon_of(box);

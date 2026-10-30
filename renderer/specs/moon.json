@@ -2,29 +2,419 @@
  "v": 1,
  "id": "moon",
  "name": "Moon",
- "rev": 1,
- "role": "detail",
+ "rev": 2,
+ "role": "both",
+ "params": {
+  "view": {
+   "about": "Which view the screen shows: now (the moon tonight), details (the numbers and the next phases) or days (a bar per evening for the next weeks).",
+   "type": "hidden",
+   "default": "now"
+  },
+  "source": {
+   "about": "Where the moon comes from: worked out on the panel for your place, or a fixed sample evening for previews.",
+   "type": "select",
+   "options": [
+    "panel",
+    "sample"
+   ],
+   "label": "Source",
+   "default": "panel"
+  },
+  "lat": {
+   "about": "Your latitude in degrees (south is negative), for moonrise and moonset and which way round the moon looks.",
+   "type": "text",
+   "label": "Latitude",
+   "default": "52.2"
+  },
+  "lon": {
+   "about": "Your longitude in degrees (west is negative), for moonrise and moonset.",
+   "type": "text",
+   "label": "Longitude",
+   "default": "-1.2"
+  }
+ },
+ "feeds": {
+  "panel.moon": {
+   "source": "$source",
+   "lat": "$lat",
+   "lon": "$lon"
+  }
+ },
  "header": {
   "label": "Moon",
   "back": true
  },
- "layout": "list",
+ "layout": "center",
+ "card": {
+  "label": "Moon",
+  "icon": "moon",
+  "preview": "moon",
+  "phase": {
+   "e": "panel.moon",
+   "a": "phase"
+  },
+  "south": {
+   "e": "panel.moon",
+   "a": "south"
+  },
+  "mode": "value",
+  "value": {
+   "e": "panel.moon",
+   "a": "card_value"
+  },
+  "sub": {
+   "e": "panel.moon",
+   "a": "card_sub"
+  }
+ },
  "nodes": [
   {
-   "c": "moon_view",
+   "c": "column",
    "p": {}
+  },
+  {
+   "c": "moon_icon",
+   "p": {
+    "layout": "hero",
+    "size": "screen",
+    "phase": {
+     "e": "panel.moon",
+     "a": "phase"
+    },
+    "south": {
+     "e": "panel.moon",
+     "a": "south"
+    },
+    "label": {
+     "e": "panel.moon",
+     "a": "name"
+    },
+    "line": {
+     "e": "panel.moon",
+     "a": "rest"
+    }
+   },
+   "in": 0,
+   "slot": 0,
+   "show": {
+    "e": "",
+    "s": "$view",
+    "map": {
+     "now": "1"
+    },
+    "else": ""
+   }
   },
   {
    "c": "more_row",
    "p": {
     "text": "details"
    },
+   "in": 0,
+   "slot": 1,
+   "show": {
+    "e": "",
+    "s": "$view",
+    "map": {
+     "now": "1"
+    },
+    "else": ""
+   },
    "on": {
     "tap": {
-     "do": "nav.open",
-     "screen": "moon_details"
+     "do": "screen.param",
+     "param": "view",
+     "to": "details",
+     "back": true
     }
    }
+  },
+  {
+   "c": "group",
+   "p": {
+    "flow": "stack",
+    "space": "none",
+    "align": "start"
+   },
+   "in": 0,
+   "slot": 0,
+   "show": {
+    "e": "",
+    "s": "$view",
+    "map": {
+     "details": "1"
+    },
+    "else": ""
+   }
+  },
+  {
+   "c": "grid",
+   "p": {
+    "cols": 2,
+    "gap": "group",
+    "aspect": "row"
+   },
+   "in": 3,
+   "slot": 0
+  },
+  {
+   "c": "stat",
+   "p": {
+    "label": "lit",
+    "value": {
+     "e": "panel.moon",
+     "a": "lit"
+    },
+    "tone": "text",
+    "size": "title"
+   },
+   "in": 4,
+   "slot": 0
+  },
+  {
+   "c": "stat",
+   "p": {
+    "label": "age",
+    "value": {
+     "e": "panel.moon",
+     "a": "age"
+    },
+    "tone": "text",
+    "size": "title"
+   },
+   "in": 4,
+   "slot": 1
+  },
+  {
+   "c": "stat",
+   "p": {
+    "label": "moonrise",
+    "value": {
+     "e": "panel.moon",
+     "a": "rise"
+    },
+    "tone": {
+     "e": "panel.moon",
+     "a": "rise_tone"
+    },
+    "size": "title"
+   },
+   "in": 4,
+   "slot": 2
+  },
+  {
+   "c": "stat",
+   "p": {
+    "label": "moonset",
+    "value": {
+     "e": "panel.moon",
+     "a": "set"
+    },
+    "tone": {
+     "e": "panel.moon",
+     "a": "set_tone"
+    },
+    "size": "title"
+   },
+   "in": 4,
+   "slot": 3
+  },
+  {
+   "c": "stat",
+   "p": {
+    "label": "next full",
+    "value": {
+     "e": "panel.moon",
+     "a": "full"
+    },
+    "tone": "text",
+    "size": "title"
+   },
+   "in": 4,
+   "slot": 4
+  },
+  {
+   "c": "stat",
+   "p": {
+    "label": "next new",
+    "value": {
+     "e": "panel.moon",
+     "a": "new"
+    },
+    "tone": "text",
+    "size": "title"
+   },
+   "in": 4,
+   "slot": 5
+  },
+  {
+   "c": "group",
+   "p": {
+    "flow": "stack",
+    "space": "block",
+    "align": "start"
+   },
+   "in": 3,
+   "slot": 0
+  },
+  {
+   "c": "section_header",
+   "p": {
+    "title": "next phases",
+    "badge": false,
+    "right": "none",
+    "size": "label"
+   },
+   "in": 11,
+   "slot": 0
+  },
+  {
+   "c": "grid",
+   "p": {
+    "cols": 4,
+    "gap": "none",
+    "aspect": "row",
+    "items": {
+     "e": "panel.moon",
+     "a": "next"
+    },
+    "empty": ""
+   },
+   "in": 11,
+   "slot": 0,
+   "cell": {
+    "c": "moon_icon",
+    "p": {
+     "layout": "column",
+     "size": "feature",
+     "phase": "$item.phase",
+     "south": {
+      "e": "panel.moon",
+      "a": "south"
+     },
+     "label": "$item.label",
+     "value": "$item.value"
+    }
+   }
+  },
+  {
+   "c": "more_row",
+   "p": {
+    "text": {
+     "e": "panel.moon",
+     "a": "days_more"
+    }
+   },
+   "in": 0,
+   "slot": 1,
+   "show": {
+    "e": "",
+    "s": "$view",
+    "map": {
+     "details": "1"
+    },
+    "else": ""
+   },
+   "on": {
+    "tap": {
+     "do": "screen.param",
+     "param": "view",
+     "to": "days",
+     "back": true
+    }
+   }
+  },
+  {
+   "c": "group",
+   "p": {
+    "flow": "stack",
+    "space": "none",
+    "align": "start"
+   },
+   "in": 0,
+   "slot": 0,
+   "show": {
+    "e": "",
+    "s": "$view",
+    "map": {
+     "days": "1"
+    },
+    "else": ""
+   }
+  },
+  {
+   "c": "moon_icon",
+   "p": {
+    "layout": "line",
+    "label": {
+     "e": "panel.moon",
+     "a": "day_name"
+    },
+    "line": {
+     "e": "panel.moon",
+     "a": "day_rest"
+    }
+   },
+   "in": 15,
+   "slot": 0
+  },
+  {
+   "c": "group",
+   "p": {
+    "flow": "stack",
+    "space": "block",
+    "align": "start"
+   },
+   "in": 15,
+   "slot": 0
+  },
+  {
+   "c": "bar_chart",
+   "p": {
+    "values": {
+     "e": "panel.moon",
+     "a": "values"
+    },
+    "bands": {
+     "e": "panel.moon",
+     "a": "bands"
+    },
+    "marks": {
+     "e": "panel.moon",
+     "a": "marks"
+    },
+    "names": {
+     "e": "panel.moon",
+     "a": "names"
+    },
+    "labels": {
+     "e": "panel.moon",
+     "a": "labels"
+    },
+    "now": {
+     "e": "panel.moon",
+     "a": "now"
+    },
+    "colour": "bands",
+    "unit": "%",
+    "width": 0,
+    "height": 240,
+    "scrub": true,
+    "ticks": 0
+   },
+   "in": 17,
+   "slot": 0
+  },
+  {
+   "c": "title",
+   "p": {
+    "text": {
+     "e": "panel.moon",
+     "a": "title_$view"
+    }
+   },
+   "in": "header",
+   "slot": "title"
   }
  ]
 }

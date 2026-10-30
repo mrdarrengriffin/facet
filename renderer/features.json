@@ -75,9 +75,9 @@
       "id": "moon",
       "label": "Moon",
       "docs": true, "status": "done", "firmware": true,
-      "screens": ["moon", "moon_details", "moon_days"],
+      "screens": ["moon"],
       "docs_pages": ["moon"],
-      "components": ["moon_view", "moon_icon", "moon_facts", "moon_phases", "moon_range"]
+      "components": ["moon_icon"]
     },
     {
       "id": "calendar",

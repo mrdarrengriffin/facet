@@ -191,6 +191,16 @@
       "1x": 12,
       "use": "donut ring thickness (docs 16)"
     },
+    "mark": {
+      "v": 24,
+      "1x": 16,
+      "use": "a mark over a bar: the Moon screen's new and full moons over their days (docs 24), its moon-edge outline"
+    },
+    "mark-fill": {
+      "v": 20,
+      "1x": 12,
+      "use": "the disc inside a mark (moon-lit full, moon-dark new): chart mark less the outline each side (docs moon glyph disc 20 in 24)"
+    },
     "legend-sw": {
       "v": 8,
       "1x": 8,

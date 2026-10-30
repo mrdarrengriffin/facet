@@ -105,6 +105,10 @@ struct TokenBars {
   int group = 1;
   std::vector<std::string> labels, legend;
   std::vector<uint8_t> legend_kind;
+  // marks (2026-10-30, the Moon screen's next days: docs moonRangeChart marks): per bar 0 none, 1 a new moon, 2 a full
+  // moon, a chart:mark disc over the bar's centre in a row above the plot (space 5 under it)
+  std::vector<uint8_t> marks;
+  std::vector<std::string> names;  // per bar: the readout's word ("24 Oct"; the axis labels may name only some bars)
 };
 lv_obj_t *token_bars(lv_obj_t *parent, const TokenBars &o, bool opening);
 bool token_bars_move(lv_obj_t *strip, const std::vector<float> &nv);  // same count: the heights move (false = rebuild)

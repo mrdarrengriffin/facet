@@ -152,16 +152,6 @@
    "note": "docs explorer default controls vs the WASM default: values may differ"
   },
   {
-   "comp": "moon_facts",
-   "variant": "default",
-   "astro": {
-    "item": "moon-facts",
-    "selector": "[data-ex-stage] > *"
-   },
-   "crop": true,
-   "note": "docs explorer default controls vs the WASM default: values may differ"
-  },
-  {
    "comp": "pr_row",
    "variant": "default",
    "astro": {
@@ -206,16 +196,6 @@
    "variant": "default",
    "astro": {
     "item": "bar-chart",
-    "selector": "[data-ex-stage] > *"
-   },
-   "crop": true,
-   "note": "docs explorer default controls vs the WASM default: values may differ"
-  },
-  {
-   "comp": "moon_range",
-   "variant": "default",
-   "astro": {
-    "item": "moon-range",
     "selector": "[data-ex-stage] > *"
    },
    "crop": true,

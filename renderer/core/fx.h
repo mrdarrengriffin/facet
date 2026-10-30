@@ -37,6 +37,10 @@ lv_obj_t *icon(lv_obj_t *parent, const char *name, const char *size, const char 
 // nearest box behind with a background (else the canvas), so a theme switch repaints it with no rebuild. nullptr = no
 // such weather icon at that size. weather_set = another icon / motion in place (same box, same size).
 lv_obj_t *weather(lv_obj_t *parent, const char *name, const char *size, bool animate);
+// the moon glyph (fw::moon_icon_px) at an icon size name ("feature", "card") or a layout size token ("layout:moon-hero"):
+// frac 0..1 through the month, south = mirrored; inks ink:moon-dark / moon-lit / moon-edge (a theme repaints it).
+// fw::moon_icon_set redraws a new phase in place.
+lv_obj_t *moon(lv_obj_t *parent, float frac, const char *size, bool south);
 bool weather_set(lv_obj_t *wx, const char *name, bool animate);
 void hit(lv_obj_t *o);
 void reach(lv_obj_t *o, const char *pad);  // o's hit area `pad` (a size token) past its box every side (a corner target: Back)  // C32: o's hit area grown to at least touch:min tall (after its contents are made)
