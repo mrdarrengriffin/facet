@@ -101,6 +101,7 @@
       "cal-time": { "v": 112, "1x": 76, "use": "Calendar: the time column of an agenda row (docs 112)" },
       "cal-row-h": { "v": 64, "1x": 44, "use": "Calendar: an agenda row (docs .fs-cal-row 64; 1x = button-h)" },
       "cal-day-gap": { "v": 32, "1x": 20, "use": "Calendar: between one day's rows and the next day's label (docs 32: a list to scan, denser than group)" },
+      "cal-sec-gap": { "v": 8, "1x": 8, "use": "Calendar: a day's label (Section header, label size: its box + space 2) to its first row; together = layout section-gap (16 / 12)" },
       "cal-btn-pad": { "v": 16, "1x": 12, "use": "Calendar: the side padding of the header's calendars button and the month bar's Today button (docs .fs-cal-fbtn 0 16)" },
       "cal-cell-w": { "v": 80, "1x": 56, "use": "Calendar month: a day cell's width (docs 80; 7 cells + 6 gaps = the content width)" },
       "cal-cell-h": { "v": 72, "1x": 48, "use": "Calendar month: a day cell's height (docs 72)" },

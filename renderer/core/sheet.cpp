@@ -166,9 +166,17 @@ void fit(lv_obj_t *ov, int rows, int row_h) {
   if (!L) return;
   L->rows = rows, L->row_h = row_h;
   if (!L->busy) lv_obj_update_layout(L->host);
+  // the overlay covers the host's whole box, its padding too (a spec Page pads its top: C4, over the whole screen)
+  const int pl = lv_obj_get_style_pad_left(L->host, LV_PART_MAIN), pt = lv_obj_get_style_pad_top(L->host, LV_PART_MAIN);
+  if (pl || pt || lv_obj_get_style_pad_right(L->host, LV_PART_MAIN) || lv_obj_get_style_pad_bottom(L->host, LV_PART_MAIN)) {
+    lv_obj_set_pos(L->ov, -pl, -pt);
+    lv_obj_set_size(L->ov, lv_obj_get_width(L->host), lv_obj_get_height(L->host));
+  }
   const int ring = fx::size("radius:ring"), hair = fx::size("stroke:hair"), in = fx::size("layout:inset");
-  const int H = lv_obj_get_height(L->ov), max_h = H - fx::size("layout:sheet-top") + ring;
-  lv_obj_set_width(L->panel, lv_obj_get_width(L->ov) + 2 * hair);
+  const int W = lv_obj_get_style_width(L->ov, LV_PART_MAIN) > 0 && !LV_COORD_IS_SPEC(lv_obj_get_style_width(L->ov, LV_PART_MAIN)) ? lv_obj_get_style_width(L->ov, LV_PART_MAIN) : lv_obj_get_width(L->ov);
+  const int H = lv_obj_get_style_height(L->ov, LV_PART_MAIN) > 0 && !LV_COORD_IS_SPEC(lv_obj_get_style_height(L->ov, LV_PART_MAIN)) ? lv_obj_get_style_height(L->ov, LV_PART_MAIN) : lv_obj_get_height(L->ov);
+  const int max_h = H - fx::size("layout:sheet-top") + ring;
+  lv_obj_set_width(L->panel, W + 2 * hair);
   lv_obj_set_x(L->panel, -hair);
   const int need = 2 * in + fx::size("layout:row") + fx::size("layout:gutter") + rows * (row_h > 0 ? row_h : fx::size("layout:sheet-row-h")) + ring;
   const int h = std::min(max_h, need);

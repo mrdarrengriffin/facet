@@ -26,6 +26,9 @@
 //              slot "title" holds one part (2026-10-28): header.label is the shorthand (the Header builds a Title from
 //              it; a bound label follows the entity), {"c": "title", "p": {"text": ...}, "in": "header", "slot":
 //              "title"} the explicit form (or a Segmented); a node there replaces the label's Title
+//   in overlay (2026-10-29) "in": "overlay" builds a bottom_sheet over the whole page (CONTRACT.md C4: the Overlay
+//              layer, never the Body); its list is a slot ("in": k, "slot": 0) the spec fills (the Calendar's sheets),
+//              its open prop a bind ({"e": "panel.calendar", "a": "sheet", "map": {"day": "open"}, "else": "closed"})
 //   in / slot  (2026-10-23, pages from components only) build this node into slot n (default 0) of node k (an earlier
 //              node whose component is a LAYOUT: its meta says "slots": N and it marks its slot objects with
 //              fw::spec::SLOT, in order) instead of the screen's content box: Split = two columns, Group = a wrapping
@@ -190,7 +193,7 @@ constexpr Rule RULES[] = {
     {"list_row", "long", "nav.open"},                {"card", "tap", "nav.open,light.toggle"},
     {"card", "long", "nav.open"},                    {"dial", "change", "light.brightness"},
     {"entity_tile", "tap", "nav.open,light.toggle"},
-    {"icon_button", "tap", "nav.open,nav.back"},     // 2026-10-29: a header's settings / shortcut icon (the end slot takes icon buttons only)
+    {"icon_button", "tap", "nav.open,nav.back,calendar.control"},  // 2026-10-29: a header's settings / shortcut icon (the end slot takes icon buttons only); the Calendar's calendars button
     {"dial", "input", "light.brightness"},           {"dial", "toggle", "light.switch"},
     {"slider", "change", "light.brightness"},        {"slider", "input", "light.brightness"},
     {"toggle", "toggle", "light.switch"},
@@ -205,13 +208,16 @@ constexpr Rule RULES[] = {
     {"timer_chip", "select", "timer.select"},       {"timer_chip", "stop", "timer.stop"},
     {"grid", "select", "timer.select"},             {"grid", "stop", "timer.stop"},  // Timer chips in an items Grid
     {"segmented", "change", "vacuum.control,screen.param"}, {"iso_floorplan", "pick", "screen.toggle"},
-    {"vacuum_mode", "change", "vacuum.control"},     {"grid", "pick", "screen.param,nav.open"},        // a link to a sub-view spec (moon -> moon_details -> ...)
+    {"vacuum_mode", "change", "vacuum.control"},     {"grid", "pick", "screen.param,nav.open,calendar.control"},
+    {"calendar_month", "pick", "calendar.control"},  {"calendar_month", "month", "calendar.control"},
+    {"bottom_sheet", "close", "calendar.control"},        // a link to a sub-view spec (moon -> moon_details -> ...)
     {"*", "open", "nav.open"},                       // any component's own "open" (a tapped calendar day, a PR):
                                                      // its detail = the screen id [+ "?" + params JSON]
 };
 constexpr const char *ACTIONS[] = {"light.switch", "light.toggle", "light.brightness", "climate.set_temperature",
                                    "climate.set_hvac_mode", "climate.set_preset_mode", "media.control", "cover.control", "lock.control", "vacuum.control", "screen.toggle", "screen.param",
-                                   "nav.open", "nav.back", "timer.start", "timer.extend", "timer.cancel", "timer.stop", "timer.select", "timer.new", "timer.back"};
+                                   "nav.open", "nav.back", "timer.start", "timer.extend", "timer.cancel", "timer.stop", "timer.select", "timer.new", "timer.back",
+                                   "calendar.control"};
 // The one closed action list, documented (CONTRACT.md C50): every action a spec node, an agent (POST /fw/act) or Home
 // Assistant (facet_act) can run, with its fields and one example. GET /fw/act, the catalogue's "act" and the agent docs
 // are generated from it; act() checks "value" against `value` (outside a spec the value a component's event would give
@@ -241,6 +247,7 @@ constexpr ActionDoc ACTION_DOCS[] = {
     {"timer.select", "Show that timer on the Timer screen.", "id|text|optional|a timer id;name|text|optional|a timer name, at most 24", "", R"({"do":"timer.select","name":"Pasta"})", false},
     {"timer.new", "Show the Timer screen's length picker.", "", "", R"({"do":"timer.new"})", false},
     {"timer.back", "Leave the length picker.", "", "", R"({"do":"timer.back"})", false},
+    {"calendar.control", "On the Calendar: show the previous, next or this month, open a day or the calendars sheet, close the sheet, or turn a calendar on or off (its id: the entity without calendar.).", "", "previous|next|today|calendars|close|*48", R"({"do":"calendar.control","value":"day 2026-10-23"})", false},
 };
 static_assert(sizeof ACTION_DOCS / sizeof ACTION_DOCS[0] == sizeof ACTIONS / sizeof ACTIONS[0], "every action has its ACTION_DOCS row (CONTRACT.md C50)");
 inline const ActionDoc *action_doc(const std::string &d) {
@@ -637,13 +644,18 @@ inline void check_screen(ArduinoJson::JsonVariantConst s, size_t bytes, Errs &e)
     const SlotDecl *sd = nullptr;  // the slot this node goes in (its declaration), its fill key and its words
     std::string sk, sw;
     if (n["in"].is<const char *>()) {  // into the header row
-      if (strcmp(n["in"] | "", "header")) err(e, p + ".in", "bad_in", "in: \"header\" or an earlier layout node");
+      if (!strcmp(n["in"] | "", "overlay")) {  // a sheet over the whole screen (C4: the Overlay layer)
+        if (strcmp(n["c"] | "", "bottom_sheet")) err(e, p + ".in", "bad_in", "the overlay takes a bottom_sheet");
+        if (!n["slot"].isNull()) err(e, p + ".slot", "bad_in", "the overlay has no slots");
+      } else {
+      if (strcmp(n["in"] | "", "header")) err(e, p + ".in", "bad_in", "in: \"header\", \"overlay\" or an earlier layout node");
       const std::string hs = n["slot"] | "end";
       sd = n["slot"].isNull() || n["slot"].is<const char *>() ? slot_named("header", hs) : nullptr;
       if (!sd)
         err(e, p + ".slot", "bad_in", hs == "start" ? "the header has no start slot (Back is fixed at the start): use slot end"
                                                    : "the header's slots are title and end");
       else { sk = "header's " + hs; sw = "the header's " + hs + " slot"; }
+      }
     } else if (!n["in"].isNull()) {  // into an earlier layout node's slot
       const int k = n["in"] | -1, sl = n["slot"] | 0;
       const std::string kc = k >= 0 && k < i - 1 ? (nodes[k]["c"] | "") : "";
@@ -1279,6 +1291,12 @@ inline bool run_action(Screen *s, Node &n, ArduinoJson::JsonVariantConst a, cons
   const std::string d = a["do"] | "";
   auto refuse = [&](const char *w) { if (why_out && why_out->empty()) *why_out = w; return true; };
   if (d == "nav.back") { emit(n.obj, "back"); return true; }
+  if (d == "calendar.control") {  // the calendar feed's own state (core/calendar_source.cpp): a tap's event says what
+    const std::string v = !strcmp(event, "tap") ? "calendars" : !strcmp(event, "close") ? "close" : detail ? detail : "";
+    const char *why = dev::calendar_source::control(v);
+    if (*why) return refuse(why);
+    return true;
+  }
   if (d.rfind("timer.", 0) == 0) {  // the panel's timers (core/device.h): which one = id / name, a chip's detail, the shown
     namespace tm = dev::timers;
     const char *why = "";
@@ -1854,8 +1872,10 @@ inline lv_obj_t *build(lv_obj_t *parent, const std::string &id, Props opened, st
       }
       if (cells) p["_cells"] = cells;
     }
-    lv_obj_t *into = c;  // "in": an earlier layout node's slot, or the header row
-    const bool in_hdr = nd["in"].is<const char *>() && building_header();
+    lv_obj_t *into = c;  // "in": an earlier layout node's slot, the header row or the overlay
+    const bool in_ov = nd["in"].is<const char *>() && !strcmp(nd["in"] | "", "overlay");
+    if (in_ov) { into = pg.page; p["_overlay"] = true; }  // a sheet over the whole page (C4), never in the Body
+    const bool in_hdr = !in_ov && nd["in"].is<const char *>() && building_header();
     const std::string hslot = nd["slot"] | "end";  // "in": "header" with no slot = the end slot, before the chrome
     if (in_hdr) {
       into = header_slot(building_header_root(), hslot.c_str());
@@ -1873,7 +1893,7 @@ inline lv_obj_t *build(lv_obj_t *parent, const std::string &id, Props opened, st
       lv_obj_remove_flag(into, LV_OBJ_FLAG_HIDDEN);  // an empty start / end slot is hidden (no gap)
     }
     if (ni - 1 < orig.size()) orig_obj[orig[ni - 1]] = n.obj;
-    if (into != c && !in_hdr) {  // a full-width node (list row, section header) in a narrower slot: the slot's width
+    if (into != c && !in_hdr && !in_ov) {  // a full-width node (list row, section header) in a narrower slot: the slot's width
       const int32_t sw = lv_obj_get_style_width(into, LV_PART_MAIN), w = lv_obj_get_style_width(n.obj, LV_PART_MAIN);
       if (sw > 0 && !LV_COORD_IS_SPEC(sw) && w > sw && !LV_COORD_IS_SPEC(w)) lv_obj_set_width(n.obj, sw);
     }

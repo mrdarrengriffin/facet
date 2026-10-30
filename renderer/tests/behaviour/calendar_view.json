@@ -1,7 +1,0 @@
-{
-  "id": "calendar_view",
-  "tests": [],
-  "xfail": {
-    "lag:tap:default": "BF-007"
-  }
-}

@@ -2,25 +2,54 @@
  "v": 1,
  "id": "calendar",
  "name": "Calendar",
- "rev": 3,
+ "rev": 4,
  "role": "page",
- "header": {
-  "label": "Calendar",
-  "back": true
- },
- "layout": "center",
- "nodes": [
-  {
-   "c": "calendar_view",
-   "p": {}
-  }
- ],
  "params": {
-  "calendars": {"about": "The calendars to show events from. Each calendar's events take their own colour.", 
-   "type": "entities",
-   "domain": "calendar",
-   "label": "Calendars",
-   "default": ""
-  }
- }
+  "source": {"about": "Where the events come from: calendars in Home Assistant, or a made-up fortnight for previews.", "type": "select", "options": ["ha", "sample"], "label": "Source", "default": "sample"},
+  "calendars": {"about": "The calendars to show events from. Each calendar's events take their own colour.", "type": "entities", "domain": "calendar", "label": "Calendars", "default": ""},
+  "view": {"about": "Which view the screen opens on: agenda lists the next event and the days after it; month shows six weeks of days with their events.", "type": "select", "options": ["agenda", "month"], "label": "View", "default": "agenda"},
+  "now": {"about": "For tests only: a fixed time in milliseconds for the made-up fortnight. Leave empty for the real time.", "type": "hidden", "default": ""}
+ },
+ "feeds": {
+  "panel.calendar": {"source": "$source", "calendars": "$calendars", "now": "$now"}
+ },
+ "card": {
+  "icon": "calendar",
+  "mode": "value",
+  "value": {"e": "panel.calendar", "a": "hero_n"},
+  "sub": {"e": "panel.calendar", "a": "card"},
+  "accent": {"e": "panel.calendar", "a": "hero_accent"}
+ },
+ "header": {"label": "Calendar", "back": true},
+ "layout": "list",
+ "nodes": [
+  {"c": "segmented", "in": "header", "p": {"options": "Agenda, Month", "selected": "$view"}, "on": {"change": {"do": "screen.param", "param": "view"}}},
+  {"c": "icon_button", "in": "header", "p": {"style": "square", "icon": "calendar"}, "on": {"tap": {"do": "calendar.control"}}},
+  {"c": "group", "p": {"flow": "stack", "space": "none", "align": "start"}},
+  {"c": "hero_block", "in": 2, "slot": 0,
+   "p": {"label_type": "title", "n": {"e": "panel.calendar", "a": "hero_n"}, "label": {"e": "panel.calendar", "a": "hero_label"},
+         "line": {"e": "panel.calendar", "a": "hero_line"}, "accent": {"e": "panel.calendar", "a": "hero_accent"}},
+   "show": {"e": "", "s": "$view", "map": {"agenda": "1"}, "else": ""}},
+  {"c": "grid", "in": 2, "slot": 0,
+   "p": {"cols": 1, "gap": "none", "aspect": "row", "items": {"e": "panel.calendar", "a": "agenda"}, "empty": "Nothing on the calendars that are on."},
+   "show": {"e": "", "s": "$view", "map": {"agenda": "1"}, "else": ""},
+   "cell": {"c": "calendar_row", "p": {"kind": "$item.kind", "title": "$item.title", "time": "$item.time", "colour": "$item.colour", "tone": "$item.tone", "first": "$item.first"}}},
+  {"c": "calendar_month", "in": 2, "slot": 0,
+   "p": {"title": {"e": "panel.calendar", "a": "month_title"}, "here": {"e": "panel.calendar", "a": "month_here"}, "days": {"e": "panel.calendar", "a": "month_days"}},
+   "show": {"e": "", "s": "$view", "map": {"month": "1"}, "else": ""},
+   "on": {"pick": {"do": "calendar.control"}, "month": {"do": "calendar.control"}}},
+  {"c": "bottom_sheet", "in": "overlay",
+   "p": {"title": "calendars", "open": {"e": "panel.calendar", "a": "sheet", "map": {"calendars": "open"}, "else": "closed"}},
+   "on": {"close": {"do": "calendar.control"}}},
+  {"c": "grid", "in": 6, "slot": 0,
+   "p": {"cols": 1, "gap": "none", "aspect": "row", "items": {"e": "panel.calendar", "a": "calendars"}, "empty": "No calendars picked."},
+   "cell": {"c": "calendar_row", "p": {"kind": "$item.kind", "title": "$item.title", "colour": "$item.colour", "status": "$item.status", "on": "$item.on"}},
+   "on": {"pick": {"do": "calendar.control"}}},
+  {"c": "bottom_sheet", "in": "overlay",
+   "p": {"title": {"e": "panel.calendar", "a": "day_title"}, "open": {"e": "panel.calendar", "a": "sheet", "map": {"day": "open"}, "else": "closed"}},
+   "on": {"close": {"do": "calendar.control"}}},
+  {"c": "grid", "in": 8, "slot": 0,
+   "p": {"cols": 1, "gap": "none", "aspect": "row", "items": {"e": "panel.calendar", "a": "day_events"}, "empty": "Nothing on this day."},
+   "cell": {"c": "calendar_row", "p": {"kind": "$item.kind", "title": "$item.title", "time": "$item.time", "colour": "$item.colour", "tone": "$item.tone"}}}
+ ]
 }

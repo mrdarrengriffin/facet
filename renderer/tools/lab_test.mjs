@@ -39,6 +39,8 @@ const EXTRA = { card: [{ opening: false }, CARD, PAGE],
   status_line: [{}, ['space:3'], PAGE],
   bins_art: [{ colours: 'black,green' }, ['layout:bin-hero', 'stroke:edge'], PAGE],
   bins_next: [{}, ['layout:bin-hero'], ['layout:inset', 'layout:top', 'layout:header-gap', 'squeeze']],
+  calendar_row: [{}, ['layout:cal-row-h', 'layout:cal-time', 'layout:dot', 'layout:gutter'], ['layout:inset', 'layout:top', 'layout:header-gap', 'squeeze']],
+  calendar_month: [{}, ['layout:cal-cell-h', 'layout:cal-grid-y'], ['layout:inset', 'layout:top', 'layout:header-gap', 'squeeze']],
   // a day row (its height, the day column, the gaps) and the hour column / hero gaps; icon sizes are shipped bitmaps
   weather_icon: [{ layout: 'row', label: 'Saturday', line: 'Rain', low: '9°', value: '13°', animated: false, divider: true }, ['layout:list-row-h', 'layout:wx-day-name', 'space:4', 'space:5'], PAGE],
   sparkline: [{ opening: false }, ['stroke:hair', 'chart:spark-h', 'chart:line-thin', 'chart:dot'], PAGE],  // stroke:hair = the dotted baseline

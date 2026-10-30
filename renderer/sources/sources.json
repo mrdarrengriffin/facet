@@ -18,9 +18,10 @@
     "fills": {"calendar": {"domain": "calendar"}}},
    {"id": "ical", "kind": "direct", "name": "Council calendar link (iCal), read by the panel itself (planned)", "adapter": "ical", "setup": ["calendar URL"]},
    {"id": "sample", "kind": "builtin", "name": "Sample weeks (previews)", "adapter": "sample"}]},
-  "calendar": {"needs": "a calendar", "sources": [
-   {"id": "ha_calendars", "kind": "ha", "name": "HA calendars", "detect": {"domain": "calendar"}, "fills": {"calendars": {"domain": "calendar", "list": true}}},
-   {"id": "ical", "kind": "direct", "name": "Calendar link (iCal)", "setup": ["calendar URL"]}]},
+  "calendar": {"needs": "a calendar", "feed": "panel.calendar", "sources": [
+   {"id": "ha_calendars", "kind": "ha", "name": "HA calendars (their events through calendar.get_events)", "adapter": "ha", "detect": {"domain": "calendar"}, "fills": {"calendars": {"domain": "calendar", "list": true}}},
+   {"id": "ical", "kind": "direct", "name": "Calendar link (iCal), read by the panel itself (planned)", "adapter": "ical", "setup": ["calendar URL"]},
+   {"id": "sample", "kind": "builtin", "name": "Sample fortnight (previews)", "adapter": "sample"}]},
   "weather": {"needs": null, "feed": "panel.weather", "sources": [
    {"id": "ha_weather", "kind": "ha", "name": "HA weather (its forecast through weather.get_forecasts)", "adapter": "ha", "detect": {"domain": "weather"}, "fills": {"weather": {"domain": "weather"}}},
    {"id": "open_meteo", "kind": "direct", "name": "Open-Meteo, called by the panel itself (planned)", "adapter": "open_meteo"},

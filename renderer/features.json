@@ -83,7 +83,7 @@
       "label": "Calendar",
       "docs": true, "status": "done", "firmware": true,
       "screens": ["calendar"],
-      "components": ["calendar_view"]
+      "components": ["calendar_row", "calendar_month"]
     },
     {
       "id": "energy",

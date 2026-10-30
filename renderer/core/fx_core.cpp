@@ -47,7 +47,7 @@ const char *const SHAPES[] = {"box", "col", "row", "stack", "centre", "cell", "g
                               "header", "header-back", "header-title", "header-label", "header-end", "header-time",
                               "hug", "over", "over-cell", "transp", "opaque", "fade-press-ink", "fade-release-ink", "no-outline", "cells", "cell-text",
                               "rule-top", "row-mid", "row-end", "fade-press-fill", "fade-release-fill",
-                              "square:ibtn-play", "square:ibtn-round", "square:ibtn-square", "tall:chip-h", "tall:list-row-h",
+                              "square:ibtn-play", "square:ibtn-round", "square:ibtn-square", "tall:chip-h", "tall:list-row-h", "tall:cal-row-h",
                               // the controls (Toggle, Count badge, Button, Segmented, Slider): their parts' sizes
                               "toggle", "toggle-off-pad", "toggle-knob", "toggle-knob-on", "toggle-slide", "word-slot",
                               "badge", "badge-num", "button", "button-fill", "border-clear", "fade-press-all",
@@ -59,7 +59,11 @@ const char *const SHAPES[] = {"box", "col", "row", "stack", "centre", "cell", "g
                               // a Group of buttons that lines up from the end (right), centred across
                               "wrap-end", "hero-stack", "hero-stack-start", "wrap-centre", "col-centre",
                               // the Radio: its ring and the chosen dot
-                              "radio", "radio-dot"};
+                              "radio", "radio-dot",
+                              // the Calendar month's drawn days: the weekday row + six weeks
+                              "cal-month",
+                              // a block one layout group under the one before (a Group with space group, a list's first day)
+                              "above:group"};
 // tint:<c> = the colour at chip.tint over what is behind (Status chip; colour.json mixes chip-<tone>); outline:<c> = the
 // focus ring (states.json focus: stroke focus, touch focus-offset outside the box)
 const char *const TINTS[] = {"ok", "warn", "error", "accent", "blue", "text-dim"};
@@ -460,6 +464,11 @@ void shape(lv_style_t *s, const char *n) {  // the structure styles: density onl
                                 : (lv_border_side_t) (LV_BORDER_SIDE_LEFT | LV_BORDER_SIDE_RIGHT));
   } else if (k == "slider") {  // the Slider: its parent's width, exactly touch:min tall (the Pen draws in it)
     lv_style_set_width(s, lv_pct(100)); lv_style_set_height(s, TMIN());
+  } else if (k == "above:group") lv_style_set_margin_top(s, tok("layout:group", lay::group));
+  else if (k == "cal-month") {  // the Calendar month's strip: its parent's width, the weekday row + six weeks tall
+    lv_style_set_width(s, lv_pct(100));
+    lv_style_set_height(s, tok("layout:cal-grid-y", lay::cal_grid_y) - tok("layout:cal-wk-y", lay::cal_wk_y) +
+                               6 * tok("layout:cal-cell-h", lay::cal_cell_h) + 5 * tok("layout:cal-cell-gy", lay::cal_cell_gy));
   } else if (k == "text-mid") lv_style_set_text_align(s, LV_TEXT_ALIGN_CENTER);
   else if (k == "slider-word") {  // the word Unavailable where the track starts (half a knob in)
     lv_style_set_align(s, LV_ALIGN_LEFT_MID); lv_style_set_translate_x(s, tok("layout:slider-knob", lay::slider_knob) / 2);

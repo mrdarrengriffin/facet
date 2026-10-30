@@ -12,7 +12,7 @@ const TEXT = {
   value2: '6.2 kWh', line2: 'Today', line3: 'Cost', line4: '£1.84', code: 'HAM', colour: 'steel', cells: 'a,b,c,d',
 };
 const safe = (s) => String(s).replace(/[^a-z0-9]+/gi, '_').replace(/^_|_$/g, '').toLowerCase();
-const FULL = /_view$|^(f1_circuit|tennis_court|football_pitch|iso_floorplan|bottom_sheet|toast_layer|lightning_radar|calendar_view)$/;
+const FULL = /_view$|^(f1_circuit|tennis_court|football_pitch|iso_floorplan|bottom_sheet|toast_layer|lightning_radar)$/;
 
 export function generate(cat) {
   const out = [];

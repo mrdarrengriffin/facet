@@ -21,10 +21,14 @@
 // builds into it; the Calendar's calendars and day sheets), `loop` (opens and closes forever: the frame-rate bench),
 // `overlay` (only the overlay, built into the caller's screen; the Layout foundation's overlay sample) with `still`
 // (shown open, no animation), `flatten` / `panel: solid` (bench options, core/sheet.cpp).
+// Spec (2026-10-29, core/spec.h "in": "overlay"): built over the whole page with its list as slot 0 (meta "slots": the
+// spec's own components, the Calendar's day and calendars sheets); the panel's height follows the list's contents
+// (again, async, whenever they change); "close" (scrim, panel key, Close) reaches the spec node's action.
 // Contrast pairs: tokens/colour.json section "bottom_sheet" (+ picker_row, radio, list_row, icon_button, header).
 #include "fw.h"
 #include "fx.h"
 #include "sheet.h"
+#include "spec.h"
 
 namespace {
 using Doc = ArduinoJson::JsonDocument;
@@ -67,7 +71,25 @@ struct Sheet {
   bool custom = false, stay = false;
   // host rows (the Calendar's calendars and day sheets): the caller fills the list itself with `rows` rows of `row_h`
   int host_rows = -1, host_row_h = 0;
+  // spec (in "overlay"): the list is a slot the screen's spec fills; the panel's height follows what is in it
+  bool slot = false, refit_due = false;
 };
+void refit(Sheet *s);
+void refit_cb(void *v) { refit((Sheet *) v); }
+// the panel's height for what the spec put in the list (its children + their margins + the gaps between)
+void refit(Sheet *s) {
+  s->refit_due = false;
+  lv_obj_update_layout(s->list);
+  int h = 0, n = 0;
+  for (uint32_t i = 0; i < lv_obj_get_child_count(s->list); i++) {
+    lv_obj_t *c = lv_obj_get_child(s->list, (int32_t) i);
+    if (lv_obj_has_flag(c, LV_OBJ_FLAG_HIDDEN)) continue;
+    h += lv_obj_get_height(c) + lv_obj_get_style_margin_top(c, LV_PART_MAIN) + lv_obj_get_style_margin_bottom(c, LV_PART_MAIN);
+    n++;
+  }
+  h += (n > 1 ? n - 1 : 0) * lv_obj_get_style_pad_row(s->list, LV_PART_MAIN);
+  fw::sheet::fit(s->ov, 1, std::max(h, 1));
+}
 int n_opts(const Sheet *s) { return s->host_rows >= 0 ? s->host_rows : s->custom ? (int) s->items.size() / 3 : LISTS[s->which].n; }
 Option opt(const Sheet *s, int i) {
   if (!s->custom) return LISTS[s->which].opts[i];
@@ -101,6 +123,7 @@ void option_props(const Sheet *s, int i, int sel, Doc &d) {
 void fill_list(Sheet *s) {
   fx::set_text(s->title, s->custom_title.empty() ? LISTS[s->which].title : s->custom_title.c_str(), "type:label");
   fw::sheet::fit(s->ov, n_opts(s), s->host_rows >= 0 ? s->host_row_h : 0);
+  if (s->slot) { lv_obj_scroll_to_y(s->list, 0, LV_ANIM_OFF); refit(s); return; }  // the spec's own contents
   lv_obj_clean(s->list);
   lv_obj_scroll_to_y(s->list, 0, LV_ANIM_OFF);
   if (s->host_rows >= 0) {  // host rows: the caller builds them (LV_EVENT_REFRESH on the overlay, param = the list)
@@ -190,8 +213,20 @@ Sheet *sheet(lv_obj_t *host, fw::Props p) {
   lv_obj_set_scroll_dir(s->list, LV_DIR_VER);
   lv_obj_set_scrollbar_mode(s->list, LV_SCROLLBAR_MODE_OFF);  // the Facet scroll track is its own part (later)
 
+  s->slot = p["_overlay"] | false;
+  if (s->slot) {  // spec: the list is slot 0 (core/spec.h "in": "overlay"); new contents = the height again (async: never inside a layout)
+    lv_obj_add_flag(s->list, fw::spec::SLOT);
+    fx::slot(s->list, "list");
+    lv_obj_add_event_cb(s->list, [](lv_event_t *e) {
+      auto *s = (Sheet *) lv_event_get_user_data(e);
+      if (s->refit_due) return;
+      s->refit_due = true;
+      lv_async_call(refit_cb, s);
+    }, LV_EVENT_CHILD_CHANGED, s);
+  }
   lv_obj_add_event_cb(s->ov, [](lv_event_t *e) {
     auto *s = (Sheet *) lv_event_get_user_data(e);
+    if (s->refit_due) lv_async_call_cancel(refit_cb, s);
     if (s->loop) lv_timer_delete(s->loop);
     delete s;
   }, LV_EVENT_DELETE, s);
@@ -205,7 +240,7 @@ std::string sig(fw::Props p) {
 }
 // the screen (root = its box; nullptr = made on parent) + the sheet over it; returns the sheet
 Sheet *fill(lv_obj_t *parent, lv_obj_t *root, fw::Props p) {
-  const bool overlay = p["overlay"] | false;
+  const bool overlay = (p["overlay"] | false) || (p["_overlay"] | false);
   // the screen: the caller's (overlay), else a Page of real components (Header + List rows) filling the frame
   lv_obj_t *host = parent;
   lv_obj_t *speaker_row = nullptr, *theme_row = nullptr;
@@ -260,6 +295,9 @@ FW_COMPONENT(bottom_sheet, "Bottom sheet", "components", R"({
   "contract": 2,
   "parts": [],
   "stage": "screen",
+  "slots": [
+    {"name": "list", "count": 1, "about": "On a spec screen (in overlay): the sheet's list, filled by the spec (in + slot 0); the sheet is as tall as what is in it.", "accepts": ["grid", "list_row", "empty_state", "label"]}
+  ],
   "frame": [480, 480],
   "icons": ["close@glyph", "speaker@icon", "speakers@icon", "tv@icon", "auto@icon", "bulb@icon", "volume@icon", "back@glyph"],
   "props": [

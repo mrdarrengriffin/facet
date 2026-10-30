@@ -61,7 +61,7 @@ void count_show(void *o, int32_t k) {  // k = 0..1024 of the way from the shown 
 }
 void fill(lv_obj_t *h, fw::Props p, bool opening) {
   const bool off = !strcmp(p["state"] | "default", "unavailable");
-  const bool accent = !off && (p["accent"] | false);
+  const bool accent = !off && (p["accent"].is<const char *>() ? !strcmp(p["accent"].as<const char *>(), "on") : (p["accent"] | false));  // a bind gives "on" / "off"
   const bool display = !strcmp(p["role"] | "hero", "display");
   fx::use(h, "box");  // again after an update's refill (it takes every style off the root): the full width
   // layout stack (the Timer's ring, Darren 2026-10-28): label over the number over the line, centred, in one column

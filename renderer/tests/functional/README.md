@@ -86,7 +86,7 @@ the `spec` component). Shared helpers for family 1: `_controls.mjs` (pixel reads
    weather_icon, moon_facts, moon_icon,
    moon_phases, moon_range, moon_view, lightning_radar, lightning_view.
 5. **Home domains (HA-driven views):** media_disc, media_view, media_visual (facet-183), cover_visual, covers_view,
-   lock_ring, thermostat_view, vacuum_mode, timer_view, calendar_view, event_row, bins_view, print_model, print_view,
+   lock_ring, thermostat_view, vacuum_mode, timer_view, event_row, bins_view, print_model, print_view,
    iso_floorplan, overhead_view, agents_view.
 6. **Feeds + sport:** f1_car_marker, f1_circuit, f1_flag, f1_race_control, f1_race_status, f1_standings,
    football_pitch, tennis_court, tennis_score, github_list, github_pr, github_view, pr_row.

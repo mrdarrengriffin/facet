@@ -95,6 +95,10 @@ const char *button(const char *press);  // the host's key press: "" = nothing to
 // by the list itself (never by Home Assistant): binds read it like an entity; values that move each second are put
 // once a second only while something bound to it is built. Legacy: timer() = the soonest running as the old one-timer
 // struct (state 0 idle, 1 running, 2 done; ends = wall-clock seconds) for the Home header's time left + Timer view.
+// the Calendar feed's own state (core/calendar_source.cpp): calendar.control; "" = done, else why not
+namespace calendar_source { const char *control(const std::string &v); }
+// the Flights feed's selection (core/flights_source.cpp): flights.select; true = the lead again (open its details)
+namespace flights_source { bool select(const std::string &d); }
 constexpr int TIMERS_MAX = 4;
 constexpr const char *TIMER_ENTITY = "panel.timer";
 struct TimerItem { int id = 0; std::string name; int total = 0; uint32_t ends = 0; int state = 1; bool named = false; };  // named = given a name (HA / voice); else it shows as its length  // state 1 running, 2 done
