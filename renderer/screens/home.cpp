@@ -156,7 +156,12 @@ bool button_node(Var b, Var pages, ArduinoJson::JsonArray nodes) {
   ArduinoJson::JsonObject n = nodes.add<ArduinoJson::JsonObject>();
   n["c"] = "icon_button";
   n["p"]["style"] = "square";
-  n["p"]["icon"] = b["icon"] | "next";
+  if (tap == "page") {  // a screen button wears its screen's own icon: its Home card's icon (spec "card", C52), else its kind's
+    Doc sp;
+    const char *j = fw::spec::screen_json(to);
+    const std::string ci = j && !deserializeJson(sp, j) ? std::string(sp["card"]["icon"] | "") : std::string();
+    n["p"]["icon"] = "screen-" + (!ci.empty() ? ci : has_icon(to) ? to : std::string("home"));
+  } else n["p"]["icon"] = b["icon"] | "next";
   n["in"] = "header";
   n["slot"] = "end";
   set_tap(n, tap, e, dt.detail, pid, "");

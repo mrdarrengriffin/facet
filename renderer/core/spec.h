@@ -807,7 +807,7 @@ inline void check_card(ArduinoJson::JsonVariantConst c, const std::string &p, co
   if (!c["label"].isNull() && (!c["label"].is<const char *>() || strlen(c["label"] | "") > 32)) err(e, p + ".label", "bad_card", "label is text (at most 32)");
 }
 // a Home's header buttons (header_actions.buttons): square Icon buttons in the header's end, each {icon, t, e, tap,
-// page} with a card's taps (t entity: its domain's; t page: opens that page). How many: the header end slot's "max"
+// page} with a card's taps (t entity: its domain's; t page: opens that page, wearing that screen's icon, so no icon). How many: the header end slot's "max"
 // (the Header's meta, C8a) less the header's own items (own: settings, a shortcut, the timer status).
 inline void check_buttons(ArduinoJson::JsonVariantConst bs, int own, const std::string &p, const std::set<std::string> &ids, Errs &e) {
   ArduinoJson::JsonArrayConst a = bs.as<ArduinoJson::JsonArrayConst>();
@@ -825,7 +825,7 @@ inline void check_buttons(ArduinoJson::JsonVariantConst bs, int own, const std::
     if (!b.is<ArduinoJson::JsonObjectConst>()) { err(e, q, "bad_deck", "a button is {icon, t, e?, tap?, page?}"); continue; }
     check_keys(b.as<ArduinoJson::JsonObjectConst>(), BK, 5, q, e);
     const std::string icon = b["icon"] | "", t = b["t"] | "", ent = b["e"] | "", tap = b["tap"] | "", pg = b["page"] | "";
-    if (ic && std::find(ic->options.begin(), ic->options.end(), icon) == ic->options.end()) err(e, q + ".icon", "bad_deck", "icon is one of the Icon button's icons");
+    if (t != "page" && ic && std::find(ic->options.begin(), ic->options.end(), icon) == ic->options.end()) err(e, q + ".icon", "bad_deck", "icon is one of the Icon button's icons");  // a page button: its screen's icon (icon ignored)
     if (t == "page") {
       if (!ids.count(pg)) err(e, q + ".page", "bad_page", "a page button names a page of this deck");
       if (!ent.empty()) err(e, q + ".e", "bad_deck", "a page button has no entity");
