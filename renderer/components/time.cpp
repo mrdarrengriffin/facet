@@ -17,6 +17,10 @@
 //           tracked), long = Monday 19 October (date-long, Inter light), text-dim, centred under the digits gap:<n>
 //           apart (hero 8, mid 7, compact 5: the old faces' spacing); prop "day" = a fixed "YYYY-MM-DD" (previews);
 //           header stays time-only. digits:false = the date alone (the analogue face's date window)
+//   line    prop (the Clock screen, 2026-10-30): a quieter line under the date, such as the weather now ("rain ·
+//           13°": type:c-weather, fg:blue as the docs .fs-clock-wx), the same gap apart (docs clock.ts: time, date, weather 16 px apart);
+//           only with a date; empty = no row (a bound line that arrives later fills the Time again: the column
+//           re-centres once)
 // Steps: none (it hugs its digits; C7 note: a time is as wide as its figures). Bleed: none. States: n/a (static: no
 // touch, no sound; the placeholder is its "unknown"). Update path: a new time changes the changed cells in place;
 // size / font / format / seconds = the contents again. Contrast pairs: colour.json sections "clock", "header".
@@ -31,7 +35,8 @@ struct TimeT {
   std::string fixed, shown, day, date_type, date_shown;  // date_type "" = no date
   long base_s = -1;    // a fixed time: seconds of the day at t0 (it runs on from there)
   uint32_t t0 = 0;
-  lv_obj_t *row = nullptr, *srow = nullptr, *ampm = nullptr, *label = nullptr, *date = nullptr;
+  lv_obj_t *row = nullptr, *srow = nullptr, *ampm = nullptr, *label = nullptr, *date = nullptr, *line = nullptr;
+  std::string line_shown;
   lv_timer_t *timer = nullptr;
 };
 TimeT *of(lv_obj_t *o) { return (TimeT *) lv_obj_get_user_data(o); }
@@ -156,7 +161,7 @@ std::string date_of(fw::Props p) {  // "" | "short" | "long" (the header is time
 std::string sig(fw::Props p) {
   return std::string(p["size"] | "mid") + "|" + (strcmp(p["font"] | "mono", "inter") ? "m" : "i") + "|" +
          (strcmp(p["format"] | "24h", "12h") ? "24" : "12") + "|" + ((p["seconds"] | false) ? "s" : "") + "|" +
-         date_of(p) + "|" + ((p["digits"] | true) ? "d" : "");
+         date_of(p) + "|" + ((p["digits"] | true) ? "d" : "") + "|" + (*(p["line"] | "") ? "l" : "");
 }
 void fill(lv_obj_t *root, fw::Props p) {
   auto *d = of(root);
@@ -180,7 +185,7 @@ void fill(lv_obj_t *root, fw::Props p) {
   lv_obj_remove_flag(root, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
   lv_obj_add_flag(root, LV_OBJ_FLAG_EVENT_BUBBLE);
   fw::shape(root, sig(p));
-  d->row = d->srow = d->ampm = d->label = d->date = nullptr;
+  d->row = d->srow = d->ampm = d->label = d->date = d->line = nullptr;
   lv_obj_t *line = root;  // the time's row: the root, or with a date the first line of a centred column
   if (!d->date_type.empty()) {
     for (const char *t : {"box", "centre", "hug", size == "hero" ? "gap:8" : size == "compact" ? "gap:5" : "gap:7"}) fx::use(root, t);
@@ -205,6 +210,10 @@ void fill(lv_obj_t *root, fw::Props p) {
     }
   }
   if (!d->date_type.empty()) d->date = fx::text(root, "", d->date_type.c_str(), "fg:text-dim");
+  if (d->date && *(p["line"] | "")) {
+    d->line_shown = p["line"] | "";
+    d->line = fx::text(root, d->line_shown.c_str(), "type:c-weather", "fg:blue");
+  }
   set(root);
   if (!d->timer) d->timer = lv_timer_create([](lv_timer_t *t) { set((lv_obj_t *) lv_timer_get_user_data(t)); }, 1000, root);
 }
@@ -222,6 +231,7 @@ FW_COMPONENT(time, "Time", "components", R"({
     {"name": "format", "about": "24h shows 13:00; 12h shows 1:00 with AM or PM.", "type": "select", "options": ["24h", "12h"], "default": "24h"},
     {"name": "seconds", "about": "Shows the seconds as well as hours and minutes.", "type": "bool", "default": false},
     {"name": "date", "about": "The date under the time: none, short like MON 19 OCT, or long like Monday 19 October. The header size never shows one.", "type": "select", "options": ["none", "short", "long"], "default": "none"},
+    {"name": "line", "about": "A quieter line under the date, such as the weather now. Only with a date; leave it out for none.", "type": "text", "default": ""},
     {"name": "digits", "about": "Shows the time itself. Off leaves the date alone, for a face that tells the time another way.", "type": "bool", "default": true},
     {"name": "time", "about": "For previews only: a fixed time to show, like 14:52:20. Leave empty for the real time.", "type": "text", "default": ""},
     {"name": "day", "about": "For previews only: a fixed date to show, like 2026-10-19. Leave empty for today.", "type": "text", "default": ""}
@@ -243,6 +253,7 @@ FW_COMPONENT(time, "Time", "components", R"({
     {"label": "mid · short date", "props": {"time": "10:08", "date": "short", "day": "2026-10-19"}},
     {"label": "mid · inter · 12h · long date", "props": {"time": "21:47", "date": "long", "day": "2026-10-19", "font": "inter", "format": "12h"}},
     {"label": "hero · short date", "props": {"time": "14:52", "size": "hero", "date": "short", "day": "2026-10-19"}},
+    {"label": "mid · date · weather line", "props": {"time": "10:08", "date": "short", "day": "2026-10-19", "line": "rain \u00b7 13\u00b0"}},
     {"label": "date only · short", "props": {"digits": false, "date": "short", "day": "2026-10-19"}},
     {"label": "date only · long", "props": {"digits": false, "date": "long", "day": "2026-10-19"}}
   ]
@@ -270,6 +281,11 @@ FW_UPDATE(time) {
   const std::string fixed = p["time"] | "";
   if (fixed != d->fixed) fixed_from(d, fixed);
   d->day = p["day"] | "";
+  const std::string ln = p["line"] | "";
+  if (d->line && ln != d->line_shown) {
+    fx::set_text(d->line, ln.c_str(), "type:c-weather");
+    d->line_shown = ln;
+  }
   set(root);
   return true;
 }

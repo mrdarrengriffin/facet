@@ -42,6 +42,7 @@ const EXTRA = { card: [{ opening: false }, CARD, PAGE],
   calendar_row: [{}, ['layout:cal-row-h', 'layout:cal-time', 'layout:dot', 'layout:gutter'], ['layout:inset', 'layout:top', 'layout:header-gap', 'squeeze']],
   calendar_month: [{}, ['layout:cal-cell-h', 'layout:cal-grid-y'], ['layout:inset', 'layout:top', 'layout:header-gap', 'squeeze']],
   // a day row (its height, the day column, the gaps) and the hour column / hero gaps; icon sizes are shipped bitmaps
+  clock_orbit: [{ animated: false, time: '10:08:30' }, [], PAGE],  // still: the dots would move between hashes
   weather_icon: [{ layout: 'row', label: 'Saturday', line: 'Rain', low: '9°', value: '13°', animated: false, divider: true }, ['layout:list-row-h', 'layout:wx-day-name', 'space:4', 'space:5'], PAGE],
   sparkline: [{ opening: false }, ['stroke:hair', 'chart:spark-h', 'chart:line-thin', 'chart:dot'], PAGE],  // stroke:hair = the dotted baseline
   // a layout whose parts sit a gutter apart (the gutter is its own, not the page's)

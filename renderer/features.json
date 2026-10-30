@@ -29,7 +29,8 @@
       "label": "Clock",
       "docs": true, "status": "done", "firmware": true,
       "screens": ["clock"],
-      "components": ["clock_face"]
+      "components": ["clock_face", "clock_orbit"],
+      "core": ["clock_source.cpp"]
     },
     {
       "id": "timer",

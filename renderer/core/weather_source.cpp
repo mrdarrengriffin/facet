@@ -7,6 +7,8 @@
 //   line       "Feels 11° · high 16°, low 8°" (the parts it knows)
 //   rain       "Rain from 14:00" / "Dry for the next hour · rain at 16:00" / "Dry for the next hour"; rain_tone
 //              info (rain within the hour) | idle (a Status line's dot)
+//   brief      the Clock screen's line under the date: "rain · 13°" (the condition in lower case + the temperature,
+//              core/weather.h line); "" while loading / on error (the Clock shows no line)
 //   card       the Home card's line: "rain in 20 min" / "raining now" within the hour, else the condition in lower
 //              case ("partly cloudy"), "loading" / "offline"
 //   hours      the next eight hours, a JSON list of Weather icon columns: [{"label": "now" | "14", "icon": "...",
@@ -101,6 +103,7 @@ void put_data(const wx::Data &d, double now) {
   put("icon", wx::icon(d.condition, is_day(now)));
   put("temp", std::isnan(d.temp) ? "--\xC2\xB0" : wx::deg(d.temp));
   put("condition", words(d.condition));
+  put("brief", wx::line(d.condition, d.temp));
   std::string line;
   if (!std::isnan(d.feels)) line = "Feels " + wx::deg(d.feels);
   if (d.n_daily > 0) line += (line.empty() ? "high " : " \xC2\xB7 high ") + wx::deg(d.daily[0].hi) + ", low " + wx::deg(d.daily[0].lo);
@@ -160,6 +163,7 @@ void put_empty(const char *state) {  // loading / error: the words only (no icon
   ha::put(E, "rain", "");
   ha::put(E, "rain_tone", "idle");
   ha::put(E, "card", err ? "offline" : "loading");
+  ha::put(E, "brief", "");
   ha::put(E, "hours", "[]");
   ha::put(E, "has_hours", "");
   ha::put(E, "days", "[]");
