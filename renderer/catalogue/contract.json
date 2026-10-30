@@ -99,6 +99,10 @@
     "commit": "6fbe138",
     "at": "2026-10-27T17:19:18.000Z"
   },
+  "components/level_bar": {
+    "commit": "21b1dff",
+    "at": "2026-10-30T13:45:39.000Z"
+  },
   "components/lightning_radar": {
     "commit": "b7295a1",
     "at": "2026-10-29T21:13:50.000Z"
@@ -139,6 +143,10 @@
     "commit": "50c9749",
     "at": "2026-10-27T21:11:08.000Z"
   },
+  "components/room_tile": {
+    "commit": "21b1dff",
+    "at": "2026-10-30T13:45:39.000Z"
+  },
   "components/section_header": {
     "commit": "753567b",
     "at": "2026-10-27T11:10:46.000Z"
@@ -170,6 +178,10 @@
   "components/stat": {
     "commit": "a96fe31",
     "at": "2026-10-27T16:50:09.000Z"
+  },
+  "components/status_block": {
+    "commit": "21b1dff",
+    "at": "2026-10-30T13:45:39.000Z"
   },
   "components/status_chip": {
     "commit": "6fbe138",
@@ -206,6 +218,10 @@
   "components/toggle": {
     "commit": "7bbc138",
     "at": "2026-10-27T11:41:31.000Z"
+  },
+  "components/vacuum_mode": {
+    "commit": "21b1dff",
+    "at": "2026-10-30T13:45:39.000Z"
   },
   "components/vacuum_robot": {
     "commit": "fbf00cb",
