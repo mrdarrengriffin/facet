@@ -2,7 +2,7 @@
  "v": 1,
  "id": "flightradar",
  "name": "Flight radar",
- "rev": 1,
+ "rev": 2,
  "role": "page",
  "card": {
   "icon": "overhead",
@@ -31,6 +31,75 @@
  },
  "layout": "list",
  "nodes": [
+  {
+   "c": "title",
+   "in": "header",
+   "slot": "title",
+   "p": {
+    "text": {
+     "e": "panel.flights",
+     "a": "title_$view"
+    }
+   }
+  },
+  {
+   "c": "status_chip",
+   "in": "header",
+   "slot": "end",
+   "p": {
+    "tone": "warn",
+    "text": "offline · last known"
+   },
+   "show": {
+    "e": "panel.flights",
+    "a": "stale"
+   }
+  },
+  {
+   "c": "segmented",
+   "in": "header",
+   "slot": "end",
+   "p": {
+    "options": "Now, Radar",
+    "selected": "$view"
+   },
+   "on": {
+    "change": {
+     "do": "screen.param",
+     "param": "view"
+    }
+   },
+   "show": {
+    "e": "",
+    "s": "$view",
+    "map": {
+     "now": "1",
+     "radar": "1"
+    },
+    "else": ""
+   }
+  },
+  {
+   "c": "column",
+   "p": {}
+  },
+  {
+   "c": "group",
+   "in": 3,
+   "slot": 0,
+   "p": {
+    "flow": "stack",
+    "space": "none"
+   },
+   "show": {
+    "e": "",
+    "s": "$view",
+    "map": {
+     "now": "1"
+    },
+    "else": ""
+   }
+  },
   {
    "c": "flight_hero",
    "p": {
@@ -78,6 +147,10 @@
      "e": "panel.flights",
      "a": "planes"
     },
+    "unit": {
+     "e": "panel.flights",
+     "a": "unit"
+    },
     "empty": {
      "e": "panel.flights",
      "a": "empty"
@@ -90,7 +163,13 @@
      "e": "panel.flights",
      "a": "empty_body"
     }
-   }
+   },
+   "on": {
+    "tap": {
+     "do": "flights.select"
+    }
+   },
+   "in": 4
   },
   {
    "c": "section_header",
@@ -99,6 +178,7 @@
     "badge": false,
     "right": "none"
    },
+   "in": 4,
    "show": {
     "e": "panel.flights",
     "a": "many"
@@ -116,6 +196,12 @@
     "trailing": "none",
     "empty": ""
    },
+   "on": {
+    "tap": {
+     "do": "flights.select"
+    }
+   },
+   "in": 4,
    "show": {
     "e": "panel.flights",
     "a": "many"
@@ -129,13 +215,349 @@
      "a": "more"
     }
    },
+   "on": {
+    "tap": {
+     "do": "screen.param",
+     "param": "view",
+     "to": "list",
+     "back": true
+    }
+   },
+   "in": 4,
    "show": {
     "e": "panel.flights",
     "a": "many"
    }
+  },
+  {
+   "c": "group",
+   "in": 3,
+   "slot": 0,
+   "p": {
+    "align": "centre",
+    "flow": "stack",
+    "space": "none"
+   },
+   "show": {
+    "e": "",
+    "s": "$view",
+    "map": {
+     "radar": "1"
+    },
+    "else": ""
+   }
+  },
+  {
+   "c": "sky_radar",
+   "in": 9,
+   "p": {
+    "size": "radar",
+    "planes": {
+     "e": "panel.flights",
+     "a": "planes"
+    },
+    "unit": {
+     "e": "panel.flights",
+     "a": "unit"
+    }
+   },
+   "on": {
+    "pick": {
+     "do": "flights.select"
+    }
+   }
+  },
+  {
+   "c": "group",
+   "in": 3,
+   "slot": 0,
+   "p": {
+    "flow": "stack",
+    "space": "none"
+   },
+   "show": {
+    "e": "",
+    "s": "$view",
+    "map": {
+     "list": "1"
+    },
+    "else": ""
+   }
+  },
+  {
+   "c": "section_header",
+   "p": {
+    "title": {
+     "e": "panel.flights",
+     "a": "list_head"
+    },
+    "badge": false,
+    "right": "none"
+   },
+   "in": 11
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "list": "stack",
+    "items": {
+     "e": "panel.flights",
+     "a": "all"
+    },
+    "icon": "none",
+    "trailing": "none",
+    "empty": ""
+   },
+   "on": {
+    "tap": {
+     "do": "flights.select"
+    }
+   },
+   "in": 11
+  },
+  {
+   "c": "group",
+   "in": 3,
+   "slot": 0,
+   "p": {
+    "flow": "stack",
+    "space": "none"
+   },
+   "show": {
+    "e": "",
+    "s": "$view",
+    "map": {
+     "detail": "1"
+    },
+    "else": ""
+   }
+  },
+  {
+   "c": "flight_hero",
+   "p": {
+    "look": {
+     "e": "panel.flights",
+     "a": "look"
+    },
+    "look_tone": {
+     "e": "panel.flights",
+     "a": "look_tone"
+    },
+    "status": {
+     "e": "panel.flights",
+     "a": "status"
+    },
+    "status_tone": {
+     "e": "panel.flights",
+     "a": "status_tone"
+    },
+    "route": {
+     "e": "panel.flights",
+     "a": "route"
+    },
+    "who": {
+     "e": "panel.flights",
+     "a": "who"
+    },
+    "alt_label": {
+     "e": "panel.flights",
+     "a": "alt_label"
+    },
+    "alt": {
+     "e": "panel.flights",
+     "a": "alt"
+    },
+    "speed": {
+     "e": "panel.flights",
+     "a": "speed"
+    },
+    "away": {
+     "e": "panel.flights",
+     "a": "away"
+    },
+    "planes": {
+     "e": "panel.flights",
+     "a": "planes"
+    },
+    "unit": {
+     "e": "panel.flights",
+     "a": "unit"
+    },
+    "empty": {
+     "e": "panel.flights",
+     "a": "empty"
+    },
+    "empty_title": {
+     "e": "panel.flights",
+     "a": "empty_title"
+    },
+    "empty_body": {
+     "e": "panel.flights",
+     "a": "empty_body"
+    }
+   },
+   "on": {
+    "tap": {
+     "do": "flights.select"
+    }
+   },
+   "in": 14
+  },
+  {
+   "c": "group",
+   "in": 14,
+   "p": {
+    "flow": "stack",
+    "space": "group"
+   }
+  },
+  {
+   "c": "grid",
+   "p": {
+    "cols": 3,
+    "gap": "group",
+    "aspect": "row"
+   },
+   "in": 16
+  },
+  {
+   "c": "group",
+   "in": 14,
+   "p": {
+    "flow": "stack",
+    "space": "group"
+   }
+  },
+  {
+   "c": "grid",
+   "p": {
+    "cols": 3,
+    "gap": "group",
+    "aspect": "row"
+   },
+   "in": 18
+  },
+  {
+   "c": "group",
+   "in": 14,
+   "p": {
+    "flow": "stack",
+    "space": "group"
+   }
+  },
+  {
+   "c": "label",
+   "p": {
+    "text": {
+     "e": "panel.flights",
+     "a": "f_src"
+    },
+    "type": "label",
+    "colour": "text-dim"
+   },
+   "in": 20
+  },
+  {
+   "c": "stat",
+   "in": 17,
+   "slot": 0,
+   "p": {
+    "label": "aircraft",
+    "value": {
+     "e": "panel.flights",
+     "a": "f_aircraft"
+    },
+    "tone": "dim",
+    "size": "body"
+   }
+  },
+  {
+   "c": "stat",
+   "in": 17,
+   "slot": 1,
+   "p": {
+    "label": "registration",
+    "value": {
+     "e": "panel.flights",
+     "a": "f_reg"
+    },
+    "tone": "dim",
+    "size": "body"
+   }
+  },
+  {
+   "c": "stat",
+   "in": 17,
+   "slot": 2,
+   "p": {
+    "label": "operator",
+    "value": {
+     "e": "panel.flights",
+     "a": "f_operator"
+    },
+    "tone": "dim",
+    "size": "body"
+   }
+  },
+  {
+   "c": "stat",
+   "in": 19,
+   "slot": 0,
+   "p": {
+    "label": "squawk",
+    "value": {
+     "e": "panel.flights",
+     "a": "f_squawk"
+    },
+    "tone": {
+     "e": "panel.flights",
+     "a": "f_squawk_tone"
+    },
+    "size": "body"
+   }
+  },
+  {
+   "c": "stat",
+   "in": 19,
+   "slot": 1,
+   "p": {
+    "label": "heading",
+    "value": {
+     "e": "panel.flights",
+     "a": "f_heading"
+    },
+    "tone": "dim",
+    "size": "body"
+   }
+  },
+  {
+   "c": "stat",
+   "in": 19,
+   "slot": 2,
+   "p": {
+    "label": "vertical speed",
+    "value": {
+     "e": "panel.flights",
+     "a": "f_vs"
+    },
+    "tone": "dim",
+    "size": "body"
+   }
   }
  ],
  "params": {
+  "view": {
+   "about": "Which view it shows: now (the aircraft that leads, the next two), radar (every aircraft round home), list (all aircraft, closest first) or detail (the one that leads, in full).",
+   "type": "select",
+   "options": [
+    "now",
+    "radar",
+    "list",
+    "detail"
+   ],
+   "label": "View",
+   "default": "now"
+  },
   "source": {
    "about": "Where the aircraft come from: an aircraft sensor in Home Assistant, or a made-up sky for previews.",
    "type": "select",

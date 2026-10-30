@@ -165,6 +165,7 @@
       "sky-radar": { "v": 208, "1x": 136, "use": "Overhead: the sky radar beside the hero aircraft (panel lab 208); rings 5 / 15 / 30 / 50 km on a square-root scale" },
       "sky-plane": { "v": 24, "1x": 16, "use": "Overhead: an aircraft on the sky radar beside the hero, a plane seen from above turned to its track (panel lab 24 grid glyph)" },
       "sky-plane-lg": { "v": 32, "1x": 24, "use": "Overhead: an aircraft on the Radar view's big sky radar (panel lab 32)" },
+      "sky-radar-lg": { "v": 576, "1x": 384, "use": "Flight radar: the Radar view's big sky radar (docs 576), centred in the content" },
       "sky-gap": { "v": 48, "1x": 8, "use": "Flight radar: the room between the hero's words and its sky radar (docs 656 - 400 - 208)" },
       "sky-route-h": { "v": 96, "1x": 64, "use": "Flight radar: the route's box, two lines of type headline (docs 96), so the stats under it never move" },
       "sky-stat": { "v": 144, "1x": 92, "use": "Flight radar: the altitude stat's width (docs 144)" },

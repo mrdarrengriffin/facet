@@ -1,32 +1,46 @@
 // The flights feed (CONTRACT.md C51): the reserved entity panel.flights (core/spec.h "local sources") in the HA store,
 // the one shape the Flight radar binds to, whatever reports the aircraft. Same file on the panels and in WASM.
-// The lead = the closest aircraft (stage 1: no selection yet); every line below is about it.
+// The lead = the selected aircraft (flights.select, below) while it is in the circle, else the closest; the hero, the
+// card and the detail view are about it. Distances and speeds follow Settings > Units (distanceUnit, speedUnit): the
+// circle is 50 km (rings 5 / 15 / 30 / 50) or 30 mi (3 / 10 / 20 / 30).
 //   state      up | overhead (the lead 30 degrees up or more: look up) | emergency | quiet | loading | error
 //   look       where to look: "high in the NW · 38°", "right overhead · 64°", "low in the SW · 4°"
 //   look_tone  accent-text from 30 degrees up (not on an emergency), else text-dim
 //   status     the status chip: "7700 emergency" (error), "military" / "helicopter" (info), "" = none; status_tone
-//   route      "Catania → Leeds", else the callsign / registration / hex; who "Jet2.com · LS13DK · Boeing 737-800"
+//   route      "Catania → Leeds", else the callsign / registration / HEX; who "Jet2.com · LS13DK · Boeing 737-800"
 //   alt_label  altitude | climbing | descending (past ±300 ft/min); alt "32,000 ft"; speed "540 mph"; away "26 km SE"
-//   planes     the sky radar's aircraft, a JSON list of [km, bearing, track, mark] (mark 1 = the lead, 2 = an emergency,
-//              3 = both), the lead last so it paints on top
-//   also       the next two closest as List row items: [{"over": "B738 · 35,000 ft · 33 km NE", "title": route,
-//              "trailing": "value", "value": status} (trailing "none" without one)]; more "all aircraft · 6"; many "1" with two or more aircraft (shows the rows)
+//   planes     the sky radar's aircraft, a JSON list of [km, bearing, track, mark, callsign, hex] (mark 1 = the lead,
+//              2 = an emergency, 3 = both; the callsign only on the 5 closest + the lead: the Radar view's labels), the
+//              lead last so it paints on top; unit km | mi (the radar's rings)
+//   also       the next two closest (not the lead) as List row items: [{"over": "B738 · 35,000 ft · 33 km NE", "title":
+//              route, "trailing": "value", "value": status} (trailing "none" without one)]; more "all aircraft · 6"; many
+//              "1" with two or more aircraft (shows the rows); all = every aircraft the same way, closest first;
+//              list_head "closest first · within 50 km"
 //   empty      "1" with no aircraft (the hero shows the quiet words): empty_title "Clear skies" / "Loading" /
-//              "Feed offline", empty_body "Nothing flying within 50 km right now."
+//              "Feed offline", empty_body "Nothing flying within 50 km right now."; stale "1" = the feed has an error
+//              but still shows the last aircraft (the header's "offline · last known")
+//   title_now / title_radar / title_list / title_detail  the header per view (the spec binds title_$view)
+//   f_aircraft f_reg f_operator f_squawk (f_squawk_tone warn on an emergency) f_heading "318° NW" f_vs "level" /
+//              "+1,100 ft/min" f_src "4CA8D2 · data sample": the detail view's facts about the lead
 //   card_text  the Home card: the route / "Clear skies"; card_sub "32,000 ft · 26 km SE" ("look up" while high, the
 //              squawk on an emergency); card_accent "true" while high
+// Action flights.select (core/spec.h): select(detail) = an aircraft by hex, callsign or route (a radar plane, a row);
+// the lead itself (or "", the hero) = true: the screen opens the detail view.
 // Adapters (the feed's settings, the spec's "feeds"; core/ha.h feed_config): source
 //   ha      a Home Assistant sensor in the panel overhead shape (setting sensor, such as sensor.panel_overhead:
 //           attribute a = "J" + rows [hex, callsign, type, alt, vs, gs, track, km*10, brg, elev*10, squawk, em, kind,
-//           mil, route "A → B", who, reg, model, operator]; error = the feed's error; radius km), a live subscription
+//           mil, route "A → B", who, reg, model, operator]; error = the feed's error; source = where the data comes
+//           from, such as adsb.fi), a live subscription
 //   sample  six made-up aircraft round Wisbech (one high overhead, an air ambulance, an RAF tanker), drifting along
 //           their tracks (a quarter speed, a two-minute loop) every 2 s so the radar moves, always passing
 // More adapters (adsb.fi / adsb.lol read by the panel itself = stage 3) = more rows here, no screen change.
 #include <algorithm>
+#include <cctype>
 #include <cmath>
 #include <cstdio>
 #include <ctime>
 #include <vector>
+#include "device.h"
 #include "fw.h"
 #include "ha.h"
 #include "units.h"
@@ -34,15 +48,22 @@
 namespace fw::dev::flights_source {
 namespace {
 constexpr const char *E = "panel.flights";
-constexpr double LOOK_UP = 30, EDGE_KM = 50;
+constexpr double LOOK_UP = 30;
 std::string cfg_seen, ent_now;
 bool sampling = false;
 
 struct Flight {
-  std::string hex, cs, type, model, who, from, to, reg, squawk, em, kind;
+  std::string hex, cs, type, model, who, op, from, to, reg, squawk, em, kind;
   double alt = NAN, vs = NAN, gs = NAN, track = 0, km = 0, brg = 0, elev = 0;
   bool mil = false;
 };
+std::vector<Flight> last;  // what the feed shows now, closest first (a selection re-puts it)
+std::string last_err, sel, src_name;
+
+units::Distance du() { return units::distance_of(dev::setting("distanceUnit")); }
+units::Speed su() { return units::speed_of(dev::setting("speedUnit")); }
+double edge_km() { return du() == units::Distance::mi ? 30 * units::KM_PER_MI : 50; }
+std::string edge_text() { return du() == units::Distance::mi ? "30 mi" : "50 km"; }
 
 const char *compass(double brg) {
   static const char *const P[] = {"N", "NE", "E", "SE", "S", "SW", "W", "NW"};
@@ -53,12 +74,11 @@ std::string thousands(long n) {
   for (int i = (int) s.size() - 3; i > 0; i -= 3) s.insert(i, ",");
   return (n < 0 ? "-" : "") + s;
 }
+std::string upper(std::string s) { for (char &c : s) c = (char) toupper((unsigned char) c); return s; }
 std::string alt_text(const Flight &f) { return std::isnan(f.alt) ? "--" : thousands(std::lround(f.alt / 25) * 25) + " ft"; }
-std::string away(const Flight &f) { return units::distance(f.km, units::Distance::km) + " " + compass(f.brg); }
-std::string route(const Flight &f) {
-  if (!f.from.empty() && !f.to.empty()) return f.from + " \xE2\x86\x92 " + f.to;
-  return !f.cs.empty() ? f.cs : !f.reg.empty() ? f.reg : f.hex;
-}
+std::string away(const Flight &f) { return units::distance(f.km, du()) + " " + compass(f.brg); }
+std::string name(const Flight &f) { return !f.cs.empty() ? f.cs : !f.reg.empty() ? f.reg : upper(f.hex); }
+std::string route(const Flight &f) { return !f.from.empty() && !f.to.empty() ? f.from + " \xE2\x86\x92 " + f.to : name(f); }
 std::string look(const Flight &f) {
   char b[48];
   const int e = (int) std::lround(f.elev);
@@ -88,59 +108,101 @@ std::string json_str(const std::string &s) {
   for (char c : s) o += c == '"' || c == '\\' ? std::string("\\") + c : std::string(1, c);
   return o + "\"";
 }
+// a List row item: "B738 · 32,000 ft · 26 km SE" over the route, a status at the row's end (else nothing there)
+std::string row(const Flight &f) {
+  const char *tn;
+  std::string over = f.type;
+  over += (over.empty() ? "" : " \xC2\xB7 ") + alt_text(f) + " \xC2\xB7 " + away(f);
+  const std::string st = status(f, &tn);
+  return std::string("{\"over\":") + json_str(over) + ",\"title\":" + json_str(route(f)) +
+         (st.empty() ? std::string(",\"trailing\":\"none\"") : ",\"trailing\":\"value\",\"value\":" + json_str(st)) + "}";
+}
+const Flight *lead_of(const std::vector<Flight> &fl) {
+  for (const Flight &f : fl)
+    if (!sel.empty() && f.hex == sel) return &f;
+  return fl.empty() ? nullptr : &fl.front();
+}
+void put(const char *a, const std::string &x) { ha::put(E, a, x); }
+void put_facts(const Flight *t) {
+  auto or_dash = [](const std::string &s) { return s.empty() ? std::string("--") : s; };
+  char b[48];
+  put("title_detail", t ? name(*t) : "");
+  put("f_aircraft", t ? or_dash(!t->model.empty() ? t->model : t->type) : "--");
+  put("f_reg", t ? or_dash(t->reg) : "--");
+  put("f_operator", t ? or_dash(t->op) : "--");
+  put("f_squawk", t ? or_dash(t->squawk) : "--");
+  put("f_squawk_tone", t && !t->em.empty() ? "warn" : "dim");
+  if (t) snprintf(b, sizeof b, "%ld\xC2\xB0 %s", std::lround(t->track), compass(t->track));
+  put("f_heading", t ? b : "--");
+  if (!t || std::isnan(t->vs)) put("f_vs", "--");
+  else if (std::fabs(t->vs) < 300) put("f_vs", "level");
+  else put("f_vs", (t->vs > 0 ? "+" : "\xE2\x88\x92") + thousands(std::lround(std::fabs(t->vs) / 100) * 100) + " ft/min");
+  put("f_src", t ? upper(t->hex) + " \xC2\xB7 data " + (src_name.empty() ? "--" : src_name) : "");
+}
+void put_common() {
+  put("unit", du() == units::Distance::mi ? "mi" : "km");
+  put("title_now", "Flight radar"), put("title_radar", "Flight radar"), put("title_list", "All aircraft");
+  put("list_head", "closest first \xC2\xB7 within " + edge_text());
+}
 
 void put_empty(const char *title, const std::string &body, const char *state) {
-  auto put = [](const char *a, const std::string &x) { ha::put(E, a, x); };
-  put("empty", "1"), put("many", ""), put("empty_title", title), put("empty_body", body);
+  put_common();
+  put("empty", "1"), put("many", ""), put("stale", ""), put("empty_title", title), put("empty_body", body);
   put("look", ""), put("look_tone", "text-dim"), put("status", ""), put("status_tone", "idle");
   put("route", ""), put("who", ""), put("alt_label", "altitude"), put("alt", "--"), put("speed", "--"), put("away", "--");
-  put("planes", "[]"), put("also", "[]"), put("more", "all aircraft");
-  put("card_text", title), put("card_sub", body.empty() ? "" : "nothing within 50 km"), put("card_accent", "false");
+  put("planes", "[]"), put("also", "[]"), put("all", "[]"), put("more", "all aircraft");
+  put_facts(nullptr);
+  put("card_text", title), put("card_sub", !strcmp(state, "quiet") ? "nothing within " + edge_text() : ""), put("card_accent", "false");
   put("", state);
 }
 void put_data(std::vector<Flight> fl, const std::string &error) {
+  const double edge = edge_km();
+  fl.erase(std::remove_if(fl.begin(), fl.end(), [&](const Flight &f) { return f.km > edge; }), fl.end());
+  std::stable_sort(fl.begin(), fl.end(), [](const Flight &a, const Flight &b) { return a.km < b.km; });
+  last = fl, last_err = error;
   if (fl.empty()) {
     if (!error.empty()) put_empty("Feed offline", error.substr(0, 80), "error");
-    else put_empty("Clear skies", "Nothing flying within 50 km right now.", "quiet");
+    else put_empty("Clear skies", "Nothing flying within " + edge_text() + " right now.", "quiet");
     return;
   }
-  auto put = [](const char *a, const std::string &x) { ha::put(E, a, x); };
-  std::stable_sort(fl.begin(), fl.end(), [](const Flight &a, const Flight &b) { return a.km < b.km; });
-  const Flight &t = fl.front();
+  put_common();
+  const Flight &t = *lead_of(fl);
   const bool high = t.elev >= LOOK_UP && t.em.empty();
   const char *tone;
   const std::string st = status(t, &tone);
-  put("empty", ""), put("empty_title", ""), put("empty_body", "");
+  put("empty", ""), put("empty_title", ""), put("empty_body", ""), put("stale", error.empty() ? "" : "1");
   put("look", look(t)), put("look_tone", high ? "accent-text" : "text-dim");
   put("status", st), put("status_tone", tone);
   put("route", route(t));
   put("who", !t.who.empty() ? t.who : t.type);
   put("alt_label", std::isnan(t.vs) || std::fabs(t.vs) < 300 ? "altitude" : t.vs > 0 ? "climbing" : "descending");
-  put("alt", alt_text(t)), put("speed", units::speed_kt(t.gs, units::Speed::mph)), put("away", away(t));
+  put("alt", alt_text(t)), put("speed", units::speed_kt(t.gs, su())), put("away", away(t));
   std::string pl = "[";
-  char b[96];
-  for (size_t k = 1; k <= fl.size(); k++) {
-    const Flight &f = fl[k % fl.size()];  // 1, 2, ..., n - 1, then 0 (the lead)
-    snprintf(b, sizeof b, "%s[%.1f,%.0f,%.0f,%d]", pl.size() > 1 ? "," : "", f.km, f.brg, f.track, (&f == &t ? 1 : 0) | (f.em.empty() ? 0 : 2));
-    pl += b;
-  }
+  char b[64];
+  auto plane = [&](const Flight &f, size_t i) {
+    const bool lead = &f == &t;
+    snprintf(b, sizeof b, "%s[%.1f,%.0f,%.0f,%d,", pl.size() > 1 ? "," : "", f.km, f.brg, f.track, (lead ? 1 : 0) | (f.em.empty() ? 0 : 2));
+    pl += b + json_str(i < 5 || lead ? f.cs : "") + "," + json_str(f.hex) + "]";
+  };
+  for (size_t i = 0; i < fl.size(); i++)
+    if (&fl[i] != &t) plane(fl[i], i);
+  plane(t, 0);  // the lead last, on top
   put("planes", pl + "]");
-  std::string al = "[";
-  for (size_t i = 1; i < fl.size() && i < 3; i++) {
-    const Flight &f = fl[i];
-    const char *tn;
-    std::string over = f.type;
-    over += (over.empty() ? "" : " \xC2\xB7 ") + alt_text(f) + " \xC2\xB7 " + away(f);
-    const std::string st = status(f, &tn);  // a status at the row's end (the trailing value), else nothing there
-    al += (al.size() > 1 ? "," : "") + std::string("{\"over\":") + json_str(over) + ",\"title\":" + json_str(route(f)) +
-          (st.empty() ? std::string(",\"trailing\":\"none\"") : ",\"trailing\":\"value\",\"value\":" + json_str(st)) + "}";
+  std::string al = "[", all = "[";
+  int n = 0;
+  for (const Flight &f : fl) {
+    all += (all.size() > 1 ? "," : "") + row(f);
+    if (&f != &t && n < 2) al += (n++ ? "," : "") + row(f);
   }
-  put("also", al + "]");
+  put("also", al + "]"), put("all", all + "]");
   snprintf(b, sizeof b, "all aircraft \xC2\xB7 %d", (int) fl.size());
   put("more", b), put("many", fl.size() >= 2 ? "1" : "");
+  put_facts(&t);
+  std::string near = units::distance(t.km, du());  // "6.5 km" -> "6 km" on the card's emergency line (docs)
+  const size_t dot = near.find('.');
+  if (dot != std::string::npos) near.erase(dot, near.find(' ') - dot);
   put("card_text", route(t));
-  put("card_sub", !t.em.empty() ? t.squawk + " " + em_text(t.em) + " \xC2\xB7 " + units::distance(t.km, units::Distance::km)
-                                : alt_text(t) + " \xC2\xB7 " + (high ? std::string("look up") : away(t)));
+  put("card_sub", !t.em.empty() ? t.squawk + " " + em_text(t.em) + " \xC2\xB7 " + near : alt_text(t) + " \xC2\xB7 " + (high ? std::string("look up") : away(t)));
   put("card_accent", high ? "true" : "false");
   put("", !t.em.empty() ? "emergency" : high ? "overhead" : "up");
 }
@@ -163,14 +225,16 @@ void rebuild() {
       const std::string rt = s(14);
       const size_t arrow = rt.find(" \xE2\x86\x92 ");
       if (arrow != std::string::npos) f.from = rt.substr(0, arrow), f.to = rt.substr(arrow + 5);
-      f.who = s(15), f.reg = s(16), f.model = s(17);
-      if (f.km <= EDGE_KM) fl.push_back(f);
+      f.who = s(15), f.reg = s(16), f.model = s(17), f.op = s(18);
+      fl.push_back(f);
     }
+  const std::string *so = ha::get(ent_now, "source");
+  src_name = so && !so->empty() ? *so : "Home Assistant";
   const bool bad = *st == "unavailable" || *st == "unknown";
   put_data(fl, bad ? std::string("feed unavailable") : er ? *er : std::string());
 }
 void entity_put(const std::string &e, const std::string &a, const std::string &) {
-  if (!ent_now.empty() && e == ent_now && (a.empty() || a == "a" || a == "error")) rebuild();
+  if (!ent_now.empty() && e == ent_now && (a.empty() || a == "a" || a == "error" || a == "source")) rebuild();
 }
 
 // ---- adapter: sample (Wisbech's sky; they drift along their tracks, 20x, and loop)
@@ -197,8 +261,11 @@ void sample_now() {
     double y = s.km * std::cos(s.brg * PI / 180) + d * std::cos(s.track * PI / 180);
     f.km = std::hypot(x, y), f.brg = std::fmod(std::atan2(x, y) * 180 / PI + 360, 360);
     f.elev = std::atan2(f.alt * 0.3048 / 1000, std::max(f.km, 0.05)) * 180 / PI;
-    if (f.km <= EDGE_KM) fl.push_back(f);
+    const size_t a = f.who.find(" \xC2\xB7 "), z = f.who.rfind(" \xC2\xB7 ");  // "Jet2.com · LS13DK · Boeing 737-800"
+    if (a != std::string::npos) f.op = f.who.substr(0, a), f.model = f.who.substr(z + 4);
+    fl.push_back(f);
   }
+  src_name = "sample";
   put_data(fl, "");
 }
 void fresh() {
@@ -215,7 +282,7 @@ void fresh() {
   if (src == "ha" && ent.rfind("sensor.", 0) == 0) {
     if (changed || ent != ent_now) {
       ent_now = ent;
-      for (const char *a : {"", "a", "error"}) ha::want(ent, a);
+      for (const char *a : {"", "a", "error", "source"}) ha::want(ent, a);
     }
     rebuild();
   } else if (src == "ha") { ent_now.clear(); put_empty("No sensor", "", "error"); }
@@ -225,6 +292,30 @@ void fresh() {
     if (!fast) fast = lv_timer_create([](lv_timer_t *) { if (sampling) sample_now(); }, 2000, nullptr);
   }
 }
-[[maybe_unused]] const bool registered = (ha::on_local(E, fresh), true);  // binds on panel.flights never reach a host
+// Settings > Units changed: the same aircraft in the new units
+void units_changed(const char *id, const char *, dev::From) {
+  if (strcmp(id, "distanceUnit") && strcmp(id, "speedUnit")) return;
+  if (sampling) sample_now();
+  else if (!ent_now.empty()) rebuild();
+}
+[[maybe_unused]] const bool registered = (ha::on_local(E, fresh), dev::observe(units_changed), true);  // binds on panel.flights never reach a host
 }  // namespace
+
+// flights.select (core/spec.h): an aircraft by hex, callsign or route (a radar plane, a row; "" = the hero = the lead).
+// The lead again = true (the screen opens its detail view); another one becomes the lead (the feed is put again).
+bool select(const std::string &d) {
+  const Flight *lead = lead_of(last);
+  if (d.empty()) return lead != nullptr;
+  const Flight *f = nullptr;
+  for (const Flight &x : last)
+    if (x.hex == d || x.cs == d) { f = &x; break; }
+  if (!f)
+    for (const Flight &x : last)
+      if (route(x) == d) { f = &x; break; }
+  if (!f) return false;
+  if (lead && f->hex == lead->hex) return true;
+  sel = f->hex;
+  put_data(last, last_err);
+  return false;
+}
 }  // namespace fw::dev::flights_source

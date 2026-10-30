@@ -453,6 +453,9 @@
     }
    ],
    "events": {
+    "close": [
+     "calendar.control"
+    ],
     "open": [
      "nav.open"
     ]
@@ -582,25 +585,106 @@
     "bytes_est": 320
    }
   },
-  "calendar_view": {
-   "name": "Calendar view",
+  "calendar_month": {
+   "name": "Calendar month",
    "update": true,
    "props": [
     {
-     "name": "view",
+     "name": "title",
+     "type": "text",
+     "bindable": true,
+     "about": "The month shown, such as October 2026."
+    },
+    {
+     "name": "here",
+     "type": "bool",
+     "bindable": true,
+     "about": "Whether this month is the one shown: Today is offered only for another month."
+    },
+    {
+     "name": "days",
+     "type": "text",
+     "bindable": true,
+     "about": "The 42 days of the six weeks shown, a JSON list: each with its date d, number n, out (another month), today, sel (the day open), dots (up to three calendar colours, comma separated) and more (+2 when there are more)."
+    }
+   ],
+   "events": {
+    "pick": [
+     "calendar.control"
+    ],
+    "month": [
+     "calendar.control"
+    ],
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 16,
+    "bytes_est": 2560
+   }
+  },
+  "calendar_row": {
+   "name": "Calendar row",
+   "update": true,
+   "props": [
+    {
+     "name": "kind",
      "type": "select",
      "bindable": true,
      "options": [
-      "agenda",
-      "month"
+      "day",
+      "event",
+      "calendar"
      ],
-     "about": "Which view the calendar opens on: agenda lists the next event and the days after it; month shows six weeks of days with their events."
+     "about": "What the row is: day is a day's label over its events, event is one event, calendar is one calendar you can show or hide."
     },
     {
-     "name": "month",
+     "name": "title",
      "type": "text",
      "bindable": true,
-     "about": "Which month the month view shows, written as year and month like 2026-10. Leave empty for this month."
+     "about": "The words: the day (today · Thu 22 Oct), the event's title or the calendar's name."
+    },
+    {
+     "name": "time",
+     "type": "text",
+     "bindable": true,
+     "about": "An event's time, such as 16:50, now or all day."
+    },
+    {
+     "name": "colour",
+     "type": "text",
+     "bindable": true,
+     "about": "The calendar's colour for its dot: blue, ok, warn, steel, text-dim, text, error or accent."
+    },
+    {
+     "name": "tone",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "",
+      "now",
+      "past"
+     ],
+     "about": "An event's moment: empty for later, now while it runs (the time in the accent), past when it is over (quieter)."
+    },
+    {
+     "name": "first",
+     "type": "bool",
+     "bindable": true,
+     "about": "A day's label at the top of the list, with no space above it."
+    },
+    {
+     "name": "status",
+     "type": "text",
+     "bindable": true,
+     "about": "A calendar's quieter line, such as 5 events or hidden."
+    },
+    {
+     "name": "on",
+     "type": "bool",
+     "bindable": true,
+     "about": "Whether a calendar is shown: its checkbox is ticked and its dot takes its colour."
     }
    ],
    "events": {
@@ -609,8 +693,8 @@
     ]
    },
    "cost": {
-    "objects": 335,
-    "bytes_est": 53600
+    "objects": 4,
+    "bytes_est": 640
    }
   },
   "camera_tile": {
@@ -1004,47 +1088,6 @@
     "bytes_est": 6400
    }
   },
-  "check_row": {
-   "name": "Check row",
-   "update": true,
-   "props": [
-    {
-     "name": "name",
-     "type": "text",
-     "bindable": true,
-     "about": "The name of the check, such as test or build."
-    },
-    {
-     "name": "state",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "pass",
-      "fail",
-      "pending",
-      "skipped"
-     ],
-     "about": "How the check went: pass, fail, pending while it still runs, or skipped. The dot and the word change to match."
-    },
-    {
-     "name": "width",
-     "type": "range",
-     "bindable": true,
-     "min": 160,
-     "max": 440,
-     "about": "How wide the row is, in pixels."
-    }
-   ],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 4,
-    "bytes_est": 640
-   }
-  },
   "checkbox": {
    "name": "Checkbox",
    "update": true,
@@ -1091,6 +1134,47 @@
    "cost": {
     "objects": 6,
     "bytes_est": 960
+   }
+  },
+  "check_row": {
+   "name": "Check row",
+   "update": true,
+   "props": [
+    {
+     "name": "name",
+     "type": "text",
+     "bindable": true,
+     "about": "The name of the check, such as test or build."
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "pass",
+      "fail",
+      "pending",
+      "skipped"
+     ],
+     "about": "How the check went: pass, fail, pending while it still runs, or skipped. The dot and the word change to match."
+    },
+    {
+     "name": "width",
+     "type": "range",
+     "bindable": true,
+     "min": 160,
+     "max": 440,
+     "about": "How wide the row is, in pixels."
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 4,
+    "bytes_est": 640
    }
   },
   "clock_face": {
@@ -1295,73 +1379,6 @@
     "bytes_est": 320
    }
   },
-  "cover_visual": {
-   "name": "Cover visual",
-   "update": true,
-   "props": [
-    {
-     "name": "kind",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "roller",
-      "venetian",
-      "curtain"
-     ],
-     "about": "What hangs in the window: a roller blind, a Venetian blind with slats, or a pair of curtains."
-    },
-    {
-     "name": "position",
-     "type": "range",
-     "bindable": true,
-     "min": 0,
-     "max": 100,
-     "about": "How open the cover is, from 0 (closed) to 100 (fully open)."
-    },
-    {
-     "name": "tilt",
-     "type": "range",
-     "bindable": true,
-     "min": 0,
-     "max": 100,
-     "about": "For Venetian blinds: how far the slats are turned, from 0 (shut) to 100 (fully open)."
-    },
-    {
-     "name": "heading",
-     "type": "range",
-     "bindable": true,
-     "min": -1,
-     "max": 100,
-     "about": "Where the cover is moving to while it moves, from 0 to 100, shown as a faint target. -1 means it is not moving."
-    },
-    {
-     "name": "draggable",
-     "type": "bool",
-     "bindable": true,
-     "about": "Lets you drag the blind's edge, or the curtains sideways, to move the cover."
-    },
-    {
-     "name": "state",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "default",
-      "disabled",
-      "unavailable"
-     ],
-     "about": "default can be dragged; disabled cannot be moved; unavailable shows the cover cannot be reached."
-    }
-   ],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 6,
-    "bytes_est": 960
-   }
-  },
   "covers_view": {
    "name": "Covers view",
    "update": true,
@@ -1439,6 +1456,73 @@
    "cost": {
     "objects": 37,
     "bytes_est": 5920
+   }
+  },
+  "cover_visual": {
+   "name": "Cover visual",
+   "update": true,
+   "props": [
+    {
+     "name": "kind",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "roller",
+      "venetian",
+      "curtain"
+     ],
+     "about": "What hangs in the window: a roller blind, a Venetian blind with slats, or a pair of curtains."
+    },
+    {
+     "name": "position",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 100,
+     "about": "How open the cover is, from 0 (closed) to 100 (fully open)."
+    },
+    {
+     "name": "tilt",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 100,
+     "about": "For Venetian blinds: how far the slats are turned, from 0 (shut) to 100 (fully open)."
+    },
+    {
+     "name": "heading",
+     "type": "range",
+     "bindable": true,
+     "min": -1,
+     "max": 100,
+     "about": "Where the cover is moving to while it moves, from 0 to 100, shown as a faint target. -1 means it is not moving."
+    },
+    {
+     "name": "draggable",
+     "type": "bool",
+     "bindable": true,
+     "about": "Lets you drag the blind's edge, or the curtains sideways, to move the cover."
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "default",
+      "disabled",
+      "unavailable"
+     ],
+     "about": "default can be dragged; disabled cannot be moved; unavailable shows the cover cannot be reached."
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 6,
+    "bytes_est": 960
    }
   },
   "date_line": {
@@ -2460,6 +2544,16 @@
      "about": "The aircraft on the sky radar (the Sky radar's planes)."
     },
     {
+     "name": "unit",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "km",
+      "mi"
+     ],
+     "about": "The sky radar's rings: km or mi, as Settings > Units says."
+    },
+    {
      "name": "empty",
      "type": "bool",
      "bindable": true,
@@ -2479,6 +2573,9 @@
     }
    ],
    "events": {
+    "tap": [
+     "flights.select"
+    ],
     "open": [
      "nav.open"
     ]
@@ -2784,7 +2881,8 @@
     ],
     "pick": [
      "screen.param",
-     "nav.open"
+     "nav.open",
+     "calendar.control"
     ],
     "open": [
      "nav.open"
@@ -3067,6 +3165,70 @@
     "bytes_est": 1120
    }
   },
+  "icon_button": {
+   "name": "Icon button",
+   "update": true,
+   "props": [
+    {
+     "name": "style",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "play",
+      "round",
+      "square"
+     ],
+     "about": "The button's shape: play is the large round play and pause button, round is a smaller circle, square has rounded corners."
+    },
+    {
+     "name": "icon",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "next",
+      "prev",
+      "play",
+      "plus",
+      "close",
+      "check",
+      "back",
+      "settings",
+      "chevron",
+      "chevron-left",
+      "calendar"
+     ],
+     "about": "The icon on the button, such as next, previous, play or close."
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "default",
+      "pressed",
+      "active",
+      "active-pressed",
+      "disabled",
+      "unavailable"
+     ],
+     "about": "How the button looks: default ready to tap, pressed while held, active when it is switched on, active-pressed while the active one is held, disabled when it cannot be used, or unavailable when its device cannot be reached."
+    }
+   ],
+   "events": {
+    "tap": [
+     "nav.open",
+     "nav.back",
+     "calendar.control"
+    ],
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 3,
+    "bytes_est": 480
+   }
+  },
   "icon": {
    "name": "Icon",
    "update": true,
@@ -3202,66 +3364,6 @@
     }
    ],
    "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 3,
-    "bytes_est": 480
-   }
-  },
-  "icon_button": {
-   "name": "Icon button",
-   "update": true,
-   "props": [
-    {
-     "name": "style",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "play",
-      "round",
-      "square"
-     ],
-     "about": "The button's shape: play is the large round play and pause button, round is a smaller circle, square has rounded corners."
-    },
-    {
-     "name": "icon",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "next",
-      "prev",
-      "play",
-      "plus",
-      "close",
-      "check",
-      "back",
-      "settings"
-     ],
-     "about": "The icon on the button, such as next, previous, play or close."
-    },
-    {
-     "name": "state",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "default",
-      "pressed",
-      "active",
-      "active-pressed",
-      "disabled",
-      "unavailable"
-     ],
-     "about": "How the button looks: default ready to tap, pressed while held, active when it is switched on, active-pressed while the active one is held, disabled when it cannot be used, or unavailable when its device cannot be reached."
-    }
-   ],
-   "events": {
-    "tap": [
-     "nav.open",
-     "nav.back"
-    ],
     "open": [
      "nav.open"
     ]
@@ -3831,7 +3933,8 @@
     "tap": [
      "nav.open",
      "nav.back",
-     "light.toggle"
+     "light.toggle",
+     "flights.select"
     ],
     "long": [
      "nav.open"
@@ -4684,75 +4787,6 @@
     "bytes_est": 1920
    }
   },
-  "pr_row": {
-   "name": "Pull request row",
-   "update": true,
-   "props": [
-    {
-     "name": "repo",
-     "type": "text",
-     "bindable": true,
-     "about": "The repository the pull request is in."
-    },
-    {
-     "name": "number",
-     "type": "range",
-     "bindable": true,
-     "min": 1,
-     "max": 9999,
-     "about": "The pull request's number."
-    },
-    {
-     "name": "title",
-     "type": "text",
-     "bindable": true,
-     "about": "The pull request's title, over up to two lines."
-    },
-    {
-     "name": "age",
-     "type": "text",
-     "bindable": true,
-     "about": "How long ago it was opened or last changed, such as 5h."
-    },
-    {
-     "name": "draft",
-     "type": "bool",
-     "bindable": true,
-     "about": "Marks it as a draft that is not ready for review yet."
-    },
-    {
-     "name": "ci",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "pass",
-      "fail",
-      "pending",
-      "none"
-     ],
-     "about": "How its automatic checks went: pass, fail, pending, or none when it has no checks."
-    },
-    {
-     "name": "state",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "default",
-      "pressed"
-     ],
-     "about": "default ready to tap; pressed while held."
-    }
-   ],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 13,
-    "bytes_est": 2080
-   }
-  },
   "print_model": {
    "name": "3D print model",
    "update": true,
@@ -4921,6 +4955,75 @@
    "cost": {
     "objects": 2,
     "bytes_est": 320
+   }
+  },
+  "pr_row": {
+   "name": "Pull request row",
+   "update": true,
+   "props": [
+    {
+     "name": "repo",
+     "type": "text",
+     "bindable": true,
+     "about": "The repository the pull request is in."
+    },
+    {
+     "name": "number",
+     "type": "range",
+     "bindable": true,
+     "min": 1,
+     "max": 9999,
+     "about": "The pull request's number."
+    },
+    {
+     "name": "title",
+     "type": "text",
+     "bindable": true,
+     "about": "The pull request's title, over up to two lines."
+    },
+    {
+     "name": "age",
+     "type": "text",
+     "bindable": true,
+     "about": "How long ago it was opened or last changed, such as 5h."
+    },
+    {
+     "name": "draft",
+     "type": "bool",
+     "bindable": true,
+     "about": "Marks it as a draft that is not ready for review yet."
+    },
+    {
+     "name": "ci",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "pass",
+      "fail",
+      "pending",
+      "none"
+     ],
+     "about": "How its automatic checks went: pass, fail, pending, or none when it has no checks."
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "default",
+      "pressed"
+     ],
+     "about": "default ready to tap; pressed while held."
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 13,
+    "bytes_est": 2080
    }
   },
   "qr_block": {
@@ -5369,7 +5472,7 @@
      "name": "planes",
      "type": "text",
      "bindable": true,
-     "about": "The aircraft to draw, as the flights feed gives them: a list of [km, bearing in degrees, track in degrees, mark], mark 1 for the lead one, 2 for an emergency. Empty is a clear sky."
+     "about": "The aircraft to draw, as the flights feed gives them: a list of [km, bearing in degrees, track in degrees, mark, callsign, hex], mark 1 for the lead one, 2 for an emergency; the callsign shows beside the plane on the radar size. Empty is a clear sky."
     },
     {
      "name": "size",
@@ -5377,12 +5480,26 @@
      "bindable": true,
      "options": [
       "hero",
+      "radar",
       "card"
      ],
-     "about": "hero is the radar beside the aircraft on the Flight radar; card is the small picture at the top right of a Home card, with dots."
+     "about": "hero is the radar beside the aircraft on the Flight radar; radar is the big one on its Radar view, with ring numbers, callsigns and planes to tap; card is the small picture at the top right of a Home card, with dots."
+    },
+    {
+     "name": "unit",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "km",
+      "mi"
+     ],
+     "about": "The distance unit of the rings: km (5, 15, 30, 50) or mi (3, 10, 20, 30), as Settings > Units says."
     }
    ],
    "events": {
+    "pick": [
+     "flights.select"
+    ],
     "open": [
      "nav.open"
     ]
@@ -6996,7 +7113,9 @@
   "timer.stop",
   "timer.select",
   "timer.new",
-  "timer.back"
+  "timer.back",
+  "calendar.control",
+  "flights.select"
  ],
  "act": [
   {
@@ -7451,6 +7570,38 @@
    "example": {
     "do": "timer.back"
    }
+  },
+  {
+   "do": "calendar.control",
+   "about": "On the Calendar: show the previous, next or this month, open a day or the calendars sheet, close the sheet, or turn a calendar on or off (its id: the entity without calendar.).",
+   "fields": [
+    {
+     "name": "value",
+     "type": "text",
+     "need": "required",
+     "limits": "previous|next|today|calendars|close|*48"
+    }
+   ],
+   "example": {
+    "do": "calendar.control",
+    "value": "day 2026-10-23"
+   }
+  },
+  {
+   "do": "flights.select",
+   "about": "On the Flight radar: select an aircraft (by hex, callsign or route) so the hero and the card show it; the selected one again opens its details (spec nodes only).",
+   "fields": [
+    {
+     "name": "value",
+     "type": "text",
+     "need": "required",
+     "limits": "*48"
+    }
+   ],
+   "spec_only": true,
+   "example": {
+    "do": "flights.select"
+   }
   }
  ],
  "fmt": [
@@ -7551,5 +7702,5 @@
    }
   }
  },
- "hash": "411a456f"
+ "hash": "10e5e816"
 }

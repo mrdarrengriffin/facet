@@ -12,8 +12,8 @@
 //            (w:sky-stat-s), distance (the rest: docs 144 / 120 / 120)
 //   empty    no aircraft: the quiet words (type:headline "Clear skies", type:body text-dim under it) beside the empty
 //            radar (docs .fs-oh-emptybox)
-// Feed: bind every prop to panel.flights (core/flights_source.cpp). Static (stage 1: the tap to open the aircraft comes
-// with the detail view). Update path: the words, stats and radar in place (silent); empty <-> aircraft or a status
+// Feed: bind every prop to panel.flights (core/flights_source.cpp). Tap (with an aircraft): emits "tap" + sound open
+// (the Flight radar opens the aircraft's details: flights.select); no press look (docs: the hero is live, not a button). Update path: the words, stats and radar in place (silent); empty <-> aircraft or a status
 // coming / going or the look line's ink changing rebuilds with a fade (fw::st::refill_fade). Contrast: text, label, stat, status_chip, overhead.
 #include "fw.h"
 #include "fx.h"
@@ -22,7 +22,7 @@ namespace {
 bool empty_of(fw::Props p) { const char *e = p["empty"] | ""; return *e && strcmp(e, "0") && strcmp(e, "false"); }
 const char *look_ink(fw::Props p) { return !strcmp(p["look_tone"] | "text-dim", "accent-text") ? "fg:accent-text" : "fg:text-dim"; }
 std::string sig(fw::Props p) { return std::string(empty_of(p) ? "e" : "-") + (*(p["status"] | "") ? "s" : "-") + look_ink(p); }
-void radar_props(fw::Props p, ArduinoJson::JsonDocument &d) { d["planes"] = p["planes"] | "[]", d["size"] = "hero"; }
+void radar_props(fw::Props p, ArduinoJson::JsonDocument &d) { d["planes"] = p["planes"] | "[]", d["size"] = "hero", d["unit"] = p["unit"] | "km"; }
 void stat_props(ArduinoJson::JsonDocument &d, const char *label, const char *value) { d["label"] = label, d["value"] = value, d["tone"] = "dim", d["size"] = "body"; }  // docs: body values (64 tall)
 lv_obj_t *line(lv_obj_t *col, const char *s, const char *type, const char *ink) {
   lv_obj_t *l = fx::text(col, s, type, ink);
@@ -89,6 +89,7 @@ FW_COMPONENT(flight_hero, "Flight hero", "components", R"({
     {"name": "speed", "about": "Its ground speed, such as 529 mph.", "type": "text", "default": "529 mph"},
     {"name": "away", "about": "How far away and which way, such as 7 km NW.", "type": "text", "default": "7 km NW"},
     {"name": "planes", "about": "The aircraft on the sky radar (the Sky radar's planes).", "type": "text", "default": "[[26,118,302,0],[12,200,210,0],[33,42,318,0],[38,140,255,0],[41,250,75,0],[6.5,300,330,1]]"},
+    {"name": "unit", "about": "The sky radar's rings: km or mi, as Settings > Units says.", "type": "select", "options": ["km", "mi"], "default": "km"},
     {"name": "empty", "about": "Shows the quiet words instead of an aircraft, when nothing is flying nearby.", "type": "bool", "default": false},
     {"name": "empty_title", "about": "The quiet words' headline, such as Clear skies.", "type": "text", "default": "Clear skies"},
     {"name": "empty_body", "about": "The line under it, such as Nothing flying within 50 km right now.", "type": "text", "default": "Nothing flying within 50 km right now."}
@@ -101,9 +102,16 @@ FW_COMPONENT(flight_hero, "Flight hero", "components", R"({
 })") {
   lv_obj_t *root = lv_obj_create(parent);
   lv_obj_remove_style_all(root);
-  lv_obj_remove_flag(root, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
+  lv_obj_remove_flag(root, LV_OBJ_FLAG_SCROLLABLE);
   fx::name(root, "flight_hero");
   fill(root, p);
+  fw::st::on_tap(root, [](lv_event_t *e) {  // the aircraft's details (nothing to open on the quiet words)
+    if (!fw::st::tap_now(e)) return;
+    auto *o = (lv_obj_t *) lv_event_get_current_target(e);
+    if (lv_obj_get_child_count(lv_obj_get_child(o, 0)) < 4) return;  // the quiet words (2 lines), not an aircraft (4)
+    fw::emit(o, "tap", "");
+    fw::sound(o, "open");
+  }, nullptr);
 }
 
 FW_UPDATE(flight_hero) {

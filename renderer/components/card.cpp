@@ -35,6 +35,7 @@ struct Card {
   bool queued = false;
   std::string props;
   lv_obj_t *label = nullptr;
+  lv_obj_t *radar = nullptr;  // the flights preview's Sky radar: new planes move it in place (no fade every 2 s)
 };
 std::map<lv_obj_t *, Card> cards;
 
@@ -46,6 +47,7 @@ std::string sig(fw::Props p) {
   ArduinoJson::JsonDocument rest;
   rest.set(p);
   if (strcmp(p["state"] | "default", "unavailable")) rest["state"] = "default";
+  if (!strcmp(p["preview"] | "", "flights")) rest.remove("planes");  // the radar takes new planes in place (FW_UPDATE)
   std::string s;
   serializeJson(rest, s);
   return s;
@@ -60,6 +62,7 @@ lv_obj_t *line(lv_obj_t *parent, const char *s, const char *type, const char *fg
 void fill(lv_obj_t *c, fw::Props p) {
   Card &k = cards[c];
   fw::shape(c, sig(p));
+  k.radar = nullptr;
   k.props.clear();
   serializeJson(p, k.props);
   const char *state = p["state"] | "default";
@@ -110,6 +113,7 @@ void fill(lv_obj_t *c, fw::Props p) {
     ArduinoJson::JsonDocument fd;
     fd["planes"] = p["planes"] | "[]", fd["size"] = "card";
     fw::find("sky_radar")->build(top, fd.as<fw::Props>());
+    k.radar = lv_obj_get_child(top, -1);
   } else if (!off && full && !strcmp(pv, "weather")) {  // the real Weather icon at card size (C8b, C52: the weather now)
     ArduinoJson::JsonDocument wd;
     wd["icon"] = p["weather"] | "partly-day", wd["size"] = "card";
@@ -264,6 +268,11 @@ FW_UPDATE(card) {
   if (fw::shape(root, sig(p)) && was_off == off) {
     const bool pr = !strcmp(state, "pressed");
     if (pr != lv_obj_has_state(root, LV_STATE_PRESSED)) lv_obj_set_state(root, LV_STATE_PRESSED, pr);
+    if (lv_obj_t *rd = cards[root].radar) {  // the flights preview: the aircraft move, the card stays
+      ArduinoJson::JsonDocument fd;
+      fd["planes"] = p["planes"] | "[]", fd["size"] = "card";
+      fw::update_child(fw::find("sky_radar"), rd, fd.as<fw::Props>());
+    }
     return true;
   }
   cards[root].long_label = false;  // new words: measure the label again

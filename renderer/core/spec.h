@@ -189,7 +189,7 @@ constexpr uint32_t PENDING_MS = 5000;        // a switch / brightness waits this
 // ---- the action whitelist per component and event (the catalogue's "actions")
 struct Rule { const char *comp, *event, *actions; };
 constexpr Rule RULES[] = {
-    {"list_row", "toggle", "light.switch"},          {"list_row", "tap", "nav.open,nav.back,light.toggle"},
+    {"list_row", "toggle", "light.switch"},          {"list_row", "tap", "nav.open,nav.back,light.toggle,flights.select"},
     {"list_row", "long", "nav.open"},                {"card", "tap", "nav.open,light.toggle"},
     {"card", "long", "nav.open"},                    {"dial", "change", "light.brightness"},
     {"entity_tile", "tap", "nav.open,light.toggle"},
@@ -209,6 +209,7 @@ constexpr Rule RULES[] = {
     {"grid", "select", "timer.select"},             {"grid", "stop", "timer.stop"},  // Timer chips in an items Grid
     {"segmented", "change", "vacuum.control,screen.param"}, {"iso_floorplan", "pick", "screen.toggle"},
     {"vacuum_mode", "change", "vacuum.control"},     {"grid", "pick", "screen.param,nav.open,calendar.control"},
+    {"sky_radar", "pick", "flights.select"},         {"flight_hero", "tap", "flights.select"},  // the Flight radar: a plane / the hero
     {"calendar_month", "pick", "calendar.control"},  {"calendar_month", "month", "calendar.control"},
     {"bottom_sheet", "close", "calendar.control"},        // a link to a sub-view spec (moon -> moon_details -> ...)
     {"*", "open", "nav.open"},                       // any component's own "open" (a tapped calendar day, a PR):
@@ -217,7 +218,7 @@ constexpr Rule RULES[] = {
 constexpr const char *ACTIONS[] = {"light.switch", "light.toggle", "light.brightness", "climate.set_temperature",
                                    "climate.set_hvac_mode", "climate.set_preset_mode", "media.control", "cover.control", "lock.control", "vacuum.control", "screen.toggle", "screen.param",
                                    "nav.open", "nav.back", "timer.start", "timer.extend", "timer.cancel", "timer.stop", "timer.select", "timer.new", "timer.back",
-                                   "calendar.control"};
+                                   "calendar.control", "flights.select"};
 // The one closed action list, documented (CONTRACT.md C50): every action a spec node, an agent (POST /fw/act) or Home
 // Assistant (facet_act) can run, with its fields and one example. GET /fw/act, the catalogue's "act" and the agent docs
 // are generated from it; act() checks "value" against `value` (outside a spec the value a component's event would give
@@ -248,6 +249,7 @@ constexpr ActionDoc ACTION_DOCS[] = {
     {"timer.new", "Show the Timer screen's length picker.", "", "", R"({"do":"timer.new"})", false},
     {"timer.back", "Leave the length picker.", "", "", R"({"do":"timer.back"})", false},
     {"calendar.control", "On the Calendar: show the previous, next or this month, open a day or the calendars sheet, close the sheet, or turn a calendar on or off (its id: the entity without calendar.).", "", "previous|next|today|calendars|close|*48", R"({"do":"calendar.control","value":"day 2026-10-23"})", false},
+    {"flights.select", "On the Flight radar: select an aircraft (by hex, callsign or route) so the hero and the card show it; the selected one again opens its details (spec nodes only).", "", "*48", R"({"do":"flights.select"})", true},
 };
 static_assert(sizeof ACTION_DOCS / sizeof ACTION_DOCS[0] == sizeof ACTIONS / sizeof ACTIONS[0], "every action has its ACTION_DOCS row (CONTRACT.md C50)");
 inline const ActionDoc *action_doc(const std::string &d) {
@@ -1319,6 +1321,18 @@ inline bool run_action(Screen *s, Node &n, ArduinoJson::JsonVariantConst a, cons
       ArduinoJson::JsonDocument t;
       t["tone"] = "warn"; t["icon"] = "timer"; t["title"] = "No timer started"; t["body"] = why;
       dev::toast(t.as<Props>());
+    }
+    return true;
+  }
+  if (d == "flights.select") {  // core/flights_source.cpp: the lead again (or the hero, no detail) = its detail view
+    if (!s) return refuse("a spec screen's action");
+    const bool again = dev::flights_source::select(detail);
+    const std::string view = s->params["view"];
+    const char *to = again ? "detail" : (view == "list" || view == "detail") ? "now" : nullptr;  // a row on the list: back to Now
+    if (to && view != to && set_param(s, "view", "", to)) {
+      if (again) s->undo.push_back({"view", view});  // Back closes the detail view first
+      else s->undo.erase(std::remove_if(s->undo.begin(), s->undo.end(), [](const auto &u) { return u.first == "view"; }), s->undo.end());
+      emit(s->root, "param", (std::string("view=") + to).c_str());
     }
     return true;
   }
