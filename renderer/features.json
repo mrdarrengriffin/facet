@@ -16,7 +16,7 @@
       "id": "system",
       "label": "Home, Settings and Set up",
       "docs": true, "status": "done", "firmware": true,
-      "screens": ["home", "settings", "screens", "screen_set", "setup", "device"]
+      "screens": ["home", "settings", "screens", "screen_set", "ha_link", "setup", "device"]
     },
     {
       "id": "toasts",

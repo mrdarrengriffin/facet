@@ -385,7 +385,8 @@ void build_settings(lv_obj_t *parent, fw::Props p) {
 
   // per group: its label (docs .fs-set-glabel: the screen type label, caps, the header's own style; text-dim, docs
   // text-mute is disabled-only here) at its line box, section-gap above its rows; groups a group apart
-  {  // "panel": Screens (Settings > Screens: which screens this panel has, their sources and options)
+  {  // "panel": Screens (Settings > Screens: which screens this panel has, their sources and options) + Home Assistant
+    // (Settings > Home Assistant: the panel's own link to HA, screens/ha_link.cpp)
     lv_obj_t *gl = fw::text(c, fw::ty::label, "panel", t.text_dim);
     lv_obj_remove_flag(gl, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_set_height(gl, fw::style(fw::ty::label).box);
@@ -403,6 +404,15 @@ void build_settings(lv_obj_t *parent, fw::Props p) {
       lv_obj_add_event_cb(r, [](lv_event_t *e) {  // after the List row's own tap (event tap + sound open)
         auto *o = (lv_obj_t *) lv_event_get_current_target(e);
         if (!lv_obj_has_state(o, fw::st::OFF)) fw::emit(o, "navigate", "screens");
+      }, LV_EVENT_CLICKED, nullptr);
+    Doc hr;  // Home Assistant: the panel's own link (screens/ha_link.cpp)
+    namespace hl = fw::dev::ha_link;
+    hr["title"] = "Home Assistant", hr["icon"] = "none", hr["trailing"] = "value-chevron";
+    hr["value"] = !hl::ready() ? "Not set up" : hl::status() == hl::OK ? (std::to_string(hl::count()) + " entities").c_str() : hl::status() == hl::FAIL ? "Not reached" : "Set up";
+    if (lv_obj_t *r = build("list_row", c, hr))
+      lv_obj_add_event_cb(r, [](lv_event_t *e) {
+        auto *o = (lv_obj_t *) lv_event_get_current_target(e);
+        if (!lv_obj_has_state(o, fw::st::OFF)) fw::emit(o, "navigate", "ha_link");
       }, LV_EVENT_CLICKED, nullptr);
     spacer(c, fw::lay::group);
   }

@@ -225,7 +225,7 @@ constexpr Rule RULES[] = {
 constexpr const char *ACTIONS[] = {"light.switch", "light.toggle", "light.brightness", "climate.set_temperature",
                                    "climate.set_hvac_mode", "climate.set_preset_mode", "media.control", "cover.control", "lock.control", "vacuum.control", "screen.toggle", "screen.param",
                                    "nav.open", "nav.back", "timer.start", "timer.extend", "timer.cancel", "timer.stop", "timer.select", "timer.new", "timer.back",
-                                   "calendar.control", "flights.select", "script.run", "scene.activate", "automation.trigger", "button.press", "entity.toggle"};
+                                   "calendar.control", "flights.select", "script.run", "scene.activate", "automation.trigger", "button.press", "entity.toggle", "ha.connect", "ha.entities"};
 // The one closed action list, documented (CONTRACT.md C50): every action a spec node, an agent (POST /fw/act) or Home
 // Assistant (facet_act) can run, with its fields and one example. GET /fw/act, the catalogue's "act" and the agent docs
 // are generated from it; act() checks "value" against `value` (outside a spec the value a component's event would give
@@ -262,6 +262,8 @@ constexpr ActionDoc ACTION_DOCS[] = {
     {"automation.trigger", "Trigger a Home Assistant automation now.", "e|entity|required|automation.x", "", R"({"do":"automation.trigger","e":"automation.lights_out"})", false},
     {"button.press", "Press a Home Assistant button entity.", "e|entity|required|button.x", "", R"({"do":"button.press","e":"button.doorbell_chime"})", false},
     {"entity.toggle", "Toggle a fan, an input boolean or an automation (an automation: enable / disable).", "e|entity|required|fan.x, input_boolean.x or automation.x", "", R"({"do":"entity.toggle","e":"fan.bedroom"})", false},
+    {"ha.connect", "Set the panel's own Home Assistant link: its address and a long-lived token (kept on the panel, never shown back).", "url|text|required|http(s)://host:port, at most 128;token|text|optional|a long-lived access token (empty = keep the one set)", "", R"({"do":"ha.connect","url":"http://homeassistant.local:8123","token":"eyJhbGciOiJIUzI1NiJ9.example.token"})", false},
+    {"ha.entities", "Read the entity lists the pickers offer from Home Assistant (the panel's own link).", "domains|text|optional|a comma list of domains (light, sensor, ...); empty = every domain", "", R"({"do":"ha.entities","domains":"light,media_player"})", false},
 };
 static_assert(sizeof ACTION_DOCS / sizeof ACTION_DOCS[0] == sizeof ACTIONS / sizeof ACTIONS[0], "every action has its ACTION_DOCS row (CONTRACT.md C50)");
 inline const ActionDoc *action_doc(const std::string &d) {
@@ -473,8 +475,8 @@ inline void check_keys(ArduinoJson::JsonObjectConst o, const char *const *keys, 
 }
 inline void check_action(ArduinoJson::JsonVariantConst a, const char *comp, const char *event, const std::string &path, Errs &e) {
   if (!a.is<ArduinoJson::JsonObjectConst>()) { err(e, path, "bad_action", "an action is an object {do, ...}"); return; }
-  static const char *const K[] = {"do", "e", "screen", "params", "param", "from", "auto", "rooms", "mode", "mop", "seconds", "name", "s", "id", "value", "to", "back"};
-  check_keys(a.as<ArduinoJson::JsonObjectConst>(), K, 17, path, e);
+  static const char *const K[] = {"do", "e", "screen", "params", "param", "from", "auto", "rooms", "mode", "mop", "seconds", "name", "s", "id", "value", "to", "back", "url", "token", "domains"};
+  check_keys(a.as<ArduinoJson::JsonObjectConst>(), K, 20, path, e);
   const std::string d = a["do"] | "";
   if (!one_of(ACTIONS, d)) { err(e, path + ".do", "bad_action", "unknown action " + d); return; }
   if (comp) {  // a spec node: its component's event allows it; nullptr = act() (an agent, HA: no component)
@@ -485,6 +487,20 @@ inline void check_action(ArduinoJson::JsonVariantConst a, const char *comp, cons
   if (d.rfind("light.", 0) == 0) {
     const std::string en = a["e"] | "";
     if (!entity_ok(en) || (en[0] != '$' && en.rfind("light.", 0) != 0)) err(e, path + ".e", "bad_entity", "a light entity (light.x or $param)");
+  }
+  if (d == "ha.connect") {  // the panel's own HA link (core/device.h ha_link): never echo the token
+    const std::string u = a["url"] | "", t = a["token"] | "";
+    if (u.size() > 128 || (u.rfind("http://", 0) != 0 && u.rfind("https://", 0) != 0) || u.find_first_of(" \"\\") != std::string::npos)
+      err(e, path + ".url", "bad_action", "url: http(s)://host[:port], at most 128");
+    bool tok = t.size() <= 512;
+    for (char c : t) tok = tok && (isalnum((unsigned char) c) || c == '.' || c == '_' || c == '-');
+    if (!tok) err(e, path + ".token", "bad_action", "token: a long-lived access token (letters, digits, . _ -)");
+  }
+  if (d == "ha.entities") {
+    const std::string ds = a["domains"] | "";
+    bool ok = ds.size() <= 256;
+    for (char c : ds) ok = ok && (islower((unsigned char) c) || isdigit((unsigned char) c) || c == '_' || c == ',' || c == ' ');
+    if (!ok) err(e, path + ".domains", "bad_action", "domains: a comma list of domains (a-z, 0-9, _)");
   }
   if (d == "entity.toggle") {
     const std::string en = a["e"] | "";
@@ -1394,6 +1410,12 @@ inline bool run_action(Screen *s, Node &n, ArduinoJson::JsonVariantConst a, cons
   const std::string d = a["do"] | "";
   auto refuse = [&](const char *w) { if (why_out && why_out->empty()) *why_out = w; return true; };
   if (d == "nav.back") { emit(n.obj, "back"); return true; }
+  if (d == "ha.connect") { dev::ha_link::configure(a["url"] | "", a["token"] | ""); return true; }
+  if (d == "ha.entities") {
+    const char *why = dev::ha_link::fetch(a["domains"] | "");
+    if (*why) return refuse(why);
+    return true;
+  }
   if (d == "calendar.control") {  // the calendar feed's own state (core/calendar_source.cpp): a tap's event says what
     const std::string v = !strcmp(event, "tap") ? "calendars" : !strcmp(event, "close") ? "close" : detail ? detail : "";
     const char *why = dev::calendar_source::control(v);

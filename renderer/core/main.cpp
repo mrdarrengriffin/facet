@@ -170,6 +170,38 @@ EMSCRIPTEN_KEEPALIVE const char *fw_ha_asks() {
   return out.c_str();
 }
 EMSCRIPTEN_KEEPALIVE void fw_ha_answer(int id, int ok, const char *json) { fw::ha::answer((uint32_t) id, ok != 0, json ? json : ""); }
+// the panel's own HA link (core/device.h ha_link): on the workbench the host fetches /api/states through its proxy
+// with its own token (set_proxy: the token typed into the bench never leaves the module). fw_ha_gets -> [id, ...]
+// (drained); the body comes back in pieces (fw_ha_chunk, streamed: never held whole), then fw_ha_got(id, ok, why);
+// fw_ha_link -> {status, count, peak, url, token} (token = the hint only)
+std::vector<uint32_t> &get_queue() {
+  static std::vector<uint32_t> q;
+  static const bool reg = (fw::dev::ha_link::on_get([](uint32_t id, const std::string &, const std::string &) { q.push_back(id); }),
+                           fw::dev::ha_link::set_proxy(true), true);
+  (void) reg;
+  return q;
+}
+[[maybe_unused]] const bool get_registered = (get_queue(), true);
+EMSCRIPTEN_KEEPALIVE const char *fw_ha_gets() {
+  static std::string out;
+  out = "[";
+  for (size_t i = 0; i < get_queue().size(); i++) out += (i ? "," : "") + std::to_string(get_queue()[i]);
+  out += "]";
+  get_queue().clear();
+  return out.c_str();
+}
+EMSCRIPTEN_KEEPALIVE void fw_ha_chunk(int id, const char *p, int n) { if (p && n > 0) fw::dev::ha_link::chunk((uint32_t) id, p, (size_t) n); }
+EMSCRIPTEN_KEEPALIVE void fw_ha_got(int id, int ok, const char *why) { fw::dev::ha_link::done((uint32_t) id, ok != 0, why ? why : ""); }
+EMSCRIPTEN_KEEPALIVE const char *fw_ha_link() {
+  namespace hl = fw::dev::ha_link;
+  static std::string out;
+  ArduinoJson::JsonDocument d;
+  static const char *const ST[] = {"off", "idle", "loading", "ok", "fail"};
+  d["status"] = ST[hl::status()], d["count"] = hl::count(), d["peak"] = (int) hl::peak(), d["url"] = hl::url(), d["token"] = hl::token_hint(), d["why"] = hl::why();
+  out.clear();
+  serializeJson(d, out);
+  return out.c_str();
+}
 
 // One panel setting from the host (the docs site's live demo: its theme / accent / sound prefs and the demo's own
 // Settings stay one value), through the ONE set() path (core/device.h) as HA or the panel API: "" applied, "same",

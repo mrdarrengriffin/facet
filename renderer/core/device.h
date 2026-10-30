@@ -39,6 +39,7 @@
 #pragma once
 #include <string>
 #include <vector>
+#include <map>
 #include "fw.h"
 
 namespace fw {
@@ -135,6 +136,62 @@ void observe(Observer cb);
 void reset();  // tests: every timer gone, no observer call
 }  // namespace timers
 struct Timer { int state = 0; long long ends = 0; int total = 0; std::string label; };
+// The panel's own Home Assistant link (core/ha_link.cpp, Settings > Home Assistant, 2026-10-30): HA's address + a
+// long-lived token, kept on the device (the firmware's NVS through on_store / restore; WASM: memory only), never shown
+// back in full (token_hint: the last 4) and never logged. fetch(domains) reads GET <url>/api/states once and keeps,
+// per wanted domain (comma list), each entity's id + friendly name + icon (the entity pickers' lists). The reply is
+// never held whole: Scan reads it chunk by chunk (depth stack + three capped strings + the kept rows), on any thread
+// (the firmware's HTTP task parses there and hands the Scan over with done()). The transport is the platform's:
+// on_get(id, url, token) starts the GET, chunk()/done() bring the body and the end back (main loop). set_proxy: the
+// host fetches with its own token (the workbench's hub proxy), so the token never leaves the module.
+// Agents / HA: actions ha.connect {url, token} and ha.entities {domains} (core/spec.h, CONTRACT.md C50).
+namespace ha_link {
+struct Entity { std::string id, name, icon; };
+class Scan {
+ public:
+  explicit Scan(const std::string &domains);  // "" = every domain
+  void feed(const char *p, size_t n);
+  bool bad() const { return bad_; }
+  size_t held() const { return held_; }  // bytes held now (buffers + kept rows); peak() the most at any point
+  size_t peak() const { return peak_; }
+  std::vector<std::string> want;
+  std::map<std::string, std::vector<Entity>> out;
+ private:
+  void str_end();
+  void obj_end();
+  void add(char c);
+  enum Cap : uint8_t { NONE, KEY, ID, NAME, ICON };
+  static constexpr int DEPTH = 32;
+  char kind_[DEPTH] = {};
+  bool expect_key_[DEPTH] = {};
+  int depth_ = 0, hex_ = -1;
+  uint32_t cp_ = 0, hi_ = 0;
+  bool in_str_ = false, esc_ = false, attrs_ = false, bad_ = false;
+  Cap cap_ = NONE;
+  std::string buf_, key2_, key3_, id_, name_, icon_;
+  size_t held_ = 0, peak_ = 0;
+};
+enum St { OFF, IDLE, LOADING, OK, FAIL };
+void configure(const std::string &url, const std::string &token);  // token "" = keep the one set; stores it
+void restore(const std::string &url, const std::string &token);    // the firmware at boot (no store)
+void on_store(void (*f)(const std::string &url, const std::string &token));
+void set_proxy(bool on);
+const std::string &url();
+bool has_token();
+std::string token_hint();  // "" or "...ab12"
+bool ready();              // an address + a token (or a proxy host)
+const char *fetch(const std::string &domains);  // "" = started, else why not
+St status();
+const std::string &why();  // the last failure, in words
+uint32_t rev();            // moves on every change (pages poll it)
+size_t peak();             // the last fetch's parse peak (bytes)
+int count();               // entities kept by the last fetch
+const std::vector<Entity> *list(const std::string &domain);  // nullptr = not fetched yet
+using GetSink = void (*)(uint32_t id, const std::string &url, const std::string &token);
+void on_get(GetSink f);
+void chunk(uint32_t id, const char *p, size_t n);
+void done(uint32_t id, bool ok, const std::string &why, Scan *parsed = nullptr);  // parsed: the platform's own Scan (taken)
+}  // namespace ha_link
 Timer &timer();  // legacy view of the list (above): the soonest running, else the first done
 bool in_device(lv_obj_t *obj);  // obj is part of a mounted device (the panel), not a workbench page alone
 lv_obj_t *first_root();  // the first mounted device's root, nullptr = none (fw::spec::act: nav.* from an agent / HA)
