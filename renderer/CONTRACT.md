@@ -382,6 +382,16 @@ never disagree. A screen is not done until its card shows the right information 
 *Why:* people put screens on Home as cards; a card that shows only a name, or different data from its screen, fails
 them. *Check:* TODO (lint: every `"role": "page"` spec has a card; screen audit renders each card per feed state).
 
+**C53. What can be edited is a flag on the screen, never a special component.** A screen's spec says `"locked": true`
+when it is made as it is: the editor opens it for its settings only (no slots, no Add, no Remove), whatever parts it
+is built from. Every factory screen is locked; a person's own screen is not, and its root is a Column (top + foot
+slots) that the editor never removes, so it always has somewhere to add a part. A factory id cannot be replaced by a
+sent copy (only the dev path may). Layouts are the general ones (Column, Cells, Grid, ...): a unique case gets a flag,
+not a one-off component.
+*Why:* one set of parts for made screens and people's screens; locking by component would fork them. *Check:*
+TODO (lint: every renderer/specs screen has `"locked": true`); the editor lab test removes every part of a custom
+screen and adds one back.
+
 ## 9. Robustness
 
 **C38. Every state is handled:** normal, pressed, on, off, disabled, loading, unavailable, unknown, empty, error.

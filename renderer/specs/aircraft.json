@@ -1,4 +1,4 @@
-{"v": 1, "id": "aircraft", "name": "All aircraft", "rev": 1, "role": "detail",
+{"v": 1, "id": "aircraft", "locked": true, "name": "All aircraft", "rev": 1, "role": "detail",
  "params": {
   "sample": {"about": "For previews only: which made-up sky to show. busy has many aircraft, overhead has one right above, emergency has one squawking an emergency, quiet has none nearby.", "type": "select", "options": ["busy", "overhead", "emergency", "quiet"], "label": "Sample", "default": "busy"}
  },

@@ -1,6 +1,7 @@
 {
  "v": 1,
  "id": "weather",
+ "locked": true,
  "name": "Weather",
  "rev": 4,
  "role": "page",

@@ -1,6 +1,7 @@
 {
  "v": 1,
  "id": "thermostat",
+ "locked": true,
  "name": "Thermostat",
  "rev": 2,
  "role": "both",

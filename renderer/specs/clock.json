@@ -1,6 +1,7 @@
 {
  "v": 1,
  "id": "clock",
+ "locked": true,
  "name": "Clock",
  "rev": 3,
  "role": "page",

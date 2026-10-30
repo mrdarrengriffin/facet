@@ -1,6 +1,7 @@
 {
  "v": 1,
  "id": "cameras",
+ "locked": true,
  "name": "Cameras",
  "rev": 1,
  "role": "page",

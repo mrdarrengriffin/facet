@@ -119,6 +119,10 @@
 //              "text": {"e": "panel.bins", "a": "when"}, ...}: the Card a Home page card for this screen shows (the
 //              Card's props; binds on the screen's feeds). Home applies the page's "feeds" too, so the card shows the
 //              same data as the screen. No card = the icon + the page's name only.
+// locked      (2026-10-30, Darren, CONTRACT C53) "locked": true = a made screen: the editor opens it for its settings
+//              only (no slots, no Add, no Remove). Every factory screen is locked; a person's own screen is not (and
+//              its root is a Column, so its top + foot always take parts). A sent copy of a factory id stays refused
+//              (no_built_in).
 // Spec role   "role": "page" | "detail" | "both" (default page; screen model 2026-10-23): a page is a place in the deck
 //              (Home links to it); a detail screen is opened from something on a page, for one entity (Light,
 //              Blinds), never in the deck; both = either (Media, Thermostat). Built-in screens: "home" is a page
@@ -618,8 +622,9 @@ inline void check_grid(ArduinoJson::JsonVariantConst n, ArduinoJson::JsonArrayCo
 }
 inline void check_screen(ArduinoJson::JsonVariantConst s, size_t bytes, Errs &e) {
   if (!s.is<ArduinoJson::JsonObjectConst>()) { err(e, "", "bad_spec", "a screen spec is an object"); return; }
-  static const char *const K[] = {"v", "id", "name", "rev", "role", "params", "header", "layout", "nodes", "feeds", "card"};
-  check_keys(s.as<ArduinoJson::JsonObjectConst>(), K, 11, "", e);
+  static const char *const K[] = {"v", "id", "name", "rev", "role", "params", "header", "layout", "nodes", "feeds", "card", "locked"};
+  check_keys(s.as<ArduinoJson::JsonObjectConst>(), K, 12, "", e);
+  if (!s["locked"].isNull() && !s["locked"].is<bool>()) err(e, ".locked", "bad_spec", "locked is true or false");
   if (!s["feeds"].isNull()) {  // {"panel.<feed>": {"source": "<adapter>", <text settings, "$param" allowed>}} (C51)
     if (!s["feeds"].is<ArduinoJson::JsonObjectConst>()) err(e, ".feeds", "bad_feeds", "feeds is an object: feed entity -> its settings");
     else for (ArduinoJson::JsonPairConst kv : s["feeds"].as<ArduinoJson::JsonObjectConst>()) {

@@ -1,6 +1,7 @@
 {
  "v": 1,
  "id": "strike_map",
+ "locked": true,
  "name": "Lightning map",
  "rev": 2,
  "role": "page",

@@ -1,6 +1,7 @@
 {
  "v": 1,
  "id": "flightradar",
+ "locked": true,
  "name": "Flight radar",
  "rev": 2,
  "role": "page",

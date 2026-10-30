@@ -1,6 +1,7 @@
 {
  "v": 1,
  "id": "moon",
+ "locked": true,
  "name": "Moon",
  "rev": 2,
  "role": "both",

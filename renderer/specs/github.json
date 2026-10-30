@@ -1,6 +1,7 @@
 {
  "v": 1,
  "id": "github",
+ "locked": true,
  "name": "GitHub",
  "rev": 2,
  "role": "page",

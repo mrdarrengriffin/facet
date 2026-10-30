@@ -1,6 +1,7 @@
 {
  "v": 1,
  "id": "living_room",
+ "locked": true,
  "name": "Living room",
  "rev": 1,
  "role": "page",

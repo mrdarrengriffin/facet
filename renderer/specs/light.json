@@ -1,6 +1,7 @@
 {
  "v": 1,
  "id": "light",
+ "locked": true,
  "name": "Light",
  "rev": 3,
  "role": "detail",

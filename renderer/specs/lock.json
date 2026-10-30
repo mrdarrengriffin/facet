@@ -1,6 +1,7 @@
 {
  "v": 1,
  "id": "lock",
+ "locked": true,
  "name": "Door lock",
  "rev": 3,
  "role": "detail",

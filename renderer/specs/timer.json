@@ -1,6 +1,7 @@
 {
  "v": 1,
  "id": "timer",
+ "locked": true,
  "name": "Timer",
  "rev": 4,
  "role": "page",

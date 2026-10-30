@@ -1,6 +1,7 @@
 {
  "v": 1,
  "id": "bins",
+ "locked": true,
  "name": "Bins",
  "rev": 5,
  "role": "page",

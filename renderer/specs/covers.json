@@ -1,6 +1,7 @@
 {
  "v": 1,
  "id": "covers",
+ "locked": true,
  "name": "Blinds and curtains",
  "rev": 3,
  "role": "both",

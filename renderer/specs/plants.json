@@ -1,6 +1,7 @@
 {
  "v": 1,
  "id": "plants",
+ "locked": true,
  "name": "Plants",
  "rev": 1,
  "role": "both",

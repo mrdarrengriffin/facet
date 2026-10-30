@@ -1,6 +1,7 @@
 {
  "v": 1,
  "id": "calendar",
+ "locked": true,
  "name": "Calendar",
  "rev": 4,
  "role": "page",

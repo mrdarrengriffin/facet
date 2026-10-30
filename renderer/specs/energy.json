@@ -1,6 +1,7 @@
 {
  "v": 1,
  "id": "energy",
+ "locked": true,
  "name": "Energy",
  "rev": 5,
  "role": "page",

@@ -1,6 +1,7 @@
 {
  "v": 1,
  "id": "vacuum",
+ "locked": true,
  "name": "Robot vacuum",
  "rev": 6,
  "role": "both",

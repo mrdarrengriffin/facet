@@ -1,4 +1,4 @@
-{"v": 1, "id": "agents", "name": "Agents", "rev": 1, "role": "page",
+{"v": 1, "id": "agents", "locked": true, "name": "Agents", "rev": 1, "role": "page",
  "params": {
   "sample": {"about": "For previews only: which set of made-up agents to show. mixed has some needing you, calm has none needing you, empty has no agents at all.", "type": "select", "options": ["mixed", "calm", "empty"], "label": "Sample", "default": "mixed"}
  },

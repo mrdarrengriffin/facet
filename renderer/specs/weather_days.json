@@ -1,6 +1,7 @@
 {
  "v": 1,
  "id": "weather_days",
+ "locked": true,
  "name": "Weather, 5 days",
  "rev": 3,
  "role": "detail",
