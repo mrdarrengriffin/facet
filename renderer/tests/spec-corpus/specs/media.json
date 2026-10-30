@@ -1,25 +1,51 @@
 {
  "v": 1,
- "id": "c_media",
- "name": "Lounge",
- "rev": 1,
- "role": "both",
- "header": {
-  "label": "Lounge",
-  "back": true
+ "id": "media",
+ "name": "Media",
+ "rev": 4,
+ "role": "page",
+ "params": {
+  "source": {"about": "Where what's playing comes from: a media player in Home Assistant, or made-up tracks for previews.", "type": "select", "options": ["ha", "sample"], "label": "Source", "default": "sample"},
+  "entity": {"about": "The media player this screen shows and controls.", "type": "entity", "domain": "media_player", "label": "Player", "default": ""},
+  "speakers": {"about": "The speakers you can switch between in the speaker picker.", "type": "entities", "domain": "media_player", "label": "Speakers", "default": ""},
+  "auto": {"about": "A sensor that names the speaker in the room you are in. When set, Auto follows it.", "type": "entity", "domain": "sensor", "label": "Auto follows", "default": ""},
+  "visual": {"about": "What is drawn for the music: disc is a plain record with a progress ring; cassette, cd and vinyl are drawn to their real look and turn while playing.", "type": "select", "options": ["disc", "cassette", "cd", "vinyl"], "label": "Visual", "default": "cd"}
  },
- "layout": "center",
+ "feeds": {
+  "panel.media": {"source": "$source", "player": "$entity", "speakers": "$speakers", "auto": "$auto"}
+ },
+ "card": {
+  "icon": "media",
+  "preview": "media",
+  "visual": "$visual",
+  "progress": {"e": "panel.media", "a": "progress"},
+  "playing": {"e": "panel.media", "a": "playing"},
+  "mode": "text",
+  "text": {"e": "panel.media", "a": "card_text"},
+  "sub": {"e": "panel.media", "a": "card_sub"},
+  "accent": {"e": "panel.media", "a": "card_accent"}
+ },
+ "header": {"label": "Media", "back": true, "clock": false},
+ "layout": "list",
  "nodes": [
-  {
-   "c": "media_view",
-   "p": {
-    "state": "playing",
-    "title": "Blue in Green",
-    "artist": "Miles Davis",
-    "progress": 40,
-    "volume": 30,
-    "player": "Lounge"
-   }
-  }
+  {"c": "icon_button", "in": "header", "slot": "end", "p": {"style": "square", "icon": "speaker"}, "on": {"tap": {"do": "media.control", "e": "panel.media"}}},
+  {"c": "media_hero",
+   "p": {"visual": "$visual", "state": {"e": "panel.media", "a": "state_label"}, "tone": {"e": "panel.media", "a": "state_tone"},
+         "title": {"e": "panel.media", "a": "title"}, "artist": {"e": "panel.media", "a": "artist"},
+         "progress": {"e": "panel.media", "a": "progress"}, "playing": {"e": "panel.media", "a": "playing"}}},
+  {"c": "group", "p": {"flow": "wrap", "space": "none", "align": "centre", "gap": "group"}},
+  {"c": "icon_button", "in": 2, "slot": 0, "p": {"style": "round", "icon": "prev", "state": {"e": "panel.media", "a": "ctl_state"}}, "on": {"tap": {"do": "media.control", "e": "panel.media"}}},
+  {"c": "icon_button", "in": 2, "slot": 0, "p": {"style": "play", "icon": "play", "state": {"e": "panel.media", "a": "play_state"}}, "on": {"toggle": {"do": "media.control", "e": "panel.media"}}},
+  {"c": "icon_button", "in": 2, "slot": 0, "p": {"style": "round", "icon": "next", "state": {"e": "panel.media", "a": "ctl_state"}}, "on": {"tap": {"do": "media.control", "e": "panel.media"}}},
+  {"c": "group", "p": {"flow": "stack", "space": "none", "align": "start"}},
+  {"c": "slider_row", "in": 6, "slot": 0,
+   "p": {"label": "vol", "value": {"e": "panel.media", "a": "volume"}, "text": {"e": "panel.media", "a": "volume_text"}, "state": {"e": "panel.media", "a": "ctl_state"}},
+   "on": {"change": {"do": "media.control", "e": "panel.media"}, "input": {"do": "media.control", "e": "panel.media"}}},
+  {"c": "bottom_sheet", "in": "overlay",
+   "p": {"title": "speaker", "open": {"e": "panel.media", "a": "sheet"}},
+   "on": {"close": {"do": "media.control", "e": "panel.media"}}},
+  {"c": "picker_row", "in": 8, "slot": 0,
+   "p": {"list": "group", "items": {"e": "panel.media", "a": "speakers"}, "empty": "No speakers picked."},
+   "on": {"tap": {"do": "media.control", "e": "panel.media"}}}
  ]
 }

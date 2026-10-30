@@ -122,8 +122,8 @@
    "note": "docs explorer default controls vs the WASM default: values may differ"
   },
   {
-   "comp": "media_disc",
-   "variant": "default",
+   "comp": "media_visual",
+   "variant": "Disc",
    "astro": {
     "item": "disc",
     "selector": "[data-ex-stage] > *"

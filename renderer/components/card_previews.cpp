@@ -1,7 +1,7 @@
 // Card previews: the artwork at the top right of a Home card (core/previews.h has the list and the rules; docs
 // Components > Graphics > Card previews, @facet/ui previews.ts). This file is the implementation (fw::card_preview,
 // used by the Card's "preview" prop too) and its workbench page: one preview at the size it has on a card, every kind a
-// variant. Contrast: tokens/colour.json section "card_preview" (+ "radar", "media_disc", "mascot", "chart").
+// variant. Contrast: tokens/colour.json section "card_preview" (+ "radar", "media_visual", "mascot", "chart").
 #include <cstring>
 #include "chart.h"
 #include "fw.h"

@@ -97,6 +97,9 @@ const char *button(const char *press);  // the host's key press: "" = nothing to
 // struct (state 0 idle, 1 running, 2 done; ends = wall-clock seconds) for the Home header's time left + Timer view.
 // the Calendar feed's own state (core/calendar_source.cpp): calendar.control; "" = done, else why not
 namespace calendar_source { const char *control(const std::string &v); }
+// the Media feed (core/media_source.cpp): media.control on panel.media; "" = done, else why not; svc = a media_player
+// service to call on ent with data ("" = none)
+namespace media_source { const char *control(const std::string &v, std::string *svc, std::string *ent, std::string *data); }
 // the Flights feed's selection (core/flights_source.cpp): flights.select; true = the lead again (open its details)
 namespace flights_source { bool select(const std::string &d); }
 constexpr int TIMERS_MAX = 4;

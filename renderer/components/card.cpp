@@ -36,6 +36,7 @@ struct Card {
   std::string props;
   lv_obj_t *label = nullptr;
   lv_obj_t *radar = nullptr;  // the flights preview's Sky radar: new planes move it in place (no fade every 2 s)
+  lv_obj_t *media = nullptr;  // the media preview's Media visual: the track's progress moves it in place
 };
 std::map<lv_obj_t *, Card> cards;
 
@@ -48,9 +49,13 @@ std::string sig(fw::Props p) {
   rest.set(p);
   if (strcmp(p["state"] | "default", "unavailable")) rest["state"] = "default";
   if (!strcmp(p["preview"] | "", "flights")) rest.remove("planes");  // the radar takes new planes in place (FW_UPDATE)
+  if (!strcmp(p["preview"] | "", "media")) rest.remove("progress");  // the visual takes the progress in place
   std::string s;
   serializeJson(rest, s);
   return s;
+}
+void media_props(fw::Props p, ArduinoJson::JsonDocument &d) {
+  d["visual"] = p["visual"] | "disc", d["size"] = "card", d["progress"] = p["progress"] | 38, d["playing"] = p["playing"] | false;
 }
 lv_obj_t *line(lv_obj_t *parent, const char *s, const char *type, const char *fg) {  // one line, full width, "..."
   lv_obj_t *o = fx::text(parent, s, type, fg);
@@ -63,6 +68,7 @@ void fill(lv_obj_t *c, fw::Props p) {
   Card &k = cards[c];
   fw::shape(c, sig(p));
   k.radar = nullptr;
+  k.media = nullptr;
   k.props.clear();
   serializeJson(p, k.props);
   const char *state = p["state"] | "default";
@@ -109,6 +115,11 @@ void fill(lv_obj_t *c, fw::Props p) {
     ArduinoJson::JsonDocument bd;
     bd["colours"] = p["colours"] | "black", bd["size"] = "card";
     fw::find("bins_art")->build(top, bd.as<fw::Props>());
+  } else if (!off && full && !strcmp(pv, "media")) {  // the real Media visual at card size (C8b, C52: what is playing)
+    ArduinoJson::JsonDocument md;
+    media_props(p, md);
+    fw::find("media_visual")->build(top, md.as<fw::Props>());
+    k.media = lv_obj_get_child(top, -1);
   } else if (!off && full && !strcmp(pv, "flights")) {  // the real Sky radar at card size (C8b, C52: the aircraft round home)
     ArduinoJson::JsonDocument fd;
     fd["planes"] = p["planes"] | "[]", fd["size"] = "card";
@@ -218,6 +229,9 @@ FW_COMPONENT(card, "Card", "components", R"({
     {"name": "icon", "about": "The small icon before the name, or none.", "type": "select", "options": ["none", "weather", "media", "timer", "energy", "light", "thermostat", "covers", "calendar", "clock", "switch", "agents", "github", "moon", "lightning", "overhead", "bins", "print", "home"], "default": "weather"},
     {"name": "preview", "about": "The small picture at the top right of the card, such as the weather now or the record that is playing, or none.", "type": "select", "options": ["none", "partly-day", "rain-light", "clear-night", "agents", "media", "dial", "switch", "clock", "timer", "github", "energy", "lightning", "bins", "weather", "flights"], "default": "partly-day"},
     {"name": "weather", "about": "With the weather preview: which weather icon it shows, such as rain-light (the weather now).", "type": "text", "default": "partly-day"},
+    {"name": "visual", "about": "With the media preview: the picture, as the Media screen shows it (disc, cassette, cd or vinyl).", "type": "select", "options": ["disc", "cassette", "cd", "vinyl"], "default": "disc"},
+    {"name": "progress", "about": "With the media preview: how far through the track it is, from 0 to 100.", "type": "range", "min": 0, "max": 100, "step": 1, "default": 38},
+    {"name": "playing", "about": "With the media preview: whether it is playing (the picture turns).", "type": "bool", "default": false},
     {"name": "planes", "about": "With the flights preview: the aircraft round home, as the flights feed gives them.", "type": "text", "default": "[]"},
     {"name": "colours", "about": "With the bins preview: the bins' colours, separated by commas, the first in front.", "type": "text", "default": "black"},
     {"name": "mode", "about": "What the middle of the card shows: value is a big short value such as 13°; text is a line of words such as the song playing.", "type": "select", "options": ["value", "text"], "default": "value"},
@@ -268,6 +282,11 @@ FW_UPDATE(card) {
   if (fw::shape(root, sig(p)) && was_off == off) {
     const bool pr = !strcmp(state, "pressed");
     if (pr != lv_obj_has_state(root, LV_STATE_PRESSED)) lv_obj_set_state(root, LV_STATE_PRESSED, pr);
+    if (lv_obj_t *mv = cards[root].media) {  // the media preview: the progress moves, the card stays
+      ArduinoJson::JsonDocument md;
+      media_props(p, md);
+      fw::update_child(fw::find("media_visual"), mv, md.as<fw::Props>());
+    }
     if (lv_obj_t *rd = cards[root].radar) {  // the flights preview: the aircraft move, the card stays
       ArduinoJson::JsonDocument fd;
       fd["planes"] = p["planes"] | "[]", fd["size"] = "card";

@@ -193,25 +193,25 @@ constexpr Rule RULES[] = {
     {"list_row", "long", "nav.open"},                {"card", "tap", "nav.open,light.toggle"},
     {"card", "long", "nav.open"},                    {"dial", "change", "light.brightness"},
     {"entity_tile", "tap", "nav.open,light.toggle"},
-    {"icon_button", "tap", "nav.open,nav.back,calendar.control"},  // 2026-10-29: a header's settings / shortcut icon (the end slot takes icon buttons only); the Calendar's calendars button
+    {"icon_button", "tap", "nav.open,nav.back,calendar.control,media.control"},  {"icon_button", "toggle", "media.control"},  // 2026-10-29: a header's settings / shortcut icon (the end slot takes icon buttons only); the Calendar's calendars button
     {"dial", "input", "light.brightness"},           {"dial", "toggle", "light.switch"},
     {"slider", "change", "light.brightness"},        {"slider", "input", "light.brightness"},
+    {"slider_row", "change", "media.control"},       {"slider_row", "input", "media.control"},
     {"toggle", "toggle", "light.switch"},
     {"more_row", "tap", "nav.open,nav.back,screen.param"},  // screen.param + to: a view of the same screen (Energy > last 7 days)
     {"thermostat_dial", "change", "climate.set_temperature"}, {"thermostat_dial", "input", "climate.set_temperature"},
     {"thermostat_view", "target", "climate.set_temperature"}, {"thermostat_view", "mode", "climate.set_hvac_mode"},
     {"thermostat_view", "preset", "climate.set_preset_mode"},
-    {"media_view", "media", "media.control"},        {"media_view", "speaker", "screen.param"},
     {"covers_view", "cover", "cover.control"},       {"covers_view", "window", "screen.param"},
     {"lock_ring", "lock", "lock.control"},           {"button", "confirm", "lock.control"},
     {"room_tile", "pick", "screen.toggle"},          {"camera_tile", "tap", "nav.back"},          {"tile", "tap", "nav.open"},          {"button", "tap", "nav.open,nav.back,light.toggle,vacuum.control,timer.start,timer.extend,timer.cancel,timer.stop,timer.select,timer.new,timer.back"},
     {"timer_chip", "select", "timer.select"},       {"timer_chip", "stop", "timer.stop"},
     {"grid", "select", "timer.select"},             {"grid", "stop", "timer.stop"},  // Timer chips in an items Grid
     {"segmented", "change", "vacuum.control,screen.param"}, {"iso_floorplan", "pick", "screen.toggle"},
-    {"vacuum_mode", "change", "vacuum.control"},     {"grid", "pick", "screen.param,nav.open,calendar.control"},
+    {"vacuum_mode", "change", "vacuum.control"},     {"grid", "pick", "screen.param,nav.open,calendar.control,media.control"},
     {"sky_radar", "pick", "flights.select"},         {"flight_hero", "tap", "flights.select"},  // the Flight radar: a plane / the hero
     {"calendar_month", "pick", "calendar.control"},  {"calendar_month", "month", "calendar.control"},
-    {"bottom_sheet", "close", "calendar.control"},        // a link to a sub-view spec (moon -> moon_details -> ...)
+    {"bottom_sheet", "close", "calendar.control,media.control"}, {"picker_row", "tap", "media.control"},        // a link to a sub-view spec (moon -> moon_details -> ...)
     {"*", "open", "nav.open"},                       // any component's own "open" (a tapped calendar day, a PR):
                                                      // its detail = the screen id [+ "?" + params JSON]
 };
@@ -452,7 +452,7 @@ inline void check_action(ArduinoJson::JsonVariantConst a, const char *comp, cons
   }
   if (d == "media.control") {
     const std::string en = a["e"] | "";
-    if (!entity_ok(en) || (en[0] != '$' && en.rfind("media_player.", 0) != 0)) err(e, path + ".e", "bad_entity", "a media player (media_player.x or $param)");
+    if (!entity_ok(en) || (en[0] != '$' && en != "panel.media" && en.rfind("media_player.", 0) != 0)) err(e, path + ".e", "bad_entity", "a media player (media_player.x, panel.media or $param)");
   }
   if (d == "cover.control") {
     const std::string en = a["e"] | "";
@@ -607,9 +607,9 @@ inline void check_screen(ArduinoJson::JsonVariantConst s, size_t bytes, Errs &e)
     }
   }
   if (!s["header"].isNull()) {
-    static const char *const H[] = {"label", "back", "settings", "actions"};
+    static const char *const H[] = {"label", "back", "settings", "actions", "clock"};
     if (!s["header"].is<ArduinoJson::JsonObjectConst>()) err(e, ".header", "bad_header", "header is {label, back, settings?, actions?}");
-    else check_keys(s["header"].as<ArduinoJson::JsonObjectConst>(), H, 4, ".header", e);
+    else check_keys(s["header"].as<ArduinoJson::JsonObjectConst>(), H, 5, ".header", e);
   }
   ArduinoJson::JsonArrayConst nodes = s["nodes"].as<ArduinoJson::JsonArrayConst>();
   if (nodes.isNull()) { err(e, ".nodes", "bad_nodes", "nodes is a list"); return; }
@@ -1357,6 +1357,24 @@ inline bool run_action(Screen *s, Node &n, ArduinoJson::JsonVariantConst a, cons
     const std::string *es = ha::get(n.entity);
     if (es && (*es == "unavailable" || *es == "unknown")) { emit(n.obj, st::BLOCKED_EVENT, "unavailable"); return refuse("the entity is unavailable"); }
   }
+  if (d == "media.control" && n.entity == "panel.media") {  // the media feed (core/media_source.cpp): it shows the tap at once and
+    // names the media_player service to call (none on its sample adapter); a tap's event says what
+    const std::string ev = event ? event : "", det = detail ? detail : "";
+    if (ev == "input") {  // live only under a finger (an update's sweep moves the value too)
+      lv_obj_t *f = lv_indev_get_active_obj();
+      while (f && f != n.obj) f = lv_obj_get_parent(f);
+      if (!f) return true;
+    }
+    const std::string v = ev == "close" ? "close" : ev == "toggle" ? "play_pause" : ev == "pick" ? "pick " + det
+                        : ev == "change" ? "volume " + det : ev == "input" ? "live " + det
+                        : n.comp == "picker_row" ? "pick " + det  // a speaker row: its name
+                        : ev == "tap" ? (det == "prev" ? "previous" : det == "speaker" ? "speakers" : det) : det;
+    std::string svc, ent, data;
+    const char *why = dev::media_source::control(v, &svc, &ent, &data);
+    if (*why) return refuse(why);
+    if (!svc.empty()) ha_act(n, svc.c_str(), ent.c_str(), data.c_str());
+    return true;
+  }
   if (d == "media.control") {  // previous | play_pause | next | volume 0-100 (the view shows it at once itself)
     static const char *const CMD[][2] = {{"previous", "media_player.media_previous_track"},
                                          {"play_pause", "media_player.media_play_pause"},
@@ -1850,6 +1868,7 @@ inline lv_obj_t *build(lv_obj_t *parent, const std::string &id, Props opened, st
   hd["label"] = doc["header"]["label"].isNull() ? "" : *hl ? hl : (doc["name"] | "");
   hd["back"] = !at_root;  // the renderer owns Back (facet-188): a spec cannot remove it
   hd["settings"] = doc["header"]["settings"] | false;  // the settings button in the chrome (Home)
+  hd["clock"] = doc["header"]["clock"] | true;  // false: no time (the Media screen, docs header clock: false)
   if (doc["header"]["actions"].is<ArduinoJson::JsonObjectConst>()) hd["actions"] = doc["header"]["actions"];  // a Home's header actions
   {  // opened for one entity (a Home card's detail): the header names it, the card's label else its friendly name
     const std::string oe = opened["entity"] | "", on = opened["name"] | "";

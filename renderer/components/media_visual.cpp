@@ -1,4 +1,6 @@
-// Media visuals: the Facet media visuals (docs: Components > Controls > Media visuals, @facet/ui media-visuals/, CSS
+// Media visuals: the Media screen's picture and its Home card preview (2026-10-30: absorbs the Media disc, visual
+// "disc": draw_disc below, the old media_disc's parts and tokens; size "card" = lay::mv_card tall, a square crop
+// showing the right end as the screen does). The Facet media visuals (docs: Components > Controls > Media visuals, @facet/ui media-visuals/, CSS
 // .f-mv-*): a cassette, a CD, or a 12" vinyl LP with its tonearm for the Media screen's hero
 // slot, drawn from the real-world dimensions (docs specs.ts: IEC 60094-7 cassette, ECMA-130 CD, RIAA E4 LP, Technics
 // SL-1200 arm), turning at the real tape and disc speeds while the track plays (CD slowed 16 x: docs; the docs'
@@ -24,8 +26,8 @@
 
 namespace {
 constexpr float PI = 3.14159265f;
-enum Kind { CASSETTE, CD, VINYL };
-const char *KIND_IDS[] = {"cassette", "cd", "vinyl"};
+enum Kind { CASSETTE, CD, VINYL, DISC };
+const char *KIND_IDS[] = {"cassette", "cd", "vinyl", "disc"};
 
 // ---- the specs (mm), docs media-visuals/specs.ts
 namespace cs {  // Compact Cassette
@@ -74,6 +76,8 @@ float ease(float cur, float target, float dt, float tau) { return cur + (target 
 
 struct MV {
   Kind kind = CASSETTE;
+  bool card = false;              // size card: the Home card preview (lay::mv_card tall, a square crop)
+  float shown = 0, mark = 0;     // disc: the progress drawn (eases to progress), the marker angle (degrees)
   float k = 1, ox = 0, oy = 0;  // px per mm; the box's top-left in mm
   int W = 0, H = 0;
   float progress = 0;            // 0..1
@@ -325,21 +329,68 @@ void arm_box(const MV *d, float a, float *x0, float *y0, float *x1, float *y1) {
   *x1 = (mx1 + pad - d->ox) * d->k; *y1 = (my1 + pad - d->oy) * d->k;
 }
 
+// ---- 4 the Media disc (absorbed from media_disc, 2026-10-30): units = px at the screen size (lay::disc_screen), k
+// scales them to the card. A dotted ring (72 dots over 355 degrees from 12 o'clock, stroke::arc, line-hi), the accent
+// progress arc sp::s2 inside it (round caps), the face (disc, a hair line edge) with two groove rings
+// (lay::disc_groove smaller each), the accent label spot with its hole in the canvas colour, the blue marker circling
+// the face sp::s5 inside its edge (one turn per Motion disc-marker while playing).
+void draw_disc(const Ctx &c) {
+  const fw::Theme &t = *fw::T;
+  const MV *d = c.d;
+  const float D = (float) fw::lay::disc_screen, C = D / 2, F = (float) fw::lay::disc_face_screen;
+  const int w = std::max(1, (int) std::lround(fw::stroke::arc * d->k)), hair = std::max(1, (int) std::lround(fw::stroke::hair * d->k));
+  const float dot = fw::stroke::arc / 2.0f;
+  for (int i = 0; i < 72; i++) {
+    const float a = (270 + i * 355.0f / 71) * PI / 180;
+    arc(c, C + (C - dot) * std::cos(a), C + (C - dot) * std::sin(a), std::max(dot, 0.5f / d->k), 0, t.line_hi);
+  }
+  if (d->shown > 0.001f) {
+    const float r = C - fw::sp::s2;
+    const float X = c.X(C), Y = c.Y(C), Rp = c.S(r);
+    lv_draw_arc_dsc_t ad;
+    lv_draw_arc_dsc_init(&ad);
+    ad.color = t.accent;
+    ad.center = {(int32_t) std::lround(X), (int32_t) std::lround(Y)};
+    ad.radius = (uint16_t) std::lround(Rp);
+    ad.width = w;
+    ad.rounded = 1;
+    ad.start_angle = 270;
+    ad.end_angle = (lv_value_precise_t) (270 + 359 * d->shown);
+    lv_draw_arc(c.l, &ad);
+  }
+  disc(c, C, C, F / 2, t.disc);
+  arc(c, C, C, F / 2, hair, t.line);
+  for (int i = 1; i <= 2; i++) arc(c, C, C, (F - i * fw::lay::disc_groove) / 2, hair, t.groove);
+  disc(c, C, C, fw::lay::disc_spot_screen / 2.0f, t.accent);
+  disc(c, C, C, fw::lay::disc_hole / 2.0f, t.bg);
+  const float orb = F / 2 - fw::sp::s5, a = (270 + d->mark) * PI / 180;
+  disc(c, C + orb * std::cos(a), C + orb * std::sin(a), fw::lay::disc_marker / 2.0f, t.blue);
+}
+
 void draw(lv_event_t *e) {
   auto *o = (lv_obj_t *) lv_event_get_current_target(e);
   Ctx c{lv_event_get_layer(e), {}, of(o)};
   lv_obj_get_coords(o, &c.o);
+  const lv_area_t keep = c.l->_clip_area;
+  if (c.d->card) {  // the card: a square crop, nothing past it
+    lv_area_t &k = c.l->_clip_area;
+    k = {LV_MAX(keep.x1, c.o.x1), LV_MAX(keep.y1, c.o.y1), LV_MIN(keep.x2, c.o.x2), LV_MIN(keep.y2, c.o.y2)};
+    if (k.x1 > k.x2 || k.y1 > k.y2) { k = keep; return; }
+  }
   switch (c.d->kind) {
     case CASSETTE: draw_cassette(c); break;
     case CD: draw_cd(c); break;
     case VINYL: draw_vinyl(c); break;
+    case DISC: draw_disc(c); break;
   }
+  c.l->_clip_area = keep;
 }
 
 // ---- geometry per visual + the pack radii / arm target from the progress
 void layout(MV *d) {
-  const float H = (float) fw::lay::mv_h;
+  const float H = (float) (d->card ? fw::lay::mv_card : fw::lay::mv_h);
   switch (d->kind) {
+    case DISC: d->k = H / fw::lay::disc_screen; d->ox = 0; d->oy = 0; d->W = (int) H; break;
     case CASSETTE:  // a pixel to spare (H - 1): the bottom edge's lines anti-alias one row past it
       d->k = (H - 1) / cs::h; d->ox = 0; d->oy = 0; d->W = ((int) std::ceil(cs::w * d->k) + fw::sp::GRID - 1) / fw::sp::GRID * fw::sp::GRID;
       d->ox = -(d->W / d->k - cs::w) / 2;  // centred in its grid-sized box
@@ -356,10 +407,12 @@ void layout(MV *d) {
       // design round, Darren 2026-10-22), its size rounded up to the grid
       d->W = ((int) std::ceil((R + d->Px + 36) * d->k) + fw::sp::GRID - 1) / fw::sp::GRID * fw::sp::GRID;
       d->H = ((int) std::ceil((R - d->oy) * d->k) + fw::sp::GRID - 1) / fw::sp::GRID * fw::sp::GRID;
+      if (d->card) { d->ox = -R, d->oy = -R, d->W = d->H = (int) H; }  // the card: the record alone, a square
       return;
     }
   }
   d->H = (int) H;
+  if (d->card && d->W > d->H) { d->ox += (d->W - d->H) / d->k; d->W = d->H; }  // the card: a square, the right end (as the screen shows it)
 }
 void feed(MV *d) {
   if (d->kind == CASSETTE) packs(cs::hubR, full_radius(cs::hubR, cs::tapeLength, cs::tapeThickness), d->progress, &d->sup, &d->tak);
@@ -391,6 +444,12 @@ void dirty_turning(lv_obj_t *o, const MV *d) {
       dirty_circle(o, d, C + r * std::cos(a), C + r * std::sin(a), 2.5f / d->k + 1.5f);
       break;
     }
+    case DISC: {  // the marker: its old and new place (both inside this box)
+      const float D = (float) fw::lay::disc_screen, orb = fw::lay::disc_face_screen / 2.0f - fw::sp::s5, m = fw::lay::disc_marker / 2.0f + 2;
+      const float a = (270 + d->mark) * PI / 180;
+      dirty_circle(o, d, D / 2 + orb * std::cos(a), D / 2 + orb * std::sin(a), m);
+      break;
+    }
     case VINYL: break;  // the plain label's turn is invisible (no art): nothing to redraw
   }
 }
@@ -403,7 +462,7 @@ void frame(void *var, int32_t) {
   d->last = now;
   const bool still = fw::mo::reduced(o);
   // spin: eases up / down (docs time constants per visual)
-  const float tauUp[3] = {0.25f, 0.6f, 0.5f}, tauDown[3] = {0.12f, 0.9f, 0.7f};
+  const float tauUp[4] = {0.25f, 0.6f, 0.5f, 0.05f}, tauDown[4] = {0.12f, 0.9f, 0.7f, 0.05f};
   d->m = ease(d->m, d->playing ? 1.0f : 0.0f, dt, d->playing ? tauUp[d->kind] : tauDown[d->kind]);
   bool moving = false;
   // the plain vinyl label has no art, so its turn is invisible (dirty_turning draws nothing for it): it does not keep
@@ -417,11 +476,20 @@ void frame(void *var, int32_t) {
     } else if (d->kind == CD) {  // CLV 1.3 m/s at the program radius, / 16
       const float r = cd::program / 2 + d->progress * (cd::programMax / 2 - cd::program / 2);
       d->ang[0] += deg_per_sec(cd::scan, r) / 16 * dt * d->m;
+    } else if (d->kind == DISC) {  // the marker: one turn per Motion disc-marker (old place, then new)
+      dirty_turning(o, d);
+      d->mark = std::fmod(d->mark + 360.0f * dt * d->m * 1000 / fw::mo::ms::disc_marker, 360.0f);
     } else {
       d->ang[0] += lp::rpm * 6 * dt * d->m;
     }
     for (float &a : d->ang) a = std::fmod(a, 360.0f);
     dirty_turning(o, d);
+  }
+  if (d->kind == DISC && std::fabs(d->shown - d->progress) > 0.0005f) {  // the progress arc sweeps (Motion value's feel)
+    d->shown = still ? d->progress : ease(d->shown, d->progress, dt, 0.12f);
+    if (std::fabs(d->shown - d->progress) <= 0.0005f) d->shown = d->progress;
+    lv_obj_invalidate(o);
+    moving = true;
   }
   if (d->kind == VINYL && std::fabs(d->armA - d->armT) > 0.01f) {
     float x0, y0, x1, y1;
@@ -458,7 +526,7 @@ void run(lv_obj_t *o) {
 
 Kind kind_of(fw::Props p) {
   const char *v = p["visual"] | "cassette";
-  for (int i = 0; i < 3; i++) if (!strcmp(v, KIND_IDS[i])) return (Kind) i;
+  for (int i = 0; i < 4; i++) if (!strcmp(v, KIND_IDS[i])) return (Kind) i;
   return CASSETTE;
 }
 void apply(MV *d, fw::Props p) {
@@ -472,9 +540,11 @@ void fill(lv_obj_t *o, fw::Props p) {
   auto *d = of(o);
   *d = MV{};
   d->kind = kind_of(p);
+  d->card = !strcmp(p["size"] | "screen", "card");
   layout(d);
   apply(d, p);
   d->armA = d->armT;  // the first draw: the arm already at its groove
+  d->shown = d->progress;
   // a playing visual starts at speed (it was playing before the screen opened), not from a standstill
   d->m = d->playing ? 1.0f : 0.0f;
   lv_obj_remove_style_all(o);
@@ -484,17 +554,23 @@ void fill(lv_obj_t *o, fw::Props p) {
 }  // namespace
 
 FW_COMPONENT(media_visual, "Media visuals", "components", R"({
-  "about": "A cassette, CD or vinyl record for the Media screen, drawn to the real sizes. They turn at the real speeds while playing; the tape or tonearm follows the track's progress.",
+  "about": "The picture on the Media screen and its Home card: a plain disc with a progress ring, or a cassette, CD or vinyl record drawn to the real sizes. They turn at the real speeds while playing; the tape or tonearm follows the track's progress.",
   "frame": [296, 208],
   "props": [
-    {"name": "visual", "about": "What is drawn: a cassette, a CD or a vinyl record.", "type": "select", "options": ["cassette", "cd", "vinyl"], "default": "cassette"},
+    {"name": "visual", "about": "What is drawn: the plain disc with a progress ring, a cassette, a CD or a vinyl record.", "type": "select", "options": ["disc", "cassette", "cd", "vinyl"], "default": "cassette"},
+    {"name": "size", "about": "screen is the Media screen's picture; card is the small picture at the top right of its Home card (a square: the right end of a cassette).", "type": "select", "options": ["screen", "card"], "default": "screen"},
     {"name": "progress", "about": "How far through the track it is, from 0 to 100. The tape moves from one reel to the other, or the tonearm moves in.", "type": "range", "min": 0, "max": 100, "step": 1, "default": 38},
     {"name": "playing", "about": "Whether it is playing. While it plays the cassette reels or the disc turn at their real speed.", "type": "bool", "default": true},
     {"name": "title", "about": "The track title, written on the cassette label or the record.", "type": "text", "default": "Harbour Lights"},
     {"name": "artist", "about": "The artist, written under the title.", "type": "text", "default": "The Lanterns"}
   ],
   "variants": [
+    {"label": "Disc", "props": {"visual": "disc", "progress": 38}},
+    {"label": "Disc · paused 72 %", "props": {"visual": "disc", "progress": 72, "playing": false}},
     {"label": "Cassette", "props": {"visual": "cassette", "progress": 30}},
+    {"label": "Disc · card", "props": {"visual": "disc", "size": "card"}},
+    {"label": "Cassette · card", "props": {"visual": "cassette", "size": "card"}},
+    {"label": "CD · card", "props": {"visual": "cd", "size": "card"}},
     {"label": "CD", "props": {"visual": "cd", "progress": 45}},
     {"label": "Vinyl", "props": {"visual": "vinyl", "progress": 60}, "audit": {"skip": {"clip": "vinyl awaiting design round, Darren 2026-10-22"}}},
     {"label": "Vinyl · stopped at the start", "props": {"visual": "vinyl", "progress": 0, "playing": false}, "audit": {"skip": {"clip": "vinyl awaiting design round, Darren 2026-10-22"}}}
@@ -512,7 +588,7 @@ FW_COMPONENT(media_visual, "Media visuals", "components", R"({
 FW_UPDATE(media_visual) {
   auto *d = of(root);
   if (!d) return false;
-  if (kind_of(p) != d->kind) {
+  if (kind_of(p) != d->kind || d->card != !strcmp(p["size"] | "screen", "card")) {
     lv_anim_delete(root, (lv_anim_exec_xcb_t) frame);
     fw::refill(root);
     fill(root, p);

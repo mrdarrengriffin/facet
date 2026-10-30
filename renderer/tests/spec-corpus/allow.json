@@ -40,8 +40,13 @@
    "curtain",
    "blind"
   ],
-  "media_view": [
-   "vol"
+  "media_hero": [
+   "idle",
+   "Nothing playing"
+  ],
+  "slider_row": [
+   "vol",
+   "--"
   ],
   "timer_view": [
    "+1 min",

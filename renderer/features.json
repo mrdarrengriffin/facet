@@ -61,7 +61,7 @@
       "label": "Media",
       "docs": true, "status": "done", "firmware": true,
       "screens": ["media"],
-      "components": ["media_view", "media_visual"],
+      "components": ["media_hero", "media_visual", "slider_row"],
       "cards": ["media"]
     },
     {

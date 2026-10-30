@@ -36,7 +36,7 @@
     {"name": "next", "kind": "ui", "group": "media", "keyline": "glyph", "file": "next.svg", "sizes": ["glyph"], "use": "round icon button (glyph-round)"},
     {"name": "prev", "kind": "ui", "group": "media", "keyline": "glyph", "file": "prev.svg", "sizes": ["glyph"], "use": "round icon button"},
     {"name": "volume", "kind": "ui", "group": "media", "keyline": "landscape", "file": "volume.svg", "sizes": ["icon"], "use": "component library (no screen uses it yet: shipped at icon size)"},
-    {"name": "speaker", "kind": "ui", "group": "media", "keyline": "portrait", "file": "speaker.svg", "sizes": ["small", "icon"], "use": "speaker button 16 · picker rows 24"},
+    {"name": "speaker", "kind": "ui", "group": "media", "keyline": "portrait", "file": "speaker.svg", "sizes": ["small", "icon", "glyph"], "use": "speaker button 16 · picker rows 24 · the Media header's speakers Icon button"},
     {"name": "speakers", "kind": "ui", "group": "media", "keyline": "landscape", "file": "speakers.svg", "sizes": ["icon"], "use": "picker rows"},
     {"name": "tv", "kind": "ui", "group": "media", "keyline": "landscape", "file": "tv.svg", "sizes": ["icon"], "use": "picker rows"},
     {"name": "stream", "kind": "ui", "group": "media", "keyline": "circle", "file": "stream.svg", "sizes": ["icon"], "use": "picker rows"},

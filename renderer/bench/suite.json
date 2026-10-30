@@ -18,7 +18,7 @@
   },
   "timing": { "tick_ms": 16, "settle_ms": 1000, "window_ms": 2000, "drag_ms": 600, "after_ms": 400, "nav_ms": 1200 },
   "auto": { "sections": ["components", "screens"], "scenarios": ["idle", "animate"], "skip": ["device"] },
-  "live": ["weather_icon", "tile", "toast_layer", "media_visual", "media_disc", "mascot_mood", "lightning_radar", "f1_circuit", "f1_standings", "f1_live", "tennis_score", "tennis_court", "tennis_live", "football_pitch", "football_live"],
+  "live": ["weather_icon", "tile", "toast_layer", "media_visual", "mascot_mood", "lightning_radar", "f1_circuit", "f1_standings", "f1_live", "tennis_score", "tennis_court", "tennis_live", "football_pitch", "football_live"],
   "cases": [
     { "id": "weather_icon.feature", "comp": "weather_icon", "props": { "icon": "rain-heavy", "size": "feature" }, "scenarios": ["animate"], "live": true, "tags": ["weather"] },
     { "id": "weather_icon.card", "comp": "weather_icon", "props": { "icon": "rain-heavy", "size": "card" }, "scenarios": ["animate"], "live": true, "tags": ["weather"] },
