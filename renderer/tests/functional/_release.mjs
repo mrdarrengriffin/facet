@@ -8,6 +8,7 @@
 //   look       a LIVE theme / accent switch through the shared styles (fw_test look), no rebuild
 //   frame565   the stage as RGB565 words (what the panel shows); diff565 = differing pixels
 //   golden     compare the stage (minus mask boxes: the live clock) with tests/golden/<suite>/<den>-<name>.565.gz; a missing or changed golden FAILS and
+//              ({ optIn: true }: the candidates go to <tmp>/facet-candidates/<suite> unless CHECK_WRITE_CANDIDATES=1)
 //              writes <name>.new.565.gz + .new.png beside it for review: never auto-accepted (FW_GOLDEN_ACCEPT=1 on a
 //              run accepts the .new files after a person has looked at the PNGs)
 //   faults     HA fault injection on a FakeHA: missing entity, wrong types, out of range, out-of-order echoes
@@ -18,6 +19,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync, renameSync } from 'node:fs';
 import { gzipSync, gunzipSync } from 'node:zlib';
 import { dirname, join } from 'node:path';
+import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { png } from '../../tools/lib/fwbench.mjs';
 
@@ -75,21 +77,22 @@ export const diff565 = (a, b) => { let n = 0; for (let i = 0; i < a.length; i++)
 const rgba = (w) => { const px = new Uint8Array(w.length * 4); w.forEach((v, i) => { px[i * 4] = (v >> 11) << 3; px[i * 4 + 1] = ((v >> 5) & 63) << 2; px[i * 4 + 2] = (v & 31) << 3; px[i * 4 + 3] = 255; }); return px; };
 
 // mask = boxes {x, y, w, h} blanked first (what changes on its own: the live clock)
-export function golden(t, suite, name, den, mask = []) {
+export function golden(t, suite, name, den, mask = [], { optIn = false } = {}) {
   const dir = join(GOLDEN, suite), base = join(dir, `${den}-${name}`), cur = frame565(t);
+  const cand = optIn && process.env.CHECK_WRITE_CANDIDATES !== '1' ? join(tmpdir(), 'facet-candidates', suite, `${den}-${name}`) : base;
   const W = t.b.W || t.b.S, H = t.b.H || t.b.S;
   for (const m of mask) for (let y = Math.max(0, m.y); y < Math.min(H, m.y + m.h); y++) for (let x = Math.max(0, m.x); x < Math.min(W, m.x + m.w); x++) cur[y * W + x] = 0;
-  mkdirSync(dir, { recursive: true });
+  mkdirSync(dir, { recursive: true }); mkdirSync(dirname(cand), { recursive: true });
   const save = (p) => { writeFileSync(`${p}.565.gz`, gzipSync(Buffer.from(cur.buffer))); writeFileSync(`${p}.png`, png(rgba(cur), W, H)); };
   if (process.env.FW_GOLDEN_ACCEPT === '1' && existsSync(`${base}.new.565.gz`)) {
     renameSync(`${base}.new.565.gz`, `${base}.565.gz`); renameSync(`${base}.new.png`, `${base}.png`);
   }
-  if (!existsSync(`${base}.565.gz`)) { save(`${base}.new`); return [`no golden ${suite}/${den}-${name}: review ${base}.new.png, then accept (FW_GOLDEN_ACCEPT=1)`]; }
+  if (!existsSync(`${base}.565.gz`)) { save(`${cand}.new`); return [`no golden ${suite}/${den}-${name}: review ${cand}.new.png, then accept (FW_GOLDEN_ACCEPT=1)`]; }
   const want = new Uint16Array(new Uint8Array(gunzipSync(readFileSync(`${base}.565.gz`))).buffer);
   const n = want.length === cur.length ? diff565(want, cur) : -1;
   if (n === 0) return [];
-  save(`${base}.new`);
-  return [`golden ${suite}/${den}-${name}: ${n < 0 ? 'size changed' : `${n} px differ`} (review ${base}.new.png)`];
+  save(`${cand}.new`);
+  return [`golden ${suite}/${den}-${name}: ${n < 0 ? 'size changed' : `${n} px differ`} (review ${cand}.new.png)`];
 }
 
 // HA faults on the fake HA (t.ha): each returns what was injected (for the log)

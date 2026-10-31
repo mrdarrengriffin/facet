@@ -137,7 +137,7 @@ export default {
         await build(t, c, light, th);
         const mask = (c.screen || c.id === 'header') ? (() => {  // the live clock (a screen's header, the Header itself)
            const k = t.part('time'), h = t.part('header'), g = den(t) === '1x' ? 8 : 12; return k && h ? [{ x: k.x - g, y: h.y, w: k.w + 2 * g, h: h.h }] : []; })() : [];  // the whole time (a theme font can be wider)
-        out.push(...golden(t, 'theme', `${th}-${c.name}-${light ? 'light' : 'dark'}`, den(t), mask));
+        out.push(...golden(t, 'theme', `${th}-${c.name}-${light ? 'light' : 'dark'}`, den(t), mask, { optIn: true }));
       }
       use(t, 'facet');
       t.eq(out.slice(0, 4), [], `goldens (${out.length} awaiting review)`);
