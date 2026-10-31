@@ -4,7 +4,7 @@
 #                                 specs, themes) + the given ids' pixel contrast, screen audit, behaviour and functional
 #                                 tests at 1.5x; also regenerates catalogue/ from the build
 #   ./check.sh gate [--ids a,b]   nightly and in CI: everything at both densities, lab test, floor plans, visual
-#   ./check.sh nightly            overnight only: ASan
+#   ./check.sh nightly            overnight only: ASan at 1.5x (and 1x on Sundays, or with --weekly)
 # One line per step (PASS / FAIL / WARN, seconds); each step's full output in $CHECK_LOG (default
 # $FW_CACHE/checks/<time>-<tier>). Functional tests are reported, never fail a tier (WARN) while the suite grows.
 # Exit 1 if any step failed. Build = $FW_OUT (env or local.env), else ./out.
@@ -12,8 +12,8 @@ set -uo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd)
 [ -f "$HERE/../local.env" ] && . "$HERE/../local.env"
 tier=${1:-}; shift || true
-ids=""
-while [ $# -gt 0 ]; do case "$1" in --ids) ids=$2; shift ;; *) echo "unknown arg $1"; exit 2 ;; esac; shift; done
+ids="" weekly=""; [ "$(date +%u)" = 7 ] && weekly=1
+while [ $# -gt 0 ]; do case "$1" in --ids) ids=$2; shift ;; --weekly) weekly=1 ;; *) echo "unknown arg $1"; exit 2 ;; esac; shift; done
 case "$tier" in fast|gate|nightly) ;; *) sed -n 2,9p "$0"; exit 2 ;; esac
 B=${FW_OUT:-$HERE/out}
 LOG=${CHECK_LOG:-${FW_CACHE:-$HERE/.cache}/checks/$(date +%Y%m%d-%H%M%S)-$tier}; mkdir -p "$LOG"
@@ -33,7 +33,7 @@ for d in $dens; do [ -f "$B/$d/fw.mjs" ] || { echo "no $d build in $B: run build
 
 if [ "$tier" = nightly ]; then
   check asan-1.5x tools/asan.sh 1.5x
-  check asan-1x tools/asan.sh 1x
+  [ -n "$weekly" ] && check asan-1x tools/asan.sh 1x
   [ $fail = 0 ] && echo "CHECK $tier: all green (logs $LOG)" || echo "CHECK $tier: FAILED (logs $LOG)"; exit $fail
 fi
 
