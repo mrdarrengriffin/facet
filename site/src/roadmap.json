@@ -1,5 +1,5 @@
 {
- "updated": "2026-10-25",
+ "updated": "2026-10-30",
  "tables": {
   "foundations": [
    {
@@ -161,16 +161,10 @@
     "note": "Text in any type style, snapped to the grid"
    },
    {
-    "name": "Status dot",
-    "group": "Atoms",
-    "status": "done",
-    "note": "Small coloured dot for state"
-   },
-   {
     "name": "Status chip",
     "group": "Atoms",
     "status": "done",
-    "note": "Small tinted word pill for state"
+    "note": "Small tinted word pill for state, or the dot alone"
    },
    {
     "name": "Corner ticks",
@@ -336,7 +330,7 @@
     "name": "Hero block",
     "group": "Screen parts",
     "status": "done",
-    "note": "Big number or headline at the top of a screen"
+    "note": "Big number or headline at the top of a screen; unit + count-up (took over Big number)"
    },
    {
     "name": "List row",
@@ -486,12 +480,6 @@
     "note": "Tiny trend line"
    },
    {
-    "name": "Big number",
-    "group": "Charts",
-    "status": "done",
-    "note": "Large figure with unit"
-   },
-   {
     "name": "Delta chip",
     "group": "Charts",
     "status": "done",
@@ -512,13 +500,7 @@
     "name": "Time",
     "group": "Clock",
     "status": "done",
-    "note": "Live time text"
-   },
-   {
-    "name": "Date line",
-    "group": "Clock",
-    "status": "done",
-    "note": "Today's date line"
+    "note": "Live time text, optional date under it"
    },
    {
     "name": "Clock faces",
@@ -545,7 +527,8 @@
    {
     "name": "Split / Group layouts",
     "group": "Screen parts",
-    "status": "doing"
+    "status": "doing",
+    "note": "Layouts with slots: pages are made only from components"
    },
    {
     "name": "Status block",
@@ -690,9 +673,10 @@
     "status": "doing"
    },
    {
-    "name": "Overhead (flights)",
+    "name": "Flight radar (overhead flights)",
     "group": "Weather and sky",
-    "status": "doing"
+    "status": "done",
+    "note": "Flights feed (HA + sample), Now | Radar, tap to select, aircraft detail, all-aircraft list, Home card. Next: the panel fetching flights itself."
    },
    {
     "name": "Calendar",
