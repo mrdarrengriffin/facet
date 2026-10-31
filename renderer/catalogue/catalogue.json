@@ -595,7 +595,12 @@
      "timer.select",
      "timer.new",
      "timer.back",
-     "cover.control"
+     "cover.control",
+     "script.run",
+     "scene.activate",
+     "automation.trigger",
+     "button.press",
+     "entity.toggle"
     ],
     "open": [
      "nav.open"
@@ -1172,47 +1177,6 @@
     "bytes_est": 6400
    }
   },
-  "check_row": {
-   "name": "Check row",
-   "update": true,
-   "props": [
-    {
-     "name": "name",
-     "type": "text",
-     "bindable": true,
-     "about": "The name of the check, such as test or build."
-    },
-    {
-     "name": "state",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "pass",
-      "fail",
-      "pending",
-      "skipped"
-     ],
-     "about": "How the check went: pass, fail, pending while it still runs, or skipped. The dot and the word change to match."
-    },
-    {
-     "name": "width",
-     "type": "range",
-     "bindable": true,
-     "min": 160,
-     "max": 440,
-     "about": "How wide the row is, in pixels."
-    }
-   ],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 4,
-    "bytes_est": 640
-   }
-  },
   "checkbox": {
    "name": "Checkbox",
    "update": true,
@@ -1259,6 +1223,47 @@
    "cost": {
     "objects": 6,
     "bytes_est": 960
+   }
+  },
+  "check_row": {
+   "name": "Check row",
+   "update": true,
+   "props": [
+    {
+     "name": "name",
+     "type": "text",
+     "bindable": true,
+     "about": "The name of the check, such as test or build."
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "pass",
+      "fail",
+      "pending",
+      "skipped"
+     ],
+     "about": "How the check went: pass, fail, pending while it still runs, or skipped. The dot and the word change to match."
+    },
+    {
+     "name": "width",
+     "type": "range",
+     "bindable": true,
+     "min": 160,
+     "max": 440,
+     "about": "How wide the row is, in pixels."
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 4,
+    "bytes_est": 640
    }
   },
   "clock_face": {
@@ -1883,7 +1888,12 @@
    "events": {
     "tap": [
      "nav.open",
-     "light.toggle"
+     "light.toggle",
+     "script.run",
+     "scene.activate",
+     "automation.trigger",
+     "button.press",
+     "entity.toggle"
     ],
     "open": [
      "nav.open"
@@ -3213,6 +3223,83 @@
     "bytes_est": 1120
    }
   },
+  "icon_button": {
+   "name": "Icon button",
+   "update": true,
+   "props": [
+    {
+     "name": "style",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "play",
+      "round",
+      "square"
+     ],
+     "about": "The button's shape: play is the large round play and pause button, round is a smaller circle, square has rounded corners."
+    },
+    {
+     "name": "icon",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "next",
+      "prev",
+      "play",
+      "plus",
+      "close",
+      "check",
+      "back",
+      "settings",
+      "chevron",
+      "chevron-left",
+      "calendar",
+      "speaker",
+      "covers"
+     ],
+     "about": "The icon on the button, such as next, previous, play or close."
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "default",
+      "pressed",
+      "active",
+      "active-pressed",
+      "disabled",
+      "unavailable"
+     ],
+     "about": "How the button looks: default ready to tap, pressed while held, active when it is switched on, active-pressed while the active one is held, disabled when it cannot be used, or unavailable when its device cannot be reached."
+    }
+   ],
+   "events": {
+    "tap": [
+     "nav.open",
+     "nav.back",
+     "light.toggle",
+     "calendar.control",
+     "media.control",
+     "cover.control",
+     "script.run",
+     "scene.activate",
+     "automation.trigger",
+     "button.press",
+     "entity.toggle"
+    ],
+    "toggle": [
+     "media.control"
+    ],
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 3,
+    "bytes_est": 480
+   }
+  },
   "icon": {
    "name": "Icon",
    "update": true,
@@ -3349,77 +3436,6 @@
     }
    ],
    "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 3,
-    "bytes_est": 480
-   }
-  },
-  "icon_button": {
-   "name": "Icon button",
-   "update": true,
-   "props": [
-    {
-     "name": "style",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "play",
-      "round",
-      "square"
-     ],
-     "about": "The button's shape: play is the large round play and pause button, round is a smaller circle, square has rounded corners."
-    },
-    {
-     "name": "icon",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "next",
-      "prev",
-      "play",
-      "plus",
-      "close",
-      "check",
-      "back",
-      "settings",
-      "chevron",
-      "chevron-left",
-      "calendar",
-      "speaker",
-      "covers"
-     ],
-     "about": "The icon on the button, such as next, previous, play or close."
-    },
-    {
-     "name": "state",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "default",
-      "pressed",
-      "active",
-      "active-pressed",
-      "disabled",
-      "unavailable"
-     ],
-     "about": "How the button looks: default ready to tap, pressed while held, active when it is switched on, active-pressed while the active one is held, disabled when it cannot be used, or unavailable when its device cannot be reached."
-    }
-   ],
-   "events": {
-    "tap": [
-     "nav.open",
-     "nav.back",
-     "calendar.control",
-     "media.control",
-     "cover.control"
-    ],
-    "toggle": [
-     "media.control"
-    ],
     "open": [
      "nav.open"
     ]
@@ -3745,14 +3761,6 @@
       "off"
      ],
      "about": "The fill colour: accent, steel, blue, or off for a grey fill."
-    },
-    {
-     "name": "width",
-     "type": "range",
-     "bindable": true,
-     "min": 0,
-     "max": 480,
-     "about": "How wide the bar is, in pixels. 0 fills the space it is in."
     }
    ],
    "events": {
@@ -3761,8 +3769,8 @@
     ]
    },
    "cost": {
-    "objects": 4,
-    "bytes_est": 640
+    "objects": 1,
+    "bytes_est": 160
    }
   },
   "lightning_radar": {
@@ -4603,8 +4611,8 @@
     ]
    },
    "cost": {
-    "objects": 8,
-    "bytes_est": 1280
+    "objects": 5,
+    "bytes_est": 800
    }
   },
   "plant_row": {
@@ -4654,77 +4662,8 @@
     ]
    },
    "cost": {
-    "objects": 12,
-    "bytes_est": 1920
-   }
-  },
-  "pr_row": {
-   "name": "Pull request row",
-   "update": true,
-   "props": [
-    {
-     "name": "repo",
-     "type": "text",
-     "bindable": true,
-     "about": "The repository the pull request is in."
-    },
-    {
-     "name": "number",
-     "type": "range",
-     "bindable": true,
-     "min": 1,
-     "max": 9999,
-     "about": "The pull request's number."
-    },
-    {
-     "name": "title",
-     "type": "text",
-     "bindable": true,
-     "about": "The pull request's title, over up to two lines."
-    },
-    {
-     "name": "age",
-     "type": "text",
-     "bindable": true,
-     "about": "How long ago it was opened or last changed, such as 5h."
-    },
-    {
-     "name": "draft",
-     "type": "bool",
-     "bindable": true,
-     "about": "Marks it as a draft that is not ready for review yet."
-    },
-    {
-     "name": "ci",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "pass",
-      "fail",
-      "pending",
-      "none"
-     ],
-     "about": "How its automatic checks went: pass, fail, pending, or none when it has no checks."
-    },
-    {
-     "name": "state",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "default",
-      "pressed"
-     ],
-     "about": "default ready to tap; pressed while held."
-    }
-   ],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 13,
-    "bytes_est": 2080
+    "objects": 9,
+    "bytes_est": 1440
    }
   },
   "print_model": {
@@ -4895,6 +4834,75 @@
    "cost": {
     "objects": 2,
     "bytes_est": 320
+   }
+  },
+  "pr_row": {
+   "name": "Pull request row",
+   "update": true,
+   "props": [
+    {
+     "name": "repo",
+     "type": "text",
+     "bindable": true,
+     "about": "The repository the pull request is in."
+    },
+    {
+     "name": "number",
+     "type": "range",
+     "bindable": true,
+     "min": 1,
+     "max": 9999,
+     "about": "The pull request's number."
+    },
+    {
+     "name": "title",
+     "type": "text",
+     "bindable": true,
+     "about": "The pull request's title, over up to two lines."
+    },
+    {
+     "name": "age",
+     "type": "text",
+     "bindable": true,
+     "about": "How long ago it was opened or last changed, such as 5h."
+    },
+    {
+     "name": "draft",
+     "type": "bool",
+     "bindable": true,
+     "about": "Marks it as a draft that is not ready for review yet."
+    },
+    {
+     "name": "ci",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "pass",
+      "fail",
+      "pending",
+      "none"
+     ],
+     "about": "How its automatic checks went: pass, fail, pending, or none when it has no checks."
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "default",
+      "pressed"
+     ],
+     "about": "default ready to tap; pressed while held."
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 13,
+    "bytes_est": 2080
    }
   },
   "qr_block": {
@@ -5141,8 +5149,8 @@
     ]
    },
    "cost": {
-    "objects": 3,
-    "bytes_est": 480
+    "objects": 4,
+    "bytes_est": 640
    }
   },
   "scroll_track": {
@@ -6934,26 +6942,6 @@
       "high"
      ],
      "about": "How much water the mop uses: low, medium or high."
-    },
-    {
-     "name": "style",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "row",
-      "button"
-     ],
-     "about": "row shows the settings as a full row; button shows a short button that sits on the map."
-    },
-    {
-     "name": "view",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "rooms",
-      "map"
-     ],
-     "about": "Which vacuum view it sits in: the room list or the map."
     }
    ],
    "events": {
@@ -6965,8 +6953,8 @@
     ]
    },
    "cost": {
-    "objects": 17,
-    "bytes_est": 2720
+    "objects": 90,
+    "bytes_est": 14400
    }
   },
   "vacuum_robot": {
@@ -7144,7 +7132,14 @@
   "timer.new",
   "timer.back",
   "calendar.control",
-  "flights.select"
+  "flights.select",
+  "script.run",
+  "scene.activate",
+  "automation.trigger",
+  "button.press",
+  "entity.toggle",
+  "ha.connect",
+  "ha.entities"
  ],
  "act": [
   {
@@ -7631,6 +7626,128 @@
    "example": {
     "do": "flights.select"
    }
+  },
+  {
+   "do": "script.run",
+   "about": "Run a Home Assistant script.",
+   "fields": [
+    {
+     "name": "e",
+     "type": "entity",
+     "need": "required",
+     "limits": "script.x"
+    }
+   ],
+   "example": {
+    "do": "script.run",
+    "e": "script.good_night"
+   }
+  },
+  {
+   "do": "scene.activate",
+   "about": "Activate a Home Assistant scene.",
+   "fields": [
+    {
+     "name": "e",
+     "type": "entity",
+     "need": "required",
+     "limits": "scene.x"
+    }
+   ],
+   "example": {
+    "do": "scene.activate",
+    "e": "scene.movie"
+   }
+  },
+  {
+   "do": "automation.trigger",
+   "about": "Trigger a Home Assistant automation now.",
+   "fields": [
+    {
+     "name": "e",
+     "type": "entity",
+     "need": "required",
+     "limits": "automation.x"
+    }
+   ],
+   "example": {
+    "do": "automation.trigger",
+    "e": "automation.lights_out"
+   }
+  },
+  {
+   "do": "button.press",
+   "about": "Press a Home Assistant button entity.",
+   "fields": [
+    {
+     "name": "e",
+     "type": "entity",
+     "need": "required",
+     "limits": "button.x"
+    }
+   ],
+   "example": {
+    "do": "button.press",
+    "e": "button.doorbell_chime"
+   }
+  },
+  {
+   "do": "entity.toggle",
+   "about": "Toggle a fan, an input boolean or an automation (an automation: enable / disable).",
+   "fields": [
+    {
+     "name": "e",
+     "type": "entity",
+     "need": "required",
+     "limits": "fan.x, input_boolean.x or automation.x"
+    }
+   ],
+   "example": {
+    "do": "entity.toggle",
+    "e": "fan.bedroom"
+   }
+  },
+  {
+   "do": "ha.connect",
+   "about": "Set the panel's own Home Assistant link: its address and a long-lived token (kept on the panel, never shown back).",
+   "fields": [
+    {
+     "name": "url",
+     "type": "text",
+     "need": "required",
+     "limits": "http(s)://host:port, at most 128"
+    },
+    {
+     "name": "token",
+     "type": "text",
+     "need": "optional",
+     "limits": "a long-lived access token (empty = keep the one set)"
+    }
+   ],
+   "example": {
+    "do": "ha.connect",
+    "url": "http://homeassistant.local:8123",
+    "token": "eyJhbGciOiJIUzI1NiJ9.example.token"
+   }
+  },
+  {
+   "do": "ha.entities",
+   "about": "Read the entity lists the pickers offer from Home Assistant (the panel's own link).",
+   "fields": [
+    {
+     "name": "domains",
+     "type": "text",
+     "need": "optional",
+     "limits": "a comma list of domains (light, sensor, ...)"
+    },
+    {
+     "name": " empty = every domain"
+    }
+   ],
+   "example": {
+    "do": "ha.entities",
+    "domains": "light,media_player"
+   }
   }
  ],
  "fmt": [
@@ -7729,7 +7846,73 @@
     "m": "card",
     "l": "card"
    }
+  },
+  "entity": {
+   "domains": "*",
+   "sizes": "s",
+   "taps": "toggle,detail,run,none",
+   "detail": "",
+   "component": {
+    "s": "entity_tile"
+   },
+   "by_domain": {
+    "light": {
+     "taps": "toggle,detail,none",
+     "detail": "light"
+    },
+    "switch": {
+     "taps": "toggle,detail,none",
+     "detail": "light"
+    },
+    "fan": {
+     "taps": "toggle,none",
+     "detail": ""
+    },
+    "input_boolean": {
+     "taps": "toggle,none",
+     "detail": ""
+    },
+    "automation": {
+     "taps": "toggle,run,none",
+     "detail": ""
+    },
+    "script": {
+     "taps": "run,none",
+     "detail": ""
+    },
+    "scene": {
+     "taps": "run,none",
+     "detail": ""
+    },
+    "button": {
+     "taps": "run,none",
+     "detail": ""
+    },
+    "cover": {
+     "taps": "detail,none",
+     "detail": "covers"
+    },
+    "climate": {
+     "taps": "detail,none",
+     "detail": "thermostat"
+    },
+    "media_player": {
+     "taps": "detail,none",
+     "detail": "media"
+    },
+    "lock": {
+     "taps": "detail,none",
+     "detail": "lock"
+    },
+    "vacuum": {
+     "taps": "detail,none",
+     "detail": "vacuum"
+    },
+    "*": {
+     "taps": "none"
+    }
+   }
   }
  },
- "hash": "4a3c2477"
+ "hash": "d865df9b"
 }
