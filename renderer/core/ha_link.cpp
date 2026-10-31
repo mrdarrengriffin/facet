@@ -26,6 +26,10 @@ struct State {
   size_t peak = 0;
   int count = 0;
   std::map<std::string, std::vector<Entity>> cache;
+  WsSink ws = nullptr;
+  uint32_t ws_next = WS_ID;
+  struct Call { std::function<void(const char *, size_t)> feed; std::function<void(bool, const std::string &)> end; };
+  std::map<uint32_t, Call> calls;  // WS reads waiting for their reply
 };
 State &S() { static State s; return s; }
 void bump() { S().rev++; }
@@ -192,12 +196,35 @@ const std::vector<Entity> *list(const std::string &domain) {
   return it == S().cache.end() ? nullptr : &it->second;
 }
 void on_get(GetSink f) { S().get = f; }
+void on_ws(WsSink f) { S().ws = f; }
+uint32_t ws(const std::string &cmd, std::function<void(const char *, size_t)> feed, std::function<void(bool, const std::string &)> end) {
+  State &s = S();
+  if (!ready() || !s.ws) return 0;
+  const uint32_t id = s.ws_next++;
+  s.calls[id] = {std::move(feed), std::move(end)};
+  s.ws(id, s.url, s.token, cmd);
+  return id;
+}
 void chunk(uint32_t id, const char *p, size_t n) {
   State &s = S();
+  if (id >= WS_ID) {
+    auto it = s.calls.find(id);
+    if (it != s.calls.end() && it->second.feed) it->second.feed(p, n);
+    return;
+  }
   if (id == s.cur && s.active) s.active->feed(p, n);
 }
 void done(uint32_t id, bool ok, const std::string &why, Scan *parsed) {
   State &s = S();
+  if (id >= WS_ID) {
+    delete parsed;
+    auto it = s.calls.find(id);
+    if (it == s.calls.end()) return;
+    auto end = std::move(it->second.end);
+    s.calls.erase(it);
+    if (end) end(ok, ok ? "" : (why.empty() ? "no reply" : why));
+    return;
+  }
   if (id != s.cur || s.st != LOADING) { delete parsed; return; }
   Scan *sc = parsed ? parsed : s.active;
   if (parsed) delete s.active;

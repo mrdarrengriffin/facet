@@ -40,6 +40,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <functional>
 #include "fw.h"
 
 namespace fw {
@@ -191,6 +192,16 @@ using GetSink = void (*)(uint32_t id, const std::string &url, const std::string 
 void on_get(GetSink f);
 void chunk(uint32_t id, const char *p, size_t n);
 void done(uint32_t id, bool ok, const std::string &why, Scan *parsed = nullptr);  // parsed: the platform's own Scan (taken)
+// One WebSocket read (2026-10-31, the Energy feed: HA's Energy dashboard): connect to <url>/api/websocket, auth with
+// the token, send cmd (one command as JSON, no "id"), stream its result message back through feed (chunk() with an
+// id from WS_ID up), then end(ok, why) (done()); the link closes. Reads only: the transport allows a closed list
+// (energy/get_prefs, recorder/statistics_during_period, recorder/list_statistic_ids; WASM: the hub's
+// /api/panel/ha-ws, its own token; the firmware: to come). on_ws: the platform's sender. ws() = 0: not ready or no
+// transport (end is not called).
+constexpr uint32_t WS_ID = 1u << 30;
+using WsSink = void (*)(uint32_t id, const std::string &url, const std::string &token, const std::string &cmd);
+void on_ws(WsSink f);
+uint32_t ws(const std::string &cmd, std::function<void(const char *, size_t)> feed, std::function<void(bool, const std::string &)> end);
 }  // namespace ha_link
 Timer &timer();  // legacy view of the list (above): the soonest running, else the first done
 bool in_device(lv_obj_t *obj);  // obj is part of a mounted device (the panel), not a workbench page alone

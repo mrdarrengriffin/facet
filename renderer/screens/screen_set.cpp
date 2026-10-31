@@ -11,6 +11,9 @@
 //                       sources set the spec's "source" parameter (C51: the adapter, core/sources.h adapter()), this
 //                       row is the one Source: a pick keeps "source" and "params.source", a spec with a "sample"
 //                       option and no sample source gets "Sample (previews)", and the parameter is not repeated below.
+//                       A source with "from" (sources.json: a standard place in HA it reads, Energy: HA's Energy
+//                       dashboard) adds the row "From <it>" with what the feed found there (its "found" attribute:
+//                       "Grid, Solar · 3 devices", "Not set up in Home Assistant"), following the pick live.
 //            "options"  one row per typed parameter of the screen's spec (core/spec.h "params", hidden ones left
 //                       out): select = a List row + Segmented (up to 4 options) or the sheet; toggle = a List row
 //                       toggle; entity = its friendly name, and a sheet of the screen's list of the same domain when
@@ -107,6 +110,11 @@ struct Page {
   std::string id;
   std::vector<Pick> picks;
   int open = -1;                                           // the pick the sheet shows
+  // "from": the row saying what the picked source found (sources.json "from", the feed's "found" attribute)
+  lv_obj_t *from_row = nullptr;
+  std::string from_feed, from_shown = "\x01";  // \x01: not shown yet
+  int src_pick = -1;                    // the Source pick in picks (-1 = one source, src_from[0])
+  std::vector<std::string> src_from;    // per source: its "from" words ("" = none)
   std::vector<std::pair<lv_obj_t *, std::string>> ctrls;  // Segmented / Toggle -> its key
 };
 void keep(Page *pg, lv_obj_t *from, const std::string &key, ArduinoJson::JsonVariantConst v) {
@@ -115,6 +123,12 @@ void keep(Page *pg, lv_obj_t *from, const std::string &key, ArduinoJson::JsonVar
   if (v.is<const char *>()) vs = v.as<const char *>();
   else serializeJson(v, vs);
   fw::emit(from, "deck", (pg->id + " " + key + "=" + vs).c_str());
+}
+// a pick's row shows its new value (the List row's update takes the whole row: title and icon kept)
+void row_value(Pick &p, const std::string &value) {
+  Doc rp;
+  rp["title"] = p.key == "source" ? "Source" : p.title.c_str(), rp["icon"] = "none", rp["trailing"] = "value-chevron", rp["value"] = value.c_str();
+  fw::update_child(fw::find("list_row"), p.row, rp.as<fw::Props>());
 }
 namespace hl = fw::dev::ha_link;
 constexpr size_t PAGE = 24;  // at most this many entity rows in the sheet; more = rows by the next letter
@@ -297,7 +311,19 @@ void build_page(lv_obj_t *parent, fw::Props p) {
   sr["trailing"] = pk.ids.size() > 1 ? "value-chevron" : "value";
   if (lv_obj_t *r = build("list_row", c, sr); r && pk.ids.size() > 1) {
     pk.row = r;
+    pg->src_pick = (int) pg->picks.size();
     pg->picks.push_back(pk);
+  }
+  // from (2026-10-31): a source that reads a standard place in HA (Energy: HA's Energy dashboard) says what it found
+  // there, live from the feed's "found" attribute (the adapter reads it when asked, core/ha.h local)
+  for (ArduinoJson::JsonVariantConst x : srcs) pg->src_from.push_back(x["from"] | "");
+  for (ArduinoJson::JsonPairConst f : spec["feeds"].as<ArduinoJson::JsonObjectConst>()) { pg->from_feed = f.key().c_str(); break; }
+  if (!pg->from_feed.empty() && std::any_of(pg->src_from.begin(), pg->src_from.end(), [](const std::string &f) { return !f.empty(); })) {
+    if (auto fresh = fw::ha::local(pg->from_feed)) fresh();
+    Doc fr;
+    fr["title"] = "From", fr["icon"] = "none", fr["trailing"] = "none", fr["sub"] = "";
+    pg->from_row = build("list_row", c, fr);
+    if (pg->from_row) lv_obj_remove_flag(pg->from_row, LV_OBJ_FLAG_CLICKABLE);
   }
 
   // options: the spec's typed parameters
@@ -459,26 +485,20 @@ void build_page(lv_obj_t *parent, fw::Props p) {
           std::string l;
           for (const std::string &x : p.chosen) l += (l.empty() ? "" : ",") + x;
           v.set(l.c_str());
-          Doc rp;
-          rp["value"] = p.chosen.empty() ? "None" : (std::to_string(p.chosen.size()) + " chosen").c_str();
-          fw::update_child(fw::find("list_row"), p.row, rp.as<fw::Props>());
+          row_value(p, p.chosen.empty() ? "None" : std::to_string(p.chosen.size()) + " chosen");
           keep(pg, pg->sheet, p.key, v.as<ArduinoJson::JsonVariantConst>());
           return;
         }
         p.cur = a == "auto" ? "auto" : a.substr(2);
         v.set(p.cur.c_str());
-        Doc rp;
-        rp["value"] = p.names[i].c_str();
-        fw::update_child(fw::find("list_row"), p.row, rp.as<fw::Props>());
+        row_value(p, p.names[i]);
         keep(pg, pg->sheet, p.key, v.as<ArduinoJson::JsonVariantConst>());
         fw::sheet::close(pg->sheet);
         pg->dirty = false;
         return;
       }
       p.sel = i;
-      Doc rp;
-      rp["value"] = p.names[i].c_str();
-      fw::update_child(fw::find("list_row"), p.row, rp.as<fw::Props>());
+      row_value(p, p.names[i]);
       if (p.ids[i] != fw::src::SAMPLE) {
         Doc v;
         v.set(p.ids[i].c_str());
@@ -493,6 +513,22 @@ void build_page(lv_obj_t *parent, fw::Props p) {
   // an open HA pick follows the link (a read ends) and a tap that changes its rows (rebuilt here, after the tap)
   pg->tick = lv_timer_create([](lv_timer_t *tm) {
     auto *pg = (Page *) lv_timer_get_user_data(tm);
+    if (pg->from_row) {  // the source's "from" row follows the pick and what the feed found
+      const int sel = pg->src_pick >= 0 ? pg->picks[pg->src_pick].sel : 0;
+      const std::string from = sel >= 0 && sel < (int) pg->src_from.size() ? pg->src_from[sel] : "";
+      const std::string *found = fw::ha::get(pg->from_feed, "found");
+      const std::string shown = from.empty() ? "" : from + "\n" + (found ? *found : "Reading Home Assistant");
+      if (shown != pg->from_shown) {
+        pg->from_shown = shown;
+        if (from.empty()) lv_obj_add_flag(pg->from_row, LV_OBJ_FLAG_HIDDEN);
+        else {
+          lv_obj_remove_flag(pg->from_row, LV_OBJ_FLAG_HIDDEN);
+          Doc fr;
+          fr["title"] = ("From " + from).c_str(), fr["icon"] = "none", fr["trailing"] = "none", fr["sub"] = found ? found->c_str() : "Reading Home Assistant";
+          fw::update_child(fw::find("list_row"), pg->from_row, fr.as<fw::Props>());
+        }
+      }
+    }
     if (pg->open < 0 || pg->open >= (int) pg->picks.size() || !pg->picks[pg->open].ha || !pg->sheet) return;
     if (!pg->dirty && pg->seen == hl::rev()) return;
     if (!pg->dirty && !fw::sheet::is_open(pg->sheet)) return;

@@ -27,9 +27,8 @@
    {"id": "open_meteo", "kind": "direct", "name": "Open-Meteo, called by the panel itself (planned)", "adapter": "open_meteo"},
    {"id": "sample", "kind": "builtin", "name": "Sample forecast (previews)", "adapter": "sample"}]},
   "energy": {"shows": "Today's energy use by the half hour with its rates, and the last two weeks.", "needs": "a smart meter or tariff", "feed": "panel.energy", "sources": [
-   {"id": "ha_panel_energy", "kind": "ha", "name": "Energy sensors in the panel energy shape (sensor.panel_energy + sensor.panel_energy_days, filled by Home Assistant from a tariff integration such as Octopus Energy)", "adapter": "ha", "detect": {"domain": "sensor"}, "fills": {"sensor": {"domain": "sensor"}, "days": {"domain": "sensor"}}},
+   {"id": "ha_energy", "kind": "ha", "name": "HA's Energy dashboard", "from": "HA's Energy dashboard", "adapter": "ha", "detect": {"energy": true}},
    {"id": "octopus", "kind": "ha", "name": "Octopus Energy (read directly, planned)", "detect": {"integration": "octopus_energy"}},
-   {"id": "ha_energy", "kind": "ha", "name": "HA Energy dashboard (planned)", "detect": {"energy": true}},
    {"id": "octopus_api", "kind": "direct", "name": "Octopus API (planned)", "setup": ["API key", "account number"]},
    {"id": "sample", "kind": "builtin", "name": "Sample time-of-use day (previews)", "adapter": "sample"}]},
   "thermostat": {"shows": "The heating: the room temperature, the target to set, the mode and preset.", "needs": "a smart thermostat", "sources": [

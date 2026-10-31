@@ -182,12 +182,23 @@ std::vector<uint32_t> &get_queue() {
   return q;
 }
 [[maybe_unused]] const bool get_registered = (get_queue(), true);
+// WS reads (ha_link::ws, 2026-10-31) ride the same queue: {"id": n, "ws": <the command>}, through the hub's
+// /api/panel/ha-ws; their reply comes back with fw_ha_chunk / fw_ha_got like a GET (ids from WS_ID up)
+std::vector<std::pair<uint32_t, std::string>> &ws_queue() {
+  static std::vector<std::pair<uint32_t, std::string>> q;
+  static const bool reg = (fw::dev::ha_link::on_ws([](uint32_t id, const std::string &, const std::string &, const std::string &cmd) { q.push_back({id, cmd}); }), true);
+  (void) reg;
+  return q;
+}
+[[maybe_unused]] const bool ws_registered = (ws_queue(), true);
 EMSCRIPTEN_KEEPALIVE const char *fw_ha_gets() {
   static std::string out;
   out = "[";
   for (size_t i = 0; i < get_queue().size(); i++) out += (i ? "," : "") + std::to_string(get_queue()[i]);
+  for (size_t i = 0; i < ws_queue().size(); i++)
+    out += (out.size() > 1 ? "," : "") + std::string("{\"id\":") + std::to_string(ws_queue()[i].first) + ",\"ws\":" + ws_queue()[i].second + "}";
   out += "]";
-  get_queue().clear();
+  get_queue().clear(), ws_queue().clear();
   return out.c_str();
 }
 EMSCRIPTEN_KEEPALIVE void fw_ha_chunk(int id, const char *p, int n) { if (p && n > 0) fw::dev::ha_link::chunk((uint32_t) id, p, (size_t) n); }
