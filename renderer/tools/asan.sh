@@ -4,7 +4,7 @@
 # WASM hides (an out-of-bounds write there silently corrupts the heap; on the panels it crashes: the 2026-10-22 clock
 # hand). Heavy (~2 GB, minutes cold): run it through the box's job queue where there is one.
 #   tools/asan.sh [1x|1.5x] [id '<props json>' ...]   no ids = every item, its defaults and every variant
-# Exit 0 = no reports. Objects cached in $FW_CACHE/asan-<den> (LVGL once; sources rebuilt when newer than their object).
+# Exit 0 = no reports. Objects cached in $FW_CACHE/asan-<den> (LVGL once; a source rebuilt when it or a header it includes changed).
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")/.." && pwd)
 [ -f "$HERE/../local.env" ] && . "$HERE/../local.env"
@@ -29,13 +29,12 @@ SAN="-fsanitize=address,undefined -fno-omit-frame-pointer -fno-sanitize-recover=
 FL="-O1 -g $SAN -DLV_CONF_INCLUDE_SIMPLE -I$G -I$L -I$L/src"
 V=; [ "$DEN" = 1x ] && V=-DFW_1X
 find "$L/src" -name '*.c' | xargs -P2 -I{} sh -c 'o='"$LV"'/$(echo "{}" | md5sum | cut -c1-12).o; [ -f $o ] || gcc '"$FL"' -c {} -o $o' 
+. "$HERE/tools/lib/stale.sh"; STALE_SKIP=$L  # sources rebuilt when they or a header they include changed (depfiles)
 OBJS=
 for f in "$HERE"/core/*.cpp "$HERE"/foundations/*.cpp "$HERE"/components/*.cpp "$HERE"/screens/*.cpp "$HERE"/tools/asan_driver.cpp; do
   [ -f "$f" ] || continue
   o="$O/obj/$(basename "$(dirname "$f")")_$(basename "$f" .cpp).o"; OBJS="$OBJS $o"
-  stale=0; [ -f "$o" ] || stale=1
-  for d in "$f" "$HERE"/core/*.h "$G"/*_gen.h "$G"/facet_*.h "$G"/lv_conf.h; do [ "$d" -nt "$o" ] && stale=1; done
-  [ $stale = 1 ] && { echo "cc $(basename "$f")"; g++ $FL $V -std=c++17 -I"$O/shim" -I"$HERE/core" -I"$AJ" -c "$f" -o "$o"; }
+  stale "$o" && { echo "cc $(basename "$f")"; g++ $FL $V -std=c++17 -I"$O/shim" -I"$HERE/core" -I"$AJ" -MMD -MF "$o.d" -c "$f" -o "$o"; }
 done
 g++ $SAN "$LV"/*.o $OBJS -o "$O/fw-asan" -lm
 exec "$O/fw-asan" "$@"

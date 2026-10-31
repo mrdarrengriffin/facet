@@ -3,8 +3,8 @@
 # workbench page.
 #   ./build.sh            both densities in parallel (1.5x = Waveshare + Shelly 720, 1x = Guition 480)
 #   ./build.sh 1x|1.5x    one
-# Incremental: each .cpp (core/*.cpp, foundations/*.cpp, components/*.cpp) is its own object, recompiled only when it or a header in
-# core/ or a generated token header (tokens/colour.json, tokens/type.json, tokens/space.json, tokens/layout.json, tokens/icons.json, tokens/motion.json, tokens/states.json, tokens/mascot.json) changed; LVGL objects are cached once per lv_conf (cold ~20-60 s, after that a component edit = a few seconds).
+# Incremental: each .cpp (core/*.cpp, foundations/*.cpp, components/*.cpp) is its own object, recompiled only when it or a header it
+# includes changed (compiler depfiles); LVGL objects are cached once per lv_conf (cold ~20-60 s, after that a component edit = a few seconds).
 # Paths (env, or local.env at the repo root, untracked):
 #   PANEL_BUILD  ESPHome build dir of the panel firmware (LVGL tree, lv_conf.h, ArduinoJson)
 #   FW_PANEL     panel firmware source dir (packages/ui.yaml for the LV_* build flags)
@@ -128,20 +128,20 @@ if [ -z "${FW_DEV:-}" ] || [ ! -f "$FONTS_H" ] || [ -n "$(find "$HERE/tools/gen_
   touch "$FONTS_H"
 fi
 
-# workbench + foundations + components: recompile when the source, a core header, a token header or (fonts) the font header is newer
+# workbench + foundations + components: recompile when the source or a header it includes is newer (compiler depfiles,
+# tools/lib/stale.sh); fonts.cpp / icons.cpp also follow this density's generated font / icon header
 CXX="em++ $FL $VFLAG -std=c++17 -I$HERE/core -I$AJ"
+. "$HERE/tools/lib/stale.sh"; STALE_SKIP=$L
 OBJS=; JOBS=
 for f in "$HERE"/core/*.cpp "$HERE"/foundations/*.cpp "$HERE"/components/*.cpp "$HERE"/screens/*.cpp "$HERE"/bench/*.cpp; do
   [ -f "$f" ] || continue
   case "$SKIP" in *" ${f#$HERE/} "*) continue ;; esac  # a hidden feature's source (FW_FEATURES)
   o="$O/$(basename "$(dirname "$f")")_$(basename "$f" .cpp).o"
   OBJS="$OBJS $o"
-  dep="$f $HERE/core/*.h $GEN/colour_gen.h $GEN/type_gen.h $GEN/space_gen.h $GEN/layout_gen.h $GEN/icons_gen.h $GEN/motion_gen.h $GEN/states_gen.h $GEN/mascot_gen.h $GEN/settings_gen.h $GEN/chart_gen.h $GEN/surfaces_gen.h $GEN/floorplan_gen.h $GEN/specs_gen.h"; [ "$(basename "$f")" = fonts.cpp ] && dep="$dep $FONTS_H"; [ "$(basename "$f")" = icons.cpp ] && dep="$dep $ICONS_H"; [ "$(basename "$f")" = floorplans.cpp ] && dep="$dep $GEN/fp_fixture_gen.h"; [ "$(basename "$f")" = specs_data.cpp ] && dep="$dep $GEN/specs_gen_data.h"; case "$(basename "$f")" in theme_file.cpp|theme_lab.cpp) dep="$dep $GEN/theme_gen.h" ;; esac
-  stale=0; [ -f "$o" ] || stale=1
-  [ $stale = 0 ] && for d in $dep; do [ "$d" -nt "$o" ] && stale=1; done
-  if [ $stale = 1 ]; then
+  extra=; [ "$(basename "$f")" = fonts.cpp ] && extra=$FONTS_H; [ "$(basename "$f")" = icons.cpp ] && extra=$ICONS_H
+  if stale "$o" $extra; then
     while [ "$(jobs -rp | wc -l)" -ge "$BUILD_JOBS" ]; do wait -n || CC_FAIL=1; done  # at most BUILD_JOBS at once
-    echo "[$DEN] cc $(basename "$f")"; $CXX -c "$f" -o "$o" & JOBS="$JOBS $!"
+    echo "[$DEN] cc $(basename "$f")"; $CXX -MMD -MF "$o.d" -c "$f" -o "$o" & JOBS="$JOBS $!"
   fi
 done
 while [ "$(jobs -rp | wc -l)" -gt 0 ]; do wait -n || CC_FAIL=1; done
