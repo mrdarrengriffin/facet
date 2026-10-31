@@ -613,8 +613,12 @@ void paint(Look *L, const fw::Theme *t, int only = -1) {  // colours from the th
       if (d.i == 3) {  // card-pad: children count from the outer edge (layout:card-pad less the border hair, = docs)
         lv_style_set_pad_all(s, tok("layout:card-pad", lay::card_pad) - tok("stroke:hair", stroke::hair)); continue;
       }
-      if (d.i == 4) {  // card-text: up to two lines of its type (type:title), then "..."
-        lv_style_set_width(s, lv_pct(100)); lv_style_set_height(s, LV_SIZE_CONTENT); lv_style_set_max_height(s, 2 * box_of(ty::title)); continue;
+      if (d.i == 4) {  // card-text: up to two lines of its type (type:title), then "..."; each line its whole type box
+        // (the type style's bottom pad assumes a box-tall label; a content-tall one needs line space - top pad there)
+        int ls, pt, pb, tr;
+        metrics(ty::title, skin_font(L->skin.get(), ty::title), ls, pt, pb, tr);
+        lv_style_set_width(s, lv_pct(100)); lv_style_set_height(s, LV_SIZE_CONTENT); lv_style_set_max_height(s, 2 * box_of(ty::title));
+        lv_style_set_pad_bottom(s, ls - pt); continue;
       }
       if (d.i == 8) {  // pair-rule: the hairline between two halves, inset by the card padding (its child = the ink)
         lv_style_set_width(s, lv_pct(100)); lv_style_set_height(s, tok("stroke:hair", stroke::hair));
