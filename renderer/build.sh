@@ -19,9 +19,9 @@ HERE=$(cd "$(dirname "$0")" && pwd)
 [ -f "$HERE/../local.env" ] && . "$HERE/../local.env"
 # FW_DEV=1 = dev build (Darren 2026-10-29: "migrate in seconds"): compile + link + the catalogue only; no contrast,
 # lint, audit, pixel contrast, lab_test, spec_test, theme_check or floorplan checks (run a normal build / facet-gate for those)
-# BUILD_JOBS = compiles at once (LVGL and the renderer's own files): default 2 in the quiet hours (00-06: the box is
-# shared and heavy caps a job at 3 GB; a cold build of every file at once was OOM-killed) else half the cores
-if [ -z "${BUILD_JOBS:-}" ]; then h=$(date +%-H); if [ "$h" -lt 6 ]; then BUILD_JOBS=2; else BUILD_JOBS=$(( $(nproc) / 2 )); fi; fi
+# BUILD_JOBS = compiles at once (LVGL and the renderer's own files): default half the cores (bin/heavy lowers it in the
+# quiet hours)
+if [ -z "${BUILD_JOBS:-}" ]; then BUILD_JOBS=$(( $(nproc) / 2 )); fi
 [ "$BUILD_JOBS" -ge 1 ] 2>/dev/null || BUILD_JOBS=1
 export BUILD_JOBS
 : "${FW_PANEL:?set FW_PANEL (panel firmware source dir) in the env or local.env}"
@@ -81,18 +81,19 @@ find "$L/src" -name '*.c' | xargs -P"$BUILD_JOBS" -I{} sh -c \
   && echo "$LVGL_OBJS" > "$LVGL_LIST"
 fi
 
+# generators (density-free headers in $GEN): only when an input is newer than the last run's stamp (each one also writes
+# its header only on change, so an unchanged input rebuilds nothing)
+GEN_IN="$HERE/tokens $HERE/specs $HERE/themes $HERE/sources $HERE/icons $HERE/fonts $HERE/catalogue/contract.json $HERE/features.json $HERE/tests/floorplan"
+if [ ! -f "$GEN/.stamp" ] || [ -n "$(find $GEN_IN "$HERE/tools" -path "$HERE/tools/node_modules" -prune -o -newer "$GEN/.stamp" -print -quit 2>/dev/null)" ]; then
+touch "$GEN/.stamp.next"
 # colour tokens: tokens/colour.json -> colour_gen.h (written only when it changes, so an unchanged JSON rebuilds nothing)
 node "$HERE/tools/gen_colour.mjs" "$GEN/colour_gen.h"
-# contrast test (tools/contrast.mjs): every declared pair x theme x accent set; reported, never fails the build
-[ "$DEN" = 1x ] || [ -n "${FW_DEV:-}" ] || node "$HERE/tools/contrast.mjs" --summary || true
 # type tokens: tokens/type.json -> type_gen.h (styles) + this density's bitmap fonts (only the sizes/glyphs the styles use)
 node "$HERE/tools/gen_type.mjs" "$GEN/type_gen.h"
 # space tokens: tokens/space.json -> space_gen.h (fw::sp::, fw::lay::, fw::rad::, fw::stroke::, fw::touch::)
 node "$HERE/tools/gen_space.mjs" "$GEN/space_gen.h"
 # contract core: colour + space + type token names -> fx_gen.h (core/fx_core.cpp: shared token styles, CONTRACT.md)
 node "$HERE/tools/gen_fx.mjs" "$GEN/fx_gen.h"
-# contract lint (tools/contract_lint.mjs): a migrated component (meta "contract": 2) that breaks the contract fails the build
-[ "$DEN" = 1x ] || [ -n "${FW_DEV:-}" ] || node "$HERE/tools/contract_lint.mjs" --summary || exit 1
 # layout tokens: tokens/layout.json -> layout_gen.h (fw::lay:: screen geometry, fw::lyt:: devices / size classes / density)
 node "$HERE/tools/gen_layout.mjs" "$GEN/layout_gen.h"
 # motion tokens: tokens/motion.json -> motion_gen.h (fw::mo:: durations, easings, patterns)
@@ -115,6 +116,12 @@ node "$HERE/tools/gen_theme.mjs" "$GEN/theme_gen.h" || exit 1
 # icons: tokens/icons.json + icons/*.svg -> icons_gen.h (table, density-free) + this density's A8 masks (tools/gen_icons.mjs,
 # resvg: `cd tools && npm install` once; FW_ICONS=used in local.env = only the icons components declare)
 node "$HERE/tools/gen_icons.mjs" --meta "$GEN/icons_gen.h"
+mv "$GEN/.stamp.next" "$GEN/.stamp"
+fi
+# contrast test (tools/contrast.mjs): every declared pair x theme x accent set; reported, never fails the build
+[ "$DEN" = 1x ] || [ -n "${FW_DEV:-}" ] || node "$HERE/tools/contrast.mjs" --summary || true
+# contract lint (tools/contract_lint.mjs): a migrated component (meta "contract": 2) that breaks the contract fails the build
+[ "$DEN" = 1x ] || [ -n "${FW_DEV:-}" ] || node "$HERE/tools/contract_lint.mjs" --summary || exit 1
 ICONS_H=$GEN/facet_icons.h; [ "$DEN" = 1x ] && ICONS_H=$GEN/facet_icons_1x.h
 # dev: the icon masks only when an input is newer than the header (~4 s)
 if [ -z "${FW_DEV:-}" ] || [ ! -f "$ICONS_H" ] || [ -n "$(find "$HERE/tools/gen_icons.mjs" "$HERE/tokens" "$HERE/icons" -newer "$ICONS_H" -print -quit 2>/dev/null)" ]; then
