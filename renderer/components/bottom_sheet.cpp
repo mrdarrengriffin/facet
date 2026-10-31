@@ -15,7 +15,7 @@
 // Theme rows open their sheets (their chevron tap plays open), a pick updates the row's value. Props: open (open = it
 // opens on build, so the 1.8 s demo reset replays it; closed = tap a row), list, title, selected, screen. Internal:
 // `items` (array of {icon, name, status}: the caller's own list instead of the built-in ones; a pick sends
-// LV_EVENT_VALUE_CHANGED to the overlay, param = the index; with `selected` = the index ringed, `stay` = a pick keeps
+// LV_EVENT_VALUE_CHANGED to the overlay, param = the index; with `selected` = the index ringed (-1 = none), `stay` = a pick keeps
 // it open; the Settings screen uses this), `rows` + `row_h` (host rows: the caller's own rows, `rows` of `row_h` px
 // for the panel's height; every fill sends LV_EVENT_REFRESH to the overlay with the list as the param, the caller
 // builds into it; the Calendar's calendars and day sheets), `loop` (opens and closes forever: the frame-rate bench),
@@ -182,7 +182,7 @@ void choices(Sheet *s, fw::Props p) {
       s->items.push_back(it["name"] | "");
       s->items.push_back(it["status"] | "");
     }
-    s->item_sel = std::min(std::max(sel, 0), std::max(0, n_opts(s) - 1));
+    s->item_sel = sel < 0 ? -1 : std::min(sel, std::max(0, n_opts(s) - 1));  // -1 = none ringed (a list of choices to narrow)
     s->stay = p["stay"] | false;
   }
 }

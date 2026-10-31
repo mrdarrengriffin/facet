@@ -6,8 +6,10 @@
 //                          only, "Not set"): set by the action ha.connect (an agent, HA, the workbench's props)
 //            "entities"    List row "Entity lists", its sub line the status (Not set up / Ready / Reading Home
 //                          Assistant / "N entities" / the failure in words), a real Button "Read now" (secondary)
-//                          appended as its trailing part: ha.entities over the domains the screens' pickers use
-//                          (PICK_DOMAINS); event "ha_link" "entities" or why not
+//                          appended as its trailing part: ha.entities again over the domains already read (the
+//                          pickers read only their own domain(s) when they open, screens/screen_set.cpp; nothing read
+//                          yet = a connection check over "zone", a few entities); event "ha_link" "entities" or why
+//                          not
 //   The rows follow the link while the page shows (a 250 ms timer compares ha_link::rev() and builds them again).
 //   Read now shows only when the link is set up and not reading.
 // Props (the workbench): url, token = ha.connect on build when given (a token typed here stays in the module; the
@@ -18,7 +20,14 @@
 namespace {
 using Doc = ArduinoJson::JsonDocument;
 namespace hl = fw::dev::ha_link;
-constexpr const char *PICK_DOMAINS = "light,sensor,binary_sensor,media_player,calendar,weather,climate,cover,lock,vacuum,camera,switch,fan,scene,script";
+constexpr const char *PICK_DOMAINS[] = {"light", "sensor", "binary_sensor", "media_player", "calendar", "weather", "climate", "cover", "lock", "vacuum", "camera",
+                                         "switch", "fan", "scene", "script", "select", "input_boolean", "input_select", "automation", "button", "number", "zone"};
+// Read now: the domains read so far (each picker reads only its own; sensors alone are ~1000 rows), else a check
+std::string read_again() {
+  std::string d;
+  for (const char *x : PICK_DOMAINS) if (hl::list(x)) d += std::string(d.empty() ? "" : ",") + x;
+  return d.empty() ? "zone" : d;
+}
 lv_obj_t *box(lv_obj_t *parent) {
   lv_obj_t *o = lv_obj_create(parent);
   lv_obj_remove_style_all(o);
@@ -126,7 +135,7 @@ void build_page(lv_obj_t *parent, fw::Props p) {
     if (!strcmp(name, "tap") && pg->read)
       for (lv_obj_t *o = from; o; o = lv_obj_get_parent(o))
         if (o == pg->read) {
-          const char *why = hl::fetch(PICK_DOMAINS);
+          const char *why = hl::fetch(read_again());
           fw::emit(pg->read, "ha_link", *why ? why : "entities");
           return;
         }

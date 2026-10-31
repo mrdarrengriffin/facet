@@ -17,6 +17,16 @@
 //                       it has one (Media: the Player from the Speakers, Auto first when the spec's screen.param
 //                       follows a sensor: "auto" or nothing picked = Auto); entities = "N chosen"; text = the value.
 //                       Lists of entities and text come from the host's discovery (the hub writes them into the deck).
+//                       Entity pickers (2026-10-31): an entity (no screen list of its domain) or entities parameter
+//                       with a "domain" opens the sheet on the panel's own Home Assistant list (core/device.h
+//                       ha_link): on open it reads ONLY that picker's domain(s) (comma list) when not cached yet
+//                       (cached per domain until Read now or a new address), a "Reading Home Assistant" row meanwhile,
+//                       "not reached" + Try again on a failure, and "Home Assistant not connected" (a tap: Settings >
+//                       Home Assistant, navigate "ha_link") when the link is not set up. Search without a keyboard:
+//                       sorted by name; more than PAGE matches = rows by the next letter of the name (a tap narrows,
+//                       one-letter levels skipped, "All entities" goes back up), else the entities (name + id).
+//                       entity = choose one (+ Auto when the spec has it), the sheet closes; entities = choose many
+//                       ("chosen" marks them, the sheet stays open, the row says "N chosen"), kept as a comma list.
 //                       No options = one List row "No options yet".
 //   sheet    the Bottom sheet in overlay mode, the screen's last child (one, moved in place per row)
 // Every change is kept in this panel's deck (fw::spec::deck_set: "on", "source", "params.<name>"; stored like a sent
@@ -25,6 +35,9 @@
 #include "fw.h"
 #include "spec.h"
 #include "sources.h"
+#include "device.h"
+#include "sheet.h"
+#include <algorithm>
 
 namespace {
 using Doc = ArduinoJson::JsonDocument;
@@ -78,9 +91,19 @@ std::string label_of(const std::string &opt) {  // a select option shown: "cd" -
 }
 
 // what a row picks from the sheet: the source, a select's options, an entity from a list
-struct Pick { std::string key; std::vector<std::string> ids, names, status, sets; lv_obj_t *row = nullptr; std::string title; int sel = 0; };
+// ha: the list is the panel's own HA list of `dom` (ids = what a row does: "e:<entity>", "g:<prefix>", "auto",
+// "up", "set", "retry", "" = nothing), rebuilt by fill_ha
+struct Pick {
+  std::string key; std::vector<std::string> ids, names, status, sets; lv_obj_t *row = nullptr; std::string title; int sel = 0;
+  bool ha = false, multi = false, auto_ok = false, tried = false;
+  std::string dom, prefix, cur;     // cur: the single pick's value ("auto" = Auto)
+  std::vector<std::string> chosen;  // multi: the picks
+};
 struct Page {
   lv_obj_t *root = nullptr, *sheet = nullptr, *home = nullptr;
+  lv_timer_t *tick = nullptr;
+  uint32_t seen = 0;
+  bool dirty = false;
   std::string id;
   std::vector<Pick> picks;
   int open = -1;                                           // the pick the sheet shows
@@ -93,16 +116,82 @@ void keep(Page *pg, lv_obj_t *from, const std::string &key, ArduinoJson::JsonVar
   else serializeJson(v, vs);
   fw::emit(from, "deck", (pg->id + " " + key + "=" + vs).c_str());
 }
+namespace hl = fw::dev::ha_link;
+constexpr size_t PAGE = 24;  // at most this many entity rows in the sheet; more = rows by the next letter
+std::string upper(std::string s) { for (char &c : s) c = (char) toupper((unsigned char) c); return s; }
+// the sheet's rows for an HA pick, from the link as it is now; starts the read of the domains not cached yet
+void fill_ha(Pick &p) {
+  p.ids.clear(), p.names.clear(), p.status.clear();
+  p.sel = -1;
+  auto row = [&](const std::string &a, const std::string &n, const std::string &st) { p.ids.push_back(a), p.names.push_back(n), p.status.push_back(st); };
+  if (!hl::ready()) { row("set", "Home Assistant not connected", "set it up in Settings > Home Assistant"); return; }
+  std::string need;
+  std::vector<const hl::Entity *> all;
+  for (const std::string &d : split(p.dom)) {
+    if (const std::vector<hl::Entity> *l = hl::list(d)) for (const hl::Entity &e : *l) all.push_back(&e);
+    else need += (need.empty() ? "" : ",") + d;
+  }
+  if (!need.empty()) {
+    if (hl::status() == hl::FAIL && p.tried) { row("retry", "Home Assistant not reached", hl::why()); row("retry", "Try again", ""); return; }
+    if (hl::status() != hl::LOADING && !*hl::fetch(need)) p.tried = true;
+    row("", "Reading Home Assistant", "loading " + need);
+    return;
+  }
+  auto name_of = [](const hl::Entity *e) { return e->name.empty() ? e->id : e->name; };
+  std::sort(all.begin(), all.end(), [&](const hl::Entity *a, const hl::Entity *b) { return upper(name_of(a)) < upper(name_of(b)); });
+  std::vector<const hl::Entity *> m;
+  for (;;) {  // the matches of the prefix; one letter level only = narrow by itself
+    m.clear();
+    for (const hl::Entity *e : all) if (upper(name_of(e)).rfind(p.prefix, 0) == 0) m.push_back(e);
+    if (m.size() <= PAGE) break;
+    std::string next;
+    bool one = true, ended = false;
+    for (const hl::Entity *e : m) {
+      const std::string u = upper(name_of(e));
+      if (u.size() <= p.prefix.size()) { ended = true; continue; }
+      if (next.empty()) next = u.substr(0, p.prefix.size() + 1);
+      else if (u.compare(0, p.prefix.size() + 1, next)) one = false;
+    }
+    if (!one || ended || next.empty()) break;
+    p.prefix = next;
+  }
+  if (!p.prefix.empty()) row("up", "All entities", std::to_string(all.size()) + " in all");
+  else if (p.auto_ok) row("auto", "Auto", "follows what's playing");
+  if (p.prefix.empty() && p.auto_ok && p.cur == "auto") p.sel = 0;
+  if (all.empty()) { row("", "No entities", "none in " + p.dom); return; }
+  if (m.size() > PAGE) {  // rows by the next letter
+    for (size_t i = 0; i < m.size();) {
+      auto key = [&](const hl::Entity *e) { const std::string u = upper(name_of(e)); return u.substr(0, p.prefix.size() + 1); };
+      const std::string g = key(m[i]);
+      size_t j = i;
+      while (j < m.size() && key(m[j]) == g) j++;
+      if (g.size() > p.prefix.size() && j - i > 1) row("g:" + g, g + "\xE2\x80\xA6", std::to_string(j - i) + (j - i == 1 ? " entity" : " entities"));
+      else for (size_t k = i; k < j; k++) {  // a letter with one entity, or names that end here: the entities
+        row("e:" + m[k]->id, name_of(m[k]), p.multi && std::find(p.chosen.begin(), p.chosen.end(), m[k]->id) != p.chosen.end() ? "chosen \xC2\xB7 " + m[k]->id : m[k]->id);
+        if (!p.multi && m[k]->id == p.cur) p.sel = (int) p.ids.size() - 1;
+      }
+      i = j;
+    }
+  } else
+    for (const hl::Entity *e : m) {
+      const bool on = std::find(p.chosen.begin(), p.chosen.end(), e->id) != p.chosen.end();
+      row("e:" + e->id, name_of(e), p.multi && on ? "chosen \xC2\xB7 " + e->id : e->id);
+      if (!p.multi && e->id == p.cur) p.sel = (int) p.ids.size() - 1;
+    }
+}
 void sheet_props(Page *pg, int k, bool open, Doc &d) {
   d["overlay"] = true;
   d["open"] = open ? "open" : "closed";
   if (k < 0 || k >= (int) pg->picks.size()) { d["title"] = ""; d["items"].to<ArduinoJson::JsonArray>(); d["selected"] = 0; return; }
   const Pick &p = pg->picks[k];
-  d["title"] = p.title.c_str();
+  d["title"] = p.prefix.empty() ? p.title.c_str() : (p.title + " \xC2\xB7 " + p.prefix).c_str();
+  if (p.ha) d["stay"] = true;  // the sheet closes itself after a real pick (a letter row narrows)
   ArduinoJson::JsonArray items = d["items"].to<ArduinoJson::JsonArray>();
   for (size_t i = 0; i < p.ids.size(); i++) {
     ArduinoJson::JsonObject it = items.add<ArduinoJson::JsonObject>();
-    it["icon"] = "check", it["name"] = p.names[i].c_str(), it["status"] = p.status[i].c_str();
+    // HA picks: a letter row = chevron, a chosen entity (entities) = check, the rest none; other lists: check
+    const char *ic = !p.ha ? "check" : p.ids[i].rfind("g:", 0) == 0 ? "chevron" : p.status[i].rfind("chosen", 0) == 0 ? "check" : "none";
+    it["icon"] = ic, it["name"] = p.names[i].c_str(), it["status"] = p.status[i].c_str();
   }
   d["selected"] = p.sel;
 }
@@ -125,7 +214,11 @@ void build_page(lv_obj_t *parent, fw::Props p) {
   lv_obj_set_size(pg->root, fw::lay::screen_w, fw::lay::screen_h);
   lv_obj_set_style_bg_color(pg->root, t.bg, 0);
   lv_obj_set_style_bg_opa(pg->root, LV_OPA_COVER, 0);
-  lv_obj_add_event_cb(pg->root, [](lv_event_t *e) { delete (Page *) lv_event_get_user_data(e); }, LV_EVENT_DELETE, pg);
+  lv_obj_add_event_cb(pg->root, [](lv_event_t *e) {
+    auto *pg = (Page *) lv_event_get_user_data(e);
+    if (pg->tick) lv_timer_delete(pg->tick);
+    delete pg;
+  }, LV_EVENT_DELETE, pg);
 
   Doc entry, spec, cat;
   fw::spec::deck_entry(pg->id, entry);
@@ -271,6 +364,17 @@ void build_page(lv_obj_t *parent, fw::Props p) {
       if (!fw::spec::entity_ok(auto_src) || auto_src[0] == '$') auto_src.clear();
       const bool offer_auto = !auto_src.empty() || (has_auto && !from.empty());
       const bool is_auto = offer_auto && (v == "auto" || !fw::spec::deck_picked(pg->id, key));
+      if (from.empty() && !dom.empty()) {  // the panel's own HA list of the domain (fill_ha)
+        rd["value"] = is_auto ? "Auto" : v.empty() || v == "auto" ? "None" : friendly(v).c_str();
+        rd["trailing"] = "value-chevron";
+        lv_obj_t *r = build("list_row", c, rd);
+        if (!r) continue;
+        Pick pk;
+        pk.key = "params." + key, pk.row = r, pk.title = label, pk.ha = true, pk.dom = dom, pk.auto_ok = offer_auto;
+        pk.cur = is_auto ? "auto" : v;
+        pg->picks.push_back(pk);
+        continue;
+      }
       const size_t n = from.size() + (offer_auto ? 1 : 0);
       rd["value"] = is_auto ? "Auto" : v.empty() || v == "auto" ? "" : friendly(v).c_str();
       rd["trailing"] = n > 1 ? "value-chevron" : "value";
@@ -287,6 +391,18 @@ void build_page(lv_obj_t *parent, fw::Props p) {
         pk.status.push_back(st ? *st : "");
       }
       for (size_t i = 0; i < pk.ids.size(); i++) if (pk.ids[i] == (is_auto ? "auto" : v)) pk.sel = (int) i;
+      pg->picks.push_back(pk);
+      continue;
+    }
+    if (type == "entities" && kv.value()["domain"].is<const char *>()) {  // choose many from the HA list
+      const std::vector<std::string> ch = split(v);
+      rd["value"] = ch.empty() ? "None" : (std::to_string(ch.size()) + " chosen").c_str();
+      rd["trailing"] = "value-chevron";
+      lv_obj_t *r = build("list_row", c, rd);
+      if (!r) continue;
+      Pick pk;
+      pk.key = "params." + key, pk.row = r, pk.title = label, pk.ha = true, pk.multi = true, pk.dom = kv.value()["domain"] | "";
+      pk.chosen = ch;
       pg->picks.push_back(pk);
       continue;
     }
@@ -313,6 +429,8 @@ void build_page(lv_obj_t *parent, fw::Props p) {
       auto *row = (lv_obj_t *) lv_event_get_current_target(e);
       if (!pg->sheet || lv_obj_has_state(row, fw::st::OFF)) return;
       pg->open = (int) (intptr_t) lv_obj_get_user_data(row);
+      Pick &p = pg->picks[pg->open];
+      if (p.ha) p.prefix.clear(), p.tried = false, fill_ha(p), pg->seen = hl::rev();
       Doc d;
       sheet_props(pg, pg->open, true, d);
       fw::update_child(fw::find("bottom_sheet"), pg->sheet, d.as<fw::Props>());
@@ -325,6 +443,38 @@ void build_page(lv_obj_t *parent, fw::Props p) {
       if (pg->open < 0 || pg->open >= (int) pg->picks.size()) return;
       Pick &p = pg->picks[pg->open];
       if (i < 0 || i >= (int) p.ids.size()) return;
+      if (p.ha) {  // what the row does (fill_ha); the sheet's rows again after this tap (pg->dirty, the tick)
+        const std::string a = p.ids[i];
+        pg->dirty = true;
+        if (a == "set") { fw::sheet::close(pg->sheet); fw::emit(pg->sheet, "navigate", "ha_link"); pg->dirty = false; return; }
+        if (a == "retry") { p.tried = false; return; }
+        if (a == "up") { p.prefix.clear(); return; }
+        if (a.rfind("g:", 0) == 0) { p.prefix = a.substr(2); return; }
+        if (a.empty()) return;
+        Doc v;
+        if (p.multi) {
+          const std::string e = a.substr(2);
+          auto it = std::find(p.chosen.begin(), p.chosen.end(), e);
+          if (it == p.chosen.end()) p.chosen.push_back(e); else p.chosen.erase(it);
+          std::string l;
+          for (const std::string &x : p.chosen) l += (l.empty() ? "" : ",") + x;
+          v.set(l.c_str());
+          Doc rp;
+          rp["value"] = p.chosen.empty() ? "None" : (std::to_string(p.chosen.size()) + " chosen").c_str();
+          fw::update_child(fw::find("list_row"), p.row, rp.as<fw::Props>());
+          keep(pg, pg->sheet, p.key, v.as<ArduinoJson::JsonVariantConst>());
+          return;
+        }
+        p.cur = a == "auto" ? "auto" : a.substr(2);
+        v.set(p.cur.c_str());
+        Doc rp;
+        rp["value"] = p.names[i].c_str();
+        fw::update_child(fw::find("list_row"), p.row, rp.as<fw::Props>());
+        keep(pg, pg->sheet, p.key, v.as<ArduinoJson::JsonVariantConst>());
+        fw::sheet::close(pg->sheet);
+        pg->dirty = false;
+        return;
+      }
       p.sel = i;
       Doc rp;
       rp["value"] = p.names[i].c_str();
@@ -340,6 +490,20 @@ void build_page(lv_obj_t *parent, fw::Props p) {
         keep(pg, pg->sheet, "params.source", v.as<ArduinoJson::JsonVariantConst>());
       }
     }, LV_EVENT_VALUE_CHANGED, pg);
+  // an open HA pick follows the link (a read ends) and a tap that changes its rows (rebuilt here, after the tap)
+  pg->tick = lv_timer_create([](lv_timer_t *tm) {
+    auto *pg = (Page *) lv_timer_get_user_data(tm);
+    if (pg->open < 0 || pg->open >= (int) pg->picks.size() || !pg->picks[pg->open].ha || !pg->sheet) return;
+    if (!pg->dirty && pg->seen == hl::rev()) return;
+    if (!pg->dirty && !fw::sheet::is_open(pg->sheet)) return;
+    pg->dirty = false;
+    Pick &p = pg->picks[pg->open];
+    fill_ha(p);
+    pg->seen = hl::rev();
+    Doc d;
+    sheet_props(pg, pg->open, true, d);
+    fw::update_child(fw::find("bottom_sheet"), pg->sheet, d.as<fw::Props>());
+  }, 50, pg);
   fw::listen(pg->root, [](lv_obj_t *from, const char *name, const char *detail, void *user) {
     auto *pg = (Page *) user;
     const bool flip = !strcmp(name, fw::st::SWITCH_EVENT), change = !strcmp(name, "change");
