@@ -27,7 +27,7 @@ export default {
       t.tap(back(t)); t.eq(t.stack(), ['home'], 'Back = Home');
     } },
     { name: 'a second Home page is the parent of its header shortcut: Kitchen > Timer > Back = Kitchen', async run(t) {
-      await t.device();
+      await t.device('house');  // the example house deck (Kitchen = a second Home)
       t.show('kitchen'); t.eq(t.stack().length, 2, 'Kitchen one level above Home');
       const k = t.where();
       t.show('timer'); t.eq(t.stack(), ['home', k, 'timer'], 'Kitchen > Timer');

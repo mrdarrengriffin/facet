@@ -1,0 +1,192 @@
+{
+ "v": 2,
+ "rev": 2,
+ "start": "living",
+ "pages": [
+  {
+   "id": "living",
+   "kind": "home",
+   "name": "Living room",
+   "cards": [
+    {
+     "t": "light",
+     "e": "light.living_room_ceiling",
+     "size": "s",
+     "tap": "toggle",
+     "label": "Ceiling"
+    },
+    {
+     "t": "light",
+     "e": "light.sofa_lamp",
+     "size": "s",
+     "tap": "toggle",
+     "label": "Sofa table"
+    },
+    {
+     "t": "light",
+     "e": "light.reading_lamp",
+     "size": "s",
+     "tap": "toggle",
+     "label": "Chair"
+    },
+    {
+     "t": "climate",
+     "e": "climate.living_room",
+     "size": "m",
+     "tap": "detail",
+     "label": "Air con"
+    },
+    {
+     "t": "media",
+     "e": "media_player.sitting_room_speaker",
+     "size": "m",
+     "tap": "detail",
+     "label": "Speaker"
+    },
+    {
+     "t": "sensor",
+     "e": "binary_sensor.back_door",
+     "size": "m",
+     "label": "Back door"
+    },
+    {
+     "t": "sensor",
+     "e": "sensor.garage_temperature",
+     "size": "m",
+     "label": "Garage"
+    },
+    {
+     "t": "page",
+     "page": "kitchen",
+     "size": "m"
+    },
+    {
+     "t": "page",
+     "page": "calendar",
+     "size": "m"
+    },
+    {
+     "t": "page",
+     "page": "weather",
+     "size": "l"
+    }
+   ]
+  },
+  {
+   "id": "kitchen",
+   "kind": "home",
+   "name": "Kitchen",
+   "header_actions": {
+    "button": "timer",
+    "status": "timer"
+   },
+   "cards": [
+    {
+     "t": "light",
+     "e": "light.pantry",
+     "size": "s",
+     "tap": "toggle",
+     "label": "Pantry"
+    },
+    {
+     "t": "light",
+     "e": "light.pantry_strip",
+     "size": "s",
+     "tap": "toggle",
+     "label": "Pantry LEDs"
+    },
+    {
+     "t": "page",
+     "page": "timer",
+     "size": "s"
+    },
+    {
+     "t": "sensor",
+     "e": "binary_sensor.fridge_door",
+     "size": "s",
+     "label": "Fridge"
+    },
+    {
+     "t": "sensor",
+     "e": "sensor.dishwasher_power",
+     "size": "s",
+     "label": "Dishwasher"
+    },
+    {
+     "t": "media",
+     "e": "media_player.kitchen_hub",
+     "size": "m",
+     "tap": "detail",
+     "label": "Kitchen display"
+    },
+    {
+     "t": "page",
+     "page": "living",
+     "size": "m"
+    },
+    {
+     "t": "page",
+     "page": "calendar",
+     "size": "m"
+    },
+    {
+     "t": "page",
+     "page": "weather",
+     "size": "m"
+    }
+   ]
+  },
+  {
+   "id": "living_room",
+   "kind": "living_room"
+  },
+  {
+   "id": "calendar",
+   "kind": "calendar"
+  },
+  {
+   "id": "clock",
+   "kind": "clock"
+  },
+  {
+   "id": "weather",
+   "kind": "weather"
+  },
+  {
+   "id": "media",
+   "kind": "media"
+  },
+  {
+   "id": "thermostat",
+   "kind": "thermostat"
+  },
+  {
+   "id": "energy",
+   "kind": "energy"
+  },
+  {
+   "id": "github",
+   "kind": "github"
+  },
+  {
+   "id": "agents",
+   "kind": "agents"
+  },
+  {
+   "id": "overhead",
+   "kind": "overhead"
+  },
+  {
+   "id": "bins",
+   "kind": "bins"
+  },
+  {
+   "id": "print",
+   "kind": "print"
+  },
+  {
+   "id": "timer",
+   "kind": "timer"
+  }
+ ]
+}

@@ -62,7 +62,7 @@ export default {
       t.ok(/seconds \/ s go on timer/.test(why({ do: 'light.toggle', e: 'light.x', seconds: 3 })), 'timer fields off timers');
     } },
     { name: 'HA actions take the same path as a tap (the fake HA sees the calls)', async run(t) {
-      await t.device();
+      await t.device('house');  // needs a light on Home
       t.ok(act(t, { do: 'light.switch', e: 'light.office', value: 'on' }).ok, 'light on');
       t.call({ service: 'light.turn_on', entity: 'light.office' });
       t.ok(act(t, { do: 'light.brightness', e: 'light.office', value: 40 }).ok, 'brightness (a number value)');
