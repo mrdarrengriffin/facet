@@ -121,7 +121,7 @@ draws; a label pair covers that control's icon (same colour, stricter threshold)
 `disabled` 3 (Facet rule: WCAG exempts disabled controls, Facet wants them readable), `decor` no requirement (1 px
 outlines/separators, shown for reference). `node renderer/tools/contrast.mjs` tests every pair x theme x accent set on
 the exact values AND the RGB565 values the panel shows (worse counts), lists failures, exit 1 if any (`--all`,
-`--json`, `--summary`); `build.sh` prints the summary line (never fails the build). Colour page sections
+`--json`, `--summary`); `check.sh` prints the summary line. Colour page sections
 "Contrast: summary / failures / <section>" draw the same matrix in WASM (selected accent = toolbar, dark + light side
 by side, failing rows tinted, ratio red + FAIL).
 

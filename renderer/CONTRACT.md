@@ -146,7 +146,7 @@ the line: `// part: <why>`. A known gap is marked `// debt: <what it should be>`
 *Why:* a copy drifts from the real one (alignment, states, sounds, theming), and the contract stops being the single
 source of how a thing looks and behaves (Darren 2026-10-27, Section header "See all").
 *Check:* lint `control` (tools/contract_lint.mjs): in a contract component, a box it makes with `fx::box` that takes
-taps (`on_tap`, CLICKABLE) or a press look fails the build unless it is marked `part:` or `debt:`.
+taps (`on_tap`, CLICKABLE) or a press look fails the checks unless it is marked `part:` or `debt:`.
 
 **C9. A component declares its minimum and scales above it in steps.**
 - Meta `"min": ["layout:<w>", "layout:<h>"]`: layout tokens, so the minimum is on the fixed grid.
@@ -486,7 +486,7 @@ padding; nothing outside its parent; no stale paint.
 *Why:* taste is the theme author's; usability is everyone's; a theme that sets a face and no pressed face would
 otherwise silently remove press feedback. *Check:* the static guards in the parser (contrast on the exact and the
 RGB565 values, press feedback, geometry; `theme_parse` tests, `tools/contrast.mjs --theme <id>`); the real pixels of
-every contract component in every built-in theme (`tools/pixel_contrast.mjs --theme all`, in the build); fit and
+every contract component in every built-in theme (`tools/pixel_contrast.mjs --theme all`, in `check.sh`); fit and
 bounds per theme (`theme_apply` "P2 + P6 per theme": no text cut that Facet does not cut).
 
 **C48. Technical caps exist only for performance or memory** (8 edge layers per block). No other limit on looks.
@@ -514,10 +514,10 @@ full bar: the Facet release gate (sections 1-10). Helpers: `tests/functional/_re
 
 | Id | Proof | How | Status |
 |---|---|---|---|
-| P1 | Lint | `tools/contract_lint.mjs` (rules `width`, `theme`, `draw`, `local`) fails the build for a component | enforced; rule gaps in section 15 |
+| P1 | Lint | `tools/contract_lint.mjs` (rules `width`, `theme`, `draw`, `local`) fails the checks for a component | enforced; rule gaps in section 15 |
 | P2 | Bounds | every object inside its parent's content box (bleed skipped): 720 and 480, insets 0..64, odd and wide parents, squeezed to the declared minimum; FAILS below it. `fw_test("bounds")`, `bounds(t, insets)`, `stage`, `boundsAll` | Card, Dial |
-| P3 | Live token propagation | every size / radius / stroke / colour token the component reads (`fx::uses`) changes its pixels live and back (`fw_lab` `uses`, `probe`, `tune`); every contract component lists at least one | all contract components (`tools/lab_test.mjs`, fails the build) |
-| P4 | Colour + pixel | after every theme x mode x accent switch, live (`fw_test("look")`), with states set BEFORE the switch (pressed, on, released): every resolved colour equals a fresh build's and is a current token, and the RGB565 frame equals a fresh build's, every pixel (`frame565`, `diff565`); and the PIXEL contrast of every shown text / icon on what is really behind it, built and switched live (`tools/pixel_contrast.mjs`, every contract component, fails the build) | Card, Header, Icon button, Status chip, Time (`liveLook`); TODO all |
+| P3 | Live token propagation | every size / radius / stroke / colour token the component reads (`fx::uses`) changes its pixels live and back (`fw_lab` `uses`, `probe`, `tune`); every contract component lists at least one | all contract components (`tools/lab_test.mjs`, fails the checks) |
+| P4 | Colour + pixel | after every theme x mode x accent switch, live (`fw_test("look")`), with states set BEFORE the switch (pressed, on, released): every resolved colour equals a fresh build's and is a current token, and the RGB565 frame equals a fresh build's, every pixel (`frame565`, `diff565`); and the PIXEL contrast of every shown text / icon on what is really behind it, built and switched live (`tools/pixel_contrast.mjs`, every contract component, fails the checks) | Card, Header, Icon button, Status chip, Time (`liveLook`); TODO all |
 | P5 | Hit areas | no overlapping clickable areas (`fw_lab(id, "proof")` -> `overlap`); targets >= `touch:min` | Card; TODO size check |
 | P6 | Text fit | no text cut except by its rule (`proof` -> `trunc`) with `fixtures` | Card |
 | P7 | Goldens | every state x step x density (x theme when themes land), RGB565, reviewed by a person, never auto-accepted (`golden`; `FW_GOLDEN_ACCEPT=1` only after review) | Card |
@@ -721,8 +721,8 @@ Rules whose check is TODO (each is a gate item; until it exists, review checks t
 | `core/fx.h` | the component API (this contract's functions) |
 | `core/fx_core.cpp` | shared token styles per display, structure and derived styles, the Pen, `fx::page`, `fx::tune` |
 | `tools/gen_fx.mjs` | tokens -> `fx_gen.h` (colours, state roles, sizes with look ranges, type) |
-| `tools/contract_lint.mjs` | the lint (P1), run by `build.sh` |
-| `tools/lab_test.mjs` | live token propagation (P3), run by `build.sh` |
+| `tools/contract_lint.mjs` | the lint (P1), run by `check.sh` |
+| `tools/lab_test.mjs` | live token propagation (P3), run by `check.sh gate` |
 | `core/test_hooks.cpp` | `fw_test`: `look`, `inset`, `bounds`, `stack`, `scrolls` |
 | `core/main.cpp` | `fw_lab`: `tokens`, `tune`, `uses`, `probe`, `proof`, `theme_*` (`core/theme_lab.cpp`) |
 | `tests/functional/theme_apply.test.mjs` | the apply path per theme: Facet no-op, live = fresh, reach, refusals, break-it, golden candidates |

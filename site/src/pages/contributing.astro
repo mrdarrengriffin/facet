@@ -107,14 +107,14 @@ FW_OUT=renderer/out npm run dev`} />
     variables are in the renderer README, "Paths"). Bundling them into the repository is planned.
   </p>
   <CodeBlock lang="bash" label="Shell" code={`cd renderer/tools && npm install && cd ../..
-renderer/build.sh 1.5x       # one build (1.5x = the 720 panel, 1x = the 480 panel), with the audit
+renderer/build.sh 1.5x       # one build (1.5x = the 720 panel, 1x = the 480 panel)
 node renderer/watch.mjs      # rebuild on save while you work`} />
   <p>If the build setup gets in your way, open an issue: getting a second person building Facet is worth fixing.</p>
 
   <h3 id="checks">Checks</h3>
   <p>Facet's rules are checked by tools, not by memory. Run the ones your change touches:</p>
   <CodeBlock lang="bash" label="Shell" code={`node renderer/tools/features.mjs check      # every source in one feature (also runs in CI)
-renderer/build.sh 1.5x && renderer/build.sh 1x  # build + audit: 4 px grid, clipping, symmetry, motion
+renderer/build.sh && renderer/check.sh gate     # both builds, then every check: 4 px grid, clipping, symmetry, motion
 node renderer/tools/contrast.mjs --summary  # every colour pair, dark and light: 0 failures
 node renderer/tools/spec_test.mjs           # screen specs
 node renderer/tools/behaviour.mjs           # taps, drags, scrolling, sounds, updates

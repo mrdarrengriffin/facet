@@ -12,13 +12,13 @@
 #   FW_OUT       output dir (default ./out), FW_CACHE object cache (default ./.cache)
 # Feature flags (renderer/features.json, tools/features.mjs; README "Feature flags"): FW_FEATURES=docs|firmware builds
 # only the features shown in that flavour (sources, specs, deck pages, Home cards) into $FW_OUT/<flavour>/<density>/
-# (own object + generated-header cache; no audit: the full build's covers it); unset = everything (the workbench).
+# (own object + generated-header cache); unset = everything (the workbench).
 # TODO: vendor LVGL, lv_conf and the fonts into this branch so it builds on its own.
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd)
 [ -f "$HERE/../local.env" ] && . "$HERE/../local.env"
-# FW_DEV=1 = dev build (Darren 2026-10-29: "migrate in seconds"): compile + link + the catalogue only; no contrast,
-# lint, audit, pixel contrast, lab_test, spec_test, theme_check or floorplan checks (run a normal build / facet-gate for those)
+# Builds only: compile + link. The checks run against the build with check.sh (fast | gate | nightly). LINKOPT = the
+# link's binaryen level (default = OPT; the watcher links at -O0: ~9 s -> ~2 s, the objects stay -O2).
 # BUILD_JOBS = compiles at once (LVGL and the renderer's own files): default half the cores (bin/heavy lowers it in the
 # quiet hours)
 if [ -z "${BUILD_JOBS:-}" ]; then BUILD_JOBS=$(( $(nproc) / 2 )); fi
@@ -48,8 +48,6 @@ VFLAG=; [ "$DEN" = 1x ] && VFLAG=-DFW_1X
 mkdir -p "$C/lvgl$OPT" "$O" "$OUT" "$GEN"
 [ -f "$PB/src/lv_conf.h" ] && [ -d "$L/src" ] || { echo "no panel build in $PB (build the panel firmware once)"; exit 1; }
 t0=$(date +%s.%N)
-# feature flags: every source in one feature, no shown feature needing a hidden one (fails the build)
-[ -n "${FW_DEV:-}" ] || node "$HERE/tools/features.mjs" check | sed "s/^/[$DEN] /"; [ "${PIPESTATUS[0]}" = 0 ] || exit 1
 SKIP=" "; [ -z "$FEAT" ] || SKIP=" $(node "$HERE/tools/features.mjs" exclude "$FEAT" | tr '\n' ' ') "
 
 # lv_conf = the panel's + host patches; rewritten only on change
@@ -72,9 +70,10 @@ CONF_SUM=$(md5sum "$GEN/lv_conf.h" | cut -c1-8)
 FL="$OPT -DLV_CONF_INCLUDE_SIMPLE -I$GEN -I$L -I$L/src"
 
 # LVGL: one cache for both densities (density-free)
-# dev: the object list of a finished LVGL build is kept per lv_conf (hashing ~1000 paths takes ~6 s)
+# the object list of a finished LVGL build is kept per lv_conf (hashing ~1000 paths takes ~6 s), used while every object is there
 LVGL_LIST=$C/lvgl$OPT-$CONF_SUM.list
-if [ -n "${FW_DEV:-}" ] && [ -s "$LVGL_LIST" ]; then LVGL_OBJS=$(cat "$LVGL_LIST"); else
+lvgl_ok() { [ -s "$LVGL_LIST" ] || return 1; local o; while read -r o; do [ -f "$o" ] || return 1; done < "$LVGL_LIST"; }
+if lvgl_ok; then LVGL_OBJS=$(cat "$LVGL_LIST"); else
 LVGL_OBJS=$(find "$L/src" -name '*.c' | while read -r f; do echo "$C/lvgl$OPT/$(echo "$f $CONF_SUM" | md5sum | cut -c1-12).o"; done)
 find "$L/src" -name '*.c' | xargs -P"$BUILD_JOBS" -I{} sh -c \
   'o='"$C/lvgl$OPT"'/$(echo "{} '"$CONF_SUM"'" | md5sum | cut -c1-12).o; [ -f $o ] || { emcc '"$FL"' -c {} -o $o.$$ && mv $o.$$ $o; }' \
@@ -118,19 +117,15 @@ node "$HERE/tools/gen_theme.mjs" "$GEN/theme_gen.h" || exit 1
 node "$HERE/tools/gen_icons.mjs" --meta "$GEN/icons_gen.h"
 mv "$GEN/.stamp.next" "$GEN/.stamp"
 fi
-# contrast test (tools/contrast.mjs): every declared pair x theme x accent set; reported, never fails the build
-[ "$DEN" = 1x ] || [ -n "${FW_DEV:-}" ] || node "$HERE/tools/contrast.mjs" --summary || true
-# contract lint (tools/contract_lint.mjs): a migrated component (meta "contract": 2) that breaks the contract fails the build
-[ "$DEN" = 1x ] || [ -n "${FW_DEV:-}" ] || node "$HERE/tools/contract_lint.mjs" --summary || exit 1
 ICONS_H=$GEN/facet_icons.h; [ "$DEN" = 1x ] && ICONS_H=$GEN/facet_icons_1x.h
-# dev: the icon masks only when an input is newer than the header (~4 s)
-if [ -z "${FW_DEV:-}" ] || [ ! -f "$ICONS_H" ] || [ -n "$(find "$HERE/tools/gen_icons.mjs" "$HERE/tokens" "$HERE/icons" -newer "$ICONS_H" -print -quit 2>/dev/null)" ]; then
+# the icon masks only when an input is newer than the header (~4 s)
+if [ ! -f "$ICONS_H" ] || [ -n "$(find "$HERE/tools/gen_icons.mjs" "$HERE/tokens" "$HERE/icons" -newer "$ICONS_H" -print -quit 2>/dev/null)" ]; then
   FW_ICONS=${FW_ICONS:-all} node "$HERE/tools/gen_icons.mjs" --data "$DEN" "$ICONS_H"
-  touch "$ICONS_H"  # the generator keeps an unchanged file; the stamp is what the dev check reads
+  touch "$ICONS_H"  # the generator keeps an unchanged file; the stamp is what the check above reads
 fi
 FONTS_H=$GEN/facet_fonts.h; [ "$DEN" = 1x ] && FONTS_H=$GEN/facet_fonts_1x.h
-# dev: the fonts only when an input is newer than the header (the rasteriser takes ~5 s)
-if [ -z "${FW_DEV:-}" ] || [ ! -f "$FONTS_H" ] || [ -n "$(find "$HERE/tools/gen_fonts.py" "$HERE/tokens" "$HERE/fonts" -newer "$FONTS_H" -print -quit 2>/dev/null)" ]; then
+# the fonts only when an input is newer than the header (the rasteriser takes ~5 s)
+if [ ! -f "$FONTS_H" ] || [ -n "$(find "$HERE/tools/gen_fonts.py" "$HERE/tokens" "$HERE/fonts" -newer "$FONTS_H" -print -quit 2>/dev/null)" ]; then
   FW_TTF=${FW_TTF:?set FW_TTF (dir of the TTFs) in local.env} "${FW_FONT_PY:?set FW_FONT_PY in local.env}" "$HERE/tools/gen_fonts.py" "$DEN" "$FONTS_H"
   touch "$FONTS_H"
 fi
@@ -155,8 +150,7 @@ while [ "$(jobs -rp | wc -l)" -gt 0 ]; do wait -n || CC_FAIL=1; done
 [ "${CC_FAIL:-0}" = 0 ] || exit 1
 # objects of deleted components must not linger in the link: OBJS lists only live sources
 mkdir -p "$OUT/.link"
-# dev: link without binaryen optimisation (the objects stay -O2; ~9 s -> ~2 s)
-LINKOPT=$OPT; [ -n "${FW_DEV:-}" ] && LINKOPT=-O0
+LINKOPT=${LINKOPT:-$OPT}
 em++ $LINKOPT $LVGL_OBJS $OBJS -sALLOW_MEMORY_GROWTH=1 -sMODULARIZE=1 -sEXPORT_ES6=1 -sENVIRONMENT=web,node \
   -sEXPORTED_FUNCTIONS='["_fw_init","_fw_meta","_fw_stage","_fw_stage_free","_fw_render","_fw_update","_fw_demo_state","_fw_tokens","_fw_content_h","_fw_stage_resize","_fw_touch","_fw_tick","_fw_dirty","_fw_frame","_fw_areas","_fw_events","_fw_ha_wants","_fw_ha_put","_fw_ha_asks","_fw_ha_answer","_fw_ha_gets","_fw_ha_chunk","_fw_ha_got","_fw_ha_link","_fw_img_wants","_fw_img_put","_fw_img_fail","_fw_img_stats","_fw_setting","_fw_spec","_fw_catalogue","_fw_spec_storage","_fw_anims","_fw_rects","_fw_taps","_fw_comps","_fw_slots","_fw_hits","_fw_hit","_fw_lab","_malloc","_free"]' \
   -sEXPORTED_RUNTIME_METHODS='["HEAPU8","UTF8ToString","stringToNewUTF8"]' -o "$OUT/.link/fw.mjs"
@@ -167,23 +161,3 @@ S=$(awk "BEGIN{printf \"%.1f\", $(date +%s.%N) - $t0}")
 printf '{"built": "%s", "density": "%s", "opt": "%s", "build_s": %s, "wasm_bytes": %s}\n' "$(date -Is)" "$DEN" "$OPT" "$S" "$(stat -c %s "$OUT/fw.wasm")" > "$OUT/manifest.json"
 node -e 'const fs=require("fs"),o=process.argv[1];import(process.argv[2]).then((F)=>{const t=JSON.stringify({flavour:process.env.FW_FEATURES||"all",ids:F.byId()});if(!fs.existsSync(o)||fs.readFileSync(o,"utf8")!==t)fs.writeFileSync(o,t)})' "$OUT/features.json" "$HERE/tools/features.mjs"  # id -> feature, docs, status, firmware (workbench nav)
 echo "[$DEN] built in ${S}s${FEAT:+ ($FEAT features)}"
-[ -z "$FEAT" ] || exit 0  # a flavour build: the audits below ran on the full build
-if [ -n "${FW_DEV:-}" ]; then [ "$DEN" = 1x ] || node "$HERE/tools/gen_catalogue.mjs" --build "${FW_OUT:-$HERE/out}" | sed "s/^/[$DEN] /"; exit 0; fi
-# component audit (tools/audit.mjs, README "Audit"; Darren 2026-10-22): clipping, stale pixels, grid, text cut off, touch
-# size, ring symmetry, motion paths, for every component / screen x variant x theme at this density. The new build is
-# already in place (the page still reloads); errors fail the build so they are seen. Cached per component.
-node "$HERE/tools/audit.mjs" --den "$DEN" --quiet --build "${FW_OUT:-$HERE/out}" | sed "s/^/[$DEN] /" ; [ "${PIPESTATUS[0]}" = 0 ] || { echo "[$DEN] audit: errors above"; exit 1; }
-# pixel contrast (tools/pixel_contrast.mjs): every contract component x variant, dark / light, built and switched live, in Facet and every built-in theme (--theme all),
-# the real text + icon pixels against what is behind them (WCAG 4.5 text, 3 large text / icons / disabled); fails the build
-node "$HERE/tools/pixel_contrast.mjs" --den "$DEN" --theme all --build "${FW_OUT:-$HERE/out}" | grep -E '^FAIL|^LEGACY|^pixel contrast' | awk '(/^FAIL/ && f++ < 12) || (/^LEGACY/ && l++ < 2) || /^pixel contrast/' | sed "s/^/[$DEN] /"; [ "${PIPESTATUS[0]}" = 0 ] || { echo "[$DEN] pixel contrast: failures above"; exit 1; }
-# every contract component: >= 1 tunable token, each repaints it live (C23 / P3), at this density; fails the build
-node "$HERE/tools/lab_test.mjs" --den "$DEN" --build "${FW_OUT:-$HERE/out}" | grep -E '^FAIL|lab_test' | awk 'NR <= 12' | sed "s/^/[$DEN] /"; [ "${PIPESTATUS[0]}" = 0 ] || { echo "[$DEN] lab_test: failures above"; exit 1; }
-# the spec catalogue + JSON Schema (core/spec.h; catalogue/) and the spec store test (power loss, refusals)
-if [ "$DEN" = 1.5x ]; then
-  node "$HERE/tools/gen_catalogue.mjs" --build "${FW_OUT:-$HERE/out}" | sed "s/^/[$DEN] /"
-  node "$HERE/tools/spec_test.mjs" --build "${FW_OUT:-$HERE/out}" | tail -1 | sed "s/^/[$DEN] /"
-  # built-in themes: facet.json up to date, every embedded theme loads and passes its guards (fails the build)
-  node "$HERE/tools/theme_check.mjs" --build "${FW_OUT:-$HERE/out}" | sed "s/^/[$DEN] /"; [ "${PIPESTATUS[0]}" = 0 ] || { echo "[$DEN] theme_check: failures above"; exit 1; }
-  # the floor plan generator on its public fixtures (tests/floorplan): fails the build
-  node "$HERE/tools/floorplan_test.mjs" --build "${FW_OUT:-$HERE/out}" | sed "s/^/[$DEN] /"; [ "${PIPESTATUS[0]}" = 0 ] || { echo "[$DEN] floorplan: failures above"; exit 1; }
-fi

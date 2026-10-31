@@ -26,7 +26,7 @@ function next(why) {
   running = true;
   const t0 = Date.now();
   console.log(`\n${new Date().toLocaleTimeString()} build ${den} (${why})`);
-  const p = spawn('/bin/sh', ['-c', `FW_DEV=1 '${join(HERE, 'build.sh')}' ${den}`], { stdio: ['ignore', 'pipe', 'pipe'] });
+  const p = spawn('/bin/sh', ['-c', `LINKOPT=-O0 '${join(HERE, 'build.sh')}' ${den}`], { stdio: ['ignore', 'pipe', 'pipe'] });
   let err = '';
   p.stdout.on('data', (d) => process.stdout.write(d));
   p.stderr.on('data', (d) => { err += d; });

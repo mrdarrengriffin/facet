@@ -79,7 +79,7 @@ are. The variables are in [renderer/README.md, "Paths"](renderer/README.md#paths
 
 ```sh
 cd renderer/tools && npm install && cd ../..
-renderer/build.sh 1.5x              # one build (1.5x = the 720 panel, 1x = the 480 panel); runs the audit
+renderer/build.sh 1.5x              # one build (1.5x = the 720 panel, 1x = the 480 panel)
 node renderer/watch.mjs             # rebuild on save while you work
 ```
 
@@ -91,7 +91,7 @@ Facet's rules are checked by tools, not by memory. Run the ones your change touc
 
 ```sh
 node renderer/tools/features.mjs check     # every source in one feature (also runs in CI)
-renderer/build.sh 1.5x && renderer/build.sh 1x   # build + audit: 4 px grid, clipping, symmetry, animation paths
+renderer/build.sh && renderer/check.sh gate       # both builds, then every check: 4 px grid, clipping, symmetry, animation paths, contrast
 node renderer/tools/contrast.mjs --summary # every colour pair, dark and light: 0 failures
 node renderer/tools/spec_test.mjs          # screen specs
 node renderer/tools/behaviour.mjs          # taps, drags, scrolling, sounds, the update path

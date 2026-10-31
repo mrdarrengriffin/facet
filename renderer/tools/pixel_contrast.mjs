@@ -12,7 +12,7 @@
 // what is behind them, in every variant, look and theme (fw_test gfx + veil_part): its face, or a colour drawing a whole
 // side of it (its outline: Win98's sunken chosen segment, black / white edges on a lighter grey face); a knob also against everything
 // round it (track, fill AND page: see the knob block below); a Win98-style checkbox's tick = the drawn part "switch".
-// No exemption list: a failing graphic fails the build (renderer/CONTRACT.md C17).
+// No exemption list: a failing graphic fails the checks (check.sh) (renderer/CONTRACT.md C17).
 // A text that changes no pixel when veiled is invisible: ratio 1, a failure. Exit 1 on any failure. A failing item
 // that a LEGACY component built (one not on the contract, inside a contract one: the Segmented in a Header) is listed
 // as LEGACY and counted, not failed: its migration piece fixes it.
