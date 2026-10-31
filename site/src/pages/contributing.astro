@@ -3,6 +3,7 @@
 // CONTRIBUTING.md (keep the two in step). Real commands only (renderer/README.md, .github/workflows/deploy.yml).
 import Docs, { type Heading } from '../layouts/Docs.astro';
 import { url } from '../lib/nav';
+import CodeBlock from '../components/CodeBlock.astro';
 
 const REPO = 'https://github.com/mrdarrengriffin/facet';
 const issue = (t: string) => `${REPO}/issues/new?template=${t}.yml`;
@@ -94,10 +95,10 @@ const headings: Heading[] = [
 
   <h3 id="site">The docs site</h3>
   <p>The site needs no C++ toolchain: it uses the published WASM build.</p>
-  <pre><code>gh release download docs-build -p docs-build.tar.gz -R mrdarrengriffin/facet
+  <CodeBlock lang="bash" label="Shell" code={`gh release download docs-build -p docs-build.tar.gz -R mrdarrengriffin/facet
 mkdir -p renderer/out/docs && tar -xzf docs-build.tar.gz -C renderer/out/docs
 cd site && npm ci
-FW_OUT=renderer/out npm run dev</code></pre>
+FW_OUT=renderer/out npm run dev`} />
 
   <h3 id="renderer">The renderer</h3>
   <p>
@@ -105,20 +106,20 @@ FW_OUT=renderer/out npm run dev</code></pre>
     from an ESPHome panel firmware build next to it; <code>local.env</code> at the repo root says where they are (the
     variables are in the renderer README, "Paths"). Bundling them into the repository is planned.
   </p>
-  <pre><code>cd renderer/tools && npm install && cd ../..
+  <CodeBlock lang="bash" label="Shell" code={`cd renderer/tools && npm install && cd ../..
 renderer/build.sh 1.5x       # one build (1.5x = the 720 panel, 1x = the 480 panel), with the audit
-node renderer/watch.mjs      # rebuild on save while you work</code></pre>
+node renderer/watch.mjs      # rebuild on save while you work`} />
   <p>If the build setup gets in your way, open an issue: getting a second person building Facet is worth fixing.</p>
 
   <h3 id="checks">Checks</h3>
   <p>Facet's rules are checked by tools, not by memory. Run the ones your change touches:</p>
-  <pre><code>node renderer/tools/features.mjs check      # every source in one feature (also runs in CI)
+  <CodeBlock lang="bash" label="Shell" code={`node renderer/tools/features.mjs check      # every source in one feature (also runs in CI)
 renderer/build.sh 1.5x && renderer/build.sh 1x  # build + audit: 4 px grid, clipping, symmetry, motion
 node renderer/tools/contrast.mjs --summary  # every colour pair, dark and light: 0 failures
 node renderer/tools/spec_test.mjs           # screen specs
 node renderer/tools/behaviour.mjs           # taps, drags, scrolling, sounds, updates
 node renderer/tools/visual.mjs              # visual regression
-renderer/tools/asan.sh                      # memory errors</code></pre>
+renderer/tools/asan.sh                      # memory errors`} />
   <p>
     The house rules, in short: every value comes from a token, sizes sit on the 4 px grid, everything works at 720 and
     480 in dark and light, and screens are made of real <a href={url('/components/')}>components</a>.

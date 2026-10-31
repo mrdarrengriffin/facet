@@ -1,0 +1,49 @@
+---
+// One code block for the whole site: Shiki highlighting at build time (no client JS for colour) with the token theme
+// in src/lib/code.ts, a header row (label + Copy button: keyboard reachable, says "Copied"), scroll inside the block
+// (long code gets a max height), plain text wraps. JSON passed as `json` is formatted with formatJson.
+import { Code } from 'astro:components';
+import { facetCodeTheme, formatJson, LANG_LABEL } from '../lib/code';
+
+type Lang = 'json' | 'yaml' | 'bash' | 'cpp' | 'text';
+interface Props { code?: string; json?: unknown; lang?: Lang; label?: string; copy?: boolean; wrap?: boolean; copyLabel?: string; id?: string }
+const { json, label, copy = true, id } = Astro.props;
+const lang: Lang = Astro.props.lang ?? (json !== undefined ? 'json' : 'text');
+const code = (json !== undefined ? formatJson(json) : (Astro.props.code ?? '')).replace(/\n+$/, '');
+const wrap = Astro.props.wrap ?? lang === 'text';
+const head = label ?? LANG_LABEL[lang];
+const copyLabel = Astro.props.copyLabel ?? `Copy ${head}`;
+---
+
+<figure class:list={['codeblock', { 'codeblock--wrap': wrap }]} id={id} data-codeblock>
+  <figcaption class="codeblock__head">
+    <span class="codeblock__label">{head}</span>
+    {copy && <button type="button" class="codeblock__copy" data-code-copy aria-label={copyLabel}><span data-code-copy-text>Copy</span></button>}
+  </figcaption>
+  <span class="codeblock__status" aria-live="polite" data-code-status></span>
+  <Code code={code} lang={lang === 'text' ? 'plaintext' : lang} theme={facetCodeTheme} wrap={wrap} />
+</figure>
+
+<script>
+  async function put(t: string) {
+    try { await navigator.clipboard.writeText(t); return; } catch { /* fall back below (no clipboard API, http) */ }
+    const a = document.createElement('textarea');
+    a.value = t; a.setAttribute('readonly', ''); a.style.position = 'fixed'; a.style.opacity = '0';
+    document.body.append(a); a.select(); document.execCommand('copy'); a.remove();
+  }
+  document.addEventListener('click', (ev) => {
+    const b = (ev.target as Element | null)?.closest<HTMLButtonElement>('[data-code-copy]');
+    if (!b) return;
+    const pre = b.closest('[data-codeblock]')?.querySelector('pre');
+    const label = b.querySelector('[data-code-copy-text]');
+    void put(pre?.textContent ?? '').then(() => {
+      if (!label) return;
+      label.textContent = 'Copied';
+      const st = b.closest('[data-codeblock]')?.querySelector('[data-code-status]');
+      if (st) { st.textContent = ''; st.textContent = 'Copied'; }
+      b.dataset.copied = '';
+      clearTimeout(Number(b.dataset.t));
+      b.dataset.t = String(setTimeout(() => { label.textContent = 'Copy'; delete b.dataset.copied; }, 1500));
+    });
+  });
+</script>

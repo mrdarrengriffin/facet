@@ -6,6 +6,7 @@
 import Docs, { type Heading } from '../../layouts/Docs.astro';
 import { AI_EXAMPLES, url } from '../../lib/nav';
 import examples from '../../lib/ai-examples.json';
+import CodeBlock from '../../components/CodeBlock.astro';
 
 const headings: Heading[] = [
   { depth: 2, slug: 'spec', text: 'What a spec is' },
@@ -15,16 +16,16 @@ const headings: Heading[] = [
   { depth: 2, slug: 'prompt', text: 'Starter prompt' },
   ...(AI_EXAMPLES ? [{ depth: 2, slug: 'examples', text: 'Examples' }] : []),
 ];
-const spec = `{"v": 1, "id": "bin_day", "name": "Bin day", "rev": 1, "role": "page",
- "header": {"label": "Bin day", "back": true},
- "layout": "list",
- "nodes": [
-  {"c": "hero_block", "p": {"n": {"e": "sensor.bin_days", "s": "2"}, "label": "days to bin day",
-                            "line": {"e": "sensor.bin_next", "s": "Recycling · Tue"}}},
-  {"c": "section_header", "p": {"title": "next collections"}},
-  {"c": "list_row", "p": {"title": "Recycling", "trailing": "value",
-                          "value": {"e": "sensor.bin_recycling", "s": "Tue 27 Oct"}}}
- ]}`;
+const spec = {
+  v: 1, id: 'bin_day', name: 'Bin day', rev: 1, role: 'page',
+  header: { label: 'Bin day', back: true },
+  layout: 'list',
+  nodes: [
+    { c: 'hero_block', p: { n: { e: 'sensor.bin_days', s: '2' }, label: 'days to bin day', line: { e: 'sensor.bin_next', s: 'Recycling · Tue' } } },
+    { c: 'section_header', p: { title: 'next collections' } },
+    { c: 'list_row', p: { title: 'Recycling', trailing: 'value', value: { e: 'sensor.bin_recycling', s: 'Tue 27 Oct' } } },
+  ],
+};
 const curl = `P=http://<panel-ip>; T=<agent token>
 curl -s $P/llms.txt                                   # where to start
 curl -s $P/agents.md                                  # the spec guide for this firmware
@@ -66,13 +67,12 @@ const prompt = `You are making a screen for my Facet wall panel at http://<panel
 
   <h2 id="spec">What a spec is</h2>
   <p>Every Facet screen is a short JSON <em>spec</em>: a header, a layout and a list of components, each with its props. A prop can be a fixed value or bound to a Home Assistant entity, so the screen updates by itself. There are no positions, sizes, colours or fonts in a spec.</p>
-  <pre><code>{spec}</code></pre>
+  <CodeBlock json={spec} label="Spec · JSON" copyLabel="Copy spec" />
   <p>Specs are small (a few kilobytes), so a panel holds many of them and only builds the one on screen.</p>
 
   <h2 id="why">Why it still looks right</h2>
   <ul>
     <li><strong>Components and tokens only.</strong> A spec can only name components the firmware ships. Spacing, type, colour and motion come from the design tokens, in light and dark, so an assistant cannot pick an off-grid gap or an unreadable colour.</li>
-    <li><strong>Slots say what they take.</strong> Each place that holds other components (the header's end, a grid cell) lists the components it accepts and how many; a spec that breaks that is refused with the exact node named. The component list in <code>/agents.md</code> shows every slot's list.</li>
     <li><strong>Budgets.</strong> Each screen has limits on nodes, bindings and size, so a screen stays fast on the panel.</li>
     <li><strong>Validation on the panel.</strong> The panel checks a spec before it keeps it and answers with the exact path and reason of anything wrong (an unknown prop, a value out of range, a style key). The assistant fixes it and tries again.</li>
     <li><strong>Layout rules.</strong> One hero per screen, rows that touch, more space between groups: the layout applies them, not the assistant.</li>
@@ -97,16 +97,15 @@ const prompt = `You are making a screen for my Facet wall panel at http://<panel
     </tbody>
   </table>
   <p>Writes need the setting on and <code>Authorization: Bearer &lt;token&gt;</code>; otherwise the panel answers 403 and says what is missing.</p>
-  <pre><code>{curl}</code></pre>
+  <CodeBlock code={curl} lang="bash" label="curl" copyLabel="Copy curl commands" />
 
   <h2 id="home-assistant">Through Home Assistant</h2>
   <p>Assistants that already work with your Home Assistant can install screens through the panel's ESPHome actions, with no network access to the panel: <code>esphome.&lt;panel&gt;_facet_hello</code> (components, screens and budgets), <code>_facet_screen</code> (install a screen spec), <code>_facet_deck</code> (the page list), <code>_facet_revert</code> (back to the factory screen) and <code>_facet_show</code> (open a screen). The first four answer with a response, so call them with a response variable and read the errors.</p>
-  <pre><code>{ha}</code></pre>
+  <CodeBlock code={ha} lang="yaml" label="Home Assistant · YAML" copyLabel="Copy Home Assistant actions" />
 
   <h2 id="prompt">Starter prompt</h2>
   <p>Paste this into your assistant and fill in the brackets.</p>
-  <pre id="starter"><code>{prompt}</code></pre>
-  <button type="button" class="copy" data-copy="starter">Copy prompt</button>
+  <CodeBlock id="starter" code={prompt} label="Prompt" copyLabel="Copy prompt" />
 
   {AI_EXAMPLES && (<>
   <h2 id="examples">Examples</h2>
@@ -127,7 +126,6 @@ const prompt = `You are making a screen for my Facet wall panel at http://<panel
 </Docs>
 
 <style>
-  pre { max-width: 100%; white-space: pre-wrap; overflow-wrap: anywhere; }
   .ex-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; padding: 0; list-style: none; }
   .ex-grid a { display: flex; flex-direction: column; gap: 4px; height: 100%; padding: 12px; border: 1px solid var(--facet-color-line); border-radius: 16px; background: var(--facet-color-surface); color: var(--facet-color-text); text-decoration: none; }
   .ex-grid a:hover { border-color: var(--facet-color-line-hi); background: var(--facet-color-surface-press); }
@@ -136,15 +134,5 @@ const prompt = `You are making a screen for my Facet wall panel at http://<panel
   :global(:root[data-theme='light']) .ex-grid .shot-light { display: block; }
   :global(:root[data-theme='light']) .ex-grid .shot-dark { display: none; }
   .ex-grid span { color: var(--facet-color-text-dim); font-size: 14px; line-height: 20px; }
-  .copy { margin-top: 8px; padding: 8px 16px; border: 1px solid var(--facet-color-line-hi); border-radius: 8px; background: var(--facet-color-surface); color: var(--facet-color-text); font: inherit; cursor: pointer; }
-  .copy:hover { background: var(--facet-color-surface-press); }
 </style>
 
-<script>
-  for (const b of document.querySelectorAll<HTMLButtonElement>('[data-copy]')) {
-    b.addEventListener('click', () => {
-      const t = document.getElementById(b.dataset.copy!)?.textContent ?? '';
-      void navigator.clipboard?.writeText(t).then(() => { const was = b.textContent; b.textContent = 'Copied'; setTimeout(() => (b.textContent = was), 1500); });
-    });
-  }
-</script>

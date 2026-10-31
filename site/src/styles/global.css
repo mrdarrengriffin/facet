@@ -12,7 +12,6 @@
   --gutter: 16px;
   --sans: var(--facet-font-sans);
   --mono: var(--facet-font-mono);
-  --code-bg: var(--facet-color-surface);
   --accent-tint: color-mix(in srgb, var(--facet-color-accent) 14%, transparent);
   color-scheme: dark;
 }
@@ -658,27 +657,113 @@ kbd {
   color: var(--facet-color-text-dim);
 }
 
-/* Code (Shiki dual themes, no default colour) */
+/* Code: one look for every block (src/components/CodeBlock.astro, markdown fences, any bare pre). Highlighting is
+   Shiki at build time with the token theme in src/lib/code.ts; its colours are these variables, so light and dark
+   both come from the colour tokens. Each one is checked against --code-bg in both themes (4.5:1 or more). A rounded
+   tinted box like the callouts (no side stripe); code scrolls inside the box, plain text (prompts) wraps. */
 
+:root {
+  --code-bg: var(--facet-color-surface);
+  --code-fg: var(--facet-color-text);
+  --code-punct: var(--facet-color-text-dim);
+  --code-comment: var(--facet-color-text-dim);
+  --code-key: var(--facet-color-accent-text);
+  --code-string: var(--facet-color-ok);
+  --code-constant: var(--facet-color-warn);
+  --code-keyword: var(--facet-color-blue);
+}
+
+.codeblock {
+  min-width: 0;
+  max-width: 100%;
+  margin: 0 0 18px;
+  border: 1px solid var(--facet-color-line);
+  border-radius: 12px;
+  background: var(--code-bg);
+  overflow: hidden;
+}
+
+.codeblock__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 40px;
+  padding: 4px 4px 4px 16px;
+  border-bottom: 1px solid var(--facet-color-line);
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--facet-color-text-dim);
+}
+
+.codeblock__copy {
+  min-height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--facet-color-text);
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+}
+
+.codeblock__copy:hover {
+  background: var(--facet-color-surface-press);
+}
+
+.codeblock__copy[data-copied] {
+  color: var(--facet-color-ok);
+}
+
+.codeblock__status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.codeblock pre,
+.prose .codeblock pre {
+  margin: 0;
+  padding: 16px 20px;
+  border: 0;
+  border-radius: 0;
+  max-height: 480px;
+  overflow: auto;
+  font-size: 14px;
+  line-height: 1.6;
+  tab-size: 2;
+}
+
+.codeblock--wrap pre {
+  max-height: none;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.codeblock pre:focus-visible {
+  outline-offset: -2px;
+}
+
+/* markdown fences and any bare pre: the same box without the header */
 .astro-code,
-.prose pre {
+pre:not(.codeblock pre) {
+  max-width: 100%;
   padding: 16px 20px;
   border: 1px solid var(--facet-color-line);
   border-radius: 12px;
   background: var(--code-bg) !important;
+  color: var(--code-fg);
   font-size: 14px;
   line-height: 1.6;
   overflow-x: auto;
-}
-
-.astro-code,
-.astro-code span {
-  color: var(--shiki-light);
-}
-
-:root:not([data-theme='light']) .astro-code,
-:root:not([data-theme='light']) .astro-code span {
-  color: var(--shiki-dark);
 }
 
 /* Search */

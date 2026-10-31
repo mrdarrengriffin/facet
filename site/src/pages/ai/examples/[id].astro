@@ -5,6 +5,7 @@
 import Docs, { type Heading } from '../../../layouts/Docs.astro';
 import Live from '../../../components/Live.astro';
 import PreviewBox from '../../../components/PreviewBox.astro';
+import CodeBlock from '../../../components/CodeBlock.astro';
 import { AI_EXAMPLES, url } from '../../../lib/nav';
 import examples from '../../../lib/ai-examples.json';
 
@@ -16,7 +17,8 @@ export function getStaticPaths() {
 const { i } = Astro.props as { i: number };
 const e = examples[i];
 const text = Object.entries(raw).find(([p]) => p.endsWith(`/${e.id}.json`))![1];
-const compact = JSON.stringify(JSON.parse(text));
+const parsed = JSON.parse(text);
+const compact = JSON.stringify(parsed);
 const prev = examples[(i + examples.length - 1) % examples.length], next = examples[(i + 1) % examples.length];
 const headings: Heading[] = [
   { depth: 2, slug: 'preview', text: 'Preview' },
@@ -40,13 +42,11 @@ const REPO = 'https://github.com/mrdarrengriffin/facet/blob/main';
 
   <h2 id="prompt">Prompt</h2>
   <p>What you would ask an assistant that can reach your panel (see <a href={url('/ai/')}>Make screens with AI</a>):</p>
-  <pre id="prompt-text"><code>{e.prompt}</code></pre>
-  <button type="button" class="copy" data-copy="prompt-text">Copy prompt</button>
+  <CodeBlock id="prompt-text" code={e.prompt} label="Prompt" copyLabel="Copy prompt" />
 
   <h2 id="spec">Spec</h2>
   <p>{(new TextEncoder().encode(compact)).length} bytes. Change the entity ids to your own, then send it to your panel.</p>
-  <pre id="spec-text"><code>{text}</code></pre>
-  <button type="button" class="copy" data-copy="spec-text">Copy spec</button>
+  <CodeBlock id="spec-text" json={parsed} label="Spec · JSON" copyLabel="Copy spec" />
 
   <nav class="ex-nav" aria-label="More examples">
     <a href={url(`/ai/examples/${prev.id}/`)}>&larr; {prev.title}</a>
@@ -58,18 +58,6 @@ const REPO = 'https://github.com/mrdarrengriffin/facet/blob/main';
 <style>
   .pair { display: flex; flex-wrap: wrap; gap: 16px; }
   .pair > div { flex: 1 1 280px; min-width: 0; }
-  pre { max-width: 100%; white-space: pre-wrap; overflow-wrap: anywhere; }
-  #spec-text { max-height: 480px; overflow: auto; }
-  .copy { margin-top: 8px; padding: 8px 16px; border: 1px solid var(--facet-color-line-hi); border-radius: 8px; background: var(--facet-color-surface); color: var(--facet-color-text); font: inherit; cursor: pointer; }
-  .copy:hover { background: var(--facet-color-surface-press); }
   .ex-nav { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 16px; margin-top: 32px; }
 </style>
 
-<script>
-  for (const b of document.querySelectorAll<HTMLButtonElement>('[data-copy]')) {
-    b.addEventListener('click', () => {
-      const t = document.getElementById(b.dataset.copy!)?.textContent ?? '';
-      void navigator.clipboard?.writeText(t).then(() => { const was = b.textContent; b.textContent = 'Copied'; setTimeout(() => (b.textContent = was), 1500); });
-    });
-  }
-</script>

@@ -3,6 +3,7 @@
 // Where it is served is not decided yet: FACET_DOCS_BASE sets the path (default /facet-docs/ = the local preview
 // through the hub), FACET_DOCS_OUT the output folder (default ./dist).
 import { defineConfig } from 'astro/config';
+import { facetCodeTheme } from './src/lib/code.ts';
 
 export default defineConfig({
   site: 'https://mrdarrengriffin.github.io',
@@ -10,4 +11,6 @@ export default defineConfig({
   outDir: process.env.FACET_DOCS_OUT ?? './dist',
   trailingSlash: 'always',
   build: { format: 'directory' },
+  // markdown fences use the same token theme as src/components/CodeBlock.astro
+  markdown: { shikiConfig: { theme: facetCodeTheme } },
 });
