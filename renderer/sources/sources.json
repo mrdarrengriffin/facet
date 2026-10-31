@@ -28,9 +28,13 @@
    {"id": "sample", "kind": "builtin", "name": "Sample forecast (previews)", "adapter": "sample"}]},
   "energy": {"shows": "Today's energy use by the half hour with its rates, and the last two weeks.", "needs": "a smart meter or tariff", "feed": "panel.energy", "sources": [
    {"id": "ha_energy", "kind": "ha", "name": "HA's Energy dashboard", "from": "HA's Energy dashboard", "adapter": "ha", "detect": {"energy": true}},
-   {"id": "octopus", "kind": "ha", "name": "Octopus Energy (read directly, planned)", "detect": {"integration": "octopus_energy"}},
    {"id": "octopus_api", "kind": "direct", "name": "Octopus API (planned)", "setup": ["API key", "account number"]},
-   {"id": "sample", "kind": "builtin", "name": "Sample time-of-use day (previews)", "adapter": "sample"}]},
+   {"id": "sample", "kind": "builtin", "name": "Sample time-of-use day (previews)", "adapter": "sample"},
+   {"id": "fixtures", "kind": "builtin", "name": "Sample day + the extras' test data (fixtures/)", "adapter": "fixtures"}],
+   "extras": [
+    {"id": "octopus", "name": "Octopus Energy", "rank": 10, "integration": "octopus_energy", "fixture": "fixtures/octopus.json",
+     "match": "the Energy dashboard's grid stat sensor.octopus_energy_electricity_<serial>_<mpan>_current_accumulative_consumption: its meter prefix; the account's Octoplus calendars from GET /api/calendars",
+     "fills": {"live": "<meter>_current_demand (W)", "rates": "event.<meter>_current_day_rates / _next_day_rates (attribute rates: start, end, value_inc_vat): the rate now / next, the bands, the cheapest run", "events": "calendar.octopus_energy_<account>_octoplus_saving_sessions / _octoplus_power_down / _greener_nights"}}]},
   "thermostat": {"shows": "The heating: the room temperature, the target to set, the mode and preset.", "needs": "a smart thermostat", "sources": [
    {"id": "ha_climate", "kind": "ha", "name": "HA climate", "detect": {"domain": "climate"}, "fills": {"entity": {"domain": "climate"}}}]},
   "covers": {"shows": "Your blinds and curtains: how open each one is, to open, close or set.", "needs": "a motorised blind or curtain", "sources": [

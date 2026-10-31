@@ -1,0 +1,657 @@
+{
+ "$comment": "Test data for the Energy feed's Octopus extra (renderer/core/energy_source.cpp): the shape of the Octopus Energy integration's entities (BottlecapDave/HomeAssistant-OctopusEnergy docs: sensors, events, Octoplus calendars), a made-up meter and account, a made-up time-of-use day. {today} / {tomorrow} = the panel's local dates, filled in when served. Playground: Energy, source fixtures.",
+ "prefs": {
+  "energy_sources": [
+   {
+    "type": "grid",
+    "stat_energy_from": "sensor.octopus_energy_electricity_00a0000000_1000000000000_current_accumulative_consumption",
+    "stat_cost": "sensor.octopus_energy_electricity_00a0000000_1000000000000_current_accumulative_cost",
+    "stat_energy_to": null
+   }
+  ]
+ },
+ "states": {
+  "sensor.octopus_energy_electricity_00a0000000_1000000000000_current_demand": {
+   "state": "420",
+   "attributes": {
+    "mpan": "1000000000000",
+    "serial_number": "00A0000000",
+    "is_export": false,
+    "is_smart_meter": true,
+    "unit_of_measurement": "W",
+    "device_class": "power"
+   }
+  },
+  "event.octopus_energy_electricity_00a0000000_1000000000000_current_day_rates": {
+   "state": "{today}T00:00:00",
+   "attributes": {
+    "mpan": "1000000000000",
+    "serial_number": "00A0000000",
+    "is_export": false,
+    "is_smart_meter": true,
+    "event_type": "octopus_energy_electricity_current_day_rates",
+    "tariff_code": "E-1R-SAMPLE-00-00-00-A",
+    "rates": [
+     {
+      "start": "{today}T00:00:00",
+      "end": "{today}T00:30:00",
+      "value_inc_vat": 0.262,
+      "is_capped": false
+     },
+     {
+      "start": "{today}T00:30:00",
+      "end": "{today}T01:00:00",
+      "value_inc_vat": 0.262,
+      "is_capped": false
+     },
+     {
+      "start": "{today}T01:00:00",
+      "end": "{today}T01:30:00",
+      "value_inc_vat": 0.262,
+      "is_capped": false
+     },
+     {
+      "start": "{today}T01:30:00",
+      "end": "{today}T02:00:00",
+      "value_inc_vat": 0.262,
+      "is_capped": false
+     },
+     {
+      "start": "{today}T02:00:00",
+      "end": "{today}T02:30:00",
+      "value_inc_vat": 0.262,
+      "is_capped": false
+     },
+     {
+      "start": "{today}T02:30:00",
+      "end": "{today}T03:00:00",
+      "value_inc_vat": 0.262,
+      "is_capped": false
+     },
+     {
+      "start": "{today}T03:00:00",
+      "end": "{today}T03:30:00",
+      "value_inc_vat": 0.262,
+      "is_capped": false
+     },
+     {
+      "start": "{today}T03:30:00",
+      "end": "{today}T04:00:00",
+      "value_inc_vat": 0.262,
+      "is_capped": false
+     },
+     {
+      "start": "{today}T04:00:00",
+      "end": "{today}T04:30:00",
+      "value_inc_vat": 0.135,
+      "is_capped": false
+     },
+     {
+      "start": "{today}T04:30:00",
+      "end": "{today}T05:00:00",
+      "value_inc_vat": 0.135,
+      "is_capped": false
+     },
+     {
+      "start": "{today}T05:00:00",
+      "end": "{today}T05:30:00",
+      "value_inc_vat": 0.135,
+      "is_capped": false
+     },
+     {
+      "start": "{today}T05:30:00",
+      "end": "{today}T06:00:00",
+      "value_inc_vat": 0.135,
+      "is_capped": false
+     },
+     {
+      "start": "{today}T06:00:00",
+      "end": "{today}T06:30:00",
+      "value_inc_vat": 0.135,
+      "is_capped": false
+     },
+     {
+      "start": "{today}T06:30:00",
+      "end": "{today}T07:00:00",
+      "value_inc_vat": 0.135,
+      "is_capped": false
+     },
+     {
+      "start": "{today}T07:00:00",
+      "end": "{today}T07:30:00",
+      "value_inc_vat": 0.262,
+      "is_capped": false
+     },
+     {
+      "start": "{today}T07:30:00",
+      "end": "{today}T08:00:00",
+      "value_inc_vat": 0.262,
+      "is_capped": false
+     },
+     {
+      "start": "{today}T08:00:00",
+      "end": "{today}T08:30:00",
+      "value_inc_vat": 0.262,
+      "is_capped": false
+     },
+     {
+      "start": "{today}T08:30:00",
+      "end": "{today}T09:00:00",
+      "value_inc_vat": 0.262,
+      "is_capped": false
+     },
+     {
+      "start": "{today}T09:00:00",
+      "end": "{today}T09:30:00",
+      "value_inc_vat": 0.262,
+      "is_capped": false
+     },
+     {
+      "start": "{today}T09:30:00",
+      "end": "{today}T10:00:00",
+      "value_inc_vat": 0.262,
+      "is_capped": false
+     },
+     {
+      "start": "{today}T10:00:00",
+      "end": "{today}T10:30:00",
+      "value_inc_vat": 0.262,
+      "is_capped": false
+     },
+     {
+      "start": "{today}T10:30:00",
+      "end": "{today}T11:00:00",
+      "value_inc_vat": 0.262,
+      "is_capped": false
+     },
+     {
+      "start": "{today}T11:00:00",
+      "end": "{today}T11:30:00",
+      "value_inc_vat": 0.262,
+      "is_capped": false
+     },
+     {
+      "start": "{today}T11:30:00",
+      "end": "{today}T12:00:00",
+      "value_inc_vat": 0.262,
+      "is_capped": false
+     },
+     {
+      "start": "{today}T12:00:00",
+      "end": "{today}T12:30:00",
+      "value_inc_vat": 0.262,
+      "is_capped": false
+     },
+     {
+      "start": "{today}T12:30:00",
+      "end": "{today}T13:00:00",
+      "value_inc_vat": 0.262,
+      "is_capped": false
+     },
+     {
+      "start": "{today}T13:00:00",
+      "end": "{today}T13:30:00",
+      "value_inc_vat": 0.135,
+      "is_capped": false
+     },
+     {
+      "start": "{today}T13:30:00",
+      "end": "{today}T14:00:00",
+      "value_inc_vat": 0.135,
+      "is_capped": false
+     },
+     {
+      "start": "{today}T14:00:00",
+      "end": "{today}T14:30:00",
+      "value_inc_vat": 0.135,
+      "is_capped": false
+     },
+     {
+      "start": "{today}T14:30:00",
+      "end": "{today}T15:00:00",
+      "value_inc_vat": 0.135,
+      "is_capped": false
+     },
+     {
+      "start": "{today}T15:00:00",
+      "end": "{today}T15:30:00",
+      "value_inc_vat": 0.135,
+      "is_capped": false
+     },
+     {
+      "start": "{today}T15:30:00",
+      "end": "{today}T16:00:00",
+      "value_inc_vat": 0.135,
+      "is_capped": false
+     },
+     {
+      "start": "{today}T16:00:00",
+      "end": "{today}T16:30:00",
+      "value_inc_vat": 0.394,
+      "is_capped": false
+     },
+     {
+      "start": "{today}T16:30:00",
+      "end": "{today}T17:00:00",
+      "value_inc_vat": 0.394,
+      "is_capped": false
+     },
+     {
+      "start": "{today}T17:00:00",
+      "end": "{today}T17:30:00",
+      "value_inc_vat": 0.394,
+      "is_capped": false
+     },
+     {
+      "start": "{today}T17:30:00",
+      "end": "{today}T18:00:00",
+      "value_inc_vat": 0.394,
+      "is_capped": false
+     },
+     {
+      "start": "{today}T18:00:00",
+      "end": "{today}T18:30:00",
+      "value_inc_vat": 0.394,
+      "is_capped": false
+     },
+     {
+      "start": "{today}T18:30:00",
+      "end": "{today}T19:00:00",
+      "value_inc_vat": 0.394,
+      "is_capped": false
+     },
+     {
+      "start": "{today}T19:00:00",
+      "end": "{today}T19:30:00",
+      "value_inc_vat": 0.262,
+      "is_capped": false
+     },
+     {
+      "start": "{today}T19:30:00",
+      "end": "{today}T20:00:00",
+      "value_inc_vat": 0.262,
+      "is_capped": false
+     },
+     {
+      "start": "{today}T20:00:00",
+      "end": "{today}T20:30:00",
+      "value_inc_vat": 0.262,
+      "is_capped": false
+     },
+     {
+      "start": "{today}T20:30:00",
+      "end": "{today}T21:00:00",
+      "value_inc_vat": 0.262,
+      "is_capped": false
+     },
+     {
+      "start": "{today}T21:00:00",
+      "end": "{today}T21:30:00",
+      "value_inc_vat": 0.262,
+      "is_capped": false
+     },
+     {
+      "start": "{today}T21:30:00",
+      "end": "{today}T22:00:00",
+      "value_inc_vat": 0.262,
+      "is_capped": false
+     },
+     {
+      "start": "{today}T22:00:00",
+      "end": "{today}T22:30:00",
+      "value_inc_vat": 0.135,
+      "is_capped": false
+     },
+     {
+      "start": "{today}T22:30:00",
+      "end": "{today}T23:00:00",
+      "value_inc_vat": 0.135,
+      "is_capped": false
+     },
+     {
+      "start": "{today}T23:00:00",
+      "end": "{today}T23:30:00",
+      "value_inc_vat": 0.135,
+      "is_capped": false
+     },
+     {
+      "start": "{today}T23:30:00",
+      "end": "{tomorrow}T00:00:00",
+      "value_inc_vat": 0.135,
+      "is_capped": false
+     }
+    ],
+    "min_rate": 0.135,
+    "max_rate": 0.394
+   }
+  },
+  "event.octopus_energy_electricity_00a0000000_1000000000000_next_day_rates": {
+   "state": "{today}T16:00:00",
+   "attributes": {
+    "mpan": "1000000000000",
+    "serial_number": "00A0000000",
+    "is_export": false,
+    "is_smart_meter": true,
+    "event_type": "octopus_energy_electricity_next_day_rates",
+    "tariff_code": "E-1R-SAMPLE-00-00-00-A",
+    "rates": [
+     {
+      "start": "{tomorrow}T00:00:00",
+      "end": "{tomorrow}T00:30:00",
+      "value_inc_vat": 0.262,
+      "is_capped": false
+     },
+     {
+      "start": "{tomorrow}T00:30:00",
+      "end": "{tomorrow}T01:00:00",
+      "value_inc_vat": 0.262,
+      "is_capped": false
+     },
+     {
+      "start": "{tomorrow}T01:00:00",
+      "end": "{tomorrow}T01:30:00",
+      "value_inc_vat": 0.262,
+      "is_capped": false
+     },
+     {
+      "start": "{tomorrow}T01:30:00",
+      "end": "{tomorrow}T02:00:00",
+      "value_inc_vat": 0.262,
+      "is_capped": false
+     },
+     {
+      "start": "{tomorrow}T02:00:00",
+      "end": "{tomorrow}T02:30:00",
+      "value_inc_vat": 0.262,
+      "is_capped": false
+     },
+     {
+      "start": "{tomorrow}T02:30:00",
+      "end": "{tomorrow}T03:00:00",
+      "value_inc_vat": 0.262,
+      "is_capped": false
+     },
+     {
+      "start": "{tomorrow}T03:00:00",
+      "end": "{tomorrow}T03:30:00",
+      "value_inc_vat": 0.262,
+      "is_capped": false
+     },
+     {
+      "start": "{tomorrow}T03:30:00",
+      "end": "{tomorrow}T04:00:00",
+      "value_inc_vat": 0.262,
+      "is_capped": false
+     },
+     {
+      "start": "{tomorrow}T04:00:00",
+      "end": "{tomorrow}T04:30:00",
+      "value_inc_vat": 0.135,
+      "is_capped": false
+     },
+     {
+      "start": "{tomorrow}T04:30:00",
+      "end": "{tomorrow}T05:00:00",
+      "value_inc_vat": 0.135,
+      "is_capped": false
+     },
+     {
+      "start": "{tomorrow}T05:00:00",
+      "end": "{tomorrow}T05:30:00",
+      "value_inc_vat": 0.135,
+      "is_capped": false
+     },
+     {
+      "start": "{tomorrow}T05:30:00",
+      "end": "{tomorrow}T06:00:00",
+      "value_inc_vat": 0.135,
+      "is_capped": false
+     },
+     {
+      "start": "{tomorrow}T06:00:00",
+      "end": "{tomorrow}T06:30:00",
+      "value_inc_vat": 0.135,
+      "is_capped": false
+     },
+     {
+      "start": "{tomorrow}T06:30:00",
+      "end": "{tomorrow}T07:00:00",
+      "value_inc_vat": 0.135,
+      "is_capped": false
+     },
+     {
+      "start": "{tomorrow}T07:00:00",
+      "end": "{tomorrow}T07:30:00",
+      "value_inc_vat": 0.262,
+      "is_capped": false
+     },
+     {
+      "start": "{tomorrow}T07:30:00",
+      "end": "{tomorrow}T08:00:00",
+      "value_inc_vat": 0.262,
+      "is_capped": false
+     },
+     {
+      "start": "{tomorrow}T08:00:00",
+      "end": "{tomorrow}T08:30:00",
+      "value_inc_vat": 0.262,
+      "is_capped": false
+     },
+     {
+      "start": "{tomorrow}T08:30:00",
+      "end": "{tomorrow}T09:00:00",
+      "value_inc_vat": 0.262,
+      "is_capped": false
+     },
+     {
+      "start": "{tomorrow}T09:00:00",
+      "end": "{tomorrow}T09:30:00",
+      "value_inc_vat": 0.262,
+      "is_capped": false
+     },
+     {
+      "start": "{tomorrow}T09:30:00",
+      "end": "{tomorrow}T10:00:00",
+      "value_inc_vat": 0.262,
+      "is_capped": false
+     },
+     {
+      "start": "{tomorrow}T10:00:00",
+      "end": "{tomorrow}T10:30:00",
+      "value_inc_vat": 0.262,
+      "is_capped": false
+     },
+     {
+      "start": "{tomorrow}T10:30:00",
+      "end": "{tomorrow}T11:00:00",
+      "value_inc_vat": 0.262,
+      "is_capped": false
+     },
+     {
+      "start": "{tomorrow}T11:00:00",
+      "end": "{tomorrow}T11:30:00",
+      "value_inc_vat": 0.262,
+      "is_capped": false
+     },
+     {
+      "start": "{tomorrow}T11:30:00",
+      "end": "{tomorrow}T12:00:00",
+      "value_inc_vat": 0.262,
+      "is_capped": false
+     },
+     {
+      "start": "{tomorrow}T12:00:00",
+      "end": "{tomorrow}T12:30:00",
+      "value_inc_vat": 0.262,
+      "is_capped": false
+     },
+     {
+      "start": "{tomorrow}T12:30:00",
+      "end": "{tomorrow}T13:00:00",
+      "value_inc_vat": 0.262,
+      "is_capped": false
+     },
+     {
+      "start": "{tomorrow}T13:00:00",
+      "end": "{tomorrow}T13:30:00",
+      "value_inc_vat": 0.135,
+      "is_capped": false
+     },
+     {
+      "start": "{tomorrow}T13:30:00",
+      "end": "{tomorrow}T14:00:00",
+      "value_inc_vat": 0.135,
+      "is_capped": false
+     },
+     {
+      "start": "{tomorrow}T14:00:00",
+      "end": "{tomorrow}T14:30:00",
+      "value_inc_vat": 0.135,
+      "is_capped": false
+     },
+     {
+      "start": "{tomorrow}T14:30:00",
+      "end": "{tomorrow}T15:00:00",
+      "value_inc_vat": 0.135,
+      "is_capped": false
+     },
+     {
+      "start": "{tomorrow}T15:00:00",
+      "end": "{tomorrow}T15:30:00",
+      "value_inc_vat": 0.135,
+      "is_capped": false
+     },
+     {
+      "start": "{tomorrow}T15:30:00",
+      "end": "{tomorrow}T16:00:00",
+      "value_inc_vat": 0.135,
+      "is_capped": false
+     },
+     {
+      "start": "{tomorrow}T16:00:00",
+      "end": "{tomorrow}T16:30:00",
+      "value_inc_vat": 0.394,
+      "is_capped": false
+     },
+     {
+      "start": "{tomorrow}T16:30:00",
+      "end": "{tomorrow}T17:00:00",
+      "value_inc_vat": 0.394,
+      "is_capped": false
+     },
+     {
+      "start": "{tomorrow}T17:00:00",
+      "end": "{tomorrow}T17:30:00",
+      "value_inc_vat": 0.394,
+      "is_capped": false
+     },
+     {
+      "start": "{tomorrow}T17:30:00",
+      "end": "{tomorrow}T18:00:00",
+      "value_inc_vat": 0.394,
+      "is_capped": false
+     },
+     {
+      "start": "{tomorrow}T18:00:00",
+      "end": "{tomorrow}T18:30:00",
+      "value_inc_vat": 0.394,
+      "is_capped": false
+     },
+     {
+      "start": "{tomorrow}T18:30:00",
+      "end": "{tomorrow}T19:00:00",
+      "value_inc_vat": 0.394,
+      "is_capped": false
+     },
+     {
+      "start": "{tomorrow}T19:00:00",
+      "end": "{tomorrow}T19:30:00",
+      "value_inc_vat": 0.262,
+      "is_capped": false
+     },
+     {
+      "start": "{tomorrow}T19:30:00",
+      "end": "{tomorrow}T20:00:00",
+      "value_inc_vat": 0.262,
+      "is_capped": false
+     },
+     {
+      "start": "{tomorrow}T20:00:00",
+      "end": "{tomorrow}T20:30:00",
+      "value_inc_vat": 0.262,
+      "is_capped": false
+     },
+     {
+      "start": "{tomorrow}T20:30:00",
+      "end": "{tomorrow}T21:00:00",
+      "value_inc_vat": 0.262,
+      "is_capped": false
+     },
+     {
+      "start": "{tomorrow}T21:00:00",
+      "end": "{tomorrow}T21:30:00",
+      "value_inc_vat": 0.262,
+      "is_capped": false
+     },
+     {
+      "start": "{tomorrow}T21:30:00",
+      "end": "{tomorrow}T22:00:00",
+      "value_inc_vat": 0.262,
+      "is_capped": false
+     },
+     {
+      "start": "{tomorrow}T22:00:00",
+      "end": "{tomorrow}T22:30:00",
+      "value_inc_vat": 0.135,
+      "is_capped": false
+     },
+     {
+      "start": "{tomorrow}T22:30:00",
+      "end": "{tomorrow}T23:00:00",
+      "value_inc_vat": 0.135,
+      "is_capped": false
+     },
+     {
+      "start": "{tomorrow}T23:00:00",
+      "end": "{tomorrow}T23:30:00",
+      "value_inc_vat": 0.135,
+      "is_capped": false
+     },
+     {
+      "start": "{tomorrow}T23:30:00",
+      "end": "{after}T00:00:00",
+      "value_inc_vat": 0.135,
+      "is_capped": false
+     }
+    ],
+    "min_rate": 0.135,
+    "max_rate": 0.394
+   }
+  }
+ },
+ "calendars": {
+  "calendar.octopus_energy_a_00000000_octoplus_saving_sessions": [
+   {
+    "start": {
+     "dateTime": "{tomorrow}T17:30:00"
+    },
+    "end": {
+     "dateTime": "{tomorrow}T18:30:00"
+    },
+    "summary": "Octopus Energy Saving Session"
+   }
+  ],
+  "calendar.octopus_energy_a_00000000_octoplus_power_down": [],
+  "calendar.octopus_energy_a_00000000_greener_nights": [
+   {
+    "start": {
+     "dateTime": "{tomorrow}T23:00:00"
+    },
+    "end": {
+     "dateTime": "{after}T06:00:00"
+    },
+    "summary": "Greener Night"
+   }
+  ]
+ }
+}

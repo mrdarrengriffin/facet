@@ -205,6 +205,14 @@ uint32_t ws(const std::string &cmd, std::function<void(const char *, size_t)> fe
   s.ws(id, s.url, s.token, cmd);
   return id;
 }
+uint32_t get(const std::string &path, std::function<void(const char *, size_t)> feed, std::function<void(bool, const std::string &)> end) {
+  State &s = S();
+  if (!ready() || !s.get) return 0;
+  const uint32_t id = s.ws_next++;
+  s.calls[id] = {std::move(feed), std::move(end)};
+  s.get(id, s.url + "/api/" + path, s.token);
+  return id;
+}
 void chunk(uint32_t id, const char *p, size_t n) {
   State &s = S();
   if (id >= WS_ID) {

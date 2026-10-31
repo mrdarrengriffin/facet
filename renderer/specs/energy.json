@@ -3,18 +3,30 @@
  "id": "energy",
  "locked": true,
  "name": "Energy",
- "rev": 6,
+ "rev": 7,
  "role": "page",
  "params": {
   "source": {
-   "about": "Where the energy use comes from: Home Assistant's Energy dashboard (the grid, solar and battery it already tracks: nothing to pick), or a made-up time-of-use day for previews.",
+   "about": "Where the energy use comes from: Home Assistant's Energy dashboard (the grid, solar and battery it already tracks: nothing to pick), a made-up time-of-use day for previews, or that day with the extras' test data (an extra tried without owning it).",
    "type": "select",
    "options": [
     "ha",
-    "sample"
+    "sample",
+    "fixtures"
    ],
    "label": "Source",
    "default": "sample"
+  },
+  "extra": {
+   "about": "One extra integration laid over the dashboard's data: the live watts, the rate now and next, the day's cheap and peak rates and events such as saving sessions. Auto picks the best one found in Home Assistant (Octopus Energy); None shows the dashboard's data alone.",
+   "type": "select",
+   "options": [
+    "auto",
+    "octopus",
+    "none"
+   ],
+   "label": "Extra data",
+   "default": "auto"
   },
   "view": {
    "about": "Which view the screen shows: today (the day's half-hours) or the last 7 days against the week before.",
@@ -24,7 +36,8 @@
  },
  "feeds": {
   "panel.energy": {
-   "source": "$source"
+   "source": "$source",
+   "extra": "$extra"
   }
  },
  "header": {
@@ -42,7 +55,11 @@
   },
   "sub": {
    "e": "panel.energy",
-   "a": "watts"
+   "a": "card"
+  },
+  "tone": {
+   "e": "panel.energy",
+   "a": "card_tone"
   }
  },
  "nodes": [
@@ -52,7 +69,7 @@
     "tone": "idle",
     "text": {
      "e": "panel.energy",
-     "a": "watts"
+     "a": "live"
     }
    },
    "in": "header",
@@ -117,6 +134,29 @@
    "slot": 0
   },
   {
+   "c": "status_line",
+   "p": {
+    "text": {
+     "e": "panel.energy",
+     "a": "event"
+    },
+    "tone": {
+     "e": "panel.energy",
+     "a": "event_tone"
+    }
+   },
+   "in": 1,
+   "slot": 0,
+   "show": {
+    "e": "panel.energy",
+    "a": "event",
+    "map": {
+     "": ""
+    },
+    "else": "1"
+   }
+  },
+  {
    "c": "group",
    "p": {
     "flow": "stack",
@@ -147,7 +187,7 @@
     "scrub": true,
     "ticks": 0
    },
-   "in": 4,
+   "in": 5,
    "slot": 0
   },
   {
@@ -164,8 +204,29 @@
     "width": 0,
     "ticks": 6
    },
-   "in": 4,
+   "in": 5,
    "slot": 0
+  },
+  {
+   "c": "status_line",
+   "p": {
+    "text": {
+     "e": "panel.energy",
+     "a": "cheapest"
+    },
+    "tone": "info",
+    "ink": "dim"
+   },
+   "in": 5,
+   "slot": 0,
+   "show": {
+    "e": "panel.energy",
+    "a": "cheapest",
+    "map": {
+     "": ""
+    },
+    "else": "1"
+   }
   },
   {
    "c": "more_row",
@@ -230,7 +291,7 @@
     "role": "hero",
     "layout": "stack"
    },
-   "in": 9,
+   "in": 11,
    "slot": 0
   },
   {
@@ -256,7 +317,7 @@
     "scrub": true,
     "ticks": 0
    },
-   "in": 9,
+   "in": 11,
    "slot": 0
   }
  ]

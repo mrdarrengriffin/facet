@@ -174,9 +174,14 @@ EMSCRIPTEN_KEEPALIVE void fw_ha_answer(int id, int ok, const char *json) { fw::h
 // with its own token (set_proxy: the token typed into the bench never leaves the module). fw_ha_gets -> [id, ...]
 // (drained); the body comes back in pieces (fw_ha_chunk, streamed: never held whole), then fw_ha_got(id, ok, why);
 // fw_ha_link -> {status, count, peak, url, token} (token = the hint only)
+std::vector<std::pair<uint32_t, std::string>> &rest_queue() { static std::vector<std::pair<uint32_t, std::string>> q; return q; }
 std::vector<uint32_t> &get_queue() {
   static std::vector<uint32_t> q;
-  static const bool reg = (fw::dev::ha_link::on_get([](uint32_t id, const std::string &, const std::string &) { q.push_back(id); }),
+  static const bool reg = (fw::dev::ha_link::on_get([](uint32_t id, const std::string &url, const std::string &) {
+                             if (id < fw::dev::ha_link::WS_ID) { q.push_back(id); return; }
+                             const size_t a = url.find("/api/");  // a REST read (ha_link::get): its path, through /api/panel/ha-get
+                             rest_queue().push_back({id, a == std::string::npos ? url : url.substr(a + 5)});
+                           }),
                            fw::dev::ha_link::set_proxy(true), true);
   (void) reg;
   return q;
@@ -197,8 +202,13 @@ EMSCRIPTEN_KEEPALIVE const char *fw_ha_gets() {
   for (size_t i = 0; i < get_queue().size(); i++) out += (i ? "," : "") + std::to_string(get_queue()[i]);
   for (size_t i = 0; i < ws_queue().size(); i++)
     out += (out.size() > 1 ? "," : "") + std::string("{\"id\":") + std::to_string(ws_queue()[i].first) + ",\"ws\":" + ws_queue()[i].second + "}";
+  for (auto &r : rest_queue()) {  // {"id": n, "get": "<path>"}: paths are ids and ISO times (no quotes)
+    std::string path;
+    for (char c : r.second) if (c != '"' && c != '\\') path += c;
+    out += (out.size() > 1 ? "," : "") + std::string("{\"id\":") + std::to_string(r.first) + ",\"get\":\"" + path + "\"}";
+  }
   out += "]";
-  get_queue().clear(), ws_queue().clear();
+  get_queue().clear(), ws_queue().clear(), rest_queue().clear();
   return out.c_str();
 }
 EMSCRIPTEN_KEEPALIVE void fw_ha_chunk(int id, const char *p, int n) { if (p && n > 0) fw::dev::ha_link::chunk((uint32_t) id, p, (size_t) n); }

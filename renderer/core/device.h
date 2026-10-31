@@ -202,6 +202,11 @@ constexpr uint32_t WS_ID = 1u << 30;
 using WsSink = void (*)(uint32_t id, const std::string &url, const std::string &token, const std::string &cmd);
 void on_ws(WsSink f);
 uint32_t ws(const std::string &cmd, std::function<void(const char *, size_t)> feed, std::function<void(bool, const std::string &)> end);
+// One REST read (2026-10-31, the Energy feed's extras: an integration's entities and calendars): GET <url>/api/<path>
+// with the token through the platform's GET (on_get; ids from WS_ID up, kept like a ws read), the body streamed back
+// through feed, then end(ok, why). Reads only, a closed list on the transport (WASM: the hub's /api/panel/ha-get:
+// states/<entity>, calendars, calendars/<calendar>?start&end). 0 = not ready or no transport (end is not called).
+uint32_t get(const std::string &path, std::function<void(const char *, size_t)> feed, std::function<void(bool, const std::string &)> end);
 }  // namespace ha_link
 Timer &timer();  // legacy view of the list (above): the soonest running, else the first done
 bool in_device(lv_obj_t *obj);  // obj is part of a mounted device (the panel), not a workbench page alone
