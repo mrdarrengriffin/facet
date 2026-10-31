@@ -2,7 +2,8 @@
 // Facet WASM workbench watcher: on a save under components/ core/ foundations/ screens/ tokens/ tools/ icons/ specs/
 // sources/ themes/ it rebuilds the 720 density (1.5x) only; the workbench page polls the build manifest and re-renders
 // by itself. The 480 density (1x) builds once the tree has been quiet for QUIET_MS, or at once on SIGUSR1
-// (`systemctl kill --kill-whom=main -s USR1 claude-wasm-watch`). The docs site (../site, when present) is rebuilt when a file under
+// (`systemctl kill --kill-whom=main -s USR1 claude-wasm-watch`); after it, catalogue/ is regenerated from the build (the
+// hub's spec pages read it), so it is never more than a minute behind. The docs site (../site, when present) is rebuilt when a file under
 // site/src or specs/ changed, or on SIGUSR2; never after every build. Run: `node watch.mjs`. Ctrl-C to stop.
 import { spawn } from 'node:child_process';
 import { existsSync, renameSync, rmSync, watch } from 'node:fs';
@@ -34,7 +35,21 @@ function next(why) {
     running = false;
     if (code === 0) console.log(`ok ${den} in ${((Date.now() - t0) / 1000).toFixed(1)} s${den === '1.5x' ? ': the page reloads by itself' : ''}`);
     else console.log(`FAILED ${den} (${code}):\n${err.split('\n').filter((l) => /error|undefined/i.test(l)).slice(0, 20).join('\n') || err.slice(-2000)}`);
-    next(want.size ? 'changed during build' : why);
+    if (code === 0 && den === '1x') catalogue();
+    else next(want.size ? 'changed during build' : why);
+  });
+}
+// catalogue/catalogue.json + spec.schema.json from the 720 build (tools/gen_catalogue.mjs), after each 480 build
+function catalogue() {
+  running = true;
+  const p = spawn(process.execPath, [join(HERE, 'tools', 'gen_catalogue.mjs')], { cwd: HERE, stdio: ['ignore', 'pipe', 'pipe'] });
+  let out = '';
+  p.stdout.on('data', (d) => { out += d; });
+  p.stderr.on('data', (d) => { out += d; });
+  p.on('close', (code) => {
+    running = false;
+    console.log(code === 0 ? out.trim().split('\n').pop() : `catalogue FAILED (${code}):\n${out.slice(-1000)}`);
+    next(want.size ? 'changed during build' : 'catalogue');
   });
 }
 // the 480 build waits for a quiet tree (each save restarts the wait)
