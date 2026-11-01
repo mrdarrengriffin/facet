@@ -199,10 +199,6 @@
     "commit": "86c2b45",
     "at": "2026-10-29T18:36:44.000Z"
   },
-  "screens/bins": {
-    "commit": "c90b000",
-    "at": "2026-10-29T11:16:45.000Z"
-  },
   "screens/calendar": {
     "commit": "215d682",
     "at": "2026-10-30T00:46:34.000Z"
@@ -210,10 +206,6 @@
   "screens/clock": {
     "commit": "cb4e04c",
     "at": "2026-10-30T01:20:43.000Z"
-  },
-  "screens/covers": {
-    "commit": "9b4d587",
-    "at": "2026-10-30T02:40:12.000Z"
   },
   "screens/energy": {
     "commit": "1056430",
@@ -234,10 +226,6 @@
   "screens/timer": {
     "commit": "7883bd6",
     "at": "2026-10-28T21:42:49.000Z"
-  },
-  "screens/vacuum": {
-    "commit": "fbf00cb",
-    "at": "2026-10-30T04:46:11.000Z"
   },
   "screens/weather": {
     "commit": "86c2b45",
