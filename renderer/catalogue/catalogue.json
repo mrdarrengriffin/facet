@@ -3441,49 +3441,6 @@
     "bytes_est": 2720
    }
   },
-  "lightning_radar": {
-   "name": "Lightning radar",
-   "update": true,
-   "props": [
-    {
-     "name": "strikes",
-     "type": "text",
-     "bindable": true,
-     "about": "The strikes to draw, newest first, as the lightning feed gives them: a list of [km, bearing in degrees, time in ms]. Empty shows the made-up storm."
-    },
-    {
-     "name": "demo",
-     "type": "bool",
-     "bindable": true,
-     "about": "For previews only: plays a made-up storm so strikes appear."
-    },
-    {
-     "name": "quiet",
-     "type": "bool",
-     "bindable": true,
-     "about": "For previews only: shows a quiet sky with no recent strikes."
-    },
-    {
-     "name": "unit",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "km",
-      "mi"
-     ],
-     "about": "Whether distances are shown in kilometres or miles."
-    }
-   ],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 1,
-    "bytes_est": 160
-   }
-  },
   "list_row": {
    "name": "List row",
    "update": true,
@@ -6995,5 +6952,5 @@
    }
   }
  },
- "hash": "303ea8e6"
+ "hash": "47d1e23c"
 }

@@ -396,12 +396,6 @@
       "needs": "dimmable lights",
       "sources": []
     },
-    "strike_map": {
-      "shows": "Lightning strikes near you on a map, the newest brightest.",
-      "needs": null,
-      "feed": "panel.lightning",
-      "sources": []
-    },
     "moon": {
       "shows": "The moon tonight: its phase, rise and set, and the next full moon.",
       "needs": null,

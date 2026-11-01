@@ -55,11 +55,6 @@
         },
         {
           "t": "page",
-          "page": "strike_map",
-          "size": "m"
-        },
-        {
-          "t": "page",
           "page": "print",
           "size": "m"
         }
@@ -100,10 +95,6 @@
     {
       "id": "flightradar",
       "kind": "flightradar"
-    },
-    {
-      "id": "strike_map",
-      "kind": "strike_map"
     },
     {
       "id": "print",

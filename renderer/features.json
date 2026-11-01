@@ -13,7 +13,7 @@
   },
   "later": {
     "about": "Features held on the wip branch until they are finished (spec of contract parts, feed on the skeleton, gate green); the docs roadmap shows their rows as in progress.",
-    "roadmap": ["Placeholder", "Thermostat", "Thermostat dial", "Door lock", "Lock ring", "Hold button", "Plant monitor", "Plant gauge / row", "Robot vacuum", "Room tile", "Status block", "Level bar", "Floor plans", "Security cameras", "Camera tile", "Bins", "Lightning"]
+    "roadmap": ["Placeholder", "Thermostat", "Thermostat dial", "Door lock", "Lock ring", "Hold button", "Plant monitor", "Plant gauge / row", "Robot vacuum", "Room tile", "Status block", "Level bar", "Floor plans", "Security cameras", "Camera tile", "Bins", "Lightning", "Lightning radar"]
   },
   "features": [
     {
@@ -94,15 +94,6 @@
       "docs": false, "status": "wip", "firmware": false,
       "about": "Kept for reference, not shipped: Card grid (the Cells layout is the Home grid, Darren 2026-10-27); Date line (the Time's date prop, Darren 2026-10-27); Status dot (the Status chip's dot size, Darren 2026-10-27). Big number (the Hero block's unit + count, Darren 2026-10-28). Hold button (the Button's hold prop, Darren 2026-10-28). Clock face, Energy view, Bins view, PR row, Check row (their screens are specs of contract parts now, 2026-10-29 night; left in their features they kept those screens off the contract firmware).",
       "components": ["card_grid", "date_line", "status_dot", "big_number", "hold_button", "timer_view", "clock_face", "energy_view", "bins_view", "pr_row", "check_row"]
-    },
-    {
-      "id": "lightning_map",
-      "label": "Lightning map",
-      "docs": false, "status": "wip", "firmware": false,
-      "screens": ["strike_map"],
-      "components": ["lightning_radar"],
-      "colour": ["radar"],
-      "roadmap": ["Lightning radar"]
     },
     {
       "id": "flightradar",

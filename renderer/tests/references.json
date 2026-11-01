@@ -273,16 +273,6 @@
       "note": "docs explorer default controls vs the WASM default: values may differ"
     },
     {
-      "comp": "lightning_radar",
-      "variant": "default",
-      "astro": {
-        "item": "radar",
-        "selector": "[data-ex-stage] > *"
-      },
-      "crop": true,
-      "note": "docs explorer default controls vs the WASM default: values may differ"
-    },
-    {
       "comp": "spec",
       "variant": "calendar",
       "astro": {

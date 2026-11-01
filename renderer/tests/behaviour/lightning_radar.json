@@ -1,7 +1,0 @@
-{
-  "id": "lightning_radar",
-  "live": true,
-  "live_why": "strikes arrive over time",
-  "tests": [],
-  "xfail": {}
-}
