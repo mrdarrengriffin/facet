@@ -71,10 +71,6 @@
     "commit": "6f632fc",
     "at": "2026-10-27T21:05:53.000Z"
   },
-  "components/github_pr": {
-    "commit": "371f103",
-    "at": "2026-10-30T04:00:35.000Z"
-  },
   "components/grid": {
     "commit": "6fbe138",
     "at": "2026-10-27T17:19:18.000Z"
@@ -171,10 +167,6 @@
     "commit": "1056430",
     "at": "2026-10-29T09:51:10.000Z"
   },
-  "components/status_row": {
-    "commit": "371f103",
-    "at": "2026-10-30T04:00:35.000Z"
-  },
   "components/time": {
     "commit": "6fbe138",
     "at": "2026-10-27T17:19:18.000Z"
@@ -226,10 +218,6 @@
   "screens/energy": {
     "commit": "1056430",
     "at": "2026-10-29T09:51:10.000Z"
-  },
-  "screens/github": {
-    "commit": "371f103",
-    "at": "2026-10-30T04:00:35.000Z"
   },
   "screens/light": {
     "commit": "5614a09",

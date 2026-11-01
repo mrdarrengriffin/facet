@@ -59,14 +59,6 @@
     },
     {
       "comp": "card_previews",
-      "variant": "github",
-      "astro": {
-        "item": "previews",
-        "index": 4
-      }
-    },
-    {
-      "comp": "card_previews",
       "variant": "energy",
       "astro": {
         "item": "previews",

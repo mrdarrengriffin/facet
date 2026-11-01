@@ -2567,57 +2567,6 @@
     "bytes_est": 480
    }
   },
-  "github_pr": {
-   "name": "GitHub PR",
-   "update": true,
-   "props": [
-    {
-     "name": "meta",
-     "type": "text",
-     "bindable": true,
-     "about": "The small line at the top: the repository and the branches."
-    },
-    {
-     "name": "title",
-     "type": "text",
-     "bindable": true,
-     "about": "The pull request's title, up to two lines."
-    },
-    {
-     "name": "by",
-     "type": "text",
-     "bindable": true,
-     "about": "Who opened it, how long ago and how big it is."
-    },
-    {
-     "name": "statuses",
-     "type": "text",
-     "bindable": true,
-     "about": "Why it needs you, draft and CI: a JSON list of {tone, text}, each shown as a dot and a word."
-    },
-    {
-     "name": "body",
-     "type": "text",
-     "bindable": true,
-     "about": "The start of the description, up to three lines."
-    },
-    {
-     "name": "url",
-     "type": "text",
-     "bindable": true,
-     "about": "The pull request's web address, for the QR code."
-    }
-   ],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 11,
-    "bytes_est": 1760
-   }
-  },
   "grid": {
    "name": "Grid",
    "update": true,
@@ -5024,53 +4973,6 @@
     "bytes_est": 480
    }
   },
-  "status_row": {
-   "name": "Status row",
-   "update": true,
-   "props": [
-    {
-     "name": "label",
-     "type": "text",
-     "bindable": true,
-     "about": "The small line above the title, such as the repository, number and age."
-    },
-    {
-     "name": "title",
-     "type": "text",
-     "bindable": true,
-     "about": "The main words of the row, one line."
-    },
-    {
-     "name": "status",
-     "type": "text",
-     "bindable": true,
-     "about": "A short status word at the end of the small line, such as review or ci fail. Leave empty for none."
-    },
-    {
-     "name": "tone",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "ok",
-      "warn",
-      "error",
-      "working",
-      "info",
-      "idle"
-     ],
-     "about": "The status dot's colour: ok, warn, error, working, info or idle."
-    }
-   ],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 5,
-    "bytes_est": 800
-   }
-  },
   "tennis_court": {
    "name": "Tennis court",
    "update": true,
@@ -6748,5 +6650,5 @@
    }
   }
  },
- "hash": "33f32054"
+ "hash": "028b58f5"
 }

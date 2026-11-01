@@ -247,49 +247,6 @@
         }
       ]
     },
-    "github": {
-      "shows": "Your pull requests: open, waiting for review and their checks.",
-      "needs": "a GitHub account",
-      "feed": "panel.github",
-      "sources": [
-        {
-          "id": "ha_panel_github",
-          "kind": "ha",
-          "name": "A pull request sensor in the panel github shape (filled by Home Assistant from the GitHub API)",
-          "adapter": "ha",
-          "detect": {
-            "domain": "sensor"
-          },
-          "fills": {
-            "sensor": {
-              "domain": "sensor"
-            }
-          }
-        },
-        {
-          "id": "github_api",
-          "kind": "direct",
-          "name": "GitHub API, read by the panel itself (planned: needs the panel's HTTPS client)",
-          "setup": [
-            "GitHub token"
-          ]
-        },
-        {
-          "id": "ha_github",
-          "kind": "ha",
-          "name": "HA GitHub (planned)",
-          "detect": {
-            "integration": "github"
-          }
-        },
-        {
-          "id": "sample",
-          "kind": "builtin",
-          "name": "Sample pull requests (previews)",
-          "adapter": "sample"
-        }
-      ]
-    },
     "timer": {
       "shows": "Timers you set on the panel or in Home Assistant, counting down.",
       "needs": null,

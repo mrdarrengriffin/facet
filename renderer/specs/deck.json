@@ -45,11 +45,6 @@
         },
         {
           "t": "page",
-          "page": "github",
-          "size": "m"
-        },
-        {
-          "t": "page",
           "page": "print",
           "size": "m"
         }
@@ -82,10 +77,6 @@
     {
       "id": "moon",
       "kind": "moon"
-    },
-    {
-      "id": "github",
-      "kind": "github"
     },
     {
       "id": "print",

@@ -252,7 +252,5 @@
       ]
     }
   ],
-  "xfail": {
-    "interaction:press-cancel:github": "BF-052 slide off to cancel fires on the GitHub screen's rows (release bug, open)"
-  }
+  "xfail": {}
 }
