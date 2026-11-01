@@ -191,4 +191,5 @@ a coffee helps cover the tokens: [Buy Me a Coffee](https://buymeacoffee.com/mrda
 
 ## Licence
 
-MIT © Darren Griffin. Bundled fonts (Inter, JetBrains Mono) are under the SIL Open Font License.
+MIT © Darren Griffin (`LICENSE`). LVGL, ArduinoJson, the image decoders and the fonts (SIL Open Font License) keep
+their own licences: `THIRD_PARTY.md`.
