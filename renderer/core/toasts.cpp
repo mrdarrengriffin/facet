@@ -269,7 +269,7 @@ lv_obj_t *layer(lv_obj_t *host, bool top, bool still) {
   lv_obj_add_flag(L->ov, (lv_obj_flag_t) (LV_OBJ_FLAG_FLOATING | LV_OBJ_FLAG_IGNORE_LAYOUT | LV_OBJ_FLAG_USER_4));
   lv_obj_set_size(L->ov, LV_PCT(100), LV_PCT(100));
   lv_obj_set_pos(L->ov, 0, 0);
-  qa::free(L->ov, "overlay: toast layer");  // sits over the screen on purpose (tools/audit_screens.mjs skips it)
+  qa::free(L->ov, "overlay: toast layer");  // sits over the screen on purpose (the screen-layout rule skips it)
   lv_obj_add_event_cb(L->ov, layer_free, LV_EVENT_DELETE, L);
   // a token tuned / a theme switched: every shown toast to its width and slot from the live layout tokens (no motion)
   lv_obj_add_event_cb(L->ov, [](lv_event_t *e) {

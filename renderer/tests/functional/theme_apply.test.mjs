@@ -84,7 +84,7 @@ export default {
       for (const c of cases(t)) {
         await build(t, c, 0, 'facet');
         const f = proof(t), cut = new Set(f.trunc.map((x) => x.why.replace(/ needs .*/, ''))), out0 = new Set(f.bounds.map((x) => x.why));
-        // Facet's own bounds are the audit's (tests/rules/audit.mjs, audit_screens): here only what a THEME adds
+        // Facet's own bounds are the audit's (tests/rules/audit.mjs, screen_layout.mjs): here only what a THEME adds
         for (const b of f.bounds.slice(0, 2)) out.push(`facet ${c.name}: ${b.why} (the proof flags Facet itself)`);
         for (const th of THEMES) {
           await build(t, c, 0, th);

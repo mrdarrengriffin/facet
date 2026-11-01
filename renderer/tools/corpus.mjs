@@ -5,8 +5,8 @@
 // validated only). Per spec x density x theme (dark, light), after 1 s of ticks:
 //   valid     the panel's validation (fw_spec check / screen) or a build error
 //   budget    bytes / nodes / binds over the catalogue budget
-//   outside   something drawn off the screen (audit_screens escape, clipped by its ancestors)
-//   overlap   two regions, or two sibling component boxes, intersect (audit_screens overlap + fw_comps)
+//   outside   something drawn off the screen (screen-layout escape, clipped by its ancestors)
+//   overlap   two regions, or two sibling component boxes, intersect (screen-layout overlap + fw_comps)
 //   text      a label cut at the bottom, wider than its box (clipped or ellipsised) or holding an ellipsis
 //   spacing   list layout: a non-row node (hero_block, gauge, ...) followed by the next node closer than the group gap
 //   grid      a drawn box off the 4 px grid in its parent (the component audit's rule)
@@ -27,7 +27,7 @@ import { readFileSync, writeFileSync, readdirSync, mkdirSync, rmSync, existsSync
 import { dirname, join, resolve, basename } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { deflateSync } from 'node:zlib';
-import { checkScreen } from './audit_screens.mjs';
+import { checkScreen } from '../tests/rules/screen_layout.mjs';
 import { generate, optionCount } from '../tests/spec-corpus/gen.mjs';
 import { demoValue } from './demo_ha.mjs';
 

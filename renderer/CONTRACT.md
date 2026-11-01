@@ -65,7 +65,7 @@ release gate (section 13).
 **C1. A screen is Screen > Page > Header slot + Body, built with `fx::page(obj, body)`.**
 The Page's children are the head (`page-head`: the header row, `layout:top` less the inset and header gap) and the
 Body (`body` + `body:list|cards|center|page`). Nothing else is a child of the Page.
-*Why:* one structure means one set of proofs covers every screen. *Check:* `tools/audit_screens.mjs` (regions never
+*Why:* one structure means one set of proofs covers every screen. *Check:* the rule `screen-layout` (`tests/rules/screen_layout.mjs`: regions never
 overlap, nothing escapes its region); bounds proof P2 on the Page body (`fw_test("bounds")`).
 
 **C2. The Body scrolls; the page inset is padding INSIDE the Body; the gutter is the gap between its children.**
@@ -77,7 +77,7 @@ component adds the page inset, a margin or an outer gap of its own.
 
 **C3. Screens are trees of components only.** A screen MUST NOT build a body by hand (no `*_view` bodies, no objects
 created by the screen code between components). A new arrangement is a new layout component.
-*Why:* hand-built bodies are where every untested layout lived. *Check:* `audit_screens.mjs`; **TODO** lint: screen
+*Why:* hand-built bodies are where every untested layout lived. *Check:* `screen-layout`; **TODO** lint: screen
 specs (`core/spec.h`) create only components inside a Page body.
 
 **C4. Sheets, toasts and dialogs live on the Overlay layer, never in the Body.**
@@ -86,7 +86,7 @@ specs (`core/spec.h`) create only components inside a Page body.
 - The scrim is the only full-screen paint. The overlay's panel is a parent like any other: its children follow C5-C43.
 - An overlay closes completely: after close, object count and animations are back to the baseline.
 - At most one modal overlay at a time; toasts stack within their layer's `layout.json` `toast` limits.
-*Why:* overlays that sat in the layout pushed content and leaked objects. *Check:* `audit_screens.mjs` overlay marking
+*Why:* overlays that sat in the layout pushed content and leaked objects. *Check:* `screen-layout` overlay marking
 (`fw::qa::free(obj, "overlay: ...")`); leak proof P9 on open/close; **TODO** bounds proof P2 for overlay panels. The
 Bottom sheet's layer is core (`core/sheet.h`); the pixel contrast proof measures only an open sheet (what is under the
 scrim is dimmed on purpose). The Toast layer is not on the contract yet.

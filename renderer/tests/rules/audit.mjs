@@ -20,7 +20,7 @@
 //             marked fw::qa::circle(obj, ref, cx, cy, r) keeps its centre on that circle (1 px), fw::qa::inside(obj,
 //             ref) stays inside ref
 //   about     every prop (meta "about") and every spec parameter (params.<name>.about) has a description
-//   layout    screens only (tools/audit_screens.mjs checkScreen, at the build and after the motion loop): the screen
+//   layout    screens only (tests/rules/screen_layout.mjs checkScreen, at the build and after the motion loop): the screen
 //             root's regions don't overlap and nothing escapes its region or the screen; overlays (a bottom sheet,
 //             a toast layer) say so with fw::qa::free(obj, "overlay: <why>")
 // Exceptions: meta "audit": {"skip": {"<check>": "why"}}, or the same on one variant (printed as notes). Failures are errors (exit 1).
@@ -28,7 +28,7 @@
 // stage of its own (sized as the workbench shows it, auto height), cached per component by the runner. The "about"
 // check is the startup rule about.
 import { createHash } from 'node:crypto';
-import { checkScreen } from '../../tools/audit_screens.mjs';
+import { checkScreen } from './screen_layout.mjs';
 
 const TICK = 16;
 const str = (m, s, f) => { const p = m.stringToNewUTF8(s); try { return f(p); } finally { m._free(p); } };
@@ -54,7 +54,7 @@ function runCase(m, den, c, props, light, vskip = {}) {
     if (ch > H) { H = ch; m._fw_stage_resize(A, W, H); }
   }
   const objs = () => JSON.parse(m.UTF8ToString(m._fw_audit(A)));
-  // ---- screens: the layout check (tools/audit_screens.mjs: regions overlap, objects escape) at the build and after
+  // ---- screens: the layout check (tests/rules/screen_layout.mjs: regions overlap, objects escape) at the build and after
   // the motion loop (live screens move); overlays opt out with fw::qa::free(obj, "overlay: <why>")
   const screenErrs = new Set();
   if (screen) for (const e of checkScreen(objs(), W, H)) screenErrs.add(e);

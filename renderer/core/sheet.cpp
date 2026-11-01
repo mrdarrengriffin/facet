@@ -106,7 +106,7 @@ lv_obj_t *make(lv_obj_t *host, bool flat, bool solid) {
   lv_obj_add_flag(L->ov, (lv_obj_flag_t) (LV_OBJ_FLAG_FLOATING | LV_OBJ_FLAG_IGNORE_LAYOUT | LV_OBJ_FLAG_HIDDEN | LV_OBJ_FLAG_USER_4));
   lv_obj_set_size(L->ov, LV_PCT(100), LV_PCT(100));
   lv_obj_set_pos(L->ov, 0, 0);
-  fw::qa::free(L->ov, "overlay: bottom sheet");  // sits over the screen on purpose (tools/audit_screens.mjs skips it)
+  fw::qa::free(L->ov, "overlay: bottom sheet");  // sits over the screen on purpose (the screen-layout rule skips it)
   lv_obj_add_event_cb(L->ov, layer_free, LV_EVENT_DELETE, L);
 
   L->scrim = bare(L->ov);

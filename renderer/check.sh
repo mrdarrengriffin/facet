@@ -51,7 +51,7 @@ for d in $dens; do check "audit-$d" node tools/functional.mjs --rules --rule abo
 if [ "$tier" = fast ]; then
   [ -n "$ids" ] || { [ $fail = 0 ] && echo "CHECK fast: all green, no --ids (logs $LOG)" || echo "CHECK fast: FAILED (logs $LOG)"; exit $fail; }
   check pixel-contrast node tools/functional.mjs --rules --tier fast --rule pixel-contrast --den 1.5x --theme all --ids "$ids"
-  check audit-screens node tools/audit_screens.mjs --den 1.5x --screen "$ids"
+  check screen-layout node tools/functional.mjs --rules --tier fast --rule screen-layout --den 1.5x --ids "$ids"
   check behaviour node tools/behaviour.mjs --den 1.5x --kind interaction,scroll,sound --ids "$ids"
   soft functional node tools/functional.mjs --den 1.5x --ids "$ids"
 else
@@ -61,8 +61,7 @@ else
     check "lab-$d" node tools/functional.mjs --rules --rule lab-tokens,noop-update --den "$d"
   done
   check floorplan node tools/functional.mjs --rules --rule floorplan
-  scr=(); [ -n "$ids" ] && scr=(--screen "$ids")
-  check audit-screens node tools/audit_screens.mjs "${scr[@]}"
+  check screen-layout node tools/functional.mjs --rules --rule screen-layout "${sel[@]}"
   check behaviour node tools/behaviour.mjs "${sel[@]}"
   soft functional node tools/functional.mjs "${sel[@]}"
   comp=(); [ -n "$ids" ] && comp=(--comp "$ids")
