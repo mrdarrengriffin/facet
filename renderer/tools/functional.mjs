@@ -134,8 +134,8 @@ class Ctx {
     this.log.push(`mount ${comp} ${JSON.stringify(props)}`);
     return this;
   }
-  async device(deck) {  // the device app (Home first); deck: a deck spec, 'house' = specs/examples/deck-house.json (else the factory deck)
-    if (deck === 'house') deck = JSON.parse(readFileSync(new URL('../specs/examples/deck-house.json', import.meta.url), 'utf8'));
+  async device(deck) {  // the device app (Home first); deck: a deck spec, 'house' = tests/fixtures/deck-house.json (else the factory deck)
+    if (deck === 'house') deck = JSON.parse(readFileSync(new URL('../tests/fixtures/deck-house.json', import.meta.url), 'utf8'));
     await this.mount('device', {});
     if (deck) {
       const r = JSON.parse(this.b.spec('deck', deck) || '{}');
