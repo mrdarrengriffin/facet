@@ -1,9 +1,0 @@
-{
-  "id": "tennis_live",
-  "live": true,
-  "live_why": "simulated live match",
-  "tests": [],
-  "xfail": {
-    "lag:tap:default": "BF-051"
-  }
-}

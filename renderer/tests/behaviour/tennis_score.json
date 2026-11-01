@@ -1,7 +1,0 @@
-{
-  "id": "tennis_score",
-  "live": true,
-  "live_why": "simulated live match",
-  "tests": [],
-  "xfail": {}
-}

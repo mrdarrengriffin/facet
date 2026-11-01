@@ -105,14 +105,6 @@
       "roadmap": ["Sports surfaces"]
     },
     {
-      "id": "tennis",
-      "label": "Tennis",
-      "docs": false, "status": "wip", "firmware": false,
-      "screens": ["tennis_live"],
-      "components": ["tennis_score", "tennis_court"],
-      "roadmap": ["Sports (live scores)"]
-    },
-    {
       "id": "workbench",
       "label": "Workbench tools",
       "docs": false, "status": "wip", "firmware": false,

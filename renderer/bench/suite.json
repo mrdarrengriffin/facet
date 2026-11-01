@@ -212,10 +212,7 @@
     "tile",
     "toast_layer",
     "media_visual",
-    "mascot_mood",
-    "tennis_score",
-    "tennis_court",
-    "tennis_live"
+    "mascot_mood"
   ],
   "cases": [
     {
