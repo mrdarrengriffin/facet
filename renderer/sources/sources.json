@@ -249,49 +249,6 @@
         }
       ]
     },
-    "vacuum": {
-      "shows": "The robot vacuum: what it is doing, its battery, the room and progress, to start, pause or dock it.",
-      "needs": "a robot vacuum",
-      "feed": "panel.vacuum",
-      "sources": [
-        {
-          "id": "roborock",
-          "kind": "ha",
-          "name": "Roborock (its status, error, room, progress, time and area sensors)",
-          "adapter": "ha",
-          "detect": {
-            "integration": "roborock",
-            "domain": "vacuum"
-          },
-          "fills": {
-            "entity": {
-              "domain": "vacuum",
-              "integration": "roborock"
-            }
-          }
-        },
-        {
-          "id": "ha_vacuum",
-          "kind": "ha",
-          "name": "HA vacuums",
-          "adapter": "ha",
-          "detect": {
-            "domain": "vacuum"
-          },
-          "fills": {
-            "entity": {
-              "domain": "vacuum"
-            }
-          }
-        },
-        {
-          "id": "sample",
-          "kind": "builtin",
-          "name": "Sample robot (previews)",
-          "adapter": "sample"
-        }
-      ]
-    },
     "cameras": {
       "shows": "Your cameras' latest pictures and what they detected.",
       "needs": "cameras",

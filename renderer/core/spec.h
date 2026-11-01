@@ -207,11 +207,11 @@ constexpr Rule RULES[] = {
     {"more_row", "tap", "nav.open,nav.back,screen.param"},  // screen.param + to: a view of the same screen (Energy > last 7 days)
     {"cover_visual", "change", "cover.control"},  // the Covers window: a drag released (its position)
     {"button", "confirm", "lock.control"},
-    {"room_tile", "pick", "screen.toggle"},          {"camera_tile", "tap", "nav.back"},          {"tile", "tap", "nav.open"},          {"button", "tap", "nav.open,nav.back,light.toggle,vacuum.control,timer.start,timer.extend,timer.cancel,timer.stop,timer.select,timer.new,timer.back,cover.control,script.run,scene.activate,automation.trigger,button.press,entity.toggle"},  // 2026-10-30: a button you place says what it does (the editor's On tap)
+    {"camera_tile", "tap", "nav.back"},          {"tile", "tap", "nav.open"},          {"button", "tap", "nav.open,nav.back,light.toggle,vacuum.control,timer.start,timer.extend,timer.cancel,timer.stop,timer.select,timer.new,timer.back,cover.control,script.run,scene.activate,automation.trigger,button.press,entity.toggle"},  // 2026-10-30: a button you place says what it does (the editor's On tap)
     {"timer_chip", "select", "timer.select"},       {"timer_chip", "stop", "timer.stop"},
     {"grid", "select", "timer.select"},             {"grid", "stop", "timer.stop"},  // Timer chips in an items Grid
     {"segmented", "change", "vacuum.control,screen.param"}, {"iso_floorplan", "pick", "screen.toggle"},
-    {"vacuum_mode", "change", "vacuum.control"},     {"grid", "pick", "screen.param,nav.open,calendar.control,media.control"},
+    {"grid", "pick", "screen.param,nav.open,calendar.control,media.control"},
     {"sky_radar", "pick", "flights.select"},         {"flight_hero", "tap", "flights.select"},  // the Flight radar: a plane / the hero
     {"calendar_month", "pick", "calendar.control"},  {"calendar_month", "month", "calendar.control"},
     {"bottom_sheet", "close", "calendar.control,media.control,cover.control"}, {"picker_row", "tap", "media.control,cover.control"},        // a link to a sub-view spec (moon -> moon_details -> ...)
@@ -518,7 +518,7 @@ inline void check_action(ArduinoJson::JsonVariantConst a, const char *comp, cons
   }
   if (d == "vacuum.control") {
     const std::string en = a["e"] | "";
-    if (!entity_ok(en) || (en[0] != '$' && en != "panel.vacuum" && en.rfind("vacuum.", 0) != 0)) err(e, path + ".e", "bad_entity", "a vacuum (vacuum.x, panel.vacuum or $param)");
+    if (!entity_ok(en) || (en[0] != '$' && en.rfind("vacuum.", 0) != 0)) err(e, path + ".e", "bad_entity", "a vacuum (vacuum.x or $param)");
     if (!a["rooms"].isNull() && !a["rooms"].is<const char *>()) err(e, path + ".rooms", "bad_action", "rooms: a comma list of segment ids or $param");
     for (const char *k : {"mode", "mop"})
       if (!a[k].isNull()) {
@@ -1516,14 +1516,6 @@ inline bool run_action(Screen *s, Node &n, ArduinoJson::JsonVariantConst a, cons
     } else if (!strcmp(detail, "open")) ha_act(n, "cover.open_cover", n.entity.c_str());
     else if (!strcmp(detail, "close")) ha_act(n, "cover.close_cover", n.entity.c_str());
     else if (!strcmp(detail, "stop")) ha_act(n, "cover.stop_cover", n.entity.c_str());
-    return true;
-  }
-  if (d == "vacuum.control" && n.entity == "panel.vacuum") {  // the vacuum feed (core/vacuum_source.cpp): it shows the
-    // tap at once and names the service to call (none on its sample adapter): a Button's label, a Vacuum mode's change
-    std::string svc, ent, data;
-    const char *why = dev::vacuum_source::control(detail ? detail : "", a["rooms"] | "", &svc, &ent, &data);
-    if (*why) return refuse(why);
-    if (!svc.empty() && !ent.empty()) ha_act(n, svc.c_str(), ent.c_str(), data.c_str());
     return true;
   }
   if (d == "vacuum.control") {  // a Button's label (Clean / Start / Resume, Pause, Dock; any case) or a Segmented's

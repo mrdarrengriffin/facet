@@ -5,12 +5,6 @@ export const EXAMPLES = {
   "updated": "10:00",
   "stories": "[{\"t\":\"Rail strike off\",\"s\":\"BBC · 6m\"},{\"t\":\"Rates held at 4%\",\"s\":\"PA · 25m\"},{\"t\":\"Fen floods ease\",\"s\":\"ITV · 48m\"},{\"t\":\"Mars rover named\",\"s\":\"BBC · 1h\"},{\"t\":\"Winter fair opens\",\"s\":\"BBC · 2h\"},{\"t\":\"Ely roof saved\",\"s\":\"ITV · 3h\"}]"
  },
- "sensor.isaac_achievements": {
-  "": "412",
-  "line": "of 637 · 225 to go for Dead God",
-  "percent": "65",
-  "facts": "[{\"t\":\"Win streak\",\"v\":\"4\"},{\"t\":\"Runs\",\"v\":\"112\"},{\"t\":\"Characters\",\"v\":\"28 of 34\"},{\"t\":\"Last run\",\"v\":\"Won · 38 min\"}]"
- },
  "sensor.agents_working": {
   "": "3"
  },
@@ -55,13 +49,6 @@ export const EXAMPLES = {
  },
  "sensor.ibuprofen_reorder": {
   "": "Wed 28 Oct"
- },
- "sensor.washer": {
-  "progress": "62",
-  "": "rinse",
-  "left": "38 min left",
-  "ends": "done at 10:39",
-  "program": "Cotton 40° · 1200 rpm"
  },
  "sensor.electricity_price": {
   "": "15",

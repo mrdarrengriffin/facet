@@ -50,11 +50,6 @@
         },
         {
           "t": "page",
-          "page": "vacuum",
-          "size": "m"
-        },
-        {
-          "t": "page",
           "page": "github",
           "size": "m"
         },
@@ -106,10 +101,6 @@
     {
       "id": "moon",
       "kind": "moon"
-    },
-    {
-      "id": "vacuum",
-      "kind": "vacuum"
     },
     {
       "id": "github",

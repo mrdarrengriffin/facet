@@ -3709,49 +3709,6 @@
     "bytes_est": 2720
    }
   },
-  "level_bar": {
-   "name": "Level bar",
-   "update": true,
-   "props": [
-    {
-     "name": "value",
-     "type": "range",
-     "bindable": true,
-     "min": -1,
-     "max": 100,
-     "about": "How full the bar is, from 0 to 100. -1 means the level is not known and shows an empty bar."
-    },
-    {
-     "name": "mark",
-     "type": "range",
-     "bindable": true,
-     "min": -1,
-     "max": 100,
-     "about": "Where the threshold line sits, from 0 to 100, such as the point a plant needs water. -1 hides it."
-    },
-    {
-     "name": "tone",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "accent",
-      "steel",
-      "blue",
-      "off"
-     ],
-     "about": "The fill colour: accent, steel, blue, or off for a grey fill."
-    }
-   ],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 1,
-    "bytes_est": 160
-   }
-  },
   "lightning_radar": {
    "name": "Lightning radar",
    "update": true,
@@ -4918,52 +4875,6 @@
     "bytes_est": 3520
    }
   },
-  "room_tile": {
-   "name": "Room tile",
-   "update": true,
-   "props": [
-    {
-     "name": "room",
-     "type": "text",
-     "bindable": true,
-     "about": "The room's name and its number in the vacuum, written as name:number, such as Kitchen:3."
-    },
-    {
-     "name": "picked",
-     "type": "text",
-     "bindable": true,
-     "about": "The rooms picked for the next clean, as name:number pairs separated by commas. If this room is among them it is shown picked."
-    },
-    {
-     "name": "here",
-     "type": "text",
-     "bindable": true,
-     "about": "The room being cleaned now; if it is this one, the tile shows it."
-    },
-    {
-     "name": "state",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "default",
-      "disabled"
-     ],
-     "about": "default can be tapped to pick the room; disabled cannot be picked."
-    }
-   ],
-   "events": {
-    "pick": [
-     "screen.toggle"
-    ],
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 4,
-    "bytes_est": 640
-   }
-  },
   "scroll_track": {
    "name": "Scroll track",
    "update": true,
@@ -5525,88 +5436,6 @@
    "cost": {
     "objects": 3,
     "bytes_est": 480
-   }
-  },
-  "status_block": {
-   "name": "Status block",
-   "update": true,
-   "props": [
-    {
-     "name": "caption",
-     "type": "text",
-     "bindable": true,
-     "about": "The small capitals line at the top in the tone colour, such as secure. Leave empty for none."
-    },
-    {
-     "name": "value",
-     "type": "text",
-     "bindable": true,
-     "about": "The state in words, such as Locked."
-    },
-    {
-     "name": "line",
-     "type": "text",
-     "bindable": true,
-     "about": "One quieter line under the state, such as since when."
-    },
-    {
-     "name": "tone",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "dim",
-      "accent",
-      "ok",
-      "warn",
-      "error",
-      "off"
-     ],
-     "about": "The caption's colour: dim, accent, ok, warn, error, or off."
-    },
-    {
-     "name": "size",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "value",
-      "hero",
-      "title"
-     ],
-     "about": "How big the state is: value for the usual size, hero for a screen's main figure, title for a smaller heading."
-    },
-    {
-     "name": "value2",
-     "type": "text",
-     "bindable": true,
-     "about": "A second value beside the first, such as a battery level. Leave empty for none."
-    },
-    {
-     "name": "line2",
-     "type": "text",
-     "bindable": true,
-     "about": "A second quieter line. Leave empty for none."
-    },
-    {
-     "name": "line3",
-     "type": "text",
-     "bindable": true,
-     "about": "A third quieter line. Leave empty for none."
-    },
-    {
-     "name": "line4",
-     "type": "text",
-     "bindable": true,
-     "about": "A fourth quieter line. Leave empty for none."
-    }
-   ],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 4,
-    "bytes_est": 640
    }
   },
   "status_chip": {
@@ -6546,59 +6375,6 @@
     "bytes_est": 320
    }
   },
-  "vacuum_mode": {
-   "name": "Vacuum mode",
-   "update": true,
-   "props": [
-    {
-     "name": "mode",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "vacuum",
-      "vac_and_mop",
-      "mop"
-     ],
-     "about": "What the robot does: vacuum only, vacuum and mop together, or mop only."
-    },
-    {
-     "name": "fan",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "quiet",
-      "balanced",
-      "turbo",
-      "max",
-      "max_plus"
-     ],
-     "about": "How hard it sucks: quiet, balanced, turbo, max or max plus."
-    },
-    {
-     "name": "mop",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "low",
-      "medium",
-      "high"
-     ],
-     "about": "How much water the mop uses: low, medium or high."
-    }
-   ],
-   "events": {
-    "change": [
-     "vacuum.control"
-    ],
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 90,
-    "bytes_est": 14400
-   }
-  },
   "vacuum_robot": {
    "name": "Vacuum robot",
    "update": true,
@@ -7526,7 +7302,7 @@
     },
     "vacuum": {
      "taps": "detail,none",
-     "detail": "vacuum"
+     "detail": ""
     },
     "*": {
      "taps": "none"
@@ -7534,5 +7310,5 @@
    }
   }
  },
- "hash": "d434a935"
+ "hash": "a3cd000a"
 }

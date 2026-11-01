@@ -111,14 +111,6 @@ ex('news', 'Headlines', 'The newest stories of a news feed: when it last updated
         rows('sensor.news', 'stories', STORIES, title='$item.t', over='$item.s', icon='none', trailing='none', rows=6, empty='No new stories')),
    better='A tap on a story does nothing yet: opening the full story is still to come, so the rows have no chevron.')
 
-FACTS = [{'t': 'Win streak', 'v': '4'}, {'t': 'Runs', 'v': '112'}, {'t': 'Characters', 'v': '28 of 34'}, {'t': 'Last run', 'v': 'Won · 38 min'}]
-ex('game_runs', 'Game progress', 'How far through a game you are: achievements as the one big number with a progress bar, three facts as rows with their values, then the last run.',
-   'Make a Facet screen "Game progress" from my Steam sensor (sensor.isaac_achievements): the achievements unlocked as the big number with the total and the next goal beside it, a progress bar, then one row per fact (attribute facts, a JSON list of {t: name, v: value}) with the value at the right, then the last run as a row.',
-   page(hero(b('sensor.isaac_achievements', '412'), 'achievements', line=b('sensor.isaac_achievements', 'of 637 · 225 to go for Dead God', 'line')),
-        N('level_bar', value=b('sensor.isaac_achievements', '65', 'percent', fmt='num'), mark=-1, tone='accent', width=0),
-        rows('sensor.isaac_achievements', 'facts', FACTS, title='$item.t', value='$item.v', icon='none', trailing='value', rows=4)),
-   held='uses level_bar, not released yet')
-
 AG = [('Firmware build', 'sensor.agent_firmware', 'needs', '3 of 4'), ('Docs writer', 'sensor.agent_docs', 'working', '3 of 5'),
       ('Code review', 'sensor.agent_review', 'working', '7 of 12'), ('Test runner', 'sensor.agent_tests', 'working', '18 of 40'),
       ('Media fetch', 'sensor.agent_media', 'done', '4 of 4'), ('House audit', 'sensor.agent_audit', 'idle', 'next 18:00')]
@@ -152,13 +144,6 @@ ex('medication', 'Medication', "Today's doses: the next one big with what to tak
         row('Reorder by', value=b('sensor.ibuprofen_reorder', 'Wed 28 Oct'))),  # 14 left, 3 a day: lasts to Fri 30 Oct
    react=[{'ev': 'toggle', 'is': 'done', 'add': {'sensor.doses_left_today': -1, 'sensor.ibuprofen_left': -1}},
           {'ev': 'toggle', 'is': 'open', 'add': {'sensor.doses_left_today': 1, 'sensor.ibuprofen_left': 1}}])
-
-ex('laundry', 'Washing machine', 'A wash in progress: how far through it is as a ring centred on the screen, then the stage, the time left, when it finishes and the program.',
-   'Make a Facet screen "Washing machine" from sensor.washer (state = the stage; attributes progress 0-100, left, ends, program) a ring filled to the progress, centred in a wide cell, then the stage as a caption, the time left, and when it ends and the program as one quiet line.',
-   page(grid([N('arc', value=b('sensor.washer', '62', 'progress', fmt='num'), size=160, knob=False)], cols=1, gap='none', aspect='wide'),
-        N('status_block', caption=b('sensor.washer', 'rinse'), value=b('sensor.washer', '38 min left', 'left'), line=b('sensor.washer', 'done at 10:39', 'ends'),
-          line2=b('sensor.washer', 'Cotton 40° · 1200 rpm', 'program'), tone='dim', size='value')),
-   held='uses status_block, not released yet')
 
 PRICES = '9,9,8,8,9,9,14,15,19,21,15,14,13,13,14,15,30,33,31,16,14,13,9,9'  # every bar agrees with its band (cheap 00-06 + 22-24, peak 16-19, normal between)
 ex('energy_price', 'Energy price', "The electricity price now as the big number, today's 24 hourly prices as bars coloured cheap to peak with now marked, and the cheapest and dearest times.",
