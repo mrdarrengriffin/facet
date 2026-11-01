@@ -5,7 +5,7 @@
 
 One font per (family, weight, size, tabular) that the styles of this density use, with only the glyphs those styles
 need (union of their glyph sets, tokens/type.json "glyphsets"). Rasterised by ESPHome's own font code (FreeType,
-4 bpp, same metrics as ESPHome's `font:`), so it needs a Python with the `esphome` package (FW_FONT_PY in local.env).
+4 bpp, same metrics as ESPHome's `font:`; tools/esphome_font.py), under the venv tools/venv.sh makes.
 TTFs: `fonts/<Family without spaces>-<weight>.ttf` (Inter, JetBrains Mono: Google Fonts' static instances, SIL OFL).
 Tabular styles (type.json "tabular"): digits 0-9 get one advance (the widest digit), glyph centred in it.
 The header defines fw::gen::FacetFont F_<id> per font, STYLE_FONT[] (one per style, styles order) and FONTS[] (memory
@@ -36,13 +36,13 @@ REG = TTF / "fonts.json"
 THEMES = sorted((HERE.parent / "themes").glob("*.json"))
 TH = HERE.parent / "tokens" / "theme.json"
 stamp = hashlib.sha1(SRC.read_bytes() + Path(__file__).read_bytes() + den.encode() + REG.read_bytes() + TH.read_bytes()
-                     + (HERE / "facet_font.inc").read_bytes() + b"".join(f.read_bytes() for f in THEMES)
+                     + (HERE / "facet_font.inc").read_bytes() + (HERE / "esphome_font.py").read_bytes() + b"".join(f.read_bytes() for f in THEMES)
                      + b"".join(f.read_bytes() for f in sorted(TTF.glob("*.ttf")))).hexdigest()[:12]
 if out.exists() and out.open().readline().strip().endswith(stamp):
     sys.exit(0)  # unchanged: skip the (slow) rasterising
 
 from freetype import Face  # noqa: E402
-from esphome.components.font import glyph_comparator, glyph_to_glyphinfo, pt_to_px  # noqa: E402
+from esphome_font import glyph_comparator, glyph_to_glyphinfo, pt_to_px  # noqa: E402
 import esphome_glyphsets as glyphsets  # noqa: E402
 
 t = json.loads(SRC.read_text())

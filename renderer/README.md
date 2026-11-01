@@ -542,12 +542,12 @@ notices the new `manifest.json` within a second and re-renders in place (playgro
 
 | Var | What |
 |---|---|
-| `FW_FONT_PY` | a Python with the `esphome` package (its FreeType rasteriser + glyph sets, used by `tools/gen_fonts.py`) |
 | `FW_OUT` | output dir (default `renderer/out`): `<density>/fw.mjs`, `fw.wasm`, `manifest.json` |
 | `FW_CACHE` | object cache (default `renderer/.cache`) |
 
 LVGL and ArduinoJson are in `renderer/third_party/` (`third_party/README.md`), `renderer/lv_conf.h` is committed.
-Inter and JetBrains Mono are in `renderer/fonts/` (`<Family>-<weight>.ttf`, SIL OFL). **TODO:** the rasteriser, so it builds on its own, without a panel firmware build next to it.
+Inter and JetBrains Mono are in `renderer/fonts/` (`<Family>-<weight>.ttf`, SIL OFL). `tools/gen_fonts.py` runs under `renderer/.venv`, which `tools/venv.sh` makes from `tools/requirements.txt` on first use
+(ESPHome's glyph rasteriser is in `tools/esphome_font.py`).
 
 ## Device firmware (Show on device)
 

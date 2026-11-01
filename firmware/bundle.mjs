@@ -13,7 +13,7 @@
 // code (informational only). The firmware embeds the hashes it
 // was built from (fw_bundle_gen.h, GET /fw/info); same function here and in the hub (it runs --hashes).
 // Fonts: fonts.cpp includes this density's generated font header (tools/gen_fonts.py from tokens/type.json; needs
-// FW_FONT_PY, see local.env); the bundle inlines it into fonts.cpp, because ESPHome #includes every header of a
+// renderer/.venv, tools/venv.sh); the bundle inlines it into fonts.cpp, because ESPHome #includes every header of a
 // component into main.cpp.
 // Static registration: ESP-IDF links the app as an archive, so an object nobody references is dropped (and its
 // FW_COMPONENT registrations with it): each copied source gets an `fwlink_<n>()` and fw_bundle_gen.h calls them all.
@@ -123,8 +123,7 @@ wrote.add('specs_gen_data.h');  // the data: core/specs_data.cpp defines it (FW_
 execFileSync('node', [join(HERE, 'tools/gen_icons.mjs'), '--meta', join(C, 'icons_gen.h')]);
 wrote.add('icons_gen.h');
 // this density's fonts (cached next to the WASM build's; the generator skips work when type.json is unchanged)
-const FONT_PY = process.env.FW_FONT_PY ?? env.FW_FONT_PY;
-if (!FONT_PY) { console.error('set FW_FONT_PY (env or local.env)'); process.exit(2); }
+const FONT_PY = execFileSync(join(HERE, 'tools/venv.sh'), { encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'] }).trim();  // renderer/.venv
 const fontDir = join(process.env.FW_CACHE ?? env.FW_CACHE ?? join(HERE, '.cache'), 'gen');
 mkdirSync(fontDir, { recursive: true });
 const fontH = join(fontDir, density === '1x' ? 'facet_fonts_1x.h' : 'facet_fonts.h');

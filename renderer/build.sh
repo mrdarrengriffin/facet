@@ -6,13 +6,12 @@
 # Incremental: each .cpp (core/*.cpp, foundations/*.cpp, components/*.cpp) is its own object, recompiled only when it or a header it
 # includes changed (compiler depfiles); LVGL objects are cached once per lv_conf (cold ~20-60 s, after that a component edit = a few seconds).
 # Paths (env, or local.env at the repo root, untracked):
-#   FW_FONT_PY   a Python with the esphome package (font rasteriser, tools/gen_fonts.py)
 #   FW_OUT       output dir (default ./out), FW_CACHE object cache (default ./.cache)
 # Feature flags (renderer/features.json, tools/features.mjs; README "Feature flags"): FW_FEATURES=docs|firmware builds
 # only the features shown in that flavour (sources, specs, deck pages, Home cards) into $FW_OUT/<flavour>/<density>/
 # (own object + generated-header cache); unset = everything (the workbench).
 # LVGL 9.5.0 and ArduinoJson 7.4.3 are vendored in third_party/ (third_party/README.md), lv_conf.h is committed.
-# TODO: the font rasteriser, so it builds on its own.
+# The font rasteriser runs under renderer/.venv (tools/venv.sh, tools/requirements.txt).
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd)
 [ -f "$HERE/../local.env" ] && . "$HERE/../local.env"
@@ -108,8 +107,8 @@ if [ ! -f "$ICONS_H" ] || [ -n "$(find "$HERE/tools/gen_icons.mjs" "$HERE/tokens
 fi
 FONTS_H=$GEN/facet_fonts.h; [ "$DEN" = 1x ] && FONTS_H=$GEN/facet_fonts_1x.h
 # the fonts only when an input is newer than the header (the rasteriser takes ~5 s)
-if [ ! -f "$FONTS_H" ] || [ -n "$(find "$HERE/tools/gen_fonts.py" "$HERE/tokens" "$HERE/fonts" -newer "$FONTS_H" -print -quit 2>/dev/null)" ]; then
-  "${FW_FONT_PY:?set FW_FONT_PY in local.env}" "$HERE/tools/gen_fonts.py" "$DEN" "$FONTS_H"
+if [ ! -f "$FONTS_H" ] || [ -n "$(find "$HERE/tools/gen_fonts.py" "$HERE/tools/esphome_font.py" "$HERE/tokens" "$HERE/fonts" -newer "$FONTS_H" -print -quit 2>/dev/null)" ]; then
+  "$("$HERE/tools/venv.sh")" "$HERE/tools/gen_fonts.py" "$DEN" "$FONTS_H"
   touch "$FONTS_H"
 fi
 

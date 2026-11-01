@@ -3,5 +3,8 @@ local.env
 # build output + object cache (defaults)
 out/
 .cache/
+# the font rasteriser's Python (renderer/tools/venv.sh)
+.venv/
+.venv.lock
 node_modules/
 *.swp
