@@ -8,6 +8,8 @@
 // texts, boxes, events and sounds back.
 // Usage: node renderer/tools/functional.mjs [--den 1.5x|1x|all] [--ids a,b] [--tier nightly] [--grep text] [--png fail|all|none]
 //        [--out dir] [--json file] [--soft] [-v] [--probe comp '{props}']   exit 1 = a test failed (unless --soft)
+//        --rules [--rule a,b] [--tier fast|gate] [--theme id,id|all]: the rules (tests/rules/*.mjs) instead of the
+//        per-component tests, over every component on one mount per case (tools/lib/rules.mjs)
 // Results: tests/functional/out/results.json + per-test PNGs (default: failures only) in tests/functional/out/png/.
 import { readFileSync, writeFileSync, existsSync, readdirSync, mkdirSync, rmSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -15,6 +17,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { performance } from 'node:perf_hooks';
 import { Bench, setBuild, shot, T } from './lib/fwbench.mjs';
 import { demoValue } from './demo_ha.mjs';
+import { runRules } from './lib/rules.mjs';
 
 const HERE = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const argv = process.argv;
@@ -235,6 +238,25 @@ if (argv.includes('--probe')) {
   for (const o of t.objs().filter((o) => t.visible(o) && (o.text || o.clk))) console.log(`${o.clk ? 'CLK ' : '    '}${o.t} ${o.w}x${o.h}@${o.x},${o.y}${o.text ? ' "' + o.text + '"' : ''}`);
   console.log('comps:', t.comps().filter((c) => c.d <= 3).map((c) => `${c.ids.at(-1)} ${c.w}x${c.h}@${c.x},${c.y}`).join(' | '));
   process.exit(0);
+}
+
+// ---------------------------------------------------------------- rules (tests/rules/*.mjs)
+if (argv.includes('--rules')) {
+  const RDIR = join(HERE, 'tests/rules'), want = arg('--rule') ? arg('--rule').split(',') : null, tier = arg('--tier', 'gate');
+  const rules = [];
+  for (const f of readdirSync(RDIR).filter((f) => f.endsWith('.mjs')).sort()) {
+    const r = (await import(pathToFileURL(join(RDIR, f)).href)).default;
+    if ((!want || want.includes(r.id)) && r.tiers.includes(tier)) rules.push(r);
+  }
+  const res = await runRules(rules, { build: BUILD, dens: DENS, ids: ONLY, themeArg: arg('--theme'), tier });
+  let bad = 0;
+  for (const r of rules) {
+    const s = res[r.id];
+    for (const l of s.out) console.log(l);
+    console.log(`${r.id}: ${s.checks} checks, ${s.fails} failed${s.legacy ? `, ${s.legacy} in legacy parts` : ''} (${DENS.filter((d) => !r.dens || r.dens.includes(d)).join(' + ')}${arg('--theme') ? `, themes ${arg('--theme')}` : ''}${ONLY ? `, ${ONLY.join(',')}` : ''})`);
+    bad += s.fails;
+  }
+  process.exit(bad ? 1 : 0);
 }
 
 // ---------------------------------------------------------------- run

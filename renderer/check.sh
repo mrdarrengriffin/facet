@@ -44,7 +44,7 @@ check features node tools/features.mjs check
 check contrast node tools/contrast.mjs --summary
 check contract-lint node tools/contract_lint.mjs --summary
 check catalogue node tools/gen_catalogue.mjs --build "$B"
-check spec-test node tools/spec_test.mjs --build "$B"
+check spec-store node tools/functional.mjs --rules --rule spec-store
 check theme-check node tools/theme_check.mjs --build "$B"
 for d in $dens; do check "audit-$d" node tools/audit.mjs --den "$d" --quiet --build "$B"; done
 

@@ -93,7 +93,7 @@ Facet's rules are checked by tools, not by memory. Run the ones your change touc
 node renderer/tools/features.mjs check     # every source in one feature (also runs in CI)
 renderer/build.sh && renderer/check.sh gate       # both builds, then every check: 4 px grid, clipping, symmetry, animation paths, contrast
 node renderer/tools/contrast.mjs --summary # every colour pair, dark and light: 0 failures
-node renderer/tools/spec_test.mjs          # screen specs
+node renderer/tools/functional.mjs --rules --rule spec-store  # screen specs
 node renderer/tools/behaviour.mjs          # taps, drags, scrolling, sounds, the update path
 node renderer/tools/visual.mjs             # visual regression
 renderer/tools/asan.sh                     # memory errors, before anything goes on a panel
