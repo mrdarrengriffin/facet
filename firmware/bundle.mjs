@@ -49,7 +49,7 @@ const lsr = (d) => (existsSync(join(HERE, d)) ? readdirSync(join(HERE, d), { rec
 // core .cpp files the list below doesn't name (sport.cpp, ...): bundled as they are (not main.cpp / bench.cpp /
 // test_hooks.cpp: WASM host + test builds only)
 const coreExtra = ls('core', '.cpp').filter((f) => !OFF.has(f) && !['core/fw_core.cpp', 'core/fx_core.cpp', 'core/motion.cpp', 'core/atoms.cpp', 'core/states.cpp', 'core/mascot.cpp', 'core/device.cpp', 'core/fonts.cpp', 'core/icons.cpp', 'core/main.cpp', 'core/bench.cpp', 'core/test_hooks.cpp'].includes(f) && !f.endsWith('_lab.cpp'));  // *_lab.cpp: the workbench's fw_lab commands (main.cpp only)
-const coreFiles = [...ls('core', '.h'), ...coreExtra, 'core/fw_core.cpp', 'core/fx_core.cpp', 'core/motion.cpp', 'core/atoms.cpp', 'core/states.cpp', 'core/mascot.cpp', 'core/device.cpp', 'core/fonts.cpp', 'core/icons.cpp', ...ls('tokens', '.json'), 'tools/gen_colour.mjs', 'tools/gen_type.mjs', 'tools/gen_space.mjs', 'tools/gen_fx.mjs', 'tools/gen_layout.mjs', 'tools/gen_motion.mjs', 'tools/gen_states.mjs', 'tools/gen_mascot.mjs', 'tools/gen_chart.mjs', 'tools/gen_theme.mjs', ...ls('themes', '.json'), 'catalogue/contract.json', 'tools/lib/looks.mjs', 'tools/gen_surfaces.mjs', 'tools/gen_floorplan.mjs', 'tools/gen_settings.mjs', 'tools/gen_specs.mjs', ...ls('specs', '.json'), 'sources/sources.json', 'tools/gen_fonts.py', 'tools/facet_font.inc', 'tools/gen_icons.mjs', ...lsr('icons')];
+const coreFiles = [...ls('core', '.h'), ...coreExtra, 'core/fw_core.cpp', 'core/fx_core.cpp', 'core/motion.cpp', 'core/atoms.cpp', 'core/states.cpp', 'core/mascot.cpp', 'core/device.cpp', 'core/fonts.cpp', 'core/icons.cpp', ...ls('tokens', '.json'), 'tools/gen_colour.mjs', 'tools/gen_type.mjs', 'tools/gen_space.mjs', 'tools/gen_fx.mjs', 'tools/gen_layout.mjs', 'tools/gen_motion.mjs', 'tools/gen_states.mjs', 'tools/gen_mascot.mjs', 'tools/gen_chart.mjs', 'tools/gen_theme.mjs', ...ls('themes', '.json'), 'catalogue/contract.json', 'tools/lib/looks.mjs', 'tools/gen_settings.mjs', 'tools/gen_specs.mjs', ...ls('specs', '.json'), 'sources/sources.json', 'tools/gen_fonts.py', 'tools/facet_font.inc', 'tools/gen_icons.mjs', ...lsr('icons')];
 const imgFiles = ['fw_images.h', 'fw_imgdec.h', 'fw_tjpgd.h', 'fw_tjpgd.c', 'fw_pngle.h', 'fw_pngle.c', 'fw_miniz.c'];  // the panel's image fetch + decoders (fw_images.h)
 const glueFiles = [...imgFiles.map((f) => 'firmware/' + f), 'firmware/fw_device.h', 'firmware/fw_bench.h', 'firmware/esphome_init.py', 'firmware/bundle.mjs', 'renderer/tools/gen_agents.mjs'];  // relative to ROOT
 const srcFiles = [...ls('foundations', '.cpp'), ...ls('components', '.cpp'), ...ls('screens', '.cpp'), ...ls('bench', '.cpp')].filter((f) => !OFF.has(f));  // bench = the stress item (facet-153)
@@ -108,8 +108,6 @@ wrote.add('chart_gen.h');
 // the theme engine's tables (theme schema, the built-in themes/*.json; core/theme_file.cpp): build.sh makes it too
 execFileSync('node', [join(HERE, 'tools/gen_theme.mjs'), join(C, 'theme_gen.h')]);
 wrote.add('theme_gen.h');
-execFileSync('node', [join(HERE, 'tools/gen_surfaces.mjs'), join(C, 'surfaces_gen.h')]);
-wrote.add('surfaces_gen.h');
 execFileSync('node', [join(HERE, 'tools/gen_settings.mjs'), join(C, 'settings_gen.h')]);
 wrote.add('settings_gen.h');
 execFileSync('node', [join(HERE, 'tools/gen_specs.mjs'), join(C, 'specs_gen.h')]);  // factory screen specs (core/spec.h)

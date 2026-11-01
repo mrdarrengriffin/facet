@@ -85,7 +85,6 @@ node "$HERE/tools/gen_states.mjs" "$GEN/states_gen.h"
 # mascot tokens: tokens/mascot.json -> mascot_gen.h (fw::mas:: geometry per density, moods, motion keyframe tracks)
 node "$HERE/tools/gen_mascot.mjs" "$GEN/mascot_gen.h"
 node "$HERE/tools/gen_chart.mjs" "$GEN/chart_gen.h"  # tokens/chart.json (+ colour, motion) -> fw::ch:: chart colours, geometry, chart motion
-node "$HERE/tools/gen_surfaces.mjs" "$GEN/surfaces_gen.h"  # tokens/surfaces.json (+ colour, space) -> fw::sf:: sports surfaces, venues, court geometry
 # settings schema: tokens/settings.json -> settings_gen.h (fw::set:: the personalisation settings, screens/settings.cpp)
 node "$HERE/tools/gen_settings.mjs" "$GEN/settings_gen.h"
 node "$HERE/tools/gen_specs.mjs" "$GEN/specs_gen.h"  # factory screen specs (core/spec.h)
