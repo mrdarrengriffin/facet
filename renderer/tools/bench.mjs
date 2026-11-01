@@ -2,7 +2,7 @@
 // Facet bench (facet-153): scripted scenarios per component / screen, run headless on the WASM build, measured per
 // LVGL refresh (core/bench.cpp: the same RENDER_START..READY window as the panels' GET /fw/perf), against the budgets
 // per device (bench/budgets.json). Suite = bench/suite.json. README "Bench".
-//   node tools/bench.mjs [--device guition|waveshare|all] [--case <id|prefix|tag:x>,...] [--scenario idle|animate|drag|navigate]
+//   node tools/bench.mjs [--device guition-4848s040|waveshare-p4-86|all] [--case <id|prefix|tag:x>,...] [--scenario idle|animate|drag|navigate]
 //                        [--props '<json>' merged into every case, e.g. {"fades":true}] [--out results.json] [--build <dir with 1x/ 1.5x/>] [--list] [--quiet]
 //   node tools/bench.mjs --lag [--case <id>,...] [--out lag.json] [--quiet]   the lag proxy (nightly tier; below)
 // Output JSON: {v, at, build{}, devices{<id>: {fit{a, b}, anchors[]}}, results[{case, comp, scenario, device, live, wasm{}, est{}, mem{}, host{}, over[]}]}
@@ -305,7 +305,7 @@ const onlyScen = arg('--scenario');
 // the host waits the panel's estimate, then GET /fw/bench every 10 s until done (no polling while it measures).
 if (arg('--panel')) {
   const dev = arg('--panel'), host = arg('--host');
-  if (!budgets.devices[dev] || !host) { console.error('--panel guition|waveshare --host <ip>'); process.exit(2); }
+  if (!budgets.devices[dev] || !host) { console.error('--panel guition-4848s040|waveshare-p4-86 --host <ip>'); process.exit(2); }
   const base = `http://${host}`;
   // an agent token (facet-163: the panel's write endpoints need it unless the request is same-origin) on every /fw/* call
   const AUTH = process.env.FACET_AGENT_TOKEN ? { authorization: `Bearer ${process.env.FACET_AGENT_TOKEN}` } : {};

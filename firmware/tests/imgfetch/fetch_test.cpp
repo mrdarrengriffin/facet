@@ -187,7 +187,7 @@ uint32_t lv_tick_get() { return (uint32_t) (sim_us() / 1000); }
 static int fails = 0, checks = 0;
 #define CHECK(c, ...) do { checks++; if (!(c)) { fails++; printf("FAIL %s:%d  ", __FILE__, __LINE__); printf(__VA_ARGS__); printf("\n"); } } while (0)
 namespace fw::img {
-static const Budget B = {3u << 20, 2048 * 2048, 8000, "waveshare", 1u << 20};
+static const Budget B = {3u << 20, 2048 * 2048, 8000, "waveshare-p4-86", 1u << 20};
 const Budget &budget() { return B; }
 struct P { uint32_t since; bool told; };
 static std::map<std::string, P> pending;

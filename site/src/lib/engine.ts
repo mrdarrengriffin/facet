@@ -14,11 +14,11 @@ export type FwEvent = { stage: number; kind: 'event' | 'sound'; name: string; de
 export type Comp = { id: string; name: string; section: string; meta: Meta };
 export type Manifest = { built: string; density: string; build_s: number; wasm_bytes: number };
 export type Zoom = '1' | 'fit' | '2';
-export type DeviceId = 'waveshare' | 'guition' | 'shelly';
+export type DeviceId = 'waveshare-p4-86' | 'guition-4848s040' | 'shelly-x1i';
 export const DEVICES: Record<DeviceId, { name: string; den: '1.5x' | '1x'; d: number; size: number }> = {
-  waveshare: { name: 'Waveshare 720', den: '1.5x', d: 1.5, size: 720 },
-  guition: { name: 'Guition 480', den: '1x', d: 1, size: 480 },
-  shelly: { name: 'Shelly 720', den: '1.5x', d: 1.5, size: 720 },
+  'waveshare-p4-86': { name: 'Waveshare 720', den: '1.5x', d: 1.5, size: 720 },
+  'guition-4848s040': { name: 'Guition 480', den: '1x', d: 1, size: 480 },
+  'shelly-x1i': { name: 'Shelly 720', den: '1.5x', d: 1.5, size: 720 },
 };
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Mod = any;

@@ -14,11 +14,11 @@ headless in the WASM build at each panel's size and checked against a budget per
 
 ```
 # WASM estimate (add --repeat 3 for medians, --baseline <run.json> for the regression check, --props '{"fades":true}' to override)
-cd renderer && heavy node tools/bench.mjs [--device guition|waveshare|all] [--case <id|component|prefix|tag:weather>,...]
+cd renderer && heavy node tools/bench.mjs [--device guition-4848s040|waveshare-p4-86|all] [--case <id|component|prefix|tag:weather>,...]
                                           [--scenario idle|animate|drag|navigate] [--out run.json] [--list] [--quiet]
 ```
 
-On the glass: `node tools/bench.mjs --panel guition --host <ip> --out panel.json` (same cases, about 6 min per panel),
+On the glass: `node tools/bench.mjs --panel guition-4848s040 --host <ip> --out panel.json` (same cases, about 6 min per panel),
 then `node tools/bench.mjs --calibrate panel.json wasm.json [--write]` (estimate error, and a fit over every case
 written to `budgets.json` `measured` + `build_factor`). The full WASM suite takes about 8 s for both devices (174 results). The host hub's `/wasm/bench` page runs it as well
 (`/api/wasm/bench`) and keeps the history.
@@ -66,7 +66,7 @@ at the end. Nothing polls the panel while it measures.
 - At the end, the panel shows what it showed before the batch. Boot safety (fw_device.h): after a crash reset, the
   saved page is not shown again; the device home is.
 
-**Host:** `bench.mjs --panel guition|waveshare --host <ip>` (or the `/wasm/bench` page, target = the panel) sends the
+**Host:** `bench.mjs --panel guition-4848s040|waveshare-p4-86 --host <ip>` (or the `/wasm/bench` page, target = the panel) sends the
 batch, sleeps the panel's `eta_s` (~4.5 min for the full suite), then GETs every 10 s until done. Cases the firmware
 does not register, `browser_only` cases and `panel_skip` are listed as skipped. Then `--calibrate panel.json
 headless.json [--write]` reports the estimate error and fits `a, b` over every moving case (`budgets.json` `measured`,

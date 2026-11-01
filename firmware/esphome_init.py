@@ -1,7 +1,7 @@
 # ESPHome external component `facet_wb` (firmware/bundle.mjs copies this as __init__.py next to the bundled sources):
 # the Facet WASM workbench core + foundations + components on a real panel. YAML:
 #   facet_wb:
-#     board: guition         # id the workbench uses for this device
+#     board: guition-4848s040   # the board id (boards/<id>.json)
 #     width: 480             # screen size in device px
 #     height: 480
 #     probation: 3min        # optional, = safe_mode boot_is_good_after (on-screen countdown after an OTA)

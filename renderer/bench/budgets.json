@@ -1,7 +1,7 @@
 {
   "about": "Facet bench budgets per device (facet-153). tools/bench.mjs measures each case in the WASM build at the device's size, then estimates the panel's render ms = WASM render ms x the device's factor. The factor is fitted on every run from the anchors: real /fw/perf numbers measured on the panel for scenarios the bench also runs (median of device ms / WASM ms). Budgets are PROVISIONAL (2026-10-22): calibrate from the panels once the firmware bench endpoint exists (README 'Bench').",
   "devices": {
-    "guition": {
+    "guition-4848s040": {
       "name": "Guition 4848S040 (ESP32-S3, 480 x 480, 90 deg sw rotation)",
       "density": "1x",
       "w": 480,
@@ -69,7 +69,7 @@
       },
       "build_factor": 85.57
     },
-    "waveshare": {
+    "waveshare-p4-86": {
       "name": "Waveshare ESP32-P4 86 (720 x 720)",
       "density": "1.5x",
       "w": 720,

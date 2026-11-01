@@ -28,7 +28,7 @@ import { usage as USAGE } from '../../tools/gen_sound_usage.mjs';
 const HERE = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const TESTS = join(HERE, 'tests/behaviour');
 export const B = JSON.parse(readFileSync(join(TESTS, '_budgets.json'), 'utf8'));
-const FIT = JSON.parse(readFileSync(join(HERE, 'bench/budgets.json'), 'utf8')).devices.guition.measured;
+const FIT = JSON.parse(readFileSync(join(HERE, 'bench/budgets.json'), 'utf8')).devices['guition-4848s040'].measured;
 const T = 16;  // ms per tick = LV_DEF_REFR_PERIOD
 class Bench extends Bench0 { constructor(m, den) { super(m, den, { long_ms: B.long_press_ms, drag_px: B.drag_px_per_tick }); } }
 const specsCache = {};  // the screen specs the module lists (fw_spec list), for the Spec screen's checks

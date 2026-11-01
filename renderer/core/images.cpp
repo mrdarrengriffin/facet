@@ -17,9 +17,9 @@ namespace {
 // content-wide 16:9 photo (440 x 248 RGB565 = 218 KB) plus a 4 x 2 grid of 96 px cells (RGB565A8 = 221 KB).
 // Waveshare P4 (32 MB PSRAM): 3 MB = a full 720 x 720 still (1 MB) plus a 64-cell grid of 72 px thumbnails (1 MB).
 #ifdef FW_1X
-constexpr Budget B = {512u * 1024u, 1024 * 1024, 8000, "guition", 256u * 1024u};
+constexpr Budget B = {512u * 1024u, 1024 * 1024, 8000, "guition-4848s040", 256u * 1024u};
 #else
-constexpr Budget B = {3u * 1024u * 1024u, 2048 * 2048, 8000, "waveshare", 1024u * 1024u};
+constexpr Budget B = {3u * 1024u * 1024u, 2048 * 2048, 8000, "waveshare-p4-86", 1024u * 1024u};
 #endif
 
 struct View {
