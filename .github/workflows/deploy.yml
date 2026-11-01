@@ -1,8 +1,7 @@
 name: Deploy docs
 
-# The docs site (site/) on GitHub Pages. The renderer's WASM build needs LVGL and the fonts, which are not vendored
-# in this repo yet, so it is built locally and kept as the asset of the `docs-build` release
-# (site/scripts/upload-build.sh); this workflow downloads it and builds the Astro site around it. The public firmware
+# The docs site (site/) on GitHub Pages, around the docs flavour of the WASM renderer built in this job from the
+# commit it documents (FW_FEATURES=docs renderer/build.sh; renderer/README.md "What a machine needs"). The public firmware
 # for the /install page (factory + OTA images, manifest.json + ota.json per board) is the asset of the `firmware`
 # release (site/scripts/upload-firmware.sh), unpacked into site/public/firmware/ and served at /facet/firmware/<board>/.
 
@@ -32,12 +31,24 @@ jobs:
           node-version: 24
           cache: npm
           cache-dependency-path: site/package-lock.json
-      - name: Download the WASM docs build
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh release download docs-build -p docs-build.tar.gz -R "$GITHUB_REPOSITORY"
-          mkdir -p renderer/out/docs && tar -xzf docs-build.tar.gz -C renderer/out/docs
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+        with:
+          python-version: '3.13'
+      - uses: mymindstorm/setup-emsdk@4528d102f7230f0e7b276855c01ea1159be0e984  # v16
+        with:
+          version: 6.0.13
+          actions-cache-folder: emsdk-cache
+      - name: LVGL objects (per lv_conf and LVGL)
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: |
+            renderer/.cache/lvgl-O2
+            renderer/.cache/lvgl-O2-*.list
+          key: lvgl-${{ hashFiles('renderer/lv_conf.h', 'renderer/third_party/lvgl/lv_version.h') }}
+      - run: npm ci
+        working-directory: renderer/tools
+      - name: Build the WASM docs flavour (both densities)
+        run: FW_FEATURES=docs renderer/build.sh
       - name: Download the public firmware (install page + panel updates)
         env:
           GH_TOKEN: ${{ github.token }}
