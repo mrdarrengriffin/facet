@@ -536,7 +536,13 @@ Save a `.cpp`/`.h` in `components/`, `foundations/` or `core/`, or `tokens/*.jso
 notices the new `manifest.json` within a second and re-renders in place (playground values kept). One-off build:
 `renderer/build.sh [1.5x|1x]`. First build is slower (LVGL objects, cached).
 
-### Paths (`local.env`, untracked)
+### What a machine needs
+
+Node 24 (`cd renderer/tools && npm ci`), Python 3 with `venv` (the font rasteriser's venv is made on first build) and
+Emscripten 6.0.13 (`em++` on `PATH`, or `$EMSDK`, default `~/emsdk`). Nothing else: LVGL, ArduinoJson, `lv_conf.h` and
+the fonts are in the repo.
+
+### Paths (`local.env`, untracked, optional)
 
 `renderer/build.sh` and `firmware/bundle.mjs` read these from the environment or `local.env` at the repo root:
 
