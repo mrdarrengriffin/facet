@@ -5,6 +5,7 @@
 #include <cstring>
 #include "chart.h"
 #include "fw.h"
+#include "colour_values_gen.h"
 #include "lightning.h"
 #include "previews.h"
 

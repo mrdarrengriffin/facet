@@ -5,6 +5,7 @@
 // Status (WIP/Done) = this file + tokens/colour.json in git.
 #include <cstdio>
 #include "fw.h"
+#include "colour_values_gen.h"
 
 namespace {
 using namespace fw::tokens;

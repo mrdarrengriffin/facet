@@ -11,7 +11,7 @@
 #include <vector>
 #include "lvgl.h"
 #include "ArduinoJson.h"
-#include "colour_gen.h"  // fw::Theme + fw::tokens:: (generated from tokens/colour.json)
+#include "colour_gen.h"  // fw::Theme + fw::tokens:: mixes (generated from tokens/colour.json; the value tables: colour_values_gen.h)
 #include "type_gen.h"    // fw::ty:: styles (generated from tokens/type.json)
 #include "space_gen.h"   // fw::sp:: lay:: rad:: stroke:: touch:: (generated from tokens/space.json), device px
 #include "layout_gen.h"  // fw::lay:: screen geometry + fw::lyt:: devices / size classes (generated from tokens/layout.json), device px

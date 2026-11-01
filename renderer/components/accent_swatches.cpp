@@ -23,6 +23,7 @@
 // settings-row (the real List row, title Accent, with the swatches as its trailing part: docs Settings .fs-set).
 // Contrast pairs: tokens/colour.json section "accent_swatches".
 #include "fw.h"
+#include "colour_values_gen.h"
 
 namespace {
 constexpr lv_state_t ST_ON = fw::st::ON, ST_OFF = fw::st::OFF;

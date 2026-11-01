@@ -86,6 +86,7 @@ put('fw_bench.h', readFileSync(join(ROOT, 'firmware/fw_bench.h')));
 for (const f of imgFiles) put(f, readFileSync(join(ROOT, 'firmware', f)));
 execFileSync('node', [join(HERE, 'tools/gen_colour.mjs'), join(C, 'colour_gen.h')]);  // rewrites only on change
 wrote.add('colour_gen.h');
+wrote.add('colour_values_gen.h');
 execFileSync('node', [join(HERE, 'tools/gen_type.mjs'), join(C, 'type_gen.h')]);
 wrote.add('type_gen.h');
 execFileSync('node', [join(HERE, 'tools/gen_space.mjs'), join(C, 'space_gen.h')]);

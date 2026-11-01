@@ -4,6 +4,7 @@
 // what the playing patterns add, written only when the whole px value changes (an unchanged frame invalidates nothing).
 #include <cstdint>
 #include "fw.h"
+#include "colour_values_gen.h"
 
 namespace fw {
 namespace {

@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 #include "fw.h"
+#include "colour_values_gen.h"
 #include "fx.h"
 #include "device.h"
 

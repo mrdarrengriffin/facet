@@ -3,6 +3,7 @@
 #include <functional>
 #include "device.h"
 #include "fx.h"
+#include "colour_values_gen.h"
 #include <algorithm>
 #include <vector>
 #include "spec.h"

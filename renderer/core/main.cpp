@@ -26,6 +26,7 @@
 #include <functional>
 #include <vector>
 #include "fw.h"
+#include "colour_values_gen.h"
 #include "ha.h"
 #include "spec.h"
 #include "device.h"

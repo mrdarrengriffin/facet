@@ -14,6 +14,7 @@
 // Data: prop "feed" = an f1_race_feed, else the race simulator. Pairs: "sport" (text on bg / surface; the tint is
 // chip-tint, the same as the Status chip's).
 #include "fw.h"
+#include "colour_values_gen.h"
 #include "sport.h"
 
 namespace {

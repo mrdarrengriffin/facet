@@ -21,6 +21,7 @@
 // Static to touch. Update path: refilled in place. Contrast: bins (decor), text, section_header, list_row, empty_state.
 // audit deps: section_header, list_row, empty_state
 #include "fw.h"
+#include "colour_values_gen.h"
 
 namespace {
 struct Bin { const char *name, *colour; int every; };  // every = days between collections

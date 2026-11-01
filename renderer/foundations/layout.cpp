@@ -8,6 +8,7 @@
 #include <cmath>
 #include <cstdio>
 #include "fw.h"
+#include "colour_values_gen.h"
 
 namespace {
 using namespace fw;

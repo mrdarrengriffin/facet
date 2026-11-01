@@ -3,6 +3,7 @@
 // (tools/gen_fx.mjs -> fx_gen.h). A theme / accent / text-size change repaints the display's set and reports one
 // style change: no object holds a colour, so none can keep an old one.
 #include "fx.h"
+#include "colour_values_gen.h"
 #include "core/lv_refr_private.h"  // lv_refr_get_disp_refreshing: is a redraw running (look_of)
 #include "core/lv_obj_draw_private.h"  // lv_obj_get_ext_draw_size: a child's reach (fx::overflow)
 #include "fw.h"

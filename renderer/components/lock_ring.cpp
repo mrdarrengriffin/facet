@@ -24,6 +24,7 @@
 // Update path: a new state animates like a tap (the shackle slides, colours fade; silent); first build at rest.
 // Contrast: section "lock_ring".
 #include "fw.h"
+#include "colour_values_gen.h"
 
 namespace {
 struct LR {
