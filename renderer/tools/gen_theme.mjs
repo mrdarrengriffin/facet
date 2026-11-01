@@ -202,7 +202,7 @@ export function header(S = schema()) {
     'struct PixelIcon { const char *name; uint8_t rows[8]; };',
     `constexpr PixelIcon PIXEL_ICONS[] = {${[...px].sort((a, b) => (a.name < b.name ? -1 : 1)).map((i) => `{${cs(i.name)}, {${i.pixel.map((r) => '0x' + r.toUpperCase()).join(', ')}}}`).join(',\n  ')}};`,
     `constexpr int N_PIXEL_ICONS = ${px.length};`);
-  L.push('// the built-in themes (themes/*.json, facet first): each is validated when the build runs (tools/theme_check.mjs)',
+  L.push('// the built-in themes (themes/*.json, facet first): each is validated against every build (tests/rules/theme_check.mjs)',
     `constexpr int N_BUILTINS = ${builtins.length};`, 'struct Builtin { const char *id; const char *json; };',
     `constexpr Builtin BUILTINS[] = {${builtins.map((f) => `{${cs(f.replace(/\.json$/, ''))}, ${cRaw(readFileSync(join(THEMES, f), 'utf8'))}}`).join(',\n  ')}};`,
     '}}  // namespace fx::tgen', '');

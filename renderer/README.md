@@ -691,7 +691,7 @@ only on success and bumps a generation. Built-ins: facet, blockcraft, win98 (por
 layout keys dropped, look sizes inside their ranges; their fonts arrive with the theme fonts).
 `node tools/contrast.mjs --theme <id | file>` = a theme's contrast guard; `fw_lab(-1, "theme_load" | "theme_dump" |
 "theme_contrast" | ..., json)` (core/theme_lab.cpp); tests `tests/functional/theme_parse.test.mjs`, `theme_fuzz.test.mjs`;
-`tools/theme_check.mjs` (build.sh: built-ins load); `tools/theme_fuzz.sh [N]` (the parser under ASan + UBSan, 100k).
+`tests/rules/theme_check.mjs` (check.sh, the runner's startup rule theme-check: built-ins load); `tools/theme_fuzz.sh [N]` (the parser under ASan + UBSan, 100k).
 
 ## ASan check
 

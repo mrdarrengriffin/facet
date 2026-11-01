@@ -442,7 +442,7 @@ Mode setting (`theme`) and Theme setting (`look`) are separate (section 2 Words)
 *Why:* a theme must never need component code, and a half-read file must never reach the screen. *Check:* P4;
 `theme_parse` tests (one per error class: refused, its path, the live theme and the frame unchanged; never-partial
 apply and its break-it), `theme_fuzz` (10k seeded mutations, WASM) and `tools/theme_fuzz.sh` (100k under ASan + UBSan);
-built-in themes are checked when the build runs (`tools/theme_check.mjs`), so the panel never meets a bad one;
+built-in themes are checked against every build (`tests/rules/theme_check.mjs`), so the panel never meets a bad one;
 `theme_apply` tests: Facet after any theme = the frame before (S1), each built-in theme switched live = a fresh build
 in it (and theme to theme), a refused file leaves every pixel and the generation, and the break-it (`fx::break_stale`,
 no repaint) turns the live = fresh proof red.
@@ -729,7 +729,7 @@ Rules whose check is TODO (each is a gate item; until it exists, review checks t
 | `core/theme_file.h`, `core/theme_file.cpp` | theme files -> Skin: strict JSON, the schema, compile, the static guards, the live slot |
 | `tokens/theme.json`, `tools/gen_theme.mjs` | the theme schema as data -> `themes/facet.json` (Facet's values: what every theme inherits) + `theme_gen.h` |
 | `tools/lib/looks.mjs` | the one list of look sizes and their ranges (C18, C19) |
-| `tools/theme_check.mjs`, `tools/theme_fuzz.sh` | built-in themes checked at build time; the parser fuzzed under ASan + UBSan |
+| `tests/rules/theme_check.mjs`, `tools/theme_fuzz.sh` | built-in themes checked at build time; the parser fuzzed under ASan + UBSan |
 | `tests/functional/_release.mjs` | gate helpers: bounds, stage, look, frame565, golden, faults, fuzz, monkey, leak, frames |
 | `components/card.cpp`, `components/dial.cpp` | the reference components (box + steps; drawn + partial redraw) |
 

@@ -45,7 +45,7 @@ check contrast node tools/contrast.mjs --summary
 check contract-lint node tools/contract_lint.mjs --summary
 check catalogue node tools/gen_catalogue.mjs --build "$B"
 check spec-store node tools/functional.mjs --rules --rule spec-store
-check theme-check node tools/theme_check.mjs --build "$B"
+check theme-check node tools/functional.mjs --rules --rule theme-check
 for d in $dens; do check "audit-$d" node tools/audit.mjs --den "$d" --quiet --build "$B"; done
 
 if [ "$tier" = fast ]; then
