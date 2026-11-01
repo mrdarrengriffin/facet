@@ -3541,81 +3541,6 @@
     "bytes_est": 480
    }
   },
-  "iso_floorplan": {
-   "name": "Iso floor plan",
-   "update": true,
-   "props": [
-    {
-     "name": "plan",
-     "type": "text",
-     "bindable": true,
-     "about": "The rooms of the floor plan: for each room its name, its number in the vacuum, its corner points in metres and where its name goes, rooms separated by semicolons."
-    },
-    {
-     "name": "dock",
-     "type": "text",
-     "bindable": true,
-     "about": "Where the charging dock sits on the plan and which way it faces, in metres."
-    },
-    {
-     "name": "robot",
-     "type": "text",
-     "bindable": true,
-     "about": "Where the robot is on the plan, as x and y in metres."
-    },
-    {
-     "name": "transform",
-     "type": "text",
-     "bindable": true,
-     "about": "How to turn the robot's own position numbers into metres on the plan, as six numbers. Leave empty when they already match."
-    },
-    {
-     "name": "trail",
-     "type": "text",
-     "bindable": true,
-     "about": "The path the robot has taken, as x,y points in metres separated by spaces."
-    },
-    {
-     "name": "picked",
-     "type": "text",
-     "bindable": true,
-     "about": "The rooms picked for the next clean, as name:number pairs separated by commas. Picked rooms are edged in the accent."
-    },
-    {
-     "name": "here",
-     "type": "text",
-     "bindable": true,
-     "about": "The room the robot is in now; its edge is lit."
-    },
-    {
-     "name": "state",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "docked",
-      "cleaning",
-      "returning",
-      "paused",
-      "idle",
-      "error",
-      "unavailable"
-     ],
-     "about": "What the robot is doing: docked, cleaning, returning to the dock, paused, idle, error, or unavailable when it cannot be reached."
-    }
-   ],
-   "events": {
-    "pick": [
-     "screen.toggle"
-    ],
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 6,
-    "bytes_est": 960
-   }
-  },
   "label": {
    "name": "Label",
    "update": true,
@@ -7310,5 +7235,5 @@
    }
   }
  },
- "hash": "a3cd000a"
+ "hash": "38f178f7"
 }

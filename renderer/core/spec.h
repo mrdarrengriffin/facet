@@ -210,7 +210,7 @@ constexpr Rule RULES[] = {
     {"camera_tile", "tap", "nav.back"},          {"tile", "tap", "nav.open"},          {"button", "tap", "nav.open,nav.back,light.toggle,vacuum.control,timer.start,timer.extend,timer.cancel,timer.stop,timer.select,timer.new,timer.back,cover.control,script.run,scene.activate,automation.trigger,button.press,entity.toggle"},  // 2026-10-30: a button you place says what it does (the editor's On tap)
     {"timer_chip", "select", "timer.select"},       {"timer_chip", "stop", "timer.stop"},
     {"grid", "select", "timer.select"},             {"grid", "stop", "timer.stop"},  // Timer chips in an items Grid
-    {"segmented", "change", "vacuum.control,screen.param"}, {"iso_floorplan", "pick", "screen.toggle"},
+    {"segmented", "change", "vacuum.control,screen.param"},
     {"grid", "pick", "screen.param,nav.open,calendar.control,media.control"},
     {"sky_radar", "pick", "flights.select"},         {"flight_hero", "tap", "flights.select"},  // the Flight radar: a plane / the hero
     {"calendar_month", "pick", "calendar.control"},  {"calendar_month", "month", "calendar.control"},
