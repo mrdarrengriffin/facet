@@ -57,6 +57,11 @@ jobs:
             .ccache
           key: fw-waveshare-p4-86-${{ github.sha }}
           restore-keys: fw-waveshare-p4-86-
+      - name: Sound bank (per its inputs; rendered only when they change)
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: esphome/components/facet_audio/facet_sounds*
+          key: sound-bank-${{ hashFiles('renderer/tokens/sound.json', 'site/src/lib/synth.ts', 'firmware/sound_bank.mjs') }}
       - name: Generate (bundle, settings, sound bank)
         run: esphome/build.sh waveshare-p4-86 prepare
       - name: Compile
