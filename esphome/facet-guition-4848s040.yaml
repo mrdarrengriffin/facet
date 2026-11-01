@@ -1,0 +1,30 @@
+# flasher-chip: ESP32-S3
+# Facet firmware for the Guition ESP32-S3-4848S040: what the install page flashes (ESP Web Tools, flash WITH erase).
+# No Wi-Fi, keys or passwords baked in (packages/net_public.yaml). Onboarding: Improv serial or the "Facet-1A2B"
+# hotspot (password on the panel); no Bluetooth on this board (internal RAM). Build: README.md.
+substitutions:
+  board: !include ../boards/guition-4848s040.json   # chip, resolution, scale, flash (boards/<id>.json)
+  name: facet                          # + MAC suffix: facet-1a2b3c
+  friendly_name: Facet panel           # + MAC suffix: "Facet panel 1a2b3c" (rename in HA)
+  build_root: !env_var ESPHOME_BUILD_ROOT build
+  build_suffix: "-public"
+  facet_version: 0.4.0-dev             # the release tag sets it
+  update_manifest: https://mrdarrengriffin.github.io/facet/firmware/${board.id}/ota.json
+  lvgl_buffer: 10%
+
+packages:
+  board: !include packages/board_guition-4848s040.yaml
+  net: !include packages/net_public.yaml
+  wb: !include packages/workbench.yaml
+  settings: !include gen/settings.yaml               # the settings entities (generated: README.md "Build")
+
+esphome:
+  name_add_mac_suffix: true
+  project:
+    name: facet.${board.id}
+    version: ${facet_version}
+
+# Device Builder "Adopt": pulls this file from the Facet repo at the installed version
+dashboard_import:
+  package_import_url: github://mrdarrengriffin/facet/esphome/facet-guition-4848s040.yaml@v${facet_version}
+  import_full_config: false

@@ -1,0 +1,381 @@
+# Facet firmware, shared part (README.md): LVGL with one blank page, the facet_wb component (= the renderer's core +
+# foundations + components + screens, bundled by firmware/bundle.mjs into gen/<board>/facet_wb), OTA safety (boot
+# guard + safe mode), a few diagnostics.
+# Substitutions from the main YAML: board (boards/<id>.json), lvgl_buffer, facet_version, update_manifest; facet_gen
+# (default below) = the folder holding <board>/facet_wb.
+# Home Assistant entities: Screen (select), Firmware (update, with the OTA
+# probation folded in: board/fw_update.h), Wi-Fi signal, IP address, Started, Free memory, Boot check; the settings
+# (settings.yaml) and the board's own (Backlight, relays, Restart, Restart reason, Wi-Fi chip firmware) come from the
+# other packages.
+
+substitutions:
+  facet_gen: ../gen   # firmware/bundle.mjs --out <facet_gen>/<board> (a relative path is from this file)
+  rotation_base: "0"  # the panel's mount in degrees (a build that rotates LVGL sets it); Rotate screen turns from here
+
+esphome:
+  includes:
+    - ../board/bootguard.h
+    - ../board/fw_update.h
+  build_flags:
+    # LVGL modules the WASM build has (panel lv_conf + packages/ui.yaml flags): ESPHome's lv_conf zeroes any module no
+    # YAML widget declares unless a build flag names it, and this firmware declares no widgets
+    - -DLV_USE_FLEX=1
+    - -DLV_USE_GRADIENT=1
+    - -DLV_USE_LABEL=1
+    - -DLV_USE_ARC=1
+    - -DLV_USE_BAR=1
+    - -DLV_USE_SLIDER=1
+    - -DLV_USE_IMAGE=1
+    - -DLV_USE_CANVAS=1
+    - -DLV_USE_LINE=1
+    - -DLV_USE_QRCODE=1
+    - -DLV_USE_SNAPSHOT=1
+    - -DLV_DRAW_SW_CIRCLE_CACHE_SIZE=32
+    # theme fonts the panel downloads (renderer/core/font_store.cpp) are drawn by TinyTTF (same as renderer/build.sh)
+    - -DLV_USE_TINY_TTF=1
+    - -DLV_TINY_TTF_FILE_SUPPORT=0
+  on_boot:
+    - priority: 900
+      then:
+        - lambda: 'panel::boot::start();'
+    - priority: -100
+      then:
+        - lambda: |-
+            esphome::App.set_loop_interval(1);   // LVGL every loop pass (esphome skill: perf)
+            // Rotate screen: the setting turns LVGL (and its touch points) at run time, on top of the
+            // board's mount (rotation_base, so the setting's 0° = the panel as mounted)
+            fw::device::rotate_hook = [](int deg) { id(lvgl_root)->set_rotation((deg + ${rotation_base}) % 360); };
+            // the panel's timers -> HA (facet fw_device.h "timers"): published on start / extend / cancel / stop /
+            // done only, never per second
+            fw::device::timers_hook = [] {
+              id(timer_next_ends).publish_state(fw::device::timers_next_iso());
+              id(timers_running).publish_state(fw::dev::timers::running());
+              id(timers_list).publish_state(fw::device::timers_list());
+            };
+            fw::device::timer_done_hook = [](const std::string &name) {
+              id(timer_last_finished).publish_state(name);   // before the event: an automation reads the name
+              id(timer_finished).trigger("finished");
+            };
+            fw::device::setup();
+            // the Screen select's options = the deck's screen names (fw::device::screen_names(); fixed until restart)
+            static esphome::FixedVector<const char *> opts;
+            const auto &names = fw::device::screen_names();
+            opts.init(names.size());
+            for (const auto &n : names) opts.push_back(n.c_str());
+            id(facet_screen).traits.set_options(opts);
+  on_shutdown:
+    - priority: -1000
+      then:
+        - lambda: 'panel::boot::hold_c6_in_reset();'
+
+# Home Assistant data for bound screens (renderer/core/ha.h, firmware/fw_device.h): state subscriptions + the
+# whitelisted light actions (HA must allow this device to perform actions: ESPHome integration option)
+api:
+  homeassistant_states: true
+  homeassistant_services: true
+  # screen specs (renderer/core/spec.h, firmware/fw_device.h): the editor / HA send screens and the deck; each answers.
+  # facet_hello / facet_screen / facet_deck / facet_revert = the editor protocol (respond-only), not for automations.
+  # facet_show {screen: name or id} = open a screen (same as the Screen select, one call from a script).
+  actions:
+    - action: facet_show
+      supports_response: optional
+      variables:
+        screen: string
+      then:  # the work in its own step: ESPHome runs api.respond's data only when a response is asked (a plain call did nothing)
+        - lambda: 'fw::device::act_last().clear(); fw::device::screen_go(screen, fw::device::act_last().to<ArduinoJson::JsonObject>());'
+        - api.respond:
+            data: !lambda 'fw::device::act_answer(root);'
+
+    # facet_toast = a toast over whatever screen shows: kind = ok | warn |
+    # error | working | info | idle, icon = timer agent person washer vacuum bolt alert done bell check pr, duration in
+    # ms (>= 10000 = an urgent toast that stays longer). firmware/fw_device.h toast_from_ha().
+    - action: facet_toast
+      variables:
+        title: string
+        body: string
+        icon: string
+        kind: string
+        duration: float
+      then:
+        - lambda: 'fw::device::toast_from_ha(title, body, icon, kind, duration);'
+
+    # the panel's timers (renderer/core/device.h): up to 4. start: seconds 1-86400, name ""
+    # = its length ("5 min"); a 5th is refused (answer {ok: false, error}, a warn toast on the panel). extend / cancel
+    # by name ("" = the one the panel shows, the soonest). Answers {ok, error?, name} when asked for a response. The work
+# is its own lambda step: api.respond's data lambda only runs when the caller asks for a response.
+    - action: facet_timer_start
+      supports_response: optional
+      variables:
+        seconds: int
+        name: string
+      then:
+        - lambda: 'fw::device::timer_from_ha("start", name, seconds);'
+        - api.respond:
+            data: !lambda 'fw::device::timer_answer(root);'
+    - action: facet_timer_extend
+      supports_response: optional
+      variables:
+        name: string
+        seconds: int
+      then:
+        - lambda: 'fw::device::timer_from_ha("extend", name, seconds);'
+        - api.respond:
+            data: !lambda 'fw::device::timer_answer(root);'
+    - action: facet_timer_cancel
+      supports_response: optional
+      variables:
+        name: string
+      then:
+        - lambda: 'fw::device::timer_from_ha("cancel", name, 0);'
+        - api.respond:
+            data: !lambda 'fw::device::timer_answer(root);'
+    # one action of Facet's closed list (CONTRACT.md C50): action = JSON {"do": "...", ...} as GET /fw/act lists them;
+    # the same checks + code path as a spec tap and POST /fw/act. Work in its own lambda step: api.respond's data
+    # lambda only runs when the caller asks for a response. Answer (optional) {ok, why?, state?}.
+    - action: facet_act
+      supports_response: optional
+      variables:
+        action: string
+      then:
+        - lambda: 'fw::device::act_from_ha(action);'
+        - api.respond:
+            data: !lambda 'fw::device::act_answer(root);'
+
+    - action: facet_hello
+      supports_response: only
+      then:
+        - api.respond:
+            data: !lambda 'fw::device::spec_hello(root);'
+    - action: facet_screen
+      supports_response: only
+      variables:
+        spec: string
+      then:
+        - api.respond:
+            data: !lambda 'fw::device::spec_apply("screen", spec, root);'
+    # the workbench's dev path (Specs page): may replace a built-in screen; facet_screen (agents) refuses one
+    - action: facet_screen_dev
+      supports_response: only
+      variables:
+        spec: string
+      then:
+        - api.respond:
+            data: !lambda 'fw::device::spec_apply("screen_dev", spec, root);'
+    - action: facet_deck
+      supports_response: only
+      variables:
+        spec: string
+      then:
+        - api.respond:
+            data: !lambda 'fw::device::spec_apply("deck", spec, root);'
+    - action: facet_revert
+      supports_response: only
+      variables:
+        screen: string
+      then:
+        - api.respond:
+            data: !lambda 'fw::device::spec_apply("revert", screen, root);'
+
+# wall-clock time for the Facet runtime (screen chrome clock, Time, Date line: localtime(); "--:--" until set): HA's
+# time first, SNTP as the fallback without HA; the timezone sets TZ for localtime
+time:
+  - platform: homeassistant
+    id: ha_time
+    timezone: Europe/London
+  - platform: sntp
+    id: sntp_time
+    timezone: Europe/London
+
+external_components:
+  - source:
+      type: local
+      path: ${facet_gen}/${board.id}
+    components: [facet_wb]
+
+facet_wb:
+  probation: 3min            # = safe_mode boot_is_good_after
+  board: ${board.id}
+  width: ${board.resolution.w}
+  height: ${board.resolution.h}
+  density: ${board.scale}
+
+safe_mode:
+  boot_is_good_after: 3min   # = facet_wb probation (the on-screen "Update settling" countdown); change both together
+
+lvgl:
+  id: lvgl_root
+  displays: lcd
+  touchscreens: touch
+  buffer_size: ${lvgl_buffer}
+  bg_color: 0x000000
+  rotation: 0               # enables run-time rotation (Settings > Rotate screen, fw_device.h rotate_hook)
+  widgets: []
+
+# which screen is up, by name (the deck's: Home, each screen that is on, Settings); choosing one opens it. Options are
+# set at boot from the deck (on_boot above); the YAML list is a placeholder. Not restored: the panel restores its page.
+select:
+  - platform: template
+    id: facet_screen
+    name: Screen
+    icon: mdi:monitor-dashboard
+    options: ["Home"]
+    update_interval: 1s
+    lambda: |-
+      std::string n = fw::device::screen_now();
+      if (n.empty()) return {};
+      return n;
+    set_action:
+      - lambda: |-
+          ArduinoJson::JsonDocument o;
+          fw::device::screen_go(std::string(x.c_str(), x.size()), o.to<ArduinoJson::JsonObject>());
+  # Debug overlay: tap areas (green >= touch:min, red smaller) and / or component outlines (cyan + id)
+  # drawn over the current screen on the top layer, never taking taps (firmware/fw_device.h "Debug overlay"). Off = the
+  # overlay object deleted and component tagging off (no cost). A new restored id: no other restore slot moves.
+  - platform: template
+    id: debug_overlay
+    name: Debug overlay
+    icon: mdi:select-drag
+    entity_category: diagnostic
+    optimistic: true
+    options: ["Off", "Tap areas", "Components", "Both"]
+    initial_option: "Off"
+    restore_value: true
+    on_value:
+      - lambda: 'fw::device::debug_overlay((int) i);'
+
+# Firmware updates from a manifest (${update_manifest}): HA shows the
+# installed + latest version and installs ONLY when someone presses Install. While a new image is on probation the
+# entity reads "installing" with the settling countdown (board/fw_update.h).
+http_request:
+
+ota:
+  - platform: http_request
+    # neither board can draw while flash is written (the PSRAM framebuffer stalls: Waveshare DSI flashes
+    # bright cyan then solid blue, Guition goes black), so the panel shows the Firmware update notice for 5 s
+    # (firmware/fw_device.h ota_begin, drawn at once: the OTA blocks the loop) and then writes the backlight OUTPUT off. The light's
+    # own write waits for a loop pass that never comes during the OTA (why a plain light.turn_off did nothing);
+    # the light.turn_off keeps its state in step so on_error's turn_on fades it back. Dark through the restart.
+    on_begin:
+      - lambda: |-
+          static std::string ver;
+          ver = id(fw_update).update_info.latest_version;
+          fw::device::ota_begin(ver.c_str());
+          for (int i = 0; i < 50; i++) { App.feed_wdt(); delay(100); }  // the notice for 5 s
+          id(backlight_pwm).set_level(0.0f);
+      - light.turn_off: {id: backlight, transition_length: 0s}
+    on_error:
+      - lambda: 'fw::device::ota_error();'
+      - light.turn_on: {id: backlight, transition_length: 300ms}
+
+update:
+  - platform: http_request
+    id: fw_update
+    name: Firmware
+    entity_category: diagnostic
+    source: ${update_manifest}
+    update_interval: 1h
+
+event:
+  - platform: template
+    id: timer_finished
+    name: Timer finished
+    icon: mdi:timer-alert-outline
+    event_types: [finished]
+
+interval:
+  - interval: 1s
+    then:
+      - lambda: 'panel::fwu::tick(id(fw_update), fw::device::probation_left(), FW_PROBATION_S);'
+
+text_sensor:
+  # the panel's timers (facet fw_device.h "timers"; published by timers_hook, never per second). Next timer ends is a
+  # text sensor with the timestamp class (ISO UTC; "" = unknown): a numeric sensor is a 32-bit float, 128 s steps for
+  # an epoch. Timers list = the list as JSON (ESPHome sensors have no attributes): [[name, ends epoch, total s,
+  # "running" | "done"], ...] soonest first. Last timer finished = the name (ESPHome events carry no data).
+  - platform: template
+    id: timer_next_ends
+    name: Next timer ends
+    icon: mdi:timer-outline
+    device_class: timestamp
+    update_interval: never
+  - platform: template
+    id: timers_list
+    name: Timers list
+    icon: mdi:timer-cog-outline
+    update_interval: never
+  - platform: template
+    id: timer_last_finished
+    name: Last timer finished
+    icon: mdi:timer-check-outline
+    update_interval: never
+  # AI agents: the token an agent sends as Authorization: Bearer <token> when Allow AI agents is on
+  # (firmware/fw_device.h "AI agents"). Diagnostic, so it stays off dashboards; New AI agent token = rotate.
+  - platform: template
+    id: ai_agent_token
+    name: AI agent token
+    icon: mdi:key-variant
+    entity_category: diagnostic
+    update_interval: 60s
+    lambda: 'return fw::device::agent_token();'
+  - platform: template
+    name: Boot check
+    icon: mdi:shield-sync-outline
+    entity_category: diagnostic
+    disabled_by_default: true
+    update_interval: 30s
+    lambda: 'return panel::boot::G.why;'
+  - platform: wifi_info
+    ip_address:
+      name: IP address
+      entity_category: diagnostic
+      disabled_by_default: true
+
+sensor:
+  - platform: template
+    id: timers_running
+    name: Timers
+    icon: mdi:timer-sand
+    unit_of_measurement: timers
+    accuracy_decimals: 0
+    state_class: measurement
+    update_interval: never
+  - platform: template
+    name: Free memory
+    icon: mdi:memory
+    unit_of_measurement: kB
+    device_class: data_size
+    state_class: measurement
+    accuracy_decimals: 0
+    entity_category: diagnostic
+    disabled_by_default: true
+    update_interval: 30s
+    lambda: 'return heap_caps_get_free_size(MALLOC_CAP_INTERNAL) / 1024.0f;'
+  - platform: wifi_signal
+    name: Wi-Fi signal
+    entity_category: diagnostic
+    update_interval: 60s
+  - platform: uptime
+    type: timestamp
+    name: Started
+    entity_category: diagnostic
+    disabled_by_default: true
+
+button:
+  - platform: template
+    name: New AI agent token
+    icon: mdi:key-change
+    entity_category: config
+    on_press:
+      - lambda: 'fw::device::agent_new_token();'
+      - component.update: ai_agent_token
+
+# Never run: having one homeassistant.action with capture_response makes ESPHome build action responses, which the
+# feed adapters' asks use (renderer/core/ha.h ask, firmware/fw_device.h ha_ask: calendar.get_events for the Bins feed)
+script:
+  - id: facet_ask_enable
+    then:
+      - homeassistant.action:
+          action: calendar.get_events
+          capture_response: true
+          on_success:
+            - lambda: '(void) response;'

@@ -1,0 +1,77 @@
+# Facet UI sounds on the Waveshare ESP32-P4-86 (boards/waveshare-p4-86.json speaker: true): included by every
+# Waveshare Facet build. Never by a board without a speaker (its UI sounds / Sound pack / Volume entities stay hidden).
+#   ES8311 DAC (I2C 0x18, 24 kHz, MCLK 256 fs) -> NS4150B amp (enable GPIO53) -> speaker; I2S MCLK 13, BCLK 12, WS 10, DOUT 9
+# ESPHome configures the codec and reserves I2S port 0; the facet_audio component (components/facet_audio/)
+# plays: the renderer's sound requests (fw::sound -> the sink set below) in the Sound pack, at the Volume, only while
+# UI sounds is on; the sounds = every sound.json type x pack rendered by the Facet synth (the bank:
+# firmware/sound_bank.mjs, generated before the build, README.md "Build"; ~1 MB of flash).
+substitutions:
+  sound_dac_level: "0.702"   # ES8311 reg 0x32 = 179 = -6 dB (0.75 = 0 dB, 0.5 dB a step): Volume 100 % = this level
+
+i2s_audio:
+  - id: i2s_bus
+    i2s_lrclk_pin: GPIO10
+    i2s_bclk_pin: GPIO12
+    i2s_mclk_pin: GPIO13
+
+audio_dac:
+  - platform: es8311
+    id: es8311_dac
+    i2c_id: bus_a
+    address: 0x18
+    bits_per_sample: 16bit
+    sample_rate: 24000
+    use_mclk: true
+
+external_components:
+  - source:
+      type: local
+      path: ../components
+    components: [facet_audio]
+
+facet_audio:
+  amp_pin: 53
+  amp_idle: 30s
+
+esphome:
+  on_boot:
+    # after workbench.yaml's -100 (fw::device::setup() sets the logging sink): this sink logs the same and plays
+    - priority: -110
+      then:
+        - lambda: |-
+            id(es8311_dac).set_volume(${sound_dac_level});
+            facet_audio::setup(id(i2s_bus).get_port());
+            fw::set_sink([](lv_obj_t *, const char *kind, const char *name, const char *detail) {
+              ESP_LOGI("facet_wb", "%s %s %s", kind, name, detail);
+              if (kind[0] == 's')  // "sound": the settings decide (UI sounds, Sound pack, Volume: core/device.h)
+                facet_audio::ui_sound(name, detail, fw::dev::setting("sounds"), fw::dev::setting("soundPack"), fw::dev::setting("volume"));
+            });
+            // a touch turns the amp on before the tapped object hears it (kept on amp_idle after the last touch / sound)
+            for (lv_indev_t *in = lv_indev_get_next(nullptr); in; in = lv_indev_get_next(in))
+              if (lv_indev_get_type(in) == LV_INDEV_TYPE_POINTER)
+                lv_indev_add_event_cb(in, [](lv_event_t *) { facet_audio::wake(); }, LV_EVENT_PRESSED, nullptr);
+            if (id(es8311_dac).is_failed()) ESP_LOGE("facet_audio", "ES8311 failed");
+
+# the sound settings work on this board: shown in Home Assistant (settings.yaml generates them hidden = no-op, as on
+# the Guition). Same ids, names and restore slots, so values persist (no prefs_schema bump)
+switch:
+  - id: !extend ui_sounds
+    internal: false
+number:
+  - id: !extend ui_volume
+    internal: false
+select:
+  - id: !extend sound_pack_select
+    internal: false
+
+# HA action: play one UI sound now (tests, automations): sound = a sound.json type (tap, open, back, toggle-on,
+# toggle-off, slider-tick, slider-landmark, confirm, timer-done, error, notify); follows the sound settings
+api:
+  actions:
+    - action: facet_sound
+      variables:
+        sound: string
+      then:
+        - lambda: |-
+            facet_audio::ui_sound(sound.c_str(), "", fw::dev::setting("sounds"), fw::dev::setting("soundPack"), fw::dev::setting("volume"));
+            ESP_LOGI("facet_audio", "%s", facet_audio::status());

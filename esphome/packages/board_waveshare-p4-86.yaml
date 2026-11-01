@@ -1,0 +1,309 @@
+# Hardware of the Waveshare ESP32-P4-86-Panel-ETH-2RO, chip v1.x (boards/waveshare-p4-86.json): 360 MHz, 32 MB flash
+# + PSRAM 200 MHz, MIPI-DSI ST7703 720x720, GT911 touch (polled every 20 ms), Wi-Fi via the ESP32-C6 (esp32_hosted
+# SDIO), backlight curve fix, relays. No UI here (packages/workbench.yaml).
+# Uses substitutions board / name / friendly_name / engineering_sample / build_root / build_suffix from the main YAML;
+# relay_1_name / relay_2_name (default "Relay 1" / "Relay 2") name the relays for what they switch ("Lamp"). Renaming
+# a relay resets its restored on/off state once (the saved slot follows the name).
+
+substitutions:
+  relay_1_name: Relay 1
+  relay_2_name: Relay 2
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+  min_version: 2026.9.0
+  build_path: ${build_root}/${name}${build_suffix}
+  includes:
+    - ../board/reset_reason.h
+
+esp32:
+  variant: esp32p4
+  engineering_sample: ${engineering_sample}
+  flash_size: ${board.flash}
+  cpu_frequency: 360MHz      # 400 MHz is flagged experimental by ESPHome
+  framework:
+    type: esp-idf
+    advanced:
+      enable_idf_experimental_features: true   # required for OTA with 32 MB flash
+      # loopTask 12 KB on the P4: with 8 KB the lowest headroom measured was 976 B
+      # (setup() peaks at ~6.3 KB; v1 spec builds + LVGL draws on top). 12 / 16 KB were tried before and internal heap
+      # fell 51 -> 25 / 21 KB: very likely the same CONFIG_SPIRAM_USE_CAPS_ALLOC effect (every malloc internal) that
+      # the malloc setting below removes; retried with malloc -> PSRAM.
+      loop_task_stack_size: 12288
+    sdkconfig_options:
+      # labels never break after a hyphen ("Wi-Fi" moves to the next line whole). KEEP IDENTICAL to
+      # renderer/lv_conf.h (the WASM build): LVGL's default minus '-'
+      CONFIG_LV_TXT_BREAK_CHARS: '" ,.;:_)}"'
+      CONFIG_ESP_HOSTED_MEMPOOL_PREFER_SPIRAM: y
+      # malloc()/new may use PSRAM (was CAPS_ALLOC = PSRAM only by explicit caps, so every
+      # C++ allocation of the spec screens, art components and the state store landed in internal RAM and a few deck
+      # screens exhausted it: panics). Allocations under 512 B stay internal (fast), 48 KB internal stay
+      # reserved for DMA / internal-only requests (= the Guition's board package, which already ran this way).
+      CONFIG_SPIRAM_USE_CAPS_ALLOC: n
+      CONFIG_SPIRAM_USE_MALLOC: y
+      # ALWAYSINTERNAL 512 -> 0 = every plain malloc()/new prefers PSRAM (drivers, Wi-Fi, lwIP and FreeRTOS ask for
+      # internal RAM explicitly and still get it, from the 48 KB reserve too). With 512 the Facet feeds' HA store (each
+      # attribute a std::string + map node under 512 B) took internal RAM per screen opened and kept it: 66 KB free
+      # after boot, 35 KB on Home, 0.5 KB after GitHub (crash). LVGL objects were already in PSRAM (ESPHome lv_malloc).
+      CONFIG_SPIRAM_MALLOC_ALWAYSINTERNAL: "0"
+      CONFIG_SPIRAM_MALLOC_RESERVE_INTERNAL: "49152"
+      # Image URLs (firmware/fw_images.h): every https picture failed "esp-aes: Failed to allocate memory": the
+      # TLS record buffers sit in PSRAM (malloc > 512 B), so hardware AES needs an internal DMA bounce buffer per record
+      # (up to 16 KB) that the fragmented internal heap can't give. Software AES (the P4 at 360 MHz: a 1 MB picture
+      # costs well under a second) + mbedTLS explicitly in PSRAM = a download never touches internal RAM for TLS
+      CONFIG_MBEDTLS_HARDWARE_AES: n
+      CONFIG_MBEDTLS_EXTERNAL_MEM_ALLOC: y
+
+psram:
+  speed: 200MHz
+
+esp_ldo:
+  - channel: 3
+    voltage: 2.5V              # MIPI D-PHY
+  - channel: 4
+    voltage: passthrough
+
+logger:
+  hardware_uart: UART0
+  level: WARN          # DEBUG logging costs CPU on every state change; raise temporarily when debugging
+
+# api / ota / wifi credentials: packages/net_public.yaml (no baked-in Wi-Fi) or your own network package
+
+# ---------------------------------------------------------------- network: Wi-Fi via the C6
+esp32_hosted:
+  type: sdio
+  variant: ESP32C6
+  active_high: true
+  reset_pin: GPIO54
+  clk_pin: GPIO18
+  cmd_pin: GPIO19
+  d0_pin: GPIO14
+  d1_pin: GPIO15
+  d2_pin: GPIO16
+  d3_pin: GPIO17
+
+# onboarding (both builds): captive portal on the fallback AP, Improv over USB serial (ESP Web Tools: the install page) and
+# Improv over BLE (HA "Improv via BLE" discovery). BLE runs on the C6 through esp32_hosted (ESPHome sets the
+# hosted Bluedroid VHCI options when esp32_ble + esp32_hosted are both present); Improv BLE only advertises while
+# the panel has no working Wi-Fi.
+captive_portal:
+
+improv_serial:
+
+esp32_improv:
+  authorizer: none
+
+web_server:
+  port: 80
+  version: 3
+
+http_request:
+
+update:
+  - platform: esp32_hosted
+    name: Wi-Fi chip firmware   # the ESP32-C6 that does Wi-Fi + BLE for the P4
+    entity_category: diagnostic
+    type: http
+    source: https://esphome.github.io/esp-hosted-firmware/manifest/esp32c6.json
+
+# ---------------------------------------------------------------- display, touch, backlight
+i2c:
+  - id: bus_a
+    sda: GPIO7
+    scl: GPIO8
+    frequency: 400kHz
+    scan: true
+
+display:
+  - platform: mipi_dsi
+    id: lcd
+    model: WAVESHARE-P4-86-PANEL
+
+touchscreen:
+  - platform: gt911
+    id: touch
+    i2c_id: bus_a
+    display: lcd
+    setup_priority: -200
+    update_interval: 20ms
+    on_touch:
+      - if:
+          condition:
+            lambda: 'return !id(backlight).current_values.is_on() || id(backlight).current_values.get_brightness() < 0.99f;'
+          then:
+            - light.turn_on: {id: backlight, brightness: 100%, transition_length: 150ms}
+    on_release:
+      - if:
+          condition: lvgl.is_paused
+          then:
+            - lvgl.resume:
+            - lvgl.widget.redraw:
+
+output:
+  - platform: ledc
+    id: backlight_pwm
+    pin: GPIO26
+    inverted: true
+    frequency: 5000Hz
+    max_power: 0.8
+    # floor = the lowest duty that still lights the panel: dark below 62 % (gamma 2.8 -> 0.26,
+    # 0.1 + 0.7 * 0.26 = ~0.28 duty), so 1 % now maps to that and the whole slider range is visible
+    min_power: 0.28
+    zero_means_zero: true
+
+light:
+  - platform: monochromatic
+    id: backlight
+    name: Backlight
+    output: backlight_pwm
+    restore_mode: ALWAYS_ON
+    default_transition_length: 250ms
+    # ESPHome's default gamma 2.8 made the old 35 % idle level ~5 % PWM (invisible); 1.4 keeps "dim" readable
+    gamma_correct: 1.4
+
+switch:
+  - platform: gpio
+    id: relay_1
+    name: ${relay_1_name}
+    pin: GPIO32
+    restore_mode: RESTORE_DEFAULT_OFF
+  - platform: gpio
+    id: relay_2
+    name: ${relay_2_name}
+    pin: GPIO46
+    restore_mode: RESTORE_DEFAULT_OFF
+
+text_sensor:
+  - platform: version
+    name: ESPHome version   # + config hash; the Facet version is the Firmware update entity (workbench.yaml)
+    hide_timestamp: true
+    entity_category: diagnostic
+    disabled_by_default: true
+  - platform: template
+    name: Restart reason
+    icon: mdi:restart-alert
+    entity_category: diagnostic
+    disabled_by_default: true
+    update_interval: 60s
+    lambda: 'return panel::reset::reason();'
+
+button:
+  - platform: restart
+    name: Restart
+    device_class: restart
+    entity_category: config
+
+wifi:
+  power_save_mode: none    # default light sleep dropped ~90 % of packets (same fix as the Guition)
+
+# ---------------------------------------------------------------- the case's keys
+# Bottom key = RESET: the P4's EN line (hardware reset, cannot be read or remapped). Top key = BOOT on GPIO35: a
+# strapping pin (held low AT RESET = download mode), a plain input after boot (key to GND, pull-up). Safe to read
+# here: nothing else uses GPIO35 in the Facet builds (it is RMII TXD1 only with Ethernet, which these builds do not
+# run). Every press fires the HA event entity "Button" (single / double / triple / long, for automations) and
+# "Button held" is on while the key is down; a single press
+# also runs the "Button action" on the panel, without HA: Contextual (default: what the screen offers, core/device.h
+# claim_button: dismiss a toast or a timer that ran out, close a bottom sheet, Media play / pause; else nothing),
+# None, Go home, Screen off / wake, Toggle backlight, Next screen. Double / triple / long only fire the event (Contextual
+# passes them to the claims too; parts act on single only for now).
+binary_sensor:
+  # "Button held": on while the key is down (live, debounced 20 ms); the clicks below read the same sensor
+  - platform: gpio
+    id: boot_key
+    name: Button held
+    icon: mdi:gesture-tap-button
+    pin:
+      number: GPIO35
+      inverted: true
+      ignore_strapping_warning: true
+      mode:
+        input: true
+        pullup: true
+    filters:
+      - delayed_on_off: 20ms
+    on_multi_click:
+      - timing:
+          - ON for at most 400ms
+          - OFF for at most 300ms
+          - ON for at most 400ms
+          - OFF for at most 300ms
+          - ON for at most 400ms
+          - OFF for at least 50ms
+        then:
+          - script.execute: {id: boot_key_press, press: triple}
+      - timing:
+          - ON for at most 400ms
+          - OFF for at most 300ms
+          - ON for at most 400ms
+          - OFF for at least 300ms
+        then:
+          - script.execute: {id: boot_key_press, press: double}
+      - timing:
+          - ON for at least 700ms
+        then:
+          - script.execute: {id: boot_key_press, press: long}
+      - timing:
+          - ON for at most 400ms
+          - OFF for at least 300ms
+        then:
+          - script.execute: {id: boot_key_press, press: single}
+
+event:
+  - platform: template
+    id: boot_key_event
+    name: Button
+    icon: mdi:gesture-tap-button
+    device_class: button
+    event_types: [single, double, triple, long]
+
+select:
+  - platform: template
+    id: boot_key_action
+    name: Button action
+    icon: mdi:gesture-tap-button
+    entity_category: config
+    optimistic: true
+    options: ["Contextual", "None", "Go home", "Screen off / wake", "Toggle backlight", "Next screen"]
+    initial_option: "Contextual"
+    restore_value: true
+
+script:
+  - id: boot_key_press
+    mode: queued
+    parameters:
+      press: string
+    then:
+      - event.trigger:
+          id: boot_key_event
+          event_type: !lambda 'return press;'
+      - lambda: |-
+          const std::string a = id(boot_key_action).current_option();
+          if (a == "Contextual") {
+            const char *took = fw::dev::button(press.c_str());
+            ESP_LOGI("button", "%s: contextual -> %s", press.c_str(), *took ? took : "nothing");
+            return;
+          }
+          if (press != "single" || a == "None") return;
+          ArduinoJson::JsonDocument o;
+          if (a == "Go home") {
+            const auto &names = fw::device::screen_names();
+            if (!names.empty()) fw::device::screen_go(names[0], o.to<ArduinoJson::JsonObject>());
+          } else if (a == "Next screen") {
+            const auto &names = fw::device::screen_names();
+            if (names.empty()) return;
+            const std::string now = fw::device::screen_now();
+            size_t i = 0;
+            while (i < names.size() && names[i] != now) i++;
+            fw::device::screen_go(names[i < names.size() ? (i + 1) % names.size() : 0], o.to<ArduinoJson::JsonObject>());
+          } else if (a == "Screen off / wake") {
+            if (id(backlight).current_values.is_on()) {
+              auto c = id(backlight).turn_off(); c.perform();
+              id(lvgl_root).set_paused(true, false);   // a touch wakes it (board on_touch / on_release resume)
+            } else {
+              auto c = id(backlight).turn_on(); c.set_brightness(1.0f); c.perform();
+              if (id(lvgl_root).is_paused()) { id(lvgl_root).set_paused(false, false); lv_obj_invalidate(lv_screen_active()); }
+            }
+          } else if (a == "Toggle backlight") {
+            auto c = id(backlight).toggle(); c.perform();
+          }

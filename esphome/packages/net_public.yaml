@@ -1,0 +1,60 @@
+# Facet PUBLIC build (facet-<board>.yaml): the network part.
+# Nothing from secrets.yaml: the panel behaves like a new device out of the box.
+#  - Wi-Fi: Improv serial (ESP Web Tools / docs /install; both boards), Improv BLE (Waveshare only: board package),
+#    or the setup hotspot "Facet-1A2B" (last 4 hex of the MAC) + captive portal at 192.168.4.1. The hotspot is WPA2
+#    with a per-panel random password shown on the panel and in its Wi-Fi QR (board/setup_ap.h). It runs while no
+#    Wi-Fi is saved, or after the saved one fails for ap_timeout (ESPHome default 90 s).
+#  - API: encryption with no key: the first client (Home Assistant on adoption) provisions the key, kept in flash.
+#  - OTA: no password (a Device Builder user who adopts the panel sets their own).
+#  - Name: facet + MAC suffix (facet-1a2b3c, "Facet panel 1a2b3c"): name_add_mac_suffix in the top-level YAML.
+#  - Set up screen (board/setup_screen.h + Facet's `setup` system screen): hotspot name + password + Wi-Fi QR, the
+#    other ways, connecting / failed / add-me-in-HA / added, and the "allow actions" hint when HA refuses actions.
+#  - No firmware upload from the browser: web_server ota off. ESPHome still accepts /update while
+#    the captive portal runs (the WPA2 hotspot, password on the panel). Updates: HA's Firmware entity or USB.
+# Uses substitution: name.
+esphome:
+  includes:
+    - ../board/setup_ap.h
+    - ../board/setup_screen.h
+  on_boot:
+    - priority: 600   # before wifi (250): the AP config must be in place when wifi setup starts it
+      then:
+        - lambda: |-
+            facet::setup_ap::apply();
+            facet::setup_screen::note_boot();
+    - priority: -110  # after the Facet runtime (workbench.yaml on_boot -100: fw::device::setup)
+      then:
+        - lambda: 'facet::setup_screen::start();'
+
+web_server:
+  ota: false
+
+# never run: its on_error makes ESPHome compile Home Assistant action responses (call_id), which setup_screen.h uses to
+# tell that HA refuses this panel's actions (an allowed call is always answered, a refused one never)
+script:
+  - id: facet_action_responses
+    then:
+      - homeassistant.action:
+          action: system_log.write
+          data:
+            message: Facet panel action check
+          on_error:
+            - logger.log: "HA action failed"
+
+api:
+  encryption: {}
+  # never reboot for want of a client (ESPHome default 15 min): a panel waiting to be added in Home Assistant rebooted
+  # every 15 min (Set up screen drawn again, onboarding timeline reset). wifi's reboot_timeout is already
+  # off while the hotspot is configured (wifi_component: !has_ap()).
+  reboot_timeout: 0s
+
+ota:
+  - platform: esphome
+    # backlight off while flashing: flash writes stall the PSRAM framebuffer, the LCD shows bright blue
+    on_begin:
+      - light.turn_off: {id: backlight, transition_length: 0s}
+    on_error:
+      - light.turn_on: {id: backlight, transition_length: 300ms}
+
+wifi:
+  ap: {}   # SSID + password set at runtime by setup_ap.h (this block only switches the AP + its code on)

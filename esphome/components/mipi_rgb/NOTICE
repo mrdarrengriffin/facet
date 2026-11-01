@@ -1,0 +1,15 @@
+mipi_rgb: ESPHome's mipi_rgb display component with three fixes for the Guition ESP32-S3-4848S040
+
+Derived from ESPHome 2026.9.1 (https://github.com/esphome/esphome, tag 2026.9.1, commit
+0b2b16e664ecfc0add37f3435db1c2140b8a687e; esphome/components/mipi_rgb last changed in fe3788ff4783).
+Copyright the ESPHome authors. The C++ files are GPLv3 (LICENSE here); the Python files are MIT, as in ESPHome.
+
+Changed (each marked "Facet" in the source):
+- mipi_rgb.cpp: wait 120 ms after SWRESET and after SLPOUT before the next init command (the ST7701S datasheet
+  times). Stock ESPHome sent the next block at once, so the panel dropped the first settings block (wrong blacks,
+  lifted greys, flicker).
+- mipi_rgb.cpp: the RGB bounce buffer is PANEL_BOUNCE_ROWS rows (a build flag, default 10 as stock).
+- mipi_rgb.h: no loop() on the ESP32-S3. Stock ESPHome restarted the RGB DMA on every loop pass, which shifted
+  frames (a red-tinted flicker); the ESP-IDF driver already restarts after a real underflow.
+
+Everything else is ESPHome's file as released. Facet drops this copy when ESPHome carries these fixes.

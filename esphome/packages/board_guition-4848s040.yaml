@@ -1,0 +1,206 @@
+# Hardware of the Guition ESP32-S3-4848S040 (boards/guition-4848s040.json): ESP32-S3 240 MHz, 512 KB SRAM shared
+# with Wi-Fi, 8 MB octal PSRAM, 16 MB flash, ST7701S 480x480 RGB panel (framebuffer in PSRAM, init over 3-wire SPI),
+# GT911 touch, backlight PWM on GPIO38. The display goes through Facet's copy of ESPHome's mipi_rgb
+# (components/mipi_rgb/NOTICE: init waits, bounce rows, no per-loop DMA restart). Pins = ESPHome's GUITION-4848S040
+# model + the board's published pinout.
+# Uses substitutions board / name / friendly_name / build_root / build_suffix from the main YAML (+ bounce_rows,
+# default below). Board default for the UI: lvgl_buffer 10%.
+
+substitutions:
+  bounce_rows: "10"     # RGB bounce buffer rows (stock ESPHome 10; 20 cost ~19 KB internal RAM and starved Wi-Fi with the panel UI)
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+  min_version: 2026.9.0
+  build_path: ${build_root}/${name}${build_suffix}
+  build_flags:
+    - -DPANEL_BOUNCE_ROWS=${bounce_rows}
+    # Xtensa literal pools next to each function: main.cpp (all panel C++ is header-inline in one
+    # TU) put some literals >256 KB before their code (setup() alone is 71 KB) -> "dangerous relocation: l32r: literal
+    # target out of range" at link. ESPHome only passes -D/-W build flags, so -mtext-section-literals goes in as -Wa.
+    - -Wa,--text-section-literals
+  # S3 + octal PSRAM + RGB panel: full hardware reset after software/USB resets + OTA (board/s3_reset.h)
+  includes:
+    - ../board/s3_reset.h
+    - ../board/lcddiag.h
+    - ../board/lcddiag.cpp   # own TU (S3 l32r range)
+  on_boot:
+    - priority: 800
+      then:
+        - lambda: 'panel::s3::reset_if_soft();'
+    # re-send the ST7701S init slowly once, 3 s after boot (the runtime re-send that fixed the colour fault; the boot
+    # init itself waits after SWRESET/SLPOUT in components/mipi_rgb)
+    - priority: -200
+      then:
+        - delay: 3s
+        - lambda: |-
+            std::string r = panel::lcd::run("init_slow", 0, 20, "");
+            ESP_LOGW("lcd", "boot: %s", r.c_str());
+
+# RGB bounce buffer: Facet's mipi_rgb with a configurable row count (components/mipi_rgb/NOTICE). 20 rows = ESPControl's
+# tested value: the panel UI's PSRAM traffic gave red flicker with the stock 10. Costs ~19 KB internal RAM.
+external_components:
+  - source: {type: local, path: ../components}
+    components: [mipi_rgb]
+
+esp32:
+  variant: esp32s3
+  flash_size: ${board.flash}
+  cpu_frequency: 240MHz
+  framework:
+    type: esp-idf
+    advanced:
+      # loopTask (LVGL + every component) gets 12 KB (ESPHome default 8 KB): LVGL's render recursion costs ~620 B per
+      # object level on the S3 (Xtensa windowed frames), and a spec row 9 levels deep overflowed 8 KB the first time a
+      # scroll drew it = the "crashes when I scroll" panics (stack probe: 18 B left, then panic). Spec
+      # trees are <= 6 levels now (peak ~6.6 KB, same as setup()); +4 KB = ~6 more levels for deeper art/calendar
+      # trees. Internal RAM is the price (static .bss): 16 KB was measured too (internal free 49 -> 41 KB idle, ~31 KB
+      # after a 361-object build = at the 30 KB spec floor), so 12. lvgl_buffer can't pay for it: ESPHome rounds
+      # any buffer_size <= 19 % to 1/8 of the screen (57.6 KB here, internal).
+      loop_task_stack_size: 12288
+    sdkconfig_options:
+      # labels never break after a hyphen ("Wi-Fi" moves to the next line whole). KEEP IDENTICAL to
+      # renderer/lv_conf.h (the WASM build): LVGL's default minus '-'
+      CONFIG_LV_TXT_BREAK_CHARS: '" ,.;:_)}"'
+      # RGB panels on the S3: the LCD DMA reads the PSRAM framebuffer while the CPU runs code; fetching code/rodata
+      # from PSRAM too and the bigger data cache keep the flash cache from stalling the panel (screen drift/tearing).
+      CONFIG_ESP32S3_DATA_CACHE_64KB: y
+      CONFIG_ESP32S3_DATA_CACHE_LINE_64B: y
+      CONFIG_SPIRAM_FETCH_INSTRUCTIONS: y
+      CONFIG_SPIRAM_RODATA: y
+      # display ISR + bounce-buffer refill stay in IRAM (no stall during flash/Wi-Fi). NOT restart-in-VSYNC: the driver
+      # already restarts after a real underflow; restarting every VSYNC shifts the frame (ESPControl's tested config).
+      CONFIG_LCD_RGB_ISR_IRAM_SAFE: y
+      CONFIG_LCD_RGB_RESTART_IN_VSYNC: n
+      # from ESPControl's 4848S040 config: mbedTLS buffers in PSRAM, 8 static Wi-Fi RX buffers
+      CONFIG_MBEDTLS_EXTERNAL_MEM_ALLOC: y
+      # Image URLs: hardware AES on PSRAM TLS buffers needs internal DMA bounce buffers (failed on the
+      # Waveshare: "esp-aes: Failed to allocate memory"); software AES never asks internal RAM for them
+      CONFIG_MBEDTLS_HARDWARE_AES: n
+      CONFIG_ESP_WIFI_STATIC_RX_BUFFER_NUM: "8"
+      # internal RAM for the panel UI + a 20-row bounce buffer (with stock settings the UI left ~45 KB, and
+      # 20 rows took it to 23 KB -> Wi-Fi allocations failed -> panic): Wi-Fi/lwIP buffers in PSRAM, Wi-Fi code out
+      # of IRAM (on the S3 IRAM comes out of the same 512 KB). A panel needs no Wi-Fi throughput.
+      CONFIG_SPIRAM_TRY_ALLOCATE_WIFI_LWIP: y
+      CONFIG_ESP_WIFI_IRAM_OPT: n
+      CONFIG_ESP_WIFI_RX_IRAM_OPT: n
+      # internal RAM (~340 KB, shared with Wi-Fi) is the limit, not PSRAM (8 MB): let plain malloc/new (C++ strings,
+      # vectors, ESPHome objects) spill into PSRAM above 4 KB and once internal free drops under the 48 KB reserve that
+      # Wi-Fi/lwIP/DMA keep (the panel UI + 20 bounce rows left 19 KB and the board hung)
+      CONFIG_SPIRAM_USE_CAPS_ALLOC: n
+      CONFIG_SPIRAM_USE_MALLOC: y
+      CONFIG_SPIRAM_MALLOC_ALWAYSINTERNAL: "512"    # was 4096: one-renderer v1 = many small C++ allocations (store, subscriptions, art)
+      CONFIG_SPIRAM_MALLOC_RESERVE_INTERNAL: "49152"
+
+psram:
+  mode: octal
+  speed: 80MHz
+
+logger:
+  hardware_uart: UART0   # USB-C = CH340 on UART0; GPIO19/20 are the touch I2C / RGB data, not USB-JTAG
+  level: WARN
+
+captive_portal:
+
+improv_serial:
+
+# No esp32_improv (BLE) on the S3: Bluedroid takes ~50 KB of internal RAM and BLE/Wi-Fi coexistence forces modem
+# sleep. First boot with it: 80-100 % ping loss, empty web pages. Onboarding = Improv serial +
+# captive portal.
+wifi:
+  power_save_mode: none    # light sleep drops most pings (80-95 % loss); not the flicker cause
+
+web_server:
+  port: 80
+  version: 3
+
+ota:
+  - platform: esphome
+    on_end:
+      - lambda: |-
+          global_preferences->sync();
+          panel::s3::hw_reset_as(ESP_RST_SW);
+
+# ---------------------------------------------------------------- display, touch, backlight
+spi:
+  - id: lcd_spi
+    clk_pin: GPIO48
+    mosi_pin: GPIO47
+    interface: software      # init sequence only (3-wire, 9-bit); pixels go over the 16-bit RGB bus
+
+i2c:
+  - id: bus_a
+    sda: GPIO19
+    scl: GPIO45
+    frequency: 400kHz
+
+display:
+  - platform: mipi_rgb
+    id: lcd
+    spi_id: lcd_spi
+    model: GUITION-4848S040
+    setup_priority: 240      # Wi-Fi claims its internal RX buffers before the panel's buffers (ESPControl)
+    # 10 MHz (model default 12): white flicker/shimmer at 12; ESPControl found 8 shimmery, >12 shifts
+    # when Wi-Fi/flash/web traffic compete for PSRAM.
+    pclk_frequency: 10MHz
+    # the model mirrors X+Y; that path streaks scan lines on some units. Non-mirrored init = ESPControl's.
+    transform:
+      mirror_x: false
+      mirror_y: false
+    update_interval: never
+    auto_clear_enabled: false
+
+touchscreen:
+  - platform: gt911
+    id: touch
+    i2c_id: bus_a
+    display: lcd
+    update_interval: 20ms
+    calibration: {x_min: 0, x_max: 480, y_min: 0, y_max: 480}
+    transform: {mirror_x: false, mirror_y: false}
+    on_release:
+      - if:
+          condition: lvgl.is_paused
+          then:
+            - lvgl.resume:
+            - lvgl.widget.redraw:
+
+output:
+  - platform: ledc
+    id: backlight_pwm
+    pin: GPIO38
+    # this backlight driver wants a low PWM rate (high rates turn levels below ~85 % off; 100 Hz shimmers): ESPControl
+    frequency: 150Hz
+    min_power: 0.01
+    zero_means_zero: true
+
+light:
+  - platform: monochromatic
+    id: backlight
+    name: Backlight
+    output: backlight_pwm
+    restore_mode: ALWAYS_ON
+    default_transition_length: 250ms
+
+# The 3-relay variant (4848S040C?) has relays on GPIO40 / GPIO2 / GPIO1: not added yet.
+
+text_sensor:
+  - platform: version
+    name: ESPHome version   # + config hash; the Facet version is the Firmware update entity (workbench.yaml)
+    hide_timestamp: true
+    entity_category: diagnostic
+    disabled_by_default: true
+  - platform: template
+    name: Restart reason
+    icon: mdi:restart-alert
+    entity_category: diagnostic
+    disabled_by_default: true
+    update_interval: 60s
+    lambda: 'return panel::s3::last_reason();'
+
+button:
+  - platform: restart
+    name: Restart
+    device_class: restart
+    entity_category: config

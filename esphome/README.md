@@ -1,0 +1,31 @@
+# Panel firmware
+
+The ESPHome firmware that runs Facet on a panel: the same renderer as the docs site and the workbench, bundled into
+an ESPHome component, plus each board's hardware.
+
+| File | What it is |
+|---|---|
+| `facet-<board>.yaml` | The firmware the install page flashes, one per board in `../boards/` (no Wi-Fi or keys baked in) |
+| `packages/board_<board>.yaml` | The board's hardware: display, touch, backlight, buttons, relays, memory settings |
+| `packages/workbench.yaml` | What every board shares: LVGL, the `facet_wb` component, Home Assistant actions, OTA updates |
+| `packages/net_public.yaml` | Onboarding: Improv serial, Improv BLE where the board has it, the setup hotspot |
+| `packages/audio_<board>.yaml` | UI sounds on a board with a speaker |
+| `board/` | Small C++ helpers the packages include (boot guard, setup hotspot and screen, S3 reset, LCD diagnostics) |
+| `components/mipi_rgb/` | ESPHome's `mipi_rgb` display with three fixes for the Guition (GPLv3, see its `NOTICE`) |
+| `components/facet_audio/` | Plays the UI sounds from a bank in flash |
+
+## Build
+
+```bash
+cd renderer/tools && npm ci && cd ../..
+esphome/build.sh waveshare-p4-86            # or guition-4848s040; add `prepare` to only generate
+```
+
+`build.sh` generates `gen/<board>/facet_wb` (`firmware/bundle.mjs`), `gen/settings.yaml` (`firmware/settings_yaml.mjs`)
+and, for a board with a speaker, the sound bank (`firmware/sound_bank.mjs`, rendered by the docs site's synth in
+headless Chromium), then runs `esphome compile`. Nothing it generates is committed.
+
+## Your own build
+
+Keep your network and names in your own YAML and include these packages, as `facet-<board>.yaml` does. Set
+`facet_gen` to the folder that holds `<board>/facet_wb` when it is not `gen/` here.
