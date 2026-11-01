@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 // Facet component audit (Darren 2026-10-22: "tests against them to make sure they align with the pixel grids and
 // there's nothing off about them. The components don't clip out of their box and it's not cut off ... tests on
 // animations to make sure that they follow the right path"). README "Audit". Runs on the WASM build, headless, over
@@ -25,66 +24,14 @@
 //             root's regions don't overlap and nothing escapes its region or the screen; overlays (a bottom sheet,
 //             a toast layer) say so with fw::qa::free(obj, "overlay: <why>")
 // Exceptions: meta "audit": {"skip": {"<check>": "why"}}, or the same on one variant (printed as notes). Failures are errors (exit 1).
-//   node tools/audit.mjs [--den 1x|1.5x|all] [--comp id,id] [--props '{"fades":true}'] [--build <dir>] [--json out.json] [--quiet] [--all-variants]
-// Cache: results per component are kept while the inputs are unchanged (core + the charts library foundations/chart.cpp,
-// tokens, this tool, the component's file and the files of components it builds with fw::find or names in a
-// "// audit deps: a, b" comment) in $FW_CACHE/audit-<den>.json, so a build re-audits only what
-// changed. --fresh ignores it.
-import { readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs';
-import { dirname, join, resolve, basename } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+// Moved from tools/audit.mjs onto the runner's loop (tools/lib/rules.mjs): per component / screen x case x look, on a
+// stage of its own (sized as the workbench shows it, auto height), cached per component by the runner. The "about"
+// check is the startup rule about.
 import { createHash } from 'node:crypto';
-import { checkScreen } from './audit_screens.mjs';
+import { checkScreen } from '../../tools/audit_screens.mjs';
 
-const HERE = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const ROOT = resolve(HERE, '..');
-const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
-const flag = (k) => process.argv.includes(k);
-const env = (() => { try { return Object.fromEntries(readFileSync(join(ROOT, 'local.env'), 'utf8').split('\n').map((l) => l.match(/^([A-Z_]+)=(.*)$/)).filter(Boolean).map((m) => [m[1], m[2]])); } catch { return {}; } })();
-const BUILD = arg('--build', process.env.FW_OUT || env.FW_OUT || join(HERE, 'out'));
-const CACHE = process.env.FW_CACHE || env.FW_CACHE || join(HERE, '.cache');
-const dens = arg('--den', 'all') === 'all' ? ['1x', '1.5x'] : [arg('--den')];
-const only = arg('--comp') ? arg('--comp').split(',') : null;
-const quiet = flag('--quiet');
-const EXTRA = JSON.parse(arg('--props', '{}'));  // merged into every case (e.g. {"fades": true}); disables the cache
 const TICK = 16;
-
-// ---------------------------------------------------------------- inputs hash (cache key per component)
-const sha = (s) => createHash('sha1').update(s).digest('hex').slice(0, 12);
-const ls = (d, ext) => (existsSync(join(HERE, d)) ? readdirSync(join(HERE, d)).filter((f) => f.endsWith(ext)).sort().map((f) => join(d, f)) : []);
-const read = (f) => readFileSync(join(HERE, f));
-const coreHash = sha(Buffer.concat([...ls('core', '.h'), ...ls('core', '.cpp'), 'foundations/chart.cpp', ...ls('tokens', '.json'), 'tools/audit.mjs', 'tools/audit_screens.mjs'].flatMap((f) => [Buffer.from(f), read(f)])));
-const srcOf = {};
-for (const d of ['components', 'screens', 'foundations']) for (const f of ls(d, '.cpp')) srcOf[basename(f, '.cpp')] = f;
-const deps = (id, seen = new Set()) => {
-  if (seen.has(id) || !srcOf[id]) return seen;
-  seen.add(id);
-  const src = read(srcOf[id]).toString();
-  for (const m of src.matchAll(/fw::find\("([a-z_0-9]+)"\)/g)) deps(m[1], seen);
-  // a file that calls another component's code directly (not through fw::find) says so: "// audit deps: a, b"
-  for (const m of src.matchAll(/\/\/ audit deps: ([a-z_0-9, ]+)/g)) for (const d of m[1].split(/[, ]+/)) if (d) deps(d, seen);
-  // a screen built from the factory specs (spec::build: the Spec screen, Device, Home) depends on every component the
-  // specs name (2026-10-23: the Calendar spec kept a stale audit after calendar_view changed)
-  if (/spec::build\(|spec::FACTORY/.test(src)) for (const c of SPEC_COMPS) deps(c, seen);
-  return seen;
-};
-const SPEC_FILES = ls('specs', '.json');
-const SPEC_COMPS = [...new Set(SPEC_FILES.flatMap((f) => [...read(f).toString().matchAll(/"c":\s*"([a-z_0-9]+)"/g)].map((m) => m[1])))];
-const specHash = sha(Buffer.concat(SPEC_FILES.flatMap((f) => [Buffer.from(f), read(f)])));
-const compHash = (id) => sha(coreHash + specHash + [...deps(id)].sort().map((d) => d + sha(read(srcOf[d]))).join());
-
-// ---------------------------------------------------------------- the module
-async function load(den) {
-  const dir = join(BUILD, den);
-  const F = (await import(pathToFileURL(join(dir, 'fw.mjs')).href)).default;
-  const wasm = await WebAssembly.compile(readFileSync(join(dir, 'fw.wasm')));
-  const m = await F({ instantiateWasm: (imports, ok) => { WebAssembly.instantiate(wasm, imports).then((i) => ok(i, wasm)); return {}; } });
-  if (!m._fw_audit) throw new Error(`${dir}: this build has no fw_audit (core/main.cpp)`);
-  m._fw_init();
-  return m;
-}
 const str = (m, s, f) => { const p = m.stringToNewUTF8(s); try { return f(p); } finally { m._free(p); } };
-
 // ---------------------------------------------------------------- one case
 function runCase(m, den, c, props, light, vskip = {}) {
   const D = den === '1x' ? 1 : 1.5, S = den === '1x' ? 480 : 720, TOUCH = den === '1x' ? 32 : 48;
@@ -307,63 +254,22 @@ function runUpdates(m, den, c) {
   return { errs, notes };
 }
 
-// ---------------------------------------------------------------- run
-const cachePath = (den) => join(CACHE, `audit-${den}.json`);
-let total = 0, failed = 0;
-const report = {};
-for (const den of dens) {
-  const m = await load(den);
-  const meta = JSON.parse(m.UTF8ToString(m._fw_meta())).map((c) => ({ ...c, meta: typeof c.meta === 'string' ? JSON.parse(c.meta) : c.meta }));
-  // about (Darren 2026-10-25): every setting has a plain description, the docs tables, the agent guide and the editor
-  // show it: each registered prop (meta "about") and each spec parameter (renderer/specs/*.json params.<name>.about)
-  if (den === dens[0]) {
-    const missing = [];
-    for (const c of meta) for (const p of c.meta.props || []) if (!p.about) missing.push(`${c.id}.${p.name}`);
-    for (const f of readdirSync(join(HERE, 'specs')).filter((f) => f.endsWith('.json')).sort()) {
-      const sp = JSON.parse(readFileSync(join(HERE, 'specs', f), 'utf8'));
-      for (const [k, v] of Object.entries(sp.params || {})) if (!(v && typeof v === 'object' && v.about)) missing.push(`specs/${f} ${k}`);
+export default {
+  id: 'audit', tiers: ['fast', 'gate'], ownStage: true, cache: true,
+  about: 'Outside, clip, text, grid, touch, radial, stale, update, motion, screen layout: every component and screen',
+  wants: (c, { ids }) => ['components', 'screens'].includes(c.section) && c.id !== 'device' && (!ids || ids.includes(c.id)),
+  run(x, rep) {
+    const { m, den, c, v, light } = x;
+    if (x.vi === 0 && !light && c.section === 'components') {
+      const u = runUpdates(m, den, c);
+      for (const e of u.errs) rep.check(false, `${c.id} [${den}] ${e}  — update`);
+      for (const n of u.notes) rep.note(`note ${c.id} [${den}] ${n}  — update`);
     }
-    total++;
-    if (missing.length) { failed++; console.log(`✗ about: ${missing.length} settings have no description: ${missing.slice(0, 10).join(', ')}${missing.length > 10 ? ` +${missing.length - 10}` : ''}`); }
-  }
-  const cache = !flag('--fresh') && existsSync(cachePath(den)) ? JSON.parse(readFileSync(cachePath(den), 'utf8')) : {};
-  const next = {};
-  for (const c of meta) {
-    if (!['components', 'screens'].includes(c.section) || c.id === 'device') continue;
-    if (only && !only.includes(c.id)) { if (cache[c.id]) next[c.id] = cache[c.id]; continue; }
-    const key = compHash(c.id);
-    let res = cache[c.id] && cache[c.id].key === key && !Object.keys(EXTRA).length ? cache[c.id] : null;
-    if (!res) {
-      const defaults = Object.fromEntries((c.meta.props || []).map((p) => [p.name, p.default]));
-      const cases = [{ label: 'default', props: {} }, ...(c.meta.variants || [])];
-      const out = [];
-      if (c.section === 'components') {
-        const u = runUpdates(m, den, c);
-        for (const e of u.errs) out.push({ e, at: 'update' });
-        for (const n of u.notes) out.push({ n, at: 'update' });
-      }
-      for (const v of cases) for (const light of [false, true]) {
-        const r = runCase(m, den, c, { ...defaults, ...v.props, ...EXTRA }, light, (v.audit && v.audit.skip) || {});
-        for (const e of r.errs) out.push({ e, at: `${v.label} · ${light ? 'light' : 'dark'}` });
-        for (const n of r.notes) out.push({ n, at: `${v.label} · ${light ? 'light' : 'dark'}` });
-      }
-      res = { key, out };
-    }
-    next[c.id] = res;
-    const errs = res.out.filter((x) => x.e), notes = res.out.filter((x) => x.n);
-    total++;
-    report[`${c.id}@${den}`] = res.out;
-    if (errs.length) failed++;
-    if (errs.length || (!quiet && notes.length)) {
-      // one line per distinct message, with the cases it happens in
-      const group = (xs, k) => { const g = new Map(); for (const x of xs) g.set(x[k], [...(g.get(x[k]) || []), x.at]); return g; };
-      if (errs.length) console.log(`✗ ${c.id} [${den}]`);
-      for (const [msg, at] of group(errs, 'e')) console.log(`    ${msg}  — ${at.length > 3 ? `${at.slice(0, 3).join('; ')} +${at.length - 3}` : at.join('; ')}`);
-      if (!quiet) for (const [msg] of group(notes, 'n')) console.log(`    note: ${msg}`);
-    }
-  }
-  if (!Object.keys(EXTRA).length) try { writeFileSync(cachePath(den), JSON.stringify(next)); } catch {}
-}
-if (arg('--json')) writeFileSync(arg('--json'), JSON.stringify(report, null, 1));
-console.log(`audit: ${total} component x density checks, ${failed} with errors`);
-process.exit(failed ? 1 : 0);
+    const defaults = Object.fromEntries((c.meta.props || []).map((p) => [p.name, p.default]));
+    const r = runCase(m, den, c, { ...defaults, ...v.props }, light, (v.audit && v.audit.skip) || {});
+    const at = `${v.label} · ${light ? 'light' : 'dark'}`;
+    for (const e of r.errs) rep.check(false, `${c.id} [${den}] ${e}  — ${at}`);
+    for (const n of r.notes) rep.note(`note ${c.id} [${den}] ${n}  — ${at}`);
+    if (!r.errs.length) rep.check(true, `${c.id} [${den}] ${at}`);
+  },
+};

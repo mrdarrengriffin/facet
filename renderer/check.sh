@@ -46,7 +46,7 @@ check contract-lint node tools/contract_lint.mjs --summary
 check catalogue node tools/gen_catalogue.mjs --build "$B"
 check spec-store node tools/functional.mjs --rules --rule spec-store
 check theme-check node tools/functional.mjs --rules --rule theme-check
-for d in $dens; do check "audit-$d" node tools/audit.mjs --den "$d" --quiet --build "$B"; done
+for d in $dens; do check "audit-$d" node tools/functional.mjs --rules --rule about,audit --den "$d"; done
 
 if [ "$tier" = fast ]; then
   [ -n "$ids" ] || { [ $fail = 0 ] && echo "CHECK fast: all green, no --ids (logs $LOG)" || echo "CHECK fast: FAILED (logs $LOG)"; exit $fail; }

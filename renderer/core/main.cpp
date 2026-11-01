@@ -17,7 +17,7 @@
 //   fw_ha_wants() -> JSON [[e, a]...]  HA pairs the built screens bind (core/ha.h); fw_ha_put(e, a, v) = a value from the host
 //   fw_ha_asks() -> JSON [{id, service, data}]  HA actions an adapter wants the reply of (drained); fw_ha_answer(id, ok, json)
 //   fw_img_wants() -> JSON [url...]  image URLs to fetch (core/images.h); fw_img_put(url, w, h, rgba) / fw_img_fail(url, why); fw_img_stats() -> JSON
-//   fw_audit(id) -> JSON              every object of the stage for tools/audit.mjs (core/audit.h, README "Audit")
+//   fw_audit(id) -> JSON              every object of the stage for the audit rule (tests/rules/audit.mjs, core/audit.h, README "Audit")
 //   fw_unclip(id)                     let every object draw outside its box (audit: what differs was clipped)
 #include <emscripten.h>
 #include <cstdint>
@@ -751,7 +751,7 @@ EMSCRIPTEN_KEEPALIVE const uint32_t *fw_frame(int id) {
   return s ? s->rgba.data() : nullptr;
 }
 
-// ---- component audit (core/audit.h, tools/audit.mjs)
+// ---- component audit (core/audit.h, tests/rules/audit.mjs)
 }  // extern "C"
 namespace {
 struct Mark {

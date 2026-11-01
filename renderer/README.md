@@ -705,10 +705,11 @@ firmware build and after core or component changes that touch memory (buffers, a
 
 ## Audit
 
-Every component and screen is checked by `renderer/tools/audit.mjs` (Darren 2026-10-22: "tests against them to make
-sure they align with the pixel grids and there's nothing off about them ... don't clip out of their box ... animations
-follow the right path"). `build.sh` runs it for each density after linking; errors fail the build (the new build is
-still served). Run by hand: `node renderer/tools/audit.mjs [--den 1x|1.5x] [--comp id,id] [--fresh] [--json out.json]`.
+Every component and screen is checked by the rule `audit` (`renderer/tests/rules/audit.mjs`; Darren 2026-10-22: "tests
+against them to make sure they align with the pixel grids and there's nothing off about them ... don't clip out of
+their box ... animations follow the right path"). `check.sh` runs it (fast: 1.5x, gate: both densities); results per
+component are cached while its inputs are unchanged. Run by hand: `node renderer/tools/functional.mjs --rules --rule
+audit [--den 1x|1.5x] [--ids id,id] [--fresh]`.
 Each component x every variant x dark / light, on its workbench frame (screens: the whole screen):
 
 | Check | What fails |

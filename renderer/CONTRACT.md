@@ -310,7 +310,7 @@ one stops the event (`lv_obj_remove_flag(inner, LV_OBJ_FLAG_EVENT_BUBBLE)`, as t
 
 **C32. Touch targets are at least `touch:min` on both axes** (ext click area included); the standard is
 `touch:target`. Targets are spaced so a finger cannot hit two.
-*Why:* usability on a wall panel. *Check:* `tools/audit.mjs` touch targets; **TODO** P5 adds the size check per
+*Why:* usability on a wall panel. *Check:* the rule `audit` (`tests/rules/audit.mjs`) touch targets; **TODO** P5 adds the size check per
 component.
 
 **C33. Components never call Home Assistant.** They emit events: `fw::emit(obj, name, detail)` for a final action,
@@ -332,7 +332,7 @@ same transition a tap would play, with no sound and no pressed flash; texts chan
 finger holds the control, the user wins. First builds appear at rest. `FW_UPDATE` returns false only when a rebuild
 is truly needed.
 *Why:* a value that jumps looks broken; a sound from an automation is noise. *Check:* behaviour `silent`;
-`tools/audit.mjs` update check (a state prop that jumps in under 3 frames); the component's update tests.
+the rule `audit`'s update check (a state prop that jumps in under 3 frames); the component's update tests.
 
 **C36. Every action gives feedback within one frame:** the pressed state style, and the sound its meaning names in
 `tokens/sound.json`. A blocked action (disabled, unavailable) calls `fw::st::blocked(obj, detail)` (event + error

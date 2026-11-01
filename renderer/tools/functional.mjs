@@ -8,7 +8,7 @@
 // texts, boxes, events and sounds back.
 // Usage: node renderer/tools/functional.mjs [--den 1.5x|1x|all] [--ids a,b] [--tier nightly] [--grep text] [--png fail|all|none]
 //        [--out dir] [--json file] [--soft] [-v] [--probe comp '{props}']   exit 1 = a test failed (unless --soft)
-//        --rules [--rule a,b] [--tier fast|gate] [--theme id,id|all]: the rules (tests/rules/*.mjs) instead of the
+//        --rules [--rule a,b] [--tier fast|gate] [--theme id,id|all] [--fresh]: the rules (tests/rules/*.mjs) instead of the
 //        per-component tests, over every component on one mount per case (tools/lib/rules.mjs)
 // Results: tests/functional/out/results.json + per-test PNGs (default: failures only) in tests/functional/out/png/.
 import { readFileSync, writeFileSync, existsSync, readdirSync, mkdirSync, rmSync } from 'node:fs';
@@ -248,7 +248,8 @@ if (argv.includes('--rules')) {
     const r = (await import(pathToFileURL(join(RDIR, f)).href)).default;
     if ((!want || want.includes(r.id)) && r.tiers.includes(tier)) rules.push(r);
   }
-  const res = await runRules(rules, { build: BUILD, dens: DENS, ids: ONLY, themeArg: arg('--theme'), tier });
+  const cacheDir = process.env.FW_CACHE || env.FW_CACHE || join(HERE, '.cache');
+  const res = await runRules(rules, { build: BUILD, dens: DENS, ids: ONLY, themeArg: arg('--theme'), tier, cacheDir, fresh: argv.includes('--fresh') });
   let bad = 0;
   for (const r of rules) {
     const s = res[r.id];

@@ -85,7 +85,7 @@ const CHROME = new Set(['header', 'back_button', 'toast_layer', 'bottom_sheet'])
 const inside = (o, b) => o.x >= b.x && o.y >= b.y && o.x + o.w <= b.x + b.w && o.y + o.h <= b.y + b.h;
 const meets = (a, b) => Math.min(a.x + a.w, b.x + b.w) > Math.max(a.x, b.x) && Math.min(a.y + a.h, b.y + b.h) > Math.max(a.y, b.y);
 
-function gridErrs(os) {  // tools/audit.mjs "grid", same allowances
+function gridErrs(os) {  // tests/rules/audit.mjs "grid", same allowances
   const errs = [];
   for (const o of os) {
     if (o.t === 'label' || o.t === 'image' || o.t === 'line' || o.free || o.w <= 0 || o.h <= 0) continue;

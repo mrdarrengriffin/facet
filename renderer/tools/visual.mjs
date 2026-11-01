@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Visual checks (2026-10-22, after Darren's batch E review: "some of [the card previews] are broken", "does the lightning
-// radar actually work in terms of animations?"). The audit (tools/audit.mjs) proves geometry: nothing clipped, on the
+// radar actually work in terms of animations?"). The audit (tests/rules/audit.mjs) proves geometry: nothing clipped, on the
 // grid, no overlap, symmetric marks, motion paths, update animations. It cannot tell whether a component LOOKS like it
 // should or whether its motion is visible. These checks look at the pixels, per component x variant x theme, one density:
 //   blank      degenerate render, inside the component's own box (its roots): (almost) no ink (pixels that differ from
