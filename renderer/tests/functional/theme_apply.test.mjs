@@ -47,7 +47,7 @@ async function build(t, c, light, theme) {
 }
 const use = (t, id) => { const r = lab(t, 'theme_use', id); if (!r.ok) throw new Error(`theme ${id} refused: ${JSON.stringify(r.errors)}`); t.b.tick(2); t.b.settle(800); return r; };
 
-export default {
+const suite = {
   id: 'theme_apply', family: 'foundations', tier: 'nightly',  // walks every theme (~50 s): never in fast or gate
   about: 'Themes applied live to every contract component: Facet no-op, live = fresh, reach, refusals, break-it, golden candidates.',
   tests: [
@@ -145,3 +145,8 @@ export default {
     } },
   ],
 };
+// every test compares builds made moments apart: a live clock (clock_orbit "live", time, ...) reads the wall clock,
+// so the clock is pinned for the whole run, as tests/rules/lab_tokens.mjs does
+const PINNED = Date.UTC(2026, 9, 31, 18, 41, 0);
+suite.tests = suite.tests.map((x) => ({ ...x, async run(t, o) { const now0 = Date.now; Date.now = () => PINNED; try { return await x.run(t, o); } finally { Date.now = now0; } } }));
+export default suite;
