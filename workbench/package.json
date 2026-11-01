@@ -1,0 +1,16 @@
+{
+  "name": "facet-workbench",
+  "private": true,
+  "type": "module",
+  "description": "The Facet workbench: every component, foundation and screen of a renderer build, live, plus the editor, specs, tests and golden review.",
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "editor-device": "node scripts/editor-device.mjs"
+  },
+  "dependencies": {
+    "@astrojs/node": "11.1.7",
+    "astro": "7.3.8",
+    "marked": "14.1.4"
+  }
+}

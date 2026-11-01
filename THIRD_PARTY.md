@@ -19,6 +19,7 @@ carries its licence text.
 | Font | Where | Licence |
 |---|---|---|
 | [Inter](https://github.com/rsms/inter) | `renderer/fonts/Inter-*.ttf` (`OFL-Inter.txt`) | SIL OFL 1.1 |
+| Inter and JetBrains Mono, latin subsets for the editor | `workbench/src/wasm/fonts/*.woff2` (`OFL-*.txt` beside them) | SIL OFL 1.1 |
 | [JetBrains Mono](https://github.com/JetBrains/JetBrainsMono) | `renderer/fonts/JetBrainsMono-*.ttf` (`OFL-JetBrainsMono.txt`) | SIL OFL 1.1 |
 | [Monocraft](https://github.com/IdreesInc/Monocraft) (Blockcraft theme) | `renderer/fonts/Monocraft.ttf` (`OFL-Monocraft.txt`) | SIL OFL 1.1 |
 | [W95FA](https://fontsarena.com/w95fa-by-alina-sava/) (Win98 theme), modified to a pixel grid | `renderer/fonts/W95FA-cell.ttf` (`OFL-W95FA.txt`) | SIL OFL 1.1 |

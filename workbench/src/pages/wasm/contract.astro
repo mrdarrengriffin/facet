@@ -1,0 +1,42 @@
+---
+// The Facet contract, readable: /wasm/contract (workbench nav > Tools > Contract). Renders renderer/CONTRACT.md
+// on every request (read-only).
+export const prerender = false;
+import Base from '../../layouts/Base.astro';
+import { existsSync, readFileSync, statSync } from 'node:fs';
+import { marked } from 'marked';
+import { REPO } from '../../lib/repo';
+
+const file = `${REPO}/renderer/CONTRACT.md`;
+const found = existsSync(file);
+const md = found ? readFileSync(file, 'utf8') : '';
+const slug = (t: string) => t.toLowerCase().replace(/<[^>]+>/g, '').replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-');
+marked.use({ renderer: { heading({ tokens, depth }) { const text = this.parser.parseInline(tokens); return `<h${depth} id="${slug(text)}">${text}</h${depth}>`; } } });
+const html = found ? await marked.parse(md) : '';
+const at = found ? statSync(file).mtime.toISOString().slice(0, 16).replace('T', ' ') : '';
+---
+<Base title="Facet contract" description="The rules every Facet component, screen and theme follows, from renderer/CONTRACT.md.">
+  <main class="ct">
+    <a class="ct-back" href="/wasm">Workbench</a>
+    {found ? <p class="ct-src">Source: <code>{file}</code> · changed {at}</p> : <p class="ct-src">No CONTRACT.md at {file}.</p>}
+    <article class="ct-doc" set:html={html} />
+  </main>
+  <style is:global>
+    .ct { max-width: 860px; margin: 0 auto; padding: 24px 16px 64px; color: var(--text); }
+    .ct-back { color: var(--accent); text-decoration: none; font-size: 14px; }
+    .ct-back::before { content: '\2039\00a0'; }
+    .ct-src { color: var(--muted); font-size: 12px; margin: 8px 0 0; }
+    .ct-doc { font-size: 15px; line-height: 1.6; }
+    .ct-doc h1 { font-size: 28px; margin: 16px 0 8px; }
+    .ct-doc h2 { font-size: 21px; margin: 40px 0 8px; padding-top: 16px; border-top: 1px solid var(--border); }
+    .ct-doc h3 { font-size: 17px; margin: 28px 0 6px; }
+    .ct-doc a { color: var(--accent); }
+    .ct-doc code { font-size: 0.88em; background: var(--surface); padding: 1px 5px; border-radius: 4px; }
+    .ct-doc pre { background: var(--surface); padding: 12px 16px; border-radius: var(--radius); overflow-x: auto; }
+    .ct-doc pre code { padding: 0; background: none; }
+    .ct-doc table { display: block; overflow-x: auto; border-collapse: collapse; font-size: 14px; margin: 12px 0; }
+    .ct-doc th, .ct-doc td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ct-doc th { color: var(--muted); font-weight: 500; font-size: 12px; }
+    .ct-doc blockquote { margin: 12px 0; padding: 10px 16px; border-radius: var(--radius); background: var(--surface); }
+  </style>
+</Base>

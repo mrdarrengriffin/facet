@@ -1,4 +1,4 @@
-// UI sounds on the docs site, as in the workbench (workbench/src/sound.ts playUi): every fw::sound(obj, id,
+// UI sounds on the docs site, as in the workbench (workbench/src/wasm/sound.ts playUi): every fw::sound(obj, id,
 // pos) the live previews request is synthesised in the browser with the approved Facet synth (lib/synth.ts) from
 // renderer/tokens/sound.json (copied to <base>sound.json by scripts/extract.mjs, fetched on the first sound).
 // One sound = base + variant (pack) defaults + the type's own values for that pack (minus `use`). Pitched sounds

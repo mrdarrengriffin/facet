@@ -465,7 +465,7 @@ EMSCRIPTEN_KEEPALIVE int fw_content_h(int id) {
 }
 
 // every object under stage `id`'s screen (depth first): [{d: depth (1 = the screen's children), x, y, w, h}] in device
-// px, coords as drawn (translate included): the workbench Pixel grid view outlines them (workbench/src/pixgrid.ts)
+// px, coords as drawn (translate included): the workbench Pixel grid view outlines them (workbench/src/wasm/pixgrid.ts)
 namespace {
 void rects(lv_obj_t *o, int depth, ArduinoJson::JsonArray arr) {
   for (uint32_t i = 0; i < lv_obj_get_child_count(o); i++) {
@@ -483,7 +483,7 @@ void rects(lv_obj_t *o, int depth, ArduinoJson::JsonArray arr) {
   }
 }
 }  // namespace
-// every tap target on stage `id`'s screen (the workbench "Tap areas" view, workbench/src/taps.ts): each visible clickable
+// every tap target on stage `id`'s screen (the workbench "Tap areas" view, workbench/src/wasm/taps.ts): each visible clickable
 // object with its hit area = its box grown by the ext click area (fx::hit, C32): [{x, y, w, h, bx, by, bw, bh, min}]
 // in device px (b* = the drawn box), min = touch:min now, so the page marks a target smaller than it
 namespace {
@@ -572,7 +572,7 @@ EMSCRIPTEN_KEEPALIVE const char *fw_hit(int id, int x, int y) {
   return out.c_str();
 }
 
-// the workbench Layout lab (workbench/src/lablayout.ts): fw_lab(id, cmd, arg)
+// the workbench Layout lab (workbench/src/wasm/lablayout.ts): fw_lab(id, cmd, arg)
 //   "tokens", ""           -> [[name, token px, now px]] every size token (fx::tunables)
 //   "tune", "name=px"      -> "" : that token as if it said px, live on every stage (fx::tune; "=" alone = all back)
 //   "uses", ""             -> ["name"]: the size tokens stage id's objects read (their shared styles + the pen while

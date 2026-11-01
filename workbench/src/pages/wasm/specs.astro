@@ -1,0 +1,109 @@
+---
+// Facet screen specs: /wasm/specs (workbench sidebar Tools > Send specs). Pick a panel and a spec (a factory screen,
+// the deck, or edit the JSON), Check (dry run in WASM at the panel's size), Send (the workbench dry-runs, asks the panel's
+// hello, then sends over the HA API; the panel validates, builds once off screen, stores, swaps), Revert (that
+// screen / the deck / everything back to factory). API: /api/wasm/spec (facet-wasm renderer/core/spec.h).
+export const prerender = false;
+import Base from '../../layouts/Base.astro';
+---
+
+<Base title="Send specs" description="Send a Facet screen spec or the deck to a panel, or revert it to factory.">
+  <main class="sp">
+    <header>
+      <a class="sp-back" href="/wasm">Workbench</a>
+      <h1>Send specs</h1>
+      <p class="sp-muted">A screen is a JSON spec built from the components on the panel; the deck lists the screens and Home's cards. Sending needs no reflash. Factory specs are built into the firmware, so Revert always gets back to them.</p>
+    </header>
+    <section class="sp-bar" aria-label="Send">
+      <label>Panel <select id="target"></select></label>
+      <label>Spec <select id="pick"></select></label>
+      <button id="check" type="button" class="sp-ghost">Check</button>
+      <button id="send" type="button">Send</button>
+      <button id="revert" type="button" class="sp-ghost">Revert this</button>
+      <button id="revert-all" type="button" class="sp-ghost">Revert all</button>
+      <button id="hello" type="button" class="sp-ghost">Panel info</button>
+    </section>
+    <div class="sp-grid">
+      <label class="sp-ed">Spec JSON <textarea id="json" spellcheck="false" rows="24"></textarea></label>
+      <div><h2>Answer</h2><div id="verdict" class="sp-verdict" role="status" hidden><span class="sp-dot"></span><span id="verdict-text"></span></div><p id="state" class="sp-muted"></p><pre id="out"></pre></div>
+    </div>
+  </main>
+  <style>
+    .sp { max-width: 1200px; margin: 0 auto; padding: 24px 16px 48px; color: var(--text); }
+    .sp h1 { margin: 4px 0 8px; font-size: 28px; }
+    .sp h2 { margin: 0 0 8px; font-size: 18px; }
+    .sp-muted { color: var(--muted); margin: 0; font-size: 14px; line-height: 20px; }
+    .sp-back { color: var(--accent); text-decoration: none; font-size: 14px; }
+    .sp-back::before { content: '\2039\00a0'; }
+    .sp-bar { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; margin: 24px 0 16px; padding: 16px; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--border); }
+    .sp-bar label, .sp-ed { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); min-width: 0; }
+    .sp select, .sp button { font: inherit; font-size: 14px; color: var(--text); background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; min-height: 40px; max-width: 100%; }
+    .sp button { background: var(--accent); border-color: var(--accent); color: var(--surface); font-weight: 600; cursor: pointer; }
+    .sp button.sp-ghost { background: transparent; color: var(--text); border-color: var(--border); font-weight: 500; }
+    .sp button:disabled { opacity: 0.6; cursor: wait; }
+    .sp-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+    @media (max-width: 760px) { .sp-grid { grid-template-columns: minmax(0, 1fr); } }
+    .sp textarea, .sp pre { font: 12px/16px ui-monospace, monospace; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; margin: 0; width: 100%; box-sizing: border-box; }
+    .sp-verdict { display: flex; gap: 12px; align-items: flex-start; padding: 12px 16px; margin: 0 0 12px; border-radius: var(--radius); background: color-mix(in srgb, var(--c) 14%, var(--surface)); font-size: 16px; line-height: 24px; color: var(--text); }
+    .sp-verdict .sp-dot { flex: none; width: 12px; height: 12px; margin-top: 6px; border-radius: 50%; background: var(--c); }
+    .sp-verdict.ok { --c: var(--ok); } .sp-verdict.warn { --c: var(--warn); } .sp-verdict.bad { --c: var(--bad); }
+    .sp pre { white-space: pre-wrap; word-break: break-word; min-height: 160px; max-height: 70vh; overflow: auto; }
+  </style>
+  <script>
+    const $ = (id: string) => document.getElementById(id) as any;
+    let data: any = null;
+    // the panel's answer, impossible to miss: applied / unchanged + why / refused + why
+    const verdict = (tone: string, text: string) => { const v = $('verdict'); v.hidden = !text; v.className = `sp-verdict ${tone}`; $('verdict-text').textContent = text; };
+    const first = (errs: any[] | undefined) => (errs && errs.length ? `${errs[0].msg}${errs[0].path ? ` (${errs[0].path})` : ''}${errs.length > 1 ? ` and ${errs.length - 1} more` : ''}` : '');
+    function judge(j: any, ok: boolean) {
+      if (j.stage === 'sent') {
+        const p = j.panel ?? {};
+        if (p.status === 'applied') return verdict('ok', `Applied on the panel: ${p.id} rev ${p.rev}${p.id === 'deck' ? '. Home shows the new deck.' : ', opened on the panel.'}`);
+        if (p.status === 'unchanged') return verdict('warn', `Unchanged: ${p.why ?? 'the panel already has this exact spec'} (${p.id} rev ${p.rev}). Edit the JSON to send a change.`);
+        return verdict('bad', `Refused by the panel: ${first(p.errors) || p.status}`);
+      }
+      if (j.error === 'needs_firmware') return verdict('bad', `Not sent: the panel has no ${j.missing.join(', ')}. It needs a firmware build first.`);
+      if (j.stage === 'dry_run') return j.dry?.ok ? verdict('ok', 'Check passed: the panel would take it (nothing was sent).') : verdict('bad', `Not sent: ${first(j.dry?.errors)}`);
+      if (j.panel?.reverted) return verdict('ok', j.panel.reverted.length ? `Reverted to factory: ${j.panel.reverted.join(', ')}.` : 'Nothing to revert: the panel already runs its factory specs.');
+      if (j.stage === 'transport' || !ok) return verdict('bad', `Could not reach the panel: ${j.error ?? 'error'}`);
+      verdict('', '');
+    }
+    const show = (o: unknown, state = '') => { $('out').textContent = typeof o === 'string' ? o : JSON.stringify(o, null, 2); $('state').textContent = state; };
+    const busy = (on: boolean) => { for (const b of document.querySelectorAll('.sp button')) (b as HTMLButtonElement).disabled = on; };
+    const picked = () => { const v = $('pick').value; return v === 'deck' ? data.deck : v.startsWith('ex:') ? data.examples[v.slice(3)] : data.factory[v]; };
+    const kind = () => (Array.isArray(spec0()?.screens) ? 'deck' : 'screen');
+    const spec0 = () => { try { return JSON.parse($('json').value); } catch { return null; } };
+    async function post(body: Record<string, unknown>, label: string) {
+      busy(true); show('', `${label}…`); verdict('', '');
+      try {
+        const r = await fetch('/api/wasm/spec', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...body, dev: true }) });  // dev: this page may replace a built-in
+        const j = await r.json();
+        const st = j.stage === 'sent' ? (j.panel?.ok ? `panel ${j.panel.status}: ${j.panel.id} rev ${j.panel.rev}${j.panel.status === 'applied' ? (j.panel.id === 'deck' ? ', Home updated' : ', opened on the panel') : ''}` : `panel refused: ${j.panel?.status ?? '?'}`) : j.error === 'needs_firmware' ? `needs firmware: ${j.missing.join(', ')}` : j.stage === 'dry_run' ? (j.dry?.ok ? 'dry run ok: the panel would take it' : 'refused by the dry run') : j.stage ?? (r.ok ? 'done' : 'error');
+        show(j, st);
+        judge(j, r.ok);
+      } catch (e) { show(String(e), 'error'); verdict('bad', `Could not reach the workbench: ${e}`); }
+      busy(false);
+    }
+    function load() {
+      const id = $('pick').value;
+      $('json').value = JSON.stringify(picked(), null, 1);
+    }
+    (async () => {
+      data = await (await fetch('/api/wasm/spec')).json();
+      for (const [k, v] of Object.entries(data.targets)) $('target').append(new Option(v as string, k));
+      try { const t = localStorage.getItem('wb.target'); if (t && data.targets[t]) $('target').value = t; } catch { /* private mode */ }
+      for (const id of Object.keys(data.factory)) $('pick').append(new Option(`Screen: ${data.factory[id].name ?? id}`, id));
+      $('pick').append(new Option('Deck (factory: screens + Home)', 'deck'));
+      for (const id of Object.keys(data.examples ?? {})) { const x = data.examples[id]; $('pick').append(new Option(`Example: ${x.screens ? 'deck (' + x.screens.filter((s: any) => s.card).map((s: any) => s.id.replace('_', ' ')).join(', ') + ')' : 'screen ' + (x.name ?? id)}`, `ex:${id}`)); }
+      load();
+      show(data.catalogue ?? 'no catalogue generated yet', `catalogue ${data.catalogue?.hash ?? '?'}`);
+    })();
+    $('pick').onchange = load;
+    const spec = () => { try { return JSON.parse($('json').value); } catch (e) { show(String(e), 'the JSON does not parse'); return null; } };
+    $('send').onclick = () => { const s = spec(); if (s) post({ target: $('target').value, kind: kind(), spec: s }, 'Sending'); };
+    $('check').onclick = () => { const s = spec(); if (s) post({ target: $('target').value, kind: 'check', spec: s }, 'Checking'); };
+    $('revert').onclick = () => post({ target: $('target').value, kind: 'revert', id: kind() === 'deck' ? 'deck' : (spec0()?.id ?? 'all') }, 'Reverting');
+    $('revert-all').onclick = () => post({ target: $('target').value, kind: 'revert', id: 'all' }, 'Reverting all');
+    $('hello').onclick = async () => { busy(true); show('', 'Asking the panel…'); const r = await fetch(`/api/wasm/spec?target=${$('target').value}`); show(await r.json(), r.ok ? 'panel hello' : 'error'); busy(false); };
+  </script>
+</Base>

@@ -1,0 +1,130 @@
+---
+// Facet golden screenshots, reviewed: /wasm/goldens. Every candidate the tests wrote (renderer/tests/golden/<suite>/
+// <den>-<name>.new.png) beside the golden it would replace, grouped by suite and component; Accept makes it the golden,
+// Reject drops it. Data + actions: /api/wasm/goldens (src/pages/api/wasm/goldens.ts).
+export const prerender = false;
+import Base from '../../layouts/Base.astro';
+---
+
+<Base title="Golden review" description="Facet golden screenshots: accept or reject each candidate the tests wrote.">
+  <main class="gd">
+    <header>
+      <a class="gd-back" href="/wasm">Workbench</a>
+      <h1>Golden review</h1>
+      <p class="gd-muted">Each screenshot is what a test saw. Accept one and it becomes the golden: later runs must match it pixel for pixel. Reject one if it's wrong; the next test run makes it again if nothing changed.</p>
+    </header>
+    <section class="gd-bar" aria-label="Filter">
+      <label>Suite <select id="suite"><option value="">All</option></select></label>
+      <label>Size <select id="den"><option value="">Both</option><option>1.5x</option><option>1x</option></select></label>
+      <label>Mode <select id="mode"><option value="">Both</option><option>dark</option><option>light</option></select></label>
+      <span id="state" class="gd-muted" role="status"></span>
+    </section>
+    <div id="list"></div>
+  </main>
+
+  <style is:global>
+    .gd { max-width: none; margin: 0 auto; padding: 24px 16px 48px; color: var(--text); }
+    .gd h1 { margin: 4px 0 8px; font-size: 28px; }
+    .gd h2 { margin: 32px 0 4px; font-size: 18px; }
+    .gd h3 { margin: 20px 0 8px; font-size: 15px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    .gd-muted { color: var(--muted); margin: 0 0 12px; font-size: 14px; line-height: 20px; }
+    .gd-back { color: var(--accent); text-decoration: none; font-size: 14px; }
+    .gd-bar { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; margin: 8px 0 16px; font-size: 14px; }
+    .gd-bar select { margin-left: 6px; }
+    .gd-grid { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; }
+    .gd-item { max-width: 100%; overflow-x: auto; background: var(--surface); border-radius: var(--radius); padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+    .gd-item.done { opacity: 0.35; }
+    .gd-name { font-size: 12px; color: var(--muted); word-break: break-all; }
+    .gd-pics { display: flex; flex-wrap: wrap; gap: 8px; }
+    .gd-pics figure { margin: 0; }
+    .gd-pics figcaption { font-size: 11px; color: var(--muted); margin-bottom: 2px; }
+    .gd-pics a { display: block; cursor: zoom-in; }
+    .gd-pics img { width: auto; height: auto; max-width: none; image-rendering: pixelated; display: block; background: #000; }
+    .gd-acts { display: flex; gap: 8px; }
+    .gd button { font: inherit; font-size: 13px; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); cursor: pointer; }
+    .gd button.ok { background: var(--accent); color: var(--on-accent, #fff); border-color: transparent; }
+    .gd button:disabled { opacity: 0.5; cursor: default; }
+  </style>
+
+  <script>
+    type Item = { suite: string; base: string; old: boolean };
+    const $ = (id: string) => document.getElementById(id) as HTMLElement;
+    const list = $('list'), state = $('state');
+    const suiteSel = $('suite') as HTMLSelectElement, denSel = $('den') as HTMLSelectElement, modeSel = $('mode') as HTMLSelectElement;
+    let items: Item[] = [];
+    const done = new Set<string>();
+    const key = (i: Item) => `${i.suite}/${i.base}`;
+    // the theme suite's names are <den>-<theme>-<component>-<n>-<mode>: group by component; other suites are one group
+    const group = (i: Item) => {
+      if (i.suite !== 'theme') return i.suite;
+      const m = i.base.match(/^[\d.]+x-[a-z0-9]+-(.+)-\d+-(dark|light)$/);
+      return m ? m[1] : 'other';
+    };
+    const img = (suite: string, file: string) => `/api/wasm/goldens?img=${encodeURIComponent(`${suite}/${file}`)}`;
+    const el = <K extends keyof HTMLElementTagNameMap>(t: K, cls = '', text = '') => {
+      const e = document.createElement(t); if (cls) e.className = cls; if (text) e.textContent = text; return e;
+    };
+
+    async function act(i: Item, action: 'accept' | 'reject', card: HTMLElement) {
+      card.querySelectorAll('button').forEach((b) => (b.disabled = true));
+      const r = await fetch('/api/wasm/goldens', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ suite: i.suite, base: i.base, action }) });
+      if (r.ok) { done.add(key(i)); card.classList.add('done'); count(); }
+      else { card.querySelectorAll('button').forEach((b) => (b.disabled = false)); state.textContent = `Couldn't ${action} ${i.base}`; }
+    }
+    function card(i: Item) {
+      const c = el('div', 'gd-item');
+      c.append(el('div', 'gd-name', i.base));
+      const pics = el('div', 'gd-pics');
+      const fig = (label: string, file: string) => {
+        const f = el('figure'); f.append(el('figcaption', '', label));
+        const a = el('a'); a.href = img(i.suite, file); a.target = '_blank'; a.title = 'Open full size';
+        const im = el('img'); im.loading = 'lazy'; im.alt = `${label}: ${i.base}`; im.src = a.href; a.append(im); f.append(a); return f;
+      };
+      pics.append(fig(i.old ? 'New' : 'New (no golden yet)', `${i.base}.new.png`));
+      if (i.old) pics.append(fig('Golden now', `${i.base}.png`));
+      c.append(pics);
+      const acts = el('div', 'gd-acts');
+      const ok = el('button', 'ok', 'Accept'), no = el('button', '', 'Reject');
+      ok.onclick = () => act(i, 'accept', c); no.onclick = () => act(i, 'reject', c);
+      acts.append(ok, no); c.append(acts);
+      if (done.has(key(i))) c.classList.add('done');
+      return c;
+    }
+    function shown() {
+      return items.filter((i) => (!suiteSel.value || i.suite === suiteSel.value) && (!denSel.value || i.base.startsWith(denSel.value + '-'))
+        && (!modeSel.value || i.base.endsWith('-' + modeSel.value) || i.base.includes(`-${modeSel.value}-`) || i.base.includes(`-${modeSel.value}.`)));
+    }
+    function count() { const s = shown(); state.textContent = `${s.filter((i) => !done.has(key(i))).length} of ${s.length} to review`; }
+    function render() {
+      list.replaceChildren();
+      const bySuite = new Map<string, Map<string, Item[]>>();
+      for (const i of shown()) {
+        const g = bySuite.get(i.suite) ?? new Map<string, Item[]>(); bySuite.set(i.suite, g);
+        const k = group(i); (g.get(k) ?? g.set(k, []).get(k)!).push(i);
+      }
+      for (const [suite, groups] of bySuite) {
+        list.append(el('h2', '', suite === 'theme' ? 'Themes (every contract component in Facet, Blockcraft, Win98)' : suite));
+        for (const [g, its] of groups) {
+          const h = el('h3'); h.append(document.createTextNode(`${g} · ${its.length}`));
+          const all = el('button', '', `Accept all ${its.length}`);
+          const grid = el('div', 'gd-grid');
+          all.onclick = async () => { all.disabled = true; for (const [n, i] of its.entries()) if (!done.has(key(i))) await act(i, 'accept', grid.children[n] as HTMLElement); };
+          h.append(all); list.append(h);
+          for (const i of its) grid.append(card(i));
+          list.append(grid);
+        }
+      }
+      count();
+    }
+    async function load() {
+      state.textContent = 'Loading…';
+      try {
+        items = (await (await fetch('/api/wasm/goldens')).json()).items;
+        for (const s of [...new Set(items.map((i) => i.suite))]) suiteSel.append(new Option(s, s));
+        render();
+      } catch { state.textContent = 'Couldn\'t load the candidates.'; }
+    }
+    for (const s of [suiteSel, denSel, modeSel]) s.onchange = render;
+    load();
+  </script>
+</Base>

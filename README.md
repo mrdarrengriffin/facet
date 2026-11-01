@@ -155,6 +155,7 @@ Other sizes are planned.
 | `renderer/` | the C++/LVGL renderer: core, foundations, components, screens, specs, tokens and the tools that check them. Developer notes: [renderer/README.md](renderer/README.md) |
 | `firmware/` | the ESPHome external component and the bundler that packs the renderer into it |
 | `esphome/` | the panel firmware: one YAML per board and the packages they share ([esphome/README.md](esphome/README.md)) |
+| `workbench/` | the local web app for working on Facet: every part live, the editor, specs, tests, golden review ([workbench/README.md](workbench/README.md)) |
 | `boards/` | one file per supported panel (chip, resolution, scale, touch, flash, status), read by everything that lists boards |
 | `site/` | the docs site (Astro), generated from what the renderer registers |
 

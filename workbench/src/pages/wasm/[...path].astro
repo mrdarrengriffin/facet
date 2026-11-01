@@ -1,0 +1,25 @@
+---
+// The workbench: /wasm, /wasm/<section>/<id>. One shell; src/wasm/app.ts routes on the client from the components the
+// WASM build registers (renderer/README.md). The panels it can show things on: FACET_PANELS (lib/panels.ts).
+export const prerender = false;
+import Base from '../../layouts/Base.astro';
+import { panels as configured } from '../../lib/panels';
+import '../../wasm/wasm.css';
+const panels = Object.fromEntries(Object.values(configured()).map((p) => [p.name, { name: p.title, board: p.board, density: p.density }]));
+---
+
+<Base title="Facet WASM" description="Build Facet components in C++/LVGL, compiled to WebAssembly, live.">
+  <div class="wb" id="wb">
+    <button class="wb-menu" id="wb-menu" type="button" aria-expanded="false" aria-controls="wb-nav">Menu and settings</button>
+    <aside class="wb-nav" id="wb-nav" aria-label="Workbench">
+      <nav class="wb-links" id="wb-links" aria-label="Pages"></nav>
+      <section class="wb-set" id="wb-settings" aria-label="Settings"></section>
+    </aside>
+    <main class="wb-main" id="wb-main"></main>
+  </div>
+  <script is:inline define:vars={{ panels }}>window.__FACET_PANELS = panels;</script>
+  <script>
+    import { start } from '../../wasm/app';
+    start();
+  </script>
+</Base>

@@ -40,7 +40,8 @@ Options, from the environment or from `local.env` at the repo root (untracked, o
 | `BUILD_JOBS` | compiles at once (default: every core but one) |
 
 `node renderer/watch.mjs` rebuilds the 1.5x build whenever you save a source, token or spec, and the 1x build after a
-minute of quiet. The workbench reloads the page when the build changes.
+minute of quiet. The workbench (`workbench/run.sh`, [workbench/README.md](../workbench/README.md)) reloads the page
+when the build changes.
 
 ## Check
 

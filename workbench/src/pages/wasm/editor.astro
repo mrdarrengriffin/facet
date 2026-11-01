@@ -1,0 +1,67 @@
+---
+// Facet editor concept (round 2 = click to edit): the editor that will live ON the panel (plain
+// HTTP, Guition first) and edit the device deck. Here in the workbench as a concept: /wasm/editor, Panel overview (live
+// thumbnails) -> Screen (click a region) -> its settings; the panel-served page (scripts/editor-device.mjs) uses this same markup + editor.ts/editor.css. Host calls go through src/wasm/editor-host.ts. Its look = Facet's own tokens (renderer/tokens/*.json,
+// read here and written out as CSS variables), the preview = the real WASM renderer (src/wasm/engine.ts), the
+// screens' settings = the typed spec params (renderer/specs/*.json) + the source catalogue (renderer/sources/
+// sources.json) + this house's discovery (/api/wasm/sources, stand-in for HA's entity list). Save only shows what
+// would be sent. Client: src/wasm/editor.ts; page data: src/wasm/editor-page.mjs. The same editor served BY a panel:
+// scripts/editor-device.mjs.
+export const prerender = false;
+import { join } from 'node:path';
+import { editorPage } from '../../wasm/editor-page.mjs';
+import { REPO } from '../../lib/repo';
+
+const { css, boot } = editorPage(join(REPO, 'renderer'));
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Facet editor</title>
+    <meta name="description" content="Facet editor concept: the panel's own screen editor with a live WASM preview." />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" />
+    <style is:inline set:html={css}></style>
+    <script is:inline>
+      // theme before first paint: ?theme= or the editor's last pick (per browser), else the device's scheme
+      try { const t = new URLSearchParams(location.search).get('theme') || localStorage.getItem('fe.theme'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch {}
+    </script>
+  </head>
+  <body>
+    <div class="ed ed-flowpage" id="ed">
+      <header class="ed-top">
+        <div class="ed-brand"><span class="ed-mark" aria-hidden="true"></span>Facet <span class="ed-dim">editor</span></div>
+        <div class="ed-panel">
+          <div class="seg" id="ed-device" role="group" aria-label="Panel"></div>
+          <span class="ed-status" id="ed-status"><span class="dot"></span><span class="txt">checking</span></span>
+        </div>
+        <div class="ed-tools">
+          <div class="seg" id="ed-theme" role="group" aria-label="Theme"></div>
+          <div class="ed-accents" id="ed-accents" role="group" aria-label="Accent"></div>
+          <span class="ed-dirty" id="ed-dirty" hidden></span>
+          <button class="btn ghost" id="ed-refresh" type="button" title="Fetch the live Home Assistant values now">Refresh</button>
+          <button class="btn ghost" id="ed-undo" type="button" title="Undo (Ctrl+Z)">Undo</button>
+          <button class="btn ghost" id="ed-redo" type="button" title="Redo (Ctrl+Shift+Z)">Redo</button>
+          <button class="btn primary" id="ed-save" type="button">Save</button>
+        </div>
+      </header>
+      <nav class="ed-crumbs" id="ed-crumbs" aria-label="Breadcrumbs"></nav>
+      <main class="ed-flow" id="ed-flow"><p class="ed-meta">Loading the renderer</p></main>
+      <footer class="ed-foot">
+        <span>Concept, round 2: click to edit.</span>
+        <span class="ed-dim">Save shows what would be sent; nothing reaches the panel.</span>
+      </footer>
+    </div>
+    <dialog class="ed-dialog" id="ed-dialog"></dialog>
+    <script type="application/json" id="ed-boot" set:html={boot}></script>
+    <script>
+      import '../../wasm/editor.css';
+      import { start } from '../../wasm/editor';
+      start();
+    </script>
+  </body>
+</html>

@@ -40,7 +40,7 @@ export class Engine {
   /** every fw::emit / fw::sound, with the stage it came from (drained once per frame) */
   onEvent: ((ev: FwEvent, stage: Stage | undefined) => void) | null = null;
   /** every animation frame: when it started, how long the WASM work took (LVGL tick + render + copy to the canvas),
-   *  whether a stage repainted and how many LVGL animations run (browser targets' frame stats, workbench/src/device.ts) */
+   *  whether a stage repainted and how many LVGL animations run (frame stats) */
   onFrame: ((f: { t: number; work: number; painted: boolean; anims: number }) => void) | null = null;
   private alive = true;
   /** root = the folder holding <density>/fw.mjs (workbench: /facet-wasm/, docs site: <base>wasm/) */

@@ -40,7 +40,7 @@ std::vector<Component> &reg() {
   static std::vector<Component> r;
   return r;
 }
-// Component outlines (an introspection hook: the workbench "Components" view (workbench/src/outline.ts) and the panel's
+// Component outlines (an introspection hook: the workbench "Components" view (workbench/src/wasm/outline.ts) and the panel's
 // Debug overlay, firmware fw_device.h): add() swaps each build for a trampoline that, while tagging is on, tags the
 // objects the build put on `parent` with the component's registry index (kept on the object until it is deleted);
 // comps_each() / comps_json() walk a screen and list the tagged objects. Hosts tag always; panels (ESP_PLATFORM) only

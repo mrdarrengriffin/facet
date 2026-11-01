@@ -414,7 +414,7 @@ inline void ota_error() {
 
 // ---------------------------------------------------------------- Debug overlay (HA select "Debug overlay")
 // Tap areas and / or component outlines drawn over the current screen, the panel side of the workbench Tap areas
-// (workbench/src/taps.ts) and Components views. Firmware glue, not a contract component: one non-clickable full-screen
+// (workbench/src/wasm/taps.ts) and Components views. Firmware glue, not a contract component: one non-clickable full-screen
 // object on the top layer that draws with lv_draw_*; boxes collected every 500 ms and after each show (redrawn only
 // when they changed). Tap areas: every visible clickable object, hit area = coords grown by ext_click_pad (scroll
 // containers with children skipped), green fill + outline = at least touch:min both ways, red = smaller, the drawn box

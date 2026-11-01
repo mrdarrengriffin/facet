@@ -1,0 +1,116 @@
+---
+// Facet functional tests, seen: /wasm/tests. Every component's hand-written functional tests (renderer/tests/functional,
+// runner renderer/tools/functional.mjs), grouped by family -> component -> test, pass / fail per size, with the
+// test's log and a screenshot of where it ended. Data + Re-run: /api/wasm/tests (src/pages/api/wasm/tests.ts).
+export const prerender = false;
+import Base from '../../layouts/Base.astro';
+---
+
+<Base title="Functional tests" description="Facet functional tests: what each component does, checked end to end in the WASM build.">
+  <main class="ft">
+    <header>
+      <a class="ft-back" href="/wasm">Workbench</a>
+      <h1>Functional tests</h1>
+      <p class="ft-muted">Each component is mounted headless in the WASM build, driven by touch (tap, hold, drag) and a fake Home Assistant (state changes, unavailable, reconnect), and checked on what it shows and sends. Programmatic only: no image review.</p>
+    </header>
+    <section class="ft-bar" aria-label="Run">
+      <button type="button" id="run">Re-run all</button>
+      <label class="ft-check"><input type="checkbox" id="only-fail" /> Failing only</label>
+      <span id="state" class="ft-muted" role="status"></span>
+    </section>
+    <div id="sum" class="ft-call"></div>
+    <div id="list"></div>
+  </main>
+
+  <style is:global>
+    .ft { max-width: 1080px; margin: 0 auto; padding: 24px 16px 48px; color: var(--text); }
+    .ft h1 { margin: 4px 0 8px; font-size: 28px; }
+    .ft h2 { margin: 32px 0 12px; font-size: 18px; text-transform: capitalize; }
+    .ft .ft-muted { color: var(--muted); margin: 0 0 12px; font-size: 14px; line-height: 20px; }
+    .ft .ft-back { color: var(--accent); text-decoration: none; font-size: 14px; }
+    .ft .ft-back::before { content: '\2039\00a0'; }
+    .ft .ft-bar { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; margin: 24px 0 16px; padding: 16px; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--border); }
+    .ft .ft-bar .ft-muted { margin: 0; }
+    .ft button { font: inherit; font-size: 14px; font-weight: 600; min-height: 40px; padding: 8px 16px; border-radius: 8px; border: 1px solid var(--accent); background: var(--accent); color: var(--surface); cursor: pointer; }
+    .ft button:disabled { opacity: 0.6; cursor: progress; }
+    .ft .ft-check { display: flex; gap: 8px; align-items: center; font-size: 14px; }
+    .ft .ft-call { display: flex; flex-wrap: wrap; gap: 8px 24px; padding: 12px 16px; border-radius: var(--radius); background: var(--accent-soft); font-size: 14px; line-height: 20px; }
+    .ft .ft-call span { display: inline-flex; gap: 8px; align-items: center; }
+    .ft .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; display: inline-block; background: var(--ok); }
+    .ft .dot.bad { background: var(--bad); } .ft .dot.warn { background: var(--warn); } .ft .dot.none { background: var(--border); }
+    .ft .comp { margin: 0 0 16px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    .ft .comp-head { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; padding: 12px 16px; border-bottom: 1px solid var(--border); }
+    .ft .comp-head b { font-size: 16px; font-family: ui-monospace, monospace; }
+    .ft .comp-head .ft-muted { margin: 0; flex: 1 1 240px; }
+    .ft .count { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+    .ft details { border-top: 1px solid var(--border); }
+    .ft details:first-of-type { border-top: 0; }
+    .ft summary { display: flex; gap: 12px; align-items: center; padding: 8px 16px; cursor: pointer; font-size: 14px; line-height: 20px; list-style: none; min-height: 40px; }
+    .ft summary::-webkit-details-marker { display: none; }
+    .ft summary .name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+    .ft summary .dens { display: flex; gap: 12px; flex: none; font-size: 12px; color: var(--muted); }
+    .ft summary .dens span { display: inline-flex; gap: 4px; align-items: center; }
+    .ft .body { padding: 4px 16px 16px; display: grid; gap: 16px; }
+    .ft .runs { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+    .ft .run h4 { margin: 0 0 8px; font-size: 13px; display: flex; gap: 8px; align-items: center; }
+    .ft .run img { width: 100%; max-width: 360px; aspect-ratio: 1; display: block; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-2); }
+    .ft .fails { margin: 0 0 8px; padding-left: 16px; color: var(--bad); font-size: 13px; line-height: 18px; }
+    .ft .fails li { overflow-wrap: anywhere; }
+    .ft pre { margin: 8px 0 0; padding: 8px 12px; max-height: 240px; overflow: auto; background: var(--surface-2); border-radius: 8px; font-size: 12px; line-height: 16px; white-space: pre-wrap; overflow-wrap: anywhere; }
+    @media (max-width: 520px) { .ft summary .dens { flex-direction: column; gap: 2px; } }
+  </style>
+
+  <script>
+    type R = { id: string; family: string; test: string; den: string; ok: boolean; xfail: string | null; fails: string[]; log: string[]; ms: number; png?: string };
+    type Doc = { at: string; dens: string[]; total: number; pass: number; fail: number; xfail: number; xpass: number; sec: number; suites: { id: string; family: string; about: string; tests: string[] }[]; results: R[] };
+    const $ = (s: string) => document.querySelector(s) as HTMLElement;
+    const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
+    const SIZE: Record<string, string> = { '1.5x': '720', '1x': '480' };
+    const dot = (r?: R) => `<i class="dot ${!r ? 'none' : r.ok ? (r.xfail ? 'warn' : '') : r.xfail ? 'warn' : 'bad'}" title="${!r ? 'not run' : r.ok ? (r.xfail ? 'passes now (listed as known failure)' : 'pass') : r.xfail ? `known failure: ${esc(r.xfail)}` : 'fail'}"></i>`;
+    let doc: Doc | null = null;
+    const open = new Set<string>();
+
+    function render() {
+      if (!doc) { $('#sum').textContent = 'No run yet: press Re-run all.'; $('#list').innerHTML = ''; return; }
+      const onlyFail = ($('#only-fail') as HTMLInputElement).checked;
+      $('#sum').innerHTML = `<span>${dot({ ok: !doc.fail } as R)} ${doc.pass} of ${doc.total} pass</span><span>${doc.fail} failing</span>${doc.xfail ? `<span>${doc.xfail} known failures</span>` : ''}<span>${doc.suites.length} components</span><span>sizes ${doc.dens.map((d) => SIZE[d] ?? d).join(' + ')}</span><span>${doc.sec} s, ${new Date(doc.at).toLocaleString()}</span>`;
+      const by = new Map<string, R>(doc.results.map((r) => [`${r.id}|${r.test}|${r.den}`, r]));
+      const fams = [...new Set(doc.suites.map((s) => s.family || 'other'))];
+      let html = '';
+      for (const f of fams) {
+        let fh = '';
+        for (const s of doc.suites.filter((x) => (x.family || 'other') === f)) {
+          const rs = doc.results.filter((r) => r.id === s.id), bad = rs.filter((r) => !r.ok).length;
+          if (onlyFail && !bad) continue;
+          let rows = '';
+          for (const name of s.tests) {
+            const per = doc.dens.map((d) => by.get(`${s.id}|${name}|${d}`));
+            if (onlyFail && per.every((r) => !r || r.ok)) continue;
+            const key = `${s.id}|${name}`;
+            const runs = per.filter(Boolean).map((r) => `<div class="run"><h4>${dot(r)} ${SIZE[r!.den] ?? r!.den} · ${r!.ms} ms${r!.xfail ? ` · known: ${esc(r!.xfail)}` : ''}</h4>${r!.fails.length ? `<ul class="fails">${r!.fails.map((m) => `<li>${esc(m)}</li>`).join('')}</ul>` : ''}${r!.png ? `<img loading="lazy" alt="${esc(name)} at ${SIZE[r!.den]}" src="/api/wasm/tests?png=${encodeURIComponent(r!.png.replace(/^png\//, ''))}&t=${encodeURIComponent(doc!.at)}">` : ''}<pre>${esc(r!.log.join('\n'))}</pre></div>`).join('');
+            rows += `<details data-k="${esc(key)}"${open.has(key) ? ' open' : ''}><summary><span class="name">${esc(name)}</span><span class="dens">${doc.dens.map((d, i) => `<span>${dot(per[i])}${SIZE[d] ?? d}</span>`).join('')}</span></summary><div class="body"><div class="runs">${runs}</div></div></details>`;
+          }
+          fh += `<section class="comp"><div class="comp-head"><b>${esc(s.id)}</b><p class="ft-muted">${esc(s.about)}</p><span class="count">${rs.length - bad}/${rs.length} pass</span></div>${rows}</section>`;
+        }
+        if (fh) html += `<h2>${esc(f)}</h2>${fh}`;
+      }
+      $('#list').innerHTML = html || '<p class="ft-muted">Nothing failing.</p>';
+      for (const d of document.querySelectorAll<HTMLDetailsElement>('#list details')) d.addEventListener('toggle', () => { const k = d.dataset.k!; d.open ? open.add(k) : open.delete(k); });
+    }
+
+    async function load(method = 'GET') {
+      const btn = $('#run') as HTMLButtonElement;
+      if (method === 'POST') { btn.disabled = true; $('#state').textContent = 'Running...'; }
+      try {
+        const r = await fetch('/api/wasm/tests', { method, headers: { 'content-type': 'application/json' }, body: method === 'POST' ? '{}' : undefined });
+        const j = await r.json();
+        if (!r.ok) { $('#state').textContent = j.error ?? 'Run failed'; return; }
+        doc = j.results; $('#state').textContent = j.runner ? '' : 'The test runner is not in the workbench tree yet.';
+        render();
+      } catch (e) { $('#state').textContent = String(e); } finally { btn.disabled = false; }
+    }
+    $('#run').addEventListener('click', () => load('POST'));
+    $('#only-fail').addEventListener('change', render);
+    load();
+  </script>
+</Base>
