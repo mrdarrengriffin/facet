@@ -1904,27 +1904,6 @@
     "bytes_est": 960
    }
   },
-  "event_row": {
-   "name": "Event row",
-   "update": true,
-   "props": [
-    {
-     "name": "event",
-     "type": "text",
-     "bindable": true,
-     "about": "What happened, as time, action and who did it separated by bars, like 09:03|locked|Alex. A jammed lock shows in the error colour."
-    }
-   ],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 3,
-    "bytes_est": 480
-   }
-  },
   "f1_car_marker": {
    "name": "F1 car marker",
    "update": true,
@@ -4010,40 +3989,6 @@
    "cost": {
     "objects": 6,
     "bytes_est": 960
-   }
-  },
-  "lock_ring": {
-   "name": "Lock ring",
-   "update": true,
-   "props": [
-    {
-     "name": "state",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "locked",
-      "unlocked",
-      "locking",
-      "unlocking",
-      "jammed",
-      "open",
-      "opening",
-      "unavailable"
-     ],
-     "about": "The lock's state: locked, unlocked, locking or unlocking while it moves, jammed when it is stuck, open or opening for a door that can open, or unavailable when it cannot be reached. The ring and padlock change to match."
-    }
-   ],
-   "events": {
-    "lock": [
-     "lock.control"
-    ],
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 5,
-    "bytes_est": 800
    }
   },
   "mascot_mood": {
@@ -7673,7 +7618,7 @@
     },
     "lock": {
      "taps": "detail,none",
-     "detail": "lock"
+     "detail": ""
     },
     "vacuum": {
      "taps": "detail,none",
@@ -7685,5 +7630,5 @@
    }
   }
  },
- "hash": "0e56813c"
+ "hash": "af6bf13b"
 }

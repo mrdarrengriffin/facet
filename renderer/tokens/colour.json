@@ -4406,74 +4406,6 @@
         "use": "the edge round black and grey bins"
       },
       {
-        "section": "lock_ring",
-        "fg": "text",
-        "bg": [
-          "surface",
-          "press-tint"
-        ],
-        "kind": "ui",
-        "use": "the padlock, locked (its shape is the state)"
-      },
-      {
-        "section": "lock_ring",
-        "fg": "accent",
-        "bg": [
-          "surface",
-          "press-tint",
-          "bg"
-        ],
-        "kind": "ui",
-        "use": "the padlock unlocked / open, the ring's edge then, and the confirm meter"
-      },
-      {
-        "section": "lock_ring",
-        "fg": "line-hi",
-        "bg": [
-          "bg"
-        ],
-        "kind": "decor",
-        "use": "the ring's edge, locked"
-      },
-      {
-        "section": "lock_ring",
-        "fg": "error",
-        "bg": [
-          "chip-error-surface",
-          "press-tint",
-          "bg"
-        ],
-        "kind": "ui",
-        "use": "the padlock jammed on the ring's error tint, and the jammed ring's edge"
-      },
-      {
-        "section": "lock_ring",
-        "fg": "text-mute",
-        "bg": [
-          "surface"
-        ],
-        "kind": "disabled",
-        "use": "the padlock, offline"
-      },
-      {
-        "section": "lock_ring",
-        "fg": "text-dim",
-        "bg": [
-          "bg"
-        ],
-        "kind": "text",
-        "use": "the hint under the ring"
-      },
-      {
-        "section": "lock_ring",
-        "fg": "error",
-        "bg": [
-          "bg"
-        ],
-        "kind": "text",
-        "use": "the hint, jammed"
-      },
-      {
         "section": "button",
         "fg": "text",
         "bg": [
@@ -4716,33 +4648,6 @@
         ],
         "kind": "decor",
         "use": "the map button's edge, the sheet rows' hairlines"
-      },
-      {
-        "section": "event_row",
-        "fg": "text-dim",
-        "bg": [
-          "bg"
-        ],
-        "kind": "text",
-        "use": "the time and what happened"
-      },
-      {
-        "section": "event_row",
-        "fg": "error",
-        "bg": [
-          "bg"
-        ],
-        "kind": "text",
-        "use": "a jammed lock's row"
-      },
-      {
-        "section": "event_row",
-        "fg": "line",
-        "bg": [
-          "bg"
-        ],
-        "kind": "decor",
-        "use": "the hairline between rows"
       },
       {
         "section": "level_bar",

@@ -67,8 +67,8 @@
 //              {"do": "cover.control", "e"}  (position N | tilt N | open | stop | close ->
 //                                              cover.set_cover_position / set_cover_tilt_position / open_cover /
 //                                              stop_cover / close_cover)
-//              {"do": "lock.control", "e"}  (a Lock view's "lock": lock | unlock | open -> lock.lock / lock.unlock /
-//                                             lock.open; the view emits unlock / open only after its hold-to-confirm)
+//              {"do": "lock.control", "e"}  (lock | unlock | open -> lock.lock / lock.unlock /
+//                                             lock.open)
 //              {"do": "vacuum.control", "e", "rooms"?: "$rooms", "mode"?, "mop"?}  (a Button tap by its label: Clean / Start (with
 //                rooms = a comma list of segment ids: vacuum.send_command app_segment_clean, the Roborock form; else
 //                vacuum.start) | Resume | Pause | Dock -> vacuum.start / pause / return_to_base; a Segmented "change"
@@ -206,7 +206,7 @@ constexpr Rule RULES[] = {
     {"toggle", "toggle", "light.switch"},
     {"more_row", "tap", "nav.open,nav.back,screen.param"},  // screen.param + to: a view of the same screen (Energy > last 7 days)
     {"cover_visual", "change", "cover.control"},  // the Covers window: a drag released (its position)
-    {"lock_ring", "lock", "lock.control"},           {"button", "confirm", "lock.control"},
+    {"button", "confirm", "lock.control"},
     {"room_tile", "pick", "screen.toggle"},          {"camera_tile", "tap", "nav.back"},          {"tile", "tap", "nav.open"},          {"button", "tap", "nav.open,nav.back,light.toggle,vacuum.control,timer.start,timer.extend,timer.cancel,timer.stop,timer.select,timer.new,timer.back,cover.control,script.run,scene.activate,automation.trigger,button.press,entity.toggle"},  // 2026-10-30: a button you place says what it does (the editor's On tap)
     {"timer_chip", "select", "timer.select"},       {"timer_chip", "stop", "timer.stop"},
     {"grid", "select", "timer.select"},             {"grid", "stop", "timer.stop"},  // Timer chips in an items Grid

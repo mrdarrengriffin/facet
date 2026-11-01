@@ -249,25 +249,6 @@
         }
       ]
     },
-    "lock": {
-      "shows": "A door lock: locked or not, to lock and unlock it.",
-      "needs": "a smart door lock",
-      "sources": [
-        {
-          "id": "ha_locks",
-          "kind": "ha",
-          "name": "HA locks",
-          "detect": {
-            "domain": "lock"
-          },
-          "fills": {
-            "entity": {
-              "domain": "lock"
-            }
-          }
-        }
-      ]
-    },
     "vacuum": {
       "shows": "The robot vacuum: what it is doing, its battery, the room and progress, to start, pause or dock it.",
       "needs": "a robot vacuum",
