@@ -4655,43 +4655,6 @@
         "use": "the record's face (line-hi edge)"
       },
       {
-        "section": "print_model",
-        "fg": "accent",
-        "bg": [
-          "bg"
-        ],
-        "kind": "ui",
-        "use": "the last layers printed (accent-press .. accent by face)"
-      },
-      {
-        "section": "print_model",
-        "fg": "text-dim",
-        "bg": [
-          "bg"
-        ],
-        "kind": "ui",
-        "use": "the printed part, light theme: text-dim (darkest face) .. surface-press (lit top); dark theme line .. text"
-      },
-      {
-        "section": "print_model",
-        "fg": "text-mute",
-        "bg": [
-          "surface",
-          "bg"
-        ],
-        "kind": "decor",
-        "use": "the ghost's hairline edges (dark theme; light: line-hi): the part above the cut, faint on purpose"
-      },
-      {
-        "section": "print_model",
-        "fg": "surface-press",
-        "bg": [
-          "bg"
-        ],
-        "kind": "decor",
-        "use": "the ghost fill (surface .. surface-press dark, surface-press .. line light at 60 %)"
-      },
-      {
         "section": "card_preview",
         "fg": "lx-faded-surface",
         "bg": [

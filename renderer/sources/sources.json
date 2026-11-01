@@ -200,53 +200,6 @@
         }
       ]
     },
-    "print": {
-      "shows": "The 3D printer: the print, its progress and time left.",
-      "needs": "a 3D printer",
-      "sources": [
-        {
-          "id": "bambu_lab",
-          "kind": "ha",
-          "name": "Bambu Lab",
-          "detect": {
-            "integration": "bambu_lab"
-          }
-        },
-        {
-          "id": "octoprint",
-          "kind": "ha",
-          "name": "OctoPrint",
-          "detect": {
-            "integration": "octoprint"
-          }
-        },
-        {
-          "id": "prusalink",
-          "kind": "ha",
-          "name": "PrusaLink",
-          "detect": {
-            "integration": "prusalink"
-          }
-        },
-        {
-          "id": "moonraker",
-          "kind": "ha",
-          "name": "Moonraker (Klipper)",
-          "detect": {
-            "integration": "moonraker"
-          }
-        },
-        {
-          "id": "bambu_lan",
-          "kind": "direct",
-          "name": "Bambu printer on the LAN",
-          "setup": [
-            "printer address",
-            "access code"
-          ]
-        }
-      ]
-    },
     "timer": {
       "shows": "Timers you set on the panel or in Home Assistant, counting down.",
       "needs": null,

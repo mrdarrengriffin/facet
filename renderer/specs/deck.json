@@ -42,11 +42,6 @@
           "t": "page",
           "page": "moon",
           "size": "m"
-        },
-        {
-          "t": "page",
-          "page": "print",
-          "size": "m"
         }
       ]
     },
@@ -77,10 +72,6 @@
     {
       "id": "moon",
       "kind": "moon"
-    },
-    {
-      "id": "print",
-      "kind": "print"
     }
   ]
 }
