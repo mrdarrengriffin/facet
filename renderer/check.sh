@@ -4,8 +4,9 @@
 #                                 build) + the fast rules (tests/rules) over every component, each replayed from the
 #                                 runner's input-hash cache unless the component changed (--ids: only those; behaviour
 #                                 included) + the given ids' functional tests. No PNGs, no goldens
-#   ./check.sh gate [--ids a,b]   nightly and in CI: every rule at both densities (lab, floor plans, behaviour included;
-#                                 visual at 1.5x), every functional test
+#   ./check.sh gate [--ids a,b] [--den 1.5x|1x]   nightly and in CI: every rule at both densities (lab, floor plans,
+#                                 behaviour included; visual at 1.5x), every functional test. --den: one density's half
+#                                 (CI runs the two halves as two jobs; the density-free checks run with 1.5x)
 #   ./check.sh nightly            overnight only: ASan at 1.5x (and 1x on Sundays, or with --weekly), the functional
 #                                 suites marked tier: 'nightly' (theme_apply), the theme parser fuzz, the lag proxy
 #                                 (bench --lag: host CPU timing, so alone), the bench headless
@@ -16,9 +17,9 @@ set -uo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd)
 [ -f "$HERE/../local.env" ] && . "$HERE/../local.env"
 tier=${1:-}; shift || true
-ids="" weekly=""; [ "$(date +%u)" = 7 ] && weekly=1
-while [ $# -gt 0 ]; do case "$1" in --ids) ids=$2; shift ;; --weekly) weekly=1 ;; *) echo "unknown arg $1"; exit 2 ;; esac; shift; done
-case "$tier" in fast|gate|nightly) ;; *) sed -n 2,11p "$0"; exit 2 ;; esac
+ids="" den="" weekly=""; [ "$(date +%u)" = 7 ] && weekly=1
+while [ $# -gt 0 ]; do case "$1" in --ids) ids=$2; shift ;; --den) den=$2; shift ;; --weekly) weekly=1 ;; *) echo "unknown arg $1"; exit 2 ;; esac; shift; done
+case "$tier" in fast|gate|nightly) ;; *) sed -n 2,12p "$0"; exit 2 ;; esac
 B=${FW_OUT:-$HERE/out}
 LOG=${CHECK_LOG:-${FW_CACHE:-$HERE/.cache}/checks/$(date +%Y%m%d-%H%M%S)-$tier}; mkdir -p "$LOG"
 fail=0
@@ -36,7 +37,9 @@ soft() { run soft "$@"; }
 bg=()
 start() { local kind=$1 name=$2; shift 2; run "$kind" "$name" "$@" >"$LOG/$name.line" & bg+=("$name"); }
 join() { wait; for n in "${bg[@]}"; do cat "$LOG/$n.line"; grep -q "^FAIL $n " "$LOG/$n.line" && fail=1; done; bg=(); }
-dens=1.5x; [ "$tier" = fast ] || dens="1.5x 1x"
+dens=1.5x; [ "$tier" = fast ] || dens=${den:-1.5x 1x}
+[ -z "$den" ] || [ "$tier" = gate ] || { echo "--den is for the gate tier"; exit 2; }
+has() { case " $dens " in *" $1 "*) return 0 ;; esac; return 1; }
 for d in $dens; do [ -f "$B/$d/fw.mjs" ] || { echo "no $d build in $B: run build.sh $d first"; exit 2; }; done
 
 if [ "$tier" = nightly ]; then
@@ -49,11 +52,13 @@ if [ "$tier" = nightly ]; then
   [ $fail = 0 ] && echo "CHECK $tier: all green (logs $LOG)" || echo "CHECK $tier: FAILED (logs $LOG)"; exit $fail
 fi
 
-# every tier: the quick checks that are not rules (density-free)
+# every tier: the quick checks that are not rules (density-free; with --den, in the 1.5x half)
+if has 1.5x; then
 check features node tools/features.mjs check
 check contrast node tools/contrast.mjs --summary
 check contract-lint node tools/contract_lint.mjs --summary
 check catalogue node tools/gen_catalogue.mjs --build "$B"
+fi
 
 sel=(); [ -n "$ids" ] && sel=(--ids "$ids")
 if [ "$tier" = fast ]; then
@@ -62,12 +67,19 @@ if [ "$tier" = fast ]; then
   soft functional node tools/functional.mjs --den 1.5x --ids "$ids"
 else
   # at once: the rules (pixel contrast, visual and behaviour, the longest, each on its own), the functional tests
-  start hard rules-1.5x-contrast node tools/functional.mjs --rules --tier gate --rule pixel-contrast --den 1.5x --theme all "${sel[@]}"
-  start hard rules-1.5x-visual node tools/functional.mjs --rules --tier gate --rule visual --den 1.5x "${sel[@]}"
-  start hard rules-behaviour node tools/functional.mjs --rules --tier gate --rule behaviour "${sel[@]}"
-  start hard rules-1.5x node tools/functional.mjs --rules --tier gate --skip pixel-contrast,visual,behaviour --den 1.5x "${sel[@]}"
-  start hard rules-1x node tools/functional.mjs --rules --tier gate --skip behaviour --den 1x --theme all "${sel[@]}"
-  start soft functional node tools/functional.mjs "${sel[@]}"
+  if has 1.5x; then
+    start hard rules-1.5x-contrast node tools/functional.mjs --rules --tier gate --rule pixel-contrast --den 1.5x --theme all "${sel[@]}"
+    start hard rules-1.5x-visual node tools/functional.mjs --rules --tier gate --rule visual --den 1.5x "${sel[@]}"
+    start hard rules-1.5x node tools/functional.mjs --rules --tier gate --skip pixel-contrast,visual,behaviour --den 1.5x "${sel[@]}"
+  fi
+  has 1x && start hard rules-1x node tools/functional.mjs --rules --tier gate --skip behaviour --den 1x --theme all "${sel[@]}"
+  if [ -n "$den" ]; then
+    start hard rules-behaviour-$den node tools/functional.mjs --rules --tier gate --rule behaviour --den "$den" "${sel[@]}"
+    start soft functional-$den node tools/functional.mjs --den "$den" "${sel[@]}"
+  else
+    start hard rules-behaviour node tools/functional.mjs --rules --tier gate --rule behaviour "${sel[@]}"
+    start soft functional node tools/functional.mjs "${sel[@]}"
+  fi
   join
 fi
 [ $fail = 0 ] && echo "CHECK $tier: all green (logs $LOG)" || echo "CHECK $tier: FAILED (logs $LOG)"

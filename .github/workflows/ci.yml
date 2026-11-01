@@ -2,7 +2,9 @@ name: CI
 
 # Every push to main and every pull request: the renderer is built from this repo alone (LVGL, ArduinoJson, lv_conf.h,
 # fonts vendored; renderer/README.md "What a machine needs") and the gate tier runs against it (renderer/check.sh gate:
-# every rule at both densities, the functional suites, goldens as raw 565). Logs of a failed step are uploaded.
+# every rule at both densities, the functional suites, goldens as raw 565). Two jobs, one per density (check.sh gate
+# --den), so the wall clock is the slower half. The renderer's own objects come back from ccache (the build's em++ runs
+# through EM_COMPILER_WRAPPER), LVGL's from the object cache. Logs of a failed step are uploaded.
 
 on:
   push:
@@ -18,8 +20,19 @@ concurrency:
 
 jobs:
   gate:
+    name: gate ${{ matrix.den }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        den: ['1.5x', '1x']
+    env:
+      EM_COMPILER_WRAPPER: ccache
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
+      CCACHE_BASEDIR: ${{ github.workspace }}
+      CCACHE_COMPILERCHECK: content
+      CCACHE_MAXSIZE: 500M
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
@@ -41,22 +54,31 @@ jobs:
             renderer/.cache/lvgl-O2
             renderer/.cache/lvgl-O2-*.list
           key: lvgl-${{ hashFiles('renderer/lv_conf.h', 'renderer/third_party/lvgl/lv_version.h') }}
+      - name: Renderer objects (ccache, per density)
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: .ccache
+          key: ccache-${{ matrix.den }}-${{ github.sha }}
+          restore-keys: ccache-${{ matrix.den }}-
+      - run: sudo apt-get install -y --no-install-recommends ccache
       - run: npm ci
         working-directory: renderer/tools
       - name: Feature flags (every source in one feature, shown features complete)
+        if: matrix.den == '1.5x'
         run: node renderer/tools/features.mjs check
       - name: JSON sources parse
+        if: matrix.den == '1.5x'
         run: |
           for f in renderer/specs/*.json renderer/specs/examples/*.json renderer/tokens/*.json renderer/features.json; do
             node -e "JSON.parse(require('fs').readFileSync(process.argv[1], 'utf8'))" "$f" || { echo "bad JSON: $f"; exit 1; }
           done
-      - name: Build (both densities)
-        run: renderer/build.sh
+      - name: Build
+        run: renderer/build.sh ${{ matrix.den }} && ccache -s
       - name: Gate
-        run: CHECK_LOG=renderer/.cache/checks/gate renderer/check.sh gate
+        run: CHECK_LOG=renderer/.cache/checks/gate renderer/check.sh gate --den ${{ matrix.den }}
       - name: Gate logs
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         with:
-          name: gate-logs
+          name: gate-logs-${{ matrix.den }}
           path: renderer/.cache/checks/
