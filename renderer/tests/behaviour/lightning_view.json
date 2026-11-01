@@ -1,7 +1,0 @@
-{
-  "id": "lightning_view",
-  "live": true,
-  "live_why": "strikes arrive over time",
-  "tests": [],
-  "xfail": {}
-}

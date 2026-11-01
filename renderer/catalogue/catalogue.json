@@ -3484,53 +3484,6 @@
     "bytes_est": 160
    }
   },
-  "lightning_view": {
-   "name": "Lightning view",
-   "update": true,
-   "props": [
-    {
-     "name": "demo",
-     "type": "bool",
-     "bindable": true,
-     "about": "For previews only: plays a made-up storm so strikes appear."
-    },
-    {
-     "name": "quiet",
-     "type": "bool",
-     "bindable": true,
-     "about": "For previews only: shows a quiet sky with no recent strikes."
-    },
-    {
-     "name": "unit",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "km",
-      "mi"
-     ],
-     "about": "Whether distances are shown in kilometres or miles."
-    },
-    {
-     "name": "size",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "screen",
-      "weather"
-     ],
-     "about": "screen fills the Lightning screen; weather fits it inside the Weather screen's lightning view."
-    }
-   ],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 16,
-    "bytes_est": 2560
-   }
-  },
   "list_row": {
    "name": "List row",
    "update": true,
@@ -7042,5 +6995,5 @@
    }
   }
  },
- "hash": "f84ecaea"
+ "hash": "303ea8e6"
 }

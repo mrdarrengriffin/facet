@@ -247,25 +247,6 @@
         }
       ]
     },
-    "lightning": {
-      "shows": "A lightning strike: how far away it was and when.",
-      "needs": null,
-      "sources": [
-        {
-          "id": "blitzortung",
-          "kind": "ha",
-          "name": "Blitzortung (HA)",
-          "detect": {
-            "integration": "blitzortung"
-          }
-        },
-        {
-          "id": "blitzortung_org",
-          "kind": "direct",
-          "name": "Blitzortung.org"
-        }
-      ]
-    },
     "github": {
       "shows": "Your pull requests: open, waiting for review and their checks.",
       "needs": "a GitHub account",

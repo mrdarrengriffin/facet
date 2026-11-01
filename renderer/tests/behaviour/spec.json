@@ -2,7 +2,6 @@
   "id": "spec",
   "live_screens": [
     "clock",
-    "lightning",
     "overhead",
     "aircraft",
     "timer",
