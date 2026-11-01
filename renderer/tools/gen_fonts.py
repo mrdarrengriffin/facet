@@ -6,7 +6,7 @@
 One font per (family, weight, size, tabular) that the styles of this density use, with only the glyphs those styles
 need (union of their glyph sets, tokens/type.json "glyphsets"). Rasterised by ESPHome's own font code (FreeType,
 4 bpp, same metrics as ESPHome's `font:`), so it needs a Python with the `esphome` package (FW_FONT_PY in local.env).
-TTFs: `<FW_TTF>/<Family>@<weight>@False@v1.ttf` (ESPHome's Google Fonts cache naming; the files are SIL OFL).
+TTFs: `fonts/<Family without spaces>-<weight>.ttf` (Inter, JetBrains Mono: Google Fonts' static instances, SIL OFL).
 Tabular styles (type.json "tabular"): digits 0-9 get one advance (the widest digit), glyph centred in it.
 The header defines fw::gen::FacetFont F_<id> per font, STYLE_FONT[] (one per style, styles order) and FONTS[] (memory
 report for the Type page).
@@ -31,12 +31,13 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 SRC = HERE.parent / "tokens" / "type.json"
 den, out = sys.argv[1], Path(sys.argv[2])
-TTF = Path(os.environ.get("FW_TTF", ""))
-REG = HERE.parent / "fonts" / "fonts.json"
+TTF = HERE.parent / "fonts"
+REG = TTF / "fonts.json"
 THEMES = sorted((HERE.parent / "themes").glob("*.json"))
 TH = HERE.parent / "tokens" / "theme.json"
 stamp = hashlib.sha1(SRC.read_bytes() + Path(__file__).read_bytes() + den.encode() + REG.read_bytes() + TH.read_bytes()
-                     + (HERE / "facet_font.inc").read_bytes() + b"".join(f.read_bytes() for f in THEMES)).hexdigest()[:12]
+                     + (HERE / "facet_font.inc").read_bytes() + b"".join(f.read_bytes() for f in THEMES)
+                     + b"".join(f.read_bytes() for f in sorted(TTF.glob("*.ttf")))).hexdigest()[:12]
 if out.exists() and out.open().readline().strip().endswith(stamp):
     sys.exit(0)  # unchanged: skip the (slow) rasterising
 
@@ -92,9 +93,9 @@ faces: dict[str, Face] = {}
 total = 0
 report = []
 for fid, f in fonts.items():
-    path = TTF / f"{f['family']}@{f['weight']}@False@v1.ttf"
+    path = TTF / f"{f['family'].replace(' ', '')}-{f['weight']}.ttf"
     if not path.exists():
-        raise SystemExit(f"gen_fonts: {path} missing (set FW_TTF in local.env; fetch it from Google Fonts)")
+        raise SystemExit(f"gen_fonts: {path} missing (Google Fonts' static instance, with its OFL in fonts/)")
     face = faces.setdefault(str(path), Face(str(path)))
     cps = sorted(f["chars"], key=functools.cmp_to_key(glyph_comparator))
     size, bpp = f["size"], 4
