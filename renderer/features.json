@@ -13,7 +13,7 @@
   },
   "later": {
     "about": "Features held on the wip branch until they are finished (spec of contract parts, feed on the skeleton, gate green); the docs roadmap shows their rows as in progress.",
-    "roadmap": ["Placeholder", "Thermostat", "Thermostat dial", "Door lock", "Lock ring", "Hold button"]
+    "roadmap": ["Placeholder", "Thermostat", "Thermostat dial", "Door lock", "Lock ring", "Hold button", "Plant monitor", "Plant gauge / row"]
   },
   "features": [
     {
@@ -111,14 +111,6 @@
       "components": ["iso_floorplan"],
       "core": ["floorplan_auto.cpp", "floorplan_auto.h"],
       "roadmap": ["Floor plans"]
-    },
-    {
-      "id": "plants",
-      "label": "Plants",
-      "docs": false, "status": "wip", "firmware": false,
-      "screens": ["plants"],
-      "components": ["plant_gauge", "plant_row"],
-      "roadmap": ["Plant monitor", "Plant gauge / row"]
     },
     {
       "id": "image",

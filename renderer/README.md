@@ -777,8 +777,6 @@ Rule: no component is shown to Darren until it passes.
 | `event_row` | One thing that happened in an activity list (lab Door lock "last 24 h"): lay::event_row_h, hairline on top, the time (label, text-dim, lay::event_time_w) + "Locked · Alex" (body, text-dim; jammed = error). Prop event "09:03\|locked\|Alex". Static. |
 | `column` | **Layout**: the content box as one column, a top slot and a foot slot pinned to the bottom (meta "slots": 2): the Vacuum's view + its action bar. |
 | `level_bar` | A level as a straight bar with an optional threshold mark (soil moisture). |
-| `plant_gauge` | One plant's soil moisture as a screen hero: caption, hero %, line, Level bar with the dry line. |
-| `plant_row` | One plant in a list: the List row + a small Level bar; with an entity a tap opens its Plants screen. |
 | `camera_tile` | One camera's still (stand-in until the panel fetches stills) with a Frigate-style detection box + tab, name and time. |
 
 ## Screens

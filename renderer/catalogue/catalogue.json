@@ -4477,102 +4477,6 @@
     "bytes_est": 1280
    }
   },
-  "plant_gauge": {
-   "name": "Plant gauge",
-   "update": true,
-   "props": [
-    {
-     "name": "name",
-     "type": "text",
-     "bindable": true,
-     "about": "The plant's name."
-    },
-    {
-     "name": "moisture",
-     "type": "range",
-     "bindable": true,
-     "min": -1,
-     "max": 100,
-     "about": "The soil moisture now, as a percentage. -1 means it cannot be read."
-    },
-    {
-     "name": "dry",
-     "type": "range",
-     "bindable": true,
-     "min": 0,
-     "max": 100,
-     "about": "The moisture below which the plant needs water. The bar shows it as a line."
-    },
-    {
-     "name": "wet",
-     "type": "range",
-     "bindable": true,
-     "min": 0,
-     "max": 100,
-     "about": "The moisture above which the soil is too wet."
-    }
-   ],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 5,
-    "bytes_est": 800
-   }
-  },
-  "plant_row": {
-   "name": "Plant row",
-   "update": true,
-   "props": [
-    {
-     "name": "name",
-     "type": "text",
-     "bindable": true,
-     "about": "The plant's name."
-    },
-    {
-     "name": "moisture",
-     "type": "range",
-     "bindable": true,
-     "min": -1,
-     "max": 100,
-     "about": "The soil moisture now, as a percentage. -1 means it cannot be read."
-    },
-    {
-     "name": "dry",
-     "type": "range",
-     "bindable": true,
-     "min": 0,
-     "max": 100,
-     "about": "The moisture below which the plant needs water. The bar shows it as a line."
-    },
-    {
-     "name": "wet",
-     "type": "range",
-     "bindable": true,
-     "min": 0,
-     "max": 100,
-     "about": "The moisture above which the soil is too wet."
-    },
-    {
-     "name": "entity",
-     "type": "text",
-     "bindable": true,
-     "about": "The plant's moisture sensor, by its Home Assistant entity id."
-    }
-   ],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 9,
-    "bytes_est": 1440
-   }
-  },
   "print_model": {
    "name": "3D print model",
    "update": true,
@@ -7630,5 +7534,5 @@
    }
   }
  },
- "hash": "af6bf13b"
+ "hash": "d434a935"
 }

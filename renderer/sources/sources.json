@@ -292,29 +292,6 @@
         }
       ]
     },
-    "plants": {
-      "shows": "How moist each plant's soil is, and which ones need water.",
-      "needs": "soil moisture sensors",
-      "sources": [
-        {
-          "id": "ha_moisture",
-          "kind": "ha",
-          "name": "HA moisture sensors",
-          "detect": {
-            "domain": "sensor"
-          },
-          "fills": {
-            "plants": {
-              "domain": "sensor",
-              "list": true
-            },
-            "entity": {
-              "domain": "sensor"
-            }
-          }
-        }
-      ]
-    },
     "cameras": {
       "shows": "Your cameras' latest pictures and what they detected.",
       "needs": "cameras",

@@ -2064,7 +2064,7 @@ inline lv_obj_t *build(lv_obj_t *parent, const std::string &id, Props opened, st
     const bool after_block = into == c && layout == "list" && lv_obj_get_index(n.obj) > 0 && !prev_row;
     if ((n.comp == "section_header" && lv_obj_get_index(n.obj) > 0 && (into != c || layout == "list")) || after_block)
       lv_obj_set_style_margin_top(n.obj, lay::group, 0);  // more space between groups (Layout rule)
-    if (into == c) {  // a row (list_row, plant_row, section_header ...) touches the next; any other block doesn't
+    if (into == c) {  // a row (list_row, section_header ...) touches the next; any other block doesn't
       const size_t L = n.comp.size();
       prev_row = n.comp == "section_header" || (L > 4 && n.comp.compare(L - 4, 4, "_row") == 0);
     }

@@ -4696,33 +4696,6 @@
         "use": "the threshold mark"
       },
       {
-        "section": "plant_gauge",
-        "fg": "accent-text",
-        "bg": [
-          "bg"
-        ],
-        "kind": "text",
-        "use": "caption: needs water"
-      },
-      {
-        "section": "plant_gauge",
-        "fg": "text-dim",
-        "bg": [
-          "bg"
-        ],
-        "kind": "text",
-        "use": "caption, the line, the value unknown"
-      },
-      {
-        "section": "plant_gauge",
-        "fg": "text",
-        "bg": [
-          "bg"
-        ],
-        "kind": "large",
-        "use": "the moisture (hero)"
-      },
-      {
         "section": "camera_tile",
         "fg": "text-dim",
         "bg": [

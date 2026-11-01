@@ -79,7 +79,7 @@ the `spec` component). Shared helpers for family 1: `_controls.mjs` (pixel reads
    dial, thermostat_dial, picker_row, check_row, list_row, more_row, focus_ring, scroll_track, bottom_sheet, toast,
    toast_layer.
 2. **Cards + tiles:** card, tile, room_tile, camera_tile, stat, big_number, status_block, status_chip, status_dot,
-   count_badge, hero_block, level_bar, plant_gauge, plant_row, empty_state, qr_block (+ the Home cards
+   count_badge, hero_block, level_bar, empty_state, qr_block (+ the Home cards
    on the device: climate, media, cover, page cards).
 3. **Layout + chrome + device:** device (navigation, Settings, deck changes), header (timer slot collapses with no
    timer: facet-180), screen_chrome, section_header, grid, card_grid, column, split, group, label, icon, time,
