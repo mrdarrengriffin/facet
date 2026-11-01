@@ -249,42 +249,6 @@
         }
       ]
     },
-    "cameras": {
-      "shows": "Your cameras' latest pictures and what they detected.",
-      "needs": "cameras",
-      "sources": [
-        {
-          "id": "frigate",
-          "kind": "ha",
-          "name": "Frigate",
-          "detect": {
-            "integration": "frigate",
-            "domain": "camera"
-          },
-          "fills": {
-            "cameras": {
-              "domain": "camera",
-              "integration": "frigate",
-              "list": true
-            }
-          }
-        },
-        {
-          "id": "ha_cameras",
-          "kind": "ha",
-          "name": "HA cameras",
-          "detect": {
-            "domain": "camera"
-          },
-          "fills": {
-            "cameras": {
-              "domain": "camera",
-              "list": true
-            }
-          }
-        }
-      ]
-    },
     "light": {
       "shows": "One light: on or off and its brightness.",
       "needs": "a dimmable light",

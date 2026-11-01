@@ -4415,51 +4415,6 @@
         "use": "hold (secondary / outline / ghost, pressed label = text): the label over the hold fill"
       },
       {
-        "section": "camera_tile",
-        "fg": "text-dim",
-        "bg": [
-          "surface"
-        ],
-        "kind": "text",
-        "use": "no still yet / offline in the still"
-      },
-      {
-        "section": "camera_tile",
-        "fg": "accent",
-        "bg": [
-          "surface"
-        ],
-        "kind": "ui",
-        "use": "the detection box"
-      },
-      {
-        "section": "camera_tile",
-        "fg": "on-accent",
-        "bg": [
-          "accent"
-        ],
-        "kind": "text",
-        "use": "the detection tab's label"
-      },
-      {
-        "section": "camera_tile",
-        "fg": "text",
-        "bg": [
-          "bg"
-        ],
-        "kind": "text",
-        "use": "the camera's name"
-      },
-      {
-        "section": "camera_tile",
-        "fg": "text-dim",
-        "bg": [
-          "bg"
-        ],
-        "kind": "text",
-        "use": "the time, the name offline"
-      },
-      {
         "section": "layout",
         "fg": "line-hi",
         "bg": [

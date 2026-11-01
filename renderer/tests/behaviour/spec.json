@@ -253,59 +253,6 @@
           "playing"
         ]
       ]
-    },
-    {
-      "name": "Cameras: a camera tap opens its own screen",
-      "kind": "interaction",
-      "props": {
-        "screen": "cameras"
-      },
-      "steps": [
-        {
-          "tap": {
-            "text": "Front door"
-          }
-        }
-      ],
-      "expect": {
-        "events": [
-          [
-            "navigate",
-            "^camera\\?"
-          ]
-        ],
-        "sounds": [
-          "open"
-        ]
-      }
-    },
-    {
-      "name": "Camera: a tap on the still goes back",
-      "kind": "interaction",
-      "props": {
-        "screen": "camera"
-      },
-      "steps": [
-        {
-          "tap": {
-            "at": [
-              0.5,
-              0.4
-            ]
-          }
-        }
-      ],
-      "expect": {
-        "events": [
-          [
-            "back",
-            ""
-          ]
-        ],
-        "sounds": [
-          "back"
-        ]
-      }
     }
   ],
   "xfail": {

@@ -723,82 +723,6 @@
     "bytes_est": 640
    }
   },
-  "camera_tile": {
-   "name": "Camera tile",
-   "update": true,
-   "props": [
-    {
-     "name": "name",
-     "type": "text",
-     "bindable": true,
-     "about": "The camera's name, shown along the bottom of the picture."
-    },
-    {
-     "name": "time",
-     "type": "text",
-     "bindable": true,
-     "about": "When the picture was taken, shown next to the name."
-    },
-    {
-     "name": "detect",
-     "type": "text",
-     "bindable": true,
-     "about": "What the camera saw, such as person or car, shown as a label on the box around it. Leave empty when nothing was seen."
-    },
-    {
-     "name": "score",
-     "type": "range",
-     "bindable": true,
-     "min": 0,
-     "max": 100,
-     "about": "How sure the camera is about what it saw, as a percentage."
-    },
-    {
-     "name": "box",
-     "type": "text",
-     "bindable": true,
-     "about": "Where the box around what was seen sits on the picture: left, top, width and height as percentages, separated by commas."
-    },
-    {
-     "name": "state",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "default",
-      "unavailable"
-     ],
-     "about": "default shows the picture; unavailable shows that the camera cannot be reached."
-    },
-    {
-     "name": "size",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "tile",
-      "full"
-     ],
-     "about": "tile is a small picture for a grid of cameras; full fills the screen with one camera."
-    },
-    {
-     "name": "entity",
-     "type": "text",
-     "bindable": true,
-     "about": "Which camera to show, by its Home Assistant entity id. Leave empty to use the sample picture."
-    }
-   ],
-   "events": {
-    "tap": [
-     "nav.back"
-    ],
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 9,
-    "bytes_est": 1440
-   }
-  },
   "card": {
    "name": "Card",
    "update": true,
@@ -7118,5 +7042,5 @@
    }
   }
  },
- "hash": "fd929c75"
+ "hash": "f84ecaea"
 }

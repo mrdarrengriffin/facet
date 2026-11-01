@@ -207,7 +207,7 @@ constexpr Rule RULES[] = {
     {"more_row", "tap", "nav.open,nav.back,screen.param"},  // screen.param + to: a view of the same screen (Energy > last 7 days)
     {"cover_visual", "change", "cover.control"},  // the Covers window: a drag released (its position)
     {"button", "confirm", "lock.control"},
-    {"camera_tile", "tap", "nav.back"},          {"tile", "tap", "nav.open"},          {"button", "tap", "nav.open,nav.back,light.toggle,vacuum.control,timer.start,timer.extend,timer.cancel,timer.stop,timer.select,timer.new,timer.back,cover.control,script.run,scene.activate,automation.trigger,button.press,entity.toggle"},  // 2026-10-30: a button you place says what it does (the editor's On tap)
+    {"tile", "tap", "nav.open"},          {"button", "tap", "nav.open,nav.back,light.toggle,vacuum.control,timer.start,timer.extend,timer.cancel,timer.stop,timer.select,timer.new,timer.back,cover.control,script.run,scene.activate,automation.trigger,button.press,entity.toggle"},  // 2026-10-30: a button you place says what it does (the editor's On tap)
     {"timer_chip", "select", "timer.select"},       {"timer_chip", "stop", "timer.stop"},
     {"grid", "select", "timer.select"},             {"grid", "stop", "timer.stop"},  // Timer chips in an items Grid
     {"segmented", "change", "vacuum.control,screen.param"},
