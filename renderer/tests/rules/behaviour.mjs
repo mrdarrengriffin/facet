@@ -201,8 +201,8 @@ export async function variant(s, v) {  // the automatic tests of one case
   const buildFrames = b.rec.slice(b.rec.findIndex((f) => f.renders) + 1);  // the first refresh = the build itself (a full cut)
   b.events();
   if (lagOn) { const st = {}; judge(id, den, 'lag', 'build', vl, judgeLag(buildFrames, S, { live, budgets: spec.budgets, stats: st }), { stats: st }); }
-  // ---- idle + same-props update (redraws when nothing changed; the update is silent: 1x, where the lag phases run)
-  if (den === '1x' && vl === 'default') {
+  // ---- idle + same-props update (redraws when nothing changed: lag, 1x; the update is silent: every density)
+  if (vl === 'default') {
     b.rec = []; b.tick(Math.ceil(B.lag.idle_ms / T));
     judge(id, den, 'lag', 'idle', vl, judgeLag(b.rec, S, { live, idle: true, budgets: spec.budgets, livePx: spec.live_px }));
     b.rec = [];
