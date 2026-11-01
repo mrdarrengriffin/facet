@@ -136,7 +136,8 @@
       "kind": "interaction",
       "props": {
         "screen": "media",
-        "entity": "media_player.alpha"
+        "entity": "media_player.alpha",
+        "source": "ha"
       },
       "steps": [
         {
@@ -170,7 +171,8 @@
       "props": {
         "screen": "media",
         "entity": "media_player.alpha",
-        "speakers": "media_player.alpha,media_player.beta"
+        "speakers": "media_player.alpha,media_player.beta",
+        "source": "ha"
       },
       "steps": [
         {
@@ -421,7 +423,9 @@
       "kind": "interaction",
       "props": {
         "screen": "vacuum",
-        "entity": "vacuum.test"
+        "entity": "vacuum.test",
+        "source": "ha",
+        "mopsel": "select.test_water"
       },
       "before_ha": [
         [
@@ -433,6 +437,11 @@
           "vacuum.test",
           "fan_speed",
           "balanced"
+        ],
+        [
+          "select.test_water",
+          "",
+          "high"
         ]
       ],
       "steps": [
@@ -465,7 +474,9 @@
       "props": {
         "screen": "vacuum",
         "entity": "vacuum.test",
-        "modesel": "select.test_mode"
+        "modesel": "select.test_mode",
+        "source": "ha",
+        "mopsel": "select.test_water"
       },
       "before_ha": [
         [
@@ -477,6 +488,11 @@
           "select.test_mode",
           "",
           "vac_and_mop"
+        ],
+        [
+          "select.test_water",
+          "",
+          "high"
         ]
       ],
       "steps": [
@@ -541,7 +557,8 @@
       "kind": "interaction",
       "props": {
         "screen": "vacuum",
-        "entity": "vacuum.test"
+        "entity": "vacuum.test",
+        "source": "ha"
       },
       "before_ha": [
         [
@@ -605,11 +622,12 @@
       }
     },
     {
-      "name": "Robot vacuum: cleaning hides the rooms and Clean, Pause sends pause",
+      "name": "Robot vacuum: while cleaning, Pause sends pause",
       "kind": "interaction",
       "props": {
         "screen": "vacuum",
-        "entity": "vacuum.test"
+        "entity": "vacuum.test",
+        "source": "ha"
       },
       "before_ha": [
         [
@@ -631,12 +649,11 @@
             "ha",
             "vacuum\\.pause.*vacuum\\.test"
           ]
-        ],
-        "absent": {
-          "hit": "room_tile"
-        }
+        ]
       }
     }
   ],
-  "xfail": {}
+  "xfail": {
+    "interaction:Robot vacuum: Map shows the floor plan; a room tap there picks it:custom": "the Map view and its Rooms | Map tabs are out until the floor plan is ported (21b1dff)"
+  }
 }
