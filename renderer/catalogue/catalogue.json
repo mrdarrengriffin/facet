@@ -1846,76 +1846,6 @@
     "bytes_est": 320
    }
   },
-  "football_pitch": {
-   "name": "Football pitch",
-   "update": true,
-   "props": [
-    {
-     "name": "width",
-     "type": "range",
-     "bindable": true,
-     "min": 280,
-     "max": 432,
-     "about": "How wide the pitch is, in pixels."
-    },
-    {
-     "name": "sim",
-     "type": "bool",
-     "bindable": true,
-     "about": "For previews only: runs a made-up match so the score and events change."
-    },
-    {
-     "name": "speed",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "1x",
-      "10x",
-      "60x"
-     ],
-     "about": "For previews only: how fast the made-up match runs, real time or 10 or 60 times faster."
-    },
-    {
-     "name": "jump",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "start",
-      "kickoff",
-      "goal",
-      "card",
-      "sub",
-      "half time",
-      "added time",
-      "full time"
-     ],
-     "about": "For previews only: skips the made-up match to a moment such as a goal, a card or half time."
-    },
-    {
-     "name": "seed",
-     "type": "range",
-     "bindable": true,
-     "min": 1,
-     "max": 20,
-     "about": "For previews only: picks a different made-up match; the same number always gives the same match."
-    },
-    {
-     "name": "feed",
-     "type": "text",
-     "bindable": true,
-     "about": "The live match data sent to the panel. Leave empty to use the made-up match."
-    }
-   ],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 118,
-    "bytes_est": 18880
-   }
-  },
   "fw_update_view": {
    "name": "Firmware update",
    "update": true,
@@ -5929,5 +5859,5 @@
    }
   }
  },
- "hash": "eb8b4c82"
+ "hash": "2212e42f"
 }

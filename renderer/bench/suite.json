@@ -215,9 +215,7 @@
     "mascot_mood",
     "tennis_score",
     "tennis_court",
-    "tennis_live",
-    "football_pitch",
-    "football_live"
+    "tennis_live"
   ],
   "cases": [
     {

@@ -1,7 +1,0 @@
-{
-  "id": "football_pitch",
-  "live": true,
-  "live_why": "simulated live match",
-  "tests": [],
-  "xfail": {}
-}

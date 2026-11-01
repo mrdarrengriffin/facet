@@ -105,14 +105,6 @@
       "roadmap": ["Sports surfaces"]
     },
     {
-      "id": "football",
-      "label": "Football",
-      "docs": false, "status": "wip", "firmware": false,
-      "screens": ["football_live"],
-      "components": ["football_pitch"],
-      "roadmap": ["Sports (live scores)"]
-    },
-    {
       "id": "tennis",
       "label": "Tennis",
       "docs": false, "status": "wip", "firmware": false,

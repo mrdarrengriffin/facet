@@ -6,5 +6,5 @@ export const SCREEN_GROUPS: [string, string[]][] = [
   ['Media', ['media']],
   ['Weather and sky', ['weather', 'weather_days', 'moon']],
   ['Info', ['calendar', 'energy']],
-  ['Sport', ['football_live', 'tennis_live']],
+  ['Sport', ['tennis_live']],
 ];
