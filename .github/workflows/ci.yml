@@ -66,6 +66,9 @@ jobs:
       - name: Feature flags (every source in one feature, shown features complete)
         if: matrix.den == '1.5x'
         run: node renderer/tools/features.mjs check
+      - name: Issue templates list every board
+        if: matrix.den == '1.5x'
+        run: node boards/templates.mjs --check
       - name: JSON sources parse
         if: matrix.den == '1.5x'
         run: |

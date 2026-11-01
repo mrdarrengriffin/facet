@@ -1,5 +1,5 @@
 {
-  "about": "One supported panel. Read by the firmware YAML (esphome/, !include), tokens/layout.json devices (tools/gen_layout.mjs), the docs site (install page, engine.ts) and deploy.yml. status: target = a release firmware is built for it.",
+  "about": "One supported panel. Read by the firmware YAML (esphome/, !include), tokens/layout.json devices (tools/gen_layout.mjs), the docs site (install page, engine.ts), deploy.yml and the issue templates (boards/templates.mjs). status: target = a release firmware is built for it.",
   "id": "waveshare-p4-86",
   "name": "Waveshare ESP32-P4-86",
   "chip": "ESP32-P4",

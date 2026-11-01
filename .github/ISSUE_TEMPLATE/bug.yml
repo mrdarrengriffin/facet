@@ -17,8 +17,10 @@ body:
     attributes:
       label: Where
       options:
+        # boards: generated from boards/*.json (node boards/templates.mjs)
         - Waveshare ESP32-P4-86 (720 x 720)
         - Guition ESP32-S3-4848S040 (480 x 480)
+        # end boards
         - Another panel
         - Docs site
     validations:
