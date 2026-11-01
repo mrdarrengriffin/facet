@@ -64,8 +64,7 @@
 //              {"do": "media.control", "e"}  (a Media view's "media" event: previous | play_pause | next |
 //                                              volume 0-100 -> media_player.media_previous_track / media_play_pause /
 //                                              media_next_track / volume_set)
-//              {"do": "cover.control", "e"}  (position N | tilt N | open | stop | close -> (on panel.covers: the covers feed,
-//                                              core/covers_source.cpp, says which; the window, the slats, the buttons)
+//              {"do": "cover.control", "e"}  (position N | tilt N | open | stop | close ->
 //                                              cover.set_cover_position / set_cover_tilt_position / open_cover /
 //                                              stop_cover / close_cover)
 //              {"do": "lock.control", "e"}  (a Lock view's "lock": lock | unlock | open -> lock.lock / lock.unlock /
@@ -364,7 +363,6 @@ constexpr const char *ROLES[] = {"page", "detail", "both"};
 struct CardType { const char *t, *domains, *sizes, *taps, *detail, *comp_s, *comp_m, *comp_l; };
 constexpr CardType CARD_TYPES[] = {
     {"light", "light,switch", "s,m", "toggle,detail", "light", "entity_tile", "card", ""},
-    {"cover", "cover", "s,m", "detail", "covers", "entity_tile", "card", ""},
     {"climate", "climate", "m", "detail", "thermostat", "", "card", ""},
     {"media", "media_player", "m,l", "detail,page", "media", "", "card", "card"},
     {"sensor", "sensor,binary_sensor", "s,m", "none", "", "entity_tile", "readout", ""},
@@ -520,7 +518,7 @@ inline void check_action(ArduinoJson::JsonVariantConst a, const char *comp, cons
   }
   if (d == "cover.control") {
     const std::string en = a["e"] | "";
-    if (!entity_ok(en) || (en[0] != '$' && en != "panel.covers" && en.rfind("cover.", 0) != 0)) err(e, path + ".e", "bad_entity", "a cover (cover.x, panel.covers or $param)");
+    if (!entity_ok(en) || (en[0] != '$' && en.rfind("cover.", 0) != 0)) err(e, path + ".e", "bad_entity", "a cover (cover.x or $param)");
   }
   if (d == "vacuum.control") {
     const std::string en = a["e"] | "";
@@ -1509,20 +1507,6 @@ inline bool run_action(Screen *s, Node &n, ArduinoJson::JsonVariantConst a, cons
       snprintf(data, sizeof data, "{\"volume_level\":%.2f}", LV_CLAMP(0, atoi(detail + 7), 100) / 100.0);
       ha_act(n, "media_player.volume_set", n.entity.c_str(), data);
     }
-    return true;
-  }
-  if (d == "cover.control" && n.entity == "panel.covers") {  // the covers feed (core/covers_source.cpp): it shows the
-    // tap at once and names the cover service to call (none on its sample adapter); a tap's event says what
-    const std::string ev = event ? event : "", det = detail ? detail : "";
-    std::string v = ev == "close" ? "sheet_close" : n.comp == "picker_row" ? "pick " + det : n.comp == "icon_button" ? "windows"
-                  : n.comp == "slider_row" || n.comp == "slider" ? (ev == "input" ? "live " : "tilt ") + det
-                  : n.comp == "cover_visual" ? "position " + det : det;
-    for (char &ch : v) ch = (char) tolower((unsigned char) ch);
-    if (n.comp == "picker_row") v = "pick " + det;  // the name as it is
-    std::string svc, ent, data;
-    const char *why = dev::covers_source::control(v, &svc, &ent, &data);
-    if (*why) return refuse(why);
-    if (!svc.empty()) ha_act(n, svc.c_str(), ent.c_str(), data.c_str());
     return true;
   }
   if (d == "cover.control") {  // position N | tilt N | open | stop | close (the view shows it at once itself)

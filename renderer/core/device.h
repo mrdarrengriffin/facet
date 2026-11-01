@@ -102,9 +102,6 @@ namespace calendar_source { const char *control(const std::string &v); }
 // the Media feed (core/media_source.cpp): media.control on panel.media; "" = done, else why not; svc = a media_player
 // service to call on ent with data ("" = none)
 namespace media_source { const char *control(const std::string &v, std::string *svc, std::string *ent, std::string *data); }
-// the Covers feed (core/covers_source.cpp): cover.control on panel.covers; "" = done, else why not; svc = a cover
-// service to call on ent with data ("" = none)
-namespace covers_source { const char *control(const std::string &v, std::string *svc, std::string *ent, std::string *data); }
 // the Vacuum feed (core/vacuum_source.cpp): vacuum.control on panel.vacuum; "" = done, else why not; svc = a vacuum /
 // select service to call on ent with data ("" = none: the sample robot does it)
 namespace vacuum_source { const char *control(const std::string &v, const std::string &rooms, std::string *svc, std::string *ent, std::string *data); }

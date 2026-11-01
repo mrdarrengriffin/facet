@@ -1,149 +1,140 @@
 {
- "v": 2,
- "rev": 3,
- "start": "home",
- "pages": [
-  {
-   "id": "home",
-   "kind": "home",
-   "name": "Home",
-   "cards": [
+  "v": 2,
+  "rev": 3,
+  "start": "home",
+  "pages": [
     {
-     "t": "page",
-     "page": "clock",
-     "size": "m"
+      "id": "home",
+      "kind": "home",
+      "name": "Home",
+      "cards": [
+        {
+          "t": "page",
+          "page": "clock",
+          "size": "m"
+        },
+        {
+          "t": "page",
+          "page": "weather",
+          "size": "m"
+        },
+        {
+          "t": "page",
+          "page": "calendar",
+          "size": "m"
+        },
+        {
+          "t": "page",
+          "page": "media",
+          "size": "m"
+        },
+        {
+          "t": "page",
+          "page": "timer",
+          "size": "m"
+        },
+        {
+          "t": "page",
+          "page": "energy",
+          "size": "m"
+        },
+        {
+          "t": "page",
+          "page": "bins",
+          "size": "m"
+        },
+        {
+          "t": "page",
+          "page": "moon",
+          "size": "m"
+        },
+        {
+          "t": "page",
+          "page": "vacuum",
+          "size": "m"
+        },
+        {
+          "t": "page",
+          "page": "github",
+          "size": "m"
+        },
+        {
+          "t": "page",
+          "page": "flightradar",
+          "size": "m"
+        },
+        {
+          "t": "page",
+          "page": "strike_map",
+          "size": "m"
+        },
+        {
+          "t": "page",
+          "page": "thermostat",
+          "size": "m"
+        },
+        {
+          "t": "page",
+          "page": "print",
+          "size": "m"
+        }
+      ]
     },
     {
-     "t": "page",
-     "page": "weather",
-     "size": "m"
+      "id": "clock",
+      "kind": "clock"
     },
     {
-     "t": "page",
-     "page": "calendar",
-     "size": "m"
+      "id": "weather",
+      "kind": "weather"
     },
     {
-     "t": "page",
-     "page": "media",
-     "size": "m"
+      "id": "calendar",
+      "kind": "calendar"
     },
     {
-     "t": "page",
-     "page": "timer",
-     "size": "m"
+      "id": "media",
+      "kind": "media"
     },
     {
-     "t": "page",
-     "page": "energy",
-     "size": "m"
+      "id": "timer",
+      "kind": "timer"
     },
     {
-     "t": "page",
-     "page": "bins",
-     "size": "m"
+      "id": "energy",
+      "kind": "energy"
     },
     {
-     "t": "page",
-     "page": "covers",
-     "size": "m"
+      "id": "bins",
+      "kind": "bins"
     },
     {
-     "t": "page",
-     "page": "moon",
-     "size": "m"
+      "id": "moon",
+      "kind": "moon"
     },
     {
-     "t": "page",
-     "page": "vacuum",
-     "size": "m"
+      "id": "vacuum",
+      "kind": "vacuum"
     },
     {
-     "t": "page",
-     "page": "github",
-     "size": "m"
+      "id": "github",
+      "kind": "github"
     },
     {
-     "t": "page",
-     "page": "flightradar",
-     "size": "m"
+      "id": "flightradar",
+      "kind": "flightradar"
     },
     {
-     "t": "page",
-     "page": "strike_map",
-     "size": "m"
+      "id": "strike_map",
+      "kind": "strike_map"
     },
     {
-     "t": "page",
-     "page": "thermostat",
-     "size": "m"
+      "id": "thermostat",
+      "kind": "thermostat"
     },
     {
-     "t": "page",
-     "page": "print",
-     "size": "m"
+      "id": "print",
+      "kind": "print"
     }
-   ]
-  },
-  {
-   "id": "clock",
-   "kind": "clock"
-  },
-  {
-   "id": "weather",
-   "kind": "weather"
-  },
-  {
-   "id": "calendar",
-   "kind": "calendar"
-  },
-  {
-   "id": "media",
-   "kind": "media"
-  },
-  {
-   "id": "timer",
-   "kind": "timer"
-  },
-  {
-   "id": "energy",
-   "kind": "energy"
-  },
-  {
-   "id": "bins",
-   "kind": "bins"
-  },
-  {
-   "id": "covers",
-   "kind": "covers"
-  },
-  {
-   "id": "moon",
-   "kind": "moon"
-  },
-  {
-   "id": "vacuum",
-   "kind": "vacuum"
-  },
-  {
-   "id": "github",
-   "kind": "github"
-  },
-  {
-   "id": "flightradar",
-   "kind": "flightradar"
-  },
-  {
-   "id": "strike_map",
-   "kind": "strike_map"
-  },
-  {
-   "id": "thermostat",
-   "kind": "thermostat"
-  },
-  {
-   "id": "print",
-   "kind": "print"
-  }
- ]
+  ]
 }

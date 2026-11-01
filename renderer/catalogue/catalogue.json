@@ -7794,16 +7794,6 @@
     "m": "card"
    }
   },
-  "cover": {
-   "domains": "cover",
-   "sizes": "s,m",
-   "taps": "detail",
-   "detail": "covers",
-   "component": {
-    "s": "entity_tile",
-    "m": "card"
-   }
-  },
   "climate": {
    "domains": "climate",
    "sizes": "m",
@@ -7887,7 +7877,7 @@
     },
     "cover": {
      "taps": "detail,none",
-     "detail": "covers"
+     "detail": ""
     },
     "climate": {
      "taps": "detail,none",
@@ -7911,5 +7901,5 @@
    }
   }
  },
- "hash": "2b88aea9"
+ "hash": "237682d5"
 }

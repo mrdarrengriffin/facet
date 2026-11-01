@@ -138,7 +138,9 @@ export function hiddenColour(flag, L = load(), aliasesOnly = false) {
 /** roadmap rows to leave out of the docs: every feature naming them is hidden */
 export function hiddenRoadmap(L = load()) {
   const shown = new Set(L.features.filter((f) => f.docs).flatMap((f) => f.roadmap ?? []));
-  return new Set(L.features.filter((f) => !f.docs).flatMap((f) => f.roadmap ?? []).filter((r) => !shown.has(r)));
+  // features.json "later": the roadmap rows of features held on the wip branch until they are finished
+  const later = L.man.later?.roadmap ?? [];
+  return new Set([...L.features.filter((f) => !f.docs).flatMap((f) => f.roadmap ?? []), ...later].filter((r) => !shown.has(r)));
 }
 /** id -> {feature, label, docs, status, firmware} for every registered id and spec screen (spec ids without spec:) */
 export function byId(L = load()) {

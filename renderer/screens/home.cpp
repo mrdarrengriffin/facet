@@ -261,12 +261,7 @@ char card_node(Var cd, Var pages, int slot, ArduinoJson::JsonArray nodes) {
       p["icon"] = has_icon(kind) ? kind : std::string("none");
       page_card(p, target, kind);  // the screen's own card (its spec's "card", on its feeds), when it has one
     } else if (t == "light") { p["icon"] = "light"; bind(p, "value", e, "level"); bind(p, "accent", e, "on"); }
-    else if (t == "cover") {
-      p["icon"] = "covers";
-      bind(p, "value", e, "num", "current_position");
-      p["value"]["tpl"] = "{}%";
-      bind(p, "sub", e, "state");
-    } else if (t == "climate") {
+    else if (t == "climate") {
       p["icon"] = "thermostat";
       bind(p, "value", e, "num", "current_temperature");
       p["value"]["tpl"] = "{}\xC2\xB0";

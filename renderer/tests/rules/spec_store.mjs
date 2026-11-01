@@ -70,7 +70,7 @@ export default {
     ok(spec('check_dev', H([{ t: 'light', e: 'light.x', size: 's', tap: 'toggle' }, { t: 'page', page: 'w', size: 'l' }])).ok, 'light and page cards pass');
     ok(dc(H([{ t: 'light', e: 'cover.x', size: 's' }])).includes('bad_entity'), 'a card takes only its domains');
     ok(dc(H([{ t: 'climate', e: 'climate.x', size: 's' }])).includes('bad_size'), 'a card takes only its sizes');
-    ok(dc(H([{ t: 'cover', e: 'cover.x', size: 'm', tap: 'page' }])).includes('bad_tap'), 'a card takes only its taps');
+    ok(dc(H([{ t: 'light', e: 'light.x', size: 'm', tap: 'page' }])).includes('bad_tap'), 'a card takes only its taps');
     ok(dc(H([{ t: 'page', page: 'nope', size: 'm' }])).includes('bad_page'), 'a page card names a page of the deck');
     ok(dc(H([{ t: 'light', e: 'light.x', size: 's', x: 10 }])).includes('style_key'), 'a card has no position (style_key)');
     ok(dc(H(Array(25).fill({ t: 'light', e: 'light.x', size: 's' }))).includes('over_budget'), 'over the card budget is refused');

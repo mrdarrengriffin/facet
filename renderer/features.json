@@ -48,15 +48,6 @@
       "cards": ["light"]
     },
     {
-      "id": "covers",
-      "label": "Blinds and curtains",
-      "docs": false, "status": "wip", "firmware": false,
-      "screens": ["covers"],
-      "docs_pages": ["covers"],
-      "components": [],
-      "cards": ["cover"]
-    },
-    {
       "id": "media",
       "label": "Media",
       "docs": true, "status": "done", "firmware": true,
