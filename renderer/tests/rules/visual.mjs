@@ -1,8 +1,6 @@
-#!/usr/bin/env node
-// Visual checks (2026-10-22, after Darren's batch E review: "some of [the card previews] are broken", "does the lightning
-// radar actually work in terms of animations?"). The audit (tests/rules/audit.mjs) proves geometry: nothing clipped, on the
-// grid, no overlap, symmetric marks, motion paths, update animations. It cannot tell whether a component LOOKS like it
-// should or whether its motion is visible. These checks look at the pixels, per component x variant x theme, one density:
+// visual (rule, gate tier, 1.5x, Facet theme): the pixels, per component x variant x look (moved from tools/visual.mjs
+// onto the runner, plan Phase 2.3). The audit rule proves geometry; this one looks at what is drawn (2026-10-22, after
+// Darren's batch E review: "some of [the card previews] are broken", "does the lightning radar actually work?"):
 //   blank      degenerate render, inside the component's own box (its roots): (almost) no ink (pixels that differ from
 //              the stage background) or ink in a sliver (error: under 16 px or 0.05 %: nothing there; review: under 2 %, or
 //              the ink's own box under a tenth of it)
@@ -10,39 +8,23 @@
 //   animates   meta "motion": "<what moves>" (or a running LVGL animation at the build): the frames over 3 s must change
 //              (3+ distinct frames); a declared motion that never shows is an error; meta "motion_off": "<bool prop>" =
 //              variants with that prop false are still (a pinned demo)
-//   reference  ported components (tests/references.json): the Astro original (docs explorer, captured headless with
-//              --capture into tests/ref/, kept in the repo) against the WASM render at 720 (1.5x), same box: structural similarity
-//              (SSIM on luminance minus the background, 8 px windows; 0.8) and ink overlap (share of ink within 2 px of the other's; 0.6). Under the thresholds = flagged for review, never
-//              a failure (the Facet port differs on purpose: the grid, tokens), with both images side by side
-// Report: $FW_OUT/visual/<den>/index.html (the hub serves it at /facet-wasm/visual/1.5x/), every flagged case + picture.
-//   node tools/visual.mjs [--den 1x|1.5x] [--comp id,id] [--capture] [--json out.json] [--dump dir: every render as PNG]
-// Exit 1 on an error (blank, a declared motion that does not show); review flags only print.
+//   reference  ported components (tests/references.json): the Astro original (tests/ref/, captured by
+//              tools/ref_capture.mjs) against the render at 720 (1.5x), same box: structural similarity (SSIM on
+//              luminance minus the background, 8 px windows; 0.8) and ink overlap (share of ink within 2 px of the
+//              other's; 0.6). Under the thresholds = flagged for review, never a failure (the Facet port differs on
+//              purpose: the grid, tokens), with both images side by side
+// Errors fail; review flags and references within the thresholds are notes. finish() writes the report:
+// $FW_OUT/visual/<den>/index.html (the hub serves it at /facet-wasm/visual/1.5x/), every flagged case + picture.
+// FW_VISUAL_DUMP=<dir>: every render as a PNG there too.
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
+import { inflateSync } from 'node:zlib';
+import { png as encodePng } from '../../tools/lib/fwbench.mjs';
 
-const HERE = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const env = {};
-const envFile = join(HERE, '..', 'local.env');
-if (existsSync(envFile)) for (const l of readFileSync(envFile, 'utf8').split('\n')) { const m = l.match(/^(\w+)=(.*)$/); if (m) env[m[1]] = m[2]; }
-const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
-const flag = (k) => process.argv.includes(k);
-const OUT = process.env.FW_OUT || env.FW_OUT, CACHE = process.env.FW_CACHE || env.FW_CACHE;
-const BUILD = arg('--build', OUT);
-const den = arg('--den', '1.5x');
-const only = arg('--comp', '') ? arg('--comp').split(',') : null;
-// PNG in / out without dependencies (8-bit RGBA / RGB, non-interlaced: what Chromium writes)
-import { deflateSync, inflateSync } from 'node:zlib';
-const CRC = new Int32Array(256).map((_, n) => { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; return c; });
-const crc = (b) => { let c = -1; for (const x of b) c = CRC[(c ^ x) & 255] ^ (c >>> 8); return (c ^ -1) >>> 0; };
-function encodePng(rgba, W, H) {
-  const raw = Buffer.alloc((W * 4 + 1) * H);
-  for (let y = 0; y < H; y++) { raw[y * (W * 4 + 1)] = 0; Buffer.from(rgba.buffer, rgba.byteOffset + y * W * 4, W * 4).copy(raw, y * (W * 4 + 1) + 1); }
-  const chunk = (t, d) => { const l = Buffer.alloc(4); l.writeUInt32BE(d.length); const td = Buffer.concat([Buffer.from(t), d]); const c = Buffer.alloc(4); c.writeUInt32BE(crc(td)); return Buffer.concat([l, td, c]); };
-  const ih = Buffer.alloc(13); ih.writeUInt32BE(W, 0); ih.writeUInt32BE(H, 4); ih[8] = 8; ih[9] = 6;
-  return Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk('IHDR', ih), chunk('IDAT', deflateSync(raw)), chunk('IEND', Buffer.alloc(0))]);
-}
+const HERE = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
+// PNG in without dependencies (8-bit RGBA / RGB, non-interlaced: what Chromium writes)
 function decodePng(buf) {
   let p = 8, W = 0, H = 0, ct = 0; const idat = [];
   while (p < buf.length) { const l = buf.readUInt32BE(p), t = buf.toString('ascii', p + 4, p + 8), d = buf.subarray(p + 8, p + 8 + l); if (t === 'IHDR') { W = d.readUInt32BE(0); H = d.readUInt32BE(4); ct = d[9]; } else if (t === 'IDAT') idat.push(d); p += 12 + l; }
@@ -65,16 +47,8 @@ function fit(img, W, H) {
   return o;
 }
 const TICK = 16;
-
-async function load(d) {
-  const dir = join(BUILD, d);
-  const F = (await import(pathToFileURL(join(dir, 'fw.mjs')).href)).default;
-  const wasm = await WebAssembly.compile(readFileSync(join(dir, 'fw.wasm')));
-  const m = await F({ instantiateWasm: (imports, ok) => { WebAssembly.instantiate(wasm, imports).then((i) => ok(i, wasm)); return {}; } });
-  m._fw_init();
-  return m;
-}
 const str = (m, s, f) => { const p = m.stringToNewUTF8(s); try { return f(p); } finally { m._free(p); } };
+
 
 // one render: RGBA frames of the stage at the build, then every `every` ticks for `ms`
 export function shoot(m, d, c, props, light, { ms = 0, every = 2 } = {}) {
@@ -157,7 +131,6 @@ function iou(a, b, W, H) {
   for (let i = 0; i < W * H; i++) { if (A[i]) { nA++; if (GB[i]) hitA++; } if (B[i]) { nB++; if (GA[i]) hitB++; } }
   return nA + nB ? (hitA + hitB) / (nA + nB) : 1;  // share of each image's ink that lies within 2 px of the other's
 }
-const png = async (b, W, H) => encodePng(b, W, H);
 function inkBox(b, W, H) {
   const k = ink(b, W, H); if (!k.n) return null;
   let x0 = W, y0 = H, x1 = -1, y1 = -1;
@@ -170,54 +143,29 @@ function crop(b, W, r) { const o = new Uint8Array(r.w * r.h * 4); for (let y = 0
 const refsFile = join(HERE, 'tests/references.json');
 const REFS = existsSync(refsFile) ? JSON.parse(readFileSync(refsFile, 'utf8')).refs : [];
 const refDir = join(HERE, 'tests/ref');  // the Astro originals, kept in the repo
-async function capture() {
-  const { chromium } = await import('/home/claude/claude-assistant/apps/hub/node_modules/playwright/index.mjs');
-  const DOCS = process.env.FW_DOCS_URL || 'http://127.0.0.1:4399/facet';
-  mkdirSync(refDir, { recursive: true });
-  const b = await chromium.launch({ executablePath: '/usr/bin/chromium' });
-  const p = await b.newPage({ viewport: { width: 1600, height: 1200 } });
-  const items = [...new Set(REFS.filter((r) => r.astro.item).map((r) => r.astro.item))];
-  for (const item of items) {
-    await p.goto(`${DOCS}/components/#${item}`, { waitUntil: 'load' });
-    await p.waitForTimeout(2500);
-    for (const th of ['dark', 'light']) {
-      await p.evaluate((th) => document.documentElement.setAttribute('data-facet-theme', th), th);
-      await p.waitForTimeout(600);
-      for (const r of REFS.filter((x) => x.astro.item === item)) {
-        const els = await p.$$(r.astro.selector || '.explorer__preview .ex-prev');
-        if (r.astro.selector) await p.waitForTimeout(400);
-        const el = els[r.astro.index ?? 0];
-        if (el) await el.screenshot({ path: join(refDir, `${r.comp}--${r.variant}--${th}.png`), animations: 'disabled' });
-        else console.log(`capture: ${item} has no element ${r.astro.index ?? 0} for ${r.comp} ${r.variant}`);
-      }
-    }
-  }
-  await b.close();
-}
 
-// ---------------------------------------------------------------- run
-if (flag('--capture')) await capture();
-const m = await load(den);
-const meta = JSON.parse(m.UTF8ToString(m._fw_meta()));
-const report = [], cards = [];
-let errors = 0;
-const rep = join(OUT, 'visual', den);  // one report per density
-mkdirSync(rep, { recursive: true });
-for (const c of meta) {
-  if (!['components', 'screens'].includes(c.section) || c.id === 'device') continue;
-  if (only && !only.includes(c.id)) continue;
-  const defaults = Object.fromEntries((c.meta.props || []).map((p) => [p.name, p.default]));
-  const cases = [{ label: 'default', props: {} }, ...(c.meta.variants || [])];
-  for (const v of cases) for (const light of [false, true]) {
+const cards = {}, counts = {};  // per density: the report's cases; errors / reviews / references within the thresholds
+export default {
+  id: 'visual', tiers: ['gate'], dens: ['1.5x'], ownStage: true,
+  about: 'Every component and screen draws something, in more than one colour, moves when it says it does, and looks like its Astro original',
+  wants: (c, { ids }) => ['components', 'screens'].includes(c.section) && c.id !== 'device' && (!ids || ids.includes(c.id)),
+  run({ m, den, c, v, light }, rep) {
+    const defaults = Object.fromEntries((c.meta.props || []).map((p) => [p.name, p.default]));
     const th = light ? 'light' : 'dark', props = { ...defaults, ...v.props };
-    const motion = c.meta.motion || (v.props && v.props.live === false ? null : null);
+    const list = (cards[den] ??= []), n = (counts[den] ??= { error: 0, review: 0, ok: 0 });
     const r = shoot(m, den, c, props, light, { ms: 3000, every: 6 });
-    if (r.err) { report.push({ c: c.id, v: v.label, th, kind: 'error', msg: `render: ${r.err}` }); errors++; continue; }
+    if (r.err) { n.error++; rep.check(false, `✗ ${c.id} · ${v.label} · ${th}: render: ${r.err}`); return; }
     // measured on the settled frame (after 3 s: an opening growth / draw-in has finished; the first frame of a bar chart
     // is its bars at 0, which read as blank)
     const f = r.frames[r.frames.length - 1], bx = r.box, k = ink(crop(f, r.W, bx), bx.w, bx.h, f.slice(0, 3));
-    if (arg('--dump')) { mkdirSync(arg('--dump'), { recursive: true }); writeFileSync(join(arg('--dump'), `${c.id}--${v.label.replace(/[^a-z0-9]+/gi, '-')}--${th}--${den}.png`), encodePng(f, r.W, r.H)); }
-    const add = (kind, msg, img = f, extra = null) => { report.push({ c: c.id, v: v.label, th, kind, msg }); cards.push({ c: c.id, v: v.label, th, kind, msg, img, W: r.W, H: r.H, extra }); if (kind === 'error') errors++; };
+    const dump = process.env.FW_VISUAL_DUMP;
+    if (dump) { mkdirSync(dump, { recursive: true }); writeFileSync(join(dump, `${c.id}--${v.label.replace(/[^a-z0-9]+/gi, '-')}--${th}--${den}.png`), encodePng(f, r.W, r.H)); }
+    let bad = false;
+    const add = (kind, msg, img = f, extra = null) => {
+      list.push({ c: c.id, v: v.label, th, kind, msg, img, W: r.W, H: r.H, extra });
+      if (kind === 'error') { n.error++; bad = true; rep.check(false, `✗ ${c.id} · ${v.label} · ${th}: ${msg}`); }
+      else { n.review++; rep.note(`? ${c.id} · ${v.label} · ${th}: ${msg}`); }
+    };
     if (k.n < 16 || k.share < 0.0005) add('error', `blank: ${(k.share * 100).toFixed(2)} % ink in its ${bx.w}x${bx.h} box`);
     else if (k.share < 0.02 || k.box < 0.1) add('review', `little ink: ${(k.share * 100).toFixed(1)} % of its ${bx.w}x${bx.h} box, the ink's own box ${(k.box * 100).toFixed(0)} % of it`);
     if (k.n && k.one > 0.97 && k.n > 64) add('review', `one colour: ${(k.one * 100).toFixed(0)} % of the ink is one colour`);
@@ -230,44 +178,47 @@ for (const c of meta) {
       const r2 = shoot(m, den, c, props, light, { ms: 10000, every: 6 });
       if (!r2.err && new Set(r2.frames.map(hash)).size < 2) add('review', `animates: ${r.anims} animation(s) running at the build, but no pixel changes in 10 s`);
     }
+    if (!bad) rep.check(true, `${c.id} · ${v.label} · ${th}`);
     // reference
     const ref = REFS.find((x) => x.comp === c.id && x.variant === v.label);
     if (ref && den === '1.5x') {
       const file = join(refDir, `${c.id}--${v.label}--${th}.png`);
-      if (!existsSync(file)) { add('review', `reference: no capture (run with --capture)`); continue; }
+      if (!existsSync(file)) { add('review', `reference: no capture (run tools/ref_capture.mjs)`); return; }
       let A = fit(decodePng(readFileSync(file)), r.W, r.H), B = f, CW = r.W, CH = r.H;
       if (ref.crop) {  // both cropped to their ink box, the docs one scaled to the WASM one
         const dec = decodePng(readFileSync(file)), ka = inkBox(dec.px, dec.W, dec.H), kb = inkBox(f, r.W, r.H);
         if (ka && kb) { CW = kb.w; CH = kb.h; B = crop(f, r.W, kb); A = fit({ W: ka.w, H: ka.h, px: crop(dec.px, dec.W, ka) }, CW, CH); }
       }
       const s = ssim(lum(A, CW, CH), lum(B, CW, CH), CW, CH), o = iou(A, B, CW, CH);
-      const ok = s >= (ref.ssim ?? 0.8) && o >= (ref.iou ?? 0.6);
-      report.push({ c: c.id, v: v.label, th, kind: ok ? 'ref-ok' : 'review', msg: `reference: SSIM ${s.toFixed(2)}, ink overlap ${o.toFixed(2)}` });
-      cards.push({ c: c.id, v: v.label, th, kind: ok ? 'ref-ok' : 'review', msg: `reference: SSIM ${s.toFixed(2)}, ink overlap ${o.toFixed(2)}${ref.note ? ` (${ref.note})` : ''}`, img: B, W: CW, H: CH, extra: A });
+      const ok = s >= (ref.ssim ?? 0.8) && o >= (ref.iou ?? 0.6), msg = `reference: SSIM ${s.toFixed(2)}, ink overlap ${o.toFixed(2)}`;
+      if (ok) { n.ok++; rep.note(`= ${c.id} · ${v.label} · ${th}: ${msg}`); } else { n.review++; rep.note(`? ${c.id} · ${v.label} · ${th}: ${msg}`); }
+      list.push({ c: c.id, v: v.label, th, kind: ok ? 'ref-ok' : 'review', msg: `${msg}${ref.note ? ` (${ref.note})` : ''}`, img: B, W: CW, H: CH, extra: A });
     }
-  }
-}
-// ---- report page: every flagged case (and every reference pair) with its pictures
-const esc = (s) => String(s).replace(/[&<>"]/g, (x) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[x]);
-let html = `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Visual checks</title><style>
+  },
+  // the report page: every flagged case (and every reference pair) with its pictures
+  finish({ build }) {
+    const esc = (s) => String(s).replace(/[&<>"]/g, (x) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[x]);
+    for (const den of Object.keys(cards)) {
+      const dir = join(build, 'visual', den), n = counts[den];
+      mkdirSync(dir, { recursive: true });
+      let html = `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Visual checks</title><style>
 :root{--bg:#0e1013;--fg:#e8e6e1;--dim:#8a919b;--line:#2a2e35;--bad:#e8542a;--rev:#e8b33a;--ok:#5fb37a}
 @media (prefers-color-scheme:light){:root{--bg:#f6f4f0;--fg:#16181c;--dim:#5c636d;--line:#dcd8d0;--bad:#b63f1a;--rev:#926600;--ok:#2f7a45}}
 body{background:var(--bg);color:var(--fg);font:14px/1.4 system-ui;margin:0;padding:16px}h1{font-size:20px}
 .c{display:inline-block;vertical-align:top;margin:0 12px 16px 0;padding:8px;border:1px solid var(--line);border-radius:8px;max-width:100%}
 .c img{display:block;max-width:100%;image-rendering:pixelated}.k{font-weight:600}.error .k{color:var(--bad)}.review .k{color:var(--rev)}.ref-ok .k{color:var(--ok)}
 .p{display:flex;gap:8px;flex-wrap:wrap}.p span{font-size:12px;color:var(--dim)}</style>
-<h1>Visual checks · ${den} · ${new Date().toISOString().slice(0, 16).replace('T', ' ')}</h1><p>${errors} error(s), ${report.filter((r) => r.kind === 'review').length} for review, ${report.filter((r) => r.kind === 'ref-ok').length} reference(s) within the thresholds. Reference pairs: Astro original left, WASM right.</p>`;
-let n = 0;
-for (const k of cards) {
-  const a = `v${n++}.png`;
-  writeFileSync(join(rep, a), await png(k.img, k.W, k.H));
-  let ref = '';
-  if (k.extra) { const b = `v${n++}.png`; writeFileSync(join(rep, b), await png(k.extra, k.W, k.H)); ref = `<div><span>Astro</span><img src="${b}" width="${k.W}"></div>`; }
-  html += `<div class="c ${k.kind}"><div><span class="k">${esc(k.kind)}</span> ${esc(k.c)} · ${esc(k.v)} · ${k.th}</div><div>${esc(k.msg)}</div><div class="p">${ref}<div><span>WASM</span><img src="${a}" width="${k.W}"></div></div></div>`;
-}
-writeFileSync(join(rep, 'index.html'), html);
-for (const r of report.filter((x) => x.kind !== 'ref-ok')) console.log(`${r.kind === 'error' ? '✗' : '?'} ${r.c} · ${r.v} · ${r.th}: ${r.msg}`);
-for (const r of report.filter((x) => x.kind === 'ref-ok')) console.log(`= ${r.c} · ${r.v} · ${r.th}: ${r.msg}`);
-console.log(`visual [${den}]: ${errors} error(s), ${report.filter((r) => r.kind === 'review').length} for review; report ${join(rep, 'index.html')}`);
-if (flag('--json')) writeFileSync(arg('--json'), JSON.stringify(report, null, 1));
-process.exit(errors ? 1 : 0);
+<h1>Visual checks · ${den} · ${new Date().toISOString().slice(0, 16).replace('T', ' ')}</h1><p>${n.error} error(s), ${n.review} for review, ${n.ok} reference(s) within the thresholds. Reference pairs: Astro original left, WASM right.</p>`;
+      let i = 0;
+      for (const k of cards[den]) {
+        const a = `v${i++}.png`;
+        writeFileSync(join(dir, a), encodePng(k.img, k.W, k.H));
+        let ref = '';
+        if (k.extra) { const b = `v${i++}.png`; writeFileSync(join(dir, b), encodePng(k.extra, k.W, k.H)); ref = `<div><span>Astro</span><img src="${b}" width="${k.W}"></div>`; }
+        html += `<div class="c ${k.kind}"><div><span class="k">${esc(k.kind)}</span> ${esc(k.c)} · ${esc(k.v)} · ${k.th}</div><div>${esc(k.msg)}</div><div class="p">${ref}<div><span>WASM</span><img src="${a}" width="${k.W}"></div></div></div>`;
+      }
+      writeFileSync(join(dir, 'index.html'), html);
+      console.log(`visual [${den}]: ${n.error} error(s), ${n.review} for review; report ${join(dir, 'index.html')}`);
+    }
+  },
+};

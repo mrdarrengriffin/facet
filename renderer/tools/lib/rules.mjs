@@ -7,7 +7,8 @@
 //                    ownStage: true (it renders on stages of its own, on a module of its own per component: what it
 //                      leaves in the module, an unclipped display or a live look switch, reaches no other rule),
 //                    cache: true (its results per component are kept while the component's inputs are unchanged),
-//                    run(x, r) }
+//                    dens: ['1.5x'] (only those densities; default every density of the run),
+//                    run(x, r), finish({ build, dens }) (optional, once after the whole run: a report of its own) }
 // x = the mount: { m, st, W, H, den, D, theme, c (meta entry), v (variant), vi (its index), light, tick, settle,
 //   test(cmd, a), frame565() }; for an ownStage rule only { m, den, theme, c, v, vi, light }.
 // r = the report: r.check(ok, line), r.legacy(line), r.note(line). A rule never builds its own module or loops itself.
@@ -108,7 +109,7 @@ export async function runRules(rules, { build, dens, ids, themeArg, tier, cacheD
     const themesOf = (rule) => { const t = rule.themes ? rule.themes(opt) : 'facet'; return t === 'all' ? builtins : t.split(','); };
     const themes = [...new Set(rules.flatMap(themesOf))];
     for (const theme of themes) for (const c of metas) {
-      let here = rules.filter((r) => themesOf(r).includes(theme) && r.wants(c, opt)).sort((a, z) => (a.order || 0) - (z.order || 0));
+      let here = rules.filter((r) => (!r.dens || r.dens.includes(den)) && themesOf(r).includes(theme) && r.wants(c, opt)).sort((a, z) => (a.order || 0) - (z.order || 0));
       if (!here.length) continue;
       // cached rules: a component whose inputs are unchanged is replayed; the ones that run are recorded
       const cached = (r) => r.cache || tier === 'fast';
@@ -152,5 +153,6 @@ export async function runRules(rules, { build, dens, ids, themeArg, tier, cacheD
     }
     if (cpath) try { writeFileSync(cpath, JSON.stringify(cache)); } catch {}
   }
+  for (const rule of rules.filter((r) => r.finish)) await rule.finish({ build, dens });
   return res;
 }

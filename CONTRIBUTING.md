@@ -95,7 +95,7 @@ renderer/build.sh && renderer/check.sh gate       # both builds, then every chec
 node renderer/tools/contrast.mjs --summary # every colour pair, dark and light: 0 failures
 node renderer/tools/functional.mjs --rules --rule spec-store  # screen specs
 node renderer/tools/behaviour.mjs          # taps, drags, scrolling, sounds, the update path
-node renderer/tools/visual.mjs             # visual regression
+node renderer/tools/functional.mjs --rules --rule visual --den 1.5x  # what is drawn: blank, one colour, motion, Astro references
 renderer/tools/asan.sh                     # memory errors, before anything goes on a panel
 ```
 

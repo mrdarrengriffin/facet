@@ -4,8 +4,8 @@
 #                                 build) + the fast rules (tests/rules) over every component, each replayed from the
 #                                 runner's input-hash cache unless the component changed (--ids: only those) + the given
 #                                 ids' behaviour and functional tests. No PNGs, no goldens
-#   ./check.sh gate [--ids a,b]   nightly and in CI: every rule at both densities (lab, floor plans included), every
-#                                 behaviour and functional test, visual
+#   ./check.sh gate [--ids a,b]   nightly and in CI: every rule at both densities (lab, floor plans included; visual at
+#                                 1.5x), every behaviour and functional test
 #   ./check.sh nightly            overnight only: ASan at 1.5x (and 1x on Sundays, or with --weekly), the functional
 #                                 suites marked tier: 'nightly' (theme_apply), the theme parser fuzz, the bench headless
 # One line per step (PASS / FAIL / WARN, seconds); each step's full output in $CHECK_LOG (default
@@ -60,13 +60,12 @@ if [ "$tier" = fast ]; then
   check behaviour node tools/behaviour.mjs --den 1.5x --kind interaction,scroll,sound --ids "$ids"
   soft functional node tools/functional.mjs --den 1.5x --ids "$ids"
 else
-  # at once: the rules (pixel contrast at 1.5x, the longest, on its own), the functional tests, visual
+  # at once: the rules (pixel contrast and visual at 1.5x, the longest, each on its own), the functional tests
   start hard rules-1.5x-contrast node tools/functional.mjs --rules --tier gate --rule pixel-contrast --den 1.5x --theme all "${sel[@]}"
-  start hard rules-1.5x node tools/functional.mjs --rules --tier gate --skip pixel-contrast --den 1.5x "${sel[@]}"
+  start hard rules-1.5x-visual node tools/functional.mjs --rules --tier gate --rule visual --den 1.5x "${sel[@]}"
+  start hard rules-1.5x node tools/functional.mjs --rules --tier gate --skip pixel-contrast,visual --den 1.5x "${sel[@]}"
   start hard rules-1x node tools/functional.mjs --rules --tier gate --den 1x --theme all "${sel[@]}"
   start soft functional node tools/functional.mjs "${sel[@]}"
-  comp=(); [ -n "$ids" ] && comp=(--comp "$ids")
-  start hard visual node tools/visual.mjs "${comp[@]}"
   join
   check behaviour node tools/behaviour.mjs "${sel[@]}"  # alone: its lag proxy times the host CPU
 fi
