@@ -53,7 +53,7 @@ void fill(lv_obj_t *root, fw::Props p) {
   deserializeJson(sd, st);
   for (ArduinoJson::JsonVariantConst s : sd.as<ArduinoJson::JsonArrayConst>()) {
     lv_obj_t *one = fx::box(row, "row-mid");
-    for (const char *t : {"hug", "gap:2"}) fx::use(one, t);
+    for (const char *t : {"hug", "gap:2", "label-row"}) fx::use(one, t);  // label-row: its text-box translate never shortens it
     Doc d;
     d["tone"] = tone(s["tone"] | "idle"), d["size"] = "dot";
     fw::find("status_chip")->build(one, d.as<fw::Props>());
