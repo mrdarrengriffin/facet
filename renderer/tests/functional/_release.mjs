@@ -10,13 +10,14 @@
 //   golden     compare the stage (minus mask boxes: the live clock) with tests/golden/<suite>/<den>-<name>.565.gz; a missing or changed golden FAILS and
 //              ({ optIn: true }: the candidates go to <tmp>/facet-candidates/<suite> unless CHECK_WRITE_CANDIDATES=1)
 //              writes <name>.new.565.gz + .new.png beside it for review: never auto-accepted (FW_GOLDEN_ACCEPT=1 on a
-//              run accepts the .new files after a person has looked at the PNGs)
+//              run accepts the .new files after a person has looked at the PNGs). Goldens are the .565.gz alone, their
+//              sizes in tests/golden/sizes.json; goldenPng renders one as a PNG on demand (tools/golden_png.mjs)
 //   faults     HA fault injection on a FakeHA: missing entity, wrong types, out of range, out-of-order echoes
 //   fuzz       n random cases of (props / HA states) -> no crash, no abort, bounds proof clean
 //   monkey     n random taps / holds / drags anywhere on the stage -> no crash, still responds
 //   leak       open / close cycles: objects back to the baseline, heap growth under a budget
 //   frames     the bench record of a gesture: renders, ms per frame (WASM), dirty px, areas
-import { existsSync, mkdirSync, readFileSync, writeFileSync, renameSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync, renameSync, rmSync } from 'node:fs';
 import { gzipSync, gunzipSync } from 'node:zlib';
 import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -85,7 +86,8 @@ export function golden(t, suite, name, den, mask = [], { optIn = false } = {}) {
   mkdirSync(dir, { recursive: true }); mkdirSync(dirname(cand), { recursive: true });
   const save = (p) => { writeFileSync(`${p}.565.gz`, gzipSync(Buffer.from(cur.buffer))); writeFileSync(`${p}.png`, png(rgba(cur), W, H)); };
   if (process.env.FW_GOLDEN_ACCEPT === '1' && existsSync(`${base}.new.565.gz`)) {
-    renameSync(`${base}.new.565.gz`, `${base}.565.gz`); renameSync(`${base}.new.png`, `${base}.png`);
+    renameSync(`${base}.new.565.gz`, `${base}.565.gz`); rmSync(`${base}.new.png`, { force: true });
+    sizes({ [`${suite}/${den}-${name}`]: [W, H] });
   }
   if (!existsSync(`${base}.565.gz`)) { save(`${cand}.new`); return [`no golden ${suite}/${den}-${name}: review ${cand}.new.png, then accept (FW_GOLDEN_ACCEPT=1)`]; }
   const want = new Uint16Array(new Uint8Array(gunzipSync(readFileSync(`${base}.565.gz`))).buffer);
@@ -93,6 +95,22 @@ export function golden(t, suite, name, den, mask = [], { optIn = false } = {}) {
   if (n === 0) return [];
   save(`${cand}.new`);
   return [`golden ${suite}/${den}-${name}: ${n < 0 ? 'size changed' : `${n} px differ`} (review ${cand}.new.png)`];
+}
+
+// tests/golden/sizes.json: {"<suite>/<den>-<name>": [W, H]} (a .565.gz is bare pixels); add = entries to record
+export function sizes(add) {
+  const p = join(GOLDEN, 'sizes.json'), all = existsSync(p) ? JSON.parse(readFileSync(p, 'utf8')) : {};
+  if (!add) return all;
+  Object.assign(all, add);
+  writeFileSync(p, JSON.stringify(Object.fromEntries(Object.keys(all).sort().map((k) => [k, all[k]])), null, 0).replace(/\],/g, '],\n') + '\n');
+  return all;
+}
+// a golden (key "<suite>/<den>-<name>") as a PNG, from its .565.gz
+export function goldenPng(key) {
+  const wh = sizes()[key];
+  if (!wh) throw new Error(`no size for ${key} in tests/golden/sizes.json`);
+  const w = new Uint16Array(new Uint8Array(gunzipSync(readFileSync(join(GOLDEN, `${key}.565.gz`)))).buffer);
+  return png(rgba(w), wh[0], wh[1]);
 }
 
 // HA faults on the fake HA (t.ha): each returns what was injected (for the log)

@@ -731,6 +731,7 @@ Rules whose check is TODO (each is a gate item; until it exists, review checks t
 | `tools/lib/looks.mjs` | the one list of look sizes and their ranges (C18, C19) |
 | `tests/rules/theme_check.mjs`, `tools/theme_fuzz.sh` | built-in themes checked at build time; the parser fuzzed under ASan + UBSan |
 | `tests/functional/_release.mjs` | gate helpers: bounds, stage, look, frame565, golden, faults, fuzz, monkey, leak, frames |
+| `tools/golden_png.mjs` | a golden as a PNG on demand: goldens are committed as `.565.gz` only, sizes in `tests/golden/sizes.json` |
 | `components/card.cpp`, `components/dial.cpp` | the reference components (box + steps; drawn + partial redraw) |
 
 ## Appendix A: theme file reference
