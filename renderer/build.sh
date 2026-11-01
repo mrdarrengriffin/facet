@@ -19,14 +19,14 @@ HERE=$(cd "$(dirname "$0")" && pwd)
 [ -f "$HERE/../local.env" ] && . "$HERE/../local.env"
 # Builds only: compile + link. The checks run against the build with check.sh (fast | gate | nightly). LINKOPT = the
 # link's binaryen level (default = OPT; the watcher links at -O0: ~9 s -> ~2 s, the objects stay -O2).
-# BUILD_JOBS = compiles at once (LVGL and the renderer's own files): default half the cores (bin/heavy lowers it in the
-# quiet hours)
-if [ -z "${BUILD_JOBS:-}" ]; then BUILD_JOBS=$(( $(nproc) / 2 )); fi
+# BUILD_JOBS = compiles at once (LVGL and the renderer's own files): default every core but one (the box serves other
+# things by day; bin/heavy lowers it in the quiet hours)
+if [ -z "${BUILD_JOBS:-}" ]; then BUILD_JOBS=$(( $(nproc) - 1 )); fi
 [ "$BUILD_JOBS" -ge 1 ] 2>/dev/null || BUILD_JOBS=1
 export BUILD_JOBS
 : "${FW_PANEL:?set FW_PANEL (panel firmware source dir) in the env or local.env}"
 if [ $# -eq 0 ]; then
-  if [ "$BUILD_JOBS" -lt 4 ]; then ra=0; "$0" 1.5x || ra=$?; rb=0; "$0" 1x || rb=$?; exit $(( ra | rb )); fi  # one density at a time
+  if [ $(( BUILD_JOBS * 2 )) -gt "$(nproc)" ]; then ra=0; "$0" 1.5x || ra=$?; rb=0; "$0" 1x || rb=$?; exit $(( ra | rb )); fi  # one density at a time
   "$0" 1.5x & a=$!; "$0" 1x & b=$!; wait $a; ra=$?; wait $b; rb=$?; exit $(( ra | rb ))
 fi
 DEN=$1
