@@ -84,7 +84,7 @@ export class Bench {  // one module instance, one stage at a time
   }
 }
 
-// RGBA frame of a stage -> PNG buffer (no dependency; same encoder as tools/corpus.mjs)
+// RGBA frame of a stage -> PNG buffer (no dependency)
 const crc = (() => { const t = new Int32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[n] = c; } return (b) => { let c = -1; for (const x of b) c = t[(c ^ x) & 255] ^ (c >>> 8); return (c ^ -1) >>> 0; }; })();
 export function png(px, W, H) {
   const raw = Buffer.alloc((W * 4 + 1) * H);

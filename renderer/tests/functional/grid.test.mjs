@@ -2,13 +2,18 @@
 // the grid's OWN width, slots with allow lists, items repeating from a list, rows / +N, the empty state. Each test is
 // one row of the release gate and fails without the behaviour.
 // Approved original: the pre-contract Grid (board facet-171, notes icon-grid-proposal §3): same sums, same look.
-import { readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { readdirSync, readFileSync } from 'node:fs';
+import { basename, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { leak, look, golden, stage, boundsAll, liveLook, lab, tune, frame565, diff565 } from './_release.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const CORPUS = join(HERE, '..', 'spec-corpus', 'specs');
+// the real callers: factory specs and AI examples that place a grid
+const SPECS = join(HERE, '..', '..', 'specs');
+const CALLERS = [SPECS, join(SPECS, 'ai-examples')].flatMap((d) => readdirSync(d).filter((f) => f.endsWith('.json') && f !== 'deck.json').map((f) => join(d, f)))
+  .filter((f) => /"c":\s*"grid"/.test(readFileSync(f, 'utf8')));
+// a docs AI example a panel refuses today (the docs preview draws it anyway)
+const KNOWN_REFUSED = { 'lights.json': 'its slider has a width prop, which the Slider does not have' };
 const den = (t) => (t.b.S > 600 ? '1.5x' : '1x');
 const INSET = { '1.5x': 32, '1x': 20 };
 const CW = (t) => t.b.S - 2 * INSET[den(t)];
@@ -186,13 +191,17 @@ export default {
       t.eq(leak(t, 100, () => t.b.update('grid', { cols: 4, items: 'bulb,power,timer' }), () => t.b.update('grid', { cols: 4, items: ITEMS }), 64 * 1024), [], 'leak (updates)');
     } },
     // ---------------------------------------------------------------- product: the existing callers
-    { name: 'existing callers: every corpus spec with a grid still checks clean and applies', async run(t) {
+    { name: 'existing callers: every shipped spec and AI example with a grid still checks clean and applies', async run(t) {
       await t.device();
-      for (const f of ['icon_grid', 'grid_items', 'grid_items_row', 'isaac_run']) {
-        const spec = JSON.parse(readFileSync(join(CORPUS, `${f}.json`), 'utf8'));
+      for (const f of CALLERS) {
+        const spec = JSON.parse(readFileSync(f, 'utf8'));
         const r = JSON.stringify(JSON.parse(t.b.spec('check', spec) || '{}'));
-        t.ok(!r.includes('bad_slot') && !r.includes('bad_cell'), `${f}: no slot errors (${r.slice(0, 120)})`);
-        t.eq(t.send(spec).status, 'applied', `${f}: applied`);
+        const n = basename(f);
+        t.ok(!r.includes('bad_slot') && !r.includes('bad_cell'), `${n}: no slot errors (${r.slice(0, 120)})`);
+        if (!f.includes('ai-examples')) continue;  // factory specs are installed already
+        const a = t.send(spec), known = KNOWN_REFUSED[n];
+        if (known) t.eq(a.status, 'refused', `${n}: still refused (${known}): fix the example, then drop this line`);
+        else t.eq(a.status, 'applied', `${n}: applied ${JSON.stringify(a.errors ?? '').slice(0, 160)}`);  // factory specs are installed already
       }
     } },
   ],

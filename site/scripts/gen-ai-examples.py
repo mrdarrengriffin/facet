@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
-"""Writes the "Make screens with AI" example specs (renderer/specs/ai-examples/*.json, one screen spec each, checked by
-the spec corpus: node renderer/tools/corpus.mjs --no-gen --extra renderer/specs/ai-examples), their demo Home Assistant
+"""Writes the "Make screens with AI" example specs (renderer/specs/ai-examples/*.json, one screen spec each), their demo Home Assistant
 values (renderer/tools/demo_ha_examples.mjs, read by demo_ha.mjs) and the docs page data (site/src/lib/ai-examples.json:
 title, what it is for, the prompt that makes it). Each bind's sample "s" = the raw Home Assistant value, so the docs
-(fed from the demo values) and the corpus (samples only) draw the same screen. Run: python3 site/scripts/gen-ai-examples.py"""
+(fed from the demo values) and a panel without them (samples only) draw the same screen. Run: python3 site/scripts/gen-ai-examples.py"""
 import json, os
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..')
