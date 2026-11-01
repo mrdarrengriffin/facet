@@ -97,41 +97,36 @@ Now playing on a spinning disc, with transport controls and live volume.</p>
 One light on a dial: drag the ring for brightness, tap to switch it.</p>
 </td>
 <td width="50%" valign="top">
-<a href="https://mrdarrengriffin.github.io/facet/screens/covers/"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/screen-covers-dark.png"><img alt="Blinds and curtains screen" src=".github/assets/screen-covers-light.png" width="200" height="200"></picture></a>
-<p><a href="https://mrdarrengriffin.github.io/facet/screens/covers/"><b>Blinds and curtains</b></a><br>
-Open, close or set a position for blinds and curtains.</p>
-</td>
-</tr>
-<tr>
-<td width="50%" valign="top">
 <a href="https://mrdarrengriffin.github.io/facet/screens/clock/"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/screen-clock-dark.png"><img alt="Clock screen" src=".github/assets/screen-clock-light.png" width="200" height="200"></picture></a>
 <p><a href="https://mrdarrengriffin.github.io/facet/screens/clock/"><b>Clock</b></a><br>
 The time as the one hero on the screen. Also the idle screen.</p>
 </td>
+</tr>
+<tr>
 <td width="50%" valign="top">
 <a href="https://mrdarrengriffin.github.io/facet/screens/timer/"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/screen-timer-dark.png"><img alt="Timer screen" src=".github/assets/screen-timer-light.png" width="200" height="200"></picture></a>
 <p><a href="https://mrdarrengriffin.github.io/facet/screens/timer/"><b>Timer</b></a><br>
 A running timer as the hero, with one-tap lengths when nothing is running.</p>
 </td>
-</tr>
-<tr>
 <td width="50%" valign="top">
 <a href="https://mrdarrengriffin.github.io/facet/screens/weather/"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/screen-weather-dark.png"><img alt="Weather screen" src=".github/assets/screen-weather-light.png" width="200" height="200"></picture></a>
 <p><a href="https://mrdarrengriffin.github.io/facet/screens/weather/"><b>Weather</b></a><br>
 The temperature, one line, rain in the next hour and the hours ahead.</p>
 </td>
+</tr>
+<tr>
 <td width="50%" valign="top">
 <a href="https://mrdarrengriffin.github.io/facet/screens/moon/"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/screen-moon-dark.png"><img alt="Moon screen" src=".github/assets/screen-moon-light.png" width="200" height="200"></picture></a>
 <p><a href="https://mrdarrengriffin.github.io/facet/screens/moon/"><b>Moon</b></a><br>
 Tonight's moon phase, worked out on the panel with no API.</p>
 </td>
-</tr>
-<tr>
 <td width="50%" valign="top">
 <a href="https://mrdarrengriffin.github.io/facet/screens/calendar/"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/screen-calendar-dark.png"><img alt="Calendar screen" src=".github/assets/screen-calendar-light.png" width="200" height="200"></picture></a>
 <p><a href="https://mrdarrengriffin.github.io/facet/screens/calendar/"><b>Calendar</b></a><br>
 What's next, then today and the days ahead as an agenda or a month.</p>
 </td>
+</tr>
+<tr>
 <td width="50%" valign="top">
 <a href="https://mrdarrengriffin.github.io/facet/screens/energy/"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/screen-energy-dark.png"><img alt="Energy screen" src=".github/assets/screen-energy-light.png" width="200" height="200"></picture></a>
 <p><a href="https://mrdarrengriffin.github.io/facet/screens/energy/"><b>Energy</b></a><br>
