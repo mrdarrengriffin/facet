@@ -7738,10 +7738,7 @@
      "name": "domains",
      "type": "text",
      "need": "optional",
-     "limits": "a comma list of domains (light, sensor, ...)"
-    },
-    {
-     "name": " empty = every domain"
+     "limits": "a comma list of domains (light, sensor, ...), empty = every domain"
     }
    ],
    "example": {
@@ -7914,5 +7911,5 @@
    }
   }
  },
- "hash": "d865df9b"
+ "hash": "2b88aea9"
 }

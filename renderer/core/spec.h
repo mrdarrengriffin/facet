@@ -263,7 +263,7 @@ constexpr ActionDoc ACTION_DOCS[] = {
     {"button.press", "Press a Home Assistant button entity.", "e|entity|required|button.x", "", R"({"do":"button.press","e":"button.doorbell_chime"})", false},
     {"entity.toggle", "Toggle a fan, an input boolean or an automation (an automation: enable / disable).", "e|entity|required|fan.x, input_boolean.x or automation.x", "", R"({"do":"entity.toggle","e":"fan.bedroom"})", false},
     {"ha.connect", "Set the panel's own Home Assistant link: its address and a long-lived token (kept on the panel, never shown back).", "url|text|required|http(s)://host:port, at most 128;token|text|optional|a long-lived access token (empty = keep the one set)", "", R"({"do":"ha.connect","url":"http://homeassistant.local:8123","token":"eyJhbGciOiJIUzI1NiJ9.example.token"})", false},
-    {"ha.entities", "Read the entity lists the pickers offer from Home Assistant (the panel's own link).", "domains|text|optional|a comma list of domains (light, sensor, ...); empty = every domain", "", R"({"do":"ha.entities","domains":"light,media_player"})", false},
+    {"ha.entities", "Read the entity lists the pickers offer from Home Assistant (the panel's own link).", "domains|text|optional|a comma list of domains (light, sensor, ...), empty = every domain", "", R"({"do":"ha.entities","domains":"light,media_player"})", false},
 };
 static_assert(sizeof ACTION_DOCS / sizeof ACTION_DOCS[0] == sizeof ACTIONS / sizeof ACTIONS[0], "every action has its ACTION_DOCS row (CONTRACT.md C50)");
 inline const ActionDoc *action_doc(const std::string &d) {
