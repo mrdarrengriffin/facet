@@ -30,4 +30,3 @@ carries its licence text.
 | ESPHome's glyph rasteriser (2026.9.1) | `renderer/tools/esphome_font.py` (notice in the file) | MIT |
 | [freetype-py](https://github.com/rougier/freetype-py), [esphome-glyphsets](https://github.com/esphome/esphome-glyphsets) | `renderer/tools/requirements.txt` (installed, not vendored) | BSD-3-Clause, Apache-2.0 |
 | [resvg-js](https://github.com/thx/resvg-js), [Playwright](https://github.com/microsoft/playwright) | `renderer/tools/package.json` (installed, not vendored) | MPL-2.0, Apache-2.0 |
-| [Valetudo](https://github.com/Hypfer/Valetudo) test maps | `renderer/tests/floorplan/valetudo/` (README there) | Apache-2.0 |
