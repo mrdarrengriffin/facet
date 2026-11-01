@@ -257,7 +257,7 @@ function runUpdates(m, den, c) {
 export default {
   id: 'audit', tiers: ['fast', 'gate'], ownStage: true, cache: true,
   about: 'Outside, clip, text, grid, touch, radial, stale, update, motion, screen layout: every component and screen',
-  wants: (c, { ids }) => ['components', 'screens'].includes(c.section) && c.id !== 'device' && (!ids || ids.includes(c.id)),
+  wants: (c) => ['components', 'screens'].includes(c.section) && c.id !== 'device',
   run(x, rep) {
     const { m, den, c, v, light } = x;
     if (x.vi === 0 && !light && c.section === 'components') {

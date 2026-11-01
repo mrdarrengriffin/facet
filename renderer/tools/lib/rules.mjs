@@ -96,7 +96,7 @@ export async function runRules(rules, { build, dens, ids, themeArg, tier, cacheD
     };
     return { check: (ok, line) => put(ok ? 'ok' : 'fail', line), legacy: (line) => put('legacy', line), note: (line) => put('note', line), replay: (recs) => recs.forEach(([k, line]) => put(k, line)) };
   };
-  const opt = { ids, tier, themeArg };
+  const opt = { tier, themeArg };  // no ids: a rule's selection never depends on --ids
   for (const rule of rules.filter((r) => r.once)) for (const den of dens.filter((d) => !rule.dens || rule.dens.includes(d)))
     await rule.once({ m: await instance(den, build), den, build }, report(rule));
   rules = rules.filter((r) => !r.once);
@@ -109,6 +109,8 @@ export async function runRules(rules, { build, dens, ids, themeArg, tier, cacheD
     const themesOf = (rule) => { const t = rule.themes ? rule.themes(opt) : 'facet'; return t === 'all' ? builtins : t.split(','); };
     const themes = [...new Set(rules.flatMap(themesOf))];
     for (const theme of themes) for (const c of metas) {
+      // --ids only narrows the components: each rule picks with its own wants(), exactly as without --ids
+      if (ids && !ids.includes(c.id)) continue;
       let here = rules.filter((r) => (!r.dens || r.dens.includes(den)) && themesOf(r).includes(theme) && r.wants(c, opt)).sort((a, z) => (a.order || 0) - (z.order || 0));
       if (!here.length) continue;
       // cached rules: a component whose inputs are unchanged is replayed; the ones that run are recorded

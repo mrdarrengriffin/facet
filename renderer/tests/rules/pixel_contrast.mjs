@@ -1,6 +1,6 @@
 // Pixel contrast proof (renderer/CONTRACT.md C15-C17, P4; Facet release gate section 4). tools/contrast.mjs checks the
 // DECLARED colour pairs; this one checks what is really on the pixels. For every contract component (meta "contract":
-// 2, or --ids any) x every meta variant x density, in four looks: built dark, switched LIVE to light, built light,
+// 2) x every meta variant x density, in four looks: built dark, switched LIVE to light, built light,
 // switched LIVE to dark (a component that holds a colour from build time fails the live ones). In each look every shown
 // text and icon layer (fw_test "inks") is veiled (drawn transparent, nothing moves) and the frame compared: the pixels
 // that change are its ink, the veiled frame is what lies behind it. Its contrast = its own drawn colour (text colour /
@@ -18,7 +18,7 @@
 // --theme <id,id|all>: the same in each theme (theme engine T2: themes/<id>.json made live before every build, then the
 // live mode switch as above); all = facet + every built-in theme. Default facet.
 // Moved from tools/pixel_contrast.mjs onto the shared mount (tools/lib/rules.mjs): --theme all = facet + every built-in
-// theme; --ids = those ids (any, contract or not), else every contract component (meta "contract": 2).
+// theme; --ids narrows to those of the contract components.
 import { readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -46,7 +46,7 @@ const ratio = (a, b) => { const x = LUM[a], y = LUM[b]; return (Math.max(x, y) +
 export default {
   id: 'pixel-contrast', tiers: ['fast', 'gate'], order: 90, cases: 'variants',  // last: it switches the look live
   about: 'Text, icons and state graphics 3:1 / 4.5:1 on the real pixels, built and switched live, per theme',
-  wants: (c, { ids }) => c.section !== 'screens' && (ids ? ids.includes(c.id) : c.meta && c.meta.contract === 2),
+  wants: (c) => c.section !== 'screens' && c.meta && c.meta.contract === 2,
   themes: ({ themeArg }) => themeArg || 'facet',
   run(x, rep) {
     const { m, W, H, den, theme, c, v } = x, test = x.test, frame = x.frame565, settle = x.settle;
@@ -79,7 +79,7 @@ export default {
         if (!n) best = 1;  // a text that changes no pixel: invisible
         const what = it.k === 'text' ? `"${String(it.s).slice(0, 28)}"` : `icon layer ${it.w}x${it.h}@${it.x},${it.y}`;
         const line = `${den}${theme === 'facet' ? '' : ' ' + theme} ${c.id} "${v.label}" ${look}: ${what} ${best.toFixed(2)} / ${it.min}`;
-        // a legacy component under test (--ids) is never excused
+        // a legacy part inside a contract component is reported, not failed
         if (best + 1e-9 < it.min && it.legacy && c.meta.contract === 2) rep.legacy(`${line} (inside ${it.c}, not on the contract yet: reported, not failed)`);
         else rep.check(best + 1e-9 >= it.min, line);
       }

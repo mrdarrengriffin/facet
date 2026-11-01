@@ -614,7 +614,7 @@ export default {
   tiers: ['fast', 'gate'],
   ownStage: true,
   looks: [0],
-  wants: (c, { ids }) => ['components', 'screens'].includes(c.section) && !B.skip.includes(c.id) && (!ids || ids.includes(c.id)),
+  wants: (c) => ['components', 'screens'].includes(c.section) && !B.skip.includes(c.id),
   async run(x, r) {
     const { m, den, c, v, vi } = x, k = `${den}|${c.id}`;
     setKinds(['interaction', 'scroll', 'sound']);

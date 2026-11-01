@@ -148,7 +148,7 @@ const cards = {}, counts = {};  // per density: the report's cases; errors / rev
 export default {
   id: 'visual', tiers: ['gate'], dens: ['1.5x'], ownStage: true,
   about: 'Every component and screen draws something, in more than one colour, moves when it says it does, and looks like its Astro original',
-  wants: (c, { ids }) => ['components', 'screens'].includes(c.section) && c.id !== 'device' && (!ids || ids.includes(c.id)),
+  wants: (c) => ['components', 'screens'].includes(c.section) && c.id !== 'device',
   run({ m, den, c, v, light }, rep) {
     const defaults = Object.fromEntries((c.meta.props || []).map((p) => [p.name, p.default]));
     const th = light ? 'light' : 'dark', props = { ...defaults, ...v.props };

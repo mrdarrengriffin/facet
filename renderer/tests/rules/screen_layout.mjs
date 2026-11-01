@@ -73,7 +73,7 @@ export function checkScreen(objs, W, H) {
 export default {
   id: 'screen-layout', tiers: ['fast', 'gate'], ownStage: true,
   about: 'Screens: regions do not overlap, nothing escapes its region or the screen, at the build, 1 s, 3 s and after an update',
-  wants: (c, { ids }) => c.section === 'screens' && (!ids || ids.includes(c.id)),
+  wants: (c) => c.section === 'screens',
   run(x, rep) {
     const { m, den, c, v, light } = x, S = den === '1x' ? 480 : 720;
     const str = (s, f) => { const p = m.stringToNewUTF8(s); try { return f(p); } finally { m._free(p); } };
