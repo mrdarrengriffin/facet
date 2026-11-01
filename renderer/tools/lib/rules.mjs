@@ -15,7 +15,8 @@
 // Cache ($FW_CACHE/rules-<den>.json): per cached rule, theme and component, the results and the component's input hash
 // (core + the charts library, tokens, specs, the rules and this runner, the component's file and the files of the
 // components it builds with fw::find or names in a "// audit deps: a, b" comment); a component whose hash is unchanged
-// is replayed, not mounted. fresh = ignore it.
+// is replayed, not mounted. In the fast tier every component rule is cached (fast = the changed components only).
+// fresh = ignore it.
 import { readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs';
 import { dirname, join, resolve, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -109,9 +110,10 @@ export async function runRules(rules, { build, dens, ids, themeArg, tier, cacheD
       let here = rules.filter((r) => themesOf(r).includes(theme) && r.wants(c, opt)).sort((a, z) => (a.order || 0) - (z.order || 0));
       if (!here.length) continue;
       // cached rules: a component whose inputs are unchanged is replayed; the ones that run are recorded
-      const key = here.some((r) => r.cache) ? compHash(c.id) : null, rec = {};
+      const cached = (r) => r.cache || tier === 'fast';
+      const key = here.some(cached) ? compHash(c.id) : null, rec = {};
       here = here.filter((r) => {
-        if (!r.cache) return true;
+        if (!cached(r)) return true;
         const k = `${r.id}|${theme}|${c.id}`, hit = cache[k];
         if (hit && hit.key === key) { report(r).replay(hit.recs); return false; }
         rec[r.id] = []; cache[k] = { key, recs: rec[r.id] };

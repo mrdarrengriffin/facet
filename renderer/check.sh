@@ -1,11 +1,13 @@
 #!/bin/bash
 # Facet checks against a build that already exists (build.sh builds; this never builds or withholds the module).
-#   ./check.sh fast [--ids a,b]   before every commit: the quick rules over everything (cached audit, lint, contrast,
-#                                 specs, themes) + the given ids' pixel contrast, screen audit, behaviour and functional
-#                                 tests at 1.5x; also regenerates catalogue/ from the build
-#   ./check.sh gate [--ids a,b]   nightly and in CI: everything at both densities, lab test, floor plans, visual
+#   ./check.sh fast [--ids a,b]   before every commit, 1.5x: lint, contrast, features, catalogue (regenerated from the
+#                                 build) + the fast rules (tests/rules) over every component, each replayed from the
+#                                 runner's input-hash cache unless the component changed (--ids: only those) + the given
+#                                 ids' behaviour and functional tests. No PNGs, no goldens
+#   ./check.sh gate [--ids a,b]   nightly and in CI: every rule at both densities (lab, floor plans included), every
+#                                 behaviour and functional test, visual
 #   ./check.sh nightly            overnight only: ASan at 1.5x (and 1x on Sundays, or with --weekly), the functional
-#                                 suites marked tier: 'nightly' (theme_apply)
+#                                 suites marked tier: 'nightly' (theme_apply), the theme parser fuzz, the bench headless
 # One line per step (PASS / FAIL / WARN, seconds); each step's full output in $CHECK_LOG (default
 # $FW_CACHE/checks/<time>-<tier>). Functional tests are reported, never fail a tier (WARN) while the suite grows.
 # Exit 1 if any step failed. Build = $FW_OUT (env or local.env), else ./out.
@@ -15,7 +17,7 @@ HERE=$(cd "$(dirname "$0")" && pwd)
 tier=${1:-}; shift || true
 ids="" weekly=""; [ "$(date +%u)" = 7 ] && weekly=1
 while [ $# -gt 0 ]; do case "$1" in --ids) ids=$2; shift ;; --weekly) weekly=1 ;; *) echo "unknown arg $1"; exit 2 ;; esac; shift; done
-case "$tier" in fast|gate|nightly) ;; *) sed -n 2,9p "$0"; exit 2 ;; esac
+case "$tier" in fast|gate|nightly) ;; *) sed -n 2,11p "$0"; exit 2 ;; esac
 B=${FW_OUT:-$HERE/out}
 LOG=${CHECK_LOG:-${FW_CACHE:-$HERE/.cache}/checks/$(date +%Y%m%d-%H%M%S)-$tier}; mkdir -p "$LOG"
 fail=0
@@ -35,33 +37,26 @@ for d in $dens; do [ -f "$B/$d/fw.mjs" ] || { echo "no $d build in $B: run build
 if [ "$tier" = nightly ]; then
   check asan-1.5x tools/asan.sh 1.5x
   soft functional-nightly node tools/functional.mjs --tier nightly
+  check theme-fuzz tools/theme_fuzz.sh
+  soft bench node tools/bench.mjs --quiet --out "$LOG/bench.json"
   [ -n "$weekly" ] && check asan-1x tools/asan.sh 1x
   [ $fail = 0 ] && echo "CHECK $tier: all green (logs $LOG)" || echo "CHECK $tier: FAILED (logs $LOG)"; exit $fail
 fi
 
-# every tier: the rules over everything that are quick (density-free or cached)
+# every tier: the quick checks that are not rules (density-free)
 check features node tools/features.mjs check
 check contrast node tools/contrast.mjs --summary
 check contract-lint node tools/contract_lint.mjs --summary
 check catalogue node tools/gen_catalogue.mjs --build "$B"
-check spec-store node tools/functional.mjs --rules --rule spec-store
-check theme-check node tools/functional.mjs --rules --rule theme-check
-for d in $dens; do check "audit-$d" node tools/functional.mjs --rules --rule about,audit --den "$d"; done
 
+sel=(); [ -n "$ids" ] && sel=(--ids "$ids")
 if [ "$tier" = fast ]; then
+  check rules node tools/functional.mjs --rules --tier fast --den 1.5x --theme all "${sel[@]}"
   [ -n "$ids" ] || { [ $fail = 0 ] && echo "CHECK fast: all green, no --ids (logs $LOG)" || echo "CHECK fast: FAILED (logs $LOG)"; exit $fail; }
-  check pixel-contrast node tools/functional.mjs --rules --tier fast --rule pixel-contrast --den 1.5x --theme all --ids "$ids"
-  check screen-layout node tools/functional.mjs --rules --tier fast --rule screen-layout --den 1.5x --ids "$ids"
   check behaviour node tools/behaviour.mjs --den 1.5x --kind interaction,scroll,sound --ids "$ids"
   soft functional node tools/functional.mjs --den 1.5x --ids "$ids"
 else
-  sel=(); [ -n "$ids" ] && sel=(--ids "$ids")
-  for d in $dens; do
-    check "pixel-contrast-$d" node tools/functional.mjs --rules --rule pixel-contrast --den "$d" --theme all "${sel[@]}"
-    check "lab-$d" node tools/functional.mjs --rules --rule lab-tokens,noop-update --den "$d"
-  done
-  check floorplan node tools/functional.mjs --rules --rule floorplan
-  check screen-layout node tools/functional.mjs --rules --rule screen-layout "${sel[@]}"
+  for d in $dens; do check "rules-$d" node tools/functional.mjs --rules --tier gate --den "$d" --theme all "${sel[@]}"; done
   check behaviour node tools/behaviour.mjs "${sel[@]}"
   soft functional node tools/functional.mjs "${sel[@]}"
   comp=(); [ -n "$ids" ] && comp=(--comp "$ids")
