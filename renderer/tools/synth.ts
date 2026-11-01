@@ -3,10 +3,9 @@
  * into a buffer (OfflineAudioContext), cleaned up (DC offset, edge fades) and loudness-aligned. The same buffer is
  * what plays live and what you'd export to WAV for a panel, so what you hear in the browser is what the firmware gets.
  */
-// Vendored for the Facet docs site (WASM) from main packages/sounds/src/synth.ts (the approved Facet synth, the one
-// the workbench plays): render() unchanged; the pack table (packs.json) is gone because the
-// site takes every sound's parameters from renderer/tokens/sound.json, and the levels come from its "levels"
-// (setLevels) instead of @facet/tokens. Keep in step with main if the synth changes.
+// The Facet synth (from the prototype's packages/sounds, the approved one: render() unchanged), played by the docs
+// site, the workbench and the panel's sound bank (firmware/sound_bank.mjs). Every sound's parameters come from
+// renderer/tokens/sound.json, the levels from its "levels" (setLevels).
 let SOUND = { peakDb: -3, loudnessDb: -12, fadeMs: 4 };
 export const setLevels = (l: Partial<typeof SOUND>) => { SOUND = { ...SOUND, ...l }; };
 

@@ -1,10 +1,10 @@
 // UI sounds on the docs site, as in the workbench (workbench/src/wasm/sound.ts playUi): every fw::sound(obj, id,
-// pos) the live previews request is synthesised in the browser with the approved Facet synth (lib/synth.ts) from
+// pos) the live previews request is synthesised in the browser with the approved Facet synth (renderer/tools/synth.ts) from
 // renderer/tokens/sound.json (copied to <base>sound.json by scripts/extract.mjs, fetched on the first sound).
 // One sound = base + variant (pack) defaults + the type's own values for that pack (minus `use`). Pitched sounds
 // (step ticks): detail = position 0..1 -> sound.json pitch.low..pitch.high semitones (fallback (pos - 0.5) x track).
 // Browsers allow audio only after a gesture: the AudioContext starts on the first pointer / key press on the page.
-import { render, setLevels } from '../lib/synth';
+import { render, setLevels } from '../../../renderer/tools/synth';
 import { livePrefs } from './prefs';
 
 type Params = Record<string, unknown> & { engine: string; track?: number };

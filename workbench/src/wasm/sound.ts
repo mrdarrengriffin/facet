@@ -4,8 +4,8 @@
 // pitch range previewed by ear (Low / High + a real Slider and Dial + a sweep; play-only, never saved), the packs.
 // Single source renderer/tokens/sound.json via /api/wasm/sound (GET adds `generated` =
 // renderer/tools/gen_sound_usage.mjs --json; read only). Sounds are synthesised with the docs site's synth
-// (site/src/lib/synth.ts render()): same parameters, same buffers as the docs and the panel's sound bank.
-import { render } from '../../../site/src/lib/synth';
+// (renderer/tools/synth.ts render()): same parameters, same buffers as the docs and the panel's sound bank.
+import { render } from '../../../renderer/tools/synth';
 
 type Params = Record<string, unknown> & { engine: string; track?: number };
 interface Variant { id: string; name: string; engine: string; about: string; defaults: Record<string, unknown> }

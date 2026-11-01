@@ -22,7 +22,7 @@ esphome/build.sh waveshare-p4-86            # or guition-4848s040; add `prepare`
 ```
 
 `build.sh` generates `gen/<board>/facet_wb` (`firmware/bundle.mjs`), `gen/settings.yaml` (`firmware/settings_yaml.mjs`)
-and, for a board with a speaker, the sound bank (`firmware/sound_bank.mjs`, rendered by the docs site's synth in
+and, for a board with a speaker, the sound bank (`firmware/sound_bank.mjs`, rendered by the Facet synth, `renderer/tools/synth.ts`, in
 headless Chromium), then runs `esphome compile`. Nothing it generates is committed.
 
 ## Your own build

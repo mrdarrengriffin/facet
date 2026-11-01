@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // The UI sounds in the panel's flash (boards with a speaker: esphome/packages/audio_*.yaml). Renders every sound of
-// renderer/tokens/sound.json (each type x each pack) with the synth the docs site plays (site/src/lib/synth.ts,
+// renderer/tokens/sound.json (each type x each pack) with the synth the docs site plays (renderer/tools/synth.ts,
 // render(): Web Audio OfflineAudioContext in headless Chromium, the same cleanup and loudness alignment), as mono 16-bit
 // PCM, and writes the facet_audio component's bank. Generated, never committed (esphome/.gitignore):
 //   node firmware/sound_bank.mjs [--out esphome/components/facet_audio] [--rate 24000] [--check]
@@ -22,7 +22,7 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = dirname(HERE);
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
 const tokens = join(ROOT, 'renderer/tokens/sound.json');
-const synthTs = join(ROOT, 'site/src/lib/synth.ts');
+const synthTs = join(ROOT, 'renderer/tools/synth.ts');
 const out = resolve(arg('--out', join(ROOT, 'esphome/components/facet_audio')));
 const RATE = Number(arg('--rate', '24000'));
 const doc = JSON.parse(readFileSync(tokens, 'utf8'));
