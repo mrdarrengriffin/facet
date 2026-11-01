@@ -3786,65 +3786,6 @@
     "bytes_est": 640
    }
   },
-  "overhead_view": {
-   "name": "Overhead view",
-   "update": true,
-   "props": [
-    {
-     "name": "sample",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "busy",
-      "overhead",
-      "emergency",
-      "quiet"
-     ],
-     "about": "For previews only: which made-up sky to show. busy has many aircraft, overhead has one right above, emergency has one squawking an emergency, quiet has none nearby."
-    },
-    {
-     "name": "view",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "now",
-      "radar",
-      "list"
-     ],
-     "about": "Which view to open on: now shows the closest aircraft with its route, radar shows the big radar, list lists every aircraft nearby."
-    },
-    {
-     "name": "unit",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "km",
-      "mi"
-     ],
-     "about": "Whether distances are shown in kilometres or miles."
-    },
-    {
-     "name": "speed",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "mph",
-      "kmh",
-      "kn"
-     ],
-     "about": "How aircraft speeds are shown: miles per hour, kilometres per hour, or knots."
-    }
-   ],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 41,
-    "bytes_est": 6560
-   }
-  },
   "picker_row": {
    "name": "Picker row",
    "update": true,
@@ -6807,5 +6748,5 @@
    }
   }
  },
- "hash": "db0ad2e4"
+ "hash": "33f32054"
 }

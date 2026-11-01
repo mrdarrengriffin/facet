@@ -2,8 +2,6 @@
   "id": "spec",
   "live_screens": [
     "clock",
-    "overhead",
-    "aircraft",
     "timer",
     "media",
     "agents",

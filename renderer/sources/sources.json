@@ -334,30 +334,6 @@
         }
       ]
     },
-    "overhead": {
-      "shows": "The aircraft flying over your home right now.",
-      "needs": null,
-      "sources": [
-        {
-          "id": "adsb_lol",
-          "kind": "direct",
-          "name": "adsb.lol (open ADS-B, no key)"
-        },
-        {
-          "id": "adsb_fi",
-          "kind": "direct",
-          "name": "adsb.fi (open ADS-B, no key)"
-        },
-        {
-          "id": "ha_flightradar24",
-          "kind": "ha",
-          "name": "HA Flightradar24",
-          "detect": {
-            "integration": "flightradar24"
-          }
-        }
-      ]
-    },
     "living_room": {
       "shows": "The lights of one room, to switch and dim each one.",
       "needs": "dimmable lights",
