@@ -793,7 +793,7 @@ Look *make(lv_display_t *d, const fw::Theme *t) {
 // a look whose theme changed (accent, light / dark, a theme file) repaints its shared styles and reports the change to
 // every object. Never during a redraw: a Pen part reads its ink here while the display renders, and invalidating every
 // object mid-render makes LVGL refuse (and log) each one: on a panel that stalled the LVGL task until the watchdog reset
-// it (2026-10-28, an accent tap with a sent theme). Mid-render it is queued for straight after the frame instead.
+// it (an accent tap with a sent theme). Mid-render it is queued for straight after the frame instead.
 void repaint_look(Look *L) {
   if (fw::T && (L->t != fw::T || L->large != (int) fw::text_large() || GEN_OLD(L))) { paint(L, fw::T); lv_obj_report_style_change(nullptr); }
 }
@@ -1518,7 +1518,7 @@ void equal(lv_obj_t *row) {  // the children (not out of the layout) share row's
   lv_obj_add_event_cb(row, place, LV_EVENT_SIZE_CHANGED, nullptr);
   lv_obj_send_event(row, LV_EVENT_SIZE_CHANGED, nullptr);
 }
-// a "pair" box (Cells, Darren 2026-10-27): its halves (children 0 and 2) split its OWN content height (C6, C9), equal,
+// a "pair" box (Cells): its halves (children 0 and 2) split its OWN content height (C6, C9), equal,
 // each the largest grid multiple that leaves the rule's box (child 1's child) between them, capped by their max-h; the
 // space left (child 1, grow) holds the rule centred. Follows the pair's size inside the layout pass (no wrong frame).
 void split(lv_obj_t *pr) {
@@ -1618,7 +1618,7 @@ void Pen::arc(int r, float a0, float a1, const char *stroke, const char *k, bool
   if (!sees(-r - w, -r - w, r + w, r + w)) return;
   // a partial redraw wholly inside the band's hole (a dial's value text in the middle of its ring) can't touch it:
   // skip it, as LVGL's arc renderer would work its circle masks over every pixel of that area for nothing (a dial
-  // drag repainted its number at ~86 ms a frame on the Waveshare P4, 2026-10-28)
+  // drag repainted its number at ~86 ms a frame on the Waveshare P4)
   {
     const lv_area_t &c = layer->_clip_area;
     const int64_t in = std::max(0, r - w / 2 - 2), in2 = in * in;
@@ -1854,7 +1854,7 @@ void at(float deg, int r, int *x, int *y) {
 int half(lv_obj_t *o) { int cx, cy, h; square(o, cx, cy, h); return h; }
 // how far a Pen knob reaches from its centre in the live theme: the knob, its halo ring (snapped: whole cells round
 // it), the half cell a snapped knob moves to its grid, edges, a shadow, the AA fringe. A moving knob repaints this
-// much round its path (2026-10-28: Phosphor's snapped knob + halo outran the dial's knob/2 + 2: ghost edges stayed)
+// much round its path (Phosphor's snapped knob + halo outran the dial's knob/2 + 2: ghost edges stayed)
 int knob_reach(lv_obj_t *o, const char *sz, const char *ring) {
   const int dm = size(sz), rw = size(ring);
   const PenPart pp = pen_part(o, G::P_KNOB);

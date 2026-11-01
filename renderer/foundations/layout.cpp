@@ -164,7 +164,7 @@ lv_obj_t *header(lv_obj_t *s, const char *label, bool back = true) {
 // Home: four real Cards, card-w x card-h, a gutter apart, from y = top (flex wrap; overflow shows past the content).
 // Each Card fills its parent (fx "fill", as in a Home cell), so each gets a fixed card-w x card-h cell here: a Card
 // straight in the content-height wrap row would be 100% of a parent sized by its children, and LVGL's layout pass
-// never settles (the 2026-10-27 ASan hang; tests/functional/layout.test.mjs)
+// never settles (the ASan hang; tests/functional/layout.test.mjs)
 lv_obj_t *home_cards(lv_obj_t *s) {
   lv_obj_t *g = rect(s, lay::inset, lay::top, lay::content_w, LV_SIZE_CONTENT);
   lv_obj_add_flag(g, LV_OBJ_FLAG_OVERFLOW_VISIBLE);
@@ -372,7 +372,7 @@ void header_zone(lv_obj_t *parent) {
 }
 
 // ---- The clock, always top right: the real Header (which ends with the real Screen chrome) on two screen tops, Home
-// (no back, the settings button before the time: Home only for now, Darren 2026-10-22) and Lights (the time alone),
+// (no back, the settings button before the time: Home only for now) and Lights (the time alone),
 // the corner's parts outlined; values from layout.json at this build's size
 void chrome_strip(lv_obj_t *col, const char *label, bool home) {
   const int S = lay::screen_w, in = lay::inset, H = lay::top;

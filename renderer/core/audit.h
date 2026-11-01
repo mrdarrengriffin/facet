@@ -1,4 +1,4 @@
-// Component audit marks (tests/rules/audit.mjs, README "Audit"; Darren 2026-10-22: "tests against them to make sure they
+// Component audit marks (tests/rules/audit.mjs, README "Audit"; "tests against them to make sure they
 // align with the pixel grids and there's nothing off about them ... don't clip out of their box ... animations follow
 // the right path"). The audit checks every component on its own (clipping, grid, symmetry, touch, motion); a
 // component only says what the audit cannot know:

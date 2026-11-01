@@ -1,4 +1,4 @@
-// Cells (components/cells.cpp, contract v2), release piece 3 (2026-10-26): the Home grid as a layout of slotted
+// Cells (components/cells.cpp, contract v2), release piece 3: the Home grid as a layout of slotted
 // children. Each test is one row of the release gate and fails without the behaviour. The layout fills its parent (the
 // stage's content box, resized to the parent size under test); its columns come from its own width, the cells' min-w
 // token and the gutter. Sample mode = a real Card in every one-slot cell, an outlined "Readout" in each half.
@@ -78,7 +78,7 @@ export default {
       t.eq(ys.every((y) => (y - c.y) % grid(t) === 0), true, 'halves on the grid');
     } },
     { name: 'a pair fits its cell at every min-h: equal halves splitting the cell on the grid, the hairline between, text inside', async run(t) {
-      // Darren 2026-10-27: tile-w columns with a shorter min-h left the second half past the cell bottom, its text cut,
+      // tile-w columns with a shorter min-h left the second half past the cell bottom, its text cut,
       // the hairline 0 px. Each pair is checked against ITS cell's rect (column and row from the geometry), so a half
       // that spills into the gutter or the next row is caught (a text-y row guess was not).
       for (const minw of ['tile-w', 'home-card-min-w']) for (const minh of ['tile-h', 'card-h', 'card-min-h']) {

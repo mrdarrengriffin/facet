@@ -1,4 +1,4 @@
-// States foundation (foundations/states.cpp): the pages of real components in each state. 2026-10-27: the Card
+// States foundation (foundations/states.cpp): the pages of real components in each state. the Card
 // samples went straight into a content-sized column; a Card fills its parent (fx "fill"), so LVGL's layout pass never
 // settled (ASan hung, then overflowed a size). Each Card sample now gets a card-w x card-h cell.
 import { readFileSync } from 'node:fs';

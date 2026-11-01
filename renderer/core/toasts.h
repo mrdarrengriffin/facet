@@ -1,7 +1,7 @@
 // toasts.h: the toasts' behaviour (renderer/CONTRACT.md C4: toasts live on the Overlay layer, never in the Body). The
 // core owns what moves and what a finger does, so the Toast and Toast layer components (components/toast.cpp,
 // toast_layer.cpp) only build their looks from token names through fx. Moved out of those components when they went
-// on the contract (2026-10-28); the motion, the gestures and the perf notes are as they were there.
+// on the contract; the motion, the gestures and the perf notes are as they were there.
 //   toast   fw::toasts::own(o) once at build (o = the Toast's root): finger down pauses the timer; a sideways drag
 //           follows the finger (translate_x only: an opacity under 100 % would render the whole toast through a layer
 //           on every move, the slow part on the Guition); released past toast.swipe = dismissed by swipe, moved less

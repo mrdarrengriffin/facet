@@ -1,5 +1,5 @@
 // Header: the row at the top of every screen, on the contract (renderer/CONTRACT.md C1: Screen > Page > Header slot +
-// Body). Structure (Darren 2026-10-27, Header round 3):
+// Body). Structure (Header round 3):
 //   [Back] [Title] .......... [END slot] [Time]
 //   Back   fixed, built by the Header: the Back button component (an Icon button, back icon), shown only when the
 //          screen has somewhere to go back to (prop back; a spec cannot set it: the renderer owns Back). A back-gap
@@ -17,7 +17,7 @@
 //          settings square, the running timer's time left), after the spec's items.
 //   Time   fixed, always last: the Time component, size "header" (prop clock off = none; prop time = a fixed preview
 //          time, empty = the live clock). With a shortcut, a long press on the time opens Settings too.
-// There is NO start slot (Darren 2026-10-27; a spec naming slot "start" is refused by core/spec.h). Each slot is declared
+// There is NO start slot (a spec naming slot "start" is refused by core/spec.h). Each slot is declared
 // ONCE, in the meta "slots" (name, accepts, max: CONTRACT.md C8a; core/spec.h enforces it at spec load, the editor reads
 // it); SLOTS below only maps a slot name to the child that holds it (header.test.mjs keeps the two equal), so a start
 // slot later is one row here + one declaration.
@@ -128,7 +128,7 @@ void samples(lv_obj_t *h, const std::string &s) {
     ArduinoJson::JsonDocument q;
     lv_obj_clean(slot(h, TITLE)); q["options"] = "Rooms, Map"; q["selected"] = "rooms"; build("segmented", slot(h, TITLE), q);
   }
-  if (s == "end-buttons")  // several items in the end slot (Darren 2026-10-27: any number, any component)
+  if (s == "end-buttons")  // several items in the end slot (any number, any component)
     for (const char *ic : {"plus", "close", "check"}) {
       ArduinoJson::JsonDocument q;
       q["style"] = "square"; q["icon"] = ic;
@@ -150,7 +150,7 @@ void fill(lv_obj_t *h, fw::Props p) {
            *tm = fx::box(h, "header-time");
   for (const Slot &s : SLOTS) fx::slot(lv_obj_get_child(h, s.child), s.name);  // the workbench outlines them
   // a bigger item (a round Icon button) shows whole, not clipped; and a hit area past its box (the Back button's) works:
-  // LVGL only looks for a tap target inside a box the touch is in, unless the box overflows (Darren 2026-10-28)
+  // LVGL only looks for a tap target inside a box the touch is in, unless the box overflows
   for (lv_obj_t *o : {h, bk, ti, en}) fx::overflow(o);
   lv_obj_add_event_cb(en, [](lv_event_t *e) { own_tail.erase((lv_obj_t *) lv_event_get_current_target(e)); }, LV_EVENT_DELETE, nullptr);
   lv_obj_add_event_cb(en, [](lv_event_t *e) {  // a C++ screen adding to the end slot (building_header()) shows it

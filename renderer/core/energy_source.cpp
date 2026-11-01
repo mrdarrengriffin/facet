@@ -12,7 +12,7 @@
 //   19:00", else = watts), card + card_tone (Home: "536 W · 43.2p", ok when cheap, warn at peak, else dim), cheapest
 //   ("Cheapest 22:00–00:00"), event + event_tone ("Saving session tomorrow 17:30–18:30", warn; a greener night ok).
 // Adapters (the feed's settings, the spec's "feeds"; core/ha.h feed_config): source
-//   ha      Home Assistant's Energy dashboard (2026-10-31: nothing to pick, energy is already standard in HA), read over
+//   ha      Home Assistant's Energy dashboard (nothing to pick, energy is already standard in HA), read over
 //           the panel's own HA link (core/device.h ha_link::ws, reads only): energy/get_prefs (the grid's import /
 //           export / cost statistics, solar, battery, gas, water, the devices) every 10 minutes, then
 //           recorder/statistics_during_period: 5-minute changes from yesterday's midnight (today's half-hours and
@@ -25,7 +25,7 @@
 //   sample  the docs time-of-use tariff day (core/energy.h sample), for previews and tests
 //   fixtures the sample day + the extras' test data (sources/fixtures/<extra>.json, compiled in as fw::spec::FIXTURES:
 //           served as if HA answered), so an extra can be tried without owning it
-// Extras (Darren 2026-10-31: the base = HA's Energy dashboard + ONE optional extra integration; sources.json
+// Extras (the base = HA's Energy dashboard + ONE optional extra integration; sources.json
 // screens.energy.extras): each = a matcher (installed? its entities, from the dashboard's grid statistics) + a mapper
 // (live watts, the rate now / next, the day's rate bands, events) + a rank. The feed setting "extra": auto (the
 // best-ranked one found) | an extra's id | none. Found automatically, nothing to pick.

@@ -54,7 +54,7 @@ void fill(lv_obj_t *s, fw::Props p) {
     k.knob_ring_c = t.bg;
   }
   // the knob is wider than the indicator it rides on: inset the arc by the difference so the knob stays in the box
-  // (2026-10-22 audit: at 64 the knob was cut off at the box edge)
+  // (audit: at 64 the knob was cut off at the box edge)
   d->arc = fw::value_arc(s, size - (k.knob > k.ind_w ? (k.knob - k.ind_w + 7) / 8 * 8 : 0), k);  // even steps of 4 each side: centred on the grid
   lv_obj_center(d->arc);
   show(s, target_of(p));

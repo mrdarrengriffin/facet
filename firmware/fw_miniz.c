@@ -1,4 +1,4 @@
-/* Facet firmware: miniz (public domain / Unlicense, as trimmed by pngle: inflate + crc32 only; Facet: unaligned access off), from https://github.com/kikuchan/pngle (b1c6819, 2025-05-18). */
+/* Facet firmware: miniz (public domain / Unlicense, as trimmed by pngle: inflate + crc32 only; Facet: unaligned access off), from https://github.com/kikuchan/pngle (b1c6819). */
 /* Facet: own names for every exported symbol, so this copy never meets another pngle / miniz (an ESPHome component,
  * the chip ROM's tinfl) at link time */
 #ifndef FW_PNGLE_NAMES

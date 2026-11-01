@@ -1,4 +1,4 @@
-// Home Assistant (Settings > Home Assistant, 2026-10-30): the panel's own link to Home Assistant (core/device.h
+// Home Assistant (Settings > Home Assistant): the panel's own link to Home Assistant (core/device.h
 // ha_link), so the entity pickers have lists on a bare panel. Composed only of real components, laid out as Settings:
 //   header   the Header (back + "Home Assistant" + the screen chrome)
 //   content  one scrolling column, groups as Settings (label, section-gap, rows; groups lay::group apart):

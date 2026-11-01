@@ -6,7 +6,7 @@
     "room"
   ],
   "stress": {
-    "about": "Stress / capability suite (Darren 2026-10-22: benchmark the hardware and the screen). Not in the full suite: run it with tag:stress. Ramps stop one step past the knee (fps under stop_fps) or at the memory reserve; the knees are read at 60 / 30 / 20 fps.",
+    "about": "Stress / capability suite (benchmark the hardware and the screen). Not in the full suite: run it with tag:stress. Ramps stop one step past the knee (fps under stop_fps) or at the memory reserve; the knees are read at 60 / 30 / 20 fps.",
     "timing": {
       "settle_ms": 300,
       "window_ms": 1200

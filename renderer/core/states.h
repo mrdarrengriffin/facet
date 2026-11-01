@@ -1,4 +1,4 @@
-// In-place state changes (Darren 2026-10-22, update path phase 2): a component's update moves to a new state
+// In-place state changes (update path phase 2): a component's update moves to a new state
 // (default <-> disabled, a choice on / off) through ONE shared helper and animates in place, never a rebuild.
 // Included at the end of fw.h, after states_gen.h (the fw::st:: tokens it extends).
 //
@@ -32,7 +32,7 @@ void fade_in_children(lv_obj_t *root, bool animate = true);
 using Fill = void (*)(lv_obj_t *root, ArduinoJson::JsonObjectConst p);
 void built(lv_obj_t *root, ArduinoJson::JsonObjectConst p);
 bool update(lv_obj_t *root, ArduinoJson::JsonObjectConst p, Fill fill);
-// Updates animate like a tap (Darren 2026-10-22: "if something gets updated from Home Assistant, and it is like a
+// Updates animate like a tap ("if something gets updated from Home Assistant, and it is like a
 // toggle, I want to make sure it animates like as if I've pressed it. Not just flicks on instantly"). A look that
 // follows a prop (a tone's colour, a mark shown / hidden by opacity) changes inside restyle(): it reads every colour /
 // opacity on o and its subtree, runs change(), and every LOCAL value that changed fades from the old one to the new

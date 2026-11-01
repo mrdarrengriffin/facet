@@ -23,7 +23,7 @@
 //            across its top, the steel-dim fabric down to the position and a space:1 accent bar: always a roller
 //            (the docs card shows the first window that way); no drag
 // Drag (draggable, default on; off = the cover has no position, docs): vertical on a blind, sideways on curtains (the
-// distance from the middle). A drag sets a GHOST target, never the drawing (Darren 2026-10-26): the drawn cover is
+// distance from the middle). A drag sets a GHOST target, never the drawing: the drawn cover is
 // the real position (prop position, HA's). Blinds: the accent handle bar becomes the ghost and follows the finger
 // (press = it jumps there with a sweep, Motion value, like the Slider's tap), the real blind stays put with a plain
 // steel bar; curtains: the panels trail the finger with a light lerp (Motion fabric-follow, no overshoot; reduced

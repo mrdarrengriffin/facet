@@ -1,4 +1,4 @@
-// Group: a LAYOUT component (pages are made only from components; Darren 2026-10-23), on the contract
+// Group: a LAYOUT component (pages are made only from components), on the contract
 // (renderer/CONTRACT.md, "contract": 2). One slot its parent's width wide that wraps its nodes in rows, the gutter
 // apart both ways: tiles three across, cards or camera tiles two across, or a row of buttons. A spec puts nodes in
 // with "in" (core/spec.h).

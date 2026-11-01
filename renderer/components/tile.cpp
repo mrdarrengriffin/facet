@@ -20,7 +20,7 @@
 // source is gone): mascot sleeping in st::unavailable_ink (text-mute), title text-mute, status = "Unavailable"
 // (text-dim), no press look; tap = "blocked" + error on finger down. The docs tile is static; a tap here = "tap"
 // (detail = the title) + sound "open" (a tile opens its agent, like a Card opens its screen).
-// No corner ticks (Darren 2026-10-21: cards / tiles get none until the screens). Contrast pairs: tokens/colour.json
+// No corner ticks (cards / tiles get none until the screens). Contrast pairs: tokens/colour.json
 // section "tile" (+ mascot).
 #include "fw.h"
 #include <string>

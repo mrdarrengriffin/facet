@@ -1,5 +1,5 @@
 // Icon button: the Facet icon-only button (docs: Components > Buttons > Icon button, @facet/ui iconButton()). CONTRACT
-// v2 (renderer/CONTRACT.md, Header round 3, 2026-10-27): token names only through core/fx.h. Three styles, each its own
+// v2 (renderer/CONTRACT.md, Header round 3): token names only through core/fx.h. Three styles, each its own
 // size (square:<layout token> = exactly that square, a touch target; C7 note below):
 //   play    layout:ibtn-play (96 / 64) round, bg:accent, glyph "feature" (48 / 32) in on-accent; pressed =
 //           pressed-accent; active (= playing) = the pause glyph + outline:focus-ring (stroke focus, touch focus-offset
@@ -7,7 +7,7 @@
 //           "toggle" play / pause + sound toggle-on / toggle-off.
 //   round   layout:ibtn-round (80 / 52) round, bg:surface + border:line, glyph "glyph" (32 / 20) in text; pressed =
 //           pressed-surface + pressed-line; active = on-line border + on-ink glyph
-//   square  layout:ibtn-square (48 / 32 = touch:min) radius:square, look as round (active too, Darren 2026-10-21)
+//   square  layout:ibtn-square (48 / 32 = touch:min) radius:square, look as round (active too)
 // A screen icon (icon "settings" = screen-settings, any "screen-*") sits at the icon size (24 / 16) in the square
 // (docs Home settingsButton()). A multi-part icon (an accent part) looks exactly as on the Icons page in every state:
 // its ink follows rest / pressed / disabled, active shows by the border alone (the active ink would merge with the

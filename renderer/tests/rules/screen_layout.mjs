@@ -1,4 +1,4 @@
-// Screen layout check (2026-10-22, after the F1 screen drew its circuit over the header and the standings): the
+// Screen layout check (after the F1 screen drew its circuit over the header and the standings): the
 // component audit checks parts alone; this checks how a SCREEN places them. For every screen x variant x theme x
 // density, at the build and again after 1 s and 3 s of updates (live screens move), and after an update from the
 // default props to each variant (fw_update: the update path must place things as the build does):
@@ -6,7 +6,7 @@
 //   escape    an object inside one region whose box (+ its ext draw size), cut by the ancestors that clip (scroll
 //             lists, anything not overflow-visible), reaches into ANOTHER region's box, or off the screen
 // A region that is meant to sit over others marks itself fw::qa::free(obj, "overlay: <why>") (also inside a region:
-// a view that hosts its sheets; 2026-10-23) (a bottom sheet,
+// a view that hosts its sheets) (a bottom sheet,
 // a toast layer): it is skipped for both checks. Zero-size boxes (holders of state) are not regions.
 // Moved from tools/audit_screens.mjs onto the runner's loop (tools/lib/rules.mjs): per screen x case x look, a screen-size
 // stage of its own; tests/rules/audit.mjs imports checkScreen from here for the screens it audits.

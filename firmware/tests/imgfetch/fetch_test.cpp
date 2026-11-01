@@ -5,7 +5,7 @@
 //   fetch_test <fixtures dir>   (rockbottom.png + photo.jpg from firmware/tests/imgdec)
 // Checks: every wanted URL ends ready or failed (never loading for ever), the right ones ready, one download at a time,
 // no deadlock (a watchdog thread: the main loop must keep beating), works again after the worker's idle exit (the
-// 2026-10-26 crash: the worker deleted itself holding the lock), and alloc / task / low-memory failures only fail images.
+// crash: the worker deleted itself holding the lock), and alloc / task / low-memory failures only fail images.
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
@@ -307,7 +307,7 @@ int main(int argc, char **argv) {
     CHECK(open_max == 1, "one download at a time (max %d)", open_max.load());
     CHECK(t.too_many == 0, "100 fit the queue (%d too many)", t.too_many);
   }
-  {  // 2. idle past 20 s: the worker task exits; then a new batch must still load (2026-10-26: deadlocked here)
+  {  // 2. idle past 20 s: the worker task exits; then a new batch must still load (deadlocked here)
     const int gone = tasks_gone;
     run_sim_ms(25000);
     CHECK(tasks_gone > gone, "the idle worker exited");

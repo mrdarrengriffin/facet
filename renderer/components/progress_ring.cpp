@@ -1,5 +1,5 @@
 // Progress ring: a read-only full-turn ring that empties as a value runs down (the Timer screen's ring, concept T1
-// picked by Darren 2026-10-28; legacy components/timer_view.cpp lay::timer_ring), on the contract (renderer/CONTRACT.md,
+// picked by legacy components/timer_view.cpp lay::timer_ring), on the contract (renderer/CONTRACT.md,
 // "contract": 2). Built only from token names and the Pen: a theme / accent switch repaints it with no code here.
 //   box      fills its parent's width up to max-w:timer-ring (432 / 288) and is as tall as it is wide (fx::drawn "fit");
 //            meta min layout:timer-ring both ways (below it the centre slot no longer fits inside the ring: the bounds

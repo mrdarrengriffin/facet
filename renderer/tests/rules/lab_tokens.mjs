@@ -1,14 +1,14 @@
 // Layout lab test (hub src/wasm/lablayout.ts, core/main.cpp fw_lab): every size token the Card uses repaints a
 // mounted Card LIVE (fx::tune -> shared token styles -> every stage), and the page-level tokens are reported "page
-// only" (a component mounted alone has no Page). Darren 2026-10-26: "changed every lab setting, nothing changed".
+// only" (a component mounted alone has no Page). "changed every lab setting, nothing changed".
 // Moved from tools/lab_test.mjs onto the runner's loop (tools/lib/rules.mjs): once per contract component and density,
 // on the case's module, on a 480 x 360 stage of its own with the props below (the tokens show on those parts).
 // parts whose whole look is a type style + a colour (no size of their own): nothing to tune, the check passes them
-// (Darren 2026-10-28: Title, the Header's text)
+// (Title, the Header's text)
 const TEXT_ONLY = new Set(['title']);
 const CARD = ['layout:card-pad', 'radius:card', 'stroke:hair'];   // must repaint the Card
 const PAGE = ['layout:inset', 'layout:gutter', 'layout:top', 'layout:header-gap', 'squeeze'];  // page only
-// Header round 3 (2026-10-27): EVERY contract component (meta "contract": 2) is mounted and must list >= 1 tunable token
+// Header round 3: EVERY contract component (meta "contract": 2) is mounted and must list >= 1 tunable token
 // that visibly changes it, and each listed token must repaint it live and come back (C23 / P3 for all). Some have
 // extra must / must-not lists (below); props = what the mount needs to show the parts that read the tokens.
 // layout:row: read, but alone on a stage the row is centred (only a Page's head shows it): header.test.mjs checks it
@@ -52,7 +52,7 @@ const EXTRA = { card: [{ opening: false }, CARD, PAGE],
   lightning_radar: [{ demo: false, now: 1792944000000 }, [], PAGE],
   timer_chip: [{}, ['layout:timer-chip-ring', 'touch:min', 'space:3', 'radius:chip', 'stroke:hair', 'stroke:edge', 'stroke:chip-arc'], PAGE] };
 // the wall clock pinned (a screen's Header shows the live time: a minute ticking over between a tune and its "and back"
-// changed the pixels, a flaky fail, 2026-10-28); the module reads it through Date.now (emscripten_date_now)
+// changed the pixels, a flaky fail); the module reads it through Date.now (emscripten_date_now)
 const PINNED = Date.UTC(2026, 9, 28, 9, 41, 0);
 
 export default {

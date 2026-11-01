@@ -7,7 +7,7 @@ const seg = (t, label) => t.objs().find((o) => o.clk && t.find(label) && o.x <= 
 const plate = (t, label) => { const s = seg(t, label); return px(t, s.x + 8, s.y + s.h / 2); };  // padding, left of the label
 const chosen = (t) => { const L = ['AUTO', 'DARK', 'LIGHT'].filter((l) => t.texts().includes(l)), p = L.map((l) => plate(t, l));
   return L.filter((l, i) => p.filter((q, j) => j !== i).every((q) => diff(p[i], q, 12))); };  // the one plate that differs from the rest
-// centred labels (Darren 2026-10-27: the labels sat left of centre): every Segmented variant (and the Header's title
+// centred labels (the labels sat left of centre): every Segmented variant (and the Header's title
 // slot one) in every built-in theme, its labels' ink (the pixels that change when the label is veiled) centred in
 // its segment within 1 px. Fails when the label's text sits at the left of its grid-rounded box.
 const THEMES = ['facet', 'blockcraft', 'phosphor', 'win98'];

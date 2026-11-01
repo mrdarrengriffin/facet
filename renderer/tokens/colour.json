@@ -541,7 +541,7 @@
     "grid": {
       "minor": {
         "value": 0.05,
-        "use": "opacity of the minor grid lines (every grid step, 8 px at 720 / 4 at 480; ink = colour text) in the Layout page's screen overlay: drawn on top of the real components, see-through on cards, still visible on the bare bg (Darren 2026-10-22: translucent ink, ~5 % light-on-dark / dark-on-light)"
+        "use": "opacity of the minor grid lines (every grid step, 8 px at 720 / 4 at 480; ink = colour text) in the Layout page's screen overlay: drawn on top of the real components, see-through on cards, still visible on the bare bg (translucent ink, ~5 % light-on-dark / dark-on-light)"
       },
       "major": {
         "value": 0.15,
@@ -568,7 +568,7 @@
       "desat": "card.press-desat",
       "over": "surface",
       "opa": "card.press-tint",
-      "use": "pressed card fill: a faint, greyed accent tint over the surface (Darren 2026-10-21, card rounds 4-5), per theme x accent set; = the pressed tint role of states.json (Card, List row, section header action; the Card press style lives there too)"
+      "use": "pressed card fill: a faint, greyed accent tint over the surface (card rounds 4-5), per theme x accent set; = the pressed tint role of states.json (Card, List row, section header action; the Card press style lives there too)"
     },
     "chip-ok": {
       "tint": "ok",
@@ -1215,7 +1215,7 @@
           "surface-press"
         ],
         "kind": "ui",
-        "use": "corner ticks while the active owner is pressed (st::on_mark_pressed): Button secondary active + pressed (Darren 2026-10-21: accent was 2.87-2.99 here in light)"
+        "use": "corner ticks while the active owner is pressed (st::on_mark_pressed): Button secondary active + pressed (accent was 2.87-2.99 here in light)"
       },
       {
         "section": "focus_ring",

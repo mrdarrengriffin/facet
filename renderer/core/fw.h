@@ -34,7 +34,7 @@ constexpr float D = 1.0f;
 #else
 constexpr float D = 1.5f;
 #endif
-// snapped to the 4 px grid (Darren 2026-10-21: no odd or off-grid geometry at either density); 0 stays 0, minimum 4
+// snapped to the 4 px grid (no odd or off-grid geometry at either density); 0 stays 0, minimum 4
 inline int px(float dp) {
   const int v = (int) std::lround(dp * D);
   return v == 0 ? 0 : v > 0 ? std::max(4, (v + 2) / 4 * 4) : -std::max(4, (-v + 2) / 4 * 4);
@@ -123,7 +123,7 @@ bool reduced(const lv_obj_t *o);                // reduced motion for o's displa
 void set_reduced(lv_display_t *d, bool on);     // per display (render() sets it for the stage it builds on)
 void set_reduced_default(bool on);              // the panel's setting: every display without its own
 bool reduced_default();
-// fades (Darren 2026-10-22, Guition): a device-level motion choice. Off = the screen change is instant (no Content
+// fades (Guition): a device-level motion choice. Off = the screen change is instant (no Content
 // rise) and the Bottom sheet's scrim snaps while its panel moves by translate only (no opacity), reduced mode too.
 // Default: off in the 1x build (Guition, 480: large blended areas cost ~90 ms a frame there), on elsewhere; props
 // "fades" (true / false) overrides it per display like reduced_motion (workbench, bench before / after).
@@ -159,7 +159,7 @@ void rise(lv_obj_t *const *items, int n, bool home);
 
 using Props = ArduinoJson::JsonObjectConst;
 using Build = void (*)(lv_obj_t *parent, Props p);
-// Update path (Darren 2026-10-22, README "Update path"): every component takes new props IN PLACE and moves to them with
+// Update path (README "Update path"): every component takes new props IN PLACE and moves to them with
 // its own animation, no rebuild. root = the one object build() made on its parent; p = the FULL new props (same shape
 // build() gets; the component compares with what it shows). Return false when it can't (a structural prop changed:
 // range, state, ...): the caller rebuilds. Updates are always silent (nobody touched it): fw::update() runs it inside
@@ -206,7 +206,7 @@ void refill(lv_obj_t *root);
 // key: a component built on another's root (Picker row on the List row's) keeps its own string under its own key.
 bool shape(lv_obj_t *root, const std::string &sig, const char *key = "");
 
-// Demo state (Darren 2026-10-22): the hosts' demo reset animates a sample back to its starting props after an
+// Demo state: the hosts' demo reset animates a sample back to its starting props after an
 // interaction. A demo whose replay ends where it started (a line drawing in again) says so, and the reset is skipped:
 // fw::demo_away(obj, false) = this demo is at its preset, true = moved away (new readings, another value). Per screen:
 // the screen is away while any of its demos is; demo_state(scr) = -1 nothing reported (hosts reset as before),
@@ -235,22 +235,22 @@ void sound(lv_obj_t *obj, const char *id, float pos);
 // component's own animations started by an update must be silent themselves (e.g. the Dial's quiet sweep).
 struct Quiet { Quiet(); ~Quiet(); };
 bool quiet();
-// Step ticks (Darren 2026-10-21), the one rule for every slider / dial / arc: call when the SHOWN value moves from
+// Step ticks, the one rule for every slider / dial / arc: call when the SHOWN value moves from
 // step `from` to step `to` of `n` steps. Every step crossed counts; an audible "slider-tick" plays for a step only when
 // the last audible tick is at least mo::ms::tick_min (motion.json "tick-min") ago, so a slow drag ticks on every single
 // step and a fast one thins out to a steady patter, never more ticks than steps. A landmark step (ends of the range:
 // tick_landmark()) plays "slider-landmark" instead and is never dropped: too soon after a tick, it waits out the
 // interval (one lv_timer). One limiter for the whole display (one finger at a time).
-// Pitch follows the value (Darren 2026-10-21): every tick and landmark carries its step's place in the range
+// Pitch follows the value: every tick and landmark carries its step's place in the range
 // (step / n) as the sound position, so low values tick lower and high values higher (sound.json `track`).
 void step_ticks(lv_obj_t *obj, int from, int to, int n);
 // Same limiter, own pitch: pos(user, step) = the sound position 0..1 of each step (a chart scrub pitches its ticks
-// by the line's height at the cursor, Darren 2026-10-22, instead of by step / n).
+// by the line's height at the cursor, instead of by step / n).
 using TickPos = float (*)(void *user, int step);
 void step_ticks(lv_obj_t *obj, int from, int to, int n, TickPos pos, void *user);
 bool tick_landmark(int step, int n);  // 0 and n today; add 50 % etc. in fw_core.cpp LANDMARKS
 
-// Bleed (States, Darren 2026-10-21): let o's marks draw up to `px` outside its box (a focus ring at the focus offset,
+// Bleed (States): let o's marks draw up to `px` outside its box (a focus ring at the focus offset,
 // an overhanging press fill). LVGL clips every child to each ancestor's box, so o and every ancestor up to the screen
 // get LV_OBJ_FLAG_OVERFLOW_VISIBLE AND an ext draw size of at least px (OVERFLOW_VISIBLE alone draws 0 px outside: the
 // clip is the ancestor's box grown by ITS ext draw size). Call once o is in its final parent.

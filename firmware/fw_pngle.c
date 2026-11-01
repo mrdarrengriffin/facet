@@ -1,4 +1,4 @@
-/* Facet firmware: pngle by kikuchan (MIT), https://github.com/kikuchan/pngle (b1c6819, 2025-05-18); see fw_pngle.h. */
+/* Facet firmware: pngle by kikuchan (MIT), https://github.com/kikuchan/pngle (b1c6819); see fw_pngle.h. */
 #include "fw_pngle.h"
 /*-
  * MIT License

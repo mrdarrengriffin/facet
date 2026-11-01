@@ -1,4 +1,4 @@
-// Time (components/time.cpp, contract v2, Header round 3 2026-10-27): digit cells that never shift; size header = the
+// Time (components/time.cpp, contract v2, Header round 3): digit cells that never shift; size header = the
 // Header's time (type label, text-dim, one label).
 import { leak, golden, stage, boundsAll, liveLook, frame565, diff565 } from './_release.mjs';
 async function at(t, props, w = 720, h = 300) { t.b.W = t.b.H = undefined; await t.mount('time', props); stage(t, w, h); t.b.settle(300); return t.part('time'); }

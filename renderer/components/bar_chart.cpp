@@ -11,7 +11,7 @@
 //            it, a tick per bar crossed (the slider rule), "scrub" on release (detail "index value"); docs onTap(i)
 //   width    dp, 0 = its parent's content width (a screen's full column: the bars keep their grid width and the gaps
 //            share the rest, so the chart spans the column; > 0 = the bars snap to the grid, the chart hugs them)
-//   compare  (2026-10-29, the Energy screen's Week view; docs barChart group 2) the earlier period, one number per
+//   compare  (the Energy screen's Week view; docs barChart group 2) the earlier period, one number per
 //            value: the bars come in pairs (the earlier one an outline in line-hi, then the value solid in text-dim), ch
 //            bar-gap inside a pair, chart:group-gap between pairs; the colour mode is series, no now marker
 //   labels   one word per value (or pair) on the axis under its centre ("Mon,...,Today"), in place of the hour ticks;

@@ -1,4 +1,4 @@
-// Screens (Settings > Screens, 2026-10-23; the panel lab's Screens screen in WASM): which screens this panel has and
+// Screens (Settings > Screens; the panel lab's Screens screen in WASM): which screens this panel has and
 // where each gets its data. Composed only of real components:
 //   header   the Header (back + "Screens" + the screen chrome) at (inset, inset)
 //   content  from lay::top, one scrolling column: the label "on this panel" (screen type label, text-dim, as the

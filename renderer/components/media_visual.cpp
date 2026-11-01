@@ -1,10 +1,10 @@
-// Media visuals: the Media screen's picture and its Home card preview (2026-10-30: absorbs the Media disc, visual
+// Media visuals: the Media screen's picture and its Home card preview (absorbs the Media disc, visual
 // "disc": draw_disc below, the old media_disc's parts and tokens; size "card" = lay::mv_card tall, a square crop
 // showing the right end as the screen does). The Facet media visuals (docs: Components > Controls > Media visuals, @facet/ui media-visuals/, CSS
 // .f-mv-*): a cassette, a CD, or a 12" vinyl LP with its tonearm for the Media screen's hero
 // slot, drawn from the real-world dimensions (docs specs.ts: IEC 60094-7 cassette, ECMA-130 CD, RIAA E4 LP, Technics
 // SL-1200 arm), turning at the real tape and disc speeds while the track plays (CD slowed 16 x: docs; the docs'
-// reel-to-reel was removed, Darren 2026-10-22), the tape packs (area-conserving) and the tonearm following the track's progress.
+// reel-to-reel was removed), the tape packs (area-conserving) and the tonearm following the track's progress.
 //   size     every visual is scaled so its height = lay::mv_h (256 / 168, the disc's slot; docs layout mv-h), shown
 //            whole in its own box (docs mediaVisual(); on the Media screen it runs off the left edge, a screen job)
 //   colours  the mv-* colour tokens (both themes), disc / groove; the cassette label stripes take the docs fallback
@@ -301,7 +301,7 @@ void draw_vinyl(const Ctx &c) {
   ring(c, 0, 0, lp::label / 2 - 0.4f, 0.5f, t.mv_vinyl, LV_OPA_60);
   disc(c, 0, 0, lp::hole / 2 - 0.3f, t.mv_metal);
   // rest post, arm base, then the arm (pivot-local: along +x, rotated about the pivot)
-  // (the first port, from the docs: Darren 2026-10-22 wants a design round on the vinyl later, this stays till then)
+  // (the first port, from the docs: the vinyl waits for a design round; this stays till then)
   const float L = arm::effective, restA = arm_angle(d->Px, d->Py, L, arm::restR, -1) * PI / 180;
   disc(c, d->Px + (L - 14) * std::cos(restA), d->Py + (L - 14) * std::sin(restA), 4.5f, t.mv_metal_2);
   disc(c, d->Px, d->Py, arm::baseR, t.mv_deck);
@@ -329,7 +329,7 @@ void arm_box(const MV *d, float a, float *x0, float *y0, float *x1, float *y1) {
   *x1 = (mx1 + pad - d->ox) * d->k; *y1 = (my1 + pad - d->oy) * d->k;
 }
 
-// ---- 4 the Media disc (absorbed from media_disc, 2026-10-30): units = px at the screen size (lay::disc_screen), k
+// ---- 4 the Media disc (absorbed from media_disc): units = px at the screen size (lay::disc_screen), k
 // scales them to the card. A dotted ring (72 dots over 355 degrees from 12 o'clock, stroke::arc, line-hi), the accent
 // progress arc sp::s2 inside it (round caps), the face (disc, a hair line edge) with two groove rings
 // (lay::disc_groove smaller each), the accent label spot with its hole in the canvas colour, the blue marker circling
@@ -404,7 +404,7 @@ void layout(MV *d) {
       d->ox = -R;
       d->oy = d->Py - 34;
       // the first port's box (the counterweight reaches past its top: a known audit exception until the vinyl's
-      // design round, Darren 2026-10-22), its size rounded up to the grid
+      // design round), its size rounded up to the grid
       d->W = ((int) std::ceil((R + d->Px + 36) * d->k) + fw::sp::GRID - 1) / fw::sp::GRID * fw::sp::GRID;
       d->H = ((int) std::ceil((R - d->oy) * d->k) + fw::sp::GRID - 1) / fw::sp::GRID * fw::sp::GRID;
       if (d->card) { d->ox = -R, d->oy = -R, d->W = d->H = (int) H; }  // the card: the record alone, a square
@@ -466,7 +466,7 @@ void frame(void *var, int32_t) {
   d->m = ease(d->m, d->playing ? 1.0f : 0.0f, dt, d->playing ? tauUp[d->kind] : tauDown[d->kind]);
   bool moving = false;
   // the plain vinyl label has no art, so its turn is invisible (dirty_turning draws nothing for it): it does not keep
-  // the clock running (2026-10-22 visual check: a frame clock every frame for no pixels); revisit with the vinyl round
+  // the clock running (visual check: a frame clock every frame for no pixels); revisit with the vinyl round
   const bool turns = d->kind != VINYL;
   if (d->m > 0.0005f && !still && turns) {
     moving = true;
@@ -501,7 +501,7 @@ void frame(void *var, int32_t) {
     moving = true;
   }
   if (!moving && (!d->playing || !turns) && !d->starting) {  // settled: the clock stops (no idle redraw; never inside lv_anim_start,
-    // which runs this once and then still uses the anim: ASan 2026-10-22, heap-use-after-free)
+    // which runs this once and then still uses the anim: ASan: heap-use-after-free)
     d->running = false;
     d->last = 0;
     lv_anim_delete(o, (lv_anim_exec_xcb_t) frame);
@@ -572,8 +572,8 @@ FW_COMPONENT(media_visual, "Media visuals", "components", R"({
     {"label": "Cassette · card", "props": {"visual": "cassette", "size": "card"}},
     {"label": "CD · card", "props": {"visual": "cd", "size": "card"}},
     {"label": "CD", "props": {"visual": "cd", "progress": 45}},
-    {"label": "Vinyl", "props": {"visual": "vinyl", "progress": 60}, "audit": {"skip": {"clip": "vinyl awaiting design round, Darren 2026-10-22"}}},
-    {"label": "Vinyl · stopped at the start", "props": {"visual": "vinyl", "progress": 0, "playing": false}, "audit": {"skip": {"clip": "vinyl awaiting design round, Darren 2026-10-22"}}}
+    {"label": "Vinyl", "props": {"visual": "vinyl", "progress": 60}, "audit": {"skip": {"clip": "vinyl awaiting design round"}}},
+    {"label": "Vinyl · stopped at the start", "props": {"visual": "vinyl", "progress": 0, "playing": false}, "audit": {"skip": {"clip": "vinyl awaiting design round"}}}
   ]
 })") {
   auto *d = new MV;

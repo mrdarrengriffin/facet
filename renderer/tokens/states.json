@@ -52,7 +52,7 @@
     },
     "pressed": {
       "label": "Pressed",
-      "about": "Finger down on something that acts. Three looks, by what is pressed (Darren 2026-10-21): a boxed control on a surface goes grey (surface-press + line-hi), an accent fill goes to accent-press, a big area (Card, List row, header action) gets the faint press tint. Colours only, nothing moves: Motion press into the look, release back out (80 ms ease-out each; reduced motion keeps them, it is colour only). No sound or event on finger down. A Toggle, Slider and Dial have no pressed look: the knob following the finger is the feedback.",
+      "about": "Finger down on something that acts. Three looks, by what is pressed: a boxed control on a surface goes grey (surface-press + line-hi), an accent fill goes to accent-press, a big area (Card, List row, header action) gets the faint press tint. Colours only, nothing moves: Motion press into the look, release back out (80 ms ease-out each; reduced motion keeps them, it is colour only). No sound or event on finger down. A Toggle, Slider and Dial have no pressed look: the knob following the finger is the feedback.",
       "motion": [
         "press",
         "release"
@@ -101,7 +101,7 @@
     },
     "disabled": {
       "label": "Disabled",
-      "about": "The part exists but cannot be used right now (a setting that needs another one first). It keeps its shape and place, drops to the muted colours, shows no press look, hides its focus ring and never moves. Finger down on it emits blocked and plays error at once (every component, Darren 2026-10-21), so it is never silent; letting go does nothing.",
+      "about": "The part exists but cannot be used right now (a setting that needs another one first). It keeps its shape and place, drops to the muted colours, shows no press look, hides its focus ring and never moves. Finger down on it emits blocked and plays error at once (every component), so it is never silent; letting go does nothing.",
       "motion": [],
       "event": "blocked",
       "sound": "error",
@@ -116,7 +116,7 @@
         },
         "knob": {
           "token": "text-dim",
-          "use": "every knob: Toggle (on and off), Slider, Dial (Darren 2026-10-21: one colour for all)"
+          "use": "every knob: Toggle (on and off), Slider, Dial (one colour for all)"
         },
         "accent": {
           "token": "accent-dim",
@@ -131,7 +131,7 @@
     },
     "unavailable": {
       "label": "Unavailable",
-      "about": "The thing behind the part is gone (a Home Assistant entity that is unavailable). It follows the disabled rule and says so in words where there is room: the control is hidden and the word Unavailable takes its place (Card, List row, Dial, Toggle, Slider); an Icon button has no room for the word, so it keeps its shape in the disabled look. Finger down emits blocked and plays error. Every control that shows a device's state has it (Darren 2026-10-21).",
+      "about": "The thing behind the part is gone (a Home Assistant entity that is unavailable). It follows the disabled rule and says so in words where there is room: the control is hidden and the word Unavailable takes its place (Card, List row, Dial, Toggle, Slider); an Icon button has no room for the word, so it keeps its shape in the disabled look. Finger down emits blocked and plays error. Every control that shows a device's state has it.",
       "motion": [],
       "event": "blocked",
       "sound": "error",
@@ -150,7 +150,7 @@
     },
     "on": {
       "label": "On and active",
-      "about": "On / active = LV_STATE_CHECKED. A switch turns accent (the Toggle track, the outline Button filling); a mode or tab that is selected keeps its box and gets an accent mark (corner ticks, underline, accent ink, line-hi border, the focus ring). Switching sweeps with Motion toggle (knob, 80 ms; reduced motion = instant) or value (Dial arc, 400 ms), emits toggle (every switch, Darren 2026-10-21) and plays toggle-on / toggle-off.",
+      "about": "On / active = LV_STATE_CHECKED. A switch turns accent (the Toggle track, the outline Button filling); a mode or tab that is selected keeps its box and gets an accent mark (corner ticks, underline, accent ink, line-hi border, the focus ring). Switching sweeps with Motion toggle (knob, 80 ms; reduced motion = instant) or value (Dial arc, 400 ms), emits toggle (every switch) and plays toggle-on / toggle-off.",
       "motion": [
         "toggle",
         "value"
@@ -180,7 +180,7 @@
         },
         "mark-pressed": {
           "token": "accent-text",
-          "use": "corner ticks while their active owner is pressed (on the pressed grey accent drops under 3:1 in light; Darren 2026-10-21)"
+          "use": "corner ticks while their active owner is pressed (on the pressed grey accent drops under 3:1 in light)"
         }
       },
       "off_sound": "toggle-off"
@@ -309,7 +309,7 @@
     ]
   },
   "decisions": {
-    "$comment": "Round 1 open questions, all decided by Darren 2026-10-21 (\"I think your suggestions are great here\"): the coordinator's picks.",
+    "$comment": "Round 1 open questions, all decided: the coordinator's picks.",
     "items": [
       {
         "q": "Pressed has three looks: surface-press (Button secondary / ghost, Icon buttons), accent-press (accent fills) and the press-tint tint (Card, List row, header action). Keep the split (boxed controls grey, big areas tinted), or move the grey ones to the tint too?",

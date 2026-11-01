@@ -1,4 +1,4 @@
-// Screen sources (Settings > Screens, 2026-10-23): where a screen's data can come from, from the source catalogue
+// Screen sources (Settings > Screens): where a screen's data can come from, from the source catalogue
 // renderer/sources/sources.json (compiled in as fw::spec::SOURCES by tools/gen_specs.mjs). Parsed on demand (the
 // Screens pages are rare; nothing stays on the heap). Header-only (core/*.h is bundled as is).
 //   picked(doc, screen, entry)  the source a deck entry uses: its "source" when the screen has it, else the first

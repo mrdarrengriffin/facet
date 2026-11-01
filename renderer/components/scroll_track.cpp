@@ -2,7 +2,7 @@
 // the right edge of every scrolling area, its height; the thumb shows how much is in view and where; nothing when
 // nothing scrolls. This page shows the core atom fw::scroll_track (atoms.h, LVGL's own styled scrollbar + the track)
 // on a scrolling column of real List rows (fw::find("list_row"), its stack), the way a long screen gets it.
-//   items   the rows (2026-10-26 real rows: the List row stack's items model, core/items.h: a comma list or a JSON
+//   items   the rows (real rows: the List row stack's items model, core/items.h: a comma list or a JSON
 //           list, usually bound to an entity attribute; plain item = title, object item = title / icon / sub / value
 //           / trailing / on / state fields); few = nothing to scroll, so no track; none = the empty words. Nothing
 //           demo: the sample rooms live in the variants. The area lay::content_w x height.

@@ -174,7 +174,7 @@ inline void worker(void *) {
       if (!ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(20000))) {  // 20 s with nothing to do: the task goes (its stack too)
         // the lock is let go BEFORE vTaskDelete: a task deleted while holding it leaves it locked for ever, and the next
         // pump() on the LVGL task waits on it = the UI and the loop stop, the task watchdog restarts the panel
-        // (2026-10-26, the TBOI grid: exactly 20 s after the last download)
+        // (the TBOI grid: exactly 20 s after the last download)
         bool go = false;
         {
           std::lock_guard<std::mutex> l(s.m);

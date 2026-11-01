@@ -1,7 +1,7 @@
 // Card: the Facet Home card (docs: @facet/ui layout.ts card(), CSS .fs-card). One screen's summary on Home; a tap
-// opens that screen. CONTRACT v2 (renderer/CONTRACT.md, release piece 2, 2026-10-26): built only from token names
+// opens that screen. CONTRACT v2 (renderer/CONTRACT.md, release piece 2): built only from token names
 // through core/fx.h. It has NO width or height of its own: it fills its parent (the Home grid cell gives it its size;
-// Darren 2026-10-26: no predefined width, so no size prop). It DECLARES a minimum (meta "min": layout:card-min-w x
+// no predefined width, so no size prop). It DECLARES a minimum (meta "min": layout:card-min-w x
 // card-min-h) and scales between that and any size above it in two steps, each picked from its own content box:
 //   full      (the approved card, 320 x 280 / 212 x 184 at the docs size): top row icon + caps label + accent dot, the
 //             preview artwork top right (icon size card 72 / 48); (grow); value (type value) or up to two lines of

@@ -72,7 +72,7 @@ void arc_pv(lv_obj_t *root, bool timer, int value) {
 // ---- switch: pill + knob; v 0 (off) .. 255 (on) mixes the looks and slides the knob
 // geometry (docs previewSwitch: a 68 x 36 pill at 2, 18 and a 24 knob 6 in from its ends, on the 72 box; scaled, the
 // pill centred): kept here, never read back from the objects (their coords are not laid out yet at build: the first
-// version read 0 and put the knob half below the pill, Darren 2026-10-22 "switch on / off broken")
+// version read 0 and put the knob half below the pill)
 struct SwPV { lv_obj_t *pill, *knob; int32_t shown; bool avail; int x0, x1; };
 void sw_show(void *o, int32_t v) {
   auto *root = (lv_obj_t *) o;
@@ -93,7 +93,7 @@ int sw_target(Props p, bool *avail) {
 
 // ---- energy: bars by price band
 lv_color_t band(const Theme &t, const std::string &b) { return b == "cheap" ? t.blue : b == "peak" ? t.accent : t.band_normal; }
-// 8 px bars sp::s1 apart (coordinator for Darren 2026-10-22: chunkier than 4 px, closer to the docs' filled look):
+// 8 px bars sp::s1 apart (coordinator for chunkier than 4 px, closer to the docs' filled look):
 // 6 at 72, 4 at 48 (the last 3 / 2 hours)
 int n_bars() { return std::min(12, (S() + sp::s1) / (2 * sp::s1 + sp::s1)); }
 void bar_data(Props p, std::vector<float> *v, std::vector<lv_color_t> *c) {

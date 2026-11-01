@@ -24,7 +24,7 @@ for (const g of groups)
     if (!Number.isInteger(v.v) || !Number.isInteger(v['1x'])) die(`${g}.${n}: v and 1x must be integers`);
     rows.push({ g, n, ...v });
   }
-// the grid rule (Darren 2026-10-21: multiples of 4, no odd numbers). Spacing, layout, radius, touch: a multiple of 4 at
+// the grid rule (multiples of 4, no odd numbers). Spacing, layout, radius, touch: a multiple of 4 at
 // both densities (minimum 4 when non-zero; radius 0 = square, radius.round = the fully-round sentinel). A 720 value may
 // sit on the 2 px grid only when it carries `grid2` (an approved docs value waiting for Darren); the 480 value never.
 // Strokes: 1 and 2 px hairlines, 3 px and up even.
@@ -48,7 +48,7 @@ for (const d of [720, 480]) {
   if (cards !== d) bad.push(`layout ${d}: 2 x card-w + gutter + 2 x inset = ${cards}, not ${d}`);
   if (tiles !== d) bad.push(`layout ${d}: 3 x tile-w + 2 x gutter + 2 x inset = ${tiles}, not ${d}`);
 }
-if (bad.length) die(`off the 4 px grid (Darren 2026-10-21: every spacing value a multiple of 4, no odd numbers):\n  ${bad.join('\n  ')}`);
+if (bad.length) die(`off the 4 px grid (every spacing value a multiple of 4, no odd numbers):\n  ${bad.join('\n  ')}`);
 const steps = Object.keys(t.tokens.space).map(Number).sort((a, b) => a - b);
 steps.forEach((s, i) => { if (s !== i + 1) die('space steps must be 1..N'); });
 

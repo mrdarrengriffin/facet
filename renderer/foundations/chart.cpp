@@ -322,7 +322,7 @@ void draw_in(Line *L) {
 
 // new value: raster old + new once (the new point one step past the right edge), slide the track left by one step;
 // the end dot stays at the right edge and moves up / down to the new value on the same eased progress, so it looks
-// like it draws the line as it goes; where it lands, it pings (Darren 2026-10-22: before, on the 480 the line jumped
+// like it draws the line as it goes; where it lands, it pings (before, on the 480 the line jumped
 // left at once while only the dot glided; the slide is now kept on the 480 too). Reduced: they jump, no ping.
 void shift_exec(void *o, int32_t p) {
   auto *L = (Line *) lv_obj_get_user_data((lv_obj_t *) o);
@@ -376,7 +376,7 @@ void morph(Line *L, const std::vector<float> &nv) {
 
 // scrub: press and drag across the chart; the cursor, a dot with a surface ring and a readout follow point by point
 // (a tick per point crossed, the slider rule); finger up = they fade out
-// the scrub tick's pitch follows the line (Darren 2026-10-22): the line's height at that step, bottom to top of the plot,
+// the scrub tick's pitch follows the line: the line's height at that step, bottom to top of the plot,
 // mapped into chart.json sound.scrub-pitch (a share of sound.json pitch); a gap takes the nearest reading's height
 float scrub_pitch(void *u, int step) {
   const Line *L = (const Line *) u;
@@ -467,7 +467,7 @@ Line *line_chart(lv_obj_t *parent, const Theme &t, const LineOpts &o) {
   }, LV_EVENT_DELETE, L);
   if (o.grid) grid_lines(L->root, t, o.w, gt(L), gb(L));
   if (o.baseline_dots)  // the docs sparkline: a dotted baseline on the box's bottom edge (docs y = h - 0.5), under the
-    // lowest point, no grid (2026-10-22 reference check: it sat on the plot bottom and the line ran through its dots)
+    // lowest point, no grid (reference check: it sat on the plot bottom and the line ran through its dots)
     if (o.ink) {  // token inks: the dashes through the Pen, stroke:hair thick in fg:line (a theme / tune repaints them)
       lv_obj_t *b = fx::strip(L->root, [](const fx::Pen &p) {
         const int t = fx::size("stroke:hair"), L0 = -(p.w / 2), y = p.h - p.h / 2 - t;
@@ -572,7 +572,7 @@ void bars_exec(void *o, int32_t ms) {  // one animation for every bar: each star
   const ch::Motion &k = ch::MOTION[ch::M_bars];
   const bool together = B->from.size() == B->v.size() && !B->from.empty() && B->from[0] >= 0;
   // many bars: one invalidation of the plot instead of one per bar (past LVGL's 32 dirty areas a frame becomes a full
-  // screen redraw: Moon by day's 55 bars repainted 62 % of the Guition per frame, 2026-10-22)
+  // screen redraw: Moon by day's 55 bars repainted 62 % of the Guition per frame)
   // (the moves land in the layout pass, so that pass runs inside the window too; anything else waiting for layout goes
   // first, with its own invalidations, so nothing outside the plot is missed)
   lv_display_t *disp = lv_obj_get_display(B->root);
@@ -1367,7 +1367,7 @@ void states(lv_obj_t *l) {
 
 // ---------------------------------------------------------------- Motion page section "Charts" (foundations/motion.cpp)
 struct Demo { Line *L = nullptr; Bars *B = nullptr; Gauge *G = nullptr; lv_obj_t *num = nullptr, *card = nullptr; int k = 0; lv_timer_t *loop = nullptr; ch::MId m; bool away = false; };
-// a tap replays the demo; it reports whether it ends at its preset (Darren 2026-10-22): a replay that ends where it
+// a tap replays the demo; it reports whether it ends at its preset: a replay that ends where it
 // started (the line draws in again, the same bars grow again) leaves it at its preset, so the hosts' demo reset is
 // skipped (no reset step, the replay plays straight away); new readings, a morph or a new gauge value move it away,
 // and the reset brings it back as before
@@ -1380,7 +1380,7 @@ void demo_play(Demo *d, bool report = true) {  // report = false: the first show
     case ch::M_draw: draw_in(d->L); break;
     case ch::M_shift:
     case ch::M_ping: {
-      // readings step clearly up / down (about 3° from the last) so the dot's move reads in the demo (Darren 2026-10-22)
+      // readings step clearly up / down (about 3° from the last) so the dot's move reads in the demo
       const float nv = std::clamp(temp_at(23 + d->k) + (d->k % 2 ? 1.6f : -1.6f), 12.5f, 21.5f);
       push(d->L, nv);
       if (d->num) { char b[16]; snprintf(b, sizeof b, "%.1f", nv); set_text(d->num, ty::c_number, b); }

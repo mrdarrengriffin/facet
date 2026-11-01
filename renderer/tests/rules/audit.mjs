@@ -1,4 +1,4 @@
-// Facet component audit (Darren 2026-10-22: "tests against them to make sure they align with the pixel grids and
+// Facet component audit ("tests against them to make sure they align with the pixel grids and
 // there's nothing off about them. The components don't clip out of their box and it's not cut off ... tests on
 // animations to make sure that they follow the right path"). README "Audit". Runs on the WASM build, headless, over
 // every registered component and screen x every variant x theme (dark, light) for one density, and checks:
@@ -105,7 +105,7 @@ function runCase(m, den, c, props, light, vskip = {}) {
   if (!screen && !skip.outside) {
     const o = outside(pxA, allowed(os));
     if (o) errs.push(`outside: ${o.n} px of ink outside the component's box (${o.bb.join(',')})`);
-    // parts placed off the stage draw where no pixel can be checked (2026-10-22: two card-preview mascots at x 72 of a
+    // parts placed off the stage draw where no pixel can be checked (two card-preview mascots at x 72 of a
     // 72 box, read as width 0 before layout, their ancestors overflow-visible for the mascot's bleed): a visible object
     // at least half outside the stage, with nothing above it clipping, is an error
     for (const o of os) {
@@ -158,7 +158,7 @@ function runCase(m, den, c, props, light, vskip = {}) {
         const centred = P && Math.abs((d) - (psize - d - size)) <= 1;
         const inset = P && pb > 0 && d === pb && size === psize - 2 * pb;  // fills the inside of the parent's border
         // edge to edge with its own border pushed off both sides (the Bottom sheet: its rounded top edge shows, its
-        // sides fall off the screen; Darren 2026-10-22, a top-only border drew square corners)
+        // sides fall off the screen; a top-only border drew square corners)
         const bleedOwn = P && o.bw > 0 && o.bw <= 2 && d === -o.bw && size === psize + 2 * o.bw;
         if (d % 4 && !centred && !inset && !bleedOwn) bad.push(d);
         if (size % 4 && !inset && !bleedOwn) bad.push(`size ${size}`);
@@ -202,7 +202,7 @@ function runCase(m, den, c, props, light, vskip = {}) {
   return { errs, notes };
 }
 
-// ---- update animates (Darren 2026-10-22: "if something gets updated from Home Assistant, and it is like a toggle, I
+// ---- update animates ("if something gets updated from Home Assistant, and it is like a toggle, I
 // want to make sure it animates like as if I've pressed it. Not just flicks on instantly"): for every state / value prop
 // (by name, below), an update from the defaults to a changed value must show an animated sequence (at least 3
 // distinct frames in the second after it), not a single-frame jump. Declared exceptions: meta "audit": {"snaps":

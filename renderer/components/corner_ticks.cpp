@@ -2,8 +2,8 @@
 // L-shaped accent marks on the corners of an active owner, the "selected, keeps its box" mark of states.json on.mark.
 // Drawn by the core atom fw::corner_ticks (core/atoms.h), which every component calls; this page shows it alone.
 //   corners  all = the four corners (Button secondary active); tr-bl = top-right + bottom-left (docs: cards and
-//            tiles; no approved WASM component uses it yet). Cards / tiles: decide with the screens (Darren
-//            2026-10-21: no ticks on the approved Card for now)
+//            tiles; no approved WASM component uses it yet). Cards / tiles: decide with the screens
+//            (no ticks on the approved Card for now)
 //   size     layout corner-tick (8 / 4) long x stroke corner-tick (2) wide (docs btn-tick-len / btn-tick-thick)
 //   colour   st::on_mark (accent); st::on_mark_pressed (accent-text) while the owner is pressed, on the owner's border box (past its padding + border), inside the box: no bleed
 //   shown    for a state selector (st::ON = LV_STATE_CHECKED, the default; 0 = always); corners = box only (Button: all)

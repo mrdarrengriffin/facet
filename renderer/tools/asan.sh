@@ -1,7 +1,7 @@
 #!/bin/bash
 # Native AddressSanitizer + UBSan run of the renderer (README "ASan check"): the same core, foundations, components and
 # screens as the WASM build, compiled with g++ for this machine, driven headless by tools/asan_driver.cpp. Finds what
-# WASM hides (an out-of-bounds write there silently corrupts the heap; on the panels it crashes: the 2026-10-22 clock
+# WASM hides (an out-of-bounds write there silently corrupts the heap; on the panels it crashes: the clock
 # hand). Heavy (~2 GB, minutes cold): run it through the box's job queue where there is one.
 #   tools/asan.sh [1x|1.5x] [id '<props json>' ...]   no ids = every item, its defaults and every variant
 # Exit 0 = no reports. Objects cached in $FW_CACHE/asan-<den> (LVGL once; a source rebuilt when it or a header it includes changed).
@@ -15,7 +15,7 @@ C=${FW_CACHE:-$HERE/.cache}
 G=$C/gen  # generated token headers + lv_conf from the last WASM build (build.sh)
 [ -f "$G/lv_conf.h" ] || { echo "run build.sh once first (generated headers in $G)"; exit 1; }
 O=$C/asan-$DEN
-# LVGL's objects per lv_conf (its md5, as build.sh): a config change (2026-10-28: TinyTTF on for theme fonts) rebuilds
+# LVGL's objects per lv_conf (its md5, as build.sh): a config change (TinyTTF on for theme fonts) rebuilds
 # them; a stale cache had TinyTTF compiled out and the link failed
 LV=$O/lv-$(md5sum "$G/lv_conf.h" | cut -c1-8); mkdir -p "$LV" "$O/obj" "$O/shim"
 cat > "$O/shim/emscripten.h" <<'H'

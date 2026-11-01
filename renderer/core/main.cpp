@@ -188,7 +188,7 @@ std::vector<uint32_t> &get_queue() {
   return q;
 }
 [[maybe_unused]] const bool get_registered = (get_queue(), true);
-// WS reads (ha_link::ws, 2026-10-31) ride the same queue: {"id": n, "ws": <the command>}, through the hub's
+// WS reads (ha_link::ws) ride the same queue: {"id": n, "ws": <the command>}, through the hub's
 // /api/panel/ha-ws; their reply comes back with fw_ha_chunk / fw_ha_got like a GET (ids from WS_ID up)
 std::vector<std::pair<uint32_t, std::string>> &ws_queue() {
   static std::vector<std::pair<uint32_t, std::string>> q;

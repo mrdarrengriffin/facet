@@ -13,7 +13,7 @@
 //        px_avg, px_pct, areas_avg, full_redraws}, mem: {heap_kb, internal_free_after, psram_free_after, internal_largest,
 //        psram_largest, objs}}. interrupted = the panel restarted during a batch (RTC memory survives a crash / reset).
 // Frame window = LVGL RENDER_START..RENDER_READY (render + flush), as GET /fw/perf; p95 from a ring of the last 512
-// frames. SPIRAM largest_free_block is read only between cases, NEVER while frames run (Darren 2026-10-22). Drags go
+// frames. SPIRAM largest_free_block is read only between cases, NEVER while frames run. Drags go
 // through a second LVGL pointer indev, so they take the same input path as a finger. At the end the panel shows again
 // what it showed before the batch.
 // Only expands inside fw_device.h (ESPHome's esphome.h includes every component header on its own).
@@ -209,7 +209,7 @@ inline void end_case(const char *err) {
     const Case &cc = B.cases[B.i];
     if (!cc.group.empty()) {
       if (cc.stop_fps > 0 && n >= 3 && r.fps < cc.stop_fps) B.stopped.push_back(cc.group);
-      // building blocks the main loop: past ~1 s a bigger step risks the task watchdog (Guition 2026-10-22: 4096 objects reset it)
+      // building blocks the main loop: past ~1 s a bigger step risks the task watchdog (Guition: 4096 objects reset it)
       if (cc.n) { B.build_group = cc.group; B.per_build_ms = r.build_ms / cc.n; }
       if (r.build_ms > 1000) B.stopped.push_back(cc.group);
       if (cc.res_int_kb || cc.res_ps_kb) {

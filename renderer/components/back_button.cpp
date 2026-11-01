@@ -1,5 +1,5 @@
 // Back button: the Facet header back button (docs: Components > Buttons > Back button, @facet/ui backButton()). A thin
-// wrapper (Header round 3, 2026-10-27): it IS the Icon button (components/icon_button.cpp, contract v2) in style square
+// wrapper (Header round 3): it IS the Icon button (components/icon_button.cpp, contract v2) in style square
 // with the back icon and its internal role "back", so look, press, disabled, size (layout:ibtn-square = touch:min = the
 // header row) and the update path are the Icon button's. The wrapper adds what only Back does: tap = event "back" +
 // sound back (the role); hold (LVGL long press) = event "home" + sound back (the device goes straight Home, facet-188;
@@ -42,7 +42,7 @@ FW_COMPONENT(back_button, "Back button", "components", R"({
   ib->build(parent, bp.as<fw::Props>());
   lv_obj_t *b = lv_obj_get_child(parent, -1);  // the Icon button just built
   if (!b) return;
-  fx::reach(b, "space:4");  // a corner target: a tap up to space 4 off it still counts (48 -> 80 px, Darren 2026-10-28)
+  fx::reach(b, "space:4");  // a corner target: a tap up to space 4 off it still counts (48 -> 80 px)
   lv_obj_add_event_cb(b, [](lv_event_t *e) {
     auto *o = (lv_obj_t *) lv_event_get_current_target(e);
     if (lv_obj_has_state(o, fw::st::OFF)) return;  // disabled: the tap's own blocked feedback

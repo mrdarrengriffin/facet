@@ -1,4 +1,4 @@
-// Split: a LAYOUT component (pages are made only from components; Darren 2026-10-23), on the contract
+// Split: a LAYOUT component (pages are made only from components), on the contract
 // (renderer/CONTRACT.md, "contract": 2). Two columns over its parent: the left one card-w wide (the art / control
 // column: a lock ring, a window, a gauge), space 9, the right one the rest (the words). Each column has a top slot and
 // a foot slot (pinned to the column's bottom), so a spec puts nodes in with "in" + "slot": 0 left top, 1 left foot,

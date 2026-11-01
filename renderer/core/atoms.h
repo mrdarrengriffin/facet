@@ -21,7 +21,7 @@ enum class Corners { all, tr_bl };
 void corner_ticks(lv_obj_t *o, Corners c = Corners::all, lv_style_selector_t show = st::ON,
                   int len = lay::corner_tick, int thick = stroke::corner_tick);
 
-// Smooth stroke = how Facet draws every curve, arc, circle and diagonal (Darren 2026-10-22, board facet-145: "atom for
+// Smooth stroke = how Facet draws every curve, arc, circle and diagonal (board facet-145: "atom for
 // everything"; never lv_line / lv_arc / lv_draw_line for them): an anti-aliased stroke of `width` px through float
 // points, rasterised once into an A8 coverage mask (1 byte / px, w x h) and shown as an lv_image recoloured with
 // `colour` (a token, like the icons). Analytic: every pixel near a segment gets coverage = clamp(width/2 + 0.5 -
@@ -33,7 +33,7 @@ void corner_ticks(lv_obj_t *o, Corners c = Corners::all, lv_style_selector_t sho
 // a shape that changes (a value arc, a clock hand, a growing z) re-rasters into its own mask (stroke_redraw /
 // stroke_set_arc), only for small or occasional changes (the lab page foundations/strokes.cpp measures).
 // The atom owns the returned image's user data (its Stroke state): never lv_obj_set_user_data on it; keep a caller's
-// state on another object (2026-10-22: the Motion page clock hand did, stroke_redraw read garbage, panels crashed).
+// state on another object (the Motion page clock hand did, stroke_redraw read garbage, panels crashed).
 enum class Cap : uint8_t { round, butt };
 struct StrokePt { float x, y; };
 lv_obj_t *stroke_path(lv_obj_t *parent, int w, int h, const StrokePt *pts, int n, int width, lv_color_t colour,
@@ -62,7 +62,7 @@ int stroke_bytes(lv_obj_t *stroke);  // the mask's bytes (memory cost of one str
 lv_draw_buf_t *stroke_segments(int w, int h, const StrokePt *ends, int n_segments, int width, Cap cap = Cap::round);
 void stroke_draw(lv_layer_t *layer, lv_draw_buf_t *mask, int x, int y, lv_color_t colour);
 
-// ---- Dials and rings (facet-129, 2026-10-22): the shared geometry of every round control and face. The Dial, the
+// ---- Dials and rings (facet-129): the shared geometry of every round control and face. The Dial, the
 // Thermostat dial, the Tick ring, the Arc, the Media disc and the clock faces all draw with these, so a scale, a value
 // arc and "where on the ring is the finger" are one rule. Angles are LVGL degrees (0 = 3 o'clock, clockwise); a ring
 // spans `range` degrees from `start` (the Facet dials: 135 + 270, open at the bottom; a full face: 270 + 360 = from 12).
@@ -71,7 +71,7 @@ inline StrokePt polar(float cx, float cy, float r, float deg) {
   const float a = deg * 3.14159265f / 180.0f;
   return {cx + std::cos(a) * r, cy + std::sin(a) * r};
 }
-// "nice" scale intervals for a value span (the Dial rule, Darren 2026-10-21): the label interval is the smallest
+// "nice" scale intervals for a value span (the Dial rule): the label interval is the smallest
 // 1 / 2 / 5 x 10^k that keeps the numbers to at most max_labels; minor ticks split it in 5 (a 2-interval in 4).
 // 0-100 = every 10, minor 2 (the docs dial ring).
 void nice_intervals(double span, double *major, double *minor, int max_labels = 11);
@@ -103,7 +103,7 @@ lv_obj_t *tick_ring(lv_obj_t *parent, int size, const TickRing &spec);  // owns 
 TickRing *tick_ring_spec(lv_obj_t *ring);
 void tick_ring_changed(lv_obj_t *ring);
 
-// Value arc: an lv_arc (anti-aliased by LVGL, invalidates only the swept part + the knob; Darren 2026-10-22: no stroke
+// Value arc: an lv_arc (anti-aliased by LVGL, invalidates only the swept part + the knob; no stroke
 // atom for dial arcs) on a d x d box, non-clickable (the owner takes the touch), range 0..steps. track_w 0 = no track;
 // knob 0 = none, else a round knob of that diameter in knob_c ringed by knob_ring px of knob_ring_c (the canvas: it
 // separates the knob from the arc under it). Value = lv_arc_set_value (indicator from start) or, for a free span (the

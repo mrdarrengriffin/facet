@@ -2,7 +2,7 @@
 // ticks): `count` ticks over `range` degrees from 12 o'clock, drawn inward from the edge, every `stride`-th a major.
 // range 360 (default) = a full turn: `count` ticks evenly round, 360 / count apart, the first at 12 o'clock (docs 354 =
 // 360 x 59 / 60, right only for 60 ticks: 24 ticks over 354 put the 3 / 6 / 9 o'clock ticks off their axes, the
-// "seriously wrong" 96 px ring, Darren 2026-10-22). Under 360 = an arc of that many degrees from 12 o'clock.
+// "seriously wrong" 96 px ring). Under 360 = an arc of that many degrees from 12 o'clock.
 // The basis of the dial scales, the media disc's dotted ring and the clock faces: this page shows the core atom
 // fw::tick_ring (atoms.h "Dials and rings"), the same call the Dial and the Thermostat dial make, so the ring is one
 // rule everywhere.

@@ -222,7 +222,7 @@ bool ticked = false;
 lv_timer_t *held = nullptr;  // a landmark waiting out the interval
 lv_obj_t *held_obj = nullptr;
 float held_pos = 0;
-// pos = the step's place in the range (0..1): the host pitches the tick by it (sound.json `track`, Darren 2026-10-21)
+// pos = the step's place in the range (0..1): the host pitches the tick by it (sound.json `track`)
 void tick_now(lv_obj_t *o, bool landmark, float pos) {
   sound(o, landmark ? "slider-landmark" : "slider-tick", pos);
   // ticks only fire on LVGL frames (16 ms): advance by tick-min while dragging so the average rate is 1 / tick-min,
@@ -267,7 +267,7 @@ void bleed_cb(lv_event_t *e) { lv_event_set_ext_draw_size(e, (int32_t) (intptr_t
 }  // namespace
 void bleed(lv_obj_t *o, int px) {
   for (lv_obj_t *x = o; x; x = lv_obj_get_parent(x)) {
-    // a scroll area keeps clipping its content (2026-10-23: a mark's bleed inside a spec list made the list overflow
+    // a scroll area keeps clipping its content (a mark's bleed inside a spec list made the list overflow
     // visible, so its rows would draw over the header when scrolled; the screen check caught the list leaving the screen)
     // (a scroll area = scrollable with its direction set: the spec list, scroll_track lists; a box left at the defaults
     // is not one)
@@ -558,7 +558,7 @@ void text_style(lv_obj_t *l, ty::Id s) {
   if (lv_label_get_long_mode(l) != LV_LABEL_LONG_WRAP) lv_obj_set_height(l, st.box);
   // descenders (Q, g, the comma) may hang below the box: LVGL cuts label text at the bottom of its content box, so the
   // content box reaches the bottom of the line (the negative bottom pad above; box_self_size takes it back out, so the box and
-  // the layout stay the style box). 2026-10-22 audit: caps rows ("ALL PULL REQUESTS", "DARK AT NIGHT,") lost 1 px.
+  // the layout stay the style box). audit: caps rows ("ALL PULL REQUESTS", "DARK AT NIGHT,") lost 1 px.
 }
 
 lv_obj_t *text(lv_obj_t *parent, ty::Id s, const char *txt, lv_color_t c, int wrap_w) {

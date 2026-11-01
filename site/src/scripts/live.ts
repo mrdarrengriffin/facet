@@ -21,7 +21,7 @@ type Item = { el: HTMLElement; comp: string; props: Record<string, unknown>; lab
   /** the screen the stage shows now (its "screen" events; a fake HA reaction is per screen) */
   screen?: string };
 
-// No demo reset (Darren 2026-10-25): a demo keeps its state until the page is left (it was rebuilt with its original
+// No demo reset: a demo keeps its state until the page is left (it was rebuilt with its original
 // props a moment after the last interaction).
 function watchGestures(it: Item, c: HTMLCanvasElement) {
   c.addEventListener('pointerdown', () => { it.held = true; });
@@ -61,7 +61,7 @@ const shown = new Set<Item>();
 
 function accentIdx(p: Prefs) { return accentSets.findIndex((a) => a.id === p.accent); }
 
-// ---- the live demo's Settings <-> the site prefs (Darren 2026-10-25: demo settings did not stick). The panel's
+// ---- the live demo's Settings <-> the site prefs (demo settings did not stick). The panel's
 // settings store (core/device.h, one per engine) is the source while you use the demo: a change there ("setting"
 // id=value) updates the site prefs (theme, accent, sounds, sound pack) or, for the rest, this browser's demo-only
 // values (kept and set again on the next engine / page); a site pref change is set on the panel (fw_setting, HOST).

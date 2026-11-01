@@ -1,5 +1,5 @@
 {
-  "$comment": "Facet screen geometry, devices, size classes and density: the single source for the WASM renderer and the panel firmware (tools/gen_layout.mjs -> layout_gen.h: fw::lay:: screen geometry in device px for this build, fw::lyt:: the device / size class / density / token tables for the Layout page). Values are device px: `v` = the 720 x 720 reference panel (1.5x), `1x` = the 480 x 480 panels. Source = Facet main packages/tokens/src/tokens.json `layout` + `devices` + `sizeClass` + `density` (1x = the docs density.1x table) and site docs concepts/screens.md. Only general screen geometry lives here: a screen's own layout values (Media m-*, mv-*, GitHub pr-*, Clock clock-*) arrive with that screen; component sizes (card, tile, list row, dial) stay in space.json under fw::lay::. Grid rule (Darren 2026-10-21): every value a multiple of 4 px at both densities; the docs' 8 px layout grid at 720 is kept where the docs had it.",
+  "$comment": "Facet screen geometry, devices, size classes and density: the single source for the WASM renderer and the panel firmware (tools/gen_layout.mjs -> layout_gen.h: fw::lay:: screen geometry in device px for this build, fw::lyt:: the device / size class / density / token tables for the Layout page). Values are device px: `v` = the 720 x 720 reference panel (1.5x), `1x` = the 480 x 480 panels. Source = Facet main packages/tokens/src/tokens.json `layout` + `devices` + `sizeClass` + `density` (1x = the docs density.1x table) and site docs concepts/screens.md. Only general screen geometry lives here: a screen's own layout values (Media m-*, mv-*, GitHub pr-*, Clock clock-*) arrive with that screen; component sizes (card, tile, list row, dial) stay in space.json under fw::lay::. Grid rule: every value a multiple of 4 px at both densities; the docs' 8 px layout grid at 720 is kept where the docs had it.",
   "screen": {
     "about": "One inset on every side. The header row sits at y = inset; content starts at top and runs to the bottom inset. More space between groups than inside them; rows are separated by hairlines rather than boxes. One hero per screen.",
     "1.5x": {
@@ -251,7 +251,7 @@
     }
   },
   "rules": {
-    "$comment": "How Facet lays things out (Darren 2026-10-22). Plain words for everyone: each section = a short heading + one or two sentences; the workbench Layout & devices page shows each with a visual (section label + about) and the docs site renders the same text. Technical detail (token names, values) lives in the token files. `components` = which tokens set each component's size, for docs and tooling (not shown on the page).",
+    "$comment": "How Facet lays things out. Plain words for everyone: each section = a short heading + one or two sentences; the workbench Layout & devices page shows each with a visual (section label + about) and the docs site renders the same text. Technical detail (token names, values) lives in the token files. `components` = which tokens set each component's size, for docs and tooling (not shown on the page).",
     "sections": [
       {
         "id": "grid",

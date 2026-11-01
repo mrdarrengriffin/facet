@@ -1,4 +1,4 @@
-// Screen settings (Settings > Screens > a screen, 2026-10-23): one screen's picks on this panel. Composed only of
+// Screen settings (Settings > Screens > a screen): one screen's picks on this panel. Composed only of
 // real components, laid out as the Settings screen:
 //   header   the Header (back + the screen's name + the screen chrome)
 //   content  one scrolling column, groups as Settings (label, section-gap, rows; groups lay::group apart):
@@ -20,7 +20,7 @@
 //                       it has one (Media: the Player from the Speakers, Auto first when the spec's screen.param
 //                       follows a sensor: "auto" or nothing picked = Auto); entities = "N chosen"; text = the value.
 //                       Lists of entities and text come from the host's discovery (the hub writes them into the deck).
-//                       Entity pickers (2026-10-31): an entity (no screen list of its domain) or entities parameter
+//                       Entity pickers: an entity (no screen list of its domain) or entities parameter
 //                       with a "domain" opens the sheet on the panel's own Home Assistant list (core/device.h
 //                       ha_link): on open it reads ONLY that picker's domain(s) (comma list) when not cached yet
 //                       (cached per domain until Read now or a new address), a "Reading Home Assistant" row meanwhile,
@@ -314,7 +314,7 @@ void build_page(lv_obj_t *parent, fw::Props p) {
     pg->src_pick = (int) pg->picks.size();
     pg->picks.push_back(pk);
   }
-  // from (2026-10-31): a source that reads a standard place in HA (Energy: HA's Energy dashboard) says what it found
+  // from: a source that reads a standard place in HA (Energy: HA's Energy dashboard) says what it found
   // there, live from the feed's "found" attribute (the adapter reads it when asked, core/ha.h local)
   for (ArduinoJson::JsonVariantConst x : srcs) pg->src_from.push_back(x["from"] | "");
   for (ArduinoJson::JsonPairConst f : spec["feeds"].as<ArduinoJson::JsonObjectConst>()) { pg->from_feed = f.key().c_str(); break; }

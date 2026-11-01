@@ -84,7 +84,7 @@ export default {
     ok(codes(spec('check_dev', linkSpec([{ c: 'more_row', p: {}, on: { tap: { do: 'nav.open' } } }]))).includes('bad_screen'), 'a tap without a screen is refused (only open takes it from the event)');
     // climate: no shipped component sets a temperature
     ok(codes(spec('check_dev', JSON.stringify({ ...factory, rev: 31, nodes: [{ c: 'dial', on: { change: { do: 'climate.set_temperature', e: 'climate.test_room' } } }] }))).includes('not_allowed'), 'a light dial cannot set a thermostat');
-    // pages from components (2026-10-23): layout slots (in / slot), repeated nodes (each / sample), bind maps, screen.toggle
+    // pages from components: layout slots (in / slot), repeated nodes (each / sample), bind maps, screen.toggle
     const P = (nodes) => JSON.stringify({ ...factory, rev: 40, params: { entity: '', areas: '', rooms: { type: 'hidden', default: '' } }, nodes });
     ok(spec('check_dev', P([{ c: 'split', p: {} }, { c: 'stat', in: 0, slot: 2, p: {} }])).ok, 'a node may go into a layout node\'s slot');
     ok(codes(spec('check_dev', P([{ c: 'card', p: {} }, { c: 'stat', in: 0, p: {} }]))).includes('bad_in'), 'in: only a layout (a component with slots)');

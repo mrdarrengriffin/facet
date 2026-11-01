@@ -8,7 +8,7 @@
 //            docs fit8), so the column after it starts on the grid. unit: after it (type title, text-dim, space 2
 //            apart, its figures on the number's baseline: baseline:hero:title); the number + unit box is what fits the
 //            grid. count: a number (an optional prefix such as £, then digits) counts up from 0 when shown and from
-//            the shown value on an update (Motion value, the Big number's count, which this replaces: 2026-10-28);
+//            the shown value on an update (Motion value, the Big number's count, which this replaces);
 //            its box is fitted at the final value first, so the count never moves the column; reduced = at once
 //   column   hero-col (the free width): label (type label, caps, text) over the line (type body, text-dim, one line,
 //            "..."), space 2 apart, centred on the hero type box ((96 - (24 + 8 + 32)) / 2 = 16 = the docs padding-top
@@ -64,13 +64,13 @@ void fill(lv_obj_t *h, fw::Props p, bool opening) {
   const bool accent = !off && (p["accent"].is<const char *>() ? !strcmp(p["accent"].as<const char *>(), "on") : (p["accent"] | false));  // a bind gives "on" / "off"
   const bool display = !strcmp(p["role"] | "hero", "display");
   fx::use(h, "box");  // again after an update's refill (it takes every style off the root): the full width
-  // layout stack (the Timer's ring, Darren 2026-10-28): label over the number over the line, centred, in one column
+  // layout stack (the Timer's ring): label over the number over the line, centred, in one column
   const bool start = !strcmp(p["layout"] | "row", "stack-start"), stack = start || !strcmp(p["layout"] | "row", "stack");
   fx::use(h, start ? "hero-stack-start" : stack ? "hero-stack" : display ? "hero-row-display" : "hero-row");
   const bool title0 = !strcmp(p["label_type"] | "label", "title");
   if (stack) fx::text(h, p["label"] | "", title0 ? "type:title" : "type:label", off ? "fg:unavailable-ink" : "fg:text-dim");
   const char *n = off ? fw::st::PLACEHOLDER : (p["n"] | "");
-  // role value (2026-10-29): the smallest, for a hero inside a small box (the compact Timer ring's hole)
+  // role value: the smallest, for a hero inside a small box (the compact Timer ring's hole)
   const char *type = display ? "type:display" : !strcmp(p["role"] | "hero", "value") ? "type:value" : "type:hero";
   const char *unit = off ? "" : (p["unit"] | "");
   lv_obj_t *line = h;

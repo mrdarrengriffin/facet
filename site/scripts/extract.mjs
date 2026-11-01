@@ -141,7 +141,7 @@ const entries = reg.filter((c) => shown(c.id)).map((c) => {
     source: f.files.map((p) => ({ path: p, url: `${REPO}/${p}` })),
   };
 });
-// public wording (Darren 2026-10-22): no internal references on the site: board ids "(facet-145)", "(lab)" tags,
+// public wording: no internal references on the site: board ids "(facet-145)", "(lab)" tags,
 // leading "Experiment:" / "WIP" markers in names, ledes and section texts
 const pub = (t) => typeof t === 'string' ? t.replace(/\s*\((?:facet-\d+|lab)[^)]*\)/gi, '').replace(/\bfacet-\d+\b,?\s*/gi, '').replace(/,?\s*\bWIP( round \d+)?\b\.?/g, '').replace(/^\s*Experiment:\s*/i, '')
   .replace(/\s*by Darren \(\d{4}-\d{2}-\d{2}:[^)]*\)/g, '').replace(/\s*\(Darren \d{4}-\d{2}-\d{2}\)/g, '').replace(/,\s*Darren \d{4}-\d{2}-\d{2}/g, '').trim() : t;
@@ -266,7 +266,7 @@ function roadmapSnapshot() {
   const src = process.env.FACET_SCOPE ?? env.match(/^FACET_SCOPE=(.*)$/m)?.[1]?.trim();
   if (!src || !existsSync(src)) return null;
   const scope = JSON.parse(readFileSync(src, 'utf8'));
-  // public wording only (Darren 2026-10-22): no internal workflow labels
+  // public wording only: no internal workflow labels
   const STATUS = { done: 'done', wip: 'doing', 'to-port': 'planned', planned: 'planned' };
   const PRIVATE = /\b(darren|claude|board|lab|your|awaiting|rejected|not liked|approved|agent worktree|port|ported|porting|wasm|astro|parity|draft|old site|docs site|wip)\b/i;
   const tables = {};
@@ -277,12 +277,12 @@ function roadmapSnapshot() {
   }
   return { updated: scope.updated ?? scope.generated, tables };
 }
-// hidden (not yet released) features stay on the roadmap as In progress, or Planned when not started (Darren 2026-10-25;
-// also applied to a snapshot made before a flag changed); their notes are left out
+// hidden (not yet released) features stay on the roadmap as In progress, or Planned when not started
+// (also applied to a snapshot made before a flag changed); their notes are left out
 const ROAD_HIDE = hiddenRoadmap(FEAT);
 const roadFilter = (r) => ({ ...r, tables: Object.fromEntries(Object.entries(r.tables).map(([k, rows]) => [k, rows.map((x) => (ROAD_HIDE.has(x.name) ? { name: x.name, group: x.group, status: x.status === 'planned' ? 'planned' : 'doing' } : x))])) });
 
-// 5e. Home page previews (Darren 2026-10-22): still PNGs rendered here by the WASM build itself (the 1.5x / 720
+// 5e. Home page previews: still PNGs rendered here by the WASM build itself (the 1.5x / 720
 // build already running in node), both themes, so they stay current with the code. Foundations: one section each
 // (cropped to its top), components: their first variant at the meta frame. Written to public/previews/<id>-<theme>.png
 // + src/data/previews.json. Plus one or two grid rules quoted from layout.json rules (when present).

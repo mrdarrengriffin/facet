@@ -1,4 +1,4 @@
-// Column: a LAYOUT component (pages are made only from components; Darren 2026-10-23), on the contract
+// Column: a LAYOUT component (pages are made only from components), on the contract
 // (renderer/CONTRACT.md, "contract": 2): the content box as one column: a top slot and a foot slot pinned to the
 // bottom (the panel lab's Vacuum: the view on top, the action bar at the foot). A spec puts nodes in with "in" +
 // "slot": 0 top, 1 foot (core/spec.h).

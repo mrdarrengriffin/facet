@@ -1,5 +1,5 @@
 // Items: the one list model of every component that repeats per item (Grid items, List row stack, Picker row group,
-// Scroll track; 2026-10-26). items = a comma list or a JSON list (usually bound to an entity attribute: {"e", "a"});
+// Scroll track). items = a comma list or a JSON list (usually bound to an entity attribute: {"e", "a"});
 // "$item" in a prop = the item (an object item: its id, else its name), "$item.<key>" = a field of an object item.
 #pragma once
 #include <cctype>

@@ -1,5 +1,5 @@
 // Light screen (specs/light.json: Page > Header (back + the light's name) > Body (centre) > Dial), release slice 1
-// (2026-10-26). Each test is one row of the release gate and fails without the behaviour. Home Assistant is faked
+//. Each test is one row of the release gate and fails without the behaviour. Home Assistant is faked
 // (tools/functional.mjs FakeHA); E is NOT one of the demo entities (any light works, not Darren's ids).
 // Approved original: Astro packages/ui/src/screens/light.ts (dial centred in the content box; brightness live at most
 // every 200 ms + the final value; HA updates held off 3 s after a local change).

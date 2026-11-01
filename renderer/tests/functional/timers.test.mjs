@@ -1,5 +1,5 @@
 // The panel's timers as data (core/device.h "the panel's timers", core/timers.cpp; core/spec.h "local sources"
-// panel.timer + the timer.* actions; Darren 2026-10-28, notes/facet-design/timer.md): up to 4, soonest first, a 5th
+// panel.timer + the timer.* actions; notes/facet-design/timer.md): up to 4, soonest first, a 5th
 // refused with a reason, extend / cancel / stop / select, done = the timer-done sound once (whatever screen shows),
 // the binds' values (name, left, share, line, others), Button taps, the legacy one-timer view (Home header).
 const tm = (t, q) => JSON.parse(t.b.str("timer", (c) => t.b.str(JSON.stringify(q), (a) => t.b.m.UTF8ToString(t.b.m._fw_test(c, a)))));

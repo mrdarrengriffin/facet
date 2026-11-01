@@ -16,7 +16,7 @@
 // Press feedback = Motion press / release as style transitions ("fade-press-all", 80 ms ease-out; reduced motion
 // keeps them: colour only). Tap = "tap" + sound tap (disabled: "blocked" + error on finger down). Bleed: the focus
 // ring (decor, C14). Contrast pairs: tokens/colour.json section "button".
-// hold (2026-10-28, was the Hold button): a confirm step (open the door's latch). No tap; a press fills the button with
+// hold (was the Hold button): a confirm step (open the door's latch). No tap; a press fills the button with
 // accent-dim from the left (core fx::hold: drawn on the Button, no extra object) over hold_time (Motion hold-confirm);
 // let go early = it drains (Motion release), nothing happens; full = sound confirm + event "confirm" (detail = value,
 // else the label), and letting go after is not a tap. hold_label = the words while held (silent). Disabled = blocked +

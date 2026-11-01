@@ -456,7 +456,7 @@ void sample(Demo *d, int w, int h) {
       d->pts[0] = d->pts[1] = {d->size / 2.f - 0.5f, d->size / 2.f - 0.5f};
       d->a = stroke_path(face, d->size, d->size, d->pts, 2, stroke::edge, T->accent);  // the hand: stroke atom, round caps
       // the Demo lives on the FACE: the stroke image's user data is the atom's own state (stroke_of); overwriting it
-      // made stroke_redraw read the Demo as a Stroke (bad draw buffer pointer: panel crash, 2026-10-22, ASan)
+      // made stroke_redraw read the Demo as a Stroke (bad draw buffer pointer: panel crash, ASan)
       lv_obj_set_user_data(face, d);
       lv_obj_t *hub = box(face);
       lv_obj_set_size(hub, sp::s2, sp::s2);

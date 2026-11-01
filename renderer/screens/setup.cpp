@@ -1,5 +1,5 @@
 // Set up: the system screen a panel shows until it is on Wi-Fi and added to Home Assistant (design: claude-assistant
-// notes/facet-design/install-onboarding.md section 3, Darren 2026-10-23). Built in, not in the deck, no Back while the
+// notes/facet-design/install-onboarding.md section 3). Built in, not in the deck, no Back while the
 // panel is not set up (prop back = reached from Settings > Wi-Fi and Home Assistant later). State comes from firmware
 // facts only (Wi-Fi, hotspot clients, Improv, API, an "adopted" pref); here every state is a prop so the workbench
 // shows each one. Plain words on screen: no "Improv" or "captive portal".
@@ -335,7 +335,7 @@ void sheet_props(Screen *scr, bool open, Doc &d) {
 
 // where the header and the body sit on the screen. Set again after every update: fw::refill (the body made again, or
 // the Header's own refill when its shape changes, e.g. the clock appears on Wi-Fi) removes ALL local styles, position
-// and size included, and a bare box falls back to LVGL's default 130 x 130 at 0,0 (2026-10-23, the panel showed only
+// and size included, and a bare box falls back to LVGL's default 130 x 130 at 0,0 (the panel showed only
 // the QR code in the top-left corner after the first state change: every text was clipped by that box).
 void place(Screen *scr) {
   if (scr->header) lv_obj_set_pos(scr->header, fw::lay::inset, fw::lay::inset);

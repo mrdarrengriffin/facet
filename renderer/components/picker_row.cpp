@@ -94,7 +94,7 @@ Spec spec_of(fw::Props p) {
   return {p["icon"] | "speaker", p["name"] | "Kitchen speaker", p["status"] | "", p["tone"] | "dim", p["state"] | "default",
           p["selected"] | false};
 }
-// Group (list: group, 2026-10-26 real rows): one picker row per item of items (core/items.h, the Grid's model): a
+// Group (list: group, real rows): one picker row per item of items (core/items.h, the Grid's model): a
 // row = this node's props with "$item" / "$item.key" filled; a prop that does not name $item comes from an object
 // item's field of that name (name also from its id), a plain-text item is the name. rows caps it (a last "+N" row);
 // no items = the List row's empty words. Nothing demo: the sample rows live in the variants.

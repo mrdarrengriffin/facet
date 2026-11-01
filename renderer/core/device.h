@@ -1,4 +1,4 @@
-// Device runtime (Darren 2026-10-22): the panel as one live thing, the same C++ on the panels and in the WASM
+// Device runtime: the panel as one live thing, the same C++ on the panels and in the WASM
 // workbench: a screen stack, Facet's screen transition and the taps that move between screens. Old Facet:
 // @facet/ui device.ts createDevice() (go(id), back, Home's settings button, the Content rise on every cut).
 //   mount      dev::mount(parent, "home") makes a full-screen root (lay::screen_w x screen_h) and shows that screen.
@@ -73,7 +73,7 @@ const Theme *theme_at(lv_obj_t *o);                  // o is a device root: the 
 void on_look(void (*cb)());
 void refresh_look();  // the look's theme changed under the same setting (a new sent theme): select it again + rebuild  // the look may have changed (theme / accent set, the sun): hosts redraw what they show
 
-// hardware button (a panel's physical key, e.g. the Waveshare's BOOT key; Darren 2026-10-24): the "Contextual" action.
+// hardware button (a panel's physical key, e.g. the Waveshare's BOOT key): the "Contextual" action.
 // A part that has something to do with the key claims it while it lives: claim_button(obj, level, fn, user). A press
 // goes to the claims whose object is shown (on the active screen or the top layer, not hidden), highest level first,
 // then newest first; the first fn that returns true took it. A claim ends with its object (LV_EVENT_DELETE).
@@ -84,7 +84,7 @@ using ButtonFn = bool (*)(void *user, const char *press);
 void claim_button(lv_obj_t *obj, ButtonLevel level, ButtonFn fn, void *user);
 const char *button(const char *press);  // the host's key press: "" = nothing took it, else the taker's object kind ("alert" ...)
 
-// the panel's timers (Darren 2026-10-28, notes timer.md; core/timers.cpp): a list of up to TIMERS_MAX, kept here so
+// the panel's timers (notes timer.md; core/timers.cpp): a list of up to TIMERS_MAX, kept here so
 // they run whatever screen shows. Each {id, name, total s, ends (lv_tick ms), state running | done}. A name is unique
 // on the panel: a preset's is its length ("5 min", core length_name), a second "5 min" becomes "5 min 2"; HA / voice
 // name their own ("Pasta"). Running out = state done + the timer-done sound ONCE (whatever screen shows), until it is
@@ -129,7 +129,7 @@ void observe(Observer cb);
 void reset();  // tests: every timer gone, no observer call
 }  // namespace timers
 struct Timer { int state = 0; long long ends = 0; int total = 0; std::string label; };
-// The panel's own Home Assistant link (core/ha_link.cpp, Settings > Home Assistant, 2026-10-30): HA's address + a
+// The panel's own Home Assistant link (core/ha_link.cpp, Settings > Home Assistant): HA's address + a
 // long-lived token, kept on the device (the firmware's NVS through on_store / restore; WASM: memory only), never shown
 // back in full (token_hint: the last 4) and never logged. fetch(domains) reads GET <url>/api/states once and keeps,
 // per wanted domain (comma list), each entity's id + friendly name + icon (the entity pickers' lists). The reply is
@@ -184,7 +184,7 @@ using GetSink = void (*)(uint32_t id, const std::string &url, const std::string 
 void on_get(GetSink f);
 void chunk(uint32_t id, const char *p, size_t n);
 void done(uint32_t id, bool ok, const std::string &why, Scan *parsed = nullptr);  // parsed: the platform's own Scan (taken)
-// One WebSocket read (2026-10-31, the Energy feed: HA's Energy dashboard): connect to <url>/api/websocket, auth with
+// One WebSocket read (the Energy feed: HA's Energy dashboard): connect to <url>/api/websocket, auth with
 // the token, send cmd (one command as JSON, no "id"), stream its result message back through feed (chunk() with an
 // id from WS_ID up), then end(ok, why) (done()); the link closes. Reads only: the transport allows a closed list
 // (energy/get_prefs, recorder/statistics_during_period, recorder/list_statistic_ids; WASM: the hub's
@@ -194,7 +194,7 @@ constexpr uint32_t WS_ID = 1u << 30;
 using WsSink = void (*)(uint32_t id, const std::string &url, const std::string &token, const std::string &cmd);
 void on_ws(WsSink f);
 uint32_t ws(const std::string &cmd, std::function<void(const char *, size_t)> feed, std::function<void(bool, const std::string &)> end);
-// One REST read (2026-10-31, the Energy feed's extras: an integration's entities and calendars): GET <url>/api/<path>
+// One REST read (the Energy feed's extras: an integration's entities and calendars): GET <url>/api/<path>
 // with the token through the platform's GET (on_get; ids from WS_ID up, kept like a ws read), the body streamed back
 // through feed, then end(ok, why). Reads only, a closed list on the transport (WASM: the hub's /api/panel/ha-get:
 // states/<entity>, calendars, calendars/<calendar>?start&end). 0 = not ready or no transport (end is not called).

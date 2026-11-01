@@ -1,7 +1,7 @@
 import { diff } from './_controls.mjs';
 // Slider (components/slider.cpp): drag, tap-to-jump, clamp at min / max, step snapping, disabled / unavailable,
 // update path. The value comes back as the "change" event detail on release. The slider is drawn by the Pen (contract
-// v2, 2026-10-27), so the knob is read from the PIXELS: a row a quarter knob under the track's centre crosses only
+// v2), so the knob is read from the PIXELS: a row a quarter knob under the track's centre crosses only
 // the knob's disc (the track is space:1 thick; the disc sits inside a canvas-coloured halo), its span's middle = the
 // knob centre.
 const KNOB = { '1.5x': 24, '1x': 16 };  // layout:slider-knob

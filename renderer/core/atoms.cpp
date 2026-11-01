@@ -298,7 +298,7 @@ void ring_draw(lv_event_t *e) {
       lv_draw_rect(layer, &dd, &da);
     } else {
       // LVGL line points are whole numbers (no LV_USE_FLOAT) on the pixel EDGE grid: a horizontal line from x 10 to
-      // 20 covers pixels 10..19, a width-2 line at y 240 covers rows 239..240 (measured, 2026-10-22). The audit bug:
+      // 20 covers pixels 10..19, a width-2 line at y 240 covers rows 239..240 (measured). The audit bug:
       // the float ends were assigned to ints, which TRUNCATES (cos 90 deg = -4e-8 put the 6 o'clock tick a pixel off,
       // and the 3 o'clock tick a pixel short). Now every end is rounded from the edge-grid position, so the four axes
       // mirror exactly.
@@ -308,7 +308,7 @@ void ring_draw(lv_event_t *e) {
       ld.color = col;
       ld.width = r->width;
       // a slanted butt end's corners (and their anti-aliased fringe) reach past its end point: pull the outer end in
-      // so they stay on the circle (the 18 % dial tick put a pixel outside the scale's box, cut off: audit 2026-10-22)
+      // so they stay on the circle (the 18 % dial tick put a pixel outside the scale's box, cut off: audit)
       const float Ro = std::sqrt(std::max(0.0f, (R - 0.5f) * (R - 0.5f) - r->width * r->width / 4.0f));
       ld.p1.x = pix(cx + c * Ro); ld.p1.y = pix(cy + s * Ro);
       ld.p2.x = pix(cx + c * (R - len)); ld.p2.y = pix(cy + s * (R - len));
@@ -369,7 +369,7 @@ lv_obj_t *value_arc(lv_obj_t *parent, int d, const ArcLook &k) {
   lv_obj_remove_flag(a, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
   lv_obj_set_size(a, d, d);
   lv_arc_set_rotation(a, 0);
-  // a full turn ends 1 degree short of its start (lv_arc draws nothing when the two angles meet: the 2026-10-22 timer
+  // a full turn ends 1 degree short of its start (lv_arc draws nothing when the two angles meet: the timer
   // preview showed no ring at all; docs arc() end 269 for a 270 start, the same rule)
   float end = k.start + std::min(k.range, 359.0f);
   while (end >= 360.0f) end -= 360.0f;

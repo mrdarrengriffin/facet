@@ -10,7 +10,7 @@ const CARD_H = { '1.5x': 280, '1x': 184 };  // lay::card_h (tokens/layout.json)
 export default {
   id: 'readout', family: 'cards', about: 'Sensor readout: label + live value; the Home sensor card is two of these in one slot.',
   tests: [
-    // facet-182 (Darren 2026-10-26, office Waveshare): Home sensor values vanished and never came back. HA values
+    // facet-182 (office Waveshare): Home sensor values vanished and never came back. HA values
     // reached the panel store, so suspect = the fade-on-update when updates arrive quicker than the fade.
     ...[[20, 'every 20 ms'], [80, 'every 80 ms'], [150, 'every 150 ms']].map(([gap, how]) => ({ name: `Home: rapid HA updates (${how}) end on the last value, fully drawn (facet-182)`, async run(t) {
       await t.device(DECK);

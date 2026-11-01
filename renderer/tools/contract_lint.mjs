@@ -15,14 +15,14 @@ const RULES = {
   theme: /\bfw::T\b|\bT->|\btheme_of\(|\bfw::Theme\b|\blv_color_(hex|make)\(|theme_file\.h|\bSkin\b|\bskin::|\btheme_(load|live|apply|facet|generation)\(/,
   draw: /\blv_draw_/,
   local: /\blv_obj_set_style_|\blv_style_init\(|\blv_obj_set_(size|width|height|pos|x|y)\(/,
-  // Header round 3 (2026-10-27): no colour / font / symbol types (C16) and no fixed size numbers (sizes are token
+  // Header round 3: no colour / font / symbol types (C16) and no fixed size numbers (sizes are token
   // NAMES through fx, so fx::tune and the Layout lab move them: C21, C23)
   font: /\blv_font_|\bLV_SYMBOL_|\blv_color_t\b|\blv_color_(white|black|mix)\(/,
   fixed: /\b(fw::)?(lay|sp|rad|stroke|touch|ic|ty)::[a-zA-Z_]/,
   // chart.json geometry is a size token too (chart:bar-gap ...): fx::size, never the compiled fw::ch:: number
   chart: new RegExp(`\\b(fw::)?ch::(${Object.keys(JSON.parse(readFileSync(join(DIR, '..', 'tokens', 'chart.json'), 'utf8')).geometry).map((n) => n.replace(/-/g, '_')).join('|')})\\b`),
 };
-// the CORE code a migrated component's sizes come from (2026-10-28: Toast, Bottom sheet, Bar chart and Sparkline were
+// the CORE code a migrated component's sizes come from (Toast, Bottom sheet, Bar chart and Sparkline were
 // migrated while the core placed / drew them at compiled sizes, so the Layout lab had no slider for them): here a
 // size is read live (fx::size("layout:inset"), re-placed on LV_EVENT_STYLE_CHANGED), never a compiled constant.
 // [file, first line of the section | null = whole file, the next section's line]

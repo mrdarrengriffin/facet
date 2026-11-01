@@ -80,7 +80,7 @@ const bg = (TOKENS.colour as { colours: Record<string, { dark: string; light: st
     <slot />
     <Search />
     <script is:inline>
-      // sidebar keeps its scroll across page loads (Darren 2026-10-23: a click lost his place); per sidebar kind
+      // sidebar keeps its scroll across page loads (a click lost his place); per sidebar kind
       (function () {
         var s = document.querySelector('[data-sidebar]');
         if (!s) return;

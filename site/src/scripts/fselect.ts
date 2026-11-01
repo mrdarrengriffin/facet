@@ -1,4 +1,4 @@
-// Facet select (Darren 2026-10-22: no browser-default selects). Enhances every <select data-fselect>: the native
+// Facet select (no browser-default selects). Enhances every <select data-fselect>: the native
 // select stays in the page (hidden, still the source of truth: its value + "change" event, so existing listeners
 // keep working) and a button + listbox in the Facet look takes its place.
 // Accessibility: button with aria-haspopup="listbox" / aria-expanded, list role="listbox" with role="option" +

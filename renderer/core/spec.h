@@ -1,11 +1,11 @@
-// Screens from specs (one-renderer plan §2.1-2.5, v1 2026-10-23, WIP): a screen is a JSON spec built from the
+// Screens from specs (one-renderer plan §2.1-2.5, v1, WIP): a screen is a JSON spec built from the
 // registered components (fw::find), the same code on the panels and in the WASM workbench. Header-only (core/*.h is
 // bundled as is). Specs never carry positions, sizes, colours, fonts or sounds: the layout and the components decide.
 //
 // Screen spec  {"v": 1, "id": "office", "name": "Office", "rev": 3,
 //               "params": {"entity": "light.x", ...},     the screen's parameters + defaults; "$entity" anywhere
 //                                                          in a string = the value it was opened with. Typed
-//                                                          (2026-10-23): {"type": text|select|entity|entities|
+//                                                          {"type": text|select|entity|entities|
 //                                                          toggle|hidden, "default", "label", "domain", "options", "about"}:
 //                                                          Settings > Screens and the workbench build their controls
 //                                                          from it (entity / entities = one / a comma list of
@@ -18,24 +18,24 @@
 //               "nodes": [node...]}
 // Node         {"c": "<component id>", "p": {prop: value | bind}, "on": {event: action}, "pending": {prop: [on, off]},
 //               "in"?: k, "slot"?: n, "each"?: "<param>", "sample"?: [{prop: value}...], "show"?: bind}
-//   show       (2026-10-24) a bind: the node shows only while its value is set (hidden for "", 0, off, false), e.g. the
+//   show       a bind: the node shows only while its value is set (hidden for "", 0, off, false), e.g. the
 //              vacuum's room tiles only while it isn't cleaning: {"e": "$entity", "map": {"cleaning": ""}, "else": "1"}.
 //              Re-read with the node's binds (a hidden node takes no room in its column).
-//   in header  (2026-10-24) "in": "header" builds the node into the screen's header row, before the screen chrome
+//   in header  "in": "header" builds the node into the screen's header row, before the screen chrome
 //              (docs header({right: [...]}): the Vacuum's Rooms | Map Segmented)
-//              slot "title" holds one part (2026-10-28): header.label is the shorthand (the Header builds a Title from
+//              slot "title" holds one part: header.label is the shorthand (the Header builds a Title from
 //              it; a bound label follows the entity), {"c": "title", "p": {"text": ...}, "in": "header", "slot":
 //              "title"} the explicit form (or a Segmented); a node there replaces the label's Title
-//   in overlay (2026-10-29) "in": "overlay" builds a bottom_sheet over the whole page (CONTRACT.md C4: the Overlay
+//   in overlay "in": "overlay" builds a bottom_sheet over the whole page (CONTRACT.md C4: the Overlay
 //              layer, never the Body); its list is a slot ("in": k, "slot": 0) the spec fills (the Calendar's sheets),
 //              its open prop a bind ({"e": "panel.calendar", "a": "sheet", "map": {"day": "open"}, "else": "closed"})
-//   in / slot  (2026-10-23, pages from components only) build this node into slot n (default 0) of node k (an earlier
+//   in / slot  (pages from components only) build this node into slot n (default 0) of node k (an earlier
 //              node whose component is a LAYOUT: its meta says "slots": N and it marks its slot objects with
 //              fw::spec::SLOT, in order) instead of the screen's content box: Split = two columns, Group = a wrapping
 //              row. k counts the nodes as written; a layout node can't repeat (each).
-//   span       (2026-10-25, Grid) [cols, rows]: a node in a static Grid's cell takes that many cells (the grid places
+//   span       (Grid) [cols, rows]: a node in a static Grid's cell takes that many cells (the grid places
 //              its cells in reading order into the first free place that fits; spans stay inside its cols)
-//   cell       (2026-10-25, Grid items mode) a Grid with "items" repeats this one node {c, p} per item ("$item" = the
+//   cell       (Grid items mode) a Grid with "items" repeats this one node {c, p} per item ("$item" = the
 //              item, "$item.<key>" = a field of an object item); not a layout (no grids in grids)
 //   each       repeat the node once per item of the comma list parameter (at most EACH_MAX), "$item" in its props /
 //              actions = the item. With the list empty, once per "sample" entry (its props over "p": the factory
@@ -49,7 +49,7 @@
 //              while the entity is empty (the factory demo), map = the value as words / a tone ("else" for the rest,
 //              default the value itself), tpl = the text around it ({} = the value; empty value = empty text).
 //              e "" with s = a bind on a screen parameter, not an entity: {"e": "", "s": "$view", "map": {...}}.
-//              fmt (2026-10-24, the panel lab's Vacuum + Door lock lines): count = the number of items in a comma
+//              fmt (the panel lab's Vacuum + Door lock lines): count = the number of items in a comma
 //              list ("Kitchen:3,Corridor:1" -> 2; a map value's "{}" = the one item's name when there is one, an
 //              else's "{}" = the number: "Clean {}" / "Clean {} rooms"); time = an ISO time as "09:03" today,
 //              "Mon 22:05" before; day = "today 07:59", "yesterday 18:42", "Mon 18:42" 
@@ -83,14 +83,14 @@
 //                comma list, the same domain as before; with "auto": "<param>" naming an entity (a sensor whose
 //                state is an entity id: HA's media target), the parameter follows that state while in Auto, a
 //                pick of "auto" starts following again; the screen's "$mode" = auto | manual | "" (no Auto)).
-//                With that sensor unset, Auto follows what's playing (2026-10-26): the first entity of the "from"
+//                With that sensor unset, Auto follows what's playing: the first entity of the "from"
 //                list whose state is playing (none playing = it stays where it is); Auto is offered whenever the
 //                sensor is set or that list has entities)
 //                "to": "week" sets that value instead of the event's (a More row opening a view of the same screen);
 //                "back": true = the screen's Back (the Header's, or a nav.back) first returns the parameter to the
 //                value before (Energy > last 7 days > Back = Energy, the docs subView), then leaves as usual
 //              {"do": "nav.open", "screen": "<id>", "params"?: {k: v}}    {"do": "nav.back"}
-//              timers (2026-10-28, the panel's own: core/device.h "the panel's timers"; no entity):
+//              timers (the panel's own: core/device.h "the panel's timers"; no entity):
 //              {"do": "timer.start", "seconds": 300, "name"?: "Pasta"}  (no name = its length, "5 min"; a 5th timer is
 //                refused: a warn toast says why)
 //              {"do": "timer.extend", "s": 60}  {"do": "timer.cancel"}  {"do": "timer.stop"}  (stop = a done one)
@@ -102,7 +102,7 @@
 //              on "open" (any component's own open event): {"do": "nav.open"} = the screen its detail names
 //              The closed whitelist: each component + event allows only the actions in RULES (the catalogue).
 //   pending    while a light.switch waits for HA: the prop shows on / off text (a List row's sub "Turning on")
-// local       (2026-10-28) an entity the panel fills itself, bound like any other (core/ha.h "local sources"; never
+// local       an entity the panel fills itself, bound like any other (core/ha.h "local sources"; never
 //  sources    sent to or asked of Home Assistant). "panel.timer" = the panel's timers (core/device.h): its state =
 //              the shown timer's running | done | idle (none); attributes: name, left ("4:32" / "1:02:05"), left_s,
 //              total (s), share (time left 0..1000: a Progress ring's value), line ("of 10 min · ends 14:52",
@@ -111,14 +111,14 @@
 //              [{"id", "name", "left" s, "total" s, "state" running | done, "time" "4:32" | "done"}]).
 //              e.g. {"e": "panel.timer", "a": "left"}; show while one runs: {"e": "panel.timer", "map": {"running":
 //              "1"}, "else": ""}. Moving values (left, share, others) are put once a second only while a bind reads it.
-// feeds       (2026-10-29, CONTRACT.md C51) "feeds": {"panel.weather": {"source": "$source", "weather": "$weather"}}:
+// feeds       (CONTRACT.md C51) "feeds": {"panel.weather": {"source": "$source", "weather": "$weather"}}:
 //              which adapter fills each feed this screen reads, and its settings (texts; "$param" = the screen's
 //              parameter). Applied when the screen is built (fw::ha::set_feed_config: the adapter refetches on a change).
-// card        (2026-10-29, Darren: every screen comes with its Home card) "card": {"icon": "weather", "preview": "weather",
+// card        (Darren: every screen comes with its Home card) "card": {"icon": "weather", "preview": "weather",
 //              "text": {"e": "panel.weather", "a": "temp"}, ...}: the Card a Home page card for this screen shows (the
 //              Card's props; binds on the screen's feeds). Home applies the page's "feeds" too, so the card shows the
 //              same data as the screen. No card = the icon + the page's name only.
-// locked      (2026-10-30, Darren, CONTRACT C53) "locked": true = a made screen: the editor opens it for its settings
+// locked      (Darren, CONTRACT C53) "locked": true = a made screen: the editor opens it for its settings
 //              only (no slots, no Add, no Remove). Every factory screen is locked; a person's own screen is not (and
 //              its root is a Column, so its top + foot always take parts). A sent copy of a factory id stays refused
 //              (no_built_in).
@@ -198,8 +198,8 @@ constexpr Rule RULES[] = {
     {"list_row", "toggle", "light.switch"},          {"list_row", "tap", "nav.open,nav.back,light.toggle"},
     {"list_row", "long", "nav.open"},                {"card", "tap", "nav.open,light.toggle"},
     {"card", "long", "nav.open"},                    {"dial", "change", "light.brightness"},
-    {"entity_tile", "tap", "nav.open,light.toggle,script.run,scene.activate,automation.trigger,button.press,entity.toggle"},  // 2026-10-30: the Home Action tile
-    {"icon_button", "tap", "nav.open,nav.back,light.toggle,calendar.control,media.control,cover.control,script.run,scene.activate,automation.trigger,button.press,entity.toggle"},  {"icon_button", "toggle", "media.control"},  // 2026-10-29: a header's settings / shortcut icon (the end slot takes icon buttons only); the Calendar's calendars button
+    {"entity_tile", "tap", "nav.open,light.toggle,script.run,scene.activate,automation.trigger,button.press,entity.toggle"},  // the Home Action tile
+    {"icon_button", "tap", "nav.open,nav.back,light.toggle,calendar.control,media.control,cover.control,script.run,scene.activate,automation.trigger,button.press,entity.toggle"},  {"icon_button", "toggle", "media.control"},  // a header's settings / shortcut icon (the end slot takes icon buttons only); the Calendar's calendars button
     {"dial", "input", "light.brightness"},           {"dial", "toggle", "light.switch"},
     {"slider", "change", "light.brightness,cover.control"}, {"slider", "input", "light.brightness"},
     {"slider_row", "change", "media.control,cover.control"}, {"slider_row", "input", "media.control,cover.control"},
@@ -207,7 +207,7 @@ constexpr Rule RULES[] = {
     {"more_row", "tap", "nav.open,nav.back,screen.param"},  // screen.param + to: a view of the same screen (Energy > last 7 days)
     {"cover_visual", "change", "cover.control"},  // the Covers window: a drag released (its position)
     {"button", "confirm", "lock.control"},
-    {"tile", "tap", "nav.open"},          {"button", "tap", "nav.open,nav.back,light.toggle,vacuum.control,timer.start,timer.extend,timer.cancel,timer.stop,timer.select,timer.new,timer.back,cover.control,script.run,scene.activate,automation.trigger,button.press,entity.toggle"},  // 2026-10-30: a button you place says what it does (the editor's On tap)
+    {"tile", "tap", "nav.open"},          {"button", "tap", "nav.open,nav.back,light.toggle,vacuum.control,timer.start,timer.extend,timer.cancel,timer.stop,timer.select,timer.new,timer.back,cover.control,script.run,scene.activate,automation.trigger,button.press,entity.toggle"},  // a button you place says what it does (the editor's On tap)
     {"timer_chip", "select", "timer.select"},       {"timer_chip", "stop", "timer.stop"},
     {"grid", "select", "timer.select"},             {"grid", "stop", "timer.stop"},  // Timer chips in an items Grid
     {"segmented", "change", "vacuum.control,screen.param"},
@@ -293,7 +293,7 @@ inline lv_obj_t *slot_of(lv_obj_t *o, int n) {  // the layout node itself may be
 // "count": n (n numbered slots of this kind: "in": k, "slot": i), "template": true (the Grid's "cell" template)}. A
 // declaration with no count and no template is a NAMED slot (the Header's title / end: "in": "header", "slot": name).
 // check_screen enforces accepts and max with a path error ("bad_slot"); the workbench / editor read the same meta.
-// An accepts entry is a component id, or {"c": id, "p": {prop: [allowed values]}, "editor": false} (Darren 2026-10-30):
+// An accepts entry is a component id, or {"c": id, "p": {prop: [allowed values]}, "editor": false}:
 // p pins props to those values in this slot (the Header's end takes only square icon buttons; the node must set each
 // pinned prop to one of them), editor false = specs may put it there but the editor never offers it (a Segmented
 // needs a screen parameter to switch; built-in screens use it in the Header's end).
@@ -351,7 +351,7 @@ constexpr const char *ROLES[] = {"page", "detail", "both"};
 // Home card type catalogue (deck v2, screen model piece 2): per type the entity domains it takes, its sizes, its taps
 // (the default first), the detail screen "detail" opens, and the component that draws it at each size (s | m | l; ""
 // = not offered). Sizes: s = a tile (tile-w x tile-h, three across), m = a card (card-w x card-h, two across),
-// l = a wide card (content-w x card-h). A sensor is read-only, in either size (Darren 2026-10-25): s = an Entity tile
+// l = a wide card (content-w x card-h). A sensor is read-only, in either size: s = an Entity tile
 // with no press (act none: value + label), m = a State readout (no box, no tap), two in a row sharing one card slot,
 // stacked (docs readoutSlot). Taps: toggle = the
 // entity's toggle, detail = its detail screen for that entity, page = a deck page, none = reports only.
@@ -361,8 +361,8 @@ constexpr CardType CARD_TYPES[] = {
     {"media", "media_player", "m,l", "detail,page", "media", "", "card", "card"},
     {"sensor", "sensor,binary_sensor", "s,m", "none", "", "entity_tile", "readout", ""},
     {"page", "", "s,m,l", "page", "", "entity_tile", "card", "card"},
-    {"entity", "*", "s", "toggle,detail,run,none", "", "entity_tile", "", ""}};  // 2026-10-30: any entity, like HA's tile card (taps by domain: ENTITY_TAPS)
-// the Entity tile (Darren 2026-10-30, after Home Assistant's tile card): any entity; what a tap can do depends on its
+    {"entity", "*", "s", "toggle,detail,run,none", "", "entity_tile", "", ""}};  // any entity, like HA's tile card (taps by domain: ENTITY_TAPS)
+// the Entity tile (after Home Assistant's tile card): any entity; what a tap can do depends on its
 // domain (the default first, like HA's): toggle, detail = the domain's own screen (only when this build has it), run =
 // the domain's run (script run, scene activate, automation trigger, button press), none. A domain not listed: none.
 struct DomainTaps { const char *dom, *taps, *detail; };
@@ -498,7 +498,7 @@ inline void check_action(ArduinoJson::JsonVariantConst a, const char *comp, cons
     const std::string en = a["e"] | "";
     if (!entity_ok(en) || (en[0] != '$' && en.rfind("fan.", 0) != 0 && en.rfind("input_boolean.", 0) != 0 && en.rfind("automation.", 0) != 0)) err(e, path + ".e", "bad_entity", "a fan, input_boolean or automation entity (or $param)");
   }
-  if (d == "script.run" || d == "scene.activate" || d == "automation.trigger" || d == "button.press" || d == "entity.toggle") {  // the Entity tile (2026-10-30)
+  if (d == "script.run" || d == "scene.activate" || d == "automation.trigger" || d == "button.press" || d == "entity.toggle") {  // the Entity tile
     const std::string en = a["e"] | "", dom = d == "entity.toggle" ? en.substr(0, en.find('.')) : d.substr(0, d.find('.'));
     if (!entity_ok(en) || (en[0] != '$' && en.rfind(dom + ".", 0) != 0)) err(e, path + ".e", "bad_entity", "a " + dom + " entity (" + dom + ".x or $param)");
   }
@@ -564,7 +564,7 @@ inline void check_value(const PropInfo &pi, ArduinoJson::JsonVariantConst v, con
         if (!kv.value().is<const char *>() || strlen(kv.value().as<const char *>()) > 64 || strlen(kv.key().c_str()) > 32) err(e, path + ".map", "bad_bind", "map values are text (64), keys at most 32");
     }
     for (const char *k : {"s", "else", "tpl"}) {
-      const size_t cap = (!strcmp(k, "s") && pi.name == "items") ? 256 : 64;  // an items sample is a whole list (2026-10-26)
+      const size_t cap = (!strcmp(k, "s") && pi.name == "items") ? 256 : 64;  // an items sample is a whole list
       if (!v[k].isNull() && (!v[k].is<const char *>() || strlen(v[k].as<const char *>()) > cap)) err(e, path + "." + k, "bad_bind", std::string(k) + " is text (at most " + std::to_string(cap) + ")");
     }
     if (!entity_ok(v["e"] | "") && !(!strcmp(v["e"] | "x", "") && v["s"].is<const char *>()))
@@ -746,7 +746,7 @@ inline void check_screen(ArduinoJson::JsonVariantConst s, size_t bytes, Errs &e)
       const std::string k = kv.key().c_str();
       auto it = std::find_if(pis->begin(), pis->end(), [&](const PropInfo &x) { return x.name == k; });
       if (it == pis->end()) { err(e, p + ".p." + k, one_of(STYLE_KEYS, k) ? "style_key" : "unknown_prop", c + " has no prop " + k); continue; }
-      // a row list (List row stack, Picker row group, Scroll track: items, 2026-10-26) fills "$item..." per row
+      // a row list (List row stack, Picker row group, Scroll track: items) fills "$item..." per row
       if (c != "grid" && !n["p"]["items"].isNull() && kv.value().is<const char *>() && strstr(kv.value() | "", "$item")) continue;
       check_value(*it, kv.value(), p + ".p." + k, e, binds);
     }
@@ -1001,7 +1001,7 @@ inline bool deck_page(const char *json, const std::string &id, ArduinoJson::Json
 }
 // this panel's deck page for id into out: the page with that id, else the first page of that kind (a screen opened
 // by its spec id finds its page); false = not in the deck. A saved deck's page takes the params it does not set from
-// the factory deck's page of the same id (2026-10-26: a deck saved before a parameter existed, e.g. the Media
+// the factory deck's page of the same id (a deck saved before a parameter existed, e.g. the Media
 // screen's speakers, still gets the build's list; a param set to "" stays cleared)
 inline bool deck_entry(const std::string &id, ArduinoJson::JsonDocument &out) {
   if (!deck_page(deck_json(), id, out)) return false;
@@ -1125,7 +1125,7 @@ struct Screen {
 // the spec screens alive now (the editor's hit-test walks them)
 inline std::vector<Screen *> &live() { static std::vector<Screen *> v; return v; }
 
-// ---- anchors (2026-10-23, the editor's click-to-edit): which screen parameters a part of the screen shows.
+// ---- anchors (the editor's click-to-edit): which screen parameters a part of the screen shows.
 // Every node is anchored to the "$param"s its props and actions use (found when the screen is built, no spec
 // changes). A component may also mark one of its parts with the prop that part shows (fw::spec::anchor(part,
 // "visual")): the editor can then pick that part alone (its parameters = the ones feeding that prop). Hosts read them
@@ -1966,7 +1966,7 @@ inline lv_obj_t *build(lv_obj_t *parent, const std::string &id, Props opened, st
   }, s);
   // header (the Header component + the screen chrome)
   ArduinoJson::JsonDocument hd;
-  // no label key = no title (the Title is a part the editor removes, Darren 2026-10-28); a label left empty by its
+  // no label key = no title (the Title is a part the editor removes); a label left empty by its
   // parameter ("$name" with no name given) = the spec's name, as before
   const char *hl = doc["header"]["label"] | "";
   hd["label"] = doc["header"]["label"].isNull() ? "" : *hl ? hl : (doc["name"] | "");
@@ -2128,7 +2128,7 @@ inline Reload &reload_hook() {
 // out: {ok, status: applied|unchanged|refused, id, rev, errors?}; dry = a hidden parent for the off-screen build
 // kind "check" / "check_deck" (facet-163, agents): validate (+ the off-screen build for a screen) and answer, store
 // nothing: {ok, status: valid|refused, id, rev, errors?}
-// built-in screens (Darren 2026-10-29, facet-209): a sent screen may be anything an agent wants, under its own id; a
+// built-in screens (facet-209): a sent screen may be anything an agent wants, under its own id; a
 // factory id is refused (built_in: a built-in only takes a theme). kind "screen_dev" / "check_dev" = the hub's own dev
 // path (Send specs, the house's copies, the tests), which may still replace a built-in without a firmware build.
 inline void no_built_in(const std::string &id, bool dev, Errs &e) {
@@ -2156,7 +2156,7 @@ inline bool apply(const char *kind, const std::string &json, lv_obj_t *dry, Ardu
   }
   const char *live = deck ? (S().deck_over.empty() ? nullptr : S().deck_over.c_str()) : (S().over.count(id) ? S().over[id].c_str() : nullptr);
   if (!live) live = deck ? FACTORY_DECK : factory(id);
-  if (!only_check && live && canonical(live) == canonical(json)) {  // the same content (Darren 2026-10-23: not the rev) = a no-op
+  if (!only_check && live && canonical(live) == canonical(json)) {  // the same content (not the rev) = a no-op
     out["ok"] = true;
     out["status"] = "unchanged";
     out["why"] = "the panel already has this exact spec";

@@ -329,7 +329,7 @@ void mascot_replay(lv_obj_t *root) {
   start(m, true);
 }
 
-// docs mascot.ts moodFor(kind, status): moved from the Tile (2026-10-22) so the Mascot mood page shares it
+// docs mascot.ts moodFor(kind, status): moved from the Tile so the Mascot mood page shares it
 static bool has_ci(const std::string &s, const char *w) {
   std::string a = s;
   for (char &c : a) c = (char) tolower((unsigned char) c);

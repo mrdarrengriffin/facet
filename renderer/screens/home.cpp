@@ -213,7 +213,7 @@ char card_node(Var cd, Var pages, int slot, ArduinoJson::JsonArray nodes) {
       : edom == "cover" ? "cover" : (edom == "sensor" || edom == "binary_sensor") ? "sensor"
       : (edom == "script" || edom == "scene" || edom == "button") ? "action" : "other";
   if (comp_s == "entity_tile") {
-    if (vt == "sensor") {  // read-only: the value as the status, the device class icon, no press (Darren 2026-10-25)
+    if (vt == "sensor") {  // read-only: the value as the status, the device class icon, no press
       sensor_icon(p, e);
       bind(p, "status", e, "state");
       p["on"] = false;
@@ -229,7 +229,7 @@ char card_node(Var cd, Var pages, int slot, ArduinoJson::JsonArray nodes) {
         }
       }
       p["on"] = false;
-    } else if (vt == "action") {  // run it (2026-10-30): the domain's icon, the verb as the status, no on look
+    } else if (vt == "action") {  // run it: the domain's icon, the verb as the status, no on look
       p["icon"] = dom == "script" ? "play" : dom == "scene" ? "house" : dom == "automation" ? "auto" : "bolt";
       p["status"] = dom == "script" ? "Run" : dom == "scene" ? "Activate" : dom == "automation" ? "Trigger" : "Press";
       p["on"] = false;
@@ -305,7 +305,7 @@ void build_home(lv_obj_t *parent, fw::Props props) {
     for (Var pg : deck["pages"].as<ArduinoJson::JsonArrayConst>())
       if (b == (pg["id"] | "")) kind = pg["kind"] | "";
     const bool sc = b != "settings" && has_icon(kind);
-    sp["header"]["settings"] = true;  // Settings stays a real button (Darren 2026-10-25)
+    sp["header"]["settings"] = true;  // Settings stays a real button
     if (sc || st == "timer") {
       if (sc) { sp["header"]["actions"]["shortcut"] = kind; sp["header"]["actions"]["to"] = b; }
       sp["header"]["actions"]["status"] = st;

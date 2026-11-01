@@ -1,4 +1,4 @@
-/* Facet firmware (firmware/fw_imgdec.h): pngle by kikuchan, MIT, https://github.com/kikuchan/pngle (b1c6819, 2025-05-18); unchanged but for the names block (and a cast in read_uint32). */
+/* Facet firmware (firmware/fw_imgdec.h): pngle by kikuchan, MIT, https://github.com/kikuchan/pngle (b1c6819); unchanged but for the names block (and a cast in read_uint32). */
 /* Facet: own names for every exported symbol, so this copy never meets another pngle / miniz (an ESPHome component,
  * the chip ROM's tinfl) at link time */
 #ifndef FW_PNGLE_NAMES

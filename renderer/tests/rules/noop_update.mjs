@@ -1,5 +1,5 @@
 // An update that changes nothing (the same props + one unknown key, so the update path runs) leaves every object
-// where it was, in every variant: an update path that drops a root style (2026-10-28: the Hero block's refill took
+// where it was, in every variant: an update path that drops a root style (the Hero block's refill took
 // its box style off and it shrank to its text) fails here, whatever the audit's frame count sees.
 // Moved from tools/lab_test.mjs onto the runner's loop: per contract component x variant, on a 720 x 720 stage of its own.
 export default {

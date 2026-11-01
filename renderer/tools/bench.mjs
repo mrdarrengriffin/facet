@@ -122,7 +122,7 @@ async function run(dev, c, scenario) {
   const build_ms = performance.now() - b0;
   const first = f64(m, m._fw_bench_take(), 8);
   m._fw_areas(id);
-  // host copy proxy (the workbench's canvas copy): whole stage vs only the flushed areas (the 2026-10-22 lag fix)
+  // host copy proxy (the workbench's canvas copy): whole stage vs only the flushed areas (the lag fix)
   const dst = new Uint8ClampedArray(w * h * 4);
   let tn = 0;
   const frames = { at: [], render: [], work: [], px: [], areas: [], flush: 0, full: 0, renders: 0, refr: 0, overflow: 0, hostFull: [], hostAreas: [] };
@@ -242,7 +242,7 @@ function judge(dev, fit, c, scenario, r) {
   if (on('idle') && scenario === 'idle' && !c.live && r.wasm.px_per_s > B.idle_px_per_s) over.push(`idle redraw ${r.wasm.px_per_s} px/s`);
   if (on('build') && est.build_ms != null && est.build_ms > B.build_ms_max) over.push(`build ${est.build_ms} ms > ${B.build_ms_max}`);
   if (on('heap') && r.mem.heap_kb > B.heap_kb_max) over.push(`heap ${r.mem.heap_kb} KB > ${B.heap_kb_max}`);
-  // every device: more than 32 invalidated areas in one refresh = LVGL redraws the whole screen (the 2026-10-23 F1 track:
+  // every device: more than 32 invalidated areas in one refresh = LVGL redraws the whole screen (the F1 track:
   // 3 fps on the Guition); many moving things = one layer + union boxes, never one object each
   if (r.wasm.area_overflows > 0) over.push(`dirty areas over 32 in ${r.wasm.area_overflows} refresh${r.wasm.area_overflows > 1 ? 'es' : ''} (full redraws)`);
   if (on('objs') && r.mem.objs > B.objs_max) over.push(`objs ${r.mem.objs} > ${B.objs_max}`);
@@ -314,7 +314,7 @@ if (arg('--panel')) {
   const info = await get('/fw/info');
   const have = new Set((await get('/fw/meta')).map((m) => m.id));  // what this firmware registered
   // the panel's own settings: bench cases may tap them (the Settings screen); put them back after the run, also on an
-  // error or abort (2026-10-22: UI sounds toggled during a run)
+  // error or abort (UI sounds toggled during a run)
   const settings0 = await get('/fw/settings').catch(() => null);
   let restored = false;
   const restoreSettings = async () => {

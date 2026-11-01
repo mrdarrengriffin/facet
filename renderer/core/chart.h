@@ -2,7 +2,7 @@
 // area as A8 masks, end dot, ping, draw-in, shift, morph, scrub), bars (rounded data end, square foot, highlight /
 // compare, grow, scrub), the gauge, legend, axis and big number. Implemented in foundations/chart.cpp (the Charts page
 // shows them); every chart component (Bar chart, Sparkline, Big number, Donut, Legend and axis, Moon by day) builds
-// with these, so the page and the components are one system (parity batch B, 2026-10-22). Header-only declarations:
+// with these, so the page and the components are one system (parity batch B). Header-only declarations:
 // the firmware bundle picks up core/*.h by itself, and foundations/chart.cpp is bundled like every foundation.
 #pragma once
 #include <cmath>
@@ -98,14 +98,14 @@ struct TokenBars {
   int w_dp = 0, h_dp = 80, now = -1, ticks = 0, dec = 2, first_hour = 0;
   bool scrub = true;
   std::string unit = "kWh";
-  // pairs (2026-10-29, the Energy screen's Week view: docs barChart group 2 / groupGap 16): bars in groups of `group`,
+  // pairs (the Energy screen's Week view: docs barChart group 2 / groupGap 16): bars in groups of `group`,
   // ch bar-gap inside a group, chart:group-gap between groups; labels = one axis word per group under its centre (in
   // place of the hour ticks; the readout names the group too); legend = the series' words over the plot, each with a
   // swatch in its kind's ink (legend_kind: 0 solid, 2 compare outline)
   int group = 1;
   std::vector<std::string> labels, legend;
   std::vector<uint8_t> legend_kind;
-  // marks (2026-10-30, the Moon screen's next days: docs moonRangeChart marks): per bar 0 none, 1 a new moon, 2 a full
+  // marks (the Moon screen's next days: docs moonRangeChart marks): per bar 0 none, 1 a new moon, 2 a full
   // moon, a chart:mark disc over the bar's centre in a row above the plot (space 5 under it)
   std::vector<uint8_t> marks;
   std::vector<std::string> names;  // per bar: the readout's word ("24 Oct"; the axis labels may name only some bars)
@@ -170,7 +170,7 @@ inline std::vector<std::string> words(Props p, const char *key, const char *def)
 }
 
 // ---- a change against a reference, as Status chip props (docs @facet/ui charts.ts deltaChip(); was the Delta chip
-// component until 2026-10-24): "▲ 12% vs yday" / "▼ 12% vs yday", "= 0% vs yday" when flat (under 0.5 % either way),
+// component until then): "▲ 12% vs yday" / "▼ 12% vs yday", "= 0% vs yday" when flat (under 0.5 % either way),
 // "-- vs yday" with no number (NAN). Tone ok when the change goes the good way, warn the bad way, idle flat / none.
 // The arrows are in the text glyph set (type.json, c-caps-sm at both densities).
 struct Delta { const char *tone; std::string text; };

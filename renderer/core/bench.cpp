@@ -4,8 +4,8 @@
 //   fw_bench_attach()       hook every display (idempotent) and zero the counters
 //   fw_bench_take() -> f64[9] since the last call: [renders, render_ms, render_ms_max, flush_ms, px, areas, refr_ms, full,
 //                           overflows] overflows = refreshes whose invalidated areas went past LVGL's 32-area buffer
-//                           (LV_INV_BUF_SIZE): LVGL then redraws the whole screen (2026-10-23, the F1 track at 3 fps).
-//                           Exact (2026-10-24): an area inside one already saved is dropped by LVGL (lv_inv_area), so
+//                           (LV_INV_BUF_SIZE): LVGL then redraws the whole screen (the F1 track at 3 fps).
+//                           Exact: an area inside one already saved is dropped by LVGL (lv_inv_area), so
 //                           only an area that would really need a 33rd slot counts (a press restyling a card's 40
 //                           children invalidates 40 areas inside the card's own: one area, no full redraw)
 //                           render_ms = sum of RENDER_START..READY (incl. the host flush), flush_ms = the host flush part

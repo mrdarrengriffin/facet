@@ -1,4 +1,4 @@
-// about (Darren 2026-10-25): every setting has a plain description, the docs tables, the agent guide and the editor
+// about: every setting has a plain description, the docs tables, the agent guide and the editor
 // show it: each registered prop (meta "about") and each spec parameter (renderer/specs/*.json params.<name>.about).
 // Moved from tools/audit.mjs: a startup check of the runner (tools/lib/rules.mjs), once at 1.5x (density-free).
 import { readFileSync, readdirSync } from 'node:fs';

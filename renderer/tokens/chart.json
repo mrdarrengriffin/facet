@@ -290,7 +290,7 @@
     "scrub-pitch": {
       "low": 0.2,
       "high": 0.8,
-      "use": "scrub ticks follow the line: the line's height at the cursor (bottom to top of the plot) maps to this part of the sound.json pitch range (0 = pitch.low, 1 = pitch.high; with -6 / +3 that is about -4 to +1 semitones), so a rise sounds like a rise without the slider's full sweep (Darren 2026-10-22)",
+      "use": "scrub ticks follow the line: the line's height at the cursor (bottom to top of the plot) maps to this part of the sound.json pitch range (0 = pitch.low, 1 = pitch.high; with -6 / +3 that is about -4 to +1 semitones), so a rise sounds like a rise without the slider's full sweep",
       "about": "As you drag across a line, the ticks rise and fall with it: higher readings tick higher."
     }
   },

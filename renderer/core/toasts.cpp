@@ -1,5 +1,5 @@
 // toasts.cpp: the toasts' behaviour (core/toasts.h says what it is). Moved out of components/toast.cpp and
-// toast_layer.cpp when they went on the contract (2026-10-28); the gestures, the timer bar and the motion are as they
+// toast_layer.cpp when they went on the contract; the gestures, the timer bar and the motion are as they
 // were there.
 #include <algorithm>
 #include <vector>

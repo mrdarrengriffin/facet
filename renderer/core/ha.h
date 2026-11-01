@@ -1,4 +1,4 @@
-// Home Assistant data for screens (one-renderer plan §2.3, first slice 2026-10-22): the same code on the panels and in
+// Home Assistant data for screens (one-renderer plan §2.3, first slice): the same code on the panels and in
 // the WASM workbench. Header-only (core/*.h is bundled as is).
 //   store    the latest value per (entity, attribute) ("" = the state), the only place HA data lands. Hosts put():
 //            the panel from its HA API subscriptions (firmware/fw_device.h), the workbench from the hub
@@ -45,7 +45,7 @@ namespace ha {
 using Pair = std::pair<std::string, std::string>;  // (entity, attribute "" = state)
 using WantSink = void (*)(const std::string &e, const std::string &a);
 using ActSink = void (*)(const char *service, const char *entity, const char *data_json);
-// asks (2026-10-29, CONTRACT.md C51 adapters): an HA action whose REPLY a feed's adapter reads (calendar.get_events:
+// asks (CONTRACT.md C51 adapters): an HA action whose REPLY a feed's adapter reads (calendar.get_events:
 // the Bins feed). Closed list (ask()); the host sends it (the panel: an HA action with wants_response over its API;
 // the workbench: the hub's /api/panel/ask) and hands the reply's JSON back with answer(id, ok, json).
 using AskSink = void (*)(uint32_t id, const char *service, const char *data_json);
@@ -75,7 +75,7 @@ struct State {
   uint32_t next_ask = 1;
   std::map<uint32_t, std::pair<AskDone, void *>> asks;  // waiting for their answer
   std::map<std::string, std::string> feeds;  // feed entity -> its settings (JSON: the spec's "feeds", params filled in)
-  // local sources already asked for their values since the last tick (2026-10-30): a screen's binds read the same feed
+  // local sources already asked for their values since the last tick: a screen's binds read the same feed
   // dozens of times while it builds; one fresh() each is enough (Moon: 30 binds x its 75-day table = 4 s, a watchdog reset)
   std::vector<std::string> freshed;
 };
@@ -88,7 +88,7 @@ inline const std::string *get(const std::string &e, const std::string &a = "") {
   auto it = S().store.find({e, a});
   return it == S().store.end() ? nullptr : &it->second;
 }
-// local sources (2026-10-28): an entity the panel fills itself, never Home Assistant (the timers: "panel.timer",
+// local sources: an entity the panel fills itself, never Home Assistant (the timers: "panel.timer",
 // core/device.h). want() never passes it to a host (no subscription, not in wants()); a bind that reads it first asks
 // the source to put its current values (fresh(): a screen built now never shows a stale second)
 inline void (*local(const std::string &e))() {
@@ -127,7 +127,7 @@ inline int pct(const std::string &e, const char *a) {
   const double b = num(get(e, a));
   return std::isfinite(b) ? (int) std::lround(LV_CLAMP(0.0, b, 255.0) * 100 / 255) : 0;
 }
-// fmt time / day (2026-10-24): an ISO time ("2026-10-24T09:03:12+01:00", HA's) -> "09:03" today / "Mon 22:05"
+// fmt time / day: an ISO time ("2026-10-24T09:03:12+01:00", HA's) -> "09:03" today / "Mon 22:05"
 // (time), "today 07:59" / "yesterday 18:42" / "Mon 18:42" (day); local time; "" when it doesn't parse
 inline std::string when(const std::string &iso, bool day, time_t now = time(nullptr)) {
   int Y, M, D, h, m;
@@ -305,7 +305,7 @@ inline void resolve(Props in, ArduinoJson::JsonDocument &out, std::vector<Pair> 
     if (is_bind(kv.value())) {
       bind_value(kv.value(), o, kv.key().c_str(), pairs);
       // a bool prop bound to a feed (Hero block accent): the feed's "true" / "false" become a real bool, so
-      // components read p["accent"] | false as they would a literal (2026-10-29)
+      // components read p["accent"] | false as they would a literal
       const char *v = o[kv.key()] | "";
       if (!strcmp(v, "true")) o[kv.key()] = true;
       else if (!strcmp(v, "false")) o[kv.key()] = false;
@@ -348,7 +348,7 @@ inline void tick(lv_timer_t *) {
   S().freshed.clear();  // the next build (or re-bind) asks the local sources again
   const uint32_t now = lv_tick_get();
   // a refresh can delete other bound objects (an items Grid rebuilds its cells: their Bounds are freed), so each one in
-  // the copy is checked to be still live before it is touched (2026-10-28: the Timer chips crashed the panel)
+  // the copy is checked to be still live before it is touched (the Timer chips crashed the panel)
   for (Bound *b : std::vector<Bound *>(S().bounds)) {
     if (std::find(S().bounds.begin(), S().bounds.end(), b) == S().bounds.end()) continue;
     if (b->hold_until && (int32_t) (now - b->hold_until) >= 0) { b->hold_until = 0; b->dirty = true; }
@@ -462,7 +462,7 @@ inline const char *act(lv_obj_t *from, const char *service, const char *entity, 
   if (svc.rfind("lock.", 0) == 0 && ent.rfind("lock.", 0) != 0) return "not a lock";
   if (svc.rfind("vacuum.", 0) == 0 && ent.rfind("vacuum.", 0) != 0) return "not a vacuum";
   if (svc.rfind("switch.", 0) == 0 && ent.rfind("switch.", 0) != 0) return "not a switch";
-  for (const char *dom : {"script.", "scene.", "automation.", "button.", "fan.", "input_boolean."})  // the Action tile (2026-10-30): its own domain only
+  for (const char *dom : {"script.", "scene.", "automation.", "button.", "fan.", "input_boolean."})  // the Action tile: its own domain only
     if (svc.rfind(dom, 0) == 0 && ent.rfind(dom, 0) != 0) return "not an entity of that service's domain";
   ArduinoJson::JsonDocument data;
   if (data_json && *data_json && deserializeJson(data, data_json)) return "data is not JSON";

@@ -1,5 +1,5 @@
 // Timer chip: one of several timers as a small chip (the Timer screen, concept T1 "Several" picked by Darren
-// 2026-10-28: the soonest timer is in the Progress ring, the others are chips above the buttons; tap one to bring it
+// the soonest timer is in the Progress ring, the others are chips above the buttons; tap one to bring it
 // into the ring; the one that is done goes accent). On the contract (renderer/CONTRACT.md, "contract": 2). Not a Button
 // kind: its own component (a mini ring, a name and a time are not a Button's label + icon).
 //   box      hugs its contents (a chip is as wide as its words, as the Status chip), at least touch:min tall (h:min, so
@@ -140,7 +140,7 @@ void fill(lv_obj_t *b, fw::Props p) {
     for (const char *t : {"w:timer-chip-ring", "h:timer-chip-ring", "max-h:timer-chip-ring"}) fx::use(c->ring, t);
     c->shown = share_of(p);
   }
-  // no name (the Timer bar, Darren 2026-10-28): the countdown is the chip's main text
+  // no name (the Timer bar): the countdown is the chip's main text
   const bool named = !c->name.empty();
   c->nm = named ? fx::text(b, c->name.c_str(), "type:c-body", "fg:text") : nullptr;
   if (c->nm) { fx::use(c->nm, "fg:disabled-ink", O); fx::fit_grid(c->nm); }

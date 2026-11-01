@@ -18,7 +18,7 @@ const char *tint_of(const char *t) {
   if (!strcmp(t, "error")) return "tint:error";
   if (!strcmp(t, "working")) return "tint:accent";
   if (!strcmp(t, "info")) return "tint:blue";
-  return "tint:text-dim";  // idle (text-dim: text-mute is for disabled only, Darren 2026-10-21)
+  return "tint:text-dim";  // idle (text-dim: text-mute is for disabled only)
 }
 void fill(lv_obj_t *b, fw::Props p) {
   // a number, or a bound Home Assistant state (text: "4", "4.0")

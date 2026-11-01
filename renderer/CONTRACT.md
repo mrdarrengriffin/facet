@@ -144,7 +144,7 @@ button). If the real one does not fit (too tall, wrong padding), give that compo
 never copy it. Its own parts that no other component has (a Segmented's segment) are not components and say so on
 the line: `// part: <why>`. A known gap is marked `// debt: <what it should be>`, which the lint lists on every run.
 *Why:* a copy drifts from the real one (alignment, states, sounds, theming), and the contract stops being the single
-source of how a thing looks and behaves (Darren 2026-10-27, Section header "See all").
+source of how a thing looks and behaves (Section header "See all").
 *Check:* lint `control` (tools/contract_lint.mjs): in a contract component, a box it makes with `fx::box` that takes
 taps (`on_tap`, CLICKABLE) or a press look fails the checks unless it is marked `part:` or `debt:`.
 

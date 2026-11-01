@@ -2,7 +2,7 @@
 // Feature flags (README "Feature flags"): reads renderer/features.json, the one manifest of what ships where.
 // Build-time only (no flags on the device): the flavour of a build is the env FW_FEATURES = docs | firmware | panel
 // (unset = everything, the WASM workbench), contract = a panel build of the contract features only (load()). panel = the workbench panel firmware (`firmware/bundle.mjs --all`): every
-// feature except one marked "panel": false (Darren 2026-10-26: Lightning is on NO firmware, not even his own panels). Used by build.sh, tools/gen_specs.mjs, tools/gen_icons.mjs, firmware/bundle.mjs and
+// feature except one marked "panel": false (Lightning is on NO firmware, not even his own panels). Used by build.sh, tools/gen_specs.mjs, tools/gen_icons.mjs, firmware/bundle.mjs and
 // site/scripts/extract.mjs.
 //   node tools/features.mjs check            fail (exit 1) when a source belongs to no feature (or two), a listed id
 //                                            does not exist (docs_pages: a screen of that feature), or a feature shown in
@@ -69,7 +69,7 @@ export function load() {
   // components / foundations listed nowhere = the library (shipped); screens, specs and bench items must be listed
   const lib = man.library;
   const features = [lib, ...man.features];
-  // contract (derived, not in features.json; Darren 2026-10-28 "only the new stuff for now"): a panel build of the
+  // contract (derived, not in features.json): a panel build of the
   // features whose every component is on the contract ("contract": 2) and whose spec screens use only such components;
   // the library (unused legacy parts are linked but unreachable) and system (the panel's own screens) always
   const v2 = (id) => { const f = join(R, 'components', `${id}.cpp`); return existsSync(f) && /"contract":\s*2\b/.test(readFileSync(f, 'utf8')); };

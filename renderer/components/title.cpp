@@ -1,5 +1,5 @@
 // Title: the screen's name in the Header's title slot, on the contract (renderer/CONTRACT.md, "contract": 2). A real
-// component (2026-10-28) so the slot only ever holds parts: an editor removes it and adds it back like any other.
+// component so the slot only ever holds parts: an editor removes it and adds it back like any other.
 //   text   type label (caps, mono), text-dim; one line; a long one ends in an ellipsis. Its ink is the nearest box
 //          part's text ink (the theme's header part, C46), as every text inside a part.
 //   width  in a row (the Header's title box: a flex row) it takes the row's room from 0 (style header-label), so it

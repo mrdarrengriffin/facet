@@ -538,7 +538,7 @@ MoonGeo moon_geo(int S) { return {S / 2.f, 20.f * S / 48.f, S >= 96 ? fw::ic::WX
 float half_chord(float r, float dy) { return dy * dy < r * r ? sqrtf(r * r - dy * dy) : -1; }
 // The masks are LVGL draw buffers (A8, LVGL's own stride): an image source LVGL draws straight from. A plain buffer
 // with stride = width was copied into an aligned one on EVERY draw (no image cache on the panels): a hero moon cost
-// three copies of its size per strip of every frame, 4 s per frame on the Waveshare and a watchdog reset (2026-10-30).
+// three copies of its size per strip of every frame, 4 s per frame on the Waveshare and a watchdog reset.
 lv_draw_buf_t *moon_buf(int S) {
   lv_draw_buf_t *b = lv_draw_buf_create(S, S, LV_COLOR_FORMAT_A8, LV_STRIDE_AUTO);
   if (b) lv_draw_buf_clear(b, nullptr);

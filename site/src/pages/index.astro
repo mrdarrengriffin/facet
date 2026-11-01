@@ -1,9 +1,9 @@
 ---
-// Home page: the original Facet site's landing layout (main a5df2ac: site/src/pages/index.astro) as a short intro
-// (Darren 2026-10-22): what Facet is, a glimpse of how it's built, then a walk into the docs. Every example is the
+// Home page: the original Facet site's landing layout (main a5df2ac: site/src/pages/index.astro) as a short intro:
+// what Facet is, a glimpse of how it's built, then a walk into the docs. Every example is the
 // real WASM component. The hero is the live panel (the Device component started on Home, as on the screen pages):
 // tap a card and its screen opens, Back returns. The Screens step shows the released screens as still pictures.
-// The intro and the idea behind the name are drafts for Darren to edit (2026-10-22).
+// The intro and the idea behind the name are drafts for Darren to edit.
 import Base from '../layouts/Base.astro';
 import Live from '../components/Live.astro';
 import { COMPONENTS, FOUNDATIONS, SCREENS, href, screenById, screenHref } from '../lib/data';
@@ -60,7 +60,7 @@ const steps = [
       <div class="landing__intro">
         <h1 class="landing__title">Facet</h1>
         <p class="landing__lede">{description}</p>
-        <!-- intro: draft for Darren to edit (2026-10-22) -->
+        <!-- intro: draft for Darren to edit -->
         <p class="landing__intro-text">
           Facet is a design system for wall panels: small touch screens that show and control your home through Home
           Assistant. Its tokens, components and sounds are drawn by one renderer, on ESP32 panels and in the browser
@@ -102,7 +102,7 @@ const steps = [
     <section class="landing__section" aria-labelledby="what-title">
       <div class="landing__head">
         <h2 id="what-title">What Facet is</h2>
-        <!-- the idea behind the name: draft for Darren to edit (2026-10-22) -->
+        <!-- the idea behind the name: draft for Darren to edit -->
         <blockquote class="landing__definition">
           <p><strong>facet</strong> <em>noun</em><br />one part of a subject, situation, etc. that has many parts</p>
           <p class="landing__source"><a href="https://dictionary.cambridge.org/dictionary/english/facet">Cambridge Dictionary</a></p>

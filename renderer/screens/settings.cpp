@@ -3,7 +3,7 @@
 // the panel's Home Assistant entities, the ESPHome page and the docs never drift. Composed only of real components:
 //   header   the Header component (back + "Settings" + the screen chrome: the live clock) at (inset, inset)
 //   content  from lay::top to the screen bottom, one scrolling column (bottom padding inset); per schema group:
-//            its label (docs .fs-set-glabel = the screen type label, caps, as the header's: Darren 2026-10-22, the
+//            its label (docs .fs-set-glabel = the screen type label, caps, as the header's: the
 //            component caps-sm was too small) then its rows; label to rows = section-gap, rows to the next label = group
 //   rows     by the setting's control:
 //            segmented / swatches  a List row (title, no trailing, not a tap target) + the Segmented / Accent swatches

@@ -1,4 +1,4 @@
-// Cells: a LAYOUT component on the contract (renderer/CONTRACT.md, release piece 3, 2026-10-26): rows of equal cells,
+// Cells: a LAYOUT component on the contract (renderer/CONTRACT.md, release piece 3): rows of equal cells,
 // one slotted child per cell (core/spec.h "in" / "slot"), any component. It is the Home grid: one Cells per run of
 // same-size cards (tiles: min tile-w x tile-h; cards: min home-card-min-w x card-h; a wide card: wide, one per row).
 //   columns   one wrapping flex ("wrap", gap:gutter): each cell grows from its min-w:<layout token>, so a row holds as
@@ -9,12 +9,12 @@
 //   short row empty filler cells (no slot) keep the last row's cells the width of the rows above, left-aligned: their
 //             count (columns - cells left over) is worked out from the layout's OWN content width after layout (C6: the
 //             one size it reads), (width + gutter) / (min-w + gutter), the same sum the flex makes. last:"fill" = no
-//             fillers: the cells on a short last row share the whole row (a lone Home card goes full width, Darren
-//             2026-10-26); the default "column" keeps them the column width (tiles, readouts).
+//             fillers: the cells on a short last row share the whole row (a lone Home card goes full width);
+//             the default "column" keeps them the column width (tiles, readouts).
 //   height    every cell is exactly the min-h token tall (h: + max-h:, so a child that fills, the Card, is the cell and
 //             follows the token both ways); a child taller than that overflows and the bounds proof reports it (C11).
-//   pair      a "p" cell holds two half-height slots (two readouts sharing a card slot, Darren 2026-10-26): they split
-//             the pair's OWN content height (C6, at every min-h, Darren 2026-10-27), equal, each the largest grid step
+//   pair      a "p" cell holds two half-height slots (two readouts sharing a card slot): they split
+//             the pair's OWN content height (C6, at every min-h), equal, each the largest grid step
 //             that still leaves the hairline room between them (at most pair-h: at card-h exactly pair-h, 2 x pair-h +
 //             8 = card-h); the first at the cell's top, the second ending on its bottom, the hairline (bg:line) inset
 //             by the card padding, centred in the space left (decor; at least one grid step, the cells being on it).

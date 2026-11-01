@@ -495,7 +495,7 @@ a .live__canvas,
   color: var(--facet-color-text-dim);
   font-size: 14px;
 }
-/* status badges (Darren 2026-10-22): a pill per row, always at the row's end; tinted fill + a dot in the status
+/* status badges: a pill per row, always at the row's end; tinted fill + a dot in the status
    colour, label in text (4.5:1 on the tint in both themes): Available = ok, In progress = accent, Planned = steel */
 .task {
   display: grid;

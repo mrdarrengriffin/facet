@@ -1,4 +1,4 @@
-// Card (components/card.cpp, contract v2), release piece 2 (2026-10-26). Each test is one row of the release gate and
+// Card (components/card.cpp, contract v2), release piece 2. Each test is one row of the release gate and
 // fails without the behaviour. The card has no size of its own: it fills its parent (here the stage's content box, the
 // stage resized to the parent size under test; on Home the grid cell). Declared minimum: layout:card-min-w x card-min-h.
 // Approved original: Astro packages/ui/src/layout.ts card() + docs CSS .fs-card (320 x 280 at 720).
@@ -203,7 +203,7 @@ export default {
       t.ha.s[E] = { '': 'on', brightness: '179', friendly_name: 'Desk lamp', supported_color_modes: '["brightness"]' };
       await t.device({ v: 2, rev: 9, start: 'p', pages: [{ id: 'p', kind: 'home', name: 'Test', cards: [{ t: 'light', e: E, size: 'm', tap: 'detail', label: 'Desk lamp' }, { t: 'light', e: E, size: 'm', tap: 'detail', label: 'Lamp two' }] }] });
       const cs = t.comps().filter((c) => c.ids.includes('card')); t.eq(cs.length, 2, 'two cards');
-      const half = (t.b.S - 2 * INSET[den(t)] - 16) / 2;  // two-up: (content - gutter) / 2 (Darren 2026-10-26)
+      const half = (t.b.S - 2 * INSET[den(t)] - 16) / 2;  // two-up: (content - gutter) / 2
       t.eq(cs.map((c) => c.w), [half, half], 'each = half the row'); t.eq(cs[0].y, cs[1].y, 'side by side');
       t.ok(cs[1].x >= cs[0].x + cs[0].w, 'no overlap');
       t.tap({ at: [cs[0].x + cs[0].w / 2, cs[0].y + cs[0].h / 2] }); t.eq(t.where(), 'light', 'opens the light screen');

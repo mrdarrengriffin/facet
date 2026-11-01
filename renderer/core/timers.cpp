@@ -73,7 +73,7 @@ void fresh() {
     const int lf = left(*s);
     put("", L().pick ? "picking" : s->state == 1 ? "running" : "done");
     put("id", std::to_string(s->id));
-    put("name", s->named ? s->name : length_name(s->total));  // no name typed on a panel: its length (Darren 2026-10-28)
+    put("name", s->named ? s->name : length_name(s->total));  // no name typed on a panel: its length
     put("left", countdown(lf));
     put("left_s", std::to_string(lf));
     put("total", std::to_string(s->total));

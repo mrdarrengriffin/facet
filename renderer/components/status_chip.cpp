@@ -1,6 +1,6 @@
 // Status chip: the Facet status chip (docs: @facet/ui atoms.ts statusChip(tone, text), CSS .f-chip): a small tinted
 // pill with a status dot and caps text, e.g. "3 working". The small way to show status (rows, headers, cards).
-// CONTRACT v2 (Header round 3, 2026-10-27): built only from token names (core/fx.h), so a live theme switch repaints
+// CONTRACT v2 (Header round 3): built only from token names (core/fx.h), so a live theme switch repaints
 // it (before: the colours were baked from fw::T at build, so a dark -> light restyle left the dark theme's near-white
 // words on the light tint: tools/pixel_contrast.mjs measured 1.1:1).
 //   box      hugs its content (C7 note: a chip is as wide as its words), tall:chip-h (exactly) (32 at 720 = docs; 480 24),
@@ -11,7 +11,7 @@
 //            light); prop pulse = the Motion pulse (fx::pulse)
 //   text     type:c-caps-sm, fg:text (the docs colour it in the tone; on its own tint the status colours drop under
 //            4.5:1 in light, so the tone is carried by the dot + fill and the words stay readable). One line, its box fitted up to the 4 px grid.
-//   size     chip (default) or dot (Darren 2026-10-27: the Status dot folded in): the dot alone, no fill or words, the
+//   size     chip (default) or dot (the Status dot folded in): the dot alone, no fill or words, the
 //            smallest way to show state (next to a label, in a row's end, on a card): w:dot round, on the canvas so
 //            working is the accent itself (lay::dot: 8 at 720, 4 at 480)
 // Tones: ok / warn / error / working (accent) / info (blue) / idle (text-dim). Changes against a reference ("▲ 12% vs
@@ -29,7 +29,7 @@ const char *fill_of(const char *t) {
   if (!strcmp(t, "error")) return "tint:error";
   if (!strcmp(t, "working")) return "tint:accent";
   if (!strcmp(t, "info")) return "tint:blue";
-  return "tint:text-dim";  // idle (text-mute is for disabled only, Darren 2026-10-21)
+  return "tint:text-dim";  // idle (text-mute is for disabled only)
 }
 const char *dot_of(const char *t, bool alone) {
   if (!strcmp(t, "ok")) return "bg:ok";

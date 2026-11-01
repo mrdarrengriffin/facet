@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// "What uses what sound", generated from the code (Foundations > Sound, Darren 2026-10-22): scans every FW_COMPONENT
+// "What uses what sound", generated from the code (Foundations > Sound): scans every FW_COMPONENT
 // file in components/ and foundations/ for the calls that make a sound and resolves each to sound.json type ids:
 //   fw::sound(obj, "<id>")          -> <id> (a ternary of two literals -> both)
 //   fw::sound(obj, fw::st::X_SOUND) -> states.json (TAP = rest.sound, ON = on.sound, OFF = on.off_sound, BLOCKED = disabled.sound)

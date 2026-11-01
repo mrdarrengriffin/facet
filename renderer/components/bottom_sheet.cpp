@@ -21,7 +21,7 @@
 // builds into it; the Calendar's calendars and day sheets), `loop` (opens and closes forever: the frame-rate bench),
 // `overlay` (only the overlay, built into the caller's screen; the Layout foundation's overlay sample) with `still`
 // (shown open, no animation), `flatten` / `panel: solid` (bench options, core/sheet.cpp).
-// Spec (2026-10-29, core/spec.h "in": "overlay"): built over the whole page with its list as slot 0 (meta "slots": the
+// Spec (core/spec.h "in": "overlay"): built over the whole page with its list as slot 0 (meta "slots": the
 // spec's own components, the Calendar's day and calendars sheets); the panel's height follows the list's contents
 // (again, async, whenever they change); "close" (scrim, panel key, Close) reaches the spec node's action.
 // Contrast pairs: tokens/colour.json section "bottom_sheet" (+ picker_row, radio, list_row, icon_button, header).

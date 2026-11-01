@@ -12,7 +12,7 @@ extern "C" void lv_image_cache_drop(const void *src);  // LVGL 9 (misc/cache/ins
 
 namespace fw::img {
 namespace {
-// Per-board caps (notes image-component.md §3 + Darren 2026-10-26: memory-bounded, Guition much lower).
+// Per-board caps (notes image-component.md §3 + memory-bounded, Guition much lower).
 // Guition 4848S040 (ESP32-S3, 8 MB PSRAM shared with LVGL's buffers, fonts, Wi-Fi + one TLS session): 512 KB = a
 // content-wide 16:9 photo (440 x 248 RGB565 = 218 KB) plus a 4 x 2 grid of 96 px cells (RGB565A8 = 221 KB).
 // Waveshare P4 (32 MB PSRAM): 3 MB = a full 720 x 720 still (1 MB) plus a 64-cell grid of 72 px thumbnails (1 MB).

@@ -1,4 +1,4 @@
-// Grid (components/grid.cpp, contract v2; geometry = the core atom fx::grid), facet-205 (2026-10-27): equal cells from
+// Grid (components/grid.cpp, contract v2; geometry = the core atom fx::grid), facet-205: equal cells from
 // the grid's OWN width, slots with allow lists, items repeating from a list, rows / +N, the empty state. Each test is
 // one row of the release gate and fails without the behaviour.
 // Approved original: the pre-contract Grid (board facet-171, notes icon-grid-proposal §3): same sums, same look.

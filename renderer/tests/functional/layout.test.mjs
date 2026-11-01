@@ -1,5 +1,5 @@
 // Layout & devices foundation (foundations/layout.cpp), the "screen" section: a real Home at true size under the token
-// layers. 2026-10-27: the Cards there went straight into a content-height wrap row; a Card fills its parent (fx "fill"),
+// layers. the Cards there went straight into a content-height wrap row; a Card fills its parent (fx "fill"),
 // so LVGL's layout pass never settled (ASan sat at 100% CPU for hours). Each Card now gets a card-w x card-h cell.
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';

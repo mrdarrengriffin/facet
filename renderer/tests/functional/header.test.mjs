@@ -1,4 +1,4 @@
-// Header (components/header.cpp, contract v2), round 3 2026-10-27: [Back] [Title] ... [END slot] [Time]. Each test is
+// Header (components/header.cpp, contract v2), round 3: [Back] [Title] ... [END slot] [Time]. Each test is
 // one row of the release gate and fails without the behaviour.
 // Approved original: the Astro header (packages/ui/src/layout.ts header({label, onBack, right, clock}), CSS .fs-header).
 import { readFileSync } from 'node:fs';

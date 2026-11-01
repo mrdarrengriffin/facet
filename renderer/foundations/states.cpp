@@ -86,7 +86,7 @@ void sample(lv_obj_t *parent, const char *id, Doc &props, const char *caption) {
   lv_obj_set_flex_align(s, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
   // a Card has no size of its own (it fills its parent, fx "fill", as in a Home cell): give it a card-w x card-h cell.
   // Straight in this content-sized column it would be 100% of a parent sized by its children and LVGL's layout never
-  // settles (2026-10-27: ASan hung, then overflowed, on this page; tests/functional/states.test.mjs)
+  // settles (ASan hung, then overflowed, on this page; tests/functional/states.test.mjs)
   lv_obj_t *host = s;
   if (c && !strcmp(id, "card")) { host = box(s); lv_obj_set_size(host, lay::card_w, lay::card_h); }
   if (c) c->build(host, props.as<Props>());

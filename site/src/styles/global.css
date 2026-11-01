@@ -1,5 +1,5 @@
 /* Facet site styles: the original Facet site's (main a5df2ac site/src/styles/global.css), kept as they are on the live
-   site (Darren 2026-10-22: the new site looks and behaves like the live one). Colours, fonts and motion come from the
+   site (the new site looks and behaves like the live one). Colours, fonts and motion come from the
    WASM tokens (src/data/tokens.css, generated from renderer/tokens/*.json); sizes are the old site's own values.
    Changes from the old file: theme selector data-theme; text-mute -> text-dim for text (Facet contrast rule:
    text-mute = disabled only); sidebar group labels flush left; the nested-radius rule; search shortcut as a circle. */
@@ -28,7 +28,7 @@
   box-sizing: border-box;
 }
 
-/* Scrollbars (Darren 2026-10-22): thin, token colours, both themes. Standard properties (Firefox, Chromium 121+);
+/* Scrollbars: thin, token colours, both themes. Standard properties (Firefox, Chromium 121+);
    older WebKit gets the ::-webkit-scrollbar version. */
 * {
   scrollbar-width: thin;
@@ -83,11 +83,11 @@ pre {
   border-radius: 4px;
 }
 
-/* Nested-radius rule (Darren 2026-10-22): a rounded box inside a rounded box takes
+/* Nested-radius rule: a rounded box inside a rounded box takes
      inner radius = outer radius - inset (padding + border between the two edges), never below 0.
    The outer box sets --r-outer (its radius) and --inset; the inner box uses .nest-r's formula. Used by: the segmented
    control (.seg), the search dialog's results, the select popups, the home page bezel. (The search button's "/" key
-   keeps the live site's small square key: Darren 2026-10-22, not a circle.) */
+   keeps the live site's small square key, not a circle.) */
 .nest-r,
 .seg button,
 .search__results a,
@@ -395,7 +395,7 @@ kbd {
   margin-bottom: 8px;
   padding: 0;
   /* the live site's label: mono caps, a muted grey between text-mute and text-dim, as muted as WCAG text contrast
-     (4.5:1 on bg) allows in each theme (Darren 2026-10-22): dark 4.7:1, light 4.5:1 */
+     (4.5:1 on bg) allows in each theme: dark 4.7:1, light 4.5:1 */
   color: var(--label-mute);
 }
 

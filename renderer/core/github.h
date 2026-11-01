@@ -49,8 +49,8 @@ inline std::string age(double h) {
   return b;
 }
 struct Status { const char *tone, *text; };
-// one PR state as Status chip props (docs @facet/ui lists.ts stateChip() + CHIP; was the State chip component until
-// 2026-10-24): approved ok, changes requested error, review pending / draft idle, ci pass ok, ci fail error,
+// one PR state as Status chip props (docs @facet/ui lists.ts stateChip() + CHIP; formerly the State chip component):
+// approved ok, changes requested error, review pending / draft idle, ci pass ok, ci fail error,
 // ci running working, review warn, assigned info; anything else = review
 inline Status state(const std::string &k) {
   static const struct { const char *id; Status s; } KINDS[] = {

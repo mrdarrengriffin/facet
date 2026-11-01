@@ -21,7 +21,7 @@ const char *fw_update(int, const char *, const char *, int, int);
 }
 static uint32_t t = 0;
 static void tick(int n) { for (int i = 0; i < n; i++) { t += 16; fw_tick(t); fw_events(); } }
-// a time bound per item: a render that never returns (a layout pass that never settles: the 2026-10-27 Layout page,
+// a time bound per item: a render that never returns (a layout pass that never settles: the Layout page,
 // hours at 100% CPU) fails the run with its name instead of holding the box's job queue. Normal items take seconds.
 constexpr unsigned ITEM_S = 300;  // the slowest item today (icons, all) takes well under a minute under ASan
 static const char *g_item = "";
@@ -29,7 +29,7 @@ static void on_alarm(int) {
   fprintf(stderr, "asan: %s did not finish within %d s (an endless loop, e.g. a layout that never settles)\n", g_item, ITEM_S);
   _exit(3);
 }
-// "taps:<comp>" = random taps for a screen's flows (Darren 2026-10-28: the Timer crashed the panel while tapping): 400 taps
+// "taps:<comp>" = random taps for a screen's flows (the Timer crashed the panel while tapping): 400 taps
 // over the lower part of the stage (where a page's buttons and chips are), a few with time jumps so timers run out and
 // the done / stop paths run too; deterministic (an LCG), so a report repeats
 static void taps(const char *id, const char *props, int S) {

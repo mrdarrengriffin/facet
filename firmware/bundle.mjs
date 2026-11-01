@@ -6,7 +6,7 @@
 //   node firmware/bundle.mjs --density 1x|1.5x --hashes      print the source hashes as JSON (no files written)
 //   --version <v>  this build's version (fw::bundle::VERSION: the Firmware entity's installed version, esphome/board/
 //          fw_update.h); kept out of the YAML so defines.h and main.cpp stay the same from build to build
-//   --contract  a workbench build of only the features fully on the contract (Darren 2026-10-28)
+//   --contract  a workbench build of only the features fully on the contract
 //   --all  every feature (a workbench / Show on device build); default = the release: features with firmware off in
 //          renderer/features.json are left out (their sources, specs, deck pages, Home cards, icons; tools/features.mjs)
 // Hashes (sha1, 12 hex) let the workbench tell whether a device runs the current code: `core` covers everything every
@@ -137,7 +137,7 @@ const link = (name, text) => { links.push(name); return `${text}\n// firmware/bu
 put('fonts.cpp', link('fwlink_fonts', fonts));
 // core extras (the feed sources: weather_source.cpp, moon_source.cpp, ...) register themselves from a static
 // initialiser (ha::on_local); nothing else names most of them, so without a link symbol the linker dropped them from
-// the static archive and their feed stayed empty on the panel (Weather showed only its header, 2026-10-30)
+// the static archive and their feed stayed empty on the panel (Weather showed only its header)
 for (const f of coreExtra) put(basename(f), link(`fwlink_k_${basename(f, '.cpp')}`, read(f).toString()));
 // icons.cpp with this density's A8 masks inlined (tools/gen_icons.mjs; FW_ICONS=used = only what components declare)
 const iconsH = join(fontDir, `facet_icons${density === '1x' ? '_1x' : ''}${FLAV ? `_${FLAV}` : ''}.h`);  // own file per flavour (FW_ICONS=used trims by feature)

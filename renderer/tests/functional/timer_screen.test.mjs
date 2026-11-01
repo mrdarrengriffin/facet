@@ -1,4 +1,4 @@
-// Timer screen (specs/timer.json, Darren 2026-10-28 concept T1; notes/facet-design/timer.md): the page's flows on the
+// Timer screen (specs/timer.json, concept T1): the page's flows on the
 // panel's real timer list (core/timers.cpp): idle presets, start, + New = the lengths again (picking) and Cancel
 // back, switching timers with a chip, cancelling the shown one only, two of the same length kept apart, a done one
 // stopped. Every test fails without the behaviour (the flows Darren found broken: chips did nothing, Cancel hit the

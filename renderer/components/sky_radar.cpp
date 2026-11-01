@@ -1,7 +1,7 @@
 // Sky radar (docs: @facet/ui screens/overhead.ts skyRadar(), CSS 50-screens.css .fs-oh-*): the aircraft round home by
 // distance (square-root scale) and bearing, each a plane seen from above turned to its track; the lead (the selected
 // one, else the closest) in the accent with a ring, an emergency in the error colour. On the contract
-// (renderer/CONTRACT.md, "contract": 2, 2026-10-29): drawn with the Pen only, every ink a colour token and every size a
+// (renderer/CONTRACT.md, "contract": 2): drawn with the Pen only, every ink a colour token and every size a
 // size token read at draw time, so a theme and the Layout lab restyle it with no code here.
 //   box     size hero = layout:sky-radar square (docs 208 / 136); radar = layout:sky-radar-lg (the Radar view, docs
 //           576); card = layout:sky-card (the Home card preview, 72 / 48)

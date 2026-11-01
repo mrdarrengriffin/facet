@@ -1,6 +1,6 @@
 // Time: the Facet time of day (docs: Components > Clock > Time, @facet/ui clocks.ts timeText() + digits()): the time in
 // fixed-width digit cells so it never shifts as it changes, the colon in its own cell raised onto the figures, and in
-// 12h a small AM / PM beside it on the baseline. CONTRACT v2 (Header round 3, 2026-10-27): token names only (core/fx.h).
+// 12h a small AM / PM beside it on the baseline. CONTRACT v2 (Header round 3): token names only (core/fx.h).
 //   size    header (the time at the end of every Header: type:label, fg:text-dim, one label: the approved header
 //           clock, docs .fs-hclock = fst-label; label is mono, so it never shifts), compact (clock-compact), mid
 //           (Ring / context faces: clock-mid), hero (clock-hero): type styles (tokens/type.json, glyph set "clock")
@@ -13,11 +13,11 @@
 //           baseline; each second only the seconds cell that changed redraws, the layout never shifts
 //   time    prop "time" = a fixed "HH:MM[:SS]" that runs on from there (docs, tests); empty = live: localtime, checked
 //           every second, a cell changes only when its digit does; the placeholder until the device has the time
-//   date    prop (Darren 2026-10-27: the Date line folded in): none (default), short = MON 19 OCT (c-date, mono caps,
+//   date    prop (the Date line folded in): none (default), short = MON 19 OCT (c-date, mono caps,
 //           tracked), long = Monday 19 October (date-long, Inter light), text-dim, centred under the digits gap:<n>
 //           apart (hero 8, mid 7, compact 5: the old faces' spacing); prop "day" = a fixed "YYYY-MM-DD" (previews);
 //           header stays time-only. digits:false = the date alone (the analogue face's date window)
-//   line    prop (the Clock screen, 2026-10-30): a quieter line under the date, such as the weather now ("rain ·
+//   line    prop (the Clock screen): a quieter line under the date, such as the weather now ("rain ·
 //           13°": type:c-weather, fg:blue as the docs .fs-clock-wx), the same gap apart (docs clock.ts: time, date, weather 16 px apart);
 //           only with a date; empty = no row (a bound line that arrives later fills the Time again: the column
 //           re-centres once)

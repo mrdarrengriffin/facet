@@ -4,7 +4,7 @@
 // redraws the whole screen, because the scrim fades over all of it and the panel (most of the screen) fades and
 // moves. Kept small where it can be: the scrim is ONE full-screen rect whose bg_opa animates (no layer, no per-child
 // opacity), the panel moves as ONE object (translate_y + opa on the panel only, its rows never re-layout), nothing
-// else is invalidated. Browser bench 2026-10-22 (8x CPU throttle, open + close looping): the cost is the blending
+// else is invalidated. Browser bench (8x CPU throttle, open + close looping): the cost is the blending
 // area, not the objects: flattening the screen under the sheet into one opaque lv_snapshot image measured no gain, a
 // panel snapshot image moving instead of the panel was worse (ARGB blend), an opaque panel that only rises was
 // ~15-18 % cheaper. Kept as the bench options flatten and solid.
@@ -24,7 +24,7 @@ struct Layer {
   int rows = 0, row_h = 0;  // the last fit (a retune fits again)
 };
 // one hair past the left / right edges and the ring radius past the bottom: the full hair edge with its rounded top
-// corners shows, its sides and bottom fall off the screen (Darren 2026-10-22: a top-only border drew square corners)
+// corners shows, its sides and bottom fall off the screen (a top-only border drew square corners)
 void pads(Layer *L) {
   const int in = fx::size("layout:inset"), hair = fx::size("stroke:hair");
   lv_obj_set_style_pad_top(L->panel, in - hair, 0);
@@ -58,7 +58,7 @@ lv_obj_t *bare(lv_obj_t *parent) {
 void set_bg_opa(void *o, int32_t v) { lv_obj_set_style_bg_opa((lv_obj_t *) o, (lv_opa_t) v, 0); }
 void set_ty(void *o, int32_t v) { lv_obj_set_style_translate_y((lv_obj_t *) o, v, 0); }
 // scrim: colour.json scrim (near-black in both themes) at motion.json opacity scrim (dark) / scrim-light (Darren
-// 2026-10-22: the backdrop must read clearly darker, not just faded towards the bg)
+// the backdrop must read clearly darker, not just faded towards the bg)
 lv_opa_t scrim_opa() { return (lv_opa_t) lroundf((fw::T->light ? fw::mo::OPA_SCRIM_LIGHT : fw::mo::OPA_SCRIM) * 255); }
 
 void unflatten(Layer *L) {

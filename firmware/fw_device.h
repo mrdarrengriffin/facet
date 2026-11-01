@@ -21,7 +21,7 @@
 //   POST /fw/act    {do, ...fields} -> {ok, why?, state?}: one action, checked + run like a spec tap (fw::spec::act,
 //                   CONTRACT.md C50; HA's facet_act does the same: act_from_ha)
 //   GET  /llms.txt, /agents.md   the agent docs (bundle fw_docs_gen.h from tools/gen_agents.mjs; open)
-// AI agents (facet-163, Darren 2026-10-25): every POST under /fw/ and every GET /fw/ha (it shows the subscribed HA
+// AI agents (facet-163): every POST under /fw/ and every GET /fw/ha (it shows the subscribed HA
 // values; the editor's ?want= subscribes too) go through agent::allow():
 // the panel's own editor (a browser request from this origin: Sec-Fetch-Site same-origin, or Origin = this host)
 // always passes; anything else needs the setting Allow AI agents on (only the panel or HA can turn it on, core/
@@ -247,7 +247,7 @@ inline bool show(ArduinoJson::JsonObjectConst req, ArduinoJson::JsonObject out) 
     serializeJson(req["props"], props);
   }
   const bool light = !strcmp(req["theme"] | "dark", "light");
-  // the panel's own settings win (Darren 2026-10-22: an HA change must show): the request's theme / accent are only
+  // the panel's own settings win (an HA change must show): the request's theme / accent are only
   // the stage under them (fw::dev::look: Theme auto + no accent chosen yet = the request's), and the Settings screen
   // shows the panel's values (the request's setting props are dropped)
   const fw::Theme *look = fw::dev::look(fw::theme(light, accent_index(req["accent"] | "")));
@@ -780,8 +780,8 @@ inline void timers_setup() {
 // Actions from Home Assistant (CONTRACT.md C50): facet_act {action: JSON} runs ONE action of the closed list through
 // fw::spec::act (the same checks and code path as a spec tap, POST /fw/act); the friendly facet_timer_start / _extend
 // / _cancel build that action. ESPHome evaluates api.respond's data only when the caller asked for a response, so the
-// YAML does the work in a lambda step (act_from_ha / timer_from_ha) and answers with act_answer() after it (2026-10-28:
-// a call without return_response did nothing while the work sat in the respond lambda). Main loop.
+// YAML does the work in a lambda step (act_from_ha / timer_from_ha) and answers with act_answer() after it
+// (a call without return_response did nothing while the work sat in the respond lambda). Main loop.
 inline ArduinoJson::JsonDocument &act_last() { static ArduinoJson::JsonDocument d; return d; }
 inline void act_answer(ArduinoJson::JsonObject out) {
   for (ArduinoJson::JsonPair kv : act_last().as<ArduinoJson::JsonObject>()) out[kv.key()] = kv.value();
@@ -816,7 +816,7 @@ inline void timer_from_ha(const char *op, const std::string &name, int seconds) 
   if (!name.empty()) a["name"] = name;
   const bool ok = act_run(a.as<ArduinoJson::JsonVariantConst>(), "facet_timer");
   ArduinoJson::JsonObject out = act_last().as<ArduinoJson::JsonObject>();
-  if (!ok) out["error"] = out["why"];  // the facet_timer_* answer kept its "error" (2026-10-28)
+  if (!ok) out["error"] = out["why"];  // the facet_timer_* answer kept its "error"
   if (!ok && !strcmp(op, "start")) {  // a refused start from HA: say so where the person is looking
     ArduinoJson::JsonDocument t;
     t["tone"] = "warn"; t["icon"] = "timer"; t["title"] = "No timer started"; t["body"] = out["why"] | "";
@@ -1311,7 +1311,7 @@ class Handler : public AsyncWebHandler {
       in_loop([&] {
         sh = S.shown;
         fw::dev::state(devs.to<ArduinoJson::JsonArray>());
-        // the loop's own bookkeeping (memory hunts, 2026-10-30): LVGL timers (each object delete walks them all),
+        // the loop's own bookkeeping (memory hunts): LVGL timers (each object delete walks them all),
         // the HA store (every feed's attributes), bound components, subscriptions
         for (lv_timer_t *t = lv_timer_get_next(nullptr); t && timers < 100000; t = lv_timer_get_next(t)) timers++;
         for (const auto &kv : fw::ha::S().store) store++, store_bytes += kv.first.first.capacity() + kv.first.second.capacity() + kv.second.capacity() + 64;
@@ -1365,7 +1365,7 @@ class Handler : public AsyncWebHandler {
       else { d["deck"] = dk; d["rev"] = dk["rev"]; d["override"] = over; serializeJson(d, s); }
     } else if (path == "/fw/ha") {
       ArduinoJson::JsonDocument d;
-      // ?want=e1,e2[&attrs=a1,a2]: subscribe to these too (the panel's editor previews live values: Darren 2026-10-25)
+      // ?want=e1,e2[&attrs=a1,a2]: subscribe to these too (the panel's editor previews live values)
       std::vector<std::pair<std::string, std::string>> add;
       if (req->hasArg("want")) {
         auto split = [](const std::string &v) { std::vector<std::string> o; size_t i = 0; while (i <= v.size()) { size_t j = v.find(',', i); if (j == std::string::npos) j = v.size(); if (j > i) o.push_back(v.substr(i, j - i)); i = j + 1; } return o; };
@@ -1493,7 +1493,7 @@ inline void setup() {
   Saved sv{};
   ArduinoJson::JsonDocument req, out;
   bool shown = false;
-  // boot safety (2026-10-22: a page that crashes the panel must not come back on every boot): after a crash reset
+  // boot safety (a page that crashes the panel must not come back on every boot): after a crash reset
   // (panic / watchdog / brownout) the saved page is NOT shown again; the device home is, and it replaces the saved one
   const esp_reset_reason_t why = esp_reset_reason();
   const bool crashed = why == ESP_RST_PANIC || why == ESP_RST_INT_WDT || why == ESP_RST_TASK_WDT || why == ESP_RST_WDT || why == ESP_RST_BROWNOUT;

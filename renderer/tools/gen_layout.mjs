@@ -40,7 +40,7 @@ for (const r of rows) {
 }
 const V = (n, d) => { const r = rows.find((x) => x.n === n); if (!r) die(`missing token ${n}`); return d === '1x' ? r['1x'] : r.v; };
 
-// the grid rule (Darren 2026-10-21): every value a multiple of 4 at both densities, at least 4
+// the grid rule: every value a multiple of 4 at both densities, at least 4
 const bad = [];
 for (const r of rows)
   for (const [d, x] of [['720 (v)', r.v], ['480 (1x)', r['1x']]])
@@ -144,7 +144,7 @@ L.push('struct Device { const char *id, *name; int w, h; float inches; const cha
 for (const [id, v] of DV) L.push(`  {${cstr(id)}, ${cstr(v.name)}, ${v.w}, ${v.h}, ${flt(v.inches)}, ${cstr(v.density)}, ${flt(t.density[v.density].d)}, ${cstr(v.class)}, ${cstr(v.status)}, ${cstr(v.role)}, ${cstr(v.runs)}, ${cstr(v.mount)}},`);
 L.push('};', `constexpr int N_DEVICES = ${DV.length};`);
 L.push(`constexpr const char *SCREEN_ABOUT = ${cstr(t.screen.about)};`);
-// rules (layout.json `rules`, Darren 2026-10-22): plain-words sections (heading + one or two sentences) that are the
+// rules (layout.json `rules`): plain-words sections (heading + one or two sentences) that are the
 // page's section labels + abouts below (the docs site reads the same keys); `components` is checked, not emitted
 const R = t.rules ?? die('rules: missing');
 const RS = Object.fromEntries((R.sections ?? []).map((s) => [s.id, s]));

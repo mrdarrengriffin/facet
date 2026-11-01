@@ -1,5 +1,5 @@
-// Dial: the Facet light dial (docs: Screens > Light, Components > Controls > Dial, @facet/ui dial(); approved round 2,
-// Darren 2026-10-21). CONTRACT v2 (renderer/core/fx.h, 2026-10-26 release slice 1): built only from token names and the
+// Dial: the Facet light dial (docs: Screens > Light, Components > Controls > Dial, @facet/ui dial()).
+// CONTRACT v2 (renderer/core/fx.h, release slice 1): built only from token names and the
 // Pen; it fills its parent's width up to max-w:dial-scale and is as tall as it is wide; every length comes from the box
 // (Pen::half) and size tokens, every ink is a shared colour style read at draw time (a theme / accent switch repaints
 // it with no code here).
