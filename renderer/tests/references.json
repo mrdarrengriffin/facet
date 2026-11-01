@@ -3,14 +3,6 @@
   "refs": [
     {
       "comp": "card_previews",
-      "variant": "agents",
-      "astro": {
-        "item": "previews",
-        "index": 0
-      }
-    },
-    {
-      "comp": "card_previews",
       "variant": "media",
       "astro": {
         "item": "previews",

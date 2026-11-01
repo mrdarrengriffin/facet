@@ -51,32 +51,6 @@
     "bytes_est": 1920
    }
   },
-  "agents_view": {
-   "name": "Agents view",
-   "update": true,
-   "props": [
-    {
-     "name": "sample",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "mixed",
-      "calm",
-      "empty"
-     ],
-     "about": "For previews only: which set of made-up agents to show. mixed has some needing you, calm has none needing you, empty has no agents at all."
-    }
-   ],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 193,
-    "bytes_est": 30880
-   }
-  },
   "arc": {
    "name": "Arc",
    "update": true,
@@ -6650,5 +6624,5 @@
    }
   }
  },
- "hash": "028b58f5"
+ "hash": "1c2bf620"
 }

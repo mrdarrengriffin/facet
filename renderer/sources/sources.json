@@ -277,20 +277,6 @@
         }
       ]
     },
-    "agents": {
-      "shows": "What your AI agents are doing: busy, waiting or done.",
-      "needs": "AI agents that report their status",
-      "sources": [
-        {
-          "id": "feed",
-          "kind": "direct",
-          "name": "Agent status feed (JSON)",
-          "setup": [
-            "feed URL"
-          ]
-        }
-      ]
-    },
     "living_room": {
       "shows": "The lights of one room, to switch and dim each one.",
       "needs": "dimmable lights",
