@@ -1,7 +1,8 @@
 # Facet firmware, shared part (README.md): LVGL with one blank page, the facet_wb component (= the renderer's core +
 # foundations + components + screens, bundled by firmware/bundle.mjs into gen/<board>/facet_wb), OTA safety (boot
 # guard + safe mode), a few diagnostics.
-# Substitutions from the main YAML: board (boards/<id>.json), lvgl_buffer, facet_version, update_manifest; facet_gen
+# Substitutions from the main YAML: board (boards/<id>.json), lvgl_buffer, facet_version (the project version:
+# the release's; a build's own version goes to firmware/bundle.mjs --version), update_manifest; facet_gen
 # (default below) = the folder holding <board>/facet_wb.
 # Home Assistant entities: Screen (select), Firmware (update, with the OTA
 # probation folded in: board/fw_update.h), Wi-Fi signal, IP address, Started, Free memory, Boot check; the settings
@@ -37,7 +38,9 @@ esphome:
   on_boot:
     - priority: 900
       then:
-        - lambda: 'panel::boot::start();'
+        - lambda: |-
+            panel::boot::start();
+            panel::fwu::watch(id(fw_update));  // the installed version = this build's (board/fw_update.h)
     - priority: -100
       then:
         - lambda: |-

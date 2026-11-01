@@ -5,7 +5,8 @@
 # gen/settings.yaml (firmware/settings_yaml.mjs) and, on a board with a speaker, the sound bank in
 # components/facet_audio (firmware/sound_bank.mjs, only when stale). All of it is generated, none of it committed.
 # Needs Node (renderer/tools: npm ci), the font rasteriser venv (renderer/tools/venv.sh) and `esphome` on PATH
-# (or $ESPHOME). FACET_VERSION sets the version the panel reports (default the YAML's).
+# (or $ESPHOME). FACET_VERSION = this build's version, the one the Firmware entity reports (bundle.mjs --version;
+# default the YAML's facet_version). A release also sets facet_version in the YAML.
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd)
 ROOT=$(dirname "$HERE")
@@ -15,8 +16,8 @@ B="$ROOT/boards/$id.json"
 yaml="$HERE/facet-$id.yaml"
 [ -f "$yaml" ] || { echo "no $yaml"; exit 2; }
 scale=$(node -p "require('$B').scale"); speaker=$(node -p "require('$B').speaker === true")
-node "$ROOT/firmware/bundle.mjs" --density "$scale" --out "$HERE/gen/$id"
+node "$ROOT/firmware/bundle.mjs" --density "$scale" ${FACET_VERSION:+--version "$FACET_VERSION"} --out "$HERE/gen/$id"
 node "$ROOT/firmware/settings_yaml.mjs" "$HERE/gen/settings.yaml"
 if [ "$speaker" = true ]; then node "$ROOT/firmware/sound_bank.mjs" --check || node "$ROOT/firmware/sound_bank.mjs"; fi
 [ "$step" = prepare ] && exit 0
-${ESPHOME:-esphome} ${FACET_VERSION:+-s facet_version "$FACET_VERSION"} "$step" "$yaml"
+${ESPHOME:-esphome} "$step" "$yaml"
