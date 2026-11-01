@@ -27,7 +27,7 @@ void fill(lv_obj_t *root, fw::Props p) {
   fw::find("slider")->build(root, d.as<fw::Props>());
   fx::use(lv_obj_get_child(root, 1), "grow");
   lv_obj_t *vb = fx::box(root, "free");
-  for (const char *t : {"wrap-end", "w:m-vol-label"}) fx::use(vb, t);  // the value at the box's right end
+  for (const char *t : {"wrap-end", "w:m-vol-label", "label-row"}) fx::use(vb, t);  // the value at the box's right end, the label's box tall
   fx::text(vb, p["text"] | "--", "type:label", "fg:text");
 }
 }  // namespace
