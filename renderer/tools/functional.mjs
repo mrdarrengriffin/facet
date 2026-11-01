@@ -6,7 +6,7 @@
 // reconnect. Headless on the WASM build (no browser): mount a component or the device, script a fake Home Assistant
 // (states, unavailable, disconnect / reconnect, auto-reacting to service calls), touch it (tap, hold, drag), read the
 // texts, boxes, events and sounds back.
-// Usage: node renderer/tools/functional.mjs [--den 1.5x|1x|all] [--ids a,b] [--grep text] [--png fail|all|none]
+// Usage: node renderer/tools/functional.mjs [--den 1.5x|1x|all] [--ids a,b] [--tier nightly] [--grep text] [--png fail|all|none]
 //        [--out dir] [--json file] [--soft] [-v] [--probe comp '{props}']   exit 1 = a test failed (unless --soft)
 // Results: tests/functional/out/results.json + per-test PNGs (default: failures only) in tests/functional/out/png/.
 import { readFileSync, writeFileSync, existsSync, readdirSync, mkdirSync, rmSync } from 'node:fs';
@@ -27,6 +27,7 @@ const B = JSON.parse(readFileSync(join(HERE, 'tests/behaviour/_budgets.json'), '
 const DENS = (arg('--den', 'all') === 'all' ? ['1.5x', '1x'] : [arg('--den')]).filter((d) => existsSync(join(BUILD, d, 'fw.wasm')));
 const ONLY = arg('--ids') ? arg('--ids').split(',') : null, GREP = arg('--grep'), PNG = arg('--png', 'fail');
 const VERBOSE = argv.includes('-v');
+const NIGHTLY = arg('--tier') === 'nightly';  // a suite with tier: 'nightly' runs only then (and then only those)
 
 // ---------------------------------------------------------------- fake Home Assistant
 // A store of entity states the device reads through fw_ha_put. Values the store lacks fall back to tools/demo_ha.mjs.
@@ -239,7 +240,7 @@ if (argv.includes('--probe')) {
 // ---------------------------------------------------------------- run
 const files = readdirSync(DIR).filter((f) => f.endsWith('.test.mjs')).sort();
 const suites = [];
-for (const f of files) { const s = (await import(pathToFileURL(join(DIR, f)).href)).default; if (!ONLY || ONLY.includes(s.id)) suites.push({ ...s, file: f }); }
+for (const f of files) { const s = (await import(pathToFileURL(join(DIR, f)).href)).default; if ((!ONLY || ONLY.includes(s.id)) && (s.tier === 'nightly') === NIGHTLY) suites.push({ ...s, file: f }); }
 if (PNG !== 'none') { rmSync(join(OUT, 'png'), { recursive: true, force: true }); mkdirSync(join(OUT, 'png'), { recursive: true }); }
 const t0 = performance.now(), results = [];
 for (const s of suites) for (const test of s.tests) {

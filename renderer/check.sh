@@ -4,7 +4,8 @@
 #                                 specs, themes) + the given ids' pixel contrast, screen audit, behaviour and functional
 #                                 tests at 1.5x; also regenerates catalogue/ from the build
 #   ./check.sh gate [--ids a,b]   nightly and in CI: everything at both densities, lab test, floor plans, visual
-#   ./check.sh nightly            overnight only: ASan at 1.5x (and 1x on Sundays, or with --weekly)
+#   ./check.sh nightly            overnight only: ASan at 1.5x (and 1x on Sundays, or with --weekly), the functional
+#                                 suites marked tier: 'nightly' (theme_apply)
 # One line per step (PASS / FAIL / WARN, seconds); each step's full output in $CHECK_LOG (default
 # $FW_CACHE/checks/<time>-<tier>). Functional tests are reported, never fail a tier (WARN) while the suite grows.
 # Exit 1 if any step failed. Build = $FW_OUT (env or local.env), else ./out.
@@ -33,6 +34,7 @@ for d in $dens; do [ -f "$B/$d/fw.mjs" ] || { echo "no $d build in $B: run build
 
 if [ "$tier" = nightly ]; then
   check asan-1.5x tools/asan.sh 1.5x
+  soft functional-nightly node tools/functional.mjs --tier nightly
   [ -n "$weekly" ] && check asan-1x tools/asan.sh 1x
   [ $fail = 0 ] && echo "CHECK $tier: all green (logs $LOG)" || echo "CHECK $tier: FAILED (logs $LOG)"; exit $fail
 fi

@@ -45,6 +45,8 @@ export default {
   `facet.toast` pair (returns the events). `t.setting(id)` = a device setting's value now.
 - **Rotate screen:** `t.turn(deg)` = the firmware's rotate hook (ESPHome turns the picture, LVGL stays upright);
   `t.glass([x, y])` = where a UI point shows on the glass, `t.tapGlass(px, py)` = a finger there (ESPHome's touch map).
+- **Tier:** `tier: 'nightly'` on a suite = it runs only in `check.sh nightly` (`functional.mjs --tier nightly`), never
+  in fast or gate, whatever `--ids` names (theme_apply: it walks every theme).
 - **Time:** `t.since()` = ms since the mount was built (mounts settle ~4.5 s), `t.until(ms)` = wait until then.
 - **Touch:** `t.tap(sel)`, `t.hold(sel, ms?)`, `t.drag(sel, {by: [dx, dy]} | {toX} | {from: [x, y], ...})`. Each returns
   the events + sounds it caused (after settling, HA answers included). Selectors: `'TEXT'` (exact, as drawn: labels

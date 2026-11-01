@@ -48,7 +48,8 @@ async function build(t, c, light, theme) {
 const use = (t, id) => { const r = lab(t, 'theme_use', id); if (!r.ok) throw new Error(`theme ${id} refused: ${JSON.stringify(r.errors)}`); t.b.tick(2); t.b.settle(800); return r; };
 
 export default {
-  id: 'theme_apply', family: 'foundations', about: 'Themes applied live to every contract component: Facet no-op, live = fresh, reach, refusals, break-it, golden candidates.',
+  id: 'theme_apply', family: 'foundations', tier: 'nightly',  // walks every theme (~50 s): never in fast or gate
+  about: 'Themes applied live to every contract component: Facet no-op, live = fresh, reach, refusals, break-it, golden candidates.',
   tests: [
     { name: 'S1: back to Facet after each built-in theme = the frame before it, every pixel (dark + light)', mount: M, async run(t) {
       const out = [];
