@@ -72,7 +72,7 @@ overlap, nothing escapes its region); bounds proof P2 on the Page body (`fw_test
 The inset (`layout:inset`) and gutter (`layout:gutter`) come from the `body` / `body:cards` shared styles. No
 component adds the page inset, a margin or an outer gap of its own.
 *Why:* content then scrolls the full page height and a bleed has room to reach the edge; spacing changes in one place.
-*Check:* P2 at insets 0..64 (`fx::inset`, `_release.mjs bounds(t, insets)`); `tools/lab_test.mjs` (page tokens are
+*Check:* P2 at insets 0..64 (`fx::inset`, `_release.mjs bounds(t, insets)`); the rules `lab-tokens` and `noop-update` (`tests/rules/`) (page tokens are
 "page only": a component mounted alone does not read them).
 
 **C3. Screens are trees of components only.** A screen MUST NOT build a body by hand (no `*_view` bodies, no objects
@@ -231,7 +231,7 @@ max(2 x token, 2); `stroke:pixel` (the cell of a snapped theme, C29) within 1 ..
 0 .. 16`), so an author never ships a value they did not get. A look size changes how a thing looks, never where
 anything goes.
 *Why:* corners and edges are taste; positions are usability; a silent clamp hides a change from the author.
-*Check:* `tools/lib/looks.mjs` (the one list); `fx::tune` clamp; `tools/lab_test.mjs`; `theme_parse` test "look
+*Check:* `tools/lib/looks.mjs` (the one list); `fx::tune` clamp; the rules `lab-tokens` and `noop-update` (`tests/rules/`); `theme_parse` test "look
 ranges are the one list" (every look size: the parser's range = `fx::tune`'s, hi loads, hi + 1 refused).
 
 **C20. Token relationships are enforced by generators and tests, never by convention.** Today: every spacing,
@@ -255,7 +255,7 @@ the draw callback and pointer handlers); review.
 **C23. Every token a component uses visibly changes it at run time.** Changing any size, radius, stroke or colour
 token the component reads (`fx::uses`) repaints it live, with no rebuild. A token it reads but that changes nothing
 is a bug (dead token) or must be removed.
-*Why:* a size token nobody tested did nothing when changed (L6). *Check:* P3 (`tools/lab_test.mjs` for the Card;
+*Why:* a size token nobody tested did nothing when changed (L6). *Check:* P3 (the rules `lab-tokens` and `noop-update` (`tests/rules/`) for the Card;
 **TODO** the same loop for every component).
 
 ## 7. Drawing
@@ -516,7 +516,7 @@ full bar: the Facet release gate (sections 1-10). Helpers: `tests/functional/_re
 |---|---|---|---|
 | P1 | Lint | `tools/contract_lint.mjs` (rules `width`, `theme`, `draw`, `local`) fails the checks for a component | enforced; rule gaps in section 15 |
 | P2 | Bounds | every object inside its parent's content box (bleed skipped): 720 and 480, insets 0..64, odd and wide parents, squeezed to the declared minimum; FAILS below it. `fw_test("bounds")`, `bounds(t, insets)`, `stage`, `boundsAll` | Card, Dial |
-| P3 | Live token propagation | every size / radius / stroke / colour token the component reads (`fx::uses`) changes its pixels live and back (`fw_lab` `uses`, `probe`, `tune`); every contract component lists at least one | all contract components (`tools/lab_test.mjs`, fails the checks) |
+| P3 | Live token propagation | every size / radius / stroke / colour token the component reads (`fx::uses`) changes its pixels live and back (`fw_lab` `uses`, `probe`, `tune`); every contract component lists at least one | all contract components (the rules `lab-tokens` and `noop-update` (`tests/rules/`), fails the checks) |
 | P4 | Colour + pixel | after every theme x mode x accent switch, live (`fw_test("look")`), with states set BEFORE the switch (pressed, on, released): every resolved colour equals a fresh build's and is a current token, and the RGB565 frame equals a fresh build's, every pixel (`frame565`, `diff565`); and the PIXEL contrast of every shown text / icon on what is really behind it, built and switched live (`tools/pixel_contrast.mjs`, every contract component, fails the checks) | Card, Header, Icon button, Status chip, Time (`liveLook`); TODO all |
 | P5 | Hit areas | no overlapping clickable areas (`fw_lab(id, "proof")` -> `overlap`); targets >= `touch:min` | Card; TODO size check |
 | P6 | Text fit | no text cut except by its rule (`proof` -> `trunc`) with `fixtures` | Card |
@@ -675,7 +675,7 @@ Ways to follow the letter and still ship something broken. Each is a violation o
 12. **Fixed sizes hidden in the core.** A component can pass lint while the core helper it calls (a chart, the toast
     stack, the bottom sheet) places or draws it at compiled sizes, so no theme or tune ever moves it. Closed by the
     contract lint's core sections (`tools/contract_lint.mjs` CORE: sizes there are `fx::size` reads, re-placed on
-    LV_EVENT_STYLE_CHANGED) and by `tools/lab_test.mjs` (every visible size is listed, and a no-op update leaves every
+    LV_EVENT_STYLE_CHANGED) and by the rules `lab-tokens` and `noop-update` (`tests/rules/`) (every visible size is listed, and a no-op update leaves every
     object in place).
 13. **A partial redraw smaller than what the theme draws.** A moving part (a knob) that repaints only its own nominal
     size leaves the theme's halo, edges or snapped cells behind as ghosts on the glass (a full-screen screenshot
@@ -722,7 +722,7 @@ Rules whose check is TODO (each is a gate item; until it exists, review checks t
 | `core/fx_core.cpp` | shared token styles per display, structure and derived styles, the Pen, `fx::page`, `fx::tune` |
 | `tools/gen_fx.mjs` | tokens -> `fx_gen.h` (colours, state roles, sizes with look ranges, type) |
 | `tools/contract_lint.mjs` | the lint (P1), run by `check.sh` |
-| `tools/lab_test.mjs` | live token propagation (P3), run by `check.sh gate` |
+| `tests/rules/lab_tokens.mjs`, `tests/rules/noop_update.mjs` | live token propagation (P3), run by `check.sh gate` |
 | `core/test_hooks.cpp` | `fw_test`: `look`, `inset`, `bounds`, `stack`, `scrolls` |
 | `core/main.cpp` | `fw_lab`: `tokens`, `tune`, `uses`, `probe`, `proof`, `theme_*` (`core/theme_lab.cpp`) |
 | `tests/functional/theme_apply.test.mjs` | the apply path per theme: Facet no-op, live = fresh, reach, refusals, break-it, golden candidates |

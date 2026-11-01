@@ -58,7 +58,7 @@ else
   sel=(); [ -n "$ids" ] && sel=(--ids "$ids")
   for d in $dens; do
     check "pixel-contrast-$d" node tools/functional.mjs --rules --rule pixel-contrast --den "$d" --theme all "${sel[@]}"
-    check "lab-test-$d" node tools/lab_test.mjs --den "$d" --build "$B"
+    check "lab-$d" node tools/functional.mjs --rules --rule lab-tokens,noop-update --den "$d"
   done
   check floorplan node tools/floorplan_test.mjs --build "$B"
   scr=(); [ -n "$ids" ] && scr=(--screen "$ids")
