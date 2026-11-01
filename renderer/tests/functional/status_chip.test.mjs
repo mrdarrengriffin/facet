@@ -40,7 +40,7 @@ export default {
     } },
     { name: 'leak: 150 build / clear cycles (pulse on): objects back, heap flat, no animation left', async run(t) {
       await at(t, {});
-      t.eq(leak(t, 150, () => t.b.rebuild('status_chip', { tone: 'working', text: '3 working', pulse: true }), () => t.b.rebuild('placeholder', {}), 48 * 1024), [], 'leak');
+      t.eq(leak(t, 150, () => t.b.rebuild('status_chip', { tone: 'working', text: '3 working', pulse: true }), () => t.b.rebuild('title', { text: 'map' }), 48 * 1024), [], 'leak');
     } },
   ],
 };

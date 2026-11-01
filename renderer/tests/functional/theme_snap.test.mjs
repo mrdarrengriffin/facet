@@ -18,7 +18,7 @@ import { frame565 } from './_release.mjs';
 const THEMES = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'themes');
 
 const lab = (t, c, a = '') => JSON.parse(t.b.str(c, (pc) => t.b.str(typeof a === 'string' ? a : JSON.stringify(a), (pa) => t.b.m.UTF8ToString(t.b.m._fw_lab(c.startsWith('pen_') ? t.b.stage : -1, pc, pa)))) || '{}');
-const M = ['placeholder', { name: 'Snap' }];
+const M = ['title', { text: 'map' }];
 const use = (t, id) => { lab(t, 'theme_use', id); t.b.tick(2); t.b.settle(300); };
 const to565 = (hex) => { const v = parseInt(hex.slice(1), 16); return (((v >> 16) & 255) >> 3) << 11 | (((v >> 8) & 255) >> 2) << 5 | ((v & 255) >> 3); };
 const SIZE = (t) => (t.b.S > 600 ? 300 : 200);

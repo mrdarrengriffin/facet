@@ -104,7 +104,7 @@ export default {
     } },
     { name: 'leak: 150 build / clear cycles: objects back, heap flat', async run(t) {
       await at(t, { style: 'play', icon: 'play' }, 160);
-      t.eq(leak(t, 150, () => t.b.rebuild('icon_button', { style: 'play', icon: 'play', state: 'active' }), () => t.b.rebuild('placeholder', {}), 48 * 1024), [], 'leak');
+      t.eq(leak(t, 150, () => t.b.rebuild('icon_button', { style: 'play', icon: 'play', state: 'active' }), () => t.b.rebuild('title', { text: 'map' }), 48 * 1024), [], 'leak');
     } },
   ],
 };

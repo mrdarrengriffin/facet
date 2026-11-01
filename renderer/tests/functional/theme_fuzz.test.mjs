@@ -56,14 +56,14 @@ function run(t, n, seed, { partial = false } = {}) {
 export default {
   id: 'theme_fuzz', family: 'themes', about: 'Seeded mutations of the built-in themes through the WASM parser: refused whole or loaded whole, never a partial apply.',
   tests: [
-    { name: '10k seeded mutations: a Skin xor errors, the live theme unchanged by every refusal', mount: ['placeholder', { name: 'Fuzz' }], run(t) {
+    { name: '10k seeded mutations: a Skin xor errors, the live theme unchanged by every refusal', mount: ['title', { text: 'map' }], run(t) {
       const o = run(t, 10000, 20261027);
       t.log.push(`10000 cases: ${o.ok} accepted, ${o.refused} refused`);
       t.eq(o.bad.slice(0, 3), [], `no broken invariant (${o.bad.length})`);
       t.eq(o.changed, 0, 'no refusal changed the live theme');
       t.ok(o.ok > 50 && o.refused > 5000, `both outcomes exercised (${o.ok} accepted, ${o.refused} refused)`);
     } },
-    { name: 'break-it: with a partial apply injected, the same fuzz sees the live theme change', mount: ['placeholder', { name: 'Fuzz' }], run(t) {
+    { name: 'break-it: with a partial apply injected, the same fuzz sees the live theme change', mount: ['title', { text: 'map' }], run(t) {
       const o = run(t, 300, 7, { partial: true });
       t.ok(o.changed > 0, `the live-path check goes red under the fault (${o.changed} of ${o.refused} refusals changed the live theme)`);
     } },

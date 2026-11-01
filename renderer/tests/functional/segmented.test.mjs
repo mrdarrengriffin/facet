@@ -19,7 +19,7 @@ async function centring(t) {
   const cases = m.variants.filter((v) => v.props.state !== 'unavailable').map((v) => ({ id: 'segmented', label: v.label, props: v.props, W: Math.round(m.frame[0] * Dn), H: Math.round(m.frame[1] * Dn) }));
   cases.push({ id: 'header', label: 'header title slot', props: { label: 'Vacuum', sample: 'title-segmented' }, W: t.b.S, H: Math.round(96 * Dn) });
   for (const th of THEMES) for (const c of cases) {
-    t.b.W = t.b.H = undefined; await t.b.render('placeholder', { name: 'Theme' }, 0);
+    t.b.W = t.b.H = undefined; await t.b.render('title', { text: 'map' }, 0);
     const r = fwlab(t, 'theme_use', th); if (!r.ok) { out.push(`theme ${th} refused`); continue; }
     t.b.tick(2); t.b.settle(800); t.b.rebuild(c.id, c.props, 0); stage(t, c.W, c.H); t.b.settle(1500);
     const W = t.b.W || t.b.S, objs = t.objs(), items = JSON.parse(fwt(t, 'inks') || '[]').filter((k) => k.k === 'text' && k.c === 'segmented');

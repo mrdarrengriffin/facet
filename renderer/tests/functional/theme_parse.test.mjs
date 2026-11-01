@@ -15,7 +15,7 @@ const theme = (id) => readFileSync(join(R, 'themes', `${id}.json`), 'utf8');
 const lab = (t, c, a = '') => JSON.parse(t.b.str(c, (pc) => t.b.str(a, (pa) => t.b.m.UTF8ToString(t.b.m._fw_lab(-1, pc, pa)))));
 const J = (o) => (typeof o === 'string' ? o : JSON.stringify(o));
 const T0 = { schema: 1, id: 'test' };
-const M = ['placeholder', { name: 'Theme' }];  // any mount: the module the tests talk to
+const M = ['title', { text: 'map' }];  // any mount: the module the tests talk to
 // a refusal: ok false, an error at `path` whose message matches `msg`, and the live theme unchanged by an apply
 function refused(t, src, path, msg, what = path) {
   const before = lab(t, 'theme_live'), r = lab(t, 'theme_load', J(src));

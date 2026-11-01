@@ -157,7 +157,7 @@ export default {
     } },
     { name: 'leak: 100 build / clear cycles: objects back, heap flat', async run(t) {
       await at(t, { ...CARDS, cells: 'c,p,c' });
-      t.eq(leak(t, 100, () => t.b.rebuild('cells', { ...CARDS, cells: 'c,p,c' }), () => t.b.rebuild('placeholder', {}), 64 * 1024), [], 'leak');
+      t.eq(leak(t, 100, () => t.b.rebuild('cells', { ...CARDS, cells: 'c,p,c' }), () => t.b.rebuild('title', { text: 'map' }), 64 * 1024), [], 'leak');
     } },
     // ---------------------------------------------------------------- 10 product: Home
     { name: 'Home: tiles three to a row, cards two-up, two readouts share a cell, a lone last card and a wide card full width', async run(t) {

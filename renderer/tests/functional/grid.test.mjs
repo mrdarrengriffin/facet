@@ -181,7 +181,7 @@ export default {
     } },
     { name: 'leak: 100 build / clear cycles and 100 item updates: objects back, heap flat', async run(t) {
       await at(t, { cols: 4, items: ITEMS });
-      t.eq(leak(t, 100, () => t.b.rebuild('grid', { cols: 4, rows: 1, items: ITEMS }), () => t.b.rebuild('placeholder', {}), 64 * 1024), [], 'leak (build)');
+      t.eq(leak(t, 100, () => t.b.rebuild('grid', { cols: 4, rows: 1, items: ITEMS }), () => t.b.rebuild('title', { text: 'map' }), 64 * 1024), [], 'leak (build)');
       await at(t, { cols: 4, items: ITEMS });
       t.eq(leak(t, 100, () => t.b.update('grid', { cols: 4, items: 'bulb,power,timer' }), () => t.b.update('grid', { cols: 4, items: ITEMS }), 64 * 1024), [], 'leak (updates)');
     } },

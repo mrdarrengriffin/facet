@@ -189,7 +189,7 @@ export default {
     } },
     { name: 'leak: 150 build / clear cycles: objects back, heap flat', async run(t) {
       await full(t, {});
-      t.eq(leak(t, 150, () => t.b.rebuild('card', { ...P, accent: true, preview: 'partly-day' }), () => t.b.rebuild('placeholder', {}), 48 * 1024), [], 'leak');
+      t.eq(leak(t, 150, () => t.b.rebuild('card', { ...P, accent: true, preview: 'partly-day' }), () => t.b.rebuild('title', { text: 'map' }), 48 * 1024), [], 'leak');
     } },
     { name: 'perf: a press repaints only the card (no full redraw), within its area', async run(t) {
       const c = await full(t, { preview: 'partly-day' });

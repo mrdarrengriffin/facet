@@ -20,7 +20,7 @@ const still = (c) => (LIVE.has(c.id) ? Object.fromEntries((c.meta.props || []).f
 const lab = (t, c, a = '') => JSON.parse(t.b.str(c, (pc) => t.b.str(a, (pa) => t.b.m.UTF8ToString(t.b.m._fw_lab(-1, pc, pa)))));
 const THEMES = ['blockcraft', 'phosphor', 'win98'];
 const E = 'light.test_lamp', LAMP = { '': 'on', brightness: '179', friendly_name: 'Desk lamp', supported_color_modes: '["brightness"]' };
-const M = ['placeholder', { name: 'Theme' }];  // any mount: the module the tests talk to
+const M = ['title', { text: 'map' }];  // any mount: the module the tests talk to
 const den = (t) => (t.b.S > 600 ? '1.5x' : '1x');
 // every contract component (catalogue meta "contract": 2) with its first two variants, plus the Light screen
 function cases(t) {
@@ -39,7 +39,7 @@ function cases(t) {
 async function build(t, c, light, theme) {
   t.b.W = t.b.H = undefined;
   if (c.screen) t.ha.s[E] = { ...LAMP };
-  await t.b.render('placeholder', { name: 'Theme' }, light);
+  await t.b.render('title', { text: 'map' }, light);
   use(t, theme);
   t.b.rebuild(c.id, c.props, light);
   stage(t, c.W, c.H); t.b.settle(1500);

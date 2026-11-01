@@ -4532,44 +4532,6 @@
     "bytes_est": 1280
    }
   },
-  "placeholder": {
-   "name": "Placeholder",
-   "update": true,
-   "props": [
-    {
-     "name": "label",
-     "type": "text",
-     "bindable": true,
-     "about": "The name of the part that is not built yet."
-    },
-    {
-     "name": "note",
-     "type": "text",
-     "bindable": true,
-     "about": "One line saying what is coming."
-    },
-    {
-     "name": "height",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "card",
-      "tile",
-      "row"
-     ],
-     "about": "How tall the outline is, matching the part it stands in for: a card, a tile or a row."
-    }
-   ],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 3,
-    "bytes_est": 480
-   }
-  },
   "plant_gauge": {
    "name": "Plant gauge",
    "update": true,
@@ -7901,5 +7863,5 @@
    }
   }
  },
- "hash": "237682d5"
+ "hash": "d0f37c89"
 }

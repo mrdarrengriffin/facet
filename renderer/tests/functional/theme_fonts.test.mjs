@@ -18,7 +18,7 @@ import { frame565, diff565, seeded } from './_release.mjs';
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PS2P = readFileSync(join(HERE, '..', 'fixtures', 'fonts', 'PressStart2P.ttf'));
 const lab = (t, c, a = '') => JSON.parse(t.b.str(c, (pc) => t.b.str(typeof a === 'string' ? a : JSON.stringify(a), (pa) => t.b.m.UTF8ToString(t.b.m._fw_lab(-1, pc, pa)))) || '{}');
-const M = ['placeholder', { name: 'Theme fonts' }];
+const M = ['title', { text: 'map' }];
 const U = 'https://fonts.example.org/PressStart2P.ttf';
 const DL = (url = U, extra = {}) => { const f = { family: 'press-start-2p', source: 'download', url, fallback: true, ...extra }; return { schema: 1, id: 'dl-test', font: { body: f, display: f, label: f, mono: f } }; };
 const apply = (t, th) => { const r = lab(t, 'theme_apply', th); if (!r.ok) throw new Error(JSON.stringify(r.errors)); t.b.tick(2); t.b.settle(200); return r; };
@@ -28,7 +28,7 @@ const st = (t) => lab(t, 'font_status');
 const wait = (t, ms) => { const end = t.b.t + ms; while (t.b.t < end) t.b.tick(); t.b.settle(300); };  // sim time (settle stops when calm)
 const sim = (t) => { lab(t, 'theme_use', ''); lab(t, 'font_sim'); t.b.tick(2); };  // Facet first: a live download theme would ask again
 const serve = (t, url, body, o = {}) => lab(t, 'font_serve', { url, status: 200, delay: 1000, b64: body ? Buffer.from(body).toString('base64') : '', ...o });
-const fresh = (t) => { t.b.rebuild('placeholder', { name: 'Theme fonts' }, 0); t.b.settle(300); return frame565(t); };
+const fresh = (t) => { t.b.rebuild('title', { text: 'map' }, 0); t.b.settle(300); return frame565(t); };
 // every type style a contract component names (tools/gen_fonts.py builds theme fonts for exactly these)
 const STYLES = ['display', 'hero', 'value', 'headline', 'title', 'body', 'label', 'c-label', 'c-meta', 'c-caps-sm', 'clock-mid', 'clock-ampm', 'clock-seconds'];
 const den = (t) => (t.b.S > 600 ? 0 : 1);

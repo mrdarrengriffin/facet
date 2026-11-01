@@ -11,6 +11,10 @@
     "docs": true, "status": "done", "firmware": true,
     "about": "Every component and foundation not listed under a feature below: the parts people (and custom specs) build screens with, so a finished one ships even when no shipped screen uses it."
   },
+  "later": {
+    "about": "Features held on the wip branch until they are finished (spec of contract parts, feed on the skeleton, gate green); the docs roadmap shows their rows as in progress.",
+    "roadmap": ["Placeholder"]
+  },
   "features": [
     {
       "id": "system",
@@ -83,13 +87,6 @@
       "docs": true, "status": "done", "firmware": true,
       "screens": ["energy"],
       "components": []
-    },
-    {
-      "id": "wip_parts",
-      "label": "Status parts (in progress)",
-      "docs": false, "status": "wip", "firmware": false,
-      "components": ["placeholder"],
-      "roadmap": ["Placeholder"]
     },
     {
       "id": "retired",

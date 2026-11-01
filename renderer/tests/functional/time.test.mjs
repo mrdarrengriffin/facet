@@ -39,7 +39,7 @@ export default {
     } },
     { name: 'leak: 150 build / clear cycles: objects back, heap flat, the clock timer freed', async run(t) {
       await at(t, {});
-      t.eq(leak(t, 150, () => t.b.rebuild('time', { size: 'hero', seconds: true, format: '12h', time: '' }), () => t.b.rebuild('placeholder', {}), 48 * 1024), [], 'leak');
+      t.eq(leak(t, 150, () => t.b.rebuild('time', { size: 'hero', seconds: true, format: '12h', time: '' }), () => t.b.rebuild('title', { text: 'map' }), 48 * 1024), [], 'leak');
     } },
   ],
 };
