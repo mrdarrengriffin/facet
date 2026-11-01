@@ -175,7 +175,7 @@ FW_COMPONENT(image, "Image", "components", R"({
   "frame": [240, 200],
   "icons": ["image@icon", "image@glyph", "image@feature", "image@card"],
   "props": [
-    {"name": "src", "about": "The picture's web address (http or https). Bind it to an entity's state or attribute to follow it; in a grid's item cell, $item.field takes it from each item.", "type": "text", "default": "https://mrdarrengriffin.github.io/facet-docs/demo/images/hills.png"},
+    {"name": "src", "about": "The picture's web address (http or https). Bind it to an entity's state or attribute to follow it; in a grid's item cell, $item.field takes it from each item.", "type": "text", "default": "https://mrdarrengriffin.github.io/facet/demo/images/hills.png"},
     {"name": "step", "about": "How wide the picture is, as a size step from icon up to hero, or content for the full content width. Leave it out when fit is cell.", "type": "select", "options": ["icon", "glyph", "detail", "feature", "card", "hero", "content"], "default": "card"},
     {"name": "fit", "about": "step: the size comes from step and aspect. cell: inside a grid cell or a layout slot, the picture fills the cell. Use step or cell, not both.", "type": "select", "options": ["step", "cell"], "default": "step"},
     {"name": "aspect", "about": "The box shape with step: 1:1, 4:3, 3:2 or 16:9 (width to height).", "type": "select", "options": ["1:1", "4:3", "3:2", "16:9"], "default": "1:1"},
@@ -187,12 +187,12 @@ FW_COMPONENT(image, "Image", "components", R"({
     {"name": "refresh", "about": "Fetch the picture again every 1, 5 or 15 minutes or every hour (for a camera still or a chart); off loads it once. If a refresh fails, the last picture stays.", "type": "select", "options": ["off", "1m", "5m", "15m", "1h"], "default": "off"}
   ],
   "variants": [
-    {"label": "card · 4:3 · cover", "props": {"src": "https://mrdarrengriffin.github.io/facet-docs/demo/images/hills.png", "step": "card", "aspect": "4:3"}},
-    {"label": "hero · 16:9 · contain", "props": {"src": "https://mrdarrengriffin.github.io/facet-docs/demo/images/hills.png", "step": "hero", "aspect": "16:9", "scale": "contain", "radius": "button"}},
-    {"label": "pixel art · hero", "props": {"src": "https://mrdarrengriffin.github.io/facet-docs/demo/images/sprite.png", "step": "hero", "scale": "pixel"}},
-    {"label": "pixel art · contain · nearest", "props": {"src": "https://mrdarrengriffin.github.io/facet-docs/demo/images/sprite.png", "step": "hero", "aspect": "4:3", "scale": "contain", "sampling": "nearest"}},
-    {"label": "round · card", "props": {"src": "https://mrdarrengriffin.github.io/facet-docs/demo/images/avatar.png", "step": "card", "radius": "round"}},
-    {"label": "failed · fallback + alt", "props": {"src": "https://mrdarrengriffin.github.io/facet-docs/demo/images/missing.png", "step": "hero", "aspect": "4:3", "fallback": "house", "alt": "Front garden"}},
+    {"label": "card · 4:3 · cover", "props": {"src": "https://mrdarrengriffin.github.io/facet/demo/images/hills.png", "step": "card", "aspect": "4:3"}},
+    {"label": "hero · 16:9 · contain", "props": {"src": "https://mrdarrengriffin.github.io/facet/demo/images/hills.png", "step": "hero", "aspect": "16:9", "scale": "contain", "radius": "button"}},
+    {"label": "pixel art · hero", "props": {"src": "https://mrdarrengriffin.github.io/facet/demo/images/sprite.png", "step": "hero", "scale": "pixel"}},
+    {"label": "pixel art · contain · nearest", "props": {"src": "https://mrdarrengriffin.github.io/facet/demo/images/sprite.png", "step": "hero", "aspect": "4:3", "scale": "contain", "sampling": "nearest"}},
+    {"label": "round · card", "props": {"src": "https://mrdarrengriffin.github.io/facet/demo/images/avatar.png", "step": "card", "radius": "round"}},
+    {"label": "failed · fallback + alt", "props": {"src": "https://mrdarrengriffin.github.io/facet/demo/images/missing.png", "step": "hero", "aspect": "4:3", "fallback": "house", "alt": "Front garden"}},
     {"label": "no src · picture icon", "props": {"src": "", "step": "card"}}
   ]
 })") {
