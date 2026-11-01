@@ -12,10 +12,10 @@ const refsFile = join(HERE, 'tests/references.json');
 const REFS = existsSync(refsFile) ? JSON.parse(readFileSync(refsFile, 'utf8')).refs : [];
 const refDir = join(HERE, 'tests/ref');
 async function capture() {
-  const { chromium } = await import('/home/claude/claude-assistant/apps/hub/node_modules/playwright/index.mjs');
+  const { chromium } = await import('playwright');  // tools/package.json devDependencies
   const DOCS = process.env.FW_DOCS_URL || 'http://127.0.0.1:4399/facet';
   mkdirSync(refDir, { recursive: true });
-  const b = await chromium.launch({ executablePath: '/usr/bin/chromium' });
+  const b = await chromium.launch(existsSync('/usr/bin/chromium') ? { executablePath: '/usr/bin/chromium' } : {});  // else Playwright's (npx playwright install chromium)
   const p = await b.newPage({ viewport: { width: 1600, height: 1200 } });
   const items = [...new Set(REFS.filter((r) => r.astro.item).map((r) => r.astro.item))];
   for (const item of items) {

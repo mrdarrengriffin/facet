@@ -1,8 +1,11 @@
 {
   "private": true,
-  "description": "Build tools of the Facet renderer (tools/gen_icons.mjs rasterises the icon masters with resvg).",
+  "description": "Build tools of the Facet renderer (tools/gen_icons.mjs rasterises the icon masters with resvg; tools/ref_capture.mjs drives Playwright).",
   "type": "module",
   "dependencies": {
     "@resvg/resvg-js": "2.6.2"
+  },
+  "devDependencies": {
+    "playwright": "1.64.1"
   }
 }

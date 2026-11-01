@@ -6,5 +6,6 @@ out/
 # the font rasteriser's Python (renderer/tools/venv.sh)
 .venv/
 .venv.lock
+__pycache__/
 node_modules/
 *.swp
