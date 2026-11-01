@@ -1,4 +1,4 @@
-// Shared WASM bench (tools/behaviour.mjs, tools/functional.mjs): one fw.mjs/fw.wasm module per (build, density),
+// Shared WASM bench (tests/rules/behaviour.mjs, tools/functional.mjs): one fw.mjs/fw.wasm module per (build, density),
 // a fresh instance per render (no state leaks), LVGL time in fixed 16 ms ticks, touch gestures, events, HA puts,
 // the audit tree (fw_audit: every object's box, text, clickable, parent) and the frame (fw_frame) for PNGs.
 import { readFileSync } from 'node:fs';

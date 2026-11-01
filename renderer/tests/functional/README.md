@@ -1,7 +1,7 @@
 # Functional tests
 
 Hand-written end-to-end tests per component and screen: does it DO what it should, read back from what it renders.
-`tools/behaviour.mjs` sweeps every id for generic rules (one sound per tap, disabled fires nothing, scroll limits, lag);
+The `behaviour` rule (`tests/rules/behaviour.mjs`) sweeps every id for generic rules (one sound per tap, disabled fires nothing, scroll limits);
 these check each component's own job: a slider clamps at max, a light card's state line follows Home Assistant after
 a toggle, a sensor value comes back after a reconnect. Headless on the WASM build (Node, no browser), ~1 s for the lot.
 

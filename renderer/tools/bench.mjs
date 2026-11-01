@@ -4,6 +4,7 @@
 // per device (bench/budgets.json). Suite = bench/suite.json. README "Bench".
 //   node tools/bench.mjs [--device guition|waveshare|all] [--case <id|prefix|tag:x>,...] [--scenario idle|animate|drag|navigate]
 //                        [--props '<json>' merged into every case, e.g. {"fades":true}] [--out results.json] [--build <dir with 1x/ 1.5x/>] [--list] [--quiet]
+//   node tools/bench.mjs --lag [--case <id>,...] [--out lag.json] [--quiet]   the lag proxy (nightly tier; below)
 // Output JSON: {v, at, build{}, devices{<id>: {fit{a, b}, anchors[]}}, results[{case, comp, scenario, device, live, wasm{}, est{}, mem{}, host{}, over[]}]}
 // Times are virtual (fixed 16 ms ticks = LV_DEF_REFR_PERIOD), so redraws are deterministic; ms are host CPU (Node,
 // TurboFan only: the script re-runs itself with --no-liftoff). est = a + b x WASM ms per device, fitted per run on
@@ -261,6 +262,36 @@ function fitLine(p) {
 const first = await load(budgets.devices[devIds[0]].density);
 meta = JSON.parse(first.UTF8ToString(first._fw_meta()));
 const all = cases();
+// ---------------------------------------------------------------- lag (--lag, the nightly tier): the behaviour cases
+// (tests/rules/behaviour.mjs) at 1x, their frames judged as a PROXY for the Guition: refreshes past LVGL's 32 dirty
+// areas, runs of near-full-screen frames, estimated Guition frame ms, redraws while idle or after an update that
+// changed nothing (tests/behaviour/_budgets.json "lag", expected fails in tests/behaviour/<id>.json). Lines as
+// "FAIL <id> [1x] lag:<test>:<variant>: <why>"; --out: every result as JSON. Exit 1 on a failure not expected.
+if (flag('--lag')) {
+  const L = await import(pathToFileURL(join(HERE, 'tests/rules/behaviour.mjs')).href);
+  const { instance, setBuild } = await import('./lib/fwbench.mjs');
+  setBuild(BUILD); L.setKinds(['lag']);
+  const rs = [];
+  for (const c of meta.map((c) => ({ ...c, meta: typeof c.meta === 'string' ? JSON.parse(c.meta) : c.meta || {} }))) {
+    if (!['components', 'screens'].includes(c.section) || L.B.skip.includes(c.id) || (arg('--case') && !arg('--case').split(',').includes(c.id))) continue;
+    const vs = [{ label: 'default', props: {} }, ...(c.meta.variants || [])];
+    try {  // the automatic cases at 1x, then the id's own lag tests at each density (tests/behaviour/<id>.json)
+      const s = L.open(c, '1x', await instance('1x', BUILD));
+      for (const i of L.picks(c)) await L.variant(s, vs[i]);
+      await L.close(s); await L.close(L.open(c, '1.5x', await instance('1.5x', BUILD)));
+    }
+    catch (e) { rs.push({ id: c.id, den: '1x', kind: 'lag', key: 'lag:crash:default', ok: false, msgs: [`runner-crash: ${String((e && e.message) || e).slice(0, 200)}`] }); }
+    rs.push(...L.take());
+  }
+  for (const r of rs) { const x = L.xfailOf(r); if (x) r.xfail = x; }
+  const fails = rs.filter((r) => !r.ok && !r.xfail), warned = rs.filter((r) => r.warns);
+  for (const r of fails) for (const msg of r.msgs.slice(0, 3)) console.log(`FAIL ${r.id} [${r.den}] ${r.key}: ${msg}`);
+  for (const r of warned) log(`WARN ${r.id} [${r.den}] ${r.key}: ${r.warns[0]}`);
+  for (const r of rs.filter((r) => r.ok && r.xfail)) console.log(`XPASS ${r.id} [${r.den}] ${r.key} (${r.xfail}): passes now, remove it from tests/behaviour/${r.id}.json xfail`);
+  if (arg('--out')) writeFileSync(arg('--out'), JSON.stringify({ at: new Date().toISOString(), build: BUILD, results: rs }, null, 1));
+  console.log(`lag: ${rs.length} tests, ${rs.filter((r) => r.ok && !r.xfail).length} pass, ${rs.filter((r) => !r.ok && r.xfail).length} expected-fail, ${fails.length} FAIL, ${warned.length} near a timing budget`);
+  process.exit(fails.length ? 1 : 0);
+}
 if (flag('--list')) {
   if (flag('--json')) { process.stdout.write(JSON.stringify({ timing: T, cases: [...all, ...suite.anchors], panel_skip: suite.panel_skip || {}, devices: Object.fromEntries(Object.entries(budgets.devices).map(([k, d]) => [k, { name: d.name, w: d.w, h: d.h, density: d.density }])) })); process.exit(0); }
   for (const c of [...all, ...suite.anchors]) console.log(c.id, c.scenarios.join(','));

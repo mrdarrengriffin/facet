@@ -1,5 +1,5 @@
 {
-  "$comment": "Behaviour test settings + lag budgets (tools/behaviour.mjs, README 'Behaviour tests'). The lag numbers are a PROXY for the Guition (1x, the weakest panel): real fps needs the device (tools/bench.mjs --panel).",
+  "$comment": "Behaviour test settings + lag budgets (tests/rules/behaviour.mjs, lag: tools/bench.mjs --lag; README 'Behaviour tests'). The lag numbers are a PROXY for the Guition (1x, the weakest panel): real fps needs the device (tools/bench.mjs --panel).",
   "long_press_ms": 800,
   "drag_px_per_tick": 8,
   "cancel_px": 48,

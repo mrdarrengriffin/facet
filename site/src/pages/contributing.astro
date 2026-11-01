@@ -117,7 +117,7 @@ node renderer/watch.mjs      # rebuild on save while you work`} />
 renderer/build.sh && renderer/check.sh gate     # both builds, then every check: 4 px grid, clipping, symmetry, motion
 node renderer/tools/contrast.mjs --summary  # every colour pair, dark and light: 0 failures
 node renderer/tools/functional.mjs --rules --rule spec-store  # screen specs
-node renderer/tools/behaviour.mjs           # taps, drags, scrolling, sounds, updates
+node renderer/tools/functional.mjs --rules --rule behaviour  # taps, drags, scrolling, sounds, updates
 node renderer/tools/functional.mjs --rules --rule visual --den 1.5x  # what is drawn: blank, one colour, motion, Astro references
 renderer/tools/asan.sh                      # memory errors`} />
   <p>

@@ -806,16 +806,18 @@ core/spec.h has the format.
 
 ## Behaviour tests
 
-The audits check how things look; `renderer/tools/behaviour.mjs` checks that they work. Every component and screen is
+The audits check how things look; the `behaviour` rule (`renderer/tests/rules/behaviour.mjs`) checks that they work. Every component and screen is
 built headless on the WASM build (a fresh module per gesture, so nothing leaks between tests) and driven through LVGL
 input with time advanced in fixed 16 ms ticks: tap, long press (800 ms), press-slide-off-release, drag. It asserts on
 what reaches the host (`fw_events`: actions, `navigate` / `back`, HA calls `ha`, `setting`), sounds, scroll position and
 limits, the device screen stack, the update path and HA values. Hooks it needs that the workbench has no call for live in
-`core/test_hooks.cpp` (`fw_test("stack" | "setting" | "scrolls")`, WASM only). Runs in `facet-gate full` (`behaviour`
-step; `--ids` limits it; `fast --ids` runs the 1.5x interaction / scroll / sound part). About a minute for everything.
+`core/test_hooks.cpp` (`fw_test("stack" | "setting" | "scrolls")`, WASM only). A rule on the runner: in `check.sh gate`
+(its own `rules-behaviour` step, both densities) and `check.sh fast --ids` (1.5x, those ids). The lag kind runs in
+`check.sh nightly` (`bench.mjs --lag`: host CPU timing, so alone).
 
 ```
-node renderer/tools/behaviour.mjs [--den 1x|1.5x] [--ids a,b] [--kind interaction,scroll,sound,lag] [--verbose] [--json out.json]
+node renderer/tools/functional.mjs --rules --rule behaviour [--den 1x|1.5x] [--ids a,b] [--fresh]
+node renderer/tools/bench.mjs --lag [--case a,b] [--out lag.json]        # the lag kind, 1x
 ```
 
 | Kind | Automatic, for every id x variant | Fails when |
@@ -850,7 +852,7 @@ list, ticks aside), `ticks_min`, `silent`, `stack`, `exists` / `absent` (a selec
 
 **Expected fails.** A known failure is listed in the id's `xfail` (key `kind:test:variant`, `*` allowed) with its finding
 id; the gate stays green on them and prints `XPASS` when one passes again (then delete the line). Findings registry:
-`tests/behaviour/_findings.json` (`--write-xfail` adds today's new failures as findings: bootstrap / after a review only).
+`tests/behaviour/_findings.json` (by hand, after a findings review).
 
 **A new component or screen ships with its file:** its automatic tests pass (or its known fails are listed with a
 finding), plus a custom test for each thing it does (the action and value a tap or drag sends, the sound, what it does

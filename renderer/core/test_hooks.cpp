@@ -1,4 +1,4 @@
-// Behaviour test hooks (tools/behaviour.mjs, README "Behaviour tests"): what the headless behaviour runner reads or
+// Behaviour test hooks (tests/rules/behaviour.mjs, README "Behaviour tests"): what the headless behaviour runner reads or
 // sets that the workbench API has no call for. WASM + native test builds only: not in the panel bundle
 // (firmware/bundle.mjs lists its core files). Reads the default display (fw_render makes the stage it builds on the
 // default; the runner keeps one stage per module instance).

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Functional tests (tests/functional/README.md): end-to-end checks that each component and screen DOES what it should,
-// read back from what it renders. Behaviour tests (tools/behaviour.mjs) sweep every id for generic rules (one sound
+// read back from what it renders. Behaviour tests (tests/rules/behaviour.mjs) sweep every id for generic rules (one sound
 // per tap, disabled fires nothing, scroll limits, lag); these are written by hand per component: a slider clamps at
 // max, a light tile's state line follows the live HA state after a toggle, a sensor readout comes back after a
 // reconnect. Headless on the WASM build (no browser): mount a component or the device, script a fake Home Assistant

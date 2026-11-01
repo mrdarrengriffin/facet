@@ -8,14 +8,14 @@
 //                      leaves in the module, an unclipped display or a live look switch, reaches no other rule),
 //                    cache: true (its results per component are kept while the component's inputs are unchanged),
 //                    dens: ['1.5x'] (only those densities; default every density of the run),
-//                    run(x, r), finish({ build, dens }) (optional, once after the whole run: a report of its own) }
+//                    run(x, r) (may be async), finish({ build, dens }) (optional, once after the whole run: a report of its own) }
 // x = the mount: { m, st, W, H, den, D, theme, c (meta entry), v (variant), vi (its index), light, tick, settle,
 //   test(cmd, a), frame565() }; for an ownStage rule only { m, den, theme, c, v, vi, light }.
 // r = the report: r.check(ok, line), r.legacy(line), r.note(line). A rule never builds its own module or loops itself.
 // A startup check (no component loop) has once(x, r) instead of wants / run: x = { m (a fresh module), den, build },
 // run once per density in its dens (default every density of the run).
 // Cache ($FW_CACHE/rules-<den>.json): per cached rule, theme and component, the results and the component's input hash
-// (core + the charts library, tokens, specs, the rules and this runner, the component's file and the files of the
+// (core + the charts library, tokens, specs, the rules, the behaviour tests and this runner, the component's file and the files of the
 // components it builds with fw::find or names in a "// audit deps: a, b" comment); a component whose hash is unchanged
 // is replayed, not mounted. In the fast tier every component rule is cached (fast = the changed components only).
 // fresh = ignore it.
@@ -35,7 +35,7 @@ const read = (f) => readFileSync(join(HERE, f));
 let hashOf = null;
 function compHash(id) {
   if (!hashOf) {
-    const coreHash = sha(Buffer.concat([...ls('core', '.h'), ...ls('core', '.cpp'), 'foundations/chart.cpp', ...ls('tokens', '.json'), ...ls('tests/rules', '.mjs'), 'tools/lib/rules.mjs'].flatMap((f) => [Buffer.from(f), read(f)])));
+    const coreHash = sha(Buffer.concat([...ls('core', '.h'), ...ls('core', '.cpp'), 'foundations/chart.cpp', ...ls('tokens', '.json'), ...ls('tests/rules', '.mjs'), ...ls('tests/behaviour', '.json'), 'tools/lib/rules.mjs'].flatMap((f) => [Buffer.from(f), read(f)])));
     const srcOf = {};
     for (const d of ['components', 'screens', 'foundations']) for (const f of ls(d, '.cpp')) srcOf[basename(f, '.cpp')] = f;
     const SPEC_FILES = ls('specs', '.json');
@@ -145,7 +145,7 @@ export async function runRules(rules, { build, dens, ids, themeArg, tier, cacheD
           if (x?.err) { for (const rule of mine.filter((r) => !r.ownStage)) report(rule, rec[rule.id]).note(`skip ${den} ${c.id} "${v.label}": ${x.err}`); }
           for (const rule of mine) {
             if (!rule.ownStage && x?.err) continue;
-            rule.run(rule.ownStage ? { m: mods.get(rule.id), den, c, v, vi, light, theme } : Object.assign(x, { theme, vi }), report(rule, rec[rule.id]));
+            await rule.run(rule.ownStage ? { m: mods.get(rule.id), den, c, v, vi, light, theme } : Object.assign(x, { theme, vi }), report(rule, rec[rule.id]));
           }
           if (shared) x.free();
         }
