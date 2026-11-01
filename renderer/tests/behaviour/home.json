@@ -1,5 +1,8 @@
 {
   "id": "home",
+  "live": true,
+  "live_why": "the Clock card on Home: its orbit dot moves every frame (~170 px) and its time text repaints (~800 px); both by design",
+  "live_px": 1000,
   "tests": [],
   "xfail": {}
 }

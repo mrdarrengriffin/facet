@@ -132,7 +132,10 @@ function checkGesture(evs, { blocked, allowed, what, gesture }) {
 }
 
 // lag judgement of one phase's frames
-function judgeLag(frames, S, { live = false, idle = false, budgets = {}, stats = null } = {}) {
+// a live id's idle and same-update redraws are allowed only up to livePx dirty px per frame (behaviour JSON "live_px";
+// none = unbounded): a full redraw still fails
+const liveOver = (frames, livePx) => (livePx ? frames.filter((f) => f.renders && f.px > livePx) : []);
+function judgeLag(frames, S, { live = false, idle = false, budgets = {}, stats = null, livePx = 0 } = {}) {
   const b = { ...B.lag, ...budgets }, msgs = [];
   const area = S * S;
   const over = frames.reduce((n, f) => n + f.over, 0);
@@ -147,6 +150,8 @@ function judgeLag(frames, S, { live = false, idle = false, budgets = {}, stats =
     const est = FIT.a + FIT.b * med;
     if (est > b.est_ms_max) msgs.push(`${est > b.est_ms_fail ? '' : 'warn-'}lag-est: typical frame est ${est.toFixed(0)} ms on the Guition (> ${b.est_ms_max} ms, ${moving.length} frames, WASM ${med.toFixed(3)} ms)`);
   }
+  const wide = idle && live ? liveOver(frames, livePx) : [];
+  if (wide.length) msgs.push(`idle-redraw-area: ${wide.length} idle frames redrew more than ${livePx} px (largest ${Math.max(...wide.map((f) => f.px))} px)`);
   if (idle && !live && moving.length) msgs.push(`idle-redraw: ${moving.length} redraws (${Math.round(moving.reduce((n, f) => n + f.px, 0) / 1000)}k px) in ${b.idle_ms / 1000} s with nothing changing`);
   if (stats) {
     const ms = moving.map((f) => f.ms).sort((a, c) => a - c);
@@ -196,12 +201,14 @@ async function autoTests(c, den, spec, specs) {
     // ---- idle + same-props update (redraws when nothing changed)
     if (lagOn && vl === 'default') {
       b.rec = []; b.tick(Math.ceil(B.lag.idle_ms / T));
-      judge(id, den, 'lag', 'idle', vl, judgeLag(b.rec, S, { live, idle: true, budgets: spec.budgets }));
+      judge(id, den, 'lag', 'idle', vl, judgeLag(b.rec, S, { live, idle: true, budgets: spec.budgets, livePx: spec.live_px }));
       b.rec = [];
       const u = b.update(id, props);
       b.tick(Math.ceil(B.lag.idle_ms / T));
       const evs = b.events();
       const msgs = [];
+      const big = live ? liveOver(b.rec, spec.live_px) : [];
+      if (u === '' && big.length) msgs.push(`same-update-redraw-area: ${big.length} frames after an update with the same props redrew more than ${spec.live_px} px (largest ${Math.max(...big.map((f) => f.px))} px)`);
       if (u === '' && !live && b.rec.some((f) => f.renders)) msgs.push(`same-update-redraw: an update with the same props redrew ${b.rec.filter((f) => f.renders).length} frames (${Math.round(b.rec.reduce((n, f) => n + f.px, 0) / 1000)}k px)`);
       judge(id, den, 'lag', 'same-update', vl, msgs);
       if (KINDS.includes('sound')) judge(id, den, 'sound', 'quiet-same-update', vl, evs.filter((e) => e.name !== 'screen').length ? [`update-noise: an update with the same props sent ${evs.map(fmtEv).join(', ')}`] : []);

@@ -834,6 +834,7 @@ Real fps needs the device (`tools/bench.mjs --panel`). Budgets: `tests/behaviour
 ```json
 { "id": "toggle",
   "live": true, "live_why": "...",           // moves by design (clock, spinning disc, live sim): idle / same-update redraws allowed
+  "live_px": 1000,                           // with live: those redraws only up to this many dirty px per frame (1x)
   "tests": [ { "name": "tap turns on", "kind": "interaction", "props": {"on": false},
                "steps": [ {"tap": {"clk": 0}} ],
                "expect": { "events": [["toggle", "on"]], "sounds": ["toggle-on"] } } ],
