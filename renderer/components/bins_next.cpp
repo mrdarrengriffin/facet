@@ -5,7 +5,7 @@
 //            else fg:text-dim), gap:2, then when (type:value, fg:text: "Tomorrow", "Today", the weekday), which bins
 //            (type:title, fg:text: "Green + Black bins") and the date + how often (type:body, fg:text-dim:
 //            "Fri 24 Oct · every 2 weeks"); the column takes the row's room (grow) and its lines fill it
-// Feed: bind every prop to panel.bins (core/bins_source.cpp: colours, caption, accent ("on" / "off"), when, bins, line).
+// Props: colours, caption, accent ("on" / "off"), when, bins, line (binds from any entity).
 // Static: no touch, no sound. Update path: the texts and the bins in place (silent); a new accent fades the caption
 // (fw::st::refill_fade). Contrast: text, label (accent-text / text-dim on the canvas) + bins (decor).
 #include "fw.h"

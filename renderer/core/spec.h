@@ -111,11 +111,11 @@
 //              [{"id", "name", "left" s, "total" s, "state" running | done, "time" "4:32" | "done"}]).
 //              e.g. {"e": "panel.timer", "a": "left"}; show while one runs: {"e": "panel.timer", "map": {"running":
 //              "1"}, "else": ""}. Moving values (left, share, others) are put once a second only while a bind reads it.
-// feeds       (2026-10-29, CONTRACT.md C51) "feeds": {"panel.bins": {"source": "calendar", "calendar": "$calendar"}}:
+// feeds       (2026-10-29, CONTRACT.md C51) "feeds": {"panel.weather": {"source": "$source", "weather": "$weather"}}:
 //              which adapter fills each feed this screen reads, and its settings (texts; "$param" = the screen's
 //              parameter). Applied when the screen is built (fw::ha::set_feed_config: the adapter refetches on a change).
-// card        (2026-10-29, Darren: every screen comes with its Home card) "card": {"icon": "bins", "preview": "bins",
-//              "text": {"e": "panel.bins", "a": "when"}, ...}: the Card a Home page card for this screen shows (the
+// card        (2026-10-29, Darren: every screen comes with its Home card) "card": {"icon": "weather", "preview": "weather",
+//              "text": {"e": "panel.weather", "a": "temp"}, ...}: the Card a Home page card for this screen shows (the
 //              Card's props; binds on the screen's feeds). Home applies the page's "feeds" too, so the card shows the
 //              same data as the screen. No card = the icon + the page's name only.
 // locked      (2026-10-30, Darren, CONTRACT C53) "locked": true = a made screen: the editor opens it for its settings

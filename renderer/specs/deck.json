@@ -40,11 +40,6 @@
         },
         {
           "t": "page",
-          "page": "bins",
-          "size": "m"
-        },
-        {
-          "t": "page",
           "page": "moon",
           "size": "m"
         },
@@ -93,10 +88,6 @@
     {
       "id": "energy",
       "kind": "energy"
-    },
-    {
-      "id": "bins",
-      "kind": "bins"
     },
     {
       "id": "moon",
