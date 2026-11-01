@@ -43,7 +43,7 @@ void corner_ticks(lv_obj_t *o, Corners c, lv_style_selector_t show, int len, int
   if (all) lv_obj_align(tick(o, len, thick, side(LV_BORDER_SIDE_BOTTOM, LV_BORDER_SIDE_RIGHT), show), LV_ALIGN_BOTTOM_RIGHT, sr, sb);
 }
 
-// ---------------------------------------------------------------- smooth stroke (facet-145: atom for everything)
+// ---------------------------------------------------------------- smooth stroke (atom for everything)
 extern "C" void lv_image_cache_drop(const void *src);  // LVGL 9 (misc/cache/instance/lv_image_cache.h, not in lvgl.h)
 namespace {
 constexpr float PI_F = 3.14159265f;

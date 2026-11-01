@@ -21,7 +21,7 @@
 //   POST /fw/act    {do, ...fields} -> {ok, why?, state?}: one action, checked + run like a spec tap (fw::spec::act,
 //                   CONTRACT.md C50; HA's facet_act does the same: act_from_ha)
 //   GET  /llms.txt, /agents.md   the agent docs (bundle fw_docs_gen.h from tools/gen_agents.mjs; open)
-// AI agents (facet-163): every POST under /fw/ and every GET /fw/ha (it shows the subscribed HA
+// AI agents: every POST under /fw/ and every GET /fw/ha (it shows the subscribed HA
 // values; the editor's ?want= subscribes too) go through agent::allow():
 // the panel's own editor (a browser request from this origin: Sec-Fetch-Site same-origin, or Origin = this host)
 // always passes; anything else needs the setting Allow AI agents on (only the panel or HA can turn it on, core/
@@ -87,7 +87,7 @@
 #include "esphome/components/api/api_server.h"
 #endif
 #include "fw_bundle_gen.h"
-#include "fw_images.h"  // the Image component's pictures: fetched + decoded on the panel (facet-171 piece 2)
+#include "fw_images.h"  // the Image component's pictures: fetched + decoded on the panel
 
 namespace fw::device {
 using namespace esphome::web_server_idf;
@@ -369,7 +369,7 @@ inline void probation_start() {
   probation_tick(PR.timer);
 }
 
-// ---------------------------------------------------------------- firmware update notice (facet-196)
+// ---------------------------------------------------------------- firmware update notice
 // Before new firmware installs (ESPHome http_request OTA: the update entity's Install), the panel shows the real
 // Firmware update view (components/fw_update_view.cpp) full screen on the top layer, in the device's look; the board
 // YAML (workbench.yaml ota on_begin) then turns the backlight off: neither board can draw while flash is written (the
@@ -414,7 +414,7 @@ inline void ota_error() {
 
 // ---------------------------------------------------------------- Debug overlay (HA select "Debug overlay")
 // Tap areas and / or component outlines drawn over the current screen, the panel side of the workbench Tap areas
-// (hub src/wasm/taps.ts) and Components views. Firmware glue, not a contract component: one non-clickable full-screen
+// (workbench/src/taps.ts) and Components views. Firmware glue, not a contract component: one non-clickable full-screen
 // object on the top layer that draws with lv_draw_*; boxes collected every 500 ms and after each show (redrawn only
 // when they changed). Tap areas: every visible clickable object, hit area = coords grown by ext_click_pad (scroll
 // containers with children skipped), green fill + outline = at least touch:min both ways, red = smaller, the drawn box
@@ -716,7 +716,7 @@ inline void ha_ask(uint32_t id, const char *service, const char *data_json) {
 #endif
 }
 
-// ---------------------------------------------------------------- toasts from Home Assistant (facet-190)
+// ---------------------------------------------------------------- toasts from Home Assistant
 // The ESPHome action facet_toast {title, body, icon, kind, duration (ms)} -> the device runtime's Toast layer: the toast
 // JSON goes on the pseudo pair facet.toast (core/device.h TOAST_PAIR, ha::on_put), the same path the workbench uses.
 // The renderer maps it (core/device.cpp toast_put, components/toast_layer.cpp push; functional test toast_ha): kind =
@@ -881,7 +881,7 @@ inline void spec_apply(const char *kind, const std::string &json, ArduinoJson::J
 
 // ---------------------------------------------------------------- themes from Home Assistant (theme engine T4)
 // The ESPHome action facet_theme {theme: the theme file as a JSON string} (settings.yaml from firmware/settings_yaml.mjs)
-// -> fx::theme_send (core/theme_slot.h): the PANEL parses + guards the file itself (no hub in the product path);
+// -> fx::theme_send (core/theme_slot.h): the PANEL parses + guards the file itself (no workbench in the product path);
 // refused = the answer {ok: false, errors: [{path, msg, line}] (first 4), n_errors} + a log line, the live look and
 // the stored copy unchanged; accepted = stored as the one sent slot's last-good copy (NVS "facet_theme"/"sent": "FXT1"
 // + CRC32 + JSON, one key = one atomic write) and the Theme (look) select moves to Sent. theme = "" drops it.
@@ -1017,7 +1017,7 @@ inline bool screen_go(const std::string &what, ArduinoJson::JsonObject out) {
 }
 
 // ---------------------------------------------------------------- screenshot (GET /screenshot)
-// Ported from the old panel firmware (projects/esphome/panel/include/shot.h, facet-90): what the glass shows as a
+// Ported from the old panel firmware (projects/esphome/panel/include/shot.h): what the glass shows as a
 // 16-bit BMP. The web server runs in its own task and LVGL is not thread-safe, so the request raises a flag and waits;
 // an lv_timer (main loop) snapshots the active screen in the display's RGB565 (+ the top layer, ARGB8888, blended in:
 // the probation chip) into PSRAM; the rows go out 4 at a time with a pause (Guition: Wi-Fi TX buffers come out of
@@ -1460,7 +1460,7 @@ class Handler : public AsyncWebHandler {
 };
 
 // on_boot (after lvgl + web_server): our own screen, the last request again (or the first component), the handler
-// ---------------------------------------------------------------- Rotate screen (facet-191)
+// ---------------------------------------------------------------- Rotate screen
 // The setting "rotation" (0 / 90 / 180 / 270, clockwise) -> the host's LVGL rotation (ESPHome lvgl `rotation:` set in
 // the YAML, so it can change at run time; touch points turn with it in the ESPHome LVGL touch path). The host sets
 // rotate_hook at boot (workbench.yaml: id(lvgl_root)->set_rotation(deg)); applied at boot and on every change, from the
@@ -1486,7 +1486,7 @@ inline void setup() {
   lv_screen_load(S.scr);
   spec_storage();     // screen specs: the overrides from NVS (each falls back to its last good copy, then factory)
   theme_storage();    // the sent theme: its last-good copy from NVS (theme engine T4)
-  agent::setup();     // AI agents: the token (NVS) + the setting (facet-163)
+  agent::setup();     // AI agents: the token (NVS) + the setting
   fw::spec::load();
   for (const auto &x : fw::spec::S().log) ESP_LOGW("facet_wb", "spec boot: %s", x.c_str());
   S.pref = esphome::global_preferences->make_preference<Saved>(0xFAC37B01u, true);

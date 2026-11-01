@@ -1,4 +1,4 @@
-// Firmware update view (components/fw_update_view.cpp, facet-196): the 2 s notice before the screen turns off for a
+// Firmware update view (components/fw_update_view.cpp): the 2 s notice before the screen turns off for a
 // firmware install (firmware/fw_device.h ota_*), and the failure state. Each says what is happening; no taps react.
 export default {
   id: 'fw_update_view', family: 'components', about: 'Firmware update notice: updating (screen turns off next), failed.',

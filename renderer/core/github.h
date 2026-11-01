@@ -1,6 +1,6 @@
 // GitHub feed (docs @facet/ui GithubData + @facet/demo-data github()): the pull requests that need you and your own,
 // with what the screens say about them (the docs wording: row status, detail statuses, "3 to review · 2 open"). A
-// panel fills the same Data from a host (the hub's GitHub poller); sample() is the docs story until then. Header-only.
+// panel fills the same Data from a host (a GitHub poller); sample() is the docs story until then. Header-only.
 #pragma once
 #include <cmath>
 #include <cstdio>

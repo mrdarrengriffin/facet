@@ -19,7 +19,7 @@
 //                       toggle; entity = its friendly name, and a sheet of the screen's list of the same domain when
 //                       it has one (Media: the Player from the Speakers, Auto first when the spec's screen.param
 //                       follows a sensor: "auto" or nothing picked = Auto); entities = "N chosen"; text = the value.
-//                       Lists of entities and text come from the host's discovery (the hub writes them into the deck).
+//                       Lists of entities and text come from the host's discovery (the workbench writes them into the deck).
 //                       Entity pickers: an entity (no screen list of its domain) or entities parameter
 //                       with a "domain" opens the sheet on the panel's own Home Assistant list (core/device.h
 //                       ha_link): on open it reads ONLY that picker's domain(s) (comma list) when not cached yet

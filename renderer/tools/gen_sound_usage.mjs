@@ -13,7 +13,7 @@
 // each other (a component that makes a sound without a line, or a line for one that makes none) and lists the
 // mismatches as `warnings`. Every sound id is checked against sound.json types.
 // Never committed: the runner makes it at startup (tests/rules/sound_usage.mjs) and tests/rules/behaviour.mjs imports `usage`.
-// Run: `node tools/gen_sound_usage.mjs` prints the summary and warnings; `--json` prints it all (the hub API runs this
+// Run: `node tools/gen_sound_usage.mjs` prints the summary and warnings; `--json` prints it all (the workbench runs this
 // on every request, so the workbench is always current).
 import { readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';

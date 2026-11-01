@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Facet bench (facet-153): scripted scenarios per component / screen, run headless on the WASM build, measured per
+// Facet bench: scripted scenarios per component / screen, run headless on the WASM build, measured per
 // LVGL refresh (core/bench.cpp: the same RENDER_START..READY window as the panels' GET /fw/perf), against the budgets
 // per device (bench/budgets.json). Suite = bench/suite.json. README "Bench".
 //   node tools/bench.mjs [--device guition-4848s040|waveshare-p4-86|all] [--case <id|prefix|tag:x>,...] [--scenario idle|animate|drag|navigate]
@@ -223,7 +223,7 @@ async function runMed(dev, c, sc, n) {
   const med = (k) => Object.fromEntries(Object.keys(rs[0][k]).map((f) => [f, timed(f) ? Math.min(...rs.map((r) => r[k][f])) : pct(rs.map((r) => r[k][f]), 0.5)]));
   return { ...rs[0], wasm: med('wasm'), host: med('host'), mem: med('mem') };
 }
-// the accepted baseline (--baseline <run.json>, the hub's data/facet-bench/baseline.json): WASM ms per device|case|scenario
+// the accepted baseline (--baseline <run.json>): WASM ms per device|case|scenario
 const BASE = (() => { try { const b = JSON.parse(readFileSync(arg('--baseline'), 'utf8')); return { at: b.at, git: b.git, m: new Map(b.results.filter((r) => r.wasm).map((r) => [`${r.device}|${r.case}|${r.scenario}`, r.wasm])) }; } catch { return null; } })();
 // checks per device (budgets.json `checks`): fps / frame_ms = absolute (Waveshare); regression = WASM ms over the
 // accepted baseline by more than regression_pct; pacing = panel p95 over pacing_ratio x the average (judder); idle, build, heap, objs
@@ -307,7 +307,7 @@ if (arg('--panel')) {
   const dev = arg('--panel'), host = arg('--host');
   if (!budgets.devices[dev] || !host) { console.error('--panel guition-4848s040|waveshare-p4-86 --host <ip>'); process.exit(2); }
   const base = `http://${host}`;
-  // an agent token (facet-163: the panel's write endpoints need it unless the request is same-origin) on every /fw/* call
+  // an agent token (the panel's write endpoints need it unless the request is same-origin) on every /fw/* call
   const AUTH = process.env.FACET_AGENT_TOKEN ? { authorization: `Bearer ${process.env.FACET_AGENT_TOKEN}` } : {};
   const get = async (u) => (await fetch(base + u, { headers: AUTH, signal: AbortSignal.timeout(8000) })).json();
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));

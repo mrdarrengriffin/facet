@@ -10,7 +10,7 @@
 //          natural width, left-aligned after Back. The title takes the room
 //          the end slot leaves: the label ellipsises and never pushes an end item off the row (flex grow from width
 //          0); a title node too wide for the row is overfull and reported by the bounds proof (C11).
-//   end    a SLOT: up to 4 items in spec order, Icon buttons, Status chips or a Segmented (facet-205; the header's own
+//   end    a SLOT: up to 4 items in spec order, Icon buttons, Status chips or a Segmented (the header's own
 //          settings / shortcut / timer items count). Code (C++ screens, Home) is not capped: an overfull row = the
 //          bounds proof reports it. "in": "header" with no slot = end. Home's settings button
 //          and a Home's header actions are END items too (props settings + actions, mapped here: shortcut square,

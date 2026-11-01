@@ -6,7 +6,7 @@
 // coverage of the styles that draw it), keeps it in flash and draws it with LVGL TinyTTF; after that it is read from
 // flash at boot: no delay, works offline, survives reboots. Until the file is there (offline, slow, refused) the
 // theme's built-in fallback font draws; when the file arrives every look repaints live (fx::restyle, C44), and a
-// refused file keeps the fallback and reports why (status()). The product path never depends on a hub: the panel
+// refused file keeps the fallback and reports why (status()). The product path never depends on a workbench: the panel
 // does all of this itself. The I/O is behind two small interfaces so the WASM workbench and the tests simulate the
 // network and the flash (missing, corrupt, slow, oversize, offline, reboot) with the same code the panel runs.
 #pragma once

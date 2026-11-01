@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Dry run of a screen spec or deck on the WASM build (the hub's /api/wasm/send runs this before it sends anything):
+// Dry run of a screen spec or deck on the WASM build (the workbench runs this before it sends anything):
 // the same validation the panel runs (core/spec.h), then the screen built at the target density with the panel's
 // builder: build errors, its objects, anything outside the screen. Reads the spec on stdin.
 // --known a,b: screens the target already has (its hello): a deck naming them is fine although this build lacks them.
@@ -20,7 +20,7 @@ m._fw_init();
 const W = den === '1x' ? 480 : 720, st = m._fw_stage(W, W);
 const S = (p, f) => { const q = m.stringToNewUTF8(p); try { return f(q); } finally { m._free(q); } };
 const spec = (c, a) => S(c, (pc) => S(a, (pa) => JSON.parse(m.UTF8ToString(m._fw_spec(pc, pa)))));
-const dev = process.argv.includes('--dev');  // the hub's dev path: may replace a built-in screen (core/spec.h no_built_in)
+const dev = process.argv.includes('--dev');  // the workbench's dev path: may replace a built-in screen (core/spec.h no_built_in)
 const out = spec(dev ? 'check_dev' : 'check', text);
 let parsed = null;
 try { parsed = JSON.parse(text); } catch { /* the check said so */ }

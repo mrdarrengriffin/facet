@@ -7,7 +7,7 @@
 //     resolved through tokens/states.json, the step ticks of core fw::step_ticks), FW_COMPONENT ids -> file
 //   - renderer/README.md: the "Components" table row per id (description)
 //   - tokens/*.json: colour (site theme + colour table), sound (sound names), each foundation's own token file
-//   - git: WIP / Done / Done, edited per source file (same rule as the workbench's /api/wasm/status)
+//   - git: WIP / Done / Done, edited per source file (same rule as the workbench's status)
 // Output: src/data/{site,components,foundations,tokens}.json + public/wasm/<density>/ (a copy of the build, so the
 // site is self-contained wherever it is deployed).
 //
@@ -27,7 +27,7 @@ const ROOT = resolve(SITE, '..');
 const R = join(ROOT, 'renderer');
 const REPO = 'https://github.com/mrdarrengriffin/facet/blob/main';
 const DENS = ['1.5x', '1x'];
-// meta "about" sentences are drafts (shown with a "draft" tag) until Darren's writing pass; set false then
+// meta "about" sentences are drafts (shown with a "draft" tag) until the writing pass; set false then
 const ABOUT_DRAFT = true;
 
 // FW_OUT: env > local.env > renderer/out
@@ -129,7 +129,7 @@ const entries = reg.filter((c) => shown(c.id)).map((c) => {
   const desc = rows[c.id] ?? '';
   return {
     id: c.id, name: c.name, section: c.section, meta: c.meta,
-    // public description: meta "about" (drafts until Darren's writing pass: ABOUT_DRAFT), else the first clause of the README row / header comment
+    // public description: meta "about" (drafts until the writing pass: ABOUT_DRAFT), else the first clause of the README row / header comment
     lede: c.meta.about || lede(desc || f.notes.replace(/^[^:]+:\s*/, '')),
     ledeKind: c.meta.about ? (ABOUT_DRAFT ? 'draft' : 'about') : 'fallback',
     description: desc,
@@ -268,7 +268,7 @@ function roadmapSnapshot() {
   const scope = JSON.parse(readFileSync(src, 'utf8'));
   // public wording only: no internal workflow labels
   const STATUS = { done: 'done', wip: 'doing', 'to-port': 'planned', planned: 'planned' };
-  const PRIVATE = /\b(darren|claude|board|lab|your|awaiting|rejected|not liked|approved|agent worktree|port|ported|porting|wasm|astro|parity|draft|old site|docs site|wip)\b/i;
+  const PRIVATE = /\b(darren|claude|board|lab|your|awaiting|rejected|not liked|approved|agent worktree|port|ported|porting|wasm|astro|parity|draft|old site|docs site|wip|facet-gate|notes\/)\b/i;
   const tables = {};
   for (const [k, rows] of Object.entries(scope.tables ?? {})) {
     tables[k] = rows

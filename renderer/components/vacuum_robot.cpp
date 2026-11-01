@@ -1,5 +1,5 @@
 // Vacuum robot: the robot vacuum seen from above in a ring (the panel lab's Vacuum Home card preview, previewVacuum3,
-// apps/hub panel/vacuum/screen.ts + vacuum.css .p3-vp), on the contract (renderer/CONTRACT.md, "contract": 2). The
+// the earlier panel lab), on the contract (renderer/CONTRACT.md, "contract": 2). The
 // Robot vacuum screen's Home card picture (C52): the card names the state in words beside it (never the ring alone).
 //   box     w / h layout:vac-card (72 / 48: the card preview size), square
 //   ring    full turn, outer edges on the box: track stroke:arc in line (part "arc"); from 12 o'clock clockwise the

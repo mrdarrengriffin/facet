@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Circuit calibration (Sport foundation, facet-157): the facts the survey outlines (bacinger/f1-circuits) lack, taken
+// Circuit calibration (Sport foundation): the facts the survey outlines (bacinger/f1-circuits) lack, taken
 // from the timing-frame circuit data the F1 apps use (MultiViewer's public circuit API, keyed by the OpenF1
 // circuit_key): which way the race goes, where the start / finish line is, the marshal sectors (yellow flags are given
 // per marshal sector) and the broadcast map rotation. Only these derived facts are kept (tools/circuits_calib.json),

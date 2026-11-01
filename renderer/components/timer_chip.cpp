@@ -1,4 +1,4 @@
-// Timer chip: one of several timers as a small chip (the Timer screen, concept T1 "Several" picked by Darren
+// Timer chip: one of several timers as a small chip (the Timer screen, concept T1 "Several"
 // the soonest timer is in the Progress ring, the others are chips above the buttons; tap one to bring it
 // into the ring; the one that is done goes accent). On the contract (renderer/CONTRACT.md, "contract": 2). Not a Button
 // kind: its own component (a mini ring, a name and a time are not a Button's label + icon).

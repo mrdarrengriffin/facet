@@ -143,7 +143,7 @@ function runCase(m, den, c, props, light, vskip = {}) {
     if (o.cut && !skip.text) errs.push(`text: "${o.text}" is cut ${o.cut} px at the bottom of its box (${o.w}x${o.h} at ${o.x},${o.y})`);
     if (o.cutr && !skip.text) errs.push(`text: "${o.text}" is ${o.cutr} px wider than its box`);
   }
-  // ---- grid: each drawn box on the 4 px grid relative to its parent (Darren: "align with the pixel grids"). Allowed
+  // ---- grid: each drawn box on the 4 px grid relative to its parent ("align with the pixel grids"). Allowed
   // as alignment: a box centred in its parent on that axis (odd parity can't be both), a box filling its parent's
   // inside of the border, a hairline (1-2 px) on its thin axis. Placed by value / angle: fw::qa::free (a note).
   if (!skip.grid) {

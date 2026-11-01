@@ -5,7 +5,7 @@
 // set() path (core/device.h "settings", fw::dev::set): an entity's new value -> set(id, value, HA); a change made
 // anywhere else (the screen, POST /fw/settings) -> the observer below moves the entity (which saves it). set() ignores
 // an unchanged value, so nothing echoes. Theme Auto follows Home Assistant's sun.sun (above_horizon = day).
-// Usage: node firmware/settings_yaml.mjs <out.yaml>   (bin/panel `wb build` runs it; writes only on change)
+// Usage: node firmware/settings_yaml.mjs <out.yaml>   (esphome/build.sh runs it; writes only on change)
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';

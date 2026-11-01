@@ -1,4 +1,4 @@
-// Card (components/card.cpp, contract v2), release piece 2. Each test is one row of the release gate and
+// Card (components/card.cpp, contract v2), release piece 2. Each test is one row of the definition of done (CONTRACT.md 13) and
 // fails without the behaviour. The card has no size of its own: it fills its parent (here the stage's content box, the
 // stage resized to the parent size under test; on Home the grid cell). Declared minimum: layout:card-min-w x card-min-h.
 // Approved original: Astro packages/ui/src/layout.ts card() + docs CSS .fs-card (320 x 280 at 720).

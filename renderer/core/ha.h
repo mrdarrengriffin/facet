@@ -1,8 +1,8 @@
 // Home Assistant data for screens (one-renderer plan §2.3, first slice): the same code on the panels and in
 // the WASM workbench. Header-only (core/*.h is bundled as is).
 //   store    the latest value per (entity, attribute) ("" = the state), the only place HA data lands. Hosts put():
-//            the panel from its HA API subscriptions (firmware/fw_device.h), the workbench from the hub
-//            (/api/panel/entities, polled; core/main.cpp fw_ha_put).
+//            the panel from its HA API subscriptions (firmware/fw_device.h), the workbench from its host
+//            (polled; core/main.cpp fw_ha_put).
 //   wants    the (entity, attribute) pairs bound by anything built (or declared up front: want()). The panel subscribes
 //            to each new pair once (on_want; HA can't unsubscribe), the workbench polls fw_ha_wants().
 //   binds    a component prop may be {"e": "light.x", "a"?: "brightness", "fmt"?: ...} instead of a value; bound()
@@ -26,7 +26,7 @@
 //            media_previous_track, media_player.volume_set {volume_level 0..1} on media_player.* entities;
 //            cover.open_cover / close_cover / stop_cover, set_cover_position {position}, set_cover_tilt_position
 //            {tilt_position} 0-100 on cover.* entities): emits
-//            "ha" {service, entity, data} (the workbench host calls HA through the hub) and calls the action sink (the panel: an HA action over its API).
+//            "ha" {service, entity, data} (the workbench host calls HA) and calls the action sink (the panel: an HA action over its API).
 // TODO (full "wish" model, plan §2.3): wishes per entity shared across screens, drag throttling (brightness while
 // dragging), providers, a deck-wide subscription union, big attributes kept raw.
 #pragma once
@@ -47,7 +47,7 @@ using WantSink = void (*)(const std::string &e, const std::string &a);
 using ActSink = void (*)(const char *service, const char *entity, const char *data_json);
 // asks (CONTRACT.md C51 adapters): an HA action whose REPLY a feed's adapter reads (calendar.get_events:
 // the Bins feed). Closed list (ask()); the host sends it (the panel: an HA action with wants_response over its API;
-// the workbench: the hub's /api/panel/ask) and hands the reply's JSON back with answer(id, ok, json).
+// the workbench: its host) and hands the reply's JSON back with answer(id, ok, json).
 using AskSink = void (*)(uint32_t id, const char *service, const char *data_json);
 using AskDone = void (*)(void *ctx, bool ok, const std::string &json);
 

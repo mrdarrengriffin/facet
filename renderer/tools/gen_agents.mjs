@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Agent discovery docs served BY the panel (facet-163): /llms.txt (a short index) + /agents.md (the spec guide: the
+// Agent discovery docs served BY the panel: /llms.txt (a short index) + /agents.md (the spec guide: the
 // components and props this release ships, binding syntax, actions, budgets, the send API with curl lines), generated
 // from catalogue/catalogue.json (+ spec.schema.json), tokens/settings.json and features.json (release flags), so the
 // guide always matches the firmware it ships in. firmware/bundle.mjs gzips both into fw_docs_gen.h / fw_docs.cpp.

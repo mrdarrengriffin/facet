@@ -1,4 +1,4 @@
-// Icon: one Facet icon on its own (board facet-171, notes icon-grid-proposal §1, pieces 1). The Icons foundation's
+// Icon: one Facet icon on its own (notes icon-grid-proposal §1, pieces 1). The Icons foundation's
 // master at a size TOKEN (never px: specs carry no sizes), recoloured by a tone. A spec picks it by name, or lets an
 // entity pick it with a bind's map ({"e": "sensor.x", "map": {"sunny": "clear-day"}, "else": "cloudy"}).
 //   name   an icon id (tokens/icons.json); an unknown name (a bound value with no icon) = a quiet outlined box, never

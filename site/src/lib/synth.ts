@@ -4,7 +4,7 @@
  * what plays live and what you'd export to WAV for a panel, so what you hear in the browser is what the firmware gets.
  */
 // Vendored for the Facet docs site (WASM) from main packages/sounds/src/synth.ts (the approved Facet synth, the one
-// the hub workbench plays through @facet/sounds): render() unchanged; the pack table (packs.json) is gone because the
+// the workbench plays): render() unchanged; the pack table (packs.json) is gone because the
 // site takes every sound's parameters from renderer/tokens/sound.json, and the levels come from its "levels"
 // (setLevels) instead of @facet/tokens. Keep in step with main if the synth changes.
 let SOUND = { peakDb: -3, loudnessDb: -12, fadeMs: 4 };

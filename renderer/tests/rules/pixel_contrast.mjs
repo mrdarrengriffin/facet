@@ -1,4 +1,4 @@
-// Pixel contrast proof (renderer/CONTRACT.md C15-C17, P4; Facet release gate section 4). tools/contrast.mjs checks the
+// Pixel contrast proof (renderer/CONTRACT.md C15-C17, P4; CONTRACT.md section 13, item 3). tools/contrast.mjs checks the
 // DECLARED colour pairs; this one checks what is really on the pixels. For every contract component (meta "contract":
 // 2) x every meta variant x density, in four looks: built dark, switched LIVE to light, built light,
 // switched LIVE to dark (a component that holds a colour from build time fails the live ones). In each look every shown

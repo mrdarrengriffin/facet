@@ -1,8 +1,8 @@
 // Weather screen (specs/weather.json + weather_days.json: Page > Header > Body: the weather now (Weather icon, hero), the
 // rain line (Status line), the next eight hours (Grid of Weather icon columns), "next 5 days" (More row) > the 5 days
 // (Grid of Weather icon rows)), on the weather feed panel.weather (core/weather_source.cpp, CONTRACT.md C51) and its
-// Home card (C52). Home Assistant is faked (tools/functional.mjs FakeHA); W is NOT Darren's entity. The forecast asks
-// (weather.get_forecasts) are answered here, as the hub / the panel's API would.
+// Home card (C52). Home Assistant is faked (tools/functional.mjs FakeHA); W is NOT a real entity. The forecast asks
+// (weather.get_forecasts) are answered here, as a host or the panel's API would.
 // Approved original: Astro packages/ui/src/screens/weather.ts (Weather view + daysView).
 const W = 'weather.test_home';
 const asks = (t) => JSON.parse(t.b.m.UTF8ToString(t.b.m._fw_ha_asks()) || '[]');

@@ -1,6 +1,6 @@
 // visual (rule, gate tier, 1.5x, Facet theme): the pixels, per component x variant x look (moved from tools/visual.mjs
 // onto the runner, plan Phase 2.3). The audit rule proves geometry; this one looks at what is drawn (after
-// Darren's batch E review: "some of [the card previews] are broken", "does the lightning radar actually work?"):
+// A batch E review: "some of [the card previews] are broken", "does the lightning radar actually work?"):
 //   blank      degenerate render, inside the component's own box (its roots): (almost) no ink (pixels that differ from
 //              the stage background) or ink in a sliver (error: under 16 px or 0.05 %: nothing there; review: under 2 %, or
 //              the ink's own box under a tenth of it)
@@ -14,7 +14,7 @@
 //              other's; 0.6). Under the thresholds = flagged for review, never a failure (the Facet port differs on
 //              purpose: the grid, tokens), with both images side by side
 // Errors fail; review flags and references within the thresholds are notes. finish() writes the report:
-// $FW_OUT/visual/<den>/index.html (the hub serves it at /facet-wasm/visual/1.5x/), every flagged case + picture.
+// $FW_OUT/visual/<den>/index.html (the workbench serves it), every flagged case + picture.
 // FW_VISUAL_DUMP=<dir>: every render as a PNG there too.
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';

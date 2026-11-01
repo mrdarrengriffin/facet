@@ -65,7 +65,7 @@ try {
   await page.check('[data-boards] input[value="guition-4848s040"]', { force: true });
   ok((await page.getAttribute('[data-install]', 'manifest'))?.includes('guition-4848s040'), 'board pick sets the manifest');
   ok(errors.length === 0, `no page errors ${errors.join(' | ')}`);
-  // the live page still uses upstream (unchanged until Darren has tried the test page)
+  // the live page still uses upstream (unchanged until the test page has been tried)
   const live = readFileSync(join(DIST, 'install/index.html'), 'utf8');
   ok(live.includes('unpkg.com/esp-web-tools@10.4.0') && !live.includes(VENDOR), 'live /install/ unchanged (upstream 10.4.0)');
 } finally {

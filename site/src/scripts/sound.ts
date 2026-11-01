@@ -1,4 +1,4 @@
-// UI sounds on the docs site, as in the hub workbench (apps/hub/src/wasm/sound.ts playUi): every fw::sound(obj, id,
+// UI sounds on the docs site, as in the workbench (workbench/src/sound.ts playUi): every fw::sound(obj, id,
 // pos) the live previews request is synthesised in the browser with the approved Facet synth (lib/synth.ts) from
 // renderer/tokens/sound.json (copied to <base>sound.json by scripts/extract.mjs, fetched on the first sound).
 // One sound = base + variant (pack) defaults + the type's own values for that pack (minus `use`). Pitched sounds
@@ -57,7 +57,7 @@ export async function playUi(id: string, detail = '') {
   const buf = await buffer(p), src = ctx().createBufferSource();
   src.buffer = buf;
   if (Number.isFinite(pos) && p.track) {
-    // sound.json "pitch" {low, high}: semitones at the bottom / top of the range, linear in between (as the hub
+    // sound.json "pitch" {low, high}: semitones at the bottom / top of the range, linear in between (as the workbench
     // player); without it the old symmetric (pos - 0.5) x track
     const pr = doc.pitch, ok = pr && typeof pr.low === 'number' && typeof pr.high === 'number';
     const semis = ok ? pr!.low! + pos * (pr!.high! - pr!.low!) : (pos - 0.5) * (p.track as number);

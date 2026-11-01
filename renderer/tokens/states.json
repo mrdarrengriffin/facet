@@ -1,5 +1,5 @@
 {
-  "$comment": "Facet interaction states, the single source for the WASM build (tools/gen_states.mjs -> states_gen.h, fw::st::). Written down once from what the approved components already do (States round 1, board facet-137): it holds no colour values, only which colour / mix / motion / sound / space token each state uses for each role, so a theme can change the rules later (facet-130) and the generator checks every reference. Colour mix amounts stay in colour.json (components.card.press-tint / press-desat: the contrast test and the Colour page read them there).",
+  "$comment": "Facet interaction states, the single source for the WASM build (tools/gen_states.mjs -> states_gen.h, fw::st::). Written down once from what the approved components already do (States round 1): it holds no colour values, only which colour / mix / motion / sound / space token each state uses for each role, so a theme can change the rules later and the generator checks every reference. Colour mix amounts stay in colour.json (components.card.press-tint / press-desat: the contrast test and the Colour page read them there).",
   "about": "How every interactive part behaves when it is pressed, disabled, unavailable, on or marked: the same colours, motion, sounds and events everywhere, so new components fit without deciding again.",
   "lvgl": {
     "pressed": {
@@ -82,7 +82,7 @@
         },
         "tint": {
           "mix": "press-tint",
-          "use": "big, unboxed or card-sized tap areas: Card, List row, section header action (a faint greyed accent tint, Darren's Card pick; mix press-tint)"
+          "use": "big, unboxed or card-sized tap areas: Card, List row, section header action (a faint greyed accent tint, the Card's pick; mix press-tint)"
         },
         "tint-line": {
           "token": "accent",
@@ -96,7 +96,7 @@
           "border",
           "border-fill"
         ],
-        "use": "how a pressed Card shows it: tint fill + line-hi border (fill), surface + accent border (border), or both (border-fill); a theme may set it later (facet-130). Rows and header actions have no border, so they always use the tint fill."
+        "use": "how a pressed Card shows it: tint fill + line-hi border (fill), surface + accent border (border), or both (border-fill); a theme may set it later. Rows and header actions have no border, so they always use the tint fill."
       }
     },
     "disabled": {

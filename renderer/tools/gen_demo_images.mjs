@@ -1,5 +1,5 @@
 // Made-up demo pictures for the Image component (workbench, docs, functional tests): drawn here, no third-party art.
-// node renderer/tools/gen_demo_images.mjs -> site/public/demo/images/*.png (served on the docs site; the hub proxy
+// node renderer/tools/gen_demo_images.mjs -> site/public/demo/images/*.png (served on the docs site; the workbench
 // serves the same files to the workbench before they are published). Deterministic: same bytes every run.
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { deflateSync } from 'node:zlib';

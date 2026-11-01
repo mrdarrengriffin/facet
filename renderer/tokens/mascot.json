@@ -422,7 +422,7 @@
     ],
     "rules": [
       "One mascot per view, except the Agents screen, where each tile is one agent.",
-      "The mood is the message: never animate a mascot that says nothing, never add moods, props or flourishes beyond these (character later, board facet-140).",
+      "The mood is the message: never animate a mascot that says nothing, never add moods, props or flourishes beyond these (character later).",
       "Colour = the mood's token; a tile may pass its own colour token (same roles), never a hex.",
       "Several on one view: each gets the instance delay (n x instance-offset) so blinks and glances never line up.",
       "Reduced motion: every loop stops on its rest frame (the pose still shows the mood, z's stay up), the hop is skipped.",

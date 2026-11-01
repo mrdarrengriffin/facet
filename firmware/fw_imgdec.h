@@ -44,7 +44,7 @@ inline void release(Out &o) {
   o.rgba = nullptr;
 }
 
-// what the bytes are: png | jpeg | gif | webp | bmp | svg | "" (the hub proxy's sniff, apps/hub api/wasm/img.ts)
+// what the bytes are: png | jpeg | gif | webp | bmp | svg | "" (the same sniff as the workbench's image fetch)
 inline const char *sniff(const uint8_t *b, size_t n) {
   if (n < 12) return "";
   if (b[0] == 0x89 && !memcmp(b + 1, "PNG", 3)) return "png";

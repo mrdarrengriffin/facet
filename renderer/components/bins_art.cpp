@@ -1,5 +1,5 @@
-// Bins art: a collection's wheelie bins drawn in their colours (the panel lab's Bins screen, board facet-72, the
-// "Faithful" bin: apps/hub panel/bins/bin-art.ts), on the contract (renderer/CONTRACT.md, "contract": 2). Decor: the
+// Bins art: a collection's wheelie bins drawn in their colours (the panel lab's Bins screen, the
+// "Faithful" bin), on the contract (renderer/CONTRACT.md, "contract": 2). Decor: the
 // words next to it name the bins (never colour alone).
 //   size    hero (the Bins screen: layout:bin-hero) or card (a Home card's preview, top right: layout:bin-card)
 //   bin     that tall, 4 / 5 of that wide on the 4 px grid: a handle loop, a slab lid over the body, a band

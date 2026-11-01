@@ -1,13 +1,13 @@
-// The panel's own image fetch (renderer core/images.h piece 2, board facet-171): every URL an Image wants is downloaded
+// The panel's own image fetch (renderer core/images.h piece 2): every URL an Image wants is downloaded
 // and decoded HERE, on the panel, and handed to the same fw::img::put() / fail() the WASM workbench feeds.
 //   One worker task (made on the first wanted URL, gone after 20 s with nothing to do), one download at a time, off the
 //   LVGL task: ESP-IDF esp_http_client, https checked against the IDF certificate bundle, redirects followed (5 hops),
-//   a desktop browser's User-Agent (the hub proxy's: some hosts refuse unknown clients). Limits from fw::img::budget():
+//   a desktop browser's User-Agent (some hosts refuse unknown clients). Limits from fw::img::budget():
 //   body_max bytes (Content-Length over it = refused before reading; more bytes = cut off), timeout_ms for the whole
 //   download. Decode: fw_imgdec.h (PNG pngle, JPEG TJpgDec) into PSRAM, never more than the free PSRAM allows.
 //   Only while the screen with the image is visible: a URL is fetched only while fw::img::waiting() says a view still
 //   wants it (leaving the screen clears that), queued URLs nothing waits for are dropped and the running download stops.
-//   Pixels and failures go back on the LVGL task (an lv_timer, 100 ms): put() / fail() with the hub proxy's words
+//   Pixels and failures go back on the LVGL task (an lv_timer, 100 ms): put() / fail() with the same words as the workbench's image fetch
 //   ("the site blocked the download (403, bot check)", "not found (404)", "not a picture (text/html)", "timeout (8 s)").
 #pragma once
 #include <algorithm>

@@ -1,4 +1,4 @@
-// Facet bench on the panel (facet-153, renderer/bench/README.md "Phase 2"): the panel tests itself. The host sends a
+// Facet bench on the panel (renderer/bench/README.md "Phase 2"): the panel tests itself. The host sends a
 // whole batch at once; the panel runs the cases on its own screen one after another (visibly: a static "Bench n/N" chip
 // on the top layer, changed between cases only), measures itself, keeps the results in RAM and hands back the report
 // at the end. No per-case requests and no polling while it runs. Included by fw_device.h (inside namespace fw::device;

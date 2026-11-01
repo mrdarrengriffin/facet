@@ -1,6 +1,6 @@
-// Stress / capability item (facet-153 round 3, "benchmark the hardware and the screen"): one
-// configurable load that the bench (renderer/bench/suite.json "stress", tools/bench.mjs, firmware/fw_bench.h, the hub's
-// /wasm/bench) ramps until the frame rate drops. Not a Facet component: section "bench", so the workbench nav leaves it
+// Stress / capability item ("benchmark the hardware and the screen"): one
+// configurable load that the bench (renderer/bench/suite.json "stress", tools/bench.mjs, firmware/fw_bench.h, the
+// workbench's Bench page) ramps until the frame rate drops. Not a Facet component: section "bench", so the workbench nav leaves it
 // out; it uses the theme tokens so it reads in both themes, and real components where the load is a component (the
 // animated weather icon).
 //   kind  ramps (n instances of 48 dp in a grid, shrinking only once they no longer fit; every one moving every frame):

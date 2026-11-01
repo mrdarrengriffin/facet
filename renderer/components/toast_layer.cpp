@@ -66,7 +66,7 @@ struct Demo {
 };
 
 // quiet = a build-time follow-up (stack > 1): no event, no sound, and the toast it pushes out leaves silently too, so a
-// workbench sample's arrival never re-arms its demo reset (the hub mutes only the first 250 ms of a rebuild)
+// workbench sample's arrival never re-arms its demo reset (the workbench mutes only the first 250 ms of a rebuild)
 void push(Demo *D, int si, bool quiet = false) {
   if (si < 0 || si >= N_SAMPLES) return;
   const Sample &s = SAMPLES[si];

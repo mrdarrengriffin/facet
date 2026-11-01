@@ -120,7 +120,7 @@ const doc = [
   sec('focus', focus.label, focus.about),
   sec('tap', rest.label, rest.about),
   sec('audit', 'Audit', 'What each approved component did per state before the states were written down (round 1). The page and the components now read these rules from tokens/states.json.'),
-  sec('decisions', 'Decisions', 'The inconsistencies the audit found, each decided by Darren (2026-10-21: "I think your suggestions are great here") and now a rule above.'),
+  sec('decisions', 'Decisions', 'The inconsistencies the audit found, each decided (" here") and now a rule above.'),
 ];
 L.push(`#define FW_STATES_SECTIONS ${cstr(JSON.stringify(doc))}`);
 L.push(`#define FW_STATES_SECTION_IDS ${cstr(JSON.stringify(doc.map((d) => d.props.section)))}`);

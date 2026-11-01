@@ -11,7 +11,7 @@
 //                                                          from it (entity / entities = one / a comma list of
 //                                                          `domain` ids, filled by the host's discovery)
 //               "header": {"label": "Office", "settings"?: false},   settings = the chrome's settings button (a
-//                                                          Home). Back is the renderer's (facet-188): every screen
+//                                                          Home). Back is the renderer's: every screen
 //                                                          but the device's root has it; "back" is accepted, ignored
 //               "layout": "list" | "center" | "cards",    list = one scrolling column (rows touch), center = one node
 //                                                          centred in the content box, cards = the card grid
@@ -114,11 +114,11 @@
 // feeds       (CONTRACT.md C51) "feeds": {"panel.weather": {"source": "$source", "weather": "$weather"}}:
 //              which adapter fills each feed this screen reads, and its settings (texts; "$param" = the screen's
 //              parameter). Applied when the screen is built (fw::ha::set_feed_config: the adapter refetches on a change).
-// card        (Darren: every screen comes with its Home card) "card": {"icon": "weather", "preview": "weather",
+// card        (every screen comes with its Home card) "card": {"icon": "weather", "preview": "weather",
 //              "text": {"e": "panel.weather", "a": "temp"}, ...}: the Card a Home page card for this screen shows (the
 //              Card's props; binds on the screen's feeds). Home applies the page's "feeds" too, so the card shows the
 //              same data as the screen. No card = the icon + the page's name only.
-// locked      (Darren, CONTRACT C53) "locked": true = a made screen: the editor opens it for its settings
+// locked      (CONTRACT C53) "locked": true = a made screen: the editor opens it for its settings
 //              only (no slots, no Add, no Remove). Every factory screen is locked; a person's own screen is not (and
 //              its root is a Column, so its top + foot always take parts). A sent copy of a factory id stays refused
 //              (no_built_in).
@@ -146,13 +146,13 @@
 //              to the factory deck. No "on": a page you don't want is not in the deck (Settings > Screens and the
 //              editor list the other page kinds as off; turning one on adds it at the end).
 //
-// Validation (one implementation for the panels, the WASM workbench and the hub's dry render): unknown keys (style
+// Validation (one implementation for the panels, the WASM workbench and its dry render): unknown keys (style
 // keys such as colour / x / width / font get `style_key`), unknown components, props a component doesn't have,
 // values outside the prop's options / range, binds, actions outside the whitelist, budgets (nodes, binds, bytes).
 // Errors: [{path, code, msg}].
 //
 // Store: factory specs (generated from renderer/specs/*.json into specs_gen.h, compiled in: a panel works with no
-// hub), overrides (sent screens and the deck) each kept with a CRC and its last good copy through a Storage the host
+// workbench), overrides (sent screens and the deck) each kept with a CRC and its last good copy through a Storage the host
 // gives (panel: NVS; WASM: memory with fault injection for the power-loss test). Apply = validate fully, build it
 // once off screen, then store and swap; a half-sent or failing spec never shows; the same content (canonical JSON CRC,
 // whatever its rev) is "unchanged"; different content applies (rev is the sender's label).
@@ -287,7 +287,7 @@ inline lv_obj_t *slot_of(lv_obj_t *o, int n) {  // the layout node itself may be
   if (lv_obj_has_flag(o, SLOT) && n-- == 0) return o;
   return slot(o, n);
 }
-// Slots with allowed components (facet-205, CONTRACT.md C8a): a component's meta "slots" declares every place a spec
+// Slots with allowed components (CONTRACT.md C8a): a component's meta "slots" declares every place a spec
 // may put other components. Either a count (legacy layouts: N numbered slots, any component, any number) or a list of
 // declarations, one per slot: {"name", "about", "accepts": [component ids] | "any", "max": n (0 = no limit),
 // "count": n (n numbered slots of this kind: "in": k, "slot": i), "template": true (the Grid's "cell" template)}. A
@@ -588,7 +588,7 @@ inline void check_value(const PropInfo &pi, ArduinoJson::JsonVariantConst v, con
     err(e, path, "bad_prop", pi.name + ": text over " + (pi.name == "items" ? "256" : pi.name == "src" ? "512" : "64") + " characters");
 }
 // a screen spec: errors into e (empty = valid)
-// Grid + Icon rules a prop check can't see (board facet-171): span only in a static grid, inside its cols; cell only
+// Grid + Icon rules a prop check can't see: span only in a static grid, inside its cols; cell only
 // with items, one non-layout node; cols xor min; an Icon's step xor fit: cell
 inline void check_grid(ArduinoJson::JsonVariantConst n, ArduinoJson::JsonArrayConst nodes, int i, const std::string &c, const std::string &p, Errs &e, int &binds) {
   if (!n["span"].isNull()) {
@@ -727,7 +727,7 @@ inline void check_screen(ArduinoJson::JsonVariantConst s, size_t bytes, Errs &e)
     const std::vector<PropInfo> *pis = props_of(c.c_str());
     const Component *comp = find(c.c_str());
     if (!pis || !comp || strcmp(comp->section, "components")) { err(e, p + ".c", "unknown_component", "no component " + c + " in this build"); continue; }
-    if (sd) {  // the slot's allow list and max count (facet-205)
+    if (sd) {  // the slot's allow list and max count
       if (!slot_takes(*sd, c)) err(e, p + ".c", "bad_slot", sw + " takes " + slot_list(*sd) + ", not " + c);
       else if (auto pin = sd->pins.find(c); pin != sd->pins.end())  // a pinned variant (C8a): each pinned prop set to an allowed value
         for (const auto &pv : pin->second) {
@@ -959,7 +959,7 @@ inline const char *factory(const std::string &id) {
     if (id == f.id) return f.json;
   return nullptr;
 }
-// a sent screen (facet-188): a live spec screen with no factory copy (an agent's / the AI's). It opens one level
+// a sent screen: a live spec screen with no factory copy (an agent's / the AI's). It opens one level
 // above Home and replaces the previous sent screen (core/device.cpp "Navigation").
 inline bool sent(const std::string &id) { return !factory(id) && S().over.count(id); }
 inline const char *screen_json(const std::string &id) {
@@ -1034,8 +1034,8 @@ inline std::vector<std::string> off_kinds() {
   for (const auto &f : FACTORY) if (!used.count(f.id) && page_role(f.id)) v.push_back(f.id);
   return v;
 }
-// sent page screens (a spec sent by Claude, the API or an agent, not a built-in) the deck has no page of: Settings >
-// Screens' "Sent" group (Add to deck / Remove = revert), the editor's Sent list (facet-166)
+// sent page screens (a spec sent through the API or by an agent, not a built-in) the deck has no page of: Settings >
+// Screens' "Sent" group (Add to deck / Remove = revert), the editor's Sent list
 inline std::vector<std::string> sent_kinds() {
   const std::set<std::string> used = deck_kinds();
   std::vector<std::string> v;
@@ -1619,7 +1619,7 @@ inline bool run_action(Screen *s, Node &n, ArduinoJson::JsonVariantConst a, cons
   }
   if (d == "light.toggle") {  // a light, or a switch (a Home light card takes both)
     const char *svc = n.entity.rfind("switch.", 0) == 0 ? "switch.toggle" : "light.toggle";
-    // hold for HA's answer = the other side (facet-181: a bare hold kept HA's answer off the card's state line)
+    // hold for HA's answer = the other side (a bare hold kept HA's answer off the card's state line)
     const std::string *cur = ha::get(n.entity, "");
     const std::string want = cur && *cur == "on" ? "off" : "on";
     if (!*ha_act(n, svc, n.entity.c_str())) ha::hold(n.obj, PENDING_MS, n.entity, "", want);
@@ -1970,7 +1970,7 @@ inline lv_obj_t *build(lv_obj_t *parent, const std::string &id, Props opened, st
   // parameter ("$name" with no name given) = the spec's name, as before
   const char *hl = doc["header"]["label"] | "";
   hd["label"] = doc["header"]["label"].isNull() ? "" : *hl ? hl : (doc["name"] | "");
-  hd["back"] = !at_root;  // the renderer owns Back (facet-188): a spec cannot remove it
+  hd["back"] = !at_root;  // the renderer owns Back: a spec cannot remove it
   hd["settings"] = doc["header"]["settings"] | false;  // the settings button in the chrome (Home)
   hd["clock"] = doc["header"]["clock"] | true;  // false: no time (the Media screen, docs header clock: false)
   if (doc["header"]["actions"].is<ArduinoJson::JsonObjectConst>()) hd["actions"] = doc["header"]["actions"];  // a Home's header actions
@@ -2069,7 +2069,7 @@ inline lv_obj_t *build(lv_obj_t *parent, const std::string &id, Props opened, st
 }
 
 // every concrete entity the specs bind (the deck's union, subscribed at boot; "$param" binds come when opened)
-// only the panel's real deck (facet-169): a Home's cards, a page's own params ("$name" -> the page's value; no value =
+// only the panel's real deck: a Home's cards, a page's own params ("$name" -> the page's value; no value =
 // the spec default = a demo id, skipped) and the literal ids of a SENT spec; a factory spec's literal ids are demo
 // entities (light.living_room_ceiling ...), so the panel never subscribes to them at boot (a page still wants what it
 // binds once it is built)
@@ -2126,10 +2126,10 @@ inline Reload &reload_hook() {
   return r;
 }
 // out: {ok, status: applied|unchanged|refused, id, rev, errors?}; dry = a hidden parent for the off-screen build
-// kind "check" / "check_deck" (facet-163, agents): validate (+ the off-screen build for a screen) and answer, store
+// kind "check" / "check_deck" (agents): validate (+ the off-screen build for a screen) and answer, store
 // nothing: {ok, status: valid|refused, id, rev, errors?}
-// built-in screens (facet-209): a sent screen may be anything an agent wants, under its own id; a
-// factory id is refused (built_in: a built-in only takes a theme). kind "screen_dev" / "check_dev" = the hub's own dev
+// built-in screens: a sent screen may be anything an agent wants, under its own id; a
+// factory id is refused (built_in: a built-in only takes a theme). kind "screen_dev" / "check_dev" = the workbench's own dev
 // path (Send specs, the house's copies, the tests), which may still replace a built-in without a firmware build.
 inline void no_built_in(const std::string &id, bool dev, Errs &e) {
   if (!dev && !id.empty() && factory(id)) err(e, ".id", "built_in", "a built-in screen can't be replaced: send yours under its own id (built-ins only take a theme)");
@@ -2239,7 +2239,7 @@ inline void revert(const std::string &id, ArduinoJson::JsonObject out) {
   if (reload_hook()) reload_hook()("deck");  // rebuild what shows (a reverted screen gone from the panel leaves the stack)
 }
 
-// ---- catalogue (components, props, binds, actions; one source for the hub, the schema and validation)
+// ---- catalogue (components, props, binds, actions; one source for the workbench, the schema and validation)
 inline void catalogue(ArduinoJson::JsonObject out) {
   out["protocol"] = PROTOCOL;
   ArduinoJson::JsonObject comps = out["components"].to<ArduinoJson::JsonObject>();

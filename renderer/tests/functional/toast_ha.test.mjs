@@ -1,4 +1,4 @@
-// Toasts from Home Assistant (facet-190): the panel's facet_toast action {title, body, icon, kind, duration ms} puts
+// Toasts from Home Assistant: the panel's facet_toast action {title, body, icon, kind, duration ms} puts
 // the toast on the facet.toast pair (firmware/fw_device.h toast_from_ha); the device maps it (core/device.cpp
 // toast_put, components/toast_layer.cpp push): kind = tone (unknown = info), icon = a Toast icon (unknown or empty =
 // the tone's own), duration >= 10 s = urgent (12 s life, else 6 s). It arrives over whatever screen shows.

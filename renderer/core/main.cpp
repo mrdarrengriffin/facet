@@ -112,7 +112,7 @@ EMSCRIPTEN_KEEPALIVE const char *fw_events() {
   return evout.c_str();
 }
 
-// Home Assistant data (core/ha.h): the host polls the wanted pairs and puts their values (hub /api/panel/entities)
+// Home Assistant data (core/ha.h): the host polls the wanted pairs and puts their values (from the workbench host)
 EMSCRIPTEN_KEEPALIVE const char *fw_ha_wants() {
   static std::string out;
   ArduinoJson::JsonDocument d;
@@ -180,7 +180,7 @@ std::vector<uint32_t> &get_queue() {
   static std::vector<uint32_t> q;
   static const bool reg = (fw::dev::ha_link::on_get([](uint32_t id, const std::string &url, const std::string &) {
                              if (id < fw::dev::ha_link::WS_ID) { q.push_back(id); return; }
-                             const size_t a = url.find("/api/");  // a REST read (ha_link::get): its path, through /api/panel/ha-get
+                             const size_t a = url.find("/api/");  // a REST read (ha_link::get): its path, through the host
                              rest_queue().push_back({id, a == std::string::npos ? url : url.substr(a + 5)});
                            }),
                            fw::dev::ha_link::set_proxy(true), true);
@@ -188,8 +188,8 @@ std::vector<uint32_t> &get_queue() {
   return q;
 }
 [[maybe_unused]] const bool get_registered = (get_queue(), true);
-// WS reads (ha_link::ws) ride the same queue: {"id": n, "ws": <the command>}, through the hub's
-// /api/panel/ha-ws; their reply comes back with fw_ha_chunk / fw_ha_got like a GET (ids from WS_ID up)
+// WS reads (ha_link::ws) ride the same queue: {"id": n, "ws": <the command>}, through the host;
+// their reply comes back with fw_ha_chunk / fw_ha_got like a GET (ids from WS_ID up)
 std::vector<std::pair<uint32_t, std::string>> &ws_queue() {
   static std::vector<std::pair<uint32_t, std::string>> q;
   static const bool reg = (fw::dev::ha_link::on_ws([](uint32_t id, const std::string &, const std::string &, const std::string &cmd) { q.push_back({id, cmd}); }), true);
@@ -465,7 +465,7 @@ EMSCRIPTEN_KEEPALIVE int fw_content_h(int id) {
 }
 
 // every object under stage `id`'s screen (depth first): [{d: depth (1 = the screen's children), x, y, w, h}] in device
-// px, coords as drawn (translate included): the workbench Pixel grid view outlines them (hub src/wasm/pixgrid.ts)
+// px, coords as drawn (translate included): the workbench Pixel grid view outlines them (workbench/src/pixgrid.ts)
 namespace {
 void rects(lv_obj_t *o, int depth, ArduinoJson::JsonArray arr) {
   for (uint32_t i = 0; i < lv_obj_get_child_count(o); i++) {
@@ -483,7 +483,7 @@ void rects(lv_obj_t *o, int depth, ArduinoJson::JsonArray arr) {
   }
 }
 }  // namespace
-// every tap target on stage `id`'s screen (the workbench "Tap areas" view, hub src/wasm/taps.ts): each visible clickable
+// every tap target on stage `id`'s screen (the workbench "Tap areas" view, workbench/src/taps.ts): each visible clickable
 // object with its hit area = its box grown by the ext click area (fx::hit, C32): [{x, y, w, h, bx, by, bw, bh, min}]
 // in device px (b* = the drawn box), min = touch:min now, so the page marks a target smaller than it
 namespace {
@@ -572,7 +572,7 @@ EMSCRIPTEN_KEEPALIVE const char *fw_hit(int id, int x, int y) {
   return out.c_str();
 }
 
-// the workbench Layout lab (hub src/wasm/lablayout.ts): fw_lab(id, cmd, arg)
+// the workbench Layout lab (workbench/src/lablayout.ts): fw_lab(id, cmd, arg)
 //   "tokens", ""           -> [[name, token px, now px]] every size token (fx::tunables)
 //   "tune", "name=px"      -> "" : that token as if it said px, live on every stage (fx::tune; "=" alone = all back)
 //   "uses", ""             -> ["name"]: the size tokens stage id's objects read (their shared styles + the pen while

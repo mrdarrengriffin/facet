@@ -13,7 +13,7 @@
 // item's build depends on (core/*.h, fw_core.cpp, fonts.cpp + the density's font header, tokens/*.json, the colour
 // generator), `files` one hash per foundations/components source (an item = its file + core), `glue` the device host
 // code (informational only). The firmware embeds the hashes it
-// was built from (fw_bundle_gen.h, GET /fw/info); same function here and in the hub (it runs --hashes).
+// was built from (fw_bundle_gen.h, GET /fw/info); same function here and in the workbench (it runs --hashes).
 // Fonts: fonts.cpp includes this density's generated font header (tools/gen_fonts.py from tokens/type.json; needs
 // renderer/.venv, tools/venv.sh); the bundle inlines it into fonts.cpp, because ESPHome #includes every header of a
 // component into main.cpp.
@@ -52,7 +52,7 @@ const coreExtra = ls('core', '.cpp').filter((f) => !OFF.has(f) && !['core/fw_cor
 const coreFiles = [...ls('core', '.h'), ...coreExtra, 'core/fw_core.cpp', 'core/fx_core.cpp', 'core/motion.cpp', 'core/atoms.cpp', 'core/states.cpp', 'core/mascot.cpp', 'core/device.cpp', 'core/fonts.cpp', 'core/icons.cpp', ...ls('tokens', '.json'), 'tools/gen_colour.mjs', 'tools/gen_type.mjs', 'tools/gen_space.mjs', 'tools/gen_fx.mjs', 'tools/gen_layout.mjs', 'tools/gen_motion.mjs', 'tools/gen_states.mjs', 'tools/gen_mascot.mjs', 'tools/gen_chart.mjs', 'tools/gen_theme.mjs', ...ls('themes', '.json'), 'catalogue/contract.json', 'tools/lib/looks.mjs', 'tools/gen_settings.mjs', 'tools/gen_specs.mjs', ...ls('specs', '.json'), 'sources/sources.json', 'tools/gen_fonts.py', 'tools/facet_font.inc', 'tools/gen_icons.mjs', ...lsr('icons')];
 const imgFiles = ['fw_images.h', 'fw_imgdec.h', 'fw_tjpgd.h', 'fw_tjpgd.c', 'fw_pngle.h', 'fw_pngle.c', 'fw_miniz.c'];  // the panel's image fetch + decoders (fw_images.h)
 const glueFiles = [...imgFiles.map((f) => 'firmware/' + f), 'firmware/fw_device.h', 'firmware/fw_bench.h', 'firmware/esphome_init.py', 'firmware/bundle.mjs', 'renderer/tools/gen_agents.mjs'];  // relative to ROOT
-const srcFiles = [...ls('foundations', '.cpp'), ...ls('components', '.cpp'), ...ls('screens', '.cpp'), ...ls('bench', '.cpp')].filter((f) => !OFF.has(f));  // bench = the stress item (facet-153)
+const srcFiles = [...ls('foundations', '.cpp'), ...ls('components', '.cpp'), ...ls('screens', '.cpp'), ...ls('bench', '.cpp')].filter((f) => !OFF.has(f));  // bench = the stress item
 const read = (rel) => readFileSync(join(HERE, rel));
 // a house overlay (FW_SPECS_OVERLAY, tools/gen_specs.mjs) changes the baked-in specs: part of the core hash
 const ovDir = process.env.FW_SPECS_OVERLAY || '';
@@ -64,7 +64,7 @@ const glue = sha(...glueFiles.flatMap((f) => [f, '\0', readFileSync(join(ROOT, f
 const files = Object.fromEntries(srcFiles.map((f) => [f, sha(read(f))]));
 const ids = {};
 for (const f of srcFiles) for (const m of read(f).toString().matchAll(/FW_COMPONENT\(\s*([A-Za-z0-9_]+)/g)) ids[m[1]] = f;
-// build check (facet-184): no part of a feature this flavour hides may reach the firmware (wip features, Lightning)
+// build check: no part of a feature this flavour hides may reach the firmware (wip features, Lightning)
 const leaks = [...hiddenIds(FLAV)].filter((id) => ids[id]);
 if (leaks.length) { console.error(`bundle: hidden features in a ${FLAV} build: ${leaks.join(', ')} (renderer/features.json)`); process.exit(1); }
 const hashes = { v: 1, density, features: FLAV, core, corefiles, glue, files, ids };
@@ -150,7 +150,7 @@ for (const f of srcFiles) {
   const n = `${f.startsWith('foundations') ? 'f' : f.startsWith('screens') ? 's' : 'c'}_${basename(f, '.cpp')}`;
   put(`${n}.cpp`, link(`fwlink_${n}`, read(f).toString()));
 }
-// agent discovery docs (facet-163): /llms.txt + /agents.md from this release's catalogue (tools/gen_agents.mjs), each
+// agent discovery docs: /llms.txt + /agents.md from this release's catalogue (tools/gen_agents.mjs), each
 // gzipped + plain (curl without --compressed gets text) into fw_docs.cpp; fw_device.h "Agent docs" serves them
 {
   const tmpD = join(C, '..', '.facet_docs');

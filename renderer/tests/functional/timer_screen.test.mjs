@@ -1,7 +1,7 @@
 // Timer screen (specs/timer.json, concept T1): the page's flows on the
 // panel's real timer list (core/timers.cpp): idle presets, start, + New = the lengths again (picking) and Cancel
 // back, switching timers with a chip, cancelling the shown one only, two of the same length kept apart, a done one
-// stopped. Every test fails without the behaviour (the flows Darren found broken: chips did nothing, Cancel hit the
+// stopped. Every test fails without the behaviour (the flows found broken: chips did nothing, Cancel hit the
 // wrong timer).
 const tm = (t, q) => JSON.parse(t.b.str("timer", (c) => t.b.str(JSON.stringify(q), (a) => t.b.m.UTF8ToString(t.b.m._fw_test(c, a)))));
 const list = (t) => tm(t, { op: 'list' }).timers;
@@ -67,7 +67,7 @@ export default {
       t.tap(/^cancel$/i); t.wait(300);
       t.eq(list(t).map((x) => String(x.id)), [String(ring)], 'Cancel removed the shown one, the other stays');
     } },
-    { name: 'Darren\'s freeze (2026-10-28 21:36): 10 min, + New, 3 min, + New, 20 min stays responsive', async run(t) {
+    { name: 'the freeze: 10 min, + New, 3 min, + New, 20 min stays responsive', async run(t) {
       await open(t);
       for (const step of [/^10 min$/i, /^\+ new$/i, /^3 min$/i, /^\+ new$/i, /^20 min$/i]) { t.tap(step); t.wait(400); }
       t.eq(list(t).length, 3, 'three timers');

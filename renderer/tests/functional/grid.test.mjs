@@ -1,7 +1,7 @@
-// Grid (components/grid.cpp, contract v2; geometry = the core atom fx::grid), facet-205: equal cells from
+// Grid (components/grid.cpp, contract v2; geometry = the core atom fx::grid), equal cells from
 // the grid's OWN width, slots with allow lists, items repeating from a list, rows / +N, the empty state. Each test is
-// one row of the release gate and fails without the behaviour.
-// Approved original: the pre-contract Grid (board facet-171, notes icon-grid-proposal §3): same sums, same look.
+// one row of the definition of done (CONTRACT.md 13) and fails without the behaviour.
+// Approved original: the pre-contract Grid (notes icon-grid-proposal §3): same sums, same look.
 import { readdirSync, readFileSync } from 'node:fs';
 import { basename, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -43,7 +43,7 @@ const expectW = (t, W, gap, cols) => Math.floor((W - gap * (cols - 1)) / cols / 
 export default {
   id: 'grid', family: 'layout', about: 'Grid layout on the contract: own-width columns, slots with allow lists, items, rows / +N, empty, update path, proofs.',
   tests: [
-    // ---------------------------------------------------------------- slots (facet-205)
+    // ---------------------------------------------------------------- slots
     { name: 'slots: meta declares cell (64, max 1) and item (template), each with an allow list of real components; contract 2', async run(t) {
       await at(t, { outline: true });
       const m = metaOf(t, 'grid'), ids = new Set(JSON.parse(t.b.m.UTF8ToString(t.b.m._fw_meta())).map((c) => c.id));

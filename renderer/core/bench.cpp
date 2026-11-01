@@ -1,4 +1,4 @@
-// Bench probes (facet-153): what the headless bench runner (tools/bench.mjs) reads from a WASM build, per refresh of
+// Bench probes: what the headless bench runner (tools/bench.mjs) reads from a WASM build, per refresh of
 // every display. Same window as the panels' GET /fw/perf (firmware/fw_device.h): LVGL RENDER_START -> RENDER_READY =
 // render + flush. WASM only (emscripten.h): not in the panel bundle (firmware/bundle.mjs lists its core files).
 //   fw_bench_attach()       hook every display (idempotent) and zero the counters

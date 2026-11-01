@@ -1,5 +1,5 @@
-// Set up: the system screen a panel shows until it is on Wi-Fi and added to Home Assistant (design: claude-assistant
-// notes/facet-design/install-onboarding.md section 3). Built in, not in the deck, no Back while the
+// Set up: the system screen a panel shows until it is on Wi-Fi and added to Home Assistant (esphome/packages/net_public.yaml,
+// esphome/board/setup_screen.h). Built in, not in the deck, no Back while the
 // panel is not set up (prop back = reached from Settings > Wi-Fi and Home Assistant later). State comes from firmware
 // facts only (Wi-Fi, hotspot clients, Improv, API, an "adopted" pref); here every state is a prop so the workbench
 // shows each one. Plain words on screen: no "Improv" or "captive portal".

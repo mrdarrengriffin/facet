@@ -1,5 +1,5 @@
 // Header (components/header.cpp, contract v2), round 3: [Back] [Title] ... [END slot] [Time]. Each test is
-// one row of the release gate and fails without the behaviour.
+// one row of the definition of done (CONTRACT.md 13) and fails without the behaviour.
 // Approved original: the Astro header (packages/ui/src/layout.ts header({label, onBack, right, clock}), CSS .fs-header).
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -96,7 +96,7 @@ export default {
       t.ok(JSON.stringify(JSON.parse(t.b.spec('check', spec('middle')) || '{}')).includes('bad_in'), 'slot middle refused');
       t.ok(!JSON.stringify(JSON.parse(t.b.spec('check', spec('end')) || '{}')).includes('bad_in'), 'slot end ok');
     } },
-    { name: 'slot rules at spec load (facet-205): wrong type, a 5th end item, the header\'s own items count, two titles, each: refused with a path; 4 pass', async run(t) {
+    { name: 'slot rules at spec load: wrong type, a 5th end item, the header\'s own items count, two titles, each: refused with a path; 4 pass', async run(t) {
       await t.device();
       const ck = (nodes, header) => JSON.stringify(JSON.parse(t.b.spec('check', { v: 1, id: 'hdrslots', rev: 1, name: 'Slots', layout: 'list', ...(header ? { header } : {}), nodes }) || '{}'));
       const ib = (slot) => ({ c: 'icon_button', p: { icon: 'close', style: 'square' }, in: 'header', ...(slot ? { slot } : {}) });

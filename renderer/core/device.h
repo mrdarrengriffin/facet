@@ -2,7 +2,7 @@
 // workbench: a screen stack, Facet's screen transition and the taps that move between screens. Old Facet:
 // @facet/ui device.ts createDevice() (go(id), back, Home's settings button, the Content rise on every cut).
 //   mount      dev::mount(parent, "home") makes a full-screen root (lay::screen_w x screen_h) and shows that screen.
-//              The workbench's "Device" page (screens/device.cpp, /wasm/screens/device) and the panel firmware
+//              The workbench's "Device" page (screens/device.cpp) and the panel firmware
 //              (POST /fw/show {"id":"device"}, firmware/fw_device.h) both just render that component.
 //   navigate   any fw::emit from inside the device (fw::listen on the root): "navigate" <id> (the screen chrome's
 //              settings button, Home's cards) = go(id); "back" (the Header's Back button) = back. The tap's own sound
@@ -136,7 +136,7 @@ struct Timer { int state = 0; long long ends = 0; int total = 0; std::string lab
 // never held whole: Scan reads it chunk by chunk (depth stack + three capped strings + the kept rows), on any thread
 // (the firmware's HTTP task parses there and hands the Scan over with done()). The transport is the platform's:
 // on_get(id, url, token) starts the GET, chunk()/done() bring the body and the end back (main loop). set_proxy: the
-// host fetches with its own token (the workbench's hub proxy), so the token never leaves the module.
+// host fetches with its own token (the workbench's host), so the token never leaves the module.
 // Agents / HA: actions ha.connect {url, token} and ha.entities {domains} (core/spec.h, CONTRACT.md C50).
 namespace ha_link {
 struct Entity { std::string id, name, icon; };
@@ -187,8 +187,8 @@ void done(uint32_t id, bool ok, const std::string &why, Scan *parsed = nullptr);
 // One WebSocket read (the Energy feed: HA's Energy dashboard): connect to <url>/api/websocket, auth with
 // the token, send cmd (one command as JSON, no "id"), stream its result message back through feed (chunk() with an
 // id from WS_ID up), then end(ok, why) (done()); the link closes. Reads only: the transport allows a closed list
-// (energy/get_prefs, recorder/statistics_during_period, recorder/list_statistic_ids; WASM: the hub's
-// /api/panel/ha-ws, its own token; the firmware: to come). on_ws: the platform's sender. ws() = 0: not ready or no
+// (energy/get_prefs, recorder/statistics_during_period, recorder/list_statistic_ids; WASM: the workbench
+// host, with its own token; the firmware: to come). on_ws: the platform's sender. ws() = 0: not ready or no
 // transport (end is not called).
 constexpr uint32_t WS_ID = 1u << 30;
 using WsSink = void (*)(uint32_t id, const std::string &url, const std::string &token, const std::string &cmd);
@@ -196,7 +196,7 @@ void on_ws(WsSink f);
 uint32_t ws(const std::string &cmd, std::function<void(const char *, size_t)> feed, std::function<void(bool, const std::string &)> end);
 // One REST read (the Energy feed's extras: an integration's entities and calendars): GET <url>/api/<path>
 // with the token through the platform's GET (on_get; ids from WS_ID up, kept like a ws read), the body streamed back
-// through feed, then end(ok, why). Reads only, a closed list on the transport (WASM: the hub's /api/panel/ha-get:
+// through feed, then end(ok, why). Reads only, a closed list on the transport (WASM: the workbench host's HA reads:
 // states/<entity>, calendars, calendars/<calendar>?start&end). 0 = not ready or no transport (end is not called).
 uint32_t get(const std::string &path, std::function<void(const char *, size_t)> feed, std::function<void(bool, const std::string &)> end);
 }  // namespace ha_link

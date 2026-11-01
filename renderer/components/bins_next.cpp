@@ -1,4 +1,4 @@
-// Bins next: the Bins screen's hero, the next collection (the panel lab's Bins screen, board facet-72: the old
+// Bins next: the Bins screen's hero, the next collection (the panel lab's Bins screen, the old
 // bins_view hero), on the contract (renderer/CONTRACT.md, "contract": 2). Specific to the Bins screen.
 //   row      a real Bins art (fw::find("bins_art"), C8b) and a column beside it, the gutter apart, centred on the row
 //   column   the caption (type:label caps, fg:accent-text when it matters now: put out tonight / collection today,

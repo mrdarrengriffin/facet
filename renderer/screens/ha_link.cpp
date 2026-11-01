@@ -13,7 +13,7 @@
 //   The rows follow the link while the page shows (a 250 ms timer compares ha_link::rev() and builds them again).
 //   Read now shows only when the link is set up and not reading.
 // Props (the workbench): url, token = ha.connect on build when given (a token typed here stays in the module; the
-// workbench's own fetch goes through the hub with the hub's token). Update path: none needed (rows follow the link).
+// workbench's own fetch goes through its host with the host's token). Update path: none needed (rows follow the link).
 #include "fw.h"
 #include "device.h"
 
@@ -94,7 +94,7 @@ const char *META = R"({
   "icons": ["back@glyph"],
   "props": [
     {"name": "url", "about": "Home Assistant's address (ha.connect on open; empty = leave it).", "type": "text", "default": ""},
-    {"name": "token", "about": "A long-lived access token (ha.connect on open; empty = keep the one set). The workbench reads through the hub with the hub's own token.", "type": "text", "default": ""}
+    {"name": "token", "about": "A long-lived access token (ha.connect on open; empty = keep the one set). The workbench reads through its host with the host's own token.", "type": "text", "default": ""}
   ]
 })";
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Contract lint (renderer/CONTRACT.md). A component whose meta says "contract": 2 is MIGRATED: it may not know the
 // screen or card width, hold or resolve a colour, draw outside the pen, or set local styles / sizes (it fills its
-// parent through core/fx.h). A violation in a migrated component fails (build.sh, facet-gate). Unmarked components are
+// parent through core/fx.h). A violation in a migrated component fails (check.sh). Unmarked components are
 // legacy: counted per rule = the migration backlog, never a failure. Rule parts: a migrated component's meta "parts" =
 // the parts its code attaches / draws (C46).
 //   node tools/contract_lint.mjs [--summary | --list]   (--list = the legacy backlog per component)

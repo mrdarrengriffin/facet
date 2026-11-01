@@ -150,7 +150,7 @@
       "grid": 4,
       "build": "1x",
       "role": "own snapped table (`1x`), not a scaled copy",
-      "optical": "thin weights one step heavier, small text one step up (Darren's V2), so it stays crisp at fewer pixels"
+      "optical": "thin weights one step heavier, small text one step up (V2), so it stays crisp at fewer pixels"
     }
   },
   "sizeClass": {

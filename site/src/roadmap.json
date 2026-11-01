@@ -144,8 +144,7 @@
    {
     "name": "Behaviour tests",
     "group": "Platform",
-    "status": "done",
-    "note": "5913 tests (interaction, scroll, sound, lag proxy) for every component + screen, in facet-gate full; 51 findings in notes/facet-design/behaviour-findings.md (d575c79)"
+    "status": "done"
    },
    {
     "name": "Floor plans",

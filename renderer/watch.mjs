@@ -2,8 +2,8 @@
 // Facet WASM workbench watcher: on a save under components/ core/ foundations/ screens/ tokens/ tools/ icons/ specs/
 // sources/ themes/ it rebuilds the 720 density (1.5x) only; the workbench page polls the build manifest and re-renders
 // by itself. The 480 density (1x) builds once the tree has been quiet for QUIET_MS, or at once on SIGUSR1
-// (`systemctl kill --kill-whom=main -s USR1 claude-wasm-watch`); after it, catalogue/ is regenerated from the build (the
-// hub's spec pages read it), so it is never more than a minute behind. The docs site (../site, when present) is rebuilt when a file under
+// (`kill -USR1 <pid>`); after it, catalogue/ is regenerated from the build (the
+// workbench's spec pages read it), so it is never more than a minute behind. The docs site (../site, when present) is rebuilt when a file under
 // site/src or specs/ changed, or on SIGUSR2; never after every build. Run: `node watch.mjs`. Ctrl-C to stop.
 import { spawn } from 'node:child_process';
 import { existsSync, renameSync, rmSync, watch } from 'node:fs';

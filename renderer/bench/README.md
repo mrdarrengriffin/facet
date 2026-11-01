@@ -1,6 +1,6 @@
 # Bench
 
-Proof in numbers for every Facet component and screen (facet-153): frame cost, redrawn area and memory, measured
+Proof in numbers for every Facet component and screen: frame cost, redrawn area and memory, measured
 headless in the WASM build at each panel's size and checked against a budget per device.
 
 | File | What |
@@ -20,8 +20,7 @@ cd renderer && heavy node tools/bench.mjs [--device guition-4848s040|waveshare-p
 
 On the glass: `node tools/bench.mjs --panel guition-4848s040 --host <ip> --out panel.json` (same cases, about 6 min per panel),
 then `node tools/bench.mjs --calibrate panel.json wasm.json [--write]` (estimate error, and a fit over every case
-written to `budgets.json` `measured` + `build_factor`). The full WASM suite takes about 8 s for both devices (174 results). The host hub's `/wasm/bench` page runs it as well
-(`/api/wasm/bench`) and keeps the history.
+written to `budgets.json` `measured` + `build_factor`). The full WASM suite takes about 8 s for both devices. The workbench's Bench page runs it as well.
 
 ## What the numbers mean
 
@@ -37,9 +36,9 @@ written to `budgets.json` `measured` + `build_factor`). The full WASM suite take
 - **Heap** = malloc growth of the case after it settles (WASM, a proxy for the LVGL heap on the panel).
 - **Build ms** = `fw_render` + the first frame in WASM. It isn't mapped to the panels yet (no anchor); `budgets.json`
   `build_factor` turns the flag on once Phase 2 measures it.
-- **Checks per device** (`budgets.json` `checks`). Waveshare = absolute: fps `fps_min`, p95 `frame_ms_max`. Guition (Darren
-  2026-10-22: it runs as fast as it can) = relative: **regression** (WASM ms more than `regression_pct` over the
-  accepted baseline, median of `--repeat 3`; the hub's "Accept as baseline"), **pacing** (panel p95 over `pacing_ratio`
+- **Checks per device** (`budgets.json` `checks`). Waveshare = absolute: fps `fps_min`, p95 `frame_ms_max`. Guition (it runs as fast
+  as it can) = relative: **regression** (WASM ms more than `regression_pct` over the
+  accepted baseline, median of `--repeat 3`; `--baseline <run.json>`), **pacing** (panel p95 over `pacing_ratio`
   x the average while it moves = judder). Every check is computed for both devices and shown; only the listed ones flag.
 - Over budget: fps under `fps_min` while the content wants to move faster, p95 panel ms over `frame_ms_max`, a still
   case (not `live`) redrawing while idle, heap or objects over budget.
@@ -66,7 +65,7 @@ at the end. Nothing polls the panel while it measures.
 - At the end, the panel shows what it showed before the batch. Boot safety (fw_device.h): after a crash reset, the
   saved page is not shown again; the device home is.
 
-**Host:** `bench.mjs --panel guition-4848s040|waveshare-p4-86 --host <ip>` (or the `/wasm/bench` page, target = the panel) sends the
+**Host:** `bench.mjs --panel guition-4848s040|waveshare-p4-86 --host <ip>` (or the workbench's Bench page, target = the panel) sends the
 batch, sleeps the panel's `eta_s` (~4.5 min for the full suite), then GETs every 10 s until done. Cases the firmware
 does not register, `browser_only` cases and `panel_skip` are listed as skipped. Then `--calibrate panel.json
 headless.json [--write]` reports the estimate error and fits `a, b` over every moving case (`budgets.json` `measured`,
@@ -82,10 +81,10 @@ ring, a second pointer indev, one 5 ms lv_timer.
 
 ## Stress / capability suite (2026-10-22, round 3)
 
-Benchmarks the hardware and the screen, not our components (Darren: "how many instances on a screen can be put on there
-before it starts lagging"). The load is `bench/stress.cpp` (item `stress`, section "bench", not in the workbench nav);
+Benchmarks the hardware and the screen, not our components (how many instances fit on a screen
+before it starts lagging). The load is `bench/stress.cpp` (item `stress`, section "bench", not in the workbench nav);
 the cases are generated from `suite.json` `stress` (tag `stress`, never in the full suite; `--case tag:stress`, or Tests =
-Stress on `/wasm/bench`). Every target runs it: headless (estimates for both panels), this browser, each panel (its own
+Stress on the Bench page). Every target runs it: headless (estimates for both panels), this browser, each panel (its own
 batch, split into batches of at most 64 cases, ramp groups never split).
 
 - **Ramps to the knee:** n instances of 48 dp (shrinking only once they no longer fit) of `icons` (the animated Weather
@@ -103,7 +102,7 @@ batch, split into batches of at most 64 cases, ramp groups never split).
   cases only), stopping before `reserve` (internal 64 KB, PSRAM 1 MB) using the last step's bytes per object.
 - **Touch to frame:** `touch` scenario, 5 taps through the bench pointer: press to the first rendered frame after it.
 
-The capability card (`apps/hub/src/lib/bench-card.mjs` in the host repo) turns a run into knees, the fps-by-size curve
+The workbench's capability card turns a run into knees, the fps-by-size curve
 per motion, raw rates, memory and touch, with the change against the previous stress run on the same target.
 
 **Results 2026-10-22 (real, on the glass):** Guition: 62 fps ceiling, ~16 animated icons / 6 arcs / 12 boxes / 8

@@ -10,9 +10,9 @@ const CARD_H = { '1.5x': 280, '1x': 184 };  // lay::card_h (tokens/layout.json)
 export default {
   id: 'readout', family: 'cards', about: 'Sensor readout: label + live value; the Home sensor card is two of these in one slot.',
   tests: [
-    // facet-182 (office Waveshare): Home sensor values vanished and never came back. HA values
+    // Seen on a Waveshare: Home sensor values vanished and never came back. HA values
     // reached the panel store, so suspect = the fade-on-update when updates arrive quicker than the fade.
-    ...[[20, 'every 20 ms'], [80, 'every 80 ms'], [150, 'every 150 ms']].map(([gap, how]) => ({ name: `Home: rapid HA updates (${how}) end on the last value, fully drawn (facet-182)`, async run(t) {
+    ...[[20, 'every 20 ms'], [80, 'every 80 ms'], [150, 'every 150 ms']].map(([gap, how]) => ({ name: `Home: rapid HA updates (${how}) end on the last value, fully drawn`, async run(t) {
       await t.device(DECK);
       const ref = t.objs().find((o) => o.text && /°|^\d/.test(o.text) && t.part('readout', /^garage$/i) && inside(o, t.part('readout', /^garage$/i)));
       for (let i = 0; i < 30; i++) {
@@ -43,7 +43,7 @@ export default {
     { name: 'update: new value shows, silently', mount: ['readout', { label: 'Dishwasher', state: '0.8 W', half: true }], run(t) {
       const ev = t.update({ state: '1.2 kW' }); t.silent(ev); t.has(val(t, 'Dishwasher'), '1.2 kW', 'new value');
     } },
-    { name: 'update to empty then back: the value returns (facet-182)', mount: ['readout', { label: 'Dishwasher', state: '0.8 W', half: true }], run(t) {
+    { name: 'update to empty then back: the value returns', mount: ['readout', { label: 'Dishwasher', state: '0.8 W', half: true }], run(t) {
       t.update({ state: '' }); t.update({ state: '3 W' }); t.has(val(t, 'Dishwasher'), '3 W', 'value after an empty update');
     } },
     { name: 'a tap does nothing (read-only)', mount: ['readout', { label: 'Dishwasher', state: '0.8 W', half: true }], run(t) {
@@ -59,18 +59,18 @@ export default {
       t.ha.set('binary_sensor.back_door', 'on'); t.ha.set('sensor.garage_temperature', '21.0'); const ev = t.wait(800);
       t.has(val(t, 'Back door'), /open/i, 'door open'); t.has(val(t, 'Garage'), /21/, 'new temperature'); t.silent(ev);
     } },
-    { name: 'Home: unavailable then back: the value returns (facet-182)', async run(t) {
+    { name: 'Home: unavailable then back: the value returns', async run(t) {
       await t.device(DECK);
       t.ha.unavailable('sensor.garage_temperature'); t.wait(800);
       t.ok(val(t, 'Garage').length > 0, 'unavailable shows a word, not a blank');
       t.ha.set('sensor.garage_temperature', '19.0'); t.wait(800); t.has(val(t, 'Garage'), /19/, 'value back');
     } },
-    { name: 'Home: empty state then a value: it returns (facet-182)', async run(t) {
+    { name: 'Home: empty state then a value: it returns', async run(t) {
       await t.device(DECK);
       t.ha.set('sensor.garage_temperature', ''); t.wait(800); t.ha.set('sensor.garage_temperature', '17.5'); t.wait(800);
       t.has(val(t, 'Garage'), /17[.,]5/, 'value after an empty state');
     } },
-    { name: 'Home: HA disconnect + reconnect: sensor values come back (facet-182)', async run(t) {
+    { name: 'Home: HA disconnect + reconnect: sensor values come back', async run(t) {
       await t.device(DECK);
       const before = [val(t, 'Back door').join(), val(t, 'Garage').join()];
       t.ha.disconnect(); t.wait(800); t.ha.reconnect(); t.wait(800);

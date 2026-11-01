@@ -13,7 +13,7 @@ node renderer/tools/functional.mjs --probe device  # what a mount shows (texts, 
 Options: `--den 1.5x|1x|all`, `--grep <test name part>`, `--png fail|all|none` (default fail), `--out <dir>`,
 `--json <file>`, `--soft` (exit 0 on failures). Build = `FW_OUT` (env or `local.env`), else `renderer/out`.
 Output: `out/results.json` (per test x size: ok, fails, log, ms, png) + `out/png/<id>/<size>-<test>.png`.
-Workbench page: `/wasm/tests` (hub; Re-run runs it against the live build). Gate: `facet-gate` step `functional`
+Workbench page: Tests (Re-run runs it against the live build). Gate: `check.sh gate` step `functional`
 (non-blocking WARN for now; `fast --ids` runs the ids' tests at 1.5x).
 
 ## Adding tests (one file per component: `<id>.test.mjs`)
@@ -32,14 +32,14 @@ export default {
       t.ha.set('light.sofa_lamp', 'on', { brightness: 115 });
       t.tap('Sofa table');                              // the fake HA answers the light.toggle call
       t.has(t.part('entity_tile', 'Sofa table').texts, /^off$/i, 'state line');
-    }, xfail: 'facet-181' },                            // known failure (board id); XPASS = fixed, remove it
+    }, xfail: 'why it fails today' },                   // known failure; XPASS = fixed, remove it
   ],
 };
 ```
 
 - **Mount:** `mount: [comp, props]` or `await t.mount(comp, props)`; `await t.device(deck?)`; `t.update(props)` = the
   update path (fw_update); `t.wait(ms)`.
-- **Navigation (device):** `t.send(spec)` = a sent spec (stored, never shown: facet-188), `t.unsend(id)` (revert),
+- **Navigation (device):** `t.send(spec)` = a sent spec (stored, never shown), `t.unsend(id)` (revert),
   `t.show(id)` = what POST /fw/show does (`home` = straight Home), `t.stack()` (ids, root first), `t.where()` (the top).
 - **From HA:** `t.toast({title, body, kind, icon, duration})` = what the panel's `facet_toast` action puts on the
   `facet.toast` pair (returns the events). `t.setting(id)` = a device setting's value now.
@@ -72,7 +72,7 @@ export default {
 ## Families still to cover (one agent per family)
 
 Done: button, slider + family 1 below (controls), entity_tile, readout (cards; incl. Home light + sensor cards on the
-device), device (navigation rules, facet-188), image (cache cap + fallbacks), covers + vacuum screens (WIP features, via
+device), device (navigation rules), image (cache cap + fallbacks), covers + vacuum screens (WIP features, via
 the `spec` component). Shared helpers for family 1: `_controls.mjs` (pixel reads for drawn / not drawn, dial ring points).
 
 1. **Controls + inputs** (done 2026-10-26): toggle, checkbox, radio, segmented, icon_button (+ button hold, was hold_button), speaker_button, back_button,
@@ -82,11 +82,11 @@ the `spec` component). Shared helpers for family 1: `_controls.mjs` (pixel reads
    count_badge, hero_block, level_bar, empty_state, qr_block (+ the Home cards
    on the device: climate, media, cover, page cards).
 3. **Layout + chrome + device:** device (navigation, Settings, deck changes), header (timer slot collapses with no
-   timer: facet-180), screen_chrome, section_header, grid, card_grid, column, split, group, label, icon, time,
+   timer), screen_chrome, section_header, grid, card_grid, column, split, group, label, icon, time,
    date_line, corner_ticks, tick_ring, arc, legend, card_previews, accent_swatches, mascot_mood.
 4. **Charts + weather + sky:** bar_chart, donut, sparkline, rate_strip, clock_face, energy_view,
    weather_icon, moon_icon, lightning_radar, lightning_view.
-5. **Home domains (HA-driven views):** media_disc, media_view, media_visual (facet-183), cover_visual,
+5. **Home domains (HA-driven views):** media_disc, media_view, media_visual, cover_visual,
    lock_ring, thermostat_view, vacuum_mode, timer_view, event_row, bins_view, print_model, print_view,
    iso_floorplan, overhead_view, agents_view.
 6. **Feeds + sport:** f1_car_marker, f1_circuit, f1_flag, f1_race_control, f1_race_status, f1_standings,

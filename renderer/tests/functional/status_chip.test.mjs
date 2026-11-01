@@ -1,6 +1,6 @@
 // Status chip (components/status_chip.cpp, contract v2, Header round 3): tinted pill, dot + caps words.
 // The regression this piece fixes: the chip baked its colours from the theme at build, so a live dark -> light restyle
-// left near-white words on the light tint (Darren's screenshot; the pixel-contrast rule measured 1.1:1).
+// left near-white words on the light tint (the pixel-contrast rule measured 1.1:1).
 import { D } from './_controls.mjs';
 import { leak, golden, stage, boundsAll, liveLook, frame565, diff565, fixtures } from './_release.mjs';
 const TONES = ['ok', 'warn', 'error', 'working', 'info', 'idle'];

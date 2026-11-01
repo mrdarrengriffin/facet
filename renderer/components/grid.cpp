@@ -1,5 +1,5 @@
-// Grid: a LAYOUT component of equal cells on the contract (renderer/CONTRACT.md; board facet-171 pieces 2 + 3, moved
-// onto the contract in facet-205). The geometry is the core atom fx::grid (core/fx_core.cpp, C8): this file says only
+// Grid: a LAYOUT component of equal cells on the contract (renderer/CONTRACT.md; moved
+// onto the contract). The geometry is the core atom fx::grid (core/fx_core.cpp, C8): this file says only
 // what goes in which cell.
 //   columns  cols 1-8, or min (an icon size step): as many min-wide cells + gaps as fit the grid's OWN width (C6: 720
 //            and 480 get their own count, at most 12). Cell width = (width - gaps) / cols snapped down to the 4 px grid;

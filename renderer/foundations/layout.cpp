@@ -109,7 +109,7 @@ void key(lv_obj_t *l, lv_color_t c, bool filled, const char *name, const char *t
   const lyt::Token *k = tok(token);
   legend(l, c, filled, name, k ? k->v : -1, k ? k->v1x : 0, what);
 }
-// ---- Real components (Darren, round 2): every example is built by the approved components' own build functions,
+// ---- Real components (round 2): every example is built by the approved components' own build functions,
 // called through the registry (fw::find + Component::build, as List row builds Toggle and Dial builds Button); a part
 // that does not exist yet is a plain labelled outline box, never a look-alike.
 using Doc = ArduinoJson::JsonDocument;
@@ -426,7 +426,7 @@ void rhythm(lv_obj_t *parent) {
   lv_obj_set_flex_flow(c, LV_FLEX_FLOW_COLUMN);
   // the real Section header (section-h tall = touch min, its caps-sm title centred in it): the gaps around it are
   // cut by its centring slack, so what you SEE stays the tokens: title to rows = section-gap, rows to the next title =
-  // group (best guess, Darren to confirm)
+  // group (best guess)
   const int sh = find("section_header") ? lay::section_h : style(ty::label).box;
   const int slack = find("section_header") ? (lay::section_h - style(ty::c_caps_sm).box) / 2 : 0;
   lv_obj_t *h1 = section(c, "Display");

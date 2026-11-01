@@ -664,7 +664,7 @@ a .live__canvas,
   color: var(--facet-color-text-dim);
   font-size: 13px;
 }
-/* the links under a picture: a clear 24 px step below it (Darren: the "Try it" link sat on the image) */
+/* the links under a picture: a clear 24 px step below it (the "Try it" link sat on the image) */
 .prose .progress__links {
   margin: 12px 0 0;
   font-size: 14px;

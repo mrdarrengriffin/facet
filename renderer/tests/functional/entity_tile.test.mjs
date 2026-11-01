@@ -66,20 +66,20 @@ export default {
         t.has(status(t, label) || [], new RegExp(`^${want}$`, 'i'), `${label} state line`);
       }
     } },
-    { name: 'Home: toggling Sofa table calls HA and the state line follows (facet-181)', async run(t) {
+    { name: 'Home: toggling Sofa table calls HA and the state line follows', async run(t) {
       await t.device('house');
       t.ha.set('light.sofa_lamp', 'on', { brightness: 115 });
       t.tap('Sofa table'); t.call({ service: 'light.toggle', entity: 'light.sofa_lamp' }, 'toggle call');
       t.has(status(t, 'Sofa table') || [], /^off$/i, 'after turning off');
       t.tap('Sofa table'); t.has(status(t, 'Sofa table') || [], /^45%$/, 'after turning back on');
     } },
-    { name: 'Home: Chair off -> on shows its brightness, not Off (facet-181)', async run(t) {
+    { name: 'Home: Chair off -> on shows its brightness, not Off', async run(t) {
       await t.device('house');
       t.ha.set('light.reading_lamp', 'off', { brightness: null });
       t.tap('Chair'); t.hasNot(status(t, 'Chair') || [], /^off$/i, 'state line after turning on');
       t.has(status(t, 'Chair') || [], /^(\d+%|on)$/i, 'shows a level');
     } },
-    { name: 'Home: a light that turns off shows Off, not its last brightness (facet-181 ceiling 50%)', async run(t) {
+    { name: 'Home: a light that turns off shows Off, not its last brightness (ceiling at 50%)', async run(t) {
       await t.device('house');
       t.ha.set('light.living_room_ceiling', 'on', { brightness: 128 }); t.has(status(t, 'Ceiling') || [], /^50%$/, 'on at 50%');
       t.ha.set('light.living_room_ceiling', 'off', { brightness: null }); t.has(status(t, 'Ceiling') || [], /^off$/i, 'off');

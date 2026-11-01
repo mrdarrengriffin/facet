@@ -11,7 +11,7 @@
 //            page (navigate "screen_set?{"id": <id>}")
 // Off = not in the deck (a page you don't want is deleted, deck v2): switching one on adds it at the end, with its spec's
 // defaults; the start page can't be switched off.
-// Sent (facet-166): screens sent to this panel (Claude, the API, an agent; core/spec.h sent_kinds) that the deck has
+// Sent: screens sent to this panel (the API, an agent; core/spec.h sent_kinds) that the deck has
 // no page of are not built-in kinds, so not on / off: after the list, a group apart, the label "sent" (as above),
 // section-gap, one List row each (its name, sub "Sent to this panel") with two real Buttons appended: "Add to deck"
 // (secondary, icon plus: deck_set "on", event "deck" <id> on=true; it then shows in the list above) and "Remove"

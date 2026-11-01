@@ -1,6 +1,6 @@
 // Device (live): the panel running as on the wall (core/device.h): it starts on Home and every tap is handled inside the
 // renderer (the settings button and Home's cards open their screen with the Content rise, Back goes back), the same
-// C++ the panel firmware runs (POST /fw/show {"id":"device"}). Workbench: /wasm/screens/device at the selected size.
+// C++ the panel firmware runs (POST /fw/show {"id":"device"}). Workbench: its Device page, at the selected size.
 #include "fw.h"
 #include "device.h"
 

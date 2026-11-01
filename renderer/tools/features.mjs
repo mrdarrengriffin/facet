@@ -78,7 +78,7 @@ export function load() {
     ft.panel ??= true;  // the workbench panel firmware: everything unless a feature opts out
     ft.contract = ft.panel && (ft === lib || ft.id === 'system' || ((ft.components ?? []).length + (ft.screens ?? []).length > 0 && (ft.components ?? []).every(v2) && (ft.screens ?? []).every(specOk)));
     if (ft.firmware && !ft.panel) errors.push(`${ft.id}: firmware true needs panel true (the release is a subset of the workbench firmware)`);
-    // wip must not leak into the release firmware (facet-184): a feature ships on firmware only when it is done
+    // wip must not leak into the release firmware: a feature ships on firmware only when it is done
     if (ft.firmware && ft.status === 'wip') errors.push(`${ft.id}: status wip with firmware true: wip features stay off the firmware`);
     for (const flag of FLAGS) if (typeof ft[flag] !== 'boolean') errors.push(`${ft.id}: ${flag} is true or false`);
     if (!man.status[ft.status]) errors.push(`${ft.id}: status ${ft.status} is one of ${Object.keys(man.status).join(', ')}`);

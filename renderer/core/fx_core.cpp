@@ -1091,7 +1091,7 @@ const G::PixelIcon *pixel_icon(const char *name) {
 // screen, no anti-aliasing, one rect per run. The Pen's centre is a CELL centre (so a shape centred on it is symmetric
 // in cells), a knob and its arc are judged at the same cell centres (they share cells), a one-cell line is Bresenham on
 // the cell grid, a thicker line k whole cells across its minor axis (never a blob), an icon in whole cells
-// (facet-201 faults; tests/functional/theme_snap.test.mjs).
+// (tests/functional/theme_snap.test.mjs).
 struct Shp { enum K { DISC, SQUARE, DIAMOND, RING, SEG, SECTOR } k; float x, y, r, r2 = 0, x2 = 0, y2 = 0, a0 = 0, a1 = 0; };
 bool inside(const Shp &s, float px, float py) {
   const float dx = px - s.x, dy = py - s.y;

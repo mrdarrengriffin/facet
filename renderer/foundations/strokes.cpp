@@ -1,6 +1,6 @@
-// Foundations > Smooth strokes (lab, board facet-145; the atom won: Motion, Dial and the mascot now draw with it): the SAME curves drawn
-// four ways side by side, so Darren can pick how Facet draws curves (Motion easing plots, mascot lines, the vacuum
-// floorplan of facet-144). The old Facet docs drew these as browser SVG (float coordinates, AA joins), so they were
+// Foundations > Smooth strokes (lab; the atom won: Motion, Dial and the mascot now draw with it): the SAME curves drawn
+// four ways side by side, to pick how Facet draws curves (Motion easing plots, mascot lines, room
+// outlines). The old Facet docs drew these as browser SVG (float coordinates, AA joins), so they were
 // smooth there; on LVGL they were 33 integer points through lv_line and look stepped.
 //   current  33 points snapped to whole pixels, lv_line with round caps (Motion today)
 //   dense    one point per pixel of length, still snapped, lv_line round caps
@@ -73,7 +73,7 @@ const char *const ABOUT[NK] = {
     "mo::ease_in_out from the LVGL path callback.",
     "A 270 degree circle arc (dial track, mascot arches).",
     "A gentle wave: a mascot-like hand-drawn line.",
-    "A room outline turned 6 degrees: near-flat walls + corners (vacuum floorplan, facet-144)."};
+    "A room outline turned 6 degrees: near-flat walls + corners (vacuum floorplan)."};
 const StrokePt PLAN_PTS[] = {{.08f, .2f}, {.55f, .2f}, {.55f, .08f}, {.92f, .08f}, {.92f, .7f}, {.72f, .92f},
                              {.36f, .92f}, {.36f, .78f}, {.08f, .78f}, {.08f, .2f}};
 constexpr int N_PLAN = sizeof(PLAN_PTS) / sizeof(PLAN_PTS[0]);
@@ -315,7 +315,7 @@ int stroke_of(const char *s) {
 }  // namespace
 
 FW_COMPONENT(strokes, "Smooth strokes (lab)", "foundations", R"({
-  "about": "Experiment (facet-145): the same curves drawn four ways, to pick how Facet draws smooth lines.",
+  "about": "Experiment: the same curves drawn four ways, to pick how Facet draws smooth lines.",
   "frame": [480, 0],
   "props": [
     {"name": "curve", "about": "Which curve to draw, or all of them.", "type": "select", "options": ["all", "ease-out", "ease-in-out", "arc", "wave", "floorplan"], "default": "all"},

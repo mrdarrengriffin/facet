@@ -1,5 +1,5 @@
 // Cells (components/cells.cpp, contract v2), release piece 3: the Home grid as a layout of slotted
-// children. Each test is one row of the release gate and fails without the behaviour. The layout fills its parent (the
+// children. Each test is one row of the definition of done (CONTRACT.md 13) and fails without the behaviour. The layout fills its parent (the
 // stage's content box, resized to the parent size under test); its columns come from its own width, the cells' min-w
 // token and the gutter. Sample mode = a real Card in every one-slot cell, an outlined "Readout" in each half.
 // Approved original: the Astro Home grid (packages/ui/src/layout.ts: 3 tiles / 2 cards per row, gutter between).

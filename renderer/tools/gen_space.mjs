@@ -26,7 +26,7 @@ for (const g of groups)
   }
 // the grid rule (multiples of 4, no odd numbers). Spacing, layout, radius, touch: a multiple of 4 at
 // both densities (minimum 4 when non-zero; radius 0 = square, radius.round = the fully-round sentinel). A 720 value may
-// sit on the 2 px grid only when it carries `grid2` (an approved docs value waiting for Darren); the 480 value never.
+// sit on the 2 px grid only when it carries `grid2` (an approved docs value waiting for a decision); the 480 value never.
 // Strokes: 1 and 2 px hairlines, 3 px and up even.
 const bad = [];
 for (const r of rows) {

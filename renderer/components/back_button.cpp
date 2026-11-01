@@ -2,7 +2,7 @@
 // wrapper (Header round 3): it IS the Icon button (components/icon_button.cpp, contract v2) in style square
 // with the back icon and its internal role "back", so look, press, disabled, size (layout:ibtn-square = touch:min = the
 // header row) and the update path are the Icon button's. The wrapper adds what only Back does: tap = event "back" +
-// sound back (the role); hold (LVGL long press) = event "home" + sound back (the device goes straight Home, facet-188;
+// sound back (the role); hold (LVGL long press) = event "home" + sound back (the device goes straight Home;
 // the tap after the hold is swallowed); disabled = "blocked" + error. The Header builds it (fixed, first, shown only
 // when the screen has somewhere to go back to). Kept as its own id: screens, specs and the catalogue name it.
 // Steps / bleed: none. States: default, pressed, disabled (the Icon button's). Pairs: colour.json "icon_button".

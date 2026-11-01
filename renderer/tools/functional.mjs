@@ -144,7 +144,7 @@ class Ctx {
     }
     return this;
   }
-  // -- the device's navigation (facet-188): send a spec (stored, never shown), show a screen (= POST /fw/show), the stack
+  // -- the device's navigation: send a spec (stored, never shown), show a screen (= POST /fw/show), the stack
   send(spec) {
     const r = JSON.parse(this.b.spec('screen_dev', spec) || '{}'); this.b.settle(1500); this.b.events();
     this.log.push(`send ${spec.id}: ${r.status}${r.errors ? ' ' + JSON.stringify(r.errors).slice(0, 160) : ''}`);
@@ -164,7 +164,7 @@ class Ctx {
     this.log.push(`update ${JSON.stringify(props)}${r ? ' -> ' + r : ''}`);
     return this.b.events();
   }
-  // Rotate screen (facet-191). The panel turns the picture in ESPHome's LVGL flush (software rotation, clockwise) and
+  // Rotate screen. The panel turns the picture in ESPHome's LVGL flush (software rotation, clockwise) and
   // maps every touch back through LvglComponent::rotate_coordinates (ESPHome 2026.9 lvgl_esphome.cpp); LVGL itself
   // stays upright, which is what this WASM stage is. turn(deg) = what the firmware's rotate_hook does; glass([x, y]) =
   // where a point of the UI shows on the glass, tapGlass(px, py) = a finger there (the touch goes through ESPHome's map).

@@ -1,5 +1,5 @@
-// Snapped drawing (renderer/CONTRACT.md C29, shape.snap; theme engine T3; the snapped-drawing faults of board
-// facet-201 as tests). A probe (core/pen_lab.cpp) draws the Pen's primitives at an odd screen offset in the live theme:
+// Snapped drawing (renderer/CONTRACT.md C29, shape.snap; theme engine T3; the snapped-drawing faults
+// as tests). A probe (core/pen_lab.cpp) draws the Pen's primitives at an odd screen offset in the live theme:
 // an arc band, minor + major ticks, a knob on the arc, a dot at the centre, a thick line, a pixel icon. Each test fails
 // without the behaviour it names:
 //   grid     every drawn pixel is part of a whole cs x cs cell of one colour on the SCREEN grid (cs = stroke:pixel)

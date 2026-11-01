@@ -4,7 +4,7 @@ The rules every Facet component, layout and screen follows, why each exists, and
 follows this contract cannot have a layout or colour bug the proofs miss: the structure makes those bugs impossible
 or the gate catches them. The API is `core/fx.h`; the lint is `tools/contract_lint.mjs`; the proofs and test helpers
 are `core/test_hooks.cpp` (`fw_test`), `core/main.cpp` (`fw_lab`) and `tests/functional/_release.mjs`. "Done" is the
-release gate (section 13).
+definition of done (section 13).
 
 ## Contents
 
@@ -510,7 +510,7 @@ firmware (the WASM build simulates both).
 ## 11. Proofs
 
 Every component passes every proof, as an automated test that fails without the behaviour. Testing detail and the
-full bar: the Facet release gate (sections 1-10). Helpers: `tests/functional/_release.mjs`.
+full bar: the definition of done (section 13). Helpers: `tests/functional/_release.mjs`.
 
 | Id | Proof | How | Status |
 |---|---|---|---|
@@ -636,10 +636,30 @@ FW_UPDATE(switch_row) {
 
 ### Definition of done
 
-A component, layout or screen is done when it passes every applicable section of the Facet release gate (sections
-1-10), on a build made from the exact source under review (the build is stamped with the source hash and the hash is
+A component, layout or screen is done when it passes every section below that applies, on a build made from the exact source under review (the build is stamped with the source hash and the hash is
 checked before anyone reports "done"), with each claim backed by a test that fails without the behaviour. Anything
-less is reported as "N of 10 gate sections" with the open items named. A golden is never accepted by the person who
+less is reported as "N of 10 sections" with the open items named.
+
+1. **Contract:** fills its parent, never reads the screen or card size; colours, sizes and fonts only through tokens
+   and parts, drawn through the Pen; lint clean; bounds proof clean at both densities down to the declared minimum;
+   any token changed at run time repaints it with no rebuild; a drawn part repaints only what changed.
+2. **Functional:** every prop and state (pressed, on, off, disabled, loading, unavailable, unknown, empty, error);
+   every interaction and its Home Assistant call; external updates (silent, out of order, out of range, entity gone);
+   open, close, rebuild and theme switch mid-interaction; nothing emitted on open.
+3. **Accessibility:** contrast (text 4.5, large 3, parts 3) in every state, mode, accent and theme; touch targets and
+   spacing; long and non-ASCII text truncates or wraps by rule; feedback within one frame; the same thing behaves the
+   same everywhere.
+4. **Visual:** goldens per state, size and theme, reviewed, never auto-accepted; side by side with the approved design;
+   565-safe.
+5. **Flexibility:** any parent size from its minimum; both densities; every built-in theme; any entity of its kind.
+6. **Performance and robustness:** frame budgets on each panel; object and heap budgets, no leaks over 1000 cycles;
+   fuzzed props, specs and states; random taps; Home Assistant loss and recovery.
+7. **Device:** runs on both panels from a published build.
+8. **Documentation and API:** a complete catalogue entry and a docs page with live examples; props are a stable API.
+9. **Review:** read by someone who did not write it, and signed off on a panel.
+10. **Product level:** screens are components only and pass 1-9 as a whole; navigation rules tested as flows; every
+    setting round-trips through a reboot; firmware boot, OTA, rollback and soak; the spec and agent API validated and
+    fuzzed; fresh install and update on both boards; docs examples run as tests. A golden is never accepted by the person who
 changed the code without review.
 
 ## 14. Loopholes closed

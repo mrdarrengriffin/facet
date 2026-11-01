@@ -1,4 +1,4 @@
-// Release-gate helpers (notes: the Facet release gate, sections 1-6 + 10), shared by every component's and screen's
+// Release-gate helpers (CONTRACT.md section 13, the definition of done), shared by every component's and screen's
 // functional tests. Not a test file. Everything runs on the WASM build with Home Assistant faked (tools/functional.mjs
 // FakeHA); each helper returns a list of failure strings (empty = pass) so a test can t.eq(list, [], 'what').
 //   fixtures   names that break layouts: very long, accents, emoji, CJK, right-to-left, empty

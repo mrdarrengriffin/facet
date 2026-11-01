@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // specs/*.json (the factory screens) + specs/deck.json + sources/sources.json -> specs_gen.h (fw::spec::FACTORY,
 // FACTORY_DECK, SOURCES): compiled into
-// the firmware and the WASM build, so a panel works with no hub (core/spec.h). Minified; checked here for JSON only
+// the firmware and the WASM build, so a panel works with no workbench (core/spec.h). Minified; checked here for JSON only
 // (the full validation is core/spec.h's, run by tools/spec.mjs and on the panel). Writes only when the output changes.
 // Feature flags (tools/features.mjs): a FW_FEATURES=docs|firmware build leaves out the specs of hidden features and
 // their deck pages + Home cards (factory deck, Home, Settings > Screens follow from these lists).

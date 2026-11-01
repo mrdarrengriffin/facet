@@ -57,7 +57,7 @@ lv_obj_t *bare(lv_obj_t *parent) {
 
 void set_bg_opa(void *o, int32_t v) { lv_obj_set_style_bg_opa((lv_obj_t *) o, (lv_opa_t) v, 0); }
 void set_ty(void *o, int32_t v) { lv_obj_set_style_translate_y((lv_obj_t *) o, v, 0); }
-// scrim: colour.json scrim (near-black in both themes) at motion.json opacity scrim (dark) / scrim-light (Darren
+// scrim: colour.json scrim (near-black in both themes) at motion.json opacity scrim (dark) / scrim-light (
 // the backdrop must read clearly darker, not just faded towards the bg)
 lv_opa_t scrim_opa() { return (lv_opa_t) lroundf((fw::T->light ? fw::mo::OPA_SCRIM_LIGHT : fw::mo::OPA_SCRIM) * 255); }
 

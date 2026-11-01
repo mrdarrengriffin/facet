@@ -1,4 +1,4 @@
-// Firmware update view (facet-196): what the panel shows just before it installs new firmware, on the top layer over
+// Firmware update view: what the panel shows just before it installs new firmware, on the top layer over
 // everything (firmware/fw_device.h ota_*). Neither board can draw while flash is written (the framebuffer in PSRAM
 // stalls: the Waveshare's DSI flashes cyan, the Guition goes black), so the panel shows this notice for 2 s and then
 // turns the backlight off until it restarts. A centred column in the content box: an icon (ic::feature), the title

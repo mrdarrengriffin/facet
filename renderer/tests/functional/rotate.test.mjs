@@ -1,4 +1,4 @@
-// Rotate screen (facet-191): Settings > Rotate screen sets "rotation" (0 / 90 / 180 / 270, clockwise); the panel turns
+// Rotate screen: Settings > Rotate screen sets "rotation" (0 / 90 / 180 / 270, clockwise); the panel turns
 // LVGL's picture and maps touches back (ESPHome software rotation, see t.turn in tools/functional.mjs). Checks: the
 // setting takes each value, and after each turn a finger on a control where it shows on the glass lands on it.
 const ctr = (b) => [b.x + b.w / 2, b.y + b.h / 2];

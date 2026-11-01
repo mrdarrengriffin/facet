@@ -116,7 +116,7 @@ bool show(Device *d, const std::string &id, std::vector<lv_obj_t *> &items) {
   return true;
 }
 
-// Navigation (facet-188): a hierarchy, Home (the stack's root) at the bottom, never a long back
+// Navigation: a hierarchy, Home (the stack's root) at the bottom, never a long back
 // chain. Back = up one level (Home > Weather > 5 days), hold Back = straight Home ("home" event).
 //   pages       a page (a deck page id or page kind, from a shortcut or a page card) and a sent screen (spec::sent:
 //               an agent's / the AI's) sit one level above Home: opening one cuts the stack to the root first, so a
@@ -163,7 +163,7 @@ void run(lv_timer_t *t) {
     if (home_dir) d->stack.erase(at + 1, d->stack.end());
     else {
       // one level above Home; a second Home page (Kitchen) is the parent of its own header shortcuts / pages:
-      // Kitchen > Timer > Back = Kitchen (facet-188)
+      // Kitchen > Timer > Back = Kitchen
       const bool sub_home = d->stack.size() == 2 && d->stack.back().rfind("home?", 0) == 0 && tgt.rfind("home", 0) != 0;
       if (spec::sent(base_of(tgt))) d->stack.resize(1);
       else if (page && !sub_home) d->stack.resize(1);
@@ -404,7 +404,7 @@ void reload(const char *id) {
     const std::string top = base_of(d->stack.back());
     if (!strcmp(id, "deck")) {  // the deck changed: screens it no longer has leave the stack; Home shows the new cards
       while (d->stack.size() > 1 && !known(d->stack.back())) d->stack.pop_back();
-    } else if (top != id) {  // a sent screen that isn't showing stays where it is (facet-188: a send never takes
+    } else if (top != id) {  // a sent screen that isn't showing stays where it is (a send never takes
       continue;               // over the display; the sender shows it with /fw/show or facet_show)
     }
     d->reloaded = id;
@@ -441,7 +441,7 @@ const char *set(const char *id, const char *value, From from, lv_obj_t *obj) {
   const set::Setting &s = set::SETTINGS[k];
   const std::string v = normal(s, value);
   if (v.empty()) return "not a valid value";
-  // Allow AI agents (facet-163): only the panel itself or Home Assistant can turn it on, never an HTTP request (an
+  // Allow AI agents: only the panel itself or Home Assistant can turn it on, never an HTTP request (an
   // agent must not be able to let itself in); a host may still turn it off
   if (from == HOST && v == "true" && !strcmp(id, "aiAgents")) return "turn Allow AI agents on on the panel (Settings) or in Home Assistant";
   Store &st = store();

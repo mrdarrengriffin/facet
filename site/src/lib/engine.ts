@@ -1,4 +1,4 @@
-// Facet WASM engine (copy of the hub workbench's src/wasm/engine.ts for docs site v0; the site passes its own build
+// Facet WASM engine (copy of the workbench's engine for the docs site; the site passes its own build
 // folder): loads a build (renderer/build.sh, copied to <base>wasm/<density>/ by scripts/extract.mjs) and draws
 // component "stages" (one LVGL display each) into canvases. Mouse/touch -> fw_touch in device pixels.
 export type Prop = { name: string; type: 'text' | 'select' | 'range' | 'bool'; default?: unknown; options?: string[]; min?: number; max?: number; step?: number };
@@ -40,10 +40,10 @@ export class Engine {
   /** every fw::emit / fw::sound, with the stage it came from (drained once per frame) */
   onEvent: ((ev: FwEvent, stage: Stage | undefined) => void) | null = null;
   /** every animation frame: when it started, how long the WASM work took (LVGL tick + render + copy to the canvas),
-   *  whether a stage repainted and how many LVGL animations run (browser targets' frame stats, src/wasm/device.ts) */
+   *  whether a stage repainted and how many LVGL animations run (browser targets' frame stats, workbench/src/device.ts) */
   onFrame: ((f: { t: number; work: number; painted: boolean; anims: number }) => void) | null = null;
   private alive = true;
-  /** root = the folder holding <density>/fw.mjs (hub: /facet-wasm/, docs site: <base>wasm/) */
+  /** root = the folder holding <density>/fw.mjs (workbench: /facet-wasm/, docs site: <base>wasm/) */
   static async load(den: string, root = '/facet-wasm/'): Promise<Engine> {
     const e = new Engine();
     e.man = await manifest(den, root);

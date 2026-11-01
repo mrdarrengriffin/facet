@@ -1,4 +1,4 @@
-// Layout lab test (hub src/wasm/lablayout.ts, core/main.cpp fw_lab): every size token the Card uses repaints a
+// Layout lab test (workbench/src/lablayout.ts, core/main.cpp fw_lab): every size token the Card uses repaints a
 // mounted Card LIVE (fx::tune -> shared token styles -> every stage), and the page-level tokens are reported "page
 // only" (a component mounted alone has no Page). "changed every lab setting, nothing changed".
 // Moved from tools/lab_test.mjs onto the runner's loop (tools/lib/rules.mjs): once per contract component and density,

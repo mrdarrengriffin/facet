@@ -1,4 +1,4 @@
-// The device's navigation (core/device.cpp "Navigation", facet-188): Home is the root, Back = up one level, a page or a
+// The device's navigation (core/device.cpp "Navigation"): Home is the root, Back = up one level, a page or a
 // sent (agent / AI) screen sits one level above Home and a sent screen replaces the last one, depth Home + 2, hold Back
 // = Home, the renderer owns Back, sending a spec never takes over the display. light, weather_days and moon are
 // factory detail screens (not deck pages); weather is a deck page.

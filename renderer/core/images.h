@@ -1,8 +1,8 @@
-// Image sources + cache (board facet-171, notes image-component.md, piece 1): the one place an image component gets
+// Image sources + cache (notes image-component.md, piece 1): the one place an image component gets
 // its pixels. A view = (src URL, box w x h, scale, radius) -> the pixels scaled to that box, RGB565 (+A8 when anything
 // is see-through: a rounded corner, a transparent PNG), dithered to 565 (pixel art: nearest, never dithered).
 // Sources: the host fetches each wanted URL and hands the DECODED pixels to put() (RGBA8888, any size up to
-// budget().src_max_px) or says fail(). WASM: the browser decodes (the hub proxy for CORS), core/main.cpp
+// budget().src_max_px) or says fail(). WASM: the browser decodes (through the workbench host for CORS), core/main.cpp
 // fw_img_put / fw_img_fail; the panel (piece 2, facet firmware/fw_images.h): its own HTTP fetch + JPEG/PNG decoder feeds the same put().
 // Cache: every view's pixels count against ONE per-board byte cap (budget().cache_bytes: Guition 512 KB, Waveshare
 // 3 MB); a new view that doesn't fit first evicts views nothing shows (least recently used first), and if it still

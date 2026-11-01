@@ -1,7 +1,7 @@
 // Media screen (specs/media.json: Page > Header (the speakers Icon button) > Body: Media hero (Media visual + the
 // track), a Group of the prev / play / next Icon buttons, the vol Slider row; the speaker Bottom sheet of Picker rows on
 // the Overlay), on the media feed panel.media (core/media_source.cpp, CONTRACT.md C51) and its Home card (C52). Home
-// Assistant is faked (tools/functional.mjs FakeHA); P1 / P2 are NOT Darren's entities. Approved original: Astro
+// Assistant is faked (tools/functional.mjs FakeHA); P1 / P2 are NOT real entities. Approved original: Astro
 // packages/ui/src/screens/media.ts (was components/media_view.cpp + media_disc.cpp).
 const P1 = 'media_player.test_kitchen', P2 = 'media_player.test_office';
 async function open(t, params) { await t.mount('spec', { screen: 'media', ...params }); return t; }
