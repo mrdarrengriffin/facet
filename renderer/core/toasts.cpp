@@ -72,7 +72,7 @@ void dismiss(Toast *t, const char *how, bool quiet) {
   bar_pause(t);
   lv_obj_remove_flag(t->o, LV_OBJ_FLAG_CLICKABLE);  // leaving: taps go through (docs pointer-events none)
   if (!quiet) emit(t->o, "dismiss", how);
-  if (!quiet && (!strcmp(how, "tap") || !strcmp(how, "button") || !strncmp(how, "swipe", 5))) sound(t->o, "back");
+  if (!quiet && (!strcmp(how, "tap") || !strcmp(how, "button") || !strncmp(how, "swipe", 5))) sound(t->o, "back");  // @sound-for toast
   lv_obj_send_event(t->o, LV_EVENT_VALUE_CHANGED, (void *) how);  // the layer restacks the others now
   // leave (Motion toast-out): a swipe carries on sideways, anything else slides back to its edge; both fade
   if (!strncmp(how, "swipe", 5)) {
@@ -322,7 +322,7 @@ lv_obj_t *show(lv_obj_t *ov, Props p, const char *detail) {
   }
   if (!L->still && detail) {
     emit(t, "toast", detail);
-    sound(t, toast::sound);
+    sound(t, toast::sound);  // @sound-for toast_layer
   }
   return t;
 }

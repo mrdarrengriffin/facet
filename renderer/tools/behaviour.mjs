@@ -11,7 +11,7 @@
 //                unavailable entities fire no HA call; device: navigate + Back return to the right screen
 //   scroll       content that overflows scrolls without jumps, stops at both ends, keeps its place on an update,
 //                nested scrollers never move together; content that fits never moves under a drag
-//   sound        each gesture plays at most one sound (step ticks aside) from the id's sound_usage.json set;
+//   sound        each gesture plays at most one sound (step ticks aside) from the id's sound usage (tools/gen_sound_usage.mjs);
 //                updates (fw_update, HA values) play nothing; Sounds off plays nothing (device)
 //   lag          a PROXY for the Guition (1x, weakest panel), measured on the 1x build: refreshes past LVGL's 32
 //                dirty areas (= full redraws), runs of near-full-screen frames, estimated Guition frame ms
@@ -39,7 +39,6 @@ const env = (() => { try { return Object.fromEntries(readFileSync(join(HERE, '..
 const BUILD = process.env.FW_OUT || env.FW_OUT || join(HERE, 'out');
 const B = JSON.parse(readFileSync(join(TESTS, '_budgets.json'), 'utf8'));
 const FIT = JSON.parse(readFileSync(join(HERE, 'bench/budgets.json'), 'utf8')).devices.guition.measured;
-const USAGE = JSON.parse(readFileSync(join(HERE, 'tokens/sound_usage.json'), 'utf8'));
 const ONLY = arg('--ids') ? arg('--ids').split(',').filter(Boolean) : null;
 const KINDS = (arg('--kind') || 'interaction,scroll,sound,lag').split(',');
 const DENS = arg('--den', 'all') === 'all' ? ['1x', '1.5x'] : [arg('--den')];
@@ -57,7 +56,7 @@ const inBox = (b, x, y) => x >= b.x && y >= b.y && x < b.x + b.w && y < b.y + b.
 const fmtEv = (e) => `${e.kind === 'sound' ? '♪' : ''}${e.name}${e.detail ? `(${String(e.detail).slice(0, 60)})` : ''}`;
 const glob = (pat, s) => new RegExp(`^${pat.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*')}$`).test(s);
 
-// allowed sounds per id: its own fw::sound calls + every component it builds (sound_usage.json `via`), transitively
+// allowed sounds per id: its own fw::sound calls + every component it builds (sound usage `via`), transitively
 const usageById = Object.fromEntries((USAGE.components || []).concat(USAGE.screens || [], USAGE.foundations || []).map((c) => [c.id, c]));
 function allowedSounds(id, seen = new Set()) {
   const u = usageById[id];
@@ -76,6 +75,7 @@ function specOf(id) {
 
 // ---------------------------------------------------------------- one WASM instance per id (fresh LVGL + HA state)
 import { instance as instance0, Bench as Bench0, setBuild } from './lib/fwbench.mjs';
+import { usage as USAGE } from './gen_sound_usage.mjs';
 setBuild(BUILD);
 const instance = (den) => instance0(den, BUILD);
 class Bench extends Bench0 { constructor(m, den) { super(m, den, { build: BUILD, long_ms: B.long_press_ms, drag_px: B.drag_px_per_tick }); } }
@@ -123,7 +123,7 @@ function checkGesture(evs, { blocked, allowed, what, gesture }) {
     if (bad.length) snd.push(`disabled-sound: ${gesture} on ${what} (disabled/unavailable) played ${bad.map(fmtEv).join(', ')} (only error)`);
   }
   if (sounds.length > 1) snd.push(`double-sound: ${gesture} on ${what} played ${sounds.length} sounds: ${sounds.map(fmtEv).join(', ')}`);
-  if (allowed) for (const s of sounds) if (!allowed.has(s.name)) snd.push(`unknown-sound: ${gesture} on ${what} played ${s.name}, not in sound_usage.json (${[...allowed].join(', ') || 'none'})`);
+  if (allowed) for (const s of sounds) if (!allowed.has(s.name)) snd.push(`unknown-sound: ${gesture} on ${what} played ${s.name}, not in its sound usage (${[...allowed].join(', ') || 'none'})`);
   if (acts.some((e) => !DRAGGY.has(e.name)) && !sounds.length && !evs.some((e) => e.kind === 'sound')) snd.push(`silent-action: ${gesture} on ${what} fired ${acts.map(fmtEv).join(', ')} with no sound`);
   const names = acts.map((e) => `${e.name}|${e.detail}`);
   const dup = names.find((n, i) => names.indexOf(n) !== i && !DRAGGY.has(n.split('|')[0]));

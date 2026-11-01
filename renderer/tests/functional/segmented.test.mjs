@@ -10,7 +10,7 @@ const chosen = (t) => { const L = ['AUTO', 'DARK', 'LIGHT'].filter((l) => t.text
 // centred labels (Darren 2026-10-27: the labels sat left of centre): every Segmented variant (and the Header's title
 // slot one) in every built-in theme, its labels' ink (the pixels that change when the label is veiled) centred in
 // its segment within 1 px. Fails when the label's text sits at the left of its grid-rounded box.
-const THEMES = ['facet', 'blockcraft', 'win98'];
+const THEMES = ['facet', 'blockcraft', 'phosphor', 'win98'];
 const fwt = (t, c, a = '') => t.b.str(c, (pc) => t.b.str(a, (pa) => t.b.m.UTF8ToString(t.b.m._fw_test(pc, pa))));
 const fwlab = (t, c, a = '') => JSON.parse(t.b.str(c, (pc) => t.b.str(a, (pa) => t.b.m.UTF8ToString(t.b.m._fw_lab(-1, pc, pa)))));
 async function centring(t) {
