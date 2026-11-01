@@ -1,14 +1,13 @@
 #!/bin/bash
 # Host ASan + UBSan test of the panel picture decode (firmware/fw_imgdec.h + fw_tjpgd.c + fw_pngle.c / fw_miniz.c), with real
-# files: Pillow-made fixtures (fixtures.py) + a real 32 x 32 RGBA PNG from the web. Needs a Python with Pillow (FW_FONT_PY in local.env). Exit 0 = all checks passed, no reports.
+# files: Pillow-made fixtures (fixtures.py, under renderer/.venv) + a real 32 x 32 RGBA PNG (files/gem.png). Exit 0 = all checks passed, no reports.
 #   firmware/tests/imgdec/run.sh
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd); ROOT=$(cd "$HERE/../../.." && pwd)
 [ -f "$ROOT/local.env" ] && . "$ROOT/local.env"
 O=${FW_CACHE:-$ROOT/renderer/.cache}/imgdec; mkdir -p "$O/fx"
-[ -f "$O/fx/photo.jpg" ] || "${FW_FONT_PY:-python3}" "$HERE/fixtures.py" "$O/fx"
-[ -f "$O/fx/rockbottom.png" ] || curl -fsSL -o "$O/fx/rockbottom.png" \
-  https://media.githubusercontent.com/media/GelatinousGoth/TboiResurrected/master/resources/gfx/items/collectibles/collectibles_562_rockbottom.png
+[ -f "$O/fx/photo.jpg" ] || "$("$ROOT/renderer/tools/venv.sh")" "$HERE/fixtures.py" "$O/fx"
+cp "$HERE/files/gem.png" "$O/fx/"
 SAN="-fsanitize=address,undefined -fno-omit-frame-pointer -fno-sanitize-recover=undefined"
 FL="-O1 -g $SAN -I$ROOT/firmware"
 gcc $FL -c "$ROOT/firmware/fw_pngle.c" -o "$O/pngle.o"

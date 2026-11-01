@@ -35,12 +35,12 @@ int main(int argc, char **argv) {
   if (argc < 2) { printf("usage: imgdec_test <fixtures dir>\n"); return 2; }
   D = argv[1];
   using fw::imgdec::release;
-  {  // the Rock Bottom item sprite: 32 x 32 RGBA PNG with see-through edges
-    auto o = dec(load("rockbottom.png"));
-    CHECK(o.rgba && o.w == 32 && o.h == 32, "rockbottom %dx%d err=%s", o.w, o.h, o.err.c_str());
+  {  // a real 32 x 32 RGBA PNG with see-through edges (files/gem.png, the docs' demo gem)
+    auto o = dec(load("gem.png"));
+    CHECK(o.rgba && o.w == 32 && o.h == 32, "gem %dx%d err=%s", o.w, o.h, o.err.c_str());
     int clear = 0, solid = 0;
     for (int i = 0; o.rgba && i < 32 * 32; i++) { clear += o.rgba[i * 4 + 3] == 0; solid += o.rgba[i * 4 + 3] == 255; }
-    CHECK(clear > 100 && solid > 100, "rockbottom alpha clear=%d solid=%d", clear, solid);
+    CHECK(clear > 100 && solid > 100, "gem alpha clear=%d solid=%d", clear, solid);
     release(o);
   }
   {  // baseline JPEG: size + colours close to the source gradient
@@ -135,7 +135,7 @@ int main(int argc, char **argv) {
       CHECK(!pre.expect((long long) b.size()) && pre.b == nullptr, "expect over cap");
     }
     fw::imgdec::Body ok(1024 * 1024);  // the sprite fits, and decodes from the body
-    auto s = load("rockbottom.png");
+    auto s = load("gem.png");
     CHECK(ok.expect((long long) s.size()) && ok.add(s.data(), s.size()), "small body");
     fw::imgdec::Out o;
     CHECK(fw::imgdec::decode(ok.b, ok.n, GU_PX, MEM, o) && o.w == 32, "body decode");
@@ -143,7 +143,7 @@ int main(int argc, char **argv) {
   }
   {  // damaged bytes: never a crash or a sanitizer report (each result is just ok or a reason)
     std::mt19937 rng(1);
-    for (const char *n : {"photo.jpg", "rockbottom.png", "palette.png", "grey.jpg"}) {
+    for (const char *n : {"photo.jpg", "gem.png", "palette.png", "grey.jpg"}) {
       const auto src = load(n);
       for (int i = 0; i < 150; i++) {
         auto b = src;

@@ -2,3 +2,5 @@
 # The same versions as ESPHome 2026.9.1 uses for the panels' fonts.
 freetype-py==2.5.1
 esphome-glyphsets==0.2.0
+# firmware/tests/imgdec/fixtures.py
+Pillow==12.3.0
