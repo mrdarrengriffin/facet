@@ -1,6 +1,6 @@
 # Floor plan generator fixtures
 
-Inputs for `tools/floorplan_test.mjs` (the generator in `core/floorplan_auto.cpp`, run through the WASM build). Only
+Inputs for the rule `floorplan` (`tests/rules/floorplan.mjs`: the generator in `core/floorplan_auto.cpp`, run through the WASM build). Only
 public sample maps with licences that allow redistribution; each keeps its licence file next to it.
 
 | File | Brand / source | What it is | Licence |

@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 // Floor plan generator tests (core/floorplan_auto.cpp, through the WASM build's fw_fpgen): every adapter on public
 // fixtures (tests/floorplan/README.md: sources + licences), plus the cleanup's quality checks done again here, independently:
 // outlines rectilinear, clockwise, on the grid, not self-crossing, rooms not overlapping, plausible sizes, every room there.
@@ -7,20 +6,14 @@
 //                      path + robot drawn over, upscaled): must give the same rooms as the JSON + the same robot spot;
 //                      the Xiaomi Cloud Map Extractor's sample picture (real renderer output, colours reused across rooms)
 //   polygons           made-up outlines in mm, y up, one slanted corner, one overlap
-// Usage: node tools/floorplan_test.mjs [--build <out dir>] [--den 1.5x] [--verbose]. Exit 1 on any failure.
+// Moved from tools/floorplan_test.mjs: a startup check of the runner (tools/lib/rules.mjs), once at 1.5x.
 import { readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 import { inflateSync } from 'node:zlib';
 
-const HERE = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const HERE = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const FX = join(HERE, 'tests', 'floorplan');
-const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
-const verbose = process.argv.includes('--verbose');
-const env = Object.fromEntries((() => { try { return readFileSync(join(HERE, '..', 'local.env'), 'utf8'); } catch { return ''; } })()
-  .split('\n').filter((l) => /^\w+=/.test(l)).map((l) => [l.split('=')[0], l.slice(l.indexOf('=') + 1)]));
-const BUILD = arg('--build', process.env.FW_OUT || env.FW_OUT || join(HERE, 'out'));
-const den = arg('--den', '1.5x');
 
 export function decodePng(buf) {  // 8-bit RGB / RGBA, non-interlaced
   let p = 8, W = 0, H = 0, ct = 0; const idat = [];
@@ -37,11 +30,7 @@ export function decodePng(buf) {  // 8-bit RGB / RGBA, non-interlaced
   return { W, H, px: out };
 }
 
-export async function loadGen(build = BUILD, d = den) {
-  const dir = join(build, d);
-  const F = (await import(pathToFileURL(join(dir, 'fw.mjs')).href)).default;
-  const wasm = await WebAssembly.compile(readFileSync(join(dir, 'fw.wasm')));
-  const m = await F({ instantiateWasm: (imports, ok) => { WebAssembly.instantiate(wasm, imports).then((i) => ok(i, wasm)); return {}; } });
+function genOf(m) {
   // gen(opts, {text} | {rgba, W, H}) -> report object
   return (opts, src) => {
     const po = m.stringToNewUTF8(JSON.stringify(opts)), pt = src.text ? m.stringToNewUTF8(src.text) : 0;
@@ -165,13 +154,9 @@ function planIoU(a, b) {
   return res;
 }
 
-async function main() {
-  const gen = await loadGen();
-  let pass = 0, fail = 0;
-  const t = (name, problems, info = '') => {
-    if (problems.length) { fail++; console.log(`FAIL ${name}: ${problems.slice(0, 4).join('; ')}`); }
-    else { pass++; if (verbose) console.log(`PASS ${name}${info ? ` (${info})` : ''}`); }
-  };
+function main(m, rep) {
+  const gen = genOf(m);
+  const t = (name, problems) => rep.check(!problems.length, `${name}${problems.length ? `: ${problems.slice(0, 4).join('; ')}` : ''}`);
   const read = (f) => readFileSync(join(FX, f), 'utf8');
   const MAPS = { roborock_s5: 'Roborock S5', dreame_d9: 'Dreame D9', viomi_v7: 'Viomi V7' };
   for (const [f, brand] of Object.entries(MAPS)) {
@@ -224,7 +209,10 @@ async function main() {
     const a = gen({ adapter: 'nope' }, {}), b = gen({ adapter: 'valetudo_json' }, { text: '{"pixelSize":5,"layers":[{"type":"floor","compressedPixels":[1,1,5]}],"entities":[]}' });
     t('refusals', [!a.error && 'unknown adapter accepted', !b.error && 'a map without segments accepted'].filter(Boolean));
   }
-  console.log(`floorplan: ${pass}/${pass + fail} passed`);
-  process.exit(fail ? 1 : 0);
 }
-if (import.meta.url === pathToFileURL(process.argv[1]).href) main();
+
+export default {
+  id: 'floorplan', tiers: ['gate'], dens: ['1.5x'],
+  about: 'Floor plan generator: every adapter on public fixtures, outlines and rooms checked independently',
+  once({ m }, rep) { main(m, rep); },
+};

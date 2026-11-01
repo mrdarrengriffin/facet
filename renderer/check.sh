@@ -60,7 +60,7 @@ else
     check "pixel-contrast-$d" node tools/functional.mjs --rules --rule pixel-contrast --den "$d" --theme all "${sel[@]}"
     check "lab-$d" node tools/functional.mjs --rules --rule lab-tokens,noop-update --den "$d"
   done
-  check floorplan node tools/floorplan_test.mjs --build "$B"
+  check floorplan node tools/functional.mjs --rules --rule floorplan
   scr=(); [ -n "$ids" ] && scr=(--screen "$ids")
   check audit-screens node tools/audit_screens.mjs "${scr[@]}"
   check behaviour node tools/behaviour.mjs "${sel[@]}"
