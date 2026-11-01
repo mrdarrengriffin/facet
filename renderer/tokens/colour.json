@@ -1805,66 +1805,6 @@
         "use": "label in text-mute (disabled only)"
       },
       {
-        "section": "status_dot",
-        "fg": "ok",
-        "bg": [
-          "bg",
-          "surface"
-        ],
-        "kind": "ui",
-        "use": "dot, tone ok"
-      },
-      {
-        "section": "status_dot",
-        "fg": "warn",
-        "bg": [
-          "bg",
-          "surface"
-        ],
-        "kind": "ui",
-        "use": "dot, tone warn"
-      },
-      {
-        "section": "status_dot",
-        "fg": "error",
-        "bg": [
-          "bg",
-          "surface"
-        ],
-        "kind": "ui",
-        "use": "dot, tone error"
-      },
-      {
-        "section": "status_dot",
-        "fg": "accent",
-        "bg": [
-          "bg",
-          "surface"
-        ],
-        "kind": "ui",
-        "use": "dot, tone working"
-      },
-      {
-        "section": "status_dot",
-        "fg": "blue",
-        "bg": [
-          "bg",
-          "surface"
-        ],
-        "kind": "ui",
-        "use": "dot, tone info"
-      },
-      {
-        "section": "status_dot",
-        "fg": "text-dim",
-        "bg": [
-          "bg",
-          "surface"
-        ],
-        "kind": "ui",
-        "use": "dot, tone idle (text-dim: text-mute is for disabled only)"
-      },
-      {
         "section": "status_chip",
         "fg": "text",
         "bg": [
@@ -2152,20 +2092,6 @@
         ],
         "kind": "ui",
         "use": "press border / border-fill: 1 px accent border"
-      },
-      {
-        "section": "card_grid",
-        "fg": "line",
-        "bg": "bg",
-        "kind": "decor",
-        "use": "the hairline between two readouts sharing a card slot"
-      },
-      {
-        "section": "card_grid",
-        "fg": "line-hi",
-        "bg": "bg",
-        "kind": "decor",
-        "use": "workbench sample: slot outlines"
       },
       {
         "section": "tile",
@@ -3476,56 +3402,6 @@
         "use": "Clock orbit: the third dot and the every-10th tick"
       },
       {
-        "section": "check_row",
-        "fg": "text",
-        "bg": [
-          "bg",
-          "surface"
-        ],
-        "kind": "text",
-        "use": "the check name"
-      },
-      {
-        "section": "check_row",
-        "fg": "ok",
-        "bg": [
-          "bg",
-          "surface"
-        ],
-        "kind": "text",
-        "use": "pass"
-      },
-      {
-        "section": "check_row",
-        "fg": "error",
-        "bg": [
-          "bg",
-          "surface"
-        ],
-        "kind": "text",
-        "use": "fail"
-      },
-      {
-        "section": "check_row",
-        "fg": "accent-text",
-        "bg": [
-          "bg",
-          "surface"
-        ],
-        "kind": "text",
-        "use": "pending"
-      },
-      {
-        "section": "check_row",
-        "fg": "text-dim",
-        "bg": [
-          "bg",
-          "surface"
-        ],
-        "kind": "text",
-        "use": "skipped"
-      },
-      {
         "section": "empty_state",
         "fg": "line",
         "bg": [
@@ -3655,43 +3531,6 @@
         "bg": "qr-bg",
         "kind": "text",
         "use": "the caption"
-      },
-      {
-        "section": "pr_row",
-        "fg": "text",
-        "bg": "surface",
-        "kind": "text",
-        "use": "title"
-      },
-      {
-        "section": "pr_row",
-        "fg": "text-dim",
-        "bg": "surface",
-        "kind": "text",
-        "use": "meta: repo, number, age (docs text-mute for number / age: disabled-only here)"
-      },
-      {
-        "section": "pr_row",
-        "fg": "text",
-        "bg": "press-tint",
-        "kind": "text",
-        "use": "title while pressed"
-      },
-      {
-        "section": "pr_row",
-        "fg": "text-dim",
-        "bg": "press-tint",
-        "kind": "text",
-        "use": "meta while pressed"
-      },
-      {
-        "section": "pr_row",
-        "fg": "line",
-        "bg": [
-          "bg"
-        ],
-        "kind": "decor",
-        "use": "the row edge"
       },
       {
         "section": "readout",

@@ -229,65 +229,6 @@
     "bytes_est": 320
    }
   },
-  "big_number": {
-   "name": "Big number",
-   "update": true,
-   "props": [
-    {
-     "name": "label",
-     "type": "text",
-     "bindable": true,
-     "about": "The small capitals line above the number that says what it is, such as today so far."
-    },
-    {
-     "name": "value",
-     "type": "range",
-     "bindable": true,
-     "min": 0,
-     "max": 40,
-     "about": "The number itself. It counts up to this value when the number first appears."
-    },
-    {
-     "name": "unit",
-     "type": "text",
-     "bindable": true,
-     "about": "The unit shown after the number, such as kWh or %. Leave empty for none."
-    },
-    {
-     "name": "decimals",
-     "type": "range",
-     "bindable": true,
-     "min": 0,
-     "max": 3,
-     "about": "How many digits are shown after the decimal point."
-    },
-    {
-     "name": "prefix",
-     "type": "text",
-     "bindable": true,
-     "about": "Text shown just before the number, such as a currency sign. Leave empty for none."
-    },
-    {
-     "name": "state",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "default",
-      "unavailable"
-     ],
-     "about": "default shows the number; unavailable shows a dash in place of it when the value cannot be read."
-    }
-   ],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 6,
-    "bytes_est": 960
-   }
-  },
   "bins_art": {
    "name": "Bins art",
    "update": true,
@@ -368,35 +309,6 @@
    "cost": {
     "objects": 9,
     "bytes_est": 1440
-   }
-  },
-  "bins_view": {
-   "name": "Bins view",
-   "update": true,
-   "props": [
-    {
-     "name": "sample",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "tonight",
-      "today",
-      "collected",
-      "later",
-      "two",
-      "none"
-     ],
-     "about": "For previews only: which made-up collection week to show. tonight means put the bins out tonight, today means collection is today, collected means it is done, later means nothing soon, two means two bins go out together, none means no collections are known."
-    }
-   ],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 66,
-    "bytes_est": 10560
    }
   },
   "bottom_sheet": {
@@ -925,33 +837,6 @@
     "bytes_est": 1920
    }
   },
-  "card_grid": {
-   "name": "Card grid",
-   "update": true,
-   "props": [
-    {
-     "name": "cells",
-     "type": "text",
-     "bindable": true,
-     "about": "The cards in order, separated by commas: s is a small square tile, three to a row; m is half the row; l is the full width; h is a read-only readout, two of which share one slot."
-    },
-    {
-     "name": "sample",
-     "type": "bool",
-     "bindable": true,
-     "about": "For previews only: fills the cells with made-up cards so the layout can be seen."
-    }
-   ],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 9,
-    "bytes_est": 1440
-   }
-  },
   "card_previews": {
    "name": "Card previews",
    "update": true,
@@ -1121,122 +1006,6 @@
    "cost": {
     "objects": 6,
     "bytes_est": 960
-   }
-  },
-  "check_row": {
-   "name": "Check row",
-   "update": true,
-   "props": [
-    {
-     "name": "name",
-     "type": "text",
-     "bindable": true,
-     "about": "The name of the check, such as test or build."
-    },
-    {
-     "name": "state",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "pass",
-      "fail",
-      "pending",
-      "skipped"
-     ],
-     "about": "How the check went: pass, fail, pending while it still runs, or skipped. The dot and the word change to match."
-    },
-    {
-     "name": "width",
-     "type": "range",
-     "bindable": true,
-     "min": 160,
-     "max": 440,
-     "about": "How wide the row is, in pixels."
-    }
-   ],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 4,
-    "bytes_est": 640
-   }
-  },
-  "clock_face": {
-   "name": "Clock faces",
-   "update": true,
-   "props": [
-    {
-     "name": "face",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "hero",
-      "ring",
-      "analogue",
-      "compact"
-     ],
-     "about": "Which clock to draw: hero is big digits, ring adds a dotted ring with a seconds dot going round, analogue has thin hands, compact is the small time in a header."
-    },
-    {
-     "name": "font",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "mono",
-      "inter"
-     ],
-     "about": "The typeface of the digits: mono is the fixed-width face, inter the rounder everyday face."
-    },
-    {
-     "name": "format",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "24h",
-      "12h"
-     ],
-     "about": "24h shows 13:00; 12h shows 1:00 with AM or PM."
-    },
-    {
-     "name": "date",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "short",
-      "long"
-     ],
-     "about": "How the date under the time is written: short like MON 19 OCT, or long like Monday 19 October."
-    },
-    {
-     "name": "seconds",
-     "type": "bool",
-     "bindable": true,
-     "about": "Shows the seconds as well as hours and minutes."
-    },
-    {
-     "name": "time",
-     "type": "text",
-     "bindable": true,
-     "about": "For previews only: a fixed time to show, like 14:52:20. Leave empty for the real time."
-    },
-    {
-     "name": "day",
-     "type": "text",
-     "bindable": true,
-     "about": "For previews only: a fixed date to show, like 2026-10-19. Leave empty for today."
-    }
-   ],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 18,
-    "bytes_est": 2880
    }
   },
   "clock_orbit": {
@@ -1470,37 +1239,6 @@
     "bytes_est": 160
    }
   },
-  "date_line": {
-   "name": "Date line",
-   "update": true,
-   "props": [
-    {
-     "name": "style",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "short",
-      "long"
-     ],
-     "about": "short is compact capitals like MON 19 OCT; long is written out like Monday 19 October."
-    },
-    {
-     "name": "date",
-     "type": "text",
-     "bindable": true,
-     "about": "For previews only: a fixed date like 2026-10-19. Leave empty for today."
-    }
-   ],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 2,
-    "bytes_est": 320
-   }
-  },
   "dial": {
    "name": "Dial",
    "update": true,
@@ -1690,20 +1428,6 @@
    "cost": {
     "objects": 5,
     "bytes_est": 800
-   }
-  },
-  "energy_view": {
-   "name": "Energy view",
-   "update": true,
-   "props": [],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 19,
-    "bytes_est": 3040
    }
   },
   "entity_tile": {
@@ -2202,69 +1926,6 @@
    "cost": {
     "objects": 5,
     "bytes_est": 800
-   }
-  },
-  "hold_button": {
-   "name": "Hold button",
-   "update": true,
-   "props": [
-    {
-     "name": "label",
-     "type": "text",
-     "bindable": true,
-     "about": "The words on the button, such as Hold to open."
-    },
-    {
-     "name": "value",
-     "type": "text",
-     "bindable": true,
-     "about": "The action the button sends when the hold completes, such as open."
-    },
-    {
-     "name": "width",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "fill",
-      "hug"
-     ],
-     "about": "fill stretches the button across the space it is in; hug fits it to its words."
-    },
-    {
-     "name": "features",
-     "type": "range",
-     "bindable": true,
-     "min": 0,
-     "max": 65535,
-     "about": "What the device can do, as Home Assistant reports it in its supported features number."
-    },
-    {
-     "name": "mask",
-     "type": "range",
-     "bindable": true,
-     "min": 0,
-     "max": 65535,
-     "about": "The feature this button needs. If the device's features do not include it, the button is hidden. 0 always shows it."
-    },
-    {
-     "name": "state",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "default",
-      "disabled"
-     ],
-     "about": "default can be held; disabled is greyed out and cannot be used."
-    }
-   ],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 7,
-    "bytes_est": 1120
    }
   },
   "icon_button": {
@@ -3220,75 +2881,6 @@
     "bytes_est": 320
    }
   },
-  "pr_row": {
-   "name": "Pull request row",
-   "update": true,
-   "props": [
-    {
-     "name": "repo",
-     "type": "text",
-     "bindable": true,
-     "about": "The repository the pull request is in."
-    },
-    {
-     "name": "number",
-     "type": "range",
-     "bindable": true,
-     "min": 1,
-     "max": 9999,
-     "about": "The pull request's number."
-    },
-    {
-     "name": "title",
-     "type": "text",
-     "bindable": true,
-     "about": "The pull request's title, over up to two lines."
-    },
-    {
-     "name": "age",
-     "type": "text",
-     "bindable": true,
-     "about": "How long ago it was opened or last changed, such as 5h."
-    },
-    {
-     "name": "draft",
-     "type": "bool",
-     "bindable": true,
-     "about": "Marks it as a draft that is not ready for review yet."
-    },
-    {
-     "name": "ci",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "pass",
-      "fail",
-      "pending",
-      "none"
-     ],
-     "about": "How its automatic checks went: pass, fail, pending, or none when it has no checks."
-    },
-    {
-     "name": "state",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "default",
-      "pressed"
-     ],
-     "about": "default ready to tap; pressed while held."
-    }
-   ],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 13,
-    "bytes_est": 2080
-   }
-  },
   "qr_block": {
    "name": "QR block",
    "update": true,
@@ -4102,41 +3694,6 @@
     "bytes_est": 480
    }
   },
-  "status_dot": {
-   "name": "Status dot",
-   "update": true,
-   "props": [
-    {
-     "name": "tone",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "ok",
-      "warn",
-      "error",
-      "working",
-      "info",
-      "idle"
-     ],
-     "about": "The state the dot shows: ok, warn, error, working, info or idle, each in its own colour."
-    },
-    {
-     "name": "pulse",
-     "type": "bool",
-     "bindable": true,
-     "about": "Makes the dot pulse gently, for something happening now."
-    }
-   ],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 1,
-    "bytes_est": 160
-   }
-  },
   "status_line": {
    "name": "Status line",
    "update": true,
@@ -4470,54 +4027,6 @@
    "cost": {
     "objects": 3,
     "bytes_est": 480
-   }
-  },
-  "timer_view": {
-   "name": "Timer view",
-   "update": true,
-   "props": [
-    {
-     "name": "state",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "idle",
-      "running",
-      "done"
-     ],
-     "about": "What the timer is doing: idle with none set, running, or done when it has finished."
-    },
-    {
-     "name": "label",
-     "type": "text",
-     "bindable": true,
-     "about": "The timer's name, shown above the time, such as Pasta."
-    },
-    {
-     "name": "total",
-     "type": "range",
-     "bindable": true,
-     "min": 60,
-     "max": 7200,
-     "about": "How long the timer was set for, in seconds."
-    },
-    {
-     "name": "left",
-     "type": "range",
-     "bindable": true,
-     "min": 1,
-     "max": 7200,
-     "about": "How many seconds are left. The ring empties as it runs down."
-    }
-   ],
-   "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 39,
-    "bytes_est": 6240
    }
   },
   "title": {
@@ -5642,5 +5151,5 @@
    }
   }
  },
- "hash": "dab886ac"
+ "hash": "c1bd1a6f"
 }

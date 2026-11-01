@@ -95,7 +95,7 @@ FW_COMPONENT(progress_ring, "Progress ring", "components", R"({
   "parts": ["arc", "arc-fill"],
   "min": ["layout:timer-ring", "layout:timer-ring"],
   "slots": [
-    {"name": "centre", "count": 1, "about": "One component in the middle of the ring, usually a Hero block with the name, the time left and when it ends (in + slot 0).", "accepts": ["hero_block", "label", "stat", "title", "big_number"], "max": 1}
+    {"name": "centre", "count": 1, "about": "One component in the middle of the ring, usually a Hero block with the name, the time left and when it ends (in + slot 0).", "accepts": ["hero_block", "label", "stat", "title"], "max": 1}
   ],
   "frame": [448, 448],
   "props": [

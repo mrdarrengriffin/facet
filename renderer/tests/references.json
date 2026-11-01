@@ -127,26 +127,6 @@
       "note": "docs explorer default controls vs the WASM default: values may differ"
     },
     {
-      "comp": "pr_row",
-      "variant": "default",
-      "astro": {
-        "item": "pr-row",
-        "selector": "[data-ex-stage] > *"
-      },
-      "crop": true,
-      "note": "docs explorer default controls vs the WASM default: values may differ"
-    },
-    {
-      "comp": "check_row",
-      "variant": "default",
-      "astro": {
-        "item": "check-row",
-        "selector": "[data-ex-stage] > *"
-      },
-      "crop": true,
-      "note": "docs explorer default controls vs the WASM default: values may differ"
-    },
-    {
       "comp": "empty_state",
       "variant": "default",
       "astro": {
@@ -197,16 +177,6 @@
       "note": "docs explorer default controls vs the WASM default: values may differ"
     },
     {
-      "comp": "big_number",
-      "variant": "default",
-      "astro": {
-        "item": "big-number",
-        "selector": "[data-ex-stage] > *"
-      },
-      "crop": true,
-      "note": "docs explorer default controls vs the WASM default: values may differ"
-    },
-    {
       "comp": "donut",
       "variant": "default",
       "astro": {
@@ -231,26 +201,6 @@
       "variant": "default",
       "astro": {
         "item": "time-text",
-        "selector": "[data-ex-stage] > *"
-      },
-      "crop": true,
-      "note": "docs explorer default controls vs the WASM default: values may differ"
-    },
-    {
-      "comp": "date_line",
-      "variant": "default",
-      "astro": {
-        "item": "date-line",
-        "selector": "[data-ex-stage] > *"
-      },
-      "crop": true,
-      "note": "docs explorer default controls vs the WASM default: values may differ"
-    },
-    {
-      "comp": "clock_face",
-      "variant": "default",
-      "astro": {
-        "item": "clock-face",
         "selector": "[data-ex-stage] > *"
       },
       "crop": true,

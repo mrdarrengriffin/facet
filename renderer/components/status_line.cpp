@@ -3,7 +3,7 @@
 // (docs screens/energy.ts: the rate line, statusDot(tone) + body text-dim).
 //   dot    a real Status chip at size dot (fw::find("status_chip"), C8b), in the tone
 //   text   type:body, fg:text (ink dim: fg:text-dim), one line on the 4 px grid (fx::fit_grid), gap:3 after the dot (the WASM originals:
-//          energy_view rate line, weather_view rain line: sp::s3, t.text)
+//          the weather view's rain line: sp::s3, t.text)
 //   box    a row, items centred on it, hugs its content
 // Steps: none (it hugs). Bleed: none. States: n/a (static: no events, no sound). Update path: the words in place; a new
 // tone updates the dot in place (its own update path: a fade, silent). Always a dot: a line without one would move its

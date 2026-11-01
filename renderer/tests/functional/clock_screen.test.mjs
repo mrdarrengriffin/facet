@@ -2,7 +2,7 @@
 // its centre slot: digits, the short date and the weather line), the weather line on the weather feed panel.weather
 // (brief) and its Home card (C52) on the clock feed panel.clock (core/clock_source.cpp: the device clock) + the same
 // weather line. Home Assistant is faked (tools/functional.mjs FakeHA); W is NOT Darren's entity. Approved original:
-// Astro packages/ui/src/screens/clock.ts (orbitFace; was the orbit face of components/clock_face.cpp).
+// Astro packages/ui/src/screens/clock.ts (orbitFace).
 const W = 'weather.test_home';
 async function open(t, params) { await t.mount('spec', { screen: 'clock', ...params }); return t; }
 const deck = (params) => ({ v: 2, rev: 9, start: 'h', pages: [

@@ -329,10 +329,6 @@
         "size": "height lay::badge_h (32 / 24) = its minimum width; padding sp::s2; radius round"
       },
       {
-        "id": "status_dot",
-        "size": "lay::dot (8 / 4); round"
-      },
-      {
         "id": "radio",
         "size": "lay::radio (24 / 16) with lay::radio_dot (8); hit area touch::min"
       },

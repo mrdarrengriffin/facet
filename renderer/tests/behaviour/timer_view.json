@@ -1,7 +1,0 @@
-{
-  "id": "timer_view",
-  "live": true,
-  "live_why": "a running countdown",
-  "tests": [],
-  "xfail": {}
-}
