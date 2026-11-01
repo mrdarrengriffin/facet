@@ -30,13 +30,13 @@ void fill(lv_obj_t *root, fw::Props p) {
   for (const char *t : {"box", "col", "line:line", "rule-top", "h:gh-row-h"}) fx::use(root, t);
   fx::use(fx::box(root, "free"), "h:gh-row-top");
   lv_obj_t *top = fx::box(root, "row-mid");
-  fx::use(top, "gap:gutter");
+  for (const char *t : {"gap:gutter", "label-row"}) fx::use(top, t);  // label-row: its text-box translate never shortens it
   lv_obj_t *lb = fx::text(top, p["label"] | "", "type:label", "fg:text-dim");
   fx::use(lb, "grow");
   lv_label_set_long_mode(lb, LV_LABEL_LONG_MODE_DOTS);  // one line, then "..."
   if (has_status(p)) {
     lv_obj_t *st = fx::box(top, "row-mid");
-    for (const char *t : {"hug", "gap:2"}) fx::use(st, t);
+    for (const char *t : {"hug", "gap:2", "label-row"}) fx::use(st, t);
     Doc d;
     dot_props(p, d);
     fw::find("status_chip")->build(st, d.as<fw::Props>());
