@@ -1,0 +1,724 @@
+{
+ "screens": {
+  "media": {
+   "source": "music_assistant",
+   "found": {
+    "music_assistant": {
+     "found": true,
+     "count": 9,
+     "evidence": "found 9"
+    },
+    "media_players": {
+     "found": true,
+     "count": 23,
+     "evidence": "found 23"
+    },
+    "spotify": {
+     "found": false,
+     "evidence": "needs Spotify sign-in"
+    }
+   },
+   "params": {
+    "speakers": "media_player.demo_media_player_23,media_player.demo_media_player_8,media_player.demo_media_player_10,media_player.demo_media_player_13,media_player.demo_media_player_16,media_player.demo_media_player_18,media_player.demo_media_player_2,media_player.demo_media_player_4,media_player.demo_media_player_6,media_player.demo_media_player_21",
+    "entity": "auto",
+    "auto": "sensor.demo_sensor_478"
+   },
+   "fills": {
+    "music_assistant": {
+     "speakers": "media_player.demo_media_player_23,media_player.demo_media_player_8,media_player.demo_media_player_10,media_player.demo_media_player_13,media_player.demo_media_player_16,media_player.demo_media_player_18,media_player.demo_media_player_2,media_player.demo_media_player_4,media_player.demo_media_player_6,media_player.demo_media_player_21",
+     "entity": "media_player.demo_media_player_2"
+    },
+    "media_players": {
+     "speakers": "media_player.demo_media_player_1,media_player.demo_media_player_2,media_player.demo_media_player_3,media_player.demo_media_player_4,media_player.demo_media_player_6,media_player.demo_media_player_5,media_player.demo_media_player_7,media_player.demo_media_player_8,media_player.demo_media_player_9,media_player.demo_media_player_10,media_player.demo_media_player_11,media_player.demo_media_player_12,media_player.demo_media_player_13,media_player.demo_media_player_14,media_player.demo_media_player_16,media_player.demo_media_player_15,media_player.demo_media_player_17,media_player.demo_media_player_18,media_player.demo_media_player_19,media_player.demo_media_player_21,media_player.demo_media_player_20,media_player.demo_media_player_22,media_player.demo_media_player_23",
+     "entity": "media_player.demo_media_player_1"
+    }
+   }
+  },
+  "calendar": {
+   "source": "ha_calendars",
+   "found": {
+    "ha_calendars": {
+     "found": true,
+     "count": 13,
+     "evidence": "found 13"
+    },
+    "ical": {
+     "found": false,
+     "evidence": "needs calendar URL"
+    }
+   },
+   "params": {
+    "calendars": "calendar.demo_calendar_1,calendar.demo_calendar_3,calendar.demo_calendar_4,calendar.demo_calendar_5,calendar.demo_calendar_6,calendar.demo_calendar_7,calendar.demo_calendar_8,calendar.demo_calendar_9,calendar.demo_calendar_10,calendar.demo_calendar_11,calendar.demo_calendar_12,calendar.demo_calendar_13,calendar.demo_calendar_2"
+   },
+   "fills": {
+    "ha_calendars": {
+     "calendars": "calendar.demo_calendar_1,calendar.demo_calendar_3,calendar.demo_calendar_4,calendar.demo_calendar_5,calendar.demo_calendar_6,calendar.demo_calendar_7,calendar.demo_calendar_8,calendar.demo_calendar_9,calendar.demo_calendar_10,calendar.demo_calendar_11,calendar.demo_calendar_12,calendar.demo_calendar_13,calendar.demo_calendar_2"
+    }
+   }
+  },
+  "weather": {
+   "source": "ha_weather",
+   "found": {
+    "ha_weather": {
+     "found": true,
+     "count": 1,
+     "evidence": "found 1"
+    },
+    "open_meteo": {
+     "found": true,
+     "evidence": "no setup"
+    }
+   },
+   "params": {
+    "weather": "weather.demo_weather_1"
+   },
+   "fills": {
+    "ha_weather": {
+     "weather": "weather.demo_weather_1"
+    }
+   }
+  },
+  "energy": {
+   "source": "octopus",
+   "found": {
+    "octopus": {
+     "found": true,
+     "count": 23,
+     "evidence": "found 23"
+    },
+    "ha_energy": {
+     "found": true,
+     "evidence": "Energy dashboard set up"
+    },
+    "octopus_api": {
+     "found": false,
+     "evidence": "needs API key + account number"
+    }
+   },
+   "params": {},
+   "fills": {}
+  },
+  "light": {
+   "source": "ha_lights",
+   "found": {
+    "ha_lights": {
+     "found": true,
+     "count": 27,
+     "evidence": "found 27"
+    }
+   },
+   "params": {
+    "entity": "light.demo_light_1"
+   },
+   "fills": {
+    "ha_lights": {
+     "entity": "light.demo_light_1"
+    }
+   }
+  },
+  "timer": {
+   "source": "panel",
+   "found": {
+    "ha_timers": {
+     "found": false,
+     "count": 0,
+     "evidence": "not in Home Assistant"
+    },
+    "panel": {
+     "found": true,
+     "evidence": "built in"
+    }
+   },
+   "params": {},
+   "fills": {}
+  },
+  "clock": {
+   "source": "panel",
+   "found": {
+    "panel": {
+     "found": true,
+     "evidence": "built in"
+    }
+   },
+   "params": {},
+   "fills": {}
+  },
+  "moon": {
+   "source": "panel",
+   "found": {
+    "panel": {
+     "found": true,
+     "evidence": "built in"
+    }
+   },
+   "params": {},
+   "fills": {}
+  }
+ },
+ "options": {
+  "media_player": [
+   {
+    "id": "media_player.demo_media_player_8",
+    "name": "Media player 8"
+   },
+   {
+    "id": "media_player.demo_media_player_10",
+    "name": "Media player 10"
+   },
+   {
+    "id": "media_player.demo_media_player_1",
+    "name": "Media player 1"
+   },
+   {
+    "id": "media_player.demo_media_player_2",
+    "name": "Media player 2"
+   },
+   {
+    "id": "media_player.demo_media_player_3",
+    "name": "Media player 3"
+   },
+   {
+    "id": "media_player.demo_media_player_4",
+    "name": "Media player 4"
+   }
+  ],
+  "sensor": [
+   {
+    "id": "sensor.kitchen_dishwasher_plug_power",
+    "name": "Dishwasher Plug Power"
+   },
+   {
+    "id": "sensor.demo_sensor_243",
+    "name": "Sensor 243"
+   },
+   {
+    "id": "sensor.demo_sensor_478",
+    "name": "Sensor 478"
+   },
+   {
+    "id": "sensor.demo_sensor_1",
+    "name": "Sensor 1"
+   },
+   {
+    "id": "sensor.demo_sensor_2",
+    "name": "Sensor 2"
+   },
+   {
+    "id": "sensor.demo_sensor_3",
+    "name": "Sensor 3"
+   },
+   {
+    "id": "sensor.demo_sensor_4",
+    "name": "Sensor 4"
+   }
+  ],
+  "calendar": [
+   {
+    "id": "calendar.demo_calendar_2",
+    "name": "Calendar 2"
+   },
+   {
+    "id": "calendar.demo_calendar_1",
+    "name": "Calendar 1"
+   },
+   {
+    "id": "calendar.demo_calendar_3",
+    "name": "Calendar 3"
+   },
+   {
+    "id": "calendar.demo_calendar_4",
+    "name": "Calendar 4"
+   },
+   {
+    "id": "calendar.demo_calendar_5",
+    "name": "Calendar 5"
+   }
+  ],
+  "weather": [
+   {
+    "id": "weather.demo_weather_1",
+    "name": "Weather 1"
+   }
+  ],
+  "climate": [],
+  "cover": [
+   {
+    "id": "cover.demo_cover_1",
+    "name": "Cover 1"
+   }
+  ],
+  "lock": [],
+  "vacuum": [
+   {
+    "id": "vacuum.demo_vacuum_1",
+    "name": "Vacuum 1"
+   }
+  ],
+  "select": [
+   {
+    "id": "select.demo_select_1",
+    "name": "Select 1"
+   },
+   {
+    "id": "select.demo_select_2",
+    "name": "Select 2"
+   },
+   {
+    "id": "select.demo_select_3",
+    "name": "Select 3"
+   },
+   {
+    "id": "select.demo_select_4",
+    "name": "Select 4"
+   }
+  ],
+  "camera": [
+   {
+    "id": "camera.demo_camera_1",
+    "name": "Camera 1"
+   },
+   {
+    "id": "camera.demo_camera_2",
+    "name": "Camera 2"
+   },
+   {
+    "id": "camera.demo_camera_3",
+    "name": "Camera 3"
+   },
+   {
+    "id": "camera.demo_camera_4",
+    "name": "Camera 4"
+   }
+  ],
+  "light": [
+   {
+    "id": "light.chair_light",
+    "name": "Chair Light"
+   },
+   {
+    "id": "light.demo_light_5",
+    "name": "Light 5"
+   },
+   {
+    "id": "light.demo_light_6",
+    "name": "Light 6"
+   },
+   {
+    "id": "light.pantry_light",
+    "name": "Pantry Light"
+   },
+   {
+    "id": "light.sofa_table_light",
+    "name": "Sofa Table Light"
+   },
+   {
+    "id": "light.demo_light_1",
+    "name": "Light 1"
+   },
+   {
+    "id": "light.demo_light_2",
+    "name": "Light 2"
+   },
+   {
+    "id": "light.demo_light_3",
+    "name": "Light 3"
+   },
+   {
+    "id": "light.demo_light_4",
+    "name": "Light 4"
+   }
+  ],
+  "switch": [
+   {
+    "id": "switch.demo_switch_1",
+    "name": "Switch 1"
+   },
+   {
+    "id": "switch.demo_switch_2",
+    "name": "Switch 2"
+   },
+   {
+    "id": "switch.demo_switch_3",
+    "name": "Switch 3"
+   },
+   {
+    "id": "switch.demo_switch_4",
+    "name": "Switch 4"
+   }
+  ],
+  "binary_sensor": [
+   {
+    "id": "binary_sensor.back_door_opening",
+    "name": "Back Door Opening"
+   },
+   {
+    "id": "binary_sensor.demo_binary_sensor_5",
+    "name": "Binary sensor 5"
+   },
+   {
+    "id": "binary_sensor.demo_binary_sensor_1",
+    "name": "Binary sensor 1"
+   },
+   {
+    "id": "binary_sensor.demo_binary_sensor_2",
+    "name": "Binary sensor 2"
+   },
+   {
+    "id": "binary_sensor.demo_binary_sensor_3",
+    "name": "Binary sensor 3"
+   },
+   {
+    "id": "binary_sensor.demo_binary_sensor_4",
+    "name": "Binary sensor 4"
+   }
+  ],
+  "script": [
+   {
+    "id": "script.good_night",
+    "name": "Good night"
+   },
+   {
+    "id": "script.movie_time",
+    "name": "Movie time"
+   }
+  ],
+  "scene": [
+   {
+    "id": "scene.dinner",
+    "name": "Dinner"
+   }
+  ],
+  "automation": [
+   {
+    "id": "automation.lights_out",
+    "name": "Lights out"
+   }
+  ],
+  "button": [
+   {
+    "id": "button.demo_button_1",
+    "name": "Button 1"
+   }
+  ],
+  "fan": [
+   {
+    "id": "fan.demo_fan_1",
+    "name": "Fan 1"
+   }
+  ]
+ },
+ "deck": {
+  "v": 2,
+  "rev": 2,
+  "start": "living",
+  "pages": [
+   {
+    "id": "living",
+    "kind": "home",
+    "name": "Living room",
+    "cards": [
+     {
+      "t": "light",
+      "e": "light.demo_light_5",
+      "size": "s",
+      "tap": "toggle",
+      "label": "Ceiling"
+     },
+     {
+      "t": "light",
+      "e": "light.sofa_table_light",
+      "size": "s",
+      "tap": "toggle",
+      "label": "Sofa table"
+     },
+     {
+      "t": "light",
+      "e": "light.chair_light",
+      "size": "s",
+      "tap": "toggle",
+      "label": "Chair"
+     },
+     {
+      "t": "media",
+      "e": "media_player.demo_media_player_10",
+      "size": "m",
+      "tap": "detail",
+      "label": "Speaker"
+     },
+     {
+      "t": "sensor",
+      "e": "binary_sensor.back_door_opening",
+      "size": "m",
+      "label": "Back door"
+     },
+     {
+      "t": "sensor",
+      "e": "sensor.demo_sensor_243",
+      "size": "m",
+      "label": "Garage"
+     },
+     {
+      "t": "page",
+      "page": "kitchen",
+      "size": "m"
+     },
+     {
+      "t": "page",
+      "page": "calendar",
+      "size": "m"
+     },
+     {
+      "t": "page",
+      "page": "weather",
+      "size": "l"
+     }
+    ]
+   },
+   {
+    "id": "kitchen",
+    "kind": "home",
+    "name": "Kitchen",
+    "header_actions": {
+     "button": "timer",
+     "status": "timer"
+    },
+    "cards": [
+     {
+      "t": "light",
+      "e": "light.pantry_light",
+      "size": "s",
+      "tap": "toggle",
+      "label": "Pantry"
+     },
+     {
+      "t": "light",
+      "e": "light.demo_light_6",
+      "size": "s",
+      "tap": "toggle",
+      "label": "Pantry LEDs"
+     },
+     {
+      "t": "page",
+      "page": "timer",
+      "size": "s"
+     },
+     {
+      "t": "sensor",
+      "e": "binary_sensor.demo_binary_sensor_5",
+      "size": "s",
+      "label": "Fridge"
+     },
+     {
+      "t": "sensor",
+      "e": "sensor.kitchen_dishwasher_plug_power",
+      "size": "s",
+      "label": "Dishwasher"
+     },
+     {
+      "t": "media",
+      "e": "media_player.demo_media_player_8",
+      "size": "m",
+      "tap": "detail",
+      "label": "Kitchen display"
+     },
+     {
+      "t": "page",
+      "page": "living",
+      "size": "m"
+     },
+     {
+      "t": "page",
+      "page": "calendar",
+      "size": "m"
+     },
+     {
+      "t": "page",
+      "page": "weather",
+      "size": "m"
+     }
+    ]
+   },
+   {
+    "id": "living_room",
+    "kind": "living_room"
+   },
+   {
+    "id": "calendar",
+    "kind": "calendar",
+    "source": "ha_calendars",
+    "params": {
+     "calendars": "calendar.demo_calendar_1,calendar.demo_calendar_3,calendar.demo_calendar_4,calendar.demo_calendar_5,calendar.demo_calendar_6,calendar.demo_calendar_7,calendar.demo_calendar_8,calendar.demo_calendar_9,calendar.demo_calendar_10,calendar.demo_calendar_11,calendar.demo_calendar_12,calendar.demo_calendar_13,calendar.demo_calendar_2"
+    }
+   },
+   {
+    "id": "clock",
+    "kind": "clock",
+    "source": "panel"
+   },
+   {
+    "id": "weather",
+    "kind": "weather",
+    "source": "ha_weather",
+    "params": {
+     "weather": "weather.demo_weather_1"
+    }
+   },
+   {
+    "id": "media",
+    "kind": "media",
+    "params": {
+     "speakers": "media_player.demo_media_player_23,media_player.demo_media_player_8,media_player.demo_media_player_10,media_player.demo_media_player_13,media_player.demo_media_player_16,media_player.demo_media_player_18,media_player.demo_media_player_2,media_player.demo_media_player_4,media_player.demo_media_player_6,media_player.demo_media_player_21",
+     "entity": "auto",
+     "auto": "sensor.demo_sensor_478"
+    },
+    "source": "music_assistant"
+   },
+   {
+    "id": "energy",
+    "kind": "energy",
+    "source": "octopus"
+   },
+   {
+    "id": "timer",
+    "kind": "timer",
+    "source": "panel"
+   }
+  ]
+ },
+ "specs": {
+  "living_room": {
+   "v": 1,
+   "id": "living_room",
+   "name": "Living room",
+   "rev": 1,
+   "role": "page",
+   "header": {
+    "label": "Living room",
+    "back": true
+   },
+   "layout": "list",
+   "nodes": [
+    {
+     "c": "list_row",
+     "p": {
+      "title": "Ceiling",
+      "icon": "bulb",
+      "trailing": "toggle",
+      "sub": {
+       "e": "light.demo_light_5",
+       "fmt": "light"
+      },
+      "on": {
+       "e": "light.demo_light_5",
+       "fmt": "on"
+      },
+      "state": {
+       "e": "light.demo_light_5",
+       "fmt": "avail"
+      }
+     },
+     "on": {
+      "toggle": {
+       "do": "light.demo_light_7",
+       "e": "light.demo_light_5"
+      },
+      "long": {
+       "do": "nav.open",
+       "screen": "light",
+       "params": {
+        "entity": "light.demo_light_5",
+        "name": "Ceiling"
+       }
+      }
+     },
+     "pending": {
+      "sub": [
+       "Turning on",
+       "Turning off"
+      ]
+     }
+    },
+    {
+     "c": "list_row",
+     "p": {
+      "title": "Sofa table",
+      "icon": "bulb",
+      "trailing": "toggle",
+      "sub": {
+       "e": "light.sofa_table_light",
+       "fmt": "light"
+      },
+      "on": {
+       "e": "light.sofa_table_light",
+       "fmt": "on"
+      },
+      "state": {
+       "e": "light.sofa_table_light",
+       "fmt": "avail"
+      }
+     },
+     "on": {
+      "toggle": {
+       "do": "light.demo_light_7",
+       "e": "light.sofa_table_light"
+      },
+      "long": {
+       "do": "nav.open",
+       "screen": "light",
+       "params": {
+        "entity": "light.sofa_table_light",
+        "name": "Sofa table"
+       }
+      }
+     },
+     "pending": {
+      "sub": [
+       "Turning on",
+       "Turning off"
+      ]
+     }
+    },
+    {
+     "c": "list_row",
+     "p": {
+      "title": "Chair",
+      "icon": "bulb",
+      "trailing": "toggle",
+      "sub": {
+       "e": "light.chair_light",
+       "fmt": "light"
+      },
+      "on": {
+       "e": "light.chair_light",
+       "fmt": "on"
+      },
+      "state": {
+       "e": "light.chair_light",
+       "fmt": "avail"
+      }
+     },
+     "on": {
+      "toggle": {
+       "do": "light.demo_light_7",
+       "e": "light.chair_light"
+      },
+      "long": {
+       "do": "nav.open",
+       "screen": "light",
+       "params": {
+        "entity": "light.chair_light",
+        "name": "Chair"
+       }
+      }
+     },
+     "pending": {
+      "sub": [
+       "Turning on",
+       "Turning off"
+      ]
+     }
+    }
+   ]
+  }
+ }
+}

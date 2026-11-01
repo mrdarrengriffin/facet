@@ -6,11 +6,15 @@
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",
-    "editor-device": "node scripts/editor-device.mjs"
+    "editor-device": "node scripts/editor-device.mjs",
+    "test:editor": "node --test --test-concurrency=1 \"tests/editor/*.test.mjs\""
   },
   "dependencies": {
     "@astrojs/node": "11.1.7",
     "astro": "7.3.8",
     "marked": "14.1.4"
+  },
+  "devDependencies": {
+    "playwright": "1.64.1"
   }
 }

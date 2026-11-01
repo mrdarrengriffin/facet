@@ -795,7 +795,7 @@ inline void check_card(ArduinoJson::JsonVariantConst c, const std::string &p, co
   check_keys(c.as<ArduinoJson::JsonObjectConst>(), CK, 6, p, e);
   const std::string t = c["t"] | "", ent = c["e"] | "", size = c["size"] | "", tap = c["tap"] | "", pg = c["page"] | "";
   const CardType *ct = card_type(t);
-  if (!ct) { err(e, p + ".t", "bad_card", "t is a card type (light, cover, climate, media, sensor, page, entity)"); return; }
+  if (!ct) { err(e, p + ".t", "bad_card", "t is a card type (light, media, sensor, page, entity)"); return; }
   if (t == "entity") {  // any entity; its tap from its domain's list
     const size_t dot = ent.find('.');
     if (dot == std::string::npos || !entity_ok(ent) || ent[0] == '$') err(e, p + ".e", "bad_entity", "an entity id (domain.name)");
