@@ -6,14 +6,15 @@
 # Incremental: each .cpp (core/*.cpp, foundations/*.cpp, components/*.cpp) is its own object, recompiled only when it or a header it
 # includes changed (compiler depfiles); LVGL objects are cached once per lv_conf (cold ~20-60 s, after that a component edit = a few seconds).
 # Paths (env, or local.env at the repo root, untracked):
-#   PANEL_BUILD  ESPHome build dir of the panel firmware (LVGL tree, lv_conf.h, ArduinoJson)
+#   PANEL_BUILD  ESPHome build dir of the panel firmware (lv_conf.h)
 #   FW_PANEL     panel firmware source dir (packages/ui.yaml for the LV_* build flags)
 #   FW_FONT_PY   a Python with the esphome package (font rasteriser, tools/gen_fonts.py); FW_TTF = dir of the TTFs
 #   FW_OUT       output dir (default ./out), FW_CACHE object cache (default ./.cache)
 # Feature flags (renderer/features.json, tools/features.mjs; README "Feature flags"): FW_FEATURES=docs|firmware builds
 # only the features shown in that flavour (sources, specs, deck pages, Home cards) into $FW_OUT/<flavour>/<density>/
 # (own object + generated-header cache); unset = everything (the workbench).
-# TODO: vendor LVGL, lv_conf and the fonts into this branch so it builds on its own.
+# LVGL 9.5.0 and ArduinoJson 7.4.3 are vendored in third_party/ (third_party/README.md).
+# TODO: commit lv_conf and the fonts so it builds on its own.
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd)
 [ -f "$HERE/../local.env" ] && . "$HERE/../local.env"
@@ -35,8 +36,8 @@ DEN=$1
 mkdir -p "${FW_CACHE:-$HERE/.cache}"; exec 8>"${FW_CACHE:-$HERE/.cache}/.build-$DEN.lock"; flock 8
 . ~/emsdk/emsdk_env.sh >/dev/null 2>&1
 PB=${PANEL_BUILD:-$HOME/.esphome-build/waveshare-p4-86-panel}
-L=$PB/managed_components/lvgl__lvgl
-AJ=$PB/managed_components/bblanchon__arduinojson/src
+L=$HERE/third_party/lvgl
+AJ=$HERE/third_party/arduinojson/src
 OPT=${OPT:--O2}
 C=${FW_CACHE:-$HERE/.cache}
 FEAT=${FW_FEATURES:-}
@@ -46,7 +47,7 @@ O=$C/obj-$DEN$OPT${FEAT:+-$FEAT}
 OUT=${FW_OUT:-$HERE/out}/${FEAT:+$FEAT/}$DEN
 VFLAG=; [ "$DEN" = 1x ] && VFLAG=-DFW_1X
 mkdir -p "$C/lvgl$OPT" "$O" "$OUT" "$GEN"
-[ -f "$PB/src/lv_conf.h" ] && [ -d "$L/src" ] || { echo "no panel build in $PB (build the panel firmware once)"; exit 1; }
+[ -f "$PB/src/lv_conf.h" ] || { echo "no panel build in $PB (build the panel firmware once)"; exit 1; }
 t0=$(date +%s.%N)
 SKIP=" "; [ -z "$FEAT" ] || SKIP=" $(node "$HERE/tools/features.mjs" exclude "$FEAT" | tr '\n' ' ') "
 

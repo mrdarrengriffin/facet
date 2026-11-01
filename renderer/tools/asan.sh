@@ -9,9 +9,8 @@ set -euo pipefail
 HERE=$(cd "$(dirname "$0")/.." && pwd)
 [ -f "$HERE/../local.env" ] && . "$HERE/../local.env"
 DEN=1x; if [ "${1:-}" = 1x ] || [ "${1:-}" = 1.5x ]; then DEN=$1; shift; fi
-PB=${PANEL_BUILD:-$HOME/.esphome-build/waveshare-p4-86-panel}
-L=$PB/managed_components/lvgl__lvgl
-AJ=$PB/managed_components/bblanchon__arduinojson/src
+L=$HERE/third_party/lvgl
+AJ=$HERE/third_party/arduinojson/src
 C=${FW_CACHE:-$HERE/.cache}
 G=$C/gen  # generated token headers + lv_conf from the last WASM build (build.sh)
 [ -f "$G/lv_conf.h" ] || { echo "run build.sh once first (generated headers in $G)"; exit 1; }
