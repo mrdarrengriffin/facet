@@ -50,11 +50,6 @@
         },
         {
           "t": "page",
-          "page": "flightradar",
-          "size": "m"
-        },
-        {
-          "t": "page",
           "page": "print",
           "size": "m"
         }
@@ -91,10 +86,6 @@
     {
       "id": "github",
       "kind": "github"
-    },
-    {
-      "id": "flightradar",
-      "kind": "flightradar"
     },
     {
       "id": "print",

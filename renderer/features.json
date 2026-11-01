@@ -96,13 +96,6 @@
       "components": ["card_grid", "date_line", "status_dot", "big_number", "hold_button", "timer_view", "clock_face", "energy_view", "bins_view", "pr_row", "check_row"]
     },
     {
-      "id": "flightradar",
-      "label": "Flight radar",
-      "docs": false, "status": "wip", "firmware": false,
-      "screens": ["flightradar"],
-      "components": ["flight_hero"]
-    },
-    {
       "id": "overhead",
       "label": "Overhead (aircraft)",
       "docs": false, "status": "wip", "firmware": false,

@@ -2416,130 +2416,6 @@
     "bytes_est": 9920
    }
   },
-  "flight_hero": {
-   "name": "Flight hero",
-   "update": true,
-   "props": [
-    {
-     "name": "look",
-     "type": "text",
-     "bindable": true,
-     "about": "Where to look, such as high in the NW · 38°."
-    },
-    {
-     "name": "look_tone",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "text-dim",
-      "accent-text"
-     ],
-     "about": "accent-text when the aircraft is high enough to look up at, else text-dim."
-    },
-    {
-     "name": "status",
-     "type": "text",
-     "bindable": true,
-     "about": "A status after the look line: military, helicopter or an emergency squawk. Empty for none."
-    },
-    {
-     "name": "status_tone",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "info",
-      "error",
-      "warn",
-      "ok",
-      "working",
-      "idle"
-     ],
-     "about": "The status dot's colour: error for an emergency, info otherwise."
-    },
-    {
-     "name": "route",
-     "type": "text",
-     "bindable": true,
-     "about": "Where it flies from and to, such as Amsterdam → Edinburgh, or its callsign."
-    },
-    {
-     "name": "who",
-     "type": "text",
-     "bindable": true,
-     "about": "The airline, flight and aircraft, such as easyJet · U245UK · Airbus A320neo."
-    },
-    {
-     "name": "alt_label",
-     "type": "text",
-     "bindable": true,
-     "about": "altitude, or climbing / descending while it does."
-    },
-    {
-     "name": "alt",
-     "type": "text",
-     "bindable": true,
-     "about": "Its height, such as 29,000 ft."
-    },
-    {
-     "name": "speed",
-     "type": "text",
-     "bindable": true,
-     "about": "Its ground speed, such as 529 mph."
-    },
-    {
-     "name": "away",
-     "type": "text",
-     "bindable": true,
-     "about": "How far away and which way, such as 7 km NW."
-    },
-    {
-     "name": "planes",
-     "type": "text",
-     "bindable": true,
-     "about": "The aircraft on the sky radar (the Sky radar's planes)."
-    },
-    {
-     "name": "unit",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "km",
-      "mi"
-     ],
-     "about": "The sky radar's rings: km or mi, as Settings > Units says."
-    },
-    {
-     "name": "empty",
-     "type": "bool",
-     "bindable": true,
-     "about": "Shows the quiet words instead of an aircraft, when nothing is flying nearby."
-    },
-    {
-     "name": "empty_title",
-     "type": "text",
-     "bindable": true,
-     "about": "The quiet words' headline, such as Clear skies."
-    },
-    {
-     "name": "empty_body",
-     "type": "text",
-     "bindable": true,
-     "about": "The line under it, such as Nothing flying within 50 km right now."
-    }
-   ],
-   "events": {
-    "tap": [
-     "flights.select"
-    ],
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 20,
-    "bytes_est": 3200
-   }
-  },
   "focus_ring": {
    "name": "Focus ring",
    "update": true,
@@ -3575,8 +3451,7 @@
     "tap": [
      "nav.open",
      "nav.back",
-     "light.toggle",
-     "flights.select"
+     "light.toggle"
     ],
     "long": [
      "nav.open"
@@ -4740,9 +4615,6 @@
     }
    ],
    "events": {
-    "pick": [
-     "flights.select"
-    ],
     "open": [
      "nav.open"
     ]
@@ -6192,7 +6064,6 @@
   "timer.new",
   "timer.back",
   "calendar.control",
-  "flights.select",
   "script.run",
   "scene.activate",
   "automation.trigger",
@@ -6672,22 +6543,6 @@
    }
   },
   {
-   "do": "flights.select",
-   "about": "On the Flight radar: select an aircraft (by hex, callsign or route) so the hero and the card show it; the selected one again opens its details (spec nodes only).",
-   "fields": [
-    {
-     "name": "value",
-     "type": "text",
-     "need": "required",
-     "limits": "*48"
-    }
-   ],
-   "spec_only": true,
-   "example": {
-    "do": "flights.select"
-   }
-  },
-  {
    "do": "script.run",
    "about": "Run a Home Assistant script.",
    "fields": [
@@ -6952,5 +6807,5 @@
    }
   }
  },
- "hash": "47d1e23c"
+ "hash": "db0ad2e4"
 }

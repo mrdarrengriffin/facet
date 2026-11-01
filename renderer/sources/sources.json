@@ -358,39 +358,6 @@
         }
       ]
     },
-    "flightradar": {
-      "shows": "The aircraft around your home on a radar, with the ones to come.",
-      "needs": null,
-      "feed": "panel.flights",
-      "sources": [
-        {
-          "id": "ha_overhead",
-          "kind": "ha",
-          "name": "An aircraft sensor in the panel overhead shape (sensor.panel_overhead, polled by Home Assistant)",
-          "adapter": "ha",
-          "detect": {
-            "domain": "sensor"
-          },
-          "fills": {
-            "sensor": {
-              "domain": "sensor"
-            }
-          }
-        },
-        {
-          "id": "adsb_fi",
-          "kind": "direct",
-          "name": "adsb.fi (open ADS-B, no key), read by the panel itself (planned)",
-          "adapter": "adsb"
-        },
-        {
-          "id": "sample",
-          "kind": "builtin",
-          "name": "Sample sky (previews)",
-          "adapter": "sample"
-        }
-      ]
-    },
     "living_room": {
       "shows": "The lights of one room, to switch and dim each one.",
       "needs": "dimmable lights",
