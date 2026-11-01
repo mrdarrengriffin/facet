@@ -13,7 +13,7 @@
   },
   "later": {
     "about": "Features held on the wip branch until they are finished (spec of contract parts, feed on the skeleton, gate green); the docs roadmap shows their rows as in progress.",
-    "roadmap": ["Placeholder", "Thermostat", "Thermostat dial", "Door lock", "Lock ring", "Hold button", "Plant monitor", "Plant gauge / row", "Robot vacuum", "Room tile", "Status block", "Level bar", "Floor plans", "Security cameras", "Camera tile", "Bins", "Lightning", "Lightning radar", "Overhead (flights)", "GitHub", "Pull request row", "Check row", "Agents", "3D print", "3D print model"]
+    "roadmap": ["Placeholder", "Thermostat", "Thermostat dial", "Door lock", "Lock ring", "Hold button", "Plant monitor", "Plant gauge / row", "Robot vacuum", "Room tile", "Status block", "Level bar", "Floor plans", "Security cameras", "Camera tile", "Bins", "Lightning", "Lightning radar", "Overhead (flights)", "GitHub", "Pull request row", "Check row", "Agents", "3D print", "3D print model", "Sports (live scores)"]
   },
   "features": [
     {
@@ -103,14 +103,6 @@
       "colour": ["courts"],
       "core": ["sport.cpp", "sport.h", "sport_sim.cpp", "sport_circuits.cpp", "sport_pick.cpp", "sport_pick.h", "surface.cpp", "surface.h"],
       "roadmap": ["Sports surfaces"]
-    },
-    {
-      "id": "f1",
-      "label": "F1",
-      "docs": false, "status": "wip", "firmware": false,
-      "screens": ["f1_live"],
-      "components": ["f1_circuit", "f1_car_marker", "f1_flag", "f1_race_control", "f1_race_status", "f1_standings"],
-      "roadmap": ["Sports (live scores)"]
     },
     {
       "id": "football",

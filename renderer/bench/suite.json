@@ -213,9 +213,6 @@
     "toast_layer",
     "media_visual",
     "mascot_mood",
-    "f1_circuit",
-    "f1_standings",
-    "f1_live",
     "tennis_score",
     "tennis_court",
     "tennis_live",
@@ -521,24 +518,6 @@
         "fades": true,
         "bench": "agents"
       },
-      "scenarios": [
-        "animate"
-      ],
-      "live": true
-    },
-    {
-      "id": "anchor.f1-circuit-22",
-      "comp": "f1_circuit",
-      "props": {},
-      "scenarios": [
-        "animate"
-      ],
-      "live": true
-    },
-    {
-      "id": "anchor.f1-live",
-      "comp": "f1_live",
-      "props": {},
       "scenarios": [
         "animate"
       ],
