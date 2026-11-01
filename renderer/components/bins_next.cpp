@@ -3,7 +3,7 @@
 //   row      a real Bins art (fw::find("bins_art"), C8b) and a column beside it, the gutter apart, centred on the row
 //   column   the caption (type:label caps, fg:accent-text when it matters now: put out tonight / collection today,
 //            else fg:text-dim), gap:2, then when (type:value, fg:text: "Tomorrow", "Today", the weekday), which bins
-//            (type:title, fg:text: "Green bin + Black bin") and the date + how often (type:body, fg:text-dim:
+//            (type:title, fg:text: "Green + Black bins") and the date + how often (type:body, fg:text-dim:
 //            "Fri 24 Oct · every 2 weeks"); the column takes the row's room (grow) and its lines fill it
 // Feed: bind every prop to panel.bins (core/bins_source.cpp: colours, caption, accent ("on" / "off"), when, bins, line).
 // Static: no touch, no sound. Update path: the texts and the bins in place (silent); a new accent fades the caption
@@ -42,12 +42,12 @@ FW_COMPONENT(bins_next, "Bins next", "components", R"({
     {"name": "caption", "about": "The small caption over the day, such as put out tonight.", "type": "text", "default": "put out tonight"},
     {"name": "accent", "about": "Draws the caption in the accent colour, for when the bins go out tonight or today.", "type": "bool", "default": true},
     {"name": "when", "about": "The day of the collection, such as Tomorrow, Today or a weekday.", "type": "text", "default": "Tomorrow"},
-    {"name": "bins", "about": "Which bins go out, such as Green bin + Black bin.", "type": "text", "default": "Black bin"},
+    {"name": "bins", "about": "Which bins go out, such as Green + Black bins.", "type": "text", "default": "Black bin"},
     {"name": "line", "about": "The date and how often, such as Fri 24 Oct · every 2 weeks.", "type": "text", "default": "Fri 24 Oct · every 2 weeks"}
   ],
   "variants": [
     {"label": "put out tonight", "props": {}},
-    {"label": "two bins · next week", "props": {"colours": "green,brown", "caption": "next collection", "accent": false, "when": "Thursday", "bins": "Green bin + Brown bin", "line": "Thu 29 Oct · every 2 weeks"}},
+    {"label": "two bins · next week", "props": {"colours": "green,brown", "caption": "next collection", "accent": false, "when": "Thursday", "bins": "Green + Brown bins", "line": "Thu 29 Oct · every 2 weeks"}},
     {"label": "collected today", "props": {"colours": "green", "caption": "collected today · bring it in", "accent": false, "when": "Today", "bins": "Green bin", "line": "Fri 23 Oct · every 2 weeks"}}
   ]
 })") {

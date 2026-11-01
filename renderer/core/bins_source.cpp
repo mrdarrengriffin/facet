@@ -6,7 +6,7 @@
 //   accent   "on" for tonight / today (the moments that matter), else "off"; tone: the same as a
 //            status tone (working / idle: a Status line's dot)
 //   when     "Tomorrow" / "Today" / the weekday ("Thursday")
-//   bins     the next collection's bins: "Green bin + Black bin"; colours: their colours, "green,black" (bins
+//   bins     the next collection's bins: "Green + Black bins" (one: "Green bin"); colours: their colours, "green,black" (bins
 //            colour tokens: black green brown blue grey purple red yellow)
 //   line     "Fri 24 Oct · every 2 weeks" (the date, and how often its first bin comes when the calendar shows it)
 //   coming   the collections after it, a JSON list of List rows: [{"title": "Black bin", "sub": "Fri 31 Oct",
@@ -30,6 +30,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cstdio>
+#include <strings.h>
 #include <ctime>
 #include "fw.h"
 #include "ha.h"
@@ -119,10 +120,15 @@ void add(Model &M, long day, const std::string &summary) {  // one event: its bi
     i = j + 1;
   }
 }
+// "Green bin"; two or more = "Green + Brown bins" (each " bin" dropped, "bins" once at the end: it fits a theme's
+// wider font on one line) unless a name does not end in " bin" ("Green bin + Garden waste")
 std::string names(const Model &M, const std::vector<int> &b) {
+  const auto bin = [](const std::string &n) { return n.size() > 4 && !strcasecmp(n.c_str() + n.size() - 4, " bin"); };
+  bool all = b.size() > 1;
+  for (int i : b) all = all && bin(M.bins[i].name);
   std::string s;
-  for (int i : b) s += (s.empty() ? "" : " + ") + M.bins[i].name;
-  return s;
+  for (int i : b) s += (s.empty() ? "" : " + ") + (all ? M.bins[i].name.substr(0, M.bins[i].name.size() - 4) : M.bins[i].name);
+  return all ? s + " bins" : s;
 }
 std::string every(const Model &M, int b) {  // the gap between a bin's first two collections
   long first = -1;

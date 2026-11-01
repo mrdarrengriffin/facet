@@ -4,7 +4,7 @@
 //            next bin 55 % of a bin to the right and behind) and a column: the caption (type label, caps: "put out
 //            tonight" / "collection today" = accent-text, "collected today · bring it in" / "next collection" =
 //            text-dim), sp::s2, when (type value: "Tomorrow", "Today", the weekday), which bins (type title, text:
-//            "Green bin + Black bin"), the date and how often (type body, text-dim: "Fri 24 Oct · every 2 weeks")
+//            "Green + Black bins"), the date and how often (type body, text-dim: "Fri 24 Oct · every 2 weeks")
 //   coming   lay::group down: a real Section header "coming up" and one real List row per later collection (title =
 //            the bins, sub = the date, trailing value "in N days")
 //   bins     lay::group down: "your bins", one List row per bin (title, sub "every 2 weeks", value "next Fri 31 Oct")
@@ -52,10 +52,10 @@ std::vector<Coll> sample(const std::string &s, int &hour) {
   }
   return c;
 }
-std::string names(const std::vector<int> &b) {
+std::string names(const std::vector<int> &b) {  // as the bins feed: "Green bin"; "Green + Black bins"
   std::string s;
-  for (int i : b) s += (s.empty() ? "" : " + ") + std::string(BINS[i].name);
-  return s;
+  for (int i : b) { const std::string n = BINS[i].name; s += (s.empty() ? "" : " + ") + (b.size() > 1 && n.size() > 4 && n.compare(n.size() - 4, 4, " bin") == 0 ? n.substr(0, n.size() - 4) : n); }
+  return b.size() > 1 ? s + " bins" : s;
 }
 
 lv_obj_t *box(lv_obj_t *parent) {

@@ -1449,7 +1449,7 @@
          "$ref": "#/$defs/param"
         }
        ],
-       "description": "Which bins go out, such as Green bin + Black bin."
+       "description": "Which bins go out, such as Green + Black bins."
       },
       "line": {
        "anyOf": [

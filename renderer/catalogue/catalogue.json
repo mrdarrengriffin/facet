@@ -377,7 +377,7 @@
      "name": "bins",
      "type": "text",
      "bindable": true,
-     "about": "Which bins go out, such as Green bin + Black bin."
+     "about": "Which bins go out, such as Green + Black bins."
     },
     {
      "name": "line",
