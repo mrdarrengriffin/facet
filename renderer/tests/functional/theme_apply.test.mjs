@@ -18,7 +18,7 @@ const LIVE = new Set(readdirSync(BEH).filter((f) => f.endsWith('.json')).map((f)
 const still = (c) => (LIVE.has(c.id) ? Object.fromEntries((c.meta.props || []).filter((q) => q.name === 'animated' || q.name === 'playing').map((q) => [q.name, false])) : {});
 
 const lab = (t, c, a = '') => JSON.parse(t.b.str(c, (pc) => t.b.str(a, (pa) => t.b.m.UTF8ToString(t.b.m._fw_lab(-1, pc, pa)))));
-const THEMES = ['blockcraft', 'win98'];
+const THEMES = ['blockcraft', 'phosphor', 'win98'];
 const E = 'light.test_lamp', LAMP = { '': 'on', brightness: '179', friendly_name: 'Desk lamp', supported_color_modes: '["brightness"]' };
 const M = ['placeholder', { name: 'Theme' }];  // any mount: the module the tests talk to
 const den = (t) => (t.b.S > 600 ? '1.5x' : '1x');
