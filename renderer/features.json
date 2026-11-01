@@ -96,13 +96,6 @@
       "components": ["card_grid", "date_line", "status_dot", "big_number", "hold_button", "timer_view", "clock_face", "energy_view", "bins_view", "pr_row", "check_row"]
     },
     {
-      "id": "image",
-      "label": "Image",
-      "docs": false, "status": "wip", "firmware": false,
-      "about": "Pictures from a URL (cover, contain, pixel art) with a per-board byte-capped cache. WIP until the panel fetches and decodes them itself (board facet-171).",
-      "components": ["image"]
-    },
-    {
       "id": "cameras",
       "label": "Cameras",
       "docs": false, "status": "wip", "firmware": false,

@@ -4559,24 +4559,6 @@
         "use": "Grid workbench sample: cell outlines"
       },
       {
-        "section": "image",
-        "fg": "text-dim",
-        "bg": [
-          "surface"
-        ],
-        "kind": "ui",
-        "use": "Image: the fallback icon on the quiet box (failed / no src)"
-      },
-      {
-        "section": "image",
-        "fg": "text-dim",
-        "bg": [
-          "surface"
-        ],
-        "kind": "text",
-        "use": "Image: the alt words under the fallback icon"
-      },
-      {
         "section": "grid",
         "fg": "text-dim",
         "bg": [
