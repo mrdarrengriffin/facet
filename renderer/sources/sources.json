@@ -249,25 +249,6 @@
         }
       ]
     },
-    "thermostat": {
-      "shows": "The heating: the room temperature, the target to set, the mode and preset.",
-      "needs": "a smart thermostat",
-      "sources": [
-        {
-          "id": "ha_climate",
-          "kind": "ha",
-          "name": "HA climate",
-          "detect": {
-            "domain": "climate"
-          },
-          "fills": {
-            "entity": {
-              "domain": "climate"
-            }
-          }
-        }
-      ]
-    },
     "lock": {
       "shows": "A door lock: locked or not, to lock and unlock it.",
       "needs": "a smart door lock",

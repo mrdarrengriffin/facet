@@ -70,11 +70,6 @@
         },
         {
           "t": "page",
-          "page": "thermostat",
-          "size": "m"
-        },
-        {
-          "t": "page",
           "page": "print",
           "size": "m"
         }
@@ -127,10 +122,6 @@
     {
       "id": "strike_map",
       "kind": "strike_map"
-    },
-    {
-      "id": "thermostat",
-      "kind": "thermostat"
     },
     {
       "id": "print",

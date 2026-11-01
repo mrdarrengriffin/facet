@@ -3209,69 +3209,6 @@
         "use": "disabled: knob"
       },
       {
-        "section": "thermostat_dial",
-        "fg": "line-hi",
-        "bg": "bg",
-        "kind": "decor",
-        "use": "minor ticks (one a degree)"
-      },
-      {
-        "section": "thermostat_dial",
-        "fg": "blue",
-        "bg": "bg",
-        "kind": "ui",
-        "use": "major ticks (every 5 degrees) and the cooling span"
-      },
-      {
-        "section": "thermostat_dial",
-        "fg": "line",
-        "bg": "bg",
-        "kind": "decor",
-        "use": "arc track (2 px)"
-      },
-      {
-        "section": "thermostat_dial",
-        "fg": "accent",
-        "bg": "bg",
-        "kind": "ui",
-        "use": "heating span and the set-point knob"
-      },
-      {
-        "section": "thermostat_dial",
-        "fg": "bg",
-        "bg": "accent",
-        "kind": "decor",
-        "use": "knob ring"
-      },
-      {
-        "section": "thermostat_dial",
-        "fg": "text",
-        "bg": "bg",
-        "kind": "ui",
-        "use": "the measured temperature marker"
-      },
-      {
-        "section": "thermostat_dial",
-        "fg": "text-mute",
-        "bg": "bg",
-        "kind": "disabled",
-        "use": "disabled / unavailable: major ticks, span, marker"
-      },
-      {
-        "section": "thermostat_dial",
-        "fg": "text-dim",
-        "bg": "bg",
-        "kind": "disabled",
-        "use": "disabled: knob"
-      },
-      {
-        "section": "thermostat_dial",
-        "fg": "text-dim",
-        "bg": "bg",
-        "kind": "text",
-        "use": "unavailable: the word Unavailable"
-      },
-      {
         "section": "checkbox",
         "fg": "text-dim",
         "bg": [

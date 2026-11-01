@@ -205,9 +205,6 @@ constexpr Rule RULES[] = {
     {"slider_row", "change", "media.control,cover.control"}, {"slider_row", "input", "media.control,cover.control"},
     {"toggle", "toggle", "light.switch"},
     {"more_row", "tap", "nav.open,nav.back,screen.param"},  // screen.param + to: a view of the same screen (Energy > last 7 days)
-    {"thermostat_dial", "change", "climate.set_temperature"}, {"thermostat_dial", "input", "climate.set_temperature"},
-    {"thermostat_view", "target", "climate.set_temperature"}, {"thermostat_view", "mode", "climate.set_hvac_mode"},
-    {"thermostat_view", "preset", "climate.set_preset_mode"},
     {"cover_visual", "change", "cover.control"},  // the Covers window: a drag released (its position)
     {"lock_ring", "lock", "lock.control"},           {"button", "confirm", "lock.control"},
     {"room_tile", "pick", "screen.toggle"},          {"camera_tile", "tap", "nav.back"},          {"tile", "tap", "nav.open"},          {"button", "tap", "nav.open,nav.back,light.toggle,vacuum.control,timer.start,timer.extend,timer.cancel,timer.stop,timer.select,timer.new,timer.back,cover.control,script.run,scene.activate,automation.trigger,button.press,entity.toggle"},  // 2026-10-30: a button you place says what it does (the editor's On tap)
@@ -363,7 +360,6 @@ constexpr const char *ROLES[] = {"page", "detail", "both"};
 struct CardType { const char *t, *domains, *sizes, *taps, *detail, *comp_s, *comp_m, *comp_l; };
 constexpr CardType CARD_TYPES[] = {
     {"light", "light,switch", "s,m", "toggle,detail", "light", "entity_tile", "card", ""},
-    {"climate", "climate", "m", "detail", "thermostat", "", "card", ""},
     {"media", "media_player", "m,l", "detail,page", "media", "", "card", "card"},
     {"sensor", "sensor,binary_sensor", "s,m", "none", "", "entity_tile", "readout", ""},
     {"page", "", "s,m,l", "page", "", "entity_tile", "card", "card"},

@@ -69,7 +69,7 @@ export default {
     const H = (cards) => JSON.stringify({ v: 2, rev: 5, start: 'h', pages: [{ id: 'h', kind: 'home', cards }, { id: 'w', kind: 'weather' }] });
     ok(spec('check_dev', H([{ t: 'light', e: 'light.x', size: 's', tap: 'toggle' }, { t: 'page', page: 'w', size: 'l' }])).ok, 'light and page cards pass');
     ok(dc(H([{ t: 'light', e: 'cover.x', size: 's' }])).includes('bad_entity'), 'a card takes only its domains');
-    ok(dc(H([{ t: 'climate', e: 'climate.x', size: 's' }])).includes('bad_size'), 'a card takes only its sizes');
+    ok(dc(H([{ t: 'media', e: 'media_player.x', size: 's' }])).includes('bad_size'), 'a card takes only its sizes');
     ok(dc(H([{ t: 'light', e: 'light.x', size: 'm', tap: 'page' }])).includes('bad_tap'), 'a card takes only its taps');
     ok(dc(H([{ t: 'page', page: 'nope', size: 'm' }])).includes('bad_page'), 'a page card names a page of the deck');
     ok(dc(H([{ t: 'light', e: 'light.x', size: 's', x: 10 }])).includes('style_key'), 'a card has no position (style_key)');
@@ -82,12 +82,7 @@ export default {
     ok(codes(spec('check_dev', linkSpec([{ c: 'card', p: {}, on: { open: { do: 'light.toggle', e: 'light.x' } } }]))).includes('not_allowed'), 'an open event allows nav.open only');
     ok(codes(spec('check_dev', linkSpec([{ c: 'more_row', p: {}, on: { tap: { do: 'light.toggle', e: 'light.x' } } }]))).includes('not_allowed'), 'a more_row tap allows navigation only');
     ok(codes(spec('check_dev', linkSpec([{ c: 'more_row', p: {}, on: { tap: { do: 'nav.open' } } }]))).includes('bad_screen'), 'a tap without a screen is refused (only open takes it from the event)');
-    // climate: thermostat_dial change / input -> climate.set_temperature on a climate entity; nothing else
-    const tSpec = (on) => JSON.stringify({ ...factory, rev: 30, nodes: [{ c: 'thermostat_dial', p: { target: { e: 'climate.test_room', a: 'temperature', fmt: 'num' } }, on }] });
-    ok(spec('check_dev', tSpec({ change: { do: 'climate.set_temperature', e: 'climate.test_room' }, input: { do: 'climate.set_temperature', e: '$entity' } })).ok, 'a thermostat dial may set the temperature (live and on release), fmt num binds');
-    ok(codes(spec('check_dev', tSpec({ change: { do: 'climate.set_temperature', e: 'light.x' } }))).includes('bad_entity'), 'climate actions need a climate entity');
-    ok(codes(spec('check_dev', tSpec({ change: { do: 'light.brightness', e: 'light.x' } }))).includes('not_allowed'), 'a thermostat dial cannot dim a light');
-    ok(codes(spec('check_dev', tSpec({ change: { do: 'climate.set_hvac_mode', e: 'climate.test_room' } }))).includes('not_allowed'), 'the dial sets the temperature only (modes come from the thermostat view)');
+    // climate: no shipped component sets a temperature
     ok(codes(spec('check_dev', JSON.stringify({ ...factory, rev: 31, nodes: [{ c: 'dial', on: { change: { do: 'climate.set_temperature', e: 'climate.test_room' } } }] }))).includes('not_allowed'), 'a light dial cannot set a thermostat');
     // pages from components (2026-10-23): layout slots (in / slot), repeated nodes (each / sample), bind maps, screen.toggle
     const P = (nodes) => JSON.stringify({ ...factory, rev: 40, params: { entity: '', areas: '', rooms: { type: 'hidden', default: '' } }, nodes });

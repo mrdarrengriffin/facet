@@ -6155,175 +6155,6 @@
     "bytes_est": 4640
    }
   },
-  "thermostat_dial": {
-   "name": "Thermostat dial",
-   "update": true,
-   "props": [
-    {
-     "name": "target",
-     "type": "range",
-     "bindable": true,
-     "min": 5,
-     "max": 30,
-     "about": "The temperature it is set to, shown as the knob on the ring."
-    },
-    {
-     "name": "current",
-     "type": "range",
-     "bindable": true,
-     "min": 5,
-     "max": 30,
-     "about": "The temperature measured in the room, shown as a long tick."
-    },
-    {
-     "name": "action",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "heating",
-      "cooling",
-      "idle",
-      "off"
-     ],
-     "about": "What it is doing now: heating or cooling colours the span between the two, idle and off leave it plain."
-    },
-    {
-     "name": "min",
-     "type": "range",
-     "bindable": true,
-     "min": 0,
-     "max": 20,
-     "about": "The lowest temperature on the ring."
-    },
-    {
-     "name": "max",
-     "type": "range",
-     "bindable": true,
-     "min": 20,
-     "max": 40,
-     "about": "The highest temperature on the ring."
-    },
-    {
-     "name": "step",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "0.5",
-      "1",
-      "0.1"
-     ],
-     "about": "How much one step changes the set temperature, in degrees."
-    },
-    {
-     "name": "state",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "default",
-      "disabled",
-      "unavailable"
-     ],
-     "about": "default can be turned; disabled cannot be changed; unavailable shows the thermostat cannot be reached."
-    }
-   ],
-   "events": {
-    "change": [
-     "climate.set_temperature"
-    ],
-    "input": [
-     "climate.set_temperature"
-    ],
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 5,
-    "bytes_est": 800
-   }
-  },
-  "thermostat_view": {
-   "name": "Thermostat view",
-   "update": true,
-   "props": [
-    {
-     "name": "target",
-     "type": "range",
-     "bindable": true,
-     "min": 5,
-     "max": 30,
-     "about": "The temperature it is set to."
-    },
-    {
-     "name": "current",
-     "type": "range",
-     "bindable": true,
-     "min": 5,
-     "max": 30,
-     "about": "The temperature measured in the room, shown in the middle of the ring."
-    },
-    {
-     "name": "action",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "heating",
-      "cooling",
-      "idle"
-     ],
-     "about": "What it is doing now: heating, cooling or idle."
-    },
-    {
-     "name": "mode",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "heat",
-      "auto",
-      "off",
-      "unavailable"
-     ],
-     "about": "The thermostat's mode: heat, auto, off, or unavailable when it cannot be reached."
-    },
-    {
-     "name": "preset",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "none",
-      "home",
-      "away",
-      "eco",
-      "boost"
-     ],
-     "about": "The preset in use, such as home, away, eco or boost, or none."
-    },
-    {
-     "name": "next",
-     "type": "text",
-     "bindable": true,
-     "about": "The next scheduled change, such as 17° from 22:30. Leave empty for none."
-    }
-   ],
-   "events": {
-    "target": [
-     "climate.set_temperature"
-    ],
-    "mode": [
-     "climate.set_hvac_mode"
-    ],
-    "preset": [
-     "climate.set_preset_mode"
-    ],
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 54,
-    "bytes_est": 8640
-   }
-  },
   "tick_ring": {
    "name": "Tick ring",
    "update": true,
@@ -7756,15 +7587,6 @@
     "m": "card"
    }
   },
-  "climate": {
-   "domains": "climate",
-   "sizes": "m",
-   "taps": "detail",
-   "detail": "thermostat",
-   "component": {
-    "m": "card"
-   }
-  },
   "media": {
    "domains": "media_player",
    "sizes": "m,l",
@@ -7843,7 +7665,7 @@
     },
     "climate": {
      "taps": "detail,none",
-     "detail": "thermostat"
+     "detail": ""
     },
     "media_player": {
      "taps": "detail,none",
@@ -7863,5 +7685,5 @@
    }
   }
  },
- "hash": "d0f37c89"
+ "hash": "0e56813c"
 }
