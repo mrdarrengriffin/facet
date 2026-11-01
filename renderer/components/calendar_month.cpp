@@ -1,5 +1,5 @@
-// Calendar month: the Calendar screen's Month view (docs @facet/ui screens/calendar-month.ts monthView; was inside
-// calendar_view), on the contract (renderer/CONTRACT.md, "contract": 2). Specific to the Calendar. A Grid can't draw
+// Calendar month: the Calendar screen's Month view (docs @facet/ui screens/calendar-month.ts monthView), on
+// the contract (renderer/CONTRACT.md, "contract": 2). Specific to the Calendar. A Grid can't draw
 // it: the day columns and the weeks are different gaps apart (layout:cal-cell-gx / cal-cell-gy), the weekday row lines
 // up with the columns and six weeks must fit the content height at 480 (6 x 48 + 5 x 4 ends at 380 of 388); 42 cells x
 // (disc + number + dots) as objects would also be ~250 objects on the panel. So the days are drawn (the Pen, C24).

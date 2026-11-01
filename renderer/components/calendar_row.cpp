@@ -1,5 +1,5 @@
 // Calendar row: one line of the Calendar screen (docs @facet/ui screens/calendar.ts agendaRow + the calendars sheet's
-// rows; was inside calendar_view), on the contract (renderer/CONTRACT.md, "contract": 2). Specific to the Calendar: the
+// rows), on the contract (renderer/CONTRACT.md, "contract": 2). Specific to the Calendar: the
 // calendar's colour dot is what a List row can't draw. A spec repeats it per item of a Grid (items = panel.calendar
 // agenda / day_events / calendars, core/calendar_source.cpp).
 //   day       a day's label: the Section header component (C8b, size label: "TODAY · THU 22 OCT", its box + space 2),

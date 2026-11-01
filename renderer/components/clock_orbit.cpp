@@ -1,5 +1,5 @@
-// Clock orbit: the Clock screen's picture (docs screens/clock.ts orbitFace; the orbit face that was part of the legacy
-// Clock faces, components/clock_face.cpp), on the contract (renderer/CONTRACT.md, "contract": 2). Built only from token
+// Clock orbit: the Clock screen's picture (docs screens/clock.ts orbitFace), on
+// the contract (renderer/CONTRACT.md, "contract": 2). Built only from token
 // names and the Pen: a theme / accent switch repaints it with no code here.
 //   box      fills its parent's width and is as tall as it is wide, never taller than its parent (fx::drawn "fit"): on
 //            the Clock screen a square the height of the body. Steps: one

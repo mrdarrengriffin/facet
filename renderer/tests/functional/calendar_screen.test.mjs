@@ -3,7 +3,7 @@
 // on the Overlay (calendars: Grid of Calendar rows with checkboxes; a day: its Calendar rows)), on the calendar feed
 // panel.calendar (core/calendar_source.cpp, CONTRACT.md C51) and its Home card (C52). Home Assistant is faked
 // (tools/functional.mjs FakeHA); C1 / C2 are NOT real entities. Approved original: Astro packages/ui/src/screens/
-// calendar.ts + calendar-month.ts (was components/calendar_view.cpp).
+// calendar.ts + calendar-month.ts.
 const NOW = 1792926000000;
 const C1 = 'calendar.test_family', C2 = 'calendar.test_work';
 const asks = (t) => JSON.parse(t.b.m.UTF8ToString(t.b.m._fw_ha_asks()) || '[]');

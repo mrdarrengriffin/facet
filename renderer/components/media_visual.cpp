@@ -1,5 +1,4 @@
-// Media visuals: the Media screen's picture and its Home card preview (absorbs the Media disc, visual
-// "disc": draw_disc below, the old media_disc's parts and tokens; size "card" = lay::mv_card tall, a square crop
+// Media visuals: the Media screen's picture and its Home card preview (visual "disc": draw_disc below; size "card" = lay::mv_card tall, a square crop
 // showing the right end as the screen does). The Facet media visuals (docs: Components > Controls > Media visuals, @facet/ui media-visuals/, CSS
 // .f-mv-*): a cassette, a CD, or a 12" vinyl LP with its tonearm for the Media screen's hero
 // slot, drawn from the real-world dimensions (docs specs.ts: IEC 60094-7 cassette, ECMA-130 CD, RIAA E4 LP, Technics
@@ -329,7 +328,7 @@ void arm_box(const MV *d, float a, float *x0, float *y0, float *x1, float *y1) {
   *x1 = (mx1 + pad - d->ox) * d->k; *y1 = (my1 + pad - d->oy) * d->k;
 }
 
-// ---- 4 the Media disc (absorbed from media_disc): units = px at the screen size (lay::disc_screen), k
+// ---- 4 the Media disc: units = px at the screen size (lay::disc_screen), k
 // scales them to the card. A dotted ring (72 dots over 355 degrees from 12 o'clock, stroke::arc, line-hi), the accent
 // progress arc sp::s2 inside it (round caps), the face (disc, a hair line edge) with two groove rings
 // (lay::disc_groove smaller each), the accent label spot with its hole in the canvas colour, the blue marker circling

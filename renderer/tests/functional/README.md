@@ -69,26 +69,12 @@ export default {
   value -> back, disconnect -> reconnect. Name the board card in the test name when a test pins a known bug.
 - Do not fix a component to make its new test pass in the same piece unless the brief says so: report the failure.
 
-## Families still to cover (one agent per family)
+## Still to cover
 
-Done: button, slider + family 1 below (controls), entity_tile, readout (cards; incl. Home light + sensor cards on the
-device), device (navigation rules), image (cache cap + fallbacks), covers + vacuum screens (WIP features, via
-the `spec` component). Shared helpers for family 1: `_controls.mjs` (pixel reads for drawn / not drawn, dial ring points).
-
-1. **Controls + inputs** (done 2026-10-26): toggle, checkbox, radio, segmented, icon_button (+ button hold, was hold_button), speaker_button, back_button,
-   dial, thermostat_dial, picker_row, check_row, list_row, more_row, focus_ring, scroll_track, bottom_sheet, toast,
-   toast_layer.
-2. **Cards + tiles:** card, tile, room_tile, camera_tile, stat, big_number, status_block, status_chip, status_dot,
-   count_badge, hero_block, level_bar, empty_state, qr_block (+ the Home cards
-   on the device: climate, media, cover, page cards).
-3. **Layout + chrome + device:** device (navigation, Settings, deck changes), header (timer slot collapses with no
-   timer), screen_chrome, section_header, grid, card_grid, column, split, group, label, icon, time,
-   date_line, corner_ticks, tick_ring, arc, legend, card_previews, accent_swatches, mascot_mood.
-4. **Charts + weather + sky:** bar_chart, donut, sparkline, rate_strip, clock_face, energy_view,
-   weather_icon, moon_icon, lightning_radar, lightning_view.
-5. **Home domains (HA-driven views):** media_disc, media_view, media_visual, cover_visual,
-   lock_ring, thermostat_view, vacuum_mode, timer_view, event_row, bins_view, print_model, print_view,
-   iso_floorplan, overhead_view, agents_view.
-6. **Feeds + sport:** f1_car_marker, f1_circuit, f1_flag, f1_race_control, f1_race_status, f1_standings,
-   football_pitch, tennis_court, tennis_score, github_pr, status_row, pr_row (+ the GitHub screen: github_screen).
-7. **Spec screens** (renderer/specs/*.json via the device: the screen's HA calls + live values), after 1-6.
+Every component and screen on main gets `tests/functional/<id>.test.mjs` (a spec screen: `<id>_screen.test.mjs`). Without
+one today: accent_swatches, arc, bins_art, bins_next, calendar_month, calendar_row, card_previews, clock_orbit, column,
+corner_ticks, count_badge, cover_visual, donut, empty_state, group, hero_block, icon, label, legend, mascot_mood,
+media_hero, media_visual, moon_icon, progress_ring, qr_block, rate_strip, sky_radar, slider_row, sparkline, split,
+status_line, tick_ring, timer_chip, vacuum_robot, weather_icon; the system screens ha_link, home, screen_set, screens,
+settings, setup; the spec screens living_room and weather_days. Shared helpers for controls: `_controls.mjs` (pixel
+reads for drawn / not drawn, dial ring points).

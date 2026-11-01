@@ -49,7 +49,7 @@ function compHash(id) {
       // a file that calls another component's code directly (not through fw::find) says so: "// audit deps: a, b"
       for (const m of src.matchAll(/\/\/ audit deps: ([a-z_0-9, ]+)/g)) for (const d of m[1].split(/[, ]+/)) if (d) deps(d, seen);
       // a screen built from the factory specs (spec::build: the Spec screen, Device, Home) depends on every component the
-      // specs name (the Calendar spec kept a stale audit after calendar_view changed)
+      // specs name (a spec kept a stale audit after a component it uses changed)
       if (/spec::build\(|spec::FACTORY/.test(src)) for (const k of SPEC_COMPS) deps(k, seen);
       return seen;
     };
