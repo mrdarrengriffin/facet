@@ -298,6 +298,22 @@
       },
       "before_spec": [
         [
+          "deck",
+          {
+            "v": 2,
+            "rev": 4,
+            "start": "home",
+            "pages": [
+              {
+                "id": "home",
+                "kind": "home",
+                "name": "Home",
+                "cards": []
+              }
+            ]
+          }
+        ],
+        [
           "screen",
           {
             "v": 1,
