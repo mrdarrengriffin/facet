@@ -30,13 +30,6 @@
      "label": "Chair"
     },
     {
-     "t": "climate",
-     "e": "climate.living_room",
-     "size": "m",
-     "tap": "detail",
-     "label": "Air con"
-    },
-    {
      "t": "media",
      "e": "media_player.sitting_room_speaker",
      "size": "m",
@@ -157,32 +150,8 @@
    "kind": "media"
   },
   {
-   "id": "thermostat",
-   "kind": "thermostat"
-  },
-  {
    "id": "energy",
    "kind": "energy"
-  },
-  {
-   "id": "github",
-   "kind": "github"
-  },
-  {
-   "id": "agents",
-   "kind": "agents"
-  },
-  {
-   "id": "overhead",
-   "kind": "overhead"
-  },
-  {
-   "id": "bins",
-   "kind": "bins"
-  },
-  {
-   "id": "print",
-   "kind": "print"
   },
   {
    "id": "timer",
