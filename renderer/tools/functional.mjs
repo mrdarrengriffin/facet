@@ -8,7 +8,7 @@
 // texts, boxes, events and sounds back.
 // Usage: node renderer/tools/functional.mjs [--den 1.5x|1x|all] [--ids a,b] [--tier nightly] [--grep text] [--png fail|all|none]
 //        [--out dir] [--json file] [--soft] [-v] [--probe comp '{props}']   exit 1 = a test failed (unless --soft)
-//        --rules [--rule a,b] [--tier fast|gate] [--theme id,id|all] [--fresh]: the rules (tests/rules/*.mjs) instead of the
+//        --rules [--rule a,b | --skip a,b] [--tier fast|gate] [--theme id,id|all] [--fresh]: the rules (tests/rules/*.mjs) instead of the
 //        per-component tests, over every component on one mount per case (tools/lib/rules.mjs)
 // Results: tests/functional/out/results.json + per-test PNGs (default: failures only) in tests/functional/out/png/.
 import { readFileSync, writeFileSync, existsSync, readdirSync, mkdirSync, rmSync } from 'node:fs';
@@ -242,16 +242,17 @@ if (argv.includes('--probe')) {
 
 // ---------------------------------------------------------------- rules (tests/rules/*.mjs)
 if (argv.includes('--rules')) {
-  const RDIR = join(HERE, 'tests/rules'), want = arg('--rule') ? arg('--rule').split(',') : null, tier = arg('--tier', 'gate');
+  const RDIR = join(HERE, 'tests/rules'), want = arg('--rule') ? arg('--rule').split(',') : null, skip = (arg('--skip') || '').split(','), tier = arg('--tier', 'gate');
   const rules = [];
   for (const f of readdirSync(RDIR).filter((f) => f.endsWith('.mjs')).sort()) {
     const r = (await import(pathToFileURL(join(RDIR, f)).href)).default;
-    if ((!want || want.includes(r.id)) && r.tiers.includes(tier)) rules.push(r);
+    if ((!want || want.includes(r.id)) && !skip.includes(r.id) && r.tiers.includes(tier)) rules.push(r);
   }
   const cacheDir = process.env.FW_CACHE || env.FW_CACHE || join(HERE, '.cache');
   const res = await runRules(rules, { build: BUILD, dens: DENS, ids: ONLY, themeArg: arg('--theme'), tier, cacheDir, fresh: argv.includes('--fresh') });
   let bad = 0;
   for (const r of rules) {
+    if (r.dens && !DENS.some((d) => r.dens.includes(d))) continue;  // a startup rule of another density
     const s = res[r.id];
     for (const l of s.out) console.log(l);
     console.log(`${r.id}: ${s.checks} checks, ${s.fails} failed${s.legacy ? `, ${s.legacy} in legacy parts` : ''} (${DENS.filter((d) => !r.dens || r.dens.includes(d)).join(' + ')}${arg('--theme') ? `, themes ${arg('--theme')}` : ''}${ONLY ? `, ${ONLY.join(',')}` : ''})`);

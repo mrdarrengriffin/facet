@@ -31,6 +31,10 @@ run() {  # run <hard|soft> <name> <cmd...>
 }
 check() { run hard "$@"; }
 soft() { run soft "$@"; }
+# steps that share nothing run at once: start each, then join prints their lines in order (and sets fail)
+bg=()
+start() { local kind=$1 name=$2; shift 2; run "$kind" "$name" "$@" >"$LOG/$name.line" & bg+=("$name"); }
+join() { wait; for n in "${bg[@]}"; do cat "$LOG/$n.line"; grep -q "^FAIL $n " "$LOG/$n.line" && fail=1; done; bg=(); }
 dens=1.5x; [ "$tier" = fast ] || dens="1.5x 1x"
 for d in $dens; do [ -f "$B/$d/fw.mjs" ] || { echo "no $d build in $B: run build.sh $d first"; exit 2; }; done
 
@@ -56,11 +60,15 @@ if [ "$tier" = fast ]; then
   check behaviour node tools/behaviour.mjs --den 1.5x --kind interaction,scroll,sound --ids "$ids"
   soft functional node tools/functional.mjs --den 1.5x --ids "$ids"
 else
-  for d in $dens; do check "rules-$d" node tools/functional.mjs --rules --tier gate --den "$d" --theme all "${sel[@]}"; done
-  check behaviour node tools/behaviour.mjs "${sel[@]}"
-  soft functional node tools/functional.mjs "${sel[@]}"
+  # at once: the rules (pixel contrast at 1.5x, the longest, on its own), the functional tests, visual
+  start hard rules-1.5x-contrast node tools/functional.mjs --rules --tier gate --rule pixel-contrast --den 1.5x --theme all "${sel[@]}"
+  start hard rules-1.5x node tools/functional.mjs --rules --tier gate --skip pixel-contrast --den 1.5x "${sel[@]}"
+  start hard rules-1x node tools/functional.mjs --rules --tier gate --den 1x --theme all "${sel[@]}"
+  start soft functional node tools/functional.mjs "${sel[@]}"
   comp=(); [ -n "$ids" ] && comp=(--comp "$ids")
-  check visual node tools/visual.mjs "${comp[@]}"
+  start hard visual node tools/visual.mjs "${comp[@]}"
+  join
+  check behaviour node tools/behaviour.mjs "${sel[@]}"  # alone: its lag proxy times the host CPU
 fi
 [ $fail = 0 ] && echo "CHECK $tier: all green (logs $LOG)" || echo "CHECK $tier: FAILED (logs $LOG)"
 exit $fail

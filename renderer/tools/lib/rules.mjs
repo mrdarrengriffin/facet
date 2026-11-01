@@ -4,7 +4,8 @@
 //   export default { id, about, tiers: ['fast', 'gate'], wants(c, opt) -> bool, themes(opt) -> 'facet' | 'all',
 //                    looks: [0, 1] (built dark, built light), order (low first; a rule that changes the mount goes last),
 //                    cases: 'all' (default + meta variants) | 'variants' (the variants, or default when there are none),
-//                    ownStage: true (it renders on a stage of its own: no shared mount is built for it),
+//                    ownStage: true (it renders on stages of its own, on a module of its own per component: what it
+//                      leaves in the module, an unclipped display or a live look switch, reaches no other rule),
 //                    cache: true (its results per component are kept while the component's inputs are unchanged),
 //                    run(x, r) }
 // x = the mount: { m, st, W, H, den, D, theme, c (meta entry), v (variant), vi (its index), light, tick, settle,
@@ -120,21 +121,31 @@ export async function runRules(rules, { build, dens, ids, themeArg, tier, cacheD
         return true;
       });
       if (!here.length) continue;
-      m = await instance(den, build);  // a fresh module per component (one per render runs the heap out)
-      if (theme !== 'facet') {
-        const r = JSON.parse(m.UTF8ToString(m._fw_lab(-1, m.stringToNewUTF8('theme_use'), m.stringToNewUTF8(theme))));
-        if (!r.ok) { for (const rule of here) report(rule, rec[rule.id]).check(false, `theme ${theme}: refused ${JSON.stringify(r.errors).slice(0, 200)}`); continue; }
+      // a fresh module per component (one per render runs the heap out): one for the shared mount, one per ownStage rule
+      const mods = new Map();
+      let refused = null;
+      for (const key of ['', ...here.filter((r) => r.ownStage).map((r) => r.id)]) {
+        const mm = await instance(den, build);
+        if (theme !== 'facet') {
+          const r = JSON.parse(mm.UTF8ToString(mm._fw_lab(-1, mm.stringToNewUTF8('theme_use'), mm.stringToNewUTF8(theme))));
+          if (!r.ok) refused = r;
+        }
+        mods.set(key, mm);
       }
+      m = mods.get('');
+      if (refused) { for (const rule of here) report(rule, rec[rule.id]).check(false, `theme ${theme}: refused ${JSON.stringify(refused.errors).slice(0, 200)}`); continue; }
       const vs = c.meta.variants || [];
       for (const [vi, v] of [{ label: 'default', props: {} }, ...vs].entries()) {
         for (const light of [0, 1]) {
           const mine = here.filter((r) => (r.looks || [0, 1]).includes(light) && !(r.cases === 'variants' && vs.length && vi === 0));
           if (!mine.length) continue;
           const shared = mine.some((r) => !r.ownStage);
-          const x = shared ? mount(m, den, c, v, light) : { m, den, c, v, light };
-          x.theme = theme; x.vi = vi;
-          if (x.err) { for (const rule of mine) report(rule, rec[rule.id]).note(`skip ${den} ${c.id} "${v.label}": ${x.err}`); x.free(); continue; }
-          for (const rule of mine) rule.run(x, report(rule, rec[rule.id]));
+          const x = shared ? mount(m, den, c, v, light) : null;
+          if (x?.err) { for (const rule of mine.filter((r) => !r.ownStage)) report(rule, rec[rule.id]).note(`skip ${den} ${c.id} "${v.label}": ${x.err}`); }
+          for (const rule of mine) {
+            if (!rule.ownStage && x?.err) continue;
+            rule.run(rule.ownStage ? { m: mods.get(rule.id), den, c, v, vi, light, theme } : Object.assign(x, { theme, vi }), report(rule, rec[rule.id]));
+          }
           if (shared) x.free();
         }
       }
