@@ -5,7 +5,6 @@
 //     registered FW_COMPONENT (id, name, section, meta JSON: frame, props, variants), fw_tokens() = the colour tokens
 //   - the .cpp sources: the header comment (notes), fw::emit / fw::sound calls (events + sounds; the fw::st:: names
 //     resolved through tokens/states.json, the step ticks of core fw::step_ticks), FW_COMPONENT ids -> file
-//   - renderer/README.md: the "Components" table row per id (description)
 //   - tokens/*.json: colour (site theme + colour table), sound (sound names), each foundation's own token file
 //   - git: WIP / Done / Done, edited per source file (same rule as the workbench's status)
 // Output: src/data/{site,components,foundations,tokens}.json + public/wasm/<density>/ (a copy of the build, so the
@@ -98,11 +97,6 @@ for (const dir of ['components', 'foundations', 'screens']) {
   }
 }
 
-// 3. README "Components" rows: | `id` | description |
-const readme = readFileSync(join(ROOT, 'renderer', 'README.md'), 'utf8');
-const rows = {};
-for (const mm of readme.matchAll(/^\| `([a-z0-9_]+)` \| (.+) \|$/gm)) rows[mm[1]] = mm[2];
-
 // 4. one record per registered entry
 /** drop "(docs ...)" / "(see ...)" references, parentheses balanced */
 function stripRefs(s) {
@@ -117,7 +111,7 @@ function stripRefs(s) {
   }
   return out;
 }
-// first clause of the README row / header comment: "Facet text button"
+// first clause of the header comment: "Facet text button"
 const lede = (s) => {
   const t = stripRefs((s ?? '').replace(/\s*\n\s*/g, ' ')).split(/[:;.]\s/)[0].replace(/,\s*WIP$/, '').replace(/`/g, '').trim();
   if (!t) return t;
@@ -126,13 +120,11 @@ const lede = (s) => {
 };
 const entries = reg.filter((c) => shown(c.id)).map((c) => {
   const f = files[c.id] ?? { uses: [], files: [], status: 'wip', notes: '', events: [], sounds: [] };
-  const desc = rows[c.id] ?? '';
   return {
     id: c.id, name: c.name, section: c.section, meta: c.meta,
-    // public description: meta "about" (drafts until the writing pass: ABOUT_DRAFT), else the first clause of the README row / header comment
-    lede: c.meta.about || lede(desc || f.notes.replace(/^[^:]+:\s*/, '')),
+    // public description: meta "about" (drafts until the writing pass: ABOUT_DRAFT), else the first clause of the header comment
+    lede: c.meta.about || lede(f.notes.replace(/^[^:]+:\s*/, '')),
     ledeKind: c.meta.about ? (ABOUT_DRAFT ? 'draft' : 'about') : 'fallback',
-    description: desc,
     notes: f.notes,
     events: f.events,
     uses: f.uses.filter((u) => u !== c.id),
