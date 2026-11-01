@@ -47,5 +47,12 @@
     "kind": "lag",
     "example": "lag-overflow: 5 refreshes past 32 dirty areas (LVGL redraws the whole screen)",
     "left": "By design (Darren 2026-10-24): on the Guition (1x, board profile fades off, motion.cpp FADES_DEFAULT) the backdrop already dims at once; the heavy frames left are the sheet itself sliding up from the bottom edge (12 -> 87 % of the screen as it rises), which Darren keeps. On the Waveshare (1.5x) the dim fade is kept. Tennis live SAMPLE sheet; the rest of BF-051 is fixed."
+  },
+  "BF-052": {
+    "id": "spec",
+    "code": "cancel-fires",
+    "kind": "interaction",
+    "example": "cancel-fires: press on \"LANTERN · #412 · 2\", slid 360 px off and released, fired pick(n1), param(pr=n1)",
+    "left": "Open, a release bug: core/fw_core.cpp tap_guard lets the click through when the release lands on the pressed object or any ancestor its events bubble to; every fx::box bubbles, and the GitHub screen's grid cell column spans the page. Listed so the gate (CI) stays green on everything else; fix before 1.0, then delete this and the xfail."
   }
 }

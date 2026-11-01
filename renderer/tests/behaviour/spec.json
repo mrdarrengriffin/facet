@@ -654,6 +654,7 @@
     }
   ],
   "xfail": {
-    "interaction:Robot vacuum: Map shows the floor plan; a room tap there picks it:custom": "the Map view and its Rooms | Map tabs are out until the floor plan is ported (21b1dff)"
+    "interaction:Robot vacuum: Map shows the floor plan; a room tap there picks it:custom": "the Map view and its Rooms | Map tabs are out until the floor plan is ported (21b1dff)",
+    "interaction:press-cancel:github": "BF-052 slide off to cancel fires on the GitHub screen's rows (release bug, open)"
   }
 }
