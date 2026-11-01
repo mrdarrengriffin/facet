@@ -542,15 +542,13 @@ notices the new `manifest.json` within a second and re-renders in place (playgro
 
 | Var | What |
 |---|---|
-| `PANEL_BUILD` | ESPHome build dir of the panel firmware (LVGL tree, `lv_conf.h`, ArduinoJson) |
-| `FW_PANEL` | panel firmware source dir (`packages/ui.yaml` for the `LV_*` build flags) |
 | `FW_FONT_PY` | a Python with the `esphome` package (its FreeType rasteriser + glyph sets, used by `tools/gen_fonts.py`) |
 | `FW_TTF` | dir of the TTFs, named `<Family>@<weight>@False@v1.ttf` (ESPHome's Google Fonts cache; Inter, JetBrains Mono, SIL OFL) |
 | `FW_OUT` | output dir (default `renderer/out`): `<density>/fw.mjs`, `fw.wasm`, `manifest.json` |
 | `FW_CACHE` | object cache (default `renderer/.cache`) |
 
-**TODO:** vendor LVGL, `lv_conf.h` and the TTFs into this branch so it builds on its own, without a panel
-firmware build next to it.
+LVGL and ArduinoJson are in `renderer/third_party/` (`third_party/README.md`), `renderer/lv_conf.h` is committed.
+**TODO:** the TTFs and the rasteriser, so it builds on its own, without a panel firmware build next to it.
 
 ## Device firmware (Show on device)
 

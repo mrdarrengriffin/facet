@@ -6,15 +6,13 @@
 # Incremental: each .cpp (core/*.cpp, foundations/*.cpp, components/*.cpp) is its own object, recompiled only when it or a header it
 # includes changed (compiler depfiles); LVGL objects are cached once per lv_conf (cold ~20-60 s, after that a component edit = a few seconds).
 # Paths (env, or local.env at the repo root, untracked):
-#   PANEL_BUILD  ESPHome build dir of the panel firmware (lv_conf.h)
-#   FW_PANEL     panel firmware source dir (packages/ui.yaml for the LV_* build flags)
 #   FW_FONT_PY   a Python with the esphome package (font rasteriser, tools/gen_fonts.py); FW_TTF = dir of the TTFs
 #   FW_OUT       output dir (default ./out), FW_CACHE object cache (default ./.cache)
 # Feature flags (renderer/features.json, tools/features.mjs; README "Feature flags"): FW_FEATURES=docs|firmware builds
 # only the features shown in that flavour (sources, specs, deck pages, Home cards) into $FW_OUT/<flavour>/<density>/
 # (own object + generated-header cache); unset = everything (the workbench).
-# LVGL 9.5.0 and ArduinoJson 7.4.3 are vendored in third_party/ (third_party/README.md).
-# TODO: commit lv_conf and the fonts so it builds on its own.
+# LVGL 9.5.0 and ArduinoJson 7.4.3 are vendored in third_party/ (third_party/README.md), lv_conf.h is committed.
+# TODO: commit the fonts so it builds on its own.
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd)
 [ -f "$HERE/../local.env" ] && . "$HERE/../local.env"
@@ -25,7 +23,6 @@ HERE=$(cd "$(dirname "$0")" && pwd)
 if [ -z "${BUILD_JOBS:-}" ]; then BUILD_JOBS=$(( $(nproc) - 1 )); fi
 [ "$BUILD_JOBS" -ge 1 ] 2>/dev/null || BUILD_JOBS=1
 export BUILD_JOBS
-: "${FW_PANEL:?set FW_PANEL (panel firmware source dir) in the env or local.env}"
 if [ $# -eq 0 ]; then
   if [ $(( BUILD_JOBS * 2 )) -gt "$(nproc)" ]; then ra=0; "$0" 1.5x || ra=$?; rb=0; "$0" 1x || rb=$?; exit $(( ra | rb )); fi  # one density at a time
   "$0" 1.5x & a=$!; "$0" 1x & b=$!; wait $a; ra=$?; wait $b; rb=$?; exit $(( ra | rb ))
@@ -35,7 +32,6 @@ DEN=$1
 # theme_check hung on it): a second build waits for the first
 mkdir -p "${FW_CACHE:-$HERE/.cache}"; exec 8>"${FW_CACHE:-$HERE/.cache}/.build-$DEN.lock"; flock 8
 . ~/emsdk/emsdk_env.sh >/dev/null 2>&1
-PB=${PANEL_BUILD:-$HOME/.esphome-build/waveshare-p4-86-panel}
 L=$HERE/third_party/lvgl
 AJ=$HERE/third_party/arduinojson/src
 OPT=${OPT:--O2}
@@ -47,32 +43,18 @@ O=$C/obj-$DEN$OPT${FEAT:+-$FEAT}
 OUT=${FW_OUT:-$HERE/out}/${FEAT:+$FEAT/}$DEN
 VFLAG=; [ "$DEN" = 1x ] && VFLAG=-DFW_1X
 mkdir -p "$C/lvgl$OPT" "$O" "$OUT" "$GEN"
-[ -f "$PB/src/lv_conf.h" ] || { echo "no panel build in $PB (build the panel firmware once)"; exit 1; }
 t0=$(date +%s.%N)
 SKIP=" "; [ -z "$FEAT" ] || SKIP=" $(node "$HERE/tools/features.mjs" exclude "$FEAT" | tr '\n' ' ') "
 
-# lv_conf = the panel's + host patches; rewritten only on change
-{
-  sed -e 's/^#define LV_USE_LOG 1/#define LV_USE_LOG 0/' -e '/^#define LV_LOG_LEVEL /d' \
-      -e 's/^#define LV_USE_STDLIB_MALLOC LV_STDLIB_CUSTOM/#define LV_USE_STDLIB_MALLOC LV_STDLIB_CLIB/' "$PB/src/lv_conf.h"
-  grep -o -- '-DLV_[A-Z_]*=[0-9]*' "$FW_PANEL/packages/ui.yaml" | sed 's/-D\([A-Z_]*\)=\(.*\)/#undef \1\n#define \1 \2/'
-  # labels never break after a hyphen ("Wi-Fi" stays whole): LVGL's Kconfig default minus '-'. KEEP IDENTICAL to the
-  # panel firmware's sdkconfig CONFIG_LV_TXT_BREAK_CHARS (its board YAML)
-  echo '#define LV_TXT_BREAK_CHARS " ,.;:_)}"'
-  echo '#define LV_CONF_H'
-  echo '#define LV_USE_OS LV_OS_NONE'
-  # theme fonts the panel downloads (core/font_store.cpp) are drawn by TinyTTF; the panel firmware needs the same flag
-  echo '#undef LV_USE_TINY_TTF'; echo '#define LV_USE_TINY_TTF 1'; echo '#undef LV_TINY_TTF_FILE_SUPPORT'; echo '#define LV_TINY_TTF_FILE_SUPPORT 0'
-  echo '#define LV_ASSERT_HANDLER_INCLUDE <stdlib.h>'
-  echo '#define LV_ASSERT_HANDLER abort();'
-} > "$GEN/lv_conf.h.$DEN"
-cmp -s "$GEN/lv_conf.h.$DEN" "$GEN/lv_conf.h" || mv "$GEN/lv_conf.h.$DEN" "$GEN/lv_conf.h"; rm -f "$GEN/lv_conf.h.$DEN"
+# lv_conf.h (committed) into the generated headers; copied only on change (its md5 keys the LVGL objects)
+cmp -s "$HERE/lv_conf.h" "$GEN/lv_conf.h" || cp "$HERE/lv_conf.h" "$GEN/lv_conf.h"
 CONF_SUM=$(md5sum "$GEN/lv_conf.h" | cut -c1-8)
 FL="$OPT -DLV_CONF_INCLUDE_SIMPLE -I$GEN -I$L -I$L/src"
 
 # LVGL: one cache for both densities (density-free)
-# the object list of a finished LVGL build is kept per lv_conf (hashing ~1000 paths takes ~6 s), used while every object is there
-LVGL_LIST=$C/lvgl$OPT-$CONF_SUM.list
+# the object list of a finished LVGL build is kept per lv_conf and LVGL tree (hashing ~1000 paths takes ~6 s), used while
+# every object is there
+LVGL_LIST=$C/lvgl$OPT-$CONF_SUM-$(echo "$L" | md5sum | cut -c1-8).list
 lvgl_ok() { [ -s "$LVGL_LIST" ] || return 1; local o; while read -r o; do [ -f "$o" ] || return 1; done < "$LVGL_LIST"; }
 if lvgl_ok; then LVGL_OBJS=$(cat "$LVGL_LIST"); else
 LVGL_OBJS=$(find "$L/src" -name '*.c' | while read -r f; do echo "$C/lvgl$OPT/$(echo "$f $CONF_SUM" | md5sum | cut -c1-12).o"; done)
