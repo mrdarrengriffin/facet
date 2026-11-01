@@ -50,14 +50,14 @@ for d in $dens; do check "audit-$d" node tools/audit.mjs --den "$d" --quiet --bu
 
 if [ "$tier" = fast ]; then
   [ -n "$ids" ] || { [ $fail = 0 ] && echo "CHECK fast: all green, no --ids (logs $LOG)" || echo "CHECK fast: FAILED (logs $LOG)"; exit $fail; }
-  check pixel-contrast node tools/pixel_contrast.mjs --den 1.5x --theme all --ids "$ids" --build "$B"
+  check pixel-contrast node tools/functional.mjs --rules --tier fast --rule pixel-contrast --den 1.5x --theme all --ids "$ids"
   check audit-screens node tools/audit_screens.mjs --den 1.5x --screen "$ids"
   check behaviour node tools/behaviour.mjs --den 1.5x --kind interaction,scroll,sound --ids "$ids"
   soft functional node tools/functional.mjs --den 1.5x --ids "$ids"
 else
   sel=(); [ -n "$ids" ] && sel=(--ids "$ids")
   for d in $dens; do
-    check "pixel-contrast-$d" node tools/pixel_contrast.mjs --den "$d" --theme all "${sel[@]}" --build "$B"
+    check "pixel-contrast-$d" node tools/functional.mjs --rules --rule pixel-contrast --den "$d" --theme all "${sel[@]}"
     check "lab-test-$d" node tools/lab_test.mjs --den "$d" --build "$B"
   done
   check floorplan node tools/floorplan_test.mjs --build "$B"

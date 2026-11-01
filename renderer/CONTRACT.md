@@ -216,7 +216,7 @@ unavailable) are set with `lv_obj_add_state` / `fx::state(obj, state, on)`, and 
 before the switch.
 State graphics (WCAG 1.4.11) MUST show at 3:1 on the real pixels: the chosen segment, a fill on its track, a knob
 against everything round it (track, fill AND the page or card); disabled ones (inactive, which WCAG exempts) at 1.5:1,
-still visible. *Check:* `tools/pixel_contrast.mjs --theme all` (no exemption list).
+still visible. *Check:* the rule `pixel-contrast` (`tests/rules/pixel_contrast.mjs`, every theme; no exemption list).
 
 **C18. Layout sizes are fixed by Facet and not themeable.** Everything in `space`, `layout`, `touch` and
 `radius:round` comes from the 4 px grid, the size class (density) and the type scale. A theme MUST NOT change them;
@@ -486,7 +486,7 @@ padding; nothing outside its parent; no stale paint.
 *Why:* taste is the theme author's; usability is everyone's; a theme that sets a face and no pressed face would
 otherwise silently remove press feedback. *Check:* the static guards in the parser (contrast on the exact and the
 RGB565 values, press feedback, geometry; `theme_parse` tests, `tools/contrast.mjs --theme <id>`); the real pixels of
-every contract component in every built-in theme (`tools/pixel_contrast.mjs --theme all`, in `check.sh`); fit and
+every contract component in every built-in theme (the rule `pixel-contrast`, `tests/rules/pixel_contrast.mjs`, in `check.sh`); fit and
 bounds per theme (`theme_apply` "P2 + P6 per theme": no text cut that Facet does not cut).
 
 **C48. Technical caps exist only for performance or memory** (8 edge layers per block). No other limit on looks.

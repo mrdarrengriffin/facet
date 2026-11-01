@@ -3,8 +3,10 @@
 // tests/rules/<rule>.mjs:
 //   export default { id, about, tiers: ['fast', 'gate'], wants(c, opt) -> bool, themes(opt) -> 'facet' | 'all',
 //                    looks: [0, 1] (built dark, built light), order (low first; a rule that changes the mount goes last),
+//                    cases: 'all' (default + meta variants) | 'variants' (the variants, or default when there are none),
 //                    run(x, r) }
-// x = the mount: { m, st, W, H, den, D, theme, c (meta entry), v (variant), light, tick, settle, test(cmd, a), frame565() }.
+// x = the mount: { m, st, W, H, den, D, theme, c (meta entry), v (variant), vi (its index), light, tick, settle,
+//   test(cmd, a), frame565() }.
 // r = the report: r.check(ok, line), r.legacy(line), r.note(line). A rule never builds its own module or loops itself.
 // A startup check (no component loop) has once(x, r) instead of wants / run: x = { m (a fresh module), den, build },
 // run once per density in its dens (default every density of the run).
@@ -65,12 +67,13 @@ export async function runRules(rules, { build, dens, ids, themeArg, tier }) {
         const r = JSON.parse(m.UTF8ToString(m._fw_lab(-1, m.stringToNewUTF8('theme_use'), m.stringToNewUTF8(theme))));
         if (!r.ok) { for (const rule of here) report(rule).check(false, `theme ${theme}: refused ${JSON.stringify(r.errors).slice(0, 200)}`); continue; }
       }
-      for (const v of c.meta.variants?.length ? c.meta.variants : [{ label: 'default', props: {} }]) {
+      const vs = c.meta.variants || [];
+      for (const [vi, v] of [{ label: 'default', props: {} }, ...vs].entries()) {
         for (const light of [0, 1]) {
-          const mine = here.filter((r) => (r.looks || [0, 1]).includes(light));
+          const mine = here.filter((r) => (r.looks || [0, 1]).includes(light) && !(r.cases === 'variants' && vs.length && vi === 0));
           if (!mine.length) continue;
           const x = mount(m, den, c, v, light);
-          x.theme = theme;
+          x.theme = theme; x.vi = vi;
           if (x.err) { for (const rule of mine) report(rule).note(`skip ${den} ${c.id} "${v.label}": ${x.err}`); x.free(); continue; }
           for (const rule of mine) rule.run(x, report(rule));
           x.free();

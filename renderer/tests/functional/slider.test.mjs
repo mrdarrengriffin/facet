@@ -24,7 +24,7 @@ const at = (g, f) => g.x0 + (g.x1 - g.x0) * f;
 export default {
   id: 'slider', family: 'controls', about: 'Horizontal slider: drag or tap-to-jump, value on release, clamps and snaps.',
   tests: [
-    // (colours: tools/pixel_contrast.mjs proves the fill and knob 3:1 on the track in every theme; here: where they are)
+    // (colours: the pixel-contrast rule proves the fill and knob 3:1 on the track in every theme; here: where they are)
     { name: 'fill runs from the start to the knob, the plain track after it', mount: ['slider', { value: 40 }], run(t, { den }) {
       const g = geo(t, den), r = row(t, g.y, Math.round(g.x0), Math.round(g.x1));
       const fill = r[Math.round((g.kx - g.x0) / 2)], track = r[Math.round((g.kx - g.x0) + (g.x1 - g.kx) / 2)];
