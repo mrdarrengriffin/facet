@@ -14,12 +14,16 @@ export type FwEvent = { stage: number; kind: 'event' | 'sound'; name: string; de
 export type Comp = { id: string; name: string; section: string; meta: Meta };
 export type Manifest = { built: string; density: string; build_s: number; wasm_bytes: number };
 export type Zoom = '1' | 'fit' | '2';
-export type DeviceId = 'waveshare-p4-86' | 'guition-4848s040' | 'shelly-x1i';
-export const DEVICES: Record<DeviceId, { name: string; den: '1.5x' | '1x'; d: number; size: number }> = {
-  'waveshare-p4-86': { name: 'Waveshare 720', den: '1.5x', d: 1.5, size: 720 },
-  'guition-4848s040': { name: 'Guition 480', den: '1x', d: 1, size: 480 },
+// the firmware boards (boards/<id>.json) + the Shelly (a browser target, no firmware); pure, so a page that does not
+// use DEVICES does not carry the board files
+type Board = { id: string; name: string; resolution: { w: number }; scale: '1.5x' | '1x' };
+export type DeviceId = string;
+const devices = (): Record<DeviceId, { name: string; den: '1.5x' | '1x'; d: number; size: number }> => ({
+  ...Object.fromEntries(Object.values(import.meta.glob<Board>('../../../boards/*.json', { eager: true, import: 'default' }))
+    .map((b) => [b.id, { name: `${b.name.split(' ')[0]} ${b.resolution.w}`, den: b.scale, d: parseFloat(b.scale), size: b.resolution.w }])),
   'shelly-x1i': { name: 'Shelly 720', den: '1.5x', d: 1.5, size: 720 },
-};
+});
+export const DEVICES = /* @__PURE__ */ devices();
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Mod = any;
 

@@ -84,6 +84,9 @@ jobs:
     needs: deploy
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: boards
       - name: Firmware manifests and images are served
         env:
           PAGE_URL: ${{ needs.deploy.outputs.page_url }}
@@ -91,7 +94,7 @@ jobs:
           base="${PAGE_URL%/}/firmware"
           sleep 20
           fail=0
-          for board in waveshare-p4-86 guition-4848s040; do
+          for board in $(jq -rs 'map(select(.status == "target")) | sort_by(-.resolution.w, .id) | .[].id' boards/*.json); do
             for f in manifest.json ota.json; do
               ok=0
               for try in 1 2 3 4 5 6; do curl -sfL -o "$board-$f" "$base/$board/$f" && { ok=1; break; }; sleep 10; done

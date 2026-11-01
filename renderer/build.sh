@@ -65,7 +65,7 @@ fi
 
 # generators (density-free headers in $GEN): only when an input is newer than the last run's stamp (each one also writes
 # its header only on change, so an unchanged input rebuilds nothing)
-GEN_IN="$HERE/tokens $HERE/specs $HERE/themes $HERE/sources $HERE/icons $HERE/fonts $HERE/catalogue/contract.json $HERE/features.json $HERE/tests/floorplan"
+GEN_IN="$HERE/../boards $HERE/tokens $HERE/specs $HERE/themes $HERE/sources $HERE/icons $HERE/fonts $HERE/catalogue/contract.json $HERE/features.json $HERE/tests/floorplan"
 if [ ! -f "$GEN/.stamp" ] || [ -n "$(find $GEN_IN "$HERE/tools" -path "$HERE/tools/node_modules" -prune -o -newer "$GEN/.stamp" -print -quit 2>/dev/null)" ]; then
 touch "$GEN/.stamp.next"
 # colour tokens: tokens/colour.json -> colour_gen.h (written only when it changes, so an unchanged JSON rebuilds nothing)

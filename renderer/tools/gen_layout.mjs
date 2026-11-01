@@ -84,7 +84,14 @@ if (bad.length) die(`layout rule:\n  ${bad.join('\n  ')}`);
 // densities, size classes, devices: each device's class = the largest class whose min fits its dp size
 const D = Object.entries(t.density).filter(([k]) => !k.startsWith('$'));
 const C = Object.entries(t.sizeClass).filter(([k]) => !k.startsWith('$'));
-const DV = Object.entries(t.devices).filter(([k]) => !k.startsWith('$'));
+// a device that is a firmware board takes its hardware from boards/<id>.json (name, size, inches, density = scale,
+// status, chip); layout.json keeps what is about the layout (class, role, mount) and may name it differently
+const BOARDS = join(HERE, '..', '..', 'boards');
+const board = (id) => { const f = join(BOARDS, `${id}.json`); return existsSync(f) ? JSON.parse(readFileSync(f, 'utf8')) : null; };
+const DV = Object.entries(t.devices).filter(([k]) => !k.startsWith('$')).map(([id, v]) => {
+  const b = board(id);
+  return [id, b ? { name: b.name, w: b.resolution.w, h: b.resolution.h, inches: b.inches, density: b.scale, status: b.status, runs: `ESPHome firmware, ${b.chip}, LVGL`, ...v } : v];
+});
 for (const [id, d] of D) if (!(d.d > 0) || !Number.isInteger(d.grid) || d.grid % 4) die(`density ${id}: d > 0 and grid a multiple of 4`);
 const fits = (c, w, h) => w >= c.min[0] && h >= c.min[1];
 for (const [id, v] of DV) {

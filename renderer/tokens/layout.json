@@ -189,29 +189,16 @@
     }
   },
   "devices": {
-    "$comment": "Screens Facet targets. status: target = built for today (workbench device switch), planned = layout class defined, no build yet. mount = how the panel is mounted (the firmware rotates in software; a square layout does not change).",
+    "$comment": "Screens Facet targets. A firmware board (boards/<id>.json) gives its name, size, inches, density (scale), status and chip; the entry here adds class, role and mount. status: target = built for today (workbench device switch), planned = layout class defined, no build yet. mount = how the panel is mounted (the firmware rotates in software; a square layout does not change).",
     "waveshare-p4-86": {
-      "name": "Waveshare ESP32-P4-86",
-      "w": 720,
-      "h": 720,
-      "inches": 4,
-      "density": "1.5x",
       "class": "square",
-      "status": "target",
       "role": "reference panel",
-      "runs": "ESPHome firmware, ESP32-P4, LVGL",
       "mount": "as built"
     },
     "guition-4848s040": {
       "name": "Guition ESP32-4848S040",
-      "w": 480,
-      "h": 480,
-      "inches": 4,
-      "density": "1x",
       "class": "square",
-      "status": "target",
       "role": "the 480 panel",
-      "runs": "ESPHome firmware, ESP32-S3, LVGL",
       "mount": "rotated 90 deg (software rotation)"
     },
     "shelly-x1i": {

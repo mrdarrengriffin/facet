@@ -1,0 +1,15 @@
+{
+  "about": "One supported panel. Read by the firmware YAML (esphome/, !include), tokens/layout.json devices (tools/gen_layout.mjs), the docs site (install page, engine.ts) and deploy.yml. status: target = a release firmware is built for it.",
+  "id": "guition-4848s040",
+  "name": "Guition ESP32-S3-4848S040",
+  "chip": "ESP32-S3",
+  "radio": null,
+  "bluetooth": false,
+  "resolution": { "w": 480, "h": 480 },
+  "inches": 4,
+  "scale": "1x",
+  "touch": "GT911",
+  "flash": "16MB",
+  "speaker": false,
+  "status": "target"
+}
