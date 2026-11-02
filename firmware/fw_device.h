@@ -193,8 +193,13 @@ inline Perf P;
 inline void perf_reset() { P = Perf{}; }
 inline void perf_event(lv_event_t *e) {
   const int64_t t = esp_timer_get_time();
+  static int64_t flush_t0 = 0, flush_us = 0;  // the flush (copy to the panel + its rotation) inside a render
+  if (lv_event_get_code(e) == LV_EVENT_FLUSH_START) { flush_t0 = t; return; }
+  if (lv_event_get_code(e) == LV_EVENT_FLUSH_FINISH) { flush_us += t - flush_t0; return; }
+  if (lv_event_get_code(e) == LV_EVENT_RENDER_START) flush_us = 0;
   if (lv_event_get_code(e) == LV_EVENT_RENDER_START && fw::dev::nav_timing()) fw::dev::nav_render();
   if (lv_event_get_code(e) == LV_EVENT_RENDER_READY && fw::dev::nav_timing()) {  // navigation timing (facet-243)
+    fw::dev::nav_copy((uint32_t) (flush_us / 1000));
     const size_t had = fw::dev::nav_times().size();
     fw::dev::nav_frame();
     const auto &n = fw::dev::nav_times();
@@ -254,6 +259,7 @@ inline void perf_json(ArduinoJson::JsonObject o) {
     if (x.screen_layout0) r["screen_layout"] = x.build1 - x.screen_layout0;  // the whole display screen's layout
     r["frame"] = x.frame - x.build1, r["total"] = x.frame - x.touch;
     if (x.render0) r["wait"] = x.render0 - x.build1, r["render"] = x.frame - x.render0;  // frame = wait (the loop) + render
+    if (x.render0) r["draw"] = x.frame - x.render0 - x.copy, r["copy"] = x.copy;  // render = draw (LVGL) + copy (flush: to the panel, rotated)
     if (!x.prof.empty()) {  // the build's nodes (spec.h), ms each (a node's time includes what it builds inside it)
       ArduinoJson::JsonArray pf = r["profile"].to<ArduinoJson::JsonArray>();
       for (const auto &p : x.prof) { ArduinoJson::JsonArray e = pf.add<ArduinoJson::JsonArray>(); e.add(p.first); e.add(p.second); }
@@ -1750,6 +1756,8 @@ inline void setup() {
   lv_display_set_theme(d, nullptr);  // clean slate like the WASM host: components style everything themselves
   lv_display_add_event_cb(d, perf_event, LV_EVENT_RENDER_START, nullptr);  // frame stats (GET /fw/perf)
   lv_display_add_event_cb(d, perf_event, LV_EVENT_RENDER_READY, nullptr);
+  lv_display_add_event_cb(d, perf_event, LV_EVENT_FLUSH_START, nullptr);   // navigation timing: draw vs copy
+  lv_display_add_event_cb(d, perf_event, LV_EVENT_FLUSH_FINISH, nullptr);
   for (lv_indev_t *i = lv_indev_get_next(nullptr); i; i = lv_indev_get_next(i))  // navigation timing: a finger's lift
     if (lv_indev_get_type(i) == LV_INDEV_TYPE_POINTER) lv_indev_add_event_cb(i, [](lv_event_t *) { fw::dev::nav_touch(); }, LV_EVENT_RELEASED, nullptr);
   S.scr = lv_obj_create(nullptr);
