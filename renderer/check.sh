@@ -10,6 +10,8 @@
 #   ./check.sh nightly            overnight only: ASan at 1.5x (and 1x on Sundays, or with --weekly), the functional
 #                                 suites marked tier: 'nightly' (theme_apply), the theme parser fuzz, the lag proxy
 #                                 (bench --lag: host CPU timing, so alone), the bench headless
+# Budgets (a tier on an already built tree; the build's time is recorded next to it, not counted): fast under 10 s,
+# gate under 300 s, nightly whatever it takes.
 # One line per step (PASS / FAIL / WARN, seconds); each step's full output in $CHECK_LOG (default
 # $FW_CACHE/checks/<time>-<tier>). Functional tests are reported, never fail a tier (WARN) while the suite grows.
 # Exit 1 if any step failed. Build = $FW_OUT (env or local.env), else ./out.
