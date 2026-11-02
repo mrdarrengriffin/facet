@@ -57,10 +57,6 @@ export default {
   bound entity reads unavailable), `reconnect()` (stored states arrive again), `calls` (service calls sent), `auto`
   (default true: toggle / turn_on / turn_off for light, switch, fan, input_boolean; cover open / close / position / tilt; vacuum start / room clean / pause / dock / suction; select option),
   `lag` (ms before an answer arrives). Unset values fall back to `tools/demo_ha.mjs`.
-- **Fake image host (`t.img`, the Image component):** `serve(url, w, h, fill)` (fill `[r,g,b,a]` or `(x, y) => [...]`),
-  `status(url, 404)`, `hang(url)` (never answers: the device times out), unknown URLs = 404; `asked` (URLs fetched),
-  `stats()` (the cache: cap, bytes, peak, views, shown, evicted, dropped, refused, pending), `leave()` (build another
-  screen: every image view goes). Serve before `await t.mount(...)`.
 - **Assert (soft, all collected):** `ok`, `eq`, `has(list, want)`, `hasNot`, `emitted(evs, name, detail?)`, `notEmitted`,
   `sounds(evs, [...])` (ticks ignored), `silent(evs)`, `call({service, entity})`.
 - What to cover per component: every gesture it answers (tap, hold, drag, slide-off), every prop that changes what it

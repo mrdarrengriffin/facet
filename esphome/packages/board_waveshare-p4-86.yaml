@@ -48,7 +48,7 @@ esp32:
       # after boot, 35 KB on Home, 0.5 KB after GitHub (crash). LVGL objects were already in PSRAM (ESPHome lv_malloc).
       CONFIG_SPIRAM_MALLOC_ALWAYSINTERNAL: "0"
       CONFIG_SPIRAM_MALLOC_RESERVE_INTERNAL: "49152"
-      # Image URLs (firmware/fw_images.h): every https picture failed "esp-aes: Failed to allocate memory": the
+      # HTTPS downloads (first seen with the Image component's pictures): every one failed "esp-aes: Failed to allocate memory": the
       # TLS record buffers sit in PSRAM (malloc > 512 B), so hardware AES needs an internal DMA bounce buffer per record
       # (up to 16 KB) that the fragmented internal heap can't give. Software AES (the P4 at 360 MHz: a 1 MB picture
       # costs well under a second) + mbedTLS explicitly in PSRAM = a download never touches internal RAM for TLS

@@ -477,16 +477,7 @@ function pageBuild() {
     play.before(bar);
   }
   top.append(preview, side);
-  // a picture's URL (Image: props.src): what happened to it, in plain words (engine imgLoop, /api/wasm/img)
-  const imgNote = h('div', 'wb-imgnote');
-  const showImg = () => {
-    const src = typeof st.props.src === 'string' ? st.props.src : '', s = src ? engine!.imgStatus.get(src) : undefined;
-    imgNote.replaceChildren(...(!s || s.state === 'loading' ? [] : s.state === 'failed'
-      ? [callout('bad', `Picture didn't load: ${s.why || s.code}. The panel keeps the picture it had, or shows the fallback.`)]
-      : s.via === 'browser' ? [callout('info', `Loaded by your browser only (${s.why}). The panel downloads pictures itself and can't get this one: it would show the fallback.`)] : []));
-  };
-  engine!.onImage = (src) => { if (src === st.props.src) showImg(); };
-  main.replaceChildren(head, err, imgNote, top, h('h2', '', 'Variants'), variants);
+  main.replaceChildren(head, err, top, h('h2', '', 'Variants'), variants);
   // Pixel grid view of the preview + meta "compare" size studies (this density only), each off and on
   const pixSec = h('section', 'wb-pixsec');
   if (pixMode === 'grid' || pixMode === 'boxes') main.insertBefore(pixSec, variants.previousSibling);
