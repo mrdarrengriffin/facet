@@ -241,6 +241,7 @@ inline void perf_json(ArduinoJson::JsonObject o) {
   o["active_s"] = lroundf(P.active_us / 1e5f) / 10.f;
   if (fw::dev::keep_pages() > 0) {  // kept pages (facet-243): what each costs in PSRAM
     o["keep"] = fw::dev::keep_pages();
+    if (fw::dev::kept_all()) o["kept_all_s"] = lroundf(fw::dev::kept_all() / 100.f) / 10.f;  // boot to all pages kept (lv_tick runs from boot)
     fw::dev::kept_json(o["kept"].to<ArduinoJson::JsonArray>());
   }
   if (!fw::dev::nav_timing()) return;  // navigation timing (GET /fw/perf?nav=1): each change, ms from its tap

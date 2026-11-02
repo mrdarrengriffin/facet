@@ -84,5 +84,19 @@ export default {
       act(t, { do: 'nav.open', screen: 'clock' });
       t.ok(page(t, 'clock').shown, 'and shows them');
     } },
+    { name: 'a settings change, then a tap before the idle rebuild: built on the tap, never the stale page', async run(t) {
+      await t.device();
+      keep(t, 8);
+      idle(t, 3000);
+      t.b.test('setting', 'textSize=large');  // a look change: every kept page stale (the shown one rebuilt by its restyle)
+      t.b.tick(3);  // no idle gap: the prebuild has not rebuilt anything yet
+      t.ok(page(t, 'clock').stale, 'Clock is stale');
+      const n = builds(t);
+      act(t, { do: 'nav.open', screen: 'clock' });
+      t.ok(builds(t) > n, 'the tap built Clock again');
+      t.ok(page(t, 'clock').shown && !page(t, 'clock').stale, 'the shown Clock is the fresh one');
+      t.eq(keep(t).filter((k) => k.page === 'clock').length, 1, 'one Clock, the stale one gone');
+      t.b.test('setting', 'textSize=standard');
+    } },
   ],
 };

@@ -143,6 +143,7 @@ lv_obj_t *make(Device *d, const std::string &id, bool at_root, std::vector<lv_ob
 // every screen built on tap); a page over the cap is built on tap. The host's mem hook (free PSRAM) measures each.
 size_t (*&mem_hook())() { static size_t (*f)() = nullptr; return f; }
 int &keep_max() { static int n = 0; return n; }
+uint32_t &kept_all_at() { static uint32_t t = 0; return t; }  // lv_tick when the kept pages first reached the cap (0 = not yet)
 bool keepable(const std::string &id) { return id == "home" || (id.find('?') == std::string::npos && spec::deck_kinds().count(id)); }
 std::string entry_of(const std::string &id) {
   ArduinoJson::JsonDocument e;
@@ -246,6 +247,7 @@ void prebuild(lv_timer_t *t) {
     const size_t m1 = mem_hook() ? mem_hook()() : 0;
     d->kept[id] = {scr, entry_of(id), false, m0 > m1 ? (uint32_t) (m0 - m1) : 0u, (uint32_t) objects(scr), lv_tick_elaps(t0)};
     d->pre_done = lv_tick_get();
+    if (!kept_all_at() && (int) d->kept.size() >= std::min<int>(keep_max(), (int) want.size())) kept_all_at() = d->pre_done;
     return;  // one per tick
   }
 }
@@ -470,6 +472,7 @@ void apply(int k, From from) {
   if (look_ && store().look_hook) store().look_hook();
   for (Device *d : devices) {
     if (text_) {
+      for (auto &k : d->kept) k.second.stale = true;  // at once: a tap before the restyle builds, never shows the old page
       if (!d->restyle) d->restyle = lv_timer_create(restyle_tick, 30, d);
       d->restyle_at = lv_tick_get();
       continue;
@@ -479,6 +482,7 @@ void apply(int k, From from) {
       if (t != d->theme || file_) {
         d->theme = t;
         if (devices.size() == 1) T = t;  // taps / fades paint from fw::T after the build: the panel's look now
+        for (auto &k : d->kept) k.second.stale = true;  // at once (as above)
         if (!d->restyle) d->restyle = lv_timer_create(restyle_tick, 30, d);
         d->restyle_at = lv_tick_get();
         continue;  // the rebuild shows every value anyway
@@ -607,6 +611,7 @@ void keep_pages(int n) {
   }
 }
 int keep_pages() { return keep_max(); }
+uint32_t kept_all() { return kept_all_at(); }
 void on_mem(size_t (*f)()) { mem_hook() = f; }
 void kept_json(ArduinoJson::JsonArray out) {
   for (Device *d : devices)

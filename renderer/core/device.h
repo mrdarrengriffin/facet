@@ -72,6 +72,7 @@ void nav_touch();            // the host's "a finger lifted" (its pointer's rele
 // hidden, repainted when it shows).
 void keep_pages(int n);
 int keep_pages();
+uint32_t kept_all();  // lv_tick ms when every page to keep was first kept (boot to all kept; 0 = not yet)
 void on_mem(size_t (*f)());
 void kept_json(ArduinoJson::JsonArray out);
 void state(ArduinoJson::JsonArray out);  // every mounted device: {stack, builds, objects} (spec hello diagnostics)  // a spec changed (core/spec.h apply): devices showing it (or every device: "deck") build it again
