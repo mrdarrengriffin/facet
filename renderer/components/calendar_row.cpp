@@ -79,10 +79,10 @@ void fill(lv_obj_t *root, fw::Props p) {
     return;
   }
   for (const char *t : {"tall:cal-row-h"}) fx::use(root, t);
-  lv_obj_t *tm = fx::text(root, p["time"] | "", "type:body", time_ink(p), "none");
+  lv_obj_t *tm = fx::text(root, p["time"] | "", "type:body", time_ink(p), "dot");
   fx::use(tm, "w:cal-time");
   dot(root, ev_dot(p));
-  fx::use(fx::text(root, p["title"] | "", "type:title", title_ink(p), "none"), "grow");
+  fx::use(fx::text(root, p["title"] | "", "type:title", title_ink(p), "dot"), "grow");
 }
 }  // namespace
 

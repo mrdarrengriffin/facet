@@ -103,14 +103,14 @@ void fill(lv_obj_t *h, fw::Props p, bool opening) {
   // label type: caps label (default) or title (the Calendar hero: the event's name as written, docs .fs-cal-htitle)
   const bool title = title0;
   if (stack) {  // the line under the number, centred (the label is above it)
-    fx::text(h, off ? fw::st::UNAVAILABLE_TEXT : (p["line"] | ""), "type:body", off ? "fg:unavailable-note" : "fg:text-dim", "none");
+    fx::use(fx::text(h, off ? fw::st::UNAVAILABLE_TEXT : (p["line"] | ""), "type:body", off ? "fg:unavailable-note" : "fg:text-dim", "dot"), "cell-text");  // the width, centred: a long line ends in "..."
     if (off) fx::state(h, fw::st::OFF, true);
     return;
   }
   lv_obj_t *col = fx::box(h, "free");
   fx::use(col, title ? "hero-col-title" : "hero-col");
-  fx::use(fx::text(col, p["label"] | "", title ? "type:title" : "type:label", off ? "fg:unavailable-ink" : "fg:text", "none"), "fill-w");
-  fx::use(fx::text(col, off ? fw::st::UNAVAILABLE_TEXT : (p["line"] | ""), "type:body", off ? "fg:unavailable-note" : "fg:text-dim", "none"), "fill-w");
+  fx::use(fx::text(col, p["label"] | "", title ? "type:title" : "type:label", off ? "fg:unavailable-ink" : "fg:text", "dot"), "fill-w");
+  fx::use(fx::text(col, off ? fw::st::UNAVAILABLE_TEXT : (p["line"] | ""), "type:body", off ? "fg:unavailable-note" : "fg:text-dim", "dot"), "fill-w");
   if (off) fx::state(h, fw::st::OFF, true);  // the unavailable look (3:1)
 }
 }  // namespace

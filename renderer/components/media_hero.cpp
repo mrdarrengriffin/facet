@@ -42,7 +42,7 @@ void fill(lv_obj_t *root, fw::Props p) {
   lv_obj_t *ti = fx::text(col, p["title"] | "Nothing playing", "type:headline", "fg:text", "fit");
   for (const char *t : {"fill-w", "h:m-title-h", "max-h:m-title-h"}) fx::use(ti, t);  // two lines, then "..."
   lv_label_set_long_mode(ti, LV_LABEL_LONG_MODE_DOTS);
-  lv_obj_t *ar = fx::text(col, p["artist"] | "", "type:body", "fg:text-dim", "none");
+  lv_obj_t *ar = fx::text(col, p["artist"] | "", "type:body", "fg:text-dim", "dot");
   fx::use(ar, "fill-w");
 }
 }  // namespace
