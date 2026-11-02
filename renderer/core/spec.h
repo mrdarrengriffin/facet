@@ -2221,13 +2221,30 @@ inline bool deck_set(const std::string &id, const std::string &key, ArduinoJson:
       if (at >= 0 || !page_role(id)) return at >= 0;
       ArduinoJson::JsonObject n = ps.add<ArduinoJson::JsonObject>();
       n["id"] = id, n["kind"] = id;
+      for (ArduinoJson::JsonVariant x : ps)  // on = on Home too: its card at the end of the first Home (C52)
+        if (!strcmp(x["kind"] | "", "home")) {
+          ArduinoJson::JsonArray cs = x["cards"].is<ArduinoJson::JsonArray>() ? x["cards"].as<ArduinoJson::JsonArray>() : x["cards"].to<ArduinoJson::JsonArray>();
+          ArduinoJson::JsonObject card = cs.add<ArduinoJson::JsonObject>();
+          card["t"] = "page", card["page"] = id, card["size"] = "m";
+          break;
+        }
     } else {
       if (at < 0) return true;
       if (id == (d["start"] | "") || (ps[at]["id"] | "") == std::string(d["start"] | "")) {
         if (why) *why = "This is the start page, so it stays on. Pick another start page first.";
         return false;
       }
+      const std::string pid = ps[at]["id"] | id.c_str();
       ps.remove(at);
+      for (ArduinoJson::JsonVariant x : ps) {  // off = gone from Home too: the cards and header shortcuts that open it
+        if (ArduinoJson::JsonArray cs = x["cards"].as<ArduinoJson::JsonArray>())
+          for (size_t k = cs.size(); k-- > 0;) if (pid == (cs[k]["page"] | "")) cs.remove(k);
+        ArduinoJson::JsonVariant ha_ = x["header_actions"];
+        if (ha_.isNull()) continue;
+        if (pid == (ha_["button"] | "")) ha_.remove("button");
+        if (ArduinoJson::JsonArray bs = ha_["buttons"].as<ArduinoJson::JsonArray>())
+          for (size_t k = bs.size(); k-- > 0;) if (pid == (bs[k]["page"] | "")) bs.remove(k);
+      }
     }
   } else {
     if (at < 0) return false;
@@ -2241,6 +2258,24 @@ inline bool deck_set(const std::string &id, const std::string &key, ArduinoJson:
   if (apply("deck", js, nullptr, o.to<ArduinoJson::JsonObject>(), true)) return true;
   if (why) *why = o["errors"][0]["msg"] | "the panel refused the change";
   return false;
+}
+// a person's change to the deck from a screen (Settings > Screens, a screen's settings): kept = a "deck" event
+// ("<id> <key>=<value>") from `from`; refused = a warn toast "Not changed" with the deck's reason, no event, and what
+// shows is built again from the deck (it shows what the panel keeps)
+inline bool deck_change(lv_obj_t *from, const std::string &id, const std::string &key, ArduinoJson::JsonVariantConst v) {
+  std::string why;
+  if (!deck_set(id, key, v, &why)) {
+    ArduinoJson::JsonDocument t;
+    t["tone"] = "warn", t["icon"] = "alert", t["title"] = "Not changed", t["body"] = why;
+    dev::toast(t.as<Props>());
+    if (reload_hook()) reload_hook()("deck");
+    return false;
+  }
+  std::string vs;
+  if (v.is<const char *>()) vs = v.as<const char *>();
+  else serializeJson(v, vs);
+  emit(from, "deck", (id + " " + key + "=" + vs).c_str());
+  return true;
 }
 // revert one override (screen id, "deck") or "all" to factory
 inline void revert(const std::string &id, ArduinoJson::JsonObject out) {

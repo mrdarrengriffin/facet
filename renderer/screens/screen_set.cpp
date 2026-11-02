@@ -114,23 +114,7 @@ struct Page {
   std::vector<std::string> src_from;    // per source: its "from" words ("" = none)
   std::vector<std::pair<lv_obj_t *, std::string>> ctrls;  // Segmented / Toggle -> its key
 };
-// false = the deck refused it: a warn toast says why in the panel's words, and the screen is built again from the deck
-// (what it shows is what the panel keeps); no "deck" event
-bool keep(Page *pg, lv_obj_t *from, const std::string &key, ArduinoJson::JsonVariantConst v) {
-  std::string why;
-  if (!fw::spec::deck_set(pg->id, key, v, &why)) {
-    Doc t;
-    t["tone"] = "warn", t["icon"] = "alert", t["title"] = "Not changed", t["body"] = why.c_str();
-    fw::dev::toast(t.as<fw::Props>());
-    if (fw::spec::reload_hook()) fw::spec::reload_hook()("deck");
-    return false;
-  }
-  std::string vs;
-  if (v.is<const char *>()) vs = v.as<const char *>();
-  else serializeJson(v, vs);
-  fw::emit(from, "deck", (pg->id + " " + key + "=" + vs).c_str());
-  return true;
-}
+bool keep(Page *pg, lv_obj_t *from, const std::string &key, ArduinoJson::JsonVariantConst v) { return fw::spec::deck_change(from, pg->id, key, v); }
 // a pick's row shows its new value (the List row's update takes the whole row: title and icon kept)
 void row_value(Pick &p, const std::string &value) {
   Doc rp;

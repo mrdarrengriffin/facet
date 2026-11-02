@@ -1,6 +1,7 @@
 // Settings > Screens > a screen (screens/screen_set.cpp): a change reaches the deck and the screen that reads it; a
 // change the deck refuses says so (a warn toast in the panel's words), sends no "deck" event, and the screen shows
 // what the panel kept.
+const deck = (t) => JSON.parse(JSON.parse(t.b.spec('list', '')).deck);
 const act = (t, a) => { const r = JSON.parse(t.b.spec('act', a) || '{}'); t.b.tick(10); t.b.settle(800); return r; };
 import fs from 'node:fs';
 const FACTORY = JSON.parse(fs.readFileSync(new URL('../../specs/deck.json', import.meta.url)));
@@ -16,6 +17,20 @@ export default {
       t.ok(evs.some((e) => e.name === 'deck' && e.detail === 'media params.visual=cassette'), 'the deck takes visual=cassette');
       act(t, { do: 'nav.back' });
       t.ok(t.comps().some((c) => c.ids.at(-1) === 'media_visual'), 'Media shows its visual');
+    } },
+    { name: 'Show on Home off: the screen leaves the deck and its Home card goes with it; on again brings both back', async run(t) {
+      await t.device();
+      act(t, { do: 'nav.open', screen: 'screen_set', params: { id: 'moon' } });
+      const off = t.tap('Show on Home');
+      t.ok(off.some((e) => e.name === 'deck' && e.detail === 'moon on=false'), `kept: ${off.map((e) => `${e.name}(${e.detail})`).join(' ')}`);
+      t.ok(!t.texts().includes('Not changed'), 'no refusal');
+      let d = deck(t);
+      t.ok(!d.pages.some((p) => p.id === 'moon'), 'Moon left the deck');
+      t.ok(!d.pages.some((p) => (p.cards ?? []).some((c) => c.page === 'moon')), 'its Home card went with it');
+      const on = t.tap('Show on Home');
+      t.ok(on.some((e) => e.name === 'deck' && e.detail === 'moon on=true'), 'on again');
+      d = deck(t);
+      t.ok(d.pages.some((p) => p.id === 'moon') && d.pages.find((p) => p.kind === 'home').cards.some((c) => c.page === 'moon'), 'Moon and its Home card are back');
     } },
     { name: 'a refused change: a warn toast in the panel\'s words, no deck event, the screen shows what is kept', async run(t) {
       await t.device();

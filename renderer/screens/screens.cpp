@@ -142,8 +142,7 @@ void build_screens(lv_obj_t *parent, fw::Props) {
         if (s.add && within(from, s.add)) {
           Doc v;
           v.set(true);
-          fw::spec::deck_set(s.id, "on", v.as<ArduinoJson::JsonVariantConst>());
-          fw::emit(s.add, "deck", (s.id + " on=true").c_str());
+          fw::spec::deck_change(s.add, s.id, "on", v.as<ArduinoJson::JsonVariantConst>());
           return;
         }
         if (!s.remove || !within(from, s.remove)) continue;
@@ -167,8 +166,7 @@ void build_screens(lv_obj_t *parent, fw::Props) {
         const bool on = !strcmp(detail, "on");
         Doc v;
         v.set(on);
-        fw::spec::deck_set(r.id, "on", v.as<ArduinoJson::JsonVariantConst>());
-        fw::emit(from, "deck", (r.id + (on ? " on=true" : " on=false")).c_str());
+        fw::spec::deck_change(from, r.id, "on", v.as<ArduinoJson::JsonVariantConst>());
         return;
       }
     if (lv_obj_t *up = lv_obj_get_parent(pg->root)) fw::notify(up, name, detail);  // the rest goes on up (navigate, back)
