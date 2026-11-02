@@ -55,6 +55,68 @@ class FakeHA {
     this.push(e); this.t.b.settle(1500);
   }
   unavailable(e) { this.set(e, 'unavailable'); }
+  // Replies (opt in: answers = true; a test that checks an ask stays open leaves it off): the HA actions an adapter
+  // wants the reply of (fw_ha_asks: weather.get_forecasts, calendar.get_events) and the panel's own link's reads
+  // (fw_ha_gets: Energy's three WebSocket reads; a REST read = not found). Served on every tick (Ctx). Failing while
+  // down (the network pulled) or fail (Home Assistant answering but its data unavailable); missing = an empty
+  // Energy dashboard and no entity found. Never a real Home Assistant.
+  serve() {
+    if (!this.answers) return;
+    const m = this.t.b.m;
+    if (!m?._fw_ha_asks) return;
+    const bad = this.down || this.fail;
+    const str = (x, f) => { const q = m.stringToNewUTF8(x); try { return f(q); } finally { m._free(q); } };
+    const asks = JSON.parse(m.UTF8ToString(m._fw_ha_asks()) || '[]');
+    for (const a of asks) {
+      const reply = bad ? null : this.reply(a.service, a.data || {});
+      str(reply ? JSON.stringify(reply) : '', (q) => m._fw_ha_answer(a.id, reply ? 1 : 0, q));
+    }
+    if (!m._fw_ha_gets) return;
+    for (const g of JSON.parse(m.UTF8ToString(m._fw_ha_gets()) || '[]')) {
+      const id = typeof g === 'number' ? g : g.id;
+      const body = bad || !g.ws ? null : this.ws(typeof g.ws === 'string' ? JSON.parse(g.ws) : g.ws);
+      if (body) { const b = JSON.stringify(body); str(b, (q) => m._fw_ha_chunk(id, q, Buffer.byteLength(b, 'utf8'))); }
+      str(body ? '' : (this.down ? 'Home Assistant not reached' : 'not found'), (q) => m._fw_ha_got(id, body ? 1 : 0, q));
+    }
+  }
+  known(e) { return !this.missing && (this.s[e] !== undefined || demoValue(e, '') !== undefined); }
+  reply(service, data) {
+    const ids = [].concat(data.entity_id || []);
+    const e = ids[0];
+    if (!e || !this.known(e)) return null;
+    const now = Date.now(), H = 3600000, iso = (t) => new Date(t).toISOString();
+    if (service === 'weather.get_forecasts') {
+      const daily = data.type === 'daily';
+      const forecast = Array.from({ length: daily ? 7 : 24 }, (_, i) => ({
+        datetime: iso(now + (daily ? i * 24 : i + 1) * H), condition: ['cloudy', 'rainy', 'partlycloudy', 'sunny'][i % 4],
+        temperature: 12 - (i % 5), templow: 5 + (i % 3), precipitation_probability: (i * 13) % 90, precipitation: (i % 3) * 0.4 }));
+      return { [e]: { forecast } };
+    }
+    if (service === 'calendar.get_events') {
+      const ev = (h, d, summary) => ({ start: iso(now + h * H), end: iso(now + (h + d) * H), summary, location: 'Test hall' });
+      return { [e]: { events: [ev(2, 1, 'Test meeting'), ev(26, 2, 'Test dinner'), ev(50, 1, 'Test walk')] } };
+    }
+    return null;
+  }
+  ws(cmd) {  // HA's result message for the panel's own link's reads (Energy's dashboard)
+    const ok = (result) => ({ id: 1, type: 'result', success: true, result });
+    if (cmd.type === 'energy/get_prefs')
+      return ok(this.missing ? { energy_sources: [], device_consumption: [] } : {
+        energy_sources: [{ type: 'grid', stat_energy_from: 'sensor.test_grid_in', stat_energy_to: null, stat_cost: 'sensor.test_grid_cost',
+          entity_energy_price: 'sensor.test_grid_price', stat_rate: 'sensor.test_grid_power' }],
+        device_consumption: [{ stat_consumption: 'sensor.test_kettle' }] });
+    if (cmd.type === 'recorder/statistics_during_period') {
+      const step = cmd.period === 'day' ? 24 * 3600000 : cmd.period === 'hour' ? 3600000 : 300000;
+      const midnight = new Date(Date.now()); midnight.setHours(0, 0, 0, 0);
+      // a lighter yesterday: today reads "more than yesterday by now" whatever the minute
+      const rows = (k) => { const out = []; for (let t = Date.parse(cmd.start_time); t < Date.now(); t += step) out.push({ start: t, end: t + step, change: +((t < +midnight ? 0.7 : 1) * k * step / 300000).toFixed(4) }); return out; };
+      const r = {};
+      for (const id of cmd.statistic_ids || []) r[id] = rows(id.endsWith('_cost') ? 0.011 : 0.04);
+      return ok(r);
+    }
+    if (cmd.type === 'recorder/list_statistic_ids') return ok([]);
+    return null;
+  }
   disconnect() { this.down = true; this.t.log.push('ha: disconnected'); this.push(); this.t.b.settle(1500); }
   reconnect() { this.down = false; this.t.log.push('ha: reconnected'); this.push(); this.t.b.settle(1500); }
   react(evs) {  // the HA side of service calls in a gesture's events
@@ -94,7 +156,11 @@ class FakeHA {
 
 // ---------------------------------------------------------------- the test context (`t` in a test's run)
 class Ctx {
-  constructor(b) { this.b = b; this.log = []; this.fails = []; this.ha = new FakeHA(this); this.comp = null; }
+  constructor(b) {
+    this.b = b; this.log = []; this.fails = []; this.ha = new FakeHA(this); this.comp = null;
+    const tick = b.tick.bind(b);
+    b.tick = (n = 1) => { for (let i = 0; i < n; i++) { tick(1); this.ha.serve(); } };  // the fake HA's replies (FakeHA.serve, opt in)
+  }
   // -- mount
   async mount(comp, props = {}) {
     this.comp = comp; this.props = props;

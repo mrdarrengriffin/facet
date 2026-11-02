@@ -8,9 +8,10 @@ import fs from 'node:fs';
 import { DEMO } from '../../tools/demo_ha.mjs';
 const SCHEMA = JSON.parse(fs.readFileSync(new URL('../../catalogue/schema.json', import.meta.url)));
 const W = 'weather.test_home';  // the demo set has no weather entity: the test gives one (NOT a real entity)
-// with entity data in the fake HA; weather_days (its forecast) and calendar (events) by a service reply, energy (the dashboard over a WebSocket),
-// moon and timer (the panel's own) reach only their empty / loading states here: their recovery is their own tests'
-const DATA = ['clock', 'weather', 'media', 'light', 'living_room'];
+// screens that show data from the fake HA (its entities, and its replies: weather.get_forecasts, calendar.get_events,
+// the Energy dashboard's WebSocket reads over the panel's own link); Moon and Timer are the panel's own
+const DATA = ['clock', 'weather', 'weather_days', 'calendar', 'media', 'energy', 'light', 'living_room'];
+const C = 'calendar.test_family';  // a calendar the fake knows (NOT a real entity)
 const SHIPPED = ['clock', 'weather', 'weather_days', 'calendar', 'media', 'energy', 'light', 'living_room', 'moon', 'timer'];
 const props = (id) => {
   const p = { screen: id };
@@ -18,43 +19,65 @@ const props = (id) => {
   if (ps.source?.options?.includes('ha')) p.source = 'ha';
   for (const [k, v] of Object.entries(ps)) {  // each entity param: the first demo entity of its domain (as the leak rule)
     if (v.type !== 'entity' && v.type !== 'entities') continue;
-    const e = Object.keys(DEMO).find((x) => x.startsWith(`${v.domain}.`)) ?? (v.domain === 'weather' ? W : null);
+    const e = Object.keys(DEMO).find((x) => x.startsWith(`${v.domain}.`)) ?? (v.domain === 'weather' ? W : v.domain === 'calendar' ? C : null);
     if (e) p[k] = e;
   }
   return p;
 };
+const ENTITIES = () => ({ [W]: { '': 'cloudy', temperature: '10.2', humidity: '81', wind_speed: '12' },
+  [C]: { '': 'off', friendly_name: 'Family' },
+  'sensor.test_grid_price': { '': '0.275', unit_of_measurement: 'GBP/kWh' }, 'sensor.test_grid_power': { '': '420', unit_of_measurement: 'W' } });
+// a feed refreshes at least once a minute: a minute of panel time, so every screen has had its next round. Energy
+// times its reads by the wall clock (time()), so the wall clock moves the same minute (Date.now, restored after each test)
+const realNow = Date.now;
+let ahead = 0;
+const wait = (t) => { ahead += 62000; Date.now = () => realNow() + ahead; t.b.tick(Math.ceil(62000 / 16)); };
 async function show(t, id, missing) {
   const get = t.ha.get.bind(t.ha);
+  t.ha.answers = true, t.ha.missing = !!missing, t.ha.fail = false;
+  Object.assign(t.ha.s, ENTITIES());
   if (missing) t.ha.get = () => undefined;  // Home Assistant has none of the entities the screen asks for
-  try { await t.mount('spec', props(id)); } finally { t.ha.get = get; }
-  t.b.settle(1500);
+  try {
+    await t.mount('spec', props(id));
+    // Energy reads HA's Energy dashboard over the panel's own link: linked to the fake (NOT a real Home Assistant)
+    JSON.parse(t.b.spec('act', { do: 'ha.connect', url: 'http://fake-ha.test:8123', token: 'testtoken1234' }) || '{}');
+    wait(t);
+  } finally { t.ha.get = get; }
   return t.texts();
 }
 const tests = SHIPPED.map((id) => ({
   name: `${id}: missing, unavailable, network pulled and restored`,
-  async run(t) {
-    const none = await show(t, id, true);  // built (a crash throws) and draws its empty / loading state
-    t.ok(none.length > 0, `${id} missing: the screen draws (${none.join(' | ')})`);
-    t.log.push(`${id} missing: ${none.join(' | ')}`);
-    t.ha.s[W] = { '': 'cloudy', temperature: '10.2', humidity: '81', wind_speed: '12' };
-    const ok = await show(t, id, false);
+  async run(t) { try { await check(t, id); } finally { Date.now = realNow, ahead = 0; } },
+}));
+// texts with their digits masked: the same data after a minute is the same text (the time, a growing total)
+const shape = (xs) => [...new Set(xs.map((x) => x.replace(/\d+/g, '#')))];
+async function check(t, id) {
+  {
+    const none0 = await show(t, id, true);  // built (a crash throws) and draws its empty / loading state
+    const none = shape(none0);
+    t.ok(none0.length > 0, `${id} missing: the screen draws (${none0.join(' | ')})`);
+    t.log.push(`${id} missing: ${none0.join(' | ')}`);
+    const ok = shape(await show(t, id, false));
     const data = ok.filter((x) => !none.includes(x));
     const wants = [...new Set(t.ha.wants().map(([e]) => e))];
     if (DATA.includes(id)) t.ok(data.length > 0, `${id}: its data shows (else this test checks nothing)`);
     t.log.push(`${id}: ${wants.length} entities, data texts: ${data.join(' | ')}`);
     // unavailable: every entity it reads
+    t.ha.fail = true;  // its replies fail too (the forecast, the events, the Energy dashboard)
     for (const e of wants) t.ha.unavailable(e);
-    const un = t.texts();
+    wait(t);
+    const un = shape(t.texts());
     t.eq(data.filter((x) => un.includes(x)), [], `${id} unavailable: no stale paint`);
-    for (const e of wants) if (e === W) t.ha.s[W] = { '': 'cloudy', temperature: '10.2', humidity: '81', wind_speed: '12' }; else delete t.ha.s[e];
-    t.ha.push(); t.b.settle(1500);
-    t.eq(data.filter((x) => !t.texts().includes(x)), [], `${id} available again: the data back`);
+    t.ha.fail = false;
+    for (const e of wants) { delete t.ha.s[e]; if (ENTITIES()[e]) t.ha.s[e] = ENTITIES()[e]; }
+    t.ha.push(); wait(t);
+    t.eq(data.filter((x) => !shape(t.texts()).includes(x)), [], `${id} available again: the data back`);
     // the network pulled, then restored
-    t.ha.disconnect();
-    const off = t.texts();
+    t.ha.disconnect(); wait(t);
+    const off = shape(t.texts());
     t.eq(data.filter((x) => off.includes(x)), [], `${id} network pulled: no stale paint`);
-    t.ha.reconnect();
-    t.eq(data.filter((x) => !t.texts().includes(x)), [], `${id} network restored: the data back, no rebuild`);
-  },
-}));
+    t.ha.reconnect(); wait(t);
+    t.eq(data.filter((x) => !shape(t.texts()).includes(x)), [], `${id} network restored: the data back, no rebuild`);
+  }
+}
 export default { id: 'release_states', family: 'device', about: 'Release dry-run: every shipped screen with its entities missing, unavailable, the network pulled and restored.', tests };
