@@ -374,6 +374,20 @@ the editor). A new source = a new adapter + its row: no screen, spec or componen
 one integration's fields only works in the homes that have it. *Check:* TODO (lint: a contract spec's binds name
 `panel.*` feeds or the screen's own params; each feed's adapters in sources.json exist in code).
 
+**C51a. Every feed is built on the Feed base (`core/feed.h`).** The base owns the poll timer and its cadence (only
+while something reads the feed), the feed's settings and their changes, the entities it reads live (a change, and Home
+Assistant coming back, runs a round), and its state; the adapter writes only `fill()` (and `sample()`). A feed's
+**state** is its entity's state: `ok`, `loading` (nothing yet), `error` (the source cannot be reached or is not set
+up) or `empty` (reached, nothing to show). A screen shows a state that is not ok in the same words everywhere,
+`feed::words`: **Loading**, **Offline**, **Nothing yet**; nothing else says "no data yet". Every field is declared
+once, **required** or **optional**, with its **placeholder**: a round that does not fill a field puts its placeholder
+(an optional field a source cannot fill: `""`, so the component bound to it hides and the screen shows what is left;
+`sources/sources.json` lists the same per feed), and an ok round that misses a required field turns the feed to
+`error`. The sample data lives in ONE place per feed, its `sample()`: what it puts is the feed's sample words, the
+words a screen on real data must never show.
+*Why:* six adapters each made their own timer, settings check and "Loading" words, and drifted. *Check:* the feed's
+functional tests (sample, ha, unavailable and back); the leak rule (sample words on real data).
+
 **C52. Every screen comes with its Home card.** A screen's spec carries `"card"`: the Card a Home page card for it
 shows (icon = the screen's icon top left, preview artwork top right, the value or words that matter now, the sub
 line), bound to the SAME feeds as the screen (C51); Home applies the page's feed settings, so the card and the screen

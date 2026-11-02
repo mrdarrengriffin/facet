@@ -1,7 +1,9 @@
 // The weather feed (CONTRACT.md C51): the reserved entity panel.weather (core/spec.h "local sources") in the HA store,
-// the one shape the Weather screen, its next 5 days and its Home card bind to, whatever gives the forecast. Same file
-// on the panels and in WASM. Words and units are Facet's (core/weather.h: the condition's words, whole degrees).
-//   state      ok | loading (no weather yet) | error (the source is unavailable)
+// the one shape the Weather screen, its next 5 days and its Home card bind to, whatever gives the forecast. Built on
+// the Feed base (core/feed.h: rounds every minute while read, settings, state, fields + placeholders, the sample in
+// sample()). Same file on the panels and in WASM. Words and units are Facet's (core/weather.h: the condition's words, whole degrees).
+//   state      ok | loading (no weather yet) | error (the source is unavailable); not ok = feed::words (Loading /
+//              Offline) as the condition and the card, every other field its placeholder (FIELDS)
 //   icon       the weather icon now ("partly-day", "rain-light", "clear-night": by day or night)
 //   temp       "13°" ("--°" while loading / on error); condition "Partly cloudy" ("Loading" / "Offline")
 //   line       "Feels 11° · high 16°, low 8°" (the parts it knows)
@@ -26,6 +28,7 @@
 // More adapters (Open-Meteo called by the panel itself, Met Office ...) = more rows here, no screen change.
 #include <cstdio>
 #include <ctime>
+#include "feed.h"
 #include "fw.h"
 #include "ha.h"
 #include "sun.h"
@@ -33,10 +36,8 @@
 
 namespace fw::dev::weather_source {
 namespace {
-constexpr const char *E = "panel.weather";
 constexpr double HOUR = 3600000;
-lv_timer_t *tick = nullptr;
-std::string cfg_seen, ent_now;
+std::string ent_now;
 double lat = 52.2, lon = -1.2;
 // the forecasts an ask brought (ha adapter): ms times
 std::vector<wx::Hour> hours_got;
@@ -96,10 +97,18 @@ std::string lower(std::string s) {
   return s;
 }
 
+// the feed's fields: required = what every screen on it needs; the rest are optional, with what they show when a
+// source cannot fill them (C51: the component hides an empty one)
+std::vector<feed::Field> FIELDS = {{"icon", true, "cloudy"}, {"temp", true, "--\xC2\xB0"}, {"condition", true, ""},
+                                   {"card", true, ""}, {"brief", false, ""}, {"line", false, ""}, {"rain", false, ""},
+                                   {"rain_tone", false, "idle"}, {"hours", false, "[]"}, {"has_hours", false, ""},
+                                   {"days", false, "[]"}};
+std::function<void(const char *, const std::string &)> put;  // the feed's put (Weather below)
+void put_state(feed::State s);
+
 // the feed from one Data (the sample's, or what the ha adapter gathered)
 void put_data(const wx::Data &d, double now) {
-  auto put = [](const char *a, const std::string &x) { ha::put(E, a, x); };
-  put("", "ok");
+  put_state(feed::OK);
   put("icon", wx::icon(d.condition, is_day(now)));
   put("temp", std::isnan(d.temp) ? "--\xC2\xB0" : wx::deg(d.temp));
   put("condition", words(d.condition));
@@ -153,28 +162,18 @@ void put_data(const wx::Data &d, double now) {
   if (ds.isNull()) js = "[]"; else serializeJson(ds, js);
   put("days", js);
 }
-void put_empty(const char *state) {  // loading / error: the words only (no icon, rain line or hours: the docs)
-  const bool err = !strcmp(state, "error");
-  ha::put(E, "", state);
-  ha::put(E, "icon", "cloudy");
-  ha::put(E, "temp", "--\xC2\xB0");
-  ha::put(E, "condition", err ? "Offline" : "Loading");
-  ha::put(E, "line", "");
-  ha::put(E, "rain", "");
-  ha::put(E, "rain_tone", "idle");
-  ha::put(E, "card", err ? "offline" : "loading");
-  ha::put(E, "brief", "");
-  ha::put(E, "hours", "[]");
-  ha::put(E, "has_hours", "");
-  ha::put(E, "days", "[]");
+void put_empty(feed::State st) {  // loading / error: the words only (no icon, rain line or hours: the docs); the rest
+  put_state(st);                 // shows its placeholders
+  put("condition", feed::words(st));
+  put("card", lower(feed::words(st)));
 }
 
 // ---- ha adapter
 void rebuild() {
   if (ent_now.empty()) return;
   const std::string *state = ha::get(ent_now), *t = ha::get(ent_now, "temperature"), *f = ha::get(ent_now, "apparent_temperature");
-  if (!state || state->empty()) { put_empty("loading"); return; }
-  if (*state == "unavailable" || *state == "unknown") { put_empty("error"); return; }
+  if (!state || state->empty()) { put_empty(feed::LOADING); return; }
+  if (*state == "unavailable" || *state == "unknown") { put_empty(feed::ERROR); return; }
   const double now = now_ms();
   wx::Data d;
   d.condition = keep(state->c_str());
@@ -227,8 +226,8 @@ void forecasts(const std::string &json, bool daily) {
     else if (hours_got.size() < 24) hours_got.push_back({t, c, temp, pr});
   }
 }
-void answered_h(void *, bool ok, const std::string &json) { waiting_h = false; if (ok) forecasts(json, false); rebuild(); }
-void answered_d(void *, bool ok, const std::string &json) { waiting_d = false; if (ok) forecasts(json, true); rebuild(); }
+void answered_h(void *, bool ok, const std::string &json);
+void answered_d(void *, bool ok, const std::string &json);
 void fetch(const std::string &ent) {
   fetched_hour = std::floor(now_ms() / HOUR), fetched_at = lv_tick_get();
   for (int daily = 0; daily < 2; daily++) {
@@ -242,32 +241,40 @@ void fetch(const std::string &ent) {
     if (*ha::ask("weather.get_forecasts", qs.c_str(), daily ? answered_d : answered_h, nullptr)) w = false;
   }
 }
-void entity_put(const std::string &e, const std::string &a, const std::string &) {
-  if (!ent_now.empty() && e == ent_now && (a.empty() || a == "temperature" || a == "apparent_temperature")) rebuild();
-}
+class Weather : public feed::Feed {
+ public:
+  Weather() : Feed("panel.weather", 60000, "ha", FIELDS) {}
+  using Feed::put;
+  using Feed::state;
 
-void fresh() {
-  if (!tick) tick = lv_timer_create([](lv_timer_t *) { if (ha::watched(E)) fresh(); }, 60000, nullptr);
-  const std::string &cfg = ha::feed_config(E);
-  ArduinoJson::JsonDocument c;
-  deserializeJson(c, cfg.empty() ? "{}" : cfg.c_str());
-  const std::string src = c["source"] | "ha", ent = c["weather"] | "";
-  const char *la = c["lat"] | "", *lo = c["lon"] | "";
-  lat = *la ? strtod(la, nullptr) : 52.2, lon = *lo ? strtod(lo, nullptr) : -1.2;
-  const bool changed = cfg != cfg_seen;
-  cfg_seen = cfg;
-  static const bool hooked = (ha::on_put(entity_put), true);
-  (void) hooked;
-  if (src == "ha" && ent.rfind("weather.", 0) == 0) {
-    if (changed || ent != ent_now) {
-      hours_got.clear(), days_got.clear(), fetched_hour = -1, ent_now = ent;
-      for (const char *a : {"", "temperature", "apparent_temperature"}) ha::want(ent, a);  // the weather now, live
-    }
+ protected:
+  void sample() override {
+    ent_now.clear();
+    reads({});
+    place();
+    const double now = now_ms();
+    put_data(wx::sample(now), now);
+  }
+  void fill() override {
+    place();
+    const std::string ent = cfg()["weather"] | "";
+    if (ent.rfind("weather.", 0) != 0) { ent_now.clear(); reads({}); put_empty(feed::ERROR); return; }  // no weather entity picked
+    if (changed() || ent != ent_now) hours_got.clear(), days_got.clear(), fetched_hour = -1, ent_now = ent;
+    reads({{ent, ""}, {ent, "temperature"}, {ent, "apparent_temperature"}});  // the weather now, live
     rebuild();
-    if (changed || std::floor(now_ms() / HOUR) != fetched_hour || lv_tick_elaps(fetched_at) > 30 * 60000u) fetch(ent);
-  } else if (src == "ha") { ent_now.clear(); put_empty("error"); }  // no weather entity picked
-  else { ent_now.clear(); const double now = now_ms(); put_data(wx::sample(now), now); }
-}
-[[maybe_unused]] const bool registered = (ha::on_local(E, fresh), true);  // binds on panel.weather never reach a host
+    if (changed() || back() || std::floor(now_ms() / HOUR) != fetched_hour || lv_tick_elaps(fetched_at) > 30 * 60000u) fetch(ent);
+  }
+
+ private:
+  void place() {  // day or night: the sun at the feed's place
+    const char *la = cfg()["lat"] | "", *lo = cfg()["lon"] | "";
+    lat = *la ? strtod(la, nullptr) : 52.2, lon = *lo ? strtod(lo, nullptr) : -1.2;
+  }
+};
+Weather F;
+void put_state(feed::State s) { F.state(s); }
+[[maybe_unused]] const bool wired = (put = [](const char *a, const std::string &x) { F.put(a, x); }, true);
+void answered_h(void *, bool ok, const std::string &json) { waiting_h = false; if (ok) forecasts(json, false); F.run(); }
+void answered_d(void *, bool ok, const std::string &json) { waiting_d = false; if (ok) forecasts(json, true); F.run(); }
 }  // namespace
 }  // namespace fw::dev::weather_source
