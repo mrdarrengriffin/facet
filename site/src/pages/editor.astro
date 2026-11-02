@@ -1,0 +1,98 @@
+---
+// Editor: the panel's own web page (workbench/EDITOR-V1.md, the v1 scope). The pictures are the clickable mock
+// (workbench /wasm/editor-v1, captured into public/editor/); each is replaced by a panel screenshot as its part lands.
+import Docs, { type Heading } from '../layouts/Docs.astro';
+import { url } from '../lib/nav';
+
+const headings: Heading[] = [
+  { depth: 2, slug: 'open', text: 'Opening it' },
+  { depth: 2, slug: 'screens', text: 'Screens' },
+  { depth: 2, slug: 'screen-settings', text: "A screen's settings" },
+  { depth: 2, slug: 'panel-settings', text: 'Panel settings' },
+  { depth: 2, slug: 'send', text: 'Send, check, undo' },
+  { depth: 2, slug: 'not-yet', text: 'Not in this version' },
+];
+const pic = (name: string, alt: string) => ({ src: url(`/editor/${name}.png`), alt });
+---
+
+<Docs edit="site/src/pages/editor.astro" title="Editor" description="The panel's own web page: choose and order its screens, set each one up, set the panel, then send, check and undo." group="Use Facet" current={url('/editor/')} headings={headings}>
+  <p class="lede">
+    Every Facet panel serves its own editor. Open the panel's address in a browser to choose its screens and their
+    order, set each one up and set the panel, then send it all and see the panel check it. Nothing else is needed: no
+    add-on, no hub, the same page on both panels.
+  </p>
+
+  <div class="callout">
+    <span class="dot" aria-hidden="true"></span>
+    <p>The editor is being built for Facet 1.0. The pictures here are from its design mock; each is replaced by a screenshot from a panel as that part lands.</p>
+  </div>
+
+  <h2 id="open">Opening it</h2>
+  <p>
+    Type the panel's address into a browser on the same network: <code>http://facet-</code> and the six characters on
+    the panel's Set up screen, then <code>.local/</code>, for example <code>http://facet-1a2b3c.local/</code>. The page
+    talks to the panel directly.
+  </p>
+
+  <h2 id="screens">Screens</h2>
+  <figure class="editor-shot">
+    <img {...pic('screens', 'The Screens list: Home first, then each screen with a live thumbnail, its data source, up and down buttons and an on / off switch')} width="1200" height="820" loading="lazy" />
+  </figure>
+  <p>
+    Every screen the panel has, plus Home, in one list. Each row has a live thumbnail, where its data comes from, an
+    on / off switch, and a handle to drag it into place (up and down buttons too). The order is the order you swipe
+    through and the order of Home's cards. A screen that is off stays in its place, greyed, and is left off the panel.
+    Home and the start page cannot be turned off. The start page is Home unless you pick another.
+  </p>
+
+  <h2 id="screen-settings">A screen's settings</h2>
+  <figure class="editor-shot">
+    <img {...pic('screen-settings', "One screen's settings: its preview, large, beside its settings")} width="1200" height="820" loading="lazy" />
+  </figure>
+  <p>
+    Tap a screen to see it large beside its settings. An entity is picked from the panel's own Home Assistant, a list of
+    entities is a multiple choice, a short choice is a row of buttons. The preview follows every change. <strong>Back to
+    defaults</strong> undoes a screen's settings.
+  </p>
+
+  <h2 id="panel-settings">Panel settings</h2>
+  <figure class="editor-shot">
+    <img {...pic('panel-settings', 'Panel settings: the Home Assistant link, the Home header buttons and the look, with Home previewed')} width="1200" height="820" loading="lazy" />
+  </figure>
+  <p>
+    The panel's link to Home Assistant comes first: its address and a long-lived token, typed once on this page and sent
+    straight to the panel. The token is never shown again, only its last four characters. Then the buttons at the top of
+    Home, and the panel's settings in their groups: Look, Sound, Clock and idle, Behaviour, Units and AI agents. The
+    preview is Home with the look applied.
+  </p>
+
+  <h2 id="send">Send, check, undo</h2>
+  <figure class="editor-shot">
+    <img {...pic('review', 'Review before sending: each change in words, was and now, and the panel ready to send')} width="1200" height="820" loading="lazy" />
+  </figure>
+  <p>
+    The top bar counts your changes. <strong>Review and send</strong> lists each one in words, what it was and what it
+    becomes, and the panel checks them before anything is sent. A problem is named next to the screen or setting it is
+    about. If the panel refuses a send, your edits stay. <strong>Undo last send</strong> puts back what the panel had
+    before; <strong>Back to factory</strong> returns it to the screens it came with.
+  </p>
+
+  <h2 id="not-yet">Not in this version</h2>
+  <p>
+    Building your own screens from parts, editing themes and changing Home's card sizes come later. Until then, screens
+    of your own can be made as specs: see <a href={url('/ai/')}>Make screens with AI</a>.
+  </p>
+</Docs>
+
+<style>
+  .editor-shot {
+    margin: 16px 0;
+  }
+  .editor-shot img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border: 1px solid var(--facet-color-line);
+    border-radius: 12px;
+  }
+</style>

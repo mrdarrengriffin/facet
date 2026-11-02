@@ -1,0 +1,16 @@
+---
+// A page that moved: old links land on the new one (a meta refresh; the link for browsers that do not follow it).
+interface Props { to: string; name: string }
+const { to, name } = Astro.props;
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Moved · Facet</title>
+    <meta name="robots" content="noindex" />
+    <meta http-equiv="refresh" content={`0; url=${to}`} />
+    <link rel="canonical" href={to} />
+  </head>
+  <body><p>This page moved to <a href={to}>{name}</a>.</p></body>
+</html>

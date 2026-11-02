@@ -1,0 +1,74 @@
+---
+// Spec format: what a screen is made of (a JSON spec of contract components), the budgets the panel checks (catalogue
+// budget, lib/counts.ts), how a prop binds to Home Assistant or to a feed (the panel.<feed> entities a source fills), and
+// the deck that lists a panel's pages. Moved from Make screens with AI, which now links here.
+import Docs, { type Heading } from '../../layouts/Docs.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+import Count from '../../components/Count.astro';
+import { url } from '../../lib/nav';
+import schema from '../../../../renderer/catalogue/schema.json';
+
+const headings: Heading[] = [
+  { depth: 2, slug: 'spec', text: 'A screen is a spec' },
+  { depth: 2, slug: 'bind', text: 'Binding to Home Assistant' },
+  { depth: 2, slug: 'feeds', text: 'Feeds' },
+  { depth: 2, slug: 'limits', text: 'What the panel checks' },
+  { depth: 2, slug: 'deck', text: 'The deck' },
+];
+const spec = {
+  v: 1, id: 'bin_day', name: 'Bin day', rev: 1, role: 'page',
+  header: { label: 'Bin day', back: true },
+  layout: 'list',
+  nodes: [
+    { c: 'hero_block', p: { n: { e: 'sensor.bin_days', s: '2' }, label: 'days to bin day', line: { e: 'sensor.bin_next', s: 'Recycling · Tue' } } },
+    { c: 'section_header', p: { title: 'next collections' } },
+    { c: 'list_row', p: { title: 'Recycling', trailing: 'value', value: { e: 'sensor.bin_recycling', s: 'Tue 27 Oct' } } },
+  ],
+};
+const feeds = Object.keys((schema.feeds as { list: Record<string, unknown> }).list);
+---
+
+<Docs edit="site/src/pages/inside/spec.astro" title="Spec format" description="How a Facet screen is written: a short JSON spec of components, bound to Home Assistant, checked by the panel." group="Inside Facet" current={url('/inside/spec/')} headings={headings}>
+  <p class="lede">
+    Every Facet screen, the factory ones included, is a short JSON spec: a header, a layout and a list of components,
+    each with its props. There are no positions, sizes, colours or fonts in a spec; those come from the tokens.
+  </p>
+
+  <h2 id="spec">A screen is a spec</h2>
+  <CodeBlock json={spec} label="Spec · JSON" copyLabel="Copy spec" />
+  <p>
+    <code>c</code> names a component and <code>p</code> holds its props. The factory specs are
+    <Count k="specMinKB" /> to <Count k="specMaxKB" /> KB each.
+    The components a spec can name, and every prop of each, are on <a href={url('/components/')}>Components</a>.
+  </p>
+
+  <h2 id="bind">Binding to Home Assistant</h2>
+  <p>
+    A prop can be a fixed value or bound to an entity: <code>{'{"e": "sensor.bin_days"}'}</code> shows its state,
+    <code>{'{"e": "light.ceiling", "a": "brightness"}'}</code> one of its attributes, and <code>s</code> is what a
+    preview shows instead. The screen updates by itself when the entity changes.
+  </p>
+
+  <h2 id="feeds">Feeds</h2>
+  <p>
+    Some screens need more than an entity's state: a forecast, a calendar's events, the energy used today. A feed is an
+    entity of the panel's own (<code>panel.weather</code>, <code>panel.calendar</code>, ...) that a source fills, from
+    Home Assistant or worked out on the panel, and the screen binds to it like any entity. The panel has these feeds:
+    {feeds.map((f, i) => <>{i > 0 && ', '}<code>{f}</code></>)}.
+  </p>
+
+  <h2 id="limits">What the panel checks</h2>
+  <ul>
+    <li><strong>Components and tokens only.</strong> A spec can only name components the firmware ships. Spacing, type, colour and motion come from the tokens, in light and dark, so a spec cannot pick an off-grid gap or an unreadable colour.</li>
+    <li><strong>Budgets.</strong> A screen is capped at <Count k="nodes" /> components, <Count k="binds" /> entity bindings and <Count k="specKB" /> KB, so it builds fast on the panel. A panel holds up to <Count k="deckScreens" /> screens.</li>
+    <li><strong>Checked before it is kept.</strong> The panel checks a spec before it keeps it and answers with what is wrong and where (an unknown prop, a value out of range). Nothing it refuses replaces what was there.</li>
+    <li><strong>Layout rules.</strong> One hero per screen, rows that touch, more space between groups: the layout applies them, not the spec.</li>
+  </ul>
+
+  <h2 id="deck">The deck</h2>
+  <p>
+    The deck is the panel's list of pages: Home and its cards, then the screens you swipe to, in order, each with its
+    settings. The <a href={url('/editor/')}>editor</a> sends a deck; so can an agent or Home Assistant. The routes and
+    actions that take specs and decks are on <a href={url('/inside/schema/')}>Schema</a>.
+  </p>
+</Docs>

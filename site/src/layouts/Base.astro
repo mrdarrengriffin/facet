@@ -14,6 +14,7 @@ import '../data/tokens.css';
 import '../styles/global.css';
 import '../styles/live.css';
 import '../styles/site.css';
+import SiteFooter from '../components/SiteFooter.astro';
 import Header from '../components/Header.astro';
 import Search from '../components/Search.astro';
 import { ACCENTS, BASE, SOUND, TOKENS } from '../lib/data';
@@ -80,6 +81,7 @@ const bg = (TOKENS.colour as { colours: Record<string, { dark: string; light: st
     <a class="skip-link" href="#main">Skip to content</a>
     <Header hasSidebar={hasSidebar} />
     <slot />
+    <SiteFooter />
     <Search />
     <script is:inline>
       // sidebar keeps its scroll across page loads (a click lost his place); per sidebar kind

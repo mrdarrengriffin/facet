@@ -1,42 +1,20 @@
 ---
-// Home page: the original Facet site's landing layout (main a5df2ac: site/src/pages/index.astro) as a short intro:
-// what Facet is, a glimpse of how it's built, then a walk into the docs. Every example is the
-// real WASM component. The hero is the live panel (the Device component started on Home, as on the screen pages):
-// tap a card and its screen opens, Back returns. The Screens step shows the released screens as still pictures.
-// The intro and the idea behind the name are drafts.
+// Home page: what Facet is in one line, the panel (a render: the live Device on Home inside a bezel, until a photo of a
+// real panel replaces it), the shipped screens live, set up in three steps, then the two panels and Install. No
+// feature grid. Every screen here is the real WASM renderer on sample data (lib/sample-ha.ts).
 import Base from '../layouts/Base.astro';
 import Live from '../components/Live.astro';
-import { COMPONENTS, FOUNDATIONS, SCREENS, href, screenById, screenHref } from '../lib/data';
-import { UPDATES_PAGE, url } from '../lib/nav';
-import previews from '../data/previews.json';
+import Count from '../components/Count.astro';
+import { SCREENS, screenById, screenHref } from '../lib/data';
+import { BOARDS, screenOf } from '../lib/boards';
+import { url } from '../lib/nav';
 
-const description =
-  'Wall panel UI for Home Assistant. One design system for ESP32 touch panels (ESPHome and LVGL), shown here by the same renderer the panels run.';
-
+const description = 'Firmware for two 4 inch wall panels that shows and controls your home through Home Assistant.';
 // the hero: a whole panel, live (sample data, no Home Assistant)
 const hero = screenById('home');
-// the screens step: every released screen (not WIP), still, each opening its page
-const released = SCREENS.filter((s) => s.status !== 'wip');
-// previews rendered by the WASM build at extract time (scripts/extract.mjs 5e): still PNGs, both themes, linking
-// to their pages
-type Shot = { id: string; section: string; label: string; name: string; w: number; h: number };
-const shots = previews.shots as Shot[];
-const shotHref = (sh: Shot) => href({ id: sh.id, section: sh.section });
-const pic = (sh: Shot, theme: string) => url(`/previews/${sh.id}-${theme}.png`);
-const fShots = shots.filter((x) => x.section === 'foundations');
-const cShots = shots.filter((x) => x.section === 'components');
-// a glimpse of the foundations: links to the rest
-const glimpse = ['space', 'motion', 'states', 'icons']
-  .map((id) => FOUNDATIONS.find((f) => f.id === id))
-  .filter((f) => f !== undefined);
-
-const steps = [
-  { title: 'Getting started', text: 'Install from Chrome or Edge over USB-C, then add the panel to Home Assistant.', href: url('/docs/') },
-  { title: 'Screens', text: `${SCREENS.length} screens, each running live on its page as it does on a panel.`, href: url('/screens/') },
-  { title: 'Design system', text: 'The foundations: colour, type, space, layout, motion, states, icons.', href: url('/foundations/') },
-  { title: 'Components', text: `${COMPONENTS.length} components, each with a playground: change its props, tap it, hear it.`, href: url('/components/') },
-  { title: 'Roadmap', text: "Where it's headed, and what's done.", href: url('/roadmap/') },
-];
+// the shipped screens: every factory spec screen with a page, live; its first sentence under it
+const shipped = SCREENS.filter((s) => s.comp === 'spec' && s.status !== 'wip');
+const first = (t: string) => t.split(/(?<=\.)\s/)[0];
 ---
 
 <Base title="Facet" description={description}>
@@ -45,20 +23,14 @@ const steps = [
       <div class="landing__intro">
         <h1 class="landing__title">Facet</h1>
         <p class="landing__lede">{description}</p>
-        <!-- intro: draft -->
         <p class="landing__intro-text">
-          Facet is firmware for two 4-inch wall panels that show and control your home through Home Assistant. One
-          C++/LVGL renderer draws it on the panel and, compiled to WebAssembly, on this site: {SCREENS.length} screens
-          built from {COMPONENTS.length} components.
+          Install it from your browser, add the panel to Home Assistant, then choose its screens on the panel's own web
+          page. It runs on the Waveshare ESP32-P4-86 and the Guition ESP32-S3-4848S040.
         </p>
         <div class="landing__actions">
-          <a class="button button--primary" href={url('/screens/')}>See the screens</a>
-          <a class="button button--secondary" href={url('/components/')}>Browse components</a>
+          <a class="button button--primary" href={url('/install/')}>Install</a>
+          <a class="button button--secondary" href={url('/screens/')}>See the screens</a>
         </div>
-        <p class="landing__docs">
-          New here? Start with <a href="#start">where to go next</a>, or see what's coming on the{' '}
-          <a href={url('/roadmap/')}>roadmap</a>.
-        </p>
       </div>
 
       {
@@ -69,129 +41,72 @@ const steps = [
                 <Live comp="device" props={{ start: 'home' }} label="Facet panel" frame={hero.frame} caption={false} />
               </div>
             </div>
-            <figcaption>A panel, live, on made-up devices. Tap a card to open its screen; its Settings (theme, accent, sound pack) are this site's too.</figcaption>
+            <figcaption>The panel, running here on made-up devices. Tap a card to open its screen.</figcaption>
           </figure>
         )
       }
     </section>
 
-    <section class="callout callout--warn landing__status" aria-label="Project status">
+    <section class="callout landing__status" aria-label="Project status">
       <span class="dot" aria-hidden="true"></span>
-      <p>
-        <strong>Facet is new.</strong> Firmware for both panels installs from the <a href={url('/install/')}>Install</a> page;
-        screens and settings still change between releases{UPDATES_PAGE ? <>; the{' '}
-        <a href={url('/updates/')}>updates page</a> shows what changed lately.</> : '.'}
-      </p>
+      <p><strong>Facet is new.</strong> Screens and settings still change between releases; <a href={url('/updates/')}>Updates</a> says what is next.</p>
     </section>
 
-    <section class="landing__section" aria-labelledby="what-title">
+    <section class="landing__section" aria-labelledby="screens-title">
       <div class="landing__head">
-        <h2 id="what-title">What Facet is</h2>
-        <!-- the idea behind the name: draft -->
-        <blockquote class="landing__definition">
-          <p><strong>facet</strong> <em>noun</em><br />one part of a subject, situation, etc. that has many parts</p>
-          <p class="landing__source"><a href="https://dictionary.cambridge.org/dictionary/english/facet">Cambridge Dictionary</a></p>
-        </blockquote>
-        <p>
-          Each screen does one job, from a light's dial to the weather or the moon. They share one set of tokens and
-          components, so a button on the Timer screen is the same button on Media.
-        </p>
-        <p>
-          Two panels for now: the Waveshare ESP32-P4-86 (720 × 720, with a speaker) and the Guition ESP32-S3-4848S040
-          (480 × 480). Colour, type, space, motion and sound are named tokens in one set of files; the panels and this
-          site are built from the same files, so every preview here is what a panel draws.
-        </p>
+        <h2 id="screens-title">The screens</h2>
+        <p><Count k="screens" /> screens come with Facet, plus Home and Settings. Each one below is live: tap it as you would on the panel.</p>
       </div>
+      <ul class="shots">
+        {shipped.map((sc) => (
+          <li>
+            <a class="shot" href={screenHref(sc)}>
+              <span class="shot__viewport">
+                <Live comp={sc.comp} props={sc.sampleProps} label={sc.name} frame={sc.frame} caption={false} />
+              </span>
+              <span class="shot__name">{sc.name}</span>
+              <span class="shot__about">{first(sc.about)}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
     </section>
 
-    <section class="landing__section" aria-labelledby="built-title">
+    <section class="landing__section" aria-labelledby="setup-title">
       <div class="landing__head">
-        <h2 id="built-title">How it's built</h2>
-        <p>Foundations first, then components made only from them, then screens made from the components.</p>
+        <h2 id="setup-title">Set up in three steps</h2>
       </div>
-      <ol class="build">
-        <li class="build__step">
-          <h3><span class="build__n">1</span> Foundations</h3>
-          <p>The rules and tokens: every size on a 4 px grid, every colour pair contrast-tested, every sound with a reason.</p>
-          <ul class="previews previews--wide">
-            {fShots.map((sh) => (
-              <li>
-                <a class="preview" href={shotHref(sh)}>
-                  <span class="preview__img">
-                    <img class="for-dark" src={pic(sh, 'dark')} width={sh.w} height={sh.h} alt={`${sh.name}: ${sh.label}`} loading="lazy" />
-                    <img class="for-light" src={pic(sh, 'light')} width={sh.w} height={sh.h} alt={`${sh.name}: ${sh.label}`} loading="lazy" />
-                  </span>
-                  <span class="preview__name">{sh.name}</span>
-                </a>
-              </li>
-            ))}
-          </ul>
-          {previews.rules.length > 0 && (
-            <ul class="build__rules">
-              {previews.rules.map((r) => <li>{r}</li>)}
-            </ul>
-          )}
-          <p class="build__links">
-            Also: {glimpse.map((f, i) => <>{i > 0 && ' · '}<a href={href(f)}>{f.name}</a></>)} · <a href={url('/foundations/')}>all of them</a>
-          </p>
+      <ol class="setup">
+        <li>
+          <h3><span class="build__n">1</span> Install</h3>
+          <p>Plug the panel into a computer with a USB-C cable and install Facet from Chrome or Edge. No tools to download.</p>
         </li>
-        <li class="build__step">
-          <h3><span class="build__n">2</span> Components</h3>
-          <p>{COMPONENTS.length} components, each built only from the foundations. Every one has a page where you change its props, tap it and hear it.</p>
-          <ul class="previews">
-            {cShots.map((sh) => (
-              <li>
-                <a class="preview" href={shotHref(sh)}>
-                  <span class="preview__img preview__img--square">
-                    <img class="for-dark" src={pic(sh, 'dark')} width={sh.w} height={sh.h} alt={`${sh.name}: ${sh.label}`} loading="lazy" />
-                    <img class="for-light" src={pic(sh, 'light')} width={sh.w} height={sh.h} alt={`${sh.name}: ${sh.label}`} loading="lazy" />
-                  </span>
-                  <span class="preview__name">{sh.name}</span>
-                </a>
-              </li>
-            ))}
-          </ul>
-          <p class="build__links"><a href={url('/components/')}>All {COMPONENTS.length} components</a></p>
+        <li>
+          <h3><span class="build__n">2</span> Join Wi-Fi</h3>
+          <p>Scan the code on the panel with your phone and pick your home network, or set it while the panel is still plugged in.</p>
         </li>
-        <li class="build__step">
-          <h3><span class="build__n">3</span> Screens</h3>
-          <p>{SCREENS.length} screens. Most are a JSON spec of 1 to 6 KB that names its components; each runs live on its page.</p>
-          <ul class="shots">
-            {released.map((sc) => (
-              <li>
-                <a class="shot" href={screenHref(sc)}>
-                  <span class="shot__viewport">
-                    <Live comp={sc.comp} props={sc.sampleProps} label={sc.name} frame={sc.frame} caption={false} still />
-                  </span>
-                  <span class="shot__name">{sc.name}</span>
-                </a>
-              </li>
-            ))}
-          </ul>
-          <p class="build__links"><a href={url('/screens/')}>All {SCREENS.length} screens</a></p>
+        <li>
+          <h3><span class="build__n">3</span> Add to Home Assistant</h3>
+          <p>Home Assistant finds the panel. Add it and allow it to perform actions, so its controls can switch your lights.</p>
         </li>
       </ol>
+      <p class="landing__after">Then open the panel's address in a browser to choose its screens and set each one up in the <a href={url('/editor/')}>editor</a>.</p>
     </section>
 
-    <section class="landing__section" id="start" aria-labelledby="start-title">
+    <section class="landing__section" aria-labelledby="buy-title">
       <div class="landing__head">
-        <h2 id="start-title">Where to go next</h2>
+        <h2 id="buy-title">Two panels</h2>
+        <p>Facet runs on these two 4 inch wall panels. <a href={url('/panels/')}>Panels</a> compares them, with the numbers measured on each.</p>
       </div>
-      <ol class="parts parts--steps">
-        {
-          steps.map((p, i) => (
-            <li class="part">
-              <h3>
-                <span class="build__n">{i + 1}</span>
-                {p.href ? <a href={p.href}>{p.title}</a> : p.title}
-                {p.soon && <span class="badge">Soon</span>}
-              </h3>
-              <p>{p.text}</p>
-            </li>
-          ))
-        }
-      </ol>
-      <p class="landing__help">Want to help? Report a bug, test on your panel, improve the docs or write code: <a href={url('/contributing/')}>Contributing</a>.</p>
+      <ul class="buy">
+        {BOARDS.map((b) => (
+          <li>
+            <h3>{b.name}</h3>
+            <p>{screenOf(b)}, {b.chip}. {b.speaker ? 'Speaker for sounds.' : 'No speaker.'}</p>
+          </li>
+        ))}
+      </ul>
+      <a class="button button--primary" href={url('/install/')}>Install Facet</a>
     </section>
   </main>
 </Base>
@@ -225,40 +140,9 @@ const steps = [
     font-size: clamp(18px, 2.2vw, 20px);
     line-height: 1.5;
   }
-  .landing__placeholder {
-    max-width: 520px;
-    margin: 16px 0 0;
-    padding: 12px 16px;
-    border: 1px dashed var(--facet-color-line-hi);
-    border-radius: 12px;
-    color: var(--facet-color-text-dim);
-    font-size: 15px;
-  }
   .landing__intro-text {
     max-width: 520px;
     margin: 16px 0 0;
-    color: var(--facet-color-text-dim);
-  }
-  .landing__definition {
-    max-width: 520px;
-    margin: 16px 0 12px;
-    padding: 14px 20px;
-    border-radius: 12px;
-    background: var(--facet-color-surface);
-  }
-  .landing__definition p {
-    margin: 0;
-    color: var(--facet-color-text);
-  }
-  .landing__definition .landing__source {
-    margin-top: 6px;
-    font-size: 13px;
-  }
-  .landing__source a {
-    color: var(--facet-color-text-dim);
-  }
-  .landing__help {
-    margin-top: 40px;
     color: var(--facet-color-text-dim);
   }
   .landing__head > p {
@@ -269,11 +153,6 @@ const steps = [
     flex-wrap: wrap;
     gap: 12px;
     margin-top: 40px;
-  }
-  .landing__docs {
-    margin: 24px 0 0;
-    color: var(--facet-color-text-dim);
-    font-size: 15px;
   }
 
   .landing__device {
@@ -344,151 +223,11 @@ const steps = [
     grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 
-  /* what's in it: plain rows, no cards */
-  .parts {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0 48px;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-  .part {
-    padding: 24px 0 32px;
-    border-top: 1px solid var(--facet-color-line);
-  }
-  .part h3 {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin: 0 0 8px;
-    font-size: 20px;
-    font-weight: 500;
-  }
-  .part h3 .badge {
-    margin-left: 0;
-  }
-  .part h3 a {
-    color: var(--facet-color-text);
-    text-decoration: none;
-  }
-  .part h3 a:hover {
-    color: var(--facet-color-accent-text);
-  }
-  .landing__head .landing__placeholder {
-    margin-top: 12px;
-  }
 
   /* previews: still PNGs from the WASM build, the site theme's version shown */
-  .previews {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 24px 16px;
-    margin: 16px 0;
-    padding: 0;
-    list-style: none;
-  }
-  .previews--wide {
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  }
-  .preview {
-    display: block;
-    color: var(--facet-color-text-dim);
-    text-decoration: none;
-  }
-  .preview__img {
-    display: grid;
-    place-items: center;
-    overflow: hidden;
-    aspect-ratio: 4 / 3;
-    padding: 12px;
-    border: 1px solid var(--facet-color-line);
-    border-radius: 16px;
-    background: var(--facet-color-bg-565);
-    transition: border-color var(--facet-duration-fade) var(--facet-easing-ease-out);
-  }
-  .previews--wide .preview__img {
-    align-items: start;
-    padding: 0;
-  }
-  .preview__img--square {
-    aspect-ratio: 1;
-  }
-  .preview__img img {
-    display: block;
-    width: auto;
-    max-width: 100%;
-    height: auto;
-    max-height: 100%;
-  }
-  .previews--wide .preview__img img {
-    width: 100%;
-    max-height: none;
-  }
-  .preview__img--empty {
-    border-style: dashed;
-    color: var(--facet-color-text-dim);
-    font-size: 13px;
-  }
   :global(:root[data-theme='light']) .preview__img .for-dark,
-  :global(:root:not([data-theme='light'])) .preview__img .for-light {
-    display: none;
-  }
-  .preview__name {
-    display: block;
-    margin-top: 10px;
-    font-size: 15px;
-  }
-  a.preview:hover .preview__img {
-    border-color: var(--facet-color-line-hi);
-  }
-  a.preview:hover .preview__name {
-    color: var(--facet-color-text);
-  }
-  .build__rules {
-    max-width: 640px;
-    margin: 0 0 12px;
-    padding-left: 20px;
-    color: var(--facet-color-text-dim);
-    font-size: 15px;
-  }
-  .build__rules li + li {
-    margin-top: 4px;
-  }
 
   /* how it's built: three numbered steps */
-  .build {
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-  .build__step {
-    padding: 24px 0 32px;
-    border-top: 1px solid var(--facet-color-line);
-  }
-  .build__step h3 {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin: 0 0 8px;
-    font-size: 20px;
-    font-weight: 500;
-  }
-  .build__step h3 .badge {
-    margin-left: 0;
-  }
-  .build__step p {
-    max-width: 640px;
-    margin: 0 0 12px;
-    color: var(--facet-color-text-dim);
-  }
-  .build__links {
-    font-size: 15px;
-  }
-  .build__step .shots {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    margin-top: 16px;
-  }
   .build__n {
     display: inline-grid;
     place-items: center;
@@ -500,8 +239,55 @@ const steps = [
     color: var(--facet-color-text-dim);
     font: 500 13px/1 var(--mono);
   }
-  .part p {
-    margin: 0 0 12px;
+
+  .shot__about {
+    color: var(--facet-color-text-dim);
+    font-size: 14px;
+    line-height: 20px;
+  }
+
+  /* set up: three numbered steps in a row */
+  .setup {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 32px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .setup h3 {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0 0 8px;
+    font-size: 18px;
+    font-weight: 500;
+  }
+  .setup p,
+  .landing__after {
+    margin: 0;
+    color: var(--facet-color-text-dim);
+  }
+  .landing__after {
+    margin-top: 32px;
+  }
+
+  /* the two panels, then Install */
+  .buy {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 32px;
+    margin: 0 0 32px;
+    padding: 0;
+    list-style: none;
+  }
+  .buy h3 {
+    margin: 0 0 4px;
+    font-size: 18px;
+    font-weight: 500;
+  }
+  .buy p {
+    margin: 0;
     color: var(--facet-color-text-dim);
   }
 
@@ -535,7 +321,8 @@ const steps = [
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 24px 16px;
     }
-    .parts {
+    .setup,
+    .buy {
       grid-template-columns: minmax(0, 1fr);
     }
   }

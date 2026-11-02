@@ -1,0 +1,54 @@
+---
+// The site footer on every page: Inside Facet (how it is built, off the top line) and the project links.
+import { insideLinks, url } from '../lib/nav';
+---
+<footer class="site-footer">
+  <nav class="site-footer__inner" aria-label="Footer">
+    <section>
+      <h2 class="facet-label">Inside Facet</h2>
+      <ul>{insideLinks.map((l) => <li><a href={l.href}>{l.label}</a></li>)}</ul>
+    </section>
+    <section>
+      <h2 class="facet-label">Project</h2>
+      <ul>
+        <li><a href={url('/contributing/')}>Contributing</a></li>
+        <li><a href={url('/updates/')}>Updates</a></li>
+        <li><a href="https://github.com/mrdarrengriffin/facet">GitHub</a></li>
+        <li><a href="https://buymeacoffee.com/mrdarrengriffin">Support Facet</a></li>
+      </ul>
+    </section>
+  </nav>
+</footer>
+
+<style>
+  .site-footer {
+    border-top: 1px solid var(--facet-color-line);
+    margin-top: 48px;
+  }
+  .site-footer__inner {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 32px 64px;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 32px 16px 48px;
+  }
+  .site-footer h2 {
+    margin: 0 0 12px;
+  }
+  .site-footer ul {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .site-footer a {
+    color: var(--facet-color-text-dim);
+    text-decoration: none;
+  }
+  .site-footer a:hover {
+    color: var(--facet-color-text);
+  }
+</style>

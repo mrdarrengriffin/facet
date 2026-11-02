@@ -7,26 +7,13 @@ import Docs, { type Heading } from '../../layouts/Docs.astro';
 import { AI_EXAMPLES, url } from '../../lib/nav';
 import examples from '../../lib/ai-examples.json';
 import CodeBlock from '../../components/CodeBlock.astro';
-import schema from '../../../../renderer/catalogue/schema.json';  // the table: the panel's routes, each with its one line
 
 const headings: Heading[] = [
-  { depth: 2, slug: 'spec', text: 'What a spec is' },
-  { depth: 2, slug: 'why', text: 'What stops a bad screen' },
   { depth: 2, slug: 'panel', text: 'Point an AI at your panel' },
   { depth: 2, slug: 'home-assistant', text: 'Through Home Assistant' },
   { depth: 2, slug: 'prompt', text: 'Starter prompt' },
   ...(AI_EXAMPLES ? [{ depth: 2, slug: 'examples', text: 'Examples' }] : []),
 ];
-const spec = {
-  v: 1, id: 'bin_day', name: 'Bin day', rev: 1, role: 'page',
-  header: { label: 'Bin day', back: true },
-  layout: 'list',
-  nodes: [
-    { c: 'hero_block', p: { n: { e: 'sensor.bin_days', s: '2' }, label: 'days to bin day', line: { e: 'sensor.bin_next', s: 'Recycling · Tue' } } },
-    { c: 'section_header', p: { title: 'next collections' } },
-    { c: 'list_row', p: { title: 'Recycling', trailing: 'value', value: { e: 'sensor.bin_recycling', s: 'Tue 27 Oct' } } },
-  ],
-};
 const curl = `P=http://<panel-ip>; T=<agent token>
 curl -s $P/llms.txt                                   # where to start
 curl -s $P/agents.md                                  # the spec guide for this firmware
@@ -58,21 +45,15 @@ const prompt = `You are making a screen for my Facet wall panel at http://<panel
 5. Fetch /screenshot and check that nothing is cut off; shorten text if it is.`;
 ---
 
-<Docs edit="site/src/pages/ai/index.astro" title="Make screens with AI" description="Ask an AI assistant for any screen you like: it writes a Facet spec, the panel checks it, and it looks like the rest of Facet." group="Start here" current={url('/ai/')} headings={headings}>
+<Docs edit="site/src/pages/ai/index.astro" title="Make screens with AI" description="Ask an AI assistant for any screen you like: it writes a Facet spec, the panel checks it, and it looks like the rest of Facet." group="Inside Facet" current={url('/ai/')} headings={headings}>
   <p class="lede">Describe a screen, for example your bin days or the next trains, and an AI assistant writes it as a spec. The panel checks the spec, and the screen uses the same components and tokens as the built-in ones.</p>
 
-  <h2 id="spec">What a spec is</h2>
-  <p>Every Facet screen is a short JSON <em>spec</em>: a header, a layout and a list of components, each with its props. A prop can be a fixed value or bound to a Home Assistant entity, so the screen updates by itself. There are no positions, sizes, colours or fonts in a spec.</p>
-  <CodeBlock json={spec} label="Spec · JSON" copyLabel="Copy spec" />
-  <p>Specs are 1 to 6 KB (the limit is 8 KB), and a panel holds up to 16 screens.</p>
-
-  <h2 id="why">What stops a bad screen</h2>
-  <ul>
-    <li><strong>Components and tokens only.</strong> A spec can only name components the firmware ships. Spacing, type, colour and motion come from the design tokens, in light and dark, so an assistant cannot pick an off-grid gap or an unreadable colour.</li>
-    <li><strong>Budgets.</strong> Each screen is capped at 48 components, 64 entity bindings and 8 KB, so it builds fast on the panel.</li>
-    <li><strong>Validation on the panel.</strong> The panel checks a spec before it keeps it and answers with the exact path and reason of anything wrong (an unknown prop, a value out of range, a style key). The assistant fixes it and tries again.</li>
-    <li><strong>Layout rules.</strong> One hero per screen, rows that touch, more space between groups: the layout applies them, not the assistant.</li>
-  </ul>
+  <p>
+    The assistant writes the screen as a <a href={url('/inside/spec/')}>spec</a>: a short JSON list of Facet components.
+    The panel checks every spec against its own budgets and components before it keeps it and says what to fix, so a
+    screen made this way looks like the rest of Facet. <a href={url('/inside/spec/')}>Spec format</a> explains the format
+    and its limits.
+  </p>
 
   <h2 id="panel">Point an AI at your panel</h2>
   <p>For assistants that can make web requests (coding agents, desktop assistants with tools):</p>
@@ -81,12 +62,7 @@ const prompt = `You are making a screen for my Facet wall panel at http://<panel
     <li>In Home Assistant, copy the panel's <strong>AI agent token</strong> sensor and give it to the assistant. Make a new token at any time to cut access off.</li>
     <li>Tell the assistant to start at <code>http://&lt;panel&gt;/llms.txt</code>. It leads to <code>/agents.md</code>, a guide generated from the firmware itself: every component and prop this panel accepts, how to bind entities, the actions and the budgets.</li>
   </ol>
-  <table>
-    <thead><tr><th>Request</th><th>What it does</th></tr></thead>
-    <tbody>
-      {schema.routes.map((r) => <tr><td><code>{r.method} {r.path}</code></td><td>{r.says}</td></tr>)}
-    </tbody>
-  </table>
+  <p>Every request the panel answers is listed on <a href={url('/inside/schema/#routes')}>Schema</a>.</p>
   <p>Writes need the setting on and <code>Authorization: Bearer &lt;token&gt;</code>; otherwise the panel answers 403 and says what is missing.</p>
   <CodeBlock code={curl} lang="bash" label="curl" copyLabel="Copy curl commands" />
 
@@ -100,7 +76,7 @@ const prompt = `You are making a screen for my Facet wall panel at http://<panel
 
   {AI_EXAMPLES && (<>
   <h2 id="examples">Examples</h2>
-  <p>Six screens made only from today's released components, each using its components the way their own demos do: lists, charts, tiles, checklists, stats and a slider. Open one to try it live, copy its spec or copy the prompt that makes it. Sample data: made-up devices, not a real home.</p>
+  <p>Screens made only from the released components, each using its components the way their own demos do: lists, charts, tiles, checklists, stats and a slider. Open one to try it live, copy its spec or copy the prompt that makes it. Sample data: made-up devices, not a real home.</p>
   <ul class="ex-grid">
     {examples.map((e) => (
       <li>

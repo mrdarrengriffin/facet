@@ -1,0 +1,79 @@
+---
+// Panels: the two boards Facet runs on, side by side, from boards/<id>.json (lib/boards.ts): what each has, the numbers
+// measured on it (performance), where to read about it (links: the maker's page when there is one). No prices.
+import Docs, { type Heading } from '../layouts/Docs.astro';
+import { url } from '../lib/nav';
+import { BOARDS, screenOf, wifiWays } from '../lib/boards';
+
+const headings: Heading[] = [
+  { depth: 2, slug: 'compare', text: 'The two panels' },
+  { depth: 2, slug: 'measured', text: 'Measured on the panels' },
+  { depth: 2, slug: 'choose', text: 'Which one' },
+  { depth: 2, slug: 'where', text: 'Where to read more' },
+];
+const yes = (v: boolean) => (v ? 'Yes' : 'No');
+const rows: [string, (b: (typeof BOARDS)[number]) => string][] = [
+  ['Screen', (b) => `${screenOf(b)}, ${b.touch} touch`],
+  ['Chip', (b) => b.chip + (b.radio ? `, with an ${b.radio} for Wi-Fi and Bluetooth` : '')],
+  ['Flash', (b) => b.flash.replace(/MB$/, ' MB')],
+  ['Speaker', (b) => (b.speaker ? 'Yes: Facet plays its UI sounds on it' : 'No: Facet is silent on it')],
+  ['Bluetooth', (b) => yes(b.bluetooth)],
+  ['Wi-Fi set up', (b) => wifiWays(b)],
+  ['Layout', (b) => (b.scale === '1x' ? 'The reference size' : `The same layout at ${b.scale.replace('x', ' times')}`)],
+];
+const ms = ([a, z]: [number, number]) => `${a} to ${z} ms`;
+// the comparison names the two by what they have: the one with a speaker, the one without
+const waveshare = BOARDS.find((b) => b.speaker && b.performance?.render_ms), guition = BOARDS.find((b) => !b.speaker && b.performance?.render_ms);
+const measured: [string, (b: (typeof BOARDS)[number]) => string | undefined][] = [
+  ['Tap to the next screen on show', (b) => b.performance?.tap_to_frame_ms && ms(b.performance.tap_to_frame_ms)],
+  ['Start-up until every screen is kept built', (b) => b.performance?.boot_to_kept_s && `${b.performance.boot_to_kept_s} s`],
+  ['Memory free with them kept', (b) => b.performance?.psram_free_mb_kept && `${b.performance.psram_free_mb_kept} MB of PSRAM`],
+  ['Drawing a whole screen', (b) => b.performance?.render_ms && ms(b.performance.render_ms)],
+  ['Screens kept built', (b) => b.memory && String(b.memory.keep_pages)],
+];
+---
+
+<Docs edit="site/src/pages/panels.astro" title="Panels" description="The two wall panels Facet runs on, side by side, with the numbers measured on each." group="Use Facet" current={url('/panels/')} headings={headings}>
+  <p class="lede">
+    Facet runs on two 4 inch square touch panels that fit a standard wall box. Both run the same Facet firmware and the
+    same screens; the bigger one draws them at 1.5 times, so they look the same, only sharper.
+  </p>
+
+  <h2 id="compare">The two panels</h2>
+  <table>
+    <thead><tr><th></th>{BOARDS.map((b) => <th>{b.name}</th>)}</tr></thead>
+    <tbody>
+      {rows.map(([label, f]) => <tr><th scope="row">{label}</th>{BOARDS.map((b) => <td>{f(b)}</td>)}</tr>)}
+    </tbody>
+  </table>
+
+  <h2 id="measured">Measured on the panels</h2>
+  <p>
+    Each panel keeps the screens you use built, so a tap shows the next one without building it. These are the
+    numbers measured on the panels themselves with the factory screens.
+  </p>
+  <table>
+    <thead><tr><th></th>{BOARDS.map((b) => <th>{b.name}</th>)}</tr></thead>
+    <tbody>
+      {measured.map(([label, f]) => <tr><th scope="row">{label}</th>{BOARDS.map((b) => <td>{f(b) ?? 'Not measured'}</td>)}</tr>)}
+    </tbody>
+  </table>
+
+  <h2 id="choose">Which one</h2>
+  <p>
+    {waveshare && guition && <>
+      The {waveshare.name} is the quicker of the two: it draws a whole screen in {ms(waveshare.performance!.render_ms!)},
+      and it has a speaker and Bluetooth. The {guition.name} takes {ms(guition.performance!.render_ms!)} for the same
+      frame, so a tap takes longer to show, and it has neither a speaker nor Bluetooth.
+    </>}
+    Every screen and setting is the same on both.
+  </p>
+
+  <h2 id="where">Where to read more</h2>
+  <ul>
+    {BOARDS.map((b) => (b.links ?? []).map((l) => (
+      <li><a href={l.url}>{l.label}</a>{!l.maker && ' (Guition has no product page of its own)'}</li>
+    )))}
+  </ul>
+  <p>Got one? <a href={url('/install/')}>Install</a> puts Facet on it from the browser.</p>
+</Docs>

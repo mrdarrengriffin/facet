@@ -7,17 +7,13 @@
 import Docs, { type Heading } from '../layouts/Docs.astro';
 import { url } from '../lib/nav';
 
-// the boards: boards/<id>.json (status target = a release firmware is built), largest screen first
-type Board = { id: string; name: string; chip: string; radio: string | null; bluetooth: boolean; resolution: { w: number; h: number }; inches: number; status: string };
-const boards = Object.values(import.meta.glob<Board>('../../../boards/*.json', { eager: true, import: 'default' }))
-  .filter((b) => b.status === 'target')
-  .sort((a, b) => b.resolution.w - a.resolution.w || a.id.localeCompare(b.id))
-  .map((b) => ({
-    id: b.id,
-    name: b.name,
-    about: `${b.inches} inch, ${b.resolution.w} x ${b.resolution.h}, ${b.chip}${b.radio ? ` with an ${b.radio} for Wi-Fi and Bluetooth` : ''}.`,
-    ways: b.bluetooth ? 'USB, Bluetooth or the panel hotspot' : 'USB or the panel hotspot (no Bluetooth on this board)',
-  }));
+import { BOARDS, screenOf, wifiWays } from '../lib/boards';
+const boards = BOARDS.map((b) => ({
+  id: b.id,
+  name: b.name,
+  about: `${screenOf(b)}, ${b.chip}${b.radio ? ` with an ${b.radio} for Wi-Fi and Bluetooth` : ''}.`,
+  ways: wifiWays(b),
+}));
 const headings: Heading[] = [
   { depth: 2, slug: 'before', text: 'Before you start' },
   { depth: 2, slug: 'install', text: 'Install' },
@@ -28,7 +24,7 @@ const headings: Heading[] = [
 const manifest = (id: string) => url(`/firmware/${id}/manifest.json`);
 ---
 
-<Docs edit="site/src/pages/install.astro" title="Install" description="Put Facet on your panel from the browser, connect it to Wi-Fi and add it to Home Assistant." group="Start here" current={url('/install/')} headings={headings}>
+<Docs edit="site/src/pages/install.astro" title="Install" description="Put Facet on your panel from the browser, connect it to Wi-Fi and add it to Home Assistant." group="Use Facet" current={url('/install/')} headings={headings}>
   <p class="lede">Put Facet on your panel from this page, connect it to Wi-Fi and add it to Home Assistant. No tools to install.</p>
 
   <div class="callout callout--warn">
@@ -38,6 +34,7 @@ const manifest = (id: string) => url(`/firmware/${id}/manifest.json`);
 
   <h2 id="before">Before you start</h2>
   <ul>
+    <li>One of the <a href={url('/panels/')}>two panels</a> Facet runs on.</li>
     <li>A computer with <strong>Chrome or Edge</strong>. Flashing uses Web Serial, which other browsers (and phones) do not have.</li>
     <li>A USB-C cable that carries data, not only power.</li>
     <li>Home Assistant with the ESPHome integration (it is built in).</li>
@@ -115,7 +112,7 @@ const manifest = (id: string) => url(`/firmware/${id}/manifest.json`);
   <p>
     Home Assistant shows a <strong>Firmware</strong> update on the panel's device page when a new Facet release is out.
     It installs only when you press Install. Installing from this page again works too, without erasing.
-    <a href={url('/docs/troubleshooting/')}>Updating and troubleshooting</a> has more, and fixes for common set up problems.
+    <a href={url('/help/troubleshooting/')}>Updating and troubleshooting</a> has more, and fixes for common set up problems.
   </p>
 </Docs>
 

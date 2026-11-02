@@ -2,8 +2,8 @@
 // Concepts: components. What a Facet component is, how screens are made of them, and what every component brings
 // (props, variants, states, events, sounds, an update path). Facts: renderer/README.md (Components, Feature flags),
 // core/spec.h (specs), site/src/pages/components/.
-import Docs, { type Heading } from '../../../layouts/Docs.astro';
-import { url } from '../../../lib/nav';
+import Docs, { type Heading } from '../../layouts/Docs.astro';
+import { url } from '../../lib/nav';
 
 const headings: Heading[] = [
   { depth: 2, slug: 'what', text: 'What a component is' },
@@ -14,12 +14,12 @@ const headings: Heading[] = [
 ];
 ---
 
-<Docs edit="site/src/pages/docs/concepts/components.astro" title="Components" description="The building blocks every Facet screen is made of, and what each one brings with it." group="Concepts" current={url('/docs/concepts/components/')} headings={headings}>
+<Docs edit="site/src/pages/inside/components.astro" title="Components" description="The building blocks every Facet screen is made of, and what each one brings with it." group="Inside Facet" current={url('/inside/components/')} headings={headings}>
   <h2 id="what">What a component is</h2>
   <p>
     A component is one building block of the panel: a button, a toggle, a list row, a Home card, a chart, a clock face.
     Each one is drawn by Facet's renderer, written in C++ on <a href="https://lvgl.io">LVGL</a>, and takes every
-    colour, size, gap and movement from the <a href={url('/docs/concepts/design-tokens/')}>design tokens</a>. Nothing on a
+    colour, size, gap and movement from the <a href={url('/inside/tokens/')}>design tokens</a>. Nothing on a
     screen is drawn by hand: a button on Timer and a button on Settings are the same component.
   </p>
 

@@ -1,0 +1,83 @@
+---
+// Schema: what a panel serves at /fw/schema (renderer/catalogue/schema.json, generated from the firmware itself), as
+// tables: the panel's routes, the factory screens and their settings, the panel settings, the actions a screen or an
+// agent can send, the tokens by group. Every row and count comes from the file; nothing is typed here.
+import Docs, { type Heading } from '../../layouts/Docs.astro';
+import Count from '../../components/Count.astro';
+import { url } from '../../lib/nav';
+import schema from '../../../../renderer/catalogue/schema.json';
+
+type Param = { label?: string; about?: string; type: string; options?: string[]; domain?: string; default?: unknown };
+type Screen = { name: string; kind: string; params?: Record<string, Param> };
+type Setting = { id: string; group: string; label: string; help?: string; kind: string; options?: { id: string; label: string }[] };
+type Action = { do: string; about: string };
+type Token = { group: string };
+const screens = Object.entries(schema.screens as Record<string, Screen>).filter(([, s]) => s.kind === 'spec');
+const settings = schema.settings as { groups: { id: string; label: string }[]; settings: Setting[] };
+const actions = (schema.spec as { actions: Action[] }).actions;
+const tokenGroups = Object.entries((schema.tokens as Token[]).reduce<Record<string, number>>((m, t) => ((m[t.group] = (m[t.group] ?? 0) + 1), m), {}));
+const kind = (p: Param) => (p.options ? p.options.join(', ') : p.type === 'entity' || p.type === 'entities' ? `${p.type === 'entities' ? 'entities' : 'an entity'} of ${p.domain}` : p.type);
+
+const headings: Heading[] = [
+  { depth: 2, slug: 'routes', text: 'Routes' },
+  { depth: 2, slug: 'screens', text: 'Screens and their settings' },
+  { depth: 2, slug: 'settings', text: 'Panel settings' },
+  { depth: 2, slug: 'actions', text: 'Actions' },
+  { depth: 2, slug: 'tokens', text: 'Tokens' },
+];
+---
+
+<Docs edit="site/src/pages/inside/schema.astro" title="Schema" description="What a Facet panel says about itself at /fw/schema: its routes, screens, settings, actions and tokens." group="Inside Facet" current={url('/inside/schema/')} headings={headings}>
+  <p class="lede">
+    Every panel describes itself at <code>GET /fw/schema</code>. The file is generated from the firmware, so it always
+    matches what that panel accepts; the editor builds its forms from it, and this page is built from the same file
+    (<a href={url('/schema.json')}>schema.json</a>, version <code>{schema.hash}</code>).
+  </p>
+
+  <h2 id="routes">Routes</h2>
+  <p><Count k="routes" /> routes. Writes need <strong>Allow AI agents</strong> on and the panel's agent token.</p>
+  <table>
+    <thead><tr><th>Request</th><th>What it does</th></tr></thead>
+    <tbody>{(schema.routes as { method: string; path: string; says: string }[]).map((r) => <tr><td><code>{r.method} {r.path}</code></td><td>{r.says}</td></tr>)}</tbody>
+  </table>
+
+  <h2 id="screens">Screens and their settings</h2>
+  <p><Count k="screens" /> factory screens. Each setting is a parameter of the screen's spec.</p>
+  {screens.map(([id, s]) => (
+    <>
+      <h3 id={`screen-${id}`}>{s.name}</h3>
+      {Object.keys(s.params ?? {}).length ? (
+        <table>
+          <thead><tr><th>Setting</th><th>Values</th><th>What it does</th></tr></thead>
+          <tbody>{Object.entries(s.params ?? {}).filter(([, p]) => p.type !== 'hidden').map(([k, p]) => <tr><td>{p.label ?? k} <code>{k}</code></td><td>{kind(p)}</td><td>{p.about}</td></tr>)}</tbody>
+        </table>
+      ) : <p class="hint">No settings.</p>}
+    </>
+  ))}
+
+  <h2 id="settings">Panel settings</h2>
+  <p><Count k="settings" /> settings in {settings.groups.length} groups.</p>
+  {settings.groups.map((g) => (
+    <>
+      <h3 id={`settings-${g.id}`}>{g.label}</h3>
+      <table>
+        <thead><tr><th>Setting</th><th>Values</th><th>What it does</th></tr></thead>
+        <tbody>{settings.settings.filter((s) => s.group === g.id).map((s) => <tr><td>{s.label} <code>{s.id}</code></td><td>{s.options ? s.options.map((o) => o.label).join(', ') : s.kind}</td><td>{s.help}</td></tr>)}</tbody>
+      </table>
+    </>
+  ))}
+
+  <h2 id="actions">Actions</h2>
+  <p>What a screen's tap, an agent (<code>POST /fw/act</code>) or Home Assistant can ask the panel to do. Each one is checked the same way, whoever sends it.</p>
+  <table>
+    <thead><tr><th>Action</th><th>What it does</th></tr></thead>
+    <tbody>{actions.map((a) => <tr><td><code>{a.do}</code></td><td>{a.about}</td></tr>)}</tbody>
+  </table>
+
+  <h2 id="tokens">Tokens</h2>
+  <p><Count k="tokens" /> tokens: the named values every colour, size, gap and movement comes from (<a href={url('/inside/tokens/')}>Tokens</a>).</p>
+  <table>
+    <thead><tr><th>Group</th><th>Tokens</th></tr></thead>
+    <tbody>{tokenGroups.map(([g, n]) => <tr><td>{g}</td><td>{n}</td></tr>)}</tbody>
+  </table>
+</Docs>

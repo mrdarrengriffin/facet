@@ -6,6 +6,12 @@ import { getCollection, render } from 'astro:content';
 import Docs, { type Heading } from '../layouts/Docs.astro';
 import { UPDATES_PAGE, url } from '../lib/nav';
 import { linkShown, updateShown } from '../lib/data';
+import road from '../roadmap.json';
+
+// What's next: the roadmap's screens being built now (status doing; components follow their screens)
+type Row = { name: string; group: string; status: string; note?: string };
+const next = (road.tables as Record<string, Row[]>).screens.filter((r) => r.status === 'doing');
+const noted = next.filter((r) => r.note), plain = next.filter((r) => !r.note);
 
 // the route exists only while the Updates page is on (lib/nav.ts UPDATES_PAGE)
 export function getStaticPaths() {
@@ -19,10 +25,10 @@ const entries = await Promise.all(all.map(async (e) => ({ e, Content: (await ren
 const days = [...new Set(entries.map((x) => x.e.data.date))].map((d) => ({ d, items: entries.filter((x) => x.e.data.date === d) }));
 const dayLabel = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
 const shortDay = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
-const headings: Heading[] = days.flatMap(({ d, items }) => [
+const headings: Heading[] = [{ depth: 2 as const, slug: 'next', text: "What's next" }, ...days.flatMap(({ d, items }) => [
   { depth: 2 as const, slug: `day-${d}`, text: dayLabel(d) },
   ...items.map(({ e }) => ({ depth: 3 as const, slug: e.id, text: e.data.title })),
-]);
+])];
 // kinds in filter order (README); an entry without one falls back to its old area
 const ORDER = ['New screen', 'New feature', 'New component', 'Improved', 'Fixed', 'Design system', 'Docs', 'Story', 'Behind the scenes'];
 const kindOf = (e: (typeof all)[number]) => e.data.kind ?? e.data.area ?? 'Story';
@@ -31,11 +37,17 @@ const pic = (f: string) => url(`/updates/${f}`);
 const link = (p: string) => (/^https?:/.test(p) ? p : url(`/${p}`));
 ---
 
-<Docs edit={false} title="Updates" description="What's new in Facet, newest first, and how it came to be." group="Project" current={url('/updates/')} headings={headings}>
-  <div class="updates__filter" role="group" aria-label="Show">
+<Docs edit={false} title="Updates" description="What is being built now, and each Facet release, newest first." group="Use Facet" current={url('/updates/')} headings={headings}>
+  <h2 id="next">What's next</h2>
+  <ul>
+    {noted.map((r) => <li><strong>{r.name}</strong>: {r.note}.</li>)}
+    {plain.length > 0 && <li><strong>New screens</strong>: {plain.map((r) => r.name).join(', ')}. Each comes to the panels when it is finished; until then it is not in the firmware.</li>}
+  </ul>
+  {entries.length === 0 && <p>Release notes appear here from Facet 1.0 on.</p>}
+  {kinds.length > 1 && <div class="updates__filter" role="group" aria-label="Show">
     <button type="button" class="updates__chip" aria-pressed="true" data-kind="">All</button>
     {kinds.map((k) => <button type="button" class="updates__chip" aria-pressed="false" data-kind={k}>{k}</button>)}
-  </div>
+  </div>}
   {
     days.map(({ d, items }) => (
       <section class="updates__day">

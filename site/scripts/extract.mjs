@@ -384,9 +384,10 @@ function screenSet() {
     const parts = [...new Set([...nodes, ...(spec.header ? chrome : [])])].filter((c) => compById[c]);
     const main = compById[nodes[0]];
     const rows = nodes.every((c) => c === 'list_row');
-    const about = rows
+    // what the screen shows, in words (sources.json shows, the Settings > Screens line), else from its parts
+    const about = srcs.screens?.[spec.id]?.shows ?? (rows
       ? `A list of ${nodes.length} rows, one per device: each shows the device's state, and a tap switches it.`
-      : main?.meta.about || main?.lede || '';
+      : main?.meta.about || main?.lede || '');
     const rel = `renderer/specs/${f}`;
     out.push({ id: spec.id, name: pub(spec.name), kind: 'spec', about: pub(about), layout: spec.layout, params,
       sampleProps: { screen: spec.id, ...Object.fromEntries(params.filter((p) => p.sample).map((p) => [p.name, p.sample])) },

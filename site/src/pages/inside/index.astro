@@ -2,10 +2,12 @@
 // Concepts: how the firmware works. Facts: README "How it works" + "Panels", firmware/ (ESPHome external component,
 // bundle.mjs), firmware/fw_device.h (HTTP API, AI agents gate), the public firmware YAML (Home Assistant API with
 // encryption from adoption, states + actions, update entity), renderer/features.json (what a release carries).
-import Docs, { type Heading } from '../../../layouts/Docs.astro';
-import { url } from '../../../lib/nav';
+import Docs, { type Heading } from '../../layouts/Docs.astro';
+import Count from '../../components/Count.astro';
+import { url } from '../../lib/nav';
 
 const headings: Heading[] = [
+  { depth: 2, slug: 'layers', text: 'Tokens, components, screens' },
   { depth: 2, slug: 'one-renderer', text: 'One renderer, two places' },
   { depth: 2, slug: 'panel', text: 'What runs on the panel' },
   { depth: 2, slug: 'home-assistant', text: 'Talking to Home Assistant' },
@@ -16,7 +18,16 @@ const headings: Heading[] = [
 ];
 ---
 
-<Docs edit="site/src/pages/docs/concepts/firmware.astro" title="How the firmware works" description="What runs on the panel, and how it talks to Home Assistant and the rest of your network." group="Concepts" current={url('/docs/concepts/firmware/')} headings={headings}>
+<Docs edit="site/src/pages/inside/index.astro" title="How Facet is built" description="How Facet is made: tokens, components and screens, one renderer for the panel and the browser, and how the panel talks to Home Assistant." group="Inside Facet" current={url('/inside/')} headings={headings}>
+  <h2 id="layers">Tokens, components, screens</h2>
+  <p>
+    Facet is built in three layers. <a href={url('/inside/tokens/')}>Tokens</a> name every colour, size, gap, movement
+    and sound (<Count k="tokens" /> tokens). <a href={url('/inside/components/')}>Components</a> are made only from
+    the tokens (<Count k="components" /> components, each with a page in the <a href={url('/components/')}>library</a>).
+    Screens are made only from components: each is a <a href={url('/inside/spec/')}>spec</a>, and a panel describes
+    all of it at <a href={url('/inside/schema/')}>/fw/schema</a>.
+  </p>
+
   <h2 id="one-renderer">One renderer, two places</h2>
   <p>
     Facet is one renderer, written in C++ on <a href="https://lvgl.io">LVGL</a>. The same source builds two ways: into
@@ -54,10 +65,10 @@ const headings: Heading[] = [
 
   <h2 id="screens">Screens and the deck</h2>
   <p>
-    Every screen is a JSON spec, a tree of <a href={url('/docs/concepts/components/')}>components</a>. The panel's set of
+    Every screen is a JSON spec, a tree of <a href={url('/inside/components/')}>components</a>. The panel's set of
     Homes, cards and screens is its <em>deck</em>, kept on the panel. It starts with Facet's own, and changes you make in
     <strong>Settings &gt; Screens</strong>, or a deck sent to it, are stored on the panel and kept across restarts.
-    <a href={url('/docs/home-cards/')}>Home cards</a> explains the cards.
+    <a href={url('/screens/home/#cards')}>Home cards</a> explains the cards.
   </p>
 
   <h2 id="api">The panel API</h2>
@@ -71,7 +82,7 @@ const headings: Heading[] = [
   <h2 id="updates">Updates</h2>
   <p>
     The panel checks for new releases itself and offers them in Home Assistant; it installs only when you say so, and
-    goes back to the previous version if an update does not settle. <a href={url('/docs/troubleshooting/')}>Updating and
+    goes back to the previous version if an update does not settle. <a href={url('/help/troubleshooting/')}>Updating and
     troubleshooting</a> has the details.
   </p>
 </Docs>

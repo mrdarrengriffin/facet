@@ -6,6 +6,7 @@
 import Docs, { type Heading } from '../../layouts/Docs.astro';
 import Live from '../../components/Live.astro';
 import PreviewBox from '../../components/PreviewBox.astro';
+import HomeCards from '../../components/HomeCards.astro';
 import { ALL, ALL_SCREENS, STATUS, href, screenById, screenGroupOf, screenHref, slug, SCREENS, type Screen } from '../../lib/data';
 
 export function getStaticPaths() {
@@ -26,6 +27,13 @@ const fill = (f: { param: string; domain: string; integration: string | null; li
   `${s.params.find((p) => p.name === f.param)?.label ?? f.param}: ${f.list ? 'every' : 'a'} ${f.domain.replace(/_/g, ' ')}${f.integration ? ` from ${f.integration.replace(/_/g, ' ')}` : ''}`;
 const headings: Heading[] = [
   { depth: 2, slug: 'preview', text: 'Preview' },
+  ...(s.id === 'home' ? [
+    { depth: 2, slug: 'cards', text: 'Home cards' },
+    { depth: 3, slug: 'sizes', text: 'Card sizes' },
+    { depth: 3, slug: 'types', text: 'What a card can show' },
+    { depth: 3, slug: 'choose', text: 'Choosing what is on Home' },
+    { depth: 3, slug: 'unavailable', text: 'When an entity is unavailable' },
+  ] : []),
   { depth: 2, slug: 'settings', text: 'Settings' },
   { depth: 2, slug: 'sources', text: 'Sources' },
   { depth: 2, slug: 'parts', text: 'Parts' },
@@ -47,6 +55,8 @@ const demo = s.comp === 'spec' ? { comp: 'spec', props: { ...s.sampleProps, live
     <p class="hint">{s.opening ?? 'Sample data: made-up devices and values, not a real home.'} Tap it as on a panel; it keeps its place until you leave the page.</p>
     {demo.comp === 'device' && <p class="hint">{DEMO_SETTINGS}</p>}
   </div>
+
+  {s.id === 'home' && <HomeCards />}
 
   <h2 id="settings">Settings</h2>
   {

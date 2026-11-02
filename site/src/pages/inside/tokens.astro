@@ -2,8 +2,8 @@
 // Concepts: design tokens. Facts: renderer/tokens/*.json (one file per foundation, build.sh generates the C++),
 // space.json (4 px grid, gen_space), colour.json (themes, accent sets, RGB565), layout.json (480 reference, 720 = 1.5x),
 // contrast pairs (renderer/README.md).
-import Docs, { type Heading } from '../../../layouts/Docs.astro';
-import { url } from '../../../lib/nav';
+import Docs, { type Heading } from '../../layouts/Docs.astro';
+import { url } from '../../lib/nav';
 
 const headings: Heading[] = [
   { depth: 2, slug: 'what', text: 'What a token is' },
@@ -23,7 +23,7 @@ const kinds = [
 ];
 ---
 
-<Docs edit="site/src/pages/docs/concepts/design-tokens.astro" title="Design tokens" description="The named values every colour, size, gap and movement in Facet comes from." group="Concepts" current={url('/docs/concepts/design-tokens/')} headings={headings}>
+<Docs edit="site/src/pages/inside/tokens.astro" title="Design tokens" description="The named values every colour, size, gap and movement in Facet comes from." group="Inside Facet" current={url('/inside/tokens/')} headings={headings}>
   <h2 id="what">What a token is</h2>
   <p>
     A design token is a named value: the surface colour, the gap between cards, the length of a press animation.
