@@ -1422,6 +1422,35 @@ class Handler : public AsyncWebHandler {
         }
       } else in_loop([&] { spec_hello(d.to<ArduinoJson::JsonObject>()); }, 2000);
       if (ok) serializeJson(d, s);
+    } else if (path == "/fw/heap") {  // PSRAM's used blocks by size (facet-256: what a slow drop is made of); ?size=N dumps
+      // the first bytes of up to 8 blocks of that size. The walk holds the heap lock: no allocation in the callback.
+      struct Sz { uint32_t size, n; };
+      struct W { Sz t[512]; int k; uint32_t blocks, bytes, want; uint8_t dump[8][48]; int nd; };
+      static W w;
+      w.k = 0, w.blocks = 0, w.bytes = 0, w.nd = 0;
+      w.want = req->hasArg("size") ? (uint32_t) atoi(req->arg("size").c_str()) : 0;
+      heap_caps_walk(MALLOC_CAP_SPIRAM, [](walker_heap_into_t, walker_block_info_t b, void *u) -> bool {
+        W &w = *(W *) u;
+        if (!b.used) return true;
+        w.blocks++, w.bytes += b.size;
+        if (w.want && b.size == w.want && w.nd < 8) memcpy(w.dump[w.nd++], b.ptr, 48);
+        for (int i = 0; i < w.k; i++) if (w.t[i].size == b.size) { w.t[i].n++; return true; }
+        if (w.k < 512) w.t[w.k++] = {(uint32_t) b.size, 1};
+        return true;
+      }, &w);
+      ArduinoJson::JsonDocument d;
+      d["blocks"] = w.blocks, d["bytes"] = w.bytes, d["sizes"] = w.k;
+      ArduinoJson::JsonArray a = d["by_size"].to<ArduinoJson::JsonArray>();
+      for (int i = 0; i < w.k; i++) { ArduinoJson::JsonArray e = a.add<ArduinoJson::JsonArray>(); e.add(w.t[i].size); e.add(w.t[i].n); }
+      ArduinoJson::JsonArray du = d["dump"].to<ArduinoJson::JsonArray>();
+      for (int i = 0; i < w.nd; i++) {
+        char hx[48 * 2 + 1], tx[49];
+        for (int j = 0; j < 48; j++) { snprintf(hx + 2 * j, 3, "%02x", w.dump[i][j]); tx[j] = isprint(w.dump[i][j]) ? (char) w.dump[i][j] : '.'; }
+        tx[48] = 0;
+        ArduinoJson::JsonObject o = du.add<ArduinoJson::JsonObject>();
+        o["hex"] = hx, o["text"] = tx;
+      }
+      serializeJson(d, s);
     } else if (path == "/fw/link") {  // the HA link's state for the link page (/link): never the token, its last 4 only
       namespace hl = fw::dev::ha_link;
       ArduinoJson::JsonDocument d;

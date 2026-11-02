@@ -18,6 +18,7 @@
 //   fw_ha_asks() -> JSON [{id, service, data}]  HA actions an adapter wants the reply of (drained); fw_ha_answer(id, ok, json)
 //   fw_audit(id) -> JSON              every object of the stage for the audit rule (tests/rules/audit.mjs, core/audit.h, README "Audit")
 //   fw_unclip(id)                     let every object draw outside its box (audit: what differs was clipped)
+#include <malloc.h>
 #include <emscripten.h>
 #include <cstdint>
 #include <cstdlib>
@@ -396,6 +397,8 @@ EMSCRIPTEN_KEEPALIVE const char *fw_update(int id, const char *comp, const char 
 
 // demo state of stage `id` (fw::demo_state): -1 no demo reported, 0 every demo at its preset (hosts skip the demo
 // reset), 1 a demo moved away (reset as usual)
+// bytes the module's heap holds now (mallinfo uordblks): a long run's growth (facet-256, the firmware's PSRAM drop)
+EMSCRIPTEN_KEEPALIVE int fw_mem() { return (int) mallinfo().uordblks; }
 EMSCRIPTEN_KEEPALIVE int fw_demo_state(int id) {
   Stage *s = get(id);
   return s ? fw::demo_state(lv_display_get_screen_active(s->d)) : -1;
