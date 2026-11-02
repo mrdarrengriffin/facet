@@ -578,10 +578,10 @@
     "status": "done"
    },
    {
-    "name": "The panel's own editor",
+    "name": "A new editor",
     "group": "Core",
     "status": "doing",
-    "note": "The panel's web page: choose and order screens, set each up, send, check and revert"
+    "note": "After 1.0: one list of screens with a switch each, the panel's settings and its Home Assistant link on one page, and every change reviewed and checked by the panel before it is sent"
    },
    {
     "name": "Settings",

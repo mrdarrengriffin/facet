@@ -19,9 +19,9 @@ Both panels get the same layout; the 480 panel is the reference size and the 720
 
 - First boot reaches Set up without help: join Wi-Fi, link Home Assistant, land on Home with the factory deck.
 - The screens: Home, Clock, Timer, Light, and a room of lights, Media, Weather, Moon, Calendar, Energy, plus Settings, Set up and toasts.
-- The panel's own editor, opened from the panel's address in a browser: choose which screens are in the deck and
-  their order, set each screen's settings (entities, source, options), set the panel's settings (mode, accent,
-  idle, Home header buttons). Send, check and revert, with the panel's validation shown plainly.
+- The panel's own editor, opened from the panel's address in a browser: arrange the Homes and their cards, put the
+  screens in order and add or remove them, set each screen's settings (entities, source, options) and Home's header
+  buttons, then save to the panel in one step; the panel checks it and keeps the version before.
 - Dark, light and auto; the accent sets.
 - Updates arrive in Home Assistant and install from there; a bad update rolls back to the previous image.
 

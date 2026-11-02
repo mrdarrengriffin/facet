@@ -30,7 +30,7 @@ const headings: Heading[] = [
 <Docs edit="site/src/pages/inside/schema.astro" title="Schema" description="What a Facet panel says about itself at /fw/schema: its routes, screens, settings, actions and tokens." group="Inside Facet" current={url('/inside/schema/')} headings={headings}>
   <p class="lede">
     Every panel describes itself at <code>GET /fw/schema</code>. The file is generated from the firmware, so it always
-    matches what that panel accepts; the editor builds its forms from it, and this page is built from the same file
+    matches what that panel accepts; agents read it, and this page is built from the same file
     (<a href={url('/schema.json')}>schema.json</a>, version <code>{schema.hash}</code>).
   </p>
 
