@@ -1903,7 +1903,7 @@ void Pen::tri(const int (&p)[3][2], const char *k) const {
 void Pen::within(int x, int y, int w, int h, const std::function<void()> &f) const {
   const lv_area_t keep = layer->_clip_area;
   lv_area_t &c = layer->_clip_area;
-  c = {std::max(keep.x1, cx + x), std::max(keep.y1, cy + y), std::min(keep.x2, cx + x + w - 1), std::min(keep.y2, cy + y + h - 1)};
+  c = {std::max<int32_t>(keep.x1, cx + x), std::max<int32_t>(keep.y1, cy + y), std::min<int32_t>(keep.x2, cx + x + w - 1), std::min<int32_t>(keep.y2, cy + y + h - 1)};  // int32_t: not int on the ESP32
   if (c.x1 <= c.x2 && c.y1 <= c.y2) f();
   layer->_clip_area = keep;
 }
