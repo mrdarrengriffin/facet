@@ -242,12 +242,13 @@ def _config_schema(config: ConfigType) -> ConfigType:
         config[CONF_ID],
         width,
         height,
-        True,  # Facet: has_hardware_rotation, always: draw_pixels_at turns LVGL's strips itself (write_rotated_)
+        model.rotation_as_transform(config),
         byte_order=config[CONF_BYTE_ORDER],
         has_writer=requires_buffer(config)
         or config.get(CONF_AUTO_CLEAR_ENABLED) is True,
         rotation=config.get(CONF_ROTATION, 0),
         draw_rounding=config.get(CONF_DRAW_ROUNDING, 0),
+        has_hardware_rotation=True,  # Facet: draw_pixels_at turns LVGL's strips itself (write_rotated_, internal tiles)
     )
     return config
 
