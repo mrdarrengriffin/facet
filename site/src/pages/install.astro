@@ -117,8 +117,8 @@ const manifest = (id: string) => url(`/firmware/${id}/manifest.json`);
   </p>
   <ol>
     <li>In Home Assistant, <strong>Settings &gt; People &gt; Users</strong>: add a user for this panel, not an administrator.</li>
-    <li>Log in as that user once (a private window is easiest) and create a long-lived access token in its profile, under <strong>Security</strong>.</li>
-    <li>Scan the code on the panel, or open <code>http://&lt;the panel's address&gt;/link</code>. Enter your Home Assistant's address and the token, and press <strong>Link</strong>.</li>
+    <li>Scan the code on the panel, or open <code>http://&lt;the panel's address&gt;/link</code>, in a browser where you are signed in to Home Assistant as that user (a private window is easiest).</li>
+    <li>Press <strong>Create a token</strong>: it opens that user's profile. Create a long-lived token there, copy it, and paste it into the link page. The address is filled in when the panel can see <code>homeassistant.local</code>; otherwise type yours. Press <strong>Link</strong>.</li>
   </ol>
   <p>
     The page says <strong>Linked</strong> when the panel has checked the address and token, or why not. The panel keeps

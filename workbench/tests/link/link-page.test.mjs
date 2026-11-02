@@ -11,14 +11,14 @@ import { chromium } from 'playwright';
 const HTML = readFileSync(new URL('../../../firmware/link.html', import.meta.url), 'utf8');
 const GOOD = 'eyJgoodtoken.abc-123_XYZ', HA = 'http://homeassistant.local:8123';
 let srv, base, browser, link;
-const reset = () => { link = { state: 'off', url: '', token: '', why: '', polls: 0 }; };
+const reset = () => { link = { state: 'off', url: '', token: '', why: '', polls: 0, seen: 'http://homeassistant.local:8123' }; };
 function panel(req, res) {
   const send = (code, type, body) => { res.writeHead(code, { 'Content-Type': type }); res.end(body); };
   if (req.url === '/link') return send(200, 'text/html; charset=utf-8', HTML);
   if (req.url === '/fw/link') {  // "checking" for two reads, then the check's answer
     const out = { ...link, state: link.state === 'checking' && ++link.polls > 2 ? link.next : link.state };
     if (out.state !== 'checking') link.state = out.state;
-    return send(200, 'application/json', JSON.stringify({ state: out.state, url: link.url, token: link.token, why: out.state === 'failed' ? link.why : '' }));
+    return send(200, 'application/json', JSON.stringify({ state: out.state, url: link.url, token: link.token, why: out.state === 'failed' ? link.why : '', seen: link.seen }));
   }
   if (req.url === '/fw/act' && req.method === 'POST') {
     let b = '';
@@ -56,11 +56,20 @@ for (const [label, width] of [['phone', 390], ['desktop', 1280]]) {
       await page.waitForFunction(() => !document.querySelector('#send').disabled);
     };
 
-    it('not set up: says so, and asks for a token', async () => {
+    it('not set up: says so, offers homeassistant.local (the panel sees it), and Create a token opens HA\'s profile', async () => {
       reset();
       await page.goto(`${base}/link`);
       await page.waitForFunction(() => !/Reading/.test(document.querySelector('#state-text').textContent));
       assert.equal(await state(), 'Not set up');
+      assert.equal(await page.inputValue('#url'), 'http://homeassistant.local:8123', 'the address the panel can see');
+      const btn = page.locator('#create');
+      assert.equal(await btn.textContent(), 'Create a token');
+      assert.equal(await btn.getAttribute('href'), 'https://my.home-assistant.io/redirect/profile_security/');
+      assert.equal(await btn.getAttribute('target'), '_blank', 'a new tab');
+      assert.match(await btn.getAttribute('rel'), /noopener/);
+      assert.equal(await page.locator('#create + .hint').textContent(), 'Opens your Home Assistant profile. Create a long-lived token there, copy it, and paste it here.');
+      const [bb, tb] = [await btn.boundingBox(), await page.locator('#token').boundingBox()];
+      assert.ok(bb.y < tb.y && bb.height >= 44, 'above the token field, a touch target');
       await send(HA, '');
       assert.match(await why(), /Paste a long-lived access token/);
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'no sideways scroll');

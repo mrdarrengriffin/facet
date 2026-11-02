@@ -103,6 +103,7 @@
 #include "spec.h"
 #include "nvs.h"
 #include "esp_http_client.h"
+#include "lwip/netdb.h"
 #include "esphome/components/network/util.h"
 #include "esp_crt_bundle.h"
 #include "esp_transport.h"
@@ -1459,6 +1460,18 @@ class Handler : public AsyncWebHandler {
         d["state"] = !hl::ready() ? "off" : st == hl::CHECKING ? "checking" : st == hl::FAIL ? "failed" : hl::checked() ? "linked" : "set";
         d["url"] = hl::url(), d["token"] = hl::token_hint(), d["why"] = hl::why();
       }, 2000);
+      // does homeassistant.local answer from here (mDNS through lwIP)? the page offers it as the address. Looked up on
+      // this HTTP task, once, again a minute later while it does not
+      static int seen = -1;
+      static uint32_t seen_at = 0;
+      if (seen != 1 && (seen < 0 || (uint32_t) (esp_timer_get_time() / 1000) - seen_at > 60000)) {
+        addrinfo hints = {}, *r = nullptr;
+        hints.ai_family = AF_INET;
+        seen = getaddrinfo("homeassistant.local", nullptr, &hints, &r) == 0 && r ? 1 : 0;
+        if (r) freeaddrinfo(r);
+        seen_at = (uint32_t) (esp_timer_get_time() / 1000);
+      }
+      d["seen"] = seen == 1 ? "http://homeassistant.local:8123" : "";
       serializeJson(d, s);
     } else if (path == "/fw/deck") {
       std::string dj;

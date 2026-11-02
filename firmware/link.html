@@ -2,7 +2,9 @@
 <!-- The panel's link page (GET /link, served from flash: firmware/bundle.mjs): set the panel's own Home Assistant
      address and long-lived token from a phone. Sends the action ha.connect (POST /fw/act, the panel's own origin: no
      agent token needed), then follows GET /fw/link until the panel has checked the link (GET <address>/api/). The token
-     is never shown back: the field is cleared after sending, the panel answers its last 4 characters only. -->
+     is never shown back: the field is cleared after sending, the panel answers its last 4 characters only. "Create a
+     token" opens Home Assistant's profile (Security) through my.home-assistant.io, as whoever is signed in there; the
+     address is filled with homeassistant.local when the panel can see it (GET /fw/link "seen"). -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -26,6 +28,9 @@ label { display: block; font-weight: 600; margin: 14px 0 6px; }
 input { width: 100%; font: inherit; color: inherit; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; min-height: 44px; }
 input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
 .hint { font-size: 0.9rem; color: var(--dim); margin: 6px 0 0; }
+.hint:empty { display: none; }
+.btn2 { display: flex; align-items: center; justify-content: center; min-height: 44px; margin: 0 0 4px; border: 1px solid var(--line); border-radius: 10px; color: var(--accent); font-weight: 600; text-decoration: none; }
+.btn2 + .hint { margin: 0 0 8px; }
 button { margin-top: 18px; width: 100%; min-height: 48px; font: inherit; font-weight: 600; color: var(--on); background: var(--accent); border: 0; border-radius: 10px; cursor: pointer; }
 button:disabled { opacity: 0.5; cursor: default; }
 ol { margin: 0; padding-left: 20px; } li { margin: 4px 0; }
@@ -43,8 +48,10 @@ ol { margin: 0; padding-left: 20px; } li { margin: 4px 0; }
     <label for="url">Home Assistant address</label>
     <input id="url" name="url" type="url" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="http://homeassistant.local:8123" required>
     <label for="token">Long-lived access token</label>
+    <a class="btn2" id="create" href="https://my.home-assistant.io/redirect/profile_security/" target="_blank" rel="noopener noreferrer">Create a token</a>
+    <p class="hint">Opens your Home Assistant profile. Create a long-lived token there, copy it, and paste it here.</p>
     <input id="token" name="token" type="password" autocomplete="off" autocapitalize="off" spellcheck="false">
-    <p class="hint" id="token-hint">In Home Assistant: your profile, Security, Long-lived access tokens, Create token.</p>
+    <p class="hint" id="token-hint"></p>
     <button id="send" type="submit">Link</button>
   </form>
   <div class="card">
@@ -70,8 +77,8 @@ function show(d, why) {
   $('why').textContent = w;
   if (d) {
     had = !!d.token;
-    if (!$('url').value && d.url) $('url').value = d.url;
-    $('token-hint').textContent = d.token ? `A token is set (ending ${d.token.replace('…', '')}). Leave this empty to keep it.` : 'In Home Assistant: your profile, Security, Long-lived access tokens, Create token.';
+    if (!$('url').value && (d.url || d.seen)) $('url').value = d.url || d.seen;  // seen: homeassistant.local answers the panel
+    $('token-hint').textContent = d.token ? `A token is set (ending ${d.token.replace('…', '')}). Leave this empty to keep it.` : '';
   }
 }
 async function read() {
