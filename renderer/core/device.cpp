@@ -57,6 +57,9 @@ std::string base_of(const std::string &id) { return id.substr(0, id.find('?')); 
 bool known(const std::string &id) { return find(base_of(id).c_str()) || spec::screen_json(base_of(id)); }
 bool text_large_setting();
 // the device's screens are built in its Text size (Settings > Text size: Large = core/fonts.cpp large fonts)
+// navigation timing (device.h nav_timing): the change being measured, from its tap to its first frame
+struct Nav { bool on = false; std::vector<NavTime> done; NavTime cur; int stage = 0; uint32_t touch = 0; };  // stage 0 idle, 1 queued, 2 built
+Nav &nav() { static Nav n; return n; }
 struct LargeScope {
   bool was;
   explicit LargeScope(bool on) : was(text_large()) { set_text_large(on); }
@@ -76,6 +79,7 @@ bool show(Device *d, const std::string &id, std::vector<lv_obj_t *> &items) {
   const size_t q = id.find('?');
   if (q == std::string::npos || deserializeJson(none, id.c_str() + q + 1) || !none.is<ArduinoJson::JsonObject>()) none.to<ArduinoJson::JsonObject>();
   if (d->screen) lv_obj_delete(d->screen);
+  if (nav().on && nav().stage == 1) nav().cur.del = lv_tick_get();
   d->builds++;
   d->screen = box(d->root);
   lv_obj_set_size(d->screen, lay::screen_w, lay::screen_h);
@@ -87,7 +91,9 @@ bool show(Device *d, const std::string &id, std::vector<lv_obj_t *> &items) {
   if (from_spec || !strcmp(c->section, "screens")) {
     lv_obj_t *s = from_spec ? spec::build(d->screen, base_of(id), none.as<Props>()) : build_into(d->screen, c, none.as<Props>());
     if (!s) return true;
+    if (nav().on && nav().stage == 1) nav().cur.made = lv_tick_get();
     lv_obj_update_layout(d->screen);
+    if (nav().on && nav().stage == 1) nav().cur.laid = lv_tick_get();
     // header = the screen's first child; blocks = the rest, a scrolling content column = its children on screen
     for (uint32_t i = 0; i < lv_obj_get_child_count(s); i++) {
       lv_obj_t *k = lv_obj_get_child(s, (int32_t) i);
@@ -147,9 +153,6 @@ std::string target_of(const std::string &id, bool &page) {
   if (id.find('?') == std::string::npos && spec::page_role(base) && find(base.c_str()) == nullptr) page = true;
   return id;
 }
-// navigation timing (device.h nav_timing): the change being measured, from its tap to its first frame
-struct Nav { bool on = false; std::vector<NavTime> done; NavTime cur; int stage = 0; uint32_t touch = 0; };  // stage 0 idle, 1 queued, 2 built
-Nav &nav() { static Nav n; return n; }
 void run(lv_timer_t *t) {
   auto *d = (Device *) lv_timer_get_user_data(t);
   if (nav().on && nav().stage == 1) nav().cur.run = lv_tick_get();

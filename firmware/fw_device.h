@@ -242,6 +242,8 @@ inline void perf_json(ArduinoJson::JsonObject o) {
   for (const fw::dev::NavTime &x : fw::dev::nav_times()) {
     ArduinoJson::JsonObject r = nv.add<ArduinoJson::JsonObject>();
     r["screen"] = x.screen, r["input"] = x.tap - x.touch, r["run"] = x.run - x.tap, r["build"] = x.build1 - x.build0, r["feeds"] = x.feed_ms, r["rounds"] = x.feeds;
+    if (x.del) r["delete"] = x.del - x.build0;
+    if (x.made) r["make"] = x.made - x.del, r["layout"] = x.laid - x.made, r["rest"] = x.build1 - x.laid;
     r["frame"] = x.frame - x.build1, r["total"] = x.frame - x.touch;
   }
 }
