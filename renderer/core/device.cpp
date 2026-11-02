@@ -504,11 +504,13 @@ lv_obj_t *mount(lv_obj_t *parent, const char *start) {
     auto *d = (Device *) lv_event_get_user_data(e);
     if (d->timer) lv_timer_delete(d->timer);
     if (d->restyle) lv_timer_delete(d->restyle);
+    if (d->pre) lv_timer_delete(d->pre);  // the kept pages' prebuild (the pages go with the root)
     if (d->toasts) lv_obj_delete(d->toasts);  // its DELETE clears d->toasts
     devices.erase(std::remove(devices.begin(), devices.end(), d), devices.end());
     delete d;
   }, LV_EVENT_DELETE, d);
   listen(d->root, on_emit);
+  if (keep_max() > 0) d->pre = lv_timer_create(prebuild, 250, d);  // kept pages on: this device keeps them too
   // toasts arrive over whatever screen shows: a Toast layer on the display's top layer (above the screen stack and
   // its cuts); it goes with the device (or with the display, whichever is deleted first)
   static const bool hooked = (ha::on_put(toast_put), true);

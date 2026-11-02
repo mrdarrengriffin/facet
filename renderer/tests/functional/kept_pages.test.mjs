@@ -74,5 +74,15 @@ export default {
       t.eq(builds(t), n + 1, 'one build: Weather again (in an idle gap or on its tap); Clock and Home none');
       t.ok(!page(t, 'weather').stale, 'and kept fresh');
     } },
+    { name: 'a device mounted again while pages are kept: the old one goes cleanly, the new one keeps its own', async run(t) {
+      await t.device();
+      keep(t, 8);
+      idle(t, 3000);
+      t.b.rebuild('device', {});  // the bench and the workbench mount a device again
+      idle(t, 3000);
+      t.eq(keep(t).length, 8, 'the new device kept its 8 pages');
+      act(t, { do: 'nav.open', screen: 'clock' });
+      t.ok(page(t, 'clock').shown, 'and shows them');
+    } },
   ],
 };
