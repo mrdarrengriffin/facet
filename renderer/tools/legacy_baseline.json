@@ -107,13 +107,5 @@
   "fixed": 10,
   "theme": 2,
   "width": 3
- },
- "screens/setup.cpp": {
-  "create": 3,
-  "local": 23,
-  "fixed": 21,
-  "font": 1,
-  "theme": 2,
-  "width": 5
  }
 }
