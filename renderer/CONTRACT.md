@@ -194,8 +194,13 @@ with the `bleed` style; **TODO** test: each bleed reaches exactly the page edge;
 `side` is `left`, `right`, `top`, `bottom` or `all`; `max` is a size token, the furthest anything inside may draw or
 take taps past the slot's box (a hit pad counts). What it lets out MUST NOT cover another slot or a touch target that
 is not its own. The component's header comment names each one and why. Nothing else draws or takes taps past a box
-(LVGL's overflow flag on its own is not used). Today: the Media hero's picture slot (`left`, `layout:mv-bleed`: the
-cassette runs off the screen's left edge), the Header bar and its slots (`all`, `space:4`: a small item's hit pad).
+(LVGL's overflow flag on its own is not used). A drawn box (`fx::strip`) with a declared bleed draws up to its max.
+A `top` (or `all`) bleed that reaches a Page's body, every box between letting it through, opens that strip of the
+header gap: the body's top edge moves up by `max` and its top padding grows by the same, so nothing moves.
+Today: the Media hero's picture slot (`left`, `layout:mv-bleed`: the cassette runs off the screen's left edge; `top`,
+`space:3`: the vinyl's arm pivot and counterweight above the record), the vinyl itself (`top`: `space:3`, at card
+size `layout:card-pad`, inside its Card's padding, which the Card declares too), the Header bar and its slots
+(`all`, `space:4`: a small item's hit pad).
 *Why:* a picture drawn past its slot is a design choice only when it is declared and bounded; an undeclared overhang
 covers a neighbour. *Check:* audit `bleed` (tests/rules/audit.mjs `bleedErrs`: side, max, covers), every component and
 screen, every theme, both densities.

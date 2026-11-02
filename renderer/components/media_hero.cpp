@@ -29,10 +29,14 @@ void visual_props(fw::Props p, ArduinoJson::JsonDocument &d) {
 void fill(lv_obj_t *root, fw::Props p) {
   for (const char *t : {"box", "row-top", "fill-w", "gap:m-gap"}) fx::use(root, t);
   fw::shape(root, sig(p), "hero");
-  fx::overflow(root, "left", "layout:mv-bleed");  // the cassette's overhang past the inset, off the screen's left edge (docs: cropped left)
+  // the bleed: the cassette's overhang past the inset, off the screen's left edge (docs: cropped left); the vinyl's arm
+  // pivot + counterweight above the record, into the header gap (the Page's body opens that strip)
+  const bool vinyl = !strcmp(p["visual"] | "cd", "vinyl");
+  const char *side = vinyl ? "top" : "left", *by = vinyl ? "space:3" : "layout:mv-bleed";
+  fx::overflow(root, side, by);
   lv_obj_t *slot = fx::box(root, "free");
   for (const char *t : {"wrap-end", "w:mv-h"}) fx::use(slot, t);  // its one child at the end: a wider one runs off to the left
-  fx::overflow(slot, "left", "layout:mv-bleed");
+  fx::overflow(slot, side, by);
   ArduinoJson::JsonDocument d;
   visual_props(p, d);
   fw::find("media_visual")->build(slot, d.as<fw::Props>());

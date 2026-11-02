@@ -1928,6 +1928,7 @@ lv_obj_t *drawn(lv_obj_t *parent, void (*draw)(const Pen &), const char *layout)
   lv_obj_add_event_cb(o, on_size, LV_EVENT_SIZE_CHANGED, nullptr);
   return o;
 }
+std::set<lv_obj_t *> &page_bodies() { static std::set<lv_obj_t *> s; return s; }  // fx::page bodies (in_page, a top bleed)
 std::set<lv_obj_t *> &strips() { static std::set<lv_obj_t *> s; return s; }  // drawn boxes (a declared bleed is their own reach)
 lv_obj_t *strip(lv_obj_t *parent, void (*draw)(const Pen &), const char *look) {
   lv_obj_t *o = box(parent, "free");
@@ -2016,8 +2017,24 @@ void overflow(lv_obj_t *o, const char *side, const char *max) {
     lv_event_set_ext_draw_size(e, m);
   }, LV_EVENT_REFR_EXT_DRAW_SIZE, nullptr);
   lv_obj_refresh_ext_draw_size(o);
+  // a top bleed that reaches a Page's body (every box between lets it through): the body's top edge moves up by it into
+  // the header gap and its top padding grows by the same, so nothing in it moves and only that strip opens (a list
+  // scrolled under it shows in that strip only)
+  if (strcmp(side, "top") && strcmp(side, "all")) return;
+  for (lv_obj_t *a = lv_obj_get_parent(o); a; a = lv_obj_get_parent(a)) {
+    if (page_bodies().count(a)) {
+      static std::map<lv_obj_t *, int32_t> opened;  // per body: the strip opened so far (bodies are erased with their page)
+      const int32_t b = size(max), had = opened.count(a) ? opened[a] : 0;
+      if (b <= had) return;
+      if (!had) lv_obj_add_event_cb(a, [](lv_event_t *e) { opened.erase((lv_obj_t *) lv_event_get_current_target(e)); }, LV_EVENT_DELETE, nullptr);
+      lv_obj_set_style_margin_top(a, -b, 0);
+      lv_obj_set_style_pad_top(a, lv_obj_get_style_pad_top(a, LV_PART_MAIN) + b - had, 0);
+      opened[a] = b;
+      return;
+    }
+    if (!lv_obj_has_flag(a, LV_OBJ_FLAG_OVERFLOW_VISIBLE)) return;  // clipped before it reaches the body
+  }
 }
-std::set<lv_obj_t *> &page_bodies() { static std::set<lv_obj_t *> s; return s; }
 bool in_page(lv_obj_t *o) {
   for (; o; o = lv_obj_get_parent(o)) if (page_bodies().count(o)) return true;
   return false;
