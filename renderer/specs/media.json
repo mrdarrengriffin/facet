@@ -3,10 +3,10 @@
  "id": "media",
  "locked": true,
  "name": "Media",
- "rev": 4,
+ "rev": 5,
  "role": "page",
  "params": {
-  "source": {"about": "Where what's playing comes from: a media player in Home Assistant, or made-up tracks for previews.", "type": "select", "options": ["ha", "sample"], "label": "Source", "default": "sample"},
+  "source": {"about": "Where what's playing comes from: a media player in Home Assistant, or made-up tracks for previews.", "type": "select", "options": ["ha", "sample"], "label": "Source", "default": "ha"},
   "entity": {"about": "The media player this screen shows and controls.", "type": "entity", "domain": "media_player", "label": "Player", "default": ""},
   "speakers": {"about": "The speakers you can switch between in the speaker picker.", "type": "entities", "domain": "media_player", "label": "Speakers", "default": ""},
   "auto": {"about": "A sensor that names the speaker in the room you are in. When set, Auto follows it.", "type": "entity", "domain": "sensor", "label": "Auto follows", "default": ""},

@@ -399,9 +399,13 @@ once, **required** or **optional**, with its **placeholder**: a round that does 
 (an optional field a source cannot fill: `""`, so the component bound to it hides and the screen shows what is left;
 `sources/sources.json` lists the same per feed), and an ok round that misses a required field turns the feed to
 `error`. The sample data lives in ONE place per feed, its `sample()`: what it puts is the feed's sample words, the
-words a screen on real data must never show.
-*Why:* six adapters each made their own timer, settings check and "Loading" words, and drifted. *Check:* the feed's
-functional tests (sample, ha, unavailable and back); the leak rule (sample words on real data).
+words a screen on real data must never show. **A panel never shows sample data unless its deck says so** (a screen's
+`source: sample`): a factory screen's source defaults to the real one (`ha`, or `panel` for what the panel works out
+itself); sample is for the site and the tests, which ask for it. A feed keeps only its last sample round's words.
+*Why:* six adapters each made their own timer, settings check and "Loading" words, and drifted; a factory Calendar
+showed its made-up fortnight on a panel, and kept every minute's copy of it. *Check:* the feed's functional tests
+(sample, ha, unavailable and back); the leak rule (sample words on real data); `no_sample` (the factory deck on a
+linked panel shows no sample words); the Calendar's moving-clock memory test.
 
 **C52. Every screen comes with its Home card.** A screen's spec carries `"card"`: the Card a Home page card for it
 shows (icon = the screen's icon top left, preview artwork top right, the value or words that matter now, the sub

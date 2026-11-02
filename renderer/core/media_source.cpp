@@ -239,7 +239,7 @@ std::vector<feed::Field> media_fields() {
 }
 class Media : public feed::Feed {
  public:
-  Media() : Feed("panel.media", 1000, "sample", media_fields()) {}  // the progress moves on once a second while shown
+  Media() : Feed("panel.media", 1000, "ha", media_fields()) {}  // the progress moves on once a second while shown
   using Feed::put;
   using Feed::state;
 

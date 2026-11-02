@@ -3,7 +3,7 @@
  "id": "energy",
  "locked": true,
  "name": "Energy",
- "rev": 7,
+ "rev": 8,
  "role": "page",
  "params": {
   "source": {
@@ -15,7 +15,7 @@
     "fixtures"
    ],
    "label": "Source",
-   "default": "sample"
+   "default": "ha"
   },
   "extra": {
    "about": "One extra integration laid over the dashboard's data: the live watts, the rate now and next, the day's cheap and peak rates and events such as saving sessions. Auto picks the best one found in Home Assistant (Octopus Energy); None shows the dashboard's data alone.",

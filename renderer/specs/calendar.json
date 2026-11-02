@@ -3,10 +3,10 @@
  "id": "calendar",
  "locked": true,
  "name": "Calendar",
- "rev": 4,
+ "rev": 5,
  "role": "page",
  "params": {
-  "source": {"about": "Where the events come from: calendars in Home Assistant, or a made-up fortnight for previews.", "type": "select", "options": ["ha", "sample"], "label": "Source", "default": "sample"},
+  "source": {"about": "Where the events come from: calendars in Home Assistant, or a made-up fortnight for previews.", "type": "select", "options": ["ha", "sample"], "label": "Source", "default": "ha"},
   "calendars": {"about": "The calendars to show events from. Each calendar's events take their own colour.", "type": "entities", "domain": "calendar", "label": "Calendars", "default": ""},
   "view": {"about": "Which view the screen opens on: agenda lists the next event and the days after it; month shows six weeks of days with their events.", "type": "select", "options": ["agenda", "month"], "label": "View", "default": "agenda"},
   "now": {"about": "For tests only: a fixed time in milliseconds for the made-up fortnight. Leave empty for the real time.", "type": "hidden", "default": ""}

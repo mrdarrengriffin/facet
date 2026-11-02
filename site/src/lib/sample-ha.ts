@@ -9,6 +9,13 @@ import type { Engine } from './engine';
 import { DEMO, demoValue, REACTIONS } from '../../../renderer/tools/demo_ha.mjs';
 // the answers a panel gets from Home Assistant (forecasts, calendar events, Energy's reads): the tests' fake uses the same
 import { demoGrid, demoReply, demoWs } from '../../../renderer/tools/demo_ha_replies.mjs';
+import factoryDeck from '../../../renderer/specs/deck.json';
+
+// the factory deck with every screen that offers a sample source on it: the site previews sample data (a panel never
+// does unless its deck says so: its factory screens read Home Assistant)
+const specFiles = import.meta.glob('../../../renderer/specs/*.json', { eager: true, import: 'default' }) as Record<string, { id?: string; params?: { source?: { options?: string[] } } }>;
+const SAMPLED = new Set(Object.values(specFiles).filter((s) => s.params?.source?.options?.includes('sample')).map((s) => s.id));
+const SITE_DECK = { ...factoryDeck, pages: factoryDeck.pages.map((p: { kind: string; params?: Record<string, string> }) => (SAMPLED.has(p.kind) ? { ...p, params: { ...(p.params ?? {}), source: 'sample' } } : p)) };
 
 const NAMES: Record<string, string[]> = {
   light: ['Ceiling', 'Lamp', 'Desk light'],
@@ -140,6 +147,7 @@ export function feedSampleHa(e: Engine) {
   live = e;
   // the panel's own Home Assistant link (Energy reads over it): a made-up address, answered here, never fetched
   try { e.withStr('act', (pc) => e.withStr(JSON.stringify({ do: 'ha.connect', url: 'http://homeassistant.local:8123', token: 'demo-token-0000' }), (pa) => (e.m as unknown as { _fw_spec: (a: number, b: number) => number })._fw_spec(pc, pa))); } catch { /* an older build */ }
+  try { e.withStr('deck', (pc) => e.withStr(JSON.stringify(SITE_DECK), (pa) => (e.m as unknown as { _fw_spec: (a: number, b: number) => number })._fw_spec(pc, pa))); } catch { /* an older build */ }
   const done = new Set<string>();
   const tick = () => {
     if (m._fw_ha_asks) answer(e, m);

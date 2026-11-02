@@ -5,12 +5,14 @@
 const back = (t) => t.part('back_button');
 const vis = (t, re) => t.objs().some((o) => o.text && t.visible(o) && re.test(String(o.text)));
 const DAYS = /^(Mon|Tue|Wed|Thu|Fri|Sat|Sun|Today)$/;
-const week = async (t) => { await t.device(); t.show('energy'); t.tap(/^last 7 days$/i); t.wait(900); };
+// a deck whose Energy is on its sample day (a panel's factory Energy reads Home Assistant: no sample data)
+const SAMPLE = { v: 2, rev: 1, start: 'home', pages: [{ id: 'home', kind: 'home', name: 'Home', cards: [{ t: 'page', page: 'energy', size: 'm' }] }, { id: 'energy', kind: 'energy', params: { source: 'sample' } }] };
+const week = async (t) => { await t.device(SAMPLE); t.show('energy'); t.tap(/^last 7 days$/i); t.wait(900); };
 export default {
   id: 'energy', family: 'charts', about: 'Energy screen: today, and the last 7 days as a view of the same screen.',
   tests: [
     { name: 'today: hero, rate, More row; no week parts', async run(t) {
-      await t.device(); t.show('energy');
+      await t.device(SAMPLE); t.show('energy');
       t.ok(vis(t, /^today so far$/i), 'today so far');
       t.ok(vis(t, /^last 7 days$/i), 'More row');
       t.ok(!vis(t, /^this week$/i), 'no week hero');

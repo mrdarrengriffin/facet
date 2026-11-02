@@ -344,7 +344,7 @@ std::vector<feed::Field> calendar_fields() {
 }
 class Calendar : public feed::Feed {
  public:
-  Calendar() : Feed("panel.calendar", 60000, "sample", calendar_fields()) {}
+  Calendar() : Feed("panel.calendar", 60000, "ha", calendar_fields()) {}
   using Feed::put;
   using Feed::state;
 

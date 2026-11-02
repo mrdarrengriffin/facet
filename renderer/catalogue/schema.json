@@ -9739,7 +9739,7 @@
       "sample"
      ],
      "label": "Source",
-     "default": "sample"
+     "default": "ha"
     },
     "calendars": {
      "about": "The calendars to show events from. Each calendar's events take their own colour.",
@@ -9809,7 +9809,7 @@
       "fixtures"
      ],
      "label": "Source",
-     "default": "sample"
+     "default": "ha"
     },
     "extra": {
      "about": "One extra integration laid over the dashboard's data: the live watts, the rate now and next, the day's cheap and peak rates and events such as saving sessions. Auto picks the best one found in Home Assistant (Octopus Energy); None shows the dashboard's data alone.",
@@ -9873,7 +9873,7 @@
       "sample"
      ],
      "label": "Source",
-     "default": "sample"
+     "default": "ha"
     },
     "entity": {
      "about": "The media player this screen shows and controls.",
@@ -10026,7 +10026,7 @@
   },
   "list": {
    "panel.calendar": {
-    "source": "sample",
+    "source": "ha",
     "every_ms": 60000,
     "fields": [
      {
@@ -10118,7 +10118,7 @@
     ]
    },
    "panel.energy": {
-    "source": "sample",
+    "source": "ha",
     "every_ms": 60000,
     "fields": [
      {
@@ -10224,7 +10224,7 @@
     ]
    },
    "panel.media": {
-    "source": "sample",
+    "source": "ha",
     "every_ms": 1000,
     "fields": [
      {

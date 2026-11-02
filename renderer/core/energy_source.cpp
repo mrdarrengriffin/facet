@@ -740,7 +740,7 @@ std::vector<fw::feed::Field> energy_fields() {
 }
 class Energy : public fw::feed::Feed {
  public:
-  Energy() : fw::feed::Feed("panel.energy", 60000, "sample", energy_fields()) {}
+  Energy() : fw::feed::Feed("panel.energy", 60000, "ha", energy_fields()) {}
   using fw::feed::Feed::put;
   using fw::feed::Feed::state;
   void live() {  // the price, the power and the extra's demand: a change shows at once
