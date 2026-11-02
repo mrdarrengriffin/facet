@@ -7,6 +7,7 @@ import Docs, { type Heading } from '../../layouts/Docs.astro';
 import { AI_EXAMPLES, url } from '../../lib/nav';
 import examples from '../../lib/ai-examples.json';
 import CodeBlock from '../../components/CodeBlock.astro';
+import schema from '../../../../renderer/catalogue/schema.json';  // the table: the panel's routes, each with its one line
 
 const headings: Heading[] = [
   { depth: 2, slug: 'spec', text: 'What a spec is' },
@@ -88,12 +89,7 @@ const prompt = `You are making a screen for my Facet wall panel at http://<panel
   <table>
     <thead><tr><th>Request</th><th>What it does</th></tr></thead>
     <tbody>
-      <tr><td><code>GET /llms.txt</code>, <code>GET /agents.md</code></td><td>The agent guide for this firmware. Open, no token needed.</td></tr>
-      <tr><td><code>GET /fw/spec</code></td><td>Components, screens, budgets and free memory.</td></tr>
-      <tr><td><code>POST /fw/spec</code> <code>kind: check</code></td><td>Checks a spec and lists errors, stores nothing.</td></tr>
-      <tr><td><code>POST /fw/spec</code> <code>kind: screen</code> / <code>deck</code> / <code>revert</code></td><td>Installs a screen, the page list, or goes back to the factory screen.</td></tr>
-      <tr><td><code>POST /fw/show</code> <code>{'{"screen": id}'}</code></td><td>Opens a screen on the panel.</td></tr>
-      <tr><td><code>GET /screenshot</code></td><td>What the screen shows now (a BMP image), so the assistant can check its work.</td></tr>
+      {schema.routes.map((r) => <tr><td><code>{r.method} {r.path}</code></td><td>{r.says}</td></tr>)}
     </tbody>
   </table>
   <p>Writes need the setting on and <code>Authorization: Bearer &lt;token&gt;</code>; otherwise the panel answers 403 and says what is missing.</p>

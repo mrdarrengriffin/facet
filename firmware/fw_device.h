@@ -1,28 +1,46 @@
 // Facet device glue (README "Device firmware"): the workbench's core + foundations + components on a real panel,
 // driven over HTTP by the workbench's "Show on device" button. ESPHome only (lvgl + web_server); no house specifics.
 //   GET  /fw/info   {v, density, core, files, ids, built, board, w, h, shown, devices: [{stack, builds, objects}], heap}   what this firmware was built from
+//                = What this firmware is: its build, board, screen size and free memory.
 //   GET  /fw/meta   [{id, name, section, meta}]                                     the registry (same as fw_meta())
+//                = Every component and screen this firmware has, with its props.
 //   POST /fw/show   {id, props?, theme?: dark|light, accent?: <set id>}  -> {ok, error?, ms, heap}
+//                = Shows one component or screen with the props you give (the workbench's Show on device).
 //   GET  /fw/perf   frame stats while animations run (since boot or the last ?reset=1): fps, frame / render ms
+//                = How smoothly the panel draws: frames per second and render times.
 //   GET  /fw/settings  the settings backup {"facet":"settings","version":1,"values":{...}} (core/device.h; no secrets)
+//                = A backup of the panel's settings (no secrets in it).
 //   POST /fw/settings  {values:{id: value}} (a backup, or a few) -> each through fw::dev::set (HOST): applied, the
 //                      entities follow and keep it (settings.yaml from firmware/settings_yaml.mjs) -> {ok, error?, settings}
+//                = Restores a settings backup, or changes a few settings.
 //   GET  /screenshot  the glass as a 16-bit BMP (paced chunks; ported from the old panel's shot.h)
+//                = What the screen shows now (a BMP image), so an assistant can check its work.
 //   GET  /fw/spec   the spec hello (core/spec.h: protocol, catalogue hash, components, screens + revs, budgets, heap)
+//                = Components, screens, budgets and free memory.
 //   POST /fw/spec   {kind: screen|deck|revert, spec?: {...}, id?} -> the apply answer (the HA actions facet_screen /
 //                   facet_deck / facet_revert do the same; workbench.yaml)
+//                = Installs a screen, the page list, or goes back to the factory screen.
 //   GET  /fw/deck   the deck this panel runs (core/spec.h deck_json: the override, else factory) {deck, rev, override}
+//                = The page list this panel runs now.
 //   GET  /fw/ha     the Home Assistant store (core/ha.h): {wants: [[e, a]...], values: {"e|a": value}, bound: n};
 //                   ?want=e1,e2[&attrs=a1] subscribes to those first (the panel-served editor's live preview)
+//                = The Home Assistant values the panel holds, and what its screens ask for.
 //   POST /fw/bench  a batch of bench cases the panel runs on its own screen (fw_bench.h); GET /fw/bench = the report
+//                = Runs speed tests on the panel's own screen; GET reads the report.
 //   POST /fw/show   {screen: <deck page id | screen id | name>} opens that screen on the device (agents)
+//                = Opens a screen on the panel.
 //   POST /fw/spec   kind check | check_deck = validate (+ build off screen) only, nothing stored
+//                = Checks a spec and lists its errors; stores nothing.
 //   GET  /fw/act    every action of the closed list (core/spec.h ACTION_DOCS: fields, limits, one example each)
+//                = Every action a screen or an assistant can run, with an example each.
 //   POST /fw/act    {do, ...fields} -> {ok, why?, state?}: one action, checked + run like a spec tap (fw::spec::act,
 //                   CONTRACT.md C50; HA's facet_act does the same: act_from_ha)
+//                = Runs one action (a light, a timer, a screen) as a tap would.
 //   GET  /fw/schema   the one schema surface (catalogue/schema.json: tokens, components, screens, feeds, settings,
 //                     themes, these routes; gzip; open), bundle fw_docs_gen.h
+//                = Everything this firmware accepts in one file: tokens, components, screens, feeds, settings, themes and these requests.
 //   GET  /llms.txt, /agents.md   the agent docs (bundle fw_docs_gen.h from tools/gen_agents.mjs; open)
+//                = The agent guide for this firmware. Open, no token needed.
 // AI agents: every POST under /fw/ and every GET /fw/ha (it shows the subscribed HA
 // values; the editor's ?want= subscribes too) go through agent::allow():
 // the panel's own editor (a browser request from this origin: Sec-Fetch-Site same-origin, or Origin = this host)
