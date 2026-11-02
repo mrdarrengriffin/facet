@@ -28,7 +28,8 @@ const char *words(State s);     // the screen's words for it: "" | "Loading" | "
 struct Field {
   const char *name;
   bool required;
-  const char *none;  // what it shows when a round did not fill it ("" = hidden)
+  const char *none;  // what it shows when a round did not fill it ("" = hidden; nullptr = it keeps its last value: a
+                     // control's position the source did not report this time)
 };
 
 class Feed {
@@ -59,7 +60,7 @@ class Feed {
   uint32_t every_ms_;
   std::vector<Field> fields_;
   ArduinoJson::JsonDocument cfg_;
-  std::string cfg_seen_;
+  std::string cfg_seen_ = "\x01";  // never a config: the first round is a change
   std::vector<std::pair<std::string, std::string>> reads_;
   std::set<std::string> put_now_, samples_, down_;  // down_: the entities it reads that are unavailable now
   bool changed_ = false, back_ = false, in_round_ = false, in_sample_ = false;

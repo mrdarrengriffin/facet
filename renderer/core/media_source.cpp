@@ -1,6 +1,6 @@
 // The media feed (CONTRACT.md C51): the reserved entity panel.media (core/spec.h "local sources") in the HA store, the
 // one shape the Media screen and its Home card bind to, whatever plays the music. Same file on the panels and in WASM.
-//   state        playing | paused | idle | off | loading | error
+//   state        ok | loading | error (the Feed base, core/feed.h); player playing | paused | idle | off | loading | error
 //   state_label  "now playing" | "paused" | "idle" | "unavailable" (docs .fs-m-state); state_tone accent-text while
 //                playing (docs data-tone working), else text-dim
 //   playing      "true" | "false" (the Media visual turns; the play button is active)
@@ -31,12 +31,12 @@
 #include <cmath>
 #include <cstdio>
 #include <ctime>
+#include "feed.h"
 #include "fw.h"
 #include "ha.h"
 
 namespace fw::dev::media_source {
 namespace {
-constexpr const char *E = "panel.media";
 const char *const ATTRS[] = {"", "media_title", "media_artist", "media_album_name", "entity_picture", "media_position",
                              "media_duration", "media_position_updated_at", "volume_level", "source", "friendly_name"};
 struct Track { const char *title, *artist, *album; int secs; };
@@ -59,10 +59,10 @@ struct St {
   int held_vol = -1, live_vol = -1;
 };
 St &S() { static St s; return s; }
-lv_timer_t *tick = nullptr;
 
 double now_ms() { return (double) time(nullptr) * 1000; }
-void put(const char *a, const std::string &v) { ha::put(E, a, v); }
+std::function<void(const char *, const std::string &)> put;  // the feed's put (Media below)
+void put_state(feed::State st);
 std::string num(double v) { char b[24]; snprintf(b, sizeof b, "%d", (int) std::lround(v)); return b; }
 std::string esc(const std::string &s) {
   std::string o;
@@ -117,7 +117,8 @@ void put_shown(const Shown &m) {
   put("card_text", m.title.empty() ? "Nothing playing" : m.title);
   put("card_sub", down ? "unavailable" : !m.artist.empty() ? m.artist : m.state == "paused" ? "paused · " + m.speaker : m.speaker);
   put("card_accent", playing ? "true" : "false");
-  put("", m.state);
+  put("player", m.state);
+  put_state(down ? feed::ERROR : m.state == "loading" ? feed::LOADING : feed::OK);
 }
 std::string row(const std::string &id, const std::string &name, const std::string &status, const char *icon, bool working, bool sel) {
   return "{\"id\":\"" + esc(id) + "\",\"name\":\"" + esc(name) + "\",\"status\":\"" + esc(status) + "\",\"icon\":\"" + icon +
@@ -203,54 +204,66 @@ void rebuild() {
   put("speakers", l + "]");
   put_shown(m);
 }
-void want_all() {
+// the settings: the players, Auto, the sheet closed again (a new screen or a new pick in Settings)
+void setup(const ArduinoJson::JsonDocument &c) {
   St &s = S();
-  for (const char *a : ATTRS) if (!s.player.empty()) ha::want(s.player, a);
-  for (const std::string &p : s.speakers)
-    for (const char *a : ATTRS) ha::want(p, a);
-}
-void entity_put(const std::string &e, const std::string &, const std::string &) {
-  St &s = S();
-  if (s.src != "ha" || !ha::watched(E)) return;  // nothing shows the feed: the next bind's fresh() catches up
-  if (e == s.player || e == current() || std::find(s.speakers.begin(), s.speakers.end(), e) != s.speakers.end()) rebuild();
-}
-
-void fresh() {
-  St &s = S();
-  if (!tick) tick = lv_timer_create([](lv_timer_t *) {  // the progress moves on once a second while playing (while shown)
-    if (!ha::watched(E)) return;
-    if (S().src == "ha") rebuild(); else sample_now();
-  }, 1000, nullptr);
-  static const bool hooked = (ha::on_put(entity_put), true);
-  (void) hooked;
-  const std::string &cfg = ha::feed_config(E);
-  if (cfg != s.cfg_seen) {
-    s.cfg_seen = cfg;
-    ArduinoJson::JsonDocument c;
-    deserializeJson(c, cfg.empty() ? "{}" : cfg.c_str());
-    s.src = c["source"] | "sample";
-    s.player = c["player"] | "";
-    if (s.player.rfind("media_player.", 0) != 0) s.player.clear();
-    s.speakers.clear();
-    const std::string l = c["speakers"] | "";
-    for (size_t i = 0; i < l.size();) {
-      size_t j = l.find(',', i);
-      if (j == std::string::npos) j = l.size();
-      std::string x = l.substr(i, j - i);
-      while (!x.empty() && x[0] == ' ') x.erase(0, 1);
-      while (!x.empty() && x.back() == ' ') x.pop_back();
-      if (x.rfind("media_player.", 0) == 0 && s.speakers.size() < 12) s.speakers.push_back(x);
-      i = j + 1;
-    }
-    if (s.speakers.empty() && !s.player.empty()) s.speakers.push_back(s.player);  // the player alone, never sample rows
-    s.picked.clear(), s.follow_last.clear();
-    s.follow = true;
-    s.sheet = "closed";
-    if (s.src == "ha") want_all();
+  s.src = c["source"] | "sample";
+  s.player = c["player"] | "";
+  if (s.player.rfind("media_player.", 0) != 0) s.player.clear();
+  s.speakers.clear();
+  const std::string l = c["speakers"] | "";
+  for (size_t i = 0; i < l.size();) {
+    size_t j = l.find(',', i);
+    if (j == std::string::npos) j = l.size();
+    std::string x = l.substr(i, j - i);
+    while (!x.empty() && x[0] == ' ') x.erase(0, 1);
+    while (!x.empty() && x.back() == ' ') x.pop_back();
+    if (x.rfind("media_player.", 0) == 0 && s.speakers.size() < 12) s.speakers.push_back(x);
+    i = j + 1;
   }
-  if (s.src == "ha") rebuild(); else sample_now();
+  if (s.speakers.empty() && !s.player.empty()) s.speakers.push_back(s.player);  // the player alone, never sample rows
+  s.picked.clear(), s.follow_last.clear();
+  s.follow = true;
+  s.sheet = "closed";
 }
-[[maybe_unused]] const bool registered = (ha::on_local(E, fresh), true);  // binds on panel.media never reach a host
+std::vector<feed::Field> media_fields() {
+  std::vector<feed::Field> v;
+  for (const char *n : {"state_label", "state_tone", "playing", "play_state", "ctl_state", "title", "card_text", "card_sub", "card_accent", "player", "sheet"})
+    v.push_back({n, true, ""});
+  for (const char *n : {"artist", "album", "art", "source", "speakers"}) v.push_back({n, false, ""});
+  for (const char *n : {"position", "duration", "progress"}) v.push_back({n, false, "0"});
+  v.push_back({"volume", false, nullptr});  // the Slider keeps its place when the player does not say
+  v.push_back({"volume_text", false, "--"});
+  v.push_back({"speaker", false, "none"});
+  return v;
+}
+class Media : public feed::Feed {
+ public:
+  Media() : Feed("panel.media", 1000, "sample", media_fields()) {}  // the progress moves on once a second while shown
+  using Feed::put;
+  using Feed::state;
+
+ protected:
+  void sample() override {
+    if (changed()) setup(cfg()), reads({});
+    sample_now();
+  }
+  void fill() override {
+    St &s = S();
+    if (changed()) {
+      setup(cfg());
+      std::vector<std::pair<std::string, std::string>> r;
+      for (const char *a : ATTRS) if (!s.player.empty()) r.push_back({s.player, a});
+      for (const std::string &p : s.speakers)
+        for (const char *a : ATTRS) r.push_back({p, a});
+      reads(r);
+    }
+    rebuild();
+  }
+};
+Media F;
+void put_state(feed::State st) { F.state(st); }
+[[maybe_unused]] const bool wired = (put = [](const char *a, const std::string &x) { F.put(a, x); }, true);
 }  // namespace
 
 // a tap on the Media screen (see the header); svc / ent / data = a media_player service to call ("" = none: done here)
@@ -259,7 +272,7 @@ const char *control(const std::string &v, std::string *svc, std::string *ent, st
   svc->clear(), data->clear();
   const bool ha = s.src == "ha";
   *ent = ha ? current() : "";
-  auto again = [&] { if (ha) rebuild(); else sample_now(); };
+  auto again = [&] { F.run(); };
   if (v == "speakers" || v == "close") { s.sheet = v == "speakers" ? "open" : "closed"; put("sheet", s.sheet); return ""; }
   if (v.rfind("pick ", 0) == 0) {  // a sheet row by its id or its name (a Picker row's tap says the name)
     std::string id = v.substr(5);

@@ -69,6 +69,7 @@ void Feed::run() {
   const bool ok = st && *st == "ok";
   for (const Field &f : fields_) {
     if (put_now_.count(f.name)) continue;
+    if (!f.none) continue;
     if (f.required && ok && !put_now_.empty()) {  // a source that cannot fill what the screen needs: an error, not a gap
       printf("feed %s: required field %s not filled\n", entity_, f.name);
       ha::put(entity_, "", state_id(ERROR));
