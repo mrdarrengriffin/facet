@@ -6,7 +6,7 @@
 // the tonearm following the track's progress.
 //   box      a strip (fx::strip) sized by layout tokens, the real object scaled to layout:mv-h (256 / 168): disc and
 //            CD mv-h square; cassette mv-cassette-w x mv-h; vinyl mv-vinyl-w x mv-vinyl-h (the arm pivot above the
-//            record). size card = an mv-card square (72 / 48): the record alone, a cassette's right end. The box sizes
+//            record). size card = an mv-card square (72 / 48): the record (its arm's top bleeds into the Card's padding), a cassette's right end. The box sizes
 //            are the real sizes scaled (tests/functional/media_visual.test.mjs proves the tokens). Nothing draws past
 //            the box; on the Media screen the cassette runs past its mv-h slot: the slot's declared bleed (Media hero).
 //   drawing  one Pen (C24) in mm scaled to px: data-sized shapes (Pen disc / ring / seg / tri / rect, within for the
@@ -24,7 +24,8 @@
 // vinyl grooves every space:1 instead of the real 0.92 mm pitch (sub-pixel here).
 // A read-out: no touch, no events, no sound. States: n/a (a picture; the Media hero shows the player's state).
 // Update path: progress / playing / title / artist move in place (packs, arm, spin ease); another visual or size =
-// rebuilt (false). Bleed: none. Contrast pairs: tokens/colour.json section "media_visual".
+// rebuilt (false). Bleed: the vinyl at card size draws its arm's pivot and counterweight above its box, top, up to
+// layout:card-pad (its Card's padding: the Card declares the same). Contrast pairs: tokens/colour.json section "media_visual".
 #include <algorithm>
 #include <cmath>
 #include "fw.h"
@@ -292,7 +293,9 @@ void draw(const fx::Pen &p) {
       case DISC: draw_disc(c); break;
     }
   };
-  if (d->card) p.within(-d->W / 2, -d->H / 2, d->W, d->H, all);  // the card: a square crop, nothing past it
+  // the card: a square crop, nothing past it but the vinyl arm's declared top bleed (layout:card-pad)
+  const int up = d->card && d->kind == VINYL ? fx::size("layout:card-pad") : 0;
+  if (d->card) p.within(-d->W / 2, -d->H / 2 - up, d->W, d->H + up, all);
   else all();
 }
 
@@ -480,6 +483,7 @@ FW_COMPONENT(media_visual, "Media visuals", "components", R"({
   lv_obj_remove_flag(o, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
   d->kind = kind_of(p);
   d->card = card_of(p);
+  if (d->kind == VINYL && d->card) fx::overflow(o, "top", "layout:card-pad");  // the arm's pivot + counterweight above the record: inside the card's padding (24 / 16 px; the arm needs 23.7 / 15.9)
   if (d->card) for (const char *t : {"w:mv-card", "h:mv-card"}) fx::use(o, t);
   else for (const char *t : BOX[d->kind]) fx::use(o, t);
   layout(d);

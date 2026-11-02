@@ -1928,9 +1928,12 @@ lv_obj_t *drawn(lv_obj_t *parent, void (*draw)(const Pen &), const char *layout)
   lv_obj_add_event_cb(o, on_size, LV_EVENT_SIZE_CHANGED, nullptr);
   return o;
 }
+std::set<lv_obj_t *> &strips() { static std::set<lv_obj_t *> s; return s; }  // drawn boxes (a declared bleed is their own reach)
 lv_obj_t *strip(lv_obj_t *parent, void (*draw)(const Pen &), const char *look) {
   lv_obj_t *o = box(parent, "free");
   use(o, look);
+  strips().insert(o);
+  lv_obj_add_event_cb(o, [](lv_event_t *e) { strips().erase((lv_obj_t *) lv_event_get_current_target(e)); }, LV_EVENT_DELETE, nullptr);
   lv_obj_add_event_cb(o, on_draw, LV_EVENT_DRAW_MAIN, (void *) draw);
   return o;
 }
@@ -2009,8 +2012,10 @@ void overflow(lv_obj_t *o, const char *side, const char *max) {
       const int32_t x = LV_MAX(lv_obj_get_ext_draw_size(c), c->spec_attr ? c->spec_attr->ext_click_pad : 0);
       m = LV_MAX(m, LV_MAX(LV_MAX(a.x1 - b.x1, b.x2 - a.x2), LV_MAX(a.y1 - b.y1, b.y2 - a.y2)) + x);
     }
+    if (strips().count(o)) m = LV_MAX(m, size(bleeds()[o].second.c_str()));  // a drawn box draws its own bleed: up to the declared max
     lv_event_set_ext_draw_size(e, m);
   }, LV_EVENT_REFR_EXT_DRAW_SIZE, nullptr);
+  lv_obj_refresh_ext_draw_size(o);
 }
 std::set<lv_obj_t *> &page_bodies() { static std::set<lv_obj_t *> s; return s; }
 bool in_page(lv_obj_t *o) {

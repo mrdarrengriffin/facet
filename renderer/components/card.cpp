@@ -126,6 +126,7 @@ void fill(lv_obj_t *c, fw::Props p) {
     media_props(p, md);
     fw::find("media_visual")->build(top, md.as<fw::Props>());
     k.media = lv_obj_get_child(top, -1);
+    if (!strcmp(md["visual"] | "", "vinyl")) fx::overflow(top, "top", "layout:card-pad");  // the vinyl's arm, into the card's padding
   } else if (!off && full && !strcmp(pv, "covers")) {  // the real Cover visual at card size (C8b, C52: the window shown)
     ArduinoJson::JsonDocument cd;
     cd["size"] = "card", cd["position"] = p["position"];
