@@ -5,10 +5,10 @@ The Updates page is what's new in Facet, newest first, ending with how it began:
 
 ## What earns an entry
 
-- A new screen, component or feature; a screen with a new look; a fix someone would notice; a new docs page.
-- Not tooling, process, tests, refactors or internal rules. Fold those into the visible change they enabled, or into
-  one occasional "Behind the scenes" entry. Several small related changes on one day = **one** entry.
-- Before adding one, look at the latest entries: if yours extends one from the same day, edit that one instead.
+**One entry per release** (Facet 1.0 onwards), written from the git log since the last release and from
+`PRODUCT.md`: what ships, on which panels, how to install or update. A release entry is drafted ahead
+(`draft: true`: never built) and finished at the tag: its version, date and time, then `draft: false`. The
+development diary that used to live here was removed before 1.0.
 
 ## How to write it
 
@@ -16,7 +16,7 @@ The Updates page is what's new in Facet, newest first, ending with how it began:
   Month view", "Media screen controls your speakers", "Smoother curves". Not a label ("Large text", "Card"), not a
   list of unrelated changes joined with "and", no internal names (spec, renderer, WASM, LVGL, port).
 - **kind** = one of: `New screen`, `New feature`, `New component`, `Improved`, `Fixed`, `Design system`, `Docs`,
-  `Story` (how Facet began), `Behind the scenes`. Drawn as a chip; the page filters by it.
+  `Story` (how Facet began), `Behind the scenes`, `Release`. Drawn as a chip; the page filters by it.
 - **Body** = 1-3 short sentences, benefit first ("Play, pause and volume now work the real speaker."), then the one
   detail that makes it interesting. No implementation detail, no "now runs on the panel renderer".
 - **One good picture** where there is something to see: the feature itself, captured from the live renderer

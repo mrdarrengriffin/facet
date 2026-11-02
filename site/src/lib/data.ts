@@ -41,7 +41,7 @@ export const STATUS: Record<Status, { label: string; hint: string }> = {
 import flags from '../data/features.json';
 const HIDDEN_FEATURES = new Set(flags.hiddenFeatures);
 const HIDDEN_PATHS = new Set(flags.hiddenPaths);
-export const updateShown = (e: { data: { feature?: string } }) => !e.data.feature || !HIDDEN_FEATURES.has(e.data.feature);
+export const updateShown = (e: { data: { feature?: string; draft?: boolean } }) => !e.data.draft && (!e.data.feature || !HIDDEN_FEATURES.has(e.data.feature));
 export const linkShown = ([, path]: [string, string]) => !HIDDEN_PATHS.has(path.replace(/^\//, '').replace(/#.*$/, '').replace(/\/?$/, '/'));
 
 export const defaults = (m: Meta) =>

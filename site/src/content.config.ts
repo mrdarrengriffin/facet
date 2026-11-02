@@ -18,6 +18,8 @@ const updates = defineCollection({
     area: z.string().optional(),
     /** a turning point in Facet's story: drawn as a tinted box with a Milestone mark */
     milestone: z.boolean().default(false),
+    /** true = written ahead of its release: never built (the version and date go in at the tag, then false) */
+    draft: z.boolean().default(false),
     /** pictures in public/updates/: a before / after pair, or one image */
     before: z.string().optional(),
     after: z.string().optional(),
