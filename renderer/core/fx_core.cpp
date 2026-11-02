@@ -2251,5 +2251,6 @@ void grid_place(lv_obj_t *r) {
   it->second.busy = true; grid_lay(r, it->second); it->second.busy = false;
 }
 int grid_cols(lv_obj_t *r) { auto it = grids.find(r); return it == grids.end() ? 1 : it->second.cols; }
+int grid_rows_shown(lv_obj_t *r) { return lv_display_get_vertical_resolution(lv_obj_get_display(r)) / std::max(1, (int) fw::lay::list_row_h); }
 }  // namespace fx
 

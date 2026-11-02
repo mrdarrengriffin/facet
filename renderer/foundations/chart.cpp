@@ -781,9 +781,10 @@ lv_obj_t *legend_colours(lv_obj_t *parent, const Theme &t, const lv_color_t *col
 void axis(lv_obj_t *parent, const Theme &t, int w, const char *const *labels, const float *at, int n) {
   lv_obj_t *a = box(parent);
   lv_obj_set_size(a, w, ty::STYLES[ty::c_meta_sm].box);
+  for (int i = 0; i < n; i++) text(a, ty::c_meta_sm, labels[i], ch::ink::axis(t));
+  lv_obj_update_layout(a);  // once: every label's width (a layout per label re-lays the whole screen each time)
   for (int i = 0; i < n; i++) {
-    lv_obj_t *l = text(a, ty::c_meta_sm, labels[i], ch::ink::axis(t));
-    lv_obj_update_layout(l);
+    lv_obj_t *l = lv_obj_get_child(a, i);
     const int lw = lv_obj_get_width(l);
     lv_obj_set_x(l, at[i] <= 0 ? 0 : at[i] >= 1 ? w - lw : (int) std::lround(at[i] * w - lw / 2.f));
   }
@@ -990,8 +991,8 @@ void tb_size(TB *B, lv_obj_t *parent) {
   for (uint8_t m : B->marks) marked = marked || m;
   B->mk_h = marked ? fx::size("chart:mark") + fx::size("space:5") : 0;  // docs: the marks row 24, 16 above the chart
   B->leg_h += B->mk_h;
+  if (!B->leg_words.empty()) lv_obj_update_layout(B->leg_words[0]);  // once: every word's width
   for (size_t k = 0; k < B->leg_words.size(); k++) {  // the words beside their swatches, in the legend row
-    lv_obj_update_layout(B->leg_words[k]);
     lv_obj_set_pos(B->leg_words[k], tb_sw_x(B, k) + fx::size("chart:legend-sw") + fx::size("space:2"), fx::size("space:2"));
   }
   B->top = B->leg_h + fx::size("chart:plot-top") + fx::type_box("type:c-meta");  // the legend, room for the readout over the bars
@@ -1006,10 +1007,12 @@ void tb_place_axis(TB *B) {  // the labels under their bar's centre, kept inside
   lv_obj_set_size(B->axis, cw, fx::type_box("type:c-meta-sm"));
   // hour ticks sit space 1 under the plot; day words (labels) space 2, as the old WASM week's axis
   lv_obj_set_style_margin_top(B->axis, fx::size(B->labels.empty() ? "space:1" : "space:2"), 0);
+  // one layout for every label's width, then each placed (a layout per label re-laid the whole screen each time: a
+  // month of day words cost the Moon screen ~400 ms on the Guition, facet-244)
+  lv_obj_update_layout(B->axis);
   for (uint32_t k = 0; k < lv_obj_get_child_count(B->axis); k++) {
     lv_obj_t *l = lv_obj_get_child(B->axis, k);
     const int i = (int) (intptr_t) lv_obj_get_user_data(l);
-    lv_obj_update_layout(l);
     const int lw = lv_obj_get_width(l), mid = B->labels.empty() ? tb_x(B, i) + B->bw / 2 : tb_centre(B, i);
     lv_obj_set_x(l, std::clamp(mid - lw / 2, 0, std::max(0, cw - lw)));
   }

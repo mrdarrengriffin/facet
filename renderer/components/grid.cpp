@@ -17,10 +17,13 @@
 // Items mode: items = a comma list or a JSON list (usually bound to an entity attribute: {"e", "a"}); one cell per
 //   item from the spec node's "cell" template (core/spec.h hands it over as _cell; none = an Icon named by the item,
 //   fit: cell). "$item" in the template = the item (an object item: its id, else its name), "$item.<key>" = its field.
-//   At most ITEMS_MAX cells. An empty list = the empty text (not blank). A tap on an item cell emits "pick" with the
+//   At most ITEMS_MAX cells. An empty list = the empty text (not blank). Made with the screen: the cells it shows (a
+//   row grid: the screen's height in list rows + 2; none while the grid is hidden, e.g. in a closed sheet); the rest
+//   CHUNK at a time from REST_MS after it, so the screen's first frame does not wait for rows below the fold. A tap on an item cell emits "pick" with the
 //   item + sound tap (actions: screen.param, nav.open); cells smaller than touch:min (a row of hearts) are shown only,
 //   never tapped (fx::grid_cell tap, C32).
-// Steps: the column count in min mode (a new width re-places the cells; an items grid with a rows cap re-expands).
+// Steps: the column count in min mode (a new width re-places the cells; an items grid with a rows cap re-expands; a row
+//   / hug items grid is made again only for another column count, never for a new width alone).
 //   Declared minimum: one tile-w square (meta "min"). Items cells are made again after a new size (async), so their
 //   contents fit; a static grid's nodes are re-placed with their cells. States: n/a (its cells' components have theirs). Bleed: none.
 // Update path: a static grid keeps its cells (the nodes inside update themselves); an items grid re-expands: a changed
@@ -42,8 +45,9 @@ struct G {
   std::vector<std::string> items;     // the items shown now (an object item kept as its JSON)
   std::vector<lv_obj_t *> cells;      // the item cells in order (+N not included)
   lv_obj_t *more = nullptr;           // the "+N" cell, or the empty text
-  bool items_mode = false, queued = false;
-  int rows = 0;
+  lv_timer_t *rest = nullptr;         // the cells still to make (fill_rest), null = all made
+  bool items_mode = false, queued = false, row = false;
+  int rows = 0, cols_built = 0;  // row: aspect row / hug (cells as tall as their content); the columns the cells were made for
 };
 std::map<lv_obj_t *, G> all;
 std::string sig(Props p) {
@@ -108,24 +112,55 @@ lv_obj_t *item_cell(lv_obj_t *r, const G &g, const std::string &item) {
   return c;
 }
 int cap_of(lv_obj_t *r, const G &g) { return g.rows > 0 ? LV_MIN(g.rows * fx::grid_cols(r), ITEMS_MAX) : ITEMS_MAX; }
-// the items from index `from` on made again (the cells before it are kept), the "+N" cell or the empty text after
-void expand(lv_obj_t *r, G &g, size_t from) {
+// the "+N" cell or the empty text after the cells, once every cell is made
+void finish(lv_obj_t *r, G &g) {
   const std::vector<std::string> list = parse(g.src.c_str());
-  const int cap = cap_of(r, g), n = (int) list.size() > cap ? cap - 1 : (int) list.size();
-  if (g.more) { lv_obj_delete(g.more); g.more = nullptr; }
-  from = LV_MIN(from, (size_t) n);
-  while (g.cells.size() > from) { lv_obj_delete(g.cells.back()); g.cells.pop_back(); }
-  g.items.assign(list.begin(), list.begin() + n);
-  for (int i = (int) from; i < n; i++) g.cells.push_back(item_cell(r, g, list[i]));
   if (list.empty()) {  // the empty state: one row of words, not a blank grid
     g.more = fx::box(r, "row");
     fx::use(g.more, "h:list-row-h");
     fx::text(g.more, g.empty.c_str(), "type:body", "fg:text-dim", "none");
-  } else if ((int) list.size() > n) {  // "+N": the items past the cap
+  } else if (list.size() > g.items.size()) {  // "+N": the items past the cap
     g.more = fx::grid_cell(r);
-    fx::text(g.more, ("+" + std::to_string(list.size() - n)).c_str(), "type:body", "fg:text-dim", "none");
+    fx::text(g.more, ("+" + std::to_string(list.size() - g.items.size())).c_str(), "type:body", "fg:text-dim", "none");
   }
   fx::grid_place(r);
+}
+bool hidden_up(lv_obj_t *o) {
+  for (; o; o = lv_obj_get_parent(o)) if (lv_obj_has_flag(o, LV_OBJ_FLAG_HIDDEN)) return true;
+  return false;
+}
+// the cells not made with the screen, CHUNK per tick from REST_MS after it: its first frame comes first (facet-244)
+constexpr int CHUNK = 4;
+constexpr uint32_t REST_MS = 50;
+void fill_rest(lv_timer_t *t) {
+  lv_obj_t *r = (lv_obj_t *) lv_timer_get_user_data(t);
+  auto it = all.find(r);
+  if (it == all.end()) { lv_timer_delete(t); return; }
+  G &g = it->second;
+  for (int k = 0; k < CHUNK && g.cells.size() < g.items.size(); k++) g.cells.push_back(item_cell(r, g, g.items[g.cells.size()]));
+  if (g.cells.size() < g.items.size()) { fx::grid_place(r); return; }
+  lv_timer_delete(t);
+  g.rest = nullptr;
+  finish(r, g);
+}
+// the items from index `from` on made again (the cells before it are kept). Made now: the cells a screen shows (row
+// cells: the screen's height in list rows + 2; every cell of a square / wide grid), none while the grid is hidden (a
+// closed sheet); the rest after the first frame (fill_rest)
+void expand(lv_obj_t *r, G &g, size_t from) {
+  const std::vector<std::string> list = parse(g.src.c_str());
+  const int cap = cap_of(r, g), n = (int) list.size() > cap ? cap - 1 : (int) list.size();
+  if (g.rest) { lv_timer_delete(g.rest); g.rest = nullptr; }
+  if (g.more) { lv_obj_delete(g.more); g.more = nullptr; }
+  from = LV_MIN(from, LV_MIN(g.cells.size(), (size_t) n));
+  while (g.cells.size() > from) { lv_obj_delete(g.cells.back()); g.cells.pop_back(); }
+  g.items.assign(list.begin(), list.begin() + n);
+  g.cols_built = fx::grid_cols(r);
+  int now = n;
+  if (hidden_up(r)) now = 0;
+  else if (g.row) now = LV_MIN(n, fx::grid_rows_shown(r) + 2);
+  for (int i = (int) from; i < LV_MAX(now, (int) from); i++) g.cells.push_back(item_cell(r, g, list[i]));
+  if ((int) g.cells.size() < n) { g.rest = lv_timer_create(fill_rest, REST_MS, r); fx::grid_place(r); return; }
+  finish(r, g);
 }
 // new cell sizes or column count (another width, a tuned gap): an items grid re-expands after the layout, so a capped
 // list shows another number and every cell's contents fit the new cell (an Icon's fit: cell); a static grid's nodes
@@ -140,7 +175,12 @@ void reexpand(void *v) {
 void on_cols(lv_event_t *e) {
   lv_obj_t *r = (lv_obj_t *) lv_event_get_current_target(e);
   auto it = all.find(r);
-  if (it != all.end() && it->second.items_mode && !it->second.queued) { it->second.queued = true; lv_async_call(reexpand, r); }
+  if (it == all.end() || !it->second.items_mode || it->second.queued) return;
+  // row cells take their content's height and the layout gives them their width: only another column count (a capped
+  // list's +N moves) needs them made again; a square / wide cell's contents fit its size, so a new size does
+  if (it->second.row && fx::grid_cols(r) == it->second.cols_built) return;
+  it->second.queued = true;
+  lv_async_call(reexpand, r);
 }
 }  // namespace
 
@@ -179,12 +219,14 @@ FW_COMPONENT(grid, "Grid", "components", R"({
   lv_obj_add_event_cb(r, [](lv_event_t *e) {
     lv_obj_t *o = (lv_obj_t *) lv_event_get_current_target(e);
     lv_async_call_cancel(reexpand, o);
+    if (auto it = all.find(o); it != all.end() && it->second.rest) lv_timer_delete(it->second.rest);
     all.erase(o);
   }, LV_EVENT_DELETE, nullptr);
   lv_obj_add_event_cb(r, on_cols, LV_EVENT_REFRESH, nullptr);
   if (p["_cell"].is<ArduinoJson::JsonObjectConst>()) serializeJson(p["_cell"], g.cell);
   g.items_mode = (p["_items"] | false) || *(p["items"] | "");
   g.sig = sig(p); g.src = p["items"] | ""; g.empty = p["empty"] | "Nothing here"; g.rows = p["rows"] | 0;
+  g.row = !strcmp(p["aspect"] | "square", "row") || !strcmp(p["aspect"] | "square", "hug");
   fx::grid(r, p["cols"] | 3, p["min"] | "none", p["gap"] | "group", p["aspect"] | "square");
   if (g.items_mode) expand(r, g, 0);
   else build_static(r, p);
@@ -201,7 +243,7 @@ FW_UPDATE(grid) {
   const std::vector<std::string> list = parse(src.c_str()), old = g.items;
   g.src = src;
   const int cap = cap_of(root, g), n = (int) list.size() > cap ? cap - 1 : (int) list.size();
-  const bool same_shape = n == (int) old.size() && (int) list.size() == n && n > 0;
+  const bool same_shape = n == (int) old.size() && (int) list.size() == n && n > 0 && !g.rest;  // all cells made
   if (!same_shape) {  // another count, the empty text or "+N": the cells after the first change are made again
     size_t k = 0;
     while (k < old.size() && k < list.size() && old[k] == list[k]) k++;

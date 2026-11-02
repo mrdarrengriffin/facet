@@ -457,7 +457,7 @@ async function scrollTests(b, c, props, vl, den, lagOn, spec) {
     // ends: a long fast drag past the end stops exactly at the end and stays; back past the start stops at 0
     const end = [];
     const [x, y] = used;
-    await b.render(id, props); b.settle(1500); b.events();
+    await b.render(id, props); b.settle(1500); b.tick(80); b.events();  // tick: rows made after the first frame (a long items grid, facet-244) are all in before the end is measured
     const s00 = find() || s0;
     const max = pos(s00) + (vert ? s00.b : s00.r);
     for (let i = 0; i < Math.ceil((total + 200) / (b.S * 0.4)) + 1; i++) b.drag(x, y, vert ? 0 : -b.S * 0.4, vert ? -b.S * 0.4 : 0, { steps: 6, hold: 16 });
