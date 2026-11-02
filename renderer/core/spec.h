@@ -1284,7 +1284,7 @@ inline void send_temperature(Node &n, double v) {
   n.c_at = lv_tick_get();
 }
 inline void follow_now(Screen *s);
-inline bool deck_set(const std::string &id, const std::string &key, ArduinoJson::JsonVariantConst value);
+inline bool deck_set(const std::string &id, const std::string &key, ArduinoJson::JsonVariantConst value, std::string *why = nullptr);
 inline void tick(lv_timer_t *t) {
   auto *s = (Screen *) lv_timer_get_user_data(t);
   const uint32_t now = lv_tick_get();
@@ -2208,7 +2208,8 @@ inline bool apply(const char *kind, const std::string &json, lv_obj_t *dry, Ardu
 // "params.<name>" = value; "on" = false takes the page out of the deck (never the start page), true adds a page of
 // kind id at the end. Kept as the deck (a new rev, validated and stored like a sent one) without rebuilding what
 // shows; false = refused
-inline bool deck_set(const std::string &id, const std::string &key, ArduinoJson::JsonVariantConst value) {
+// why: the panel's reason when the deck refuses the change (the first error's words)
+inline bool deck_set(const std::string &id, const std::string &key, ArduinoJson::JsonVariantConst value, std::string *why) {
   ArduinoJson::JsonDocument d;
   if (deserializeJson(d, deck_json())) return false;
   ArduinoJson::JsonArray ps = d["pages"].as<ArduinoJson::JsonArray>();
@@ -2222,7 +2223,10 @@ inline bool deck_set(const std::string &id, const std::string &key, ArduinoJson:
       n["id"] = id, n["kind"] = id;
     } else {
       if (at < 0) return true;
-      if (id == (d["start"] | "") || (ps[at]["id"] | "") == std::string(d["start"] | "")) return false;
+      if (id == (d["start"] | "") || (ps[at]["id"] | "") == std::string(d["start"] | "")) {
+        if (why) *why = "This is the start page, so it stays on. Pick another start page first.";
+        return false;
+      }
       ps.remove(at);
     }
   } else {
@@ -2234,7 +2238,9 @@ inline bool deck_set(const std::string &id, const std::string &key, ArduinoJson:
   std::string js;
   serializeJson(d, js);
   ArduinoJson::JsonDocument o;
-  return apply("deck", js, nullptr, o.to<ArduinoJson::JsonObject>(), true);
+  if (apply("deck", js, nullptr, o.to<ArduinoJson::JsonObject>(), true)) return true;
+  if (why) *why = o["errors"][0]["msg"] | "the panel refused the change";
+  return false;
 }
 // revert one override (screen id, "deck") or "all" to factory
 inline void revert(const std::string &id, ArduinoJson::JsonObject out) {
