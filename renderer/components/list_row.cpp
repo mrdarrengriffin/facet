@@ -22,7 +22,8 @@
 // Unavailable in unavailable-note). n/a: loading, unknown, empty, error (no data of its own: the binding maps those to
 // unavailable); a stack with no items = its empty words.
 // Tap = a real CLICKED: chevron rows emit "tap" (detail = title) + sound "open"; a toggle row hands the tap to its toggle
-// (whole row = hit area); other rows emit "tap" + sound "tap". Bleed: none.
+// (whole row = hit area); other rows emit "tap" + sound "tap"; act none = a read-out row: not a target (no press look,
+// no event, no sound). Bleed: none.
 // Stack (list: stack): one row per item of items (core/items.h, the Grid's model). A row = this node's props with
 // "$item" / "$item.key" filled; a prop that does not name $item comes from an object item's field of the same name, a
 // plain-text item is the title. rows caps the list (a last "+N" row for the rest); no items = the empty words.
@@ -58,6 +59,7 @@ struct Spec {
   const char *title, *icon, *sub, *trailing, *value, *state;
   bool on, divider;
   const char *over = "", *under = "", *tone = "dim";
+  bool act = true;  // act none: a read-out row (no press, no tap, no sound)
 };
 std::string caps(const char *s) {
   std::string o(s);
@@ -113,7 +115,7 @@ void fill(lv_obj_t *r, const Spec &s, Row *d) {
   fx::use(r, "bg-none", ST_OFF);                      // no press look when disabled / unavailable
   fx::use(r, "bg-none", ST_OFF | LV_STATE_PRESSED);
   fx::use(r, "part:list-row");  // the theme's list row (C46), after the row's own state tokens
-  lv_obj_add_flag(r, LV_OBJ_FLAG_CLICKABLE);
+  if (s.act) lv_obj_add_flag(r, LV_OBJ_FLAG_CLICKABLE); else lv_obj_remove_flag(r, LV_OBJ_FLAG_CLICKABLE);
 
   const bool working = !strcmp(s.tone, "working");
   if (strcmp(s.icon, "none")) fx::icon_use(fx::icon(r, s.icon, "icon", working ? "fg:accent-text" : "fg:text-dim"), "ink:disabled-ink", ST_OFF);
@@ -184,7 +186,8 @@ lv_obj_t *root(lv_obj_t *parent) {
 
 Spec spec_of(fw::Props p) {
   return {p["title"] | "", p["icon"] | "bulb", p["sub"] | "", p["trailing"] | "none", p["value"] | "",
-          p["state"] | "default", p["on"] | false, p["divider"] | true, p["over"] | "", p["under"] | "", p["tone"] | "dim"};
+          p["state"] | "default", p["on"] | false, p["divider"] | true, p["over"] | "", p["under"] | "", p["tone"] | "dim",
+          strcmp(p["act"] | "tap", "none") != 0};
 }
 std::string stack_sig(fw::Props p);  // below: a stack's row count
 // the props that need the contents again: all but a pressed state and a toggle's on (those move in place)
@@ -271,6 +274,7 @@ FW_COMPONENT(list_row, "List row", "components", R"({
     {"name": "value", "about": "The value shown at the right end when there is one, such as 42%.", "type": "text", "default": ""},
     {"name": "on", "about": "Whether the switch at the right end is on.", "type": "bool", "default": false},
     {"name": "state", "debug": true, "about": "How the row looks: default ready to tap, pressed while held, disabled when it cannot be used, or unavailable when its device cannot be reached.", "type": "select", "options": ["default", "pressed", "disabled", "unavailable"], "default": "default"},
+    {"name": "act", "about": "tap: the row can be tapped; none: a read-out row that shows a value and takes no tap: no press look, no sound.", "type": "select", "options": ["tap", "none"], "default": "tap"},
     {"name": "divider", "about": "Draws a thin line under the row to separate it from the next.", "type": "bool", "default": true},
     {"name": "list", "about": "single is one row on its own; stack is a list of rows touching, with lines between them, one row per item of items.", "type": "select", "options": ["single", "stack"], "default": "single"},
     {"name": "items", "about": "With list stack: the rows, a comma list or a JSON list, usually bound to an entity attribute. Each row is this node's props with $item (or $item.field) filled in; a plain item is the row's title, and an object item's title (or name), icon, sub, over, under, tone, trailing, value, on and state fields fill the props that do not name $item. No items shows the empty words, never sample rows.", "type": "text", "default": ""},
@@ -283,6 +287,7 @@ FW_COMPONENT(list_row, "List row", "components", R"({
     {"label": "over + title", "props": {"title": "Brussels \u2192 Nottingham", "icon": "none", "over": "B763 \u00b7 21,000 ft \u00b7 22 km S"}},
     {"label": "icon + title + sub", "props": {"title": "Kitchen", "icon": "bulb", "sub": "Off since 18:40"}},
     {"label": "trailing value", "props": {"title": "Brightness", "icon": "none", "trailing": "value", "value": "80%"}},
+    {"label": "read-out · act none", "props": {"title": "Address", "icon": "none", "trailing": "value", "value": "http://ha.local:8123", "act": "none"}},
     {"label": "trailing chevron", "props": {"title": "Sounds", "icon": "volume", "trailing": "chevron"}},
     {"label": "value + chevron", "props": {"title": "Theme", "icon": "none", "trailing": "value-chevron", "value": "Dark"}},
     {"label": "toggle · off", "props": {"title": "Chime", "icon": "speaker", "trailing": "toggle"}},

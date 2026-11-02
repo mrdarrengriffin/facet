@@ -1,21 +1,22 @@
 // Home Assistant (Settings > Home Assistant): the panel's own link to Home Assistant (core/device.h
-// ha_link), so the entity pickers have lists on a bare panel. Composed only of real components, laid out as Settings:
+// ha_link), so the entity pickers have lists on a bare panel. A screen spec of real components only, built by the spec
+// renderer (core/spec.h: Page > Header + list Body, C1-C3), laid out as Settings:
 //   header   the Header (back + "Home Assistant" + the screen chrome)
-//   content  one scrolling column, groups as Settings (label, section-gap, rows; groups lay::group apart):
+//   body     two groups, each a Section header (size label) over read-only List rows (act none):
 //            "connection"  List row "Address" (the URL, or "Not set") and List row "Token" (the last 4 characters
 //                          only, "Not set"): set by the action ha.connect (an agent, HA, the workbench's props)
 //            "entities"    List row "Entity lists", its sub line the status (Not set up / Ready / Reading Home
-//                          Assistant / "N entities" / the failure in words), a real Button "Read now" (secondary)
-//                          appended as its trailing part: ha.entities again over the domains already read (the
-//                          pickers read only their own domain(s) when they open, screens/screen_set.cpp; nothing read
-//                          yet = a connection check over "zone", a few entities); event "ha_link" "entities" or why
-//                          not
-//   The rows follow the link while the page shows (a 250 ms timer compares ha_link::rev() and builds them again).
+//                          Assistant / "N entities" / the failure in words), a Button "Read now" (secondary) in its
+//                          end slot: the action ha.entities over the domains already read (the pickers read only their
+//                          own domain(s) when they open, screens/screen_set.cpp; nothing read yet = a connection check
+//                          over "zone", a few entities)
+//   The spec follows the link while the page shows (a 250 ms timer compares ha_link::rev() and builds it again).
 //   Read now shows only when the link is set up and not reading.
 // Props (the workbench): url, token = ha.connect on build when given (a token typed here stays in the module; the
 // workbench's own fetch goes through its host with the host's token). Update path: none needed (rows follow the link).
 #include "fw.h"
 #include "device.h"
+#include "spec.h"
 
 namespace {
 using Doc = ArduinoJson::JsonDocument;
@@ -28,30 +29,6 @@ std::string read_again() {
   for (const char *x : PICK_DOMAINS) if (hl::list(x)) d += std::string(d.empty() ? "" : ",") + x;
   return d.empty() ? "zone" : d;
 }
-lv_obj_t *box(lv_obj_t *parent) {
-  lv_obj_t *o = lv_obj_create(parent);
-  lv_obj_remove_style_all(o);
-  lv_obj_remove_flag(o, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
-  return o;
-}
-lv_obj_t *build(const char *id, lv_obj_t *parent, Doc &props) {
-  const fw::Component *c = fw::find(id);
-  if (!c) return nullptr;
-  const uint32_t before = lv_obj_get_child_count(parent);
-  c->build(parent, props.as<fw::Props>());
-  return lv_obj_get_child_count(parent) > before ? lv_obj_get_child(parent, -1) : nullptr;
-}
-void spacer(lv_obj_t *parent, int h) {
-  lv_obj_t *s = box(parent);
-  lv_obj_set_size(s, 1, h);
-}
-void group(lv_obj_t *c, const char *label, bool first) {
-  if (!first) spacer(c, fw::lay::group);
-  lv_obj_t *gl = fw::text(c, fw::ty::label, label, fw::T->text_dim);
-  lv_obj_remove_flag(gl, LV_OBJ_FLAG_CLICKABLE);
-  lv_obj_set_height(gl, fw::style(fw::ty::label).box);
-  spacer(c, fw::lay::section_gap);
-}
 std::string status_words() {
   switch (hl::status()) {
     case hl::OFF: return "Not set up";
@@ -61,30 +38,43 @@ std::string status_words() {
     default: return "Not reached: " + hl::why();
   }
 }
-struct Page { lv_obj_t *root = nullptr, *col = nullptr, *read = nullptr; lv_timer_t *tick = nullptr; uint32_t rev = 0; };
-// the rows, from the link as it is now (built again whenever it changes: a List row update is not a merge, and the
-// Status row carries its Button)
-void rows(Page *pg) {
-  pg->rev = hl::rev();
-  lv_obj_t *c = pg->col;
-  lv_obj_clean(c);
-  pg->read = nullptr;
-  group(c, "connection", true);
-  Doc a;
-  a["title"] = "Address", a["icon"] = "none", a["trailing"] = "value", a["value"] = hl::url().empty() ? "Not set" : hl::url().c_str();
-  if (lv_obj_t *r = build("list_row", c, a)) lv_obj_remove_flag(r, LV_OBJ_FLAG_CLICKABLE);
-  Doc t;
-  t["title"] = "Token", t["icon"] = "none", t["trailing"] = "value", t["value"] = hl::has_token() ? hl::token_hint().c_str() : "Not set";
-  if (lv_obj_t *r = build("list_row", c, t)) lv_obj_remove_flag(r, LV_OBJ_FLAG_CLICKABLE);
-  group(c, "entities", false);
-  Doc s;
-  s["title"] = "Entity lists", s["icon"] = "none", s["trailing"] = "none", s["sub"] = status_words().c_str();
-  if (lv_obj_t *r = build("list_row", c, s)) {
-    lv_obj_remove_flag(r, LV_OBJ_FLAG_CLICKABLE);
-    Doc rb;
-    rb["kind"] = "secondary", rb["label"] = "Read now";
-    if (hl::ready() && hl::status() != hl::LOADING) pg->read = build("button", r, rb);
+ArduinoJson::JsonObject node(ArduinoJson::JsonArray n, const char *c) {
+  ArduinoJson::JsonObject o = n.add<ArduinoJson::JsonObject>();
+  o["c"] = c;
+  return o;
+}
+void group(ArduinoJson::JsonArray n, const char *title) {
+  ArduinoJson::JsonObject p = node(n, "section_header")["p"].to<ArduinoJson::JsonObject>();
+  p["title"] = title, p["size"] = "label", p["badge"] = false, p["right"] = "none";
+}
+ArduinoJson::JsonObject row(ArduinoJson::JsonArray n, const char *title) {
+  ArduinoJson::JsonObject p = node(n, "list_row")["p"].to<ArduinoJson::JsonObject>();
+  p["title"] = title, p["icon"] = "none", p["act"] = "none";
+  return p;
+}
+// the screen as a spec, from the link as it is now
+std::string spec_json() {
+  Doc sp;
+  sp["v"] = 1, sp["id"] = "ha_link", sp["name"] = "Home Assistant", sp["layout"] = "list";
+  sp["header"]["label"] = "Home Assistant";
+  ArduinoJson::JsonArray n = sp["nodes"].to<ArduinoJson::JsonArray>();
+  group(n, "connection");
+  ArduinoJson::JsonObject a = row(n, "Address");
+  a["trailing"] = "value", a["value"] = hl::url().empty() ? "Not set" : hl::url().c_str();
+  ArduinoJson::JsonObject t = row(n, "Token");
+  t["trailing"] = "value", t["value"] = hl::has_token() ? hl::token_hint().c_str() : "Not set";
+  group(n, "entities");
+  const int at = (int) n.size();
+  row(n, "Entity lists")["sub"] = status_words();
+  if (hl::ready() && hl::status() != hl::LOADING) {
+    ArduinoJson::JsonObject b = node(n, "button");
+    b["in"] = at, b["slot"] = 0;
+    b["p"]["kind"] = "secondary", b["p"]["label"] = "Read now";
+    b["on"]["tap"]["do"] = "ha.entities", b["on"]["tap"]["domains"] = read_again();
   }
+  std::string out;
+  serializeJson(sp, out);
+  return out;
 }
 
 const char *META = R"({
@@ -98,49 +88,40 @@ const char *META = R"({
   ]
 })";
 
+// the built screen and the timer that follows the link; the spec root is built again in its place on a change
+struct Live { lv_obj_t *parent = nullptr, *root = nullptr; lv_timer_t *tick = nullptr; uint32_t rev = 0; bool again = false; };
+void on_delete(lv_event_t *e) {
+  auto *lv = (Live *) lv_event_get_user_data(e);
+  if (lv->again) return;
+  lv_timer_delete(lv->tick);
+  delete lv;
+}
+void mount(Live *lv) {
+  lv->rev = hl::rev();
+  Doc none;
+  std::string error;
+  const uint32_t before = lv_obj_get_child_count(lv->parent);
+  fw::spec::build(lv->parent, "ha_link", none.as<fw::Props>(), &error, spec_json().c_str());
+  lv->root = lv_obj_get_child_count(lv->parent) > before ? lv_obj_get_child(lv->parent, -1) : nullptr;
+  if (lv->root) lv_obj_add_event_cb(lv->root, on_delete, LV_EVENT_DELETE, lv);
+}
 void build_page(lv_obj_t *parent, fw::Props p) {
-  const fw::Theme &th = *fw::T;
   const std::string pu = p["url"] | "", pt = p["token"] | "";
   if (!pu.empty() && (pu != hl::url() || !pt.empty())) hl::configure(pu, pt);
-  auto *pg = new Page;
-  pg->root = box(parent);
-  lv_obj_set_size(pg->root, fw::lay::screen_w, fw::lay::screen_h);
-  lv_obj_set_style_bg_color(pg->root, th.bg, 0);
-  lv_obj_set_style_bg_opa(pg->root, LV_OPA_COVER, 0);
-  lv_obj_add_event_cb(pg->root, [](lv_event_t *e) {
-    auto *pg = (Page *) lv_event_get_user_data(e);
-    if (pg->tick) lv_timer_delete(pg->tick);
-    delete pg;
-  }, LV_EVENT_DELETE, pg);
-  Doc hd;
-  hd["label"] = "Home Assistant";
-  if (lv_obj_t *h = build("header", pg->root, hd)) lv_obj_set_pos(h, fw::lay::inset, fw::lay::inset);
-  lv_obj_t *c = box(pg->root);
-  lv_obj_add_flag(c, (lv_obj_flag_t) (LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_CLICKABLE));
-  lv_obj_set_scroll_dir(c, LV_DIR_VER);
-  lv_obj_set_scrollbar_mode(c, LV_SCROLLBAR_MODE_OFF);
-  lv_obj_set_pos(c, fw::lay::inset, fw::lay::top);
-  lv_obj_set_size(c, fw::lay::content_w, fw::lay::screen_h - fw::lay::top);
-  lv_obj_set_style_pad_bottom(c, fw::lay::inset, 0);
-  lv_obj_set_flex_flow(c, LV_FLEX_FLOW_COLUMN);
-  pg->col = c;
-  rows(pg);
-
-  pg->tick = lv_timer_create([](lv_timer_t *tm) {
-    auto *pg = (Page *) lv_timer_get_user_data(tm);
-    if (pg->rev != hl::rev()) rows(pg);
-  }, 250, pg);
-  fw::listen(pg->root, [](lv_obj_t *from, const char *name, const char *detail, void *user) {
-    auto *pg = (Page *) user;
-    if (!strcmp(name, "tap") && pg->read)
-      for (lv_obj_t *o = from; o; o = lv_obj_get_parent(o))
-        if (o == pg->read) {
-          const char *why = hl::fetch(read_again());
-          fw::emit(pg->read, "ha_link", *why ? why : "entities");
-          return;
-        }
-    if (lv_obj_t *up = lv_obj_get_parent(pg->root)) fw::notify(up, name, detail);
-  }, pg);
+  auto *lv = new Live;
+  lv->parent = parent;
+  lv->tick = lv_timer_create([](lv_timer_t *tm) {
+    auto *lv = (Live *) lv_timer_get_user_data(tm);
+    if (lv->rev == hl::rev() || !lv->root) return;
+    const int32_t at = lv_obj_get_index(lv->root);
+    lv->again = true;
+    lv_obj_delete(lv->root);
+    lv->again = false;
+    mount(lv);
+    if (lv->root) lv_obj_move_to_index(lv->root, at);
+  }, 250, lv);
+  mount(lv);
+  if (!lv->root) { lv_timer_delete(lv->tick); delete lv; }
 }
 const int reg = fw::add({"ha_link", "Home Assistant", "screens", META, build_page});
 }  // namespace

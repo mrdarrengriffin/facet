@@ -11,6 +11,8 @@ export default {
     { name: 'chevron row: open sound', mount: ['list_row', { ...P, trailing: 'chevron' }], run(t) { const ev = t.tap('Lights'); t.emitted(ev, 'tap', 'Lights'); t.sounds(ev, ['open']); } },
     { name: 'value row: shows the value, tap sound', mount: ['list_row', { ...P, trailing: 'value', value: '42%' }], run(t) { t.has(t.texts(), '42%', 'value'); t.sounds(t.tap('Lights'), ['tap']); } },
     { name: 'value + chevron: value shown, open sound', mount: ['list_row', { ...P, trailing: 'value-chevron', value: 'Dark' }], run(t) { t.has(t.texts(), 'Dark', 'value'); t.sounds(t.tap('Lights'), ['open']); } },
+    { name: 'act none: a read-out row, no event, no sound, no press look', mount: ['list_row', { ...P, trailing: 'value', value: '42%', act: 'none' }], run(t) {
+      t.has(t.texts(), '42%', 'value'); const ev = t.tap('Lights'); t.eq(ev.filter((e) => e.kind !== 'sound').length, 0, 'no event'); t.silent(ev); } },
     { name: 'value kind with no value: an em dash', mount: ['list_row', { ...P, trailing: 'value', value: '' }], run(t) { t.has(t.texts(), '—', 'dash'); } },
     { name: 'toggle row: a tap anywhere flips the switch (toggle on + toggle-on), again off', mount: ['list_row', { ...P, trailing: 'toggle', on: false }], run(t) {
       t.eq(knobRight(t), false, 'off at rest'); let ev = t.tap('Lights'); t.emitted(ev, 'toggle', 'on'); t.sounds(ev, ['toggle-on']); t.eq(knobRight(t), true, 'knob right');

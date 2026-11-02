@@ -2334,6 +2334,16 @@
      "about": "How the row looks: default ready to tap, pressed while held, disabled when it cannot be used, or unavailable when its device cannot be reached."
     },
     {
+     "name": "act",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "tap",
+      "none"
+     ],
+     "about": "tap: the row can be tapped; none: a read-out row that shows a value and takes no tap: no press look, no sound."
+    },
+    {
      "name": "divider",
      "type": "bool",
      "bindable": true,
@@ -5151,5 +5161,5 @@
    }
   }
  },
- "hash": "c1bd1a6f"
+ "hash": "96e2707a"
 }
