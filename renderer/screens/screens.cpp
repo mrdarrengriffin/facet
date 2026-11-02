@@ -1,41 +1,50 @@
 // Screens (Settings > Screens; the panel lab's Screens screen in WASM): which screens this panel has and
-// where each gets its data. Composed only of real components:
-//   header   the Header (back + "Screens" + the screen chrome) at (inset, inset)
-//   content  from lay::top, one scrolling column: the label "on this panel" (screen type label, text-dim, as the
-//            Settings group labels), section-gap, then one List row per deck page (deck v2; not the Homes), then one
+// where each gets its data. On the contract: Screen > Page (fx::page) > Header + list Body, real components only (C1-C3):
+//   header   the Header (back + "Screens" + the screen chrome) in the Page's head
+//   body     a Section header "on this panel" (size label, as every settings group), then one List row per deck page
+//            (deck v2; not the Homes), then one
 //            per page kind the deck has none of (off; core/spec.h off_kinds): its name,
 //            the source as the sub line (core/sources.h: the deck entry's source, else the screen's first; "Built in"
-//            when it has none), and a real Toggle appended as its trailing part (on = the screen is on: a Home card)
+//            when it has none), and a real Toggle in its end slot (on = the screen is on: a Home card)
 //   taps     the Toggle = on / off: kept in this panel's deck (fw::spec::deck_set "on", stored like a sent deck, Home
 //            follows the next time it shows), event "deck" <id> on=true|false; the rest of the row opens the screen's
 //            page (navigate "screen_set?{"id": <id>}")
 // Off = not in the deck (a page you don't want is deleted, deck v2): switching one on adds it at the end, with its spec's
 // defaults; the start page can't be switched off.
 // Sent: screens sent to this panel (the API, an agent; core/spec.h sent_kinds) that the deck has
-// no page of are not built-in kinds, so not on / off: after the list, a group apart, the label "sent" (as above),
-// section-gap, one List row each (its name, sub "Sent to this panel") with two real Buttons appended: "Add to deck"
+// no page of are not built-in kinds, so not on / off: after the list a Section header "sent" a group apart (above:group,
+// the spec renderer's rule), one List row each (its name, sub "Sent to this panel") with two real Buttons: "Add to deck"
 // (secondary, icon plus: deck_set "on", event "deck" <id> on=true; it then shows in the list above) and "Remove"
 // (ghost; first tap turns it into "Confirm" primary, the second reverts that sent screen: fw::spec::revert, event
 // "spec" "revert <id>"). The device rebuilds the page after either (spec reload "deck").
 // Update path: none needed (the device builds it each time it opens; props: none). Pairs: the components'.
 #include "fw.h"
+#include "fx.h"
 #include "spec.h"
 #include "sources.h"
 
 namespace {
 using Doc = ArduinoJson::JsonDocument;
-lv_obj_t *box(lv_obj_t *parent) {
-  lv_obj_t *o = lv_obj_create(parent);
-  lv_obj_remove_style_all(o);
-  lv_obj_remove_flag(o, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
-  return o;
-}
 lv_obj_t *build(const char *id, lv_obj_t *parent, Doc &props) {
   const fw::Component *c = fw::find(id);
   if (!c) return nullptr;
   const uint32_t before = lv_obj_get_child_count(parent);
   c->build(parent, props.as<fw::Props>());
   return lv_obj_get_child_count(parent) > before ? lv_obj_get_child(parent, -1) : nullptr;
+}
+// a List row's end slot (shown once it holds something), where its trailing component goes (C8a)
+lv_obj_t *end_of(lv_obj_t *row) {
+  lv_obj_t *e = fw::spec::slot_of(row, 0);
+  if (!e) return row;
+  lv_obj_remove_flag(e, LV_OBJ_FLAG_HIDDEN);
+  return e;
+}
+// a group's Section header (size label, as every settings group); not the first: a group apart
+void group(lv_obj_t *body, const char *title, bool first) {
+  Doc sh;
+  sh["title"] = title, sh["size"] = "label", sh["badge"] = false, sh["right"] = "none";
+  lv_obj_t *h = build("section_header", body, sh);
+  if (h && !first) fx::use(h, "above:group");
 }
 // a screen's name: its spec's, else the built-in screen's
 std::string name_of(const std::string &id) {
@@ -62,30 +71,15 @@ const char *META = R"({
 })";
 
 void build_screens(lv_obj_t *parent, fw::Props) {
-  const fw::Theme &t = *fw::T;
   auto *pg = new Page;
-  lv_obj_t *root = pg->root = box(parent);
-  lv_obj_set_size(root, fw::lay::screen_w, fw::lay::screen_h);
-  lv_obj_set_style_bg_color(root, t.bg, 0);
-  lv_obj_set_style_bg_opa(root, LV_OPA_COVER, 0);
+  lv_obj_t *root = pg->root = fx::box(parent, "fill");
   lv_obj_add_event_cb(root, [](lv_event_t *e) { delete (Page *) lv_event_get_user_data(e); }, LV_EVENT_DELETE, pg);
+  const fx::Page fp = fx::page(root, "list");
   Doc hd;
   hd["label"] = "Screens";
-  if (lv_obj_t *h = build("header", root, hd)) lv_obj_set_pos(h, fw::lay::inset, fw::lay::inset);
-
-  lv_obj_t *c = box(root);
-  lv_obj_add_flag(c, (lv_obj_flag_t) (LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_CLICKABLE));  // clickable: a drag in a gap scrolls too
-  lv_obj_set_scroll_dir(c, LV_DIR_VER);
-  lv_obj_set_scrollbar_mode(c, LV_SCROLLBAR_MODE_OFF);
-  lv_obj_set_pos(c, fw::lay::inset, fw::lay::top);
-  lv_obj_set_size(c, fw::lay::content_w, fw::lay::screen_h - fw::lay::top);
-  lv_obj_set_style_pad_bottom(c, fw::lay::inset, 0);
-  lv_obj_set_flex_flow(c, LV_FLEX_FLOW_COLUMN);
-  lv_obj_t *gl = fw::text(c, fw::ty::label, "on this panel", t.text_dim);
-  lv_obj_remove_flag(gl, LV_OBJ_FLAG_CLICKABLE);
-  lv_obj_set_height(gl, fw::style(fw::ty::label).box);
-  lv_obj_t *gap = box(c);
-  lv_obj_set_size(gap, 1, fw::lay::section_gap);
+  build("header", fp.head, hd);
+  lv_obj_t *c = fp.body;
+  group(c, "on this panel", true);
 
   Doc deck, cat;
   deserializeJson(deck, fw::spec::deck_json());
@@ -111,7 +105,7 @@ void build_screens(lv_obj_t *parent, fw::Props) {
     if (!r) continue;
     Doc tp;
     tp["on"] = fw::spec::deck_on(x);
-    lv_obj_t *tg = build("toggle", r, tp);  // the real Toggle as the row's trailing part (Settings' inline controls)
+    lv_obj_t *tg = build("toggle", end_of(r), tp);  // the real Toggle in the row's end slot
     pg->rows.push_back({id, tg});
     char *nav = strdup(("screen_set?{\"id\":\"" + id + "\"}").c_str());  // freed with the row
     lv_obj_add_event_cb(r, [](lv_event_t *e) { free(lv_event_get_user_data(e)); }, LV_EVENT_DELETE, nav);
@@ -123,13 +117,7 @@ void build_screens(lv_obj_t *parent, fw::Props) {
   }
   const std::vector<std::string> sent = fw::spec::sent_kinds();
   if (!sent.empty()) {  // the Sent group: screens sent to this panel, not built-in kinds
-    lv_obj_t *sg = box(c);
-    lv_obj_set_size(sg, 1, fw::lay::group);
-    lv_obj_t *sl = fw::text(c, fw::ty::label, "sent", t.text_dim);
-    lv_obj_remove_flag(sl, LV_OBJ_FLAG_CLICKABLE);
-    lv_obj_set_height(sl, fw::style(fw::ty::label).box);
-    lv_obj_t *sgap = box(c);
-    lv_obj_set_size(sgap, 1, fw::lay::section_gap);
+    group(c, "sent", false);
     for (const std::string &id : sent) {
       Doc rd;
       rd["title"] = name_of(id).c_str();
@@ -141,8 +129,9 @@ void build_screens(lv_obj_t *parent, fw::Props) {
       Doc ad, rm;
       ad["kind"] = "secondary", ad["label"] = "Add to deck", ad["icon"] = "plus";
       rm["kind"] = "ghost", rm["label"] = "Remove";
-      lv_obj_t *a = build("button", r, ad);
-      lv_obj_t *x = build("button", r, rm);
+      lv_obj_t *en = end_of(r);
+      lv_obj_t *a = build("button", en, ad);
+      lv_obj_t *x = build("button", en, rm);
       pg->sent.push_back({id, a, x});
     }
   }
