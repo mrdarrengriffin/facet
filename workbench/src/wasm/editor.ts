@@ -1069,7 +1069,7 @@ function markSel() {
 // screen's spec (deck.specs[kind]), installed in the engine as a sent screen, the same path a panel takes.
 let slotLayer: HTMLElement | null = null;
 function slotHits(): SlotHit[] {
-  if (!main) return [];
+  if (!main || !host.slots) return [];
   try { return (main as Stage & { slots(): SlotHit[] }).slots().filter((x) => x.in !== undefined); } catch { return []; }
 }
 function placeSlots() {

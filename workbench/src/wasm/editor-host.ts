@@ -36,6 +36,8 @@ export interface EditorHost {
   devices: DeviceId[];
   /** true = Save really sends (a failed send keeps the edits unsaved); false = a concept that only shows the deck */
   live: boolean;
+  /** true = the screen view outlines the screen's slots (CONTRACT C8a) to compose it: the workbench lab, not a panel */
+  slots: boolean;
   /** Save dialog's confirm button */
   saveLabel: string;
   /** HA states for bound components + their actions (engine HaBridge); null states = sample data */
@@ -60,6 +62,7 @@ export interface EditorHost {
 export const hubHost: EditorHost = {
   devices: ['guition', 'waveshare'],
   live: false,
+  slots: true,
   saveLabel: 'Mark as saved',
   ha: hubHa,
   wasmBase: (den) => `/facet-wasm/${den}/`,

@@ -32,6 +32,7 @@ const here = typeof document !== 'undefined' && document.documentElement.dataset
 export const deviceHost: EditorHost = {
   devices: [here as EditorHost['devices'][number]],
   live: true,
+  slots: false,
   saveLabel: 'Save to panel',
   wasmBase: (den) => `/ed/${den}/`,
   // live values from the panel's own HA subscriptions (GET /fw/ha?want= subscribes first; a new entity fills in a poll later)
