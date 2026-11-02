@@ -16,10 +16,10 @@ for (const device of ['guition', 'waveshare']) {
     after(async () => { await E?.done(); });
 
     it('offers every card type the engine knows', () => {
-      assert.deepEqual([...types].sort(), ['light', 'media', 'page', 'sensor']);
+      assert.deepEqual([...types].sort(), ['entity', 'light', 'media', 'page', 'sensor']);
     });
 
-    for (const t of ['light', 'media', 'sensor', 'page']) {
+    for (const t of ['entity', 'light', 'media', 'sensor', 'page']) {
       it(`${t}: the modal, the Home preview and the deck show the card just added`, async () => {
         const before = homeOf(await fe(page, 'deck'), 'kitchen').cards;
         const others = new Set(lower((await texts(page, 'Preview')) ?? []));
@@ -65,8 +65,8 @@ for (const device of ['guition', 'waveshare']) {
       await page.locator('#ed-crumbs button', { hasText: 'Panel' }).click();
       await settle(page);
       const th = lower(await texts(page, 'Thumb home kitchen'));
-      const last = homeOf(await fe(page, 'deck'), 'kitchen').cards.at(-1);
-      assert.ok(th.includes(expectedTitle(last, E.src).toLowerCase()), 'thumbnail draws the last added card');
+      const last = homeOf(await fe(page, 'deck'), 'kitchen').cards.filter((c) => expectedTitle(c, E.src)).at(-1);  // a page card has no fixed title
+      assert.ok(th.includes(expectedTitle(last, E.src).toLowerCase()), `thumbnail draws the last added card (drew ${th.join(' | ')})`);
       assert.match(await page.locator('[data-testid="home-tile"][data-id="kitchen"] .sub').innerText(), new RegExp(`^${homeOf(await fe(page, 'deck'), 'kitchen').cards.length} cards`));
     });
   });

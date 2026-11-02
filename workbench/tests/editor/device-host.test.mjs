@@ -7,7 +7,7 @@ import { execFileSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, existsSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, extname } from 'node:path';
-import { launch, close, fixture, fe, texts, settle, homeOf, lower } from './lib.mjs';
+import { launch, close, fixture, fe, texts, settle, homeOf, lower, expectedTitle } from './lib.mjs';
 
 const WBDIR = new URL('../..', import.meta.url).pathname;
 // the renderer build: FW_OUT (env or the repo's local.env), else renderer/out
@@ -78,12 +78,13 @@ for (const device of ['guition', 'waveshare']) {
     it('adding a card shows that card, and Save posts exactly the edited deck', async () => {
       const P = await openPanel(device);
       await P.page.locator('[data-testid="home-tile"][data-id="kitchen"] .shot').click(); await settle(P.page);
-      await P.page.locator('[data-testid="add-card"] button[data-v="cover"]').click(); await settle(P.page, 900);
+      await P.page.locator('[data-testid="add-card"] button[data-v="sensor"]').click(); await settle(P.page, 900);  // (the cover card is held on wip)
       const card = homeOf(await fe(P.page, 'deck'), 'kitchen').cards.at(-1);
-      assert.equal(card.t, 'cover');
+      assert.equal(card.t, 'sensor');
       assert.equal((await fe(P.page, 'flow')).err, '');
       const drawn = lower(await texts(P.page, 'Card preview'));
-      assert.ok(drawn.includes(card.e.toLowerCase()) || drawn.some((t) => t.includes('cover')), `card preview draws the new cover (${drawn.join(' | ')})`);
+      const want = expectedTitle(card, fixture()) ?? card.e;  // the panel-served editor has no entity lists yet: the type's placeholder entity
+      assert.ok(want && drawn.includes(want.toLowerCase()), `card preview draws the new sensor "${want}" (${drawn.join(' | ')})`);
       assert.ok(!drawn.includes('pantry') && !drawn.includes('ceiling'), 'only that card');
       await P.page.keyboard.press('Escape'); await settle(P.page, 300);
       const shown = await fe(P.page, 'deck');

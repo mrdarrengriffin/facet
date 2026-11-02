@@ -146,7 +146,7 @@ for (const [view, width, height] of [['desktop', 1440, 1000], ['phone', 390, 844
       await settle(page, 400);
       const c = (await lab(page, 'cards'))[n];
       assert.deepEqual([c.t, c.e, c.tap, c.ask, c.size], ['entity', 'script.good_night', 'run', undefined, 's']);
-      assert.ok((await drawn(page)).includes('run'), 'the tile says Run');
+      assert.ok((await drawn(page)).includes('run'), `the tile says Run (drew ${(await drawn(page)).join(' | ')})`);
     });
 
     it('step 4: the header end slot offers square icon buttons (no segmented), no debug props, and a tap action', async () => {
@@ -207,7 +207,7 @@ for (const [view, width, height] of [['desktop', 1440, 1000], ['phone', 390, 844
     });
 
     it('a locked screen (every factory one, spec "locked") shows no slots or parts to edit', async () => {
-      await page.locator('#screen').selectOption('built:vacuum');
+      await page.locator('#screen').selectOption('built:clock');  // (vacuum is held on wip)
       await settle(page, 600);
       assert.equal((await page.evaluate(() => window.lab.spec())).locked, true);
       assert.equal(await page.locator('#ov .ov-slot, #ov .ov-node').count(), 0);

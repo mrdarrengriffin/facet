@@ -33,7 +33,7 @@ const vals: Record<string, Record<string, string>> = {};  // per screen: the set
 type Cur = { k: 'home' } | { k: 'custom'; i: number } | { k: 'built'; id: string };
 let cur: Cur = { k: 'home' };
 type Card = { t: string; page?: string; e?: string; size: 's' | 'm' | 'l'; label?: string; tap?: string };
-let cards: Card[] = [{ t: 'page', page: 'bins', size: 'm' }, { t: 'page', page: 'energy', size: 'm' }];
+let cards: Card[] = [{ t: 'page', page: 'clock', size: 'm' }, { t: 'page', page: 'energy', size: 'm' }];
 const customs: Spec[] = [];
 const editable = () => cur.k !== 'home' && !spec.locked;  // a locked screen (spec "locked", C53: every factory one) = settings only
 const starter = () => ({

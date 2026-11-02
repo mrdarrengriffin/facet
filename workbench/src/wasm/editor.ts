@@ -1098,9 +1098,11 @@ function specText(kind: string): string | null {
   return specCache.get(kind) ?? null;
 }
 type SpecNode = { c: string; p?: Record<string, unknown>; in?: number | string; slot?: number | string; [k: string]: unknown };
+/** a slot's accepts entry (core/spec.h): a component id, or {c, p?: {prop: allowed values}, editor?: false = not offered here} */
+type Accept = string | { c: string; p?: Record<string, unknown[]>; editor?: boolean };
 function slotDecl(owner: string, name: string) {
   const m = engine?.comps.find((x) => x.id === owner)?.meta as { slots?: unknown } | undefined;
-  return Array.isArray(m?.slots) ? (m!.slots as { name: string; about?: string; accepts?: string[]; max?: number }[]).find((d) => d.name === name) : undefined;
+  return Array.isArray(m?.slots) ? (m!.slots as { name: string; about?: string; accepts?: Accept[]; max?: number }[]).find((d) => d.name === name) : undefined;
 }
 function slotDrawer(dr: HTMLElement) {
   const e = entry(st.sel), pick = flow.slot;
@@ -1146,13 +1148,15 @@ function slotDrawer(dr: HTMLElement) {
   });
   const full = decl?.max != null && items.length >= decl.max;
   const add = h('div', 'slot-add'), sel = h('select');
-  for (const a of decl?.accepts ?? []) { if (!engine?.comps.some((c) => c.id === a)) continue; const o = h('option', '', compName(a)); o.value = a; sel.append(o); }
+  const takes = (decl?.accepts ?? []).map((a) => (typeof a === 'string' ? { c: a } : a)).filter((a) => a.editor !== false && engine?.comps.some((c) => c.id === a.c));
+  for (const a of takes) { const o = h('option', '', compName(a.c)); o.value = a.c; sel.append(o); }
   const ab = h('button', 'btn', full ? 'Slot is full' : 'Add');
   ab.type = 'button';
   ab.disabled = full || !sel.options.length;
   ab.onclick = () => commit((ns) => {
     const c = engine!.comps.find((x) => x.id === sel.value);
-    const node: SpecNode = { c: sel.value, p: defaults(c), in: pick.in, slot: pick.in === 'header' ? pick.n : items.length };
+    const must = Object.fromEntries(Object.entries(takes.find((a) => a.c === sel.value)?.p ?? {}).map(([k, v]) => [k, v[0]]));  // what the slot requires (the first allowed value)
+    const node: SpecNode = { c: sel.value, p: { ...defaults(c), ...must }, in: pick.in, slot: pick.in === 'header' ? pick.n : items.length };
     const at = items.length ? items[items.length - 1][1] + 1 : ns.length;
     fixIn(ns, at, 1);  // before the insert: refs at or past `at` move up one
     ns.splice(at, 0, node);
@@ -1198,7 +1202,7 @@ function types(): Record<string, CardType> {
 }
 const home = () => deck.homes.find((x) => x.id === st.sel);
 const cards = (): HCard[] => ((home() as any)?.cards ?? []) as HCard[];
-const TYPE_NAME: Record<string, string> = { light: 'Light or switch', cover: 'Blind or curtain', climate: 'Climate', media: 'Media player', sensor: 'Sensor (read only)', page: 'Page' };
+const TYPE_NAME: Record<string, string> = { entity: 'Any entity', light: 'Light or switch', cover: 'Blind or curtain', climate: 'Climate', media: 'Media player', sensor: 'Sensor (read only)', page: 'Page' };
 const SIZE_NAME: Record<string, string> = { s: 'Tile', m: 'Card', l: 'Wide' };
 // a sensor's m is the State readout, two stacked in one card slot (sensors in both sizes)
 const sizeName = (t: string, x: string) => (t === 'sensor' && x === 'm' ? 'Readout (half a card)' : t === 'sensor' && x === 's' ? 'Tile' : SIZE_NAME[x] ?? x);
@@ -1219,7 +1223,7 @@ function homeBoxes(s: Stage | null = main): HBox[] {
   let i = 0;
   for (const c of comps) {
     const id = c.ids[0];
-    if (id === 'screen_chrome') out.push({ card: -1, x: c.x, y: c.y, w: c.w, h: c.h });
+    if (id === 'header' && !out.some((b) => b.card === -1)) out.push({ card: -1, x: c.x, y: c.y, w: c.w, h: c.h });  // Home's Header (its header actions)
     else if (id === 'entity_tile' || id === 'card' || id === 'readout') out.push({ card: i++, x: c.x, y: c.y, w: c.w, h: c.h });
   }
   return out;
@@ -1465,7 +1469,10 @@ function homeDrawer() {
     const size = ty.sizes.split(',').includes('m') ? 'm' : ty.sizes.split(',')[0];
     const c: HCard = { t: k, size };
     if (k === 'page') c.page = deck.screens[0]?.id ?? deck.homes.find((x) => x.id !== hm.id)?.id;
-    else c.e = ty.domains.split(',').flatMap((d) => src?.options[d] ?? [])[0]?.id ?? `${ty.domains.split(',')[0]}.none`;
+    else {  // "*" = any domain (the Entity tile): the house's first light, else the first entity it has
+      const ds = ty.domains === '*' ? ['light', ...Object.keys(src?.options ?? {})] : ty.domains.split(',');
+      c.e = ds.flatMap((d) => src?.options[d] ?? [])[0]?.id ?? `${ds[0]}.none`;
+    }
     editCards((cs) => { cs.push(c); });
     cardModal(cards().length - 1);
   });

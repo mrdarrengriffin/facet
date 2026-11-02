@@ -8,7 +8,7 @@ describe('save and load', () => {
   it('Save sends what the editor shows; after saving nothing is unsaved', async () => {
     const E = await openEditor({ query: 'home=kitchen' }), { page } = E;
     assert.equal(await page.locator('#ed-save').isDisabled(), true, 'nothing to save yet');
-    await page.locator('[data-testid="add-card"] button[data-v="cover"]').click(); await settle(page);
+    await page.locator('[data-testid="add-card"] button[data-v="sensor"]').click(); await settle(page);  // (the cover card is held on wip)
     await page.keyboard.press('Escape'); await settle(page, 300);
     const shown = await fe(page, 'deck');
     await page.locator('#ed-save').click(); await settle(page, 300);

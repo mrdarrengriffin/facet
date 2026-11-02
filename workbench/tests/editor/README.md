@@ -1,9 +1,9 @@
 # Editor end-to-end tests
 
-**State:** 48 of 71 pass. They moved here from the private host with the editor. The rest fail because their fixture
-deck and expectations still assume features that are on the `wip` branch (the cover and climate Home cards, the pages
-of held screens) and a house fixture that was replaced with anonymous entities. Bringing them back to green is part
-of the editor work (plan Phase 5.5); they are in no check tier yet.
+**State:** 73 of 73 pass. They moved here from the private host with the editor. Held features (the cover and climate
+Home cards, the vacuum screen, the agents screen) are on the `wip` branch, so the tests use what main ships (a sensor
+card, the clock screen, the fixture's own unlocked Living room). They are in no check tier yet: the editor v1 tests
+join the gate as v1 is built (`workbench/EDITOR-V1.md`).
 
 Playwright (library) + `node:test` against the real workbench editor page (`/wasm/editor`, the real WASM engine) and the
 device bundle (`scripts/editor-device.mjs`, served from a stubbed panel). Each test asserts what a user would see or
