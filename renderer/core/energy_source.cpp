@@ -267,6 +267,9 @@ void from_ha() {
   if (!hl::ready()) { put_state(fd::ERROR, "Home Assistant not connected"); return; }
   if (!prefs.read) { if (why_now.empty()) put_state(fd::LOADING, "loading"); else put_state(fd::ERROR, "Home Assistant not reached"); return; }
   if (!prefs.grid && !prefs.solar) { put_state(fd::ERROR, "Energy dashboard not set up in Home Assistant"); return; }
+  // the last read failed (the network pulled, Home Assistant down): Offline, never the numbers from before (the next
+  // read that lands brings them back)
+  if (!why_now.empty()) { put_state(fd::ERROR, "Home Assistant not reached"); return; }
   if (today_at < 0) { put_state(fd::LOADING, "loading"); return; }
   const double now = (double) time(nullptr) * 1000, d0 = en::midnight(now);
   bool costed = false;
