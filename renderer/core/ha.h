@@ -35,6 +35,7 @@
 #include <cstdio>
 #include <ctime>
 #include <map>
+#include <set>
 #include <string>
 #include <utility>
 #include <vector>
@@ -329,13 +330,10 @@ inline Bound *bound_of(lv_obj_t *obj) {
     if (b->obj == obj) return b;
   return nullptr;
 }
-// obj sits in a hidden subtree (a kept page that is not shown; core/device.cpp): its binds wait. Its own hidden flag
-// does not count (a show bind hides it and must be able to show it again)
-inline bool asleep(lv_obj_t *obj) {
-  for (lv_obj_t *o = obj ? lv_obj_get_parent(obj) : nullptr; o; o = lv_obj_get_parent(o))
-    if (lv_obj_has_flag(o, LV_OBJ_FLAG_HIDDEN)) return true;
-  return false;
-}
+// parking screens: never-loaded LVGL screens that hold the kept pages not shown (core/device.cpp)
+inline std::set<lv_obj_t *> &parks() { static std::set<lv_obj_t *> s; return s; }
+// obj sits on a parking screen (a kept page that is not shown): its binds wait, its data is kept
+inline bool asleep(lv_obj_t *obj) { return obj && parks().count(lv_obj_get_screen(obj)); }
 // the store values again, through the component's update path (silent)
 inline void refresh(Bound *b) {
   b->dirty = false;

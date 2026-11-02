@@ -34,6 +34,7 @@ struct Device {
   lv_timer_t *pre = nullptr;  // the kept pages' prebuild (idle gaps)
   uint32_t shown_at = 0;      // the last screen change (the prebuild waits 300 ms after one)
   uint32_t pre_done = 0;      // the last prebuild's end (the next waits 250 ms from it)
+  lv_obj_t *park = nullptr;   // the kept pages not shown: a never-loaded screen of the same display (no refresh walks it)
 };
 
 std::vector<Device *> devices;  // every mounted device (usually one; a workbench page may show several)
@@ -133,9 +134,10 @@ lv_obj_t *make(Device *d, const std::string &id, bool at_root, std::vector<lv_ob
   return scr;
 }
 
-// Kept pages (facet-243): Home and the deck's pages are built once, in the idle gaps (prebuild), and kept hidden when
-// another screen shows, so a tap shows a page instead of building it. A hidden page does no drawing; its binds keep the
-// data and repaint when it shows again (core/ha.h asleep / wake). It keeps its scroll and state. A settings or look
+// Kept pages (facet-243): Home and the deck's pages are built once, in the idle gaps (prebuild), and parked when
+// another screen shows (moved to a never-loaded screen of the same display: the panel's refresh never walks them; hidden
+// on the shown screen they cost ~80 ms before every render on the Waveshare), so a tap shows a page instead of building
+// it. A parked page does no drawing; its binds keep the data and repaint when it shows again (core/ha.h asleep / wake). It keeps its scroll and state. A settings or look
 // change makes every kept page stale; a deck change the pages whose entry changed (and Home: its cards); a spec change
 // that page. A stale page is built again when it shows, or in the idle gaps. keep_pages(n): at most n kept (0 = off:
 // every screen built on tap); a page over the cap is built on tap. The host's mem hook (free PSRAM) measures each.
@@ -153,12 +155,22 @@ bool is_kept(Device *d, lv_obj_t *o) {
   for (auto &k : d->kept) if (k.second.scr == o) return true;
   return false;
 }
+lv_obj_t *park_of(Device *d) {
+  if (d->park) return d->park;
+  lv_display_t *was = lv_display_get_default();
+  lv_display_set_default(lv_obj_get_display(d->root));  // the device's own display (a workbench page has several)
+  d->park = lv_obj_create(nullptr);
+  lv_display_set_default(was);
+  ha::parks().insert(d->park);
+  lv_obj_add_event_cb(d->park, [](lv_event_t *e) { ha::parks().erase((lv_obj_t *) lv_event_get_current_target(e)); }, LV_EVENT_DELETE, nullptr);
+  return d->park;
+}
 bool show(Device *d, const std::string &id, std::vector<lv_obj_t *> &items) {
   lv_obj_t *old = d->screen;
   d->shown_at = lv_tick_get();
   auto leave = [&](lv_obj_t *o) {
     if (!o) return;
-    if (is_kept(d, o)) lv_obj_add_flag(o, LV_OBJ_FLAG_HIDDEN);
+    if (is_kept(d, o)) lv_obj_set_parent(o, park_of(d));  // parked: off the shown screen, nothing walks it
     else lv_obj_delete(o);
   };
   auto it = d->kept.find(id);
@@ -166,7 +178,7 @@ bool show(Device *d, const std::string &id, std::vector<lv_obj_t *> &items) {
     lv_obj_t *scr = it->second.scr;
     if (old != scr) leave(old);
     if (nav().on && nav().stage == 1) nav().cur.del = lv_tick_get();
-    lv_obj_remove_flag(scr, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_set_parent(scr, d->root);  // back on the shown screen
     d->screen = scr;
     ha::wake(scr);
     if (nav().on && nav().stage == 1) nav().cur.made = lv_tick_get();  // made = shown + its waiting binds repainted
@@ -230,7 +242,7 @@ void prebuild(lv_timer_t *t) {
     lv_obj_t *scr = make(d, id, id == "home", nullptr);
     T = devices.size() == 1 ? d->theme : was;
     if (!scr) continue;
-    lv_obj_add_flag(scr, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_set_parent(scr, park_of(d));
     const size_t m1 = mem_hook() ? mem_hook()() : 0;
     d->kept[id] = {scr, entry_of(id), false, m0 > m1 ? (uint32_t) (m0 - m1) : 0u, (uint32_t) objects(scr), lv_tick_elaps(t0)};
     d->pre_done = lv_tick_get();
@@ -511,7 +523,8 @@ lv_obj_t *mount(lv_obj_t *parent, const char *start) {
     auto *d = (Device *) lv_event_get_user_data(e);
     if (d->timer) lv_timer_delete(d->timer);
     if (d->restyle) lv_timer_delete(d->restyle);
-    if (d->pre) lv_timer_delete(d->pre);  // the kept pages' prebuild (the pages go with the root)
+    if (d->pre) lv_timer_delete(d->pre);  // the kept pages' prebuild
+    if (d->park) lv_obj_delete(d->park);  // the parked kept pages (the shown one goes with the root)
     if (d->toasts) lv_obj_delete(d->toasts);  // its DELETE clears d->toasts
     devices.erase(std::remove(devices.begin(), devices.end(), d), devices.end());
     delete d;
