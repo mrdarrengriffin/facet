@@ -26,6 +26,11 @@ lv_obj_t *box(lv_obj_t *parent, const char *layout = "col");
 //   "none"  never cut: the fit proof (P6) fails if it ever is, in any theme
 lv_obj_t *text(lv_obj_t *parent, const char *s, const char *type, const char *fg, const char *over);
 const char *text_over(lv_obj_t *label);  // a text's declared overflow ("dot" | "fit" | "none"), nullptr = not an fx::text
+// a "fit" text n lines tall (1..4, the Text component): its height = n line boxes of its type (a theme changes only the
+// font inside them, C45), its full width; it wraps and the last line ends in "..." (one line = dot).
+// lines_of = the declared count (0 = none), for the fit proof
+void lines(lv_obj_t *label, const char *type, int n);
+int lines_of(lv_obj_t *label);
 void set_text(lv_obj_t *label, const char *s, const char *type);  // new words, the type's case (an update path)
 // Apply a shared token style by name (optionally per state / part). Unknown name = abort (a typo crashes the
 // workbench, never a silent default).

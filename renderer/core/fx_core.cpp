@@ -1310,6 +1310,17 @@ lv_obj_t *text(lv_obj_t *p, const char *s, const char *type, const char *fg, con
   lv_label_set_text(o, fw::cased(type_id(type), s).c_str());
   return o;
 }
+std::map<lv_obj_t *, int> &line_counts() { static std::map<lv_obj_t *, int> m; return m; }
+void lines(lv_obj_t *l, const char *type, int n) {  // n line boxes of its type (the line box never changes with a theme, C45: only the font in it)
+  if (n < 1 || n > 4 || !text_over(l)) abort();
+  if (!line_counts().count(l)) lv_obj_add_event_cb(l, [](lv_event_t *e) { line_counts().erase((lv_obj_t *) lv_event_get_current_target(e)); }, LV_EVENT_DELETE, nullptr);
+  line_counts()[l] = n;
+  const int box = box_of(type_id(type));
+  lv_obj_set_width(l, lv_pct(100));
+  lv_obj_set_height(l, n * box);
+  lv_label_set_long_mode(l, LV_LABEL_LONG_MODE_DOTS);
+}
+int lines_of(lv_obj_t *l) { auto it = line_counts().find(l); return it == line_counts().end() ? 0 : it->second; }
 void set_text(lv_obj_t *l, const char *s, const char *type) {
   const std::string c = fw::cased(type_id(type), s);
   if (c != lv_label_get_text(l)) lv_label_set_text(l, c.c_str());

@@ -1994,6 +1994,26 @@
         "use": "header actions: the status beside the time (a timer's time left)"
       },
       {
+        "section": "text",
+        "fg": "text",
+        "bg": [
+          "bg",
+          "surface"
+        ],
+        "kind": "text",
+        "use": "the Text component, tone default (headline, body, label)"
+      },
+      {
+        "section": "text",
+        "fg": "text-dim",
+        "bg": [
+          "bg",
+          "surface"
+        ],
+        "kind": "text",
+        "use": "the Text component, tone dim"
+      },
+      {
         "section": "title",
         "fg": "text-dim",
         "bg": [

@@ -3749,6 +3749,56 @@
     "bytes_est": 640
    }
   },
+  "text": {
+   "name": "Text",
+   "update": true,
+   "props": [
+    {
+     "name": "text",
+     "type": "text",
+     "bindable": true,
+     "about": "The words to show."
+    },
+    {
+     "name": "style",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "body",
+      "headline",
+      "label"
+     ],
+     "about": "headline for a screen's big line, body for a paragraph, label for a small line in capitals."
+    },
+    {
+     "name": "tone",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "default",
+      "dim"
+     ],
+     "about": "default is the main text colour; dim is the quieter one for explanations."
+    },
+    {
+     "name": "lines",
+     "type": "range",
+     "bindable": true,
+     "min": 1,
+     "max": 4,
+     "about": "How many lines it may take, from 1 to 4. It is always that tall; words that do not fit end in an ellipsis."
+    }
+   ],
+   "events": {
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 2,
+    "bytes_est": 320
+   }
+  },
   "tick_ring": {
    "name": "Tick ring",
    "update": true,
@@ -5161,5 +5211,5 @@
    }
   }
  },
- "hash": "96e2707a"
+ "hash": "66e50128"
 }
