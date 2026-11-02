@@ -260,6 +260,7 @@ class Weather : public feed::Feed {
     const std::string ent = cfg()["weather"] | "";
     if (ent.rfind("weather.", 0) != 0) { ent_now.clear(); reads({}); put_empty(feed::ERROR); return; }  // no weather entity picked
     if (changed() || ent != ent_now) hours_got.clear(), days_got.clear(), fetched_hour = -1, ent_now = ent;
+    if (back()) waiting_h = waiting_d = false;  // asks sent before Home Assistant dropped never come back
     reads({{ent, ""}, {ent, "temperature"}, {ent, "apparent_temperature"}});  // the weather now, live
     rebuild();
     if (changed() || back() || std::floor(now_ms() / HOUR) != fetched_hour || lv_tick_elaps(fetched_at) > 30 * 60000u) fetch(ent);

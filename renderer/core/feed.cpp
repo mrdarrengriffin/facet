@@ -13,7 +13,7 @@ std::vector<Feed *> &list() { static std::vector<Feed *> v; return v; }
 template <int N> void tramp() { if (N < (int) list().size()) list()[N]->run(); }
 using Fn = void (*)();
 constexpr Fn TRAMP[] = {tramp<0>, tramp<1>, tramp<2>, tramp<3>, tramp<4>, tramp<5>, tramp<6>, tramp<7>};
-bool bad(const std::string *v) { return !v || v->empty() || *v == "unavailable" || *v == "unknown"; }
+bool bad(const std::string &v) { return v == "unavailable" || v == "unknown"; }  // HA says it is away (not: not yet known)
 }  // namespace
 
 const char *state_id(State s) { return s == LOADING ? "loading" : s == ERROR ? "error" : s == EMPTY ? "empty" : "ok"; }
@@ -25,7 +25,7 @@ void on_put(const std::string &e, const std::string &a, const std::string &v) { 
     if (f->in_round_ || std::none_of(f->reads_.begin(), f->reads_.end(), [&](const auto &r) { return r.first == e && r.second == a; })) continue;
     bool came = false;
     if (a.empty()) {
-      const bool was = f->down_.count(e), down = v.empty() || v == "unavailable" || v == "unknown";
+      const bool was = f->down_.count(e), down = bad(v);
       if (down) f->down_.insert(e); else f->down_.erase(e);
       came = was && !down;
     }
@@ -78,6 +78,29 @@ void Feed::run() {
   }
 }
 
+void Feed::sample_round() {
+  if (in_round_) return;
+  in_round_ = in_sample_ = true;
+  put_now_.clear();
+  sample();
+  in_round_ = in_sample_ = false;
+}
+std::string Feed::json() {
+  ArduinoJson::JsonDocument d;
+  d["entity"] = entity_, d["every_ms"] = every_ms_, d["source"] = default_source_;
+  ArduinoJson::JsonArray fs = d["fields"].to<ArduinoJson::JsonArray>();
+  for (const Field &f : fields_) {
+    ArduinoJson::JsonObject o = fs.add<ArduinoJson::JsonObject>();
+    o["name"] = f.name, o["required"] = f.required;
+    if (f.none) o["none"] = f.none; else o["none"] = nullptr;
+  }
+  ArduinoJson::JsonArray ss = d["samples"].to<ArduinoJson::JsonArray>();
+  for (const std::string &w : samples_) ss.add(w);
+  std::string out;
+  serializeJson(d, out);
+  return out;
+}
+
 void Feed::put(const char *field, const std::string &v) {
   if (std::none_of(fields_.begin(), fields_.end(), [&](const Field &f) { return !strcmp(f.name, field); })) {
     printf("feed %s: %s is not one of its fields\n", entity_, field);
@@ -95,7 +118,7 @@ void Feed::reads(const std::vector<std::pair<std::string, std::string>> &pairs) 
   reads_ = pairs;
   down_.clear();
   for (const auto &r : reads_) {
-    if (r.second.empty() && bad(ha::get(r.first))) down_.insert(r.first);
+    if (const std::string *v = ha::get(r.first); r.second.empty() && v && bad(*v)) down_.insert(r.first);
     ha::want(r.first, r.second);
   }
 }

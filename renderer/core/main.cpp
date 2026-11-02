@@ -30,6 +30,7 @@
 #include "spec.h"
 #include "device.h"
 #include "fx.h"
+#include "feed.h"
 #include "sheet.h"
 #include "core/lv_obj_style_private.h"  // the style list (fw_lab names the token styles)
 // LVGL private (src/core/lv_obj_draw_private.h): the ext draw size an object holds (fw::bleed sets it)
@@ -561,6 +562,8 @@ EMSCRIPTEN_KEEPALIVE const char *fw_hit(int id, int x, int y) {
 //   "probe", "<squeeze>"   -> {name: 1 | 0}: which size tokens (+ "squeeze") change stage id's pixels (each moved
 //                             and put back, rendered synchronously): the lab shows what this component really uses
 //   "theme_*", <json>      -> the theme engine: load, apply, dump, contrast, builtins (core/theme_lab.cpp)
+//   "feeds", ""            -> [Feed json] every feed (core/feed.h: fields required / optional + placeholder, the sample
+//                             words after one sample round each)
 //   "proof", ""            -> {bounds, overlap, trunc: [{x, y, w, h, why}]} for stage id: Body objects outside their
 //                             parent's content box (bleed skipped), clickable areas that overlap (not nested), text
 //                             wider than its label (cut to "...")
@@ -667,7 +670,13 @@ EMSCRIPTEN_KEEPALIVE const char *fw_lab(int id, const char *cmd, const char *arg
     serializeJson(doc, out);
     return out.c_str();
   }
-  if (c != "proof") return "tokens | tune | uses | probe | proof | theme_*";
+  if (c == "feeds") {
+    out = "[";
+    for (fw::feed::Feed *f : fw::feed::all()) { f->sample_round(); out += (out.size() > 1 ? "," : "") + f->json(); }
+    out += "]";
+    return out.c_str();
+  }
+  if (c != "proof") return "tokens | tune | uses | probe | proof | feeds | theme_*";
   Stage *s = get(id);
   if (!s) return "{}";
   lv_obj_t *scr = lv_display_get_screen_active(s->d);

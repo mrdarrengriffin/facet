@@ -379,6 +379,7 @@ class Calendar : public feed::Feed {
       reads(r);
     }
     for (Cal &c : cals) { const std::string *n = ha::get(c.entity, "friendly_name"); if (n && !n->empty()) c.name = *n; }
+    if (back()) waiting = 0;  // asks sent before Home Assistant dropped never come back
     src_now = "ha";
     rebuild();
     double a, b;

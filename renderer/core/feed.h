@@ -40,6 +40,10 @@ class Feed {
   const char *entity() const { return entity_; }
   const std::set<std::string> &samples() const { return samples_; }  // the words sample() puts (the leak rule)
   const std::vector<Field> &fields() const { return fields_; }
+  uint32_t every_ms() const { return every_ms_; }
+  const char *default_source() const { return default_source_; }
+  void sample_round();  // sample() once (the lab: the sample words without a screen); the next run() puts the real data
+  std::string json();   // {entity, every_ms, source, fields: [{name, required, none}], samples: [...]} (lab "feeds", schema)
 
  protected:
   virtual void fill() = 0;    // put the fields for the settings now (called by run())
