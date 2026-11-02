@@ -21,6 +21,23 @@ const chipFor = (t, id) => chip(t, list(t).findIndex((x) => String(x.id) === Str
 export default {
   id: 'timer_screen', family: 'screens', about: 'The Timer screen: presets, + New, switching with a chip, cancel one, stop a done one.',
   tests: [
+    { name: 'Home card (C52): "Set a timer" with none running, the time left and its length while one runs', async run(t) {
+      await t.device(); tm(t, { op: 'reset' }); t.wait(500);
+      const card = () => {  // Home scrolled to the end: the texts of the card headed TIMER
+        t.drag({ at: [t.b.S / 2, t.b.S * 0.8] }, { by: [0, -t.b.S] }); t.wait(800);
+        const head = t.objs().find((o) => o.text === 'TIMER' && t.visible(o));
+        const box = head && t.objs().filter((o) => o.clk && o.x <= head.x && o.y <= head.y && o.x + o.w >= head.x + head.w && o.y + o.h >= head.y + head.h).sort((a, z) => a.w * a.h - z.w * z.h)[0];
+        return box ? t.texts(box) : [];
+      };
+      const idle = card();
+      t.ok(idle.includes('Set a timer'), `idle: Set a timer (${idle.join(' | ')})`);
+      t.ok(!idle.some((x) => /^\d+:\d\d$/.test(x)), 'idle: no time');
+      tm(t, { op: 'start', seconds: 300 }); t.wait(1500);
+      const run = card();
+      t.ok(run.some((x) => /^4:5\d$|^5:00$/.test(x)), `running: the time left (${run.join(' | ')})`);
+      t.ok(run.includes('5 min'), 'running: its length');
+      t.ok(!run.includes('Set a timer'), 'running: no Set a timer');
+    } },
     { name: 'idle: the four presets, no running buttons; a preset starts a timer named by its length', async run(t) {
       await open(t);
       for (const m of [3, 5, 10, 20]) t.ok(has(t, new RegExp(`^${m} min$`, 'i')), `${m} min preset shown`);

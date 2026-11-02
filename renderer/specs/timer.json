@@ -3,13 +3,34 @@
  "id": "timer",
  "locked": true,
  "name": "Timer",
- "rev": 4,
+ "rev": 5,
  "role": "page",
  "header": {
   "label": "Timer",
   "back": true
  },
  "layout": "center",
+ "card": {
+  "label": "Timer",
+  "icon": "timer",
+  "preview": "timer",
+  "mode": {
+   "e": "panel.timer",
+   "map": {
+    "running": "value"
+   },
+   "else": "text"
+  },
+  "value": {
+   "e": "panel.timer",
+   "a": "left"
+  },
+  "text": "Set a timer",
+  "sub": {
+   "e": "panel.timer",
+   "a": "name"
+  }
+ },
  "nodes": [
   {
    "c": "group",
@@ -51,7 +72,14 @@
      "a": "line"
     },
     "accent": false,
-    "role": {"e": "panel.timer", "a": "bar", "map": {"1": "value"}, "else": "hero"},
+    "role": {
+     "e": "panel.timer",
+     "a": "bar",
+     "map": {
+      "1": "value"
+     },
+     "else": "hero"
+    },
     "layout": "stack"
    },
    "in": 1,
