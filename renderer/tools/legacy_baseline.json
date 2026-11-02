@@ -108,13 +108,6 @@
   "theme": 2,
   "width": 3
  },
- "screens/settings.cpp": {
-  "create": 5,
-  "local": 20,
-  "width": 4,
-  "fixed": 25,
-  "theme": 2
- },
  "screens/setup.cpp": {
   "create": 3,
   "local": 23,
