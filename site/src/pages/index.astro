@@ -30,23 +30,8 @@ const glimpse = ['space', 'motion', 'states', 'icons']
   .map((id) => FOUNDATIONS.find((f) => f.id === id))
   .filter((f) => f !== undefined);
 
-const what = [
-  {
-    title: 'For wall panels',
-    text: 'Small square touch screens on the wall, running ESPHome and LVGL. The first two are a 720 × 720 Waveshare ESP32-P4 panel and a 480 × 480 Guition ESP32-S3 panel.',
-  },
-  {
-    title: 'One set of tokens',
-    text: 'Every colour, type style, space, motion and sound is a named token in one set of files. The panels and this site are built from the same files.',
-  },
-  {
-    title: 'One renderer',
-    text: 'Components are C++ on LVGL. The same code is compiled to WebAssembly for this site, so every example here is what a panel draws, pixel for pixel.',
-  },
-];
-
 const steps = [
-  { title: 'Getting started', text: 'What you need and how to put Facet on a panel.', href: url('/docs/') },
+  { title: 'Getting started', text: 'Install from Chrome or Edge over USB-C, then add the panel to Home Assistant.', href: url('/docs/') },
   { title: 'Screens', text: `${SCREENS.length} screens, each running live on its page as it does on a panel.`, href: url('/screens/') },
   { title: 'Design system', text: 'The foundations: colour, type, space, layout, motion, states, icons.', href: url('/foundations/') },
   { title: 'Components', text: `${COMPONENTS.length} components, each with a playground: change its props, tap it, hear it.`, href: url('/components/') },
@@ -62,9 +47,9 @@ const steps = [
         <p class="landing__lede">{description}</p>
         <!-- intro: draft -->
         <p class="landing__intro-text">
-          Facet is a design system for wall panels: small touch screens that show and control your home through Home
-          Assistant. Its tokens, components and sounds are drawn by one renderer, on ESP32 panels and in the browser
-          alike, so every screen looks and feels the same wherever it runs.
+          Facet is firmware for two 4-inch wall panels that show and control your home through Home Assistant. One
+          C++/LVGL renderer draws it on the panel and, compiled to WebAssembly, on this site: {SCREENS.length} screens
+          built from {COMPONENTS.length} components.
         </p>
         <div class="landing__actions">
           <a class="button button--primary" href={url('/screens/')}>See the screens</a>
@@ -93,8 +78,8 @@ const steps = [
     <section class="callout callout--warn landing__status" aria-label="Project status">
       <span class="dot" aria-hidden="true"></span>
       <p>
-        <strong>Facet is a work in progress.</strong> The foundations, the components and the first screens are here; more
-        screens and the panel firmware are on the way. Expect things to move around while that happens{UPDATES_PAGE ? <>; the{' '}
+        <strong>Facet is new.</strong> Firmware for both panels installs from the <a href={url('/install/')}>Install</a> page;
+        screens and settings still change between releases{UPDATES_PAGE ? <>; the{' '}
         <a href={url('/updates/')}>updates page</a> shows what changed lately.</> : '.'}
       </p>
     </section>
@@ -108,21 +93,15 @@ const steps = [
           <p class="landing__source"><a href="https://dictionary.cambridge.org/dictionary/english/facet">Cambridge Dictionary</a></p>
         </blockquote>
         <p>
-          Each screen in Facet is shaped around the one thing it does, from a light's dial to
-          the weather or the moon. Like the faces cut into a gemstone, they are many small parts of one system, cut to fit together, so
-          the whole feels thought out and designed.
+          Each screen does one job, from a light's dial to the weather or the moon. They share one set of tokens and
+          components, so a button on the Timer screen is the same button on Media.
+        </p>
+        <p>
+          Two panels for now: the Waveshare ESP32-P4-86 (720 × 720, with a speaker) and the Guition ESP32-S3-4848S040
+          (480 × 480). Colour, type, space, motion and sound are named tokens in one set of files; the panels and this
+          site are built from the same files, so every preview here is what a panel draws.
         </p>
       </div>
-      <ul class="parts parts--3">
-        {
-          what.map((p) => (
-            <li class="part">
-              <h3>{p.title}</h3>
-              <p>{p.text}</p>
-            </li>
-          ))
-        }
-      </ul>
     </section>
 
     <section class="landing__section" aria-labelledby="built-title">
@@ -158,7 +137,7 @@ const steps = [
         </li>
         <li class="build__step">
           <h3><span class="build__n">2</span> Components</h3>
-          <p>Built only from the foundations, drawn by the panel renderer. Each one has a page with a playground.</p>
+          <p>{COMPONENTS.length} components, each built only from the foundations. Every one has a page where you change its props, tap it and hear it.</p>
           <ul class="previews">
             {cShots.map((sh) => (
               <li>
@@ -176,7 +155,7 @@ const steps = [
         </li>
         <li class="build__step">
           <h3><span class="build__n">3</span> Screens</h3>
-          <p>One job per screen, made from the components and a few shared screen patterns. Each one runs live on its page.</p>
+          <p>{SCREENS.length} screens. Most are a JSON spec of 1 to 6 KB that names its components; each runs live on its page.</p>
           <ul class="shots">
             {released.map((sc) => (
               <li>
@@ -389,9 +368,6 @@ const steps = [
   .part h3 .badge {
     margin-left: 0;
   }
-  .parts--3 {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
   .part h3 a {
     color: var(--facet-color-text);
     text-decoration: none;
@@ -540,9 +516,6 @@ const steps = [
     }
     .landing__section .shots {
       grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-    .parts--3 {
-      grid-template-columns: minmax(0, 1fr);
     }
   }
   @media (max-width: 640px) {

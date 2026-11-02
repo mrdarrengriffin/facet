@@ -18,7 +18,7 @@ const done = SCREENS.filter((s) => s.status !== 'wip').length;
 >
   <p>
     A screen is built from the <a href={url('/components/')}>components</a>: most are a short spec that names its parts
-    and settings, and the panel finds the data for them. {done} of {SCREENS.length} are done; the rest are being worked on.
+    and settings, and the panel finds the data for them. {done < SCREENS.length && `${done} of ${SCREENS.length} are done; the rest are being worked on.`}
   </p>
   {
     screenGroups().map((g) => (

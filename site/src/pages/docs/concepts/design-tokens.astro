@@ -10,7 +10,7 @@ const headings: Heading[] = [
   { depth: 2, slug: 'kinds', text: 'The kinds of token' },
   { depth: 2, slug: 'rules', text: 'Rules every value follows' },
   { depth: 2, slug: 'sizes', text: 'One layout, two sizes' },
-  { depth: 2, slug: 'panel', text: 'Made for the panel' },
+  { depth: 2, slug: 'panel', text: '16-bit colour' },
 ];
 const kinds = [
   ['Colour', 'colour', 'Backgrounds, surfaces, three text levels, lines, the accent and status colours, in a light and a dark theme.'],
@@ -32,7 +32,7 @@ const kinds = [
   </p>
   <p>
     The tokens live in one JSON file per foundation in the repository (<code>renderer/tokens/</code>). The build turns
-    them into the C++ the panel runs and into the pages of this site, so the docs and the panel never disagree.
+    them into the C++ the panel runs and into the pages of this site, so the docs and the panel are built from the same values.
   </p>
 
   <h2 id="kinds">The kinds of token</h2>
@@ -52,7 +52,7 @@ const kinds = [
     <li><strong>4 px grid</strong>: every size and gap is a whole number of 4 px steps.</li>
     <li>
       <strong>Contrast</strong>: every place two colours meet is listed and tested against the WCAG AA levels, in both
-      themes and with every accent colour, on the 16-bit colours the panel really shows. Facet ships with no failures.
+      themes and with every accent colour, on the 16-bit colours the panel really shows. 6,490 checks (649 pairs × 2 themes × 5 accents), 0 failures.
     </li>
   </ul>
 
@@ -62,7 +62,7 @@ const kinds = [
     screen looks the same on both, just sharper on the bigger one. The size switch at the top of each page shows either.
   </p>
 
-  <h2 id="panel">Made for the panel</h2>
+  <h2 id="panel">16-bit colour</h2>
   <p>
     The panels show 16-bit colour, which has fewer shades than a computer screen. Facet's colours are chosen for that:
     softer looks come from a less saturated colour, not from transparency, and gradients are dithered so they do not

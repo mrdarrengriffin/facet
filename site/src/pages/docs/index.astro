@@ -3,7 +3,7 @@
 // docs: install -> Home Assistant -> screens -> AI screens -> reference -> roadmap. Released features only.
 import Docs, { type Heading } from '../../layouts/Docs.astro';
 import { url } from '../../lib/nav';
-import { screenById, screenHref } from '../../lib/data';
+import { COMPONENTS, SCREENS, screenById, screenHref } from '../../lib/data';
 
 const home = screenById('home');
 const headings: Heading[] = [
@@ -19,13 +19,13 @@ const headings: Heading[] = [
 
 <Docs edit="site/src/pages/docs/index.astro" title="Getting started" description="What Facet is, what you need, and the steps from a blank panel to your own screens." group="Start here" current={url('/docs/')} headings={headings}>
   <p class="lede">
-    Facet turns a small touch screen on the wall into a panel for your home. It runs on ESP32 panels with ESPHome,
-    talks to Home Assistant, and every screen is built from one design system, so it all looks and feels the same.
+    Facet is firmware for two 4-inch wall panels. It runs on ESPHome, talks to Home Assistant and draws
+    {SCREENS.length} screens from one set of {COMPONENTS.length} components.
   </p>
 
   <div class="callout">
     <span class="dot" aria-hidden="true"></span>
-    <p>Facet is early. The firmware is a preview build, and new screens arrive often: the <a href={url('/roadmap/')}>roadmap</a> shows what is available and what is next.</p>
+    <p>Facet is new: screens and settings still change between releases. The <a href={url('/roadmap/')}>roadmap</a> shows what is next.</p>
   </div>
 
   <h2 id="need">What you need</h2>
@@ -47,15 +47,15 @@ const headings: Heading[] = [
   <h2 id="home-assistant">2. Connect to Home Assistant</h2>
   <p>
     Home Assistant finds the panel on your network. Add it, then allow it to perform Home Assistant actions so its
-    controls can switch your lights and more. The steps are on the <a href={url('/install/#home-assistant')}>Install</a> page.
+    controls can switch lights and control media players. The steps are on the <a href={url('/install/#home-assistant')}>Install</a> page.
     Firmware updates then arrive in Home Assistant too. Something not working? See
     <a href={url('/docs/troubleshooting/')}>Updating and troubleshooting</a>.
   </p>
 
   <h2 id="screens">3. Find your way round</h2>
   <p>
-    The panel starts on {home ? <a href={screenHref(home)}>Home</a> : 'Home'}: your cards at a glance, with the other
-    screens a tap away. Lights, covers, media, weather, the clock, timers, the calendar and energy each have a screen.
+    The panel starts on {home ? <a href={screenHref(home)}>Home</a> : 'Home'}: a grid of your cards, with the other
+    screens one tap away. Lights, media, weather, the moon, the clock, timers, the calendar and energy each have a screen.
     <a href={url('/screens/')}>Screens</a> shows every one live, with what it shows, its settings and where its data comes from.
     <a href={url('/docs/home-cards/')}>Home cards</a> explains the card sizes and how to choose what is on Home.
   </p>
@@ -78,7 +78,7 @@ const headings: Heading[] = [
 
   <h2 id="contribute">6. Help make Facet better</h2>
   <p>
-    Facet gets better with every person who tries it. Tell us what broke, test it on your panel, fix a line in these
-    docs or write some code: <a href={url('/contributing/')}>Contributing</a> has every way in, and most need no code.
+    Found a bug, or have a panel to test on? <a href={url('/contributing/')}>Contributing</a> lists each way to help;
+    most need no code.
   </p>
 </Docs>
