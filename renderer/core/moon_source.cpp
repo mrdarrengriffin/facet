@@ -1,7 +1,8 @@
 // The moon feed (CONTRACT.md C51): the reserved entity panel.moon (core/spec.h "local sources") in the HA store, the
-// one shape the Moon screen binds to. Worked out on the panel (core/lunar.h: Meeus phase times, the main lunar terms;
+// one shape the Moon screen binds to. On the Feed base (core/feed.h). Worked out on the panel (core/lunar.h: Meeus phase times, the main lunar terms;
 // no API, docs @facet/ui moon.ts moonData). Same file on the panels and in WASM.
-//   state     the phase now: new_moon | waxing_crescent | first_quarter | waxing_gibbous | full_moon | waning_gibbous |
+//   state     ok (the moon is worked out on the panel: always)
+//   phase_key the phase now: new_moon | waxing_crescent | first_quarter | waxing_gibbous | full_moon | waning_gibbous |
 //             last_quarter | waning_crescent
 //   phase     0..1 through the synodic month ("0.372"; the Moon phase's phase), south "true" | "false" (lat < 0)
 //   name, rest  the one line (docs moonLine): "Waxing gibbous", "78% · full on Fri"
@@ -24,22 +25,20 @@
 #include <cmath>
 #include <cstdio>
 #include <ctime>
+#include "feed.h"
 #include "fw.h"
 #include "fx.h"
-#include "ha.h"
 #include "lunar.h"
 
 namespace fw::dev::moon_source {
 namespace {
-constexpr const char *E = "panel.moon";
 constexpr double SAMPLE_NOW = 1792702800000.0;  // 22 Oct 2026 21:00 UTC: an evening, four days before full
 constexpr int DAYS_BACK = 7;                     // docs MOON_RANGE_BACK
-lv_timer_t *tick = nullptr;
 const char *KEYS[8] = {"new_moon", "waxing_crescent", "first_quarter", "waxing_gibbous", "full_moon", "waning_gibbous", "last_quarter", "waning_crescent"};
 const char *SHORT[4] = {"New", "First quarter", "Full", "Last quarter"};
 const char *MONTHS[12] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
 
-void put(const char *a, const std::string &v) { ha::put(E, a, v); }
+std::function<void(const char *, const std::string &)> put;  // the feed's put (Moon below)
 std::string day_time(double t, double now) { return lunar::day_word(t, now) + " \xC2\xB7 " + lunar::hm(t); }
 // the phase name of a fraction (docs moonPhaseName) or of the principal phase the day crosses
 int phase_ix(double f) { return f < 0.25 ? 1 : f < 0.5 ? 3 : f < 0.75 ? 5 : 7; }
@@ -105,20 +104,35 @@ void put_data(double now, double lat, double lon) {
   put_days(now);
   snprintf(b, sizeof b, "%ld%%", std::lround(m.illumination)), put("card_value", b);
   put("card_sub", name);
-  put("", KEYS[m.phase]);
+  put("phase_key", KEYS[m.phase]);
 }
 
-void fresh() {
-  if (!tick) tick = lv_timer_create([](lv_timer_t *) { if (ha::watched(E)) fresh(); }, 60000, nullptr);  // the moon moves on with the clock
-  const std::string &cfg = ha::feed_config(E);
-  ArduinoJson::JsonDocument c;
-  deserializeJson(c, cfg.empty() ? "{}" : cfg.c_str());
-  const std::string src = c["source"] | "panel";
-  const char *la = c["lat"] | "", *lo = c["lon"] | "";
-  const double lat = *la ? strtod(la, nullptr) : 52.2, lon = *lo ? strtod(lo, nullptr) : -1.2;
-  if (src == "sample") put_data(SAMPLE_NOW, 52.2, -1.2);
-  else put_data((double) time(nullptr) * 1000, std::isfinite(lat) ? std::clamp(lat, -89.0, 89.0) : 52.2, std::isfinite(lon) ? lon : -1.2);
+// required: what the screen and its card need; the rest optional (rise / set "--" in dim when none)
+const char *const REQ[] = {"phase", "name", "lit", "card_value", "card_sub", "phase_key"};
+std::vector<feed::Field> moon_fields() {
+  std::vector<feed::Field> v;
+  for (const char *n : REQ) v.push_back({n, true, ""});
+  for (const char *n : {"south", "rest", "age", "full", "new", "next", "values", "bands", "marks", "names", "labels", "now", "title_days",
+                        "title_now", "title_details", "days_more", "day_name", "day_rest"}) v.push_back({n, false, ""});
+  for (const char *n : {"rise", "set"}) v.push_back({n, false, "--"});
+  for (const char *n : {"rise_tone", "set_tone"}) v.push_back({n, false, "dim"});
+  return v;
 }
-[[maybe_unused]] const bool registered = (ha::on_local(E, fresh), true);  // binds on panel.moon never reach a host
+class Moon : public feed::Feed {
+ public:
+  Moon() : Feed("panel.moon", 60000, "panel", moon_fields()) {}  // the moon moves on with the clock
+  using Feed::put;
+
+ protected:
+  void fill() override {
+    const char *la = cfg()["lat"] | "", *lo = cfg()["lon"] | "";
+    const double lat = *la ? strtod(la, nullptr) : 52.2, lon = *lo ? strtod(lo, nullptr) : -1.2;
+    state(feed::OK);
+    put_data((double) time(nullptr) * 1000, std::isfinite(lat) ? std::clamp(lat, -89.0, 89.0) : 52.2, std::isfinite(lon) ? lon : -1.2);
+  }
+  void sample() override { state(feed::OK); put_data(SAMPLE_NOW, 52.2, -1.2); }  // a fixed evening at the docs place
+};
+Moon F;
+[[maybe_unused]] const bool wired = (put = [](const char *a, const std::string &x) { F.put(a, x); }, true);
 }  // namespace
 }  // namespace fw::dev::moon_source
