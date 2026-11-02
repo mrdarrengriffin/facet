@@ -165,10 +165,13 @@ bool show(Device *d, const std::string &id, std::vector<lv_obj_t *> &items) {
   if (it != d->kept.end() && !it->second.stale) {  // kept: shown again as it was left, its binds caught up first
     lv_obj_t *scr = it->second.scr;
     if (old != scr) leave(old);
-    if (nav().on && nav().stage == 1) nav().cur.del = nav().cur.made = nav().cur.laid = lv_tick_get();
+    if (nav().on && nav().stage == 1) nav().cur.del = lv_tick_get();
     lv_obj_remove_flag(scr, LV_OBJ_FLAG_HIDDEN);
     d->screen = scr;
     ha::wake(scr);
+    if (nav().on && nav().stage == 1) nav().cur.made = lv_tick_get();  // made = shown + its waiting binds repainted
+    lv_obj_update_layout(scr);  // its layout now, inside the change (not in the first frame)
+    if (nav().on && nav().stage == 1) nav().cur.laid = lv_tick_get();
     if (lv_obj_get_child_count(scr)) collect(lv_obj_get_child(scr, 0), items);
     return true;
   }
