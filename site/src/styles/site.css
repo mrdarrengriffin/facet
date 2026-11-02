@@ -160,6 +160,56 @@ a .live__canvas,
 .live--static .live__canvas {
   pointer-events: none;
 }
+/* ---- screen pictures (components/Shot.astro): panel pixels = CSS pixels like the live canvas, shrunk when narrow */
+.shot-img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+.try {
+  display: grid;
+  justify-items: center;
+  gap: 16px;
+}
+.try .shot-img {
+  width: 720px;
+}
+:root[data-device='480'] .try .shot-img {
+  width: 480px;
+}
+/* the states strip: one small picture per state, its name under it */
+.states {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 16px;
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.prose .states {
+  padding: 0;
+}
+.prose .states li + li {
+  margin-top: 0;
+}
+.states figure {
+  margin: 0;
+}
+.states .shot-img {
+  width: 100%;
+  border: 1px solid var(--facet-color-line);
+  border-radius: 12px;
+}
+.states figcaption {
+  margin-top: 8px;
+  color: var(--facet-color-text-dim);
+  font-size: 13px;
+}
+/* the grids: the picture fills the tile's viewport */
+.shot__viewport .shot-img {
+  width: 100%;
+  max-height: 100%;
+}
 /* foundation sections: the panel-wide canvas in a rounded frame */
 .live--doc .live__stage {
   display: block;

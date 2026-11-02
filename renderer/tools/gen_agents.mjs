@@ -95,13 +95,17 @@ write a spec, POST it as "check" until it is valid, POST it as "screen", then op
 \`\`\`json
 {"v": 1, "id": "office", "name": "Office", "rev": 1, "role": "page",
  "params": {"entity": {"type": "entity", "domain": "light", "label": "Light", "default": "light.office"}},
- "header": {"label": "Office", "back": true},
+ "header": {"label": "Office"},
  "layout": "list",
  "nodes": [
-  {"c": "section_header", "p": {"label": "Lights"}},
-  {"c": "list_row", "p": {"label": {"e": "$entity", "fmt": "name", "s": "Office"}, "sub": {"e": "$entity", "fmt": "light", "s": "On"}},
+  {"c": "section_header", "p": {"title": "Lights"}},
+  {"c": "list_row", "p": {"title": {"e": "$entity", "fmt": "name", "s": "Office"}, "sub": {"e": "$entity", "fmt": "light", "s": "On"},
+    "trailing": "toggle", "on": {"e": "$entity", "fmt": "on", "s": "on"}, "state": {"e": "$entity", "fmt": "avail"}},
    "on": {"toggle": {"do": "light.switch", "e": "$entity"}}}]}
 \`\`\`
+- The header's Back is the panel's own
+  (every screen but the first has it). Note the two \`on\` keys: in \`p\` the List row's switch (bound with fmt on), on
+  the node what its events do.
 - \`role\`: ${C.roles.join(' | ')} (page = in the page list; detail = opened from a card for one entity; both).
 - \`layout\`: ${C.layouts.join(' | ')} (list = one scrolling column, center = one node centred, cards = the card grid).
 - \`params\`: the screen's inputs; \`"$name"\` in any string = the value it was opened with. Types: text, select,

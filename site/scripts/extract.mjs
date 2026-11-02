@@ -432,6 +432,14 @@ w('icons.json', iconSet());
 w('previews.json', previews());
 const screens = screenSet();
 w('screens.json', screens);
+// the site's deck (lib/sample-ha.ts, scripts/shots.mjs): the factory deck with every page that offers a sample source
+// set to it, so the previews show sample data (a panel never does unless its deck says so)
+{
+  const deck = json('specs/deck.json');
+  const sampled = new Set(readdirSync(join(R, 'specs')).filter((f) => f.endsWith('.json')).map((f) => json(`specs/${f}`))
+    .filter((sp) => sp.params?.source?.options?.includes('sample')).map((sp) => sp.id));
+  w('site-deck.json', { ...deck, pages: deck.pages.map((p) => (sampled.has(p.kind) ? { ...p, params: { ...(p.params ?? {}), source: 'sample' } } : p)) });
+}
 const road = roadmapSnapshot() ?? JSON.parse(readFileSync(join(SITE, 'src/roadmap.json'), 'utf8'));
 writeFileSync(join(SITE, 'src/roadmap.json'), JSON.stringify(roadFilter(road), null, 1) + '\n');
 // feature flags for the pages: hidden features (Updates entries tagged with one are left out) + the paths of hidden

@@ -34,7 +34,7 @@ const fid = (n: string) => `pg-${c.id}-${n}`;
         <Lede e={c} />
       </header>
 
-      <section class="explorer__workbench" data-playground data-preview-scope data-defaults={JSON.stringify(base)}>
+      <section class="explorer__workbench" data-playground data-preview-scope data-md-skip data-defaults={JSON.stringify(base)}>
         <div class="explorer__preview">
           <div class="explorer__themed" data-themed>
             <div class="explorer__stage" data-live-auto>
@@ -86,7 +86,7 @@ const fid = (n: string) => `pg-${c.id}-${n}`;
 
       {
         variants.length > 0 && (
-          <section class="explorer__variants" data-preview-scope>
+          <section class="explorer__variants" data-preview-scope data-md-skip>
             <h2 class="facet-label">Variants</h2>
             <div class="explorer__variant-grid">
               {variants.map((v) => (

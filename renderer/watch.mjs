@@ -58,7 +58,8 @@ function quietLater() {
   quiet = setTimeout(() => queue('1x', 'quiet'), QUIET_MS);
 }
 
-// docs site: extract + astro build into dist.next, swapped in as dist; never while a WASM build runs
+// docs site: extract + the screen pictures + astro build into dist.next + the agent docs (.md twins, llms.txt), swapped
+// in as dist; never while a WASM build runs
 const SITE = join(HERE, '..', 'site');
 let docsRunning = false;
 const step = (args, env) => new Promise((res) => {
@@ -77,7 +78,9 @@ async function docs() {
   try {
     const nx = join(SITE, 'dist.next'), dist = join(SITE, 'dist'), old = join(SITE, 'dist.old');
     let r = await step(['scripts/extract.mjs']);
+    if (r.code === 0) r = await step(['scripts/shots.mjs']);  // cached: renders only when the build or its inputs changed
     if (r.code === 0) r = await step(['node_modules/astro/bin/astro.mjs', 'build'], { FACET_DOCS_OUT: nx });
+    if (r.code === 0) r = await step(['scripts/llms.mjs', nx]);
     if (r.code === 0) r = await step(['scripts/check-dist.mjs', nx]);  // words run together, broken links: not swapped in
     if (r.code === 0) {
       rmSync(old, { recursive: true, force: true });

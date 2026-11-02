@@ -1,18 +1,20 @@
 ---
-// Home page: what Facet is in one line, the panel (a render: the live Device on Home inside a bezel, until a photo of a
-// real panel replaces it), the shipped screens live, set up in three steps, then the two panels and Install. No
-// feature grid. Every screen here is the real WASM renderer on sample data (lib/sample-ha.ts).
+// Home page: what Facet is in one line, the panel (a render: the Device on Home inside a bezel, until a photo of a
+// real panel replaces it), the shipped screens, set up in three steps, then the two panels and Install. No feature
+// grid. Every screen here is a picture the WASM renderer made at build on sample data (scripts/shots.mjs); the panel's
+// Try it loads the live one, so the page loads no WASM until asked.
 import Base from '../layouts/Base.astro';
 import Live from '../components/Live.astro';
+import Shot from '../components/Shot.astro';
 import Count from '../components/Count.astro';
 import { SCREENS, screenById, screenHref } from '../lib/data';
 import { BOARDS, screenOf } from '../lib/boards';
 import { url } from '../lib/nav';
 
 const description = 'Firmware for two 4 inch wall panels that shows and controls your home through Home Assistant.';
-// the hero: a whole panel, live (sample data, no Home Assistant)
+// the hero: a whole panel, a picture until Try it (sample data, no Home Assistant)
 const hero = screenById('home');
-// the shipped screens: every factory spec screen with a page, live; its first sentence under it
+// the shipped screens: every factory spec screen with a page, as a picture; its first sentence under it
 const shipped = SCREENS.filter((s) => s.comp === 'spec' && s.status !== 'wip');
 const first = (t: string) => t.split(/(?<=\.)\s/)[0];
 ---
@@ -35,13 +37,17 @@ const first = (t: string) => t.split(/(?<=\.)\s/)[0];
 
       {
         hero && (
-          <figure class="landing__device">
+          <figure class="landing__device" data-try-box>
             <div class="landing__bezel">
               <div class="landing__viewport">
-                <Live comp="device" props={{ start: 'home' }} label="Facet panel" frame={hero.frame} caption={false} />
+                <div class="landing__shot" data-try-shot><Shot id="home" alt="The Facet panel on Home, with made-up devices" /></div>
+                <template><Live comp="device" props={{ start: 'home' }} label="Facet panel" frame={hero.frame} caption={false} /></template>
               </div>
             </div>
-            <figcaption>The panel, running here on made-up devices. Tap a card to open its screen.</figcaption>
+            <figcaption>
+              The panel on made-up devices.
+              <button type="button" class="button button--secondary landing__try" data-try>Try it</button>
+            </figcaption>
           </figure>
         )
       }
@@ -55,14 +61,14 @@ const first = (t: string) => t.split(/(?<=\.)\s/)[0];
     <section class="landing__section" aria-labelledby="screens-title">
       <div class="landing__head">
         <h2 id="screens-title">The screens</h2>
-        <p><Count k="screens" /> screens come with Facet, plus Home and Settings. Each one below is live: tap it as you would on the panel.</p>
+        <p><Count k="screens" /> screens come with Facet, plus Home and Settings. Each one opens its page, where you can try it.</p>
       </div>
       <ul class="shots">
         {shipped.map((sc) => (
           <li>
             <a class="shot" href={screenHref(sc)}>
               <span class="shot__viewport">
-                <Live comp={sc.comp} props={sc.sampleProps} label={sc.name} frame={sc.frame} caption={false} />
+                <Shot id={sc.id} kind="half" alt="" />
               </span>
               <span class="shot__name">{sc.name}</span>
               <span class="shot__about">{first(sc.about)}</span>
@@ -191,10 +197,21 @@ const first = (t: string) => t.split(/(?<=\.)\s/)[0];
     max-width: none;
   }
   .landing__device figcaption {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
     margin-top: 16px;
     color: var(--facet-color-text-dim);
     font-size: 14px;
     text-align: center;
+  }
+  /* the picture IS the screen, as the live panel after Try it */
+  .landing__shot,
+  .landing__shot :global(.shot-img) {
+    width: 100%;
+    height: 100%;
   }
 
   .landing__status {

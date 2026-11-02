@@ -1,7 +1,8 @@
 // Live previews: every <figure data-live> on a page is a stage of ONE shared WASM engine (the same build the panels
 // run), created when it scrolls near the viewport. The page-level switches (theme, device 720 / 480, accent set) live
 // in the header (Base.astro) and re-render every stage. The engine module (~1 MB) loads only when the first preview
-// comes into view.
+// comes into view. Screens are pictures until asked (components/Shot.astro, made by scripts/shots.mjs): a Try it
+// button puts the live demo in the picture's place, so the homepage and a screen page load no WASM until then.
 import { Engine, type Stage } from '../lib/engine';
 import { fakeHaEvent, fakeHaState, feedSampleHa } from '../lib/sample-ha';
 import { getPrefs, livePrefs, onPrefs, setPrefs, type Prefs } from './prefs';
@@ -207,6 +208,21 @@ function log(kind: string, name: string, detail: string, from: string) {
   ol.closest('[data-events]')!.classList.add('has-events');
 }
 
+/** a <figure data-live> (components/Live.astro) as a preview item */
+function itemOf(el: HTMLElement): Item {
+  return {
+    el,
+    comp: el.dataset.comp!,
+    props: JSON.parse(el.dataset.props ?? '{}'),
+    label: el.dataset.label ?? '',
+    frame: JSON.parse(el.dataset.frame ?? '[240,0]'),
+    doc: el.dataset.doc === '1',
+    sandbox: el.dataset.sandbox === '1',
+    still: el.dataset.still === '1',
+    spec: el.dataset.spec,
+  };
+}
+
 export function initLive() {
   // debugging / tests: the page's engine and previews
   (window as unknown as { __facetDocs: unknown }).__facetDocs = { engine: () => engine, items, ha: fakeHaState, setting: (id: string, v: string | null = null) => (engine ? setting(engine, id, v) : '') };
@@ -214,20 +230,22 @@ export function initLive() {
     for (const x of xs) if (x.isIntersecting) { io.unobserve(x.target); const it = items.find((i) => i.el === x.target); if (it) void show(it); }
   }, { rootMargin: '400px 0px' });
   for (const el of document.querySelectorAll<HTMLElement>('figure[data-live]')) {
-    const it: Item = {
-      el,
-      comp: el.dataset.comp!,
-      props: JSON.parse(el.dataset.props ?? '{}'),
-      label: el.dataset.label ?? '',
-      frame: JSON.parse(el.dataset.frame ?? '[240,0]'),
-      doc: el.dataset.doc === '1',
-      sandbox: el.dataset.sandbox === '1',
-      still: el.dataset.still === '1',
-      spec: el.dataset.spec,
-    };
+    const it = itemOf(el);
     items.push(it);
     io.observe(el);
   }
+  // Try it (a screen page's preview, the homepage panel): a picture (components/Shot.astro) until pressed, then the
+  // live demo from the box's <template> in its place; the engine loads only now
+  for (const b of document.querySelectorAll<HTMLButtonElement>('[data-try]')) b.addEventListener('click', () => {
+    const box = b.closest<HTMLElement>('[data-try-box]'), fig = box?.querySelector('template')?.content.firstElementChild?.cloneNode(true) as HTMLElement | undefined;
+    if (!box || !fig) return;
+    box.querySelector('[data-try-shot]')?.replaceWith(fig);
+    box.dataset.tried = '';
+    b.remove();
+    const it = itemOf(fig);
+    items.push(it);
+    void show(it);
+  });
   onPrefs(() => { const p = livePrefs(); if (engine && loadedFor === p.device) pushPrefs(engine, p); void redrawAll(p); });
   // preview theme switches (Site / Dark / Light) of each box
   for (const sw of document.querySelectorAll<HTMLButtonElement>('[data-theme-set]')) {

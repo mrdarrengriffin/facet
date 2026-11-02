@@ -6,5 +6,7 @@ dist*/
 .astro/
 public/sound.json
 public/previews/
+# screen pictures + their cache key (scripts/shots.mjs)
+public/shots/
 # firmware images + manifests: published by the release workflow (GitHub Pages); copied in locally, never committed
 public/firmware/

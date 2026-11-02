@@ -5,17 +5,15 @@
 // component then shows; a screen's own events (a ticked checkbox, a mode pick) change what its REACTIONS say (data next
 // to the demo values, renderer/tools/demo_ha_examples.mjs). The state lasts while the page is open (no reset).
 import type { Engine } from './engine';
+/** what the feed needs of an engine: the module and its string helpers (the page's Engine, or scripts/shots.mjs in node) */
+type Host = Pick<Engine, 'm' | 'str' | 'withStr'>;
 // the README images' demo values (one list for both): named demo entities (the docs Home's cards) and by entity name
 import { DEMO, demoValue, REACTIONS } from '../../../renderer/tools/demo_ha.mjs';
 // the answers a panel gets from Home Assistant (forecasts, calendar events, Energy's reads): the tests' fake uses the same
 import { demoGrid, demoReply, demoWs } from '../../../renderer/tools/demo_ha_replies.mjs';
-import factoryDeck from '../../../renderer/specs/deck.json';
-
-// the factory deck with every screen that offers a sample source on it: the site previews sample data (a panel never
-// does unless its deck says so: its factory screens read Home Assistant)
-const specFiles = import.meta.glob('../../../renderer/specs/*.json', { eager: true, import: 'default' }) as Record<string, { id?: string; params?: { source?: { options?: string[] } } }>;
-const SAMPLED = new Set(Object.values(specFiles).filter((s) => s.params?.source?.options?.includes('sample')).map((s) => s.id));
-const SITE_DECK = { ...factoryDeck, pages: factoryDeck.pages.map((p: { kind: string; params?: Record<string, string> }) => (SAMPLED.has(p.kind) ? { ...p, params: { ...(p.params ?? {}), source: 'sample' } } : p)) };
+// the factory deck with every screen that offers a sample source on it (scripts/extract.mjs writes it): the site
+// previews sample data (a panel never does unless its deck says so: its factory screens read Home Assistant)
+import SITE_DECK from '../data/site-deck.json' with { type: 'json' };
 
 const NAMES: Record<string, string[]> = {
   light: ['Ceiling', 'Lamp', 'Desk light'],
@@ -42,7 +40,7 @@ const ENERGY: Record<string, Record<string, string>> = {
 
 // what taps changed: "entity|attr" -> value, for this page (a new engine, e.g. the 720 / 480 switch, is fed these)
 const changed = new Map<string, string>();
-let live: Engine | null = null;
+let live: Host | null = null;
 function value(entity: string, attr: string): string | undefined {
   return changed.get(`${entity}|${attr}`) ?? first(entity, attr);
 }
@@ -125,7 +123,7 @@ type HaMod = {
   _fw_ha_gets?: () => number; _fw_ha_chunk: (id: number, s: number, n: number) => void; _fw_ha_got: (id: number, ok: number, s: number) => void;
 };
 /** the replies a screen waits for: HA actions (a forecast, a calendar's events) and the link's reads (Energy) */
-function answer(e: Engine, m: HaMod) {
+function answer(e: Host, m: HaMod) {
   for (const a of JSON.parse(e.str(m._fw_ha_asks!()) || '[]') as { id: number; service: string; data?: Record<string, unknown> }[]) {
     const r = demoReply(a.service, a.data ?? {});
     e.withStr(r ? JSON.stringify(r) : '', (p) => m._fw_ha_answer(a.id, r ? 1 : 0, p));
@@ -141,9 +139,12 @@ function answer(e: Engine, m: HaMod) {
   }
 }
 
-export function feedSampleHa(e: Engine) {
+/** the sample HA on engine e: the panel's link and the site deck installed, then tick() answers what its screens
+ *  want and wait for (each pair once per engine). The page ticks it on a timer (feedSampleHa); scripts/shots.mjs
+ *  between frames, for the pictures. null = an older build with no HA hooks */
+export function sampleFeeder(e: Host): { tick: () => void; stop: () => void } | null {
   const m = e.m as unknown as HaMod;
-  if (!m._fw_ha_wants) return;
+  if (!m._fw_ha_wants) return null;
   live = e;
   // the panel's own Home Assistant link (Energy reads over it): a made-up address, answered here, never fetched
   try { e.withStr('act', (pc) => e.withStr(JSON.stringify({ do: 'ha.connect', url: 'http://homeassistant.local:8123', token: 'demo-token-0000' }), (pa) => (e.m as unknown as { _fw_spec: (a: number, b: number) => number })._fw_spec(pc, pa))); } catch { /* an older build */ }
@@ -160,7 +161,13 @@ export function feedSampleHa(e: Engine) {
       if (v !== undefined) e.withStr(en, (pe) => e.withStr(a, (pa) => e.withStr(v, (pv) => m._fw_ha_put(pe, pa, pv))));
     }
   };
-  const t = window.setInterval(() => { try { tick(); } catch { window.clearInterval(t); } }, 250);
+  return { tick, stop: () => { if (live === e) live = null; } };
+}
+
+export function feedSampleHa(e: Engine) {
+  const f = sampleFeeder(e);
+  if (!f) return;
+  const t = window.setInterval(() => { try { f.tick(); } catch { window.clearInterval(t); } }, 250);
   const dispose = e.dispose.bind(e);
-  e.dispose = () => { window.clearInterval(t); if (live === e) live = null; dispose(); };
+  e.dispose = () => { window.clearInterval(t); f.stop(); dispose(); };
 }

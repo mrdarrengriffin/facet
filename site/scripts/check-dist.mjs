@@ -5,9 +5,12 @@
 //   a typed count: a number before screens / components / foundations / tokens / routes / settings / bindings
 //     that is not a generated one (<Count>, lib/counts.ts: read from the schema and catalogue, marked data-count)
 //   a broken internal link: a page or file that is not in the build, or a #fragment with no such id on its page
+//   agent docs (scripts/llms.mjs): a page with no .md twin, not linked from llms.txt or not in llms-full.txt, or a
+//     link in llms.txt to a file that is not in the build
 // Usage: node scripts/check-dist.mjs [dist folder] (default FACET_DOCS_OUT or ./dist); base = FACET_DOCS_BASE or /facet-docs/
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
+import { docPages, mdPath } from './md.mjs';
 
 const DIST = process.argv[2] ?? process.env.FACET_DOCS_OUT ?? './dist';
 const BASE = process.env.FACET_DOCS_BASE ?? '/facet-docs/';
@@ -98,6 +101,20 @@ for (const f of files) {
     const file = join(DIST, path), known = ids.get(path) ?? ids.get(path + '/');
     if (!known && !(existsSync(file) && statSync(file).isFile())) { bad++; console.log(`link  ${here}  no such page: ${h}`); continue; }
     if (frag && known && !known.has(decodeURIComponent(frag))) { bad++; console.log(`link  ${here}  no #${frag} on ${path}`); }
+  }
+}
+// agent docs: every doc page has its .md twin, a line in llms.txt and its part of llms-full.txt
+const read = (f) => (existsSync(join(DIST, f)) ? readFileSync(join(DIST, f), 'utf8') : null);
+const llms = read('llms.txt'), full = read('llms-full.txt'), at = (p) => BASE.slice(0, -1) + p;
+if (llms === null || full === null) { bad++; console.log('llms  no llms.txt / llms-full.txt (scripts/llms.mjs)'); }
+else {
+  for (const p of docPages(DIST)) {
+    if (!existsSync(join(DIST, mdPath(p)))) { bad++; console.log(`llms  ${p}  no Markdown twin ${mdPath(p)}`); }
+    if (!llms.includes(`](${at(mdPath(p))})`)) { bad++; console.log(`llms  ${p}  not in llms.txt`); }
+    if (!full.includes(`<!-- page: ${at(p)} `)) { bad++; console.log(`llms  ${p}  not in llms-full.txt`); }
+  }
+  for (const [, h] of llms.matchAll(/\]\(([^)]+)\)/g)) {
+    if (!h.startsWith(BASE) || !existsSync(join(DIST, decodeURIComponent(h.slice(BASE.length).split('#')[0])))) { bad++; console.log(`llms  llms.txt links to a file not in the build: ${h}`); }
   }
 }
 console.log(`check-dist: ${files.length} pages, ${bad} fault${bad === 1 ? '' : 's'}`);

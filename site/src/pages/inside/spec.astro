@@ -1,7 +1,9 @@
 ---
 // Spec format: what a screen is made of (a JSON spec of contract components), the budgets the panel checks (catalogue
 // budget, lib/counts.ts), how a prop binds to Home Assistant or to a feed (the panel.<feed> entities a source fills), and
-// the deck that lists a panel's pages. Moved from Make screens with AI, which now links here.
+// what a tap does (a node's "on": event -> action, the closed whitelist), the deck that lists a panel's pages. Moved
+// from Make screens with AI, which now links here. The full guide is the firmware's own (renderer/tools/gen_agents.mjs,
+// served here as /agents.md by scripts/llms.mjs).
 import Docs, { type Heading } from '../../layouts/Docs.astro';
 import CodeBlock from '../../components/CodeBlock.astro';
 import Count from '../../components/Count.astro';
@@ -11,13 +13,14 @@ import schema from '../../../../renderer/catalogue/schema.json';
 const headings: Heading[] = [
   { depth: 2, slug: 'spec', text: 'A screen is a spec' },
   { depth: 2, slug: 'bind', text: 'Binding to Home Assistant' },
+  { depth: 2, slug: 'act', text: 'Doing things' },
   { depth: 2, slug: 'feeds', text: 'Feeds' },
   { depth: 2, slug: 'limits', text: 'What the panel checks' },
   { depth: 2, slug: 'deck', text: 'The deck' },
 ];
 const spec = {
   v: 1, id: 'bin_day', name: 'Bin day', rev: 1, role: 'page',
-  header: { label: 'Bin day', back: true },
+  header: { label: 'Bin day' },
   layout: 'list',
   nodes: [
     { c: 'hero_block', p: { n: { e: 'sensor.bin_days', s: '2' }, label: 'days to bin day', line: { e: 'sensor.bin_next', s: 'Recycling · Tue' } } },
@@ -25,6 +28,14 @@ const spec = {
     { c: 'list_row', p: { title: 'Recycling', trailing: 'value', value: { e: 'sensor.bin_recycling', s: 'Tue 27 Oct' } } },
   ],
 };
+// a light row that switches the light: its props bound to the entity, its toggle event sent as an action
+const row = {
+  c: 'list_row',
+  p: { title: { e: 'light.garage', fmt: 'name', s: 'Garage light' }, icon: 'bulb', trailing: 'toggle', sub: { e: 'light.garage', fmt: 'light', s: 'On' }, on: { e: 'light.garage', fmt: 'on', s: 'on' }, state: { e: 'light.garage', fmt: 'avail' } },
+  on: { toggle: { do: 'light.switch', e: 'light.garage' } },
+};
+const fmts = (schema.spec as { fmt: string[] }).fmt;
+const layouts = (schema.spec as { layouts: string[] }).layouts;
 const feeds = Object.keys((schema.feeds as { list: Record<string, unknown> }).list);
 ---
 
@@ -41,12 +52,41 @@ const feeds = Object.keys((schema.feeds as { list: Record<string, unknown> }).li
     <Count k="specMinKB" /> to <Count k="specMaxKB" /> KB each.
     The components a spec can name, and every prop of each, are on <a href={url('/components/')}>Components</a>.
   </p>
+  <p>
+    <code>layout</code> is one of {layouts.map((l, i) => <>{i > 0 && ', '}<code>{l}</code></>)}: list is one scrolling
+    column of rows, center one component in the middle, cards the card grid. The header's Back button is the panel's own:
+    every screen but the first has it. The whole format, every component's props and which actions each one takes are in
+    the <a href={url('/agents.md')}>agent guide</a>, the same one a panel serves; the JSON Schema of a spec is
+    <a href={url('/spec.schema.json')}>spec.schema.json</a>.
+  </p>
 
   <h2 id="bind">Binding to Home Assistant</h2>
   <p>
     A prop can be a fixed value or bound to an entity: <code>{'{"e": "sensor.bin_days"}'}</code> shows its state,
     <code>{'{"e": "light.ceiling", "a": "brightness"}'}</code> one of its attributes, and <code>s</code> is what a
     preview shows instead. The screen updates by itself when the entity changes.
+  </p>
+  <p>
+    <code>fmt</code> turns the state into what a prop wants: <code>on</code> for a switch, <code>name</code> the entity's
+    name, <code>light</code> a light's state line, <code>avail</code> the unavailable look, <code>pct</code> a percentage.
+    All of them: {fmts.map((f, i) => <>{i > 0 && ', '}<code>{f}</code></>)}. <code>map</code> turns states into words
+    (<code>{'{"on": "Open", "off": "Shut"}'}</code>, <code>else</code> for the rest) and <code>tpl</code> puts the value
+    in a line (<code>{'"{} °C"'}</code>).
+  </p>
+
+  <h2 id="act">Doing things</h2>
+  <p>
+    A component does something when it is tapped through its node's <code>on</code>: each event it sends (a toggle's
+    <code>toggle</code>, a row's <code>tap</code>, <code>long</code> for a long press) names one action. This row shows a
+    light and switches it:
+  </p>
+  <CodeBlock json={row} label="Node · JSON" copyLabel="Copy node" />
+  <p>
+    Each component and event takes only certain actions, and the panel refuses the rest with what it does take
+    (<code>list_row tap allows nav.open, nav.back, light.toggle</code>). The actions are on
+    <a href={url('/inside/schema/#actions')}>Schema</a>; which ones each component takes is in the
+    <a href={url('/agents.md')}>agent guide</a>. Note the two <code>on</code> keys: inside <code>p</code> it is the List row's
+    switch, bound to the light; on the node it is what the events do.
   </p>
 
   <h2 id="feeds">Feeds</h2>
