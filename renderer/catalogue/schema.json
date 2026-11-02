@@ -12323,7 +12323,7 @@
   {
    "method": "GET",
    "path": "/fw/perf",
-   "about": "frame stats while animations run (since boot or the last ?reset=1): fps, frame / render ms",
+   "about": "frame stats while animations run (since boot or the last ?reset=1): fps, frame / render ms; ?nav=1|0 = navigation timing on / off (each screen change: tap, build, feeds, first frame)",
    "says": "How smoothly the panel draws: frames per second and render times."
   },
   {
