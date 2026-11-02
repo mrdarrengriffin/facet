@@ -72,7 +72,7 @@ void build_static(lv_obj_t *r, Props p) {
     const int i = atoi(kv.key().c_str());
     if (i >= 0 && i < n) spans[i] = {kv.value()[0] | 1, kv.value()[1] | 1};
   }
-  const bool outline = (p["outline"] | false) || !spec::building_header();
+  const bool outline = (p["outline"] | false) || spec::alone(r);
   const bool row = !strcmp(p["aspect"] | "square", "row") || !strcmp(p["aspect"] | "square", "hug");
   for (int i = 0; i < n; i++) {
     lv_obj_t *c = fx::grid_cell(r, spans[i].first, spans[i].second);

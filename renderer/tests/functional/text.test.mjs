@@ -1,5 +1,6 @@
 // Text (components/text.cpp): words that wrap to the line count they declare (1 to 4), never more; what does not fit
-// ends in "..." on the last line. The fit proof: the text's box is exactly that many line boxes of its type.
+// ends in "..." on the last line. The fit proof: the text's box is that many line boxes of its type (+ the room its
+// last line's font needs past its box), never room for another line, and no glyph is cut.
 import fs from 'node:fs';
 import { look, golden, stage } from './_release.mjs';
 
@@ -21,13 +22,13 @@ export default {
     { name: 'the box is its line count of line boxes, every style, 1 to 4 lines', async run(t) {
       for (const style of ['body', 'headline', 'label']) for (const lines of [1, 2, 3, 4]) {
         const l = await at(t, { style, lines, text: 'Short' });
-        t.eq(l?.h, lines * box(t, style), `${style} x ${lines}: ${l?.h} = ${lines} x ${box(t, style)}`);
+        t.ok(l && l.h >= lines * box(t, style) && l.h < (lines + 1) * box(t, style) && l.h % 4 === 0, `${style} x ${lines}: ${l?.h} = ${lines} x ${box(t, style)} + the last line's room, on the grid, no room for another`);
       }
     } },
     { name: 'a long text stays in its lines and ends in "..."; a short one is whole', async run(t) {
       for (const lines of [1, 2, 3]) {
         const l = await at(t, { lines, text: LONG });
-        t.ok(l && l.h === lines * box(t, 'body'), `${lines} lines: box ${l?.h}`);
+        t.ok(l && l.h >= lines * box(t, 'body') && l.h < (lines + 1) * box(t, 'body'), `${lines} lines: box ${l?.h}`);
         t.ok(!l.cut, `${lines} lines: no glyph below its box (cut ${l?.cut})`);
       }
       const s = await at(t, { lines: 2, text: 'Two words' });

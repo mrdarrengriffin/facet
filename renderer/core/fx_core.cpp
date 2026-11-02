@@ -1315,9 +1315,12 @@ void lines(lv_obj_t *l, const char *type, int n) {  // n line boxes of its type 
   if (n < 1 || n > 4 || !text_over(l)) abort();
   if (!line_counts().count(l)) lv_obj_add_event_cb(l, [](lv_event_t *e) { line_counts().erase((lv_obj_t *) lv_event_get_current_target(e)); }, LV_EVENT_DELETE, nullptr);
   line_counts()[l] = n;
-  const int box = box_of(type_id(type));
+  // lines step by the line box; the last line's font may reach past its box (a descender: Inter 28 at 480 is 34 tall
+  // in a 32 box), so the box gets that room too, up to the grid: never room for another line
+  const int box = box_of(type_id(type)), lh = lv_font_get_line_height(lv_obj_get_style_text_font(l, LV_PART_MAIN));
+  lv_obj_set_style_text_line_space(l, box - lh, LV_PART_MAIN);
   lv_obj_set_width(l, lv_pct(100));
-  lv_obj_set_height(l, n * box);
+  lv_obj_set_height(l, (n * box + std::max(0, lh - box) + 3) / 4 * 4);
   lv_label_set_long_mode(l, LV_LABEL_LONG_MODE_DOTS);
 }
 int lines_of(lv_obj_t *l) { auto it = line_counts().find(l); return it == line_counts().end() ? 0 : it->second; }
@@ -1929,6 +1932,11 @@ void overflow(lv_obj_t *o) {
     lv_event_set_ext_draw_size(e, m);
   }, LV_EVENT_REFR_EXT_DRAW_SIZE, nullptr);
 }
+std::set<lv_obj_t *> &page_bodies() { static std::set<lv_obj_t *> s; return s; }
+bool in_page(lv_obj_t *o) {
+  for (; o; o = lv_obj_get_parent(o)) if (page_bodies().count(o)) return true;
+  return false;
+}
 Page page(lv_obj_t *pg, const char *kind) {
   Page p{pg, nullptr, nullptr};
   use(pg, "page");
@@ -1944,6 +1952,8 @@ Page page(lv_obj_t *pg, const char *kind) {
   lv_obj_remove_style_all(p.body);
   use(p.body, "body");
   use(p.body, (std::string("body:") + kind).c_str());
+  page_bodies().insert(p.body);
+  lv_obj_add_event_cb(p.body, [](lv_event_t *e) { page_bodies().erase((lv_obj_t *) lv_event_get_current_target(e)); }, LV_EVENT_DELETE, nullptr);
   use(p.body, "body-move");
   use(pg, "page-move");
   if (!strcmp(kind, "center")) lv_obj_remove_flag(p.body, (lv_obj_flag_t) (LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_CLICKABLE));

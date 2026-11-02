@@ -55,7 +55,7 @@ FW_COMPONENT(group, "Group", "components", R"({
   else if (!strcmp(sp, "near")) fx::use(g, "above:7");
   else if (!strcmp(sp, "line")) fx::use(g, "above:3");
   else if (!strcmp(sp, "strip")) fx::use(g, "above:8");
-  const int n = (p["sample"] | 0) ? (p["sample"] | 0) : fw::spec::building_header() ? 0 : 3;  // alone: three outlines
+  const int n = (p["sample"] | 0) ? (p["sample"] | 0) : !fw::spec::alone(parent) ? 0 : 3;  // alone: three outlines
   for (int i = 0; i < n; i++) {  // the workbench sample: tile-sized outlines
     lv_obj_t *t = fx::box(g, "free");
     for (const char *k : {"w:tile-w", "h:room-tile-h", "border:line-hi"}) fx::use(t, k);

@@ -1832,6 +1832,8 @@ inline lv_obj_t *&building_header() {
   static lv_obj_t *h = nullptr;
   return h;
 }
+// a layout built alone (the workbench shows its slots outlined): not while a spec screen builds, not inside a Page body
+inline bool alone(lv_obj_t *parent) { return !building_header() && !fx::in_page(parent); }
 // `item`, just built into building_header() (the end slot), goes before the Header's own end items (Home's settings
 // button, header actions); the time is after the slot anyway
 inline void header_place(lv_obj_t *item) {

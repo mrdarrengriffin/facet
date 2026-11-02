@@ -34,7 +34,7 @@ FW_COMPONENT(column, "Column", "components", R"({
   fx::use(root, "fill");
   fx::name(root, "column");
   fw::shape(root, sig(p));
-  const bool o = (p["outline"] | false) || !fw::spec::building_header();  // alone (workbench): show the slots
+  const bool o = (p["outline"] | false) || fw::spec::alone(parent);  // alone (workbench): show the slots
   static const char *const NAMES[2] = {"top", "foot"};
   for (int i = 0; i < 2; i++) {
     if (i) fx::use(fx::box(root, "free"), "grow");

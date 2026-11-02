@@ -65,7 +65,7 @@ FW_COMPONENT(split, "Split", "components", R"({
   for (const char *t : {"fill", art_right(p) ? "row-top-rev" : "row-top", "gap:9"}) fx::use(root, t);
   fx::name(root, "split");
   fw::shape(root, sig(p));
-  const bool o = (p["outline"] | false) || !fw::spec::building_header();  // alone (workbench): show the slots
+  const bool o = (p["outline"] | false) || fw::spec::alone(parent);  // alone (workbench): show the slots
   static const char *const LN[2] = {"left", "left foot"}, *const RN[2] = {"right", "right foot"};
   lv_obj_t *l = fx::box(root, "col");
   for (const char *t : {"fill", art_w(p)}) fx::use(l, t);
