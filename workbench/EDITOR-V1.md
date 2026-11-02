@@ -17,7 +17,9 @@ spec's params): an entity is a picker of that domain from the panel's own Home A
 multi-pick, a select a segmented control (three options or fewer) or a list, text a field. The preview follows every
 change. "Back to defaults" per screen.
 
-**3. Panel settings.** Home's header buttons first (the deck's Home `header_actions`: the button, Settings or a
+**3. Panel settings.** The panel's own Home Assistant link first: its address and a long-lived token, entered once on
+the editor page the panel serves, sent to the panel directly (the page's own origin, the `ha.connect` path; no Home
+Assistant service call). The token is never shown back (its last four characters only). Then Home's header buttons (the deck's Home `header_actions`: the button, Settings or a
 screen it opens; the status, nothing or a running timer; sent with the deck), then the settings in `/fw/schema` in
 their groups (Look, Sound, Clock and idle, Behaviour, Units, AI agents), each control from the setting's own
 `control` (segmented, sheet, swatches, toggle, slider, presets). The preview is Home with the look applied.

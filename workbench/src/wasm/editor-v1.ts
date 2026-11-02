@@ -24,7 +24,7 @@ type Boot = {
 };
 /** what the editor holds (and what "the panel" runs, the same shape): the deck as rows + the panel's settings */
 type Draft = { order: string[]; on: Record<string, boolean>; start: string; params: Record<string, Record<string, string>>;
-  header: { button: string; status: string }; settings: Record<string, unknown> };
+  header: { button: string; status: string }; settings: Record<string, unknown>; ha: { url: string; token: string } };
 type Page = { id: string; kind: string; name?: string; params?: Record<string, string>; cards?: unknown[]; header_actions?: unknown };
 
 const boot: Boot = JSON.parse(document.getElementById('v1-boot')!.textContent!);
@@ -46,7 +46,7 @@ function factory(): Draft {
   const settings = Object.fromEntries(boot.settings.settings.map((s) => [s.id, s.default]));
   return { order, on: Object.fromEntries(order.map((id) => [id, inDeck.includes(id)])), start: boot.deck.start,
     params: Object.fromEntries(order.map((id) => [id, { ...(boot.deck.pages.find((p) => p.id === id)?.params ?? {}) }])),
-    header: { button: 'settings', status: 'none' }, settings };
+    header: { button: 'settings', status: 'none' }, settings, ha: { url: '', token: '' } };
 }
 const panel = { rev: 3, runs: factory(), before: [] as { rev: number; runs: Draft }[] };
 let draft = clone(panel.runs);
@@ -81,9 +81,12 @@ function changes(a: Draft, b: Draft): Change[] {
   }
   if (a.header.button !== b.header.button) out.push({ where: 'Home header', what: 'Button', was: hbName(a.header.button), now: hbName(b.header.button), key: 'header.button' });
   if (a.header.status !== b.header.status) out.push({ where: 'Home header', what: 'Status', was: a.header.status, now: b.header.status, key: 'header.status' });
+  if (a.ha.url !== b.ha.url) out.push({ where: 'Home Assistant', what: 'Address', was: a.ha.url || 'not set', now: b.ha.url || 'not set', key: 'ha.url' });
+  if (a.ha.token !== b.ha.token) out.push({ where: 'Home Assistant', what: 'Token', was: hint(a.ha.token), now: hint(b.ha.token), key: 'ha.token' });
   for (const s of boot.settings.settings) if (a.settings[s.id] !== b.settings[s.id]) out.push({ where: 'Panel', what: s.label, was: say(s, a.settings[s.id]), now: say(s, b.settings[s.id]), key: `set.${s.id}` });
   return out;
 }
+const hint = (t: string) => (t ? `…${t.slice(-4)}` : 'not set');  // a token is never shown back whole
 const hbName = (b: string) => (b === 'settings' ? 'Settings' : name(b));
 function say(s: Setting, v: unknown) {
   if (s.options) return s.options.find((o) => o.id === v)?.label ?? String(v);
@@ -372,6 +375,18 @@ function panelView() {
   left.append(preview('home', big, 'Preview').canvas, h('p', 'dim', 'Home with the look applied. Auto shows dark here; text size, rotation, sounds and idle show on the panel.'));
   const form = h('div', 'v1-form');
   form.append(h('h1', '', 'Panel settings'));
+  form.append(h('h2', 'cap', 'Home Assistant'));
+  const url = h('input', 'v1-input');
+  url.placeholder = 'http://homeassistant.local:8123';
+  url.value = draft.ha.url;
+  url.onchange = () => edit(() => { draft.ha.url = url.value.trim(); });
+  form.append(field('Address', "Home Assistant's address, as you open it in a browser at home (http or https).", url));
+  const tok = h('input', 'v1-input');
+  tok.type = 'password';
+  tok.autocomplete = 'off';
+  tok.placeholder = draft.ha.token ? `set (${hint(draft.ha.token)})` : 'paste a long-lived access token';
+  tok.onchange = () => { if (tok.value.trim()) edit(() => { draft.ha.token = tok.value.trim(); }); };
+  form.append(field('Token', 'In Home Assistant: your profile > Security > Long-lived access tokens > Create token. It stays on the panel and is never shown again.', tok));
   form.append(h('h2', 'cap', 'Home header'));
   const pages = draft.order.filter((x) => draft.on[x]);
   form.append(field('Button', 'The button at the top right of Home: Settings, or a screen it opens.', list([['settings', 'Settings'], ...pages.map((p) => [p, name(p)] as [string, string])], draft.header.button, (v) => edit(() => { draft.header.button = v; }))));
@@ -464,7 +479,7 @@ function review() {
 function sent(d: HTMLDialogElement, n: number) {
   const box = h('div', 'dlg');
   box.append(h('span', 'cap', DEVICES[device].name), h('h2', '', `Sent: the panel runs rev ${panel.rev}`));
-  box.append(h('p', 'dim', `${n} change${n === 1 ? '' : 's'}: the deck (POST /fw/spec, kind deck) and the settings that changed (POST /fw/settings). On a real panel the screen changes now.`));
+  box.append(h('p', 'dim', `${n} change${n === 1 ? '' : 's'}: the deck (POST /fw/spec, kind deck), the settings that changed (POST /fw/settings) and the Home Assistant link if it changed (POST /fw/act ha.connect, from the panel's own page). On a real panel the screen changes now.`));
   const acts = h('div', 'acts');
   const ok = h('button', 'btn primary', 'Done');
   ok.type = 'button';
