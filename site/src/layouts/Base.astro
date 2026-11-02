@@ -33,8 +33,10 @@ const {
   noindex = false,
 } = Astro.props;
 const pageTitle = title === 'Facet' ? 'Facet' : `${title} · Facet`;
-const canonical = new URL(Astro.url.pathname, Astro.site);
-const socialImage = new URL(`${BASE}social-card.png`, Astro.site).href;
+// the public site's own address, whatever base this build has (a local copy is served under another base)
+const PUBLIC_BASE = '/facet/';
+const canonical = new URL(PUBLIC_BASE + Astro.url.pathname.slice(BASE.length), Astro.site);
+const socialImage = new URL(`${PUBLIC_BASE}social-card.png`, Astro.site).href;
 const bg = (TOKENS.colour as { colours: Record<string, { dark: string; light: string }> }).colours.bg;
 ---
 
