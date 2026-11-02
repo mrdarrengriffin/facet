@@ -23,13 +23,13 @@ export default {
       t.ok(tm, 'the Time in the slot');
       t.ok(Math.abs(tm.x + tm.w / 2 - (o.x + o.w / 2)) <= 2 && Math.abs(tm.y + tm.h / 2 - (o.y + o.h / 2)) <= 2, 'centred in the ring');
     } },
-    { name: 'ha: the weather entity gives the line; unavailable = no line', async run(t) {
+    { name: 'ha: the weather entity gives the line; unavailable = the line says Unavailable', async run(t) {
       t.ha.s[W] = { '': 'rainy', temperature: '13.4' };
       await open(t, { source: 'ha', weather: W });
       t.has(t.texts(), /^RAIN(Y)? · 13°$/, 'the line from HA');
       t.ha.s[W] = { '': 'unavailable' };
       await open(t, { source: 'ha', weather: W });
-      t.hasNot(t.texts(), / · /, 'no weather line');
+      t.hasNot(t.texts(), / · /, 'no weather line'); t.has(t.texts(), /^UNAVAILABLE$/, 'the word in its place');
       t.has(t.texts(), /^(MON|TUE|WED|THU|FRI|SAT|SUN) \d{1,2} [A-Z]{3}$/, 'the date stays');
     } },
     { name: 'Home card (C52): the time on the clock feed + the weather line', async run(t) {

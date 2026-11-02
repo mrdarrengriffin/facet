@@ -8,7 +8,7 @@
 //            this node's: "change" (released) and the live "input" while a finger moves it (core/spec.h maps them)
 //   value    type:label, fg:text, right-aligned in a w:m-vol-label box ("--" = not known); bound (the screen's feed puts
 //            the finger's value while it moves)
-// States: default, disabled, unavailable = the Slider's (its own looks: the word Unavailable on the track); the label
+// States: default, disabled, unavailable, missing = the Slider's (its own looks: the word Unavailable on the track); the label
 // and value stay. Steps: none (fixed boxes, the slider takes the rest). Update path: the Slider's own update (the
 // finger wins), the words in place, silent. Contrast: text, slider.
 #include "fw.h"
@@ -41,12 +41,13 @@ FW_COMPONENT(slider_row, "Slider row", "components", R"({
     {"name": "label", "about": "The name before the slider, in small capitals, such as vol.", "type": "text", "default": "vol"},
     {"name": "value", "about": "Where the slider is, from 0 to 100.", "type": "range", "min": 0, "max": 100, "step": 1, "default": 42},
     {"name": "text", "about": "The value shown after the slider, such as 42 (-- when it is not known).", "type": "text", "default": "42"},
-    {"name": "state", "debug": true, "about": "default can be dragged; disabled cannot be changed; unavailable shows the device cannot be reached.", "type": "select", "options": ["default", "disabled", "unavailable"], "default": "default"}
+    {"name": "state", "debug": true, "about": "default can be dragged; disabled cannot be changed; unavailable shows the device has no state now; missing shows Home Assistant has no such device.", "type": "select", "options": ["default", "disabled", "unavailable", "missing"], "default": "default"}
   ],
   "variants": [
     {"label": "volume · 42", "props": {}},
     {"label": "volume · 100", "props": {"value": 100, "text": "100"}},
-    {"label": "unavailable", "props": {"state": "unavailable", "text": "--"}}
+    {"label": "unavailable", "props": {"state": "unavailable", "text": "--"}},
+    {"label": "missing", "props": {"state": "missing", "text": "--"}}
   ]
 })") {
   lv_obj_t *root = lv_obj_create(parent);

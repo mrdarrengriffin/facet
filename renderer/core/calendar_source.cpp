@@ -1,9 +1,12 @@
 // The calendar feed (CONTRACT.md C51): the reserved entity panel.calendar (core/spec.h "local sources") in the HA store,
 // the one shape the Calendar screen and its Home card bind to, whatever holds the events. On the Feed base (core/feed.h). Same file on the panels and in
 // WASM. Words are Facet's (core/agenda.h: "16:50", "Tmrw", "today · Thu 22 Oct", "October 2026").
-//   state        ok | loading (no calendar has answered yet) | error (every calendar unavailable, or none picked)
+//   state        ok | loading (no calendar has answered yet) | error (none picked) | missing (Home Assistant has none
+//                of the calendars) | unavailable (none of them has a state now, at least one is there); one calendar
+//                missing or unavailable among others that answer: ok, its row in the calendars sheet says the word
 //   hero_n       the next event's when: "16:50" (today), "Now" (running), "Tmrw", "Thu", "24 Oct"; "--" for none
-//   hero_label   its title as written ("Nothing coming up" / "Loading" / "Offline"); hero_line "until 17:50 · Larkfield
+//   hero_label   its title as written ("Nothing coming up" / feed::words: "Loading", "Offline", "Not found",
+//                "Unavailable"); hero_line "until 17:50 · Larkfield
 //                studio · Family" (the parts it knows); hero_accent "on" while it runs or starts within 15 minutes
 //   agenda       the days from today, a JSON list of Calendar rows (components/calendar_row.cpp): a day {"kind": "day",
 //                "title": "today · Thu 22 Oct", "first": "on" | "off"} then its events {"kind": "event", "time": "16:50" |
@@ -15,7 +18,7 @@
 //                "dots": "blue,ok" (up to three, or two when there are more), "more": "+2" | ""}
 //   sheet        which sheet is open: "calendars" | "day" | ""
 //   calendars    the calendars sheet's rows, on first: [{"id": "toggle family", "kind": "calendar", "colour": "blue",
-//                "title": "Family", "status": "5 events" | "hidden", "on": "on" | "off"}] (the id is the row's pick:
+//                "title": "Family", "status": "5 events" | "hidden" | "Not found" | "Unavailable", "on": "on" | "off"}] (the id is the row's pick:
 //                calendar.control toggles it)
 //   shown        how many calendars are on ("5")
 //   day_title    the day sheet's title ("Friday 23 October"); day_events its rows (Calendar rows, kind event)
@@ -217,7 +220,9 @@ void put_events(const std::vector<ag::Event> &all, double now) {
         r["kind"] = "calendar";
         r["colour"] = c.colour;
         r["title"] = c.name;
-        r["status"] = o ? std::to_string(n) + (n == 1 ? " event" : " events") : "hidden";
+        const feed::State fs = feed::of(ha::get(c.entity));  // the sample's calendars have no entity: ok
+        r["status"] = !o ? std::string("hidden") : !c.entity.empty() && (fs == feed::MISSING || fs == feed::UNAVAILABLE)
+                      ? std::string(feed::words(fs)) : std::to_string(n) + (n == 1 ? " event" : " events");
         r["on"] = o ? "on" : "off";
       }
     put("calendars", ser(d));
@@ -260,23 +265,29 @@ void put_sample() {
 void rebuild() {
   if (src_now != "ha") return;
   if (cals.empty()) { put_empty(feed::ERROR); return; }
-  bool any = false, all_down = true;
-  std::vector<ag::Event> ev = asked;
+  if (ha::offline()) { put_empty(feed::ERROR); return; }  // Home Assistant not reached: Offline, never the events from before
+  bool any = false, all_down = true, all_gone = true;  // gone: Home Assistant has no such calendar
+  std::vector<ag::Event> ev;
+  for (const ag::Event &x : asked)  // a calendar that is not there (any more) adds nothing it said before
+    if (std::none_of(cals.begin(), cals.end(), [&](const Cal &c) { return c.id == x.calendar && feed::of(ha::get(c.entity)) == feed::MISSING; }))
+      ev.push_back(x);
   for (const Cal &c : cals) {
-    const std::string *st = ha::get(c.entity);
-    if (st && !st->empty()) any = true;
-    if (!st || (*st != "unavailable" && *st != "unknown")) all_down = false;
-    if (answered_ok.count(c.id)) continue;
+    const feed::State fs = feed::of(ha::get(c.entity));
+    if (fs == feed::OK) any = true;
+    if (fs != feed::MISSING) all_gone = false;
+    if (fs != feed::MISSING && fs != feed::UNAVAILABLE) all_down = false;
+    if (answered_ok.count(c.id) || fs == feed::MISSING) continue;
     const std::string *msg = ha::get(c.entity, "message"), *s = ha::get(c.entity, "start_time"), *e = ha::get(c.entity, "end_time"),
                       *ad = ha::get(c.entity, "all_day"), *loc = ha::get(c.entity, "location");
     const double a = s ? ha_ms(s->c_str()) : NAN, b = e ? ha_ms(e->c_str()) : NAN;
     if (msg && !msg->empty() && !std::isnan(a))
       ev.push_back({*msg, loc ? *loc : "", c.id, a, std::isnan(b) ? a + ag::HOUR : b, ad && (*ad == "on" || *ad == "true")});
   }
+  // none of the calendars is in Home Assistant: Not found; none has a state now: Unavailable, never the events from
+  // before (kept: they show again the moment a calendar is back)
+  if (all_gone) { put_empty(feed::MISSING); return; }
+  if (all_down) { put_empty(feed::UNAVAILABLE); return; }
   if (!any && ev.empty()) { put_empty(feed::LOADING); return; }
-  // every calendar unavailable (Home Assistant dropped them, or the network): Offline, never the events from before
-  // (kept: they show again the moment a calendar is back)
-  if (all_down) { put_empty(feed::ERROR); return; }
   put_events(ev, now_ms());
 }
 void events_into(const std::string &cid, ArduinoJson::JsonVariantConst v, int depth = 0) {  // "events" lists anywhere

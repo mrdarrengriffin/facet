@@ -14,11 +14,20 @@ std::vector<Feed *> &list() { static std::vector<Feed *> v; return v; }
 template <int N> void tramp() { if (N < (int) list().size()) list()[N]->run(); }
 using Fn = void (*)();
 constexpr Fn TRAMP[] = {tramp<0>, tramp<1>, tramp<2>, tramp<3>, tramp<4>, tramp<5>, tramp<6>, tramp<7>};
-bool bad(const std::string &v) { return v == "unavailable" || v == "unknown"; }  // HA says it is away (not: not yet known)
+// HA says it is away, or has no such entity (not: not yet known); back from it = a round that fetches again
+bool bad(const std::string &v) { return v.empty() || v == "unavailable" || v == "unknown"; }
 }  // namespace
 
-const char *state_id(State s) { return s == LOADING ? "loading" : s == ERROR ? "error" : s == EMPTY ? "empty" : "ok"; }
-const char *words(State s) { return s == LOADING ? "Loading" : s == ERROR ? "Offline" : s == EMPTY ? "Nothing yet" : ""; }
+const char *state_id(State s) {
+  return s == LOADING ? "loading" : s == ERROR ? "error" : s == EMPTY ? "empty" : s == MISSING ? "missing" : s == UNAVAILABLE ? "unavailable" : "ok";
+}
+const char *words(State s) {  // the two entity words are the states tokens' (fw::st, every component's too)
+  return s == LOADING ? "Loading" : s == ERROR ? "Offline" : s == EMPTY ? "Nothing yet" : s == MISSING ? st::MISSING_TEXT
+         : s == UNAVAILABLE ? st::UNAVAILABLE_TEXT : "";
+}
+State of(const std::string *v) {  // Home Assistant not reached (the host says so): Offline, whatever it said before
+  return !v ? LOADING : ha::offline() ? ERROR : v->empty() ? MISSING : *v == "unavailable" || *v == "unknown" ? UNAVAILABLE : OK;
+}
 const std::vector<Feed *> &all() { return list(); }
 
 void on_put(const std::string &e, const std::string &a, const std::string &v) {  // an entity a feed reads changed

@@ -196,6 +196,9 @@ EMSCRIPTEN_KEEPALIVE const char *fw_ha_gets() {
   return out.c_str();
 }
 EMSCRIPTEN_KEEPALIVE void fw_ha_chunk(int id, const char *p, int n) { if (p && n > 0) fw::dev::ha_link::chunk((uint32_t) id, p, (size_t) n); }
+// the host is (not) connected to Home Assistant: a state it never answers turns missing after ha::MISSING_MS (the
+// panel: its API link; the tests and previews say so themselves)
+EMSCRIPTEN_KEEPALIVE void fw_ha_connected(int on) { fw::ha::set_connected(on != 0); }
 EMSCRIPTEN_KEEPALIVE void fw_ha_got(int id, int ok, const char *why) { fw::dev::ha_link::done((uint32_t) id, ok != 0, why ? why : ""); }
 EMSCRIPTEN_KEEPALIVE const char *fw_ha_link() {
   namespace hl = fw::dev::ha_link;

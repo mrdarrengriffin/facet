@@ -218,7 +218,7 @@ void fill(lv_obj_t *s, fw::Props p, bool opening) {
     d->val = nullptr;
     lv_obj_t *slot = fx::box(s, "free");  // the value's slot, the word on its middle (as the approved dial)
     fx::use(slot, "dial-slot");
-    fx::text(slot, d->state == 3 ? "Not found" : fw::st::UNAVAILABLE_TEXT, "type:body", "fg:unavailable-note", "none");
+    fx::text(slot, d->state == 3 ? fw::st::MISSING_TEXT : fw::st::UNAVAILABLE_TEXT, "type:body", "fg:unavailable-note", "none");
     lv_obj_move_to_index(down, -1);
     fx::use(down, "dial-wing-down");
   } else {

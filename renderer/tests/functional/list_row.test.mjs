@@ -33,6 +33,11 @@ export default {
       t.has(t.texts(), /^Unavailable$/, 'word'); t.hasNot(t.texts(), '42%', 'value gone'); t.hasNot(t.texts(), '3 on', 'sub gone');
       const ev = t.tap('Lights'); t.notEmitted(ev, 'tap'); t.sounds(ev, ['error']);
     } },
+    { name: 'missing: "Not found" replaces the trailing part, tap blocked; to unavailable: its word', mount: ['list_row', { ...P, trailing: 'value', value: '42%', state: 'missing' }], run(t) {
+      t.has(t.texts(), /^Not found$/, 'word'); t.hasNot(t.texts(), /^Unavailable$/, 'not the other word'); t.hasNot(t.texts(), '42%', 'value gone');
+      const ev = t.tap('Lights'); t.notEmitted(ev, 'tap'); t.sounds(ev, ['error']);
+      t.update({ state: 'unavailable' }); t.has(t.texts(), /^Unavailable$/, 'unavailable word'); t.hasNot(t.texts(), /^Not found$/, 'missing word gone');
+    } },
     { name: 'pressed look still taps', mount: ['list_row', { ...P, state: 'pressed' }], run(t) { t.emitted(t.tap('Lights'), 'tap', 'Lights'); } },
     { name: 'stack: one row per item, each taps with its own title', mount: ['list_row', { ...P, list: 'stack', items: 'Kitchen,Study,Lounge' }], run(t, { den }) {
       for (const n of ['Kitchen', 'Study', 'Lounge']) t.emitted(t.tap(n), 'tap', n, n);

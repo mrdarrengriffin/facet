@@ -804,9 +804,10 @@
      "options": [
       "default",
       "pressed",
-      "unavailable"
+      "unavailable",
+      "missing"
      ],
-     "about": "How the card looks: default ready to tap, pressed while held, or unavailable when its device cannot be reached."
+     "about": "How the card looks: default ready to tap, pressed while held, unavailable when its device has no state now, or missing when Home Assistant has no such device."
     },
     {
      "name": "press",
@@ -1491,9 +1492,10 @@
      "options": [
       "default",
       "pressed",
-      "unavailable"
+      "unavailable",
+      "missing"
      ],
-     "about": "How the tile looks: default ready to tap, pressed while held, or unavailable when the device cannot be reached."
+     "about": "How the tile looks: default ready to tap, pressed while held, unavailable when the device has no state now, or missing when Home Assistant has no such device."
     },
     {
      "name": "press",
@@ -1974,9 +1976,10 @@
       "active",
       "active-pressed",
       "disabled",
-      "unavailable"
+      "unavailable",
+      "missing"
      ],
-     "about": "How the button looks: default ready to tap, pressed while held, active when it is switched on, active-pressed while the active one is held, disabled when it cannot be used, or unavailable when its device cannot be reached."
+     "about": "How the button looks: default ready to tap, pressed while held, active when it is switched on, active-pressed while the active one is held, disabled when it cannot be used, unavailable when its device has no state now, or missing when Home Assistant has no such device (the same look)."
     }
    ],
    "events": {
@@ -2329,9 +2332,10 @@
       "default",
       "pressed",
       "disabled",
-      "unavailable"
+      "unavailable",
+      "missing"
      ],
-     "about": "How the row looks: default ready to tap, pressed while held, disabled when it cannot be used, or unavailable when its device cannot be reached."
+     "about": "How the row looks: default ready to tap, pressed while held, disabled when it cannot be used, unavailable when its device has no state now, or missing when Home Assistant has no such device."
     },
     {
      "name": "act",
@@ -3368,9 +3372,10 @@
      "options": [
       "default",
       "disabled",
-      "unavailable"
+      "unavailable",
+      "missing"
      ],
-     "about": "default can be dragged; disabled cannot be changed; unavailable shows the device cannot be reached."
+     "about": "default can be dragged; disabled cannot be changed; unavailable shows the device has no state now; missing shows Home Assistant has no such device."
     }
    ],
    "events": {
@@ -3421,9 +3426,10 @@
      "options": [
       "default",
       "disabled",
-      "unavailable"
+      "unavailable",
+      "missing"
      ],
-     "about": "default can be dragged; disabled cannot be changed; unavailable shows the device cannot be reached."
+     "about": "default can be dragged; disabled cannot be changed; unavailable shows the device has no state now; missing shows Home Assistant has no such device."
     }
    ],
    "events": {
@@ -4276,9 +4282,10 @@
      "options": [
       "default",
       "disabled",
-      "unavailable"
+      "unavailable",
+      "missing"
      ],
-     "about": "default can be tapped; disabled cannot be changed; unavailable shows the device cannot be reached."
+     "about": "default can be tapped; disabled cannot be changed; unavailable shows the device has no state now; missing shows Home Assistant has no such device."
     }
    ],
    "events": {
@@ -5212,5 +5219,5 @@
    }
   }
  },
- "hash": "d33fb385"
+ "hash": "1a993f6b"
 }

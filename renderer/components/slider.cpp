@@ -10,6 +10,7 @@
 //   disabled   (fw::st::OFF) track disabled-line, fill disabled-ink, knob disabled-knob; a press emits "blocked" and
 //              plays error ONCE (on press, however long the drag), the value never moves
 //   unavailable  the box, no track / knob, the word Unavailable (body, unavailable-note) where the track starts
+//   missing      the same, the word Not found (Home Assistant has no such entity; fw::st::gone / gone_word)
 // Input: press on the knob (within touch:min / 2 of its centre) = grab, it follows the finger; press elsewhere on the
 // track = tap-to-jump: the value is set at once and the knob sweeps there with Motion "value" (reduced = instant);
 // moving the finger during the sweep stops it and the knob follows the finger. Hit maths = the drawn geometry (C27).
@@ -102,7 +103,7 @@ int idx_of(const Slider *d, fw::Props p) {
 void fill(lv_obj_t *s, fw::Props p) {
   auto *d = of(s);
   const char *state = p["state"] | "default";
-  d->unavail = !strcmp(state, "unavailable");
+  d->unavail = fw::st::gone(state);
   const bool off = d->unavail || !strcmp(state, "disabled");
   d->min = p["min"] | 0.0;
   d->max = std::max(d->min, (double) (p["max"] | 100.0));
@@ -114,7 +115,7 @@ void fill(lv_obj_t *s, fw::Props p) {
   fx::use(s, "slider");
   lv_obj_add_flag(s, LV_OBJ_FLAG_CLICKABLE);
   lv_obj_remove_flag(s, (lv_obj_flag_t) (LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_SCROLL_CHAIN | LV_OBJ_FLAG_GESTURE_BUBBLE | LV_OBJ_FLAG_EVENT_BUBBLE));
-  lv_obj_t *u = d->word = fx::text(s, fw::st::UNAVAILABLE_TEXT, "type:body", "fg:unavailable-note", "none");
+  lv_obj_t *u = d->word = fx::text(s, fw::st::gone_word(state), "type:body", "fg:unavailable-note", "none");
   fx::use(u, "slider-word");
   lv_obj_set_flag(u, LV_OBJ_FLAG_HIDDEN, !d->unavail);
   d->shown_idx = d->idx;
@@ -135,7 +136,7 @@ FW_COMPONENT(slider, "Slider", "components", R"({
     {"name": "min", "about": "The lowest value, at the left end.", "type": "range", "min": 0, "max": 50, "step": 1, "default": 0},
     {"name": "max", "about": "The highest value, at the right end.", "type": "range", "min": 10, "max": 100, "step": 1, "default": 100},
     {"name": "step", "about": "How much the value changes from one position to the next.", "type": "range", "min": 1, "max": 25, "step": 1, "default": 1},
-    {"name": "state", "debug": true, "about": "default can be dragged; disabled cannot be changed; unavailable shows the device cannot be reached.", "type": "select", "options": ["default", "disabled", "unavailable"], "default": "default"}
+    {"name": "state", "debug": true, "about": "default can be dragged; disabled cannot be changed; unavailable shows the device has no state now; missing shows Home Assistant has no such device.", "type": "select", "options": ["default", "disabled", "unavailable", "missing"], "default": "default"}
   ],
   "variants": [
     {"label": "min · 0", "props": {"value": 0}},
@@ -144,7 +145,8 @@ FW_COMPONENT(slider, "Slider", "components", R"({
     {"label": "step 10 · 40", "props": {"step": 10}},
     {"label": "disabled · 40", "props": {"state": "disabled"}},
     {"label": "disabled · 0", "props": {"value": 0, "state": "disabled"}},
-    {"label": "unavailable", "props": {"state": "unavailable"}}
+    {"label": "unavailable", "props": {"state": "unavailable"}},
+    {"label": "missing", "props": {"state": "missing"}}
   ]
 })") {
   auto *d = new Slider;
@@ -204,7 +206,8 @@ FW_UPDATE(slider) {
     return true;
   }
   const char *state = p["state"] | "default";
-  const bool unavail = !strcmp(state, "unavailable"), off = unavail || !strcmp(state, "disabled");
+  const bool unavail = fw::st::gone(state), off = unavail || !strcmp(state, "disabled");
+  if (unavail && strcmp(lv_label_get_text(d->word), fw::st::gone_word(state))) lv_label_set_text(d->word, fw::st::gone_word(state));  // unavailable <-> missing
   if (unavail != d->unavail) {
     d->unavail = unavail;
     if (unavail) fw::st::swap(nullptr, d->word); else lv_obj_add_flag(d->word, LV_OBJ_FLAG_HIDDEN);

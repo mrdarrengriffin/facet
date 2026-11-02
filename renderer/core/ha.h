@@ -79,7 +79,16 @@ struct State {
   // local sources already asked for their values since the last tick: a screen's binds read the same feed
   // dozens of times while it builds; one fresh() each is enough (Moon: 30 binds x its 75-day table = 4 s, a watchdog reset)
   std::vector<std::string> freshed;
+  // a missing entity (facet-260): Home Assistant sends nothing for an entity it does not have, so a state still
+  // unanswered MISSING_MS after it was wanted while the host was connected is put as "" (the host's word for "no such
+  // entity": the screens' missing / unavailable state). set_connected: the panel's API link (the workbench and tests: off)
+  // told: the host says whether it is connected at all (a panel; the workbench and most tests never do). Told and not
+  // connected = Home Assistant itself is not reached: the feeds say Offline over the values from before (offline())
+  bool connected = false, told = false;
+  uint32_t connected_at = 0;
+  std::map<std::string, uint32_t> wanted_at;  // entity -> when its state was first wanted
 };
+constexpr uint32_t MISSING_MS = 10000;
 inline State &S() {
   static State s;
   return s;
@@ -105,8 +114,15 @@ inline void want(const std::string &e, const std::string &a = "") {
   State &s = S();
   if (std::find(s.wants.begin(), s.wants.end(), Pair{e, a}) != s.wants.end()) return;
   s.wants.push_back({e, a});
+  if (a.empty()) s.wanted_at.emplace(e, lv_tick_get());
   if (s.want_sink) s.want_sink(e, a);
 }
+inline void set_connected(bool on) {
+  State &s = S();
+  if (on && !s.connected) s.connected_at = lv_tick_get();
+  s.connected = on, s.told = true;
+}
+inline bool offline() { return S().told && !S().connected; }
 inline void on_want(WantSink f) {  // the panel: subscribe; called at once for every pair wanted so far
   S().want_sink = f;
   for (const Pair &p : std::vector<Pair>(S().wants)) f(p.first, p.second);
@@ -267,7 +283,7 @@ inline void bind_raw(ArduinoJson::JsonVariantConst b, ArduinoJson::JsonObject ou
   }
   if (fmt == "light") {
     use(""); use("brightness");
-    if (!st || *st == "unavailable" || *st == "unknown") { out[key] = ""; return; }
+    if (!st || st->empty() || *st == "unavailable" || *st == "unknown") { out[key] = ""; return; }  // "": no such entity
     if (!on) { out[key] = "Off"; return; }
     const double br = num(get(e, "brightness"));
     out[key] = std::isfinite(br) ? "On · " + std::to_string(pct(e, "brightness")) + "%" : std::string("On");
@@ -288,13 +304,19 @@ inline void bind_raw(ArduinoJson::JsonVariantConst b, ArduinoJson::JsonObject ou
   if (fmt == "time" || fmt == "day") { use(a); const std::string *v = get(e, a); out[key] = v ? when(*v, fmt == "day") : std::string(); return; }
   if (fmt == "level") {  // a light / switch as one short value: "Off", "64%" (a dimmable light on), "On"; "" unavailable
     use(""); use("brightness");
-    if (!st || *st == "unavailable" || *st == "unknown") { out[key] = ""; return; }
+    if (!st || st->empty() || *st == "unavailable" || *st == "unknown") { out[key] = ""; return; }  // "": no such entity
     if (!on) { out[key] = "Off"; return; }
     out[key] = std::isfinite(num(get(e, "brightness"))) ? std::to_string(pct(e, "brightness")) + "%" : std::string("On");
     return;
   }
   if (fmt == "state") { use(""); use("unit_of_measurement"); use("device_class"); out[key] = words(e); return; }
-  if (fmt == "name") { use("friendly_name"); const std::string *n = get(e, "friendly_name"); out[key] = n && !n->empty() ? *n : e; return; }
+  if (fmt == "name") {  // the friendly name; none (a missing entity): the bind's "fallback" (the screen's own label), else the id
+    use("friendly_name");
+    const std::string *n = get(e, "friendly_name");
+    const char *fb = b["fallback"] | (const char *) nullptr;
+    out[key] = n && !n->empty() ? *n : fb ? std::string(fb) : e;
+    return;
+  }
   use(a);
   const std::string *v = get(e, a);
   out[key] = v ? *v : "";
@@ -349,9 +371,18 @@ inline void refresh(Bound *b) {
   if (lv_obj_get_style_margin_top(b->obj, LV_PART_MAIN) != mt) lv_obj_set_style_margin_top(b->obj, mt, 0);
   if (lv_obj_get_style_margin_bottom(b->obj, LV_PART_MAIN) != mb) lv_obj_set_style_margin_bottom(b->obj, mb, 0);
 }
+inline void put(const std::string &e, const std::string &a, const std::string &v);
 inline void tick(lv_timer_t *) {
   S().freshed.clear();  // the next build (or re-bind) asks the local sources again
   const uint32_t now = lv_tick_get();
+  if (S().connected) {  // states Home Assistant never answered: missing ("")
+    for (const Pair &p : std::vector<Pair>(S().wants)) {
+      if (!p.second.empty() || get(p.first)) continue;
+      auto w = S().wanted_at.find(p.first);
+      const uint32_t since = w == S().wanted_at.end() ? S().connected_at : std::max(w->second, S().connected_at);
+      if (lv_tick_diff(now, since) >= MISSING_MS) put(p.first, "", "");
+    }
+  }
   // a refresh can delete other bound objects (an items Grid rebuilds its cells: their Bounds are freed), so each one in
   // the copy is checked to be still live before it is touched (the Timer chips crashed the panel)
   for (Bound *b : std::vector<Bound *>(S().bounds)) {

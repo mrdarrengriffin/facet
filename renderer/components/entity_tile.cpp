@@ -15,7 +15,8 @@
 // States (tokens per state, C17): on = LV_STATE_USER_2 (not CHECKED: the theme's card part has no "on" look of its
 // own), fading with Motion toggle (fade-switch); pressed = the Card press (fade-press / fade-release); unavailable
 // (fw::st::OFF): icon + label unavailable-ink, status "Unavailable" in unavailable-note, no press look; a tap = blocked
-// + error. n/a: loading, unknown, empty, error (the binding maps those to unavailable).
+// + error; missing (Home Assistant has no such entity): the same look, status "Not found" (fw::st::gone / gone_word).
+// n/a: loading, unknown, empty, error (the binding maps those to unavailable).
 // Tap (states.json): act toggle = the tile shows the other side at once (like a tap on a Toggle) + sound toggle-on /
 // toggle-off + event "tap" (the Home's spec sends the toggle; HA's answer settles it); act open = sound open + event
 // "tap" (the Home opens the screen). Update path: label / status texts in place, on / off fades (silent); icon or
@@ -41,12 +42,12 @@ void fades(lv_obj_t *o) {  // the Motion toggle fade on the states the part chan
 // on: a bool, or a state word "on" (a bind's map: a cover's open)
 bool on_of(fw::Props p) { return p["on"].is<bool>() ? p["on"].as<bool>() : !strcmp(p["on"] | "", "on"); }
 std::string sig(fw::Props p) {  // what needs a rebuild: the icon, unavailable, the press style (texts and on move in place)
-  return std::string(p["icon"] | "bulb") + "|" + (strcmp(p["state"] | "default", "unavailable") ? "" : "off") + "|" + (p["press"] | "");
+  return std::string(p["icon"] | "bulb") + "|" + (fw::st::gone(p["state"] | "default") ? p["state"] | "" : "") + "|" + (p["press"] | "");
 }
 void fill(lv_obj_t *c, fw::Props p) {
   Tile *k = tile_of(c);
   const char *state = p["state"] | "default";
-  const bool off = !strcmp(state, "unavailable");
+  const bool off = fw::st::gone(state);
   fw::shape(c, sig(p));
   for (const char *t : {"fill", "col", "radius:tile", "card-pad", "bg:surface", "border:line", "fade-release"}) fx::use(c, t);
   const char *press = p["press"] | fw::st::PRESS_STYLE;
@@ -66,7 +67,7 @@ void fill(lv_obj_t *c, fw::Props p) {
   k->label = fx::text(c, p["label"] | "", "type:body", off ? "fg:unavailable-ink" : "fg:text", "fit");
   fx::use(k->label, "tile-text");
   lv_label_set_long_mode(k->label, LV_LABEL_LONG_MODE_DOTS);  // two lines, then "..."
-  k->status = fx::text(c, off ? fw::st::UNAVAILABLE_TEXT : (p["status"] | ""), "type:label", off ? "fg:unavailable-note" : "fg:text-dim", "none");
+  k->status = fx::text(c, off ? fw::st::gone_word(state) : (p["status"] | ""), "type:label", off ? "fg:unavailable-note" : "fg:text-dim", "none");
   fx::use(k->status, "tile-status");
   if (!off) fx::use(k->status, "fg:on-ink", ST_ON);
   fades(k->status);
@@ -97,7 +98,7 @@ FW_COMPONENT(entity_tile, "Entity tile", "components", R"({
     {"name": "status", "about": "The short state under the name, such as 64% or Off.", "type": "text", "default": "64%"},
     {"name": "on", "about": "Whether the thing is on. On tiles are lit in the accent colour.", "type": "bool", "default": true},
     {"name": "act", "about": "What a tap does: toggle switches it on or off, open opens its own screen, none does nothing.", "type": "select", "options": ["toggle", "open", "none"], "default": "toggle"},
-    {"name": "state", "debug": true, "about": "How the tile looks: default ready to tap, pressed while held, or unavailable when the device cannot be reached.", "type": "select", "options": ["default", "pressed", "unavailable"], "default": "default"},
+    {"name": "state", "debug": true, "about": "How the tile looks: default ready to tap, pressed while held, unavailable when the device has no state now, or missing when Home Assistant has no such device.", "type": "select", "options": ["default", "pressed", "unavailable", "missing"], "default": "default"},
     {"name": "press", "about": "How the tile shows it is being pressed: fill darkens the whole tile, border lights its edge, border-fill does both.", "type": "select", "options": ["fill", "border", "border-fill"], "default": "fill"}
   ],
   "variants": [
@@ -108,7 +109,8 @@ FW_COMPONENT(entity_tile, "Entity tile", "components", R"({
     {"label": "opens a screen", "props": {"icon": "screen-timer", "label": "Timer", "status": "", "on": false, "act": "open"}},
     {"label": "sensor · read only", "props": {"icon": "thermometer", "label": "Kitchen", "status": "21.4\u00b0", "on": false, "act": "none"}},
     {"label": "pressed", "props": {"state": "pressed", "on": false, "status": "Off"}},
-    {"label": "unavailable", "props": {"label": "Chair", "state": "unavailable"}}
+    {"label": "unavailable", "props": {"label": "Chair", "state": "unavailable"}},
+    {"label": "missing", "props": {"label": "Chair", "state": "missing"}}
   ]
 })") {
   lv_obj_t *c = lv_obj_create(parent);  // styles: fill() (an update refills the same root)
@@ -137,7 +139,7 @@ FW_UPDATE(entity_tile) {
   Tile *k = tile_of(root);
   if (!k) return false;
   const char *state = p["state"] | "default";
-  const bool was_off = lv_obj_has_state(root, ST_OFF), off = !strcmp(state, "unavailable");
+  const bool was_off = lv_obj_has_state(root, ST_OFF), off = fw::st::gone(state);
   if (fw::shape(root, sig(p))) {
     put(k->label, "type:body", p["label"] | "");
     if (!off) put(k->status, "type:label", p["status"] | "");

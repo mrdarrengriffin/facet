@@ -40,12 +40,13 @@ const NIGHTLY = arg('--tier') === 'nightly';  // a suite with tier: 'nightly' ru
 // "unavailable" (what the panel sees when HA drops); reconnect = the stored states arrive again.
 const DOMAIN_ON = { light: 1, switch: 1, fan: 1, input_boolean: 1 };
 class FakeHA {
-  constructor(t) { this.t = t; this.s = {}; this.calls = []; this.auto = true; this.lag = 0; this.down = false; this.pending = []; }
+  // absent: entities Home Assistant does not have; it never answers them (no state at all, as HA does for a deleted one)
+  constructor(t) { this.t = t; this.s = {}; this.calls = []; this.auto = true; this.lag = 0; this.down = false; this.pending = []; this.absent = new Set(); }
   get(e, a = '') { const st = this.s[e]; if (st && a in st) return st[a] ?? ''; return demoValue(e, a); }  // null = HA dropped it -> ''
   wants() { return JSON.parse(this.t.b.m.UTF8ToString(this.t.b.m._fw_ha_wants()) || '[]'); }
   push(only) {  // send the bound pairs (all, or one entity's) to the device
     for (const [e, a] of this.wants()) {
-      if (only && e !== only) continue;
+      if ((only && e !== only) || this.absent.has(e)) continue;
       const v = this.down ? (a ? undefined : 'unavailable') : this.get(e, a);
       if (v !== undefined) this.t.b.haPut(e, a, String(v));
     }
@@ -87,14 +88,15 @@ class FakeHA {
       str(body ? '' : (this.down ? 'Home Assistant not reached' : 'not found'), (q) => m._fw_ha_got(id, body ? 1 : 0, q));
     }
   }
-  known(e) { return !this.missing && (this.s[e] !== undefined || demoValue(e, '') !== undefined); }
+  known(e) { return !this.missing && !this.absent.has(e) && this.s[e]?.[''] !== '' && (this.s[e] !== undefined || demoValue(e, '') !== undefined); }  // '' / absent: no such entity
   reply(service, data) {
     const e = [].concat(data.entity_id || [])[0];
     return e && this.known(e) ? demoReply(service, data) : null;
   }
   ws(cmd) { return demoWs(cmd, { empty: this.missing, prefix: 'test_' }); }  // HA's result for the link's reads (Energy)
-  disconnect() { this.down = true; this.t.log.push('ha: disconnected'); this.push(); this.t.b.settle(1500); }
-  reconnect() { this.down = false; this.t.log.push('ha: reconnected'); this.push(); this.t.b.settle(1500); }
+  // the device is told (fw_ha_connected) first, as a panel's API link is: Offline while down, not Unavailable
+  disconnect() { this.down = true; this.t.log.push('ha: disconnected'); this.t.b.m._fw_ha_connected?.(0); this.push(); this.t.b.settle(1500); }
+  reconnect() { this.down = false; this.t.log.push('ha: reconnected'); this.t.b.m._fw_ha_connected?.(1); this.push(); this.t.b.settle(1500); }
   react(evs) {  // the HA side of service calls in a gesture's events
     for (const ev of evs.filter((x) => x.kind === 'event' && x.name === 'ha')) {
       let d; try { d = JSON.parse(ev.detail); } catch { continue; }

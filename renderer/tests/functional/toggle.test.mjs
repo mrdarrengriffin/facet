@@ -41,5 +41,11 @@ export default {
       t.silent(t.update({ state: 'unavailable', on: true }), 'to unavailable'); t.has(t.texts(), /^Unavailable$/, 'word');
       t.update({ on: true, state: 'default' }); t.hasNot(t.texts(), /^Unavailable$/, 'word gone'); t.eq(side(t), 'right', 'knob back on');
     } },
+    { name: 'missing: "Not found" in place of the switch; to unavailable and back', mount: ['toggle', { state: 'missing' }], run(t) {
+      t.has(t.texts(), /^Not found$/, 'word'); t.hasNot(t.texts(), /^Unavailable$/, 'not the other word');
+      t.sounds(t.tap({ clk: 0 }), ['error']);
+      t.update({ state: 'unavailable' }); t.has(t.texts(), /^Unavailable$/, 'unavailable word'); t.hasNot(t.texts(), /^Not found$/, 'missing word gone');
+      t.update({ state: 'missing' }); t.has(t.texts(), /^Not found$/, 'missing again');
+    } },
   ],
 };

@@ -19,7 +19,8 @@
 // States (tokens per state, C17): default; pressed (fill pressed-tint fading in over nothing: fade-press-fill); on (the
 // toggle's); disabled (fw::st::OFF: icon, title, sub, value, chevron disabled-ink, no press look, the toggle's own
 // disabled look, a tap = "blocked" + error); unavailable (OFF too: icon + title disabled-ink, no sub, the end = the word
-// Unavailable in unavailable-note). n/a: loading, unknown, empty, error (no data of its own: the binding maps those to
+// Unavailable in unavailable-note); missing (Home Assistant has no such entity: the unavailable look, the word Not
+// found, fw::st::MISSING_TEXT). n/a: loading, unknown, empty, error (no data of its own: the binding maps those to
 // unavailable); a stack with no items = its empty words.
 // Tap = a real CLICKED: chevron rows emit "tap" (detail = title) + sound "open"; a toggle row hands the tap to its toggle
 // (whole row = hit area); other rows emit "tap" + sound "tap"; act none = a read-out row: not a target (no press look,
@@ -76,7 +77,7 @@ Row *row_of(lv_obj_t *r) {  // the Row rides on the root's DELETE event (the roo
   return nullptr;
 }
 Kind effective(const Spec &s) {
-  const bool unavail = !strcmp(s.state, "unavailable");
+  const bool unavail = !strcmp(s.state, "unavailable") || !strcmp(s.state, "missing");  // missing: the unavailable look
   Kind kind = unavail ? K_NONE : kind_of(s.trailing);
   if (!unavail && kind == K_NONE && s.on) kind = K_TOGGLE;            // playground: on implies a toggle
   else if (!unavail && kind == K_NONE && s.value[0]) kind = K_VALUE;  // a typed value implies a value
@@ -105,7 +106,7 @@ void show_end(lv_obj_t *en) {
 
 // the row's look and contents on r (build: a new root; update: the same root after fw::refill)
 void fill(lv_obj_t *r, const Spec &s, Row *d) {
-  const bool unavail = !strcmp(s.state, "unavailable"), off = unavail || !strcmp(s.state, "disabled");
+  const bool unavail = !strcmp(s.state, "unavailable") || !strcmp(s.state, "missing"), off = unavail || !strcmp(s.state, "disabled");
   const Kind kind = effective(s);
 
   for (const char *t : {"box", "row-mid", "gap:4", "pad-x:4", "tall:list-row-h", "bg:pressed-tint", "bg-none", "fade-release-fill"}) fx::use(r, t);
@@ -138,7 +139,7 @@ void fill(lv_obj_t *r, const Spec &s, Row *d) {
   d->title = s.title;
   d->toggle = nullptr;
   d->val = nullptr;
-  if (unavail) word(en, fw::st::UNAVAILABLE_TEXT, "fg:unavailable-note");
+  if (unavail) word(en, !strcmp(s.state, "missing") ? fw::st::MISSING_TEXT : fw::st::UNAVAILABLE_TEXT, "fg:unavailable-note");
   if (kind == K_VALUE || kind == K_VALUE_CHEVRON) d->val = word(en, s.value[0] ? s.value : fw::st::PLACEHOLDER, s.value[0] ? "fg:text-dim" : "fg:text");
   if (kind == K_CHEVRON || kind == K_VALUE_CHEVRON) fx::icon_use(fx::icon(en, "chevron", "icon", "fg:text-dim"), "ink:disabled-ink", ST_OFF);
   if (kind == K_TOGGLE) {
@@ -273,7 +274,7 @@ FW_COMPONENT(list_row, "List row", "components", R"({
     {"name": "trailing", "about": "What sits at the right end: none, a value, a chevron to show it opens more, a value and a chevron, or an on/off switch.", "type": "select", "options": ["none", "value", "chevron", "value-chevron", "toggle"], "default": "none"},
     {"name": "value", "about": "The value shown at the right end when there is one, such as 42%.", "type": "text", "default": ""},
     {"name": "on", "about": "Whether the switch at the right end is on.", "type": "bool", "default": false},
-    {"name": "state", "debug": true, "about": "How the row looks: default ready to tap, pressed while held, disabled when it cannot be used, or unavailable when its device cannot be reached.", "type": "select", "options": ["default", "pressed", "disabled", "unavailable"], "default": "default"},
+    {"name": "state", "debug": true, "about": "How the row looks: default ready to tap, pressed while held, disabled when it cannot be used, unavailable when its device has no state now, or missing when Home Assistant has no such device.", "type": "select", "options": ["default", "pressed", "disabled", "unavailable", "missing"], "default": "default"},
     {"name": "act", "about": "tap: the row can be tapped; none: a read-out row that shows a value and takes no tap: no press look, no sound.", "type": "select", "options": ["tap", "none"], "default": "tap"},
     {"name": "divider", "about": "Draws a thin line under the row to separate it from the next.", "type": "bool", "default": true},
     {"name": "list", "about": "single is one row on its own; stack is a list of rows touching, with lines between them, one row per item of items.", "type": "select", "options": ["single", "stack"], "default": "single"},
@@ -296,6 +297,7 @@ FW_COMPONENT(list_row, "List row", "components", R"({
     {"label": "disabled · toggle", "props": {"title": "Night dimming", "icon": "power", "sub": "Needs a clock source", "trailing": "toggle", "on": true, "state": "disabled"}},
     {"label": "disabled · value", "props": {"title": "Brightness", "icon": "none", "trailing": "value-chevron", "value": "80%", "state": "disabled"}},
     {"label": "unavailable", "props": {"title": "Porch light", "icon": "bulb", "trailing": "toggle", "state": "unavailable"}},
+    {"label": "missing", "props": {"title": "Porch light", "icon": "bulb", "trailing": "toggle", "state": "missing"}},
     {"label": "stack · dividers", "props": {"list": "stack", "items": "[{\"title\":\"Lights\",\"icon\":\"bulb\",\"trailing\":\"value-chevron\",\"value\":\"3 on\"},{\"title\":\"Chime\",\"icon\":\"speaker\",\"sub\":\"Plays on every tap\",\"trailing\":\"toggle\",\"on\":true},{\"title\":\"Volume\",\"icon\":\"volume\",\"trailing\":\"value\",\"value\":\"60%\"},{\"title\":\"Night dimming\",\"icon\":\"power\",\"trailing\":\"toggle\",\"state\":\"disabled\"},{\"title\":\"Porch light\",\"icon\":\"house\",\"trailing\":\"chevron\",\"state\":\"unavailable\"}]"}},
     {"label": "stack · plain items · cap", "props": {"list": "stack", "icon": "none", "trailing": "chevron", "items": "Kitchen,Hallway,Study,Bedroom,Garden", "rows": 3}},
     {"label": "stack · empty", "props": {"list": "stack", "empty": "No rooms yet"}}

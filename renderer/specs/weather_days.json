@@ -46,7 +46,7 @@
      "e": "panel.weather",
      "a": "days"
     },
-    "empty": "No forecast yet"
+    "empty": {"e": "panel.weather", "a": "days_empty"}
    },
    "cell": {
     "c": "weather_icon",

@@ -2,19 +2,22 @@
 // the one shape the Weather screen, its next 5 days and its Home card bind to, whatever gives the forecast. Built on
 // the Feed base (core/feed.h: rounds every minute while read, settings, state, fields + placeholders, the sample in
 // sample()). Same file on the panels and in WASM. Words and units are Facet's (core/weather.h: the condition's words, whole degrees).
-//   state      ok | loading (no weather yet) | error (the source is unavailable); not ok = feed::words (Loading /
-//              Offline) as the condition and the card, every other field its placeholder (FIELDS)
+//   state      ok | loading (no weather yet) | error (no weather entity picked) | missing (Home Assistant has no such
+//              entity) | unavailable (it has no state now); not ok = feed::words (Loading / Offline / Not found /
+//              Unavailable) as the condition and the card, every other field its placeholder (FIELDS)
 //   icon       the weather icon now ("partly-day", "rain-light", "clear-night": by day or night)
 //   temp       "13°" ("--°" while loading / on error); condition "Partly cloudy" ("Loading" / "Offline")
 //   line       "Feels 11° · high 16°, low 8°" (the parts it knows)
 //   rain       "Rain from 14:00" / "Dry for the next hour · rain at 16:00" / "Dry for the next hour"; rain_tone
 //              info (rain within the hour) | idle (a Status line's dot)
 //   brief      the Clock screen's line under the date: "rain · 13°" (the condition in lower case + the temperature,
-//              core/weather.h line); "" while loading / on error (the Clock shows no line)
+//              core/weather.h line); "" while loading / on error (the Clock shows no line); missing / unavailable:
+//              the words (the entity the Clock was given says why it shows no weather)
 //   card       the Home card's line: "rain in 20 min" / "raining now" within the hour, else the condition in lower
 //              case ("partly cloudy"), "loading" / "offline"
 //   hours      the next eight hours, a JSON list of Weather icon columns: [{"label": "now" | "14", "icon": "...",
 //              "value": "13°", "accent": "on" | "off"}]; has_hours "1" when known, else "" (the screen hides the strip)
+//   days_empty what the 5 days list says with no days: "No forecast yet", or missing / unavailable's words
 //   days       the next five days, a JSON list of Weather icon rows: [{"label": "Today" | "Saturday", "icon": "...",
 //              "line": "Rain · 4.2 mm", "low": "8°", "value": "16°", "divider": "off" for the first, else "on"}]
 // Adapters (the feed's settings, the spec's "feeds"; core/ha.h feed_config): source
@@ -102,7 +105,7 @@ std::string lower(std::string s) {
 std::vector<feed::Field> FIELDS = {{"icon", true, "cloudy"}, {"temp", true, "--\xC2\xB0"}, {"condition", true, ""},
                                    {"card", true, ""}, {"brief", false, ""}, {"line", false, ""}, {"rain", false, ""},
                                    {"rain_tone", false, "idle"}, {"hours", false, "[]"}, {"has_hours", false, ""},
-                                   {"days", false, "[]"}};
+                                   {"days", false, "[]"}, {"days_empty", false, "No forecast yet"}};
 std::function<void(const char *, const std::string &)> put;  // the feed's put (Weather below)
 void put_state(feed::State s);
 
@@ -162,18 +165,19 @@ void put_data(const wx::Data &d, double now) {
   if (ds.isNull()) js = "[]"; else serializeJson(ds, js);
   put("days", js);
 }
-void put_empty(feed::State st) {  // loading / error: the words only (no icon, rain line or hours: the docs); the rest
-  put_state(st);                 // shows its placeholders
+void put_empty(feed::State st) {  // not ok: the words only (no icon, rain line or hours: the docs); the rest shows its
+  put_state(st);                 // placeholders. The entity's two states say so on every screen on the feed
   put("condition", feed::words(st));
-  put("card", lower(feed::words(st)));
+  const bool gone = st == feed::MISSING || st == feed::UNAVAILABLE;  // the entity's two words, as written everywhere
+  put("card", gone ? feed::words(st) : lower(feed::words(st)));
+  if (gone) put("brief", feed::words(st)), put("days_empty", feed::words(st));
 }
 
 // ---- ha adapter
 void rebuild() {
   if (ent_now.empty()) return;
   const std::string *state = ha::get(ent_now), *t = ha::get(ent_now, "temperature"), *f = ha::get(ent_now, "apparent_temperature");
-  if (!state || state->empty()) { put_empty(feed::LOADING); return; }
-  if (*state == "unavailable" || *state == "unknown") { put_empty(feed::ERROR); return; }
+  if (const feed::State st = feed::of(state); st != feed::OK) { put_empty(st); return; }  // loading, missing, unavailable
   const double now = now_ms();
   wx::Data d;
   d.condition = keep(state->c_str());

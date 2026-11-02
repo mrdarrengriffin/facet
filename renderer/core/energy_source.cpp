@@ -19,7 +19,9 @@
 //           yesterday up to now) every minute, daily changes for the 13 days before today every 15 minutes. Use = grid
 //           in + solar - grid out + battery out - battery in; cost = the grid's cost statistics (else use x the
 //           dashboard's price). The rate = the dashboard's price (entity or fixed), else the last half-hour's cost /
-//           kWh; no tariff bands (all "normal"). Live W = the grid's power sensor when the dashboard has one. Each
+//           kWh; no tariff bands (all "normal"). Live W = the grid's power sensor when the dashboard has one. A
+//           sensor the dashboard names that Home Assistant does not have, or that has no state now, says so where its
+//           value shows (feed::words: watts / live / card "Not found" / "Unavailable", the price's rate line too). Each
 //           reply is streamed through a small reader (Sax: a key path, never the whole reply). Not linked / no grid or
 //           solar in the dashboard = an error state saying so.
 //   sample  the docs time-of-use tariff day (core/energy.h sample), for previews and tests
@@ -304,6 +306,16 @@ void from_ha() {
   bool banded = false;
   const ExtOut x = overlay(d, rn, rx, banded);
   publish(d, rn, rx, banded, &x);
+  // the dashboard's sensors HA does not have, or that have no state now: their words where their values show
+  auto gone = [](const std::string &e) {
+    const fd::State st = e.empty() ? fd::OK : fd::of(ha::get(e));
+    return st == fd::MISSING || st == fd::UNAVAILABLE ? fd::words(st) : nullptr;
+  };
+  if (const char *w = gone(prefs.power_e)) {
+    put_e("watts", w);
+    if (!x.on) put_e("live", w), put_e("card", w);
+  }
+  if (const char *w = gone(prefs.price_e)) put_e("rate", w);
 }
 void next();
 void F_live();  // the feed's live reads again (the prefs name the price and power sensors)

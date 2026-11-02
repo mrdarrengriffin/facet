@@ -57,10 +57,10 @@ export default {
       t.eq(col.y - (rain.y + rain.h), k.strip, 'space:8 above the hours');
       const more = t.part('more_row'); t.eq(more.y + more.h, k.bottom, 'next 5 days on the body foot');
     } },
-    { name: 'ha: unavailable shows Offline and --°, no hours or rain line', async run(t) {
+    { name: 'ha: unavailable shows Unavailable and --°, no hours or rain line (Not found: missing_entities)', async run(t) {
       t.ha.s[W] = { '': 'unavailable' };
       await open(t, { source: 'ha', weather: W });
-      t.has(t.texts(), /^offline$/i, 'offline'); t.has(t.texts(), /^--°$/, 'no temperature');
+      t.has(t.texts(), /^Unavailable$/, 'unavailable'); t.hasNot(t.texts(), /^(offline|not found)$/i, 'not the other words'); t.has(t.texts(), /^--°$/, 'no temperature');
       t.hasNot(t.texts(), /next 5 days|dry for|rain from/i, 'no rain line or more row');
     } },
     { name: '5 days: next 5 days opens five day rows on the same feed (Today first)', async run(t) {

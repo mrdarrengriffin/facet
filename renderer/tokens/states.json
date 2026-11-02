@@ -131,7 +131,7 @@
     },
     "unavailable": {
       "label": "Unavailable",
-      "about": "The thing behind the part is gone (a Home Assistant entity that is unavailable). It follows the disabled rule and says so in words where there is room: the control is hidden and the word Unavailable takes its place (Card, List row, Dial, Toggle, Slider); an Icon button has no room for the word, so it keeps its shape in the disabled look. Finger down emits blocked and plays error. Every control that shows a device's state has it.",
+      "about": "The thing behind the part is gone (a Home Assistant entity that is unavailable). It follows the disabled rule and says so in words where there is room: the control is hidden and the word Unavailable takes its place (Card, List row, Dial, Toggle, Slider), or Not found (missing_text) when Home Assistant has no such entity at all (the host's empty state); an Icon button has no room for the word, so it keeps its shape in the disabled look. Finger down emits blocked and plays error. Every control that shows a device's state has it.",
       "motion": [],
       "event": "blocked",
       "sound": "error",
@@ -146,6 +146,7 @@
         }
       },
       "text": "Unavailable",
+      "missing_text": "Not found",
       "placeholder": "—"
     },
     "on": {

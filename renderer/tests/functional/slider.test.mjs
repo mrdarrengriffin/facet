@@ -76,6 +76,11 @@ export default {
       t.has(t.texts(), /unavailable/i, 'word'); const b = t.part('slider');
       const ev = t.drag(null, { from: [b.x + b.w / 2, b.y + b.h / 2], by: [64, 0] }); t.notEmitted(ev, 'change'); t.sounds(ev, ['error']);
     } },
+    { name: 'missing: "Not found", no track, drag changes nothing; to unavailable: its word', mount: ['slider', { value: 40, state: 'missing' }], run(t) {
+      t.has(t.texts(), /^Not found$/, 'word'); t.hasNot(t.texts(), /^Unavailable$/, 'not the other word'); const b = t.part('slider');
+      const ev = t.drag(null, { from: [b.x + b.w / 2, b.y + b.h / 2], by: [64, 0] }); t.notEmitted(ev, 'change'); t.sounds(ev, ['error']);
+      t.update({ state: 'unavailable' }); t.has(t.texts(), /^Unavailable$/, 'unavailable word'); t.hasNot(t.texts(), /^Not found$/, 'missing word gone');
+    } },
     { name: 'update value: knob moves there silently, no change event', mount: ['slider', { value: 40 }], run(t, { den }) {
       const ev = t.update({ value: 90 }); t.silent(ev); t.notEmitted(ev, 'change'); const g = geo(t, den);
       t.ok(Math.abs(g.kx - at(g, 0.9)) <= 2, `knob at ${g.kx}, want ${at(g, 0.9)}`);

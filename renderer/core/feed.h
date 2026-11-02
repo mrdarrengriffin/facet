@@ -6,8 +6,12 @@
 //              then the one hook fill(). A round runs when a bind first reads the feed, every `every_ms` while something
 //              reads it (ha::watched), when the settings change, and when an entity it reads changes (reads()), which
 //              is also how it refreshes when Home Assistant comes back (back(): one of them was unavailable, now is not)
-//   state      "" = ok | loading | error | empty, put with state(); the words a screen shows for a state that is not
-//              ok are words() (one place: the same "Loading" / "Offline" / "Nothing yet" on every screen)
+//   state      "" = ok | loading | error | empty | missing | unavailable, put with state(); the words a screen shows
+//              for a state that is not ok are words() (one place: the same "Loading" / "Offline" / "Nothing yet" /
+//              "Not found" / "Unavailable" on every screen). error = the source cannot be reached or is not set up
+//              (Home Assistant itself); missing = the entity it reads is not in Home Assistant (the host's empty state);
+//              unavailable = the entity is there but has no state now (unavailable / unknown). of(): an entity's state
+//              as one of these (an adapter's one test of the entity it reads)
 //   fields     declared once (name, required, placeholder): put() takes only a declared field; after a round, a field
 //              the round did not put gets its placeholder (an optional field the source cannot fill: "" hides it, the
 //              component shows what is left), and a required field missing from an ok round turns the feed to error
@@ -21,9 +25,12 @@
 #include "ArduinoJson.h"
 
 namespace fw::feed {
-enum State { OK, LOADING, ERROR, EMPTY };
-const char *state_id(State s);  // "ok" | "loading" | "error" | "empty"
-const char *words(State s);     // the screen's words for it: "" | "Loading" | "Offline" | "Nothing yet"
+enum State { OK, LOADING, ERROR, EMPTY, MISSING, UNAVAILABLE };
+const char *state_id(State s);  // "ok" | "loading" | "error" | "empty" | "missing" | "unavailable"
+const char *words(State s);     // the screen's words: "" | "Loading" | "Offline" | "Nothing yet" | "Not found" | "Unavailable"
+// an entity's state (nullptr = not answered yet): LOADING; the host says Home Assistant is not reached (ha::offline):
+// ERROR; "" (no such entity): MISSING; unavailable / unknown: UNAVAILABLE; anything else OK
+State of(const std::string *st);
 
 struct Field {
   const char *name;

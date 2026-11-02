@@ -12,6 +12,7 @@
 //   off · disabled  hollow track (hair border disabled-line, no fill), disabled-knob knob (the inset less the hair)
 //   on · disabled   disabled-accent track, disabled-on-fill knob
 //   unavailable     the word Unavailable (body, unavailable-note) in place of the switch, touch:min tall
+//   missing         the same with the word Not found (Home Assistant has no such entity; fw::st::gone / gone_word)
 // Tap: the knob slides + the colours fade = Motion pattern "toggle" as a style transition (reduced motion = instant),
 // emits "toggle" (detail on / off) and plays toggle-on / toggle-off; disabled / unavailable: "blocked" + error on
 // finger down. Bleed: none. Contrast pairs: tokens/colour.json section "toggle".
@@ -21,19 +22,20 @@
 namespace {
 constexpr lv_state_t ST_OFF = fw::st::OFF, ST_ON = fw::st::ON;  // disabled (LVGL sends no events to LV_STATE_DISABLED)
 
-struct Toggle { bool on = false, unavail = false; };
+struct Toggle { bool on = false, unavail = false; const char *word = nullptr; };
 Toggle *of(lv_obj_t *t) { return (Toggle *) lv_obj_get_user_data(t); }
 
 void fill(lv_obj_t *t, fw::Props p) {
   auto *d = of(t);
   d->on = p["on"] | false;
-  d->unavail = !strcmp(p["state"] | "default", "unavailable");
+  d->unavail = fw::st::gone(p["state"] | "default");
+  d->word = fw::st::gone_word(p["state"] | "default");
   const bool disabled = !strcmp(p["state"] | "default", "disabled");
   lv_obj_add_flag(t, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_STATE_TRICKLE));
   lv_obj_remove_flag(t, LV_OBJ_FLAG_SCROLLABLE);
   if (d->unavail) {  // states.json unavailable: the word in place of the switch; a tap = blocked
     fx::use(t, "word-slot");
-    fx::fit_grid(fx::text(t, fw::st::UNAVAILABLE_TEXT, "type:body", "fg:unavailable-note", "none"));
+    fx::fit_grid(fx::text(t, d->word, "type:body", "fg:unavailable-note", "none"));
     lv_obj_add_state(t, ST_OFF);
     return;
   }
@@ -72,14 +74,15 @@ FW_COMPONENT(toggle, "Toggle", "components", R"({
   "frame": [160, 96],
   "props": [
     {"name": "on", "about": "Whether the switch is on.", "type": "bool", "default": false},
-    {"name": "state", "debug": true, "about": "default can be tapped; disabled cannot be changed; unavailable shows the device cannot be reached.", "type": "select", "options": ["default", "disabled", "unavailable"], "default": "default"}
+    {"name": "state", "debug": true, "about": "default can be tapped; disabled cannot be changed; unavailable shows the device has no state now; missing shows Home Assistant has no such device.", "type": "select", "options": ["default", "disabled", "unavailable", "missing"], "default": "default"}
   ],
   "variants": [
     {"label": "off", "props": {}},
     {"label": "on", "props": {"on": true}},
     {"label": "off · disabled", "props": {"state": "disabled"}},
     {"label": "on · disabled", "props": {"on": true, "state": "disabled"}},
-    {"label": "unavailable", "props": {"state": "unavailable"}}
+    {"label": "unavailable", "props": {"state": "unavailable"}},
+    {"label": "missing", "props": {"state": "missing"}}
   ]
 })") {
   auto *d = new Toggle;
@@ -106,9 +109,9 @@ FW_COMPONENT(toggle, "Toggle", "components", R"({
 FW_UPDATE(toggle) {
   auto *d = of(root);
   if (!d) return false;
-  const bool unavail = !strcmp(p["state"] | "default", "unavailable");
+  const bool unavail = fw::st::gone(p["state"] | "default");
   if (unavail || d->unavail) {
-    if (unavail && d->unavail) return true;
+    if (unavail && d->unavail && d->word == fw::st::gone_word(p["state"] | "default")) return true;
     fw::refill(root);
     fill(root, p);
     fw::st::fade_in_children(root);

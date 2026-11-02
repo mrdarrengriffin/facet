@@ -237,9 +237,13 @@ FW_UPDATE(grid) {
   if (it == all.end() || sig(p) != it->second.sig) return false;
   G &g = it->second;
   if (!g.items_mode) return true;
-  g.empty = p["empty"] | "Nothing here";
-  const std::string src = p["items"] | "";
-  if (src == g.src) return true;
+  const std::string empty = p["empty"] | "Nothing here", src = p["items"] | "";
+  const bool new_words = empty != g.empty;  // the empty words follow a bind too (a feed: "Not found")
+  g.empty = empty;
+  if (src == g.src) {
+    if (new_words && g.items.empty()) expand(root, g, 0);  // showing the empty words: the new ones
+    return true;
+  }
   const std::vector<std::string> list = parse(src.c_str()), old = g.items;
   g.src = src;
   const int cap = cap_of(root, g), n = (int) list.size() > cap ? cap - 1 : (int) list.size();

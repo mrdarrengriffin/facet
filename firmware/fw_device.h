@@ -1863,6 +1863,12 @@ inline void setup() {
     if (!look && from != fw::dev::SCREEN) reshow_later(false);  // a value from elsewhere: the controls move
   });
   fw::ha::on_want(ha_subscribe);  // (the pairs wanted so far too)
+#ifdef USE_API
+  // Home Assistant connected: a state it never answers is a missing entity (core/ha.h MISSING_MS)
+  lv_timer_create([](lv_timer_t *) {
+    fw::ha::set_connected(esphome::api::global_api_server && esphome::api::global_api_server->is_connected());
+  }, 1000, nullptr);
+#endif
   fw::ha::on_act(ha_action);
   fw::ha::on_ask(ha_ask);
   fw::spec::want_all();  // every entity the deck's specs bind (the overrides were loaded before the first show)

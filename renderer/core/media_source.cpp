@@ -1,11 +1,13 @@
 // The media feed (CONTRACT.md C51): the reserved entity panel.media (core/spec.h "local sources") in the HA store, the
 // one shape the Media screen and its Home card bind to, whatever plays the music. Same file on the panels and in WASM.
-//   state        ok | loading | error (the Feed base, core/feed.h); player playing | paused | idle | off | loading | error
-//   state_label  "now playing" | "paused" | "idle" | "unavailable" (docs .fs-m-state); state_tone accent-text while
-//                playing (docs data-tone working), else text-dim
+//   state        ok | loading | error (no player picked) | missing (Home Assistant has no such player) | unavailable
+//                (it has no state now) (the Feed base, core/feed.h); player playing | paused | idle | off | loading |
+//                error | missing | unavailable
+//   state_label  "now playing" | "paused" | "idle" | "Not found" | "Unavailable" | "Offline" (no player picked, Home
+//                Assistant not reached) (docs .fs-m-state; feed::words); state_tone accent-text while playing (docs data-tone working), else text-dim
 //   playing      "true" | "false" (the Media visual turns; the play button is active)
-//   play_state   active | default | unavailable (the play Icon button); ctl_state default | unavailable (prev / next,
-//                the volume Slider row)
+//   play_state   active | default | unavailable (the play Icon button); ctl_state default | unavailable | missing (prev
+//                / next, the volume Slider row: its word)
 //   title        the track, or "Nothing playing"; artist; album; art (an image URL, "" = none); source (the input)
 //   progress     0-100 of the track, moving on locally once a second while playing (from HA's position and the time
 //                it was read); position / duration in seconds
@@ -14,7 +16,7 @@
 //                tone, selected}: Auto first (follows what's playing), then each player
 //   sheet        open | closed (the speaker Bottom sheet)
 //   card_text / card_sub / card_accent  the Home card: the track (or Nothing playing), "artist" or the speaker's
-//                state, accent while playing
+//                state (the words), accent while playing
 // Adapters (the feed's settings, the spec's "feeds"; core/ha.h feed_config): source
 //   ha      a Home Assistant media_player (setting player; speakers = a comma list of players for the sheet; auto =
 //           an optional sensor naming the player to follow), read live like any bind (state, media_title,
@@ -99,12 +101,13 @@ struct Shown {
 };
 void put_shown(const Shown &m) {
   St &s = S();
-  const bool down = m.state == "error", playing = m.state == "playing";
-  put("state_label", down ? "unavailable" : playing ? "now playing" : m.state == "paused" ? "paused" : m.state == "loading" ? "loading" : "idle");
+  const bool gone = m.state == "missing", down = gone || m.state == "error" || m.state == "unavailable", playing = m.state == "playing";
+  const char *word = feed::words(gone ? feed::MISSING : m.state == "unavailable" ? feed::UNAVAILABLE : feed::ERROR);  // (the label is caps)
+  put("state_label", down ? word : playing ? "now playing" : m.state == "paused" ? "paused" : m.state == "loading" ? "loading" : "idle");
   put("state_tone", playing ? "accent-text" : "text-dim");
   put("playing", playing ? "true" : "false");
   put("play_state", down ? "unavailable" : playing ? "active" : "default");
-  put("ctl_state", down ? "unavailable" : "default");
+  put("ctl_state", gone ? "missing" : down ? "unavailable" : "default");
   put("title", m.title.empty() ? "Nothing playing" : m.title);
   put("artist", m.artist), put("album", m.album), put("art", m.art), put("source", m.source);
   put("position", num(m.pos)), put("duration", num(m.dur));
@@ -115,10 +118,10 @@ void put_shown(const Shown &m) {
   put("speaker", m.speaker.empty() ? "none" : m.speaker);
   put("sheet", s.sheet);
   put("card_text", m.title.empty() ? "Nothing playing" : m.title);
-  put("card_sub", down ? "unavailable" : !m.artist.empty() ? m.artist : m.state == "paused" ? "paused · " + m.speaker : m.speaker);
+  put("card_sub", down ? std::string(word) : !m.artist.empty() ? m.artist : m.state == "paused" ? "paused · " + m.speaker : m.speaker);
   put("card_accent", playing ? "true" : "false");
   put("player", m.state);
-  put_state(down ? feed::ERROR : m.state == "loading" ? feed::LOADING : feed::OK);
+  put_state(gone ? feed::MISSING : m.state == "unavailable" ? feed::UNAVAILABLE : down ? feed::ERROR : m.state == "loading" ? feed::LOADING : feed::OK);
 }
 std::string row(const std::string &id, const std::string &name, const std::string &status, const char *icon, bool working, bool sel) {
   return "{\"id\":\"" + esc(id) + "\",\"name\":\"" + esc(name) + "\",\"status\":\"" + esc(status) + "\",\"icon\":\"" + icon +
@@ -178,8 +181,8 @@ void rebuild() {
   Shown m;
   const std::string *st = attr(e, "");
   m.speaker = e.empty() ? "" : name_of(e);
-  if (e.empty() || !st) m.state = e.empty() ? "error" : "loading";
-  else if (*st == "unavailable" || *st == "unknown") m.state = "error";
+  const feed::State fs = feed::of(st);
+  if (e.empty() || fs != feed::OK) m.state = e.empty() ? "error" : feed::state_id(fs);  // loading | missing | unavailable
   else {
     m.state = *st == "playing" || *st == "paused" || *st == "off" ? *st : "idle";
     if (lv_tick_get() < s.hold_play && !s.held_state.empty()) m.state = s.held_state;  // our own tap wins for 3 s

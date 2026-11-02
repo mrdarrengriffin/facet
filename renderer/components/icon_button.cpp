@@ -22,7 +22,8 @@
 // sound back (the Bottom sheet's Close).
 // C7 note: a button is a fixed touch target by design: its root is exactly its style's square (a layout token through
 // a shared style, so fx::tune and the Layout lab move it), never a width from its parent, never a call.
-// Steps: none. Bleed: none. States: default, pressed, active, active-pressed, disabled, unavailable; n/a: loading,
+// Steps: none. Bleed: none. States: default, pressed, active, active-pressed, disabled, unavailable, missing (no such
+// entity: the unavailable look, no room for its word either); n/a: loading,
 // unknown, empty, error (no data of its own). Update path: the state in place (LVGL state transitions, silent);
 // style / icon / role = the contents again (fw::refill). Pairs: colour.json contrast section "icon_button".
 #include "fw.h"
@@ -43,7 +44,7 @@ void set_state(lv_obj_t *b, const char *state, bool animate) {
   const bool active = !strcmp(state, "active") || !strcmp(state, "active-pressed");
   if (pressed != lv_obj_has_state(b, P)) lv_obj_set_state(b, P, pressed);
   fw::st::set_state(b, C, active, animate);
-  fw::st::set_state(b, ST_OFF, !strcmp(state, "unavailable") || !strcmp(state, "disabled"), animate);
+  fw::st::set_state(b, ST_OFF, fw::st::gone(state) || !strcmp(state, "disabled"), animate);
 }
 const char *role_of(fw::Props p) { return p["role"] | ""; }
 std::string icon_of(fw::Props p) {  // the icon this button shows
@@ -64,7 +65,7 @@ void data(lv_obj_t *b, fw::Props p) {
   d->role = r == "back" ? R_BACK : r == "settings" ? R_SETTINGS : r == "shortcut" ? R_SHORTCUT : r == "close" ? R_CLOSE : play ? R_PLAY : R_TAP;
   snprintf(d->to, sizeof d->to, "%s", p["to"] | "");
   const std::string ic = icon_of(p);
-  snprintf(d->icon, sizeof d->icon, "%s", !strcmp(p["state"] | "default", "unavailable") ? "unavailable" : play ? "play"
+  snprintf(d->icon, sizeof d->icon, "%s", fw::st::gone(p["state"] | "default") ? "unavailable" : play ? "play"
            : ic == "screen-settings" ? "settings" : ic.c_str());
 }
 // the glyph: an icon centred in the button (play and pause on top of each other), its ink per state
@@ -134,7 +135,7 @@ FW_COMPONENT(icon_button, "Icon button", "components", R"({
   "props": [
     {"name": "style", "about": "The button's shape: play is the large round play and pause button, round is a smaller circle, square has rounded corners.", "type": "select", "options": ["play", "round", "square"], "default": "round"},
     {"name": "icon", "about": "The icon on the button, such as next, previous, play or close.", "type": "select", "options": ["next", "prev", "play", "plus", "close", "check", "back", "settings", "chevron", "chevron-left", "calendar", "speaker", "covers"], "default": "next"},
-    {"name": "state", "debug": true, "about": "How the button looks: default ready to tap, pressed while held, active when it is switched on, active-pressed while the active one is held, disabled when it cannot be used, or unavailable when its device cannot be reached.", "type": "select", "options": ["default", "pressed", "active", "active-pressed", "disabled", "unavailable"], "default": "default"}
+    {"name": "state", "debug": true, "about": "How the button looks: default ready to tap, pressed while held, active when it is switched on, active-pressed while the active one is held, disabled when it cannot be used, unavailable when its device has no state now, or missing when Home Assistant has no such device (the same look).", "type": "select", "options": ["default", "pressed", "active", "active-pressed", "disabled", "unavailable", "missing"], "default": "default"}
   ],
   "variants": [
     {"label": "play · default", "props": {"style": "play"}},
@@ -156,6 +157,7 @@ FW_COMPONENT(icon_button, "Icon button", "components", R"({
     {"label": "square · close", "props": {"style": "square", "icon": "close"}},
     {"label": "play · unavailable", "props": {"style": "play", "state": "unavailable"}},
     {"label": "round · unavailable", "props": {"state": "unavailable"}},
+    {"label": "round · missing", "props": {"state": "missing"}},
     {"label": "square · settings", "props": {"style": "square", "icon": "settings"}},
     {"label": "square · settings · pressed", "props": {"style": "square", "icon": "settings", "state": "pressed"}},
     {"label": "square · back", "props": {"style": "square", "icon": "back"}}

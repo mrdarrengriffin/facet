@@ -54,10 +54,10 @@ export default {
       answer(t, q.find((a) => a.data.entity_id === C2).id, { [C2]: { events: [{ start: iso(s), end: iso(s + 3600e3), summary: 'Standup' }] } });
       t.has(t.texts(), /^standup$/i, 'an asked event');
     } },
-    { name: 'ha: unavailable calendars say Offline, no rows', async run(t) {
+    { name: 'ha: unavailable calendars say Unavailable, no rows (Not found: missing_entities)', async run(t) {
       t.ha.s[C1] = { '': 'unavailable' };
       await open(t, { source: 'ha', calendars: C1 });
-      t.has(t.texts(), /^offline$/i, 'offline');
+      t.has(t.texts(), /^Unavailable$/, 'unavailable'); t.hasNot(t.texts(), /^(offline|not found)$/i, 'not the other words');
     } },
     { name: 'Home card (C52): the next event on the same feed', async run(t) {
       await t.device(deck({ source: 'sample', now: String(NOW) }));

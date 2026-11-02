@@ -393,8 +393,13 @@ one integration's fields only works in the homes that have it. *Check:* TODO (li
 while something reads the feed), the feed's settings and their changes, the entities it reads live (a change, and Home
 Assistant coming back, runs a round), and its state; the adapter writes only `fill()` (and `sample()`). A feed's
 **state** is its entity's state: `ok`, `loading` (nothing yet), `error` (the source cannot be reached or is not set
-up) or `empty` (reached, nothing to show). A screen shows a state that is not ok in the same words everywhere,
-`feed::words`: **Loading**, **Offline**, **Nothing yet**; nothing else says "no data yet". Every field is declared
+up: Home Assistant itself), `empty` (reached, nothing to show), `missing` (an entity the feed reads is not in Home
+Assistant) or `unavailable` (the entity is there, with no state now: unavailable or unknown). A screen shows a state
+that is not ok in the same words everywhere, `feed::words`: **Loading**, **Offline**, **Nothing yet**, **Not found**,
+**Unavailable**; nothing else says "no data yet", and missing and unavailable never show each other's word (C38). An
+adapter tells them apart with `feed::of` (no state yet, `""`, unavailable / unknown); a feed that reads several
+entities is missing when none is there, unavailable when none has a state, and otherwise shows the ones that answer
+(the others say their word where they show: a calendar's row, Energy's live power and price). Every field is declared
 once, **required** or **optional**, with its **placeholder**: a round that does not fill a field puts its placeholder
 (an optional field a source cannot fill: `""`, so the component bound to it hides and the screen shows what is left;
 `sources/sources.json` lists the same per feed), and an ok round that misses a required field turns the feed to
@@ -404,7 +409,7 @@ words a screen on real data must never show. **A panel never shows sample data u
 itself); sample is for the site and the tests, which ask for it. A feed keeps only its last sample round's words.
 *Why:* six adapters each made their own timer, settings check and "Loading" words, and drifted; a factory Calendar
 showed its made-up fortnight on a panel, and kept every minute's copy of it. *Check:* the feed's functional tests
-(sample, ha, unavailable and back); the leak rule (sample words on real data); `no_sample` (the factory deck on a
+(sample, ha, unavailable and back); `missing_entities` (Not found / Unavailable per screen); the leak rule (sample words on real data); `no_sample` (the factory deck on a
 linked panel shows no sample words); the Calendar's moving-clock memory test.
 
 **C52. Every screen comes with its Home card.** A screen's spec carries `"card"`: the Card a Home page card for it
@@ -435,12 +440,18 @@ the build with the panel's errors.
 ## 9. Robustness
 
 **C38. Every state is handled:** normal, pressed, on, off, disabled, loading, unavailable, unknown, empty, error.
-Each is a prop value with a variant and a test, or is listed in the header comment as "n/a: <why>".
-*Why:* the untested state is the one the house shows at 3 am. *Check:* the component's tests; **TODO** lint: meta
-state options + header n/a list cover all ten.
+Each is a prop value with a variant and a test, or is listed in the header comment as "n/a: <why>". An entity has two
+states it cannot be shown in, each with its own word, on every screen and Home card that reads one: not in Home
+Assistant = **Not found** (the host's empty state; a panel puts it for a state Home Assistant does not answer within
+10 s of connecting, `ha::MISSING_MS`) and there but with no state now (unavailable, unknown) = **Unavailable**; never
+one in place of the other. A component that shows a state word takes `missing` beside `unavailable` (the same look)
+and both words from one place (`fw::st::gone_word`: `MISSING_TEXT`, `UNAVAILABLE_TEXT`, tokens/states.json).
+*Why:* the untested state is the one the house shows at 3 am; "Unavailable" for an entity that was deleted or
+mistyped sends people to the wrong fix. *Check:* the component's tests; `missing_entities` (every screen and Home card
+that reads an entity, both states, both sizes); **TODO** lint: meta state options + header n/a list cover all ten.
 
 **C39. Bad values never break it.** Out-of-range values clamp; wrong types fall back to the default; NaN and
-infinities are refused (`std::isfinite`); a missing entity shows its "missing" state; attributes may disappear.
+infinities are refused (`std::isfinite`); a missing entity shows its "missing" state (Not found, C38); attributes may disappear.
 *Why:* Home Assistant sends whatever it has. *Check:* `_release.mjs faults` (missing, unavailable, unknown,
 wrongType, outOfRange, dropped, outOfOrder) and `fuzz`.
 

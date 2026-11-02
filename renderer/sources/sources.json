@@ -34,7 +34,7 @@
         {
           "id": "media_players",
           "kind": "ha",
-          "name": "HA media players",
+          "name": "Players in Home Assistant",
           "detect": {
             "domain": "media_player"
           },
@@ -66,7 +66,7 @@
         {
           "id": "ha_calendars",
           "kind": "ha",
-          "name": "HA calendars (their events through calendar.get_events)",
+          "name": "Calendars in Home Assistant",
           "adapter": "ha",
           "detect": {
             "domain": "calendar"
@@ -103,7 +103,7 @@
         {
           "id": "ha_weather",
           "kind": "ha",
-          "name": "HA weather (its forecast through weather.get_forecasts)",
+          "name": "Forecast from Home Assistant",
           "adapter": "ha",
           "detect": {
             "domain": "weather"
@@ -136,8 +136,8 @@
         {
           "id": "ha_energy",
           "kind": "ha",
-          "name": "HA's Energy dashboard",
-          "from": "HA's Energy dashboard",
+          "name": "Home Assistant's Energy dashboard",
+          "from": "Home Assistant's Energy dashboard",
           "adapter": "ha",
           "detect": {
             "energy": true
@@ -188,7 +188,7 @@
         {
           "id": "ha_lights",
           "kind": "ha",
-          "name": "HA lights",
+          "name": "Lights in Home Assistant",
           "detect": {
             "domain": "light"
           },
@@ -207,7 +207,7 @@
         {
           "id": "ha_timers",
           "kind": "ha",
-          "name": "HA timer helpers",
+          "name": "Timer helpers in Home Assistant",
           "detect": {
             "domain": "timer"
           }
@@ -253,6 +253,6 @@
     "panel.energy": {"required": ["cost","line","card","card_tone"], "optional": ["rate","tone","values","bands","now","week_cost","week_line","week","week_before","days","watts","found","live","cheapest","event","event_tone"]},
     "panel.media": {"required": ["state_label","state_tone","playing","play_state","ctl_state","title","card_text","card_sub","card_accent","player","sheet"], "optional": ["artist","album","art","source","speakers","position","duration","progress","volume","volume_text","speaker"]},
     "panel.moon": {"required": ["phase","name","lit","card_value","card_sub","phase_key"], "optional": ["south","rest","age","full","new","next","values","bands","marks","names","labels","now","title_days","title_now","title_details","days_more","day_name","day_rest","rise","set","rise_tone","set_tone"]},
-    "panel.weather": {"required": ["icon","temp","condition","card"], "optional": ["brief","line","rain","rain_tone","hours","has_hours","days"]}
+    "panel.weather": {"required": ["icon","temp","condition","card"], "optional": ["brief","line","rain","rain_tone","hours","has_hours","days","days_empty"]}
   }
 }

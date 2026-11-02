@@ -1,6 +1,6 @@
 // Feeds (core/feed.h, CONTRACT.md C51a): every feed on the Feed base. Its fields as sources/sources.json lists them
 // (required / optional), its sample words (one sample round each), and Home Assistant dropping and coming back: the
-// screen shows the base's words (Offline), then the feed refreshes (the weather asks its forecast again). Home
+// screen shows the base's words (Offline: the host says Home Assistant is not reached), then the feed refreshes (the weather asks its forecast again). Home
 // Assistant is faked (tools/functional.mjs FakeHA); W is NOT a real entity.
 import fs from 'node:fs';
 

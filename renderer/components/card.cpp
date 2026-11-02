@@ -18,6 +18,7 @@
 // both tints. press-tint = the accent greyed halfway to text-mute, 5 % over the surface (tokens/colour.json).
 // Unavailable (Facet disabled rule): icon, label and value in the unavailable ink, value an em dash, sub "Unavailable"
 // (unavailable-note), no preview, no press look (USER_1 outranks PRESSED); a tap emits "blocked" + plays error.
+// Missing (Home Assistant has no such entity): the same look, sub "Not found" (fw::st::gone / gone_word).
 // Tap = a real CLICKED: fw::emit "tap" (detail = the label) + fw::sound "open". Contrast pairs: colour.json "card".
 // The preview artwork (components/card_previews.cpp) is still legacy (holds its colours): its own migration piece.
 #include "fw.h"
@@ -49,7 +50,7 @@ const char *tone(const char *t) {
 std::string sig(fw::Props p) {
   ArduinoJson::JsonDocument rest;
   rest.set(p);
-  if (strcmp(p["state"] | "default", "unavailable")) rest["state"] = "default";
+  if (!fw::st::gone(p["state"] | "default")) rest["state"] = "default";
   if (!strcmp(p["preview"] | "", "flights")) rest.remove("planes");  // the radar takes new planes in place (FW_UPDATE)
   if (!strcmp(p["preview"] | "", "media")) rest.remove("progress");  // the visual takes the progress in place
   if (!strcmp(p["preview"] | "", "covers")) rest.remove("position");  // the window takes the position in place
@@ -78,7 +79,7 @@ void fill(lv_obj_t *c, fw::Props p) {
   k.props.clear();
   serializeJson(p, k.props);
   const char *state = p["state"] | "default";
-  const bool off = !strcmp(state, "unavailable");
+  const bool off = fw::st::gone(state);
   const bool accent = !off && (p["accent"].is<const char *>() ? !strcmp(p["accent"] | "", "on") : (p["accent"] | false));  // a feed bind gives "on" / "off"
   const bool text_mode = !strcmp(p["mode"] | "value", "text");
   const bool full = k.step == 0;
@@ -168,7 +169,7 @@ void fill(lv_obj_t *c, fw::Props p) {
          off ? "fg:unavailable-ink" : accent ? "fg:accent-text" : "fg:text");
   }
   fx::use(fx::box(body, "free"), full ? "card-gap" : "card-gap-s");
-  line(body, off ? fw::st::UNAVAILABLE_TEXT : (p["sub"] | ""), "type:body", off ? "fg:unavailable-note" : tone(p["tone"] | "dim"));
+  line(body, off ? fw::st::gone_word(state) : (p["sub"] | ""), "type:body", off ? "fg:unavailable-note" : tone(p["tone"] | "dim"));
 
   if (!strcmp(state, "pressed") != lv_obj_has_state(c, LV_STATE_PRESSED)) lv_obj_set_state(c, LV_STATE_PRESSED, !strcmp(state, "pressed"));
   if (off) lv_obj_add_state(c, ST_OFF);
@@ -265,7 +266,7 @@ FW_COMPONENT(card, "Card", "components", R"({
     {"name": "sub", "about": "The quieter supporting line at the bottom of the card.", "type": "text", "default": "Dry for the next hour"},
     {"name": "tone", "about": "The colour of the supporting line: dim for normal, ok for good news, warn for something to watch, error for a problem.", "type": "select", "options": ["dim", "ok", "warn", "error"], "default": "dim"},
     {"name": "accent", "about": "Edges the card in the accent colour to show it needs you now, such as a timer that is running.", "type": "bool", "default": false},
-    {"name": "state", "debug": true, "about": "How the card looks: default ready to tap, pressed while held, or unavailable when its device cannot be reached.", "type": "select", "options": ["default", "pressed", "unavailable"], "default": "default"},
+    {"name": "state", "debug": true, "about": "How the card looks: default ready to tap, pressed while held, unavailable when its device has no state now, or missing when Home Assistant has no such device.", "type": "select", "options": ["default", "pressed", "unavailable", "missing"], "default": "default"},
     {"name": "press", "about": "How the card shows it is being pressed: fill darkens the whole card, border lights its edge, border-fill does both.", "type": "select", "options": ["fill", "border", "border-fill"], "default": "fill"}
   ],
   "variants": [
@@ -279,7 +280,8 @@ FW_COMPONENT(card, "Card", "components", R"({
     {"label": "preview · energy bars", "props": {"label": "Energy", "icon": "energy", "preview": "energy", "value": "£2.42", "sub": "Today so far"}},
     {"label": "no icon, no preview", "props": {"label": "Energy", "icon": "none", "preview": "none", "value": "£2.42", "sub": "Today so far"}},
     {"label": "long name, big number", "props": {"label": "Living room ceiling light above the table", "icon": "light", "preview": "none", "value": "1234567890 kWh", "sub": "A very long supporting line that cannot fit"}},
-    {"label": "unavailable", "props": {"label": "Lights", "icon": "light", "preview": "none", "value": "65%", "sub": "", "state": "unavailable"}}
+    {"label": "unavailable", "props": {"label": "Lights", "icon": "light", "preview": "none", "value": "65%", "sub": "", "state": "unavailable"}},
+    {"label": "missing", "props": {"label": "Lights", "icon": "light", "preview": "none", "value": "65%", "sub": "", "state": "missing"}}
   ]
 })") {
   lv_obj_t *c = lv_obj_create(parent);
@@ -303,7 +305,7 @@ FW_COMPONENT(card, "Card", "components", R"({
 // contents in (fw::st::fade_in_children). Silent.
 FW_UPDATE(card) {
   const char *state = p["state"] | "default";
-  const bool was_off = lv_obj_has_state(root, ST_OFF), off = !strcmp(state, "unavailable");
+  const bool was_off = lv_obj_has_state(root, ST_OFF), off = fw::st::gone(state);
   if (fw::shape(root, sig(p)) && was_off == off) {
     const bool pr = !strcmp(state, "pressed");
     if (pr != lv_obj_has_state(root, LV_STATE_PRESSED)) lv_obj_set_state(root, LV_STATE_PRESSED, pr);

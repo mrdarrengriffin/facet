@@ -10,11 +10,16 @@
 // local styles are never touched, a fade still running is reversed from where it is), so the state styles own the
 // look again when it ends. LVGL's own transitions (press fades) run as before.
 #pragma once
+#include <cstring>
 #include <functional>
 #include "fw.h"
 
 namespace fw {
 namespace st {
+// The two states of an entity a part cannot show (a component's "state" prop): unavailable (Home Assistant has it, with
+// no state now) and missing (Home Assistant has no such entity). The same look (OFF); each its own word, from here only
+inline bool gone(const char *s) { return s && (!strcmp(s, "unavailable") || !strcmp(s, "missing")); }
+inline const char *gone_word(const char *s) { return s && !strcmp(s, "missing") ? MISSING_TEXT : UNAVAILABLE_TEXT; }
 // add (on) / remove `state` on o and its whole subtree; animate = fade the looks that change (false = build time)
 void set_state(lv_obj_t *o, lv_state_t state, bool on, bool animate = true);
 // default <-> disabled (and the colour side of unavailable): st::OFF

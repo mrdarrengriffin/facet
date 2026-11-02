@@ -1992,7 +1992,11 @@ inline lv_obj_t *build(lv_obj_t *parent, const std::string &id, Props opened, st
     const std::string oe = opened["entity"] | "", on = opened["name"] | "";
     if (!oe.empty() && oe[0] != '$' && entity_ok(oe)) {
       if (!on.empty()) hd["label"] = on;
-      else { hd["label"].to<ArduinoJson::JsonObject>(); hd["label"]["e"] = oe; hd["label"]["fmt"] = "name"; }
+      else {
+        const std::string own = hd["label"] | "";
+        hd["label"].to<ArduinoJson::JsonObject>();
+        hd["label"]["e"] = oe, hd["label"]["fmt"] = "name", hd["label"]["fallback"] = own;  // a missing entity: the screen's own label
+      }
     }
   }
   // Screen > Page > Header slot + Body (fx::page): the inset is padding INSIDE the body, from the structure

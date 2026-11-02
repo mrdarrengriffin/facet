@@ -34,6 +34,11 @@ export default {
     { name: 'unavailable: no tap, error only', mount: ['entity_tile', { label: 'Sofa table', state: 'unavailable' }], run(t) {
       const ev = t.tap('Sofa table'); t.notEmitted(ev, 'tap'); t.sounds(ev, ['error']);
     } },
+    { name: 'missing: "Not found", no tap; to unavailable: "Unavailable"', mount: ['entity_tile', { label: 'Sofa table', state: 'missing' }], run(t) {
+      t.has(t.texts(), /^not found$/i, 'word (caps: type label)'); t.hasNot(t.texts(), /^unavailable$/i, 'not the other word');
+      const ev = t.tap('Sofa table'); t.notEmitted(ev, 'tap'); t.sounds(ev, ['error']);
+      t.update({ state: 'unavailable' }); t.has(t.texts(), /^unavailable$/i, 'unavailable word'); t.hasNot(t.texts(), /^not found$/i, 'missing word gone');
+    } },
     { name: 'update status + on: new line shows, silently', mount: ['entity_tile', { label: 'Sofa table', status: '64%', on: true }], run(t) {
       const ev = t.update({ status: 'Off', on: false }); t.silent(ev);
       t.has(status(t, 'Sofa table'), /^off$/i, 'status after update'); t.hasNot(status(t, 'Sofa table'), /64%/, 'old status');

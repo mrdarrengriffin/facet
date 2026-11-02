@@ -117,6 +117,12 @@ export default {
       t.eq(held === before, true, 'no press look');
       const ev = t.tap({ at: [c.x + c.w / 2, c.y + c.h / 2] }); t.emitted(ev, 'blocked'); t.sounds(ev, ['error']); t.notEmitted(ev, 'tap');
     } },
+    { name: 'missing (no such entity): the unavailable look, "Not found", never "Unavailable"; to unavailable: its word', async run(t) {
+      const c = await full(t, { state: 'missing', preview: 'partly-day' });
+      t.has(t.texts(), 'Not found', 'word'); t.hasNot(t.texts(), 'Unavailable', 'not the other word'); t.eq(preview(t, c).length, 0, 'no preview');
+      const ev = t.tap({ at: [c.x + c.w / 2, c.y + c.h / 2] }); t.emitted(ev, 'blocked'); t.notEmitted(ev, 'tap');
+      t.update({ state: 'unavailable' }); t.has(t.texts(), 'Unavailable', 'unavailable word'); t.hasNot(t.texts(), 'Not found', 'missing word gone');
+    } },
     { name: 'empty values: no label, no value, no sub: builds, bounds clean', async run(t) {
       await full(t, { label: '', value: '', sub: '', icon: 'none' }); t.eq(boundsAll(t), [], 'bounds');
       await full(t, { mode: 'text', text: '' }); t.eq(boundsAll(t), [], 'bounds text');
