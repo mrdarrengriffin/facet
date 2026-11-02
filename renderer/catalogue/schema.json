@@ -594,6 +594,46 @@
    "use": "Media visuals as a Home card's preview (top right): this tall (= icon size card)"
   },
   {
+   "name": "layout:mv-cassette-w",
+   "group": "layout",
+   "type": "size",
+   "px": {
+    "1.5x": 408,
+    "1x": 264
+   },
+   "use": "Media visuals: the cassette's box width at mv-h (its real 100.4 x 63.8 mm, a pixel spare, up to the grid)"
+  },
+  {
+   "name": "layout:mv-vinyl-w",
+   "group": "layout",
+   "type": "size",
+   "px": {
+    "1.5x": 272,
+    "1x": 180
+   },
+   "use": "Media visuals: the vinyl's box width at mv-h (the record and the tonearm, up to the grid)"
+  },
+  {
+   "name": "layout:mv-vinyl-h",
+   "group": "layout",
+   "type": "size",
+   "px": {
+    "1.5x": 304,
+    "1x": 200
+   },
+   "use": "Media visuals: the vinyl's box height (the record and the arm pivot above it, up to the grid)"
+  },
+  {
+   "name": "layout:mv-bleed",
+   "group": "layout",
+   "type": "size",
+   "px": {
+    "1.5x": 152,
+    "1x": 96
+   },
+   "use": "Media visuals: how far the cassette runs past its mv-h slot on the Media screen (the declared bleed, left)"
+  },
+  {
    "name": "layout:cover-pad",
    "group": "layout",
    "type": "size",
@@ -2662,6 +2702,46 @@
     "light": "#F1EEE8"
    },
    "use": "cassette hubs (white plastic)"
+  },
+  {
+   "name": "mv-shell-rim",
+   "group": "media",
+   "type": "colour",
+   "value": {
+    "dark": "#31353D",
+    "light": "#3F434A"
+   },
+   "use": "media visuals: the cassette shell's inner rim = mv-shell-edge over mv-shell at 0.7, worked out"
+  },
+  {
+   "name": "mv-tape-rim",
+   "group": "media",
+   "type": "colour",
+   "value": {
+    "dark": "#5F4536",
+    "light": "#6E5340"
+   },
+   "use": "media visuals: the sheen line round a tape pack = mv-tape-hi over mv-tape at 0.7, worked out"
+  },
+  {
+   "name": "mv-hub-ring",
+   "group": "media",
+   "type": "colour",
+   "value": {
+    "dark": "#81807C",
+    "light": "#999896"
+   },
+   "use": "media visuals: the ring on a cassette hub = mv-window over mv-hub at 0.4, worked out"
+  },
+  {
+   "name": "mv-label-ring",
+   "group": "media",
+   "type": "colour",
+   "value": {
+    "dark": "#5F5C58",
+    "light": "#6A6863"
+   },
+   "use": "media visuals: the ring at the vinyl label's edge = mv-vinyl over mv-paper at 0.6, worked out"
   },
   {
    "name": "bin-black",
@@ -7150,8 +7230,11 @@
   "media_visual": {
    "name": "Media visuals",
    "about": "The picture on the Media screen and its Home card: a plain disc with a progress ring, or a cassette, CD or vinyl record drawn to the real sizes. They turn at the real speeds while playing; the tape or tonearm follows the track's progress.",
-   "contract": 1,
-   "min": null,
+   "contract": 2,
+   "min": [
+    "layout:mv-card",
+    "layout:mv-card"
+   ],
    "slots": null,
    "props": [
     {
