@@ -43,8 +43,9 @@ for b in $BOARDS; do
   mkdir -p "$OUT/$b"
   cp "$B/firmware.factory.bin" "$OUT/$b/facet-$b-$V.factory.bin"
   cp "$B/firmware.ota.bin" "$OUT/$b/facet-$b-$V.ota.bin"
-  strings "$OUT/$b/facet-$b-$V.ota.bin" | grep -qx "$V" || { echo "$b: the image does not say $V"; exit 1; }
-  ! strings "$OUT/$b/facet-$b-$V.ota.bin" | grep -q '+wip' || { echo "$b: the image says +wip"; exit 1; }
+  txt=$(strings "$OUT/$b/facet-$b-$V.ota.bin")  # whole, then grep (grep -q in a pipe: SIGPIPE fails it under pipefail)
+  grep -qx -- "$V" <<<"$txt" || { echo "$b: the image does not say $V"; exit 1; }
+  ! grep -q -- '+wip' <<<"$txt" || { echo "$b: the image says +wip"; exit 1; }
   echo "$b: $V, $(du -h "$OUT/$b/facet-$b-$V.ota.bin" | cut -f1) OTA"
 done
 node "$ROOT/firmware/manifests.mjs" "$OUT" "$V" "$(git -C "$ROOT" rev-parse --short "$T^{}")"
