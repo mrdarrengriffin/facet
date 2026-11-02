@@ -3561,9 +3561,10 @@
      "bindable": true,
      "options": [
       "card",
-      "radar"
+      "radar",
+      "qr"
      ],
-     "about": "How wide the picture column is: card (a Home card's width) or radar (the Lightning radar's square, wider)."
+     "about": "How wide the picture column is: card (a Home card's width), radar (the Lightning radar's square, wider) or qr (a QR code block's width, narrower)."
     },
     {
      "name": "art_mid",
@@ -5211,5 +5212,5 @@
    }
   }
  },
- "hash": "66e50128"
+ "hash": "d33fb385"
 }

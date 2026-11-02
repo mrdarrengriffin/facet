@@ -3,7 +3,8 @@
 // column: a lock ring, a window, a gauge), space 9, the right one the rest (the words). Each column has a top slot and
 // a foot slot (pinned to the column's bottom), so a spec puts nodes in with "in" + "slot": 0 left top, 1 left foot,
 // 2 right top, 3 right foot (core/spec.h).
-//   art_w    card (w:card-w) or radar (w:radar: the Lightning map's 384 / 256 square); art_mid: the art column's top
+//   art_w    card (w:card-w), radar (w:radar: the Lightning map's 384 / 256 square) or qr (w:qr-block-w: the QR
+//            block's 208 / 140, Set up); art_mid: the art column's top
 //            slot centred down the column (a grow above it as well as under it); art_fill: the art column's top slot
 //            IS the column (it grows to the column's height, the foot slot stays empty: the Covers window)
 //   art      left (default) or right: the art column on the right (flex row reversed, so the slot numbers stay)
@@ -20,8 +21,11 @@
 
 namespace {
 bool art_right(fw::Props p) { return !strcmp(p["art"] | "left", "right"); }
-bool radar_w(fw::Props p) { return !strcmp(p["art_w"] | "card", "radar"); }
-std::string sig(fw::Props p) { return std::string((p["outline"] | false) ? "outline" : "") + (art_right(p) ? "|right" : "") + (radar_w(p) ? "|radar" : "") + ((p["art_mid"] | false) ? "|mid" : "") + ((p["art_fill"] | false) ? "|fill" : ""); }
+const char *art_w(fw::Props p) {
+  const char *w = p["art_w"] | "card";
+  return !strcmp(w, "radar") ? "w:radar" : !strcmp(w, "qr") ? "w:qr-block-w" : "w:card-w";
+}
+std::string sig(fw::Props p) { return std::string((p["outline"] | false) ? "outline" : "") + (art_right(p) ? "|right" : "") + "|" + art_w(p) + ((p["art_mid"] | false) ? "|mid" : "") + ((p["art_fill"] | false) ? "|fill" : ""); }
 void column(lv_obj_t *c, bool outline, const char *const names[2], bool mid = false, bool fill = false) {
   if (mid) fx::use(fx::box(c, "free"), "grow");  // art middle: the top slot centred down the column
   for (int i = 0; i < 2; i++) {
@@ -46,14 +50,15 @@ FW_COMPONENT(split, "Split", "components", R"({
   "slots": 4,
   "props": [
     {"name": "art", "about": "Which side the card-wide column for the picture or control is on: left, or right with the words first (the Lightning map). The slots keep their numbers: 0 and 1 are always the picture column.", "type": "select", "options": ["left", "right"], "default": "left"},
-    {"name": "art_w", "about": "How wide the picture column is: card (a Home card's width) or radar (the Lightning radar's square, wider).", "type": "select", "options": ["card", "radar"], "default": "card"},
+    {"name": "art_w", "about": "How wide the picture column is: card (a Home card's width), radar (the Lightning radar's square, wider) or qr (a QR code block's width, narrower).", "type": "select", "options": ["card", "radar", "qr"], "default": "card"},
     {"name": "art_mid", "about": "Centres the picture column's top slot down the screen instead of at the top (the Lightning radar).", "type": "bool", "default": false},
     {"name": "art_fill", "about": "Makes the picture column's top slot the whole column, for a picture as tall as the screen (the Blinds window).", "type": "bool", "default": false},
     {"name": "outline", "about": "For previews only: outlines the two columns and their top and foot areas so you can see where things go.", "type": "bool", "default": false}
   ],
   "variants": [
     {"label": "slots", "props": {"outline": true}},
-    {"label": "art right", "props": {"outline": true, "art": "right"}}
+    {"label": "art right", "props": {"outline": true, "art": "right"}},
+    {"label": "art qr", "props": {"outline": true, "art_w": "qr"}}
   ]
 })") {
   lv_obj_t *root = fx::box(parent, "free");
@@ -63,7 +68,7 @@ FW_COMPONENT(split, "Split", "components", R"({
   const bool o = (p["outline"] | false) || !fw::spec::building_header();  // alone (workbench): show the slots
   static const char *const LN[2] = {"left", "left foot"}, *const RN[2] = {"right", "right foot"};
   lv_obj_t *l = fx::box(root, "col");
-  for (const char *t : {"fill", radar_w(p) ? "w:radar" : "w:card-w"}) fx::use(l, t);
+  for (const char *t : {"fill", art_w(p)}) fx::use(l, t);
   column(l, o, LN, p["art_mid"] | false, p["art_fill"] | false);
   lv_obj_t *r = fx::box(root, "col");
   for (const char *t : {"fill", "grow-w"}) fx::use(r, t);
