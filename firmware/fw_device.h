@@ -7,7 +7,8 @@
 //   POST /fw/show   {id, props?, theme?: dark|light, accent?: <set id>}  -> {ok, error?, ms, heap}
 //                = Shows one component or screen with the props you give (the workbench's Show on device).
 //   GET  /fw/perf   frame stats while animations run (since boot or the last ?reset=1): fps, frame / render ms;
-//                   ?nav=1|0 = navigation timing on / off (each screen change: tap, build, feeds, first frame)
+//                   ?nav=1|0 = navigation timing on / off (each screen change: tap, build, feeds, first frame);
+//                   ?keep=N = keep N pages built (until the next boot; "kept": each page's PSRAM, objects, build ms)
 //                = How smoothly the panel draws: frames per second and render times.
 //   GET  /fw/settings  the settings backup {"facet":"settings","version":1,"values":{...}} (core/device.h; no secrets)
 //                = A backup of the panel's settings (no secrets in it).
@@ -237,6 +238,10 @@ inline void perf_json(ArduinoJson::JsonObject o) {
   o["render_ms_max"] = lroundf(P.render_max / 100.f) / 10.f;
   o["slow"] = P.slow;
   o["active_s"] = lroundf(P.active_us / 1e5f) / 10.f;
+  if (fw::dev::keep_pages() > 0) {  // kept pages (facet-243): what each costs in PSRAM
+    o["keep"] = fw::dev::keep_pages();
+    fw::dev::kept_json(o["kept"].to<ArduinoJson::JsonArray>());
+  }
   if (!fw::dev::nav_timing()) return;  // navigation timing (GET /fw/perf?nav=1): each change, ms from its tap
   ArduinoJson::JsonArray nv = o["nav"].to<ArduinoJson::JsonArray>();
   for (const fw::dev::NavTime &x : fw::dev::nav_times()) {
@@ -1371,7 +1376,8 @@ class Handler : public AsyncWebHandler {
       ArduinoJson::JsonDocument d;
       const bool reset = req->hasArg("reset");  // url_to() has no query string
       const int nav = req->hasArg("nav") ? (req->arg("nav") == "1" ? 1 : 0) : -1;  // the navigation timing flag (facet-243)
-      in_loop([&] { if (nav >= 0) fw::dev::nav_timing(nav == 1); perf_json(d.to<ArduinoJson::JsonObject>()); if (reset) perf_reset(); }, 2000);
+      const int keep = req->hasArg("keep") ? atoi(req->arg("keep").c_str()) : -1;  // kept pages: the cap now (until the next boot)
+      in_loop([&] { if (keep >= 0) fw::dev::keep_pages(keep); if (nav >= 0) fw::dev::nav_timing(nav == 1); perf_json(d.to<ArduinoJson::JsonObject>()); if (reset) perf_reset(); }, 2000);
       serializeJson(d, s);
     } else if (path == "/fw/bench" && post) {
       ArduinoJson::JsonDocument body, out;
@@ -1743,6 +1749,11 @@ inline void setup() {
   spec_storage();     // screen specs: the overrides from NVS (each falls back to its last good copy, then factory)
   theme_storage();    // the sent theme: its last-good copy from NVS (theme engine T4)
   agent::setup();     // AI agents: the token (NVS) + the setting
+  fw::dev::on_mem([] { return heap_caps_get_free_size(MALLOC_CAP_SPIRAM); });  // kept pages: each one's PSRAM
+#ifndef FW_KEEP_PAGES
+#define FW_KEEP_PAGES 0
+#endif
+  fw::dev::keep_pages(FW_KEEP_PAGES);  // kept pages (facet-243): the board's cap (0 = every screen built on tap)
   halink::setup();    // the panel's own Home Assistant link: its address + token (NVS), its reads (esp_http_client)
   fw::spec::load();
   for (const auto &x : fw::spec::S().log) ESP_LOGW("facet_wb", "spec boot: %s", x.c_str());

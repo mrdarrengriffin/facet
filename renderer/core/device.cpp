@@ -1,6 +1,7 @@
 // Device runtime: core/device.h (screen stack, navigation, the screen transition). Same file on the panels and in WASM.
 #include <cmath>
 #include <functional>
+#include <map>
 #include "device.h"
 #include "fx.h"
 #include "colour_values_gen.h"
@@ -28,6 +29,10 @@ struct Device {
   std::string target;
   lv_timer_t *timer = nullptr;
   lv_obj_t *toasts = nullptr;  // the Toast layer over every screen (the display's top layer; core/toasts.h)
+  struct Kept { lv_obj_t *scr; std::string entry; bool stale; uint32_t bytes, objs, ms; };  // a kept page (show())
+  std::map<std::string, Kept> kept;
+  lv_timer_t *pre = nullptr;  // the kept pages' prebuild (idle gaps)
+  uint32_t shown_at = 0;      // the last screen change (the prebuild waits 300 ms after one)
 };
 
 std::vector<Device *> devices;  // every mounted device (usually one; a workbench page may show several)
@@ -65,61 +70,164 @@ struct LargeScope {
   explicit LargeScope(bool on) : was(text_large()) { set_text_large(on); }
   ~LargeScope() { set_text_large(was); }
 };
-bool show(Device *d, const std::string &id, std::vector<lv_obj_t *> &items) {
+// the items the rise transition moves: the header (the screen's first child) and the blocks (a scrolling column =
+// its children on screen)
+void collect(lv_obj_t *s, std::vector<lv_obj_t *> &items) {
+  for (uint32_t i = 0; i < lv_obj_get_child_count(s); i++) {
+    lv_obj_t *k = lv_obj_get_child(s, (int32_t) i);
+    if (skip(k)) continue;
+    if (!i) { items.push_back(k); continue; }
+    if (lv_obj_has_flag(k, LV_OBJ_FLAG_SCROLLABLE) && lv_obj_get_child_count(k) > 1) {
+      for (uint32_t j = 0; j < lv_obj_get_child_count(k); j++) {
+        lv_obj_t *b = lv_obj_get_child(k, (int32_t) j);
+        lv_area_t a;
+        lv_obj_get_coords(b, &a);
+        if (!skip(b) && a.y1 < lay::screen_h) items.push_back(b);
+      }
+    } else items.push_back(k);
+  }
+}
+// screen `id` made into a new screen box under the device root (at_root: the stack's root, built without Back);
+// nullptr = no such screen
+lv_obj_t *make(Device *d, const std::string &id, bool at_root, std::vector<lv_obj_t *> *items) {
   LargeScope large(text_large_setting());
   struct RootScope {  // the stack's root screen is built without Back (spec::at_root)
     bool was;
     explicit RootScope(bool on) : was(spec::at_root) { spec::at_root = on; }
     ~RootScope() { spec::at_root = was; }
-  } root(d->stack.size() <= 1);
+  } root(at_root);
   const Component *c = find(base_of(id).c_str());
   const bool from_spec = !c && spec::screen_json(base_of(id));  // a screen from its spec (core/spec.h)
-  if (!c && !from_spec) return false;
+  if (!c && !from_spec) return nullptr;
   ArduinoJson::JsonDocument none;
   const size_t q = id.find('?');
   if (q == std::string::npos || deserializeJson(none, id.c_str() + q + 1) || !none.is<ArduinoJson::JsonObject>()) none.to<ArduinoJson::JsonObject>();
-  if (d->screen) lv_obj_delete(d->screen);
-  if (nav().on && nav().stage == 1) nav().cur.del = lv_tick_get();
   d->builds++;
-  d->screen = box(d->root);
-  lv_obj_set_size(d->screen, lay::screen_w, lay::screen_h);
+  lv_obj_t *scr = box(d->root);
+  lv_obj_set_size(scr, lay::screen_w, lay::screen_h);
   // the panel's own canvas: the live theme's bg under a contract or spec screen (fx::bg, Facet's bg for the Facet
   // Skin), Facet's under a legacy screen (no half-themed screens: its parts keep Facet's palette)
   const bool themed = from_spec || (c && c->meta && (strstr(c->meta, "\"contract\": 2") || strstr(c->meta, "\"contract\":2")));
-  lv_obj_set_style_bg_color(d->screen, themed ? fx::bg(lv_obj_get_display(d->root)) : T->bg, 0);
-  lv_obj_set_style_bg_opa(d->screen, LV_OPA_COVER, 0);
+  lv_obj_set_style_bg_color(scr, themed ? fx::bg(lv_obj_get_display(d->root)) : T->bg, 0);
+  lv_obj_set_style_bg_opa(scr, LV_OPA_COVER, 0);
   if (from_spec || !strcmp(c->section, "screens")) {
-    lv_obj_t *s = from_spec ? spec::build(d->screen, base_of(id), none.as<Props>()) : build_into(d->screen, c, none.as<Props>());
-    if (!s) return true;
+    lv_obj_t *s = from_spec ? spec::build(scr, base_of(id), none.as<Props>()) : build_into(scr, c, none.as<Props>());
+    if (!s) return scr;
     if (nav().on && nav().stage == 1) nav().cur.made = lv_tick_get();
-    lv_obj_update_layout(d->screen);
+    lv_obj_update_layout(scr);
     if (nav().on && nav().stage == 1) nav().cur.laid = lv_tick_get();
-    // header = the screen's first child; blocks = the rest, a scrolling content column = its children on screen
-    for (uint32_t i = 0; i < lv_obj_get_child_count(s); i++) {
-      lv_obj_t *k = lv_obj_get_child(s, (int32_t) i);
-      if (skip(k)) continue;
-      if (!i) { items.push_back(k); continue; }
-      if (lv_obj_has_flag(k, LV_OBJ_FLAG_SCROLLABLE) && lv_obj_get_child_count(k) > 1) {
-        for (uint32_t j = 0; j < lv_obj_get_child_count(k); j++) {
-          lv_obj_t *b = lv_obj_get_child(k, (int32_t) j);
-          lv_area_t a;
-          lv_obj_get_coords(b, &a);
-          if (!skip(b) && a.y1 < lay::screen_h) items.push_back(b);
-        }
-      } else items.push_back(k);
-    }
-    return true;
+    if (items) collect(s, *items);
+    return scr;
   }
   // a page that is not a screen (a foundation): the Header (back + its name) and the page scrolling under it
   ArduinoJson::JsonDocument hd;
   hd["label"] = c->name;
-  const fx::Page pg = fx::page(d->screen, "page");  // Page > Header slot + Body (CONTRACT.md): the inset from the structure
+  const fx::Page pg = fx::page(scr, "page");  // Page > Header slot + Body (CONTRACT.md): the inset from the structure
   lv_obj_t *h = build_into(pg.head, find("header"), hd.as<Props>());
-  lv_obj_t *sc = pg.body;
-  build_into(sc, c, none.as<Props>());
-  if (h) items.push_back(h);
-  items.push_back(sc);
+  build_into(pg.body, c, none.as<Props>());
+  if (items) {
+    if (h) items->push_back(h);
+    items->push_back(pg.body);
+  }
+  return scr;
+}
+
+// Kept pages (facet-243): Home and the deck's pages are built once, in the idle gaps (prebuild), and kept hidden when
+// another screen shows, so a tap shows a page instead of building it. A hidden page does no drawing; its binds keep the
+// data and repaint when it shows again (core/ha.h asleep / wake). It keeps its scroll and state. A settings or look
+// change makes every kept page stale; a deck change the pages whose entry changed (and Home: its cards); a spec change
+// that page. A stale page is built again when it shows, or in the idle gaps. keep_pages(n): at most n kept (0 = off:
+// every screen built on tap); a page over the cap is built on tap. The host's mem hook (free PSRAM) measures each.
+size_t (*&mem_hook())() { static size_t (*f)() = nullptr; return f; }
+int &keep_max() { static int n = 0; return n; }
+bool keepable(const std::string &id) { return id == "home" || (id.find('?') == std::string::npos && spec::deck_kinds().count(id)); }
+std::string entry_of(const std::string &id) {
+  ArduinoJson::JsonDocument e;
+  if (!spec::deck_entry(id, e)) return "";
+  std::string out;
+  serializeJson(e, out);
+  return out;
+}
+bool is_kept(Device *d, lv_obj_t *o) {
+  for (auto &k : d->kept) if (k.second.scr == o) return true;
+  return false;
+}
+bool show(Device *d, const std::string &id, std::vector<lv_obj_t *> &items) {
+  lv_obj_t *old = d->screen;
+  d->shown_at = lv_tick_get();
+  auto leave = [&](lv_obj_t *o) {
+    if (!o) return;
+    if (is_kept(d, o)) lv_obj_add_flag(o, LV_OBJ_FLAG_HIDDEN);
+    else lv_obj_delete(o);
+  };
+  auto it = d->kept.find(id);
+  if (it != d->kept.end() && !it->second.stale) {  // kept: shown again as it was left, its binds caught up first
+    lv_obj_t *scr = it->second.scr;
+    if (old != scr) leave(old);
+    if (nav().on && nav().stage == 1) nav().cur.del = nav().cur.made = nav().cur.laid = lv_tick_get();
+    lv_obj_remove_flag(scr, LV_OBJ_FLAG_HIDDEN);
+    d->screen = scr;
+    ha::wake(scr);
+    if (lv_obj_get_child_count(scr)) collect(lv_obj_get_child(scr, 0), items);
+    return true;
+  }
+  if (it != d->kept.end()) {  // stale: built again
+    if (it->second.scr == old) old = nullptr;
+    lv_obj_delete(it->second.scr);
+    d->kept.erase(it);
+  }
+  leave(old);
+  d->screen = nullptr;
+  if (nav().on && nav().stage == 1) nav().cur.del = lv_tick_get();
+  lv_obj_t *scr = make(d, id, d->stack.size() <= 1, &items);
+  if (!scr) return false;
+  d->screen = scr;
+  if (keep_max() > 0 && keepable(id) && (int) d->kept.size() < keep_max()) d->kept[id] = {scr, entry_of(id), false, 0, 0, 0};
   return true;
+}
+bool pointer_down() {
+  for (lv_indev_t *i = lv_indev_get_next(nullptr); i; i = lv_indev_get_next(i))
+    if (lv_indev_get_type(i) == LV_INDEV_TYPE_POINTER && lv_indev_get_state(i) == LV_INDEV_STATE_PRESSED) return true;
+  return false;
+}
+int objects(lv_obj_t *x) { int n = 1; for (uint32_t i = 0; i < lv_obj_get_child_count(x); i++) n += objects(lv_obj_get_child(x, (int32_t) i)); return n; }
+// the idle gaps: one kept page built (or built again) per tick, never while a finger is down or a screen change waits
+void prebuild(lv_timer_t *t) {
+  auto *d = (Device *) lv_timer_get_user_data(t);
+  // idle: no finger for 500 ms, no screen change in the last 300 ms, none waiting (Home always has something turning,
+  // so a running animation does not count)
+  lv_display_t *disp = lv_obj_get_display(d->root);
+  if (keep_max() <= 0 || d->stack.empty() || d->timer || d->restyle || pointer_down()) return;
+  if ((disp && lv_display_get_inactive_time(disp) < 500) || lv_tick_elaps(d->shown_at) < 300) return;
+  std::vector<std::string> want{"home"};
+  ArduinoJson::JsonDocument deck;
+  if (!deserializeJson(deck, spec::deck_json()))
+    for (ArduinoJson::JsonVariantConst pg : deck["pages"].as<ArduinoJson::JsonArrayConst>()) {
+      const std::string kind = pg["kind"] | "";
+      if (kind != "home" && keepable(kind) && std::find(want.begin(), want.end(), kind) == want.end()) want.push_back(kind);
+    }
+  for (const std::string &id : want) {
+    auto it = d->kept.find(id);
+    if (it == d->kept.end() && d->screen && d->stack.back() == id && (int) d->kept.size() < keep_max()) {  // the shown one: kept as it is
+      d->kept[id] = {d->screen, entry_of(id), false, 0, (uint32_t) objects(d->screen), 0};
+      return;
+    }
+    if (it != d->kept.end() && !it->second.stale) continue;
+    if (it != d->kept.end() && it->second.scr == d->screen) continue;  // the shown page: built again by its restyle
+    if (it == d->kept.end() && (int) d->kept.size() >= keep_max()) return;
+    if (it != d->kept.end()) { lv_obj_delete(it->second.scr); d->kept.erase(it); }
+    const size_t m0 = mem_hook() ? mem_hook()() : 0;
+    const uint32_t t0 = lv_tick_get();
+    const Theme *was = T;
+    if (d->theme) T = d->theme;
+    lv_obj_t *scr = make(d, id, id == "home", nullptr);
+    T = devices.size() == 1 ? d->theme : was;
+    if (!scr) continue;
+    lv_obj_add_flag(scr, LV_OBJ_FLAG_HIDDEN);
+    const size_t m1 = mem_hook() ? mem_hook()() : 0;
+    d->kept[id] = {scr, entry_of(id), false, m0 > m1 ? (uint32_t) (m0 - m1) : 0u, (uint32_t) objects(scr), lv_tick_elaps(t0)};
+    return;  // one per tick
+  }
 }
 
 // Navigation: a hierarchy, Home (the stack's root) at the bottom, never a long back
@@ -284,6 +392,15 @@ void settings_props(ArduinoJson::JsonDocument &d) {
 constexpr uint32_t restyle_wait = 600;
 void restyle_now(Device *d) {
   if (d->stack.empty()) return;
+  if (d->reloaded.empty()) for (auto &k : d->kept) k.second.stale = true;  // a settings / look change: every kept page
+  else {  // a spec / deck change: only the pages it touched (reload() marked them); the shown one may be untouched
+    auto it = d->kept.find(d->stack.back());
+    if (it != d->kept.end() && it->second.scr == d->screen && !it->second.stale) {
+      emit(d->root, "spec-applied", d->reloaded.c_str());
+      d->reloaded.clear();
+      return;
+    }
+  }
   lv_obj_t *root = d->screen && lv_obj_get_child_count(d->screen) ? lv_obj_get_child(d->screen, 0) : nullptr;
   int32_t idx = -1, y = 0;
   for (uint32_t i = 0; root && i < lv_obj_get_child_count(root); i++) {
@@ -415,6 +532,14 @@ void toast(Props t) {
   }
 }
 void reload(const char *id) {
+  for (Device *d : devices)  // kept pages it touched go stale (a deck change: the pages whose entry changed, the gone ones)
+    for (auto it = d->kept.begin(); it != d->kept.end();) {
+      const bool deck = !strcmp(id, "deck");
+      const bool gone = deck && it->first != "home" && !spec::deck_kinds().count(it->first);
+      if (gone && it->second.scr != d->screen) { lv_obj_delete(it->second.scr); it = d->kept.erase(it); continue; }
+      if (gone || (deck ? entry_of(it->first) != it->second.entry : it->first == id)) it->second.stale = true;
+      ++it;
+    }
   for (Device *d : devices) {
     if (d->stack.empty()) continue;
     const std::string top = base_of(d->stack.back());
@@ -442,6 +567,32 @@ void go(lv_obj_t *in, const char *id) { queue(in, GO, id); }
 void back(lv_obj_t *in) { queue(in, BACK, nullptr); }
 void home(lv_obj_t *in) { queue(in, HOME, nullptr); }
 bool in_device(lv_obj_t *obj) { return of(obj) != nullptr; }
+void keep_pages(int n) {
+  keep_max() = n < 0 ? 0 : n;
+  for (Device *d : devices) {
+    while ((int) d->kept.size() > keep_max()) {  // fewer: drop hidden ones (the shown one stays until it is left)
+      auto it = std::find_if(d->kept.begin(), d->kept.end(), [&](auto &k) { return k.second.scr != d->screen; });
+      if (it == d->kept.end()) break;
+      lv_obj_delete(it->second.scr);
+      d->kept.erase(it);
+    }
+    if (keep_max() > 0 && !d->pre) d->pre = lv_timer_create(prebuild, 250, d);
+  }
+}
+int keep_pages() { return keep_max(); }
+void on_mem(size_t (*f)()) { mem_hook() = f; }
+void kept_json(ArduinoJson::JsonArray out) {
+  for (Device *d : devices)
+    for (auto &k : d->kept) {
+      ArduinoJson::JsonObject o = out.add<ArduinoJson::JsonObject>();
+      o["page"] = k.first, o["bytes"] = k.second.bytes, o["objects"] = k.second.objs, o["build_ms"] = k.second.ms;
+      o["stale"] = k.second.stale, o["shown"] = k.second.scr == d->screen;
+      int waiting = 0;  // binds whose data changed while the page was hidden (their widgets repaint when it shows)
+      for (const ha::Bound *b : ha::S().bounds)
+        if (b->dirty) for (lv_obj_t *x = b->obj; x; x = lv_obj_get_parent(x)) if (x == k.second.scr) { waiting++; break; }
+      o["waiting"] = waiting;
+    }
+}
 void nav_timing(bool on) { nav().on = on; nav().stage = 0; if (on) nav().done.clear(); }
 bool nav_timing() { return nav().on; }
 void nav_touch() { if (nav().on) nav().touch = lv_tick_get(); }

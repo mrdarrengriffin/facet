@@ -63,6 +63,14 @@ const std::vector<NavTime> &nav_times();
 void nav_feed(uint32_t ms);  // a feed round's time (core/feed.cpp), counted into the change being built
 void nav_frame();            // the host's "a frame was drawn" (its display's render-ready)
 void nav_touch();            // the host's "a finger lifted" (its pointer's release): the change it causes starts there
+// Kept pages (facet-243, core/device.cpp): Home and the deck's pages built once in the idle gaps and kept hidden, so a
+// tap shows a page instead of building it. keep_pages(n): at most n kept (0 = off, every screen built on tap). on_mem:
+// the host's free-PSRAM reading (each kept page's cost). kept_json: [{page, bytes, objects, build_ms, stale, shown, waiting}] (waiting: binds whose data changed while
+// hidden, repainted when it shows).
+void keep_pages(int n);
+int keep_pages();
+void on_mem(size_t (*f)());
+void kept_json(ArduinoJson::JsonArray out);
 void state(ArduinoJson::JsonArray out);  // every mounted device: {stack, builds, objects} (spec hello diagnostics)  // a spec changed (core/spec.h apply): devices showing it (or every device: "deck") build it again
 const char *current(lv_obj_t *in);  // the id on top of the stack ("" = not a device)
 

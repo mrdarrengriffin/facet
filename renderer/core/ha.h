@@ -329,6 +329,13 @@ inline Bound *bound_of(lv_obj_t *obj) {
     if (b->obj == obj) return b;
   return nullptr;
 }
+// obj sits in a hidden subtree (a kept page that is not shown; core/device.cpp): its binds wait. Its own hidden flag
+// does not count (a show bind hides it and must be able to show it again)
+inline bool asleep(lv_obj_t *obj) {
+  for (lv_obj_t *o = obj ? lv_obj_get_parent(obj) : nullptr; o; o = lv_obj_get_parent(o))
+    if (lv_obj_has_flag(o, LV_OBJ_FLAG_HIDDEN)) return true;
+  return false;
+}
 // the store values again, through the component's update path (silent)
 inline void refresh(Bound *b) {
   b->dirty = false;
@@ -352,7 +359,15 @@ inline void tick(lv_timer_t *) {
   for (Bound *b : std::vector<Bound *>(S().bounds)) {
     if (std::find(S().bounds.begin(), S().bounds.end(), b) == S().bounds.end()) continue;
     if (b->hold_until && (int32_t) (now - b->hold_until) >= 0) { b->hold_until = 0; b->dirty = true; }
-    if (b->dirty && !b->hold_until) refresh(b);
+    if (b->dirty && !b->hold_until && !asleep(b->obj)) refresh(b);  // a hidden (kept) page: the data only, its widgets wait
+  }
+}
+// a kept page shown again: what changed while it was hidden reaches its widgets before its first frame
+inline void wake(lv_obj_t *root) {
+  for (Bound *b : std::vector<Bound *>(S().bounds)) {
+    if (std::find(S().bounds.begin(), S().bounds.end(), b) == S().bounds.end() || !b->dirty || b->hold_until) continue;
+    for (lv_obj_t *o = b->obj; o; o = lv_obj_get_parent(o))
+      if (o == root) { refresh(b); break; }
   }
 }
 inline void start_timer() {
