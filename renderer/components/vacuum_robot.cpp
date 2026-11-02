@@ -60,7 +60,7 @@ void take(lv_obj_t *s, fw::Props p) {
 }  // namespace
 
 FW_COMPONENT(vacuum_robot, "Vacuum robot", "components", R"({
-  "about": "The robot vacuum seen from above inside a ring: the run's progress while it cleans, else its battery. The Robot vacuum screen's Home card picture.",
+  "about": "The robot vacuum seen from above inside a ring: the run's progress while it cleans, else its battery.",
   "contract": 2,
   "parts": ["arc", "arc-fill"],
   "frame": [120, 120],

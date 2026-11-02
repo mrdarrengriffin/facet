@@ -23,7 +23,6 @@ const sizes = [
 ];
 const types = [
   ['Light (or a switch)', 'Tile, card', 'Tap to switch it, or open the Light screen for that light.'],
-  ['Cover', 'Tile, card', 'Opens the Covers screen for it.'],
   ['Media player', 'Card, wide card', 'Shows the track and the state; opens the Media screen.'],
   ['Sensor', 'Tile, readout', 'Read only: the value and its label.'],
   ['Page', 'Tile, card, wide card', 'Opens another screen or another Home.'],
@@ -34,7 +33,7 @@ const types = [
   <h2 id="home">What Home is</h2>
   <p>
     {home ? <a href={screenHref(home)}>Home</a> : 'Home'} is the screen the panel starts on: a grid of cards, each one a
-    light, a cover, a speaker, a sensor or a way into another screen. The cards keep their order and fill the grid row by
+    light, a speaker, a sensor or a way into another screen. The cards keep their order and fill the grid row by
     row, and the page scrolls when there are more than fit. A panel can have more than one Home, for example one per
     room, with a card on one that opens the next.
   </p>

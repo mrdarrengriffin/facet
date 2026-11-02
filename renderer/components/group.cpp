@@ -31,7 +31,7 @@ FW_COMPONENT(group, "Group", "components", R"({
   "props": [
     {"name": "align", "about": "Where the parts line up: start is the left, centre is the middle (a stack centres each part), end is the right.", "type": "select", "options": ["start", "centre", "end"], "default": "start"},
     {"name": "flow", "about": "wrap lays the parts side by side and starts a new line when the row is full; stack puts each part under the last.", "type": "select", "options": ["wrap", "stack"], "default": "wrap"},
-    {"name": "gap", "about": "The room between the parts side by side: gutter, group for a few big controls in a row (the Media screen's previous, play and next), or near for a column of buttons that belong together (the Blinds screen's Open, Stop and Close).", "type": "select", "options": ["gutter", "group", "near"], "default": "gutter"},
+    {"name": "gap", "about": "The room between the parts side by side: gutter, group for a few big controls in a row (the Media screen's previous, play and next), or near for a column of buttons that belong together.", "type": "select", "options": ["gutter", "group", "near"], "default": "gutter"},
     {"name": "space", "about": "The room above the group: none, group for related parts, block for separate blocks, near for parts that belong tightly together, line for a line that belongs to the block above, strip for a strip under a hero and its lines.", "type": "select", "options": ["none", "group", "block", "near", "line", "strip"], "default": "none"},
     {"name": "sample", "about": "For previews only: how many made-up tiles fill the row. 0 shows the empty layout.", "type": "range", "min": 0, "max": 6, "step": 1, "default": 0}
   ],

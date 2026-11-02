@@ -40,7 +40,7 @@ FW_COMPONENT(bins_art, "Bins art", "components", R"({
   "frame": [320, 200],
   "props": [
     {"name": "colours", "about": "The bins' colours, separated by commas, the first in front: black, green, brown, blue, grey, purple, red or yellow.", "type": "text", "default": "green,black"},
-    {"name": "size", "about": "hero is the Bins screen's size; card is the small picture at the top right of a Home card.", "type": "select", "options": ["hero", "card"], "default": "hero"}
+    {"name": "size", "about": "hero is the big picture; card is the small picture at the top right of a Home card.", "type": "select", "options": ["hero", "card"], "default": "hero"}
   ],
   "variants": [
     {"label": "green + black", "props": {}},

@@ -2,15 +2,16 @@
 // The page was renamed Updates: old links land there.
 import { UPDATES_PAGE, url } from '../../lib/nav';
 const to = url(UPDATES_PAGE ? '/updates/' : '/roadmap/');
+const name = UPDATES_PAGE ? 'Updates' : 'the roadmap';
 ---
 
 <!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>Updates · Facet</title>
+    <title>Moved · Facet</title>
     <meta http-equiv="refresh" content={`0; url=${to}`} />
     <link rel="canonical" href={to} />
   </head>
-  <body><p>This page moved to <a href={to}>Updates</a>.</p></body>
+  <body><p>This page moved to <a href={to}>{name}</a>.</p></body>
 </html>

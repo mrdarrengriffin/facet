@@ -44,7 +44,7 @@
     {
       "id": "bins",
       "label": "Bins",
-      "about": "Only for the Bins screen: the bin colours councils use; the screen always names the bin too."
+      "about": "For bin pictures (Bins art, Bins next): the bin colours councils use; the bin is always named too."
     }
   ],
   "colours": {

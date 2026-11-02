@@ -1001,7 +1001,7 @@
          "$ref": "#/$defs/param"
         }
        ],
-       "description": "hero is the Bins screen's size; card is the small picture at the top right of a Home card."
+       "description": "hero is the big picture; card is the small picture at the top right of a Home card."
       }
      }
     },
@@ -3101,7 +3101,7 @@
          "$ref": "#/$defs/param"
         }
        ],
-       "description": "screen fills the space it is in, the Blinds screen's window; card is the small picture at the top right of a Home card."
+       "description": "screen is a window that fills the space it is in; card is the small picture at the top right of a Home card."
       },
       "state": {
        "anyOf": [
@@ -4256,7 +4256,7 @@
          "$ref": "#/$defs/param"
         }
        ],
-       "description": "The room between the parts side by side: gutter, group for a few big controls in a row (the Media screen's previous, play and next), or near for a column of buttons that belong together (the Blinds screen's Open, Stop and Close)."
+       "description": "The room between the parts side by side: gutter, group for a few big controls in a row (the Media screen's previous, play and next), or near for a column of buttons that belong together."
       },
       "space": {
        "anyOf": [

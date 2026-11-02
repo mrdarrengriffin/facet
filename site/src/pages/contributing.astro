@@ -23,8 +23,8 @@ const headings: Heading[] = [
 
 <Docs edit="site/src/pages/contributing.astro" title="Contributing" description="Every way to help Facet, and most of them need no code." group="Start here" current={url('/contributing/')} headings={headings}>
   <p class="lede">
-    Thanks for wanting to help. Facet is early and small, so every bit of help counts, and you don't need to write
-    code to make a difference.
+    Thanks for helping. Facet has one maintainer and two supported panels, so a test report or a docs fix makes a
+    real difference, and most of the ways in need no code.
   </p>
 
   <table>
@@ -40,7 +40,7 @@ const headings: Heading[] = [
 
   <div class="callout">
     <span class="dot" aria-hidden="true"></span>
-    <p>Not sure where something fits? <a href={`${REPO}/issues/new/choose`}>Open an issue</a> and ask. There are no silly questions.</p>
+    <p>Not sure where something fits? <a href={`${REPO}/issues/new/choose`}>Open an issue</a> and ask.</p>
   </div>
 
   <h2 id="bug">Report a bug</h2>
@@ -53,14 +53,14 @@ const headings: Heading[] = [
   </ul>
 
   <h2 id="device">Test on a device</h2>
-  <p>Real panels find things the browser never will, so test reports are gold.</p>
+  <p>Real panels find what the browser can't: timing, touch, heat and Wi-Fi drop-outs.</p>
   <ul>
     <li>
       <strong>Panels:</strong> the Waveshare ESP32-P4-86 (4 inch, 720 x 720) and the Guition ESP32-S3-4848S040 (4 inch,
-      480 x 480). Other panels are planned: if you have one, an issue saying so helps decide what comes next.
+      480 x 480). Other panels come after 1.0: if you have one, an issue saying so helps decide which.
     </li>
     <li>
-      <strong>Install the preview build</strong> from your browser on the <a href={url('/install/')}>Install</a> page. It
+      <strong>Install Facet</strong> from your browser on the <a href={url('/install/')}>Install</a> page. It
       replaces what is on the panel now; updates then arrive in Home Assistant.
     </li>
     <li>
@@ -87,9 +87,11 @@ const headings: Heading[] = [
 
   <h2 id="code">Contribute code</h2>
   <p>
-    The repository has three parts: <code>renderer/</code> (the C++/LVGL renderer: core, foundations, components,
-    screens, specs, tokens and the tools that check them), <code>firmware/</code> (the ESPHome external component) and
-    <code>site/</code> (these docs, generated from what the renderer registers).
+    The repository has six parts: <code>renderer/</code> (the C++/LVGL renderer: core, foundations, components,
+    screens, specs, tokens and the tools that check them), <code>firmware/</code> (the ESPHome external component),
+    <code>esphome/</code> (one YAML per board and the packages they share), <code>workbench/</code> (the local web app
+    for working on Facet), <code>boards/</code> (one file per supported panel) and <code>site/</code> (these docs,
+    generated from what the renderer registers).
     The <a href={`${REPO}/blob/main/renderer/README.md`}>renderer README</a> has the detail.
   </p>
 
@@ -101,9 +103,8 @@ npm run dev                          # or: npm run build`} />
 
   <h3 id="renderer">The renderer</h3>
   <p>
-    The renderer builds to WebAssembly with Emscripten. For now it borrows LVGL, <code>lv_conf.h</code> and the fonts
-    from an ESPHome panel firmware build next to it; <code>local.env</code> at the repo root says where they are (the
-    variables are in the renderer README, "Paths"). Bundling them into the repository is planned.
+    The renderer builds to WebAssembly with Emscripten 6.0.13 and needs Node 24. Everything else is in the repository:
+    LVGL 9.5.0 and ArduinoJson in <code>third_party/</code>, <code>lv_conf.h</code> and the fonts.
   </p>
   <CodeBlock lang="bash" label="Shell" code={`cd renderer/tools && npm install && cd ../..
 renderer/build.sh 1.5x       # one build (1.5x = the 720 panel, 1x = the 480 panel)

@@ -1,5 +1,5 @@
 {
- "updated": "2026-10-30",
+ "updated": "2026-11-02",
  "tables": {
   "foundations": [
    {
@@ -107,23 +107,24 @@
    {
     "name": "Sound on the panels",
     "group": "Sound",
-    "status": "planned",
-    "note": "Real speaker playback on the Waveshare plus rules for when sounds play"
+    "status": "done",
+    "note": "Speaker playback on the Waveshare; the Guition has no speaker"
    },
    {
     "name": "Docs site",
     "group": "Platform",
-    "status": "doing"
+    "status": "done"
    },
    {
     "name": "Device side: ESPHome + Home Assistant",
     "group": "Platform",
-    "status": "planned"
+    "status": "done"
    },
    {
     "name": "Install wizard and onboarding",
     "group": "Platform",
-    "status": "planned"
+    "status": "done",
+    "note": "Install from the browser, the Set up screen, Wi-Fi from a phone"
    },
    {
     "name": "More sounds",
@@ -574,7 +575,13 @@
    {
     "name": "Home",
     "group": "Core",
-    "status": "doing"
+    "status": "done"
+   },
+   {
+    "name": "The panel's own editor",
+    "group": "Core",
+    "status": "doing",
+    "note": "The panel's web page: choose and order screens, set each up, send, check and revert"
    },
    {
     "name": "Settings",
@@ -597,8 +604,7 @@
    {
     "name": "Toasts over any screen",
     "group": "Core",
-    "status": "doing",
-    "note": "Toast layer over every screen; Settings > Toasts; HA sends toasts (action to wire on device)"
+    "status": "done"
    },
    {
     "name": "Light",
@@ -620,8 +626,7 @@
    {
     "name": "Blinds and curtains",
     "group": "Home control",
-    "status": "done",
-    "note": "Window drawn per kind; drag to a position; pick a window in the header"
+    "status": "doing"
    },
    {
     "name": "Robot vacuum",
@@ -674,8 +679,7 @@
    {
     "name": "Flight radar (overhead flights)",
     "group": "Weather and sky",
-    "status": "done",
-    "note": "Flights feed (HA + sample), Now | Radar, tap to select, aircraft detail, all-aircraft list, Home card. Next: the panel fetching flights itself."
+    "status": "doing"
    },
    {
     "name": "Calendar",
