@@ -2,6 +2,8 @@
 //   words run together: text that touches an inline tag with no space where a reader expects one (a letter or digit
 //     both sides: "press<b>Install</b>", "named<code>Facet-</code>"), two <code> runs touching, a lowercase letter
 //     straight into an uppercase one, punctuation straight into a letter (prose only: never inside code / pre)
+//   a typed count: a number before screens / components / foundations / tokens / routes / settings / bindings
+//     that is not a generated one (<Count>, lib/counts.ts: read from the schema and catalogue, marked data-count)
 //   a broken internal link: a page or file that is not in the build, or a #fragment with no such id on its page
 // Usage: node scripts/check-dist.mjs [dist folder] (default FACET_DOCS_OUT or ./dist); base = FACET_DOCS_BASE or /facet-docs/
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
@@ -18,6 +20,7 @@ const CODE = new Set(['code', 'pre', 'kbd', 'samp']);
 const VOID = new Set(['br', 'hr', 'img', 'input', 'meta', 'link', 'source', 'wbr', 'area', 'base', 'col', 'embed', 'track', 'path', 'circle', 'rect', 'line', 'use']);
 const ent = (s) => s.replace(/&nbsp;|&#160;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"')
   .replace(/&#39;|&#x27;|&apos;/g, "'").replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(+n)).replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)));
+const COUNTED = /(?<![\w.])(\d[\d,.]*)\s+(?:entity\s+)?(screens|components|foundations|tokens|routes|settings|bindings)\b/gi;
 const word = (c) => /[\p{L}\p{N}]/u.test(c ?? '');
 
 function pages(dir) {
@@ -35,7 +38,9 @@ function textFaults(html) {
   const faults = [];
   const body = html.slice(html.search(/<body[\s>]/i) + 1);
   const re = /<!--[\s\S]*?-->|<(\/?)([a-zA-Z][\w-]*)([^>]*)>|([^<]+)/g;
-  let skip = 0, code = 0, prev = '', edge = null, tail = '', m;
+  let skip = 0, code = 0, prev = '', edge = null, tail = '', m, cnt = false, blk = '';
+  // blk = this block's prose, a generated count's digits as C (so only typed numbers are left as digits)
+  const counts = () => { for (const x of blk.matchAll(COUNTED)) faults.push(['typed count', x[0]]); blk = ''; };
   // prev = the last visible character; edge = an inline tag since it (tag name, closing), else null
   const say = (what, next) => faults.push([what, (tail + ' ⟨' + edge?.[0] + '⟩ ' + next).replace(/\s+/g, ' ').slice(-70)]);
   while ((m = re.exec(body))) {
@@ -49,13 +54,15 @@ function textFaults(html) {
         // </code><code>: two code runs touching
         if (!close && tag === 'code' && edge?.[0] === 'code' && edge[1]) faults.push(['code runs touching', tail.slice(-50)]);
         edge = [tag, close];
-      } else if (!VOID.has(tag) || tag === 'br' || tag === 'img') { prev = ' '; edge = null; tail = ''; }  // a block edge: a break
+        if (tag === 'span') cnt = !close && / data-count=/.test(m[3]);
+      } else if (!VOID.has(tag) || tag === 'br' || tag === 'img') { prev = ' '; edge = null; tail = ''; counts(); }  // a block edge: a break
       continue;
     }
     if (skip || !m[4]) continue;
     const t = ent(m[4]);
     if (edge && word(prev) && word(t[0])) say('no space at a tag', t.slice(0, 30));
     if (!code) {
+      blk += cnt ? t.replace(/\d/g, 'C') : t;
       for (const w of t.split(/\s+/)) {
         const bare = w.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, '');
         if (/\p{Ll}\p{Lu}/u.test(bare) && !bare.split(/[^\p{L}]+/u).every((x) => !/\p{Ll}\p{Lu}/u.test(x) || NAMES.test(x))) faults.push(['lowercase into uppercase', w]);
@@ -66,6 +73,7 @@ function textFaults(html) {
     prev = t.trimEnd() === t ? t.at(-1) : ' ', edge = null;
     tail = (tail + t).slice(-60);
   }
+  counts();
   return faults;
 }
 

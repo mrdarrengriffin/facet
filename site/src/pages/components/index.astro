@@ -5,7 +5,8 @@ import Base from '../../layouts/Base.astro';
 import ComponentsSidebar from '../../components/ComponentsSidebar.astro';
 import Live from '../../components/Live.astro';
 import EditPage from '../../components/EditPage.astro';
-import { COMPONENTS, componentGroups, defaults, href } from '../../lib/data';
+import Count from '../../components/Count.astro';
+import { componentGroups, defaults, href } from '../../lib/data';
 ---
 
 <Base title="Components" description={`Every Facet component, live: the real renderer the panels run, with a playground for its props.`} hasSidebar>
@@ -15,7 +16,7 @@ import { COMPONENTS, componentGroups, defaults, href } from '../../lib/data';
       <header class="explorer__head">
         <p class="facet-label">Components</p>
         <h1>Components</h1>
-        <p class="lede">{COMPONENTS.length} components, each drawn by the same renderer the panels run. Open one to try it: change its props, tap it, hear it.</p>
+        <p class="lede"><Count k="components" /> components, each drawn by the same renderer the panels run. Open one to try it: change its props, tap it, hear it.</p>
       </header>
       {
         componentGroups().map((g) => (

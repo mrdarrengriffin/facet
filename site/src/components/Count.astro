@@ -1,0 +1,7 @@
+---
+// A count from lib/counts.ts (schema and catalogue), marked so scripts/check-dist.mjs can tell it from a typed number.
+import { COUNTS, type CountKey } from '../lib/counts';
+interface Props { k: CountKey }
+const { k } = Astro.props;
+---
+<span data-count={k}>{COUNTS[k].toLocaleString('en-GB')}</span>

@@ -3,22 +3,24 @@
 // a still picture drawn by the WASM renderer on sample data, grouped as on the roadmap; each opens its page.
 import Docs from '../../layouts/Docs.astro';
 import Live from '../../components/Live.astro';
-import { SCREENS, STATUS, screenGroups, screenHref } from '../../lib/data';
+import { STATUS, screenGroups, screenHref } from '../../lib/data';
+import Count from '../../components/Count.astro';
 import { url } from '../../lib/nav';
-const done = SCREENS.filter((s) => s.status !== 'wip').length;
+import { COUNTS } from '../../lib/counts';
 ---
 
 <Docs
   edit="site/src/pages/screens/index.astro"
   title="Screens"
-  description={`One job per screen. ${SCREENS.length} screens, each drawn here by the renderer the panels run, on sample data.`}
+  description={`One job per screen. The ${COUNTS.screens} factory screens, plus Home and Settings, each drawn here by the renderer the panels run, on sample data.`}
   group="Screens"
   current={url('/screens/')}
   wide
 >
   <p>
     A screen is built from the <a href={url('/components/')}>components</a>: most are a short spec that names its parts
-    and settings, and the panel finds the data for them. {done < SCREENS.length && `${done} of ${SCREENS.length} are done; the rest are being worked on.`}
+    and settings, and the panel finds the data for them. Facet comes with <Count k="screens" /> screens, plus Home and
+    Settings; choose which are on your panel in the <a href={url('/editor/')}>editor</a>.
   </p>
   {
     screenGroups().map((g) => (
