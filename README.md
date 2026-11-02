@@ -132,6 +132,18 @@ What's next, then today and the days ahead as an agenda or a month.</p>
 <p><a href="https://mrdarrengriffin.github.io/facet/screens/energy/"><b>Energy</b></a><br>
 Today's cost so far, the price you're on and today's half-hours.</p>
 </td>
+<td width="50%" valign="top">
+<a href="https://mrdarrengriffin.github.io/facet/screens/living-room/"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/screen-living_room-dark.png"><img alt="Living room screen" src=".github/assets/screen-living_room-light.png" width="200" height="200"></picture></a>
+<p><a href="https://mrdarrengriffin.github.io/facet/screens/living-room/"><b>Living room</b></a><br>
+The lights of one room, to switch and dim each one.</p>
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+<a href="https://mrdarrengriffin.github.io/facet/screens/weather/"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/screen-weather_days-dark.png"><img alt="Weather, 5 days screen" src=".github/assets/screen-weather_days-light.png" width="200" height="200"></picture></a>
+<p><a href="https://mrdarrengriffin.github.io/facet/screens/weather/"><b>Weather, 5 days</b></a><br>
+The next five days from the Weather screen, each with its high, low and rain.</p>
+</td>
 </tr>
 </table>
 
@@ -142,8 +154,8 @@ More screens are on the way (thermostat, lock, vacuum, cameras, plants and other
 
 | Panel | Screen | Status |
 |---|---|---|
-| Waveshare ESP32-P4-86 | 4", 720 x 720 | In progress |
-| Guition ESP32-4848S040 | 4", 480 x 480 | In progress |
+| Waveshare ESP32-P4-86 | 4", 720 x 720 | Supported: every screen above |
+| Guition ESP32-4848S040 | 4", 480 x 480 | Supported: every screen above (a screen change takes 0.1 to 0.2 s, the S3 draws more slowly) |
 
 Both panels get the same layout: the 480 panel is the reference size, the 720 panel draws it at 1.5x.
 Other sizes are planned.

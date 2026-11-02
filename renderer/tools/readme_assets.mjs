@@ -1,6 +1,6 @@
 // README images (.github/assets/) rendered by the WASM renderer itself: no browser, no dependencies.
 //   node tools/readme_assets.mjs --list                      the screens the docs build registers
-//   node tools/readme_assets.mjs [--screens id,spec:weather,...] [--hero id,...]
+//   node tools/readme_assets.mjs [--screens id,spec:weather,spec:weather?source=sample,...] [--hero id,...]
 // Reads the DOCS flavour build ($FW_OUT/docs/1.5x, `FW_FEATURES=docs ./build.sh`), renders each screen at 720 x 720 in
 // dark and light, halves it (2 x 2 box filter) to 360 with rounded corners, and writes
 //   .github/assets/screen-<id>-<theme>.png   one per screen (shown at 200 in the README)
@@ -45,9 +45,12 @@ function feed() {
 const S = 720, H = 360, R = 32;
 let t = 0;
 // "<id>" = a registered screen, "spec:<screen>" = the spec screen with that built-in spec
-const file = (id) => id.replace(/^spec:/, '');
+const file = (id) => id.replace(/^spec:/, '').replace(/\?.*$/, '');  // spec:weather?source=sample -> weather
 function render(id, light) {
-  const [comp, props] = id.startsWith('spec:') ? ['spec', { screen: file(id) }] : [id, {}];
+  // spec:<id>?k=v&...: the screen with those params (a README shot of a Home Assistant screen with its sample data)
+  const params = Object.fromEntries(new URLSearchParams(id.includes('?') ? id.slice(id.indexOf('?') + 1) : ''));
+  // home = the device (Home as the panel shows it: the stack's root, no Back)
+  const [comp, props] = id.startsWith('spec:') ? ['spec', { screen: file(id), ...params }] : id === 'home' ? ['device', {}] : [id, {}];
   const st = m._fw_stage(S, S);
   const tick = (n) => { for (let i = 0; i < n; i++) { t += 16; m._fw_tick(t); } m._fw_events(); };
   tick(2);
