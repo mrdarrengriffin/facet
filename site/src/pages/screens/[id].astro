@@ -32,7 +32,7 @@ const headings: Heading[] = [
   { depth: 2, slug: 'status', text: 'Status' },
 ];
 const st = STATUS[s.status];
-const DEMO_SETTINGS = 'Its Settings stick: theme, accent, sounds, sound pack and volume are the site\'s own settings too; text size, clock face, transitions, toasts and units apply to the demo. Idle, idle brightness, screen off and Allow AI agents only act on a real panel.';
+const DEMO_SETTINGS = 'Its Settings stick: theme, accent, sounds, sound pack and volume are the site\'s own settings too; text size, transitions, toasts and units apply to the demo. Idle, screen off and Allow AI agents only act on a real panel.';
 // the demo runs as on a panel: a spec screen is the root of a device stack (spec prop live), so
 // its taps open the screens it leads to and Back returns; the root itself has no Back. Home and Settings = the Device component started on them.
 const demo = s.comp === 'spec' ? { comp: 'spec', props: { ...s.sampleProps, live: true } }

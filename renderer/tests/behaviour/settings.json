@@ -63,45 +63,6 @@
       }
     },
     {
-      "name": "Clock face sheet: a pick sets it and closes",
-      "kind": "interaction",
-      "steps": [
-        {
-          "drag": {
-            "at": [
-              0.5,
-              0.97
-            ]
-          },
-          "by": [
-            0,
-            -0.95
-          ]
-        },
-        {
-          "tap": {
-            "text": "Clock face"
-          }
-        },
-        {
-          "tap": {
-            "text": "Analogue"
-          }
-        }
-      ],
-      "expect": {
-        "events": [
-          [
-            "setting",
-            "clockFace=analogue"
-          ]
-        ],
-        "absent": {
-          "text": "Context"
-        }
-      }
-    },
-    {
       "name": "Sound pack sheet: scrim closes without a change",
       "kind": "interaction",
       "steps": [

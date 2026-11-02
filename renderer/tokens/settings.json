@@ -258,41 +258,6 @@
       }
     },
     {
-      "id": "clockFace", "help": "Which clock the panel shows when it is idle: big digits, a ring with a seconds dot, an analogue face, or context with the weather and what is next.",
-      "group": "idle",
-      "label": "Clock face",
-      "kind": "select",
-      "control": "sheet",
-      "default": "ring",
-      "options": [
-        {
-          "id": "hero",
-          "label": "Hero",
-          "hint": "big digits"
-        },
-        {
-          "id": "ring",
-          "label": "Ring",
-          "hint": "digits in a seconds ring"
-        },
-        {
-          "id": "analogue",
-          "label": "Analogue",
-          "hint": "hands and ticks"
-        },
-        {
-          "id": "context",
-          "label": "Clock + context",
-          "hint": "weather, next event, timers"
-        }
-      ],
-      "esphome": {
-        "id": "face_select",
-        "name": "Clock face",
-        "icon": "mdi:clock-outline"
-      }
-    },
-    {
       "id": "idleAfter", "help": "How many seconds with no touch before the panel shows the clock. 0 never goes idle.",
       "group": "idle",
       "label": "Clock after",
@@ -312,30 +277,12 @@
         900
       ],
       "zero": "Never",
-      "about": "No touch for this long: the clock shows, without its header, dimmed to the idle brightness. A touch goes back to Home.",
+      "about": "No touch for this long: the clock shows, without its header. A touch goes back to Home.",
       "esphome": {
         "id": "idle_after_s",
         "name": "Clock after",
         "icon": "mdi:clock-start",
         "device_class": "duration",
-        "internal": true
-      }
-    },
-    {
-      "id": "idleBrightness", "help": "How bright the screen is while it shows the idle clock, as a percentage.",
-      "group": "idle",
-      "label": "Idle brightness",
-      "kind": "number",
-      "control": "slider",
-      "default": 70,
-      "min": 10,
-      "max": 100,
-      "step": 5,
-      "unit": "%",
-      "esphome": {
-        "id": "idle_brightness",
-        "name": "Idle brightness",
-        "icon": "mdi:brightness-6",
         "internal": true
       }
     },
