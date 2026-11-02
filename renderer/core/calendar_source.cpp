@@ -1,5 +1,5 @@
 // The calendar feed (CONTRACT.md C51): the reserved entity panel.calendar (core/spec.h "local sources") in the HA store,
-// the one shape the Calendar screen and its Home card bind to, whatever holds the events. Same file on the panels and in
+// the one shape the Calendar screen and its Home card bind to, whatever holds the events. On the Feed base (core/feed.h). Same file on the panels and in
 // WASM. Words are Facet's (core/agenda.h: "16:50", "Tmrw", "today · Thu 22 Oct", "October 2026").
 //   state        ok | loading (no calendar has answered yet) | error (every calendar unavailable, or none picked)
 //   hero_n       the next event's when: "16:50" (today), "Now" (running), "Tmrw", "Thu", "24 Oct"; "--" for none
@@ -39,18 +39,19 @@
 #include <ctime>
 #include <set>
 #include "agenda.h"
+#include "feed.h"
 #include "fw.h"
 #include "ha.h"
 
 namespace fw::dev::calendar_source {
 namespace {
 namespace ag = fw::agenda;
-constexpr const char *E = "panel.calendar";
 constexpr const char *COLOURS[] = {"blue", "ok", "warn", "steel", "text-dim"};
 constexpr int AGENDA_MAX = 60;  // rows (Grid ITEMS_MAX 64)
 struct Cal { std::string id, entity, name, colour; bool on; };
-lv_timer_t *tick = nullptr;
-std::string cfg_seen, src_now;
+std::string src_now;
+std::function<void(const char *, const std::string &)> put_f;  // the feed's put (Calendar below)
+void put_state(feed::State st);
 std::vector<Cal> cals;
 std::vector<ag::Event> asked;      // get_events replies (ha), every calendar
 std::set<std::string> hidden;      // calendars turned off (ids)
@@ -130,11 +131,11 @@ void event_row(ArduinoJson::JsonArray arr, const ag::Event &x, double now) {
 
 // the feed from every event known (all calendars; the hidden ones drop out here)
 void put_events(const std::vector<ag::Event> &all, double now) {
-  auto put = [](const char *a, const std::string &v) { ha::put(E, a, v); };
+  auto &put = put_f;
   std::vector<ag::Event> ev;
   for (const ag::Event &e : all) if (on(e.calendar)) ev.push_back(e);
   sort_events(ev);
-  put("", "ok");
+  put_state(feed::OK);
   // hero (+ the card): the running or next event
   const ag::Event *e = ag::next(ev, now);
   if (!e) {
@@ -232,18 +233,11 @@ void put_events(const std::vector<ag::Event> &all, double now) {
   }
   put("sheet", sheet);
 }
-void put_empty(const char *state) {  // loading / error: the words only
-  const bool err = !strcmp(state, "error");
-  ha::put(E, "", state);
-  ha::put(E, "hero_n", "--");
-  ha::put(E, "hero_label", err ? "Offline" : "Loading");
-  ha::put(E, "hero_line", err ? (cals.empty() ? "no calendars picked" : "the calendars can't be reached") : "");
-  ha::put(E, "hero_accent", "off");
-  ha::put(E, "card", err ? "Offline" : "Loading");
-  ha::put(E, "agenda", "[]");
-  for (const char *a : {"calendars", "day_events", "month_days"}) ha::put(E, a, "[]");
-  ha::put(E, "month_title", ""), ha::put(E, "month_here", "1"), ha::put(E, "shown", "0");
-  ha::put(E, "day_title", "day"), ha::put(E, "sheet", "");
+void put_empty(feed::State st) {  // loading / error: the words only; the rest shows its placeholders
+  put_state(st);
+  put_f("hero_label", feed::words(st));
+  put_f("card", feed::words(st));
+  put_f("hero_line", st == feed::ERROR ? (cals.empty() ? "no calendars picked" : "the calendars can't be reached") : "");
 }
 
 // ---- sample adapter
@@ -265,7 +259,7 @@ void put_sample() {
 // what each calendar entity says itself (its running or next event): used until its get_events reply lands
 void rebuild() {
   if (src_now != "ha") return;
-  if (cals.empty()) { put_empty("error"); return; }
+  if (cals.empty()) { put_empty(feed::ERROR); return; }
   bool any = false, all_down = true;
   std::vector<ag::Event> ev = asked;
   for (const Cal &c : cals) {
@@ -279,8 +273,8 @@ void rebuild() {
     if (msg && !msg->empty() && !std::isnan(a))
       ev.push_back({*msg, loc ? *loc : "", c.id, a, std::isnan(b) ? a + ag::HOUR : b, ad && (*ad == "on" || *ad == "true")});
   }
-  if (!any && ev.empty()) { put_empty("loading"); return; }
-  if (all_down && ev.empty()) { put_empty("error"); return; }
+  if (!any && ev.empty()) { put_empty(feed::LOADING); return; }
+  if (all_down && ev.empty()) { put_empty(feed::ERROR); return; }
   put_events(ev, now_ms());
 }
 void events_into(const std::string &cid, ArduinoJson::JsonVariantConst v, int depth = 0) {  // "events" lists anywhere
@@ -299,6 +293,7 @@ void events_into(const std::string &cid, ArduinoJson::JsonVariantConst v, int de
     }
   }
 }
+void run_again();
 void answered(void *ctx, bool ok, const std::string &json) {
   waiting = std::max(0, waiting - 1);
   const std::string cid = (const char *) ctx;
@@ -308,7 +303,7 @@ void answered(void *ctx, bool ok, const std::string &json) {
     events_into(cid, d.as<ArduinoJson::JsonVariantConst>());
     answered_ok.insert(cid);
   }
-  rebuild();  // a failed ask keeps what the entity says
+  run_again();  // a failed ask keeps what the entity says
 }
 // the days to fetch: today .. 14 days on, and the month shown's six weeks
 void want_range(double &a, double &b) {
@@ -338,32 +333,37 @@ void fetch() {
     if (*ha::ask("calendar.get_events", qs.c_str(), answered, (void *) ids[i].c_str())) waiting--;
   }
 }
-void entity_put(const std::string &e, const std::string &a, const std::string &) {
-  if (src_now != "ha") return;
-  for (const Cal &c : cals)
-    if (c.entity == e) {
-      if (a == "friendly_name") { for (Cal &x : cals) if (x.entity == e) { const std::string *n = ha::get(e, "friendly_name"); if (n && !n->empty()) x.name = *n; } }
-      rebuild();
-      return;
-    }
+std::vector<feed::Field> calendar_fields() {
+  std::vector<feed::Field> v = {{"hero_n", true, "--"}, {"hero_label", true, ""}, {"card", true, ""}, {"hero_line", false, ""},
+                                {"hero_accent", false, "off"}, {"month_title", false, ""}, {"month_here", false, "1"},
+                                {"shown", false, "0"}, {"day_title", false, "day"}, {"sheet", false, ""}};
+  for (const char *n : {"agenda", "month_days", "calendars", "day_events"}) v.push_back({n, false, "[]"});
+  return v;
 }
+class Calendar : public feed::Feed {
+ public:
+  Calendar() : Feed("panel.calendar", 60000, "sample", calendar_fields()) {}
+  using Feed::put;
+  using Feed::state;
 
-void fresh() {
-  if (!tick) tick = lv_timer_create([](lv_timer_t *) { if (ha::watched(E)) fresh(); }, 60000, nullptr);
-  const std::string &cfg = ha::feed_config(E);
-  ArduinoJson::JsonDocument c;
-  deserializeJson(c, cfg.empty() ? "{}" : cfg.c_str());
-  const std::string src = c["source"] | "sample", list = c["calendars"] | "";
-  const char *fx_ = c["now"] | "";
-  fixed = *fx_ ? strtod(fx_, nullptr) : 0;
-  const bool changed = cfg != cfg_seen;
-  cfg_seen = cfg;
-  static const bool hooked = (ha::on_put(entity_put), true);
-  (void) hooked;
-  if (changed) { my = -1, sel = 0, sheet.clear(); }
-  if (src == "ha") {
-    if (changed || src_now != "ha") {
+ protected:
+  void settings() {
+    const char *fx_ = cfg()["now"] | "";
+    fixed = *fx_ ? strtod(fx_, nullptr) : 0;
+    if (changed()) { my = -1, sel = 0, sheet.clear(); }
+  }
+  void sample() override {
+    settings();
+    if (src_now != "sample" || changed()) sample_cals(), reads({});
+    src_now = "sample";
+    put_sample();
+  }
+  void fill() override {
+    settings();
+    const std::string list = cfg()["calendars"] | "";
+    if (changed() || src_now != "ha") {
       cals.clear(), asked.clear(), answered_ok.clear(), hidden.clear(), fetched_day = -1;
+      std::vector<std::pair<std::string, std::string>> r;
       for (size_t i = 0, k = 0; i < list.size() && cals.size() < 12;) {
         size_t j = list.find(',', i);
         if (j == std::string::npos) j = list.size();
@@ -373,23 +373,23 @@ void fresh() {
         while (!e.empty() && e.back() == ' ') e.pop_back();
         if (e.rfind("calendar.", 0) != 0 || e.size() > 96) continue;
         const std::string id = e.substr(9);
-        const std::string *n = ha::get(e, "friendly_name");
-        cals.push_back({id, e, n && !n->empty() ? *n : id, COLOURS[k++ % 5], true});
-        for (const char *a : {"", "message", "start_time", "end_time", "all_day", "location", "friendly_name"}) ha::want(e, a);
+        cals.push_back({id, e, id, COLOURS[k++ % 5], true});
+        for (const char *a : {"", "message", "start_time", "end_time", "all_day", "location", "friendly_name"}) r.push_back({e, a});
       }
+      reads(r);
     }
+    for (Cal &c : cals) { const std::string *n = ha::get(c.entity, "friendly_name"); if (n && !n->empty()) c.name = *n; }
     src_now = "ha";
     rebuild();
     double a, b;
     want_range(a, b);
-    if (!cals.empty() && (changed || day_no(now_ms()) != fetched_day || lv_tick_elaps(fetched_at) > 15 * 60000u || a < from_ms || b > to_ms)) fetch();
-  } else {
-    if (src_now != "sample" || changed) sample_cals();
-    src_now = "sample";
-    put_sample();
+    if (!cals.empty() && (changed() || back() || day_no(now_ms()) != fetched_day || lv_tick_elaps(fetched_at) > 15 * 60000u || a < from_ms || b > to_ms)) fetch();
   }
-}
-[[maybe_unused]] const bool registered = (ha::on_local(E, fresh), true);  // binds on panel.calendar never reach a host
+};
+Calendar F;
+void put_state(feed::State st) { F.state(st); }
+void run_again() { F.run(); }
+[[maybe_unused]] const bool wired = (put_f = [](const char *a, const std::string &x) { F.put(a, x); }, true);
 }  // namespace
 
 // calendar.control (core/spec.h ACTIONS): what a tap on the Calendar screen does; "" = done, else why not
@@ -415,7 +415,7 @@ const char *control(const std::string &v) {
     if (!cal_of(id)) return "no calendar by that id";
     if (hidden.count(id)) hidden.erase(id); else hidden.insert(id);
   } else return "previous, next, today, calendars, close, day <YYYY-MM-DD> or toggle <id>";
-  fresh();  // the month may need fetching; the feed again
+  F.run();  // the month may need fetching; the feed again
   return "";
 }
 }  // namespace fw::dev::calendar_source
