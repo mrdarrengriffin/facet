@@ -248,7 +248,6 @@ def _config_schema(config: ConfigType) -> ConfigType:
         or config.get(CONF_AUTO_CLEAR_ENABLED) is True,
         rotation=config.get(CONF_ROTATION, 0),
         draw_rounding=config.get(CONF_DRAW_ROUNDING, 0),
-        has_hardware_rotation=True,  # Facet: draw_pixels_at turns LVGL's strips itself (write_rotated_, internal tiles)
     )
     return config
 

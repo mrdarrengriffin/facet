@@ -64,7 +64,6 @@ class MipiRgb : public display::Display {
 
   // this will be horribly slow.
  protected:
-  void write_rotated_(int x_start, int y_start, int w, int h, const uint8_t *ptr, int x_offset, int y_offset, int x_pad);
   void write_to_display_(int x_start, int y_start, int w, int h, const uint8_t *ptr, int x_offset, int y_offset,
                          int x_pad);
   bool check_buffer_();
