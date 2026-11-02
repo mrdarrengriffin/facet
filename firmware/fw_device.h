@@ -102,6 +102,10 @@
 #include "nvs.h"
 #include "esp_http_client.h"
 #include "esp_crt_bundle.h"
+#include "esp_transport.h"
+#include "esp_transport_tcp.h"
+#include "esp_transport_ssl.h"
+#include "esp_transport_ws.h"
 #include "theme_slot.h"
 #ifdef USE_API
 #include "esphome/components/api/api_server.h"
@@ -1493,7 +1497,8 @@ inline void apply_rotation() {
 
 // The panel's own Home Assistant link (core/device.h ha_link, Settings > Home Assistant) on the firmware: its address
 // and token in NVS "facet_halink" (restored at boot, kept on every ha.connect through on_store; never logged), and its
-// reads (GET <url>/api/states and the REST reads) through esp_http_client on a task of their own: http and https (https
+// reads (GET <url>/api/states and the REST reads) through esp_http_client, and the Energy feed's WebSocket reads through
+// esp_transport_ws, each on a task of its own: http and https (https / wss
 // checks the server against the ESP-IDF certificate bundle). The body comes back to the main loop in pieces through a
 // bounded queue (never held whole: the HTTP task waits while HELD bytes are queued), then done(id, ok, why).
 namespace halink {
@@ -1560,6 +1565,102 @@ inline void get(uint32_t id, const std::string &url, const std::string &token) {
     push(std::move(end));
   }
 }
+// one WebSocket read (ha_link::ws, the Energy feed): <url>/api/websocket (ws, or wss for https), auth with the token, the
+// command with id 1, then HA's result message streamed back as HA sent it (the workbench host does the same). Reads only:
+// the closed list below, else refused before connecting.
+struct WsJob { uint32_t id; std::string url, token, cmd; };
+inline bool ws_read_ok(const std::string &cmd) {
+  ArduinoJson::JsonDocument d;
+  if (deserializeJson(d, cmd)) return false;
+  const std::string t = d["type"] | "";
+  return t == "energy/get_prefs" || t == "recorder/statistics_during_period" || t == "recorder/list_statistic_ids";
+}
+// one whole frame (a small one: the auth messages) into out; false = closed / timed out / too big
+inline bool ws_frame(esp_transport_handle_t ws, std::string &out, size_t most) {
+  out.clear();
+  char buf[512];
+  int total = -1;
+  while (total < 0 || (int) out.size() < total) {
+    const int n = esp_transport_read(ws, buf, sizeof buf, 15000);
+    if (n < 0) return false;
+    if (total < 0) total = esp_transport_ws_get_read_payload_len(ws);
+    if (n == 0 && total > 0) continue;
+    out.append(buf, n);
+    if (out.size() > most) return false;
+    if (total == 0) break;
+  }
+  return true;
+}
+inline void ws_task(void *arg) {
+  WsJob *j = (WsJob *) arg;
+  std::string why;
+  bool ok = false;
+  const bool tls = j->url.rfind("https://", 0) == 0;
+  std::string rest = j->url.substr(j->url.find("://") + 3), host = rest.substr(0, rest.find('/'));
+  int port = tls ? 443 : 80;
+  if (const size_t c = host.rfind(':'); c != std::string::npos) port = atoi(host.c_str() + c + 1), host = host.substr(0, c);
+  esp_transport_handle_t base = tls ? esp_transport_ssl_init() : esp_transport_tcp_init();
+  if (tls && base) esp_transport_ssl_crt_bundle_attach(base, esp_crt_bundle_attach);
+  esp_transport_handle_t ws = base ? esp_transport_ws_init(base) : nullptr;
+  if (!ws) why = "the panel could not start the connection";
+  else {
+    esp_transport_ws_set_path(ws, "/api/websocket");
+    std::string m;
+    if (esp_transport_connect(ws, host.c_str(), port, 15000) < 0) why = "cannot reach Home Assistant at that address";
+    else if (!ws_frame(ws, m, 1024) || m.find("auth_required") == std::string::npos) why = "Home Assistant did not ask for the token";
+    else {
+      ArduinoJson::JsonDocument a;
+      a["type"] = "auth", a["access_token"] = j->token;
+      std::string as;
+      serializeJson(a, as);
+      ArduinoJson::JsonDocument c;
+      deserializeJson(c, j->cmd);
+      c["id"] = 1;
+      std::string cs;
+      serializeJson(c, cs);
+      const int fin = WS_TRANSPORT_OPCODES_TEXT | WS_TRANSPORT_OPCODES_FIN;
+      if (esp_transport_ws_send_raw(ws, (ws_transport_opcodes_t) fin, as.c_str(), as.size(), 15000) < 0 || !ws_frame(ws, m, 1024)) why = "Home Assistant closed the connection";
+      else if (m.find("auth_ok") == std::string::npos) why = "Home Assistant refused the token";
+      else if (esp_transport_ws_send_raw(ws, (ws_transport_opcodes_t) fin, cs.c_str(), cs.size(), 15000) < 0) why = "Home Assistant closed the connection";
+      else {  // the result: one text frame, streamed through the queue (never held whole)
+        char buf[2048];
+        int total = -1, got = 0;
+        while (total < 0 || got < total) {
+          const int n = esp_transport_read(ws, buf, sizeof buf, 20000);
+          if (n < 0) break;
+          if (total < 0) total = esp_transport_ws_get_read_payload_len(ws);
+          if (n == 0) { if (total == 0) break; continue; }
+          got += n;
+          while (held() > HELD) vTaskDelay(pdMS_TO_TICKS(10));
+          Piece p;
+          p.id = j->id, p.data.assign(buf, n);
+          push(std::move(p));
+        }
+        ok = total >= 0 && got == total;
+        if (!ok) why = "the connection to Home Assistant dropped";
+      }
+      esp_transport_close(ws);
+    }
+  }
+  if (ws) esp_transport_destroy(ws);  // the websocket layer, then its base (destroyed separately)
+  if (base) esp_transport_destroy(base);
+  Piece end;
+  end.id = j->id, end.end = true, end.ok = ok, end.why = why;
+  push(std::move(end));
+  delete j;
+  vTaskDelete(nullptr);
+}
+inline void ws(uint32_t id, const std::string &url, const std::string &token, const std::string &cmd) {
+  Piece end;
+  end.id = id, end.end = true;
+  if (!ws_read_ok(cmd)) { end.why = "not a read the panel may make"; push(std::move(end)); return; }
+  auto *j = new WsJob{id, url, token, cmd};
+  if (xTaskCreate(ws_task, "fw_ha_ws", 12288, j, 4, nullptr) != pdPASS) {
+    delete j;
+    end.why = "the panel has no memory for the request now";
+    push(std::move(end));
+  }
+}
 inline void drain(lv_timer_t *) {  // main loop: what the HTTP task read, into ha_link
   for (int k = 0; k < 16; k++) {
     Piece p;
@@ -1598,6 +1699,7 @@ inline void setup() {
     nvs_close(w);
   });
   fw::dev::ha_link::on_get(get);
+  fw::dev::ha_link::on_ws(ws);
   lv_timer_create(drain, 20, nullptr);
 }
 }  // namespace halink

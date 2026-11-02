@@ -188,7 +188,7 @@ void done(uint32_t id, bool ok, const std::string &why, Scan *parsed = nullptr);
 // the token, send cmd (one command as JSON, no "id"), stream its result message back through feed (chunk() with an
 // id from WS_ID up), then end(ok, why) (done()); the link closes. Reads only: the transport allows a closed list
 // (energy/get_prefs, recorder/statistics_during_period, recorder/list_statistic_ids; WASM: the workbench
-// host, with its own token; the firmware: not yet, Energy's ws reads wait). on_ws: the platform's sender. ws() = 0: not ready or no
+// host, with its own token; the firmware: esp_transport_ws, firmware/fw_device.h). on_ws: the platform's sender. ws() = 0: not ready or no
 // transport (end is not called).
 constexpr uint32_t WS_ID = 1u << 30;
 using WsSink = void (*)(uint32_t id, const std::string &url, const std::string &token, const std::string &cmd);
