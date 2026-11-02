@@ -26,6 +26,21 @@ const F = (await import(pathToFileURL(join(BUILD, 'fw.mjs')).href)).default;
 const wasm = await WebAssembly.compile(readFileSync(join(BUILD, 'fw.wasm')));
 const m = await F({ instantiateWasm: (imports, ok) => { WebAssembly.instantiate(wasm, imports).then((i) => ok(i, wasm)); return {}; }, print: () => {}, printErr: () => {} });
 m._fw_init();
+// Home's cards as on a panel with nothing linked yet would read Home Assistant ("loading"): for the README the factory
+// deck with every page that has a sample source on it (Weather's sample forecast, as its own README shot)
+{
+  const deck = JSON.parse(readFileSync(new URL('../specs/deck.json', import.meta.url), 'utf8'));
+  for (const p of deck.pages) {
+    let sp = null;
+    try { sp = JSON.parse(readFileSync(new URL(`../specs/${p.kind}.json`, import.meta.url), 'utf8')); } catch {}
+    if (sp?.params?.source?.options?.includes('sample')) p.params = { ...(p.params ?? {}), source: 'sample' };
+  }
+  deck.rev = (deck.rev ?? 1) + 1;
+  const s1 = m.stringToNewUTF8('deck'), s2 = m.stringToNewUTF8(JSON.stringify(deck));
+  const r = m.UTF8ToString(m._fw_spec(s1, s2));
+  m._free(s1), m._free(s2);
+  if (!JSON.parse(r).ok) throw new Error(`readme deck refused: ${r}`);
+}
 const meta = JSON.parse(m.UTF8ToString(m._fw_meta())).map((c) => ({ ...c, meta: typeof c.meta === 'string' ? JSON.parse(c.meta) : c.meta }));
 const screens = meta.filter((c) => c.section === 'screens');
 if (process.argv.includes('--list')) { for (const c of screens) console.log(c.id, '|', c.meta?.title || c.title || '', '|', c.meta?.desc || c.meta?.description || ''); process.exit(0); }
