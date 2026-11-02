@@ -43,40 +43,48 @@ std::string day_time(double t, double now) { return lunar::day_word(t, now) + " 
 // the phase name of a fraction (docs moonPhaseName) or of the principal phase the day crosses
 int phase_ix(double f) { return f < 0.25 ? 1 : f < 0.5 ? 3 : f < 0.75 ? 5 : 7; }
 
+// the chart's days: worked out once a day (they change at local midnight), then put from the cache each round
+struct Days { double d0 = -1; int n = 0; std::string v, bands, marks, names, labels, day_name, day_rest; };
+Days &days() { static Days d; return d; }
 void put_days(double now) {
   const int slot = fx::size("space:1") + fx::size("chart:bar-gap");
   const int n = std::max(DAYS_BACK + 1, (fw::lay::content_w + fx::size("chart:bar-gap")) / std::max(1, slot));
   const double d0 = lunar::day_start(now - DAYS_BACK * lunar::DAY);
-  std::string v, bands, marks, names, labels;
   char b[32];
-  std::string day_name, day_rest;
-  for (int i = 0; i < n; i++) {
-    const double day = lunar::day_start(d0 + (i + 0.5) * lunar::DAY);  // local midnight (DST-safe)
-    const double f0 = lunar::frac(day), f1 = lunar::frac(day + lunar::DAY), f = lunar::frac(day + 21 * 3600000.0);
-    const auto across = [&](double x) { return f0 < x && f1 >= x; };
-    const int ev = f1 < f0 ? 0 : across(0.5) ? 2 : across(0.25) ? 1 : across(0.75) ? 3 : -1;  // principal phase that day
-    const long lit = std::lround(lunar::illumination(f) * 100);
-    const char *sep = i ? "," : "";
-    snprintf(b, sizeof b, "%s%ld", sep, lit), v += b;
-    bands += sep, bands += ev == 2 ? "full" : i < DAYS_BACK ? "past" : "day";
-    marks += sep, marks += ev == 2 ? "full" : ev == 0 ? "new" : "";
-    const time_t tt = (time_t) (day / 1000);
-    struct tm tm;
-    localtime_r(&tt, &tm);
-    snprintf(b, sizeof b, "%s%d %s", sep, tm.tm_mday, MONTHS[tm.tm_mon]), names += b;
-    labels += sep;
-    if (tm.tm_mday == 1 && i < n - 6) labels += MONTHS[tm.tm_mon];
-    if (i == DAYS_BACK) {
-      day_name = lunar::PHASE_TEXT[ev >= 0 ? ev * 2 : phase_ix(f)];
-      snprintf(b, sizeof b, "%ld%% \xC2\xB7 tonight", lit), day_rest = b;
+  Days &c = days();
+  if (c.d0 != d0 || c.n != n) {
+    c = Days{};
+    c.d0 = d0, c.n = n;
+    std::string &v = c.v, &bands = c.bands, &marks = c.marks, &names = c.names, &labels = c.labels;
+    std::string &day_name = c.day_name, &day_rest = c.day_rest;
+    for (int i = 0; i < n; i++) {
+      const double day = lunar::day_start(d0 + (i + 0.5) * lunar::DAY);  // local midnight (DST-safe)
+      const double f0 = lunar::frac(day), f1 = lunar::frac(day + lunar::DAY), f = lunar::frac(day + 21 * 3600000.0);
+      const auto across = [&](double x) { return f0 < x && f1 >= x; };
+      const int ev = f1 < f0 ? 0 : across(0.5) ? 2 : across(0.25) ? 1 : across(0.75) ? 3 : -1;  // principal phase that day
+      const long lit = std::lround(lunar::illumination(f) * 100);
+      const char *sep = i ? "," : "";
+      snprintf(b, sizeof b, "%s%ld", sep, lit), v += b;
+      bands += sep, bands += ev == 2 ? "full" : i < DAYS_BACK ? "past" : "day";
+      marks += sep, marks += ev == 2 ? "full" : ev == 0 ? "new" : "";
+      const time_t tt = (time_t) (day / 1000);
+      struct tm tm;
+      localtime_r(&tt, &tm);
+      snprintf(b, sizeof b, "%s%d %s", sep, tm.tm_mday, MONTHS[tm.tm_mon]), names += b;
+      labels += sep;
+      if (tm.tm_mday == 1 && i < n - 6) labels += MONTHS[tm.tm_mon];
+      if (i == DAYS_BACK) {
+        day_name = lunar::PHASE_TEXT[ev >= 0 ? ev * 2 : phase_ix(f)];
+        snprintf(b, sizeof b, "%ld%% \xC2\xB7 tonight", lit), day_rest = b;
+      }
     }
   }
-  put("values", v), put("bands", bands), put("marks", marks), put("names", names), put("labels", labels);
+  put("values", c.v), put("bands", c.bands), put("marks", c.marks), put("names", c.names), put("labels", c.labels);
   snprintf(b, sizeof b, "%d", DAYS_BACK), put("now", b);
   snprintf(b, sizeof b, "Next %d days", n - DAYS_BACK), put("title_days", b);
   put("title_now", "Moon"), put("title_details", "Moon details");  // the header's title per view (the spec's $view)
   snprintf(b, sizeof b, "next %d days", n - DAYS_BACK), put("days_more", b);
-  put("day_name", day_name), put("day_rest", day_rest);
+  put("day_name", c.day_name), put("day_rest", c.day_rest);
 }
 
 void put_data(double now, double lat, double lon) {
@@ -92,15 +100,22 @@ void put_data(double now, double lat, double lon) {
   put("rise", std::isnan(m.next_rise) ? "--" : day_time(m.next_rise, now)), put("rise_tone", std::isnan(m.next_rise) ? "dim" : "text");
   put("set", std::isnan(m.next_set) ? "--" : day_time(m.next_set, now)), put("set_tone", std::isnan(m.next_set) ? "dim" : "text");
   put("full", day_time(m.next_full, now)), put("new", day_time(m.next_new, now));
-  std::string js = "[";
-  int got = 0;
-  for (const lunar::Phase &p : lunar::phases_around(now, 4)) {
-    if (p.t <= now || got == 4) continue;
-    snprintf(b, sizeof b, "%s{\"phase\":%.2f,\"label\":\"%s\",\"value\":\"", got ? "," : "", p.kind * 0.25, SHORT[p.kind]);
-    js += b + lunar::day_word(p.t, now) + "\"}";
-    got++;
+  static double next_day = -1, next_until = -1;  // the next phases: again at local midnight or once the first has passed
+  static std::string next_js;
+  if (next_day != lunar::day_start(now) || now >= next_until) {
+    std::string js = "[";
+    int got = 0;
+    next_until = 1e300;
+    for (const lunar::Phase &p : lunar::phases_around(now, 4)) {
+      if (p.t <= now || got == 4) continue;
+      if (!got) next_until = p.t;
+      snprintf(b, sizeof b, "%s{\"phase\":%.2f,\"label\":\"%s\",\"value\":\"", got ? "," : "", p.kind * 0.25, SHORT[p.kind]);
+      js += b + lunar::day_word(p.t, now) + "\"}";
+      got++;
+    }
+    next_js = js + "]", next_day = lunar::day_start(now);
   }
-  put("next", js + "]");
+  put("next", next_js);
   put_days(now);
   snprintf(b, sizeof b, "%ld%%", std::lround(m.illumination)), put("card_value", b);
   put("card_sub", name);
