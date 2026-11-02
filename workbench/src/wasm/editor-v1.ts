@@ -174,26 +174,19 @@ function render() {
 function screensView() {
   const wrap = h('section', 'v1-screens');
   const head = h('div', 'v1-head');
-  head.append(h('h1', '', 'Screens'), h('p', 'dim', 'Home first, then the screens you swipe to, in this order. Their cards on Home follow the same order. Tap a screen to set it up.'));
+  head.append(h('h1', '', 'Screens'), h('p', 'dim', 'Home first, then the screens you swipe to, in this order; their cards on Home follow it. A screen that is off stays in its place, greyed. Tap a screen to set it up.'));
   wrap.append(head);
   const list = h('ol', 'v1-list');
   list.append(row('home'));
-  const on = draft.order.filter((id) => draft.on[id]), off = draft.order.filter((id) => !draft.on[id]);
-  for (const id of on) list.append(row(id));
+  for (const id of draft.order) list.append(row(id));  // one list in deck order; an off screen stays in its place, greyed
   wrap.append(list);
-  if (off.length) {
-    wrap.append(h('h2', 'cap', 'Not on this panel'));
-    const l2 = h('ol', 'v1-list off');
-    for (const id of off) l2.append(row(id));
-    wrap.append(l2);
-  }
   return wrap;
 }
 function row(id: string) {
-  const li = h('li', 'v1-row');
+  const li = h('li', `v1-row${id === 'home' || draft.on[id] ? '' : ' off'}`);
   li.dataset.id = id;
   const on = id === 'home' || draft.on[id];
-  const grip = h('span', 'v1-grip', id === 'home' || !on ? '' : '⋮⋮');
+  const grip = h('span', 'v1-grip', id === 'home' ? '' : '⋮⋮');
   grip.setAttribute('aria-hidden', 'true');
   const thumb = h('button', 'v1-thumb');
   thumb.type = 'button';
@@ -207,8 +200,8 @@ function row(id: string) {
   thumb.onclick = open;
   txt.onclick = open;
   const end = h('div', 'v1-end');
-  if (id !== 'home' && on) {
-    const i = draft.order.filter((x) => draft.on[x]).indexOf(id), n = draft.order.filter((x) => draft.on[x]).length;
+  if (id !== 'home') {
+    const i = draft.order.indexOf(id), n = draft.order.length;
     end.append(iconBtn('↑', `Move ${name(id)} up`, i === 0, () => move(id, -1)), iconBtn('↓', `Move ${name(id)} down`, i === n - 1, () => move(id, 1)));
   }
   if (id !== 'home') {
@@ -216,7 +209,7 @@ function row(id: string) {
     end.append(toggle(on, locked ? `${name(id)} is the start page` : `${name(id)} on this panel`, locked, () => edit(() => { draft.on[id] = !on; })));
   }
   li.append(grip, thumb, txt, end);
-  if (id !== 'home' && on) dragRow(li, id);
+  if (id !== 'home') dragRow(li, id);
   return li;
 }
 function summary(id: string) {
@@ -248,11 +241,9 @@ function toggle(on: boolean, label: string, disabled: boolean, f: () => void) {
 }
 function move(id: string, by: number) {
   edit(() => {
-    const on = draft.order.filter((x) => draft.on[x]);
-    const i = on.indexOf(id), j = i + by;
-    if (j < 0 || j >= on.length) return;
-    [on[i], on[j]] = [on[j], on[i]];
-    draft.order = [...on, ...draft.order.filter((x) => !draft.on[x])];
+    const o = draft.order, i = o.indexOf(id), j = i + by;
+    if (j < 0 || j >= o.length) return;
+    [o[i], o[j]] = [o[j], o[i]];
   });
 }
 let dragging = '';
@@ -267,9 +258,10 @@ function dragRow(li: HTMLElement, id: string) {
     const from = dragging;
     if (!from || from === id) return;
     edit(() => {
-      const on = draft.order.filter((x) => draft.on[x] && x !== from);
-      on.splice(on.indexOf(id) + (draft.order.indexOf(from) < draft.order.indexOf(id) ? 1 : 0), 0, from);
-      draft.order = [...on, ...draft.order.filter((x) => !draft.on[x])];
+      const after = draft.order.indexOf(from) < draft.order.indexOf(id);
+      const o = draft.order.filter((x) => x !== from);
+      o.splice(o.indexOf(id) + (after ? 1 : 0), 0, from);
+      draft.order = o;
     });
   };
 }

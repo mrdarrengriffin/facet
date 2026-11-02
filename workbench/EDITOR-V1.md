@@ -8,8 +8,9 @@ Round 1 is a clickable mock in the workbench (`/wasm/editor-v1`); nothing is in 
 
 **1. Screens.** Every factory screen this firmware has (`/fw/schema` screens of kind `spec`), plus Home. Each row: a
 live thumbnail, its name, where its data comes from, an on / off switch and a handle to drag it into order (up / down
-buttons too, for touch and keyboard). Off = left out of the deck sent; Home and the start page cannot be off. The
-order is the swipe order and the order of Home's cards. The start page is picked here (Home by default).
+buttons too, for touch and keyboard). One list in deck order: a screen that is off stays in its place, greyed, and is
+left out of the deck sent; Home and the start page cannot be off. The order is the swipe order and the order of Home's
+cards. The start page is picked here (Home by default).
 
 **2. Screen settings.** Tap a screen: its preview, large, and its settings as a form made from `/fw/schema` (the
 spec's params): an entity is a picker of that domain from the panel's own Home Assistant link, a list of entities a
@@ -41,7 +42,7 @@ concept (`/wasm/editor`, which stays as the lab).
 One part per round, in the order above: build it, put it on both panels, a preview page with screenshots, Darren uses
 it on the glass and says what is wrong; again until he says yes.
 
-## Open for Darren
-1. Off screens: listed greyed under "Not on this panel" (the mock), or behind an "Add a screen" button?
-2. The panel's check messages are written for agents ("button is settings or a page id of this deck"). The editor
-   says where (screen and setting); should the panel's messages themselves become plain words, one list for both?
+## Decided
+- Off screens stay in the one list, greyed, in their deck order (round 2).
+- The panel's check messages are plain words, one wording for people and agents, the technical id on a second line;
+  changed in the panel (core/spec.h), the editor shows them as they come (round 2).

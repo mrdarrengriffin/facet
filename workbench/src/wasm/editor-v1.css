@@ -41,8 +41,8 @@ h1 { margin: 0; font: var(--t-c-title); }
 .v1-row[draggable='true'] { cursor: grab; }
 .v1-row.lift { opacity: 0.5; }
 .v1-row.over { border-color: var(--f-accent); }
-.v1-list.off .v1-row { background: none; }
-.v1-list.off .v1-thumb { opacity: 0.45; }
+.v1-row.off { background: none; }
+.v1-row.off .v1-thumb, .v1-row.off .v1-txt { opacity: 0.45; }
 .v1-grip { color: var(--f-text-mute); letter-spacing: -2px; user-select: none; }
 .v1-thumb { padding: 0; border: 0; background: none; cursor: pointer; line-height: 0; }
 .v1-canvas { display: block; border-radius: var(--rad-chip); image-rendering: auto; }
