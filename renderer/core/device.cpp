@@ -307,7 +307,11 @@ void run(lv_timer_t *t) {
   std::vector<lv_obj_t *> items;
   if (nav().on && nav().stage == 1) nav().cur.build0 = lv_tick_get(), nav().cur.screen = d->stack.back();
   show(d, d->stack.back(), items);
-  if (nav().on && nav().stage == 1) nav().cur.build1 = lv_tick_get(), nav().stage = 2;
+  if (nav().on && nav().stage == 1) {  // timing: the whole display screen's layout too (what LVGL's next refresh does first)
+    nav().cur.screen_layout0 = lv_tick_get();
+    lv_obj_update_layout(lv_obj_get_screen(d->root));
+    nav().cur.build1 = lv_tick_get(), nav().stage = 2;
+  }
   const char *tr = setting("transition");
   if (!items.empty() && !(tr && !strcmp(tr, "instant"))) rise(items.data(), (int) items.size(), home_dir);
   T = devices.size() == 1 ? d->theme : was;  // a panel (one device): fw::T stays its look for taps / fades
