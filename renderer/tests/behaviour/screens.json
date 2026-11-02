@@ -26,11 +26,14 @@
       "steps": [
         {
           "tap": {
-            "clk": 2
+            "comp": "toggle"
           }
         }
       ],
       "expect": {
+        "no_events": [
+          "navigate"
+        ],
         "events": [
           [
             "toggle",

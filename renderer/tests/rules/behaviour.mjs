@@ -505,7 +505,8 @@ async function scrollTests(b, c, props, vl, den, lagOn, spec) {
 //  come between), no_events?: [name...], sounds?: [name...] (exact, ticks aside), ticks_min?: n, silent?: true,
 //  stack?: [ids], exists?: sel, absent?: sel, scroll?: {sel, at: "start"|"end"|n}}}
 // sel: {text: "Start"|"/re/"} (nearest clickable around that label, else the label) | {type: "arc", i?} |
-//      {clk: i} (i-th clickable) | {hit: "dial", i?} (fw_hits component of a spec screen) | {at: [fx, fy]} (stage fractions)
+//      {clk: i} (i-th clickable) | {hit: "dial", i?} (fw_hits component of a spec screen) | {comp: "toggle", i?} (the i-th
+//      component of that id, its box) | {at: [fx, fy]} (stage fractions)
 function resolveSel(b, sel) {
   if (!sel) return null;
   const S = b.S;
@@ -523,6 +524,7 @@ function resolveSel(b, sel) {
   if (sel.type) return objs.filter((o) => vis(o) && o.t === sel.type)[sel.i || 0] || null;
   if (sel.clk !== undefined) return objs.filter((o) => vis(o) && o.clk)[sel.clk] || null;
   if (sel.hit) return b.hits().filter((h) => h.c === sel.hit)[sel.i || 0] || null;
+  if (sel.comp) return JSON.parse(b.m.UTF8ToString(b.m._fw_comps(b.stage)) || '[]').filter((c) => c.ids.at(-1) === sel.comp)[sel.i || 0] || null;
   return null;
 }
 function matchEvents(evs, want) {  // ordered subsequence
