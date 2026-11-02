@@ -79,7 +79,7 @@ esp32:
       # first). Facet's small C++ allocations (strings, maps, JSON documents) took 71 KB of internal RAM to build the
       # first screen and left 11 KB free; with this, 135 KB stays free and the panel still draws at 61 fps. Task
       # stacks, DMA and ISR buffers ask for internal RAM by their caps, so they are not moved.
-      CONFIG_SPIRAM_MALLOC_ALWAYSINTERNAL: "0"
+      CONFIG_SPIRAM_MALLOC_ALWAYSINTERNAL: "${board.memory.malloc_always_internal}"   # boards/<id>.json memory (facet-242)
       # Image URLs: hardware AES on PSRAM TLS buffers needs internal DMA bounce buffers (failed on the
       # Waveshare: "esp-aes: Failed to allocate memory"); software AES never asks internal RAM for them
       CONFIG_MBEDTLS_HARDWARE_AES: n
@@ -95,7 +95,7 @@ esp32:
       # Wi-Fi/lwIP/DMA keep (the panel UI + 20 bounce rows left 19 KB and the board hung)
       CONFIG_SPIRAM_USE_CAPS_ALLOC: n
       CONFIG_SPIRAM_USE_MALLOC: y
-      # CONFIG_SPIRAM_MALLOC_ALWAYSINTERNAL: "0" above (was 512, before that 4096)
+      # CONFIG_SPIRAM_MALLOC_ALWAYSINTERNAL: above, from boards/guition-4848s040.json memory (was 512, before that 4096)
       CONFIG_SPIRAM_MALLOC_RESERVE_INTERNAL: "49152"
 
 psram:

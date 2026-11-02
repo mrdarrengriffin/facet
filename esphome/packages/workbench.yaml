@@ -201,6 +201,7 @@ facet_wb:
   width: ${board.resolution.w}
   height: ${board.resolution.h}
   density: ${board.scale}
+  keep_pages: ${board.memory.keep_pages}   # boards/<id>.json memory: deck pages kept built (facet-243)
 
 safe_mode:
   boot_is_good_after: 3min   # = facet_wb probation (the on-screen "Update settling" countdown); change both together
