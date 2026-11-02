@@ -600,6 +600,17 @@ inline void check_grid(ArduinoJson::JsonVariantConst n, ArduinoJson::JsonArrayCo
     else if (sa.size() != 2 || !sa[0].is<int>() || !sa[1].is<int>() || sa[0].as<int>() < 1 || sa[0].as<int>() > cols || sa[1].as<int>() < 1 || sa[1].as<int>() > 8)
       err(e, p + ".span", "bad_span", "span is [columns 1.." + std::to_string(cols) + ", rows 1..8]");
   }
+  // a row / hug grid sizes its cells to their content; a component with no size of its own (it fills its cell) draws
+  // nothing there, so the spec is refused, never rendered empty
+  auto sized_by_cell = [](const std::string &comp, ArduinoJson::JsonVariantConst g, const std::string &path, Errs &e) {
+    const char *a = g["p"]["aspect"] | "square";
+    if (comp == "entity_tile" && (!strcmp(a, "row") || !strcmp(a, "hug")))
+      err(e, path, "bad_slot", comp + " fills its cell and a grid with aspect " + a + " sizes its cells to their content: it would draw 0 px; use aspect square or wide");
+  };
+  if (n["in"].is<int>()) {
+    const int k = n["in"] | -1;
+    if (k >= 0 && k < i && !strcmp(nodes[k]["c"] | "", "grid")) sized_by_cell(c, nodes[k], p + ".c", e);
+  }
   if (c == "grid") {
     if (!n["p"]["cols"].isNull() && !n["p"]["min"].isNull()) err(e, p + ".p.min", "bad_prop", "cols or min, not both");
     if (!n["cell"].isNull() && n["p"]["items"].isNull()) err(e, p + ".cell", "bad_cell", "cell goes with items");
@@ -613,6 +624,7 @@ inline void check_grid(ArduinoJson::JsonVariantConst n, ArduinoJson::JsonArrayCo
   if (slots_of(cc.c_str())) { err(e, p + ".cell.c", "bad_cell", "a cell can't be a layout (no grids in grids)"); return; }
   if (const SlotDecl *t = slot_named("grid", "item"); t && !slot_takes(*t, cc))
     err(e, p + ".cell.c", "bad_slot", "a grid's item cell takes " + slot_list(*t) + ", not " + cc);
+  sized_by_cell(cc, n, p + ".cell.c", e);
   static const char *const CK[] = {"c", "p"};
   check_keys(cn.as<ArduinoJson::JsonObjectConst>(), CK, 2, p + ".cell", e);
   for (ArduinoJson::JsonPairConst kv : cn["p"].as<ArduinoJson::JsonObjectConst>()) {

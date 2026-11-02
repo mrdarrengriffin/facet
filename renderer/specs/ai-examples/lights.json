@@ -14,8 +14,7 @@
    "c": "grid",
    "p": {
     "cols": 3,
-    "gap": "group",
-    "aspect": "row"
+    "gap": "group"
    }
   },
   {
@@ -247,8 +246,7 @@
     },
     "min": 0,
     "max": 100,
-    "step": 5,
-    "width": 0
+    "step": 5
    },
    "on": {
     "change": {

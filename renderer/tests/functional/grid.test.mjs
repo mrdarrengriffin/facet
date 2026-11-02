@@ -13,7 +13,7 @@ const SPECS = join(HERE, '..', '..', 'specs');
 const CALLERS = [SPECS, join(SPECS, 'ai-examples')].flatMap((d) => readdirSync(d).filter((f) => f.endsWith('.json') && f !== 'deck.json').map((f) => join(d, f)))
   .filter((f) => /"c":\s*"grid"/.test(readFileSync(f, 'utf8')));
 // a docs AI example a panel refuses today (the docs preview draws it anyway)
-const KNOWN_REFUSED = { 'lights.json': 'its slider has a width prop, which the Slider does not have' };
+const KNOWN_REFUSED = {};
 const den = (t) => (t.b.S > 600 ? '1.5x' : '1x');
 const INSET = { '1.5x': 32, '1x': 20 };
 const CW = (t) => t.b.S - 2 * INSET[den(t)];
@@ -54,7 +54,7 @@ export default {
         const bad = s.accepts.map((a) => (typeof a === 'string' ? a : a.c)).filter((a) => !ids.has(a)); t.eq(bad, [], `${comp}.${s.name}: every accepted id is a component`);
       }
     } },
-    { name: 'slot rules refused at spec load with a path: wrong type in a cell, two in one cell, wrong item template, each into a cell', async run(t) {
+    { name: 'slot rules refused at spec load with a path: wrong type in a cell, two in one cell, wrong item template, each into a cell, a tile in a row grid', async run(t) {
       await t.device();
       const g = { c: 'grid', p: { cols: 3 } };
       let r = check(t, [g, { c: 'stat', p: {}, in: 0, slot: 0 }, { c: 'icon', p: { name: 'bulb' }, in: 0, slot: 1 }]);
@@ -69,6 +69,12 @@ export default {
       t.ok(!r.includes('bad_slot'), `a checkbox template passes: ${r.slice(0, 120)}`);
       r = check(t, [g, { c: 'stat', p: {}, in: 0, slot: 0, each: 'rooms' }]);
       t.ok(r.includes('bad_slot') && r.includes('.nodes[1].each'), `each into a one-node cell refused: ${r.slice(0, 200)}`);
+      r = check(t, [{ c: 'grid', p: { cols: 3, aspect: 'row' } }, { c: 'entity_tile', p: {}, in: 0, slot: 0 }]);
+      t.ok(r.includes('bad_slot') && r.includes('.nodes[1].c') && r.includes('entity_tile') && r.includes('0 px'), `an Entity tile in a row grid refused, naming it and why: ${r.slice(0, 200)}`);
+      r = check(t, [{ c: 'grid', p: { items: 'a,b', aspect: 'hug' }, cell: { c: 'entity_tile', p: { label: '$item' } } }]);
+      t.ok(r.includes('bad_slot') && r.includes('.nodes[0].cell.c') && r.includes('entity_tile'), `an Entity tile template in a hug grid refused: ${r.slice(0, 200)}`);
+      r = check(t, [{ c: 'grid', p: { cols: 3, aspect: 'square' } }, { c: 'entity_tile', p: {}, in: 0, slot: 0 }]);
+      t.ok(!r.includes('bad_slot'), `an Entity tile in a square grid passes: ${r.slice(0, 120)}`);
       r = check(t, [{ c: 'group', p: {} }, { c: 'slider', p: {}, in: 0 }]);
       t.ok(!r.includes('bad_slot'), 'a legacy layout (slots: N) takes any component, as before');
     } },
