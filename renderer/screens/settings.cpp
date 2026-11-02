@@ -1,18 +1,16 @@
 // Settings screen (docs: Screens > Settings, @facet/ui screens/settings.ts, CSS .fs-set*): the first full screen, every
 // personalisation setting from the ONE schema tokens/settings.json (fw::set::, tools/gen_settings.mjs), so the screen,
 // the panel's Home Assistant entities, the ESPHome page and the docs never drift. Composed only of real components:
-//   header   the Header component (back + "Settings" + the screen chrome: the live clock) at (inset, inset)
-//   content  from lay::top to the screen bottom, one scrolling column (bottom padding inset); per schema group:
-//            its label (docs .fs-set-glabel = the screen type label, caps, as the header's: the
-//            component caps-sm was too small) then its rows; label to rows = section-gap, rows to the next label = group
+//   header   the Header component (back + "Settings" + the screen chrome: the live clock) in the Page's head
+//   body     Screen > Page (fx::page) > Header + list Body (C1-C3), real components only; per schema group a Section
+//            header (size label) over its rows, groups a group apart (above:group, the spec renderer's rule)
 //   rows     by the setting's control:
-//            segmented / swatches  a List row (title, no trailing, not a tap target) + the Segmented / Accent swatches
-//                                  component appended as its trailing part (docs .fs-set with an inline control)
+//            segmented / swatches  a read-out List row (title, act none) with the Segmented / Accent swatches in its
+//                                  end slot
 //            toggle                a List row with trailing toggle (the whole row is the hit area)
 //            sheet / presets       a List row with value + chevron; a tap opens the Bottom sheet
-//            slider                a slider row, layout token set-slider-row-h (144 / 96): hairline, title + value on
-//                                  top (title / body type), the Slider component full width under them; the value
-//                                  follows the knob while it moves
+//            slider                a read-out List row (the name, the value in words) over the Slider component;
+//                                  the words follow the knob while it moves
 //   sheet    the Bottom sheet component in overlay mode, the screen's last child (its single overlay root)
 // Values come from the props (one per setting = the playground; missing = the live value, fw::dev::setting). Inside the
 // Device (live) view, Theme / Accent restyle that device; the workbench's own theme and accent stay global settings.
@@ -24,6 +22,7 @@
 // Update path: a prop change moves every control in place (FW_UPDATE(settings) at the end), no rebuild.
 // Bench: prop sheet = "loop" opens and closes the sheet forever over this screen (the Guition sheet speed test).
 #include "fw.h"
+#include "fx.h"
 #include "settings_gen.h"
 #include "device.h"
 #include "spec.h"
@@ -33,12 +32,6 @@ using Doc = ArduinoJson::JsonDocument;
 using ArduinoJson::JsonArray;
 using ArduinoJson::JsonObject;
 
-lv_obj_t *box(lv_obj_t *parent) {
-  lv_obj_t *o = lv_obj_create(parent);
-  lv_obj_remove_style_all(o);
-  lv_obj_remove_flag(o, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
-  return o;
-}
 lv_obj_t *build(const char *id, lv_obj_t *parent, Doc &props) {
   const fw::Component *c = fw::find(id);
   if (!c) return nullptr;
@@ -46,10 +39,19 @@ lv_obj_t *build(const char *id, lv_obj_t *parent, Doc &props) {
   c->build(parent, props.as<fw::Props>());
   return lv_obj_get_child_count(parent) > before ? lv_obj_get_child(parent, -1) : nullptr;
 }
-lv_obj_t *spacer(lv_obj_t *parent, int h) {
-  lv_obj_t *s = box(parent);
-  lv_obj_set_size(s, 1, h);
-  return s;
+// a List row's end slot (shown once it holds something), where its trailing control goes (C8a)
+lv_obj_t *end_of(lv_obj_t *row) {
+  lv_obj_t *e = fw::spec::slot_of(row, 0);
+  if (!e) return row;
+  lv_obj_remove_flag(e, LV_OBJ_FLAG_HIDDEN);
+  return e;
+}
+// a group's Section header (size label); not the first: a group apart (the spec renderer's rule)
+void group(lv_obj_t *body, const char *title, bool first) {
+  Doc sh;
+  sh["title"] = title, sh["size"] = "label", sh["badge"] = false, sh["right"] = "none";
+  lv_obj_t *h = build("section_header", body, sh);
+  if (h && !first) fx::use(h, "above:group");
 }
 
 // ---- values (as @facet/settings format())
@@ -97,10 +99,6 @@ std::string lower(std::string t) {
 }
 
 // ---- the screen
-struct SliderRow {
-  const fw::set::Setting *s;
-  lv_obj_t *value, *slider;
-};
 struct Screen {
   lv_obj_t *root = nullptr, *sheet = nullptr;
   bool loop = false;
@@ -109,6 +107,7 @@ struct Screen {
   lv_obj_t *sheet_row = nullptr;
   lv_obj_t *ctrl[fw::set::N_SETTINGS] = {};  // per setting: the component the update path moves (Segmented, Accent
                                              // swatches, List row, Slider)
+  lv_obj_t *words[fw::set::N_SETTINGS] = {};  // per slider setting: the read-out List row over it (its value in words)
   std::string values[fw::set::N_SETTINGS];  // per setting: its value (option id, "true" / "false", the number)
 };
 int index_of(const fw::set::Setting &s) { return (int) (&s - fw::set::SETTINGS); }
@@ -188,10 +187,13 @@ void ctrl_props(const fw::set::Setting &s, const std::string &v, Doc &d) {
       d["max"] = s.max;
       d["step"] = s.step;
       d["value"] = atof(v.c_str());
-      // track + knob = the row's content width (width prop = the track in dp)
-      d["width"] = (int) std::lround((fw::lay::content_w - 2 * fw::sp::s4 - fw::touch::min / 2) / fw::D);
       return;
   }
+}
+// a slider setting's read-out row: its name and the value in words
+void words_props(const fw::set::Setting &s, const std::string &v, Doc &d) {
+  d["title"] = s.label, d["icon"] = "none", d["trailing"] = "value", d["act"] = "none";
+  d["value"] = format_number(s, atof(v.c_str()));
 }
 const char *ctrl_id(const fw::set::Setting &s) {
   using namespace fw::set;
@@ -267,7 +269,6 @@ void open_sheet(Screen *scr, const fw::set::Setting &s, lv_obj_t *row) {
 // the row of setting s in the column: its component (kept in scr->ctrl for the update path)
 void row_for(Screen *scr, lv_obj_t *col, const fw::set::Setting &s) {
   using namespace fw::set;
-  const fw::Theme &t = *fw::T;
   const int k = index_of(s);
   const std::string &v = scr->values[k];
   Doc d;
@@ -279,10 +280,10 @@ void row_for(Screen *scr, lv_obj_t *col, const fw::set::Setting &s) {
       rd["title"] = s.label;
       rd["icon"] = "none";
       rd["trailing"] = "none";
+      rd["act"] = "none";  // the control is the target, not the row
       lv_obj_t *r = build("list_row", col, rd);
       if (!r) return;
-      lv_obj_remove_flag(r, LV_OBJ_FLAG_CLICKABLE);  // the control is the target, not the row
-      scr->ctrl[k] = build(ctrl_id(s), r, d);
+      scr->ctrl[k] = build(ctrl_id(s), end_of(r), d);
       return;
     }
     case TOGGLE:
@@ -303,36 +304,25 @@ void row_for(Screen *scr, lv_obj_t *col, const fw::set::Setting &s) {
       }, LV_EVENT_CLICKED, scr);
       return;
     }
-    case SLIDER: {
-      lv_obj_t *r = box(col);
-      lv_obj_set_size(r, fw::lay::content_w, fw::lay::set_slider_row_h);
-      lv_obj_set_style_border_side(r, LV_BORDER_SIDE_TOP, 0);  // the List row hairline
-      lv_obj_set_style_border_width(r, fw::stroke::hair, 0);
-      lv_obj_set_style_border_color(r, t.line, 0);
-      lv_obj_set_style_pad_top(r, fw::sp::s7 - fw::stroke::hair, 0);  // the border counts as content offset
-      lv_obj_set_style_pad_hor(r, fw::sp::s4, 0);                   // = List row side padding
-      lv_obj_set_flex_flow(r, LV_FLEX_FLOW_COLUMN);
-      lv_obj_set_style_pad_row(r, fw::sp::s5, 0);
-      lv_obj_t *top = box(r);
-      lv_obj_set_size(top, LV_PCT(100), fw::style(fw::ty::title).box);
-      lv_obj_set_flex_flow(top, LV_FLEX_FLOW_ROW);
-      lv_obj_set_flex_align(top, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-      lv_obj_t *ti = fw::text(top, fw::ty::title, s.label, t.text);
-      lv_obj_set_height(ti, fw::style(fw::ty::title).box);
-      lv_obj_set_flex_grow(ti, 1);
-      auto *sr = new SliderRow{&s, nullptr, nullptr};
-      sr->value = fw::text(top, fw::ty::body, format_number(s, atof(v.c_str())).c_str(), t.text_dim);
-      lv_obj_set_height(sr->value, fw::style(fw::ty::body).box);
-      sr->slider = scr->ctrl[k] = build("slider", r, d);
-      lv_obj_add_event_cb(r, [](lv_event_t *e) { delete (SliderRow *) lv_event_get_user_data(e); }, LV_EVENT_DELETE, sr);
-      // the value follows the knob: the Slider's live "input" (every step the shown value crosses: a finger, or the
-      // update path's quiet sweep)
-      fw::listen(r, [](lv_obj_t *, const char *name, const char *detail, void *user) {
-        if (strcmp(name, "input")) return;
-        auto *sr = (SliderRow *) user;
-        const std::string txt = format_number(*sr->s, atof(detail));
-        if (strcmp(lv_label_get_text(sr->value), txt.c_str())) fw::set_text(sr->value, fw::ty::body, txt.c_str());
-      }, sr);
+    case SLIDER: {  // a read-out List row (the name, the value in words) over the Slider
+      Doc wd;
+      words_props(s, v, wd);
+      scr->words[k] = build("list_row", col, wd);
+      lv_obj_t *sl = scr->ctrl[k] = build("slider", col, d);
+      if (!sl || !scr->words[k]) return;
+      // the words follow the knob: the Slider's live "input" (a finger, or the update path's quiet sweep)
+      fw::listen(sl, [](lv_obj_t *from, const char *name, const char *detail, void *user) {
+        auto *scr = (Screen *) user;
+        if (!strcmp(name, "input"))
+          for (int k = 0; k < fw::set::N_SETTINGS; k++)
+            if (scr->ctrl[k] == from && scr->words[k]) {
+              Doc wd;
+              words_props(fw::set::SETTINGS[k], detail, wd);
+              fw::update_child(fw::find("list_row"), scr->words[k], wd.as<fw::Props>());
+              return;
+            }
+        if (lv_obj_t *up = lv_obj_get_parent(from)) fw::notify(up, name, detail);
+      }, scr);
       return;
     }
   }
@@ -359,38 +349,23 @@ std::string meta_json() {
 const std::string META = meta_json();
 
 void build_settings(lv_obj_t *parent, fw::Props p) {
-  const fw::Theme &t = *fw::T;
   auto *scr = new Screen;
-  scr->root = box(parent);
+  scr->root = fx::box(parent, "fill");
   lv_obj_set_user_data(scr->root, scr);
-  lv_obj_set_size(scr->root, fw::lay::screen_w, fw::lay::screen_h);
-  lv_obj_set_style_bg_color(scr->root, t.bg, 0);
-  lv_obj_set_style_bg_opa(scr->root, LV_OPA_COVER, 0);
   lv_obj_add_event_cb(scr->root, [](lv_event_t *e) { delete (Screen *) lv_event_get_user_data(e); }, LV_EVENT_DELETE, scr);
   for (int i = 0; i < fw::set::N_SETTINGS; i++) scr->values[i] = value_of(fw::set::SETTINGS[i], p);
   fw::listen(scr->root, on_control, scr);
 
   Doc hd;  // the Header (+ its screen chrome: the live clock; the settings button is Home's only)
   hd["label"] = "Settings";
-  if (lv_obj_t *h = build("header", scr->root, hd)) lv_obj_set_pos(h, fw::lay::inset, fw::lay::inset);
+  const fx::Page fp = fx::page(scr->root, "list");  // Screen > Page > Header + list Body (C1-C3)
+  build("header", fp.head, hd);
+  lv_obj_t *c = fp.body;
 
-  lv_obj_t *c = box(scr->root);
-  lv_obj_add_flag(c, (lv_obj_flag_t) (LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_CLICKABLE));  // clickable: a drag in a gap scrolls too
-  lv_obj_set_scroll_dir(c, LV_DIR_VER);
-  lv_obj_set_scrollbar_mode(c, LV_SCROLLBAR_MODE_OFF);  // the Facet scroll track is its own part (later)
-  lv_obj_set_pos(c, fw::lay::inset, fw::lay::top);
-  lv_obj_set_size(c, fw::lay::content_w, fw::lay::screen_h - fw::lay::top);
-  lv_obj_set_style_pad_bottom(c, fw::lay::inset, 0);
-  lv_obj_set_flex_flow(c, LV_FLEX_FLOW_COLUMN);
-
-  // per group: its label (docs .fs-set-glabel: the screen type label, caps, the header's own style; text-dim, docs
-  // text-mute is disabled-only here) at its line box, section-gap above its rows; groups a group apart
+  // per group: a Section header (size label) over its rows; groups a group apart
   {  // "panel": Screens (Settings > Screens: which screens this panel has, their sources and options) + Home Assistant
     // (Settings > Home Assistant: the panel's own link to HA, screens/ha_link.cpp)
-    lv_obj_t *gl = fw::text(c, fw::ty::label, "panel", t.text_dim);
-    lv_obj_remove_flag(gl, LV_OBJ_FLAG_CLICKABLE);
-    lv_obj_set_height(gl, fw::style(fw::ty::label).box);
-    spacer(c, fw::lay::section_gap);
+    group(c, "panel", true);
     Doc deck;
     deserializeJson(deck, fw::spec::deck_json());
     int on = 0, all = 0;
@@ -414,14 +389,9 @@ void build_settings(lv_obj_t *parent, fw::Props p) {
         auto *o = (lv_obj_t *) lv_event_get_current_target(e);
         if (!lv_obj_has_state(o, fw::st::OFF)) fw::emit(o, "navigate", "ha_link");
       }, LV_EVENT_CLICKED, nullptr);
-    spacer(c, fw::lay::group);
   }
   for (int g = 0; g < fw::set::N_GROUPS; g++) {
-    if (g) spacer(c, fw::lay::group);
-    lv_obj_t *gl = fw::text(c, fw::ty::label, fw::set::GROUPS[g].label, t.text_dim);
-    lv_obj_remove_flag(gl, LV_OBJ_FLAG_CLICKABLE);
-    lv_obj_set_height(gl, fw::style(fw::ty::label).box);  // fw::text leaves default labels at content height
-    spacer(c, fw::lay::section_gap);
+    group(c, fw::set::GROUPS[g].label, false);
     for (int i = 0; i < fw::set::N_SETTINGS; i++)
       if (!strcmp(fw::set::SETTINGS[i].group, fw::set::GROUPS[g].id)) row_for(scr, c, fw::set::SETTINGS[i]);
   }
@@ -447,6 +417,11 @@ FW_UPDATE(settings) {
     Doc d;
     ctrl_props(s, scr->values[i], d);
     fw::update_child(fw::find(ctrl_id(s)), scr->ctrl[i], d.as<fw::Props>());
+    if (scr->words[i]) {
+      Doc wd;
+      words_props(s, scr->values[i], wd);
+      fw::update_child(fw::find("list_row"), scr->words[i], wd.as<fw::Props>());
+    }
   }
   if (!p["sheet"].is<const char *>()) return true;  // no sheet prop (the device runtime's value moves): the sheet stays
   const char *sheet = p["sheet"] | "closed";
