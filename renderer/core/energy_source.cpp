@@ -1,5 +1,5 @@
 // The energy feed (CONTRACT.md C51): the reserved entity panel.energy (core/spec.h "local sources") in the HA store,
-// the one shape the Energy screen binds to, whatever measures the use. Same file on the panels and in WASM.
+// the one shape the Energy screen binds to, whatever measures the use. On the Feed base (core/feed.h). Same file on the panels and in WASM.
 //   state ok | loading (no data yet) | error (the source is unavailable); attributes: cost ("£2.42"), line ("4.2 kWh ·
 //   12% less than yesterday by now"), rate ("Normal 26.2p until 16:00, then 39.4p"), tone (the band as a status tone:
 //   peak working, cheap info, normal idle), values (48 half-hours of kWh, "-" = not yet), bands (48 band ids), now (the
@@ -43,6 +43,7 @@
 #include <cstdio>
 #include <ctime>
 #include "energy.h"
+#include "feed.h"
 #include "fw.h"
 #include "ha.h"
 #include "device.h"
@@ -53,8 +54,8 @@
 
 namespace fw::dev::energy_source {
 namespace {
-constexpr const char *E = "panel.energy";
-lv_timer_t *tick = nullptr;
+std::function<void(const char *, const std::string &)> put_e;  // the feed's put (Energy below)
+void put_st(fw::feed::State st);
 std::string hm(double t) {
   const time_t s = (time_t) (t / 1000);
   struct tm tm;
@@ -67,8 +68,8 @@ std::string hm(double t) {
 struct ExtOut { bool on = false; std::string live, card, tone = "dim", cheapest, event, event_tone = "idle"; };
 void publish(const fw::energy::Data &d, double rate_now, double rate_next, bool banded = true, const ExtOut *x = nullptr) {
   namespace en = fw::energy;
-  auto put = [](const char *a, const std::string &x) { ha::put(E, a, x); };
-  put("", "ok");
+  auto &put = put_e;
+  put_st(fw::feed::OK);
   put("cost", en::money(d.cost));
   char b[96];
   const double y = d.yesterday_to_now;
@@ -248,24 +249,25 @@ bool fixtures = false;   // source fixtures: the sample day + the extras' test d
 std::string extra_cfg = "auto";
 void show();
 
-void put_state(const char *st, const char *line) {
-  ha::put(E, "cost", fw::energy::money(NAN)), ha::put(E, "line", line);
-  ha::put(E, "rate", ""), ha::put(E, "tone", "idle"), ha::put(E, "watts", "-- W now");
-  ha::put(E, "live", "-- W now"), ha::put(E, "card", "-- W now"), ha::put(E, "card_tone", "dim");
-  ha::put(E, "cheapest", ""), ha::put(E, "event", ""), ha::put(E, "event_tone", "idle");
-  ha::put(E, "", st);
+void put_state(fw::feed::State st, const char *line) {  // loading / error: the reason in the line, the rest keeps its last
+  put_e("cost", fw::energy::money(NAN)), put_e("line", line);                         // values (the charts)
+  put_e("rate", ""), put_e("tone", "idle"), put_e("watts", "-- W now");
+  put_e("live", "-- W now"), put_e("card", "-- W now"), put_e("card_tone", "dim");
+  put_e("cheapest", ""), put_e("event", ""), put_e("event_tone", "idle");
+  put_st(st);
 }
 void put_found() {
   const char *f = !hl::ready() ? "Home Assistant not connected" : !prefs.read ? (why_now.empty() ? "Reading Home Assistant" : why_now.c_str())
                   : prefs.found.empty() ? "Not set up in Home Assistant" : prefs.found.c_str();
-  ha::put(E, "found", ext && !fixtures && prefs.read && !prefs.found.empty() ? prefs.found + " \xC2\xB7 " + ext_name() : std::string(f));
+  put_e("found", ext && !fixtures && prefs.read && !prefs.found.empty() ? prefs.found + " \xC2\xB7 " + ext_name() : std::string(f));
 }
 void from_ha() {
   namespace en = fw::energy;
-  if (!hl::ready()) { put_state("error", "Home Assistant not connected"); return; }
-  if (!prefs.read) { if (why_now.empty()) put_state("loading", "loading"); else put_state("error", "Home Assistant not reached"); return; }
-  if (!prefs.grid && !prefs.solar) { put_state("error", "Energy dashboard not set up in Home Assistant"); return; }
-  if (today_at < 0) { put_state("loading", "loading"); return; }
+  namespace fd = fw::feed;
+  if (!hl::ready()) { put_state(fd::ERROR, "Home Assistant not connected"); return; }
+  if (!prefs.read) { if (why_now.empty()) put_state(fd::LOADING, "loading"); else put_state(fd::ERROR, "Home Assistant not reached"); return; }
+  if (!prefs.grid && !prefs.solar) { put_state(fd::ERROR, "Energy dashboard not set up in Home Assistant"); return; }
+  if (today_at < 0) { put_state(fd::LOADING, "loading"); return; }
   const double now = (double) time(nullptr) * 1000, d0 = en::midnight(now);
   bool costed = false;
   for (auto &p : prefs.stats) costed |= p.second == R_COST;
@@ -301,6 +303,7 @@ void from_ha() {
   publish(d, rn, rx, banded, &x);
 }
 void next();
+void F_live();  // the feed's live reads again (the prefs name the price and power sensors)
 // one read (a WS command or a REST GET): a fresh Sax with these handlers, then done(ok) and the next step. soft: an
 // extra's read (its failure is not the feed's: the next read goes on, why_now untouched)
 using Feed = std::function<void(const char *, size_t)>;
@@ -320,6 +323,7 @@ void start(Step s, Issue issue, std::function<void(Sax &, const std::string &, b
     step = S_IDLE;
     done(good);
     put_found();
+    F_live();
     show();
     if (good || soft) next();
   });
@@ -720,28 +724,53 @@ void next() {
   }
   ext_next(now);
 }
-void entity_put(const std::string &e, const std::string &, const std::string &) {
-  if (e.empty() || !want_data || !ha::watched(E)) return;
-  if (e == prefs.price_e || e == prefs.power_e || (ext && e == "sensor." + oct.meter + "_current_demand")) from_ha();
+// every field keeps its last value when a round does not put it (the charts while loading), but what only an extra
+// fills: blank without one
+std::vector<fw::feed::Field> energy_fields() {
+  std::vector<fw::feed::Field> v;
+  for (const char *n : {"cost", "line", "card", "card_tone"}) v.push_back({n, true, nullptr});
+  for (const char *n : {"rate", "tone", "values", "bands", "now", "week_cost", "week_line", "week", "week_before", "days", "watts", "found"})
+    v.push_back({n, false, nullptr});
+  for (const char *n : {"live", "cheapest", "event"}) v.push_back({n, false, nullptr});
+  v.push_back({"event_tone", false, nullptr});
+  return v;
 }
-void fresh() {
-  if (!tick) tick = lv_timer_create([](lv_timer_t *) { if (ha::watched(E)) fresh(); }, 60000, nullptr);
-  static const bool hooked = (ha::on_put(entity_put), true);
-  (void) hooked;
-  const std::string &cfg = ha::feed_config(E);
-  Doc c;
-  deserializeJson(c, cfg.empty() ? "{}" : cfg.c_str());
-  const std::string src = c["source"] | "sample";
-  const bool was_fixtures = fixtures;
-  want_data = src == "ha", fixtures = src == "fixtures", extra_cfg = c["extra"] | "auto";
-  if (fixtures != was_fixtures) ext = nullptr, oct = Oct();
-  if (fixtures) choose_fixtures();
-  else if (want_data && prefs.read) choose_ha();
-  else ext = nullptr, oct = Oct();
-  put_found();
-  next();  // the prefs whatever the source (Settings shows what HA's Energy dashboard has); the data for source ha
-  show();
-}
-[[maybe_unused]] const bool registered = (ha::on_local(E, fresh), true);  // binds on panel.energy never reach a host
+class Energy : public fw::feed::Feed {
+ public:
+  Energy() : fw::feed::Feed("panel.energy", 60000, "sample", energy_fields()) {}
+  using fw::feed::Feed::put;
+  using fw::feed::Feed::state;
+  void live() {  // the price, the power and the extra's demand: a change shows at once
+    std::vector<std::pair<std::string, std::string>> r;
+    if (want_data) {
+      for (const std::string &e : {prefs.price_e, prefs.power_e}) if (!e.empty()) r.push_back({e, ""});
+      if (ext) r.push_back({"sensor." + oct.meter + "_current_demand", ""});
+    }
+    reads(r);
+  }
+
+ protected:
+  void sample() override { round(); }  // fw::energy::sample: the day the sample source shows (show())
+  void fill() override { round(); }
+
+ private:
+  void round() {
+    const std::string src = cfg()["source"] | "sample";
+    const bool was_fixtures = fixtures;
+    want_data = src == "ha", fixtures = src == "fixtures", extra_cfg = cfg()["extra"] | "auto";
+    if (fixtures != was_fixtures) ext = nullptr, oct = Oct();
+    if (fixtures) choose_fixtures();
+    else if (want_data && prefs.read) choose_ha();
+    else ext = nullptr, oct = Oct();
+    live();
+    put_found();
+    next();  // the prefs whatever the source (Settings shows what HA's Energy dashboard has); the data for source ha
+    show();
+  }
+};
+Energy F;
+void F_live() { F.live(); }
+void put_st(fw::feed::State st) { F.state(st); }
+[[maybe_unused]] const bool wired = (put_e = [](const char *a, const std::string &x) { F.put(a, x); }, true);
 }  // namespace
 }  // namespace fw::dev::energy_source
