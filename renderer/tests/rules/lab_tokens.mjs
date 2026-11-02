@@ -4,8 +4,8 @@
 // Moved from tools/lab_test.mjs onto the runner's loop (tools/lib/rules.mjs): once per contract component and density,
 // on the case's module, on a 480 x 360 stage of its own with the props below (the tokens show on those parts).
 // parts whose whole look is a type style + a colour (no size of their own): nothing to tune, the check passes them
-// (Title, the Header's text)
-const TEXT_ONLY = new Set(['title']);
+// (Title, Text: its box is its type's line boxes, the Header's text)
+const TEXT_ONLY = new Set(['title', 'text']);
 const CARD = ['layout:card-pad', 'radius:card', 'stroke:hair'];   // must repaint the Card
 const PAGE = ['layout:inset', 'layout:gutter', 'layout:top', 'layout:header-gap', 'squeeze'];  // page only
 // Header round 3: EVERY contract component (meta "contract": 2) is mounted and must list >= 1 tunable token
@@ -33,6 +33,7 @@ const EXTRA = { card: [{ opening: false }, CARD, PAGE],
   status_line: [{ text: 'Normal 26.2p until 16:00' }, ['space:3'], PAGE],
   bins_art: [{ colours: 'black,green' }, ['layout:bin-hero', 'stroke:edge'], PAGE],
   cover_visual: [{ kind: 'venetian', position: 40, heading: 80 }, ['layout:cover-pad', 'layout:cover-rail', 'layout:cover-bar', 'layout:cover-slat', 'layout:cover-stack', 'stroke:edge', 'space:1'], PAGE],
+  media_visual: [{ playing: false }, [], PAGE],  // still, as media_hero: a turning reel or record repaints between a tune and its "and back"
   media_hero: [{ playing: false }, ['layout:m-gap', 'layout:m-col-top', 'layout:m-title-h'], PAGE],  // still: a turning picture repaints between a tune and its "and back"
   slider_row: [{}, ['layout:gutter', 'layout:m-vol-label'], PAGE.filter((n) => n !== 'layout:gutter')],  // its row's gap is its own gutter
   bins_next: [{}, ['layout:bin-hero'], ['layout:inset', 'layout:top', 'layout:header-gap', 'squeeze']],
