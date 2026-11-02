@@ -112,7 +112,7 @@ int own_items(lv_obj_t *en, fw::Props p) {
     n += build("icon_button", en, q) != nullptr;
   }
   if (timer_status(p)) {
-    lv_obj_t *st = fx::text(en, "", "type:label", "fg:accent-text");
+    lv_obj_t *st = fx::text(en, "", "type:label", "fg:accent-text", "none");
     lv_timer_t *tm = lv_timer_create(status_tick, 1000, st);
     status_tick(tm);
     lv_obj_add_event_cb(st, [](lv_event_t *e) { lv_timer_delete((lv_timer_t *) lv_event_get_user_data(e)); }, LV_EVENT_DELETE, tm);

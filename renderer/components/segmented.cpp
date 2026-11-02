@@ -85,7 +85,7 @@ void fill(lv_obj_t *box, fw::Props p) {
     lv_obj_add_flag(box, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_remove_flag(box, LV_OBJ_FLAG_SCROLLABLE);
     fx::use(box, "word-slot");
-    fx::fit_grid(fx::text(box, fw::st::UNAVAILABLE_TEXT, "type:body", "fg:unavailable-note"));
+    fx::fit_grid(fx::text(box, fw::st::UNAVAILABLE_TEXT, "type:body", "fg:unavailable-note", "none"));
     lv_obj_add_state(box, ST_OFF);  // the tap = blocked (the root's handler, made once in build)
     return;
   }
@@ -135,7 +135,7 @@ void fill(lv_obj_t *box, fw::Props p) {
     if (n > 1) plate(s, "seg-plate", false, i == 0 ? "ring-r" : i == n - 1 ? "ring-l" : "ring-lr", false);  // separator sides, 1 hairline
 
     fx::use(s, "part:segment");  // the theme's segment (C46): a theme that styles it draws each segment (Win98: raised, the chosen one sunken)
-    lv_obj_t *l = fx::text(s, labels[i].c_str(), "type:label", "fg:text-dim");
+    lv_obj_t *l = fx::text(s, labels[i].c_str(), "type:label", "fg:text-dim", "dot");
     fx::use(l, "fg:text", ST_ON);  // chosen = full text colour (docs)
     fx::use(l, "fg:disabled-ink", ST_OFF);
     fx::use(l, "fg:disabled-on-fill", ST_ON | ST_OFF);  // disabled-ink fails 3:1 on the plate

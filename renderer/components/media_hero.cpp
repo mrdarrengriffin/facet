@@ -37,12 +37,12 @@ void fill(lv_obj_t *root, fw::Props p) {
   fw::find("media_visual")->build(slot, d.as<fw::Props>());
   lv_obj_t *col = fx::box(root, "col");
   for (const char *t : {"grow", "gap:2"}) fx::use(col, t);
-  lv_obj_t *st = fx::text(col, p["state"] | "idle", "type:label", ink(p));
+  lv_obj_t *st = fx::text(col, p["state"] | "idle", "type:label", ink(p), "none");
   for (const char *t : {"fill-w", "above:m-col-top"}) fx::use(st, t);
-  lv_obj_t *ti = fx::text(col, p["title"] | "Nothing playing", "type:headline", "fg:text");
+  lv_obj_t *ti = fx::text(col, p["title"] | "Nothing playing", "type:headline", "fg:text", "fit");
   for (const char *t : {"fill-w", "h:m-title-h", "max-h:m-title-h"}) fx::use(ti, t);  // two lines, then "..."
   lv_label_set_long_mode(ti, LV_LABEL_LONG_MODE_DOTS);
-  lv_obj_t *ar = fx::text(col, p["artist"] | "", "type:body", "fg:text-dim");
+  lv_obj_t *ar = fx::text(col, p["artist"] | "", "type:body", "fg:text-dim", "none");
   fx::use(ar, "fill-w");
 }
 }  // namespace

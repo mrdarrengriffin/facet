@@ -196,7 +196,7 @@ Sheet *sheet(lv_obj_t *host, fw::Props p) {
   lv_obj_t *panel = fw::sheet::panel(s->ov);
 
   lv_obj_t *head = fx::box(panel, "row");  // as tall as the Close button (ibtn-square = layout row, 48 / 32)
-  s->title = fx::text(head, "", "type:label", "fg:text-dim");
+  s->title = fx::text(head, "", "type:label", "fg:text-dim", "none");
   fx::use(s->title, "grow-w");
   Doc cp;
   cp["style"] = "square";

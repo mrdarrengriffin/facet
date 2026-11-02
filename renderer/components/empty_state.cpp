@@ -15,7 +15,7 @@ const char *tone(const char *s) {
        : !strcmp(s, "info") ? "fg:blue" : !strcmp(s, "idle") ? "fg:text-dim" : "fg:ok";
 }
 void line(lv_obj_t *c, const char *type, const char *s, const char *fg) {
-  lv_obj_t *l = fx::text(c, s, type, fg);
+  lv_obj_t *l = fx::text(c, s, type, fg, "dot");
   fx::use(l, "cell-text");  // the full width, centred
   lv_label_set_long_mode(l, LV_LABEL_LONG_MODE_DOTS);
 }

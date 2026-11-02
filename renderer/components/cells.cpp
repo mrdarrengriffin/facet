@@ -67,7 +67,7 @@ lv_obj_t *cell(lv_obj_t *g, const Cells &k) {  // an empty cell (a filler, or a 
 void sample_half(lv_obj_t *h) {  // an unbuilt part: a plain labelled outline (Readout is not on the contract yet)
   lv_obj_t *o = fx::box(h, "centre");
   for (const char *s : {"fill", "border:line-hi"}) fx::use(o, s);
-  fx::text(o, "Readout", "type:label", "fg:text-dim");
+  fx::text(o, "Readout", "type:label", "fg:text-dim", "none");
 }
 void sample_card(lv_obj_t *s) {
   const fw::Component *c = fw::find("card");

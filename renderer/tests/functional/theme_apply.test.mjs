@@ -78,7 +78,7 @@ const suite = {
       use(t, 'facet');
       t.eq(out.slice(0, 6), [], 'A -> B -> A live = fresh A');
     } },
-    { name: 'P2 + P6 per theme: no object outside its parent and no text cut that Facet does not cut (theme fonts and sizes included)', mount: M, async run(t) {
+    { name: 'P2 + P6 per theme: no object outside its parent and no text cut except by its rule: dot or fit, never none (C40; theme fonts and sizes included)', mount: M, async run(t) {
       const out = [];
       const proof = (t) => JSON.parse(t.b.str('proof', (c) => t.b.str('', (a) => t.b.m.UTF8ToString(t.b.m._fw_lab(t.b.stage, c, a)))));
       for (const c of cases(t)) {
@@ -86,6 +86,7 @@ const suite = {
         const f = proof(t), cut = new Set(f.trunc.map((x) => x.why.replace(/ needs .*/, ''))), out0 = new Set(f.bounds.map((x) => x.why));
         // Facet's own bounds are the audit's (tests/rules/audit.mjs, screen_layout.mjs): here only what a THEME adds
         for (const b of f.bounds.slice(0, 2)) out.push(`facet ${c.name}: ${b.why} (the proof flags Facet itself)`);
+        for (const x of f.trunc.filter((x) => x.why.includes(' (none) '))) out.push(`facet ${c.name}: ${x.why} (a "none" text must never be cut, C40)`);
         for (const th of THEMES) {
           await build(t, c, 0, th);
           const p = proof(t);

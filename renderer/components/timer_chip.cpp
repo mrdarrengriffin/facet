@@ -142,10 +142,10 @@ void fill(lv_obj_t *b, fw::Props p) {
   }
   // no name (the Timer bar): the countdown is the chip's main text
   const bool named = !c->name.empty();
-  c->nm = named ? fx::text(b, c->name.c_str(), "type:c-body", "fg:text") : nullptr;
+  c->nm = named ? fx::text(b, c->name.c_str(), "type:c-body", "fg:text", "none") : nullptr;
   if (c->nm) { fx::use(c->nm, "fg:disabled-ink", O); fx::fit_grid(c->nm); }
   c->type = named ? "type:c-meta" : "type:c-body";
-  c->left = fx::text(b, done ? "DONE" : countdown(left_of(p)).c_str(), c->type, done || !named ? "fg:text" : "fg:text-dim");
+  c->left = fx::text(b, done ? "DONE" : countdown(left_of(p)).c_str(), c->type, done || !named ? "fg:text" : "fg:text-dim", "none");
   fx::use(c->left, "fg:disabled-ink", O);
   fx::fit_grid(c->left);
   fx::use(b, "part:control");  // the theme's control (C46), last

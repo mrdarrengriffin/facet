@@ -23,12 +23,12 @@ void fill(lv_obj_t *root, fw::Props p) {
   fw::find("bins_art")->build(root, d.as<fw::Props>());
   lv_obj_t *col = fx::box(root, "col");
   for (const char *t : {"grow", "gap:2"}) fx::use(col, t);
-  fx::use(fx::text(col, p["caption"] | "", "type:label", cap_ink(p)), "fill-w");
+  fx::use(fx::text(col, p["caption"] | "", "type:label", cap_ink(p), "none"), "fill-w");
   lv_obj_t *lines = fx::box(col, "col");
   fx::use(lines, "fill-w");
-  fx::use(fx::text(lines, p["when"] | "", "type:value", "fg:text"), "fill-w");
-  fx::use(fx::text(lines, p["bins"] | "", "type:title", "fg:text"), "fill-w");
-  fx::use(fx::text(lines, p["line"] | "", "type:body", "fg:text-dim"), "fill-w");
+  fx::use(fx::text(lines, p["when"] | "", "type:value", "fg:text", "dot"), "fill-w");
+  fx::use(fx::text(lines, p["bins"] | "", "type:title", "fg:text", "dot"), "fill-w");
+  fx::use(fx::text(lines, p["line"] | "", "type:body", "fg:text-dim", "dot"), "fill-w");
 }
 }  // namespace
 

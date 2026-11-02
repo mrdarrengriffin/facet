@@ -68,7 +68,7 @@ void fill(lv_obj_t *h, fw::Props p, bool opening) {
   const bool start = !strcmp(p["layout"] | "row", "stack-start"), stack = start || !strcmp(p["layout"] | "row", "stack");
   fx::use(h, start ? "hero-stack-start" : stack ? "hero-stack" : display ? "hero-row-display" : "hero-row");
   const bool title0 = !strcmp(p["label_type"] | "label", "title");
-  if (stack) fx::text(h, p["label"] | "", title0 ? "type:title" : "type:label", off ? "fg:unavailable-ink" : "fg:text-dim");
+  if (stack) fx::text(h, p["label"] | "", title0 ? "type:title" : "type:label", off ? "fg:unavailable-ink" : "fg:text-dim", "none");
   const char *n = off ? fw::st::PLACEHOLDER : (p["n"] | "");
   // role value: the smallest, for a hero inside a small box (the compact Timer ring's hole)
   const char *type = display ? "type:display" : !strcmp(p["role"] | "hero", "value") ? "type:value" : "type:hero";
@@ -79,9 +79,9 @@ void fill(lv_obj_t *h, fw::Props p, bool opening) {
     fx::use(line, "hug");
     fx::use(line, "gap:2");
   }
-  lv_obj_t *num = fx::text(line, n, type, off ? "fg:unavailable-ink" : accent ? "fg:accent-text" : "fg:text");
+  lv_obj_t *num = fx::text(line, n, type, off ? "fg:unavailable-ink" : accent ? "fg:accent-text" : "fg:text", "none");
   if (*unit) {
-    fx::use(fx::text(line, unit, "type:title", "fg:text-dim"), display ? "baseline:display:title" : "baseline:hero:title");
+    fx::use(fx::text(line, unit, "type:title", "fg:text-dim", "none"), display ? "baseline:display:title" : "baseline:hero:title");
     fx::fit_grid(line);
   } else fx::fit_grid(num);  // fit8: the box on the grid, the text at its left
   Count *c = count_of(h);
@@ -103,14 +103,14 @@ void fill(lv_obj_t *h, fw::Props p, bool opening) {
   // label type: caps label (default) or title (the Calendar hero: the event's name as written, docs .fs-cal-htitle)
   const bool title = title0;
   if (stack) {  // the line under the number, centred (the label is above it)
-    fx::text(h, off ? fw::st::UNAVAILABLE_TEXT : (p["line"] | ""), "type:body", off ? "fg:unavailable-note" : "fg:text-dim");
+    fx::text(h, off ? fw::st::UNAVAILABLE_TEXT : (p["line"] | ""), "type:body", off ? "fg:unavailable-note" : "fg:text-dim", "none");
     if (off) fx::state(h, fw::st::OFF, true);
     return;
   }
   lv_obj_t *col = fx::box(h, "free");
   fx::use(col, title ? "hero-col-title" : "hero-col");
-  fx::use(fx::text(col, p["label"] | "", title ? "type:title" : "type:label", off ? "fg:unavailable-ink" : "fg:text"), "fill-w");
-  fx::use(fx::text(col, off ? fw::st::UNAVAILABLE_TEXT : (p["line"] | ""), "type:body", off ? "fg:unavailable-note" : "fg:text-dim"), "fill-w");
+  fx::use(fx::text(col, p["label"] | "", title ? "type:title" : "type:label", off ? "fg:unavailable-ink" : "fg:text", "none"), "fill-w");
+  fx::use(fx::text(col, off ? fw::st::UNAVAILABLE_TEXT : (p["line"] | ""), "type:body", off ? "fg:unavailable-note" : "fg:text-dim", "none"), "fill-w");
   if (off) fx::state(h, fw::st::OFF, true);  // the unavailable look (3:1)
 }
 }  // namespace

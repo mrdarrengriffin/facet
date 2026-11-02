@@ -32,7 +32,7 @@ void fill(lv_obj_t *b, fw::Props p) {
   lv_obj_remove_flag(b, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
   fx::use(b, "badge");
   fx::use(b, tint_of(zero ? "idle" : (p["tone"] | "idle")));
-  lv_obj_t *l = fx::text(b, txt, "type:c-caps-sm", "fg:text");
+  lv_obj_t *l = fx::text(b, txt, "type:c-caps-sm", "fg:text", "none");
   fx::fit_grid(l);
   fx::use(l, "badge-num");
 }

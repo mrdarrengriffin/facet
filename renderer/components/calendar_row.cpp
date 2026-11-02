@@ -67,8 +67,8 @@ void fill(lv_obj_t *root, fw::Props p) {
     dot(dw, cal_dot(p));
     lv_obj_t *col = fx::box(root, "col");
     fx::use(col, "grow");
-    fx::use(fx::text(col, p["title"] | "", "type:title", "fg:text"), "fill-w");
-    fx::use(fx::text(col, p["status"] | "", "type:label", "fg:text-dim"), "fill-w");
+    fx::use(fx::text(col, p["title"] | "", "type:title", "fg:text", "none"), "fill-w");
+    fx::use(fx::text(col, p["status"] | "", "type:label", "fg:text-dim", "none"), "fill-w");
     lv_obj_t *cp = fx::box(root, "centre");  // space:3 from the end (docs 14 / 12) round a box the Checkbox's size (it fills what it is in)
     for (const char *t : {"hug", "pad-x:3"}) fx::use(cp, t);
     lv_obj_t *cw = fx::box(cp, "centre");
@@ -79,10 +79,10 @@ void fill(lv_obj_t *root, fw::Props p) {
     return;
   }
   for (const char *t : {"tall:cal-row-h"}) fx::use(root, t);
-  lv_obj_t *tm = fx::text(root, p["time"] | "", "type:body", time_ink(p));
+  lv_obj_t *tm = fx::text(root, p["time"] | "", "type:body", time_ink(p), "none");
   fx::use(tm, "w:cal-time");
   dot(root, ev_dot(p));
-  fx::use(fx::text(root, p["title"] | "", "type:title", title_ink(p)), "grow");
+  fx::use(fx::text(root, p["title"] | "", "type:title", title_ink(p), "none"), "grow");
 }
 }  // namespace
 

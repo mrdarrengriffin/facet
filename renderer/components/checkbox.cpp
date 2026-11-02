@@ -82,7 +82,7 @@ void fill(lv_obj_t *r, fw::Props p) {
     fades(ic);
   }
   if (*label) {
-    lv_obj_t *l = fx::text(r, label, "type:body", "fg:text");
+    lv_obj_t *l = fx::text(r, label, "type:body", "fg:text", "none");
     fx::fit_grid(l);  // the label's box rounded up to the grid, so the checkbox is on the grid
     fx::use(l, "fg:text-dim", ST_DONE);
     fx::use(l, "strike", ST_DONE);  // ticked = struck through (a done list item)

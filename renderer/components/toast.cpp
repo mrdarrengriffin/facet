@@ -49,7 +49,7 @@ lv_obj_t *fill(lv_obj_t *o, fw::Props p) {
   fx::use(col, "grow-w");
   const struct { const char *txt, *type, *fg; } lines[] = {{p["title"] | "", "type:title", "fg:text"}, {p["body"] | "", "type:body", "fg:text-dim"}};
   for (const auto &l : lines) {
-    lv_obj_t *lb = fx::text(col, l.txt, l.type, l.fg);
+    lv_obj_t *lb = fx::text(col, l.txt, l.type, l.fg, "dot");
     fx::use(lb, "fill-w");
     lv_label_set_long_mode(lb, LV_LABEL_LONG_MODE_DOTS);
   }

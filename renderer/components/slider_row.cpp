@@ -20,7 +20,7 @@ void slider_props(fw::Props p, ArduinoJson::JsonDocument &d) {
 }
 void fill(lv_obj_t *root, fw::Props p) {
   for (const char *t : {"box", "row", "fill-w"}) fx::use(root, t);
-  lv_obj_t *l = fx::text(root, p["label"] | "vol", "type:label", "fg:text-dim");
+  lv_obj_t *l = fx::text(root, p["label"] | "vol", "type:label", "fg:text-dim", "none");
   fx::use(l, "w:m-vol-label");
   ArduinoJson::JsonDocument d;
   slider_props(p, d);
@@ -28,7 +28,7 @@ void fill(lv_obj_t *root, fw::Props p) {
   fx::use(lv_obj_get_child(root, 1), "grow");
   lv_obj_t *vb = fx::box(root, "free");
   for (const char *t : {"wrap-end", "w:m-vol-label", "label-row"}) fx::use(vb, t);  // the value at the box's right end, the label's box tall
-  fx::text(vb, p["text"] | "--", "type:label", "fg:text");
+  fx::text(vb, p["text"] | "--", "type:label", "fg:text", "none");
 }
 }  // namespace
 

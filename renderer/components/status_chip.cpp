@@ -58,7 +58,7 @@ void fill(lv_obj_t *c, fw::Props p) {
   for (const char *t : {"w:dot", "h:dot", "radius:round"}) fx::use(d, t);
   fx::use(d, dot_of(tone, false));
   if (p["pulse"] | false) fx::pulse(d);
-  lv_obj_t *l = fx::text(c, p["text"] | "", "type:c-caps-sm", "fg:text");
+  lv_obj_t *l = fx::text(c, p["text"] | "", "type:c-caps-sm", "fg:text", "none");
   fx::fit_grid(l);  // the chip's width on the 4 px grid (the Label rule, docs fit8)
 }
 }  // namespace

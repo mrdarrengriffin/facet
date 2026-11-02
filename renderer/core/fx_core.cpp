@@ -1292,10 +1292,19 @@ lv_obj_t *box(lv_obj_t *p, const char *layout) {
   if (strcmp(layout, "free")) use(o, layout);
   return o;
 }
-lv_obj_t *text(lv_obj_t *p, const char *s, const char *type, const char *fg) {
+std::map<lv_obj_t *, const char *> &overs() { static std::map<lv_obj_t *, const char *> m; return m; }
+const char *text_over(lv_obj_t *l) { auto it = overs().find(l); return it == overs().end() ? nullptr : it->second; }
+lv_obj_t *text(lv_obj_t *p, const char *s, const char *type, const char *fg, const char *over) {
+  static const char *const OVER[] = {"dot", "fit", "none"};
+  const char *ov = nullptr;
+  for (const char *x : OVER) if (!strcmp(over, x)) ov = x;
+  if (!ov) abort();  // C40: every text slot declares dot, fit or none
   lv_obj_t *o = lv_label_create(p);
   lv_obj_remove_style_all(o);
   lv_obj_remove_flag(o, LV_OBJ_FLAG_CLICKABLE);
+  if (ov != OVER[2]) lv_label_set_long_mode(o, LV_LABEL_LONG_MODE_DOTS);  // "..." inside the box the component gives it
+  overs()[o] = ov;
+  lv_obj_add_event_cb(o, [](lv_event_t *e) { overs().erase((lv_obj_t *) lv_event_get_target(e)); }, LV_EVENT_DELETE, nullptr);
   use(o, type); use(o, fg);
   text_parts(o, look_of(o), type_part[defs[ix(type)].i], true);  // the theme's text parts, last
   lv_label_set_text(o, fw::cased(type_id(type), s).c_str());

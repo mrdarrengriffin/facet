@@ -406,9 +406,14 @@ infinities are refused (`std::isfinite`); a missing entity shows its "missing" s
 wrongType, outOfRange, dropped, outOfOrder) and `fuzz`.
 
 **C40. Any text fits by rule.** Long, empty and non-ASCII text (accents, emoji, CJK, right-to-left) is one line ending
-in "..." or wraps to a declared line count; it never clips, overlaps or pushes anything out of its box.
-*Why:* real names are long and not English. *Check:* `_release.mjs fixtures` in the component's tests;
-`fw_lab(id, "proof")` -> `trunc`.
+in "..." or wraps to a declared line count; it never clips, overlaps or pushes anything out of its box. Every text slot
+declares which, as the last argument of `fx::text`: `dot` (one line, "..." inside its line box: the component gives it
+its width), `fit` (wraps to the lines its box holds, the last ending in "...") or `none` (never cut). A one-glyph text in
+a fixed digit cell is judged by its ink, not its advance (C49).
+*Why:* real names are long and not English, and a theme's font can be wider than Facet's. *Check:* `fx::text` aborts
+without a declaration; `fw_lab(id, "proof")` -> `trunc` reports only `none` (and legacy) texts that are cut; the
+`theme_apply` test "P2 + P6 per theme" fails on any cut `none` text in any built-in theme, Facet included;
+`_release.mjs fixtures` in the component's tests.
 
 **C41. Rapid input never sticks.** Repeated taps, drags, flicks, long presses and multi-touch leave a consistent state
 and no stuck animation.

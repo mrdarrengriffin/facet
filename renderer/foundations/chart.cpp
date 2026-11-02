@@ -1036,7 +1036,7 @@ void tb_axis(TB *B, lv_obj_t *parent) {
   B->axis = a;
   if (!B->labels.empty()) {  // one word per group (the days of a week), under its centre
     for (int g = 0; g < tb_groups(B) && (size_t) g < B->labels.size(); g++)
-      lv_obj_set_user_data(fx::text(a, B->labels[g].c_str(), "type:c-meta-sm", "fg:text-dim"), (void *) (intptr_t) g);
+      lv_obj_set_user_data(fx::text(a, B->labels[g].c_str(), "type:c-meta-sm", "fg:text-dim", "none"), (void *) (intptr_t) g);
     tb_place_axis(B);
     return;
   }
@@ -1044,7 +1044,7 @@ void tb_axis(TB *B, lv_obj_t *parent) {
     if ((B->first_hour + i) % B->ticks) continue;
     char hh[4];
     snprintf(hh, sizeof hh, "%02d", (B->first_hour + i) % 24);
-    lv_obj_set_user_data(fx::text(a, hh, "type:c-meta-sm", "fg:text-dim"), (void *) (intptr_t) i);
+    lv_obj_set_user_data(fx::text(a, hh, "type:c-meta-sm", "fg:text-dim", "none"), (void *) (intptr_t) i);
   }
   tb_place_axis(B);
 }
@@ -1062,7 +1062,7 @@ lv_obj_t *token_bars(lv_obj_t *parent, const TokenBars &o, bool opening) {
   B->s = fx::strip(parent, tb_draw, "free");
   lv_obj_add_event_cb(B->s, tb_free, LV_EVENT_DELETE, B);
   qa::free(B->s, "bars: sized by their values (the chart hugs its bars)");
-  for (const std::string &w : B->legend) B->leg_words.push_back(fx::text(B->s, w.c_str(), "type:c-meta-sm", "fg:text-dim"));
+  for (const std::string &w : B->legend) B->leg_words.push_back(fx::text(B->s, w.c_str(), "type:c-meta-sm", "fg:text-dim", "none"));
   tb_size(B, parent);
   if (B->scrub) {
     lv_obj_add_flag(B->s, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_PRESS_LOCK));

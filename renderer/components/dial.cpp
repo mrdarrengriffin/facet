@@ -213,19 +213,19 @@ void fill(lv_obj_t *s, fw::Props p, bool opening) {
 
   lv_obj_t *up = fx::box(s, "free"), *down = fx::box(s, "free");
   fx::use(up, "dial-wing-up");
-  d->cap = fx::text(up, d->dimmable ? (p["caption"] | "Brightness") : "Power", "type:label", dim ? "fg:disabled-ink" : "fg:text-dim");
+  d->cap = fx::text(up, d->dimmable ? (p["caption"] | "Brightness") : "Power", "type:label", dim ? "fg:disabled-ink" : "fg:text-dim", "none");
   if (d->state >= 2) {
     d->val = nullptr;
     lv_obj_t *slot = fx::box(s, "free");  // the value's slot, the word on its middle (as the approved dial)
     fx::use(slot, "dial-slot");
-    fx::text(slot, d->state == 3 ? "Not found" : fw::st::UNAVAILABLE_TEXT, "type:body", "fg:unavailable-note");
+    fx::text(slot, d->state == 3 ? "Not found" : fw::st::UNAVAILABLE_TEXT, "type:body", "fg:unavailable-note", "none");
     lv_obj_move_to_index(down, -1);
     fx::use(down, "dial-wing-down");
   } else {
-    d->val = fx::text(s, d->dimmable ? "0" : "Off", "type:display", dim ? "fg:disabled-ink" : "fg:text");
+    d->val = fx::text(s, d->dimmable ? "0" : "Off", "type:display", dim ? "fg:disabled-ink" : "fg:text", "none");
     lv_obj_move_to_index(down, -1);
     fx::use(down, "dial-wing-down");
-    if (d->dimmable) d->unit = fx::text(down, p["unit"] | "%", "type:body", dim ? "fg:disabled-ink" : "fg:text-dim");
+    if (d->dimmable) d->unit = fx::text(down, p["unit"] | "%", "type:body", dim ? "fg:disabled-ink" : "fg:text-dim", "none");
     d->btn = button(down, s);
   }
   set_on(s, d->on);

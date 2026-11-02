@@ -118,7 +118,7 @@ void fill(lv_obj_t *b, fw::Props p) {
   // the parts first, then the state, then the state looks + their fades: building never fades (C34)
   const char *ic = p["icon"] | "none";
   lv_obj_t *o = strcmp(ic, "none") ? fx::icon(b, ic, "icon", k.l[0].fg) : nullptr;  // before the label, its ink = the label's
-  lv_obj_t *l = fx::text(b, p["label"] | "Start", "type:c-label", k.l[0].fg);
+  lv_obj_t *l = fx::text(b, p["label"] | "Start", "type:c-label", k.l[0].fg, "none");
   fx::use(l, "text-mid");  // the text centred in its grid box (the rounding slack splits both sides)
   fx::fit_grid(l);
   lv_obj_t *u = nullptr;

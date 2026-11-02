@@ -605,7 +605,14 @@ void lab_walk(lv_obj_t *o, bool in_body, ArduinoJson::JsonArray bounds, ArduinoJ
       lv_text_get_size(&sz, t, lv_obj_get_style_text_font(c, LV_PART_MAIN), lv_obj_get_style_text_letter_space(c, LV_PART_MAIN),
                        lv_obj_get_style_text_line_space(c, LV_PART_MAIN), LV_COORD_MAX, LV_TEXT_FLAG_NONE);
       const int cw = lv_obj_get_content_width(c);
-      if (t && *t && sz.x > cw) lab_box(trunc, a, lab_name(c) + " needs " + std::to_string(sz.x) + " px, has " + std::to_string(cw));
+      // C40: a dot / fit text ending in "..." is cut by its rule; a "none" text (or a legacy one) is cut by mistake
+      const char *ov = fx::text_over(c);
+      if (t && *t && !t[1]) {  // one ASCII glyph (a digit cell): its ink must fit, not its advance (C49)
+        lv_font_glyph_dsc_t g;
+        if (lv_font_get_glyph_dsc(lv_obj_get_style_text_font(c, LV_PART_MAIN), &g, (uint8_t) t[0], 0)) sz.x = g.box_w;
+      }
+      if (t && *t && sz.x > cw && (!ov || !strcmp(ov, "none")))
+        lab_box(trunc, a, lab_name(c) + (ov ? " (none)" : "") + " needs " + std::to_string(sz.x) + " px, has " + std::to_string(cw));
     }
     if (body && lv_obj_has_flag(c, LV_OBJ_FLAG_CLICKABLE)) clicks.push_back(c);
     lab_walk(c, body, bounds, trunc, clicks);

@@ -32,7 +32,7 @@ void column(lv_obj_t *c, bool outline, const char *const names[2], bool mid = fa
     fx::slot(s, names[i]);
     if (outline) {  // the workbench sample: each slot a labelled outline
       for (const char *t : {"h:list-row-h", "border:line-hi", "pad:4"}) fx::use(s, t);
-      fx::text(s, names[i], "type:label", "fg:text-dim");
+      fx::text(s, names[i], "type:label", "fg:text-dim", "none");
     }
   }
 }

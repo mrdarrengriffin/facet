@@ -43,7 +43,7 @@ FW_COMPONENT(column, "Column", "components", R"({
     fx::slot(s, NAMES[i]);
     if (o) {  // the workbench sample: each slot a labelled outline
       for (const char *t : {"h:list-row-h", "border:line-hi", "pad:4"}) fx::use(s, t);
-      fx::text(s, NAMES[i], "type:label", "fg:text-dim");
+      fx::text(s, NAMES[i], "type:label", "fg:text-dim", "none");
     }
   }
 }

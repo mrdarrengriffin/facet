@@ -63,10 +63,10 @@ void fill(lv_obj_t *c, fw::Props p) {
   fx::icon_use(ic, "ink:unavailable-ink", ST_OFF);
   for (lv_state_t st : {(lv_state_t) 0, ST_ON}) fx::icon_use(ic, "fade-switch", st);
   fx::use(fx::box(c, "free"), "grow");
-  k->label = fx::text(c, p["label"] | "", "type:body", off ? "fg:unavailable-ink" : "fg:text");
+  k->label = fx::text(c, p["label"] | "", "type:body", off ? "fg:unavailable-ink" : "fg:text", "fit");
   fx::use(k->label, "tile-text");
   lv_label_set_long_mode(k->label, LV_LABEL_LONG_MODE_DOTS);  // two lines, then "..."
-  k->status = fx::text(c, off ? fw::st::UNAVAILABLE_TEXT : (p["status"] | ""), "type:label", off ? "fg:unavailable-note" : "fg:text-dim");
+  k->status = fx::text(c, off ? fw::st::UNAVAILABLE_TEXT : (p["status"] | ""), "type:label", off ? "fg:unavailable-note" : "fg:text-dim", "none");
   fx::use(k->status, "tile-status");
   if (!off) fx::use(k->status, "fg:on-ink", ST_ON);
   fades(k->status);

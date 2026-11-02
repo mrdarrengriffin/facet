@@ -30,7 +30,7 @@ void fill(lv_obj_t *r, fw::Props p) {
   lv_obj_add_flag(r, LV_OBJ_FLAG_CLICKABLE);
   lv_obj_add_flag(r, LV_OBJ_FLAG_STATE_TRICKLE);  // the press reaches the label and chevron (the theme's pressed ink)
 
-  lv_obj_t *l = fx::text(r, p["text"] | "", "type:label", "fg:text-dim");
+  lv_obj_t *l = fx::text(r, p["text"] | "", "type:label", "fg:text-dim", "dot");
   fx::use(l, "grow-w");
   fx::use(l, "fg:disabled-ink", ST_OFF);
   lv_label_set_long_mode(l, LV_LABEL_LONG_MODE_DOTS);

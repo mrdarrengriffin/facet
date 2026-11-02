@@ -3745,8 +3745,8 @@
     ]
    },
    "cost": {
-    "objects": 3,
-    "bytes_est": 480
+    "objects": 4,
+    "bytes_est": 640
    }
   },
   "tick_ring": {

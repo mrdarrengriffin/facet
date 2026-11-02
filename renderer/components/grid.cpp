@@ -81,7 +81,7 @@ void build_static(lv_obj_t *r, Props p) {
     // the workbench sample: each cell a named outline
     if (row) fx::use(c, "h:list-row-h");
     fx::use(c, "border:line-hi");
-    fx::use(fx::text(c, ("cell " + std::to_string(i)).c_str(), "type:label", "fg:text-dim"), "cell-text");  // ends in "..." in a narrow cell (C40)
+    fx::use(fx::text(c, ("cell " + std::to_string(i)).c_str(), "type:label", "fg:text-dim", "none"), "cell-text");  // ends in "..." in a narrow cell (C40)
   }
 }
 // ---- items
@@ -120,10 +120,10 @@ void expand(lv_obj_t *r, G &g, size_t from) {
   if (list.empty()) {  // the empty state: one row of words, not a blank grid
     g.more = fx::box(r, "row");
     fx::use(g.more, "h:list-row-h");
-    fx::text(g.more, g.empty.c_str(), "type:body", "fg:text-dim");
+    fx::text(g.more, g.empty.c_str(), "type:body", "fg:text-dim", "none");
   } else if ((int) list.size() > n) {  // "+N": the items past the cap
     g.more = fx::grid_cell(r);
-    fx::text(g.more, ("+" + std::to_string(list.size() - n)).c_str(), "type:body", "fg:text-dim");
+    fx::text(g.more, ("+" + std::to_string(list.size() - n)).c_str(), "type:body", "fg:text-dim", "none");
   }
   fx::grid_place(r);
 }

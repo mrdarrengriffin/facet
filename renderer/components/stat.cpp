@@ -18,7 +18,7 @@ const char *tone(const char *t) {
   return !strcmp(t, "text") ? "fg:text" : !strcmp(t, "warn") ? "fg:warn" : !strcmp(t, "ok") ? "fg:ok" : "fg:text-dim";
 }
 void line(lv_obj_t *s, const char *type, const char *txt, const char *fg) {
-  lv_obj_t *l = fx::text(s, txt, type, fg);
+  lv_obj_t *l = fx::text(s, txt, type, fg, "dot");
   fx::use(l, "fill-w");
   lv_label_set_long_mode(l, LV_LABEL_LONG_MODE_DOTS);
 }

@@ -62,7 +62,7 @@ void media_props(fw::Props p, ArduinoJson::JsonDocument &d) {
   d["visual"] = p["visual"] | "disc", d["size"] = "card", d["progress"] = p["progress"] | 38, d["playing"] = p["playing"] | false;
 }
 lv_obj_t *line(lv_obj_t *parent, const char *s, const char *type, const char *fg) {  // one line, full width, "..."
-  lv_obj_t *o = fx::text(parent, s, type, fg);
+  lv_obj_t *o = fx::text(parent, s, type, fg, "dot");
   fx::use(o, "fill-w");
   lv_label_set_long_mode(o, LV_LABEL_LONG_MODE_DOTS);
   return o;
@@ -108,7 +108,7 @@ void fill(lv_obj_t *c, fw::Props p) {
   fx::use(lab, "card-row");
   const char *ic = p["icon"] | "weather";
   if (strcmp(ic, "none")) fx::icon(lab, ("screen-" + std::string(ic)).c_str(), "icon", dim);
-  k.label = fx::text(lab, p["label"] | "Weather", "type:label", dim);
+  k.label = fx::text(lab, p["label"] | "Weather", "type:label", dim, "dot");
   lv_label_set_long_mode(k.label, LV_LABEL_LONG_MODE_DOTS);
   fx::fit_grid(k.label);  // the dot after it on the grid (docs fit8)
   if (k.long_label) fx::use(k.label, "cell");

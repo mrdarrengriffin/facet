@@ -30,7 +30,7 @@ lv_obj_t *build(const char *id, lv_obj_t *parent, ArduinoJson::JsonDocument &pro
   return lv_obj_get_child_count(parent) > before ? lv_obj_get_child(parent, -1) : nullptr;
 }
 lv_obj_t *words(lv_obj_t *h, const char *s, const char *type, const char *fg) {
-  lv_obj_t *l = fx::text(h, s, type, fg);
+  lv_obj_t *l = fx::text(h, s, type, fg, "dot");
   lv_label_set_long_mode(l, LV_LABEL_LONG_MODE_DOTS);
   return l;
 }

@@ -33,7 +33,7 @@ void fill(lv_obj_t *t, fw::Props p) {
   lv_obj_remove_flag(t, LV_OBJ_FLAG_SCROLLABLE);
   if (d->unavail) {  // states.json unavailable: the word in place of the switch; a tap = blocked
     fx::use(t, "word-slot");
-    fx::fit_grid(fx::text(t, fw::st::UNAVAILABLE_TEXT, "type:body", "fg:unavailable-note"));
+    fx::fit_grid(fx::text(t, fw::st::UNAVAILABLE_TEXT, "type:body", "fg:unavailable-note", "none"));
     lv_obj_add_state(t, ST_OFF);
     return;
   }

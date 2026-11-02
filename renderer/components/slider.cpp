@@ -114,7 +114,7 @@ void fill(lv_obj_t *s, fw::Props p) {
   fx::use(s, "slider");
   lv_obj_add_flag(s, LV_OBJ_FLAG_CLICKABLE);
   lv_obj_remove_flag(s, (lv_obj_flag_t) (LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_SCROLL_CHAIN | LV_OBJ_FLAG_GESTURE_BUBBLE | LV_OBJ_FLAG_EVENT_BUBBLE));
-  lv_obj_t *u = d->word = fx::text(s, fw::st::UNAVAILABLE_TEXT, "type:body", "fg:unavailable-note");
+  lv_obj_t *u = d->word = fx::text(s, fw::st::UNAVAILABLE_TEXT, "type:body", "fg:unavailable-note", "none");
   fx::use(u, "slider-word");
   lv_obj_set_flag(u, LV_OBJ_FLAG_HIDDEN, !d->unavail);
   d->shown_idx = d->idx;

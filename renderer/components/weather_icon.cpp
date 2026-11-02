@@ -38,7 +38,7 @@ lv_obj_t *wx(lv_obj_t *parent, fw::Props p, const char *size) {
   return w ? w : fx::weather(parent, "cloudy", size, false);  // an unknown name: the cloud (the docs' fallback)
 }
 void words(lv_obj_t *parent, const char *s, const char *type, const char *fg, const char *width) {  // a sized text: one
-  lv_obj_t *t = fx::text(parent, s, type, fg);                                                       // line, "..." when
+  lv_obj_t *t = fx::text(parent, s, type, fg, "dot");                                                       // line, "..." when
   fx::use(t, width);                                                                                  // it doesn't fit
   lv_label_set_long_mode(t, LV_LABEL_LONG_MODE_DOTS);  // never wrapped into a hidden second line (a hard cut)
 }
@@ -47,22 +47,22 @@ void fill(lv_obj_t *root, fw::Props p) {
   const char *L = layout_of(p);
   if (!strcmp(L, "column")) {
     for (const char *t : {"box", "col-centre", "w:hour-col", "gap:2"}) fx::use(root, t);
-    if (*(p["label"] | "")) fx::text(root, p["label"] | "", "type:label", flag(p, "accent", false) ? "fg:accent-text" : "fg:text-dim");
+    if (*(p["label"] | "")) fx::text(root, p["label"] | "", "type:label", flag(p, "accent", false) ? "fg:accent-text" : "fg:text-dim", "none");
     wx(root, p, p["size"] | "glyph");
-    if (*(p["value"] | "")) fx::text(root, p["value"] | "", "type:body", "fg:text");
+    if (*(p["value"] | "")) fx::text(root, p["value"] | "", "type:body", "fg:text", "none");
   } else if (!strcmp(L, "row")) {
     for (const char *t : {"box", "row-mid", "fill-w", "tall:list-row-h", "pad-x:4", "gap:5"}) fx::use(root, t);
     if (flag(p, "divider", false)) { fx::use(root, "line:line"); fx::use(root, "rule-top"); }
     words(root, p["label"] | "", "type:title", "fg:text", "w:wx-day-name");
     wx(root, p, p["size"] | "feature");
     words(root, p["line"] | "", "type:body", "fg:text-dim", "grow-w");
-    fx::text(root, p["low"] | "", "type:body", "fg:text-dim");
-    fx::text(root, p["value"] | "", "type:title", "fg:text");
+    fx::text(root, p["low"] | "", "type:body", "fg:text-dim", "none");
+    fx::text(root, p["value"] | "", "type:title", "fg:text", "none");
   } else if (!strcmp(L, "hero")) {
     for (const char *t : {"box", "col", "fill-w", "gap:3"}) fx::use(root, t);
     lv_obj_t *top = fx::box(root, "free");
     fx::use(top, "hero-row-display");  // the display type box tall (= the hero icon), as the Hero block's number row
-    fx::text(top, p["value"] | "", "type:display", "fg:text");
+    fx::text(top, p["value"] | "", "type:display", "fg:text", "none");
     fx::use(fx::box(top, "free"), "grow");
     wx(top, p, p["size"] | "hero");
     words(root, p["label"] | "", "type:headline", "fg:text", "fill-w");

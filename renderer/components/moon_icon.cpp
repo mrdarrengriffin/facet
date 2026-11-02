@@ -58,19 +58,19 @@ void fill(lv_obj_t *root, Props p) {
     for (const char *t : {"box", "col-centre", "gap:2"}) fx::use(root, t);
     moon(root, p, ph, south);
     if (*(p["label"] | "")) {  // one line, "..." when it is wider than the column (C40; docs: nowrap, it ran over)
-      lv_obj_t *k = fx::text(root, p["label"] | "", "type:label", "fg:text-dim");  // docs text-mute: 3.2:1, under 4.5
+      lv_obj_t *k = fx::text(root, p["label"] | "", "type:label", "fg:text-dim", "dot");  // docs text-mute: 3.2:1, under 4.5
       for (const char *t : {"above:2", "cell-text"}) fx::use(k, t);  // the column wide, centred
       lv_label_set_long_mode(k, LV_LABEL_LONG_MODE_DOTS);
     }
-    if (*(p["value"] | "")) fx::text(root, p["value"] | "", "type:body", "fg:text");
+    if (*(p["value"] | "")) fx::text(root, p["value"] | "", "type:body", "fg:text", "none");
   } else if (!strcmp(L, "hero") || !strcmp(L, "line")) {
     for (const char *t : {"box", "col-centre", "fill-w", "gap:9"}) fx::use(root, t);
     if (!strcmp(L, "hero")) moon(root, p, ph, south);
     lv_obj_t *line = fx::box(root, "row");
     for (const char *t : {"hug", "gap:2"}) fx::use(line, t);  // a word space between the two (docs: one text run)
-    fx::text(line, p["label"] | "", "type:title", "fg:text");
+    fx::text(line, p["label"] | "", "type:title", "fg:text", "none");
     if (*(p["line"] | "")) {
-      lv_obj_t *r = fx::text(line, (std::string("\xC2\xB7 ") + (p["line"] | "")).c_str(), "type:title", "fg:text-dim");
+      lv_obj_t *r = fx::text(line, (std::string("\xC2\xB7 ") + (p["line"] | "")).c_str(), "type:title", "fg:text-dim", "dot");
       lv_label_set_long_mode(r, LV_LABEL_LONG_MODE_DOTS);
     }
   } else {

@@ -48,7 +48,7 @@ void one(lv_obj_t *o, const Ro &r) {
   lv_obj_t *top = fx::box(o, "row");
   for (const char *t : {"gap:2", "label-row"}) fx::use(top, t);
   fx::icon(top, r.icon, "icon", dim);
-  fx::fit_grid(fx::text(top, r.label, "type:label", dim));  // the label box on the grid, so the dot after it is too
+  fx::fit_grid(fx::text(top, r.label, "type:label", dim, "none"));  // the label box on the grid, so the dot after it is too
   if (const fw::Component *dc = fw::find("status_chip")) {  // the dot (Status chip size dot): always there, shown when it matters (fades)
     ArduinoJson::JsonDocument dp;
     dp["tone"] = "working";
@@ -59,8 +59,8 @@ void one(lv_obj_t *o, const Ro &r) {
   }
   lv_obj_t *line = fx::box(o, "row-mid");
   fx::use(line, "gap:3");
-  fx::text(line, r.state, "type:title", mute ? "fg:unavailable-ink" : accent ? "fg:accent-text" : !strcmp(r.tone, "warn") ? "fg:warn" : "fg:text");
-  if (*r.detail) fx::use(fx::text(line, r.detail, "type:body", "fg:text-dim"), "grow-w");
+  fx::text(line, r.state, "type:title", mute ? "fg:unavailable-ink" : accent ? "fg:accent-text" : !strcmp(r.tone, "warn") ? "fg:warn" : "fg:text", "none");
+  if (*r.detail) fx::use(fx::text(line, r.detail, "type:body", "fg:text-dim", "none"), "grow-w");
   if (mute) fx::state(o, fw::st::OFF, true);  // offline = unavailable: the unavailable ink is the disabled look (3:1)
 }
 void fill(lv_obj_t *s, fw::Props p) {

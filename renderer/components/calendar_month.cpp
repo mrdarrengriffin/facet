@@ -142,7 +142,7 @@ FW_COMPONENT(calendar_month, "Calendar month", "components", R"({
     delete m;
   }, LV_EVENT_DELETE, m);
   lv_obj_t *bar = fx::box(root, "row");
-  m->title = fx::text(bar, p["title"] | "", "type:title", "fg:text");
+  m->title = fx::text(bar, p["title"] | "", "type:title", "fg:text", "none");
   fx::use(m->title, "grow");
   Doc tb;
   tb["kind"] = "secondary", tb["size"] = "small", tb["label"] = "today";

@@ -20,7 +20,12 @@ namespace fx {
 // "wrap" (rows that wrap; a child with "grow" + min-w:<token> takes a track slot of its min-w, then shares the rest).
 lv_obj_t *box(lv_obj_t *parent, const char *layout = "col");
 // A one-line text in a type style ("type:label") and a colour ("fg:text-dim"); the style's case; ends in "...".
-lv_obj_t *text(lv_obj_t *parent, const char *s, const char *type, const char *fg);
+// over = what the text does when it is wider than its box (C40), declared for every text slot:
+//   "dot"   one line, ending in "..." inside its line box (the component gives it its width)
+//   "fit"   wraps to the lines its box holds, the last ending in "..." (the component gives it its height)
+//   "none"  never cut: the fit proof (P6) fails if it ever is, in any theme
+lv_obj_t *text(lv_obj_t *parent, const char *s, const char *type, const char *fg, const char *over);
+const char *text_over(lv_obj_t *label);  // a text's declared overflow ("dot" | "fit" | "none"), nullptr = not an fx::text
 void set_text(lv_obj_t *label, const char *s, const char *type);  // new words, the type's case (an update path)
 // Apply a shared token style by name (optionally per state / part). Unknown name = abort (a typo crashes the
 // workbench, never a silent default).

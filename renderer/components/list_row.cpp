@@ -85,7 +85,7 @@ Kind effective(const Spec &s) {
 
 // one line of the text column: its type, its ink (+ disabled-ink when OFF), one line ending in "..."
 lv_obj_t *line(lv_obj_t *col, const char *txt, const char *type, const char *fg) {
-  lv_obj_t *l = fx::text(col, txt, type, fg);
+  lv_obj_t *l = fx::text(col, txt, type, fg, "dot");
   fx::use(l, "fill-w");
   fx::use(l, "fg:disabled-ink", ST_OFF);
   lv_label_set_long_mode(l, LV_LABEL_LONG_MODE_DOTS);
@@ -95,7 +95,7 @@ lv_obj_t *line(lv_obj_t *col, const char *txt, const char *type, const char *fg)
 lv_obj_t *word(lv_obj_t *end, const char *txt, const char *fg) {
   lv_obj_t *b = fx::box(end, "free");
   fx::use(b, "list-slot");
-  lv_obj_t *l = fx::text(b, txt, "type:body", fg);
+  lv_obj_t *l = fx::text(b, txt, "type:body", fg, "dot");
   fx::use(l, "fg:disabled-ink", ST_OFF);
   return l;
 }

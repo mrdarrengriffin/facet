@@ -102,7 +102,7 @@ std::string strip(const std::string &type) { return type.substr(5); }  // "type:
 void cell(lv_obj_t *row, const std::string &type, const std::string &c, bool colon) {
   lv_obj_t *o = fx::box(row, "free");
   fx::use(o, ((colon ? "colon:" : "digit:") + strip(type)).c_str());
-  lv_obj_t *l = fx::text(o, c.c_str(), type.c_str(), "fg:text");
+  lv_obj_t *l = fx::text(o, c.c_str(), type.c_str(), "fg:text", "none");
   fx::use(l, "cell-text");  // the cell's width, the figure centred (a colon's advance is wider than its cell)
   lv_label_set_long_mode(l, LV_LABEL_LONG_MODE_CLIP);
   if (colon) fx::use(l, ("colon-raise:" + strip(type)).c_str());
@@ -195,7 +195,7 @@ void fill(lv_obj_t *root, fw::Props p) {
   if (!d->digits) {
   } else if (d->header) {
     fx::use(root, "label-row");  // the label's box tall (its text-box translate never shortens the root)
-    d->label = fx::text(root, "", "type:label", "fg:text-dim");
+    d->label = fx::text(root, "", "type:label", "fg:text-dim", "none");
   } else {
     d->row = fx::box(line, "cells");  // a row, its cells centred in it (fit_grid rounds it up to the grid)
     fx::use(d->row, "hug");
@@ -205,14 +205,14 @@ void fill(lv_obj_t *root, fw::Props p) {
       fx::use(d->srow, ("baseline:" + strip(d->type) + ":" + strip(d->sec_type)).c_str());
     }
     if (d->h12) {
-      d->ampm = fx::text(line, "PM", d->ap_type.c_str(), "fg:text-dim");
+      d->ampm = fx::text(line, "PM", d->ap_type.c_str(), "fg:text-dim", "none");
       fx::use(d->ampm, ("baseline:" + strip(d->type) + ":" + strip(d->ap_type)).c_str());
     }
   }
-  if (!d->date_type.empty()) d->date = fx::text(root, "", d->date_type.c_str(), "fg:text-dim");
+  if (!d->date_type.empty()) d->date = fx::text(root, "", d->date_type.c_str(), "fg:text-dim", "none");
   if (d->date && *(p["line"] | "")) {
     d->line_shown = p["line"] | "";
-    d->line = fx::text(root, d->line_shown.c_str(), "type:c-weather", "fg:blue");
+    d->line = fx::text(root, d->line_shown.c_str(), "type:c-weather", "fg:blue", "none");
   }
   set(root);
   if (!d->timer) d->timer = lv_timer_create([](lv_timer_t *t) { set((lv_obj_t *) lv_timer_get_user_data(t)); }, 1000, root);
