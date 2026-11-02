@@ -383,7 +383,11 @@ void build_settings(lv_obj_t *parent, fw::Props p) {
     Doc hr;  // Home Assistant: the panel's own link (screens/ha_link.cpp)
     namespace hl = fw::dev::ha_link;
     hr["title"] = "Home Assistant", hr["icon"] = "none", hr["trailing"] = "value-chevron";
-    hr["value"] = !hl::ready() ? "Not set up" : hl::status() == hl::OK ? (std::to_string(hl::count()) + " entities").c_str() : hl::status() == hl::FAIL ? "Not reached" : "Set up";
+    // linked = an address and a token, whether or not the entity list has been read yet: "Linked, <host>"
+    std::string host = hl::url();
+    if (size_t a = host.find("://"); a != std::string::npos) host.erase(0, a + 3);
+    host = host.substr(0, host.find_first_of(":/"));
+    hr["value"] = !hl::ready() ? std::string("Not set up") : hl::status() == hl::FAIL ? std::string("Not reached") : "Linked, " + host;
     if (lv_obj_t *r = build("list_row", c, hr))
       lv_obj_add_event_cb(r, [](lv_event_t *e) {
         auto *o = (lv_obj_t *) lv_event_get_current_target(e);
