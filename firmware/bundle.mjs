@@ -25,6 +25,7 @@ import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync,
 import { basename, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
+import { tmpdir } from 'node:os';
 import { excluded, hiddenIds } from '../renderer/tools/features.mjs';
 
 // ROOT = repo root (local.env, firmware/ glue); HERE = renderer/ (sources; hash keys are relative to it: core/fw.h, ...)
@@ -108,7 +109,25 @@ execFileSync('node', [join(HERE, 'tools/gen_theme.mjs'), join(C, 'theme_gen.h')]
 wrote.add('theme_gen.h');
 execFileSync('node', [join(HERE, 'tools/gen_settings.mjs'), join(C, 'settings_gen.h')]);
 wrote.add('settings_gen.h');
-execFileSync('node', [join(HERE, 'tools/gen_specs.mjs'), join(C, 'specs_gen.h')]);  // factory screen specs (core/spec.h)
+// factory screen specs (core/spec.h). The deck baked in must pass the panel's own deck check (fw_spec check, the same
+// code in the WASM build of this tree): a panel never boots a deck it would refuse (every later deck change is checked
+// as a whole deck, so one unknown screen refuses them all). A hidden feature's pages are already out (gen_specs).
+const deckOut = join(tmpdir(), `facet-deck-${process.pid}.json`);
+execFileSync('node', [join(HERE, 'tools/gen_specs.mjs'), join(C, 'specs_gen.h')], { env: { ...process.env, FW_DECK_OUT: deckOut } });
+{
+  const out = process.env.FW_OUT ?? env.FW_OUT ?? join(HERE, 'out');
+  if (!existsSync(join(out, density, 'fw.wasm'))) { console.error(`bundle: no WASM build in ${join(out, density)} to check the baked deck with (renderer/build.sh ${density})`); process.exit(1); }
+  const { instance } = await import('../renderer/tools/lib/fwbench.mjs');
+  const m = await instance(density, out), deck = readFileSync(deckOut, 'utf8');
+  rmSync(deckOut, { force: true });
+  const str = (x, f) => { const p = m.stringToNewUTF8(x); try { return f(p); } finally { m._free(p); } };
+  const r = JSON.parse(str('check', (pc) => str(deck, (pd) => m.UTF8ToString(m._fw_spec(pc, pd)))));
+  if (!r.ok) {
+    console.error(`bundle: the deck this firmware would boot fails the panel's own check${process.env.FW_SPECS_OVERLAY ? ` (overlay ${process.env.FW_SPECS_OVERLAY})` : ''}:`);
+    for (const e of r.errors) console.error(`  ${e.path} ${e.code}: ${e.msg}`);
+    process.exit(1);
+  }
+}
 wrote.add('specs_gen.h');
 wrote.add('specs_gen_data.h');  // the data: core/specs_data.cpp defines it (FW_SPECS_DATA)
 execFileSync('node', [join(HERE, 'tools/gen_icons.mjs'), '--meta', join(C, 'icons_gen.h')]);

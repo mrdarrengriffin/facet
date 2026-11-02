@@ -417,6 +417,12 @@ not a one-off component.
 TODO (lint: every renderer/specs screen has `"locked": true`); the editor lab test removes every part of a custom
 screen and adds one back.
 
+**C54. A firmware boots only a deck its own check accepts.** The deck baked into a firmware (the factory deck, or a
+house overlay's, `FW_SPECS_OVERLAY`) passes the panel's deck check (`fw_spec check`) before the firmware is built.
+*Why:* every deck change is checked as a whole deck, so a booted deck naming a screen the firmware lacks refuses every
+later change, silently. *Check:* `firmware/bundle.mjs` runs the check with the WASM build of the same tree and fails
+the build with the panel's errors.
+
 ## 9. Robustness
 
 **C38. Every state is handled:** normal, pressed, on, off, disabled, loading, unavailable, unknown, empty, error.

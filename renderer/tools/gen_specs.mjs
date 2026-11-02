@@ -68,5 +68,6 @@ for (const sc of Object.values(sources.screens ?? {}))
   }
 L.push('};', 'extern const int N_FACTORY = sizeof(FACTORY_LIST) / sizeof(FACTORY_LIST[0]);', `extern const char *const FACTORY_DECK = ${raw(deck)};`, `extern const char *const SOURCES = ${raw(sources)};`, `extern const char *const FIXTURES = ${raw(fixtures)};`, '}  // namespace spec', '}  // namespace fw', '#endif', '');
 const put = (f, text) => { if (!existsSync(f) || readFileSync(f, 'utf8') !== text) writeFileSync(f, text); };
+if (process.env.FW_DECK_OUT) writeFileSync(process.env.FW_DECK_OUT, JSON.stringify(deck));  // the deck as baked (firmware/bundle.mjs checks it with the panel's own check)
 put(out, HEAD.join('\n'));
 put(out.replace(/\.h$/, '_data.h'), L.join('\n'));
