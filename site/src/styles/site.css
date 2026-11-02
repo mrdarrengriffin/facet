@@ -292,13 +292,18 @@ a .live__canvas,
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 24px;
 }
-.tags {
+.tags,
+.prose ul.tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin: 0;
+  gap: 8px 20px;
+  margin: 0 0 18px;
   padding: 0;
   list-style: none;
+}
+/* in prose: in line with its heading (no list indent), one gap between items (no stacked-list top margin) */
+.prose .tags li + li {
+  margin-top: 0;
 }
 .sounds {
   margin: 0;
