@@ -2,10 +2,14 @@
 // Contract lint (renderer/CONTRACT.md). A component whose meta says "contract": 2 is MIGRATED: it may not know the
 // screen or card width, hold or resolve a colour, draw outside the pen, or set local styles / sizes (it fills its
 // parent through core/fx.h). A violation in a migrated component fails (check.sh). Unmarked components are
-// legacy: counted per rule = the migration backlog, never a failure. Rule parts: a migrated component's meta "parts" =
-// the parts its code attaches / draws (C46).
-//   node tools/contract_lint.mjs [--summary | --list]   (--list = the legacy backlog per component)
-import { readFileSync, readdirSync } from 'node:fs';
+// legacy: counted per rule = the migration backlog. Rule parts: a migrated component's meta "parts" = the parts its code
+// attaches / draws (C46).
+// Legacy lint: the backlog only shrinks. Every legacy component and every screen file (screens/*.cpp) has its count per
+// rule in tools/legacy_baseline.json; a count above it (a new legacy use: the fw:: API in core/fw.h is deprecated) or a
+// new legacy file fails. Screens also count `create` (C3: a screen creates only components inside a Page body: no
+// hand-made objects). A count below it passes and says to lower the baseline (--baseline writes it).
+//   node tools/contract_lint.mjs [--summary | --list | --baseline]   (--list = the legacy backlog per file)
+import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 const DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'components');
@@ -42,6 +46,9 @@ for (const [f, from, to] of CORE) {
   });
 }
 const mode = process.argv[2] || '--summary';
+const SCREENS = join(DIR, '..', 'screens'), BASE = join(DIR, '..', 'tools', 'legacy_baseline.json');
+const C3 = /\blv_[a-z]+_create\(|\bfw::text\(/;  // a screen making its own objects (C3)
+const counts = {};  // file -> rule -> lines, every legacy component and screen file
 const bad = [...coreBad], debts = [], legacy = {}, perComp = [];
 let migrated = 0;
 for (const f of readdirSync(DIR).filter((x) => x.endsWith('.cpp')).sort()) {
@@ -82,14 +89,36 @@ for (const f of readdirSync(DIR).filter((x) => x.endsWith('.cpp')).sort()) {
     if (!meta) bad.push(`${f}: parts: no meta "parts" list (C46)`);
     else if (diff.length) bad.push(`${f}: parts: meta "parts" [${[...said]}] != the parts it uses [${[...used]}]`);
   }
+  if (!isV2 && Object.keys(hits).length) counts[`components/${f}`] = hits;
   if (!isV2 && Object.keys(hits).length) {
     perComp.push(`${f.replace('.cpp', '')} ${Object.entries(hits).map(([k, v]) => `${k}=${v}`).join(' ')}`);
     for (const [k, v] of Object.entries(hits)) { legacy[k] = legacy[k] || { comps: 0, lines: 0 }; legacy[k].comps++; legacy[k].lines += v; }
   }
 }
+for (const f of readdirSync(SCREENS).filter((x) => x.endsWith('.cpp')).sort()) {
+  const hits = {};
+  readFileSync(join(SCREENS, f), 'utf8').split('\n').forEach((line) => {
+    const code = line.replace(/\/\/.*$/, '');
+    for (const [r, re] of [...Object.entries(RULES), ['create', C3]]) if (re.test(code)) hits[r] = (hits[r] || 0) + 1;
+  });
+  if (Object.keys(hits).length) counts[`screens/${f}`] = hits;
+}
+const lower = [];
+if (mode === '--baseline') writeFileSync(BASE, JSON.stringify(counts, null, 1) + '\n');
+else {
+  const base = existsSync(BASE) ? JSON.parse(readFileSync(BASE, 'utf8')) : {};
+  for (const [f, hits] of Object.entries(counts))
+    for (const [r, n] of Object.entries(hits)) {
+      const was = base[f]?.[r] ?? 0;
+      if (n > was) bad.push(`${f}: legacy: ${n - was} new ${r} use(s) (${was} -> ${n}); core/fw.h is deprecated: build it with core/fx.h and components`);
+    }
+  for (const [f, hits] of Object.entries(base))
+    for (const [r, n] of Object.entries(hits)) if ((counts[f]?.[r] ?? 0) < n) lower.push(`${f} ${r} ${n} -> ${counts[f]?.[r] ?? 0}`);
+}
 const sum = Object.entries(legacy).map(([k, v]) => `${k} ${v.comps} comps/${v.lines} lines`).join(', ');
 console.log(`contract lint: ${migrated} migrated, ${bad.length} violation(s); legacy backlog: ${perComp.length} components (${sum})`);
 if (mode === '--list') perComp.forEach((l) => console.log('  ' + l));
+if (lower.length) console.log(`legacy backlog shrank (lower the baseline: node tools/contract_lint.mjs --baseline): ${lower.join('; ')}`);
 debts.forEach((l) => console.log('DEBT ' + l));
 bad.forEach((l) => console.log('FAIL ' + l));
 process.exit(bad.length ? 1 : 0);

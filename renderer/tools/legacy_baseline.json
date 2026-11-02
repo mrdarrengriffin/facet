@@ -1,0 +1,126 @@
+{
+ "components/accent_swatches.cpp": {
+  "theme": 6,
+  "font": 1,
+  "local": 26,
+  "fixed": 10
+ },
+ "components/arc.cpp": {
+  "theme": 1,
+  "local": 1,
+  "fixed": 4
+ },
+ "components/card_previews.cpp": {
+  "fixed": 17,
+  "local": 23,
+  "font": 8,
+  "draw": 3
+ },
+ "components/corner_ticks.cpp": {
+  "local": 7,
+  "fixed": 3,
+  "theme": 2
+ },
+ "components/donut.cpp": {
+  "local": 8,
+  "theme": 1,
+  "chart": 1,
+  "fixed": 1,
+  "font": 1
+ },
+ "components/focus_ring.cpp": {
+  "local": 7,
+  "fixed": 4,
+  "theme": 2
+ },
+ "components/fw_update_view.cpp": {
+  "font": 1,
+  "fixed": 11,
+  "width": 2,
+  "local": 4,
+  "theme": 1
+ },
+ "components/icon.cpp": {
+  "fixed": 10,
+  "font": 1,
+  "theme": 8,
+  "local": 3
+ },
+ "components/label.cpp": {
+  "fixed": 10,
+  "font": 1,
+  "theme": 1,
+  "local": 4
+ },
+ "components/legend.cpp": {
+  "theme": 1,
+  "local": 2,
+  "fixed": 1,
+  "font": 2
+ },
+ "components/mascot_mood.cpp": {
+  "fixed": 7,
+  "theme": 1,
+  "width": 2,
+  "local": 4
+ },
+ "components/media_visual.cpp": {
+  "font": 12,
+  "draw": 21,
+  "fixed": 23,
+  "theme": 4,
+  "local": 1
+ },
+ "components/qr_block.cpp": {
+  "theme": 1,
+  "local": 7,
+  "fixed": 8
+ },
+ "components/scroll_track.cpp": {
+  "width": 1,
+  "local": 1,
+  "fixed": 1
+ },
+ "components/speaker_button.cpp": {
+  "fixed": 12,
+  "theme": 1,
+  "font": 1,
+  "local": 15
+ },
+ "components/tick_ring.cpp": {
+  "theme": 1,
+  "fixed": 5,
+  "local": 3
+ },
+ "components/tile.cpp": {
+  "font": 4,
+  "fixed": 18,
+  "theme": 2,
+  "local": 19
+ },
+ "screens/ha_link.cpp": {
+  "create": 1
+ },
+ "screens/screen_set.cpp": {
+  "create": 4,
+  "local": 9,
+  "fixed": 10,
+  "theme": 2,
+  "width": 3
+ },
+ "screens/settings.cpp": {
+  "create": 5,
+  "local": 20,
+  "width": 4,
+  "fixed": 25,
+  "theme": 2
+ },
+ "screens/setup.cpp": {
+  "create": 3,
+  "local": 23,
+  "fixed": 21,
+  "font": 1,
+  "theme": 2,
+  "width": 5
+ }
+}

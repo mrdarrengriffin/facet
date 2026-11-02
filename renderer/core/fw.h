@@ -1,3 +1,4 @@
+// DEPRECATED for new code: build with core/fx.h and components (CONTRACT.md); the contract lint fails on a new use.
 // Facet WASM workbench: the tiny API a component sees (README.md).
 // A component = one .cpp in ../components/ with one FW_COMPONENT(...) block. Sizes are written in dp (1x) and turned
 // into device pixels with fw::px() (Waveshare/Shelly build = 1.5x, Guition build = 1x). Colours only from fw::T
