@@ -70,11 +70,11 @@ export default {
       t.eq(t.where(), 'weather_days', 'the days screen');
       t.has(t.texts(), /^today$/i, 'Today'); t.eq(wxComps(t).length, 5, 'five rows');
     } },
-    { name: '5 days: a condition too long for its room ends in a real ellipsis on one line (never wrapped into a hidden line)', async run(t) {
+    { name: '5 days: the weather over the rain, each one line, whole at both sizes (Thunderstorms · 6.8 mm)', async run(t) {
       await t.mount('spec', { screen: 'weather_days', source: 'sample' });
-      const o = t.objs().find((x) => /^thunderstorms/i.test(x.text || '')), one = t.b.S > 600 ? 32 : 20;
-      t.ok(o, 'the long condition'); t.eq(o.h, one, 'one body line tall');
-      t.ok(/\.\.\.$|…$/.test(o.text) || /mm$/.test(o.text), 'ends in an ellipsis (or fits whole)');
+      const o = t.objs().find((x) => /^thunderstorms/i.test(x.text || '')), r = t.objs().find((x) => x.text === '6.8 mm'), one = t.b.S > 600 ? 32 : 20;
+      t.ok(o && r, 'the condition and the rain, each its own line'); t.eq([o.h, r.h], [one, one], 'one body line tall each');
+      t.eq(o.text, 'Thunderstorms', 'whole, no ellipsis'); t.ok(r.y >= o.y + o.h, 'the rain under the weather');
     } },
     { name: 'Home card (C52): the weather now on the same feed, the real Weather icon as its preview', async run(t) {
       await t.device(deck({ source: 'sample' }));

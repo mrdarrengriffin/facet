@@ -10,7 +10,8 @@
 //            the hour now), value under it (type:body, fg:text), gap:2, centred in w:hour-col (a hug Grid centres the eight)
 //   row      one of the next days (docs daysView), a List row's height (tall:list-row-h, pad-x:4, gap:5; divider = the
 //            List row's hairline on top, line:line + rule-top): the day (type:title, fg:text, w:wx-day-name), the icon,
-//            line (type:body, fg:text-dim, the free width, "..."), low (type:body, fg:text-dim), value (type:title)
+//            line in a column of two (the free width, each "..."): the weather over the rain, split at " · "
+//            (type:body, fg:text-dim), low (type:body, fg:text-dim), value (type:title)
 //   hero     the weather now (docs .fs-w-now): value (type:display, fg:text) at the start of a row (hero-row-display:
 //            the display type box tall, = the hero icon) with the icon at its end, then label (type:headline, fg:text) and line (type:body, fg:text-dim), gap:3; fills the width
 // Feed: on the Weather screen every word binds to panel.weather (core/weather_source.cpp: icon, temp, condition, line;
@@ -42,6 +43,10 @@ void words(lv_obj_t *parent, const char *s, const char *type, const char *fg, co
   fx::use(t, width);                                                                                  // it doesn't fit
   lv_label_set_long_mode(t, LV_LABEL_LONG_MODE_DOTS);  // never wrapped into a hidden second line (a hard cut)
 }
+// a day with no rain: its second line hidden, so the weather sits mid-row on its own
+void rain_shown(lv_obj_t *two, bool on) {
+  if (lv_obj_t *r = lv_obj_get_child(two, 1)) on ? lv_obj_remove_flag(r, LV_OBJ_FLAG_HIDDEN) : lv_obj_add_flag(r, LV_OBJ_FLAG_HIDDEN);
+}
 void fill(lv_obj_t *root, fw::Props p) {
   fw::shape(root, sig(p));
   const char *L = layout_of(p);
@@ -55,7 +60,14 @@ void fill(lv_obj_t *root, fw::Props p) {
     if (flag(p, "divider", false)) { fx::use(root, "line:line"); fx::use(root, "rule-top"); }
     words(root, p["label"] | "", "type:title", "fg:text", "w:wx-day-name");
     wx(root, p, p["size"] | "feature");
-    words(root, p["line"] | "", "type:body", "fg:text-dim", "grow-w");
+    // the line in two: the weather over the rain ("Thunderstorms · 6.8 mm" whole at 480), the free width
+    lv_obj_t *two = fx::box(root, "col");
+    fx::use(two, "grow-w");
+    const std::string line = p["line"] | "";
+    const size_t dot = line.find(" \xC2\xB7 ");
+    words(two, line.substr(0, dot).c_str(), "type:body", "fg:text-dim", "fill-w");
+    words(two, dot == std::string::npos ? "" : line.substr(dot + 4).c_str(), "type:body", "fg:text-dim", "fill-w");
+    rain_shown(two, dot != std::string::npos);
     fx::text(root, p["low"] | "", "type:body", "fg:text-dim", "none");
     fx::text(root, p["value"] | "", "type:title", "fg:text", "none");
   } else if (!strcmp(L, "hero")) {
@@ -81,7 +93,7 @@ void parts(lv_obj_t *root, lv_obj_t **icon, std::vector<lv_obj_t *> &texts) {
       lv_obj_t *c = lv_obj_get_child(todo[k], (int32_t) i);
       if (lv_obj_check_type(c, &lv_label_class)) texts.push_back(c);
       else if (fw::weather_icon_name(c)) *icon = c;
-      else if (k == 0) todo.push_back(c);  // the hero's top row
+      else if (k == 0) todo.push_back(c);  // the hero's top row, the day row's line column
     }
 }
 }  // namespace
@@ -134,11 +146,15 @@ FW_UPDATE(weather_icon) {
     size_t i = 0;
     if (*(p["label"] | "") && i < t.size()) fx::set_text(t[i++], p["label"] | "", "type:label");
     if (*(p["value"] | "") && i < t.size()) fx::set_text(t[i++], p["value"] | "", "type:body");
-  } else if (!strcmp(L, "row") && t.size() == 4) {
+  } else if (!strcmp(L, "row") && t.size() == 5) {  // breadth first: label, low, value (root), the line's two (its column)
+    const std::string line = p["line"] | "";
+    const size_t dot = line.find(" \xC2\xB7 ");
     fx::set_text(t[0], p["label"] | "", "type:title");
-    fx::set_text(t[1], p["line"] | "", "type:body");
-    fx::set_text(t[2], p["low"] | "", "type:body");
-    fx::set_text(t[3], p["value"] | "", "type:title");
+    fx::set_text(t[1], p["low"] | "", "type:body");
+    fx::set_text(t[2], p["value"] | "", "type:title");
+    fx::set_text(t[3], line.substr(0, dot).c_str(), "type:body");
+    fx::set_text(t[4], dot == std::string::npos ? "" : line.substr(dot + 4).c_str(), "type:body");
+    rain_shown(lv_obj_get_parent(t[4]), dot != std::string::npos);
   } else if (!strcmp(L, "hero") && t.size() == 3) {  // breadth first: label, line (root), then value (the top row)
     fx::set_text(t[0], p["label"] | "", "type:headline");
     fx::set_text(t[1], p["line"] | "", "type:body");
