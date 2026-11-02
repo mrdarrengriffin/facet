@@ -13,6 +13,7 @@ const headings: Heading[] = [
   { depth: 2, slug: 'wifi', text: 'Wi-Fi does not join' },
   { depth: 2, slug: 'home-assistant', text: 'Not showing in Home Assistant' },
   { depth: 2, slug: 'actions', text: 'Controls do nothing' },
+  { depth: 2, slug: 'link', text: 'Lists of your devices are empty' },
   { depth: 2, slug: 'help', text: 'Still stuck?' },
 ];
 ---
@@ -74,6 +75,30 @@ const headings: Heading[] = [
     If the panel shows your lights but tapping them changes nothing, Home Assistant is not letting it act. Open the
     panel's device in Home Assistant, press <strong>Configure</strong> and turn on <strong>Allow the device to perform
     Home Assistant actions</strong>.
+  </p>
+
+  <h2 id="link">Lists of your devices are empty</h2>
+  <p>
+    When you choose a light or a sensor for a screen, the panel reads the list from Home Assistant with an address and a
+    token of its own. <strong>Settings &gt; Home Assistant</strong> on the panel says whether it has them: <em>Not set
+    up</em>, <em>Linked</em> with your Home Assistant's name, or <em>Not reached</em> with the reason.
+  </p>
+  <p>
+    To set them, open <code>http://&lt;the panel's address&gt;/link</code> on a phone or computer (Settings &gt; Home
+    Assistant shows it as a QR code while the panel is not linked). Enter your Home Assistant's address and a
+    long-lived access token, and press <strong>Link</strong>. The page tells you when the panel is linked, or why not.
+    Give each panel a Home Assistant user of its own, not an administrator, and create the token while logged in as
+    that user.
+  </p>
+  <p>
+    If the link page does not open (firmware from before it), set the link from Home Assistant instead. In
+    <strong>Developer tools &gt; Actions</strong>, choose the action <code>esphome.&lt;panel&gt;_facet_act</code> and
+    set its <code>action</code> field to:
+  </p>
+  <pre><code>{'{"do": "ha.connect", "url": "http://homeassistant.local:8123", "token": "<the token>"}'}</code></pre>
+  <p>
+    The panel keeps the address and token when it restarts, and never shows the token back: Settings shows its last
+    four characters only.
   </p>
 
   <h2 id="help">Still stuck?</h2>
