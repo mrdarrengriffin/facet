@@ -34,6 +34,7 @@ Everything below is served by this panel itself and matches its firmware (catalo
 
 ## Docs
 - [Agent guide](/agents.md): the spec format, every component and prop this firmware has, bindings, actions, limits, the send API with curl examples
+- [Schema](/fw/schema): the one machine-readable description of this firmware (gzip JSON): tokens, components (props, options, minimums, slots, events, actions), screens and their settings, feeds (fields, required or optional, states), settings, themes, and these endpoints
 
 ## Endpoints (JSON)
 - GET /fw/spec: hello (protocol, catalogue hash, components, screens and revs, budgets, free memory)

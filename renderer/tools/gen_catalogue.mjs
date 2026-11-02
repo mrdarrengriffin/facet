@@ -1,9 +1,14 @@
 #!/usr/bin/env node
 // The spec catalogue (core/spec.h catalogue(): one source) -> catalogue/catalogue.json (components, props, which events
 // take which actions, binds, budgets, a cost per component: objects in its default build) + catalogue/spec.schema.json
-// (JSON Schema for a screen spec and a deck: the editor, later). Runs on the WASM build (1.5x). Writes only on change.
+// (JSON Schema for a screen spec and a deck: the editor, later) + catalogue/schema.json, THE one schema surface (plan 5.3):
+// tokens (group, type, range per density / mode, use), components (props, options, minimums, slots, events, actions),
+// screens (built-in + factory specs with their params), feeds (fields required / optional + placeholder, states and
+// their words), settings, themes (the theme file's keys, parts and ranges) and the panel's HTTP routes (firmware/
+// fw_device.h's route list). The panel serves it at GET /fw/schema, the docs site at /schema.json, llms.txt points at
+// it. Runs on the WASM build (1.5x). Writes only on change.
 // Usage: node tools/gen_catalogue.mjs [--build <dir with 1.5x/>]
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
+import { readFileSync, readdirSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -62,4 +67,49 @@ mkdirSync(D, { recursive: true });
 const put = (f, o) => { const s = JSON.stringify(o, null, 1) + '\n'; if (!existsSync(join(D, f)) || readFileSync(join(D, f), 'utf8') !== s) writeFileSync(join(D, f), s); };
 put('catalogue.json', cat);
 put('spec.schema.json', schema);
+
+// ---- the one schema surface
+const T = (f) => JSON.parse(readFileSync(join(HERE, 'tokens', f), 'utf8'));
+const tokens = [];
+for (const [g, set] of Object.entries(T('space.json').tokens)) for (const [n, v] of Object.entries(set)) tokens.push({ name: `${g}:${n}`, group: g, type: 'size', px: { '1.5x': v.v, '1x': v['1x'] }, use: v.use ?? '' });
+for (const [g, set] of Object.entries(T('layout.json').tokens ?? {})) for (const [n, v] of Object.entries(set)) if (v && typeof v === 'object' && 'v' in v) tokens.push({ name: `layout:${n}`, group: g, type: 'size', px: { '1.5x': v.v, '1x': v['1x'] }, use: v.use ?? '' });
+for (const [n, v] of Object.entries(T('colour.json').colours)) tokens.push({ name: n, group: v.group ?? '', type: 'colour', value: { dark: v.dark, light: v.light }, use: v.role ?? '' });
+for (const [n, v] of Object.entries(T('type.json').styles)) tokens.push({ name: `type:${n}`, group: v.scale ?? '', type: 'type', px: { '1.5x': { size: v.size, box: v.box }, '1x': { size: v['1x']?.size, box: v['1x']?.box } }, use: v.use ?? '' });
+for (const [n, v] of Object.entries(T('motion.json').durations)) tokens.push({ name: `motion:${n}`, group: v.group ?? '', type: 'duration', ms: v.ms, use: v.use ?? '' });
+const comps = {}, screens = {};
+for (const [id, mt] of Object.entries(META)) {
+  const c = cat.components[id];
+  const entry = { name: c?.name ?? id, about: mt.about ?? '', contract: mt.contract ?? 1, min: mt.min ?? null, slots: mt.slots ?? null,
+    props: (mt.props ?? []).map((p) => ({ name: p.name, type: p.type, about: p.about ?? '', ...(p.options ? { options: p.options } : {}), ...(p.type === 'range' ? { min: p.min, max: p.max, step: p.step } : {}), default: p.default, ...(p.debug ? { debug: true } : {}) })),
+    events: c ? c.events : {}, spec: !!c };
+  const sec = JSON.parse(m.UTF8ToString(m._fw_meta())).find((x) => x.id === id)?.section;
+  if (sec === 'screens') screens[id] = { ...entry, kind: 'built-in' }; else comps[id] = entry;
+}
+for (const f of readdirSync(join(HERE, 'specs')).filter((f) => f.endsWith('.json') && f !== 'deck.json')) {
+  const sp = JSON.parse(readFileSync(join(HERE, 'specs', f), 'utf8'));
+  if (!sp.id) continue;
+  screens[sp.id] = { name: sp.name ?? sp.id, kind: 'spec', layout: sp.layout, params: sp.params ?? {}, feeds: Object.keys(sp.feeds ?? {}) };
+}
+const st = m._fw_stage(720, 720);
+const lab = (c) => { const pc = m.stringToNewUTF8(c), pa = m.stringToNewUTF8(''); try { return JSON.parse(m.UTF8ToString(m._fw_lab(st, pc, pa))); } finally { m._free(pc); m._free(pa); } };
+const feeds = Object.fromEntries(lab('feeds').map((f) => [f.entity, { source: f.source, every_ms: f.every_ms, fields: f.fields }]));
+const SETTINGS = T('settings.json'), THEME = T('theme.json');
+const routes = [];  // firmware/fw_device.h: "//   GET  /fw/x   about" (+ indented continuation lines)
+for (const l of readFileSync(join(HERE, '..', 'firmware', 'fw_device.h'), 'utf8').split('\n').slice(0, 40)) {
+  const r = l.match(/^\/\/   ((?:GET|POST)(?:\|POST)?)\s+(\S+(?:, \S+)?)\s+(.*)$/);
+  if (r) routes.push({ method: r[1], path: r[2], about: r[3].trim() });
+  else if (routes.length && /^\/\/\s{6,}\S/.test(l)) routes[routes.length - 1].about += ' ' + l.replace(/^\/\/\s+/, '');
+}
+const out = {
+  $comment: `Facet's one schema surface, generated by tools/gen_catalogue.mjs from the registry, the tokens, the specs, the feeds and the firmware's routes (catalogue ${cat.hash}). Do not edit. The panel serves it at GET /fw/schema; the docs site at /schema.json.`,
+  hash: cat.hash, protocol: cat.protocol,
+  tokens, components: comps, screens,
+  feeds: { states: ['ok', 'loading', 'error', 'empty'], words: { loading: 'Loading', error: 'Offline', empty: 'Nothing yet' }, list: feeds },
+  settings: { groups: SETTINGS.groups, settings: SETTINGS.settings },
+  themes: { schema: THEME.schema, limits: THEME.limits, modes: THEME.modes, roles: THEME.roles, type: THEME.type, keys: THEME.keys, parts: THEME.parts, shape: THEME.shape },
+  spec: { actions: cat.act, fmt: cat.fmt, layouts: cat.layouts, budget: cat.budget, cards: cat.cards, schema: 'catalogue/spec.schema.json' },
+  routes,
+};
+put('schema.json', out);
+console.log(`schema: ${tokens.length} tokens, ${Object.keys(comps).length} components, ${Object.keys(screens).length} screens, ${Object.keys(feeds).length} feeds, ${SETTINGS.settings.length} settings, ${routes.length} routes`);
 console.log(`catalogue ${cat.hash}: ${Object.keys(cat.components).length} components, ${Object.values(cat.components).filter((c) => Object.keys(c.events).length).length} with actions`);

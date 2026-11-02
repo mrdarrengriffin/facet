@@ -20,6 +20,8 @@
 //   GET  /fw/act    every action of the closed list (core/spec.h ACTION_DOCS: fields, limits, one example each)
 //   POST /fw/act    {do, ...fields} -> {ok, why?, state?}: one action, checked + run like a spec tap (fw::spec::act,
 //                   CONTRACT.md C50; HA's facet_act does the same: act_from_ha)
+//   GET  /fw/schema   the one schema surface (catalogue/schema.json: tokens, components, screens, feeds, settings,
+//                     themes, these routes; gzip; open), bundle fw_docs_gen.h
 //   GET  /llms.txt, /agents.md   the agent docs (bundle fw_docs_gen.h from tools/gen_agents.mjs; open)
 // AI agents: every POST under /fw/ and every GET /fw/ha (it shows the subscribed HA
 // values; the editor's ?want= subscribes too) go through agent::allow():
@@ -1236,7 +1238,7 @@ class Handler : public AsyncWebHandler {
     auto inm = request->get_header("If-None-Match");
     if (inm.has_value() && *inm == f->etag) { httpd_resp_set_status(req, "304 Not Modified"); httpd_resp_send(req, nullptr, 0); return; }
     auto ae = request->get_header("Accept-Encoding");
-    const bool gz = ae.has_value() && ae->find("gzip") != std::string::npos;
+    const bool gz = !f->raw || (ae.has_value() && ae->find("gzip") != std::string::npos);  // a gzip-only file: always gzip
     httpd_resp_set_status(req, HTTPD_200);
     httpd_resp_set_type(req, f->type);
     if (gz) httpd_resp_set_hdr(req, "Content-Encoding", "gzip");
@@ -1259,7 +1261,7 @@ class Handler : public AsyncWebHandler {
   bool canHandle(AsyncWebServerRequest *req) const override {
     char buf[AsyncWebServerRequest::URL_BUF_SIZE];
     auto u = req->url_to(buf);
-    return u.size() > 4 && !strncmp(u.c_str(), "/fw/", 4);
+    return u.size() > 4 && !strncmp(u.c_str(), "/fw/", 4) && strcmp(u.c_str(), "/fw/schema");  // /fw/schema: the docs handler
   }
   void handleBody(AsyncWebServerRequest *, uint8_t *data, size_t len, size_t index, size_t total) override {
     if (index == 0) {
@@ -1440,7 +1442,7 @@ class Handler : public AsyncWebHandler {
       }
     } else {
       code = 404;
-      s = R"({"ok":false,"error":"docs: /llms.txt /agents.md; GET /fw/info, GET /fw/meta, GET /fw/perf[?reset=1], POST /fw/show, GET|POST /fw/act, GET|POST /fw/settings, GET|POST /fw/spec, GET /fw/deck, GET /fw/ha, POST|GET /fw/bench"})";
+      s = R"({"ok":false,"error":"docs: /llms.txt /agents.md /fw/schema; GET /fw/info, GET /fw/meta, GET /fw/perf[?reset=1], POST /fw/show, GET|POST /fw/act, GET|POST /fw/settings, GET|POST /fw/spec, GET /fw/deck, GET /fw/ha, POST|GET /fw/bench"})";
     }
     body_.clear();  // a body is only delivered for some content types: never reuse the previous request's
     too_big_ = false;
@@ -1527,7 +1529,7 @@ inline void setup() {
     ws->add_handler(new Handler());
     ws->add_handler(new shot::Handler());  // GET /screenshot
 #if __has_include("fw_docs_gen.h")
-    ws->add_handler(new docs::Handler());  // GET /llms.txt, /agents.md
+    ws->add_handler(new docs::Handler());  // GET /llms.txt, /agents.md, /fw/schema
 #endif
 #if __has_include("fw_web_gen.h")
     if (auto *srv = ws->get_server()) web::Front::add(srv, new web::Handler());  // GET / = the web UI
