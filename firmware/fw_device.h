@@ -6,7 +6,8 @@
 //                = Every component and screen this firmware has, with its props.
 //   POST /fw/show   {id, props?, theme?: dark|light, accent?: <set id>}  -> {ok, error?, ms, heap}
 //                = Shows one component or screen with the props you give (the workbench's Show on device).
-//   GET  /fw/perf   frame stats while animations run (since boot or the last ?reset=1): fps, frame / render ms
+//   GET  /fw/perf   frame stats while animations run (since boot or the last ?reset=1): fps, frame / render ms;
+//                   ?nav=1|0 = navigation timing on / off (each screen change: tap, build, feeds, first frame)
 //                = How smoothly the panel draws: frames per second and render times.
 //   GET  /fw/settings  the settings backup {"facet":"settings","version":1,"values":{...}} (core/device.h; no secrets)
 //                = A backup of the panel's settings (no secrets in it).
@@ -191,6 +192,17 @@ inline Perf P;
 inline void perf_reset() { P = Perf{}; }
 inline void perf_event(lv_event_t *e) {
   const int64_t t = esp_timer_get_time();
+  if (lv_event_get_code(e) == LV_EVENT_RENDER_READY && fw::dev::nav_timing()) {  // navigation timing (facet-243)
+    const size_t had = fw::dev::nav_times().size();
+    fw::dev::nav_frame();
+    const auto &n = fw::dev::nav_times();
+    if (!n.empty() && (n.size() != had || had == 32)) {
+      const fw::dev::NavTime &x = n.back();
+      ESP_LOGI("facet_nav", "%s: lift->tap %u ms, tap->run %u ms, build %u ms (feeds %u ms in %u rounds), build->frame %u ms, lift->frame %u ms",
+               x.screen.c_str(), (unsigned) (x.tap - x.touch), (unsigned) (x.run - x.tap), (unsigned) (x.build1 - x.build0), (unsigned) x.feed_ms, (unsigned) x.feeds,
+               (unsigned) (x.frame - x.build1), (unsigned) (x.frame - x.touch));
+    }
+  }
   if (lv_event_get_code(e) == LV_EVENT_RENDER_START) {
     // a drag repaints with no animation running (a dial, a slider): a pressed pointer counts too
     bool down = false;
@@ -225,6 +237,13 @@ inline void perf_json(ArduinoJson::JsonObject o) {
   o["render_ms_max"] = lroundf(P.render_max / 100.f) / 10.f;
   o["slow"] = P.slow;
   o["active_s"] = lroundf(P.active_us / 1e5f) / 10.f;
+  if (!fw::dev::nav_timing()) return;  // navigation timing (GET /fw/perf?nav=1): each change, ms from its tap
+  ArduinoJson::JsonArray nv = o["nav"].to<ArduinoJson::JsonArray>();
+  for (const fw::dev::NavTime &x : fw::dev::nav_times()) {
+    ArduinoJson::JsonObject r = nv.add<ArduinoJson::JsonObject>();
+    r["screen"] = x.screen, r["input"] = x.tap - x.touch, r["run"] = x.run - x.tap, r["build"] = x.build1 - x.build0, r["feeds"] = x.feed_ms, r["rounds"] = x.feeds;
+    r["frame"] = x.frame - x.build1, r["total"] = x.frame - x.touch;
+  }
 }
 
 // ---------------------------------------------------------------- render
@@ -1349,7 +1368,8 @@ class Handler : public AsyncWebHandler {
     } else if (path == "/fw/perf") {
       ArduinoJson::JsonDocument d;
       const bool reset = req->hasArg("reset");  // url_to() has no query string
-      in_loop([&] { perf_json(d.to<ArduinoJson::JsonObject>()); if (reset) perf_reset(); }, 2000);
+      const int nav = req->hasArg("nav") ? (req->arg("nav") == "1" ? 1 : 0) : -1;  // the navigation timing flag (facet-243)
+      in_loop([&] { if (nav >= 0) fw::dev::nav_timing(nav == 1); perf_json(d.to<ArduinoJson::JsonObject>()); if (reset) perf_reset(); }, 2000);
       serializeJson(d, s);
     } else if (path == "/fw/bench" && post) {
       ArduinoJson::JsonDocument body, out;
@@ -1714,6 +1734,8 @@ inline void setup() {
   lv_display_set_theme(d, nullptr);  // clean slate like the WASM host: components style everything themselves
   lv_display_add_event_cb(d, perf_event, LV_EVENT_RENDER_START, nullptr);  // frame stats (GET /fw/perf)
   lv_display_add_event_cb(d, perf_event, LV_EVENT_RENDER_READY, nullptr);
+  for (lv_indev_t *i = lv_indev_get_next(nullptr); i; i = lv_indev_get_next(i))  // navigation timing: a finger's lift
+    if (lv_indev_get_type(i) == LV_INDEV_TYPE_POINTER) lv_indev_add_event_cb(i, [](lv_event_t *) { fw::dev::nav_touch(); }, LV_EVENT_RELEASED, nullptr);
   S.scr = lv_obj_create(nullptr);
   lv_screen_load(S.scr);
   spec_storage();     // screen specs: the overrides from NVS (each falls back to its last good copy, then factory)

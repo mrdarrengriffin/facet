@@ -5,6 +5,7 @@
 #include <cstring>
 #include "fw.h"
 #include "ha.h"
+#include "device.h"
 
 namespace fw::feed {
 namespace {
@@ -59,12 +60,14 @@ void Feed::run() {
   deserializeJson(cfg_, c.empty() ? "{}" : c.c_str());
   in_round_ = true;
   put_now_.clear();
+  const uint32_t t0 = lv_tick_get();
   if (source() == "sample") {
     in_sample_ = true;
     sample();
     in_sample_ = false;
   } else fill();
   in_round_ = false;
+  dev::nav_feed(lv_tick_elaps(t0));  // navigation timing (device.h): a round during a screen build
   const std::string *st = ha::get(entity_);
   const bool ok = st && *st == "ok";
   for (const Field &f : fields_) {

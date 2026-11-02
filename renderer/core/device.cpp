@@ -147,8 +147,12 @@ std::string target_of(const std::string &id, bool &page) {
   if (id.find('?') == std::string::npos && spec::page_role(base) && find(base.c_str()) == nullptr) page = true;
   return id;
 }
+// navigation timing (device.h nav_timing): the change being measured, from its tap to its first frame
+struct Nav { bool on = false; std::vector<NavTime> done; NavTime cur; int stage = 0; uint32_t touch = 0; };  // stage 0 idle, 1 queued, 2 built
+Nav &nav() { static Nav n; return n; }
 void run(lv_timer_t *t) {
   auto *d = (Device *) lv_timer_get_user_data(t);
+  if (nav().on && nav().stage == 1) nav().cur.run = lv_tick_get();
   d->timer = nullptr;  // one-shot: LVGL deletes it after this call
   const Op op = d->op;
   d->op = NONE;
@@ -182,7 +186,9 @@ void run(lv_timer_t *t) {
   const Theme *was = T;
   if (d->theme) T = d->theme;
   std::vector<lv_obj_t *> items;
+  if (nav().on && nav().stage == 1) nav().cur.build0 = lv_tick_get(), nav().cur.screen = d->stack.back();
   show(d, d->stack.back(), items);
+  if (nav().on && nav().stage == 1) nav().cur.build1 = lv_tick_get(), nav().stage = 2;
   const char *tr = setting("transition");
   if (!items.empty() && !(tr && !strcmp(tr, "instant"))) rise(items.data(), (int) items.size(), home_dir);
   T = devices.size() == 1 ? d->theme : was;  // a panel (one device): fw::T stays its look for taps / fades
@@ -191,6 +197,11 @@ void run(lv_timer_t *t) {
 void queue(lv_obj_t *in, Op op, const char *id) {
   Device *d = of(in);
   if (!d) return;
+  if (nav().on) {
+    Nav &n = nav();
+    n.cur = NavTime{}, n.cur.tap = lv_tick_get(), n.stage = 1;
+    n.cur.touch = n.touch && lv_tick_diff(n.cur.tap, n.touch) < 1000 ? n.touch : n.cur.tap;  // its finger's lift, when one was
+  }
   d->op = op;
   d->target = id ? id : "";
   if (!d->timer) {
@@ -279,7 +290,9 @@ void restyle_now(Device *d) {
   const Theme *was = T;
   T = d->theme;
   std::vector<lv_obj_t *> items;
+  if (nav().on && nav().stage == 1) nav().cur.build0 = lv_tick_get(), nav().cur.screen = d->stack.back();
   show(d, d->stack.back(), items);
+  if (nav().on && nav().stage == 1) nav().cur.build1 = lv_tick_get(), nav().stage = 2;
   T = devices.size() == 1 ? d->theme : was;  // a panel (one device): fw::T stays its look for taps / fades
   root = d->screen && lv_obj_get_child_count(d->screen) ? lv_obj_get_child(d->screen, 0) : nullptr;
   if (root && idx >= 0 && idx < (int32_t) lv_obj_get_child_count(root) && y > 0) {
@@ -426,6 +439,19 @@ void go(lv_obj_t *in, const char *id) { queue(in, GO, id); }
 void back(lv_obj_t *in) { queue(in, BACK, nullptr); }
 void home(lv_obj_t *in) { queue(in, HOME, nullptr); }
 bool in_device(lv_obj_t *obj) { return of(obj) != nullptr; }
+void nav_timing(bool on) { nav().on = on; nav().stage = 0; if (on) nav().done.clear(); }
+bool nav_timing() { return nav().on; }
+void nav_touch() { if (nav().on) nav().touch = lv_tick_get(); }
+const std::vector<NavTime> &nav_times() { return nav().done; }
+void nav_feed(uint32_t ms) { if (nav().on && nav().stage == 1 && nav().cur.build0) nav().cur.feed_ms += ms, nav().cur.feeds++; }
+void nav_frame() {
+  Nav &n = nav();
+  if (!n.on || n.stage != 2) return;
+  n.cur.frame = lv_tick_get();
+  if (n.done.size() >= 32) n.done.erase(n.done.begin());
+  n.done.push_back(n.cur);
+  n.stage = 0;
+}
 lv_obj_t *first_root() { return devices.empty() ? nullptr : devices.front()->root; }
 const char *current(lv_obj_t *in) {
   Device *d = of(in);

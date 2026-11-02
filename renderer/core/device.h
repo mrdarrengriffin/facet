@@ -52,6 +52,16 @@ void go(lv_obj_t *in, const char *id);  // in = the root or anything inside it; 
 void back(lv_obj_t *in);
 void home(lv_obj_t *in);
 void reload(const char *id);
+// Navigation timing (a debug flag, off by default; facet-243): each screen change, in lv_tick ms: the tap handled
+// (navigate / back / home queued), the change run, the build start and end, the feeds' rounds during the build,
+// the first frame drawn after it. nav_timing(true) starts recording (the last 32 kept); nav_json lists them.
+struct NavTime { std::string screen; uint32_t touch = 0, tap = 0, run = 0, build0 = 0, build1 = 0, frame = 0, feed_ms = 0, feeds = 0; };
+void nav_timing(bool on);
+bool nav_timing();
+const std::vector<NavTime> &nav_times();
+void nav_feed(uint32_t ms);  // a feed round's time (core/feed.cpp), counted into the change being built
+void nav_frame();            // the host's "a frame was drawn" (its display's render-ready)
+void nav_touch();            // the host's "a finger lifted" (its pointer's release): the change it causes starts there
 void state(ArduinoJson::JsonArray out);  // every mounted device: {stack, builds, objects} (spec hello diagnostics)  // a spec changed (core/spec.h apply): devices showing it (or every device: "deck") build it again
 const char *current(lv_obj_t *in);  // the id on top of the stack ("" = not a device)
 

@@ -5,7 +5,8 @@
 // uses S, show(), in_loop()).
 //   POST /fw/bench {run: "<id>", theme?, timing?: {settle_ms, window_ms, drag_ms, after_ms, nav_ms},
 //                   cases: [[case, component, props (object), scenario, path?: [[x0,y0],[x1,y1]], to?, opts?], ...]}
-//        scenario idle | animate | drag | navigate | touch (5 taps: press to the first frame after it); opts = {settle_ms,
+//        scenario idle | animate | drag | navigate | touch (5 taps: press to the first frame after it; at the centre, or
+//        with a path at its two points in turn: a card, then Back); opts = {settle_ms,
 //        window_ms, group, stop_fps, reserve_int_kb, reserve_ps_kb, n} (the stress suite: ramps stop past their knee)
 //        -> 200 {ok, run, total, eta_s} at once (409 while a batch runs; 400 over FW_BENCH_MAX cases or a bad body)
 //   GET  /fw/bench -> {run, state: idle|running|done|interrupted, done, total, results: [row...]}
@@ -31,6 +32,7 @@ struct Case {
   std::string name, comp, req;  // req = the /fw/show body for this case
   Scen sc = S_ANIMATE;
   float path[4] = {0.2f, 0.5f, 0.8f, 0.5f};
+  bool pathed = false;  // a path was given: touch taps its two points in turn (a card, then Back: five screen changes)
   std::string to = "settings";
   // per-case options (7th element, the stress suite): own settle / window, and a ramp group that stops one step past its
   // knee (fps under stop_fps) or before the memory reserve (predicted from the last step's bytes per object)
@@ -298,14 +300,14 @@ inline void step(lv_timer_t *) {
     case TAP:  // pressed: wait for the first frame after the press (on_disp), then let go
       if (B.press_wait && el < 500) return;
       B.press_wait = false;
-      touch_at(0.5f, 0.5f, false);
+      touch_at(c->pathed ? c->path[(B.taps - 1) % 2 * 2] : 0.5f, c->pathed ? c->path[(B.taps - 1) % 2 * 2 + 1] : 0.5f, false);
       go(TAPGAP);
       return;
     case TAPGAP:  // 5 taps, 300 ms apart
       if (B.taps && el < 300) return;
       if (B.taps >= 5) { end_case(nullptr); return; }
       B.taps++;
-      touch_at(0.5f, 0.5f, true);
+      touch_at(c->pathed ? c->path[(B.taps - 1) % 2 * 2] : 0.5f, c->pathed ? c->path[(B.taps - 1) % 2 * 2 + 1] : 0.5f, true);  // a path: its points in turn
       B.t_press = esp_timer_get_time();
       B.press_wait = true;
       go(TAP);
@@ -363,8 +365,10 @@ inline std::string start(ArduinoJson::JsonObjectConst b, uint32_t *total, uint32
       c.res_ps_kb = o["reserve_ps_kb"] | 0u;
       c.n = o["n"] | 0u;
     }
-    if (a[4].is<ArduinoJson::JsonArrayConst>() && a[4].size() == 2)
+    if (a[4].is<ArduinoJson::JsonArrayConst>() && a[4].size() == 2) {
       for (int i = 0; i < 4; i++) c.path[i] = std::clamp(a[4][i / 2][i % 2] | c.path[i], 0.f, 1.f);
+      c.pathed = true;
+    }
     if (a[5].is<const char *>()) c.to = a[5].as<const char *>();
     ArduinoJson::JsonDocument req;
     req["id"] = c.comp;
