@@ -19,6 +19,7 @@ const headings: Heading[] = [
   { depth: 2, slug: 'install', text: 'Install' },
   { depth: 2, slug: 'wifi', text: 'Wi-Fi' },
   { depth: 2, slug: 'home-assistant', text: 'Home Assistant' },
+  { depth: 2, slug: 'link', text: 'The panel\'s own link' },
   { depth: 2, slug: 'updates', text: 'Updates' },
 ];
 const manifest = (id: string) => url(`/firmware/${id}/manifest.json`);
@@ -107,6 +108,27 @@ const manifest = (id: string) => url(`/firmware/${id}/manifest.json`);
       actions</strong>, so the panel can switch lights and control media players.
     </li>
   </ol>
+
+  <h2 id="link">The panel's own link</h2>
+  <p>
+    When you choose a light or a sensor for a screen, the panel reads the list from Home Assistant itself, with an
+    address and a token of its own. After it is added, Set up shows a code to its link page; it is also on the panel
+    under <strong>Settings &gt; Home Assistant</strong> while the panel is not linked.
+  </p>
+  <ol>
+    <li>In Home Assistant, <strong>Settings &gt; People &gt; Users</strong>: add a user for this panel, not an administrator.</li>
+    <li>Log in as that user once (a private window is easiest) and create a long-lived access token in its profile, under <strong>Security</strong>.</li>
+    <li>Scan the code on the panel, or open <code>http://&lt;the panel's address&gt;/link</code>. Enter your Home Assistant's address and the token, and press <strong>Link</strong>.</li>
+  </ol>
+  <p>
+    The page says <strong>Linked</strong> when the panel has checked the address and token, or why not. The panel keeps
+    them when it restarts and never shows the token back. If the link page does not open, see
+    <a href={url('/help/troubleshooting/#link')}>Troubleshooting</a>.
+  </p>
+  <div class="page-shots">
+    <figure><img src={url('/install/link-qr.png')} width="720" height="720" alt="The panel's Settings, Home Assistant screen while it is not linked: the link page's address and its QR code." loading="lazy" /><figcaption>On the panel, while it is not linked</figcaption></figure>
+    <figure><img src={url('/install/link-page.png')} width="390" height="780" alt="The link page on a phone: Linked, homeassistant.local, the address and token fields and the Link button." loading="lazy" /><figcaption>The link page on a phone</figcaption></figure>
+  </div>
 
   <h2 id="updates">Updates</h2>
   <p>

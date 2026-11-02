@@ -730,3 +730,32 @@ a .live__canvas,
     display: none;
   }
 }
+
+/* screenshots in a page: the editor, the link page (a figure, its caption under it) */
+.prose .page-shot,
+.prose .page-shots figure {
+  margin: 0 0 24px;
+}
+.prose .page-shot img,
+.prose .page-shots img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--facet-color-line);
+  border-radius: 12px;
+}
+.prose .page-shots {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+.prose .page-shot figcaption,
+.prose .page-shots figcaption {
+  margin-top: 8px;
+  color: var(--facet-color-text-dim);
+  font-size: 0.9em;
+}
+@media (max-width: 640px) {
+  .prose .page-shots { grid-template-columns: 1fr; }
+}
