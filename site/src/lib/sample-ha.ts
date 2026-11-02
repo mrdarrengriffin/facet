@@ -6,7 +6,9 @@
 // to the demo values, renderer/tools/demo_ha_examples.mjs). The state lasts while the page is open (no reset).
 import type { Engine } from './engine';
 // the README images' demo values (one list for both): named demo entities (the docs Home's cards) and by entity name
-import { demoValue, REACTIONS } from '../../../renderer/tools/demo_ha.mjs';
+import { DEMO, demoValue, REACTIONS } from '../../../renderer/tools/demo_ha.mjs';
+// the answers a panel gets from Home Assistant (forecasts, calendar events, Energy's reads): the tests' fake uses the same
+import { demoGrid, demoReply, demoWs } from '../../../renderer/tools/demo_ha_replies.mjs';
 
 const NAMES: Record<string, string[]> = {
   light: ['Ceiling', 'Lamp', 'Desk light'],
@@ -21,7 +23,14 @@ const VALUES: Record<string, Record<string, string | (() => string)>> = {
   media_player: { '': 'playing', media_title: 'Slow Tide', media_artist: 'Harbour Lights', volume_level: '0.45', media_duration: '236', media_position: '71', media_position_updated_at: () => new Date().toISOString() },
   cover: { '': 'open', current_position: '60', current_tilt_position: '40', device_class: 'blind' },
   climate: { '': 'heat', current_temperature: '20.5', temperature: '21', hvac_action: 'heating', preset_mode: 'none', min_temp: '7', max_temp: '30', target_temp_step: '0.5' },
-  weather: { '': 'partlycloudy', temperature: '14', apparent_temperature: '12' },
+  weather: { '': 'partlycloudy', temperature: '14', apparent_temperature: '12', humidity: '71', wind_speed: '14', wind_speed_unit: 'km/h', pressure: '1016', temperature_unit: '°C' },
+  calendar: { '': 'off' },
+  sensor: {},
+};
+// Energy's dashboard (demoWs) names these: its price and live power are plain entity states
+const G = demoGrid();
+const ENERGY: Record<string, Record<string, string>> = {
+  [G.price]: { '': '0.275', unit_of_measurement: 'GBP/kWh' }, [G.power]: { '': '420', unit_of_measurement: 'W', device_class: 'power' },
 };
 
 // what taps changed: "entity|attr" -> value, for this page (a new engine, e.g. the 720 / 480 switch, is fed these)
@@ -90,6 +99,7 @@ function first(entity: string, attr: string): string | undefined {
     const i = Math.max(0, (parseInt(obj.replace(/\D+/g, ''), 10) || 1) - 1);
     return names[i % Math.max(1, names.length)] ?? obj.replace(/_/g, ' ');
   }
+  if (ENERGY[entity]) return ENERGY[entity][attr];
   if (!/^sample_\d+$/.test(obj)) {  // a named demo entity (the demo deck, a spec's default): the shared demo values
     const d = demoValue(entity, attr);
     if (d !== undefined) return d;
@@ -99,12 +109,39 @@ function first(entity: string, attr: string): string | undefined {
 }
 
 /** put sample values for every pair the engine's screens want, as they ask (each pair once per engine) */
+/** the link's /api/states: the demo entities, as HA lists them */
+const STATES = () => [...Object.keys(DEMO), ...Object.keys(ENERGY), 'weather.home', 'calendar.family']
+  .map((id) => ({ entity_id: id, state: first(id, '') ?? 'unknown', attributes: { friendly_name: first(id, 'friendly_name') } }));
+type HaMod = {
+  _fw_ha_wants?: () => number; _fw_ha_put: (a: number, b: number, c: number) => void;
+  _fw_ha_asks?: () => number; _fw_ha_answer: (id: number, ok: number, s: number) => void;
+  _fw_ha_gets?: () => number; _fw_ha_chunk: (id: number, s: number, n: number) => void; _fw_ha_got: (id: number, ok: number, s: number) => void;
+};
+/** the replies a screen waits for: HA actions (a forecast, a calendar's events) and the link's reads (Energy) */
+function answer(e: Engine, m: HaMod) {
+  for (const a of JSON.parse(e.str(m._fw_ha_asks!()) || '[]') as { id: number; service: string; data?: Record<string, unknown> }[]) {
+    const r = demoReply(a.service, a.data ?? {});
+    e.withStr(r ? JSON.stringify(r) : '', (p) => m._fw_ha_answer(a.id, r ? 1 : 0, p));
+  }
+  if (!m._fw_ha_gets) return;
+  for (const g of JSON.parse(e.str(m._fw_ha_gets()) || '[]') as (number | { id: number; ws?: unknown })[]) {
+    const id = typeof g === 'number' ? g : g.id, ws = typeof g === 'number' ? null : g.ws;
+    // a plain id = the link's /api/states read (how many entities it sees); ws = a WebSocket read; get = other REST
+    const body = typeof g === 'number' ? STATES() : ws ? demoWs(typeof ws === 'string' ? JSON.parse(ws) : ws) : null;
+    if (body) { const b = JSON.stringify(body); e.withStr(b, (p) => m._fw_ha_chunk(id, p, new TextEncoder().encode(b).length)); }
+    e.withStr(body ? '' : 'not found', (p) => m._fw_ha_got(id, body ? 1 : 0, p));
+  }
+}
+
 export function feedSampleHa(e: Engine) {
-  const m = e.m as unknown as { _fw_ha_wants?: () => number; _fw_ha_put: (a: number, b: number, c: number) => void };
+  const m = e.m as unknown as HaMod;
   if (!m._fw_ha_wants) return;
   live = e;
+  // the panel's own Home Assistant link (Energy reads over it): a made-up address, answered here, never fetched
+  try { e.withStr('act', (pc) => e.withStr(JSON.stringify({ do: 'ha.connect', url: 'http://homeassistant.local:8123', token: 'demo-token-0000' }), (pa) => (e.m as unknown as { _fw_spec: (a: number, b: number) => number })._fw_spec(pc, pa))); } catch { /* an older build */ }
   const done = new Set<string>();
   const tick = () => {
+    if (m._fw_ha_asks) answer(e, m);
     const pairs = JSON.parse(e.str(m._fw_ha_wants!())) as [string, string][];
     for (const [en, a] of pairs) {
       const k = `${en}|${a}`;

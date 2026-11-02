@@ -17,6 +17,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { performance } from 'node:perf_hooks';
 import { Bench, setBuild, shot, T } from './lib/fwbench.mjs';
 import { demoValue } from './demo_ha.mjs';
+import { demoReply, demoWs } from './demo_ha_replies.mjs';
 import { runRules } from './lib/rules.mjs';
 
 const HERE = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -81,42 +82,10 @@ class FakeHA {
   }
   known(e) { return !this.missing && (this.s[e] !== undefined || demoValue(e, '') !== undefined); }
   reply(service, data) {
-    const ids = [].concat(data.entity_id || []);
-    const e = ids[0];
-    if (!e || !this.known(e)) return null;
-    const now = Date.now(), H = 3600000, iso = (t) => new Date(t).toISOString();
-    if (service === 'weather.get_forecasts') {
-      const daily = data.type === 'daily';
-      const forecast = Array.from({ length: daily ? 7 : 24 }, (_, i) => ({
-        datetime: iso(now + (daily ? i * 24 : i + 1) * H), condition: ['cloudy', 'rainy', 'partlycloudy', 'sunny'][i % 4],
-        temperature: 12 - (i % 5), templow: 5 + (i % 3), precipitation_probability: (i * 13) % 90, precipitation: (i % 3) * 0.4 }));
-      return { [e]: { forecast } };
-    }
-    if (service === 'calendar.get_events') {
-      const ev = (h, d, summary) => ({ start: iso(now + h * H), end: iso(now + (h + d) * H), summary, location: 'Test hall' });
-      return { [e]: { events: [ev(2, 1, 'Test meeting'), ev(26, 2, 'Test dinner'), ev(50, 1, 'Test walk')] } };
-    }
-    return null;
+    const e = [].concat(data.entity_id || [])[0];
+    return e && this.known(e) ? demoReply(service, data) : null;
   }
-  ws(cmd) {  // HA's result message for the panel's own link's reads (Energy's dashboard)
-    const ok = (result) => ({ id: 1, type: 'result', success: true, result });
-    if (cmd.type === 'energy/get_prefs')
-      return ok(this.missing ? { energy_sources: [], device_consumption: [] } : {
-        energy_sources: [{ type: 'grid', stat_energy_from: 'sensor.test_grid_in', stat_energy_to: null, stat_cost: 'sensor.test_grid_cost',
-          entity_energy_price: 'sensor.test_grid_price', stat_rate: 'sensor.test_grid_power' }],
-        device_consumption: [{ stat_consumption: 'sensor.test_kettle' }] });
-    if (cmd.type === 'recorder/statistics_during_period') {
-      const step = cmd.period === 'day' ? 24 * 3600000 : cmd.period === 'hour' ? 3600000 : 300000;
-      const midnight = new Date(Date.now()); midnight.setHours(0, 0, 0, 0);
-      // a lighter yesterday: today reads "more than yesterday by now" whatever the minute
-      const rows = (k) => { const out = []; for (let t = Date.parse(cmd.start_time); t < Date.now(); t += step) out.push({ start: t, end: t + step, change: +((t < +midnight ? 0.7 : 1) * k * step / 300000).toFixed(4) }); return out; };
-      const r = {};
-      for (const id of cmd.statistic_ids || []) r[id] = rows(id.endsWith('_cost') ? 0.011 : 0.04);
-      return ok(r);
-    }
-    if (cmd.type === 'recorder/list_statistic_ids') return ok([]);
-    return null;
-  }
+  ws(cmd) { return demoWs(cmd, { empty: this.missing, prefix: 'test_' }); }  // HA's result for the link's reads (Energy)
   disconnect() { this.down = true; this.t.log.push('ha: disconnected'); this.push(); this.t.b.settle(1500); }
   reconnect() { this.down = false; this.t.log.push('ha: reconnected'); this.push(); this.t.b.settle(1500); }
   react(evs) {  // the HA side of service calls in a gesture's events
