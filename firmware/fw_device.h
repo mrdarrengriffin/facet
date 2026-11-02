@@ -100,6 +100,8 @@
 #include "ha.h"
 #include "spec.h"
 #include "nvs.h"
+#include "esp_http_client.h"
+#include "esp_crt_bundle.h"
 #include "theme_slot.h"
 #ifdef USE_API
 #include "esphome/components/api/api_server.h"
@@ -1489,6 +1491,117 @@ inline void apply_rotation() {
   lv_async_call([](void *) { if (rotate_hook) rotate_hook(rotation_now()); }, nullptr);
 }
 
+// The panel's own Home Assistant link (core/device.h ha_link, Settings > Home Assistant) on the firmware: its address
+// and token in NVS "facet_halink" (restored at boot, kept on every ha.connect through on_store; never logged), and its
+// reads (GET <url>/api/states and the REST reads) through esp_http_client on a task of their own: http and https (https
+// checks the server against the ESP-IDF certificate bundle). The body comes back to the main loop in pieces through a
+// bounded queue (never held whole: the HTTP task waits while HELD bytes are queued), then done(id, ok, why).
+namespace halink {
+struct Piece { uint32_t id = 0; std::string data; bool end = false, ok = false; std::string why; };
+struct Job { uint32_t id; std::string url, token; };
+constexpr size_t HELD = 32 * 1024;
+inline std::mutex &mu() { static std::mutex m; return m; }
+inline std::deque<Piece> &queue() { static std::deque<Piece> q; return q; }
+inline std::atomic<size_t> &held() { static std::atomic<size_t> n{0}; return n; }
+inline void push(Piece p) {
+  held() += p.data.size();
+  std::lock_guard<std::mutex> g(mu());
+  queue().push_back(std::move(p));
+}
+inline void task(void *arg) {
+  Job *j = (Job *) arg;
+  esp_http_client_config_t c = {};
+  c.url = j->url.c_str();
+  c.timeout_ms = 15000;
+  c.buffer_size = 2048;
+  if (j->url.rfind("https://", 0) == 0) c.crt_bundle_attach = esp_crt_bundle_attach;
+  bool ok = false;
+  std::string why;
+  esp_http_client_handle_t h = esp_http_client_init(&c);
+  if (!h) why = "the panel could not start the request";
+  else {
+    const std::string auth = "Bearer " + j->token;
+    esp_http_client_set_header(h, "Authorization", auth.c_str());
+    const esp_err_t e = esp_http_client_open(h, 0);
+    if (e != ESP_OK) why = std::string("cannot reach Home Assistant at that address (") + esp_err_to_name(e) + ")";
+    else {
+      esp_http_client_fetch_headers(h);
+      const int st = esp_http_client_get_status_code(h);
+      if (st == 401) why = "Home Assistant refused the token";
+      else if (st != 200) why = "Home Assistant answered " + std::to_string(st);
+      else {
+        char buf[2048];  // on this task's own stack (10 KB): reads can overlap (the entity lists + an Energy read)
+        int n;
+        while ((n = esp_http_client_read(h, buf, sizeof buf)) > 0) {
+          while (held() > HELD) vTaskDelay(pdMS_TO_TICKS(10));
+          Piece p;
+          p.id = j->id, p.data.assign(buf, n);
+          push(std::move(p));
+        }
+        ok = n == 0;
+        if (!ok) why = "the connection to Home Assistant dropped";
+      }
+      esp_http_client_close(h);
+    }
+    esp_http_client_cleanup(h);
+  }
+  Piece end;
+  end.id = j->id, end.end = true, end.ok = ok, end.why = why;
+  push(std::move(end));
+  delete j;
+  vTaskDelete(nullptr);
+}
+inline void get(uint32_t id, const std::string &url, const std::string &token) {
+  auto *j = new Job{id, url, token};
+  if (xTaskCreate(task, "fw_ha_get", 10240, j, 4, nullptr) != pdPASS) {
+    delete j;
+    Piece end;
+    end.id = id, end.end = true, end.why = "the panel has no memory for the request now";
+    push(std::move(end));
+  }
+}
+inline void drain(lv_timer_t *) {  // main loop: what the HTTP task read, into ha_link
+  for (int k = 0; k < 16; k++) {
+    Piece p;
+    {
+      std::lock_guard<std::mutex> g(mu());
+      if (queue().empty()) return;
+      p = std::move(queue().front());
+      queue().pop_front();
+    }
+    held() -= p.data.size();
+    if (p.end) fw::dev::ha_link::done(p.id, p.ok, p.why);
+    else fw::dev::ha_link::chunk(p.id, p.data.data(), p.data.size());
+  }
+}
+inline std::string nvs_str(nvs_handle_t h, const char *key) {
+  size_t n = 0;
+  if (nvs_get_str(h, key, nullptr, &n) != ESP_OK || !n) return "";
+  std::string v(n, '\0');
+  if (nvs_get_str(h, key, v.data(), &n) != ESP_OK) return "";
+  v.resize(n ? n - 1 : 0);
+  return v;
+}
+inline void setup() {
+  nvs_handle_t h;
+  if (nvs_open("facet_halink", NVS_READONLY, &h) == ESP_OK) {
+    const std::string url = nvs_str(h, "url"), tok = nvs_str(h, "tok");
+    nvs_close(h);
+    if (!url.empty()) fw::dev::ha_link::restore(url, tok);
+  }
+  fw::dev::ha_link::on_store([](const std::string &url, const std::string &tok) {
+    nvs_handle_t w;
+    if (nvs_open("facet_halink", NVS_READWRITE, &w) != ESP_OK) { ESP_LOGE("facet_wb", "HA link NVS: cannot open"); return; }
+    nvs_set_str(w, "url", url.c_str());
+    nvs_set_str(w, "tok", tok.c_str());
+    nvs_commit(w);
+    nvs_close(w);
+  });
+  fw::dev::ha_link::on_get(get);
+  lv_timer_create(drain, 20, nullptr);
+}
+}  // namespace halink
+
 inline void setup() {
   fw::bundle::link_all();
   // component events + sound requests: logged (TODO: sound playback on the panels; no audio path yet)
@@ -1504,6 +1617,7 @@ inline void setup() {
   spec_storage();     // screen specs: the overrides from NVS (each falls back to its last good copy, then factory)
   theme_storage();    // the sent theme: its last-good copy from NVS (theme engine T4)
   agent::setup();     // AI agents: the token (NVS) + the setting
+  halink::setup();    // the panel's own Home Assistant link: its address + token (NVS), its reads (esp_http_client)
   fw::spec::load();
   for (const auto &x : fw::spec::S().log) ESP_LOGW("facet_wb", "spec boot: %s", x.c_str());
   S.pref = esphome::global_preferences->make_preference<Saved>(0xFAC37B01u, true);
