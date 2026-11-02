@@ -608,6 +608,7 @@ bool nav_timing() { return nav().on; }
 void nav_touch() { if (nav().on) nav().touch = lv_tick_get(); }
 const std::vector<NavTime> &nav_times() { return nav().done; }
 void nav_feed(uint32_t ms) { if (nav().on && nav().stage == 1 && nav().cur.build0) nav().cur.feed_ms += ms, nav().cur.feeds++; }
+void nav_render() { if (nav().on && nav().stage == 2 && !nav().cur.render0) nav().cur.render0 = lv_tick_get(); }
 void nav_frame() {
   Nav &n = nav();
   if (!n.on || n.stage != 2) return;

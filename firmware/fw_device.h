@@ -193,6 +193,7 @@ inline Perf P;
 inline void perf_reset() { P = Perf{}; }
 inline void perf_event(lv_event_t *e) {
   const int64_t t = esp_timer_get_time();
+  if (lv_event_get_code(e) == LV_EVENT_RENDER_START && fw::dev::nav_timing()) fw::dev::nav_render();
   if (lv_event_get_code(e) == LV_EVENT_RENDER_READY && fw::dev::nav_timing()) {  // navigation timing (facet-243)
     const size_t had = fw::dev::nav_times().size();
     fw::dev::nav_frame();
@@ -250,6 +251,7 @@ inline void perf_json(ArduinoJson::JsonObject o) {
     if (x.del) r["delete"] = x.del - x.build0;
     if (x.made) r["make"] = x.made - x.del, r["layout"] = x.laid - x.made, r["rest"] = x.build1 - x.laid;
     r["frame"] = x.frame - x.build1, r["total"] = x.frame - x.touch;
+    if (x.render0) r["wait"] = x.render0 - x.build1, r["render"] = x.frame - x.render0;  // frame = wait (the loop) + render
   }
 }
 
