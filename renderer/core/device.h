@@ -56,11 +56,13 @@ void reload(const char *id);
 // (navigate / back / home queued), the change run, the build start and end (in it: the old screen deleted, the new
 // one made, its layout done), the feeds' rounds during the build,
 // the first frame drawn after it. nav_timing(true) starts recording (the last 32 kept); nav_json lists them.
-struct NavTime { std::string screen; uint32_t touch = 0, tap = 0, run = 0, build0 = 0, del = 0, made = 0, laid = 0, build1 = 0, screen_layout0 = 0, render0 = 0, frame = 0, feed_ms = 0, feeds = 0; };
+struct NavTime { std::string screen; uint32_t touch = 0, tap = 0, run = 0, build0 = 0, del = 0, made = 0, laid = 0, build1 = 0, screen_layout0 = 0, render0 = 0, frame = 0, feed_ms = 0, feeds = 0;
+  std::vector<std::pair<std::string, uint32_t>> prof; };  // the build's nodes and their ms (spec.h), in build order
 void nav_timing(bool on);
 bool nav_timing();
 const std::vector<NavTime> &nav_times();
 void nav_feed(uint32_t ms);  // a feed round's time (core/feed.cpp), counted into the change being built
+void nav_prof(const char *what, uint32_t ms);  // a spec node built during the change being measured (its ms)
 void nav_render();           // the host's "a render starts" (its display's render-start: the wait before it is the loop's)
 void nav_frame();            // the host's "a frame was drawn" (its display's render-ready)
 void nav_touch();            // the host's "a finger lifted" (its pointer's release): the change it causes starts there

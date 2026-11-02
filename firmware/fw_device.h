@@ -253,6 +253,10 @@ inline void perf_json(ArduinoJson::JsonObject o) {
     if (x.screen_layout0) r["screen_layout"] = x.build1 - x.screen_layout0;  // the whole display screen's layout
     r["frame"] = x.frame - x.build1, r["total"] = x.frame - x.touch;
     if (x.render0) r["wait"] = x.render0 - x.build1, r["render"] = x.frame - x.render0;  // frame = wait (the loop) + render
+    if (!x.prof.empty()) {  // the build's nodes (spec.h), ms each (a node's time includes what it builds inside it)
+      ArduinoJson::JsonArray pf = r["profile"].to<ArduinoJson::JsonArray>();
+      for (const auto &p : x.prof) { ArduinoJson::JsonArray e = pf.add<ArduinoJson::JsonArray>(); e.add(p.first); e.add(p.second); }
+    }
   }
 }
 
