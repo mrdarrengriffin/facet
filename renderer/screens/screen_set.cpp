@@ -1,9 +1,9 @@
-// Screen settings (Settings > Screens > a screen): one screen's picks on this panel. Composed only of
-// real components, laid out as the Settings screen:
+// Screen settings (Settings > Screens > a screen): one screen's picks on this panel. On the contract: Screen > Page
+// (fx::page) > Header + list Body (C1-C3), real components only, laid out as the Settings screen:
 //   header   the Header (back + the screen's name + the screen chrome)
-//   content  one scrolling column, groups as Settings (label, section-gap, rows; groups lay::group apart):
-//            "shows"    what the screen shows and what it needs, in words (sources.json "shows" + "needs"; body
-//                       text wrapped to the column), so a screen with no options yet still says what it is
+//   body     groups as Settings: a Section header (size label) over its rows, groups a group apart (above:group):
+//            "shows"    what the screen shows and what it needs, in words (sources.json "shows" + "needs"; the Text
+//                       component, body, up to 4 lines), so a screen with no options yet still says what it is
 //            "home"     List row "Show on Home" with its Toggle (the whole row): the deck entry's on
 //            "source"   List row "Source" + the source's name (core/sources.h); more than one source = a chevron and
 //                       a tap opens the Bottom sheet with the screen's sources (name; status = the kind, "needs <setup>"
@@ -15,7 +15,7 @@
 //                       dashboard) adds the row "From <it>" with what the feed found there (its "found" attribute:
 //                       "Grid, Solar · 3 devices", "Not set up in Home Assistant"), following the pick live.
 //            "options"  one row per typed parameter of the screen's spec (core/spec.h "params", hidden ones left
-//                       out): select = a List row + Segmented (up to 4 options) or the sheet; toggle = a List row
+//                       out): select = a List row + Segmented in its end slot (up to 4 options) or the sheet; toggle = a List row
 //                       toggle; entity = its friendly name, and a sheet of the screen's list of the same domain when
 //                       it has one (Media: the Player from the Speakers, Auto first when the spec's screen.param
 //                       follows a sensor: "auto" or nothing picked = Auto); entities = "N chosen"; text = the value.
@@ -36,6 +36,7 @@
 // deck) and emitted as "deck" "<screen> <key>=<value>" for the host. The screen opens with them next time.
 // Props: id = the screen (a deck screen id). Update path: none needed (built each time it opens).
 #include "fw.h"
+#include "fx.h"
 #include "spec.h"
 #include "sources.h"
 #include "device.h"
@@ -44,12 +45,6 @@
 
 namespace {
 using Doc = ArduinoJson::JsonDocument;
-lv_obj_t *box(lv_obj_t *parent) {
-  lv_obj_t *o = lv_obj_create(parent);
-  lv_obj_remove_style_all(o);
-  lv_obj_remove_flag(o, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
-  return o;
-}
 lv_obj_t *build(const char *id, lv_obj_t *parent, Doc &props) {
   const fw::Component *c = fw::find(id);
   if (!c) return nullptr;
@@ -57,16 +52,19 @@ lv_obj_t *build(const char *id, lv_obj_t *parent, Doc &props) {
   c->build(parent, props.as<fw::Props>());
   return lv_obj_get_child_count(parent) > before ? lv_obj_get_child(parent, -1) : nullptr;
 }
-void spacer(lv_obj_t *parent, int h) {
-  lv_obj_t *s = box(parent);
-  lv_obj_set_size(s, 1, h);
-}
+// a group's Section header (size label); not the first: a group apart (the spec renderer's rule, as Settings)
 void group(lv_obj_t *c, const char *label, bool first) {
-  if (!first) spacer(c, fw::lay::group);
-  lv_obj_t *gl = fw::text(c, fw::ty::label, label, fw::T->text_dim);
-  lv_obj_remove_flag(gl, LV_OBJ_FLAG_CLICKABLE);
-  lv_obj_set_height(gl, fw::style(fw::ty::label).box);
-  spacer(c, fw::lay::section_gap);
+  Doc sh;
+  sh["title"] = label, sh["size"] = "label", sh["badge"] = false, sh["right"] = "none";
+  lv_obj_t *h = build("section_header", c, sh);
+  if (h && !first) fx::use(h, "above:group");
+}
+// a List row's end slot (shown once it holds something), where its trailing control goes (C8a)
+lv_obj_t *end_of(lv_obj_t *row) {
+  lv_obj_t *e = fw::spec::slot_of(row, 0);
+  if (!e) return row;
+  lv_obj_remove_flag(e, LV_OBJ_FLAG_HIDDEN);
+  return e;
 }
 std::string friendly(const std::string &e) {
   if (e.empty()) return "";
@@ -221,13 +219,9 @@ const char *META = R"({
 })";
 
 void build_page(lv_obj_t *parent, fw::Props p) {
-  const fw::Theme &t = *fw::T;
   auto *pg = new Page;
   pg->id = p["id"] | "media";
-  pg->root = box(parent);
-  lv_obj_set_size(pg->root, fw::lay::screen_w, fw::lay::screen_h);
-  lv_obj_set_style_bg_color(pg->root, t.bg, 0);
-  lv_obj_set_style_bg_opa(pg->root, LV_OPA_COVER, 0);
+  pg->root = fx::box(parent, "fill");
   lv_obj_add_event_cb(pg->root, [](lv_event_t *e) {
     auto *pg = (Page *) lv_event_get_user_data(e);
     if (pg->tick) lv_timer_delete(pg->tick);
@@ -243,15 +237,9 @@ void build_page(lv_obj_t *parent, fw::Props p) {
 
   Doc hd;
   hd["label"] = name.c_str();
-  if (lv_obj_t *h = build("header", pg->root, hd)) lv_obj_set_pos(h, fw::lay::inset, fw::lay::inset);
-  lv_obj_t *c = box(pg->root);
-  lv_obj_add_flag(c, (lv_obj_flag_t) (LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_CLICKABLE));  // clickable: a drag in a gap scrolls too
-  lv_obj_set_scroll_dir(c, LV_DIR_VER);
-  lv_obj_set_scrollbar_mode(c, LV_SCROLLBAR_MODE_OFF);
-  lv_obj_set_pos(c, fw::lay::inset, fw::lay::top);
-  lv_obj_set_size(c, fw::lay::content_w, fw::lay::screen_h - fw::lay::top);
-  lv_obj_set_style_pad_bottom(c, fw::lay::inset, 0);
-  lv_obj_set_flex_flow(c, LV_FLEX_FLOW_COLUMN);
+  const fx::Page fp = fx::page(pg->root, "list");  // Screen > Page > Header + list Body (C1-C3)
+  build("header", fp.head, hd);
+  lv_obj_t *c = fp.body;
 
   // shows: what the screen is, in words
   {
@@ -262,8 +250,9 @@ void build_page(lv_obj_t *parent, fw::Props p) {
     else if (!about.empty()) about += " Works in every home.";
     if (!about.empty()) {
       group(c, "shows", true);
-      lv_obj_t *l = fw::text(c, fw::ty::body, about.c_str(), t.text, fw::lay::content_w);
-      lv_obj_remove_flag(l, LV_OBJ_FLAG_CLICKABLE);
+      Doc td;  // the Text component: up to 4 lines of body text, then "..."
+      td["text"] = about.c_str(), td["style"] = "body", td["lines"] = 4;
+      build("text", c, td);
     }
   }
   // home
@@ -352,7 +341,7 @@ void build_page(lv_obj_t *parent, fw::Props p) {
         for (ArduinoJson::JsonVariantConst o : opts) labels += std::string(labels.empty() ? "" : ", ") + label_of(o | "");
         Doc sd;
         sd["options"] = labels.c_str(), sd["selected"] = v.c_str();
-        if (lv_obj_t *sg = build("segmented", r, sd)) pg->ctrls.push_back({sg, "params." + key});
+        if (lv_obj_t *sg = build("segmented", end_of(r), sd)) pg->ctrls.push_back({sg, "params." + key});
         continue;
       }
       rd["trailing"] = "value-chevron", rd["value"] = label_of(v).c_str();
