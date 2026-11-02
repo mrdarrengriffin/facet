@@ -274,7 +274,9 @@ void rebuild() {
       ev.push_back({*msg, loc ? *loc : "", c.id, a, std::isnan(b) ? a + ag::HOUR : b, ad && (*ad == "on" || *ad == "true")});
   }
   if (!any && ev.empty()) { put_empty(feed::LOADING); return; }
-  if (all_down && ev.empty()) { put_empty(feed::ERROR); return; }
+  // every calendar unavailable (Home Assistant dropped them, or the network): Offline, never the events from before
+  // (kept: they show again the moment a calendar is back)
+  if (all_down) { put_empty(feed::ERROR); return; }
   put_events(ev, now_ms());
 }
 void events_into(const std::string &cid, ArduinoJson::JsonVariantConst v, int depth = 0) {  // "events" lists anywhere
