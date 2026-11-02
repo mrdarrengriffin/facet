@@ -1,5 +1,5 @@
 {
-  "about": "One supported panel. Read by the firmware YAML (esphome/, !include), tokens/layout.json devices (tools/gen_layout.mjs), the docs site (install page, engine.ts), deploy.yml and the issue templates (boards/templates.mjs). status: target = a release firmware is built for it. memory: keep_pages = how many deck pages the panel keeps built (facet-243); malloc_always_internal = CONFIG_SPIRAM_MALLOC_ALWAYSINTERNAL (facet-242; absent = the chip's default).",
+  "about": "One supported panel. Read by the firmware YAML (esphome/, !include), tokens/layout.json devices (tools/gen_layout.mjs), the docs site (install page, engine.ts), deploy.yml and the issue templates (boards/templates.mjs). status: target = a release firmware is built for it. memory: keep_pages = how many deck pages the panel keeps built (facet-243); malloc_always_internal = CONFIG_SPIRAM_MALLOC_ALWAYSINTERNAL as a string (an sdkconfig value; facet-242; absent = the chip's default).",
   "id": "guition-4848s040",
   "name": "Guition ESP32-S3-4848S040",
   "chip": "ESP32-S3",
@@ -17,6 +17,6 @@
   "status": "target",
   "memory": {
     "keep_pages": 8,
-    "malloc_always_internal": 0
+    "malloc_always_internal": "0"
   }
 }
