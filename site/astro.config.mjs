@@ -10,6 +10,9 @@ export default defineConfig({
   base: process.env.FACET_DOCS_BASE ?? '/facet-docs/',
   outDir: process.env.FACET_DOCS_OUT ?? './dist',
   trailingSlash: 'always',
+  // whitespace as written: the compressor has dropped the line break between text and an inline tag on the CI build
+  // ("named<code>Facet-</code>" on the live Install page); scripts/check-dist.mjs fails the build on any such join
+  compressHTML: false,
   build: { format: 'directory' },
   // markdown fences use the same token theme as src/components/CodeBlock.astro
   markdown: { shikiConfig: { theme: facetCodeTheme } },

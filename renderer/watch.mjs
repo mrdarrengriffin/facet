@@ -78,6 +78,7 @@ async function docs() {
     const nx = join(SITE, 'dist.next'), dist = join(SITE, 'dist'), old = join(SITE, 'dist.old');
     let r = await step(['scripts/extract.mjs']);
     if (r.code === 0) r = await step(['node_modules/astro/bin/astro.mjs', 'build'], { FACET_DOCS_OUT: nx });
+    if (r.code === 0) r = await step(['scripts/check-dist.mjs', nx]);  // words run together, broken links: not swapped in
     if (r.code === 0) {
       rmSync(old, { recursive: true, force: true });
       if (existsSync(dist)) renameSync(dist, old);

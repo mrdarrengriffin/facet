@@ -8,7 +8,7 @@
   "scripts": {
     "extract": "node scripts/extract.mjs",
     "dev": "npm run extract && astro dev",
-    "build": "npm run extract && astro build",
+    "build": "npm run extract && astro build && node scripts/check-dist.mjs",
     "preview": "astro preview"
   },
   "dependencies": {
