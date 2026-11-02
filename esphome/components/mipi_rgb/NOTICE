@@ -11,5 +11,8 @@ Changed (each marked "Facet" in the source):
 - mipi_rgb.cpp: the RGB bounce buffer is PANEL_BOUNCE_ROWS rows (a build flag, default 10 as stock).
 - mipi_rgb.h: no loop() on the ESP32-S3. Stock ESPHome restarted the RGB DMA on every loop pass, which shifted
   frames (a red-tinted flicker); the ESP-IDF driver already restarts after a real underflow.
+- mipi_rgb.cpp / display.py: LVGL's hardware rotation (has_hardware_rotation): draw_pixels_at turns each strip
+  48 x 48 pixels at a time in a small internal tile and copies the tiles into the PSRAM frame (write_rotated_),
+  instead of ESPHome's software rotation into a PSRAM buffer a pixel at a time (~63 ms a frame on the S3).
 
 Everything else is ESPHome's file as released. Facet drops this copy when ESPHome carries these fixes.

@@ -1,3 +1,4 @@
+#include <algorithm>
 #if defined(USE_ESP32_VARIANT_ESP32S3) || defined(USE_ESP32_VARIANT_ESP32P4) || defined(USE_ESP32_VARIANT_ESP32S31)
 #include "mipi_rgb.h"
 #include "esphome/core/gpio.h"
@@ -226,9 +227,53 @@ void MipiRgb::draw_pixels_at(int x_start, int y_start, int w, int h, const uint8
     Display::draw_pixels_at(x_start, y_start, w, h, ptr, order, bitness, big_endian, x_offset, y_offset, x_pad);
     this->write_to_display_(x_start, y_start, w, h, reinterpret_cast<const uint8_t *>(this->buffer_), x_start, y_start,
                             this->width_ - w - x_start);
+  } else if (this->rotation_ != display::DISPLAY_ROTATION_0_DEGREES) {
+    this->write_rotated_(x_start, y_start, w, h, ptr, x_offset, y_offset, x_pad);
   } else {
     this->write_to_display_(x_start, y_start, w, h, ptr, x_offset, y_offset, x_pad);
   }
+}
+
+// Facet: LVGL's hardware rotation (display metadata has_hardware_rotation) lands here. The strip LVGL drew (internal
+// RAM) is turned a TILE x TILE block at a time into a small internal tile and each tile copied into the PSRAM frame
+// row by row: no PSRAM buffer written a pixel at a time (ESPHome's software rotation without a 2D engine: ~63 ms a
+// frame on the S3, facet-245). Same pixel mapping as draw_pixel_at.
+void MipiRgb::write_rotated_(int x_start, int y_start, int w, int h, const uint8_t *ptr, int x_offset, int y_offset,
+                             int x_pad) {
+  constexpr int TILE = 48;
+  static uint16_t tile[TILE * TILE];  // 4.6 KB, internal (.bss)
+  const int stride = x_offset + w + x_pad;  // source pixels per row
+  const uint16_t *src = reinterpret_cast<const uint16_t *>(ptr) + y_offset * stride + x_offset;
+  const int W = this->width_, H = this->height_;
+  int bx0, by0, bw, bh;  // the block in panel pixels
+  switch (this->rotation_) {
+    case display::DISPLAY_ROTATION_90_DEGREES: bx0 = W - y_start - h, by0 = x_start, bw = h, bh = w; break;
+    case display::DISPLAY_ROTATION_270_DEGREES: bx0 = y_start, by0 = H - x_start - w, bw = h, bh = w; break;
+    default: bx0 = W - x_start - w, by0 = H - y_start - h, bw = w, bh = h; break;  // 180
+  }
+  for (int ty = 0; ty < bh; ty += TILE)
+    for (int tx = 0; tx < bw; tx += TILE) {
+      const int tw = std::min(TILE, bw - tx), th = std::min(TILE, bh - ty);
+      for (int r = 0; r < th; r++) {
+        uint16_t *out = tile + r * tw;
+        const int py = ty + r;  // the block's row
+        for (int c = 0; c < tw; c++) {
+          const int px = tx + c;  // the block's column
+          int sr, sc;              // its source row / column in the strip
+          switch (this->rotation_) {
+            case display::DISPLAY_ROTATION_90_DEGREES: sr = h - 1 - px, sc = py; break;
+            case display::DISPLAY_ROTATION_270_DEGREES: sr = px, sc = w - 1 - py; break;
+            default: sr = h - 1 - py, sc = w - 1 - px; break;
+          }
+          out[c] = src[sr * stride + sc];
+        }
+      }
+      const esp_err_t err = esp_lcd_panel_draw_bitmap(this->handle_, bx0 + tx, by0 + ty, bx0 + tx + tw, by0 + ty + th, tile);
+      if (err != ESP_OK) {
+        ESP_LOGE(TAG, "lcd_lcd_panel_draw_bitmap failed: %s", esp_err_to_name(err));
+        return;
+      }
+    }
 }
 
 void MipiRgb::write_to_display_(int x_start, int y_start, int w, int h, const uint8_t *ptr, int x_offset, int y_offset,
