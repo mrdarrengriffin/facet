@@ -33,6 +33,7 @@ struct Device {
   std::map<std::string, Kept> kept;
   lv_timer_t *pre = nullptr;  // the kept pages' prebuild (idle gaps)
   uint32_t shown_at = 0;      // the last screen change (the prebuild waits 300 ms after one)
+  uint32_t pre_done = 0;      // the last prebuild's end (the next waits 250 ms from it)
 };
 
 std::vector<Device *> devices;  // every mounted device (usually one; a workbench page may show several)
@@ -199,6 +200,9 @@ void prebuild(lv_timer_t *t) {
   lv_display_t *disp = lv_obj_get_display(d->root);
   if (keep_max() <= 0 || d->stack.empty() || d->timer || d->restyle || pointer_down()) return;
   if ((disp && lv_display_get_inactive_time(disp) < 500) || lv_tick_elaps(d->shown_at) < 300) return;
+  // 250 ms from the END of the last build: building makes timers, LVGL's handler then starts its list again and would
+  // run this one again in the same call, page after page, and never give the loop back (the Guition's task watchdog)
+  if (d->pre_done && lv_tick_elaps(d->pre_done) < 250) return;
   std::vector<std::string> want{"home"};
   ArduinoJson::JsonDocument deck;
   if (!deserializeJson(deck, spec::deck_json()))
@@ -226,6 +230,7 @@ void prebuild(lv_timer_t *t) {
     lv_obj_add_flag(scr, LV_OBJ_FLAG_HIDDEN);
     const size_t m1 = mem_hook() ? mem_hook()() : 0;
     d->kept[id] = {scr, entry_of(id), false, m0 > m1 ? (uint32_t) (m0 - m1) : 0u, (uint32_t) objects(scr), lv_tick_elaps(t0)};
+    d->pre_done = lv_tick_get();
     return;  // one per tick
   }
 }
