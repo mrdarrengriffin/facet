@@ -94,11 +94,10 @@ const headings: Heading[] = [
   </p>
 
   <h3 id="site">The docs site</h3>
-  <p>The site needs no C++ toolchain: it uses the published WASM build.</p>
-  <CodeBlock lang="bash" label="Shell" code={`gh release download docs-build -p docs-build.tar.gz -R mrdarrengriffin/facet
-mkdir -p renderer/out/docs && tar -xzf docs-build.tar.gz -C renderer/out/docs
+  <p>The site is built around the docs flavour of the WASM renderer, so it needs the renderer setup below. A text-only fix needs nothing: use the page's <strong>Edit this page on GitHub</strong> link.</p>
+  <CodeBlock lang="bash" label="Shell" code={`FW_FEATURES=docs renderer/build.sh   # the docs flavour of the WASM build (the renderer setup below)
 cd site && npm ci
-FW_OUT=renderer/out npm run dev`} />
+npm run dev                          # or: npm run build`} />
 
   <h3 id="renderer">The renderer</h3>
   <p>

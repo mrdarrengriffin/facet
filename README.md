@@ -48,7 +48,7 @@ you, the screen goes quiet.
 Facet is one renderer, written in C++ on [LVGL](https://lvgl.io). The same source builds two ways:
 
 - **On the panel**, as an ESPHome external component (`firmware/`). The panel reads Home Assistant
-  itself, and fetches public data (weather, moon, energy prices) on its own while a screen is visible.
+  itself (weather, calendars, media, lights, energy) and works the moon out on its own.
 - **In the browser**, compiled to WebAssembly. The docs site and the workbench use this build, so
   what you see there is pixel for pixel what the panel draws.
 
@@ -65,9 +65,10 @@ anywhere:
 | Endpoint | What it does |
 |---|---|
 | `POST /fw/show` | show a component or screen with props: `{"id": "spec", "props": {"screen": "weather"}}` |
-| `POST /fw/spec` | send a screen spec to draw |
-| `POST /fw/deck` | send the panel's set of screens |
+| `POST /fw/spec` | install a screen spec (`kind: screen`), the panel's set of screens (`kind: deck`), or check one (`kind: check`) |
+| `GET /fw/deck` | the panel's set of screens |
 | `GET /fw/info`, `/fw/meta` | what the panel runs and what it can show |
+| `GET /fw/schema` | everything this firmware accepts, in one file (every request is listed there) |
 
 Changes from anywhere but the panel's own editor are gated behind an **Allow AI agents** switch on the
 device (off by default) and a per-panel token. AI agents start at the panel's `/llms.txt`.

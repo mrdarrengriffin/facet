@@ -62,13 +62,13 @@ from its spec in `renderer/specs/`. The edit link takes you to the right file ei
 
 ### Work on the docs site
 
-The site needs no C++ toolchain: it uses the published WASM build.
+The site is built around the docs flavour of the WASM renderer, so it needs the renderer setup below (a text-only fix
+needs nothing: use the page's **Edit this page on GitHub** link).
 
 ```sh
-gh release download docs-build -p docs-build.tar.gz -R mrdarrengriffin/facet
-mkdir -p renderer/out/docs && tar -xzf docs-build.tar.gz -C renderer/out/docs
+FW_FEATURES=docs renderer/build.sh  # the docs flavour of the WASM build
 cd site && npm ci
-FW_OUT=renderer/out npm run dev     # or: npm run build
+npm run dev                         # or: npm run build
 ```
 
 ### Work on the renderer
