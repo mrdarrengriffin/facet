@@ -5,7 +5,7 @@
 #                                 runner's input-hash cache unless the component changed (--ids: only those; behaviour
 #                                 included) + the given ids' functional tests. No PNGs, no goldens
 #   ./check.sh gate [--ids a,b] [--den 1.5x|1x]   nightly and in CI: every rule at both densities (lab, floor plans,
-#                                 behaviour included; visual at 1.5x), every functional test. --den: one density's half
+#                                 behaviour included; visual at 1.5x), every functional test, and locally the workbench Playwright tests. --den: one density's half
 #                                 (CI runs the two halves as two jobs; the density-free checks run with 1.5x)
 #   ./check.sh nightly            overnight only: ASan at 1.5x (and 1x on Sundays, or with --weekly), the functional
 #                                 suites marked tier: 'nightly' (theme_apply), the theme parser fuzz, the lag proxy
@@ -79,6 +79,12 @@ else
   else
     start hard rules-behaviour node tools/functional.mjs --rules --tier gate --rule behaviour "${sel[@]}"
     start soft functional node tools/functional.mjs "${sel[@]}"
+  fi
+  # the workbench's Playwright tests (the panel's editor, the link page): the whole gate only, on a machine with the
+  # workbench running (WORKBENCH_URL, default localhost:4322: it serves this tree and the build in $FW_OUT); CI has none
+  if [ -z "$ids" ]; then
+    if [ -n "${CI:-}" ]; then echo "SKIP workbench (CI: no workbench server)"
+    else start hard workbench bash -c 'cd ../workbench && node --test --test-concurrency=1 tests/editor/*.test.mjs tests/link/*.test.mjs'; fi
   fi
   join
 fi
