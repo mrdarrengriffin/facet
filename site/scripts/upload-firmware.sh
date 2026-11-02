@@ -1,13 +1,18 @@
 #!/bin/bash
-# Publish the public firmware for the docs /install page and the panels' update check, then redeploy.
-#   site/scripts/upload-firmware.sh [dir]      (needs gh, signed in; dir default site/public/firmware)
+# Publish the public firmware for the docs /install page and the panels' update check.
+#   site/scripts/upload-firmware.sh [dir] [--stage <tag>] [--deploy]   (needs gh, signed in; dir default site/public/firmware)
+# --stage <tag>: the tarball goes to the DRAFT release <tag> (a rehearsal or a release's own assets), never to the
+#   `firmware` release the site downloads; the draft is made if missing. --deploy: start the docs deploy after (off by
+#   default: nothing changes on the site unless told).
 # dir/<board>/ holds manifest.json (ESP Web Tools: factory image) + ota.json (ESPHome update entity: OTA image) and
 # the images they name. Only the files the two manifests reference go into the `firmware` release asset
 # (firmware.tar.gz); .github/workflows/deploy.yml unpacks it into site/public/firmware/ before the Astro build, so they
 # are served at /facet/firmware/<board>/... One copy per board: each upload replaces the last.
 set -e
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
-D=$(cd "${1:-$ROOT/site/public/firmware}" && pwd)
+dir="" stage="" deploy=0
+while [ $# -gt 0 ]; do case "$1" in --stage) stage=${2:?--stage <tag>}; shift ;; --deploy) deploy=1 ;; *) dir=$1 ;; esac; shift; done
+D=$(cd "${dir:-$ROOT/site/public/firmware}" && pwd)
 T=$(mktemp -d); trap 'rm -rf "$T"' EXIT
 files=$(python3 - "$D" <<'PY'
 import json, os, sys
@@ -30,7 +35,14 @@ PY
 )
 tar -czf "$T/firmware.tar.gz" -C "$D" $files
 cd "$ROOT"
-gh release view firmware >/dev/null 2>&1 || gh release create firmware --prerelease --title "Firmware (install page)" \
-  --notes "Public firmware images + ESP Web Tools / OTA manifests per board, served by the docs site at /facet/firmware/<board>/ (Pages workflow). Replaced on every firmware publish; not a release."
-gh release upload firmware "$T/firmware.tar.gz" --clobber
-gh workflow run deploy.yml --ref main
+if [ -n "$stage" ]; then
+  gh release view "$stage" >/dev/null 2>&1 || gh release create "$stage" --draft --title "$stage (staged firmware)" --notes "Staged firmware: a draft, not published."
+  gh release upload "$stage" "$T/firmware.tar.gz" --clobber
+  echo "staged: firmware.tar.gz on the draft release $stage"
+else
+  gh release view firmware >/dev/null 2>&1 || gh release create firmware --prerelease --title "Firmware (install page)" \
+    --notes "Public firmware images + ESP Web Tools / OTA manifests per board, served by the docs site at /facet/firmware/<board>/ (Pages workflow). Replaced on every firmware publish; not a release."
+  gh release upload firmware "$T/firmware.tar.gz" --clobber
+  echo "uploaded: firmware.tar.gz on the firmware release"
+fi
+if [ "$deploy" = 1 ]; then gh workflow run deploy.yml --ref main; echo "docs deploy started"; else echo "no deploy (--deploy starts it)"; fi

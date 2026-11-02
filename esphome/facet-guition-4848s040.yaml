@@ -7,7 +7,7 @@ substitutions:
   name: facet                          # + MAC suffix: facet-1a2b3c
   friendly_name: Facet panel           # + MAC suffix: "Facet panel 1a2b3c" (rename in HA)
   build_root: !env_var ESPHOME_BUILD_ROOT build
-  build_suffix: "-public"
+  build_suffix: "-public-guition"
   facet_version: 0.4.0-dev             # the release tag sets it
   update_manifest: https://mrdarrengriffin.github.io/facet/firmware/${board.id}/ota.json
   lvgl_buffer: 10%
