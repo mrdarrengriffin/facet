@@ -10,5 +10,11 @@ export default {
       const ev = t.tap(/^later$/i);
       t.emitted(ev, 'setup', 'not-now');
     } },
+    { name: 'the address is whole under the code on every step with one (connected, link)', async run(t) {
+      for (const state of ['connected', 'link']) {
+        await t.mount('setup', { state, ip: '192.168.100.200' });
+        t.ok(t.texts().includes('192.168.100.200'), `${state}: the address whole: ${t.texts().join(' / ')}`);
+      }
+    } },
   ],
 };

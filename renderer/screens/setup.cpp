@@ -12,7 +12,8 @@
 //            narrowest column (1 to 4), the facts as Stats in a Grid
 //            (cols = the facts, aspect row), the buttons in a Grid (Allow / Not now), the ways as Picker rows (a tap
 //            shows that way); space 5 (= section-gap) above each block after the first
-//   foot     the device name (+ its address once on Wi-Fi), Text label dim
+//   foot     the device name (+ its address once on Wi-Fi), Text label dim: under the code, the name (one line, "...")
+//            and the address on a line of its own (whole); without a code, "name · address" on one line
 // States (prop state):
 //   no-wifi       warn "No Wi-Fi"      hotspot: Wi-Fi QR with the per-panel password (WPA), the network + password
 //                                      as facts; or the way picked: Bluetooth (HA app) / USB cable (docs Install)
@@ -20,7 +21,8 @@
 //   allow         info "Asking"        Home Assistant asks to send Wi-Fi details over Bluetooth: Allow / Not now
 //   connecting    working (pulse)      the Wi-Fi name, "Joining your Wi-Fi…"
 //   failed        error                "Could not join <wifi>", what to check, the hotspot comes back by itself
-//   connected     ok "On Wi-Fi"        "Add me in Home Assistant": QR to HA's integrations page, name + address
+//   connected     ok "On Wi-Fi"        "Add me in Home Assistant": QR to HA's integrations page, the name as a fact,
+//                                      the address in the foot
 //   added         ok "Connected"       "Connected to Home Assistant" (the panel then opens Home with a toast)
 //   link          ok "Connected"       the panel has no Home Assistant link of its own yet: QR to its link page
 //                                      (http://<its address>/link), Later (ghost: "not-now") = Home without it
@@ -110,7 +112,7 @@ View view_of(fw::Props p) {
     v.qr = HA_ADD, v.qr_caption = "open in HA";
     v.title = "Add me in Home Assistant", v.xl = 3;
     v.text = "Settings > Devices & services shows a new ESPHome device. Press Add.";
-    v.facts = {{"name", dev}, {"address", ip}};
+    v.facts = {{"name", dev}};  // the address: whole in the foot under the code (two facts side by side cut both)
     v.ip = true;
   } else if (st == "added") {
     v.chip_tone = "ok", v.chip_text = "Connected", v.clock = true;
@@ -234,7 +236,9 @@ void fill(Screen *scr) {
     Doc qp;
     qp["text"] = v.qr.c_str(), qp["caption"] = v.qr_caption.c_str();
     build("qr_block", art, qp);
-    gap(text(art, foot, "label", true, 2));
+    // the name on one line (cut with "..." when long), the address whole on its own under it
+    gap(text(art, p["device"] | "Facet panel 1a2b3c", "label", true, 1));
+    if (v.ip) text(art, p["ip"] | "192.168.1.42", "label", true, 1);
   } else {  // no code: the words on top, the name at the foot
     Doc cd;
     lv_obj_t *col = build("column", fp.body, cd);
