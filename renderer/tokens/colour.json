@@ -288,6 +288,30 @@
       "light": "#F1EEE8",
       "role": "cassette hubs (white plastic)"
     },
+    "mv-shell-rim": {
+      "group": "media",
+      "dark": "#31353D",
+      "light": "#3F434A",
+      "role": "media visuals: the cassette shell's inner rim = mv-shell-edge over mv-shell at 0.7, worked out"
+    },
+    "mv-tape-rim": {
+      "group": "media",
+      "dark": "#5F4536",
+      "light": "#6E5340",
+      "role": "media visuals: the sheen line round a tape pack = mv-tape-hi over mv-tape at 0.7, worked out"
+    },
+    "mv-hub-ring": {
+      "group": "media",
+      "dark": "#81807C",
+      "light": "#999896",
+      "role": "media visuals: the ring on a cassette hub = mv-window over mv-hub at 0.4, worked out"
+    },
+    "mv-label-ring": {
+      "group": "media",
+      "dark": "#5F5C58",
+      "light": "#6A6863",
+      "role": "media visuals: the ring at the vinyl label's edge = mv-vinyl over mv-paper at 0.6, worked out"
+    },
     "bin-black": {
       "group": "bins",
       "dark": "#2A2D33",

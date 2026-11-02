@@ -1092,7 +1092,7 @@ const G::PixelIcon *pixel_icon(const char *name) {
 // in cells), a knob and its arc are judged at the same cell centres (they share cells), a one-cell line is Bresenham on
 // the cell grid, a thicker line k whole cells across its minor axis (never a blob), an icon in whole cells
 // (tests/functional/theme_snap.test.mjs).
-struct Shp { enum K { DISC, SQUARE, DIAMOND, RING, SEG, SECTOR } k; float x, y, r, r2 = 0, x2 = 0, y2 = 0, a0 = 0, a1 = 0; };
+struct Shp { enum K { DISC, SQUARE, DIAMOND, RING, SEG, SECTOR, TRI } k; float x, y, r, r2 = 0, x2 = 0, y2 = 0, a0 = 0, a1 = 0; };  // TRI: (x, y) (x2, y2) (a0, a1), r = its reach from (x, y)
 bool inside(const Shp &s, float px, float py) {
   const float dx = px - s.x, dy = py - s.y;
   switch (s.k) {
@@ -1106,6 +1106,11 @@ bool inside(const Shp &s, float px, float py) {
       t = fmaxf(0, fminf(1, t));
       const float qx = s.x + t * vx - px, qy = s.y + t * vy - py;
       return qx * qx + qy * qy <= s.r * s.r;
+    }
+    case Shp::TRI: {
+      auto side = [&](float ax, float ay, float bx, float by) { return (bx - ax) * (py - ay) - (by - ay) * (px - ax); };
+      const float a = side(s.x, s.y, s.x2, s.y2), b = side(s.x2, s.y2, s.a0, s.a1), c = side(s.a0, s.a1, s.x, s.y);
+      return (a >= 0 && b >= 0 && c >= 0) || (a <= 0 && b <= 0 && c <= 0);
     }
     case Shp::SECTOR: {
       const float d2 = dx * dx + dy * dy;
@@ -1564,6 +1569,7 @@ void slot(lv_obj_t *o, const char *n) {
   if (!slot_marks().count(o)) lv_obj_add_event_cb(o, [](lv_event_t *e) { slot_marks().erase((lv_obj_t *) lv_event_get_current_target(e)); }, LV_EVENT_DELETE, nullptr);
   slot_marks()[o] = n;
 }
+std::string slot_of(lv_obj_t *o) { auto it = slot_marks().find(o); return it == slot_marks().end() ? "" : it->second; }
 std::string slots_json(lv_obj_t *scr, const std::function<int(lv_obj_t *)> &owner) {
   ArduinoJson::JsonDocument doc;
   ArduinoJson::JsonArray a = doc.to<ArduinoJson::JsonArray>();
@@ -1596,6 +1602,7 @@ std::string slots_json(lv_obj_t *scr, const std::function<int(lv_obj_t *)> &owne
 }
 #else
 void slot(lv_obj_t *, const char *) {}
+std::string slot_of(lv_obj_t *) { return ""; }
 std::string slots_json(lv_obj_t *, const std::function<int(lv_obj_t *)> &) { return "[]"; }
 #endif
 int type_box(const char *type) { return box_of(type_id(type)); }
@@ -1779,8 +1786,10 @@ void Pen::knob(int x, int y, const char *sz, const char *k, const char *halo, co
     draw_edges(layer, in, *pp.k, pp.b, pp.lt, pp.set, shp == 0 || shp == 3 ? dm / 2 : 0);
   }
 }
-void Pen::text(int x, int y, const char *s, const char *type, const char *k) const {
+void Pen::text(int x, int y, const char *s0, const char *type, const char *k) const {
   const fw::ty::Id id = type_id(type);
+  const std::string cased = fw::cased(id, s0);  // the type's case (a caps style draws in capitals, as fx::text)
+  const char *s = cased.c_str();
   const lv_font_t *f = skin_font(look_of(obj)->skin.get(), id);  // the theme's font for the style (C49)
   const int ls = fw::ty::STYLES[id].letter_space;
   lv_point_t sz;
@@ -1812,7 +1821,7 @@ void Pen::text(int x, int y, const char *s, const char *type, const char *k) con
 int Pen::text_w(const char *s, const char *type) const {
   const fw::ty::Id id = type_id(type);
   lv_point_t sz;
-  lv_text_get_size(&sz, s, skin_font(look_of(obj)->skin.get(), id), fw::ty::STYLES[id].letter_space, 0, LV_COORD_MAX, LV_TEXT_FLAG_NONE);
+  lv_text_get_size(&sz, fw::cased(id, s).c_str(), skin_font(look_of(obj)->skin.get(), id), fw::ty::STYLES[id].letter_space, 0, LV_COORD_MAX, LV_TEXT_FLAG_NONE);
   return sz.x;
 }
 void Pen::turned(int x, int y, const char *icon, const char *sz, float deg, const char *k) const {
@@ -1835,6 +1844,68 @@ void Pen::turned(int x, int y, const char *icon, const char *sz, float deg, cons
   d.src = b; d.recolor = ink(obj, k); d.recolor_opa = LV_OPA_COVER;
   const lv_area_t a = {cx + x - px / 2, cy + y - px / 2, cx + x - px / 2 + px - 1, cy + y - px / 2 + px - 1};
   lv_draw_image(layer, &d, &a);
+}
+void Pen::disc(int x, int y, int r, const char *k) const {
+  if (r < 1 || !sees(x - r, y - r, x + r, y + r)) return;
+  const lv_color_t col = ink(obj, k);
+  if (const int cs = snap_cell(look_of(obj)->skin.get())) { cells(*this, Grid(*this, cs), Shp{Shp::DISC, (float) x, (float) y, (float) r}, col); return; }
+  lv_draw_arc_dsc_t d;
+  lv_draw_arc_dsc_init(&d);
+  d.center.x = cx + x; d.center.y = cy + y; d.radius = r; d.width = r; d.start_angle = 0; d.end_angle = 360;
+  d.color = col; d.opa = LV_OPA_COVER;
+  lv_draw_arc(layer, &d);
+}
+void Pen::ring(int x, int y, int r, int w, const char *k, float a0, float a1, bool round) const {
+  if (r < 1 || w < 1 || a1 - a0 < 0.5f || !sees(x - r, y - r, x + r, y + r)) return;
+  w = std::min(w, r);
+  const lv_color_t col = ink(obj, k);
+  if (const int cs = snap_cell(look_of(obj)->skin.get())) {
+    const float hw = cells_of(w, cs) * cs / 2.0f, m = r - w / 2.0f;
+    const float s0 = fmodf(a0, 360);
+    cells(*this, Grid(*this, cs), Shp{Shp::SECTOR, (float) x, (float) y, m + hw, std::max(0.0f, m - hw), 0, 0, s0, s0 + std::min(360.0f, a1 - a0)}, col);
+    return;
+  }
+  lv_draw_arc_dsc_t d;
+  lv_draw_arc_dsc_init(&d);
+  d.center.x = cx + x; d.center.y = cy + y; d.radius = r; d.width = w;
+  d.start_angle = fmodf(a0, 360); d.end_angle = a1 - a0 >= 360 ? d.start_angle + 360 : fmodf(a1, 360);
+  d.rounded = round && !look_of(obj)->skin->cap;
+  d.color = col; d.opa = LV_OPA_COVER;
+  lv_draw_arc(layer, &d);
+}
+void Pen::seg(int x1, int y1, int x2, int y2, int w, const char *k, bool round) const {
+  w = std::max(1, w);
+  if (!sees(std::min(x1, x2) - w, std::min(y1, y2) - w, std::max(x1, x2) + w, std::max(y1, y2) + w)) return;
+  const lv_color_t col = ink(obj, k);
+  if (const int cs = snap_cell(look_of(obj)->skin.get())) { cell_line(*this, Grid(*this, cs), x1, y1, x2, y2, cells_of(w, cs), col); return; }
+  lv_draw_line_dsc_t d;
+  lv_draw_line_dsc_init(&d);
+  d.p1.x = cx + x1; d.p1.y = cy + y1; d.p2.x = cx + x2; d.p2.y = cy + y2;
+  d.width = w; d.color = col; d.opa = LV_OPA_COVER; d.round_start = d.round_end = round && !look_of(obj)->skin->cap;
+  lv_draw_line(layer, &d);
+}
+void Pen::tri(const int (&p)[3][2], const char *k) const {
+  const int x1 = std::min({p[0][0], p[1][0], p[2][0]}), x2 = std::max({p[0][0], p[1][0], p[2][0]});
+  const int y1 = std::min({p[0][1], p[1][1], p[2][1]}), y2 = std::max({p[0][1], p[1][1], p[2][1]});
+  if (!sees(x1, y1, x2, y2)) return;
+  const lv_color_t col = ink(obj, k);
+  if (const int cs = snap_cell(look_of(obj)->skin.get())) {
+    const float r = (float) std::max({x2 - p[0][0], p[0][0] - x1, y2 - p[0][1], p[0][1] - y1});
+    cells(*this, Grid(*this, cs), Shp{Shp::TRI, (float) p[0][0], (float) p[0][1], r, 0, (float) p[1][0], (float) p[1][1], (float) p[2][0], (float) p[2][1]}, col);
+    return;
+  }
+  lv_draw_triangle_dsc_t d;
+  lv_draw_triangle_dsc_init(&d);
+  d.color = col; d.opa = LV_OPA_COVER;
+  for (int i = 0; i < 3; i++) d.p[i] = {(lv_value_precise_t) (cx + p[i][0]), (lv_value_precise_t) (cy + p[i][1])};
+  lv_draw_triangle(layer, &d);
+}
+void Pen::within(int x, int y, int w, int h, const std::function<void()> &f) const {
+  const lv_area_t keep = layer->_clip_area;
+  lv_area_t &c = layer->_clip_area;
+  c = {std::max(keep.x1, cx + x), std::max(keep.y1, cy + y), std::min(keep.x2, cx + x + w - 1), std::min(keep.y2, cy + y + h - 1)};
+  if (c.x1 <= c.x2 && c.y1 <= c.y2) f();
+  layer->_clip_area = keep;
 }
 void Pen::rect(int x, int y, int w, int h, const char *k, int radius, int border, int foot) const {
   if (w <= 0 || h <= 0 || !sees(x, y, x + w - 1, y + h - 1)) return;
@@ -1910,7 +1981,16 @@ void pointer(lv_obj_t *o, float *deg, int *dist, int *half) {
 // o lets its children draw (and take taps) past its box (C14-style overhang: a round Icon button taller than the Header): the flag
 // alone draws 0 px outside (LVGL clips to the box grown by its ext draw size), so the ext draw size follows the
 // children's overhang (their own reach included), measured again when they change
-void overflow(lv_obj_t *o) {
+std::map<lv_obj_t *, std::pair<std::string, std::string>> &bleeds() { static std::map<lv_obj_t *, std::pair<std::string, std::string>> m; return m; }
+std::string bleed_of(lv_obj_t *o) {
+  auto it = bleeds().find(o);
+  return it == bleeds().end() ? "" : "{\"side\":\"" + it->second.first + "\",\"max\":" + std::to_string(size(it->second.second.c_str())) + "}";
+}
+void overflow(lv_obj_t *o, const char *side, const char *max) {
+  if (strcmp(side, "left") && strcmp(side, "right") && strcmp(side, "top") && strcmp(side, "bottom") && strcmp(side, "all")) abort();
+  size(max);  // a size token, or abort
+  if (!bleeds().count(o)) lv_obj_add_event_cb(o, [](lv_event_t *e) { bleeds().erase((lv_obj_t *) lv_event_get_current_target(e)); }, LV_EVENT_DELETE, nullptr);
+  bleeds()[o] = {side, max};
   lv_obj_add_flag(o, LV_OBJ_FLAG_OVERFLOW_VISIBLE);
   for (lv_event_code_t c : {LV_EVENT_LAYOUT_CHANGED, LV_EVENT_CHILD_CHANGED, LV_EVENT_SIZE_CHANGED})
     lv_obj_add_event_cb(o, [](lv_event_t *e) { lv_obj_refresh_ext_draw_size((lv_obj_t *) lv_event_get_current_target(e)); }, c, nullptr);
@@ -1945,7 +2025,7 @@ Page page(lv_obj_t *pg, const char *kind) {
   p.head = lv_obj_create(pg);
   lv_obj_remove_style_all(p.head);
   lv_obj_remove_flag(p.head, (lv_obj_flag_t) (LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_CLICKABLE));
-  overflow(p.head);  // the Header's items may outgrow its bar (a round Icon button): never clipped
+  overflow(p.head, "all", "space:4");  // the Header's items may outgrow its bar (a round Icon button): never clipped
   use(p.head, "page-head");
   use(p.head, "head-move");  // C45: a flush header bar (empty in Facet)
   p.body = lv_obj_create(pg);

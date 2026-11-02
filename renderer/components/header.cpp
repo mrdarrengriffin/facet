@@ -23,7 +23,7 @@
 // slot later is one row here + one declaration.
 // Fit: the row is layout:row tall (>= touch:min, tools/gen_layout.mjs), up to layout:header-max-w wide, items centred
 // on it, layout:header-item-gap apart (all through tok(): the /wasm Layout lab moves them live; C20).
-// Steps: none (one row; the title is what gives way). Bleed: none. States: n/a (its children have theirs). Events:
+// Steps: none (one row; the title is what gives way). Bleed: all sides, space:4 (C13b: hit pads). States: n/a (its children have theirs). Events:
 // Back's "back" / "home", the end squares' "navigate".
 // Slots for code: fw::spec::building_header() = the END slot (C++ screens place their controls there with
 // header_place: before the header's own end items); fw::spec::header_slot(root, "title" | "end");
@@ -149,9 +149,9 @@ void fill(lv_obj_t *h, fw::Props p) {
   lv_obj_t *bk = fx::box(h, "header-back"), *ti = fx::box(h, "header-title"), *en = fx::box(h, "header-end"),
            *tm = fx::box(h, "header-time");
   for (const Slot &s : SLOTS) fx::slot(lv_obj_get_child(h, s.child), s.name);  // the workbench outlines them
-  // a bigger item (a round Icon button) shows whole, not clipped; and a hit area past its box (the Back button's) works:
-  // LVGL only looks for a tap target inside a box the touch is in, unless the box overflows
-  for (lv_obj_t *o : {h, bk, ti, en}) fx::overflow(o);
+  // a declared bleed (C13b, all sides, space:4): a small item's hit pad past its slot (the Back button's) works; LVGL only
+  // looks for a tap target inside a box the touch is in, unless the box overflows
+  for (lv_obj_t *o : {h, bk, ti, en}) fx::overflow(o, "all", "space:4");
   lv_obj_add_event_cb(en, [](lv_event_t *e) { own_tail.erase((lv_obj_t *) lv_event_get_current_target(e)); }, LV_EVENT_DELETE, nullptr);
   lv_obj_add_event_cb(en, [](lv_event_t *e) {  // a C++ screen adding to the end slot (building_header()) shows it
     auto *o = (lv_obj_t *) lv_event_get_current_target(e);

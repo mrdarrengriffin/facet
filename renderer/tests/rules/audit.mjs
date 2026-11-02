@@ -14,6 +14,8 @@
 //   touch     every object that takes touches is at least touch::min (48 / 32) with its ext click area
 //   radial    meta "audit": {"radial": true}: the marks at 12, 3, 6 and 9 o'clock (ink in the outer band of the
 //             component's circle) sit on the centre lines within 0.5 px
+//   bleed     a box with a declared bleed (fx::overflow, C13b): its children reach past it only on the declared side, at
+//             most its max, and what they let out covers no slot and no touch target that is not its own
 //   stale     the frame after the animations equals a full redraw at that moment (nothing left behind)
 //   update    a state / value prop changed through the update path animates (3+ frames), silently
 //   motion    while it animates (the first 2 s from the build, every 2nd frame): no ink leaves the box; an object
@@ -32,6 +34,41 @@ import { checkScreen } from './screen_layout.mjs';
 
 const TICK = 16;
 const str = (m, s, f) => { const p = m.stringToNewUTF8(s); try { return f(p); } finally { m._free(p); } };
+// ---------------------------------------------------------------- bleed (C13b)
+export function bleedErrs(os) {
+  const errs = [];
+  const under = (k, i) => { for (let q = os[k].p; q >= 0; q = os[q].p) if (q === i) return true; return false; };
+  const cut = (a, b) => Math.max(a[0], b[0]) <= Math.min(a[2], b[2]) && Math.max(a[1], b[1]) <= Math.min(a[3], b[3]);
+  os.forEach((o, i) => {
+    if (!o.bl) return;
+    const ob = [o.x, o.y, o.x + o.w - 1, o.y + o.h - 1], over = { left: 0, right: 0, top: 0, bottom: 0 }, who = {}, pieces = [];
+    os.forEach((c, k) => {  // an overflowing child's ext is only the bubble round its own children (each counted here); a label's is its glyph room; a hit pad counts (taps past the box)
+      if (!under(k, i) || !c.w || !c.h || c.opa === 0) return;
+      const e = Math.max(c.ov || c.t === 'label' ? 0 : c.ext || 0, c.pad || 0), cb = [c.x - e, c.y - e, c.x + c.w - 1 + e, c.y + c.h - 1 + e];
+      if (ob[0] - cb[0] > over.left) who.left = c.text || c.t; over.left = Math.max(over.left, ob[0] - cb[0]); if (cb[2] - ob[2] > over.right) who.right = c.text || c.t; over.right = Math.max(over.right, cb[2] - ob[2]);
+      if (ob[1] - cb[1] > over.top) who.top = c.text || c.t; over.top = Math.max(over.top, ob[1] - cb[1]); if (cb[3] - ob[3] > over.bottom) who.bottom = c.text || c.t; over.bottom = Math.max(over.bottom, cb[3] - ob[3]);
+      // the parts of c outside o's box
+      if (cb[0] < ob[0]) pieces.push([k, [cb[0], cb[1], Math.min(cb[2], ob[0] - 1), cb[3]]]);
+      if (cb[2] > ob[2]) pieces.push([k, [Math.max(cb[0], ob[2] + 1), cb[1], cb[2], cb[3]]]);
+      if (cb[1] < ob[1]) pieces.push([k, [cb[0], cb[1], cb[2], Math.min(cb[3], ob[1] - 1)]]);
+      if (cb[3] > ob[3]) pieces.push([k, [cb[0], Math.max(cb[1], ob[3] + 1), cb[2], cb[3]]]);
+    });
+    const name = `${o.slot ? `slot ${o.slot}` : o.t || 'obj'} at ${o.x},${o.y}`;
+    for (const [side, px] of Object.entries(over)) {
+      if (px <= 0) continue;
+      if (o.bl.side !== 'all' && o.bl.side !== side) errs.push(`bleed: ${name} declares ${o.bl.side}, its children reach ${px} px past its ${side} (${who[side]})`);
+      else if (px > o.bl.max) errs.push(`bleed: ${name} reaches ${px} px past its ${side} (${who[side]}), its declared max is ${o.bl.max}`);
+    }
+    // nothing it lets out may lie over a slot or a touch target that is not its own (nor an ancestor of it, nor a
+    // backdrop or scrim round its whole box)
+    const round = (t) => t.x <= ob[0] && t.y <= ob[1] && t.x + t.w - 1 >= ob[2] && t.y + t.h - 1 >= ob[3];
+    for (const [k, pb] of pieces) for (const [q, t] of os.entries()) {
+      if (q === i || q === k || under(i, q) || under(q, i) || under(k, q) || !(t.clk || t.slot) || !t.w || !t.h || round(t)) continue;
+      if (cut(pb, [t.x, t.y, t.x + t.w - 1, t.y + t.h - 1])) { errs.push(`bleed: ${name}: what it lets out (${pb.join(',')}) covers ${t.slot ? `slot ${t.slot}` : `a touch target (${t.t})`} at ${t.x},${t.y}`); return; }
+    }
+  });
+  return errs;
+}
 // ---------------------------------------------------------------- one case
 function runCase(m, den, c, props, light, vskip = {}) {
   const D = den === '1x' ? 1 : 1.5, S = den === '1x' ? 480 : 720, TOUCH = den === '1x' ? 32 : 48;
@@ -116,6 +153,10 @@ function runCase(m, den, c, props, light, vskip = {}) {
       if (vis * 2 < o.w * o.h) { errs.push(`outside: a ${o.t || 'obj'} ${o.w}x${o.h} at ${o.x},${o.y} is ${vis ? 'mostly' : 'wholly'} off the ${W}x${H} stage`); break; }
     }
   } else if (skip.outside) notes.push(`outside skipped: ${skip.outside}`);
+  // ---- bleed (C13b): what a box with a declared bleed lets its children draw past it stays on the declared side, within
+  // its max, and off every slot and touch target outside it
+  if (!skip.bleed) errs.push(...bleedErrs(os));
+  else notes.push(`bleed skipped: ${skip.bleed}`);
   // ---- stale: what the partial redraws left on screen must equal a full redraw at the same moment (an animation that
   // invalidates too little leaves old pixels behind)
   {

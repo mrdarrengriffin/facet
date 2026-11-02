@@ -3,7 +3,8 @@
 //   row      the picture slot (w:mv-h, the disc's slot) and the words column (grow), cross-centred, gap:9 apart
 //   picture  a real Media visual (fw::find("media_visual"), C8b): disc / cassette / cd / vinyl, size screen, in a slot
 //            wrap-end: one wider than its slot (the cassette) keeps its right edge on the slot's and runs off the
-//            screen's left edge (docs .f-mv-layer, cropped left; fx::overflow draws the overhang)
+//            screen's left edge (docs .f-mv-layer, cropped left): the slot's and the row's declared bleed (C13b: left, at
+//            most layout:mv-bleed, the cassette's overhang)
 //   column   gap:2 between its lines: the state (type:label caps; fg:accent-text while playing = docs data-tone
 //            working, else fg:text-dim), the title (type:headline, fg:text, two lines then "...", h:m-title-h: the artist
 //            never moves; docs line-clamp 2, where the artist follows a one-line title), the artist (type:body, fg:text-dim, one line, "...")
@@ -28,10 +29,10 @@ void visual_props(fw::Props p, ArduinoJson::JsonDocument &d) {
 void fill(lv_obj_t *root, fw::Props p) {
   for (const char *t : {"box", "row-top", "fill-w", "gap:m-gap"}) fx::use(root, t);
   fw::shape(root, sig(p), "hero");
-  fx::overflow(root);  // the cassette's overhang past the inset, off the screen's left edge (docs: cropped left)
+  fx::overflow(root, "left", "layout:mv-bleed");  // the cassette's overhang past the inset, off the screen's left edge (docs: cropped left)
   lv_obj_t *slot = fx::box(root, "free");
   for (const char *t : {"wrap-end", "w:mv-h"}) fx::use(slot, t);  // its one child at the end: a wider one runs off to the left
-  fx::overflow(slot);
+  fx::overflow(slot, "left", "layout:mv-bleed");
   ArduinoJson::JsonDocument d;
   visual_props(p, d);
   fw::find("media_visual")->build(slot, d.as<fw::Props>());

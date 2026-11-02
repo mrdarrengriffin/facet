@@ -93,7 +93,12 @@ void pair_split(lv_obj_t *pair);  // a "pair" box: its halves (children 0, 2) sh
                                   // rule between (child 1); follows the pair's size (Cells). split = once more (a tuned token)
 void split(lv_obj_t *pair);
 void bleed(lv_obj_t *o);
-void overflow(lv_obj_t *o);  // o's children may draw past its box (their overhang is drawn, never clipped)           // the one escape: o's background reaches the page edge (the "bleed" style marks it)
+// a declared bleed (C13b): o's children may draw, and take taps, past its box on `side` (left, right, top, bottom or
+// all) by at most `max` (a size token); the audit's bleed check holds them to it and keeps the overhang off every other
+// slot and touch target. bleed_of = {"side", "max" px} for the audit ("" = none); slot_of = o's slot name ("" = none)
+void overflow(lv_obj_t *o, const char *side, const char *max);
+std::string bleed_of(lv_obj_t *o);
+std::string slot_of(lv_obj_t *o);
 void name(lv_obj_t *o, const char *n);  // a component root's name for the inspector
 void slot(lv_obj_t *o, const char *n);  // o holds the meta slot n (C8a): the workbench outlines it (hosts only, no-op on a panel)
 // [{n, x, y, w, h, empty?, in?}] every marked slot on scr (device px; an empty one = where its first item would go);
@@ -130,6 +135,15 @@ struct Pen {
   // a filled box x, y (its top-left) w x h with `radius` px corners; border > 0 = only a border that wide (an outline);
   // foot = clip it at y + h: the corners below are cut off (a bar's square foot under a rounded data end). Core only.
   void rect(int x, int y, int w, int h, const char *ink, int radius = 0, int border = 0, int foot = 0) const;
+  // data-sized shapes (C12: a drawing to real sizes, the Media visuals): every size in Pen px from the data, every ink a
+  // colour style by name, snapped themes in whole cells. A filled circle of radius r; a ring w px wide whose outer edge
+  // is r (a0..a1: only that span, 0 deg = 3 o'clock, clockwise; round = round ends); a line w px thick (round = round
+  // caps); a filled triangle; f drawn only inside the box x, y, w x h
+  void disc(int x, int y, int r, const char *ink) const;
+  void ring(int x, int y, int r, int w, const char *ink, float a0 = 0, float a1 = 360, bool round = false) const;
+  void seg(int x1, int y1, int x2, int y2, int w, const char *ink, bool round = false) const;
+  void tri(const int (&p)[3][2], const char *ink) const;
+  void within(int x, int y, int w, int h, const std::function<void()> &f) const;
   // false when the box x1..x2, y1..y2 (centre-relative) is outside what this redraw repaints: every primitive above
   // skips itself then, so a partial redraw (redraw / redraw_arc) costs only what crosses it (the static scale is not
   // drawn again while a knob moves)

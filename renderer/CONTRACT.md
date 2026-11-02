@@ -12,7 +12,7 @@ definition of done (section 13).
 2. [Words](#2-words)
 3. [Structure: Screen, Page, Header, Body, Overlay](#3-structure-screen-page-header-body-overlay) (C1-C4)
 4. [Size and placement](#4-size-and-placement) (C5-C12)
-5. [Escapes: bleed and decor](#5-escapes-bleed-and-decor) (C13-C14)
+5. [Bleed and decor](#5-bleed-and-decor) (C13-C14)
 6. [Style and tokens](#6-style-and-tokens) (C15-C23)
 7. [Drawing](#7-drawing) (C24-C30)
 8. [Interaction](#8-interaction) (C31-C37)
@@ -180,15 +180,25 @@ no exception today.
 (`lv_obj_set_style_*`, `lv_style_init`); inspector local count (`fx_tree`); **TODO** an `fx` API for an object
 placed by data (until then, none exists and none is allowed).
 
-## 5. Escapes: bleed and decor
+## 5. Bleed and decor
 
 **C13. Bleed is explicit: `fx::bleed(obj)`, nothing else.** A bleed extends an object's background to the page edge
 (the inset, via `transform_width` in the `bleed` style). It is only for a background or rule that meets the page edge
 (a divider). The component's header comment names each bleed and why. `transform_width`, negative padding or
 negative margins MUST NOT be used any other way.
-*Why:* the bounds proof skips bleeds, so an undeclared bleed is an unchecked escape. *Check:* P2 skips only objects
+*Why:* the bounds proof skips bleeds, so an undeclared bleed is unchecked. *Check:* P2 skips only objects
 with the `bleed` style; **TODO** test: each bleed reaches exactly the page edge; lint: `transform_width` / negative
 `margin` outside the core.
+
+**C13b. A slot may let its children past its box only by a declared bleed: `fx::overflow(slot, side, max)`.**
+`side` is `left`, `right`, `top`, `bottom` or `all`; `max` is a size token, the furthest anything inside may draw or
+take taps past the slot's box (a hit pad counts). What it lets out MUST NOT cover another slot or a touch target that
+is not its own. The component's header comment names each one and why. Nothing else draws or takes taps past a box
+(LVGL's overflow flag on its own is not used). Today: the Media hero's picture slot (`left`, `layout:mv-bleed`: the
+cassette runs off the screen's left edge), the Header bar and its slots (`all`, `space:4`: a small item's hit pad).
+*Why:* a picture drawn past its slot is a design choice only when it is declared and bounded; an undeclared overhang
+covers a neighbour. *Check:* audit `bleed` (tests/rules/audit.mjs `bleedErrs`: side, max, covers), every component and
+screen, every theme, both densities.
 
 **C14. Decor is explicit: only core atoms draw outside their owner's box** (today the focus ring, `fw::focus_ring`).
 A component MUST NOT draw outside its own box itself.
@@ -647,7 +657,7 @@ FW_UPDATE(switch_row) {
 |---|---|
 | C5-C8 fills, knows nothing, no width | lint P1 clean; "fills its parent" at full, odd, wide sizes |
 | C9-C11 minimum, steps, fixed children | "minimum = sum"; "scales both ways"; P2 at the minimum with `fixtures`; "below the minimum FAILS" |
-| C12-C14 no local styles, escapes | lint `local` clean; every bleed named in the header |
+| C12-C14 no local styles, bleed, decor | lint `local` clean; every bleed named in the header; audit `bleed` |
 | C15-C17, C23 tokens and states | P3 per token it reads; P4 with states set before switching |
 | C24-C30 drawing | lint `draw`; P4 pixels; P10 dirty area; fuzz to 0 x 0 |
 | C31-C37 interaction | P5; one test per event (emit, sound, blocked, drag-off cancel); silent update; nothing on open |

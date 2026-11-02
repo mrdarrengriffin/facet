@@ -834,6 +834,8 @@ void audit_walk(lv_obj_t *o, int parent, int depth, ArduinoJson::JsonArray arr) 
     j["t"] = type_of(c);
     j["ext"] = lv_obj_get_ext_draw_size(c);
     j["ov"] = lv_obj_has_flag(c, LV_OBJ_FLAG_OVERFLOW_VISIBLE);
+    if (const std::string b = fx::bleed_of(c); !b.empty()) { ArduinoJson::JsonDocument bd; deserializeJson(bd, b); j["bl"] = bd; }
+    if (const std::string sl = fx::slot_of(c); !sl.empty()) j["slot"] = sl;
     j["sc"] = scrolls(c);
     j["cc"] = (bool) lv_obj_get_style_clip_corner(c, LV_PART_MAIN) && lv_obj_get_style_radius(c, LV_PART_MAIN) > 0;
     j["opa"] = lv_obj_get_style_opa_recursive(c, LV_PART_MAIN);
