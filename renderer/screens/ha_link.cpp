@@ -88,40 +88,25 @@ const char *META = R"({
   ]
 })";
 
-// the built screen and the timer that follows the link; the spec root is built again in its place on a change
-struct Live { lv_obj_t *parent = nullptr, *root = nullptr; lv_timer_t *tick = nullptr; uint32_t rev = 0; bool again = false; };
-void on_delete(lv_event_t *e) {
-  auto *lv = (Live *) lv_event_get_user_data(e);
-  if (lv->again) return;
-  lv_timer_delete(lv->tick);
-  delete lv;
-}
-void mount(Live *lv) {
-  lv->rev = hl::rev();
+// the spec root, built again in its place when the link changes (hl::rev); its timer goes with it (fx::every)
+void mount(lv_obj_t *parent, int32_t at) {
   Doc none;
   std::string error;
-  const uint32_t before = lv_obj_get_child_count(lv->parent);
-  fw::spec::build(lv->parent, "ha_link", none.as<fw::Props>(), &error, spec_json().c_str());
-  lv->root = lv_obj_get_child_count(lv->parent) > before ? lv_obj_get_child(lv->parent, -1) : nullptr;
-  if (lv->root) lv_obj_add_event_cb(lv->root, on_delete, LV_EVENT_DELETE, lv);
+  const uint32_t rev = hl::rev();
+  lv_obj_t *root = fw::spec::build(parent, "ha_link", none.as<fw::Props>(), &error, spec_json().c_str());
+  if (!root) return;
+  if (at >= 0) lv_obj_move_to_index(root, at);
+  fx::every(root, 250, [parent, root, rev] {
+    if (rev == hl::rev()) return;
+    const int32_t at = lv_obj_get_index(root);
+    lv_obj_delete(root);
+    mount(parent, at);
+  });
 }
 void build_page(lv_obj_t *parent, fw::Props p) {
   const std::string pu = p["url"] | "", pt = p["token"] | "";
   if (!pu.empty() && (pu != hl::url() || !pt.empty())) hl::configure(pu, pt);
-  auto *lv = new Live;
-  lv->parent = parent;
-  lv->tick = lv_timer_create([](lv_timer_t *tm) {
-    auto *lv = (Live *) lv_timer_get_user_data(tm);
-    if (lv->rev == hl::rev() || !lv->root) return;
-    const int32_t at = lv_obj_get_index(lv->root);
-    lv->again = true;
-    lv_obj_delete(lv->root);
-    lv->again = false;
-    mount(lv);
-    if (lv->root) lv_obj_move_to_index(lv->root, at);
-  }, 250, lv);
-  mount(lv);
-  if (!lv->root) { lv_timer_delete(lv->tick); delete lv; }
+  mount(parent, -1);
 }
 const int reg = fw::add({"ha_link", "Home Assistant", "screens", META, build_page});
 }  // namespace

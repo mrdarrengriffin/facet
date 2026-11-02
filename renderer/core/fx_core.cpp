@@ -2017,6 +2017,23 @@ bool in_page(lv_obj_t *o) {
   for (; o; o = lv_obj_get_parent(o)) if (page_bodies().count(o)) return true;
   return false;
 }
+void every(lv_obj_t *owner, uint32_t ms, std::function<void()> fn) {
+  struct E { std::function<void()> fn; lv_timer_t *t = nullptr; bool running = false, gone = false; };
+  auto *e = new E{std::move(fn)};
+  e->t = lv_timer_create([](lv_timer_t *t) {
+    auto *e = (E *) lv_timer_get_user_data(t);
+    e->running = true;
+    e->fn();
+    e->running = false;
+    if (e->gone) delete e;  // fn deleted its owner: the timer went with it, the state after fn returned
+  }, ms, e);
+  lv_obj_add_event_cb(owner, [](lv_event_t *ev) {
+    auto *e = (E *) lv_event_get_user_data(ev);
+    lv_timer_delete(e->t);
+    if (e->running) e->gone = true;
+    else delete e;
+  }, LV_EVENT_DELETE, e);
+}
 Page page(lv_obj_t *pg, const char *kind) {
   Page p{pg, nullptr, nullptr};
   use(pg, "page");

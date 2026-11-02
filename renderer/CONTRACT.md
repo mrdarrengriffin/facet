@@ -78,8 +78,8 @@ component adds the page inset, a margin or an outer gap of its own.
 **C3. Screens are trees of components only.** A screen MUST NOT build a body by hand (no `*_view` bodies, no objects
 created by the screen code between components). A new arrangement is a new layout component.
 *Why:* hand-built bodies are where every untested layout lived. *Check:* `screen-layout`; the contract lint's legacy
-baseline (`tools/legacy_baseline.json`): a screen file may not add a hand-made object (`lv_*_create`, `fw::text`) or a
-legacy API use; **TODO** the baseline at zero for every screen.
+baseline (`tools/legacy_baseline.json`) has no screen file: one hand-made object (`lv_*_create`, `fw::text`) or legacy
+API use in a screen fails. A screen's timer is its root's (`fx::every`).
 
 **C4. Sheets, toasts and dialogs live on the Overlay layer, never in the Body.**
 - The overlay root fills the screen and is not part of the Body's layout; opening it MUST NOT move, resize or reflow
@@ -738,7 +738,6 @@ Rules whose check is TODO (each is a gate item; until it exists, review checks t
 
 | Rule | Missing check |
 |---|---|
-| C3 | the legacy baseline at zero for every screen file (today it only stops new hand-made objects) |
 | C4 | bounds proof for overlay panels (Bottom sheet, Toast layer to the contract) |
 | C6 | lint: `lv_display_get_*`, size reads of objects the component does not own |
 | C7 | lint: `w:` token on a component root |

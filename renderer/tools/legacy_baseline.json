@@ -64,13 +64,6 @@
   "width": 2,
   "local": 4
  },
- "components/media_visual.cpp": {
-  "font": 12,
-  "draw": 21,
-  "fixed": 23,
-  "theme": 4,
-  "local": 1
- },
  "components/qr_block.cpp": {
   "theme": 1,
   "local": 7,
@@ -97,15 +90,5 @@
   "fixed": 18,
   "theme": 2,
   "local": 19
- },
- "screens/ha_link.cpp": {
-  "create": 1
- },
- "screens/screen_set.cpp": {
-  "create": 4,
-  "local": 9,
-  "fixed": 10,
-  "theme": 2,
-  "width": 3
  }
 }

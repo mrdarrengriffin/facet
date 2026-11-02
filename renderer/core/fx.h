@@ -182,6 +182,9 @@ void break_stale(bool on);  // break-it (tests only): a live theme switch repain
 struct Page { lv_obj_t *page, *head, *body; };
 Page page(lv_obj_t *page, const char *body);
 bool in_page(lv_obj_t *o);  // o is inside a Page's body (fx::page): a layout there is part of a screen, not shown alone
+// fn every ms while owner lives: the timer is the owner's and goes with it (a screen never makes or deletes one, C3);
+// fn may delete its owner (a screen built again in its place)
+void every(lv_obj_t *owner, uint32_t ms, std::function<void()> fn);
 bool migrated(const fw::Component *c);    // meta "contract": 2
 void inset(int px);                       // proofs only: the page inset as if its token were px (-1 = the token)
 // proofs + the workbench Layout lab: size token `name` as if it were px (px < 0 = the token again; name "" = all

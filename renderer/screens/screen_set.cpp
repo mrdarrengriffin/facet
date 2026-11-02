@@ -102,7 +102,6 @@ struct Pick {
 };
 struct Page {
   lv_obj_t *root = nullptr, *sheet = nullptr, *home = nullptr;
-  lv_timer_t *tick = nullptr;
   uint32_t seen = 0;
   bool dirty = false;
   std::string id;
@@ -224,7 +223,6 @@ void build_page(lv_obj_t *parent, fw::Props p) {
   pg->root = fx::box(parent, "fill");
   lv_obj_add_event_cb(pg->root, [](lv_event_t *e) {
     auto *pg = (Page *) lv_event_get_user_data(e);
-    if (pg->tick) lv_timer_delete(pg->tick);
     delete pg;
   }, LV_EVENT_DELETE, pg);
 
@@ -500,8 +498,7 @@ void build_page(lv_obj_t *parent, fw::Props p) {
       }
     }, LV_EVENT_VALUE_CHANGED, pg);
   // an open HA pick follows the link (a read ends) and a tap that changes its rows (rebuilt here, after the tap)
-  pg->tick = lv_timer_create([](lv_timer_t *tm) {
-    auto *pg = (Page *) lv_timer_get_user_data(tm);
+  fx::every(pg->root, 50, [pg] {
     if (pg->from_row) {  // the source's "from" row follows the pick and what the feed found
       const int sel = pg->src_pick >= 0 ? pg->picks[pg->src_pick].sel : 0;
       const std::string from = sel >= 0 && sel < (int) pg->src_from.size() ? pg->src_from[sel] : "";
@@ -528,7 +525,7 @@ void build_page(lv_obj_t *parent, fw::Props p) {
     Doc d;
     sheet_props(pg, pg->open, true, d);
     fw::update_child(fw::find("bottom_sheet"), pg->sheet, d.as<fw::Props>());
-  }, 50, pg);
+  });
   fw::listen(pg->root, [](lv_obj_t *from, const char *name, const char *detail, void *user) {
     auto *pg = (Page *) user;
     const bool flip = !strcmp(name, fw::st::SWITCH_EVENT), change = !strcmp(name, "change");
