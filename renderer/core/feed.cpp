@@ -62,7 +62,8 @@ void Feed::run() {
   put_now_.clear();
   const uint32_t t0 = lv_tick_get();
   if (source() == "sample") {
-    in_sample_ = true;
+    samples_.clear();  // this round's words only: a sample that moves with the clock (the Calendar's agenda) kept a new
+    in_sample_ = true; // string every minute, never freed (facet-256: ~1.9 KB a minute of PSRAM on the panels)
     sample();
     in_sample_ = false;
   } else fill();
@@ -85,6 +86,7 @@ void Feed::sample_round() {
   if (in_round_) return;
   in_round_ = in_sample_ = true;
   put_now_.clear();
+  samples_.clear();
   sample();
   in_round_ = in_sample_ = false;
 }

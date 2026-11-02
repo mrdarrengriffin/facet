@@ -38,7 +38,7 @@ class Feed {
   virtual ~Feed() = default;
   void run();  // one round (the base calls it; an adapter calls it after an answer it waited for)
   const char *entity() const { return entity_; }
-  const std::set<std::string> &samples() const { return samples_; }  // the words sample() puts (the leak rule)
+  const std::set<std::string> &samples() const { return samples_; }  // the words the last sample round put (the leak rule)
   const std::vector<Field> &fields() const { return fields_; }
   uint32_t every_ms() const { return every_ms_; }
   const char *default_source() const { return default_source_; }

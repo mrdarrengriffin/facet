@@ -63,6 +63,24 @@ export default {
       await t.device(deck({ source: 'sample', now: String(NOW) }));
       const c = t.part('card');
       t.ok(c, 'the page card'); t.ok(c.texts.some((x) => /pottery class/i.test(x)), 'the next event on the card');
+        } },
+    { name: 'a sample that moves with the clock keeps no old copies (facet-256: the panels lost ~1.9 KB of PSRAM a minute)', async run(t) {
+      // the sample fortnight follows the wall clock (Date.now): each minute another agenda; the feed kept every one
+      const real = Date.now, base = real.call(Date);
+      let off = 0;
+      Date.now = () => base + off;
+      try {
+        await t.mount('spec', { screen: 'calendar', source: 'sample' });
+        const mem = () => t.b.m._fw_mem();
+        let at10 = 0;
+        for (let i = 1; i <= 40; i++) {
+          off = i * 60000;
+          t.wait(61000);  // the feed's minute round
+          if (i === 10) at10 = mem();
+        }
+        const grew = mem() - at10;
+        t.ok(grew < 8 * 1024, `30 more minutes of a moving sample: ${grew} B more held (a copy a minute was ~1.9 KB)`);
+      } finally { Date.now = real; }
     } },
   ],
 };
