@@ -36,7 +36,7 @@ FW_COMPONENT(title, "Title", "components", R"({
     {"label": "long name", "props": {"text": "Living room ceiling and the sofa lamps"}}
   ]
 })") {
-  fit(fx::text(parent, p["text"] | "", "type:label", "fg:text-dim", "none"));
+  fit(fx::text(parent, p["text"] | "", "type:label", "fg:text-dim", "dot"));
 }
 
 FW_UPDATE(title) {

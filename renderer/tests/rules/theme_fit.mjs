@@ -10,7 +10,6 @@ const FACET = new Map();  // den|id|vi -> Facet's bounds (why), from this run
 // Listed on every run (LEGACY), never hidden; a case that fits again must be removed here.
 const KNOWN = new Set(['moon_icon-11', 'progress_ring-4', 'toggle-5'].flatMap((k) => [`1.5x blockcraft ${k}`, `1x blockcraft ${k}`]).concat(['1.5x win98 hero_block-8']));
 // the Title's long name is cut with no "..." (it is declared none): its dot fix waits for Darren's look (parked)
-for (const d of ['1.5x', '1x']) for (const t of ['facet', 'blockcraft', 'phosphor', 'win98']) KNOWN.add(`${d} ${t} header-6`);
 
 export default {
   id: 'theme-fit', tiers: ['gate'], order: 20, looks: [0],
