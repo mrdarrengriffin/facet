@@ -58,7 +58,7 @@ class FakeHA {
   unavailable(e) { this.set(e, 'unavailable'); }
   // Replies (opt in: answers = true; a test that checks an ask stays open leaves it off): the HA actions an adapter
   // wants the reply of (fw_ha_asks: weather.get_forecasts, calendar.get_events) and the panel's own link's reads
-  // (fw_ha_gets: Energy's three WebSocket reads; a REST read = not found). Served on every tick (Ctx). Failing while
+  // (fw_ha_gets: Energy's three WebSocket reads, the link check; a REST read = not found). Served on every tick (Ctx). Failing while
   // down (the network pulled) or fail (Home Assistant answering but its data unavailable); missing = an empty
   // Energy dashboard and no entity found. Never a real Home Assistant.
   serve() {
@@ -75,6 +75,13 @@ class FakeHA {
     if (!m._fw_ha_gets) return;
     for (const g of JSON.parse(m.UTF8ToString(m._fw_ha_gets()) || '[]')) {
       const id = typeof g === 'number' ? g : g.id;
+      if (g.get === '') {  // the link check (GET <url>/api/), in the panel's words: refused = a wrong token (refuse)
+        const why = this.down ? 'cannot reach Home Assistant at that address' : this.refuse ? 'Home Assistant refused the token' : '';
+        const b = '{"message":"API running."}';
+        if (!why) str(b, (q) => m._fw_ha_chunk(id, q, b.length));
+        str(why, (q) => m._fw_ha_got(id, why ? 0 : 1, q));
+        continue;
+      }
       const body = bad || !g.ws ? null : this.ws(typeof g.ws === 'string' ? JSON.parse(g.ws) : g.ws);
       if (body) { const b = JSON.stringify(body); str(b, (q) => m._fw_ha_chunk(id, q, Buffer.byteLength(b, 'utf8'))); }
       str(body ? '' : (this.down ? 'Home Assistant not reached' : 'not found'), (q) => m._fw_ha_got(id, body ? 1 : 0, q));

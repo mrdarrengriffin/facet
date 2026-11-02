@@ -29,5 +29,36 @@ export default {
       act(t, { do: 'ha.entities', domains: 'light' }); t.ha.serve(); t.b.settle(600);
       t.eq(row(), 'Not reached', 'a failed read: Not reached');
     } },
+      { name: 'the link check: linked, a refused token, an unreachable address (status, Settings row, the screen\'s words)', async run(t) {
+      await t.device();
+      const link = () => JSON.parse(t.b.m.UTF8ToString(t.b.m._fw_ha_link()));
+      const row = () => { act(t, { do: 'nav.open', screen: 'settings' }); const r = t.texts().find((s) => /^(Not set up|Not reached|Linked, )/.test(s)); act(t, { do: 'nav.back' }); return r; };
+      t.ha.answers = true;
+      act(t, { do: 'ha.connect', url: 'http://ha.test:8123', token: 'abcdefgh1234' }); t.b.tick(4); t.b.settle(600);
+      t.eq([link().status, link().why], ['idle', ''], 'a good token: checked, nothing wrong');
+      t.eq(row(), 'Linked, ha.test');
+      t.ha.refuse = true;
+      act(t, { do: 'ha.connect', url: 'http://ha.test:8123', token: 'wrongtoken99' }); t.b.tick(4); t.b.settle(600);
+      t.eq([link().status, link().why], ['fail', 'Home Assistant refused the token'], 'a refused token: said in words');
+      t.eq(row(), 'Not reached');
+      t.ok(!JSON.stringify(link()).includes('wrongtoken99'), 'the token is never shown back');
+      t.eq(link().token, '\u2026en99', 'its last 4 characters only');
+      t.ha.refuse = false, t.ha.down = true;
+      act(t, { do: 'ha.connect', url: 'http://nowhere.test:8123' }); t.b.tick(4); t.b.settle(600);
+      t.eq([link().status, link().why], ['fail', 'cannot reach Home Assistant at that address'], 'an unreachable address: said in words');
+      act(t, { do: 'nav.open', screen: 'ha_link' });
+      t.ok(t.texts().includes('Cannot reach Home Assistant at that address.'), `the screen says why, whole: ${t.texts().join(' / ')}`);
+    } },
+    { name: 'the link page as a QR code while the panel is not linked, gone once it is', async run(t) {
+      t.ha.answers = true;
+      await t.mount('ha_link', { page: 'http://192.168.1.42/link' });
+      const qr = () => t.texts().some((s) => /^open on your phone$/i.test(s));
+      t.ok(qr() && t.texts().includes('http://192.168.1.42/link'), 'not linked: the link page, its address and its code');
+      act(t, { do: 'ha.connect', url: 'http://ha.test:8123', token: 'abcdefgh1234' }); t.b.tick(4); t.b.settle(600);
+      t.ok(!qr(), 'linked: no code');
+      t.ha.refuse = true;
+      act(t, { do: 'ha.connect', url: 'http://ha.test:8123', token: 'wrongtoken99' }); t.b.tick(4); t.b.settle(600);
+      t.ok(qr(), 'the check failed: the code again');
+    } },
   ],
 };

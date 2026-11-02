@@ -3,8 +3,9 @@ import { configured, env } from '../../../lib/ha';
 
 export const prerender = false;
 
-/** The REST reads the panel may make (GET only): one entity's state, the calendar list, one calendar's events. */
+/** The REST reads the panel may make (GET only): the link check, one entity's state, the calendar list, one calendar's events. */
 const READS = [
+  /^$/,  // the API root: the link check (HA answers 200 with a good token)
   /^states\/[a-z_]+\.[a-z0-9_]+$/,
   /^calendars$/,
   /^calendars\/calendar\.[a-z0-9_]+\?start=[0-9TZ:.+-]+&end=[0-9TZ:.+-]+$/,

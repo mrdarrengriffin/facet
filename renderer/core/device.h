@@ -188,8 +188,10 @@ class Scan {
   std::string buf_, key2_, key3_, id_, name_, icon_;
   size_t held_ = 0, peak_ = 0;
 };
-enum St { OFF, IDLE, LOADING, OK, FAIL };
-void configure(const std::string &url, const std::string &token);  // token "" = keep the one set; stores it
+enum St { OFF, IDLE, LOADING, OK, FAIL, CHECKING };
+// configure: token "" = keep the one set; stores it, then checks the link (GET <url>/api/ through get(): CHECKING, then
+// IDLE + checked() or FAIL + why(): "Home Assistant refused the token", "cannot reach Home Assistant at that address")
+void configure(const std::string &url, const std::string &token);
 void restore(const std::string &url, const std::string &token);    // the firmware at boot (no store)
 void on_store(void (*f)(const std::string &url, const std::string &token));
 void set_proxy(bool on);
@@ -200,6 +202,11 @@ bool ready();              // an address + a token (or a proxy host)
 const char *fetch(const std::string &domains);  // "" = started, else why not
 St status();
 const std::string &why();  // the last failure, in words
+bool checked();            // the last check since the link was set answered (the address and token work)
+// the panel's own link page (firmware: http://<its address>/link once on Wi-Fi, fw_device.h; "" = none): Settings >
+// Home Assistant and Set up show it as a QR code while the panel is not linked
+void set_page(const std::string &u);
+const std::string &page();
 uint32_t rev();            // moves on every change (pages poll it)
 size_t peak();             // the last fetch's parse peak (bytes)
 int count();               // entities kept by the last fetch

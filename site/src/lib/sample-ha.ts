@@ -124,10 +124,11 @@ function answer(e: Engine, m: HaMod) {
     e.withStr(r ? JSON.stringify(r) : '', (p) => m._fw_ha_answer(a.id, r ? 1 : 0, p));
   }
   if (!m._fw_ha_gets) return;
-  for (const g of JSON.parse(e.str(m._fw_ha_gets()) || '[]') as (number | { id: number; ws?: unknown })[]) {
+  for (const g of JSON.parse(e.str(m._fw_ha_gets()) || '[]') as (number | { id: number; ws?: unknown; get?: string })[]) {
     const id = typeof g === 'number' ? g : g.id, ws = typeof g === 'number' ? null : g.ws;
-    // a plain id = the link's /api/states read (how many entities it sees); ws = a WebSocket read; get = other REST
-    const body = typeof g === 'number' ? STATES() : ws ? demoWs(typeof ws === 'string' ? JSON.parse(ws) : ws) : null;
+    // a plain id = the link's /api/states read (how many entities it sees); ws = a WebSocket read; get '' = the link
+    // check (the API root); other REST = not found
+    const body = typeof g === 'number' ? STATES() : ws ? demoWs(typeof ws === 'string' ? JSON.parse(ws) : ws) : g.get === '' ? { message: 'API running.' } : null;
     if (body) { const b = JSON.stringify(body); e.withStr(b, (p) => m._fw_ha_chunk(id, p, new TextEncoder().encode(b).length)); }
     e.withStr(body ? '' : 'not found', (p) => m._fw_ha_got(id, body ? 1 : 0, p));
   }

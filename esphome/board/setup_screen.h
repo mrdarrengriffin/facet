@@ -10,6 +10,8 @@
 //   failed        that try ran out (or the hotspot came back): FAILED_MS, then no-wifi again
 //   connected     on Wi-Fi, never added to Home Assistant: "Add me in Home Assistant" + name + address
 //   added         the first API connection while the screen shows: ADDED_MS, then Home + a toast "Set up: done"
+//   link          after added, while the panel has no Home Assistant link of its own (core/device.h ha_link): QR to
+//                 its link page http://<address>/link; leaves once linked (a phone sent ha.connect) or on Later
 //   actions       Home Assistant refuses this panel's actions (a call with a call_id got no answer in ACTION_MS: HA
 //                 answers every allowed call and drops refused ones silently, homeassistant/components/esphome
 //                 manager.py); shown once per boot with Back
@@ -60,6 +62,7 @@ struct St {
   // actions: last unanswered call (ms sent, 0 = none), refused seen, hint dismissed (Back) this boot
   uint32_t action_sent = 0, action_id = 0;
   bool refused = false, hint_done = false;
+  bool offer_link = false, link_later = false;  // added while the screen showed: the link step next, until Later
   Timeline tl;
 };
 inline St S;
@@ -166,7 +169,7 @@ inline const char *want() {
     S.pref.save(&s);
     esphome::global_preferences->sync();
     mark(S.tl.api, "Home Assistant connected (adopted)");
-    if (!S.shown.empty()) S.added_until = t + ADDED_MS;
+    if (!S.shown.empty()) S.added_until = t + ADDED_MS, S.offer_link = true;
   }
   if (S.action_sent && t - S.action_sent > ACTION_MS) {
     S.action_sent = 0;
@@ -179,6 +182,7 @@ inline const char *want() {
     S.added_until = 0;
   }
   if (S.refused && !S.hint_done && api_on) return "actions";
+  if (conn && S.offer_link && !S.link_later && !fw::dev::ha_link::ready()) return "link";
   if (conn) return S.adopted ? "" : "connected";
   if (S.connect_since) {
     if (t - S.connect_since < CONNECT_MS) return "connecting";
@@ -214,18 +218,20 @@ inline void props(const char *state, std::string &out) {
   auto fn = esphome::App.get_friendly_name();
   p["device"] = std::string(fn.c_str(), fn.size());
   p["ip"] = ip();
+  p["link"] = "http://" + ip() + "/link";
   serializeJson(p, out);
 }
 
 inline void on_event(lv_obj_t *, const char *name, const char *detail, void *) {
   if (!strcmp(name, "way") && detail) S.way = detail;
   else if (!strcmp(name, "back") && S.shown == "actions") S.hint_done = true;  // next tick leaves
+  else if (!strcmp(name, "setup") && detail && !strcmp(detail, "not-now") && S.shown == "link") S.link_later = true;  // Later
 }
 
 inline void leave() {
   if (!S.scr) return;
   ESP_LOGW("setup", "Set up screen: leaving (%s)", S.shown.c_str());
-  const bool done = S.shown == "added";
+  const bool done = S.shown == "added" || S.shown == "link";
   lv_screen_load_anim(fw::device::S.scr, LV_SCREEN_LOAD_ANIM_FADE_IN, 300, 0, true);  // deletes our screen after
   S.scr = nullptr;
   S.shown.clear();

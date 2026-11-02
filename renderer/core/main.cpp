@@ -200,7 +200,7 @@ EMSCRIPTEN_KEEPALIVE const char *fw_ha_link() {
   namespace hl = fw::dev::ha_link;
   static std::string out;
   ArduinoJson::JsonDocument d;
-  static const char *const ST[] = {"off", "idle", "loading", "ok", "fail"};
+  static const char *const ST[] = {"off", "idle", "loading", "ok", "fail", "checking"};
   d["status"] = ST[hl::status()], d["count"] = hl::count(), d["peak"] = (int) hl::peak(), d["url"] = hl::url(), d["token"] = hl::token_hint(), d["why"] = hl::why();
   out.clear();
   serializeJson(d, out);

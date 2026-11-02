@@ -7,7 +7,8 @@
     "dev": "astro dev",
     "start": "astro dev",
     "editor-device": "node scripts/editor-device.mjs",
-    "test:editor": "node --test --test-concurrency=1 \"tests/editor/*.test.mjs\""
+    "test:editor": "node --test --test-concurrency=1 \"tests/editor/*.test.mjs\"",
+    "test:link": "node --test tests/link/*.test.mjs"
   },
   "dependencies": {
     "@astrojs/node": "11.1.7",

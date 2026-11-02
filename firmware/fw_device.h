@@ -103,6 +103,7 @@
 #include "spec.h"
 #include "nvs.h"
 #include "esp_http_client.h"
+#include "esphome/components/network/util.h"
 #include "esp_crt_bundle.h"
 #include "esp_transport.h"
 #include "esp_transport_tcp.h"
@@ -1421,6 +1422,15 @@ class Handler : public AsyncWebHandler {
         }
       } else in_loop([&] { spec_hello(d.to<ArduinoJson::JsonObject>()); }, 2000);
       if (ok) serializeJson(d, s);
+    } else if (path == "/fw/link") {  // the HA link's state for the link page (/link): never the token, its last 4 only
+      namespace hl = fw::dev::ha_link;
+      ArduinoJson::JsonDocument d;
+      in_loop([&] {
+        const hl::St st = hl::status();
+        d["state"] = !hl::ready() ? "off" : st == hl::CHECKING ? "checking" : st == hl::FAIL ? "failed" : hl::checked() ? "linked" : "set";
+        d["url"] = hl::url(), d["token"] = hl::token_hint(), d["why"] = hl::why();
+      }, 2000);
+      serializeJson(d, s);
     } else if (path == "/fw/deck") {
       std::string dj;
       bool over = false;
@@ -1570,7 +1580,10 @@ inline void task(void *arg) {
     const std::string auth = "Bearer " + j->token;
     esp_http_client_set_header(h, "Authorization", auth.c_str());
     const esp_err_t e = esp_http_client_open(h, 0);
-    if (e != ESP_OK) why = std::string("cannot reach Home Assistant at that address (") + esp_err_to_name(e) + ")";
+    if (e != ESP_OK) {  // plain words on the screens and the link page; the error's name in the log
+      why = "cannot reach Home Assistant at that address";
+      ESP_LOGW("facet_wb", "HA link: %s", esp_err_to_name(e));
+    }
     else {
       esp_http_client_fetch_headers(h);
       const int st = esp_http_client_get_status_code(h);
@@ -1743,6 +1756,16 @@ inline void setup() {
   fw::dev::ha_link::on_get(get);
   fw::dev::ha_link::on_ws(ws);
   lv_timer_create(drain, 20, nullptr);
+  // the link page's address (Settings > Home Assistant and Set up show it as a QR code while not linked)
+  lv_timer_create([](lv_timer_t *) {
+    for (auto &a : esphome::network::get_ip_addresses()) {
+      if (!a.is_set() || !a.is_ip4()) continue;
+      char b[esphome::network::IP_ADDRESS_BUFFER_SIZE];
+      fw::dev::ha_link::set_page(std::string("http://") + a.str_to(b) + "/link");
+      return;
+    }
+    fw::dev::ha_link::set_page("");
+  }, 2000, nullptr);
 }
 }  // namespace halink
 

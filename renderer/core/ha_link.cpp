@@ -30,6 +30,9 @@ struct State {
   uint32_t ws_next = WS_ID;
   struct Call { std::function<void(const char *, size_t)> feed; std::function<void(bool, const std::string &)> end; };
   std::map<uint32_t, Call> calls;  // WS reads waiting for their reply
+  uint32_t check = 0;              // the link check in flight (configure), 0 = none
+  bool checked = false;
+  std::string page;
 };
 State &S() { static State s; return s; }
 void bump() { S().rev++; }
@@ -163,6 +166,20 @@ void configure(const std::string &url, const std::string &token) {
   if (s.store) s.store(s.url, s.token);
   if (s.st != LOADING) s.st = ready() ? IDLE : OFF;
   s.why.clear();
+  s.checked = false, s.check = 0;
+  // the check: GET <url>/api/ (HA answers 200 with the token, 401 without); a newer configure supersedes it
+  if (s.st == IDLE && (s.check = get("", nullptr, nullptr))) {
+    const uint32_t id = s.check;
+    s.calls[id].end = [id](bool ok, const std::string &why) {
+      State &s = S();
+      if (id != s.check) return;
+      s.check = 0, s.checked = ok;
+      if (s.st == CHECKING) s.st = ok ? (s.count ? OK : IDLE) : FAIL;
+      if (!ok) s.why = why;
+      bump();
+    };
+    s.st = CHECKING;
+  }
   bump();
 }
 void set_proxy(bool on) { S().proxy = on; if (S().st == OFF && ready()) S().st = IDLE; bump(); }
@@ -188,6 +205,9 @@ const char *fetch(const std::string &domains) {
 }
 St status() { return S().st; }
 const std::string &why() { return S().why; }
+bool checked() { return S().checked; }
+void set_page(const std::string &u) { if (u != S().page) S().page = u, bump(); }
+const std::string &page() { return S().page; }
 uint32_t rev() { return S().rev; }
 size_t peak() { return S().peak; }
 int count() { return S().count; }

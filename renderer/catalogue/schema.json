@@ -9328,6 +9328,12 @@
      "type": "text",
      "about": "A long-lived access token (ha.connect on open; empty = keep the one set). The workbench reads through its host with the host's own token.",
      "default": ""
+    },
+    {
+     "name": "page",
+     "type": "text",
+     "about": "The panel's own link page, shown as a QR code while it is not linked (the panel sets it: http://<its address>/link).",
+     "default": ""
     }
    ],
    "events": {},
@@ -9588,7 +9594,7 @@
     {
      "name": "state",
      "type": "select",
-     "about": "Which step of setting up the panel is on: no Wi-Fi yet, phone joined, Home Assistant asking, connecting, failed, connected, added, or the hint to allow actions. The panel sets this itself; pick one here to preview a step.",
+     "about": "Which step of setting up the panel is on: no Wi-Fi yet, phone joined, Home Assistant asking, connecting, failed, connected, added, linking the screens to Home Assistant, or the hint to allow actions. The panel sets this itself; pick one here to preview a step.",
      "options": [
       "no-wifi",
       "phone-joined",
@@ -9597,6 +9603,7 @@
       "failed",
       "connected",
       "added",
+      "link",
       "actions"
      ],
      "default": "no-wifi"
@@ -9653,6 +9660,12 @@
      "type": "text",
      "about": "The panel's address on your network, shown once it is connected.",
      "default": "192.168.1.42"
+    },
+    {
+     "name": "link",
+     "type": "text",
+     "about": "The panel's own link page, where a phone sets its Home Assistant address and token.",
+     "default": "http://192.168.1.42/link"
     }
    ],
    "events": {},

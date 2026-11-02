@@ -2,9 +2,13 @@
 // ha_link), so the entity pickers have lists on a bare panel. A screen spec of real components only, built by the spec
 // renderer (core/spec.h: Page > Header + list Body, C1-C3), laid out as Settings:
 //   header   the Header (back + "Home Assistant" + the screen chrome)
-//   body     two groups, each a Section header (size label) over read-only List rows (act none):
+//   body     the groups, each a Section header (size label) over read-only List rows (act none):
+//            "not reached"  when the link's check or a read failed: why, whole (Text body dim, up to 3 lines)
+//            "link this panel"  while the panel is not linked (no address + token, or the check failed) and it serves
+//                          its link page (ha_link::page): List row "Link page" (its address) + the QR block to it
 //            "connection"  List row "Address" (the URL, or "Not set") and List row "Token" (the last 4 characters
-//                          only, "Not set"): set by the action ha.connect (an agent, HA, the workbench's props)
+//                          only, "Not set"): set by the action ha.connect (the panel's link page /link, an agent,
+//                          HA, the workbench's props)
 //            "entities"    List row "Entity lists", its sub line the status (Not set up / Ready / Reading Home
 //                          Assistant / "N entities" / the failure in words), a Button "Read now" (secondary) in its
 //                          end slot: the action ha.entities over the domains already read (the pickers read only their
@@ -34,6 +38,7 @@ std::string status_words() {
     case hl::OFF: return "Not set up";
     case hl::IDLE: return "Ready";
     case hl::LOADING: return "Reading Home Assistant";
+    case hl::CHECKING: return "Checking the link";
     case hl::OK: return std::to_string(hl::count()) + " entities";
     default: return "Not reached: " + hl::why();
   }
@@ -58,6 +63,20 @@ std::string spec_json() {
   sp["v"] = 1, sp["id"] = "ha_link", sp["name"] = "Home Assistant", sp["layout"] = "list";
   sp["header"]["label"] = "Home Assistant";
   ArduinoJson::JsonArray n = sp["nodes"].to<ArduinoJson::JsonArray>();
+  if (hl::status() == hl::FAIL) {  // why, whole (a row's sub line cuts it): "Home Assistant refused the token."
+    group(n, "not reached");
+    std::string w = hl::why();
+    if (!w.empty()) w[0] = (char) toupper((unsigned char) w[0]), w += ".";
+    ArduinoJson::JsonObject x = node(n, "text")["p"].to<ArduinoJson::JsonObject>();
+    x["text"] = w.c_str(), x["style"] = "body", x["tone"] = "dim", x["lines"] = 3;
+  }
+  if ((!hl::ready() || hl::status() == hl::FAIL) && !hl::page().empty()) {  // not linked: the panel's own link page
+    group(n, "link this panel");
+    ArduinoJson::JsonObject l = row(n, "Link page");
+    l["trailing"] = "value", l["value"] = hl::page().c_str();
+    ArduinoJson::JsonObject q = node(n, "qr_block")["p"].to<ArduinoJson::JsonObject>();
+    q["text"] = hl::page().c_str(), q["caption"] = "open on your phone";
+  }
   group(n, "connection");
   ArduinoJson::JsonObject a = row(n, "Address");
   a["trailing"] = "value", a["value"] = hl::url().empty() ? "Not set" : hl::url().c_str();
@@ -84,7 +103,8 @@ const char *META = R"({
   "icons": ["back@glyph"],
   "props": [
     {"name": "url", "about": "Home Assistant's address (ha.connect on open; empty = leave it).", "type": "text", "default": ""},
-    {"name": "token", "about": "A long-lived access token (ha.connect on open; empty = keep the one set). The workbench reads through its host with the host's own token.", "type": "text", "default": ""}
+    {"name": "token", "about": "A long-lived access token (ha.connect on open; empty = keep the one set). The workbench reads through its host with the host's own token.", "type": "text", "default": ""},
+    {"name": "page", "about": "The panel's own link page, shown as a QR code while it is not linked (the panel sets it: http://<its address>/link).", "type": "text", "default": ""}
   ]
 })";
 
@@ -104,7 +124,8 @@ void mount(lv_obj_t *parent, int32_t at) {
   });
 }
 void build_page(lv_obj_t *parent, fw::Props p) {
-  const std::string pu = p["url"] | "", pt = p["token"] | "";
+  const std::string pu = p["url"] | "", pt = p["token"] | "", pg = p["page"] | "";
+  if (!pg.empty()) hl::set_page(pg);
   if (!pu.empty() && (pu != hl::url() || !pt.empty())) hl::configure(pu, pt);
   mount(parent, -1);
 }

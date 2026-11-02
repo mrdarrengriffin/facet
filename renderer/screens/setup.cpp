@@ -22,8 +22,10 @@
 //   failed        error                "Could not join <wifi>", what to check, the hotspot comes back by itself
 //   connected     ok "On Wi-Fi"        "Add me in Home Assistant": QR to HA's integrations page, name + address
 //   added         ok "Connected"       "Connected to Home Assistant" (the panel then opens Home with a toast)
+//   link          ok "Connected"       the panel has no Home Assistant link of its own yet: QR to its link page
+//                                      (http://<its address>/link), Later (ghost: "not-now") = Home without it
 //   actions       warn "Actions off"   Home Assistant refuses this panel's actions: where to turn them on
-// Events: "setup" detail allow / not-now (the Allow buttons), "way" detail hotspot|bluetooth|usb (a way picked).
+// Events: "setup" detail allow / not-now (the Allow buttons; Later on link), "way" detail hotspot|bluetooth|usb (a way picked).
 // Update path: the page made again with a fade (refill_fade: a state is another page of the same screen), silent.
 #include <algorithm>
 #include <functional>
@@ -82,7 +84,7 @@ struct Screen {
 View view_of(fw::Props p) {
   const std::string st = p["state"] | "no-wifi", way = p["way"] | "hotspot";
   const std::string ssid = p["ssid"] | "Facet-1A2B", pw = p["password"] | "k7mqx3tpa9", wifi = p["wifi"] | "Larkfield";
-  const std::string dev = p["device"] | "Facet panel 1a2b3c", ip = p["ip"] | "192.168.1.42";
+  const std::string dev = p["device"] | "Facet panel 1a2b3c", ip = p["ip"] | "192.168.1.42", link = p["link"] | "http://192.168.1.42/link";
   View v;
   if (st == "phone-joined") {
     v.chip_tone = "info", v.chip_text = "Phone joined";
@@ -114,6 +116,13 @@ View view_of(fw::Props p) {
     v.chip_tone = "ok", v.chip_text = "Connected", v.clock = true;
     v.title = "Connected to Home Assistant", v.xl = 1;
     v.text = "All set. Home opens in a moment.";
+    v.ip = true;
+  } else if (st == "link") {
+    v.chip_tone = "ok", v.chip_text = "Connected", v.clock = true;
+    v.qr = link, v.qr_caption = "link page";
+    v.title = "Link the screens to Home Assistant", v.xl = 4;
+    v.text = "Scan to give this panel its own Home Assistant token. Or later, in Settings > Home Assistant.";
+    v.secondary = "Later";
     v.ip = true;
   } else if (st == "actions") {
     v.chip_tone = "warn", v.chip_text = "Actions off", v.clock = true;
@@ -171,12 +180,13 @@ void facts(lv_obj_t *parent, const View &v) {
   }
 }
 void buttons(lv_obj_t *parent, const View &v) {
-  if (v.primary.empty()) return;
-  lv_obj_t *g = row_grid(parent, 2);
+  if (v.primary.empty() && v.secondary.empty()) return;
+  const bool one = v.primary.empty();  // the ghost alone (Later): one cell
+  lv_obj_t *g = row_grid(parent, one ? 1 : 2);
   gap(g);
   struct B { const std::string &label; const char *kind, *what; } bs[] = {{v.primary, "primary", "allow"}, {v.secondary, "ghost", "not-now"}};
-  for (int i = 0; g && i < 2; i++) {
-    lv_obj_t *c = fw::spec::slot_of(g, i);
+  for (int i = one ? 1 : 0, k = 0; g && i < 2; i++, k++) {
+    lv_obj_t *c = fw::spec::slot_of(g, k);
     if (!c || bs[i].label.empty()) continue;
     Doc bp;
     bp["kind"] = bs[i].kind, bp["label"] = bs[i].label.c_str();
@@ -262,7 +272,7 @@ const char *META = R"J({
   "about": "The screen a new panel shows until it is on Wi-Fi and added to Home Assistant: a code to join its hotspot (with the password), the other ways to set it up, then each step until it is connected.",
   "frame": [480, 480],
   "props": [
-    {"name": "state", "about": "Which step of setting up the panel is on: no Wi-Fi yet, phone joined, Home Assistant asking, connecting, failed, connected, added, or the hint to allow actions. The panel sets this itself; pick one here to preview a step.", "type": "select", "options": ["no-wifi", "phone-joined", "allow", "connecting", "failed", "connected", "added", "actions"], "default": "no-wifi"},
+    {"name": "state", "about": "Which step of setting up the panel is on: no Wi-Fi yet, phone joined, Home Assistant asking, connecting, failed, connected, added, linking the screens to Home Assistant, or the hint to allow actions. The panel sets this itself; pick one here to preview a step.", "type": "select", "options": ["no-wifi", "phone-joined", "allow", "connecting", "failed", "connected", "added", "link", "actions"], "default": "no-wifi"},
     {"name": "way", "about": "How the panel is being set up: by joining its own hotspot from a phone, through the Home Assistant app over Bluetooth, or over a USB cable from a computer.", "type": "select", "options": ["hotspot", "bluetooth", "usb"], "default": "hotspot"},
     {"name": "bluetooth", "about": "Whether this panel can be set up over Bluetooth. Off on boards without Bluetooth, which hides that option.", "type": "bool", "default": true},
     {"name": "back", "about": "Shows a Back button. On when the screen is opened again from Settings, off on a brand-new panel.", "type": "bool", "default": false},
@@ -270,7 +280,8 @@ const char *META = R"J({
     {"name": "password", "about": "The password for the panel's hotspot. Each panel makes its own.", "type": "text", "default": "k7mqx3tpa9"},
     {"name": "wifi", "about": "The name of your home Wi-Fi network the panel is joining, shown while it connects.", "type": "text", "default": "Larkfield"},
     {"name": "device", "about": "The name the panel shows for itself and in Home Assistant.", "type": "text", "default": "Facet panel 1a2b3c"},
-    {"name": "ip", "about": "The panel's address on your network, shown once it is connected.", "type": "text", "default": "192.168.1.42"}
+    {"name": "ip", "about": "The panel's address on your network, shown once it is connected.", "type": "text", "default": "192.168.1.42"},
+    {"name": "link", "about": "The panel's own link page, where a phone sets its Home Assistant address and token.", "type": "text", "default": "http://192.168.1.42/link"}
   ],
   "audit": {"snaps": {"way": "another way is another page of the screen: the body is made again and fades (refill_fade)"}},
   "variants": [
@@ -284,6 +295,7 @@ const char *META = R"J({
     {"label": "5 could not connect", "props": {"state": "failed"}},
     {"label": "6 on Wi-Fi, add in Home Assistant", "props": {"state": "connected"}},
     {"label": "7 added", "props": {"state": "added"}},
+    {"label": "7b link Home Assistant", "props": {"state": "link"}},
     {"label": "8 allow actions hint", "props": {"state": "actions"}},
     {"label": "from Settings (Back)", "props": {"state": "added", "back": true}}
   ]

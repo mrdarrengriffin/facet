@@ -1,0 +1,108 @@
+<!doctype html>
+<!-- The panel's link page (GET /link, served from flash: firmware/bundle.mjs): set the panel's own Home Assistant
+     address and long-lived token from a phone. Sends the action ha.connect (POST /fw/act, the panel's own origin: no
+     agent token needed), then follows GET /fw/link until the panel has checked the link (GET <address>/api/). The token
+     is never shown back: the field is cleared after sending, the panel answers its last 4 characters only. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Link this panel to Home Assistant</title>
+<style>
+:root { --bg: #f4f4f2; --card: #fff; --text: #1b1b1a; --dim: #66655f; --line: #d9d8d2; --accent: #2f6fdf; --on: #fff; --ok: #1f8a4c; --bad: #c63b2f; --wait: #b07a12; }
+@media (prefers-color-scheme: dark) { :root { --bg: #121212; --card: #1d1d1c; --text: #ecebe6; --dim: #a3a29b; --line: #34332f; --accent: #6d9cf0; --on: #0d1a33; --ok: #4cc27f; --bad: #ef6a5c; --wait: #e2b04a; } }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { max-width: 34rem; margin: 0 auto; padding: 24px 16px 40px; }
+h1 { margin: 0 0 4px; font-size: 1.5rem; font-weight: 600; }
+p { margin: 0 0 12px; }
+.dim { color: var(--dim); }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin: 16px 0; }
+.state { display: flex; align-items: center; gap: 10px; font-weight: 600; }
+.dot { width: 10px; height: 10px; border-radius: 50%; background: var(--dim); flex: none; }
+.state.linked .dot { background: var(--ok); } .state.failed .dot { background: var(--bad); } .state.checking .dot { background: var(--wait); }
+.why { margin: 6px 0 0 20px; color: var(--dim); }
+label { display: block; font-weight: 600; margin: 14px 0 6px; }
+input { width: 100%; font: inherit; color: inherit; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; min-height: 44px; }
+input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.hint { font-size: 0.9rem; color: var(--dim); margin: 6px 0 0; }
+button { margin-top: 18px; width: 100%; min-height: 48px; font: inherit; font-weight: 600; color: var(--on); background: var(--accent); border: 0; border-radius: 10px; cursor: pointer; }
+button:disabled { opacity: 0.5; cursor: default; }
+ol { margin: 0; padding-left: 20px; } li { margin: 4px 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Link this panel to Home Assistant</h1>
+  <p class="dim">The panel reads its own lists of your lights, sensors and calendars from Home Assistant with this address and token. It keeps them, and never shows the token back.</p>
+  <div class="card" aria-live="polite">
+    <div class="state" id="state"><span class="dot"></span><span id="state-text">Reading the panel…</span></div>
+    <p class="why" id="why" hidden></p>
+  </div>
+  <form class="card" id="form" novalidate>
+    <label for="url">Home Assistant address</label>
+    <input id="url" name="url" type="url" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="http://homeassistant.local:8123" required>
+    <label for="token">Long-lived access token</label>
+    <input id="token" name="token" type="password" autocomplete="off" autocapitalize="off" spellcheck="false">
+    <p class="hint" id="token-hint">In Home Assistant: your profile, Security, Long-lived access tokens, Create token.</p>
+    <button id="send" type="submit">Link</button>
+  </form>
+  <div class="card">
+    <p><strong>A user of its own (best):</strong></p>
+    <ol class="dim">
+      <li>In Home Assistant, Settings, People, Users: add a user for this panel, not an administrator.</li>
+      <li>Log in as that user once (a private window), and create its long-lived token there.</li>
+      <li>Paste that token above.</li>
+    </ol>
+  </div>
+</main>
+<script>
+const $ = (id) => document.getElementById(id);
+const WORDS = { off: 'Not set up', set: 'Set, not checked yet', checking: 'Checking the link…', linked: 'Linked', failed: 'Not reached' };
+let had = false;
+function host(u) { try { return new URL(u).hostname; } catch { return u; } }
+function show(d, why) {
+  const st = d ? d.state : 'failed';
+  $('state').className = 'state ' + st;
+  $('state-text').textContent = (WORDS[st] || st) + ((st === 'linked' || st === 'set') && d.url ? ', ' + host(d.url) : '');
+  const w = why || (st === 'failed' && d.why ? d.why[0].toUpperCase() + d.why.slice(1) + '.' : '');
+  $('why').hidden = !w;
+  $('why').textContent = w;
+  if (d) {
+    had = !!d.token;
+    if (!$('url').value && d.url) $('url').value = d.url;
+    $('token-hint').textContent = d.token ? `A token is set (ending ${d.token.replace('…', '')}). Leave this empty to keep it.` : 'In Home Assistant: your profile, Security, Long-lived access tokens, Create token.';
+  }
+}
+async function read() {
+  const r = await fetch('/fw/link', { cache: 'no-store' });
+  if (!r.ok) throw new Error();
+  return r.json();
+}
+async function follow() {  // until the panel has checked the link (its check gives up after 15 s)
+  for (let i = 0; i < 40; i++) {
+    const d = await read().catch(() => null);
+    if (d) show(d);
+    if (d && d.state !== 'checking') return;
+    await new Promise((ok) => setTimeout(ok, 600));
+  }
+}
+$('form').onsubmit = async (ev) => {
+  ev.preventDefault();
+  const url = $('url').value.trim().replace(/\/+$/, ''), token = $('token').value.trim();
+  if (!/^https?:\/\/[^\s/]+/.test(url)) { show({ state: 'failed', url: '', token: had ? 'x' : '' }, 'The address starts with http:// or https://, like http://homeassistant.local:8123.'); return; }
+  if (!token && !had) { show({ state: 'off', url: '', token: '' }, 'Paste a long-lived access token from Home Assistant.'); return; }
+  $('send').disabled = true;
+  try {
+    const r = await fetch('/fw/act', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ do: 'ha.connect', url, token }) });
+    const a = await r.json().catch(() => ({}));
+    $('token').value = '';
+    if (!a.ok) { show(null, 'The panel did not take it: ' + (a.why || 'no answer') + '.'); return; }
+    await follow();
+  } catch { show(null, 'The panel did not answer. Is this phone on the same network as the panel?'); }
+  finally { $('send').disabled = false; }
+};
+read().then(show).catch(() => show(null, 'The panel did not answer.'));
+</script>
+</body>
+</html>
