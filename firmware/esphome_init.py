@@ -27,6 +27,12 @@ CONFIG_SCHEMA = cv.Schema(
 
 
 async def to_code(config):
+    # the panel's own Home Assistant link (fw_device.h halink): GETs on esp_http_client, Energy's reads on
+    # esp_transport_ws; ESPHome leaves both out of a build unless a component asks for them
+    from esphome.components.esp32 import include_builtin_idf_component
+
+    include_builtin_idf_component("esp_http_client")
+    include_builtin_idf_component("tcp_transport")
     cg.add_global(cg.RawStatement('#include "esphome/components/facet_wb/fw_device.h"'))
     cg.add_define("FW_DEVICE_BOARD", config["board"])
     cg.add_define("FW_DEVICE_W", config["width"])
