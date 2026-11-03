@@ -24,7 +24,7 @@
 // Fit: the row is layout:row tall (>= touch:min, tools/gen_layout.mjs), up to layout:header-max-w wide, items centred
 // on it, layout:header-item-gap apart (all through tok(): the /wasm Layout lab moves them live; C20).
 // Steps: none (one row; the title is what gives way). Bleed: all sides, space:4 (C13b: hit pads). States: n/a (its children have theirs). Events:
-// Back's "back" / "home", the end squares' "navigate".
+// Back's "back" / "home", the end squares' "navigate"; the timer's time left "navigate" timer.
 // Slots for code: fw::spec::building_header() = the END slot (C++ screens place their controls there with
 // header_place: before the header's own end items); fw::spec::header_slot(root, "title" | "end");
 // fw::spec::header_hide_time(header or end slot) = a control takes the time's place (Media, sport).
@@ -116,6 +116,14 @@ int own_items(lv_obj_t *en, fw::Props p) {
     lv_timer_t *tm = lv_timer_create(status_tick, 1000, st);
     status_tick(tm);
     lv_obj_add_event_cb(st, [](lv_event_t *e) { lv_timer_delete((lv_timer_t *) lv_event_get_user_data(e)); }, LV_EVENT_DELETE, tm);
+    // a tap on the time left opens the Timer (touch:min tall around the label: the header row has the room)
+    lv_obj_add_flag(st, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_set_ext_click_area(st, fw::touch::min / 2);
+    lv_obj_add_event_cb(st, [](lv_event_t *e) {
+      auto *o = (lv_obj_t *) lv_event_get_current_target(e);
+      fw::emit(o, "navigate", "timer");
+      fw::sound(o, "open");
+    }, LV_EVENT_CLICKED, nullptr);
     n++;
   }
   return n;

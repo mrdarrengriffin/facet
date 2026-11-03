@@ -31,6 +31,16 @@ const VARIANTS = [{}, { back: false, settings: true }, { sample: 'end-chip' }, {
 export default {
   id: 'header', family: 'layout', about: 'Header on the contract: Back, title slot, end slot (any number of items), Time; update path, proofs.',
   tests: [
+    { name: 'the timer\'s time left in the end slot: a tap opens the Timer', async run(t) {
+      await t.mount('header', { label: 'Home', settings: true, back: false, actions: { status: 'timer' } });
+      JSON.parse(t.b.str('timer', (c) => t.b.str(JSON.stringify({ op: 'reset' }), (a) => t.b.m.UTF8ToString(t.b.m._fw_test(c, a)))));
+      JSON.parse(t.b.str('timer', (c) => t.b.str(JSON.stringify({ op: 'start', seconds: 300 }), (a) => t.b.m.UTF8ToString(t.b.m._fw_test(c, a)))));
+      t.wait(2500);
+      const left = t.texts().find((x) => /^4:5\d$/.test(x));
+      t.ok(left, `the time left shows: ${t.texts().join(' | ')}`);
+      const evs = t.tap(left);
+      t.ok(evs.some((e) => e.name === 'navigate' && e.detail === 'timer'), `navigate timer: ${evs.map((e) => `${e.name}(${e.detail})`).join(' ')}`);
+    } },
     // ---------------------------------------------------------------- 1 contract
     { name: 'tokens: the header row is layout:row tall and >= touch:min (C20); Back (an Icon button square) fills it', async run(t) {
       t.ok(lay(t, 'row') >= TMIN(t), `row ${lay(t, 'row')} >= touch:min ${TMIN(t)}`);
