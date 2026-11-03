@@ -134,6 +134,16 @@ export default {
       t.has(t.texts(), /^No keys yet/, 'the page follows: none');
       t.eq([write(t, a).code, write(t, b).code], [401, 401], 'both refused');
     } },
+    { name: 'Settings: the API keys count follows a key allowed while Settings shows', async run(t) {
+      await t.device(); K(t, { op: 'reset' }); on(t);
+      t.b.spec('act', { do: 'nav.open', screen: 'settings' }); settle(t);
+      for (let i = 0; i < 8 && !t.texts().includes('API keys'); i++) { t.drag({ at: [t.b.S / 2, t.b.S * 0.8] }, { by: [0, -t.b.S * 0.4] }); t.wait(500); }
+      t.has(t.texts(), 'No keys', 'none yet');
+      const r = ask(t, 'Kitchen script'); settle(t);
+      t.tap(/^Allow$/i); settle(t); t.wait(600); settle(t);
+      t.eq(poll(t, r.body.id).body.state, 'allowed', 'allowed');
+      t.has(t.texts(), '1 key', 'the row says 1 key without leaving Settings');
+    } },
     { name: 'Allow while Settings > API keys shows, after Revoke all: the page follows, the panel stays up', async run(t) {
       await t.device(); K(t, { op: 'reset' }); on(t);
       allowed(t, 'Old');

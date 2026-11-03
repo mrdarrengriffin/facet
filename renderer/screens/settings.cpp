@@ -158,6 +158,12 @@ void on_control(lv_obj_t *from, const char *name, const char *detail, void *user
   if (lv_obj_t *up = lv_obj_get_parent(scr->root)) fw::notify(up, name, detail);
 }
 
+// the Settings row that opens Settings > API keys: its value = how many keys
+void keys_props(Doc &d) {
+  const size_t n = fw::keys::list().size();
+  const std::string v = !n ? std::string("No keys") : n == 1 ? std::string("1 key") : std::to_string(n) + " keys";
+  d["title"] = "API keys", d["icon"] = "none", d["trailing"] = "value-chevron", d["value"] = v.c_str();
+}
 // the props of setting s's component for value v: ONE place, so a build and the update path can't drift
 void ctrl_props(const fw::set::Setting &s, const std::string &v, Doc &d) {
   using namespace fw::set;
@@ -404,14 +410,21 @@ void build_settings(lv_obj_t *parent, fw::Props p) {
       if (!strcmp(fw::set::SETTINGS[i].group, fw::set::GROUPS[g].id)) row_for(scr, c, fw::set::SETTINGS[i]);
     if (strcmp(fw::set::GROUPS[g].id, "agents")) continue;
     Doc ar;  // API keys: the keys scripts, automations and agents use (screens/agent_keys.cpp, core/keys.h)
-    const size_t n = fw::keys::list().size();
-    const std::string v = !n ? std::string("No keys") : n == 1 ? std::string("1 key") : std::to_string(n) + " keys";
-    ar["title"] = "API keys", ar["icon"] = "none", ar["trailing"] = "value-chevron", ar["value"] = v.c_str();
-    if (lv_obj_t *r = build("list_row", c, ar))
+    keys_props(ar);
+    if (lv_obj_t *r = build("list_row", c, ar)) {
       lv_obj_add_event_cb(r, [](lv_event_t *e) {
         auto *o = (lv_obj_t *) lv_event_get_current_target(e);
         if (!lv_obj_has_state(o, fw::st::OFF)) fw::emit(o, "navigate", "agent_keys");
       }, LV_EVENT_CLICKED, nullptr);
+      // the count follows the keys (a key allowed on the glass while Settings shows, one revoked by an agent)
+      fx::every(r, 250, [r, rev = fw::keys::rev()]() mutable {
+        if (rev == fw::keys::rev()) return;
+        rev = fw::keys::rev();
+        Doc k;
+        keys_props(k);
+        fw::update_child(fw::find("list_row"), r, k.as<fw::Props>());
+      });
+    }
   }
 
   const char *sheet = p["sheet"] | "closed";
