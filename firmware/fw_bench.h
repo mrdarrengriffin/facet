@@ -157,21 +157,17 @@ inline void caption() {
     lv_obj_set_size(chip, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
     lv_obj_align(chip, LV_ALIGN_BOTTOM_MID, 0, -fw::sp::s4);
     lv_obj_set_style_radius(chip, fw::rad::chip, 0);
-    lv_obj_set_style_bg_opa(chip, LV_OPA_COVER, 0);
+    fx::use(chip, "bg:surface");  // the display's live look, as the Status chip's own text (never the batch's theme)
   }
   lv_obj_clean(chip);
   if (B.ph == IDLE || B.ph == DONE) { lv_obj_add_flag(chip, LV_OBJ_FLAG_HIDDEN); return; }
   lv_obj_remove_flag(chip, LV_OBJ_FLAG_HIDDEN);
-  const fw::Theme *old = fw::T;
-  fw::T = fw::theme(S.light, S.accent);
-  lv_obj_set_style_bg_color(chip, fw::T->surface, 0);
   char t[32];
   snprintf(t, sizeof t, "Bench %u/%u", (unsigned) (B.i + 1), (unsigned) B.cases.size());
   ArduinoJson::JsonDocument p;
   p["tone"] = "info";
   p["text"] = t;
   cc->build(chip, p.as<fw::Props>());
-  fw::T = old;
 }
 inline void end_case(const char *err) {
   B.counting = false;
