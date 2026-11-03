@@ -25,8 +25,11 @@ const sel = S.settings.filter((s) => s.kind === 'select'), sw = S.settings.filte
 const common = (s) => [`    id: ${ent(s).id}`, `    name: ${q(ent(s).name)}`, ...(ent(s).icon ? [`    icon: ${q(ent(s).icon)}`] : []), '    entity_category: config', '    optimistic: true',
   ...(ent(s).internal ? ['    internal: true'] : []), ...(ent(s).device_class ? [`    device_class: ${ent(s).device_class}`] : [])];
 L.push('select:');
+// a fresh panel's Update channel = the channel of the build it runs (release channels): a version with a pre-release
+// part (FACET_VERSION 0.5.0-beta.2, release.yml) starts on Beta, else the schema's Stable; a channel chosen later wins
+const BUILD_CHANNEL = /^\d+\.\d+\.\d+-/.test(process.env.FACET_VERSION || '') ? 'beta' : null;
 for (const s of sel) {
-  const def = s.options.find((o) => o.id === s.default).label;
+  const def = s.options.find((o) => o.id === (s.id === 'updateChannel' && BUILD_CHANNEL ? BUILD_CHANNEL : s.default)).label;
   L.push('  - platform: template', ...common(s), `    options: [${s.options.map((o) => q(o.label)).join(', ')}]`, `    initial_option: ${q(def)}`,
     '    restore_value: true', `    on_value:`, `      - lambda: 'fw::dev::set(${q(s.id)}, x.c_str(), fw::dev::HA);'`);
 }
