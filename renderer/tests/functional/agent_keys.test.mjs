@@ -134,6 +134,19 @@ export default {
       t.has(t.texts(), /^No keys yet/, 'the page follows: none');
       t.eq([write(t, a).code, write(t, b).code], [401, 401], 'both refused');
     } },
+    { name: 'Allow while Settings > API keys shows, after Revoke all: the page follows, the panel stays up', async run(t) {
+      await t.device(); K(t, { op: 'reset' }); on(t);
+      allowed(t, 'Old');
+      t.b.spec('act', { do: 'nav.open', screen: 'agent_keys' }); settle(t);
+      t.hold(/^Revoke all$/i, 1600); settle(t);
+      t.has(t.texts(), /^No keys yet/, 'none after Revoke all');
+      const r = ask(t, 'claude-workbench', 'never'); settle(t);
+      t.has(t.texts(), 'Allow claude-workbench?', 'the glass asks over the page');
+      t.tap(/^Allow$/i); settle(t); t.wait(600); settle(t);
+      t.eq(poll(t, r.body.id).body.state, 'allowed', 'allowed');
+      t.eq(t.where(), 'agent_keys', 'still on API keys');
+      t.has(t.texts(), 'claude-workbench', 'the page lists the new key');
+    } },
     { name: 'a change made with a key toasts with Undo; Undo puts it back', async run(t) {
       await t.device(); K(t, { op: 'reset' }); on(t);
       const key = allowed(t, 'Claude Code');
