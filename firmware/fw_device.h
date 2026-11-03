@@ -123,6 +123,7 @@
 #include "esp_transport_tcp.h"
 #include "esp_transport_ssl.h"
 #include "esp_transport_ws.h"
+#include "theme_file.h"
 #include "theme_slot.h"
 #ifdef USE_API
 #include "esphome/components/api/api_server.h"
