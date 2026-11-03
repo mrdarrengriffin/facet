@@ -11057,7 +11057,7 @@
     "about": "Off: every write from outside the panel's own editor is refused, keys too, and no key can be asked for. On: a request with Authorization: Bearer <key> (a key from POST /fw/keys/request, allowed on the glass) can do what the editor does. Reads, /llms.txt, /agents.md, /ai and /schema.json are always open.",
     "esphome": {
      "id": "ai_agents",
-     "name": "Allow AI agents",
+     "name": "Allow API access",
      "icon": "mdi:robot-outline"
     }
    }
