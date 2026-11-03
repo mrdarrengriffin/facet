@@ -316,15 +316,16 @@ void row_for(Screen *scr, lv_obj_t *col, const fw::set::Setting &s) {
       // the words follow the knob: the Slider's live "input" (a finger, or the update path's quiet sweep)
       fw::listen(sl, [](lv_obj_t *from, const char *name, const char *detail, void *user) {
         auto *scr = (Screen *) user;
-        if (!strcmp(name, "input"))
-          for (int k = 0; k < fw::set::N_SETTINGS; k++)
-            if (scr->ctrl[k] == from && scr->words[k]) {
-              Doc wd;
-              words_props(fw::set::SETTINGS[k], detail, wd);
-              fw::update_child(fw::find("list_row"), scr->words[k], wd.as<fw::Props>());
-              return;
-            }
-        if (lv_obj_t *up = lv_obj_get_parent(from)) fw::notify(up, name, detail);
+        // "change" goes to the settings path from the Slider itself (re-sent from its parent it matched no control:
+        // the glass Volume never applied)
+        if (strcmp(name, "input")) { on_control(from, name, detail, scr); return; }
+        for (int k = 0; k < fw::set::N_SETTINGS; k++)
+          if (scr->ctrl[k] == from && scr->words[k]) {
+            Doc wd;
+            words_props(fw::set::SETTINGS[k], detail, wd);
+            fw::update_child(fw::find("list_row"), scr->words[k], wd.as<fw::Props>());
+            return;
+          }
       }, scr);
       return;
     }
