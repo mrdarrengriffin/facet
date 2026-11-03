@@ -37,7 +37,13 @@ lv_obj_t *radio_of(lv_obj_t *row) {
 struct Spec {
   const char *icon, *name, *status, *tone, *state;
   bool selected;
+  const char *mark = "radio";  // radio: one of a choose-one list; check: one of a pick-many list (a checkbox, no group)
 };
+bool check_mark(const Spec &s) { return !strcmp(s.mark, "check"); }
+void check_props(bool on, const Spec &s, ArduinoJson::JsonDocument &cp) {
+  const bool off = !strcmp(s.state, "unavailable") || !strcmp(s.state, "disabled");
+  cp["check"] = on ? "done" : "open", cp["label"] = "", cp["interactive"] = false, cp["state"] = off ? "disabled" : "default";
+}
 
 void pick_cb(lv_event_t *e) {
   // a real tap on an enabled row: this radio on, the sibling picker rows' radios off (after the List row's own
@@ -65,9 +71,25 @@ void radio_props(const Spec &s, ArduinoJson::JsonDocument &rp) {
   rp["state"] = off ? "disabled" : "default";
 }
 
-// the picker's parts on a List row r: the radio in its end slot, the PICKER mark + tap handler
+// the picker's parts on a List row r: the radio (or a check row's checkbox) in its end slot, the PICKER mark + tap
+// handler
 void decorate(lv_obj_t *r, const Spec &s) {
   lv_obj_t *radio = nullptr;
+  if (check_mark(s)) {
+    if (strcmp(s.state, "unavailable")) {
+      ArduinoJson::JsonDocument cp;
+      check_props(s.selected, s, cp);
+      radio = build("checkbox", lv_obj_get_child(r, -1), cp);
+      if (radio) {
+        lv_obj_remove_flag(radio, LV_OBJ_FLAG_CLICKABLE);  // the row is the target
+        fx::use(radio, "hug");  // the box alone (its empty label slot sized it to nothing in the end slot)
+      }
+    }
+    lv_obj_remove_flag(r, PICKER);  // not one of a choose-one group: a tap is the list's (it sends selected back)
+    lv_obj_set_user_data(r, radio);
+    lv_obj_remove_event_cb(r, pick_cb);
+    return;
+  }
   if (strcmp(s.state, "unavailable")) {
     ArduinoJson::JsonDocument rp;
     radio_props(s, rp);
@@ -92,7 +114,7 @@ lv_obj_t *picker_row(lv_obj_t *parent, const Spec &s) {
 
 Spec spec_of(fw::Props p) {
   return {p["icon"] | "speaker", p["name"] | "Kitchen speaker", p["status"] | "", p["tone"] | "dim", p["state"] | "default",
-          p["selected"] | false};
+          p["selected"] | false, p["mark"] | "radio"};
 }
 // Group (list: group, real rows): one picker row per item of items (core/items.h, the Grid's model): a
 // row = this node's props with "$item" / "$item.key" filled; a prop that does not name $item comes from an object
@@ -150,6 +172,7 @@ FW_COMPONENT(picker_row, "Picker row", "components", R"({
     {"name": "status", "about": "The small capitals line under the name, such as what is playing there.", "type": "text", "default": "playing · Northbound · Marlow & Finch"},
     {"name": "tone", "about": "The status colour: dim for normal, working for something going on now, such as playing.", "type": "select", "options": ["dim", "working"], "default": "dim"},
     {"name": "selected", "about": "Whether this is the chosen option; its radio is on.", "type": "bool", "default": false},
+    {"name": "mark", "about": "radio for one option of a choose-one list; check for one of a pick-many list: a checkbox showing selected, the other rows untouched by a tap (the list sends the new selected).", "type": "select", "options": ["radio", "check"], "default": "radio"},
     {"name": "state", "debug": true, "about": "How the row looks: default ready to tap, pressed while held, disabled when it cannot be chosen, or unavailable when its device cannot be reached.", "type": "select", "options": ["default", "pressed", "disabled", "unavailable"], "default": "default"},
     {"name": "list", "about": "single is one row on its own; group is a choose-one list, one row per item of items, where a tap moves the choice.", "type": "select", "options": ["single", "group"], "default": "single"},
     {"name": "items", "about": "With list group: the options, a comma list or a JSON list, usually bound to an entity attribute (such as a media player's source list). Each row is this node's props with $item (or $item.field) filled in; a plain item is the row's name, and an object item's name, icon, status, tone, selected and state fields fill the props that do not name $item. No items shows the empty words, never sample rows.", "type": "text", "default": ""},
@@ -199,6 +222,14 @@ FW_UPDATE(picker_row) {
   if (fw::shape(root, sig(p), "picker")) {
     if (grp) return true;  // the same items (sig): nothing moves
     fw::update_child(fw::find("list_row"), root, lp.as<fw::Props>());  // only the press can differ: in place
+    if (check_mark(s)) {  // a check row: its mark = selected, in place
+      if (lv_obj_t *ck = (lv_obj_t *) lv_obj_get_user_data(root)) {
+        ArduinoJson::JsonDocument cp;
+        check_props(s.selected, s, cp);
+        fw::update_child(fw::find("checkbox"), ck, cp.as<fw::Props>());
+      }
+      return true;
+    }
     if (lv_obj_t *rd = radio_of(root)) {
       ArduinoJson::JsonDocument rp;
       radio_props(s, rp);

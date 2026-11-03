@@ -29,7 +29,7 @@
 //                       sorted by name; more than PAGE matches = rows by the next letter of the name (a tap narrows,
 //                       one-letter levels skipped, "All entities" goes back up), else the entities (name + id).
 //                       entity = choose one (+ Auto when the spec has it), the sheet closes; entities = choose many
-//                       ("chosen" marks them, the sheet stays open, the row says "N chosen"), kept as a comma list.
+//                       (a checkbox marks them, the sheet stays open, the row says "N chosen"), kept as a comma list.
 //                       No options = one List row "No options yet".
 //   sheet    the Bottom sheet in overlay mode, the screen's last child (one, moved in place per row)
 // Every change is kept in this panel's deck (fw::spec::deck_set: "on", "source", "params.<name>"; stored like a sent
@@ -172,15 +172,14 @@ void fill_ha(Pick &p) {
       while (j < m.size() && key(m[j]) == g) j++;
       if (g.size() > p.prefix.size() && j - i > 1) row("g:" + g, g + "\xE2\x80\xA6", std::to_string(j - i) + (j - i == 1 ? " entity" : " entities"));
       else for (size_t k = i; k < j; k++) {  // a letter with one entity, or names that end here: the entities
-        row("e:" + m[k]->id, name_of(m[k]), p.multi && std::find(p.chosen.begin(), p.chosen.end(), m[k]->id) != p.chosen.end() ? "chosen \xC2\xB7 " + m[k]->id : m[k]->id);
+        row("e:" + m[k]->id, name_of(m[k]), m[k]->id);
         if (!p.multi && m[k]->id == p.cur) p.sel = (int) p.ids.size() - 1;
       }
       i = j;
     }
   } else
     for (const hl::Entity *e : m) {
-      const bool on = std::find(p.chosen.begin(), p.chosen.end(), e->id) != p.chosen.end();
-      row("e:" + e->id, name_of(e), p.multi && on ? "chosen \xC2\xB7 " + e->id : e->id);
+      row("e:" + e->id, name_of(e), e->id);
       if (!p.multi && e->id == p.cur) p.sel = (int) p.ids.size() - 1;
     }
 }
@@ -198,7 +197,8 @@ void sheet_props(Page *pg, int k, bool open, Doc &d) {
     // (entities) rings each chosen one, a choose-one list the selected one
     const bool letter = p.ha && p.ids[i].rfind("g:", 0) == 0;
     it["icon"] = letter ? "chevron" : "none", it["name"] = p.names[i].c_str(), it["status"] = p.status[i].c_str();
-    if (p.multi && !letter) it["selected"] = p.status[i].rfind("chosen", 0) == 0;
+    if (p.multi && !letter)  // a pick-many list: its checkbox says it (no "chosen" word)
+      it["selected"] = p.ids[i].rfind("e:", 0) == 0 && std::find(p.chosen.begin(), p.chosen.end(), p.ids[i].substr(2)) != p.chosen.end();
   }
   d["selected"] = p.sel;
 }

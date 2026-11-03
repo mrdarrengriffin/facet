@@ -2784,6 +2784,16 @@
      "about": "Whether this is the chosen option; its radio is on."
     },
     {
+     "name": "mark",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "radio",
+      "check"
+     ],
+     "about": "radio for one option of a choose-one list; check for one of a pick-many list: a checkbox showing selected, the other rows untouched by a tap (the list sends the new selected)."
+    },
+    {
      "name": "state",
      "type": "select",
      "bindable": true,
@@ -5227,5 +5237,5 @@
    }
   }
  },
- "hash": "a00d0495"
+ "hash": "b083102d"
 }

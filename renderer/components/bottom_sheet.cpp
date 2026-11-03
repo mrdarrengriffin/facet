@@ -118,7 +118,9 @@ void option_props(const Sheet *s, int i, int sel, Doc &d) {
   d["name"] = o.name;
   d["status"] = o.status;
   d["tone"] = o.tone;
-  d["selected"] = s->custom && i < (int) s->item_on.size() ? (bool) s->item_on[(size_t) i] : i == sel;
+  const bool many = s->custom && !s->item_on.empty();  // a pick-many list: checkboxes (radios are for one choice)
+  d["selected"] = s->custom && i < (int) s->item_on.size() ? (bool) s->item_on[(size_t) i] : (many ? false : i == sel);
+  if (many && i < (int) s->item_on.size()) d["mark"] = "check";
 }
 
 void fill_list(Sheet *s) {
