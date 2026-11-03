@@ -946,8 +946,28 @@ inline void spec_hello(ArduinoJson::JsonObject out) {
   fx::theme_status(out["theme"].to<ArduinoJson::JsonObject>());  // look, live, the sent slot, the boot restore
 }
 // kind screen | deck: json = the spec; revert: json = the id (| deck | all)
+inline void theme_from_ha(const std::string &json, ArduinoJson::JsonObject out);
+// a theme file checked by the panel's own guards (structure, ranges, contrast in every mode and accent, press
+// feedback): nothing stored, the look unchanged. {ok, errors: [{path, msg, line}] (first 4), n_errors}
+inline void theme_check(const std::string &json, ArduinoJson::JsonObject out) {
+  std::vector<fx::ThemeError> err;
+  const bool ok = fx::theme_load(json.data(), json.size(), err) != nullptr && err.empty();
+  out["ok"] = ok;
+  if (ok) out["status"] = "ok: this theme passes every guard (nothing stored; send it with kind theme)";
+  ArduinoJson::JsonArray a = out["errors"].to<ArduinoJson::JsonArray>();
+  for (size_t i = 0; i < err.size() && i < 4; i++) {
+    ArduinoJson::JsonObject e = a.add<ArduinoJson::JsonObject>();
+    e["path"] = err[i].path, e["msg"] = err[i].msg, e["line"] = err[i].line;
+  }
+  out["n_errors"] = (int) err.size();
+}
+// POST /fw/spec kinds: screen | deck | check | revert (core/spec.h); theme = a theme file an agent sends (the same path
+// as Home Assistant's facet_theme: guarded on the panel, stored as the sent slot, the Theme setting moves to Sent; ""
+// drops it); theme_check = its guards only
 inline void spec_apply(const char *kind, const std::string &json, ArduinoJson::JsonObject out) {
   if (!strcmp(kind, "revert")) { fw::spec::revert(json.empty() ? "all" : json, out); return; }
+  if (!strcmp(kind, "theme")) { theme_from_ha(json, out); return; }
+  if (!strcmp(kind, "theme_check")) { theme_check(json, out); return; }
   lv_obj_t *dry = lv_obj_create(S.scr);
   lv_obj_add_flag(dry, (lv_obj_flag_t) (LV_OBJ_FLAG_HIDDEN | LV_OBJ_FLAG_FLOATING));
   const int64_t t0 = esp_timer_get_time();
@@ -1430,6 +1450,7 @@ class Handler : public AsyncWebHandler {
           const std::string kind = body["kind"] | "screen";
           std::string arg;
           if (kind == "revert") arg = body["id"] | "all";
+          else if (body["spec"].is<const char *>()) arg = body["spec"].as<const char *>();  // a theme file sent as text
           else serializeJson(body["spec"], arg);
           fw::keys::Kind kk;
           const std::string what = fw::keys::describe("/fw/spec", body_, &kk);  // a key's change: toast + Undo (keys::change)

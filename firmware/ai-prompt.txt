@@ -11,8 +11,11 @@ You can change my Facet wall panel at {panel} (plain HTTP on my own Wi-Fi).
 6. Send it: POST {panel}/fw/spec {"kind": "screen", "spec": ...}, then open it: POST {panel}/fw/show {"screen": "<id>"}.
    To put it in the swipe order: GET {panel}/fw/deck, add {"id": "<id>", "kind": "<id>"} to its pages,
    raise its rev and POST the whole deck back {"kind": "deck", "spec": <deck>}. Otherwise it only opens with fw/show.
+   A theme (colours, edges, shapes; never sizes or layout) instead: write a theme file to the "themes" part of
+   {panel}/schema.json, check it: POST {panel}/fw/spec {"kind": "theme_check", "spec": <theme>}, fix every error,
+   then send it: POST {panel}/fw/spec {"kind": "theme", "spec": <theme>}. It shows at once.
 7. Tell me in plain words what changed and how to undo it: tap Undo on the panel, or
-   POST {panel}/fw/spec {"kind": "revert", "id": "<its id>"}.
+   POST {panel}/fw/spec {"kind": "revert", "id": "<its id>"} (a theme: Settings, Theme, back to Facet).
 If the panel answers "off", ask me to turn on Allow API access in the panel's Settings.
 
 What I want:

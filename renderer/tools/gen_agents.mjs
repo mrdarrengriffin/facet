@@ -57,6 +57,9 @@ Everything below is served by this panel itself and matches its firmware (catalo
 - POST /fw/spec {"kind":"check","spec":{...}}: validate + test-build a screen spec, stores nothing
 - POST /fw/spec {"kind":"screen","spec":{...}}: install (or update) a screen
 - POST /fw/spec {"kind":"deck","spec":{...}}: replace the page list; {"kind":"revert","id":"<id>|all"} undoes
+- POST /fw/spec {"kind":"theme_check","spec":<theme file>}: run a theme through the panel's guards, stores nothing;
+  {"kind":"theme","spec":<theme file>}: make it the panel's sent theme, shown at once ("spec": "" drops it). The format:
+  the "themes" part of /schema.json
 - POST /fw/show {"screen":"<id>"}: open a screen
 - GET /fw/deck: the pages this panel runs; GET /fw/info: firmware build; GET /screenshot: the screen as a BMP
 
@@ -156,6 +159,14 @@ it below (a closed whitelist). Actions: ${C.actions.join(', ')}.
 GET /fw/deck shows the page list. To add your screen as a page, send the whole deck back with a new entry
 \`{"id": "<page id>", "kind": "<your screen id>"}\` (kind = a page-role screen or "home").${cards.length ? `
 Home cards (\`{"t": type, "e": entity, "size", "tap", "label"?}\`): ${cards.map(([t, c]) => `${t} (${c.domains ?? 'page'}; ${c.sizes}; tap ${c.taps})`).join(', ')}.` : ''}
+
+## Themes
+A theme changes the look only: colours per mode, part faces and edges, shapes (knobs, ticks, icons, snapping) and type
+faces; sizes, layout and touch targets stay Facet's. Its format is the \`themes\` part of /schema.json (keys, modes,
+roles, parts, shape, type, limits). The panel guards every theme itself (structure, ranges, contrast in every mode and
+accent, press feedback): \`{"kind":"theme_check","spec":<theme>}\` answers \`{ok, errors: [{path, msg, line}], n_errors}\`,
+\`{"kind":"theme","spec":<theme>}\` stores it as the one sent theme and the Theme setting moves to Sent (Undo on the
+glass, or Settings > Theme > Facet). A refused theme is never shown.
 
 ## Send API
 ${ACCESS}

@@ -433,6 +433,11 @@ std::string describe(const std::string &route, const std::string &body, Kind *ki
   if (deserializeJson(d, body)) return "";
   if (route == "/fw/spec") {
     const std::string k = d["kind"] | "screen";
+    if (k == "theme") {  // the Theme setting moves to Sent: Undo puts the look back
+      *kind = SETTING;
+      const std::string l = d["spec"]["label"] | (d["spec"]["id"] | "");
+      return l.empty() ? "Theme sent" : "Theme " + l + " sent";
+    }
     if (k != "screen" && k != "deck" && k != "revert") return "";
     *kind = SCREENS;
     if (k == "deck") return "Page list changed";
