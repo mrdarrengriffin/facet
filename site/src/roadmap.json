@@ -581,7 +581,7 @@
     "name": "A new editor",
     "group": "Core",
     "status": "doing",
-    "note": "After 1.0: one list of screens with a switch each, the panel's settings and its Home Assistant link on one page, and every change reviewed and checked by the panel before it is sent"
+    "note": "In 1.0: one list of screens with a switch each, the panel's settings and its Home Assistant link on one page, and every change reviewed and checked by the panel before it is sent"
    },
    {
     "name": "Settings",
