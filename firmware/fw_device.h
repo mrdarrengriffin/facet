@@ -1509,6 +1509,22 @@ class Handler : public AsyncWebHandler {
         seen_at = (uint32_t) (esp_timer_get_time() / 1000);
       }
       d["seen"] = seen == 1 ? "http://homeassistant.local:8123" : "";
+      // Home Assistant's own address as the panel sees it: its ESPHome API connection's peer (works where mDNS does
+      // not reach, a panel on its own IoT network); the page offers it when homeassistant.local is not seen
+#ifdef USE_API
+      std::string ha_at;
+      in_loop([&] {
+        if (auto *api = esphome::api::global_api_server)
+          for (const auto &c : api->active_clients()) {
+            if (!c || !strstr(c->get_name(), "Home Assistant")) continue;
+            std::array<char, esphome::socket::SOCKADDR_STR_LEN> b{};
+            std::string ip = c->get_peername_to(b);
+            if (std::count(ip.begin(), ip.end(), ':') == 1) ip.resize(ip.find(':'));  // an IPv4 peer with its port
+            if (!ip.empty() && ip.find(':') == std::string::npos) { ha_at = "http://" + ip + ":8123"; break; }
+          }
+      }, 1000);
+      d["ha"] = ha_at;
+#endif
       serializeJson(d, s);
     } else if (path == "/fw/deck") {
       std::string dj;
