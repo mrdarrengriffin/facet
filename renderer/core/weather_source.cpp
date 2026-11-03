@@ -10,9 +10,9 @@
 //   line       "Feels 11° · high 16°, low 8°" (the parts it knows)
 //   rain       "Rain from 14:00" / "Dry for the next hour · rain at 16:00" / "Dry for the next hour"; rain_tone
 //              info (rain within the hour) | idle (a Status line's dot)
-//   brief      the Clock screen's line under the date: "rain · 13°" (the condition in lower case + the temperature,
-//              core/weather.h line); "" while loading / on error (the Clock shows no line); missing / unavailable:
-//              the words (the entity the Clock was given says why it shows no weather)
+//   brief      a short line for under a time: "rain · 13°" (the condition in lower case + the temperature,
+//              core/weather.h line); "" while loading / on error (no line); missing / unavailable: the words (the
+//              entity says why it shows no weather). No factory screen binds it now (the Clock shows no weather).
 //   card       the Home card's line: "rain in 20 min" / "raining now" within the hour, else the condition in lower
 //              case ("partly cloudy"), "loading" / "offline"
 //   hours      the next eight hours, a JSON list of Weather icon columns: [{"label": "now" | "14", "icon": "...",

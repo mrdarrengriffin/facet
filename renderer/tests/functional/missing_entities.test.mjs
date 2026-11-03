@@ -9,7 +9,6 @@ const W = 'weather.test_home', C = 'calendar.test_family', P = 'media_player.tes
 const ROOM = ['light.living_room_ceiling', 'light.reading_lamp', 'light.sofa_lamp'];
 // screen: [params, the entities it reads, their state back, how many times the word shows (at least)]
 const SCREENS = {
-  clock: [{ source: 'ha', weather: W }, { [W]: { '': 'rainy', temperature: '13.4' } }, 1],
   weather: [{ source: 'ha', weather: W }, { [W]: { '': 'rainy', temperature: '13.4' } }, 1],
   weather_days: [{ source: 'ha', weather: W }, { [W]: { '': 'rainy', temperature: '13.4' } }, 1],
   calendar: [{ source: 'ha', calendars: C }, { [C]: { '': 'off', friendly_name: 'Family' } }, 1],
@@ -18,7 +17,7 @@ const SCREENS = {
   light: [{ entity: 'light.test_lamp', name: 'Ceiling' }, { 'light.test_lamp': { '': 'on', brightness: '128', friendly_name: 'Lamp' } }, 1],
   living_room: [{}, Object.fromEntries(ROOM.map((e) => [e, { '': 'off' }])), 3],
 };
-const HOME = ['clock', 'weather', 'calendar', 'media'];  // the cards that fit one Home page; Energy's on its own
+const HOME = ['weather', 'calendar', 'media'];  // the cards that fit one Home page; Energy's on its own (Clock, Moon, Timer read no entity)
 const words = (t) => t.texts().map((s) => s.toLowerCase());
 const count = (t, w) => words(t).filter((s) => s === w.toLowerCase()).length;
 const realNow = Date.now;

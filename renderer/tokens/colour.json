@@ -3425,7 +3425,7 @@
           "surface"
         ],
         "kind": "text",
-        "use": "the Clock screen's weather line under the date (docs .fs-clock-wx)"
+        "use": "the Time's quieter line under the date, such as the weather (docs .fs-clock-wx)"
       },
       {
         "section": "clock",

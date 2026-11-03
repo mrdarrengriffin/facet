@@ -47,7 +47,7 @@ inline std::string deg(double t) {
   snprintf(b, sizeof b, "%ld\xC2\xB0", std::lround(t));
   return b;
 }
-// the Clock's weather line: "rain · 13°" (lower-case words, docs weatherLine); either part may be missing
+// the short weather line (feed attribute brief): "rain · 13°" (lower-case words, docs weatherLine); either part may be missing
 inline std::string line(const char *condition, double temp) {
   std::string w = text(condition);
   for (char &ch : w) ch = (char) tolower((unsigned char) ch);

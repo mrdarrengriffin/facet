@@ -17,7 +17,7 @@
 //           tracked), long = Monday 19 October (date-long, Inter light), text-dim, centred under the digits gap:<n>
 //           apart (hero 8, mid 7, compact 5: the old faces' spacing); prop "day" = a fixed "YYYY-MM-DD" (previews);
 //           header stays time-only. digits:false = the date alone (the analogue face's date window)
-//   line    prop (the Clock screen): a quieter line under the date, such as the weather now ("rain ·
+//   line    prop: a quieter line under the date, such as the weather now ("rain ·
 //           13°": type:c-weather, fg:blue as the docs .fs-clock-wx), the same gap apart (docs clock.ts: time, date, weather 16 px apart);
 //           only with a date; empty = no row (a bound line that arrives later fills the Time again: the column
 //           re-centres once)

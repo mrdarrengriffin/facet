@@ -3,33 +3,8 @@
  "id": "clock",
  "locked": true,
  "name": "Clock",
- "rev": 3,
+ "rev": 4,
  "role": "page",
- "params": {
-  "source": {
-   "about": "Where the weather line under the date comes from: a weather entity in Home Assistant, or a made-up forecast for previews.",
-   "type": "select",
-   "options": [
-    "ha",
-    "sample"
-   ],
-   "label": "Weather from",
-   "default": "ha"
-  },
-  "weather": {
-   "about": "The weather forecast to show the weather now beside the time.",
-   "type": "entity",
-   "domain": "weather",
-   "label": "Forecast",
-   "default": "weather.forecast_home"
-  }
- },
- "feeds": {
-  "panel.weather": {
-   "source": "$source",
-   "weather": "$weather"
-  }
- },
  "card": {
   "icon": "clock",
   "preview": "clock",
@@ -39,8 +14,8 @@
    "a": "time"
   },
   "sub": {
-   "e": "panel.weather",
-   "a": "brief"
+   "e": "panel.clock",
+   "a": "day"
   }
  },
  "header": {
@@ -58,11 +33,7 @@
    "p": {
     "size": "mid",
     "font": "inter",
-    "date": "short",
-    "line": {
-     "e": "panel.weather",
-     "a": "brief"
-    }
+    "date": "short"
    },
    "in": 0,
    "slot": 0

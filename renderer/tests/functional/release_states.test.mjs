@@ -11,8 +11,8 @@ import { DEMO } from '../../tools/demo_ha.mjs';
 const SCHEMA = JSON.parse(fs.readFileSync(new URL('../../catalogue/schema.json', import.meta.url)));
 const W = 'weather.test_home';  // the demo set has no weather entity: the test gives one (NOT a real entity)
 // screens that show data from the fake HA (its entities, and its replies: weather.get_forecasts, calendar.get_events,
-// the Energy dashboard's WebSocket reads over the panel's own link); Moon and Timer are the panel's own
-export const DATA = ['clock', 'weather', 'weather_days', 'calendar', 'media', 'energy', 'light', 'living_room'];
+// the Energy dashboard's WebSocket reads over the panel's own link); Clock, Moon and Timer are the panel's own
+export const DATA = ['weather', 'weather_days', 'calendar', 'media', 'energy', 'light', 'living_room'];
 const C = 'calendar.test_family';  // a calendar the fake knows (NOT a real entity)
 export const SHIPPED = ['clock', 'weather', 'weather_days', 'calendar', 'media', 'energy', 'light', 'living_room', 'moon', 'timer'];
 export const props = (id) => {

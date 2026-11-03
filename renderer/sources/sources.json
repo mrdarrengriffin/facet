@@ -220,7 +220,7 @@
       ]
     },
     "clock": {
-      "shows": "The time and date, with the weather under it.",
+      "shows": "The time and date.",
       "needs": null,
       "sources": [
         {
@@ -249,7 +249,7 @@
   },
   "feeds": {
     "panel.calendar": {"required": ["hero_n","hero_label","card"], "optional": ["hero_line","hero_accent","month_title","month_here","shown","day_title","sheet","agenda","month_days","calendars","day_events"]},
-    "panel.clock": {"required": ["time","date"], "optional": []},
+    "panel.clock": {"required": ["time","date"], "optional": ["day"]},
     "panel.energy": {"required": ["cost","line","card","card_tone"], "optional": ["rate","tone","values","bands","now","week_cost","week_line","week","week_before","days","watts","found","live","cheapest","event","event_tone"]},
     "panel.media": {"required": ["state_label","state_tone","playing","play_state","ctl_state","title","card_text","card_sub","card_accent","player","sheet"], "optional": ["artist","album","art","source","speakers","position","duration","progress","volume","volume_text","speaker"]},
     "panel.moon": {"required": ["phase","name","lit","card_value","card_sub","phase_key"], "optional": ["south","rest","age","full","new","next","values","bands","marks","names","labels","now","title_days","title_now","title_details","days_more","day_name","day_rest","rise","set","rise_tone","set_tone"]},
