@@ -697,8 +697,8 @@
      "type": "range",
      "bindable": true,
      "min": 0,
-     "max": 100,
-     "about": "With the media preview: how far through the track it is, from 0 to 100."
+     "max": 1000,
+     "about": "With the media preview: how far through the track it is, from 0 to 100. With the timer preview: how much of the running timer is left, out of 1000 (empty when none runs)."
     },
     {
      "name": "playing",
@@ -866,6 +866,14 @@
      "min": 0,
      "max": 100,
      "about": "The level the picture shows where it has one, such as how far round the dial is, from 0 to 100."
+    },
+    {
+     "name": "progress",
+     "type": "range",
+     "bindable": true,
+     "min": 0,
+     "max": 1000,
+     "about": "For the timer picture: how much of the running timer is left, out of 1000; 0 when no timer runs (an empty ring)."
     },
     {
      "name": "on",
@@ -5219,5 +5227,5 @@
    }
   }
  },
- "hash": "1a993f6b"
+ "hash": "a00d0495"
 }
