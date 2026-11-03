@@ -13,6 +13,17 @@ const btn = (t, i) => t.comps().filter((c) => c.ids.includes('icon_button') && c
 export default {
   id: 'media_screen', family: 'screens', about: 'The Media screen on the media feed: the hero, the controls, the volume, the speaker sheet, the HA adapter, Home card.',
   tests: [
+    { name: 'nothing picked (a fresh panel): every Home Assistant media player, never Offline', async run(t) {
+      t.ha.s['media_player.test_kitchen'] = { '': 'idle', friendly_name: 'Kitchen' };
+      t.ha.s['media_player.test_office'] = { '': 'idle', friendly_name: 'Office' };
+      t.ha.answers = true;
+      await t.device({ v: 2, rev: 9, start: 'h', pages: [
+        { id: 'h', kind: 'home', name: 'Test', cards: [{ t: 'page', page: 'media', size: 'm' }] },
+        { id: 'media', kind: 'media', params: { source: 'ha' } }] });
+      t.b.spec('act', { do: 'ha.connect', url: 'http://ha.test:8123', token: 'abcdefgh1234' }); t.b.tick(8); t.b.settle(600);
+      t.show('media'); t.wait(61000); t.b.tick(8); t.b.settle(800);
+      t.hasNot(t.texts(), /^Offline$/i, `not Offline: ${t.texts().slice(0, 10)}`);
+    } },
     { name: 'sample: the track playing, its artist, the volume', async run(t) {
       await open(t, { source: 'sample' });
       const tx = t.texts();

@@ -36,6 +36,7 @@
 #include "feed.h"
 #include "fw.h"
 #include "ha.h"
+#include "device.h"
 
 namespace fw::dev::media_source {
 namespace {
@@ -207,6 +208,19 @@ void rebuild() {
   put("speakers", l + "]");
   put_shown(m);
 }
+// every media_player Home Assistant has (the panel's own link reads them once; until then none, and the feed sets up
+// again when they come: fill)
+std::vector<std::string> every_player() {
+  namespace hl = fw::dev::ha_link;
+  std::vector<std::string> out;
+  const std::vector<hl::Entity> *l = hl::list("media_player");
+  if (!l) {
+    if (hl::ready() && hl::status() != hl::LOADING && hl::status() != hl::FAIL) hl::fetch("media_player");
+    return out;
+  }
+  for (const hl::Entity &e : *l) if (out.size() < 12) out.push_back(e.id);
+  return out;
+}
 // the settings: the players, Auto, the sheet closed again (a new screen or a new pick in Settings)
 void setup(const ArduinoJson::JsonDocument &c) {
   St &s = S();
@@ -225,6 +239,12 @@ void setup(const ArduinoJson::JsonDocument &c) {
     i = j + 1;
   }
   if (s.speakers.empty() && !s.player.empty()) s.speakers.push_back(s.player);  // the player alone, never sample rows
+  // nothing picked (a fresh panel): every media player Home Assistant has; Auto follows the one playing, else the
+  // first shows (never Offline for want of a pick)
+  if (s.speakers.empty() && s.player.empty() && s.src == "ha") {
+    s.speakers = every_player();
+    if (!s.speakers.empty()) s.player = s.speakers[0];
+  }
   s.picked.clear(), s.follow_last.clear();
   s.follow = true;
   s.sheet = "closed";
@@ -253,8 +273,10 @@ class Media : public feed::Feed {
   }
   void fill() override {
     St &s = S();
-    if (changed()) {
+    static bool all = false;  // set up from every player (nothing picked): again once the link has the list
+    if (changed() || (all && s.speakers.empty())) {
       setup(cfg());
+      all = (cfg()["player"] | "")[0] == 0 && (cfg()["speakers"] | "")[0] == 0;
       std::vector<std::pair<std::string, std::string>> r;
       for (const char *a : ATTRS) if (!s.player.empty()) r.push_back({s.player, a});
       for (const std::string &p : s.speakers)
