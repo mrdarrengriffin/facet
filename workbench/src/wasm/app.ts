@@ -501,7 +501,7 @@ function pageBuild() {
   // a fresh build)
   const rerender = (open = false) => {
     const e = open ? big.render(c.id, props(), st.light, accentIdx(), auto && !st.screen) : big.apply(c.id, { ...props(), opening: false }, st.light, accentIdx(), auto && !st.screen);
-    PH = big.h; err.replaceChildren(...(e ? [callout('bad', e)] : [])); showImg(); size();
+    PH = big.h; err.replaceChildren(...(e ? [callout('bad', e)] : [])); size();
   };
   const size = () => { const pad = st.screen ? 32 + 24 : 32; const f = st.zoom === 'fit' ? fit(PW, PH, preview.clientWidth - pad, Math.max(240, window.innerHeight * (st.screen ? 0.75 : 0.5) - pad)) : zoomSize(PW, PH, Number(st.zoom)); Object.assign(big.canvas.style, { width: `${f.width}px`, height: `${f.height}px` }); };
   (ro = new ResizeObserver(size)).observe(preview);
