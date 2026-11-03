@@ -77,6 +77,24 @@ export default {
       t.ok(!c.texts.includes('Wed'), 'never the short form on the card');
       void wed;
     } },
+    { name: 'calendars picked in screen settings reach the Calendar at once (no restart)', async run(t) {
+      t.ha.s[C1] = { '': 'off', friendly_name: 'Family' };
+      t.ha.s[C2] = { '': 'off', friendly_name: 'Work' };
+      const dk = (cals) => ({ v: 2, rev: 9 + cals.length, start: 'h', pages: [
+        { id: 'h', kind: 'home', name: 'Test', cards: [{ t: 'page', page: 'calendar', size: 'm' }] },
+        { id: 'calendar', kind: 'calendar', params: { source: 'ha', calendars: cals.join(',') } }] });
+      await t.device(dk([C1]));
+      t.b.test('keep', '8'); t.wait(4000);  // the panels keep the deck's pages built
+      t.show('calendar'); t.wait(1500);
+      const first = asks(t).filter((a) => a.service === 'calendar.get_events');
+      t.ok(first.some((a) => a.data.entity_id === C1), `asked ${C1}: ${first.map((a) => a.data.entity_id)}`);
+      for (const a of first) answer(t, a.id, { [a.data.entity_id]: { events: [] } });
+      const r = JSON.parse(t.b.spec('deck', dk([C1, C2])) || '{}');
+      t.ok(r.ok, `the deck takes both: ${JSON.stringify(r.errors ?? '')}`);
+      t.b.spec('act', { do: 'nav.back' }); t.wait(4000); t.show('calendar'); t.wait(1500);
+      const after = asks(t).filter((a) => a.service === 'calendar.get_events').map((a) => a.data.entity_id);
+      t.ok(after.includes(C2), `asked ${C2} too without a restart: ${after}`);
+    } },
     { name: 'a sample that moves with the clock keeps no old copies (facet-256: the panels lost ~1.9 KB of PSRAM a minute)', async run(t) {
       // the sample fortnight follows the wall clock (Date.now): each minute another agenda; the feed kept every one
       const real = Date.now, base = real.call(Date);
