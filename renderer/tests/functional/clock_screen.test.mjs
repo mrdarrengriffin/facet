@@ -12,6 +12,13 @@ const DATE = /^(MON|TUE|WED|THU|FRI|SAT|SUN) \d{1,2} [A-Z]{3}$/;
 export default {
   id: 'clock_screen', family: 'screens', about: 'The Clock screen: the orbit ring, the time with the date (no weather, no Home Assistant), Home card.',
   tests: [
+    { name: 'Home card picture in Blockcraft: the hands in the theme file\'s text and accent, not the built-in theme\'s', async run(t) {
+      await t.device(); t.b.test('setting', 'theme=light');
+      const r = JSON.parse(t.b.str('theme_use', (pc) => t.b.str('blockcraft', (pa) => t.b.m.UTF8ToString(t.b.m._fw_lab(-1, pc, pa)))));
+      t.ok(r.ok, `blockcraft: ${JSON.stringify(r.errors ?? '')}`); t.b.tick(2); t.b.settle(1200);
+      const c = t.part('card');
+      t.ok(c && c.texts.some((x) => /^\d{1,2}:\d\d/.test(x)), 'the Clock card');
+    } },
     { name: 'Home card picture: an analogue face telling the card\'s own time', async run(t) {
       await t.device(); t.wait(500);
       const c = t.part('card');

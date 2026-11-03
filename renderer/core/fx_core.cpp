@@ -1234,6 +1234,11 @@ std::string type_font_info(const char *type) {
            (int) lv_font_get_line_height(f), adv, f == fw::font(id) ? "true" : "false", dl ? "true" : "false", exact || dl ? "true" : "false", r);
   return b;
 }
+const fw::Theme &palette(lv_display_t *d) {
+  if (fw::T) look(d, fw::T);
+  for (Look *L : looks) if (L->d == d) return L->th;
+  return make(d, fw::T ? fw::T : fw::theme(false))->th;
+}
 lv_color_t bg(lv_display_t *d) {  // the canvas under a contract page: bg in the live theme (fw::T's mode + accent)
   if (fw::T) look(d, fw::T);
   for (Look *L : looks) if (L->d == d) return L->th.bg;

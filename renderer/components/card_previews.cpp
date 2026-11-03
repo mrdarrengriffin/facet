@@ -6,6 +6,7 @@
 #include <cstring>
 #include "chart.h"
 #include "fw.h"
+#include "fx.h"
 #include "colour_values_gen.h"
 #include "lightning.h"
 #include "previews.h"
@@ -16,6 +17,8 @@ namespace fw::qa { void legacy(lv_obj_t *o, const char *why); }  // core/fw_core
 namespace fw {
 namespace {
 int S() { return ic::PX[ic::card]; }
+// the colours: the live look's palette (a theme file's too: Blockcraft's text, not the built-in theme's)
+const Theme &live(lv_obj_t *o) { return fx::palette(lv_obj_get_display(o)); }
 // a docs length on the 72 px box, scaled to this box and put on the 4 px grid (minimum 4)
 int g(float v72) { const int v = (int) std::lround(v72 * S() / 72.0f / 4) * 4; return std::max(4, v); }
 
@@ -60,7 +63,7 @@ void arc_show(void *o, int32_t v) {
   lv_arc_set_value(a->arc, v);
 }
 void arc_pv(lv_obj_t *root, bool timer, int value) {
-  const Theme &t = *T;
+  const Theme &t = live(root);
   ArcLook l;
   l.start = timer ? 270.0f : 135.0f;
   l.range = timer ? 360.0f : 270.0f;
@@ -85,7 +88,7 @@ struct SwPV { lv_obj_t *pill, *knob; int32_t shown; bool avail; int x0, x1; };
 void sw_show(void *o, int32_t v) {
   auto *root = (lv_obj_t *) o;
   auto *s = (SwPV *) lv_obj_get_user_data(root);
-  const Theme &t = *T;
+  const Theme &t = live(root);
   s->shown = v;
   lv_obj_set_x(s->knob, s->x0 + (s->x1 - s->x0) * v / 255);
   // unavailable: an empty line outline, no knob, whatever the value (docs: dim, no knob)
@@ -120,7 +123,7 @@ double lx_now(Props p) { const double f = p["now"] | 0.0; return f > 0 ? f : (do
 void lx_draw(lv_event_t *e) {
   auto *o = (lv_obj_t *) lv_event_get_current_target(e);
   const LxPV &x = *(const LxPV *) lv_event_get_user_data(e);
-  const Theme &t = *T;
+  const Theme &t = live(o);
   lv_area_t a;
   lv_obj_get_coords(o, &a);
   const float C = S() / 2.0f, D = (float) lay::preview_strike, R = C - D;
@@ -144,7 +147,7 @@ void lx_draw(lv_event_t *e) {
 }
 
 void build_kind(lv_obj_t *root, const char *kind, Props p) {
-  const Theme &t = *T;
+  const Theme &t = live(root);
   const int s = S();
   if (!strcmp(kind, "agents")) {
     const mas::Mood moods[4] = {mas::working, mas::done, mas::needs, mas::working};

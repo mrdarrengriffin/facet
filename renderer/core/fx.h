@@ -171,6 +171,9 @@ void look(lv_display_t *d, const fw::Theme *t);
 // Skin when its generation is old (one style change; no component rebuilt or told, C44)
 void restyle();
 lv_color_t bg(lv_display_t *d);
+// the live look's palette (the theme file's colours, skinned, in fw::T's mode + accent): for drawing that still takes
+// colours by hand (the legacy card previews), so a theme file reaches it too
+const fw::Theme &palette(lv_display_t *d);
 #ifndef ESP_PLATFORM
 extern std::string pen_veil;  // tests only (fw_test "veil_part"): the drawn part the Pen skips ("" = none)
 void break_stale(bool on);  // break-it (tests only): a live theme switch repaints nothing; the live = fresh proof must go red
