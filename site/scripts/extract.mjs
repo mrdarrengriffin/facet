@@ -421,6 +421,11 @@ const site = {
   demoResetMs: motion.durations?.['demo-reset']?.ms ?? 1800,
   built: new Date().toISOString(),
   commit: git('rev-parse', '--short', 'HEAD').trim(),
+  // the latest release tag reachable from HEAD (v0.5.0-beta.2 -> 0.5.0-beta.2); commits after it show as +N
+  version: (() => {
+    const [tag, ahead = '0'] = git('describe', '--tags', '--match', 'v*', '--long').trim().split(/-(\d+)-g[0-9a-f]+$/);
+    return tag ? tag.replace(/^v/, '') + (ahead !== '0' ? `+${ahead}` : '') : 'dev';
+  })(),
   repo: REPO,
   wasm: manifests,
 };
