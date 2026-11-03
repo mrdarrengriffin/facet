@@ -69,6 +69,12 @@ const headings: Heading[] = [
     </li>
     <li>The panel waits as long as it takes to be added; it does not need restarting.</li>
     <li>Look for <strong>Facet panel</strong> and the end of its address in the discovered devices.</li>
+    <li>
+      <strong>It asks for an encryption key.</strong> A new panel never needs one: Home Assistant gives it a key of
+      its own while adding it. Home Assistant asks only for a panel it knew before that was then installed with
+      erase (the panel's key went with the erase). Delete the old panel under <strong>Settings &gt; Devices &amp;
+      services &gt; ESPHome</strong>, then add it again from the discovered devices.
+    </li>
   </ul>
 
   <h2 id="actions">Controls do nothing</h2>
