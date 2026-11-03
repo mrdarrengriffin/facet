@@ -30,11 +30,16 @@ export const ENTITIES = () => ({ [W]: { '': 'cloudy', temperature: '10.2', humid
   [C]: { '': 'off', friendly_name: 'Family' },
   'sensor.test_grid_price': { '': '0.275', unit_of_measurement: 'GBP/kWh' }, 'sensor.test_grid_power': { '': '420', unit_of_measurement: 'W' } });
 // a feed refreshes at least once a minute: a minute of panel time, so every screen has had its next round. Energy
-// times its reads by the wall clock (time()), so the wall clock moves the same minute (Date.now, restored after each test)
+// times its reads by the wall clock (time()), so the wall clock moves the same minute (Date.now, restored after each test).
+// The clock starts at today's noon, not now: a run near midnight crossed into tomorrow mid-test ("Tmrw", today's
+// energy total back to zero) and failed on a day edge, not on the screen
 const realNow = Date.now;
-let ahead = 0;
-export const wait = (t) => { ahead += 62000; Date.now = () => realNow() + ahead; t.b.tick(Math.ceil(62000 / 16)); };
+let ahead = 0, pinned = false;
+const noon = () => { const d = new Date(realNow()); d.setHours(12, 0, 0, 0); return d.getTime() - realNow(); };
+const pin = () => { if (!pinned) { pinned = true, ahead = noon(); Date.now = () => realNow() + ahead; } };
+export const wait = (t) => { pin(); ahead += 62000; t.b.tick(Math.ceil(62000 / 16)); };
 export async function show(t, id, missing) {
+  pin();
   const get = t.ha.get.bind(t.ha);
   t.ha.answers = true, t.ha.missing = !!missing, t.ha.fail = false;
   Object.assign(t.ha.s, ENTITIES());
@@ -48,7 +53,7 @@ export async function show(t, id, missing) {
   return t.texts();
 }
 /** the panel clock back to the wall clock (after a run that used wait) */
-export const realClock = () => { Date.now = realNow, ahead = 0; };
+export const realClock = () => { Date.now = realNow, ahead = 0, pinned = false; };
 /** every entity the mounted screen reads (as it asks for them now) */
 export const wanted = (t) => [...new Set(t.ha.wants().map(([e]) => e))];
 /** Home Assistant up but the screen's entities unavailable: their states, and its replies fail too (the forecast, the
@@ -65,6 +70,7 @@ export function offline(t) { t.ha.disconnect(); wait(t); }
 export function online(t) { t.ha.reconnect(); wait(t); }
 /** just built, nothing from Home Assistant yet: no states, no replies (what a screen shows while it waits) */
 export async function loading(t, id) {
+  pin();
   const get = t.ha.get.bind(t.ha);
   t.ha.answers = false, t.ha.missing = false, t.ha.fail = false;
   t.ha.get = () => undefined;
