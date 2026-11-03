@@ -118,7 +118,7 @@ int own_items(lv_obj_t *en, fw::Props p) {
     lv_obj_add_event_cb(st, [](lv_event_t *e) { lv_timer_delete((lv_timer_t *) lv_event_get_user_data(e)); }, LV_EVENT_DELETE, tm);
     // a tap on the time left opens the Timer (touch:min tall around the label: the header row has the room)
     lv_obj_add_flag(st, LV_OBJ_FLAG_CLICKABLE);
-    lv_obj_set_ext_click_area(st, fw::touch::min / 2);
+    lv_obj_set_ext_click_area(st, fx::size("touch:min") / 2);
     lv_obj_add_event_cb(st, [](lv_event_t *e) {
       auto *o = (lv_obj_t *) lv_event_get_current_target(e);
       fw::emit(o, "navigate", "timer");
