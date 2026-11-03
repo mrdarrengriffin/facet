@@ -633,6 +633,20 @@ void go(lv_obj_t *in, const char *id) { queue(in, GO, id); }
 void back(lv_obj_t *in) { queue(in, BACK, nullptr); }
 void home(lv_obj_t *in) { queue(in, HOME, nullptr); }
 void on_idle(void (*cb)(bool idle, int pct)) { idle_hook() = cb; }
+static Update &update_state() { static Update u; return u; }
+static void (*&install_hook())() { static void (*f)() = nullptr; return f; }
+void update_set(const char *state, const char *installed, const char *latest) {
+  Update &u = update_state();
+  u.state = state ? state : "", u.installed = installed ? installed : "", u.latest = latest ? latest : "";
+}
+const Update &update_now() { return update_state(); }
+void on_update_install(void (*cb)()) { install_hook() = cb; }
+const char *update_install() {
+  if (update_state().state != "available") return "no update";
+  if (!install_hook()) return "this panel cannot install";
+  install_hook()();
+  return "";
+}
 bool idle() {
   for (Device *d : devices) if (d->idled) return true;
   return false;

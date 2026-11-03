@@ -58,6 +58,16 @@ esphome:
               id(fw_update).set_source_url(u);
               id(fw_update).update();
             };
+            // Settings > Update: the Firmware entity's state on every change (after watch()'s version fix), and its
+            // Update button installs (core/device.h update)
+            id(fw_update).add_on_state_callback([] {
+              auto *u = id(fw_update);
+              using namespace esphome::update;
+              const char *st = u->state == UPDATE_STATE_NO_UPDATE ? "none" : u->state == UPDATE_STATE_AVAILABLE ? "available"
+                             : u->state == UPDATE_STATE_INSTALLING ? "installing" : "";
+              fw::dev::update_set(st, u->update_info.current_version.c_str(), u->update_info.latest_version.c_str());
+            });
+            fw::dev::on_update_install([] { id(fw_update).perform(); });
             // the idle clock dims the backlight to Idle brightness (core/device.h idle); leaving it = full again
             fw::dev::on_idle([](bool on, int pct) {
               auto c = id(backlight).turn_on(); c.set_brightness(pct / 100.0f); c.set_transition_length(on ? 600 : 150); c.perform();

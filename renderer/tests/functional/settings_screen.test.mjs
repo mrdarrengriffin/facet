@@ -16,5 +16,40 @@ export default {
       t.drag({ at: [sl.x + sl.w * 0.8, sl.y + sl.h / 2] }, { by: [-sl.w * 0.6, 0] }); t.wait(600);
       t.ok(t.setting('volume') !== was, `volume ${was} -> ${t.setting('volume')}`);
     } },
+    { name: 'Update: up to date = the row greyed out, a tap opens nothing', async run(t) {
+      await t.device(); t.b.test('update', 'none,0.5.0,0.5.0');
+      act(t, { do: 'nav.open', screen: 'settings' });
+      t.has(t.texts(), 'Up to date', 'the value');
+      t.tap('Up to date'); t.wait(600);
+      t.hasNot(t.texts(), 'Installed 0.5.0', 'no sheet');
+    } },
+    { name: 'Update: available = the version in the row; its sheet has the Update button, which asks the host', async run(t) {
+      await t.device(); t.b.test('update', 'available,0.5.0,0.6.0');
+      act(t, { do: 'nav.open', screen: 'settings' });
+      t.has(t.texts(), '0.6.0 available', 'the value');
+      t.tap('0.6.0 available'); t.wait(800);
+      t.has(t.texts(), 'Installed 0.5.0', 'the sheet: the installed version');
+      t.has(t.texts(), '0.6.0', 'the sheet: the new one');
+      const b = t.objs().filter((o) => o.text === 'UPDATE' && t.visible(o)).pop();  // the Button (the title says it too, above)
+      const evs = t.tap({ at: [b.x + b.w / 2, b.y + b.h / 2] }); t.wait(800);
+      t.emitted(evs, 'update', 'this panel cannot install');  // the workbench has no installer
+      t.hasNot(t.texts(), 'Installed 0.5.0', 'the sheet closed');
+    } },
+    { name: 'Update: the preview prop moves the row and the sheet in place (the playground)', async run(t) {
+      await t.mount('settings', { update: 'up_to_date' });
+      t.has(t.texts(), 'Up to date', 'up to date');
+      t.update({ update: 'available' }); t.wait(600);
+      t.has(t.texts(), '0.6.0 available', 'available');
+      t.update({ update: 'available', sheet: 'update' }); t.wait(800);
+      t.has(t.texts(), 'Installed 0.5.0', 'the Update sheet');
+      t.update({ update: 'installing', sheet: 'closed' }); t.wait(800);
+      t.has(t.texts(), 'Installing', 'installing');
+    } },
+    { name: 'Update: the row follows the host while Settings shows', async run(t) {
+      await t.device(); t.b.test('update', 'none,0.5.0,0.5.0');
+      act(t, { do: 'nav.open', screen: 'settings' });
+      t.b.test('update', 'available,0.5.0,0.6.0'); t.wait(1500);
+      t.has(t.texts(), '0.6.0 available', 'now available');
+    } },
   ],
 };

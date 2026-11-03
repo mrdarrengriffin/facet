@@ -59,6 +59,15 @@ lv_obj_t *mount(lv_obj_t *parent, const char *start = "home");  // the device ro
 void go(lv_obj_t *in, const char *id);  // in = the root or anything inside it; queued for the next tick
 void back(lv_obj_t *in);
 void home(lv_obj_t *in);
+// firmware update (Settings > Update): the host's update entity, told here on every change (a panel: ESPHome's
+// Firmware entity, packages/workbench.yaml). state: "" = not checked yet, "none" = up to date, "available",
+// "installing". update_install() asks the host to install the latest ("" = asked, else why not: no update, no host);
+// it installs only when someone asks (the Settings sheet's Update button, Home Assistant's Install).
+struct Update { std::string state, installed, latest; };
+void update_set(const char *state, const char *installed, const char *latest);
+const Update &update_now();
+void on_update_install(void (*cb)());
+const char *update_install();
 void on_idle(void (*cb)(bool idle, int pct));  // the idle clock shows (pct = Idle brightness) or leaves (100)
 bool idle();  // a device shows the idle clock
 void reload(const char *id);

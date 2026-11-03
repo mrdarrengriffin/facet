@@ -9642,9 +9642,22 @@
      "options": [
       "closed",
       "open",
-      "loop"
+      "loop",
+      "update"
      ],
      "default": "closed"
+    },
+    {
+     "name": "update",
+     "type": "select",
+     "about": "For previews only: a made-up firmware update instead of the panel's own (live).",
+     "options": [
+      "live",
+      "up_to_date",
+      "available",
+      "installing"
+     ],
+     "default": "live"
     }
    ],
    "events": {},
