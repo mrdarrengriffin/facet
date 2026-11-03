@@ -242,7 +242,14 @@ void put_empty(feed::State st) {  // loading / error: the words only; the rest s
   put_state(st);
   put_f("hero_label", feed::words(st));
   put_f("card", feed::words(st));
-  put_f("hero_line", st == feed::ERROR ? (cals.empty() ? "no calendars picked" : "the calendars can't be reached") : "");
+  put_f("hero_line", st == feed::ERROR ? "the calendars can't be reached" : "");
+}
+// none picked: set-up, not a fault (never "Offline")
+void put_none() {
+  put_state(feed::EMPTY);
+  put_f("hero_label", "No calendars");
+  put_f("card", "No calendars");
+  put_f("hero_line", "Pick them in the editor");
 }
 
 // ---- sample adapter
@@ -264,7 +271,7 @@ void put_sample() {
 // what each calendar entity says itself (its running or next event): used until its get_events reply lands
 void rebuild() {
   if (src_now != "ha") return;
-  if (cals.empty()) { put_empty(feed::ERROR); return; }
+  if (cals.empty()) { put_none(); return; }
   if (ha::offline()) { put_empty(feed::ERROR); return; }  // Home Assistant not reached: Offline, never the events from before
   bool any = false, all_down = true, all_gone = true;  // gone: Home Assistant has no such calendar
   std::vector<ag::Event> ev;
