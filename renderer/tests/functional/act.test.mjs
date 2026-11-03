@@ -69,8 +69,8 @@ export default {
       t.ok(t.ha.calls.some((c) => c.service === 'light.turn_on' && c.data?.brightness_pct === 40), 'brightness_pct 40');
       t.ok(act(t, { do: 'media.control', e: 'media_player.kitchen', value: 'volume 30' }).ok, 'volume');
       t.ok(t.ha.calls.some((c) => c.service === 'media_player.volume_set' && Math.abs(c.data?.volume_level - 0.3) < 1e-6), 'volume_level 0.3');
-      t.ok(act(t, { do: 'cover.control', e: 'cover.office_blind', value: 'position 50' }).ok, 'cover');
-      t.call({ service: 'cover.set_cover_position', entity: 'cover.office_blind' });
+      t.ok(act(t, { do: 'cover.control', e: 'cover.living_room_blind', value: 'position 50' }).ok, 'cover');
+      t.call({ service: 'cover.set_cover_position', entity: 'cover.living_room_blind' });
       t.ok(act(t, { do: 'vacuum.control', e: 'vacuum.robot', value: 'clean', rooms: '1,3' }).ok, 'room clean');
       t.ok(t.ha.calls.some((c) => c.service === 'vacuum.send_command' && JSON.stringify(c.data).includes('[1,3]')), 'segments 1,3');
       const dead = t.ha.wants().map((w) => w[0]).find((e) => e.startsWith('light.'));  // a light Home shows (in the store)

@@ -4676,7 +4676,7 @@
    ],
    "example": {
     "do": "cover.control",
-    "e": "cover.office_blind",
+    "e": "cover.living_room_blind",
     "value": "position 50"
    }
   },
@@ -5237,5 +5237,5 @@
    }
   }
  },
- "hash": "b083102d"
+ "hash": "2ea721ca"
 }

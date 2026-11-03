@@ -90,9 +90,10 @@ for (const [view, width, height] of [['desktop', 1440, 1000], ['phone', 390, 844
       await ep.locator('.ep-cur').click();
       const q = ep.locator('input');
       await q.fill('pantry');
-      const ids = await ep.locator('.ep-list button').evaluateAll((bs) => bs.map((b) => b.dataset.id));
-      assert.ok(ids.length > 0 && ids.every((id) => /^(light|switch)\./.test(id) && id.includes('pantry')), `filtered: ${ids}`);
-      await q.fill('binary_sensor.back_door_opening');
+      const hits = await ep.locator('.ep-list button').evaluateAll((bs) => bs.map((b) => [b.dataset.id, b.textContent]));
+      assert.ok(hits.length > 0 && hits.every(([id, text]) => /^(light|switch)\./.test(id) && /pantry/i.test(id + text)), `filtered: ${hits}`);
+      const ids = hits.map(([id]) => id);
+      await q.fill('binary_sensor.demo_binary_sensor_6');
       assert.equal(await ep.locator('.ep-list button').count(), 0, 'a wrong domain is never offered');
       await q.fill('pantry');
       await q.press('Enter');
@@ -132,12 +133,12 @@ for (const [view, width, height] of [['desktop', 1440, 1000], ['phone', 390, 844
       const doms = new Set(await ep.locator('.ep-list button').evaluateAll((bs) => bs.map((b) => b.dataset.id.split('.')[0])));
       assert.ok(doms.size >= 5, `any domain: ${[...doms]}`);
       await ep.locator('.ep-cur').click();
-      await pickE('light.pantry_light');
+      await pickE('light.demo_light_10');
       assert.deepEqual(await taps(), ['toggle', 'detail', 'none'], 'a light: toggle (default), its screen, nothing');
       assert.equal((await lab(page, 'draft'))[n].tap, 'toggle');
       await pickE('automation.lights_out');
       assert.deepEqual(await taps(), ['toggle', 'run', 'none'], 'an automation: on / off or trigger');
-      await pickE('sensor.kitchen_dishwasher_plug_power');
+      await pickE('sensor.demo_sensor_5');
       assert.equal((await lab(page, 'draft'))[n].tap, 'none', 'a sensor: nothing (no generic screen)');
       await pickE('script.good_night');
       assert.deepEqual(await taps(), ['run', 'none']);

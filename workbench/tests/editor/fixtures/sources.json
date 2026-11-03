@@ -184,7 +184,7 @@
   ],
   "sensor": [
    {
-    "id": "sensor.kitchen_dishwasher_plug_power",
+    "id": "sensor.demo_sensor_5",
     "name": "Dishwasher Plug Power"
    },
    {
@@ -292,7 +292,7 @@
   ],
   "light": [
    {
-    "id": "light.chair_light",
+    "id": "light.demo_light_9",
     "name": "Chair Light"
    },
    {
@@ -304,11 +304,11 @@
     "name": "Light 6"
    },
    {
-    "id": "light.pantry_light",
+    "id": "light.demo_light_10",
     "name": "Pantry Light"
    },
    {
-    "id": "light.sofa_table_light",
+    "id": "light.demo_light_8",
     "name": "Sofa Table Light"
    },
    {
@@ -348,7 +348,7 @@
   ],
   "binary_sensor": [
    {
-    "id": "binary_sensor.back_door_opening",
+    "id": "binary_sensor.demo_binary_sensor_6",
     "name": "Back Door Opening"
    },
    {
@@ -426,14 +426,14 @@
      },
      {
       "t": "light",
-      "e": "light.sofa_table_light",
+      "e": "light.demo_light_8",
       "size": "s",
       "tap": "toggle",
       "label": "Sofa table"
      },
      {
       "t": "light",
-      "e": "light.chair_light",
+      "e": "light.demo_light_9",
       "size": "s",
       "tap": "toggle",
       "label": "Chair"
@@ -447,7 +447,7 @@
      },
      {
       "t": "sensor",
-      "e": "binary_sensor.back_door_opening",
+      "e": "binary_sensor.demo_binary_sensor_6",
       "size": "m",
       "label": "Back door"
      },
@@ -485,7 +485,7 @@
     "cards": [
      {
       "t": "light",
-      "e": "light.pantry_light",
+      "e": "light.demo_light_10",
       "size": "s",
       "tap": "toggle",
       "label": "Pantry"
@@ -510,7 +510,7 @@
      },
      {
       "t": "sensor",
-      "e": "sensor.kitchen_dishwasher_plug_power",
+      "e": "sensor.demo_sensor_5",
       "size": "s",
       "label": "Dishwasher"
      },
@@ -645,28 +645,28 @@
       "icon": "bulb",
       "trailing": "toggle",
       "sub": {
-       "e": "light.sofa_table_light",
+       "e": "light.demo_light_8",
        "fmt": "light"
       },
       "on": {
-       "e": "light.sofa_table_light",
+       "e": "light.demo_light_8",
        "fmt": "on"
       },
       "state": {
-       "e": "light.sofa_table_light",
+       "e": "light.demo_light_8",
        "fmt": "avail"
       }
      },
      "on": {
       "toggle": {
        "do": "light.demo_light_7",
-       "e": "light.sofa_table_light"
+       "e": "light.demo_light_8"
       },
       "long": {
        "do": "nav.open",
        "screen": "light",
        "params": {
-        "entity": "light.sofa_table_light",
+        "entity": "light.demo_light_8",
         "name": "Sofa table"
        }
       }
@@ -685,28 +685,28 @@
       "icon": "bulb",
       "trailing": "toggle",
       "sub": {
-       "e": "light.chair_light",
+       "e": "light.demo_light_9",
        "fmt": "light"
       },
       "on": {
-       "e": "light.chair_light",
+       "e": "light.demo_light_9",
        "fmt": "on"
       },
       "state": {
-       "e": "light.chair_light",
+       "e": "light.demo_light_9",
        "fmt": "avail"
       }
      },
      "on": {
       "toggle": {
        "do": "light.demo_light_7",
-       "e": "light.chair_light"
+       "e": "light.demo_light_9"
       },
       "long": {
        "do": "nav.open",
        "screen": "light",
        "params": {
-        "entity": "light.chair_light",
+        "entity": "light.demo_light_9",
         "name": "Chair"
        }
       }

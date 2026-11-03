@@ -77,12 +77,12 @@ describe('edit a Home card', () => {
     const lbl = page.locator('[data-testid="card-modal"] #p-label');
     await lbl.fill(''); await settle(page);  // no label: the card shows its entity's name
     const ent = page.locator('#hc-entity');
-    await ent.fill('light.sofa_table_light'); await ent.dispatchEvent('change'); await settle(page);
-    assert.equal((await kitchen(page))[0].e, 'light.sofa_table_light');
-    const name = E.src.options.light.find((o) => o.id === 'light.sofa_table_light').name;
+    await ent.fill('light.demo_light_8'); await ent.dispatchEvent('change'); await settle(page);
+    assert.equal((await kitchen(page))[0].e, 'light.demo_light_8');
+    const name = E.src.options.light.find((o) => o.id === 'light.demo_light_8').name;
     assert.ok((await drawn(page)).includes(name.toLowerCase()), `draws ${name}`);
     const before = await fe(page, 'deck');
-    await ent.fill('sensor.kitchen_dishwasher_plug_power'); await ent.dispatchEvent('change'); await settle(page);
+    await ent.fill('sensor.demo_sensor_5'); await ent.dispatchEvent('change'); await settle(page);
     assert.deepEqual(await fe(page, 'deck'), before, 'a sensor is not a light: nothing changes');
   });
 
