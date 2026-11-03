@@ -627,6 +627,13 @@ void kept_json(ArduinoJson::JsonArray out) {
       o["waiting"] = waiting;
     }
 }
+void (*&build_poll())() { static void (*f)() = nullptr; return f; }
+void build_tick() {
+  static uint32_t last = 0;
+  if (!build_poll() || lv_tick_elaps(last) < 20) return;
+  last = lv_tick_get();
+  build_poll()();
+}
 void nav_timing(bool on) { nav().on = on; nav().stage = 0; if (on) nav().done.clear(); }
 bool nav_timing() { return nav().on; }
 void nav_touch() { if (nav().on) nav().touch = lv_tick_get(); }

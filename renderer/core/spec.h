@@ -2043,6 +2043,7 @@ inline lv_obj_t *build(lv_obj_t *parent, const std::string &id, Props opened, st
       if (lv_obj_t *sl = slot_of(orig_obj[k], nd["slot"] | 0)) into = sl;
     const uint32_t prof0 = lv_tick_get();
     n.obj = ha::bound(into, n.comp.c_str(), p.as<Props>());
+    dev::build_tick();  // the host reads its touch chip during a long build (device.h build_poll)
     if (dev::nav_timing()) {  // navigation timing's profile (facet-243): what a screen's build is made of, node by node
       std::string what = n.comp;
       const char *t = p["title"] | p["label"] | p["text"] | "";

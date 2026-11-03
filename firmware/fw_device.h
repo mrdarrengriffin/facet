@@ -1601,6 +1601,47 @@ class Handler : public AsyncWebHandler {
 };
 
 // on_boot (after lvgl + web_server): our own screen, the last request again (or the first component), the handler
+// ---------------------------------------------------------------- A tap during a page build
+// A page build holds the loop (the Guition's kept pages: 150-1230 ms), so the touch chip is not read: a press and its
+// lift both inside one build were lost. The host reads the chip between the build's nodes (fw::dev::build_poll, every
+// 20 ms: workbench.yaml); its listener tells this latch. A press and a lift both seen there, with LVGL's own pointer
+// never pressed in between, are given to LVGL after the build as one tap at the press point (a pointer of our own: the
+// same path as a finger). A press there that is still down after the build needs nothing: LVGL reads it as usual.
+namespace late {
+inline bool polling = false, down = false, pending = false;
+inline lv_point_t pt{};
+inline int phase = 0;  // the tap given: 1, 2 pressed, 3 released
+inline lv_indev_t *indev = nullptr;
+inline void press(int32_t x, int32_t y) { if (polling && !down) down = true, pt = {x, y}; }
+inline void lift() {
+  if (polling && down && !pending) pending = true;
+  down = false;
+}
+inline bool lvgl_pressed() {  // the host's own touch pointer (not ours, not the bench's)
+  for (lv_indev_t *i = lv_indev_get_next(nullptr); i; i = lv_indev_get_next(i))
+    if (i != indev && i != bench::indev && lv_indev_get_type(i) == LV_INDEV_TYPE_POINTER && lv_indev_get_state(i) == LV_INDEV_STATE_PRESSED) return true;
+  return false;
+}
+inline void start(void (*poll)()) {
+  fw::dev::build_poll() = poll;
+  indev = lv_indev_create();
+  lv_indev_set_type(indev, LV_INDEV_TYPE_POINTER);
+  lv_indev_set_read_cb(indev, [](lv_indev_t *, lv_indev_data_t *d) {
+    d->point = pt;
+    d->state = phase == 1 || phase == 2 ? LV_INDEV_STATE_PRESSED : LV_INDEV_STATE_RELEASED;
+    if (phase == 3) phase = 0, pending = false;
+    else if (phase) phase++;
+  });
+  lv_timer_create([](lv_timer_t *) {  // between builds: LVGL saw the press itself, or the tap is due
+    if (down && lvgl_pressed()) down = false;
+    if (pending && !phase) {
+      if (lvgl_pressed()) pending = false;
+      else phase = 1, ESP_LOGI("facet", "a tap during a build, given after it at %d,%d", (int) pt.x, (int) pt.y);
+    }
+  }, 10, nullptr);
+}
+}  // namespace late
+
 // ---------------------------------------------------------------- Rotate screen
 // The setting "rotation" (0 / 90 / 180 / 270, clockwise) -> the host's LVGL rotation (ESPHome lvgl `rotation:` set in
 // the YAML, so it can change at run time; touch points turn with it in the ESPHome LVGL touch path). The host sets
