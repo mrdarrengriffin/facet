@@ -68,10 +68,6 @@ void nav_copy(uint32_t ms);  // the host's flush time inside the first frame (co
 void nav_render();           // the host's "a render starts" (its display's render-start: the wait before it is the loop's)
 void nav_frame();            // the host's "a frame was drawn" (its display's render-ready)
 void nav_touch();            // the host's "a finger lifted" (its pointer's release): the change it causes starts there
-// a page build holds the loop for its whole length (the Guition's kept pages: 150-1230 ms), so the host's touch chip is
-// not read: the host's build_poll reads it between the build's nodes (build_tick: at most every 20 ms; none = no reads)
-void (*&build_poll())();
-void build_tick();
 // Kept pages (facet-243, core/device.cpp): Home and the deck's pages built once in the idle gaps and kept hidden, so a
 // tap shows a page instead of building it. keep_pages(n): at most n kept (0 = off, every screen built on tap). on_mem:
 // the host's free-PSRAM reading (each kept page's cost). kept_json: [{page, bytes, objects, build_ms, stale, shown, waiting}] (waiting: binds whose data changed while
