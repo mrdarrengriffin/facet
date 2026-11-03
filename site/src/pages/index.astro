@@ -1,18 +1,17 @@
 ---
 // Home page: what Facet is in one line, the panel (a render: the Device on Home inside a bezel, until a photo of a
 // real panel replaces it), the shipped screens, set up in three steps, then the two panels and Install. No feature
-// grid. Every screen here is a picture the WASM renderer made at build on sample data (scripts/shots.mjs); the panel's
-// Try it loads the live one, so the page loads no WASM until asked.
+// grid. Every screen here is a picture the WASM renderer made at build on sample data (scripts/shots.mjs), so the page
+// loads no WASM; the panel opens Home's page, where it runs live.
 import Base from '../layouts/Base.astro';
-import Live from '../components/Live.astro';
 import Shot from '../components/Shot.astro';
 import Count from '../components/Count.astro';
 import { SCREENS, screenById, screenHref } from '../lib/data';
 import { BOARDS, screenOf } from '../lib/boards';
 import { url } from '../lib/nav';
 
-const description = 'Firmware for two 4 inch wall panels that shows and controls your home through Home Assistant.';
-// the hero: a whole panel, a picture until Try it (sample data, no Home Assistant)
+const description = 'Firmware for 4 inch wall panels (two so far) that shows and controls your home through Home Assistant.';
+// the hero: a whole panel, a picture (sample data, no Home Assistant) that opens Home's page
 const hero = screenById('home');
 // the shipped screens: every factory spec screen with a page, as a picture; its first sentence under it
 const shipped = SCREENS.filter((s) => s.comp === 'spec' && s.status !== 'wip');
@@ -27,7 +26,7 @@ const first = (t: string) => t.split(/(?<=\.)\s/)[0];
         <p class="landing__lede">{description}</p>
         <p class="landing__intro-text">
           Install it from your browser, add the panel to Home Assistant, then arrange its screens on the panel's own web
-          page. It runs on the Waveshare ESP32-P4-86 and the Guition ESP32-S3-4848S040.
+          page. So far it runs on the Waveshare ESP32-P4-86 and the Guition ESP32-S3-4848S040.
         </p>
         <div class="landing__actions">
           <a class="button button--primary" href={url('/install/')}>Install</a>
@@ -37,16 +36,14 @@ const first = (t: string) => t.split(/(?<=\.)\s/)[0];
 
       {
         hero && (
-          <figure class="landing__device" data-try-box>
+          <figure class="landing__device">
             <div class="landing__bezel">
               <div class="landing__viewport">
-                <div class="landing__shot" data-try-shot><Shot id="home" alt="The Facet panel on Home, with made-up devices" /></div>
-                <template><Live comp="device" props={{ start: 'home' }} label="Facet panel" frame={hero.frame} caption={false} /></template>
+                <a class="landing__shot" href={screenHref(hero)}><Shot id="home" alt="The Facet panel on Home, with made-up devices" /></a>
               </div>
             </div>
             <figcaption>
-              The panel on made-up devices.
-              <button type="button" class="button button--secondary landing__try" data-try>Try it</button>
+              The panel on made-up devices. <a href={screenHref(hero)}>Try it live</a>.
             </figcaption>
           </figure>
         )
@@ -101,8 +98,8 @@ const first = (t: string) => t.split(/(?<=\.)\s/)[0];
 
     <section class="landing__section" aria-labelledby="buy-title">
       <div class="landing__head">
-        <h2 id="buy-title">Two panels</h2>
-        <p>Facet runs on these two 4 inch wall panels. <a href={url('/panels/')}>Panels</a> compares them, with the numbers measured on each.</p>
+        <h2 id="buy-title">Two panels so far</h2>
+        <p>So far, Facet runs on these two 4 inch wall panels. <a href={url('/panels/')}>Panels</a> compares them, with the numbers measured on each.</p>
       </div>
       <ul class="buy">
         {BOARDS.map((b) => (
@@ -207,9 +204,10 @@ const first = (t: string) => t.split(/(?<=\.)\s/)[0];
     font-size: 14px;
     text-align: center;
   }
-  /* the picture IS the screen, as the live panel after Try it */
+  /* the picture IS the screen */
   .landing__shot,
   .landing__shot :global(.shot-img) {
+    display: block;
     width: 100%;
     height: 100%;
   }

@@ -304,7 +304,7 @@ kbd {
   --tone: var(--facet-color-blue);
   display: flex;
   gap: 12px;
-  align-items: baseline;
+  align-items: flex-start;
   padding: 16px 20px;
   border-radius: 12px;
   background: color-mix(in srgb, var(--tone) 12%, transparent);
@@ -314,8 +314,16 @@ kbd {
   --tone: var(--facet-color-warn);
 }
 
-.callout p {
+/* the text's own margins off (beats .prose p), so the padding is the same above and below */
+.callout p,
+.prose .callout p {
   margin: 0;
+}
+
+/* the dot in the middle of the first line */
+.callout > .dot {
+  margin-top: calc((1lh - 8px) / 2);
+  transform: none;
 }
 
 /* links on a tinted box (callouts, quotes): text colour + underline, accent-text on a tint falls under 4.5:1 */
@@ -1108,4 +1116,8 @@ pre:not(.codeblock pre) {
   .mmenu {
     transition: none;
   }
+}
+
+.callout + .callout {
+  margin-top: 12px;
 }

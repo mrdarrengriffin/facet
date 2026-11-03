@@ -43,13 +43,28 @@ export class Engine {
    *  whether a stage repainted and how many LVGL animations run (frame stats) */
   onFrame: ((f: { t: number; work: number; painted: boolean; anims: number }) => void) | null = null;
   private alive = true;
-  /** root = the folder holding <density>/fw.mjs (workbench: /facet-wasm/, docs site: <base>wasm/) */
-  static async load(den: string, root = '/facet-wasm/'): Promise<Engine> {
+  /** root = the folder holding <density>/fw.mjs (workbench: /facet-wasm/, docs site: <base>wasm/); now = the panel's
+   *  wall clock (ms, as Date.now), e.g. the docs demo's mid-afternoon (lib/sample-ha.ts demoNow): the module's one
+   *  clock import, so time() and everything after it read it */
+  static async load(den: string, root = '/facet-wasm/', { now }: { now?: () => number } = {}): Promise<Engine> {
     const e = new Engine();
     e.man = await manifest(den, root);
     const v = encodeURIComponent(e.man.built), base = `${root}${den}/`;
     const { default: create } = await import(/* @vite-ignore */ `${base}fw.mjs?v=${v}`);
-    e.m = await create({ locateFile: (f: string) => `${base}${f}?v=${v}` });
+    const wasm = `${base}fw.wasm?v=${v}`;
+    e.m = await create({
+      locateFile: (f: string) => `${base}${f}?v=${v}`,
+      ...(now && {
+        instantiateWasm: (imports: { env: Record<string, unknown> }, ok: (i: WebAssembly.Instance, m: WebAssembly.Module) => void) => {
+          imports.env.emscripten_date_now = now;
+          const im = imports as WebAssembly.Imports;
+          WebAssembly.instantiateStreaming(fetch(wasm), im)  // a server without the wasm type: the bytes instead
+            .catch(() => fetch(wasm).then((r) => r.arrayBuffer()).then((b) => WebAssembly.instantiate(b, im)))
+            .then((r) => ok(r.instance, r.module));
+          return {};
+        },
+      }),
+    });
     e.m._fw_init();
     e.comps = JSON.parse(e.str(e.m._fw_meta()));
     e.tokens = JSON.parse(e.str(e.m._fw_tokens()));

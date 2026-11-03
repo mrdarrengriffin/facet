@@ -1,12 +1,15 @@
 ---
 // One page per registered component, in the original site's UI explorer layout (main a5df2ac: site/src/pages/
 // components.astro): components sidebar with a filter; preview + props playground (the build's meta props drive the
-// live WASM stage, sitting in the page like a figure: no preview bar, theme from the site, size from the room, silent); variants; then the reference generated from the source (props, events and sounds, built with). Every example is the real component, drawn by the panel renderer.
+// live WASM stage, the page's one live renderer: no preview bar, theme from the site, size from the room, silent);
+// variants as pictures (scripts/shots.mjs, cropped to the component); then the reference generated from the source
+// (props, events and sounds, built with). Every example is the real component, drawn by the panel renderer.
 import Base from '../../layouts/Base.astro';
 import ComponentsSidebar from '../../components/ComponentsSidebar.astro';
 import Events from '../../components/Events.astro';
 import EditPage from '../../components/EditPage.astro';
 import Live from '../../components/Live.astro';
+import Shot from '../../components/Shot.astro';
 import Lede from '../../components/Lede.astro';
 import { ALL, COMPONENTS, defaults, groupOf, href, propTypeWord, slug, valueList, type Entry } from '../../lib/data';
 
@@ -89,10 +92,10 @@ const fid = (n: string) => `pg-${c.id}-${n}`;
           <section class="explorer__variants" data-preview-scope data-md-skip>
             <h2 class="facet-label">Variants</h2>
             <div class="explorer__variant-grid">
-              {variants.map((v) => (
+              {variants.map((v, i) => (
                 <figure class="ex-variant">
                   <div class="ex-variant__cell">
-                    <Live comp={c.id} props={{ ...base, ...v.props }} label={v.label} frame={m.frame} caption={false} />
+                    <Shot comp={c.id} variant={i} alt={v.label} />
                   </div>
                   <figcaption>{v.label}</figcaption>
                 </figure>

@@ -1,13 +1,13 @@
 ---
 // One page per screen, all generated (scripts/extract.mjs screenSet(): renderer/specs/*.json, the build's registered
-// screens, renderer/sources/sources.json): a picture of it on sample data (scripts/shots.mjs, the panel renderer at
-// build) that Try it swaps for the live demo, the states it shows (the release test's: with data, loading, not found,
+// screens, renderer/sources/sources.json): its live demo on sample data (the page's one live renderer), the states it
+// shows as pictures (scripts/shots.mjs) (the release test's: with data, loading, not found,
 // unavailable, offline), what it shows, its settings (the spec's typed parameters), its data sources, the parts it is
 // built from, the screens it opens, its status.
 import Docs, { type Heading } from '../../layouts/Docs.astro';
 import Live from '../../components/Live.astro';
 import Shot from '../../components/Shot.astro';
-import shots from '../../data/shots.json';
+import shotData from '../../data/shots.json';
 import PreviewBox from '../../components/PreviewBox.astro';
 import HomeCards from '../../components/HomeCards.astro';
 import { ALL, ALL_SCREENS, STATUS, href, screenById, screenGroupOf, screenHref, slug, SCREENS, type Screen } from '../../lib/data';
@@ -30,7 +30,7 @@ const fill = (f: { param: string; domain: string; integration: string | null; li
   `${s.params.find((p) => p.name === f.param)?.label ?? f.param}: ${f.list ? 'every' : 'a'} ${f.domain.replace(/_/g, ' ')}${f.integration ? ` from ${f.integration.replace(/_/g, ' ')}` : ''}`;
 // the states strip (scripts/shots.mjs): the states this screen shows differently from its data; a shipped screen with
 // none but its data (Moon, Timer) needs no Home Assistant
-const states = (shots as Record<string, { states: { id: string; label: string }[] }>)[s.id]?.states ?? [];
+const states = (shotData.screens as Record<string, { states: { id: string; label: string }[] }>)[s.id]?.states ?? [];
 const headings: Heading[] = [
   { depth: 2, slug: 'preview', text: 'Preview' },
   ...(states.length ? [{ depth: 3, slug: 'states', text: 'States' }] : []),
@@ -58,12 +58,8 @@ const demo = s.comp === 'spec' ? { comp: 'spec', props: { ...s.sampleProps, live
   <div data-preview-scope>
     <h2 id="preview">Preview</h2>
     <PreviewBox />
-    <div class="try" data-try-box>
-      <div class="try__shot" data-try-shot><Shot id={s.id} alt={`The ${s.name} screen on sample data`} /></div>
-      <template><Live comp={demo.comp} props={demo.props} label={`${s.name} screen`} frame={s.frame} caption={false} /></template>
-      <button type="button" class="button button--secondary try__go" data-try>Try it</button>
-    </div>
-    <p class="hint">{s.opening ?? 'Sample data: made-up devices and values, not a real home.'} Try it to tap it as on a panel; it keeps its place until you leave the page.</p>
+    <Live comp={demo.comp} props={demo.props} label={`${s.name} screen`} frame={s.frame} caption={false} />
+    <p class="hint">{s.opening ?? 'Sample data: made-up devices and values, not a real home.'} Tap it as on a panel; it keeps its place until you leave the page.</p>
     {demo.comp === 'device' && <p class="hint">{DEMO_SETTINGS}</p>}
     {
       states.length > 1 ? (

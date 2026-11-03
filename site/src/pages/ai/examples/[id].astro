@@ -1,10 +1,9 @@
 ---
-// One example screen made with AI: live on the panel renderer in dark and light (the spec installed in the page's
-// engine as a panel installs one, demo Home Assistant values from renderer/tools/demo_ha.mjs), the prompt that makes
-// it and its spec, both copyable. Data: site/src/lib/ai-examples.json + renderer/specs/ai-examples/<id>.json.
+// One example screen made with AI: pictures of it in dark and light (scripts/shots.mjs: the panel renderer at build,
+// the spec installed as a panel installs one, on the site's sample Home Assistant), the prompt that makes it and its
+// spec, both copyable. Data: site/src/lib/ai-examples.json + renderer/specs/ai-examples/<id>.json.
 import Docs, { type Heading } from '../../../layouts/Docs.astro';
-import Live from '../../../components/Live.astro';
-import PreviewBox from '../../../components/PreviewBox.astro';
+import Shot from '../../../components/Shot.astro';
 import CodeBlock from '../../../components/CodeBlock.astro';
 import { AI_EXAMPLES, url } from '../../../lib/nav';
 import examples from '../../../lib/ai-examples.json';
@@ -30,12 +29,11 @@ const REPO = 'https://github.com/mrdarrengriffin/facet/blob/main';
 
 <Docs title={e.title} description={e.about} group="Make screens with AI" current={url('/ai/')} headings={headings} wide source={[{ path: `renderer/specs/ai-examples/${e.id}.json`, url: `${REPO}/renderer/specs/ai-examples/${e.id}.json` }]}>
   <p class="lede">{e.about}</p>
-  <div data-preview-scope>
+  <div>
     <h2 id="preview">Preview</h2>
-    <PreviewBox />
     <div class="pair">
-      <div data-preview-scope data-preview-theme="dark"><Live comp="spec" props={{ screen: e.id, live: true }} spec={compact} label={`${e.title}, dark`} frame={[480, 480]} /></div>
-      <div data-preview-scope data-preview-theme="light"><Live comp="spec" props={{ screen: e.id, live: true }} spec={compact} label={`${e.title}, light`} frame={[480, 480]} /></div>
+      <figure data-preview-scope data-preview-theme="dark"><Shot example={e.id} alt={`${e.title}, dark`} /><figcaption>Dark</figcaption></figure>
+      <figure data-preview-scope data-preview-theme="light"><Shot example={e.id} alt={`${e.title}, light`} /><figcaption>Light</figcaption></figure>
     </div>
     <p class="hint">Sample data: made-up devices and values, not a real home.{e.better && ` ${e.better}`}</p>
   </div>
@@ -57,7 +55,10 @@ const REPO = 'https://github.com/mrdarrengriffin/facet/blob/main';
 
 <style>
   .pair { display: flex; flex-wrap: wrap; gap: 16px; }
-  .pair > div { flex: 1 1 280px; min-width: 0; }
+  .pair > figure { flex: 1 1 280px; min-width: 0; max-width: 480px; margin: 0; }
+  .pair :global(.shot-img) { width: 100%; border: 1px solid var(--facet-color-line); border-radius: 12px; }
+  .pair figcaption { margin-top: 8px; color: var(--facet-color-text-dim); font-size: 13px; }
+  .pair + .hint { margin-top: 16px; }
   .ex-nav { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 16px; margin-top: 32px; }
 </style>
 

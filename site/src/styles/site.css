@@ -166,17 +166,6 @@ a .live__canvas,
   max-width: 100%;
   height: auto;
 }
-.try {
-  display: grid;
-  justify-items: center;
-  gap: 16px;
-}
-.try .shot-img {
-  width: 720px;
-}
-:root[data-device='480'] .try .shot-img {
-  width: 480px;
-}
 /* the states strip: one small picture per state, its name under it */
 .states {
   display: grid;
@@ -205,9 +194,17 @@ a .live__canvas,
   color: var(--facet-color-text-dim);
   font-size: 13px;
 }
-/* the grids: the picture fills the tile's viewport */
+/* the grids: a screen picture fills the tile edge to edge (the tile's rounded corners clip it) */
 .shot__viewport .shot-img {
   width: 100%;
+  max-height: 100%;
+}
+/* a component picture (cropped to it, its own margin in it): its own size, shrunk to fit, centred */
+.shot-img--comp,
+.shot__viewport .shot-img--comp {
+  width: auto;
+  height: auto;
+  max-width: 100%;
   max-height: 100%;
 }
 /* foundation sections: the panel-wide canvas in a rounded frame */
@@ -419,11 +416,13 @@ a .live__canvas,
   width: 100%;
   overflow: hidden;
   aspect-ratio: 1;
-  padding: 12px;
   border: 1px solid var(--facet-color-line);
   border-radius: 16px;
   background: var(--facet-color-bg-565);
   transition: border-color var(--facet-duration-fade) var(--facet-easing-ease-out);
+}
+.shot__viewport--comp {
+  padding: 8px;
 }
 .shot__viewport .live,
 .shot__viewport .live__stage {
@@ -808,4 +807,12 @@ a .live__canvas,
 }
 @media (max-width: 640px) {
   .prose .page-shots { grid-template-columns: 1fr; }
+}
+
+/* a phone: the grids two across (one 180px column left a card the width of the screen) */
+@media (max-width: 480px) {
+  .shots {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px 16px;
+  }
 }

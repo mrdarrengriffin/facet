@@ -372,7 +372,7 @@
   justify-content: center;
   min-width: 96px;
   min-height: 88px;
-  padding: 16px;
+  padding: 4px;
   background: var(--facet-color-bg-565);
   color: var(--facet-color-text);
   overflow: auto;

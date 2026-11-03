@@ -356,7 +356,11 @@ function screenSet() {
         fills: Object.entries(x.fills ?? {}).map(([param, f]) => ({ param, domain: f.domain, integration: f.integration ?? null, list: !!f.list })) })),
     };
   };
+  // a source picks the made-up data when the screen offers it (a demo at its best: the sample fortnight, tracks,
+  // forecast; Energy's sample day with the extras' test data: rates, the peak band, a saving session)
   const sampleOf = (k, t) => {
+    if (k === 'source' && t.options?.includes('fixtures')) return 'fixtures';
+    if (k === 'source' && t.options?.includes('sample')) return 'sample';
     if (t.type === 'entity') return t.domain === 'sensor' ? '' : `${t.domain}.sample_1`;
     if (t.type === 'entities') return [1, 2, 3].slice(0, t.domain === 'calendar' ? 2 : 3).map((i) => `${t.domain}.sample_${i}`).join(',');
     return t.default ?? '';

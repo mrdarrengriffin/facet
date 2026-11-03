@@ -1,12 +1,12 @@
 ---
-// The components overview, in the explorer layout: the filter sidebar and every component as a still picture (drawn
-// by the WASM renderer, not interactive) that opens its page, where people try it.
+// The components overview, in the explorer layout: the filter sidebar and every component as a picture (drawn by the
+// renderer at build, scripts/shots.mjs: its first variant, cropped to it) that opens its page, where people try it.
 import Base from '../../layouts/Base.astro';
 import ComponentsSidebar from '../../components/ComponentsSidebar.astro';
-import Live from '../../components/Live.astro';
+import Shot from '../../components/Shot.astro';
 import EditPage from '../../components/EditPage.astro';
 import Count from '../../components/Count.astro';
-import { componentGroups, defaults, href } from '../../lib/data';
+import { componentGroups, href } from '../../lib/data';
 ---
 
 <Base title="Components" description={`Every Facet component, live: the real renderer the panels run, with a playground for its props.`} hasSidebar>
@@ -26,8 +26,8 @@ import { componentGroups, defaults, href } from '../../lib/data';
               {g.items.map((c) => (
                 <li>
                   <a class="shot" href={href(c)}>
-                    <span class="shot__viewport">
-                      <Live comp={c.id} props={{ ...defaults(c.meta), ...(c.meta.variants?.[0]?.props ?? {}) }} label={c.name} frame={c.meta.frame} caption={false} still />
+                    <span class="shot__viewport shot__viewport--comp">
+                      <Shot comp={c.id} variant={c.meta.variants?.length ? 0 : -1} alt="" />
                     </span>
                     <span class="shot__name">{c.name}</span>
                     <span class="shot__about">{c.lede}</span>

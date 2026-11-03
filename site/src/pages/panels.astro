@@ -6,7 +6,7 @@ import { url } from '../lib/nav';
 import { BOARDS, screenOf, wifiWays } from '../lib/boards';
 
 const headings: Heading[] = [
-  { depth: 2, slug: 'compare', text: 'The two panels' },
+  { depth: 2, slug: 'compare', text: 'The panels so far' },
   { depth: 2, slug: 'measured', text: 'Measured on the panels' },
   { depth: 2, slug: 'choose', text: 'Which one' },
   { depth: 2, slug: 'where', text: 'Where to read more' },
@@ -33,13 +33,13 @@ const measured: [string, (b: (typeof BOARDS)[number]) => string | undefined][] =
 ];
 ---
 
-<Docs edit="site/src/pages/panels.astro" title="Panels" description="The two wall panels Facet runs on, side by side, with the numbers measured on each." group="Use Facet" current={url('/panels/')} headings={headings}>
+<Docs edit="site/src/pages/panels.astro" title="Panels" description="The wall panels Facet runs on so far, side by side, with the numbers measured on each." group="Use Facet" current={url('/panels/')} headings={headings}>
   <p class="lede">
-    Facet runs on two 4 inch square touch panels that fit a standard wall box. Both run the same Facet firmware and the
+    So far, Facet runs on two 4 inch square touch panels that fit a standard wall box. Both run the same Facet firmware and the
     same screens; the bigger one draws them at 1.5 times, so they look the same, only sharper.
   </p>
 
-  <h2 id="compare">The two panels</h2>
+  <h2 id="compare">The panels so far</h2>
   <table>
     <thead><tr><th></th>{BOARDS.map((b) => <th>{b.name}</th>)}</tr></thead>
     <tbody>

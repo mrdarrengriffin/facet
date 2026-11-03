@@ -15,6 +15,13 @@ import { demoGrid, demoReply, demoWs } from '../../../renderer/tools/demo_ha_rep
 // previews sample data (a panel never does unless its deck says so: its factory screens read Home Assistant)
 import SITE_DECK from '../data/site-deck.json' with { type: 'json' };
 
+/** the demo panel's clock: today at 15:20 here, then running. Mid-afternoon shows a demo at its best (Energy's day
+ *  half drawn with its peak ahead, the calendar's evening still to come, the light fading in the forecast). The live
+ *  demo's engine reads it (lib/engine.ts load now), and so do the pictures (scripts/shots.mjs) and these replies. */
+const realNow = Date.now.bind(Date);
+const AHEAD = (() => { const d = new Date(realNow()); d.setHours(15, 20, 0, 0); return d.getTime() - realNow(); })();
+export const demoNow = () => realNow() + AHEAD;
+
 const NAMES: Record<string, string[]> = {
   light: ['Ceiling', 'Lamp', 'Desk light'],
   media_player: ['Kitchen speaker', 'Lounge speaker', 'Study speaker'],
@@ -25,7 +32,7 @@ const NAMES: Record<string, string[]> = {
 };
 const VALUES: Record<string, Record<string, string | (() => string)>> = {
   light: { '': 'on', brightness: '166' },
-  media_player: { '': 'playing', media_title: 'Slow Tide', media_artist: 'Harbour Lights', volume_level: '0.45', media_duration: '236', media_position: '71', media_position_updated_at: () => new Date().toISOString() },
+  media_player: { '': 'playing', media_title: 'Slow Tide', media_artist: 'Harbour Lights', volume_level: '0.45', media_duration: '236', media_position: '71', media_position_updated_at: () => new Date(demoNow()).toISOString() },
   cover: { '': 'open', current_position: '60', current_tilt_position: '40', device_class: 'blind' },
   climate: { '': 'heat', current_temperature: '20.5', temperature: '21', hvac_action: 'heating', preset_mode: 'none', min_temp: '7', max_temp: '30', target_temp_step: '0.5' },
   weather: { '': 'partlycloudy', temperature: '14', apparent_temperature: '12', humidity: '71', wind_speed: '14', wind_speed_unit: 'km/h', pressure: '1016', temperature_unit: '°C' },
@@ -105,6 +112,7 @@ function first(entity: string, attr: string): string | undefined {
     return names[i % Math.max(1, names.length)] ?? obj.replace(/_/g, ' ');
   }
   if (ENERGY[entity]) return ENERGY[entity][attr];
+  if (attr === 'media_position_updated_at') return new Date(demoNow()).toISOString();
   if (!/^sample_\d+$/.test(obj)) {  // a named demo entity (the demo deck, a spec's default): the shared demo values
     const d = demoValue(entity, attr);
     if (d !== undefined) return d;
@@ -125,7 +133,7 @@ type HaMod = {
 /** the replies a screen waits for: HA actions (a forecast, a calendar's events) and the link's reads (Energy) */
 function answer(e: Host, m: HaMod) {
   for (const a of JSON.parse(e.str(m._fw_ha_asks!()) || '[]') as { id: number; service: string; data?: Record<string, unknown> }[]) {
-    const r = demoReply(a.service, a.data ?? {});
+    const r = demoReply(a.service, a.data ?? {}, demoNow());
     e.withStr(r ? JSON.stringify(r) : '', (p) => m._fw_ha_answer(a.id, r ? 1 : 0, p));
   }
   if (!m._fw_ha_gets) return;
@@ -133,7 +141,7 @@ function answer(e: Host, m: HaMod) {
     const id = typeof g === 'number' ? g : g.id, ws = typeof g === 'number' ? null : g.ws;
     // a plain id = the link's /api/states read (how many entities it sees); ws = a WebSocket read; get '' = the link
     // check (the API root); other REST = not found
-    const body = typeof g === 'number' ? STATES() : ws ? demoWs(typeof ws === 'string' ? JSON.parse(ws) : ws) : g.get === '' ? { message: 'API running.' } : null;
+    const body = typeof g === 'number' ? STATES() : ws ? demoWs(typeof ws === 'string' ? JSON.parse(ws) : ws, { now: demoNow() }) : g.get === '' ? { message: 'API running.' } : null;
     if (body) { const b = JSON.stringify(body); e.withStr(b, (p) => m._fw_ha_chunk(id, p, new TextEncoder().encode(b).length)); }
     e.withStr(body ? '' : 'not found', (p) => m._fw_ha_got(id, body ? 1 : 0, p));
   }

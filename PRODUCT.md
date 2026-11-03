@@ -5,7 +5,7 @@ it, this page wins or it is changed with Darren.
 
 ## Who installs it, and how
 
-Someone with Home Assistant and one of two 4" touch panels:
+Someone with Home Assistant and one of the 4" touch panels Facet runs on so far (two):
 
 - Waveshare ESP32-P4-86 (720 x 720)
 - Guition ESP32-S3-4848S040 (480 x 480)

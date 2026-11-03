@@ -1,19 +1,42 @@
 ---
-// A screen picture made at build (scripts/shots.mjs: the renderer on the sample Home Assistant, src/data/shots.json):
-// one <img> whose file follows the panel size (720 / 480, the site pref) and the theme (the box's preview theme, else
-// the site's); src/scripts/shots.ts swaps it. Without script it shows the 720 dark picture. kind = main (full size:
-// the screen page, the homepage panel), half (the grids) or a state id (the states strip, half size).
+// A picture made at build (scripts/shots.mjs, src/data/shots.json): one <img> whose file follows the panel size (720 /
+// 480, the site pref) and the theme (the box's preview theme, else the site's); src/scripts/shots.ts swaps it. Without
+// script it shows the 720 dark picture.
+//   screen (id): kind = main (full size: the homepage panel), half (the grids) or a state id (the states strip, half)
+//   comp (comp + variant): a component cropped to what it draws, at its own size (variant -1 = its defaults)
+//   example (example): an AI example's screen, dark or light by its box (the example page's pair)
 import shots from '../data/shots.json';
 import { BASE } from '../lib/data';
 
-type Srcs = Record<string, Record<string, string>>;
-interface Props { id: string; kind?: string; alt: string; class?: string }
-const { id, kind = 'main', alt, class: cls } = Astro.props;
-const rec = (shots as Record<string, { main: Srcs; half: Srcs; states: { id: string; src: Srcs }[] }>)[id];
-const srcs: Srcs | undefined = !rec ? undefined : kind === 'main' || kind === 'half' ? rec[kind] : rec.states.find((s) => s.id === kind)?.src;
-if (!srcs) throw new Error(`Shot: no ${kind} picture for screen ${id} (scripts/shots.mjs)`);
-const full = Object.fromEntries(Object.entries(srcs).map(([size, t]) => [size, Object.fromEntries(Object.entries(t).map(([th, p]) => [th, BASE + p]))]));
-const w = kind === 'main' ? 720 : 360;
+type Pic = string | { src: string; w: number; h: number };
+type Srcs = Record<string, Record<string, Pic>>;
+type Data = {
+  screens: Record<string, { main: Srcs; half: Srcs; states: { id: string; src: Srcs }[] }>;
+  examples: Record<string, Srcs>;
+  comps: Record<string, { base: Srcs; variants: Srcs[] }>;
+};
+interface Props { id?: string; kind?: string; comp?: string; variant?: number; example?: string; alt: string; class?: string }
+const { id, kind = 'main', comp, variant = -1, example, alt, class: cls } = Astro.props;
+const D = shots as unknown as Data;
+let srcs: Srcs | undefined, what: string;
+if (comp) {
+  const c = D.comps[comp];
+  srcs = variant < 0 ? c?.base : c?.variants[variant];
+  what = `component ${comp} ${variant}`;
+} else if (example) {
+  srcs = D.examples[example];
+  what = `example ${example}`;
+} else {
+  const rec = D.screens[id!];
+  srcs = !rec ? undefined : kind === 'main' || kind === 'half' ? rec[kind] : rec.states.find((s) => s.id === kind)?.src;
+  what = `${kind} picture for screen ${id}`;
+}
+if (!srcs || !srcs['720']) throw new Error(`Shot: no ${what} (scripts/shots.mjs)`);
+const full = Object.fromEntries(Object.entries(srcs).map(([size, t]) => [size, Object.fromEntries(Object.entries(t).map(([th, p]) => [th, typeof p === 'string' ? BASE + p : { ...p, src: BASE + p.src }]))]));
+const first = full['720'].dark;
+const src = typeof first === 'string' ? first : first.src;
+const w = typeof first === 'string' ? (kind === 'main' || example ? 720 : 360) : first.w;
+const h = typeof first === 'string' ? w : first.h;
 ---
 
-<img class:list={['shot-img', cls]} src={full['720'].dark} data-shot={JSON.stringify(full)} width={w} height={w} alt={alt} loading="lazy" decoding="async" />
+<img class:list={['shot-img', { 'shot-img--comp': !!comp }, cls]} src={src} data-shot={JSON.stringify(full)} width={w} height={h} alt={alt} loading="lazy" decoding="async" />

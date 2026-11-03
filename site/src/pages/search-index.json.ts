@@ -14,7 +14,7 @@ export const GET: APIRoute = async () => {
   const recs: Rec[] = [];
   recs.push({ title: 'Install', heading: '', text: 'Put Facet on your panel from the browser, connect it to Wi-Fi and add it to Home Assistant.', url: url('/install/') });
   const pages: [string, string, string][] = [
-    ['Panels', 'The two panels Facet runs on (Waveshare ESP32-P4-86, Guition ESP32-S3-4848S040) side by side, measured numbers, where to read more.', '/panels/'],
+    ['Panels', 'The panels Facet runs on so far (Waveshare ESP32-P4-86, Guition ESP32-S3-4848S040) side by side, measured numbers, where to read more.', '/panels/'],
     ['Editor', "The panel's own web page: choose and order screens, set each one up, set the panel, send, check and undo.", '/editor/'],
     ['FAQ', 'Home Assistant, internet and cloud, ESPHome, own screens, other panels, cost and licence.', '/help/'],
     ['Troubleshooting', 'Firmware updates in Home Assistant, the settling countdown, re-flashing with or without erase, Wi-Fi not joining, the panel not showing in Home Assistant, controls doing nothing.', '/help/troubleshooting/'],

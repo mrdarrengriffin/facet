@@ -1,10 +1,10 @@
 // Live previews: every <figure data-live> on a page is a stage of ONE shared WASM engine (the same build the panels
 // run), created when it scrolls near the viewport. The page-level switches (theme, device 720 / 480, accent set) live
 // in the header (Base.astro) and re-render every stage. The engine module (~1 MB) loads only when the first preview
-// comes into view. Screens are pictures until asked (components/Shot.astro, made by scripts/shots.mjs): a Try it
-// button puts the live demo in the picture's place, so the homepage and a screen page load no WASM until then.
+// comes into view. Only a page's demo is live (a screen page, a component's playground, the foundations); cards, lists
+// and grids are pictures made at build (components/Shot.astro, scripts/shots.mjs), so those pages load no WASM.
 import { Engine, type Stage } from '../lib/engine';
-import { fakeHaEvent, fakeHaState, feedSampleHa } from '../lib/sample-ha';
+import { demoNow, fakeHaEvent, fakeHaState, feedSampleHa } from '../lib/sample-ha';
 import { getPrefs, livePrefs, onPrefs, setPrefs, type Prefs } from './prefs';
 import { playUi, setVolume } from './sound';
 import site from '../data/site.json';
@@ -122,7 +122,7 @@ async function ensure(p: Prefs): Promise<Engine> {
   if (loading && loadedFor === p.device) return loading;
   loadedFor = p.device;
   document.documentElement.dataset.live = 'loading';
-  loading = Engine.load(DEN[p.device].den, ROOT).then((e) => {
+  loading = Engine.load(DEN[p.device].den, ROOT, { now: demoNow }).then((e) => {
     if (loadedFor !== p.device) { e.dispose(); return loading!; }
     engine?.dispose();
     for (const it of items) { it.stage = undefined; clearTimeout(it.timer); it.held = false; it.screen = undefined; }
@@ -234,18 +234,6 @@ export function initLive() {
     items.push(it);
     io.observe(el);
   }
-  // Try it (a screen page's preview, the homepage panel): a picture (components/Shot.astro) until pressed, then the
-  // live demo from the box's <template> in its place; the engine loads only now
-  for (const b of document.querySelectorAll<HTMLButtonElement>('[data-try]')) b.addEventListener('click', () => {
-    const box = b.closest<HTMLElement>('[data-try-box]'), fig = box?.querySelector('template')?.content.firstElementChild?.cloneNode(true) as HTMLElement | undefined;
-    if (!box || !fig) return;
-    box.querySelector('[data-try-shot]')?.replaceWith(fig);
-    box.dataset.tried = '';
-    b.remove();
-    const it = itemOf(fig);
-    items.push(it);
-    void show(it);
-  });
   onPrefs(() => { const p = livePrefs(); if (engine && loadedFor === p.device) pushPrefs(engine, p); void redrawAll(p); });
   // preview theme switches (Site / Dark / Light) of each box
   for (const sw of document.querySelectorAll<HTMLButtonElement>('[data-theme-set]')) {
