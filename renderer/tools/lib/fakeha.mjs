@@ -58,6 +58,13 @@ export class FakeHA {
         str(why, (q) => m._fw_ha_got(id, why ? 0 : 1, q));
         continue;
       }
+      if (typeof g === 'number' && !bad) {  // GET <url>/api/states (the link's entity list): the store's entities
+        const b = JSON.stringify(Object.entries(this.s).filter(([, v]) => v && v[''] !== undefined && v[''] !== '')
+          .map(([e, v]) => ({ entity_id: e, state: v[''], attributes: { friendly_name: v.friendly_name ?? e } })));
+        str(b, (q) => m._fw_ha_chunk(id, q, Buffer.byteLength(b, 'utf8')));
+        str('', (q) => m._fw_ha_got(id, 1, q));
+        continue;
+      }
       if (g.get === 'config' && !bad) {  // GET <url>/api/config: HA's own settings (the panel reads its country)
         const b = JSON.stringify(this.country ? { country: this.country, unit_system: { length: 'km' } } : { unit_system: { length: 'km' } });
         str(b, (q) => m._fw_ha_chunk(id, q, b.length));

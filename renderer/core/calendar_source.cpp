@@ -45,6 +45,7 @@
 #include "feed.h"
 #include "fw.h"
 #include "ha.h"
+#include "device.h"
 
 namespace fw::dev::calendar_source {
 namespace {
@@ -55,6 +56,8 @@ struct Cal { std::string id, entity, name, colour; bool on; };
 std::string src_now;
 std::function<void(const char *, const std::string &)> put_f;  // the feed's put (Calendar below)
 void put_state(feed::State st);
+std::string every_calendar();
+std::string list_now;  // the calendars the feed reads now (picked, or every one Home Assistant has)
 std::vector<Cal> cals;
 std::vector<ag::Event> asked;      // get_events replies (ha), every calendar
 std::set<std::string> hidden;      // calendars turned off (ids)
@@ -386,8 +389,10 @@ class Calendar : public feed::Feed {
   }
   void fill() override {
     settings();
-    const std::string list = cfg()["calendars"] | "";
-    if (changed() || src_now != "ha") {
+    std::string list = cfg()["calendars"] | "";
+    if (list.empty()) list = every_calendar();  // none picked: every calendar Home Assistant has (a fresh panel)
+    if (changed() || src_now != "ha" || list != list_now) {
+      list_now = list;
       cals.clear(), asked.clear(), answered_ok.clear(), hidden.clear(), fetched_day = -1;
       std::vector<std::pair<std::string, std::string>> r;
       for (size_t i = 0, k = 0; i < list.size() && cals.size() < 12;) {
@@ -415,6 +420,19 @@ class Calendar : public feed::Feed {
   }
 };
 Calendar F;
+// every calendar.* entity Home Assistant has, as a comma list (the panel's own link reads them once; until it has
+// them, none, and the feed fills again when they come)
+std::string every_calendar() {
+  namespace hl = fw::dev::ha_link;
+  const std::vector<hl::Entity> *l = hl::list("calendar");
+  if (!l) {
+    if (hl::ready() && hl::status() != hl::LOADING && hl::status() != hl::FAIL) hl::fetch("calendar");
+    return "";
+  }
+  std::string out;
+  for (const hl::Entity &e : *l) out += (out.empty() ? "" : ",") + e.id;
+  return out;
+}
 void put_state(feed::State st) { F.state(st); }
 void run_again() { F.run(); }
 [[maybe_unused]] const bool wired = (put_f = [](const char *a, const std::string &x) { F.put(a, x); }, true);

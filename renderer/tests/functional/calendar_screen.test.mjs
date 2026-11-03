@@ -77,6 +77,19 @@ export default {
       t.ok(!c.texts.includes('Wed'), 'never the short form on the card');
       void wed;
     } },
+    { name: 'none picked: every calendar Home Assistant has (a fresh panel)', async run(t) {
+      t.ha.s[C1] = { '': 'off', friendly_name: 'Family' };
+      t.ha.s[C2] = { '': 'off', friendly_name: 'Work' };
+      t.ha.answers = true;
+      await t.device({ v: 2, rev: 9, start: 'h', pages: [
+        { id: 'h', kind: 'home', name: 'Test', cards: [{ t: 'page', page: 'calendar', size: 'm' }] },
+        { id: 'calendar', kind: 'calendar', params: { source: 'ha' } }] });
+      t.b.spec('act', { do: 'ha.connect', url: 'http://ha.test:8123', token: 'abcdefgh1234' }); t.b.tick(8); t.b.settle(600);
+      t.show('calendar'); t.wait(61000); t.b.tick(8); t.b.settle(800);
+      const link = JSON.parse(t.b.m.UTF8ToString(t.b.m._fw_ha_link()));
+      t.ok(link.count >= 2, `the link read Home Assistant's entities: ${link.count}`);
+      t.hasNot(t.texts(), 'No calendars', `not the none-picked words: ${t.texts().slice(0, 8)}`);
+    } },
     { name: 'calendars picked in screen settings reach the Calendar at once (no restart)', async run(t) {
       t.ha.s[C1] = { '': 'off', friendly_name: 'Family' };
       t.ha.s[C2] = { '': 'off', friendly_name: 'Work' };
