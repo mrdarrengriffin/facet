@@ -58,6 +58,12 @@ export class FakeHA {
         str(why, (q) => m._fw_ha_got(id, why ? 0 : 1, q));
         continue;
       }
+      if (g.get === 'config' && !bad) {  // GET <url>/api/config: HA's own settings (the panel reads its country)
+        const b = JSON.stringify(this.country ? { country: this.country, unit_system: { length: 'km' } } : { unit_system: { length: 'km' } });
+        str(b, (q) => m._fw_ha_chunk(id, q, b.length));
+        str('', (q) => m._fw_ha_got(id, 1, q));
+        continue;
+      }
       const body = bad || !g.ws ? null : this.ws(typeof g.ws === 'string' ? JSON.parse(g.ws) : g.ws);
       if (body) { const b = JSON.stringify(body); str(b, (q) => m._fw_ha_chunk(id, q, Buffer.byteLength(b, 'utf8'))); }
       str(body ? '' : (this.down ? 'Home Assistant not reached' : 'not found'), (q) => m._fw_ha_got(id, body ? 1 : 0, q));

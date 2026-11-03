@@ -5,6 +5,15 @@ const act = (t, a) => { const r = JSON.parse(t.b.spec('act', a) || '{}'); t.b.ti
 export default {
   id: 'ha_link', family: 'device', about: 'The Home Assistant link screen follows the link: built again in place on a change.',
   tests: [
+    { name: 'a link set up: the units from Home Assistant\'s country (GB: miles and mph; FR: km and km/h)', async run(t) {
+      await t.device();
+      t.ha.answers = true; t.ha.country = 'GB';
+      act(t, { do: 'ha.connect', url: 'http://ha.test:8123', token: 'abcdefgh1234' }); t.b.tick(8); t.b.settle(600);
+      t.eq([t.setting('distanceUnit'), t.setting('speedUnit')], ['mi', 'mph'], 'GB');
+      t.ha.country = 'FR';
+      act(t, { do: 'ha.connect', url: 'http://ha2.test:8123', token: 'abcdefgh5678' }); t.b.tick(8); t.b.settle(600);
+      t.eq([t.setting('distanceUnit'), t.setting('speedUnit')], ['km', 'kmh'], 'FR');
+    } },
     { name: 'a new address: the screen shows it, built again in its place, once', async run(t) {
       await t.mount('ha_link', {});
       const r = act(t, { do: 'ha.connect', url: 'http://ha.test:8123', token: 'abcdefgh1234' });

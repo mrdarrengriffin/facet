@@ -157,6 +157,24 @@ void restore(const std::string &url, const std::string &token) {
   S().st = ready() ? IDLE : OFF;
   bump();
 }
+// a link just set up: the units from Home Assistant's country (GET /api/config "country": GB, US, LR, MM drive in
+// miles = miles and mph, else km and km/h). Once per link, so a unit chosen afterwards stays; a reply without a
+// country changes nothing.
+void units_from_config() {
+  auto *buf = new std::string;
+  get("config", [buf](const char *p, size_t n) { if (buf->size() < 8192) buf->append(p, std::min(n, 8192 - buf->size())); },
+      [buf](bool ok, const std::string &) {
+        ArduinoJson::JsonDocument d, f;
+        f["country"] = true;
+        std::string c;
+        if (ok && !deserializeJson(d, *buf, ArduinoJson::DeserializationOption::Filter(f))) c = d["country"] | "";
+        delete buf;
+        if (c.size() != 2) return;
+        const bool miles = c == "GB" || c == "US" || c == "LR" || c == "MM";
+        fw::dev::set("distanceUnit", miles ? "mi" : "km", fw::dev::HOST);
+        fw::dev::set("speedUnit", miles ? "mph" : "kmh", fw::dev::HOST);
+      });
+}
 void configure(const std::string &url, const std::string &token) {
   State &s = S();
   if (url != s.url) s.cache.clear(), s.count = 0;
@@ -176,6 +194,7 @@ void configure(const std::string &url, const std::string &token) {
       s.check = 0, s.checked = ok;
       if (s.st == CHECKING) s.st = ok ? (s.count ? OK : IDLE) : FAIL;
       if (!ok) s.why = why;
+      if (ok) units_from_config();
       bump();
     };
     s.st = CHECKING;
