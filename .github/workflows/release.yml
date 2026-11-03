@@ -89,7 +89,9 @@ jobs:
         with:
           node-version: 24
           cache: npm
-          cache-dependency-path: renderer/tools/package-lock.json
+          cache-dependency-path: |
+            renderer/tools/package-lock.json
+            workbench/package-lock.json
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
         with:
           python-version: '3.13'
@@ -97,6 +99,8 @@ jobs:
       - run: pip install esphome==2026.9.1
       - run: npm ci
         working-directory: renderer/tools
+      - run: npm ci
+        working-directory: workbench   # the panel's editor (esphome/build.sh: workbench/scripts/editor-device.mjs)
       - name: ESP-IDF toolchain (per ESPHome version)
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
         with:
