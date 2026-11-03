@@ -32,6 +32,8 @@ esphome:
     - -DLV_USE_QRCODE=1
     - -DLV_USE_SNAPSHOT=1
     - -DLV_DRAW_SW_CIRCLE_CACHE_SIZE=32
+    # a character the fonts lack (an emoji in a Home Assistant name) draws nothing, never a box (renderer/lv_conf.h)
+    - -DLV_USE_FONT_PLACEHOLDER=0
     # theme fonts the panel downloads (renderer/core/font_store.cpp) are drawn by TinyTTF (same as renderer/build.sh)
     - -DLV_USE_TINY_TTF=1
     - -DLV_TINY_TTF_FILE_SUPPORT=0

@@ -73,7 +73,7 @@
 #define LV_USE_DROPDOWN_LIST 0
 #define LV_USE_EGL 0
 #define LV_USE_FLEX 1
-#define LV_USE_FONT_PLACEHOLDER 1
+#define LV_USE_FONT_PLACEHOLDER 0  // a character the font lacks (an emoji in an HA name) draws nothing, never a box
 #define LV_USE_FREERTOS_TASK_NOTIFY 0
 #define LV_USE_G2D_DRAW_THREAD 0
 #define LV_USE_GENERIC_MIPI 0
