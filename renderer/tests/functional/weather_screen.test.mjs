@@ -40,6 +40,21 @@ export default {
       t.ha.set(W, 'sunny', { temperature: '21.4' });
       t.has(t.texts(), /^21°$/, 'a new temperature in place'); t.has(t.texts(), /^sunny$/i, 'a new condition in place');
     } },
+    { name: 'ha: a failed forecast ask (a boot before Home Assistant is linked) is asked again a minute on', async run(t) {
+      t.ha.s[W] = { '': 'cloudy', temperature: '11' };
+      await open(t, { source: 'ha', weather: W });
+      const first = asks(t).filter((a) => a.service === 'weather.get_forecasts');
+      t.eq(first.length >= 2, true, 'hourly + daily asked');
+      for (const a of first) t.b.str('', (p) => t.b.m._fw_ha_answer(a.id, 0, p));
+      t.b.settle(800);
+      t.hasNot(t.texts(), /^now$/i, 'no hours after the failure');
+      t.wait(61000); t.b.settle(1500);
+      const again = asks(t).filter((a) => a.service === 'weather.get_forecasts' && !first.some((f) => f.id === a.id));
+      t.eq(again.map((a) => a.data.type).sort(), ['daily', 'hourly'], 'asked again within a minute, not at the next hour');
+      const now = Math.floor(Date.now() / 3600e3) * 3600e3;
+      answer(t, again.find((a) => a.data.type === 'hourly').id, { [W]: { forecast: hourly(now, 12) } });
+      t.has(t.texts(), /^now$/i, 'the hours once it answers');
+    } },
     { name: 'ha: no apparent temperature (Met.no) = no Feels part, never Feels 0°', async run(t) {
       t.ha.s[W] = { '': 'cloudy', temperature: '10.2' };
       await open(t, { source: 'ha', weather: W });

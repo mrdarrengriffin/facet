@@ -230,13 +230,17 @@ void forecasts(const std::string &json, bool daily) {
     else if (hours_got.size() < 24) hours_got.push_back({t, c, temp, pr});
   }
 }
+// no forecast yet (the first ask failed or went unanswered: a boot before Home Assistant was linked): ask again a
+// minute on, not at the next hour
+constexpr uint32_t RETRY_MS = 45000;  // under the feed's 60 s round: its next round asks again
 void answered_h(void *, bool ok, const std::string &json);
 void answered_d(void *, bool ok, const std::string &json);
 void fetch(const std::string &ent) {
+  const bool lost = lv_tick_elaps(fetched_at) > RETRY_MS;  // an ask unanswered this long (sent before the host's link was up)
   fetched_hour = std::floor(now_ms() / HOUR), fetched_at = lv_tick_get();
   for (int daily = 0; daily < 2; daily++) {
     bool &w = daily ? waiting_d : waiting_h;
-    if (w) continue;
+    if (w && !lost) continue;
     ArduinoJson::JsonDocument q;
     q["entity_id"] = ent, q["type"] = daily ? "daily" : "hourly";
     std::string qs;
@@ -267,7 +271,8 @@ class Weather : public feed::Feed {
     if (back()) waiting_h = waiting_d = false;  // asks sent before Home Assistant dropped never come back
     reads({{ent, ""}, {ent, "temperature"}, {ent, "apparent_temperature"}});  // the weather now, live
     rebuild();
-    if (changed() || back() || std::floor(now_ms() / HOUR) != fetched_hour || lv_tick_elaps(fetched_at) > 30 * 60000u) fetch(ent);
+    if (changed() || back() || std::floor(now_ms() / HOUR) != fetched_hour || lv_tick_elaps(fetched_at) > 30 * 60000u ||
+        ((hours_got.empty() || days_got.empty()) && lv_tick_elaps(fetched_at) > RETRY_MS)) fetch(ent);
   }
 
  private:

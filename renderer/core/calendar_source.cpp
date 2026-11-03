@@ -334,8 +334,12 @@ void want_range(double &a, double &b) {
   a = std::min(ag::midnight(now), g);
   b = std::max(ag::day_add(now, 15), ag::day_add(g, 42));
 }
+// no reply from any calendar yet (asks failed or went unanswered: a boot before Home Assistant was linked): ask again a
+// minute on, not 15 minutes on
+constexpr uint32_t RETRY_MS = 45000;  // under the feed's 60 s round: its next round asks again
 void fetch() {
-  if (waiting) return;
+  if (waiting && lv_tick_elaps(fetched_at) <= RETRY_MS) return;
+  waiting = 0;  // older asks unanswered this long are lost (a late reply still lands: answered keeps waiting >= 0)
   double a, b;
   want_range(a, b);
   from_ms = a, to_ms = b;
@@ -404,7 +408,8 @@ class Calendar : public feed::Feed {
     rebuild();
     double a, b;
     want_range(a, b);
-    if (!cals.empty() && (changed() || back() || day_no(now_ms()) != fetched_day || lv_tick_elaps(fetched_at) > 15 * 60000u || a < from_ms || b > to_ms)) fetch();
+    if (!cals.empty() && (changed() || back() || day_no(now_ms()) != fetched_day || lv_tick_elaps(fetched_at) > 15 * 60000u || a < from_ms || b > to_ms ||
+                          (answered_ok.empty() && lv_tick_elaps(fetched_at) > RETRY_MS))) fetch();
   }
 };
 Calendar F;
