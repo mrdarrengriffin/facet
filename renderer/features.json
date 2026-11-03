@@ -47,9 +47,16 @@
       "id": "lights",
       "label": "Lights",
       "docs": true, "status": "done", "firmware": true,
-      "screens": ["light", "living_room"],
+      "screens": ["light"],
       "docs_pages": ["light"],
       "cards": ["light"]
+    },
+    {
+      "id": "living_room",
+      "label": "Living room",
+      "docs": false, "status": "wip", "firmware": false,
+      "about": "One room's lights to switch and dim: out of 1.0 (it repeats the Light screen; a room view may come back later).",
+      "screens": ["living_room"]
     },
     {
       "id": "media",
