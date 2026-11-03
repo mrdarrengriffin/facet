@@ -64,10 +64,11 @@ function accentIdx(p: Prefs) { return accentSets.findIndex((a) => a.id === p.acc
 
 // ---- the live demo's Settings <-> the site prefs (demo settings did not stick). The panel's
 // settings store (core/device.h, one per engine) is the source while you use the demo: a change there ("setting"
-// id=value) updates the site prefs (theme, accent, sounds, sound pack) or, for the rest, this browser's demo-only
+// id=value) updates the site prefs (accent, sounds, sound pack) or, for the rest, this browser's demo-only
 // values (kept and set again on the next engine / page); a site pref change is set on the panel (fw_setting, HOST).
 // Device stages are never rendered again for a pref change: the device restyles itself, so its screen stays put.
-const SHARED: Record<string, keyof Prefs> = { theme: 'theme', accent: 'accent', sounds: 'sound', soundPack: 'pack' };
+// The panel's Theme is its own: it never changes the site's, and once set there the site's no longer reaches it.
+const SHARED: Record<string, keyof Prefs> = { accent: 'accent', sounds: 'sound', soundPack: 'pack' };
 const OWN_KEY = 'facet-docs-panel';
 let pushed: Record<string, string> = {};
 function panelOwn(): Record<string, string> {
@@ -91,6 +92,7 @@ function panelTheme(p: Prefs): string {
 /** the site prefs onto the panel: only what changed since the last push (a demo Theme Auto stays Auto) */
 function pushPrefs(e: Engine, p: Prefs) {
   const want: Record<string, string> = { theme: panelTheme(p), accent: p.accent, sounds: String(p.sound), soundPack: p.pack };
+  if (panelOwn().theme) delete want.theme;
   for (const [k, v] of Object.entries(want)) {
     if (!v || pushed[k] === v) continue;
     pushed[k] = v;
@@ -111,8 +113,7 @@ function fromPanel(detail: string) {
   }
   pushed[id] = v;
   const cur = getPrefs();
-  if (pref === 'theme') { if ((v === 'dark' || v === 'light') && v !== cur.theme && panelTheme(cur) !== 'auto') setPrefs({ theme: v }); }
-  else if (pref === 'accent') { if (v !== cur.accent && accentSets.some((a) => a.id === v)) setPrefs({ accent: v }); }
+  if (pref === 'accent') { if (v !== cur.accent && accentSets.some((a) => a.id === v)) setPrefs({ accent: v }); }
   else if (pref === 'sound') { if ((v === 'true') !== cur.sound) setPrefs({ sound: v === 'true' }); }
   else if (v !== cur.pack) setPrefs({ pack: v });
 }
@@ -242,6 +243,9 @@ export function initLive() {
       if (!scope) return;
       const v = sw.dataset.themeSet!;
       if (v === 'site') delete scope.dataset.previewTheme; else scope.dataset.previewTheme = v;
+      const own = panelOwn();  // the box's switch takes the panel's theme back from its own Settings
+      if (own.theme) { delete own.theme; try { localStorage.setItem(OWN_KEY, JSON.stringify(own)); } catch { /* private mode */ } }
+      delete pushed.theme;
       for (const b of scope.querySelectorAll<HTMLButtonElement>('[data-theme-set]')) b.setAttribute('aria-pressed', String(b.dataset.themeSet === v));
       const p = livePrefs();
       if (engine && loadedFor === p.device) pushPrefs(engine, p);
