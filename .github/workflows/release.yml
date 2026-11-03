@@ -178,6 +178,7 @@ jobs:
           tar -czf "$R.tar.gz" -C out .
           gh release view "$R" >/dev/null 2>&1 || gh release create "$R" --title "Firmware ($CH channel, install page)" --notes "The $CH channel's images and manifests, served by the docs site. Replaced by every $CH tag." --prerelease --target main
           gh release upload "$R" "$R.tar.gz" --clobber
+          git tag -f "$R" && git push -f origin "refs/tags/$R"   # the channel tag follows the build it serves
           echo "$R.tar.gz: $V" | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Deploy the docs site (serves both channels)
         run: gh workflow run deploy.yml --ref main
