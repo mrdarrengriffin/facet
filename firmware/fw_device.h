@@ -1636,7 +1636,10 @@ inline void start(void (*poll)()) {
     if (down && lvgl_pressed()) down = false;
     if (pending && !phase) {
       if (lvgl_pressed()) pending = false;
-      else phase = 1, ESP_LOGI("facet", "a tap during a build, given after it at %d,%d", (int) pt.x, (int) pt.y);
+      else {
+        phase = 1;
+        ESP_LOGI("facet", "a tap during a build, given after it at %d,%d", (int) pt.x, (int) pt.y);
+      }
     }
   }, 10, nullptr);
 }
