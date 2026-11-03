@@ -62,6 +62,20 @@ const manifest = (id: string) => url(`/firmware/${id}/manifest.json`);
     }
   </fieldset>
 
+  <fieldset class="boards channels" data-channels hidden>
+    <legend class="facet-label">Release</legend>
+    <label class="board">
+      <input type="radio" name="channel" value="stable" checked />
+      <span class="board__name">Stable</span>
+      <span class="board__about">The release we recommend. Updates when a new version is ready.</span>
+    </label>
+    <label class="board">
+      <input type="radio" name="channel" value="beta" />
+      <span class="board__name">Beta</span>
+      <span class="board__about">Newer builds, more often, that may have rough edges. Switch back in the panel's Settings, Update channel.</span>
+      <span class="board__ways" data-beta-version></span>
+    </label>
+  </fieldset>
   <div class="install">
     <esp-web-install-button manifest={manifest(boards[0].id)} data-install>
       <button slot="activate" class="button button--primary" type="button">Install</button>
@@ -140,13 +154,27 @@ const manifest = (id: string) => url(`/firmware/${id}/manifest.json`);
 
 <script is:inline type="module" src="https://unpkg.com/esp-web-tools@10.4.0/dist/web/install-button.js?module"></script>
 <script>
-  // the board pick sets the installer's manifest
+  // the board pick and the release channel set the installer's manifest: manifest.json (stable) or manifest-beta.json
+  // beside it (the beta channel, .github/workflows/release.yml); the channel choice shows only while a beta exists
   const button = document.querySelector<HTMLElement>('[data-install]');
-  document.querySelectorAll<HTMLInputElement>('[data-boards] input[name="board"]').forEach((r) =>
-    r.addEventListener('change', () => {
-      if (r.checked && button && r.dataset.manifest) button.setAttribute('manifest', r.dataset.manifest);
-    }),
-  );
+  const channels = document.querySelector<HTMLElement>('[data-channels]');
+  const pick = () => {
+    const b = document.querySelector<HTMLInputElement>('[data-boards] input[name="board"]:checked');
+    const beta = document.querySelector<HTMLInputElement>('[data-channels] input[value="beta"]')?.checked;
+    if (button && b?.dataset.manifest) button.setAttribute('manifest', beta ? b.dataset.manifest.replace(/manifest\.json$/, 'manifest-beta.json') : b.dataset.manifest);
+  };
+  document.querySelectorAll<HTMLInputElement>('[data-boards] input, [data-channels] input').forEach((r) => r.addEventListener('change', pick));
+  const first = document.querySelector<HTMLInputElement>('[data-boards] input[name="board"]')?.dataset.manifest;
+  if (first && channels)
+    fetch(first.replace(/manifest\.json$/, 'manifest-beta.json'), { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((m) => {
+        if (!m) return;
+        channels.hidden = false;
+        const v = document.querySelector('[data-beta-version]');
+        if (v && m.version) v.textContent = `Now ${m.version}`;
+      })
+      .catch(() => {});
 </script>
 
 <style>
@@ -157,6 +185,9 @@ const manifest = (id: string) => url(`/firmware/${id}/manifest.json`);
     margin: 24px 0;
     padding: 0;
     border: 0;
+  }
+  .channels[hidden] {
+    display: none;
   }
   .boards legend {
     margin-bottom: 12px;
