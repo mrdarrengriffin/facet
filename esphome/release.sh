@@ -2,7 +2,8 @@
 # The public firmware for a release, built from its TAG (never the working tree): every board's factory + OTA image
 # and its two manifests, ready for site/scripts/upload-firmware.sh (plan Phase 6.1).
 #   esphome/release.sh <version> [out dir]      e.g. esphome/release.sh 1.0.0   (out default site/public/firmware)
-# Checks, in order (each stops the build): the tag v<version> exists; every esphome/facet-<board>.yaml at the tag says
+# Checks, in order (each stops the build): the tag v<version> exists; CI and Firmware both succeeded on the tagged
+# commit (gh run list --commit); every esphome/facet-<board>.yaml at the tag says
 # facet_version: <version> (its dashboard_import reads @v<version>); then per board, in a worktree of the tag:
 # FACET_VERSION=<version> esphome/build.sh <board> compile into the board's own build folder (build_suffix), the images
 # copied out at once as facet-<board>-<version>.{factory,ota}.bin (the tag's WASM built first, both densities: the
@@ -21,6 +22,13 @@ for b in $BOARDS; do
   [ "$y" = "$V" ] || { echo "esphome/facet-$b.yaml at $T says facet_version $y, not $V"; exit 1; }
 done
 echo "tag $T ($(git -C "$ROOT" rev-parse --short "$T^{}")); both YAMLs say $V"
+# CI must be green on the exact commit tagged: every workflow that ran on it (CI, Firmware) succeeded, none still running
+SHA=$(git -C "$ROOT" rev-parse "$T^{}")
+runs=$(gh run list --commit "$SHA" --json workflowName,status,conclusion -q '.[] | "\(.workflowName)=\(.status)/\(.conclusion)"' 2>/dev/null) || { echo "cannot read CI for $SHA (gh signed in?)"; exit 1; }
+for w in CI Firmware; do
+  grep -qx "$w=completed/success" <<<"$runs" || { echo "CI not green on $SHA: $w is $(grep "^$w=" <<<"$runs" | head -1 | cut -d= -f2 || echo 'not run')"; exit 1; }
+done
+echo "CI green on $SHA (CI, Firmware)"
 mkdir -p "$OUT"
 W=$(mktemp -d)/facet-$T
 git -C "$ROOT" worktree add -q --detach "$W" "$T"
