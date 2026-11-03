@@ -135,7 +135,6 @@ const manifest = (id: string) => url(`/firmware/${id}/manifest.json`);
 </Docs>
 
 <script is:inline>
-  // ?baud=115200 = old speed, for timing against the fast path
   {
     const b = Number(new URLSearchParams(location.search).get('baud'));
     if (b) window.FACET_FLASH_BAUD = b;

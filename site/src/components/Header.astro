@@ -118,9 +118,6 @@ const here = (href: string) => href.replace(/\/?$/, '/') === path.replace(/\/?$/
   </div>
 </header>
 
-<!-- Mobile menu (the header nav was unreachable on phones): a modal sheet from the left with the
-     header links, then this page's sidebar (a docs or components page: its own list, current page marked) or the docs
-     sections. Escape, the close button or the backdrop close it; focus stays inside while open (modal dialog + Tab wrap). -->
 <dialog class="mmenu" id="mmenu" aria-label="Menu" data-menu>
   <div class="mmenu__head">
     <a class="header__brand" href={url('/')}>

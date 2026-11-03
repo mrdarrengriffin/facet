@@ -65,7 +65,6 @@ const bg = (TOKENS.colour as { colours: Record<string, { dark: string; light: st
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="color-scheme" content="dark light" />
     <script is:inline>
-      // prefs before first paint (no theme flash): stored > system theme; panel 720; accent + pack = the defaults
       (function () {
         var r = document.documentElement, p = {};
         try { p = JSON.parse(localStorage.getItem('facet-docs-prefs') || '{}') || {}; } catch (e) {}
@@ -84,7 +83,6 @@ const bg = (TOKENS.colour as { colours: Record<string, { dark: string; light: st
     <SiteFooter />
     <Search />
     <script is:inline>
-      // sidebar keeps its scroll across page loads (a click lost his place); per sidebar kind
       (function () {
         var s = document.querySelector('[data-sidebar]');
         if (!s) return;
