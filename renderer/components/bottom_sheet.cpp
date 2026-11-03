@@ -68,6 +68,7 @@ struct Sheet {
   // LV_EVENT_VALUE_CHANGED to the overlay with the index as the param; stay = a pick does not close (sound packs)
   std::vector<std::string> items;  // icon, name, status per item
   int item_sel = 0;
+  std::vector<bool> item_on;  // items that say "selected" themselves (a pick-many list): each one's radio; else item_sel
   bool custom = false, stay = false;
   // host rows (the Calendar's calendars and day sheets): the caller fills the list itself with `rows` rows of `row_h`
   int host_rows = -1, host_row_h = 0;
@@ -117,7 +118,7 @@ void option_props(const Sheet *s, int i, int sel, Doc &d) {
   d["name"] = o.name;
   d["status"] = o.status;
   d["tone"] = o.tone;
-  d["selected"] = i == sel;
+  d["selected"] = s->custom && i < (int) s->item_on.size() ? (bool) s->item_on[(size_t) i] : i == sel;
 }
 
 void fill_list(Sheet *s) {
@@ -172,6 +173,7 @@ void choices(Sheet *s, fw::Props p) {
   s->sel[0] = std::min(std::max(sel, 0), LISTS[0].n - 1);
   s->sel[1] = std::min(std::max(sel, 0), LISTS[1].n - 1);
   s->items.clear();
+  s->item_on.clear();
   s->custom = false;
   s->host_rows = p["rows"].is<int>() ? std::max(0, p["rows"].as<int>()) : -1;
   s->host_row_h = p["row_h"] | 0;
@@ -181,6 +183,7 @@ void choices(Sheet *s, fw::Props p) {
       s->items.push_back(it["icon"] | "none");
       s->items.push_back(it["name"] | "");
       s->items.push_back(it["status"] | "");
+      if (it["selected"].is<bool>()) s->item_on.resize(s->items.size() / 3, false), s->item_on.back() = it["selected"].as<bool>();
     }
     s->item_sel = sel < 0 ? -1 : std::min(sel, std::max(0, n_opts(s) - 1));  // -1 = none ringed (a list of choices to narrow)
     s->stay = p["stay"] | false;

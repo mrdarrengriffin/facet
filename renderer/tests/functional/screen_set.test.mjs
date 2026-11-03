@@ -4,6 +4,8 @@
 const deck = (t) => JSON.parse(JSON.parse(t.b.spec('list', '')).deck);
 const act = (t, a) => { const r = JSON.parse(t.b.spec('act', a) || '{}'); t.b.tick(10); t.b.settle(800); return r; };
 import fs from 'node:fs';
+import { px, diff, comps } from './_controls.mjs';
+const radioOn = (t, r) => diff(px(t, r.x + r.w / 2, r.y + r.h / 2), px(t, r.x - 12, r.y + r.h / 2));
 const FACTORY = JSON.parse(fs.readFileSync(new URL('../../specs/deck.json', import.meta.url)));
 
 export default {
@@ -17,6 +19,16 @@ export default {
       t.ok(evs.some((e) => e.name === 'deck' && e.detail === 'media params.visual=cassette'), 'the deck takes visual=cassette');
       act(t, { do: 'nav.back' });
       t.ok(t.comps().some((c) => c.ids.at(-1) === 'media_visual'), 'Media shows its visual');
+    } },
+    { name: 'Calendar > Source: one mark per row (its radio), no tick at the start', async run(t) {
+      await t.device();
+      act(t, { do: 'nav.open', screen: 'screen_set', params: { id: 'calendar' } });
+      t.tap(/^Source$/); t.b.settle(1200);
+      t.has(t.texts(), /^Sample fortnight/, 'the Source sheet is open');
+      const rows = t.comps().filter((c) => c.ids.includes('picker_row') && t.visible(c));
+      t.ok(rows.length >= 3, `picker rows: ${rows.length}`);
+      t.eq(rows.filter((c) => (c.props?.icon ?? 'none') !== 'none').length, 0, 'no icon at the start of any row');
+      t.eq(comps(t, 'radio').filter((r) => t.visible(r) && radioOn(t, r)).length, 1, 'one radio on (the chosen source)');
     } },
     { name: 'Show on Home off: the screen leaves the deck and its Home card goes with it; on again brings both back', async run(t) {
       await t.device();

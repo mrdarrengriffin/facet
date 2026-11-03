@@ -194,9 +194,11 @@ void sheet_props(Page *pg, int k, bool open, Doc &d) {
   ArduinoJson::JsonArray items = d["items"].to<ArduinoJson::JsonArray>();
   for (size_t i = 0; i < p.ids.size(); i++) {
     ArduinoJson::JsonObject it = items.add<ArduinoJson::JsonObject>();
-    // HA picks: a letter row = chevron, a chosen entity (entities) = check, the rest none; other lists: check
-    const char *ic = !p.ha ? "check" : p.ids[i].rfind("g:", 0) == 0 ? "chevron" : p.status[i].rfind("chosen", 0) == 0 ? "check" : "none";
-    it["icon"] = ic, it["name"] = p.names[i].c_str(), it["status"] = p.status[i].c_str();
+    // the radio is the one mark: a letter row (HA picks) = chevron, every other row no icon; a pick-many list
+    // (entities) rings each chosen one, a choose-one list the selected one
+    const bool letter = p.ha && p.ids[i].rfind("g:", 0) == 0;
+    it["icon"] = letter ? "chevron" : "none", it["name"] = p.names[i].c_str(), it["status"] = p.status[i].c_str();
+    if (p.multi && !letter) it["selected"] = p.status[i].rfind("chosen", 0) == 0;
   }
   d["selected"] = p.sel;
 }
