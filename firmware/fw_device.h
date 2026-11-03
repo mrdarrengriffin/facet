@@ -1613,6 +1613,17 @@ inline void apply_rotation() {
   lv_async_call([](void *) { if (rotate_hook) rotate_hook(rotation_now()); }, nullptr);
 }
 
+// ---------------------------------------------------------------- Update channel
+// The setting "updateChannel" (stable | beta) -> which manifest the Firmware update entity checks: the host's
+// channel_hook (workbench.yaml: the YAML's update_manifest, ota.json, or ota-beta.json beside it) points the entity at
+// it and checks at once. Applied at boot and on every change.
+inline void (*channel_hook)(bool beta) = nullptr;
+inline void apply_channel() {
+  if (!channel_hook) return;
+  const char *v = fw::dev::setting("updateChannel");
+  channel_hook(v && !strcmp(v, "beta"));
+}
+
 // The panel's own Home Assistant link (core/device.h ha_link, Settings > Home Assistant) on the firmware: its address
 // and token in NVS "facet_halink" (restored at boot, kept on every ha.connect through on_store; never logged), and its
 // reads (GET <url>/api/states and the REST reads) through esp_http_client, and the Energy feed's WebSocket reads through
@@ -1883,6 +1894,7 @@ inline void setup() {
   // settings (core/device.h): the shown page follows every change; the probation chip follows the look
   fw::dev::observe([](const char *id, const char *, fw::dev::From from) {
     if (!strcmp(id, "rotation")) { apply_rotation(); return; }
+    if (!strcmp(id, "updateChannel")) { apply_channel(); return; }
     const bool look = !strcmp(id, "theme") || !strcmp(id, "accent");
     if (!look && from != fw::dev::SCREEN) reshow_later(false);  // a value from elsewhere: the controls move
   });
@@ -1902,6 +1914,7 @@ inline void setup() {
   });
   timers_setup();    // the panel's timers -> the host's HA entities (timers_hook)
   apply_rotation();  // the restored Rotate screen (the select restored it before on_boot)
+  apply_channel();   // the restored Update channel
   probation_start();
   dbg::D.ready = true;  // the Debug overlay select restored its value before LVGL was up
   if (dbg::D.mode) { dbg::apply(); if (dbg::D.mode & dbg::COMPS) { dbg::rebuild(); dbg::refresh(); } }

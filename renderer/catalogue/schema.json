@@ -9559,6 +9559,16 @@
      "default": "rise"
     },
     {
+     "name": "updateChannel",
+     "type": "select",
+     "about": "Which firmware updates the panel offers: Stable releases, or Beta builds that come more often and may have rough edges.",
+     "options": [
+      "stable",
+      "beta"
+     ],
+     "default": "stable"
+    },
+    {
      "name": "toastPosition",
      "type": "select",
      "about": "Where messages such as a finished timer appear: at the top or the bottom of the screen.",
@@ -10930,6 +10940,31 @@
      "id": "transition_select",
      "name": "Transition",
      "icon": "mdi:transition"
+    }
+   },
+   {
+    "id": "updateChannel",
+    "help": "Which firmware updates the panel offers: Stable releases, or Beta builds that come more often and may have rough edges.",
+    "group": "behaviour",
+    "label": "Update channel",
+    "kind": "select",
+    "control": "segmented",
+    "default": "stable",
+    "about": "Picks the update manifest the panel's Firmware entity checks (ota.json or ota-beta.json beside it). Switching back to Stable offers the stable build, even when it is older. The workbench and docs ignore it.",
+    "options": [
+     {
+      "id": "stable",
+      "label": "Stable"
+     },
+     {
+      "id": "beta",
+      "label": "Beta"
+     }
+    ],
+    "esphome": {
+     "id": "update_channel_select",
+     "name": "Update channel",
+     "icon": "mdi:source-branch"
     }
    },
    {
