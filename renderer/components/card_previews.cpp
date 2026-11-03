@@ -2,6 +2,7 @@
 // Components > Graphics > Card previews, @facet/ui previews.ts). This file is the implementation (fw::card_preview,
 // used by the Card's "preview" prop too) and its workbench page: one preview at the size it has on a card, every kind a
 // variant. Contrast: tokens/colour.json section "card_preview" (+ "radar", "media_visual", "mascot", "chart").
+#include <cstdio>
 #include <cstring>
 #include "chart.h"
 #include "fw.h"
@@ -45,6 +46,13 @@ lv_obj_t *dot_at(lv_obj_t *parent, float r, float deg, int d, lv_color_t c, cons
 
 // ---- dial / timer: a value arc + the blue hub
 struct ArcPV { lv_obj_t *arc; int32_t shown; };
+// the arc: the dial its value (0..100); the timer the share left of the running timer (the card's progress: panel.timer
+// share, 0..1000, empty when none runs), never a made-up 65 %
+int arc_value(const char *kind, Props p) {
+  if (kind[0] != 't') return std::clamp((int) (p["value"] | 64), 0, 100);
+  const int v = p["progress"].is<const char *>() ? atoi(p["progress"].as<const char *>()) : (int) (p["progress"] | 0);
+  return std::clamp(v / 10, 0, 100);
+}
 void arc_show(void *o, int32_t v) {
   auto *root = (lv_obj_t *) o;
   auto *a = (ArcPV *) lv_obj_get_user_data(root);
@@ -157,7 +165,7 @@ void build_kind(lv_obj_t *root, const char *kind, Props p) {
     fill(centred(root, g(4)), t.bg);
     dot_at(root, (g(68) + g(44)) / 4.0f, 315, g(8), t.blue, "the record's marker: placed by angle");
   } else if (!strcmp(kind, "dial") || !strcmp(kind, "timer")) {
-    arc_pv(root, kind[0] == 't', std::clamp((int) (p["value"] | (kind[0] == 't' ? 65 : 64)), 0, 100));
+    arc_pv(root, kind[0] == 't', arc_value(kind, p));
   } else if (!strcmp(kind, "switch")) {
     auto *sw = new SwPV{};
     const int pw = g(68), ph = s / 2, kd = g(24), px = (s - pw) / 2, pad = (ph - kd) / 2;
@@ -176,13 +184,15 @@ void build_kind(lv_obj_t *root, const char *kind, Props p) {
     lv_obj_set_user_data(root, sw);
     lv_obj_add_event_cb(root, [](lv_event_t *e) { delete (SwPV *) lv_event_get_user_data(e); }, LV_EVENT_DELETE, sw);
     sw_show(root, sw_target(p, &sw->avail));
-  } else if (!strcmp(kind, "clock")) {
-    const int dot = g(14), outer = s - dot, inner = g(46);
-    ring(centred(root, outer), stroke::hair, t.line_hi);
-    ring(centred(root, inner), stroke::hair, t.groove);
-    fill(circle(root, (s - dot) / 2, 0, dot), t.accent);  // on the outer ring at 12
-    dot_at(root, inner / 2.0f, 20, g(8), t.blue, "an orbit dot: placed by angle");
-    dot_at(root, inner / 2.0f, 125, g(6), t.steel, "an orbit dot: placed by angle");
+  } else if (!strcmp(kind, "clock")) {  // a small analogue face telling the card's own time (its value, "14:52" / "2:52 PM")
+    const int face = s - g(4);
+    ring(centred(root, face), stroke::hair, t.line_hi);
+    int hh = 10, mm = 10;
+    sscanf(p["value"] | "", "%d:%d", &hh, &mm);
+    // each hand a row of round dots from the centre (a round-capped stroke): hour in text, minute in accent
+    for (float r = 0; r <= face * 0.25f; r += 1) dot_at(root, r, 270 + ((hh % 12) + mm / 60.0f) * 30, S() / 20, t.text, "a clock hand: placed by angle");
+    for (float r = 0; r <= face * 0.38f; r += 1) dot_at(root, r, 270 + mm * 6.0f, S() / 20, t.accent, "a clock hand: placed by angle");
+    fill(centred(root, g(8)), t.accent);
   } else if (!strcmp(kind, "github")) {
     const int d = g(20), in = g(4), w = stroke::edge;
     ring(circle(root, in, in, d), w, t.steel);
@@ -254,7 +264,7 @@ bool card_preview_set(lv_obj_t *preview, const char *kind, Props p) {
   if (!strcmp(kind, "dial") || !strcmp(kind, "timer")) {
     auto *a = (ArcPV *) lv_obj_get_user_data(root);
     if (!a) return false;
-    const int to = std::clamp((int) (p["value"] | (kind[0] == 't' ? 65 : 64)), 0, 100);
+    const int to = arc_value(kind, p);
     if (to != a->shown || lv_anim_get(root, (lv_anim_exec_xcb_t) arc_show)) animate(root, st::SWEEP, {arc_show, a->shown, to, mo::VALUE});
   } else if (!strcmp(kind, "switch")) {
     auto *s = (SwPV *) lv_obj_get_user_data(root);
@@ -288,6 +298,7 @@ FW_COMPONENT(card_previews, "Card previews", "components", R"({
   "props": [
     {"name": "preview", "about": "Which picture to draw, as it appears at the top right of a Home card: agents, media, a dial, a switch, the clock, a timer, GitHub, energy or lightning.", "type": "select", "options": ["agents", "media", "dial", "switch", "clock", "timer", "github", "energy", "lightning"], "default": "dial"},
     {"name": "value", "about": "The level the picture shows where it has one, such as how far round the dial is, from 0 to 100.", "type": "range", "min": 0, "max": 100, "step": 1, "default": 64},
+    {"name": "progress", "about": "For the timer picture: how much of the running timer is left, out of 1000; 0 when no timer runs (an empty ring).", "type": "range", "min": 0, "max": 1000, "step": 1, "default": 0},
     {"name": "on", "about": "Whether the thing the picture stands for is on, such as the switch or the dial's light.", "type": "bool", "default": true},
     {"name": "unavailable", "about": "Shows the picture greyed out, for a device that cannot be reached.", "type": "bool", "default": false},
     {"name": "quiet", "about": "For the lightning picture: shows a quiet sky with no recent strikes.", "type": "bool", "default": false}
@@ -300,7 +311,7 @@ FW_COMPONENT(card_previews, "Card previews", "components", R"({
     {"label": "switch · off", "props": {"preview": "switch", "on": false}},
     {"label": "switch · unavailable", "props": {"preview": "switch", "unavailable": true}},
     {"label": "clock", "props": {"preview": "clock"}},
-    {"label": "timer", "props": {"preview": "timer", "value": 65}},
+    {"label": "timer", "props": {"preview": "timer", "progress": 650}},
     {"label": "github", "props": {"preview": "github"}},
     {"label": "energy", "props": {"preview": "energy"}},
     {"label": "lightning", "props": {"preview": "lightning", "now": 1792944000000}}

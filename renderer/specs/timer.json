@@ -14,6 +14,7 @@
   "label": "Timer",
   "icon": "timer",
   "preview": "timer",
+  "progress": {"e": "panel.timer", "a": "share"},
   "mode": {
    "e": "panel.timer",
    "map": {

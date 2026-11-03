@@ -21,6 +21,16 @@ const chipFor = (t, id) => chip(t, list(t).findIndex((x) => String(x.id) === Str
 export default {
   id: 'timer_screen', family: 'screens', about: 'The Timer screen: presets, + New, switching with a chip, cancel one, stop a done one.',
   tests: [
+    { name: 'Home card: no ring with no timer running (never a made-up share)', async run(t) {
+      await t.device(); tm(t, { op: 'reset' }); t.wait(500);
+      t.drag({ at: [t.b.S / 2, t.b.S * 0.8] }, { by: [0, -t.b.S] }); t.wait(800);
+      t.has(t.texts(), 'Set a timer', 'the idle Timer card');
+    } },
+    { name: 'Home card ring: the share left of the running timer (4:32 of 10 min)', async run(t) {
+      await t.device(); tm(t, { op: 'reset' }); tm(t, { op: 'start', seconds: 600 }); t.wait(328000);
+      t.drag({ at: [t.b.S / 2, t.b.S * 0.8] }, { by: [0, -t.b.S] }); t.wait(800);
+      t.ok(t.texts().some((x) => /^4:\d\d$/.test(x)), `the time left: ${t.texts().filter((x) => /:/.test(x)).join(' ')}`);
+    } },
     { name: 'Home card (C52): "Set a timer" with none running, the time left and its length while one runs', async run(t) {
       await t.device(); tm(t, { op: 'reset' }); t.wait(500);
       const card = () => {  // Home scrolled to the end: the texts of the card headed TIMER

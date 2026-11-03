@@ -43,6 +43,10 @@ struct Card {
 };
 std::map<lv_obj_t *, Card> cards;
 
+// the timer preview's progress (panel.timer share, 0..1000): a timer runs while it is above 0
+bool timer_running(fw::Props p) {
+  return (p["progress"].is<const char *>() ? atoi(p["progress"].as<const char *>()) : (int) (p["progress"] | 0)) > 0;
+}
 const char *tone(const char *t) {
   return !strcmp(t, "ok") ? "fg:ok" : !strcmp(t, "warn") ? "fg:warn" : !strcmp(t, "error") ? "fg:error" : "fg:text-dim";
 }
@@ -151,6 +155,8 @@ void fill(lv_obj_t *c, fw::Props p) {
     ArduinoJson::JsonDocument wd;
     wd["icon"] = p["weather"] | "partly-day", wd["size"] = "card";
     fw::find("weather_icon")->build(top, wd.as<fw::Props>());
+  } else if (!off && full && !strcmp(pv, "timer") && !timer_running(p)) {
+    // no timer running: no picture (the ring would stand for nothing)
   } else if (!off && full && fw::is_preview(pv)) fw::card_preview(top, pv, p);  // the card artwork (legacy, components/card_previews.cpp)
   else if (!off && full && strcmp(pv, "none")) fx::icon(top, pv, "card", "fg:text-dim");
 
@@ -252,7 +258,7 @@ FW_COMPONENT(card, "Card", "components", R"({
     {"name": "preview", "about": "The small picture at the top right of the card, such as the weather now or the record that is playing, or none.", "type": "select", "options": ["none", "partly-day", "rain-light", "clear-night", "agents", "media", "dial", "switch", "clock", "timer", "github", "energy", "lightning", "bins", "weather", "flights", "covers", "moon", "vacuum"], "default": "partly-day"},
     {"name": "weather", "about": "With the weather preview: which weather icon it shows, such as rain-light (the weather now).", "type": "text", "default": "partly-day"},
     {"name": "visual", "about": "With the media preview: the picture, as the Media screen shows it (disc, cassette, cd or vinyl).", "type": "select", "options": ["disc", "cassette", "cd", "vinyl"], "default": "disc"},
-    {"name": "progress", "about": "With the media preview: how far through the track it is, from 0 to 100.", "type": "range", "min": 0, "max": 100, "step": 1, "default": 38},
+    {"name": "progress", "about": "With the media preview: how far through the track it is, from 0 to 100. With the timer preview: how much of the running timer is left, out of 1000 (empty when none runs).", "type": "range", "min": 0, "max": 1000, "step": 1, "default": 38},
     {"name": "playing", "about": "With the media preview: whether it is playing (the picture turns).", "type": "bool", "default": false},
     {"name": "run", "about": "With the vacuum preview: run while the robot is out cleaning (progress = the run's), idle at rest (progress = the battery), off when it cannot be reached.", "type": "select", "options": ["run", "idle", "off"], "default": "idle"},
     {"name": "position", "about": "With the covers preview: how open the window is, from 0 (closed) to 100 (open).", "type": "range", "min": 0, "max": 100, "step": 1, "default": 60},
