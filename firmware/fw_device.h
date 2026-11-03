@@ -1586,6 +1586,9 @@ class Handler : public AsyncWebHandler {
     body_.clear();  // a body is only delivered for some content types: never reuse the previous request's
     too_big_ = false;
     auto *r = req->beginResponse(code, "application/json", s);
+    // web_server_idf knows only 200 204 400 401 404 409 422 and sends any other code as 500: set those lines here
+    static const std::pair<int, const char *> LINES[] = {{403, "403 Forbidden"}, {410, "410 Gone"}, {429, "429 Too Many Requests"}, {503, "503 Service Unavailable"}};
+    for (const auto &[c, line] : LINES) if (c == code) httpd_resp_set_status(*req, line);
     r->addHeader("Cache-Control", "no-store");
     r->addHeader("Access-Control-Allow-Origin", origin.c_str());
     r->addHeader("Vary", "Origin");

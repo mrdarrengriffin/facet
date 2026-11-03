@@ -59,6 +59,7 @@ if has 1.5x; then
 check features node tools/features.mjs check
 check contrast node tools/contrast.mjs --summary
 check contract-lint node tools/contract_lint.mjs --summary
+check http-status node --test tools/http_status.test.mjs
 check catalogue node tools/gen_catalogue.mjs --build "$B"
 fi
 
