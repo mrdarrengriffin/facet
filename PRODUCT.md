@@ -27,7 +27,7 @@ Both panels get the same layout; the 480 panel is the reference size and the 720
 
 ## What "works" means
 
-The release quality checklist (plan Phase 6.0), run by Darren on a fresh Waveshare and a fresh Guition. Every line
+The release quality checklist (RELEASING.md), run by Darren on a fresh Waveshare and a fresh Guition. Every line
 is a yes or the release waits.
 
 ## What 1.0 is not

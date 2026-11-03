@@ -1,5 +1,5 @@
 // The rules pass of tools/functional.mjs (--rules): one loop over components x variants x densities x themes x looks,
-// one mount per case, every rule that wants that case run on it in order (plan Phase 2.1). A rule is a module in
+// one mount per case, every rule that wants that case run on it in order. A rule is a module in
 // tests/rules/<rule>.mjs:
 //   export default { id, about, tiers: ['fast', 'gate'], wants(c, opt) -> bool, themes(opt) -> 'facet' | 'all',
 //                    looks: [0, 1] (built dark, built light), order (low first; a rule that changes the mount goes last),

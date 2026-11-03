@@ -114,6 +114,9 @@ The house rules, in short: every value comes from a token, sizes sit on the 4 px
 Small pull requests get reviewed fastest. For anything big, open an issue first so we can agree the shape before
 you spend the time.
 
+Open work lives on the [project board](https://github.com/users/mrdarrengriffin/projects/3); a `facet-NNN` in a
+comment or commit is an item there. How a release is cut: [RELEASING.md](RELEASING.md).
+
 ## Share an idea
 
 New screens, components, panels, sounds, better words: start a thread in [Discussions > Ideas](https://github.com/mrdarrengriffin/facet/discussions/categories/ideas).

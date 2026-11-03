@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// A release's file changes, in one step (plan Phase 6.1): the version in every esphome/facet-<board>.yaml
+// A release's file changes, in one step (RELEASING.md): the version in every esphome/facet-<board>.yaml
 // (facet_version; dashboard_import reads @v<version>), the release's Updates entry out of draft with today's date
 // (site/src/content/updates/*.md whose title is "Facet <major.minor>"), and the Updates page on (site/src/lib/nav.ts).
 //   node firmware/release-prep.mjs <version>        then review `git diff` and commit "Release: <version>"

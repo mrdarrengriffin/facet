@@ -1,5 +1,5 @@
 // visual (rule, gate tier, 1.5x, Facet theme): the pixels, per component x variant x look (moved from tools/visual.mjs
-// onto the runner, plan Phase 2.3). The audit rule proves geometry; this one looks at what is drawn (after
+// onto the runner). The audit rule proves geometry; this one looks at what is drawn (after
 // A batch E review: "some of [the card previews] are broken", "does the lightning radar actually work?"):
 //   blank      degenerate render, inside the component's own box (its roots): (almost) no ink (pixels that differ from
 //              the stage background) or ink in a sliver (error: under 16 px or 0.05 %: nothing there; review: under 2 %, or

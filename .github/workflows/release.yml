@@ -1,6 +1,6 @@
 name: Release
 
-# Release channels (plan 6.1): a tag builds the public firmware for every board on GitHub and publishes it.
+# Release channels (RELEASING.md): a tag builds the public firmware for every board on GitHub and publishes it.
 #   v1.0.0          stable: the `firmware` release's firmware.tar.gz (manifest.json + ota.json per board), the
 #                   Install page's default and every panel on the Stable update channel
 #   v0.5.0-beta.1   beta: the `firmware-beta` release's firmware-beta.tar.gz (manifest-beta.json + ota-beta.json),

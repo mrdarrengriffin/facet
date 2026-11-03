@@ -1,6 +1,6 @@
 #!/bin/bash
 # The public firmware for a release, built from its TAG (never the working tree): every board's factory + OTA image
-# and its two manifests, ready for site/scripts/upload-firmware.sh (plan Phase 6.1).
+# and its two manifests, ready for site/scripts/upload-firmware.sh (RELEASING.md).
 #   esphome/release.sh <version> [out dir]      e.g. esphome/release.sh 1.0.0   (out default site/public/firmware)
 # Checks, in order (each stops the build): the tag v<version> exists; CI and Firmware both succeeded on the tagged
 # commit (gh run list --commit); every esphome/facet-<board>.yaml at the tag says

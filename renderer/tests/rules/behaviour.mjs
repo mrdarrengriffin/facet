@@ -1,5 +1,5 @@
 // behaviour (rule, fast + gate tiers, Facet theme, built dark): the audits check how things LOOK; this checks that they
-// WORK (README "Behaviour tests"; moved from tools/behaviour.mjs onto the runner, plan Phase 2.4). Every component and
+// WORK (README "Behaviour tests"; moved from tools/behaviour.mjs onto the runner). Every component and
 // screen is driven through LVGL input (press, release, tap, long-press, drag) with LVGL time advanced in fixed 16 ms
 // ticks (deterministic), then asserted on what it does: events to the host (fw_events: actions, navigation, HA service
 // calls "ha", settings), sounds (kind "sound"), scroll position + limits (fw_test "scrolls"), the device screen stack

@@ -1,4 +1,4 @@
-// The release quality checklist (plan Phase 6.0): what a person checks on the glass of fresh panels before a tag.
+// The release quality checklist (RELEASING.md): what a person checks on the glass of fresh panels before a tag.
 // Every line is a yes or the release waits. Shown and ticked at /wasm/checklist; ticks kept by /api/wasm/checklist.
 export const PANELS = [['waveshare', 'Waveshare'], ['guition', 'Guition']] as const;
 export type Panel = (typeof PANELS)[number][0];
