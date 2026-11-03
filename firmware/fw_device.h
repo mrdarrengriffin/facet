@@ -1638,7 +1638,7 @@ inline void start(void (*poll)()) {
       if (lvgl_pressed()) pending = false;
       else {
         phase = 1;
-        ESP_LOGI("facet", "a tap during a build, given after it at %d,%d", (int) pt.x, (int) pt.y);
+        ESP_LOGW("facet", "a tap during a build, given after it at %d,%d", (int) pt.x, (int) pt.y);
       }
     }
   }, 10, nullptr);
