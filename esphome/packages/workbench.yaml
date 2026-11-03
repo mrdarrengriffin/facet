@@ -300,6 +300,22 @@ interval:
   - interval: 1s
     then:
       - lambda: 'panel::fwu::tick(id(fw_update), fw::device::probation_left(), FW_PROBATION_S);'
+      # Screen off after (setting screenOff, minutes; 0 = never): no touch that long = the backlight fades off and LVGL
+      # pauses, so the waking touch only wakes (the board's on_release resumes LVGL); once it runs again, the light
+      # comes back (the board "Screen off / wake" action does the same by hand)
+      - lambda: |-
+          static bool slept = false;
+          const char *v = fw::dev::setting("screenOff");
+          const long m = v ? atol(v) : 0;
+          if (!slept && m > 0 && !id(lvgl_root).is_paused() && lv_display_get_inactive_time(nullptr) > (uint32_t) m * 60000u) {
+            slept = true;
+            auto c = id(backlight).turn_off(); c.set_transition_length(800); c.perform();
+            id(lvgl_root).set_paused(true, false);
+          } else if (slept && !id(lvgl_root).is_paused()) {
+            slept = false;
+            auto c = id(backlight).turn_on(); c.set_brightness(1.0f); c.set_transition_length(150); c.perform();
+            lv_obj_invalidate(lv_screen_active());
+          }
 
 text_sensor:
   # the panel's timers (facet fw_device.h "timers"; published by timers_hook, never per second). Next timer ends is a

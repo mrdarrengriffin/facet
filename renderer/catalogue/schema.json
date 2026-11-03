@@ -10912,8 +10912,7 @@
      "id": "screen_off_min",
      "name": "Screen off after",
      "icon": "mdi:monitor-off",
-     "device_class": "duration",
-     "internal": true
+     "device_class": "duration"
     }
    },
    {
