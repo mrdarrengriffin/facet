@@ -64,6 +64,19 @@ export default {
       const c = t.part('card');
       t.ok(c, 'the page card'); t.ok(c.texts.some((x) => /pottery class/i.test(x)), 'the next event on the card');
         } },
+    { name: 'Home card: the day of an event this week in full (Wednesday, not Wed); Tomorrow in full', async run(t) {
+      const sun = Date.UTC(2026, 10, 1, 12), wed = sun + 3 * 86400e3;  // Sunday 1 Nov 2026 noon, the event Wednesday 4 Nov
+      t.ha.s[C1] = { '': 'off', friendly_name: 'Family', message: 'Tennis - Coaching', start_time: '2026-11-04 18:00:00', end_time: '2026-11-04 19:00:00', all_day: 'false' };
+      await t.device({ v: 2, rev: 9, start: 'h', pages: [
+        { id: 'h', kind: 'home', name: 'Test', cards: [{ t: 'page', page: 'c', size: 'm' }, { t: 'page', page: 'k', size: 'm' }] },
+        { id: 'c', kind: 'calendar', params: { source: 'ha', calendars: C1, now: String(sun) } },
+        { id: 'k', kind: 'clock', params: { source: 'sample' } }] });
+      t.b.settle(1500);
+      const c = t.part('card');
+      t.ok(c && c.texts.includes('Wednesday'), `the card: ${JSON.stringify(c?.texts)}`);
+      t.ok(!c.texts.includes('Wed'), 'never the short form on the card');
+      void wed;
+    } },
     { name: 'a sample that moves with the clock keeps no old copies (facet-256: the panels lost ~1.9 KB of PSRAM a minute)', async run(t) {
       // the sample fortnight follows the wall clock (Date.now): each minute another agenda; the feed kept every one
       const real = Date.now, base = real.call(Date);

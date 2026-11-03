@@ -143,6 +143,7 @@ void put_events(const std::vector<ag::Event> &all, double now) {
   const ag::Event *e = ag::next(ev, now);
   if (!e) {
     put("hero_n", "--"), put("hero_label", "Nothing coming up"), put("hero_line", "in the next 14 days"), put("hero_accent", "off");
+    put("card_n", "--");
     put("card", "Nothing coming up");
   } else {
     const long dd = ag::day_diff(e->start, now);
@@ -152,6 +153,7 @@ void put_events(const std::vector<ag::Event> &all, double now) {
     if (const Cal *c = cal_of(e->calendar)) line += " \xC2\xB7 " + c->name;
     const std::string n = run ? "Now" : dd == 0 && !e->all_day ? ag::hm(e->start) : dd == 1 ? "Tmrw" : dd < 7 ? ag::wd(e->start) : ag::dm(e->start);
     put("hero_n", n), put("hero_label", e->summary), put("hero_line", line);
+    put("card_n", run ? "Now" : dd == 0 && !e->all_day ? ag::hm(e->start) : dd == 1 ? "Tomorrow" : dd < 7 ? ag::weekday(e->start) : ag::dm(e->start));
     put("hero_accent", run || e->start - now <= ag::SOON ? "on" : "off");
     put("card", e->summary);
   }
@@ -358,7 +360,7 @@ void fetch() {
   }
 }
 std::vector<feed::Field> calendar_fields() {
-  std::vector<feed::Field> v = {{"hero_n", true, "--"}, {"hero_label", true, ""}, {"card", true, ""}, {"hero_line", false, ""},
+  std::vector<feed::Field> v = {{"hero_n", true, "--"}, {"card_n", false, "--"}, {"hero_label", true, ""}, {"card", true, ""}, {"hero_line", false, ""},
                                 {"hero_accent", false, "off"}, {"month_title", false, ""}, {"month_here", false, "1"},
                                 {"shown", false, "0"}, {"day_title", false, "day"}, {"sheet", false, ""}};
   for (const char *n : {"agenda", "month_days", "calendars", "day_events"}) v.push_back({n, false, "[]"});

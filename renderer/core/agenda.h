@@ -41,6 +41,13 @@ inline std::string hm(double t) {
   snprintf(b, sizeof b, "%02d:%02d", tm.tm_hour, tm.tm_min);
   return b;
 }
+inline std::string weekday(double t) {  // the whole name (the Home card has the room)
+  static const char *W[] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
+  const time_t s = (time_t) (t / 1000);
+  struct tm tm;
+  localtime_r(&s, &tm);
+  return W[tm.tm_wday];
+}
 inline std::string wd(double t) {
   static const char *W[] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
   const time_t s = (time_t) (t / 1000);

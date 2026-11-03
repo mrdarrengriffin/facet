@@ -16,8 +16,8 @@
  },
  "card": {
   "icon": "calendar",
-  "mode": "value",
-  "value": {"e": "panel.calendar", "a": "hero_n"},
+  "mode": "text",
+  "text": {"e": "panel.calendar", "a": "card_n"},
   "sub": {"e": "panel.calendar", "a": "card"},
   "accent": {"e": "panel.calendar", "a": "hero_accent"}
  },
