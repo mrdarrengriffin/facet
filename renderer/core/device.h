@@ -47,6 +47,7 @@ namespace fw {
 namespace dev {
 constexpr const char *TOAST_PAIR = "facet.toast";  // the HA store pair a host puts a toast's JSON on
 void toast(Props t);  // a toast over every mounted device's screen (see "toasts" above)
+void toast(Props t, std::function<void()> on_action);  // its action Button runs on_action (core/keys.cpp: Undo)
 lv_obj_t *mount(lv_obj_t *parent, const char *start = "home");  // the device root (its screen is its one child)
 void go(lv_obj_t *in, const char *id);  // in = the root or anything inside it; queued for the next tick
 void back(lv_obj_t *in);
@@ -80,7 +81,8 @@ void state(ArduinoJson::JsonArray out);  // every mounted device: {stack, builds
 const char *current(lv_obj_t *in);  // the id on top of the stack ("" = not a device)
 
 // settings (above)
-enum From : uint8_t { SCREEN, HA, HOST, BOOT };  // who set it: the Settings screen, Home Assistant, a host / API, restore
+enum From : uint8_t { SCREEN, HA, HOST, BOOT, EDITOR };  // who set it: the Settings screen, Home Assistant, a host / API (an
+                                                       // agent's key), restore, the panel's own editor (same origin)
 const char *setting(const char *id);  // the value now (option id, "true" / "false", the number), nullptr = no such id
 // "" = applied, "same" = already that value, else the error; obj = the control that changed it (emits from there)
 const char *set(const char *id, const char *value, From from, lv_obj_t *obj = nullptr);
@@ -193,6 +195,10 @@ enum St { OFF, IDLE, LOADING, OK, FAIL, CHECKING };
 // IDLE + checked() or FAIL + why(): "Home Assistant refused the token", "cannot reach Home Assistant at that address")
 void configure(const std::string &url, const std::string &token);
 void restore(const std::string &url, const std::string &token);    // the firmware at boot (no store)
+// the link as it is now, to put back (core/keys.cpp: Undo of an agent's ha.connect); never leaves the core
+struct Link { std::string url, token; };
+Link kept();
+void put_back(const Link &l);
 void on_store(void (*f)(const std::string &url, const std::string &token));
 void set_proxy(bool on);
 const std::string &url();

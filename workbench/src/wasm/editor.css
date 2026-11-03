@@ -121,6 +121,17 @@ button, input, select { font: inherit; color: inherit; }
 .dlg .was { color: var(--f-text-dim); text-decoration: line-through; }
 .dlg pre { margin: 0; max-height: calc(var(--sp-10) * 6); overflow: auto; padding: var(--sp-3); background: var(--f-bg); border: 1px solid var(--f-line); font: 400 var(--sp-3)/1.5 var(--mono); color: var(--f-text-dim); }
 .dlg .acts { display: flex; justify-content: flex-end; gap: var(--sp-3); }
+/* Agents (the panel's own editor): the switch row, the keys with Revoke, Create key, the key shown once */
+.dlg h3 { margin: 0; font: var(--t-label); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--f-text-dim); }
+.dlg .ag-row, .dlg .ag-keys li { display: flex; align-items: center; gap: var(--sp-4); }
+.dlg .ag-keys li { grid-template-columns: none; }
+.dlg .ag-row .txt, .dlg .ag-keys .txt { flex: 1; min-width: 0; }
+.dlg .nm { font-weight: 500; }
+.dlg .sub, .dlg .ag-keys .empty { color: var(--f-text-dim); }
+.dlg .ag-new { display: flex; flex-wrap: wrap; gap: var(--sp-3); }
+.dlg .ag-new input { flex: 1 1 calc(var(--sp-10) * 5); }
+.dlg .ag-new input, .dlg .ag-new select { padding: var(--sp-2) var(--sp-3); border: 1px solid var(--f-line-hi); border-radius: var(--rad-button); background: var(--f-bg); color: var(--f-text); font: inherit; }
+.dlg .ag-key pre { color: var(--f-text); user-select: all; }
 .dlg .note { display: flex; gap: var(--sp-3); align-items: center; padding: var(--sp-3) var(--sp-4); border-radius: var(--rad-button); background: var(--f-surface-press); color: var(--f-text-dim); }
 .dlg .note::before { content: ''; flex: none; width: var(--sp-2); height: var(--sp-2); border-radius: var(--rad-round); background: var(--f-warn); }
 

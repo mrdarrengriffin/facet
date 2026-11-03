@@ -70,8 +70,9 @@ anywhere:
 | `GET /fw/info`, `/fw/meta` | what the panel runs and what it can show |
 | `GET /fw/schema` | everything this firmware accepts, in one file (every request is listed there) |
 
-Changes from anywhere but the panel's own editor are gated behind an **Allow AI agents** switch on the
-device (off by default) and a per-panel token. AI agents start at the panel's `/llms.txt`.
+Changes from anywhere but the panel's own editor are gated behind an **Allow API access** switch on the
+device (off by default) and a key per agent, asked for by name and allowed with a tap on the panel. Agents start at
+the panel's `/ai` (one prompt to paste) or `/llms.txt`.
 
 ## <picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/icon-home-dark.svg"><source media="(prefers-color-scheme: light)" srcset=".github/assets/icon-home-light.svg"><img alt="" src=".github/assets/icon-home-light.svg" width="20" height="20"></picture>&nbsp; Screens
 

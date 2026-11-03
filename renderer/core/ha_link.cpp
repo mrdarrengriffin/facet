@@ -182,6 +182,11 @@ void configure(const std::string &url, const std::string &token) {
   }
   bump();
 }
+Link kept() { return {S().url, S().token}; }
+void put_back(const Link &l) {
+  S().token = l.token;
+  configure(l.url, "");  // stores it (on_store) and checks it again
+}
 void set_proxy(bool on) { S().proxy = on; if (S().st == OFF && ready()) S().st = IDLE; bump(); }
 const std::string &url() { return S().url; }
 bool has_token() { return !S().token.empty(); }

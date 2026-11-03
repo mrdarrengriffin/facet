@@ -312,15 +312,6 @@ text_sensor:
     name: Last timer finished
     icon: mdi:timer-check-outline
     update_interval: never
-  # AI agents: the token an agent sends as Authorization: Bearer <token> when Allow AI agents is on
-  # (firmware/fw_device.h "AI agents"). Diagnostic, so it stays off dashboards; New AI agent token = rotate.
-  - platform: template
-    id: ai_agent_token
-    name: AI agent token
-    icon: mdi:key-variant
-    entity_category: diagnostic
-    update_interval: 60s
-    lambda: 'return fw::device::agent_token();'
   - platform: template
     name: Boot check
     icon: mdi:shield-sync-outline
@@ -363,15 +354,6 @@ sensor:
     name: Started
     entity_category: diagnostic
     disabled_by_default: true
-
-button:
-  - platform: template
-    name: New AI agent token
-    icon: mdi:key-change
-    entity_category: config
-    on_press:
-      - lambda: 'fw::device::agent_new_token();'
-      - component.update: ai_agent_token
 
 # Never run: having one homeassistant.action with capture_response makes ESPHome build action responses, which the
 # feed adapters' asks use (renderer/core/ha.h ask, firmware/fw_device.h ha_ask: calendar.get_events for the Bins feed)

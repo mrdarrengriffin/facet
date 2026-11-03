@@ -745,6 +745,90 @@ function save() {
   d.showModal();
 }
 
+// ---- API keys (the panel's own editor only: host.agents): the switch Allow API access, the keys with Revoke,
+// Create key = the same request an agent makes (the panel asks "Allow <name>?" on its glass; the key shows here once)
+async function agentsDialog() {
+  const A = host.agents;
+  if (!A) return;
+  const d = $('ed-dialog') as HTMLDialogElement;
+  const box = h('div', 'dlg agents');
+  d.replaceChildren(box);
+  if (!d.open) d.showModal();
+  const draw = async (made?: HTMLElement) => {
+    const a = await A.list();
+    box.replaceChildren(h('span', 'cap', 'API'), h('h2', '', 'API keys'));
+    if (!a) { box.append(h('div', 'note', 'The panel did not answer.')); return; }
+    const row = h('div', 'ag-row');
+    const lab = h('div', 'txt');
+    lab.append(h('div', 'nm', 'Allow API access'), h('div', 'sub', 'Lets scripts, automations and agents on your network change this panel, each with its own key.'));
+    const err = h('div', 'note');
+    err.hidden = true;
+    row.append(lab, sw(a.on, 'Allow API access', async () => {
+      const e = await A.setOn(!a.on);
+      if (e) { err.hidden = false; err.textContent = e; return; }
+      void draw();
+    }));
+    box.append(row, err);
+    const ul = h('ul', 'ag-keys');
+    if (!a.keys.length) ul.append(h('li', 'empty', 'No keys yet.'));
+    for (const k of a.keys) {
+      const li = h('li');
+      const t = h('div', 'txt');
+      t.append(h('div', 'nm', k.name), h('div', 'sub', `${k.used_words} · ${k.ends_words}`));
+      const rv = h('button', 'btn ghost', 'Revoke');
+      rv.type = 'button';
+      rv.onclick = async () => { rv.disabled = true; await A.revoke(k.id); void draw(); };
+      li.append(t, rv);
+      ul.append(li);
+    }
+    box.append(h('h3', '', 'Keys'), ul);
+    // Create key: a name + how long, then the panel asks on its glass
+    const form = h('div', 'ag-new');
+    const name = Object.assign(h('input'), { type: 'text', placeholder: 'Script on my laptop', ariaLabel: 'Name for the key', maxLength: 60 }) as HTMLInputElement;
+    const life = h('select');
+    life.setAttribute('aria-label', 'How long the key lasts');
+    for (const [v, l] of [['30d', 'Ends after 30 days unused'], ['1d', 'Ends after 1 day'], ['never', 'Until revoked']]) life.append(Object.assign(h('option', '', l), { value: v }));
+    const go = h('button', 'btn primary', 'Create key');
+    go.type = 'button';
+    go.disabled = !a.on;
+    const say = h('div', 'note');
+    say.hidden = a.on;
+    if (!a.on) say.textContent = 'Turn on Allow API access first.';
+    go.onclick = async () => {
+      const n = name.value.trim();
+      if (!n) { name.focus(); return; }
+      go.disabled = true;
+      say.hidden = false;
+      const r = await A.request(n, life.value as '1d' | '30d' | 'never');
+      if (!r.id) { say.textContent = r.error ?? 'The panel refused.'; go.disabled = false; return; }
+      say.textContent = 'Tap Allow on the panel. It waits two minutes.';
+      for (;;) {
+        await new Promise((ok) => setTimeout(ok, 2000));
+        if (!d.open) return;
+        const p = await A.poll(r.id);
+        if (p.state === 'waiting') continue;
+        if (p.state === 'allowed' && p.key) {
+          const k = h('div', 'ag-key');
+          k.append(h('div', 'sub', 'The key, shown this once: copy it now.'), Object.assign(h('pre'), { textContent: p.key }));
+          void draw(k);
+        } else { say.textContent = p.error ?? 'Not allowed.'; go.disabled = false; }
+        return;
+      }
+    };
+    form.append(name, life, go);
+    box.append(h('h3', '', 'Create key'), form, say);
+    if (made) box.append(made);
+    box.append(h('p', 'sub', 'A key can do what this editor does. Plain HTTP on your own Wi-Fi: the editor is open on the LAN, as panels at this tier are.'));
+    const acts = h('div', 'acts');
+    const close = h('button', 'btn ghost', 'Close');
+    close.type = 'button';
+    close.onclick = () => d.close();
+    acts.append(close);
+    box.append(acts);
+  };
+  await draw();
+}
+
 // test bridge (editor tests): what the editor holds + what each preview stage really drew (fw_audit labels,
 // fw_comps boxes), so the end-to-end tests assert the rendered outcome, not the DOM around it. Read-only.
 const stageBy = (label: string) => (engine ? [...engine.views].find((s) => s.label === label) ?? null : null);
@@ -768,6 +852,8 @@ export async function start() {
   const rd = $o('ed-redo');
   if (rd) rd.onclick = doRedo;
   $('ed-save').onclick = save;
+  const ag = $o('ed-agents');  // the panel's own editor only (host.agents)
+  if (ag) { ag.hidden = !host.agents; ag.onclick = () => void agentsDialog(); }
   const rf = $o('ed-refresh');
   if (rf) rf.onclick = () => engine?.haNow();
   addEventListener('keydown', (ev) => {

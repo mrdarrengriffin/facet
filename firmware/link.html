@@ -1,7 +1,7 @@
 <!doctype html>
 <!-- The panel's link page (GET /link, served from flash: firmware/bundle.mjs): set the panel's own Home Assistant
      address and long-lived token from a phone. Sends the action ha.connect (POST /fw/act, the panel's own origin: no
-     agent token needed), then follows GET /fw/link until the panel has checked the link (GET <address>/api/). The token
+     agent key needed), then follows GET /fw/link until the panel has checked the link (GET <address>/api/). The token
      is never shown back: the field is cleared after sending, the panel answers its last 4 characters only. "Create a
      token" opens Home Assistant's profile (Security) through my.home-assistant.io, as whoever is signed in there; the
      address is filled with homeassistant.local when the panel can see it (GET /fw/link "seen"). -->

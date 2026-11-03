@@ -81,11 +81,11 @@ const html = `<!doctype html>
 <header class="ed-top">
 <div class="ed-brand"><span class="ed-mark" aria-hidden="true"></span>Facet <span class="ed-dim">editor</span></div>
 <div class="ed-panel"><div class="seg" id="ed-device" role="group" aria-label="Panel"></div><span class="ed-status" id="ed-status"><span class="dot"></span><span class="txt">checking</span></span></div>
-<div class="ed-tools"><div class="seg" id="ed-theme" role="group" aria-label="Theme"></div><div class="ed-accents" id="ed-accents" role="group" aria-label="Accent"></div><span class="ed-dirty" id="ed-dirty" hidden></span><button class="btn ghost" id="ed-refresh" type="button" title="Fetch the live Home Assistant values now">Refresh</button><button class="btn ghost" id="ed-undo" type="button" title="Undo (Ctrl+Z)">Undo</button><button class="btn ghost" id="ed-redo" type="button" title="Redo (Ctrl+Shift+Z)">Redo</button><button class="btn primary" id="ed-save" type="button">Save</button></div>
+<div class="ed-tools"><div class="seg" id="ed-theme" role="group" aria-label="Theme"></div><div class="ed-accents" id="ed-accents" role="group" aria-label="Accent"></div><span class="ed-dirty" id="ed-dirty" hidden></span><button class="btn ghost" id="ed-agents" type="button" title="API access: the switch and its keys">API keys</button><button class="btn ghost" id="ed-refresh" type="button" title="Fetch the live Home Assistant values now">Refresh</button><button class="btn ghost" id="ed-undo" type="button" title="Undo (Ctrl+Z)">Undo</button><button class="btn ghost" id="ed-redo" type="button" title="Redo (Ctrl+Shift+Z)">Redo</button><button class="btn primary" id="ed-save" type="button">Save</button></div>
 </header>
 <nav class="ed-crumbs" id="ed-crumbs" aria-label="Breadcrumbs"></nav>
 <main class="ed-flow" id="ed-flow"><p class="ed-meta">Loading the renderer</p></main>
-<footer class="ed-foot"><span>Served by this panel.</span><p class="agent-hint">AI agents: read <a href="/llms.txt">/llms.txt</a></p><span class="ed-dim">Save sends the deck to the panel.</span></footer>
+<footer class="ed-foot"><span>Served by this panel.</span><p class="agent-hint">Agents: paste <a href="/ai">/ai</a> to yours</p><span class="ed-dim">Save sends the deck to the panel.</span></footer>
 </div>
 <dialog class="ed-dialog" id="ed-dialog"></dialog>
 <script type="application/json" id="ed-boot">${boot}</script>

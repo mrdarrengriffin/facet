@@ -19,7 +19,7 @@ export const prerender = false;
  *   screen / deck: 1) dry run in WASM at the panel's density (tools/spec.mjs: the panel's own validation + build);
  *   2) the panel's hello: a component the spec uses that the panel lacks = 409 needs_firmware; 3) POST /fw/spec on the
  *   panel (it validates again, builds once off screen, stores, swaps) -> its answer. revert: {kind: revert, id}.
- * Panels = FACET_PANELS (lib/panels.ts); the panel's HTTP API with its agent token (lib/panel-auth.ts).
+ * Panels = FACET_PANELS (lib/panels.ts); the panel's HTTP API with its key (FACET_PANEL_KEYS, lib/panel-auth.ts).
  */
 const R = join(REPO, 'renderer');
 const json = (o: unknown, status = 200) => new Response(JSON.stringify(o), { status, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' } });

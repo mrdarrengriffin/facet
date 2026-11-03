@@ -35,7 +35,7 @@ const headings: Heading[] = [
   </p>
 
   <h2 id="routes">Routes</h2>
-  <p><Count k="routes" /> routes. Writes need <strong>Allow AI agents</strong> on and the panel's agent token.</p>
+  <p><Count k="routes" /> routes. Writes need <strong>Allow API access</strong> on and a key you allowed on the panel.</p>
   <table>
     <thead><tr><th>Request</th><th>What it does</th></tr></thead>
     <tbody>{(schema.routes as { method: string; path: string; says: string }[]).map((r) => <tr><td><code>{r.method} {r.path}</code></td><td>{r.says}</td></tr>)}</tbody>

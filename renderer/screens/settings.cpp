@@ -11,6 +11,8 @@
 //            sheet / presets       a List row with value + chevron; a tap opens the Bottom sheet
 //            slider                a read-out List row (the name, the value in words) over the Slider component;
 //                                  the words follow the knob while it moves
+//   API      after the API group's switch: List row "API keys" (value: how many keys) opens Settings > API keys
+//            (screens/agent_keys.cpp)
 //   sheet    the Bottom sheet component in overlay mode, the screen's last child (its single overlay root)
 // Values come from the props (one per setting = the playground; missing = the live value, fw::dev::setting). Inside the
 // Device (live) view, Theme / Accent restyle that device; the workbench's own theme and accent stay global settings.
@@ -26,6 +28,7 @@
 #include "settings_gen.h"
 #include "device.h"
 #include "spec.h"
+#include "keys.h"
 
 namespace {
 using Doc = ArduinoJson::JsonDocument;
@@ -398,6 +401,16 @@ void build_settings(lv_obj_t *parent, fw::Props p) {
     group(c, fw::set::GROUPS[g].label, false);
     for (int i = 0; i < fw::set::N_SETTINGS; i++)
       if (!strcmp(fw::set::SETTINGS[i].group, fw::set::GROUPS[g].id)) row_for(scr, c, fw::set::SETTINGS[i]);
+    if (strcmp(fw::set::GROUPS[g].id, "agents")) continue;
+    Doc ar;  // API keys: the keys scripts, automations and agents use (screens/agent_keys.cpp, core/keys.h)
+    const size_t n = fw::keys::list().size();
+    const std::string v = !n ? std::string("No keys") : n == 1 ? std::string("1 key") : std::to_string(n) + " keys";
+    ar["title"] = "API keys", ar["icon"] = "none", ar["trailing"] = "value-chevron", ar["value"] = v.c_str();
+    if (lv_obj_t *r = build("list_row", c, ar))
+      lv_obj_add_event_cb(r, [](lv_event_t *e) {
+        auto *o = (lv_obj_t *) lv_event_get_current_target(e);
+        if (!lv_obj_has_state(o, fw::st::OFF)) fw::emit(o, "navigate", "agent_keys");
+      }, LV_EVENT_CLICKED, nullptr);
   }
 
   const char *sheet = p["sheet"] | "closed";

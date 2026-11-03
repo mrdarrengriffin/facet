@@ -25,6 +25,21 @@ const ACT = (C.act ?? []).filter((x) => !x.spec_only);
 const val = (g) => g.split('|').map((a) => a[0] === '*' ? `a short name (at most ${a.slice(1)})` : a.replace(/#(\S+)/, (_, r) => `<${r}>`)).join(' | ');
 const actLines = ACT.map((x) => { const f = (x.fields ?? []).map((f) => `\`${f.name}\`${f.need === 'required' ? '' : '?'} (${f.name === 'value' ? val(f.limits) : f.limits})`).join(', '); return `- \`${x.do}\`: ${x.about}${f ? ' ' + f + '.' : ''} e.g. \`${JSON.stringify(x.example)}\``; }).join('\n');
 
+// the one access text (llms.txt + agents.md): keys asked for by name, allowed on the glass (core/keys.h)
+const ACCESS = `Writes (every POST) need the panel setting "${agents.label}" on (off on a new panel; the owner turns it on
+in the panel's Settings, its editor or Home Assistant) and a key of your own in the header
+\`Authorization: Bearer <key>\`. Send JSON bodies with \`Content-Type: application/json\`. Reads (GET) are open and never
+answer a key.
+- POST /fw/keys/request {"name": "<you> on <this computer>", "expires"?: "1d" | "30d" | "never"} -> {ok, id}: the
+  panel asks "Allow <name>?" on its screen. Tell the person to tap Allow.
+- POST /fw/keys/poll {"id": "<id>"} every 2 s -> {state: "waiting"} | {state: "allowed", key} (the key comes back once)
+  | {state: "denied", error}. No tap in two minutes = denied. expires: 30d (default) = ends after 30 days unused, each
+  use moves the end on; 1d = ends a day after it was made; never = until revoked (or 90 days unused).
+- A refused write answers 403 {"agents": "off"} (the setting is off) or 401 {"agents": "key"} (no key, or one that was
+  revoked, ended or unused for 90 days), each with one plain line. GET /fw/keys lists the keys (names and times).
+- Every change made with a key shows on the panel's screen with what changed, the key's name and Undo.
+Plain HTTP on the owner's own Wi-Fi: the panel's editor is open on the LAN, as panels at this tier are.`;
+
 const llms = `# Facet panel
 
 > A Facet wall panel (ESP32 touch screen, ESPHome firmware, Home Assistant). You can make screens for it: write a
@@ -34,7 +49,8 @@ Everything below is served by this panel itself and matches its firmware (catalo
 
 ## Docs
 - [Agent guide](/agents.md): the spec format, every component and prop this firmware has, bindings, actions, limits, the send API with curl examples
-- [Schema](/fw/schema): the one machine-readable description of this firmware (gzip JSON): tokens, components (props, options, minimums, slots, events, actions), screens and their settings, feeds (fields, required or optional, states), settings, themes, and these endpoints
+- [Prompt](/ai): the one prompt that sets an agent up for this panel (plain text, this panel's address in it)
+- [Schema](/schema.json) (also /fw/schema): the one machine-readable description of this firmware (gzip JSON): tokens, components (props, options, minimums, slots, events, actions), screens and their settings, feeds (fields, required or optional, states), settings, themes, and these endpoints
 
 ## Endpoints (JSON)
 - GET /fw/spec: hello (protocol, catalogue hash, components, screens and revs, budgets, free memory)
@@ -49,11 +65,9 @@ Everything below is served by this panel itself and matches its firmware (catalo
 - POST /fw/act {"do":"timer.start","seconds":300}: run one (lights, climate, media, covers, locks, vacuum, timers, opening screens) -> {ok, why?, state?}
 
 ## Access
-Writes need the panel setting "${agents.label}" (off by default; the owner turns it on on the panel or in Home
-Assistant) and the header \`Authorization: Bearer <agent token>\` (the owner reads it in Home Assistant: the panel's
-"AI agent token" entity). Without them a write (and GET /fw/ha, the panel's Home Assistant values) answers 403 with
-what to do. Reading the docs and the other GET endpoints is open. Browsers: CORS is answered (OPTIONS preflight allows
-Authorization, Content-Type and X-Facet-Token from any origin), so a web page can call the panel with the token.
+${ACCESS}
+Browsers: CORS is answered (OPTIONS preflight allows Authorization and Content-Type from any origin), so a web page can
+call the panel with its key.
 `;
 
 const typ = (p) => {
@@ -123,6 +137,12 @@ write a spec, POST it as "check" until it is valid, POST it as "screen", then op
 A prop marked bindable takes a bind instead of a value:
 \`{"e": "light.x" | "$param", "a"?: "<attribute>", "fmt"?: <fmt>, "s"?: "<sample>", "map"?: {"<value>": "<text>"}, "else"?: "<text>", "tpl"?: "Battery {}%"}\`
 - fmt: ${C.fmt.join(', ')}.
+- Units: \`fmt: "num"\` gives the bare number (no unit) for a number prop such as a Stat's value; put the unit in the
+  component's own unit prop if it has one, or use \`tpl\` (\`"{} W"\`). \`fmt: "state"\` gives the state as words with its unit:
+  a sensor rounded to one decimal plus its unit_of_measurement (\`"412 W"\`, \`"18.5°"\`), a door "Open" / "Closed",
+  unavailable "Unavailable". No fmt = the raw state, no unit. To show a sensor with its unit in a text prop: \`"fmt": "state"\`.
+- Check an entity exists first: GET /fw/ha?want=<id>,<id> answers \`{"values": {"<id>": "<state>", "<id>|friendly_name": ...}}\`
+  with the ones the panel has; one Home Assistant does not have is missing from values (ask again after a second).
 - \`s\` is shown until Home Assistant sends the value (at most 64 characters; 256 for an \`items\` list); \`map\` turns states into words; \`tpl\` wraps the value (\`{}\`).
 - The panel subscribes to bound entities itself through its Home Assistant connection.
 
@@ -138,11 +158,12 @@ GET /fw/deck shows the page list. To add your screen as a page, send the whole d
 Home cards (\`{"t": type, "e": entity, "size", "tap", "label"?}\`): ${cards.map(([t, c]) => `${t} (${c.domains ?? 'page'}; ${c.sizes}; tap ${c.taps})`).join(', ')}.` : ''}
 
 ## Send API
-Writes need "${agents.label}" on (the owner turns it on on the panel, Settings > ${S.groups.find((g) => g.id === agents.group)?.label ?? 'AI agents'},
-or in Home Assistant) and the panel's agent token (Home Assistant entity "AI agent token"). A refused call answers 403
-\`{"ok": false, "error": ..., "agents": "off" | "token"}\`.
+${ACCESS}
 \`\`\`sh
-P=${P}; T=<agent token>
+P=${P}
+curl -s -H 'Content-Type: application/json' -d '{"name":"My script on my laptop"}' $P/fw/keys/request  # {ok, id}: tap Allow on the panel
+curl -s -H 'Content-Type: application/json' -d '{"id":"<id>"}' $P/fw/keys/poll   # {state: allowed, key} once
+T=<key>
 curl -s $P/fw/spec                                   # hello: components, screens, budgets, heap
 curl -s -H "Authorization: Bearer $T" -H 'Content-Type: application/json' \\
   -d '{"kind":"check","spec":'"$(cat office.json)"'}' $P/fw/spec    # {ok, status: valid|refused, errors: [{path, code, msg}]}
@@ -164,7 +185,7 @@ One closed list of actions runs everywhere: a spec node's event, \`POST /fw/act\
 action \`esphome.<node>_facet_act\` \`{"action": "<the same JSON as a string>"}\` take the same actions with the same checks
 and limits. Outside a spec the value a component's event would give is the \`value\` field. GET /fw/act lists them as
 JSON. Answer: \`{"ok": true, "state": {...}}\` (the timers, the entity's state, the screen) or \`{"ok": false, "why": "..."}\`
-(HTTP 400). Writes need the agent token, as above.
+(HTTP 400). Writes need a key, as above.
 \`\`\`sh
 curl -s -H "Authorization: Bearer $T" -H 'Content-Type: application/json' \\
   -d '{"do":"timer.start","seconds":300,"name":"Pasta"}' $P/fw/act

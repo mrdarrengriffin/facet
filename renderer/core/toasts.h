@@ -15,7 +15,8 @@
 //           from tokens) placed along the bottom inside the edge, the tone colour, shrinking left over the life
 //           (layout.json toast life 6 s, life-urgent 12 s), linear; timer off = a full bar, no timeout. An update
 //           keeps the life left when the timer and life stay.
-//   action  fw::toasts::action(o, button): a tap on the toast's Button (the real one, fw::find) dismisses it
+//   action  fw::toasts::action(o, button): a tap on the toast's Button (the real one, fw::find) dismisses it; on_action(o,
+//           fn) = it runs fn first (on the next LVGL pass, never inside the tap: Undo, core/keys.cpp)
 //   layer   fw::toasts::layer(host) = a Toast layer overlay on host (full size, floating, NOT clickable: only the
 //           toasts take taps); up to toast.max (2) toasts, newest nearest the edge they enter from, lay::gutter apart;
 //           top = the first at lay::toast_top, bottom = the first ends at the bottom inset; x = inset, content width.
@@ -29,6 +30,7 @@
 // Perf (Guition): small invalidation only. A sitting toast redraws its timer bar strip (stroke::edge high); an arriving
 // / leaving toast redraws its own box while it fades; a restack moves whole toasts by y. Nothing full-screen.
 #pragma once
+#include <functional>
 #include "fw.h"
 
 namespace fw {
@@ -38,12 +40,13 @@ void arm(lv_obj_t *toast, lv_obj_t *bar, bool timer, bool urgent);  // after the
 int32_t left(lv_obj_t *toast, bool timer, bool urgent);  // before an update's refill: the bar paused, the width to keep (-1 = full)
 void again(lv_obj_t *toast, lv_obj_t *bar, bool timer, bool urgent, int32_t keep_w);  // after it: a dismissed one comes back
 void action(lv_obj_t *toast, lv_obj_t *button);
+void on_action(lv_obj_t *toast, std::function<void()> fn);  // its Button runs fn (on the next pass), then dismisses
 
 lv_obj_t *layer(lv_obj_t *host, bool top = toast::top, bool still = false);
 lv_obj_t *show(lv_obj_t *layer, Props toast, const char *detail);
 void clear(lv_obj_t *layer);     // every toast showing leaves quietly
 void set_top(lv_obj_t *layer, bool top);  // taken only while no toast is showing (a stack never flips)
-void push(lv_obj_t *layer, Props toast, bool top);
+lv_obj_t *push(lv_obj_t *layer, Props toast, bool top);  // the toast (nullptr = none)
 // o lies under a shown toast (and is not part of one): the contrast proofs skip it (covered on purpose, like the scrim's)
 bool under(lv_obj_t *o);
 }  // namespace toasts

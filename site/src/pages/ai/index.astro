@@ -1,22 +1,28 @@
 ---
-// Make screens with AI: what a screen spec is, why AI-made screens still look like Facet (components + tokens, budgets,
-// validation on the panel), and how to let an assistant make one: on the panel's own API (agent docs at /llms.txt and
-// /agents.md, the AI agents setting + token), through Home Assistant (the ESPHome actions), or with a starter prompt.
+// Make screens with AI. Opens with the one prompt to paste to an agent (firmware/ai-prompt.txt: the same file the
+// panel serves at GET /ai with its own address in; the address field here puts yours where it says {panel}), then
+// what a screen spec is, why AI-made screens still look like Facet (components + tokens, budgets, validation on the
+// panel), the panel's API (API keys: asked for by name, allowed on the glass; core/keys.h), Home Assistant, examples.
 // Examples: a grid of tiles (WASM shots, dark + light, follow the site theme: renderer/tools/readme_assets.mjs --ai-examples) linking to ./examples/<id>/.
 import Docs, { type Heading } from '../../layouts/Docs.astro';
 import { AI_EXAMPLES, url } from '../../lib/nav';
 import examples from '../../lib/ai-examples.json';
 import CodeBlock from '../../components/CodeBlock.astro';
+import promptText from '../../../../firmware/ai-prompt.txt?raw';
 
 const headings: Heading[] = [
-  { depth: 2, slug: 'panel', text: 'Point an AI at your panel' },
+  { depth: 2, slug: 'prompt', text: 'Paste this to your agent' },
+  { depth: 2, slug: 'specs', text: 'What the agent makes' },
+  { depth: 2, slug: 'panel', text: 'The panel\'s API' },
   { depth: 2, slug: 'home-assistant', text: 'Through Home Assistant' },
-  { depth: 2, slug: 'prompt', text: 'Starter prompt' },
   ...(AI_EXAMPLES ? [{ depth: 2, slug: 'examples', text: 'Examples' }] : []),
 ];
-const curl = `P=http://<panel-ip>; T=<agent token>
-curl -s $P/llms.txt                                   # where to start
-curl -s $P/agents.md                                  # the spec guide for this firmware
+const ADDR = 'http://<panel address>';
+const prompt = promptText.replaceAll('{panel}', ADDR);
+const curl = `P=http://<panel address>
+curl -s -H 'Content-Type: application/json' -d '{"name":"My script on my laptop"}' $P/fw/keys/request  # tap Allow on the panel
+curl -s -H 'Content-Type: application/json' -d '{"id":"<id>"}' $P/fw/keys/poll   # the key, once
+T=<key>
 curl -s -H "Authorization: Bearer $T" -H 'Content-Type: application/json' \\
   -d '{"kind":"check","spec":'"$(cat bin_day.json)"'}' $P/fw/spec    # valid, or what to fix
 curl -s -H "Authorization: Bearer $T" -H 'Content-Type: application/json' \\
@@ -35,19 +41,20 @@ response_variable: result
 action: esphome.kitchen_panel_facet_show
 data:
   screen: bin_day`;
-const prompt = `You are making a screen for my Facet wall panel at http://<panel-ip>.
-1. Read http://<panel-ip>/llms.txt, then /agents.md: it lists the only components, props and actions this panel accepts.
-2. Write a screen spec (JSON) for: <what you want, e.g. "my bin collections: days until the next one, then each bin with its date">.
-   Use my Home Assistant entities: <entity ids>. Use only components from /agents.md, no positions, sizes or colours.
-   One hero per screen, short text, rows for lists.
-3. POST it to /fw/spec with kind "check" (header Authorization: Bearer <agent token>) and fix every error it reports.
-4. When it is valid, POST it with kind "screen", then open it with POST /fw/show {"screen": "<id>"}.
-5. Fetch /screenshot and check that nothing is cut off; shorten text if it is.`;
 ---
 
 <Docs edit="site/src/pages/ai/index.astro" title="Make screens with AI" description="Ask an AI assistant for any screen you like: it writes a Facet spec, the panel checks it, and it looks like the rest of Facet." group="Inside Facet" current={url('/ai/')} headings={headings}>
   <p class="lede">Describe a screen, for example your bin days or the next trains, and an AI assistant writes it as a spec. The panel checks the spec, and the screen uses the same components and tokens as the built-in ones.</p>
 
+  <h2 id="prompt">Paste this to your agent</h2>
+  <p>Type your panel's address, copy the prompt, add what you want at the end and paste it to your agent. Your panel serves the same prompt at <code>http://&lt;panel address&gt;/ai</code>, its address already in.</p>
+  <label class="ai-addr">Panel address <input type="text" inputmode="url" autocomplete="off" spellcheck="false" placeholder="192.168.1.40" data-ai-addr /></label>
+  <div data-ai-prompt data-addr={ADDR}>
+    <CodeBlock id="agent-prompt" code={prompt} label="Prompt" copyLabel="Copy prompt" />
+  </div>
+  <p>The agent asks the panel for an API key with its name, the same way any script or automation does, and the panel asks you <em>Allow &lt;name&gt;?</em> on its screen. Tap <strong>Allow</strong>. Every change it makes shows on the panel with <strong>Undo</strong>; <strong>Settings &gt; API keys</strong> lists the keys and revokes them. Keys need <strong>Allow API access</strong> on, in the panel's Settings. It is plain HTTP on your own Wi-Fi: the editor is open on the LAN, as panels at this tier are.</p>
+
+  <h2 id="specs">What the agent makes</h2>
   <p>
     The assistant writes the screen as a <a href={url('/inside/spec/')}>spec</a>: a short JSON list of Facet components.
     The panel checks every spec against its own budgets and components before it keeps it and says what to fix, so a
@@ -55,24 +62,14 @@ const prompt = `You are making a screen for my Facet wall panel at http://<panel
     and its limits.
   </p>
 
-  <h2 id="panel">Point an AI at your panel</h2>
-  <p>For assistants that can make web requests (coding agents, desktop assistants with tools):</p>
-  <ol>
-    <li>On the panel, open <strong>Settings &gt; AI agents</strong> and turn on <strong>Allow AI agents</strong> (you can also switch it in Home Assistant).</li>
-    <li>In Home Assistant, copy the panel's <strong>AI agent token</strong> sensor and give it to the assistant. Make a new token at any time to cut access off.</li>
-    <li>Tell the assistant to start at <code>http://&lt;panel&gt;/llms.txt</code>. It leads to <code>/agents.md</code>, a guide generated from the firmware itself: every component and prop this panel accepts, how to bind entities, the actions and the budgets.</li>
-  </ol>
-  <p>Every request the panel answers is listed on <a href={url('/inside/schema/#routes')}>Schema</a>.</p>
-  <p>Writes need the setting on and <code>Authorization: Bearer &lt;token&gt;</code>; otherwise the panel answers 403 and says what is missing.</p>
+  <h2 id="panel">The panel's API</h2>
+  <p>For agents, scripts and automations that make web requests: each asks for its own API key the same way. The panel serves its own guide at <code>/llms.txt</code> and <code>/agents.md</code>, generated from the firmware itself: every component and prop it accepts, how to bind entities, the actions and the budgets. Every request it answers is listed on <a href={url('/inside/schema/#routes')}>Schema</a>.</p>
+  <p>Every write needs <code>Authorization: Bearer &lt;key&gt;</code>; reads need nothing. Without the setting on the panel answers 403, without a working key 401, each with one line saying what to do. A key ends after 30 days unused (each use moves its end on), after 1 day whatever happens, or when revoked, as chosen when it is asked for; a key kept until revoked still goes when it is not used for 90 days.</p>
   <CodeBlock code={curl} lang="bash" label="curl" copyLabel="Copy curl commands" />
 
   <h2 id="home-assistant">Through Home Assistant</h2>
   <p>Assistants that already work with your Home Assistant can install screens through the panel's ESPHome actions, with no network access to the panel: <code>esphome.&lt;panel&gt;_facet_hello</code> (components, screens and budgets), <code>_facet_screen</code> (install a screen spec), <code>_facet_deck</code> (the page list), <code>_facet_revert</code> (back to the factory screen) and <code>_facet_show</code> (open a screen). The first four answer with a response, so call them with a response variable and read the errors.</p>
   <CodeBlock code={ha} lang="yaml" label="Home Assistant · YAML" copyLabel="Copy Home Assistant actions" />
-
-  <h2 id="prompt">Starter prompt</h2>
-  <p>Paste this into your assistant and fill in the brackets.</p>
-  <CodeBlock id="starter" code={prompt} label="Prompt" copyLabel="Copy prompt" />
 
   {AI_EXAMPLES && (<>
   <h2 id="examples">Examples</h2>
@@ -92,7 +89,27 @@ const prompt = `You are making a screen for my Facet wall panel at http://<panel
   </>)}
 </Docs>
 
+<script>
+  // the address field: the prompt's address (every place it says it) follows what is typed
+  const input = document.querySelector<HTMLInputElement>('[data-ai-addr]');
+  const box = document.querySelector<HTMLElement>('[data-ai-prompt]');
+  if (input && box) {
+    let cur = box.dataset.addr ?? '';
+    input.addEventListener('input', () => {
+      const v = input.value.trim().replace(/\/+$/, '');
+      const next = v ? (/^https?:\/\//.test(v) ? v : `http://${v}`) : (box.dataset.addr ?? '');
+      if (!cur || next === cur) return;
+      const walk = document.createTreeWalker(box.querySelector('pre') ?? box, NodeFilter.SHOW_TEXT);
+      for (let n = walk.nextNode(); n; n = walk.nextNode()) if (n.nodeValue?.includes(cur)) n.nodeValue = n.nodeValue.split(cur).join(next);
+      cur = next;
+    });
+  }
+</script>
+
 <style>
+  .ai-addr { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 16px 0; color: var(--facet-color-text-dim); font-size: 14px; }
+  .ai-addr input { flex: 1 1 220px; max-width: 360px; padding: 8px 12px; border: 1px solid var(--facet-color-line-hi); border-radius: 10px; background: var(--facet-color-surface); color: var(--facet-color-text); font: inherit; font-size: 16px; }
+  .ai-addr input:focus-visible { outline: 2px solid var(--facet-color-accent); outline-offset: 2px; }
   .ex-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; padding: 0; list-style: none; }
   .ex-grid a { display: flex; flex-direction: column; gap: 4px; height: 100%; padding: 12px; border: 1px solid var(--facet-color-line); border-radius: 16px; background: var(--facet-color-surface); color: var(--facet-color-text); text-decoration: none; }
   .ex-grid a:hover { border-color: var(--facet-color-line-hi); background: var(--facet-color-surface-press); }

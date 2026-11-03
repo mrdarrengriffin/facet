@@ -30,6 +30,10 @@ export type Discovery = {
 };
 export type PanelStatus = { online: boolean; ip?: string };
 export type SaveResult = { sent: boolean; note: string };
+/** the panel's API keys (renderer/core/keys.h, GET /fw/keys): names and times only, never a key */
+export type AgentKey = { id: string; name: string; used_words: string; ends_words: string };
+export type Agents = { on: boolean; keys: AgentKey[] };
+export type KeyPoll = { state: 'waiting' | 'allowed' | 'denied' | 'gone'; key?: string; error?: string; left_s?: number };
 
 export interface EditorHost {
   /** the panels this host can edit (the device toggle); a panel serving the editor = only itself */
@@ -57,6 +61,15 @@ export interface EditorHost {
   /** the deck being edited, after every change (before the engine builds it): a host whose HA can't unsubscribe (the
    *  panel) keeps its live values to the entities this deck names, not the sample screens' demo ones */
   deckChanged?(deck: Deck): void;
+  /** the panel's API keys and the switch Allow API access (Create key = the same request an agent makes:
+   *  POST /fw/keys/request, allowed on the glass); absent = this host has none */
+  agents?: {
+    list(): Promise<Agents | null>;
+    setOn(on: boolean): Promise<string>;  // '' = done, else why not
+    request(name: string, expires: '1d' | '30d' | 'never'): Promise<{ id?: string; error?: string }>;
+    poll(id: string): Promise<KeyPoll>;
+    revoke(id: string): Promise<boolean>;  // a key's id, or 'all'
+  };
 }
 
 export const hubHost: EditorHost = {

@@ -14,6 +14,7 @@ const headings: Heading[] = [
   { depth: 2, slug: 'home-assistant', text: 'Not showing in Home Assistant' },
   { depth: 2, slug: 'actions', text: 'Controls do nothing' },
   { depth: 2, slug: 'link', text: 'Lists of your devices are empty' },
+  { depth: 2, slug: 'agents', text: 'A script or agent cannot change the panel' },
   { depth: 2, slug: 'help', text: 'Still stuck?' },
 ];
 ---
@@ -104,6 +105,16 @@ const headings: Heading[] = [
   <p>
     The panel keeps the address and token when it restarts, and never shows the token back: Settings shows its last
     four characters only.
+  </p>
+
+  <h2 id="agents">A script or agent cannot change the panel</h2>
+  <p>
+    Scripts, automations and agents need <strong>Allow API access</strong> on (the panel's Settings, its editor or Home
+    Assistant) and a key of their own. Each asks the panel for one with its name, the same way; the panel asks you
+    <em>Allow &lt;name&gt;?</em> and the key works once you tap <strong>Allow</strong>. No tap in two minutes is a no.
+    A key ends after 30 days unused unless it was asked for as another kind (1 day, or until revoked): ask again.
+    <strong>Settings &gt; API keys</strong> lists the keys and revokes them all. <a href={url('/ai/')}>Make screens with AI</a>
+    has the prompt to give an agent.
   </p>
 
   <h2 id="help">Still stuck?</h2>

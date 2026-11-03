@@ -1,6 +1,6 @@
 ---
 // Concepts: how the firmware works. Facts: README "How it works" + "Panels", firmware/ (ESPHome external component,
-// bundle.mjs), firmware/fw_device.h (HTTP API, AI agents gate), the public firmware YAML (Home Assistant API with
+// bundle.mjs), firmware/fw_device.h (HTTP API, API keys gate), the public firmware YAML (Home Assistant API with
 // encryption from adoption, states + actions, update entity), renderer/features.json (what a release carries).
 import Docs, { type Heading } from '../../layouts/Docs.astro';
 import Count from '../../components/Count.astro';
@@ -75,7 +75,7 @@ const headings: Heading[] = [
   <p>
     The panel also answers a small HTTP API on your network: what it runs, what it can show, and a way to show a screen
     or install a new one. Anything that changes the panel, except from the panel's own pages, needs the
-    <strong>Allow AI agents</strong> setting on (it is off by default) and the panel's token.
+    <strong>Allow API access</strong> setting on (it is off by default) and a key you allowed on the panel.
     <a href={url('/ai/')}>Make screens with AI</a> describes it.
   </p>
 

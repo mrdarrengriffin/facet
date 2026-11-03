@@ -552,13 +552,15 @@ const Theme *theme_at(lv_obj_t *o) {
   for (Device *d : devices) if (d->root == o) return d->theme;
   return nullptr;
 }
-void toast(Props t) {
+void toast(Props t) { toast(t, nullptr); }
+void toast(Props t, std::function<void()> on_action) {
   const bool top = store().v[index_of("toastPosition")] != "bottom";
   for (Device *d : devices) {
     if (!d->toasts) continue;
     const Theme *was = T;
     T = d->theme;  // built in the device's look (fw::T is global)
-    toasts::push(d->toasts, t, top);
+    lv_obj_t *o = toasts::push(d->toasts, t, top);
+    if (o && on_action) toasts::on_action(o, on_action);
     T = devices.size() == 1 ? d->theme : was;  // a panel (one device): fw::T stays its look for taps / fades
   }
 }
@@ -656,9 +658,9 @@ const char *set(const char *id, const char *value, From from, lv_obj_t *obj) {
   const set::Setting &s = set::SETTINGS[k];
   const std::string v = normal(s, value);
   if (v.empty()) return "not a valid value";
-  // Allow AI agents: only the panel itself or Home Assistant can turn it on, never an HTTP request (an
-  // agent must not be able to let itself in); a host may still turn it off
-  if (from == HOST && v == "true" && !strcmp(id, "aiAgents")) return "turn Allow AI agents on on the panel (Settings) or in Home Assistant";
+  // Allow API access (core/keys.h): only the glass, Home Assistant or the panel's own editor can turn it on,
+  // never an agent's request (an agent must not be able to let itself in); a host may still turn it off
+  if (from == HOST && v == "true" && !strcmp(id, "aiAgents")) return "turn on Allow API access on the panel (Settings > API keys), in its editor or in Home Assistant";
   Store &st = store();
   const bool was_given = st.given[k];
   st.given[k] = true;

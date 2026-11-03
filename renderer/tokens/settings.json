@@ -24,7 +24,7 @@
     },
     {
       "id": "agents",
-      "label": "AI agents"
+      "label": "API"
     }
   ],
   "settings": [
@@ -417,13 +417,13 @@
     },
     {
       "id": "aiAgents",
-      "help": "Lets AI assistants on your network send screens to this panel. Each request needs the panel's agent token (Home Assistant shows it). Turn it on here or in Home Assistant.",
+      "help": "Lets scripts, automations and agents on your network change this panel. Each one asks for its own key, and you tap Allow on the panel. Off: every key is refused. Turn it on here, in the panel's editor or in Home Assistant.",
       "group": "agents",
-      "label": "Allow AI agents",
+      "label": "Allow API access",
       "kind": "switch",
       "control": "toggle",
       "default": false,
-      "about": "Off: the write endpoints (/fw/spec, /fw/show, /fw/settings, /fw/bench) refuse everything but the panel's own editor. On: they also take requests with Authorization: Bearer <agent token>. /llms.txt and /agents.md are always readable.",
+      "about": "Off: every write from outside the panel's own editor is refused, keys too, and no key can be asked for. On: a request with Authorization: Bearer <key> (a key from POST /fw/keys/request, allowed on the glass) can do what the editor does. Reads, /llms.txt, /agents.md, /ai and /schema.json are always open.",
       "esphome": {
         "id": "ai_agents",
         "name": "Allow AI agents",

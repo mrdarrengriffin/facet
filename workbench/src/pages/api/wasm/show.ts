@@ -94,7 +94,7 @@ export const POST: APIRoute = async ({ url, request }) => {
   if (!p) return json({ ok: false, error: `device must be one of ${TARGETS()}` }, 400);
   const ip = p.host;
   try {
-    // agent auth: the panel's AI agent token from HA; 403 agents:"off" -> say how to turn it on
+    // agent auth: the key the workbench has for this panel (FACET_PANEL_KEYS); 403 off / 401 key -> say what to do
     const r = await panelFetch(ip!, '/fw/show', { method: 'POST', headers: { 'content-type': 'application/json' }, body: await request.text(), signal: AbortSignal.timeout(8000) });
     const body = await r.json();
     const off = agentsOffMessage(body, p.title);

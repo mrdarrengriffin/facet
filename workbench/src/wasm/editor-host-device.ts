@@ -5,7 +5,7 @@
 // stored in NVS with the last good copy, Home rebuilt). No HA yet: no entity options, no found sources ("set up
 // later"), the preview's bound components keep their sample data.
 import type { EditorHost } from './editor-host';
-export type { Option, Deck, DeckPage, DeckEntry, Discovery, PanelStatus, SaveResult, EditorHost } from './editor-host';
+export type { Option, Deck, DeckPage, DeckEntry, Discovery, PanelStatus, SaveResult, EditorHost, Agents, AgentKey, KeyPoll } from './editor-host';
 
 const j = async (path: string, init?: RequestInit) => {
   const r = await fetch(path, { cache: 'no-store', ...init });
@@ -79,6 +79,34 @@ export const deviceHost: EditorHost = {
   },
   deckChanged(deck) { inDeck = entities(deck, new Set()); },
   saveNote: 'Sends the deck to this panel: applied in one step, kept across reboots, the last one kept to roll back.',
+  // API keys (renderer/core/keys.h): this page is the panel's own origin, so its writes need no key
+  agents: {
+    async list() {
+      try { const { ok, body } = await j('/fw/keys'); return ok && body ? { on: !!body.on, keys: body.keys ?? [] } : null; } catch { return null; }
+    },
+    async setOn(on) {
+      try {
+        const { ok, body } = await j('/fw/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ values: { aiAgents: on } }) });
+        return ok && body?.ok ? '' : body?.error ?? 'The panel did not answer.';
+      } catch { return 'The panel did not answer.'; }
+    },
+    async request(name, expires) {
+      try {
+        const { body } = await j('/fw/keys/request', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, expires }) });
+        return body?.ok ? { id: body.id } : { error: body?.error ?? 'The panel did not answer.' };
+      } catch { return { error: 'The panel did not answer.' }; }
+    },
+    async poll(id) {
+      try {
+        const { ok, body } = await j('/fw/keys/poll', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
+        if (!ok && !body?.state) return { state: 'gone', error: body?.error ?? 'The panel did not answer.' };
+        return { state: body.state, key: body.key, error: body.error, left_s: body.left_s };
+      } catch { return { state: 'waiting' }; }
+    },
+    async revoke(id) {
+      try { const { ok, body } = await j('/fw/keys/revoke', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) }); return ok && !!body?.ok; } catch { return false; }
+    },
+  },
 };
 
 export const host: EditorHost = deviceHost;

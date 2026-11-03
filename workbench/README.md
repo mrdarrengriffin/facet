@@ -22,7 +22,8 @@ All optional, from the environment:
 | Variable | What |
 |---|---|
 | `HA_URL`, `HA_TOKEN` | a Home Assistant and a long-lived access token: bound screens show its real states and the actions reach it. Without them the workbench uses the fake Home Assistant (`renderer/tools/demo_ha.mjs`) and actions are accepted but not sent |
-| `FACET_PANELS` | panels to show things on and send specs to: `<name>=<host>@<board-id>`, comma separated, e.g. `office=192.168.1.40@waveshare-p4-86`. A panel runs the workbench firmware (`esphome/`) with "Allow AI agents" on; the workbench reads its agent token from Home Assistant |
+| `FACET_PANELS` | panels to show things on and send specs to: `<name>=<host>@<board-id>`, comma separated, e.g. `office=192.168.1.40@waveshare-p4-86`. A panel runs the workbench firmware (`esphome/`) with "Allow API access" on |
+| `FACET_PANEL_KEYS` | the workbench's key per panel: `<host>=<key>`, comma separated. Ask a panel for one with `POST /fw/keys/request {"name": "Workbench"}` and tap Allow on its screen (its `/llms.txt` has the curl lines) |
 | `FW_OUT`, `FW_CACHE` | where the renderer build is (as `renderer/build.sh`; `local.env` at the repo root works too) |
 | `PORT` | default 4322 |
 

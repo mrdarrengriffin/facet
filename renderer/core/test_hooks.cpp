@@ -27,6 +27,12 @@
 //                                    list (core/device.h "the panel's timers")
 //   fw_test("scrolls", "")        -> JSON [{x, y, w, h, sx, sy, t, b, l, r, dir}] every shown object that can scroll
 //                                    (scrollable flag + room to scroll or scrolled), screen then top layer, tree order
+//   fw_test("keys", "{op, ...}")  -> JSON: API keys (core/keys.h) as the firmware's HTTP glue drives them
+//                                    (firmware/fw_device.h "API keys"): op http {method, path, body?, auth?, editor?}
+//                                    -> {code, body}; op write {route: /fw/spec | /fw/settings | /fw/act, body, auth?,
+//                                    editor?} = the gate, then the change through keys::change -> {code, body};
+//                                    op allow {auth?, editor?} = the gate alone; op switch {on} (as Home Assistant sets it); op skew {s} (the wall clock moves);
+//                                    op reboot (the stored JSON restored into a fresh store) -> {stored}; op reset
 #include <emscripten.h>
 #include <string>
 #include <vector>
@@ -36,6 +42,8 @@
 #include "sheet.h"
 #include "toasts.h"
 #include "ha.h"
+#include "keys.h"
+#include "spec.h"
 #include "core/lv_obj_private.h"  // the style list (the bounds proof names the token styles)
 #include "core/lv_obj_style_private.h"
 
@@ -201,6 +209,84 @@ void timer_cmd(const std::string &a, ArduinoJson::JsonDocument &d) {
   for (const std::string &c : timer_changes) ch.add(c);
   timer_changes.clear();
 }
+extern "C" const char *fw_spec(const char *cmd, const char *arg);  // core/main.cpp (the spec API, its memory storage)
+std::string keys_stored;
+void keys_cmd(const std::string &a, ArduinoJson::JsonDocument &d) {
+  namespace k = fw::keys;
+  static const bool hooked = (k::on_store([](const std::string &j) { keys_stored = j; }), true);
+  (void) hooked;
+  ArduinoJson::JsonDocument in;
+  deserializeJson(in, a);
+  const std::string op = in["op"] | "";
+  const std::string auth = in["auth"] | "", body = in["body"].is<const char *>() ? std::string(in["body"].as<const char *>()) : in["body"].isNull() ? std::string() : [&] { std::string b; serializeJson(in["body"], b); return b; }();
+  const bool editor = in["editor"] | false;
+  int code = 200;
+  std::string out;
+  if (op == "http") {
+    if (!k::http(in["method"] | "GET", in["path"] | "", body, auth, editor, &code, &out)) code = 404, out = "{}";
+  } else if (op == "write") {
+    const std::string route = in["route"] | "";
+    std::string who;
+    if (k::allow(auth, editor, &who, &code, &out)) {
+      k::Kind kind;
+      const std::string what = k::describe(route, body, &kind);
+      ArduinoJson::JsonDocument b;
+      deserializeJson(b, body);
+      bool ok = false;
+      k::change(who, kind, what, [&] {
+        if (route == "/fw/settings") {
+          const std::string e = fw::dev::restore(body.c_str(), editor ? fw::dev::EDITOR : fw::dev::HOST);
+          out = e.empty() ? "{\"ok\":true}" : "{\"ok\":false,\"error\":\"" + e + "\"}";
+          ok = e.empty();
+        } else if (route == "/fw/act") {
+          out = fw_spec("act", body.c_str());
+        } else {
+          const std::string kind_ = b["kind"] | "screen";
+          std::string arg;
+          if (kind_ == "revert") arg = b["id"] | "all";
+          else serializeJson(b["spec"], arg);
+          if (kind_ == "check" || kind_ == "check_deck") {  // as the firmware's spec_apply: apply's check (off screen build)
+            lv_display_t *disp = lv_display_get_default();
+            lv_obj_t *dry = disp ? lv_obj_create(lv_display_get_screen_active(disp)) : nullptr;
+            if (dry) lv_obj_add_flag(dry, LV_OBJ_FLAG_HIDDEN);
+            ArduinoJson::JsonDocument cd;
+            fw::spec::apply(kind_.c_str(), arg, dry, cd.to<ArduinoJson::JsonObject>());
+            if (dry) lv_obj_delete(dry);
+            out.clear();
+            serializeJson(cd, out);
+          } else out = fw_spec(kind_.c_str(), arg.c_str());
+        }
+        ArduinoJson::JsonDocument r;
+        deserializeJson(r, out);
+        ok = r["ok"] | false;
+        if (!ok) code = 400;
+        return ok;
+      });
+    }
+  } else if (op == "allow") {  // the gate alone (a write that changes nothing: a spec check)
+    std::string who;
+    if (k::allow(auth, editor, &who, &code, &out)) out = "{\"ok\":true,\"who\":\"" + who + "\"}";
+  } else if (op == "switch") {
+    out = std::string("\"") + fw::dev::set("aiAgents", (in["on"] | false) ? "true" : "false", fw::dev::HA) + "\"";
+  } else if (op == "skew") {
+    k::skew(in["s"] | 0LL);
+    out = "{}";
+  } else if (op == "reboot") {
+    const std::string kept = keys_stored;
+    k::reset();
+    k::restore(kept);
+    d["stored"] = kept;
+    return;
+  } else if (op == "reset") {
+    k::reset();
+    keys_stored.clear();
+    out = "{}";
+  }
+  d["code"] = code;
+  ArduinoJson::JsonDocument r;
+  if (!deserializeJson(r, out)) d["body"] = r;
+  else d["body"] = out;
+}
 }  // namespace
 
 extern "C" EMSCRIPTEN_KEEPALIVE const char *fw_test(const char *cmd, const char *arg) {
@@ -214,6 +300,7 @@ extern "C" EMSCRIPTEN_KEEPALIVE const char *fw_test(const char *cmd, const char 
     fw::dev::kept_json(d.to<ArduinoJson::JsonArray>());
   }
   else if (c == "timer") timer_cmd(a, d);
+  else if (c == "keys") keys_cmd(a, d);
   else if (c == "setting") {
     const size_t eq = a.find('=');
     if (eq == std::string::npos) return "id=value";
@@ -274,7 +361,7 @@ extern "C" EMSCRIPTEN_KEEPALIVE const char *fw_test(const char *cmd, const char 
     if (on) lv_obj_set_style_opa(ink_objs[i], LV_OPA_TRANSP, 0); else lv_obj_remove_local_style_prop(ink_objs[i], LV_STYLE_OPA, 0);
     lv_obj_invalidate(ink_objs[i]);
     return "";
-  } else return "stack | timer | setting | scrolls | look | inset | bounds | inks | gfx | veil | veil_part";
+  } else return "stack | timer | keys | setting | scrolls | look | inset | bounds | inks | gfx | veil | veil_part";
   serializeJson(d, out);
   return out.c_str();
 }

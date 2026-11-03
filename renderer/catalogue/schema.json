@@ -9295,6 +9295,17 @@
   }
  },
  "screens": {
+  "agent_keys": {
+   "name": "agent_keys",
+   "about": "Settings > API keys: the keys scripts, automations and agents use to change this panel, each with its name, when it was last used and when it ends, and Revoke all. A script, automation or agent asks the panel for a key; the person taps Allow on the glass.",
+   "contract": 1,
+   "min": null,
+   "slots": null,
+   "props": [],
+   "events": {},
+   "spec": false,
+   "kind": "built-in"
+  },
   "device": {
    "name": "device",
    "about": "The panel running live: starts on Home; tap the settings button or a card to open a screen, Back to return. Every tap is handled inside the renderer, as on the device.",
@@ -9572,7 +9583,7 @@
     {
      "name": "aiAgents",
      "type": "bool",
-     "about": "Lets AI assistants on your network send screens to this panel. Each request needs the panel's agent token (Home Assistant shows it). Turn it on here or in Home Assistant.",
+     "about": "Lets scripts, automations and agents on your network change this panel. Each one asks for its own key, and you tap Allow on the panel. Off: every key is refused. Turn it on here, in the panel's editor or in Home Assistant.",
      "default": false
     },
     {
@@ -10584,7 +10595,7 @@
    },
    {
     "id": "agents",
-    "label": "AI agents"
+    "label": "API"
    }
   ],
   "settings": [
@@ -11003,13 +11014,13 @@
    },
    {
     "id": "aiAgents",
-    "help": "Lets AI assistants on your network send screens to this panel. Each request needs the panel's agent token (Home Assistant shows it). Turn it on here or in Home Assistant.",
+    "help": "Lets scripts, automations and agents on your network change this panel. Each one asks for its own key, and you tap Allow on the panel. Off: every key is refused. Turn it on here, in the panel's editor or in Home Assistant.",
     "group": "agents",
-    "label": "Allow AI agents",
+    "label": "Allow API access",
     "kind": "switch",
     "control": "toggle",
     "default": false,
-    "about": "Off: the write endpoints (/fw/spec, /fw/show, /fw/settings, /fw/bench) refuse everything but the panel's own editor. On: they also take requests with Authorization: Bearer <agent token>. /llms.txt and /agents.md are always readable.",
+    "about": "Off: every write from outside the panel's own editor is refused, keys too, and no key can be asked for. On: a request with Authorization: Bearer <key> (a key from POST /fw/keys/request, allowed on the glass) can do what the editor does. Reads, /llms.txt, /agents.md, /ai and /schema.json are always open.",
     "esphome": {
      "id": "ai_agents",
      "name": "Allow AI agents",
@@ -12426,14 +12437,44 @@
   {
    "method": "GET",
    "path": "/fw/schema",
-   "about": "the one schema surface (catalogue/schema.json: tokens, components, screens, feeds, settings, themes, these routes; gzip; open), bundle fw_docs_gen.h",
+   "about": "the one schema surface (catalogue/schema.json: tokens, components, screens, feeds, settings, themes, these routes; gzip; open), bundle fw_docs_gen.h; GET /schema.json is the same file",
    "says": "Everything this firmware accepts in one file: tokens, components, screens, feeds, settings, themes and these requests."
   },
   {
    "method": "GET",
    "path": "/llms.txt, /agents.md",
    "about": "the agent docs (bundle fw_docs_gen.h from tools/gen_agents.mjs; open)",
-   "says": "The agent guide for this firmware. Open, no token needed."
+   "says": "The agent guide for this firmware. Open, no key needed."
+  },
+  {
+   "method": "GET",
+   "path": "/ai",
+   "about": "the prompt to paste to an agent (plain text, firmware/ai-prompt.txt; {panel} = this panel's address)",
+   "says": "The one prompt that sets an agent up for this panel, its address already in."
+  },
+  {
+   "method": "GET",
+   "path": "/fw/keys",
+   "about": "{on, max, waiting, keys: [{id, name, made, used, ends, used_words, ends_words}]} (core/keys.h)",
+   "says": "The API keys this panel has: names and times only, never a key."
+  },
+  {
+   "method": "POST",
+   "path": "/fw/keys/request",
+   "about": "{name, expires?: 1d | 30d | never} -> {ok, id, state: waiting, wait_s} (no key needed)",
+   "says": "Asks the panel for a key: the person taps Allow on the glass."
+  },
+  {
+   "method": "POST",
+   "path": "/fw/keys/poll",
+   "about": "{id} -> {state: waiting, left_s} | {state: allowed, key} (once) | {state: denied, error}",
+   "says": "Whether the person allowed the request; the key comes back once."
+  },
+  {
+   "method": "POST",
+   "path": "/fw/keys/revoke",
+   "about": "{id | \"all\"} -> {ok, revoked}",
+   "says": "Revokes one key, or every key."
   }
  ]
 }

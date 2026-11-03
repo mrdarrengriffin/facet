@@ -307,8 +307,8 @@ if (arg('--panel')) {
   const dev = arg('--panel'), host = arg('--host');
   if (!budgets.devices[dev] || !host) { console.error('--panel guition-4848s040|waveshare-p4-86 --host <ip>'); process.exit(2); }
   const base = `http://${host}`;
-  // an agent token (the panel's write endpoints need it unless the request is same-origin) on every /fw/* call
-  const AUTH = process.env.FACET_AGENT_TOKEN ? { authorization: `Bearer ${process.env.FACET_AGENT_TOKEN}` } : {};
+  // an agent key (core/keys.h: the panel's writes need one unless the request is same-origin) on every /fw/* call
+  const AUTH = process.env.FACET_PANEL_KEY ? { authorization: `Bearer ${process.env.FACET_PANEL_KEY}` } : {};
   const get = async (u) => (await fetch(base + u, { headers: AUTH, signal: AbortSignal.timeout(8000) })).json();
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const info = await get('/fw/info');

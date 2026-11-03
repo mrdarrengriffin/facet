@@ -1,7 +1,7 @@
 // The panels the workbench can show things on and send specs to: FACET_PANELS, a comma list of
 // <name>=<host>@<board-id>, e.g. "office=192.168.1.40@waveshare-p4-86,bench=192.168.1.41@guition-4848s040".
 // The board (boards/<id>.json) gives the size and density. A panel needs the workbench firmware (esphome/) and, for
-// anything but its own pages, "Allow AI agents" on (the token is read from Home Assistant: lib/panel-auth.ts).
+// anything but its own pages, "Allow API access" on and a key (FACET_PANEL_KEYS: lib/panel-auth.ts).
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { REPO } from './repo';

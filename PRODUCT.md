@@ -37,5 +37,5 @@ is a yes or the release waits.
   entity.
 - Theme files and the theme editor.
 - The composer: building new screens from parts, header slots.
-- The agent API beyond what already ships behind the "Allow AI agents" switch.
+- The agent API beyond what already ships behind the "Allow API access" switch and its keys.
 - Other panels and sizes.

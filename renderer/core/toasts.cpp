@@ -20,6 +20,7 @@ struct Toast {
   uint32_t life = 0;
   bool timer = false, layer = false, top = toast::top, closed = false, down = false, dragged = false, busy = false;
   int32_t x0 = 0, dx = 0;
+  std::function<void()> act;  // on_action: what its Button does before it dismisses (core/keys.cpp: Undo)
 };
 void toast_free(lv_event_t *e) {
   auto *t = (Toast *) lv_event_get_user_data(e);
@@ -256,7 +257,15 @@ void again(lv_obj_t *o, lv_obj_t *bar, bool timer, bool urgent, int32_t keep_w) 
 
 void action(lv_obj_t *o, lv_obj_t *button) {
   if (Toast *t = of(o))
-    lv_obj_add_event_cb(button, [](lv_event_t *e) { dismiss((Toast *) lv_event_get_user_data(e), "action"); }, LV_EVENT_CLICKED, t);
+    lv_obj_add_event_cb(button, [](lv_event_t *e) {
+      auto *t = (Toast *) lv_event_get_user_data(e);
+      if (t->closed) return;
+      if (t->act) { auto fn = t->act; lv_async_call([](void *p) { auto *f = (std::function<void()> *) p; (*f)(); delete f; }, new std::function<void()>(fn)); }  // after this tap's own events
+      dismiss(t, "action");
+    }, LV_EVENT_CLICKED, t);
+}
+void on_action(lv_obj_t *o, std::function<void()> fn) {
+  if (Toast *t = of(o)) t->act = std::move(fn);
 }
 
 lv_obj_t *layer(lv_obj_t *host, bool top, bool still) {
@@ -361,8 +370,8 @@ void set_top(lv_obj_t *ov, bool top) {
 
 // The device's toast layer: core/device.cpp puts one over every screen of a mounted device (on the display's top
 // layer) and pushes the toasts Home Assistant sends (fw::dev::toast): event "toast" + sound notify, timer on.
-void push(lv_obj_t *ov, Props t, bool top) {
-  if (!layer_of(ov)) return;
+lv_obj_t *push(lv_obj_t *ov, Props t, bool top) {
+  if (!layer_of(ov)) return nullptr;
   set_top(ov, top);
   // an unknown tone = info; an unknown or empty icon = the tone's own (ok done, warn / error alert, working agent, else bell)
   static const char *TONES[] = {"ok", "warn", "error", "working", "info", "idle"};
@@ -382,7 +391,7 @@ void push(lv_obj_t *ov, Props t, bool top) {
   // detail "<tone> <icon> <life>: <title>" (functional tests read what arrived; toast_ha.test.mjs)
   char det[160];
   snprintf(det, sizeof det, "%s %s %s: %s", tone.c_str(), ic ? ic : icon, urgent ? "urgent" : "normal", t["title"] | "");
-  show(ov, d.as<Props>(), det);
+  return show(ov, d.as<Props>(), det);
 }
 }  // namespace toasts
 }  // namespace fw

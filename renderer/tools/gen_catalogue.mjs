@@ -97,7 +97,7 @@ const SETTINGS = T('settings.json'), THEME = T('theme.json');
 // firmware/fw_device.h: "//   GET  /fw/x   about" (+ indented continuation lines), then "//   = says": the one line
 // people read (the docs site's table), every route has one
 const routes = [];
-for (const l of readFileSync(join(HERE, '..', 'firmware', 'fw_device.h'), 'utf8').split('\n').slice(0, 60)) {
+for (const l of readFileSync(join(HERE, '..', 'firmware', 'fw_device.h'), 'utf8').split("\n").slice(0, 90)) {
   const r = l.match(/^\/\/   ((?:GET|POST)(?:\|POST)?)\s+([^\s,]+(?:, \S+)?)\s+(.*)$/), says = l.match(/^\/\/\s{6,}= (.+)$/);
   if (r) routes.push({ method: r[1], path: r[2], about: r[3].trim(), says: '' });
   else if (routes.length && says) routes[routes.length - 1].says = says[1].trim();
