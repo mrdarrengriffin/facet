@@ -3,7 +3,8 @@ name: Deploy docs
 # The docs site (site/) on GitHub Pages, around the docs flavour of the WASM renderer built in this job from the
 # commit it documents (FW_FEATURES=docs renderer/build.sh; renderer/README.md "What a machine needs"). The public firmware
 # for the /install page (factory + OTA images, manifest.json + ota.json per board) is the asset of the `firmware`
-# release (site/scripts/upload-firmware.sh), unpacked into site/public/firmware/ and served at /facet/firmware/<board>/.
+# release, the beta channel's (manifest-beta.json + ota-beta.json) the `firmware-beta` release's (both written by
+# release.yml on a tag), unpacked into site/public/firmware/ and served at /facet/firmware/<board>/.
 
 on:
   push:
@@ -55,6 +56,10 @@ jobs:
         run: |
           gh release download firmware -p firmware.tar.gz -R "$GITHUB_REPOSITORY"
           mkdir -p site/public/firmware && tar -xzf firmware.tar.gz -C site/public/firmware
+          # the beta channel (release.yml, a vX.Y.Z-beta.N tag): manifest-beta.json + ota-beta.json beside stable's
+          if gh release download firmware-beta -p firmware-beta.tar.gz -R "$GITHUB_REPOSITORY" 2>/dev/null; then
+            tar -xzf firmware-beta.tar.gz -C site/public/firmware
+          else echo "no beta channel yet"; fi
           ls -R site/public/firmware
       - run: npm ci
         working-directory: site
