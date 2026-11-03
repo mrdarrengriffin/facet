@@ -111,8 +111,6 @@ The house rules, in short: every value comes from a token, sizes sit on the 4 px
 4. Commit messages: a short summary line, `Area: what changed` (for example `Docs: contributing page` or
    `Toggle: thumb follows the drag`), then more detail below if it helps.
 
-New here? Issues labelled [good first issue](https://github.com/mrdarrengriffin/facet/labels/good%20first%20issue) are small and well described: a good place to start.
-
 Small pull requests get reviewed fastest. For anything big, open an issue first so we can agree the shape before
 you spend the time.
 
