@@ -32,7 +32,7 @@
       "id": "clock",
       "label": "Clock",
       "docs": true, "status": "done", "firmware": true,
-      "screens": ["clock"],
+      "screens": ["clock", "idle"],
       "components": ["clock_orbit"],
       "core": ["clock_source.cpp"]
     },

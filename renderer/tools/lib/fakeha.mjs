@@ -139,6 +139,7 @@ export class Ctx {
   async device(deck) {  // the device app (Home first); deck: a deck spec, 'house' = tests/fixtures/deck-house.json (else the factory deck)
     if (deck === 'house') deck = JSON.parse(readFileSync(new URL('../../tests/fixtures/deck-house.json', import.meta.url), 'utf8'));
     await this.mount('device', {});
+    this.setting('idleAfter', 0); this.b.events();  // no idle clock while a test waits (tests/functional/idle.test.mjs sets it)
     if (deck) {
       const r = JSON.parse(this.b.spec('deck', deck) || '{}');
       if (r.errors?.length) throw new Error(`deck: ${JSON.stringify(r.errors).slice(0, 200)}`);
@@ -174,7 +175,9 @@ export class Ctx {
   glass([x, y]) { const W = this.b.S - 1, r = this.rot || 0; return r === 90 ? [W - y, x] : r === 180 ? [W - x, W - y] : r === 270 ? [y, W - x] : [x, y]; }
   untouch([px, py]) { const W = this.b.S - 1, r = this.rot || 0; return r === 90 ? [py, W - px] : r === 180 ? [W - px, W - py] : r === 270 ? [W - py, px] : [px, py]; }
   tapGlass(px, py) { const [x, y] = this.untouch([px, py]); return this.gesture(`tap glass ${Math.round(px)},${Math.round(py)} (${this.rot || 0}°)`, this.b.tap(x, y)); }
-  setting(id) { return this.b.str(id, (p) => this.b.m.UTF8ToString(this.b.m._fw_setting(p, 0))); }
+  setting(id, v) {  // the value now; with v: set it (as a host: "" = applied, else the error)
+    return this.b.str(id, (p) => v === undefined ? this.b.m.UTF8ToString(this.b.m._fw_setting(p, 0)) : this.b.str(String(v), (q) => this.b.m.UTF8ToString(this.b.m._fw_setting(p, q))));
+  }
   toast(o) { this.b.haPut('facet.toast', '', JSON.stringify({ n: (this.nToast = (this.nToast || 0) + 1), ...o })); this.log.push(`ha: toast ${JSON.stringify(o)}`); this.b.tick(2); const ev = this.b.events(); this.b.settle(1500); return ev.concat(this.b.events()); }
   since() { return this.b.t - (this.built ?? 0); }  // ms since the mount was built (mounts settle a few seconds)
   until(ms) { return this.wait(Math.max(0, ms - this.since())); }  // wait until ms after the build

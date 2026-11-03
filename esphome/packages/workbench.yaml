@@ -58,6 +58,10 @@ esphome:
               id(fw_update).set_source_url(u);
               id(fw_update).update();
             };
+            // the idle clock dims the backlight to Idle brightness (core/device.h idle); leaving it = full again
+            fw::dev::on_idle([](bool on, int pct) {
+              auto c = id(backlight).turn_on(); c.set_brightness(pct / 100.0f); c.set_transition_length(on ? 600 : 150); c.perform();
+            });
             // the panel's timers -> HA (facet fw_device.h "timers"): published on start / extend / cancel / stop /
             // done only, never per second
             fw::device::timers_hook = [] {
@@ -300,9 +304,10 @@ interval:
   - interval: 1s
     then:
       - lambda: 'panel::fwu::tick(id(fw_update), fw::device::probation_left(), FW_PROBATION_S);'
-      # Screen off after (setting screenOff, minutes; 0 = never): no touch that long = the backlight fades off and LVGL
-      # pauses, so the waking touch only wakes (the board's on_release resumes LVGL); once it runs again, the light
-      # comes back (the board "Screen off / wake" action does the same by hand)
+      # Screen off after (setting screenOff, minutes from the last touch; 0 = never): no touch that long = the backlight
+      # fades off and LVGL pauses, so the waking touch only wakes (the board's on_release resumes LVGL); once it runs
+      # again, the light comes back, dimmed while the idle clock still shows (the board "Screen off / wake" action
+      # does the same by hand)
       - lambda: |-
           static bool slept = false;
           const char *v = fw::dev::setting("screenOff");
@@ -313,7 +318,8 @@ interval:
             id(lvgl_root).set_paused(true, false);
           } else if (slept && !id(lvgl_root).is_paused()) {
             slept = false;
-            auto c = id(backlight).turn_on(); c.set_brightness(1.0f); c.set_transition_length(150); c.perform();
+            const char *b = fw::dev::setting("idleBrightness");
+            auto c = id(backlight).turn_on(); c.set_brightness(fw::dev::idle() && b ? atoi(b) / 100.0f : 1.0f); c.set_transition_length(150); c.perform();
             lv_obj_invalidate(lv_screen_active());
           }
 

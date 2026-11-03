@@ -106,6 +106,11 @@ export class Engine {
         // the device's Sound pack setting (core/device.h settings: "setting" soundPack=<id>) = the workbench pack
         if (ev.kind === 'event' && ev.name === 'setting' && ev.detail.startsWith('soundPack=')) setSoundVariant(ev.detail.slice(10));
         if (ev.kind === 'event' && ev.name === 'ha') void haAction(e.ha, ev.detail);
+        // the idle clock dims the screen (core/device.h idle: "idle" <pct>, "" = undimmed): the panel's backlight here
+        if (ev.kind === 'event' && ev.name === 'idle') {
+          const c = [...e.views].find((s) => s.id === ev.stage)?.canvas;
+          if (c) { c.style.transition = `filter ${ev.detail ? 600 : 150}ms`; c.style.filter = ev.detail ? `brightness(${Number(ev.detail) / 100})` : ''; }
+        }
       }
       // feed adapters' asks (core/ha.h ask, CONTRACT C51): HA actions whose reply goes back with fw_ha_answer
       const asks = e.m._fw_ha_asks ? e.str(e.m._fw_ha_asks()) : '[]';

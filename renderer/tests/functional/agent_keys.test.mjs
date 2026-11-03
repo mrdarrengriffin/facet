@@ -137,7 +137,7 @@ export default {
     { name: 'Settings: the API keys count follows a key allowed while Settings shows', async run(t) {
       await t.device(); K(t, { op: 'reset' }); on(t);
       t.b.spec('act', { do: 'nav.open', screen: 'settings' }); settle(t);
-      for (let i = 0; i < 8 && !t.texts().includes('API keys'); i++) { t.drag({ at: [t.b.S / 2, t.b.S * 0.8] }, { by: [0, -t.b.S * 0.4] }); t.wait(500); }
+      for (let i = 0; i < 8 && !t.texts().includes('API keys'); i++) { t.drag({ at: [4, t.b.S * 0.8] }, { by: [0, -t.b.S * 0.4] }); t.wait(500); }
       t.has(t.texts(), 'No keys', 'none yet');
       const r = ask(t, 'Kitchen script'); settle(t);
       t.tap(/^Allow$/i); settle(t); t.wait(600); settle(t);

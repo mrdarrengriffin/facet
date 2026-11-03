@@ -15,7 +15,7 @@
 namespace fw {
 namespace dev {
 namespace {
-enum Op : uint8_t { NONE, GO, BACK, HOME };
+enum Op : uint8_t { NONE, GO, BACK, HOME, IDLE };
 struct Device {
   lv_obj_t *root = nullptr, *screen = nullptr;  // screen = the root's one child (rebuilt on every cut)
   const Theme *stage = nullptr;                 // the theme the device was mounted with (fw::T is global)
@@ -35,6 +35,8 @@ struct Device {
   uint32_t shown_at = 0;      // the last screen change (the prebuild waits 300 ms after one)
   uint32_t pre_done = 0;      // the last prebuild's end (the next waits 250 ms from it)
   lv_obj_t *park = nullptr;   // the kept pages not shown: a never-loaded screen of the same display (no refresh walks it)
+  lv_timer_t *idle = nullptr; // the idle check (1 s; device.h "idle")
+  bool idled = false;         // the idle clock shows (dimmed)
 };
 
 std::vector<Device *> devices;  // every mounted device (usually one; a workbench page may show several)
@@ -283,6 +285,28 @@ std::string target_of(const std::string &id, bool &page) {
   if (id.find('?') == std::string::npos && spec::page_role(base) && find(base.c_str()) == nullptr) page = true;
   return id;
 }
+// Idle (device.h "idle"): the host's dim hook, else the "idle" event (the workbench dims its canvas)
+void (*&idle_hook())(bool, int) { static void (*f)(bool, int) = nullptr; return f; }
+void idle_dim(Device *d, bool on) {
+  d->idled = on;
+  const char *v = setting("idleBrightness");
+  const int pct = on ? (v ? atoi(v) : 70) : 100;
+  if (idle_hook()) idle_hook()(on, pct);
+  emit(d->root, "idle", on ? std::to_string(pct).c_str() : "");
+}
+void queue(lv_obj_t *in, Op op, const char *id);
+void idle_tick(lv_timer_t *t) {
+  auto *d = (Device *) lv_timer_get_user_data(t);
+  if (d->stack.empty() || d->stack[0] != "home" || d->op != NONE || d->restyle || !known("idle")) return;
+  const std::string top = base_of(d->stack.back());
+  if (top == "idle" || top == "setup" || top == "ha_link" || pointer_down()) return;
+  const char *v = setting("idleAfter");
+  const uint32_t ms = (uint32_t) (v ? atol(v) : 0) * 1000u;
+  if (!ms) return;
+  for (const TimerItem &x : timers::all()) if (x.state == 2) return;  // a timer ringing stays in view
+  if (lv_display_get_inactive_time(lv_obj_get_display(d->root)) < ms || lv_tick_elaps(d->shown_at) < ms) return;
+  queue(d->root, IDLE, nullptr);
+}
 void run(lv_timer_t *t) {
   auto *d = (Device *) lv_timer_get_user_data(t);
   if (nav().on && nav().stage == 1) nav().cur.run = lv_tick_get();
@@ -315,6 +339,10 @@ void run(lv_timer_t *t) {
     if (d->stack.size() < 2) return;
     d->stack.resize(1);
     home_dir = true;
+  } else if (op == IDLE) {
+    if (d->stack.back() == "idle") return;
+    d->stack.resize(1);
+    d->stack.push_back("idle");
   } else return;
   const Theme *was = T;
   if (d->theme) T = d->theme;
@@ -327,9 +355,12 @@ void run(lv_timer_t *t) {
     nav().cur.build1 = lv_tick_get(), nav().stage = 2;
   }
   const char *tr = setting("transition");
-  if (!items.empty() && !(tr && !strcmp(tr, "instant"))) rise(items.data(), (int) items.size(), home_dir);
+  const bool idle = d->stack.back() == "idle";
+  if (idle && d->screen) lv_obj_fade_in(d->screen, 600, 0);  // the idle clock fades in, no rise
+  else if (!items.empty() && !(tr && !strcmp(tr, "instant"))) rise(items.data(), (int) items.size(), home_dir);
   T = devices.size() == 1 ? d->theme : was;  // a panel (one device): fw::T stays its look for taps / fades
   emit(d->root, "screen", base_of(d->stack.back()).c_str());  // the host may mirror it (URL, HA); not a tap
+  if (idle != d->idled) idle_dim(d, idle);
 }
 void queue(lv_obj_t *in, Op op, const char *id) {
   Device *d = of(in);
@@ -528,6 +559,7 @@ lv_obj_t *mount(lv_obj_t *parent, const char *start) {
     if (d->timer) lv_timer_delete(d->timer);
     if (d->restyle) lv_timer_delete(d->restyle);
     if (d->pre) lv_timer_delete(d->pre);  // the kept pages' prebuild
+    if (d->idle) lv_timer_delete(d->idle);
     if (d->park) lv_obj_delete(d->park);  // the parked kept pages (the shown one goes with the root)
     if (d->toasts) lv_obj_delete(d->toasts);  // its DELETE clears d->toasts
     devices.erase(std::remove(devices.begin(), devices.end(), d), devices.end());
@@ -535,6 +567,7 @@ lv_obj_t *mount(lv_obj_t *parent, const char *start) {
   }, LV_EVENT_DELETE, d);
   listen(d->root, on_emit);
   if (keep_max() > 0) d->pre = lv_timer_create(prebuild, 250, d);  // kept pages on: this device keeps them too
+  d->idle = lv_timer_create(idle_tick, 1000, d);
   // toasts arrive over whatever screen shows: a Toast layer on the display's top layer (above the screen stack and
   // its cuts); it goes with the device (or with the display, whichever is deleted first)
   static const bool hooked = (ha::on_put(toast_put), true);
@@ -599,6 +632,11 @@ void state(ArduinoJson::JsonArray out) {
 void go(lv_obj_t *in, const char *id) { queue(in, GO, id); }
 void back(lv_obj_t *in) { queue(in, BACK, nullptr); }
 void home(lv_obj_t *in) { queue(in, HOME, nullptr); }
+void on_idle(void (*cb)(bool idle, int pct)) { idle_hook() = cb; }
+bool idle() {
+  for (Device *d : devices) if (d->idled) return true;
+  return false;
+}
 bool in_device(lv_obj_t *obj) { return of(obj) != nullptr; }
 void keep_pages(int n) {
   keep_max() = n < 0 ? 0 : n;

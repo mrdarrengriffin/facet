@@ -9395,6 +9395,17 @@
    "spec": false,
    "kind": "built-in"
   },
+  "idle": {
+   "name": "idle",
+   "about": "The idle clock: the Clock screen without its header, shown after Clock after with no touch. A touch goes back to Home.",
+   "contract": 1,
+   "min": null,
+   "slots": null,
+   "props": [],
+   "events": {},
+   "spec": false,
+   "kind": "built-in"
+  },
   "screens": {
    "name": "screens",
    "about": "Settings > Screens: every screen of this panel with where its data comes from and an on / off toggle; a screen off leaves Home. Tap a screen for its source and options.",
@@ -9545,9 +9556,18 @@
      "default": "60"
     },
     {
+     "name": "idleBrightness",
+     "type": "range",
+     "about": "How bright the screen is while the idle clock shows, from 10 to 100 percent.",
+     "min": 10,
+     "max": 100,
+     "step": 5,
+     "default": 70
+    },
+    {
      "name": "screenOff",
      "type": "select",
-     "about": "How many minutes the idle clock shows before the screen turns off. 0 keeps it on.",
+     "about": "How many minutes with no touch before the screen turns off, counted from the last touch (the idle clock does not restart it). 0 keeps it on.",
      "options": [
       "0",
       "15",
@@ -10893,13 +10913,30 @@
      "id": "idle_after_s",
      "name": "Clock after",
      "icon": "mdi:clock-start",
-     "device_class": "duration",
-     "internal": true
+     "device_class": "duration"
+    }
+   },
+   {
+    "id": "idleBrightness",
+    "help": "How bright the screen is while the idle clock shows, from 10 to 100 percent.",
+    "group": "idle",
+    "label": "Idle brightness",
+    "kind": "number",
+    "control": "slider",
+    "default": 70,
+    "min": 10,
+    "max": 100,
+    "step": 5,
+    "unit": "%",
+    "esphome": {
+     "id": "idle_brightness",
+     "name": "Idle brightness",
+     "icon": "mdi:brightness-6"
     }
    },
    {
     "id": "screenOff",
-    "help": "How many minutes the idle clock shows before the screen turns off. 0 keeps it on.",
+    "help": "How many minutes with no touch before the screen turns off, counted from the last touch (the idle clock does not restart it). 0 keeps it on.",
     "group": "idle",
     "label": "Screen off after",
     "kind": "number",

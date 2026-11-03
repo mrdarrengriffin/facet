@@ -407,8 +407,7 @@ void build_settings(lv_obj_t *parent, fw::Props p) {
   for (int g = 0; g < fw::set::N_GROUPS; g++) {
     group(c, fw::set::GROUPS[g].label, false);
     for (int i = 0; i < fw::set::N_SETTINGS; i++)
-      if (!strcmp(fw::set::SETTINGS[i].group, fw::set::GROUPS[g].id) && strcmp(fw::set::SETTINGS[i].id, "idleAfter"))
-        row_for(scr, c, fw::set::SETTINGS[i]);  // Clock after: the screensaver is not built yet (no knob without an effect)
+      if (!strcmp(fw::set::SETTINGS[i].group, fw::set::GROUPS[g].id)) row_for(scr, c, fw::set::SETTINGS[i]);
     if (strcmp(fw::set::GROUPS[g].id, "agents")) continue;
     Doc ar;  // API keys: the keys scripts, automations and agents use (screens/agent_keys.cpp, core/keys.h)
     keys_props(ar);

@@ -282,12 +282,28 @@
         "id": "idle_after_s",
         "name": "Clock after",
         "icon": "mdi:clock-start",
-        "device_class": "duration",
-        "internal": true
+        "device_class": "duration"
       }
     },
     {
-      "id": "screenOff", "help": "How many minutes the idle clock shows before the screen turns off. 0 keeps it on.",
+      "id": "idleBrightness", "help": "How bright the screen is while the idle clock shows, from 10 to 100 percent.",
+      "group": "idle",
+      "label": "Idle brightness",
+      "kind": "number",
+      "control": "slider",
+      "default": 70,
+      "min": 10,
+      "max": 100,
+      "step": 5,
+      "unit": "%",
+      "esphome": {
+        "id": "idle_brightness",
+        "name": "Idle brightness",
+        "icon": "mdi:brightness-6"
+      }
+    },
+    {
+      "id": "screenOff", "help": "How many minutes with no touch before the screen turns off, counted from the last touch (the idle clock does not restart it). 0 keeps it on.",
       "group": "idle",
       "label": "Screen off after",
       "kind": "number",

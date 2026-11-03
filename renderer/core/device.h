@@ -35,7 +35,14 @@
 //              Toasts). From Home Assistant: the host puts the toast JSON on the pseudo pair TOAST_PAIR ("facet.toast",
 //              state) through ha::put (the panel: its ESPHome "toast" action; the workbench: fw_ha_put); each put
 //              must differ (include an id or the time), an unchanged value is no new toast.
-// TODO (with the panel host): idle -> clock, as createDevice; Text size (a type-scale rebuild).
+//   idle       Settings > Clock after (idleAfter s; 0 = never) with no touch and no screen change: the stack becomes
+//              [home, idle], the idle clock (screens/idle.cpp: the Clock screen, its header hidden) fading in over 600 ms
+//              with no rise, and the screen dims to Idle brightness: the host's on_idle hook (a panel: its backlight),
+//              and the event "idle" <pct> ("" = undimmed: the workbench's canvas filter). The first touch is swallowed
+//              and goes Home (undimmed). Never over Set up, the Home Assistant link, a ringing timer or a finger down;
+//              only on a device whose root is Home. It never counts as activity: Screen off (the host's) still counts
+//              from the last touch.
+// TODO: Text size (a type-scale rebuild).
 #pragma once
 #include <string>
 #include <vector>
@@ -52,6 +59,8 @@ lv_obj_t *mount(lv_obj_t *parent, const char *start = "home");  // the device ro
 void go(lv_obj_t *in, const char *id);  // in = the root or anything inside it; queued for the next tick
 void back(lv_obj_t *in);
 void home(lv_obj_t *in);
+void on_idle(void (*cb)(bool idle, int pct));  // the idle clock shows (pct = Idle brightness) or leaves (100)
+bool idle();  // a device shows the idle clock
 void reload(const char *id);
 // Navigation timing (a debug flag, off by default; facet-243): each screen change, in lv_tick ms: the tap handled
 // (navigate / back / home queued), the change run, the build start and end (in it: the old screen deleted, the new
