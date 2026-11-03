@@ -26,7 +26,8 @@ export default {
       t.tap(/^Source$/); t.b.settle(1200);
       t.has(t.texts(), /^Sample fortnight/, 'the Source sheet is open');
       const rows = t.comps().filter((c) => c.ids.includes('picker_row') && t.visible(c));
-      t.ok(rows.length >= 3, `picker rows: ${rows.length}`);
+      t.ok(rows.length >= 2, `picker rows: ${rows.length}`);
+      t.hasNot(t.texts(), /iCal/, 'no source this firmware cannot read (the iCal link is planned)');
       t.eq(rows.filter((c) => (c.props?.icon ?? 'none') !== 'none').length, 0, 'no icon at the start of any row');
       t.eq(comps(t, 'radio').filter((r) => t.visible(r) && radioOn(t, r)).length, 1, 'one radio on (the chosen source)');
     } },

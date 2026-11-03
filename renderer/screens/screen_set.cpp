@@ -281,6 +281,12 @@ void build_page(lv_obj_t *parent, fw::Props p) {
     }
     pk.status.push_back(st);
   }
+  if (linked)  // only the sources this firmware has an adapter for: a planned one (Spotify, an iCal link) picked here
+    for (size_t i = pk.ids.size(); i-- > 0;)  // left the screen with nothing to read (Offline, its settings gone)
+      if (pk.sets[i].empty()) {
+        pk.ids.erase(pk.ids.begin() + (long) i), pk.names.erase(pk.names.begin() + (long) i);
+        pk.sets.erase(pk.sets.begin() + (long) i), pk.status.erase(pk.status.begin() + (long) i);
+      }
   bool sample_opt = false;
   for (ArduinoJson::JsonVariantConst o : sparam["options"].as<ArduinoJson::JsonArrayConst>()) sample_opt |= !strcmp(o | "", "sample");
   if (linked && sample_opt && !has_sample) {  // previews: the spec's sample adapter, not a catalogue source
