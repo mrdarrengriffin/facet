@@ -9,14 +9,10 @@
 //            variants grid), at its meta frame (auto height when h = 0), cropped to what it draws plus an even margin
 //   examples each "Make screens with AI" example (src/lib/ai-examples.json), its spec installed as a panel installs one,
 //            on the sample Home Assistant, dark and light (the example page's pair)
-//   states   each shipped screen in the states the release test checks (renderer/tests/functional/release_states.test.mjs
-//            STATES: with data, loading, not found, unavailable, offline, on the functional tests' fake Home Assistant,
-//            tools/lib/fakeha.mjs), half size; a state is left out when the screen looks the same as with data in it
-//            (its texts, digits masked: Moon and Timer need no Home Assistant)
-// Output: public/shots/*.png (palette PNG, sharp) + src/data/shots.json (the paths, sizes and state labels the pages use;
+// Output: public/shots/*.png (palette PNG, sharp) + src/data/shots.json (the paths and sizes the pages use;
 // a copy stays in public/shots/ with the pictures, so a cached folder alone, as CI restores it, is enough).
 // Cache: public/shots/key.txt = a hash of the two docs builds' fw.wasm and every input here (this script, the sample HA,
-// the test's states, the screens and the site deck); the same key = nothing rendered. FACET_SHOTS=fresh renders anyway.
+// the screens and the site deck); the same key = nothing rendered. FACET_SHOTS=fresh renders anyway.
 import { createHash } from 'node:crypto';
 import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -45,7 +41,7 @@ const INPUTS = [
   ...DENS.map(([d]) => join(BUILD, d, 'fw.wasm')), fileURLToPath(import.meta.url),
   rel('site/src/lib/sample-ha.ts'), rel('site/src/data/site-deck.json'),
   rel('renderer/tools/demo_ha.mjs'), rel('renderer/tools/demo_ha_examples.mjs'), rel('renderer/tools/demo_ha_replies.mjs'),
-  rel('renderer/tools/lib/fwbench.mjs'), rel('renderer/tools/lib/fakeha.mjs'), rel('renderer/tests/functional/release_states.test.mjs'),
+  rel('renderer/tools/lib/fwbench.mjs'),
   rel('site/src/lib/ai-examples.json'),
 ];
 const EX_DIR = rel('renderer/specs/ai-examples');
@@ -67,9 +63,7 @@ if (process.env.FACET_SHOTS !== 'fresh' && existsSync(KEPT) && existsSync(KEYFIL
   process.exit(0);
 }
 
-const { Bench, instance } = await import(pathToFileURL(join(R, 'tools/lib/fwbench.mjs')).href);
-const { Ctx } = await import(pathToFileURL(join(R, 'tools/lib/fakeha.mjs')).href);
-const RS = await import(pathToFileURL(join(R, 'tests/functional/release_states.test.mjs')).href);
+const { instance } = await import(pathToFileURL(join(R, 'tools/lib/fwbench.mjs')).href);
 const { sampleFeeder, demoNow } = await import(pathToFileURL(join(SITE, 'src/lib/sample-ha.ts')).href);
 const realNow = Date.now;  // the panel's time() reads Date.now in node: the demo clock (mid-afternoon) for main, comps, examples
 
@@ -114,7 +108,7 @@ const frame = (m, st, S, H = S) => { m._fw_refresh(st); const p = m._fw_frame(st
 const demoOf = (s) => (s.comp === 'spec' ? ['spec', { ...s.sampleProps, live: true }]
   : s.comp === 'home' || s.comp === 'settings' ? ['device', { start: s.comp }] : [s.comp, s.sampleProps]);
 async function mainShot(s, den, S, theme, spec) {
-  Date.now = demoNow;  // (a states picture before put the test's own clock back)
+  Date.now = demoNow;
   const m = await instance(den, BUILD);
   const host = { m, str: (p) => m.UTF8ToString(p), withStr: (x, f) => { const p = m.stringToNewUTF8(x); try { return f(p); } finally { m._free(p); } } };
   const feed = sampleFeeder(host);
@@ -138,19 +132,9 @@ async function mainShot(s, den, S, theme, spec) {
   return px;
 }
 
-// ---- states: the release test's states on its fake HA (a fresh test context per state and theme)
-const shape = (xs) => JSON.stringify([...new Set(xs.map((x) => x.replace(/\d+/g, '#')))].sort());
-async function stateShot(id, st, den, light) {
-  const b = new Bench(null, den, { build: BUILD }), t = new Ctx(b);
-  const render = b.render.bind(b);
-  b.render = (c, p) => render(c, p, light ? 1 : 0);
-  try { await st.to(t, id); } finally { RS.realClock(); }
-  return { px: frame(b.m, b.stage, b.S), texts: shape(t.texts()) };
-}
-
 const out = {};
 for (const s of screens) {
-  const rec = (out[s.id] = { main: {}, half: {}, states: [] });
+  const rec = (out[s.id] = { main: {}, half: {} });
   for (const [den, S] of DENS) {
     rec.main[S] = {}, rec.half[S] = {};
     for (const theme of THEMES) {
@@ -158,18 +142,6 @@ for (const s of screens) {
       if (FULL.has(s.id)) rec.main[S][theme] = await save(`${s.id}-${S}-${theme}`, px, S, S);
       rec.half[S][theme] = await save(`${s.id}-${S}-${theme}-half`, px, S, S / 2);
     }
-  }
-  if (s.comp !== 'spec' || !RS.SHIPPED.includes(s.id)) continue;
-  // which states it has: the ones that look different from its data (1.5x texts decide for both sizes)
-  const data = (await stateShot(s.id, RS.STATES[0], '1.5x', false)).texts;
-  for (const st of RS.STATES) {
-    if (st.id !== 'data' && (await stateShot(s.id, st, '1.5x', false)).texts === data) continue;
-    const srcs = {};
-    for (const [den, S] of DENS) {
-      srcs[S] = {};
-      for (const theme of THEMES) srcs[S][theme] = await save(`${s.id}-state-${st.id}-${S}-${theme}`, (await stateShot(s.id, st, den, theme === 'light')).px, S, S / 2);
-    }
-    rec.states.push({ id: st.id, label: st.label, src: srcs });
   }
 }
 

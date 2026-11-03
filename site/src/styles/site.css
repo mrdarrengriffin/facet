@@ -166,34 +166,6 @@ a .live__canvas,
   max-width: 100%;
   height: auto;
 }
-/* the states strip: one small picture per state, its name under it */
-.states {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 16px;
-  margin: 16px 0 0;
-  padding: 0;
-  list-style: none;
-}
-.prose .states {
-  padding: 0;
-}
-.prose .states li + li {
-  margin-top: 0;
-}
-.states figure {
-  margin: 0;
-}
-.states .shot-img {
-  width: 100%;
-  border: 1px solid var(--facet-color-line);
-  border-radius: 12px;
-}
-.states figcaption {
-  margin-top: 8px;
-  color: var(--facet-color-text-dim);
-  font-size: 13px;
-}
 /* the grids: a screen picture fills the tile edge to edge (the tile's rounded corners clip it) */
 .shot__viewport .shot-img {
   width: 100%;
