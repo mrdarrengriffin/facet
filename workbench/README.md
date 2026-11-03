@@ -38,6 +38,7 @@ All optional, from the environment:
 | `/wasm/tests` | the functional tests, run against the live build, with a picture per test |
 | `/wasm/goldens` | golden candidates the tests wrote: compare and accept or reject |
 | `/wasm/release` | what each feature ships (`renderer/features.json`) |
+| `/wasm/checklist` | the release quality checklist, ticked per panel on fresh panels before a tag (ticks kept in `$FW_CACHE/checklist.json`) |
 | `/wasm/contract` | `renderer/CONTRACT.md`, readable |
 
 ## Where things live

@@ -1,0 +1,101 @@
+---
+// The release quality checklist: /wasm/checklist (workbench nav > Checklist). Every line of plan Phase 6.0, run by a
+// person on the glass of a fresh Waveshare and a fresh Guition, ticked per panel as they go. Lines: lib/checklist.ts;
+// ticks and notes: /api/wasm/checklist (kept on this machine; "Start a new run" clears them).
+export const prerender = false;
+import Base from '../../layouts/Base.astro';
+import { GROUPS, PANELS } from '../../lib/checklist';
+const name = Object.fromEntries(PANELS) as Record<string, string>;
+const keysOf = (l: { id: string; on: string[] }) => (l.on.length ? l.on.map((p) => [`${l.id}@${p}`, name[p]]) : [[l.id, 'Done']]);
+const total = GROUPS.reduce((n, g) => n + g.lines.reduce((m, l) => m + Math.max(1, l.on.length), 0), 0);
+---
+
+<Base title="Release checklist" description="The release quality checklist: every line checked on the glass of fresh panels before a tag.">
+  <main class="ck">
+    <header>
+      <a class="ck-back" href="/wasm">Workbench</a>
+      <h1>Release checklist</h1>
+      <p class="ck-muted">Run on a fresh Waveshare and a fresh Guition before the tag. Every line is a yes or the release waits. Ticks are kept on this machine, so you can tick from a phone at the panel.</p>
+      <div class="ck-bar">
+        <span class="ck-count"><strong id="ck-done">0</strong> of {total} ticked</span>
+        <button type="button" id="ck-reset" class="ck-btn">Start a new run</button>
+      </div>
+      <p class="ck-note" id="ck-err" hidden><span class="ck-dot" />Could not reach the workbench: ticks are not being kept.</p>
+    </header>
+
+    {GROUPS.map((g) => (
+      <section class="ck-group">
+        <h2>{g.title}</h2>
+        <ul>
+          {g.lines.map((l) => (
+            <li class="ck-line">
+              <div class="ck-text">
+                <strong>{l.check}</strong>
+                <span class="ck-muted">{l.look}</span>
+                <input class="ck-noteinput" data-note={keysOf(l)[0][0]} placeholder="Note (what you saw, if not a yes)" aria-label={`Note for ${l.check}`} />
+              </div>
+              <div class="ck-boxes">
+                {keysOf(l).map(([k, label]) => (
+                  <label class="ck-box"><input type="checkbox" data-key={k} /><span>{label}</span><time data-when={k} /></label>
+                ))}
+              </div>
+            </li>
+          ))}
+        </ul>
+      </section>
+    ))}
+  </main>
+
+  <script>
+    const API = '/api/wasm/checklist';
+    const err = document.getElementById('ck-err')!;
+    type State = { ticks: Record<string, string>; notes: Record<string, string> };
+    const when = (iso?: string) => (iso ? new Date(iso).toLocaleString([], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '');
+    function show(s: State) {
+      document.querySelectorAll<HTMLInputElement>('input[data-key]').forEach((b) => {
+        b.checked = !!s.ticks[b.dataset.key!];
+        document.querySelector(`[data-when="${b.dataset.key}"]`)!.textContent = when(s.ticks[b.dataset.key!]);
+      });
+      document.querySelectorAll<HTMLInputElement>('input[data-note]').forEach((n) => { if (document.activeElement !== n) n.value = s.notes[n.dataset.note!] ?? ''; });
+      document.getElementById('ck-done')!.textContent = String(Object.keys(s.ticks).length);
+    }
+    async function call(method: string, body?: unknown) {
+      try {
+        const r = await fetch(API, { method, headers: { 'content-type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
+        if (!r.ok) throw new Error();
+        err.hidden = true;
+        show(await r.json());
+      } catch { err.hidden = false; }
+    }
+    document.querySelectorAll<HTMLInputElement>('input[data-key]').forEach((b) => b.addEventListener('change', () => call('POST', { key: b.dataset.key, on: b.checked })));
+    document.querySelectorAll<HTMLInputElement>('input[data-note]').forEach((n) => n.addEventListener('change', () => call('POST', { key: n.dataset.note, note: n.value })));
+    document.getElementById('ck-reset')!.addEventListener('click', () => { if (confirm('Clear every tick and note for a new run?')) call('DELETE'); });
+    call('GET');
+  </script>
+
+  <style>
+    .ck { max-width: 900px; margin: 0 auto; padding: 24px 16px 48px; color: var(--text); }
+    .ck h1 { margin: 4px 0 8px; font-size: 28px; }
+    .ck h2 { margin: 28px 0 8px; font-size: 18px; }
+    .ck-muted { color: var(--muted); font-size: 14px; line-height: 20px; }
+    .ck header .ck-muted { margin: 0 0 12px; }
+    .ck-back { color: var(--accent); text-decoration: none; font-size: 14px; }
+    .ck-back::before { content: '\2039\00a0'; }
+    .ck-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; padding: 12px 16px; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--border); font-size: 14px; }
+    .ck-btn { font: inherit; color: var(--accent); background: none; border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 12px; min-height: 40px; cursor: pointer; }
+    .ck-note { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-radius: var(--radius); background: var(--surface); margin: 12px 0 0; font-size: 14px; }
+    .ck-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--bad); flex: none; }
+    .ck ul { list-style: none; margin: 0; padding: 0; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+    .ck-line { display: flex; gap: 16px; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--border); }
+    .ck-line:last-child { border-bottom: 0; }
+    .ck-text { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1; }
+    .ck-noteinput { font: inherit; font-size: 13px; color: var(--text); background: transparent; border: 1px solid transparent; border-radius: 6px; padding: 4px 6px; margin-left: -6px; }
+    .ck-noteinput:hover, .ck-noteinput:focus { border-color: var(--border); outline: none; }
+    .ck-boxes { display: flex; flex-direction: column; gap: 6px; flex: none; }
+    .ck-box { display: grid; grid-template-columns: 24px auto; align-items: center; column-gap: 6px; font-size: 14px; cursor: pointer; min-height: 32px; }
+    .ck-box input { width: 20px; height: 20px; margin: 0; accent-color: var(--accent); }
+    .ck-box time { grid-column: 2; font-size: 11px; color: var(--muted); }
+    .ck-box time:empty { display: none; }
+    @media (max-width: 600px) { .ck-line { flex-direction: column; gap: 8px; } .ck-boxes { flex-direction: row; gap: 16px; } }
+  </style>
+</Base>

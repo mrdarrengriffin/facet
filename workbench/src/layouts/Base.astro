@@ -8,7 +8,7 @@ interface Props {
 }
 const { title, description } = Astro.props;
 const path = Astro.url.pathname;
-const NAV: [string, string][] = [['/wasm', 'Workbench'], ['/wasm/editor', 'Editor'], ['/wasm/editor-lab', 'Editor lab'], ['/wasm/specs', 'Specs'], ['/wasm/tests', 'Tests'], ['/wasm/goldens', 'Goldens'], ['/wasm/release', 'Release'], ['/wasm/contract', 'Contract']];
+const NAV: [string, string][] = [['/wasm', 'Workbench'], ['/wasm/editor', 'Editor'], ['/wasm/editor-lab', 'Editor lab'], ['/wasm/specs', 'Specs'], ['/wasm/tests', 'Tests'], ['/wasm/goldens', 'Goldens'], ['/wasm/release', 'Release'], ['/wasm/checklist', 'Checklist'], ['/wasm/contract', 'Contract']];
 const here = (href: string) => (href === '/wasm' ? path === '/wasm' || /^\/wasm\/(components|foundations|screens)\//.test(path) : path.startsWith(href));
 ---
 <!doctype html>
