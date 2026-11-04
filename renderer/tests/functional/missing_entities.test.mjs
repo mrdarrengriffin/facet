@@ -11,8 +11,8 @@ const ROOM = ['light.living_room_ceiling', 'light.reading_lamp', 'light.sofa_lam
 const SCREENS = {
   weather: [{ source: 'ha', weather: W }, { [W]: { '': 'rainy', temperature: '13.4' } }, 1],
   weather_days: [{ source: 'ha', weather: W }, { [W]: { '': 'rainy', temperature: '13.4' } }, 1],
-  calendar: [{ source: 'ha', calendars: C }, { [C]: { '': 'off', friendly_name: 'Family' } }, 1],
-  media: [{ source: 'ha', entity: P }, { [P]: { '': 'playing', media_title: 'Test track', friendly_name: 'Test TV' } }, 2],  // the label + the volume
+  calendar: [{ source: 'ha' }, { [C]: { '': 'off', friendly_name: 'Family' } }, 1],
+  media: [{ source: 'ha' }, { [P]: { '': 'playing', media_title: 'Test track', friendly_name: 'Test TV' } }, 1],  // no speaker in HA: the label; then the player's
   energy: [{ source: 'ha' }, { 'sensor.test_grid_power': { '': '420', unit_of_measurement: 'W' }, 'sensor.test_grid_price': { '': '0.275', unit_of_measurement: 'GBP/kWh' } }, 2],  // the live pill + the rate
   light: [{ entity: 'light.test_lamp', name: 'Ceiling' }, { 'light.test_lamp': { '': 'on', brightness: '128', friendly_name: 'Lamp' } }, 1],
   living_room: [{}, Object.fromEntries(ROOM.map((e) => [e, { '': 'off' }])), 3],
@@ -42,7 +42,8 @@ async function both(t, ents, back, n, what) {
   t.eq(count(t, 'Unavailable'), 0, `${what} not in Home Assistant: never "Unavailable"`);
   t.ha.absent = new Set();
   for (const e of ents) t.ha.set(e, 'unavailable');
-  wait(t, 62000);
+  for (let i = 0; i < 2; i++) { wait(t, 62000); t.ha.push(); }  // found again (Media's speakers, the Calendar's calendars: looked for again), then wanted: answers as HA does
+  wait(t, 1000);
   t.ok(count(t, 'Unavailable') >= n, `${what} unavailable: "Unavailable" x${n} (${t.texts().join(' / ').slice(0, 200)})`);
   t.eq(count(t, 'Not found'), 0, `${what} unavailable: never "Not found"`);
   for (const [e, s] of Object.entries(back)) { delete t.ha.s[e]; t.ha.set(e, s[''], Object.fromEntries(Object.entries(s).filter(([k]) => k))); }

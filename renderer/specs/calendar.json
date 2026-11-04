@@ -3,16 +3,16 @@
  "id": "calendar",
  "locked": true,
  "name": "Calendar",
- "rev": 5,
+ "rev": 6,
  "role": "page",
  "params": {
   "source": {"about": "Where the events come from: calendars in Home Assistant, or a made-up fortnight for previews.", "type": "select", "options": ["ha", "sample"], "label": "Source", "default": "ha"},
-  "calendars": {"about": "The calendars to show events from. Each calendar's events take their own colour.", "type": "entities", "domain": "calendar", "label": "Calendars", "default": ""},
+  "hidden": {"about": "The calendars turned off on the screen (the calendars sheet), as ids. Every other calendar in Home Assistant shows, each in its own colour.", "type": "hidden", "default": ""},
   "view": {"about": "Which view the screen opens on: agenda lists the next event and the days after it; month shows six weeks of days with their events.", "type": "select", "options": ["agenda", "month"], "label": "View", "default": "agenda"},
   "now": {"about": "For tests only: a fixed time in milliseconds for the made-up fortnight. Leave empty for the real time.", "type": "hidden", "default": ""}
  },
  "feeds": {
-  "panel.calendar": {"source": "$source", "calendars": "$calendars", "now": "$now"}
+  "panel.calendar": {"source": "$source", "hidden": "$hidden", "now": "$now"}
  },
  "card": {
   "icon": "calendar",
@@ -43,7 +43,7 @@
    "p": {"title": "calendars", "open": {"e": "panel.calendar", "a": "sheet", "map": {"calendars": "open"}, "else": "closed"}},
    "on": {"close": {"do": "calendar.control"}}},
   {"c": "grid", "in": 6, "slot": 0,
-   "p": {"cols": 1, "gap": "none", "aspect": "row", "items": {"e": "panel.calendar", "a": "calendars"}, "empty": "No calendars picked."},
+   "p": {"cols": 1, "gap": "none", "aspect": "row", "items": {"e": "panel.calendar", "a": "calendars"}, "empty": "No calendars in Home Assistant."},
    "cell": {"c": "calendar_row", "p": {"kind": "$item.kind", "title": "$item.title", "colour": "$item.colour", "status": "$item.status", "on": "$item.on"}},
    "on": {"pick": {"do": "calendar.control"}}},
   {"c": "bottom_sheet", "in": "overlay",

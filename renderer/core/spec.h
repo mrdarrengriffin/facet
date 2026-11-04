@@ -1419,6 +1419,12 @@ inline bool run_action(Screen *s, Node &n, ArduinoJson::JsonVariantConst a, cons
     const std::string v = !strcmp(event, "tap") ? "calendars" : !strcmp(event, "close") ? "close" : detail ? detail : "";
     const char *why = dev::calendar_source::control(v);
     if (*why) return refuse(why);
+    if (v.rfind("toggle ", 0) == 0 && s->params.count("hidden")) {  // the pick sticks (the deck: a restart keeps it)
+      ArduinoJson::JsonDocument kv;
+      kv.set(dev::calendar_source::hidden_list());
+      s->params["hidden"] = kv.as<std::string>();
+      deck_set(s->id, "params.hidden", kv.as<ArduinoJson::JsonVariantConst>());
+    }
     return true;
   }
   if (d.rfind("timer.", 0) == 0) {  // the panel's timers (core/device.h): which one = id / name, a chip's detail, the shown

@@ -26,9 +26,10 @@
 //                is hero_n, accent hero_accent, as on the screen)
 // What the person does (calendar.control, core/spec.h ACTIONS): previous | next | today (the month shown), day
 // <YYYY-MM-DD> (that day's sheet), calendars (the calendars sheet), close (the open sheet), toggle <id> (a calendar
-// shown / hidden; kept while the panel runs).
+// shown / hidden; kept in the deck, params.hidden, so it survives a restart).
 // Adapters (the feed's settings, the spec's "feeds"; core/ha.h feed_config): source
-//   ha      Home Assistant calendars (setting calendars: a comma list of calendar entities). Each entity's own event
+//   ha      every calendar in Home Assistant (no setting to pick them: the calendars sheet turns each off or on;
+//           setting hidden = the ones off, a comma list of ids, written by the sheet). Each entity's own event
 //           (state on while one runs; message, start_time, end_time, all_day, location) is a live subscription like any
 //           bind; the days around come from calendar.get_events (core/ha.h ask, one per calendar) on build, every 15
 //           minutes, on a new day and when the month shown leaves the days fetched. Without action responses (or a
@@ -249,13 +250,9 @@ void put_empty(feed::State st) {  // loading / error: the words only; the rest s
   put_f("card", feed::words(st));
   put_f("hero_line", st == feed::ERROR ? "the calendars can't be reached" : "");
 }
-// none picked: set-up, not a fault (never "Offline")
-void put_none() {
-  put_state(feed::EMPTY);
-  put_f("hero_label", "No calendars");
-  put_f("card", "No calendars");
-  put_f("hero_line", "Pick them in the editor");
-}
+// no calendar found yet: still looking (loading), Home Assistant not reached (Offline), or connected long enough to
+// say it has none (Not found)
+void put_none() { put_empty(ha::offline() ? feed::ERROR : ha::settled() ? feed::MISSING : feed::LOADING); }
 
 // ---- sample adapter
 void sample_cals() {
@@ -389,8 +386,12 @@ class Calendar : public feed::Feed {
   }
   void fill() override {
     settings();
-    std::string list = cfg()["calendars"] | "";
-    if (list.empty()) list = every_calendar();  // none picked: every calendar Home Assistant has (a fresh panel)
+    static uint32_t looked = 0;
+    if (cals.empty() && list_now.empty() && fw::dev::ha_link::list("calendar") && lv_tick_elaps(looked) > 30000) {
+      looked = lv_tick_get();  // none found: look again (a calendar added in Home Assistant)
+      fw::dev::ha_link::fetch("calendar");
+    }
+    const std::string list = every_calendar();  // every calendar Home Assistant has; the ones turned off: hidden
     if (changed() || src_now != "ha" || list != list_now) {
       list_now = list;
       cals.clear(), asked.clear(), answered_ok.clear(), hidden.clear(), fetched_day = -1;
@@ -408,6 +409,13 @@ class Calendar : public feed::Feed {
         for (const char *a : {"", "message", "start_time", "end_time", "all_day", "location", "friendly_name"}) r.push_back({e, a});
       }
       reads(r);
+      const std::string h = cfg()["hidden"] | "";  // the ones turned off on the screen (kept in the deck: hidden_list)
+      for (size_t i = 0; i < h.size();) {
+        size_t j = h.find(',', i);
+        if (j == std::string::npos) j = h.size();
+        if (cal_of(h.substr(i, j - i))) hidden.insert(h.substr(i, j - i));
+        i = j + 1;
+      }
     }
     for (Cal &c : cals) { const std::string *n = ha::get(c.entity, "friendly_name"); if (n && !n->empty()) c.name = *n; }
     if (back()) waiting = 0;  // asks sent before Home Assistant dropped never come back
@@ -438,6 +446,12 @@ void run_again() { F.run(); }
 [[maybe_unused]] const bool wired = (put_f = [](const char *a, const std::string &x) { F.put(a, x); }, true);
 }  // namespace
 
+// the calendars turned off, as the deck keeps them (core/spec.h calendar.control: params.hidden after a toggle)
+std::string hidden_list() {
+  std::string out;
+  for (const std::string &id : hidden) out += (out.empty() ? "" : ",") + id;
+  return out;
+}
 // calendar.control (core/spec.h ACTIONS): what a tap on the Calendar screen does; "" = done, else why not
 const char *control(const std::string &v) {
   const double now = now_ms();

@@ -9,6 +9,17 @@ const C1 = 'calendar.test_family', C2 = 'calendar.test_work';
 const asks = (t) => JSON.parse(t.b.m.UTF8ToString(t.b.m._fw_ha_asks()) || '[]');
 const answer = (t, id, obj) => { t.b.str(JSON.stringify(obj), (p) => t.b.m._fw_ha_answer(id, 1, p)); t.b.settle(1500); };
 async function open(t, params) { await t.mount('spec', { screen: 'calendar', ...params }); return t; }
+// the device with the Calendar page, linked to the fake HA (every calendar it has), on the Calendar
+async function linked(t, params, answers = true) {
+  t.ha.answers = true;  // the link's entity list; then answers (get_events) as asked
+  await t.device({ v: 2, rev: 9, start: 'h', pages: [
+    { id: 'h', kind: 'home', name: 'Test', cards: [{ t: 'page', page: 'calendar', size: 'm' }] },
+    { id: 'calendar', kind: 'calendar', params }] });
+  t.b.spec('act', { do: 'ha.connect', url: 'http://ha.test:8123', token: 'abcdefgh1234' }); t.b.tick(8); t.b.settle(600);
+  t.show('calendar'); t.b.settle(400); t.ha.answers = answers;
+  for (let i = 0; i < 2; i++) { t.wait(61000); t.b.tick(8); t.ha.push(); t.b.settle(400); }  // the feed's round: once a minute
+  return t;
+}
 const deck = (params) => ({ v: 2, rev: 9, start: 'h', pages: [
   { id: 'h', kind: 'home', name: 'Test', cards: [{ t: 'page', page: 'c', size: 'l' }] },
   { id: 'c', kind: 'calendar', params }] });
@@ -46,17 +57,17 @@ export default {
     { name: 'ha: each calendar live, then get_events per calendar; colours in order', async run(t) {
       t.ha.s[C1] = { '': 'off', friendly_name: 'Family', message: 'Dentist', start_time: '2099-01-01 09:00:00', end_time: '2099-01-01 10:00:00', all_day: 'false' };
       t.ha.s[C2] = { '': 'off', friendly_name: 'Work' };
-      await open(t, { source: 'ha', calendars: `${C1},${C2}` });
+      await linked(t, { source: 'ha' }, false);
       t.has(t.texts(), /^dentist$/i, 'the entity\'s own event before any reply');
       const q = asks(t).filter((a) => a.service === 'calendar.get_events');
-      t.eq(q.map((a) => a.data.entity_id).sort(), [C1, C2], 'one ask per calendar');
+      t.eq([...new Set(q.map((a) => a.data.entity_id))].sort(), [C1, C2], 'an ask per calendar');
       const s = Date.now() + 2 * 3600e3;
       answer(t, q.find((a) => a.data.entity_id === C2).id, { [C2]: { events: [{ start: iso(s), end: iso(s + 3600e3), summary: 'Standup' }] } });
       t.has(t.texts(), /^standup$/i, 'an asked event');
     } },
     { name: 'ha: unavailable calendars say Unavailable, no rows (Not found: missing_entities)', async run(t) {
       t.ha.s[C1] = { '': 'unavailable' };
-      await open(t, { source: 'ha', calendars: C1 });
+      await linked(t, { source: 'ha' });
       t.has(t.texts(), /^Unavailable$/, 'unavailable'); t.hasNot(t.texts(), /^(offline|not found)$/i, 'not the other words');
     } },
     { name: 'Home card (C52): the next event on the same feed', async run(t) {
@@ -67,11 +78,13 @@ export default {
     { name: 'Home card: the day of an event this week in full (Wednesday, not Wed); Tomorrow in full', async run(t) {
       const sun = Date.UTC(2026, 10, 1, 12), wed = sun + 3 * 86400e3;  // Sunday 1 Nov 2026 noon, the event Wednesday 4 Nov
       t.ha.s[C1] = { '': 'off', friendly_name: 'Family', message: 'Tennis - Coaching', start_time: '2026-11-04 18:00:00', end_time: '2026-11-04 19:00:00', all_day: 'false' };
+      t.ha.answers = true;
       await t.device({ v: 2, rev: 9, start: 'h', pages: [
         { id: 'h', kind: 'home', name: 'Test', cards: [{ t: 'page', page: 'c', size: 'm' }, { t: 'page', page: 'k', size: 'm' }] },
-        { id: 'c', kind: 'calendar', params: { source: 'ha', calendars: C1, now: String(sun) } },
+        { id: 'c', kind: 'calendar', params: { source: 'ha', now: String(sun) } },
         { id: 'k', kind: 'clock', params: { source: 'sample' } }] });
-      t.b.settle(1500);
+      t.b.spec('act', { do: 'ha.connect', url: 'http://ha.test:8123', token: 'abcdefgh1234' }); t.b.tick(8); t.b.settle(600);
+      for (let i = 0; i < 2; i++) { t.wait(61000); t.b.tick(8); t.ha.push(); t.b.settle(400); }
       const c = t.part('card');
       t.ok(c && c.texts.includes('Wednesday'), `the card: ${JSON.stringify(c?.texts)}`);
       t.ok(!c.texts.includes('Wed'), 'never the short form on the card');
@@ -90,23 +103,18 @@ export default {
       t.ok(link.count >= 2, `the link read Home Assistant's entities: ${link.count}`);
       t.hasNot(t.texts(), 'No calendars', `not the none-picked words: ${t.texts().slice(0, 8)}`);
     } },
-    { name: 'calendars picked in screen settings reach the Calendar at once (no restart)', async run(t) {
+    { name: 'a calendar turned off on the screen stays off: the deck keeps it (a restart)', async run(t) {
       t.ha.s[C1] = { '': 'off', friendly_name: 'Family' };
       t.ha.s[C2] = { '': 'off', friendly_name: 'Work' };
-      const dk = (cals) => ({ v: 2, rev: 9 + cals.length, start: 'h', pages: [
-        { id: 'h', kind: 'home', name: 'Test', cards: [{ t: 'page', page: 'calendar', size: 'm' }] },
-        { id: 'calendar', kind: 'calendar', params: { source: 'ha', calendars: cals.join(',') } }] });
-      await t.device(dk([C1]));
-      t.b.test('keep', '8'); t.wait(4000);  // the panels keep the deck's pages built
-      t.show('calendar'); t.wait(1500);
-      const first = asks(t).filter((a) => a.service === 'calendar.get_events');
-      t.ok(first.some((a) => a.data.entity_id === C1), `asked ${C1}: ${first.map((a) => a.data.entity_id)}`);
-      for (const a of first) answer(t, a.id, { [a.data.entity_id]: { events: [] } });
-      const r = JSON.parse(t.b.spec('deck', dk([C1, C2])) || '{}');
-      t.ok(r.ok, `the deck takes both: ${JSON.stringify(r.errors ?? '')}`);
-      t.b.spec('act', { do: 'nav.back' }); t.wait(4000); t.show('calendar'); t.wait(1500);
-      const after = asks(t).filter((a) => a.service === 'calendar.get_events').map((a) => a.data.entity_id);
-      t.ok(after.includes(C2), `asked ${C2} too without a restart: ${after}`);
+      t.ha.answers = true;
+      await linked(t, { source: 'ha' });
+      const b = t.comps().find((c) => c.ids.includes('icon_button') && c.y < 100 && c.x > t.b.S / 2);
+      t.tap(b); t.tap(t.find(/^work$/i));
+      t.has(t.texts(), /^hidden$/i, 'Work hidden');
+      const l = JSON.parse(t.b.spec('list', '') || '{}');
+      const deck = typeof l.deck === 'string' ? JSON.parse(l.deck) : l.deck || {};
+      const pg = (deck.pages || []).find((p) => p.kind === 'calendar');
+      t.eq(pg?.params?.hidden, C2.slice(9), `the deck keeps it: ${JSON.stringify(pg?.params)}`);
     } },
     { name: 'a sample that moves with the clock keeps no old copies (facet-256: the panels lost ~1.9 KB of PSRAM a minute)', async run(t) {
       // the sample fortnight follows the wall clock (Date.now): each minute another agenda; the feed kept every one

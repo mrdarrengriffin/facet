@@ -27,7 +27,7 @@ export const props = (id) => {
   return p;
 };
 export const ENTITIES = () => ({ [W]: { '': 'cloudy', temperature: '10.2', humidity: '81', wind_speed: '12' },
-  [C]: { '': 'off', friendly_name: 'Family' },
+  [C]: { '': 'off', friendly_name: 'Family' }, 'media_player.test_tv': { '': 'playing', media_title: 'Test track', friendly_name: 'Test TV' },
   'sensor.test_grid_price': { '': '0.275', unit_of_measurement: 'GBP/kWh' }, 'sensor.test_grid_power': { '': '420', unit_of_measurement: 'W' } });
 // a feed refreshes at least once a minute: a minute of panel time, so every screen has had its next round. Energy
 // times its reads by the wall clock (time()), so the wall clock moves the same minute (Date.now, restored after each test).
@@ -49,6 +49,7 @@ export async function show(t, id, missing) {
     // Energy reads HA's Energy dashboard over the panel's own link: linked to the fake (NOT a real Home Assistant)
     JSON.parse(t.b.spec('act', { do: 'ha.connect', url: 'http://fake-ha.test:8123', token: 'testtoken1234' }) || '{}');
     wait(t);
+    for (let i = 0; i < 2; i++) { t.ha.push(); wait(t); }  // what the screen wanted once the link answered (the speakers, the calendars it found) answers too
   } finally { t.ha.get = get; }
   return t.texts();
 }

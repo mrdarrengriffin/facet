@@ -31,26 +31,6 @@ export default {
       t.eq(rows.filter((c) => (c.props?.icon ?? 'none') !== 'none').length, 0, 'no icon at the start of any row');
       t.eq(comps(t, 'radio').filter((r) => t.visible(r) && radioOn(t, r)).length, 1, 'one radio on (the chosen source)');
     } },
-    { name: 'Calendar > Calendars (pick many): a checkbox per row, not radios; a tap ticks only that row', async run(t) {
-      t.ha.s['calendar.test_family'] = { '': 'off', friendly_name: 'Family' };
-      t.ha.s['calendar.test_work'] = { '': 'off', friendly_name: 'Work' };
-      t.ha.answers = true;
-      await t.device();
-      t.b.spec('act', { do: 'ha.connect', url: 'http://ha.test:8123', token: 'abcdefgh1234' }); t.b.tick(8); t.b.settle(600);
-      act(t, { do: 'nav.open', screen: 'screen_set', params: { id: 'calendar' } });
-      for (let i = 0; i < 6 && !t.texts().includes('Calendars'); i++) { t.drag({ at: [t.b.S / 2, t.b.S * 0.8] }, { by: [0, -t.b.S * 0.4] }); t.wait(500); }
-      t.drag({ at: [t.b.S / 2, t.b.S * 0.8] }, { by: [0, -t.b.S * 0.3] }); t.wait(500);  // the row clear of the bottom edge
-      t.tap(/^Calendars$/); t.b.tick(8); t.b.settle(1200); t.b.tick(8); t.b.settle(800);
-      t.has(t.texts(), 'Family', 'the calendars listed');
-      t.eq(comps(t, 'radio').filter((r) => t.visible(r)).length, 0, 'no radios');
-      t.ok(comps(t, 'checkbox').filter((r) => t.visible(r)).length >= 2, 'a checkbox per calendar');
-      const evs = t.tap('Family'); t.b.tick(8); t.b.settle(800);
-      t.ok(evs.some((e) => e.name === 'deck' && /calendar\.test_family/.test(e.detail)), `Family picked: ${evs.map((e) => e.name + '(' + e.detail + ')').join(' ').slice(0, 200)}`);
-      const boxes = comps(t, 'checkbox').filter((r) => t.visible(r)).sort((a, z) => a.y - z.y);
-      const ink = (b) => px(t, b.x + b.w / 2, b.y + b.h / 2), bg = (b) => px(t, b.x - 12, b.y + b.h / 2);
-      t.ok(diff(ink(boxes[0]), bg(boxes[0])), 'Family ticked');
-      t.ok(!diff(ink(boxes[1]), bg(boxes[1])), 'Work not (the other row untouched)');
-    } },
     { name: 'Show on Home off: the screen leaves the deck and its Home card goes with it; on again brings both back', async run(t) {
       await t.device();
       act(t, { do: 'nav.open', screen: 'screen_set', params: { id: 'moon' } });
