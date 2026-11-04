@@ -5,8 +5,7 @@
 // from its HA link). key(): the picture a URL names, without HA's access token (token=..., which HA's proxy rotates
 // every 5 minutes): views, fetches and the cache match by it, so a new token never fetches the same picture again.
 // shade (px, 0 = none): the bottom shade px darken towards black, the upper half a smoothstep ramp, the lower half at
-// SHADE_MIN, so light text in that lower half keeps its contrast over any picture (Media art; colour.json art-shade =
-// the lightest it can be there).
+// SHADE_MIN, so light text in that lower half keeps its contrast over any picture.
 // Sources: the host fetches each wanted URL and hands the DECODED pixels to put() (RGBA8888, any size up to
 // budget().src_max_px) or says fail(). WASM: the browser decodes (through the workbench host for CORS), core/main.cpp
 // fw_img_put / fw_img_fail; the panel (piece 2, facet firmware/fw_images.h): its own HTTP fetch + JPEG/PNG decoder feeds the same put().
@@ -38,7 +37,7 @@ using Notify = void (*)(void *owner);
 // take a view for owner (any stable key: a component keeps two, the image shown + the one coming) (one per owner: a second acquire releases the first); returns its id (> 0)
 // nearest = no blur when scaling up (any scale; pixel always is): sharp pixel art in cover / contain boxes, never dithered
 int acquire(void *owner, const char *src, int w, int h, Scale s, int radius, Notify cb, bool nearest = false, int shade = 0);
-constexpr float SHADE_MIN = 0.35f;  // the shade's darkest factor (white -> #595959: colour.json art-shade)
+constexpr float SHADE_MIN = 0.35f;  // the shade's darkest factor (white -> #595959)
 std::string key(const std::string &url);  // the URL without its access token (token=...)
 bool same(const std::string &a, const std::string &b);  // the same picture (key)
 void release(void *owner);

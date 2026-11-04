@@ -29,14 +29,14 @@ const isRed = (c) => c[0] > 180 && c[1] < 90 && c[2] < 90;
 export default {
   id: 'idle', family: 'device', about: 'The idle clock: Clock after with no touch, dimmed; a touch goes Home and clicks nothing; Idle shows Album art while music plays.',
   tests: [
-    { name: 'Idle shows Album art: while music plays, the art covers the screen (darker at its foot); paused, the clock; a tap goes Home', async run(t) {
+    { name: 'Idle shows Album art: while music plays, the art alone covers the screen (no words, no shade); paused, the clock; a tap goes Home', async run(t) {
       await artIdle(t);
       const S = t.b.S;
       t.eq(t.stack(), ['home', 'idle'], 'idle');
       t.ok(t.img.asked.includes(HA + ART), `the art fetched: ${t.img.asked}`);
       const top = rgb(t, S >> 1, S >> 3), foot = rgb(t, 4, S - 4);
       t.ok(isRed(top), `the art at the top: ${top}`);
-      t.ok(foot[0] < top[0] * 0.5, `its foot is shaded for the words: ${foot} under ${top}`);
+      t.ok(isRed(foot), `its foot is the art too, no shade: ${foot}`);
       t.ha.set(P, 'paused'); t.wait(1500);
       t.ok(!isRed(rgb(t, S >> 1, S >> 3)), `paused: no art (${rgb(t, S >> 1, S >> 3)})`);
       t.ok(t.texts().some((x) => DATE.test(x)), 'the clock shows');

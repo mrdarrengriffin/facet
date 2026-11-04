@@ -2507,18 +2507,6 @@
      "about": "The album art's address (the player's picture). The default is the docs' demo picture."
     },
     {
-     "name": "title",
-     "type": "text",
-     "bindable": true,
-     "about": "The track, one line."
-    },
-    {
-     "name": "artist",
-     "type": "text",
-     "bindable": true,
-     "about": "The artist, one line under it."
-    },
-    {
      "name": "playing",
      "type": "bool",
      "bindable": true,
@@ -5294,5 +5282,5 @@
    }
   }
  },
- "hash": "97208dee"
+ "hash": "678bd29d"
 }

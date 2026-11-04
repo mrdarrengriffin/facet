@@ -486,24 +486,6 @@
       "light": "#E4E0D9",
       "role": "deck parts: arm base, head cover"
     },
-    "art-text": {
-      "group": "media",
-      "dark": "#FFFFFF",
-      "light": "#FFFFFF",
-      "role": "Media art: the track over the album art's shaded foot (fixed: the art is the same in both themes)"
-    },
-    "art-text-dim": {
-      "group": "media",
-      "dark": "#DCDEE2",
-      "light": "#DCDEE2",
-      "role": "Media art: the artist under the track"
-    },
-    "art-shade": {
-      "group": "media",
-      "dark": "#595959",
-      "light": "#595959",
-      "role": "Media art: the lightest the shaded foot can be (a white pixel at core/images.h SHADE_MIN 0.35), the words' worst case; a reference, not drawn"
-    },
     "flag-green": {
       "group": "secondary",
       "dark": "#1FA34A",
@@ -3270,20 +3252,6 @@
         "bg": "mv-vinyl",
         "kind": "decor",
         "use": "tonearm over the record"
-      },
-      {
-        "section": "media_art",
-        "fg": "art-text",
-        "bg": "art-shade",
-        "kind": "text",
-        "use": "the track over the album art's shaded foot (art-shade: the lightest the shade leaves a white pixel)"
-      },
-      {
-        "section": "media_art",
-        "fg": "art-text-dim",
-        "bg": "art-shade",
-        "kind": "text",
-        "use": "the artist under it"
       },
       {
         "section": "donut",

@@ -5,7 +5,7 @@
 // on the case's module, on a 480 x 360 stage of its own with the props below (the tokens show on those parts).
 // parts whose whole look is a type style + a colour (no size of their own): nothing to tune, the check passes them
 // (Title, Text: its box is its type's line boxes, the Header's text)
-const TEXT_ONLY = new Set(['title', 'text']);
+const TEXT_ONLY = new Set(['title', 'text', 'media_art']);  // media_art: a picture alone (no size token of its own)
 import { serveDemoArt } from '../../tools/demo_art.mjs';  // pictures: the docs' demo art (Media art)
 const CARD = ['layout:card-pad', 'radius:card', 'stroke:hair'];   // must repaint the Card
 const PAGE = ['layout:inset', 'layout:gutter', 'layout:top', 'layout:header-gap', 'squeeze'];  // page only
@@ -34,8 +34,6 @@ const EXTRA = { card: [{ opening: false }, CARD, PAGE],
   status_line: [{ text: 'Normal 26.2p until 16:00' }, ['space:3'], PAGE],
   bins_art: [{ colours: 'black,green' }, ['layout:bin-hero', 'stroke:edge'], PAGE],
   cover_visual: [{ kind: 'venetian', position: 40, heading: 80 }, ['layout:cover-pad', 'layout:cover-rail', 'layout:cover-bar', 'layout:cover-slat', 'layout:cover-stack', 'stroke:edge', 'space:1'], PAGE],
-  // its words sit layout:inset above its foot, space:2 apart (the inset is its own here, not a Page's)
-  media_art: [{ art: '/api/media_player_proxy/media_player.sitting_room_speaker?token=demo&cache=a', title: 'Harbour Lights', artist: 'The Lanterns' }, ['layout:inset', 'space:2'], PAGE.filter((n) => n !== 'layout:inset')],
   media_visual: [{ playing: false }, [], PAGE],  // still, as media_hero: a turning reel or record repaints between a tune and its "and back"
   media_hero: [{ playing: false }, ['layout:m-gap', 'layout:m-col-top', 'layout:m-title-h'], PAGE],  // still: a turning picture repaints between a tune and its "and back"
   slider_row: [{}, ['layout:gutter', 'layout:m-vol-label'], PAGE.filter((n) => n !== 'layout:gutter')],  // its row's gap is its own gutter

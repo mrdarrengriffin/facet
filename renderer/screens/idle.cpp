@@ -4,7 +4,7 @@
 // release clicks nothing) and goes back to Home. The device fades it in, dims the screen (Idle brightness) and
 // undims when it leaves.
 // Idle shows = Album art (setting idleShow "art"): a Media art over the clock, bound to the Media feed (panel.media:
-// art, title, artist, playing): while music plays with art it covers the screen, else it draws nothing and the clock
+// art, playing): while music plays with art it covers the screen (the art alone), else it draws nothing and the clock
 // shows; it moves with the feed in place (a new track, a pause). It takes no touch: the tap reaches the clock under it.
 // The feed reads the Media screen's source (the deck's pick, else Home Assistant) when no screen has set one yet.
 #include "fw.h"
@@ -48,7 +48,7 @@ void build_idle(lv_obj_t *parent, fw::Props p) {
   lv_obj_add_flag(layer, (lv_obj_flag_t) (LV_OBJ_FLAG_IGNORE_LAYOUT | LV_OBJ_FLAG_FLOATING));
   lv_obj_remove_flag(layer, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
   ArduinoJson::JsonDocument b;
-  for (const char *a : {"art", "title", "artist", "playing"}) b[a]["e"] = "panel.media", b[a]["a"] = a;
+  for (const char *a : {"art", "playing"}) b[a]["e"] = "panel.media", b[a]["a"] = a;
   fw::ha::bound(layer, "media_art", b.as<fw::Props>());
 }
 const int reg = fw::add({"idle", "Idle clock", "screens", META, build_idle});
