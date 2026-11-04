@@ -9,6 +9,9 @@ carries its licence text.
 |---|---|---|
 | [LVGL](https://github.com/lvgl/lvgl) 9.5.0 | `renderer/third_party/lvgl/` (`LICENCE.txt`, `COPYRIGHTS.md` for the libraries inside it) | MIT |
 | [ArduinoJson](https://github.com/bblanchon/ArduinoJson) 7.4.3 | `renderer/third_party/arduinojson/` (`LICENSE.txt`) | MIT |
+| [pngle](https://github.com/kikuchan/pngle) (b1c6819) | `firmware/fw_pngle.c`, `fw_pngle.h` | MIT |
+| [miniz](https://github.com/richgel999/miniz), as trimmed by pngle | `firmware/fw_miniz.c` | Unlicense (public domain) |
+| [TJpgDec](http://elm-chan.org/fsw/tjpgd/) R0.03 (ChaN), from LVGL | `firmware/fw_tjpgd.c`, `fw_tjpgd.h` | ChaN's free licence (keep the notice) |
 | [ESPHome](https://github.com/esphome/esphome) `mipi_rgb` display component, 2026.9.1 with three fixes | `esphome/components/mipi_rgb/` (`LICENSE`, `NOTICE`: the upstream commit and what changed) | GPLv3 (C++), MIT (Python) |
 
 ## Fonts

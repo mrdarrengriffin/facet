@@ -123,6 +123,7 @@ export class Engine {
     };
     requestAnimationFrame(frame);
     if (e.m._fw_ha_wants) e.haLoop();
+    if (e.m._fw_img_wants) e.imgLoop();
     return e;
   }
   /** Home Assistant data for bound components (core/ha.h): the wanted (entity, attribute) pairs' values from the HA
@@ -147,6 +148,66 @@ export class Engine {
         } catch { /* workbench or HA away: keep the last values */ }
       }
       await new Promise((res) => setTimeout(res, 500));
+    }
+  }
+  /** Images (renderer core/images.h): the URLs the built screens want (album art), fetched through the workbench (a path on
+   *  Home Assistant: /api/panel/ha-img; a URL: /api/wasm/img where the host has it: CORS,
+   *  redirects, a plain-words reason when it fails), decoded by the browser and put as RGBA pixels (fw_img_put), or
+   *  failed (fw_img_fail) with the HTTP status / "timeout" / "decode". The panel fetches like the workbench does (a plain HTTP
+   *  client), so the proxy's answer is the panel's answer. Workbench nicety only: when the proxy fails, the browser
+   *  tries the URL itself (crossOrigin, works when the host sends CORS headers and lets browser tabs through); a picture
+   *  that only loads that way is marked via 'browser' (the panel would show the fallback). Every outcome goes to
+   *  imgStatus + onImage (the playground's status line).  */
+  imgStatus = new Map<string, ImgStatus>();
+  onImage?: (src: string, s: ImgStatus) => void;
+  private async imgLoop() {
+    const decode = async (blob: Blob) => { try { return await createImageBitmap(blob); } catch { throw Object.assign(new Error('decode'), { why: "the file isn't a picture the browser can read" }); } };
+    const direct = (src: string) => new Promise<ImageBitmap>((res, rej) => {
+      const im = new Image();
+      im.crossOrigin = 'anonymous';
+      im.onload = () => createImageBitmap(im).then(res, rej);  // a host without CORS taints the canvas: rejected here
+      im.onerror = () => rej(new Error('direct'));
+      im.src = src;
+    });
+    const one = async (src: string) => {
+      const status = (s: ImgStatus) => { this.imgStatus.set(src, s); this.onImage?.(src, s); };
+      status({ state: 'loading' });
+      let bm: ImageBitmap, via: ImgStatus['via'] = 'proxy';
+      try {
+        // a picture on Home Assistant (a player's entity_picture: a path, or the module's HA address in front of it, which
+        // the workbench's own link stands in for, as for its REST reads): the workbench's HA (or its fake HA's demo art)
+        const ha = src.startsWith('/') ? src : /^https?:\/\/[^/]+(\/api\/(?:media_player_proxy|image_proxy)\/.*)$/.exec(src)?.[1];
+        const r = await fetch(ha ? `/api/panel/ha-img?path=${encodeURIComponent(ha)}` : `/api/wasm/img?src=${encodeURIComponent(src)}`);
+        if (!r.ok) {
+          const why = r.headers.get('x-fw-reason') || (await r.text().catch(() => '')).slice(0, 160) || `HTTP ${r.status}`;
+          throw Object.assign(new Error(r.status === 504 ? 'timeout' : String(r.status)), { why });
+        }
+        bm = await decode(await r.blob());
+      } catch (e) {
+        const code = (e as Error).message || 'failed', why = (e as { why?: string }).why || code;
+        try { bm = await direct(src); via = 'browser'; } catch {
+          if (this.alive) {
+            this.withStr(src, (ps) => this.withStr(code, (pw) => this.m._fw_img_fail(ps, pw)));
+            status({ state: 'failed', code, why });
+          }
+          return;
+        }
+        status({ state: 'loading', why });  // the browser got it (below): keep the proxy's reason for the note
+      }
+      const c = new OffscreenCanvas(bm.width, bm.height), g = c.getContext('2d')!;
+      g.drawImage(bm, 0, 0);
+      const px = g.getImageData(0, 0, bm.width, bm.height).data;
+      if (!this.alive) return;
+      const p = this.m._malloc(px.length);
+      this.m.HEAPU8.set(px, p);
+      this.withStr(src, (ps) => this.m._fw_img_put(ps, bm.width, bm.height, p));
+      this.m._free(p);
+      status({ state: 'ready', via, w: bm.width, h: bm.height, why: via === 'browser' ? this.imgStatus.get(src)?.why : undefined });
+    };
+    while (this.alive) {
+      const w = JSON.parse(this.str(this.m._fw_img_wants()) || '[]') as string[];
+      for (const src of w) void one(src);
+      await new Promise((res) => setTimeout(res, 250));
     }
   }
   /** fetch the HA values now (the editor's Refresh button); the poll period restarts from it */
@@ -192,6 +253,9 @@ export class Engine {
   stage(w: number, h: number) { const s = new Stage(this, w, h); this.views.add(s); return s; }
   dispose() { this.alive = false; for (const s of [...this.views]) s.free(); }
 }
+
+/** one image URL's outcome on the workbench (Engine.imgStatus): via 'browser' = only the browser tab could load it */
+export type ImgStatus = { state: 'loading' | 'ready' | 'failed'; via?: 'proxy' | 'browser'; code?: string; why?: string; w?: number; h?: number };
 
 export class Stage {
   canvas = document.createElement('canvas');

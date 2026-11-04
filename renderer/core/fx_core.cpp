@@ -1912,6 +1912,16 @@ void Pen::within(int x, int y, int w, int h, const std::function<void()> &f) con
   if (c.x1 <= c.x2 && c.y1 <= c.y2) f();
   layer->_clip_area = keep;
 }
+void Pen::image(int x, int y, const lv_image_dsc_t *px) const {
+  if (!px || !px->data) return;
+  const int w = (int) px->header.w, h = (int) px->header.h;
+  if (w < 1 || h < 1 || !sees(x, y, x + w - 1, y + h - 1)) return;
+  lv_draw_image_dsc_t d;
+  lv_draw_image_dsc_init(&d);
+  d.src = px;
+  const lv_area_t a = {cx + x, cy + y, cx + x + w - 1, cy + y + h - 1};
+  lv_draw_image(layer, &d, &a);
+}
 void Pen::rect(int x, int y, int w, int h, const char *k, int radius, int border, int foot) const {
   if (w <= 0 || h <= 0 || !sees(x, y, x + w - 1, y + h - 1)) return;
   lv_draw_rect_dsc_t d;

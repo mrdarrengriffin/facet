@@ -65,6 +65,8 @@
 // OPTIONS /fw/* answers 204 with Allow-Origin = the request's Origin, Allow-Methods GET, POST, OPTIONS, Allow-Headers
 // Authorization, Content-Type (+ Private-Network for Chrome), Max-Age 600; every /fw/ response echoes the Origin
 // (Vary: Origin; "*" without one). No credentials (cookies) are involved: the key is the only one, so echoing is safe.
+// Images (fw_images.h): every picture URL the screen wants (the Media feed's album art) is downloaded + decoded on the
+// panel (one worker task, only while a view waits for it) and handed to fw::img::put() / fail() on the LVGL task.
 // Web UI (optional): a bundle may add fw_web_gen.h (fw::web::FILES, gzipped files linked into the image's rodata by
 // the host's build, e.g. the Facet editor + the 1x renderer): GET / and each FILES path are served straight from
 // flash in 4 KB chunks (no RAM copy; Content-Encoding gzip, ETag + If-None-Match -> 304, each file's Cache-Control),
@@ -129,6 +131,7 @@
 #include "esphome/components/api/api_server.h"
 #endif
 #include "fw_bundle_gen.h"
+#include "fw_images.h"  // pictures (album art): fetched + decoded on the panel
 
 namespace fw::device {
 using namespace esphome::web_server_idf;
@@ -1947,6 +1950,7 @@ inline void setup() {
   fw::ha::on_act(ha_action);
   fw::ha::on_ask(ha_ask);
   fw::spec::want_all();  // every entity the deck's specs bind (the overrides were loaded before the first show)
+  images::setup();       // Image URLs: the panel's own download + decode (fw_images.h)
   fw::dev::on_look([] {  // theme / accent / the sun: draw the page again in the new look (+ the probation chip)
     reshow_later(true);
     PR.shown = -2;

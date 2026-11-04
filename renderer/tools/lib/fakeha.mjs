@@ -5,6 +5,7 @@
 import { readFileSync } from 'node:fs';
 import { demoValue } from '../demo_ha.mjs';
 import { demoReply, demoWs } from '../demo_ha_replies.mjs';
+import { demoArt } from '../demo_art.mjs';
 
 const B = JSON.parse(readFileSync(new URL('../../tests/behaviour/_budgets.json', import.meta.url), 'utf8'));
 
@@ -120,12 +121,41 @@ export class FakeHA {
   flush() { const now = this.t.b.t; const due = this.pending.filter((p) => p.at <= now); this.pending = this.pending.filter((p) => p.at > now); due.forEach((p) => p.apply()); }
 }
 
+// ---------------------------------------------------------------- fake image host
+// What the WASM host does for pictures (core/images.h): the device lists the URLs it wants, the host answers with RGBA
+// pixels (fw_img_put) or a failure (fw_img_fail). serve(url, w, h, fill) = an image (fill: [r,g,b,a] or
+// (x, y) => [r,g,b,a]); status(url, 404) = an HTTP error; hang(url) = never answers (the device times out); unknown
+// URLs = the demo players' art (tools/demo_art.mjs), else 404. asked = every URL the device fetched, in order.
+export class FakeImg {
+  constructor(t) { this.t = t; this.map = {}; this.asked = []; }
+  serve(url, w, h, fill = [128, 128, 128, 255]) { this.map[url] = { w, h, fill }; return this; }
+  status(url, code) { this.map[url] = { code: String(code) }; return this; }
+  hang(url) { this.map[url] = { hang: true }; return this; }
+  flush() {
+    const m = this.t.b.m;
+    if (!m?._fw_img_wants) return;
+    for (const url of JSON.parse(m.UTF8ToString(m._fw_img_wants()) || '[]')) {
+      this.asked.push(url);
+      const demo = !this.map[url] && demoArt(url);
+      const s = this.map[url] || (demo ? { w: demo.w, h: demo.h, fill: (x, y) => demo.rgba.subarray((y * demo.w + x) * 4, (y * demo.w + x) * 4 + 4) } : { code: '404' });
+      if (s.hang) { this.t.log.push(`img: ${url} (no answer)`); continue; }
+      if (s.code) { this.t.log.push(`img: ${url} -> ${s.code}`); this.t.b.str(url, (pu) => this.t.b.str(s.code, (pw) => m._fw_img_fail(pu, pw))); continue; }
+      const px = new Uint8Array(s.w * s.h * 4);
+      for (let y = 0; y < s.h; y++) for (let x = 0; x < s.w; x++) px.set(typeof s.fill === 'function' ? s.fill(x, y) : s.fill, (y * s.w + x) * 4);
+      const p = m._malloc(px.length); m.HEAPU8.set(px, p);
+      this.t.b.str(url, (pu) => m._fw_img_put(pu, s.w, s.h, p)); m._free(p);
+      this.t.log.push(`img: ${url} -> ${s.w}x${s.h}`);
+    }
+  }
+  stats() { const m = this.t.b.m; return m._fw_img_stats ? JSON.parse(m.UTF8ToString(m._fw_img_stats())) : {}; }
+}
+
 // ---------------------------------------------------------------- the test context (`t` in a test's run)
 export class Ctx {
   constructor(b) {
-    this.b = b; this.log = []; this.fails = []; this.ha = new FakeHA(this); this.comp = null;
+    this.b = b; this.log = []; this.fails = []; this.ha = new FakeHA(this); this.img = new FakeImg(this); this.comp = null;
     const tick = b.tick.bind(b);
-    b.tick = (n = 1) => { for (let i = 0; i < n; i++) { tick(1); this.ha.serve(); } };  // the fake HA's replies (FakeHA.serve, opt in)
+    b.tick = (n = 1) => { for (let i = 0; i < n; i++) { tick(1); this.ha.serve(); this.img.flush(); } };  // the fake HA's replies (FakeHA.serve, opt in), the fake image host
   }
   // -- mount
   async mount(comp, props = {}) {

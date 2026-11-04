@@ -11,6 +11,8 @@ type Host = Pick<Engine, 'm' | 'str' | 'withStr'>;
 import { DEMO, demoValue, REACTIONS } from '../../../renderer/tools/demo_ha.mjs';
 // the answers a panel gets from Home Assistant (forecasts, calendar events, Energy's reads): the tests' fake uses the same
 import { demoGrid, demoReply, demoWs } from '../../../renderer/tools/demo_ha_replies.mjs';
+// the demo players' album art, drawn in code: the fake HA's picture proxy (the screens fetch entity_picture)
+import { demoArt, demoArtUrl } from '../../../renderer/tools/demo_art.mjs';
 // the factory deck with every screen that offers a sample source on it (scripts/extract.mjs writes it): the site
 // previews sample data (a panel never does unless its deck says so: its factory screens read Home Assistant)
 import SITE_DECK from '../data/site-deck.json' with { type: 'json' };
@@ -113,6 +115,7 @@ function first(entity: string, attr: string): string | undefined {
   }
   if (ENERGY[entity]) return ENERGY[entity][attr];
   if (attr === 'media_position_updated_at') return new Date(demoNow()).toISOString();
+  if (attr === 'entity_picture' && domain === 'media_player') return demoArtUrl(obj);
   if (!/^sample_\d+$/.test(obj)) {  // a named demo entity (the demo deck, a spec's default): the shared demo values
     const d = demoValue(entity, attr);
     if (d !== undefined) return d;
@@ -129,7 +132,20 @@ type HaMod = {
   _fw_ha_wants?: () => number; _fw_ha_put: (a: number, b: number, c: number) => void;
   _fw_ha_asks?: () => number; _fw_ha_answer: (id: number, ok: number, s: number) => void;
   _fw_ha_gets?: () => number; _fw_ha_chunk: (id: number, s: number, n: number) => void; _fw_ha_got: (id: number, ok: number, s: number) => void;
+  _fw_img_wants?: () => number; _fw_img_put: (s: number, w: number, h: number, px: number) => void; _fw_img_fail: (s: number, why: number) => void;
+  _malloc: (n: number) => number; _free: (p: number) => void; HEAPU8: Uint8Array;
 };
+/** the pictures a screen wants (core/images.h): the demo players' art, drawn here; anything else is not found */
+function pictures(e: Host, m: HaMod) {
+  for (const url of JSON.parse(e.str(m._fw_img_wants!()) || '[]') as string[]) {
+    const a = demoArt(url);
+    if (!a) { e.withStr(url, (pu) => e.withStr('not found (404)', (pw) => m._fw_img_fail(pu, pw))); continue; }
+    const p = m._malloc(a.rgba.length);
+    m.HEAPU8.set(a.rgba, p);
+    e.withStr(url, (pu) => m._fw_img_put(pu, a.w, a.h, p));
+    m._free(p);
+  }
+}
 /** the replies a screen waits for: HA actions (a forecast, a calendar's events) and the link's reads (Energy) */
 function answer(e: Host, m: HaMod) {
   for (const a of JSON.parse(e.str(m._fw_ha_asks!()) || '[]') as { id: number; service: string; data?: Record<string, unknown> }[]) {
@@ -160,6 +176,7 @@ export function sampleFeeder(e: Host): { tick: () => void; stop: () => void } | 
   const done = new Set<string>();
   const tick = () => {
     if (m._fw_ha_asks) answer(e, m);
+    if (m._fw_img_wants) pictures(e, m);
     const pairs = JSON.parse(e.str(m._fw_ha_wants!())) as [string, string][];
     for (const [en, a] of pairs) {
       const k = `${en}|${a}`;

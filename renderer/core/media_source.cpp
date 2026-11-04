@@ -8,7 +8,9 @@
 //   playing      "true" | "false" (the Media visual turns; the play button is active)
 //   play_state   active | default | unavailable (the play Icon button); ctl_state default | unavailable | missing (prev
 //                / next, the volume Slider row: its word)
-//   title        the track, or "Nothing playing"; artist; album; art (an image URL, "" = none); source (the input)
+//   title        the track, or "Nothing playing"; artist; album; art (the player's entity_picture: "" = none; a path
+//                on Home Assistant gets the panel's HA address in front, in the workbench it stays a path its host
+//                fetches; core/images.h); source (the input)
 //   progress     0-100 of the track, moving on locally once a second while playing (from HA's position and the time
 //                it was read); position / duration in seconds
 //   volume       0-100 (the Slider); volume_text the number shown beside it ("--" = unknown)
@@ -236,6 +238,8 @@ void rebuild() {
     auto a = [&](const char *k) { const std::string *v = attr(e, k); return v ? *v : std::string(); };
     m.title = a("media_title"), m.artist = a("media_artist"), m.album = a("media_album_name");
     m.art = a("entity_picture"), m.source = a("source");
+    if (m.art == "None") m.art.clear();
+    if (m.art.size() > 1 && m.art[0] == '/' && m.art[1] != '/' && !fw::dev::ha_link::url().empty()) m.art = fw::dev::ha_link::url() + m.art;
     m.dur = atof(a("media_duration").c_str());
     m.pos = atof(a("media_position").c_str());
     const double at = iso_ms(attr(e, "media_position_updated_at"));
