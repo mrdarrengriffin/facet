@@ -83,6 +83,7 @@ jobs:
   publish:
     needs: [check, build]
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     env:
       GH_TOKEN: ${{ github.token }}
       V: ${{ needs.check.outputs.version }}
@@ -123,5 +124,13 @@ jobs:
           gh release edit firmware-dev --title "Firmware (dev channel): $V" --notes-file release-body.md
           gh release upload firmware-dev firmware-dev.tar.gz --clobber
           echo "firmware-dev.tar.gz: $V" | tee -a "$GITHUB_STEP_SUMMARY"
-      - name: Deploy the docs site (serves every channel)
-        run: gh workflow run deploy.yml --ref main
+      - name: Deploy the docs site (serves every channel) and wait for it (its check fetches ota-dev.json + the bins)
+        run: |
+          t=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          gh workflow run deploy.yml --ref main
+          for i in $(seq 1 20); do
+            id=$(gh run list --workflow deploy.yml --event workflow_dispatch --json databaseId,createdAt -q "[.[] | select(.createdAt >= \"$t\")][0].databaseId")
+            [ -n "$id" ] && break; sleep 6
+          done
+          [ -n "$id" ] || { echo "::error::the deploy run did not start"; exit 1; }
+          gh run watch "$id" --interval 30 --exit-status
