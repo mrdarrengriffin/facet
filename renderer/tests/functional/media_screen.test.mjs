@@ -18,12 +18,73 @@ async function linked(t, params) {
   t.show('media'); for (let i = 0; i < 4; i++) { t.wait(1500); t.b.tick(8); t.ha.push(); t.b.settle(400); }
   return t;
 }
+import { frame565 } from './_release.mjs';
+// album art: what the CD shows at 0.7 of its radius, straight up from its centre (inside the printed band, clear of the
+// hub and the print mark): RGB 0-255 from the RGB565 frame
+function cdBand(t) {
+  const v = t.part('media_visual'), f = frame565(t), x = Math.round(v.x + v.w / 2), y = Math.round(v.y + v.h / 2 - 0.7 * v.w / 2);
+  const q = f[y * t.b.S + x];
+  return [(q >> 11) << 3, ((q >> 5) & 63) << 2, (q & 31) << 3];
+}
+const red = (c) => c[0] > 180 && c[1] < 90 && c[2] < 90, blue = (c) => c[2] > 180 && c[0] < 90 && c[1] < 120;
+const ART = (n, tok = 'a1') => `/api/media_player_proxy/${P1}?token=${tok}&cache=${n}`;  // as HA gives entity_picture
+const HA_URL = 'http://ha.test:8123';
 const sheet = (t) => { const b = t.comps().find((c) => c.ids.includes('icon_button') && c.y < 100 && c.x > t.b.S / 2); t.tap(b); return t.texts(); };
 const btn = (t, i) => t.comps().filter((c) => c.ids.includes('icon_button') && c.y > 200).sort((a, b) => a.x - b.x)[i];
 
 export default {
   id: 'media_screen', family: 'screens', about: 'The Media screen on the media feed: the hero, the controls, the volume, the speaker sheet, the HA adapter, Home card.',
   tests: [
+    { name: 'album art: the playing player\'s picture, fetched over the panel\'s HA link, is printed on the CD (plain while it loads, after a 404, with none)', async run(t) {
+      t.ha.s[P1] = { '': 'playing', friendly_name: 'Kitchen', media_title: 'Red Song', media_artist: 'Band', media_duration: '200', media_position: '20', entity_picture: ART('red') };
+      t.img.serve(HA_URL + ART('red'), 64, 64, [230, 30, 30, 255]);
+      await linked(t, { source: 'ha', visual: 'cd' });
+      t.ok(t.img.asked.includes(HA_URL + ART('red')), `fetched with the link's address in front: ${t.img.asked}`);
+      t.ok(red(cdBand(t)), `the CD shows the art: ${cdBand(t)}`);
+      t.ha.set(P1, undefined, { entity_picture: ART('gone') });  // HA has no picture there (404)
+      t.wait(1500);
+      const plain = cdBand(t);
+      t.ok(!red(plain), `a 404: the plain CD again, no error (${plain})`);
+      t.hasNot(t.texts(), /404|not found|failed/i, 'no error words');
+      t.ha.set(P1, undefined, { entity_picture: null });
+      t.wait(1500);
+      t.eq(cdBand(t), plain, 'no art: the plain CD');
+    } },
+    { name: 'album art: a new track swaps it (the old one stays until the new one is in); HA\'s token turning over fetches nothing', async run(t) {
+      t.ha.s[P1] = { '': 'playing', friendly_name: 'Kitchen', media_title: 'Red Song', media_duration: '200', media_position: '20', entity_picture: ART('red') };
+      t.img.serve(HA_URL + ART('red'), 64, 64, [230, 30, 30, 255]).serve(HA_URL + ART('blue'), 48, 48, [30, 30, 230, 255]).hang(HA_URL + ART('slow'));
+      await linked(t, { source: 'ha', visual: 'cd' });
+      t.ok(red(cdBand(t)), `red first: ${cdBand(t)}`);
+      const n = t.img.asked.length;
+      t.ha.set(P1, undefined, { entity_picture: ART('red', 'a2') }); t.wait(1500);  // HA's 5-minute token rotation
+      t.eq(t.img.asked.length, n, 'a new token alone: nothing fetched');
+      t.ok(red(cdBand(t)), 'still red');
+      t.ha.set(P1, undefined, { media_title: 'Slow Song', entity_picture: ART('slow') }); t.wait(1500);
+      t.ok(red(cdBand(t)), `the next art still loading: the old one stays (${cdBand(t)})`);
+      t.wait(9000);
+      t.ok(!red(cdBand(t)) && !blue(cdBand(t)), `it never came (timeout): the plain CD (${cdBand(t)})`);
+      t.ha.set(P1, undefined, { media_title: 'Blue Song', entity_picture: ART('blue') }); t.wait(1500);
+      t.ok(blue(cdBand(t)), `the new track's art: ${cdBand(t)}`);
+    } },
+    { name: 'album art: memory stays flat over 240 track changes (an hour of 15 s tracks)', async run(t) {
+      t.ha.s[P1] = { '': 'playing', friendly_name: 'Kitchen', media_title: 'Song 0', media_duration: '200', media_position: '20', entity_picture: ART('t0') };
+      for (let i = 0; i < 240; i++) t.img.serve(HA_URL + ART('t' + i), 300, 300, [i % 256, 128, 255 - (i % 256), 255]);
+      await linked(t, { source: 'ha', visual: 'cd' });
+      const heap = () => t.b.m.HEAPU8.length, st0 = t.img.stats();
+      let h10 = 0, peak = 0;
+      for (let i = 1; i < 240; i++) {
+        t.ha.set(P1, undefined, { media_title: 'Song ' + i, entity_picture: ART('t' + i) });
+        t.wait(1500);
+        const st = t.img.stats();
+        peak = Math.max(peak, st.bytes);
+        if (i === 10) h10 = heap();
+      }
+      const st = t.img.stats();
+      t.log.push(`img stats after 240 tracks: ${JSON.stringify(st)}; WASM heap ${h10} -> ${heap()} bytes`);
+      t.ok(st.views <= 2 && st.bytes <= st0.bytes * 2 + 4096, `at most the shown + the coming art: ${JSON.stringify(st)} (start ${st0.bytes} B)`);
+      t.ok(peak <= st0.bytes * 2 + 4096, `peak ${peak} B`);
+      t.eq(heap(), h10, 'the WASM heap did not grow after the first 10 tracks');
+    } },
     { name: 'nothing picked (a fresh panel): every Home Assistant media player, never Offline', async run(t) {
       t.ha.s['media_player.test_kitchen'] = { '': 'idle', friendly_name: 'Kitchen' };
       t.ha.s['media_player.test_office'] = { '': 'idle', friendly_name: 'Office' };

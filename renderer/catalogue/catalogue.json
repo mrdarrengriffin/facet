@@ -707,6 +707,12 @@
      "about": "With the media preview: whether it is playing (the picture turns)."
     },
     {
+     "name": "art",
+     "type": "text",
+     "bindable": true,
+     "about": "With the media preview: the album art's address, printed on the disc, CD or record. Empty: the plain picture."
+    },
+    {
      "name": "run",
      "type": "select",
      "bindable": true,
@@ -2547,6 +2553,12 @@
      "type": "bool",
      "bindable": true,
      "about": "Whether it is playing: the picture turns."
+    },
+    {
+     "name": "art",
+     "type": "text",
+     "bindable": true,
+     "about": "The album art's address: printed on the disc, CD or record (Media visuals). Empty: the plain picture."
     }
    ],
    "events": {
@@ -2610,6 +2622,12 @@
      "type": "text",
      "bindable": true,
      "about": "The artist, written under the title."
+    },
+    {
+     "name": "art",
+     "type": "text",
+     "bindable": true,
+     "about": "The album art's address (the player's picture): printed on the disc face, the CD or the record's label. Empty, loading or failed: the plain drawing."
     }
    ],
    "events": {
@@ -5237,5 +5255,5 @@
    }
   }
  },
- "hash": "2e2d2c31"
+ "hash": "d0a3bf19"
 }

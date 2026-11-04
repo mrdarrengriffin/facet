@@ -56,7 +56,7 @@ std::string sig(fw::Props p) {
   rest.set(p);
   if (!fw::st::gone(p["state"] | "default")) rest["state"] = "default";
   if (!strcmp(p["preview"] | "", "flights")) rest.remove("planes");  // the radar takes new planes in place (FW_UPDATE)
-  if (!strcmp(p["preview"] | "", "media")) rest.remove("progress");  // the visual takes the progress in place
+  if (!strcmp(p["preview"] | "", "media")) rest.remove("progress"), rest.remove("art");  // the visual takes them in place
   if (!strcmp(p["preview"] | "", "covers")) rest.remove("position");  // the window takes the position in place
   if (!strcmp(p["preview"] | "", "vacuum")) rest.remove("progress"), rest.remove("run");  // the robot takes them in place
   std::string s;
@@ -65,6 +65,7 @@ std::string sig(fw::Props p) {
 }
 void media_props(fw::Props p, ArduinoJson::JsonDocument &d) {
   d["visual"] = p["visual"] | "disc", d["size"] = "card", d["progress"] = p["progress"] | 38, d["playing"] = p["playing"] | false;
+  d["art"] = p["art"] | "";
 }
 lv_obj_t *line(lv_obj_t *parent, const char *s, const char *type, const char *fg) {  // one line, full width, "..."
   lv_obj_t *o = fx::text(parent, s, type, fg, "dot");
@@ -260,6 +261,7 @@ FW_COMPONENT(card, "Card", "components", R"({
     {"name": "visual", "about": "With the media preview: the picture, as the Media screen shows it (disc, cassette, cd or vinyl).", "type": "select", "options": ["disc", "cassette", "cd", "vinyl"], "default": "disc"},
     {"name": "progress", "about": "With the media preview: how far through the track it is, from 0 to 100. With the timer preview: how much of the running timer is left, out of 1000 (empty when none runs).", "type": "range", "min": 0, "max": 1000, "step": 1, "default": 38},
     {"name": "playing", "about": "With the media preview: whether it is playing (the picture turns).", "type": "bool", "default": false},
+    {"name": "art", "about": "With the media preview: the album art's address, printed on the disc, CD or record. Empty: the plain picture.", "type": "text", "default": ""},
     {"name": "run", "about": "With the vacuum preview: run while the robot is out cleaning (progress = the run's), idle at rest (progress = the battery), off when it cannot be reached.", "type": "select", "options": ["run", "idle", "off"], "default": "idle"},
     {"name": "position", "about": "With the covers preview: how open the window is, from 0 (closed) to 100 (open).", "type": "range", "min": 0, "max": 100, "step": 1, "default": 60},
     {"name": "phase", "about": "With the moon preview: where the moon is in its month, from 0 (new) through 0.5 (full) to 1.", "type": "range", "min": 0, "max": 1, "step": 0.01, "default": 0.25},

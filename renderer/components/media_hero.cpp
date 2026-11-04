@@ -8,6 +8,7 @@
 //   column   gap:2 between its lines: the state (type:label caps; fg:accent-text while playing = docs data-tone
 //            working, else fg:text-dim), the title (type:headline, fg:text, two lines then "...", h:m-title-h: the artist
 //            never moves; docs line-clamp 2, where the artist follows a one-line title), the artist (type:body, fg:text-dim, one line, "...")
+// Album art: art goes to the visual (printed on the disc, CD or record label; Media visuals).
 // Feed: bind every prop to panel.media (core/media_source.cpp). A read-out (docs: no touch): no events, no sound.
 // Update path: the words and the picture in place (the visual's own update: spin, packs, arm, arc), silent; another
 // visual or a new state ink rebuilds with a fade (fw::st::refill_fade). Contrast: text, media_visual.
@@ -24,7 +25,7 @@ const char *ink(fw::Props p) { return !strcmp(p["tone"] | "text-dim", "accent-te
 std::string sig(fw::Props p) { return std::string(p["visual"] | "cd") + ink(p); }
 void visual_props(fw::Props p, ArduinoJson::JsonDocument &d) {
   d["visual"] = p["visual"] | "cd", d["size"] = "screen", d["progress"] = p["progress"] | 38, d["playing"] = playing_of(p);
-  d["title"] = p["title"] | "", d["artist"] = p["artist"] | "";
+  d["title"] = p["title"] | "", d["artist"] = p["artist"] | "", d["art"] = p["art"] | "";
 }
 void fill(lv_obj_t *root, fw::Props p) {
   for (const char *t : {"box", "row-top", "fill-w", "gap:m-gap"}) fx::use(root, t);
@@ -64,7 +65,8 @@ FW_COMPONENT(media_hero, "Media hero", "components", R"({
     {"name": "title", "about": "The track, up to two lines.", "type": "text", "default": "Harbour Lights"},
     {"name": "artist", "about": "The artist, one line.", "type": "text", "default": "The Lanterns"},
     {"name": "progress", "about": "How far through the track it is, from 0 to 100.", "type": "range", "min": 0, "max": 100, "step": 1, "default": 38},
-    {"name": "playing", "about": "Whether it is playing: the picture turns.", "type": "bool", "default": true}
+    {"name": "playing", "about": "Whether it is playing: the picture turns.", "type": "bool", "default": true},
+    {"name": "art", "about": "The album art's address: printed on the disc, CD or record (Media visuals). Empty: the plain picture.", "type": "text", "default": ""}
   ],
   "variants": [
     {"label": "CD · playing", "props": {}},
