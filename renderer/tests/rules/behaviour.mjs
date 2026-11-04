@@ -23,6 +23,7 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Bench as Bench0 } from '../../tools/lib/fwbench.mjs';
+import { FakeHA } from '../../tools/lib/fakeha.mjs';
 import { usage as USAGE } from '../../tools/gen_sound_usage.mjs';
 
 const HERE = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
@@ -501,7 +502,7 @@ async function scrollTests(b, c, props, vl, den, lagOn, spec) {
 
 // ---------------------------------------------------------------- custom tests (tests/behaviour/<id>.json "tests")
 // {name, kind, den?, props?, steps: [{tap|long|press|release|drag: sel, by?: [dx,dy]} | {wait: ms} | {update: props}
-//  | {ha: [e, a, v]} | {setting: "id=value"}], expect: {events?: [[name, detailRegex?]...] (in order, others may
+//  | {ha: [e, a, v]} | {setting: "id=value"}], link?: true (linkHA), expect: {events?: [[name, detailRegex?]...] (in order, others may
 //  come between), no_events?: [name...], sounds?: [name...] (exact, ticks aside), ticks_min?: n, silent?: true,
 //  stack?: [ids], exists?: sel, absent?: sel, scroll?: {sel, at: "start"|"end"|n}}}
 // sel: {text: "Start"|"/re/"} (nearest clickable around that label, else the label) | {type: "arc", i?} |
@@ -536,6 +537,15 @@ function matchEvents(evs, want) {  // ordered subsequence
   }
   return i >= want.length ? null : want[i];
 }
+// link: true = the panel's own link to a fake Home Assistant (tools/lib/fakeha.mjs) holding the before_ha states: the
+// screens that find their entities over the link (Media's speakers, Calendar's calendars) see them as on a panel
+function linkHA(b, states) {
+  const ha = new FakeHA({ b, log: [] });
+  ha.answers = true;
+  for (const [e, a, v] of states) (ha.s[e] ||= {})[a] = v;
+  b.spec('act', { do: 'ha.connect', url: 'http://ha.test:8123', token: 'abcdefgh1234' });
+  for (let i = 0; i < 5; i++) { for (let k = 0; k < 80; k++) { b.tick(1); ha.serve(); } ha.push(); b.settle(400); }
+}
 async function customTests(c, den, spec, m) {
   const tests = (spec.tests || []).filter((t) => (!t.den || t.den === den) && KINDS.includes(t.kind));
   if (!tests.length) return;
@@ -546,6 +556,7 @@ async function customTests(c, den, spec, m) {
     const props = { ...defaults, ...(t.props || {}) };
     const err = await b.render(c.id, props);
     for (const h of t.before_ha || []) b.haPut(...h);
+    if (t.link && !err) linkHA(b, t.before_ha || []);
     if (t.before_spec && !err) { for (const x of t.before_spec) b.spec(...x); b.rebuild(c.id, props); }  // specs sent first (a fresh module each test): built with them
     if (err) { judge(c.id, den, t.kind, t.name, 'custom', [`render-error: ${err}`]); continue; }
     b.settle(1500); b.events();

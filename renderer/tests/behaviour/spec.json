@@ -131,9 +131,9 @@
       "kind": "interaction",
       "props": {
         "screen": "media",
-        "entity": "media_player.alpha",
         "source": "ha"
       },
+      "link": true,
       "steps": [
         {
           "tap": {
@@ -165,10 +165,9 @@
       "kind": "interaction",
       "props": {
         "screen": "media",
-        "entity": "media_player.alpha",
-        "speakers": "media_player.alpha,media_player.beta",
         "source": "ha"
       },
+      "link": true,
       "steps": [
         {
           "tap": {
@@ -219,9 +218,9 @@
       "name": "Media: HA values arriving are silent",
       "kind": "sound",
       "props": {
-        "screen": "media",
-        "entity": "media_player.alpha"
+        "screen": "media"
       },
+      "link": true,
       "steps": [
         {
           "ha": [
