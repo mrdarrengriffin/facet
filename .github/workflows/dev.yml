@@ -58,8 +58,11 @@ jobs:
           sha=${{ steps.v.outputs.sha }}
           # Firmware runs only when its paths change (firmware.yml): its newest such commit
           fw=$(git log -1 --format=%H "$sha" -- renderer firmware esphome boards .github/workflows/firmware.yml)
-          # a push of several commits runs Firmware on its head only: when $fw has no run, the head's run covers it
-          [ -n "$(gh run list --commit "$fw" --workflow firmware.yml --json databaseId -q '.[0].databaseId')" ] || fw=$sha
+          # a push of several commits runs Firmware on its head only: the newest Firmware run on main whose commit
+          # holds $fw and is in $sha's history covers it
+          for h in $(gh run list --workflow firmware.yml --branch main -L 30 --json headSha -q '.[].headSha'); do
+            if git merge-base --is-ancestor "$fw" "$h" 2>/dev/null && git merge-base --is-ancestor "$h" "$sha"; then fw=$h; break; fi
+          done
           for i in $(seq 1 60); do
             ok=1; bad=
             for w in "ci.yml $sha" "firmware.yml $fw"; do
