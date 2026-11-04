@@ -26,6 +26,8 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      artifact_id: ${{ steps.pages.outputs.artifact_id }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -81,7 +83,8 @@ jobs:
         env:
           FW_OUT: renderer/out
           FACET_DOCS_BASE: /facet/
-      - uses: actions/upload-pages-artifact@v3
+      - id: pages
+        uses: actions/upload-pages-artifact@v3
         with:
           path: site/dist
 
@@ -93,29 +96,42 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     outputs:
       page_url: ${{ steps.deployment.outputs.page_url }}
-    # Pages keys a deployment by its build version, GITHUB_SHA by default: a second deploy of the same commit (dev.yml
-    # or release.yml publishing new firmware with main unchanged) "succeeds" without replacing the site. Each run is
-    # its own version (commit.run.attempt). Pages refuses a deployment while another is still in progress (even a
-    # finished run's, for a while): wait and try again, up to twice.
-    env:
-      GITHUB_SHA: ${{ github.sha }}.${{ github.run_id }}.${{ github.run_attempt }}
+    # The Pages deployment, made here rather than with actions/deploy-pages (same API, POST .../pages/deployments): that
+    # action's build version is always GITHUB_SHA, and a second deploy of the same commit (dev.yml or release.yml
+    # publishing new firmware while main is unchanged) never replaced the site and held Pages "in progress" for half
+    # an hour. Here each run is its own version (commit.run.attempt). A deployment refused because another is still in
+    # progress is tried again, every minute for up to 15 minutes; then its status is followed to succeed.
     steps:
-      - id: first
-        continue-on-error: true
-        uses: actions/deploy-pages@v4
-      - if: steps.first.outcome == 'failure'
-        run: sleep 120
-      - id: second
-        if: steps.first.outcome == 'failure'
-        continue-on-error: true
-        uses: actions/deploy-pages@v4
-      - if: steps.first.outcome == 'failure' && steps.second.outcome == 'failure'
-        run: sleep 300
-      - id: third
-        if: steps.first.outcome == 'failure' && steps.second.outcome == 'failure'
-        uses: actions/deploy-pages@v4
       - id: deployment
-        run: echo "page_url=${{ steps.first.outputs.page_url || steps.second.outputs.page_url || steps.third.outputs.page_url }}" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARTIFACT_ID: ${{ needs.build.outputs.artifact_id }}
+          VERSION: ${{ github.sha }}.${{ github.run_id }}.${{ github.run_attempt }}
+        run: |
+          [ -n "$ARTIFACT_ID" ] || { echo "::error::no Pages artifact id from the build job"; exit 1; }
+          oidc=$(curl -sfH "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL" | jq -r .value)
+          body=$(jq -nc --arg a "$ARTIFACT_ID" --arg v "$VERSION" --arg t "$oidc" '{artifact_id: ($a | tonumber), pages_build_version: $v, oidc_token: $t}')
+          id=
+          for try in $(seq 1 15); do
+            if out=$(gh api -X POST "repos/$GITHUB_REPOSITORY/pages/deployments" --input - <<<"$body" 2>&1); then
+              id=$(jq -r .id <<<"$out"); break
+            fi
+            echo "try $try: $out"
+            grep -q "in progress deployment" <<<"$out" || { echo "::error::Pages deployment refused: $out"; exit 1; }
+            sleep 60
+          done
+          [ -n "$id" ] || { echo "::error::Pages stayed busy for 15 minutes"; exit 1; }
+          echo "deployment $id ($VERSION)"
+          for i in $(seq 1 120); do
+            st=$(gh api "repos/$GITHUB_REPOSITORY/pages/deployments/$id" -q .status 2>/dev/null || echo error)
+            case "$st" in
+              succeed) echo "deployed"; break ;;
+              deployment_failed|deployment_content_failed|deployment_cancelled|deployment_lost) echo "::error::Pages deployment $id: $st"; exit 1 ;;
+            esac
+            [ "$i" = 120 ] && { echo "::error::Pages deployment $id still $st after 10 minutes"; exit 1; }
+            sleep 5
+          done
+          echo "page_url=$(gh api "repos/$GITHUB_REPOSITORY/pages" -q .html_url)" >> "$GITHUB_OUTPUT"
 
   check:
     # the /install page fails with "Failed to download manifest" when these are not served
