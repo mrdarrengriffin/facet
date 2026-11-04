@@ -15,6 +15,7 @@ export default {
       await t.device();
       act(t, { do: 'nav.open', screen: 'screen_set', params: { id: 'media' } });
       t.drag({ at: [360, 600] }, { by: [0, -400] }); t.drag({ at: [360, 600] }, { by: [0, -400] });
+      t.tap(/^Visual$/); t.b.settle(1200);
       const evs = t.tap(/^cassette$/i);
       t.ok(evs.some((e) => e.name === 'deck' && e.detail === 'media params.visual=cassette'), 'the deck takes visual=cassette');
       act(t, { do: 'nav.back' });
