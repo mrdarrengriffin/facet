@@ -1,0 +1,18 @@
+name: Deploy Pages with a build version
+description: >-
+  actions/deploy-pages (its dist checked out at DEPLOY_PAGES_DIR by the calling job, at a pinned commit) with the
+  Pages build version from an input instead of GITHUB_SHA. Pages treats a second deployment of the same build version
+  as done and keeps the old site, so a redeploy of an unchanged main (new firmware in a release asset) needs its own.
+inputs:
+  build_version: {description: 'A commit sha in this repository, unique per deploy', required: true}
+  token: {default: '${{ github.token }}', required: true}
+  timeout: {default: '600000', required: false}
+  error_count: {default: '10', required: false}
+  reporting_interval: {default: '5000', required: false}
+  artifact_name: {default: 'github-pages', required: false}
+  preview: {default: 'false', required: false}
+outputs:
+  page_url: {description: 'URL to deployed GitHub Pages'}
+runs:
+  using: node24
+  main: index.js

@@ -93,23 +93,59 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     outputs:
       page_url: ${{ steps.deployment.outputs.page_url }}
-    # Pages refuses a deployment while another is still in progress (an earlier run's can stay "in progress" on its side
-    # for many minutes after its run finished): wait and try again, twice. The check job then proves the site changed.
+    permissions:
+      contents: write   # the build-version commit below
+      pages: write
+      id-token: write
+    env:
+      DEPLOY_PAGES_DIR: _deploy-pages
+    # Pages keys a deployment by its build version (GITHUB_SHA in actions/deploy-pages) and answers a second deployment
+    # of the same version with the first one's success, keeping the old site: a dispatched deploy of an unchanged main
+    # (dev.yml or release.yml publishing new firmware) never reached Pages. A dispatched run deploys as its own commit:
+    # main's tree, main as its parent, held by the `pages-deploy` tag (never on main), through deploy-pages run with that
+    # sha (.github/actions/deploy-pages). Pages refuses a deployment while another is still in progress (an earlier
+    # run's can stay "in progress" on its side for many minutes after its run finished): wait and try again, twice.
+    # The check job then proves the site changed.
     steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/actions
+      - uses: actions/checkout@v4
+        with:
+          repository: actions/deploy-pages
+          ref: d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e  # v4.0.5
+          path: ${{ env.DEPLOY_PAGES_DIR }}
+      - id: version
+        name: Build version (a dispatched run's own commit)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          R: ${{ github.repository }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = push ]; then echo "sha=$GITHUB_SHA" >> "$GITHUB_OUTPUT"; exit 0; fi
+          tree=$(gh api "repos/$R/git/commits/$GITHUB_SHA" -q .tree.sha)
+          v=$(gh api "repos/$R/git/commits" -f tree="$tree" -f "parents[]=$GITHUB_SHA" \
+            -f message="Pages deploy of ${GITHUB_SHA:0:7} (run $GITHUB_RUN_ID.$GITHUB_RUN_ATTEMPT)" -q .sha)
+          gh api -X PATCH "repos/$R/git/refs/tags/pages-deploy" -f sha="$v" -F force=true >/dev/null 2>&1 \
+            || gh api "repos/$R/git/refs" -f ref=refs/tags/pages-deploy -f sha="$v" >/dev/null
+          echo "sha=$v" >> "$GITHUB_OUTPUT"
+          echo "Pages build version $v (main ${GITHUB_SHA:0:7}'s tree)" | tee -a "$GITHUB_STEP_SUMMARY"
       - id: first
         continue-on-error: true
-        uses: actions/deploy-pages@v4
+        uses: ./.github/actions/deploy-pages
+        with: {build_version: '${{ steps.version.outputs.sha }}'}
       - if: steps.first.outcome == 'failure'
         run: sleep 180
       - id: second
         if: steps.first.outcome == 'failure'
         continue-on-error: true
-        uses: actions/deploy-pages@v4
+        uses: ./.github/actions/deploy-pages
+        with: {build_version: '${{ steps.version.outputs.sha }}'}
       - if: steps.first.outcome == 'failure' && steps.second.outcome == 'failure'
         run: sleep 600
       - id: third
         if: steps.first.outcome == 'failure' && steps.second.outcome == 'failure'
-        uses: actions/deploy-pages@v4
+        uses: ./.github/actions/deploy-pages
+        with: {build_version: '${{ steps.version.outputs.sha }}'}
       - id: deployment
         run: echo "page_url=${{ steps.first.outputs.page_url || steps.second.outputs.page_url || steps.third.outputs.page_url }}" >> "$GITHUB_OUTPUT"
 
