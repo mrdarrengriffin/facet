@@ -6,10 +6,15 @@ const DECK = { v: 2, rev: 9, start: 't', pages: [{ id: 't', kind: 'home', name: 
   { t: 'light', e: 'light.sofa_lamp', size: 's', tap: 'toggle', label: 'Sofa table' }] }] };
 const val = (t, label) => { const p = t.part('readout', new RegExp(`^${label}$`, 'i')); return p ? p.texts.filter((s) => s.toUpperCase() !== label.toUpperCase()) : []; };
 const inside = (o, b) => o.x >= b.x && o.y >= b.y && o.x + o.w <= b.x + b.w && o.y + o.h <= b.y + b.h;
+import { frame565, diff565 } from './_release.mjs';
+const stalePx = (t) => { const a = frame565(t); t.b.m._fw_redraw(t.b.stage); const b = frame565(t); return diff565(a, b); };
 const CARD_H = { '1.5x': 280, '1x': 184 };  // lay::card_h (tokens/layout.json)
 export default {
   id: 'readout', family: 'cards', about: 'Sensor readout: label + live value; the Home sensor card is two of these in one slot.',
   tests: [
+    // #62 (not reproduced yet): a value bound to the Home sensor card's readout vanished on a panel and never came back.
+    // Ruled out here: rapid updates, unavailable / empty / reconnect, a hidden kept Home (data only, widgets wake on
+    // show), look changes mid-burst, screen changes mid-update, and stale pixels (a full redraw = the partial one).
     // Seen on a Waveshare: Home sensor values vanished and never came back. HA values
     // reached the panel store, so suspect = the fade-on-update when updates arrive quicker than the fade.
     ...[[20, 'every 20 ms'], [80, 'every 80 ms'], [150, 'every 150 ms']].map(([gap, how]) => ({ name: `Home: rapid HA updates (${how}) end on the last value, fully drawn`, async run(t) {
@@ -75,6 +80,51 @@ export default {
       const before = [val(t, 'Back door').join(), val(t, 'Garage').join()];
       t.ha.disconnect(); t.wait(800); t.ha.reconnect(); t.wait(800);
       t.eq([val(t, 'Back door').join(), val(t, 'Garage').join()], before, 'values after reconnect');
+    } },
+    ...[
+      ['plain', (t) => { t.ha.set('sensor.garage_temperature', '22.5'); t.wait(800); }],
+      ['unavailable then value', (t) => { t.ha.unavailable('sensor.garage_temperature'); t.wait(800); t.ha.set('sensor.garage_temperature', '22.5'); t.wait(800); }],
+      ['disconnect reconnect then value', (t) => { t.ha.disconnect(); t.wait(800); t.ha.reconnect(); t.wait(800); t.ha.set('sensor.garage_temperature', '22.5'); t.wait(800); }],
+      ['look change then value', (t) => { t.b.test('setting', 'textSize=large'); t.wait(800); t.ha.set('sensor.garage_temperature', '22.5'); t.wait(800); }],
+      ['theme then value', (t) => { t.b.test('setting', 'theme=light'); t.wait(800); t.ha.set('sensor.garage_temperature', '22.5'); t.wait(800); }],
+      ['burst', (t) => { for (let i = 0; i < 30; i++) { t.ha.set('sensor.garage_temperature', i % 5 === 2 ? 'unavailable' : String(10 + i)); t.wait(30); } t.ha.set('sensor.garage_temperature', '22.5'); t.wait(800); }],
+    ].map(([how, step]) => ({ name: `#62 Home kept and hidden (another screen shows): ${how}, then back: the value is there, fully drawn`, async run(t) {
+      await t.device({ ...DECK, pages: [...DECK.pages, { id: 'clock', kind: 'clock', params: { source: 'sample' } }],
+        start: 't' });
+      t.b.test('keep', '8'); t.b.tick(300);
+      t.b.spec('act', { do: 'nav.open', screen: 'clock' }); t.b.tick(10); t.b.settle(800);
+      step(t);
+      t.b.spec('act', { do: 'nav.back' }); t.b.tick(10); t.b.settle(800);
+      t.has(val(t, 'Garage'), /22[.,]5/, `value back on Home: ${JSON.stringify(val(t, 'Garage'))}`);
+      t.eq(stalePx(t), 0, 'no stale pixels');
+      t.ok(val(t, 'Back door').length > 0, `door: ${JSON.stringify(val(t, 'Back door'))}`);
+    } })),
+    ...['theme=light', 'textSize=large'].map((set) => ({ name: `#62 Home shown: a look change (${set}) inside a burst of updates, then a trip away: the values follow`, async run(t) {
+      await t.device({ ...DECK, pages: [...DECK.pages, { id: 'clock', kind: 'clock', params: { source: 'sample' } }] });
+      t.b.test('keep', '8'); t.b.tick(300);
+      for (let i = 0; i < 30; i++) {
+        if (i === 10) t.b.test('setting', set);
+        t.ha.set('sensor.garage_temperature', i % 6 === 4 ? 'unavailable' : String(10 + i)); t.ha.set('binary_sensor.back_door', i % 2 ? 'on' : 'off');
+        t.wait(40);
+      }
+      t.ha.set('sensor.garage_temperature', '22.5'); t.wait(2500);
+      t.has(val(t, 'Garage'), /22[.,]5/, `value: ${JSON.stringify(val(t, 'Garage'))}`);
+      t.b.spec('act', { do: 'nav.open', screen: 'clock' }); t.b.tick(10); t.b.settle(800);
+      t.ha.set('sensor.garage_temperature', '23.5'); t.wait(800);
+      t.b.spec('act', { do: 'nav.back' }); t.b.tick(10); t.b.settle(800);
+      t.has(val(t, 'Garage'), /23[.,]5/, `after a trip away: ${JSON.stringify(val(t, 'Garage'))}`);
+      t.eq(stalePx(t), 0, 'no stale pixels');
+    } })),
+    { name: '#62 updates while the screen changes (Home <-> Clock): the last value, fully drawn', async run(t) {
+      await t.device({ ...DECK, pages: [...DECK.pages, { id: 'clock', kind: 'clock', params: { source: 'sample' } }] });
+      t.b.test('keep', '8'); t.b.tick(300);
+      for (let i = 0; i < 6; i++) {
+        t.b.spec('act', { do: 'nav.open', screen: 'clock' }); t.b.tick(2); t.ha.set('sensor.garage_temperature', String(30 + i)); t.b.tick(3);
+        t.b.spec('act', { do: 'nav.back' }); t.b.tick(2); t.ha.set('sensor.garage_temperature', String(40 + i)); t.b.tick(3);
+      }
+      t.b.settle(1500);
+      t.has(val(t, 'Garage'), /45/, `the last value: ${JSON.stringify(val(t, 'Garage'))}`);
+      t.eq(stalePx(t), 0, 'no stale pixels');
     } },
     { name: 'Home: many quick updates: the last value wins', async run(t) {
       await t.device(DECK);
