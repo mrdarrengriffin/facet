@@ -32,7 +32,7 @@ void draw(const fx::Pen &p) {
   const MA *d = of(p.obj);
   const lv_image_dsc_t *px = d ? d->art.pixels() : nullptr;
   if (!px || !d->playing) return;  // nothing: what is under it shows
-  p.image(-p.w / 2, -p.h / 2, px);
+  p.image(-p.w / 2, -p.h / 2, px, d->w, d->h);  // its box (the pixels may be stored smaller: images.h max_side)
 }
 bool playing_of(fw::Props p) {
   if (p["playing"].is<bool>()) return p["playing"].as<bool>();

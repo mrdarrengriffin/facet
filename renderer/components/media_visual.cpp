@@ -236,7 +236,7 @@ bool art(const Ctx &c) {  // the art drawn at its place: true; none (yet): false
   const lv_image_dsc_t *px = c.d->art.pixels();
   int x, y, D;
   if (!px || !art_box(c.d, &x, &y, &D)) return false;
-  c.p.image(x, y, px);
+  c.p.image(x, y, px, D, D);
   return true;
 }
 
@@ -244,7 +244,7 @@ bool art(const Ctx &c) {  // the art drawn at its place: true; none (yet): false
 // the surface ink with a line edge (the theme's)
 void draw_art(const Ctx &c) {
   const MV *d = c.d;
-  if (const lv_image_dsc_t *px = d->art.pixels()) { c.p.image(-d->W / 2, -d->H / 2, px); return; }
+  if (const lv_image_dsc_t *px = d->art.pixels()) { c.p.image(-d->W / 2, -d->H / 2, px, d->W, d->H); return; }
   const int r = art_radius(d);
   c.p.rect(-d->W / 2, -d->H / 2, d->W, d->H, "fg:surface", r);
   c.p.rect(-d->W / 2, -d->H / 2, d->W, d->H, "fg:line", r, std::max(1, S("stroke:hair")));

@@ -145,8 +145,9 @@ struct Pen {
   void seg(int x1, int y1, int x2, int y2, int w, const char *ink, bool round = false) const;
   void tri(const int (&p)[3][2], const char *ink) const;
   void within(int x, int y, int w, int h, const std::function<void()> &f) const;
-  // a picture (core/images.h: its pixels already scaled, shaped and dithered to the box) with its top-left at x, y
-  void image(int x, int y, const lv_image_dsc_t *px) const;
+  // a picture (core/images.h: its pixels already scaled, shaped and dithered to the box) with its top-left at x, y;
+  // w x h = its box when the pixels are smaller (a box over budget().max_side): LVGL scales them up to it (0 = as they are)
+  void image(int x, int y, const lv_image_dsc_t *px, int w = 0, int h = 0) const;
   // false when the box x1..x2, y1..y2 (centre-relative) is outside what this redraw repaints: every primitive above
   // skips itself then, so a partial redraw (redraw / redraw_arc) costs only what crosses it (the static scale is not
   // drawn again while a knob moves)

@@ -21,7 +21,7 @@
 #define LV_DRAW_SW_SUPPORT_L8 0
 #define LV_DRAW_SW_SUPPORT_PREMULTIPLIED 0
 #define LV_DRAW_SW_SUPPORT_RGB565 1
-#define LV_DRAW_SW_SUPPORT_RGB565A8 0
+#define LV_DRAW_SW_SUPPORT_RGB565A8 1  // also LVGL's scaled RGB565 draws (a picture kept under its box: core/img_scale.h); the boards' YAML build flag
 #define LV_DRAW_SW_SUPPORT_RGB888 1
 #define LV_DRAW_SW_SUPPORT_SWAPPED 0
 #define LV_DRAW_SW_SUPPORT_XRGB8888 0

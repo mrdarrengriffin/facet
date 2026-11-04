@@ -36,5 +36,6 @@ int esp_http_client_get_status_code(esp_http_client_handle_t h);
 esp_err_t esp_http_client_set_redirection(esp_http_client_handle_t h);
 int esp_http_client_read(esp_http_client_handle_t h, char *buf, int len);
 bool esp_http_client_is_complete_data_received(esp_http_client_handle_t h);
+bool esp_http_client_is_chunked_response(esp_http_client_handle_t h);
 esp_err_t esp_http_client_close(esp_http_client_handle_t h);
 esp_err_t esp_http_client_cleanup(esp_http_client_handle_t h);

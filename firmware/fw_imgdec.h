@@ -1,14 +1,20 @@
-// Picture decode for the panel's own image fetch (fw_images.h; renderer core/images.h piece 2): the downloaded bytes ->
-// RGBA8888 for fw::img::put(). No ESP-IDF calls, so the host ASan test (firmware/tests/imgdec) runs this same code.
-//   PNG  = pngle (fw_pngle.c + its trimmed miniz inflate, MIT; the decoder ESPHome's online_image uses): streams the
-//          rows, so memory = ~45 KB of decoder state (the 32 KB inflate window) + the RGBA out; size checked from the
-//          header before the out is allocated. Palette, grey, 16-bit, alpha (tRNS) and interlaced PNGs
-//   JPEG = TJpgDec R0.03 (fw_tjpgd.c, a ~4 KB work area, decodes block by block straight into the RGBA out): baseline
-//          only (progressive = "not supported"); a photo with more pixels than max_px is shrunk while decoding by
-//          1/2, 1/4 or 1/8 (the decoder's own descaling), so a camera-sized JPEG costs only the small result
+// Picture decode for the panel's own image fetch (fw_images.h; renderer core/images.h): the downloaded bytes ->
+// the pixels of every view that waits for them, decoded row by row straight into each view's box and format (renderer
+// core/img_scale.h Sink: RGB565, + A8 only when see-through). No full-size copy of the picture is ever made. No ESP-IDF
+// calls, so the host ASan tests (firmware/tests/imgdec, imgfetch) run this same code.
+//   PNG  = pngle (fw_pngle.c + its trimmed miniz inflate, MIT; the decoder ESPHome's online_image uses): ~45 KB of
+//          decoder state (the 32 KB inflate window) + one row; size checked from the header before anything big is
+//          allocated. Palette, grey, 16-bit, alpha (tRNS) and interlaced PNGs (interlaced only: one full RGBA copy, the
+//          passes paint over each other)
+//   JPEG = TJpgDec R0.03 (fw_tjpgd.c, a ~4 KB work area, one band of MCU rows): baseline only (progressive = "not
+//          supported"). Shrunk while decoding (1/2, 1/4: the decoder's own descaling) to the smallest step that still
+//          covers every box it is for, never below (a smaller step blown up = blocky art). Never 1/8: this copy of
+//          TJpgDec (LVGL's) leaves out the 1/8 output stage, so a 1/8 decode is garbage (the "malformed art")
 //   anything else = "not a picture" (WebP, GIF, SVG, BMP named as such: "<type> isn't supported on the panel")
-// Memory: every buffer through FW_IMGDEC_ALLOC (the panel: PSRAM). mem_max = the most the decode may hold at once
-// (inflate + out); over = "too big", decided before any big allocation. Out-of-memory mid-decode = "out of memory".
+// A picture must be whole: a PNG without its end (IEND) or a JPEG that runs out of bytes = "broken picture (... cut
+// short)", never half a picture.
+// Memory: mem_max = the most the decode may hold at once (outputs + rows + decoder). It is worked out from the header
+// before any big allocation: over = "too big (needs N KB, M KB free)". Out-of-memory mid-way = "out of memory".
 #pragma once
 #include <cstdint>
 #include <cstdio>
@@ -21,6 +27,10 @@ extern "C" {
 extern "C" {
 #include "fw_pngle.h"
 }
+#include <memory>
+#include <new>
+#include <vector>
+#include "img_scale.h"
 #ifndef FW_IMGDEC_ALLOC
 #ifdef ESP_PLATFORM  // the panel: PSRAM (pictures never belong in internal RAM)
 #include "esp_heap_caps.h"
@@ -34,14 +44,18 @@ extern "C" {
 
 namespace fw::imgdec {
 
-struct Out {
-  int w = 0, h = 0;
-  uint8_t *rgba = nullptr;  // w * h * 4 (FW_IMGDEC_ALLOC), free with release()
-  std::string err;          // the reason when decode() returns false (the words the component shows)
+using fw::img::Box;
+using fw::img::Pixels;
+// a decode's result: one finished Pixels per box (in the boxes' order), or err
+struct Result {
+  std::vector<Pixels> px;
+  std::string err;           // the reason when decode() returns false (the words the component shows)
+  int sw = 0, sh = 0, sc = 0;  // the source as decoded (after a JPEG's 1/2^sc)
+  size_t need = 0;           // the bytes the decode held at most
 };
-inline void release(Out &o) {
-  if (o.rgba) FW_IMGDEC_FREE(o.rgba);
-  o.rgba = nullptr;
+inline void release(Result &r) {
+  for (auto &p : r.px) fw::img::free_pixels(p);
+  r.px.clear();
 }
 
 // what the bytes are: png | jpeg | gif | webp | bmp | svg | "" (the same sniff as the workbench's image fetch)
@@ -103,35 +117,90 @@ struct Body {
 
 namespace detail {
 
+inline std::string too_big(size_t need, size_t room) {
+  char t[64];
+  snprintf(t, sizeof t, "too big (needs %u KB, %u KB free)", (unsigned) ((need + 1023) / 1024), (unsigned) (room / 1024));
+  return t;
+}
+// one Sink per box, planned for a sw x sh source; false = out of memory (r.err)
+inline bool plan(const std::vector<Box> &boxes, int sw, int sh, int max_side, bool may_alpha, std::unique_ptr<fw::img::Sink[]> &k, size_t &need, Result &r) {
+  k.reset(new (std::nothrow) fw::img::Sink[boxes.size()]);
+  if (!k) { r.err = "out of memory"; return false; }
+  need = 0;
+  for (size_t i = 0; i < boxes.size(); i++) {
+    if (!k[i].plan(boxes[i], sw, sh, max_side, may_alpha)) { r.err = "out of memory"; return false; }
+    need += k[i].need();
+  }
+  return true;
+}
+inline bool begin(std::unique_ptr<fw::img::Sink[]> &k, size_t n, Result &r) {
+  for (size_t i = 0; i < n; i++)
+    if (!k[i].begin()) { r.err = "out of memory"; return false; }
+  return true;
+}
+inline void feed(std::unique_ptr<fw::img::Sink[]> &k, size_t n, const uint8_t *row) {
+  for (size_t i = 0; i < n; i++) k[i].row(row);
+}
+inline bool finish(std::unique_ptr<fw::img::Sink[]> &k, size_t n, Result &r) {
+  r.px.resize(n);
+  for (size_t i = 0; i < n; i++)
+    if (!k[i].finish(r.px[i])) { release(r); return false; }
+  return true;
+}
+
 struct Png {
-  Out *o;
+  const std::vector<Box> *boxes;
+  int max_side;
   long max_px;
   size_t mem_max;
-  bool refused = false;  // too big / out of memory: o->err says which
+  Result *r;
+  std::unique_ptr<fw::img::Sink[]> k;
+  uint8_t *buf = nullptr;  // one row (or, interlaced, the whole picture)
+  bool interlaced = false;
+  uint32_t w = 0, h = 0;
+  bool refused = false;  // too big / out of memory: r->err says which
   bool done = false;     // IEND reached: the whole picture came
 };
 inline void png_init(pngle_t *p, uint32_t w, uint32_t h) {
   Png *u = (Png *) pngle_get_user_data(p);
-  // pngle's own state (~45 KB with the inflate window) + two scanlines + the RGBA out
-  const unsigned long long need = (unsigned long long) w * h * 4 + 48 * 1024 + (unsigned long long) w * 16;
-  if (!w || !h || (unsigned long long) w * h > (unsigned long long) u->max_px || need > u->mem_max) { u->o->err = "too big"; u->refused = true; return; }
-  u->o->rgba = (uint8_t *) FW_IMGDEC_ALLOC((size_t) w * h * 4);
-  if (!u->o->rgba) { u->o->err = "out of memory"; u->refused = true; return; }
-  memset(u->o->rgba, 0, (size_t) w * h * 4);
-  u->o->w = (int) w; u->o->h = (int) h;
+  if (!w || !h || (unsigned long long) w * h > (unsigned long long) u->max_px) { u->r->err = "too big"; u->refused = true; return; }
+  const pngle_ihdr_t *ih = pngle_get_ihdr(p);
+  u->interlaced = ih && ih->interlace;
+  size_t need = 0;
+  if (!plan(*u->boxes, (int) w, (int) h, u->max_side, true, u->k, need, *u->r)) { u->refused = true; return; }
+  // pngle's own state (~45 KB with the inflate window) + its two scanlines + our row (interlaced: the picture)
+  need += 48 * 1024 + (size_t) w * 16 + (u->interlaced ? (size_t) w * h * 4 : (size_t) w * 4);
+  u->r->need = need;
+  if (need > u->mem_max) { u->r->err = too_big(need, u->mem_max); u->refused = true; return; }
+  const size_t bytes = u->interlaced ? (size_t) w * h * 4 : (size_t) w * 4;
+  u->buf = (uint8_t *) FW_IMGDEC_ALLOC(bytes);
+  if (!u->buf || !begin(u->k, u->boxes->size(), *u->r)) { u->r->err = "out of memory"; u->refused = true; return; }
+  memset(u->buf, 0, bytes);
+  u->w = w, u->h = h, u->r->sw = (int) w, u->r->sh = (int) h;
 }
 inline void png_draw(pngle_t *p, uint32_t x, uint32_t y, uint32_t w, uint32_t h, const uint8_t rgba[4]) {
   Png *u = (Png *) pngle_get_user_data(p);
-  Out &o = *u->o;
-  if (!o.rgba) return;
-  // one pixel, or an interlaced pass's block (later passes paint over it): clipped to the picture
-  for (uint32_t yy = y; yy < y + h && yy < (uint32_t) o.h; yy++)
-    for (uint32_t xx = x; xx < x + w && xx < (uint32_t) o.w; xx++) memcpy(o.rgba + ((size_t) yy * o.w + xx) * 4, rgba, 4);
+  if (!u->buf || u->refused) return;
+  if (!u->interlaced) {  // every pixel in order, one at a time: a row is done at its last pixel
+    if (x >= u->w || y >= u->h) return;
+    memcpy(u->buf + (size_t) x * 4, rgba, 4);
+    if (x == u->w - 1) feed(u->k, u->boxes->size(), u->buf);
+    return;
+  }
+  // an interlaced pass's block (later passes paint over it): clipped to the picture
+  for (uint32_t yy = y; yy < y + h && yy < u->h; yy++)
+    for (uint32_t xx = x; xx < x + w && xx < u->w; xx++) memcpy(u->buf + ((size_t) yy * u->w + xx) * 4, rgba, 4);
 }
-inline bool png(const uint8_t *b, size_t n, long max_px, size_t mem_max, Out &o) {
+inline bool png(const uint8_t *b, size_t n, long max_px, size_t mem_max, const std::vector<Box> &boxes, int max_side, Result &r) {
+  // the size from IHDR first (bytes 16-23): pngle allocates its scanlines from it before our init callback can refuse
+  if (n >= 24 && !memcmp(b + 12, "IHDR", 4)) {
+    const uint32_t w = (uint32_t) b[16] << 24 | b[17] << 16 | b[18] << 8 | b[19], h = (uint32_t) b[20] << 24 | b[21] << 16 | b[22] << 8 | b[23];
+    if (!w || !h || w > (1u << 16) || h > (1u << 16) || (unsigned long long) w * h > (unsigned long long) max_px) { r.err = "too big"; return false; }
+  }
   pngle_t *p = pngle_new();
-  if (!p) { o.err = "out of memory"; return false; }
-  Png u{&o, max_px, mem_max};
+  if (!p) { r.err = "out of memory"; return false; }
+  Png u;
+  u.boxes = &boxes, u.max_side = max_side, u.max_px = max_px, u.mem_max = mem_max, u.r = &r;
   pngle_set_user_data(p, &u);
   pngle_set_init_callback(p, png_init);
   pngle_set_draw_callback(p, png_draw);
@@ -140,23 +209,30 @@ inline bool png(const uint8_t *b, size_t n, long max_px, size_t mem_max, Out &o)
   bool ok = true;
   while (at < n && !u.refused) {  // fed in 1 KB steps (as the bytes would come off the network)
     const size_t k = n - at < 1024 ? n - at : 1024;
-    const int r = pngle_feed(p, b + at, k);
-    if (r < 0) { ok = false; break; }
-    if (r == 0) break;  // wants more than there is: truncated
-    at += (size_t) r;
+    const int got = pngle_feed(p, b + at, k);
+    if (got < 0) { ok = false; break; }
+    if (got == 0) break;  // wants more than there is: truncated
+    at += (size_t) got;
   }
-  const bool whole = ok && !u.refused && u.done && o.rgba;
-  if (!whole && !u.refused) o.err = std::string("broken picture (PNG: ") + (ok ? "cut short" : pngle_error(p)) + ")";
+  bool whole = ok && !u.refused && u.done && u.buf;
+  if (whole && u.interlaced)
+    for (uint32_t y = 0; y < u.h; y++) feed(u.k, boxes.size(), u.buf + (size_t) y * u.w * 4);
+  if (whole && !finish(u.k, boxes.size(), r)) whole = false, r.err = "broken picture (PNG: cut short)";
+  if (!whole && !u.refused && r.err.empty()) r.err = std::string("broken picture (PNG: ") + (ok ? "cut short" : pngle_error(p)) + ")";
   pngle_destroy(p);
-  if (!whole) { release(o); o.w = o.h = 0; return false; }
+  if (u.buf) FW_IMGDEC_FREE(u.buf);
+  if (!whole) { release(r); return false; }
   return true;
 }
 
 struct Jpg {
   const uint8_t *b;
   size_t n, at;
-  Out *o;
+  std::unique_ptr<fw::img::Sink[]> *k;
+  size_t nk;
   int ow, oh;
+  uint8_t *band;      // one band of MCU rows, RGBA
+  int top = -1, bot = -1;  // the band's rows (picture rows)
 };
 inline size_t jin(JDEC *jd, uint8_t *buf, size_t len) {
   Jpg *j = (Jpg *) jd->device;
@@ -165,70 +241,96 @@ inline size_t jin(JDEC *jd, uint8_t *buf, size_t len) {
   j->at += k;
   return k;
 }
+inline void jflush(Jpg *j) {  // the band's rows, in order, into every box
+  if (j->top < 0) return;
+  for (int y = j->top; y <= j->bot && y < j->oh; y++) feed(*j->k, j->nk, j->band + (size_t) (y - j->top) * j->ow * 4);
+  j->top = j->bot = -1;
+}
 inline int jout(JDEC *jd, void *bitmap, JRECT *r) {
   Jpg *j = (Jpg *) jd->device;
+  if ((int) r->top != j->top) { jflush(j); j->top = r->top, j->bot = r->bottom; }  // the next MCU row: the last one is done
   const uint8_t *s = (const uint8_t *) bitmap;
   // the block as decoded (its edge may pass the picture's: clipped here)
   for (int y = r->top; y <= r->bottom; y++)
     for (int x = r->left; x <= r->right; x++, s += 3) {
       if (x >= j->ow || y >= j->oh) continue;
-      uint8_t *d = j->o->rgba + ((size_t) y * j->ow + x) * 4;
+      uint8_t *d = j->band + ((size_t) (y - j->top) * j->ow + x) * 4;
       d[0] = s[2]; d[1] = s[1]; d[2] = s[0]; d[3] = 255;  // LVGL's TJpgDec writes B, G, R
     }
   return 1;
 }
-inline bool jpeg(const uint8_t *b, size_t n, long max_px, size_t mem_max, Out &o, long fit_px) {
+inline bool jpeg(const uint8_t *b, size_t n, long max_px, size_t mem_max, const std::vector<Box> &boxes, int max_side, Result &r) {
   constexpr size_t WORK = 4096;  // TJpgDec's pool: tables + one MCU (JD_FASTDECODE 1 needs ~3.5 KB)
   void *work = FW_IMGDEC_ALLOC(WORK);
-  if (!work) { o.err = "out of memory"; return false; }
+  if (!work) { r.err = "out of memory"; return false; }
   JDEC jd;
-  Jpg j{b, n, 0, &o, 0, 0};
-  JRESULT r = jd_prepare(&jd, jin, work, WORK, &j);
-  if (r != JDR_OK) {
+  std::unique_ptr<fw::img::Sink[]> k;
+  Jpg j{b, n, 0, &k, boxes.size(), 0, 0, nullptr};
+  JRESULT res = jd_prepare(&jd, jin, work, WORK, &j);
+  if (res != JDR_OK) {
     FW_IMGDEC_FREE(work);
-    o.err = r == JDR_FMT3 ? "JPEG type isn't supported on the panel (progressive)" : r == JDR_MEM1 ? "JPEG type isn't supported on the panel" : "broken picture (JPEG)";
+    r.err = res == JDR_FMT3 ? "JPEG type isn't supported on the panel (progressive)" : res == JDR_MEM1 ? "JPEG type isn't supported on the panel" : "broken picture (JPEG)";
     return false;
   }
-  // shrink while decoding (1/1, 1/2, 1/4, 1/8) until the result fits max_px and mem_max
-  int sc = 0;
-  for (;; sc++) {
-    if (sc > 3) { FW_IMGDEC_FREE(work); o.err = "too big"; return false; }
-    const long w = (jd.width + (1 << sc) - 1) >> sc, h = (jd.height + (1 << sc) - 1) >> sc;
-    if ((long long) w * h <= max_px && (unsigned long long) w * h * 4 + WORK <= mem_max) { j.ow = (int) w; j.oh = (int) h; break; }
+  const auto dim = [&](int sc, int &w, int &h) { w = std::max(1, (int) jd.width >> sc), h = std::max(1, (int) jd.height >> sc); };
+  // the fewest pixels within max_px ...
+  constexpr int SC_MAX = 2;  // 1/4 at most (the 1/8 output stage is missing: see the top)
+  int lo = 0, w, h;
+  for (;; lo++) {
+    if (lo > SC_MAX) { FW_IMGDEC_FREE(work); r.err = "too big"; return false; }
+    dim(lo, w, h);
+    if ((long long) w * h <= max_px) break;
   }
-  // smaller still while the next step keeps at least fit_px (the largest view that shows it): album art for a 168 px
-  // disc never decodes at 1000 x 1000
-  while (fit_px > 0 && sc < 3) {
-    const long w = (jd.width + (2 << sc) - 1) >> (sc + 1), h = (jd.height + (2 << sc) - 1) >> (sc + 1);
-    if ((long long) w * h < fit_px) break;
-    sc++, j.ow = (int) w, j.oh = (int) h;
+  // ... and the smallest step that still covers every box (its stored size: img_scale.h), never below it
+  int sc = lo;
+  while (sc < SC_MAX) {
+    dim(sc + 1, w, h);
+    bool covers = true;
+    for (const Box &bx : boxes) {
+      int ow, oh;
+      fw::img::stored(bx, w, h, max_side, ow, oh);
+      covers &= bx.s != fw::img::pixel && ow <= w && oh <= h;
+    }
+    if (!covers) break;
+    sc++;
   }
-  o.rgba = (uint8_t *) FW_IMGDEC_ALLOC((size_t) j.ow * j.oh * 4);
-  if (!o.rgba) { FW_IMGDEC_FREE(work); o.err = "out of memory"; return false; }
-  memset(o.rgba, 0, (size_t) j.ow * j.oh * 4);
-  o.w = j.ow; o.h = j.oh;
-  r = jd_decomp(&jd, jout, (uint8_t) sc);
+  dim(sc, j.ow, j.oh);
+  r.sw = j.ow, r.sh = j.oh, r.sc = sc;
+  size_t need = 0;
+  // opaque: an A8 plane only for a round corner (the Sink adds it)
+  if (!plan(boxes, j.ow, j.oh, max_side, false, k, need, r)) { FW_IMGDEC_FREE(work); return false; }
+  const int band_h = std::max(1, (jd.msy * 8) >> sc);
+  need += WORK + (size_t) j.ow * band_h * 4;
+  r.need = need;
+  if (need > mem_max) { FW_IMGDEC_FREE(work); r.err = too_big(need, mem_max); return false; }
+  j.band = (uint8_t *) FW_IMGDEC_ALLOC((size_t) j.ow * band_h * 4);
+  if (!j.band || !begin(k, boxes.size(), r)) {
+    if (j.band) FW_IMGDEC_FREE(j.band);
+    FW_IMGDEC_FREE(work);
+    r.err = "out of memory";
+    return false;
+  }
+  res = jd_decomp(&jd, jout, (uint8_t) sc);
   FW_IMGDEC_FREE(work);
-  if (r != JDR_OK && r != JDR_INP) {  // a truncated file (JDR_INP) still shows what came: like a browser
-    release(o);
-    o.w = o.h = 0;
-    o.err = "broken picture (JPEG)";
-    return false;
-  }
+  if (res == JDR_OK) jflush(&j);
+  FW_IMGDEC_FREE(j.band);
+  if (res != JDR_OK) { r.err = res == JDR_INP ? "broken picture (JPEG: cut short)" : "broken picture (JPEG)"; return false; }
+  if (!finish(k, boxes.size(), r)) { r.err = "broken picture (JPEG: cut short)"; return false; }
   return true;
 }
 }  // namespace detail
 
-// bytes -> o (RGBA8888). max_px = the most pixels the result may have (images.h budget().src_max_px), mem_max = the most
-// memory the decode may hold at once, fit_px = the pixels the picture is shown at (0 = any): a JPEG shrinks while
-// decoding as far as it can without going under it. false = o.err says why ("too big", "not a picture", ...); o holds nothing then.
-inline bool decode(const uint8_t *b, size_t n, long max_px, size_t mem_max, Out &o, long fit_px = 0) {
-  o = Out{};
+// bytes -> the pixels of each box (r.px, in the boxes' order). max_px = the most pixels the source may have as decoded
+// (images.h budget().src_max_px), mem_max = the most memory the decode may hold at once, max_side = budget().max_side.
+// false = r.err says why ("too big", "not a picture", ...); r holds nothing then.
+inline bool decode(const uint8_t *b, size_t n, long max_px, size_t mem_max, const std::vector<Box> &boxes, int max_side, Result &r) {
+  r = Result{};
+  if (boxes.empty()) { r.err = "left the screen"; return false; }
   const char *t = sniff(b, n);
-  if (!strcmp(t, "png")) return detail::png(b, n, max_px, mem_max, o);
-  if (!strcmp(t, "jpeg")) return detail::jpeg(b, n, max_px, mem_max, o, fit_px);
-  if (*t) { o.err = std::string(t == std::string("svg") ? "SVG" : t == std::string("webp") ? "WebP" : t == std::string("gif") ? "GIF" : "BMP") + " isn't supported on the panel"; return false; }
-  o.err = "not a picture";
+  if (!strcmp(t, "png")) return detail::png(b, n, max_px, mem_max, boxes, max_side, r);
+  if (!strcmp(t, "jpeg")) return detail::jpeg(b, n, max_px, mem_max, boxes, max_side, r);
+  if (*t) { r.err = std::string(t == std::string("svg") ? "SVG" : t == std::string("webp") ? "WebP" : t == std::string("gif") ? "GIF" : "BMP") + " isn't supported on the panel"; return false; }
+  r.err = "not a picture";
   return false;
 }
 

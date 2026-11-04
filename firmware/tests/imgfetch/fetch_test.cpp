@@ -6,6 +6,8 @@
 // Checks: every wanted URL ends ready or failed (never loading for ever), the right ones ready, one download at a time,
 // no deadlock (a watchdog thread: the main loop must keep beating), works again after the worker's idle exit (the
 // crash: the worker deleted itself holding the lock), and alloc / task / low-memory failures only fail images.
+// Incomplete downloads (a length not reached, a chunked body cut off, no length and the picture stops early) fail,
+// never come out as pictures; 30 track changes in a row (Guition sizes) each come in, and every byte goes back.
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
@@ -24,7 +26,10 @@
 #include <vector>
 
 // ---------------------------------------------------------------- simulation knobs
-static constexpr int SPEED = 50;  // simulated ms per real ms
+#ifndef SIM_SPEED
+#define SIM_SPEED 50
+#endif
+static constexpr int SPEED = SIM_SPEED;  // simulated ms per real ms (TSan: slower, run.sh; the decode runs ~10x slower under it)
 static std::atomic<double> P_ALLOC{0}, P_LOW{0}, P_TASK{0}, P_NEW{0};
 static std::mutex rng_m;
 static std::mt19937 rng(12345);
@@ -39,13 +44,30 @@ static int64_t sim_us() { return std::chrono::duration_cast<std::chrono::microse
 static void sim_sleep_ms(int64_t ms) { std::this_thread::sleep_for(std::chrono::microseconds(ms * 1000 / SPEED)); }
 
 // ---------------------------------------------------------------- heap
-static std::atomic<long> allocs{0}, alloc_fails{0};
+static std::atomic<long> allocs{0}, alloc_fails{0}, live{0}, live_max{0};
+#include <malloc.h>
+static void count(void *p, long sign) {
+  if (!p) return;
+  const long now = live += sign * (long) malloc_usable_size(p);
+  for (long m = live_max; now > m && !live_max.compare_exchange_weak(m, now);) {}
+}
 void *heap_caps_malloc(size_t n, unsigned) {
   if (roll(P_ALLOC)) { alloc_fails++; return nullptr; }
   allocs++;
-  return malloc(n);
+  void *p = malloc(n);
+  count(p, 1);
+  return p;
 }
-void heap_caps_free(void *p) { free(p); }
+void heap_caps_free(void *p) { count(p, -1); free(p); }
+void *sim_realloc(void *p, size_t n) {
+  count(p, -1);
+  void *q = realloc(p, n);
+  count(q ? q : p, 1);
+  return q;
+}
+#define FW_IMG_MALLOC(n) heap_caps_malloc(n, 0)
+#define FW_IMG_REALLOC(p, n) sim_realloc(p, n)
+#define FW_IMG_FREE(p) heap_caps_free(p)
 size_t heap_caps_get_free_size(unsigned caps) { return roll(P_LOW) ? 9000 : (caps & (1 << 10)) ? 30u << 20 : 200u << 10; }
 size_t heap_caps_get_largest_free_block(unsigned caps) { return roll(P_LOW) ? 4000 : (caps & (1 << 10)) ? 28u << 20 : 100u << 10; }
 #define FW_IMGDEC_ALLOC(n) heap_caps_malloc(n, 0)
@@ -104,7 +126,7 @@ struct esp_http_client {
   std::string url, kind;
   std::vector<uint8_t> body;
   size_t at = 0;
-  int status = 0, hops = 0;
+  int status = 0, hops = 0, reads = 0;
   int64_t len = -1;
   bool is_open = false;
 };
@@ -154,8 +176,11 @@ int64_t esp_http_client_fetch_headers(esp_http_client_handle_t h) {
   if (k == "big") { h->len = 50ll << 20; return h->len; }
   if (k == "jpg") { hdr(h, "Content-Type", "image/jpeg"); h->body = JPG; }
   else { hdr(h, "Content-Type", "image/png"); h->body = PNG; }
-  if (k == "trunc") h->body.resize(h->body.size() / 2);  // the length says more is coming: it never does
-  h->len = k == "nolen" ? -1 : (int64_t) (k == "trunc" ? PNG.size() : h->body.size());
+  if (k == "jcut" || k == "jcutlen") h->body = JPG;
+  // cut short: the length says more is coming (it never does); chunked without the last chunk; no length at all
+  if (k == "trunc" || k == "chunkcut" || k == "nolencut" || k == "jcut" || k == "jcutlen") h->body.resize(h->body.size() / 2);
+  const bool nolen = k == "nolen" || k == "nolencut" || k == "jcut" || k == "chunked" || k == "chunkcut";
+  h->len = nolen ? -1 : (int64_t) (k == "trunc" ? PNG.size() : k == "jcutlen" ? JPG.size() : h->body.size());
   if (k == "garbage") for (size_t i = 16; i < h->body.size(); i++) h->body[i] ^= (uint8_t) (i * 7);
   return h->len;
 }
@@ -164,13 +189,21 @@ esp_err_t esp_http_client_set_redirection(esp_http_client_handle_t h) { h->hops+
 int esp_http_client_read(esp_http_client_handle_t h, char *buf, int n) {
   if (h->kind == "slow") { sim_sleep_ms(400); }
   if (h->kind == "drop" && h->at > 100) return -1;
-  if (h->at >= h->body.size()) { if (h->kind == "trunc") sim_sleep_ms(50); return 0; }
+  if (h->at >= h->body.size()) { if (h->kind == "trunc" || h->kind == "chunkcut" || h->kind == "jcutlen") sim_sleep_ms(50); return 0; }
+  const bool ch = h->kind == "chunked" || h->kind == "chunkcut";
+  if (ch && (++h->reads % 3) == 0) return 0;  // a read that held only chunk framing (IDF returns 0: not the end)
   const int k = std::min<int>(n, std::min<size_t>(h->kind == "slow" ? 16 : 1500, h->body.size() - h->at));
   memcpy(buf, h->body.data() + h->at, k);
   h->at += k;
   return k;
 }
-bool esp_http_client_is_complete_data_received(esp_http_client_handle_t h) { return h->kind != "trunc" && h->at >= h->body.size(); }
+bool esp_http_client_is_complete_data_received(esp_http_client_handle_t h) {
+  const std::string &k = h->kind;
+  if (k == "trunc" || k == "chunkcut" || k == "jcutlen") return false;
+  if (k == "nolen" || k == "nolencut" || k == "jcut") return false;  // IDF: no length, not chunked = never "complete"
+  return h->at >= h->body.size();
+}
+bool esp_http_client_is_chunked_response(esp_http_client_handle_t h) { return h->kind == "chunked" || h->kind == "chunkcut"; }
 esp_err_t esp_http_client_close(esp_http_client_handle_t h) {
   if (h->is_open) { h->is_open = false; open_now--; }
   return ESP_OK;
@@ -187,8 +220,10 @@ uint32_t lv_tick_get() { return (uint32_t) (sim_us() / 1000); }
 static int fails = 0, checks = 0;
 #define CHECK(c, ...) do { checks++; if (!(c)) { fails++; printf("FAIL %s:%d  ", __FILE__, __LINE__); printf(__VA_ARGS__); printf("\n"); } } while (0)
 namespace fw::img {
-static const Budget B = {3u << 20, 2048 * 2048, 8000, "waveshare-p4-86", 1u << 20};
+static Budget B = {3u << 20, 2048 * 2048, 8000, "waveshare-p4-86", 1u << 20, 0};
 const Budget &budget() { return B; }
+static Box BOX = [] { Box b; b.w = b.h = 168; b.r = 12; return b; }();  // the views' box (the Media screen's CD art)
+static std::map<std::string, std::vector<Pixels>> kept;  // what the views hold (freed on leave)
 struct P { uint32_t since; bool told; };
 static std::map<std::string, P> pending;
 struct V { int st = 0; std::string err; };  // 0 loading, 1 ready, 2 failed
@@ -216,6 +251,25 @@ void fail(const char *src, const char *why) {
   auto it = views.find(src);
   if (it != views.end() && it->second.st == 0) { it->second.st = 2; it->second.err = why; }
 }
+std::vector<Box> boxes(const char *) { on_lvgl(); return {BOX}; }
+void put(const char *src, std::vector<Pixels> &px) {
+  on_lvgl();
+  CHECK(px.size() == 1 && px[0].data && px[0].box == BOX, "put %s: %zu boxes", src, px.size());
+  int ow, oh;
+  stored(BOX, 1, 1, B.max_side, ow, oh);
+  if (!px.empty()) {
+    CHECK(px[0].w == ow && px[0].h == oh, "put %s at %dx%d, not %dx%d", src, px[0].w, px[0].h, ow, oh);
+    unsigned sum = 0;
+    for (size_t i = 0; px[0].data && i < px[0].size; i++) sum += px[0].data[i];  // every byte readable (ASan)
+    (void) sum;
+  }
+  pending.erase(src);
+  auto it = views.find(src);
+  if (it != views.end()) { it->second.st = 1; it->second.err.clear(); }
+  for (auto &p : kept[src]) free_pixels(p);
+  kept[src].clear();
+  for (auto &p : px) if (p.data) { kept[src].push_back(p); p.data = nullptr; }
+}
 bool waiting(const char *src) { on_lvgl(); return pending.count(src) > 0; }
 void alive(const char *src) { on_lvgl(); auto it = pending.find(src); if (it != pending.end()) it->second.since = lv_tick_get(); }
 static void timeouts() {
@@ -224,7 +278,11 @@ static void timeouts() {
   for (auto &u : late) fail(u.c_str(), "timeout");
 }
 static void want(const std::string &u) { views[u] = V{}; pending[u] = P{lv_tick_get(), false}; }
-static void leave() { views.clear(); pending.clear(); }
+static void leave() {
+  views.clear(); pending.clear();
+  for (auto &kv : kept) for (auto &p : kv.second) free_pixels(p);
+  kept.clear();
+}
 }  // namespace fw::img
 
 #include "../../fw_images.h"
@@ -260,7 +318,7 @@ static std::vector<uint8_t> load(const std::string &p) {
   return v;
 }
 static const char *KINDS[] = {"ok", "ok", "ok", "jpg", "nolen", "redir", "404", "500", "bot", "html", "big", "trunc", "drop", "garbage", "err", "loop", "ok", "ok", "slow", "hang"};
-static const std::set<std::string> GOOD = {"ok", "jpg", "nolen", "redir"};
+static const std::set<std::string> GOOD = {"ok", "jpg", "nolen", "redir", "chunked"};
 static std::vector<std::string> batch(const char *tag, int n, bool with_slow = true) {
   std::vector<std::string> v;
   for (int i = 0; i < n; i++) {
@@ -278,6 +336,7 @@ static Tally tally() {
     if (kv.second.st == 0) t.loading++;
     if (kv.second.st == 1) { t.ready++; t.good_ready += g; CHECK(g, "a bad URL came out ready: %s", kv.first.c_str()); }
     if (kv.second.st == 2) { t.failed++; t.too_many += kv.second.err == "too many pictures"; }
+    if (g && kv.second.st == 2 && getenv("VERBOSE")) printf("good failed: %s: %s\n", kv.first.c_str(), kv.second.err.c_str());
   }
   return t;
 }
@@ -354,6 +413,51 @@ int main(int argc, char **argv) {
       run_sim_ms(round == 1 ? 25000 : 500);  // one idle exit under injection too
     }
     P_ALLOC = 0; P_NEW = 0; P_TASK = 0; P_LOW = 0;
+  }
+  {  // 6. incomplete downloads never come out as pictures: each fails with its reason; whole chunked ones load
+    fw::img::leave();
+    run_sim_ms(300);
+    const char *cut[] = {"trunc", "chunkcut", "nolencut", "jcut", "jcutlen"};
+    for (const char *k : cut) fw::img::want(std::string("https://t/") + k + "/x.png");
+    fw::img::want("https://t/chunked/y.png");
+    fw::img::want("https://t/nolen/y.png");
+    settle(5 * 60 * 1000);
+    for (const char *k : cut) {
+      const auto &v = fw::img::views[std::string("https://t/") + k + "/x.png"];
+      CHECK(v.st == 2 && (v.err.find("broke off") != std::string::npos || v.err.find("cut short") != std::string::npos), "%s: st %d err '%s'", k, v.st, v.err.c_str());
+      printf("cut short %-9s -> %s\n", k, v.err.c_str());
+    }
+    CHECK(fw::img::views["https://t/chunked/y.png"].st == 1, "a whole chunked body loads (%s)", fw::img::views["https://t/chunked/y.png"].err.c_str());
+    CHECK(fw::img::views["https://t/nolen/y.png"].st == 1, "a whole body without a length loads");
+  }
+  {  // 7. track after track (the Guition: 320 px a side at most, the idle art's 480 box): 30 changes, each comes in,
+     //    the previous picture held until then; nothing leaks or stalls
+    fw::img::leave();
+    run_sim_ms(1000);
+    fw::img::B.max_side = 320;
+    fw::img::BOX = fw::img::Box{};
+    fw::img::BOX.w = fw::img::BOX.h = 480;
+    const long base = live;
+    std::string prev;
+    int in = 0;
+    int64_t worst = 0;
+    for (int i = 0; i < 30; i++) {
+      const std::string u = "https://t/jpg/track" + std::to_string(i) + ".jpg";
+      fw::img::want(u);
+      worst = std::max(worst, settle(60 * 1000));
+      in += fw::img::views[u].st == 1;
+      if (!prev.empty()) { fw::img::views.erase(prev); for (auto &p : fw::img::kept[prev]) fw::img::free_pixels(p); fw::img::kept.erase(prev); }
+      prev = u;
+    }
+    CHECK(in == 30, "30 track changes: %d came in", in);
+    const long held = live - base;
+    fw::img::leave();
+    run_sim_ms(1000);
+    printf("30 track changes: %d in, slowest %lld sim ms; one picture held %ld KB; peak %ld KB; after leaving %ld B\n", in, (long long) worst,
+           held / 1024, live_max.load() / 1024, live.load() - base);
+    CHECK(live == base, "every byte back after 30 tracks (%ld B left)", live.load() - base);
+    CHECK(held <= 320 * 320 * 2 + 4096, "one 320 x 320 RGB565 picture held (%ld B)", held);
+    fw::img::B.max_side = 0;
   }
   fw::img::leave();
   run_sim_ms(1000);  // drain the last results

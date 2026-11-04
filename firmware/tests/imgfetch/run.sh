@@ -8,9 +8,9 @@ HERE=$(cd "$(dirname "$0")" && pwd); ROOT=$(cd "$HERE/../../.." && pwd)
 FX=${FW_CACHE:-$ROOT/renderer/.cache}/imgdec/fx
 [ -f "$FX/rgba.png" ] && [ -f "$FX/photo.jpg" ] || "$ROOT/firmware/tests/imgdec/run.sh" >/dev/null
 O=${FW_CACHE:-$ROOT/renderer/.cache}/imgfetch; mkdir -p "$O"
-INC="-I$HERE/shim -I$ROOT/firmware"
+INC="-I$HERE/shim -I$ROOT/firmware -I$ROOT/renderer/core"
 for san in asan tsan; do
-  if [ $san = asan ]; then S="-fsanitize=address,undefined -fno-omit-frame-pointer -fno-sanitize-recover=undefined"; else S="-fsanitize=thread"; fi
+  if [ $san = asan ]; then S="-fsanitize=address,undefined -fno-omit-frame-pointer -fno-sanitize-recover=undefined"; else S="-fsanitize=thread -DSIM_SPEED=10"; fi
   FL="-O1 -g $S $INC"
   gcc $FL -c "$ROOT/firmware/fw_pngle.c" -o "$O/pngle-$san.o"
   gcc $FL -c "$ROOT/firmware/fw_miniz.c" -o "$O/miniz-$san.o"

@@ -4,9 +4,14 @@
 //   LVGL task: ESP-IDF esp_http_client, https checked against the IDF certificate bundle, redirects followed (5 hops),
 //   a desktop browser's User-Agent (some hosts refuse unknown clients). Limits from fw::img::budget():
 //   body_max bytes (Content-Length over it = refused before reading; more bytes = cut off), timeout_ms for the whole
-//   download. Decode: fw_imgdec.h (PNG pngle, JPEG TJpgDec) into PSRAM, never more than the free PSRAM allows; a big
-//   JPEG shrinks while decoding to the largest view that wants it (fw::img::need_px). Each picture logs its download,
-//   decode and scale times and the free PSRAM / internal RAM after it (tag facet_img).
+//   download. A download must be whole: a Content-Length not reached, a chunked body without its last chunk, a
+//   picture that stops early = failed ("the download broke off ..."), never half a picture.
+//   Decode: fw_imgdec.h (PNG pngle, JPEG TJpgDec) row by row straight into the pixels of each view that wants the URL
+//   (fw::img::boxes(), taken on the LVGL task when the URL is queued), in PSRAM: it reserves what this decode needs
+//   (its outputs + a few rows + the decoder) and refuses unless the largest free PSRAM block has that plus
+//   DECODE_MARGIN ("too big (needs N KB, M KB free)"). A big JPEG shrinks while decoding to the smallest step that
+//   still covers its boxes. The old picture stays on screen meanwhile (images.h Swap). Each picture logs its download
+//   and decode times and the free PSRAM / internal RAM after it (tag facet_img, INFO); every failure is a WARN with its reason.
 //   Only while the screen with the image is visible: a URL is fetched only while fw::img::waiting() says a view still
 //   wants it (leaving the screen clears that), queued URLs nothing waits for are dropped and the running download stops.
 //   Pixels and failures go back on the LVGL task (an lv_timer, 100 ms): put() / fail() with the same words as the workbench's image fetch
@@ -41,7 +46,7 @@ inline const char *const UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.3
 
 struct Done {
   std::string url, err;
-  fw::imgdec::Out px;
+  fw::imgdec::Result px;
   int64_t got_us = 0, dec_us = 0;  // the download and the decode
   size_t bytes = 0;
 };
@@ -49,7 +54,7 @@ struct State {
   std::mutex m;
   std::deque<std::string> queue;  // waiting for the worker
   std::string ha;                 // the panel's Home Assistant address (a path's host), set by pump()
-  std::map<std::string, long> fit;  // a queued URL's largest view (px), set by pump()
+  std::map<std::string, std::vector<fw::img::Box>> boxes;  // a queued URL's views (their boxes), set by pump()
   std::deque<Done *> done;        // waiting for the LVGL task
   std::string current;            // the URL being downloaded ("" = none)
   std::atomic<bool> cancel{false};
@@ -71,6 +76,8 @@ inline bool low_memory() {
          heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) < PSRAM_KEEP + fw::img::budget().body_max / 4;
 }
 inline State &S() { static State s; return s; }
+// reads that bring nothing for this long, before the body is whole = the download broke off
+constexpr int64_t QUIET_US = 1500 * 1000;
 
 // response headers the reasons need (esp_http_client hands them only to the event handler)
 struct Hdr {
@@ -86,14 +93,16 @@ inline esp_err_t on_event(esp_http_client_event_t *e) {
   return ESP_OK;
 }
 
-// the most the decode may hold: the largest free PSRAM block, less a reserve for LVGL and the image cache
+// what the decode leaves free for everything else (LVGL's draw layers, Wi-Fi, the API) while it runs
+constexpr size_t DECODE_MARGIN = 96 * 1024;
+// the most the decode may hold: the largest free PSRAM block, less the margin. The decode itself works out what it
+// needs (fw_imgdec.h: outputs + rows + decoder) and is refused if that is more
 inline size_t decode_room() {
   const size_t big = heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM);
-  const size_t keep = fw::img::budget().cache_bytes + 512 * 1024;
-  return big > keep ? big - keep : 0;
+  return big > DECODE_MARGIN ? big - DECODE_MARGIN : 0;
 }
 
-inline void fetch(const std::string &src, long fit, const std::string &ha, Done &d) {
+inline void fetch(const std::string &src, const std::vector<fw::img::Box> &boxes, const std::string &ha, Done &d) {
   const auto &B = fw::img::budget();
   if (src[0] == '/' && ha.empty()) { d.err = "no Home Assistant link (Settings > Home Assistant)"; return; }
   const std::string url = src[0] == '/' ? ha + src : src;
@@ -147,25 +156,40 @@ inline void fetch(const std::string &src, long fit, const std::string &ha, Done 
     if (!body.expect(len)) { d.err = body.err; goto out; }
     uint8_t *buf = (uint8_t *) heap_caps_malloc(4096, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
     if (!buf) { d.err = "out of memory"; goto out; }
+    const bool chunked = esp_http_client_is_chunked_response(h);
+    int64_t quiet = 0;  // since when reads have brought nothing (0 = they bring bytes)
     for (;;) {
       if (S().cancel) { d.err = "left the screen"; break; }
       if (late()) { d.err = tmo; break; }
       const int k = esp_http_client_read(h, (char *) buf, 4096);
-      if (k == 0 && esp_http_client_is_complete_data_received(h)) break;
-      if (k == 0 && len < 0 && body.n) break;  // no length, connection closed: that's all
       if (k < 0) { d.err = late() || k == -ESP_ERR_HTTP_EAGAIN ? tmo : "the download broke off"; break; }
-      if (k > 0 && !body.add(buf, (size_t) k)) { d.err = body.err; break; }
-      if (k == 0) vTaskDelay(1);
+      if (k > 0) {
+        if (!body.add(buf, (size_t) k)) { d.err = body.err; break; }
+        quiet = 0;
+        continue;
+      }
+      if (esp_http_client_is_complete_data_received(h)) break;  // the length reached, or the chunked body's last chunk
+      if (len < 0 && !chunked) break;  // no length, not chunked: the server closes at the end (the decode checks it is whole)
+      // nothing this read: a chunked body's framing, or the connection went quiet / closed before the end
+      const int64_t now = esp_timer_get_time();
+      if (!quiet) quiet = now;
+      else if (now - quiet > QUIET_US) break;
+      vTaskDelay(1);
     }
     heap_caps_free(buf);
+    if (d.err.empty() && len >= 0 && body.n != (size_t) len) {
+      char t[64];
+      snprintf(t, sizeof t, "the download broke off (%u of %u KB)", (unsigned) (body.n / 1024), (unsigned) ((len + 1023) / 1024));
+      d.err = t;
+    } else if (d.err.empty() && chunked && !esp_http_client_is_complete_data_received(h))
+      d.err = "the download broke off (no end to the chunked body)";
     if (!d.err.empty()) goto out;
     esp_http_client_close(h);
     esp_http_client_cleanup(h);
     h = nullptr;
-    const long max_px = B.src_max_px;
     const int64_t t1 = esp_timer_get_time();
     d.got_us = t1 - t0, d.bytes = body.n;
-    const bool ok = fw::imgdec::decode(body.b, body.n, max_px, decode_room(), d.px, fit);
+    const bool ok = fw::imgdec::decode(body.b, body.n, B.src_max_px, decode_room(), boxes, B.max_side, d.px);
     d.dec_us = esp_timer_get_time() - t1;
     if (!ok) {
       d.err = d.px.err;
@@ -184,12 +208,12 @@ inline void worker(void *) {
       std::lock_guard<std::mutex> l(s.m);
       if (!s.queue.empty()) { url = s.queue.front(); s.queue.pop_front(); s.current = url; s.cancel = false; }
     }
-    long fit = 0;
+    std::vector<fw::img::Box> boxes;
     std::string ha;
     if (!url.empty()) {
       std::lock_guard<std::mutex> l(s.m);
-      auto f = s.fit.find(url);
-      if (f != s.fit.end()) fit = f->second, s.fit.erase(f);
+      auto f = s.boxes.find(url);
+      if (f != s.boxes.end()) boxes.swap(f->second), s.boxes.erase(f);
       ha = s.ha;
     }
     if (url.empty()) {
@@ -206,18 +230,21 @@ inline void worker(void *) {
       }
       continue;
     }
-    Done *d = new (std::nothrow) Done{url, "", {}};
+    Done *d = new (std::nothrow) Done{url, "", {}};  // (a nothrow new; its strings and vector are small)
     if (!d) {  // no memory for the result: the view times out (fails) on its own
       std::lock_guard<std::mutex> l(s.m);
       s.current.clear();
       continue;
     }
-    fetch(url, fit, ha, *d);
+    fetch(url, boxes, ha, *d);
     if (uxTaskGetStackHighWaterMark(nullptr) < 1024) ESP_LOGW("facet_img", "fetch task stack low (%u B left)", (unsigned) uxTaskGetStackHighWaterMark(nullptr));
-    if (d->err.empty() && !d->px.rgba) d->err = "failed";
-    if (!d->err.empty()) ESP_LOGW("facet_img", "%s: %s", url.c_str(), d->err.c_str());
-    else ESP_LOGI("facet_img", "%s: %u B in %d ms, decoded %dx%d in %d ms", url.c_str(), (unsigned) d->bytes, (int) (d->got_us / 1000),
-                  d->px.w, d->px.h, (int) (d->dec_us / 1000));
+    if (d->err.empty() && d->px.px.empty()) d->err = "failed";
+    if (!d->err.empty()) {
+      if (d->err != "left the screen") ESP_LOGW("facet_img", "%s: %s", url.c_str(), d->err.c_str());
+    } else
+      ESP_LOGI("facet_img", "%s: %u B in %d ms, decoded %dx%d (1/%d) into %u box(es) in %d ms, held %u KB", url.c_str(), (unsigned) d->bytes,
+               (int) (d->got_us / 1000), d->px.sw, d->px.sh, 1 << d->px.sc, (unsigned) d->px.px.size(), (int) (d->dec_us / 1000),
+               (unsigned) (d->px.need / 1024));
     std::lock_guard<std::mutex> l(s.m);
     s.current.clear();
     s.done.push_back(d);
@@ -233,16 +260,15 @@ inline void pump(lv_timer_t *) {
     done.swap(s.done);
   }
   for (Done *d : done) {
-    if (d->px.rgba) {
-      const int64_t t = esp_timer_get_time();
-      fw::img::put(d->url.c_str(), d->px.w, d->px.h, d->px.rgba);
+    if (d->err.empty()) {
+      fw::img::put(d->url.c_str(), d->px.px);  // the views take their pixels (no copy)
       s.fetched++;
-      ESP_LOGI("facet_img", "scaled in %d ms; cache %s; free PSRAM %u KB (largest %u KB), internal %u KB", (int) ((esp_timer_get_time() - t) / 1000),
-               fw::img::stats().c_str(), (unsigned) (heap_caps_get_free_size(MALLOC_CAP_SPIRAM) / 1024),
-               (unsigned) (heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) / 1024), (unsigned) (heap_caps_get_free_size(MALLOC_CAP_INTERNAL) / 1024));
+      ESP_LOGI("facet_img", "in; cache %s; free PSRAM %u KB (largest %u KB), internal %u KB", fw::img::stats().c_str(),
+               (unsigned) (heap_caps_get_free_size(MALLOC_CAP_SPIRAM) / 1024), (unsigned) (heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) / 1024),
+               (unsigned) (heap_caps_get_free_size(MALLOC_CAP_INTERNAL) / 1024));
     }
     else if (d->err != "left the screen") { fw::img::fail(d->url.c_str(), d->err.c_str()); s.failed++; }
-    fw::imgdec::release(d->px);
+    fw::imgdec::release(d->px);  // what no view took
     delete d;
   }
   if (!done.empty()) s.progress = lv_tick_get();
@@ -254,10 +280,10 @@ inline void pump(lv_timer_t *) {
     for (const auto &u : want) {
       if (std::find(s.queue.begin(), s.queue.end(), u) != s.queue.end() || u == s.current) continue;
       if (s.queue.size() >= MAX_QUEUE) over.push_back(u);
-      else s.queue.push_back(u), s.fit[u] = fw::img::need_px(u.c_str());
+      else s.queue.push_back(u), s.boxes[u] = fw::img::boxes(u.c_str());
     }
     s.queue.erase(std::remove_if(s.queue.begin(), s.queue.end(), [](const std::string &u) { return !fw::img::waiting(u.c_str()); }), s.queue.end());
-    for (auto f = s.fit.begin(); f != s.fit.end();) f = std::find(s.queue.begin(), s.queue.end(), f->first) == s.queue.end() ? s.fit.erase(f) : std::next(f);
+    for (auto f = s.boxes.begin(); f != s.boxes.end();) f = std::find(s.queue.begin(), s.queue.end(), f->first) == s.queue.end() ? s.boxes.erase(f) : std::next(f);
     if (!s.current.empty() && !fw::img::waiting(s.current.c_str())) s.cancel = true;
     if (s.current != s.seen) {  // a new download started: its timeout counts from now
       s.seen = s.current;

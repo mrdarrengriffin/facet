@@ -22,5 +22,6 @@ Image.new('RGB', (8000, 6000), (40, 90, 160)).save(f'{d}/huge-flat.jpg', quality
 Image.new('RGB', (5000, 5000), (200, 30, 30)).save(f'{d}/huge-flat.png')              # few bytes, 25 Mpx
 noise = Image.frombytes('RGB', (2400, 1800), bytes(random.getrandbits(8) for _ in range(2400 * 1800 * 3)))
 noise.save(f'{d}/big.jpg', quality=95)                                # several MB: over every body cap
+photo(640, 640).save(f'{d}/cover.jpg', quality=90, subsampling=0)  # an HA media_player_proxy album cover: 640 x 640, 4:4:4, q90
 p.save(f'{d}/photo.gif'); p.save(f'{d}/photo.webp')
 open(f'{d}/page.html', 'w').write('<!doctype html><html><body>Just a moment...</body></html>')

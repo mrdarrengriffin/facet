@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include "lvgl.h"
+#include "img_scale.h"  // renderer/core (the real scaler: Box, Pixels, Sink)
 namespace fw::img {
 struct Budget {
   size_t cache_bytes;
@@ -13,6 +14,7 @@ struct Budget {
   int timeout_ms;
   const char *board;
   size_t body_max;
+  int max_side;
 };
 const Budget &budget();
 std::vector<std::string> wants();
@@ -20,6 +22,7 @@ void put(const char *src, int w, int h, const uint8_t *rgba);
 void fail(const char *src, const char *why);
 bool waiting(const char *src);
 void alive(const char *src);
-inline long need_px(const char *) { return 0; }
+std::vector<Box> boxes(const char *src);
+void put(const char *src, std::vector<Pixels> &px);
 inline std::string stats() { return "{}"; }
 }  // namespace fw::img

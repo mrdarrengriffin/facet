@@ -6,10 +6,10 @@ set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd); ROOT=$(cd "$HERE/../../.." && pwd)
 [ -f "$ROOT/local.env" ] && . "$ROOT/local.env"
 O=${FW_CACHE:-$ROOT/renderer/.cache}/imgdec; mkdir -p "$O/fx"
-[ -f "$O/fx/photo.jpg" ] || "$("$ROOT/renderer/tools/venv.sh")" "$HERE/fixtures.py" "$O/fx"
+[ -f "$O/fx/cover.jpg" ] || "$("$ROOT/renderer/tools/venv.sh")" "$HERE/fixtures.py" "$O/fx"
 cp "$HERE/files/gem.png" "$O/fx/"
 SAN="-fsanitize=address,undefined -fno-omit-frame-pointer -fno-sanitize-recover=undefined"
-FL="-O1 -g $SAN -I$ROOT/firmware"
+FL="-O1 -g $SAN -I$ROOT/firmware -I$ROOT/renderer/core"
 gcc $FL -c "$ROOT/firmware/fw_pngle.c" -o "$O/pngle.o"
 gcc $FL -c "$ROOT/firmware/fw_miniz.c" -o "$O/miniz.o"
 gcc $FL -fwrapv -c "$ROOT/firmware/fw_tjpgd.c" -o "$O/tjpgd.o"

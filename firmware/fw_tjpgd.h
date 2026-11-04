@@ -1,5 +1,5 @@
 /* Facet firmware (firmware/fw_imgdec.h): TJpgDec R0.03 by ChaN, copied from LVGL 9 src/libs/tjpgd (its LV_USE_TJPGD
- * guard and lv_conf include removed, the config inlined with descaling on). NB LVGL's copy writes RGB888 as B, G, R. License: ChaN's, kept below. */
+ * guard and lv_conf include removed, the config inlined with descaling on). NB LVGL's copy writes RGB888 as B, G, R, and has no 1/8 output stage (a 1/8 decode is garbage: fw_imgdec.h never asks for one). License: ChaN's, kept below. */
 /*----------------------------------------------------------------------------/
 / TJpgDec - Tiny JPEG Decompressor R0.03 include file         (C)ChaN, 2021
 /----------------------------------------------------------------------------*/

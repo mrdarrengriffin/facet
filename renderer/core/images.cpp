@@ -13,14 +13,16 @@ extern "C" void lv_image_cache_drop(const void *src);  // LVGL 9 (misc/cache/ins
 namespace fw::img {
 namespace {
 // Per-board caps (memory-bounded, Guition much lower).
-// Guition 4848S040 (ESP32-S3, 8 MB PSRAM shared with LVGL's buffers, fonts, Wi-Fi + one TLS session): 640 KB = the
-// idle screen's full-screen album art (480 x 480 RGB565 = 450 KB) while the Media screen's (CD 168 px RGB565A8 = 83 KB)
-// and the Home card's (47 px, 7 KB) stay on their kept pages, with room to spare.
+// Guition 4848S040 (ESP32-S3, 8 MB PSRAM shared with code, LVGL's buffers, fonts, Wi-Fi + one TLS session; ~1.2 MB
+// free on the Media screen): views keep at most 320 px a side (max_side), so the idle screen's full-screen album art is
+// 320 x 320 RGB565 = 200 KB (480 x 480 would be 450 KB), scaled up by LVGL when drawn. 640 KB = that art twice (the
+// shown one + the next track's while it comes in) and the Media screen's (CD 168 px RGB565A8 = 83 KB, twice) and the
+// Home card's (47 px, 7 KB).
 // Waveshare P4 (32 MB PSRAM): 3 MB = a full 720 x 720 still (1 MB) plus a 64-cell grid of 72 px thumbnails (1 MB).
 #ifdef FW_1X
-constexpr Budget B = {640u * 1024u, 1024 * 1024, 8000, "guition-4848s040", 256u * 1024u};
+constexpr Budget B = {640u * 1024u, 1024 * 1024, 8000, "guition-4848s040", 256u * 1024u, 320};
 #else
-constexpr Budget B = {3u * 1024u * 1024u, 2048 * 2048, 8000, "waveshare-p4-86", 1024u * 1024u};
+constexpr Budget B = {3u * 1024u * 1024u, 2048 * 2048, 8000, "waveshare-p4-86", 1024u * 1024u, 0};
 #endif
 
 struct View {
@@ -49,7 +51,7 @@ lv_timer_t *watch = nullptr, *sweep_t = nullptr;
 void free_px(View *v) {
   if (!v->data) return;
   lv_image_cache_drop(&v->dsc);
-  lv_free(v->data);
+  FW_IMG_FREE(v->data);  // made by img_scale.h (FW_IMG_MALLOC)
   v->data = nullptr;
   total -= v->bytes;
   v->bytes = 0;
@@ -89,109 +91,7 @@ void timeouts(lv_timer_t *) {
 }
 bool url_ok(const std::string &s) { return !s.rfind("http://", 0) || !s.rfind("https://", 0) || (s.size() > 1 && s[0] == '/' && s[1] != '/'); }
 
-// ---- scaling: RGBA8888 source -> the view's box
-void out_size(const View &v, int sw, int sh, int &ow, int &oh) {
-  if (v.s == cover) { ow = v.w; oh = v.h; return; }
-  if (v.s == contain) {
-    const double k = std::min((double) v.w / sw, (double) v.h / sh);
-    ow = std::max(1, (int) std::lround(sw * k));
-    oh = std::max(1, (int) std::lround(sh * k));
-    return;
-  }
-  if (sw <= v.w && sh <= v.h) {  // pixel: whole-number zoom (nearest), or a whole-number shrink when too big
-    const int k = std::max(1, std::min(v.w / sw, v.h / sh));
-    ow = sw * k; oh = sh * k;
-  } else {
-    const int d = (int) std::ceil(std::max((double) sw / v.w, (double) sh / v.h));
-    ow = std::max(1, sw / d); oh = std::max(1, sh / d);
-  }
-}
-constexpr uint8_t BAYER[16] = {0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5};
-// one output column (or row): its source taps. Box (down): the source span [a, b); bilinear (up): a, b and b's weight
-// w (0-256); nearest: a alone (w = 0, b = a). Worked out once per column and row, so the pixel loop is integer only
-// (the panels' FPUs are single precision: double maths there is software, ~1 s for a full screen)
-struct Tap { int a, b, w; bool box; };
-void taps(std::vector<Tap> &t, int on, int sn, double k, double o, bool pix, bool near) {
-  t.resize((size_t) on);
-  for (int x = 0; x < on; x++) {
-    Tap &q = t[(size_t) x];
-    q.box = false, q.w = 0;
-    if (pix) q.a = q.b = std::min(sn - 1, x * sn / on);
-    else if (near && k >= 1) q.a = q.b = std::clamp((int) std::floor(o + (x + 0.5) / k), 0, sn - 1);
-    else if (k >= 1) {
-      const double f = std::clamp(o + (x + 0.5) / k - 0.5, 0.0, sn - 1.0);
-      q.a = (int) f, q.b = std::min(q.a + 1, sn - 1), q.w = (int) std::lround((f - q.a) * 256);
-    } else {
-      const int a = (int) std::floor(o + x / k), b = std::max(a + 1, (int) std::ceil(o + (x + 1) / k));
-      q.a = std::clamp(a, 0, sn - 1), q.b = std::clamp(b, q.a + 1, sn), q.box = true;
-    }
-  }
-}
-void scale(const View &v, const uint8_t *src, int sw, int sh, int ow, int oh, uint16_t *col, uint8_t *alpha, bool &see_through) {
-  double k = 1, x0 = 0, y0 = 0;
-  if (v.s == cover) {
-    k = std::max((double) ow / sw, (double) oh / sh);
-    x0 = (sw - ow / k) / 2; y0 = (sh - oh / k) / 2;
-  } else if (v.s == contain) k = (double) ow / sw;
-  const bool pix = v.s == pixel, near = v.nearest;
-  std::vector<Tap> xs, ys;
-  taps(xs, ow, sw, k, x0, pix, near);
-  taps(ys, oh, sh, k, y0, pix, near);
-  const int rad = std::min(v.r, std::min(ow, oh) / 2);
-  see_through = false;
-  for (int y = 0; y < oh; y++) {
-    const Tap &ty = ys[(size_t) y];
-    int shade = 256;  // the shade: darker towards the bottom edge (images.h), so light text reads over it
-    if (v.shade > 0 && y >= oh - v.shade) {
-      const float t = std::min(1.0f, (y - (oh - v.shade) + 0.5f) / (v.shade / 2.0f));
-      shade = (int) std::lround(256 * (1 - (1 - SHADE_MIN) * t * t * (3 - 2 * t)));
-    }
-    const bool yc = y < rad || y >= oh - rad;
-    for (int x = 0; x < ow; x++) {
-      const Tap &tx = xs[(size_t) x];
-      uint32_t a = 0, r = 0, g = 0, b = 0, n = 1;  // premultiplied sums: R = r / a
-      if (tx.box) {
-        n = 0;
-        for (int sy = ty.a; sy < ty.b; sy++) {
-          const uint8_t *p = src + ((size_t) sy * sw + tx.a) * 4;
-          for (int sx = tx.a; sx < tx.b; sx++, p += 4, n++) a += p[3], r += p[0] * p[3], g += p[1] * p[3], b += p[2] * p[3];
-        }
-      } else {  // bilinear (nearest: one tap at weight 65536): weights in 1/65536
-        const int wx[2] = {256 - tx.w, tx.w}, wy[2] = {256 - ty.w, ty.w}, sx[2] = {tx.a, tx.b}, sy[2] = {ty.a, ty.b};
-        for (int q = 0; q < 4; q++) {
-          const uint32_t w = (uint32_t) (wx[q & 1] * wy[q >> 1]);
-          if (!w) continue;
-          const uint8_t *p = src + ((size_t) sy[q >> 1] * sw + sx[q & 1]) * 4;
-          const uint32_t pa = p[3] * w;
-          a += pa, r += (p[0] * pa) >> 8, g += (p[1] * pa) >> 8, b += (p[2] * pa) >> 8;
-        }
-        n = 65536;
-        if (a) r = (uint32_t) (((uint64_t) r << 8) / a), g = (uint32_t) (((uint64_t) g << 8) / a), b = (uint32_t) (((uint64_t) b << 8) / a);
-      }
-      int R, G, Bc, A;
-      if (tx.box) {
-        R = a ? (int) (r / a) : 0, G = a ? (int) (g / a) : 0, Bc = a ? (int) (b / a) : 0;
-        A = n ? (int) ((a + n / 2) / n) : 0;
-      } else {
-        R = (int) r, G = (int) g, Bc = (int) b;
-        A = (int) ((a + 32768) >> 16);
-      }
-      if (rad > 0 && yc && (x < rad || x >= ow - rad)) {  // rounded corner: anti-aliased coverage of the corner circle
-        const float cx = x < rad ? rad : ow - rad, cy = y < rad ? rad : oh - rad;
-        const float d = std::sqrt((x + 0.5f - cx) * (x + 0.5f - cx) + (y + 0.5f - cy) * (y + 0.5f - cy));
-        A = (int) std::lround(A * std::clamp(rad - d + 0.5f, 0.0f, 1.0f));
-      }
-      if (shade < 256) R = R * shade >> 8, G = G * shade >> 8, Bc = Bc * shade >> 8;
-      if (!pix && !near) {  // ordered dither to 565 (photos band otherwise); pixel art stays exact
-        const int t = BAYER[(x & 3) + (y & 3) * 4];
-        R = std::min(255, R + t / 2); G = std::min(255, G + t / 4); Bc = std::min(255, Bc + t / 2);
-      }
-      col[(size_t) y * ow + x] = (uint16_t) (((R >> 3) << 11) | ((G >> 2) << 5) | (Bc >> 3));
-      alpha[(size_t) y * ow + x] = (uint8_t) std::clamp(A, 0, 255);
-      see_through |= A < 255;
-    }
-  }
-}
+Box box_of(const View &v) { Box b; b.w = v.w, b.h = v.h, b.r = v.r, b.shade = v.shade, b.s = v.s, b.nearest = v.nearest; return b; }
 // room for need more bytes: evict views nothing shows, least recently used first; false = it can't fit
 bool room(size_t need, const View *keep) {
   while (total + need > B.cache_bytes) {
@@ -204,47 +104,45 @@ bool room(size_t need, const View *keep) {
   }
   return true;
 }
-void fill(View *v, const uint8_t *rgba, int sw, int sh) {
-  int ow, oh;
-  out_size(*v, sw, sh, ow, oh);
-  const size_t px = (size_t) ow * oh;
-  // scale into scratch first (alpha known after), then keep only the planes needed. Every allocation here may fail
-  // (the panel: a full PSRAM, no exceptions) = the view fails "no memory" and the component shows its fallback
-  uint8_t *scratch = (uint8_t *) lv_malloc(px * 3);
-  if (!scratch) { refused++; if (!v->data) { v->st = failed; v->err = "no memory"; } return; }
-  uint16_t *col = (uint16_t *) scratch;
-  uint8_t *al = scratch + px * 2;
-  bool see = false;
-  scale(*v, rgba, sw, sh, ow, oh, col, al, see);
-  const size_t data = px * 2 + (see ? px : 0), bytes = data + sizeof(View);
-  const size_t had = v->bytes;
-  if (!room(bytes > had ? bytes - had : 0, v)) {
-    lv_free(scratch);
-    refused++;
-    if (!v->data) { v->st = failed; v->err = "over budget"; }
-    else v->err = "over budget (kept the last image)";
-    return;
-  }
-  uint8_t *d = (uint8_t *) lv_malloc(data);
-  if (!d) { lv_free(scratch); refused++; if (!v->data) { v->st = failed; v->err = "no memory"; } return; }
-  memcpy(d, col, px * 2);
-  if (see) memcpy(d + px * 2, al, px);
-  lv_free(scratch);
+bool fail_px(View *v, const char *why) {
+  refused++;
+  if (!v->data) { v->st = failed; v->err = why; }
+  else v->err = std::string(why) + " (kept the last image)";
+  return false;
+}
+// the view takes these pixels (px.data = nullptr after): within the cap, its old pixels go only once the new are in
+bool adopt(View *v, Pixels &px) {
+  const size_t bytes = px.size + sizeof(View), had = v->bytes;
+  if (!room(bytes > had ? bytes - had : 0, v)) return fail_px(v, "over budget");
   free_px(v);
-  v->data = d;
+  v->data = px.data;
+  px.data = nullptr;
   v->bytes = bytes;
   total += bytes;
   peak = std::max(peak, total);
+  const size_t n = (size_t) px.w * px.h;
   v->dsc = {};
   v->dsc.header.magic = LV_IMAGE_HEADER_MAGIC;
-  v->dsc.header.cf = see ? LV_COLOR_FORMAT_RGB565A8 : LV_COLOR_FORMAT_RGB565;
-  v->dsc.header.w = (uint32_t) ow;
-  v->dsc.header.h = (uint32_t) oh;
-  v->dsc.header.stride = (uint32_t) ow * 2;
-  v->dsc.data_size = (uint32_t) data;
-  v->dsc.data = d;
+  v->dsc.header.cf = px.alpha ? LV_COLOR_FORMAT_RGB565A8 : LV_COLOR_FORMAT_RGB565;
+  v->dsc.header.w = (uint32_t) px.w;
+  v->dsc.header.h = (uint32_t) px.h;
+  v->dsc.header.stride = (uint32_t) px.w * 2;
+  v->dsc.data_size = (uint32_t) (n * 2 + (px.alpha ? n : 0));
+  v->dsc.data = v->data;
   v->st = ready;
   v->err.clear();
+  return true;
+}
+// a whole RGBA8888 source (the WASM host's decode) -> the view's pixels, one pass (img_scale.h). Every allocation may
+// fail (the panel: a full PSRAM, no exceptions) = the view fails "no memory" and the component shows its fallback
+void fill(View *v, const uint8_t *rgba, int sw, int sh) {
+  Sink k;
+  if (!k.plan(box_of(*v), sw, sh, B.max_side, true) || !k.begin()) { fail_px(v, "no memory"); return; }
+  for (int y = 0; y < sh; y++) k.row(rgba + (size_t) y * sw * 4);
+  Pixels px;
+  if (!k.finish(px)) { fail_px(v, "no memory"); return; }
+  adopt(v, px);
+  free_pixels(px);
 }
 }  // namespace
 
@@ -341,12 +239,25 @@ bool waiting(const char *src_c) {
     if (p.key == k) return true;
   return false;
 }
-long need_px(const char *src_c) {
+std::vector<Box> boxes(const char *src_c) {
   const std::string k = key(src_c ? src_c : "");
-  long n = 0;
+  std::vector<Box> out;
   for (const View *v : views)
-    if (v->key == k) n = std::max(n, (long) v->w * v->h);
-  return n;
+    if (v->key == k && std::find(out.begin(), out.end(), box_of(*v)) == out.end()) out.push_back(box_of(*v));
+  return out;
+}
+void put(const char *src_c, std::vector<Pixels> &px) {
+  const std::string src = src_c ? src_c : "", k = key(src);
+  pending.erase(std::remove_if(pending.begin(), pending.end(), [&](const Pending &p) { return p.key == k; }), pending.end());
+  bool again = false;
+  for (View *v : views) {
+    if (v->key != k) continue;
+    auto it = std::find_if(px.begin(), px.end(), [&](const Pixels &p) { return p.data && p.box == box_of(*v); });
+    if (it != px.end()) adopt(v, *it);
+    else if (!v->data) again = true;  // came (or changed size) while the picture was decoding: fetched again for it
+  }
+  if (again) refresh(src.c_str());
+  notify(k);
 }
 void refresh(const char *src_c) {
   const std::string src = src_c ? src_c : "", k = key(src);
@@ -380,11 +291,15 @@ void Swap::in(void *own) {
   const int i = (int) ((uintptr_t) own & 1);
   const State st = state(own);
   if (st == loading) return;
-  if (st == ready && i != s->on_) {
-    drop(s->owner(s->on_));
-    s->src_[s->on_].clear();
+  if (st == ready && i != s->on_) {  // the new one is fully in: shown from now, and only then does the old one go
+    const int old = s->on_;
     s->on_ = i;
-  } else if (st == failed) {
+    if (s->changed_) s->changed_(s->ctx_);
+    drop(s->owner(old));
+    s->src_[old].clear();
+    return;
+  }
+  if (st == failed) {
     s->clear();
     return;
   }
@@ -399,8 +314,12 @@ void Swap::set(const std::string &url, int w, int h, int radius, int shade) {
   if (resized) { drop(owner(1 - on_)); src_[1 - on_].clear(); }
   w_ = w, h_ = h, r_ = radius, shade_ = shade;
   drop(owner(n));  // what was coming (or, resized, what was shown at the old size)
-  if (n != on_ && !src_[on_].empty() && 2 * (size_t) w * h * 3 > B.cache_bytes) {  // two would not fit (Guition, full
-    drop(owner(on_));                                                               // screen): the old goes first
+  int sw, sh;  // the pixels a view of this box keeps (img_scale.h stored: capped to max_side)
+  Box bx;
+  bx.w = w, bx.h = h;
+  stored(bx, w, h, B.max_side, sw, sh);
+  if (n != on_ && !src_[on_].empty() && 2 * ((size_t) sw * sh * (radius > 0 ? 3 : 2) + sizeof(View)) > B.cache_bytes) {  // two would
+    drop(owner(on_));                                                                 // not fit: the old goes first
     src_[on_].clear();
     if (changed_) changed_(ctx_);
   }

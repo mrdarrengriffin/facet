@@ -1912,15 +1912,27 @@ void Pen::within(int x, int y, int w, int h, const std::function<void()> &f) con
   if (c.x1 <= c.x2 && c.y1 <= c.y2) f();
   layer->_clip_area = keep;
 }
-void Pen::image(int x, int y, const lv_image_dsc_t *px) const {
+void Pen::image(int x, int y, const lv_image_dsc_t *px, int bw, int bh) const {
   if (!px || !px->data) return;
   const int w = (int) px->header.w, h = (int) px->header.h;
-  if (w < 1 || h < 1 || !sees(x, y, x + w - 1, y + h - 1)) return;
+  if (bw <= 0) bw = w;
+  if (bh <= 0) bh = h;
+  if (w < 1 || h < 1 || !sees(x, y, x + bw - 1, y + bh - 1)) return;
   lv_draw_image_dsc_t d;
   lv_draw_image_dsc_init(&d);
   d.src = px;
   const lv_area_t a = {cx + x, cy + y, cx + x + w - 1, cy + y + h - 1};
-  lv_draw_image(layer, &d, &a);
+  if (bw == w && bh == h) { lv_draw_image(layer, &d, &a); return; }
+  // stored smaller than its box: scaled up from the top-left corner (rounded up, so it covers the box), clipped to it
+  d.scale_x = (int32_t) ((bw * 256 + w - 1) / w);
+  d.scale_y = (int32_t) ((bh * 256 + h - 1) / h);
+  d.pivot.x = 0, d.pivot.y = 0;
+  const lv_area_t clip = layer->_clip_area;
+  lv_area_t &c = layer->_clip_area;
+  c.x1 = std::max<int32_t>(c.x1, cx + x), c.y1 = std::max<int32_t>(c.y1, cy + y);
+  c.x2 = std::min<int32_t>(c.x2, cx + x + bw - 1), c.y2 = std::min<int32_t>(c.y2, cy + y + bh - 1);
+  if (c.x1 <= c.x2 && c.y1 <= c.y2) lv_draw_image(layer, &d, &a);
+  layer->_clip_area = clip;
 }
 void Pen::rect(int x, int y, int w, int h, const char *k, int radius, int border, int foot) const {
   if (w <= 0 || h <= 0 || !sees(x, y, x + w - 1, y + h - 1)) return;

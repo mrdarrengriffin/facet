@@ -20,6 +20,9 @@ esphome:
     # TU) put some literals >256 KB before their code (setup() alone is 71 KB) -> "dangerous relocation: l32r: literal
     # target out of range" at link. ESPHome only passes -D/-W build flags, so -mtext-section-literals goes in as -Wa.
     - -Wa,--text-section-literals
+    # LVGL's scaled RGB565 / RGB565A8 image draws (ESPHome's lv_conf leaves them out): a picture over 320 px a side is
+    # kept at 320 and scaled up when drawn (renderer core/img_scale.h). Same as renderer/lv_conf.h
+    - -DLV_DRAW_SW_SUPPORT_RGB565A8=1
   # S3 + octal PSRAM + RGB panel: full hardware reset after software/USB resets + OTA (board/s3_reset.h)
   includes:
     - ../board/s3_reset.h
