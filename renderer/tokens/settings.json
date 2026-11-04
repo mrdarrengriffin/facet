@@ -286,6 +286,31 @@
       }
     },
     {
+      "id": "idleShow", "help": "What the idle screen shows. Album art shows the art of the music playing, full screen with the track and the artist, and the clock when nothing plays or there is no art.",
+      "group": "idle",
+      "label": "Idle shows",
+      "kind": "select",
+      "control": "segmented",
+      "default": "clock",
+      "options": [
+        {
+          "id": "clock",
+          "label": "Clock"
+        },
+        {
+          "id": "art",
+          "label": "Album art",
+          "hint": "while music plays"
+        }
+      ],
+      "about": "Album art: while the Media feed plays with art, the idle screen shows the art edge to edge with the track and the artist; paused, stopped or no art = the clock. A touch goes back to Home either way.",
+      "esphome": {
+        "id": "idle_show",
+        "name": "Idle shows",
+        "icon": "mdi:image-album"
+      }
+    },
+    {
       "id": "idleBrightness", "help": "How bright the screen is while the idle clock shows, from 10 to 100 percent.",
       "group": "idle",
       "label": "Idle brightness",

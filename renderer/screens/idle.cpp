@@ -3,13 +3,19 @@
 // of the screen. Nothing on it takes a tap: the first touch anywhere is swallowed (the finger's
 // release clicks nothing) and goes back to Home. The device fades it in, dims the screen (Idle brightness) and
 // undims when it leaves.
+// Idle shows = Album art (setting idleShow "art"): a Media art over the clock, bound to the Media feed (panel.media:
+// art, title, artist, playing): while music plays with art it covers the screen, else it draws nothing and the clock
+// shows; it moves with the feed in place (a new track, a pause). It takes no touch: the tap reaches the clock under it.
+// The feed reads the Media screen's source (the deck's pick, else Home Assistant) when no screen has set one yet.
 #include "fw.h"
 #include "spec.h"
 #include "device.h"
+#include "ha.h"
+#include "fx.h"
 
 namespace {
 const char *META = R"({
-  "about": "The idle clock: the Clock screen without its header, shown after Clock after with no touch. A touch goes back to Home.",
+  "about": "The idle clock: the Clock screen without its header, shown after Clock after with no touch. With Idle shows set to Album art, the art of the music playing covers it while it plays. A touch goes back to Home.",
   "frame": [480, 480],
   "icons": [],
   "props": []
@@ -28,6 +34,22 @@ void build_idle(lv_obj_t *parent, fw::Props p) {
     if (lv_indev_t *i = lv_indev_active()) lv_indev_wait_release(i);
     fw::dev::home((lv_obj_t *) lv_event_get_current_target(e));
   }, LV_EVENT_PRESSED, nullptr);
+  const char *show = fw::dev::setting("idleShow");
+  if (!show || strcmp(show, "art")) return;
+  if (fw::ha::feed_config("panel.media").empty()) {  // no screen set the feed's source yet: the Media screen's
+    ArduinoJson::JsonDocument de, fc;
+    fc["source"] = fw::spec::deck_entry("media", de) && de["params"]["source"].is<const char *>() ? de["params"]["source"].as<const char *>() : "ha";
+    std::string cfg;
+    serializeJson(fc, cfg);
+    fw::ha::set_feed_config("panel.media", cfg);
+  }
+  lv_obj_t *layer = fx::box(parent, "free");  // over the clock, the whole screen, outside its layout
+  fx::use(layer, "fill");
+  lv_obj_add_flag(layer, (lv_obj_flag_t) (LV_OBJ_FLAG_IGNORE_LAYOUT | LV_OBJ_FLAG_FLOATING));
+  lv_obj_remove_flag(layer, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
+  ArduinoJson::JsonDocument b;
+  for (const char *a : {"art", "title", "artist", "playing"}) b[a]["e"] = "panel.media", b[a]["a"] = a;
+  fw::ha::bound(layer, "media_art", b.as<fw::Props>());
 }
 const int reg = fw::add({"idle", "Idle clock", "screens", META, build_idle});
 }  // namespace
