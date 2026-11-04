@@ -366,22 +366,39 @@ inline void save() {
 #ifndef FW_PROBATION_S
 #define FW_PROBATION_S 180
 #endif
-// seconds until safe_mode confirms the running image (0 = due), -1 = confirmed / not an OTA image under verify
+// seconds until safe_mode confirms the running image (0 = due), -1 = confirmed / not an OTA image under verify. The
+// running image only counts while it is also the one set to boot: otherwise a restart boots another image anyway
+// (and safe_mode, which confirms only the running = boot image, never would), so there is nothing to wait for.
+struct ProbationState {
+  bool done = false;     // once valid it stays valid: no more partition reads
+  int64_t checked = -1;  // the partition state is read at most once a second (callers poll every loop)
+};
+inline ProbationState PROB_;
 inline int probation_left() {
-  static bool done = false;  // once valid it stays valid: no more partition reads
-  static int64_t checked = -1;  // the partition state is read at most once a second (callers poll every loop)
-  if (done) return -1;
+  if (PROB_.done) return -1;
   const int64_t now = esp_timer_get_time();
-  if (checked < 0 || now - checked >= 1000000) {
-    checked = now;
+  if (PROB_.checked < 0 || now - PROB_.checked >= 1000000) {
+    PROB_.checked = now;
     esp_ota_img_states_t st;
-    if (esp_ota_get_state_partition(esp_ota_get_running_partition(), &st) != ESP_OK || st != ESP_OTA_IMG_PENDING_VERIFY) {
-      done = true;
+    const esp_partition_t *run = esp_ota_get_running_partition();
+    if (esp_ota_get_state_partition(run, &st) != ESP_OK || st != ESP_OTA_IMG_PENDING_VERIFY || run != esp_ota_get_boot_partition()) {
+      PROB_.done = true;
       return -1;
     }
   }
   const int left = FW_PROBATION_S - (int) (now / 1000000);
   return left > 0 ? left : 0;
+}
+// the countdown is over and safe_mode has not confirmed the image (it confirms at boot_is_good_after, = FW_PROBATION_S):
+// the boot has run that long, so it is confirmed here (as safe_mode would: the running image, only when it is the boot
+// one); probation_left() is -1 from now on (the host's Firmware entity: up to date, fw_settle.h CONFIRM)
+inline void probation_confirm() {
+  if (PROB_.done) return;
+  const esp_partition_t *run = esp_ota_get_running_partition();
+  esp_err_t e = ESP_OK;
+  if (run == esp_ota_get_boot_partition()) e = esp_ota_mark_app_valid_cancel_rollback();
+  ESP_LOGW("facet_wb", "OTA image not confirmed %d s after boot: confirmed here (%s)", FW_PROBATION_S, esp_err_to_name(e));
+  PROB_.done = true;
 }
 struct Probation {
   lv_obj_t *box = nullptr;  // top-layer holder (full width, top inset), the chip is rebuilt into it

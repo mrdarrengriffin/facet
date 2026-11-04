@@ -17,6 +17,7 @@ esphome:
   includes:
     - ../board/bootguard.h
     - ../board/fw_notes.h
+    - ../board/fw_settle.h
     - ../board/fw_update.h
   build_flags:
     # LVGL modules the WASM build has (panel lv_conf + packages/ui.yaml flags): ESPHome's lv_conf zeroes any module no

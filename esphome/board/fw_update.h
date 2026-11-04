@@ -5,8 +5,11 @@
 // settling countdown as its progress and the summary "Update settling: don't unplug (m:ss)"; a power cut now rolls
 // back. When confirmed it checks the manifest again (normal "up to date" / "update available"). Installs only when
 // someone presses Install in HA: nothing here or in the YAML installs on its own.
-// tick() runs every second (YAML interval). Also does the first manifest check 30 s after boot, because the entity's
-// own check at setup runs before Wi-Fi is up and its next poll is hours away.
+// tick() runs every second (YAML interval); what it does when is fw_settle.h (host-tested): after the restart the entity
+// reads up to date with this build's version the moment the image is confirmed (or at once on a boot with no
+// probation), never blank or Installing while a manifest check is pending; the manifest is then asked at once, and
+// again every minute until a check lands (one already running, no network or a failed fetch no longer leaves it to
+// the hourly poll); a countdown at 0:00 that safe_mode never confirms is confirmed here after a minute.
 // The installed version is the build's (fw::bundle::VERSION, firmware/bundle.mjs --version, in its own small .cpp), not
 // ESPHOME_PROJECT_VERSION: that one sits in defines.h, which ~135 ESPHome objects include, so a version stamped per
 // build recompiled all of them. The project version stays the release's (facet_version in the YAML); the entity
@@ -29,6 +32,7 @@
 #include "esphome/components/http_request/update/http_request_update.h"
 #include "esphome/components/json/json_util.h"
 #include "fw_notes.h"
+#include "fw_settle.h"
 
 namespace fw::bundle {
 extern const char *const VERSION;  // facet_wb fw_bundle_info.cpp
@@ -137,9 +141,16 @@ inline void notes_take(UpdateEntity *u) {
   if (!n.failed && !n.text.empty() && u->*Peek::state() == esphome::update::UPDATE_STATE_AVAILABLE) u->publish_state();
 }
 
+inline fw::settle::Clock &clock() {
+  static fw::settle::Clock c;
+  return c;
+}
 // the entity's check compares the manifest with ESPHOME_PROJECT_VERSION: compare with the build's version instead
 inline void fix(UpdateEntity *u) {
   auto &i = u->*Peek::info();
+  const auto st0 = u->*Peek::state();
+  // a manifest check landed (only a check fills the title): the settle clock stops checking
+  if (!i.title.empty() && (st0 == esphome::update::UPDATE_STATE_NO_UPDATE || st0 == esphome::update::UPDATE_STATE_AVAILABLE)) clock().landed();
   if (version()[0] && i.current_version != version()) {
     i.current_version = version();
     auto &st = u->*Peek::state();
@@ -168,35 +179,25 @@ inline void settling(UpdateEntity *u, int left, int total) {
   i.summary = b;
   u->publish_state();
 }
-inline void settled(UpdateEntity *u) {
-  u->*Peek::state() = esphome::update::UPDATE_STATE_UNKNOWN;
+// confirmed (or no probation): up to date with this build, until the manifest check says otherwise
+inline void up_to_date(UpdateEntity *u) {
+  u->*Peek::state() = esphome::update::UPDATE_STATE_NO_UPDATE;
   auto &i = u->*Peek::info();
   i.has_progress = false;
+  i.progress = 0.0f;
+  i.current_version = version();
+  i.latest_version = version();
   i.summary.clear();
   u->publish_state();
 }
 
 inline void tick(HttpRequestUpdate *u, int left, int total) {
-  static int was = -2;
-  static bool checked = false;
   notes_take(u);
-  if (left >= 0) {
-    if (left != was) settling(u, left, total);
-    was = left;
-    return;
-  }
-  if (was >= 0) {  // just confirmed
-    was = -1;
-    settled(u);
-    u->check();
-    checked = true;
-    return;
-  }
-  was = -1;
-  if (!checked && esp_timer_get_time() > 30000000LL) {
-    checked = true;
-    u->check();
-  }
+  const unsigned a = clock().step(left, esp_timer_get_time());
+  if (a & fw::settle::SETTLING) settling(u, left, total);
+  if (a & fw::settle::CONFIRM) fw::device::probation_confirm();
+  if (a & fw::settle::UP_TO_DATE) up_to_date(u);
+  if (a & fw::settle::CHECK) u->check();
 }
 
 }  // namespace panel::fwu
