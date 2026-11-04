@@ -14,6 +14,25 @@ builds both boards, checks each image says the version (never `+wip`), and publi
 - a docs deploy, which serves `manifest.json` + `ota.json` (stable) and `manifest-beta.json` + `ota-beta.json` (beta)
   per board. The Install page offers Stable / Beta while a beta exists.
 
+## Release notes
+
+Every version has `release-notes/<version>.md`, written for the people who install the panel, not as a commit list.
+A tag without it fails before anything builds. Draft the next version's file as work lands; check it with
+`node firmware/release-notes.mjs check <version>`.
+
+- A headline paragraph: what this version means for someone with a panel on the wall.
+- `## New`, `## Improved`, `## Fixed`: each bullet starts with a bold lead in plain language, then a sentence or two,
+  then its issue (`#N`). One of the three has bullets.
+- `## After updating`: only when someone has to do something (a setting moved or went, a step on the panel).
+- `## Known issues`: what is still wrong, with its issue.
+
+The release workflow uses the file as the GitHub release body (plus the full-changelog link). The OTA manifest's
+`summary` is its short version: the headline, After updating in full, then the bold leads (at most 1200 characters).
+Home Assistant shows that summary as the release notes in the panel's update dialog, with `release_url` (the GitHub
+release) as the link to the rest. To change a published release's notes: edit the file, commit, then
+`node firmware/release-notes.mjs body V vPREV > notes.md && gh release edit vV --notes-file notes.md`; the update card
+picks up the new summary only with the next build of that channel.
+
 ## Quality checklist (a person, on glass, before a stable tag)
 
 Run on a fresh Waveshare and a fresh Guition. Every line is a yes or the release waits. The workbench shows the same
@@ -42,13 +61,14 @@ V = the version, for example `1.0.0`. A failed check stops the day.
 2. `(cd renderer && node tools/gen_catalogue.mjs) && git status --short`: empty (else commit "Catalogue: V").
 3. Read the root README: the screens table is the shipped set (`renderer/features.json` `firmware: true`); the panels
    table says exactly what is missing, if anything.
-4. `node firmware/release-prep.mjs V`: sets `facet_version` in both `esphome/facet-*.yaml`, publishes the Updates
+4. `node firmware/release-notes.mjs check V`: the notes are written and read well (Release notes, above).
+5. `node firmware/release-prep.mjs V`: sets `facet_version` in both `esphome/facet-*.yaml`, publishes the Updates
    entry dated today. `git diff --stat` shows those files only.
-5. `(cd site && FACET_DOCS_BASE=/facet/ FACET_DOCS_OUT=dist.release npm run build)`: `check-dist: N pages, 0 faults`.
-6. Commit "Release: V", `git tag -a vV -m "Facet V"`, `git push origin main vV`.
-7. Watch the release workflow (`gh run list --workflow release.yml`); then
+6. `(cd site && FACET_DOCS_BASE=/facet/ FACET_DOCS_OUT=dist.release npm run build)`: `check-dist: N pages, 0 faults`.
+7. Commit "Release: V", `git tag -a vV -m "Facet V"`, `git push origin main vV`.
+8. Watch the release workflow (`gh run list --workflow release.yml`); then
    `https://mrdarrengriffin.github.io/facet/firmware/<board>/manifest.json` says V.
-8. Install from the docs site on a fresh panel (the checklist above); the 24 h run on this build starts.
+9. Install from the docs site on a fresh panel (the checklist above); the 24 h run on this build starts.
 
 To build the images locally instead (no publishing): `esphome/release.sh V [out dir]` builds from a worktree of the tag.
 

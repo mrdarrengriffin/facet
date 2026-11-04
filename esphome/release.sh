@@ -56,4 +56,4 @@ for b in $BOARDS; do
   ! grep -q -- '+wip' <<<"$txt" || { echo "$b: the image says +wip"; exit 1; }
   echo "$b: $V, $(du -h "$OUT/$b/facet-$b-$V.ota.bin" | cut -f1) OTA"
 done
-node "$ROOT/firmware/manifests.mjs" "$OUT" "$V" "$(git -C "$ROOT" rev-parse --short "$T^{}")"
+node "$ROOT/firmware/manifests.mjs" "$OUT" "$V"

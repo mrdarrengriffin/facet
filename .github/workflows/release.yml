@@ -7,7 +7,8 @@ name: Release
 #                   the Install page's Beta switch and panels on the Beta update channel
 # Dev builds (this repo's workbench builds on the owner's panels) are never published. Each tag also gets its own
 # GitHub release (a pre-release for a beta) with both boards' images. Checks, each stops the run: CI and Firmware
-# succeeded on the tagged commit (waits for them while they run); a stable tag's esphome/facet-*.yaml say
+# succeeded on the tagged commit (waits for them while they run); the tag carries release-notes/<version>.md (the
+# release body and, short, the update card's notes: firmware/release-notes.mjs); a stable tag's esphome/facet-*.yaml say
 # facet_version: <version> (a beta's are stamped at build); every image says the version (build and project) and
 # never "+wip". Then the docs deploy runs, which serves
 # both channels (deploy.yml).
@@ -54,6 +55,10 @@ jobs:
             v=$(sed -n 's/^ *facet_version: *\([^ #]*\).*/\1/p' "$y")
             [ "$v" = "${{ steps.v.outputs.version }}" ] || { echo "::error::$y says facet_version $v"; exit 1; }
           done
+      - name: The version's release notes (release-notes/<version>.md, RELEASING.md)
+        run: |
+          out=$(node firmware/release-notes.mjs check "${{ steps.v.outputs.version }}")
+          echo "$out" | tee -a "$GITHUB_STEP_SUMMARY"
       - name: CI and Firmware green on the tagged commit
         env: {GH_TOKEN: '${{ github.token }}'}
         run: |
@@ -167,16 +172,19 @@ jobs:
       CH: ${{ needs.check.outputs.channel }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
-        with: {ref: '${{ env.TAG }}'}
+        with: {ref: '${{ env.TAG }}', fetch-depth: 0}   # every tag: the previous one, for the full-changelog link
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
         with: {node-version: 24}
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
         with: {pattern: 'fw-*', path: out, merge-multiple: true}
       - name: Manifests (the channel's names)
-        run: node firmware/manifests.mjs out "$V" "$(git rev-parse --short HEAD)"
-      - name: This tag's release (images attached; a pre-release for a beta)
+        run: node firmware/manifests.mjs out "$V"
+      - name: This tag's release (the version's notes as its body; images attached; a pre-release for a beta)
         run: |
-          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --verify-tag --title "Facet $V" --generate-notes $([ "$CH" = beta ] && echo --prerelease)
+          prev=$(git describe --tags --abbrev=0 --match 'v[0-9]*' "$TAG^" 2>/dev/null || true)
+          node firmware/release-notes.mjs body "$V" "$prev" > notes.md
+          if gh release view "$TAG" >/dev/null 2>&1; then gh release edit "$TAG" --notes-file notes.md
+          else gh release create "$TAG" --verify-tag --title "Facet $V" --notes-file notes.md $([ "$CH" = beta ] && echo --prerelease); fi
           gh release upload "$TAG" out/*/*.bin --clobber
       - name: The channel's firmware asset (what the docs site serves)
         run: |
