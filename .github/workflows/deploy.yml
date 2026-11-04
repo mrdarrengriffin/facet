@@ -114,10 +114,12 @@ jobs:
           body=$(jq -nc --arg a "$ARTIFACT_ID" --arg v "$VERSION" --arg t "$oidc" '{artifact_id: ($a | tonumber), pages_build_version: $v, oidc_token: $t}')
           id=
           for try in $(seq 1 15); do
-            if out=$(gh api -X POST "repos/$GITHUB_REPOSITORY/pages/deployments" --input - <<<"$body" 2>&1); then
-              id=$(jq -r .id <<<"$out"); break
-            fi
-            echo "try $try: $out"
+            out=$(curl -sS -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+              -H "Content-Type: application/json" -H "X-GitHub-Api-Version: 2022-11-28" \
+              -w '\n%{http_code}' --data "$body" "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/pages/deployments")
+            code=$(tail -n1 <<<"$out"); out=$(sed '$d' <<<"$out")
+            if [ "${code:0:1}" = 2 ]; then id=$(jq -r '.id // empty' <<<"$out"); id=${id:-$VERSION}; break; fi
+            echo "try $try: HTTP $code $out (oidc token ${#oidc} chars)"
             grep -q "in progress deployment" <<<"$out" || { echo "::error::Pages deployment refused: $out"; exit 1; }
             sleep 60
           done
