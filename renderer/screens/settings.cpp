@@ -213,11 +213,11 @@ const char *ctrl_id(const fw::set::Setting &s) {
   return s.control == SWATCHES ? "accent_swatches" : s.control == SEGMENTED ? "segmented" : s.control == SLIDER ? "slider" : "list_row";
 }
 
-// the icon on a sheet's rows (docs SHEET_ICON; idleAfter = timer, not shipped at icon size: check)
+// the icon on a sheet's rows (docs SHEET_ICON): the radio is the one mark, so a plain choice (Theme, idleAfter) has none
 const char *sheet_icon(const fw::set::Setting &s) {
   if (!strcmp(s.id, "soundPack")) return "volume";
   if (!strcmp(s.id, "screenOff")) return "power";
-  return "check";
+  return "none";
 }
 // the Bottom sheet's props for setting s (its options, title, the value ringed)
 void sheet_props(Screen *scr, const fw::set::Setting &s, bool open, Doc &d) {
