@@ -14,6 +14,8 @@
 //               boot_is_good_after, = the probation), so the caller confirms it itself; the countdown never sits at
 //               0:00 with the entity on Installing for good
 #include <cstdint>
+#include <cstring>
+#include <string>
 
 namespace fw::settle {
 
@@ -50,6 +52,32 @@ struct Clock {
       next = now + RETRY;
     }
     return a;
+  }
+};
+
+// The Update channel (workbench.yaml channel_hook): the manifest beside the YAML's ota.json for a channel (beta / dev:
+// ota-beta.json / ota-dev.json; anything else = the URL as given, stable).
+inline std::string channel_url(std::string base, const char *ch) {
+  const size_t k = base.rfind("ota.json");
+  if (ch && k != std::string::npos && (!strcmp(ch, "beta") || !strcmp(ch, "dev")))
+    base.replace(k, 8, std::string("ota-") + ch + ".json");
+  return base;
+}
+// A channel change only records the manifest (want()): the hook runs inside the select's state publish, before the
+// select has stored its value, and ESPHome writes stored values to flash once a minute, so a restart soon after a
+// check started inside the change (a crash in the fetch, a power dip) came back on the old channel. The next tick
+// (step()) writes the stored settings to flash (save()), then points the entity at the manifest and checks it
+// (check(url)). Several changes before a tick = one check, of the last one.
+struct Channel {
+  std::string url;
+  bool pending = false;
+  void want(const std::string &u) { url = u, pending = true; }
+  template <class Save, class Check> bool step(Save save, Check check) {
+    if (!pending) return false;
+    pending = false;
+    save();
+    check(url);
+    return true;
   }
 };
 

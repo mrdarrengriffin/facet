@@ -31,6 +31,7 @@
 #include "freertos/task.h"
 #include "esphome/components/http_request/update/http_request_update.h"
 #include "esphome/components/json/json_util.h"
+#include "esphome/core/preferences.h"
 #include "fw_notes.h"
 #include "fw_settle.h"
 
@@ -167,6 +168,13 @@ inline void watch(UpdateEntity *u, esphome::http_request::HttpRequestComponent *
   u->add_on_state_callback([u]() { fix(u); });
 }
 inline void set_url(const std::string &url) { notes().url = url; }
+// the Update channel (workbench.yaml channel_hook, fw_settle.h Channel): the hook only records the manifest; tick()
+// writes the stored settings to flash, then points the entity at it and checks it
+inline fw::settle::Channel &channel() {
+  static fw::settle::Channel c;
+  return c;
+}
+inline void set_channel(const char *ch, const char *base) { channel().want(fw::settle::channel_url(base, ch)); }
 inline void settling(UpdateEntity *u, int left, int total) {
   u->*Peek::state() = esphome::update::UPDATE_STATE_INSTALLING;
   auto &i = u->*Peek::info();
@@ -193,6 +201,11 @@ inline void up_to_date(UpdateEntity *u) {
 
 inline void tick(HttpRequestUpdate *u, int left, int total) {
   notes_take(u);
+  channel().step([] { esphome::global_preferences->sync(); }, [u](const std::string &url) {
+    u->set_source_url(url);
+    set_url(url);
+    u->update();
+  });
   const unsigned a = clock().step(left, esp_timer_get_time());
   if (a & fw::settle::SETTLING) settling(u, left, total);
   if (a & fw::settle::CONFIRM) fw::device::probation_confirm();

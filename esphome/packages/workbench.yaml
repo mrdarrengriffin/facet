@@ -54,16 +54,11 @@ esphome:
             // board's mount (rotation_base, so the setting's 0° = the panel as mounted)
             fw::device::rotate_hook = [](int deg) { id(lvgl_root)->set_rotation((deg + ${rotation_base}) % 360); };
             // Update channel: the Firmware entity checks ota.json (stable), or ota-beta.json / ota-dev.json beside it
-            // (release channels, RELEASING.md); the setting is read here, so Dev needs nothing new in fw_device.h
+            // (release channels, RELEASING.md); the setting is read here, so Dev needs nothing new in fw_device.h.
+            // The hook runs inside the select's publish, before the select stores the value: it only records the
+            // manifest, and the next tick saves the settings to flash before it checks (board/fw_update.h set_channel)
             fw::device::channel_hook = [](bool) {
-              const char *ch = fw::dev::setting("updateChannel");
-              std::string u = "${update_manifest}";
-              const size_t k = u.rfind("ota.json");
-              if (ch && k != std::string::npos && (!strcmp(ch, "beta") || !strcmp(ch, "dev")))
-                u.replace(k, 8, std::string("ota-") + ch + ".json");
-              id(fw_update).set_source_url(u);
-              panel::fwu::set_url(u);
-              id(fw_update).update();
+              panel::fwu::set_channel(fw::dev::setting("updateChannel"), "${update_manifest}");
             };
             // Settings > Update: the Firmware entity's state on every change (after watch()'s version fix), and its
             // Update button installs (core/device.h update)

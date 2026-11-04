@@ -3,6 +3,7 @@
 #include "fw_settle.h"
 
 #include <cstdio>
+#include <string>
 
 using namespace fw::settle;
 static int fails = 0;
@@ -69,6 +70,28 @@ int main() {
     Clock c;
     EXPECT(c.step(100, 80 * S) & SETTLING);
     EXPECT(!(c.step(100, 81 * S) & SETTLING));
+  }
+  {  // the Update channel: each channel's manifest beside ota.json
+    const std::string b = "https://example.org/firmware/guition-4848s040/ota.json";
+    EXPECT(channel_url(b, "stable") == b);
+    EXPECT(channel_url(b, "beta") == "https://example.org/firmware/guition-4848s040/ota-beta.json");
+    EXPECT(channel_url(b, "dev") == "https://example.org/firmware/guition-4848s040/ota-dev.json");
+    EXPECT(channel_url(b, nullptr) == b);
+    EXPECT(channel_url("https://example.org/manifest.json", "dev") == "https://example.org/manifest.json");
+  }
+  {  // a channel change checks nothing itself; the next step saves the settings, then checks the last one, once
+    Channel ch;
+    std::string log;
+    auto save = [&] { log += "save;"; };
+    auto check = [&](const std::string &u) { log += "check " + u + ";"; };
+    EXPECT(!ch.step(save, check));
+    ch.want("ota-beta.json");
+    ch.want("ota-dev.json");
+    EXPECT(log.empty());
+    EXPECT(ch.step(save, check));
+    EXPECT(log == "save;check ota-dev.json;");
+    EXPECT(!ch.step(save, check));
+    EXPECT(log == "save;check ota-dev.json;");
   }
   if (fails) printf("fw_settle: %d failed\n", fails);
   else printf("fw_settle: ok\n");

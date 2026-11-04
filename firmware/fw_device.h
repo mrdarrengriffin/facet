@@ -1672,9 +1672,10 @@ inline void apply_rotation() {
 }
 
 // ---------------------------------------------------------------- Update channel
-// The setting "updateChannel" (stable | beta) -> which manifest the Firmware update entity checks: the host's
+// The setting "updateChannel" (stable | beta | dev) -> which manifest the Firmware update entity checks: the host's
 // channel_hook (workbench.yaml: the YAML's update_manifest, ota.json, or ota-beta.json beside it) points the entity at
-// it and checks at once. Applied at boot and on every change.
+// it and checks it on the next tick, after the settings are saved (board/fw_update.h set_channel). Applied at boot and
+// on every change.
 inline void (*channel_hook)(bool beta) = nullptr;
 inline void apply_channel() {
   if (!channel_hook) return;
