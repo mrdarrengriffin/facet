@@ -545,6 +545,7 @@ void toast_put(const std::string &e, const std::string &a, const std::string &v)
 }
 lv_obj_t *mount(lv_obj_t *parent, const char *start) {
   spec::reload_hook() = reload;  // a sent spec / deck rebuilds what shows it
+  spec::kept_hook() = kept_changed;  // a quiet deck change (Settings > Screens): the kept pages it touched go stale
   spec::want_all();               // the deck's entities (idempotent; the panel also does it at boot)
   auto *d = new Device;
   d->stage = T;
@@ -596,6 +597,33 @@ void toast(Props t, std::function<void()> on_action) {
     if (o && on_action) toasts::on_action(o, on_action);
     T = devices.size() == 1 ? d->theme : was;  // a panel (one device): fw::T stays its look for taps / fades
   }
+}
+// a deck change kept without rebuilding what shows (spec.h deck_set: Settings > Screens > a screen, a screen's own
+// pick): a kept page whose entry changed is built again when it shows (or in the idle gaps), one gone from the deck is
+// dropped; the shown page made the change itself, so it only takes the new entry. The changed page's feeds take its
+// new settings at once (spec::page_feeds), so its Home card follows before the page is built again; not while that
+// page shows (its own pick: the feed already has it).
+void kept_changed(const char *id) {
+  bool shown = false;
+  for (Device *d : devices) {
+    for (auto it = d->kept.begin(); it != d->kept.end();) {
+      const std::string e = entry_of(it->first);
+      const bool gone = it->first != "home" && !spec::deck_kinds().count(it->first);
+      if (it->second.scr == d->screen) {
+        it->second.entry = e;
+        if (it->first == id) shown = true;
+      } else if (gone) {
+        lv_obj_delete(it->second.scr);
+        it = d->kept.erase(it);
+        continue;
+      } else if (e != it->second.entry) {
+        it->second.stale = true;
+      }
+      ++it;
+    }
+    if (!d->stack.empty() && base_of(d->stack.back()) == id) shown = true;
+  }
+  if (!shown) spec::page_feeds(id);
 }
 void reload(const char *id) {
   for (Device *d : devices)  // kept pages it touched go stale (a deck change: the pages whose entry changed, the gone ones)

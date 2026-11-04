@@ -116,6 +116,25 @@ export default {
       const pg = (deck.pages || []).find((p) => p.kind === 'calendar');
       t.eq(pg?.params?.hidden, C2.slice(9), `the deck keeps it: ${JSON.stringify(pg?.params)}`);
     } },
+    { name: 'Settings > Screens > Calendar: a change shows at once on the kept Calendar screen and its Home card (#98)', async run(t) {
+      // the panels keep their deck pages built (boards/*.json keep_pages): a screen-settings change is kept quietly
+      // (spec.h deck_set), so the kept Calendar page and the Home card's feed must follow it without a restart
+      const keep = (n = '') => t.b.test('keep', String(n)) ?? [];
+      const act = (a) => { t.b.spec('act', a); t.b.tick(10); t.b.settle(800); };
+      await t.device({ v: 2, rev: 9, start: 'h', pages: [
+        { id: 'h', kind: 'home', name: 'Test', cards: [{ t: 'page', page: 'calendar', size: 'm' }] },
+        { id: 'calendar', kind: 'calendar', params: { source: 'ha', now: String(NOW) } }] });
+      keep(8); t.b.tick(200);
+      t.ok(keep().some((k) => k.page === 'calendar'), `the Calendar page is kept: ${JSON.stringify(keep().map((k) => k.page))}`);
+      t.ok(!t.part('card').texts.some((x) => /pottery class/i.test(x)), 'the card before: no sample event');
+      act({ do: 'nav.open', screen: 'screen_set', params: { id: 'calendar' } });
+      t.tap(/^Source$/); t.b.settle(1200);
+      t.tap(/^Sample fortnight/); t.b.settle(1200);
+      act({ do: 'nav.back' });
+      t.ok(t.part('card')?.texts.some((x) => /pottery class/i.test(x)), `the Home card follows: ${JSON.stringify(t.part('card')?.texts)}`);
+      act({ do: 'nav.open', screen: 'calendar' });
+      t.has(t.texts(), /^pottery class$/i, 'the Calendar screen follows');
+    } },
     { name: 'a sample that moves with the clock keeps no old copies (facet-256: the panels lost ~1.9 KB of PSRAM a minute)', async run(t) {
       // the sample fortnight follows the wall clock (Date.now): each minute another agenda; the feed kept every one
       const real = Date.now, base = real.call(Date);

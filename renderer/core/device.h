@@ -71,6 +71,7 @@ const char *update_install();
 void on_idle(void (*cb)(bool idle, int pct));  // the idle clock shows (pct = Idle brightness) or leaves (100)
 bool idle();  // a device shows the idle clock
 void reload(const char *id);
+void kept_changed(const char *id);  // a quiet deck change (spec.h kept_hook): the kept pages it touched go stale
 // Navigation timing (a debug flag, off by default; facet-243): each screen change, in lv_tick ms: the tap handled
 // (navigate / back / home queued), the change run, the build start and end (in it: the old screen deleted, the new
 // one made, its layout done), the feeds' rounds during the build,

@@ -2156,6 +2156,31 @@ inline Reload &reload_hook() {
   static Reload r = nullptr;
   return r;
 }
+// a deck change kept quietly (deck_set: Settings > Screens, a screen's own pick): the host marks the kept pages it
+// touched stale without rebuilding what shows (core/device.cpp kept_changed); id = the deck page that changed
+inline Reload &kept_hook() {
+  static Reload r = nullptr;
+  return r;
+}
+// deck page id's feed settings now (its spec's "feeds", "$param" = the page entry's params over the spec's
+// defaults), as build() and a Home page card apply them: a feed follows a deck change before the page is built again
+inline void page_feeds(const std::string &id) {
+  ArduinoJson::JsonDocument de, sp;
+  if (!deck_entry(id, de)) return;
+  const char *j = screen_json(de["kind"] | id.c_str());
+  if (!j || deserializeJson(sp, j)) return;
+  std::map<std::string, std::string> pm;
+  for (ArduinoJson::JsonPairConst kv : sp["params"].as<ArduinoJson::JsonObjectConst>()) pm[kv.key().c_str()] = param_default(kv.value());
+  for (ArduinoJson::JsonPairConst kv : de["params"].as<ArduinoJson::JsonObjectConst>())
+    if (kv.value().is<const char *>()) pm[kv.key().c_str()] = kv.value().as<std::string>();
+  for (ArduinoJson::JsonPairConst kv : sp["feeds"].as<ArduinoJson::JsonObjectConst>()) {
+    ArduinoJson::JsonDocument fc;
+    for (ArduinoJson::JsonPairConst f : kv.value().as<ArduinoJson::JsonObjectConst>()) fc[f.key().c_str()] = subst(f.value() | "", pm);
+    std::string cfg;
+    serializeJson(fc, cfg);
+    ha::set_feed_config(kv.key().c_str(), cfg);
+  }
+}
 // out: {ok, status: applied|unchanged|refused, id, rev, errors?}; dry = a hidden parent for the off-screen build
 // kind "check" / "check_deck" (agents): validate (+ the off-screen build for a screen) and answer, store
 // nothing: {ok, status: valid|refused, id, rev, errors?}
@@ -2272,7 +2297,10 @@ inline bool deck_set(const std::string &id, const std::string &key, ArduinoJson:
   std::string js;
   serializeJson(d, js);
   ArduinoJson::JsonDocument o;
-  if (apply("deck", js, nullptr, o.to<ArduinoJson::JsonObject>(), true)) return true;
+  if (apply("deck", js, nullptr, o.to<ArduinoJson::JsonObject>(), true)) {
+    if (kept_hook()) kept_hook()(id.c_str());  // kept pages built from the old entry go stale; the page's feeds follow
+    return true;
+  }
   if (why) *why = o["errors"][0]["msg"] | "the panel refused the change";
   return false;
 }
