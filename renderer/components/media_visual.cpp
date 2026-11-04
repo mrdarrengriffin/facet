@@ -19,6 +19,8 @@
 // 0.7 s, brake 1 s; tape ~0.25 s), the arm eases to its groove (docs tau 0.45 s), the disc's progress arc sweeps. Each
 // frame redraws only what moved (C26, fx::redraw / redraw_arc): the two cassette hubs, the CD's print mark, the arm's
 // box, the disc marker. Reduced motion = nothing turns; packs and the arm jump to the track's place.
+// art (the fifth visual): the album art alone, a square the size of the CD's box, the theme's tile corner (radius:tile;
+// radius:icon at card size); it never turns; none or loading = a plain square, surface ink with a line edge.
 // Album art (art: the feed's picture URL, core/images.h): printed on the disc face, the CD's label side (out to the
 // end of the info band, the clear hub stays) and the vinyl's label, a circle scaled to that place at this size (screen
 // or card; one view each). It stands still (a turning picture would be a full redraw every frame): the disc's marker
@@ -39,8 +41,9 @@
 
 namespace {
 constexpr float PI = 3.14159265f;
-enum Kind { CASSETTE, CD, VINYL, DISC };
-const char *KIND_IDS[] = {"cassette", "cd", "vinyl", "disc"};
+enum Kind { CASSETTE, CD, VINYL, DISC, ART };
+const char *KIND_IDS[] = {"cassette", "cd", "vinyl", "disc", "art"};
+constexpr int KINDS = 5;
 
 // ---- the specs (mm), docs media-visuals/specs.ts
 namespace cs {  // Compact Cassette
@@ -227,12 +230,24 @@ bool art_box(const MV *d, int *x, int *y, int *D) {
   *y = (int) std::lround((cy - d->oy) * d->k - d->H / 2.0f) - *D / 2;
   return true;
 }
+// the square art's corner radius: the theme's tile corner on the Media screen, its icon corner on the Home card
+int art_radius(const MV *d) { return std::min(d->H / 2, S(d->card ? "radius:icon" : "radius:tile")); }
 bool art(const Ctx &c) {  // the art drawn at its place: true; none (yet): false, the plain drawing
   const lv_image_dsc_t *px = c.d->art.pixels();
   int x, y, D;
   if (!px || !art_box(c.d, &x, &y, &D)) return false;
   c.p.image(x, y, px);
   return true;
+}
+
+// ---- 5 the square art: the picture alone, the box's size, the theme's corner; none or loading = a plain square in
+// the surface ink with a line edge (the theme's)
+void draw_art(const Ctx &c) {
+  const MV *d = c.d;
+  if (const lv_image_dsc_t *px = d->art.pixels()) { c.p.image(-d->W / 2, -d->H / 2, px); return; }
+  const int r = art_radius(d);
+  c.p.rect(-d->W / 2, -d->H / 2, d->W, d->H, "fg:surface", r);
+  c.p.rect(-d->W / 2, -d->H / 2, d->W, d->H, "fg:line", r, std::max(1, S("stroke:hair")));
 }
 
 // ---- 2 CD (label side up; the art printed from the hub's edge out to the info band's)
@@ -331,6 +346,7 @@ void draw(const fx::Pen &p) {
       case CD: draw_cd(c); break;
       case VINYL: draw_vinyl(c); break;
       case DISC: draw_disc(c); break;
+      case ART: draw_art(c); break;
     }
   };
   // the card: a square crop, nothing past it but the vinyl arm's declared top bleed (layout:card-pad)
@@ -340,8 +356,8 @@ void draw(const fx::Pen &p) {
 }
 
 // ---- geometry per visual (the box = its tokens) + the pack radii / arm target from the progress
-const char *const BOX[4][2] = {{"w:mv-cassette-w", "h:mv-h"}, {"w:mv-h", "h:mv-h"}, {"w:mv-vinyl-w", "h:mv-vinyl-h"}, {"w:mv-h", "h:mv-h"}};
-const char *const BOX_W[4] = {"layout:mv-cassette-w", "layout:mv-h", "layout:mv-vinyl-w", "layout:mv-h"};
+const char *const BOX[KINDS][2] = {{"w:mv-cassette-w", "h:mv-h"}, {"w:mv-h", "h:mv-h"}, {"w:mv-vinyl-w", "h:mv-vinyl-h"}, {"w:mv-h", "h:mv-h"}, {"w:mv-h", "h:mv-h"}};
+const char *const BOX_W[KINDS] = {"layout:mv-cassette-w", "layout:mv-h", "layout:mv-vinyl-w", "layout:mv-h", "layout:mv-h"};
 void layout(MV *d) {
   const float H = (float) S(d->card ? "layout:mv-card" : "layout:mv-h");
   d->H = (int) H;
@@ -349,6 +365,7 @@ void layout(MV *d) {
   d->ox = d->oy = 0;
   switch (d->kind) {
     case DISC: d->k = H / S("layout:disc-screen"); break;
+    case ART: d->k = 1; break;
     case CD: d->k = H / cd::d; break;
     case CASSETTE:  // a pixel to spare (H - 1): the bottom edge's lines anti-alias one row past it
       d->k = (H - 1) / cs::h;
@@ -401,6 +418,7 @@ void dirty_turning(lv_obj_t *o, const MV *d) {
       break;
     }
     case VINYL: break;  // the plain label's turn is invisible (no art): nothing to redraw
+    case ART: break;    // the square art never turns
   }
 }
 
@@ -412,12 +430,12 @@ void frame(void *var, int32_t) {
   d->last = now;
   const bool still = fw::mo::reduced(o);
   // spin: eases up / down (docs time constants per visual)
-  const float tauUp[4] = {0.25f, 0.6f, 0.5f, 0.05f}, tauDown[4] = {0.12f, 0.9f, 0.7f, 0.05f};
+  const float tauUp[KINDS] = {0.25f, 0.6f, 0.5f, 0.05f, 0.05f}, tauDown[KINDS] = {0.12f, 0.9f, 0.7f, 0.05f, 0.05f};
   d->m = ease(d->m, d->playing ? 1.0f : 0.0f, dt, d->playing ? tauUp[d->kind] : tauDown[d->kind]);
   bool moving = false;
   // the plain vinyl label has no art, so its turn is invisible (dirty_turning draws nothing for it): it does not keep
   // the clock running
-  const bool turns = d->kind != VINYL;
+  const bool turns = d->kind != VINYL && d->kind != ART;  // the square art never turns
   if (d->m > 0.0005f && !still && turns) {
     moving = true;
     if (d->kind == CASSETTE) {  // both spools counter-clockwise at the tape speed at the pack edge
@@ -476,7 +494,7 @@ void run(lv_obj_t *o) {
 
 Kind kind_of(fw::Props p) {
   const char *v = p["visual"] | "cassette";
-  for (int i = 0; i < 4; i++) if (!strcmp(v, KIND_IDS[i])) return (Kind) i;
+  for (int i = 0; i < KINDS; i++) if (!strcmp(v, KIND_IDS[i])) return (Kind) i;
   return CASSETTE;
 }
 bool card_of(fw::Props p) { return !strcmp(p["size"] | "screen", "card"); }
@@ -486,6 +504,7 @@ void art_changed(void *mv) {
 }
 // the art prop: printed where the visual has a place for it, at this size (the cassette has none)
 void art_set(MV *d, const std::string &url) {
+  if (d->kind == ART) { d->art.set(url, d->W, d->H, art_radius(d)); return; }
   int x, y, D;
   if (!art_box(d, &x, &y, &D)) return;
   d->art.set(url, D, D, D / 2);
@@ -507,7 +526,7 @@ FW_COMPONENT(media_visual, "Media visuals", "components", R"({
   "min": ["layout:mv-card", "layout:mv-card"],
   "frame": [296, 208],
   "props": [
-    {"name": "visual", "about": "What is drawn: the plain disc with a progress ring, a cassette, a CD or a vinyl record.", "type": "select", "options": ["disc", "cassette", "cd", "vinyl"], "default": "cassette"},
+    {"name": "visual", "about": "What is drawn: the plain disc with a progress ring, a cassette, a CD, a vinyl record, or art: the album art alone, a square.", "type": "select", "options": ["disc", "cassette", "cd", "vinyl", "art"], "default": "cassette"},
     {"name": "size", "about": "screen is the Media screen's picture; card is the small picture at the top right of its Home card (a square: the right end of a cassette).", "type": "select", "options": ["screen", "card"], "default": "screen"},
     {"name": "progress", "about": "How far through the track it is, from 0 to 100. The tape moves from one reel to the other, or the tonearm moves in.", "type": "range", "min": 0, "max": 100, "step": 1, "default": 38},
     {"name": "playing", "about": "Whether it is playing. While it plays the cassette reels or the disc turn at their real speed.", "type": "bool", "default": true},
@@ -523,6 +542,8 @@ FW_COMPONENT(media_visual, "Media visuals", "components", R"({
     {"label": "Cassette · card", "props": {"visual": "cassette", "size": "card"}},
     {"label": "CD · card", "props": {"visual": "cd", "size": "card"}},
     {"label": "CD", "props": {"visual": "cd", "progress": 45}},
+    {"label": "Art · no art yet", "props": {"visual": "art"}},
+    {"label": "Art · card", "props": {"visual": "art", "size": "card"}},
     {"label": "Vinyl", "props": {"visual": "vinyl", "progress": 60}, "audit": {"skip": {"clip": "vinyl awaiting design round"}}},
     {"label": "Vinyl · stopped at the start", "props": {"visual": "vinyl", "progress": 0, "playing": false}, "audit": {"skip": {"clip": "vinyl awaiting design round"}}}
   ]

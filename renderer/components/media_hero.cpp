@@ -59,7 +59,7 @@ FW_COMPONENT(media_hero, "Media hero", "components", R"({
   "parts": [],
   "frame": [656, 280],
   "props": [
-    {"name": "visual", "about": "The picture: the plain disc with a progress ring, a cassette, a CD or a vinyl record.", "type": "select", "options": ["disc", "cassette", "cd", "vinyl"], "default": "cd"},
+    {"name": "visual", "about": "The picture: the plain disc with a progress ring, a cassette, a CD, a vinyl record, or the album art alone (art).", "type": "select", "options": ["disc", "cassette", "cd", "vinyl", "art"], "default": "cd"},
     {"name": "state", "about": "What the player is doing, in small capitals: now playing, paused or idle.", "type": "text", "default": "now playing"},
     {"name": "tone", "about": "accent-text while it plays, text-dim otherwise.", "type": "select", "options": ["text-dim", "accent-text"], "default": "accent-text"},
     {"name": "title", "about": "The track, up to two lines.", "type": "text", "default": "Harbour Lights"},

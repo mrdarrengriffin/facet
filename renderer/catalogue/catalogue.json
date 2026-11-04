@@ -688,9 +688,10 @@
       "disc",
       "cassette",
       "cd",
-      "vinyl"
+      "vinyl",
+      "art"
      ],
-     "about": "With the media preview: the picture, as the Media screen shows it (disc, cassette, cd or vinyl)."
+     "about": "With the media preview: the picture, as the Media screen shows it (disc, cassette, cd, vinyl or art)."
     },
     {
      "name": "progress",
@@ -2535,9 +2536,10 @@
       "disc",
       "cassette",
       "cd",
-      "vinyl"
+      "vinyl",
+      "art"
      ],
-     "about": "The picture: the plain disc with a progress ring, a cassette, a CD or a vinyl record."
+     "about": "The picture: the plain disc with a progress ring, a cassette, a CD, a vinyl record, or the album art alone (art)."
     },
     {
      "name": "state",
@@ -2610,9 +2612,10 @@
       "disc",
       "cassette",
       "cd",
-      "vinyl"
+      "vinyl",
+      "art"
      ],
-     "about": "What is drawn: the plain disc with a progress ring, a cassette, a CD or a vinyl record."
+     "about": "What is drawn: the plain disc with a progress ring, a cassette, a CD, a vinyl record, or art: the album art alone, a square."
     },
     {
      "name": "size",
@@ -5282,5 +5285,5 @@
    }
   }
  },
- "hash": "678bd29d"
+ "hash": "0136d086"
 }

@@ -1,7 +1,7 @@
 // Media visual (components/media_visual.cpp): the disc, cassette, CD and vinyl drawn with the Pen from real sizes; its
 // box from the mv-* layout tokens (proved against the real-size formula here); a golden per shape and size.
 import fs from 'node:fs';
-import { look, golden, stage } from './_release.mjs';
+import { look, golden, stage, frame565 } from './_release.mjs';
 
 const SP = JSON.parse(fs.readFileSync(new URL('../../tokens/space.json', import.meta.url))).tokens;
 const den = (t) => (t.b.S > 600 ? '1.5x' : '1x');
@@ -18,6 +18,25 @@ async function at(t, props, light = 0) {
 export default {
   id: 'media_visual', family: 'media', about: 'The Media screen picture: each shape at its token size, a golden per shape.',
   tests: [
+    { name: 'art: the album art alone, a square (mv-h, card mv-card); a plain square with none, while it loads or after a 404; it never turns', async run(t) {
+      const URL = 'http://ha.test:8123/api/media_player_proxy/media_player.x?token=a&cache=sq';
+      const mid = (o) => { const q = frame565(t)[Math.round(o.y + o.h / 2) * (t.b.W || t.b.S) + Math.round(o.x + o.w / 2)]; return [(q >> 11) << 3, ((q >> 5) & 63) << 2, (q & 31) << 3]; };
+      const red = (c) => c[0] > 180 && c[1] < 90;
+      let o = await at(t, { visual: 'art' });
+      t.ok(o.w === tok(t, 'mv-h') && o.h === tok(t, 'mv-h'), `screen: ${o.w} x ${o.h} = mv-h square`);
+      const plain = mid(o);
+      t.ok(!red(plain), `no art: the plain square (${plain})`);
+      t.img.serve(URL, 80, 80, [230, 30, 30, 255]);
+      o = await at(t, { visual: 'art', art: URL, playing: true }); t.wait(600);
+      t.ok(red(mid(o)), `the art: ${mid(o)}`);
+      t.eq(t.b.m._fw_anims(), 0, 'nothing turns while playing');
+      o = await at(t, { visual: 'art', size: 'card', art: URL }); t.wait(600);
+      t.ok(o.w === tok(t, 'mv-card') && red(mid(o)), `card: ${o.w} x ${o.h}, ${mid(o)}`);
+      t.img.status(URL.replace('sq', 'gone'), 404);
+      o = await at(t, { visual: 'art', art: URL.replace('sq', 'gone') }); t.wait(600);
+      t.eq(mid(o), plain, 'a 404: the plain square');
+      t.eq(t.texts(), [], 'no error words');
+    } },
     { name: 'the box sizes are the tokens, and the tokens are the real sizes scaled to mv-h', async run(t) {
       const H = tok(t, 'mv-h'), G = den(t) === '1x' ? 4 : 8, s5 = tok(t, '5', 'space');
       const k = H / 301.6, Px = (H / 2 - s5) / k, oy = -Math.sqrt(215 * 215 - Px * Px) - 34;
