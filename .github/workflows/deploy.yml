@@ -26,6 +26,8 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      dev: ${{ steps.firmware.outputs.dev }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -53,7 +55,8 @@ jobs:
         working-directory: renderer/tools
       - name: Build the WASM docs flavour (both densities)
         run: FW_FEATURES=docs renderer/build.sh
-      - name: Download the public firmware (install page + panel updates)
+      - id: firmware
+        name: Download the public firmware (install page + panel updates)
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -67,6 +70,8 @@ jobs:
           if gh release download firmware-dev -p firmware-dev.tar.gz -R "$GITHUB_REPOSITORY" 2>/dev/null; then
             tar -xzf firmware-dev.tar.gz -C site/public/firmware
           else echo "no dev channel yet"; fi
+          # the dev version this site serves (the check compares it; the asset can move on while this run deploys)
+          echo "dev=$(cat site/public/firmware/*/ota-dev.json 2>/dev/null | jq -rs '.[0].version // empty')" >> "$GITHUB_OUTPUT"
           ls -R site/public/firmware
       - run: npm ci
         working-directory: site
@@ -151,7 +156,7 @@ jobs:
 
   check:
     # the /install page fails with "Failed to download manifest" when these are not served
-    needs: deploy
+    needs: [build, deploy]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -160,6 +165,7 @@ jobs:
       - name: Firmware manifests and images are served
         env:
           PAGE_URL: ${{ needs.deploy.outputs.page_url }}
+          DEV: ${{ needs.build.outputs.dev }}
           GH_TOKEN: ${{ github.token }}
         run: |
           # a channel whose release asset exists must be served (beta: firmware-beta, dev: firmware-dev)
@@ -190,10 +196,10 @@ jobs:
                 [[ " $need " == *" $ch "* ]] && { echo "::error::$base/$board/ota-$ch.json not served"; fail=1; }
                 continue
               fi
-              if [ "$ch" = dev ]; then   # the site this run deployed, not an older one: the asset's version
-                want=$(gh release view firmware-dev -R "$GITHUB_REPOSITORY" --json name -q '.name | sub("^.*: "; "")')
+              if [ "$ch" = dev ]; then   # the site this run deployed, not an older one: the dev version it packed
+                want=$DEV
                 got=$(jq -r .version "$board-ota-dev.json")
-                [ "$got" = "$want" ] || { echo "::error::$board/ota-dev.json says $got, the firmware-dev release $want"; fail=1; }
+                [ "$got" = "$want" ] || { echo "::error::$board/ota-dev.json says $got, this run packed $want"; fail=1; }
               fi
               bin=$(jq -r '.builds[].ota.path' "$board-ota-$ch.json")
               code=$(curl -sIL -o /dev/null -w '%{http_code}' "$base/$board/$bin")
