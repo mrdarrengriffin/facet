@@ -74,6 +74,13 @@ inline int cmp(const Ver &a, const Ver &b) {
   return 0;
 }
 
+// the update entity offers `latest` only when it is strictly newer than the running build (fw_update.h fix): a dev
+// build on Beta or Stable, or a channel switched back, is never offered an older build; unreadable = no offer
+inline bool newer(const char *latest, const char *running) {
+  const Ver l = parse(latest), r = parse(running);
+  return l.ok && r.ok && cmp(l, r) > 0;
+}
+
 using Entry = std::pair<std::string, std::string>;  // version, Markdown summary
 constexpr size_t CAP = 3072;
 constexpr const char *MORE = "\n\n*…and earlier changes: see the release.*";

@@ -50,6 +50,18 @@ struct Peek : UpdateEntity {
   static esphome::update::UpdateState UpdateEntity::*state() { return &Peek::state_; }
   static esphome::update::UpdateInfo UpdateEntity::*info() { return &Peek::update_info_; }
 };
+// whether the entity's manifest check is running: its task handle (protected in a final class, so no Peek). An
+// explicit instantiation may name a member it can't access ([temp.spec] access rule); the friend hands the pointer
+// out. Read on the main loop only, where the entity sets and clears it.
+struct TaskTag {
+  using type = TaskHandle_t HttpRequestUpdate::*;
+  friend type task_member(TaskTag);
+};
+template <class Tag, typename Tag::type M> struct Rob {
+  friend typename Tag::type task_member(Tag) { return M; }
+};
+template struct Rob<TaskTag, &HttpRequestUpdate::update_task_handle_>;
+inline bool checking(HttpRequestUpdate *u) { return u->*task_member(TaskTag{}) != nullptr; }
 inline const char *version() {
   if (fw::bundle::VERSION[0]) return fw::bundle::VERSION;
 #ifdef ESPHOME_PROJECT_VERSION
@@ -152,12 +164,15 @@ inline void fix(UpdateEntity *u) {
   const auto st0 = u->*Peek::state();
   // a manifest check landed (only a check fills the title): the settle clock stops checking
   if (!i.title.empty() && (st0 == esphome::update::UPDATE_STATE_NO_UPDATE || st0 == esphome::update::UPDATE_STATE_AVAILABLE)) clock().landed();
-  if (version()[0] && i.current_version != version()) {
+  // offered only when strictly newer than this build (fw_notes.h newer()): the entity's own check offers any other
+  // version, so a dev build on Beta / Stable (or a channel switched back) was offered an older one. No "switch back"
+  // install: the channel moves on with its next release.
+  if (version()[0]) {
     i.current_version = version();
     auto &st = u->*Peek::state();
     if (st == esphome::update::UPDATE_STATE_NO_UPDATE || st == esphome::update::UPDATE_STATE_AVAILABLE)
-      st = i.latest_version.empty() || i.latest_version == version() ? esphome::update::UPDATE_STATE_NO_UPDATE
-                                                                      : esphome::update::UPDATE_STATE_AVAILABLE;
+      st = fw::notes::newer(i.latest_version.c_str(), version()) ? esphome::update::UPDATE_STATE_AVAILABLE
+                                                                  : esphome::update::UPDATE_STATE_NO_UPDATE;
   }
   notes_check(u);
 }
@@ -201,7 +216,7 @@ inline void up_to_date(UpdateEntity *u) {
 
 inline void tick(HttpRequestUpdate *u, int left, int total) {
   notes_take(u);
-  channel().step([] { esphome::global_preferences->sync(); }, [u](const std::string &url) {
+  channel().step(checking(u), [] { esphome::global_preferences->sync(); }, [u](const std::string &url) {
     u->set_source_url(url);
     set_url(url);
     u->update();

@@ -84,13 +84,25 @@ int main() {
     std::string log;
     auto save = [&] { log += "save;"; };
     auto check = [&](const std::string &u) { log += "check " + u + ";"; };
-    EXPECT(!ch.step(save, check));
+    EXPECT(!ch.step(false, save, check));
     ch.want("ota-beta.json");
     ch.want("ota-dev.json");
     EXPECT(log.empty());
-    EXPECT(ch.step(save, check));
+    EXPECT(ch.step(false, save, check));
     EXPECT(log == "save;check ota-dev.json;");
-    EXPECT(!ch.step(save, check));
+    EXPECT(!ch.step(false, save, check));
+    EXPECT(log == "save;check ota-dev.json;");
+  }
+  {  // a change while a check runs waits for it to end (the running check keeps its URL), then checks once
+    Channel ch;
+    std::string log;
+    auto save = [&] { log += "save;"; };
+    auto check = [&](const std::string &u) { log += "check " + u + ";"; };
+    ch.want("ota-dev.json");
+    EXPECT(!ch.step(true, save, check));
+    EXPECT(!ch.step(true, save, check));
+    EXPECT(log.empty());
+    EXPECT(ch.step(false, save, check));
     EXPECT(log == "save;check ota-dev.json;");
   }
   if (fails) printf("fw_settle: %d failed\n", fails);

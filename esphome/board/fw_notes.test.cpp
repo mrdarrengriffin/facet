@@ -70,6 +70,16 @@ int main() {
   const std::string huge(5000, 'y');
   EXPECT(join({{"0.6.0", huge}, {"0.5.1", "z"}}, "0.5.0").find(huge) != std::string::npos);  // the newest, even alone over
 
+  // the update offer: strictly newer only (a dev build on Beta / Stable, or switched back, is offered nothing older)
+  EXPECT(!newer("0.5.0-beta.5", "0.5.0-beta.5.dev.20261104+b809273"));
+  EXPECT(!newer("0.4.2", "0.5.0-beta.5.dev.20261104+b809273"));
+  EXPECT(!newer("0.5.0-beta.5.dev.20261104+b809273", "0.5.0-beta.5.dev.20261104+b809273"));
+  EXPECT(newer("0.5.0-beta.6", "0.5.0-beta.5.dev.20261104+b809273"));
+  EXPECT(newer("0.5.0-beta.5.dev.20261105+c0ffee1", "0.5.0-beta.5.dev.20261104+b809273"));
+  EXPECT(newer("0.5.0-beta.5", "0.5.0-beta.4"));
+  EXPECT(!newer("", "0.5.0-beta.4"));
+  EXPECT(!newer("0.5.0-beta.5", "garbage"));
+
   printf(fails ? "fw_notes: %d failed\n" : "fw_notes: all passed\n", fails);
   return fails ? 1 : 0;
 }

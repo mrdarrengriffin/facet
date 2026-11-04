@@ -67,13 +67,15 @@ inline std::string channel_url(std::string base, const char *ch) {
 // select has stored its value, and ESPHome writes stored values to flash once a minute, so a restart soon after a
 // check started inside the change (a crash in the fetch, a power dip) came back on the old channel. The next tick
 // (step()) writes the stored settings to flash (save()), then points the entity at the manifest and checks it
-// (check(url)). Several changes before a tick = one check, of the last one.
+// (check(url)). Several changes before a tick = one check, of the last one. While a check runs (busy: the entity's
+// task reads the URL it was started with, by reference, for the whole fetch) the change waits: setting the URL then
+// would swap the string under that task.
 struct Channel {
   std::string url;
   bool pending = false;
   void want(const std::string &u) { url = u, pending = true; }
-  template <class Save, class Check> bool step(Save save, Check check) {
-    if (!pending) return false;
+  template <class Save, class Check> bool step(bool busy, Save save, Check check) {
+    if (!pending || busy) return false;
     pending = false;
     save();
     check(url);
