@@ -1,0 +1,106 @@
+name: Firmware build
+
+# Both boards' public images at one version, for release.yml (a tag) and dev.yml (a nightly dev build of main): the WASM
+# build at the board's density, then esphome/build.sh compile with FACET_VERSION and the YAML's facet_version stamped
+# to the version; each image is checked to say the version (build and project) and never "+wip". Uploads the artifact
+# fw-<board> with out/<board>/facet-<board>-<version>.{factory,ota}.bin; the caller writes the manifests.
+
+on:
+  workflow_call:
+    inputs:
+      ref: {description: 'The tag or commit to build', type: string, required: true}
+      version: {description: 'The version the images say', type: string, required: true}
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - {board: waveshare-p4-86, density: 1.5x}
+          - {board: guition-4848s040, density: 1x}
+    name: build ${{ matrix.board }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      ESPHOME_BUILD_ROOT: ${{ github.workspace }}/.esphome-build
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
+      CCACHE_MAXSIZE: 2G
+      CHROMIUM_PATH: /usr/bin/google-chrome
+      V: ${{ inputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with: {ref: '${{ inputs.ref }}'}
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            renderer/tools/package-lock.json
+            workbench/package-lock.json
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+        with:
+          python-version: '3.13'
+      - run: sudo apt-get install -y --no-install-recommends ccache
+      - run: pip install esphome==2026.9.1
+      - run: npm ci
+        working-directory: renderer/tools
+      - run: npm ci
+        working-directory: workbench   # the panel's editor (esphome/build.sh: workbench/scripts/editor-device.mjs)
+      - name: ESP-IDF toolchain (per ESPHome version)
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: ~/.cache/esphome
+          key: esphome-idf-2026.9.1
+      - name: ESPHome build folder + ccache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: |
+            .esphome-build
+            .ccache
+          key: fw-${{ matrix.board }}-${{ github.sha }}
+          restore-keys: fw-${{ matrix.board }}-
+      - name: Sound bank (per its inputs; rendered only when they change)
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: esphome/components/facet_audio/facet_sounds*
+          key: sound-bank-${{ hashFiles('renderer/tokens/sound.json', 'renderer/tools/synth.ts', 'firmware/sound_bank.mjs') }}
+      - uses: mymindstorm/setup-emsdk@4528d102f7230f0e7b276855c01ea1159be0e984  # v16
+        with:
+          version: 6.0.13
+          actions-cache-folder: emsdk-cache
+      - name: LVGL objects (per lv_conf and LVGL)
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: |
+            renderer/.cache/lvgl-O2
+            renderer/.cache/lvgl-O2-*.list
+          key: lvgl-${{ hashFiles('renderer/lv_conf.h', 'renderer/third_party/lvgl/lv_version.h') }}
+      - name: WASM build at the board's density (the bundle checks the deck it bakes in)
+        run: renderer/build.sh ${{ matrix.density }}
+      - name: Compile (FACET_VERSION and the YAML's facet_version = the version)
+        run: |
+          # a beta tag's and main's YAMLs keep the placeholder (only release-prep sets it, for stable): stamp it, so the
+          # project version (Home Assistant's device page, the Device Builder import ref) is the build's on every channel
+          sed -i "s/^\( *facet_version: *\)[^ #]*/\1$V/" esphome/facet-${{ matrix.board }}.yaml
+          FACET_VERSION="$V" esphome/build.sh ${{ matrix.board }} compile
+      - name: The images, checked
+        run: |
+          b=${{ matrix.board }}
+          suffix=$(sed -n 's/^ *build_suffix: *"\([^"]*\)".*/\1/p' esphome/facet-$b.yaml)
+          name=$(sed -n 's/^ *name: *\([a-z0-9-]*\).*/\1/p' esphome/facet-$b.yaml | head -1)
+          B="$ESPHOME_BUILD_ROOT/$name$suffix/build"
+          mkdir -p out/$b
+          cp "$B/firmware.factory.bin" out/$b/facet-$b-$V.factory.bin
+          cp "$B/firmware.ota.bin" out/$b/facet-$b-$V.ota.bin
+          txt=$(strings out/$b/facet-$b-$V.ota.bin)
+          grep -qx -- "$V" <<<"$txt" || { echo "::error::$b: the image does not say $V"; exit 1; }
+          grep -q -- "@v$V\$" <<<"$txt" || { echo "::error::$b: the image's project version is not $V"; exit 1; }
+          ! grep -q -- '+wip' <<<"$txt" || { echo "::error::$b: the image says +wip"; exit 1; }
+          echo "$b: $V, $(du -h out/$b/facet-$b-$V.ota.bin | cut -f1) OTA" | tee -a "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        with:
+          name: fw-${{ matrix.board }}
+          path: out/

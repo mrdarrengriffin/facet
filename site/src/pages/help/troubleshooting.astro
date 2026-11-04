@@ -2,12 +2,13 @@
 // Updating + troubleshooting. Facts: install.astro (flash, Wi-Fi ways, HA adding), the public firmware YAML
 // (net_public: hotspot after the saved Wi-Fi fails for 90 s, encryption key from HA on adoption, API never reboots for
 // want of a client, no browser firmware upload; workbench: update entity hourly, installs only on Install, 3 min
-// settling = safe_mode boot_is_good_after, a power cut in it boots the previous firmware).
+// settling = safe_mode boot_is_good_after, a power cut in it boots the previous firmware; channels: RELEASING.md).
 import Docs, { type Heading } from '../../layouts/Docs.astro';
 import { url } from '../../lib/nav';
 
 const headings: Heading[] = [
   { depth: 2, slug: 'updates', text: 'Firmware updates' },
+  { depth: 3, slug: 'channels', text: 'Update channels' },
   { depth: 2, slug: 'settling', text: 'After an update' },
   { depth: 2, slug: 'reflash', text: 'Re-flashing' },
   { depth: 2, slug: 'wifi', text: 'Wi-Fi does not join' },
@@ -25,6 +26,25 @@ const headings: Heading[] = [
     The panel checks for a new Facet release every hour, and shortly after it starts. When there is one, Home Assistant
     shows a <strong>Firmware</strong> update on the panel's device page. Nothing installs by itself: press
     <strong>Install</strong> when it suits you. The panel downloads the update over Wi-Fi and restarts on the new version.
+  </p>
+
+  <h3 id="channels">Update channels</h3>
+  <p>
+    Which updates the panel is offered depends on its <strong>Update channel</strong>, in the panel's Settings or as a
+    select on its device page in Home Assistant:
+  </p>
+  <ul>
+    <li><strong>Stable</strong> (the default): the releases we recommend.</li>
+    <li><strong>Beta</strong>: newer versions, more often, that may have rough edges.</li>
+    <li>
+      <strong>Dev</strong>: a build of the latest code, made each night when something changed. It has passed the
+      automatic checks but nobody has tried it on a panel, so it can break things. Pick it to try a fix early.
+    </li>
+  </ul>
+  <p>
+    Switching channel offers that channel's latest version, even when it is older than the one on the panel, so you can
+    always go back from Dev to Beta or Stable. The <a href={url('/install/')}>Install</a> page offers Stable and Beta
+    only.
   </p>
 
   <h2 id="settling">After an update</h2>

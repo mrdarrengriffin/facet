@@ -7,7 +7,11 @@
 // release-notes/<version>.md (firmware/release-notes.mjs: Home Assistant shows it as the release notes) and
 // ota.release_url the version's GitHub release. ota.json's notes: one short summary per version since the last stable
 // release, newest first (release-notes.mjs entries): the panel shows those newer than its own (esphome/board/fw_notes.h).
+// Dev channel (.github/workflows/dev.yml, a nightly build of main: 0.5.0-beta.5.dev.20261104+abc1234): ota-dev.json
+// only (the Install page never offers dev), its summary and notes the given Markdown (the commit titles since the last
+// dev build), its release_url the given link (that commit range); no release-notes file.
 //   node firmware/manifests.mjs <dir> <version>
+//   node firmware/manifests.mjs <dir> <dev version> --dev <summary.md> <release url>
 // dir/<board>/facet-<board>-<version>.{factory,ota}.bin must exist; the board's name and chip come from boards/<board>.json.
 // Refuses a version with "+wip", a missing image and missing release notes. Prints one line per board.
 import { createHash } from 'node:crypto';
@@ -17,13 +21,24 @@ import { fileURLToPath } from 'node:url';
 import { REPO, entries, summary as notesSummary } from './release-notes.mjs';
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
-const [dir, version] = process.argv.slice(2);
-if (!dir || !version) { console.error('usage: node firmware/manifests.mjs <dir> <version>'); process.exit(2); }
+const [dir, version, flag, devSummary, devUrl] = process.argv.slice(2);
+if (!dir || !version || (flag && (flag !== '--dev' || !devSummary || !devUrl))) {
+  console.error('usage: node firmware/manifests.mjs <dir> <version> [--dev <summary.md> <release url>]');
+  process.exit(2);
+}
 if (version.includes('+wip')) { console.error(`refused: ${version} is a build from a changed tree`); process.exit(1); }
-let summary, notes;
-try { summary = notesSummary(version); notes = entries(version); } catch (e) { console.error(e.message); process.exit(1); }
-export const channel = (v) => (/^\d+\.\d+\.\d+-/.test(v) ? 'beta' : 'stable');
-const SUFFIX = channel(version) === 'beta' ? '-beta' : '';
+// a dev build: X.Y.Z[-tag.N] then .dev.<date> or -dev.<date> (fw_notes.h orders it above the version it builds on)
+export const channel = (v) => (/^\d+\.\d+\.\d+(-[a-z]+(\.\d+)?)?[.-]dev\.\d/.test(v) ? 'dev' : /^\d+\.\d+\.\d+-/.test(v) ? 'beta' : 'stable');
+const CH = channel(version);
+if ((CH === 'dev') !== Boolean(flag)) { console.error(`refused: ${version} is ${CH}; --dev goes with a dev version only`); process.exit(1); }
+let summary, notes, releaseUrl = `${REPO}/releases/tag/v${version}`;
+if (CH === 'dev') {
+  summary = readFileSync(devSummary, 'utf8').trim();
+  if (!summary) { console.error(`${devSummary} is empty`); process.exit(1); }
+  notes = [{ version, summary }];
+  releaseUrl = devUrl;
+} else try { summary = notesSummary(version); notes = entries(version); } catch (e) { console.error(e.message); process.exit(1); }
+const SUFFIX = CH === 'stable' ? '' : `-${CH}`;
 const boards = readdirSync(dir).filter((b) => existsSync(join(ROOT, 'boards', `${b}.json`)));
 if (!boards.length) { console.error(`no <board>/ in ${dir}`); process.exit(1); }
 for (const b of boards) {
@@ -33,9 +48,9 @@ for (const b of boards) {
   const fac = `facet-${b}-${version}.factory.bin`, ota = `facet-${b}-${version}.ota.bin`;
   for (const f of [fac, ota]) if (!existsSync(join(dir, b, f))) { console.error(`${b}: missing ${f}`); process.exit(1); }
   const md5 = createHash('md5').update(readFileSync(join(dir, b, ota))).digest('hex');
-  writeFileSync(join(dir, b, `manifest${SUFFIX}.json`), JSON.stringify({ name, version, home_assistant_domain: 'esphome', new_install_prompt_erase: true,
+  if (CH !== 'dev') writeFileSync(join(dir, b, `manifest${SUFFIX}.json`), JSON.stringify({ name, version, home_assistant_domain: 'esphome', new_install_prompt_erase: true,
     builds: [{ chipFamily: chip, parts: [{ path: fac, offset: 0 }] }] }, null, 2) + '\n');
   writeFileSync(join(dir, b, `ota${SUFFIX}.json`), JSON.stringify({ name, version, builds: [{ chipFamily: chip, ota: { path: ota, md5,
-    release_url: `${REPO}/releases/tag/v${version}`, summary } }], notes }, null, 2) + '\n');
-  console.log(`${b} ${version}: manifest${SUFFIX}.json + ota${SUFFIX}.json (ota md5 ${md5})`);
+    release_url: releaseUrl, summary } }], notes }, null, 2) + '\n');
+  console.log(`${b} ${version}: ${CH === 'dev' ? '' : `manifest${SUFFIX}.json + `}ota${SUFFIX}.json (ota md5 ${md5})`);
 }

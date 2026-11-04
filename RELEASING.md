@@ -2,9 +2,22 @@
 
 ## Channels
 
-- **Dev**: workbench builds from `main`, flashed to test panels, never published.
-- **Beta**: a tag `vX.Y.Z-beta.N`. Panels on the beta channel (Settings > Update channel) are offered it.
-- **Stable**: a tag `vX.Y.Z`. Its `esphome/facet-*.yaml` files must already say that version.
+A panel's Update channel (Settings, and the Update channel select in Home Assistant) picks which manifest its Firmware
+update entity checks. The default is Stable; a fresh panel starts on the channel of the build it was flashed with.
+
+- **Stable**: a tag `vX.Y.Z`. Its `esphome/facet-*.yaml` files must already say that version. `ota.json`, and the
+  Install page's default (`manifest.json`).
+- **Beta**: a tag `vX.Y.Z-beta.N`. `ota-beta.json`, and the Install page's Beta switch (`manifest-beta.json`).
+- **Dev**: a nightly build of `main` by `.github/workflows/dev.yml`, untested beyond CI. `ota-dev.json` only: the
+  Install page never offers it. It builds once a night when `main` moved since the last dev build (the `firmware-dev`
+  tag) and CI and Firmware are green on it; `gh workflow run dev.yml` builds one now. Its version is the last tag's
+  plus the date and commit: after `v0.5.0-beta.5`, `0.5.0-beta.5.dev.20261104+abc1234`, which sorts above beta.5 and
+  below beta.6 (after a stable `v0.5.0`: `0.5.1-dev.20261104+abc1234`). Its notes are the commit titles since the
+  last dev build, linked to that commit range; no release-notes file. Only the newest dev build is served.
+
+A panel on a channel is offered that channel's build whenever it differs from the one it runs, so switching from Dev
+to Beta offers the beta even when it is older. Workbench builds (`panel wb build`, a `+wip` or build-stamped version)
+are never published.
 
 Pushing a tag starts `.github/workflows/release.yml`. It waits for CI and Firmware to be green on the tagged commit,
 builds both boards, checks each image says the version (never `+wip`), and publishes:
@@ -12,7 +25,7 @@ builds both boards, checks each image says the version (never `+wip`), and publi
 - the tag's release with its images (a pre-release for a beta);
 - the channel's asset (`firmware` or `firmware-beta`), and moves that channel tag to the build;
 - a docs deploy, which serves `manifest.json` + `ota.json` (stable) and `manifest-beta.json` + `ota-beta.json` (beta)
-  per board. The Install page offers Stable / Beta while a beta exists.
+  per board, beside the dev channel's `ota-dev.json`. The Install page offers Stable / Beta while a beta exists.
 
 ## Release notes
 

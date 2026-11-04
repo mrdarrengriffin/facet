@@ -380,16 +380,17 @@
       }
     },
     {
-      "id": "updateChannel", "help": "Which firmware updates the panel offers: Stable releases, or Beta builds that come more often and may have rough edges.",
+      "id": "updateChannel", "help": "Which firmware updates the panel offers: Stable releases, Beta builds that come more often and may have rough edges, or Dev: a nightly build of the latest code, untested, for trying fixes early. Dev can break things; switch back to Beta or Stable if it does.",
       "group": "behaviour",
       "label": "Update channel",
       "kind": "select",
       "control": "segmented",
       "default": "stable",
-      "about": "Picks the update manifest the panel's Firmware entity checks (ota.json or ota-beta.json beside it). Switching back to Stable offers the stable build, even when it is older. The workbench and docs ignore it.",
+      "about": "Picks the update manifest the panel's Firmware entity checks (ota.json, or ota-beta.json or ota-dev.json beside it). Switching to another channel offers that channel's build, even when it is older. The workbench and docs ignore it.",
       "options": [
         {"id": "stable", "label": "Stable"},
-        {"id": "beta", "label": "Beta"}
+        {"id": "beta", "label": "Beta"},
+        {"id": "dev", "label": "Dev"}
       ],
       "esphome": {
         "id": "update_channel_select",

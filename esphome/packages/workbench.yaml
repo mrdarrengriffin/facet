@@ -52,11 +52,14 @@ esphome:
             // Rotate screen: the setting turns LVGL (and its touch points) at run time, on top of the
             // board's mount (rotation_base, so the setting's 0° = the panel as mounted)
             fw::device::rotate_hook = [](int deg) { id(lvgl_root)->set_rotation((deg + ${rotation_base}) % 360); };
-            // Update channel: the Firmware entity checks ota.json (stable) or ota-beta.json beside it (release channels)
-            fw::device::channel_hook = [](bool beta) {
+            // Update channel: the Firmware entity checks ota.json (stable), or ota-beta.json / ota-dev.json beside it
+            // (release channels, RELEASING.md); the setting is read here, so Dev needs nothing new in fw_device.h
+            fw::device::channel_hook = [](bool) {
+              const char *ch = fw::dev::setting("updateChannel");
               std::string u = "${update_manifest}";
               const size_t k = u.rfind("ota.json");
-              if (beta && k != std::string::npos) u.replace(k, 8, "ota-beta.json");
+              if (ch && k != std::string::npos && (!strcmp(ch, "beta") || !strcmp(ch, "dev")))
+                u.replace(k, 8, std::string("ota-") + ch + ".json");
               id(fw_update).set_source_url(u);
               panel::fwu::set_url(u);
               id(fw_update).update();

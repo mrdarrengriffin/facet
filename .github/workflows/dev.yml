@@ -1,0 +1,127 @@
+name: Dev build
+
+# The Dev update channel (RELEASING.md): one firmware build of main per night, for panels whose Update channel is Dev.
+# Builds only when main moved since the last dev build (the `firmware-dev` tag marks its commit) and CI and Firmware
+# are green on it (Firmware: on the newest commit that touched its paths; waits while they run). Run by hand
+# (workflow_dispatch) for a dev build now: then it builds even when main has not moved.
+# Version: the last tag's, then a dev part with the date, then the commit (fw_notes.h orders them):
+#   last tag v0.5.0-beta.5 -> 0.5.0-beta.5.dev.20261104+abc1234 (above beta.5, below beta.6)
+#   last tag v0.5.0        -> 0.5.1-dev.20261104+abc1234
+# Publishes ota-dev.json per board (no install manifest: the Install page never offers dev), its notes the commit
+# titles since the last dev build and its link that commit range, as the `firmware-dev` release's firmware-dev.tar.gz
+# (replaced each time: only the newest dev build is served), then runs the docs deploy, which serves it.
+
+on:
+  schedule:
+    - cron: '41 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: dev-build
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      go: ${{ steps.v.outputs.go }}
+      version: ${{ steps.v.outputs.version }}
+      sha: ${{ steps.v.outputs.sha }}
+      last: ${{ steps.v.outputs.last }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with: {ref: main, fetch-depth: 0}
+      - id: v
+        name: Changed since the last dev build, and its version
+        run: |
+          sha=$(git rev-parse HEAD)
+          last=$(git rev-parse -q --verify 'refs/tags/firmware-dev^{commit}' || true)
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"; echo "last=$last" >> "$GITHUB_OUTPUT"
+          if [ "$last" = "$sha" ] && [ "${{ github.event_name }}" = schedule ]; then
+            echo "main is at the last dev build ($sha): nothing to build" | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "go=false" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          base=$(git describe --tags --abbrev=0 --match 'v[0-9]*' "$sha"); base=${base#v}
+          d=$(date -u +%Y%m%d); s=$(git rev-parse --short=7 "$sha")
+          if [[ "$base" == *-* ]]; then V="$base.dev.$d+$s"
+          else IFS=. read -r x y z <<<"$base"; V="$x.$y.$((z + 1))-dev.$d+$s"; fi
+          echo "version=$V" >> "$GITHUB_OUTPUT"; echo "go=true" >> "$GITHUB_OUTPUT"
+          echo "dev build $V (last dev build: ${last:-none})" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: CI and Firmware green
+        if: steps.v.outputs.go == 'true'
+        env: {GH_TOKEN: '${{ github.token }}'}
+        run: |
+          sha=${{ steps.v.outputs.sha }}
+          # Firmware runs only when its paths change (firmware.yml): its newest such commit
+          fw=$(git log -1 --format=%H "$sha" -- renderer firmware esphome boards .github/workflows/firmware.yml)
+          for i in $(seq 1 60); do
+            ok=1; bad=
+            for w in "ci.yml $sha" "firmware.yml $fw"; do
+              set -- $w
+              r=$(gh run list --commit "$2" --workflow "$1" --json status,conclusion -q '.[0] | "\(.status)/\(.conclusion)"')
+              [ "$r" = completed/success ] || ok=0
+              if [[ "$r" == completed/* && "$r" != completed/success ]]; then bad="$bad $1 ($2: $r)"; fi
+            done
+            if [ $ok = 1 ]; then echo "CI green on $sha, Firmware on $fw"; exit 0; fi
+            if [ -n "$bad" ]; then echo "::error::not green:$bad"; exit 1; fi
+            sleep 30
+          done
+          echo "::error::CI or Firmware did not finish within 30 minutes"; exit 1
+
+  build:
+    needs: check
+    if: needs.check.outputs.go == 'true'
+    uses: ./.github/workflows/firmware-build.yml
+    with:
+      ref: ${{ needs.check.outputs.sha }}
+      version: ${{ needs.check.outputs.version }}
+
+  publish:
+    needs: [check, build]
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      V: ${{ needs.check.outputs.version }}
+      SHA: ${{ needs.check.outputs.sha }}
+      LAST: ${{ needs.check.outputs.last }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with: {ref: '${{ needs.check.outputs.sha }}', fetch-depth: 0}
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
+        with: {node-version: 24}
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
+        with: {pattern: 'fw-*', path: out, merge-multiple: true}
+      - name: Notes (the commit titles since the last dev build) and ota-dev.json
+        run: |
+          repo="https://github.com/$GITHUB_REPOSITORY"
+          if [ -n "$LAST" ] && [ "$LAST" != "$SHA" ] && git merge-base --is-ancestor "$LAST" "$SHA"; then
+            range="$LAST..$SHA"; url="$repo/compare/${LAST:0:7}...${SHA:0:7}"; since="since the last dev build"
+          else
+            range="-n 15 $SHA"; url="$repo/commits/${SHA:0:7}"; since="the latest"
+          fi
+          titles=$(git log --no-merges --format='%s' $range)
+          n=$(grep -c . <<<"$titles" || true)
+          {
+            echo "A nightly build of the latest code (${SHA:0:7}): untested, it can break things. Switch the Update channel back to Beta or Stable if it does."
+            echo; echo "**Changes $since**"; echo
+            head -n 20 <<<"$titles" | sed 's/^/- /'
+            if [ "$n" -gt 20 ]; then echo "- and $((n - 20)) more"; fi
+            if [ "$n" = 0 ]; then echo "- No new commits (built again by hand)"; fi
+          } > dev-notes.md
+          cat dev-notes.md >> "$GITHUB_STEP_SUMMARY"
+          node firmware/manifests.mjs out "$V" --dev dev-notes.md "$url"
+          printf '%s\n\nAll commits: %s\n' "$(cat dev-notes.md)" "$url" > release-body.md
+      - name: The firmware-dev asset (what the docs site serves)
+        run: |
+          tar -czf firmware-dev.tar.gz -C out .
+          git tag -f firmware-dev "$SHA" && git push -f origin refs/tags/firmware-dev   # marks the last dev build
+          gh release view firmware-dev >/dev/null 2>&1 || gh release create firmware-dev --verify-tag --prerelease --title "Firmware (dev channel)" --notes "The Dev channel's nightly build."
+          gh release edit firmware-dev --title "Firmware (dev channel): $V" --notes-file release-body.md
+          gh release upload firmware-dev firmware-dev.tar.gz --clobber
+          echo "firmware-dev.tar.gz: $V" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Deploy the docs site (serves every channel)
+        run: gh workflow run deploy.yml --ref main

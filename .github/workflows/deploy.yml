@@ -4,7 +4,8 @@ name: Deploy docs
 # commit it documents (FW_FEATURES=docs renderer/build.sh; renderer/README.md "What a machine needs"). The public firmware
 # for the /install page (factory + OTA images, manifest.json + ota.json per board) is the asset of the `firmware`
 # release, the beta channel's (manifest-beta.json + ota-beta.json) the `firmware-beta` release's (both written by
-# release.yml on a tag), unpacked into site/public/firmware/ and served at /facet/firmware/<board>/.
+# release.yml on a tag), and the dev channel's (ota-dev.json only: a nightly build of main, never on the Install page)
+# the `firmware-dev` release's (dev.yml), unpacked into site/public/firmware/ and served at /facet/firmware/<board>/.
 
 on:
   push:
@@ -60,6 +61,10 @@ jobs:
           if gh release download firmware-beta -p firmware-beta.tar.gz -R "$GITHUB_REPOSITORY" 2>/dev/null; then
             tar -xzf firmware-beta.tar.gz -C site/public/firmware
           else echo "no beta channel yet"; fi
+          # the dev channel (dev.yml, nightly): ota-dev.json + its images
+          if gh release download firmware-dev -p firmware-dev.tar.gz -R "$GITHUB_REPOSITORY" 2>/dev/null; then
+            tar -xzf firmware-dev.tar.gz -C site/public/firmware
+          else echo "no dev channel yet"; fi
           ls -R site/public/firmware
       - run: npm ci
         working-directory: site
@@ -116,6 +121,14 @@ jobs:
             for bin in $(jq -r '.builds[].parts[].path' "$board-manifest.json") $(jq -r '.builds[].ota.path' "$board-ota.json" 2>/dev/null); do
               code=$(curl -sIL -o /dev/null -w '%{http_code}' "$base/$board/$bin")
               echo "$board/$bin: $code"; [ "$code" = 200 ] || { echo "::error::$base/$board/$bin returned $code"; fail=1; }
+            done
+            # the beta and dev channels, when they exist: their OTA image is served beside them
+            for ch in beta dev; do
+              curl -sfL -o "$board-ota-$ch.json" "$base/$board/ota-$ch.json" || continue
+              bin=$(jq -r '.builds[].ota.path' "$board-ota-$ch.json")
+              code=$(curl -sIL -o /dev/null -w '%{http_code}' "$base/$board/$bin")
+              echo "$board/ota-$ch.json: version $(jq -r .version "$board-ota-$ch.json"), $bin: $code"
+              [ "$code" = 200 ] || { echo "::error::$base/$board/$bin returned $code"; fail=1; }
             done
           done
           exit $fail

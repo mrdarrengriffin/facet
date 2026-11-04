@@ -32,6 +32,15 @@ int main() {
   EXPECT(c("0.5.0-beta.3.2611041319", "0.5.0-beta.3") == 0);  // a build stamp is not a newer version
   EXPECT(c("0.5.0-beta.3+wip", "0.5.0-beta.3") == 0);
   EXPECT(c("0.5.0.2611041319", "0.5.0") == 0);
+  // dev builds (the Dev channel): above the version they build on, below the next one, by date
+  EXPECT(c("0.5.0-beta.5.dev.20261104+abc1234", "0.5.0-beta.5") > 0);
+  EXPECT(c("0.5.0-beta.5.dev.20261104+abc1234", "0.5.0-beta.6") < 0);
+  EXPECT(c("0.5.0-beta.5.dev.20261105+def5678", "0.5.0-beta.5.dev.20261104+abc1234") > 0);
+  EXPECT(c("0.5.0-beta.5.dev.20261104+def5678", "0.5.0-beta.5.dev.20261104+abc1234") == 0);  // the sha is not an order
+  EXPECT(c("0.5.0-beta.6.dev.20261101+abc1234", "0.5.0-beta.5.dev.20261130+abc1234") > 0);
+  EXPECT(c("0.5.1-dev.20261104+abc1234", "0.5.0") > 0);
+  EXPECT(c("0.5.1-dev.20261104+abc1234", "0.5.1-beta.1") < 0);
+  EXPECT(c("0.5.0.dev.20261104+abc1234", "0.5.0") > 0);
   EXPECT(!parse("").ok && !parse("dev").ok && !parse("0.5").ok && !parse(nullptr).ok && !parse("0.5.0-").ok);
 
   const std::vector<Entry> e = {
@@ -41,6 +50,8 @@ int main() {
   EXPECT(join(e, "0.5.0-beta.3.2611041319") == join(e, "0.5.0-beta.3"));
   EXPECT(join(e, "0.5.0-beta.5") == "### 0.5.0-beta.6\n\nsix");
   EXPECT(join(e, "0.4.0") == "### 0.5.0-beta.6\n\nsix\n\n### 0.5.0-beta.5\n\nfive\n\n### 0.5.0-beta.4\n\nfour\n\n### 0.5.0-beta.3\n\nthree");
+  EXPECT(join({{"0.5.0-beta.5.dev.20261105+b", "dev"}}, "0.5.0-beta.5.dev.20261104+a") == "### 0.5.0-beta.5.dev.20261105+b\n\ndev");
+  EXPECT(join({{"0.5.0-beta.6", "six"}}, "0.5.0-beta.5.dev.20261104+a") == "### 0.5.0-beta.6\n\nsix");
   // nothing newer, or a running version it can't read: empty (the caller keeps ota.summary)
   EXPECT(join(e, "0.5.0-beta.6").empty());
   EXPECT(join(e, "0.5.0").empty());
