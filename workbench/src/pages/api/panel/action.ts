@@ -11,7 +11,7 @@ export const prerender = false;
  *   with data: one of FACET_CALL, on an entity of the service's own domain.
  * No Home Assistant configured: accepted and not sent ({ok: true, demo: true}).
  */
-const FACET_CALL = ['light.turn_on', 'cover.set_cover_position', 'media_player.volume_set', 'climate.set_temperature',
+const FACET_CALL = ['light.turn_on', 'cover.set_cover_position', 'media_player.volume_set', 'media_player.select_source', 'climate.set_temperature',
   'input_select.select_option', 'select.select_option', 'input_number.set_value', 'number.set_value', 'script.turn_on',
   'climate.set_hvac_mode', 'climate.set_preset_mode', 'cover.set_cover_tilt_position'];
 const bad = (msg: string) => Response.json({ error: msg }, { status: 400 });

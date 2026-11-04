@@ -7,6 +7,8 @@
 // at CAP bytes (entity_id, attributes.friendly_name, attributes.icon); every other value is skipped as it streams.
 // At each entity's end, one whose domain is wanted is kept. Held bytes = the capped strings + the kept rows.
 #include "device.h"
+#include "sax.h"
+#include <memory>
 #include <cstring>
 
 namespace fw {
@@ -33,6 +35,8 @@ struct State {
   uint32_t check = 0;              // the link check in flight (configure), 0 = none
   bool checked = false;
   std::string page;
+  std::map<std::string, std::vector<RegRow>> reg;  // per domain, once all three registry reads answered
+  std::string reg_busy;                              // the domain being read ("" = none)
 };
 State &S() { static State s; return s; }
 void bump() { S().rev++; }
@@ -177,7 +181,7 @@ void units_from_config() {
 }
 void configure(const std::string &url, const std::string &token) {
   State &s = S();
-  if (url != s.url) s.cache.clear(), s.count = 0;
+  if (url != s.url) s.cache.clear(), s.reg.clear(), s.count = 0;
   s.url = url;
   while (!s.url.empty() && s.url.back() == '/') s.url.pop_back();
   if (!token.empty()) s.token = token;
@@ -292,6 +296,115 @@ void done(uint32_t id, bool ok, const std::string &why, Scan *parsed) {
   }
   delete sc;
   bump();
+}
+// ---- the registries (reg_fetch): entity -> device -> area, each its own WS read through a Sax
+namespace {
+struct RegRead {
+  std::string domain;
+  std::vector<RegRow> rows;
+  std::map<std::string, std::string> dev_of, area_of_dev;  // entity -> device, device -> area id
+  std::map<std::string, std::pair<std::string, int>> areas; // area id -> name, order
+  std::string f_id, f_pl, f_area, f_dev;
+  json::Sax sax;
+};
+std::unique_ptr<RegRead> R;
+void reg_end(bool ok);
+bool reg_read(const char *cmd, std::function<void(json::Sax &, const std::string &, bool)> leaf, std::function<void(json::Sax &)> close,
+              std::function<void()> next) {
+  R->sax = json::Sax();
+  R->sax.leaf = std::move(leaf), R->sax.close = std::move(close);
+  const uint32_t id = ws(std::string("{\"type\":\"") + cmd + "\"}", [](const char *p, size_t n) { if (R) R->sax.feed(p, n); },
+                         [next](bool ok, const std::string &) {
+                           if (!R) return;
+                           if (!ok || R->sax.bad || !R->sax.ok) return reg_end(false);
+                           next();
+                         });
+  return id != 0;
+}
+void reg_areas() {
+  const bool ok = reg_read("config/area_registry/list",
+      [](json::Sax &x, const std::string &v, bool) {
+        if (x.depth != 3 || x.key(0) != "result") return;
+        if (x.key(2) == "area_id") R->f_id = v;
+        else if (x.key(2) == "name") R->f_pl = v;
+      },
+      [](json::Sax &x) {
+        if (x.depth != 3) return;
+        const int n = (int) R->areas.size();
+        if (!R->f_id.empty()) R->areas[R->f_id] = {R->f_pl, n};
+        R->f_id.clear(), R->f_pl.clear();
+      },
+      [] { reg_end(true); });
+  if (!ok) reg_end(false);
+}
+void reg_devices() {
+  const bool ok = reg_read("config/device_registry/list",
+      [](json::Sax &x, const std::string &v, bool str) {
+        if (x.depth != 3 || x.key(0) != "result") return;
+        if (x.key(2) == "id") R->f_dev = v;
+        else if (x.key(2) == "area_id" && str) R->f_area = v;
+      },
+      [](json::Sax &x) {
+        if (x.depth != 3) return;
+        if (!R->f_dev.empty() && !R->f_area.empty()) R->area_of_dev[R->f_dev] = R->f_area;
+        R->f_dev.clear(), R->f_area.clear();
+      },
+      reg_areas);
+  if (!ok) reg_end(false);
+}
+void reg_entities() {
+  const bool ok = reg_read("config/entity_registry/list_for_display",
+      [](json::Sax &x, const std::string &v, bool str) {
+        if (x.depth != 4 || x.key(1) != "entities") return;
+        const std::string &k = x.key(3);
+        if (k == "ei") R->f_id = v;
+        else if (k == "pl") R->f_pl = v;
+        else if (k == "ai" && str) R->f_area = v;
+        else if (k == "di" && str) R->f_dev = v;
+      },
+      [](json::Sax &x) {
+        if (x.depth != 4) return;
+        if (R->f_id.rfind(R->domain + ".", 0) == 0) {
+          RegRow r;
+          r.id = R->f_id, r.platform = R->f_pl, r.area = R->f_area;  // its own area for now; the device's fills in after
+          if (r.area.empty() && !R->f_dev.empty()) R->dev_of[r.id] = R->f_dev;
+          R->rows.push_back(std::move(r));
+        }
+        R->f_id.clear(), R->f_pl.clear(), R->f_area.clear(), R->f_dev.clear();
+      },
+      reg_devices);
+  if (!ok) reg_end(false);
+}
+void reg_end(bool ok) {
+  State &s = S();
+  if (ok) {
+    for (RegRow &r : R->rows) {
+      if (r.area.empty()) {
+        auto d = R->dev_of.find(r.id);
+        if (d != R->dev_of.end()) { auto a = R->area_of_dev.find(d->second); if (a != R->area_of_dev.end()) r.area = a->second; }
+      }
+      auto a = R->areas.find(r.area);
+      if (a != R->areas.end()) r.area_order = a->second.second, r.area = a->second.first;
+      else r.area.clear();
+    }
+    s.reg[R->domain] = std::move(R->rows);
+  }
+  s.reg_busy.clear();
+  R.reset();
+  bump();
+}
+}  // namespace
+void reg_fetch(const std::string &domain, bool again) {
+  State &s = S();
+  if ((!again && s.reg.count(domain)) || !s.reg_busy.empty() || !ready() || !s.ws) return;
+  s.reg_busy = domain;
+  R.reset(new RegRead());
+  R->domain = domain;
+  reg_entities();
+}
+const std::vector<RegRow> *reg(const std::string &domain) {
+  auto it = S().reg.find(domain);
+  return it == S().reg.end() ? nullptr : &it->second;
 }
 }  // namespace ha_link
 }  // namespace dev

@@ -4,7 +4,8 @@ import { configured, env } from '../../../lib/ha';
 export const prerender = false;
 
 /** The WebSocket commands the panel may send: reads only (the Energy screen: HA's Energy dashboard + its statistics). */
-const READS = new Set(['energy/get_prefs', 'recorder/statistics_during_period', 'recorder/list_statistic_ids']);
+const READS = new Set(['energy/get_prefs', 'recorder/statistics_during_period', 'recorder/list_statistic_ids',
+  'config/entity_registry/list_for_display', 'config/device_registry/list', 'config/area_registry/list']);
 
 /**
  * POST /api/panel/ha-ws: one Home Assistant WebSocket read for the WASM workbench (core/device.h

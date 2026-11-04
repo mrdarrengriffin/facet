@@ -142,7 +142,7 @@ const char *button(const char *press);  // the host's key press: "" = nothing to
 // once a second only while something bound to it is built. Legacy: timer() = the soonest running as the old one-timer
 // struct (state 0 idle, 1 running, 2 done; ends = wall-clock seconds) for the Home header's time left + Timer view.
 // the Calendar feed's own state (core/calendar_source.cpp): calendar.control; "" = done, else why not
-namespace calendar_source { const char *control(const std::string &v); }
+namespace calendar_source { const char *control(const std::string &v); std::string hidden_list(); }
 // the Media feed (core/media_source.cpp): media.control on panel.media; "" = done, else why not; svc = a media_player
 // service to call on ent with data ("" = none)
 namespace media_source { const char *control(const std::string &v, std::string *svc, std::string *ent, std::string *data); }
@@ -242,9 +242,18 @@ void done(uint32_t id, bool ok, const std::string &why, Scan *parsed = nullptr);
 // One WebSocket read (the Energy feed: HA's Energy dashboard): connect to <url>/api/websocket, auth with
 // the token, send cmd (one command as JSON, no "id"), stream its result message back through feed (chunk() with an
 // id from WS_ID up), then end(ok, why) (done()); the link closes. Reads only: the transport allows a closed list
-// (energy/get_prefs, recorder/statistics_during_period, recorder/list_statistic_ids; WASM: the workbench
+// (energy/get_prefs, recorder/statistics_during_period, recorder/list_statistic_ids, and the three registry lists
+// above; WASM: the workbench
 // host, with its own token; the firmware: esp_transport_ws, firmware/fw_device.h). on_ws: the platform's sender. ws() = 0: not ready or no
 // transport (end is not called).
+// HA's registries for one domain's entities (the Media sources: the integration behind each player, and its area): the
+// entity registry (config/entity_registry/list_for_display: platform, own area, device), the device registry (the
+// device's area) and the area registry (names, in HA's order), three WS reads in a row, only the wanted rows kept.
+// reg_fetch(domain) starts them once per link (again after a failure, or on a new link; again = read afresh, the
+// rows kept until the new ones come); reg(domain) = nullptr until all three answered. A failed read leaves reg() empty, never wrong.
+struct RegRow { std::string id, platform, area; int area_order = 1 << 20; };  // area "" = none (order last)
+void reg_fetch(const std::string &domain, bool again = false);
+const std::vector<RegRow> *reg(const std::string &domain);
 constexpr uint32_t WS_ID = 1u << 30;
 using WsSink = void (*)(uint32_t id, const std::string &url, const std::string &token, const std::string &cmd);
 void on_ws(WsSink f);

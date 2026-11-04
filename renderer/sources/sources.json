@@ -12,49 +12,53 @@
       "needs": "a speaker or music service",
       "sources": [
         {
-          "id": "music_assistant",
-          "kind": "ha",
-          "name": "Music Assistant",
-          "detect": {
-            "integration": "music_assistant",
-            "domain": "media_player"
-          },
-          "fills": {
-            "speakers": {
-              "domain": "media_player",
-              "integration": "music_assistant",
-              "list": true
-            },
-            "entity": {
-              "domain": "media_player",
-              "integration": "music_assistant"
-            }
-          }
-        },
-        {
           "id": "media_players",
           "kind": "ha",
           "name": "Players in Home Assistant",
+          "adapter": "ha",
           "detect": {
             "domain": "media_player"
-          },
-          "fills": {
-            "speakers": {
-              "domain": "media_player",
-              "list": true
-            },
-            "entity": {
-              "domain": "media_player"
-            }
+          }
+        },
+        {
+          "id": "music_assistant",
+          "kind": "ha",
+          "name": "Music Assistant",
+          "adapter": "music_assistant",
+          "detect": {
+            "integration": "music_assistant",
+            "domain": "media_player"
           }
         },
         {
           "id": "spotify",
-          "kind": "direct",
+          "kind": "ha",
           "name": "Spotify",
-          "setup": [
-            "Spotify sign-in"
-          ]
+          "adapter": "spotify",
+          "detect": {
+            "integration": "spotify",
+            "domain": "media_player"
+          }
+        },
+        {
+          "id": "cast",
+          "kind": "ha",
+          "name": "Google Cast",
+          "adapter": "cast",
+          "detect": {
+            "integration": "cast",
+            "domain": "media_player"
+          }
+        },
+        {
+          "id": "sonos",
+          "kind": "ha",
+          "name": "Sonos",
+          "adapter": "sonos",
+          "detect": {
+            "integration": "sonos",
+            "domain": "media_player"
+          }
         }
       ]
     },
@@ -70,12 +74,6 @@
           "adapter": "ha",
           "detect": {
             "domain": "calendar"
-          },
-          "fills": {
-            "calendars": {
-              "domain": "calendar",
-              "list": true
-            }
           }
         },
         {

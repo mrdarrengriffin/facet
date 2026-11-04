@@ -23,7 +23,8 @@
 //            light.turn_off, light.toggle on light.* entities; climate.set_temperature {temperature},
 //            climate.set_hvac_mode {hvac_mode: off|heat|cool|heat_cool|auto|dry|fan_only}, climate.set_preset_mode
 //            {preset_mode} on climate.* entities; media_player.media_play_pause / media_next_track /
-//            media_previous_track, media_player.volume_set {volume_level 0..1} on media_player.* entities;
+//            media_previous_track, media_player.volume_set {volume_level 0..1}, media_player.select_source {source} on
+//            media_player.* entities;
 //            cover.open_cover / close_cover / stop_cover, set_cover_position {position}, set_cover_tilt_position
 //            {tilt_position} 0-100 on cover.* entities): emits
 //            "ha" {service, entity, data} (the workbench host calls HA) and calls the action sink (the panel: an HA action over its API).
@@ -123,6 +124,8 @@ inline void set_connected(bool on) {
   s.connected = on, s.told = true;
 }
 inline bool offline() { return S().told && !S().connected; }
+// connected at least MISSING_MS: long enough for an answer HA never gives to mean "it has none"
+inline bool settled() { return S().connected && lv_tick_diff(lv_tick_get(), S().connected_at) >= MISSING_MS; }
 inline void on_want(WantSink f) {  // the panel: subscribe; called at once for every pair wanted so far
   S().want_sink = f;
   for (const Pair &p : std::vector<Pair>(S().wants)) f(p.first, p.second);
@@ -534,6 +537,10 @@ inline const char *act(lv_obj_t *from, const char *service, const char *entity, 
     if (!only("volume_level") || !data["volume_level"].is<double>()) return "media_player.volume_set takes volume_level";
     const double v = data["volume_level"].as<double>();
     if (!std::isfinite(v) || v < 0 || v > 1) return "volume_level outside 0..1";
+  } else if (svc == "media_player.select_source") {  // a Spotify Connect device (the Media speaker sheet): its name
+    const std::string o = data["source"] | "";
+    if (!only("source") || o.empty() || o.size() > 64) return "media_player.select_source takes source (a device name)";
+    for (char c : o) if ((unsigned char) c < 0x20 || c == '"' || c == '\\') return "source: a plain name";
   } else if (svc == "cover.set_cover_position" || svc == "cover.set_cover_tilt_position") {
     const char *k = svc == "cover.set_cover_position" ? "position" : "tilt_position";
     if (!only(k) || !data[k].is<double>()) return "cover position: position / tilt_position 0..100";

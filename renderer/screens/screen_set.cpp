@@ -281,6 +281,21 @@ void build_page(lv_obj_t *parent, fw::Props p) {
     }
     pk.status.push_back(st);
   }
+  {  // an integration's source only when Home Assistant has it (its registry, once read; until then all are offered)
+    namespace hl = fw::dev::ha_link;
+    size_t k = 0;
+    for (ArduinoJson::JsonVariantConst x : srcs) {
+      const std::string in = x["detect"]["integration"] | "", dom = x["detect"]["domain"] | "";
+      bool keep = true;
+      if (!in.empty() && !dom.empty()) {
+        hl::reg_fetch(dom);
+        if (const std::vector<hl::RegRow> *r = hl::reg(dom))
+          keep = std::any_of(r->begin(), r->end(), [&](const hl::RegRow &e) { return e.platform == in; });
+      }
+      if (!keep && (pk.ids[k] != (entry["source"] | ""))) pk.sets[k].clear();  // dropped below, as a source with no adapter
+      k++;
+    }
+  }
   if (linked)  // only the sources this firmware has an adapter for: a planned one (Spotify, an iCal link) picked here
     for (size_t i = pk.ids.size(); i-- > 0;)  // left the screen with nothing to read (Offline, its settings gone)
       if (pk.sets[i].empty()) {

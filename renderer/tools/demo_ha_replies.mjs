@@ -27,9 +27,19 @@ export function demoReply(service, data, now = Date.now()) {
 export const demoGrid = (p = '') => ({ in: `sensor.${p}grid_in`, cost: `sensor.${p}grid_cost`, price: `sensor.${p}grid_price`,
   power: `sensor.${p}grid_power`, device: `sensor.${p}kettle` });
 
-/** HA's result message for a WebSocket read (Energy's dashboard), else null; empty = an Energy dashboard not set up */
-export function demoWs(cmd, { empty = false, prefix = '', now = Date.now() } = {}) {
+/** HA's result message for a WebSocket read (Energy's dashboard; the registries), else null; empty = an Energy dashboard
+ *  not set up; states = the fake store ({entity: {_platform, _area}}): the registries list its entities, each on a
+ *  device of its own in its _area (areas in the order they first appear) */
+export function demoWs(cmd, { empty = false, prefix = '', now = Date.now(), states = {} } = {}) {
   const ok = (result) => ({ id: 1, type: 'result', success: true, result });
+  const slug = (a) => String(a).toLowerCase().replace(/[^a-z0-9]+/g, '_');
+  const ents = Object.entries(states).filter(([, v]) => v && v[''] !== undefined);
+  if (cmd.type === 'config/entity_registry/list_for_display')
+    return ok({ entity_categories: {}, entities: ents.map(([e, v]) => ({ ei: e, pl: v._platform ?? 'demo', di: `dev_${slug(e)}` })) });
+  if (cmd.type === 'config/device_registry/list')
+    return ok(ents.map(([e, v]) => ({ id: `dev_${slug(e)}`, area_id: v._area ? slug(v._area) : null, identifiers: [['demo', e]] })));
+  if (cmd.type === 'config/area_registry/list')
+    return ok([...new Set(ents.map(([, v]) => v._area).filter(Boolean))].map((a) => ({ area_id: slug(a), name: a })));
   const g = demoGrid(prefix);
   if (cmd.type === 'energy/get_prefs')
     return ok(empty ? { energy_sources: [], device_consumption: [] } : {

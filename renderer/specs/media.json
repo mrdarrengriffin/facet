@@ -3,17 +3,14 @@
  "id": "media",
  "locked": true,
  "name": "Media",
- "rev": 5,
+ "rev": 6,
  "role": "page",
  "params": {
-  "source": {"about": "Where what's playing comes from: a media player in Home Assistant, or made-up tracks for previews.", "type": "select", "options": ["ha", "sample"], "label": "Source", "default": "ha"},
-  "entity": {"about": "The media player this screen shows and controls.", "type": "entity", "domain": "media_player", "label": "Player", "default": ""},
-  "speakers": {"about": "The speakers you can switch between in the speaker picker.", "type": "entities", "domain": "media_player", "label": "Speakers", "default": ""},
-  "auto": {"about": "A sensor that names the speaker in the room you are in. When set, Auto follows it.", "type": "entity", "domain": "sensor", "label": "Auto follows", "default": ""},
+  "source": {"about": "Where what's playing comes from: every player in Home Assistant, the players of one integration (Music Assistant, Google Cast, Sonos), a Spotify account and its Connect devices, or made-up tracks for previews. The screen lists the source's speakers and follows the one playing.", "type": "select", "options": ["ha", "music_assistant", "spotify", "cast", "sonos", "sample"], "label": "Source", "default": "ha"},
   "visual": {"about": "What is drawn for the music: disc is a plain record with a progress ring; cassette, cd and vinyl are drawn to their real look and turn while playing.", "type": "select", "options": ["disc", "cassette", "cd", "vinyl"], "label": "Visual", "default": "cd"}
  },
  "feeds": {
-  "panel.media": {"source": "$source", "player": "$entity", "speakers": "$speakers", "auto": "$auto"}
+  "panel.media": {"source": "$source"}
  },
  "card": {
   "icon": "media",
@@ -46,7 +43,7 @@
    "p": {"title": "speaker", "open": {"e": "panel.media", "a": "sheet"}},
    "on": {"close": {"do": "media.control", "e": "panel.media"}}},
   {"c": "picker_row", "in": 8, "slot": 0,
-   "p": {"list": "group", "items": {"e": "panel.media", "a": "speakers"}, "empty": "No speakers picked."},
+   "p": {"list": "group", "items": {"e": "panel.media", "a": "speakers"}, "empty": "No speakers found."},
    "on": {"tap": {"do": "media.control", "e": "panel.media"}}}
  ]
 }
