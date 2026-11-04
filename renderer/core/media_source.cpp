@@ -288,7 +288,10 @@ bool speakers_now(std::vector<std::string> &out) {
   if (!plat.empty() && !(hl::status() == hl::FAIL)) return false;  // an integration's players: wait for the registry
   const std::vector<hl::Entity> *l = hl::list("media_player");
   if (!l) {
-    if (hl::ready() && hl::status() != hl::LOADING && hl::status() != hl::FAIL) hl::fetch("media_player");
+    if (hl::ready() && hl::status() != hl::LOADING && (hl::status() != hl::FAIL || lv_tick_diff(lv_tick_get(), s.looked) > 30000)) {
+      s.looked = lv_tick_get();  // again after a failed read too, at most every 30 s
+      hl::fetch("media_player");
+    }
     return false;
   }
   for (const hl::Entity &e : *l) {
@@ -338,7 +341,8 @@ class Media : public feed::Feed {
       s.looked = lv_tick_get();  // none found: look again (a player added in Home Assistant, a speaker back)
       hl::reg_fetch("media_player", true);
     }
-    if (changed() || (rev != s.link_rev && (s.waiting || s.speakers.empty() || !s.had_reg))) {
+    if (changed() || (rev != s.link_rev && (s.waiting || s.speakers.empty() || !s.had_reg)) ||
+        (s.waiting && lv_tick_diff(lv_tick_get(), s.looked) > 30000)) {
       s.link_rev = rev;
       setup(cfg());
       s.had_reg = hl::reg("media_player") != nullptr;

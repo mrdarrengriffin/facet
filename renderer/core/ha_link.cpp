@@ -37,6 +37,7 @@ struct State {
   std::string page;
   std::map<std::string, std::vector<RegRow>> reg;  // per domain, once all three registry reads answered
   std::string reg_busy;                              // the domain being read ("" = none)
+  uint32_t reg_failed = 0;                           // when the last registry read failed (0 = never): again after 30 s
 };
 State &S() { static State s; return s; }
 void bump() { S().rev++; }
@@ -388,7 +389,7 @@ void reg_end(bool ok) {
       else r.area.clear();
     }
     s.reg[R->domain] = std::move(R->rows);
-  }
+  } else s.reg_failed = lv_tick_get() | 1;
   s.reg_busy.clear();
   R.reset();
   bump();
@@ -397,6 +398,7 @@ void reg_end(bool ok) {
 void reg_fetch(const std::string &domain, bool again) {
   State &s = S();
   if ((!again && s.reg.count(domain)) || !s.reg_busy.empty() || !ready() || !s.ws) return;
+  if (s.reg_failed && lv_tick_diff(lv_tick_get(), s.reg_failed) < 30000) return;  // Home Assistant said no just now
   s.reg_busy = domain;
   R.reset(new RegRead());
   R->domain = domain;
