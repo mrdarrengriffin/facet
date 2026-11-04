@@ -1,0 +1,34 @@
+name: Planned work
+description: A change to make (a fix, a feature, docs or tooling), written so anyone can pick it up.
+body:
+  - type: markdown
+    attributes:
+      value: For a rough idea, start a thread in Discussions instead. An issue here is work someone can start on.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What is wrong or missing today, and who it affects. Link the screen, component or file.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: The change, in enough detail to start. Note what it touches (spec, contract, docs).
+    validations:
+      required: true
+  - type: textarea
+    id: done
+    attributes:
+      label: Done when
+      description: Checkable outcomes, e.g. "a fresh panel shows ...", "the fast gate is green", "pictures at 720 and 480".
+      value: |
+        - [ ]
+    validations:
+      required: true
+  - type: textarea
+    id: questions
+    attributes:
+      label: Open questions
+      description: Anything still to decide. Leave empty if none.

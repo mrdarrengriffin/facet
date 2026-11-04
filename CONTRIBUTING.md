@@ -6,6 +6,7 @@ to make a difference. Pick whatever suits you:
 | I want to... | Start here |
 |---|---|
 | Tell you something is broken | [Report a bug](#report-a-bug) |
+| Plan a change | [Write a good issue](#write-a-good-issue) |
 | Try Facet on my panel | [Test on a device](#test-on-a-device) |
 | Fix a typo or explain something better | [Improve the docs](#improve-the-docs) |
 | Write code | [Contribute code](#contribute-code) |
@@ -116,6 +117,20 @@ you spend the time.
 
 Open work lives on the [project board](https://github.com/users/mrdarrengriffin/projects/3); a `facet-NNN` in a
 comment or commit is an item there. How a release is cut: [RELEASING.md](RELEASING.md).
+
+## Write a good issue
+
+Issues are public and are how the work is planned: every one is on the [project board](https://github.com/users/mrdarrengriffin/projects/3).
+A good one can be picked up by someone who has never seen the conversation that led to it:
+
+- **Title:** the area, then the change: `Media: list every speaker on the screen`, not `media bug`.
+- **Problem:** what is wrong or missing today, for whom. Link the screen, component or file.
+- **Proposal:** the change, and what it touches (a spec, the contract, the docs).
+- **Done when:** checkable outcomes, so everyone agrees when it is finished.
+
+Use the [bug report](https://github.com/mrdarrengriffin/facet/issues/new?template=bug.yml) for something broken and
+[planned work](https://github.com/mrdarrengriffin/facet/issues/new?template=task.yml) for the rest. Commits that finish
+one say `Fixes #N`.
 
 ## Share an idea
 
