@@ -29,7 +29,9 @@ A tag without it fails before anything builds. Draft the next version's file as 
 The release workflow uses the file as the GitHub release body (plus the full-changelog link). The OTA manifest's
 `summary` is its short version: the headline, After updating in full, then the bold leads (at most 1200 characters).
 Home Assistant shows that summary as the release notes in the panel's update dialog, with `release_url` (the GitHub
-release) as the link to the rest. To change a published release's notes: edit the file, commit, then
+release) as the link to the rest. The manifest also lists every version's own short summary since the last stable
+release (`notes`, `node firmware/release-notes.mjs entries V`); the panel shows those newer than the version it runs,
+newest first, so a panel that skipped versions sees what changed in each. A section with nothing under it is left out. To change a published release's notes: edit the file, commit, then
 `node firmware/release-notes.mjs body V vPREV > notes.md && gh release edit vV --notes-file notes.md`; the update card
 picks up the new summary only with the next build of that channel.
 

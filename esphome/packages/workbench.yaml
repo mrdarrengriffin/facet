@@ -16,6 +16,7 @@ substitutions:
 esphome:
   includes:
     - ../board/bootguard.h
+    - ../board/fw_notes.h
     - ../board/fw_update.h
   build_flags:
     # LVGL modules the WASM build has (panel lv_conf + packages/ui.yaml flags): ESPHome's lv_conf zeroes any module no
@@ -42,7 +43,8 @@ esphome:
       then:
         - lambda: |-
             panel::boot::start();
-            panel::fwu::watch(id(fw_update));  // the installed version = this build's (board/fw_update.h)
+            // the installed version = this build's; the notes of every version since it (board/fw_update.h)
+            panel::fwu::watch(id(fw_update), id(fw_http), "${update_manifest}");
     - priority: -100
       then:
         - lambda: |-
@@ -56,6 +58,7 @@ esphome:
               const size_t k = u.rfind("ota.json");
               if (beta && k != std::string::npos) u.replace(k, 8, "ota-beta.json");
               id(fw_update).set_source_url(u);
+              panel::fwu::set_url(u);
               id(fw_update).update();
             };
             // Settings > Update: the Firmware entity's state on every change (after watch()'s version fix), and its
@@ -275,6 +278,7 @@ select:
 # installed + latest version and installs ONLY when someone presses Install. While a new image is on probation the
 # entity reads "installing" with the settling countdown (board/fw_update.h).
 http_request:
+  id: fw_http
 
 ota:
   - platform: http_request
