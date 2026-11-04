@@ -6,6 +6,7 @@
 // parts whose whole look is a type style + a colour (no size of their own): nothing to tune, the check passes them
 // (Title, Text: its box is its type's line boxes, the Header's text)
 const TEXT_ONLY = new Set(['title', 'text']);
+import { serveDemoArt } from '../../tools/demo_art.mjs';  // pictures: the docs' demo art (Media art)
 const CARD = ['layout:card-pad', 'radius:card', 'stroke:hair'];   // must repaint the Card
 const PAGE = ['layout:inset', 'layout:gutter', 'layout:top', 'layout:header-gap', 'squeeze'];  // page only
 // Header round 3: EVERY contract component (meta "contract": 2) is mounted and must list >= 1 tunable token
@@ -33,6 +34,8 @@ const EXTRA = { card: [{ opening: false }, CARD, PAGE],
   status_line: [{ text: 'Normal 26.2p until 16:00' }, ['space:3'], PAGE],
   bins_art: [{ colours: 'black,green' }, ['layout:bin-hero', 'stroke:edge'], PAGE],
   cover_visual: [{ kind: 'venetian', position: 40, heading: 80 }, ['layout:cover-pad', 'layout:cover-rail', 'layout:cover-bar', 'layout:cover-slat', 'layout:cover-stack', 'stroke:edge', 'space:1'], PAGE],
+  // its words sit layout:inset above its foot, space:2 apart (the inset is its own here, not a Page's)
+  media_art: [{ art: '/api/media_player_proxy/media_player.sitting_room_speaker?token=demo&cache=a', title: 'Harbour Lights', artist: 'The Lanterns' }, ['layout:inset', 'space:2'], PAGE.filter((n) => n !== 'layout:inset')],
   media_visual: [{ playing: false }, [], PAGE],  // still, as media_hero: a turning reel or record repaints between a tune and its "and back"
   media_hero: [{ playing: false }, ['layout:m-gap', 'layout:m-col-top', 'layout:m-title-h'], PAGE],  // still: a turning picture repaints between a tune and its "and back"
   slider_row: [{}, ['layout:gutter', 'layout:m-vol-label'], PAGE.filter((n) => n !== 'layout:gutter')],  // its row's gap is its own gutter
@@ -67,7 +70,7 @@ export default {
     Date.now = () => PINNED;
     const W = 480, H = 360, st = m._fw_stage(W, H);
     let t = m.__t || 0;
-    const tick = (n = 4) => { for (let k = 0; k < n; k++) { t += 16; m._fw_tick(t); } m.__t = t; };
+    const tick = (n = 4) => { for (let k = 0; k < n; k++) { t += 16; m._fw_tick(t); serveDemoArt(m); } m.__t = t; };
     const S = (p, f) => { const q = m.stringToNewUTF8(p); try { return f(q); } finally { m._free(q); } };
     const lab = (c, a = '', sid = -1) => S(c, (pc) => S(a, (pa) => m.UTF8ToString(m._fw_lab(sid, pc, pa))));
     const hash = () => { const px = new Uint32Array(m.HEAPU8.buffer, m._fw_frame(st), W * H); let h = 0; for (let k = 0; k < px.length; k++) h = (Math.imul(h, 31) + px[k]) | 0; return h; };

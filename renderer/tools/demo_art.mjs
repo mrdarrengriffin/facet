@@ -4,6 +4,7 @@
 // here: drawn in code (no image files), the same pixels everywhere. Plain JS: node and the site's bundler load it.
 //   demoArtUrl(name)  the entity_picture of a demo player: a path on HA, as HA gives it (its proxy, an access token)
 //   demoArt(url)      {w, h, rgba} for a demo picture URL (any host in front of the path), else null
+//   serveDemoArt(m)   a WASM module's wanted pictures (core/images.h fw_img_wants) answered: demo art, else 404
 
 const SIZE = 300;  // a typical album-art size from a speaker integration
 /** the picture proxy path HA gives as entity_picture, with the demo's access token */
@@ -35,4 +36,17 @@ export function demoArt(url) {
     }
   }
   return { w, h, rgba };
+}
+
+export function serveDemoArt(m) {
+  if (!m._fw_img_wants) return;
+  const str = (s, f) => { const p = m.stringToNewUTF8(s); try { return f(p); } finally { m._free(p); } };
+  for (const url of JSON.parse(m.UTF8ToString(m._fw_img_wants()) || '[]')) {
+    const a = demoArt(url);
+    if (!a) { str(url, (pu) => str('not found (404)', (pw) => m._fw_img_fail(pu, pw))); continue; }
+    const p = m._malloc(a.rgba.length);
+    m.HEAPU8.set(a.rgba, p);
+    str(url, (pu) => m._fw_img_put(pu, a.w, a.h, p));
+    m._free(p);
+  }
 }

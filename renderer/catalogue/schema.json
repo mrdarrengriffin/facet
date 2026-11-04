@@ -7217,8 +7217,8 @@
     {
      "name": "art",
      "type": "text",
-     "about": "The album art's address (the player's picture).",
-     "default": ""
+     "about": "The album art's address (the player's picture). The default is the docs' demo picture.",
+     "default": "/api/media_player_proxy/media_player.sitting_room_speaker?token=demo&cache=sitting_room_speaker"
     },
     {
      "name": "title",

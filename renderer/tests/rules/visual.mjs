@@ -22,6 +22,7 @@ import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 import { inflateSync } from 'node:zlib';
 import { png as encodePng } from '../../tools/lib/fwbench.mjs';
+import { serveDemoArt } from '../../tools/demo_art.mjs';  // pictures: the docs' demo art (Media art)
 
 const HERE = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 // PNG in without dependencies (8-bit RGBA / RGB, non-interlaced: what Chromium writes)
@@ -58,7 +59,7 @@ export function shoot(m, d, c, props, light, { ms = 0, every = 2 } = {}) {
   let W = screen ? S : Math.round(fw * D), H = screen ? S : (fh ? Math.round(fh * D) : S);
   const id = m._fw_stage(W, H);
   let t = Math.round(m.__t || 0);
-  const tick = (n = 1) => { for (let i = 0; i < n; i++) { t += TICK; m._fw_tick(t); } m.__t = t; m._fw_events(); };
+  const tick = (n = 1) => { for (let i = 0; i < n; i++) { t += TICK; m._fw_tick(t); serveDemoArt(m); } m.__t = t; m._fw_events(); };
   tick(2);
   const e = str(m, c.id, (cp) => str(m, JSON.stringify(props), (pp) => m.UTF8ToString(m._fw_render(id, cp, pp, light ? 1 : 0, 0))));
   if (e) { m._fw_stage_free(id); return { err: e }; }

@@ -2504,7 +2504,7 @@
      "name": "art",
      "type": "text",
      "bindable": true,
-     "about": "The album art's address (the player's picture)."
+     "about": "The album art's address (the player's picture). The default is the docs' demo picture."
     },
     {
      "name": "title",

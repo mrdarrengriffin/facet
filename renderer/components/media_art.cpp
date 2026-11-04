@@ -79,14 +79,14 @@ FW_COMPONENT(media_art, "Media art", "components", R"({
   "parts": [],
   "frame": [480, 480],
   "props": [
-    {"name": "art", "about": "The album art's address (the player's picture).", "type": "text", "default": ""},
+    {"name": "art", "about": "The album art's address (the player's picture). The default is the docs' demo picture.", "type": "text", "default": "/api/media_player_proxy/media_player.sitting_room_speaker?token=demo&cache=sitting_room_speaker"},
     {"name": "title", "about": "The track, one line.", "type": "text", "default": "Harbour Lights"},
     {"name": "artist", "about": "The artist, one line under it.", "type": "text", "default": "The Lanterns"},
     {"name": "playing", "about": "Whether it is playing: only then is the picture shown.", "type": "bool", "default": true}
   ],
   "variants": [
-    {"label": "no art: draws nothing", "props": {}},
-    {"label": "paused: draws nothing", "props": {"playing": false}}
+    {"label": "a long title", "props": {"title": "A very long track title that does not fit on one line at all", "artist": "Somebody with a long name and a band"}},
+    {"label": "no artist", "props": {"artist": ""}}
   ]
 })") {
   auto *d = new MA;

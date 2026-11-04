@@ -5836,7 +5836,7 @@
          "$ref": "#/$defs/param"
         }
        ],
-       "description": "The album art's address (the player's picture)."
+       "description": "The album art's address (the player's picture). The default is the docs' demo picture."
       },
       "title": {
        "anyOf": [
