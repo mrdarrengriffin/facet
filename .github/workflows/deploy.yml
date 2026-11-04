@@ -99,15 +99,16 @@ jobs:
     # The Pages deployment, made here rather than with actions/deploy-pages (same API, POST .../pages/deployments): that
     # action's build version is always GITHUB_SHA, and a second deploy of the same commit (dev.yml or release.yml
     # publishing new firmware while main is unchanged) never replaced the site and held Pages "in progress" for half
-    # an hour. Here each run is its own version (commit.run.attempt). A deployment refused because another is still in
+    # an hour. Here each run is its own version (a hash of commit.run.attempt). A deployment refused because another is still in
     # progress is tried again, every minute for up to 15 minutes; then its status is followed to succeed.
     steps:
       - id: deployment
         env:
           GH_TOKEN: ${{ github.token }}
           ARTIFACT_ID: ${{ needs.build.outputs.artifact_id }}
-          VERSION: ${{ github.sha }}.${{ github.run_id }}.${{ github.run_attempt }}
+          RUN: ${{ github.sha }}.${{ github.run_id }}.${{ github.run_attempt }}
         run: |
+          VERSION=$(printf %s "$RUN" | sha1sum | cut -c1-40)   # Pages takes a commit-shaped version only
           [ -n "$ARTIFACT_ID" ] || { echo "::error::no Pages artifact id from the build job"; exit 1; }
           oidc=$(curl -sfH "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL" | jq -r .value)
           body=$(jq -nc --arg a "$ARTIFACT_ID" --arg v "$VERSION" --arg t "$oidc" '{artifact_id: ($a | tonumber), pages_build_version: $v, oidc_token: $t}')
@@ -121,7 +122,7 @@ jobs:
             sleep 60
           done
           [ -n "$id" ] || { echo "::error::Pages stayed busy for 15 minutes"; exit 1; }
-          echo "deployment $id ($VERSION)"
+          echo "deployment $id ($VERSION = $RUN)"
           for i in $(seq 1 120); do
             st=$(gh api "repos/$GITHUB_REPOSITORY/pages/deployments/$id" -q .status 2>/dev/null || echo error)
             case "$st" in
