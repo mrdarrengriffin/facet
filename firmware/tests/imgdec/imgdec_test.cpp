@@ -237,6 +237,73 @@ int main(int argc, char **argv) {
     }
     release(full);
   }
+  {  // the JPEG's own descale (1/2, 1/4: the memory fallback's 320, the Media CD's 168, small boxes): each step against an
+     // exact area average of the 1:1 decode, 4:4:4 and 4:2:0. LVGL's TJpgDec left out the descale stage: every other
+     // row came out as the right half of a source row (the "interlaced" idle art), about 21 dB here
+    for (const char *f : {"cover.jpg", "cover420.jpg"}) {
+      const auto b = load(f);
+      auto full = dec(b, {box(640, 640)}, WS_PX, MEM);
+      CHECK(ok(full) && full.px[0].w == 640, "%s at 1:1 err=%s", f, full.err.c_str());
+      for (const int n : {320, 160}) {
+        auto r = dec(b, {box(n, n)}, WS_PX, MEM);
+        CHECK(ok(r) && r.px[0].w == n && r.sc == (n == 320 ? 1 : 2), "%s into %d: 1/%d err=%s", f, n, 1 << r.sc, r.err.c_str());
+        if (!ok(r) || !ok(full)) { release(r); continue; }
+        const int k = 640 / n;
+        double e[2] = {0, 0};  // even rows, odd rows
+        for (int y = 0; y < n; y++)
+          for (int x = 0; x < n; x++) {
+            double ref[3] = {0, 0, 0};
+            for (int sy = y * k; sy < (y + 1) * k; sy++)
+              for (int sx = x * k; sx < (x + 1) * k; sx++) { int R, G, B; rgb(full.px[0], sx, sy, R, G, B); ref[0] += R, ref[1] += G, ref[2] += B; }
+            int c[3];
+            rgb(r.px[0], x, y, c[0], c[1], c[2]);
+            for (int i = 0; i < 3; i++) { const double d = c[i] - ref[i] / (k * k); e[y & 1] += d * d; }
+          }
+        const double half = (double) n * n * 3 / 2, ev = 10 * std::log10(255.0 * 255.0 / std::max(1e-9, e[0] / half)), od = 10 * std::log10(255.0 * 255.0 / std::max(1e-9, e[1] / half));
+        printf("%s at 1/%d (%d px): PSNR even rows %.1f dB, odd rows %.1f dB\n", f, k, n, ev, od);
+        CHECK(ev >= 32 && od >= 32, "%s at 1/%d: PSNR %.1f / %.1f dB (>= 32 on even and odd rows)", f, k, ev, od);
+        release(r);
+      }
+      release(full);
+    }
+  }
+  {  // the idle art's reserved slots (img_scale.h Slots): with them, a fragmented PSRAM (the largest block 150 KB, far
+     // under the 494 KB a 480 decode holds with its pixels) still gets the idle art at its box size, smooth, no fallback,
+     // over 30 track changes (shown + coming: each new one in the free slot, the old one's handed back)
+    const auto b = load("cover.jpg");
+    const long before = live;
+    CHECK(fw::img::slots_reserve(480, 480) == 2 && fw::img::slots_free() == 2, "two 480 x 480 slots reserved");
+    const long slots_bytes = live - before;
+    fw::imgdec::Result shown;
+    int at_box = 0;
+    for (int i = 0; i < 30; i++) {
+      live_max = live;
+      const long base = live;
+      auto r = dec(b, {box(480, 480)}, GU_PX, 150 * 1024);
+      at_box += ok(r) && r.side == 0 && r.sc == 0 && r.px[0].w == 480 && r.px[0].h == 480 && r.px[0].slot;
+      CHECK(live_max - base <= 150 * 1024, "track %d: the decode held %ld KB beside the slots (150 KB free)", i, (live_max - base) / 1024);
+      if (i == 29 && ok(r)) {  // the last one against the board loop's reference: as sharp as the unconstrained decode
+        auto ref = dec(b, {box(480, 480)}, GU_PX, MEM);  // (both slots busy now: a normal allocation)
+        long d = 0;
+        for (size_t q = 0; ok(ref) && q < (size_t) 480 * 480; q++) d += ((const uint16_t *) r.px[0].data)[q] != ((const uint16_t *) ref.px[0].data)[q];
+        CHECK(ok(ref) && !ref.px[0].slot && d == 0, "in a slot = the same pixels as a normal decode (%ld differ)", d);
+        release(ref);
+      }
+      release(shown);  // the old track's picture: its slot back
+      shown = r;
+      CHECK(fw::img::slots_free() == 1, "track %d: one slot shown, one free (%d free)", i, fw::img::slots_free());
+    }
+    CHECK(at_box == 30, "30 tracks in 150 KB free: %d at 480 x 480 in a slot, no fallback", at_box);
+    printf("idle art with slots, 150 KB free: %d of 30 tracks at 480 x 480 (slots %ld KB, reserved once)\n", at_box, slots_bytes / 1024);
+    // without a free slot (both held) the same squeeze is the fallback, as before
+    auto other = dec(b, {box(480, 480)}, GU_PX, MEM);
+    auto r = dec(b, {box(480, 480)}, GU_PX, 300 * 1024);
+    CHECK(ok(r) && !r.px[0].slot && r.side == 320, "no free slot: the fallback (side %d) err=%s", r.side, r.err.c_str());
+    release(r);
+    release(other);
+    release(shown);
+    CHECK(fw::img::slots_free() == 2 && live - before == slots_bytes, "every slot back, nothing else held (%ld B)", live - before - slots_bytes);
+  }
   {
     auto r = dec(load("grey.jpg"), {box(640, 480)});
     if (ok(r)) { int R, G, B; rgb(r.px[0], 10, 10, R, G, B); CHECK(abs(R - B) <= 8, "grey.jpg is grey: %d %d %d", R, G, B); }

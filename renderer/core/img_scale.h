@@ -10,9 +10,12 @@
 // 720). max_side (0 = none) is only the panel decode's memory fallback (firmware/fw_imgdec.h fit): a view the largest
 // free PSRAM block can't hold at its box size keeps max_side px on its long side and LVGL scales it up smoothly when
 // drawn (fx::Pen::image, bilinear).
-// Memory: every buffer through FW_IMG_MALLOC (the panel: PSRAM), freed with FW_IMG_FREE (free_pixels()).
+// Memory: every buffer through FW_IMG_MALLOC (the panel: PSRAM), freed with FW_IMG_FREE (free_pixels()), except the
+// screen-size pictures (the idle art): those go into one of SLOTS buffers reserved once (slots_reserve) and handed
+// back after (slot_give), so a fragmented heap can't push the idle art into the memory fallback.
 #pragma once
 #include <algorithm>
+#include <atomic>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -42,17 +45,64 @@ struct Box {
   bool nearest = false;
   bool operator==(const Box &o) const { return w == o.w && h == o.h && r == o.r && shade == o.shade && s == o.s && nearest == o.nearest; }
 };
-// a view's finished pixels: w x h RGB565, then (alpha) w x h A8. size = the bytes held (FW_IMG_MALLOC)
+// Reserved pictures: SLOTS buffers of one screen-size RGB565 picture each (the idle art shown + the next track's while
+// it comes in), made once (slots_reserve, the LVGL task: the first screen-size view, or the panel's boot with Idle shows
+// = Album art) and never freed. An opaque picture of at least half that size and at most all of it is made in a free
+// slot (Sink::begin, any task: a slot is taken and given back atomically) instead of a fresh allocation, and the decode
+// doesn't count its pixels against the free memory (Sink::need). No free slot (or not reserved): a normal allocation.
+struct Slots {
+  static constexpr int N = 2;
+  uint8_t *buf[N] = {};
+  std::atomic<bool> busy[N] = {};
+  std::atomic<int> n{0};
+  size_t bytes = 0;
+};
+inline Slots &slots() { static Slots s; return s; }
+// the slots for w x h RGB565 (once; later calls keep the first): how many there are (0 = no memory)
+inline int slots_reserve(int w, int h) {
+  Slots &s = slots();
+  if (s.n.load() || w < 1 || h < 1) return s.n.load();
+  s.bytes = (size_t) w * h * 2;
+  int n = 0;
+  for (int i = 0; i < Slots::N; i++)
+    if ((s.buf[n] = (uint8_t *) FW_IMG_MALLOC(s.bytes))) n++;
+  s.n.store(n);
+  return n;
+}
+inline bool slot_fits(size_t bytes) { const Slots &s = slots(); return s.n.load() && bytes <= s.bytes && bytes * 2 >= s.bytes; }
+inline int slots_free() {
+  Slots &s = slots();
+  int f = 0;
+  for (int i = 0; i < s.n.load(); i++) f += !s.busy[i].load();
+  return f;
+}
+inline uint8_t *slot_take(size_t bytes) {
+  Slots &s = slots();
+  if (!slot_fits(bytes)) return nullptr;
+  for (int i = 0; i < s.n.load(); i++) {
+    bool no = false;
+    if (s.busy[i].compare_exchange_strong(no, true)) return s.buf[i];
+  }
+  return nullptr;
+}
+inline void slot_give(const uint8_t *p) {
+  Slots &s = slots();
+  for (int i = 0; i < s.n.load(); i++)
+    if (s.buf[i] == p) { s.busy[i].store(false); return; }
+}
+
+// a view's finished pixels: w x h RGB565, then (alpha) w x h A8. size = the bytes held (FW_IMG_MALLOC, or a slot)
 struct Pixels {
   Box box;
   int w = 0, h = 0;
   bool alpha = false;
+  bool slot = false;  // data is a reserved slot (given back, never freed)
   uint8_t *data = nullptr;
   size_t size = 0;
 };
 inline void free_pixels(Pixels &p) {
-  if (p.data) FW_IMG_FREE(p.data);
-  p.data = nullptr, p.size = 0;
+  if (p.data) { if (p.slot) slot_give(p.data); else FW_IMG_FREE(p.data); }
+  p.data = nullptr, p.size = 0, p.slot = false;
 }
 
 // the view's size for a sw x sh source: cover = the box; contain = the source fitted inside; pixel = a whole-number
@@ -108,15 +158,18 @@ class Sink {
     taps(ys_, oh_, sh, k, y0);
     ring_n_ = 1;
     for (int y = 0; y < oh_; y++) ring_n_ = std::max(ring_n_, last(y) - ys_[y].a + 1);
+    in_slot_ = !alpha_ && slot_fits(px() * 2) && slots_free() > 0;
     return true;
   }
+  bool in_slot() const { return in_slot_; }  // planned into a reserved slot (its pixels not counted in need())
   int w() const { return ow_; }
   int h() const { return oh_; }
   // the bytes begin() takes, on top of plan()'s taps (taps() are counted too: the decode's whole reserve)
-  size_t need() const { return px() * (alpha_ ? 3 : 2) + (size_t) ring_n_ * sw_ * 4 + sizeof(Tap) * (size_t) (ow_ + oh_); }
+  size_t need() const { return (in_slot_ ? 0 : px() * (alpha_ ? 3 : 2)) + (size_t) ring_n_ * sw_ * 4 + sizeof(Tap) * (size_t) (ow_ + oh_); }
   bool begin() {
     if (!xs_) return false;
-    out_ = (uint8_t *) FW_IMG_MALLOC(px() * (alpha_ ? 3 : 2));
+    slot_ = in_slot_ && (out_ = slot_take(px() * 2)) != nullptr;
+    if (!out_) out_ = (uint8_t *) FW_IMG_MALLOC(px() * (alpha_ ? 3 : 2));
     ring_ = (uint8_t *) FW_IMG_MALLOC((size_t) ring_n_ * sw_ * 4);
     if (!out_ || !ring_) { drop(); return false; }
     in_ = 0, y_ = 0, see_ = false;
@@ -133,13 +186,13 @@ class Sink {
   bool finish(Pixels &out) {
     if (!out_ || y_ < oh_) { drop(); return false; }
     out = Pixels{};
-    out.box = box_, out.w = ow_, out.h = oh_, out.alpha = see_;
+    out.box = box_, out.w = ow_, out.h = oh_, out.alpha = see_, out.slot = slot_;
     out.size = px() * (alpha_ ? 3 : 2);
-    if (alpha_ && !see_) {  // the A8 plane isn't needed: given back (a shrink in place)
+    if (alpha_ && !see_ && !slot_) {  // the A8 plane isn't needed: given back (a shrink in place)
       if (void *p = FW_IMG_REALLOC(out_, px() * 2)) out_ = (uint8_t *) p, out.size = px() * 2;
     }
     out.data = out_;
-    out_ = nullptr;
+    out_ = nullptr, slot_ = false;
     drop();
     return true;
   }
@@ -171,7 +224,8 @@ class Sink {
   size_t px() const { return (size_t) ow_ * oh_; }
   void drop() {
     if (xs_) FW_IMG_FREE(xs_);
-    if (out_) FW_IMG_FREE(out_);
+    if (out_) { if (slot_) slot_give(out_); else FW_IMG_FREE(out_); }
+    slot_ = false;
     if (ring_) FW_IMG_FREE(ring_);
     xs_ = ys_ = nullptr, out_ = ring_ = nullptr;
   }
@@ -233,7 +287,7 @@ class Sink {
 
   Box box_;
   int sw_ = 0, sh_ = 0, ow_ = 0, oh_ = 0, r_ = 0, shade_ = 0, ring_n_ = 1, in_ = 0, y_ = 0;
-  bool alpha_ = false, see_ = false;
+  bool alpha_ = false, see_ = false, in_slot_ = false, slot_ = false;
   Tap *xs_ = nullptr, *ys_ = nullptr;
   uint8_t *out_ = nullptr, *ring_ = nullptr;
 };

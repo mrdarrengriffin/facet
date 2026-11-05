@@ -23,5 +23,6 @@ Image.new('RGB', (5000, 5000), (200, 30, 30)).save(f'{d}/huge-flat.png')        
 noise = Image.frombytes('RGB', (2400, 1800), bytes(random.getrandbits(8) for _ in range(2400 * 1800 * 3)))
 noise.save(f'{d}/big.jpg', quality=95)                                # several MB: over every body cap
 photo(640, 640).save(f'{d}/cover.jpg', quality=90, subsampling=0)  # an HA media_player_proxy album cover: 640 x 640, 4:4:4, q90
+photo(640, 640).save(f'{d}/cover420.jpg', quality=90)                # the same, 4:2:0 (Pillow's default: 16 x 16 MCUs)
 p.save(f'{d}/photo.gif'); p.save(f'{d}/photo.webp')
 open(f'{d}/page.html', 'w').write('<!doctype html><html><body>Just a moment...</body></html>')

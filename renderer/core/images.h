@@ -61,7 +61,10 @@ bool waiting(const char *src);
 // one URL at a time, so a URL's budget().timeout_ms starts when its own download does, not when the view asked
 void alive(const char *src);  // a view still wants this URL (false once put / fail / timeout, or the screen was left)
 void refresh(const char *src);  // fetch a URL again (its views keep their pixels until the new ones come; a failure keeps them)
-std::string stats();  // JSON {board, cap, bytes, peak, views, shown, evicted, dropped, refused, pending, fetches}
+std::string stats();  // JSON {board, cap, bytes, peak, views, shown, evicted, dropped, refused, pending, fetches, slots, slots_free}
+// the screen-size picture slots (img_scale.h Slots: the idle art, shown + coming), reserved once for this display (LVGL
+// task; also done by the first screen-size view): how many there are
+int reserve_screen();
 
 // A picture that changes (a track's album art): the one shown stays until the next is fully in, then the two swap and
 // only then do the old one's pixels go (only the current picture is kept, never a cache of past tracks; only if two

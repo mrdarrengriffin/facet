@@ -1950,6 +1950,84 @@
     "bytes_est": 800
    }
   },
+  "icon_button": {
+   "name": "Icon button",
+   "update": true,
+   "props": [
+    {
+     "name": "style",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "play",
+      "round",
+      "square"
+     ],
+     "about": "The button's shape: play is the large round play and pause button, round is a smaller circle, square has rounded corners."
+    },
+    {
+     "name": "icon",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "next",
+      "prev",
+      "play",
+      "plus",
+      "close",
+      "check",
+      "back",
+      "settings",
+      "chevron",
+      "chevron-left",
+      "calendar",
+      "speaker",
+      "covers"
+     ],
+     "about": "The icon on the button, such as next, previous, play or close."
+    },
+    {
+     "name": "state",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "default",
+      "pressed",
+      "active",
+      "active-pressed",
+      "disabled",
+      "unavailable",
+      "missing"
+     ],
+     "about": "How the button looks: default ready to tap, pressed while held, active when it is switched on, active-pressed while the active one is held, disabled when it cannot be used, unavailable when its device has no state now, or missing when Home Assistant has no such device (the same look)."
+    }
+   ],
+   "events": {
+    "tap": [
+     "nav.open",
+     "nav.back",
+     "light.toggle",
+     "calendar.control",
+     "media.control",
+     "cover.control",
+     "script.run",
+     "scene.activate",
+     "automation.trigger",
+     "button.press",
+     "entity.toggle"
+    ],
+    "toggle": [
+     "media.control"
+    ],
+    "open": [
+     "nav.open"
+    ]
+   },
+   "cost": {
+    "objects": 3,
+    "bytes_est": 480
+   }
+  },
   "icon": {
    "name": "Icon",
    "update": true,
@@ -2086,84 +2164,6 @@
     }
    ],
    "events": {
-    "open": [
-     "nav.open"
-    ]
-   },
-   "cost": {
-    "objects": 3,
-    "bytes_est": 480
-   }
-  },
-  "icon_button": {
-   "name": "Icon button",
-   "update": true,
-   "props": [
-    {
-     "name": "style",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "play",
-      "round",
-      "square"
-     ],
-     "about": "The button's shape: play is the large round play and pause button, round is a smaller circle, square has rounded corners."
-    },
-    {
-     "name": "icon",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "next",
-      "prev",
-      "play",
-      "plus",
-      "close",
-      "check",
-      "back",
-      "settings",
-      "chevron",
-      "chevron-left",
-      "calendar",
-      "speaker",
-      "covers"
-     ],
-     "about": "The icon on the button, such as next, previous, play or close."
-    },
-    {
-     "name": "state",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "default",
-      "pressed",
-      "active",
-      "active-pressed",
-      "disabled",
-      "unavailable",
-      "missing"
-     ],
-     "about": "How the button looks: default ready to tap, pressed while held, active when it is switched on, active-pressed while the active one is held, disabled when it cannot be used, unavailable when its device has no state now, or missing when Home Assistant has no such device (the same look)."
-    }
-   ],
-   "events": {
-    "tap": [
-     "nav.open",
-     "nav.back",
-     "light.toggle",
-     "calendar.control",
-     "media.control",
-     "cover.control",
-     "script.run",
-     "scene.activate",
-     "automation.trigger",
-     "button.press",
-     "entity.toggle"
-    ],
-    "toggle": [
-     "media.control"
-    ],
     "open": [
      "nav.open"
     ]
@@ -5300,5 +5300,5 @@
    }
   }
  },
- "hash": "e69689e9"
+ "hash": "499cd08e"
 }

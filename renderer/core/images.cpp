@@ -38,6 +38,7 @@ struct View {
   State st = loading;
   lv_image_dsc_t dsc{};
   uint8_t *data = nullptr;
+  bool slot = false;  // data is a reserved slot (img_scale.h Slots): given back, never freed
   size_t bytes = 0;  // counted against the cap (pixels + this record)
   int owners = 0;
   uint32_t used = 0;
@@ -55,8 +56,9 @@ lv_timer_t *watch = nullptr, *sweep_t = nullptr;
 void free_px(View *v) {
   if (!v->data) return;
   lv_image_cache_drop(&v->dsc);
-  FW_IMG_FREE(v->data);  // made by img_scale.h (FW_IMG_MALLOC)
-  v->data = nullptr;
+  if (v->slot) slot_give(v->data);  // a reserved slot: back to the pool
+  else FW_IMG_FREE(v->data);  // made by img_scale.h (FW_IMG_MALLOC)
+  v->data = nullptr, v->slot = false;
   total -= v->bytes;
   v->bytes = 0;
 }
@@ -119,8 +121,8 @@ bool adopt(View *v, Pixels &px) {
   const size_t bytes = px.size + sizeof(View), had = v->bytes;
   if (!room(bytes > had ? bytes - had : 0, v)) return fail_px(v, "over budget");
   free_px(v);
-  v->data = px.data;
-  px.data = nullptr;
+  v->data = px.data, v->slot = px.slot;
+  px.data = nullptr, px.slot = false;
   v->bytes = bytes;
   total += bytes;
   peak = std::max(peak, total);
@@ -140,8 +142,10 @@ bool adopt(View *v, Pixels &px) {
 // a whole RGBA8888 source (the WASM host's decode) -> the view's pixels, one pass (img_scale.h). Every allocation may
 // fail (the panel: a full PSRAM, no exceptions) = the view fails "no memory" and the component shows its fallback
 void fill(View *v, const uint8_t *rgba, int sw, int sh) {
+  bool see = false;  // an A8 plane only for a see-through source (an opaque one can go into a reserved slot)
+  for (size_t i = 3, n = (size_t) sw * sh * 4; i < n && !see; i += 4) see = rgba[i] < 255;
   Sink k;
-  if (!k.plan(box_of(*v), sw, sh, 0, true) || !k.begin()) { fail_px(v, "no memory"); return; }
+  if (!k.plan(box_of(*v), sw, sh, 0, see) || !k.begin()) { fail_px(v, "no memory"); return; }
   for (int y = 0; y < sh; y++) k.row(rgba + (size_t) y * sw * 4);
   Pixels px;
   if (!k.finish(px)) { fail_px(v, "no memory"); return; }
@@ -152,10 +156,35 @@ void fill(View *v, const uint8_t *rgba, int sw, int sh) {
 
 const Budget &budget() { return B; }
 
+namespace {
+// a screen-size opaque cover (the idle art: square corners, at least half the screen, at most all of it): its pixels go
+// into the reserved slots (img_scale.h Slots), reserved on the first
+bool screen_size(int w, int h, Scale s, int radius) {
+  lv_display_t *d = lv_display_get_default();
+  if (!d || s != cover || radius) return false;
+  const size_t px = (size_t) w * h, scr = (size_t) lv_display_get_horizontal_resolution(d) * lv_display_get_vertical_resolution(d);
+  return px <= scr && px * 2 >= scr;
+}
+}  // namespace
+
+int reserve_screen() {
+  lv_display_t *d = lv_display_get_default();
+  return d ? slots_reserve(lv_display_get_horizontal_resolution(d), lv_display_get_vertical_resolution(d)) : 0;
+}
+
 int acquire(void *owner, const char *src_c, int w, int h, Scale s, int radius, Notify cb, bool nearest, int shade) {
   release(owner);
   const std::string src = src_c ? src_c : "", k = key(src);
   w = std::max(1, w), h = std::max(1, h), shade = std::max(0, shade);
+  if (screen_size(w, h, s, radius) && !nearest) {
+    reserve_screen();
+    // the screen's picture: what other screens left in the cache (the Media screen's CD art, kept for a return) goes
+    // now, so its memory is free for this one
+    std::vector<View *> left;
+    for (View *x : views)
+      if (!x->owners && x->data && !(x->key == k && x->w == w && x->h == h)) left.push_back(x);
+    for (View *x : left) { dropped++; erase(x); }
+  }
   View *v = nullptr;
   for (View *x : views)
     if (x->key == k && x->w == w && x->h == h && x->s == s && x->r == radius && x->nearest == nearest && x->shade == shade) { v = x; break; }
@@ -342,9 +371,9 @@ const lv_image_dsc_t *Swap::pixels() const { return src_[on_].empty() ? nullptr 
 std::string stats() {
   char b[320];
   snprintf(b, sizeof b,
-           "{\"board\":\"%s\",\"cap\":%u,\"bytes\":%u,\"peak\":%u,\"views\":%u,\"shown\":%d,\"evicted\":%u,\"dropped\":%u,\"refused\":%u,\"pending\":%u,\"fetches\":%u}",
+           "{\"board\":\"%s\",\"cap\":%u,\"bytes\":%u,\"peak\":%u,\"views\":%u,\"shown\":%d,\"evicted\":%u,\"dropped\":%u,\"refused\":%u,\"pending\":%u,\"fetches\":%u,\"slots\":%d,\"slots_free\":%d}",
            B.board, (unsigned) B.cache_bytes, (unsigned) total, (unsigned) peak, (unsigned) views.size(), shown(), evicted, dropped,
-           refused, (unsigned) pending.size(), fetches);
+           refused, (unsigned) pending.size(), fetches, slots().n.load(), slots_free());
   return b;
 }
 }  // namespace fw::img

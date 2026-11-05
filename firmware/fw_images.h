@@ -51,8 +51,21 @@ struct Done {
   int64_t got_us = 0, dec_us = 0;  // the download and the decode
   size_t bytes = 0;
 };
+// the last decode's biggest view (GET /fw/info "art", fw_device.h): what it was made for and what came out
+struct Art {
+  bool any = false;
+  std::string err;           // "" = decoded
+  int bw = 0, bh = 0;        // the box
+  int ow = 0, oh = 0;        // the pixels kept (smaller than the box = the memory fallback; LVGL scales them up)
+  int sw = 0, sh = 0, sc = 0;  // the source as decoded (a JPEG at 1/2^sc)
+  bool nearest = false, slot = false;
+  int side = 0;              // the fallback's cap on the long side (0 = none)
+  size_t need = 0, need_full = 0, room = 0;
+  int64_t at_us = 0;
+};
 struct State {
   std::mutex m;
+  Art art;
   std::deque<std::string> queue;  // waiting for the worker
   std::string ha;                 // the panel's Home Assistant address (a path's host), set by pump()
   std::map<std::string, std::vector<fw::img::Box>> boxes;  // a queued URL's views (their boxes), set by pump()
@@ -265,6 +278,20 @@ inline void worker(void *) {
     fetch(url, boxes, ha, *d);
     if (uxTaskGetStackHighWaterMark(nullptr) < 1024) ESP_LOGW("facet_img", "fetch task stack low (%u B left)", (unsigned) uxTaskGetStackHighWaterMark(nullptr));
     if (d->err.empty() && d->px.px.empty()) d->err = "failed";
+    Art a;
+    if (d->err != "left the screen" && !boxes.empty()) {
+      a.any = true, a.err = d->err, a.at_us = esp_timer_get_time();
+      size_t big = 0;
+      for (const auto &bx : boxes)
+        if ((size_t) bx.w * bx.h > big) big = (size_t) bx.w * bx.h, a.bw = bx.w, a.bh = bx.h, a.nearest = bx.nearest || bx.s == fw::img::pixel;
+      for (const auto &p : d->px.px)
+        if (p.box.w == a.bw && p.box.h == a.bh) a.ow = p.w, a.oh = p.h, a.slot = p.slot;
+      a.sw = d->px.sw, a.sh = d->px.sh, a.sc = d->px.sc, a.side = d->px.side;
+      a.need = d->px.need, a.need_full = d->px.need_full, a.room = d->px.room;
+      if (d->err.empty() && a.side)  // the logger runs at WARN: this shows in the web log
+        ESP_LOGW("facet_img", "%s: kept %dx%d for its %dx%d box (memory fallback: %u KB free in one block, %u KB needed at box size)", url.c_str(),
+                 a.ow, a.oh, a.bw, a.bh, (unsigned) (a.room / 1024), (unsigned) (a.need_full / 1024));
+    }
     if (!d->err.empty()) {
       if (d->err != "left the screen") ESP_LOGW("facet_img", "%s: %s", url.c_str(), d->err.c_str());
     } else
@@ -272,6 +299,7 @@ inline void worker(void *) {
                (int) (d->got_us / 1000), d->px.sw, d->px.sh, 1 << d->px.sc, (unsigned) d->px.px.size(), (int) (d->dec_us / 1000),
                (unsigned) (d->px.need / 1024));
     std::lock_guard<std::mutex> l(s.m);
+    if (a.any) s.art = a;
     s.current.clear();
     s.done.push_back(d);
   }

@@ -8,8 +8,9 @@
 //          passes paint over each other)
 //   JPEG = TJpgDec R0.03 (fw_tjpgd.c, a ~4 KB work area, one band of MCU rows): baseline only (progressive = "not
 //          supported"). Shrunk while decoding (1/2, 1/4: the decoder's own descaling) to the smallest step that still
-//          covers every box it is for, never below (a smaller step blown up = blocky art). Never 1/8: this copy of
-//          TJpgDec (LVGL's) leaves out the 1/8 output stage, so a 1/8 decode is garbage (the "malformed art")
+//          covers every box it is for, never below (a smaller step blown up = blocky art). LVGL's copy of TJpgDec
+//          left out the descale stage: fw_tjpgd.c has ChaN's back for 1/2 and 1/4 (without it every other row came out
+//          shifted, the "interlaced" art). Never 1/8: its output stage is missing too, so a 1/8 decode is garbage
 //   anything else = "not a picture" (WebP, GIF, SVG, BMP named as such: "<type> isn't supported on the panel")
 // A picture must be whole: a PNG without its end (IEND) or a JPEG that runs out of bytes = "broken picture (... cut
 // short)", never half a picture.
@@ -57,6 +58,8 @@ struct Result {
   int sw = 0, sh = 0, sc = 0;  // the source as decoded (after a JPEG's 1/2^sc)
   int side = 0;              // 0 = every view at its box size; else the memory fallback's cap on the long side (fit)
   size_t need = 0;           // the bytes the decode held at most
+  size_t need_full = 0;      // the bytes it would have held with every view at its box size (side = 0)
+  size_t room = 0;           // mem_max: what it was allowed
 };
 inline void release(Result &r) {
   for (auto &p : r.px) fw::img::free_pixels(p);
@@ -188,6 +191,7 @@ inline void png_init(pngle_t *p, uint32_t w, uint32_t h) {
     // pngle's own state (~45 KB with the inflate window) + its two scanlines + our row (interlaced: the picture)
     need += 48 * 1024 + (size_t) w * 16 + (u->interlaced ? (size_t) w * h * 4 : (size_t) w * 4);
     u->r->need = need, u->r->side = side;
+    if (!step) u->r->need_full = need;
     if (need <= u->mem_max || step == FIT_STEPS) break;
     side = biggest(*u->boxes, (int) w, (int) h, side) * 2 / 3;
   }
@@ -324,6 +328,7 @@ inline bool jpeg(const uint8_t *b, size_t n, long max_px, size_t mem_max, const 
     band_h = std::max(1, (jd.msy * 8) >> sc);
     need += WORK + (size_t) j.ow * band_h * 4;
     r.side = side;
+    if (!step) r.need_full = need;
     if (need <= mem_max || step == FIT_STEPS) break;
     side = biggest(boxes, j.ow, j.oh, side) * 2 / 3;
   }
@@ -353,6 +358,7 @@ inline bool jpeg(const uint8_t *b, size_t n, long max_px, size_t mem_max, const 
 // false = r.err says why ("too big", "not a picture", ...); r holds nothing then.
 inline bool decode(const uint8_t *b, size_t n, long max_px, size_t mem_max, const std::vector<Box> &boxes, Result &r) {
   r = Result{};
+  r.room = mem_max;
   if (boxes.empty()) { r.err = "left the screen"; return false; }
   const char *t = sniff(b, n);
   if (!strcmp(t, "png")) return detail::png(b, n, max_px, mem_max, boxes, r);

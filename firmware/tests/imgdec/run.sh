@@ -6,7 +6,7 @@ set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd); ROOT=$(cd "$HERE/../../.." && pwd)
 [ -f "$ROOT/local.env" ] && . "$ROOT/local.env"
 O=${FW_CACHE:-$ROOT/renderer/.cache}/imgdec; mkdir -p "$O/fx"
-[ -f "$O/fx/cover.jpg" ] || "$("$ROOT/renderer/tools/venv.sh")" "$HERE/fixtures.py" "$O/fx"
+[ -f "$O/fx/cover420.jpg" ] || "$("$ROOT/renderer/tools/venv.sh")" "$HERE/fixtures.py" "$O/fx"
 cp "$HERE/files/gem.png" "$O/fx/"
 SAN="-fsanitize=address,undefined -fno-omit-frame-pointer -fno-sanitize-recover=undefined"
 FL="-O1 -g $SAN -I$ROOT/firmware -I$ROOT/renderer/core"

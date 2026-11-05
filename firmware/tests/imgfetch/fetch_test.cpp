@@ -31,6 +31,7 @@
 #endif
 static constexpr int SPEED = SIM_SPEED;  // simulated ms per real ms (TSan: slower, run.sh; the decode runs ~10x slower under it)
 static std::atomic<double> P_ALLOC{0}, P_LOW{0}, P_TASK{0}, P_NEW{0};
+static std::atomic<size_t> MAX_BLOCK{SIZE_MAX};  // a fragmented PSRAM: no allocation bigger than this
 static std::mutex rng_m;
 static std::mt19937 rng(12345);
 static bool roll(double p) {
@@ -52,7 +53,7 @@ static void count(void *p, long sign) {
   for (long m = live_max; now > m && !live_max.compare_exchange_weak(m, now);) {}
 }
 void *heap_caps_malloc(size_t n, unsigned) {
-  if (roll(P_ALLOC)) { alloc_fails++; return nullptr; }
+  if (roll(P_ALLOC) || n > MAX_BLOCK) { alloc_fails++; return nullptr; }
   allocs++;
   void *p = malloc(n);
   count(p, 1);
@@ -456,6 +457,39 @@ int main(int argc, char **argv) {
            held / 1024, live_max.load() / 1024, live.load() - base);
     CHECK(live == base, "every byte back after 30 tracks (%ld B left)", live.load() - base);
     CHECK(held <= 480 * 480 * 2 + 4096, "one 480 x 480 RGB565 picture held (%ld B)", held);
+  }
+  {  // 8. the same on a fragmented PSRAM (no block over 560 KB: a 480 decode with its pixels needs 494 KB + the 96 KB margin), with the
+     //    idle art's two screen-size slots reserved first (img_scale.h Slots, as the panel does at boot): every track
+     //    still comes in at its 480 box (put() checks the size: the memory fallback would fail it), nothing leaks
+    fw::img::leave();
+    run_sim_ms(1000);
+    const long base = live;
+    CHECK(fw::img::slots_reserve(480, 480) == 2, "two slots");
+    const long slots_bytes = live - base;
+    MAX_BLOCK = 560 * 1024;
+    std::string prev;
+    int in = 0;
+    for (int i = 0; i < 30; i++) {
+      const std::string u = "https://t/jpg/frag" + std::to_string(i) + ".jpg";
+      fw::img::want(u);
+      settle(60 * 1000);
+      in += fw::img::views[u].st == 1;
+      if (fw::img::views[u].st != 1) printf("fragmented track %d: %s\n", i, fw::img::views[u].err.c_str());
+      if (!prev.empty()) { fw::img::views.erase(prev); for (auto &p : fw::img::kept[prev]) fw::img::free_pixels(p); fw::img::kept.erase(prev); }
+      prev = u;
+    }
+    {
+      std::lock_guard<std::mutex> l(fw::device::images::S().m);
+      const auto &a = fw::device::images::S().art;
+      CHECK(a.any && a.err.empty() && a.ow == 480 && a.oh == 480 && a.slot && a.side == 0, "the art record: %dx%d slot %d side %d err '%s'", a.ow, a.oh, a.slot, a.side, a.err.c_str());
+    }
+    MAX_BLOCK = SIZE_MAX;
+    CHECK(in == 30, "30 tracks on a fragmented PSRAM: %d came in at 480", in);
+    fw::img::leave();
+    run_sim_ms(1000);
+    printf("fragmented PSRAM (no block over 560 KB), 2 slots: %d of 30 tracks at 480 x 480; after leaving %ld B (the slots, %ld B)\n", in,
+           live.load() - base, slots_bytes);
+    CHECK(fw::img::slots_free() == 2 && live - base == slots_bytes, "the slots back, nothing else left (%ld B)", live.load() - base - slots_bytes);
   }
   fw::img::leave();
   run_sim_ms(1000);  // drain the last results

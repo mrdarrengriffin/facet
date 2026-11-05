@@ -890,6 +890,41 @@ JRESULT jd_mcu_output(
                 }
             }
         }
+
+        /* Facet: ChaN's descale stage, which LVGL's copy leaves out. Without it a 1/2 or 1/4 decode hands out the
+         * first rx * ry pixels of the full-size MCU as if they were the shrunk block: every other output row is the
+         * right half of a source row (shifted), and the block repeats rows (the "interlaced" album art) */
+        if(JD_USE_SCALE && jd->scale) {
+            unsigned int sx, sy, r, g, b, s, w, a;
+            uint8_t * op;
+
+            /* Get averaged RGB value of each square corresponds to a pixel */
+            s = jd->scale * 2;  /* Number of shifts for averaging */
+            w = 1 << jd->scale; /* Width of square */
+            a = (mx - w) * (JD_FORMAT != 2 ? 3 : 1);  /* Bytes to skip for next line in the square */
+            op = (uint8_t *)jd->workbuf;
+            for(iy = 0; iy < my; iy += w) {
+                for(ix = 0; ix < mx; ix += w) {
+                    pix = (uint8_t *)jd->workbuf + (iy * mx + ix) * (JD_FORMAT != 2 ? 3 : 1);
+                    r = g = b = 0;
+                    for(sy = 0; sy < w; sy++) { /* Accumulate RGB value in the square */
+                        for(sx = 0; sx < w; sx++) {
+                            r += *pix++;    /* Accumulate R or Y (monochrome output) */
+                            if(JD_FORMAT != 2) {    /* RGB output? */
+                                g += *pix++;    /* Accumulate G */
+                                b += *pix++;    /* Accumulate B */
+                            }
+                        }
+                        pix += a;
+                    }   /* Put the averaged pixel value */
+                    *op++ = (uint8_t)(r >> s);  /* Put R or Y (monochrome output) */
+                    if(JD_FORMAT != 2) {    /* RGB output? */
+                        *op++ = (uint8_t)(g >> s);  /* Put G */
+                        *op++ = (uint8_t)(b >> s);  /* Put B */
+                    }
+                }
+            }
+        }
     }
 
     /* Squeeze up pixel table if a part of MCU is to be truncated */

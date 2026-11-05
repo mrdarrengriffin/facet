@@ -1,7 +1,10 @@
 // Facet device glue (README "Device firmware"): the workbench's core + foundations + components on a real panel,
 // driven over HTTP by the workbench's "Show on device" button. ESPHome only (lvgl + web_server); no house specifics.
-//   GET  /fw/info   {v, density, core, files, ids, built, board, w, h, shown, devices: [{stack, builds, objects}], heap}   what this firmware was built from
-//                = What this firmware is: its build, board, screen size and free memory.
+//   GET  /fw/info   {v, density, core, files, ids, built, board, w, h, shown, devices: [{stack, builds, objects}], heap, art}   what this firmware was built from
+//                   art = the last picture decode's biggest view (null = none yet): {box, kept, source: [w, h], jpeg: 1/N,
+//                   filter: area | bilinear | nearest, drawn: 1:1 | scaled up by LVGL, reserved (in a screen slot), slots,
+//                   slots_free, fallback (why it was kept smaller; null = it wasn't), error, need_kb, room_kb, age_s}
+//                = What this firmware is: its build, board, screen size, free memory and the last album art decode.
 //   GET  /fw/meta   [{id, name, section, meta}]                                     the registry (same as fw_meta())
 //                = Every component and screen this firmware has, with its props.
 //   POST /fw/show   {id, props?, theme?: dark|light, accent?: <set id>}  -> {ok, error?, ms, heap}
@@ -1147,6 +1150,38 @@ inline bool screen_go(const std::string &what, ArduinoJson::JsonObject out) {
   return true;
 }
 
+// ---------------------------------------------------------------- /fw/info "art"
+// the last picture decode (fw_images.h Art): read under the image worker's lock (any task)
+inline void art_info(ArduinoJson::JsonVariant o) {
+  images::Art a;
+  {
+    std::lock_guard<std::mutex> l(images::S().m);
+    a = images::S().art;
+  }
+  if (!a.any) { o.set(nullptr); return; }
+  const auto pair = [&](const char *k, int w, int h) { auto v = o[k].to<ArduinoJson::JsonArray>(); v.add(w), v.add(h); };
+  pair("box", a.bw, a.bh);
+  if (a.err.empty()) {
+    pair("kept", a.ow, a.oh);
+    pair("source", a.sw, a.sh);
+    o["jpeg"] = a.sc ? (a.sc == 1 ? "1/2" : "1/4") : "1/1";
+    // the scaler's filter for this view (img_scale.h): nearest for pixel art, else an area average down, bilinear up
+    const bool up = a.sw > 0 && a.sh > 0 && (double) std::max((double) a.ow / a.sw, (double) a.oh / a.sh) >= 1.0;
+    o["filter"] = a.nearest ? "nearest" : up ? "bilinear" : "area";
+    o["drawn"] = a.ow == a.bw && a.oh == a.bh ? "1:1" : "scaled up by LVGL";
+    o["reserved"] = a.slot;
+  } else o["error"] = a.err;
+  o["slots"] = fw::img::slots().n.load(), o["slots_free"] = fw::img::slots_free();
+  if (a.side) {
+    char t[120];
+    snprintf(t, sizeof t, "largest free PSRAM block %u KB (less the margin), the box size needs %u KB: kept at %d px",
+             (unsigned) (a.room / 1024), (unsigned) ((a.need_full + 1023) / 1024), a.side);
+    o["fallback"] = t;
+  } else o["fallback"] = nullptr;
+  o["need_kb"] = (unsigned) ((a.need + 1023) / 1024), o["room_kb"] = (unsigned) (a.room / 1024);
+  o["age_s"] = (int) ((esp_timer_get_time() - a.at_us) / 1000000);
+}
+
 // ---------------------------------------------------------------- screenshot (GET /screenshot)
 // Ported from the old panel firmware (projects/esphome/panel/include/shot.h): what the glass shows as a
 // 16-bit BMP. The web server runs in its own task and LVGL is not thread-safe, so the request raises a flag and waits;
@@ -1436,6 +1471,7 @@ class Handler : public AsyncWebHandler {
       d["uptime_s"] = (int) (esp_timer_get_time() / 1000000);
       d["probation_s"] = probation_left();
       heap(d["heap"].to<ArduinoJson::JsonObject>());
+      art_info(d["art"]);
       FacetLcdStats ls{};
       if (facet_lcd_stats && facet_lcd_stats(&ls)) {
         auto l = d["lcd"].to<ArduinoJson::JsonObject>();
@@ -1995,6 +2031,11 @@ inline void setup() {
   fw::ha::on_ask(ha_ask);
   fw::spec::want_all();  // every entity the deck's specs bind (the overrides were loaded before the first show)
   images::setup();       // Image URLs: the panel's own download + decode (fw_images.h)
+  {  // Idle shows = Album art: its screen-size picture slots now, while the PSRAM is whole (img_scale.h Slots)
+    const char *show = fw::dev::setting("idleShow");
+    const int n = show && !strcmp(show, "art") ? fw::img::reserve_screen() : 2;
+    if (n < 2) ESP_LOGW("facet_img", "idle art: only %d of 2 screen-size picture slots (no memory)", n);
+  }
   fw::dev::on_look([] {  // theme / accent / the sun: draw the page again in the new look (+ the probation chip)
     reshow_later(true);
     PR.shown = -2;
