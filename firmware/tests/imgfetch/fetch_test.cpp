@@ -458,7 +458,8 @@ int main(int argc, char **argv) {
     CHECK(live == base, "every byte back after 30 tracks (%ld B left)", live.load() - base);
     CHECK(held <= 480 * 480 * 2 + 4096, "one 480 x 480 RGB565 picture held (%ld B)", held);
   }
-  {  // 8. the same on a fragmented PSRAM (no block over 560 KB: a 480 decode with its pixels needs 494 KB + the 96 KB margin), with the
+  {  // 8. the same on a fragmented PSRAM (no block over 400 KB: a 480 decode with its pixels needs 494 KB + the 96 KB margin, and the old
+     //    fetch guard asked for a 512 KB block here), with the
      //    idle art's two screen-size slots reserved first (img_scale.h Slots, as the panel does at boot): every track
      //    still comes in at its 480 box (put() checks the size: the memory fallback would fail it), nothing leaks
     fw::img::leave();
@@ -466,7 +467,7 @@ int main(int argc, char **argv) {
     const long base = live;
     CHECK(fw::img::slots_reserve(480, 480) == 2, "two slots");
     const long slots_bytes = live - base;
-    MAX_BLOCK = 560 * 1024;
+    MAX_BLOCK = 400 * 1024;
     std::string prev;
     int in = 0;
     for (int i = 0; i < 30; i++) {
@@ -487,7 +488,7 @@ int main(int argc, char **argv) {
     CHECK(in == 30, "30 tracks on a fragmented PSRAM: %d came in at 480", in);
     fw::img::leave();
     run_sim_ms(1000);
-    printf("fragmented PSRAM (no block over 560 KB), 2 slots: %d of 30 tracks at 480 x 480; after leaving %ld B (the slots, %ld B)\n", in,
+    printf("fragmented PSRAM (no block over 400 KB), 2 slots: %d of 30 tracks at 480 x 480; after leaving %ld B (the slots, %ld B)\n", in,
            live.load() - base, slots_bytes);
     CHECK(fw::img::slots_free() == 2 && live - base == slots_bytes, "the slots back, nothing else left (%ld B)", live.load() - base - slots_bytes);
   }
