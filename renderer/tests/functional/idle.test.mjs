@@ -19,8 +19,8 @@ async function artIdle(t, state = 'playing') {
   await t.device();
   t.b.spec('act', { do: 'ha.connect', url: HA, token: 'abcdefgh1234' }); t.b.tick(8); t.b.settle(600);
   t.setting('idleShow', 'art'); t.setting('idleAfter', 60); t.b.events();
-  t.wait(Math.max(0, 62000 - t.since()));
-  for (let i = 0; i < 3; i++) { t.ha.push(); t.wait(1500); }
+  t.dims = idle(t.wait(Math.max(0, 62000 - t.since())));
+  for (let i = 0; i < 3; i++) { t.ha.push(); t.dims.push(...idle(t.wait(1500))); }
   return t;
 }
 const rgb = (t, x, y) => { const q = frame565(t)[y * t.b.S + x]; return [(q >> 11) << 3, ((q >> 5) & 63) << 2, (q & 31) << 3]; };
@@ -45,6 +45,19 @@ export default {
       const evs = t.tap({ at: [S / 2, S / 2] });
       t.eq(t.stack(), ['home'], 'a tap: Home');
       t.notEmitted(evs, 'navigate');
+    } },
+    { name: 'Album art idle: dimmed to Idle brightness while the art shows, a tap = full brightness again', async run(t) {
+      await artIdle(t);
+      t.eq(t.stack(), ['home', 'idle'], 'idle');
+      t.ok(isRed(rgb(t, t.b.S >> 1, t.b.S >> 3)), 'the art shows');
+      t.eq(t.dims, ['70'], 'dimmed once, to 70 (the default)');
+      t.eq(idle(t.tap({ at: [t.b.S / 2, t.b.S / 2] })), [''], 'a tap: undimmed');
+      t.setting('idleBrightness', 25);
+      const dims = idle(t.wait(62000));
+      for (let i = 0; i < 2; i++) { t.ha.push(); dims.push(...idle(t.wait(1500))); }
+      t.eq(t.stack(), ['home', 'idle'], 'idle again');
+      t.ok(isRed(rgb(t, t.b.S >> 1, t.b.S >> 3)), 'the art again');
+      t.eq(dims, ['25'], 'dimmed to the new Idle brightness, 25');
     } },
     { name: 'Idle shows Clock (the default): the clock even while music plays', async run(t) {
       await artIdle(t);
