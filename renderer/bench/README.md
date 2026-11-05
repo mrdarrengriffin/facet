@@ -51,15 +51,19 @@ decode, scale and drawing cost what a real cover does). Measured `--repeat 3`, e
 
 | Case | Guition est. ms / frame, fps, CPU | Waveshare est. ms / frame, fps, CPU |
 |---|---|---|
-| vinyl, its label turning | 11.2, 31, ~35 % | 2.7, 31, ~8 % |
+| vinyl, its label turning | 10.5, 31, ~33 % | 2.6, 31, ~8 % |
 | CD with art, spin off (the mark turns) | 2.4, 53, ~13 % | 0.6, 53, ~3 % |
-| CD with art, spin on | 41.7, 13 (capped at 12), ~54 % | 11.3, 31, ~35 % |
+| CD with art, spin on (the default) | 30.1, 13 (capped at 12), ~36 % | 9.6, 31, ~30 % |
 
 What it took: the art turned once per drawn angle into one buffer the art's size (bilinear, fixed point; its round mask
 copied as it is) and drawn as a plain picture: LVGL's own image transform cost twice as much (Guition CD 58 ms); a
 ring a partial redraw lies wholly inside or outside of is skipped (the record's label among its grooves: 22 -> 11 ms);
-the redraw is the art's circle only, at most 30 a second (the CD's on the Guition: 12). Not yet measured on the glass
-(no `/fw/perf` run of a build with it).
+the redraw is the art's circle only, at most 30 a second (the CD's on the Guition: 12). The CD on the Guition: its
+art turned nearest-pixel while it turns (about 15 degrees a frame there; the frame it stops on is smoothed), the
+middle its clear hub covers not turned, the bilinear 2 x 2 block without per-pixel clamps: 37 -> 30 ms. Tried and
+dropped: the circle redrawn as six chord-wide bands instead of its square (41 ms: each area costs more than the
+corners it saves). Before: the turn itself 14 of the 37 ms, the rings and the clear hub drawn over it 6.5. Not yet
+measured on the glass (no `/fw/perf` run of a build with it).
 
 ## Phase 2: the panel tests itself (built and flashed 2026-10-22: `firmware/fw_bench.h`)
 

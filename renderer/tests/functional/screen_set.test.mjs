@@ -37,7 +37,7 @@ export default {
       t.eq(odd, 0, `the saved disc shows as CD selected (fills ${JSON.stringify(fills)})`);
       t.has(t.texts(), /^Spin during playback$/, 'the Spin during playback row');
       const evs = t.tap('Spin during playback');
-      t.ok(evs.some((e) => e.name === 'deck' && e.detail === 'media params.spin=true'), `the deck takes spin=true: ${evs.map((e) => `${e.name}(${e.detail})`).join(' ')}`);
+      t.ok(evs.some((e) => e.name === 'deck' && e.detail === 'media params.spin=false'), `on by default: the tap turns it off (spin=false): ${evs.map((e) => `${e.name}(${e.detail})`).join(' ')}`);
     } },
     { name: 'Calendar > Source: one mark per row (its radio), no tick at the start', async run(t) {
       await t.device();

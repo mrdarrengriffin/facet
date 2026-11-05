@@ -696,7 +696,7 @@
      "name": "spin",
      "type": "bool",
      "bindable": true,
-     "about": "With the media preview: the CD's album art turns with it while playing (the record's always does)."
+     "about": "With the media preview: the CD's album art turns with it while playing (the record's always does); off: it stands still."
     },
     {
      "name": "progress",
@@ -2549,7 +2549,7 @@
      "name": "spin",
      "type": "bool",
      "bindable": true,
-     "about": "The CD's album art turns with it while playing (the record's label always does)."
+     "about": "The CD's album art turns with it while playing (the record's label always does); off: it stands still."
     },
     {
      "name": "state",

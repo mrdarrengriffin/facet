@@ -69,7 +69,7 @@ export default {
     { name: 'album art: play -> pause -> play with the same art fetches nothing, rebuilds nothing, and the art is drawn in every frame', async run(t) {
       t.ha.s[P1] = { '': 'playing', friendly_name: 'Kitchen', media_title: 'Red Song', media_artist: 'Band', media_duration: '200', media_position: '20', entity_picture: ART('red') };
       t.img.serve(HA_URL + ART('red'), 64, 64, [230, 30, 30, 255]);
-      await linked(t, { source: 'ha', visual: 'cd' });
+      await linked(t, { source: 'ha', visual: 'cd', spin: 'false' });  // still: a redraw here is a rebuild (turning: the next test)
       t.ok(red(cdBand(t)), `red first: ${cdBand(t)}`);
       t.img.hang(HA_URL + ART('red'));  // a second fetch would take its time (a panel's Wi-Fi): the art would go missing meanwhile
       const m = t.b.m, v = t.part('media_visual'), hero = t.part('media_hero'), asked = t.img.asked.length, st0 = t.img.stats();
@@ -92,10 +92,10 @@ export default {
       t.eq(gaps, 0, `the art drawn in all ${frames} frames`);
       t.ok(biggest < (v.w * v.h) / 2, `no rebuild: the biggest redraw ${biggest} px < half the picture (${v.w}x${v.h}; the hero ${hero.w}x${hero.h})`);
     } },
-    { name: 'spin on: the CD turns with its art while playing; pause stops it in place: nothing fetched, nothing rebuilt, the art in every frame', async run(t) {
+    { name: 'by default (Spin during playback on) the CD turns with its art while playing; pause stops it in place: nothing fetched, nothing rebuilt, the art in every frame', async run(t) {
       t.ha.s[P1] = { '': 'playing', friendly_name: 'Kitchen', media_title: 'Red Song', media_artist: 'Band', media_duration: '200', media_position: '20', entity_picture: ART('red') };
       t.img.serve(HA_URL + ART('red'), 64, 64, [230, 30, 30, 255]);
-      await linked(t, { source: 'ha', visual: 'cd', spin: 'true' });
+      await linked(t, { source: 'ha', visual: 'cd' });  // no spin saved: on
       t.ok(red(cdBand(t)), `red first: ${cdBand(t)}`);
       t.img.hang(HA_URL + ART('red'));
       const m = t.b.m, v = t.part('media_visual'), hero = t.part('media_hero'), asked = t.img.asked.length, st0 = t.img.stats();

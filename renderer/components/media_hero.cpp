@@ -64,7 +64,7 @@ FW_COMPONENT(media_hero, "Media hero", "components", R"({
   "frame": [656, 280],
   "props": [
     {"name": "visual", "about": "The picture: a CD, a cassette, a vinyl record, or the album art alone (art). disc, the old plain disc, draws the CD.", "type": "select", "options": ["cd", "cassette", "vinyl", "art"], "default": "cd"},
-    {"name": "spin", "about": "The CD's album art turns with it while playing (the record's label always does).", "type": "bool", "default": false},
+    {"name": "spin", "about": "The CD's album art turns with it while playing (the record's label always does); off: it stands still.", "type": "bool", "default": true},
     {"name": "state", "about": "What the player is doing, in small capitals: now playing, paused or idle.", "type": "text", "default": "now playing"},
     {"name": "tone", "about": "accent-text while it plays, text-dim otherwise.", "type": "select", "options": ["text-dim", "accent-text"], "default": "accent-text"},
     {"name": "title", "about": "The track, up to two lines.", "type": "text", "default": "Harbour Lights"},

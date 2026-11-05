@@ -481,7 +481,8 @@
         "visual": "cd",
         "art": "http://bench.test/api/media_player_proxy/media_player.bench?cache=cover",
         "playing": true,
-        "progress": 40
+        "progress": 40,
+        "spin": false
       },
       "img": true,
       "scenarios": [

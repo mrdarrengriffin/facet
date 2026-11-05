@@ -5106,8 +5106,8 @@
     {
      "name": "spin",
      "type": "bool",
-     "about": "With the media preview: the CD's album art turns with it while playing (the record's always does).",
-     "default": false
+     "about": "With the media preview: the CD's album art turns with it while playing (the record's always does); off: it stands still.",
+     "default": true
     },
     {
      "name": "progress",
@@ -7134,8 +7134,8 @@
     {
      "name": "spin",
      "type": "bool",
-     "about": "The CD's album art turns with it while playing (the record's label always does).",
-     "default": false
+     "about": "The CD's album art turns with it while playing (the record's label always does); off: it stands still.",
+     "default": true
     },
     {
      "name": "state",
@@ -7196,7 +7196,7 @@
   },
   "media_visual": {
    "name": "Media visuals",
-   "about": "The picture on the Media screen and its Home card: a cassette, CD or vinyl record drawn to the real sizes, or the album art alone. They turn at the real speeds while playing; the tape or tonearm follows the track's progress. The record turns with its album art; the CD's art turns with spin.",
+   "about": "The picture on the Media screen and its Home card: a cassette, CD or vinyl record drawn to the real sizes, or the album art alone. They turn at the real speeds while playing; the tape or tonearm follows the track's progress. The record and the CD turn with their album art (the CD's stands still with spin off).",
    "contract": 2,
    "min": [
     "layout:mv-card",
@@ -7245,7 +7245,7 @@
      "name": "spin",
      "type": "bool",
      "about": "The CD: its album art turns with it while playing (off: the art stands still, a small mark shows the turn). The record's label always turns with it.",
-     "default": false
+     "default": true
     },
     {
      "name": "title",
@@ -9930,7 +9930,7 @@
      "about": "With the CD: its album art turns with it while the music plays. Off: the art stands still and a small mark shows the turn.",
      "type": "toggle",
      "label": "Spin during playback",
-     "default": "false"
+     "default": "true"
     }
    },
    "feeds": [

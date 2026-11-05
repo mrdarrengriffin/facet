@@ -71,12 +71,13 @@ export default {
       t.ok(w.seen.size >= 2 && w.gaps === 0, `turns again: ${[...w.seen]}, ${w.gaps} frames without art`);
       t.eq(t.img.asked.length, asked, `no new picture request: ${t.img.asked.slice(asked)}`);
     } },
-    { name: 'cd: spin off = the art stands still (the mark turns); spin on = the CD turns with its art; spin toggles in place', async run(t) {
-      const { o, a, props } = await turning(t, 'cd');
+    { name: 'cd: spin off = the art stands still (the mark turns); spin on (the default) = the CD turns with its art; spin toggles in place', async run(t) {
+      const { o, a, props } = await turning(t, 'cd', { spin: false });
       let w = watch(t, a, 2000);
       t.ok(w.seen.size === 1 && w.seen.has('red'), `spin off: upright, still: ${[...w.seen]}`);
       t.ok(w.biggest > 0 && w.biggest < (o.w * o.h) / 20, `spin off: only the print mark redrawn (${w.biggest} px)`);
-      t.eq(t.b.update('media_visual', { ...props, spin: true }), '', 'spin on: in place');
+      const { spin, ...dflt } = props;
+      t.eq(t.b.update('media_visual', dflt), '', 'spin not given (on): in place');
       areas(t);
       w = watch(t, a, 3000);
       t.ok(w.seen.has('red') && w.seen.has('blue'), `spin on: turns: ${[...w.seen]}`);

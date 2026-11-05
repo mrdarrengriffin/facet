@@ -1977,7 +1977,7 @@
          "$ref": "#/$defs/param"
         }
        ],
-       "description": "With the media preview: the CD's album art turns with it while playing (the record's always does)."
+       "description": "With the media preview: the CD's album art turns with it while playing (the record's always does); off: it stands still."
       },
       "progress": {
        "anyOf": [
@@ -5942,7 +5942,7 @@
          "$ref": "#/$defs/param"
         }
        ],
-       "description": "The CD's album art turns with it while playing (the record's label always does)."
+       "description": "The CD's album art turns with it while playing (the record's label always does); off: it stands still."
       },
       "state": {
        "anyOf": [
