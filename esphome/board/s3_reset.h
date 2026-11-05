@@ -49,7 +49,10 @@ inline std::string last_reason() {
 inline void reset_if_soft() {
   auto reason = esp_reset_reason();
   if (reason != ESP_RST_DEEPSLEEP) rtc_magic = 0;
-  if (reason == ESP_RST_SW) {
+  // a new OTA image is confirmed on its first boot after the old image's restart. That restart can end in the RTC
+  // watchdog (ESP_RST_WDT: esp_restart arms it for 1 s; f9a5a1e's restart always did), so WDT counts too: on this first
+  // boot the reason is always the OLD image's; a new image that fails later is still caught (boot guard, safe mode)
+  if (reason == ESP_RST_SW || reason == ESP_RST_WDT) {
     esp_ota_img_states_t st;
     const esp_partition_t *run = esp_ota_get_running_partition();
     if (run && esp_ota_get_state_partition(run, &st) == ESP_OK && st == ESP_OTA_IMG_PENDING_VERIFY)

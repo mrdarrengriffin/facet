@@ -17,10 +17,11 @@ enum : uint32_t {
   FLUSH = 1u << 1,    // the flush itself: draw buffer -> PSRAM framebuffer
   FETCH = 1u << 2,    // an image download (TLS + body into PSRAM, worker task, core 0)
   DECODE = 1u << 3,   // an image decode + scale (PSRAM to PSRAM, worker task)
-  FLASH = 1u << 4,    // a flash write or erase (NVS settings, OTA, specs: the board hooks the flash driver)
 };
-constexpr int N = 5;
-constexpr const char *NAMES[N] = {"refresh", "flush", "fetch", "decode", "flash"};
+// no flash bit: wrapping the flash driver's start/end hooks (f9a5a1e) left the panel's software restart ending in the RTC
+// watchdog, which made the next OTA image roll back (#118)
+constexpr int N = 4;
+constexpr const char *NAMES[N] = {"refresh", "flush", "fetch", "decode"};
 
 inline void on(uint32_t b) {
   if (&facet_busy) __atomic_fetch_or(const_cast<uint32_t *>(&facet_busy), b, __ATOMIC_RELAXED);
