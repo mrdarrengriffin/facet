@@ -175,6 +175,66 @@ const manifest = (id: string) => url(`/firmware/${id}/manifest.json`);
         if (v && m.version) v.textContent = `Now ${m.version}`;
       })
       .catch(() => {});
+
+  // Plausible "Install" event (the stub is in Base.astro). ESP Web Tools fires no DOM event for install progress:
+  // its dialog keeps it in the reactive property _installState, which flash() sets (initializing ... finished/error).
+  // Wrap that property's setter on the dialog class, so every dialog reports: start (install confirmed, first state),
+  // success / failure once each, cancel when the dialog closes mid-install. reason = ESP Web Tools' error code only.
+  type Flash = { state: string; manifest?: { version?: string }; details?: { error?: string } } | undefined;
+  type Attempt = { phase: 'started' | 'done'; props: Record<string, string> };
+  const attempts = new WeakMap<HTMLElement, Attempt>();
+  const send = (props: Record<string, string>) => {
+    const p = (window as any).plausible;
+    if (typeof p === 'function') p('Install', { props });
+  };
+  const target = (dialog: any) => {
+    // the manifest URL the dialog installs from: /firmware/<board>/manifest(-beta).json
+    const m = /\/firmware\/([^/]+)\/manifest(-beta)?\.json/.exec(String(dialog.manifestPath || ''));
+    return { board: m?.[1] || 'unknown', channel: m?.[2] ? 'beta' : 'stable' };
+  };
+  const onState = (dialog: any, s: Flash) => {
+    let a = attempts.get(dialog);
+    if (!s) {
+      if (a?.phase === 'done') attempts.delete(dialog); // a new attempt (install again)
+      return;
+    }
+    if (!a) {
+      a = { phase: 'started', props: { ...target(dialog), version: s.manifest?.version || dialog._manifest?.version || 'unknown' } };
+      attempts.set(dialog, a);
+      send({ stage: 'start', ...a.props });
+    }
+    if (a.phase !== 'started') return;
+    if (s.state === 'finished') {
+      a.phase = 'done';
+      send({ stage: 'success', ...a.props });
+    } else if (s.state === 'error') {
+      a.phase = 'done';
+      const reason = s.details?.error;
+      send({ stage: 'failure', ...a.props, ...(reason && /^[a-z_]{1,40}$/.test(reason) ? { reason } : {}) });
+    }
+  };
+  customElements.whenDefined('ewt-install-dialog').then((Dialog) => {
+    const proto = Dialog.prototype;
+    const d = Object.getOwnPropertyDescriptor(proto, '_installState');
+    if (!d?.set || !d.get) return;
+    Object.defineProperty(proto, '_installState', {
+      ...d,
+      get() { return d.get!.call(this); },
+      set(v: Flash) {
+        d.set!.call(this, v);
+        try { onState(this, v); } catch {}
+      },
+    });
+  });
+  document.addEventListener('closed', (e) => {
+    const dialog = e.target as HTMLElement;
+    if (dialog?.localName !== 'ewt-install-dialog') return;
+    const a = attempts.get(dialog);
+    if (a?.phase === 'started') {
+      a.phase = 'done';
+      send({ stage: 'cancel', ...a.props });
+    }
+  });
 </script>
 
 <style>
