@@ -657,7 +657,7 @@
     "name": "Media",
     "group": "Media",
     "status": "done",
-    "note": "Now playing with disc/cassette/vinyl visuals, speaker picker; later a full-screen album art view"
+    "note": "Now playing with CD/cassette/vinyl visuals and album art, speaker picker, full-screen album art when idle"
    },
    {
     "name": "Weather",

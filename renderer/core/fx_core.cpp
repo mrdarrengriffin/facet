@@ -1863,6 +1863,15 @@ void Pen::disc(int x, int y, int r, const char *k) const {
 void Pen::ring(int x, int y, int r, int w, const char *k, float a0, float a1, bool round) const {
   if (r < 1 || w < 1 || a1 - a0 < 0.5f || !sees(x - r, y - r, x + r, y + r)) return;
   w = std::min(w, r);
+  {  // a partial redraw that lies wholly inside the ring's hole, or wholly outside it: nothing of it to draw (a turning
+     // record's label redrawn among its grooves costs only the grooves that cross it)
+    const lv_area_t &c = layer->_clip_area;
+    const int64_t X = cx + x, Y = cy + y;
+    const int64_t fx = std::max(std::llabs(c.x1 - X), std::llabs(c.x2 - X)), fy = std::max(std::llabs(c.y1 - Y), std::llabs(c.y2 - Y));
+    const int64_t nx = X < c.x1 ? c.x1 - X : X > c.x2 ? X - c.x2 : 0, ny = Y < c.y1 ? c.y1 - Y : Y > c.y2 ? Y - c.y2 : 0;
+    const int64_t in = std::max(0, r - w - 2), out = r + 2;  // 2: the anti-aliased edges
+    if (fx * fx + fy * fy < in * in || nx * nx + ny * ny > out * out) return;
+  }
   const lv_color_t col = ink(obj, k);
   if (const int cs = snap_cell(look_of(obj)->skin.get())) {
     const float hw = cells_of(w, cs) * cs / 2.0f, m = r - w / 2.0f;
@@ -1912,7 +1921,7 @@ void Pen::within(int x, int y, int w, int h, const std::function<void()> &f) con
   if (c.x1 <= c.x2 && c.y1 <= c.y2) f();
   layer->_clip_area = keep;
 }
-void Pen::image(int x, int y, const lv_image_dsc_t *px, int bw, int bh) const {
+void Pen::image(int x, int y, const lv_image_dsc_t *px, int bw, int bh, int rot) const {
   if (!px || !px->data) return;
   const int w = (int) px->header.w, h = (int) px->header.h;
   if (bw <= 0) bw = w;
@@ -1923,6 +1932,22 @@ void Pen::image(int x, int y, const lv_image_dsc_t *px, int bw, int bh) const {
   d.src = px;
   d.antialias = 1;  // scaled up: bilinear, never nearest (blocky art)
   const lv_area_t a = {cx + x, cy + y, cx + x + w - 1, cy + y + h - 1};
+  rot %= 3600;
+  if (rot < 0) rot += 3600;
+  if (rot && w > 1 && h > 1) {  // turned about the box's centre: the pixels centred in it, scaled about that centre
+    const int ax = cx + x + (bw - w) / 2, ay = cy + y + (bh - h) / 2;
+    const lv_area_t ra = {ax, ay, ax + w - 1, ay + h - 1};
+    d.rotation = rot;
+    d.pivot.x = w / 2, d.pivot.y = h / 2;
+    if (bw != w || bh != h) d.scale_x = (int32_t) ((bw * 256 + w - 1) / w), d.scale_y = (int32_t) ((bh * 256 + h - 1) / h);
+    const lv_area_t clip = layer->_clip_area;
+    lv_area_t &c = layer->_clip_area;
+    c.x1 = std::max<int32_t>(c.x1, cx + x), c.y1 = std::max<int32_t>(c.y1, cy + y);
+    c.x2 = std::min<int32_t>(c.x2, cx + x + bw - 1), c.y2 = std::min<int32_t>(c.y2, cy + y + bh - 1);
+    if (c.x1 <= c.x2 && c.y1 <= c.y2) lv_draw_image(layer, &d, &ra);
+    layer->_clip_area = clip;
+    return;
+  }
   if (bw == w && bh == h) { lv_draw_image(layer, &d, &a); return; }
   // stored smaller than its box: scaled up from the top-left corner (rounded up, so it covers the box), clipped to it
   d.scale_x = (int32_t) ((bw * 256 + w - 1) / w);

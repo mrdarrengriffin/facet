@@ -89,7 +89,7 @@ The room's cards, each one a way into a screen.</p>
 <td width="50%" valign="top">
 <a href="https://mrdarrengriffin.github.io/facet/screens/media/"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/screen-media-dark.png"><img alt="Media screen" src=".github/assets/screen-media-light.png" width="200"></picture></a>
 <p><a href="https://mrdarrengriffin.github.io/facet/screens/media/"><b>Media</b></a><br>
-Now playing on a spinning disc, with transport controls and live volume.</p>
+Now playing on a turning CD, record or cassette with the album art, with transport controls and live volume.</p>
 </td>
 </tr>
 <tr>

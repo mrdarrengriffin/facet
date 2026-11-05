@@ -1,14 +1,14 @@
-// Media hero: the Media screen's hero (docs: @facet/ui screens/media.ts: the disc slot + .fs-m-col; CSS .fs-m-*), on
+// Media hero: the Media screen's hero (docs: @facet/ui screens/media.ts: the picture slot + .fs-m-col; CSS .fs-m-*), on
 // the contract (renderer/CONTRACT.md, "contract": 2). Specific to the Media screen.
-//   row      the picture slot (w:mv-h, the disc's slot) and the words column (grow), cross-centred, gap:9 apart
-//   picture  a real Media visual (fw::find("media_visual"), C8b): disc / cassette / cd / vinyl, size screen, in a slot
+//   row      the picture slot (w:mv-h, the CD's slot) and the words column (grow), cross-centred, gap:9 apart
+//   picture  a real Media visual (fw::find("media_visual"), C8b): cd / cassette / vinyl / art, size screen (spin: the CD's art turns), in a slot
 //            wrap-end: one wider than its slot (the cassette) keeps its right edge on the slot's and runs off the
 //            screen's left edge (docs .f-mv-layer, cropped left): the slot's and the row's declared bleed (C13b: left, at
 //            most layout:mv-bleed, the cassette's overhang)
 //   column   gap:2 between its lines: the state (type:label caps; fg:accent-text while playing = docs data-tone
 //            working, else fg:text-dim), the title (type:headline, fg:text, two lines then "...", h:m-title-h: the artist
 //            never moves; docs line-clamp 2, where the artist follows a one-line title), the artist (type:body, fg:text-dim, one line, "...")
-// Album art: art goes to the visual (printed on the disc, CD or record label; Media visuals).
+// Album art: art goes to the visual (printed on the CD or the record's label; Media visuals).
 // Feed: bind every prop to panel.media (core/media_source.cpp). A read-out (docs: no touch): no events, no sound.
 // Update path: the words, their tone and the picture in place (the visual's own update: spin, packs, arm, arc; the
 // art kept), silent: play <-> pause redraws the state line, the play button and what moves, nothing else; another
@@ -27,7 +27,7 @@ bool lit(fw::Props p) { return !strcmp(ink(p), "fg:accent-text"); }
 std::string sig(fw::Props p) { return p["visual"] | "cd"; }
 void visual_props(fw::Props p, ArduinoJson::JsonDocument &d) {
   d["visual"] = p["visual"] | "cd", d["size"] = "screen", d["progress"] = p["progress"] | 38, d["playing"] = playing_of(p);
-  d["title"] = p["title"] | "", d["artist"] = p["artist"] | "", d["art"] = p["art"] | "";
+  d["title"] = p["title"] | "", d["artist"] = p["artist"] | "", d["art"] = p["art"] | "", d["spin"] = p["spin"];
 }
 void fill(lv_obj_t *root, fw::Props p) {
   for (const char *t : {"box", "row-top", "fill-w", "gap:m-gap"}) fx::use(root, t);
@@ -63,20 +63,21 @@ FW_COMPONENT(media_hero, "Media hero", "components", R"({
   "parts": [],
   "frame": [656, 280],
   "props": [
-    {"name": "visual", "about": "The picture: the plain disc with a progress ring, a cassette, a CD, a vinyl record, or the album art alone (art).", "type": "select", "options": ["disc", "cassette", "cd", "vinyl", "art"], "default": "cd"},
+    {"name": "visual", "about": "The picture: a CD, a cassette, a vinyl record, or the album art alone (art). disc, the old plain disc, draws the CD.", "type": "select", "options": ["cd", "cassette", "vinyl", "art"], "default": "cd"},
+    {"name": "spin", "about": "The CD's album art turns with it while playing (the record's label always does).", "type": "bool", "default": false},
     {"name": "state", "about": "What the player is doing, in small capitals: now playing, paused or idle.", "type": "text", "default": "now playing"},
     {"name": "tone", "about": "accent-text while it plays, text-dim otherwise.", "type": "select", "options": ["text-dim", "accent-text"], "default": "accent-text"},
     {"name": "title", "about": "The track, up to two lines.", "type": "text", "default": "Harbour Lights"},
     {"name": "artist", "about": "The artist, one line.", "type": "text", "default": "The Lanterns"},
     {"name": "progress", "about": "How far through the track it is, from 0 to 100.", "type": "range", "min": 0, "max": 100, "step": 1, "default": 38},
     {"name": "playing", "about": "Whether it is playing: the picture turns.", "type": "bool", "default": true},
-    {"name": "art", "about": "The album art's address: printed on the disc, CD or record (Media visuals). Empty: the plain picture.", "type": "text", "default": ""}
+    {"name": "art", "about": "The album art's address: printed on the CD or the record's label (Media visuals). Empty: the plain picture.", "type": "text", "default": ""}
   ],
   "variants": [
     {"label": "CD · playing", "props": {}},
-    {"label": "disc · paused", "props": {"visual": "disc", "state": "paused", "tone": "text-dim", "playing": false, "progress": 72}},
+    {"label": "cd · paused", "props": {"visual": "cd", "state": "paused", "tone": "text-dim", "playing": false, "progress": 72}},
     {"label": "cassette · long title", "props": {"visual": "cassette", "title": "A very long track title that needs two lines and more", "artist": "Somebody with a long name and a band"}},
-    {"label": "idle", "props": {"visual": "disc", "state": "idle", "tone": "text-dim", "title": "Nothing playing", "artist": "", "playing": false, "progress": 0}}
+    {"label": "idle", "props": {"visual": "cd", "state": "idle", "tone": "text-dim", "title": "Nothing playing", "artist": "", "playing": false, "progress": 0}}
   ]
 })") {
   lv_obj_t *root = lv_obj_create(parent);

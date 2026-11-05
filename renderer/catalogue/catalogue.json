@@ -685,13 +685,18 @@
      "type": "select",
      "bindable": true,
      "options": [
-      "disc",
-      "cassette",
       "cd",
+      "cassette",
       "vinyl",
       "art"
      ],
-     "about": "With the media preview: the picture, as the Media screen shows it (disc, cassette, cd, vinyl or art)."
+     "about": "With the media preview: the picture, as the Media screen shows it (cd, cassette, vinyl or art; disc, the old plain disc, draws the CD)."
+    },
+    {
+     "name": "spin",
+     "type": "bool",
+     "bindable": true,
+     "about": "With the media preview: the CD's album art turns with it while playing (the record's always does)."
     },
     {
      "name": "progress",
@@ -711,7 +716,7 @@
      "name": "art",
      "type": "text",
      "bindable": true,
-     "about": "With the media preview: the album art's address, printed on the disc, CD or record. Empty: the plain picture."
+     "about": "With the media preview: the album art's address, printed on the CD or the record. Empty: the plain picture."
     },
     {
      "name": "run",
@@ -2533,13 +2538,18 @@
      "type": "select",
      "bindable": true,
      "options": [
-      "disc",
-      "cassette",
       "cd",
+      "cassette",
       "vinyl",
       "art"
      ],
-     "about": "The picture: the plain disc with a progress ring, a cassette, a CD, a vinyl record, or the album art alone (art)."
+     "about": "The picture: a CD, a cassette, a vinyl record, or the album art alone (art). disc, the old plain disc, draws the CD."
+    },
+    {
+     "name": "spin",
+     "type": "bool",
+     "bindable": true,
+     "about": "The CD's album art turns with it while playing (the record's label always does)."
     },
     {
      "name": "state",
@@ -2587,7 +2597,7 @@
      "name": "art",
      "type": "text",
      "bindable": true,
-     "about": "The album art's address: printed on the disc, CD or record (Media visuals). Empty: the plain picture."
+     "about": "The album art's address: printed on the CD or the record's label (Media visuals). Empty: the plain picture."
     }
    ],
    "events": {
@@ -2609,13 +2619,12 @@
      "type": "select",
      "bindable": true,
      "options": [
-      "disc",
-      "cassette",
       "cd",
+      "cassette",
       "vinyl",
       "art"
      ],
-     "about": "What is drawn: the plain disc with a progress ring, a cassette, a CD, a vinyl record, or art: the album art alone, a square."
+     "about": "What is drawn: a cassette, a CD, a vinyl record, or art: the album art alone, a square. disc, the old plain disc, draws the CD."
     },
     {
      "name": "size",
@@ -2639,7 +2648,13 @@
      "name": "playing",
      "type": "bool",
      "bindable": true,
-     "about": "Whether it is playing. While it plays the cassette reels or the disc turn at their real speed."
+     "about": "Whether it is playing. While it plays the cassette reels or the disc turn at their real speed; pausing slows them to a stop where they are."
+    },
+    {
+     "name": "spin",
+     "type": "bool",
+     "bindable": true,
+     "about": "The CD: its album art turns with it while playing (off: the art stands still, a small mark shows the turn). The record's label always turns with it."
     },
     {
      "name": "title",
@@ -2657,7 +2672,7 @@
      "name": "art",
      "type": "text",
      "bindable": true,
-     "about": "The album art's address (the player's picture): printed on the disc face, the CD or the record's label. Empty, loading or failed: the plain drawing."
+     "about": "The album art's address (the player's picture): printed on the CD or the record's label. Empty, loading or failed: the plain drawing."
     }
    ],
    "events": {
@@ -5285,5 +5300,5 @@
    }
   }
  },
- "hash": "0136d086"
+ "hash": "e69689e9"
 }

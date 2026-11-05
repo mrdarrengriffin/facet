@@ -71,8 +71,8 @@ std::string sig(fw::Props p) {
   return s;
 }
 void media_props(fw::Props p, ArduinoJson::JsonDocument &d) {
-  d["visual"] = p["visual"] | "disc", d["size"] = "card", d["progress"] = p["progress"] | 38, d["playing"] = p["playing"] | false;
-  d["art"] = p["art"] | "";
+  d["visual"] = p["visual"] | "cd", d["size"] = "card", d["progress"] = p["progress"] | 38, d["playing"] = p["playing"] | false;
+  d["art"] = p["art"] | "", d["spin"] = p["spin"];
 }
 lv_obj_t *line(lv_obj_t *parent, const char *s, const char *type, const char *fg) {  // one line, full width, "..."
   lv_obj_t *o = fx::text(parent, s, type, fg, "dot");
@@ -270,10 +270,11 @@ FW_COMPONENT(card, "Card", "components", R"({
     {"name": "icon", "about": "The small icon before the name, or none.", "type": "select", "options": ["none", "weather", "media", "timer", "energy", "light", "thermostat", "covers", "calendar", "clock", "switch", "agents", "github", "moon", "lightning", "overhead", "bins", "print", "home", "vacuum"], "default": "weather"},
     {"name": "preview", "about": "The small picture at the top right of the card, such as the weather now or the record that is playing, or none.", "type": "select", "options": ["none", "partly-day", "rain-light", "clear-night", "agents", "media", "dial", "switch", "clock", "timer", "github", "energy", "lightning", "bins", "weather", "flights", "covers", "moon", "vacuum"], "default": "partly-day"},
     {"name": "weather", "about": "With the weather preview: which weather icon it shows, such as rain-light (the weather now).", "type": "text", "default": "partly-day"},
-    {"name": "visual", "about": "With the media preview: the picture, as the Media screen shows it (disc, cassette, cd, vinyl or art).", "type": "select", "options": ["disc", "cassette", "cd", "vinyl", "art"], "default": "disc"},
+    {"name": "visual", "about": "With the media preview: the picture, as the Media screen shows it (cd, cassette, vinyl or art; disc, the old plain disc, draws the CD).", "type": "select", "options": ["cd", "cassette", "vinyl", "art"], "default": "cd"},
+    {"name": "spin", "about": "With the media preview: the CD's album art turns with it while playing (the record's always does).", "type": "bool", "default": false},
     {"name": "progress", "about": "With the media preview: how far through the track it is, from 0 to 100. With the timer preview: how much of the running timer is left, out of 1000 (empty when none runs).", "type": "range", "min": 0, "max": 1000, "step": 1, "default": 38},
     {"name": "playing", "about": "With the media preview: whether it is playing (the picture turns).", "type": "bool", "default": false},
-    {"name": "art", "about": "With the media preview: the album art's address, printed on the disc, CD or record. Empty: the plain picture.", "type": "text", "default": ""},
+    {"name": "art", "about": "With the media preview: the album art's address, printed on the CD or the record. Empty: the plain picture.", "type": "text", "default": ""},
     {"name": "run", "about": "With the vacuum preview: run while the robot is out cleaning (progress = the run's), idle at rest (progress = the battery), off when it cannot be reached.", "type": "select", "options": ["run", "idle", "off"], "default": "idle"},
     {"name": "position", "about": "With the covers preview: how open the window is, from 0 (closed) to 100 (open).", "type": "range", "min": 0, "max": 100, "step": 1, "default": 60},
     {"name": "phase", "about": "With the moon preview: where the moon is in its month, from 0 (new) through 0.5 (full) to 1.", "type": "range", "min": 0, "max": 1, "step": 0.01, "default": 0.25},

@@ -455,6 +455,83 @@
         "navigate"
       ],
       "to": "settings"
+    },
+    {
+      "id": "media_visual.vinyl-art",
+      "comp": "media_visual",
+      "props": {
+        "visual": "vinyl",
+        "art": "http://bench.test/api/media_player_proxy/media_player.bench?cache=cover",
+        "playing": true,
+        "progress": 40
+      },
+      "img": true,
+      "scenarios": [
+        "idle"
+      ],
+      "live": true,
+      "tags": [
+        "media-spin"
+      ]
+    },
+    {
+      "id": "media_visual.cd-art",
+      "comp": "media_visual",
+      "props": {
+        "visual": "cd",
+        "art": "http://bench.test/api/media_player_proxy/media_player.bench?cache=cover",
+        "playing": true,
+        "progress": 40
+      },
+      "img": true,
+      "scenarios": [
+        "idle"
+      ],
+      "live": true,
+      "tags": [
+        "media-spin"
+      ]
+    },
+    {
+      "id": "media_visual.cd-art-spin",
+      "comp": "media_visual",
+      "props": {
+        "visual": "cd",
+        "art": "http://bench.test/api/media_player_proxy/media_player.bench?cache=cover",
+        "playing": true,
+        "progress": 40,
+        "spin": true
+      },
+      "img": true,
+      "scenarios": [
+        "idle"
+      ],
+      "live": true,
+      "tags": [
+        "media-spin"
+      ]
+    },
+    {
+      "id": "media_hero.cd-art-spin",
+      "comp": "media_hero",
+      "props": {
+        "visual": "cd",
+        "art": "http://bench.test/api/media_player_proxy/media_player.bench?cache=cover",
+        "playing": true,
+        "progress": 40,
+        "spin": true,
+        "title": "Harbour Lights",
+        "artist": "The Lanterns",
+        "state": "Now playing"
+      },
+      "img": true,
+      "scenarios": [
+        "idle"
+      ],
+      "live": true,
+      "tags": [
+        "media-spin"
+      ]
     }
   ],
   "anchors": [

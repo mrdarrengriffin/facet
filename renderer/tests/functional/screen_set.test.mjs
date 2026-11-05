@@ -15,11 +15,29 @@ export default {
       await t.device();
       act(t, { do: 'nav.open', screen: 'screen_set', params: { id: 'media' } });
       t.drag({ at: [360, 600] }, { by: [0, -400] }); t.drag({ at: [360, 600] }, { by: [0, -400] });
-      t.tap(/^Visual$/); t.b.settle(1200);
-      const evs = t.tap(/^cassette$/i);
+      const evs = t.tap(/^cassette$/i);  // four options: the Segmented in the Visual row
       t.ok(evs.some((e) => e.name === 'deck' && e.detail === 'media params.visual=cassette'), 'the deck takes visual=cassette');
       act(t, { do: 'nav.back' });
       t.ok(t.comps().some((c) => c.ids.at(-1) === 'media_visual'), 'Media shows its visual');
+    } },
+    { name: 'Media: a saved Visual = disc (folded into the CD) opens as the CD; Spin during playback reaches the deck and the screen', async run(t) {
+      const d = JSON.parse(JSON.stringify(FACTORY));
+      const mp = d.pages.find((p) => p.kind === 'media');
+      mp.params = { ...(mp.params || {}), visual: 'disc' };
+      await t.device(d);
+      act(t, { do: 'nav.open', screen: 'media' });
+      t.ok(t.comps().some((c) => c.ids.at(-1) === 'media_visual'), 'Media opens with its visual');
+      act(t, { do: 'nav.open', screen: 'screen_set', params: { id: 'media' } });
+      t.drag({ at: [360, 600] }, { by: [0, -400] }); t.drag({ at: [360, 600] }, { by: [0, -400] });
+      const seg = t.comps().find((c) => c.ids.includes('segmented') && t.visible(c)), words = seg ? t.texts(seg) : [];
+      t.ok(words.some((x) => /^cd$/i.test(x)) && !t.texts().some((x) => /^disc$/i.test(x)), `Visual offers CD, no Disc: ${words}`);
+      // the selected segment: the one whose fill (near its top edge, clear of the words) differs from the other three
+      const fills = [0, 1, 2, 3].map((i) => px(t, seg.x + (i + 0.5) * seg.w / 4, seg.y + 5));
+      const odd = fills.findIndex((f, i) => fills.every((g, j) => j === i || diff(f, g)));
+      t.eq(odd, 0, `the saved disc shows as CD selected (fills ${JSON.stringify(fills)})`);
+      t.has(t.texts(), /^Spin during playback$/, 'the Spin during playback row');
+      const evs = t.tap('Spin during playback');
+      t.ok(evs.some((e) => e.name === 'deck' && e.detail === 'media params.spin=true'), `the deck takes spin=true: ${evs.map((e) => `${e.name}(${e.detail})`).join(' ')}`);
     } },
     { name: 'Calendar > Source: one mark per row (its radio), no tick at the start', async run(t) {
       await t.device();

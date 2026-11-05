@@ -148,7 +148,9 @@ struct Pen {
   // a picture (core/images.h: its pixels already scaled, shaped and dithered to the box) with its top-left at x, y;
   // w x h = its box when the pixels are smaller (the panel's decode fell back on memory): LVGL scales them up to it,
   // bilinear (never nearest) (0 = as they are)
-  void image(int x, int y, const lv_image_dsc_t *px, int w = 0, int h = 0) const;
+  // rot (0.1 degrees, clockwise) turns it about its box's centre (bilinear: a round picture whose corners are
+  // see-through, the Media visuals' turning album art)
+  void image(int x, int y, const lv_image_dsc_t *px, int w = 0, int h = 0, int rot = 0) const;
   // false when the box x1..x2, y1..y2 (centre-relative) is outside what this redraw repaints: every primitive above
   // skips itself then, so a partial redraw (redraw / redraw_arc) costs only what crosses it (the static scale is not
   // drawn again while a knob moves)

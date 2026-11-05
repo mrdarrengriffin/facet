@@ -43,6 +43,24 @@ written to `budgets.json` `measured` + `build_factor`). The full WASM suite take
 - Over budget: fps under `fps_min` while the content wants to move faster, p95 panel ms over `frame_ms_max`, a still
   case (not `live`) redrawing while idle, heap or objects over budget.
 
+## Media spin
+
+The turning album art (components/media_visual.cpp): cases tagged `media-spin` (`--case tag:media-spin`), each with
+`"img": true` (every picture the case asks for is answered at once with a 640 x 640 cover with fine detail, so the
+decode, scale and drawing cost what a real cover does). Measured `--repeat 3`, estimates from the anchors' fit:
+
+| Case | Guition est. ms / frame, fps, CPU | Waveshare est. ms / frame, fps, CPU |
+|---|---|---|
+| vinyl, its label turning | 11.2, 31, ~35 % | 2.7, 31, ~8 % |
+| CD with art, spin off (the mark turns) | 2.4, 53, ~13 % | 0.6, 53, ~3 % |
+| CD with art, spin on | 41.7, 13 (capped at 12), ~54 % | 11.3, 31, ~35 % |
+
+What it took: the art turned once per drawn angle into one buffer the art's size (bilinear, fixed point; its round mask
+copied as it is) and drawn as a plain picture: LVGL's own image transform cost twice as much (Guition CD 58 ms); a
+ring a partial redraw lies wholly inside or outside of is skipped (the record's label among its grooves: 22 -> 11 ms);
+the redraw is the art's circle only, at most 30 a second (the CD's on the Guition: 12). Not yet measured on the glass
+(no `/fw/perf` run of a build with it).
+
 ## Phase 2: the panel tests itself (built and flashed 2026-10-22: `firmware/fw_bench.h`)
 
 The same `suite.json` cases run on the Guition and the Waveshare, giving the real numbers that calibrate the estimate.

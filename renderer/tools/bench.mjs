@@ -54,6 +54,21 @@ async function load(den) {
   return m;
 }
 const str = (m, s, f) => { const p = m.stringToNewUTF8(s); try { return f(p); } finally { m._free(p); } };
+// a case with "img": true gets every picture it asks for (core/images.h fw_img_wants) at once: a 640 x 640 album cover
+// (the size Spotify / HA's proxy give) with fine detail, so the decode, scale and drawing cost what a real cover does
+let COVER = null;
+function serveImages(m) {
+  const want = JSON.parse(m.UTF8ToString(m._fw_img_wants()) || '[]');
+  if (!want.length) return;
+  if (!COVER) {
+    COVER = new Uint8Array(640 * 640 * 4);
+    for (let y = 0; y < 640; y++) for (let x = 0; x < 640; x++) COVER.set([(x * 255) / 640, (y * 255) / 640, ((x ^ y) * 3) & 255, 255], (y * 640 + x) * 4);
+  }
+  const px = m._malloc(COVER.length);
+  m.HEAPU8.set(COVER, px);
+  for (const u of want) str(m, u, (p) => m._fw_img_put(p, 640, 640, px));
+  m._free(px);
+}
 const f64 = (m, p, n) => Array.from(new Float64Array(m.HEAPU8.buffer, p, n));
 
 // ---------------------------------------------------------------- cases
@@ -106,7 +121,7 @@ async function run(dev, c, scenario) {
   const id = m._fw_stage(w, h);
   m._fw_bench_attach();
   let t = 0;
-  const tick = () => { t += T.tick_ms; m._fw_tick(t); };
+  const tick = () => { t += T.tick_ms; m._fw_tick(t); if (c.img) serveImages(m); };
   for (let i = 0; i < 3; i++) tick();
   m._fw_areas(id); m._fw_bench_take();
   const mem0 = f64(m, m._fw_bench_mem(), 4);

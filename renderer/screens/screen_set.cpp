@@ -334,7 +334,7 @@ void build_page(lv_obj_t *parent, fw::Props p) {
   bool any = false;
   auto value = [&](const char *k, ArduinoJson::JsonVariantConst def) {
     const char *v = entry["params"][k] | (const char *) nullptr;
-    return v ? std::string(v) : fw::spec::param_default(def);
+    return v ? fw::spec::param_value(def, v) : fw::spec::param_default(def);  // an old pick no longer offered: the default
   };
   for (ArduinoJson::JsonPairConst kv : params) {
     if (!kv.value().is<ArduinoJson::JsonObjectConst>()) continue;

@@ -92,6 +92,30 @@ export default {
       t.eq(gaps, 0, `the art drawn in all ${frames} frames`);
       t.ok(biggest < (v.w * v.h) / 2, `no rebuild: the biggest redraw ${biggest} px < half the picture (${v.w}x${v.h}; the hero ${hero.w}x${hero.h})`);
     } },
+    { name: 'spin on: the CD turns with its art while playing; pause stops it in place: nothing fetched, nothing rebuilt, the art in every frame', async run(t) {
+      t.ha.s[P1] = { '': 'playing', friendly_name: 'Kitchen', media_title: 'Red Song', media_artist: 'Band', media_duration: '200', media_position: '20', entity_picture: ART('red') };
+      t.img.serve(HA_URL + ART('red'), 64, 64, [230, 30, 30, 255]);
+      await linked(t, { source: 'ha', visual: 'cd', spin: 'true' });
+      t.ok(red(cdBand(t)), `red first: ${cdBand(t)}`);
+      t.img.hang(HA_URL + ART('red'));
+      const m = t.b.m, v = t.part('media_visual'), hero = t.part('media_hero'), asked = t.img.asked.length, st0 = t.img.stats();
+      const areas = () => { const q = new Int32Array(m.HEAPU8.buffer), p = m._fw_areas(t.b.stage) >> 2, out = []; for (let i = 0; i < q[p]; i++) { const [x1, y1, x2, y2] = q.subarray(p + 1 + i * 4, p + 5 + i * 4); out.push((x2 - x1 + 1) * (y2 - y1 + 1)); } return out; };
+      let frames = 0, gaps = 0, biggest = 0, redraws = 0;
+      const watch = (ms) => { for (let e = 0; e < ms; e += 20) { t.ha.react(t.wait(20)); frames++; if (!red(cdBand(t))) gaps++; const a = areas(); redraws += a.length; biggest = Math.max(biggest, ...a); } };
+      const echo = (st) => { t.ha.s[P1][''] = st; t.ha.push(P1); };
+      areas();
+      watch(1000);
+      t.ok(redraws > 10 && biggest > (v.w * v.h) / 2, `playing: the CD's printed circle redrawn as it turns (${redraws} areas, biggest ${biggest} px)`);
+      echo('paused'); watch(6000);
+      redraws = 0; biggest = 0; watch(1000);
+      t.eq(redraws, 0, 'paused: stopped, nothing redrawn');
+      echo('playing'); watch(2000);
+      t.eq(t.img.asked.length, asked, `no image request: ${t.img.asked.slice(asked)}`);
+      const st = t.img.stats();
+      t.eq([st.fetches, st.dropped], [st0.fetches, st0.dropped], `the art's view kept (no re-decode): ${JSON.stringify(st)}`);
+      t.eq(gaps, 0, `the art drawn in all ${frames} frames`);
+      t.ok(biggest <= v.w * v.h, `no rebuild: the biggest redraw ${biggest} px <= the picture (${v.w}x${v.h}; the hero ${hero.w}x${hero.h})`);
+    } },
     { name: 'Home card: play -> pause -> play with the same art fetches nothing, rebuilds nothing, and the art is drawn in every frame', async run(t) {
       t.ha.s[P1] = { '': 'playing', friendly_name: 'Kitchen', media_title: 'Red Song', media_duration: '200', media_position: '20', entity_picture: ART('red') };
       t.img.serve(HA_URL + ART('red'), 64, 64, [230, 30, 30, 255]);

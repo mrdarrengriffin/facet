@@ -382,6 +382,13 @@ inline std::string param_default(ArduinoJson::JsonVariantConst v) {
   if (v.is<const char *>()) return v.as<std::string>();
   return v["default"] | "";
 }
+// a saved value of a typed parameter: a select's value that is no longer one of its options (an option folded into
+// another, Media's visual disc -> cd) is its default, so an old pick opens the screen and Settings shows the default
+inline std::string param_value(ArduinoJson::JsonVariantConst def, const std::string &v) {
+  if (strcmp(def["type"] | "", "select") || !def["options"].is<ArduinoJson::JsonArrayConst>() || (!v.empty() && v[0] == '$')) return v;
+  for (ArduinoJson::JsonVariantConst o : def["options"].as<ArduinoJson::JsonArrayConst>()) if (v == (o | "")) return v;
+  return param_default(def);
+}
 constexpr const char *STYLE_KEYS[] = {"color", "colour", "bg", "x", "y", "w", "h", "width", "height", "size", "font",
                                       "radius", "pad", "padding", "margin", "align", "sound", "opacity"};
 inline bool in_list(const char *csv, const std::string &w) {
@@ -1871,6 +1878,10 @@ inline lv_obj_t *build(lv_obj_t *parent, const std::string &id, Props opened, st
   }
   for (ArduinoJson::JsonPairConst kv : opened)
     if (kv.value().is<const char *>()) s->params[kv.key().c_str()] = kv.value().as<std::string>();
+  for (ArduinoJson::JsonPairConst kv : doc["params"].as<ArduinoJson::JsonObjectConst>()) {  // an old pick no longer offered
+    std::string &v = s->params[kv.key().c_str()];
+    v = param_value(kv.value(), v);
+  }
   for (ArduinoJson::JsonPairConst kv : doc["feeds"].as<ArduinoJson::JsonObjectConst>()) {  // C51: the feeds' adapters + settings
     ArduinoJson::JsonDocument fc;
     for (ArduinoJson::JsonPairConst f : kv.value().as<ArduinoJson::JsonObjectConst>()) fc[f.key().c_str()] = subst(f.value() | "", s->params);
