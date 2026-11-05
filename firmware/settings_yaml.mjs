@@ -57,8 +57,14 @@ L.push('', 'api:', '  actions:', '    - action: facet_theme', '      supports_re
   '        - api.respond:', "            data: !lambda 'fw::device::theme_from_ha(theme, root);'");
 
 // a change from anywhere but the entity itself -> move the entity (it publishes to HA and saves to NVS)
-L.push('', 'esphome:', '  on_boot:', '    - priority: -100', '      then:', '        - lambda: |-',
-  '            fw::dev::observe([](const char *k, const char *v, fw::dev::From from) {',
+L.push('', 'esphome:', '  on_boot:', '    - priority: -100', '      then:', '        - lambda: |-');
+// esphome.was (a number renamed): ESPHome keys a restored value by the NAME's object_id hash, not the id, so the
+// renamed entity would start at its default. Once, at boot: the value saved under the old name moves to the entity
+// (which saves it under its own key) and the old key is marked done (NaN). Home Assistant sees a new entity.
+for (const s of nm.filter((s) => ent(s).was))
+  L.push(`            { auto p = global_preferences->make_preference<float>(fnv1_hash_object_id(${q(ent(s).was)}, ${ent(s).was.length}));`,
+    `              float old; if (p.load(&old) && std::isfinite(old)) { auto c = id(${ent(s).id}).make_call(); c.set_value(old); c.perform(); old = NAN; p.save(&old); } }`);
+L.push('            fw::dev::observe([](const char *k, const char *v, fw::dev::From from) {',
   '              if (from == fw::dev::HA) return;  // came from the entity: it has it already');
 for (const s of sel) L.push(`              if (!strcmp(k, ${q(s.id)})) { auto c = id(${ent(s).id}).make_call(); c.set_option(fw::dev::option_label(k, v)); c.perform(); return; }`);
 for (const s of sw) L.push(`              if (!strcmp(k, ${q(s.id)})) { if (!strcmp(v, "true")) id(${ent(s).id}).turn_on(); else id(${ent(s).id}).turn_off(); return; }`);

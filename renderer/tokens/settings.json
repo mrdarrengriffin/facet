@@ -280,7 +280,8 @@
       "about": "No touch for this long: the idle screen shows (the clock without its header, or the album art). A touch goes back to Home.",
       "esphome": {
         "id": "idle_after_s",
-        "name": "Clock after",
+        "name": "Idle after",
+        "was": "Clock after",
         "icon": "mdi:clock-start",
         "device_class": "duration"
       }
