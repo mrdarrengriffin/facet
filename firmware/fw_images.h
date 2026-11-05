@@ -71,10 +71,31 @@ constexpr size_t MAX_QUEUE = 128;
 // internal RAM the fetch never takes the panel below (Wi-Fi, LVGL draw, the API need it): checked before every
 // connect. TLS buffers come from PSRAM (CONFIG_MBEDTLS_EXTERNAL_MEM_ALLOC), software AES (no DMA bounce buffers)
 constexpr size_t INTERNAL_KEEP = 32 * 1024, INTERNAL_BLOCK = 8 * 1024, PSRAM_KEEP = 256 * 1024;
+// PSRAM questions by trial allocation, never heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM): that one walks every
+// block of the PSRAM heap (thousands, their headers in PSRAM: milliseconds) inside the heap's spinlock with this core's
+// interrupts off, and the other core's next malloc spins on the lock with ITS interrupts off. On the Guition the RGB
+// panel's bounce-buffer refill is an interrupt on the LVGL core: it missed its slot = a band of stale rows (#118).
+// A TLSF malloc + free is O(1); the internal heap's walk is short (few blocks, fast RAM) and keeps its call.
+inline bool psram_has(size_t n) {
+  void *p = heap_caps_malloc(n, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+  if (!p) return false;
+  heap_caps_free(p);
+  return true;
+}
+// the largest free PSRAM block up to cap, to 16 KB: bisected trial allocations (~7 for 1 MB)
+inline size_t psram_largest(size_t cap) {
+  size_t lo = 0, hi = std::min(cap, heap_caps_get_free_size(MALLOC_CAP_SPIRAM)) + 1;
+  while (hi - lo > 16 * 1024) {
+    const size_t mid = lo + (hi - lo) / 2;
+    if (psram_has(mid)) lo = mid;
+    else hi = mid;
+  }
+  return lo;
+}
 inline bool low_memory() {
   return heap_caps_get_free_size(MALLOC_CAP_INTERNAL) < INTERNAL_KEEP ||
          heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL) < INTERNAL_BLOCK ||
-         heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) < PSRAM_KEEP + fw::img::budget().body_max / 4;
+         !psram_has(PSRAM_KEEP + fw::img::budget().body_max / 4);
 }
 inline State &S() { static State s; return s; }
 // reads that bring nothing for this long, before the body is whole = the download broke off
@@ -99,7 +120,7 @@ constexpr size_t DECODE_MARGIN = 96 * 1024;
 // the most the decode may hold: the largest free PSRAM block, less the margin. The decode itself works out what it
 // needs (fw_imgdec.h: outputs + rows + decoder) and is refused if that is more
 inline size_t decode_room() {
-  const size_t big = heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM);
+  const size_t big = psram_largest(8u << 20);  // a decode never plans more than this (both boards' budgets)
   return big > DECODE_MARGIN ? big - DECODE_MARGIN : 0;
 }
 
@@ -269,7 +290,7 @@ inline void pump(lv_timer_t *) {
       fw::img::put(d->url.c_str(), d->px.px);  // the views take their pixels (no copy)
       s.fetched++;
       ESP_LOGI("facet_img", "in; cache %s; free PSRAM %u KB (largest %u KB), internal %u KB", fw::img::stats().c_str(),
-               (unsigned) (heap_caps_get_free_size(MALLOC_CAP_SPIRAM) / 1024), (unsigned) (heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) / 1024),
+               (unsigned) (heap_caps_get_free_size(MALLOC_CAP_SPIRAM) / 1024), (unsigned) (psram_largest(8u << 20) / 1024),
                (unsigned) (heap_caps_get_free_size(MALLOC_CAP_INTERNAL) / 1024));
     }
     else if (d->err != "left the screen") { fw::img::fail(d->url.c_str(), d->err.c_str()); s.failed++; }
