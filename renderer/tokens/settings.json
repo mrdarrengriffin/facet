@@ -258,9 +258,9 @@
       }
     },
     {
-      "id": "idleAfter", "help": "How many seconds with no touch before the panel shows the clock. 0 never goes idle.",
+      "id": "idleAfter", "help": "How many seconds with no touch before the panel goes idle (the clock, or the album art while music plays). 0 never goes idle.",
       "group": "idle",
-      "label": "Clock after",
+      "label": "Idle after",
       "kind": "number",
       "control": "presets",
       "default": 60,
@@ -277,7 +277,7 @@
         900
       ],
       "zero": "Never",
-      "about": "No touch for this long: the clock shows, without its header. A touch goes back to Home.",
+      "about": "No touch for this long: the idle screen shows (the clock without its header, or the album art). A touch goes back to Home.",
       "esphome": {
         "id": "idle_after_s",
         "name": "Clock after",

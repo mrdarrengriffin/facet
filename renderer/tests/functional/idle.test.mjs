@@ -1,4 +1,4 @@
-// Idle clock (core/device.h idle, screens/idle.cpp): Settings > Clock after with no touch = the stack [home, idle],
+// Idle clock (core/device.h idle, screens/idle.cpp): Settings > Idle after with no touch = the stack [home, idle],
 // the Clock screen without its header, dimmed (the event "idle" <Idle brightness>, "" = undimmed); the first touch goes
 // Home and clicks nothing under the finger; 0 = never; a toast shows over it and it stays.
 import { frame565 } from './_release.mjs';
@@ -27,7 +27,7 @@ const rgb = (t, x, y) => { const q = frame565(t)[y * t.b.S + x]; return [(q >> 1
 const isRed = (c) => c[0] > 180 && c[1] < 90 && c[2] < 90;
 
 export default {
-  id: 'idle', family: 'device', about: 'The idle clock: Clock after with no touch, dimmed; a touch goes Home and clicks nothing; Idle shows Album art while music plays.',
+  id: 'idle', family: 'device', about: 'The idle clock: Idle after with no touch, dimmed; a touch goes Home and clicks nothing; Idle shows Album art while music plays.',
   tests: [
     { name: 'Idle shows Album art: while music plays, the art alone covers the screen (no words, no shade); paused, the clock; a tap goes Home', async run(t) {
       await artIdle(t);
@@ -53,7 +53,7 @@ export default {
       t.eq(t.stack(), ['home', 'idle'], 'idle again');
       t.ok(!isRed(rgb(t, t.b.S >> 1, t.b.S >> 3)), 'no art');
     } },
-    { name: 'Clock after (60 s): Home until then, then the idle clock without its header, dimmed to Idle brightness', async run(t) {
+    { name: 'Idle after (60 s): Home until then, then the idle clock without its header, dimmed to Idle brightness', async run(t) {
       await on(t);
       t.eq(t.setting('idleBrightness'), '70', 'default 70 %');
       t.wait(Math.max(0, 55000 - t.since()));
@@ -80,7 +80,7 @@ export default {
       await on(t); t.setting('idleBrightness', 40);
       t.eq(idle(t.wait(Math.max(0, 62000 - t.since()))), ['40'], 'dimmed to 40');
     } },
-    { name: 'Clock after 0 = never (10 min with no touch)', async run(t) {
+    { name: 'Idle after 0 = never (10 min with no touch)', async run(t) {
       await on(t); t.setting('idleAfter', 0);
       t.eq(idle(t.wait(600000)), [], 'no idle');
       t.eq(t.stack(), ['home'], 'Home');

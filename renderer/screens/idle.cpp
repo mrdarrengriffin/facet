@@ -1,4 +1,4 @@
-// Idle clock: what the panel shows after Settings > Clock after with no touch (core/device.cpp "idle"). The Clock
+// Idle clock: what the panel shows after Settings > Idle after with no touch (core/device.cpp "idle"). The Clock
 // screen (specs/clock.json: the orbit, the time and the date) with its Header hidden, so the clock sits in the middle
 // of the screen. Nothing on it takes a tap: the first touch anywhere is swallowed (the finger's
 // release clicks nothing) and goes back to Home. The device fades it in, dims the screen (Idle brightness) and
@@ -15,7 +15,7 @@
 
 namespace {
 const char *META = R"({
-  "about": "The idle clock: the Clock screen without its header, shown after Clock after with no touch. With Idle shows set to Album art, the art of the music playing covers it while it plays. A touch goes back to Home.",
+  "about": "The idle clock: the Clock screen without its header, shown after Idle after with no touch. With Idle shows set to Album art, the art of the music playing covers it while it plays. A touch goes back to Home.",
   "frame": [480, 480],
   "icons": [],
   "props": []

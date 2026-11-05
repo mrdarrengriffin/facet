@@ -42,7 +42,7 @@ export default {
 - **Navigation (device):** `t.send(spec)` = a sent spec (stored, never shown), `t.unsend(id)` (revert),
   `t.show(id)` = what POST /fw/show does (`home` = straight Home), `t.stack()` (ids, root first), `t.where()` (the top).
 - **From HA:** `t.toast({title, body, kind, icon, duration})` = what the panel's `facet_toast` action puts on the
-  `facet.toast` pair (returns the events). `t.setting(id)` = a device setting's value now; `t.setting(id, v)` sets it. `t.device()` starts with Clock after = 0 (no idle clock while a test waits).
+  `facet.toast` pair (returns the events). `t.setting(id)` = a device setting's value now; `t.setting(id, v)` sets it. `t.device()` starts with Idle after = 0 (no idle clock while a test waits).
 - **Rotate screen:** `t.turn(deg)` = the firmware's rotate hook (ESPHome turns the picture, LVGL stays upright);
   `t.glass([x, y])` = where a UI point shows on the glass, `t.tapGlass(px, py)` = a finger there (ESPHome's touch map).
 - **Tier:** `tier: 'nightly'` on a suite = it runs only in `check.sh nightly` (`functional.mjs --tier nightly`), never

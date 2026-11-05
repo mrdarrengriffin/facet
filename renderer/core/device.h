@@ -35,7 +35,7 @@
 //              Toasts). From Home Assistant: the host puts the toast JSON on the pseudo pair TOAST_PAIR ("facet.toast",
 //              state) through ha::put (the panel: its ESPHome "toast" action; the workbench: fw_ha_put); each put
 //              must differ (include an id or the time), an unchanged value is no new toast.
-//   idle       Settings > Clock after (idleAfter s; 0 = never) with no touch and no screen change: the stack becomes
+//   idle       Settings > Idle after (idleAfter s; 0 = never) with no touch and no screen change: the stack becomes
 //              [home, idle], the idle clock (screens/idle.cpp: the Clock screen, its header hidden) fading in over 600 ms
 //              with no rise, and the screen dims to Idle brightness: the host's on_idle hook (a panel: its backlight),
 //              and the event "idle" <pct> ("" = undimmed: the workbench's canvas filter). The first touch is swallowed
