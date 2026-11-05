@@ -1152,13 +1152,14 @@ inline bool screen_go(const std::string &what, ArduinoJson::JsonObject out) {
 
 // ---------------------------------------------------------------- /fw/info "art"
 // the last picture decode (fw_images.h Art): read under the image worker's lock (any task)
-inline void art_info(ArduinoJson::JsonVariant o) {
+inline void art_info(ArduinoJson::JsonDocument &d) {
   images::Art a;
   {
     std::lock_guard<std::mutex> l(images::S().m);
     a = images::S().art;
   }
-  if (!a.any) { o.set(nullptr); return; }
+  if (!a.any) { d["art"] = nullptr; return; }
+  ArduinoJson::JsonObject o = d["art"].to<ArduinoJson::JsonObject>();
   const auto pair = [&](const char *k, int w, int h) { auto v = o[k].to<ArduinoJson::JsonArray>(); v.add(w), v.add(h); };
   pair("box", a.bw, a.bh);
   if (a.err.empty()) {
@@ -1471,7 +1472,7 @@ class Handler : public AsyncWebHandler {
       d["uptime_s"] = (int) (esp_timer_get_time() / 1000000);
       d["probation_s"] = probation_left();
       heap(d["heap"].to<ArduinoJson::JsonObject>());
-      art_info(d["art"]);
+      art_info(d);
       FacetLcdStats ls{};
       if (facet_lcd_stats && facet_lcd_stats(&ls)) {
         auto l = d["lcd"].to<ArduinoJson::JsonObject>();
