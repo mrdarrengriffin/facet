@@ -23,7 +23,8 @@
 //                       Entity pickers: an entity (no screen list of its domain) or entities parameter
 //                       with a "domain" opens the sheet on the panel's own Home Assistant list (core/device.h
 //                       ha_link): on open it reads ONLY that picker's domain(s) (comma list) when not cached yet
-//                       (cached per domain until Read now or a new address), a "Reading Home Assistant" row meanwhile,
+//                       (cached per domain until a new address; a list older than ha_link::STALE_MS is read again in
+//                       the background on open, the old list showing meanwhile), a "Reading Home Assistant" row meanwhile,
 //                       "not reached" + Try again on a failure, and "Home Assistant not connected" (a tap: Settings >
 //                       Home Assistant, navigate "ha_link") when the link is not set up. Search without a keyboard:
 //                       sorted by name; more than PAGE matches = rows by the next letter of the name (a tap narrows,
@@ -124,24 +125,28 @@ void row_value(Pick &p, const std::string &value) {
 namespace hl = fw::dev::ha_link;
 constexpr size_t PAGE = 24;  // at most this many entity rows in the sheet; more = rows by the next letter
 std::string upper(std::string s) { for (char &c : s) c = (char) toupper((unsigned char) c); return s; }
-// the sheet's rows for an HA pick, from the link as it is now; starts the read of the domains not cached yet
+// the sheet's rows for an HA pick, from the link as it is now; starts the read of the domains not cached yet, and once
+// per open of the stale ones (in the background: their old list shows; the sheet follows the read through hl::rev)
 void fill_ha(Pick &p) {
   p.ids.clear(), p.names.clear(), p.status.clear();
   p.sel = -1;
   auto row = [&](const std::string &a, const std::string &n, const std::string &st) { p.ids.push_back(a), p.names.push_back(n), p.status.push_back(st); };
   if (!hl::ready()) { row("set", "Home Assistant not connected", "set it up in Settings > Home Assistant"); return; }
-  std::string need;
+  std::string need, old;
   std::vector<const hl::Entity *> all;
   for (const std::string &d : split(p.dom)) {
-    if (const std::vector<hl::Entity> *l = hl::list(d)) for (const hl::Entity &e : *l) all.push_back(&e);
-    else need += (need.empty() ? "" : ",") + d;
+    if (const std::vector<hl::Entity> *l = hl::list(d)) {
+      for (const hl::Entity &e : *l) all.push_back(&e);
+      if (hl::stale(d)) old += (old.empty() ? "" : ",") + d;
+    } else need += (need.empty() ? "" : ",") + d;
   }
   if (!need.empty()) {
     if (hl::status() == hl::FAIL && p.tried) { row("retry", "Home Assistant not reached", hl::why()); row("retry", "Try again", ""); return; }
-    if (hl::status() != hl::LOADING && !*hl::fetch(need)) p.tried = true;
+    if (hl::status() != hl::LOADING && !*hl::fetch(old.empty() ? need : need + "," + old)) p.tried = true;
     row("", "Reading Home Assistant", "loading " + need);
     return;
   }
+  if (!old.empty() && !p.tried && hl::status() != hl::LOADING && !*hl::fetch(old)) p.tried = true;  // the old list shows meanwhile
   auto name_of = [](const hl::Entity *e) { return e->name.empty() ? e->id : e->name; };
   std::sort(all.begin(), all.end(), [&](const hl::Entity *a, const hl::Entity *b) { return upper(name_of(a)) < upper(name_of(b)); });
   std::vector<const hl::Entity *> m;

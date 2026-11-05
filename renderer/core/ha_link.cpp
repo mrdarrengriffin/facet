@@ -28,6 +28,7 @@ struct State {
   size_t peak = 0;
   int count = 0;
   std::map<std::string, std::vector<Entity>> cache;
+  std::map<std::string, uint32_t> read_at;  // per cached domain: when it was read (lv_tick)
   WsSink ws = nullptr;
   uint32_t ws_next = WS_ID;
   struct Call { std::function<void(const char *, size_t)> feed; std::function<void(bool, const std::string &)> end; };
@@ -182,7 +183,7 @@ void units_from_config() {
 }
 void configure(const std::string &url, const std::string &token) {
   State &s = S();
-  if (url != s.url) s.cache.clear(), s.reg.clear(), s.count = 0;
+  if (url != s.url) s.cache.clear(), s.read_at.clear(), s.reg.clear(), s.count = 0;
   s.url = url;
   while (!s.url.empty() && s.url.back() == '/') s.url.pop_back();
   if (!token.empty()) s.token = token;
@@ -244,6 +245,10 @@ const std::vector<Entity> *list(const std::string &domain) {
   auto it = S().cache.find(domain);
   return it == S().cache.end() ? nullptr : &it->second;
 }
+bool stale(const std::string &domain) {
+  auto it = S().read_at.find(domain);
+  return it != S().read_at.end() && lv_tick_diff(lv_tick_get(), it->second) > STALE_MS;
+}
 void on_get(GetSink f) { S().get = f; }
 void on_ws(WsSink f) { S().ws = f; }
 uint32_t ws(const std::string &cmd, std::function<void(const char *, size_t)> feed, std::function<void(bool, const std::string &)> end) {
@@ -288,7 +293,8 @@ void done(uint32_t id, bool ok, const std::string &why, Scan *parsed) {
   s.active = nullptr;
   if (ok && sc && !sc->bad()) {
     s.count = 0;
-    for (auto &kv : sc->out) { s.count += (int) kv.second.size(); s.cache[kv.first] = std::move(kv.second); }
+    const uint32_t now = lv_tick_get();
+    for (auto &kv : sc->out) { s.count += (int) kv.second.size(); s.cache[kv.first] = std::move(kv.second); s.read_at[kv.first] = now; }
     s.peak = sc->peak();
     s.st = OK;
   } else {

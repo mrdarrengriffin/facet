@@ -9315,7 +9315,7 @@
   },
   "ha_link": {
    "name": "ha_link",
-   "about": "Settings > Home Assistant: the panel's own link to Home Assistant (its address and a long-lived token, kept on the panel; the token is never shown back) and the entity lists the screens' pickers offer, read from Home Assistant on demand. Set with the action ha.connect; Read now = ha.entities.",
+   "about": "Settings > Home Assistant: the panel's own link to Home Assistant (its address and a long-lived token, kept on the panel; the token is never shown back) Set with the action ha.connect. The entity pickers read their own lists when they open (again in the background when a list is old).",
    "contract": 1,
    "min": null,
    "slots": null,

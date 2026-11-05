@@ -1,5 +1,6 @@
 // Home Assistant (Settings > Home Assistant): the panel's own link to Home Assistant (core/device.h
-// ha_link), so the entity pickers have lists on a bare panel. A screen spec of real components only, built by the spec
+// ha_link), so the entity pickers have lists on a bare panel (each picker reads its own domain when it opens, and again
+// in the background when its list is older than ha_link::STALE_MS: screens/screen_set.cpp; nothing to read by hand). A screen spec of real components only, built by the spec
 // renderer (core/spec.h: Page > Header + list Body, C1-C3), laid out as Settings:
 //   header   the Header (back + "Home Assistant" + the screen chrome)
 //   body     the groups, each a Section header (size label) over read-only List rows (act none):
@@ -9,13 +10,7 @@
 //            "connection"  List row "Address" (the URL, or "Not set") and List row "Token" (the last 4 characters
 //                          only, "Not set"): set by the action ha.connect (the panel's link page /link, an agent,
 //                          HA, the workbench's props)
-//            "entities"    List row "Entity lists", its sub line the status (Not set up / Ready / Reading Home
-//                          Assistant / "N entities" / the failure in words), a Button "Read now" (secondary) in its
-//                          end slot: the action ha.entities over the domains already read (the pickers read only their
-//                          own domain(s) when they open, screens/screen_set.cpp; nothing read yet = a connection check
-//                          over "zone", a few entities)
 //   The spec follows the link while the page shows (a 250 ms timer compares ha_link::rev() and builds it again).
-//   Read now shows only when the link is set up and not reading.
 // Props (the workbench): url, token = ha.connect on build when given (a token typed here stays in the module; the
 // workbench's own fetch goes through its host with the host's token). Update path: none needed (rows follow the link).
 #include "fw.h"
@@ -25,24 +20,6 @@
 namespace {
 using Doc = ArduinoJson::JsonDocument;
 namespace hl = fw::dev::ha_link;
-constexpr const char *PICK_DOMAINS[] = {"light", "sensor", "binary_sensor", "media_player", "calendar", "weather", "climate", "cover", "lock", "vacuum", "camera",
-                                         "switch", "fan", "scene", "script", "select", "input_boolean", "input_select", "automation", "button", "number", "zone"};
-// Read now: the domains read so far (each picker reads only its own; sensors alone are ~1000 rows), else a check
-std::string read_again() {
-  std::string d;
-  for (const char *x : PICK_DOMAINS) if (hl::list(x)) d += std::string(d.empty() ? "" : ",") + x;
-  return d.empty() ? "zone" : d;
-}
-std::string status_words() {
-  switch (hl::status()) {
-    case hl::OFF: return "Not set up";
-    case hl::IDLE: return "Ready";
-    case hl::LOADING: return "Reading Home Assistant";
-    case hl::CHECKING: return "Checking the link";
-    case hl::OK: return std::to_string(hl::count()) + " entities";
-    default: return "Not reached: " + hl::why();
-  }
-}
 ArduinoJson::JsonObject node(ArduinoJson::JsonArray n, const char *c) {
   ArduinoJson::JsonObject o = n.add<ArduinoJson::JsonObject>();
   o["c"] = c;
@@ -82,15 +59,6 @@ std::string spec_json() {
   a["trailing"] = "value", a["value"] = hl::url().empty() ? "Not set" : hl::url().c_str();
   ArduinoJson::JsonObject t = row(n, "Token");
   t["trailing"] = "value", t["value"] = hl::has_token() ? hl::token_hint().c_str() : "Not set";
-  group(n, "entities");
-  const int at = (int) n.size();
-  row(n, "Entity lists")["sub"] = status_words();
-  if (hl::ready() && hl::status() != hl::LOADING) {
-    ArduinoJson::JsonObject b = node(n, "button");
-    b["in"] = at, b["slot"] = 0;
-    b["p"]["kind"] = "secondary", b["p"]["label"] = "Read now";
-    b["on"]["tap"]["do"] = "ha.entities", b["on"]["tap"]["domains"] = read_again();
-  }
   std::string out;
   serializeJson(sp, out);
   return out;
@@ -98,7 +66,7 @@ std::string spec_json() {
 
 const char *META = R"({
   "role": "detail",
-  "about": "Settings > Home Assistant: the panel's own link to Home Assistant (its address and a long-lived token, kept on the panel; the token is never shown back) and the entity lists the screens' pickers offer, read from Home Assistant on demand. Set with the action ha.connect; Read now = ha.entities.",
+  "about": "Settings > Home Assistant: the panel's own link to Home Assistant (its address and a long-lived token, kept on the panel; the token is never shown back) Set with the action ha.connect. The entity pickers read their own lists when they open (again in the background when a list is old).",
   "frame": [480, 480],
   "icons": ["back@glyph"],
   "props": [

@@ -236,6 +236,10 @@ uint32_t rev();            // moves on every change (pages poll it)
 size_t peak();             // the last fetch's parse peak (bytes)
 int count();               // entities kept by the last fetch
 const std::vector<Entity> *list(const std::string &domain);  // nullptr = not fetched yet
+// a domain's list read longer ago than this: its picker reads it again in the background when it opens (the old list
+// shows meanwhile), so entities added to Home Assistant appear without a manual read
+constexpr uint32_t STALE_MS = 5 * 60 * 1000;
+bool stale(const std::string &domain);  // cached and read more than STALE_MS ago
 using GetSink = void (*)(uint32_t id, const std::string &url, const std::string &token);
 void on_get(GetSink f);
 void chunk(uint32_t id, const char *p, size_t n);

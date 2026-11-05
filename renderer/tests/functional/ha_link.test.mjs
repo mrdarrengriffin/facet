@@ -58,6 +58,38 @@ export default {
       act(t, { do: 'nav.open', screen: 'ha_link' });
       t.ok(t.texts().includes('Cannot reach Home Assistant at that address.'), `the screen says why, whole: ${t.texts().join(' / ')}`);
     } },
+    { name: 'no "Entity lists / Read now": a picker reads its own domain on open, and again in the background when its list is old (a new entity shows up)', async run(t) {
+      t.ha.answers = true;
+      t.ha.s['weather.test_home'] = { '': 'sunny', friendly_name: 'Test home' };
+      await t.device({ v: 2, rev: 9, start: 'h', pages: [
+        { id: 'h', kind: 'home', name: 'Test', cards: [{ t: 'page', page: 'weather', size: 'm' }] }, { id: 'weather', kind: 'weather', params: { source: 'ha_weather' } }] });
+      act(t, { do: 'ha.connect', url: 'http://ha.test:8123', token: 'abcdefgh1234' }); t.b.tick(8); t.b.settle(600);
+      act(t, { do: 'nav.open', screen: 'ha_link' });
+      t.hasNot(t.texts(), /^(Entity lists|Read now)$/, 'the screen: the link only, nothing to read by hand');
+      const link = () => JSON.parse(t.b.m.UTF8ToString(t.b.m._fw_ha_link()));
+      const picker = () => {
+        act(t, { do: 'nav.open', screen: 'settings' });
+        act(t, { do: 'nav.open', screen: 'screen_set', params: { id: 'weather' } });
+        t.drag({ at: [t.b.S / 2, t.b.S * 0.8] }, { by: [0, -t.b.S / 2] }); t.b.settle(600);
+        t.tap(/^Forecast$/);
+        const first = t.texts();  // straight after the tap, before Home Assistant answers
+        t.wait(800); t.b.settle(600);
+        return { first, after: t.texts() };
+      };
+      let p = picker();
+      t.has(p.after, /^Test home$/, 'read on open: the weather list');
+      t.eq(link().status, 'ok', `read: ${JSON.stringify(link())}`);
+      const reads = link().count;
+      t.ha.s['weather.test_new'] = { '': 'rainy', friendly_name: 'New place' };
+      p = picker();
+      t.hasNot(p.after, /^New place$/, 'a fresh list: not read again');
+      t.wait(5 * 60 * 1000 + 1000);
+      p = picker();
+      t.hasNot(p.first, /^Reading Home Assistant$/, 'an old list: shown at once, no Reading row');
+      t.has(p.first, /^Test home$/, 'the old list meanwhile');
+      t.has(p.after, /^New place$/, 'read again in the background: the new entity shows');
+      t.eq(link().count, reads + 1, 'only the weather domain read');
+    } },
     { name: 'the link page as a QR code while the panel is not linked, gone once it is', async run(t) {
       t.ha.answers = true;
       await t.mount('ha_link', { page: 'http://192.168.1.42/link' });
