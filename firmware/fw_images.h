@@ -36,6 +36,7 @@
 #define FW_IMG_CRT_BUNDLE 1
 #endif
 #include "esphome/core/log.h"
+#include "fw_busy.h"
 #include "fw_imgdec.h"
 #include "images.h"
 #include "device.h"
@@ -158,6 +159,7 @@ inline void fetch(const std::string &src, const std::vector<fw::img::Box> &boxes
     if (!buf) { d.err = "out of memory"; goto out; }
     const bool chunked = esp_http_client_is_chunked_response(h);
     int64_t quiet = 0;  // since when reads have brought nothing (0 = they bring bytes)
+    fw::busy::on(fw::busy::FETCH);
     for (;;) {
       if (S().cancel) { d.err = "left the screen"; break; }
       if (late()) { d.err = tmo; break; }
@@ -176,6 +178,7 @@ inline void fetch(const std::string &src, const std::vector<fw::img::Box> &boxes
       else if (now - quiet > QUIET_US) break;
       vTaskDelay(1);
     }
+    fw::busy::off(fw::busy::FETCH);
     heap_caps_free(buf);
     if (d.err.empty() && len >= 0 && body.n != (size_t) len) {
       char t[64];
@@ -189,7 +192,9 @@ inline void fetch(const std::string &src, const std::vector<fw::img::Box> &boxes
     h = nullptr;
     const int64_t t1 = esp_timer_get_time();
     d.got_us = t1 - t0, d.bytes = body.n;
+    fw::busy::on(fw::busy::DECODE);
     const bool ok = fw::imgdec::decode(body.b, body.n, B.src_max_px, decode_room(), boxes, d.px);
+    fw::busy::off(fw::busy::DECODE);
     d.dec_us = esp_timer_get_time() - t1;
     if (!ok) {
       d.err = d.px.err;

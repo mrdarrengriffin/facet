@@ -11,12 +11,36 @@
 
 namespace esphome::mipi_rgb {
 
-// Facet: frame counters (MipiRgb::vsyncs / frames). The callbacks run in the LCD ISR, which stays in IRAM
-// (CONFIG_LCD_RGB_ISR_IRAM_SAFE): IRAM code, DRAM data.
+// Facet: frame counters (MipiRgb::vsyncs / frames) and underrun attribution (#118). The callbacks run in the LCD ISR,
+// which stays in IRAM (CONFIG_LCD_RGB_ISR_IRAM_SAFE): IRAM code, DRAM data. A VSYNC with no whole frame streamed since
+// the last one = a frame the bounce buffers underran; it is counted against every job bit set in facet_busy (set by
+// Facet's firmware, firmware/fw_busy.h) at that moment.
+}  // namespace esphome::mipi_rgb
+extern "C" DRAM_ATTR volatile uint32_t facet_busy = 0;
+extern "C" DRAM_ATTR volatile uint32_t facet_busy_seen = 0;
+namespace esphome::mipi_rgb {
 static DRAM_ATTR volatile uint32_t s_vsyncs = 0;
 static DRAM_ATTR volatile uint32_t s_frames = 0;
+static DRAM_ATTR uint32_t s_last_frames = 0;
+static DRAM_ATTR uint32_t s_missed = 0;
+static DRAM_ATTR uint32_t s_idle = 0;
+static DRAM_ATTR uint32_t s_with[8] = {};
+static DRAM_ATTR uint32_t s_busy[8] = {};  // frames each job ran in, missed or not (the base for the rates)
 static IRAM_ATTR bool on_vsync_(esp_lcd_panel_handle_t, const esp_lcd_rgb_panel_event_data_t *, void *) {
   s_vsyncs = s_vsyncs + 1;
+  const uint32_t f = s_frames;
+  const uint32_t now = facet_busy;
+  const uint32_t b = now | facet_busy_seen;  // every job that ran during this frame
+  facet_busy_seen = now;
+  for (int i = 0; i < 8; i++)
+    if (b & (1u << i)) s_busy[i]++;
+  if (f == s_last_frames && s_vsyncs > 2) {
+    s_missed++;
+    if (!b) s_idle++;
+    for (int i = 0; i < 8; i++)
+      if (b & (1u << i)) s_with[i]++;
+  }
+  s_last_frames = f;
   return false;
 }
 static IRAM_ATTR bool on_frame_(esp_lcd_panel_handle_t, const esp_lcd_rgb_panel_event_data_t *, void *) {
@@ -26,10 +50,16 @@ static IRAM_ATTR bool on_frame_(esp_lcd_panel_handle_t, const esp_lcd_rgb_panel_
 uint32_t MipiRgb::vsyncs() { return s_vsyncs; }
 uint32_t MipiRgb::frames() { return s_frames; }
 }  // namespace esphome::mipi_rgb
-// Facet's firmware reads them for /fw/info "lcd" (firmware/fw_device.h, weak there)
-extern "C" bool facet_lcd_stats(uint32_t *vsyncs, uint32_t *frames) {
-  *vsyncs = esphome::mipi_rgb::s_vsyncs;
-  *frames = esphome::mipi_rgb::s_frames;
+// Facet's firmware reads them for /fw/info "lcd" (firmware/fw_device.h, weak there; same layout as its FacetLcdStats)
+struct FacetLcdStats {
+  uint32_t vsyncs, frames, missed, idle, with[8], busy[8];
+};
+extern "C" bool facet_lcd_stats(FacetLcdStats *out) {
+  out->vsyncs = esphome::mipi_rgb::s_vsyncs;
+  out->frames = esphome::mipi_rgb::s_frames;
+  out->missed = esphome::mipi_rgb::s_missed;
+  out->idle = esphome::mipi_rgb::s_idle;
+  for (int i = 0; i < 8; i++) out->with[i] = esphome::mipi_rgb::s_with[i], out->busy[i] = esphome::mipi_rgb::s_busy[i];
   return true;
 }
 namespace esphome::mipi_rgb {

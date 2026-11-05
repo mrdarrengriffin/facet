@@ -100,6 +100,7 @@
 #include "esp_system.h"
 #include "esp_random.h"
 #include "esp_attr.h"
+#include "fw_busy.h"
 #include "esphome/core/defines.h"
 #include "esphome/core/log.h"
 #include "esphome/core/preferences.h"
@@ -302,7 +303,12 @@ inline void heap(ArduinoJson::JsonObject o) {
 // the display's frame counters, when the board's display driver has them (Facet's mipi_rgb, Guition RGB panel; a weak
 // symbol, so null elsewhere): /fw/info "lcd" {vsyncs, frames, missed}. missed = VSYNCs without a whole frame streamed
 // = frames the RGB bounce buffers underran (PSRAM too busy), each a one-frame flicker or shift (#118)
-extern "C" bool facet_lcd_stats(uint32_t *vsyncs, uint32_t *frames) __attribute__((weak));
+// with[i] = missed frames while fw::busy job i ran (fw_busy.h), idle = missed with none running, busy[i] = all frames
+// job i ran in (missed or not: with / busy = how often that job costs a frame).
+struct FacetLcdStats {
+  uint32_t vsyncs, frames, missed, idle, with[8], busy[8];
+};
+extern "C" bool facet_lcd_stats(FacetLcdStats *out) __attribute__((weak));
 namespace fw::device {
 // content taller than the screen (doc pages): top-aligned and scrollable instead of centred and clipped
 inline void fit_scroll() {
@@ -1430,12 +1436,16 @@ class Handler : public AsyncWebHandler {
       d["uptime_s"] = (int) (esp_timer_get_time() / 1000000);
       d["probation_s"] = probation_left();
       heap(d["heap"].to<ArduinoJson::JsonObject>());
-      uint32_t v = 0, f = 0;
-      if (facet_lcd_stats && facet_lcd_stats(&v, &f)) {
+      FacetLcdStats ls{};
+      if (facet_lcd_stats && facet_lcd_stats(&ls)) {
         auto l = d["lcd"].to<ArduinoJson::JsonObject>();
-        l["vsyncs"] = v;
-        l["frames"] = f;
-        l["missed"] = v > f ? v - f : 0;
+        l["vsyncs"] = ls.vsyncs;
+        l["frames"] = ls.frames;
+        l["missed"] = ls.missed;
+        auto w = l["with"].to<ArduinoJson::JsonObject>();
+        w["none"] = ls.idle;
+        auto b = l["frames_with"].to<ArduinoJson::JsonObject>();
+        for (int i = 0; i < fw::busy::N; i++) w[fw::busy::NAMES[i]] = ls.with[i], b[fw::busy::NAMES[i]] = ls.busy[i];
       }
       std::string sh = "null";
       ArduinoJson::JsonDocument devs;
@@ -1931,6 +1941,9 @@ inline void setup() {
   lv_display_add_event_cb(d, perf_event, LV_EVENT_RENDER_READY, nullptr);
   lv_display_add_event_cb(d, perf_event, LV_EVENT_FLUSH_START, nullptr);   // navigation timing: draw vs copy
   lv_display_add_event_cb(d, perf_event, LV_EVENT_FLUSH_FINISH, nullptr);
+  // the underrun counters' REFRESH bit (fw_busy.h, #118)
+  lv_display_add_event_cb(d, [](lv_event_t *) { fw::busy::on(fw::busy::REFRESH); }, LV_EVENT_REFR_START, nullptr);
+  lv_display_add_event_cb(d, [](lv_event_t *) { fw::busy::off(fw::busy::REFRESH); }, LV_EVENT_REFR_READY, nullptr);
   for (lv_indev_t *i = lv_indev_get_next(nullptr); i; i = lv_indev_get_next(i))  // navigation timing: a finger's lift
     if (lv_indev_get_type(i) == LV_INDEV_TYPE_POINTER) lv_indev_add_event_cb(i, [](lv_event_t *) { fw::dev::nav_touch(); }, LV_EVENT_RELEASED, nullptr);
   S.scr = lv_obj_create(nullptr);

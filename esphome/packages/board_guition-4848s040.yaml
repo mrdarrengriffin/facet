@@ -200,6 +200,25 @@ light:
     restore_mode: ALWAYS_ON
     default_transition_length: 250ms
 
+# LCD pixel clock at run time (#118 tests: underruns vs scan rate; frame rate = PCLK / 265,200 clocks a frame, 10 MHz
+# = 37.7 Hz). Not restored: every boot starts at the YAML's pclk_frequency.
+number:
+  - platform: template
+    id: lcd_pclk
+    name: LCD pixel clock
+    icon: mdi:sine-wave
+    entity_category: diagnostic
+    disabled_by_default: true
+    unit_of_measurement: MHz
+    min_value: 6
+    max_value: 14
+    step: 0.5
+    initial_value: 10
+    optimistic: true
+    restore_value: false
+    set_action:
+      - lambda: 'esp_lcd_rgb_panel_set_pclk(id(lcd)->get_handle(), (uint32_t) (x * 1000000.0f));'
+
 # The 3-relay variant (4848S040C?) has relays on GPIO40 / GPIO2 / GPIO1: not added yet.
 
 text_sensor:

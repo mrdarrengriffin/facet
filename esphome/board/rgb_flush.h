@@ -12,13 +12,48 @@
 // own draw_bitmap skips it too when bounce buffers are on).
 #pragma once
 #include <cstring>
+#include "esp_attr.h"
+#include "esp_flash.h"
 #include "esp_lcd_panel_rgb.h"
 #include "esphome/core/log.h"
 #include "esphome/components/lvgl/lvgl_esphome.h"
 #include "esphome/components/mipi_rgb/mipi_rgb.h"
 
+// the underrun counters' job bits (Facet firmware/fw_busy.h: FLUSH = 1 << 1, FLASH = 1 << 4), defined by
+// components/mipi_rgb
+extern "C" volatile uint32_t facet_busy;
+extern "C" volatile uint32_t facet_busy_seen;
+
 namespace panel {
 namespace rgbflush {
+
+constexpr uint32_t BUSY_FLUSH = 1u << 1, BUSY_FLASH = 1u << 4;
+inline IRAM_ATTR void busy_on(uint32_t b) {
+  __atomic_fetch_or(const_cast<uint32_t *>(&facet_busy), b, __ATOMIC_RELAXED);
+  __atomic_fetch_or(const_cast<uint32_t *>(&facet_busy_seen), b, __ATOMIC_RELAXED);
+}
+inline IRAM_ATTR void busy_off(uint32_t b) { __atomic_fetch_and(const_cast<uint32_t *>(&facet_busy), ~b, __ATOMIC_RELAXED); }
+
+// FLASH bit: the default flash chip's OS hooks, wrapped (start/end bracket every write, erase and read of the driver)
+inline const esp_flash_os_functions_t *flash_orig = nullptr;
+inline esp_flash_os_functions_t flash_ours{};
+inline IRAM_ATTR esp_err_t flash_start(void *arg, uint32_t flags) {
+  const esp_err_t r = flash_orig->start ? flash_orig->start(arg, flags) : ESP_OK;
+  busy_on(BUSY_FLASH);
+  return r;
+}
+inline IRAM_ATTR esp_err_t flash_end(void *arg) {
+  busy_off(BUSY_FLASH);
+  return flash_orig->end ? flash_orig->end(arg) : ESP_OK;
+}
+inline void watch_flash() {
+  if (flash_orig || !esp_flash_default_chip || !esp_flash_default_chip->os_func) return;
+  flash_orig = esp_flash_default_chip->os_func;
+  flash_ours = *flash_orig;
+  flash_ours.start = flash_start;
+  flash_ours.end = flash_end;
+  esp_flash_default_chip->os_func = &flash_ours;
+}
 
 struct Ctx {
   esphome::lvgl::LvglComponent *lv{nullptr};
@@ -32,6 +67,7 @@ inline Ctx &ctx() {
 
 inline void flush(lv_display_t *disp, const lv_area_t *a, uint8_t *px) {
   Ctx &c = ctx();
+  busy_on(BUSY_FLUSH);
   if (!c.lv->is_paused()) {
     const int aw = lv_area_get_width(a), ah = lv_area_get_height(a), W = c.w, H = c.h;
     const uint16_t *src = reinterpret_cast<const uint16_t *>(px);
@@ -65,11 +101,13 @@ inline void flush(lv_display_t *disp, const lv_area_t *a, uint8_t *px) {
         break;
     }
   }
+  busy_off(BUSY_FLUSH);
   lv_display_flush_ready(disp);
 }
 
 // after LVGL's setup (on_boot priority below 600): replaces ESPHome's flush callback on this display
 inline void install(esphome::lvgl::LvglComponent *lv, esphome::mipi_rgb::MipiRgb *lcd) {
+  watch_flash();
   void *fb = nullptr;
   if (lcd->is_failed() || lv->get_disp() == nullptr ||
       esp_lcd_rgb_panel_get_frame_buffer(lcd->get_handle(), 1, &fb) != ESP_OK || fb == nullptr) {
