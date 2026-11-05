@@ -11,8 +11,12 @@ update entity checks. The default is Stable; a fresh panel starts on the channel
 - **Dev**: a nightly build of `main` by `.github/workflows/dev.yml`, untested beyond CI. `ota-dev.json` only: the
   Install page never offers it. It builds once a night when `main` moved since the last dev build (the `firmware-dev`
   tag) and CI and Firmware are green on it; `gh workflow run dev.yml` builds one now. Its version is the last tag's
-  plus the date and commit: after `v0.5.0-beta.5`, `0.5.0-beta.5.dev.20261104+abc1234`, which sorts above beta.5 and
-  below beta.6 (after a stable `v0.5.0`: `0.5.1-dev.20261104+abc1234`). Its notes are the commit titles since the
+  plus the commit's time (UTC, to the minute) and the commit: after `v0.5.0-beta.5`,
+  `0.5.0-beta5-dev202611041319+abc1234`, which sorts above beta.5 and below beta.6 (after a stable `v0.5.0`:
+  `0.5.1-dev202611041319+abc1234`). Two dev builds on one day are two versions, so Home Assistant offers the newer
+  one; a rebuild of the same commit is the same version. Home Assistant ignores everything after `+` and orders
+  versions with AwesomeVersion, which reads `beta5-dev<time>` as one pre-release but cannot order
+  `beta.5.dev.<time>` against a beta tag at all: keep the compound form. Its notes are the commit titles since the
   last dev build, linked to that commit range; no release-notes file. Only the newest dev build is served.
 
 A panel on a channel is offered that channel's build whenever it differs from the one it runs, so switching from Dev

@@ -7,7 +7,7 @@
 // release-notes/<version>.md (firmware/release-notes.mjs: Home Assistant shows it as the release notes) and
 // ota.release_url the version's GitHub release. ota.json's notes: one short summary per version since the last stable
 // release, newest first (release-notes.mjs entries): the panel shows those newer than its own (esphome/board/fw_notes.h).
-// Dev channel (.github/workflows/dev.yml, a nightly build of main: 0.5.0-beta.5.dev.20261104+abc1234): ota-dev.json
+// Dev channel (.github/workflows/dev.yml, a nightly build of main: 0.5.0-beta5-dev202611041319+abc1234): ota-dev.json
 // only (the Install page never offers dev), its summary and notes the given Markdown (the commit titles since the last
 // dev build), its release_url the given link (that commit range); no release-notes file.
 //   node firmware/manifests.mjs <dir> <version>
@@ -27,8 +27,9 @@ if (!dir || !version || (flag && (flag !== '--dev' || !devSummary || !devUrl))) 
   process.exit(2);
 }
 if (version.includes('+wip')) { console.error(`refused: ${version} is a build from a changed tree`); process.exit(1); }
-// a dev build: X.Y.Z[-tag.N] then .dev.<date> or -dev.<date> (fw_notes.h orders it above the version it builds on)
-export const channel = (v) => (/^\d+\.\d+\.\d+(-[a-z]+(\.\d+)?)?[.-]dev\.\d/.test(v) ? 'dev' : /^\d+\.\d+\.\d+-/.test(v) ? 'beta' : 'stable');
+// a dev build: X.Y.Z[-tagN] then -dev<YYYYMMDDHHMM> (or the older .dev.<date>; fw_notes.h orders it above the version it
+// builds on)
+export const channel = (v) => (/^\d+\.\d+\.\d+(-[a-z]+\.?\d*)?(-dev\.?|\.dev\.)\d/.test(v) ? 'dev' : /^\d+\.\d+\.\d+-/.test(v) ? 'beta' : 'stable');
 const CH = channel(version);
 if ((CH === 'dev') !== Boolean(flag)) { console.error(`refused: ${version} is ${CH}; --dev goes with a dev version only`); process.exit(1); }
 let summary, notes, releaseUrl = `${REPO}/releases/tag/v${version}`;

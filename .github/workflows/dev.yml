@@ -4,9 +4,12 @@ name: Dev build
 # Builds only when main moved since the last dev build (the `firmware-dev` tag marks its commit) and CI and Firmware
 # are green on it (Firmware: on the newest commit that touched its paths; waits while they run). Run by hand
 # (workflow_dispatch) for a dev build now: then it builds even when main has not moved.
-# Version: the last tag's, then a dev part with the date, then the commit (fw_notes.h orders them):
-#   last tag v0.5.0-beta.5 -> 0.5.0-beta.5.dev.20261104+abc1234 (above beta.5, below beta.6)
-#   last tag v0.5.0        -> 0.5.1-dev.20261104+abc1234
+# Version: the last tag's, then a dev part with the commit's time (UTC, YYYYMMDDHHMM: two dev builds on one day are two
+# versions, a rebuild of one commit the same), then the commit. The pre-release is one compound part (beta5-dev<time>,
+# not beta.5.dev.<time>) because that is the form Home Assistant's AwesomeVersion orders against a beta tag; fw_notes.h
+# orders it the same way:
+#   last tag v0.5.0-beta.5 -> 0.5.0-beta5-dev202611041319+abc1234 (above beta.5, below beta.6)
+#   last tag v0.5.0        -> 0.5.1-dev202611041319+abc1234 (above 0.5.0, below 0.5.1-beta.1)
 # Publishes ota-dev.json per board (no install manifest: the Install page never offers dev), its notes the commit
 # titles since the last dev build and its link that commit range, as the `firmware-dev` release's firmware-dev.tar.gz
 # (replaced each time: only the newest dev build is served), then runs the docs deploy, which serves it.
@@ -46,8 +49,8 @@ jobs:
             echo "go=false" >> "$GITHUB_OUTPUT"; exit 0
           fi
           base=$(git describe --tags --abbrev=0 --match 'v[0-9]*' "$sha"); base=${base#v}
-          d=$(date -u +%Y%m%d); s=$(git rev-parse --short=7 "$sha")
-          if [[ "$base" == *-* ]]; then V="$base.dev.$d+$s"
+          d=$(TZ=UTC git show -s --format=%cd --date=format-local:%Y%m%d%H%M "$sha"); s=$(git rev-parse --short=7 "$sha")
+          if [[ "$base" == *-* ]]; then V="${base%%-*}-$(tr -d . <<<"${base#*-}")-dev$d+$s"
           else IFS=. read -r x y z <<<"$base"; V="$x.$y.$((z + 1))-dev.$d+$s"; fi
           echo "version=$V" >> "$GITHUB_OUTPUT"; echo "go=true" >> "$GITHUB_OUTPUT"
           echo "dev build $V (last dev build: ${last:-none})" | tee -a "$GITHUB_STEP_SUMMARY"

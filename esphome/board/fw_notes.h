@@ -13,18 +13,19 @@
 
 namespace fw::notes {
 
-// X.Y.Z, X.Y.Z-tag.N, a leading "v", then an optional dev build of that version, ".dev.<YYYYMMDD>" (the Dev channel,
-// .github/workflows/dev.yml: 0.5.0-beta.5.dev.20261104+abc1234 sorts above 0.5.0-beta.5, below 0.5.0-beta.6);
-// anything after that (a build stamp ".2611041319", "+wip", "+<sha>") is ignored, so a workbench build of
-// 0.5.0-beta.3 counts as 0.5.0-beta.3. A pre-release sorts before its release (dev < alpha < beta < rc < release;
-// another tag sits with alpha, then by name).
+// X.Y.Z, X.Y.Z-tag.N (or -tagN), a leading "v", then an optional dev build of that version, "-dev<YYYYMMDDHHMM>"
+// (the Dev channel, .github/workflows/dev.yml, UTC commit time: 0.5.0-beta5-dev202611041319+abc1234 sorts above
+// 0.5.0-beta.5, below 0.5.0-beta.6; after a release, 0.5.1-dev202611041319+abc1234 above 0.5.0, below 0.5.1-beta.1).
+// The older dev form ".dev.<YYYYMMDD>" still reads, as that day's 00:00. Anything after that (a build stamp
+// ".2611041319", "+wip", "+<sha>") is ignored, so a workbench build of 0.5.0-beta.3 counts as 0.5.0-beta.3. A
+// pre-release sorts before its release (dev < alpha < beta < rc < release; another tag sits with alpha, then by name).
 struct Ver {
   bool ok = false;
   long n[3] = {0, 0, 0};
   int rank = 4;  // 4 = a release
   std::string tag;
-  long pre = 0;
-  long dev = 0;  // ".dev.N" after the version: N (0 = not a dev build)
+  long long pre = 0;
+  long long dev = 0;  // a dev build's YYYYMMDDHHMM (0 = not a dev build); 64-bit: a long is 32 on the panel
 };
 
 inline Ver parse(const char *s) {
@@ -42,9 +43,14 @@ inline Ver parse(const char *s) {
     }
   }
   v.ok = true;
-  // ".dev.N" after the version (and its pre-release): a dev build of it
-  auto dev = [&v](const char *p) {
-    if (!strncmp(p, ".dev.", 5) && p[5] >= '0' && p[5] <= '9') v.dev = strtol(p + 5, nullptr, 10);
+  // a dev stamp: YYYYMMDDHHMM, or an older dev build's YYYYMMDD (= its 00:00)
+  auto stamp = [](long long n) { return n < 100000000LL ? n * 10000 : n; };
+  // "-dev<stamp>" (or the older ".dev.<date>") after the version and its pre-release: a dev build of it
+  auto dev = [&](const char *p) {
+    if (!strncmp(p, "-dev", 4)) p += 4 + (p[4] == '.');
+    else if (!strncmp(p, ".dev.", 5)) p += 5;
+    else return;
+    if (*p >= '0' && *p <= '9') v.dev = stamp(strtoll(p, nullptr, 10));
   };
   if (*s != '-') return dev(s), v;
   s++;
@@ -54,11 +60,14 @@ inline Ver parse(const char *s) {
   v.rank = 1;
   for (int i = 0; i < 4; i++)
     if (v.tag == tags[i]) v.rank = i;
-  if (*s == '.' && s[1] >= '0' && s[1] <= '9') {
+  const char *n = s + (*s == '.');  // beta.5 or beta5
+  if (*n >= '0' && *n <= '9') {
     char *e;
-    v.pre = strtol(s + 1, &e, 10);
+    v.pre = strtoll(n, &e, 10);
     s = e;
   }
+  // a dev build after a release, X.Y.Z-dev<stamp>: its number is the stamp
+  if (v.rank == 0 && v.pre) v.dev = stamp(v.pre), v.pre = 0;
   dev(s);
   return v;
 }

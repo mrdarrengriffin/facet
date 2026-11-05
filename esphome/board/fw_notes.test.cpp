@@ -32,14 +32,24 @@ int main() {
   EXPECT(c("0.5.0-beta.3.2611041319", "0.5.0-beta.3") == 0);  // a build stamp is not a newer version
   EXPECT(c("0.5.0-beta.3+wip", "0.5.0-beta.3") == 0);
   EXPECT(c("0.5.0.2611041319", "0.5.0") == 0);
-  // dev builds (the Dev channel): above the version they build on, below the next one, by date
-  EXPECT(c("0.5.0-beta.5.dev.20261104+abc1234", "0.5.0-beta.5") > 0);
-  EXPECT(c("0.5.0-beta.5.dev.20261104+abc1234", "0.5.0-beta.6") < 0);
+  // dev builds (the Dev channel): above the version they build on, below the next one, by commit time (UTC)
+  EXPECT(c("0.5.0-beta5-dev202611041319+abc1234", "0.5.0-beta.5") > 0);
+  EXPECT(c("0.5.0-beta5-dev202611041319+abc1234", "0.5.0-beta.6") < 0);
+  EXPECT(c("0.5.0-beta5-dev202611041319+def5678", "0.5.0-beta5-dev202611040905+abc1234") > 0);  // same day, later
+  EXPECT(c("0.5.0-beta5-dev202611040905+def5678", "0.5.0-beta5-dev202611041319+abc1234") < 0);
+  EXPECT(c("0.5.0-beta5-dev202611041319+def5678", "0.5.0-beta5-dev202611041319+abc1234") == 0);  // the sha is not an order
+  EXPECT(c("0.5.0-beta5-dev202611050001+def5678", "0.5.0-beta5-dev202611042359+abc1234") > 0);
+  EXPECT(c("0.5.0-beta6-dev202611010000+abc1234", "0.5.0-beta5-dev202611302359+abc1234") > 0);
+  EXPECT(c("0.5.0-beta6-dev202611010000+abc1234", "0.5.0-beta.6") > 0);
+  EXPECT(c("0.5.0-beta5-dev202611041319", "0.5.0-beta.5.dev.20261104+e36e788") > 0);  // the older dev form = 00:00
+  EXPECT(c("0.5.0-beta5-dev202611050000", "0.5.0-beta.5.dev.20261105+e36e788") == 0);
   EXPECT(c("0.5.0-beta.5.dev.20261105+def5678", "0.5.0-beta.5.dev.20261104+abc1234") > 0);
-  EXPECT(c("0.5.0-beta.5.dev.20261104+def5678", "0.5.0-beta.5.dev.20261104+abc1234") == 0);  // the sha is not an order
-  EXPECT(c("0.5.0-beta.6.dev.20261101+abc1234", "0.5.0-beta.5.dev.20261130+abc1234") > 0);
-  EXPECT(c("0.5.1-dev.20261104+abc1234", "0.5.0") > 0);
-  EXPECT(c("0.5.1-dev.20261104+abc1234", "0.5.1-beta.1") < 0);
+  EXPECT(c("0.5.0-beta5", "0.5.0-beta.5") == 0);
+  EXPECT(c("0.5.1-dev202611041319+abc1234", "0.5.0") > 0);
+  EXPECT(c("0.5.1-dev202611041319+abc1234", "0.5.1-beta.1") < 0);
+  EXPECT(c("0.5.1-dev202611041319+abc1234", "0.5.1-dev202611040905+abc1234") > 0);
+  EXPECT(c("0.5.1-dev202611041319+abc1234", "0.5.1-dev.20261104+abc1234") > 0);
+  EXPECT(c("0.5.0-beta5-dev202611041319.2611041400+wip", "0.5.0-beta5-dev202611041319+abc1234") == 0);  // a build stamp
   EXPECT(c("0.5.0.dev.20261104+abc1234", "0.5.0") > 0);
   EXPECT(!parse("").ok && !parse("dev").ok && !parse("0.5").ok && !parse(nullptr).ok && !parse("0.5.0-").ok);
 
@@ -50,8 +60,8 @@ int main() {
   EXPECT(join(e, "0.5.0-beta.3.2611041319") == join(e, "0.5.0-beta.3"));
   EXPECT(join(e, "0.5.0-beta.5") == "### 0.5.0-beta.6\n\nsix");
   EXPECT(join(e, "0.4.0") == "### 0.5.0-beta.6\n\nsix\n\n### 0.5.0-beta.5\n\nfive\n\n### 0.5.0-beta.4\n\nfour\n\n### 0.5.0-beta.3\n\nthree");
-  EXPECT(join({{"0.5.0-beta.5.dev.20261105+b", "dev"}}, "0.5.0-beta.5.dev.20261104+a") == "### 0.5.0-beta.5.dev.20261105+b\n\ndev");
-  EXPECT(join({{"0.5.0-beta.6", "six"}}, "0.5.0-beta.5.dev.20261104+a") == "### 0.5.0-beta.6\n\nsix");
+  EXPECT(join({{"0.5.0-beta5-dev202611041319+b", "dev"}}, "0.5.0-beta5-dev202611040905+a") == "### 0.5.0-beta5-dev202611041319+b\n\ndev");
+  EXPECT(join({{"0.5.0-beta.6", "six"}}, "0.5.0-beta5-dev202611041319+a") == "### 0.5.0-beta.6\n\nsix");
   // nothing newer, or a running version it can't read: empty (the caller keeps ota.summary)
   EXPECT(join(e, "0.5.0-beta.6").empty());
   EXPECT(join(e, "0.5.0").empty());
@@ -71,11 +81,13 @@ int main() {
   EXPECT(join({{"0.6.0", huge}, {"0.5.1", "z"}}, "0.5.0").find(huge) != std::string::npos);  // the newest, even alone over
 
   // the update offer: strictly newer only (a dev build on Beta / Stable, or switched back, is offered nothing older)
-  EXPECT(!newer("0.5.0-beta.5", "0.5.0-beta.5.dev.20261104+b809273"));
-  EXPECT(!newer("0.4.2", "0.5.0-beta.5.dev.20261104+b809273"));
-  EXPECT(!newer("0.5.0-beta.5.dev.20261104+b809273", "0.5.0-beta.5.dev.20261104+b809273"));
-  EXPECT(newer("0.5.0-beta.6", "0.5.0-beta.5.dev.20261104+b809273"));
-  EXPECT(newer("0.5.0-beta.5.dev.20261105+c0ffee1", "0.5.0-beta.5.dev.20261104+b809273"));
+  EXPECT(!newer("0.5.0-beta.5", "0.5.0-beta5-dev202611041319+b809273"));
+  EXPECT(!newer("0.4.2", "0.5.0-beta5-dev202611041319+b809273"));
+  EXPECT(!newer("0.5.0-beta5-dev202611041319+b809273", "0.5.0-beta5-dev202611041319+b809273"));
+  EXPECT(!newer("0.5.0-beta5-dev202611041319+c0ffee1", "0.5.0-beta5-dev202611041319+b809273"));  // a rebuild of one commit
+  EXPECT(newer("0.5.0-beta.6", "0.5.0-beta5-dev202611041319+b809273"));
+  EXPECT(newer("0.5.0-beta5-dev202611041507+c0ffee1", "0.5.0-beta5-dev202611041319+b809273"));  // same day, later
+  EXPECT(newer("0.5.0-beta5-dev202611041319+c0ffee1", "0.5.0-beta.5.dev.20261104+e36e788"));  // from the older dev form
   EXPECT(newer("0.5.0-beta.5", "0.5.0-beta.4"));
   EXPECT(!newer("", "0.5.0-beta.4"));
   EXPECT(!newer("0.5.0-beta.5", "garbage"));
