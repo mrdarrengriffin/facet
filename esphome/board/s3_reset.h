@@ -1,14 +1,23 @@
 #pragma once
 // Guition 4848S040 (ESP32-S3 + octal PSRAM + RGB panel): the panel does not come back after a software reset (black
 // screen after OTA), so software/USB resets and OTA end in a 100 ms deep sleep = full hardware reset.
-// A new OTA image is confirmed first, or the bootloader's rollback would undo it after the sleep. Same as ESPControl.
+// A new OTA image is marked valid for the bootloader first (its rollback would undo it after the sleep) and goes on
+// an update trial instead (fw_trial.h: the app rolls back if it is not healthy within 3 boots).
 // Panics and watchdog resets get the same hardware reset (one crash left the panel dead, the next boots failed
 // too and ESPHome went into safe mode); the original reason is kept in RTC memory for the "Last reset" sensor.
 #include <esp_attr.h>
 #include <esp_ota_ops.h>
 #include <esp_sleep.h>
 #include <esp_system.h>
+#include <esp_timer.h>
+#include <nvs.h>
+#include "esphome/core/log.h"
+#include "esphome/components/wifi/wifi_component.h"
+#ifdef USE_API
+#include "esphome/components/api/api_server.h"
+#endif
 #include <string>
+#include "fw_trial.h"
 
 namespace panel::s3 {
 
@@ -45,19 +54,78 @@ inline std::string last_reason() {
   }
 }
 
+// ---------------------------------------------------------------- update trial (#118): fw_trial.h decides, this applies
+namespace trial {
+inline nvs_handle_t open_nvs() {
+  nvs_handle_t h = 0;
+  return nvs_open("fw_trial", NVS_READWRITE, &h) == ESP_OK ? h : 0;
+}
+inline void save(const fw::trial::Rec &r) {
+  nvs_handle_t h = open_nvs();
+  if (!h) return;
+  if (r.slot) nvs_set_u32(h, "slot", r.slot), nvs_set_u32(h, "boots", r.boots);
+  else nvs_erase_all(h);
+  nvs_commit(h);
+  nvs_close(h);
+}
+inline esp_timer_handle_t timer = nullptr;
+inline int64_t wifi_since = -1;
+inline void check(void *) {
+  const int64_t s = esp_timer_get_time() / 1000000;
+  auto *w = esphome::wifi::global_wifi_component;
+  const bool up = w && w->is_connected();
+  if (!up) wifi_since = -1;
+  else if (wifi_since < 0) wifi_since = s;
+  bool api = false;
+#ifdef USE_API
+  api = esphome::api::global_api_server && esphome::api::global_api_server->is_connected();
+#endif
+  if (fw::trial::healthy(s, up, wifi_since < 0 ? 0 : s - wifi_since, api)) {
+    save(fw::trial::Rec{});
+    ESP_LOGW("fw_trial", "update trial over: healthy after %d s (%s)", (int) s, api ? "Wi-Fi + Home Assistant" : "Wi-Fi");
+    esp_timer_stop(timer);
+  } else if (fw::trial::retry(s, up, w && w->has_sta())) {
+    ESP_LOGE("fw_trial", "no Wi-Fi %d s into an update trial: restart", (int) s);
+    esp_restart();  // counted on the next boot
+  }
+}
+// on_boot priority 800, every boot; hop = this boot continues our own deep-sleep hop
+inline void on_boot(bool hop) {
+  const esp_partition_t *run = esp_ota_get_running_partition();
+  nvs_handle_t h = open_nvs();
+  if (!run || !h) return;
+  fw::trial::Rec r;
+  nvs_get_u32(h, "slot", &r.slot);
+  nvs_get_u32(h, "boots", &r.boots);
+  nvs_close(h);
+  esp_ota_img_states_t st;
+  const bool pending = esp_ota_get_state_partition(run, &st) == ESP_OK && st == ESP_OTA_IMG_PENDING_VERIFY;
+  const uint32_t had = r.slot;
+  bool mark = false;
+  const fw::trial::Boot b = fw::trial::boot(r, run->address, pending, hop, mark);
+  if (mark) esp_ota_mark_app_valid_cancel_rollback();
+  if (b != fw::trial::Boot::NONE || had) save(r);
+  if (b == fw::trial::Boot::ROLLBACK) {
+    const esp_partition_t *prev = esp_ota_get_next_update_partition(nullptr);  // the other slot = the image before
+    ESP_LOGE("fw_trial", "update not healthy after %d boots: back to the previous image", fw::trial::MAX_BOOTS);
+    if (prev && esp_ota_set_boot_partition(prev) == ESP_OK) esp_restart();
+    return;
+  }
+  if (b == fw::trial::Boot::TRIAL && !timer) {
+    ESP_LOGW("fw_trial", "update trial: boot %u of %d", (unsigned) r.boots, fw::trial::MAX_BOOTS);
+    esp_timer_create_args_t a{};
+    a.callback = check;
+    a.name = "fw_trial";
+    if (esp_timer_create(&a, &timer) == ESP_OK) esp_timer_start_periodic(timer, 5 * 1000000);
+  }
+}
+}  // namespace trial
+
 // on_boot priority 800
 inline void reset_if_soft() {
   auto reason = esp_reset_reason();
   if (reason != ESP_RST_DEEPSLEEP) rtc_magic = 0;
-  // a new OTA image is confirmed on its first boot after the old image's restart. That restart can end in the RTC
-  // watchdog (ESP_RST_WDT: esp_restart arms it for 1 s; f9a5a1e's restart always did), so WDT counts too: on this first
-  // boot the reason is always the OLD image's; a new image that fails later is still caught (boot guard, safe mode)
-  if (reason == ESP_RST_SW || reason == ESP_RST_WDT) {
-    esp_ota_img_states_t st;
-    const esp_partition_t *run = esp_ota_get_running_partition();
-    if (run && esp_ota_get_state_partition(run, &st) == ESP_OK && st == ESP_OTA_IMG_PENDING_VERIFY)
-      esp_ota_mark_app_valid_cancel_rollback();
-  }
+  trial::on_boot(reason == ESP_RST_DEEPSLEEP && rtc_magic == MAGIC);
   if (reason == ESP_RST_USB || reason == ESP_RST_SW || reason == ESP_RST_PANIC || reason == ESP_RST_INT_WDT ||
       reason == ESP_RST_TASK_WDT || reason == ESP_RST_WDT) {
     rtc_reason = reason;

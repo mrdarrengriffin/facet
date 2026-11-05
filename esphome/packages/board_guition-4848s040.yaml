@@ -28,6 +28,7 @@ esphome:
     - -DLV_DRAW_SW_SUPPORT_RGB565A8=1
   # S3 + octal PSRAM + RGB panel: full hardware reset after software/USB resets + OTA (board/s3_reset.h)
   includes:
+    - ../board/fw_trial.h
     - ../board/s3_reset.h
     - ../board/lcddiag.h
     - ../board/lcddiag.cpp   # own TU (S3 l32r range)
