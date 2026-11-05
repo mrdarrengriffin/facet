@@ -9,13 +9,13 @@ const deck = (params) => ({ v: 2, rev: 9, start: 'h', pages: [
   { id: 'h', kind: 'home', name: 'Test', cards: [{ t: 'page', page: 'm', size: 'l' }] },
   { id: 'm', kind: 'media', params }] });
 // the device with the Media page, linked to the fake HA (the registries: each entity's _platform / _area), on Media
-async function linked(t, params) {
+async function linked(t, params, show = 'media') {
   t.ha.answers = true;
   await t.device({ v: 2, rev: 9, start: 'h', pages: [
     { id: 'h', kind: 'home', name: 'Test', cards: [{ t: 'page', page: 'media', size: 'm' }] },
     { id: 'media', kind: 'media', params }] });
   t.b.spec('act', { do: 'ha.connect', url: 'http://ha.test:8123', token: 'abcdefgh1234' }); t.b.tick(8); t.b.settle(600);
-  t.show('media'); for (let i = 0; i < 4; i++) { t.wait(1500); t.b.tick(8); t.ha.push(); t.b.settle(400); }
+  t.show(show); for (let i = 0; i < 4; i++) { t.wait(1500); t.b.tick(8); t.ha.push(); t.b.settle(400); }
   return t;
 }
 import { frame565 } from './_release.mjs';
@@ -91,6 +91,30 @@ export default {
       t.eq([st.fetches, st.dropped], [st0.fetches, st0.dropped], `the art's view kept (no re-decode): ${JSON.stringify(st)}`);
       t.eq(gaps, 0, `the art drawn in all ${frames} frames`);
       t.ok(biggest < (v.w * v.h) / 2, `no rebuild: the biggest redraw ${biggest} px < half the picture (${v.w}x${v.h}; the hero ${hero.w}x${hero.h})`);
+    } },
+    { name: 'Home card: play -> pause -> play with the same art fetches nothing, rebuilds nothing, and the art is drawn in every frame', async run(t) {
+      t.ha.s[P1] = { '': 'playing', friendly_name: 'Kitchen', media_title: 'Red Song', media_duration: '200', media_position: '20', entity_picture: ART('red') };
+      t.img.serve(HA_URL + ART('red'), 64, 64, [230, 30, 30, 255]);
+      await linked(t, { source: 'ha', visual: 'cd' }, 'home');
+      const c = t.part('card'), v = t.part('media_visual');
+      t.ok(c && v && v.w < c.w, `the Home card's picture: ${JSON.stringify(v)}`);
+      t.ok(red(cdBand(t)), `red first: ${cdBand(t)}`);
+      t.img.hang(HA_URL + ART('red'));  // a second fetch would take its time: the art would go missing meanwhile
+      const m = t.b.m, asked = t.img.asked.length, st0 = t.img.stats();
+      const areas = () => { const q = new Int32Array(m.HEAPU8.buffer), p = m._fw_areas(t.b.stage) >> 2, out = []; for (let i = 0; i < q[p]; i++) { const [x1, y1, x2, y2] = q.subarray(p + 1 + i * 4, p + 5 + i * 4); out.push((x2 - x1 + 1) * (y2 - y1 + 1)); } return out; };
+      let frames = 0, gaps = 0, biggest = 0;
+      const watch = (ms) => { for (let e = 0; e < ms; e += 20) { t.wait(20); frames++; if (!red(cdBand(t))) gaps++; biggest = Math.max(biggest, ...areas()); } };
+      const echo = (st) => { t.ha.s[P1][''] = st; t.ha.push(P1); };
+      areas();
+      echo('paused'); watch(2000);
+      t.ok(t.part('card').texts.some((x) => /paused/i.test(x)), `the sub says paused: ${t.part('card').texts}`);
+      echo('playing'); watch(2000); echo('paused'); watch(2000); echo('playing'); watch(2000);
+      t.ok(!t.part('card').texts.some((x) => /paused/i.test(x)), `playing again: ${t.part('card').texts}`);
+      t.eq(t.img.asked.length, asked, `no image request: ${t.img.asked.slice(asked)}`);
+      const st = t.img.stats();
+      t.eq([st.fetches, st.dropped], [st0.fetches, st0.dropped], `the art's view kept (no re-decode): ${JSON.stringify(st)}`);
+      t.eq(gaps, 0, `the art drawn in all ${frames} frames`);
+      t.ok(biggest < (c.w * c.h) / 2, `no rebuild: the biggest redraw ${biggest} px < half the card (${c.w}x${c.h})`);
     } },
     { name: 'album art: memory stays flat over 240 track changes (an hour of 15 s tracks)', async run(t) {
       t.ha.s[P1] = { '': 'playing', friendly_name: 'Kitchen', media_title: 'Song 0', media_duration: '200', media_position: '20', entity_picture: ART('t0') };

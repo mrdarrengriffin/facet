@@ -40,12 +40,18 @@ struct Card {
   lv_obj_t *media = nullptr;  // the media preview's Media visual: the track's progress moves it in place
   lv_obj_t *cover = nullptr;  // the covers preview's Cover visual: the position moves it in place
   lv_obj_t *robot = nullptr;  // the vacuum preview's Vacuum robot: the ring moves in place
+  lv_obj_t *dot = nullptr, *sub = nullptr;  // the media preview: play / pause shows the dot and new words in place
 };
 std::map<lv_obj_t *, Card> cards;
 
 // the timer preview's progress (panel.timer share, 0..1000): a timer runs while it is above 0
 bool timer_running(fw::Props p) {
   return (p["progress"].is<const char *>() ? atoi(p["progress"].as<const char *>()) : (int) (p["progress"] | 0)) > 0;
+}
+bool accent_of(fw::Props p) {  // a feed bind gives "on" / "off" (or "true" / "false")
+  if (fw::st::gone(p["state"] | "default")) return false;
+  if (p["accent"].is<const char *>()) { const char *a = p["accent"]; return !strcmp(a, "on") || !strcmp(a, "true"); }
+  return p["accent"] | false;
 }
 const char *tone(const char *t) {
   return !strcmp(t, "ok") ? "fg:ok" : !strcmp(t, "warn") ? "fg:warn" : !strcmp(t, "error") ? "fg:error" : "fg:text-dim";
@@ -56,7 +62,8 @@ std::string sig(fw::Props p) {
   rest.set(p);
   if (!fw::st::gone(p["state"] | "default")) rest["state"] = "default";
   if (!strcmp(p["preview"] | "", "flights")) rest.remove("planes");  // the radar takes new planes in place (FW_UPDATE)
-  if (!strcmp(p["preview"] | "", "media")) rest.remove("progress"), rest.remove("art");  // the visual takes them in place
+  if (!strcmp(p["preview"] | "", "media"))  // the visual takes them in place; play / pause = the dot and the sub (FW_UPDATE)
+    for (const char *k : {"progress", "art", "playing", "accent", "sub"}) rest.remove(k);
   if (!strcmp(p["preview"] | "", "covers")) rest.remove("position");  // the window takes the position in place
   if (!strcmp(p["preview"] | "", "vacuum")) rest.remove("progress"), rest.remove("run");  // the robot takes them in place
   std::string s;
@@ -81,11 +88,12 @@ void fill(lv_obj_t *c, fw::Props p) {
   k.media = nullptr;
   k.cover = nullptr;
   k.robot = nullptr;
+  k.dot = k.sub = nullptr;
   k.props.clear();
   serializeJson(p, k.props);
   const char *state = p["state"] | "default";
   const bool off = fw::st::gone(state);
-  const bool accent = !off && (p["accent"].is<const char *>() ? !strcmp(p["accent"] | "", "on") : (p["accent"] | false));  // a feed bind gives "on" / "off"
+  const bool accent = accent_of(p);
   const bool text_mode = !strcmp(p["mode"] | "value", "text");
   const bool full = k.step == 0;
   const char *dim = off ? "fg:unavailable-ink" : "fg:text-dim";
@@ -118,11 +126,13 @@ void fill(lv_obj_t *c, fw::Props p) {
   lv_label_set_long_mode(k.label, LV_LABEL_LONG_MODE_DOTS);
   fx::fit_grid(k.label);  // the dot after it on the grid (docs fit8)
   if (k.long_label) fx::use(k.label, "cell");
-  if (accent) {
+  const char *pv = p["preview"] | "none";
+  if (accent || (!off && !strcmp(pv, "media"))) {  // the media card keeps its dot, hidden while paused: play / pause shows it in place
     lv_obj_t *dot = fx::box(lab, "free");
     for (const char *s : {"w:dot", "h:dot", "radius:round", "bg:accent"}) fx::use(dot, s);
+    if (!accent) lv_obj_add_flag(dot, LV_OBJ_FLAG_HIDDEN);
+    if (!strcmp(pv, "media")) k.dot = dot;
   }
-  const char *pv = p["preview"] | "none";
   if (!off && full && !strcmp(pv, "bins")) {  // the real Bins art at card size (C8b; contract, unlike the legacy previews)
     ArduinoJson::JsonDocument bd;
     bd["colours"] = p["colours"] | "black", bd["size"] = "card";
@@ -176,7 +186,8 @@ void fill(lv_obj_t *c, fw::Props p) {
          off ? "fg:unavailable-ink" : accent ? "fg:accent-text" : "fg:text");
   }
   fx::use(fx::box(body, "free"), full ? "card-gap" : "card-gap-s");
-  line(body, off ? fw::st::gone_word(state) : (p["sub"] | ""), "type:body", off ? "fg:unavailable-note" : tone(p["tone"] | "dim"));
+  lv_obj_t *sb = line(body, off ? fw::st::gone_word(state) : (p["sub"] | ""), "type:body", off ? "fg:unavailable-note" : tone(p["tone"] | "dim"));
+  if (k.dot) k.sub = sb;
 
   if (!strcmp(state, "pressed") != lv_obj_has_state(c, LV_STATE_PRESSED)) lv_obj_set_state(c, LV_STATE_PRESSED, !strcmp(state, "pressed"));
   if (off) lv_obj_add_state(c, ST_OFF);
@@ -217,7 +228,8 @@ void check(void *v) {
   }
   if (lab) {
     lv_obj_get_content_coords(lab, &lb);
-    for (uint32_t i = 0; i < lv_obj_get_child_count(lab); i++) if (outside(lv_obj_get_child(lab, (int32_t) i), lb)) wide = true;
+    for (uint32_t i = 0; i < lv_obj_get_child_count(lab); i++)
+      if (lv_obj_t *o = lv_obj_get_child(lab, (int32_t) i); !lv_obj_has_flag(o, LV_OBJ_FLAG_HIDDEN) && outside(o, lb)) wide = true;
     if (outside(lab, cb)) wide = true;
   }
   if (wide && !k.long_label) { k.long_label = true; rebuild(c); }
@@ -308,7 +320,8 @@ FW_COMPONENT(card, "Card", "components", R"({
   }, nullptr);
 }
 
-// Update path: pressed <-> default = the press fade (LVGL state transition); every other prop builds the contents again
+// Update path: pressed <-> default = the press fade (LVGL state transition); the media preview's progress, art, play /
+// pause (its dot, its sub) move in place (the picture keeps its art); every other prop builds the contents again
 // in the same card at the same step (fw::refill), then the step is checked again; default <-> unavailable fades the new
 // contents in (fw::st::fade_in_children). Silent.
 FW_UPDATE(card) {
@@ -321,6 +334,14 @@ FW_UPDATE(card) {
       ArduinoJson::JsonDocument md;
       media_props(p, md);
       fw::update_child(fw::find("media_visual"), mv, md.as<fw::Props>());
+    }
+    Card &k = cards[root];
+    if (k.dot) {  // the media card's play / pause: the dot and the sub in place (the picture keeps its art)
+      if (accent_of(p) == lv_obj_has_flag(k.dot, LV_OBJ_FLAG_HIDDEN)) {
+        if (accent_of(p)) lv_obj_remove_flag(k.dot, LV_OBJ_FLAG_HIDDEN);
+        else lv_obj_add_flag(k.dot, LV_OBJ_FLAG_HIDDEN);
+      }
+      if (k.sub && strcmp(lv_label_get_text(k.sub), p["sub"] | "")) fx::set_text(k.sub, p["sub"] | "", "type:body");
     }
     if (lv_obj_t *cv = cards[root].cover) {  // the covers preview: the blind moves, the card stays
       ArduinoJson::JsonDocument cd;
