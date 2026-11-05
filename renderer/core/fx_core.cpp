@@ -1921,6 +1921,7 @@ void Pen::image(int x, int y, const lv_image_dsc_t *px, int bw, int bh) const {
   lv_draw_image_dsc_t d;
   lv_draw_image_dsc_init(&d);
   d.src = px;
+  d.antialias = 1;  // scaled up: bilinear, never nearest (blocky art)
   const lv_area_t a = {cx + x, cy + y, cx + x + w - 1, cy + y + h - 1};
   if (bw == w && bh == h) { lv_draw_image(layer, &d, &a); return; }
   // stored smaller than its box: scaled up from the top-left corner (rounded up, so it covers the box), clipped to it

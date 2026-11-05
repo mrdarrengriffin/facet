@@ -12,17 +12,21 @@ extern "C" void lv_image_cache_drop(const void *src);  // LVGL 9 (misc/cache/ins
 
 namespace fw::img {
 namespace {
-// Per-board caps (memory-bounded, Guition much lower).
+// Per-board caps (memory-bounded, Guition much lower). Every view keeps its own box's pixels on every board (the idle
+// art 480 x 480 on the Guition, 720 x 720 on the Waveshare, the CD's and the card's at their sizes): never a fixed
+// smaller size scaled up when drawn (a 320 px art blown up to 480 looked pixelated). Only the panel's decode, when the
+// largest free PSRAM block can't hold a view at its box size, keeps it a step smaller (firmware/fw_imgdec.h fit), and
+// LVGL then scales it up smoothly (fx::Pen::image: bilinear, never nearest).
 // Guition 4848S040 (ESP32-S3, 8 MB PSRAM shared with code, LVGL's buffers, fonts, Wi-Fi + one TLS session; ~1.2 MB
-// free on the Media screen): views keep at most 320 px a side (max_side), so the idle screen's full-screen album art is
-// 320 x 320 RGB565 = 200 KB (480 x 480 would be 450 KB), scaled up by LVGL when drawn. 640 KB = that art twice (the
-// shown one + the next track's while it comes in) and the Media screen's (CD 168 px RGB565A8 = 83 KB, twice) and the
-// Home card's (47 px, 7 KB).
-// Waveshare P4 (32 MB PSRAM): 3 MB = a full 720 x 720 still (1 MB) plus a 64-cell grid of 72 px thumbnails (1 MB).
+// free on the Media screen): 1 MB = the idle screen's full-screen art twice (480 x 480 RGB565 = 450 KB: the shown one +
+// the next track's while it comes in) and the Home card's (47 px, 7 KB); the Media screen's (CD 164 px RGB565A8 = 79 KB,
+// twice) fit beside one of them.
+// Waveshare P4 (32 MB PSRAM): 3 MB = a full 720 x 720 still (1 MB) twice, or one plus a 64-cell grid of 72 px
+// thumbnails (1 MB).
 #ifdef FW_1X
-constexpr Budget B = {640u * 1024u, 1024 * 1024, 8000, "guition-4848s040", 256u * 1024u, 320};
+constexpr Budget B = {1024u * 1024u, 1024 * 1024, 8000, "guition-4848s040", 256u * 1024u};
 #else
-constexpr Budget B = {3u * 1024u * 1024u, 2048 * 2048, 8000, "waveshare-p4-86", 1024u * 1024u, 0};
+constexpr Budget B = {3u * 1024u * 1024u, 2048 * 2048, 8000, "waveshare-p4-86", 1024u * 1024u};
 #endif
 
 struct View {
@@ -137,7 +141,7 @@ bool adopt(View *v, Pixels &px) {
 // fail (the panel: a full PSRAM, no exceptions) = the view fails "no memory" and the component shows its fallback
 void fill(View *v, const uint8_t *rgba, int sw, int sh) {
   Sink k;
-  if (!k.plan(box_of(*v), sw, sh, B.max_side, true) || !k.begin()) { fail_px(v, "no memory"); return; }
+  if (!k.plan(box_of(*v), sw, sh, 0, true) || !k.begin()) { fail_px(v, "no memory"); return; }
   for (int y = 0; y < sh; y++) k.row(rgba + (size_t) y * sw * 4);
   Pixels px;
   if (!k.finish(px)) { fail_px(v, "no memory"); return; }
@@ -314,10 +318,10 @@ void Swap::set(const std::string &url, int w, int h, int radius, int shade) {
   if (resized) { drop(owner(1 - on_)); src_[1 - on_].clear(); }
   w_ = w, h_ = h, r_ = radius, shade_ = shade;
   drop(owner(n));  // what was coming (or, resized, what was shown at the old size)
-  int sw, sh;  // the pixels a view of this box keeps (img_scale.h stored: capped to max_side)
+  int sw, sh;  // the pixels a view of this box keeps (img_scale.h stored: its box)
   Box bx;
   bx.w = w, bx.h = h;
-  stored(bx, w, h, B.max_side, sw, sh);
+  stored(bx, w, h, 0, sw, sh);
   if (n != on_ && !src_[on_].empty() && 2 * ((size_t) sw * sh * (radius > 0 ? 3 : 2) + sizeof(View)) > B.cache_bytes) {  // two would
     drop(owner(on_));                                                                 // not fit: the old goes first
     src_[on_].clear();

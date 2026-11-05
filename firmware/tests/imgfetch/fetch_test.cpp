@@ -220,7 +220,7 @@ uint32_t lv_tick_get() { return (uint32_t) (sim_us() / 1000); }
 static int fails = 0, checks = 0;
 #define CHECK(c, ...) do { checks++; if (!(c)) { fails++; printf("FAIL %s:%d  ", __FILE__, __LINE__); printf(__VA_ARGS__); printf("\n"); } } while (0)
 namespace fw::img {
-static Budget B = {3u << 20, 2048 * 2048, 8000, "waveshare-p4-86", 1u << 20, 0};
+static Budget B = {3u << 20, 2048 * 2048, 8000, "waveshare-p4-86", 1u << 20};
 const Budget &budget() { return B; }
 static Box BOX = [] { Box b; b.w = b.h = 168; b.r = 12; return b; }();  // the views' box (the Media screen's CD art)
 static std::map<std::string, std::vector<Pixels>> kept;  // what the views hold (freed on leave)
@@ -256,7 +256,7 @@ void put(const char *src, std::vector<Pixels> &px) {
   on_lvgl();
   CHECK(px.size() == 1 && px[0].data && px[0].box == BOX, "put %s: %zu boxes", src, px.size());
   int ow, oh;
-  stored(BOX, 1, 1, B.max_side, ow, oh);
+  stored(BOX, 1, 1, 0, ow, oh);
   if (!px.empty()) {
     CHECK(px[0].w == ow && px[0].h == oh, "put %s at %dx%d, not %dx%d", src, px[0].w, px[0].h, ow, oh);
     unsigned sum = 0;
@@ -430,11 +430,10 @@ int main(int argc, char **argv) {
     CHECK(fw::img::views["https://t/chunked/y.png"].st == 1, "a whole chunked body loads (%s)", fw::img::views["https://t/chunked/y.png"].err.c_str());
     CHECK(fw::img::views["https://t/nolen/y.png"].st == 1, "a whole body without a length loads");
   }
-  {  // 7. track after track (the Guition: 320 px a side at most, the idle art's 480 box): 30 changes, each comes in,
+  {  // 7. track after track (the Guition's idle art: its 480 box, kept at 480): 30 changes, each comes in,
      //    the previous picture held until then; nothing leaks or stalls
     fw::img::leave();
     run_sim_ms(1000);
-    fw::img::B.max_side = 320;
     fw::img::BOX = fw::img::Box{};
     fw::img::BOX.w = fw::img::BOX.h = 480;
     const long base = live;
@@ -456,8 +455,7 @@ int main(int argc, char **argv) {
     printf("30 track changes: %d in, slowest %lld sim ms; one picture held %ld KB; peak %ld KB; after leaving %ld B\n", in, (long long) worst,
            held / 1024, live_max.load() / 1024, live.load() - base);
     CHECK(live == base, "every byte back after 30 tracks (%ld B left)", live.load() - base);
-    CHECK(held <= 320 * 320 * 2 + 4096, "one 320 x 320 RGB565 picture held (%ld B)", held);
-    fw::img::B.max_side = 0;
+    CHECK(held <= 480 * 480 * 2 + 4096, "one 480 x 480 RGB565 picture held (%ld B)", held);
   }
   fw::img::leave();
   run_sim_ms(1000);  // drain the last results

@@ -189,7 +189,7 @@ inline void fetch(const std::string &src, const std::vector<fw::img::Box> &boxes
     h = nullptr;
     const int64_t t1 = esp_timer_get_time();
     d.got_us = t1 - t0, d.bytes = body.n;
-    const bool ok = fw::imgdec::decode(body.b, body.n, B.src_max_px, decode_room(), boxes, B.max_side, d.px);
+    const bool ok = fw::imgdec::decode(body.b, body.n, B.src_max_px, decode_room(), boxes, d.px);
     d.dec_us = esp_timer_get_time() - t1;
     if (!ok) {
       d.err = d.px.err;

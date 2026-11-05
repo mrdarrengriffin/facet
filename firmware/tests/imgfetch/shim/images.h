@@ -14,7 +14,6 @@ struct Budget {
   int timeout_ms;
   const char *board;
   size_t body_max;
-  int max_side;
 };
 const Budget &budget();
 std::vector<std::string> wants();

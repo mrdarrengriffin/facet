@@ -13,9 +13,13 @@
 //   anything else = "not a picture" (WebP, GIF, SVG, BMP named as such: "<type> isn't supported on the panel")
 // A picture must be whole: a PNG without its end (IEND) or a JPEG that runs out of bytes = "broken picture (... cut
 // short)", never half a picture.
+// Size: every view at its own box size (img_scale.h stored; an area filter down, bilinear up, never nearest).
 // Memory: mem_max = the most the decode may hold at once (outputs + rows + decoder). It is worked out from the header
-// before any big allocation: over = "too big (needs N KB, M KB free)". Out-of-memory mid-way = "out of memory".
+// before any big allocation. Views that don't fit at their box size are kept smaller, the biggest view's side two thirds
+// at a time, at most FIT_STEPS times (LVGL scales them up smoothly when drawn: fx::Pen::image); still over = "too big
+// (needs N KB, M KB free)". Out-of-memory mid-way = "out of memory".
 #pragma once
+#include <algorithm>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -51,6 +55,7 @@ struct Result {
   std::vector<Pixels> px;
   std::string err;           // the reason when decode() returns false (the words the component shows)
   int sw = 0, sh = 0, sc = 0;  // the source as decoded (after a JPEG's 1/2^sc)
+  int side = 0;              // 0 = every view at its box size; else the memory fallback's cap on the long side (fit)
   size_t need = 0;           // the bytes the decode held at most
 };
 inline void release(Result &r) {
@@ -122,6 +127,18 @@ inline std::string too_big(size_t need, size_t room) {
   snprintf(t, sizeof t, "too big (needs %u KB, %u KB free)", (unsigned) ((need + 1023) / 1024), (unsigned) (room / 1024));
   return t;
 }
+// the memory fallback: at most this many steps, each the biggest view's long side x 2 / 3 (480 -> 320 -> 213)
+constexpr int FIT_STEPS = 2;
+// the long side of the biggest view these boxes keep from a sw x sh source, capped at side (0 = their boxes)
+inline int biggest(const std::vector<Box> &boxes, int sw, int sh, int side) {
+  int m = 0;
+  for (const Box &bx : boxes) {
+    int ow, oh;
+    fw::img::stored(bx, sw, sh, side, ow, oh);
+    m = std::max(m, std::max(ow, oh));
+  }
+  return m;
+}
 // one Sink per box, planned for a sw x sh source; false = out of memory (r.err)
 inline bool plan(const std::vector<Box> &boxes, int sw, int sh, int max_side, bool may_alpha, std::unique_ptr<fw::img::Sink[]> &k, size_t &need, Result &r) {
   k.reset(new (std::nothrow) fw::img::Sink[boxes.size()]);
@@ -150,7 +167,6 @@ inline bool finish(std::unique_ptr<fw::img::Sink[]> &k, size_t n, Result &r) {
 
 struct Png {
   const std::vector<Box> *boxes;
-  int max_side;
   long max_px;
   size_t mem_max;
   Result *r;
@@ -167,10 +183,14 @@ inline void png_init(pngle_t *p, uint32_t w, uint32_t h) {
   const pngle_ihdr_t *ih = pngle_get_ihdr(p);
   u->interlaced = ih && ih->interlace;
   size_t need = 0;
-  if (!plan(*u->boxes, (int) w, (int) h, u->max_side, true, u->k, need, *u->r)) { u->refused = true; return; }
-  // pngle's own state (~45 KB with the inflate window) + its two scanlines + our row (interlaced: the picture)
-  need += 48 * 1024 + (size_t) w * 16 + (u->interlaced ? (size_t) w * h * 4 : (size_t) w * 4);
-  u->r->need = need;
+  for (int step = 0, side = 0;; step++) {  // every view at its box size; smaller only when that doesn't fit (fit)
+    if (!plan(*u->boxes, (int) w, (int) h, side, true, u->k, need, *u->r)) { u->refused = true; return; }
+    // pngle's own state (~45 KB with the inflate window) + its two scanlines + our row (interlaced: the picture)
+    need += 48 * 1024 + (size_t) w * 16 + (u->interlaced ? (size_t) w * h * 4 : (size_t) w * 4);
+    u->r->need = need, u->r->side = side;
+    if (need <= u->mem_max || step == FIT_STEPS) break;
+    side = biggest(*u->boxes, (int) w, (int) h, side) * 2 / 3;
+  }
   if (need > u->mem_max) { u->r->err = too_big(need, u->mem_max); u->refused = true; return; }
   const size_t bytes = u->interlaced ? (size_t) w * h * 4 : (size_t) w * 4;
   u->buf = (uint8_t *) FW_IMGDEC_ALLOC(bytes);
@@ -191,7 +211,7 @@ inline void png_draw(pngle_t *p, uint32_t x, uint32_t y, uint32_t w, uint32_t h,
   for (uint32_t yy = y; yy < y + h && yy < u->h; yy++)
     for (uint32_t xx = x; xx < x + w && xx < u->w; xx++) memcpy(u->buf + ((size_t) yy * u->w + xx) * 4, rgba, 4);
 }
-inline bool png(const uint8_t *b, size_t n, long max_px, size_t mem_max, const std::vector<Box> &boxes, int max_side, Result &r) {
+inline bool png(const uint8_t *b, size_t n, long max_px, size_t mem_max, const std::vector<Box> &boxes, Result &r) {
   // the size from IHDR first (bytes 16-23): pngle allocates its scanlines from it before our init callback can refuse
   if (n >= 24 && !memcmp(b + 12, "IHDR", 4)) {
     const uint32_t w = (uint32_t) b[16] << 24 | b[17] << 16 | b[18] << 8 | b[19], h = (uint32_t) b[20] << 24 | b[21] << 16 | b[22] << 8 | b[23];
@@ -200,7 +220,7 @@ inline bool png(const uint8_t *b, size_t n, long max_px, size_t mem_max, const s
   pngle_t *p = pngle_new();
   if (!p) { r.err = "out of memory"; return false; }
   Png u;
-  u.boxes = &boxes, u.max_side = max_side, u.max_px = max_px, u.mem_max = mem_max, u.r = &r;
+  u.boxes = &boxes, u.max_px = max_px, u.mem_max = mem_max, u.r = &r;
   pngle_set_user_data(p, &u);
   pngle_set_init_callback(p, png_init);
   pngle_set_draw_callback(p, png_draw);
@@ -259,7 +279,7 @@ inline int jout(JDEC *jd, void *bitmap, JRECT *r) {
     }
   return 1;
 }
-inline bool jpeg(const uint8_t *b, size_t n, long max_px, size_t mem_max, const std::vector<Box> &boxes, int max_side, Result &r) {
+inline bool jpeg(const uint8_t *b, size_t n, long max_px, size_t mem_max, const std::vector<Box> &boxes, Result &r) {
   constexpr size_t WORK = 4096;  // TJpgDec's pool: tables + one MCU (JD_FASTDECODE 1 needs ~3.5 KB)
   void *work = FW_IMGDEC_ALLOC(WORK);
   if (!work) { r.err = "out of memory"; return false; }
@@ -281,26 +301,33 @@ inline bool jpeg(const uint8_t *b, size_t n, long max_px, size_t mem_max, const 
     dim(lo, w, h);
     if ((long long) w * h <= max_px) break;
   }
-  // ... and the smallest step that still covers every box (its stored size: img_scale.h), never below it
-  int sc = lo;
-  while (sc < SC_MAX) {
-    dim(sc + 1, w, h);
-    bool covers = true;
-    for (const Box &bx : boxes) {
-      int ow, oh;
-      fw::img::stored(bx, w, h, max_side, ow, oh);
-      covers &= bx.s != fw::img::pixel && ow <= w && oh <= h;
-    }
-    if (!covers) break;
-    sc++;
-  }
-  dim(sc, j.ow, j.oh);
-  r.sw = j.ow, r.sh = j.oh, r.sc = sc;
+  // ... and the smallest step that still covers every view (its stored size: img_scale.h), never below it. Every view
+  // at its box size; smaller (and so maybe a smaller step) only when that doesn't fit in mem_max (fit)
+  int sc = lo, band_h = 1;
   size_t need = 0;
-  // opaque: an A8 plane only for a round corner (the Sink adds it)
-  if (!plan(boxes, j.ow, j.oh, max_side, false, k, need, r)) { FW_IMGDEC_FREE(work); return false; }
-  const int band_h = std::max(1, (jd.msy * 8) >> sc);
-  need += WORK + (size_t) j.ow * band_h * 4;
+  for (int step = 0, side = 0;; step++) {
+    sc = lo;
+    while (sc < SC_MAX) {
+      dim(sc + 1, w, h);
+      bool covers = true;
+      for (const Box &bx : boxes) {
+        int ow, oh;
+        fw::img::stored(bx, w, h, side, ow, oh);
+        covers &= bx.s != fw::img::pixel && ow <= w && oh <= h;
+      }
+      if (!covers) break;
+      sc++;
+    }
+    dim(sc, j.ow, j.oh);
+    // opaque: an A8 plane only for a round corner (the Sink adds it)
+    if (!plan(boxes, j.ow, j.oh, side, false, k, need, r)) { FW_IMGDEC_FREE(work); return false; }
+    band_h = std::max(1, (jd.msy * 8) >> sc);
+    need += WORK + (size_t) j.ow * band_h * 4;
+    r.side = side;
+    if (need <= mem_max || step == FIT_STEPS) break;
+    side = biggest(boxes, j.ow, j.oh, side) * 2 / 3;
+  }
+  r.sw = j.ow, r.sh = j.oh, r.sc = sc;
   r.need = need;
   if (need > mem_max) { FW_IMGDEC_FREE(work); r.err = too_big(need, mem_max); return false; }
   j.band = (uint8_t *) FW_IMGDEC_ALLOC((size_t) j.ow * band_h * 4);
@@ -321,14 +348,15 @@ inline bool jpeg(const uint8_t *b, size_t n, long max_px, size_t mem_max, const 
 }  // namespace detail
 
 // bytes -> the pixels of each box (r.px, in the boxes' order). max_px = the most pixels the source may have as decoded
-// (images.h budget().src_max_px), mem_max = the most memory the decode may hold at once, max_side = budget().max_side.
+// (images.h budget().src_max_px), mem_max = the most memory the decode may hold at once (views kept smaller when their
+// box size doesn't fit: r.side).
 // false = r.err says why ("too big", "not a picture", ...); r holds nothing then.
-inline bool decode(const uint8_t *b, size_t n, long max_px, size_t mem_max, const std::vector<Box> &boxes, int max_side, Result &r) {
+inline bool decode(const uint8_t *b, size_t n, long max_px, size_t mem_max, const std::vector<Box> &boxes, Result &r) {
   r = Result{};
   if (boxes.empty()) { r.err = "left the screen"; return false; }
   const char *t = sniff(b, n);
-  if (!strcmp(t, "png")) return detail::png(b, n, max_px, mem_max, boxes, max_side, r);
-  if (!strcmp(t, "jpeg")) return detail::jpeg(b, n, max_px, mem_max, boxes, max_side, r);
+  if (!strcmp(t, "png")) return detail::png(b, n, max_px, mem_max, boxes, r);
+  if (!strcmp(t, "jpeg")) return detail::jpeg(b, n, max_px, mem_max, boxes, r);
   if (*t) { r.err = std::string(t == std::string("svg") ? "SVG" : t == std::string("webp") ? "WebP" : t == std::string("gif") ? "GIF" : "BMP") + " isn't supported on the panel"; return false; }
   r.err = "not a picture";
   return false;

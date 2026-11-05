@@ -6,9 +6,10 @@
 //   firmware/fw_imgdec.h) feeds it each row as the JPEG or PNG decode produces it, on its own task, straight into the
 //   view's pixels (images.cpp put(src, pixels) adopts them, no copy). No LVGL calls, so it runs off the LVGL task and
 //   in the host tests.
-// Stored size: a view keeps its box's pixels, except that a box over the board's max_side (budget(): Guition 320) keeps
-// max_side px on its long side and is scaled up by LVGL when drawn (fx::Pen::image): 320 x 320 RGB565 = 200 KB where
-// 480 x 480 would be 450 KB.
+// Stored size: a view keeps its box's pixels on every board (the Guition's idle art 480 x 480, the Waveshare's 720 x
+// 720). max_side (0 = none) is only the panel decode's memory fallback (firmware/fw_imgdec.h fit): a view the largest
+// free PSRAM block can't hold at its box size keeps max_side px on its long side and LVGL scales it up smoothly when
+// drawn (fx::Pen::image, bilinear).
 // Memory: every buffer through FW_IMG_MALLOC (the panel: PSRAM), freed with FW_IMG_FREE (free_pixels()).
 #pragma once
 #include <algorithm>

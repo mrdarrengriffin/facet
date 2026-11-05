@@ -1,8 +1,8 @@
 // Image sources + cache (notes image-component.md, piece 1): the one place an image component gets
 // its pixels. A view = (src URL, box w x h, scale, radius) -> the pixels scaled to that box, RGB565 (+A8 when anything
 // is see-through: a rounded corner, a transparent PNG), dithered to 565 (pixel art: nearest, never dithered).
-// Scaling: core/img_scale.h (one pass, rows in, the view's pixels out; a box over budget().max_side keeps max_side px
-// and is scaled up when drawn).
+// Scaling: core/img_scale.h (one pass, rows in, the view's pixels out at the view's own box size: an area filter down,
+// bilinear up, never nearest except pixel art).
 // A URL is http(s)://..., or a path on the panel's Home Assistant ("/api/media_player_proxy/...": the host fetches it
 // from its HA link). key(): the picture a URL names, without HA's access token (token=..., which HA's proxy rotates
 // every 5 minutes): views, fetches and the cache match by it, so a new token never fetches the same picture again.
@@ -33,7 +33,6 @@ struct Budget {
   int timeout_ms;      // a wanted URL that hasn't come in by then = failed "timeout"
   const char *board;
   size_t body_max;     // the panel's download of one picture, at most (compressed bytes; fw_images.h)
-  int max_side;        // a view's pixels on their long side, at most (0 = its box): bigger boxes are scaled up when drawn
 };
 const Budget &budget();
 // a view's owner hears about every change of its view (pixels in, failed) through this

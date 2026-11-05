@@ -84,10 +84,45 @@ export default {
       t.eq(st.views, 1, `one picture kept: ${JSON.stringify(st)}`);
       t.eq(st.refused, 0, 'nothing refused');
       t.ok(m1.heap - m0.heap < 64 * 1024 && m1.objs === m0.objs, `heap ${Math.round((m1.heap - m0.heap) / 1024)} KB, objects ${m0.objs} -> ${m1.objs}`);
-      const side = Math.max(t.part('media_art').w, t.part('media_art').h), cap = t.img.stats().board === 'guition-4848s040' ? 320 : 0;
-      const k = cap && side > cap ? cap / side : 1, ow = Math.round(t.part('media_art').w * k), oh = Math.round(t.part('media_art').h * k);
+      const ow = t.part('media_art').w, oh = t.part('media_art').h;  // every board keeps the art at its box size
       t.log.push(`25 tracks: heap ${m1.heap - m0.heap} B, kept ${st.bytes} B (${ow}x${oh}), peak cache ${st.peak} B`);
-      t.ok(st.bytes <= ow * oh * 2 + 256, `kept at ${ow}x${oh} RGB565 (${st.bytes} B; the box ${t.part('media_art').w}x${t.part('media_art').h})`);
+      t.ok(st.bytes <= ow * oh * 2 + 256 && st.bytes >= ow * oh * 2, `kept at ${ow}x${oh} RGB565 (${st.bytes} B; the box ${t.part('media_art').w}x${t.part('media_art').h})`);
+    } },
+    { name: 'quality: a 640 px cover drawn at the box\'s own size (480 on the Guition, 720 on the Waveshare) matches a reference resample; a pixelated copy would not', async run(t) {
+      // fine detail (an x ^ y pattern, as the docs' cover fixture): area-averaged down / bilinear up in doubles here
+      const S0 = 640, pat = (x, y) => [(x * 255) / S0 | 0, (y * 255) / S0 | 0, ((x ^ y) * 3) & 255, 255];
+      const u = URL.replace('cache=1', 'cache=detail');
+      t.img.serve(u, S0, S0, pat);
+      t.b.W = t.b.H = undefined;
+      await t.mount('media_art', { art: u, playing: true }); t.wait(600);
+      const o = t.part('media_art'), k = Math.max(o.w / S0, o.h / S0), x0 = (S0 - o.w / k) / 2, y0 = (S0 - o.h / k) / 2;
+      const ref = (X, Y, c) => {  // the cover-scaled source at output pixel X, Y
+        if (k < 1) {  // area: the source span this pixel covers, fractional edges weighted
+          let sum = 0, wt = 0;
+          const ax = x0 + X / k, bx = x0 + (X + 1) / k, ay = y0 + Y / k, by = y0 + (Y + 1) / k;
+          for (let sy = Math.floor(ay); sy < Math.ceil(by); sy++) for (let sx = Math.floor(ax); sx < Math.ceil(bx); sx++) {
+            const w = (Math.min(sx + 1, bx) - Math.max(sx, ax)) * (Math.min(sy + 1, by) - Math.max(sy, ay));
+            sum += pat(Math.min(S0 - 1, sx), Math.min(S0 - 1, sy))[c] * w; wt += w;
+          }
+          return sum / wt;
+        }
+        const fx = Math.min(S0 - 1, Math.max(0, x0 + (X + 0.5) / k - 0.5)), fy = Math.min(S0 - 1, Math.max(0, y0 + (Y + 0.5) / k - 0.5));
+        const xa = Math.floor(fx), ya = Math.floor(fy), xb = Math.min(xa + 1, S0 - 1), yb = Math.min(ya + 1, S0 - 1), ax = fx - xa, ay = fy - ya;
+        return (pat(xa, ya)[c] * (1 - ax) + pat(xb, ya)[c] * ax) * (1 - ay) + (pat(xa, yb)[c] * (1 - ax) + pat(xb, yb)[c] * ax) * ay;
+      };
+      // PSNR over a grid of samples: the frame, and a two-thirds copy blown up by nearest neighbour (the pixelated look)
+      const n = Math.round(o.w * 2 / 3);
+      let e = 0, eb = 0, cnt = 0;
+      for (let Y = 1; Y < o.h - 1; Y += 3) for (let X = 1; X < o.w - 1; X += 3) {
+        const got = rgb(t, o.x + X, o.y + Y), bx = Math.floor(Math.floor(X * n / o.w) * o.w / n), by = Math.floor(Math.floor(Y * n / o.w) * o.w / n);
+        for (let c = 0; c < 3; c++) { const r = ref(X, Y, c); e += (got[c] - r) ** 2; eb += (ref(bx, by, c) - r) ** 2; cnt++; }
+      }
+      const db = (v) => 10 * Math.log10(255 * 255 / Math.max(1e-9, v / cnt));
+      t.log.push(`quality ${o.w}x${o.h}: PSNR ${db(e).toFixed(1)} dB; a pixelated copy ${db(eb).toFixed(1)} dB`);
+      t.ok(db(e) >= 30, `drawn at its box size: PSNR ${db(e).toFixed(1)} dB >= 30 (a ${n} px copy blown up by nearest: ${db(eb).toFixed(1)} dB)`);
+      t.ok(db(e) - db(eb) >= 4, `the bar tells pixelated art apart (${db(e).toFixed(1)} vs ${db(eb).toFixed(1)} dB)`);
+      const b = t.img.stats().bytes;
+      t.ok(b >= o.w * o.h * 2 && b <= o.w * o.h * 2 + 256, `kept at ${o.w}x${o.h} RGB565 (${b} B)`);
     } },
     { name: 'bounds at odd sizes, and fuzz (sizes, art or none)', async run(t) {
       const bad = [];
