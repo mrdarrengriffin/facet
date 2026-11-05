@@ -10,8 +10,9 @@
 //            never moves; docs line-clamp 2, where the artist follows a one-line title), the artist (type:body, fg:text-dim, one line, "...")
 // Album art: art goes to the visual (printed on the disc, CD or record label; Media visuals).
 // Feed: bind every prop to panel.media (core/media_source.cpp). A read-out (docs: no touch): no events, no sound.
-// Update path: the words and the picture in place (the visual's own update: spin, packs, arm, arc), silent; another
-// visual or a new state ink rebuilds with a fade (fw::st::refill_fade). Contrast: text, media_visual.
+// Update path: the words, their tone and the picture in place (the visual's own update: spin, packs, arm, arc; the
+// art kept), silent: play <-> pause redraws the state line, the play button and what moves, nothing else; another
+// visual rebuilds with a fade (fw::st::refill_fade). Contrast: text, media_visual.
 #include "fw.h"
 #include "fx.h"
 
@@ -22,7 +23,8 @@ bool playing_of(fw::Props p) {
   return !strcmp(v, "true") || !strcmp(v, "1");
 }
 const char *ink(fw::Props p) { return !strcmp(p["tone"] | "text-dim", "accent-text") ? "fg:accent-text" : "fg:text-dim"; }
-std::string sig(fw::Props p) { return std::string(p["visual"] | "cd") + ink(p); }
+bool lit(fw::Props p) { return !strcmp(ink(p), "fg:accent-text"); }
+std::string sig(fw::Props p) { return p["visual"] | "cd"; }
 void visual_props(fw::Props p, ArduinoJson::JsonDocument &d) {
   d["visual"] = p["visual"] | "cd", d["size"] = "screen", d["progress"] = p["progress"] | 38, d["playing"] = playing_of(p);
   d["title"] = p["title"] | "", d["artist"] = p["artist"] | "", d["art"] = p["art"] | "";
@@ -43,8 +45,10 @@ void fill(lv_obj_t *root, fw::Props p) {
   fw::find("media_visual")->build(slot, d.as<fw::Props>());
   lv_obj_t *col = fx::box(root, "col");
   for (const char *t : {"grow", "gap:2"}) fx::use(col, t);
-  lv_obj_t *st = fx::text(col, p["state"] | "idle", "type:label", ink(p), "none");
+  lv_obj_t *st = fx::text(col, p["state"] | "idle", "type:label", "fg:text-dim", "none");
   for (const char *t : {"fill-w", "above:m-col-top"}) fx::use(st, t);
+  fx::use(st, "fg:accent-text", LV_STATE_CHECKED);  // the tone: a state of the same line, so play <-> pause recolours it in place
+  fx::state(st, LV_STATE_CHECKED, lit(p));
   lv_obj_t *ti = fx::text(col, p["title"] | "Nothing playing", "type:headline", "fg:text", "fit");
   for (const char *t : {"fill-w", "h:m-title-h", "max-h:m-title-h"}) fx::use(ti, t);  // two lines, then "..."
   lv_label_set_long_mode(ti, LV_LABEL_LONG_MODE_DOTS);
@@ -91,7 +95,9 @@ FW_UPDATE(media_hero) {
   ArduinoJson::JsonDocument d;
   visual_props(p, d);
   if (lv_obj_t *v = lv_obj_get_child(slot, 0)) fw::update_child(fw::find("media_visual"), v, d.as<fw::Props>());
-  fx::set_text(lv_obj_get_child(col, 0), p["state"] | "idle", "type:label");
+  lv_obj_t *st = lv_obj_get_child(col, 0);
+  fx::set_text(st, p["state"] | "idle", "type:label");
+  if (lit(p) != lv_obj_has_state(st, LV_STATE_CHECKED)) fx::state(st, LV_STATE_CHECKED, lit(p));
   lv_obj_t *ti = lv_obj_get_child(col, 1);
   fx::set_text(ti, p["title"] | "Nothing playing", "type:headline");
   fx::set_text(lv_obj_get_child(col, 2), p["artist"] | "", "type:body");

@@ -66,6 +66,32 @@ export default {
       t.ha.set(P1, undefined, { media_title: 'Blue Song', entity_picture: ART('blue') }); t.wait(1500);
       t.ok(blue(cdBand(t)), `the new track's art: ${cdBand(t)}`);
     } },
+    { name: 'album art: play -> pause -> play with the same art fetches nothing, rebuilds nothing, and the art is drawn in every frame', async run(t) {
+      t.ha.s[P1] = { '': 'playing', friendly_name: 'Kitchen', media_title: 'Red Song', media_artist: 'Band', media_duration: '200', media_position: '20', entity_picture: ART('red') };
+      t.img.serve(HA_URL + ART('red'), 64, 64, [230, 30, 30, 255]);
+      await linked(t, { source: 'ha', visual: 'cd' });
+      t.ok(red(cdBand(t)), `red first: ${cdBand(t)}`);
+      t.img.hang(HA_URL + ART('red'));  // a second fetch would take its time (a panel's Wi-Fi): the art would go missing meanwhile
+      const m = t.b.m, v = t.part('media_visual'), hero = t.part('media_hero'), asked = t.img.asked.length, st0 = t.img.stats();
+      // the areas LVGL flushed since the last read (read every 20 ms: under the stage's 64-area log, so a big one is real)
+      const areas = () => { const q = new Int32Array(m.HEAPU8.buffer), p = m._fw_areas(t.b.stage) >> 2, out = []; for (let i = 0; i < q[p]; i++) { const [x1, y1, x2, y2] = q.subarray(p + 1 + i * 4, p + 5 + i * 4); out.push((x2 - x1 + 1) * (y2 - y1 + 1)); } return out; };
+      let frames = 0, gaps = 0, biggest = 0;
+      const watch = (ms) => { for (let e = 0; e < ms; e += 20) { t.ha.react(t.wait(20)); frames++; if (!red(cdBand(t))) gaps++; biggest = Math.max(biggest, ...areas()); } };
+      const press = () => { const b = btn(t, 1); t.b.touch(b.x + b.w / 2, b.y + b.h / 2, 1); watch(80); t.b.touch(b.x + b.w / 2, b.y + b.h / 2, 0); watch(200); };
+      const echo = (st) => { t.ha.s[P1][''] = st; t.ha.push(P1); };  // HA's new state, no settling: every frame is watched
+      areas();
+      press(); echo('paused'); watch(4000);  // the panel's own tap, then HA's echo
+      t.has(t.texts(), /^paused$/i, 'paused');
+      press(); echo('playing'); watch(4000);
+      t.has(t.texts(), /^now playing$/i, 'playing again');
+      echo('paused'); watch(2000); echo('playing'); watch(2000);  // from Home Assistant (no hold)
+      t.eq(t.ha.calls.filter((c) => c.service === 'media_player.media_play_pause').length, 2, 'both taps went out');
+      t.eq(t.img.asked.length, asked, `no image request: ${t.img.asked.slice(asked)}`);
+      const st = t.img.stats();
+      t.eq([st.fetches, st.dropped], [st0.fetches, st0.dropped], `the art's view kept (no re-decode): ${JSON.stringify(st)}`);
+      t.eq(gaps, 0, `the art drawn in all ${frames} frames`);
+      t.ok(biggest < (v.w * v.h) / 2, `no rebuild: the biggest redraw ${biggest} px < half the picture (${v.w}x${v.h}; the hero ${hero.w}x${hero.h})`);
+    } },
     { name: 'album art: memory stays flat over 240 track changes (an hour of 15 s tracks)', async run(t) {
       t.ha.s[P1] = { '': 'playing', friendly_name: 'Kitchen', media_title: 'Song 0', media_duration: '200', media_position: '20', entity_picture: ART('t0') };
       for (let i = 0; i < 240; i++) t.img.serve(HA_URL + ART('t' + i), 300, 300, [i % 256, 128, 255 - (i % 256), 255]);
