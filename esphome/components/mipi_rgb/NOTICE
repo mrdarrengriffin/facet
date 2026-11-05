@@ -1,4 +1,4 @@
-mipi_rgb: ESPHome's mipi_rgb display component with three fixes for the Guition ESP32-S3-4848S040
+mipi_rgb: ESPHome's mipi_rgb display component with three fixes and two additions for the Guition ESP32-S3-4848S040
 
 Derived from ESPHome 2026.9.1 (https://github.com/esphome/esphome, tag 2026.9.1, commit
 0b2b16e664ecfc0add37f3435db1c2140b8a687e; esphome/components/mipi_rgb last changed in fe3788ff4783).
@@ -9,6 +9,8 @@ Changed (each marked "Facet" in the source):
   times). Stock ESPHome sent the next block at once, so the panel dropped the first settings block (wrong blacks,
   lifted greys, flicker).
 - mipi_rgb.cpp: the RGB bounce buffer is PANEL_BOUNCE_ROWS rows (a build flag, default 10 as stock).
+- mipi_rgb.cpp/.h: VSYNC and frame-complete counters (IRAM callbacks) for /fw/info "lcd", and get_handle() for
+  Facet's direct LVGL flush (board/rgb_flush.h).
 - mipi_rgb.h: no loop() on the ESP32-S3. Stock ESPHome restarted the RGB DMA on every loop pass, which shifted
   frames (a red-tinted flicker); the ESP-IDF driver already restarts after a real underflow.
 

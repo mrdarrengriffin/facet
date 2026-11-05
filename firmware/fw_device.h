@@ -298,6 +298,12 @@ inline void heap(ArduinoJson::JsonObject o) {
   o["psram_free"] = heap_caps_get_free_size(MALLOC_CAP_SPIRAM);
   o["internal_largest"] = heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL);
 }
+}  // namespace fw::device
+// the display's frame counters, when the board's display driver has them (Facet's mipi_rgb, Guition RGB panel; a weak
+// symbol, so null elsewhere): /fw/info "lcd" {vsyncs, frames, missed}. missed = VSYNCs without a whole frame streamed
+// = frames the RGB bounce buffers underran (PSRAM too busy), each a one-frame flicker or shift (#118)
+extern "C" bool facet_lcd_stats(uint32_t *vsyncs, uint32_t *frames) __attribute__((weak));
+namespace fw::device {
 // content taller than the screen (doc pages): top-aligned and scrollable instead of centred and clipped
 inline void fit_scroll() {
   int32_t y = 0;
@@ -1424,6 +1430,13 @@ class Handler : public AsyncWebHandler {
       d["uptime_s"] = (int) (esp_timer_get_time() / 1000000);
       d["probation_s"] = probation_left();
       heap(d["heap"].to<ArduinoJson::JsonObject>());
+      uint32_t v = 0, f = 0;
+      if (facet_lcd_stats && facet_lcd_stats(&v, &f)) {
+        auto l = d["lcd"].to<ArduinoJson::JsonObject>();
+        l["vsyncs"] = v;
+        l["frames"] = f;
+        l["missed"] = v > f ? v - f : 0;
+      }
       std::string sh = "null";
       ArduinoJson::JsonDocument devs;
       size_t timers = 0, store = 0, store_bytes = 0, bounds = 0, wants = 0;

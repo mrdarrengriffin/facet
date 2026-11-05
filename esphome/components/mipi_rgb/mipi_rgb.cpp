@@ -6,8 +6,32 @@
 #include "esphome/core/log.h"
 #include <driver/gpio.h>
 #include <esp_lcd_panel_ops.h>
+#include <esp_attr.h>
 #include <span>
 
+namespace esphome::mipi_rgb {
+
+// Facet: frame counters (MipiRgb::vsyncs / frames). The callbacks run in the LCD ISR, which stays in IRAM
+// (CONFIG_LCD_RGB_ISR_IRAM_SAFE): IRAM code, DRAM data.
+static DRAM_ATTR volatile uint32_t s_vsyncs = 0;
+static DRAM_ATTR volatile uint32_t s_frames = 0;
+static IRAM_ATTR bool on_vsync_(esp_lcd_panel_handle_t, const esp_lcd_rgb_panel_event_data_t *, void *) {
+  s_vsyncs = s_vsyncs + 1;
+  return false;
+}
+static IRAM_ATTR bool on_frame_(esp_lcd_panel_handle_t, const esp_lcd_rgb_panel_event_data_t *, void *) {
+  s_frames = s_frames + 1;
+  return false;
+}
+uint32_t MipiRgb::vsyncs() { return s_vsyncs; }
+uint32_t MipiRgb::frames() { return s_frames; }
+}  // namespace esphome::mipi_rgb
+// Facet's firmware reads them for /fw/info "lcd" (firmware/fw_device.h, weak there)
+extern "C" bool facet_lcd_stats(uint32_t *vsyncs, uint32_t *frames) {
+  *vsyncs = esphome::mipi_rgb::s_vsyncs;
+  *frames = esphome::mipi_rgb::s_frames;
+  return true;
+}
 namespace esphome::mipi_rgb {
 
 static const uint8_t DELAY_FLAG = 0xFF;
@@ -176,6 +200,12 @@ void MipiRgb::common_setup_() {
   }
   config.pclk_gpio_num = static_cast<gpio_num_t>(this->pclk_pin_->get_pin());
   esp_err_t err = esp_lcd_new_rgb_panel(&config, &this->handle_);
+  if (err == ESP_OK) {
+    esp_lcd_rgb_panel_event_callbacks_t cbs{};
+    cbs.on_vsync = on_vsync_;
+    cbs.on_frame_buf_complete = on_frame_;
+    err = esp_lcd_rgb_panel_register_event_callbacks(this->handle_, &cbs, nullptr);
+  }
   if (err == ESP_OK)
     err = esp_lcd_panel_reset(this->handle_);
   if (err == ESP_OK)

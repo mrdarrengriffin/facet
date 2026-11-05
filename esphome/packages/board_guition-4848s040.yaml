@@ -7,7 +7,10 @@
 # default below). Board default for the UI: lvgl_buffer 10%.
 
 substitutions:
-  bounce_rows: "10"     # RGB bounce buffer rows (stock ESPHome 10; 20 cost ~19 KB internal RAM and starved Wi-Fi with the panel UI)
+  # RGB bounce buffer rows (stock ESPHome 10): 2 x rows x 960 B of internal RAM. 16 (#118) = a refill may run 0.8 ms
+  # late instead of 0.5 ms before the panel shows stale rows (band flicker). 20 starved Wi-Fi before the panel's
+  # malloc moved to PSRAM (internal free was ~45 KB then, ~110 KB now). 480 rows must divide by it.
+  bounce_rows: "16"
 
 esphome:
   name: ${name}
@@ -28,6 +31,7 @@ esphome:
     - ../board/s3_reset.h
     - ../board/lcddiag.h
     - ../board/lcddiag.cpp   # own TU (S3 l32r range)
+    - ../board/rgb_flush.h   # LVGL flush straight into the framebuffer, rotated by rows (#118)
   on_boot:
     - priority: 800
       then:
@@ -40,9 +44,14 @@ esphome:
         - lambda: |-
             std::string r = panel::lcd::run("init_slow", 0, 20, "");
             ESP_LOGW("lcd", "boot: %s", r.c_str());
+    # after LVGL's setup: its flush writes the framebuffer directly (ESPHome's software rotation went through a PSRAM
+    # buffer and starved the bounce-buffer refill: band flicker, #118)
+    - priority: -150
+      then:
+        - lambda: 'panel::rgbflush::install(id(lvgl_root), id(lcd));'
 
-# RGB bounce buffer: Facet's mipi_rgb with a configurable row count (components/mipi_rgb/NOTICE). 20 rows = ESPControl's
-# tested value: the panel UI's PSRAM traffic gave red flicker with the stock 10. Costs ~19 KB internal RAM.
+# RGB bounce buffer: Facet's mipi_rgb with a configurable row count (bounce_rows above; components/mipi_rgb/NOTICE) and
+# frame counters (/fw/info "lcd": frames the bounce buffers underran).
 external_components:
   - source: {type: local, path: ../components}
     components: [mipi_rgb]

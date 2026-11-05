@@ -61,6 +61,12 @@ class MipiRgb : public display::Display {
   int get_height_internal() override { return this->height_; }
   void dump_config() override;
   void draw_pixel_at(int x, int y, Color color) override;
+  // Facet: the panel handle (board/rgb_flush.h writes LVGL's rotated chunks straight into the framebuffer) and the
+  // frame counters: VSYNCs, and frames the bounce buffers streamed whole. A gap between the two = frames that
+  // underran (PSRAM too busy to refill a bounce buffer in time) and were resynced at VSYNC.
+  esp_lcd_panel_handle_t get_handle() const { return this->handle_; }
+  static uint32_t vsyncs();
+  static uint32_t frames();
 
   // this will be horribly slow.
  protected:
