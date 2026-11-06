@@ -8,7 +8,7 @@ an ESPHome component, plus each board's hardware.
 | `facet-<board>.yaml` | The firmware the install page flashes, one per board in `../boards/` (no Wi-Fi or keys baked in) |
 | `packages/board_<board>.yaml` | The board's hardware: display, touch, backlight, buttons, relays, memory settings |
 | `packages/workbench.yaml` | What every board shares: LVGL, the `facet_wb` component, Home Assistant actions, OTA updates |
-| `packages/net_public.yaml` | Onboarding: Improv serial, Improv BLE where the board has it, the setup hotspot |
+| `packages/net_public.yaml` | Onboarding: Improv serial, Improv BLE where the board has it, the setup hotspot; the per-panel update password for network flashes (`board/update_password.h`) |
 | `packages/audio_<board>.yaml` | UI sounds on a board with a speaker |
 | `board/` | Small C++ helpers the packages include (boot guard, setup hotspot and screen, S3 reset + update trial, direct RGB flush, LCD diagnostics) |
 | `components/mipi_rgb/` | ESPHome's `mipi_rgb` display with three fixes and frame counters for the Guition (GPLv3, see its `NOTICE`) |
@@ -39,3 +39,7 @@ Assistant's API connected, or 10 min with Wi-Fi) within 3 boots, or the panel bo
 
 Keep your network and names in your own YAML and include these packages, as `facet-<board>.yaml` does. Set
 `facet_gen` to the folder that holds `<board>/facet_wb` when it is not `gen/` here.
+
+A panel on the public build takes a network flash (espota, port 3232) only with its own update password: Settings >
+Update password (hold the row), or Home Assistant's action `esphome.<panel>_facet_update_password` (response
+`{password}`). Pass it as `ota: password:` in your YAML or `espota.py --auth`. Help: Updating and troubleshooting.

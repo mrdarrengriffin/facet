@@ -68,6 +68,10 @@ void update_set(const char *state, const char *installed, const char *latest);
 const Update &update_now();
 void on_update_install(void (*cb)());
 const char *update_install();
+// the panel's update password (a manual flash over the network, the public build's board/update_password.h): told once
+// at boot; "" = none (the workbench, a build without one): Settings shows no Update password row. Never logged.
+void update_password_set(const char *pw);
+const std::string &update_password();
 void on_idle(void (*cb)(bool idle, int pct));  // the idle clock shows (pct = Idle brightness) or leaves (100)
 bool idle();  // a device shows the idle clock
 void reload(const char *id);

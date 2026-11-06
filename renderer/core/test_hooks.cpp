@@ -5,6 +5,7 @@
 //   fw_test("stack", "")          -> JSON [{stack: [ids], builds, objects}] every mounted device (core/device.h state)
 //   fw_test("keep", "<n>|")       -> JSON [{page, bytes, objects, build_ms, stale, shown}] kept pages (n = set the cap first)
 //   fw_test("update", "state,installed,latest" | "install") -> "" : the host's firmware update (core/device.h update)
+//   fw_test("update_password", "<pw>") -> "" : the panel's update password as a host tells it ("" = none; core/device.h)
 //   fw_test("setting", "id=value") -> "" applied / "same" / the error (dev::set from the host, e.g. sounds=false)
 //   fw_test("look", "light,accent") -> "" : the theme / accent switched LIVE through the contract's shared styles (fx::look,
 //                                    no rebuild): the colour + pixel proofs compare this with a fresh build
@@ -334,6 +335,7 @@ extern "C" EMSCRIPTEN_KEEPALIVE const char *fw_test(const char *cmd, const char 
     fw::dev::update_set(a.substr(0, p1).c_str(), a.substr(p1 + 1, p2 - p1 - 1).c_str(), a.substr(p2 + 1).c_str());
     return "";
   }
+  else if (c == "update_password") { fw::dev::update_password_set(a.c_str()); return ""; }
   else if (c == "setting") {
     const size_t eq = a.find('=');
     if (eq == std::string::npos) return "id=value";

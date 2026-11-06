@@ -5,7 +5,10 @@
 #    with a per-panel random password shown on the panel and in its Wi-Fi QR (board/setup_ap.h). It runs while no
 #    Wi-Fi is saved, or after the saved one fails for ap_timeout (ESPHome default 90 s).
 #  - API: encryption with no key: the first client (Home Assistant on adoption) provisions the key, kept in flash.
-#  - OTA: no password (a Device Builder user who adopts the panel sets their own).
+#  - OTA (espota, port 3232): a per-panel update password made on the first boot (board/update_password.h, #149),
+#    shown in Settings (Update password, hold to show) and answered by the Home Assistant action
+#    facet_update_password. Never logged. The Firmware entity's installs (http_request) and USB don't need it.
+#    Home Assistant, holding the API encryption key, can also upload over the encrypted channel (ESPHome's rule).
 #  - Name: facet + MAC suffix (facet-1a2b3c, "Facet panel 1a2b3c"): name_add_mac_suffix in the top-level YAML.
 #  - Set up screen (board/setup_screen.h + Facet's `setup` system screen): hotspot name + password + Wi-Fi QR, the
 #    other ways, connecting / failed / add-me-in-HA / added, and the "allow actions" hint when HA refuses actions.
@@ -16,15 +19,20 @@ esphome:
   includes:
     - ../board/setup_ap.h
     - ../board/setup_screen.h
+    - ../board/ota_pw.h
+    - ../board/update_password.h
   on_boot:
     - priority: 600   # before wifi (250): the AP config must be in place when wifi setup starts it
       then:
         - lambda: |-
             facet::setup_ap::apply();
+            facet::update_password::apply(id(facet_espota));
             facet::setup_screen::note_boot();
     - priority: -110  # after the Facet runtime (workbench.yaml on_boot -100: fw::device::setup)
       then:
-        - lambda: 'facet::setup_screen::start();'
+        - lambda: |-
+            fw::dev::update_password_set(facet::update_password::get().c_str());
+            facet::setup_screen::start();
 
 web_server:
   ota: false
@@ -43,6 +51,14 @@ script:
 
 api:
   encryption: {}
+  # the update password for a manual flash (espota), to whoever Home Assistant lets call actions: answers
+  # {password}. No entity: an entity's state would sit in Home Assistant's history.
+  actions:
+    - action: facet_update_password
+      supports_response: only
+      then:
+        - api.respond:
+            data: !lambda 'root["password"] = facet::update_password::get();'
   # never reboot for want of a client (ESPHome default 15 min): a panel waiting to be added in Home Assistant rebooted
   # every 15 min (Set up screen drawn again, onboarding timeline reset). wifi's reboot_timeout is already
   # off while the hotspot is configured (wifi_component: !has_ap()).
@@ -50,6 +66,9 @@ api:
 
 ota:
   - platform: esphome
+    id: facet_espota
+    # "" compiles ESPHome's password check; the panel's own password is set at boot (board/update_password.h)
+    password: ""
     # backlight off while flashing: flash writes stall the PSRAM framebuffer, the LCD shows bright blue
     on_begin:
       - light.turn_off: {id: backlight, transition_length: 0s}

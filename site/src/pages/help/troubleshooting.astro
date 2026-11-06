@@ -2,7 +2,8 @@
 // Updating + troubleshooting. Facts: install.astro (flash, Wi-Fi ways, HA adding), the public firmware YAML
 // (net_public: hotspot after the saved Wi-Fi fails for 90 s, encryption key from HA on adoption, API never reboots for
 // want of a client, no browser firmware upload; workbench: update entity hourly, installs only on Install, 3 min
-// settling = safe_mode boot_is_good_after, a power cut in it boots the previous firmware; channels: RELEASING.md).
+// settling = safe_mode boot_is_good_after, a power cut in it boots the previous firmware; channels: RELEASING.md;
+// update password: board/update_password.h + net_public facet_update_password, #149).
 import Docs, { type Heading } from '../../layouts/Docs.astro';
 import { url } from '../../lib/nav';
 
@@ -11,6 +12,7 @@ const headings: Heading[] = [
   { depth: 3, slug: 'channels', text: 'Update channels' },
   { depth: 2, slug: 'settling', text: 'After an update' },
   { depth: 2, slug: 'reflash', text: 'Re-flashing' },
+  { depth: 3, slug: 'update-password', text: 'Flashing over the network' },
   { depth: 2, slug: 'wifi', text: 'Wi-Fi does not join' },
   { depth: 2, slug: 'home-assistant', text: 'Not showing in Home Assistant' },
   { depth: 2, slug: 'actions', text: 'Controls do nothing' },
@@ -60,7 +62,8 @@ const headings: Heading[] = [
   <h2 id="reflash">Re-flashing</h2>
   <p>
     You can always put Facet back on the panel over USB from the <a href={url('/install/')}>Install</a> page. Firmware
-    cannot be uploaded from the panel's own web page.
+    cannot be uploaded from the panel's own web page, and a network flash needs the panel's
+    <a href="#update-password">update password</a>.
   </p>
   <ul>
     <li><strong>Without erasing</strong>: the panel keeps its Wi-Fi, its settings and its place in Home Assistant. Use this to repair or update it.</li>
@@ -69,6 +72,27 @@ const headings: Heading[] = [
       longer recognises it: delete the old device in Home Assistant, then add the panel again as on the Install page.
     </li>
   </ul>
+
+  <h3 id="update-password">Flashing over the network</h3>
+  <p>
+    Each panel has its own <strong>update password</strong>, made when it first starts, so nobody else on your network
+    can put firmware on it. You only need it to flash a build of your own over Wi-Fi (ESPHome's <code>esphome upload</code>
+    or <code>espota</code>, port 3232). Updates from Home Assistant's <strong>Firmware</strong> entity and USB flashing
+    from the Install page don't use it.
+  </p>
+  <ul>
+    <li>On the panel: <strong>Settings &gt; Update password</strong>, at the end of the list. Hold the row to show it for a minute.</li>
+    <li>
+      In Home Assistant: <strong>Developer tools &gt; Actions</strong>, pick
+      <code>ESPHome: &lt;panel&gt;_facet_update_password</code> and run it with <strong>Return response</strong>
+      ticked. The answer is <code>password: ...</code>.
+    </li>
+  </ul>
+  <p>
+    Put it in your ESPHome YAML as <code>ota: password:</code>, or pass it to <code>espota.py --auth</code>. The panel
+    never writes it to its log or to a problem report. A panel updated from an older version gets its password on the
+    first start of this one. Flashing with erase makes a new password.
+  </p>
 
   <h2 id="wifi">Wi-Fi does not join</h2>
   <ul>

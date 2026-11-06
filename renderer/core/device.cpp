@@ -669,6 +669,9 @@ void update_set(const char *state, const char *installed, const char *latest) {
 }
 const Update &update_now() { return update_state(); }
 void on_update_install(void (*cb)()) { install_hook() = cb; }
+static std::string &password_state() { static std::string s; return s; }
+void update_password_set(const char *pw) { password_state() = pw ? pw : ""; }
+const std::string &update_password() { return password_state(); }
 const char *update_install() {
   if (update_state().state != "available") return "no update";
   if (!install_hook()) return "this panel cannot install";

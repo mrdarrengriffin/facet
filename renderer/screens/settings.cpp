@@ -13,7 +13,8 @@
 //                                  the words follow the knob while it moves
 //   API      after the API group's switch: List row "API keys" (value: how many keys) opens Settings > API keys
 //            (screens/agent_keys.cpp)
-//   about    the last group: List row "Report a problem" opens Settings > Report a problem (screens/report.cpp)
+//   about    the last group: List row "Report a problem" opens Settings > Report a problem (screens/report.cpp); on a
+//            panel with an update password (core/device.h), List row "Update password": hold to show it for a minute
 //   sheet    the Bottom sheet component in overlay mode, the screen's last child (its single overlay root)
 // Values come from the props (one per setting = the playground; missing = the live value, fw::dev::setting). Inside the
 // Device (live) view, Theme / Accent restyle that device; the workbench's own theme and accent stay global settings.
@@ -208,6 +209,11 @@ void ctrl_props(const fw::set::Setting &s, const std::string &v, Doc &d) {
 void words_props(const fw::set::Setting &s, const std::string &v, Doc &d) {
   d["title"] = s.label, d["icon"] = "none", d["trailing"] = "value", d["act"] = "none";
   d["value"] = format_number(s, atof(v.c_str()));
+}
+// the Update password row: hidden ("Hold to show") or the password
+void pw_props(Doc &d, bool shown) {
+  d["title"] = "Update password", d["icon"] = "none", d["trailing"] = "value";
+  d["value"] = shown ? fw::dev::update_password().c_str() : "Hold to show";
 }
 const char *ctrl_id(const fw::set::Setting &s) {
   using namespace fw::set;
@@ -510,6 +516,30 @@ void build_settings(lv_obj_t *parent, fw::Props p) {
         auto *o = (lv_obj_t *) lv_event_get_current_target(e);
         if (!lv_obj_has_state(o, fw::st::OFF)) fw::emit(o, "navigate", "report");
       }, LV_EVENT_CLICKED, nullptr);
+    // Update password (a panel with one: the public build's espota password, core/device.h): a List row whose value
+    // reads "Hold to show"; a hold shows the password for a minute (no row without one: the workbench)
+    if (!fw::dev::update_password().empty()) {
+      Doc pr;
+      pw_props(pr, false);
+      if (lv_obj_t *r = build("list_row", c, pr)) {
+        static uint32_t shown_at = 0;  // 0 = hidden (one Settings at a time shows this row)
+        shown_at = 0;
+        lv_obj_add_event_cb(r, [](lv_event_t *e) {
+          auto *o = (lv_obj_t *) lv_event_get_current_target(e);
+          Doc d;
+          pw_props(d, true);
+          fw::update_child(fw::find("list_row"), o, d.as<fw::Props>());
+          shown_at = lv_tick_get() | 1;
+        }, LV_EVENT_LONG_PRESSED, nullptr);
+        fx::every(r, 1000, [r]() {
+          if (!shown_at || lv_tick_elaps(shown_at) < 60000) return;
+          shown_at = 0;
+          Doc d;
+          pw_props(d, false);
+          fw::update_child(fw::find("list_row"), r, d.as<fw::Props>());
+        });
+      }
+    }
   }
 
   const char *sheet = p["sheet"] | "closed";
