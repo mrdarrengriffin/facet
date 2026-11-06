@@ -389,6 +389,47 @@ int main(int argc, char **argv) {
     }
     CHECK(live == base, "fuzz: every buffer freed (%ld B)", live - base);
   }
+  {  // a board's hardware JPEG (the P4: fw_imgdec_hw.h) is tried first; when it says no, the software path decodes the
+     // same picture as if it had never been asked (same pixels, no "hw", nothing it left behind); when it says yes, its
+     // pixels are the result and PNG never goes to it
+    const auto b = load("cover420.jpg");
+    auto soft = dec(b, {box(480, 480), box(168, 168, 12)}, WS_PX, MEM);
+    static int asked = 0;
+    fw::imgdec::hw_jpeg() = [](const uint8_t *, size_t, long, size_t, const std::vector<Box> &, fw::imgdec::Result &r) {
+      asked++;
+      r.err = "engine said no", r.sw = 7, r.hw = true;  // leftovers the software path must not keep
+      return false;
+    };
+    auto fb = dec(b, {box(480, 480), box(168, 168, 12)}, WS_PX, MEM);
+    CHECK(asked == 1 && ok(fb, 2) && !fb.hw && fb.err.empty(), "hardware no: software result (asked %d, err=%s)", asked, fb.err.c_str());
+    bool same = ok(soft, 2) && ok(fb, 2);
+    for (size_t i = 0; same && i < 2; i++)
+      same = soft.px[i].w == fb.px[i].w && soft.px[i].h == fb.px[i].h && soft.px[i].size == fb.px[i].size && !memcmp(soft.px[i].data, fb.px[i].data, soft.px[i].size);
+    CHECK(same, "hardware no: the same pixels as the software path alone");
+    auto png = dec(load("gem.png"), {box(32, 32)}, WS_PX, MEM);
+    CHECK(asked == 1 && ok(png), "a PNG never goes to the JPEG engine");
+    fw::imgdec::hw_jpeg() = [](const uint8_t *, size_t, long, size_t, const std::vector<Box> &boxes, fw::imgdec::Result &r) {
+      r.px.resize(boxes.size());
+      for (size_t i = 0; i < boxes.size(); i++) {
+        r.px[i].box = boxes[i], r.px[i].w = boxes[i].w, r.px[i].h = boxes[i].h, r.px[i].size = (size_t) boxes[i].w * boxes[i].h * 2;
+        r.px[i].data = (uint8_t *) FW_IMG_MALLOC(r.px[i].size);
+        memset(r.px[i].data, 0x5a, r.px[i].size);
+      }
+      r.hw = true;
+      return true;
+    };
+    auto hw = dec(b, {box(480, 480)}, WS_PX, MEM);
+    CHECK(ok(hw) && hw.hw && ((uint8_t *) hw.px[0].data)[0] == 0x5a, "hardware yes: its pixels");
+    fw::imgdec::hw_jpeg() = nullptr;
+    release(soft), release(fb), release(png), release(hw);
+    // the software decode's time on this host (the panels' are on /fw/info "art": decode_ms, decoder)
+    for (const int n : {480, 168}) {
+      const auto t0 = std::chrono::steady_clock::now();
+      auto r = dec(b, {box(n, n)}, WS_PX, MEM);
+      printf("software JPEG 640x640 4:2:0 -> %d: %.1f ms on this host\n", n, ms_since(t0));
+      release(r);
+    }
+  }
   printf("imgdec: %d checks, %d failed\n", checks, fails);
   return fails ? 1 : 0;
 }

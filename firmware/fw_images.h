@@ -38,6 +38,14 @@
 #include "esphome/core/log.h"
 #include "fw_busy.h"
 #include "fw_imgdec.h"
+#if __has_include("soc/soc_caps.h")
+#include "soc/soc_caps.h"
+#endif
+// the ESP32-P4: JPEG through the chip's JPEG engine + PPA first (fw_imgdec_hw.h), the software decode when it says no
+#if defined(SOC_JPEG_DECODE_SUPPORTED) && defined(SOC_PPA_SUPPORTED) && __has_include("driver/jpeg_decode.h") && __has_include("driver/ppa.h")
+#include "fw_imgdec_hw.h"
+#define FW_IMG_HW 1
+#endif
 #include "images.h"
 #include "device.h"
 
@@ -261,6 +269,9 @@ out:
 
 inline void worker(void *) {
   State &s = S();
+#ifdef FW_IMG_HW
+  fw::imgdec::hw_jpeg() = fw::imgdec::hw::jpeg;
+#endif
   for (;;) {
     std::string url;
     {
@@ -308,7 +319,7 @@ inline void worker(void *) {
         if (p.box.w == a.bw && p.box.h == a.bh) a.ow = p.w, a.oh = p.h, a.slot = p.slot;
       a.sw = d->px.sw, a.sh = d->px.sh, a.sc = d->px.sc, a.side = d->px.side;
       a.need = d->px.need, a.need_full = d->px.need_full, a.room = d->px.room;
-      a.got_ms = (int) (d->got_us / 1000), a.dec_ms = (int) (d->dec_us / 1000);
+      a.hw = d->px.hw, a.got_ms = (int) (d->got_us / 1000), a.dec_ms = (int) (d->dec_us / 1000);
       if (d->err.empty() && a.side)  // the logger runs at WARN: this shows in the web log
         ESP_LOGW("facet_img", "%s: kept %dx%d for its %dx%d box (memory fallback: %u KB free in one block, %u KB needed at box size)", url.c_str(),
                  a.ow, a.oh, a.bw, a.bh, (unsigned) (a.room / 1024), (unsigned) (a.need_full / 1024));
@@ -316,9 +327,9 @@ inline void worker(void *) {
     if (!d->err.empty()) {
       if (d->err != "left the screen") ESP_LOGW("facet_img", "%s: %s", url.c_str(), d->err.c_str());
     } else
-      ESP_LOGI("facet_img", "%s: %u B in %d ms, decoded %dx%d (1/%d) into %u box(es) in %d ms, held %u KB", url.c_str(), (unsigned) d->bytes,
-               (int) (d->got_us / 1000), d->px.sw, d->px.sh, 1 << d->px.sc, (unsigned) d->px.px.size(), (int) (d->dec_us / 1000),
-               (unsigned) (d->px.need / 1024));
+      ESP_LOGI("facet_img", "%s: %u B in %d ms, decoded %dx%d (1/%d, %s) into %u box(es) in %d ms, held %u KB", url.c_str(), (unsigned) d->bytes,
+               (int) (d->got_us / 1000), d->px.sw, d->px.sh, 1 << d->px.sc, d->px.hw ? "hardware" : "software", (unsigned) d->px.px.size(),
+               (int) (d->dec_us / 1000), (unsigned) (d->px.need / 1024));
     std::lock_guard<std::mutex> l(s.m);
     if (a.any) s.art = a;
     s.current.clear();

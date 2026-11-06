@@ -11,6 +11,7 @@
 //          covers every box it is for, never below (a smaller step blown up = blocky art). LVGL's copy of TJpgDec
 //          left out the descale stage: fw_tjpgd.c has ChaN's back for 1/2 and 1/4 (without it every other row came out
 //          shifted, the "interlaced" art). Never 1/8: its output stage is missing too, so a 1/8 decode is garbage
+//   JPEG on a chip with a JPEG engine + PPA (the ESP32-P4): fw_imgdec_hw.h first (hw_jpeg), this path when it says no
 //   anything else = "not a picture" (WebP, GIF, SVG, BMP named as such: "<type> isn't supported on the panel")
 // A picture must be whole: a PNG without its end (IEND) or a JPEG that runs out of bytes = "broken picture (... cut
 // short)", never half a picture.
@@ -60,7 +61,12 @@ struct Result {
   size_t need = 0;           // the bytes the decode held at most
   size_t need_full = 0;      // the bytes it would have held with every view at its box size (side = 0)
   size_t room = 0;           // mem_max: what it was allowed
+  bool hw = false;           // decoded by the chip's JPEG engine (fw_imgdec_hw.h), else in software
 };
+// a board's hardware JPEG decode (the ESP32-P4: fw_imgdec_hw.h, installed by fw_images.h): tried first for every JPEG;
+// false = the software path below decodes it (progressive, out of memory, any engine error). None = software only
+using HwJpeg = bool (*)(const uint8_t *b, size_t n, long max_px, size_t mem_max, const std::vector<Box> &boxes, Result &r);
+inline HwJpeg &hw_jpeg() { static HwJpeg f = nullptr; return f; }
 inline void release(Result &r) {
   for (auto &p : r.px) fw::img::free_pixels(p);
   r.px.clear();
@@ -362,7 +368,12 @@ inline bool decode(const uint8_t *b, size_t n, long max_px, size_t mem_max, cons
   if (boxes.empty()) { r.err = "left the screen"; return false; }
   const char *t = sniff(b, n);
   if (!strcmp(t, "png")) return detail::png(b, n, max_px, mem_max, boxes, r);
-  if (!strcmp(t, "jpeg")) return detail::jpeg(b, n, max_px, mem_max, boxes, r);
+  if (!strcmp(t, "jpeg")) {
+    if (hw_jpeg() && hw_jpeg()(b, n, max_px, mem_max, boxes, r)) return true;
+    r = Result{};  // the hardware said no: the software path from a clean result
+    r.room = mem_max;
+    return detail::jpeg(b, n, max_px, mem_max, boxes, r);
+  }
   if (*t) { r.err = std::string(t == std::string("svg") ? "SVG" : t == std::string("webp") ? "WebP" : t == std::string("gif") ? "GIF" : "BMP") + " isn't supported on the panel"; return false; }
   r.err = "not a picture";
   return false;

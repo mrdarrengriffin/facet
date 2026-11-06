@@ -41,6 +41,7 @@ using Notify = void (*)(void *owner);
 // nearest = no blur when scaling up (any scale; pixel always is): sharp pixel art in cover / contain boxes, never dithered
 int acquire(void *owner, const char *src, int w, int h, Scale s, int radius, Notify cb, bool nearest = false, int shade = 0);
 std::string key(const std::string &url);  // the URL without its access token (token=...)
+std::string sized(const std::string &url, int w, int h);  // Apple Music art (mzstatic.com) asked at the box size (capped); others as they are
 bool same(const std::string &a, const std::string &b);  // the same picture (key)
 void release(void *owner);
 void drop(void *owner);  // release, and its pixels go at once when nothing else shows them (not kept for a return)

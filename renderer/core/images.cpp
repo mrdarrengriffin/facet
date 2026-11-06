@@ -1,6 +1,7 @@
 // Image sources + cache (core/images.h). Platform-neutral: the WASM host and (piece 2) the panel feed put()/fail().
 #include "images.h"
 #include <algorithm>
+#include <cctype>
 #include <cmath>
 #include <cstring>
 #include <map>
@@ -174,7 +175,7 @@ int reserve_screen() {
 
 int acquire(void *owner, const char *src_c, int w, int h, Scale s, int radius, Notify cb, bool nearest, int shade) {
   release(owner);
-  const std::string src = src_c ? src_c : "", k = key(src);
+  const std::string src = sized(src_c ? src_c : "", w, h), k = key(src);
   w = std::max(1, w), h = std::max(1, h), shade = std::max(0, shade);
   if (screen_size(w, h, s, radius) && !nearest) {
     reserve_screen();
@@ -300,6 +301,38 @@ void refresh(const char *src_c) {
   pending.push_back({src, k, lv_tick_get(), false});
   fetches++;
   if (!watch) watch = lv_timer_create(timeouts, 250, nullptr);
+}
+// Apple Music's artwork (mzstatic.com: the size is in the URL's last part, "600x600bb.jpg", or a template "{w}x{h}bb.jpg";
+// also URL-encoded inside another URL's query): asked at the box's size, its long side, at most ART_MAX, so the 720 idle
+// art comes from a 720 source and a small box downloads a small one. Anything else as it is
+constexpr int ART_MAX = 1000;
+std::string sized(const std::string &url, int w, int h) {
+  std::string low = url;
+  for (char &c : low) c = (char) tolower((unsigned char) c);
+  if (low.find("mzstatic.com") == std::string::npos) return url;
+  const int side = std::clamp(std::max(w, h), 16, ART_MAX);
+  auto num = [&](size_t a, size_t &b) {  // digits or {w} / {h} from a: b = past them
+    b = a;
+    if (low.compare(a, 3, "{w}") == 0 || low.compare(a, 3, "{h}") == 0) return b = a + 3, true;
+    while (b < low.size() && isdigit((unsigned char) low[b])) b++;
+    return b > a;
+  };
+  for (size_t x = low.rfind('x'); x != std::string::npos && x > 0; x = low.rfind('x', x - 1)) {
+    size_t a = x;  // back over the width
+    if (x >= 3 && low.compare(x - 3, 3, "{w}") == 0) a = x - 3;
+    else while (a > 0 && isdigit((unsigned char) low[a - 1])) a--;
+    const bool after_slash = a > 0 && (low[a - 1] == '/' || (a >= 3 && low.compare(a - 3, 3, "%2f") == 0));
+    size_t e;
+    if (a == x || !after_slash || !num(x + 1, e)) continue;
+    size_t d = e;  // the crop letters ("bb", "cc", "sr"), then the extension
+    while (d < low.size() && isalpha((unsigned char) low[d])) d++;
+    if (d >= low.size() || low[d] != '.') continue;
+    bool ext = false;
+    for (const char *t : {".jpg", ".jpeg", ".png", ".webp"}) ext |= low.compare(d, strlen(t), t) == 0;
+    if (!ext) continue;
+    return url.substr(0, a) + std::to_string(side) + "x" + std::to_string(side) + url.substr(e);
+  }
+  return url;
 }
 // HA's media_player_proxy URL carries the entity's access token (token=...), new every 5 minutes: not the picture
 std::string key(const std::string &url) {

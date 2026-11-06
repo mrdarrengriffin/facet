@@ -53,6 +53,26 @@ function quality(t) {
 export default {
   id: 'media_art', family: 'media', about: 'Media art: the album art full screen while playing, nothing over it; nothing otherwise.',
   tests: [
+    { name: 'Apple Music art is asked at the box size, capped; other URLs as they are (#130)', async run(t) {
+      const A = 'https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/ab/cd/ef/source/100x100bb.jpg';
+      const T = 'https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/ab/cd/ef/source/{w}x{h}bb.jpg';
+      const P = 'http://ha.test:8123/api/media_player_proxy/media_player.x?token=a&cache=' + encodeURIComponent('https://is1-ssl.mzstatic.com/image/thumb/a/b/600x600bb.jpg');
+      const O = 'http://ha.test:8123/art/100x100bb.jpg';  // not Apple's: as it is
+      const asked = [];
+      for (const u of [A, T, P, O]) {
+        t.img.asked.length = 0;
+        t.b.W = t.b.H = undefined;
+        await t.mount('media_art', { art: u, playing: true });
+        t.wait(600);
+        asked.push(t.img.asked.at(-1) || '');
+      }
+      const b = t.part('media_art'), side = Math.min(1000, Math.max(b?.w || 0, b?.h || 0));
+      t.ok(side > 100, `the box (${side} px)`);
+      t.eq(asked[0], A.replace('100x100bb', `${side}x${side}bb`), 'a sized Apple URL: the box size');
+      t.eq(asked[1], T.replace('{w}x{h}bb', `${side}x${side}bb`), 'a template Apple URL: the box size');
+      t.eq(asked[2], P.replace('600x600bb', `${side}x${side}bb`), 'inside the proxy URL (encoded): the box size');
+      t.eq(asked[3], O, 'not Apple: as it is');
+    } },
     { name: 'fills its parent; with art and playing the picture covers it edge to edge', async run(t) {
       const o = await at(t, {}), c = t.part('media_art');
       for (const [w, h] of [[333, 251], [97, 401]]) { stage(t, w, h); t.wait(300); const p = t.part('media_art'); t.ok(p.w <= w && p.h === h && p.w >= w - 2 * 32, `fills ${w}x${h}: ${p.w}x${p.h}`); }
