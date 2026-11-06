@@ -140,6 +140,8 @@
 #include "fw_bundle_gen.h"
 #include "src/misc/lv_timer_private.h"  // lv_timer_t period (screenshot: hold LVGL's refresh)
 namespace fw::report_screen { void set_board(const std::string &b); }  // screens/report.cpp
+extern "C" char facet_overflow_task[20];  // esphome/board/stack_guard.h: the task that overflowed its stack
+extern "C" uint32_t facet_overflow_magic;
 #include "fw_report.h"  // the problem report: kept log, boots, connection drops, redaction
 #include "esp_wifi.h"
 #include "esp_event.h"
@@ -1457,7 +1459,7 @@ class Handler : public AsyncWebHandler {
 #endif
 
 // ---------------------------------------------------------------- GET /fw/info (also in the problem report)
-inline void info_json(std::string &s) {
+__attribute__((noinline)) inline void info_json(std::string &s) {  // noinline: its frame is gone before a report sends
   ArduinoJson::JsonDocument d;
   deserializeJson(d, fw::bundle::INFO);
   d["board"] = FW_DEVICE_BOARD;
@@ -1632,10 +1634,16 @@ inline void begin() {
     capture = &c;
     esphome::esp32::crash_handler_log();  // its lines also go into the ring
     capture = nullptr;
+    if (facet_overflow_magic == 0x534F5646) {  // a stack overflow: which task (stack_guard.h)
+      facet_overflow_task[sizeof facet_overflow_task - 1] = 0;
+      c += std::string("Stack overflow in task ") + facet_overflow_task + "\n";
+      line(std::string("the crash was a stack overflow in task ") + facet_overflow_task);
+    }
     crash = c;
     save_crash(c);
   }
 #endif
+  facet_overflow_magic = 0;
   esp_event_handler_register(WIFI_EVENT, WIFI_EVENT_STA_DISCONNECTED, on_wifi, nullptr);
 }
 // every second (workbench.yaml interval, main loop): this boot's run time + wall time, and the links' drops
@@ -1650,7 +1658,8 @@ inline void tick() {
   const bool wifi = wf && wf->is_connected();
   if (wifi) W[fw::report::WIFI].rssi = wf->wifi_rssi();
   const bool api = esphome::api::global_api_server && esphome::api::global_api_server->is_connected();
-  const bool ha_ready = fw::dev::ha_link::ready();
+  // the panel's own HA link: watched once it has worked (checked) and while Wi-Fi is up (a Wi-Fi drop is its own line)
+  const bool ha_ready = fw::dev::ha_link::ready() && fw::dev::ha_link::checked() && wifi;
   const bool ha = ha_ready && fw::dev::ha_link::status() != fw::dev::ha_link::FAIL;
   const bool up[fw::report::LINKS] = {wifi, api, ha};
   for (int k = 0; k < fw::report::LINKS; k++) {
@@ -1690,10 +1699,14 @@ inline void send(AsyncWebServerRequest *request) {
   httpd_req_t *req = *request;
   httpd_resp_set_hdr(req, "Cache-Control", "no-store");
   bool ok = true;
+  // paced pieces, as the screenshot: Wi-Fi TX buffers come out of internal RAM on the Guition, and one 14 KB chunk
+  // (/fw/info) stalled the send and crashed the panel
   auto out = [&](const std::string &t) {
-    if (!ok) return;
     const std::string r = fw::report::redact(t);
-    ok = httpd_resp_send_chunk(req, r.data(), r.size()) == ESP_OK;
+    for (size_t at = 0; ok && at < r.size(); at += 1024) {
+      ok = httpd_resp_send_chunk(req, r.data() + at, std::min<size_t>(1024, r.size() - at)) == ESP_OK;
+      vTaskDelay(heap_caps_get_free_size(MALLOC_CAP_INTERNAL) < 24 * 1024 ? pdMS_TO_TICKS(20) : 1);
+    }
   };
   char t[256];
   const uint32_t now = up_s();
@@ -1756,6 +1769,16 @@ inline void send(AsyncWebServerRequest *request) {
   free(k);
   if (ok) httpd_resp_send_chunk(req, nullptr, 0);
 }
+// its own handler: under the /fw/ handler's frame (every route's locals) the report's sends overflowed the web
+// server task's stack (crash record: pthread_getspecific in lwip_send, from report::send)
+class Handler : public AsyncWebHandler {
+ public:
+  bool canHandle(AsyncWebServerRequest *request) const override {
+    char buf[AsyncWebServerRequest::URL_BUF_SIZE];
+    return request->method() == HTTP_GET && request->url_to(buf) == "/fw/report";
+  }
+  void handleRequest(AsyncWebServerRequest *request) override { send(request); }
+};
 }  // namespace report
 
 // ---------------------------------------------------------------- HTTP
@@ -1764,7 +1787,8 @@ class Handler : public AsyncWebHandler {
   bool canHandle(AsyncWebServerRequest *req) const override {
     char buf[AsyncWebServerRequest::URL_BUF_SIZE];
     auto u = req->url_to(buf);
-    return u.size() > 4 && !strncmp(u.c_str(), "/fw/", 4) && strcmp(u.c_str(), "/fw/schema");  // /fw/schema: the docs handler
+    return u.size() > 4 && !strncmp(u.c_str(), "/fw/", 4) && strcmp(u.c_str(), "/fw/schema") &&  // /fw/schema: the docs handler
+           !(req->method() == HTTP_GET && !strcmp(u.c_str(), "/fw/report"));                     // GET /fw/report: report::Handler
   }
   void handleBody(AsyncWebServerRequest *, uint8_t *data, size_t len, size_t index, size_t total) override {
     if (index == 0) {
@@ -1792,7 +1816,6 @@ class Handler : public AsyncWebHandler {
       req->send(r);
       return;
     }
-    if (path == "/fw/report" && !post) { report::send(req); return; }  // the problem report (streams; no secrets)
     std::string s, who;  // who = the key's id ("" = the editor, or a read)
     int code = 200;
     const bool ed = agent::editor(req), keyed = path == "/fw/keys" || path.rfind("/fw/keys/", 0) == 0;
@@ -2457,6 +2480,7 @@ inline void setup() {
   if (dbg::D.mode) { dbg::apply(); if (dbg::D.mode & dbg::COMPS) { dbg::rebuild(); dbg::refresh(); } }
   if (auto *ws = esphome::web_server_base::global_web_server_base) {
     ws->add_handler(new Handler());
+    ws->add_handler(new report::Handler());  // GET /fw/report (the /fw/ handler leaves it)
     ws->add_handler(new shot::Handler());  // GET /screenshot
 #if __has_include("fw_docs_gen.h")
     ws->add_handler(new docs::Handler());  // GET /ai, /llms.txt, /agents.md, /fw/schema (= /schema.json), /link

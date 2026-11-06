@@ -95,6 +95,7 @@ static void test_redact() {
       std::string("got ") + secret + " from the panel",
       std::string("noise_psk=") + secret,
       "secret: short1",
+      std::string("Bearer eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiIxMjM0In0.") + secret,  // a JWT (HA's long-lived tokens)
   };
   for (auto &l : leaks) {
     const std::string r = redact(l);
@@ -105,7 +106,8 @@ static void test_redact() {
   }
   // ordinary lines stay as they are
   for (const char *ok : {"keys: 2", "[W][wifi:123]: Disconnected reason 8, signal -71", "build 0.5.0-beta.7+abc1234",
-                         "free 112511 B, largest 47104", "tokens_ok yes", "/fw/report"})
+                         "free 112511 B, largest 47104", "tokens_ok yes", "/fw/report",
+                         "firmware 0.5.0-beta6-dev202611061147+9d9ef80, board guition-4848s040"})
     EXPECT(redact(ok) == ok, "changed: '%s' -> '%s'", ok, redact(ok).c_str());
   const char *col = "\x1b[1;31mE x\x1b[0m\r";
   EXPECT(fw::report::plain(col, strlen(col)) == "E x", "plain");

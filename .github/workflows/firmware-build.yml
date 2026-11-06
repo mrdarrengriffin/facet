@@ -95,6 +95,7 @@ jobs:
           mkdir -p out/$b
           cp "$B/firmware.factory.bin" out/$b/facet-$b-$V.factory.bin
           cp "$B/firmware.ota.bin" out/$b/facet-$b-$V.ota.bin
+          mkdir -p elf && cp "$B/firmware.elf" elf/facet-$b-$V.elf   # decodes a crash record's addresses (/fw/report)
           txt=$(strings out/$b/facet-$b-$V.ota.bin)
           grep -qx -- "$V" <<<"$txt" || { echo "::error::$b: the image does not say $V"; exit 1; }
           grep -q -- "@v$V\$" <<<"$txt" || { echo "::error::$b: the image's project version is not $V"; exit 1; }
@@ -104,3 +105,9 @@ jobs:
         with:
           name: fw-${{ matrix.board }}
           path: out/
+      # the ELF, for addr2line on a problem report's crash record (not a release file: elf-*, not fw-*)
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        with:
+          name: elf-${{ matrix.board }}
+          path: elf/
+          retention-days: 30

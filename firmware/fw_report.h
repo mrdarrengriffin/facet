@@ -119,7 +119,8 @@ inline char lower(char c) { return c >= 'A' && c <= 'Z' ? (char) (c - 'A' + 'a')
 // Removes secrets from a line before it leaves the panel:
 //   the value after a secret's name (token, password, psk, secret, key, api_key, bearer, authorization, ...) up to the
 //   next space, quote, comma, ampersand or brace -> [redacted]
-//   any run of 24+ token characters with a digit and a letter (a key or token printed on its own) -> [redacted]
+//   any run of 24+ token characters with a digit and a letter (a key or token printed on its own) -> [redacted],
+//   except a version (it starts with a digit and has a dot; no key or token does)
 inline std::string redact(const std::string &in) {
   static const char *const NAMES[] = {"token", "password", "passwd", "pass", "psk", "secret", "key", "apikey",
                                       "api_key", "bearer", "authorization", "auth", "noise_psk", "encryption"};
@@ -160,7 +161,9 @@ inline std::string redact(const std::string &in) {
         alpha |= (s[e] >= 'a' && s[e] <= 'z') || (s[e] >= 'A' && s[e] <= 'Z');
         e++;
       }
-      if (e - i >= 24 && dig && alpha) {
+      // a version ("0.5.0-beta6-dev202611061147+9d9ef80": starts with a digit, has a dot) is not a secret
+      const bool version = s[i] >= '0' && s[i] <= '9' && s.find('.', i) < e;
+      if (e - i >= 24 && dig && alpha && !version) {
         out += "[redacted]";
         i = e;
         continue;
