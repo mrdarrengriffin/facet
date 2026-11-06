@@ -10,60 +10,73 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Report a problem: Facet</title>
+<meta name="color-scheme" content="light dark">
+<title>Report a problem · Facet</title>
 <style>
-/* Facet's look, as the link page (firmware/link.html) */
-@font-face { font-family: "Inter"; font-weight: 400; src: url(/ed/fonts/inter-400.woff2) format("woff2"); font-display: swap; }
-@font-face { font-family: "Inter"; font-weight: 500; src: url(/ed/fonts/inter-500.woff2) format("woff2"); font-display: swap; }
+/* The docs site's look (site/src/styles/global.css, tokens site/src/data/tokens.css): Inter + JetBrains Mono from
+   the panel itself (/ed/fonts: Inter 400 / 500 / 600, mono 400; no internet needed), else the system's; the bg /
+   surface / line / accent tokens, light or dark as the system is; a 720 px column, the header with the Facet mark,
+   pill buttons in mono caps, the report in a code block. */
+@font-face { font-family: Inter; font-weight: 400; src: url(/ed/fonts/inter-400.woff2) format("woff2"); font-display: swap; }
+@font-face { font-family: Inter; font-weight: 500; src: url(/ed/fonts/inter-500.woff2) format("woff2"); font-display: swap; }
+@font-face { font-family: Inter; font-weight: 600; src: url(/ed/fonts/inter-600.woff2) format("woff2"); font-display: swap; }
 @font-face { font-family: "JetBrains Mono"; font-weight: 400; src: url(/ed/fonts/jetbrains-mono-400.woff2) format("woff2"); font-display: swap; }
-:root { --bg: #F4F2EE; --card: #FFFFFF; --text: #16181C; --dim: #5C636D; --line: #DDD9D2; --line-hi: #B9B4AB; --accent: #E8542A; --accent-text: #B63F1A; --on: #16181C; --ok: #2A7D48; --bad: #C9302C; --wait: #926600; }
-@media (prefers-color-scheme: dark) { :root { --bg: #000000; --card: #0A0B0E; --text: #F2F1EE; --dim: #8A919B; --line: #22262D; --line-hi: #3A404A; --accent: #E8542A; --accent-text: #E8542A; --on: #0A0B0E; --ok: #5DBE7E; --bad: #E5484D; --wait: #E8B33A; } }
+:root { --bg: #F4F2EE; --surface: #FFFFFF; --press: #E9E6E0; --text: #16181C; --dim: #5C636D; --line: #DDD9D2; --line-hi: #B9B4AB; --accent: #E8542A; --accent-press: #E1552C; --accent-text: #B63F1A; --on-accent: #16181C; --ok: #2A7D48; --bad: #C9302C;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+@media (prefers-color-scheme: dark) { :root { --bg: #000000; --surface: #0A0B0E; --press: #15171C; --text: #F2F1EE; --dim: #8A919B; --line: #22262D; --line-hi: #3A404A; --accent-press: #D84D23; --accent-text: #E8542A; --on-accent: #0A0B0E; --ok: #5DBE7E; --bad: #E5484D; } }
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.5 "Inter", system-ui, -apple-system, "Segoe UI", sans-serif; -webkit-font-smoothing: antialiased; }
-main { max-width: 52rem; margin: 0 auto; padding: 32px 16px 48px; }
-.caps { margin: 0; font: 400 12px/16px "JetBrains Mono", ui-monospace, monospace; letter-spacing: 0.12em; text-transform: uppercase; color: var(--dim); }
-h1 { margin: 8px 0; font-size: 28px; line-height: 34px; font-weight: 500; letter-spacing: -0.01em; }
-p { margin: 0 0 12px; }
-.dim { color: var(--dim); }
-.card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px; margin: 16px 0; }
-.state { display: flex; align-items: center; gap: 12px; font-weight: 500; }
-.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--wait); flex: none; }
-.state.ok .dot { background: var(--ok); } .state.bad .dot { background: var(--bad); }
-.btns { display: grid; gap: 8px; }
-.btns a, .btns button { display: flex; align-items: center; justify-content: center; min-height: 52px; width: 100%; font: inherit; font-weight: 600; text-decoration: none; border-radius: 10px; cursor: pointer; }
-.main { color: var(--on); background: var(--accent); border: 0; }
-.alt { color: var(--accent-text); background: none; border: 1px solid var(--line-hi); }
-button:disabled { opacity: 0.5; cursor: default; }
-ol { margin: 0 0 16px; padding-left: 20px; } li { margin: 6px 0; }
-a { color: var(--accent-text); }
-@media (min-width: 720px) { .steps { display: grid; grid-template-columns: 1fr 15rem; gap: 24px; align-items: start; } .steps ol { margin: 0; } }
-textarea { display: block; width: 100%; height: 50vh; margin: 0; padding: 12px; font: 12px/1.45 "JetBrains Mono", ui-monospace, monospace; color: inherit; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; resize: vertical; white-space: pre; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 var(--sans); -webkit-font-smoothing: antialiased; }
+a { color: var(--accent-text); text-underline-offset: 3px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+header { height: 64px; border-bottom: 1px solid var(--line); }
+.brand { display: flex; align-items: center; gap: 10px; max-width: 720px; height: 100%; margin: 0 auto; padding: 0 24px; font-size: 18px; font-weight: 600; letter-spacing: -0.01em; }
+.brand svg { width: 28px; height: 28px; }
+main { max-width: 720px; margin: 0 auto; padding: 56px 24px 96px; }
+.label { margin: 0; font: 500 12px/1.6 var(--mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--dim); }
+h1 { margin: 12px 0; font-size: clamp(36px, 6vw, 48px); font-weight: 300; line-height: 1.1; letter-spacing: -0.03em; }
+.lede { margin: 0 0 32px; color: var(--dim); font-size: 19px; line-height: 1.5; }
+ol { margin: 0 0 24px; padding-left: 22px; }
+li + li { margin-top: 4px; }
+li::marker { color: var(--dim); }
+.buttons { display: flex; flex-wrap: wrap; gap: 12px; margin: 0 0 16px; }
+.button { display: inline-flex; align-items: center; justify-content: center; height: 48px; padding: 0 18px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--text); font: 500 14px/1 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; text-decoration: none; cursor: pointer; }
+.button:hover { border-color: var(--line-hi); }
+.primary { border-color: transparent; background: var(--accent); color: var(--on-accent); }
+.primary:hover { border-color: transparent; background: var(--accent-press); }
+.button:disabled { opacity: 0.5; cursor: default; }
+.status { display: flex; align-items: center; gap: 10px; margin: 0 0 40px; color: var(--dim); font-size: 15px; }
+.dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--line-hi); }
+.ok .dot { background: var(--ok); } .bad .dot { background: var(--bad); }
+.code { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); overflow: hidden; }
+.code p { margin: 0; padding: 10px 16px; border-bottom: 1px solid var(--line); }
+textarea { display: block; width: 100%; height: 480px; max-height: 60vh; margin: 0; padding: 16px 20px; border: 0; background: none; color: inherit; font: 13px/1.6 var(--mono); white-space: pre; overflow: auto; resize: none; }
+textarea:focus-visible { outline-offset: -2px; border-radius: 0; }
+.note { margin: 12px 0 0; color: var(--dim); font-size: 14px; }
+@media (max-width: 600px) { header .brand, main { padding-left: 16px; padding-right: 16px; } main { padding-top: 40px; } .button { flex: 1 1 100%; } }
 </style>
 </head>
 <body>
+<header><div class="brand"><svg viewBox="0 0 64 64" aria-hidden="true"><rect x="4" y="4" width="56" height="56" rx="14" fill="currentColor" opacity=".08"/><rect x="4" y="4" width="56" height="56" rx="14" fill="none" stroke="currentColor" stroke-width="3"/><circle cx="18.5" cy="18.5" r="3.5" fill="#E8542A"/><rect x="15" y="29" width="34" height="10" rx="3" fill="currentColor"/><rect x="15" y="43" width="20" height="4" rx="2" fill="currentColor" opacity=".45"/></svg>Facet</div></header>
 <main>
-  <p class="caps">Facet</p>
+  <p class="label">This panel</p>
   <h1>Report a problem</h1>
-  <div class="card steps">
-    <ol>
-      <li>Copy this report (or download it).</li>
-      <li>Open a new issue on GitHub: <a id="ghlink" href="https://github.com/mrdarrengriffin/facet/issues/new?template=bug.yml" target="_blank" rel="noopener noreferrer">the bug report form</a>.</li>
-      <li>Paste the report into the Report box (or attach the file), and say what happened.</li>
-    </ol>
-    <div class="btns">
-      <button class="main" id="copy" type="button" disabled>Copy report</button>
-      <a class="alt" id="dl" href="/fw/report.txt?download=1" download="facet-report.txt">Download report (.txt)</a>
-      <a class="alt" id="gh" href="https://github.com/mrdarrengriffin/facet/issues/new?template=bug.yml" target="_blank" rel="noopener noreferrer">Open a GitHub issue</a>
-    </div>
+  <p class="lede">Send this panel's report with your bug report: it helps find what went wrong.</p>
+  <ol>
+    <li>Copy this report (or download it).</li>
+    <li>Open a new issue on GitHub: <a id="ghlink" href="https://github.com/mrdarrengriffin/facet/issues/new?template=bug.yml" target="_blank" rel="noopener noreferrer">the bug report form</a>.</li>
+    <li>Paste the report into the Report box (or attach the file), and say what happened.</li>
+  </ol>
+  <div class="buttons">
+    <button class="button primary" id="copy" type="button" disabled>Copy report</button>
+    <a class="button" id="dl" href="/fw/report.txt?download=1" download="facet-report.txt">Download report (.txt)</a>
+    <a class="button" id="gh" href="https://github.com/mrdarrengriffin/facet/issues/new?template=bug.yml" target="_blank" rel="noopener noreferrer">Open a GitHub issue</a>
   </div>
-  <div class="card" aria-live="polite">
-    <div class="state" id="state"><span class="dot"></span><span id="state-text">Reading the report…</span></div>
-  </div>
-  <div class="card">
-    <p class="caps">The report</p>
-    <p class="dim">This panel's logs from before its last restart, its Wi-Fi and Home Assistant drops and its last crash. Tokens, keys and passwords are taken out.</p>
+  <p class="status" id="state" aria-live="polite"><span class="dot"></span><span id="state-text">Reading the report…</span></p>
+  <div class="code">
+    <p class="label">The report</p>
     <textarea id="text" readonly spellcheck="false" aria-label="The report"></textarea>
   </div>
+  <p class="note">The logs from before the last restart, the Wi-Fi and Home Assistant drops and the last crash. Tokens, keys and passwords are taken out.</p>
 </main>
 <script>
 const $ = (id) => document.getElementById(id);
@@ -82,7 +95,7 @@ function facts(t) {
   const m = /^firmware (.*?), board (.*?), built/m.exec(t || '');
   return m ? { version: m[1] === '?' ? '' : m[1], board: m[2] } : { version: '', board: '' };
 }
-function state(cls, words) { $('state').className = 'state ' + cls; $('state-text').textContent = words; }
+function state(cls, words) { $('state').className = 'status ' + cls; $('state-text').textContent = words; }
 function copy() {
   const ta = $('text');
   ta.focus();
@@ -90,8 +103,8 @@ function copy() {
   ta.setSelectionRange(0, ta.value.length);  // iOS
   let ok = false;
   try { ok = document.execCommand('copy'); } catch { ok = false; }  // works on plain http, where navigator.clipboard is not there
-  if (!ok && navigator.clipboard) navigator.clipboard.writeText(ta.value).then(() => state('ok', 'Copied. Now open a new issue on GitHub and paste it into the Report box.'), () => state('bad', 'Could not copy: the report is selected below, copy it from there.'));
-  else state(ok ? 'ok' : 'bad', ok ? 'Copied. Now open a new issue on GitHub and paste it into the Report box.' : 'Could not copy: the report is selected below, copy it from there.');
+  if (!ok && navigator.clipboard) navigator.clipboard.writeText(ta.value).then(() => state('ok', 'Copied. Now open a new issue on GitHub and paste it into the Report box.'), () => state('bad', 'Could not copy: the report is selected below; copy it from there.'));
+  else state(ok ? 'ok' : 'bad', ok ? 'Copied. Now open a new issue on GitHub and paste it into the Report box.' : 'Could not copy: the report is selected below; copy it from there.');
   ta.blur();
 }
 async function load() {
