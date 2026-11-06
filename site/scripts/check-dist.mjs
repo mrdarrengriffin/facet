@@ -136,7 +136,9 @@ else {
   const pagesOf = screens.filter((s) => s.page);
   const panel = JSON.parse(readFileSync(join(SITE, 'src/data/features.json'), 'utf8')).panel;
   // the overview: its screens (use screen) and its On every panel rows, each badged when not Stable
-  const want = new Set([...pagesOf.filter((s) => s.use === 'screen'), ...panel].filter((s) => s.channel !== 'stable').map((s) => `${s.id}:${s.channel}`));
+  const wip = JSON.parse(readFileSync(join(SITE, 'src/data/features.json'), 'utf8')).wip ?? [];
+  // ... and the Coming soon cards (features.json wip)
+  const want = new Set([...[...pagesOf.filter((s) => s.use === 'screen'), ...panel].filter((s) => s.channel !== 'stable').map((s) => `${s.id}:${s.channel}`), ...wip.map((w) => `${w.id}:soon`)]);
   const index = read('screens/index.html');
   if (index === null) fault('no screens/index.html');
   else if (!same(marks(index), want)) fault(`screens/ badges ${[...marks(index)].join(', ') || 'none'}, want ${[...want].join(', ') || 'none'}`);
@@ -151,7 +153,6 @@ else {
   }
   for (const s of screens) if (!['screen', 'panel'].includes(s.use)) fault(`${s.id}: use is screen or panel`);
   // Coming soon from the wip branch (features.json wip): its page badges exactly those, each Coming soon
-  const wip = JSON.parse(readFileSync(join(SITE, 'src/data/features.json'), 'utf8')).wip ?? [];
   const soonPage = read('screens/coming-soon/index.html');
   const wantWip = new Set(wip.map((w) => `${w.id}:soon`));
   if (soonPage === null) fault('no screens/coming-soon/index.html');

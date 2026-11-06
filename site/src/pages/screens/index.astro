@@ -9,6 +9,9 @@ import { PANEL_FEATURES, PANEL_LABEL, STATUS, screenGroups, screenHref } from '.
 import Count from '../../components/Count.astro';
 import { url } from '../../lib/nav';
 import { COUNTS } from '../../lib/counts';
+import flags from '../../data/features.json';
+// Coming soon from the wip branch (renderer/features.json wip): cards that open their spot on /screens/coming-soon/
+const WIP = flags.wip as { id: string; label: string; about: string; pictures: { file: string }[] }[];
 ---
 
 <Docs
@@ -48,6 +51,23 @@ import { COUNTS } from '../../lib/counts';
     ))
   }
   <section>
+    <h2 class="facet-label" id="coming-soon">Coming soon</h2>
+    <p class="hint">Screens being designed, in no firmware yet. More on each: <a href={url('/screens/coming-soon/')}>Coming soon</a>.</p>
+    <ul class="shots">
+      {WIP.map((w) => (
+        <li>
+          <a class="shot" href={url(`/screens/coming-soon/#${w.id}`)}>
+            <span class="shot__viewport">
+              <img class="shot-img" src={url(`/coming-soon/${w.pictures[0].file}-360.webp`)} srcset={`${url(`/coming-soon/${w.pictures[0].file}-360.webp`)} 360w, ${url(`/coming-soon/${w.pictures[0].file}-720.png`)} 720w`} sizes="240px" width="360" height="360" alt="" loading="lazy" decoding="async" />
+            </span>
+            <span class="shot__name">{w.label} <ChannelBadge channel="soon" of={w.id} /></span>
+            <span class="shot__about">{w.about}</span>
+          </a>
+        </li>
+      ))}
+    </ul>
+  </section>
+  <section>
     <h2 class="facet-label" id="panel">{PANEL_LABEL}</h2>
     <p class="hint">Not screens you add: part of every panel, most of them in Settings.</p>
     <ul class="panel-features">
@@ -58,10 +78,6 @@ import { COUNTS } from '../../lib/counts';
         </li>
       ))}
     </ul>
-  </section>
-  <section>
-    <h2 class="facet-label" id="coming-soon">Coming soon</h2>
-    <p class="hint">Screens being designed, in no firmware yet: F1, tennis, plants, blinds, a door lock and more. <a href={url('/screens/coming-soon/')}>See what's coming</a>.</p>
   </section>
 </Docs>
 
