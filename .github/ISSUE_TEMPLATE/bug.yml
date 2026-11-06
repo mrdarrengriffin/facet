@@ -40,10 +40,12 @@ body:
     attributes:
       label: The panel's problem report
       description: >-
-        On a panel, Settings > Report a problem has a QR code that opens this form with the version filled in, and
-        shows the address of the panel's report (http://<panel address>/fw/report). Open it on the same network, copy
-        all of it and paste it here. It holds the logs from before the last restart, Wi-Fi and Home
-        Assistant drops and the last crash, with tokens, keys and passwords removed.
+        On a panel, open Settings > About > Report a problem and scan its QR code with your phone (on the same Wi-Fi as the
+        panel), or open the address shown under the code on a computer, for example http://192.168.1.50/fw/report.
+        That page has Copy report and Download report: paste the report here, or attach the downloaded file below.
+        The address is the panel's IP address: it is on that screen, or find the panel in your router's list of devices. The report
+        holds the logs from before the last restart, Wi-Fi and Home Assistant drops and the last crash, with tokens,
+        keys and passwords removed.
       render: text
   - type: textarea
     id: shots

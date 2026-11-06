@@ -21,7 +21,11 @@ Not sure where something fits? Open an issue and ask. There are no silly questio
 - what you did, what you expected, and what happened instead;
 - where: which panel (or the docs site, and which browser);
 - the firmware version, if it happened on a panel (Home Assistant shows it on the panel's device page);
-- a photo or screenshot, if it is something you can see.
+- a photo or screenshot, if it is something you can see;
+- the panel's problem report: on the panel, Settings > About > Report a problem shows a QR code and an address such as
+  `http://192.168.1.50/fw/report`. Open it on a phone or computer on the same Wi-Fi, tap **Copy report** or
+  **Download report (.txt)**, then **Open a GitHub issue** and paste or attach it. It keeps the logs from before a
+  restart, Wi-Fi and Home Assistant drops and the last crash, with tokens, keys and passwords removed.
 
 ## Test on a device
 

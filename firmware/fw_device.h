@@ -23,8 +23,12 @@
 //                = Restores a settings backup, or changes a few settings.
 //   GET  /screenshot  the glass as a 16-bit BMP, streamed from the framebuffer (no frame copy; paced chunks)
 //                = What the screen shows now (a BMP image), so an assistant can check its work.
-//   GET  /fw/report  the problem report, plain text: version, boots + reset reasons, the crash record, Wi-Fi / HA drops,
-//                    /fw/info, settings, the log kept across restarts; tokens, keys and passwords removed ("problem report")
+//   GET  /fw/report  the problem report page (HTML, firmware/report.html from flash, gzip): shows /fw/report.txt with
+//                    Copy report, Download report (.txt) and Open a GitHub issue (the Bug report form, version + board in)
+//                = The page Settings > Report a problem opens on a phone: copy or download the report, then open an issue.
+//   GET  /fw/report.txt  the problem report, plain text: version, boots + reset reasons, the crash record, Wi-Fi / HA
+//                    drops, /fw/info, settings, the log kept across restarts; tokens, keys and passwords removed
+//                    ("problem report"); ?download=1 = as a file (facet-report-<board>.txt)
 //                = Everything needed to report a problem, also from before the last restart (paste it into a bug report).
 //   GET  /fw/spec   the spec hello (core/spec.h: protocol, catalogue hash, components, screens + revs, budgets, heap)
 //                = Components, screens, budgets and free memory.
@@ -1556,8 +1560,8 @@ inline void info_json(std::string &s) {
   if (!in_loop([&] { info_build(s); }, 3000)) s = R"({"ok":false,"error":"the main loop did not answer in time"})";
 }
 
-// ---------------------------------------------------------------- problem report (GET /fw/report, fw_report.h)
-// (Settings > Report a problem, screens/report.cpp, shows its address and a QR code to a filled-in bug report)
+// ---------------------------------------------------------------- problem report (GET /fw/report.txt, fw_report.h)
+// (Settings > Report a problem, screens/report.cpp, shows a QR code + the address of its page, GET /fw/report)
 // Kept across restarts in RTC memory that boot doesn't clear (RTC_NOINIT: a software, watchdog or crash restart keeps it,
 // and so does the Guition's deep-sleep hop; power loss clears it): the last log lines, boots and connection drops. The
 // S3's RTC slow memory is 8 KB, so the Guition keeps 5 KB of log (~40 lines); the P4 keeps 16 KB.
@@ -1753,11 +1757,14 @@ inline void tick() {
     }
   }
 }
-// GET /fw/report: plain text, redacted, streamed a section at a time (the log ring is copied out first)
+// GET /fw/report.txt: plain text, redacted, streamed a section at a time (the log ring is copied out first); the page
+// at GET /fw/report (firmware/report.html) is the docs handler's, from flash
 inline void send(AsyncWebServerRequest *request) {
+  const bool file = request->hasArg("download");
   request->beginResponse(200, "text/plain; charset=utf-8");
   httpd_req_t *req = *request;
   httpd_resp_set_hdr(req, "Cache-Control", "no-store");
+  if (file) httpd_resp_set_hdr(req, "Content-Disposition", "attachment; filename=\"facet-report-" FW_DEVICE_BOARD ".txt\"");
   bool ok = true;
   // paced pieces, as the screenshot: Wi-Fi TX buffers come out of internal RAM on the Guition, and one 14 KB chunk
   // (/fw/info) stalled the send and crashed the panel
@@ -1835,7 +1842,7 @@ class Handler : public AsyncWebHandler {
  public:
   bool canHandle(AsyncWebServerRequest *request) const override {
     char buf[AsyncWebServerRequest::URL_BUF_SIZE];
-    return request->method() == HTTP_GET && request->url_to(buf) == "/fw/report";
+    return request->method() == HTTP_GET && request->url_to(buf) == "/fw/report.txt";
   }
   void handleRequest(AsyncWebServerRequest *request) override { send(request); httpd_stack_note(); }
 };
@@ -1848,7 +1855,8 @@ class Handler : public AsyncWebHandler {
     char buf[AsyncWebServerRequest::URL_BUF_SIZE];
     auto u = req->url_to(buf);
     return u.size() > 4 && !strncmp(u.c_str(), "/fw/", 4) && strcmp(u.c_str(), "/fw/schema") &&  // /fw/schema: the docs handler
-           !(req->method() == HTTP_GET && !strcmp(u.c_str(), "/fw/report"));                     // GET /fw/report: report::Handler
+           !(req->method() == HTTP_GET && (!strcmp(u.c_str(), "/fw/report") ||                     // GET /fw/report: docs::Handler
+                                           !strcmp(u.c_str(), "/fw/report.txt")));                  // GET /fw/report.txt: report::Handler
   }
   void handleBody(AsyncWebServerRequest *, uint8_t *data, size_t len, size_t index, size_t total) override {
     if (index == 0) {
@@ -2551,10 +2559,10 @@ inline void setup() {
   if (dbg::D.mode) { dbg::apply(); if (dbg::D.mode & dbg::COMPS) { dbg::rebuild(); dbg::refresh(); } }
   if (auto *ws = esphome::web_server_base::global_web_server_base) {
     ws->add_handler(new Handler());
-    ws->add_handler(new report::Handler());  // GET /fw/report (the /fw/ handler leaves it)
+    ws->add_handler(new report::Handler());  // GET /fw/report.txt (the /fw/ handler leaves it)
     ws->add_handler(new shot::Handler());  // GET /screenshot
 #if __has_include("fw_docs_gen.h")
-    ws->add_handler(new docs::Handler());  // GET /ai, /llms.txt, /agents.md, /fw/schema (= /schema.json), /link
+    ws->add_handler(new docs::Handler());  // GET /ai, /llms.txt, /agents.md, /fw/schema (= /schema.json), /link, /fw/report
 #endif
 #if __has_include("fw_web_gen.h")
     if (auto *srv = ws->get_server()) web::Front::add(srv, new web::Handler());  // GET / = the web UI

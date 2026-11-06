@@ -1,11 +1,12 @@
 // Report a problem (Settings > Report a problem): how to send a bug report from the panel. A screen spec of real
 // components only, built by the spec renderer (core/spec.h: Page > Header + list Body, C1-C3), laid out as Settings:
 //   header   the Header (back + "Report a problem" + the screen chrome)
-//   body     "on your phone"  one Text body dim line (what the code does), then the QR block: a new GitHub Bug report
-//                             (bug.yml) with this panel's version + board filled in
-//            "this panel"     read-only List rows (act none): Version, Board, Report (the address of its problem
-//                             report page, http://<its address>/fw/report: logs kept across restarts, connection drops,
-//                             the last crash; no secrets) or "Needs Wi-Fi"
+//   body     "problem report"  one Text body dim line (what to do), then the QR block: the panel's own report page
+//                              (http://<its address>/fw/report, firmware/report.html: Copy report, Download report,
+//                              Open a GitHub issue), then that address as a Text line, for a computer on the same Wi-Fi.
+//                              Not on Wi-Fi yet: the QR opens a new GitHub Bug report (bug.yml) with this panel's
+//                              version + board filled in instead.
+//            "this panel"      read-only List rows (act none): Version, Board
 //   The spec follows the address while the page shows (a 1 s timer compares the link page's address).
 // The firmware tells it the board (report::set_board); the version is the installed firmware's (core/device.h update).
 // Props (the workbench): version, board, page (the panel's address as its link page, http://<address>/link) stand in
@@ -56,7 +57,7 @@ Facts facts(fw::Props p) {
   if (f.page.empty()) f.page = hl::page();
   return f;
 }
-// http://<address>/link -> http://<address>/fw/report ("" = not on Wi-Fi yet)
+// http://<address>/link -> http://<address>/fw/report, the report page ("" = not on Wi-Fi yet)
 std::string report_of(const std::string &page) {
   const size_t a = page.find("://");
   if (page.empty() || a == std::string::npos) return "";
@@ -68,24 +69,28 @@ std::string spec_json(const Facts &f) {
   sp["header"]["label"] = "Report a problem";
   ArduinoJson::JsonArray n = sp["nodes"].to<ArduinoJson::JsonArray>();
   const std::string rep = report_of(f.page);
-  // the Bug report form (.github/ISSUE_TEMPLATE/bug.yml): its version field and report field filled in
-  std::string url = "https://github.com/mrdarrengriffin/facet/issues/new?template=bug.yml";
-  std::string ver = f.version.empty() ? std::string("unknown") : f.version;
-  if (!f.board.empty()) ver += " on " + f.board;
-  url += "&version=" + enc(ver);  // the report's address stays on the screen (a longer code is too fine to scan at 480)
-  group(n, "on your phone");
+  group(n, "problem report");
   ArduinoJson::JsonObject x = node(n, "text")["p"].to<ArduinoJson::JsonObject>();
-  x["text"] = "Scan to open a bug report with this panel's details filled in, then paste in its report.";
-  x["style"] = "body", x["tone"] = "dim", x["lines"] = 3;
+  x["style"] = "body", x["tone"] = "dim", x["lines"] = 2;
   ArduinoJson::JsonObject q = node(n, "qr_block")["p"].to<ArduinoJson::JsonObject>();
-  q["text"] = url.c_str(), q["caption"] = "open on your phone";
+  if (!rep.empty()) {  // the panel's own report page: a short address, a coarse code that scans at 480
+    x["text"] = "Scan with your phone, or open this address on a computer on the same Wi-Fi.";
+    q["text"] = rep.c_str(), q["caption"] = "open on your phone";
+    ArduinoJson::JsonObject a = node(n, "text")["p"].to<ArduinoJson::JsonObject>();  // the address, as typed (not caps)
+    a["text"] = rep.c_str(), a["style"] = "body", a["tone"] = "default", a["lines"] = 1;
+  } else {  // no Wi-Fi yet: no report page to open; the Bug report form (bug.yml) with the version field filled in
+    std::string url = "https://github.com/mrdarrengriffin/facet/issues/new?template=bug.yml";
+    std::string ver = f.version.empty() ? std::string("unknown") : f.version;
+    if (!f.board.empty()) ver += " on " + f.board;
+    url += "&version=" + enc(ver);
+    x["text"] = "This panel isn't on Wi-Fi yet, so its report can't be opened. Scan to open a bug report instead.";
+    q["text"] = url, q["caption"] = "open on your phone";  // a copy: url ends with this block
+  }
   group(n, "this panel");
   ArduinoJson::JsonObject v = row(n, "Version");
   v["trailing"] = "value", v["value"] = f.version.empty() ? "Unknown" : f.version.c_str();
   ArduinoJson::JsonObject b = row(n, "Board");
   b["trailing"] = "value", b["value"] = f.board.empty() ? "Unknown" : f.board.c_str();
-  ArduinoJson::JsonObject r = row(n, "Report");
-  r["trailing"] = "value", r["value"] = rep.empty() ? "Needs Wi-Fi" : rep.c_str();
   std::string out;
   serializeJson(sp, out);
   return out;
@@ -93,7 +98,7 @@ std::string spec_json(const Facts &f) {
 
 const char *META = R"({
   "role": "detail",
-  "about": "Settings > Report a problem: a QR code that opens a new GitHub bug report with this panel's version and board filled in, and the address of the panel's problem report (logs kept across restarts, connection drops, the last crash; no secrets).",
+  "about": "Settings > Report a problem: a QR code and address that open the panel's problem report page on a phone or computer on the same Wi-Fi, to copy or download the report (logs kept across restarts, connection drops, the last crash; no secrets) and open a GitHub issue with the version and board filled in.",
   "frame": [480, 480],
   "icons": ["back@glyph"],
   "props": [
@@ -102,7 +107,7 @@ const char *META = R"({
     {"name": "page", "about": "The panel's address as its link page (empty = the panel's own: http://<its address>/link).", "type": "text", "default": ""}
   ],
   "variants": [
-    {"label": "on Wi-Fi", "props": {"version": "0.5.0-beta.7", "board": "guition-4848s040", "page": "http://192.168.1.42/link"}},
+    {"label": "on Wi-Fi", "props": {"version": "0.5.0-beta.7", "board": "guition-4848s040", "page": "http://192.168.1.50/link"}},
     {"label": "no Wi-Fi yet", "props": {"version": "0.5.0-beta.7", "board": "waveshare-p4-86"}}
   ]
 })";

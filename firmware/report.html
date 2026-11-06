@@ -1,0 +1,114 @@
+<!doctype html>
+<!-- The panel's problem report page (GET /fw/report, served from flash: firmware/bundle.mjs; #125). The QR code on
+     Settings > Report a problem opens it on a phone on the same Wi-Fi. It reads the report as plain text
+     (GET /fw/report.txt, streamed by the panel: fw_device.h "problem report"), shows it, and offers Copy report (works
+     on plain http, where the Clipboard API is not there), Download report (.txt) and Open a GitHub issue: the Bug
+     report form (.github/ISSUE_TEMPLATE/bug.yml) with the title, version and board filled in and a line asking to paste
+     or attach the report. The report itself never goes in that address (GitHub limits its length). -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Facet problem report</title>
+<style>
+/* Facet's look, as the link page (firmware/link.html) */
+@font-face { font-family: "Inter"; font-weight: 400; src: url(/ed/fonts/inter-400.woff2) format("woff2"); font-display: swap; }
+@font-face { font-family: "Inter"; font-weight: 500; src: url(/ed/fonts/inter-500.woff2) format("woff2"); font-display: swap; }
+@font-face { font-family: "JetBrains Mono"; font-weight: 400; src: url(/ed/fonts/jetbrains-mono-400.woff2) format("woff2"); font-display: swap; }
+:root { --bg: #F4F2EE; --card: #FFFFFF; --text: #16181C; --dim: #5C636D; --line: #DDD9D2; --line-hi: #B9B4AB; --accent: #E8542A; --accent-text: #B63F1A; --on: #16181C; --ok: #2A7D48; --bad: #C9302C; --wait: #926600; }
+@media (prefers-color-scheme: dark) { :root { --bg: #000000; --card: #0A0B0E; --text: #F2F1EE; --dim: #8A919B; --line: #22262D; --line-hi: #3A404A; --accent: #E8542A; --accent-text: #E8542A; --on: #0A0B0E; --ok: #5DBE7E; --bad: #E5484D; --wait: #E8B33A; } }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.5 "Inter", system-ui, -apple-system, "Segoe UI", sans-serif; -webkit-font-smoothing: antialiased; }
+main { max-width: 40rem; margin: 0 auto; padding: 32px 16px 48px; }
+.caps { margin: 0; font: 400 12px/16px "JetBrains Mono", ui-monospace, monospace; letter-spacing: 0.12em; text-transform: uppercase; color: var(--dim); }
+h1 { margin: 8px 0; font-size: 28px; line-height: 34px; font-weight: 500; letter-spacing: -0.01em; }
+p { margin: 0 0 12px; }
+.dim { color: var(--dim); }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px; margin: 16px 0; }
+.state { display: flex; align-items: center; gap: 12px; font-weight: 500; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--wait); flex: none; }
+.state.ok .dot { background: var(--ok); } .state.bad .dot { background: var(--bad); }
+.btns { display: grid; gap: 8px; }
+.btns a, .btns button { display: flex; align-items: center; justify-content: center; min-height: 52px; width: 100%; font: inherit; font-weight: 600; text-decoration: none; border-radius: 10px; cursor: pointer; }
+.main { color: var(--on); background: var(--accent); border: 0; }
+.alt { color: var(--accent-text); background: none; border: 1px solid var(--line-hi); }
+button:disabled { opacity: 0.5; cursor: default; }
+ol { margin: 0; padding-left: 20px; } li { margin: 4px 0; }
+textarea { display: block; width: 100%; height: 50vh; margin: 0; padding: 12px; font: 12px/1.45 "JetBrains Mono", ui-monospace, monospace; color: inherit; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; resize: vertical; white-space: pre; }
+</style>
+</head>
+<body>
+<main>
+  <p class="caps">Facet</p>
+  <h1>Problem report</h1>
+  <p class="dim">This panel's logs from before its last restart, its Wi-Fi and Home Assistant drops and its last crash. Tokens, keys and passwords are taken out.</p>
+  <div class="card" aria-live="polite">
+    <div class="state" id="state"><span class="dot"></span><span id="state-text">Reading the report…</span></div>
+  </div>
+  <div class="card">
+    <ol class="dim">
+      <li>Copy the report, or download it.</li>
+      <li>Open a GitHub issue, say what happened, and paste the report in (or attach the file).</li>
+    </ol>
+  </div>
+  <div class="btns">
+    <button class="main" id="copy" type="button" disabled>Copy report</button>
+    <a class="alt" id="dl" href="/fw/report.txt?download=1" download="facet-report.txt">Download report (.txt)</a>
+    <a class="alt" id="gh" href="https://github.com/mrdarrengriffin/facet/issues/new?template=bug.yml" target="_blank" rel="noopener noreferrer">Open a GitHub issue</a>
+  </div>
+  <div class="card">
+    <p class="caps">The report</p>
+    <textarea id="text" readonly spellcheck="false" aria-label="The report"></textarea>
+  </div>
+</main>
+<script>
+const $ = (id) => document.getElementById(id);
+// the Bug report form with the title, version and board filled in: short on purpose (no report in it)
+function issueUrl(version, board) {
+  const q = new URLSearchParams({ template: 'bug.yml' });
+  if (version || board) {
+    q.set('title', 'Problem on ' + (board || 'a panel') + (version ? ' (' + version + ')' : ''));
+    q.set('version', (version || 'unknown') + (board ? ' on ' + board : ''));
+  }
+  q.set('report', 'Paste the panel\'s report here (Copy report on its report page), or attach the .txt you downloaded under Photos, screenshots or logs.');
+  return 'https://github.com/mrdarrengriffin/facet/issues/new?' + q.toString();
+}
+// "Facet problem report\nfirmware <version>, board <board>, built ..." (fw_device.h report::send)
+function facts(t) {
+  const m = /^firmware (.*?), board (.*?), built/m.exec(t || '');
+  return m ? { version: m[1] === '?' ? '' : m[1], board: m[2] } : { version: '', board: '' };
+}
+function state(cls, words) { $('state').className = 'state ' + cls; $('state-text').textContent = words; }
+function copy() {
+  const ta = $('text');
+  ta.focus();
+  ta.select();
+  ta.setSelectionRange(0, ta.value.length);  // iOS
+  let ok = false;
+  try { ok = document.execCommand('copy'); } catch { ok = false; }  // works on plain http, where navigator.clipboard is not there
+  if (!ok && navigator.clipboard) navigator.clipboard.writeText(ta.value).then(() => state('ok', 'Copied. Now open a GitHub issue and paste it in.'), () => state('bad', 'Could not copy: the report is selected below, copy it from there.'));
+  else state(ok ? 'ok' : 'bad', ok ? 'Copied. Now open a GitHub issue and paste it in.' : 'Could not copy: the report is selected below, copy it from there.');
+  ta.blur();
+}
+async function load() {
+  try {
+    const r = await fetch('/fw/report.txt', { cache: 'no-store' });
+    if (!r.ok) throw new Error();
+    const t = await r.text();
+    $('text').value = t;
+    const f = facts(t);
+    $('gh').href = issueUrl(f.version, f.board);
+    const name = 'facet-report' + (f.board ? '-' + f.board : '') + '.txt';
+    $('dl').download = name;
+    $('dl').href = URL.createObjectURL(new Blob([t], { type: 'text/plain' }));  // the same report as shown
+    $('copy').disabled = false;
+    state('ok', 'Report ready' + (f.version ? ': ' + f.version + (f.board ? ' on ' + f.board : '') : '') + '.');
+  } catch {
+    state('bad', 'The panel did not answer. Is this device on the same Wi-Fi as the panel? Reload to try again.');
+  }
+}
+$('copy').onclick = copy;
+load();
+</script>
+</body>
+</html>
