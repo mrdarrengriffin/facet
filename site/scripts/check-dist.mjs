@@ -9,7 +9,8 @@
 //     link in llms.txt to a file that is not in the build
 //   screen channels (renderer/features.json since, RELEASING.md "Screen channels"): a screen with no channel, the
 //     Screens overview or a screen page whose Beta / Coming soon badges (data-channel-of) are not exactly the
-//     screens that are not Stable, or a screen with a page that the root README does not show
+//     screens and panel features that are not Stable, a screen with a page that the root README's screens table does
+//     not show, or a panel feature (features.json panel_features) in it
 // Usage: node scripts/check-dist.mjs [dist folder] (default FACET_DOCS_OUT or ./dist); base = FACET_DOCS_BASE or /facet-docs/
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
@@ -132,7 +133,9 @@ else {
   const fault = (m) => { bad++; console.log(`channel  ${m}`); };
   for (const s of screens) if (!['stable', 'beta', 'soon'].includes(s.channel)) fault(`${s.id}: no channel`);
   const pagesOf = screens.filter((s) => s.page);
-  const want = new Set(pagesOf.filter((s) => s.channel !== 'stable').map((s) => `${s.id}:${s.channel}`));
+  const panel = JSON.parse(readFileSync(join(SITE, 'src/data/features.json'), 'utf8')).panel;
+  // the overview: its screens (use screen) and its On every panel rows, each badged when not Stable
+  const want = new Set([...pagesOf.filter((s) => s.use === 'screen'), ...panel].filter((s) => s.channel !== 'stable').map((s) => `${s.id}:${s.channel}`));
   const index = read('screens/index.html');
   if (index === null) fault('no screens/index.html');
   else if (!same(marks(index), want)) fault(`screens/ badges ${[...marks(index)].join(', ') || 'none'}, want ${[...want].join(', ') || 'none'}`);
@@ -142,8 +145,10 @@ else {
     const h1 = html.match(/<h1[\s\S]*?<\/h1>/)?.[0] ?? '';
     const w = new Set(s.channel === 'stable' ? [] : [`${s.id}:${s.channel}`]);
     if (!same(marks(h1), w) || !same(marks(html), w)) fault(`screens/${s.id}/: badges ${[...marks(html)].join(', ') || 'none'}, want ${[...w].join(', ') || 'none'}`);
-    if (!readme.includes(`assets/screen-${s.id}-dark.png`)) fault(`${s.id}: not in the root README's screens table`);
+    if (s.use === 'screen' && !readme.includes(`assets/screen-${s.id}-dark.png`)) fault(`${s.id}: not in the root README's screens table`);
+    if (s.use === 'panel' && readme.includes(`assets/screen-${s.id}-dark.png`)) fault(`${s.id}: a panel feature in the root README's screens table`);
   }
+  for (const s of screens) if (!['screen', 'panel'].includes(s.use)) fault(`${s.id}: use is screen or panel`);
 }
 console.log(`check-dist: ${files.length} pages, ${bad} fault${bad === 1 ? '' : 's'}`);
 process.exit(bad ? 1 : 0);

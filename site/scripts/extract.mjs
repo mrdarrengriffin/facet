@@ -19,7 +19,7 @@ import { execFileSync } from 'node:child_process';
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { byId, channels, hiddenIds, hiddenRoadmap, load as loadFeatures } from '../../renderer/tools/features.mjs';
+import { byId, channels, hiddenIds, panelFeatures, hiddenRoadmap, load as loadFeatures } from '../../renderer/tools/features.mjs';
 
 const SITE = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const ROOT = resolve(SITE, '..');
@@ -413,6 +413,7 @@ function screenSet() {
     if (!CH[s.id]) throw new Error(`extract: screen ${s.id} has no channel (renderer/features.json: its feature's since)`);
     s.channel = CH[s.id].channel;
     s.since = CH[s.id].since;
+    s.use = CH[s.id].kind;  // screen (people put it on the panel or a Home deck) | panel (a panel feature: On every panel)
   }
   for (const s of out) {
     s.opens = [...(opens[s.id] ?? [])].filter((x) => out.some((o) => o.id === x));
@@ -463,7 +464,9 @@ writeFileSync(join(SITE, 'src/roadmap.json'), JSON.stringify(roadFilter(road), n
 const hiddenFeatures = FEAT.features.filter((f) => !f.docs).map((f) => f.id);
 const hiddenPaths = [...HIDDEN].flatMap((id) => [`screens/${id.replace(/_/g, '-')}/`, `components/${id.replace(/_/g, '-')}/`, `foundations/${id.replace(/_/g, '-')}/`])
   .filter((p) => !(p.startsWith('screens/') ? screens : entries).some((e) => p.endsWith(`/${e.id.replace(/_/g, '-')}/`)));
-w('features.json', { hiddenFeatures, hiddenPaths, status: FEAT.man.status, channels: FEAT.man.channels, stable: FEAT.man.release.stable });
+w('features.json', { hiddenFeatures, hiddenPaths, status: FEAT.man.status, channels: FEAT.man.channels, stable: FEAT.man.release.stable,
+  // On every panel (Screens overview): the panel features with their channel
+  panel: panelFeatures(FEAT.man).map(({ id, label, about, screen, channel, since }) => ({ id, label, about, screen: screen ?? null, channel, since })) });
 writeFileSync(join(out, 'tokens.css'), tokensCss());
 // sound: the packs for the header picker; the whole sound.json is copied to public/ (fetched on the first sound)
 w('sound-packs.json', { default: soundTok.default, variants: soundTok.variants.map((v) => ({ id: v.id, name: v.name, about: v.about })) });

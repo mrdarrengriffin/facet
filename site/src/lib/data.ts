@@ -121,6 +121,8 @@ export type Screen = {
   sampleProps: Record<string, unknown>; comp: string; frame: [number, number]; parts: string[]; sources: ScreenSources | null;
   status: Status; source: { path: string; url: string }[]; opens: string[]; openedFrom: string[]; role: string; page: boolean;
   channel: Channel; since: string | null;
+  /** screen: people put it on the panel or a Home deck; panel: a panel feature (On every panel), not a screen */
+  use: 'screen' | 'panel';
 };
 /** every screen of the build; SCREENS = the ones with a page: a detail screen (spec / meta role "detail": a drill-down
  *  such as Energy's last days or Settings > Screens) has none, it opens by tapping inside its parent's demo, unless its
@@ -132,9 +134,18 @@ export const screenById = (id: string) => SCREENS.find((s) => s.id === id);
 /** screens in index / sidebar groups (lib/screen-groups.ts order; unknown ids last, under Other) */
 export function screenGroups(): { label: string; items: Screen[] }[] {
   const known = new Set(SCREEN_GROUPS.flatMap(([, ids]) => ids));
-  const out = SCREEN_GROUPS.map(([label, ids]) => ({ label, items: ids.map(screenById).filter((s): s is Screen => !!s) }));
-  const other = SCREENS.filter((s) => !known.has(s.id));
+  const out = SCREEN_GROUPS.map(([label, ids]) => ({ label, items: ids.map(screenById).filter((s): s is Screen => !!s && s.use === 'screen') }));
+  const other = SCREENS.filter((s) => !known.has(s.id) && s.use === 'screen');
   if (other.length) out.push({ label: 'Other', items: other });
   return out.filter((g) => g.items.length);
 }
-export const screenGroupOf = (id: string) => screenGroups().find((g) => g.items.some((s) => s.id === id))?.label ?? 'Screens';
+export const PANEL_LABEL = 'On every panel';
+export const screenGroupOf = (id: string) =>
+  screenGroups().find((g) => g.items.some((s) => s.id === id))?.label ?? (ALL_SCREENS.find((s) => s.id === id)?.use === 'panel' ? PANEL_LABEL : 'Screens');
+/** On every panel (renderer/features.json panel_features): what every panel has, not a screen people add; each links
+ *  to its own page when it has one, else to Settings (where it lives) */
+export type PanelFeature = { id: string; label: string; about: string; screen: string | null; channel: Channel; since: string | null; href: string; page: boolean };
+export const PANEL_FEATURES: PanelFeature[] = (flags.panel as Omit<PanelFeature, 'href' | 'page'>[]).map((p) => {
+  const own = p.screen ? SCREENS.find((s) => s.id === p.screen) : undefined;
+  return { ...p, href: screenHref(own ?? { id: 'settings' }), page: !!own };
+});

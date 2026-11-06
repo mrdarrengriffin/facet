@@ -5,7 +5,7 @@
 import Docs from '../../layouts/Docs.astro';
 import Shot from '../../components/Shot.astro';
 import ChannelBadge from '../../components/ChannelBadge.astro';
-import { STATUS, screenGroups, screenHref } from '../../lib/data';
+import { PANEL_FEATURES, PANEL_LABEL, STATUS, screenGroups, screenHref } from '../../lib/data';
 import Count from '../../components/Count.astro';
 import { url } from '../../lib/nav';
 import { COUNTS } from '../../lib/counts';
@@ -24,7 +24,8 @@ import { COUNTS } from '../../lib/counts';
     and settings, and the panel finds the data for them. Facet comes with <Count k="screens" /> screens, plus Home and
     Settings; choose which are on your panel under <strong>Settings &gt; Screens</strong>. A screen marked
     <strong>Beta</strong> is on the beta firmware, not yet in a stable release; <strong>Coming soon</strong> is in
-    the docs, not on a released firmware yet.
+    the docs, not on a released firmware yet. What every panel has besides its screens (set up, Settings, the idle
+    clock and the rest) is under <a href="#panel">{PANEL_LABEL}</a>.
   </p>
   {
     screenGroups().map((g) => (
@@ -46,4 +47,47 @@ import { COUNTS } from '../../lib/counts';
       </section>
     ))
   }
+  <section>
+    <h2 class="facet-label" id="panel">{PANEL_LABEL}</h2>
+    <p class="hint">Not screens you add: part of every panel, most of them in Settings.</p>
+    <ul class="panel-features">
+      {PANEL_FEATURES.map((p) => (
+        <li>
+          <span class="panel-features__name"><a href={p.href}>{p.label}</a>{p.channel !== 'stable' && ' '}<ChannelBadge channel={p.channel} of={p.id} /></span>
+          <span class="panel-features__about">{p.about}</span>
+        </li>
+      ))}
+    </ul>
+  </section>
 </Docs>
+
+<style>
+  .panel-features {
+    display: grid;
+    gap: 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-top: 1px solid var(--facet-color-line);
+  }
+  .panel-features li {
+    display: grid;
+    grid-template-columns: minmax(180px, 1fr) 2fr;
+    align-items: baseline;
+    column-gap: 24px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--facet-color-line);
+  }
+  .panel-features__name :global(.channel-badge) {
+    margin-left: 8px;
+    vertical-align: 1px;
+  }
+  .panel-features__about {
+    color: var(--facet-color-text-dim);
+  }
+  @media (max-width: 640px) {
+    .panel-features li {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

@@ -1,7 +1,7 @@
 // Site navigation: the header's top line (what a buyer needs), the docs sidebar groups (Use Facet, Screens, Help,
 // Inside Facet), the footer's Inside Facet links and the reading order for previous / next. Screens come from the
 // generated data; a page still to come shows as "Soon".
-import { BASE, screenGroups, screenHref } from './data';
+import { BASE, PANEL_FEATURES, PANEL_LABEL, screenGroups, screenHref } from './data';
 
 export interface NavLink {
   label: string;
@@ -69,6 +69,11 @@ export function getSidebar(): NavGroup[] {
     {
       label: 'Screens',
       links: [{ label: 'Overview', href: url('/screens/') }, ...screenGroups().flatMap((g) => g.items).map((s) => ({ label: s.name, href: screenHref(s), channel: s.channel })).sort(byLabel)],
+    },
+    {
+      // the panel features with a page of their own (the rest are inside Settings)
+      label: PANEL_LABEL,
+      links: PANEL_FEATURES.filter((p) => p.page).map((p) => ({ label: p.label, href: p.href, channel: p.channel })).sort(byLabel),
     },
     {
       label: 'Help',
