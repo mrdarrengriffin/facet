@@ -171,6 +171,10 @@ std::string why_now;  // the last failure, "" = fine
 bool want_data = false;  // source ha: today + days too (else only the prefs, for Settings' "found")
 double slot_k[48], slot_c[48], yday_k, day_k[13], day_c[13];
 bool slot_any[48], yday_any, day_any[13];
+// a read in flight sums into these and replaces the shown ones only once it lands: a round while it streams (the live
+// demand changes every few seconds) shows the last good day, never a half-read or empty one (£0.00)
+struct TodayBuf { double k[48], c[48], yk; bool any[48], yany; } today_rd;
+struct DaysBuf { double k[13], c[13]; bool any[13]; } days_rd;
 // the rows of a statistics reply: start + change per statistic id, summed into the buckets by role
 double row_start = NAN, row_change = NAN;
 Role role_of(const std::string &id, bool &found) {
@@ -364,11 +368,13 @@ void stat_leaf(Sax &x, const std::string &v, bool) {
 }
 void read_today() {
   const double now = (double) time(nullptr) * 1000, d0 = fw::energy::midnight(now), y0 = fw::energy::midnight(d0 - 12 * H);
-  for (int i = 0; i < 48; i++) slot_k[i] = slot_c[i] = 0, slot_any[i] = false;
-  yday_k = 0, yday_any = false;
+  TodayBuf &b = today_rd;
+  for (int i = 0; i < 48; i++) b.k[i] = b.c[i] = 0, b.any[i] = false;
+  b.yk = 0, b.yany = false;
   start(S_TODAY, ws_of(stats_cmd(y0, "5minute")), stat_leaf,
         [d0, y0, now](Sax &x) {
           if (x.depth != 4) return;  // one row ends
+          TodayBuf &b = today_rd;
           const double st = row_start, ch = row_change;
           row_start = row_change = NAN;
           bool known;
@@ -377,18 +383,26 @@ void read_today() {
           if (st >= d0) {
             const int i = (int) ((st - d0) / (30 * MIN));
             if (i < 0 || i >= 48) return;
-            if (r == R_COST) slot_c[i] += ch;
-            else slot_k[i] += sign(r) * ch, slot_any[i] = true;
-          } else if (st >= y0 && st + 5 * MIN <= now - DAY && r != R_COST) yday_k += sign(r) * ch, yday_any = true;
+            if (r == R_COST) b.c[i] += ch;
+            else b.k[i] += sign(r) * ch, b.any[i] = true;
+          } else if (st >= y0 && st + 5 * MIN <= now - DAY && r != R_COST) b.yk += sign(r) * ch, b.yany = true;
         },
-        [](bool ok) { if (ok) today_at = (double) time(nullptr) * 1000; });
+        [](bool ok) {
+          if (!ok) return;
+          const TodayBuf &b = today_rd;
+          std::copy(b.k, b.k + 48, slot_k), std::copy(b.c, b.c + 48, slot_c), std::copy(b.any, b.any + 48, slot_any);
+          yday_k = b.yk, yday_any = b.yany;
+          today_at = (double) time(nullptr) * 1000;
+        });
 }
 void read_days() {
   const double now = (double) time(nullptr) * 1000, d0 = fw::energy::midnight(now), first = fw::energy::midnight(d0 - 13 * DAY + 12 * H);
-  for (int k = 0; k < 13; k++) day_k[k] = day_c[k] = 0, day_any[k] = false;
+  DaysBuf &b = days_rd;
+  for (int k = 0; k < 13; k++) b.k[k] = b.c[k] = 0, b.any[k] = false;
   start(S_DAYS, ws_of(stats_cmd(first, "day")), stat_leaf,
         [d0](Sax &x) {
           if (x.depth != 4) return;
+          DaysBuf &b = days_rd;
           const double st = row_start, ch = row_change;
           row_start = row_change = NAN;
           bool known;
@@ -396,10 +410,15 @@ void read_days() {
           if (!known || std::isnan(st) || std::isnan(ch)) return;
           const long k = 13 + std::lround((fw::energy::midnight(st + 12 * H) - d0) / DAY);
           if (k < 0 || k >= 13) return;  // today comes from the 5-minute rows
-          if (r == R_COST) day_c[k] += ch;
-          else day_k[k] += sign(r) * ch, day_any[k] = true;
+          if (r == R_COST) b.c[k] += ch;
+          else b.k[k] += sign(r) * ch, b.any[k] = true;
         },
-        [d0](bool ok) { if (ok) days_at = (double) time(nullptr) * 1000, days_for = d0; });
+        [d0](bool ok) {
+          if (!ok) return;
+          const DaysBuf &b = days_rd;
+          std::copy(b.k, b.k + 13, day_k), std::copy(b.c, b.c + 13, day_c), std::copy(b.any, b.any + 13, day_any);
+          days_at = (double) time(nullptr) * 1000, days_for = d0;
+        });
 }
 // ---- the extras (one optional integration on top of the base; sources.json screens.energy.extras)
 // an ISO time ("2026-10-31T16:00:00+00:00", "...Z", a local "2026-10-31T16:00:00" or a date "2026-11-01") -> ms

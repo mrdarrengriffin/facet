@@ -7,6 +7,10 @@ const vis = (t, re) => t.objs().some((o) => o.text && t.visible(o) && re.test(St
 const DAYS = /^(Mon|Tue|Wed|Thu|Fri|Sat|Sun|Today)$/;
 // a deck whose Energy is on its sample day (a panel's factory Energy reads Home Assistant: no sample data)
 const SAMPLE = { v: 2, rev: 1, start: 'home', pages: [{ id: 'home', kind: 'home', name: 'Home', cards: [{ t: 'page', page: 'energy', size: 'm' }] }, { id: 'energy', kind: 'energy', params: { source: 'sample' } }] };
+const realNow = Date.now;
+let ahead = 0;
+const later = (t, ms) => { ahead += ms; Date.now = () => realNow() + ahead; t.wait(ms); };  // Energy times its reads by time()
+const money = (t) => t.objs().filter((o) => o.text && t.visible(o) && /^\u00a3/.test(String(o.text))).map((o) => String(o.text));
 const week = async (t) => { await t.device(SAMPLE); t.show('energy'); t.tap(/^last 7 days$/i); t.wait(900); };
 export default {
   id: 'energy', family: 'charts', about: 'Energy screen: today, and the last 7 days as a view of the same screen.',
@@ -44,6 +48,25 @@ export default {
       t.ok(!vis(t, /^this week$/i), 'week gone');
       t.tap(back(t)); t.wait(900);
       t.ok(t.where() !== 'energy', `Back 2 leaves (${t.stack().join(' > ')})`);
+    } },
+    { name: 'a refresh in flight keeps the cost: a live change mid-read never shows £0.00 (#62)', async run(t) {
+      try {
+        t.ha.answers = true;
+        await t.mount('spec', { screen: 'energy', source: 'ha' });
+        t.b.spec('act', { do: 'ha.connect', url: 'http://fake-ha.test:8123', token: 'testtoken1234' });
+        t.b.m._fw_ha_connected(1);
+        later(t, 11000); t.ha.push(); later(t, 62000);
+        const before = money(t);
+        t.ok(before.length && before.every((m) => /^\u00a3\d+\.\d\d$/.test(m)), `cost read: ${before.join(' ')} | ${t.texts().join(" / ").slice(0, 300)}`);
+        t.ha.answers = false;          // the next minute's statistics read goes out and stays in flight
+        later(t, 60000);
+        for (const w of [510, 2327, 880]) { t.ha.set('sensor.test_grid_power', w, { unit_of_measurement: 'W' }); later(t, 2000); }
+        t.eq(money(t), before, 'live changes while the read streams: the last cost stays');
+        t.ha.answers = true;           // the read lands
+        later(t, 3000);
+        const after = money(t);
+        t.ok(after.length && after.every((m) => /^\u00a3\d+\.\d\d$/.test(m)), `cost after the read: ${after.join(' ')}`);
+      } finally { Date.now = realNow, ahead = 0; t.b.m._fw_ha_connected?.(0); }
     } },
   ],
 };
