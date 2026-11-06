@@ -82,7 +82,7 @@ export class FakeHA {
     const e = [].concat(data.entity_id || [])[0];
     return e && this.known(e) ? demoReply(service, data) : null;
   }
-  ws(cmd) { return demoWs(cmd, { empty: this.missing, prefix: 'test_', states: this.s }); }  // HA's result for the link's reads (Energy, the registries)
+  ws(cmd) { return this.wsx?.(cmd) ?? demoWs(cmd, { empty: this.missing, prefix: 'test_', states: this.s }); }  // wsx: a test's own replies (null = the demo's)  // HA's result for the link's reads (Energy, the registries)  // HA's result for the link's reads (Energy, the registries)
   // the device is told (fw_ha_connected) first, as a panel's API link is: Offline while down, not Unavailable
   disconnect() { this.down = true; this.t.log.push('ha: disconnected'); this.t.b.m._fw_ha_connected?.(0); this.push(); this.t.b.settle(1500); }
   reconnect() { this.down = false; this.t.log.push('ha: reconnected'); this.t.b.m._fw_ha_connected?.(1); this.push(); this.t.b.settle(1500); }

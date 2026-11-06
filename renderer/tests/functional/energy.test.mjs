@@ -10,7 +10,7 @@ const SAMPLE = { v: 2, rev: 1, start: 'home', pages: [{ id: 'home', kind: 'home'
 const realNow = Date.now;
 let ahead = 0;
 const later = (t, ms) => { ahead += ms; Date.now = () => realNow() + ahead; t.wait(ms); };  // Energy times its reads by time()
-const money = (t) => t.objs().filter((o) => o.text && t.visible(o) && /^\u00a3/.test(String(o.text))).map((o) => String(o.text));
+const money = (t) => t.objs().filter((o) => o.text && t.visible(o) && /^~?\u00a3/.test(String(o.text))).map((o) => String(o.text));
 // linked to the fake Home Assistant (NOT a real one), the day read: the cost shows
 const linked = async (t) => {
   t.ha.answers = true;
@@ -20,6 +20,34 @@ const linked = async (t) => {
   later(t, 11000); t.ha.push(); later(t, 62000);
 };
 const isMoney = (m) => /^\u00a3\d+\.\d\d$/.test(m);
+// a time-of-use day as Home Assistant records it (#134): a grid import statistic with no cost statistic of its own, a
+// price entity, and the cost sensor HA made for it (energy/info cost_sensors) pricing each 5 minutes at its own rate:
+// 0.10 before 07:00, 0.30 after. The price now (noon) is 0.45: kWh x the price now would be wrong. Test ids only.
+const TOU = { in: 'sensor.test_tou_in', cost: 'sensor.test_tou_in_cost', price: 'sensor.test_tou_price' };
+const rate = (ms) => (new Date(ms).getHours() < 7 ? 0.10 : 0.30);
+const touRows = (from, now, cost) => { const out = []; for (let t = from; t < now; t += 300000) out.push({ start: t, end: t + 300000, change: cost ? +(0.05 * rate(t)).toFixed(5) : 0.05 }); return out; };
+const touWs = (costSensors) => (cmd) => {
+  const ok = (result) => ({ id: 1, type: 'result', success: true, result });
+  if (cmd.type === 'energy/get_prefs') return ok({ energy_sources: [{ type: 'grid', stat_energy_from: TOU.in, stat_energy_to: null, stat_cost: null, entity_energy_price: TOU.price, number_energy_price: null }], device_consumption: [] });
+  if (cmd.type === 'energy/info') return ok({ cost_sensors: costSensors ? { [TOU.in]: TOU.cost } : {}, solar_forecast_domains: [] });
+  if (cmd.type === 'recorder/statistics_during_period') {
+    const r = {}, from = Date.parse(cmd.start_time), now = Date.now();
+    for (const id of cmd.statistic_ids || []) if (id === TOU.in || id === TOU.cost) r[id] = touRows(from, now, id === TOU.cost);
+    return ok(r);
+  }
+  return null;
+};
+const atNoon = () => { const d = new Date(realNow()); d.setHours(12, 0, 0, 0); ahead = d.getTime() - realNow(); Date.now = () => realNow() + ahead; };
+const touDay = async (t, costSensors) => {
+  atNoon();
+  t.ha.wsx = touWs(costSensors);
+  t.ha.s[TOU.price] = { '': '0.45', unit_of_measurement: 'GBP/kWh' };
+  await linked(t);
+  t.ha.push(); later(t, 62000);  // the price entity, wanted once the dashboard was read
+  const now = Date.now(), d0 = new Date(now); d0.setHours(0, 0, 0, 0);
+  const rows = touRows(+d0, now, true);
+  return { cost: rows.reduce((a, r) => a + r.change, 0), kwh: rows.length * 0.05 };
+};
 const week = async (t) => { await t.device(SAMPLE); t.show('energy'); t.tap(/^last 7 days$/i); t.wait(900); };
 export default {
   id: 'energy', family: 'charts', about: 'Energy screen: today, and the last 7 days as a view of the same screen.',
@@ -104,6 +132,28 @@ export default {
         later(t, 65000);
         t.ok(vis(t, /not reached/i), `over 3 minutes: Home Assistant not reached (${t.texts().join(' / ').slice(0, 160)})`);
       } finally { Date.now = realNow, ahead = 0; t.ha.answers = true; t.b.m._fw_ha_connected?.(0); }
+    } },
+    { name: 'cost = Home Assistant\'s cost sensor (each moment at its own rate), not kWh x the price now (#134)', async run(t) {
+      try {
+        const want = await touDay(t, true);
+        // the read landed up to a minute before now: within a few 5-minute rows of the sum to now
+        const near = (m) => m.length === 1 && /^\u00a3\d+\.\d\d$/.test(m[0]) && Math.abs(+m[0].slice(1) - want.cost) <= 0.05;
+        t.ok(near(money(t)), `the day priced at the time of use: ${money(t)} ~ \u00a3${want.cost.toFixed(2)} (kWh x 0.45 now would be \u00a3${(want.kwh * 0.45).toFixed(2)})`);
+        const was = money(t);
+        t.ha.set(TOU.price, 'unknown');  // the price entity between rates: the cost does not blink
+        later(t, 2000);
+        t.eq(money(t), was, 'price unknown: the cost stays');
+      } finally { Date.now = realNow, ahead = 0; t.ha.wsx = null; t.b.m._fw_ha_connected?.(0); }
+    } },
+    { name: 'no cost sensor: kWh x the price, marked as an estimate (~) (#134)', async run(t) {
+      try {
+        const want = await touDay(t, false);
+        const m = money(t);
+        t.ok(m.length === 1 && /^~\u00a3\d+\.\d\d$/.test(m[0]) && Math.abs(+m[0].slice(2) - want.kwh * 0.45) <= 0.1, `the estimate, marked: ${m} ~ ~\u00a3${(want.kwh * 0.45).toFixed(2)}`);
+        t.ha.set(TOU.price, 'unknown');
+        later(t, 2000);
+        t.eq(money(t), m, 'price unknown: the last price, no blink');
+      } finally { Date.now = realNow, ahead = 0; t.ha.wsx = null; t.b.m._fw_ha_connected?.(0); }
     } },
   ],
 };

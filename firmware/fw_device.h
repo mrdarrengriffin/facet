@@ -1851,7 +1851,7 @@ inline bool ws_read_ok(const std::string &cmd) {
   ArduinoJson::JsonDocument d;
   if (deserializeJson(d, cmd)) return false;
   const std::string t = d["type"] | "";
-  return t == "energy/get_prefs" || t == "recorder/statistics_during_period" || t == "recorder/list_statistic_ids" ||
+  return t == "energy/get_prefs" || t == "energy/info" || t == "recorder/statistics_during_period" || t == "recorder/list_statistic_ids" ||
          t == "config/entity_registry/list_for_display" || t == "config/device_registry/list" || t == "config/area_registry/list";
 }
 // one whole frame (a small one: the auth messages) into out; false = closed / timed out / too big

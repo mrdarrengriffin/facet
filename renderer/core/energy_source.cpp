@@ -69,11 +69,12 @@ std::string hm(double t) {
 }
 // what the extra adds to the feed (empty = no extra: the plain words)
 struct ExtOut { bool on = false; std::string live, card, tone = "dim", cheapest, event, event_tone = "idle"; };
-void publish(const fw::energy::Data &d, double rate_now, double rate_next, bool banded = true, const ExtOut *x = nullptr) {
+void publish(const fw::energy::Data &d, double rate_now, double rate_next, bool banded = true, const ExtOut *x = nullptr, bool est = false) {
   namespace en = fw::energy;
   auto &put = put_e;
   put_st(fw::feed::OK);
-  put("cost", en::money(d.cost));
+  const std::string mark = est && !std::isnan(d.cost) ? "~" : "";  // an estimate: kWh x the price now (#134)
+  put("cost", mark + en::money(d.cost));
   char b[96];
   const double y = d.yesterday_to_now;
   if (!std::isnan(y) && y > 0) {
@@ -125,7 +126,7 @@ void publish(const fw::energy::Data &d, double rate_now, double rate_next, bool 
       dn += (i ? "," : "") + std::string(i == 6 ? "Today" : DAY[tm.tm_wday]);
     }
     a = na ? a / na : 0, pv = np ? pv / np : 0;
-    put("week_cost", en::money(wc));
+    put("week_cost", mark + en::money(wc));
     const long delta = pv > 0 ? std::lround((a - pv) / pv * 100) : 0;
     if (pv > 0) snprintf(b, sizeof b, "%.1f kWh \xC2\xB7 %ld%% %s a day than the week before", wk, std::labs(delta), delta <= 0 ? "less" : "more");
     else snprintf(b, sizeof b, "%.1f kWh", wk);
@@ -164,7 +165,7 @@ struct Src { std::string type, from, to, cost, price_e, power_e; double price = 
 Prefs prefs, reading;
 Src src_now;
 std::unique_ptr<Sax> sax;
-enum Step { S_IDLE, S_PREFS, S_TODAY, S_DAYS, S_EXTRA } step = S_IDLE;
+enum Step { S_IDLE, S_PREFS, S_INFO, S_TODAY, S_DAYS, S_EXTRA } step = S_IDLE;
 void choose_ha();
 double prefs_at = -1e18, today_at = -1e18, days_at = -1e18, days_for = 0;
 std::string why_now;  // the last failure, "" = fine
@@ -229,7 +230,12 @@ void from_ha() {
   bool costed = false;
   for (auto &p : prefs.stats) costed |= p.second == R_COST;
   double price = prefs.price;
-  if (!prefs.price_e.empty()) { const double x = ha::num(ha::get(prefs.price_e)); if (std::isfinite(x) && x >= 0) price = x; }
+  static double last_price = NAN;  // the price entity's last number: one going unknown at a rate change does not blink
+  if (!prefs.price_e.empty()) {
+    const double x = ha::num(ha::get(prefs.price_e));
+    if (std::isfinite(x) && x >= 0) price = last_price = x;
+    else if (!std::isnan(last_price)) price = last_price;
+  }
   en::Data d;
   double kwh = 0, cost = 0, last_rate = NAN;
   bool any = false;
@@ -257,7 +263,7 @@ void from_ha() {
   double rn = std::isnan(price) ? last_rate : price, rx = NAN;
   bool banded = false;
   const ExtOut x = overlay(d, rn, rx, banded);
-  publish(d, rn, rx, banded, &x);
+  publish(d, rn, rx, banded, &x, !costed);
   // the dashboard's sensors HA does not have, or that have no state now: their words where their values show
   auto gone = [](const std::string &e) {
     const fd::State st = e.empty() ? fd::OK : fd::of(ha::get(e));
@@ -318,6 +324,41 @@ std::string stats_cmd(double from, const char *period) {
   serializeJson(c, out);
   return out;
 }
+// HA's own cost of the grid's use (#134): a dashboard with a price (entity or fixed) but no cost statistic has a cost
+// sensor HA made, which prices each moment at the rate of that moment; energy/info's cost_sensors names it per energy
+// statistic. Without one (none yet, an older HA) the cost is an estimate: kWh x the price now, shown "~£".
+std::vector<std::pair<std::string, std::string>> cost_map;  // the grid's import statistic -> HA's cost sensor
+bool info_due = false;
+double info_at = -1e18;
+bool own_cost(const Prefs &p) { for (auto &s : p.stats) if (s.second == R_COST) return true; return false; }
+// adds HA's cost sensors for p's import statistics when p has no cost statistic of its own; true = p has none
+bool with_costs(Prefs &p) {
+  if (own_cost(p)) return false;
+  std::vector<std::pair<std::string, Role>> add;
+  for (auto &s : p.stats)
+    if (s.second == R_IN)
+      for (auto &c : cost_map) if (c.first == s.first) add.push_back({c.second, R_COST});
+  for (auto &a : add) p.stats.push_back(a);
+  return true;
+}
+std::vector<std::pair<std::string, std::string>> map_reading;
+void read_info() {
+  map_reading.clear();
+  info_due = false, info_at = (double) time(nullptr) * 1000;
+  start(S_INFO, ws_of("{\"type\":\"energy/info\"}"),
+        [](Sax &x, const std::string &v, bool str) {
+          if (x.depth == 3 && x.key(1) == "cost_sensors" && str && map_reading.size() < 16) map_reading.push_back({x.key(2), v});
+        },
+        nullptr,
+        [](bool ok) {
+          if (!ok || map_reading == cost_map) return;
+          cost_map = std::move(map_reading);
+          Prefs p = prefs;
+          p.stats.erase(std::remove_if(p.stats.begin(), p.stats.end(), [](auto &s) { return s.second == R_COST; }), p.stats.end());
+          with_costs(p);
+          if (p.stats != prefs.stats) prefs.stats = std::move(p.stats), today_at = days_at = -1e18;
+        }, true);  // soft: an HA without it (or a transport that refuses it) is no failure; the estimate stays
+}
 void read_prefs() {
   reading = Prefs();
   start(S_PREFS, ws_of("{\"type\":\"energy/get_prefs\"}"),
@@ -366,6 +407,7 @@ void read_prefs() {
           for (auto &p : parts) if (p.first) f += (f.empty() ? "" : ", ") + std::string(p.second);
           if (reading.devices) f += (f.empty() ? "" : " \xC2\xB7 ") + std::to_string(reading.devices) + (reading.devices == 1 ? " device" : " devices");
           reading.found = f;
+          info_due = with_costs(reading);  // no cost statistic of its own: HA's cost sensors (energy/info) for it
           const bool changed = reading.stats != prefs.stats;
           prefs = std::move(reading);
           prefs_at = (double) time(nullptr) * 1000;
@@ -705,6 +747,7 @@ void next() {
   const double now = (double) time(nullptr) * 1000;
   if (fails && now - fail_at < RETRY_MS) { ext_next(now); return; }  // the base's reads wait out a failure
   if (hl::ready() && now - prefs_at > 10 * MIN) { read_prefs(); return; }
+  if (want_data && hl::ready() && prefs.read && info_due && now - info_at > 30000) { read_info(); return; }
   if (want_data && hl::ready() && !prefs.stats.empty()) {
     if (now - today_at > 55000) { read_today(); return; }
     if (now - days_at > 15 * MIN || days_for != fw::energy::midnight(now)) { read_days(); return; }

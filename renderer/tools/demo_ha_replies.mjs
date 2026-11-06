@@ -45,6 +45,7 @@ export function demoWs(cmd, { empty = false, prefix = '', now = Date.now(), stat
     return ok(empty ? { energy_sources: [], device_consumption: [] } : {
       energy_sources: [{ type: 'grid', stat_energy_from: g.in, stat_energy_to: null, stat_cost: g.cost, entity_energy_price: g.price, stat_rate: g.power }],
       device_consumption: [{ stat_consumption: g.device }] });
+  if (cmd.type === 'energy/info') return ok({ cost_sensors: {}, solar_forecast_domains: [] });  // the demo grid has its own cost statistic
   if (cmd.type === 'recorder/statistics_during_period') {
     const step = cmd.period === 'day' ? 24 * H : cmd.period === 'hour' ? H : 300000;
     const midnight = new Date(now); midnight.setHours(0, 0, 0, 0);

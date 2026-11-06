@@ -259,7 +259,7 @@ void done(uint32_t id, bool ok, const std::string &why, Scan *parsed = nullptr);
 // One WebSocket read (the Energy feed: HA's Energy dashboard): connect to <url>/api/websocket, auth with
 // the token, send cmd (one command as JSON, no "id"), stream its result message back through feed (chunk() with an
 // id from WS_ID up), then end(ok, why) (done()); the link closes. Reads only: the transport allows a closed list
-// (energy/get_prefs, recorder/statistics_during_period, recorder/list_statistic_ids, and the three registry lists
+// (energy/get_prefs, energy/info, recorder/statistics_during_period, recorder/list_statistic_ids, and the three registry lists
 // above; WASM: the workbench
 // host, with its own token; the firmware: esp_transport_ws, firmware/fw_device.h). on_ws: the platform's sender. ws() = 0: not ready or no
 // transport (end is not called).
