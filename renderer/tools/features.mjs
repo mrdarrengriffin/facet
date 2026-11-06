@@ -275,7 +275,13 @@ export function tagErrors(man = load().man, rel = tagReleases(man)) {
     if (c.channel === 'stable') {
       const st = rel.find((v) => v.version === stable);
       if (st && !st.screens.has(id)) errors.push(`${id}: stable (since ${c.since}) but not on the ${st.ref} firmware`);
-    } else if (!at) errors.push(`${id}: since ${c.since} is not a tagged release`);
+    } else if (!at) {
+      // the release being prepared: `since --write V` runs before V is tagged, so V has its notes file and is newer
+      // than every tag; any other untagged version is an error
+      const preparing = existsSync(new URL(`../../release-notes/${c.since}.md`, import.meta.url)) &&
+                        rel.every((v) => cmpVer(c.since, v.version) > 0);
+      if (!preparing) errors.push(`${id}: since ${c.since} is not a tagged release`);
+    }
     else if (first?.version !== c.since) errors.push(`${id}: since ${c.since}, the tags say ${first ? first.version : 'next'}`);
   }
   for (const p of (man.panel_features?.list ?? []).filter((x) => x.setting)) {
