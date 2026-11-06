@@ -4,6 +4,7 @@
 // opens its page.
 import Docs from '../../layouts/Docs.astro';
 import Shot from '../../components/Shot.astro';
+import ChannelBadge from '../../components/ChannelBadge.astro';
 import { STATUS, screenGroups, screenHref } from '../../lib/data';
 import Count from '../../components/Count.astro';
 import { url } from '../../lib/nav';
@@ -21,7 +22,9 @@ import { COUNTS } from '../../lib/counts';
   <p>
     A screen is built from the <a href={url('/components/')}>components</a>: most are a short spec that names its parts
     and settings, and the panel finds the data for them. Facet comes with <Count k="screens" /> screens, plus Home and
-    Settings; choose which are on your panel under <strong>Settings &gt; Screens</strong>.
+    Settings; choose which are on your panel under <strong>Settings &gt; Screens</strong>. A screen marked
+    <strong>Beta</strong> is on the beta firmware, not yet in a stable release; <strong>Coming soon</strong> is in
+    the docs, not on a released firmware yet.
   </p>
   {
     screenGroups().map((g) => (
@@ -34,7 +37,7 @@ import { COUNTS } from '../../lib/counts';
                 <span class="shot__viewport">
                   <Shot id={s.id} kind="half" alt="" />
                 </span>
-                <span class="shot__name">{s.name}{s.status === 'wip' && <span class="badge" title={STATUS.wip.hint}>WIP</span>}</span>
+                <span class="shot__name">{s.name}{s.channel !== 'stable' && ' '}<ChannelBadge channel={s.channel} of={s.id} />{s.status === 'wip' && <span class="badge" title={STATUS.wip.hint}>WIP</span>}</span>
                 <span class="shot__about">{s.about}</span>
               </a>
             </li>

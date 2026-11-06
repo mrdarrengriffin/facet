@@ -5,6 +5,7 @@
 import Base from './Base.astro';
 import Icon from '../components/Icon.astro';
 import EditPage from '../components/EditPage.astro';
+import ChannelBadge from '../components/ChannelBadge.astro';
 import { getReadingOrder, getSidebar } from '../lib/nav';
 import { SITE } from '../lib/data';
 
@@ -57,6 +58,7 @@ const repo = SITE.repo.replace('/blob/', '/tree/');
                         {link.icon && <span class="sidebar__icon"><Icon name={link.icon} size={18} /></span>}
                         {link.label}
                         {link.badge && <span class="badge">{link.badge}</span>}
+                        {link.channel && <ChannelBadge channel={link.channel} />}
                       </a>
                     ) : (
                       <span class="sidebar__soon">

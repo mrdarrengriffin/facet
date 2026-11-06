@@ -7,9 +7,13 @@
 //   a broken internal link: a page or file that is not in the build, or a #fragment with no such id on its page
 //   agent docs (scripts/llms.mjs): a page with no .md twin, not linked from llms.txt or not in llms-full.txt, or a
 //     link in llms.txt to a file that is not in the build
+//   screen channels (renderer/features.json since, RELEASING.md "Screen channels"): a screen with no channel, the
+//     Screens overview or a screen page whose Beta / Coming soon badges (data-channel-of) are not exactly the
+//     screens that are not Stable, or a screen with a page that the root README does not show
 // Usage: node scripts/check-dist.mjs [dist folder] (default FACET_DOCS_OUT or ./dist); base = FACET_DOCS_BASE or /facet-docs/
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { dirname, join, relative } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { docPages, mdPath } from './md.mjs';
 
 const DIST = process.argv[2] ?? process.env.FACET_DOCS_OUT ?? './dist';
@@ -115,6 +119,30 @@ else {
   }
   for (const [, h] of llms.matchAll(/\]\(([^)]+)\)/g)) {
     if (!h.startsWith(BASE) || !existsSync(join(DIST, decodeURIComponent(h.slice(BASE.length).split('#')[0])))) { bad++; console.log(`llms  llms.txt links to a file not in the build: ${h}`); }
+  }
+}
+// screen channels: every screen has one; the overview and each screen page badge exactly the non-Stable ones; the
+// README shows every screen with a page (its pictures carry the chip: renderer/tools/channels.test.mjs)
+{
+  const SITE = join(dirname(fileURLToPath(import.meta.url)), '..');
+  const screens = JSON.parse(readFileSync(join(SITE, 'src/data/screens.json'), 'utf8'));
+  const readme = readFileSync(join(SITE, '..', 'README.md'), 'utf8');
+  const marks = (html) => new Set([...html.matchAll(/data-channel-of="([^"]+)"/g)].map((x) => x[1]));
+  const same = (a, b) => a.size === b.size && [...a].every((x) => b.has(x));
+  const fault = (m) => { bad++; console.log(`channel  ${m}`); };
+  for (const s of screens) if (!['stable', 'beta', 'soon'].includes(s.channel)) fault(`${s.id}: no channel`);
+  const pagesOf = screens.filter((s) => s.page);
+  const want = new Set(pagesOf.filter((s) => s.channel !== 'stable').map((s) => `${s.id}:${s.channel}`));
+  const index = read('screens/index.html');
+  if (index === null) fault('no screens/index.html');
+  else if (!same(marks(index), want)) fault(`screens/ badges ${[...marks(index)].join(', ') || 'none'}, want ${[...want].join(', ') || 'none'}`);
+  for (const s of pagesOf) {
+    const html = read(`screens/${s.id.replace(/_/g, '-')}/index.html`);
+    if (html === null) { fault(`${s.id}: no page`); continue; }
+    const h1 = html.match(/<h1[\s\S]*?<\/h1>/)?.[0] ?? '';
+    const w = new Set(s.channel === 'stable' ? [] : [`${s.id}:${s.channel}`]);
+    if (!same(marks(h1), w) || !same(marks(html), w)) fault(`screens/${s.id}/: badges ${[...marks(html)].join(', ') || 'none'}, want ${[...w].join(', ') || 'none'}`);
+    if (!readme.includes(`assets/screen-${s.id}-dark.png`)) fault(`${s.id}: not in the root README's screens table`);
   }
 }
 console.log(`check-dist: ${files.length} pages, ${bad} fault${bad === 1 ? '' : 's'}`);

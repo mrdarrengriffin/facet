@@ -8,6 +8,8 @@ export interface NavLink {
   /** no href = a page still to come ("Soon" badge, not a link) */
   href?: string;
   badge?: string;
+  /** a screen's channel (beta | soon: a ChannelBadge after the label; stable: none) */
+  channel?: import('./data').Channel;
   /** WASM icon name, shown before the label */
   icon?: string;
 }
@@ -66,7 +68,7 @@ export function getSidebar(): NavGroup[] {
     },
     {
       label: 'Screens',
-      links: [{ label: 'Overview', href: url('/screens/') }, ...screenGroups().flatMap((g) => g.items).map((s) => ({ label: s.name, href: screenHref(s) })).sort(byLabel)],
+      links: [{ label: 'Overview', href: url('/screens/') }, ...screenGroups().flatMap((g) => g.items).map((s) => ({ label: s.name, href: screenHref(s), channel: s.channel })).sort(byLabel)],
     },
     {
       label: 'Help',

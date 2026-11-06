@@ -19,7 +19,7 @@ import { execFileSync } from 'node:child_process';
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { byId, hiddenIds, hiddenRoadmap, load as loadFeatures } from '../../renderer/tools/features.mjs';
+import { byId, channels, hiddenIds, hiddenRoadmap, load as loadFeatures } from '../../renderer/tools/features.mjs';
 
 const SITE = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const ROOT = resolve(SITE, '..');
@@ -407,6 +407,13 @@ function screenSet() {
       role: c.meta.role ?? 'page', page: hasPage(c.id, c.meta.role ?? 'page'), comp: c.id, frame: c.meta.frame, parts: f.uses.filter((u) => compById[u] && u !== c.id), sources: sourcesOf(c.id), status: relStatus(c.id, f.status),
       source: f.files.map((p) => ({ path: p, url: `${REPO}/${p}` })) });
   }
+  // the screen's channel (stable | beta | soon: features.json since, RELEASING.md "Screen channels"): every screen has one
+  const CH = channels(FEAT.man);
+  for (const s of out) {
+    if (!CH[s.id]) throw new Error(`extract: screen ${s.id} has no channel (renderer/features.json: its feature's since)`);
+    s.channel = CH[s.id].channel;
+    s.since = CH[s.id].since;
+  }
   for (const s of out) {
     s.opens = [...(opens[s.id] ?? [])].filter((x) => out.some((o) => o.id === x));
     s.openedFrom = Object.entries(opens).filter(([, v]) => v.has(s.id)).map(([k]) => k);
@@ -456,7 +463,7 @@ writeFileSync(join(SITE, 'src/roadmap.json'), JSON.stringify(roadFilter(road), n
 const hiddenFeatures = FEAT.features.filter((f) => !f.docs).map((f) => f.id);
 const hiddenPaths = [...HIDDEN].flatMap((id) => [`screens/${id.replace(/_/g, '-')}/`, `components/${id.replace(/_/g, '-')}/`, `foundations/${id.replace(/_/g, '-')}/`])
   .filter((p) => !(p.startsWith('screens/') ? screens : entries).some((e) => p.endsWith(`/${e.id.replace(/_/g, '-')}/`)));
-w('features.json', { hiddenFeatures, hiddenPaths, status: FEAT.man.status });
+w('features.json', { hiddenFeatures, hiddenPaths, status: FEAT.man.status, channels: FEAT.man.channels, stable: FEAT.man.release.stable });
 writeFileSync(join(out, 'tokens.css'), tokensCss());
 // sound: the packs for the header picker; the whole sound.json is copied to public/ (fetched on the first sound)
 w('sound-packs.json', { default: soundTok.default, variants: soundTok.variants.map((v) => ({ id: v.id, name: v.name, about: v.about })) });

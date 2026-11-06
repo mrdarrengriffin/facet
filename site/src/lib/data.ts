@@ -42,6 +42,15 @@ import flags from '../data/features.json';
 const HIDDEN_FEATURES = new Set(flags.hiddenFeatures);
 const HIDDEN_PATHS = new Set(flags.hiddenPaths);
 export const updateShown = (e: { data: { feature?: string; draft?: boolean } }) => !e.data.draft && (!e.data.feature || !HIDDEN_FEATURES.has(e.data.feature));
+// a screen's channel (renderer/features.json since; RELEASING.md "Screen channels"): Stable shows no badge
+export type Channel = 'stable' | 'beta' | 'soon';
+export const STABLE_VERSION = flags.stable as string;
+const minor = STABLE_VERSION.split('.').slice(0, 2).join('.');
+export const CHANNEL: Record<Channel, { label: string; hint: string }> = {
+  stable: { label: flags.channels.stable, hint: `In the stable release (${minor})` },
+  beta: { label: flags.channels.beta, hint: `On the beta firmware, not yet in a stable release (${minor})` },
+  soon: { label: flags.channels.soon, hint: 'In the docs, not on a released firmware yet' },
+};
 export const linkShown = ([, path]: [string, string]) => !HIDDEN_PATHS.has(path.replace(/^\//, '').replace(/#.*$/, '').replace(/\/?$/, '/'));
 
 export const defaults = (m: Meta) =>
@@ -111,6 +120,7 @@ export type Screen = {
   id: string; name: string; kind: 'spec' | 'built'; about: string; opening?: string | null; layout?: string; params: ScreenParam[];
   sampleProps: Record<string, unknown>; comp: string; frame: [number, number]; parts: string[]; sources: ScreenSources | null;
   status: Status; source: { path: string; url: string }[]; opens: string[]; openedFrom: string[]; role: string; page: boolean;
+  channel: Channel; since: string | null;
 };
 /** every screen of the build; SCREENS = the ones with a page: a detail screen (spec / meta role "detail": a drill-down
  *  such as Energy's last days or Settings > Screens) has none, it opens by tapping inside its parent's demo, unless its

@@ -1,0 +1,35 @@
+---
+// A screen's channel as a badge after its name (renderer/features.json since; RELEASING.md "Screen channels"): Beta
+// in the accent, Coming soon in the quiet .badge tone (as the version badge and WIP); Stable shows nothing. The same
+// look as the README pictures' chip (renderer/tools/lib/chip.mjs). data-channel-of: scripts/check-dist.mjs checks
+// every listed screen has exactly its own.
+import { CHANNEL, type Channel } from '../lib/data';
+
+interface Props {
+  channel: Channel;
+  /** the screen it marks, for check-dist (the sidebar's badges leave it out) */
+  of?: string;
+}
+const { channel, of } = Astro.props;
+---
+
+{channel !== 'stable' && (
+  <span class={`badge channel-badge channel-badge--${channel}`} data-channel-of={of && `${of}:${channel}`} title={CHANNEL[channel].hint}>{CHANNEL[channel].label}</span>
+)}
+
+<style is:global>
+  .channel-badge {
+    flex: none;
+    white-space: nowrap;
+  }
+  h1 .channel-badge {
+    margin-left: 12px;
+    vertical-align: middle;
+    position: relative;
+    top: -0.2em;
+  }
+  .channel-badge--beta {
+    background: color-mix(in srgb, var(--facet-color-accent) 16%, transparent);
+    color: var(--facet-color-accent-text);
+  }
+</style>

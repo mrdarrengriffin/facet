@@ -6,7 +6,8 @@ import Docs, { type Heading } from '../../layouts/Docs.astro';
 import Live from '../../components/Live.astro';
 import PreviewBox from '../../components/PreviewBox.astro';
 import HomeCards from '../../components/HomeCards.astro';
-import { ALL, ALL_SCREENS, STATUS, href, screenById, screenGroupOf, screenHref, slug, SCREENS, type Screen } from '../../lib/data';
+import ChannelBadge from '../../components/ChannelBadge.astro';
+import { ALL, ALL_SCREENS, CHANNEL, STATUS, href, screenById, screenGroupOf, screenHref, slug, SCREENS, type Screen } from '../../lib/data';
 
 export function getStaticPaths() {
   return SCREENS.map((s) => ({ params: { id: slug(s.id) }, props: { s } }));
@@ -47,6 +48,7 @@ const demo = s.comp === 'spec' ? { comp: 'spec', props: { ...s.sampleProps, live
 ---
 
 <Docs title={s.name} description={s.about} group={`Screens · ${screenGroupOf(s.id)}`} current={screenHref(s)} headings={headings} source={s.source} wide>
+  <ChannelBadge slot="title-after" channel={s.channel} of={s.id} />
   <div data-preview-scope>
     <h2 id="preview">Preview</h2>
     <PreviewBox />
@@ -122,5 +124,6 @@ const demo = s.comp === 'spec' ? { comp: 'spec', props: { ...s.sampleProps, live
 
   <h2 id="status">Status</h2>
   <p><span class={`status-badge status-badge--${s.status === 'done' ? 'done' : 'doing'}`}><span class="status-badge__dot" aria-hidden="true" />{st.label}</span> {st.hint}.</p>
+  <p><strong>{CHANNEL[s.channel].label}</strong>: {CHANNEL[s.channel].hint.replace(/^./, (c) => c.toLowerCase())}{s.channel === 'beta' && s.since && <> (since <code>{s.since}</code>)</>}.</p>
 </Docs>
 
