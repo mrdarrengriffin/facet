@@ -11,6 +11,15 @@ const realNow = Date.now;
 let ahead = 0;
 const later = (t, ms) => { ahead += ms; Date.now = () => realNow() + ahead; t.wait(ms); };  // Energy times its reads by time()
 const money = (t) => t.objs().filter((o) => o.text && t.visible(o) && /^\u00a3/.test(String(o.text))).map((o) => String(o.text));
+// linked to the fake Home Assistant (NOT a real one), the day read: the cost shows
+const linked = async (t) => {
+  t.ha.answers = true;
+  await t.mount('spec', { screen: 'energy', source: 'ha' });
+  t.b.spec('act', { do: 'ha.connect', url: 'http://fake-ha.test:8123', token: 'testtoken1234' });
+  t.b.m._fw_ha_connected(1);
+  later(t, 11000); t.ha.push(); later(t, 62000);
+};
+const isMoney = (m) => /^\u00a3\d+\.\d\d$/.test(m);
 const week = async (t) => { await t.device(SAMPLE); t.show('energy'); t.tap(/^last 7 days$/i); t.wait(900); };
 export default {
   id: 'energy', family: 'charts', about: 'Energy screen: today, and the last 7 days as a view of the same screen.',
@@ -67,6 +76,34 @@ export default {
         const after = money(t);
         t.ok(after.length && after.every((m) => /^\u00a3\d+\.\d\d$/.test(m)), `cost after the read: ${after.join(' ')}`);
       } finally { Date.now = realNow, ahead = 0; t.b.m._fw_ha_connected?.(0); }
+    } },
+    { name: 'one failed read keeps the last good day; Offline after 2 failed reads in a row (#132)', async run(t) {
+      try {
+        await linked(t);
+        const before = money(t);
+        t.ok(before.length && before.every(isMoney), `cost read: ${before.join(' ')}`);
+        t.ha.fail = true;              // Home Assistant answers, but the reads fail
+        later(t, 62000);
+        t.eq(money(t), before, 'one failed read: the last cost stays');
+        t.ok(!vis(t, /not reached/i), 'one failed read: not Offline');
+        later(t, 62000);
+        t.ok(money(t).every((m) => !isMoney(m)), `2 failed reads: no number (${money(t).join(' ')})`);
+        t.ok(vis(t, /not reached/i), 'two failed reads: Home Assistant not reached');
+        t.ha.fail = false;             // a read lands again
+        later(t, 62000);
+        t.ok(money(t).length && money(t).every(isMoney), `back: ${money(t).join(' ')}`);
+        t.ok(!vis(t, /not reached/i), 'back: not Offline');
+      } finally { Date.now = realNow, ahead = 0; t.b.m._fw_ha_connected?.(0); }
+    } },
+    { name: 'no read landing for 3 minutes is Offline, even with none failed (#132)', async run(t) {
+      try {
+        await linked(t);
+        t.ha.answers = false;          // reads go out and never come back
+        later(t, 120000);
+        t.ok(money(t).every(isMoney) && !vis(t, /not reached/i), `2 minutes: the last cost (${money(t).join(' ')})`);
+        later(t, 65000);
+        t.ok(vis(t, /not reached/i), `over 3 minutes: Home Assistant not reached (${t.texts().join(' / ').slice(0, 160)})`);
+      } finally { Date.now = realNow, ahead = 0; t.ha.answers = true; t.b.m._fw_ha_connected?.(0); }
     } },
   ],
 };

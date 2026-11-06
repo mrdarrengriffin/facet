@@ -168,6 +168,15 @@ enum Step { S_IDLE, S_PREFS, S_TODAY, S_DAYS, S_EXTRA } step = S_IDLE;
 void choose_ha();
 double prefs_at = -1e18, today_at = -1e18, days_at = -1e18, days_for = 0;
 std::string why_now;  // the last failure, "" = fine
+// a dropped read is not Offline yet (#132): the last good day stays up through one failed read; Offline after 2 failed
+// reads in a row or 3 minutes with no read landing
+int fails = 0;
+double good_at = -1e18, fail_at = -1e18;  // the last read that landed, the last that failed (ms)
+constexpr double RETRY_MS = 50000;  // a failed read is tried again after this (not on the next round: a live change
+                                    // every few seconds would spend both failures in one breath)
+constexpr int OFFLINE_FAILS = 2;
+constexpr double OFFLINE_MS = 3 * 60000.0;
+bool offline(double now) { return fails >= OFFLINE_FAILS || (good_at > 0 && now - good_at > OFFLINE_MS); }
 bool want_data = false;  // source ha: today + days too (else only the prefs, for Settings' "found")
 double slot_k[48], slot_c[48], yday_k, day_k[13], day_c[13];
 bool slot_any[48], yday_any, day_any[13];
@@ -211,11 +220,12 @@ void from_ha() {
   if (!hl::ready()) { put_state(fd::ERROR, "Home Assistant not connected"); return; }
   if (!prefs.read) { if (why_now.empty()) put_state(fd::LOADING, "loading"); else put_state(fd::ERROR, "Home Assistant not reached"); return; }
   if (!prefs.grid && !prefs.solar) { put_state(fd::ERROR, "Energy dashboard not set up in Home Assistant"); return; }
-  // the last read failed (the network pulled, Home Assistant down): Offline, never the numbers from before (the next
-  // read that lands brings them back)
-  if (!why_now.empty()) { put_state(fd::ERROR, "Home Assistant not reached"); return; }
-  if (today_at < 0) { put_state(fd::LOADING, "loading"); return; }
+  // reads failing (the network pulled, Home Assistant down): Offline, never the numbers from before, but only after 2
+  // failed reads in a row or 3 minutes with none landing; one dropped read keeps the last good day (the next read that
+  // lands brings fresh ones)
   const double now = (double) time(nullptr) * 1000, d0 = en::midnight(now);
+  if (offline(now)) { put_state(fd::ERROR, "Home Assistant not reached"); return; }
+  if (today_at < 0) { put_state(fd::LOADING, "loading"); return; }
   bool costed = false;
   for (auto &p : prefs.stats) costed |= p.second == R_COST;
   double price = prefs.price;
@@ -275,7 +285,11 @@ void start(Step s, Issue issue, std::function<void(Sax &, const std::string &, b
   step = s;
   const uint32_t id = issue([](const char *p, size_t n) { if (sax) sax->feed(p, n); }, [done, soft](bool ok, const std::string &why) {
     const bool good = ok && sax && !sax->bad && sax->ok;
-    if (!soft) why_now = good ? "" : !ok ? "Home Assistant not reached: " + why : "Home Assistant said no";
+    if (!soft) {
+      why_now = good ? "" : !ok ? "Home Assistant not reached: " + why : "Home Assistant said no";
+      if (good) fails = 0, good_at = (double) time(nullptr) * 1000;
+      else fails++, fail_at = (double) time(nullptr) * 1000;
+    }
     sax.reset();
     step = S_IDLE;
     done(good);
@@ -689,6 +703,7 @@ void show() {
 void next() {
   if (step != S_IDLE) return;
   const double now = (double) time(nullptr) * 1000;
+  if (fails && now - fail_at < RETRY_MS) { ext_next(now); return; }  // the base's reads wait out a failure
   if (hl::ready() && now - prefs_at > 10 * MIN) { read_prefs(); return; }
   if (want_data && hl::ready() && !prefs.stats.empty()) {
     if (now - today_at > 55000) { read_today(); return; }

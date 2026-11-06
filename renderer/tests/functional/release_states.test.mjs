@@ -59,7 +59,9 @@ export const realClock = () => { Date.now = realNow, ahead = 0, pinned = false; 
 export const wanted = (t) => [...new Set(t.ha.wants().map(([e]) => e))];
 /** Home Assistant up but the screen's entities unavailable: their states, and its replies fail too (the forecast, the
  *  events, the Energy dashboard) */
-export function unavailable(t, wants = wanted(t)) { t.ha.fail = true; for (const e of wants) t.ha.unavailable(e); wait(t); }
+// (three minutes: Energy keeps its last good day through one failed read, Offline after 2 failed reads or 3 minutes)
+export function unavailable(t, wants = wanted(t)) { t.ha.fail = true; for (const e of wants) t.ha.unavailable(e); grace(t); }
+const grace = (t) => { for (let i = 0; i < 3; i++) wait(t); };
 /** the entities back as they were */
 export function available(t, wants) {
   t.ha.fail = false;
@@ -67,7 +69,7 @@ export function available(t, wants) {
   t.ha.push(); wait(t);
 }
 /** the network pulled / restored */
-export function offline(t) { t.ha.disconnect(); wait(t); }
+export function offline(t) { t.ha.disconnect(); grace(t); }
 export function online(t) { t.ha.reconnect(); wait(t); }
 /** just built, nothing from Home Assistant yet: no states, no replies (what a screen shows while it waits) */
 export async function loading(t, id) {
