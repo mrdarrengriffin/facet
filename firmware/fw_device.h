@@ -20,6 +20,9 @@
 //                = Restores a settings backup, or changes a few settings.
 //   GET  /screenshot  the glass as a 16-bit BMP, streamed from the framebuffer (no frame copy; paced chunks)
 //                = What the screen shows now (a BMP image), so an assistant can check its work.
+//   GET  /fw/report  the problem report, plain text: version, boots + reset reasons, the crash record, Wi-Fi / HA drops,
+//                    /fw/info, settings, the log kept across restarts; tokens, keys and passwords removed ("problem report")
+//                = Everything needed to report a problem, also from before the last restart (paste it into a bug report).
 //   GET  /fw/spec   the spec hello (core/spec.h: protocol, catalogue hash, components, screens + revs, budgets, heap)
 //                = Components, screens, budgets and free memory.
 //   POST /fw/spec   {kind: screen|deck|revert, spec?: {...}, id?} -> the apply answer (the HA actions facet_screen /
@@ -136,6 +139,15 @@
 #endif
 #include "fw_bundle_gen.h"
 #include "src/misc/lv_timer_private.h"  // lv_timer_t period (screenshot: hold LVGL's refresh)
+namespace fw::report_screen { void set_board(const std::string &b); }  // screens/report.cpp
+#include "fw_report.h"  // the problem report: kept log, boots, connection drops, redaction
+#include "esp_wifi.h"
+#include "esp_event.h"
+#include "esphome/components/logger/logger.h"
+#include "esphome/components/wifi/wifi_component.h"
+#ifdef USE_ESP32_CRASH_HANDLER
+#include "esphome/components/esp32/crash_handler.h"
+#endif
 #include "fw_shot.h"  // screenshot: the framebuffer read back through the rotation
 #include "fw_images.h"  // pictures (album art): fetched + decoded on the panel
 
@@ -1439,6 +1451,308 @@ class Handler : public AsyncWebHandler {
 }  // namespace docs
 #endif
 
+// ---------------------------------------------------------------- GET /fw/info (also in the problem report)
+inline void info_json(std::string &s) {
+  ArduinoJson::JsonDocument d;
+  deserializeJson(d, fw::bundle::INFO);
+  d["board"] = FW_DEVICE_BOARD;
+  d["w"] = FW_DEVICE_W;
+  d["h"] = FW_DEVICE_H;
+  d["uptime_s"] = (int) (esp_timer_get_time() / 1000000);
+  d["probation_s"] = probation_left();
+  heap(d["heap"].to<ArduinoJson::JsonObject>());
+  art_info(d);
+  FacetLcdStats ls{};
+  if (facet_lcd_stats && facet_lcd_stats(&ls)) {
+    auto l = d["lcd"].to<ArduinoJson::JsonObject>();
+    l["vsyncs"] = ls.vsyncs;
+    l["frames"] = ls.frames;
+    l["missed"] = ls.missed;
+    auto w = l["with"].to<ArduinoJson::JsonObject>();
+    w["none"] = ls.idle;
+    auto b = l["frames_with"].to<ArduinoJson::JsonObject>();
+    for (int i = 0; i < fw::busy::N; i++) w[fw::busy::NAMES[i]] = ls.with[i], b[fw::busy::NAMES[i]] = ls.busy[i];
+  }
+  std::string sh = "null";
+  ArduinoJson::JsonDocument devs;
+  size_t timers = 0, store = 0, store_bytes = 0, bounds = 0, wants = 0;
+  in_loop([&] {
+    sh = S.shown;
+    fw::dev::state(devs.to<ArduinoJson::JsonArray>());
+    // the loop's own bookkeeping (memory hunts): LVGL timers (each object delete walks them all),
+    // the HA store (every feed's attributes), bound components, subscriptions
+    for (lv_timer_t *t = lv_timer_get_next(nullptr); t && timers < 100000; t = lv_timer_get_next(t)) timers++;
+    for (const auto &kv : fw::ha::S().store) store++, store_bytes += kv.first.first.capacity() + kv.first.second.capacity() + kv.second.capacity() + 64;
+    bounds = fw::ha::S().bounds.size(), wants = fw::ha::wants().size();
+  }, 2000);
+  d["devices"] = devs;
+  ArduinoJson::JsonObject lp = d["loop"].to<ArduinoJson::JsonObject>();
+  lp["timers"] = timers, lp["store"] = store, lp["store_bytes"] = store_bytes, lp["bounds"] = bounds, lp["wants"] = wants;  // what is on the glass: each mounted device's screen stack (top = shown), builds, objects
+  ArduinoJson::JsonDocument shd;
+  if (!deserializeJson(shd, sh)) d["shown"] = shd;
+  serializeJson(d, s);
+}
+
+// ---------------------------------------------------------------- problem report (GET /fw/report, fw_report.h)
+// (Settings > Report a problem, screens/report.cpp, shows its address and a QR code to a filled-in bug report)
+// Kept across restarts in RTC memory that boot doesn't clear (RTC_NOINIT: a software, watchdog or crash restart keeps it,
+// and so does the Guition's deep-sleep hop; power loss clears it): the last log lines, boots and connection drops. The
+// S3's RTC slow memory is 8 KB, so the Guition keeps 5 KB of log (~40 lines); the P4 keeps 16 KB.
+// Crash record: ESPHome's crash handler (its wrap of esp_panic_handler) keeps a panic's reason and backtrace in
+// .noinit RAM, which the Guition's hop clears and a power cycle loses. report::begin() (on_boot 850, before the hop at
+// 800) has ESPHome log it again into a string and saves that in NVS "facet_report", so it survives power loss.
+// The log ring gets every line the logger prints (its level: WARN on the Guition), without colour codes; the report
+// passes everything through fw::report::redact (tokens, keys, passwords). The report streams section by section.
+namespace report {
+#if CONFIG_IDF_TARGET_ESP32S3
+constexpr size_t LOG = 5 * 1024;
+#else
+constexpr size_t LOG = 16 * 1024;
+#endif
+using Kept = fw::report::Kept<LOG>;
+RTC_NOINIT_ATTR inline Kept K;
+inline portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED;
+inline bool ready = false, kept = false;
+inline std::string *capture = nullptr;  // while ESPHome logs the crash record again
+inline std::string crash;               // the saved crash record (NVS)
+inline std::atomic<int> wifi_reason{0}, wifi_rssi{0};
+struct Watch { bool seen = false, up = false; uint32_t drops = 0; int rssi = 0; };
+inline Watch W[fw::report::LINKS];
+inline const char *built() {  // the bundle's build time (fw::bundle::INFO "built")
+  static std::string b;
+  if (b.empty()) {
+    ArduinoJson::JsonDocument d;
+    deserializeJson(d, fw::bundle::INFO);
+    b = d["built"] | "?";
+  }
+  return b.c_str();
+}
+inline uint32_t up_s() { return (uint32_t) (esp_timer_get_time() / 1000000); }
+inline uint32_t epoch_now() { const time_t t = time(nullptr); return t > 1600000000 ? (uint32_t) t : 0; }
+inline std::string clock_text(uint32_t ep) {
+  if (!ep) return "";
+  const time_t t = ep;
+  struct tm tm;
+  localtime_r(&t, &tm);
+  char b[32];
+  strftime(b, sizeof b, "%Y-%m-%d %H:%M:%S", &tm);
+  return b;
+}
+// one line into the ring: "[b<boot> <uptime>s <hh:mm:ss>] text"
+inline void line(const std::string &text) {
+  const uint32_t ms = (uint32_t) (esp_timer_get_time() / 1000), ep = epoch_now();
+  char pre[48];
+  if (ep) {
+    const time_t t = ep;
+    struct tm tm;
+    localtime_r(&t, &tm);
+    snprintf(pre, sizeof pre, "[b%u %u.%us %02d:%02d:%02d] ", (unsigned) K.boot, (unsigned) (ms / 1000),
+             (unsigned) (ms % 1000 / 100), tm.tm_hour, tm.tm_min, tm.tm_sec);
+  } else snprintf(pre, sizeof pre, "[b%u %u.%us] ", (unsigned) K.boot, (unsigned) (ms / 1000), (unsigned) (ms % 1000 / 100));
+  std::string l = pre + text;
+  portENTER_CRITICAL(&mux);
+  K.put(l.data(), l.size());
+  portEXIT_CRITICAL(&mux);
+}
+inline void on_log(void *, uint8_t, const char *, const char *msg, size_t n) {
+  std::string p = fw::report::plain(msg, n);
+  if (capture) *capture += p + "\n";
+  if (ready) line(p);
+}
+inline const char *reason_text(int r) {
+  switch (r) {
+    case ESP_RST_POWERON: return "power on";
+    case ESP_RST_SW: return "software restart";
+    case ESP_RST_PANIC: return "crash (panic)";
+    case ESP_RST_INT_WDT: return "interrupt watchdog";
+    case ESP_RST_TASK_WDT: return "task watchdog";
+    case ESP_RST_WDT: return "watchdog (RTC)";
+    case ESP_RST_BROWNOUT: return "brownout";
+    case ESP_RST_DEEPSLEEP: return "deep sleep (hardware reset hop)";
+    case ESP_RST_USB: return "USB";
+    case ESP_RST_EXT: return "reset pin";
+    default: return "other";
+  }
+}
+inline void on_wifi(void *, esp_event_base_t, int32_t id, void *data) {
+  if (id != WIFI_EVENT_STA_DISCONNECTED || !data) return;
+  const auto *e = (const wifi_event_sta_disconnected_t *) data;
+  wifi_reason = e->reason, wifi_rssi = e->rssi;
+}
+inline void save_crash(const std::string &c) {
+  nvs_handle_t h;
+  if (nvs_open("facet_report", NVS_READWRITE, &h) != ESP_OK) return;
+  nvs_set_str(h, "crash", c.substr(0, 3000).c_str());
+  nvs_commit(h);
+  nvs_close(h);
+}
+// on_boot priority 850 (workbench.yaml): before the Guition's hop (s3_reset.h, 800) and before anything else logs much
+inline void begin() {
+  const int r = (int) esp_reset_reason();
+  kept = K.begin();
+  {
+    // the Guition's hop right after a restart continues that boot (it ran < 10 s); any other deep sleep is a new boot
+    const fw::report::Boot *b = K.this_boot();
+    const bool hop = r == ESP_RST_DEEPSLEEP && kept && b && b->ran_s < 10;
+    if (!hop) K.new_boot((uint8_t) r);
+    ready = true;
+    char t[96];
+    if (hop) snprintf(t, sizeof t, "--- hardware reset hop (boot %u continues) ---", (unsigned) K.boot);
+    else snprintf(t, sizeof t, "--- boot %u: %s%s ---", (unsigned) K.boot, reason_text(r), kept ? "" : " (log starts here)");
+    line(t);
+  }
+  if (auto *lg = esphome::logger::global_logger) lg->add_log_callback(nullptr, on_log);
+  nvs_handle_t h;
+  if (nvs_open("facet_report", NVS_READONLY, &h) == ESP_OK) {
+    size_t n = 0;
+    if (nvs_get_str(h, "crash", nullptr, &n) == ESP_OK && n > 1) {
+      crash.resize(n);
+      nvs_get_str(h, "crash", crash.data(), &n);
+      crash.resize(n - 1);
+    }
+    nvs_close(h);
+  }
+#ifdef USE_ESP32_CRASH_HANDLER
+  if (esphome::esp32::crash_handler_has_data()) {
+    std::string c;
+    char t[160];
+    snprintf(t, sizeof t, "Crash before boot %u (firmware %s, built %s):\n", (unsigned) K.boot,
+#ifdef ESPHOME_PROJECT_VERSION
+             ESPHOME_PROJECT_VERSION,
+#else
+             "?",
+#endif
+             built());
+    c = t;
+    capture = &c;
+    esphome::esp32::crash_handler_log();  // its lines also go into the ring
+    capture = nullptr;
+    crash = c;
+    save_crash(c);
+  }
+#endif
+  esp_event_handler_register(WIFI_EVENT, WIFI_EVENT_STA_DISCONNECTED, on_wifi, nullptr);
+}
+// every second (workbench.yaml interval, main loop): this boot's run time + wall time, and the links' drops
+inline void tick() {
+  if (!ready) return;
+  const uint32_t now = up_s();
+  if (fw::report::Boot *b = K.this_boot()) {
+    b->ran_s = now;
+    if (!b->epoch && epoch_now()) b->epoch = epoch_now() - now;
+  }
+  auto *wf = esphome::wifi::global_wifi_component;
+  const bool wifi = wf && wf->is_connected();
+  if (wifi) W[fw::report::WIFI].rssi = wf->wifi_rssi();
+  const bool api = esphome::api::global_api_server && esphome::api::global_api_server->is_connected();
+  const bool ha_ready = fw::dev::ha_link::ready();
+  const bool ha = ha_ready && fw::dev::ha_link::status() != fw::dev::ha_link::FAIL;
+  const bool up[fw::report::LINKS] = {wifi, api, ha};
+  for (int k = 0; k < fw::report::LINKS; k++) {
+    Watch &w = W[k];
+    if (k == fw::report::HA && !ha_ready) continue;
+    if (!w.seen) {  // a link counts drops only once it has been up
+      if (up[k]) w.seen = true, w.up = true;
+      continue;
+    }
+    if (w.up == up[k]) continue;
+    w.up = up[k];
+    if (!up[k]) {
+      w.drops++;
+      int reason = 0, rssi = 0;
+      if (k == fw::report::WIFI) reason = wifi_reason.exchange(0), rssi = wifi_rssi.exchange(0);
+      if (!rssi && k == fw::report::WIFI) rssi = w.rssi;
+      fw::report::Conn *c;
+      portENTER_CRITICAL(&mux);
+      c = &K.drop((uint8_t) k, now, epoch_now(), (uint8_t) reason, (int8_t) rssi);
+      portEXIT_CRITICAL(&mux);
+      std::string t = fw::report::conn_line(*c, false);
+      if (k == fw::report::HA) t += ": " + fw::dev::ha_link::why();
+      line(t);
+    } else {
+      portENTER_CRITICAL(&mux);
+      K.back((uint8_t) k, now);
+      portEXIT_CRITICAL(&mux);
+      fw::report::Conn c{};
+      K.each_conn([&](const fw::report::Conn &x) { if (x.link == k && x.boot == K.boot && !x.open) c = x; });
+      line(fw::report::conn_line(c, true));
+    }
+  }
+}
+// GET /fw/report: plain text, redacted, streamed a section at a time (the log ring is copied out first)
+inline void send(AsyncWebServerRequest *request) {
+  request->beginResponse(200, "text/plain; charset=utf-8");
+  httpd_req_t *req = *request;
+  httpd_resp_set_hdr(req, "Cache-Control", "no-store");
+  bool ok = true;
+  auto out = [&](const std::string &t) {
+    if (!ok) return;
+    const std::string r = fw::report::redact(t);
+    ok = httpd_resp_send_chunk(req, r.data(), r.size()) == ESP_OK;
+  };
+  char t[256];
+  const uint32_t now = up_s();
+  snprintf(t, sizeof t, "Facet problem report\nfirmware %s, board %s, built %s\nuptime %s, now %s\n\n",
+#ifdef ESPHOME_PROJECT_VERSION
+           ESPHOME_PROJECT_VERSION,
+#else
+           "?",
+#endif
+           FW_DEVICE_BOARD, built(), fw::report::dur(now).c_str(),
+           epoch_now() ? clock_text(epoch_now()).c_str() : "unknown (no time yet)");
+  out(t);
+  Kept *k = (Kept *) malloc(sizeof(Kept));  // a copy, so the ring can go on while this sends (PSRAM)
+  if (!k) { out("(not enough memory to copy the kept log)\n"); httpd_resp_send_chunk(req, nullptr, 0); return; }
+  portENTER_CRITICAL(&mux);
+  memcpy((void *) k, (const void *) &K, sizeof(Kept));
+  portEXIT_CRITICAL(&mux);
+  std::string o = "== Boots (oldest first) ==\n";
+  k->each_boot([&](const fw::report::Boot &b) {
+    snprintf(t, sizeof t, "boot %u: %s, ran %s%s%s\n", (unsigned) b.n, reason_text(b.reason), fw::report::dur(b.ran_s).c_str(),
+             b.epoch ? ", started " : "", b.epoch ? clock_text(b.epoch).c_str() : "");
+    o += t;
+  });
+  if (!kept && k->boot <= 1) o += "(nothing kept from before this boot: power on)\n";
+  out(o + "\n");
+  out("== Crash record ==\n" + (crash.empty() ? std::string("none\n") : crash) + "\n");
+  o = "== Connections ==\n";
+  snprintf(t, sizeof t, "drops since this boot: Wi-Fi %u, HA API %u, HA link %u; now: Wi-Fi %s, HA API %s, HA link %s\n",
+           (unsigned) W[0].drops, (unsigned) W[1].drops, (unsigned) W[2].drops, W[0].up ? "up" : "down",
+           W[1].up ? "up" : "down", fw::dev::ha_link::ready() ? (W[2].up ? "up" : "down") : "not set up");
+  o += t;
+  int nc = 0;
+  k->each_conn([&](const fw::report::Conn &c) {
+    nc++;
+    snprintf(t, sizeof t, "boot %u +%us%s%s: %s dropped", (unsigned) c.boot, (unsigned) c.at_s, c.epoch ? " " : "",
+             c.epoch ? clock_text(c.epoch).c_str() : "", fw::report::link_name(c.link));
+    o += t;
+    if (c.link == fw::report::WIFI) {
+      snprintf(t, sizeof t, " (reason %u, signal %d dBm)", c.reason, c.rssi);
+      o += t;
+    }
+    o += c.open ? (c.boot == k->boot ? ", still down\n" : ", not back before the restart\n")
+                : ", back after " + fw::report::dur(c.down_s) + "\n";
+  });
+  if (!nc) o += "no drops kept\n";
+  out(o + "\n");
+  std::string info;
+  info_json(info);
+  out("== Panel (/fw/info) ==\n" + info + "\n\n");
+  std::string set;
+  in_loop([&] { fw::dev::settings_json(set); }, 3000);
+  out("== Settings (no secrets) ==\n" + (set.empty() ? std::string("(the main loop did not answer)") : set) + "\n\n");
+  out("== Log (oldest first; kept across restarts) ==\n");
+  o.clear();
+  k->lines([&](const std::string &l) {
+    o += l + "\n";
+    if (o.size() > 1500) { out(o); o.clear(); vTaskDelay(1); }
+  });
+  out(o);
+  free(k);
+  if (ok) httpd_resp_send_chunk(req, nullptr, 0);
+}
+}  // namespace report
+
 // ---------------------------------------------------------------- HTTP
 class Handler : public AsyncWebHandler {
  public:
@@ -1473,6 +1787,7 @@ class Handler : public AsyncWebHandler {
       req->send(r);
       return;
     }
+    if (path == "/fw/report" && !post) { report::send(req); return; }  // the problem report (streams; no secrets)
     std::string s, who;  // who = the key's id ("" = the editor, or a read)
     int code = 200;
     const bool ed = agent::editor(req), keyed = path == "/fw/keys" || path.rfind("/fw/keys/", 0) == 0;
@@ -1491,44 +1806,7 @@ class Handler : public AsyncWebHandler {
     } else if (path == "/fw/meta") {
       fw::meta_json(s);  // the registry is fixed after boot: no loop job needed
     } else if (path == "/fw/info") {
-      ArduinoJson::JsonDocument d;
-      deserializeJson(d, fw::bundle::INFO);
-      d["board"] = FW_DEVICE_BOARD;
-      d["w"] = FW_DEVICE_W;
-      d["h"] = FW_DEVICE_H;
-      d["uptime_s"] = (int) (esp_timer_get_time() / 1000000);
-      d["probation_s"] = probation_left();
-      heap(d["heap"].to<ArduinoJson::JsonObject>());
-      art_info(d);
-      FacetLcdStats ls{};
-      if (facet_lcd_stats && facet_lcd_stats(&ls)) {
-        auto l = d["lcd"].to<ArduinoJson::JsonObject>();
-        l["vsyncs"] = ls.vsyncs;
-        l["frames"] = ls.frames;
-        l["missed"] = ls.missed;
-        auto w = l["with"].to<ArduinoJson::JsonObject>();
-        w["none"] = ls.idle;
-        auto b = l["frames_with"].to<ArduinoJson::JsonObject>();
-        for (int i = 0; i < fw::busy::N; i++) w[fw::busy::NAMES[i]] = ls.with[i], b[fw::busy::NAMES[i]] = ls.busy[i];
-      }
-      std::string sh = "null";
-      ArduinoJson::JsonDocument devs;
-      size_t timers = 0, store = 0, store_bytes = 0, bounds = 0, wants = 0;
-      in_loop([&] {
-        sh = S.shown;
-        fw::dev::state(devs.to<ArduinoJson::JsonArray>());
-        // the loop's own bookkeeping (memory hunts): LVGL timers (each object delete walks them all),
-        // the HA store (every feed's attributes), bound components, subscriptions
-        for (lv_timer_t *t = lv_timer_get_next(nullptr); t && timers < 100000; t = lv_timer_get_next(t)) timers++;
-        for (const auto &kv : fw::ha::S().store) store++, store_bytes += kv.first.first.capacity() + kv.first.second.capacity() + kv.second.capacity() + 64;
-        bounds = fw::ha::S().bounds.size(), wants = fw::ha::wants().size();
-      }, 2000);
-      d["devices"] = devs;
-      ArduinoJson::JsonObject lp = d["loop"].to<ArduinoJson::JsonObject>();
-      lp["timers"] = timers, lp["store"] = store, lp["store_bytes"] = store_bytes, lp["bounds"] = bounds, lp["wants"] = wants;  // what is on the glass: each mounted device's screen stack (top = shown), builds, objects
-      ArduinoJson::JsonDocument shd;
-      if (!deserializeJson(shd, sh)) d["shown"] = shd;
-      serializeJson(d, s);
+      info_json(s);
     } else if (path == "/fw/perf") {
       ArduinoJson::JsonDocument d;
       const bool reset = req->hasArg("reset");  // url_to() has no query string
@@ -2052,6 +2330,7 @@ inline void setup() {
 
 inline void setup() {
   fw::bundle::link_all();
+  fw::report_screen::set_board(FW_DEVICE_BOARD);  // Settings > Report a problem fills the board in
   // component events + sound requests: logged (TODO: sound playback on the panels; no audio path yet)
   fw::set_sink([](lv_obj_t *, const char *kind, const char *name, const char *detail) {
     ESP_LOGI("facet_wb", "%s %s %s", kind, name, detail);

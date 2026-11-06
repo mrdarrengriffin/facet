@@ -40,6 +40,11 @@ esphome:
     - -DLV_USE_TINY_TTF=1
     - -DLV_TINY_TTF_FILE_SUPPORT=0
   on_boot:
+    # the problem report (fw_device.h report): before the Guition's hardware reset hop (800), so a crash record is
+    # copied out of RAM the hop clears
+    - priority: 850
+      then:
+        - lambda: 'fw::device::report::begin();'
     - priority: 900
       then:
         - lambda: |-
@@ -328,6 +333,7 @@ event:
 interval:
   - interval: 1s
     then:
+      - lambda: 'fw::device::report::tick();'   # the problem report: run time, Wi-Fi / HA drops
       - lambda: 'panel::fwu::tick(id(fw_update), fw::device::probation_left(), FW_PROBATION_S);'
       # Screen off after (setting screenOff, minutes from the last touch; 0 = never): no touch that long = the backlight
       # fades off and LVGL pauses, so the waking touch only wakes (the board's on_release resumes LVGL); once it runs

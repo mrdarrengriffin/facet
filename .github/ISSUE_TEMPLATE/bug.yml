@@ -9,9 +9,14 @@ body:
     id: what
     attributes:
       label: What happened
-      description: What you did, what you expected, and what happened instead.
+      description: What you did, and what happened.
     validations:
       required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+      description: What should have happened instead.
   - type: dropdown
     id: where
     attributes:
@@ -30,6 +35,16 @@ body:
     attributes:
       label: Firmware version or browser
       description: On a panel, Home Assistant shows the firmware version on its device page. On the docs site, your browser.
+  - type: textarea
+    id: report
+    attributes:
+      label: The panel's problem report
+      description: >-
+        On a panel, Settings > Report a problem has a QR code that opens this form with the version filled in, and
+        shows the address of the panel's report (http://<panel address>/fw/report). Open it on the same network, copy
+        all of it and paste it here. It holds the logs from before the last restart, Wi-Fi and Home
+        Assistant drops and the last crash, with tokens, keys and passwords removed.
+      render: text
   - type: textarea
     id: shots
     attributes:

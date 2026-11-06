@@ -64,6 +64,7 @@ check fw-notes bash -c 'o=$(mktemp) && c++ -std=c++17 -Wall -Wextra -Werror -o "
 check fw-settle bash -c 'o=$(mktemp) && c++ -std=c++17 -Wall -Wextra -Werror -o "$o" ../esphome/board/fw_settle.test.cpp && "$o"; r=$?; rm -f "$o"; exit $r'
 check fw-trial bash -c 'o=$(mktemp) && c++ -std=c++17 -Wall -Wextra -Werror -o "$o" ../esphome/board/fw_trial.test.cpp && "$o"; r=$?; rm -f "$o"; exit $r'
 check fw-shot bash -c 'o=$(mktemp) && c++ -std=c++17 -Wall -Wextra -Werror -o "$o" ../firmware/fw_shot.test.cpp && "$o"; r=$?; rm -f "$o"; exit $r'
+check fw-report bash -c 'o=$(mktemp) && c++ -std=c++17 -Wall -Wextra -Werror -o "$o" ../firmware/fw_report.test.cpp && "$o"; r=$?; rm -f "$o"; exit $r'
 check catalogue node tools/gen_catalogue.mjs --build "$B"
 fi
 

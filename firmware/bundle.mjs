@@ -52,7 +52,7 @@ const lsr = (d) => (existsSync(join(HERE, d)) ? readdirSync(join(HERE, d), { rec
 const coreExtra = ls('core', '.cpp').filter((f) => !OFF.has(f) && !['core/fw_core.cpp', 'core/fx_core.cpp', 'core/motion.cpp', 'core/atoms.cpp', 'core/states.cpp', 'core/mascot.cpp', 'core/device.cpp', 'core/fonts.cpp', 'core/icons.cpp', 'core/main.cpp', 'core/bench.cpp', 'core/test_hooks.cpp'].includes(f) && !f.endsWith('_lab.cpp'));  // *_lab.cpp: the workbench's fw_lab commands (main.cpp only)
 const coreFiles = [...ls('core', '.h'), ...coreExtra, 'core/fw_core.cpp', 'core/fx_core.cpp', 'core/motion.cpp', 'core/atoms.cpp', 'core/states.cpp', 'core/mascot.cpp', 'core/device.cpp', 'core/fonts.cpp', 'core/icons.cpp', ...ls('tokens', '.json'), 'tools/gen_colour.mjs', 'tools/gen_type.mjs', 'tools/gen_space.mjs', 'tools/gen_fx.mjs', 'tools/gen_layout.mjs', 'tools/gen_motion.mjs', 'tools/gen_states.mjs', 'tools/gen_mascot.mjs', 'tools/gen_chart.mjs', 'tools/gen_theme.mjs', ...ls('themes', '.json'), 'catalogue/contract.json', 'tools/lib/looks.mjs', 'tools/gen_settings.mjs', 'tools/gen_specs.mjs', ...ls('specs', '.json'), 'sources/sources.json', 'tools/gen_fonts.py', 'tools/facet_font.inc', 'tools/gen_icons.mjs', ...lsr('icons')];
 const imgFiles = ['fw_images.h', 'fw_imgdec.h', 'fw_tjpgd.h', 'fw_tjpgd.c', 'fw_pngle.h', 'fw_pngle.c', 'fw_miniz.c'];  // the panel's image fetch + decoders (fw_images.h)
-const glueFiles = [...imgFiles.map((f) => 'firmware/' + f), 'firmware/fw_device.h', 'firmware/fw_bench.h', 'firmware/fw_busy.h', 'firmware/fw_shot.h', 'firmware/esphome_init.py', 'firmware/bundle.mjs', 'renderer/tools/gen_agents.mjs', 'firmware/link.html', 'firmware/ai-prompt.txt'];  // relative to ROOT
+const glueFiles = [...imgFiles.map((f) => 'firmware/' + f), 'firmware/fw_device.h', 'firmware/fw_bench.h', 'firmware/fw_busy.h', 'firmware/fw_shot.h', 'firmware/fw_report.h', 'firmware/esphome_init.py', 'firmware/bundle.mjs', 'renderer/tools/gen_agents.mjs', 'firmware/link.html', 'firmware/ai-prompt.txt'];  // relative to ROOT
 const srcFiles = [...ls('foundations', '.cpp'), ...ls('components', '.cpp'), ...ls('screens', '.cpp'), ...ls('bench', '.cpp')].filter((f) => !OFF.has(f));  // bench = the stress item
 const read = (rel) => readFileSync(join(HERE, rel));
 // a house overlay (FW_SPECS_OVERLAY, tools/gen_specs.mjs) changes the baked-in specs: part of the core hash
@@ -88,6 +88,7 @@ put('fw_device.h', readFileSync(join(ROOT, 'firmware/fw_device.h')));
 put('fw_bench.h', readFileSync(join(ROOT, 'firmware/fw_bench.h')));
 put('fw_busy.h', readFileSync(join(ROOT, 'firmware/fw_busy.h')));  // the underrun counters' job bits (#118)
 put('fw_shot.h', readFileSync(join(ROOT, 'firmware/fw_shot.h')));  // screenshot read-back (fw_shot.test.cpp)
+put('fw_report.h', readFileSync(join(ROOT, 'firmware/fw_report.h')));  // the problem report's kept memory (fw_report.test.cpp)
 for (const f of imgFiles) put(f, readFileSync(join(ROOT, 'firmware', f)));
 execFileSync('node', [join(HERE, 'tools/gen_colour.mjs'), join(C, 'colour_gen.h')]);  // rewrites only on change
 wrote.add('colour_gen.h');

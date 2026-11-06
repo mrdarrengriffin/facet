@@ -299,7 +299,7 @@ void idle_tick(lv_timer_t *t) {
   auto *d = (Device *) lv_timer_get_user_data(t);
   if (d->stack.empty() || d->stack[0] != "home" || d->op != NONE || d->restyle || !known("idle")) return;
   const std::string top = base_of(d->stack.back());
-  if (top == "idle" || top == "setup" || top == "ha_link" || pointer_down()) return;
+  if (top == "idle" || top == "setup" || top == "ha_link" || top == "report" || pointer_down()) return;
   const char *v = setting("idleAfter");
   const uint32_t ms = (uint32_t) (v ? atol(v) : 0) * 1000u;
   if (!ms) return;
