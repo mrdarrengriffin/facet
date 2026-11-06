@@ -163,7 +163,7 @@ Not screens you add: what every panel has, most of it in Settings.
 | [Home Assistant link](https://mrdarrengriffin.github.io/facet/screens/settings/) `BETA` | Settings > Home Assistant: the panel's own link to Home Assistant, its address and token kept on the panel. |
 | [API keys](https://mrdarrengriffin.github.io/facet/screens/settings/) `BETA` | Settings > API keys: the keys scripts, automations and agents use to change the panel; you allow each on the glass, and revoke them here. |
 | [Update channels](https://mrdarrengriffin.github.io/facet/screens/settings/) `BETA` | Settings > Update channel: Stable releases, or Beta and Dev builds that come more often. |
-| [Report a problem](https://mrdarrengriffin.github.io/facet/screens/settings/) `COMING SOON` | Settings > Report a problem: the address of the panel's report page, with its logs kept across restarts and an issue filled in. |
+| [Report a problem](https://mrdarrengriffin.github.io/facet/screens/settings/) `BETA` | Settings > Report a problem: the address of the panel's report page, with its logs kept across restarts and an issue filled in. |
 
 More screens are on the way (thermostat, lock, vacuum, cameras, plants and others): see the
 [roadmap](https://mrdarrengriffin.github.io/facet/roadmap/).
