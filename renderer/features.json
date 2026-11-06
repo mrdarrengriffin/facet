@@ -13,14 +13,14 @@
   },
   "later": {
     "about": "Features held on the wip branch until they are finished (spec of contract parts, feed on the skeleton, gate green); the docs roadmap shows their rows as in progress.",
-    "roadmap": ["Placeholder", "Thermostat", "Thermostat dial", "Door lock", "Lock ring", "Hold button", "Plant monitor", "Plant gauge / row", "Robot vacuum", "Room tile", "Status block", "Level bar", "Floor plans", "Security cameras", "Camera tile", "Bins", "Lightning", "Lightning radar", "Overhead (flights)", "Flight radar (overhead flights)", "Blinds and curtains", "GitHub", "Pull request row", "Check row", "Agents", "3D print", "3D print model", "Sports (live scores)", "Sports surfaces"]
+    "roadmap": ["Placeholder", "Thermostat", "Thermostat dial", "Door lock", "Lock ring", "Hold button", "Plant monitor", "Plant gauge / row", "Robot vacuum", "Room tile", "Status block", "Level bar", "Floor plans", "Security cameras", "Camera tile", "Bins", "Lightning", "Lightning radar", "Blinds and curtains", "GitHub", "Pull request row", "Check row", "Agents", "3D print", "3D print model", "Sports (live scores)", "Sports surfaces"]
   },
   "features": [
     {
       "id": "system",
       "label": "Home, Settings and Set up",
       "docs": true, "status": "done", "firmware": true,
-      "screens": ["home", "settings", "screens", "screen_set", "ha_link", "agent_keys", "setup", "device"]
+      "screens": ["home", "settings", "screens", "screen_set", "ha_link", "agent_keys", "report", "setup", "device"]
     },
     {
       "id": "toasts",
@@ -94,6 +94,14 @@
       "docs": true, "status": "done", "firmware": true,
       "screens": ["energy"],
       "components": []
+    },
+    {
+      "id": "overhead",
+      "label": "Overhead",
+      "docs": true, "status": "preview", "firmware": false,
+      "screens": ["overhead"],
+      "components": ["flight_hero"],
+      "roadmap": ["Overhead (flights)", "Flight radar (overhead flights)"]
     },
     {
       "id": "workbench",

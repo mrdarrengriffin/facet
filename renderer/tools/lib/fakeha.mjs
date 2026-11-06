@@ -82,7 +82,7 @@ export class FakeHA {
     const e = [].concat(data.entity_id || [])[0];
     return e && this.known(e) ? demoReply(service, data) : null;
   }
-  ws(cmd) { return this.wsx?.(cmd) ?? demoWs(cmd, { empty: this.missing, prefix: 'test_', states: this.s }); }  // wsx: a test's own replies (null = the demo's)  // HA's result for the link's reads (Energy, the registries)  // HA's result for the link's reads (Energy, the registries)
+  ws(cmd) { return this.wsx?.(cmd) ?? demoWs(cmd, { empty: this.missing, prefix: 'test_', states: this.s }); }  // wsx: a test's own replies (null = the demo's)  // HA's result for the link's reads (Energy, the registries)
   // the device is told (fw_ha_connected) first, as a panel's API link is: Offline while down, not Unavailable
   disconnect() { this.down = true; this.t.log.push('ha: disconnected'); this.t.b.m._fw_ha_connected?.(0); this.push(); this.t.b.settle(1500); }
   reconnect() { this.down = false; this.t.log.push('ha: reconnected'); this.t.b.m._fw_ha_connected?.(1); this.push(); this.t.b.settle(1500); }
@@ -150,12 +150,42 @@ export class FakeImg {
   stats() { const m = this.t.b.m; return m._fw_img_stats ? JSON.parse(m.UTF8ToString(m._fw_img_stats())) : {}; }
 }
 
+// ---------------------------------------------------------------- fake web (the feeds' direct sources)
+// What the WASM host does for a feed's web read (core/net.h): the device lists the URLs it wants, the host streams the
+// body back (fw_net_chunk) and ends it (fw_net_got). serve(match, body | (url) => body) answers URLs matching (a
+// RegExp or a prefix); status(match, why) fails them; hang(match) never answers (the device times out). asked = every
+// URL read, in order; unknown URLs fail "not found". Never the real internet.
+export class FakeWeb {
+  constructor(t) { this.t = t; this.rules = []; this.asked = []; }
+  rule(match, r) { this.rules.unshift({ match, ...r }); return this; }
+  serve(match, body) { return this.rule(match, { body }); }
+  status(match, why) { return this.rule(match, { why }); }
+  hang(match) { return this.rule(match, { hang: true }); }
+  flush() {
+    const m = this.t.b.m;
+    if (!m?._fw_net_gets) return;
+    for (const { id, url } of JSON.parse(m.UTF8ToString(m._fw_net_gets()) || '[]')) {
+      this.asked.push(url);
+      const r = this.rules.find((x) => (x.match instanceof RegExp ? x.match.test(url) : url.startsWith(x.match)));
+      if (r?.hang) { this.t.log.push(`web: ${url} (no answer)`); continue; }
+      const body = r && !r.why ? (typeof r.body === 'function' ? r.body(url) : r.body) : null;
+      if (body !== null && body !== undefined) {
+        const b = typeof body === 'string' ? body : JSON.stringify(body);
+        this.t.b.str(b, (q) => m._fw_net_chunk(id, q, Buffer.byteLength(b, 'utf8')));
+      }
+      const why = body !== null && body !== undefined ? '' : r?.why || 'not found';
+      this.t.b.str(why, (q) => m._fw_net_got(id, why ? 0 : 1, q));
+      this.t.log.push(`web: ${url} -> ${why || 'ok'}`);
+    }
+  }
+}
+
 // ---------------------------------------------------------------- the test context (`t` in a test's run)
 export class Ctx {
   constructor(b) {
-    this.b = b; this.log = []; this.fails = []; this.ha = new FakeHA(this); this.img = new FakeImg(this); this.comp = null;
+    this.b = b; this.log = []; this.fails = []; this.ha = new FakeHA(this); this.img = new FakeImg(this); this.web = new FakeWeb(this); this.comp = null;
     const tick = b.tick.bind(b);
-    b.tick = (n = 1) => { for (let i = 0; i < n; i++) { tick(1); this.ha.serve(); this.img.flush(); } };  // the fake HA's replies (FakeHA.serve, opt in), the fake image host
+    b.tick = (n = 1) => { for (let i = 0; i < n; i++) { tick(1); this.ha.serve(); this.img.flush(); this.web.flush(); } };  // + the fake web (core/net.h)  // the fake HA's replies (FakeHA.serve, opt in), the fake image host
   }
   // -- mount
   async mount(comp, props = {}) {

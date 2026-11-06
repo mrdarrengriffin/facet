@@ -42,6 +42,11 @@
           "t": "page",
           "page": "moon",
           "size": "m"
+        },
+        {
+          "t": "page",
+          "page": "overhead",
+          "size": "m"
         }
       ]
     },
@@ -72,6 +77,10 @@
     {
       "id": "moon",
       "kind": "moon"
+    },
+    {
+      "id": "overhead",
+      "kind": "overhead"
     }
   ]
 }

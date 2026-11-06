@@ -61,7 +61,7 @@ std::string sig(fw::Props p) {
   ArduinoJson::JsonDocument rest;
   rest.set(p);
   if (!fw::st::gone(p["state"] | "default")) rest["state"] = "default";
-  if (!strcmp(p["preview"] | "", "flights")) rest.remove("planes");  // the radar takes new planes in place (FW_UPDATE)
+  if (!strcmp(p["preview"] | "", "flights")) rest.remove("planes"), rest.remove("radar_unit"), rest.remove("radar_range");  // the radar takes new planes in place (FW_UPDATE)
   if (!strcmp(p["preview"] | "", "media"))  // the visual takes them in place; play / pause = the dot and the sub (FW_UPDATE)
     for (const char *k : {"progress", "art", "playing", "accent", "sub"}) rest.remove(k);
   if (!strcmp(p["preview"] | "", "covers")) rest.remove("position");  // the window takes the position in place
@@ -155,7 +155,7 @@ void fill(lv_obj_t *c, fw::Props p) {
     k.robot = lv_obj_get_child(top, -1);
   } else if (!off && full && !strcmp(pv, "flights")) {  // the real Sky radar at card size (C8b, C52: the aircraft round home)
     ArduinoJson::JsonDocument fd;
-    fd["planes"] = p["planes"] | "[]", fd["size"] = "card";
+    fd["planes"] = p["planes"] | "[]", fd["size"] = "card", fd["unit"] = p["radar_unit"] | "km", fd["range"] = p["radar_range"] | "50";
     fw::find("sky_radar")->build(top, fd.as<fw::Props>());
     k.radar = lv_obj_get_child(top, -1);
   } else if (!off && full && !strcmp(pv, "moon")) {  // the real Moon phase at card size (C8b, C52: the moon tonight)
@@ -280,6 +280,8 @@ FW_COMPONENT(card, "Card", "components", R"({
     {"name": "phase", "about": "With the moon preview: where the moon is in its month, from 0 (new) through 0.5 (full) to 1.", "type": "range", "min": 0, "max": 1, "step": 0.01, "default": 0.25},
     {"name": "south", "about": "With the moon preview: draws the moon as seen from the southern half of the world.", "type": "bool", "default": false},
     {"name": "planes", "about": "With the flights preview: the aircraft round home, as the flights feed gives them.", "type": "text", "default": "[]"},
+    {"name": "radar_unit", "about": "With the flights preview: the radar's distance unit, km or mi.", "type": "select", "options": ["km", "mi"], "default": "km"},
+    {"name": "radar_range", "about": "With the flights preview: how far out the radar reaches, in its unit.", "type": "select", "options": ["10", "25", "50", "100"], "default": "50"},
     {"name": "colours", "about": "With the bins preview: the bins' colours, separated by commas, the first in front.", "type": "text", "default": "black"},
     {"name": "mode", "about": "What the middle of the card shows: value is a big short value such as 13°; text is a line of words such as the song playing.", "type": "select", "options": ["value", "text"], "default": "value"},
     {"name": "value", "about": "The big value shown in the middle when the mode is value.", "type": "text", "default": "13°"},
@@ -356,7 +358,7 @@ FW_UPDATE(card) {
     }
     if (lv_obj_t *rd = cards[root].radar) {  // the flights preview: the aircraft move, the card stays
       ArduinoJson::JsonDocument fd;
-      fd["planes"] = p["planes"] | "[]", fd["size"] = "card";
+      fd["planes"] = p["planes"] | "[]", fd["size"] = "card", fd["unit"] = p["radar_unit"] | "km", fd["range"] = p["radar_range"] | "50";
       fw::update_child(fw::find("sky_radar"), rd, fd.as<fw::Props>());
     }
     return true;

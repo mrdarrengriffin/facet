@@ -16,6 +16,7 @@
 //   fw_events() -> JSON               events + sound requests since the last call (fw::emit / fw::sound): [{stage,kind,name,detail}] or ""
 //   fw_ha_wants() -> JSON [[e, a]...]  HA pairs the built screens bind (core/ha.h); fw_ha_put(e, a, v) = a value from the host
 //   fw_ha_asks() -> JSON [{id, service, data}]  HA actions an adapter wants the reply of (drained); fw_ha_answer(id, ok, json)
+//   fw_net_gets() -> JSON [{id, url}...]  the feeds' web reads (core/net.h), drained; fw_net_chunk(id, p, n) / fw_net_got(id, ok, why)
 //   fw_img_wants() -> JSON [url...]  image URLs to fetch (core/images.h); fw_img_put(url, w, h, rgba) / fw_img_fail(url, why); fw_img_stats() -> JSON
 //   fw_audit(id) -> JSON              every object of the stage for the audit rule (tests/rules/audit.mjs, core/audit.h, README "Audit")
 //   fw_unclip(id)                     let every object draw outside its box (audit: what differs was clipped)
@@ -34,6 +35,7 @@
 #include "images.h"
 #include "fx.h"
 #include "feed.h"
+#include "net.h"
 #include "sheet.h"
 #include "core/lv_obj_style_private.h"  // the style list (fw_lab names the token styles)
 // LVGL private (src/core/lv_obj_draw_private.h): the ext draw size an object holds (fw::bleed sets it)
@@ -219,6 +221,27 @@ EMSCRIPTEN_KEEPALIVE void fw_ha_chunk(int id, const char *p, int n) { if (p && n
 // panel: its API link; the tests and previews say so themselves)
 EMSCRIPTEN_KEEPALIVE void fw_ha_connected(int on) { fw::ha::set_connected(on != 0); }
 EMSCRIPTEN_KEEPALIVE void fw_ha_got(int id, int ok, const char *why) { fw::dev::ha_link::done((uint32_t) id, ok != 0, why ? why : ""); }
+// the feeds' web reads (core/net.h: a direct source, such as a public flight API): the host fetches each one (the
+// workbench through its /api/wasm/web proxy: the APIs send no CORS headers) and streams the body back
+std::vector<std::pair<uint32_t, std::string>> &net_queue() {
+  static std::vector<std::pair<uint32_t, std::string>> q;
+  static const bool reg = (fw::net::on_get([](uint32_t id, const std::string &url) { q.push_back({id, url}); }), true);
+  (void) reg;
+  return q;
+}
+[[maybe_unused]] const bool net_registered = (net_queue(), true);
+EMSCRIPTEN_KEEPALIVE const char *fw_net_gets() {
+  static std::string out;
+  ArduinoJson::JsonDocument d;
+  ArduinoJson::JsonArray a = d.to<ArduinoJson::JsonArray>();
+  for (auto &r : net_queue()) { ArduinoJson::JsonObject o = a.add<ArduinoJson::JsonObject>(); o["id"] = r.first, o["url"] = r.second; }
+  net_queue().clear();
+  out.clear();
+  serializeJson(d, out);
+  return out.c_str();
+}
+EMSCRIPTEN_KEEPALIVE void fw_net_chunk(int id, const char *p, int n) { if (p && n > 0) fw::net::chunk((uint32_t) id, p, (size_t) n); }
+EMSCRIPTEN_KEEPALIVE void fw_net_got(int id, int ok, const char *why) { fw::net::finish((uint32_t) id, ok != 0, why ? why : ""); }
 EMSCRIPTEN_KEEPALIVE const char *fw_ha_link() {
   namespace hl = fw::dev::ha_link;
   static std::string out;
@@ -587,6 +610,7 @@ EMSCRIPTEN_KEEPALIVE const char *fw_hit(int id, int x, int y) {
 //   "probe", "<squeeze>"   -> {name: 1 | 0}: which size tokens (+ "squeeze") change stage id's pixels (each moved
 //                             and put back, rendered synchronously): the lab shows what this component really uses
 //   "theme_*", <json>      -> the theme engine: load, apply, dump, contrast, builtins (core/theme_lab.cpp)
+//   "value", "<e>|<a>"     -> the HA store's value (a feed's field), "" = none
 //   "feeds", ""            -> [Feed json] every feed (core/feed.h: fields required / optional + placeholder, the sample
 //                             words after one sample round each)
 //   "proof", ""            -> {bounds, overlap, trunc: [{x, y, w, h, why}]} for stage id: Body objects outside their
@@ -701,7 +725,13 @@ EMSCRIPTEN_KEEPALIVE const char *fw_lab(int id, const char *cmd, const char *arg
     out += "]";
     return out.c_str();
   }
-  if (c != "proof") return "tokens | tune | uses | probe | proof | feeds | theme_*";
+  if (c == "value") {  // "<entity>|<attribute>": the store's value now ("" = none): a feed's field read back by a test
+    const size_t bar = a.find('|');
+    const std::string *v = fw::ha::get(a.substr(0, bar), bar == std::string::npos ? "" : a.substr(bar + 1));
+    out = v ? *v : "";
+    return out.c_str();
+  }
+  if (c != "proof") return "tokens | tune | uses | probe | proof | feeds | value | theme_*";
   Stage *s = get(id);
   if (!s) return "{}";
   lv_obj_t *scr = lv_display_get_screen_active(s->d);

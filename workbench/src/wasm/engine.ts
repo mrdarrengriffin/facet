@@ -120,6 +120,9 @@ export class Engine {
       // ... and its WebSocket reads (ha_link::ws: {id, ws: the command}), through /api/panel/ha-ws, reads only
       // ... and its REST reads (ha_link::get: {id, get: the path}), through /api/panel/ha-get, reads only
       if (gets !== '[]') for (const g of JSON.parse(gets) as (number | { id: number; ws?: unknown; get?: string })[]) void (typeof g === 'number' ? e.haStates(g) : g.get !== undefined ? e.haGet(g.id, g.get) : e.haWs(g.id, g.ws));
+      // the feeds' web reads (core/net.h: a public API a direct source reads, such as adsb.lol), through /api/wasm/web (no CORS there)
+      const webs = e.m._fw_net_gets ? e.str(e.m._fw_net_gets()) : '[]';
+      if (webs !== '[]') for (const w of JSON.parse(webs) as { id: number; url: string }[]) void e.webGet(w.id, w.url);
     };
     requestAnimationFrame(frame);
     if (e.m._fw_ha_wants) e.haLoop();
@@ -245,6 +248,28 @@ export class Engine {
       }
     } catch (err) { why = String((err as Error)?.message || err); }
     if (this.alive) this.withStr(why, (pw) => this.m._fw_ha_got(id, ok, pw));
+  }
+  /** one web read for a feed (core/net.h), streamed into the module as the panel's HTTP task would */
+  private async webGet(id: number, url: string) {
+    let ok = 0, why = '';
+    try {
+      const r = await fetch(`/api/wasm/web?url=${encodeURIComponent(url)}`, { cache: 'no-store' });
+      if (!r.ok || !r.body) why = (await r.text().catch(() => '')).slice(0, 120) || `HTTP ${r.status}`;
+      else {
+        const rd = r.body.getReader();
+        for (;;) {
+          const { done, value } = await rd.read();
+          if (done || !this.alive) break;
+          for (let i = 0; i < value.length; i += 4096) {
+            const part = value.subarray(i, i + 4096), p = this.m._malloc(part.length);
+            this.m.HEAPU8.set(part, p);
+            try { this.m._fw_net_chunk(id, p, part.length); } finally { this.m._free(p); }
+          }
+        }
+        ok = 1;
+      }
+    } catch (err) { why = String((err as Error)?.message || err); }
+    if (this.alive) this.withStr(why, (pw) => this.m._fw_net_got(id, ok, pw));
   }
   private haPut(e: string, a: string, v: string) { this.withStr(e, (pe) => this.withStr(a, (pa) => this.withStr(v, (pv) => this.m._fw_ha_put(pe, pa, pv)))); }
   str(p: number) { return this.m.UTF8ToString(p) as string; }

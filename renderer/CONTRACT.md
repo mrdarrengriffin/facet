@@ -412,6 +412,20 @@ showed its made-up fortnight on a panel, and kept every minute's copy of it. *Ch
 (sample, ha, unavailable and back); `missing_entities` (Not found / Unavailable per screen); the leak rule (sample words on real data); `no_sample` (the factory deck on a
 linked panel shows no sample words); the Calendar's moving-clock memory test.
 
+**C51b. Home Assistant is optional: a screen's Source lists a keyless public source first, then one entry per Home
+Assistant integration.** A screen's `source` setting offers, in order: a public API that needs no account or key (the
+default, read by the panel itself through `core/net.h`, asking only for what the screen shows: a small box round home,
+a few reads a minute while the feed is shown); then one entry per Home Assistant integration that provides the data,
+named for it ("FlightRadar24 (Home Assistant)", "ADS-B receiver: dump1090 / readsb / tar1090 (Home Assistant)"); then
+`sample`. Each entry is an adapter of the screen's one feed (C51): it maps its source onto the feed's own model (the
+Overhead feed's Flight), and everything after that (filters, words, units) is shared. A source that cannot fill the
+feed yet is listed in `sources/sources.json` as planned, with why. A direct source's terms (licence, rate limit, CORS:
+the workbench reads it through its `/api/wasm/web` allowlist) are written next to its row.
+*Why:* a panel must work in a home without Home Assistant, and a home with an integration should not need a second
+account for the same data; one model per feed keeps every source looking the same. *Check:* the feed's functional tests
+per adapter (`tests/functional/overhead_screen.test.mjs`: adsb.lol on the fake web, FlightRadar24 and an ADS-B receiver
+on the fake Home Assistant); **TODO** lint: a contract screen's `source` options start with a direct or builtin source.
+
 **C52. Every screen comes with its Home card.** A screen's spec carries `"card"`: the Card a Home page card for it
 shows (icon = the screen's icon top left, preview artwork top right, the value or words that matter now, the sub
 line), bound to the SAME feeds as the screen (C51); Home applies the page's feed settings, so the card and the screen
@@ -788,6 +802,7 @@ Rules whose check is TODO (each is a gate item; until it exists, review checks t
 | C43 | fuzz sizes 0 x 0 .. minimum |
 | C52 | lint: every page spec has a `card`; the screen audit renders each card in every feed state |
 | C51 | lint: contract spec binds name only `panel.*` feeds or the screen's params; every adapter listed in sources.json exists in code |
+| C51b | lint: a contract screen's `source` options start with a direct (keyless) or builtin source; the Weather and other screens follow (an issue of its own) |
 
 ## 16. Files
 

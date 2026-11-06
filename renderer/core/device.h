@@ -159,6 +159,8 @@ namespace calendar_source { const char *control(const std::string &v); std::stri
 // the Media feed (core/media_source.cpp): media.control on panel.media; "" = done, else why not; svc = a media_player
 // service to call on ent with data ("" = none)
 namespace media_source { const char *control(const std::string &v, std::string *svc, std::string *ent, std::string *data); }
+// the Flights feed's selection (core/flights_source.cpp): flights.select; true = the lead again (open its details)
+namespace flights_source { bool select(const std::string &d); }
 constexpr int TIMERS_MAX = 4;
 constexpr const char *TIMER_ENTITY = "panel.timer";
 struct TimerItem { int id = 0; std::string name; int total = 0; uint32_t ends = 0; int state = 1; bool named = false; };  // named = given a name (HA / voice); else it shows as its length  // state 1 running, 2 done
