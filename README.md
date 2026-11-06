@@ -78,7 +78,7 @@ the panel's `/ai` (one prompt to paste) or `/llms.txt`.
 
 Each screen has a page in the docs with a live preview you can tap and drag, what it shows and the
 data it reads. A **BETA** chip on a picture: the screen is on the beta firmware, not yet in a stable release.
-**COMING SOON**: it is in the docs, not on a released firmware yet.
+**COMING SOON**: it is in the docs, not on a released firmware yet. The same marks show on the panel features below.
 
 <table>
 <tr>
@@ -107,65 +107,63 @@ The time as the one hero on the screen. Also the idle screen.</p>
 </tr>
 <tr>
 <td width="50%" valign="top">
-<a href="https://mrdarrengriffin.github.io/facet/screens/idle/"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/screen-idle-dark.png"><img alt="Idle clock screen" src=".github/assets/screen-idle-light.png" width="200"></picture></a>
-<p><a href="https://mrdarrengriffin.github.io/facet/screens/idle/"><b>Idle clock</b></a><br>
-The Clock without its header, shown when no one has touched the panel for a while, or the album art while music plays.</p>
-</td>
-<td width="50%" valign="top">
 <a href="https://mrdarrengriffin.github.io/facet/screens/timer/"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/screen-timer-dark.png"><img alt="Timer screen" src=".github/assets/screen-timer-light.png" width="200"></picture></a>
 <p><a href="https://mrdarrengriffin.github.io/facet/screens/timer/"><b>Timer</b></a><br>
 A running timer as the hero, with one-tap lengths when nothing is running.</p>
 </td>
-</tr>
-<tr>
 <td width="50%" valign="top">
 <a href="https://mrdarrengriffin.github.io/facet/screens/weather/"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/screen-weather-dark.png"><img alt="Weather screen" src=".github/assets/screen-weather-light.png" width="200"></picture></a>
 <p><a href="https://mrdarrengriffin.github.io/facet/screens/weather/"><b>Weather</b></a><br>
 The temperature, one line, rain in the next hour and the hours ahead.</p>
 </td>
+</tr>
+<tr>
 <td width="50%" valign="top">
 <a href="https://mrdarrengriffin.github.io/facet/screens/weather/"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/screen-weather_days-dark.png"><img alt="Weather, 5 days screen" src=".github/assets/screen-weather_days-light.png" width="200"></picture></a>
 <p><a href="https://mrdarrengriffin.github.io/facet/screens/weather/"><b>Weather, 5 days</b></a><br>
 The next five days from the Weather screen, each with its high, low and rain.</p>
 </td>
-</tr>
-<tr>
 <td width="50%" valign="top">
 <a href="https://mrdarrengriffin.github.io/facet/screens/moon/"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/screen-moon-dark.png"><img alt="Moon screen" src=".github/assets/screen-moon-light.png" width="200"></picture></a>
 <p><a href="https://mrdarrengriffin.github.io/facet/screens/moon/"><b>Moon</b></a><br>
 Tonight's moon phase, worked out on the panel with no API.</p>
 </td>
+</tr>
+<tr>
 <td width="50%" valign="top">
 <a href="https://mrdarrengriffin.github.io/facet/screens/overhead/"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/screen-overhead-dark.png"><img alt="Overhead screen" src=".github/assets/screen-overhead-light.png" width="200"></picture></a>
 <p><a href="https://mrdarrengriffin.github.io/facet/screens/overhead/"><b>Overhead</b></a><br>
 The aircraft flying over your home on a radar: the closest one, where to look for it, its height and speed.</p>
 </td>
-</tr>
-<tr>
 <td width="50%" valign="top">
 <a href="https://mrdarrengriffin.github.io/facet/screens/calendar/"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/screen-calendar-dark.png"><img alt="Calendar screen" src=".github/assets/screen-calendar-light.png" width="200"></picture></a>
 <p><a href="https://mrdarrengriffin.github.io/facet/screens/calendar/"><b>Calendar</b></a><br>
 What's next, then today and the days ahead as an agenda or a month.</p>
 </td>
+</tr>
+<tr>
 <td width="50%" valign="top">
 <a href="https://mrdarrengriffin.github.io/facet/screens/energy/"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/screen-energy-dark.png"><img alt="Energy screen" src=".github/assets/screen-energy-light.png" width="200"></picture></a>
 <p><a href="https://mrdarrengriffin.github.io/facet/screens/energy/"><b>Energy</b></a><br>
 Today's cost so far, the price you're on and today's half-hours.</p>
 </td>
 </tr>
-<tr>
-<td width="50%" valign="top">
-<a href="https://mrdarrengriffin.github.io/facet/screens/settings/"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/screen-settings-dark.png"><img alt="Settings screen" src=".github/assets/screen-settings-light.png" width="200"></picture></a>
-<p><a href="https://mrdarrengriffin.github.io/facet/screens/settings/"><b>Settings</b></a><br>
-Every setting on the panel itself: theme, accent, sounds, screens, idle and updates.</p>
-</td>
-<td width="50%" valign="top">
-<a href="https://mrdarrengriffin.github.io/facet/screens/setup/"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/screen-setup-dark.png"><img alt="Set up screen" src=".github/assets/screen-setup-light.png" width="200"></picture></a>
-<p><a href="https://mrdarrengriffin.github.io/facet/screens/setup/"><b>Set up</b></a><br>
-What a new panel shows until it is on Wi-Fi and added to Home Assistant, one step at a time.</p>
-</td>
-</tr>
 </table>
+
+### On every panel
+
+Not screens you add: what every panel has, most of it in Settings.
+
+| Feature | What it is |
+|---|---|
+| [Set up](https://mrdarrengriffin.github.io/facet/screens/setup/) | What a new panel shows until it is on Wi-Fi and added to Home Assistant, one step at a time. |
+| [Settings](https://mrdarrengriffin.github.io/facet/screens/settings/) | Every setting on the panel itself: theme, accent, sounds, screens, idle and updates. |
+| [Screens and Home](https://mrdarrengriffin.github.io/facet/screens/settings/) | Settings > Screens: every screen of the panel with where its data comes from, on or off; tap one for its source and options. |
+| [Idle clock](https://mrdarrengriffin.github.io/facet/screens/idle/) `BETA` | The Clock without its header, shown when no one has touched the panel for a while, or the album art while music plays. |
+| [Home Assistant link](https://mrdarrengriffin.github.io/facet/screens/settings/) `BETA` | Settings > Home Assistant: the panel's own link to Home Assistant, its address and token kept on the panel. |
+| [API keys](https://mrdarrengriffin.github.io/facet/screens/settings/) `BETA` | Settings > API keys: the keys scripts, automations and agents use to change the panel; you allow each on the glass, and revoke them here. |
+| [Update channels](https://mrdarrengriffin.github.io/facet/screens/settings/) `BETA` | Settings > Update channel: Stable releases, or Beta and Dev builds that come more often. |
+| [Report a problem](https://mrdarrengriffin.github.io/facet/screens/settings/) `COMING SOON` | Settings > Report a problem: the address of the panel's report page, with its logs kept across restarts and an issue filled in. |
 
 More screens are on the way (thermostat, lock, vacuum, cameras, plants and others): see the
 [roadmap](https://mrdarrengriffin.github.io/facet/roadmap/).

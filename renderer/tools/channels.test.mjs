@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { inflateSync } from 'node:zlib';
-import { channelErrors, channelOf, channels, cmpVer, R } from './features.mjs';
+import { channelErrors, channelOf, channels, cmpVer, panelFeatures, R } from './features.mjs';
 import { CHIP, chipBox, chipColours, drawChip } from './lib/chip.mjs';
 
 const man = () => JSON.parse(readFileSync(join(R, 'features.json'), 'utf8'));
@@ -102,5 +102,28 @@ test('README pictures: the chip is on exactly the screens that are not Stable', 
         assert.equal(hasChip(img, ch, theme), want, `screen-${id}-${theme}.png: ${want ? 'no' : 'a'} ${ch} chip (channel ${c[id].channel}; render again: tools/readme_assets.mjs)`);
       }
     }
+  }
+});
+
+test('features.json: a panel feature is a screen or a setting', () => {
+  const m = man();
+  m.panel_features.list.push({ id: 'x', label: 'X', about: 'x', screen: 'nope' });
+  assert.match(channelErrors(m).join('\n'), /nope is not a screen/);
+  const m2 = man();
+  m2.panel_features.list.push({ id: 'y', label: 'Y', about: 'y', setting: 'updateChannel' });
+  assert.match(channelErrors(m2).join('\n'), /a setting says since/);
+});
+
+test('README: the screens table has screens only; On every panel lists each panel feature with its mark', () => {
+  const readme = readFileSync(join(R, '..', 'README.md'), 'utf8');
+  const c = channels();
+  for (const [, id] of readme.matchAll(/assets\/screen-([a-z0-9_]+)-dark\.png/g)) assert.equal(c[id]?.kind, 'screen', `${id}: a panel feature in the screens table`);
+  const sec = readme.slice(readme.indexOf('### On every panel'));
+  assert.ok(readme.includes('### On every panel'), 'README: no On every panel section');
+  const MARK = { stable: '', beta: ' `BETA`', soon: ' `COMING SOON`' };
+  for (const p of panelFeatures()) {
+    const row = sec.split('\n').find((l) => l.startsWith(`| [${p.label}](`));
+    assert.ok(row, `README On every panel: no row for ${p.label}`);
+    assert.match(row, new RegExp(`^\\| \\[[^\\]]+\\]\\([^)]+\\)${MARK[p.channel].replace(/`/g, '`')} \\|`), `README On every panel: ${p.label} is ${p.channel}`);
   }
 });

@@ -41,6 +41,11 @@ The docs site and the README show every screen, each with its channel, from one 
 - **Coming soon**: in no release yet: on `main` and in the docs (`firmware: false`, or `since: "next"`). A quieter
   "Coming soon" badge and chip.
 
+Screens are what people put on the panel or a Home deck. What every panel has (set up, Settings, the idle clock, the
+Home Assistant link, API keys, update channels, report a problem) is listed in `panel_features` instead: the docs and
+the README show these under **On every panel**, never among the screens, with the same channel marks. An entry is one
+of the panel's own screens (its channel is that screen's) or a setting with its own `since`.
+
 Every feature with `firmware: true` says `since`: the version its screens first shipped in, or `next`. A screen that
 shipped later than the rest of its feature has its own entry in `screen_since`. `node renderer/tools/features.mjs check`
 (build.sh, check.sh, CI) fails when one is missing, and, where the release tags are fetched (CI fetches them), when one
@@ -99,7 +104,8 @@ V = the version, for example `1.0.0`. A failed check stops the day.
 
 1. `git switch main && git pull && git status --short`: empty, and the last nightly gate green.
 2. `(cd renderer && node tools/gen_catalogue.mjs) && git status --short`: empty (else commit "Catalogue: V").
-3. Read the root README: the screens table is every screen the docs list, with its channel chip; the panels table
+3. Read the root README: the screens table is every screen the docs list, with its channel chip, and On every
+   panel marks each panel feature's channel; the panels table
    says exactly what is missing, if anything. `node renderer/tools/features.mjs since --write V` (Screen channels,
    below), then `(cd renderer && node tools/readme_assets.mjs)` so the README pictures carry the new chips.
 4. `node firmware/release-notes.mjs check V`: the notes are written and read well (Release notes, above).

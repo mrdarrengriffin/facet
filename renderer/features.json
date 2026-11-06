@@ -9,6 +9,19 @@
     "stable": "0.4.0",
     "about": "Screen channels (RELEASING.md 'Screen channels'). stable = the latest stable release's version. Every feature with firmware or docs true says since: the release its screens first shipped in, or next while no release has them yet; screen_since overrides it for one screen that shipped later. A screen's channel: stable when since <= release.stable, beta when since is a released beta, soon (Coming soon) when since is next or the feature is not on the firmware. tools/features.mjs check fails when one is missing, and compares them with the release tags when the tags are there (`features.mjs since` prints what the tags say). Before a tag: `node renderer/tools/features.mjs since --write V`."
   },
+  "panel_features": {
+    "about": "What every panel has, not a screen you put on it or on a Home deck: the docs list these under On every panel (Screens overview, root README), never among the screens. An entry is one of the panel's own screens (screen: its channel is that screen's) or a setting (setting: an id in tokens/settings.json, with its own since). A screen listed here is kind panel; every other screen is kind screen.",
+    "list": [
+      {"id": "setup", "label": "Set up", "screen": "setup", "about": "What a new panel shows until it is on Wi-Fi and added to Home Assistant, one step at a time."},
+      {"id": "settings", "label": "Settings", "screen": "settings", "about": "Every setting on the panel itself: theme, accent, sounds, screens, idle and updates."},
+      {"id": "screens", "label": "Screens and Home", "screen": "screens", "also": ["screen_set"], "about": "Settings > Screens: every screen of the panel with where its data comes from, on or off; tap one for its source and options."},
+      {"id": "idle", "label": "Idle clock", "screen": "idle", "about": "The Clock without its header, shown when no one has touched the panel for a while, or the album art while music plays."},
+      {"id": "ha_link", "label": "Home Assistant link", "screen": "ha_link", "about": "Settings > Home Assistant: the panel's own link to Home Assistant, its address and token kept on the panel."},
+      {"id": "agent_keys", "label": "API keys", "screen": "agent_keys", "about": "Settings > API keys: the keys scripts, automations and agents use to change the panel; you allow each on the glass, and revoke them here."},
+      {"id": "update_channel", "label": "Update channels", "setting": "updateChannel", "since": "0.5.0-beta.1", "about": "Settings > Update channel: Stable releases, or Beta and Dev builds that come more often."},
+      {"id": "report", "label": "Report a problem", "screen": "report", "about": "Settings > Report a problem: the address of the panel's report page, with its logs kept across restarts and an issue filled in."}
+    ]
+  },
   "channels": {
     "stable": "Stable",
     "beta": "Beta",

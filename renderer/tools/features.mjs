@@ -190,16 +190,43 @@ export function channelErrors(man) {
       if (!ok(v)) errors.push(`${ft.id}: screen_since ${id} ${JSON.stringify(v)} is a version or next`);
     }
   }
+  // panel features: one of the panel's own screens, or a setting with its own since
+  const screensOf = new Set(man.features.flatMap((f) => f.screens ?? []));
+  const settingIds = settingsIds(readFileSync(join(R, 'tokens', 'settings.json'), 'utf8'));
+  const seen = new Set();
+  for (const p of man.panel_features?.list ?? []) {
+    const at = `panel_features ${p.id ?? '?'}`;
+    if (!p.id || !p.label || !p.about) errors.push(`${at}: id, label and about`);
+    if (seen.has(p.id)) errors.push(`${at}: listed twice`);
+    seen.add(p.id);
+    if (!p.screen === !p.setting) errors.push(`${at}: one of screen or setting`);
+    for (const id of [p.screen, ...(p.also ?? [])].filter(Boolean)) if (!screensOf.has(id)) errors.push(`${at}: ${id} is not a screen of any feature`);
+    if (p.setting) {
+      if (!settingIds.has(p.setting)) errors.push(`${at}: setting ${p.setting} is not in tokens/settings.json`);
+      if (!ok(p.since)) errors.push(`${at}: a setting says since (a version or next), not ${JSON.stringify(p.since)}`);
+    } else if (p.since !== undefined) errors.push(`${at}: since comes from its screen (features[].since / screen_since)`);
+  }
   return errors;
 }
-/** screen id -> { channel, since, feature } for every screen of a feature shown in the docs or on the firmware */
+const settingsIds = (src) => new Set([...src.matchAll(/"id":\s*"([A-Za-z0-9_]+)"/g)].map((m) => m[1]));
+/** the screens that are panel features (kind panel: Set up, Settings, the idle clock ...), not screens people add */
+export const panelScreens = (man) => new Set((man.panel_features?.list ?? []).flatMap((p) => [p.screen, ...(p.also ?? [])].filter(Boolean)));
+/** panel features with their channel: [{ id, label, about, screen, setting, channel, since }] */
+export function panelFeatures(man = load().man) {
+  const ch = channels(man);
+  return (man.panel_features?.list ?? []).map((p) => {
+    const c = p.screen ? ch[p.screen] : { channel: channelOf(p.since, man.release.stable), since: p.since };
+    return { ...p, channel: c?.channel ?? 'soon', since: c?.since ?? null };
+  });
+}
+/** screen id -> { channel, since, feature, kind (screen | panel) } for every screen of a feature shown in the docs or on the firmware */
 export function channels(man = load().man) {
-  const out = {};
+  const out = {}, panel = panelScreens(man);
   for (const ft of man.features) {
     if (!ft.docs && !ft.firmware) continue;
     for (const id of ft.screens ?? []) {
       const since = ft.firmware ? (ft.screen_since?.[id] ?? ft.since ?? null) : null;
-      out[id] = { channel: channelOf(since, man.release.stable, ft.firmware), since, feature: ft.id };
+      out[id] = { channel: channelOf(since, man.release.stable, ft.firmware), since, feature: ft.id, kind: panel.has(id) ? 'panel' : 'screen' };
     }
   }
   return out;
@@ -217,6 +244,7 @@ export function tagReleases(man = load().man) {
   for (const v of vs) {
     const m = JSON.parse(git('show', `${v.ref}:renderer/features.json`));
     v.screens = new Set(m.features.filter((f) => f.firmware).flatMap((f) => f.screens ?? []));
+    try { v.settings = settingsIds(git('show', `${v.ref}:renderer/tokens/settings.json`)); } catch { v.settings = new Set(); }
   }
   return vs;
 }
@@ -238,6 +266,11 @@ export function tagErrors(man = load().man, rel = tagReleases(man)) {
       if (st && !st.screens.has(id)) errors.push(`${id}: stable (since ${c.since}) but not on the ${st.ref} firmware`);
     } else if (!at) errors.push(`${id}: since ${c.since} is not a tagged release`);
     else if (first?.version !== c.since) errors.push(`${id}: since ${c.since}, the tags say ${first ? first.version : 'next'}`);
+  }
+  for (const p of (man.panel_features?.list ?? []).filter((x) => x.setting)) {
+    const first = rel.find((v) => v.settings.has(p.setting));
+    const want = !first ? 'next' : cmpVer(first.version, stable) <= 0 ? null : first.version;  // null: stable, any since <= stable
+    if (want === null ? p.since === 'next' || cmpVer(p.since, stable) > 0 : p.since !== want) errors.push(`panel_features ${p.id}: since ${p.since}, the tags say ${first ? first.version : 'next'}`);
   }
   return errors;
 }
@@ -284,7 +317,8 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   } else if (cmd === 'table') {
     for (const f of L.features) console.log(`${f.id.padEnd(12)} docs ${f.docs ? 'on ' : 'off'}  ${f.status.padEnd(7)} firmware ${f.firmware ? 'on ' : 'off'}  ${f.label}`);
   } else if (cmd === 'channels') {
-    for (const [id, c] of Object.entries(channels(L.man))) console.log(`${id.padEnd(12)} ${c.channel.padEnd(6)} ${c.since ?? '-'}`);
+    for (const [id, c] of Object.entries(channels(L.man))) console.log(`${id.padEnd(14)} ${c.kind.padEnd(6)} ${c.channel.padEnd(6)} ${c.since ?? '-'}`);
+    for (const p of panelFeatures(L.man).filter((x) => x.setting)) console.log(`${p.id.padEnd(14)} panel  ${p.channel.padEnd(6)} ${p.since ?? '-'} (setting ${p.setting})`);
   } else if (cmd === 'since') {
     const w = process.argv.indexOf('--write');
     if (w > 0) {
