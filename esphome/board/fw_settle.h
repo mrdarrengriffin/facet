@@ -63,6 +63,16 @@ inline std::string channel_url(std::string base, const char *ch) {
     base.replace(k, 8, std::string("ota-") + ch + ".json");
   return base;
 }
+// the manifest URL with a throwaway query (?t=<stamp>): GitHub Pages serves ota*.json with max-age 600, so without it
+// a check up to 10 min after a release could get the old manifest from the CDN. A ?t= / &t= already there is replaced
+// (it is the last part); relative firmware paths still resolve (ESPHome joins them at the last '/').
+inline std::string fresh_url(std::string url, uint32_t stamp) {
+  size_t q = url.find("?t=");
+  if (q == std::string::npos) q = url.find("&t=");
+  if (q != std::string::npos) url.erase(q);
+  url += url.find('?') == std::string::npos ? "?t=" : "&t=";
+  return url + std::to_string(stamp);
+}
 // A channel change only records the manifest (want()): the hook runs inside the select's state publish, before the
 // select has stored its value, and ESPHome writes stored values to flash once a minute, so a restart soon after a
 // check started inside the change (a crash in the fetch, a power dip) came back on the old channel. The next tick

@@ -76,6 +76,13 @@ int main() {
     EXPECT(channel_url(b, "stable") == b);
     EXPECT(channel_url(b, "beta") == "https://example.org/firmware/guition-4848s040/ota-beta.json");
     EXPECT(channel_url(b, "dev") == "https://example.org/firmware/guition-4848s040/ota-dev.json");
+    // every check asks a new URL (the CDN's cache), one ?t= only, other queries kept
+    EXPECT(fresh_url(b, 7) == b + "?t=7");
+    EXPECT(fresh_url(fresh_url(b, 7), 8) == b + "?t=8");
+    EXPECT(fresh_url(b + "?x=1", 9) == b + "?x=1&t=9");
+    EXPECT(fresh_url(fresh_url(b + "?x=1", 9), 10) == b + "?x=1&t=10");
+    // ESPHome joins a relative firmware path at the last '/': still the board's folder
+    { const std::string f = fresh_url(channel_url(b, "dev"), 123); EXPECT(f.substr(0, f.rfind('/') + 1) == "https://example.org/firmware/guition-4848s040/"); }
     EXPECT(channel_url(b, nullptr) == b);
     EXPECT(channel_url("https://example.org/manifest.json", "dev") == "https://example.org/manifest.json");
   }

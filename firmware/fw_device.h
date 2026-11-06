@@ -1530,7 +1530,7 @@ inline const char *built() {  // the bundle's build time (fw::bundle::INFO "buil
   return b.c_str();
 }
 inline uint32_t up_s() { return (uint32_t) (esp_timer_get_time() / 1000000); }
-inline uint32_t epoch_now() { const time_t t = time(nullptr); return t > 1600000000 ? (uint32_t) t : 0; }
+inline uint32_t epoch_now() { const time_t t = ::time(nullptr); return t > 1600000000 ? (uint32_t) t : 0; }
 inline std::string clock_text(uint32_t ep) {
   if (!ep) return "";
   const time_t t = ep;

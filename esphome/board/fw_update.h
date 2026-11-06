@@ -26,6 +26,8 @@
 #include <cstdio>
 #include <string>
 #include <vector>
+#include <ctime>
+#include "esp_random.h"
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -70,6 +72,15 @@ inline const char *version() {
   return "";
 #endif
 }
+// the throwaway query of a manifest URL (fw_settle.h fresh_url): wall time once known, else a per-boot random base +
+// uptime, so no two checks ask the same URL
+inline uint32_t stamp() {
+  const time_t t = ::time(nullptr);
+  if (t > 1600000000) return (uint32_t) t;
+  static const uint32_t base = esp_random() & 0x3fffffff;
+  return base + (uint32_t) (esp_timer_get_time() / 1000000);
+}
+inline std::string fresh(const std::string &url) { return url.empty() ? url : fw::settle::fresh_url(url, stamp()); }
 // the release notes of the versions between this build and the offered one (see the top)
 struct Notes {
   esphome::http_request::HttpRequestComponent *http = nullptr;
@@ -135,7 +146,7 @@ inline void notes_check(UpdateEntity *u) {
   n.want = key;
   n.tried = now;
   n.busy = 1;
-  auto *job = new NotesJob{n.url, i.current_version};
+  auto *job = new NotesJob{fresh(n.url), i.current_version};  // past the CDN's cache, as the entity's check
   if (xTaskCreate(notes_task, "fw_notes", 8192, job, 1, nullptr) != pdPASS) {
     delete job;
     n.busy = 0;
@@ -217,10 +228,14 @@ inline void up_to_date(UpdateEntity *u) {
 inline void tick(HttpRequestUpdate *u, int left, int total) {
   notes_take(u);
   channel().step(checking(u), [] { esphome::global_preferences->sync(); }, [u](const std::string &url) {
-    u->set_source_url(url);
+    u->set_source_url(fresh(url));
     set_url(url);
     u->update();
   });
+  // every check asks a new manifest URL (?t=, past GitHub Pages' 10 min cache): the entity's hourly poll, Home
+  // Assistant's "check for updates" and ours all start from whatever source_url holds then. Only between checks: the
+  // entity's task reads the string for the whole fetch.
+  if (!checking(u) && !notes().url.empty()) u->set_source_url(fresh(notes().url));
   const unsigned a = clock().step(left, esp_timer_get_time());
   if (a & fw::settle::SETTLING) settling(u, left, total);
   if (a & fw::settle::CONFIRM) fw::device::probation_confirm();
