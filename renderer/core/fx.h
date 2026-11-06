@@ -76,6 +76,8 @@ void fit_grid(lv_obj_t *label);
 // equal parts (a Segmented "fill"): row's children share its content width, each on the 4 px grid, the last takes the
 // remainder; again on every size change of row (the sums live here, C8)
 void equal(lv_obj_t *row);
+void rest_fit(lv_obj_t *row);  // a hugging row of a text and its "dot" rest: the rest no wider than the row's parent leaves (C40)
+void word_fit(lv_obj_t *slot, lv_obj_t *word);  // the word in a Word slot (Unavailable): never wider than the slot's parent gives, "..." past it
 // The Grid layout's geometry (C8: a layout arranges; the sums live here so the component holds no size). grid() makes
 // `root` a grid of equal cells: `cols` columns, or min = an icon size name ("glyph", "icon" ...): as many min-wide cells
 // + gaps as fit, at most 12 ("none" = cols); gap "none" | "near" (space:3) | "group" (layout:gutter) | "block"

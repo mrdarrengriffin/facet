@@ -76,7 +76,8 @@ void fill(lv_obj_t *h, fw::Props p, bool opening) {
   lv_obj_t *line = h;
   if (*unit) {  // number + unit in one box on the grid
     line = fx::box(h, "row-top");
-    fx::use(line, "hug");
+    fx::use(line, stack ? "hug" : "fill");  // in a row: the row's height (the number's type box), not its translated text's;
+                                            // fit_grid below sets the width
     fx::use(line, "gap:2");
   }
   lv_obj_t *num = fx::text(line, n, type, off ? "fg:unavailable-ink" : accent ? "fg:accent-text" : "fg:text", "none");

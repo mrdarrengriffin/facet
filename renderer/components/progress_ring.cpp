@@ -65,8 +65,9 @@ void go(lv_obj_t *s, int32_t to) {
   else fw::animate(s, fw::st::SWEEP, {show, r->shown, to, fw::mo::VALUE});
 }
 
-// the workbench sample: a made-up Hero block in the slot (the real one, C8b)
-void sample(lv_obj_t *slot, const char *kind) {
+// the workbench sample: a made-up Hero block in the slot (the real one, C8b); compact = the Timer page's small ring,
+// whose hero takes role value (specs/timer.json), so a theme's wider type still fits the hole
+void sample(lv_obj_t *slot, const char *kind, bool small) {
   lv_obj_clean(slot);
   if (!strcmp(kind, "none")) return;
   const fw::Component *c = fw::find("hero_block");
@@ -78,6 +79,7 @@ void sample(lv_obj_t *slot, const char *kind) {
   d["layout"] = "stack";  // as on the Timer page: label over the time over the line
   d["line"] = done ? "done" : "ends 14:52";
   d["accent"] = done;
+  if (small) d["role"] = "value";
   if (off) d["state"] = "unavailable";
   c->build(slot, d.as<fw::Props>());
 }
@@ -87,6 +89,7 @@ void style(lv_obj_t *s) {
   fx::use(s, "max-w:timer-ring-sm", ST_SM);
 }
 bool compact(fw::Props p) { return !strcmp(p["size"] | "normal", "compact"); }
+std::string sig(fw::Props p) { return std::string(p["sample"] | "none") + (compact(p) ? "|sm" : ""); }
 }  // namespace
 
 FW_COMPONENT(progress_ring, "Progress ring", "components", R"({
@@ -128,8 +131,8 @@ FW_COMPONENT(progress_ring, "Progress ring", "components", R"({
   if (compact(p)) fx::state(s, ST_SM, true);
   fx::slot(r->slot, "centre");
   lv_obj_add_flag(r->slot, fw::spec::SLOT);
-  fw::shape(s, p["sample"] | "none");
-  sample(r->slot, p["sample"] | "none");
+  fw::shape(s, sig(p));
+  sample(r->slot, p["sample"] | "none", compact(p));
   r->off = off_of(p);
   if (r->off) fx::state(s, fw::st::OFF, true);
   r->shown = r->off ? 0 : share_of(p);  // opening: at rest (C34), no sweep
@@ -140,7 +143,7 @@ FW_COMPONENT(progress_ring, "Progress ring", "components", R"({
 FW_UPDATE(progress_ring) {
   Ring *r = of(root);
   if (!r) return false;
-  if (!fw::shape(root, p["sample"] | "none")) sample(r->slot, p["sample"] | "none");
+  if (!fw::shape(root, sig(p))) sample(r->slot, p["sample"] | "none", compact(p));
   if (compact(p) != lv_obj_has_state(root, ST_SM)) { fx::state(root, ST_SM, compact(p)); lv_obj_invalidate(root); }  // a new size: restyled in place
   const bool off = off_of(p);
   if (off != r->off) {

@@ -85,7 +85,9 @@ void fill(lv_obj_t *box, fw::Props p) {
     lv_obj_add_flag(box, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_remove_flag(box, LV_OBJ_FLAG_SCROLLABLE);
     fx::use(box, "word-slot");
-    fx::fit_grid(fx::text(box, fw::st::UNAVAILABLE_TEXT, "type:body", "fg:unavailable-note", "none"));
+    lv_obj_t *w = fx::text(box, fw::st::UNAVAILABLE_TEXT, "type:body", "fg:unavailable-note", "dot");  // its width; a theme's wider font ends in "..." (C40)
+    fx::fit_grid(w);
+    fx::word_fit(box, w);
     lv_obj_add_state(box, ST_OFF);  // the tap = blocked (the root's handler, made once in build)
     return;
   }

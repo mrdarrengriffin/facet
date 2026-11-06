@@ -1536,6 +1536,45 @@ void fit_grid(lv_obj_t *l) {  // the label's box = its text's width rounded up t
                    LV_COORD_MAX, LV_TEXT_FLAG_NONE);
   lv_obj_set_width(l, (sz.x + fw::sp::GRID - 1) / fw::sp::GRID * fw::sp::GRID);
 }
+static void word_cap(lv_event_t *e) {  // word_fit's bound, again on every size change of the slot
+  lv_obj_t *sl = (lv_obj_t *) lv_event_get_current_target(e), *par = lv_obj_get_parent(sl), *wd = lv_obj_get_child(sl, 0);
+  if (!par || !wd || !lv_obj_check_type(wd, &lv_label_class) || lv_obj_get_style_width(par, LV_PART_MAIN) == LV_SIZE_CONTENT) return;  // a hugging parent sets no bound
+  const int32_t room = std::max<int32_t>(0, lv_obj_get_content_width(par) - lv_obj_get_style_pad_left(sl, LV_PART_MAIN) - lv_obj_get_style_pad_right(sl, LV_PART_MAIN));
+  if (lv_obj_get_style_max_width(wd, LV_PART_MAIN) != room) lv_obj_set_style_max_width(wd, room, LV_PART_MAIN);
+}
+void word_fit(lv_obj_t *slot, lv_obj_t *w) {  // a Word slot's word: at most what the slot's parent gives it (C40, "...")
+  lv_label_set_long_mode(w, LV_LABEL_LONG_MODE_DOTS);
+  for (uint32_t i = 0; i < lv_obj_get_event_count(slot); i++) if (lv_event_dsc_get_cb(lv_obj_get_event_dsc(slot, i)) == word_cap) return;
+  lv_obj_add_event_cb(slot, word_cap, LV_EVENT_SIZE_CHANGED, nullptr);
+}
+static void rest_cap(lv_event_t *e);
+static void rest_set(lv_obj_t *row) {  // rest_fit's bound: the row's parent's content less the text and the gap
+  lv_obj_t *par = lv_obj_get_parent(row), *k = lv_obj_get_child(row, 0), *r = lv_obj_get_child(row, 1);
+  if (!par || !k || !r || !lv_obj_check_type(k, &lv_label_class) || lv_obj_get_style_width(par, LV_PART_MAIN) == LV_SIZE_CONTENT) return;
+  if (lv_obj_get_content_width(par) <= 0) return;  // not laid out yet: the parent's size change brings it
+  lv_point_t sz;
+  lv_text_get_size(&sz, lv_label_get_text(k), lv_obj_get_style_text_font(k, LV_PART_MAIN), lv_obj_get_style_text_letter_space(k, LV_PART_MAIN), 0,
+                   LV_COORD_MAX, LV_TEXT_FLAG_NONE);
+  const int32_t room = std::max<int32_t>(0, lv_obj_get_content_width(par) - sz.x - lv_obj_get_style_pad_column(row, LV_PART_MAIN));
+  if (lv_obj_get_style_max_width(r, LV_PART_MAIN) != room) lv_obj_set_style_max_width(r, room, LV_PART_MAIN);
+}
+static bool has_cb(lv_obj_t *o, lv_event_cb_t cb) {
+  for (uint32_t i = 0; i < lv_obj_get_event_count(o); i++) if (lv_event_dsc_get_cb(lv_obj_get_event_dsc(o, i)) == cb) return true;
+  return false;
+}
+static void rest_cap(lv_event_t *e) { rest_set((lv_obj_t *) lv_event_get_current_target(e)); }  // the row's size changed (its text, its font)
+static void rest_par(lv_event_t *e) {  // the parent's size changed: each of its rest rows again
+  lv_obj_t *par = (lv_obj_t *) lv_event_get_current_target(e);
+  for (uint32_t i = 0; i < lv_obj_get_child_count(par); i++) {
+    lv_obj_t *c = lv_obj_get_child(par, (int32_t) i);
+    if (has_cb(c, rest_cap)) rest_set(c);
+  }
+}
+void rest_fit(lv_obj_t *row) {  // a hugging row of a text (child 0) and its "dot" rest (child 1): the rest gives way
+  if (!has_cb(row, rest_cap)) lv_obj_add_event_cb(row, rest_cap, LV_EVENT_SIZE_CHANGED, nullptr);
+  lv_obj_t *par = lv_obj_get_parent(row);
+  if (par && !has_cb(par, rest_par)) lv_obj_add_event_cb(par, rest_par, LV_EVENT_SIZE_CHANGED, nullptr);
+}
 void equal(lv_obj_t *row) {  // the children (not out of the layout) share row's content width on the 4 px grid
   auto place = [](lv_event_t *e) {
     lv_obj_t *r = (lv_obj_t *) lv_event_get_current_target(e);

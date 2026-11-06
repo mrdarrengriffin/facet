@@ -4,15 +4,16 @@
 //       what a THEME adds; Facet runs first, so its bounds are known when the other themes run)
 //   P6  no text cut except by its rule: a "dot" or "fit" text ends in "..." by design; a "none" text (fx::text) is
 //       never cut, in any theme, Facet included
-// Folded here from the theme_apply functional test (nightly) so it runs in the gate tier, per component.
+// Folded here from the theme_apply functional test (nightly) so it runs in the fast and gate tiers, per component (a
+// commit's fast gate catches a new overflow for its ids, ~10 s for all).
 const FACET = new Map();  // den|id|vi -> Facet's bounds (why), from this run
-// a theme's type pushes a fixed box past its parent: a layout answer per component is still open (board facet-226).
-// Listed on every run (LEGACY), never hidden; a case that fits again must be removed here.
-const KNOWN = new Set(['moon_icon-11', 'progress_ring-4', 'toggle-5'].flatMap((k) => [`1.5x blockcraft ${k}`, `1x blockcraft ${k}`]).concat(['1.5x win98 hero_block-8']));
+// a case a theme cannot fit yet, listed on every run (LEGACY), never hidden; a case that fits again must be removed here.
+// Empty: every built-in theme fits (a new fault fails the gate).
+const KNOWN = new Set([]);
 // the Title's long name is cut with no "..." (it is declared none): its dot fix waits for Darren's look (parked)
 
 export default {
-  id: 'theme-fit', tiers: ['gate'], order: 20, looks: [0],
+  id: 'theme-fit', tiers: ['fast', 'gate'], order: 20, looks: [0],
   about: 'Per theme: no object outside its parent that Facet does not have, and no "none" text cut (C40, C45, P2 + P6)',
   wants: (c) => c.section !== 'screens' && c.meta?.contract === 2,
   themes: () => 'all',

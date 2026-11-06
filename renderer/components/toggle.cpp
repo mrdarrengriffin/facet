@@ -35,7 +35,9 @@ void fill(lv_obj_t *t, fw::Props p) {
   lv_obj_remove_flag(t, LV_OBJ_FLAG_SCROLLABLE);
   if (d->unavail) {  // states.json unavailable: the word in place of the switch; a tap = blocked
     fx::use(t, "word-slot");
-    fx::fit_grid(fx::text(t, d->word, "type:body", "fg:unavailable-note", "none"));
+    lv_obj_t *w = fx::text(t, d->word, "type:body", "fg:unavailable-note", "dot");  // its width; a theme's wider font ends in "..." (C40)
+    fx::fit_grid(w);
+    fx::word_fit(t, w);
     lv_obj_add_state(t, ST_OFF);
     return;
   }

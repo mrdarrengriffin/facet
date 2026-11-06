@@ -72,6 +72,9 @@ void fill(lv_obj_t *root, Props p) {
     if (*(p["line"] | "")) {
       lv_obj_t *r = fx::text(line, (std::string("\xC2\xB7 ") + (p["line"] | "")).c_str(), "type:title", "fg:text-dim", "dot");
       lv_label_set_long_mode(r, LV_LABEL_LONG_MODE_DOTS);
+      // the rest of the line is what gives way (C40): at most the box's width less the label and the gap, so a theme's
+      // wider title type ends it in "..." inside the box; again when the row's size changes (the box, the label's font)
+      fx::rest_fit(line);
     }
   } else {
     for (const char *t : {"box", "centre", "hug"}) fx::use(root, t);
