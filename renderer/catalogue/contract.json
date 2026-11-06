@@ -71,6 +71,10 @@
     "commit": "6f632fc",
     "at": "2026-10-27T21:05:53.000Z"
   },
+  "components/flight_hero": {
+    "commit": "46ca611",
+    "at": "2026-11-06T10:57:00.000Z"
+  },
   "components/grid": {
     "commit": "6fbe138",
     "at": "2026-10-27T17:19:18.000Z"
@@ -223,6 +227,10 @@
   "screens/moon": {
     "commit": "34db6fa",
     "at": "2026-10-30T03:51:07.000Z"
+  },
+  "screens/overhead": {
+    "commit": "46ca611",
+    "at": "2026-11-06T10:57:00.000Z"
   },
   "screens/timer": {
     "commit": "7883bd6",
