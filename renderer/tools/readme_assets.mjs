@@ -10,10 +10,13 @@
 //   .github/assets/screens-<theme>.png       the hero: the --hero screens in a 4-wide grid, transparent around them
 //   node tools/readme_assets.mjs --ai-examples   instead: each "Make screens with AI" example (specs/ai-examples, installed as a
 //   panel installs a spec, demo HA values) -> site/public/ai/shots/<id>-<theme>.png (the tiles on the docs /ai/ page)
+//   node tools/readme_assets.mjs --lab           instead: the root README's In the lab strip (no build needed: the screens
+//   are on the wip branch): each LAB picture's site/public/lab/<id>-720.png with the IN THE LAB chip, halved to 360 with
+//   rounded corners -> .github/assets/lab-<id>.png (dark only: the lab pictures are)
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { deflateSync } from 'node:zlib';
+import { deflateSync, inflateSync } from 'node:zlib';
 import { demoValue } from './demo_ha.mjs';
 import { channels } from './features.mjs';
 import { drawChip } from './lib/chip.mjs';
@@ -22,6 +25,16 @@ const HERE = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const ROOT = resolve(HERE, '..');
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
 const env = (() => { try { return Object.fromEntries(readFileSync(join(ROOT, 'local.env'), 'utf8').split('\n').map((l) => l.match(/^([A-Z_]+)=(.*)$/)).filter(Boolean).map((m) => [m[1], m[2]])); } catch { return {}; } })();
+if (process.argv.includes('--lab')) {
+  const LAB = ['f1-live', 'tennis-live', 'plants', 'blinds'];  // the README strip (site/src/lib/lab.json has them all)
+  for (const id of LAB) {
+    const { W, H: h, rgba } = unpng(readFileSync(join(ROOT, 'site', 'public', 'lab', `${id}-720.png`)));
+    if (W !== 720 || h !== 720) throw new Error(`lab ${id}: ${W} x ${h}, want 720 x 720`);
+    writeFileSync(join(ROOT, '.github', 'assets', `lab-${id}.png`), png(halve(drawChip(rgba, 720, 'lab', 'dark'), 720), 360, 360));
+  }
+  console.log(`readme_assets: ${LAB.length} lab pictures -> .github/assets/lab-*.png`);
+  process.exit(0);
+}
 const BUILD = join(resolve(ROOT, process.env.FW_OUT || env.FW_OUT || join(HERE, 'out')), 'docs', '1.5x');
 if (!existsSync(join(BUILD, 'fw.mjs'))) { console.error(`readme_assets: no docs build in ${BUILD} (FW_FEATURES=docs ./build.sh)`); process.exit(1); }
 const OUT = join(ROOT, '.github', 'assets');
@@ -62,7 +75,7 @@ function feed() {
     str(e, (ep) => str(a, (ap) => str(v, (vp) => m._fw_ha_put(ep, ap, vp))));
   }
 }
-const S = 720, H = 360, R = 32;
+const S = 720, H = 360;
 let t = 0;
 // "<id>" = a registered screen, "spec:<screen>" = the spec screen with that built-in spec
 const file = (id) => id.replace(/^spec:/, '').replace(/\?.*$/, '');  // spec:weather?source=sample -> weather
@@ -84,8 +97,11 @@ function render(id, light) {
   const p = m._fw_frame(st), b = m.HEAPU8.slice(p, p + S * S * 4);
   m._fw_stage_free(st);
   if (chipOf(id) !== 'stable') drawChip(b, S, chipOf(id), light ? 'light' : 'dark');
-  // 2 x 2 box filter to 360, rounded corners (anti-aliased alpha)
-  const o = new Uint8Array(H * H * 4);
+  return halve(b, S);
+}
+/** an S x S RGBA frame -> S / 2 by a 2 x 2 box filter, rounded corners (radius 32, anti-aliased alpha) */
+function halve(b, S) {
+  const H = S / 2, R = 32, o = new Uint8Array(H * H * 4);
   for (let y = 0; y < H; y++) for (let x = 0; x < H; x++) {
     const i = (y * H + x) * 4;
     for (let c = 0; c < 3; c++) { let s = 0; for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) s += b[((2 * y + dy) * S + 2 * x + dx) * 4 + c]; o[i + c] = (s + 2) >> 2; }
@@ -95,6 +111,32 @@ function render(id, light) {
     o[i + 3] = Math.round(a * 255);
   }
   return o;
+}
+/** a PNG (8-bit RGB or RGBA, not interlaced) -> { W, H, rgba } (opaque when RGB) */
+function unpng(b) {
+  let p = 8, W = 0, Hh = 0, n = 4;
+  const idat = [];
+  while (p < b.length) {
+    const len = b.readUInt32BE(p), type = b.toString('latin1', p + 4, p + 8), d = b.subarray(p + 8, p + 8 + len);
+    if (type === 'IHDR') {
+      W = d.readUInt32BE(0); Hh = d.readUInt32BE(4);
+      if (d[8] !== 8 || (d[9] !== 2 && d[9] !== 6) || d[12]) throw new Error('unpng: 8-bit RGB or RGBA, not interlaced');
+      n = d[9] === 6 ? 4 : 3;
+    }
+    if (type === 'IDAT') idat.push(d);
+    p += 12 + len;
+  }
+  const raw = inflateSync(Buffer.concat(idat)), st = W * n, row = new Uint8Array(W * Hh * n), out = new Uint8Array(W * Hh * 4);
+  for (let y = 0; y < Hh; y++) {
+    const f = raw[y * (st + 1)];
+    for (let x = 0; x < st; x++) {
+      const v = raw[y * (st + 1) + 1 + x], a = x >= n ? row[y * st + x - n] : 0, u = y ? row[(y - 1) * st + x] : 0, c = x >= n && y ? row[(y - 1) * st + x - n] : 0;
+      const pa = Math.abs(u - c), pb = Math.abs(a - c), pc = Math.abs(a + u - 2 * c);
+      row[y * st + x] = (v + [0, a, u, (a + u) >> 1, pa <= pb && pa <= pc ? a : pb <= pc ? u : c][f]) & 255;
+    }
+  }
+  for (let i = 0; i < W * Hh; i++) { for (let c = 0; c < 3; c++) out[i * 4 + c] = row[i * n + c]; out[i * 4 + 3] = n === 4 ? row[i * n + 3] : 255; }
+  return { W, H: Hh, rgba: out };
 }
 function png(rgba, W, Hh) {
   const crcT = new Int32Array(256).map((_, n) => { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; return c; });
