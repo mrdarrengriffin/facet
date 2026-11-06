@@ -60,6 +60,7 @@ check features node tools/features.mjs check
 check contrast node tools/contrast.mjs --summary
 check contract-lint node tools/contract_lint.mjs --summary
 check http-status node --test tools/http_status.test.mjs
+check backlight node --test tools/backlight.test.mjs
 check fw-notes bash -c 'o=$(mktemp) && c++ -std=c++17 -Wall -Wextra -Werror -o "$o" ../esphome/board/fw_notes.test.cpp && "$o"; r=$?; rm -f "$o"; exit $r'
 check fw-settle bash -c 'o=$(mktemp) && c++ -std=c++17 -Wall -Wextra -Werror -o "$o" ../esphome/board/fw_settle.test.cpp && "$o"; r=$?; rm -f "$o"; exit $r'
 check fw-trial bash -c 'o=$(mktemp) && c++ -std=c++17 -Wall -Wextra -Werror -o "$o" ../esphome/board/fw_trial.test.cpp && "$o"; r=$?; rm -f "$o"; exit $r'

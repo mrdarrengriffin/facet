@@ -157,9 +157,11 @@ output:
     inverted: true
     frequency: 5000Hz
     max_power: 0.8
-    # floor = the lowest duty that still lights the panel: dark below 62 % (gamma 2.8 -> 0.26,
-    # 0.1 + 0.7 * 0.26 = ~0.28 duty), so 1 % now maps to that and the whole slider range is visible
-    min_power: 0.28
+    # floor = the lowest output that still lights the glass at 5 kHz (boards/<id>.json backlight.floor, #153): ESPHome
+    # sends min_power + (max_power - min_power) * level^gamma, so the floor is an output value, after the light's gamma,
+    # and 1 % on the slider lands on it. Measured 0.463-0.466 (48 % on the old 0.28 floor; 0.28 had been worked out
+    # through gamma 2.8 while the light runs 1.4, which left the lower half of the slider black)
+    min_power: ${board.backlight.floor}
     zero_means_zero: true
 
 light:

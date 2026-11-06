@@ -192,7 +192,7 @@ output:
     pin: GPIO38
     # this backlight driver wants a low PWM rate (high rates turn levels below ~85 % off; 100 Hz shimmers): ESPControl
     frequency: 150Hz
-    min_power: 0.01
+    min_power: ${board.backlight.floor}   # boards/<id>.json: the lowest output that lights the glass
     zero_means_zero: true
 
 light:
