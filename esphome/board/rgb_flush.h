@@ -101,4 +101,14 @@ inline void install(esphome::lvgl::LvglComponent *lv, esphome::mipi_rgb::MipiRgb
 }
 
 }  // namespace rgbflush
+
+// the screenshot's source (firmware/fw_device.h shot::frame_hook): framebuffer, panel size, LVGL's rotation in
+// degrees (the same mapping flush() writes). Called with LVGL's refresh held; the bounce-buffer ISR only reads it.
+inline bool shot_frame(const uint16_t **fb, int *w, int *h, int *rot) {
+  rgbflush::Ctx &c = rgbflush::ctx();
+  if (!c.fb || !c.lv) return false;
+  *fb = c.fb, *w = c.w, *h = c.h, *rot = (int) c.lv->get_rotation();
+  return true;
+}
+
 }  // namespace panel

@@ -18,7 +18,7 @@
 //   POST /fw/settings  {values:{id: value}} (a backup, or a few) -> each through fw::dev::set (HOST): applied, the
 //                      entities follow and keep it (settings.yaml from firmware/settings_yaml.mjs) -> {ok, error?, settings}
 //                = Restores a settings backup, or changes a few settings.
-//   GET  /screenshot  the glass as a 16-bit BMP (paced chunks; ported from the old panel's shot.h)
+//   GET  /screenshot  the glass as a 16-bit BMP, streamed from the framebuffer (no frame copy; paced chunks)
 //                = What the screen shows now (a BMP image), so an assistant can check its work.
 //   GET  /fw/spec   the spec hello (core/spec.h: protocol, catalogue hash, components, screens + revs, budgets, heap)
 //                = Components, screens, budgets and free memory.
@@ -135,6 +135,8 @@
 #include "esphome/components/api/api_server.h"
 #endif
 #include "fw_bundle_gen.h"
+#include "src/misc/lv_timer_private.h"  // lv_timer_t period (screenshot: hold LVGL's refresh)
+#include "fw_shot.h"  // screenshot: the framebuffer read back through the rotation
 #include "fw_images.h"  // pictures (album art): fetched + decoded on the panel
 
 namespace fw::device {
@@ -1184,28 +1186,50 @@ inline void art_info(ArduinoJson::JsonDocument &d) {
 }
 
 // ---------------------------------------------------------------- screenshot (GET /screenshot)
-// Ported from the old panel firmware (projects/esphome/panel/include/shot.h): what the glass shows as a
-// 16-bit BMP. The web server runs in its own task and LVGL is not thread-safe, so the request raises a flag and waits;
-// an lv_timer (main loop) snapshots the active screen in the display's RGB565 (+ the top layer, ARGB8888, blended in:
-// the probation chip) into PSRAM; the rows go out 4 at a time with a pause (Guition: Wi-Fi TX buffers come out of
-// ~45 KB internal RAM; an unpaced response crashed it). Only the internal heap is read (no PSRAM walk while lit).
+// What the glass shows, as a 16-bit BMP, read straight from the panel's framebuffer (the board's frame_hook:
+// esphome/board/rgb_flush.h, dsi_frame.h) and encoded as it streams: a band of rows at a time into a small buffer,
+// never a whole-frame copy, so it works however little memory is free (a full lv_snapshot needed ~460 KB + 920 KB for
+// the top layer on the Guition and failed once the idle art reserved its buffers). The framebuffer already holds the
+// top layer (the probation chip). It is in panel orientation; the pixels are read back through LVGL's rotation.
+// No tearing: the web server runs in its own task, so the request raises a flag and an lv_timer (main loop, between
+// renders: every flush is synchronous) holds LVGL's refresh timer (period 5 min, as ESPHome does while a display is
+// busy; lv_timer_pause would not stick, LVGL resumes it on every invalidation) until the last row is out. Changes made
+// meanwhile are drawn when it is released. A stuck request releases it after HOLD_MAX_MS. The framebuffer is never
+// freed or moved, so reading it can't fault. Rows go out 4 at a time with a pause (Guition: Wi-Fi TX buffers come out
+// of internal RAM; an unpaced response crashed it).
 namespace shot {
+// board: framebuffer (RGB565, panel orientation), panel width / height, LVGL rotation in degrees; false = none
+inline bool (*frame_hook)(const uint16_t **fb, int *w, int *h, int *rot) = nullptr;
+constexpr uint32_t HOLD_MAX_MS = 20000;
 struct State {
-  std::atomic<int> state{0};  // 0 idle, 1 requested, 2 ready, 3 failed
-  lv_draw_buf_t *scr = nullptr, *top = nullptr;
+  std::atomic<int> state{0};  // 0 idle, 1 requested, 2 held (stream now), 3 done (release)
+  lv_timer_t *refr = nullptr;
+  uint32_t period = 0, held_at = 0;
+  bool holding = false;
 };
 inline State SH;
-inline void take(lv_timer_t *) {
-  if (SH.state.load() != 1) return;
-  SH.scr = lv_snapshot_take(lv_screen_active(), LV_COLOR_FORMAT_RGB565);
-  SH.top = lv_obj_get_child_count(lv_layer_top()) ? lv_snapshot_take(lv_layer_top(), LV_COLOR_FORMAT_ARGB8888) : nullptr;
-  SH.state = SH.scr ? 2 : 3;
+inline void unhold() {
+  if (!SH.holding) return;
+  lv_timer_set_period(SH.refr, SH.period);
+  lv_timer_ready(SH.refr);
+  SH.holding = false;
 }
-inline void release() {
-  if (SH.scr) lv_draw_buf_destroy(SH.scr);
-  if (SH.top) lv_draw_buf_destroy(SH.top);
-  SH.scr = SH.top = nullptr;
-  SH.state = 0;
+inline void take(lv_timer_t *) {  // main loop (lv_timer): hold / release LVGL's refresh
+  const int st = SH.state.load();
+  if (st == 1) {
+    lv_display_t *d = lv_display_get_default();
+    SH.refr = d ? lv_display_get_refr_timer(d) : nullptr;
+    if (!SH.refr) { SH.state = 0; return; }
+    SH.period = SH.refr->period;
+    lv_timer_set_period(SH.refr, 5 * 60 * 1000);
+    SH.holding = true, SH.held_at = lv_tick_get();
+    SH.state = 2;
+  } else if (st == 3) {
+    unhold();
+    SH.state = 0;
+  } else if (st == 2 && SH.holding && lv_tick_elaps(SH.held_at) > HOLD_MAX_MS) {
+    unhold();  // the stream goes on (may tear), the screen doesn't stay frozen
+  }
 }
 class Handler : public AsyncWebHandler {
  public:
@@ -1214,16 +1238,34 @@ class Handler : public AsyncWebHandler {
     return request->url_to(buf) == "/screenshot";
   }
   void handleRequest(AsyncWebServerRequest *request) override {
+    if (!frame_hook) { request->send(501, "text/plain", "no framebuffer on this board"); return; }
     int expected = 0;
     if (!SH.state.compare_exchange_strong(expected, 1)) { request->send(503, "text/plain", "busy"); return; }
     for (int i = 0; i < 60 && SH.state.load() == 1; i++) vTaskDelay(pdMS_TO_TICKS(50));
-    if (SH.state.load() != 2) {
-      if (SH.state.load() == 1) SH.state = 0;
-      else release();
-      request->send(500, "text/plain", "snapshot failed (LVGL paused or out of memory)");
+    expected = 1;
+    if (SH.state.compare_exchange_strong(expected, 0)) {
+      request->send(503, "text/plain", "LVGL is not running (paused?)");
       return;
     }
-    const int w = SH.scr->header.w, h = SH.scr->header.h, row = w * 2;
+    const uint16_t *fb = nullptr;
+    int pw = 0, ph = 0, rot = 0;
+    if (!frame_hook(&fb, &pw, &ph, &rot) || !fb) {
+      SH.state = 3;
+      request->send(503, "text/plain", "framebuffer not ready");
+      return;
+    }
+    int w, h;
+    fw::shot::size(pw, ph, rot, w, h);
+    const int row = w * 2;
+    // a band of rows (16 = a 64 B cache line holds 32 px: a rotated read uses each line it loads); smaller if short
+    int band = 16;
+    uint8_t *out = nullptr;
+    while (band >= 1 && !(out = (uint8_t *) malloc((size_t) row * band))) band /= 2;
+    if (!out) {
+      SH.state = 3;
+      request->send(503, "text/plain", "out of memory");
+      return;
+    }
     uint8_t hd[66] = {'B', 'M'};
     auto le32 = [&](int o, uint32_t v) { for (int k = 0; k < 4; k++) hd[o + k] = (v >> (8 * k)) & 0xFF; };
     le32(2, 66 + row * h); le32(10, 66); le32(14, 40); le32(18, w); le32(22, h);
@@ -1232,35 +1274,20 @@ class Handler : public AsyncWebHandler {
     request->beginResponse(200, "image/bmp");
     httpd_req_t *req = *request;
     httpd_resp_set_hdr(req, "Cache-Control", "no-store");
-    httpd_resp_send_chunk(req, (const char *) hd, sizeof hd);
-    static const int ROWS = 4;
-    std::vector<uint8_t> out(row * ROWS);
-    for (int y0 = h - 1; y0 >= 0; y0 -= ROWS) {
-      size_t n = 0;
-      for (int y = y0; y > y0 - ROWS && y >= 0; y--) {
-        const uint8_t *sp = SH.scr->data + y * SH.scr->header.stride;
-        const uint8_t *t = SH.top && y < (int) SH.top->header.h ? SH.top->data + y * SH.top->header.stride : nullptr;
-        for (int x = 0; x < w; x++) {
-          uint16_t v = sp[2 * x] | (sp[2 * x + 1] << 8);
-          if (t && x < (int) SH.top->header.w && t[4 * x + 3]) {
-            const int a = t[4 * x + 3];
-            int r = (v >> 11) & 31, g = (v >> 5) & 63, b = v & 31;
-            r = r << 3 | r >> 2, g = g << 2 | g >> 4, b = b << 3 | b >> 2;
-            b = (t[4 * x] * a + b * (255 - a)) / 255;
-            g = (t[4 * x + 1] * a + g * (255 - a)) / 255;
-            r = (t[4 * x + 2] * a + r * (255 - a)) / 255;
-            v = ((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3);
-          }
-          out[n++] = v & 0xFF;
-          out[n++] = v >> 8;
-        }
+    bool ok = httpd_resp_send_chunk(req, (const char *) hd, sizeof hd) == ESP_OK;
+    // BMP rows go bottom-up: the band covers LVGL rows y0 .. y0 - n + 1, out row k = LVGL row y0 - k
+    for (int y0 = h - 1; ok && y0 >= 0; y0 -= band) {
+      const int n = std::min(band, y0 + 1);
+      fw::shot::band(fb, pw, ph, rot, y0, n, (uint16_t *) out);
+      for (int k = 0; ok && k < n; k += 4) {
+        ok = httpd_resp_send_chunk(req, (const char *) out + k * row, (size_t) std::min(4, n - k) * row) == ESP_OK;
+        if (heap_caps_get_free_size(MALLOC_CAP_INTERNAL) < 24 * 1024) vTaskDelay(pdMS_TO_TICKS(20));
+        else vTaskDelay(1);
       }
-      if (httpd_resp_send_chunk(req, (const char *) out.data(), n) != ESP_OK) break;
-      if (heap_caps_get_free_size(MALLOC_CAP_INTERNAL) < 24 * 1024) vTaskDelay(pdMS_TO_TICKS(20));
-      else vTaskDelay(1);
     }
-    httpd_resp_send_chunk(req, nullptr, 0);
-    release();
+    free(out);
+    SH.state = 3;  // the lv_timer releases LVGL's refresh
+    if (ok) httpd_resp_send_chunk(req, nullptr, 0);
   }
 };
 }  // namespace shot
@@ -2057,7 +2084,7 @@ inline void setup() {
     if (auto *srv = ws->get_server()) web::Front::add(srv, new web::Handler());  // GET / = the web UI
     else ws->add_handler(new web::Handler());  // no server yet: behind web_server ("/" stays ESPHome's, /ed/* works)
 #endif
-    lv_timer_create(shot::take, 100, nullptr);
+    lv_timer_create(shot::take, 50, nullptr);
   }
 }
 

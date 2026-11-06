@@ -53,6 +53,8 @@ esphome:
             // Rotate screen: the setting turns LVGL (and its touch points) at run time, on top of the
             // board's mount (rotation_base, so the setting's 0° = the panel as mounted)
             fw::device::rotate_hook = [](int deg) { id(lvgl_root)->set_rotation((deg + ${rotation_base}) % 360); };
+            // GET /screenshot reads the panel's framebuffer (every board header defines panel::shot_frame)
+            fw::device::shot::frame_hook = panel::shot_frame;
             // Update channel: the Firmware entity checks ota.json (stable), or ota-beta.json / ota-dev.json beside it
             // (release channels, RELEASING.md); the setting is read here, so Dev needs nothing new in fw_device.h.
             // The hook runs inside the select's publish, before the select stores the value: it only records the

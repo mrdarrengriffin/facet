@@ -20,6 +20,11 @@ esphome:
     - -DLV_DRAW_SW_SUPPORT_RGB565A8=1
   includes:
     - ../board/reset_reason.h
+    - ../board/dsi_frame.h   # the panel framebuffer for GET /screenshot
+  on_boot:
+    - priority: -150
+      then:
+        - lambda: 'panel::dsiframe::install(id(lvgl_root), id(lcd));'
 
 esp32:
   variant: esp32p4
