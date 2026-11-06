@@ -1,5 +1,6 @@
 // Facet device glue (README "Device firmware"): the workbench's core + foundations + components on a real panel,
 // driven over HTTP by the workbench's "Show on device" button. ESPHome only (lvgl + web_server); no house specifics.
+//   GET  /fw/info   (heap: + httpd_stack_min / loop_stack_min, the web server's and main loop's least free stack bytes)
 //   GET  /fw/info   {v, density, core, files, ids, built, board, w, h, shown, devices: [{stack, builds, objects}], heap, art}   what this firmware was built from
 //                   art = the last picture decode's biggest view (null = none yet): {box, kept, source: [w, h], jpeg: 1/N,
 //                   filter: area | bilinear | nearest, drawn: 1:1 | scaled up by LVGL, reserved (in a screen slot), slots,
@@ -142,6 +143,7 @@
 namespace fw::report_screen { void set_board(const std::string &b); }  // screens/report.cpp
 extern "C" char facet_overflow_task[20];  // esphome/board/stack_guard.h: the task that overflowed its stack
 extern "C" uint32_t facet_overflow_magic;
+extern "C" bool facet_hop(int *reason, bool *restart) __attribute__((weak));  // esphome/board/s3_reset.h (Guition)
 #include "fw_report.h"  // the problem report: kept log, boots, connection drops, redaction
 #include "esp_wifi.h"
 #include "esp_event.h"
@@ -194,6 +196,14 @@ inline void drain(lv_timer_t *) {
     j->fn();
     xSemaphoreGive(j->done);
   }
+}
+// the web server task's least free stack, in bytes, after each Facet request (-1 = none yet): its stack is ESP-IDF's
+// 4 KB + 256 (ESPHome), and /fw/info built there overflowed it on the Guition (crash record: stack overflow in task httpd)
+inline std::atomic<int> httpd_stack_min{-1};
+inline void httpd_stack_note() {
+  const int f = (int) uxTaskGetStackHighWaterMark(nullptr);
+  int m = httpd_stack_min.load();
+  while ((m < 0 || f < m) && !httpd_stack_min.compare_exchange_weak(m, f)) {}
 }
 inline bool in_loop(std::function<void()> fn, uint32_t ms = 6000) {
   Job j{std::move(fn), xSemaphoreCreateBinary()};
@@ -1223,7 +1233,7 @@ struct State {
   lv_timer_t *refr = nullptr;
   uint32_t period = 0, held_at = 0;
   bool holding = false;
-  bool swapped = false;  // the framebuffer holds LVGL's pixels as they are: RGB565_SWAPPED (the Guition) = bytes swapped
+  bool swapped = false;  // the framebuffer's pixels have their bytes swapped (a big-endian panel: the Guition)
 };
 inline State SH;
 inline void unhold() {
@@ -1239,7 +1249,13 @@ inline void take(lv_timer_t *) {  // main loop (lv_timer): hold / release LVGL's
     SH.refr = d ? lv_display_get_refr_timer(d) : nullptr;
     if (!SH.refr) { SH.state = 0; return; }
     SH.period = SH.refr->period;
+    // LVGL swaps the bytes just before the flush for a big-endian panel (ESPHome's lv_conf LV_COLOR_16_SWAP: the
+    // Guition), or renders RGB565_SWAPPED: either way the framebuffer holds them swapped
+#if defined(LV_COLOR_16_SWAP) && LV_COLOR_16_SWAP
+    SH.swapped = true;
+#else
     SH.swapped = lv_display_get_color_format(d) == LV_COLOR_FORMAT_RGB565_SWAPPED;
+#endif
     lv_timer_set_period(SH.refr, 5 * 60 * 1000);
     SH.holding = true, SH.held_at = lv_tick_get();
     SH.state = 2;
@@ -1308,6 +1324,7 @@ class Handler : public AsyncWebHandler {
     free(out);
     SH.state = 3;  // the lv_timer releases LVGL's refresh
     if (ok) httpd_resp_send_chunk(req, nullptr, 0);
+    httpd_stack_note();
   }
 };
 }  // namespace shot
@@ -1460,7 +1477,8 @@ class Handler : public AsyncWebHandler {
 #endif
 
 // ---------------------------------------------------------------- GET /fw/info (also in the problem report)
-__attribute__((noinline)) inline void info_json(std::string &s) {  // noinline: its frame is gone before a report sends
+// built in the main loop (12 KB stack), not on the web server's
+inline void info_build(std::string &s) {
   ArduinoJson::JsonDocument d;
   deserializeJson(d, fw::bundle::INFO);
   d["board"] = FW_DEVICE_BOARD;
@@ -1484,7 +1502,7 @@ __attribute__((noinline)) inline void info_json(std::string &s) {  // noinline: 
   std::string sh = "null";
   ArduinoJson::JsonDocument devs;
   size_t timers = 0, store = 0, store_bytes = 0, bounds = 0, wants = 0;
-  in_loop([&] {
+  {
     sh = S.shown;
     fw::dev::state(devs.to<ArduinoJson::JsonArray>());
     // the loop's own bookkeeping (memory hunts): LVGL timers (each object delete walks them all),
@@ -1492,13 +1510,18 @@ __attribute__((noinline)) inline void info_json(std::string &s) {  // noinline: 
     for (lv_timer_t *t = lv_timer_get_next(nullptr); t && timers < 100000; t = lv_timer_get_next(t)) timers++;
     for (const auto &kv : fw::ha::S().store) store++, store_bytes += kv.first.first.capacity() + kv.first.second.capacity() + kv.second.capacity() + 64;
     bounds = fw::ha::S().bounds.size(), wants = fw::ha::wants().size();
-  }, 2000);
+  }
+  // stacks' least free bytes: the web server task's (after Facet requests) and the main loop's (now)
+  d["heap"]["httpd_stack_min"] = httpd_stack_min.load(), d["heap"]["loop_stack_min"] = (int) uxTaskGetStackHighWaterMark(nullptr);
   d["devices"] = devs;
   ArduinoJson::JsonObject lp = d["loop"].to<ArduinoJson::JsonObject>();
   lp["timers"] = timers, lp["store"] = store, lp["store_bytes"] = store_bytes, lp["bounds"] = bounds, lp["wants"] = wants;  // what is on the glass: each mounted device's screen stack (top = shown), builds, objects
   ArduinoJson::JsonDocument shd;
   if (!deserializeJson(shd, sh)) d["shown"] = shd;
   serializeJson(d, s);
+}
+inline void info_json(std::string &s) {
+  if (!in_loop([&] { info_build(s); }, 3000)) s = R"({"ok":false,"error":"the main loop did not answer in time"})";
 }
 
 // ---------------------------------------------------------------- problem report (GET /fw/report, fw_report.h)
@@ -1596,12 +1619,16 @@ inline void save_crash(const std::string &c) {
 }
 // on_boot priority 850 (workbench.yaml): before the Guition's hop (s3_reset.h, 800) and before anything else logs much
 inline void begin() {
-  const int r = (int) esp_reset_reason();
+  int r = (int) esp_reset_reason();
   kept = K.begin();
   {
-    // the Guition's hop right after a restart continues that boot (it ran < 10 s); any other deep sleep is a new boot
-    const fw::report::Boot *b = K.this_boot();
-    const bool hop = r == ESP_RST_DEEPSLEEP && kept && b && b->ran_s < 10;
+    // the Guition's deep-sleep hop (s3_reset.h): at boot after a reset it continues that boot; a software restart
+    // goes straight to it (#121), and that one is a new boot with the reason it stands for
+    int why = 0;
+    bool restart = false;
+    const bool ours = facet_hop && facet_hop(&why, &restart);
+    const bool hop = ours && !restart && kept && K.this_boot();
+    if (ours && restart) r = why;
     if (!hop) K.new_boot((uint8_t) r);
     ready = true;
     char t[96];
@@ -1778,7 +1805,7 @@ class Handler : public AsyncWebHandler {
     char buf[AsyncWebServerRequest::URL_BUF_SIZE];
     return request->method() == HTTP_GET && request->url_to(buf) == "/fw/report";
   }
-  void handleRequest(AsyncWebServerRequest *request) override { send(request); }
+  void handleRequest(AsyncWebServerRequest *request) override { send(request); httpd_stack_note(); }
 };
 }  // namespace report
 
@@ -2056,6 +2083,7 @@ class Handler : public AsyncWebHandler {
     r->addHeader("Access-Control-Allow-Origin", origin.c_str());
     r->addHeader("Vary", "Origin");
     req->send(r);
+    httpd_stack_note();
   }
 
  private:

@@ -23,6 +23,7 @@ namespace panel::s3 {
 
 RTC_NOINIT_ATTR inline uint32_t rtc_reason;
 RTC_NOINIT_ATTR inline uint32_t rtc_magic;
+RTC_NOINIT_ATTR inline uint32_t rtc_counted;  // MAGIC: the hop stands for a restart, so the next boot counts (trial)
 static const uint32_t MAGIC = 0x53335253;  // "S3RS"
 
 inline void hw_reset() {
@@ -121,11 +122,25 @@ inline void on_boot(bool hop) {
 }
 }  // namespace trial
 
+// A software restart (the Restart button, an update trial's retry, any esp_restart) goes straight to the hop instead
+// of through the chip's restart (#121): esp_restart arms the RTC watchdog for 1 s and resets the digital system, and
+// on this board that reset hung about one restart in ten (the problem report: no panic, the last log line seconds
+// before, next boot "watchdog (RTC)"). esp_restart's shutdown handlers run first (registered after this one: Wi-Fi's
+// among them), then this one sleeps 100 ms = the same full hardware reset every software reset ends in anyway.
+inline void restart_as_hop() {
+  rtc_counted = MAGIC;
+  hw_reset_as(ESP_RST_SW);
+}
+
 // on_boot priority 800
 inline void reset_if_soft() {
   auto reason = esp_reset_reason();
   if (reason != ESP_RST_DEEPSLEEP) rtc_magic = 0;
-  trial::on_boot(reason == ESP_RST_DEEPSLEEP && rtc_magic == MAGIC);
+  // a hop that stands for a restart counts as a boot of an update trial; our own boot-time hop doesn't
+  const bool ours = reason == ESP_RST_DEEPSLEEP && rtc_magic == MAGIC, counted = ours && rtc_counted == MAGIC;
+  rtc_counted = 0;
+  trial::on_boot(ours && !counted);
+  esp_register_shutdown_handler(restart_as_hop);
   if (reason == ESP_RST_USB || reason == ESP_RST_SW || reason == ESP_RST_PANIC || reason == ESP_RST_INT_WDT ||
       reason == ESP_RST_TASK_WDT || reason == ESP_RST_WDT) {
     rtc_reason = reason;
@@ -135,3 +150,11 @@ inline void reset_if_soft() {
 }
 
 }  // namespace panel::s3
+
+// for the problem report (firmware/fw_device.h report::begin, on_boot 850, before reset_if_soft): a deep-sleep boot that
+// is our hop, with the reason it stands for, and whether it stands for a restart (else it continues the boot before)
+extern "C" bool facet_hop(int *reason, bool *restart) {
+  if (esp_reset_reason() != ESP_RST_DEEPSLEEP || panel::s3::rtc_magic != panel::s3::MAGIC) return false;
+  *reason = (int) panel::s3::rtc_reason, *restart = panel::s3::rtc_counted == panel::s3::MAGIC;
+  return true;
+}
