@@ -1534,6 +1534,24 @@ inline void info_build(std::string &s) {
   if (!deserializeJson(shd, sh)) d["shown"] = shd;
   serializeJson(d, s);
 }
+// GET /fw/meta, streamed (chunked): [{id, name, section, meta}], the same JSON as fw::meta_json()
+inline void meta_stream(httpd_req_t *req, const std::string &origin) {
+  httpd_resp_set_type(req, "application/json");
+  httpd_resp_set_hdr(req, "Cache-Control", "no-store");
+  httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", origin.c_str());
+  httpd_resp_set_hdr(req, "Vary", "Origin");
+  std::string part;
+  bool first = true;
+  for (const auto &c : fw::reg()) {
+    ArduinoJson::JsonDocument d;
+    d["id"] = c.id, d["name"] = c.name, d["section"] = c.section, d["meta"] = ArduinoJson::serialized(c.meta);
+    part.assign(first ? "[" : ",");
+    serializeJson(d, part);
+    first = false;
+    if (httpd_resp_send_chunk(req, part.data(), part.size()) != ESP_OK) return;  // client gone
+  }
+  if (httpd_resp_send_chunk(req, first ? "[]" : "]", first ? 2 : 1) == ESP_OK) httpd_resp_send_chunk(req, nullptr, 0);
+}
 inline void info_json(std::string &s) {
   if (!in_loop([&] { info_build(s); }, 3000)) s = R"({"ok":false,"error":"the main loop did not answer in time"})";
 }
@@ -1874,7 +1892,14 @@ class Handler : public AsyncWebHandler {
     if (keyed || refused) {
       // answered above
     } else if (path == "/fw/meta") {
-      fw::meta_json(s);  // the registry is fixed after boot: no loop job needed
+      // the registry is fixed after boot (no loop job). Sent one component at a time: as one string it is ~200 KB, and
+      // building it (the string doubling as it grows) plus the response's copy asked PSRAM for ~400 KB the 4848S040
+      // doesn't have free with album art held (abort in the allocator, #152)
+      body_.clear();
+      too_big_ = false;
+      meta_stream(*req, origin);
+      httpd_stack_note();
+      return;
     } else if (path == "/fw/info") {
       info_json(s);
     } else if (path == "/fw/perf") {
