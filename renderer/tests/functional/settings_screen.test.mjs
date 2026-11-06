@@ -46,16 +46,17 @@ export default {
       t.has(t.texts(), 'Installing', 'installing');
     } },
     { name: 'Update password: no row without one (the workbench)', async run(t) {
+      // drags in the left gutter: the full-width sliders (Volume, Backlight) would take a drag in the middle at 480
       await t.device(); t.b.test('update_password', '');
       act(t, { do: 'nav.open', screen: 'settings' });
-      for (let i = 0; i < 12; i++) { t.drag({ at: [t.b.S / 2, t.b.S * 0.8] }, { by: [0, -t.b.S * 0.25] }); t.wait(300); }
+      for (let i = 0; i < 12; i++) { t.drag({ at: [t.b.S * 0.02, t.b.S * 0.8] }, { by: [0, -t.b.S * 0.25] }); t.wait(300); }
       t.has(t.texts(), 'Report a problem', 'scrolled to the end');
       t.hasNot(t.texts(), 'Update password', 'no row');
     } },
     { name: 'Update password: hidden until held, then shown', async run(t) {
       await t.device(); t.b.test('update_password', 'abcdefghjkmnpqrs');
       act(t, { do: 'nav.open', screen: 'settings' });
-      for (let i = 0; i < 12; i++) { t.drag({ at: [t.b.S / 2, t.b.S * 0.8] }, { by: [0, -t.b.S * 0.25] }); t.wait(300); }
+      for (let i = 0; i < 12; i++) { t.drag({ at: [t.b.S * 0.02, t.b.S * 0.8] }, { by: [0, -t.b.S * 0.25] }); t.wait(300); }
       t.has(t.texts(), 'Update password', 'the row');
       t.has(t.texts(), 'Hold to show', 'hidden');
       t.hasNot(t.texts(), 'abcdefghjkmnpqrs', 'not shown before a hold');
