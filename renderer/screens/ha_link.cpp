@@ -10,10 +10,19 @@
 //            "connection"  List row "Address" (the URL, or "Not set") and List row "Token" (the last 4 characters
 //                          only, "Not set"): set by the action ha.connect (the panel's link page /link, an agent,
 //                          HA, the workbench's props)
-//   The spec follows the link while the page shows (a 250 ms timer compares ha_link::rev() and builds it again).
+//            "pairing"     Home Assistant's own connection to the panel (the ESPHome API, ha_link::pairing), only on a
+//                          build that has one: List row "Encryption key" (Set by Home Assistant / None / Built in), and
+//                          with a key Home Assistant set a Button "Reset pairing" (secondary, hold to confirm: Home
+//                          Assistant loses the panel until it adopts it again), its "confirm" = ha_link::reset_pairing()
+//                          + a toast; a Text body dim line says what to do next
+//   The spec follows the link while the page shows (a 250 ms timer compares ha_link::rev() and the pairing, and builds
+//   it again); the spec sits in a fill box that takes the Reset pairing hold (no action of the list: glass only, and
+//   POST /fw/pairing/reset on the firmware).
 // Props (the workbench): url, token = ha.connect on build when given (a token typed here stays in the module; the
-// workbench's own fetch goes through its host with the host's token). Update path: none needed (rows follow the link).
+// workbench's own fetch goes through its host with the host's token); pairing = a stand-in for the firmware's key
+// (none | unpaired | paired | fixed; only where no firmware set one). Update path: none needed (rows follow the link).
 #include "fw.h"
+#include "fx.h"
 #include "device.h"
 #include "spec.h"
 
@@ -59,6 +68,21 @@ std::string spec_json() {
   a["trailing"] = "value", a["value"] = hl::url().empty() ? "Not set" : hl::url().c_str();
   ArduinoJson::JsonObject t = row(n, "Token");
   t["trailing"] = "value", t["value"] = hl::has_token() ? hl::token_hint().c_str() : "Not set";
+  const hl::Pairing pr = hl::pairing();
+  if (pr != hl::NO_PAIRING) {
+    group(n, "pairing");
+    ArduinoJson::JsonObject k = row(n, "Encryption key");
+    k["trailing"] = "value", k["value"] = pr == hl::PAIRED ? "Set by Home Assistant" : pr == hl::FIXED ? "Built in" : "None";
+    if (pr == hl::PAIRED) {
+      ArduinoJson::JsonObject b = node(n, "button")["p"].to<ArduinoJson::JsonObject>();
+      b["kind"] = "secondary", b["label"] = "Reset pairing", b["hold"] = true, b["hold_label"] = "Resetting", b["value"] = "reset_pairing";
+    }
+    ArduinoJson::JsonObject x = node(n, "text")["p"].to<ArduinoJson::JsonObject>();
+    x["style"] = "body", x["tone"] = "dim", x["lines"] = 3;
+    x["text"] = pr == hl::PAIRED ? "Home Assistant says the encryption key is invalid? Hold Reset pairing, then add the panel again in Home Assistant."
+              : pr == hl::FIXED ? "The key is part of this firmware: change it in the firmware's settings."
+                                : "Home Assistant can add this panel now and give it a new key (Settings > Devices & services).";
+  }
   std::string out;
   serializeJson(sp, out);
   return out;
@@ -72,28 +96,51 @@ const char *META = R"({
   "props": [
     {"name": "url", "about": "Home Assistant's address (ha.connect on open; empty = leave it).", "type": "text", "default": ""},
     {"name": "token", "about": "A long-lived access token (ha.connect on open; empty = keep the one set). The workbench reads through its host with the host's own token.", "type": "text", "default": ""},
-    {"name": "page", "about": "The panel's own link page, shown as a QR code while it is not linked (the panel sets it: http://<its address>/link).", "type": "text", "default": ""}
+    {"name": "page", "about": "The panel's own link page, shown as a QR code while it is not linked (the panel sets it: http://<its address>/link).", "type": "text", "default": ""},
+    {"name": "pairing", "about": "Home Assistant's encryption key on the panel, as a stand-in where the firmware has not set it: none (no pairing group), unpaired, paired (Reset pairing shows) or fixed.", "type": "select", "options": ["none", "unpaired", "paired", "fixed"], "default": "none"}
   ]
 })";
 
-// the spec root, built again in its place when the link changes (hl::rev); its timer goes with it (fx::every)
+// the workbench's stand-in key (the pairing prop): kept here, Reset pairing clears it like the firmware's
+hl::Pairing fake = hl::NO_PAIRING;
+hl::Pairing fake_state() { return fake; }
+bool fake_reset() { return fake = hl::UNPAIRED, true; }
+
+// the spec in a fill box, built again in its place when the link or the pairing changes (hl::rev); its timer goes
+// with it (fx::every); the box takes Reset pairing's hold, anything else goes on up (the Header's back: the device)
 void mount(lv_obj_t *parent, int32_t at) {
   Doc none;
   std::string error;
   const uint32_t rev = hl::rev();
-  lv_obj_t *root = fw::spec::build(parent, "ha_link", none.as<fw::Props>(), &error, spec_json().c_str());
-  if (!root) return;
+  const hl::Pairing pr = hl::pairing();
+  lv_obj_t *root = fx::box(parent, "fill");
   if (at >= 0) lv_obj_move_to_index(root, at);
-  fx::every(root, 250, [parent, root, rev] {
-    if (rev == hl::rev()) return;
+  if (!fw::spec::build(root, "ha_link", none.as<fw::Props>(), &error, spec_json().c_str())) { lv_obj_delete(root); return; }
+  fw::listen(root, [](lv_obj_t *from, const char *name, const char *detail, void *user) {
+    if (!strcmp(name, "confirm") && !strcmp(detail, "reset_pairing")) {
+      const bool ok = hl::reset_pairing();
+      Doc t;
+      t["tone"] = ok ? "ok" : "warn", t["icon"] = ok ? "check" : "alert", t["title"] = ok ? "Pairing reset" : "Nothing to reset";
+      t["body"] = ok ? "Add the panel again in Home Assistant: it asks for no key now and sets a new one." : "This panel holds no key from Home Assistant.";
+      fw::dev::toast(t.as<fw::Props>());
+      return;
+    }
+    if (lv_obj_t *up = lv_obj_get_parent((lv_obj_t *) user)) fw::notify(up, name, detail);
+  }, root);
+  fx::every(root, 250, [parent, root, rev, pr] {
+    if (rev == hl::rev() && pr == hl::pairing()) return;
     const int32_t at = lv_obj_get_index(root);
     lv_obj_delete(root);
     mount(parent, at);
   });
 }
 void build_page(lv_obj_t *parent, fw::Props p) {
-  const std::string pu = p["url"] | "", pt = p["token"] | "", pg = p["page"] | "";
+  const std::string pu = p["url"] | "", pt = p["token"] | "", pg = p["page"] | "", pp = p["pairing"] | "";
   if (!pg.empty()) hl::set_page(pg);
+  if (!pp.empty() && (hl::pairing() == hl::NO_PAIRING || fake != hl::NO_PAIRING)) {  // never over the firmware's key
+    fake = pp == "paired" ? hl::PAIRED : pp == "fixed" ? hl::FIXED : pp == "unpaired" ? hl::UNPAIRED : hl::NO_PAIRING;
+    hl::on_pairing(fake_state, fake_reset);
+  }
   if (!pu.empty() && (pu != hl::url() || !pt.empty())) hl::configure(pu, pt);
   mount(parent, -1);
 }

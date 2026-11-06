@@ -1883,6 +1883,7 @@ class Handler : public AsyncWebHandler {
         const hl::St st = hl::status();
         d["state"] = !hl::ready() ? "off" : st == hl::CHECKING ? "checking" : st == hl::FAIL ? "failed" : hl::checked() ? "linked" : "set";
         d["url"] = hl::url(), d["token"] = hl::token_hint(), d["why"] = hl::why();
+        d["pairing"] = hl::pairing_word(hl::pairing());  // Home Assistant's encryption key: none / unpaired / paired / fixed
       }, 2000);
       // does homeassistant.local answer from here (mDNS through lwIP)? the page offers it as the address. Looked up on
       // this HTTP task, once, again a minute later while it does not
@@ -1913,6 +1914,16 @@ class Handler : public AsyncWebHandler {
       d["ha"] = ha_at;
 #endif
       serializeJson(d, s);
+    } else if (path == "/fw/pairing/reset" && post) {  // Reset pairing without the glass (the editor or a key, as every write)
+      bool ok = false;
+      std::string was;
+      if (!in_loop([&] { was = fw::dev::ha_link::pairing_word(fw::dev::ha_link::pairing()); ok = fw::dev::ha_link::reset_pairing(); }, 2000)) code = 503, s = late;
+      else {
+        ArduinoJson::JsonDocument d;
+        d["ok"] = ok, d["was"] = was;
+        if (!ok) code = 409, d["why"] = was == "paired" ? "the key could not be cleared" : "no key from Home Assistant to clear";
+        serializeJson(d, s);
+      }
     } else if (path == "/fw/deck") {
       std::string dj;
       bool over = false;
@@ -2299,6 +2310,34 @@ inline std::string nvs_str(nvs_handle_t h, const char *key) {
   v.resize(n ? n - 1 : 0);
   return v;
 }
+// Home Assistant's pairing (core/device.h ha_link::pairing): the ESPHome API's encryption key. The public build has
+// none in its YAML (api: encryption: {}), so Home Assistant sets one when it adopts the panel and the API keeps it in
+// its own preference; Reset pairing clears that record (APIServer::clear_noise_psk: an all-zeros key = none, written
+// at once, every client told to go), so the API answers without encryption and Home Assistant can adopt it again with
+// a new key. A key in the YAML (USE_API_NOISE_PSK_FROM_YAML) is FIXED: nothing to clear.
+inline void pairing_setup() {
+#if defined(USE_API) && defined(USE_API_NOISE)
+  namespace hl = fw::dev::ha_link;
+  hl::on_pairing([]() -> hl::Pairing {
+#ifdef USE_API_NOISE_PSK_FROM_YAML
+    return hl::FIXED;
+#else
+    auto *api = esphome::api::global_api_server;
+    if (!api) return hl::NO_PAIRING;
+    return api->get_noise_ctx().has_psk() ? hl::PAIRED : hl::UNPAIRED;
+#endif
+  }, []() -> bool {
+#ifdef USE_API_NOISE_PSK_FROM_YAML
+    return false;
+#else
+    auto *api = esphome::api::global_api_server;
+    if (!api || !api->clear_noise_psk(true)) return false;
+    ESP_LOGW("facet_wb", "Home Assistant pairing reset: the API encryption key is cleared");
+    return true;
+#endif
+  });
+#endif
+}
 inline void setup() {
   nvs_handle_t h;
   if (nvs_open("facet_halink", NVS_READONLY, &h) == ESP_OK) {
@@ -2316,6 +2355,7 @@ inline void setup() {
   });
   fw::dev::ha_link::on_get(get);
   fw::dev::ha_link::on_ws(ws);
+  pairing_setup();
   lv_timer_create(drain, 20, nullptr);
   // the link page's address (Settings > Home Assistant and Set up show it as a QR code while not linked)
   lv_timer_create([](lv_timer_t *) {

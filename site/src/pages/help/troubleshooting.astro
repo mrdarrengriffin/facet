@@ -99,6 +99,25 @@ const headings: Heading[] = [
     </li>
   </ul>
 
+  <h3 id="encryption-key">Home Assistant says the encryption key is invalid</h3>
+  <p>
+    The panel still holds a key Home Assistant no longer has (Home Assistant was restored from an older backup, or
+    the panel was added to another Home Assistant). Clear the panel's key, then let Home Assistant give it a new one:
+  </p>
+  <ol>
+    <li>
+      On the panel, open <strong>Settings &gt; Home Assistant</strong> and hold <strong>Reset pairing</strong> until
+      it fills. <strong>Encryption key</strong> then reads <strong>None</strong>. Without the glass:
+      <code>curl -X POST -H "Authorization: Bearer &lt;key&gt;" http://&lt;panel&gt;/fw/pairing/reset</code> (an API
+      key from Settings &gt; API keys, as for every change from outside).
+    </li>
+    <li>
+      In Home Assistant, the panel's ESPHome entry asks to be set up again (<strong>Reconfigure</strong>, or the
+      repair notice). Confirm it: Home Assistant connects without a key and gives the panel a new one. The device,
+      its entities and their names stay as they were.
+    </li>
+  </ol>
+
   <h2 id="actions">Controls do nothing</h2>
   <p>
     If the panel shows your lights but tapping them changes nothing, Home Assistant is not letting it act. Open the

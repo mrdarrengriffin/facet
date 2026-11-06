@@ -238,6 +238,25 @@ const std::string &why() { return S().why; }
 bool checked() { return S().checked; }
 void set_page(const std::string &u) { if (u != S().page) S().page = u, bump(); }
 const std::string &page() { return S().page; }
+namespace {
+Pairing (*pair_state)() = nullptr;
+bool (*pair_reset)() = nullptr;
+}  // namespace
+void on_pairing(Pairing (*state)(), bool (*reset)()) { pair_state = state, pair_reset = reset, bump(); }
+Pairing pairing() { return pair_state ? pair_state() : NO_PAIRING; }
+bool reset_pairing() {
+  if (pairing() != PAIRED || !pair_reset || !pair_reset()) return false;
+  bump();
+  return true;
+}
+const char *pairing_word(Pairing p) {
+  switch (p) {
+    case UNPAIRED: return "unpaired";
+    case PAIRED: return "paired";
+    case FIXED: return "fixed";
+    default: return "none";
+  }
+}
 uint32_t rev() { return S().rev; }
 size_t peak() { return S().peak; }
 int count() { return S().count; }

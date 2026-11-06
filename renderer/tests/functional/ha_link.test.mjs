@@ -101,5 +101,18 @@ export default {
       act(t, { do: 'ha.connect', url: 'http://ha.test:8123', token: 'wrongtoken99' }); t.b.tick(4); t.b.settle(600);
       t.ok(qr(), 'the check failed: the code again');
     } },
+    { name: 'Reset pairing: hold clears the key Home Assistant set (encryption key None, a toast); no button without one', async run(t) {
+      await t.mount('ha_link', { pairing: 'paired' });
+      t.has(t.texts(), 'Set by Home Assistant', 'the key Home Assistant set');
+      t.hold(/^Reset pairing$/i, 1600); t.b.tick(40); t.b.settle(600);
+      t.has(t.texts(), 'None', 'cleared: no key');
+      t.hasNot(t.texts(), /^Reset pairing$/i, 'nothing left to reset');
+      t.eq(t.texts().filter((s) => s === 'Encryption key').length, 1, 'built again in place, once');
+      await t.mount('ha_link', { pairing: 'fixed' });
+      t.has(t.texts(), 'Built in', 'a key in the firmware');
+      t.hasNot(t.texts(), /^Reset pairing$/i, 'a built-in key: no reset');
+      await t.mount('ha_link', { pairing: 'none' });
+      t.hasNot(t.texts(), 'Encryption key', 'no pairing on this build: no group');
+    } },
   ],
 };

@@ -246,6 +246,16 @@ bool checked();            // the last check since the link was set answered (th
 // Home Assistant and Set up show it as a QR code while the panel is not linked
 void set_page(const std::string &u);
 const std::string &page();
+// Home Assistant's own connection TO the panel (the ESPHome API) and its encryption key, which the firmware keeps:
+// pairing() = NO_PAIRING (this build has none: WASM, a build without encryption), UNPAIRED (no key: Home Assistant can
+// adopt the panel and set one), PAIRED (a key Home Assistant set) or FIXED (a key built in: no reset).
+// reset_pairing() clears a key Home Assistant set (Settings > Home Assistant's Reset pairing, POST /fw/pairing/reset),
+// so a Home Assistant that lost it ("invalid encryption key") can adopt the panel again; false = nothing to clear.
+enum Pairing { NO_PAIRING = -1, UNPAIRED = 0, PAIRED = 1, FIXED = 2 };
+void on_pairing(Pairing (*state)(), bool (*reset)());  // the firmware's (fw_device.h); the workbench: the screen's prop
+Pairing pairing();
+bool reset_pairing();
+const char *pairing_word(Pairing p);  // "none" | "unpaired" | "paired" | "fixed"
 uint32_t rev();            // moves on every change (pages poll it)
 size_t peak();             // the last fetch's parse peak (bytes)
 int count();               // entities kept by the last fetch

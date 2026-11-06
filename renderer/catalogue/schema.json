@@ -9511,6 +9511,18 @@
      "type": "text",
      "about": "The panel's own link page, shown as a QR code while it is not linked (the panel sets it: http://<its address>/link).",
      "default": ""
+    },
+    {
+     "name": "pairing",
+     "type": "select",
+     "about": "Home Assistant's encryption key on the panel, as a stand-in where the firmware has not set it: none (no pairing group), unpaired, paired (Reset pairing shows) or fixed.",
+     "options": [
+      "none",
+      "unpaired",
+      "paired",
+      "fixed"
+     ],
+     "default": "none"
     }
    ],
    "events": {},
