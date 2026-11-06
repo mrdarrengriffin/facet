@@ -25,10 +25,11 @@
 //                = What the screen shows now (a BMP image), so an assistant can check its work.
 //   GET  /fw/report  the problem report page (HTML, firmware/report.html from flash, gzip): shows /fw/report.txt with
 //                    Copy report, Download report (.txt) and Open a GitHub issue (the Bug report form, version + board in)
-//                = The page Settings > Report a problem opens on a phone: copy or download the report, then open an issue.
+//                = The page Settings > Report a problem points to: the steps, copy or download, open an issue.
 //   GET  /fw/report.txt  the problem report, plain text: version, boots + reset reasons, the crash record, Wi-Fi / HA
 //                    drops, /fw/info, settings, the log kept across restarts; tokens, keys and passwords removed
-//                    ("problem report"); ?download=1 = as a file (facet-report-<board>.txt)
+//                    ("problem report"), after two lines on where to send it; ?download=1 = as a file
+//                    (facet-report-<board>.txt)
 //                = Everything needed to report a problem, also from before the last restart (paste it into a bug report).
 //   GET  /fw/spec   the spec hello (core/spec.h: protocol, catalogue hash, components, screens + revs, budgets, heap)
 //                = Components, screens, budgets and free memory.
@@ -1561,7 +1562,7 @@ inline void info_json(std::string &s) {
 }
 
 // ---------------------------------------------------------------- problem report (GET /fw/report.txt, fw_report.h)
-// (Settings > Report a problem, screens/report.cpp, shows a QR code + the address of its page, GET /fw/report)
+// (Settings > Report a problem, screens/report.cpp, shows the address of its page, GET /fw/report)
 // Kept across restarts in RTC memory that boot doesn't clear (RTC_NOINIT: a software, watchdog or crash restart keeps it,
 // and so does the Guition's deep-sleep hop; power loss clears it): the last log lines, boots and connection drops. The
 // S3's RTC slow memory is 8 KB, so the Guition keeps 5 KB of log (~40 lines); the P4 keeps 16 KB.
@@ -1777,6 +1778,7 @@ inline void send(AsyncWebServerRequest *request) {
   };
   char t[256];
   const uint32_t now = up_s();
+  out(fw::report::HOWTO);  // what to do with it, first (the page's steps say the same)
   snprintf(t, sizeof t, "Facet problem report\nfirmware %s, board %s, built %s\nuptime %s, now %s\n\n",
 #ifdef ESPHOME_PROJECT_VERSION
            ESPHOME_PROJECT_VERSION,

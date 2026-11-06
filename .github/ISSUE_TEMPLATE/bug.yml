@@ -38,14 +38,13 @@ body:
   - type: textarea
     id: report
     attributes:
-      label: The panel's problem report
+      label: Report
       description: >-
-        On a panel, open Settings > About > Report a problem and scan its QR code with your phone (on the same Wi-Fi as the
-        panel), or open the address shown under the code on a computer, for example http://192.168.1.50/fw/report.
-        That page has Copy report and Download report: paste the report here, or attach the downloaded file below.
-        The address is the panel's IP address: it is on that screen, or find the panel in your router's list of devices. The report
-        holds the logs from before the last restart, Wi-Fi and Home Assistant drops and the last crash, with tokens,
-        keys and passwords removed.
+        The panel's problem report. On the panel, open Settings > About > Report a problem: it shows the address of
+        the panel's report page, for example http://192.168.1.50/fw/report (the panel's IP address; your router's list
+        of devices shows it too). Open that address on a computer on the same Wi-Fi, copy the report (or download
+        it) and paste it in here, or attach the file below. It holds the logs from before the last restart, Wi-Fi and
+        Home Assistant drops and the last crash, with tokens, keys and passwords removed.
       render: text
   - type: textarea
     id: shots

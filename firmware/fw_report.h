@@ -177,6 +177,11 @@ inline std::string redact(const std::string &in) {
   return out;
 }
 
+// the report's first lines (GET /fw/report.txt and the downloaded file): what to do with it, before the report itself
+constexpr const char *HOWTO =
+    "# To report a problem: open https://github.com/mrdarrengriffin/facet/issues/new?template=bug.yml\n"
+    "# and paste this whole file into the Report box (or attach it), then say what happened.\n\n";
+
 // ---------------------------------------------------------------- text helpers
 // strips ANSI colour codes (ESPHome's log lines carry them)
 inline std::string plain(const char *s, size_t n) {

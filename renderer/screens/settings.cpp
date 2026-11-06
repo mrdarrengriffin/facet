@@ -507,7 +507,7 @@ void build_settings(lv_obj_t *parent, fw::Props p) {
       });
     }
   }
-  {  // "about": Report a problem (Settings > Report a problem: a QR code to a filled-in bug report, screens/report.cpp)
+  {  // "about": Report a problem (Settings > Report a problem: the address of the panel's report page, screens/report.cpp)
     group(c, "about", false);
     Doc rr;
     rr["title"] = "Report a problem", rr["icon"] = "none", rr["trailing"] = "chevron";

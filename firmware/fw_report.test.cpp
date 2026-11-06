@@ -109,6 +109,8 @@ static void test_redact() {
                          "free 112511 B, largest 47104", "tokens_ok yes", "/fw/report",
                          "firmware 0.5.0-beta6-dev202611061147+9d9ef80, board guition-4848s040"})
     EXPECT(redact(ok) == ok, "changed: '%s' -> '%s'", ok, redact(ok).c_str());
+  EXPECT(redact(fw::report::HOWTO) == fw::report::HOWTO, "the how-to lines changed: '%s'", redact(fw::report::HOWTO).c_str());
+  EXPECT(strstr(fw::report::HOWTO, "template=bug.yml") && strstr(fw::report::HOWTO, "Report box"), "how-to: the form + the box");
   const char *col = "\x1b[1;31mE x\x1b[0m\r";
   EXPECT(fw::report::plain(col, strlen(col)) == "E x", "plain");
 }

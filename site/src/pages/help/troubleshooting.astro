@@ -197,17 +197,19 @@ const headings: Heading[] = [
     Tokens, keys and passwords are taken out before it leaves the panel. To send it with a bug report:
   </p>
   <ol>
-    <li>On the panel, open <strong>Settings &gt; About &gt; Report a problem</strong>.</li>
-    <li>Scan the QR code with your phone, or open the address under it on a computer. Both need to be on the same
-      Wi-Fi as the panel. The address is the panel's own, for example <code>http://192.168.1.50/fw/report</code>; your
-      router's list of devices shows the panel's IP address too.</li>
-    <li>On that page, tap <strong>Copy report</strong> or <strong>Download report (.txt)</strong>.</li>
-    <li>Tap <strong>Open a GitHub issue</strong>: the bug report form opens with the version and board filled in. Say
-      what happened, then paste the report in, or attach the file you downloaded.</li>
+    <li>On the panel, open <strong>Settings &gt; About &gt; Report a problem</strong>. Its <strong>Report page</strong>
+      row shows the address of the panel's report page, for example <code>http://192.168.1.50/fw/report</code> (the
+      panel's IP address; your router's list of devices shows it too).</li>
+    <li>Open that address on a computer on the same Wi-Fi as the panel. The page starts with the steps.</li>
+    <li>Copy the report (<strong>Copy report</strong>), or download it (<strong>Download report (.txt)</strong>).</li>
+    <li>Open a new issue on GitHub (<strong>Open a GitHub issue</strong>): the bug report form opens with the version
+      and board filled in. Paste the report into the <strong>Report</strong> box (or attach the file), and say what
+      happened.</li>
   </ol>
   <p>
     The report as plain text is at <code>http://&lt;panel address&gt;/fw/report.txt</code>, for a script or
-    <code>curl</code>. A panel that is not on Wi-Fi yet shows a QR code that opens the bug report form instead.
+    <code>curl</code>; its first lines say where to send it. A panel that is not on Wi-Fi yet shows no address: connect
+    it to Wi-Fi first.
   </p>
 
   <h2 id="help">Still stuck?</h2>

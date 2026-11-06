@@ -1,5 +1,5 @@
 // The problem report page (firmware/report.html, GET /fw/report on the panel, #125): small enough to serve from flash,
-// the three buttons, and a GitHub issue address that stays short (the report never goes in it).
+// the steps first, and a GitHub issue address that stays short (the report never goes in it).
 //   node --test renderer/tools/report_page.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -21,6 +21,13 @@ test('small: under 4 KB gzipped (served from flash in one piece)', () => {
 test('Copy report, Download report (.txt), Open a GitHub issue', () => {
   for (const b of ['Copy report', 'Download report (.txt)', 'Open a GitHub issue']) assert.ok(html.includes(`>${b}<`), b);
   assert.ok(html.includes("fetch('/fw/report.txt'"), 'reads the plain-text report');
+});
+test('the steps come first, the GitHub link in step 2, the buttons next to them', () => {
+  const steps = ['Copy this report (or download it).', 'Open a new issue on GitHub:', 'Paste the report into the Report box (or attach the file), and say what happened.'];
+  const at = steps.map((x) => html.indexOf(x));
+  assert.ok(at.every((i) => i > 0), 'all three steps');
+  assert.ok(at[0] < html.indexOf('id="copy"') && html.indexOf('id="copy"') < html.indexOf('id="state"'), 'steps, then the buttons, then the rest');
+  assert.ok(html.includes('id="ghlink"') && script.includes("$('ghlink').href = issueUrl"), 'step 2 links the filled-in form');
 });
 test('the version and board come from the report\'s first lines', () => {
   const t = 'Facet problem report\nfirmware 0.5.0-beta.7, board guition-4848s040, built 2026-11-06\nuptime 3 min';

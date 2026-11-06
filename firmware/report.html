@@ -1,15 +1,16 @@
 <!doctype html>
-<!-- The panel's problem report page (GET /fw/report, served from flash: firmware/bundle.mjs; #125). The QR code on
-     Settings > Report a problem opens it on a phone on the same Wi-Fi. It reads the report as plain text
-     (GET /fw/report.txt, streamed by the panel: fw_device.h "problem report"), shows it, and offers Copy report (works
-     on plain http, where the Clipboard API is not there), Download report (.txt) and Open a GitHub issue: the Bug
-     report form (.github/ISSUE_TEMPLATE/bug.yml) with the title, version and board filled in and a line asking to paste
-     or attach the report. The report itself never goes in that address (GitHub limits its length). -->
+<!-- The panel's problem report page (GET /fw/report, served from flash: firmware/bundle.mjs; #125). Settings > About >
+     Report a problem shows its address, to open on a computer on the same Wi-Fi. It starts with the steps (copy the
+     report, open the Bug report form, paste it into the Report box), with Copy report (works on plain http, where the
+     Clipboard API is not there), Download report (.txt) and Open a GitHub issue beside them: the Bug report form
+     (.github/ISSUE_TEMPLATE/bug.yml) with the title, version and board filled in and a line asking to paste or attach
+     the report. It reads the report as plain text (GET /fw/report.txt, streamed by the panel: fw_device.h "problem
+     report"). The report itself never goes in the issue address (GitHub limits its length). -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Facet problem report</title>
+<title>Report a problem: Facet</title>
 <style>
 /* Facet's look, as the link page (firmware/link.html) */
 @font-face { font-family: "Inter"; font-weight: 400; src: url(/ed/fonts/inter-400.woff2) format("woff2"); font-display: swap; }
@@ -19,7 +20,7 @@
 @media (prefers-color-scheme: dark) { :root { --bg: #000000; --card: #0A0B0E; --text: #F2F1EE; --dim: #8A919B; --line: #22262D; --line-hi: #3A404A; --accent: #E8542A; --accent-text: #E8542A; --on: #0A0B0E; --ok: #5DBE7E; --bad: #E5484D; --wait: #E8B33A; } }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.5 "Inter", system-ui, -apple-system, "Segoe UI", sans-serif; -webkit-font-smoothing: antialiased; }
-main { max-width: 40rem; margin: 0 auto; padding: 32px 16px 48px; }
+main { max-width: 52rem; margin: 0 auto; padding: 32px 16px 48px; }
 .caps { margin: 0; font: 400 12px/16px "JetBrains Mono", ui-monospace, monospace; letter-spacing: 0.12em; text-transform: uppercase; color: var(--dim); }
 h1 { margin: 8px 0; font-size: 28px; line-height: 34px; font-weight: 500; letter-spacing: -0.01em; }
 p { margin: 0 0 12px; }
@@ -33,31 +34,34 @@ p { margin: 0 0 12px; }
 .main { color: var(--on); background: var(--accent); border: 0; }
 .alt { color: var(--accent-text); background: none; border: 1px solid var(--line-hi); }
 button:disabled { opacity: 0.5; cursor: default; }
-ol { margin: 0; padding-left: 20px; } li { margin: 4px 0; }
+ol { margin: 0 0 16px; padding-left: 20px; } li { margin: 6px 0; }
+a { color: var(--accent-text); }
+@media (min-width: 720px) { .steps { display: grid; grid-template-columns: 1fr 15rem; gap: 24px; align-items: start; } .steps ol { margin: 0; } }
 textarea { display: block; width: 100%; height: 50vh; margin: 0; padding: 12px; font: 12px/1.45 "JetBrains Mono", ui-monospace, monospace; color: inherit; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; resize: vertical; white-space: pre; }
 </style>
 </head>
 <body>
 <main>
   <p class="caps">Facet</p>
-  <h1>Problem report</h1>
-  <p class="dim">This panel's logs from before its last restart, its Wi-Fi and Home Assistant drops and its last crash. Tokens, keys and passwords are taken out.</p>
+  <h1>Report a problem</h1>
+  <div class="card steps">
+    <ol>
+      <li>Copy this report (or download it).</li>
+      <li>Open a new issue on GitHub: <a id="ghlink" href="https://github.com/mrdarrengriffin/facet/issues/new?template=bug.yml" target="_blank" rel="noopener noreferrer">the bug report form</a>.</li>
+      <li>Paste the report into the Report box (or attach the file), and say what happened.</li>
+    </ol>
+    <div class="btns">
+      <button class="main" id="copy" type="button" disabled>Copy report</button>
+      <a class="alt" id="dl" href="/fw/report.txt?download=1" download="facet-report.txt">Download report (.txt)</a>
+      <a class="alt" id="gh" href="https://github.com/mrdarrengriffin/facet/issues/new?template=bug.yml" target="_blank" rel="noopener noreferrer">Open a GitHub issue</a>
+    </div>
+  </div>
   <div class="card" aria-live="polite">
     <div class="state" id="state"><span class="dot"></span><span id="state-text">Reading the report…</span></div>
   </div>
   <div class="card">
-    <ol class="dim">
-      <li>Copy the report, or download it.</li>
-      <li>Open a GitHub issue, say what happened, and paste the report in (or attach the file).</li>
-    </ol>
-  </div>
-  <div class="btns">
-    <button class="main" id="copy" type="button" disabled>Copy report</button>
-    <a class="alt" id="dl" href="/fw/report.txt?download=1" download="facet-report.txt">Download report (.txt)</a>
-    <a class="alt" id="gh" href="https://github.com/mrdarrengriffin/facet/issues/new?template=bug.yml" target="_blank" rel="noopener noreferrer">Open a GitHub issue</a>
-  </div>
-  <div class="card">
     <p class="caps">The report</p>
+    <p class="dim">This panel's logs from before its last restart, its Wi-Fi and Home Assistant drops and its last crash. Tokens, keys and passwords are taken out.</p>
     <textarea id="text" readonly spellcheck="false" aria-label="The report"></textarea>
   </div>
 </main>
@@ -65,12 +69,12 @@ textarea { display: block; width: 100%; height: 50vh; margin: 0; padding: 12px; 
 const $ = (id) => document.getElementById(id);
 // the Bug report form with the title, version and board filled in: short on purpose (no report in it)
 function issueUrl(version, board) {
-  const q = new URLSearchParams({ template: 'bug.yml' });
+  const q = new URLSearchParams({ template: 'bug.yml' });  // the same form as the report's first lines (fw_device.h report::send)
   if (version || board) {
     q.set('title', 'Problem on ' + (board || 'a panel') + (version ? ' (' + version + ')' : ''));
     q.set('version', (version || 'unknown') + (board ? ' on ' + board : ''));
   }
-  q.set('report', 'Paste the panel\'s report here (Copy report on its report page), or attach the .txt you downloaded under Photos, screenshots or logs.');
+  q.set('report', 'Paste the whole report here (Copy report on the panel\'s report page), or attach the downloaded .txt under Photos, screenshots or logs.');
   return 'https://github.com/mrdarrengriffin/facet/issues/new?' + q.toString();
 }
 // "Facet problem report\nfirmware <version>, board <board>, built ..." (fw_device.h report::send)
@@ -86,8 +90,8 @@ function copy() {
   ta.setSelectionRange(0, ta.value.length);  // iOS
   let ok = false;
   try { ok = document.execCommand('copy'); } catch { ok = false; }  // works on plain http, where navigator.clipboard is not there
-  if (!ok && navigator.clipboard) navigator.clipboard.writeText(ta.value).then(() => state('ok', 'Copied. Now open a GitHub issue and paste it in.'), () => state('bad', 'Could not copy: the report is selected below, copy it from there.'));
-  else state(ok ? 'ok' : 'bad', ok ? 'Copied. Now open a GitHub issue and paste it in.' : 'Could not copy: the report is selected below, copy it from there.');
+  if (!ok && navigator.clipboard) navigator.clipboard.writeText(ta.value).then(() => state('ok', 'Copied. Now open a new issue on GitHub and paste it into the Report box.'), () => state('bad', 'Could not copy: the report is selected below, copy it from there.'));
+  else state(ok ? 'ok' : 'bad', ok ? 'Copied. Now open a new issue on GitHub and paste it into the Report box.' : 'Could not copy: the report is selected below, copy it from there.');
   ta.blur();
 }
 async function load() {
@@ -97,7 +101,7 @@ async function load() {
     const t = await r.text();
     $('text').value = t;
     const f = facts(t);
-    $('gh').href = issueUrl(f.version, f.board);
+    $('gh').href = $('ghlink').href = issueUrl(f.version, f.board);
     const name = 'facet-report' + (f.board ? '-' + f.board : '') + '.txt';
     $('dl').download = name;
     $('dl').href = URL.createObjectURL(new Blob([t], { type: 'text/plain' }));  // the same report as shown

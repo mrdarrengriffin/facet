@@ -1,11 +1,10 @@
 // Report a problem (Settings > Report a problem): how to send a bug report from the panel. A screen spec of real
 // components only, built by the spec renderer (core/spec.h: Page > Header + list Body, C1-C3), laid out as Settings:
 //   header   the Header (back + "Report a problem" + the screen chrome)
-//   body     "problem report"  one Text body dim line (what to do), then the QR block: the panel's own report page
-//                              (http://<its address>/fw/report, firmware/report.html: Copy report, Download report,
-//                              Open a GitHub issue), then that address as a Text line, for a computer on the same Wi-Fi.
-//                              Not on Wi-Fi yet: the QR opens a new GitHub Bug report (bug.yml) with this panel's
-//                              version + board filled in instead.
+//   body     "problem report"  one Text body dim line (what to do), then a read-only List row "Report page" with the
+//                              panel's own report page (http://<its address>/fw/report, firmware/report.html: the
+//                              steps, Copy report, Download report, Open a GitHub issue). Not on Wi-Fi yet: no row,
+//                              the line says so.
 //            "this panel"      read-only List rows (act none): Version, Board
 //   The spec follows the address while the page shows (a 1 s timer compares the link page's address).
 // The firmware tells it the board (report::set_board); the version is the installed firmware's (core/device.h update).
@@ -37,15 +36,6 @@ ArduinoJson::JsonObject row(ArduinoJson::JsonArray n, const char *title) {
   p["title"] = title, p["icon"] = "none", p["act"] = "none";
   return p;
 }
-std::string enc(const std::string &s) {  // a URL query value
-  static const char *H = "0123456789ABCDEF";
-  std::string o;
-  for (unsigned char c : s) {
-    if (isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~') o += (char) c;
-    else o += '%', o += H[c >> 4], o += H[c & 15];
-  }
-  return o;
-}
 struct Facts { std::string version, board, page; };
 Facts facts(fw::Props p) {
   Facts f;
@@ -72,19 +62,11 @@ std::string spec_json(const Facts &f) {
   group(n, "problem report");
   ArduinoJson::JsonObject x = node(n, "text")["p"].to<ArduinoJson::JsonObject>();
   x["style"] = "body", x["tone"] = "dim", x["lines"] = 2;
-  ArduinoJson::JsonObject q = node(n, "qr_block")["p"].to<ArduinoJson::JsonObject>();
-  if (!rep.empty()) {  // the panel's own report page: a short address, a coarse code that scans at 480
-    x["text"] = "Scan with your phone, or open this address on a computer on the same Wi-Fi.";
-    q["text"] = rep.c_str(), q["caption"] = "open on your phone";
-    ArduinoJson::JsonObject a = node(n, "text")["p"].to<ArduinoJson::JsonObject>();  // the address, as typed (not caps)
-    a["text"] = rep.c_str(), a["style"] = "body", a["tone"] = "default", a["lines"] = 1;
-  } else {  // no Wi-Fi yet: no report page to open; the Bug report form (bug.yml) with the version field filled in
-    std::string url = "https://github.com/mrdarrengriffin/facet/issues/new?template=bug.yml";
-    std::string ver = f.version.empty() ? std::string("unknown") : f.version;
-    if (!f.board.empty()) ver += " on " + f.board;
-    url += "&version=" + enc(ver);
-    x["text"] = "This panel isn't on Wi-Fi yet, so its report can't be opened. Scan to open a bug report instead.";
-    q["text"] = url, q["caption"] = "open on your phone";  // a copy: url ends with this block
+  x["text"] = rep.empty() ? "To report a problem, connect this panel to Wi-Fi first: its report page needs it."
+                          : "To report a problem, open this address on a computer on the same Wi-Fi. It has the report and the steps.";
+  if (!rep.empty()) {  // the panel's own report page, as a settings row to read and type
+    ArduinoJson::JsonObject a = row(n, "Report page");
+    a["trailing"] = "value", a["value"] = rep.c_str();
   }
   group(n, "this panel");
   ArduinoJson::JsonObject v = row(n, "Version");
@@ -98,7 +80,7 @@ std::string spec_json(const Facts &f) {
 
 const char *META = R"({
   "role": "detail",
-  "about": "Settings > Report a problem: a QR code and address that open the panel's problem report page on a phone or computer on the same Wi-Fi, to copy or download the report (logs kept across restarts, connection drops, the last crash; no secrets) and open a GitHub issue with the version and board filled in.",
+  "about": "Settings > Report a problem: the address of the panel's problem report page, to open on a computer on the same Wi-Fi. That page has the steps, the report (logs kept across restarts, connection drops, the last crash; no secrets) to copy or download, and a GitHub issue with the version and board filled in.",
   "frame": [480, 480],
   "icons": ["back@glyph"],
   "props": [
