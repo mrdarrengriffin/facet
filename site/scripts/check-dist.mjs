@@ -15,7 +15,7 @@ import { docPages, mdPath } from './md.mjs';
 const DIST = process.argv[2] ?? process.env.FACET_DOCS_OUT ?? './dist';
 const BASE = process.env.FACET_DOCS_BASE ?? '/facet-docs/';
 // words that are spelled with a capital inside (names), and dotted words people write as prose
-const NAMES = /^(GitHub|ESPHome|PlatformIO|JavaScript|TypeScript|WebSocket|WebSockets|LilyGO|YouTube|iPhone|iPad|macOS|iOS|PSRAM|LVGL|WebAssembly|OpenStreetMap|ArduinoJson|HomeKit|AirPlay|TiviMate|MiB|KiB|kWh|MWh|GBP|mAh|IoT|SoC|SoCs|McCartney|OpenType|JetBrains|LiDAR|iCal)$/;
+const NAMES = /^(GitHub|ESPHome|PlatformIO|JavaScript|TypeScript|WebSocket|WebSockets|LilyGO|YouTube|iPhone|iPad|macOS|iOS|PSRAM|LVGL|WebAssembly|OpenStreetMap|ArduinoJson|HomeKit|AirPlay|TiviMate|MiB|KiB|kWh|MWh|GBP|mAh|IoT|SoC|SoCs|McCartney|OpenType|JetBrains|LiDAR|iCal|FlightRadar24|OpenSky|easyJet)$/;
 const DOTTED = /^(e\.g|i\.e|etc|vs|v\d|\d)/;
 const INLINE = new Set(['a', 'b', 'strong', 'em', 'i', 'code', 'kbd', 'samp', 'span', 'abbr', 'small', 'mark', 'sup', 'sub', 'u', 's', 'q', 'time', 'var', 'cite', 'dfn']);
 const SKIP = new Set(['script', 'style', 'svg', 'template', 'noscript', 'textarea', 'canvas']);

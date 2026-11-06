@@ -1185,6 +1185,8 @@ inline void art_info(ArduinoJson::JsonDocument &d) {
     o["filter"] = a.nearest ? "nearest" : up ? "bilinear" : "area";
     o["drawn"] = a.ow == a.bw && a.oh == a.bh ? "1:1" : "scaled up by LVGL";
     o["reserved"] = a.slot;
+    o["decoder"] = a.hw ? "hardware" : "software";  // the P4's JPEG engine + PPA, or the software decode
+    o["download_ms"] = a.got_ms, o["decode_ms"] = a.dec_ms;
   } else o["error"] = a.err;
   o["slots"] = fw::img::slots().n.load(), o["slots_free"] = fw::img::slots_free();
   if (a.side) {
