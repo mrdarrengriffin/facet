@@ -1843,10 +1843,14 @@ inline void get(uint32_t id, const std::string &url, const std::string &token) {
     push(std::move(end));
   }
 }
-// one WebSocket read (ha_link::ws, the Energy feed): <url>/api/websocket (ws, or wss for https), auth with the token, the
-// command with id 1, then HA's result message streamed back as HA sent it (the workbench host does the same). Reads only:
-// the closed list below, else refused before connecting.
+// WebSocket reads (ha_link::ws, the Energy feed): <url>/api/websocket (ws, or wss for https), auth with the token, each
+// command with its own id, HA's result message streamed back as HA sent it (the workbench host does the same). Reads
+// only: the closed list below, else refused before connecting. One task, one connection kept for a round (#133): a read
+// queued within WS_IDLE_MS of the last goes on the open connection (no TCP / TLS / auth again), a new link or a
+// dropped connection = a fresh one (a reused one that died before its reply: once more on a fresh one), idle = closed
+// (before HA's 55 s heartbeat could want a pong). The log says once an hour how many connections, reads and bytes.
 struct WsJob { uint32_t id; std::string url, token, cmd; };
+constexpr uint32_t WS_IDLE_MS = 15000;
 inline bool ws_read_ok(const std::string &cmd) {
   ArduinoJson::JsonDocument d;
   if (deserializeJson(d, cmd)) return false;
@@ -1870,71 +1874,124 @@ inline bool ws_frame(esp_transport_handle_t ws, std::string &out, size_t most) {
   }
   return true;
 }
-inline void ws_task(void *arg) {
-  WsJob *j = (WsJob *) arg;
-  std::string why;
-  bool ok = false;
-  const bool tls = j->url.rfind("https://", 0) == 0;
-  std::string rest = j->url.substr(j->url.find("://") + 3), host = rest.substr(0, rest.find('/'));
+struct WsConn {
+  esp_transport_handle_t base = nullptr, ws = nullptr;
+  std::string url, token;
+  int next_id = 1;
+  uint32_t opens = 0, reads = 0, log_at = 0;
+  uint64_t bytes = 0;
+};
+inline void ws_close(WsConn &c) {
+  if (c.ws) { esp_transport_close(c.ws); esp_transport_destroy(c.ws); }  // the websocket layer, then its base
+  if (c.base) esp_transport_destroy(c.base);
+  c.ws = c.base = nullptr;
+}
+inline bool ws_open(WsConn &c, const WsJob &j, std::string &why) {
+  ws_close(c);
+  c.url = j.url, c.token = j.token, c.next_id = 1;
+  const bool tls = j.url.rfind("https://", 0) == 0;
+  std::string rest = j.url.substr(j.url.find("://") + 3), host = rest.substr(0, rest.find('/'));
   int port = tls ? 443 : 80;
-  if (const size_t c = host.rfind(':'); c != std::string::npos) port = atoi(host.c_str() + c + 1), host = host.substr(0, c);
-  esp_transport_handle_t base = tls ? esp_transport_ssl_init() : esp_transport_tcp_init();
-  if (tls && base) esp_transport_ssl_crt_bundle_attach(base, esp_crt_bundle_attach);
-  esp_transport_handle_t ws = base ? esp_transport_ws_init(base) : nullptr;
-  if (!ws) why = "the panel could not start the connection";
+  if (const size_t k = host.rfind(':'); k != std::string::npos) port = atoi(host.c_str() + k + 1), host = host.substr(0, k);
+  c.base = tls ? esp_transport_ssl_init() : esp_transport_tcp_init();
+  if (tls && c.base) esp_transport_ssl_crt_bundle_attach(c.base, esp_crt_bundle_attach);
+  c.ws = c.base ? esp_transport_ws_init(c.base) : nullptr;
+  if (!c.ws) { why = "the panel could not start the connection"; ws_close(c); return false; }
+  esp_transport_ws_set_path(c.ws, "/api/websocket");
+  c.opens++;
+  std::string m;
+  if (esp_transport_connect(c.ws, host.c_str(), port, 15000) < 0) why = "cannot reach Home Assistant at that address";
+  else if (!ws_frame(c.ws, m, 1024) || m.find("auth_required") == std::string::npos) why = "Home Assistant did not ask for the token";
   else {
-    esp_transport_ws_set_path(ws, "/api/websocket");
-    std::string m;
-    if (esp_transport_connect(ws, host.c_str(), port, 15000) < 0) why = "cannot reach Home Assistant at that address";
-    else if (!ws_frame(ws, m, 1024) || m.find("auth_required") == std::string::npos) why = "Home Assistant did not ask for the token";
-    else {
-      ArduinoJson::JsonDocument a;
-      a["type"] = "auth", a["access_token"] = j->token;
-      std::string as;
-      serializeJson(a, as);
-      ArduinoJson::JsonDocument c;
-      deserializeJson(c, j->cmd);
-      c["id"] = 1;
-      std::string cs;
-      serializeJson(c, cs);
-      const int fin = WS_TRANSPORT_OPCODES_TEXT | WS_TRANSPORT_OPCODES_FIN;
-      if (esp_transport_ws_send_raw(ws, (ws_transport_opcodes_t) fin, as.c_str(), as.size(), 15000) < 0 || !ws_frame(ws, m, 1024)) why = "Home Assistant closed the connection";
-      else if (m.find("auth_ok") == std::string::npos) why = "Home Assistant refused the token";
-      else if (esp_transport_ws_send_raw(ws, (ws_transport_opcodes_t) fin, cs.c_str(), cs.size(), 15000) < 0) why = "Home Assistant closed the connection";
-      else {  // the result: one text frame, streamed through the queue (never held whole)
-        char buf[2048];
-        int total = -1, got = 0;
-        while (total < 0 || got < total) {
-          const int n = esp_transport_read(ws, buf, sizeof buf, 20000);
-          if (n < 0) break;
-          if (total < 0) total = esp_transport_ws_get_read_payload_len(ws);
-          if (n == 0) { if (total == 0) break; continue; }
-          got += n;
-          while (held() > HELD) vTaskDelay(pdMS_TO_TICKS(10));
-          Piece p;
-          p.id = j->id, p.data.assign(buf, n);
-          push(std::move(p));
-        }
-        ok = total >= 0 && got == total;
-        if (!ok) why = "the connection to Home Assistant dropped";
-      }
-      esp_transport_close(ws);
-    }
+    ArduinoJson::JsonDocument a;
+    a["type"] = "auth", a["access_token"] = j.token;
+    std::string as;
+    serializeJson(a, as);
+    const int fin = WS_TRANSPORT_OPCODES_TEXT | WS_TRANSPORT_OPCODES_FIN;
+    if (esp_transport_ws_send_raw(c.ws, (ws_transport_opcodes_t) fin, as.c_str(), as.size(), 15000) < 0 || !ws_frame(c.ws, m, 1024)) why = "Home Assistant closed the connection";
+    else if (m.find("auth_ok") == std::string::npos) why = "Home Assistant refused the token";
+    else return true;
   }
-  if (ws) esp_transport_destroy(ws);  // the websocket layer, then its base (destroyed separately)
-  if (base) esp_transport_destroy(base);
-  Piece end;
-  end.id = j->id, end.end = true, end.ok = ok, end.why = why;
-  push(std::move(end));
-  delete j;
-  vTaskDelete(nullptr);
+  ws_close(c);
+  return false;
+}
+// one command on the open connection, its result streamed through the queue (never held whole). started = a byte of
+// the reply was passed on (no second try then); a frame that is not this command's result (a ping, an older id) is
+// skipped
+inline bool ws_read(WsConn &c, const WsJob &j, std::string &why, bool &started) {
+  ArduinoJson::JsonDocument cd;
+  deserializeJson(cd, j.cmd);
+  const int id = c.next_id++;
+  cd["id"] = id;
+  std::string cs;
+  serializeJson(cd, cs);
+  const int fin = WS_TRANSPORT_OPCODES_TEXT | WS_TRANSPORT_OPCODES_FIN;
+  if (esp_transport_ws_send_raw(c.ws, (ws_transport_opcodes_t) fin, cs.c_str(), cs.size(), 15000) < 0) { why = "Home Assistant closed the connection"; return false; }
+  const std::string mine = "{\"id\":" + std::to_string(id) + ",";
+  char buf[2048];
+  for (int frames = 0; frames < 8; frames++) {
+    int total = -1, got = 0;
+    bool keep = true, first = true;
+    while (total < 0 || got < total) {
+      const int n = esp_transport_read(c.ws, buf, sizeof buf, 20000);
+      if (n < 0) { why = "the connection to Home Assistant dropped"; return false; }
+      if (total < 0) {
+        total = esp_transport_ws_get_read_payload_len(c.ws);
+        const int op = esp_transport_ws_get_read_opcode(c.ws) & 0x0F;
+        keep = op == WS_TRANSPORT_OPCODES_TEXT || op == WS_TRANSPORT_OPCODES_CONT;
+      }
+      if (n == 0) { if (total == 0) break; continue; }
+      if (first && keep) keep = std::string(buf, std::min<size_t>(n, mine.size())) == mine, first = false;
+      got += n;
+      if (!keep) continue;  // read past it
+      started = true;
+      c.bytes += n;
+      while (held() > HELD) vTaskDelay(pdMS_TO_TICKS(10));
+      Piece p;
+      p.id = j.id, p.data.assign(buf, n);
+      push(std::move(p));
+    }
+    if (keep && total >= 0 && got == total && total > 0) { c.reads++; return true; }
+  }
+  why = "Home Assistant did not answer the read";
+  return false;
+}
+inline QueueHandle_t &ws_queue() { static QueueHandle_t q = nullptr; return q; }
+inline void ws_task(void *) {
+  WsConn c;
+  for (;;) {
+    WsJob *j = nullptr;
+    if (xQueueReceive(ws_queue(), &j, c.ws ? pdMS_TO_TICKS(WS_IDLE_MS) : portMAX_DELAY) != pdTRUE) { ws_close(c); continue; }
+    std::string why;
+    bool ok = false;
+    for (int attempt = 0; attempt < 2 && !ok; attempt++) {
+      const bool reused = c.ws && c.url == j->url && c.token == j->token;
+      if (!reused && !ws_open(c, *j, why)) break;
+      bool started = false;
+      ok = ws_read(c, *j, why, started);
+      if (!ok) { ws_close(c); if (started || !reused) break; }
+    }
+    const uint32_t now = (uint32_t) (esp_timer_get_time() / 1000);
+    if (now - c.log_at >= 3600000u) {
+      if (c.log_at) ESP_LOGI("facet_wb", "HA link (WebSocket) in the last hour: %u connections, %u reads, %llu bytes", (unsigned) c.opens, (unsigned) c.reads, (unsigned long long) c.bytes);
+      c.log_at = now, c.opens = c.reads = 0, c.bytes = 0;
+    }
+    Piece end;
+    end.id = j->id, end.end = true, end.ok = ok, end.why = why;
+    push(std::move(end));
+    delete j;
+  }
 }
 inline void ws(uint32_t id, const std::string &url, const std::string &token, const std::string &cmd) {
   Piece end;
   end.id = id, end.end = true;
   if (!ws_read_ok(cmd)) { end.why = "not a read the panel may make"; push(std::move(end)); return; }
+  if (!ws_queue()) {  // the one reader task, made on the first read
+    ws_queue() = xQueueCreate(8, sizeof(WsJob *));
+    if (ws_queue() && xTaskCreate(ws_task, "fw_ha_ws", 12288, nullptr, 4, nullptr) != pdPASS) { vQueueDelete(ws_queue()); ws_queue() = nullptr; }
+  }
   auto *j = new WsJob{id, url, token, cmd};
-  if (xTaskCreate(ws_task, "fw_ha_ws", 12288, j, 4, nullptr) != pdPASS) {
+  if (!ws_queue() || xQueueSend(ws_queue(), &j, 0) != pdTRUE) {
     delete j;
     end.why = "the panel has no memory for the request now";
     push(std::move(end));

@@ -48,6 +48,9 @@ const touDay = async (t, costSensors) => {
   const rows = touRows(+d0, now, true);
   return { cost: rows.reduce((a, r) => a + r.change, 0), kwh: rows.length * 0.05 };
 };
+import { demoWs } from '../../tools/demo_ha_replies.mjs';
+const field = (t, a) => t.b.test('ha_get', `panel.energy|${a}`);
+const at = (h) => { const d = new Date(realNow()); d.setHours(h, 0, 0, 0); ahead = d.getTime() - realNow(); Date.now = () => realNow() + ahead; };
 const week = async (t) => { await t.device(SAMPLE); t.show('energy'); t.tap(/^last 7 days$/i); t.wait(900); };
 export default {
   id: 'energy', family: 'charts', about: 'Energy screen: today, and the last 7 days as a view of the same screen.',
@@ -153,6 +156,41 @@ export default {
         t.ha.set(TOU.price, 'unknown');
         later(t, 2000);
         t.eq(money(t), m, 'price unknown: the last price, no blink');
+      } finally { Date.now = realNow, ahead = 0; t.ha.wsx = null; t.b.m._fw_ha_connected?.(0); }
+    } },
+    { name: 'incremental statistics reads: the day is the same as a full read, at a fraction of the bytes (#133)', async run(t) {
+      try {
+        at(18);  // late in the day: a full read is at its largest
+        let cut = () => Date.now() - 3 * 60000;  // the data HA has: up to 3 minutes ago (5-minute rows compile late)
+        const reads = [];
+        const all = [];  // every WebSocket read's time: the connections under the panel's 15 s reuse (fw_device.h WS_IDLE_MS)
+        t.ha.wsx = (cmd) => {
+          all.push(Date.now());
+          if (cmd.type !== 'recorder/statistics_during_period') return null;
+          const r = demoWs(cmd, { prefix: 'test_', now: cut() });
+          // what a full read (yesterday's midnight to now) would have cost at this moment
+          const d0 = new Date(Date.now()); d0.setHours(0, 0, 0, 0); d0.setDate(d0.getDate() - 1);
+          const full = demoWs({ ...cmd, start_time: d0.toISOString() }, { prefix: 'test_', now: cut() });
+          if (cmd.period === '5minute') reads.push({ at: Date.now(), bytes: JSON.stringify(r).length, full: JSON.stringify(full).length });
+          return r;
+        };
+        await linked(t);
+        const n0 = reads.length;
+        for (let i = 0; i < 60; i++) later(t, 60000);  // an hour: a read a minute, a full one every 15
+        const hour = reads.slice(n0), b = hour.reduce((a, r) => a + r.bytes, 0), f = hour.reduce((a, r) => a + r.full, 0);
+        const ws = all.filter((x) => x >= hour[0].at - 1000), conns = ws.filter((x, i) => !i || x - ws[i - 1] > 15000).length;
+        t.log.push(`one hour from 18:00: ${hour.length} statistics reads, ${b} bytes (a full read each time: ${f} bytes, ${(100 * b / f).toFixed(0)}%); ${ws.length} WebSocket reads = ${ws.length} connections before, ${conns} with a round's reads on one`);
+        t.ok(hour.length >= 55, `a read a minute (${hour.length})`);
+        t.ok(b < f * 0.35, `incremental bytes ${b} under 35% of full ${f}`);
+        const T = Date.now(); cut = () => T - 3 * 60000;  // HA's data stops moving: the partial reads settle on it
+        later(t, 60000); later(t, 60000);
+        const A = { values: field(t, 'values'), cost: field(t, 'cost') };
+        // a fresh panel at the same data: one full read
+        t.b.m._fw_ha_connected?.(0);
+        await linked(t);
+        const B = { values: field(t, 'values'), cost: field(t, 'cost') };
+        t.ok(A.values && A.cost, `the fields read (${JSON.stringify(A).slice(0, 80)})`);
+        t.eq(A, B, 'the half-hours and the cost after partial reads = a full read of the same data');
       } finally { Date.now = realNow, ahead = 0; t.ha.wsx = null; t.b.m._fw_ha_connected?.(0); }
     } },
   ],

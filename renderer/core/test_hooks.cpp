@@ -320,6 +320,11 @@ extern "C" EMSCRIPTEN_KEEPALIVE const char *fw_test(const char *cmd, const char 
     }
     d["polls"] = chip.polls, d["left"] = (int) (chip.steps.size() - chip.at);
   }
+  else if (c == "ha_get") {  // "<entity>|<attribute>": the HA store's value now (a feed's fields: panel.energy|cost); null = none
+    const size_t bar = a.find('|');
+    const std::string *v = fw::ha::get(a.substr(0, bar), bar == std::string::npos ? "" : a.substr(bar + 1));
+    if (v) d.set(*v);
+  }
   else if (c == "timer") timer_cmd(a, d);
   else if (c == "keys") keys_cmd(a, d);
   else if (c == "update") {  // "state,installed,latest": the host's firmware update (core/device.h update); "install" = ask

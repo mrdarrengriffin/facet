@@ -16,7 +16,8 @@
 //           the panel's own HA link (core/device.h ha_link::ws, reads only): energy/get_prefs (the grid's import /
 //           export / cost statistics, solar, battery, gas, water, the devices) every 10 minutes, then
 //           recorder/statistics_during_period: 5-minute changes from yesterday's midnight (today's half-hours and
-//           yesterday up to now) every minute, daily changes for the 13 days before today every 15 minutes. Use = grid
+//           yesterday up to now) every 15 minutes, only those since the last complete half-hour's start in the minutes
+//           between (laid over the day already read), daily changes for the 13 days before today every 15 minutes. Use = grid
 //           in + solar - grid out + battery out - battery in; cost = the grid's cost statistics (else use x the
 //           dashboard's price). The rate = the dashboard's price (entity or fixed), else the last half-hour's cost /
 //           kWh; no tariff bands (all "normal"). Live W = the grid's power sensor when the dashboard has one. A
@@ -151,6 +152,7 @@ void publish(const fw::energy::Data &d, double rate_now, double rate_next, bool 
 namespace hl = fw::dev::ha_link;
 using Doc = ArduinoJson::JsonDocument;
 constexpr double MIN = 60000, H = 3600000, DAY = 24 * H;
+constexpr int YDAY5 = 25 * 12;  // yesterday's 5-minute rows (a 25-hour day at a clock change)
 using fw::json::Sax;
 enum Role { R_IN, R_OUT, R_SOLAR, R_BOUT, R_BIN, R_COST };
 struct Prefs {
@@ -179,11 +181,16 @@ constexpr int OFFLINE_FAILS = 2;
 constexpr double OFFLINE_MS = 3 * 60000.0;
 bool offline(double now) { return fails >= OFFLINE_FAILS || (good_at > 0 && now - good_at > OFFLINE_MS); }
 bool want_data = false;  // source ha: today + days too (else only the prefs, for Settings' "found")
-double slot_k[48], slot_c[48], yday_k, day_k[13], day_c[13];
-bool slot_any[48], yday_any, day_any[13];
+double slot_k[48], slot_c[48], yday5[YDAY5], day_k[13], day_c[13];  // yday5: yesterday's 5-minute use, net kWh
+bool slot_any[48], yday5_any[YDAY5], day_any[13];
 // a read in flight sums into these and replaces the shown ones only once it lands: a round while it streams (the live
 // demand changes every few seconds) shows the last good day, never a half-read or empty one (£0.00)
-struct TodayBuf { double k[48], c[48], yk; bool any[48], yany; } today_rd;
+struct TodayBuf { double k[48], c[48], y5[YDAY5]; bool any[48], y5any[YDAY5]; } today_rd;
+// incremental reads (#133): a full read (yesterday's midnight to now) every 15 minutes and on a new day; the minutes
+// between read only the rows since the start of the last complete half-hour (HA compiles a 5-minute row a few minutes
+// after it ends: the half-hour before the current one still settles), laid over the day already read
+double full_at = -1e18, full_for = 0, part_from = 0;
+constexpr double FULL_MS = 15 * 60000.0;
 struct DaysBuf { double k[13], c[13]; bool any[13]; } days_rd;
 // the rows of a statistics reply: start + change per statistic id, summed into the buckets by role
 double row_start = NAN, row_change = NAN;
@@ -252,7 +259,13 @@ void from_ha() {
   }
   d.kwh = any ? std::round(kwh * 10) / 10 : 0;
   d.cost = costed || !std::isnan(price) ? cost : NAN;
-  d.yesterday_to_now = yday_any ? yday_k : NAN;
+  {  // yesterday up to this time of day (its complete 5-minute rows)
+    const double y0 = en::midnight(d0 - 12 * H);
+    double yk = 0;
+    bool ya = false;
+    for (int j = 0; j < YDAY5 && y0 + (j + 1) * 5 * MIN <= now - DAY; j++) if (yday5_any[j]) yk += yday5[j], ya = true;
+    d.yesterday_to_now = ya ? yk : NAN;
+  }
   d.watts = NAN;
   if (!prefs.power_e.empty()) { const double w = ha::num(ha::get(prefs.power_e)); if (std::isfinite(w)) d.watts = w; }
   for (int k = 0; k < 14; k++) {
@@ -424,31 +437,43 @@ void stat_leaf(Sax &x, const std::string &v, bool) {
 }
 void read_today() {
   const double now = (double) time(nullptr) * 1000, d0 = fw::energy::midnight(now), y0 = fw::energy::midnight(d0 - 12 * H);
+  const bool full = today_at < 0 || full_for != d0 || now - full_at > FULL_MS;
+  // a partial read: from the start of the half-hour before the current one (never before today's midnight)
+  const double from = full ? y0 : std::max(d0, d0 + (std::floor((now - d0) / (30 * MIN)) - 1) * 30 * MIN);
+  const int fi = full ? 0 : (int) std::lround((from - d0) / (30 * MIN));
   TodayBuf &b = today_rd;
-  for (int i = 0; i < 48; i++) b.k[i] = b.c[i] = 0, b.any[i] = false;
-  b.yk = 0, b.yany = false;
-  start(S_TODAY, ws_of(stats_cmd(y0, "5minute")), stat_leaf,
-        [d0, y0, now](Sax &x) {
+  for (int i = 0; i < 48; i++) {  // a partial read keeps the half-hours before its window
+    const bool keep = i < fi;
+    b.k[i] = keep ? slot_k[i] : 0, b.c[i] = keep ? slot_c[i] : 0, b.any[i] = keep && slot_any[i];
+  }
+  for (int j = 0; j < YDAY5; j++) b.y5[j] = full ? 0 : yday5[j], b.y5any[j] = !full && yday5_any[j];
+  part_from = from;
+  start(S_TODAY, ws_of(stats_cmd(from, "5minute")), stat_leaf,
+        [d0, y0](Sax &x) {
           if (x.depth != 4) return;  // one row ends
           TodayBuf &b = today_rd;
           const double st = row_start, ch = row_change;
           row_start = row_change = NAN;
           bool known;
           const Role r = role_of(x.key(1), known);
-          if (!known || std::isnan(st) || std::isnan(ch)) return;
+          if (!known || std::isnan(st) || std::isnan(ch) || st < part_from) return;
           if (st >= d0) {
             const int i = (int) ((st - d0) / (30 * MIN));
             if (i < 0 || i >= 48) return;
             if (r == R_COST) b.c[i] += ch;
             else b.k[i] += sign(r) * ch, b.any[i] = true;
-          } else if (st >= y0 && st + 5 * MIN <= now - DAY && r != R_COST) b.yk += sign(r) * ch, b.yany = true;
+          } else if (st >= y0 && r != R_COST) {
+            const int j = (int) ((st - y0) / (5 * MIN));
+            if (j >= 0 && j < YDAY5) b.y5[j] += sign(r) * ch, b.y5any[j] = true;
+          }
         },
-        [](bool ok) {
+        [full, d0](bool ok) {
           if (!ok) return;
           const TodayBuf &b = today_rd;
           std::copy(b.k, b.k + 48, slot_k), std::copy(b.c, b.c + 48, slot_c), std::copy(b.any, b.any + 48, slot_any);
-          yday_k = b.yk, yday_any = b.yany;
+          std::copy(b.y5, b.y5 + YDAY5, yday5), std::copy(b.y5any, b.y5any + YDAY5, yday5_any);
           today_at = (double) time(nullptr) * 1000;
+          if (full) full_at = today_at, full_for = d0;
         });
 }
 void read_days() {
