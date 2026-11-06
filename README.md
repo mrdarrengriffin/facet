@@ -178,15 +178,7 @@ have the same guide: [Contributing](https://mrdarrengriffin.github.io/facet/cont
 
 ## Inspiration
 
-Facet learns a lot from other open-source panel projects, and they're well worth a look:
-
-- [ESPControl](https://github.com/jtenniswood/espcontrol) by jtenniswood, an ESPHome-based smart
-  home control panel, especially if you want a panel you can set up today:
-  [jtenniswood.github.io/espcontrol](https://jtenniswood.github.io/espcontrol/).
-- [openHASP](https://github.com/HASwitchPlate/openHASP) by fvanroie and contributors, LVGL pages on
-  touch panels driven over MQTT.
-
-Facet isn't affiliated with these projects.
+Facet learns a lot from other open-source panel projects: thanks to everyone who builds and shares them.
 
 ## Support
 

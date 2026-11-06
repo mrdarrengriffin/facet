@@ -25,7 +25,7 @@ class MipiRgb : public display::Display {
  public:
   MipiRgb(int width, int height) : width_(width), height_(height) {}
   void setup() override;
-  // Facet (the same fix as ESPControl's fork): stock ESPHome calls esp_lcd_rgb_panel_restart() on EVERY loop on the S3. With the
+  // Facet (the same fix as another open-source panel's fork): stock ESPHome calls esp_lcd_rgb_panel_restart() on EVERY loop on the S3. With the
   // panel UI's 1 ms loop interval that restarted the RGB DMA ~1000x/s = shifted frames, a red-tinted flicker. The
   // ESP-IDF driver already restarts by itself after a real underflow, so no loop at all.
   void update() override;

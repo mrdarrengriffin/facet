@@ -85,10 +85,10 @@ esp32:
       CONFIG_SPIRAM_FETCH_INSTRUCTIONS: y
       CONFIG_SPIRAM_RODATA: y
       # display ISR + bounce-buffer refill stay in IRAM (no stall during flash/Wi-Fi). NOT restart-in-VSYNC: the driver
-      # already restarts after a real underflow; restarting every VSYNC shifts the frame (ESPControl's tested config).
+      # already restarts after a real underflow; restarting every VSYNC shifts the frame (another open-source panel's tested config).
       CONFIG_LCD_RGB_ISR_IRAM_SAFE: y
       CONFIG_LCD_RGB_RESTART_IN_VSYNC: n
-      # from ESPControl's 4848S040 config: mbedTLS buffers in PSRAM, 8 static Wi-Fi RX buffers
+      # as another open-source panel's 4848S040 config: mbedTLS buffers in PSRAM, 8 static Wi-Fi RX buffers
       CONFIG_MBEDTLS_EXTERNAL_MEM_ALLOC: y
       # every malloc / new prefers PSRAM, whatever its size (IDF's default sends anything under 512 B to internal RAM
       # first). Facet's small C++ allocations (strings, maps, JSON documents) took 71 KB of internal RAM to build the
@@ -160,11 +160,11 @@ display:
     id: lcd
     spi_id: lcd_spi
     model: GUITION-4848S040
-    setup_priority: 240      # Wi-Fi claims its internal RX buffers before the panel's buffers (ESPControl)
-    # 10 MHz (model default 12): white flicker/shimmer at 12; ESPControl found 8 shimmery, >12 shifts
+    setup_priority: 240      # Wi-Fi claims its internal RX buffers before the panel's buffers
+    # 10 MHz (model default 12): white flicker/shimmer at 12; 8 is shimmery too, >12 shifts
     # when Wi-Fi/flash/web traffic compete for PSRAM.
     pclk_frequency: 10MHz
-    # the model mirrors X+Y; that path streaks scan lines on some units. Non-mirrored init = ESPControl's.
+    # the model mirrors X+Y; that path streaks scan lines on some units. Non-mirrored init, as another open-source panel uses.
     transform:
       mirror_x: false
       mirror_y: false
@@ -190,7 +190,7 @@ output:
   - platform: ledc
     id: backlight_pwm
     pin: GPIO38
-    # this backlight driver wants a low PWM rate (high rates turn levels below ~85 % off; 100 Hz shimmers): ESPControl
+    # this backlight driver wants a low PWM rate (high rates turn levels below ~85 % off; 100 Hz shimmers)
     frequency: 150Hz
     min_power: ${board.backlight.floor}   # boards/<id>.json: the lowest output that lights the glass
     zero_means_zero: true
