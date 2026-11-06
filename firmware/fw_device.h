@@ -1540,13 +1540,13 @@ inline void meta_stream(httpd_req_t *req, const std::string &origin) {
   httpd_resp_set_hdr(req, "Cache-Control", "no-store");
   httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", origin.c_str());
   httpd_resp_set_hdr(req, "Vary", "Origin");
-  std::string part;
+  std::string part, js;
   bool first = true;
   for (const auto &c : fw::reg()) {
     ArduinoJson::JsonDocument d;
     d["id"] = c.id, d["name"] = c.name, d["section"] = c.section, d["meta"] = ArduinoJson::serialized(c.meta);
-    part.assign(first ? "[" : ",");
-    serializeJson(d, part);
+    serializeJson(d, js);  // (replaces js: serializeJson into a std::string does not append)
+    part.assign(first ? "[" : ",").append(js);
     first = false;
     if (httpd_resp_send_chunk(req, part.data(), part.size()) != ESP_OK) return;  // client gone
   }
