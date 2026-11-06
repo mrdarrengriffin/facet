@@ -71,7 +71,9 @@ esp32:
       # trees. Internal RAM is the price (static .bss): 16 KB was measured too (internal free 49 -> 41 KB idle, ~31 KB
       # after a 361-object build = at the 30 KB spec floor), so 12. lvgl_buffer can't pay for it: ESPHome rounds
       # any buffer_size <= 19 % to 1/8 of the screen (57.6 KB here, internal).
-      loop_task_stack_size: 12288
+      # 16 KB since #152: 12 KB left ~1.9 KB at its lowest (the editor, problem report, rotations). The image, feed and
+      # Home Assistant workers' stacks moved to PSRAM (firmware/fw_stacks.h) pay for it. Internal: it writes to flash.
+      loop_task_stack_size: 16384
     sdkconfig_options:
       # labels never break after a hyphen ("Wi-Fi" moves to the next line whole). KEEP IDENTICAL to
       # renderer/lv_conf.h (the WASM build): LVGL's default minus '-'

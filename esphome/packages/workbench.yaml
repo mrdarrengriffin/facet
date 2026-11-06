@@ -20,8 +20,10 @@ esphome:
     - ../board/fw_settle.h
     - ../board/fw_update.h
     - ../board/stack_guard.h   # the problem report: which task overflowed its stack
+    - ../board/stacks.h        # the web server task's stack: 8 KB (#152)
   build_flags:
     - -Wl,--wrap=vApplicationStackOverflowHook   # board/stack_guard.h
+    - -Wl,--wrap=httpd_start                     # board/stacks.h
     # LVGL modules the WASM build has (panel lv_conf + packages/ui.yaml flags): ESPHome's lv_conf zeroes any module no
     # YAML widget declares unless a build flag names it, and this firmware declares no widgets
     - -DLV_USE_FLEX=1

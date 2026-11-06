@@ -5,6 +5,8 @@
 //                   filter: area | bilinear | nearest, drawn: 1:1 | scaled up by LVGL, reserved (in a screen slot), slots,
 //                   slots_free, fallback (why it was kept smaller; null = it wasn't), error, need_kb, room_kb, age_s}
 //                   (heap: + httpd_stack_min / loop_stack_min, the web server's and main loop's least free stack bytes)
+//                   stacks: {httpd, loop, img, net, ha_ws, ha_get: {size, least_free, psram}} each task's stack bytes, its
+//                   least free bytes so far (-1 = not run yet) and whether it lives in PSRAM (fw_stacks.h)
 //                = What this firmware is: its build, board, screen size, free memory and the last album art decode.
 //   GET  /fw/meta   [{id, name, section, meta}]                                     the registry (same as fw_meta())
 //                = Every component and screen this firmware has, with its props.
@@ -108,6 +110,7 @@
 #include "esp_random.h"
 #include "esp_attr.h"
 #include "fw_busy.h"
+#include "fw_stacks.h"  // task stack sizes + least free bytes (/fw/info "stacks")
 #include "esphome/core/defines.h"
 #include "esphome/core/log.h"
 #include "esphome/core/preferences.h"
@@ -197,14 +200,10 @@ inline void drain(lv_timer_t *) {
     xSemaphoreGive(j->done);
   }
 }
-// the web server task's least free stack, in bytes, after each Facet request (-1 = none yet): its stack is ESP-IDF's
-// 4 KB + 256 (ESPHome), and /fw/info built there overflowed it on the Guition (crash record: stack overflow in task httpd)
-inline std::atomic<int> httpd_stack_min{-1};
-inline void httpd_stack_note() {
-  const int f = (int) uxTaskGetStackHighWaterMark(nullptr);
-  int m = httpd_stack_min.load();
-  while ((m < 0 || f < m) && !httpd_stack_min.compare_exchange_weak(m, f)) {}
-}
+// the web server task's least free stack, in bytes, after each Facet request: its stack was ESP-IDF's 4 KB + 256
+// (ESPHome) and overflowed on the Guition (/fw/info, /fw/report); 8 KB now (esphome/board/stacks.h, fw_stacks.h)
+extern "C" int facet_httpd_stack_size __attribute__((weak));  // esphome/board/stacks.h (absent = not wrapped)
+inline void httpd_stack_note() { fw::stacks::note(fw::stacks::HTTPD); }
 inline bool in_loop(std::function<void()> fn, uint32_t ms = 6000) {
   Job j{std::move(fn), xSemaphoreCreateBinary()};
   if (!j.done) return false;
@@ -1511,8 +1510,23 @@ inline void info_build(std::string &s) {
     for (const auto &kv : fw::ha::S().store) store++, store_bytes += kv.first.first.capacity() + kv.first.second.capacity() + kv.second.capacity() + 64;
     bounds = fw::ha::S().bounds.size(), wants = fw::ha::wants().size();
   }
-  // stacks' least free bytes: the web server task's (after Facet requests) and the main loop's (now)
-  d["heap"]["httpd_stack_min"] = httpd_stack_min.load(), d["heap"]["loop_stack_min"] = (int) uxTaskGetStackHighWaterMark(nullptr);
+  // task stacks (fw_stacks.h): size, PSRAM or internal, least free bytes (-1 = the task has not run yet). The loop's
+  // is read now (this runs on it); heap.httpd_stack_min / loop_stack_min stay for older readers
+  if (&facet_httpd_stack_size && facet_httpd_stack_size) fw::stacks::sized(fw::stacks::HTTPD, facet_httpd_stack_size, false);
+#ifdef ESPHOME_LOOP_TASK_STACK_SIZE
+  fw::stacks::sized(fw::stacks::LOOP, ESPHOME_LOOP_TASK_STACK_SIZE, false);
+#endif
+  fw::stacks::note(fw::stacks::LOOP);
+  {
+    auto st = d["stacks"].to<ArduinoJson::JsonObject>();
+    for (int i = 0; i < fw::stacks::N; i++) {
+      const auto &sl = fw::stacks::slots()[i];
+      auto o = st[fw::stacks::NAMES[i]].to<ArduinoJson::JsonObject>();
+      o["size"] = sl.size.load(), o["least_free"] = sl.least.load(), o["psram"] = sl.psram.load();
+    }
+  }
+  d["heap"]["httpd_stack_min"] = fw::stacks::slots()[fw::stacks::HTTPD].least.load();
+  d["heap"]["loop_stack_min"] = fw::stacks::slots()[fw::stacks::LOOP].least.load();
   d["devices"] = devs;
   ArduinoJson::JsonObject lp = d["loop"].to<ArduinoJson::JsonObject>();
   lp["timers"] = timers, lp["store"] = store, lp["store_bytes"] = store_bytes, lp["bounds"] = bounds, lp["wants"] = wants;  // what is on the glass: each mounted device's screen stack (top = shown), builds, objects
@@ -2178,11 +2192,12 @@ inline void task(void *arg) {
   end.id = j->id, end.end = true, end.ok = ok, end.why = why;
   push(std::move(end));
   delete j;
-  vTaskDelete(nullptr);
+  fw::stacks::end(fw::stacks::HA_GET);
 }
 inline void get(uint32_t id, const std::string &url, const std::string &token) {
   auto *j = new Job{id, url, token};
-  if (xTaskCreate(task, "fw_ha_get", 10240, j, 4, nullptr) != pdPASS) {
+  // stack in PSRAM (fw_stacks.h: no flash on this task)
+  if (!fw::stacks::spawn(task, "fw_ha_get", 10240, j, 4, nullptr, tskNO_AFFINITY, fw::stacks::HA_GET)) {
     delete j;
     Piece end;
     end.id = id, end.end = true, end.why = "the panel has no memory for the request now";
@@ -2326,6 +2341,7 @@ inline void ws_task(void *) {
     end.id = j->id, end.end = true, end.ok = ok, end.why = why;
     push(std::move(end));
     delete j;
+    fw::stacks::note(fw::stacks::HA_WS);
   }
 }
 inline void ws(uint32_t id, const std::string &url, const std::string &token, const std::string &cmd) {
@@ -2334,7 +2350,7 @@ inline void ws(uint32_t id, const std::string &url, const std::string &token, co
   if (!ws_read_ok(cmd)) { end.why = "not a read the panel may make"; push(std::move(end)); return; }
   if (!ws_queue()) {  // the one reader task, made on the first read
     ws_queue() = xQueueCreate(8, sizeof(WsJob *));
-    if (ws_queue() && xTaskCreate(ws_task, "fw_ha_ws", 12288, nullptr, 4, nullptr) != pdPASS) { vQueueDelete(ws_queue()); ws_queue() = nullptr; }
+    if (ws_queue() && !fw::stacks::spawn(ws_task, "fw_ha_ws", 12288, nullptr, 4, nullptr, tskNO_AFFINITY, fw::stacks::HA_WS)) { vQueueDelete(ws_queue()); ws_queue() = nullptr; }
   }
   auto *j = new WsJob{id, url, token, cmd};
   if (!ws_queue() || xQueueSend(ws_queue(), &j, 0) != pdTRUE) {

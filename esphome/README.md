@@ -35,6 +35,12 @@ Assistant's API connected, or 10 min with Wi-Fi) within 3 boots, or the panel bo
 `GET /fw/info` `lcd` counts frames the RGB panel's bounce buffers underran (`missed`), and which jobs ran in them
 (`with`: refresh, flush, fetch, decode; `frames_with`: how many frames each job ran in). It should stay flat.
 
+Task stacks (both boards): the web server 8 KB (ESPHome starts it at 4 KB + 256 B; `board/stacks.h` wraps
+`httpd_start`) and the main loop 16 KB (`loop_task_stack_size`), both in internal RAM because they write to flash. The
+workers that never touch flash (image fetch + decode, feed reads, Home Assistant reads) keep their stacks in PSRAM
+(`firmware/fw_stacks.h`). `GET /fw/info` `stacks` = each task's `size`, `least_free` bytes so far and `psram`; keep the
+web server at 2 KB free or more and the loop at 4 KB.
+
 ## Your own build
 
 Keep your network and names in your own YAML and include these packages, as `facet-<board>.yaml` does. Set

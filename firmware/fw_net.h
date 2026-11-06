@@ -131,12 +131,13 @@ inline void worker(void *) {
           std::lock_guard<std::mutex> l(s.m);
           if (s.queue.empty()) { s.task = nullptr; go = true; }
         }
-        if (go) vTaskDelete(nullptr);
+        if (go) fw::stacks::end(fw::stacks::NET);
       }
       continue;
     }
     Res r{q.id, false, {}, {}};
     read(q.url, r);
+    fw::stacks::note(fw::stacks::NET);
     std::lock_guard<std::mutex> l(s.m);
     s.done.push_back(std::move(r));
   }
@@ -151,7 +152,8 @@ inline void pump(lv_timer_t *) {
     done.swap(s.done);
     start = !s.queue.empty() && !s.task;
     if (start) {
-      if (xTaskCreatePinnedToCore(worker, "facet_net", 12288, nullptr, 1, &s.task, portNUM_PROCESSORS > 1 ? 0 : tskNO_AFFINITY) != pdPASS) {
+      // stack in PSRAM (fw_stacks.h: the worker never touches flash)
+      if (!fw::stacks::spawn(worker, "facet_net", 12288, nullptr, 1, &s.task, portNUM_PROCESSORS > 1 ? 0 : tskNO_AFFINITY, fw::stacks::NET)) {
         s.task = nullptr;
         for (const Req &q : s.queue) done.push_back({q.id, false, {}, "no memory for the read task"});
         s.queue.clear();

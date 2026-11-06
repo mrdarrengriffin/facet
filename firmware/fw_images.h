@@ -37,6 +37,7 @@
 #endif
 #include "esphome/core/log.h"
 #include "fw_busy.h"
+#include "fw_stacks.h"
 #include "fw_imgdec.h"
 #if __has_include("soc/soc_caps.h")
 #include "soc/soc_caps.h"
@@ -288,7 +289,7 @@ inline void worker(void *) {
     }
     if (url.empty()) {
       if (!ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(20000))) {  // 20 s with nothing to do: the task goes (its stack too)
-        // the lock is let go BEFORE vTaskDelete: a task deleted while holding it leaves it locked for ever, and the next
+        // the lock is let go BEFORE the task ends: a task deleted while holding it leaves it locked for ever, and the next
         // pump() on the LVGL task waits on it = the UI and the loop stop, the task watchdog restarts the panel
         // (the TBOI grid: exactly 20 s after the last download)
         bool go = false;
@@ -296,7 +297,7 @@ inline void worker(void *) {
           std::lock_guard<std::mutex> l(s.m);
           if (s.queue.empty()) { s.task = nullptr; go = true; }
         }
-        if (go) vTaskDelete(nullptr);
+        if (go) fw::stacks::end(fw::stacks::IMG);
       }
       continue;
     }
@@ -307,6 +308,7 @@ inline void worker(void *) {
       continue;
     }
     fetch(url, boxes, ha, *d);
+    fw::stacks::note(fw::stacks::IMG);
     if (uxTaskGetStackHighWaterMark(nullptr) < 1024) ESP_LOGW("facet_img", "fetch task stack low (%u B left)", (unsigned) uxTaskGetStackHighWaterMark(nullptr));
     if (d->err.empty() && d->px.px.empty()) d->err = "failed";
     Art a;
@@ -382,8 +384,9 @@ inline void pump(lv_timer_t *) {
       keep.insert(keep.end(), s.queue.begin(), s.queue.end());
     if (!s.queue.empty()) {
       if (!s.task) {
-        // 12 KB internal stack: the TLS handshake runs on it. Core 0 at the loop's priority: decoding never holds up LVGL
-        if (xTaskCreatePinnedToCore(worker, "facet_img", 12288, nullptr, 1, &s.task, portNUM_PROCESSORS > 1 ? 0 : tskNO_AFFINITY) != pdPASS) {
+        // 12 KB stack in PSRAM (fw_stacks.h: the worker never touches flash): the TLS handshake runs on it. Core 0 at the
+        // loop's priority: decoding never holds up LVGL
+        if (!fw::stacks::spawn(worker, "facet_img", 12288, nullptr, 1, &s.task, portNUM_PROCESSORS > 1 ? 0 : tskNO_AFFINITY, fw::stacks::IMG)) {
           s.task = nullptr;
           ESP_LOGW("facet_img", "no memory for the fetch task");
         } else s.progress = lv_tick_get();

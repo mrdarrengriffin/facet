@@ -38,8 +38,9 @@ esp32:
       # loopTask 12 KB on the P4: with 8 KB the lowest headroom measured was 976 B
       # (setup() peaks at ~6.3 KB; v1 spec builds + LVGL draws on top). 12 / 16 KB were tried before and internal heap
       # fell 51 -> 25 / 21 KB: very likely the same CONFIG_SPIRAM_USE_CAPS_ALLOC effect (every malloc internal) that
-      # the malloc setting below removes; retried with malloc -> PSRAM.
-      loop_task_stack_size: 12288
+      # the malloc setting below removes; retried with malloc -> PSRAM. 16 KB since #152 (same as the 4848S040: 4 KB
+      # of headroom over the worst pages), paid for by the workers' PSRAM stacks (firmware/fw_stacks.h).
+      loop_task_stack_size: 16384
     sdkconfig_options:
       # labels never break after a hyphen ("Wi-Fi" moves to the next line whole). KEEP IDENTICAL to
       # renderer/lv_conf.h (the WASM build): LVGL's default minus '-'
