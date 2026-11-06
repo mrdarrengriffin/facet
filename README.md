@@ -210,6 +210,8 @@ Help of any kind is welcome, and most of it needs no code: report a bug, try Fac
 fix a line in the docs (every docs page has an **Edit this page** link), or share an idea for a screen.
 [CONTRIBUTING.md](CONTRIBUTING.md) has every way in, from a two-minute report to building the renderer, and the docs
 have the same guide: [Contributing](https://mrdarrengriffin.github.io/facet/contributing/).
+Want a screen to read another source (a public API, a Home Assistant integration)? That is an adapter:
+[Writing an adapter](https://mrdarrengriffin.github.io/facet/inside/adapters/).
 
 ## Inspiration
 

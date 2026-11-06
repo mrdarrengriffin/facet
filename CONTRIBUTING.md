@@ -90,6 +90,15 @@ node renderer/watch.mjs             # rebuild on save while you work
 
 If the build setup gets in your way, open an issue: getting a second person building Facet is worth fixing.
 
+### Adding a data source (adapter)
+
+A screen's data can come from a public API (no account or key, read by the panel itself) or a Home Assistant
+integration. Each source is an **adapter** onto the screen's one model ([CONTRACT.md](renderer/CONTRACT.md) C51,
+C51b): a row in `renderer/sources/sources.json`, the source in the screen's spec (`renderer/specs/<screen>.json`), a
+branch in the feed's `renderer/core/<feed>_source.cpp` that maps the source onto the model, and a functional test on
+the fake Home Assistant or fake web. No screen changes. The steps, a worked example, each screen's model and the pull
+request checklist: [Writing an adapter](https://mrdarrengriffin.github.io/facet/inside/adapters/).
+
 ### Checks before a pull request
 
 Facet's rules are checked by tools, not by memory. Run the ones your change touches:
