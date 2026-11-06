@@ -62,6 +62,8 @@ struct Art {
   int side = 0;              // the fallback's cap on the long side (0 = none)
   size_t need = 0, need_full = 0, room = 0;
   int64_t at_us = 0;
+  bool hw = false;           // the chip's JPEG engine decoded it (else software)
+  int got_ms = 0, dec_ms = 0;  // the download, the decode (into every box)
 };
 struct State {
   std::mutex m;
@@ -306,6 +308,7 @@ inline void worker(void *) {
         if (p.box.w == a.bw && p.box.h == a.bh) a.ow = p.w, a.oh = p.h, a.slot = p.slot;
       a.sw = d->px.sw, a.sh = d->px.sh, a.sc = d->px.sc, a.side = d->px.side;
       a.need = d->px.need, a.need_full = d->px.need_full, a.room = d->px.room;
+      a.got_ms = (int) (d->got_us / 1000), a.dec_ms = (int) (d->dec_us / 1000);
       if (d->err.empty() && a.side)  // the logger runs at WARN: this shows in the web log
         ESP_LOGW("facet_img", "%s: kept %dx%d for its %dx%d box (memory fallback: %u KB free in one block, %u KB needed at box size)", url.c_str(),
                  a.ow, a.oh, a.bw, a.bh, (unsigned) (a.room / 1024), (unsigned) (a.need_full / 1024));
