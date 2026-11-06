@@ -75,6 +75,9 @@ int main() {
       run(48, 48, rot, b);  // square, like both panels
       run(40, 24, rot, b);  // not square: width and height must not swap
     }
+  uint16_t px[2] = {0xF800, 0x1234};
+  fw::shot::swap(px, 2);
+  EXPECT(px[0] == 0x00F8 && px[1] == 0x3412, "swap");
   if (fails) { printf("%d failed\n", fails); return 1; }
   printf("fw_shot: ok\n");
   return 0;

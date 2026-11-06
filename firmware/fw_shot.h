@@ -35,4 +35,9 @@ inline void band(const uint16_t *fb, int pw, int ph, int rot, int y0, int n, uin
   }
 }
 
+// RGB565 with its bytes swapped (LVGL's RGB565_SWAPPED, as an RGB panel takes it) -> plain little-endian RGB565
+inline void swap(uint16_t *px, size_t n) {
+  for (size_t i = 0; i < n; i++) px[i] = (uint16_t) (px[i] << 8 | px[i] >> 8);
+}
+
 }  // namespace fw::shot

@@ -1220,6 +1220,7 @@ struct State {
   lv_timer_t *refr = nullptr;
   uint32_t period = 0, held_at = 0;
   bool holding = false;
+  bool swapped = false;  // the framebuffer holds LVGL's pixels as they are: RGB565_SWAPPED (the Guition) = bytes swapped
 };
 inline State SH;
 inline void unhold() {
@@ -1235,6 +1236,7 @@ inline void take(lv_timer_t *) {  // main loop (lv_timer): hold / release LVGL's
     SH.refr = d ? lv_display_get_refr_timer(d) : nullptr;
     if (!SH.refr) { SH.state = 0; return; }
     SH.period = SH.refr->period;
+    SH.swapped = lv_display_get_color_format(d) == LV_COLOR_FORMAT_RGB565_SWAPPED;
     lv_timer_set_period(SH.refr, 5 * 60 * 1000);
     SH.holding = true, SH.held_at = lv_tick_get();
     SH.state = 2;
@@ -1293,6 +1295,7 @@ class Handler : public AsyncWebHandler {
     for (int y0 = h - 1; ok && y0 >= 0; y0 -= band) {
       const int n = std::min(band, y0 + 1);
       fw::shot::band(fb, pw, ph, rot, y0, n, (uint16_t *) out);
+      if (SH.swapped) fw::shot::swap((uint16_t *) out, (size_t) n * w);  // the BMP is little-endian RGB565
       for (int k = 0; ok && k < n; k += 4) {
         ok = httpd_resp_send_chunk(req, (const char *) out + k * row, (size_t) std::min(4, n - k) * row) == ESP_OK;
         if (heap_caps_get_free_size(MALLOC_CAP_INTERNAL) < 24 * 1024) vTaskDelay(pdMS_TO_TICKS(20));
