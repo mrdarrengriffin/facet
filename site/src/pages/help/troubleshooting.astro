@@ -108,12 +108,13 @@ const headings: Heading[] = [
     <li>
       On the panel, open <strong>Settings &gt; Home Assistant</strong> and hold <strong>Reset pairing</strong> until
       it fills. <strong>Encryption key</strong> then reads <strong>None</strong>. Without the glass:
-      <code>curl -X POST -H "Authorization: Bearer &lt;key&gt;" http://&lt;panel&gt;/fw/pairing/reset</code> (an API
+      <code>curl -X POST -d "{}" -H "Authorization: Bearer &lt;key&gt;" http://&lt;panel&gt;/fw/pairing/reset</code> (an API
       key from Settings &gt; API keys, as for every change from outside).
     </li>
     <li>
-      In Home Assistant, the panel's ESPHome entry asks to be set up again (<strong>Reconfigure</strong>, or the
-      repair notice). Confirm it: Home Assistant connects without a key and gives the panel a new one. The device,
+      In Home Assistant, the panel's ESPHome entry asks to be confirmed again (<strong>Settings &gt; Devices &amp;
+      services</strong>, a <strong>Reconfigure</strong> notice saying the panel no longer uses encryption; reload
+      the entry if it does not show). Confirm it: Home Assistant connects and gives the panel a new key. The device,
       its entities and their names stay as they were.
     </li>
   </ol>
