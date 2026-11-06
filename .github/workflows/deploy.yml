@@ -130,8 +130,12 @@ jobs:
           tree=$(gh api "repos/$R/git/commits/$GITHUB_SHA" -q .tree.sha)
           v=$(gh api "repos/$R/git/commits" -f tree="$tree" -f "parents[]=$GITHUB_SHA" \
             -f message="Pages deploy of ${GITHUB_SHA:0:7} (run $GITHUB_RUN_ID.$GITHUB_RUN_ATTEMPT)" -q .sha)
+          # the tag only keeps the commit from garbage collection; Pages needs the commit, not a ref. Moving it is
+          # refused (403: the workflow token may not write workflow files) when main moved on with a workflow change
+          # after this run was dispatched (this commit's .github/workflows then differs from main's), and failed the run
           gh api -X PATCH "repos/$R/git/refs/tags/pages-deploy" -f sha="$v" -F force=true >/dev/null 2>&1 \
-            || gh api "repos/$R/git/refs" -f ref=refs/tags/pages-deploy -f sha="$v" >/dev/null
+            || gh api "repos/$R/git/refs" -f ref=refs/tags/pages-deploy -f sha="$v" >/dev/null 2>&1 \
+            || echo "::notice::pages-deploy tag not moved (not needed for the deploy)"
           echo "sha=$v" >> "$GITHUB_OUTPUT"
           echo "Pages build version $v (main ${GITHUB_SHA:0:7}'s tree)" | tee -a "$GITHUB_STEP_SUMMARY"
       - id: first
