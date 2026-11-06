@@ -1,10 +1,10 @@
 // Facet device glue (README "Device firmware"): the workbench's core + foundations + components on a real panel,
 // driven over HTTP by the workbench's "Show on device" button. ESPHome only (lvgl + web_server); no house specifics.
-//   GET  /fw/info   (heap: + httpd_stack_min / loop_stack_min, the web server's and main loop's least free stack bytes)
 //   GET  /fw/info   {v, density, core, files, ids, built, board, w, h, shown, devices: [{stack, builds, objects}], heap, art}   what this firmware was built from
 //                   art = the last picture decode's biggest view (null = none yet): {box, kept, source: [w, h], jpeg: 1/N,
 //                   filter: area | bilinear | nearest, drawn: 1:1 | scaled up by LVGL, reserved (in a screen slot), slots,
 //                   slots_free, fallback (why it was kept smaller; null = it wasn't), error, need_kb, room_kb, age_s}
+//                   (heap: + httpd_stack_min / loop_stack_min, the web server's and main loop's least free stack bytes)
 //                = What this firmware is: its build, board, screen size, free memory and the last album art decode.
 //   GET  /fw/meta   [{id, name, section, meta}]                                     the registry (same as fw_meta())
 //                = Every component and screen this firmware has, with its props.
