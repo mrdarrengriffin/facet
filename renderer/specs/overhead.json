@@ -24,22 +24,18 @@
       "default": "adsb_lol"
     },
     "sensor": {
-      "about": "With a Home Assistant source: the sensor that lists the aircraft (FlightRadar24's Current in area, or the REST sensor on your receiver's aircraft.json).",
-      "type": "entity",
-      "domain": "sensor",
-      "label": "Aircraft sensor",
-      "default": "sensor.flightradar24_current_in_area"
+      "about": "With a Home Assistant source: the sensor that lists the aircraft. Found by itself (FlightRadar24's Current in area, or your receiver's sensor); set it only when Home Assistant has more than one, from the Source sheet.",
+      "type": "hidden",
+      "default": ""
     },
     "lat": {
-      "about": "Your home's latitude in degrees (south is negative), the radar's centre. Empty uses Home Assistant's home.",
-      "type": "text",
-      "label": "Latitude",
+      "about": "Your home's latitude in degrees, the radar's centre. Empty (the default) = Home Assistant's home (zone.home); set it only for a panel without Home Assistant.",
+      "type": "hidden",
       "default": ""
     },
     "lon": {
-      "about": "Your home's longitude in degrees (west is negative). Empty uses Home Assistant's home.",
-      "type": "text",
-      "label": "Longitude",
+      "about": "Your home's longitude in degrees. Empty (the default) = Home Assistant's home.",
+      "type": "hidden",
       "default": ""
     },
     "range": {
@@ -51,11 +47,23 @@
         "50",
         "100"
       ],
+      "labels": [
+        "10 km",
+        "25 km",
+        "50 km",
+        "100 km"
+      ],
+      "labels_mi": [
+        "10 mi",
+        "25 mi",
+        "50 mi",
+        "100 mi"
+      ],
       "label": "Range",
       "default": "50"
     },
     "min_alt": {
-      "about": "Leaves out aircraft lower than this, in feet (0 shows all that are flying).",
+      "about": "Leaves out aircraft lower than this (aircraft on the ground are always left out).",
       "type": "select",
       "options": [
         "0",
@@ -63,7 +71,19 @@
         "3000",
         "10000"
       ],
-      "label": "Lowest altitude (ft)",
+      "labels": [
+        "Any height",
+        "300 m",
+        "900 m",
+        "3,000 m"
+      ],
+      "labels_mi": [
+        "Any height",
+        "1,000 ft",
+        "3,000 ft",
+        "10,000 ft"
+      ],
+      "label": "Lowest altitude",
       "default": "0"
     }
   },

@@ -252,55 +252,72 @@
         {
           "id": "adsb_lol",
           "kind": "direct",
-          "name": "adsb.lol: open ADS-B data, read by the panel itself (no account or key)",
+          "name": "adsb.lol",
+          "line": "open data · no key · over the internet",
           "adapter": "adsb_lol",
-          "setup": ["your home's place (Latitude and Longitude, or Home Assistant's home)", "web access (no account, no key)"],
+          "from": "Home Assistant",
+          "setup": [
+            "Home Assistant's home location (zone.home), or Latitude and Longitude in the deck",
+            "internet access (no account, no key)"
+          ],
           "about": "GET https://api.adsb.lol/v2/point/<lat>/<lon>/<radius in nautical miles> over the internet every 10 s while the screen or its card shows (after a failure 20, 40, 80, 160 s, then every 5 min); only the circle round home is asked for (~520 B an aircraft, at most 128 KB: 100 km round a big airport can be more, then use 50). Data: ODbL 1.0 (adsb.lol). No route (from / to) in this source."
         },
         {
           "id": "fr24",
           "kind": "ha",
-          "name": "FlightRadar24 (Home Assistant)",
+          "name": "FlightRadar24",
+          "line": "Home Assistant · routes and airlines",
           "adapter": "fr24",
           "detect": {
             "integration": "flightradar24",
             "domain": "sensor"
           },
-          "fills": {
-            "sensor": {
-              "integration": "flightradar24",
-              "domain": "sensor"
-            }
+          "finds": {
+            "param": "sensor",
+            "domain": "sensor",
+            "platform": "flightradar24",
+            "match": "in_area",
+            "default": "sensor.flightradar24_current_in_area"
           },
-          "setup": ["the FlightRadar24 integration (HACS) with its area on your home", "its Current in area sensor"],
+          "from": "Home Assistant",
+          "setup": [
+            "the FlightRadar24 integration (HACS) with its area on your home",
+            "its Current in area sensor"
+          ],
           "about": "The FlightRadar24 integration (HACS, AlexandrErohin/home-assistant-flightradar24): its Current in area sensor's attribute flights, with routes and airlines. Set its area to your home; its radius and altitude limits apply first."
         },
         {
           "id": "adsb_ha",
           "kind": "ha",
-          "name": "ADS-B receiver: dump1090 / readsb / tar1090 (Home Assistant)",
+          "name": "ADS-B receiver",
+          "line": "your receiver · through Home Assistant",
           "adapter": "adsb_ha",
           "detect": {
             "domain": "sensor"
           },
-          "fills": {
-            "sensor": {
-              "domain": "sensor"
-            }
+          "finds": {
+            "param": "sensor",
+            "domain": "sensor",
+            "match": "aircraft|adsb|dump1090|readsb|tar1090",
+            "default": "sensor.adsb_aircraft"
           },
-          "setup": ["a REST sensor on the receiver's data/aircraft.json with json_attributes: aircraft", "your home's place"],
+          "from": "Home Assistant",
+          "setup": [
+            "a REST sensor on the receiver's data/aircraft.json with json_attributes: aircraft (named ADS-B aircraft: sensor.adsb_aircraft)"
+          ],
           "about": "Your own receiver read by Home Assistant: a REST sensor on http://<receiver>/data/aircraft.json (tar1090: /tar1090/data/aircraft.json) with json_attributes: [aircraft]."
         },
         {
           "id": "opensky_ha",
           "kind": "ha",
-          "name": "OpenSky (Home Assistant) (planned)",
+          "name": "OpenSky (planned)",
           "about": "Home Assistant's OpenSky integration gives only a count of aircraft and entered / exited events, no positions: not enough for the radar yet."
         },
         {
           "id": "sample",
           "kind": "builtin",
-          "name": "Sample sky (previews)",
+          "name": "Sample sky",
+          "line": "made-up aircraft · previews",
           "adapter": "sample"
         }
       ]
@@ -310,7 +327,7 @@
     "panel.calendar": {"required": ["hero_n","hero_label","card"], "optional": ["card_n","hero_line","hero_accent","month_title","month_here","shown","day_title","sheet","agenda","month_days","calendars","day_events"]},
     "panel.clock": {"required": ["time","date"], "optional": ["day"]},
     "panel.energy": {"required": ["cost","line","card","card_tone"], "optional": ["rate","tone","values","bands","now","week_cost","week_line","week","week_before","days","watts","found","live","cheapest","event","event_tone"]},
-    "panel.flights": {"required": ["unit","range","planes","empty","card_text","title_now","title_radar","title_list"], "optional": ["look","status","route","who","also","all","many","list_head","empty_title","empty_body","stale","title_detail","f_src","card_sub","more","alt","speed","away","f_aircraft","f_reg","f_operator","f_squawk","f_heading","f_vs","look_tone","status_tone","alt_label","f_squawk_tone","card_accent"]},
+    "panel.flights": {"required": ["unit","range","planes","empty","card_text","title_now","title_radar","title_list"], "optional": ["look","status","route","who","also","all","many","list_head","empty_title","empty_body","stale","title_detail","f_src","card_sub","more","found","alt","speed","away","f_aircraft","f_reg","f_operator","f_squawk","f_heading","f_vs","look_tone","status_tone","alt_label","f_squawk_tone","card_accent"]},
     "panel.media": {"required": ["state_label","state_tone","playing","play_state","ctl_state","title","card_text","card_sub","card_accent","player","sheet"], "optional": ["artist","album","art","source","speakers","position","duration","progress","volume","volume_text","speaker"]},
     "panel.moon": {"required": ["phase","name","lit","card_value","card_sub","phase_key"], "optional": ["south","rest","age","full","new","next","values","bands","marks","names","labels","now","title_days","title_now","title_details","days_more","day_name","day_rest","rise","set","rise_tone","set_tone"]},
     "panel.weather": {"required": ["icon","temp","condition","card"], "optional": ["brief","line","rain","rain_tone","hours","has_hours","days","days_empty"]}

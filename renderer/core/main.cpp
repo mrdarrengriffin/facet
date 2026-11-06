@@ -613,9 +613,10 @@ EMSCRIPTEN_KEEPALIVE const char *fw_hit(int id, int x, int y) {
 //   "value", "<e>|<a>"     -> the HA store's value (a feed's field), "" = none
 //   "feeds", ""            -> [Feed json] every feed (core/feed.h: fields required / optional + placeholder, the sample
 //                             words after one sample round each)
-//   "proof", ""            -> {bounds, overlap, trunc: [{x, y, w, h, why}]} for stage id: Body objects outside their
+//   "proof", ""            -> {bounds, overlap, trunc, cut: [{x, y, w, h, why}]} for stage id: Body objects outside their
 //                             parent's content box (bleed skipped), clickable areas that overlap (not nested), text
-//                             wider than its label (cut to "...")
+//                             wider than its label (cut to "..."); cut = one-line texts shortened to "..." by their rule
+//                             (C40 allows it; a page that must show its words whole, Settings, tests it is empty)
 namespace {
 bool lab_has(lv_obj_t *o, const char *name) {
   for (uint32_t i = 0; i < o->style_cnt; i++) { const char *n = fx::style_name(o->styles[i].style); if (n && !strcmp(n, name)) return true; }
@@ -631,6 +632,7 @@ std::string lab_name(lv_obj_t *o) {
   return "object";
 }
 bool qa_clips_on_purpose(lv_obj_t *o);  // fw::qa::clips(o, why): o clips its children on purpose (below)
+ArduinoJson::JsonArray *lab_cut = nullptr;  // proof's "cut": one-line ("dot") texts shortened to "..." by their rule
 void lab_walk(lv_obj_t *o, bool in_body, ArduinoJson::JsonArray bounds, ArduinoJson::JsonArray trunc, std::vector<lv_obj_t *> &clicks) {
   for (uint32_t i = 0; i < lv_obj_get_child_count(o); i++) {
     lv_obj_t *c = lv_obj_get_child(o, i);
@@ -665,6 +667,8 @@ void lab_walk(lv_obj_t *o, bool in_body, ArduinoJson::JsonArray bounds, ArduinoJ
       }
       if (t && *t && sz.x > cw && (!ov || !strcmp(ov, "none")))
         lab_box(trunc, a, lab_name(c) + (ov ? " (none)" : "") + " needs " + std::to_string(sz.x) + " px, has " + std::to_string(cw));
+      else if (t && *t && sz.x > cw && lab_cut && !strcmp(ov, "dot") && !lv_obj_has_flag(c, LV_OBJ_FLAG_HIDDEN))  // cut by its rule
+        lab_box(*lab_cut, a, std::string(t).substr(0, 48) + " needs " + std::to_string(sz.x) + " px, has " + std::to_string(cw));
     }
     if (body && lv_obj_has_flag(c, LV_OBJ_FLAG_CLICKABLE)) clicks.push_back(c);
     lab_walk(c, body, bounds, trunc, clicks);
@@ -738,11 +742,13 @@ EMSCRIPTEN_KEEPALIVE const char *fw_lab(int id, const char *cmd, const char *arg
   lv_obj_update_layout(scr);
   ArduinoJson::JsonDocument doc;
   auto bounds = doc["bounds"].to<ArduinoJson::JsonArray>(), overlap = doc["overlap"].to<ArduinoJson::JsonArray>(),
-       trunc = doc["trunc"].to<ArduinoJson::JsonArray>();
+       trunc = doc["trunc"].to<ArduinoJson::JsonArray>(), cut = doc["cut"].to<ArduinoJson::JsonArray>();
+  lab_cut = &cut;
   std::vector<lv_obj_t *> clicks;
   // a component mounted alone (no Page on the stage) is all "body": the stage's content box is its parent
   lv_obj_t *first = lv_obj_get_child(scr, 0);
   lab_walk(scr, first && !lab_has(first, "page"), bounds, trunc, clicks);
+  lab_cut = nullptr;
   for (size_t i = 0; i < clicks.size(); i++)
     for (size_t j = i + 1; j < clicks.size(); j++) {
       if (lab_inside(clicks[i], clicks[j]) || lab_inside(clicks[j], clicks[i])) continue;

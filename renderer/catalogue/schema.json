@@ -9560,7 +9560,7 @@
   },
   "report": {
    "name": "report",
-   "about": "Settings > Report a problem: a QR code that opens a new GitHub bug report with this panel's version and board filled in, and the address of the panel's problem report (logs kept across restarts, connection drops, the last crash; no secrets).",
+   "about": "Settings > Report a problem: a QR code and address that open the panel's problem report page on a phone or computer on the same Wi-Fi, to copy or download the report (logs kept across restarts, connection drops, the last crash; no secrets) and open a GitHub issue with the version and board filled in.",
    "contract": 1,
    "min": null,
    "slots": null,
@@ -9606,6 +9606,7 @@
       "living_room",
       "media",
       "moon",
+      "overhead",
       "timer",
       "weather"
      ],
@@ -10214,22 +10215,18 @@
      "default": "adsb_lol"
     },
     "sensor": {
-     "about": "With a Home Assistant source: the sensor that lists the aircraft (FlightRadar24's Current in area, or the REST sensor on your receiver's aircraft.json).",
-     "type": "entity",
-     "domain": "sensor",
-     "label": "Aircraft sensor",
-     "default": "sensor.flightradar24_current_in_area"
+     "about": "With a Home Assistant source: the sensor that lists the aircraft. Found by itself (FlightRadar24's Current in area, or your receiver's sensor); set it only when Home Assistant has more than one, from the Source sheet.",
+     "type": "hidden",
+     "default": ""
     },
     "lat": {
-     "about": "Your home's latitude in degrees (south is negative), the radar's centre. Empty uses Home Assistant's home.",
-     "type": "text",
-     "label": "Latitude",
+     "about": "Your home's latitude in degrees, the radar's centre. Empty (the default) = Home Assistant's home (zone.home); set it only for a panel without Home Assistant.",
+     "type": "hidden",
      "default": ""
     },
     "lon": {
-     "about": "Your home's longitude in degrees (west is negative). Empty uses Home Assistant's home.",
-     "type": "text",
-     "label": "Longitude",
+     "about": "Your home's longitude in degrees. Empty (the default) = Home Assistant's home.",
+     "type": "hidden",
      "default": ""
     },
     "range": {
@@ -10241,11 +10238,23 @@
       "50",
       "100"
      ],
+     "labels": [
+      "10 km",
+      "25 km",
+      "50 km",
+      "100 km"
+     ],
+     "labels_mi": [
+      "10 mi",
+      "25 mi",
+      "50 mi",
+      "100 mi"
+     ],
      "label": "Range",
      "default": "50"
     },
     "min_alt": {
-     "about": "Leaves out aircraft lower than this, in feet (0 shows all that are flying).",
+     "about": "Leaves out aircraft lower than this (aircraft on the ground are always left out).",
      "type": "select",
      "options": [
       "0",
@@ -10253,7 +10262,19 @@
       "3000",
       "10000"
      ],
-     "label": "Lowest altitude (ft)",
+     "labels": [
+      "Any height",
+      "300 m",
+      "900 m",
+      "3,000 m"
+     ],
+     "labels_mi": [
+      "Any height",
+      "1,000 ft",
+      "3,000 ft",
+      "10,000 ft"
+     ],
+     "label": "Lowest altitude",
      "default": "0"
     }
    },
@@ -10660,6 +10681,11 @@
      },
      {
       "name": "more",
+      "required": false,
+      "none": ""
+     },
+     {
+      "name": "found",
       "required": false,
       "none": ""
      },
@@ -12923,7 +12949,7 @@
   {
    "method": "GET",
    "path": "/fw/info",
-   "about": "{v, density, core, files, ids, built, board, w, h, shown, devices: [{stack, builds, objects}], heap, art}   what this firmware was built from art = the last picture decode's biggest view (null = none yet): {box, kept, source: [w, h], jpeg: 1/N, filter: area | bilinear | nearest, drawn: 1:1 | scaled up by LVGL, reserved (in a screen slot), slots, slots_free, fallback (why it was kept smaller; null = it wasn't), error, need_kb, room_kb, age_s} (heap: + httpd_stack_min / loop_stack_min, the web server's and main loop's least free stack bytes)",
+   "about": "{v, density, core, files, ids, built, board, w, h, shown, devices: [{stack, builds, objects}], heap, art}   what this firmware was built from art = the last picture decode's biggest view (null = none yet): {box, kept, source: [w, h], jpeg: 1/N, filter: area | bilinear | nearest, drawn: 1:1 | scaled up by LVGL, reserved (in a screen slot), slots, slots_free, fallback (why it was kept smaller; null = it wasn't), error, need_kb, room_kb, age_s} (heap: + httpd_stack_min / loop_stack_min, the web server's and main loop's least free stack bytes) stacks: {httpd, loop, img, net, ha_ws, ha_get: {size, least_free, psram}} each task's stack bytes, its least free bytes so far (-1 = not run yet) and whether it lives in PSRAM (fw_stacks.h)",
    "says": "What this firmware is: its build, board, screen size, free memory and the last album art decode."
   },
   {
@@ -12965,7 +12991,13 @@
   {
    "method": "GET",
    "path": "/fw/report",
-   "about": "the problem report, plain text: version, boots + reset reasons, the crash record, Wi-Fi / HA drops, /fw/info, settings, the log kept across restarts; tokens, keys and passwords removed (\"problem report\")",
+   "about": "the problem report page (HTML, firmware/report.html from flash, gzip): shows /fw/report.txt with Copy report, Download report (.txt) and Open a GitHub issue (the Bug report form, version + board in)",
+   "says": "The page Settings > Report a problem opens on a phone: copy or download the report, then open an issue."
+  },
+  {
+   "method": "GET",
+   "path": "/fw/report.txt",
+   "about": "the problem report, plain text: version, boots + reset reasons, the crash record, Wi-Fi / HA drops, /fw/info, settings, the log kept across restarts; tokens, keys and passwords removed (\"problem report\"); ?download=1 = as a file (facet-report-<board>.txt)",
    "says": "Everything needed to report a problem, also from before the last restart (paste it into a bug report)."
   },
   {

@@ -9,10 +9,16 @@
 //   shown(doc, screen, entry, param, v)  the source a page really uses, given the spec's source parameter (param = its
 //                                definition, v = its value): the picked source when it sets v or sets nothing, else the
 //                                first source that sets v; v "sample" and no such source = SAMPLE (named "Sample (previews)")
+//   candidates(finds)            a Home Assistant source's own entity, found, not picked (sources.json "finds": {param,
+//                                domain, platform?, match? ("a|b": a substring of the id), default?}): the registry's
+//                                rows of that domain that fit, in its order (core/device.h ha_link::reg; read on first
+//                                ask); none found (or no registry yet) = the default alone, if any
+//   found(finds)                 the one it uses: the first candidate
 #pragma once
 #include <string>
 #include "fw.h"
 #include "specs_gen.h"
+#include "device.h"
 
 namespace fw {
 namespace src {
@@ -68,6 +74,32 @@ inline std::string line(const ArduinoJson::JsonDocument &d, const std::string &s
   if (id == SAMPLE) return SAMPLE_NAME;
   const std::string n = name(d, screen, id);
   return n.empty() ? "Built in" : n;
+}
+inline std::vector<std::string> candidates(ArduinoJson::JsonVariantConst f) {
+  std::vector<std::string> out;
+  const std::string dom = f["domain"] | "", plat = f["platform"] | "", match = f["match"] | "", def = f["default"] | "";
+  if (!dom.empty()) {
+    dev::ha_link::reg_fetch(dom);
+    if (const auto *r = dev::ha_link::reg(dom))
+      for (const auto &row : *r) {
+        if (!plat.empty() && row.platform != plat) continue;
+        bool hit = match.empty();
+        for (size_t i = 0; !hit && i <= match.size();) {
+          size_t j = match.find('|', i);
+          if (j == std::string::npos) j = match.size();
+          const std::string m = match.substr(i, j - i);
+          hit = !m.empty() && row.id.find(m) != std::string::npos;
+          i = j + 1;
+        }
+        if (hit && row.id.rfind(dom + ".", 0) == 0) out.push_back(row.id);
+      }
+  }
+  if (out.empty() && !def.empty()) out.push_back(def);
+  return out;
+}
+inline std::string found(ArduinoJson::JsonVariantConst f) {
+  const std::vector<std::string> c = candidates(f);
+  return c.empty() ? std::string() : c.front();
 }
 }  // namespace src
 }  // namespace fw

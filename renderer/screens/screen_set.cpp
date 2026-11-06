@@ -11,11 +11,15 @@
 //                       sources set the spec's "source" parameter (C51: the adapter, core/sources.h adapter()), this
 //                       row is the one Source: a pick keeps "source" and "params.source", a spec with a "sample"
 //                       option and no sample source gets "Sample (previews)", and the parameter is not repeated below.
+//                       A source's sheet line is its sources.json "line" when it has one; a source that "finds" its own
+//                       entity in HA's registry gets one sheet row per candidate only when there is more than one, the
+//                       row setting that parameter too.
 //                       A source with "from" (sources.json: a standard place in HA it reads, Energy: HA's Energy
 //                       dashboard) adds the row "From <it>" with what the feed found there (its "found" attribute:
 //                       "Grid, Solar · 3 devices", "Not set up in Home Assistant"), following the pick live.
 //            "options"  one row per typed parameter of the screen's spec (core/spec.h "params", hidden ones left
-//                       out): select = a List row + Segmented in its end slot (up to 4 options) or the sheet; toggle = a List row
+//                       out): select = a List row + Segmented in its end slot (up to 4 options, no labels) or a value row and the
+//                       sheet (more options, or the spec's "labels" / "labels_mi": words with a unit); toggle = a List row
 //                       toggle; entity = its friendly name, and a sheet of the screen's list of the same domain when
 //                       it has one (Media: the Player from the Speakers, Auto first when the spec's screen.param
 //                       follows a sensor: "auto" or nothing picked = Auto); entities = "N chosen"; text = the value.
@@ -100,6 +104,7 @@ struct Pick {
   bool ha = false, multi = false, auto_ok = false, tried = false;
   std::string dom, prefix, cur;     // cur: the single pick's value ("auto" = Auto)
   std::vector<std::string> chosen;  // multi: the picks
+  std::vector<std::string> pkey, pval;  // the Source: a parameter a row sets too (its own sensor, sources.json "finds")
 };
 struct Page {
   lv_obj_t *root = nullptr, *sheet = nullptr, *home = nullptr;
@@ -214,7 +219,7 @@ const char *META = R"({
   "frame": [480, 480],
   "icons": ["back@glyph", "chevron@icon", "check@icon", "close@glyph"],
   "props": [
-    {"name": "id", "about": "Which screen's settings to show (a screen id of the deck or the factory).", "type": "select", "options": ["calendar", "clock", "energy", "living_room", "media", "moon", "timer", "weather"], "default": "media"}
+    {"name": "id", "about": "Which screen's settings to show (a screen id of the deck or the factory).", "type": "select", "options": ["calendar", "clock", "energy", "living_room", "media", "moon", "overhead", "timer", "weather"], "default": "media"}
   ]
 })";
 
@@ -278,6 +283,7 @@ void build_page(lv_obj_t *parent, fw::Props p) {
     linked |= !pk.sets.back().empty();
     has_sample |= pk.sets.back() == "sample";
     std::string st = cat["kinds"][x["kind"] | ""] | "";
+    if (x["line"].is<const char *>()) { pk.status.push_back(x["line"] | ""); continue; }  // its own one line (the sheet)
     ArduinoJson::JsonArrayConst setup = x["setup"].as<ArduinoJson::JsonArrayConst>();
     if (setup.size()) {
       std::string need;
@@ -313,7 +319,26 @@ void build_page(lv_obj_t *parent, fw::Props p) {
     pk.ids.push_back(fw::src::SAMPLE), pk.names.push_back(fw::src::SAMPLE_NAME), pk.sets.push_back("sample");
     pk.status.push_back(cat["kinds"]["builtin"] | "");
   }
-  for (size_t i = 0; i < pk.ids.size(); i++) if (pk.ids[i] == cur) pk.sel = (int) i;
+  {  // a Home Assistant source that finds its own entity (sources.json "finds"): one row per candidate only when HA
+     // has more than one (the row sets the parameter too), else the source finds it itself (the parameter cleared)
+    Pick ex = pk;
+    ex.ids.clear(), ex.names.clear(), ex.sets.clear(), ex.status.clear();
+    for (size_t i = 0; i < pk.ids.size(); i++) {
+      ArduinoJson::JsonVariantConst f;
+      for (ArduinoJson::JsonVariantConst x : srcs) if (pk.ids[i] == (x["id"] | "")) f = x["finds"];
+      const std::string fk = f.isNull() ? "" : std::string("params.") + (f["param"] | "");
+      const std::vector<std::string> cands = f.isNull() ? std::vector<std::string>() : fw::src::candidates(f);
+      const size_t n = cands.size() > 1 ? cands.size() : 1;
+      for (size_t k = 0; k < n; k++) {
+        ex.ids.push_back(pk.ids[i]), ex.names.push_back(pk.names[i]), ex.sets.push_back(pk.sets[i]);
+        ex.status.push_back(n > 1 ? friendly(cands[k]) : pk.status[i]);
+        ex.pkey.push_back(fk), ex.pval.push_back(n > 1 ? cands[k] : "");
+      }
+    }
+    pk = ex;
+  }
+  for (size_t i = 0; i < pk.ids.size(); i++)
+    if (pk.ids[i] == cur && (pk.pval[i].empty() || pk.pval[i] == (entry["params"][pk.pkey[i].substr(7)] | ""))) { pk.sel = (int) i; break; }
   Doc sr;
   sr["title"] = "Source", sr["icon"] = "none";
   sr["value"] = pk.ids.empty() ? "Built in" : pk.names[pk.sel].c_str();
@@ -352,7 +377,11 @@ void build_page(lv_obj_t *parent, fw::Props p) {
     rd["title"] = label.c_str(), rd["icon"] = "none";
     if (type == "select") {
       ArduinoJson::JsonArrayConst opts = kv.value()["options"].as<ArduinoJson::JsonArrayConst>();
-      if (opts.size() <= 4) {  // a List row (title only, not a tap target) + the Segmented as its trailing part
+      // the option words: the spec's labels (labels_mi with the distance unit miles), else the option itself
+      const char *du = fw::dev::setting("distanceUnit");
+      ArduinoJson::JsonArrayConst lab = kv.value()[du && !strcmp(du, "mi") && kv.value()["labels_mi"].is<ArduinoJson::JsonArrayConst>() ? "labels_mi" : "labels"];
+      auto word = [&](size_t i, const char *o) { return i < lab.size() ? std::string(lab[i] | o) : label_of(o); };
+      if (opts.size() <= 4 && lab.isNull()) {  // a List row (title only, not a tap target) + the Segmented as its trailing part
         rd["trailing"] = "none";
         lv_obj_t *r = build("list_row", c, rd);
         if (!r) continue;
@@ -364,12 +393,15 @@ void build_page(lv_obj_t *parent, fw::Props p) {
         if (lv_obj_t *sg = build("segmented", end_of(r), sd)) pg->ctrls.push_back({sg, "params." + key});
         continue;
       }
-      rd["trailing"] = "value-chevron", rd["value"] = label_of(v).c_str();
+      // with labels (words with a unit: "1,000 ft"), or more than 4: a value row + the sheet, so the title always shows
+      Pick pk;
+      for (size_t i = 0; i < opts.size(); i++) { pk.ids.push_back(opts[i] | ""); pk.names.push_back(word(i, opts[i] | "")); pk.status.push_back(""); }
+      std::string vw = label_of(v);
+      for (size_t i = 0; i < pk.ids.size(); i++) if (pk.ids[i] == v) vw = pk.names[i];
+      rd["trailing"] = "value-chevron", rd["value"] = vw.c_str();
       lv_obj_t *r = build("list_row", c, rd);
       if (!r) continue;
-      Pick pk;
       pk.key = "params." + key, pk.row = r, pk.title = label;
-      for (ArduinoJson::JsonVariantConst o : opts) { pk.ids.push_back(o | ""); pk.names.push_back(label_of(o | "")); pk.status.push_back(""); }
       for (size_t i = 0; i < pk.ids.size(); i++) if (pk.ids[i] == v) pk.sel = (int) i;
       pg->picks.push_back(pk);
       continue;
@@ -517,6 +549,11 @@ void build_page(lv_obj_t *parent, fw::Props p) {
         Doc v;
         v.set(p.sets[i].c_str());
         keep(pg, pg->sheet, "params.source", v.as<ArduinoJson::JsonVariantConst>());
+      }
+      if (p.key == "source" && i < (int) p.pkey.size() && !p.pkey[i].empty()) {  // its own sensor ("" = found by itself)
+        Doc v;
+        v.set(p.pval[i].c_str());
+        keep(pg, pg->sheet, p.pkey[i], v.as<ArduinoJson::JsonVariantConst>());
       }
     }, LV_EVENT_VALUE_CHANGED, pg);
   // an open HA pick follows the link (a read ends) and a tap that changes its rows (rebuilt here, after the tap)

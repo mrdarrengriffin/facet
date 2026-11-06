@@ -6,7 +6,8 @@
 //               "params": {"entity": "light.x", ...},     the screen's parameters + defaults; "$entity" anywhere
 //                                                          in a string = the value it was opened with. Typed
 //                                                          {"type": text|select|entity|entities|
-//                                                          toggle|hidden, "default", "label", "domain", "options", "about"}:
+//                                                          toggle|hidden, "default", "label", "domain", "options", "about",
+//                                                          "labels" / "labels_mi" (a select's option words, km / mi)}:
 //                                                          Settings > Screens and the workbench build their controls
 //                                                          from it (entity / entities = one / a comma list of
 //                                                          `domain` ids, filled by the host's discovery)
@@ -672,8 +673,12 @@ inline void check_screen(ArduinoJson::JsonVariantConst s, size_t bytes, Errs &e)
       const std::string pp = std::string(".params.") + kv.key().c_str();
       if (kv.value().is<const char *>()) continue;
       if (!kv.value().is<ArduinoJson::JsonObjectConst>()) { err(e, pp, "bad_params", "a parameter is its default (text) or {type, default, label, ...}"); continue; }
-      static const char *const PK[] = {"type", "default", "label", "domain", "options", "about"};
-      check_keys(kv.value().as<ArduinoJson::JsonObjectConst>(), PK, 6, pp, e);
+      static const char *const PK[] = {"type", "default", "label", "domain", "options", "about", "labels", "labels_mi"};
+      check_keys(kv.value().as<ArduinoJson::JsonObjectConst>(), PK, 8, pp, e);
+      for (const char *lk : {"labels", "labels_mi"})  // a select's option words (labels_mi: when the distance unit is miles)
+        if (!kv.value()[lk].isNull() && (!kv.value()[lk].is<ArduinoJson::JsonArrayConst>() ||
+                                          kv.value()[lk].size() != kv.value()["options"].size()))
+          err(e, pp + "." + lk, "bad_params", "labels name each option, in order");
       if (!one_of(PARAM_TYPES, kv.value()["type"] | "")) err(e, pp + ".type", "bad_params", "type is text, select, entity, entities, toggle or hidden");
       if (!kv.value()["default"].isNull() && !kv.value()["default"].is<const char *>()) err(e, pp + ".default", "bad_params", "a parameter default is text");
       if (!strcmp(kv.value()["type"] | "", "select") && !kv.value()["options"].is<ArduinoJson::JsonArrayConst>()) err(e, pp + ".options", "bad_params", "a select lists its options");

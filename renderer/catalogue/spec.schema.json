@@ -85,6 +85,20 @@
      "items": {
       "type": "string"
      }
+    },
+    "labels": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     },
+     "description": "What each option is called in Settings, in order (with the distance unit km, or always without labels_mi)"
+    },
+    "labels_mi": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     },
+     "description": "The same with the distance unit miles"
     }
    }
   },

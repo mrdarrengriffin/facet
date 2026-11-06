@@ -23,10 +23,12 @@
 //              stale "1" = the last read failed but the aircraft before it still show (the header's "offline · last known")
 //   title_now / title_radar / title_list / title_detail  the header per view (the spec binds title_$view)
 //   f_aircraft f_reg f_operator f_squawk f_squawk_tone f_heading f_vs f_src: the detail view's facts about the lead
+//   found      Settings > Screens > Overhead, the From row: "Centred on Home · FlightRadar24 Current in area" (where the
+//              radar is centred, from Home Assistant's home, and the sensor it found)
 //   card_text, card_sub, card_accent  the Home card: the route / "Clear skies" / the feed's word; "32,000 ft · 26 km SE"
 //              ("look up" while high, the squawk on an emergency); "true" while high
-// Settings (the spec's "feeds"; core/ha.h feed_config): source, sensor, lat, lon (home; "" = Home Assistant's
-// zone.home), range (10 | 25 | 50 | 100 in the distance unit), min_alt (feet: lower aircraft are left out; aircraft on
+// Settings (the spec's "feeds"; core/ha.h feed_config): source, sensor ("" = found by itself: sources.json "finds",
+// the integration's own sensor in HA's registry), lat, lon (home; "" = Home Assistant's zone.home, the default), range (10 | 25 | 50 | 100 in the distance unit), min_alt (feet: lower aircraft are left out; aircraft on
 // the ground always are).
 // Adapters (sources/sources.json "overhead", in order):
 //   adsb_lol  the public adsb.lol API (open ADS-B data, ODbL, no key), read by the panel itself every 10 s while the
@@ -54,6 +56,7 @@
 #include "fw.h"
 #include "ha.h"
 #include "net.h"
+#include "sources.h"
 #include "units.h"
 
 namespace fw::dev::flights_source {
@@ -268,7 +271,7 @@ std::vector<feed::Field> flight_fields() {
   std::vector<feed::Field> v;
   for (const char *n : {"unit", "range", "planes", "empty", "card_text", "title_now", "title_radar", "title_list"}) v.push_back({n, true, ""});
   for (const char *n : {"look", "status", "route", "who", "also", "all", "many", "list_head", "empty_title", "empty_body", "stale", "title_detail",
-                        "f_src", "card_sub", "more"})
+                        "f_src", "card_sub", "more", "found"})
     v.push_back({n, false, ""});
   for (const char *n : {"alt", "speed", "away", "f_aircraft", "f_reg", "f_operator", "f_squawk", "f_heading", "f_vs"}) v.push_back({n, false, "--"});
   v.push_back({"look_tone", false, "text-dim"}), v.push_back({"status_tone", false, "idle"}), v.push_back({"alt_label", false, "altitude"});
@@ -293,8 +296,8 @@ class Flights : public feed::Feed {
     const bool own = !la.empty() && !lo.empty();
     std::vector<std::pair<std::string, std::string>> rd;
     if (!own) rd.push_back({"zone.home", "latitude"}), rd.push_back({"zone.home", "longitude"});
-    const std::string ent = cfg()["sensor"] | "";
-    if (src == "fr24" || src == "adsb_ha") rd.push_back({ent, ""}), rd.push_back({ent, src == "fr24" ? "flights" : "aircraft"});
+    const std::string ent = sensor_of(src, cfg()["sensor"] | "");
+    if (src == "fr24" || src == "adsb_ha") rd.push_back({ent, ""}), rd.push_back({ent, src == "fr24" ? "flights" : "aircraft"}), rd.push_back({ent, "friendly_name"});
     if (src == "adsb_ha") rd.push_back({ent, "ac"});
     reads(rd);
     if (changed()) last.clear(), trails.clear(), sel.clear(), fetched_ = 0, err_.clear(), fails_ = 0, have_ = false;
@@ -304,6 +307,14 @@ class Flights : public feed::Feed {
     else if (const std::string *a = ha::get("zone.home", "latitude"), *b = ha::get("zone.home", "longitude"); a && b && !a->empty() && !b->empty())
       hlat_ = strtod(a->c_str(), nullptr), hlon_ = strtod(b->c_str(), nullptr);
     const bool home = std::isfinite(hlat_) && std::isfinite(hlon_) && std::fabs(hlat_) <= 90 && std::fabs(hlon_) <= 180;
+    {  // Settings > Screens > Overhead, the From row: where the radar is centred and what it reads
+      std::string f = !home ? std::string("No home location in Home Assistant") : own ? std::string("Centred on the place set here") : std::string("Centred on Home");
+      if ((src == "fr24" || src == "adsb_ha") && !ent.empty()) {
+        const std::string *fn = ha::get(ent, "friendly_name");
+        f += " \xC2\xB7 " + (fn && !fn->empty() ? *fn : ent);
+      }
+      put("found", f);
+    }
     if (src == "fr24" || src == "adsb_ha") {
       src_name = src == "fr24" ? "FlightRadar24" : "ADS-B receiver";
       const std::string *st = ha::get(ent);
@@ -365,6 +376,21 @@ class Flights : public feed::Feed {
   std::vector<Flight> got_;
   lv_timer_t *sample_tick_ = nullptr;
 
+  // the sensor a Home Assistant source reads: the one set (the Source sheet, when HA has more than one), else the one
+  // found (sources.json "finds": the integration's own sensor in HA's registry, else its usual id); again when the
+  // registry changes
+  std::string found_src_, found_ent_;
+  uint32_t found_rev_ = 0;
+  std::string sensor_of(const std::string &src, const std::string &set) {
+    if (!set.empty() || (src != "fr24" && src != "adsb_ha")) return set;
+    if (src == found_src_ && dev::ha_link::rev() == found_rev_ && !found_ent_.empty()) return found_ent_;
+    ArduinoJson::JsonDocument d;
+    found_src_ = src, found_rev_ = dev::ha_link::rev(), found_ent_.clear();
+    if (fw::src::load(d))
+      for (ArduinoJson::JsonVariantConst x : fw::src::of(d, "overhead"))
+        if (src == (x["adapter"] | "")) found_ent_ = fw::src::found(x["finds"]);
+    return found_ent_;
+  }
   static double clamp_range(const char *s) {
     const double r = strtod(s, nullptr);
     for (double x : {10.0, 25.0, 50.0, 100.0}) if (r <= x) return x;

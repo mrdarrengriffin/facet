@@ -244,7 +244,7 @@ export class Ctx {
   wait(ms) { const end = this.b.t + ms; while (this.b.t < end) { this.b.tick(); this.ha.flush(); } return this.b.events(); }
   // -- read back
   objs() { return this.b.audit(); }
-  visible(o) { return o.w > 0 && o.h > 0 && o.opa !== 0 && o.x + o.w > 0 && o.y + o.h > 0 && o.x < this.b.S && o.y < this.b.S; }
+  visible(o) { return o.w > 0 && o.h > 0 && o.opa !== 0 && o.x + o.w > 0 && o.y + o.h > 0 && o.x < (this.b.W || this.b.S) && o.y < (this.b.H || this.b.S); }  // a resized stage (stage()) counts its own size
   texts(box) { return this.objs().filter((o) => o.text && this.visible(o) && (!box || inside(o, box))).map((o) => String(o.text)); }
   comps() { return JSON.parse(this.b.m.UTF8ToString(this.b.m._fw_comps(this.b.stage)) || '[]'); }
   /** the box of component `id` (innermost) that holds the text `label` (or the first one) */
