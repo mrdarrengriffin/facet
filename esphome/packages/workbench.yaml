@@ -88,6 +88,16 @@ esphome:
               id(timer_finished).trigger("finished");
             };
             fw::device::setup();
+            // a tap that lands while a page builds (core/device.h late_start, #94): the touch chip read inside the build
+            struct Late : touchscreen::TouchListener {
+              void touch(touchscreen::TouchPoint tp) override { fw::dev::late_press(tp.x, tp.y); }
+              void release() override { fw::dev::late_lift(); }
+            };
+            id(touch)->register_listener(new Late());
+            fw::dev::late_start([] {
+              id(touch)->update();  // polled chip: "read now"
+              id(touch)->loop();
+            });
             // the Screen select's options = the deck's screen names (fw::device::screen_names(); fixed until restart)
             static esphome::FixedVector<const char *> opts;
             const auto &names = fw::device::screen_names();

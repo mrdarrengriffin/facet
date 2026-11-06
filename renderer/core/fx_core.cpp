@@ -29,6 +29,7 @@ int style_role(int style);                                          // the font 
 uint32_t role_glyph(int role, int i);                               // the code points the role's styles draw (0 = end)
 }
 #include "font_store.h"
+#include "device.h"  // dev::build_tick: the touch chip read during a long build (#94)
 
 namespace {
 enum Kind { FG, BG, BORDER, LINE, INK, PAD, GAP, PADX, RADIUS, HEIGHT, MAXH, MINW, MAXW, ABOVE, WIDTH, TYPE, SHAPE, DERIVED,
@@ -1294,6 +1295,7 @@ void use(lv_obj_t *o, const char *t, lv_style_selector_t sel) {
   lv_obj_refresh_ext_draw_size(o);
 }
 lv_obj_t *box(lv_obj_t *p, const char *layout) {
+  fw::dev::build_tick();  // a big component's build reads the touch chip too (device.h late_start)
   lv_obj_t *o = lv_obj_create(p);
   lv_obj_remove_style_all(o);
   lv_obj_remove_flag(o, (lv_obj_flag_t) (LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_CLICKABLE));
@@ -1305,6 +1307,7 @@ lv_obj_t *box(lv_obj_t *p, const char *layout) {
 std::map<lv_obj_t *, const char *> &overs() { static std::map<lv_obj_t *, const char *> m; return m; }
 const char *text_over(lv_obj_t *l) { auto it = overs().find(l); return it == overs().end() ? nullptr : it->second; }
 lv_obj_t *text(lv_obj_t *p, const char *s, const char *type, const char *fg, const char *over) {
+  fw::dev::build_tick();  // a big component's build reads the touch chip too (device.h late_start)
   static const char *const OVER[] = {"dot", "fit", "none"};
   const char *ov = nullptr;
   for (const char *x : OVER) if (!strcmp(over, x)) ov = x;
@@ -2013,6 +2016,7 @@ void Pen::rect(int x, int y, int w, int h, const char *k, int radius, int border
   layer->_clip_area = clip;
 }
 lv_obj_t *drawn(lv_obj_t *parent, void (*draw)(const Pen &), const char *layout) {
+  fw::dev::build_tick();  // a big component's build reads the touch chip too (device.h late_start)
   lv_obj_t *o = box(parent, layout);
   use(o, "fit");  // as tall as wide, but never taller than its parent: the Pen takes the largest square that fits
   lv_obj_add_event_cb(o, on_draw, LV_EVENT_DRAW_MAIN, (void *) draw);

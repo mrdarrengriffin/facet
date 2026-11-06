@@ -300,6 +300,26 @@ extern "C" EMSCRIPTEN_KEEPALIVE const char *fw_test(const char *cmd, const char 
     if (!a.empty()) fw::dev::keep_pages(atoi(a.c_str()));
     fw::dev::kept_json(d.to<ArduinoJson::JsonArray>());
   }
+  else if (c == "chip") {  // a fake touch chip read during builds (device.h late_start, #94): {"steps": ["p x y" | "l" | "-"]}
+    struct Chip { std::vector<std::string> steps; size_t at = 0; int polls = 0; };  // one step per read, then nothing
+    static Chip chip;
+    if (!a.empty()) {
+      ArduinoJson::JsonDocument in;
+      deserializeJson(in, a);
+      chip = Chip();
+      for (ArduinoJson::JsonVariantConst x : in["steps"].as<ArduinoJson::JsonArrayConst>()) chip.steps.push_back(x | "");
+      fw::dev::late_ms(0);
+      fw::dev::late_start([] {
+        chip.polls++;
+        if (chip.at >= chip.steps.size()) return;
+        const std::string &st = chip.steps[chip.at++];
+        int x = 0, y = 0;
+        if (sscanf(st.c_str(), "p %d %d", &x, &y) == 2) fw::dev::late_press(x, y);
+        else if (st == "l") fw::dev::late_lift();
+      });
+    }
+    d["polls"] = chip.polls, d["left"] = (int) (chip.steps.size() - chip.at);
+  }
   else if (c == "timer") timer_cmd(a, d);
   else if (c == "keys") keys_cmd(a, d);
   else if (c == "update") {  // "state,installed,latest": the host's firmware update (core/device.h update); "install" = ask

@@ -87,6 +87,18 @@ void nav_copy(uint32_t ms);  // the host's flush time inside the first frame (co
 void nav_render();           // the host's "a render starts" (its display's render-start: the wait before it is the loop's)
 void nav_frame();            // the host's "a frame was drawn" (its display's render-ready)
 void nav_touch();            // the host's "a finger lifted" (its pointer's release): the change it causes starts there
+// A tap during a build (#94): a page build holds the loop (the Guition's kept pages: 150-1230 ms), so a polled touch
+// chip is not read and a press and its lift both inside one build were lost. late_start(poll): the host's "read the
+// chip now" (its touch listener tells late_press / late_lift); build_tick() calls it at most every 20 ms during any
+// build (between a screen's nodes and inside the core atoms: one big component's build too). A press and a lift both
+// seen there, with LVGL's own pointer never pressed in between, are given to LVGL after the build as one tap at the
+// press point (a pointer of the core's own: the same path as a finger). A press still down after the build needs
+// nothing: LVGL reads it as usual. late_ms(ms): the poll spacing (tests: 0 = every tick).
+void late_start(void (*poll)());
+void late_press(int32_t x, int32_t y);
+void late_lift();
+void late_ms(uint32_t ms);
+void build_tick();
 // Kept pages (facet-243, core/device.cpp): Home and the deck's pages built once in the idle gaps and kept hidden, so a
 // tap shows a page instead of building it. keep_pages(n): at most n kept (0 = off, every screen built on tap). on_mem:
 // the host's free-PSRAM reading (each kept page's cost). kept_json: [{page, bytes, objects, build_ms, stale, shown, waiting}] (waiting: binds whose data changed while

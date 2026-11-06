@@ -14,6 +14,39 @@ const idle = (t, ms) => t.b.tick(Math.ceil(ms / 16));  // the prebuild runs in i
 export default {
   id: 'kept_pages', family: 'device', about: 'Kept pages: shown without a build, data-only while hidden, scroll kept, only touched pages rebuilt.',
   tests: [
+    { name: 'a tap made while a page builds (press and lift both inside the build) is given after it (#94)', async run(t) {
+      t.ha.s[W] = { '': 'cloudy', temperature: '10.2' };
+      await t.device();
+      const card = t.part('card', /clock/i) || t.find(/^clock$/i);
+      t.ok(card, 'Home has a Clock card');
+      if (!card) return;
+      keep(t, 8);
+      const [x, y] = [Math.round(card.x + card.w / 2), Math.round(card.y + card.h / 2)];
+      // the fake chip: read only from inside builds (between nodes and in the core atoms); press, a read, then lift
+      t.b.test('chip', JSON.stringify({ steps: [`p ${x} ${y}`, '-', 'l'] }));
+      let grew = null;
+      for (let i = 0; i < 400 && !grew; i++) {
+        const k0 = keep(t).filter((k) => k.page !== 'home').length, c0 = t.b.test('chip');  // Home is kept as shown: no build
+        t.b.tick(1);
+        const c1 = t.b.test('chip');
+        if (keep(t).filter((k) => k.page !== 'home').length > k0) grew = { k: keep(t).map((k) => k.page), before: c0, after: c1 };
+      }
+      t.ok(grew, 'a kept page was built in the idle gap');
+      t.eq(grew?.before.left, 3, `the tap was not read before that build (${JSON.stringify(grew?.before)})`);
+      t.eq(grew?.after.left, 0, `press and lift both read inside that one build (${JSON.stringify(grew?.after)})`);
+      t.ok(t.where() === 'home', `still Home right after the build (${t.where()})`);
+      t.b.tick(10); t.b.settle(800);
+      t.eq(t.where(), 'clock', 'the tap is given after the build: Clock opens');
+      t.b.test('chip', JSON.stringify({ steps: [] }));
+    } },
+    { name: 'one big component builds with the chip read inside it (Moon: polls well past its nodes) (#94)', async run(t) {
+      await t.device();
+      t.b.test('chip', JSON.stringify({ steps: [] }));
+      const p0 = t.b.test('chip').polls;
+      act(t, { do: 'nav.open', screen: 'moon' });
+      const n = t.b.test('chip').polls - p0;
+      t.ok(n >= 20, `the chip read ${n} times while Moon built (one per core atom; was once per spec node)`);
+    } },
     { name: 'every deck page is built once in the idle gaps; a tap shows it without a build, Back too', async run(t) {
       t.ha.s[W] = { '': 'cloudy', temperature: '10.2' };
       await t.device();

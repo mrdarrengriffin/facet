@@ -707,6 +707,63 @@ void kept_json(ArduinoJson::JsonArray out) {
       o["waiting"] = waiting;
     }
 }
+// ---- a tap during a build (device.h late_start)
+namespace {
+struct Late {
+  void (*poll)() = nullptr;
+  bool polling = false, down = false, pending = false;
+  lv_point_t pt{};
+  int phase = 0;  // the tap given: 1, 2 pressed, 3 released
+  uint32_t every = 20, last = 0;
+  lv_indev_t *indev = nullptr;
+};
+Late &late() { static Late l; return l; }
+bool host_pressed() {  // a pointer other than ours is down (the host's own finger, the bench's)
+  for (lv_indev_t *i = lv_indev_get_next(nullptr); i; i = lv_indev_get_next(i))
+    if (i != late().indev && lv_indev_get_type(i) == LV_INDEV_TYPE_POINTER && lv_indev_get_state(i) == LV_INDEV_STATE_PRESSED) return true;
+  return false;
+}
+}  // namespace
+void late_start(void (*poll)()) {
+  Late &l = late();
+  l.poll = poll;
+  if (l.indev) return;
+  l.indev = lv_indev_create();
+  lv_indev_set_type(l.indev, LV_INDEV_TYPE_POINTER);
+  lv_indev_set_read_cb(l.indev, [](lv_indev_t *, lv_indev_data_t *d) {
+    Late &l = late();
+    d->point = l.pt;
+    d->state = l.phase == 1 || l.phase == 2 ? LV_INDEV_STATE_PRESSED : LV_INDEV_STATE_RELEASED;
+    if (l.phase == 3) l.phase = 0, l.pending = false;
+    else if (l.phase) l.phase++;
+  });
+  lv_timer_create([](lv_timer_t *) {  // between builds: LVGL saw the press itself, or the tap is due
+    Late &l = late();
+    if (l.down && host_pressed()) l.down = false;
+    if (l.pending && !l.phase) {
+      if (host_pressed()) l.pending = false;
+      else {
+        l.phase = 1;
+        LV_LOG_WARN("a tap during a build, given after it at %d,%d", (int) l.pt.x, (int) l.pt.y);
+      }
+    }
+  }, 10, nullptr);
+}
+void late_press(int32_t x, int32_t y) { Late &l = late(); if (l.polling && !l.down && !l.pending) l.down = true, l.pt = {x, y}; }
+void late_lift() {
+  Late &l = late();
+  if (l.polling && l.down && !l.pending) l.pending = true;
+  l.down = false;
+}
+void late_ms(uint32_t ms) { late().every = ms; }
+void build_tick() {
+  Late &l = late();
+  if (!l.poll || l.polling || (l.every && lv_tick_elaps(l.last) < l.every)) return;
+  l.last = lv_tick_get();
+  l.polling = true;
+  l.poll();
+  l.polling = false;
+}
 void nav_timing(bool on) { nav().on = on; nav().stage = 0; if (on) nav().done.clear(); }
 bool nav_timing() { return nav().on; }
 void nav_touch() { if (nav().on) nav().touch = lv_tick_get(); }
