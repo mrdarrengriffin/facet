@@ -59,15 +59,21 @@ jobs:
         run: |
           out=$(node firmware/release-notes.mjs check "${{ steps.v.outputs.version }}")
           echo "$out" | tee -a "$GITHUB_STEP_SUMMARY"
-      - name: CI and Firmware green on the tagged commit
+      - name: CI green on the tagged commit, Firmware on the run that covers it
         env: {GH_TOKEN: '${{ github.token }}'}
         run: |
           sha=$(git rev-parse HEAD)
+          # Firmware runs only when its paths change, and on a push's head only: the newest Firmware run on main whose
+          # commit holds the last firmware change and is in the tag's history counts (as dev.yml does)
+          fw=$(git log -1 --format=%H "$sha" -- renderer firmware esphome boards renderer/tools/synth.ts .github/workflows/firmware.yml)
+          for h in $(gh run list --workflow firmware.yml --branch main -L 30 --json headSha -q '.[].headSha'); do
+            if git merge-base --is-ancestor "$fw" "$h" 2>/dev/null && git merge-base --is-ancestor "$h" "$sha"; then fw=$h; break; fi
+          done
           for i in $(seq 1 60); do
-            runs=$(gh run list --commit "$sha" --json workflowName,status,conclusion -q '.[] | "\(.workflowName)=\(.status)/\(.conclusion)"')
-            ok=1; for w in CI Firmware; do grep -qx "$w=completed/success" <<<"$runs" || ok=0; done
-            [ $ok = 1 ] && { echo "CI green on $sha"; exit 0; }
-            grep -E "^(CI|Firmware)=completed/" <<<"$runs" | grep -v "/success$" && { echo "::error::CI not green on $sha"; exit 1; }
+            ci=$(gh run list --commit "$sha" --workflow ci.yml --json status,conclusion -q '.[0] | "\(.status)/\(.conclusion)"')
+            fr=$(gh run list --commit "$fw" --workflow firmware.yml --json status,conclusion -q '.[0] | "\(.status)/\(.conclusion)"')
+            [ "$ci" = completed/success ] && [ "$fr" = completed/success ] && { echo "CI green on $sha, Firmware on $fw"; exit 0; }
+            for r in "CI $ci" "Firmware $fr"; do case "$r" in *completed/success|*" "|*in_progress*|*queued*|*pending*|*waiting*) ;; *completed/*) echo "::error::$r"; exit 1;; esac; done
             sleep 30
           done
           echo "::error::CI did not finish on $sha within 30 minutes"; exit 1
