@@ -152,6 +152,7 @@ extern "C" uint32_t facet_overflow_magic;
 #endif
 #include "fw_shot.h"  // screenshot: the framebuffer read back through the rotation
 #include "fw_images.h"  // pictures (album art): fetched + decoded on the panel
+#include "fw_net.h"  // the feeds' web reads (core/net.h: a public API a screen reads itself, adsb.lol)
 
 namespace fw::device {
 using namespace esphome::web_server_idf;
@@ -2463,6 +2464,7 @@ inline void setup() {
   fw::ha::on_ask(ha_ask);
   fw::spec::want_all();  // every entity the deck's specs bind (the overrides were loaded before the first show)
   images::setup();       // Image URLs: the panel's own download + decode (fw_images.h)
+  netread::setup();      // web reads for the feeds' direct sources (fw_net.h)
   {  // Idle shows = Album art: its screen-size picture slots now, while the PSRAM is whole (img_scale.h Slots)
     const char *show = fw::dev::setting("idleShow");
     const int n = show && !strcmp(show, "art") ? fw::img::reserve_screen() : 2;

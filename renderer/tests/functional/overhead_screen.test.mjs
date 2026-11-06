@@ -126,6 +126,11 @@ export default {
       t.ok(t.web.asked.length === n + 1, `one more read after 10 s (${t.web.asked.length - n})`);
       t.web.status(/adsb\.lol/, 'timeout'); t.wait(10500);
       t.has(t.texts(), /offline · last known/i, 'the stale tag'); t.eq(routeOf(t), 'EEE5', 'the last aircraft stay');
+      const k = t.web.asked.length; t.wait(10500);
+      t.eq(t.web.asked.length, k, 'after a failure: no read 10 s on');
+      t.wait(10500); t.eq(t.web.asked.length, k + 1, 'the next read 20 s on (backoff)');
+      t.web.serve(/adsb\.lol/, { ac: [rs(A)] }); t.wait(41000);
+      t.ok(!t.texts().some((x) => /offline · last known/i.test(x)), 'a good read clears the tag');
     } },
     { name: 'an ADS-B receiver in Home Assistant (a REST sensor on aircraft.json)', async run(t) {
       home(t); t.ha.s[R] = { '': 'ok', aircraft: JSON.stringify([rs(A), rs({ ...B, cat: 'A7' })]) };

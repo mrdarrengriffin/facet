@@ -255,7 +255,7 @@
           "name": "adsb.lol: open ADS-B data, read by the panel itself (no account or key)",
           "adapter": "adsb_lol",
           "setup": ["your home's place (Latitude and Longitude, or Home Assistant's home)", "web access (no account, no key)"],
-          "about": "GET https://api.adsb.lol/v2/point/<lat>/<lon>/<radius in nautical miles> every 10 s while the screen or its card shows; only the circle round home is asked for. Data: ODbL 1.0 (adsb.lol). No route (from / to) in this source."
+          "about": "GET https://api.adsb.lol/v2/point/<lat>/<lon>/<radius in nautical miles> over the internet every 10 s while the screen or its card shows (after a failure 20, 40, 80, 160 s, then every 5 min); only the circle round home is asked for (~520 B an aircraft, at most 128 KB: 100 km round a big airport can be more, then use 50). Data: ODbL 1.0 (adsb.lol). No route (from / to) in this source."
         },
         {
           "id": "fr24",

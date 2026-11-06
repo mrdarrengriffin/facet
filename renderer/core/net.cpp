@@ -52,4 +52,11 @@ void chunk(uint32_t id, const char *p, size_t n) {
   it->second.body.append(p, n);
 }
 void finish(uint32_t id, bool ok, const std::string &why) { end(id, ok, why); }
+void give(uint32_t id, std::string &&body) {
+  auto it = reads().find(id);
+  if (it == reads().end()) return;
+  if (body.size() > it->second.max) it->second.over = true;
+  else it->second.body = std::move(body);
+  end(id, true, "");
+}
 }  // namespace fw::net

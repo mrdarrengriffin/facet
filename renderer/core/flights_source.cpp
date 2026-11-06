@@ -30,7 +30,8 @@
 // the ground always are).
 // Adapters (sources/sources.json "overhead", in order):
 //   adsb_lol  the public adsb.lol API (open ADS-B data, ODbL, no key), read by the panel itself every 10 s while the
-//             feed is shown: GET https://api.adsb.lol/v2/point/<lat>/<lon>/<radius nm> (only the circle round home);
+//             feed is shown (after a failure 20, 40, 80, 160 s, then every 5 min until one works): GET
+//             https://api.adsb.lol/v2/point/<lat>/<lon>/<radius nm> (only the circle round home; ~520 B an aircraft);
 //             readsb's JSON ("ac": hex, flight, r, t, alt_baro, gs, track, baro_rate, squawk, emergency, category,
 //             dbFlags, lat, lon, dst, dir)
 //   fr24      Home Assistant's FlightRadar24 integration (HACS): its "Current in area" sensor's attribute flights (a
@@ -60,6 +61,7 @@ namespace {
 constexpr double LOOK_UP = 30, PI = 3.14159265358979, KM_PER_NM = 1.852, EARTH_KM = 6371.0;
 constexpr uint32_t POLL_MS = 10000;  // the public API: one read per 10 s while shown
 constexpr int TRAIL = 6;             // trail points kept per aircraft
+constexpr size_t MAX_PLANES = 40;    // the radar draws the closest 40 (+ the lead): the frame time stays in budget
 
 struct Flight {
   std::string hex, cs, type, model, op, from, to, reg, squawk, em, kind;
@@ -295,7 +297,7 @@ class Flights : public feed::Feed {
     if (src == "fr24" || src == "adsb_ha") rd.push_back({ent, ""}), rd.push_back({ent, src == "fr24" ? "flights" : "aircraft"});
     if (src == "adsb_ha") rd.push_back({ent, "ac"});
     reads(rd);
-    if (changed()) last.clear(), trails.clear(), sel.clear(), fetched_ = 0, err_.clear();
+    if (changed()) last.clear(), trails.clear(), sel.clear(), fetched_ = 0, err_.clear(), fails_ = 0, have_ = false;
     // home: the settings' place, else Home Assistant's
     hlat_ = NAN, hlon_ = NAN;
     if (own) hlat_ = strtod(la.c_str(), nullptr), hlon_ = strtod(lo.c_str(), nullptr);
@@ -322,7 +324,9 @@ class Flights : public feed::Feed {
     src_name = "adsb.lol";
     if (!home) { put_word(feed::ERROR); return; }
     const uint32_t now = lv_tick_get();
-    if (!reading_ && (!fetched_ || lv_tick_elaps(fetched_) >= POLL_MS - 500)) {
+    // every 10 s while shown; after a failure 20, 40, 80, 160 s, then every 5 min until a read works
+    const uint32_t every = std::min<uint32_t>(POLL_MS << std::min(fails_, 5), 300000);
+    if (!reading_ && (!fetched_ || lv_tick_elaps(fetched_) >= every - 500)) {
       char url[128];
       const double km = units::from_km(1, du()) ? range_ / units::from_km(1, du()) : range_;  // the range in km
       snprintf(url, sizeof url, "https://api.adsb.lol/v2/point/%.3f/%.3f/%d", hlat_, hlon_, (int) std::min(250.0, std::ceil(km / KM_PER_NM)));
@@ -331,8 +335,8 @@ class Flights : public feed::Feed {
       fw::net::get(url, [this](bool ok, const std::string &body, const std::string &why) {
         reading_ = false;
         std::vector<Flight> fl;
-        if (ok && read_readsb(body, hlat_, hlon_, fl)) got_ = std::move(fl), err_.clear(), have_ = true;
-        else err_ = why.empty() ? std::string("unreadable answer") : why;
+        if (ok && read_readsb(body, hlat_, hlon_, fl)) got_ = std::move(fl), err_.clear(), have_ = true, fails_ = 0;
+        else err_ = why.empty() ? std::string("unreadable answer") : why, fails_++;
         run();
       });
     }
@@ -354,6 +358,7 @@ class Flights : public feed::Feed {
 
  private:
   bool sampling_ = false, reading_ = false, have_ = false, stale_ = false;
+  int fails_ = 0;  // reads failed in a row (the backoff)
   double range_ = 50, min_alt_ = 0, hlat_ = NAN, hlon_ = NAN;
   uint32_t fetched_ = 0;
   std::string err_;
@@ -434,7 +439,7 @@ class Flights : public feed::Feed {
         }
       pl += "]]";
     };
-    for (size_t i = 0; i < fl.size(); i++)
+    for (size_t i = 0; i < fl.size() && i < MAX_PLANES; i++)  // the closest MAX_PLANES on the radar (the list has all)
       if (&fl[i] != &t) plane(fl[i], i);
     plane(t, 0);
     put("planes", pl + "]");

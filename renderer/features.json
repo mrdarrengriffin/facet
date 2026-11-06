@@ -98,7 +98,7 @@
     {
       "id": "overhead",
       "label": "Overhead",
-      "docs": true, "status": "preview", "firmware": false,
+      "docs": true, "status": "done", "firmware": true,
       "screens": ["overhead"],
       "components": ["flight_hero"],
       "roadmap": ["Overhead (flights)", "Flight radar (overhead flights)"]
