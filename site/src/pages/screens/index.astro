@@ -23,8 +23,8 @@ import { COUNTS } from '../../lib/counts';
     A screen is built from the <a href={url('/components/')}>components</a>: most are a short spec that names its parts
     and settings, and the panel finds the data for them. Facet comes with <Count k="screens" /> screens, plus Home and
     Settings; choose which are on your panel under <strong>Settings &gt; Screens</strong>. A screen marked
-    <strong>Beta</strong> is on the beta firmware, not yet in a stable release; <strong>Coming soon</strong> is in
-    the docs, not on a released firmware yet. What every panel has besides its screens (set up, Settings, the idle
+    <strong>Beta</strong> is on the beta firmware, not yet in a stable release; <strong>Coming soon</strong> is not on a released
+    firmware yet: in the docs, or still being designed (<a href="#coming-soon">below</a>). What every panel has besides its screens (set up, Settings, the idle
     clock and the rest) is under <a href="#panel">{PANEL_LABEL}</a>.
   </p>
   {
@@ -60,8 +60,8 @@ import { COUNTS } from '../../lib/counts';
     </ul>
   </section>
   <section>
-    <h2 class="facet-label" id="lab">In the lab</h2>
-    <p class="hint">Screens being designed, in no firmware yet: F1, tennis, plants, blinds, a door lock and more. <a href={url('/screens/lab/')}>See what's in the lab</a>.</p>
+    <h2 class="facet-label" id="coming-soon">Coming soon</h2>
+    <p class="hint">Screens being designed, in no firmware yet: F1, tennis, plants, blinds, a door lock and more. <a href={url('/screens/coming-soon/')}>See what's coming</a>.</p>
   </section>
 </Docs>
 

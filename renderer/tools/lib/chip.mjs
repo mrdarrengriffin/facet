@@ -1,6 +1,6 @@
 // The channel chip on the README's screen pictures (tools/readme_assets.mjs; RELEASING.md "Screen channels"): a pill in
 // the bottom-right corner saying BETA (accent fill, on-accent label) or COMING SOON (the docs' .badge: surface-press
-// fill, text-dim label, a line-hi outline: the same chip, a quieter tone; IN THE LAB, the lab pictures: no fill, quieter still), in the docs' mono caps (JetBrains Mono 500, tracked like the docs' .badge), with a ring
+// fill, text-dim label, a line-hi outline: the same chip, a quieter tone), in the docs' mono caps (JetBrains Mono 500, tracked like the docs' .badge), with a ring
 // of the canvas colour so it reads on any screen. Sizes are in dp of the 480 reference, so a 480 (1x) and a 720 (1.5x)
 // frame get the same chip at the same place. No dependencies: the font's outlines are read and filled here.
 import { readFileSync } from 'node:fs';
@@ -9,14 +9,13 @@ import { fileURLToPath } from 'node:url';
 
 const R = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 export const CHIP = { font: 20, height: 36, pad: 14, margin: 20, ring: 3, outline: 1.5, tracking: 0.08 };  // dp
-export const CHIP_TEXT = { beta: 'BETA', soon: 'COMING SOON', lab: 'IN THE LAB' };
+export const CHIP_TEXT = { beta: 'BETA', soon: 'COMING SOON' };
 
 const colour = JSON.parse(readFileSync(join(R, 'tokens', 'colour.json'), 'utf8')).colours;
 const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
 /** fill, label and ring colours of a channel's chip in a theme ('dark' | 'light') */
 export function chipColours(channel, theme) {
   const c = (k) => hex(colour[k][theme]);
-  if (channel === 'lab') return { fill: c('bg'), label: c('text-dim'), ring: c('bg'), outline: c('line-hi') };  // quieter still: no fill
   return channel === 'beta' ? { fill: c('accent'), label: c('on-accent'), ring: c('bg'), outline: null }
     : { fill: c('surface-press'), label: c('text-dim'), ring: c('bg'), outline: c('line-hi') };
 }
@@ -130,19 +129,20 @@ function fill(polys, W, H) {
   return a;
 }
 
-/** the chip's box on a frame of S x S px (dp scaled by S / 480): { x, y, w, h } in px */
-export function chipBox(channel, S) {
+/** the chip's box on a frame of S x S px (dp scaled by S / 480): { x, y, w, h } in px; corner 'top' = top-right, for a
+ *  picture whose bottom-right holds something that matters (it covers the header's clock instead) */
+export function chipBox(channel, S, corner = 'bottom') {
   const k = S / 480, f = font(), text = CHIP_TEXT[channel];
   const em = CHIP.font * k, adv = (f.advance / f.upem) * em, tr = CHIP.tracking * em;
   const textW = text.length * adv + (text.length - 1) * tr;
   const h = Math.round(CHIP.height * k), w = Math.round(textW + 2 * CHIP.pad * k);
-  return { x: S - Math.round(CHIP.margin * k) - w, y: S - Math.round(CHIP.margin * k) - h, w, h, em, adv, tr };
+  return { x: S - Math.round(CHIP.margin * k) - w, y: corner === 'top' ? Math.round(CHIP.margin * k) : S - Math.round(CHIP.margin * k) - h, w, h, em, adv, tr };
 }
 
-/** draws a channel's chip (beta | soon | lab) onto an RGBA frame of S x S px (opaque), in place */
-export function drawChip(rgba, S, channel, theme) {
+/** draws a channel's chip (beta | soon) onto an RGBA frame of S x S px (opaque), in place */
+export function drawChip(rgba, S, channel, theme, corner = 'bottom') {
   if (!CHIP_TEXT[channel]) return rgba;
-  const k = S / 480, f = font(), box = chipBox(channel, S), col = chipColours(channel, theme);
+  const k = S / 480, f = font(), box = chipBox(channel, S, corner), col = chipColours(channel, theme);
   const pill = (x, y, w, h) => {  // a rounded rect (radius h / 2) as a polygon
     const r = h / 2, out = [];
     for (let i = 0; i <= 16; i++) { const t = Math.PI / 2 + (Math.PI * i) / 16; out.push([x + r + r * Math.cos(t), y + r - r * Math.sin(t)]); }

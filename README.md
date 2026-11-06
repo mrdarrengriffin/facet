@@ -168,16 +168,16 @@ Not screens you add: what every panel has, most of it in Settings.
 More screens are on the way (thermostat, lock, vacuum, cameras, plants and others): see the
 [roadmap](https://mrdarrengriffin.github.io/facet/roadmap/).
 
-### In the lab
+### Coming soon
 
 Screens being designed, not in any firmware yet and may change: F1 live, tennis, plants, blinds and more on the
-[In the lab](https://mrdarrengriffin.github.io/facet/screens/lab/) page.
+[Coming soon](https://mrdarrengriffin.github.io/facet/screens/coming-soon/) page.
 
 <p>
-<a href="https://mrdarrengriffin.github.io/facet/screens/lab/"><img alt="F1 live, in the lab" src=".github/assets/lab-f1-live.png" width="180"></a>
-<a href="https://mrdarrengriffin.github.io/facet/screens/lab/"><img alt="Tennis live, in the lab" src=".github/assets/lab-tennis-live.png" width="180"></a>
-<a href="https://mrdarrengriffin.github.io/facet/screens/lab/"><img alt="Plants, in the lab" src=".github/assets/lab-plants.png" width="180"></a>
-<a href="https://mrdarrengriffin.github.io/facet/screens/lab/"><img alt="Blinds and curtains, in the lab" src=".github/assets/lab-blinds.png" width="180"></a>
+<a href="https://mrdarrengriffin.github.io/facet/screens/coming-soon/"><img alt="F1 live, coming soon" src=".github/assets/coming-soon-f1-live.png" width="180"></a>
+<a href="https://mrdarrengriffin.github.io/facet/screens/coming-soon/"><img alt="Tennis live, coming soon" src=".github/assets/coming-soon-tennis-live.png" width="180"></a>
+<a href="https://mrdarrengriffin.github.io/facet/screens/coming-soon/"><img alt="Plants, coming soon" src=".github/assets/coming-soon-plants.png" width="180"></a>
+<a href="https://mrdarrengriffin.github.io/facet/screens/coming-soon/"><img alt="Blinds and curtains, coming soon" src=".github/assets/coming-soon-blinds.png" width="180"></a>
 </p>
 
 ## Panels

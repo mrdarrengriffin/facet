@@ -19,7 +19,7 @@ import { execFileSync } from 'node:child_process';
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { byId, channels, hiddenIds, panelFeatures, hiddenRoadmap, load as loadFeatures } from '../../renderer/tools/features.mjs';
+import { byId, channels, hiddenIds, panelFeatures, hiddenRoadmap, load as loadFeatures, wipScreens } from '../../renderer/tools/features.mjs';
 
 const SITE = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const ROOT = resolve(SITE, '..');
@@ -466,7 +466,9 @@ const hiddenPaths = [...HIDDEN].flatMap((id) => [`screens/${id.replace(/_/g, '-'
   .filter((p) => !(p.startsWith('screens/') ? screens : entries).some((e) => p.endsWith(`/${e.id.replace(/_/g, '-')}/`)));
 w('features.json', { hiddenFeatures, hiddenPaths, status: FEAT.man.status, channels: FEAT.man.channels, stable: FEAT.man.release.stable,
   // On every panel (Screens overview): the panel features with their channel
-  panel: panelFeatures(FEAT.man).map(({ id, label, about, screen, channel, since }) => ({ id, label, about, screen: screen ?? null, channel, since })) });
+  panel: panelFeatures(FEAT.man).map(({ id, label, about, screen, channel, since }) => ({ id, label, about, screen: screen ?? null, channel, since })),
+  // Coming soon from the wip branch (features.json wip): the /screens/coming-soon/ page
+  wip: wipScreens(FEAT.man) });
 writeFileSync(join(out, 'tokens.css'), tokensCss());
 // sound: the packs for the header picker; the whole sound.json is copied to public/ (fetched on the first sound)
 w('sound-packs.json', { default: soundTok.default, variants: soundTok.variants.map((v) => ({ id: v.id, name: v.name, about: v.about })) });

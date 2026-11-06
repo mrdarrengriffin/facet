@@ -38,8 +38,10 @@ The docs site and the README show every screen, each with its channel, from one 
 - **Stable**: in the latest stable release (`release.stable`). No badge.
 - **Beta**: in a released beta, not yet in a stable release. A "Beta" badge on the docs, a "BETA" chip on the README
   picture.
-- **Coming soon**: in no release yet: on `main` and in the docs (`firmware: false`, or `since: "next"`). A quieter
-  "Coming soon" badge and chip.
+- **Coming soon**: in no release yet: on `main` and in the docs (`firmware: false`, or `since: "next"`), or still
+  being designed on the `wip` branch (`wip`: the docs' Coming soon page, `/screens/coming-soon/`, and the README's
+  Coming soon strip, `tools/readme_assets.mjs --coming-soon`). A quieter "Coming soon" badge and chip. When a wip
+  screen comes to `main` it moves from `wip` into `features`.
 
 Screens are what people put on the panel or a Home deck. What every panel has (set up, Settings, the idle clock, the
 Home Assistant link, API keys, update channels, report a problem) is listed in `panel_features` instead: the docs and

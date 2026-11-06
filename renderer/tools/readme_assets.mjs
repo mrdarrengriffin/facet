@@ -10,9 +10,9 @@
 //   .github/assets/screens-<theme>.png       the hero: the --hero screens in a 4-wide grid, transparent around them
 //   node tools/readme_assets.mjs --ai-examples   instead: each "Make screens with AI" example (specs/ai-examples, installed as a
 //   panel installs a spec, demo HA values) -> site/public/ai/shots/<id>-<theme>.png (the tiles on the docs /ai/ page)
-//   node tools/readme_assets.mjs --lab           instead: the root README's In the lab strip (no build needed: the screens
-//   are on the wip branch): each LAB picture's site/public/lab/<id>-720.png with the IN THE LAB chip, halved to 360 with
-//   rounded corners -> .github/assets/lab-<id>.png (dark only: the lab pictures are)
+//   node tools/readme_assets.mjs --coming-soon   instead: the root README's Coming soon strip (no build needed: the screens
+//   are on the wip branch, features.json wip): each picture's site/public/coming-soon/<id>-720.png with the COMING SOON
+//   chip, halved to 360 with rounded corners -> .github/assets/coming-soon-<id>.png (dark only: the pictures are)
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -25,14 +25,15 @@ const HERE = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const ROOT = resolve(HERE, '..');
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
 const env = (() => { try { return Object.fromEntries(readFileSync(join(ROOT, 'local.env'), 'utf8').split('\n').map((l) => l.match(/^([A-Z_]+)=(.*)$/)).filter(Boolean).map((m) => [m[1], m[2]])); } catch { return {}; } })();
-if (process.argv.includes('--lab')) {
-  const LAB = ['f1-live', 'tennis-live', 'plants', 'blinds'];  // the README strip (site/src/lib/lab.json has them all)
-  for (const id of LAB) {
-    const { W, H: h, rgba } = unpng(readFileSync(join(ROOT, 'site', 'public', 'lab', `${id}-720.png`)));
-    if (W !== 720 || h !== 720) throw new Error(`lab ${id}: ${W} x ${h}, want 720 x 720`);
-    writeFileSync(join(ROOT, '.github', 'assets', `lab-${id}.png`), png(halve(drawChip(rgba, 720, 'lab', 'dark'), 720), 360, 360));
+if (process.argv.includes('--coming-soon')) {
+  // the README strip (features.json wip has them all); top: the chip top-right, where bottom-right would hide a value
+  const STRIP = [['f1-live'], ['tennis-live'], ['plants', 'top'], ['blinds']];
+  for (const [id, corner] of STRIP) {
+    const { W, H: h, rgba } = unpng(readFileSync(join(ROOT, 'site', 'public', 'coming-soon', `${id}-720.png`)));
+    if (W !== 720 || h !== 720) throw new Error(`coming soon ${id}: ${W} x ${h}, want 720 x 720`);
+    writeFileSync(join(ROOT, '.github', 'assets', `coming-soon-${id}.png`), png(halve(drawChip(rgba, 720, 'soon', 'dark', corner), 720), 360, 360));
   }
-  console.log(`readme_assets: ${LAB.length} lab pictures -> .github/assets/lab-*.png`);
+  console.log(`readme_assets: ${STRIP.length} coming soon pictures -> .github/assets/coming-soon-*.png`);
   process.exit(0);
 }
 const BUILD = join(resolve(ROOT, process.env.FW_OUT || env.FW_OUT || join(HERE, 'out')), 'docs', '1.5x');

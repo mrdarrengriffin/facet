@@ -22,6 +22,20 @@
       {"id": "report", "label": "Report a problem", "screen": "report", "about": "Settings > Report a problem: the address of the panel's report page, with its logs kept across restarts and an issue filled in."}
     ]
   },
+  "wip": {
+    "about": "Coming soon from the wip branch: screens being designed that are in no firmware and not on main yet. Their channel is always soon (Coming soon), like a feature off the firmware; the docs show them on /screens/coming-soon/ (the pictures: site/public/coming-soon/<picture>-720.png and -360.webp) and four in the root README's Coming soon strip (tools/readme_assets.mjs --coming-soon). An id here is never a screen of a feature: when one comes to main it moves into features.",
+    "list": [
+      {"id": "f1", "label": "F1 live", "about": "The race as it runs: the order, the gaps and every car on a map of the circuit.", "note": "All 23 circuits of the season are drawn from their real shapes.", "pictures": [{"file": "f1-live", "alt": "F1 live: the running order beside the circuit map"}, {"file": "f1-circuits", "alt": "The 23 circuits"}]},
+      {"id": "tennis", "label": "Tennis live", "about": "A match point by point: the score, who's serving and where the ball is on the court.", "note": "Each court is drawn in its own surface, Wimbledon's grass among them.", "pictures": [{"file": "tennis-live", "alt": "Tennis live: the score above the court"}, {"file": "tennis-wimbledon", "alt": "The grass court at Wimbledon"}]},
+      {"id": "plants", "label": "Plants", "about": "Which plants need water first, with each one's soil moisture against its own limit.", "pictures": [{"file": "plants", "alt": "Plants: the driest plant and the rest in a list"}]},
+      {"id": "blinds", "label": "Blinds and curtains", "about": "How far a blind or curtain is open, with open, stop and close.", "pictures": [{"file": "blinds", "alt": "A blind 60% open with open, stop and close"}]},
+      {"id": "lock", "label": "Door lock", "about": "Whether the door is locked, who last locked or unlocked it, and a hold to open.", "note": "Opening a door takes a hold, never a single tap.", "pictures": [{"file": "lock", "alt": "Door lock: jammed, with the last 24 hours"}]},
+      {"id": "github", "label": "GitHub", "about": "The pull requests waiting on you: reviews, assignments and failing checks.", "pictures": [{"file": "github", "alt": "GitHub: three pull requests that need you"}]},
+      {"id": "thermostat", "label": "Thermostat", "about": "The room's temperature on a dial, the target you set and the heating mode.", "pictures": [{"file": "thermostat", "alt": "Thermostat: 19.4 degrees, heating to 21"}]},
+      {"id": "lightning", "label": "Lightning", "about": "The nearest lightning strike, how many in the last 15 minutes and whether it's coming closer.", "pictures": [{"file": "lightning", "alt": "Lightning: quiet, nothing within 100 km"}]},
+      {"id": "print", "label": "3D print", "about": "A 3D print's progress, time left and temperatures, with the model being printed.", "note": "Getting the 3D model of the print is still being worked out.", "pictures": [{"file": "print", "alt": "3D print: the model being printed"}]}
+    ]
+  },
   "channels": {
     "stable": "Stable",
     "beta": "Beta",

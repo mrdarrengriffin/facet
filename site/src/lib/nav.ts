@@ -68,7 +68,7 @@ export function getSidebar(): NavGroup[] {
     },
     {
       label: 'Screens',
-      links: [{ label: 'Overview', href: url('/screens/') }, ...screenGroups().flatMap((g) => g.items).map((s) => ({ label: s.name, href: screenHref(s), channel: s.channel })).sort(byLabel), { label: 'In the lab', href: url('/screens/lab/') }],
+      links: [{ label: 'Overview', href: url('/screens/') }, ...screenGroups().flatMap((g) => g.items).map((s) => ({ label: s.name, href: screenHref(s), channel: s.channel })).sort(byLabel), { label: 'Coming soon', href: url('/screens/coming-soon/') }],
     },
     {
       // the panel features with a page of their own (the rest are inside Settings)

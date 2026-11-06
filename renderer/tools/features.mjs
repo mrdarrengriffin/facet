@@ -9,7 +9,7 @@
 //                                            docs / firmware needs a hidden one
 //   node tools/features.mjs exclude <flag>   the source files (relative to renderer/) a docs | firmware build leaves out
 //   node tools/features.mjs table            one line per feature: docs, status, firmware
-//   node tools/features.mjs channels         one line per screen: its channel (stable | beta | soon) and since
+//   node tools/features.mjs channels         one line per screen: its channel (stable | beta | soon) and since (wip screens: soon)
 //   node tools/features.mjs since [--write V]  what the release tags say each screen's since is; --write V (before
 //                                            tagging V) turns every since "next" into V, and a stable V into release.stable
 import { execFileSync } from 'node:child_process';
@@ -206,8 +206,19 @@ export function channelErrors(man) {
       if (!ok(p.since)) errors.push(`${at}: a setting says since (a version or next), not ${JSON.stringify(p.since)}`);
     } else if (p.since !== undefined) errors.push(`${at}: since comes from its screen (features[].since / screen_since)`);
   }
+  // wip: Coming soon from the wip branch, never a screen of a feature here
+  const wipSeen = new Set();
+  for (const w of man.wip?.list ?? []) {
+    const at = `wip ${w.id ?? '?'}`;
+    if (!w.id || !w.label || !w.about || !(w.pictures ?? []).length) errors.push(`${at}: id, label, about and pictures`);
+    if (wipSeen.has(w.id)) errors.push(`${at}: listed twice`);
+    wipSeen.add(w.id);
+    if (screensOf.has(w.id) || man.features.some((f) => f.id === w.id)) errors.push(`${at}: is on main (a feature or its screen): take it out of wip`);
+  }
   return errors;
 }
+/** the wip screens (features.json wip: on the wip branch, in no firmware), each Coming soon: [{ id, label, about, note, pictures, channel }] */
+export const wipScreens = (man = load().man) => (man.wip?.list ?? []).map((w) => ({ ...w, channel: 'soon' }));
 const settingsIds = (src) => new Set([...src.matchAll(/"id":\s*"([A-Za-z0-9_]+)"/g)].map((m) => m[1]));
 /** the screens that are panel features (kind panel: Set up, Settings, the idle clock ...), not screens people add */
 export const panelScreens = (man) => new Set((man.panel_features?.list ?? []).flatMap((p) => [p.screen, ...(p.also ?? [])].filter(Boolean)));
@@ -319,6 +330,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   } else if (cmd === 'channels') {
     for (const [id, c] of Object.entries(channels(L.man))) console.log(`${id.padEnd(14)} ${c.kind.padEnd(6)} ${c.channel.padEnd(6)} ${c.since ?? '-'}`);
     for (const p of panelFeatures(L.man).filter((x) => x.setting)) console.log(`${p.id.padEnd(14)} panel  ${p.channel.padEnd(6)} ${p.since ?? '-'} (setting ${p.setting})`);
+    for (const w of wipScreens(L.man)) console.log(`${w.id.padEnd(14)} wip    ${w.channel.padEnd(6)} - (wip branch)`);
   } else if (cmd === 'since') {
     const w = process.argv.indexOf('--write');
     if (w > 0) {

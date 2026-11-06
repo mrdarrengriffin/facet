@@ -1,0 +1,132 @@
+---
+// Coming soon from the wip branch: screens being designed that are in no firmware and not on main yet
+// (renderer/features.json wip, channel soon), one card each with its pictures (public/coming-soon/), its name, the
+// Coming soon badge (check-dist: exactly the wip screens), what it will show and a short note.
+import Docs from '../../layouts/Docs.astro';
+import ChannelBadge from '../../components/ChannelBadge.astro';
+import { url } from '../../lib/nav';
+import flags from '../../data/features.json';
+
+type Wip = { id: string; label: string; about: string; note?: string; pictures: { file: string; alt: string }[]; channel: 'soon' };
+const WIP = flags.wip as Wip[];
+// a picture's size at 720 (public/coming-soon/<file>-720.png, lossless: also the README strip's source;
+// <file>-360.webp is half of it), so a card's pictures share one height
+const SIZE: Record<string, [number, number]> = {
+  'f1-circuits': [720, 1264],
+  'tennis-wimbledon': [600, 384],
+};
+const size = (f: string) => SIZE[f] ?? [720, 720];
+---
+
+<Docs
+  edit="renderer/features.json"
+  title="Coming soon"
+  description="Screens being designed. They aren't in any firmware yet and may change."
+  group="Screens"
+  current={url('/screens/coming-soon/')}
+  wide
+>
+  <p>
+    Their code is on the <code>wip</code> branch. When one is ready it joins the <a href={url('/screens/')}>screens</a>,
+    first on the beta firmware as <strong>Beta</strong>, then in a stable release.
+  </p>
+  <ul class="soon">
+    {WIP.map((s) => (
+      <li class:list={['soon__card', { 'soon__card--wide': s.pictures.length > 1 }]} id={s.id}>
+        <div class="soon__pics">
+          {s.pictures.map((p) => {
+            const [w, h] = size(p.file);
+            return (
+              <a class="soon__pic" href={url(`/coming-soon/${p.file}-720.png`)} style={`flex-grow:${(w / h).toFixed(3)}`}>
+                <img
+                  src={url(`/coming-soon/${p.file}-360.webp`)}
+                  srcset={`${url(`/coming-soon/${p.file}-360.webp`)} ${w / 2}w, ${url(`/coming-soon/${p.file}-720.png`)} ${w}w`}
+                  sizes="(max-width: 640px) 100vw, 400px"
+                  width={w / 2}
+                  height={h / 2}
+                  alt={p.alt}
+                  loading="lazy"
+                  decoding="async"
+                />
+              </a>
+            );
+          })}
+        </div>
+        <span class="soon__name">{s.label} <ChannelBadge channel={s.channel} of={s.id} /></span>
+        <span class="soon__about">{s.about}</span>
+        {s.note && <span class="soon__note">{s.note}</span>}
+      </li>
+    ))}
+  </ul>
+</Docs>
+
+<style>
+  .soon {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 32px 24px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .soon__card {
+    display: flex;
+    flex-direction: column;
+    margin: 0 !important;
+    color: var(--facet-color-text-dim);
+  }
+  .soon__card--wide {
+    grid-column: span 2;
+  }
+  .soon__pics {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .soon__pic {
+    flex-basis: 0;
+    min-width: 0;
+    display: block;
+    overflow: hidden;
+    border: 1px solid var(--facet-color-line);
+    border-radius: 16px;
+    background: var(--facet-color-bg-565);
+    transition: border-color var(--facet-duration-fade) var(--facet-easing-ease-out);
+  }
+  .soon__pic:hover {
+    border-color: var(--facet-color-line-hi);
+  }
+  .soon__pic img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  .soon__name {
+    display: block;
+    margin-top: 12px;
+    color: var(--facet-color-text);
+    font-size: 15px;
+  }
+  .soon__about {
+    display: block;
+    margin-top: 2px;
+    font-size: 13px;
+    line-height: 1.4;
+  }
+  .soon__note {
+    display: block;
+    margin-top: 6px;
+    color: var(--facet-color-text-mute);
+    font-size: 12px;
+    line-height: 1.4;
+  }
+  .soon__name :global(.channel-badge) {
+    margin-left: 6px;
+    vertical-align: 1px;
+  }
+  @media (max-width: 560px) {
+    .soon__card--wide {
+      grid-column: auto;
+    }
+  }
+</style>

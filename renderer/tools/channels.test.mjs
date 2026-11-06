@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { inflateSync } from 'node:zlib';
-import { channelErrors, channelOf, channels, cmpVer, panelFeatures, R } from './features.mjs';
+import { channelErrors, channelOf, channels, cmpVer, panelFeatures, R, wipScreens } from './features.mjs';
 import { CHIP, chipBox, chipColours, drawChip } from './lib/chip.mjs';
 
 const man = () => JSON.parse(readFileSync(join(R, 'features.json'), 'utf8'));
@@ -65,8 +65,8 @@ function decode(file) {
 }
 // a chip is there when the pill's fill shows at both ends (beside the label, inside the outline), in the picture's
 // own scale (rendered at 720, halved)
-function hasChip(img, channel, theme) {
-  const S = 720, k = img.W / S, box = chipBox(channel, S), fill = chipColours(channel, theme).fill;
+function hasChip(img, channel, theme, corner = 'bottom') {
+  const S = 720, k = img.W / S, box = chipBox(channel, S, corner), fill = chipColours(channel, theme).fill;
   const inset = (CHIP.pad / 2) * (S / 480);
   return [box.x + inset, box.x + box.w - inset].every((x) => {
     const i = (Math.round((box.y + box.h / 2) * k) * img.W + Math.round(x * k)) * 4;
@@ -126,4 +126,20 @@ test('README: the screens table has screens only; On every panel lists each pane
     assert.ok(row, `README On every panel: no row for ${p.label}`);
     assert.match(row, new RegExp(`^\\| \\[[^\\]]+\\]\\([^)]+\\)${MARK[p.channel].replace(/`/g, '`')} \\|`), `README On every panel: ${p.label} is ${p.channel}`);
   }
+});
+
+test('features.json: the wip screens are Coming soon, not on main, and their README pictures carry the chip', () => {
+  const w = wipScreens();
+  assert.ok(w.length > 0);
+  for (const x of w) assert.equal(x.channel, 'soon', x.id);
+  const m = man();
+  m.wip.list.push({ ...m.wip.list[0] });
+  assert.match(channelErrors(m).join('\n'), /listed twice/);
+  const m2 = man();
+  m2.wip.list.push({ id: 'clock', label: 'Clock', about: 'x', pictures: [{ file: 'x' }] });
+  assert.match(channelErrors(m2).join('\n'), /is on main/);
+  const readme = readFileSync(join(R, '..', 'README.md'), 'utf8');
+  const pics = [...readme.matchAll(/assets\/coming-soon-([a-z0-9-]+)\.png/g)].map((x) => x[1]);
+  assert.ok(pics.length > 0, 'README: no Coming soon strip');
+  for (const f of pics) assert.ok(['bottom', 'top'].some((c) => hasChip(decode(join(R, '..', '.github', 'assets', `coming-soon-${f}.png`)), 'soon', 'dark', c)), `coming-soon-${f}.png: no Coming soon chip (tools/readme_assets.mjs --coming-soon)`);
 });

@@ -10,7 +10,8 @@
 //   screen channels (renderer/features.json since, RELEASING.md "Screen channels"): a screen with no channel, the
 //     Screens overview or a screen page whose Beta / Coming soon badges (data-channel-of) are not exactly the
 //     screens and panel features that are not Stable, a screen with a page that the root README's screens table does
-//     not show, or a panel feature (features.json panel_features) in it
+//     not show, or a panel feature (features.json panel_features) in it; the Coming soon page's badges not exactly the
+//     wip screens (features.json wip)
 // Usage: node scripts/check-dist.mjs [dist folder] (default FACET_DOCS_OUT or ./dist); base = FACET_DOCS_BASE or /facet-docs/
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
@@ -149,6 +150,12 @@ else {
     if (s.use === 'panel' && readme.includes(`assets/screen-${s.id}-dark.png`)) fault(`${s.id}: a panel feature in the root README's screens table`);
   }
   for (const s of screens) if (!['screen', 'panel'].includes(s.use)) fault(`${s.id}: use is screen or panel`);
+  // Coming soon from the wip branch (features.json wip): its page badges exactly those, each Coming soon
+  const wip = JSON.parse(readFileSync(join(SITE, 'src/data/features.json'), 'utf8')).wip ?? [];
+  const soonPage = read('screens/coming-soon/index.html');
+  const wantWip = new Set(wip.map((w) => `${w.id}:soon`));
+  if (soonPage === null) fault('no screens/coming-soon/index.html');
+  else if (!same(marks(soonPage), wantWip)) fault(`screens/coming-soon/ badges ${[...marks(soonPage)].join(', ') || 'none'}, want ${[...wantWip].join(', ') || 'none'}`);
 }
 console.log(`check-dist: ${files.length} pages, ${bad} fault${bad === 1 ? '' : 's'}`);
 process.exit(bad ? 1 : 0);
