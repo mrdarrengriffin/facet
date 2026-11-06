@@ -31,6 +31,27 @@ builds both boards, checks each image says the version (never `+wip`), and publi
 - a docs deploy, which serves `manifest.json` + `ota.json` (stable) and `manifest-beta.json` + `ota-beta.json` (beta)
   per board, beside the dev channel's `ota-dev.json`. The Install page offers Stable / Beta while a beta exists.
 
+## Screen channels
+
+The docs site and the README show every screen, each with its channel, from one source: `renderer/features.json`.
+
+- **Stable**: in the latest stable release (`release.stable`). No badge.
+- **Beta**: in a released beta, not yet in a stable release. A "Beta" badge on the docs, a "BETA" chip on the README
+  picture.
+- **Coming soon**: in no release yet: on `main` and in the docs (`firmware: false`, or `since: "next"`). A quieter
+  "Coming soon" badge and chip.
+
+Every feature with `firmware: true` says `since`: the version its screens first shipped in, or `next`. A screen that
+shipped later than the rest of its feature has its own entry in `screen_since`. `node renderer/tools/features.mjs check`
+(build.sh, check.sh, CI) fails when one is missing, and, where the release tags are fetched (CI fetches them), when one
+disagrees with the tags: a `next` screen that is on a tagged firmware, a beta screen whose `since` is not the first tag
+it is in. `features.mjs channels` lists every screen's channel; `features.mjs since` prints what the tags say.
+
+Before tagging V: `node renderer/tools/features.mjs since --write V` turns every `next` into V (and, for a stable V,
+sets `release.stable`, which moves every beta screen to Stable), then render the README pictures again
+(`renderer/tools/readme_assets.mjs`: the chip is drawn from the channel; `tools/channels.test.mjs` fails while a picture
+says another channel).
+
 ## Release notes
 
 Every version has `release-notes/<version>.md`, written for the people who install the panel, not as a commit list.
@@ -78,8 +99,9 @@ V = the version, for example `1.0.0`. A failed check stops the day.
 
 1. `git switch main && git pull && git status --short`: empty, and the last nightly gate green.
 2. `(cd renderer && node tools/gen_catalogue.mjs) && git status --short`: empty (else commit "Catalogue: V").
-3. Read the root README: the screens table is the shipped set (`renderer/features.json` `firmware: true`); the panels
-   table says exactly what is missing, if anything.
+3. Read the root README: the screens table is every screen the docs list, with its channel chip; the panels table
+   says exactly what is missing, if anything. `node renderer/tools/features.mjs since --write V` (Screen channels,
+   below), then `(cd renderer && node tools/readme_assets.mjs)` so the README pictures carry the new chips.
 4. `node firmware/release-notes.mjs check V`: the notes are written and read well (Release notes, above).
 5. `node firmware/release-prep.mjs V`: sets `facet_version` in both `esphome/facet-*.yaml`, publishes the Updates
    entry dated today. `git diff --stat` shows those files only.

@@ -9,7 +9,11 @@
 //                                            docs / firmware needs a hidden one
 //   node tools/features.mjs exclude <flag>   the source files (relative to renderer/) a docs | firmware build leaves out
 //   node tools/features.mjs table            one line per feature: docs, status, firmware
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+//   node tools/features.mjs channels         one line per screen: its channel (stable | beta | soon) and since
+//   node tools/features.mjs since [--write V]  what the release tags say each screen's since is; --write V (before
+//                                            tagging V) turns every since "next" into V, and a stable V into release.stable
+import { execFileSync } from 'node:child_process';
+import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -151,6 +155,93 @@ export function byId(L = load()) {
   }
   return out;
 }
+// Screen channels (RELEASING.md "Screen channels"): features.json release.stable + each feature's since /
+// screen_since. stable = in the latest stable release; beta = in a released beta, not yet in a stable one; soon (Coming
+// soon) = in no release yet (since "next", or a feature that is not on the firmware).
+export const CHANNELS = ['stable', 'beta', 'soon'];
+const VER = /^(\d+)\.(\d+)\.(\d+)(?:-([a-z]+)\.(\d+))?$/;
+/** semver order for X.Y.Z and X.Y.Z-pre.N (a pre-release sorts before its release) */
+export function cmpVer(a, b) {
+  const x = a.match(VER), y = b.match(VER);
+  for (let i = 1; i <= 3; i++) if (+x[i] !== +y[i]) return +x[i] - +y[i];
+  if (!x[4] !== !y[4]) return x[4] ? -1 : 1;
+  if (!x[4]) return 0;
+  return x[4] !== y[4] ? (x[4] < y[4] ? -1 : 1) : +x[5] - +y[5];
+}
+/** a screen's channel from its since, the latest stable version and whether its feature is on the firmware */
+export function channelOf(since, stable, firmware = true) {
+  if (!firmware || !since || since === 'next') return 'soon';
+  return cmpVer(since, stable) <= 0 ? 'stable' : 'beta';
+}
+/** problems with the channel fields of a manifest (no git): a released or documented feature without since, bad
+ *  versions, screen_since naming a screen the feature does not have */
+export function channelErrors(man) {
+  const errors = [];
+  const stable = man.release?.stable;
+  if (!stable || !VER.test(stable) || stable.includes('-')) errors.push(`release.stable: the latest stable version (X.Y.Z), not ${JSON.stringify(stable)}`);
+  const ok = (v) => v === 'next' || (typeof v === 'string' && VER.test(v));
+  for (const ft of man.features) {
+    const shown = ft.firmware || ft.docs;
+    if (shown && ft.firmware && !ft.since) errors.push(`${ft.id}: no since (the release its screens first shipped in, or next): every screen needs a channel`);
+    if (ft.since !== undefined && !ok(ft.since)) errors.push(`${ft.id}: since ${JSON.stringify(ft.since)} is a version (X.Y.Z or X.Y.Z-beta.N) or next`);
+    if (ft.since !== undefined && !ft.firmware) errors.push(`${ft.id}: since with firmware false: a feature off the firmware is Coming soon, it has no since`);
+    for (const [id, v] of Object.entries(ft.screen_since ?? {})) {
+      if (!(ft.screens ?? []).includes(id)) errors.push(`${ft.id}: screen_since ${id} is not one of its screens`);
+      if (!ok(v)) errors.push(`${ft.id}: screen_since ${id} ${JSON.stringify(v)} is a version or next`);
+    }
+  }
+  return errors;
+}
+/** screen id -> { channel, since, feature } for every screen of a feature shown in the docs or on the firmware */
+export function channels(man = load().man) {
+  const out = {};
+  for (const ft of man.features) {
+    if (!ft.docs && !ft.firmware) continue;
+    for (const id of ft.screens ?? []) {
+      const since = ft.firmware ? (ft.screen_since?.[id] ?? ft.since ?? null) : null;
+      out[id] = { channel: channelOf(since, man.release.stable, ft.firmware), since, feature: ft.id };
+    }
+  }
+  return out;
+}
+const git = (...a) => execFileSync('git', a, { cwd: R, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+/** the releases as the tags say: [{ version, ref, screens (on that firmware) }] oldest first, or null without tags (a
+ *  shallow checkout). The latest stable is its tag vX.Y.Z, or the stable channel's tag (firmware) before stable tags. */
+export function tagReleases(man = load().man) {
+  let tags;
+  try { tags = git('tag', '--list', 'v*', 'firmware').split('\n').filter(Boolean); } catch { return null; }
+  const vs = tags.filter((t) => VER.test(t.slice(1))).map((t) => ({ version: t.slice(1), ref: t }));
+  const stable = man.release.stable;
+  if (!vs.some((v) => v.version === stable)) { if (!tags.includes('firmware')) return null; vs.push({ version: stable, ref: 'firmware' }); }
+  vs.sort((a, b) => cmpVer(a.version, b.version));
+  for (const v of vs) {
+    const m = JSON.parse(git('show', `${v.ref}:renderer/features.json`));
+    v.screens = new Set(m.features.filter((f) => f.firmware).flatMap((f) => f.screens ?? []));
+  }
+  return vs;
+}
+/** the channel fields against the tags: a stable or beta screen is in the release its since names (and not before it,
+ *  for a beta), a next screen is in no release, release.stable is not behind the newest stable tag */
+export function tagErrors(man = load().man, rel = tagReleases(man)) {
+  if (!rel) return null;
+  const errors = [];
+  const stable = man.release.stable;
+  const newest = rel.filter((v) => !v.version.includes('-')).at(-1);
+  if (newest && cmpVer(newest.version, stable) > 0) errors.push(`release.stable ${stable} but v${newest.version} is tagged: write ${newest.version}`);
+  for (const [id, c] of Object.entries(channels(man))) {
+    if (!c.since) continue;
+    const first = rel.find((v) => v.screens.has(id));
+    if (c.since === 'next') { if (first) errors.push(`${id}: since next, but it is on the ${first.ref} firmware: write ${first.version}`); continue; }
+    const at = rel.find((v) => v.version === c.since);
+    if (c.channel === 'stable') {
+      const st = rel.find((v) => v.version === stable);
+      if (st && !st.screens.has(id)) errors.push(`${id}: stable (since ${c.since}) but not on the ${st.ref} firmware`);
+    } else if (!at) errors.push(`${id}: since ${c.since} is not a tagged release`);
+    else if (first?.version !== c.since) errors.push(`${id}: since ${c.since}, the tags say ${first ? first.version : 'next'}`);
+  }
+  return errors;
+}
+
 /** the flavour this process builds (env FW_FEATURES), checked */
 export function flavour() {
   const f = process.env.FW_FEATURES || '';
@@ -160,7 +251,7 @@ export function flavour() {
 
 /** errors: manifest problems + every shown feature (per flag) that needs a hidden one */
 export function check(L = load()) {
-  const errors = [...L.errors];
+  const errors = [...L.errors, ...channelErrors(L.man)];
   for (const flag of FLAGS) {
     for (const s of L.sources) {
       if (!on(s.feature, flag)) continue;  // hidden itself: may need anything
@@ -179,17 +270,38 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   const L = load();
   if (cmd === 'check') {
     const e = check(L);
+    // the channels against the release tags, when the checkout has them (a shallow clone does not: CI fetches them)
+    const te = e.length ? [] : tagErrors(L.man);
+    if (te) e.push(...te.map((x) => `channels: ${x}`));
     for (const x of e) console.error(`features: ${x}`);
     const n = (flag) => L.features.filter((f) => f[flag]).length;
-    console.log(e.length ? `features: ${e.length} error(s)` : `features: ok (${L.features.length} features, docs ${n('docs')}, firmware ${n('firmware')}, ${L.sources.filter((s) => s.kind !== 'core').length} sources)`);
+    const ch = Object.values(channels(L.man)).reduce((a, c) => ((a[c.channel] = (a[c.channel] ?? 0) + 1), a), {});
+    console.log(e.length ? `features: ${e.length} error(s)` : `features: ok (${L.features.length} features, docs ${n('docs')}, firmware ${n('firmware')}, ${L.sources.filter((s) => s.kind !== 'core').length} sources; screens ${CHANNELS.map((c) => `${c} ${ch[c] ?? 0}`).join(', ')}; tags ${te ? 'checked' : 'not here, not checked'})`);
     process.exit(e.length ? 1 : 0);
   } else if (cmd === 'exclude') {
     if (!FLAGS.includes(arg)) { console.error('exclude docs|firmware'); process.exit(2); }
     process.stdout.write(excluded(arg, L).join('\n') + '\n');
   } else if (cmd === 'table') {
     for (const f of L.features) console.log(`${f.id.padEnd(12)} docs ${f.docs ? 'on ' : 'off'}  ${f.status.padEnd(7)} firmware ${f.firmware ? 'on ' : 'off'}  ${f.label}`);
+  } else if (cmd === 'channels') {
+    for (const [id, c] of Object.entries(channels(L.man))) console.log(`${id.padEnd(12)} ${c.channel.padEnd(6)} ${c.since ?? '-'}`);
+  } else if (cmd === 'since') {
+    const w = process.argv.indexOf('--write');
+    if (w > 0) {
+      const V = process.argv[w + 1];
+      if (!V || !VER.test(V)) { console.error('since --write X.Y.Z[-beta.N]'); process.exit(2); }
+      const p = join(R, 'features.json');
+      let src = readFileSync(p, 'utf8').replace(/"next"/g, `"${V}"`);  // since / screen_since values only say next
+      if (!V.includes('-')) src = src.replace(/("stable":\s*)"[^"]*"/, `$1"${V}"`);
+      writeFileSync(p, src);
+      console.log(`features.json: next -> ${V}${V.includes('-') ? '' : `, release.stable ${V}`}`);
+    } else {
+      const rel = tagReleases(L.man);
+      if (!rel) { console.error('since: no release tags here (git fetch --tags)'); process.exit(1); }
+      for (const id of Object.keys(channels(L.man))) console.log(`${id.padEnd(12)} ${rel.find((v) => v.screens.has(id))?.version ?? 'next'}`);
+    }
   } else {
-    console.error('usage: features.mjs check | exclude docs|firmware | table');
+    console.error('usage: features.mjs check | exclude docs|firmware | table | channels | since [--write V]');
     process.exit(2);
   }
 }

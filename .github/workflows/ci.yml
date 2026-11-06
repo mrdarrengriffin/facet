@@ -63,9 +63,11 @@ jobs:
       - run: sudo apt-get install -y --no-install-recommends ccache
       - run: npm ci
         working-directory: renderer/tools
-      - name: Feature flags (every source in one feature, shown features complete)
+      - name: Feature flags (every source in one feature, shown features complete, channels match the release tags)
         if: matrix.den == '1.5x'
-        run: node renderer/tools/features.mjs check
+        run: |
+          git fetch --no-tags --depth=1 origin '+refs/tags/v*:refs/tags/v*' '+refs/tags/firmware:refs/tags/firmware'
+          node renderer/tools/features.mjs check
       - name: Issue templates list every board
         if: matrix.den == '1.5x'
         run: node boards/templates.mjs --check

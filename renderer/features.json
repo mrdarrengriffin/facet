@@ -5,6 +5,15 @@
     "wip": "Work in progress",
     "preview": "Preview"
   },
+  "release": {
+    "stable": "0.4.0",
+    "about": "Screen channels (RELEASING.md 'Screen channels'). stable = the latest stable release's version. Every feature with firmware or docs true says since: the release its screens first shipped in, or next while no release has them yet; screen_since overrides it for one screen that shipped later. A screen's channel: stable when since <= release.stable, beta when since is a released beta, soon (Coming soon) when since is next or the feature is not on the firmware. tools/features.mjs check fails when one is missing, and compares them with the release tags when the tags are there (`features.mjs since` prints what the tags say). Before a tag: `node renderer/tools/features.mjs since --write V`."
+  },
+  "channels": {
+    "stable": "Stable",
+    "beta": "Beta",
+    "soon": "Coming soon"
+  },
   "library": {
     "id": "library",
     "label": "Component library",
@@ -19,19 +28,21 @@
     {
       "id": "system",
       "label": "Home, Settings and Set up",
-      "docs": true, "status": "done", "firmware": true,
+      "docs": true, "status": "done", "firmware": true, "since": "0.4.0",
+      "screen_since": {"ha_link": "0.5.0-beta.1", "agent_keys": "0.5.0-beta.1", "report": "next"},
       "screens": ["home", "settings", "screens", "screen_set", "ha_link", "agent_keys", "report", "setup", "device"]
     },
     {
       "id": "toasts",
       "label": "Toasts",
-      "docs": true, "status": "done", "firmware": true,
+      "docs": true, "status": "done", "firmware": true, "since": "0.4.0",
       "components": ["toast", "toast_layer"]
     },
     {
       "id": "clock",
       "label": "Clock",
-      "docs": true, "status": "done", "firmware": true,
+      "docs": true, "status": "done", "firmware": true, "since": "0.4.0",
+      "screen_since": {"idle": "0.5.0-beta.3"},
       "screens": ["clock", "idle"],
       "components": ["clock_orbit"],
       "core": ["clock_source.cpp"]
@@ -39,14 +50,14 @@
     {
       "id": "timer",
       "label": "Timer",
-      "docs": true, "status": "done", "firmware": true,
+      "docs": true, "status": "done", "firmware": true, "since": "0.4.0",
       "screens": ["timer"],
       "components": ["progress_ring", "timer_chip"]
     },
     {
       "id": "lights",
       "label": "Lights",
-      "docs": true, "status": "done", "firmware": true,
+      "docs": true, "status": "done", "firmware": true, "since": "0.4.0",
       "screens": ["light"],
       "docs_pages": ["light"],
       "cards": ["light"]
@@ -61,7 +72,7 @@
     {
       "id": "media",
       "label": "Media",
-      "docs": true, "status": "done", "firmware": true,
+      "docs": true, "status": "done", "firmware": true, "since": "0.4.0",
       "screens": ["media"],
       "components": ["media_hero", "slider_row"],
       "cards": ["media"]
@@ -69,14 +80,14 @@
     {
       "id": "weather",
       "label": "Weather",
-      "docs": true, "status": "done", "firmware": true,
+      "docs": true, "status": "done", "firmware": true, "since": "0.4.0",
       "screens": ["weather", "weather_days"],
       "components": []
     },
     {
       "id": "moon",
       "label": "Moon",
-      "docs": true, "status": "done", "firmware": true,
+      "docs": true, "status": "done", "firmware": true, "since": "0.4.0",
       "screens": ["moon"],
       "docs_pages": ["moon"],
       "components": ["moon_icon"]
@@ -84,21 +95,21 @@
     {
       "id": "calendar",
       "label": "Calendar",
-      "docs": true, "status": "done", "firmware": true,
+      "docs": true, "status": "done", "firmware": true, "since": "0.4.0",
       "screens": ["calendar"],
       "components": ["calendar_row", "calendar_month"]
     },
     {
       "id": "energy",
       "label": "Energy",
-      "docs": true, "status": "done", "firmware": true,
+      "docs": true, "status": "done", "firmware": true, "since": "0.4.0",
       "screens": ["energy"],
       "components": []
     },
     {
       "id": "overhead",
       "label": "Overhead",
-      "docs": true, "status": "done", "firmware": true,
+      "docs": true, "status": "done", "firmware": true, "since": "next",
       "screens": ["overhead"],
       "components": ["flight_hero"],
       "roadmap": ["Overhead (flights)", "Flight radar (overhead flights)"]

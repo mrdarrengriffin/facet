@@ -1,6 +1,9 @@
 // README images (.github/assets/) rendered by the WASM renderer itself: no browser, no dependencies.
 //   node tools/readme_assets.mjs --list                      the screens the docs build registers
 //   node tools/readme_assets.mjs [--screens id,spec:weather,spec:weather?source=sample,...] [--hero id,...]
+// Without --screens: the screens the root README shows (its screen-<id>-*.png), a spec screen with its sample source
+// when it has one; the hero: HERO below. A screen that is not Stable (features.json, RELEASING.md "Screen channels")
+// gets its channel's chip in the bottom-right corner (tools/lib/chip.mjs: BETA, COMING SOON), drawn before the halving.
 // Reads the DOCS flavour build ($FW_OUT/docs/1.5x, `FW_FEATURES=docs ./build.sh`), renders each screen at 720 x 720 in
 // dark and light, halves it (2 x 2 box filter) to 360 with rounded corners, and writes
 //   .github/assets/screen-<id>-<theme>.png   one per screen (shown at 200 in the README)
@@ -12,6 +15,8 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { deflateSync } from 'node:zlib';
 import { demoValue } from './demo_ha.mjs';
+import { channels } from './features.mjs';
+import { drawChip } from './lib/chip.mjs';
 
 const HERE = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const ROOT = resolve(HERE, '..');
@@ -61,6 +66,8 @@ const S = 720, H = 360, R = 32;
 let t = 0;
 // "<id>" = a registered screen, "spec:<screen>" = the spec screen with that built-in spec
 const file = (id) => id.replace(/^spec:/, '').replace(/\?.*$/, '');  // spec:weather?source=sample -> weather
+const CHANNEL = channels();
+const chipOf = (id) => (CHANNEL[file(id)]?.channel ?? 'stable');
 function render(id, light) {
   // spec:<id>?k=v&...: the screen with those params (a README shot of a Home Assistant screen with its sample data)
   const params = Object.fromEntries(new URLSearchParams(id.includes('?') ? id.slice(id.indexOf('?') + 1) : ''));
@@ -76,6 +83,7 @@ function render(id, light) {
   m._fw_refresh(st);
   const p = m._fw_frame(st), b = m.HEAPU8.slice(p, p + S * S * 4);
   m._fw_stage_free(st);
+  if (chipOf(id) !== 'stable') drawChip(b, S, chipOf(id), light ? 'light' : 'dark');
   // 2 x 2 box filter to 360, rounded corners (anti-aliased alpha)
   const o = new Uint8Array(H * H * 4);
   for (let y = 0; y < H; y++) for (let x = 0; x < H; x++) {
@@ -111,8 +119,16 @@ if (process.argv.includes('--ai-examples')) {
   console.log(`readme_assets: ${ex.length} AI examples x 2 themes -> site/public/ai/shots/`);
   process.exit(0);
 }
-const ids = arg('--screens') ? arg('--screens').split(',') : screens.map((c) => c.id);
-const hero = arg('--hero') ? arg('--hero').split(',') : ids.slice(0, 8);
+// a README screen id as rendered: registered screens as they are, a spec screen with its sample source when it has one
+const asShot = (id) => {
+  if (screens.some((c) => c.id === id)) return id;
+  const sp = JSON.parse(readFileSync(join(HERE, 'specs', `${id}.json`), 'utf8'));
+  return sp.params?.source?.options?.includes('sample') ? `spec:${id}?source=sample` : `spec:${id}`;
+};
+const README_IDS = [...new Set([...readFileSync(join(ROOT, 'README.md'), 'utf8').matchAll(/assets\/screen-([a-z0-9_]+)-dark\.png/g)].map((x) => x[1]))];
+const HERO = ['home', 'media', 'weather', 'clock', 'light', 'energy', 'calendar', 'timer'];  // the README's alt text names them
+const ids = arg('--screens') ? arg('--screens').split(',') : README_IDS.map(asShot);
+const hero = arg('--hero') ? arg('--hero').split(',') : HERO.map(asShot);
 const shots = {};
 for (const theme of ['dark', 'light']) {
   for (const id of ids) {
