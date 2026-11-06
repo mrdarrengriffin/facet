@@ -47,6 +47,7 @@ export const insideLinks: NavLink[] = [
   { label: 'Components', href: url('/inside/components/') },
   { label: 'Component library', href: url('/components/') },
   { label: 'Spec format', href: url('/inside/spec/') },
+  { label: 'Writing an adapter', href: url('/inside/adapters/') },
   { label: 'Schema', href: url('/inside/schema/') },
   { label: 'Make screens with AI', href: url('/ai/') },
 ];

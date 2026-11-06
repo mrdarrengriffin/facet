@@ -7,6 +7,7 @@ import Live from '../../components/Live.astro';
 import PreviewBox from '../../components/PreviewBox.astro';
 import HomeCards from '../../components/HomeCards.astro';
 import ChannelBadge from '../../components/ChannelBadge.astro';
+import { url } from '../../lib/nav';
 import { ALL, ALL_SCREENS, CHANNEL, STATUS, href, screenById, screenGroupOf, screenHref, slug, SCREENS, type Screen } from '../../lib/data';
 
 export function getStaticPaths() {
@@ -16,6 +17,8 @@ const { s } = Astro.props as { s: Screen };
 const parts = s.parts.map((id) => ALL.find((e) => e.id === id)).filter((e) => !!e);
 const link = (id: string) => screenById(id);
 const sources = s.sources;
+// the data screens: each reads one feed, filled by adapters (CONTRACT.md C51; Inside Facet > Writing an adapter)
+const ADAPTER_SCREENS = new Set(['overhead', 'weather', 'media', 'energy', 'calendar', 'bins']);
 const typeWord = (p: Screen['params'][number]) =>
   p.options?.length ? 'pick one' : p.type === 'bool' || p.type === 'toggle' ? 'on / off' : p.type === 'entity' ? `one ${p.domain} entity` : p.type === 'entities' ? `a list of ${p.domain} entities` : p.type;
 // the values a setting accepts, as written in a spec (null = free text / an entity id)
@@ -110,6 +113,7 @@ const demo = s.comp === 'spec' ? { comp: 'spec', props: { ...s.sampleProps, live
       <p class="hint">Built in: the panel works it out itself, no source to pick.</p>
     )
   }
+  {ADAPTER_SCREENS.has(s.id) && <p>Want another source? <a href={url('/inside/adapters/')}>Write an adapter</a>.</p>}
 
   <h2 id="parts">Parts</h2>
   {parts.length ? <ul class="tags">{parts.map((p) => <li><a href={href(p)}>{p.name}</a></li>)}</ul> : <p class="hint">Drawn by the screen itself.</p>}

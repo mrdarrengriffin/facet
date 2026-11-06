@@ -1,0 +1,310 @@
+---
+// Writing an adapter: contributor docs for adding a data source to a screen. Facts: renderer/CONTRACT.md C51, C51a,
+// C51b; core/feed.h (the Feed base), core/net.h (direct reads), core/sources.h + screens/screen_set.cpp (the Source
+// sheet: detect / finds), sources/sources.json, the adapters in core/*_source.cpp, the tests in
+// tests/functional/ (fake HA, fake web: tools/lib/fakeha.mjs), workbench/src/pages/api/wasm/web.ts (the allowlist).
+// The worked example (Lyrion Music Server for Media) was applied to a copy of main, built and its test run green.
+import Docs, { type Heading } from '../../layouts/Docs.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+import { url } from '../../lib/nav';
+import sources from '../../../../renderer/sources/sources.json';
+
+const REPO = 'https://github.com/mrdarrengriffin/facet';
+const src = (p: string) => `${REPO}/blob/main/${p}`;
+const feeds = sources.feeds as Record<string, { required: string[]; optional: string[] }>;
+const headings: Heading[] = [
+  { depth: 2, slug: 'what', text: 'What an adapter is' },
+  { depth: 2, slug: 'when', text: 'When to write one' },
+  { depth: 2, slug: 'parts', text: 'The parts of an adapter' },
+  { depth: 2, slug: 'example', text: 'Worked example' },
+  { depth: 2, slug: 'home-assistant', text: 'Home Assistant adapters' },
+  { depth: 3, slug: 'declare', text: 'Declaring what it needs' },
+  { depth: 3, slug: 'naming', text: 'Naming in the Source list' },
+  { depth: 2, slug: 'direct', text: 'Public (direct) adapters' },
+  { depth: 2, slug: 'testing', text: 'Testing' },
+  { depth: 2, slug: 'models', text: "Each screen's model" },
+  { depth: 2, slug: 'checklist', text: 'Pull request checklist' },
+];
+
+const row = {
+  id: 'squeezebox',
+  kind: 'ha',
+  name: 'Lyrion Music Server (Home Assistant)',
+  adapter: 'squeezebox',
+  detect: { integration: 'squeezebox', domain: 'media_player' },
+};
+const test = `{ name: 'squeezebox: only the Lyrion Music Server players', async run(t) {
+  t.ha.s['media_player.test_lms'] = { '': 'playing', friendly_name: 'Kitchen LMS', media_title: 'LMS Song', _platform: 'squeezebox' };
+  t.ha.s['media_player.test_cast'] = { '': 'idle', friendly_name: 'Lounge Cast', _platform: 'cast' };
+  await linked(t, { source: 'squeezebox' });
+  t.has(t.texts(), /^lms song$/i, 'its track');
+  const tx = sheet(t);
+  t.has(tx, /^kitchen lms$/i, 'the Lyrion player'); t.hasNot(tx, /^lounge cast$/i, 'not the Cast one');
+} },`;
+const skeleton = `// in the feed's fill() (core/flights_source.cpp, the fr24 branch, shortened)
+const std::string src = source();                      // the deck's "source" setting, else the feed's default
+const std::string ent = sensor_of(src, cfg()["sensor"] | "");  // the entity it reads: set, else found ("finds")
+if (src == "fr24") {
+  reads({{ent, ""}, {ent, "flights"}});                // read live: a change runs a round, so does HA coming back
+  const feed::State s = feed::of(ha::get(ent));         // not there / no state / HA offline, in the feed's words
+  if (s != feed::OK) { put_word(s); return; }
+  std::vector<Flight> fl;
+  const std::string *a = ha::get(ent, "flights");
+  if (!a) { put_word(feed::LOADING); return; }
+  read_fr24(*a, hlat_, hlon_, fl);                      // the adapter's whole job: its JSON -> the model (Flight)
+  take(fl, false);                                      // shared: filters, the lead, words, units, the card
+  return;
+}`;
+const direct = `// a direct read (core/net.h), as the adsb.lol adapter does it
+const uint32_t every = std::min<uint32_t>(POLL_MS << std::min(fails_, 5), 300000);  // backoff after failures
+if (!reading_ && (!fetched_ || lv_tick_elaps(fetched_) >= every - 500)) {
+  reading_ = true, fetched_ = lv_tick_get();
+  fw::net::get(url, [this](bool ok, const std::string &body, const std::string &why) {
+    reading_ = false;
+    if (ok && read_readsb(body, hlat_, hlon_, got_)) err_.clear(), fails_ = 0, have_ = true;
+    else err_ = why.empty() ? "unreadable answer" : why, fails_++;
+    run();                                              // a round with the answer
+  });
+}`;
+const models: { screen: string; feed: string; model: string; fields: [string, string][]; adapters: string; coming?: boolean }[] = [
+  {
+    screen: 'Overhead', feed: 'panel.flights', model: 'Flight (core/flights_source.cpp)', adapters: 'adsb_lol, fr24, adsb_ha, sample',
+    fields: [
+      ['hex', 'ICAO 24-bit address (required: a flight without one is dropped)'], ['cs', 'callsign'], ['type', 'type code (A20N)'],
+      ['model', 'aircraft model (Airbus A320neo)'], ['op', 'operator / airline'], ['from, to', 'route, as city names ("" = unknown)'],
+      ['reg', 'registration'], ['alt', 'altitude, ft (NAN = unknown)'], ['vs', 'vertical speed, ft/min'], ['gs', 'ground speed, kt'],
+      ['track', 'track, degrees'], ['lat, lon', 'position; or km + brg (distance and bearing from home)'], ['squawk, em', 'squawk; emergency kind ("" = none)'],
+      ['kind', 'jet | heli'], ['mil', 'military'], ['ground', 'on the ground (always left out)'],
+    ],
+  },
+  {
+    screen: 'Weather', feed: 'panel.weather', model: 'wx::Data (core/weather.h)', adapters: 'ha, sample',
+    fields: [
+      ['condition', "Home Assistant's condition id (partlycloudy, rainy ...)"], ['temp, feels', 'temperature and apparent temperature, °C'],
+      ['hourly[12]', '{t (ms), condition, temp, precip mm}'], ['daily[5]', '{t, condition, hi, lo, precip}'],
+      ['rain_from, next_rain', 'when rain starts within the hour / the next wet hour (ms, NAN = dry)'],
+    ],
+  },
+  {
+    screen: 'Media', feed: 'panel.media', model: 'Shown (core/media_source.cpp), from a player\'s media_player attributes', adapters: 'ha, music_assistant, spotify, cast, sonos, sample',
+    fields: [
+      ['state', 'playing | paused | idle | off | unavailable ...'], ['title, artist, album', 'the track'], ['art', 'entity_picture'],
+      ['source', 'the input'], ['speaker', "the player's name"], ['pos, dur', 'position and duration, s'], ['vol', 'volume 0-100 (-1 = unknown)'],
+    ],
+  },
+  {
+    screen: 'Energy', feed: 'panel.energy', model: 'energy::Data (core/energy.h)', adapters: 'ha (+ extras: octopus), sample, fixtures',
+    fields: [
+      ['slots[48]', "today's half-hours: {start ms, kwh (NAN = not yet), band cheap | normal | peak}"], ['kwh, cost', 'today so far'],
+      ['yesterday_to_now', 'yesterday up to this time, for the comparison'], ['watts', 'live power (NAN = none)'],
+      ['band, next_band, until', 'the rate band now, the next one and when it changes'], ['days[14]', '{t, kwh, cost}, oldest first, today last'],
+    ],
+  },
+  {
+    screen: 'Calendar', feed: 'panel.calendar', model: 'agenda::Cal and agenda::Event (core/agenda.h)', adapters: 'ha, sample',
+    fields: [
+      ['Cal', '{id, name, colour (a colour token), on}'], ['Event', '{summary, location, calendar (its Cal id), start, end (ms), all_day}'],
+    ],
+  },
+  {
+    screen: 'Bins', feed: 'panel.bins', model: 'coming with the screen (#99)', adapters: 'coming', coming: true,
+    fields: [['next', "the next collection's date and its bins, each with a name and a colour"], ['after', 'the collections after it']],
+  },
+];
+---
+
+<Docs edit="site/src/pages/inside/adapters.astro" title="Writing an adapter" description="Add a data source to a Facet screen: a public API or a Home Assistant integration, mapped onto the screen's one model." group="Inside Facet" current={url('/inside/adapters/')} headings={headings}>
+  <p class="lede">
+    A Facet screen shows one kind of data one way, wherever it comes from. An adapter is the piece of code that reads
+    one source and turns it into that screen's model. Adding a source never touches the screen.
+  </p>
+
+  <h2 id="what">What an adapter is</h2>
+  <p>
+    Each kind of data has one <strong>feed</strong>: an entity of the panel's own, such as <code>panel.flights</code>
+    or <code>panel.weather</code>, whose fields are written in Facet's words and units. Screens and their Home cards
+    bind only to feed fields, never to an integration's entity ids or attribute names
+    (<a href={src('renderer/CONTRACT.md')}>CONTRACT.md</a> C51). An <strong>adapter</strong> reads one source (a public
+    API, a Home Assistant integration, made-up sample data) and fills the feed from it. Everything after the model (the
+    filters, the words, the units, the card) is shared by every adapter of that feed.
+  </p>
+  <p>
+    A screen's <strong>Source</strong> setting lists its adapters in this order (C51b): a public source that needs no
+    account or key first, read by the panel itself, then one entry per Home Assistant integration that provides the
+    data. Home Assistant is optional: where a public source exists, a panel without Home Assistant still shows the
+    screen. Sample data is an adapter too, for the docs, the workbench and the tests; panels stop offering it as a
+    source in 0.5.0-beta.8 (<a href={`${REPO}/issues/156`}>#156</a>).
+  </p>
+
+  <h2 id="when">When to write one</h2>
+  <ul>
+    <li>A Home Assistant integration has the data an existing screen shows, and the screen does not list it yet.</li>
+    <li>A public API has the data with no account or key, and the screen has no public source yet.</li>
+    <li>A source the screen lists as <em>planned</em> in <code>renderer/sources/sources.json</code>.</li>
+  </ul>
+  <p>
+    Not an adapter: a new kind of data (that is a new feed and a new screen: open an issue first), or a source that
+    needs an account or key on the panel (open an issue to agree how first).
+  </p>
+
+  <h2 id="parts">The parts of an adapter</h2>
+  <ol>
+    <li>
+      <strong>A row in <code>renderer/sources/sources.json</code></strong>, under the screen, in order of preference:
+      <code>id</code>, <code>kind</code> (<code>direct</code> = the panel calls the service, <code>ha</code> = a Home
+      Assistant integration, <code>builtin</code>), <code>name</code>, <code>adapter</code>, and for Home Assistant
+      <code>detect</code> and, if it reads one entity of its own, <code>finds</code>. Optional: <code>line</code> (the
+      Source sheet's second line), <code>setup</code> (what a person needs first), <code>about</code> (how it reads,
+      its terms).
+    </li>
+    <li><strong>The adapter's id in the screen's spec</strong>: <code>renderer/specs/&lt;screen&gt;.json</code>, the <code>source</code> parameter's <code>options</code>.</li>
+    <li>
+      <strong>The code</strong>, in the feed's file <code>renderer/core/&lt;feed&gt;_source.cpp</code>: a branch of
+      <code>fill()</code> that reads the source and maps it onto the model. Some feeds need none: Media's integration
+      sources share one branch that keeps the players of that integration.
+    </li>
+    <li><strong>A functional test</strong> in <code>renderer/tests/functional/&lt;screen&gt;_screen.test.mjs</code>, on the fake Home Assistant or the fake web.</li>
+  </ol>
+  <p>
+    Every feed is built on the Feed base (<a href={src('renderer/core/feed.h')}><code>core/feed.h</code></a>, C51a). The
+    base runs the rounds (only while something on screen reads the feed), reads the settings, keeps the state and puts
+    each field's placeholder. An adapter writes only its part of <code>fill()</code>:
+  </p>
+  <ul>
+    <li><code>source()</code> and <code>cfg()</code>: the picked source and the feed's settings this round.</li>
+    <li><code>reads(&#123;&#123;entity, attribute&#125;, ...&#125;)</code>: what it reads live from Home Assistant. A change runs a round, and so does Home Assistant coming back.</li>
+    <li><code>feed::of(ha::get(entity))</code>: the entity's state as one of ok, loading, error (Home Assistant not reached), missing (no such entity) or unavailable.</li>
+    <li><code>state(...)</code> and <code>put(field, value)</code>: the feed's state and fields. A state that is not ok shows the same words on every screen: Loading, Offline, Nothing yet, Not found, Unavailable (<code>feed::words</code>).</li>
+    <li>For answers it waits for (a Home Assistant action, a web read): call <code>run()</code> when the answer arrives.</li>
+  </ul>
+
+  <h2 id="example">Worked example: Lyrion Music Server for Media</h2>
+  <p>
+    Home Assistant's <code>squeezebox</code> integration (Lyrion Music Server) makes <code>media_player</code>
+    entities. The Media screen already reads any player, and its integration sources (Music Assistant, Google Cast,
+    Sonos) keep only the players whose registry platform is the adapter's id. So this adapter is data, not code.
+  </p>
+  <p><strong>1. The row</strong>, in <code>screens.media.sources</code> of <code>renderer/sources/sources.json</code>:</p>
+  <CodeBlock json={row} label="sources.json · JSON" copyLabel="Copy row" />
+  <p><strong>2. The option</strong>: add <code>"squeezebox"</code> to the <code>source</code> parameter's <code>options</code> in <code>renderer/specs/media.json</code>, before <code>"sample"</code>, and name it in the parameter's <code>about</code>.</p>
+  <p><strong>3. The test</strong>, in <code>renderer/tests/functional/media_screen.test.mjs</code>: a Lyrion player and a Cast player on the fake Home Assistant, and only the Lyrion one on the screen.</p>
+  <CodeBlock lang="text" label="media_screen.test.mjs" code={test} />
+  <p><strong>4. Build and run it</strong>:</p>
+  <CodeBlock lang="bash" label="Shell" code={`renderer/build.sh 1.5x
+node renderer/tools/functional.mjs --ids media_screen,feeds --den 1.5x`} />
+  <p>
+    A source whose data does not come as the model does needs a branch in <code>fill()</code>. The FlightRadar24 adapter
+    for Overhead is the pattern: read the integration's attribute, map each item onto the model, hand the list to the
+    shared code.
+  </p>
+  <CodeBlock lang="cpp" label="C++" code={skeleton} />
+
+  <h2 id="home-assistant">Home Assistant adapters</h2>
+  <p>
+    The panel reads Home Assistant over its own connection: entity states and attributes live (<code>reads()</code>),
+    actions that answer (<code>ha::ask</code>, such as <code>weather.get_forecasts</code> and
+    <code>calendar.get_events</code>), and, for Energy, the WebSocket API (<code>ha_link::ws</code>, reads only). An
+    adapter never writes to Home Assistant except through a screen's declared action. Home Assistant may send a list
+    attribute as Python text (<code>'...'</code>, <code>None</code>, <code>True</code>): read both, as
+    <code>read_fr24</code> does.
+  </p>
+
+  <h3 id="declare">Declaring what it needs</h3>
+  <p>A Home Assistant row says what must exist for it to work:</p>
+  <ul>
+    <li><code>detect</code>: <code>&#123;"integration": "flightradar24", "domain": "sensor"&#125;</code>, the integration (the entity registry's platform) and the entity domain it provides. <code>&#123;"domain": "weather"&#125;</code> alone = any entity of that domain.</li>
+    <li>
+      <code>finds</code>: for an adapter that reads one entity of its own, how to find it in the registry:
+      <code>&#123;"param", "domain", "platform", "match", "default"&#125;</code>. <code>match</code> is a list of
+      id substrings (<code>"aircraft|adsb|dump1090"</code>); <code>default</code> is the integration's usual id. When
+      Home Assistant has more than one, the Source sheet offers one row per candidate.
+    </li>
+  </ul>
+  <div class="callout">
+    <span class="dot" aria-hidden="true"></span>
+    <p>
+      Today the Source sheet leaves out an integration source whose integration Home Assistant does not have. Coming
+      in 0.5.0-beta.8 (<a href={`${REPO}/issues/156`}>#156</a>): it stays in the list, greyed, saying
+      <strong>Not set up in Home Assistant</strong>. Both read the same <code>detect</code>, so declare it fully.
+    </p>
+  </div>
+
+  <h3 id="naming">Naming in the Source list</h3>
+  <p>
+    A Home Assistant source is named for its integration: <strong>&lt;Integration&gt; (Home Assistant)</strong>, as
+    "FlightRadar24 (Home Assistant)" or "Met Office (Home Assistant)". A public source is named for the service
+    ("adsb.lol"). <code>line</code>, when set, is the Source sheet's second line ("Home Assistant · routes and
+    airlines"). Some older rows still have a short name; they move to this form screen by screen
+    (<a href={`${REPO}/issues/129`}>#129</a>).
+  </p>
+
+  <h2 id="direct">Public (direct) adapters</h2>
+  <p>
+    The panel reads a public source itself, through <a href={src('renderer/core/net.h')}><code>core/net.h</code></a>:
+    <code>fw::net::get(url, done)</code>, HTTPS GET only. The rules (C51b), as the adsb.lol adapter keeps them:
+  </p>
+  <ul>
+    <li><strong>No account, no key.</strong> A source that needs one is not a direct source.</li>
+    <li><strong>Only what the screen shows.</strong> Ask for the small area round home, not the world. Bodies are capped (<code>net::MAX_BODY</code>, 128 KB; pass a smaller <code>max</code> when you can); a bigger answer fails "too much data". A read open longer than 15 s fails "timeout".</li>
+    <li><strong>A few reads a minute, only while shown.</strong> The Feed base runs rounds only while the screen or its Home card reads the feed. Set the feed's <code>every_ms</code> to the rate (adsb.lol: 10 s) and keep one read open at a time.</li>
+    <li><strong>Back off.</strong> After a failure wait longer each time (adsb.lol: 20, 40, 80, 160 s, then every 5 minutes). Keep the last good data and say it is stale rather than blanking the screen.</li>
+    <li><strong>Its terms next to its row.</strong> Licence, rate limit and CORS go in the row's <code>about</code>.</li>
+    <li><strong>The workbench reads it through an allowlist</strong>, because these APIs send no CORS headers: add a pattern for your URL to <code>READS</code> in <code>workbench/src/pages/api/wasm/web.ts</code>, as tight as the URL.</li>
+  </ul>
+  <CodeBlock lang="cpp" label="C++" code={direct} />
+
+  <h2 id="testing">Testing</h2>
+  <p>
+    Functional tests run on the WASM build in Node, with a fake Home Assistant and a fake web. They never touch a real
+    Home Assistant or the internet. How to write them: <a href={src('renderer/tests/functional/README.md')}>tests/functional/README.md</a>.
+  </p>
+  <ul>
+    <li><strong>Fake Home Assistant</strong> (<code>t.ha</code>): <code>t.ha.s[entity] = &#123;'': state, attribute: value, _platform: 'integration', _area: 'Kitchen'&#125;</code> sets an entity and its registry row; <code>unavailable(e)</code>, <code>disconnect()</code>, <code>reconnect()</code>; <code>calls</code> lists the actions sent.</li>
+    <li><strong>Fake web</strong> (<code>t.web</code>): <code>serve(/regex/, body)</code>, <code>status(/regex/, 'timeout')</code>, <code>hang(/regex/)</code>; <code>asked</code> lists the URLs read, so a test can check the URL, the rate and the backoff.</li>
+    <li><strong>Recorded data</strong>: build the test's answers from a real response, cut down and with anything personal taken out, in the integration's own field names (the Overhead tests build FlightRadar24 and readsb JSON this way). A larger recording can live in <code>renderer/sources/fixtures/</code>, as Energy's Octopus data does.</li>
+    <li><strong>Cover</strong>: the data mapped (one full item, one with fields missing), empty, each feed state (loading, not found, unavailable, Home Assistant offline and back) and, for a direct source, the rate and the backoff. <code>tests/functional/overhead_screen.test.mjs</code> covers all three of its sources.</li>
+    <li><strong>The workbench</strong> uses <code>renderer/tools/demo_ha.mjs</code> as its Home Assistant: add an entity there to try the adapter by hand.</li>
+  </ul>
+  <CodeBlock lang="bash" label="Shell" code={`node renderer/tools/functional.mjs --ids overhead_screen --den 1.5x   # one screen's tests
+node renderer/tools/functional.mjs --ids feeds                        # every feed: fields = sources.json, sample words`} />
+
+  <h2 id="models">Each screen's model</h2>
+  <p>
+    What an adapter fills, per screen. The feed's fields (what the screen binds) are worked out from the model by the
+    shared code; they are listed under each table, required first.
+  </p>
+  {
+    models.map((m) => (
+      <>
+        <h3 id={`model-${m.screen.toLowerCase()}`}>{m.screen}{m.coming && <span class="hint"> (coming)</span>}</h3>
+        <p class="hint">Feed <code>{m.feed}</code> · model <code>{m.model}</code> · adapters: {m.adapters}</p>
+        <table>
+          <thead><tr><th>Field</th><th>What it holds</th></tr></thead>
+          <tbody>{m.fields.map(([f, d]) => <tr><td><code>{f}</code></td><td>{d}</td></tr>)}</tbody>
+        </table>
+        {feeds[m.feed] && (
+          <p class="hint">
+            Feed fields: required {feeds[m.feed].required.map((f, i) => <>{i ? ', ' : ''}<code>{f}</code></>)};
+            optional {feeds[m.feed].optional.map((f, i) => <>{i ? ', ' : ''}<code>{f}</code></>)}.
+          </p>
+        )}
+        {m.coming && <p class="hint">Bins returns with <a href={`${REPO}/issues/99`}>#99</a>; its model is settled there.</p>}
+      </>
+    ))
+  }
+  <p>The full meaning of every feed field is in the comment at the top of its <code>core/&lt;feed&gt;_source.cpp</code>.</p>
+
+  <h2 id="checklist">Pull request checklist</h2>
+  <ul>
+    <li>A row in <code>sources.json</code>, in order (a public source first, then Home Assistant integrations), with <code>detect</code> (and <code>finds</code>) for Home Assistant, <code>about</code> with the terms for a public source.</li>
+    <li>The name: the service, or <strong>&lt;Integration&gt; (Home Assistant)</strong>.</li>
+    <li>The adapter id in the spec's <code>source</code> options and its <code>about</code>.</li>
+    <li>The code maps onto the model only: no new feed fields, no screen or spec changes beyond the option.</li>
+    <li>A public source: no key, only what the screen shows, capped, a few reads a minute while shown, backoff, the workbench allowlist.</li>
+    <li>Not-ok states use the feed's words (<code>feed::of</code>, <code>feed::words</code>); no "no data" words of its own.</li>
+    <li>A functional test on the fake Home Assistant or the fake web, from recorded data; <code>--ids &lt;screen&gt;_screen,feeds</code> green at 1.5x and 1x.</li>
+    <li>The adapter is described in the comment at the top of the feed's <code>_source.cpp</code> (the Adapters list).</li>
+    <li>Commit <code>Sources: &lt;screen&gt; reads &lt;source&gt;</code>; the pull request links the integration or the API's docs.</li>
+  </ul>
+  <p>Questions first? Open an issue or ask in <a href="https://github.com/mrdarrengriffin/facet/discussions">Discussions</a>. More on pull requests: <a href={url('/contributing/')}>Contributing</a>.</p>
+</Docs>

@@ -94,7 +94,8 @@ const feeds = Object.keys((schema.feeds as { list: Record<string, unknown> }).li
     Some screens need more than an entity's state: a forecast, a calendar's events, the energy used today. A feed is an
     entity of the panel's own (<code>panel.weather</code>, <code>panel.calendar</code>, ...) that a source fills, from
     Home Assistant or worked out on the panel, and the screen binds to it like any entity. The panel has these feeds:
-    {feeds.map((f, i) => <>{i > 0 && ', '}<code>{f}</code></>)}.
+    {feeds.map((f, i) => <>{i > 0 && ', '}<code>{f}</code></>)}. A new source for a feed is an adapter:
+    <a href={url('/inside/adapters/')}>Writing an adapter</a>.
   </p>
 
   <h2 id="limits">What the panel checks</h2>

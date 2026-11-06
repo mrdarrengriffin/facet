@@ -22,6 +22,7 @@ export const GET: APIRoute = async () => {
     ['Tokens', 'Inside Facet: named values for colour, type, spacing, layout, motion, states and icons; the 4 px grid, contrast tests, 480 and 720 sizes, 16-bit colour.', '/inside/tokens/'],
     ['Components', 'Inside Facet: what a component is, screens made of components, props, variants, states, events, sounds and updates.', '/inside/components/'],
     ['Spec format', 'Inside Facet: a screen is a JSON spec of components; binding to Home Assistant, feeds, the budgets the panel checks, the deck.', '/inside/spec/'],
+    ['Writing an adapter', 'Inside Facet: add a data source to a screen, a public API or a Home Assistant integration mapped onto the screen\'s one model; declaring what it needs, naming, rate limits, testing on the fake Home Assistant and fake web, each screen\'s model, the pull request checklist.', '/inside/adapters/'],
     ['Schema', 'Inside Facet: what a panel serves at /fw/schema: routes, screens and their settings, panel settings, actions, tokens.', '/inside/schema/'],
     ['Foundations', 'The tokens and rules every component is built from: colour, type, space, layout, motion, states, icons, sound.', '/foundations/'],
     ['Make screens with AI', 'Let an AI assistant make panel screens from Facet components: the panel API, Home Assistant actions and a starter prompt.', '/ai/'],

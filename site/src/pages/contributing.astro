@@ -14,6 +14,7 @@ const headings: Heading[] = [
   { depth: 2, slug: 'code', text: 'Contribute code' },
   { depth: 3, slug: 'site', text: 'The docs site' },
   { depth: 3, slug: 'renderer', text: 'The renderer' },
+  { depth: 3, slug: 'adapter', text: 'Adding a data source' },
   { depth: 3, slug: 'checks', text: 'Checks' },
   { depth: 3, slug: 'pull-requests', text: 'Pull requests' },
   { depth: 2, slug: 'ideas', text: 'Share an idea' },
@@ -112,6 +113,15 @@ npm run dev                          # or: npm run build`} />
 renderer/build.sh 1.5x       # one build (1.5x = the 720 panel, 1x = the 480 panel)
 node renderer/watch.mjs      # rebuild on save while you work`} />
   <p>If the build setup gets in your way, open an issue: getting a second person building Facet is worth fixing.</p>
+
+  <h3 id="adapter">Adding a data source (adapter)</h3>
+  <p>
+    A screen's data can come from a public API or a Home Assistant integration. Each source is an adapter: a row in
+    <code>renderer/sources/sources.json</code>, the source in the screen's spec, a branch in the feed's
+    <code>renderer/core/&lt;feed&gt;_source.cpp</code> that maps the source onto the screen's model, and a test on the
+    fake Home Assistant or fake web. No screen changes. <a href={url('/inside/adapters/')}>Writing an adapter</a> has
+    the steps, a worked example, each screen's model and the checklist.
+  </p>
 
   <h3 id="checks">Checks</h3>
   <p>Facet's rules are checked by tools, not by memory. Run the ones your change touches:</p>
