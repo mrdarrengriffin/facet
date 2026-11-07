@@ -183,7 +183,7 @@ inline bool at_root = false;
 constexpr int PROTOCOL = 1;
 constexpr int DECK_V = 2;  // the deck's own version (v1 decks are refused)
 struct Budget {
-  int nodes = 48, binds = 64, bytes = 8192, screens = 16, deck_bytes = 8192, pages = 16, homes = 4, cards = 24;  // start values (screen model): the bench sets them
+  int nodes = 48, binds = 64, bytes = 8192, screens = 16, deck_bytes = 8192, pages = 16, homes = 8, cards = 24;  // start values (screen model): the bench sets them
 };
 inline const Budget &budget() {
   static Budget b;

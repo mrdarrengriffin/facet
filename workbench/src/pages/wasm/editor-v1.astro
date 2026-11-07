@@ -1,6 +1,6 @@
 ---
-// Facet editor v1, round 1: a clickable mock of the v1 scope (workbench/EDITOR-V1.md): Screens (the deck: on / off,
-// order, start page), a screen's settings, the panel's settings, and send / check / revert. Forms from the schema
+// Facet editor v1 (scope workbench/EDITOR-V1.md), part 1: Screens (your own screens and built-in ones as tabs in swipe
+// order: add, name, order, remove, the start page), the panel's settings, and Save (review, check, Undo). Forms from the schema
 // (renderer/catalogue/schema.json, what a panel serves at /fw/schema), previews from the real WASM renderer, the check
 // = the panel's own deck check (fw_spec check, in WASM). Nothing is sent: "the panel" is this page's memory. Home
 // Assistant is a stub (no states: screens show their sample data); entity pickers list tests/editor/fixtures.
@@ -20,7 +20,8 @@ const screens = Object.fromEntries(Object.entries(schema.screens).filter(([id, s
 const fixture = rj(join(REPO, 'workbench/tests/editor/fixtures/sources.json'));
 const accents = rj(join(R, 'tokens/colour.json')).accent;
 const scope = readFileSync(join(REPO, 'workbench/EDITOR-V1.md'), 'utf8');
-const boot = JSON.stringify({ screens, settings: schema.settings, deck: rj(join(R, 'specs/deck.json')), options: fixture.options, accents, scope, hash: schema.hash })
+const own_max = Number(readFileSync(join(R, 'core/spec.h'), 'utf8').match(/\bhomes = (\d+)/)![1]);  // the deck check's budget for your own screens
+const boot = JSON.stringify({ screens, settings: schema.settings, deck: rj(join(R, 'specs/deck.json')), options: fixture.options, accents, scope, hash: schema.hash, own_max })
   .replace(/</g, '\\u003c');
 ---
 
@@ -30,26 +31,26 @@ const boot = JSON.stringify({ screens, settings: schema.settings, deck: rj(join(
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Facet editor v1</title>
-    <meta name="description" content="Facet editor v1, round 1: a clickable mock of screens, screen settings, panel settings and send / check / revert." />
+    <meta name="description" content="Facet editor v1, part 1: your screens as tabs (add, name, order, remove, start page), settings, and Save with review and check." />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" />
     <style is:inline set:html={css}></style>
   </head>
   <body>
     <div class="v1" id="v1">
       <header class="v1-top">
-        <div class="v1-brand"><span class="v1-mark" aria-hidden="true"></span>Facet <span class="dim">editor</span></div>
-        <div class="seg" id="v1-device" role="group" aria-label="Panel"></div>
-        <nav class="v1-tabs" id="v1-tabs" aria-label="Sections"></nav>
+        <div class="v1-brand"><span class="v1-mark" aria-hidden="true"></span><b>Facet</b><span class="v1-meta" id="v1-where"></span></div>
+        <b class="v1-title" id="v1-title"></b>
+        <nav class="v1-tabs" id="v1-tabs" aria-label="Screens, in swipe order"></nav>
         <div class="v1-send">
-          <span class="v1-count" id="v1-count"></span>
-          <button class="btn primary" id="v1-review" type="button">Review and send</button>
+          <div class="seg sm" id="v1-device" role="group" aria-label="Panel"></div>
+          <button class="btn ghost" id="v1-undo" type="button">↶ Undo</button>
+          <button class="btn" id="v1-settings" type="button" aria-pressed="false">⚙ Settings</button>
+          <button class="btn primary" id="v1-save" type="button">Save</button>
         </div>
       </header>
       <main class="v1-main" id="v1-main"><p class="dim">Loading the renderer</p></main>
       <footer class="v1-foot">
-        <span>Editor v1 · round 1 mock</span>
+        <span>Editor v1 · part 1, Screens</span>
         <span class="dim">Nothing reaches a panel: "the panel" is this page. Home Assistant is a stub, so screens show sample data.</span>
         <button class="link" id="v1-scope" type="button">Scope</button>
       </footer>

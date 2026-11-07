@@ -59,5 +59,11 @@ One part per round, in the order above: build it, put it on both panels, a previ
 480, then use it on the glass and say what is wrong; again until it is a yes.
 
 ## Decided
+- The parts are built in the workbench (`/wasm/editor-v1`) first; the panels switch from the current editor to v1
+  once part 2 is in, so a panel never loses card editing.
+- A fresh panel holds one empty Home that shows the editor's address ("Add cards at http://<panel>"); it ships
+  with the switch to v1. Back to factory gives the same.
+- A panel holds up to 8 of your own screens (the deck check's `homes` budget; its memory measured on the 480 panel
+  before the switch).
 - The panel's check messages are plain words, one wording for people and agents, the technical id on a second line;
   they are changed in the panel (core/spec.h) and the editor shows them as they come.
