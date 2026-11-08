@@ -91,6 +91,7 @@ void grid(lv_obj_t *root, int cols, const char *min, const char *gap, const char
 lv_obj_t *grid_cell(lv_obj_t *root, int w = 1, int h = 1, bool tap = false);
 void grid_place(lv_obj_t *root);
 int grid_cols(lv_obj_t *root);
+int home_cols();  // Home's Grid columns: the size class's homeCols (tokens/layout.json), the one place the count lives
 int grid_rows_shown(lv_obj_t *root);  // the list rows (layout:list-row-h) its display's height holds: a row grid's first screenful
 void pair_split(lv_obj_t *pair);  // a "pair" box: its halves (children 0, 2) share its height in equal grid steps, the
                                   // rule between (child 1); follows the pair's size (Cells). split = once more (a tuned token)

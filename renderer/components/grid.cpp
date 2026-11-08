@@ -5,7 +5,9 @@
 //            and 480 get their own count, at most 12). Cell width = (width - gaps) / cols snapped down to the 4 px grid;
 //            half the leftover (on the grid) on the left, so the cells sit centred within 4 px
 //   gap      none | near (space:3) | group (layout:gutter) | block (layout:group), read live (the Layout lab tunes them)
-//   aspect   square (cell height = width) | wide (16:9, on the grid) | row (the content's height: rows that flow)
+//   aspect   square (cell height = width) | wide (16:9, on the grid) | row (the content's height: rows that flow) |
+//            half (rows half a square: (width - gap) / 2 on the grid; an even-height cell starts on an even row and a
+//            one-row cell after a one-row cell goes under it: Home's halves)
 //   rows     0 = no cap; else at most rows x cols cells: an items list longer than that shows rows x cols - 1 items
 //            and a last "+N" cell (N = the rest), instead of a partly shown grid
 // Slots (meta "slots", C8a: core/spec.h refuses anything else with a path error): "cell" = 64 numbered cells, one
@@ -191,14 +193,14 @@ FW_COMPONENT(grid, "Grid", "components", R"({
   "frame": [480, 360],
   "min": ["layout:tile-w", "layout:tile-w"],
   "slots": [
-    {"name": "cell", "count": 64, "about": "One component per cell, in reading order (in + slot); a node may span several cells.", "accepts": ["icon", "stat", "readout", "tile", "entity_tile", "checkbox", "toggle", "button", "icon_button", "status_chip", "count_badge", "arc", "donut", "sparkline", "weather_icon", "label"], "max": 1},
+    {"name": "cell", "count": 64, "about": "One component per cell, in reading order (in + slot); a node may span several cells.", "accepts": ["icon", "stat", "readout", "tile", "entity_tile", "card", "checkbox", "toggle", "button", "icon_button", "status_chip", "count_badge", "arc", "donut", "sparkline", "weather_icon", "label"], "max": 1},
     {"name": "item", "template": true, "about": "With items: the one component repeated per item (the node's cell), $item filled in.", "accepts": ["icon", "checkbox", "status_chip", "weather_icon", "moon_icon", "stat", "readout", "label", "tile", "entity_tile", "timer_chip", "calendar_row"]}
   ],
   "props": [
     {"name": "cols", "about": "How many columns, 1 to 8. Leave it out when min is set.", "type": "range", "min": 1, "max": 8, "step": 1, "default": 3},
     {"name": "min", "about": "Instead of cols: the smallest cell, as an icon size step; the grid fits as many columns as it can, so a bigger screen gets more columns. none uses cols.", "type": "select", "options": )" FW_ICON_MIN_IDS R"(, "default": "none"},
     {"name": "gap", "about": "The space between cells: none, near, group or block (from tight to roomy).", "type": "select", "options": ["none", "near", "group", "block"], "default": "group"},
-    {"name": "aspect", "about": "The cell shape: square, wide (16 by 9), row (as tall as what is inside, for text like stats), or hug (each cell as wide as what is inside, the row centred, like a bar of chips).", "type": "select", "options": ["square", "wide", "row", "hug"], "default": "square"},
+    {"name": "aspect", "about": "The cell shape: square, wide (16 by 9), row (as tall as what is inside, for text like stats), hug (each cell as wide as what is inside, the row centred, like a bar of chips), or half (rows half a square tall: a square is two rows, two halves share one).", "type": "select", "options": ["square", "wide", "row", "hug", "half"], "default": "square"},
     {"name": "rows", "about": "At most this many rows; 0 for no limit. A list of items that does not fit shows a last cell with +N for the rest.", "type": "range", "min": 0, "max": 8, "step": 1, "default": 0},
     {"name": "items", "about": "The list to repeat one cell per item: a comma list or a JSON list, usually bound to an entity attribute. Each cell is the node's cell template with $item (or $item.field) filled in; without a template, an icon named by the item.", "type": "text", "default": ""},
     {"name": "empty", "about": "The words shown when the items list is empty.", "type": "text", "default": "Nothing here"},
@@ -210,7 +212,8 @@ FW_COMPONENT(grid, "Grid", "components", R"({
     {"label": "4 · spans", "props": {"cols": 4, "outline": true, "_cells": 6, "_spans": {"0": [2, 2]}}},
     {"label": "items", "props": {"cols": 4, "gap": "near", "items": "bulb,power,timer,bell,person,door,window,house"}},
     {"label": "min glyph · 1 row · +N", "props": {"min": "glyph", "gap": "none", "rows": 1, "items": "bolt,bolt,bolt,bolt,bolt,bolt,bolt,bolt,bolt,bolt,bolt,bolt,bolt,bolt,bolt,bolt,bolt,bolt"}},
-    {"label": "row · 3", "props": {"aspect": "row", "outline": true}}
+    {"label": "row · 3", "props": {"aspect": "row", "outline": true}},
+    {"label": "half · Home sizes", "props": {"aspect": "half", "outline": true, "_cells": 5, "_spans": {"0": [2, 2], "1": [1, 1], "2": [1, 1], "3": [1, 2], "4": [2, 2]}}}
   ]
 })") {
   lv_obj_t *r = fx::box(parent, "free");

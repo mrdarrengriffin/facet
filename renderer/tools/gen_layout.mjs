@@ -112,7 +112,11 @@ const block = (d) => {
   B.push('}  // namespace lay', 'namespace toast {  // toast behaviour (layout.json toast)');
   for (const k of TD) B.push(`constexpr int ${field(k)} = ${d === '1x' ? TO[k]['1x'] : TO[k].v};  // ${TO[k].use}`);
   B.push('}  // namespace toast');
-  return B;
+  // Home's grid columns: this build's size class (its screen in dp) homeCols, the one place the count lives
+  const S = t.screen[d], den = t.density[d].d;
+  const cls = C.filter(([, c]) => fits(c, S.w / den, S.h / den)).sort((a, b) => b[1].min[0] * b[1].min[1] - a[1].min[0] * a[1].min[1])[0];
+  if (!cls || !Number.isInteger(cls[1].homeCols) || cls[1].homeCols < 1) die(`screen.${d}: no size class with homeCols`);
+  B.push(`namespace lay { constexpr int home_cols = ${cls[1].homeCols}; }  // sizeClass.${cls[0]}.homeCols`);
   return B;
 };
 L.push('#ifdef FW_1X', ...block('1x'), '#else', ...block('1.5x'), '#endif');

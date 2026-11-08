@@ -136,7 +136,7 @@
 //              page-role spec or "home"; name = header label + card title (else the spec's name); source = an id
 //              of the kind's sources (renderer/sources/sources.json); params = the page opens with them over the
 //              spec's defaults (a host's discovery fills them). cards only on a home: t = a card type (CARD_TYPES),
-//              e = its entity (a domain the type takes), size s | m | l, tap toggle | detail | page | none (the
+//              e = its entity (a domain the type takes), size 1x1 | 2x1 | 1x2 | 2x2 | half (old: s | m | l), tap toggle | detail | page | none (the
 //              type's first by default), page = a page id (t page), label (else the entity's name). A home may set
 //              header_actions {button: "settings" (default) | a page id (that page's shortcut in the settings
 //              button's place; Settings = a long press on the time), status: "none" | "timer" (the panel's timer,
@@ -358,6 +358,8 @@ constexpr const char *ROLES[] = {"page", "detail", "both"};
 // with no press (act none: value + label), m = a State readout (no box, no tap), two in a row sharing one card slot,
 // stacked (docs readoutSlot). Taps: toggle = the
 // entity's toggle, detail = its detail screen for that entity, page = a deck page, none = reports only.
+// Grid sizes (Home's Grid, screens/home.cpp): every type takes every one; sizes = the old sizes a deck may still say
+constexpr const char *GRID_SIZES = "1x1,2x1,1x2,2x2,half";
 struct CardType { const char *t, *domains, *sizes, *taps, *detail, *comp_s, *comp_m, *comp_l; };
 constexpr CardType CARD_TYPES[] = {
     {"light", "light,switch", "s,m", "toggle,detail", "light", "entity_tile", "card", ""},
@@ -834,7 +836,8 @@ inline void check_card(ArduinoJson::JsonVariantConst c, const std::string &p, co
     const size_t dot = ent.find('.');
     if (dot == std::string::npos || !csv_has(ct->domains, ent.substr(0, dot))) err(e, p + ".e", "bad_entity", std::string("a ") + t + " card takes " + ct->domains + " entities");
   } else if (!ent.empty()) err(e, p + ".e", "bad_card", "a page card has no entity");
-  if (!csv_has(ct->sizes, size)) err(e, p + ".size", "bad_size", std::string("a ") + t + " card is size " + ct->sizes);
+  if (!csv_has(GRID_SIZES, size) && !csv_has(ct->sizes, size))
+    err(e, p + ".size", "bad_size", std::string("a card's size is ") + GRID_SIZES + " (old decks: " + ct->sizes + ")");
   if (t != "entity" && !tap.empty() && !csv_has(ct->taps, tap)) err(e, p + ".tap", "bad_tap", std::string("a ") + t + " card's tap is " + ct->taps);
   if (!pg.empty() && !ids.count(pg)) err(e, p + ".page", "bad_page", "no page " + pg + " in this deck");
   if (t == "page" && pg.empty()) err(e, p + ".page", "bad_page", "a page card names a page");

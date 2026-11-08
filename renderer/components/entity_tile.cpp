@@ -9,6 +9,8 @@
 //   label    type body, text, up to two lines in a fixed box of two body lines (tile-text), "..."
 //   status   type label (caps), one line, space 5 above (tile-status): the state ("Off", "64%", "Open"); on-ink
 //            (accent-text) while on, else text-dim
+//   half     shape half (half a Home cell): one row, a gutter apart: the icon, the label (one line, takes the free
+//            width, "..."), the status
 // Props: icon (a UI or screen icon name), label, status, on (bool), act toggle | open | none (what a tap does: the
 // sound and the instant look; none = read-only, a Home sensor tile: not clickable, no press look), state default |
 // pressed | unavailable, press (the Card's press styles).
@@ -42,14 +44,16 @@ void fades(lv_obj_t *o) {  // the Motion toggle fade on the states the part chan
 // on: a bool, or a state word "on" (a bind's map: a cover's open)
 bool on_of(fw::Props p) { return p["on"].is<bool>() ? p["on"].as<bool>() : !strcmp(p["on"] | "", "on"); }
 std::string sig(fw::Props p) {  // what needs a rebuild: the icon, unavailable, the press style (texts and on move in place)
-  return std::string(p["icon"] | "bulb") + "|" + (fw::st::gone(p["state"] | "default") ? p["state"] | "" : "") + "|" + (p["press"] | "");
+  return std::string(p["icon"] | "bulb") + "|" + (fw::st::gone(p["state"] | "default") ? p["state"] | "" : "") + "|" + (p["press"] | "") + "|" + (p["shape"] | "tile");
 }
 void fill(lv_obj_t *c, fw::Props p) {
   Tile *k = tile_of(c);
   const char *state = p["state"] | "default";
   const bool off = fw::st::gone(state);
   fw::shape(c, sig(p));
-  for (const char *t : {"fill", "col", "radius:tile", "card-pad", "bg:surface", "border:line", "fade-release"}) fx::use(c, t);
+  const bool half = !strcmp(p["shape"] | "tile", "half");
+  fx::use(c, half ? "row" : "col");
+  for (const char *t : {"fill", "radius:tile", "card-pad", "bg:surface", "border:line", "fade-release"}) fx::use(c, t);
   const char *press = p["press"] | fw::st::PRESS_STYLE;
   const bool p_fill = strcmp(press, "border") != 0, p_border = strcmp(press, "fill") != 0;
   fx::use(c, p_fill ? "bg:pressed-tint" : "bg:surface", LV_STATE_PRESSED);
@@ -63,12 +67,12 @@ void fill(lv_obj_t *c, fw::Props p) {
   fx::icon_use(ic, "ink:on-mark", ST_ON);
   fx::icon_use(ic, "ink:unavailable-ink", ST_OFF);
   for (lv_state_t st : {(lv_state_t) 0, ST_ON}) fx::icon_use(ic, "fade-switch", st);
-  fx::use(fx::box(c, "free"), "grow");
-  k->label = fx::text(c, p["label"] | "", "type:body", off ? "fg:unavailable-ink" : "fg:text", "fit");
-  fx::use(k->label, "tile-text");
-  lv_label_set_long_mode(k->label, LV_LABEL_LONG_MODE_DOTS);  // two lines, then "..."
+  if (!half) fx::use(fx::box(c, "free"), "grow");
+  k->label = fx::text(c, p["label"] | "", "type:body", off ? "fg:unavailable-ink" : "fg:text", half ? "none" : "fit");
+  fx::use(k->label, half ? "grow" : "tile-text");
+  lv_label_set_long_mode(k->label, LV_LABEL_LONG_MODE_DOTS);  // two lines (half: one, beside the icon), then "..."
   k->status = fx::text(c, off ? fw::st::gone_word(state) : (p["status"] | ""), "type:label", off ? "fg:unavailable-note" : "fg:text-dim", "none");
-  fx::use(k->status, "tile-status");
+  if (!half) fx::use(k->status, "tile-status");
   if (!off) fx::use(k->status, "fg:on-ink", ST_ON);
   fades(k->status);
 
@@ -99,6 +103,7 @@ FW_COMPONENT(entity_tile, "Entity tile", "components", R"({
     {"name": "on", "about": "Whether the thing is on. On tiles are lit in the accent colour.", "type": "bool", "default": true},
     {"name": "act", "about": "What a tap does: toggle switches it on or off, open opens its own screen, none does nothing.", "type": "select", "options": ["toggle", "open", "none"], "default": "toggle"},
     {"name": "state", "debug": true, "about": "How the tile looks: default ready to tap, pressed while held, unavailable when the device has no state now, or missing when Home Assistant has no such device.", "type": "select", "options": ["default", "pressed", "unavailable", "missing"], "default": "default"},
+    {"name": "shape", "about": "The tile's shape: tile is a square (icon on top, the name and state under it), half is a half-height row (icon, name, state in one line), for half a Home cell.", "type": "select", "options": ["tile", "half"], "default": "tile"},
     {"name": "press", "about": "How the tile shows it is being pressed: fill darkens the whole tile, border lights its edge, border-fill does both.", "type": "select", "options": ["fill", "border", "border-fill"], "default": "fill"}
   ],
   "variants": [
@@ -110,7 +115,9 @@ FW_COMPONENT(entity_tile, "Entity tile", "components", R"({
     {"label": "sensor · read only", "props": {"icon": "thermometer", "label": "Kitchen", "status": "21.4\u00b0", "on": false, "act": "none"}},
     {"label": "pressed", "props": {"state": "pressed", "on": false, "status": "Off"}},
     {"label": "unavailable", "props": {"label": "Chair", "state": "unavailable"}},
-    {"label": "missing", "props": {"label": "Chair", "state": "missing"}}
+    {"label": "missing", "props": {"label": "Chair", "state": "missing"}},
+    {"label": "half", "props": {"shape": "half"}},
+    {"label": "half · sensor", "props": {"shape": "half", "icon": "thermometer", "label": "Kitchen", "status": "21.4\u00b0", "on": false, "act": "none"}}
   ]
 })") {
   lv_obj_t *c = lv_obj_create(parent);  // styles: fill() (an update refills the same root)

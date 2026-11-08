@@ -2,9 +2,11 @@
 // screen turns the Home page into a screen spec made only of real components and builds it with the spec renderer
 // (core/spec.h build: binds to the entities' live state, the tap actions, the header):
 //   header   the Header (label = the page name; Back unless it is the start page) + the screen chrome
-//   content  one Cells layout (components/cells.cpp) per run of same-size cards, in the deck's order: tiles (min
-//            tile-w x tile-h, three to a row), cards (min home-card-min-w x card-h, two to a row; two readouts in a row
-//            share one cell, a pair), wide cards (wide: one per row); one node per card, from the card type catalogue (CARD_TYPES: the component per size):
+//   content  one Grid (components/grid.cpp): square cells, the size class's column count (tokens/layout.json
+//            homeCols, 3 on the square panels), rows half a square; each card spans its size: 1x1, 2x1, 1x2, 2x2 or
+//            half (a half under a half shares one square). Every type at every size: 1x1 = the Entity tile, half =
+//            the Entity tile's half row, bigger = the Card (a sensor: the State readout). Old sizes: s = 1x1, m =
+//            2x1 (a sensor's m = half), l = 2x2. What each type shows:
 //              light   s Entity tile (bulb / power icon, "64%" / "Off", on = accent) | m Card (value = the level)
 //              cover   s Entity tile (opens Blinds) | m Card (position, state)
 //              climate m Card (current temperature, state)
@@ -30,6 +32,7 @@
 // its own update path (binds), so nothing else changes with props.
 #include <string>
 #include "fw.h"
+#include "fx.h"
 #include "spec.h"
 
 namespace {
@@ -37,7 +40,7 @@ using Doc = ArduinoJson::JsonDocument;
 using Var = ArduinoJson::JsonVariantConst;
 
 const char *META = R"({
-  "about": "A room's Home: its cards from the deck (tiles, cards, wide cards and read-only readouts) in rows of one size, live from the entities. Tap a tile to toggle, a card to open its screen.",
+  "about": "A room's Home: its cards from the deck on a grid of squares (1 by 1, 2 by 1, 1 by 2, 2 by 2 or a half), live from the entities. Tap a tile to toggle, a card to open its screen.",
   "frame": [480, 480],
   "icons": ["screen-settings@icon", "bulb@icon", "power@icon"],
   "props": [
@@ -167,17 +170,28 @@ bool button_node(Var b, Var pages, ArduinoJson::JsonArray nodes) {
   set_tap(n, tap, e, dt.detail, pid, "");
   return true;
 }
-char card_node(Var cd, Var pages, int slot, ArduinoJson::JsonArray nodes) {
-  const std::string t = cd["t"] | "", e = cd["e"] | "", size = cd["size"] | "m", label = cd["label"] | "";
+// a card's size on the grid: 1x1 2x1 1x2 2x2 half; the old sizes keep working (s = 1x1, m = 2x1, l = 2x2; a sensor's
+// m, a readout half of a card, = half)
+std::string grid_size(const std::string &t, const std::string &size) {
+  if (size == "s") return "1x1";
+  if (size == "m" || size.empty()) return t == "sensor" ? "half" : "2x1";
+  if (size == "l") return "2x2";
+  return size;
+}
+// one deck card -> one spec node in slot `slot` of node 0 (the Grid); returns false when it is left out
+bool card_node(Var cd, Var pages, int slot, ArduinoJson::JsonArray nodes) {
+  const std::string t = cd["t"] | "", e = cd["e"] | "", label = cd["label"] | "", size = grid_size(t, cd["size"] | "m");
   const fw::spec::CardType *ct = fw::spec::card_type(t);
-  if (!ct) return 0;
+  if (!ct) return false;
   std::string tap = cd["tap"] | "";
   const std::string edom = e.substr(0, e.find('.'));
   const fw::spec::DomainTaps &dt = fw::spec::entity_taps(edom);
   const std::string taps = t == "entity" ? dt.taps : ct->taps, detail = t == "entity" ? dt.detail : ct->detail;
   if (tap.empty()) tap = taps.substr(0, taps.find(','));
-  const char *comp = size == "s" ? ct->comp_s : size == "l" ? ct->comp_l : ct->comp_m;
-  if (!*comp) return 0;
+  const std::string edom0 = e.substr(0, e.find('.'));
+  const bool sensor = t == "sensor" || (t == "entity" && (edom0 == "sensor" || edom0 == "binary_sensor"));
+  // every type at every size: a square or a half = the Entity tile, bigger = the Card (a sensor: the State readout)
+  const char *comp = size == "1x1" || size == "half" ? "entity_tile" : sensor ? "readout" : "card";
   {  // a card that opens a screen this build lacks (its feature is off, features.json; a custom deck can still name
      // one) is left out, so no card leads nowhere
     std::string to = tap == "detail" ? detail : "";
@@ -186,14 +200,19 @@ char card_node(Var cd, Var pages, int slot, ArduinoJson::JsonArray nodes) {
       to.clear();
       for (Var pg : pages.as<ArduinoJson::JsonArrayConst>())
         if (id == (pg["id"] | "")) to = pg["kind"] | "";
-      if (to.empty()) return 0;
+      if (to.empty()) return false;
     }
-    if (!to.empty() && !fw::spec::screen_known(to)) return 0;
+    if (!to.empty() && !fw::spec::screen_known(to)) return false;
   }
   ArduinoJson::JsonObject n = nodes.add<ArduinoJson::JsonObject>();
   n["c"] = comp;
   n["in"] = 0;
   n["slot"] = slot;
+  {  // the span in the grid's half rows: a square is two
+    ArduinoJson::JsonArray sp = n["span"].to<ArduinoJson::JsonArray>();
+    sp.add(size[0] == '2' ? 2 : 1);
+    sp.add(size == "half" ? 1 : size == "1x2" || size == "2x2" ? 4 : 2);
+  }
   ArduinoJson::JsonObject p = n["p"].to<ArduinoJson::JsonObject>();
   const std::string dom = e.substr(0, e.find('.'));
   // the label: the card's, else the entity's friendly name; a page card: the page's name
@@ -213,6 +232,7 @@ char card_node(Var cd, Var pages, int slot, ArduinoJson::JsonArray nodes) {
       : edom == "cover" ? "cover" : (edom == "sensor" || edom == "binary_sensor") ? "sensor"
       : (edom == "script" || edom == "scene" || edom == "button") ? "action" : "other";
   if (comp_s == "entity_tile") {
+    if (size == "half") p["shape"] = "half";
     if (vt == "sensor") {  // read-only: the value as the status, the device class icon, no press
       sensor_icon(p, e);
       bind(p, "status", e, "state");
@@ -260,12 +280,15 @@ char card_node(Var cd, Var pages, int slot, ArduinoJson::JsonArray nodes) {
     if (t == "page") {
       p["icon"] = has_icon(kind) ? kind : std::string("none");
       page_card(p, target, kind);  // the screen's own card (its spec's "card", on its feeds), when it has one
-    } else if (t == "light") { p["icon"] = "light"; bind(p, "value", e, "level"); bind(p, "accent", e, "on"); }
-    else if (t == "media") {
+    } else if (vt == "light") { p["icon"] = "light"; bind(p, "value", e, "level"); bind(p, "accent", e, "on"); }
+    else if (t == "media" || dom == "media_player") {
       p["icon"] = "media";
       p["mode"] = "text";
       bind(p, "text", e, "", "media_title");
       bind(p, "sub", e, "state");
+    } else {  // anything else: its state (a cover, a climate, a script ...)
+      p["icon"] = vt == "cover" ? "covers" : dom == "climate" ? "thermostat" : "none";
+      bind(p, "value", e, "state");
     }
     if (t != "page") bind(p, "state", e, "avail");
   } else if (comp_s == "readout") {
@@ -278,7 +301,7 @@ char card_node(Var cd, Var pages, int slot, ArduinoJson::JsonArray nodes) {
     tone["else"] = "text";
   }
   set_tap(n, tap, e, detail, pid, label);
-  return t == "sensor" && size == "m" ? 'h' : size[0];
+  return true;
 }
 
 void build_home(lv_obj_t *parent, fw::Props props) {
@@ -311,52 +334,17 @@ void build_home(lv_obj_t *parent, fw::Props props) {
       sp["header"]["actions"]["status"] = st;
     }
   }
-  sp["layout"] = "cards";  // the Cells layouts one under another, a gutter apart (each fills the width)
+  sp["layout"] = "cards";
   ArduinoJson::JsonArray nodes = sp["nodes"].to<ArduinoJson::JsonArray>();
-  // every card's node first (in its own list), then one Cells per run of same-size cards (h counts as m: two readouts
-  // in a row share one cell, a "p" pair), each followed by its cards with "in" = that Cells and their slot in it
-  Doc tmp;
-  ArduinoJson::JsonArray cards = tmp.to<ArduinoJson::JsonArray>();
-  std::string kinds;
-  for (Var cd : page["cards"].as<ArduinoJson::JsonArrayConst>()) {
-    const char k = card_node(cd, deck["pages"], 0, cards);
-    if (k) kinds += k;
+  {  // node 0: the Grid, the size class's column count (tokens/layout.json homeCols), rows half a square
+    ArduinoJson::JsonObject g = nodes.add<ArduinoJson::JsonObject>();
+    g["c"] = "grid";
+    g["p"]["cols"] = fx::home_cols();
+    g["p"]["aspect"] = "half";
   }
-  size_t i = 0;
-  while (i < kinds.size()) {
-    const char run = kinds[i] == 'h' ? 'm' : kinds[i];
-    const int at = (int) nodes.size();
-    ArduinoJson::JsonObject lay = nodes.add<ArduinoJson::JsonObject>();
-    lay["c"] = "cells";
-    lay["p"]["sample"] = false;
-    lay["p"]["min-w"] = run == 's' ? "tile-w" : "home-card-min-w";
-    lay["p"]["min-h"] = run == 's' ? "tile-h" : "card-h";
-    if (run == 'l') lay["p"]["wide"] = true;
-    else if (run != 's') lay["p"]["last"] = "fill";  // a lone card on the last row goes full width (tiles keep columns)
-    std::string cells;
-    int slot = 0;
-    for (; i < kinds.size() && (kinds[i] == 'h' ? 'm' : kinds[i]) == run; i++) {
-      const bool half = kinds[i] == 'h';
-      if (half) {  // a pair cell: this readout on top, the next one (if a readout) under it
-        cells += cells.empty() ? "p" : ",p";
-        for (int h = 0; h < 2 && i < kinds.size() && kinds[i] == 'h'; h++, i++) {
-          ArduinoJson::JsonObject n = nodes.add<ArduinoJson::JsonObject>();
-          n.set(cards[i]);
-          n["in"] = at;
-          n["slot"] = slot + h;
-        }
-        slot += 2;
-        i--;  // the for loop's i++
-        continue;
-      }
-      cells += cells.empty() ? "c" : ",c";
-      ArduinoJson::JsonObject n = nodes.add<ArduinoJson::JsonObject>();
-      n.set(cards[i]);
-      n["in"] = at;
-      n["slot"] = slot++;
-    }
-    lay["p"]["cells"] = cells;
-  }
+  int slot = 0;
+  for (Var cd : page["cards"].as<ArduinoJson::JsonArrayConst>())
+    if (card_node(cd, deck["pages"], slot, nodes)) slot++;
   for (Var b : page["header_actions"]["buttons"].as<ArduinoJson::JsonArrayConst>()) button_node(b, deck["pages"], nodes);
   std::string json, error;
   serializeJson(sp, json);

@@ -2247,7 +2247,7 @@ const char *style_name(const lv_style_t *s) {
 }  // namespace fx
 
 namespace {
-struct GridL { int cols = 1, want = 1, min = -1, W = -1, gap = 0, cw = 0, ch = 0, left = 0; bool row = false, wide = false, hug = false, busy = false; std::string gapn; };  // hug: a row, cells as wide as their contents, centred
+struct GridL { int cols = 1, want = 1, min = -1, W = -1, gap = 0, cw = 0, ch = 0, left = 0; bool row = false, wide = false, hug = false, half = false, busy = false; std::string gapn; };  // hug: a row, cells as wide as their contents, centred; half: rows half a square
 struct GridC { int w = 1, h = 1; bool tap = false; };
 std::map<lv_obj_t *, GridL> grids;
 std::map<lv_obj_t *, GridC> gcells;
@@ -2266,7 +2266,7 @@ bool grid_measure(lv_obj_t *r, GridL &g) {
   g.cols = g.min >= 0 ? LV_CLAMP(1, (W + g.gap) / (ic::PX[g.min] + g.gap), 12) : g.want;
   g.cw = LV_MAX(0, (W - g.gap * (g.cols - 1)) / g.cols / sp::GRID * sp::GRID);
   g.left = LV_MAX(0, (W - g.cw * g.cols - g.gap * (g.cols - 1)) / 2 / sp::GRID * sp::GRID);
-  g.ch = g.wide ? g.cw * 9 / 16 / sp::GRID * sp::GRID : g.cw;
+  g.ch = g.wide ? g.cw * 9 / 16 / sp::GRID * sp::GRID : g.half ? LV_MAX(0, (g.cw - g.gap) / 2 / sp::GRID * sp::GRID) : g.cw;
   if (g.row) {
     lv_obj_set_style_pad_left(r, g.hug ? 0 : g.left, 0);
     lv_obj_set_style_pad_column(r, g.gap, 0);
@@ -2274,8 +2274,12 @@ bool grid_measure(lv_obj_t *r, GridL &g) {
   }
   return g.cols * 100000 + g.cw * 100 + g.ch != was;
 }
-void grid_lay(lv_obj_t *r, GridL &g) {  // every cell into the first free place that fits, in reading order
+// every cell into the first free place that fits, in reading order. Half rows: a cell an even number of rows tall
+// starts on an even row (squares stay on the square grid), and a one-row cell right after a one-row cell goes under
+// it when that place is free (two halves share one square)
+void grid_lay(lv_obj_t *r, GridL &g) {
   std::vector<std::vector<bool>> occ;
+  int px = -1, py = -1;  // the last one-row cell's place (half rows)
   for (uint32_t i = 0; i < lv_obj_get_child_count(r); i++) {
     lv_obj_t *c = lv_obj_get_child(r, (int32_t) i);
     auto it = gcells.find(c);
@@ -2286,6 +2290,17 @@ void grid_lay(lv_obj_t *r, GridL &g) {  // every cell into the first free place 
     else
       for (int y = 0, done = 0; !done; y++) {
         while ((int) occ.size() < y + h) occ.emplace_back(g.cols, false);
+        if (g.half && h == 1 && px >= 0 && y == 0) {  // under the half before it
+          while ((int) occ.size() < py + 2) occ.emplace_back(g.cols, false);
+          if (py % 2 == 0 && !occ[py + 1][px]) {
+            occ[py + 1][px] = true;
+            lv_obj_set_pos(c, g.left + px * (g.cw + g.gap), (py + 1) * (g.ch + g.gap));
+            lv_obj_set_size(c, cw, chh);
+            px = -1;
+            break;
+          }
+        }
+        if (g.half && h % 2 == 0 && y % 2) continue;
         for (int x = 0; x + w <= g.cols && !done; x++) {
           bool free = true;
           for (int yy = y; yy < y + h && free; yy++)
@@ -2296,6 +2311,7 @@ void grid_lay(lv_obj_t *r, GridL &g) {  // every cell into the first free place 
           lv_obj_set_pos(c, g.left + x * (g.cw + g.gap), y * (g.ch + g.gap));
           lv_obj_set_size(c, cw, chh);
           done = 1;
+          px = h == 1 ? x : -1, py = y;
         }
       }
     const bool tap = it->second.tap && g.cw >= fw::touch::min && (g.row || g.ch >= fw::touch::min);
@@ -2320,7 +2336,7 @@ namespace fx {
 void grid(lv_obj_t *r, int cols, const char *min, const char *gap, const char *aspect) {
   const bool fresh = !grids.count(r);
   GridL &g = grids[r];
-  g.want = LV_CLAMP(1, cols, 8); g.gapn = gap; g.hug = !strcmp(aspect, "hug"); g.row = g.hug || !strcmp(aspect, "row"); g.wide = !strcmp(aspect, "wide"); g.min = -1;
+  g.want = LV_CLAMP(1, cols, 8); g.gapn = gap; g.hug = !strcmp(aspect, "hug"); g.row = g.hug || !strcmp(aspect, "row"); g.wide = !strcmp(aspect, "wide"); g.half = !strcmp(aspect, "half"); g.min = -1;
   for (int i = 0; i < fw::ic::N_SIZES; i++) if (!strcmp(fw::ic::SIZE_NAMES[i], min)) g.min = i;
   if (g.row) { lv_obj_set_layout(r, LV_LAYOUT_FLEX); lv_obj_set_flex_flow(r, LV_FLEX_FLOW_ROW_WRAP); }
   if (g.hug) lv_obj_set_flex_align(r, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);  // the row centred (a Timer bar)
@@ -2347,6 +2363,7 @@ void grid_place(lv_obj_t *r) {
   it->second.busy = true; grid_lay(r, it->second); it->second.busy = false;
 }
 int grid_cols(lv_obj_t *r) { auto it = grids.find(r); return it == grids.end() ? 1 : it->second.cols; }
+int home_cols() { return fw::lay::home_cols; }
 int grid_rows_shown(lv_obj_t *r) { return lv_display_get_vertical_resolution(lv_obj_get_display(r)) / std::max(1, (int) fw::lay::list_row_h); }
 }  // namespace fx
 
