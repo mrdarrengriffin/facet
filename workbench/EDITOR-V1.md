@@ -63,6 +63,11 @@ One part per round, in the order above: build it, put it on both panels, a previ
   once part 2 is in, so a panel never loses card editing.
 - A fresh panel holds one empty Home that shows the editor's address ("Add cards at http://<panel>"); it ships
   with the switch to v1. Back to factory gives the same.
+- Part 2 grid: Home becomes the Grid layout (square cells, nodes span `[cols, rows]`), 3 columns at both densities,
+  the count in ONE place (a layout token) so it can change later. Card sizes 1 × 1, 2 × 1, 1 × 2, 2 × 2 and half
+  (a half-height 1 × 1; a second half may sit under it). Every card type offers every size: each size is its own
+  layout of the card, shown at 720 and 480 before it lands. Decks with the old sizes keep working: s = 1 × 1,
+  m = 2 × 1, l = 2 × 2; the editor saves the new ones.
 - A panel holds up to 8 of your own screens (the deck check's `homes` budget; its memory measured on the 480 panel
   before the switch).
 - The panel's check messages are plain words, one wording for people and agents, the technical id on a second line;
