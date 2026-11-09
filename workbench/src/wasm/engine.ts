@@ -75,12 +75,28 @@ export class Engine {
   ha: HaBridge = hubHa;
   /** base = where manifest.json / fw.mjs / fw.wasm live (the workbench's /facet-wasm/<den>/ unless a host says otherwise);
    *  ha = where HA states / actions go (the workbench unless a host says otherwise) */
-  static async load(den: string, base = `/facet-wasm/${den}/`, ha: HaBridge = hubHa): Promise<Engine> {
+  /** progress(done, total): the renderer's download, in bytes (total 0 = not known; size = its size when the host knows it) */
+  static async load(den: string, base = `/facet-wasm/${den}/`, ha: HaBridge = hubHa, progress?: (done: number, total: number) => void, size = 0): Promise<Engine> {
     const e = new Engine();
     e.ha = ha;
     e.man = await manifest(den, base);
     const v = encodeURIComponent(e.man.built);
     const { default: create } = await import(/* @vite-ignore */ `${base}fw.mjs?v=${v}`);
+    // with progress: the renderer's download read here and counted (the same URL as the page's preload); the module
+    // then loads it as usual, from the browser's cache (immutable), so it comes over the network once
+    if (progress) {
+      const total = size || e.man.wasm_bytes || 0;
+      try {
+        const r = await fetch(`${base}fw.wasm?v=${v}`, { credentials: 'same-origin' });
+        const rd = r.ok ? r.body?.getReader() : undefined;
+        for (let got = 0; rd;) {
+          const { done, value } = await rd.read();
+          if (done) break;
+          got += value.length;
+          progress(got, total);
+        }
+      } catch { /* the module's own load says what is wrong */ }
+    }
     e.m = await create({ locateFile: (f: string) => `${base}${f}?v=${v}` });
     e.m._fw_init();
     // the panel's own HA link starts linked to the workbench's proxy (each /wasm page is a fresh module, so the pickers have

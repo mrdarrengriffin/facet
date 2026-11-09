@@ -69,12 +69,16 @@ const faces = FONTS.map((f) => `@font-face{font-family:'${f.family}';font-style:
 // the page = editor v1's markup and boot data (src/wasm/editor-v1-page.mjs, the same as the workbench's), fonts embedded,
 // plus the agent hint (the panel serves /ai)
 const body = v1Body(v1Boot(dirname(R), { panel: true }), '<span>Served by this panel.</span><span class="agent-hint dim">Agents: paste <a href="/ai">/ai</a> to yours</span>');
+// the renderer's download starts with the page (a preload; the editor reads the same URL, counting its progress
+// against the manifest's wasm_bytes)
+const wasmB = readFileSync(join(wasmDir, 'fw.wasm')), built = JSON.parse(readFileSync(join(wasmDir, 'manifest.json'), 'utf8')).built;
 const html = `<!doctype html>
 <html lang="en" data-device="${device}" data-den="${den}">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="icon" href="data:,">
 <title>Facet</title>
 <style>${faces}${vars}</style>
+<link rel="preload" href="/ed/${den}/fw.wasm?v=${encodeURIComponent(built)}" as="fetch" type="application/wasm" crossorigin="anonymous">
 <link rel="stylesheet" href="/ed/editor.css?v=${h8(css)}">
 </head>
 <body>
@@ -92,7 +96,7 @@ const files = [
   ['/ed/editor.css', 'text/css', LONG, css],
   [`/ed/${den}/manifest.json`, 'application/json', REVAL, readFileSync(join(wasmDir, 'manifest.json'))],
   [`/ed/${den}/fw.mjs`, 'text/javascript', LONG, readFileSync(join(wasmDir, 'fw.mjs'))],
-  [`/ed/${den}/fw.wasm`, 'application/wasm', LONG, readFileSync(join(wasmDir, 'fw.wasm'))],
+  [`/ed/${den}/fw.wasm`, 'application/wasm', LONG, wasmB],
   ...FONTS.map((f) => [f.path, 'font/woff2', LONG, f.b]),
 ];
 if (dist) for (const [p, , , b] of files) { const f = join(dist, p === '/' ? 'index.html' : p); mkdirSync(dirname(f), { recursive: true }); writeFileSync(f, b); }

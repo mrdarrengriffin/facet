@@ -1183,8 +1183,13 @@ async function load() {
   engine?.dispose();
   engine = null;
   top();
-  $('v1-main').replaceChildren(h('p', 'dim', 'Loading the renderer'));
-  engine = await Engine.load(DEVICES[device].den, host.wasmBase(DEVICES[device].den), host.ha);
+  const msg = h('p', 'dim', 'Loading the renderer');
+  $('v1-main').replaceChildren(msg);
+  // its download, as it comes (the first open after an update: a few seconds from a panel)
+  const said = (got: number, total: number) => {
+    msg.textContent = total ? `Loading the renderer · ${Math.min(99, Math.floor((got / total) * 100))} %` : `Loading the renderer · ${(got / 1e6).toFixed(1)} MB`;
+  };
+  engine = await Engine.load(DEVICES[device].den, host.wasmBase(DEVICES[device].den), host.ha, said);
   let named = false;
   if (host.panel && first) {  // what the panel runs: the editor starts from it
     first = false;
