@@ -13,7 +13,7 @@ export type SaveOut = { ok: boolean; errors?: Err[]; why?: string };
 /** the pickers' lists: null = this host has none of its own (the workbench: the fixture) */
 export type Entities = { state: 'ok' | 'loading' | 'off' | 'failed'; why?: string; lists: Record<string, Opt[]> } | null;
 /** a search's answer (the add list): at most a page of matches (dc = the entity's device class), more = how many more */
-export type Found = { state: 'ok' | 'off' | 'failed'; why?: string; found: (Opt & { dc?: string })[]; more: number };
+export type Found = { state: 'ok' | 'off' | 'failed'; why?: string; found: (Opt & { dc?: string; st?: string; unit?: string })[]; more: number };
 
 export interface V1Host {
   /** true = served by a panel: Save sends to it, and it is the only panel */

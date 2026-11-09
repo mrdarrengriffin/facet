@@ -186,12 +186,16 @@
    {
     "id": "sensor.demo_sensor_5",
     "name": "Dishwasher Plug Power",
-    "dc": "power"
+    "dc": "power",
+    "st": "412",
+    "unit": "W"
    },
    {
     "id": "sensor.demo_sensor_243",
     "name": "Sensor 243",
-    "dc": "temperature"
+    "dc": "temperature",
+    "st": "19.4567",
+    "unit": "°C"
    },
    {
     "id": "sensor.demo_sensor_478",
@@ -200,22 +204,30 @@
    {
     "id": "sensor.demo_sensor_1",
     "name": "Sensor 1",
-    "dc": "temperature"
+    "dc": "temperature",
+    "st": "21.5",
+    "unit": "°C"
    },
    {
     "id": "sensor.demo_sensor_2",
     "name": "Sensor 2",
-    "dc": "humidity"
+    "dc": "humidity",
+    "st": "52",
+    "unit": "%"
    },
    {
     "id": "sensor.demo_sensor_3",
     "name": "Sensor 3",
-    "dc": "battery"
+    "dc": "battery",
+    "st": "82",
+    "unit": "%"
    },
    {
     "id": "sensor.demo_sensor_4",
     "name": "Sensor 4",
-    "dc": "energy"
+    "dc": "energy",
+    "st": "3.21",
+    "unit": "kWh"
    }
   ],
   "calendar": [
@@ -356,7 +368,8 @@
    {
     "id": "binary_sensor.demo_binary_sensor_6",
     "name": "Back Door Opening",
-    "dc": "door"
+    "dc": "door",
+    "st": "off"
    },
    {
     "id": "binary_sensor.demo_binary_sensor_5",
@@ -365,7 +378,8 @@
    {
     "id": "binary_sensor.demo_binary_sensor_1",
     "name": "Binary sensor 1",
-    "dc": "motion"
+    "dc": "motion",
+    "st": "on"
    },
    {
     "id": "binary_sensor.demo_binary_sensor_2",

@@ -26,7 +26,7 @@ type CardDef = { domains: string; taps: string; detail: string; by_domain?: Reco
 type Boot = {
   screens: Record<string, Screen>; settings: { groups: { id: string; label: string }[]; settings: Setting[] };
   deck: { start: string; pages: Page[] };
-  options: Record<string, { id: string; name: string; dc?: string }[]>;
+  options: Record<string, { id: string; name: string; dc?: string; st?: string; unit?: string }[]>;
   accents: { default: string; sets: { id: string; label: string; dark: { accent: string } }[] };
   scope: string; hash: string; own_max: number;
   cards: Record<string, CardDef>; grid_sizes: string; card_max: number;
@@ -36,7 +36,7 @@ type Draft = { pages: Page[]; start: string; settings: Record<string, unknown>; 
 
 const boot: Boot = JSON.parse(document.getElementById('v1-boot')!.textContent!);
 /** the entity pickers' lists: the workbench's fixture, or what the panel reads from its Home Assistant link */
-let options: Record<string, { id: string; name: string; dc?: string }[]> = host.panel ? {} : boot.options;
+let options: Record<string, { id: string; name: string; dc?: string; st?: string; unit?: string }[]> = host.panel ? {} : boot.options;
 /** names of entities met outside the lists (a search's matches, the deck's own entities on a panel) */
 const names = new Map<string, string>();
 let ents: { state: string; why?: string } = { state: host.panel ? 'loading' : 'ok' };
@@ -591,17 +591,49 @@ async function find(doms: string[], dc: string, q: string) {
   const all = doms.flatMap((d) => options[d] ?? []).filter((o) => (!dcs.length || dcs.includes(o.dc ?? '')) && (o.id.toLowerCase().includes(qq) || o.name.toLowerCase().includes(qq)));
   return { state: 'ok' as const, why: undefined as string | undefined, found: all.slice(0, 40), more: Math.max(0, all.length - 40) };
 }
+/** an entity's state in words, as Home Assistant shows it: a number with its unit, a door Open / Closed, motion
+ *  Detected / Clear, on / off as On / Off, anything else with a capital */
+const BIN: Record<string, [string, string]> = {
+  door: ['Open', 'Closed'], window: ['Open', 'Closed'], opening: ['Open', 'Closed'], garage_door: ['Open', 'Closed'],
+  motion: ['Detected', 'Clear'], occupancy: ['Detected', 'Clear'], presence: ['Home', 'Away'], moisture: ['Wet', 'Dry'],
+  battery: ['Low', 'Normal'], connectivity: ['Connected', 'Disconnected'], lock: ['Unlocked', 'Locked'], plug: ['Plugged in', 'Unplugged'],
+};
+function stateText(o: { id: string; dc?: string; st?: string; unit?: string }) {
+  const st = o.st ?? '';
+  if (!st) return '';
+  if (st === 'unavailable' || st === 'unknown') return st === 'unknown' ? 'Unknown' : 'Unavailable';
+  if (o.id.startsWith('binary_sensor.') && (st === 'on' || st === 'off')) { const w = BIN[o.dc ?? ''] ?? ['On', 'Off']; return w[st === 'on' ? 0 : 1]; }
+  if (/^-?\d+(\.\d+)?$/.test(st)) {
+    const n = Number(st), dec = (st.split('.')[1] ?? '').length;
+    const v = dec > 2 ? String(Number(n.toFixed(2))) : st;
+    return o.unit ? `${v} ${o.unit}` : v;
+  }
+  const w = st.replace(/_/g, ' ');
+  return `${w[0].toUpperCase()}${w.slice(1)}${o.unit ? ` ${o.unit}` : ''}`;
+}
 /** a search box and its matches (nothing until something is typed); pick(id) when a match is tapped */
 function searchBox(doms: string[], dc: string, label: string, pick: (id: string) => void, extra?: (box: HTMLElement) => void, focus = true): HTMLElement[] {
-  const q = h('input', 'v1-input');
-  q.type = 'search';
+  // one field: a magnifier, the text, its own clear (×) once something is typed
+  const field = h('label', 'v1-search');
+  field.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>';
+  const q = h('input');
+  q.type = 'text';
+  q.autocomplete = 'off';
+  q.spellcheck = false;
   q.placeholder = 'Start typing to search';
   q.setAttribute('aria-label', `Search ${label}`);
+  const clr = h('button', 'v1-search-clear', '×');
+  clr.type = 'button';
+  clr.title = 'Clear';
+  clr.hidden = true;
+  clr.onclick = () => { q.value = ''; q.dispatchEvent(new Event('input')); q.focus(); };
+  field.append(q, clr);
   const box = h('div', 'v1-cardlist');
   let seq = 0, timer = 0;
   const idle = () => { box.replaceChildren(); extra?.(box); };
   const run = async () => {
     const v = q.value.trim(), my = ++seq;
+    box.classList.toggle('found', !!v);
     if (!v) { idle(); return; }
     box.replaceChildren(h('p', 'dim', 'Searching…'));
     const r = await find(doms, dc, v);
@@ -610,21 +642,23 @@ function searchBox(doms: string[], dc: string, label: string, pick: (id: string)
     if (r.state === 'off') { box.append(h('p', 'v1-note', 'Home Assistant is not set up: Settings > Home Assistant.')); return; }
     if (r.state === 'failed') { box.append(h('p', 'v1-note', `Home Assistant did not answer: ${r.why ?? ''}`)); return; }
     for (const o of r.found) {
-      const b = h('button', 'v1-opt');
+      const b = h('button', 'v1-opt hit');
       b.type = 'button';
       const tx = h('span', 'v1-ftxt');
       tx.append(h('span', '', o.name), h('p', 'mono', o.id));
       b.append(tx);
+      const v = stateText(o);
+      if (v) { const s = h('span', 'v1-val', v); s.title = v; b.append(s); }
       b.onclick = () => pick(o.id);
       box.append(b);
     }
     if (!r.found.length) box.append(h('p', 'dim', 'Nothing matches.'));
     if (r.more) box.append(h('p', 'v1-meta', `${r.more} more: type more of the name to narrow it.`));
   };
-  q.oninput = () => { clearTimeout(timer); timer = window.setTimeout(() => void run(), host.panel ? 350 : 0); };
+  q.oninput = () => { clr.hidden = !q.value; clearTimeout(timer); timer = window.setTimeout(() => void run(), host.panel ? 350 : 0); };
   idle();
   if (focus) requestAnimationFrame(() => q.focus());
-  return [q, box];
+  return [field, box];
 }
 let addKind = '', addClass: string | null = null;  // the add list's step: a type picked ('' = the types), a sensor's class (null = not yet)
 function addCardSide(p: Page): HTMLElement[] {
