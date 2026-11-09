@@ -19,7 +19,7 @@ constexpr size_t CAP = 160;  // a captured string's most bytes (ids and names ar
 // what a read keeps: at most PER entities a domain and BUDGET counted bytes in all (the heap adds its own per block; a
 // house runs to thousands of sensors: kept whole they ran the 480 panel out of heap mid-read); the rest is counted,
 // left_out(domain)
-constexpr size_t PER = 500, BUDGET = 64 * 1024;
+constexpr size_t PER = 500, BUDGET = 96 * 1024;
 struct State {
   std::string url, token;
   bool proxy = false;
@@ -270,6 +270,7 @@ const char *pairing_word(Pairing p) {
 uint32_t rev() { return S().rev; }
 size_t peak() { return S().peak; }
 int count() { return S().count; }
+void forget(const std::string &domain) { State &s = S(); auto it = s.cache.find(domain); if (it == s.cache.end()) return; s.count -= (int) it->second.size(); s.cache.erase(it); s.read_at.erase(domain); s.left.erase(domain); }
 int left_out(const std::string &domain) { auto it = S().left.find(domain); return it == S().left.end() ? 0 : it->second; }
 const std::vector<Entity> *list(const std::string &domain) {
   auto it = S().cache.find(domain);

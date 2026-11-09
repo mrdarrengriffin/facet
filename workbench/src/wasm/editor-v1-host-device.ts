@@ -58,19 +58,22 @@ export const host: V1Host = {
     } catch { return null; }
   },
   async entities(domains): Promise<Entities> {
-    // the panel reads Home Assistant once for all of them (a few seconds): ask with nothing to send until it has
-    // them, then fetch each domain's list on its own (one big answer would not fit the 480 panel's memory)
-    const all = encodeURIComponent(domains.join(','));
-    let state: any = null;
-    for (let i = 0; i < 30 && (!state || state.state === 'loading'); i++) {
-      if (i) await new Promise((r) => setTimeout(r, 1000));
-      try { state = (await j(`/fw/entities?domains=${all}&send=`)).body; } catch { state = null; }
-    }
-    if (!state || state.state === 'loading') return { state: 'failed', why: 'Home Assistant took too long to answer', lists: {} };
-    if (state.state !== 'ok') return { state: state.state, why: state.why, lists: {} };
+    // a few domains at a time (a large house's whole list does not fit the 480 panel): per group the panel reads Home
+    // Assistant (a few seconds; ask with nothing to send until it has them), then sends the lists and frees them
+    const GROUPS = [['light', 'switch', 'media_player', 'cover', 'climate', 'fan', 'lock', 'vacuum'], ['sensor']];
+    const groups = GROUPS.map((g) => g.filter((d) => domains.includes(d))).filter((g) => g.length);
+    groups.push(domains.filter((d) => !GROUPS.flat().includes(d)));
     const lists: Record<string, { id: string; name: string }[]> = {};
-    for (const d of domains) {
-      try { const { body } = await j(`/fw/entities?domains=${all}&send=${d}`); if (body?.lists?.[d]) lists[d] = body.lists[d]; } catch { /* that one stays empty */ }
+    for (const g of groups.filter((x) => x.length)) {
+      const q = encodeURIComponent(g.join(','));
+      let st: any = null;
+      for (let i = 0; i < 30 && (!st || st.state === 'loading'); i++) {
+        if (i) await new Promise((r) => setTimeout(r, 1000));
+        try { st = (await j(`/fw/entities?domains=${q}&send=`)).body; } catch { st = null; }
+      }
+      if (!st || st.state === 'loading') return { state: 'failed', why: 'Home Assistant took too long to answer', lists };
+      if (st.state !== 'ok') return { state: st.state, why: st.why, lists };
+      try { const { body } = await j(`/fw/entities?domains=${q}&send=${q}&drop=1`); Object.assign(lists, body?.lists ?? {}); } catch { /* that group stays empty */ }
     }
     return { state: 'ok', lists };
   },

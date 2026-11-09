@@ -265,6 +265,7 @@ uint32_t rev();            // moves on every change (pages poll it)
 size_t peak();             // the last fetch's parse peak (bytes)
 int count();               // entities kept by the last fetch
 int left_out(const std::string &domain);  // entities of that domain the last read did not keep (too many)
+void forget(const std::string &domain);  // free a domain's list (its next picker reads it again)
 const std::vector<Entity> *list(const std::string &domain);  // nullptr = not fetched yet
 // a domain's list read longer ago than this: its picker reads it again in the background when it opens (the old list
 // shows meanwhile), so entities added to Home Assistant appear without a manual read

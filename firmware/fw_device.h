@@ -44,7 +44,8 @@
 //   GET  /fw/entities  ?domains=light,sensor[&send=light]: the entity pickers' lists from the panel's own Home Assistant
 //                   link (core/device.h ha_link): {state: off|loading|ok|failed, why?, lists: {domain: [{id, name}]},
 //                   more: {domain: n left out}} (at most 500 per domain; send = the domains to answer with, default
-//                   all); a domain not read yet (or read over five minutes ago) is read now: ask again until ok
+//                   all; drop = free them once sent); a domain not read yet (or read over five minutes ago) is read
+//                   now: ask again until ok. A large house: ask a few domains at a time, with drop
 //                = The entities the editor's pickers offer, read from Home Assistant through the panel's link.
 //   POST /fw/bench  a batch of bench cases the panel runs on its own screen (fw_bench.h); GET /fw/bench = the report
 //                = Runs speed tests on the panel's own screen; GET reads the report.
@@ -2049,6 +2050,7 @@ class Handler : public AsyncWebHandler {
       };
       auto split = [](const std::string &v) { std::vector<std::string> o; size_t i = 0; while (i < v.size()) { size_t j = v.find(',', i); if (j == std::string::npos) j = v.size(); if (j > i) o.push_back(v.substr(i, j - i)); i = j + 1; } return o; };
       const std::vector<std::string> want = split(arg("domains")), send = req->hasArg("send") ? split(arg("send")) : want;
+      const bool drop = req->hasArg("drop");  // free those lists once sent (a large house: the next group's read fits)
       constexpr size_t CAP = 500;  // per domain; more = how many were left out
       auto esc = [](std::string &o, const std::string &v) {
         o += '"';
@@ -2098,6 +2100,7 @@ class Handler : public AsyncWebHandler {
           if (left) more += (more.empty() ? "" : ",") + ("\"" + dom + "\":" + std::to_string(left));
         }
         s += "},\"more\":{" + more + "}}";
+        if (drop && state == "ok") for (const auto &dom : send) hl::forget(dom);  // the editor holds them now
       }, 3000);
     } else if (path == "/fw/ha") {
       ArduinoJson::JsonDocument d;
