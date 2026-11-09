@@ -24,9 +24,10 @@
 #ifndef FW_IMG_MALLOC
 #ifdef ESP_PLATFORM  // the panel: PSRAM (pictures never belong in internal RAM)
 #include "esp_heap_caps.h"
-#define FW_IMG_MALLOC(n) heap_caps_malloc(n, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT)
-#define FW_IMG_REALLOC(p, n) heap_caps_realloc(p, n, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT)
-#define FW_IMG_FREE(p) heap_caps_free(p)
+#include "img_arena.h"
+#define FW_IMG_MALLOC(n) fw::img::arena::alloc(n)  // the pictures' own memory first (img_arena.h)
+#define FW_IMG_REALLOC(p, n) fw::img::arena::realloc(p, n)
+#define FW_IMG_FREE(p) fw::img::arena::free(p)
 #else
 #define FW_IMG_MALLOC(n) malloc(n)
 #define FW_IMG_REALLOC(p, n) realloc(p, n)

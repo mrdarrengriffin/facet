@@ -120,7 +120,7 @@ inline size_t psram_largest(size_t cap) {
 inline bool low_memory(size_t psram) {
   return heap_caps_get_free_size(MALLOC_CAP_INTERNAL) < INTERNAL_KEEP ||
          heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL) < INTERNAL_BLOCK ||
-         !psram_has(psram);
+         (!psram_has(psram) && fw::img::arena::largest() < psram);  // the pictures' own memory counts (img_arena.h)
 }
 // PSRAM_KEEP stands in for the decode's pixels (a 480 x 480 picture is 450 KB). A picture whose views all go into the
 // idle art's reserved slots (img_scale.h Slots) or are small needs only the body, the decoder's rows and those small
@@ -162,7 +162,14 @@ constexpr size_t DECODE_MARGIN = 96 * 1024;
 // needs (fw_imgdec.h: outputs + rows + decoder) and is refused if that is more
 inline size_t decode_room() {
   const size_t big = psram_largest(8u << 20);  // a decode never plans more than this (both boards' budgets)
-  return big > DECODE_MARGIN ? big - DECODE_MARGIN : 0;
+  // the shared PSRAM less the margin, or the pictures' own arena (its own: no margin), whichever is bigger
+  return std::max(big > DECODE_MARGIN ? big - DECODE_MARGIN : 0, fw::img::arena::largest());
+}
+// the pictures' own memory (img_arena.h), reserved once at boot while the PSRAM is whole: room for one picture's
+// download and decode (a 480 panel's idle art needs ~110 KB beside its reserved slots), more on a big panel
+inline void arena_setup() {
+  const size_t want = fw::img::budget().cache_bytes >= (2u << 20) ? 512 * 1024 : 192 * 1024;
+  if (!fw::img::arena::init(want)) ESP_LOGW("facet_img", "no %u KB block for the pictures' own memory: pictures use the shared PSRAM", (unsigned) (want / 1024));
 }
 
 inline void fetch(const std::string &src, const std::vector<fw::img::Box> &boxes, const std::string &ha, Done &d) {

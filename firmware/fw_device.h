@@ -1212,6 +1212,7 @@ inline void art_info(ArduinoJson::JsonDocument &d) {
     o["download_ms"] = a.got_ms, o["decode_ms"] = a.dec_ms;
   } else o["error"] = a.err;
   o["slots"] = fw::img::slots().n.load(), o["slots_free"] = fw::img::slots_free();
+  o["arena_kb"] = (unsigned) (fw::img::arena::size() / 1024), o["arena_free_kb"] = (unsigned) (fw::img::arena::largest() / 1024);  // the pictures' own memory
   if (a.side) {
     char t[120];
     snprintf(t, sizeof t, "largest free PSRAM block %u KB (less the margin), the box size needs %u KB: kept at %d px",
@@ -2617,6 +2618,7 @@ inline void setup() {
     const int n = show && !strcmp(show, "art") ? fw::img::reserve_screen() : 2;
     if (n < 2) ESP_LOGW("facet_img", "idle art: only %d of 2 screen-size picture slots (no memory)", n);
   }
+  images::arena_setup();  // the pictures' own memory, after the slots, while the PSRAM is still whole (fw_images.h)
   fw::dev::on_look([] {  // theme / accent / the sun: draw the page again in the new look (+ the probation chip)
     reshow_later(true);
     PR.shown = -2;

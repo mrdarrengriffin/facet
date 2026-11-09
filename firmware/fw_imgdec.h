@@ -40,8 +40,9 @@ extern "C" {
 #ifndef FW_IMGDEC_ALLOC
 #ifdef ESP_PLATFORM  // the panel: PSRAM (pictures never belong in internal RAM)
 #include "esp_heap_caps.h"
-#define FW_IMGDEC_ALLOC(n) heap_caps_malloc(n, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT)
-#define FW_IMGDEC_FREE(p) heap_caps_free(p)
+#include "img_arena.h"
+#define FW_IMGDEC_ALLOC(n) fw::img::arena::alloc(n)  // the pictures' own memory first (img_arena.h)
+#define FW_IMGDEC_FREE(p) fw::img::arena::free(p)
 #else
 #define FW_IMGDEC_ALLOC(n) malloc(n)
 #define FW_IMGDEC_FREE(p) free(p)
