@@ -2094,7 +2094,8 @@ class Handler : public AsyncWebHandler {
             s += "{\"id\":", esc(s, e.id), s += ",\"name\":", esc(s, e.name), s += '}';
           }
           s += ']';
-          if (l->size() > CAP) more += (more.empty() ? "" : ",") + ("\"" + dom + "\":" + std::to_string(l->size() - CAP));
+          const size_t left = (l->size() > CAP ? l->size() - CAP : 0) + (size_t) hl::left_out(dom);
+          if (left) more += (more.empty() ? "" : ",") + ("\"" + dom + "\":" + std::to_string(left));
         }
         s += "},\"more\":{" + more + "}}";
       }, 3000);

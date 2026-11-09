@@ -16,6 +16,10 @@ namespace dev {
 namespace ha_link {
 namespace {
 constexpr size_t CAP = 160;  // a captured string's most bytes (ids and names are shorter; longer ones are cut)
+// what a read keeps: at most PER entities a domain and BUDGET counted bytes in all (the heap adds its own per block; a
+// house runs to thousands of sensors: kept whole they ran the 480 panel out of heap mid-read); the rest is counted,
+// left_out(domain)
+constexpr size_t PER = 500, BUDGET = 64 * 1024;
 struct State {
   std::string url, token;
   bool proxy = false;
@@ -29,6 +33,7 @@ struct State {
   int count = 0;
   std::map<std::string, std::vector<Entity>> cache;
   std::map<std::string, uint32_t> read_at;  // per cached domain: when it was read (lv_tick)
+  std::map<std::string, int> left;         // per cached domain: entities the read did not keep (PER, BUDGET)
   WsSink ws = nullptr;
   uint32_t ws_next = WS_ID;
   struct Call { std::function<void(const char *, size_t)> feed; std::function<void(bool, const std::string &)> end; };
@@ -80,7 +85,9 @@ void Scan::obj_end() {  // an entity's object closes: keep it when its domain is
     const std::string dom = id_.substr(0, dot);
     auto it = out.find(dom);
     if (it == out.end() && want.empty()) it = out.emplace(dom, std::vector<Entity>()).first;
-    if (it != out.end()) {
+    const size_t add = sizeof(Entity) + id_.size() + (name_.empty() ? id_.size() : name_.size()) + icon_.size();
+    if (it != out.end() && (it->second.size() >= PER || held_ + add > BUDGET)) left[dom]++;
+    else if (it != out.end()) {
       it->second.push_back({id_, name_.empty() ? id_ : name_, icon_});
       held_ += sizeof(Entity) + id_.size() + (name_.empty() ? id_.size() : name_.size()) + icon_.size();
       if (held_ > peak_) peak_ = held_;
@@ -227,6 +234,9 @@ const char *fetch(const std::string &domains) {
   if (!s.get) return "this build cannot reach Home Assistant";
   delete s.active;
   s.active = new Scan(domains);
+  // the lists being read again go now: the old and the new copies are never held at once
+  for (const std::string &w : s.active->want) s.count -= s.cache.count(w) ? (int) s.cache[w].size() : 0, s.cache.erase(w), s.left.erase(w);
+  if (s.active->want.empty()) s.cache.clear(), s.left.clear(), s.count = 0;
   s.st = LOADING;
   s.why.clear();
   bump();
@@ -260,6 +270,7 @@ const char *pairing_word(Pairing p) {
 uint32_t rev() { return S().rev; }
 size_t peak() { return S().peak; }
 int count() { return S().count; }
+int left_out(const std::string &domain) { auto it = S().left.find(domain); return it == S().left.end() ? 0 : it->second; }
 const std::vector<Entity> *list(const std::string &domain) {
   auto it = S().cache.find(domain);
   return it == S().cache.end() ? nullptr : &it->second;
@@ -313,7 +324,7 @@ void done(uint32_t id, bool ok, const std::string &why, Scan *parsed) {
   if (ok && sc && !sc->bad()) {
     s.count = 0;
     const uint32_t now = lv_tick_get();
-    for (auto &kv : sc->out) { s.count += (int) kv.second.size(); s.cache[kv.first] = std::move(kv.second); s.read_at[kv.first] = now; }
+    for (auto &kv : sc->out) { s.count += (int) kv.second.size(); s.cache[kv.first] = std::move(kv.second); s.read_at[kv.first] = now; s.left[kv.first] = sc->left.count(kv.first) ? sc->left[kv.first] : 0; }
     s.peak = sc->peak();
     s.st = OK;
   } else {

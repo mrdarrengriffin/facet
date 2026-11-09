@@ -212,6 +212,7 @@ class Scan {
   size_t peak() const { return peak_; }
   std::vector<std::string> want;
   std::map<std::string, std::vector<Entity>> out;
+  std::map<std::string, int> left;  // per domain: entities not kept (ha_link.cpp PER, BUDGET)
  private:
   void str_end();
   void obj_end();
@@ -263,6 +264,7 @@ const char *pairing_word(Pairing p);  // "none" | "unpaired" | "paired" | "fixed
 uint32_t rev();            // moves on every change (pages poll it)
 size_t peak();             // the last fetch's parse peak (bytes)
 int count();               // entities kept by the last fetch
+int left_out(const std::string &domain);  // entities of that domain the last read did not keep (too many)
 const std::vector<Entity> *list(const std::string &domain);  // nullptr = not fetched yet
 // a domain's list read longer ago than this: its picker reads it again in the background when it opens (the old list
 // shows meanwhile), so entities added to Home Assistant appear without a manual read
