@@ -279,6 +279,15 @@ inline void fetch(const std::string &src, const std::vector<fw::img::Box> &boxes
     const bool ok = fw::imgdec::decode(body.b, body.n, B.src_max_px, decode_room(), boxes, d.px);
     fw::busy::off(fw::busy::DECODE);
     d.dec_us = esp_timer_get_time() - t1;
+    // a finished picture leaves the pictures' own memory for the shared PSRAM when a block there takes it: the arena
+    // is the decode's room, not a store (a kept cover there left the next decode 29 KB, img_arena.h)
+    if (ok) for (auto &p : d.px.px)
+      if (p.data && !p.slot && fw::img::arena::mine(p.data))
+        if (void *q = heap_caps_malloc(p.size, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT)) {
+          memcpy(q, p.data, p.size);
+          fw::img::arena::free(p.data);
+          p.data = (uint8_t *) q;
+        }
     if (!ok) {
       d.err = d.px.err;
       if (d.err == "not a picture") d.err += " (" + (hdr.type.empty() ? std::string("no type") : hdr.type.substr(0, hdr.type.find(';'))) + ")";
