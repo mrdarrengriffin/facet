@@ -43,7 +43,7 @@ li::marker { color: var(--dim); }
 .button:disabled { opacity: 0.5; cursor: default; }
 .status { display: flex; align-items: center; gap: 10px; margin: 0 0 40px; color: var(--dim); font-size: 15px; }
 .dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--line-hi); }
-.safe { margin: -16px 0 32px; color: var(--text); }
+.safe { margin: -8px 0 32px; padding: 12px 16px; border-radius: 12px; background: color-mix(in srgb, var(--ok) 10%, var(--surface)); color: var(--text); }  /* a notice: tinted, rounded, its dot */
 .ok .dot { background: var(--ok); } .bad .dot { background: var(--bad); }
 .code { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); overflow: hidden; }
 .code p { margin: 0; padding: 10px 16px; border-bottom: 1px solid var(--line); }
