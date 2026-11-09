@@ -43,10 +43,14 @@ extern "C" {
 #include "img_arena.h"
 #define FW_IMGDEC_ALLOC(n) fw::img::arena::alloc(n)  // the pictures' own memory first (img_arena.h)
 #define FW_IMGDEC_FREE(p) fw::img::arena::free(p)
+#define FW_IMGDEC_BODY_ALLOC(n) fw::img::arena::alloc_shared_first(n)  // the download: shared PSRAM first
 #else
 #define FW_IMGDEC_ALLOC(n) malloc(n)
 #define FW_IMGDEC_FREE(p) free(p)
 #endif
+#endif
+#ifndef FW_IMGDEC_BODY_ALLOC
+#define FW_IMGDEC_BODY_ALLOC(n) FW_IMGDEC_ALLOC(n)
 #endif
 
 namespace fw::imgdec {
@@ -115,7 +119,7 @@ struct Body {
     size_t r = room ? room : 16 * 1024;
     while (r < want) r *= 2;
     if (r > cap) r = cap;
-    uint8_t *nb = (uint8_t *) FW_IMGDEC_ALLOC(r);
+    uint8_t *nb = (uint8_t *) FW_IMGDEC_BODY_ALLOC(r);
     if (!nb) { err = "out of memory"; return false; }
     if (b) { memcpy(nb, b, n); FW_IMGDEC_FREE(b); }
     b = nb; room = r;

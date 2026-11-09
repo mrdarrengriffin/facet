@@ -39,6 +39,12 @@ inline void *alloc(size_t n) {
   void *p = S().h ? multi_heap_malloc(S().h, n) : nullptr;
   return p ? p : heap_caps_malloc(n, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
 }
+// a buffer that only needs one plain block (a download): the shared PSRAM first, the arena when it has no such block,
+// so the arena keeps its room for the decode's own buffers
+inline void *alloc_shared_first(size_t n) {
+  void *p = heap_caps_malloc(n, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+  return p ? p : (S().h ? multi_heap_malloc(S().h, n) : nullptr);
+}
 inline void free(void *p) {
   if (!p) return;
   if (mine(p)) multi_heap_free(S().h, p);
