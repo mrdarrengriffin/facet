@@ -116,11 +116,12 @@ inline size_t psram_largest(size_t cap) {
   }
   return lo;
 }
-// psram = the PSRAM block the fetch wants free first (psram_need)
-inline bool low_memory(size_t psram) {
+// psram = the shared PSRAM block the fetch wants free first (psram_need); own = what it needs in the pictures' own
+// memory instead (arena_need: no margin, nothing else lives there)
+inline bool low_memory(size_t psram, size_t own = SIZE_MAX) {  // own: SIZE_MAX = not a picture (the feeds)
   return heap_caps_get_free_size(MALLOC_CAP_INTERNAL) < INTERNAL_KEEP ||
          heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL) < INTERNAL_BLOCK ||
-         (!psram_has(psram) && fw::img::arena::largest() < psram);  // the pictures' own memory counts (img_arena.h)
+         (!psram_has(psram) && fw::img::arena::largest() < own);
 }
 // PSRAM_KEEP stands in for the decode's pixels (a 480 x 480 picture is 450 KB). A picture whose views all go into the
 // idle art's reserved slots (img_scale.h Slots) or are small needs only the body, the decoder's rows and those small
@@ -137,6 +138,18 @@ inline size_t psram_need(const std::vector<fw::img::Box> &boxes) {
   }
   if (!slotted) return old;
   return std::min(old, fw::img::budget().body_max / 4 + 96 * 1024 + small);
+}
+// the same in the pictures' own memory (img_arena.h): the body's usual size and the views outside the slots, as they
+// are (the decode's own check, fw_imgdec.h, refuses what does not fit after all)
+inline size_t arena_need(const std::vector<fw::img::Box> &boxes) {
+  size_t small = 0;
+  int slotted = 0;
+  for (const auto &b : boxes) {
+    const size_t px = (size_t) b.w * b.h;
+    if (!b.r && b.s == fw::img::cover && fw::img::slot_fits(px * 2) && slotted < fw::img::slots_free()) slotted++;
+    else small += px * 3;
+  }
+  return fw::img::budget().body_max / 4 + small;
 }
 inline State &S() { static State s; return s; }
 // reads that bring nothing for this long, before the body is whole = the download broke off
@@ -180,8 +193,8 @@ inline void fetch(const std::string &src, const std::vector<fw::img::Box> &boxes
   const auto late = [&] { return (esp_timer_get_time() - t0) / 1000 >= B.timeout_ms; };
   char tmo[24];
   snprintf(tmo, sizeof tmo, "timeout (%d s)", B.timeout_ms / 1000);
-  const size_t keep = psram_need(boxes);
-  if (low_memory(keep)) { d.err = "the panel is low on memory"; return; }
+  const size_t keep = psram_need(boxes), own = arena_need(boxes);
+  if (low_memory(keep, own)) { d.err = "the panel is low on memory"; return; }
   Hdr hdr;
   esp_http_client_config_t c{};
   c.url = url.c_str();
@@ -201,7 +214,7 @@ inline void fetch(const std::string &src, const std::vector<fw::img::Box> &boxes
   int status = 0;
   int64_t len = -1;
   for (int hop = 0;; hop++) {
-    if (hop && low_memory(keep)) { d.err = "the panel is low on memory"; goto out; }
+    if (hop && low_memory(keep, own)) { d.err = "the panel is low on memory"; goto out; }
     if (esp_http_client_open(h, 0) != ESP_OK) { d.err = late() ? tmo : "couldn't reach the site"; goto out; }
     len = esp_http_client_fetch_headers(h);
     status = esp_http_client_get_status_code(h);
