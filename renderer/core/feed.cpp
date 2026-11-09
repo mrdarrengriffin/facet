@@ -56,7 +56,7 @@ Feed::Feed(const char *entity, uint32_t every_ms, const char *source, std::vecto
 }
 
 void Feed::run() {
-  if (in_round_) return;
+  if (in_round_ || ha::S().mirror) return;  // mirrored: the panel's values come in instead (ha.h mirror)
   if (!tick_ && every_ms_)
     tick_ = lv_timer_create([](lv_timer_t *t) {
       auto *f = (Feed *) lv_timer_get_user_data(t);

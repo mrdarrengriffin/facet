@@ -2132,28 +2132,58 @@ class Handler : public AsyncWebHandler {
       }, 3000);
       }
     } else if (path == "/fw/ha") {
-      ArduinoJson::JsonDocument d;
-      // ?want=e1,e2[&attrs=a1,a2]: subscribe to these too (the panel's editor previews live values)
+      // ?want=e1,e2[&attrs=a1,a2]: subscribe to these too (the panel's editor previews live values); a local source
+      // (panel.*: a feed, the timers) is the panel's own: all its fields come back, and one not on a screen now is run
+      // (at most every 20 s), so the editor shows what the glass would. Written straight into one string (no document).
       std::vector<std::pair<std::string, std::string>> add;
+      std::vector<std::string> es;
       if (req->hasArg("want")) {
         auto split = [](const std::string &v) { std::vector<std::string> o; size_t i = 0; while (i <= v.size()) { size_t j = v.find(',', i); if (j == std::string::npos) j = v.size(); if (j > i) o.push_back(v.substr(i, j - i)); i = j + 1; } return o; };
-        const auto es = split(req->arg("want").c_str()), as = req->hasArg("attrs") ? split(req->arg("attrs").c_str()) : std::vector<std::string>{};
-        for (const auto &e : es) if (e.size() < 80 && add.size() < 32) { add.push_back({e, ""}); add.push_back({e, "friendly_name"}); for (const auto &a : as) if (a.size() < 40) add.push_back({e, a}); }
+        const auto as = req->hasArg("attrs") ? split(req->arg("attrs").c_str()) : std::vector<std::string>{};
+        for (const auto &e : split(req->arg("want").c_str())) if (e.size() < 80 && es.size() < 48) es.push_back(e);
+        for (const auto &e : es) { add.push_back({e, ""}); add.push_back({e, "friendly_name"}); for (const auto &a : as) if (a.size() < 40 && add.size() < 256) add.push_back({e, a}); }
       }
+      auto esc = [](std::string &o, const std::string &v) {
+        static const char *hex = "0123456789abcdef";
+        o += '"';
+        for (char c : v) {
+          if (c == '"' || c == '\\') o += '\\', o += c;
+          else if (c == '\n') o += "\\n";
+          else if ((unsigned char) c < 0x20) { o += "\\u00"; o += hex[(c >> 4) & 15]; o += hex[c & 15]; }
+          else o += c;
+        }
+        o += '"';
+      };
       in_loop([&] {
-        for (const auto &p : add) fw::ha::want(p.first, p.second);
-        if (add.empty()) {  // ?want= answers only {values} of those entities (minimal)
-          ArduinoJson::JsonArray w = d["wants"].to<ArduinoJson::JsonArray>();
-          for (const auto &p : fw::ha::wants()) { auto x = w.add<ArduinoJson::JsonArray>(); x.add(p.first); x.add(p.second); }
+        namespace h = fw::ha;
+        static std::map<std::string, uint32_t> ran;  // a local source run for the editor: when
+        for (const auto &p : add) h::want(p.first, p.second);
+        for (const auto &e : es)
+          if (auto fresh = h::local(e))
+            if (!h::watched(e) && (!ran.count(e) || lv_tick_elaps(ran[e]) > 20000)) { ran[e] = lv_tick_get(); fresh(); }
+        auto wanted = [&](const std::string &e) { return std::find(es.begin(), es.end(), e) != es.end(); };
+        size_t need = 64;
+        for (const auto &kv : h::S().store) if (es.empty() || wanted(kv.first.first)) need += kv.first.first.size() + kv.first.second.size() + kv.second.size() + 8;
+        s.reserve(need + need / 8);
+        s = "{";
+        if (es.empty()) {  // no ?want=: the wants too
+          s += "\"wants\":[";
+          bool f = true;
+          for (const auto &p : h::wants()) { if (!f) s += ','; f = false; s += '['; esc(s, p.first); s += ','; esc(s, p.second); s += ']'; }
+          s += "],";
         }
-        ArduinoJson::JsonObject v = d["values"].to<ArduinoJson::JsonObject>();
-        for (const auto &kv : fw::ha::S().store) {
-          if (!add.empty() && std::none_of(add.begin(), add.end(), [&](const auto &p) { return p.first == kv.first.first; })) continue;  // ?want=: only those
-          v[kv.first.first + (kv.first.second.empty() ? "" : "|" + kv.first.second)] = kv.second;
+        s += "\"values\":{";
+        bool f = true;
+        for (const auto &kv : h::S().store) {
+          if (!es.empty() && !wanted(kv.first.first)) continue;  // ?want=: only those
+          if (!f) s += ',';
+          f = false;
+          esc(s, kv.first.first + (kv.first.second.empty() ? "" : "|" + kv.first.second));
+          s += ':';
+          esc(s, kv.second);
         }
-        d["bound"] = (int) fw::ha::S().bounds.size();
+        s += "},\"bound\":" + std::to_string((int) h::S().bounds.size()) + "}";
       }, 2000);
-      serializeJson(d, s);
     } else if (path == "/fw/act" && post) {  // one action of the closed list (CONTRACT.md C50; act_run)
       ArduinoJson::JsonDocument body;
       bool ok = false;

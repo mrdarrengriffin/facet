@@ -23,17 +23,22 @@ const entities = (v: unknown, out: Set<string>): Set<string> => {
 };
 // the panel's HA can't unsubscribe: ask only for the entities this deck names, never the sample screens' demo ones
 const ha: HaBridge = {
+  mirror: true,  // the panel's own feeds and timers (panel.*): what the glass shows, never fetched here
   async states(all, attrs) {
-    const ids = all.filter((id) => inDeck.has(id));
+    const ids = all.filter((id) => inDeck.has(id) || id.startsWith('panel.'));
     if (!ids.length) return [];
     try {
       const q = `want=${encodeURIComponent(ids.join(','))}${attrs.length ? `&attrs=${encodeURIComponent(attrs.join(','))}` : ''}`;
       const { ok, body } = await j(`/fw/ha?${q}`);
       if (!ok || !body?.values) return null;
       const v = body.values as Record<string, string>;
-      return ids.filter((id) => v[id] != null).map((id) => ({
+      // a panel.* source: every field the panel holds for it; an entity: the attributes asked for
+      const fields = (id: string) => id.startsWith('panel.')
+        ? Object.keys(v).filter((k) => k.startsWith(`${id}|`) && k !== `${id}|friendly_name`).map((k) => k.slice(id.length + 1))
+        : attrs.filter((a) => v[`${id}|${a}`] != null);
+      return ids.filter((id) => v[id] != null).map((id) => ({  // a source the panel has not run yet: still loading
         id, name: v[`${id}|friendly_name`] ?? id, state: v[id],
-        attrs: Object.fromEntries(attrs.filter((a) => v[`${id}|${a}`] != null).map((a) => [a, v[`${id}|${a}`]])),
+        attrs: Object.fromEntries(fields(id).map((a) => [a, v[`${id}|${a}`]])),
       }));
     } catch { return null; }
   },

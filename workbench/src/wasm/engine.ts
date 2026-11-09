@@ -39,6 +39,9 @@ export type HaBridge = {
   action(value: { service: string; entity: string; data?: Record<string, unknown> }): Promise<void>;
   /** an HA action whose reply a feed adapter reads (core/ha.h ask: calendar.get_events); null = no HA here */
   ask?(service: string, data: Record<string, unknown>): Promise<{ ok: boolean; response?: unknown } | null>;
+  /** mirror: the panel's own sources (panel.*: the feeds, the timers) come from this host with all their fields, as it
+   *  holds them (the editor a panel serves: the glass's data, nothing fetched twice); the module makes none itself */
+  mirror?: boolean;
 };
 export const hubHa: HaBridge = {
   async states(ids, attrs) {
@@ -99,6 +102,7 @@ export class Engine {
     }
     e.m = await create({ locateFile: (f: string) => `${base}${f}?v=${v}` });
     e.m._fw_init();
+    if (ha.mirror) e.m._fw_ha_mirror?.(1);
     // the panel's own HA link starts linked to the workbench's proxy (each /wasm page is a fresh module, so the pickers have
     // a list on every page); ?ha=off leaves it unset (the pickers' "not connected" state)
     if (e.m._fw_spec && new URLSearchParams(location.search).get('ha') !== 'off')
@@ -156,12 +160,15 @@ export class Engine {
       if (w !== '[]' && (w !== last || Date.now() - at > period)) {
         last = w; at = Date.now();
         const pairs = JSON.parse(w) as [string, string][];
-        const ids = [...new Set(pairs.map((p) => p[0]))], attrs = [...new Set(pairs.map((p) => p[1]).filter((a) => a && a !== 'friendly_name'))];
+        // a mirrored source (panel.*) is asked by name only: the host answers with all its fields
+        const own = (id: string) => !!this.ha.mirror && id.startsWith('panel.');
+        const ids = [...new Set(pairs.map((p) => p[0]))], attrs = [...new Set(pairs.filter((p) => !own(p[0])).map((p) => p[1]).filter((a) => a && a !== 'friendly_name'))];
         try {
           const got = await this.ha.states(ids, attrs);
           if (got && this.alive) for (const s of got) {
             this.haPut(s.id, '', s.state);
             this.haPut(s.id, 'friendly_name', s.name);
+            if (own(s.id)) { for (const [a, v] of Object.entries(s.attrs ?? {})) this.haPut(s.id, a, String(v)); continue; }
             for (const a of attrs) this.haPut(s.id, a, s.attrs?.[a] == null ? 'None' : String(s.attrs[a]));
           }
         } catch { /* workbench or HA away: keep the last values */ }

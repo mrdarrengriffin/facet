@@ -221,6 +221,8 @@ EMSCRIPTEN_KEEPALIVE void fw_ha_chunk(int id, const char *p, int n) { if (p && n
 // panel: its API link; the tests and previews say so themselves)
 EMSCRIPTEN_KEEPALIVE void fw_ha_connected(int on) { fw::ha::set_connected(on != 0); }
 EMSCRIPTEN_KEEPALIVE void fw_ha_got(int id, int ok, const char *why) { fw::dev::ha_link::done((uint32_t) id, ok != 0, why ? why : ""); }
+// the editor a panel serves: its local sources' values (panel.*) come from the panel, not made here (ha.h mirror)
+EMSCRIPTEN_KEEPALIVE void fw_ha_mirror(int on) { fw::ha::S().mirror = on != 0; }
 // the editor's add list on the link (ha_link::find_json, the panel's GET /fw/entities?q=&dc=): ask until state is not
 // loading (each tick serves the read)
 EMSCRIPTEN_KEEPALIVE const char *fw_ha_find(const char *domains, const char *dc, const char *q) {

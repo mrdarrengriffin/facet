@@ -86,6 +86,9 @@ struct State {
   // told: the host says whether it is connected at all (a panel; the workbench and most tests never do). Told and not
   // connected = Home Assistant itself is not reached: the feeds say Offline over the values from before (offline())
   bool connected = false, told = false;
+  // mirror (the editor a panel serves, fw_ha_mirror): the local sources' values (panel.*: the feeds, the timers) come
+  // from the panel like Home Assistant's, never made here: want() passes them on, their own rounds and fresh() do nothing
+  bool mirror = false;
   uint32_t connected_at = 0;
   std::map<std::string, uint32_t> wanted_at;  // entity -> when its state was first wanted
 };
@@ -111,7 +114,7 @@ inline void on_local(const char *entity, void (*fresh)()) {
   if (!local(entity)) S().locals.push_back({entity, fresh});
 }
 inline void want(const std::string &e, const std::string &a = "") {
-  if (e.empty() || local(e)) return;
+  if (e.empty() || (local(e) && !S().mirror)) return;
   State &s = S();
   if (std::find(s.wants.begin(), s.wants.end(), Pair{e, a}) != s.wants.end()) return;
   s.wants.push_back({e, a});
@@ -261,7 +264,7 @@ inline std::string words(const std::string &e) {
 }
 inline void bind_raw(ArduinoJson::JsonVariantConst b, ArduinoJson::JsonObject out, const char *key, std::vector<Pair> *pairs) {
   const std::string e = b["e"] | "", a = b["a"] | "", fmt = b["fmt"] | "";
-  if (void (*fresh)() = local(e)) {
+  if (void (*fresh)() = S().mirror ? nullptr : local(e)) {
     auto &f = S().freshed;
     if (std::find(f.begin(), f.end(), e) == f.end()) { f.push_back(e); fresh(); }
   }
@@ -627,7 +630,7 @@ inline const std::string &feed_config(const std::string &e) {
 inline void set_feed_config(const std::string &e, const std::string &cfg) {
   if (feed_config(e) == cfg) return;
   S().feeds[e] = cfg;
-  if (auto f = local(e)) f();  // the adapter reads the new settings at once
+  if (auto f = S().mirror ? nullptr : local(e)) f();  // the adapter reads the new settings at once
 }
 }  // namespace ha
 }  // namespace fw
