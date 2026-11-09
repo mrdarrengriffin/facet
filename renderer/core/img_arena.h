@@ -55,7 +55,12 @@ inline void *realloc(void *p, size_t n) {
   multi_heap_free(S().h, p);
   return q;
 }
-inline size_t largest() { return S().h ? multi_heap_get_largest_free_block(S().h) : 0; }  // the biggest piece free now
+inline size_t largest() {  // the biggest piece free now
+  if (!S().h) return 0;
+  multi_heap_info_t i;
+  multi_heap_get_info(S().h, &i);
+  return i.largest_free_block;
+}
 inline size_t size() { return S().size; }
 }  // namespace fw::img::arena
 #define FW_IMG_ARENA 1
