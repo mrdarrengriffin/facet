@@ -1,4 +1,4 @@
-// host test for fw_report.h: the kept memory across "restarts", the log ring's wrap, connection drops and redaction.
+// host test for fw_report.h: the kept memory across "restarts", the log ring's wrap, connection drops, redaction and the scrub (#176).
 //   c++ -std=c++17 -Wall -Wextra -Werror firmware/fw_report.test.cpp && ./a.out
 #include "fw_report.h"
 #include <cstdio>
@@ -115,11 +115,56 @@ static void test_redact() {
   EXPECT(fw::report::plain(col, strlen(col)) == "E x", "plain");
 }
 
+// #176: a report from a panel with Home Assistant linked and music playing: no address, entity id, token, query or
+// user screen id comes out; what helps find a problem stays
+static bool is_builtin(const std::string &id) { return id == "weather_screen" || id == "light_screen"; }
+static void test_scrub() {
+  using fw::report::scrub;
+  using fw::report::redact;
+  const std::string report =
+      std::string(fw::report::HOWTO) +
+      "Facet problem report\nfirmware 0.5.0-beta.7+abc1234, board guition-4848s040, built 2026-11-06\n"
+      "uptime 3 min 05 s, now 2026-11-09 18:40\n"
+      "== Connections ==\nboot 2 +120s: HA link dropped: cannot reach 192.168.1.20:8123 (timeout)\n"
+      "== Panel (/fw/info) ==\n{\"board\":\"guition-4848s040\",\"shown\":\"[screen]\",\"heap\":{\"free\":112511}}\n"
+      "== Settings (no secrets) ==\n{\"facet\":\"settings\",\"values\":{\"haUrl\":\"http://homeassistant.local:8123\",\"theme\":\"dark\"}}\n"
+      "== Log ==\n"
+      "[W][wifi:1234]: Disconnected ssid='Griffin Home' bssid=A4:5E:60:12:34:56 reason='Beacon Timeout'\n"
+      "[W][facet_wb:2578]: spec boot: darrens_office: current copy bad, last good\n"
+      "[W][facet_wb:2578]: spec boot: weather_screen: no intact copy, factory\n"
+      "[W][facet_wb:2578]: spec boot: deck: current copy bad, last good\n"
+      "[E][art:88]: picture failed: http://10.0.0.5:8123/api/media_player_proxy/media_player.spotify_31337abc?token=s3cr3tT0k3n&cache=9f8e7d6c\n"
+      "[E][art:88]: picture failed: /api/media_player_proxy/media_player.spotify_31337abc?token=s3cr3tT0k3n&cache=9f8e7d6c\n"
+      "[W][ha:40]: no state for light.kitchen_island, sensor.living_room_temperature\n"
+      "[W][ha:41]: host fe80 at 192.168.1.20 refused (wss://ha.example.org/api/websocket#x)\n";
+  const std::string r = redact(scrub(report, is_builtin));
+  for (const char *leak : {"192.168", "10.0.0.5", "8123", "homeassistant.local", "ha.example.org", "Griffin Home",
+                           "A4:5E", "darrens_office", "spotify_31337abc", "31337", "s3cr3tT0k3n", "cache=", "9f8e7d6c",
+                           "kitchen_island", "living_room_temperature", "token="})
+    EXPECT(r.find(leak) == std::string::npos, "'%s' left in the report:\n%s", leak, r.c_str());
+  for (const char *kept : {"firmware 0.5.0-beta.7+abc1234, board guition-4848s040, built 2026-11-06", "uptime 3 min 05 s",
+                           "HA link dropped: cannot reach [address] (timeout)", "\"free\":112511", "\"theme\":\"dark\"",
+                           "ssid=[name] bssid=[address] reason='Beacon Timeout'", "spec boot: [screen]: current copy bad",
+                           "spec boot: weather_screen: no intact copy", "spec boot: deck:",
+                           "http://[host]/api/media_player_proxy/media_player.[entity]\n",
+                           "failed: /api/media_player_proxy/media_player.[entity]\n",
+                           "light.[entity], sensor.[entity]", "wss://[host]/api/websocket)", "template=bug.yml",
+                           fw::report::SAFE})
+    EXPECT(r.find(kept) != std::string::npos, "'%s' missing from the report:\n%s", kept, r.c_str());
+  // ordinary lines stay as they are
+  for (const char *ok : {"keys: 2", "[W][wifi:123]: Disconnected reason 8, signal -71", "build 0.5.0-beta.7+abc1234",
+                         "free 112511 B, largest 47104", "at 12:34:56, 1.2.3 of 4", "what? no", "/fw/report",
+                         "boot 3: software restart, ran 1 h 02 min", "weather screen: 3 days"})
+    EXPECT(scrub(ok) == ok, "changed: '%s' -> '%s'", ok, scrub(ok).c_str());
+  EXPECT(scrub(fw::report::HOWTO) == fw::report::HOWTO, "the how-to lines changed: '%s'", scrub(fw::report::HOWTO).c_str());
+}
+
 int main() {
   test_restart();
   test_wrap();
   test_conns();
   test_redact();
+  test_scrub();
   if (fails) { printf("%d failed\n", fails); return 1; }
   printf("fw_report: ok\n");
   return 0;

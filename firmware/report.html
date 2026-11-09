@@ -43,6 +43,7 @@ li::marker { color: var(--dim); }
 .button:disabled { opacity: 0.5; cursor: default; }
 .status { display: flex; align-items: center; gap: 10px; margin: 0 0 40px; color: var(--dim); font-size: 15px; }
 .dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--line-hi); }
+.safe { margin: -16px 0 32px; color: var(--text); }
 .ok .dot { background: var(--ok); } .bad .dot { background: var(--bad); }
 .code { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); overflow: hidden; }
 .code p { margin: 0; padding: 10px 16px; border-bottom: 1px solid var(--line); }
@@ -57,6 +58,7 @@ textarea:focus-visible { outline-offset: -2px; border-radius: 0; }
   <p class="label">This panel</p>
   <h1>Report a problem</h1>
   <p class="lede">Send this panel's report with your bug report: it helps find what went wrong.</p>
+  <p class="status ok safe"><span class="dot"></span><span>Safe to paste: no passwords, keys, tokens, addresses or names of your devices and entities.</span></p>
   <ol>
     <li>Copy this report (or download it).</li>
     <li>Open a new issue on GitHub: <a id="ghlink" href="https://github.com/mrdarrengriffin/facet/issues/new?template=bug.yml" target="_blank" rel="noopener noreferrer">the bug report form</a>.</li>
@@ -72,7 +74,7 @@ textarea:focus-visible { outline-offset: -2px; border-radius: 0; }
     <p class="label">The report</p>
     <textarea id="text" readonly spellcheck="false" aria-label="The report"></textarea>
   </div>
-  <p class="note">The logs from before the last restart, the Wi-Fi and Home Assistant drops and the last crash. Tokens, keys and passwords are taken out.</p>
+  <p class="note">The logs from before the last restart, the Wi-Fi and Home Assistant drops and the last crash. Tokens, keys, passwords, addresses, network names, entity ids and your own screens' names are taken out.</p>
 </main>
 <script>
 const $ = (id) => document.getElementById(id);

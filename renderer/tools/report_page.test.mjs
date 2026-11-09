@@ -29,6 +29,11 @@ test('the steps come first, the GitHub link in step 2, the buttons next to them'
   assert.ok(at[0] < html.indexOf('id="copy"') && html.indexOf('id="copy"') < html.indexOf('id="state"'), 'steps, then the buttons, then the rest');
   assert.ok(html.includes('id="ghlink"') && script.includes("$('ghlink').href = issueUrl"), 'step 2 links the filled-in form');
 });
+test('says it is safe to paste, at the top, as the text does (#176)', () => {
+  const safe = 'Safe to paste: no passwords, keys, tokens, addresses or names of your devices and entities.';
+  assert.ok(html.includes(safe) && html.indexOf(safe) < html.indexOf('<ol>'), 'the line, before the steps');
+  assert.ok(readFileSync(join(ROOT, 'firmware', 'fw_report.h'), 'utf8').includes(`"# ${safe}\\n`), 'the same line in the text');
+});
 test('the version and board come from the report\'s first lines', () => {
   const t = 'Facet problem report\nfirmware 0.5.0-beta.7, board guition-4848s040, built 2026-11-06\nuptime 3 min';
   assert.deepEqual(fns.facts(t), { version: '0.5.0-beta.7', board: 'guition-4848s040' });

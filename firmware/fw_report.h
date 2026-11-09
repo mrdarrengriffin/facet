@@ -5,7 +5,8 @@
 //   log ring     the last log lines as text, oldest overwritten; a boot writes a "--- boot N ---" line into it
 //   boots        the last BOOTS boots: reset reason, how long each ran, wall time at start
 //   connections  the last CONNS Wi-Fi / Home Assistant drops and reconnects: when, for how long, why, signal
-// Everything that leaves the panel goes through redact(): tokens, keys and passwords never appear in a report.
+// Everything that leaves the panel goes through redact() (tokens, keys, passwords) and scrub() (addresses, network
+// names, entity ids, URL queries, user screen ids), so a report is safe to paste into a public issue.
 #pragma once
 #include <cstddef>
 #include <cstdint>
@@ -177,10 +178,151 @@ inline std::string redact(const std::string &in) {
   return out;
 }
 
+// ---------------------------------------------------------------- scrub (#176)
+// Takes out what identifies a home, after redact() took out the secrets, so the report is safe to paste in public:
+//   URLs           scheme://[host]/path, no query or fragment (a picture's cache= id, a token); github.com stays
+//   paths          /a/b?x=1 -> /a/b (Home Assistant's relative picture URLs)
+//   IPv4 [+port]   [address]; MAC addresses (a BSSID) [address]
+//   ssid=...       ssid=[name] (ESPHome's Wi-Fi warnings name the network)
+//   entity ids     <domain>.[entity] for Home Assistant's domains (media_player.spotify_<account> etc.)
+//   spec boot ids  "spec boot: <id>: ..." -> "spec boot: [screen]: ..." unless the id is built in (builtin(id))
+// Kept: firmware, board, uptime, boot and reset reasons, heap, settings values, error words.
+inline const char *const HA_DOMAINS[] = {
+    "alarm_control_panel", "assist_satellite", "automation", "binary_sensor", "button", "calendar", "camera",
+    "climate", "conversation", "counter", "cover", "date", "datetime", "device_tracker", "event", "fan", "group",
+    "humidifier", "image", "input_boolean", "input_button", "input_datetime", "input_number", "input_select",
+    "input_text", "lawn_mower", "light", "lock", "media_player", "notify", "number", "person", "remote", "scene",
+    "schedule", "script", "select", "sensor", "siren", "stt", "sun", "switch", "text", "time", "timer", "todo", "tts",
+    "update", "vacuum", "valve", "wake_word", "water_heater", "weather", "zone"};
+inline bool hex_ch(char c) { return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'); }
+inline bool dig_ch(char c) { return c >= '0' && c <= '9'; }
+// the end of a URL or path: space, quote, brackets, comma, angle brackets
+inline bool url_end(char c) {
+  return c == ' ' || c == '\t' || c == '\n' || c == '"' || c == '\'' || c == ',' || c == '<' || c == '>' || c == ')' ||
+         c == '}' || c == ']' || c == '\\' || c == ';';
+}
+// an IPv4 address at i (four numbers 0..255, not part of a longer dotted run): its length, else 0
+inline size_t ipv4_at(const std::string &s, size_t i) {
+  if (i > 0 && (dig_ch(s[i - 1]) || s[i - 1] == '.' || word_ch(s[i - 1]))) return 0;
+  size_t j = i;
+  for (int part = 0; part < 4; part++) {
+    if (part) { if (j >= s.size() || s[j] != '.') return 0; j++; }
+    size_t k = j;
+    int v = 0;
+    while (k < s.size() && dig_ch(s[k]) && k - j < 4) v = v * 10 + (s[k] - '0'), k++;
+    if (k == j || k - j > 3 || v > 255) return 0;
+    j = k;
+  }
+  if (j < s.size() && (word_ch(s[j]) || (s[j] == '.' && j + 1 < s.size() && dig_ch(s[j + 1])))) return 0;
+  if (j + 1 < s.size() && s[j] == ':' && dig_ch(s[j + 1])) {  // :port
+    j++;
+    while (j < s.size() && dig_ch(s[j])) j++;
+  }
+  return j - i;
+}
+// a MAC address at i (six hex pairs with ':' or '-'): its length, else 0
+inline size_t mac_at(const std::string &s, size_t i) {
+  if (i > 0 && (word_ch(s[i - 1]) || s[i - 1] == ':')) return 0;
+  if (i + 17 > s.size()) return 0;
+  const char sep = s[i + 2];
+  if (sep != ':' && sep != '-') return 0;
+  for (int k = 0; k < 6; k++) {
+    if (!hex_ch(s[i + 3 * k]) || !hex_ch(s[i + 3 * k + 1])) return 0;
+    if (k < 5 && s[i + 3 * k + 2] != sep) return 0;
+  }
+  if (i + 17 < s.size() && (word_ch(s[i + 17]) || s[i + 17] == sep)) return 0;
+  return 17;
+}
+inline std::string scrub(const std::string &in, bool (*builtin)(const std::string &) = nullptr) {
+  // 1. URLs and paths: host out, query and fragment out
+  std::string a;
+  a.reserve(in.size());
+  bool in_path = false;  // inside a token that has a '/' (a URL's path or a bare path)
+  for (size_t i = 0; i < in.size();) {
+    const char c = in[i];
+    if (c == ':' && in.compare(i, 3, "://") == 0 && i > 0 && word_ch(in[i - 1])) {
+      size_t h = i + 3;
+      while (h < in.size() && !url_end(in[h]) && in[h] != '/' && in[h] != '?' && in[h] != '#') h++;
+      if (in.compare(i + 3, h - i - 3, "github.com") == 0) {  // Facet's own public pages (the how-to's form) stay
+        while (i < in.size() && !url_end(in[i])) a += in[i++];
+        continue;
+      }
+      a += "://[host]";
+      i = h;
+      in_path = true;
+      continue;
+    }
+    if (url_end(c)) in_path = false;
+    else if (c == '/') in_path = true;
+    else if (in_path && (c == '?' || c == '#')) {  // the query / fragment of a URL or path: out
+      while (i < in.size() && !url_end(in[i])) i++;
+      in_path = false;
+      continue;
+    }
+    a += c;
+    i++;
+  }
+  // 2. addresses, network names, entity ids, user screen ids
+  std::string o;
+  o.reserve(a.size());
+  for (size_t i = 0; i < a.size();) {
+    if (size_t n = ipv4_at(a, i)) { o += "[address]"; i += n; continue; }
+    if (size_t n = mac_at(a, i)) { o += "[address]"; i += n; continue; }
+    if ((i == 0 || !word_ch(a[i - 1])) && (a.compare(i, 5, "ssid=") == 0 || a.compare(i, 5, "SSID=") == 0 ||
+                                           a.compare(i, 6, "ssid: ") == 0 || a.compare(i, 6, "SSID: ") == 0)) {
+      const size_t v = i + (a[i + 4] == '=' ? 5 : 6);
+      o.append(a, i, v - i);
+      size_t e = v;
+      if (e < a.size() && (a[e] == '\'' || a[e] == '"')) {
+        const char q = a[e++];
+        while (e < a.size() && a[e] != q && a[e] != '\n') e++;
+        if (e < a.size() && a[e] == q) e++;
+      } else {
+        while (e < a.size() && !url_end(a[e])) e++;
+      }
+      o += "[name]";
+      i = e;
+      continue;
+    }
+    if (a.compare(i, 11, "spec boot: ") == 0) {
+      const size_t v = i + 11;
+      size_t e = v;
+      while (e < a.size() && a[e] != ':' && a[e] != '\n') e++;
+      const std::string id = a.substr(v, e - v);
+      o += "spec boot: ";
+      o += id == "deck" || (builtin && builtin(id)) ? id : "[screen]";
+      i = e;
+      continue;
+    }
+    if ((i == 0 || (!word_ch(a[i - 1]) && a[i - 1] != '.')) && a[i] >= 'a' && a[i] <= 'z') {
+      bool hit = false;
+      for (const char *d : HA_DOMAINS) {
+        const size_t L = strlen(d);
+        if (a.compare(i, L, d) != 0 || i + L + 1 >= a.size() || a[i + L] != '.') continue;
+        size_t e = i + L + 1;
+        while (e < a.size() && ((a[e] >= 'a' && a[e] <= 'z') || dig_ch(a[e]) || a[e] == '_')) e++;
+        if (e == i + L + 1) continue;
+        o.append(a, i, L + 1);
+        o += "[entity]";
+        i = e;
+        hit = true;
+        break;
+      }
+      if (hit) continue;
+    }
+    o += a[i++];
+  }
+  return o;
+}
+// what the report may say about itself once scrub() and redact() ran (the page says the same)
+constexpr const char *SAFE =
+    "Safe to paste: no passwords, keys, tokens, addresses or names of your devices and entities.";
+
 // the report's first lines (GET /fw/report.txt and the downloaded file): what to do with it, before the report itself
 constexpr const char *HOWTO =
     "# To report a problem: open https://github.com/mrdarrengriffin/facet/issues/new?template=bug.yml\n"
-    "# and paste this whole file into the Report box (or attach it), then say what happened.\n\n";
+    "# and paste this whole file into the Report box (or attach it), then say what happened.\n"
+    "# Safe to paste: no passwords, keys, tokens, addresses or names of your devices and entities.\n\n";
 
 // ---------------------------------------------------------------- text helpers
 // strips ANSI colour codes (ESPHome's log lines carry them)

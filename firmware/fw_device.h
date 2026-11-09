@@ -1577,7 +1577,8 @@ inline void info_json(std::string &s) {
 // .noinit RAM, which the Guition's hop clears and a power cycle loses. report::begin() (on_boot 850, before the hop at
 // 800) has ESPHome log it again into a string and saves that in NVS "facet_report", so it survives power loss.
 // The log ring gets every line the logger prints (its level: WARN on the Guition), without colour codes; the report
-// passes everything through fw::report::redact (tokens, keys, passwords). The report streams section by section.
+// passes everything through fw::report::scrub (addresses, entity ids, URL queries, user screen ids) and redact
+// (tokens, keys, passwords). The report streams section by section.
 namespace report {
 #if CONFIG_IDF_TARGET_ESP32S3
 constexpr size_t LOG = 5 * 1024;
@@ -1776,8 +1777,16 @@ inline void send(AsyncWebServerRequest *request) {
   bool ok = true;
   // paced pieces, as the screenshot: Wi-Fi TX buffers come out of internal RAM on the Guition, and one 14 KB chunk
   // (/fw/info) stalled the send and crashed the panel
+  static std::string ids;  // the built-in screen ids (the bundle's "ids"): a user's own screen id is scrubbed, these stay
+  if (ids.empty()) {
+    ArduinoJson::JsonDocument b;
+    ids = ",";
+    if (!deserializeJson(b, fw::bundle::INFO))
+      for (auto kv : b["ids"].as<ArduinoJson::JsonObjectConst>()) ids += std::string(kv.key().c_str()) + ",";
+  }
   auto out = [&](const std::string &t) {
-    const std::string r = fw::report::redact(t);
+    const std::string r = fw::report::redact(fw::report::scrub(
+        t, [](const std::string &id) { return ids.find("," + id + ",") != std::string::npos; }));
     for (size_t at = 0; ok && at < r.size(); at += 1024) {
       ok = httpd_resp_send_chunk(req, r.data() + at, std::min<size_t>(1024, r.size() - at)) == ESP_OK;
       vTaskDelay(heap_caps_get_free_size(MALLOC_CAP_INTERNAL) < 24 * 1024 ? pdMS_TO_TICKS(20) : 1);
@@ -1831,6 +1840,15 @@ inline void send(AsyncWebServerRequest *request) {
   out(o + "\n");
   std::string info;
   info_json(info);
+  {  // the last screen sent: its id only (its props can carry names), a user's own screen as [screen]
+    ArduinoJson::JsonDocument d;
+    if (!deserializeJson(d, info) && d["shown"].is<ArduinoJson::JsonObjectConst>()) {
+      const std::string id = d["shown"]["id"] | "";
+      d["shown"] = ids.find("," + id + ",") != std::string::npos ? id : std::string("[screen]");
+      info.clear();
+      serializeJson(d, info);
+    }
+  }
   out("== Panel (/fw/info) ==\n" + info + "\n\n");
   std::string set;
   in_loop([&] { fw::dev::settings_json(set); }, 3000);
