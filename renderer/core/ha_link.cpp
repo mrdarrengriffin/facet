@@ -35,6 +35,7 @@ struct State {
   std::map<std::string, std::vector<Entity>> cache;
   std::map<std::string, uint32_t> read_at;  // per cached domain: when it was read (lv_tick)
   std::map<std::string, int> left;         // per cached domain: entities the read did not keep (PER, BUDGET)
+  size_t (*largest)() = nullptr;           // on_largest
   std::string index_key, index;            // the editor's index (index_text): its domains, its lines until taken
   int index_left = 0;
   bool index_ready = false;
@@ -134,9 +135,8 @@ void Scan::obj_end() {  // an entity's object closes: keep it when its domain is
     if (!ok) ;  // not wanted, or not a match
     else if (index) {  // one line, straight into the one string
       const size_t n = id_.size() + name_.size() + dc_.size() + st_.size() + unit_.size() + 5;
-      if (lines.size() + n > INDEX_MAX) more++;
+      if (lines.size() + n + 16 > lines.capacity()) more++;  // the string was sized once (index_text): never grown here
       else {
-        if (lines.capacity() < lines.size() + n) lines.reserve(std::min(INDEX_MAX, std::max<size_t>(lines.capacity() * 2, 16 * 1024)));
         auto field = [&](const std::string &v, char end) { for (char c : v) lines += (c == '\t' || c == '\n') ? ' ' : c; lines += end; };
         field(id_, '\t'), field(name_.empty() ? id_ : name_, '\t'), field(dc_, '\t'), field(st_, '\t'), field(unit_, '\n');
         peak_ = std::max(peak_, held_ + lines.capacity());
@@ -376,9 +376,13 @@ void index_text(const std::string &domains, std::string &out) {
   if (s.st != LOADING && s.st != CHECKING && s.index_key != domains) {
     if (!cannot()) {
       delete s.active;
+      std::string().swap(s.index);
+      // one allocation, before the read, never grown: half the largest free block at most (the 480 panel: a doubling
+      // string ran it out of memory mid-read)
+      const size_t room = s.largest ? s.largest() / 2 : INDEX_MAX;
       s.active = new Scan(domains);
       s.active->index = true;
-      std::string().swap(s.index);
+      s.active->lines.reserve(std::min(INDEX_MAX, room));
       s.index_key = domains, s.index_ready = false, s.index_left = 0;
       s.st = LOADING;
       s.why.clear();
@@ -440,6 +444,7 @@ bool stale(const std::string &domain) {
   return it != S().read_at.end() && lv_tick_diff(lv_tick_get(), it->second) > STALE_MS;
 }
 void on_get(GetSink f) { S().get = f; }
+void on_largest(size_t (*f)()) { S().largest = f; }
 void on_ws(WsSink f) { S().ws = f; }
 uint32_t ws(const std::string &cmd, std::function<void(const char *, size_t)> feed, std::function<void(bool, const std::string &)> end) {
   State &s = S();

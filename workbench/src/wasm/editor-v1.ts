@@ -586,14 +586,14 @@ function cardFor(id: string, size: string): Card {
 /** the search index (a panel: read once from its Home Assistant, a few seconds in a large house, then searched here as
  *  you type; again in the background when over a minute old), or the workbench's fixture */
 type Row = { id: string; name: string; dc?: string; st?: string; unit?: string };
-let idx: { at: number; state: string; why?: string; rows: Row[] } | null = null;
+let idx: { at: number; state: string; why?: string; rows: Row[]; left: number } | null = null;
 let idxRun: Promise<void> | null = null;
 function loadIndex(): Promise<void> {
   if (idxRun) return idxRun;
   if (idx && idx.state === 'ok' && Date.now() - idx.at < 60_000) return Promise.resolve();
   idxRun = host.index(allDomains()).then((r) => {
     if (!r) return;
-    if (r.state === 'ok' || !idx || idx.state !== 'ok') idx = { at: Date.now(), state: r.state, why: r.why, rows: r.rows };  // a failed refresh keeps the last good one
+    if (r.state === 'ok' || !idx || idx.state !== 'ok') idx = { at: Date.now(), state: r.state, why: r.why, rows: r.rows, left: r.left };  // a failed refresh keeps the last good one
     for (const o of r.rows) names.set(o.id, o.name);
   }).finally(() => { idxRun = null; });
   return idxRun;
@@ -602,13 +602,13 @@ async function find(doms: string[], dc: string, q: string) {
   let rows: Row[];
   if (host.panel) {
     if (!idx || idx.state !== 'ok') await loadIndex(); else void loadIndex();  // old: read again behind the scenes
-    if (!idx || idx.state !== 'ok') return { state: (idx?.state ?? 'failed') as 'off' | 'failed', why: idx?.why, found: [] as Row[], more: 0 };
+    if (!idx || idx.state !== 'ok') return { state: (idx?.state ?? 'failed') as 'off' | 'failed', why: idx?.why, found: [] as Row[], more: 0, left: 0 };
     const ds = new Set(doms);
     rows = idx.rows.filter((o) => ds.has(o.id.slice(0, o.id.indexOf('.'))));
   } else rows = doms.flatMap((d) => options[d] ?? []);
   const qq = q.toLowerCase(), dcs = dc ? dc.split(',') : [];
   const all = rows.filter((o) => (!dcs.length || dcs.includes(o.dc ?? '')) && (o.id.toLowerCase().includes(qq) || o.name.toLowerCase().includes(qq)));
-  return { state: 'ok' as const, why: undefined as string | undefined, found: all.slice(0, 40), more: Math.max(0, all.length - 40) };
+  return { state: 'ok' as const, why: undefined as string | undefined, found: all.slice(0, 40), more: Math.max(0, all.length - 40), left: host.panel ? idx?.left ?? 0 : 0 };
 }
 /** an entity's state in words, as Home Assistant shows it: a number with its unit, a door Open / Closed, motion
  *  Detected / Clear, on / off as On / Off, anything else with a capital */
@@ -673,6 +673,7 @@ function searchBox(doms: string[], dc: string, label: string, pick: (id: string)
     }
     if (!r.found.length) box.append(h('p', 'dim', 'Nothing matches.'));
     if (r.more) box.append(h('p', 'v1-meta', `${r.more} more: type more of the name to narrow it.`));
+    if (r.left) box.append(h('p', 'v1-meta', `${r.left} entities did not fit in this panel's memory and are not searched.`));
   };
   q.oninput = () => { clr.hidden = !q.value; clearTimeout(timer); timer = window.setTimeout(() => void run(), 60); };
   idle();

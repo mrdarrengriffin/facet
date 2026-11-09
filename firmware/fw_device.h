@@ -342,6 +342,7 @@ inline void heap(ArduinoJson::JsonObject o) {
   o["internal_min"] = heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL);
   o["psram_free"] = heap_caps_get_free_size(MALLOC_CAP_SPIRAM);
   o["internal_largest"] = heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL);
+  o["largest"] = heap_caps_get_largest_free_block(MALLOC_CAP_8BIT);  // the most one allocation can get (the search index: half)
 }
 }  // namespace fw::device
 // the display's frame counters, when the board's display driver has them (Facet's mipi_rgb, Guition RGB panel; a weak
@@ -2606,6 +2607,7 @@ inline void setup() {
     nvs_close(w);
   });
   fw::dev::ha_link::on_get(get);
+  fw::dev::ha_link::on_largest([]() -> size_t { return heap_caps_get_largest_free_block(MALLOC_CAP_8BIT); });
   fw::dev::ha_link::on_ws(ws);
   pairing_setup();
   lv_timer_create(drain, 20, nullptr);
