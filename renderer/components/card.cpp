@@ -2,12 +2,14 @@
 // opens that screen. CONTRACT v2 (renderer/CONTRACT.md, release piece 2): built only from token names
 // through core/fx.h. It has NO width or height of its own: it fills its parent (the Home grid cell gives it its size;
 // no predefined width, so no size prop). It DECLARES a minimum (meta "min": layout:card-min-w x
-// card-min-h) and scales between that and any size above it in two steps, each picked from its own content box:
+// card-min-h) and scales between that and any size above it in three steps, each picked from its own content box:
 //   full      (the approved card, 320 x 280 / 212 x 184 at the docs size): top row icon + caps label + accent dot, the
 //             preview artwork top right (icon size card 72 / 48); (grow); value (type value) or up to two lines of
 //             text (type title, bottom-aligned); card-gap (space 9: value bottom = 88 / 56 from the edge); sub (body)
-//   compact   when the full card does not fit its height: no preview, value / text one line in type title, space 2
-//             before the sub. card-min-h is exactly what the compact step needs (a test proves the sum).
+//   pictured  when the full card does not fit its height: the full card's head (the preview stays: a wide, short
+//             cell such as Home's 2 x 1), value / text one line in type title, space 2 before the sub
+//   compact   when that does not fit either: the same with no preview. card-min-h is exactly what the compact step
+//             needs (a test proves the sum).
 //   A label too long for its row takes the row's free width and ends in "..." (the dot then sits at the row's end).
 // Below the minimum the bounds proof fails by design. Every text is one line with "...", except text mode (two).
 // Look: bg:surface, border:line (hair), radius:card, padding card-pad (layout:card-pad less the hair, children count
@@ -30,7 +32,7 @@
 namespace {
 constexpr lv_state_t ST_OFF = fw::st::OFF;  // unavailable (LVGL sends no events to LV_STATE_DISABLED; see Button)
 struct Card {
-  int step = 0;             // 0 full, 1 compact
+  int step = 0;             // 0 full, 1 pictured, 2 compact
   bool long_label = false;  // the label takes the row's free width and ends in "..."
   int w = -1, h = -1;       // the content size the step was picked at
   bool queued = false;
@@ -95,7 +97,7 @@ void fill(lv_obj_t *c, fw::Props p) {
   const bool off = fw::st::gone(state);
   const bool accent = accent_of(p);
   const bool text_mode = !strcmp(p["mode"] | "value", "text");
-  const bool full = k.step == 0;
+  const bool full = k.step == 0, pic = k.step < 2;  // pic: the preview shows (full, pictured)
   const char *dim = off ? "fg:unavailable-ink" : "fg:text-dim";
 
   lv_obj_remove_style_all(c);
@@ -133,43 +135,43 @@ void fill(lv_obj_t *c, fw::Props p) {
     if (!accent) lv_obj_add_flag(dot, LV_OBJ_FLAG_HIDDEN);
     if (!strcmp(pv, "media")) k.dot = dot;
   }
-  if (!off && full && !strcmp(pv, "bins")) {  // the real Bins art at card size (C8b; contract, unlike the legacy previews)
+  if (!off && pic && !strcmp(pv, "bins")) {  // the real Bins art at card size (C8b; contract, unlike the legacy previews)
     ArduinoJson::JsonDocument bd;
     bd["colours"] = p["colours"] | "black", bd["size"] = "card";
     fw::find("bins_art")->build(top, bd.as<fw::Props>());
-  } else if (!off && full && !strcmp(pv, "media")) {  // the real Media visual at card size (C8b, C52: what is playing)
+  } else if (!off && pic && !strcmp(pv, "media")) {  // the real Media visual at card size (C8b, C52: what is playing)
     ArduinoJson::JsonDocument md;
     media_props(p, md);
     fw::find("media_visual")->build(top, md.as<fw::Props>());
     k.media = lv_obj_get_child(top, -1);
     if (!strcmp(md["visual"] | "", "vinyl")) fx::overflow(top, "top", "layout:card-pad");  // the vinyl's arm, into the card's padding
-  } else if (!off && full && !strcmp(pv, "covers")) {  // the real Cover visual at card size (C8b, C52: the window shown)
+  } else if (!off && pic && !strcmp(pv, "covers")) {  // the real Cover visual at card size (C8b, C52: the window shown)
     ArduinoJson::JsonDocument cd;
     cd["size"] = "card", cd["position"] = p["position"];
     fw::find("cover_visual")->build(top, cd.as<fw::Props>());
     k.cover = lv_obj_get_child(top, -1);
-  } else if (!off && full && !strcmp(pv, "vacuum")) {  // the real Vacuum robot at card size (C8b, C52: the run or the battery)
+  } else if (!off && pic && !strcmp(pv, "vacuum")) {  // the real Vacuum robot at card size (C8b, C52: the run or the battery)
     ArduinoJson::JsonDocument vd;
     vd["value"] = p["progress"], vd["run"] = p["run"] | "idle";
     fw::find("vacuum_robot")->build(top, vd.as<fw::Props>());
     k.robot = lv_obj_get_child(top, -1);
-  } else if (!off && full && !strcmp(pv, "flights")) {  // the real Sky radar at card size (C8b, C52: the aircraft round home)
+  } else if (!off && pic && !strcmp(pv, "flights")) {  // the real Sky radar at card size (C8b, C52: the aircraft round home)
     ArduinoJson::JsonDocument fd;
     fd["planes"] = p["planes"] | "[]", fd["size"] = "card", fd["unit"] = p["radar_unit"] | "km", fd["range"] = p["radar_range"] | "50";
     fw::find("sky_radar")->build(top, fd.as<fw::Props>());
     k.radar = lv_obj_get_child(top, -1);
-  } else if (!off && full && !strcmp(pv, "moon")) {  // the real Moon phase at card size (C8b, C52: the moon tonight)
+  } else if (!off && pic && !strcmp(pv, "moon")) {  // the real Moon phase at card size (C8b, C52: the moon tonight)
     ArduinoJson::JsonDocument md;
     md["phase"] = p["phase"], md["south"] = p["south"], md["size"] = "card";
     fw::find("moon_icon")->build(top, md.as<fw::Props>());
-  } else if (!off && full && !strcmp(pv, "weather")) {  // the real Weather icon at card size (C8b, C52: the weather now)
+  } else if (!off && pic && !strcmp(pv, "weather")) {  // the real Weather icon at card size (C8b, C52: the weather now)
     ArduinoJson::JsonDocument wd;
     wd["icon"] = p["weather"] | "partly-day", wd["size"] = "card";
     fw::find("weather_icon")->build(top, wd.as<fw::Props>());
-  } else if (!off && full && !strcmp(pv, "timer") && !timer_running(p)) {
+  } else if (!off && pic && !strcmp(pv, "timer") && !timer_running(p)) {
     // no timer running: no picture (the ring would stand for nothing)
-  } else if (!off && full && fw::is_preview(pv)) fw::card_preview(top, pv, p);  // the card artwork (legacy, components/card_previews.cpp)
-  else if (!off && full && strcmp(pv, "none")) fx::icon(top, pv, "card", "fg:text-dim");
+  } else if (!off && pic && fw::is_preview(pv)) fw::card_preview(top, pv, p);  // the card artwork (legacy, components/card_previews.cpp)
+  else if (!off && pic && strcmp(pv, "none")) fx::icon(top, pv, "card", "fg:text-dim");
 
   // the body: everything under the head (Facet: no padding of its own, so it is the card's content box as before)
   lv_obj_t *body = fx::box(c, "col");
@@ -208,6 +210,7 @@ bool outside(lv_obj_t *o, const lv_area_t &box) {
   }
   return a.x1 < box.x1 || a.y1 < box.y1 || a.x2 > box.x2 || a.y2 > box.y2;
 }
+void queue(lv_obj_t *c);
 // after a layout: does this step fit its own content box? if not, the next step down (never below compact: under the
 // declared minimum the bounds proof reports it)
 void check(void *v) {
@@ -233,7 +236,7 @@ void check(void *v) {
     if (outside(lab, cb)) wide = true;
   }
   if (wide && !k.long_label) { k.long_label = true; rebuild(c); }
-  if (tall && k.step == 0) { k.step = 1; rebuild(c); }
+  if (tall && k.step < 2) { k.step++; rebuild(c); queue(c); }  // pictured, then compact: each checked again
 }
 void queue(lv_obj_t *c) {
   Card &k = cards[c];
