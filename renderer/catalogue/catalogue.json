@@ -1540,6 +1540,16 @@
      "about": "How the tile looks: default ready to tap, pressed while held, unavailable when the device has no state now, or missing when Home Assistant has no such device."
     },
     {
+     "name": "shape",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "tile",
+      "half"
+     ],
+     "about": "The tile's shape: tile is a square (icon on top, the name and state under it), half is half a Home cell: the name over the state, no icon."
+    },
+    {
      "name": "press",
      "type": "select",
      "bindable": true,
@@ -1835,9 +1845,10 @@
       "square",
       "wide",
       "row",
-      "hug"
+      "hug",
+      "half"
      ],
-     "about": "The cell shape: square, wide (16 by 9), row (as tall as what is inside, for text like stats), or hug (each cell as wide as what is inside, the row centred, like a bar of chips)."
+     "about": "The cell shape: square, wide (16 by 9), row (as tall as what is inside, for text like stats), hug (each cell as wide as what is inside, the row centred, like a bar of chips), or half (rows half a square tall: a square is two rows, two halves share one)."
     },
     {
      "name": "rows",
@@ -5373,7 +5384,7 @@
   "screens": 16,
   "deck_bytes": 8192,
   "pages": 16,
-  "homes": 4,
+  "homes": 8,
   "cards": 24
  },
  "deck_v": 2,
@@ -5382,6 +5393,7 @@
   "detail",
   "both"
  ],
+ "grid_sizes": "1x1,2x1,2x2,half",
  "cards": {
   "light": {
    "domains": "light,switch",
@@ -5491,5 +5503,5 @@
    }
   }
  },
- "hash": "61c94041"
+ "hash": "71b696b1"
 }

@@ -55,7 +55,7 @@ const schema = {
       params: { type: 'object', additionalProperties: { anyOf: [{ type: 'string' }, { $ref: '#/$defs/typedParam' }] } }, header: { type: 'object', additionalProperties: false, properties: { label: { type: 'string' }, back: { type: 'boolean' } } },
       layout: { enum: cat.layouts }, nodes: { type: 'array', maxItems: cat.budget.nodes, items: { oneOf: Object.keys(cat.components).map((id) => ({ $ref: `#/$defs/c_${id}` })) } } } },
     ...Object.fromEntries(Object.entries(cat.components).map(([id, c]) => [`c_${id}`, node(id, c)])),
-    card: { type: 'object', additionalProperties: false, required: ['t', 'size'], properties: { t: { enum: Object.keys(cat.cards) }, e: { type: 'string' }, size: { enum: ['s', 'm', 'l'] },
+    card: { type: 'object', additionalProperties: false, required: ['t', 'size'], properties: { t: { enum: Object.keys(cat.cards) }, e: { type: 'string' }, size: { enum: [...cat.grid_sizes.split(','), 's', 'm', 'l'] },
       tap: { enum: ['toggle', 'detail', 'page', 'none'] }, page: { type: 'string', pattern: '^[a-z0-9_]{1,12}$' }, label: { type: 'string', maxLength: 32 } } },
     deck: { type: 'object', additionalProperties: false, required: ['v', 'rev', 'start', 'pages'], properties: { v: { const: cat.deck_v }, rev: { type: 'integer' }, start: { type: 'string', pattern: '^[a-z0-9_]{1,12}$' },
       pages: { type: 'array', minItems: 1, maxItems: cat.budget.pages, items: { type: 'object', additionalProperties: false, required: ['id', 'kind'], properties: { id: { type: 'string', pattern: '^[a-z0-9_]{1,12}$' }, kind: { type: 'string', pattern: '^[a-z0-9_]{1,12}$' }, name: { type: 'string', maxLength: 32 }, source: { type: 'string', pattern: '^[a-z0-9_]{1,24}$' }, params: { type: 'object', additionalProperties: { type: 'string', maxLength: 1024 } },
@@ -111,7 +111,7 @@ const out = {
   feeds: { states: ['ok', 'loading', 'error', 'empty'], words: { loading: 'Loading', error: 'Offline', empty: 'Nothing yet' }, list: feeds },
   settings: { groups: SETTINGS.groups, settings: SETTINGS.settings },
   themes: { schema: THEME.schema, limits: THEME.limits, modes: THEME.modes, roles: THEME.roles, type: THEME.type, keys: THEME.keys, parts: THEME.parts, shape: THEME.shape },
-  spec: { actions: cat.act, fmt: cat.fmt, layouts: cat.layouts, budget: cat.budget, cards: cat.cards, schema: 'catalogue/spec.schema.json' },
+  spec: { actions: cat.act, fmt: cat.fmt, layouts: cat.layouts, budget: cat.budget, cards: cat.cards, grid_sizes: cat.grid_sizes, schema: 'catalogue/spec.schema.json' },
   routes,
 };
 put('schema.json', out);

@@ -19,13 +19,16 @@ type Setting = { id: string; group: string; label: string; help?: string; kind: 
   options?: Opt[]; min?: number; max?: number; step?: number; unit?: string; presets?: number[]; zero?: string };
 type Header = { button?: string; status?: string; buttons?: unknown[] };
 /** a deck page: kind "home" = your own screen (cards), else a built-in screen (its id = its kind, once per deck) */
-type Page = { id: string; kind: string; name?: string; source?: string; params?: Record<string, string>; cards?: unknown[]; header_actions?: Header };
+type Card = { t: string; e?: string; size: string; tap?: string; page?: string; label?: string };
+type Page = { id: string; kind: string; name?: string; source?: string; params?: Record<string, string>; cards?: Card[]; header_actions?: Header };
+type CardDef = { domains: string; taps: string; detail: string; by_domain?: Record<string, { taps: string; detail?: string }> };
 type Boot = {
   screens: Record<string, Screen>; settings: { groups: { id: string; label: string }[]; settings: Setting[] };
   deck: { start: string; pages: Page[] };
   options: Record<string, { id: string; name: string }[]>;
   accents: { default: string; sets: { id: string; label: string; dark: { accent: string } }[] };
   scope: string; hash: string; own_max: number;
+  cards: Record<string, CardDef>; grid_sizes: string; card_max: number;
 };
 /** what the editor holds (and what "the panel" runs, the same shape): the deck's pages in swipe order + the panel's settings */
 type Draft = { pages: Page[]; start: string; settings: Record<string, unknown>; ha: { url: string; token: string } };
@@ -79,12 +82,85 @@ function newId(n: string) {
   for (let i = 2; ; i++) if (!taken.has(`${base}_${i}`)) return `${base}_${i}`;
 }
 
+// ---- 2. the grid: Home's Grid placed as the panel places it (core/fx_core.cpp grid_lay, aspect half: rows half a
+// square; an even-height card starts on an even row; a one-row card after a one-row card goes under it), so the
+// editor knows where every card sits and which squares are empty
+const COLS = 3;  // the square panels' homeCols (tokens/layout.json); both panels are square
+type Spot = { x: number; y: number; w: number; h: number };
+const span = (size: string): [number, number] => {
+  const s = size === 's' ? '1x1' : size === 'm' ? '2x1' : size === 'l' ? '2x2' : size;
+  return [s[0] === '2' ? 2 : 1, s === 'half' ? 1 : s === '1x2' || s === '2x2' ? 4 : 2];
+};
+const gsize = (c: Card) => (c.size === 's' ? '1x1' : c.size === 'm' ? (c.t === 'sensor' ? 'half' : '2x1') : c.size === 'l' ? '2x2' : c.size);
+/** where each card goes (null = left out: a page card whose page is not in the deck), and the taken half rows */
+function place(cards: Card[], pages: Page[]): { at: (Spot | null)[]; occ: boolean[][] } {
+  const occ: boolean[][] = [], at: (Spot | null)[] = [];
+  const grow = (n: number) => { while (occ.length < n) occ.push(Array(COLS).fill(false)); };
+  let px = -1, py = -1;
+  for (const c of cards) {
+    const pg = c.t === 'page' || c.tap === 'page' ? c.page ?? '' : null;
+    if (pg !== null && !pages.some((p) => p.id === pg)) { at.push(null); continue; }
+    const [sw, sh] = span(gsize(c)), w = Math.min(sw, COLS), hh = sh;
+    let done: Spot | null = null;
+    for (let y = 0; !done; y++) {
+      grow(y + hh);
+      if (hh === 1 && px >= 0 && y === 0) {
+        grow(py + 2);
+        if (py % 2 === 0 && !occ[py + 1][px]) { occ[py + 1][px] = true; done = { x: px, y: py + 1, w, h: 1 }; px = -1; break; }
+      }
+      if (hh % 2 === 0 && y % 2) continue;
+      for (let x = 0; x + w <= COLS && !done; x++) {
+        let free = true;
+        for (let yy = y; yy < y + hh && free; yy++) for (let xx = x; xx < x + w && free; xx++) free = !occ[yy][xx];
+        if (!free) continue;
+        for (let yy = y; yy < y + hh; yy++) for (let xx = x; xx < x + w; xx++) occ[yy][xx] = true;
+        done = { x, y, w, h: hh };
+        px = hh === 1 ? x : -1; py = y;
+      }
+    }
+    at.push(done);
+  }
+  return { at, occ };
+}
+/** a new card at a square (or under a half): the place in the card order that puts it there and moves the fewest
+ *  other cards (none, nearly always); -1 = nowhere */
+function insertAt(p: Page, card: Card, x: number, y: number): number {
+  const cards = p.cards ?? [], was = place(cards, draft.pages).at;
+  let best = -1, moved = Infinity;
+  for (let i = 0; i <= cards.length; i++) {
+    const next = [...cards.slice(0, i), card, ...cards.slice(i)];
+    const at = place(next, draft.pages).at;
+    if (at[i]?.x !== x || at[i]?.y !== y) continue;
+    const m = was.filter((s, j) => { const t = at[j < i ? j : j + 1]; return !!s !== !!t || (s && t && (s.x !== t.x || s.y !== t.y)); }).length;
+    if (m < moved) { best = i; moved = m; }
+    if (!m) break;
+  }
+  return best;
+}
+const TYPE_NAME: Record<string, string> = { light: 'Light', media: 'Media', sensor: 'Sensor', page: 'Screen', entity: 'Entity' };
+const SIZE_NAME: Record<string, string> = { '1x1': '1 × 1', '2x1': '2 × 1', '2x2': '2 × 2', '1x2': '1 × 2', half: 'Half' };
+const TAP_NAME: Record<string, string> = { toggle: 'Toggle', detail: 'Its screen', page: 'A screen', run: 'Run', none: 'Nothing' };
+function entName(id: string | undefined) {
+  if (!id) return '';
+  for (const l of Object.values(boot.options)) { const o = l.find((x) => x.id === id); if (o) return o.name; }
+  return id;
+}
+const cardName = (c: Card, d: Draft = draft) => c.label || (c.t === 'page' ? name(c.page ?? '', d) : entName(c.e)) || TYPE_NAME[c.t] || c.t;
+/** the taps a card can have: the type's, or for an Entity card its domain's (the default first) */
+function tapsOf(c: Card) {
+  const def = boot.cards[c.t];
+  if (!def) return ['none'];
+  if (c.t === 'entity') { const dom = (c.e ?? '').split('.')[0]; return (def.by_domain?.[dom] ?? def.by_domain?.['*'] ?? { taps: 'none' }).taps.split(','); }
+  return def.taps.split(',');
+}
+
 // ---- what changed, in words
 type Change = { where: string; what: string; was: string; now: string };
 function changes(a: Draft, b: Draft): Change[] {
   const out: Change[] = [];
   const ia = new Set(a.pages.map((p) => p.id)), ib = new Set(b.pages.map((p) => p.id));
   for (const p of b.pages) if (!ia.has(p.id)) out.push({ where: pname(p), what: own(p) ? 'Added your screen' : 'Added the built-in screen', was: '', now: '' });
+  for (const p of b.pages) if (!ia.has(p.id) && own(p)) for (const c of p.cards ?? []) out.push({ where: pname(p), what: `Added a ${TYPE_NAME[c.t] ?? c.t} card`, was: '', now: `${cardName(c, b)}, ${SIZE_NAME[gsize(c)]}` });
   for (const p of a.pages) if (!ib.has(p.id)) out.push({ where: pname(p), what: 'Removed', was: '', now: '' });
   const keptA = a.pages.filter((p) => ib.has(p.id)).map((p) => p.id), keptB = b.pages.filter((p) => ia.has(p.id)).map((p) => p.id);
   if (keptA.join() !== keptB.join()) out.push({ where: 'Screens', what: 'Swipe order', was: keptA.map((id) => name(id, a)).join(', '), now: keptB.map((id) => name(id, b)).join(', ') });
@@ -97,6 +173,7 @@ function changes(a: Draft, b: Draft): Change[] {
       const ha = pa.header_actions ?? {}, hb = pb.header_actions ?? {};
       if ((ha.button ?? 'settings') !== (hb.button ?? 'settings')) out.push({ where: pname(pb), what: 'Header button', was: hbName(ha.button, a), now: hbName(hb.button, b) });
       if ((ha.status ?? 'none') !== (hb.status ?? 'none')) out.push({ where: pname(pb), what: 'Header status', was: ha.status === 'timer' ? 'Timer' : 'Nothing', now: hb.status === 'timer' ? 'Timer' : 'Nothing' });
+      out.push(...cardChanges(pa, pb, a, b));
       continue;
     }
     for (const [k, p] of Object.entries(boot.screens[pb.kind].params)) {
@@ -108,6 +185,28 @@ function changes(a: Draft, b: Draft): Change[] {
   if (a.ha.url !== b.ha.url) out.push({ where: 'Home Assistant', what: 'Address', was: a.ha.url || 'not set', now: b.ha.url || 'not set' });
   if (a.ha.token !== b.ha.token) out.push({ where: 'Home Assistant', what: 'Token', was: hint(a.ha.token), now: hint(b.ha.token) });
   for (const s of boot.settings.settings) if (a.settings[s.id] !== b.settings[s.id]) out.push({ where: 'Settings', what: s.label, was: say(s, a.settings[s.id]), now: say(s, b.settings[s.id]) });
+  return out;
+}
+/** a Home's cards, before and after: added, removed, changed (size, label, tap), the order */
+function cardChanges(pa: Page, pb: Page, a: Draft, b: Draft): Change[] {
+  const out: Change[] = [], key = (c: Card) => `${c.t}|${c.e ?? ''}|${c.page ?? ''}`;
+  const ca = [...(pa.cards ?? [])], cb = pb.cards ?? [], kept: [Card, Card][] = [];
+  for (const c of cb) {
+    const i = ca.findIndex((x) => key(x) === key(c));
+    if (i < 0) { out.push({ where: pname(pb), what: `Added a ${TYPE_NAME[c.t] ?? c.t} card`, was: '', now: `${cardName(c, b)}, ${SIZE_NAME[gsize(c)]}` }); continue; }
+    kept.push([ca[i], c]);
+    ca.splice(i, 1);
+  }
+  for (const c of ca) out.push({ where: pname(pb), what: 'Removed a card', was: cardName(c, a), now: '' });
+  for (const [x, y] of kept) {
+    const w = `${pname(pb)} · ${cardName(y, b)}`;
+    if (gsize(x) !== gsize(y)) out.push({ where: w, what: 'Size', was: SIZE_NAME[gsize(x)], now: SIZE_NAME[gsize(y)] });
+    if ((x.label ?? '') !== (y.label ?? '')) out.push({ where: w, what: 'Name', was: x.label || 'its own', now: y.label || 'its own' });
+    const tx = x.tap || tapsOf(x)[0], ty = y.tap || tapsOf(y)[0];
+    if (tx !== ty || (ty === 'page' && x.page !== y.page)) out.push({ where: w, what: 'Tap', was: ty === 'page' && tx === 'page' ? name(x.page ?? '', a) : TAP_NAME[tx] ?? tx, now: ty === 'page' && tx === 'page' ? name(y.page ?? '', b) : TAP_NAME[ty] ?? ty });
+  }
+  const oa = (pa.cards ?? []).filter((c) => kept.some(([x]) => x === c)).map(key), ob = kept.map(([, y]) => key(y));
+  if (oa.join() !== ob.join()) out.push({ where: pname(pb), what: 'Card order', was: '', now: '' });
   return out;
 }
 const hint = (t: string) => (t ? `…${t.slice(-4)}` : 'not set');  // a token is never shown back whole
@@ -129,20 +228,35 @@ function check(): { ok: boolean; errors: { where: string; what: string; msg: str
     const m = x.path.match(/^\.pages\[(\d+)\](?:\.(params)\.(\w+)|\.(header_actions)(?:\.(\w+))?|\.(cards)\[(\d+)\]|\.(\w+))?/);
     const pg = m ? d.pages[+m[1]] : null;
     const where = pg ? pname(pg) : x.path.startsWith('.start') ? 'Start page' : 'Screens';
-    const what = !pg || !m ? '' : m[3] ? boot.screens[pg.kind]?.params[m[3]]?.label ?? m[3] : m[4] ? 'Header' : m[6] ? `Card ${+m[7] + 1}` : '';
+    const what = !pg || !m ? '' : m[3] ? boot.screens[pg.kind]?.params[m[3]]?.label ?? m[3] : m[4] ? 'Header' : m[6] ? `${cardName((pg.cards ?? [])[+m[7]] ?? { t: '', size: '' })} card` : '';
     return { where, what, msg: x.msg };
   }) };
 }
 
 // ---- engine + previews
+/** this page's own light / dark: the browser's by default, or the top bar's toggle (remembered on this browser) */
+let pageLook: 'auto' | 'light' | 'dark' = (() => { try { const v = localStorage.getItem('facet-v1-look'); return v === 'light' || v === 'dark' ? v : 'auto'; } catch { return 'auto'; } })();
+function look() {
+  if (pageLook === 'auto') delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = pageLook;
+  const b = $('v1-look');
+  b.textContent = pageLook === 'auto' ? '◐ Auto' : pageLook === 'light' ? '☼ Light' : '☾ Dark';
+  b.title = `This page: ${pageLook === 'auto' ? 'follows the browser' : pageLook} (the panel's own Mode is in Settings)`;
+}
 let device: DeviceId = new URLSearchParams(location.search).get('device') === 'guition' ? 'guition' : 'waveshare';
 let engine: Engine | null = null;
 let sel = draft.start;                                     // the screen on the live panel
 let side: 'screen' | 'add' | 'settings' | 'review' | 'saved' = 'screen';  // what the sidebar holds (a bottom sheet on a phone)
+/** on your own screen: the card picked on the grid (its index), or an empty place picked to add a card to */
+let cardSel = -1;
+let target: { x: number; y: number; size: string } | null = null;
+/** the Grid on the live panel, in device px (measured once per panel from the renderer: engine.comps) */
+let geo = { x: 0, y: 0, cw: 1, gap: 0, inset: 0, top: 0 };
+const rowY = (y: number) => geo.y + Math.floor(y / 2) * (geo.cw + geo.gap) + (y % 2) * (((geo.cw - geo.gap) / 2) + geo.gap);
+const spotBox = (s: Spot) => ({ left: geo.x + s.x * (geo.cw + geo.gap), top: rowY(s.y), width: s.w * geo.cw + (s.w - 1) * geo.gap, height: s.h === 1 ? (geo.cw - geo.gap) / 2 : (s.h / 2) * geo.cw + (s.h / 2 - 1) * geo.gap });
 let savedAt = '';
 const stages: Stage[] = [];
 const S = () => DEVICES[device].size;
-/** the panel's Mode; Auto follows this computer's light / dark (the mock has no sun). The page wears the same mode. */
+/** the panel's Mode; Auto follows this computer's light / dark (the mock has no sun) */
 const light = () => draft.settings.theme === 'light' || (draft.settings.theme === 'auto' && matchMedia('(prefers-color-scheme: light)').matches);
 const accent = () => boot.accents.sets.findIndex((a) => a.id === draft.settings.accent);
 function applyDeck() {
@@ -164,8 +278,8 @@ function preview(p: Page, cssW: number, label: string) {
 function freeStages() { for (const s of stages.splice(0)) s.free(); }
 
 // ---- the page
-function edit(f: () => void) { f(); if (!pageOf(draft, sel)) sel = draft.start; applyDeck(); top(); render(); }
-function go(id: string) { sel = id; side = 'screen'; top(); render(); }
+function edit(f: () => void) { f(); if (!pageOf(draft, sel)) sel = draft.start; const p = pageOf(draft, sel)!; if (cardSel >= (p.cards?.length ?? 0) || !own(p)) cardSel = -1; if (!own(p)) target = null; applyDeck(); top(); render(); }
+function go(id: string) { sel = id; side = 'screen'; cardSel = -1; target = null; top(); render(); }
 function top() {
   const dev = $('v1-device');
   dev.replaceChildren(...(['waveshare', 'guition'] as DeviceId[]).map((d) => {
@@ -192,7 +306,7 @@ function top() {
   undo.disabled = !panel.before.length;
   undo.title = panel.before.length ? 'Go back to what the panel ran before your last save' : 'Nothing saved yet';
   $('v1-settings').setAttribute('aria-pressed', String(side === 'settings'));
-  document.documentElement.dataset.theme = light() ? 'light' : 'dark';
+  look();
   $('v1-where').textContent = `${DEVICES[device].name} · ${S()} × ${S()}`;
   $('v1-title').textContent = pname(pageOf(draft, sel));
 }
@@ -233,14 +347,213 @@ function render() {
   const stage = h('div', 'v1-stage');
   const big = Math.min(S(), 600);
   const frame = h('div', 'v1-frame');
-  frame.append(preview(p, big, 'Live panel').canvas);
-  stage.append(frame, h('p', 'v1-meta', `Live panel · ${pname(p)} · ${S()} × ${S()}${big < S() ? ` at ${Math.round((big / S()) * 100)}%` : ''}`));
+  if (own(p)) frame.append(gridPanel(p, big));
+  else frame.append(preview(p, big, 'Live panel').canvas);
+  if (own(p)) {
+    const end = btn('+ Add a card at the end', 'Add a 1 × 1 card after the last one', (p.cards?.length ?? 0) >= budgetCards, () => {
+      const sp = place([...(p.cards ?? []), { t: 'page', page: p.id, size: '1x1' }], draft.pages).at.at(-1)!;
+      cardSel = -1; target = { x: sp.x, y: sp.y, size: '1x1' }; side = 'screen'; top(); render();
+    }, 'ghost');
+    stage.append(end);
+  }
+  stage.prepend(frame, h('p', 'v1-meta', `Live panel · ${pname(p)} · ${S()} × ${S()}${big < S() ? ` at ${Math.round((big / S()) * 100)}%` : ''}${own(p) ? ' · tap a card to change it, an empty square to add one' : ''}`));
   const sb = h('aside', 'v1-side');
   sb.append(h('i', 'v1-grab'));
-  const body = side === 'add' ? addSide() : side === 'settings' ? settingsSide() : side === 'review' ? reviewSide() : side === 'saved' ? savedSide() : screenSide(p);
+  const body = side === 'screen' && own(p) && target ? addCardSide(p) : side === 'screen' && own(p) && cardSel >= 0 ? cardSide(p, cardSel) : side === 'add' ? addSide() : side === 'settings' ? settingsSide() : side === 'review' ? reviewSide() : side === 'saved' ? savedSide() : screenSide(p);
   sb.setAttribute('aria-label', body[0].querySelector('b')?.textContent ?? '');
   sb.append(...body);
   main.replaceChildren(stage, sb);
+}
+
+/** your own screen on the live panel: the real screen (it scrolls as the panel does: drag or the wheel), with the
+ *  editing layer over its grid, kept in step with the scroll: every card a box to pick, every empty square a + (a
+ *  half with room under it: a half +). The layer stops at the header, as the cards do. */
+function gridPanel(p: Page, cssW: number) {
+  const cards = p.cards ?? [], { at, occ } = place(cards, draft.pages);
+  const fit = Math.floor((S() - geo.inset - geo.y + geo.gap) / (geo.cw + geo.gap)) * 2;  // the squares one screen shows
+  const rows = Math.max(occ.length + (occ.length % 2) + 2, fit);
+  const s = preview(p, cssW, 'Live panel');
+  const k = cssW / S();
+  const wrap = h('div', 'v1-grid');
+  const clip = h('div', 'v1-clip');  // over the whole panel: a tap on the header doesn't leave the screen being edited
+  const win = h('div', 'v1-win');    // the cards' window: under the header
+  win.style.top = `${geo.top * k}px`;
+  const layer = h('div', 'v1-layer');
+  layer.style.top = `${-geo.top * k}px`;
+  const put = (e: HTMLElement, sp: Spot) => { const b = spotBox(sp); e.style.left = `${b.left * k}px`; e.style.top = `${b.top * k}px`; e.style.width = `${b.width * k}px`; e.style.height = `${b.height * k}px`; return e; };
+  at.forEach((sp, i) => {
+    if (!sp) return;
+    const b = put(h('button', 'v1-cell card'), sp);
+    b.type = 'button';
+    b.title = `${cardName(cards[i])} · ${SIZE_NAME[gsize(cards[i])]}`;
+    b.setAttribute('aria-label', `Card: ${b.title}`);
+    b.setAttribute('aria-pressed', String(i === cardSel && !target));
+    b.onclick = () => { if (dragged) return; target = null; cardSel = cardSel === i ? -1 : i; side = 'screen'; top(); render(); };
+    layer.append(b);
+  });
+  const free = (y: number, x: number) => !(occ[y]?.[x]);
+  for (let y = 0; y < rows; y += 2)
+    for (let x = 0; x < COLS; x++) {
+      const up = free(y, x), down = free(y + 1, x);
+      if (up && down) layer.append(addCell(put, x, y, '1x1'));
+      else if (!up && down && at.some((sp) => sp && sp.x === x && sp.y === y && sp.h === 1)) layer.append(addCell(put, x, y + 1, 'half'));
+    }
+  win.append(layer);
+  clip.append(win);
+  wrap.append(s.canvas, clip);
+  // the scroll: the layer follows the grid's place on the panel (engine comps); a drag or the wheel over the layer
+  // goes to the panel as a touch drag, so it scrolls with the panel's own feel
+  let gy = geo.y;
+  const follow = () => {
+    if (!stages.includes(s)) return;
+    const g = s.comps().find((c) => c.ids.includes('grid'));
+    if (g && g.y !== gy) { gy = g.y; layer.style.transform = `translateY(${(gy - geo.y) * k}px)`; }
+    requestAnimationFrame(follow);
+  };
+  requestAnimationFrame(follow);
+  const xy = (ev: PointerEvent | WheelEvent) => { const r = s.canvas.getBoundingClientRect(); return [Math.round((ev.clientX - r.left) / k), Math.round((ev.clientY - r.top) / k)]; };
+  const touch = (x: number, y: number, d: number) => engine!.m._fw_touch(s.id, x, y, d);
+  let down: number[] | null = null;
+  clip.onpointerdown = (ev) => { down = xy(ev); dragged = false; };
+  clip.onpointermove = (ev) => {
+    if (!down || !ev.buttons) return;
+    const [x, y] = xy(ev);
+    if (!dragged && Math.abs(y - down[1]) > 8) { dragged = true; clip.setPointerCapture(ev.pointerId); touch(down[0], down[1], 1); }
+    if (dragged) touch(x, y, 1);
+  };
+  clip.onpointerup = clip.onpointercancel = (ev) => { if (dragged) { const [x, y] = xy(ev); setTimeout(() => touch(x, y, 0), 40); setTimeout(() => { dragged = false; }, 0); } down = null; };
+  let wheel = 0, wy = 0;
+  clip.onwheel = (ev) => {
+    ev.preventDefault();
+    const [x] = xy(ev);
+    if (!wheel) { wy = S() / 2; touch(x, wy, 1); }
+    wy = Math.max(geo.top, Math.min(S() - 1, wy - ev.deltaY / k / 2));
+    touch(x, wy, 1);
+    clearTimeout(wheel);
+    wheel = window.setTimeout(() => { touch(x, wy, 0); wheel = 0; }, 90);
+  };
+  return wrap;
+}
+let dragged = false;
+function addCell(put: (e: HTMLElement, sp: Spot) => HTMLElement, x: number, y: number, size: string) {
+  const b = put(h('button', `v1-cell add${size === 'half' ? ' half' : ''}`, '+'), { x, y, w: 1, h: size === 'half' ? 1 : 2 });
+  b.type = 'button';
+  b.title = size === 'half' ? 'Add another half underneath' : 'Add a card here';
+  b.setAttribute('aria-label', b.title);
+  b.setAttribute('aria-pressed', String(!!target && target.x === x && target.y === y));
+  b.onclick = () => { cardSel = -1; target = target && target.x === x && target.y === y ? null : { x, y, size }; side = 'screen'; top(); render(); };
+  return b;
+}
+
+// 2. a card: its size, what it shows, what a tap does, its place, remove
+function cardSide(p: Page, i: number): HTMLElement[] {
+  const cards = p.cards!, c = cards[i], out: HTMLElement[] = [];
+  const close = () => { cardSel = -1; top(); render(); };
+  const hd = sideHead(cardName(c), `${TYPE_NAME[c.t] ?? c.t} card · ${i + 1} of ${cards.length} on ${pname(p)}`, false);
+  hd.append(btn('✕', 'Close', false, close, 'icon'));
+  out.push(hd);
+  const set = (f: (c: Card) => void) => edit(() => f(c));
+  out.push(field('Size', 'The card reflows the grid: the cards after it move up or down to fit.', seg(boot.grid_sizes.split(',').map((z) => [z, SIZE_NAME[z] ?? z]), gsize(c), (z) => set((c) => { c.size = z; }))));
+  const { at, occ } = place(cards, draft.pages), sp = at[i];
+  if (sp && sp.h === 1 && sp.y % 2 === 0 && !occ[sp.y + 1]?.[sp.x]) {
+    out.push(field('Under it', 'Two halves share one square. Optional: the space can stay empty.', btn('+ Add another half', 'Add another half underneath', false, () => { cardSel = -1; target = { x: sp.x, y: sp.y + 1, size: 'half' }; top(); render(); })));
+  }
+  out.push(h('h2', 'cap', 'What it shows'));
+  if (c.t === 'page') out.push(field('Screen', 'The screen it opens.', list(draft.pages.filter((x) => x.id !== p.id).map((x) => [x.id, pname(x)] as [string, string]), c.page ?? '', (v) => set((c) => { c.page = v; }))));
+  else {
+    const doms = c.t === 'entity' ? Object.keys(boot.options) : boot.cards[c.t].domains.split(',');
+    const items: [string, string, string?][] = doms.flatMap((d) => (boot.options[d] ?? []).map((o) => [o.id, o.name, o.id] as [string, string, string]));
+    if (c.e && !items.some(([v]) => v === c.e)) items.unshift([c.e, `${c.e} (not found)`]);
+    out.push(field('Entity', undefined, list(items, c.e ?? '', (v) => set((c) => {
+      c.e = v;
+      if (c.tap && !tapsOf(c).includes(c.tap)) delete c.tap;
+    }), 'Pick one')));
+  }
+  const nm = h('input', 'v1-input');
+  nm.value = c.label ?? '';
+  nm.placeholder = c.t === 'page' ? name(c.page ?? '') : entName(c.e) || 'Its own name';
+  nm.maxLength = 32;
+  nm.onchange = () => set((c) => { const v = nm.value.trim(); if (v) c.label = v; else delete c.label; });
+  out.push(field('Name', 'Leave it empty to use its own name.', nm));
+  const taps = tapsOf(c);
+  if (taps.length > 1) {
+    const cur = c.tap || taps[0];
+    const pick = (v: string) => set((c) => {
+      if (v === taps[0]) delete c.tap; else c.tap = v;
+      if (v === 'page' && c.t !== 'page' && !c.page) c.page = draft.pages.find((x) => x.id !== p.id)?.id;
+      if (v !== 'page' && c.t !== 'page') delete c.page;
+    });
+    const items = taps.map((t) => [t, TAP_NAME[t] ?? t] as [string, string]);
+    out.push(field('Tap', 'What a tap on the card does.', items.length <= 3 ? seg(items, cur, pick) : list(items, cur, pick)));
+    if (cur === 'page' && c.t !== 'page') out.push(field('Opens', undefined, list(draft.pages.filter((x) => x.id !== p.id).map((x) => [x.id, pname(x)] as [string, string]), c.page ?? '', (v) => set((c) => { c.page = v; }))));
+  }
+  out.push(h('h2', 'cap', 'Place'));
+  const order = h('div', 'v1-row');
+  order.append(
+    btn('← Earlier', 'One place earlier in the grid', i === 0, () => { cards.splice(i, 1); cards.splice(i - 1, 0, c); cardSel = i - 1; edit(() => {}); }),
+    btn('Later →', 'One place later in the grid', i === cards.length - 1, () => { cards.splice(i, 1); cards.splice(i + 1, 0, c); cardSel = i + 1; edit(() => {}); }),
+  );
+  out.push(field('Order', 'Cards fill the grid in reading order.', order));
+  out.push(h('div', 'v1-gap'), btn('Remove this card', `Remove ${cardName(c)}`, false, () => { cards.splice(i, 1); cardSel = -1; edit(() => {}); }, 'ghost danger'));
+  return out;
+}
+
+// 2. an empty place picked: everything that fits there (every card type takes every size), as one list to search
+function addCardSide(p: Page): HTMLElement[] {
+  const t = target!, out: HTMLElement[] = [];
+  const hd = sideHead('Add a card', `${SIZE_NAME[t.size]} · row ${Math.floor(t.y / 2) + 1}, column ${t.x + 1}${t.size === 'half' ? ', under the half' : ''}`, false);
+  hd.append(btn('✕', 'Close', false, () => { target = null; top(); render(); }, 'icon'));
+  out.push(hd);
+  const full = (p.cards?.length ?? 0) >= budgetCards;
+  if (full) { out.push(h('p', 'v1-note', `A screen holds ${budgetCards} cards. Remove one to add another.`)); return out; }
+  const q = h('input', 'v1-input');
+  q.placeholder = 'Search';
+  q.setAttribute('aria-label', 'Search the cards');
+  const box = h('div', 'v1-cardlist');
+  const groups: { label: string; items: Card[] }[] = [
+    { label: 'Screens', items: draft.pages.filter((x) => x.id !== p.id).map((x) => ({ t: 'page', page: x.id, size: t.size })) },
+  ];
+  const typed = new Set<string>();
+  for (const [ty, def] of Object.entries(boot.cards)) {
+    if (ty === 'page' || ty === 'entity') continue;
+    const doms = def.domains.split(',');
+    doms.forEach((d) => typed.add(d));
+    groups.push({ label: `${TYPE_NAME[ty] ?? ty}`, items: doms.flatMap((d) => (boot.options[d] ?? []).map((o) => ({ t: ty, e: o.id, size: t.size }))) });
+  }
+  groups.push({ label: 'Other entities', items: Object.keys(boot.options).filter((d) => !typed.has(d)).flatMap((d) => boot.options[d].map((o) => ({ t: 'entity', e: o.id, size: t.size }))) });
+  const fill = () => {
+    const f = q.value.trim().toLowerCase();
+    box.replaceChildren();
+    for (const g of groups) {
+      const its = g.items.filter((c) => !f || `${cardName(c)} ${c.e ?? ''} ${g.label}`.toLowerCase().includes(f));
+      if (!its.length) continue;
+      box.append(h('h2', 'cap', g.label));
+      for (const c of its) {
+        const b = h('button', 'v1-opt');
+        b.type = 'button';
+        const tx = h('span', 'v1-ftxt');
+        tx.append(h('span', '', cardName(c)));
+        if (c.e) tx.append(h('p', 'mono', c.e));
+        b.append(tx);
+        b.onclick = () => {
+          const i = insertAt(p, c, t.x, t.y);
+          const cards = (p.cards ??= []);
+          const at = i < 0 ? cards.length : i;
+          cards.splice(at, 0, c);
+          target = null;
+          cardSel = at;
+          edit(() => {});
+        };
+        box.append(b);
+      }
+    }
+    if (!box.children.length) box.append(h('p', 'dim', 'Nothing matches.'));
+  };
+  q.oninput = fill;
+  fill();
+  out.push(q, box);
+  requestAnimationFrame(() => q.focus());
+  return out;
 }
 
 /** a sidebar's head: title, a quiet line under it, and ✕ back to the screen when it is a passing view */
@@ -277,7 +590,7 @@ function screenSide(p: Page): HTMLElement[] {
   out.push(field('Start page', undefined, start));
   if (own(p)) {
     const cards = p.cards?.length ?? 0;
-    out.push(h('p', 'v1-note', cards ? `${cards} card${cards === 1 ? '' : 's'} on this screen. Adding and arranging cards comes in part 2.` : 'An empty grid. Adding cards comes in part 2.'));
+    out.push(h('p', 'v1-note', `${cards ? `${cards} card${cards === 1 ? '' : 's'} on this screen. ` : 'An empty grid. '}Tap an empty square on the panel to add a card, a card to change it.`));
     const hdr = p.header_actions ?? {};
     const setH = (k: 'button' | 'status', v: string, dflt: string) => edit(() => {
       const x = { ...(p.header_actions ?? {}) };
@@ -593,6 +906,20 @@ function scope() {
   d.showModal();
 }
 
+/** the Grid's place and cell size on this panel: a Home with two 1 x 1 cards, drawn once, its boxes read back */
+const budgetCards = boot.card_max;
+function measure() {
+  const e = engine!;
+  const d = { v: 2, rev: 0, start: 'm', pages: [{ id: 'm', kind: 'home', name: 'M', cards: [{ t: 'page', page: 'm', size: '1x1' }, { t: 'page', page: 'm', size: '1x1' }] }] };
+  e.withStr('deck', (pc) => e.withStr(JSON.stringify(d), (pj) => e.str(e.m._fw_spec(pc, pj))));
+  const s = e.stage(S(), S());
+  s.render('home', { page: 'm' }, false);
+  const bx = s.comps(), g = bx.find((b) => b.ids.includes('grid'));
+  const cs = bx.filter((b) => g && b.d === g.d + 1 && b.y >= g.y).sort((a, b) => a.x - b.x);
+  const hd = bx.find((b) => b.ids.includes('header'));
+  if (g && cs.length >= 2) geo = { x: cs[0].x, y: g.y, cw: cs[0].w, gap: cs[1].x - cs[0].x - cs[0].w, inset: S() - g.x - g.w, top: hd ? hd.y + hd.h : g.y };
+  s.free();
+}
 async function load() {
   freeStages();
   engine?.dispose();
@@ -600,6 +927,7 @@ async function load() {
   top();
   $('v1-main').replaceChildren(h('p', 'dim', 'Loading the renderer'));
   engine = await Engine.load(DEVICES[device].den, `/facet-wasm/${DEVICES[device].den}/`, noHa);
+  measure();
   applyDeck();
   top();
   render();
@@ -608,6 +936,13 @@ async function load() {
 export function start() {
   $('v1-save').onclick = () => { side = 'review'; top(); render(); };
   $('v1-undo').onclick = undo;
+  $('v1-look').onclick = () => {
+    // two states: the browser's look, or the other one
+    pageLook = pageLook !== 'auto' ? 'auto' : matchMedia('(prefers-color-scheme: light)').matches ? 'dark' : 'light';
+    try { if (pageLook === 'auto') localStorage.removeItem('facet-v1-look'); else localStorage.setItem('facet-v1-look', pageLook); } catch { /* private window */ }
+    look();
+  };
+  look();
   $('v1-settings').onclick = () => { side = side === 'settings' ? 'screen' : 'settings'; top(); render(); };
   $('v1-scope').onclick = scope;
   (window as any).__v1 = { draft: () => draft, load: (d: Draft) => edit(() => { draft = d; sel = d.start; }), put: (e: string, a: string, v: string) => engine?.haPut(e, a, v), engine: () => engine, panel: () => panel, deck: () => toDeck(draft, panel.rev), check, changes: () => changes(panel.runs, draft) };  // tests

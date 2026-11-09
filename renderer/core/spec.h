@@ -2413,6 +2413,7 @@ inline void catalogue(ArduinoJson::JsonObject out) {
   out["deck_v"] = DECK_V;
   auto rl = out["roles"].to<ArduinoJson::JsonArray>();
   for (const char *r : ROLES) rl.add(r);
+  out["grid_sizes"] = GRID_SIZES;  // the sizes the editor offers (Home's Grid)
   ArduinoJson::JsonObject ct = out["cards"].to<ArduinoJson::JsonObject>();
   for (const CardType &c : CARD_TYPES) { auto o = ct[c.t].to<ArduinoJson::JsonObject>(); o["domains"] = c.domains; o["sizes"] = c.sizes; o["taps"] = c.taps; o["detail"] = c.detail;
     auto cm = o["component"].to<ArduinoJson::JsonObject>(); if (*c.comp_s) cm["s"] = c.comp_s; if (*c.comp_m) cm["m"] = c.comp_m; if (*c.comp_l) cm["l"] = c.comp_l; }

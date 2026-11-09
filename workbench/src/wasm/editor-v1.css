@@ -14,9 +14,9 @@ html, body { margin: 0; height: 100%; }
 body { background: var(--f-bg); color: var(--f-text); font: 400 15px/1.3 var(--sans); -webkit-font-smoothing: antialiased; }
 button, input, select { font: inherit; color: inherit; }
 /* the panel's small text: mono caps (label), mono meta */
-.caps, .cap, .btn, .seg button, .v1-tab, .v1-add, .v1-brand b, .v1-sidetitle b { font: 500 12px/1 var(--mono); letter-spacing: 1px; text-transform: uppercase; }
+.caps, .cap, .btn, .seg button, .v1-tab, .v1-add, .v1-brand b, .v1-sidetitle b { font: 500 13px/1 var(--mono); letter-spacing: 1px; text-transform: uppercase; }
 .v1-meta, .dim { color: var(--f-text-dim); }
-.v1-meta { font: 400 12px/1.3 var(--mono); }
+.v1-meta { font: 400 13px/1.35 var(--mono); }
 .mono { font-family: var(--mono); font-size: 0.85em; }
 .link { border: 0; background: none; padding: 0; color: var(--f-accent-text); cursor: pointer; }
 .dot { flex: none; display: inline-block; width: var(--sp-2); height: var(--sp-2); border-radius: var(--rad-round); background: var(--f-text-mute); }
@@ -63,11 +63,15 @@ button, input, select { font: inherit; color: inherit; }
 .seg button { height: var(--sp-9); padding: 0 var(--sp-5); border: 0; border-left: 1px solid var(--f-line); background: none; color: var(--f-text-dim); cursor: pointer; white-space: nowrap; }
 .seg button:first-child { border-left: 0; }
 .seg button:hover { color: var(--f-text); }
-.seg button[aria-pressed='true'] { background: var(--f-surface-press); color: var(--f-text); box-shadow: inset 0 0 0 1px var(--f-text-dim); border-radius: var(--rad-button); }
+.seg button[aria-pressed='true'] { background: var(--f-surface-press); color: var(--f-text); box-shadow: inset 0 0 0 1px var(--f-text-dim); }
+/* the pick's ring follows the group's outline: round only where the group is (its outer ends), square between segments */
+.seg button:first-child { border-radius: calc(var(--rad-button) - 1px) 0 0 calc(var(--rad-button) - 1px); }
+.seg button:last-child { border-radius: 0 calc(var(--rad-button) - 1px) calc(var(--rad-button) - 1px) 0; }
+.seg button:only-child { border-radius: calc(var(--rad-button) - 1px); }
 .seg.sm button { height: var(--sp-8); padding: 0 var(--sp-3); }
 
 .v1-input { width: 100%; height: var(--sp-9); padding: 0 var(--sp-3); background: var(--f-surface); border: 1px solid var(--f-line); border-radius: var(--rad-button); font: 400 14px/1 var(--sans); }
-.v1-input::placeholder { color: var(--f-text-mute); }
+.v1-input::placeholder { color: var(--f-text-dim); }
 .v1-switch { position: relative; flex: none; width: var(--sp-10); height: var(--sp-7); border: 0; padding: 0; border-radius: var(--rad-round); background: var(--f-line-hi); cursor: pointer; transition: background var(--mo-fast, 120ms); }
 .v1-switch::after { content: ''; position: absolute; top: var(--sp-1); left: var(--sp-1); width: var(--sp-4); height: var(--sp-4); border-radius: var(--rad-round); background: var(--f-surface); transition: transform var(--mo-fast, 120ms); }
 .v1-switch[aria-checked='true'] { background: var(--f-accent); }
@@ -81,7 +85,7 @@ button, input, select { font: inherit; color: inherit; }
 .v1-swatches button[aria-pressed='true'] { outline-color: var(--f-text); outline-offset: 2px; }
 .v1-range { display: flex; align-items: center; gap: var(--sp-4); width: 100%; }
 .v1-range input { flex: 1; accent-color: var(--f-accent); }
-.v1-range output { font: 400 12px/1 var(--mono); color: var(--f-text-dim); }
+.v1-range output { font: 400 13px/1 var(--mono); color: var(--f-text-dim); }
 .v1-row { display: flex; flex-wrap: wrap; gap: var(--sp-3); align-items: center; width: 100%; }
 .v1-row .v1-input { flex: 1; width: auto; }
 
@@ -99,7 +103,7 @@ button, input, select { font: inherit; color: inherit; }
 /* the sidebar's head: the panel's header (title in mono caps, ✕ as its square icon button) */
 .v1-sidehead { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; gap: var(--sp-4); margin: 0 calc(var(--sp-7) * -1); padding: var(--sp-6) var(--sp-7) var(--sp-5); background: var(--f-bg); }
 .v1-sidetitle { flex: 1; display: flex; flex-direction: column; gap: var(--sp-2); min-width: 0; }
-.v1-sidetitle b { font-size: 13px; }
+.v1-sidetitle b { font-size: 14px; }
 .v1-side > .btn { align-self: flex-start; margin-top: var(--sp-4); }
 .v1-gap { flex: 1; min-height: var(--sp-7); }
 
@@ -114,7 +118,7 @@ button, input, select { font: inherit; color: inherit; }
 .v1-field:not(.inline) > .seg, .v1-field:not(.inline) > .v1-swatches { align-self: flex-start; }
 .v1-ftxt { display: flex; flex-direction: column; gap: var(--sp-1); min-width: 0; }
 .v1-ftxt > label, .v1-ftxt > span { font: 400 17px/1.25 var(--sans); color: var(--f-text); }
-.v1-ftxt > p { margin: 0; font: 400 13px/1.35 var(--sans); color: var(--f-text-dim); max-width: 60ch; }
+.v1-ftxt > p { margin: 0; font: 400 14px/1.4 var(--sans); color: var(--f-text-dim); max-width: 60ch; }
 .v1-pick { display: inline-flex; align-items: center; gap: var(--sp-3); max-width: calc(var(--sp-10) * 5); padding: 0; border: 0; background: none; color: var(--f-text-dim); cursor: pointer; text-align: right; font: 400 15px/1.25 var(--sans); }
 .v1-pick > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .v1-pick:hover { color: var(--f-text); }
@@ -142,7 +146,7 @@ button, input, select { font: inherit; color: inherit; }
 .v1-changes, .v1-checks { margin: 0; padding: 0; list-style: none; }
 .v1-changes li { display: flex; flex-direction: column; gap: var(--sp-1); padding: var(--sp-4) 0; border-bottom: 1px solid var(--f-line); }
 .v1-changes b { font: 400 16px/1.25 var(--sans); }
-.v1-changes s { color: var(--f-text-mute); }
+.v1-changes s { color: var(--f-text-dim); }
 .v1-changes .now { color: var(--f-text); }
 .v1-checks li { display: flex; align-items: baseline; gap: var(--sp-3); padding: var(--sp-4) 0; border-bottom: 1px solid var(--f-line); }
 .v1-checks b { font-weight: 500; }
@@ -181,3 +185,21 @@ button, input, select { font: inherit; color: inherit; }
   .v1-sidehead { margin: 0 calc(var(--sp-4) * -1); padding: var(--sp-3) var(--sp-4); }
   .v1-foot { display: none; }
 }
+
+/* 2. the grid on the live panel: the real screen; the editing layer over its grid follows the panel's scroll and
+   stops under the header: a card = a box to pick (the pick = an accent ring), an empty square = a dashed + */
+.v1-grid { position: relative; line-height: 0; }
+.v1-clip { position: absolute; inset: 0; touch-action: none; }
+.v1-win { position: absolute; left: 0; right: 0; bottom: 0; overflow: hidden; }
+.v1-layer { position: absolute; left: 0; right: 0; height: 100000px; will-change: transform; }
+.v1-cell { position: absolute; margin: 0; padding: 0; border-radius: var(--rad-card, var(--rad-button)); cursor: pointer; background: none; }
+.v1-cell.card { border: 2px solid transparent; }
+.v1-cell.card:hover { border-color: var(--f-line-hi); }
+.v1-cell.card[aria-pressed='true'] { border-color: var(--f-accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--f-accent) 30%, transparent); }
+.v1-cell.add { border: 2px dashed var(--f-text-dim); color: var(--f-text-dim); font: 300 32px/1 var(--sans); opacity: 0.7; }
+.v1-cell.add.half { font-size: 24px; }
+.v1-cell.add:hover { opacity: 1; color: var(--f-text-dim); }
+.v1-cell.add[aria-pressed='true'] { opacity: 1; border-color: var(--f-accent); color: var(--f-accent-text); }
+.v1-cell:focus-visible { outline: 2px solid var(--f-accent); outline-offset: -2px; }
+.v1-cardlist { display: flex; flex-direction: column; }
+.v1-side > .v1-input { margin-top: var(--sp-2); }

@@ -21,7 +21,7 @@ const fixture = rj(join(REPO, 'workbench/tests/editor/fixtures/sources.json'));
 const accents = rj(join(R, 'tokens/colour.json')).accent;
 const scope = readFileSync(join(REPO, 'workbench/EDITOR-V1.md'), 'utf8');
 const own_max = Number(readFileSync(join(R, 'core/spec.h'), 'utf8').match(/\bhomes = (\d+)/)![1]);  // the deck check's budget for your own screens
-const boot = JSON.stringify({ screens, settings: schema.settings, deck: rj(join(R, 'specs/deck.json')), options: fixture.options, accents, scope, hash: schema.hash, own_max })
+const boot = JSON.stringify({ screens, settings: schema.settings, deck: rj(join(R, 'specs/deck.json')), options: fixture.options, accents, scope, hash: schema.hash, own_max, cards: schema.spec.cards, grid_sizes: schema.spec.grid_sizes ?? '1x1,2x1,2x2,half', card_max: schema.spec.budget.cards })
   .replace(/</g, '\\u003c');
 ---
 
@@ -31,7 +31,7 @@ const boot = JSON.stringify({ screens, settings: schema.settings, deck: rj(join(
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Facet editor v1</title>
-    <meta name="description" content="Facet editor v1, part 1: your screens as tabs (add, name, order, remove, start page), settings, and Save with review and check." />
+    <meta name="description" content="Facet editor v1: your screens as tabs (part 1), cards on each screen's grid (part 2), settings, and Save with review and check." />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <style is:inline set:html={css}></style>
   </head>
@@ -44,13 +44,14 @@ const boot = JSON.stringify({ screens, settings: schema.settings, deck: rj(join(
         <div class="v1-send">
           <div class="seg sm" id="v1-device" role="group" aria-label="Panel"></div>
           <button class="btn ghost" id="v1-undo" type="button">↶ Undo</button>
+          <button class="btn ghost" id="v1-look" type="button"></button>
           <button class="btn" id="v1-settings" type="button" aria-pressed="false">⚙ Settings</button>
           <button class="btn primary" id="v1-save" type="button">Save</button>
         </div>
       </header>
       <main class="v1-main" id="v1-main"><p class="dim">Loading the renderer</p></main>
       <footer class="v1-foot">
-        <span>Editor v1 · part 1, Screens</span>
+        <span>Editor v1 · parts 1 and 2, Screens and the grid</span>
         <span class="dim">Nothing reaches a panel: "the panel" is this page. Home Assistant is a stub, so screens show sample data.</span>
         <button class="link" id="v1-scope" type="button">Scope</button>
       </footer>
