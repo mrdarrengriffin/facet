@@ -223,6 +223,12 @@ EMSCRIPTEN_KEEPALIVE void fw_ha_connected(int on) { fw::ha::set_connected(on != 
 EMSCRIPTEN_KEEPALIVE void fw_ha_got(int id, int ok, const char *why) { fw::dev::ha_link::done((uint32_t) id, ok != 0, why ? why : ""); }
 // the editor a panel serves: its local sources' values (panel.*) come from the panel, not made here (ha.h mirror)
 EMSCRIPTEN_KEEPALIVE void fw_ha_mirror(int on) { fw::ha::S().mirror = on != 0; }
+// the editor's search index on the link (ha_link::index_text, the panel's GET /fw/entities?index=1): ask until not #loading
+EMSCRIPTEN_KEEPALIVE const char *fw_ha_index(const char *domains) {
+  static std::string out;
+  fw::dev::ha_link::index_text(domains ? domains : "", out);
+  return out.c_str();
+}
 // the editor's add list on the link (ha_link::find_json, the panel's GET /fw/entities?q=&dc=): ask until state is not
 // loading (each tick serves the read)
 EMSCRIPTEN_KEEPALIVE const char *fw_ha_find(const char *domains, const char *dc, const char *q) {

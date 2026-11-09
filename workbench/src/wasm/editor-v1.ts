@@ -583,12 +583,31 @@ function cardFor(id: string, size: string): Card {
   const t = Object.entries(boot.cards).find(([ty, def]) => ty !== 'entity' && ty !== 'page' && def.domains.split(',').includes(dom))?.[0] ?? 'entity';
   return { t, e: id, size };
 }
-/** search the entities: the panel's own search (host.search), or the workbench's fixture here */
+/** the search index (a panel: read once from its Home Assistant, a few seconds in a large house, then searched here as
+ *  you type; again in the background when over a minute old), or the workbench's fixture */
+type Row = { id: string; name: string; dc?: string; st?: string; unit?: string };
+let idx: { at: number; state: string; why?: string; rows: Row[] } | null = null;
+let idxRun: Promise<void> | null = null;
+function loadIndex(): Promise<void> {
+  if (idxRun) return idxRun;
+  if (idx && idx.state === 'ok' && Date.now() - idx.at < 60_000) return Promise.resolve();
+  idxRun = host.index(allDomains()).then((r) => {
+    if (!r) return;
+    if (r.state === 'ok' || !idx || idx.state !== 'ok') idx = { at: Date.now(), state: r.state, why: r.why, rows: r.rows };  // a failed refresh keeps the last good one
+    for (const o of r.rows) names.set(o.id, o.name);
+  }).finally(() => { idxRun = null; });
+  return idxRun;
+}
 async function find(doms: string[], dc: string, q: string) {
-  const r = await host.search(doms, dc, q);
-  if (r) { for (const o of r.found) names.set(o.id, o.name); return r; }
+  let rows: Row[];
+  if (host.panel) {
+    if (!idx || idx.state !== 'ok') await loadIndex(); else void loadIndex();  // old: read again behind the scenes
+    if (!idx || idx.state !== 'ok') return { state: (idx?.state ?? 'failed') as 'off' | 'failed', why: idx?.why, found: [] as Row[], more: 0 };
+    const ds = new Set(doms);
+    rows = idx.rows.filter((o) => ds.has(o.id.slice(0, o.id.indexOf('.'))));
+  } else rows = doms.flatMap((d) => options[d] ?? []);
   const qq = q.toLowerCase(), dcs = dc ? dc.split(',') : [];
-  const all = doms.flatMap((d) => options[d] ?? []).filter((o) => (!dcs.length || dcs.includes(o.dc ?? '')) && (o.id.toLowerCase().includes(qq) || o.name.toLowerCase().includes(qq)));
+  const all = rows.filter((o) => (!dcs.length || dcs.includes(o.dc ?? '')) && (o.id.toLowerCase().includes(qq) || o.name.toLowerCase().includes(qq)));
   return { state: 'ok' as const, why: undefined as string | undefined, found: all.slice(0, 40), more: Math.max(0, all.length - 40) };
 }
 /** an entity's state in words, as Home Assistant shows it: a number with its unit, a door Open / Closed, motion
@@ -635,7 +654,7 @@ function searchBox(doms: string[], dc: string, label: string, pick: (id: string)
     const v = q.value.trim(), my = ++seq;
     box.classList.toggle('found', !!v);
     if (!v) { idle(); return; }
-    box.replaceChildren(h('p', 'dim', 'Searching…'));
+    box.replaceChildren(h('p', 'dim', host.panel && (!idx || idx.state !== 'ok') ? 'Reading your entities from Home Assistant…' : 'Searching…'));
     const r = await find(doms, dc, v);
     if (my !== seq) return;  // typed on since
     box.replaceChildren();
@@ -655,7 +674,7 @@ function searchBox(doms: string[], dc: string, label: string, pick: (id: string)
     if (!r.found.length) box.append(h('p', 'dim', 'Nothing matches.'));
     if (r.more) box.append(h('p', 'v1-meta', `${r.more} more: type more of the name to narrow it.`));
   };
-  q.oninput = () => { clr.hidden = !q.value; clearTimeout(timer); timer = window.setTimeout(() => void run(), host.panel ? 350 : 0); };
+  q.oninput = () => { clr.hidden = !q.value; clearTimeout(timer); timer = window.setTimeout(() => void run(), 60); };
   idle();
   if (focus) requestAnimationFrame(() => q.focus());
   return [field, box];
@@ -663,6 +682,7 @@ function searchBox(doms: string[], dc: string, label: string, pick: (id: string)
 let addKind = '', addClass: string | null = null;  // the add list's step: a type picked ('' = the types), a sensor's class (null = not yet)
 function addCardSide(p: Page): HTMLElement[] {
   const t = target!, out: HTMLElement[] = [];
+  if (host.panel) void loadIndex();  // read while a type is picked: ready by the time something is typed
   const ks = kinds(), k = ks.find((x) => x.id === addKind);
   const cls = addClass === null ? undefined : k?.classes?.find(([v]) => v === addClass);
   const back = () => { if (cls) addClass = null; else addKind = ''; render(); };

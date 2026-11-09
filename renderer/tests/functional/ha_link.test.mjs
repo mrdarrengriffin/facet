@@ -122,6 +122,26 @@ export default {
       t.ok(link().peak < 16 * 1024, `held while reading: ${link().peak} bytes (a page of matches, never the list)`);
       t.eq(link().count, 0, 'the pickers\' lists untouched (nothing cached)');
     } },
+    { name: 'the editor\'s search index: one read, one line per entity of the wanted domains, then nothing kept', async run(t) {
+      t.ha.answers = true;
+      for (let i = 0; i < 1500; i++) t.ha.s[`sensor.s${i}`] = { '': '21.5', unit_of_measurement: '°C', device_class: 'temperature', friendly_name: `Room ${i} temperature` };
+      t.ha.s['light.kitchen_ceiling'] = { '': 'on', friendly_name: 'Kitchen\tCeiling' };
+      t.ha.s['weather.home'] = { '': 'sunny', friendly_name: 'Home' };
+      await t.device();
+      act(t, { do: 'ha.connect', url: 'http://ha.test:8123', token: 'abcdefgh1234' }); t.b.tick(8); t.b.settle(600);
+      const index = (doms) => { const m = t.b.m, p = m.stringToNewUTF8(doms); try { let r; for (let i = 0; i < 20; i++) { r = m.UTF8ToString(m._fw_ha_index(p)); if (r !== '#loading\n') break; t.b.tick(2); } return r; } finally { m._free(p); } };
+      const r = index('light,sensor');
+      const lines = r.trimEnd().split('\n'), end = lines.pop();
+      t.eq(end, '#ok\t0', `ends with #ok and nothing left out: ${r.slice(-40)}`);
+      t.eq(lines.length, 1501, 'every light and sensor, one line each');
+      t.ok(lines.includes('sensor.s7\tRoom 7 temperature\ttemperature\t21.5\t°C'), 'id, name, device class, state, unit');
+      t.ok(lines.includes('light.kitchen_ceiling\tKitchen Ceiling\t\ton\t'), 'a tab in a name: a space; no device class or unit: empty');
+      t.ok(!lines.some((l) => l.startsWith('weather.')), 'only the wanted domains');
+      const kb = Buffer.byteLength(r, 'utf8') / 1024;
+      t.ok(kb < 100, `1,501 lines in ${kb.toFixed(0)} KB`);
+      const once = (doms) => { const m = t.b.m, p = m.stringToNewUTF8(doms); try { return m.UTF8ToString(m._fw_ha_index(p)); } finally { m._free(p); } };
+      t.eq(once('light,sensor'), '#loading\n', 'taken: asked again, it reads afresh (nothing kept)');
+    } },
     { name: 'the link page as a QR code while the panel is not linked, gone once it is', async run(t) {
       t.ha.answers = true;
       await t.mount('ha_link', { page: 'http://192.168.1.42/link' });

@@ -4,7 +4,7 @@
 // Assistant link), GET /fw/ha?want= (live values for the previews), POST /fw/spec {kind: deck | revert}, POST /fw/act
 // {do: ha.connect}.
 import type { HaBridge } from './engine';
-import type { V1Host, PanelState, SaveOut, Entities, Found } from './editor-v1-host';
+import type { V1Host, PanelState, SaveOut, Entities, Index, Row } from './editor-v1-host';
 export type * from './editor-v1-host';
 
 const j = async (path: string, init?: RequestInit) => {
@@ -82,16 +82,28 @@ export const host: V1Host = {
     }
     return { state: 'ok', lists };
   },
-  async search(domains, dc, q): Promise<Found> {
-    // the panel reads Home Assistant once per search and keeps only the matches (never the whole list): ask until it has them
-    const u = `/fw/entities?domains=${encodeURIComponent(domains.join(','))}&dc=${encodeURIComponent(dc)}&q=${encodeURIComponent(q)}`;
+  async index(domains): Promise<Index> {
+    // the panel reads Home Assistant once (a few seconds in a large house) and sends one line per entity, then keeps
+    // nothing: "id\tname\tdc\tstate\tunit" lines, then "#ok\t<left out>"; "#loading" = ask again
+    const u = `/fw/entities?index=1&domains=${encodeURIComponent(domains.join(','))}`;
     for (let i = 0; i < 40; i++) {
-      if (i) await new Promise((r) => setTimeout(r, 400));
-      let b: any = null;
-      try { b = (await j(u)).body; } catch { b = null; }
-      if (b && b.state !== 'loading') return { state: b.state, why: b.why, found: b.found ?? [], more: b.more ?? 0 };
+      if (i) await new Promise((r) => setTimeout(r, 500));
+      let t = '';
+      try { t = await (await fetch(u, { cache: 'no-store' })).text(); } catch { continue; }
+      if (t.startsWith('#loading')) continue;
+      if (t.startsWith('#off')) return { state: 'off', rows: [], left: 0 };
+      if (t.startsWith('#failed')) return { state: 'failed', why: t.split('\t')[1]?.trim() || 'no answer', rows: [], left: 0 };
+      const lines = t.split('\n'), rows: Row[] = [];
+      let left = 0;
+      for (const l of lines) {
+        if (!l) continue;
+        if (l.startsWith('#ok')) { left = Number(l.split('\t')[1]) || 0; continue; }
+        const [id, name, dc, st, unit] = l.split('\t');
+        rows.push({ id, name: name || id, dc: dc || undefined, st, unit: unit || undefined });
+      }
+      return { state: 'ok', rows, left };
     }
-    return { state: 'failed', why: 'Home Assistant took too long to answer', found: [], more: 0 };
+    return { state: 'failed', why: 'Home Assistant took too long to answer', rows: [], left: 0 };
   },
   async save(deck, settings, link): Promise<SaveOut> {
     try {

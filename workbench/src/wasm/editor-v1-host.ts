@@ -12,8 +12,10 @@ export type Err = { path: string; code: string; msg: string };
 export type SaveOut = { ok: boolean; errors?: Err[]; why?: string };
 /** the pickers' lists: null = this host has none of its own (the workbench: the fixture) */
 export type Entities = { state: 'ok' | 'loading' | 'off' | 'failed'; why?: string; lists: Record<string, Opt[]> } | null;
-/** a search's answer (the add list): at most a page of matches (dc = the entity's device class), more = how many more */
-export type Found = { state: 'ok' | 'off' | 'failed'; why?: string; found: (Opt & { dc?: string; st?: string; unit?: string })[]; more: number };
+/** an entity in the search index: its device class, state and unit as Home Assistant has them */
+export type Row = Opt & { dc?: string; st?: string; unit?: string };
+/** the search index (the add list, a card's entity): every entity of the card domains; left = lines the panel left out */
+export type Index = { state: 'ok' | 'off' | 'failed'; why?: string; rows: Row[]; left: number };
 
 export interface V1Host {
   /** true = served by a panel: Save sends to it, and it is the only panel */
@@ -25,9 +27,9 @@ export interface V1Host {
   /** what the panel runs now; null = none (the workbench starts from the factory deck file) */
   load(): Promise<PanelState | null>;
   entities(domains: string[]): Promise<Entities>;
-  /** the add list's search: entities of those domains (and device classes, "" = any) whose name or id holds q; null =
-   *  this host has none of its own (the workbench: the fixture, searched in the page) */
-  search(domains: string[], dc: string, q: string): Promise<Found | null>;
+  /** the search index of those domains, read once and searched in the page; null = this host has none of its own (the
+   *  workbench: the fixture) */
+  index(domains: string[]): Promise<Index | null>;
   /** Save: the deck, the settings that changed, the Home Assistant link when it changed (token "" = keep the one set) */
   save(deck: object, settings: Record<string, unknown>, ha: { url: string; token: string } | null): Promise<SaveOut>;
   /** Back to factory (kind revert, the deck) */
@@ -44,7 +46,7 @@ export const host: V1Host = {
   ha: noHa,
   load: async () => null,
   entities: async () => null,
-  search: async () => null,
+  index: async () => null,
   save: async () => ({ ok: true }),
   factory: async () => ({ ok: true }),
 };

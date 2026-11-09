@@ -47,7 +47,9 @@
 //                   all; drop = free them once sent); a domain not read yet (or read over five minutes ago) is read
 //                   now: ask again until ok. A large house: ask a few domains at a time, with drop.
 //                   ?q=kitch[&dc=temperature]: a search instead (a read keeping only the matches, at most 40):
-//                   {state, found: [{id, name, dc, st, unit}], more} (the editor's add list)
+//                   {state, found: [{id, name, dc, st, unit}], more}.
+//                   ?index=1&domains=..: the editor's search index, text: one line per entity "id\tname\tdc\tstate\tunit"
+//                   then "#ok\t<left out>"; or "#loading" (ask again), "#off", "#failed\t<why>"; the panel keeps none of it
 //                = The entities the editor's pickers offer, read from Home Assistant through the panel's link.
 //   POST /fw/bench  a batch of bench cases the panel runs on its own screen (fw_bench.h); GET /fw/bench = the report
 //                = Runs speed tests on the panel's own screen; GET reads the report.
@@ -2070,7 +2072,24 @@ class Handler : public AsyncWebHandler {
         return v.size() > 256 || v.find_first_not_of("abcdefghijklmnopqrstuvwxyz0123456789_,") != std::string::npos ? std::string() : v;
       };
       auto split = [](const std::string &v) { std::vector<std::string> o; size_t i = 0; while (i < v.size()) { size_t j = v.find(',', i); if (j == std::string::npos) j = v.size(); if (j > i) o.push_back(v.substr(i, j - i)); i = j + 1; } return o; };
-      if (req->hasArg("q") || req->hasArg("dc")) {  // the editor's add list: a search, only its matches (ha_link::find_json)
+      if (req->hasArg("index")) {  // the editor's search index (ha_link::index_text): the lines moved out of the core, sent
+        // in 4 KB pieces from that one string (a response object would copy it), then freed: the panel keeps nothing
+        std::string txt;
+        const std::string doms = arg("domains");
+        if (!in_loop([&] { hl::index_text(doms, txt); }, 3000)) txt = "#failed\tthe main loop did not answer in time\n";
+        httpd_req_t *h = *req;
+        httpd_resp_set_type(h, "text/plain; charset=utf-8");
+        httpd_resp_set_hdr(h, "Cache-Control", "no-store");
+        httpd_resp_set_hdr(h, "Access-Control-Allow-Origin", origin.c_str());
+        httpd_resp_set_hdr(h, "Vary", "Origin");
+        bool sent = true;
+        for (size_t at = 0; sent && at < txt.size(); at += 4096) sent = httpd_resp_send_chunk(h, txt.data() + at, std::min<size_t>(4096, txt.size() - at)) == ESP_OK;
+        if (sent) httpd_resp_send_chunk(h, nullptr, 0);
+        body_.clear();
+        too_big_ = false;
+        httpd_stack_note();
+        return;
+      } else if (req->hasArg("q") || req->hasArg("dc")) {  // the editor's add list: a search, only its matches (ha_link::find_json)
         std::string q = req->hasArg("q") ? req->arg("q").c_str() : "";
         if (q.size() > 64) q.resize(64);
         for (char &c : q) if ((unsigned char) c < 0x20) c = ' ';

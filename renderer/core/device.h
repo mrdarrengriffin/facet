@@ -208,12 +208,14 @@ struct Entity { std::string id, name, icon, dc; };  // dc: attributes.device_cla
 struct Find { std::string dc, q; };
 struct Hit { Entity e; std::string st, unit; };  // a search's match: its state and unit_of_measurement as Home Assistant has them
 constexpr size_t FIND_MAX = 40;
+constexpr size_t INDEX_MAX = 192 * 1024;  // an index's most bytes (a house of ~2,400 entities: ~130 KB for the card domains)
 class Scan {
  public:
   explicit Scan(const std::string &domains);  // "" = every domain
   Scan(const std::string &domains, const Find &f);
-  bool search = false;
-  int more = 0;  // a search's matches past FIND_MAX
+  bool search = false, index = false;  // index: every wanted entity as one line in lines (read_index)
+  int more = 0;  // a search's matches past FIND_MAX; an index's lines past INDEX_MAX
+  std::string lines;
   std::vector<Hit> hits;  // a search's matches, in Home Assistant's order (a search keeps nothing in out)
   void feed(const char *p, size_t n);
   bool bad() const { return bad_; }
@@ -286,6 +288,11 @@ const std::vector<Hit> *found(const std::string &domains, const Find &f, int *mo
 // the search's answer, the same on the panel (GET /fw/entities?q=&dc=) and in WASM (fw_ha_find): {"state": ok | loading
 // | off | failed, "why"?, "found": [{id, name, dc, st, unit}], "more": n}; loading = asked again until ok (a read started here)
 std::string find_json(const std::string &domains, const Find &f);
+// the editor's search index (/fw/entities?index=1): one read of /api/states keeping, for the wanted domains, one line
+// per entity "id\tname\tdevice_class\tstate\tunit\n" in one string (no per-entity strings: ~80 bytes each), at most
+// INDEX_MAX. index_text(domains, out): "#loading\n" (a read started or running: ask again), "#off\n", "#failed\t<why>\n",
+// or the lines + "#ok\t<left out>\n", MOVED into out: the panel keeps nothing once it has answered (the browser searches it)
+void index_text(const std::string &domains, std::string &out);
 // a domain's list read longer ago than this: its picker reads it again in the background when it opens (the old list
 // shows meanwhile), so entities added to Home Assistant appear without a manual read
 constexpr uint32_t STALE_MS = 5 * 60 * 1000;
