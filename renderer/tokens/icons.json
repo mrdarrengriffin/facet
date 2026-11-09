@@ -28,7 +28,7 @@
     {"name": "chevron-left", "kind": "ui", "group": "navigation", "keyline": "glyph", "file": "chevron-left.svg", "sizes": ["glyph"], "use": "Calendar month: previous month (the chevron mirrored; docs rotate(180deg))"},
     {"name": "chevron-down", "kind": "ui", "group": "navigation", "keyline": "glyph", "file": "chevron-down.svg", "sizes": ["small"], "use": "speaker button"},
     {"name": "close", "kind": "ui", "group": "navigation", "keyline": "glyph", "file": "close.svg", "sizes": ["icon", "glyph"], "use": "Button icon 24 · bottom sheet close button"},
-    {"name": "plus", "pixel": ["00", "18", "18", "7E", "7E", "18", "18", "00"], "kind": "ui", "group": "navigation", "keyline": "glyph", "file": "plus.svg", "sizes": ["icon", "glyph"], "use": "Button icon 24 · icon buttons"},
+    {"name": "plus", "pixel": ["00", "18", "18", "7E", "7E", "18", "18", "00"], "kind": "ui", "group": "navigation", "keyline": "glyph", "file": "plus.svg", "sizes": ["icon", "glyph", "feature"], "use": "Button icon 24 · icon buttons"},
     {"name": "minus", "pixel": ["00", "00", "00", "7E", "7E", "00", "00", "00"], "kind": "ui", "group": "navigation", "keyline": "glyph", "file": "minus.svg", "sizes": ["icon", "glyph"], "use": "Thermostat: the - button (square icon button, glyph size; 2026-10-23 it was missing there)"},
     {"name": "check", "kind": "ui", "group": "navigation", "keyline": "glyph", "file": "check.svg", "sizes": ["icon", "glyph"], "use": "Button icon 24 · toast"},
     {"name": "play", "kind": "ui", "group": "media", "keyline": "glyph", "file": "play.svg", "sizes": ["glyph", "feature"], "use": "play button (glyph-play) · toast"},

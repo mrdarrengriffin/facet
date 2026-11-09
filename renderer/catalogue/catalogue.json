@@ -1432,9 +1432,10 @@
      "options": [
       "done",
       "alert",
-      "pr"
+      "pr",
+      "plus"
      ],
-     "about": "The icon at the top: done for all clear, alert for a problem, pr for pull requests."
+     "about": "The icon at the top: done for all clear, alert for a problem, pr for pull requests, plus for something to add."
     },
     {
      "name": "title",
@@ -5503,5 +5504,5 @@
    }
   }
  },
- "hash": "71b696b1"
+ "hash": "41486d78"
 }

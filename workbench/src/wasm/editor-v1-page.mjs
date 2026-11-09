@@ -16,8 +16,10 @@ export function v1Boot(repo, { panel = false } = {}) {
   const accents = rj(join(R, 'tokens/colour.json')).accent;
   const scope = readFileSync(join(repo, 'workbench/EDITOR-V1.md'), 'utf8');
   const own_max = Number(readFileSync(join(R, 'core/spec.h'), 'utf8').match(/\bhomes = (\d+)/)[1]);  // the deck check's budget for your own screens
+  // the workbench's mock panel starts from a deck with every screen (tests/fixtures/deck-full.json; a panel's own
+  // factory deck is one empty Home)
   return JSON.stringify({
-    screens, settings: schema.settings, deck: panel ? { start: '', pages: [] } : rj(join(R, 'specs/deck.json')), options: panel ? {} : fixture.options, accents, scope, hash: schema.hash, own_max,
+    screens, settings: schema.settings, deck: panel ? { start: '', pages: [] } : rj(join(R, 'tests/fixtures/deck-full.json')), options: panel ? {} : fixture.options, accents, scope, hash: schema.hash, own_max,
     cards: schema.spec.cards, grid_sizes: schema.spec.grid_sizes ?? '1x1,2x1,2x2,half', card_max: schema.spec.budget.cards,
   }).replace(/</g, '\\u003c');
 }

@@ -34,9 +34,9 @@ FW_COMPONENT(empty_state, "Empty state", "components", R"({
   "parts": [],
   "min": ["layout:card-min-w", "layout:empty-h"],
   "frame": [464, 128],
-  "icons": ["done@feature", "alert@feature", "pr@feature"],
+  "icons": ["done@feature", "alert@feature", "pr@feature", "plus@feature"],
   "props": [
-    {"name": "icon", "about": "The icon at the top: done for all clear, alert for a problem, pr for pull requests.", "type": "select", "options": ["done", "alert", "pr"], "default": "done"},
+    {"name": "icon", "about": "The icon at the top: done for all clear, alert for a problem, pr for pull requests, plus for something to add.", "type": "select", "options": ["done", "alert", "pr", "plus"], "default": "done"},
     {"name": "title", "about": "The short heading that says nothing is here.", "type": "text", "default": "Nothing needs you"},
     {"name": "body", "about": "One quieter line under the heading that explains it.", "type": "text", "default": "No review requests or assignments"},
     {"name": "tone", "about": "The icon's colour, by what the emptiness means: ok, warn, error, working, info or idle.", "type": "select", "options": ["ok", "warn", "error", "working", "info", "idle"], "default": "ok"}

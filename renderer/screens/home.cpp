@@ -35,6 +35,7 @@
 #include "fw.h"
 #include "fx.h"
 #include "spec.h"
+#include "device.h"
 
 namespace {
 using Doc = ArduinoJson::JsonDocument;
@@ -349,6 +350,16 @@ void build_home(lv_obj_t *parent, fw::Props props) {
   int slot = 0;
   for (Var cd : page["cards"].as<ArduinoJson::JsonArrayConst>())
     if (card_node(cd, deck["pages"], slot, nodes)) slot++;
+  if (!slot) {  // no cards yet (a fresh panel, Back to factory): where to add them, the panel's own address
+    ArduinoJson::JsonObject n = nodes.add<ArduinoJson::JsonObject>();
+    n["c"] = "empty_state";
+    n["p"]["icon"] = "plus";
+    n["p"]["tone"] = "idle";
+    n["p"]["title"] = "Add your cards";
+    std::string at = fw::dev::ha_link::page();  // http://<the panel>/link once on Wi-Fi ("" = not known: the workbench)
+    if (at.size() > 5 && at.compare(at.size() - 5, 5, "/link") == 0) at.resize(at.size() - 5);
+    n["p"]["body"] = at.empty() ? std::string("Open the panel's address in a browser") : "Open " + at + " in a browser";
+  }
   for (Var b : page["header_actions"]["buttons"].as<ArduinoJson::JsonArrayConst>()) button_node(b, deck["pages"], nodes);
   std::string json, error;
   serializeJson(sp, json);

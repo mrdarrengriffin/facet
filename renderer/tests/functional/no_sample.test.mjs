@@ -22,7 +22,7 @@ export default {
       await t.device();
       t.ha.answers = true;
       t.b.spec('act', { do: 'ha.connect', url: 'http://homeassistant.local:8123', token: 'abcdefgh1234' }); t.b.settle(600);
-      const deck = JSON.parse(readFileSync(new URL('deck.json', SPECS), 'utf8'));
+      const deck = JSON.parse(readFileSync(new URL('../tests/fixtures/deck-full.json', SPECS), 'utf8'));  // a deck with every screen (the factory one is one empty Home)
       const seen = [];
       for (const pg of deck.pages) {
         if (pg.kind !== 'home') t.b.spec('act', { do: 'nav.open', screen: pg.id });

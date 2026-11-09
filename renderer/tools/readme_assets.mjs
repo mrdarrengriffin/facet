@@ -48,7 +48,7 @@ m._fw_init();
 // Home's cards as on a panel with nothing linked yet would read Home Assistant ("loading"): for the README the factory
 // deck with every page that has a sample source on it (Weather's sample forecast, as its own README shot)
 {
-  const deck = JSON.parse(readFileSync(new URL('../specs/deck.json', import.meta.url), 'utf8'));
+  const deck = JSON.parse(readFileSync(new URL('../tests/fixtures/deck-full.json', import.meta.url), 'utf8'));
   for (const p of deck.pages) {
     let sp = null;
     try { sp = JSON.parse(readFileSync(new URL(`../specs/${p.kind}.json`, import.meta.url), 'utf8')); } catch {}

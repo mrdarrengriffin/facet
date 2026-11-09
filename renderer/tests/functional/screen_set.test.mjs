@@ -6,7 +6,7 @@ const act = (t, a) => { const r = JSON.parse(t.b.spec('act', a) || '{}'); t.b.ti
 import fs from 'node:fs';
 import { px, diff, comps } from './_controls.mjs';
 const radioOn = (t, r) => diff(px(t, r.x + r.w / 2, r.y + r.h / 2), px(t, r.x - 12, r.y + r.h / 2));
-const FACTORY = JSON.parse(fs.readFileSync(new URL('../../specs/deck.json', import.meta.url)));
+const FACTORY = JSON.parse(fs.readFileSync(new URL('../fixtures/deck-full.json', import.meta.url)));
 
 export default {
   id: 'screen_set', family: 'device', about: 'A screen\'s settings: a change reaches the deck and the screen; a refused one says so.',

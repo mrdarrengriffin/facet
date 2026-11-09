@@ -1,86 +1,8 @@
 {
   "v": 2,
-  "rev": 3,
+  "rev": 1,
   "start": "home",
   "pages": [
-    {
-      "id": "home",
-      "kind": "home",
-      "name": "Home",
-      "cards": [
-        {
-          "t": "page",
-          "page": "clock",
-          "size": "m"
-        },
-        {
-          "t": "page",
-          "page": "weather",
-          "size": "m"
-        },
-        {
-          "t": "page",
-          "page": "calendar",
-          "size": "m"
-        },
-        {
-          "t": "page",
-          "page": "media",
-          "size": "m"
-        },
-        {
-          "t": "page",
-          "page": "timer",
-          "size": "m"
-        },
-        {
-          "t": "page",
-          "page": "energy",
-          "size": "m"
-        },
-        {
-          "t": "page",
-          "page": "moon",
-          "size": "m"
-        },
-        {
-          "t": "page",
-          "page": "overhead",
-          "size": "m"
-        }
-      ]
-    },
-    {
-      "id": "clock",
-      "kind": "clock"
-    },
-    {
-      "id": "weather",
-      "kind": "weather"
-    },
-    {
-      "id": "calendar",
-      "kind": "calendar"
-    },
-    {
-      "id": "media",
-      "kind": "media"
-    },
-    {
-      "id": "timer",
-      "kind": "timer"
-    },
-    {
-      "id": "energy",
-      "kind": "energy"
-    },
-    {
-      "id": "moon",
-      "kind": "moon"
-    },
-    {
-      "id": "overhead",
-      "kind": "overhead"
-    }
+    { "id": "home", "kind": "home", "name": "Home", "cards": [] }
   ]
 }

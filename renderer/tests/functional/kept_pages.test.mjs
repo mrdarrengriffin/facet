@@ -3,7 +3,7 @@
 // (core/ha.h asleep) and catch up when it shows (wake). Scroll is kept. A spec / deck change rebuilds only the pages it
 // touched. Home Assistant is faked (tools/functional.mjs FakeHA); W is the factory deck's weather entity.
 import fs from 'node:fs';
-const FACTORY = JSON.parse(fs.readFileSync(new URL('../../specs/deck.json', import.meta.url)));
+const FACTORY = JSON.parse(fs.readFileSync(new URL('../fixtures/deck-full.json', import.meta.url)));
 const W = 'weather.forecast_home';
 const act = (t, a) => { const r = JSON.parse(t.b.spec('act', a) || '{}'); t.b.tick(10); t.b.settle(800); return r; };
 const keep = (t, n = '') => t.b.test('keep', String(n)) ?? [];
