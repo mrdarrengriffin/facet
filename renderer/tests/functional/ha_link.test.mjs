@@ -90,6 +90,37 @@ export default {
       t.has(p.after, /^New place$/, 'read again in the background: the new entity shows');
       t.eq(link().count, reads + 1, 'only the weather domain read');
     } },
+    { name: 'the add list\'s search on a large house: only the matches of that type and device class, never the whole list', async run(t) {
+      t.ha.answers = true;
+      for (let i = 0; i < 1500; i++) {  // a large house: 1,500 sensors, a tenth of them temperatures
+        const room = ['Kitchen', 'Hall', 'Office', 'Bedroom', 'Garage'][Math.floor(i / 10) % 5];
+        t.ha.s[`sensor.s${i}`] = { '': '1', friendly_name: `${room} ${i % 10 === 0 ? 'Temperature' : 'Power'} ${i}`, device_class: i % 10 === 0 ? 'temperature' : 'power' };
+      }
+      t.ha.s['light.kitchen_ceiling'] = { '': 'on', friendly_name: 'Kitchen Ceiling' };
+      await t.device();
+      act(t, { do: 'ha.connect', url: 'http://ha.test:8123', token: 'abcdefgh1234' }); t.b.tick(8); t.b.settle(600);
+      const find = (doms, dc, q) => {
+        const m = t.b.m, a = m.stringToNewUTF8(doms), b = m.stringToNewUTF8(dc), c = m.stringToNewUTF8(q);
+        try {
+          let r;
+          for (let i = 0; i < 20; i++) { r = JSON.parse(m.UTF8ToString(m._fw_ha_find(a, b, c))); if (r.state !== 'loading') break; t.b.tick(2); }
+          return r;
+        } finally { m._free(a), m._free(b), m._free(c); }
+      };
+      const link = () => JSON.parse(t.b.m.UTF8ToString(t.b.m._fw_ha_link()));
+      let r = find('sensor,binary_sensor', 'temperature', 'kitchen');
+      t.eq(r.state, 'ok', JSON.stringify(r).slice(0, 200));
+      t.eq([r.found.length, r.more], [30, 0], 'the kitchen temperatures: 30, nothing else');
+      t.ok(r.found.every((e) => e.dc === 'temperature' && /^Kitchen /.test(e.name)), 'each one a kitchen temperature');
+      r = find('sensor', '', 'KITCHEN');
+      t.eq([r.found.length, r.more], [40, 260], 'any kitchen sensor: a page of 40, the other 260 counted (case ignored)');
+      r = find('light,sensor', '', 'ceiling');
+      t.eq(r.found.map((e) => e.id), ['light.kitchen_ceiling'], 'by name across domains');
+      r = find('sensor', '', 's1499');
+      t.eq(r.found.map((e) => e.id), ['sensor.s1499'], 'by entity id');
+      t.ok(link().peak < 16 * 1024, `held while reading: ${link().peak} bytes (a page of matches, never the list)`);
+      t.eq(link().count, 0, 'the pickers\' lists untouched (nothing cached)');
+    } },
     { name: 'the link page as a QR code while the panel is not linked, gone once it is', async run(t) {
       t.ha.answers = true;
       await t.mount('ha_link', { page: 'http://192.168.1.42/link' });

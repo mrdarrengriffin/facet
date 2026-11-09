@@ -221,6 +221,13 @@ EMSCRIPTEN_KEEPALIVE void fw_ha_chunk(int id, const char *p, int n) { if (p && n
 // panel: its API link; the tests and previews say so themselves)
 EMSCRIPTEN_KEEPALIVE void fw_ha_connected(int on) { fw::ha::set_connected(on != 0); }
 EMSCRIPTEN_KEEPALIVE void fw_ha_got(int id, int ok, const char *why) { fw::dev::ha_link::done((uint32_t) id, ok != 0, why ? why : ""); }
+// the editor's add list on the link (ha_link::find_json, the panel's GET /fw/entities?q=&dc=): ask until state is not
+// loading (each tick serves the read)
+EMSCRIPTEN_KEEPALIVE const char *fw_ha_find(const char *domains, const char *dc, const char *q) {
+  static std::string out;
+  out = fw::dev::ha_link::find_json(domains ? domains : "", {dc ? dc : "", q ? q : ""});
+  return out.c_str();
+}
 // the feeds' web reads (core/net.h: a direct source, such as a public flight API): the host fetches each one (the
 // workbench through its /api/wasm/web proxy: the APIs send no CORS headers) and streams the body back
 std::vector<std::pair<uint32_t, std::string>> &net_queue() {

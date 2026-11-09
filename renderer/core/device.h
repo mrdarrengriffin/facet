@@ -202,10 +202,17 @@ struct Timer { int state = 0; long long ends = 0; int total = 0; std::string lab
 // host fetches with its own token (the workbench's host), so the token never leaves the module.
 // Agents / HA: actions ha.connect {url, token} and ha.entities {domains} (core/spec.h, CONTRACT.md C50).
 namespace ha_link {
-struct Entity { std::string id, name, icon; };
+struct Entity { std::string id, name, icon, dc; };  // dc: attributes.device_class ("" = none)
+// a search (find): only the entities whose device class is one of dc (comma list, "" = any) and whose id or name holds
+// q (ASCII case-insensitive, "" = any) are kept, at most FIND_MAX; the rest that match are counted (more)
+struct Find { std::string dc, q; };
+constexpr size_t FIND_MAX = 40;
 class Scan {
  public:
   explicit Scan(const std::string &domains);  // "" = every domain
+  Scan(const std::string &domains, const Find &f);
+  bool search = false;
+  int more = 0;  // a search's matches past FIND_MAX
   void feed(const char *p, size_t n);
   bool bad() const { return bad_; }
   size_t held() const { return held_; }  // bytes held now (buffers + kept rows); peak() the most at any point
@@ -217,7 +224,9 @@ class Scan {
   void str_end();
   void obj_end();
   void add(char c);
-  enum Cap : uint8_t { NONE, KEY, ID, NAME, ICON };
+  bool match(const std::string &dom) const;
+  Find f_;
+  enum Cap : uint8_t { NONE, KEY, ID, NAME, ICON, DC };
   static constexpr int DEPTH = 32;
   char kind_[DEPTH] = {};
   bool expect_key_[DEPTH] = {};
@@ -225,8 +234,8 @@ class Scan {
   uint32_t cp_ = 0, hi_ = 0;
   bool in_str_ = false, esc_ = false, attrs_ = false, bad_ = false;
   Cap cap_ = NONE;
-  std::string buf_, key2_, key3_, id_, name_, icon_;
-  size_t held_ = 0, peak_ = 0;
+  std::string buf_, key2_, key3_, id_, name_, icon_, dc_;
+  size_t held_ = 0, peak_ = 0, kept_ = 0;
 };
 enum St { OFF, IDLE, LOADING, OK, FAIL, CHECKING };
 // configure: token "" = keep the one set; stores it, then checks the link (GET <url>/api/ through get(): CHECKING, then
@@ -267,6 +276,14 @@ int count();               // entities kept by the last fetch
 int left_out(const std::string &domain);  // entities of that domain the last read did not keep (too many)
 void forget(const std::string &domain);  // free a domain's list (its next picker reads it again)
 const std::vector<Entity> *list(const std::string &domain);  // nullptr = not fetched yet
+// the editor's add list (/fw/entities ?q= &dc=): find() reads GET <url>/api/states once more and keeps only the matches
+// (Find), never the lists (the cache is left as it is); found(domains, f) = those matches once that read answered,
+// nullptr before (or when the last search was another one). One search is held at a time; a new one replaces it.
+const char *find(const std::string &domains, const Find &f);  // "" = started, else why not
+const std::vector<Entity> *found(const std::string &domains, const Find &f, int *more = nullptr);
+// the search's answer, the same on the panel (GET /fw/entities?q=&dc=) and in WASM (fw_ha_find): {"state": ok | loading
+// | off | failed, "why"?, "found": [{id, name, dc}], "more": n}; loading = asked again until ok (a read started here)
+std::string find_json(const std::string &domains, const Find &f);
 // a domain's list read longer ago than this: its picker reads it again in the background when it opens (the old list
 // shows meanwhile), so entities added to Home Assistant appear without a manual read
 constexpr uint32_t STALE_MS = 5 * 60 * 1000;

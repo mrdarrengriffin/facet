@@ -45,7 +45,9 @@
 //                   link (core/device.h ha_link): {state: off|loading|ok|failed, why?, lists: {domain: [{id, name}]},
 //                   more: {domain: n left out}} (at most 500 per domain; send = the domains to answer with, default
 //                   all; drop = free them once sent); a domain not read yet (or read over five minutes ago) is read
-//                   now: ask again until ok. A large house: ask a few domains at a time, with drop
+//                   now: ask again until ok. A large house: ask a few domains at a time, with drop.
+//                   ?q=kitch[&dc=temperature]: a search instead (a read keeping only the matches, at most 40):
+//                   {state, found: [{id, name, dc}], more} (the editor's add list)
 //                = The entities the editor's pickers offer, read from Home Assistant through the panel's link.
 //   POST /fw/bench  a batch of bench cases the panel runs on its own screen (fw_bench.h); GET /fw/bench = the report
 //                = Runs speed tests on the panel's own screen; GET reads the report.
@@ -2068,6 +2070,13 @@ class Handler : public AsyncWebHandler {
         return v.size() > 256 || v.find_first_not_of("abcdefghijklmnopqrstuvwxyz0123456789_,") != std::string::npos ? std::string() : v;
       };
       auto split = [](const std::string &v) { std::vector<std::string> o; size_t i = 0; while (i < v.size()) { size_t j = v.find(',', i); if (j == std::string::npos) j = v.size(); if (j > i) o.push_back(v.substr(i, j - i)); i = j + 1; } return o; };
+      if (req->hasArg("q") || req->hasArg("dc")) {  // the editor's add list: a search, only its matches (ha_link::find_json)
+        std::string q = req->hasArg("q") ? req->arg("q").c_str() : "";
+        if (q.size() > 64) q.resize(64);
+        for (char &c : q) if ((unsigned char) c < 0x20) c = ' ';
+        const std::string doms = arg("domains"), dc = arg("dc");
+        in_loop([&] { s = hl::find_json(doms, {dc, q}); }, 3000);
+      } else {
       const std::vector<std::string> want = split(arg("domains")), send = req->hasArg("send") ? split(arg("send")) : want;
       const bool drop = req->hasArg("drop");  // free those lists once sent (a large house: the next group's read fits)
       constexpr size_t CAP = 500;  // per domain; more = how many were left out
@@ -2121,6 +2130,7 @@ class Handler : public AsyncWebHandler {
         s += "},\"more\":{" + more + "}}";
         if (drop && state == "ok") for (const auto &dom : send) hl::forget(dom);  // the editor holds them now
       }, 3000);
+      }
     } else if (path == "/fw/ha") {
       ArduinoJson::JsonDocument d;
       // ?want=e1,e2[&attrs=a1,a2]: subscribe to these too (the panel's editor previews live values)

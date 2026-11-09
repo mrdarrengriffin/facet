@@ -4,8 +4,9 @@
 // The token is never logged and never shown back (token_hint = the last 4 characters).
 // Scan: a streaming reader of the /api/states array. It keeps a stack of container kinds (32 deep), whether an
 // object expects a key, the key at depth 2 (an entity's field) and depth 3 (an attribute), and three strings capped
-// at CAP bytes (entity_id, attributes.friendly_name, attributes.icon); every other value is skipped as it streams.
-// At each entity's end, one whose domain is wanted is kept. Held bytes = the capped strings + the kept rows.
+// at CAP bytes (entity_id, attributes.friendly_name, attributes.icon, attributes.device_class); every other value is
+// skipped as it streams. At each entity's end, one whose domain is wanted (and, a search, that matches) is kept. Held
+// bytes = the capped strings + the kept rows.
 #include "device.h"
 #include "sax.h"
 #include <memory>
@@ -34,6 +35,9 @@ struct State {
   std::map<std::string, std::vector<Entity>> cache;
   std::map<std::string, uint32_t> read_at;  // per cached domain: when it was read (lv_tick)
   std::map<std::string, int> left;         // per cached domain: entities the read did not keep (PER, BUDGET)
+  std::string found_key;                   // the last search's (domains|dc|q), its matches, how many more
+  std::vector<Entity> found;
+  int found_more = 0;
   WsSink ws = nullptr;
   uint32_t ws_next = WS_ID;
   struct Call { std::function<void(const char *, size_t)> feed; std::function<void(bool, const std::string &)> end; };
@@ -65,8 +69,42 @@ Scan::Scan(const std::string &domains) {
     if (!d.empty()) { want.push_back(d); out[d]; }
     i = j + 1;
   }
-  buf_.reserve(CAP), id_.reserve(CAP), name_.reserve(CAP), icon_.reserve(CAP);
-  held_ = peak_ = 4 * CAP + 2 * 64;
+  buf_.reserve(CAP), id_.reserve(CAP), name_.reserve(CAP), icon_.reserve(CAP), dc_.reserve(32);
+  held_ = peak_ = 4 * CAP + 2 * 64 + 32;
+}
+Scan::Scan(const std::string &domains, const Find &f) : Scan(domains) {
+  search = true, f_ = f;
+  for (char &c : f_.q) if (c >= 'A' && c <= 'Z') c = (char) (c - 'A' + 'a');
+}
+namespace {
+bool holds(const std::string &hay, const std::string &q) {  // ASCII case-insensitive; q is lower case
+  if (q.empty()) return true;
+  if (hay.size() < q.size()) return false;
+  for (size_t i = 0; i + q.size() <= hay.size(); i++) {
+    size_t k = 0;
+    while (k < q.size()) {
+      char c = hay[i + k];
+      if (c >= 'A' && c <= 'Z') c = (char) (c - 'A' + 'a');
+      if (c != q[k]) break;
+      k++;
+    }
+    if (k == q.size()) return true;
+  }
+  return false;
+}
+}  // namespace
+bool Scan::match(const std::string &) const {
+  if (!f_.dc.empty()) {
+    bool in = false;
+    for (size_t i = 0; i < f_.dc.size() && !in;) {
+      size_t j = f_.dc.find(',', i);
+      if (j == std::string::npos) j = f_.dc.size();
+      in = f_.dc.compare(i, j - i, dc_) == 0 && j > i;
+      i = j + 1;
+    }
+    if (!in) return false;
+  }
+  return holds(id_, f_.q) || holds(name_, f_.q);
 }
 void Scan::add(char c) {
   if (cap_ != NONE && buf_.size() < CAP) buf_ += c;
@@ -78,22 +116,27 @@ void Scan::str_end() {
   if (c == ID) id_ = buf_;
   else if (c == NAME) name_ = buf_;
   else if (c == ICON) icon_ = buf_;
+  else if (c == DC) dc_ = buf_.substr(0, 32);
 }
-void Scan::obj_end() {  // an entity's object closes: keep it when its domain is wanted
+void Scan::obj_end() {  // an entity's object closes: keep it when its domain is wanted (and, a search, it matches)
   const size_t dot = id_.find('.');
   if (dot != std::string::npos && dot > 0) {
     const std::string dom = id_.substr(0, dot);
     auto it = out.find(dom);
-    if (it == out.end() && want.empty()) it = out.emplace(dom, std::vector<Entity>()).first;
-    const size_t add = sizeof(Entity) + id_.size() + (name_.empty() ? id_.size() : name_.size()) + icon_.size();
-    if (it != out.end() && (it->second.size() >= PER || held_ + add > BUDGET)) left[dom]++;
-    else if (it != out.end()) {
-      it->second.push_back({id_, name_.empty() ? id_ : name_, icon_});
-      held_ += sizeof(Entity) + id_.size() + (name_.empty() ? id_.size() : name_.size()) + icon_.size();
+    const bool ok = (it != out.end() || want.empty()) && (!search || match(dom));
+    if (ok && it == out.end()) it = out.emplace(dom, std::vector<Entity>()).first;
+    const size_t add = sizeof(Entity) + id_.size() + (name_.empty() ? id_.size() : name_.size()) + icon_.size() + dc_.size();
+    if (!ok) ;  // not wanted, or not a match
+    else if (search && kept_ >= FIND_MAX) more++;
+    else if (it->second.size() >= PER || held_ + add > BUDGET) left[dom]++;
+    else {
+      it->second.push_back({id_, name_.empty() ? id_ : name_, icon_, dc_});
+      kept_++;
+      held_ += add;
       if (held_ > peak_) peak_ = held_;
     }
   }
-  id_.clear(), name_.clear(), icon_.clear();
+  id_.clear(), name_.clear(), icon_.clear(), dc_.clear();
 }
 void Scan::feed(const char *p, size_t n) {
   for (size_t i = 0; i < n && !bad_; i++) {
@@ -132,6 +175,7 @@ void Scan::feed(const char *p, size_t n) {
         else if (depth_ == 2 && obj && key2_ == "entity_id") cap_ = ID;
         else if (depth_ == 3 && attrs_ && key3_ == "friendly_name") cap_ = NAME;
         else if (depth_ == 3 && attrs_ && key3_ == "icon") cap_ = ICON;
+        else if (depth_ == 3 && attrs_ && key3_ == "device_class") cap_ = DC;
         else cap_ = NONE;
         break;
       }
@@ -139,7 +183,7 @@ void Scan::feed(const char *p, size_t n) {
       case '[':
         if (depth_ >= DEPTH) { bad_ = true; break; }
         if (depth_ == 2 && c == '{' && key2_ == "attributes") attrs_ = true, key3_.clear();
-        if (depth_ == 1 && c == '{') key2_.clear(), id_.clear(), name_.clear(), icon_.clear();
+        if (depth_ == 1 && c == '{') key2_.clear(), id_.clear(), name_.clear(), icon_.clear(), dc_.clear();
         kind_[depth_] = c;
         expect_key_[depth_] = c == '{';
         depth_++;
@@ -227,11 +271,77 @@ std::string token_hint() {
   return t.size() < 8 ? std::string(t.empty() ? "" : "set") : "\xE2\x80\xA6" + t.substr(t.size() - 4);
 }
 bool ready() { return !S().url.empty() && (S().proxy || !S().token.empty()); }
-const char *fetch(const std::string &domains) {
+namespace {
+const char *cannot() {
   State &s = S();
   if (!ready()) return "Home Assistant is not set up: its address and a token first";
   if (s.st == LOADING) return "already reading Home Assistant";
   if (!s.get) return "this build cannot reach Home Assistant";
+  return nullptr;
+}
+std::string find_key(const std::string &domains, const Find &f) {
+  std::string q = f.q;
+  for (char &c : q) if (c >= 'A' && c <= 'Z') c = (char) (c - 'A' + 'a');
+  return domains + '|' + f.dc + '|' + q;
+}
+}  // namespace
+const char *find(const std::string &domains, const Find &f) {
+  State &s = S();
+  if (const char *no = cannot()) return no;
+  delete s.active;
+  s.active = new Scan(domains, f);
+  s.found.clear(), s.found.shrink_to_fit(), s.found_key = find_key(domains, f), s.found_more = 0;  // never two searches held
+  s.st = LOADING;
+  s.why.clear();
+  bump();
+  s.get(++s.cur, s.url + "/api/states", s.token);
+  return "";
+}
+const std::vector<Entity> *found(const std::string &domains, const Find &f, int *more) {
+  State &s = S();
+  if (s.found_key != find_key(domains, f) || (s.st == LOADING && s.active && s.active->search)) return nullptr;
+  if (s.st == FAIL && s.found.empty() && !s.found_more) return nullptr;
+  if (more) *more = s.found_more;
+  return &s.found;
+}
+std::string find_json(const std::string &domains, const Find &f) {
+  State &s = S();
+  auto esc = [](std::string &o, const std::string &v) {
+    o += '"';
+    for (char c : v) {
+      if (c == '"' || c == '\\') o += '\\', o += c;
+      else if ((unsigned char) c < 0x20) o += ' ';
+      else o += c;
+    }
+    o += '"';
+  };
+  int more = 0;
+  const std::vector<Entity> *l = found(domains, f, &more);
+  std::string o;
+  if (!l) {
+    if (!ready()) return R"({"state":"off","found":[],"more":0})";
+    if (s.st == FAIL && s.found_key == find_key(domains, f)) {
+      o = R"({"state":"failed","why":)";
+      esc(o, s.why);
+      return o + R"(,"found":[],"more":0})";
+    }
+    if (s.st != LOADING && s.st != CHECKING) find(domains, f);
+    return R"({"state":"loading","found":[],"more":0})";
+  }
+  size_t need = 48;
+  for (const auto &e : *l) need += e.id.size() + e.name.size() + e.dc.size() + 32;
+  o.reserve(need);
+  o = R"({"state":"ok","found":[)";
+  for (size_t i = 0; i < l->size(); i++) {
+    const Entity &e = (*l)[i];
+    if (i) o += ',';
+    o += "{\"id\":", esc(o, e.id), o += ",\"name\":", esc(o, e.name), o += ",\"dc\":", esc(o, e.dc), o += '}';
+  }
+  return o + "],\"more\":" + std::to_string(more) + '}';
+}
+const char *fetch(const std::string &domains) {
+  State &s = S();
+  if (const char *no = cannot()) return no;
   delete s.active;
   s.active = new Scan(domains);
   // the lists being read again go now: the old and the new copies are never held at once
@@ -322,7 +432,13 @@ void done(uint32_t id, bool ok, const std::string &why, Scan *parsed) {
   Scan *sc = parsed ? parsed : s.active;
   if (parsed) delete s.active;
   s.active = nullptr;
-  if (ok && sc && !sc->bad()) {
+  if (ok && sc && !sc->bad() && sc->search) {
+    s.found.clear();
+    for (auto &kv : sc->out) for (auto &e : kv.second) s.found.push_back(std::move(e));
+    s.found_more = sc->more;
+    s.peak = sc->peak();
+    s.st = OK;
+  } else if (ok && sc && !sc->bad()) {
     s.count = 0;
     const uint32_t now = lv_tick_get();
     for (auto &kv : sc->out) { s.count += (int) kv.second.size(); s.cache[kv.first] = std::move(kv.second); s.read_at[kv.first] = now; s.left[kv.first] = sc->left.count(kv.first) ? sc->left[kv.first] : 0; }
