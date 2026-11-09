@@ -10,7 +10,8 @@
 //             page's memory); Undo goes back to what ran before the last save; Back to factory = one empty Home.
 // The previews are the real renderer (engine.ts) with Home Assistant stubbed (no states: sample data). Nothing leaves
 // the page.
-import { Engine, Stage, DEVICES, type DeviceId, type HaBridge } from './engine';
+import { Engine, Stage, DEVICES, type DeviceId } from './engine';
+import { host, type PanelState } from './editor-v1-host';
 
 type Param = { about?: string; type: string; options?: string[]; label?: string; default?: string; domain?: string };
 type Screen = { name: string; params: Record<string, Param> };
@@ -31,9 +32,12 @@ type Boot = {
   cards: Record<string, CardDef>; grid_sizes: string; card_max: number;
 };
 /** what the editor holds (and what "the panel" runs, the same shape): the deck's pages in swipe order + the panel's settings */
-type Draft = { pages: Page[]; start: string; settings: Record<string, unknown>; ha: { url: string; token: string } };
+type Draft = { pages: Page[]; start: string; settings: Record<string, unknown>; ha: { url: string; token: string; hint?: string; state?: string; why?: string } };
 
 const boot: Boot = JSON.parse(document.getElementById('v1-boot')!.textContent!);
+/** the entity pickers' lists: the workbench's fixture, or what the panel reads from its Home Assistant link */
+let options: Record<string, { id: string; name: string }[]> = host.panel ? {} : boot.options;
+let ents: { state: string; why?: string } = { state: host.panel ? 'loading' : 'ok' };
 const $ = (id: string) => document.getElementById(id)!;
 function h<K extends keyof HTMLElementTagNameMap>(tag: K, cls = '', text = ''): HTMLElementTagNameMap[K] {
   const e = document.createElement(tag);
@@ -46,7 +50,6 @@ const own = (p: Page) => p.kind === 'home';
 const pageOf = (d: Draft, id: string) => d.pages.find((p) => p.id === id);
 const pname = (p: Page | undefined) => (!p ? '?' : p.name || (own(p) ? 'Home' : boot.screens[p.kind]?.name ?? p.kind));
 const name = (id: string, d: Draft = draft) => pname(pageOf(d, id));
-const noHa: HaBridge = { states: async () => null, action: async () => undefined, ask: async () => null };
 const defaults = () => Object.fromEntries(boot.settings.settings.map((s) => [s.id, s.default]));
 
 // ---- the factory, the panel, the draft
@@ -59,7 +62,19 @@ function today(): Draft {
   const pages = boot.deck.pages.filter((p) => own(p) || boot.screens[p.kind]).map((p) => clone(p));
   return { pages, start: pages.some((p) => p.id === boot.deck.start) ? boot.deck.start : pages[0].id, settings: defaults(), ha: { url: '', token: '' } };
 }
-const panel = { rev: 3, runs: today(), before: [] as { rev: number; runs: Draft }[] };
+const panel = { rev: 3, runs: host.panel ? factory() : today(), before: [] as { rev: number; runs: Draft }[] };
+/** what a panel runs, as the editor holds it (the token never: its last four only) */
+function fromPanel(st: PanelState): Draft {
+  return { pages: clone(st.deck.pages), start: st.deck.start, settings: { ...defaults(), ...st.settings }, ha: { url: st.ha.url, token: '', hint: st.ha.hint, state: st.ha.state, why: st.ha.why } };
+}
+/** every domain a picker can list: the card types', the Entity card's, the screens' entity params' */
+function allDomains() {
+  if (!host.panel) return Object.keys(options);
+  const d = new Set<string>();
+  for (const c of Object.values(boot.cards)) { c.domains.split(',').forEach((x) => x && x !== '*' && d.add(x)); Object.keys(c.by_domain ?? {}).forEach((x) => x !== '*' && d.add(x)); }
+  for (const sc of Object.values(boot.screens)) for (const p of Object.values(sc.params)) if (p.domain) d.add(p.domain);
+  return [...d];
+}
 let draft = clone(panel.runs);
 
 function paramVal(p: Page, k: string) { return p.params?.[k] ?? boot.screens[p.kind].params[k].default ?? ''; }
@@ -142,7 +157,7 @@ const SIZE_NAME: Record<string, string> = { '1x1': '1 × 1', '2x1': '2 × 1', '2
 const TAP_NAME: Record<string, string> = { toggle: 'Toggle', detail: 'Its screen', page: 'A screen', run: 'Run', none: 'Nothing' };
 function entName(id: string | undefined) {
   if (!id) return '';
-  for (const l of Object.values(boot.options)) { const o = l.find((x) => x.id === id); if (o) return o.name; }
+  for (const l of Object.values(options)) { const o = l.find((x) => x.id === id); if (o) return o.name; }
   return id;
 }
 const cardName = (c: Card, d: Draft = draft) => c.label || (c.t === 'page' ? name(c.page ?? '', d) : entName(c.e)) || TYPE_NAME[c.t] || c.t;
@@ -183,7 +198,7 @@ function changes(a: Draft, b: Draft): Change[] {
     }
   }
   if (a.ha.url !== b.ha.url) out.push({ where: 'Home Assistant', what: 'Address', was: a.ha.url || 'not set', now: b.ha.url || 'not set' });
-  if (a.ha.token !== b.ha.token) out.push({ where: 'Home Assistant', what: 'Token', was: hint(a.ha.token), now: hint(b.ha.token) });
+  if (b.ha.token) out.push({ where: 'Home Assistant', what: 'Token', was: hint(a.ha.token, a.ha.hint), now: hint(b.ha.token) });
   for (const s of boot.settings.settings) if (a.settings[s.id] !== b.settings[s.id]) out.push({ where: 'Settings', what: s.label, was: say(s, a.settings[s.id]), now: say(s, b.settings[s.id]) });
   return out;
 }
@@ -209,7 +224,7 @@ function cardChanges(pa: Page, pb: Page, a: Draft, b: Draft): Change[] {
   if (oa.join() !== ob.join()) out.push({ where: pname(pb), what: 'Card order', was: '', now: '' });
   return out;
 }
-const hint = (t: string) => (t ? `…${t.slice(-4)}` : 'not set');  // a token is never shown back whole
+const hint = (t: string, kept = '') => (t ? `…${t.slice(-4)}` : kept || 'not set');  // a token is never shown back whole
 const hbName = (b: string | undefined, d: Draft) => (!b || b === 'settings' ? 'Settings' : name(b, d));
 function say(s: Setting, v: unknown) {
   if (s.options) return s.options.find((o) => o.id === v)?.label ?? String(v);
@@ -224,13 +239,17 @@ function check(): { ok: boolean; errors: { where: string; what: string; msg: str
   if (!engine) return { ok: false, errors: [{ where: 'Editor', what: '', msg: 'the renderer is still loading' }] };
   const d = toDeck(draft, panel.rev + 1), e = engine;
   const r = JSON.parse(e.withStr('check', (pc) => e.withStr(JSON.stringify(d), (pj) => e.str(e.m._fw_spec(pc, pj))))) as { ok: boolean; errors: Err[] };
-  return { ok: r.ok, errors: (r.errors ?? []).map((x) => {
+  return { ok: r.ok, errors: words(d, r.errors ?? []) };
+}
+/** the panel's check errors said against their screen, card or setting (never a JSON path) */
+function words(d: { pages: Page[] }, errs: Err[]) {
+  return errs.map((x) => {
     const m = x.path.match(/^\.pages\[(\d+)\](?:\.(params)\.(\w+)|\.(header_actions)(?:\.(\w+))?|\.(cards)\[(\d+)\]|\.(\w+))?/);
     const pg = m ? d.pages[+m[1]] : null;
     const where = pg ? pname(pg) : x.path.startsWith('.start') ? 'Start page' : 'Screens';
     const what = !pg || !m ? '' : m[3] ? boot.screens[pg.kind]?.params[m[3]]?.label ?? m[3] : m[4] ? 'Header' : m[6] ? `${cardName((pg.cards ?? [])[+m[7]] ?? { t: '', size: '' })} card` : '';
     return { where, what, msg: x.msg };
-  }) };
+  });
 }
 
 // ---- engine + previews
@@ -243,7 +262,7 @@ function look() {
   b.setAttribute('aria-label', `Page look: ${pageLook}`);
   b.title = `This page: ${pageLook === 'auto' ? 'follows the browser' : pageLook} (the panel's own Mode is in Settings)`;
 }
-let device: DeviceId = new URLSearchParams(location.search).get('device') === 'guition' ? 'guition' : 'waveshare';
+let device: DeviceId = host.devices.length === 1 ? host.devices[0] : new URLSearchParams(location.search).get('device') === 'guition' ? 'guition' : 'waveshare';
 let engine: Engine | null = null;
 let sel = draft.start;                                     // the screen on the live panel
 let side: 'screen' | 'add' | 'settings' | 'review' | 'saved' = 'screen';  // what the sidebar holds (a bottom sheet on a phone)
@@ -267,7 +286,9 @@ function applyDeck() {
   const e = engine;
   if (!e) return;
   applySettings();
-  e.withStr('deck', (pc) => e.withStr(JSON.stringify(toDeck(draft, panel.rev)), (pj) => e.str(e.m._fw_spec(pc, pj))));
+  const d = toDeck(draft, panel.rev);
+  host.deckChanged?.(d);
+  e.withStr('deck', (pc) => e.withStr(JSON.stringify(d), (pj) => e.str(e.m._fw_spec(pc, pj))));
 }
 function preview(p: Page, cssW: number, label: string) {
   const s = engine!.stage(S(), S());
@@ -287,7 +308,8 @@ function edit(f: () => void) { f(); if (!pageOf(draft, sel)) sel = draft.start; 
 function go(id: string) { sel = id; side = 'screen'; cardSel = -1; target = null; top(); render(); }
 function top() {
   const dev = $('v1-device');
-  dev.replaceChildren(...(['waveshare', 'guition'] as DeviceId[]).map((d) => {
+  dev.hidden = host.devices.length < 2;
+  dev.replaceChildren(...host.devices.map((d) => {
     const b = h('button', '', DEVICES[d].name);
     b.type = 'button';
     b.setAttribute('aria-pressed', String(d === device));
@@ -296,7 +318,7 @@ function top() {
   }));
   const tabs = $('v1-tabs');
   const strip = h('div', 'v1-strip');  // the tabs scroll; + Screen stays in view
-  strip.append(...draft.pages.map((p) => tab(p)));
+  strip.append(...draft.pages.filter(own).map((p) => tab(p)));  // your own screens; built-in ones are in Settings > Screens
   tabs.replaceChildren(strip);
   const add = h('button', 'v1-add', '+ Screen');
   add.type = 'button';
@@ -316,12 +338,19 @@ function top() {
   $('v1-title').textContent = pname(pageOf(draft, sel));
 }
 let dragging = '';
+/** your own screen `id` to place `to` among your own screens; the built-in screens keep their places in the swipe */
+function moveOwn(id: string, to: number) {
+  const owns = draft.pages.filter(own), from = owns.findIndex((x) => x.id === id);
+  if (from < 0 || to < 0 || to >= owns.length) return;
+  owns.splice(to, 0, ...owns.splice(from, 1));
+  let k = 0;
+  draft.pages = draft.pages.map((x) => (own(x) ? owns[k++] : x));
+}
 function tab(p: Page) {
   const b = h('button', 'v1-tab', pname(p));
   b.type = 'button';
   b.setAttribute('aria-current', String(p.id === sel && side !== 'add'));
   if (p.id === draft.start) { const st = h('span', 'v1-star', '★'); st.title = 'Start page'; b.prepend(st); }
-  if (!own(p)) b.classList.add('builtin');
   b.onclick = () => go(p.id);
   b.draggable = true;
   b.ondragstart = (e) => { dragging = p.id; b.classList.add('lift'); e.dataTransfer?.setData('text/plain', p.id); };
@@ -332,14 +361,8 @@ function tab(p: Page) {
     e.preventDefault();
     const from = dragging;
     if (!from || from === p.id) return;
-    edit(() => {
-      const ids = draft.pages.map((x) => x.id);
-      const after = ids.indexOf(from) < ids.indexOf(p.id);
-      const moved = draft.pages.find((x) => x.id === from)!;
-      const rest = draft.pages.filter((x) => x.id !== from);
-      rest.splice(rest.findIndex((x) => x.id === p.id) + (after ? 1 : 0), 0, moved);
-      draft.pages = rest;
-    });
+    const owns = draft.pages.filter(own);
+    edit(() => moveOwn(from, owns.findIndex((x) => x.id === p.id)));
   };
   return b;
 }
@@ -365,7 +388,10 @@ function render() {
   if (!engine) return;
   freeStages();
   const main = $('v1-main');
-  const p = pageOf(draft, sel)!;
+  if (!own(pageOf(draft, sel) ?? { id: '', kind: '' })) sel = (pageOf(draft, draft.start) && own(pageOf(draft, draft.start)!) ? draft.start : draft.pages.find(own)?.id) ?? draft.pages[0].id;
+  // Settings > Screens > a built-in screen: the live panel shows that screen, on the panel or not
+  const shown = side === 'settings' && setView === 'screen' ? draft.pages.find((x) => x.kind === setScreen) ?? { id: setScreen, kind: setScreen } : null;
+  const p = shown ?? pageOf(draft, sel)!;
   const stage = h('div', 'v1-stage');
   const big = panelSize();
   const frame = h('div', 'v1-frame');
@@ -484,8 +510,8 @@ function cardSide(p: Page, i: number): HTMLElement[] {
   out.push(h('h2', 'cap', 'What it shows'));
   if (c.t === 'page') out.push(field('Screen', 'The screen it opens.', list(draft.pages.filter((x) => x.id !== p.id).map((x) => [x.id, pname(x)] as [string, string]), c.page ?? '', (v) => set((c) => { c.page = v; }))));
   else {
-    const doms = c.t === 'entity' ? Object.keys(boot.options) : boot.cards[c.t].domains.split(',');
-    const items: [string, string, string?][] = doms.flatMap((d) => (boot.options[d] ?? []).map((o) => [o.id, o.name, o.id] as [string, string, string]));
+    const doms = c.t === 'entity' ? allDomains() : boot.cards[c.t].domains.split(',');
+    const items: [string, string, string?][] = doms.flatMap((d) => (options[d] ?? []).map((o) => [o.id, o.name, o.id] as [string, string, string]));
     if (c.e && !items.some(([v]) => v === c.e)) items.unshift([c.e, `${c.e} (not found)`]);
     out.push(field('Entity', undefined, list(items, c.e ?? '', (v) => set((c) => {
       c.e = v;
@@ -527,6 +553,7 @@ function addCardSide(p: Page): HTMLElement[] {
   const hd = sideHead('Add a card', `${SIZE_NAME[t.size]} · row ${Math.floor(t.y / 2) + 1}, column ${t.x + 1}${t.size === 'half' ? ', under the half' : ''}`, false);
   hd.append(btn('✕', 'Close', false, () => { target = null; top(); render(); }, 'icon'));
   out.push(hd);
+  if (ents.state !== 'ok') out.push(h('p', 'v1-note', ents.state === 'loading' ? 'Reading your entities from Home Assistant…' : ents.state === 'off' ? 'Home Assistant is not set up: Settings > Home Assistant. Screens can be added now.' : `Home Assistant did not answer: ${ents.why ?? ''}`));
   const full = (p.cards?.length ?? 0) >= budgetCards;
   if (full) { out.push(h('p', 'v1-note', `A screen holds ${budgetCards} cards. Remove one to add another.`)); return out; }
   const q = h('input', 'v1-input');
@@ -541,9 +568,9 @@ function addCardSide(p: Page): HTMLElement[] {
     if (ty === 'page' || ty === 'entity') continue;
     const doms = def.domains.split(',');
     doms.forEach((d) => typed.add(d));
-    groups.push({ label: `${TYPE_NAME[ty] ?? ty}`, items: doms.flatMap((d) => (boot.options[d] ?? []).map((o) => ({ t: ty, e: o.id, size: t.size }))) });
+    groups.push({ label: `${TYPE_NAME[ty] ?? ty}`, items: doms.flatMap((d) => (options[d] ?? []).map((o) => ({ t: ty, e: o.id, size: t.size }))) });
   }
-  groups.push({ label: 'Other entities', items: Object.keys(boot.options).filter((d) => !typed.has(d)).flatMap((d) => boot.options[d].map((o) => ({ t: 'entity', e: o.id, size: t.size }))) });
+  groups.push({ label: 'Other entities', items: allDomains().filter((d) => !typed.has(d)).flatMap((d) => (options[d] ?? []).map((o) => ({ t: 'entity', e: o.id, size: t.size }))) });
   const fill = () => {
     const f = q.value.trim().toLowerCase();
     box.replaceChildren();
@@ -592,52 +619,40 @@ function sideHead(t: string, sub: string, close = true) {
 // 1. Screens: the selected screen
 function screenSide(p: Page): HTMLElement[] {
   const out: HTMLElement[] = [];
-  out.push(sideHead(pname(p), `${own(p) ? 'Your screen' : 'Built-in screen'} · ${draft.pages.indexOf(p) + 1} of ${draft.pages.length} in the swipe`, false));
+  const owns = draft.pages.filter(own), i = owns.indexOf(p), n = owns.length;
+  out.push(sideHead(pname(p), `Your screen · ${i + 1} of ${n}`, false));
   const nm = h('input', 'v1-input');
   nm.value = pname(p);
   nm.maxLength = 32;
   nm.setAttribute('aria-label', 'Name');
-  nm.onchange = () => {
-    const v = nm.value.trim();
-    edit(() => { if (own(p)) p.name = v || 'Home'; else if (v && v !== boot.screens[p.kind].name) p.name = v; else delete p.name; });
-  };
-  out.push(field('Name', own(p) ? 'Its tab here and the title on the panel.' : 'Leave it to use the screen\'s own name.', nm));
-  const i = draft.pages.indexOf(p), n = draft.pages.length;
+  nm.onchange = () => edit(() => { p.name = nm.value.trim() || 'Home'; });
+  out.push(field('Name', 'Its tab here and the title on the panel.', nm));
   const order = h('div', 'v1-row');
   order.append(
-    btn('← Earlier', `Move ${pname(p)} one place earlier`, i === 0, () => edit(() => { draft.pages.splice(i, 1); draft.pages.splice(i - 1, 0, p); })),
-    btn('Later →', `Move ${pname(p)} one place later`, i === n - 1, () => edit(() => { draft.pages.splice(i, 1); draft.pages.splice(i + 1, 0, p); })),
+    btn('← Earlier', `Move ${pname(p)} one place earlier`, i === 0, () => edit(() => moveOwn(p.id, i - 1))),
+    btn('Later →', `Move ${pname(p)} one place later`, i === n - 1, () => edit(() => moveOwn(p.id, i + 1))),
   );
-  out.push(field('Swipe order', 'Drag its tab, or move it here.', order));
+  out.push(field('Order', 'Drag its tab, or move it here.', order));
   const start = btn(p.id === draft.start ? '★ The panel opens on this' : 'Open the panel on this', 'Start page', p.id === draft.start, () => edit(() => { draft.start = p.id; }));
   out.push(field('Start page', undefined, start));
-  if (own(p)) {
-    const cards = p.cards?.length ?? 0;
-    out.push(h('p', 'v1-note', `${cards ? `${cards} card${cards === 1 ? '' : 's'} on this screen. ` : 'An empty grid. '}Tap an empty square on the panel to add a card, a card to change it.`));
-    const hdr = p.header_actions ?? {};
-    const setH = (k: 'button' | 'status', v: string, dflt: string) => edit(() => {
-      const x = { ...(p.header_actions ?? {}) };
-      if (v === dflt) delete x[k]; else x[k] = v;
-      if (Object.keys(x).length) p.header_actions = x; else delete p.header_actions;
-    });
-    out.push(h('h2', 'cap', 'Header'));
-    out.push(field('Button', 'Top right: Settings, or a screen it opens.', list([['settings', 'Settings'], ...draft.pages.filter((x) => x.id !== p.id).map((x) => [x.id, pname(x)] as [string, string])], hdr.button ?? 'settings', (v) => setH('button', v, 'settings'))));
-    out.push(field('Status', 'Next to the time: nothing, or a running timer.', seg([['none', 'Nothing'], ['timer', 'Timer']], hdr.status ?? 'none', (v) => setH('status', v, 'none'))));
-  } else {
-    const ps = Object.entries(boot.screens[p.kind].params).filter(([, x]) => x.type !== 'hidden');
-    if (ps.length) {
-      out.push(h('h2', 'cap', 'Its settings'));
-      for (const [k, x] of ps) out.push(field(x.label ?? k, x.about, paramControl(p, k, x)));
-      out.push(btn('Back to defaults', `${pname(p)} back to defaults`, !p.params || !Object.keys(p.params).length, () => edit(() => { delete p.params; }), 'ghost'));
-    } else out.push(h('p', 'dim', 'This screen has nothing to set.'));
-  }
+  const cards = p.cards?.length ?? 0;
+  out.push(h('p', 'v1-note', `${cards ? `${cards} card${cards === 1 ? '' : 's'} on this screen. ` : 'An empty grid. '}Tap an empty square on the panel to add a card, a card to change it.`));
+  const hdr = p.header_actions ?? {};
+  const setH = (k: 'button' | 'status', v: string, dflt: string) => edit(() => {
+    const x = { ...(p.header_actions ?? {}) };
+    if (v === dflt) delete x[k]; else x[k] = v;
+    if (Object.keys(x).length) p.header_actions = x; else delete p.header_actions;
+  });
+  out.push(h('h2', 'cap', 'Header'));
+  out.push(field('Button', 'Top right: Settings, or a screen it opens.', list([['settings', 'Settings'], ...draft.pages.filter((x) => x.id !== p.id).map((x) => [x.id, pname(x)] as [string, string])], hdr.button ?? 'settings', (v) => setH('button', v, 'settings'))));
+  out.push(field('Status', 'Next to the time: nothing, or a running timer.', seg([['none', 'Nothing'], ['timer', 'Timer']], hdr.status ?? 'none', (v) => setH('status', v, 'none'))));
   const rm = btn('Remove this screen', `Remove ${pname(p)}`, n === 1, () => edit(() => {
     draft.pages = draft.pages.filter((x) => x !== p);
-    if (draft.start === p.id) draft.start = draft.pages[0].id;
-    sel = draft.pages[Math.max(0, i - 1)].id;
+    if (draft.start === p.id) draft.start = draft.pages.find(own)!.id;
+    sel = owns[Math.max(0, i - 1)] === p ? owns[1].id : owns[Math.max(0, i - 1)].id;
   }), 'ghost danger');
   out.push(h('div', 'v1-gap'), rm);
-  if (n === 1) out.push(h('p', 'dim', 'The panel needs at least one screen.'));
+  if (n === 1) out.push(h('p', 'dim', 'The panel keeps at least one of your own screens.'));
   return out;
 }
 
@@ -646,7 +661,6 @@ function addSide(): HTMLElement[] {
   const out: HTMLElement[] = [];
   out.push(sideHead('New screen', 'It goes at the end of the swipe'));
   const owns = draft.pages.filter(own).length, full = owns >= boot.own_max;
-  out.push(h('h2', 'cap', 'Your own screen'));
   const nm = h('input', 'v1-input');
   nm.placeholder = 'Kitchen, Gaming, TV…';
   nm.maxLength = 32;
@@ -660,21 +674,7 @@ function addSide(): HTMLElement[] {
   const r = h('div', 'v1-row');
   r.append(nm, add);
   out.push(field('Name', full ? `A panel holds ${boot.own_max} of your own screens.` : `A grid you fill with cards. ${owns} of ${boot.own_max} used.`, r));
-  out.push(h('h2', 'cap', 'Built-in screens'));
-  const have = new Set(draft.pages.map((p) => p.kind));
-  const free = Object.entries(boot.screens).filter(([k]) => !have.has(k));
-  if (!free.length) out.push(h('p', 'dim', 'Every built-in screen is on the panel.'));
-  const grid = h('div', 'v1-builtins');
-  for (const [k, s] of free) {
-    const b = h('button', 'v1-builtin');
-    b.type = 'button';
-    b.setAttribute('aria-label', `Add ${s.name}`);
-    b.append(preview({ id: k, kind: k }, 96, `add:${k}`).canvas, h('span', '', s.name));
-    b.onclick = () => edit(() => { draft.pages.push({ id: k, kind: k }); sel = k; side = 'screen'; });
-    grid.append(b);
-  }
-  out.push(grid);
-  out.push(h('p', 'dim', 'A built-in screen is never rebuilt from cards: it is its own swipe page, once per panel.'));
+  out.push(h('p', 'dim', 'Built-in screens (Clock, Weather, Media…) are turned on and set in Settings > Screens.'));
   return out;
 }
 
@@ -715,7 +715,7 @@ function paramControl(pg: Page, k: string, p: Param): HTMLElement {
   if (p.type === 'entities') {
     const box = h('div', 'v1-multi');
     const have = new Set(v.split(',').filter(Boolean));
-    const opts = boot.options[p.domain ?? ''] ?? [];
+    const opts = options[p.domain ?? ''] ?? [];
     if (!opts.length) box.append(h('span', 'dim', `No ${p.domain} entities in this house`));
     for (const o of opts) {
       const l = h('label', 'v1-check');
@@ -734,7 +734,7 @@ function paramControl(pg: Page, k: string, p: Param): HTMLElement {
   return t;
 }
 function entityPick(domain: string, v: string, set: (x: string) => void) {
-  const opts = boot.options[domain] ?? [];
+  const opts = options[domain] ?? [];
   const items: [string, string, string?][] = opts.map((o) => [o.id, o.name, o.id]);
   if (v && !opts.some((o) => o.id === v)) items.unshift([v, `${v} (not found)`]);
   return list(items, v, set, `Pick a ${domain.replace('_', ' ')}`);
@@ -789,10 +789,11 @@ function toggle(on: boolean, label: string, disabled: boolean, f: () => void) {
 // 3. Settings: one grouped list, as the panel's own Settings screen: Panel (Screens, Home Assistant), then the
 // schema's groups, then Start again. Screens and Home Assistant open their own page in the sidebar (‹ back), as on the
 // panel; every change shows on the live panel as it is made
-let setView: 'main' | 'screens' | 'ha' = 'main';
-const openScreens = new Set<string>();
+let setView: 'main' | 'screens' | 'screen' | 'ha' = 'main';
+let setScreen = '';  // Settings > Screens > one built-in screen: its kind
 function settingsSide(): HTMLElement[] {
   if (setView === 'screens') return screensView();
+  if (setView === 'screen') return screenView(setScreen);
   if (setView === 'ha') return haView();
   const out: HTMLElement[] = [];
   out.push(sideHead('Settings', `${DEVICES[device].name} · the whole panel`));
@@ -807,7 +808,12 @@ function settingsSide(): HTMLElement[] {
   out.push(h('h2', 'cap', 'Start again'), factoryBtn());
   return out;
 }
-const haStatus = () => (!draft.ha.url || !draft.ha.token ? 'Not set up' : `Set, ${draft.ha.url.replace(/^https?:\/\//, '').replace(/[:/].*$/, '')}`);
+function haStatus() {
+  const a = draft.ha, at = a.url.replace(/^https?:\/\//, '').replace(/[:/].*$/, '');
+  if (!a.url || (!a.token && !a.hint)) return 'Not set up';
+  if (a.token || a.url !== panel.runs.ha.url || !host.panel) return `Set, ${at}`;
+  return a.state === 'linked' ? `Linked, ${at}` : a.state === 'failed' ? 'Not reached' : a.state === 'checking' ? 'Checking' : `Set, ${at}`;
+}
 /** a row that opens a page: the label left, its value + › right (the panel's List row, value-chevron) */
 function navRow(label: string, value: string, f: () => void) {
   const b = h('button', 'v1-field inline v1-nav');
@@ -821,41 +827,47 @@ function navRow(label: string, value: string, f: () => void) {
   return b;
 }
 /** a page inside Settings: ‹ back to the list, its title */
-function subHead(t: string, sub: string) {
+function subHead(t: string, sub: string, up: 'main' | 'screens' = 'main') {
   const hd = sideHead(t, sub, false);
-  const back = btn('‹', 'Back to Settings', false, () => { setView = 'main'; render(); }, 'icon');
+  const back = btn('‹', up === 'main' ? 'Back to Settings' : 'Back to Screens', false, () => { setView = up; render(); }, 'icon');
   hd.prepend(back);
   return hd;
 }
-// Settings > Screens: every built-in screen in this firmware, on (in the swipe) or off, its options under it
+// Settings > Screens: the start page, then every built-in screen in this firmware, a row each (on or off); a row opens
+// that screen's page, where the live panel shows it
 function screensView(): HTMLElement[] {
-  const out: HTMLElement[] = [subHead('Screens', 'Built-in screens: on adds one to the end of the swipe')];
+  const out: HTMLElement[] = [subHead('Screens', 'The built-in screens and the one the panel opens on')];
+  out.push(field('Start page', 'The screen the panel opens on.', list(draft.pages.map((x) => [x.id, pname(x)] as [string, string]), draft.start, (v) => edit(() => { draft.start = v; }))));
+  out.push(h('h2', 'cap', 'Built-in screens'));
   for (const [k, sc] of Object.entries(boot.screens)) {
     const pg = draft.pages.find((p) => p.kind === k);
-    const ps = Object.entries(sc.params).filter(([, x]) => x.type !== 'hidden');
-    const row = h('div', 'v1-field inline');
-    const t = h('div', 'v1-ftxt');
-    const nm = h('span', '', pg ? pname(pg) : sc.name);
-    t.append(nm);
-    if (pg && ps.length) {
-      const more = h('button', 'link', openScreens.has(k) ? 'Hide its settings' : `Its settings · ${ps.length}`);
-      more.type = 'button';
-      more.onclick = () => { openScreens.has(k) ? openScreens.delete(k) : openScreens.add(k); render(); };
-      t.append(more);
-    } else if (!pg) t.append(h('p', '', 'Off'));
-    const last = !!pg && draft.pages.length === 1;
-    row.append(t, toggle(!!pg, `${sc.name} on the panel`, last, () => edit(() => {
-      if (pg) { draft.pages = draft.pages.filter((x) => x !== pg); if (draft.start === pg.id) draft.start = draft.pages[0].id; openScreens.delete(k); }
-      else draft.pages.push({ id: k, kind: k });
-    })));
-    out.push(row);
-    if (pg && openScreens.has(k)) {
-      const box = h('div', 'v1-sub');
-      for (const [pk, x] of ps) box.append(field(x.label ?? pk, x.about, paramControl(pg, pk, x)));
-      box.append(btn('Back to defaults', `${sc.name} back to defaults`, !pg.params || !Object.keys(pg.params).length, () => edit(() => { delete pg.params; }), 'ghost'));
-      out.push(box);
-    }
+    out.push(navRow(pg ? pname(pg) : sc.name, pg ? 'On' : 'Off', () => { setView = 'screen'; setScreen = k; render(); }));
   }
+  return out;
+}
+// Settings > Screens > one built-in screen: on the panel or not, its name and options; the live panel shows it (its
+// sample data where Home Assistant has nothing yet) and follows every change
+function screenView(k: string): HTMLElement[] {
+  const sc = boot.screens[k], pg = draft.pages.find((p) => p.kind === k);
+  const out: HTMLElement[] = [subHead(pg ? pname(pg) : sc.name, 'Built-in screen', 'screens')];
+  const last = !!pg && draft.pages.length === 1;
+  const on = toggle(!!pg, `${sc.name} on the panel`, last, () => edit(() => {
+    if (pg) { draft.pages = draft.pages.filter((x) => x !== pg); if (draft.start === pg.id) draft.start = draft.pages.find(own)?.id ?? draft.pages[0].id; }
+    else draft.pages.push({ id: k, kind: k });
+  }));
+  out.push(field('On the panel', pg ? 'It has its own place in the swipe, and cards can open it.' : 'Off: not on the panel. Turn it on to give it a place in the swipe and set it up.', on));
+  if (!pg) return out;
+  const nm = h('input', 'v1-input');
+  nm.value = pname(pg);
+  nm.maxLength = 32;
+  nm.onchange = () => { const v = nm.value.trim(); edit(() => { if (v && v !== sc.name) pg.name = v; else delete pg.name; }); };
+  out.push(field('Name', "Leave it to use the screen's own name.", nm));
+  const ps = Object.entries(sc.params).filter(([, x]) => x.type !== 'hidden');
+  if (ps.length) {
+    out.push(h('h2', 'cap', 'Its settings'));
+    for (const [pk, x] of ps) out.push(field(x.label ?? pk, x.about, paramControl(pg, pk, x)));
+    out.push(btn('Back to defaults', `${sc.name} back to defaults`, !pg.params || !Object.keys(pg.params).length, () => edit(() => { delete pg.params; }), 'ghost'));
+  } else out.push(h('p', 'dim', 'This screen has nothing to set.'));
   return out;
 }
 // Settings > Home Assistant: the panel's own link (ha.connect): the address, a long-lived token sent once, its last
@@ -870,7 +882,7 @@ function haView(): HTMLElement[] {
   const tok = h('input', 'v1-input');
   tok.type = 'password';
   tok.autocomplete = 'off';
-  tok.placeholder = draft.ha.token ? `set (${hint(draft.ha.token)})` : 'paste a long-lived access token';
+  tok.placeholder = draft.ha.token || draft.ha.hint ? `set (${hint(draft.ha.token, draft.ha.hint)})` : 'paste a long-lived access token';
   tok.onchange = () => { if (tok.value.trim()) edit(() => { draft.ha.token = tok.value.trim(); }); };
   out.push(field('Token', 'In Home Assistant: your profile > Security > Long-lived access tokens > Create token. It stays on the panel and is never shown again.', tok));
   out.push(h('p', 'v1-note', 'The editor reads your entities through this link: the pickers list what this Home Assistant has.'));
@@ -934,24 +946,45 @@ function reviewSide(): HTMLElement[] {
     ul.append(li);
   }
   out.push(ul);
-  const r = check();
-  out.push(h('h2', 'cap', r.ok ? 'The panel checked them' : `The panel can't take this yet · ${r.errors.length}`));
+  const r = saveErr ? { ok: false, errors: saveErr } : check();
+  out.push(h('h2', 'cap', saveErr ? `The panel refused it · ${r.errors.length}` : r.ok ? 'The panel checked them' : `The panel can't take this yet · ${r.errors.length}`));
   const ck = h('ul', 'v1-checks');
   if (r.ok) { const li = h('li', 'ok'); li.append(h('i', 'dot'), document.createTextNode('All good: every screen and card is valid.')); ck.append(li); }
   for (const e of r.errors) { const li = h('li', 'bad'); li.append(h('i', 'dot'), h('b', '', e.what ? `${e.where} · ${e.what}` : e.where), document.createTextNode(` ${e.msg}`)); ck.append(li); }
   out.push(ck);
   if (!r.ok) out.push(h('p', 'v1-meta', 'Fix these, then Save. Your changes are kept.'));
   const acts = h('div', 'v1-acts');
-  acts.append(btn('Not yet', 'Keep editing', false, () => { side = 'screen'; top(); render(); }, 'ghost'), btn('Save', 'Save to the panel', !r.ok || !ch.length, () => {
-    panel.before.push({ rev: panel.rev, runs: panel.runs });
-    panel.rev++;
-    panel.runs = clone(draft);
-    savedAt = new Date().toTimeString().slice(0, 5);
-    side = 'saved';
-    top(); render();
-  }, 'primary'));
+  acts.append(btn('Not yet', 'Keep editing', false, () => { saveErr = null; side = 'screen'; top(); render(); }, 'ghost'), btn(saving ? 'Saving…' : 'Save', 'Save to the panel', saving || !r.ok || !ch.length, () => void save(), 'primary'));
   out.push(acts);
   return out;
+}
+let saving = false, saveErr: { where: string; what: string; msg: string }[] | null = null;
+/** the settings that differ between two drafts, as the panel takes them */
+const setDiff = (a: Draft, b: Draft) => Object.fromEntries(boot.settings.settings.filter((s) => a.settings[s.id] !== b.settings[s.id]).map((s) => [s.id, b.settings[s.id]]));
+async function save() {
+  const link = draft.ha.url !== panel.runs.ha.url || draft.ha.token ? { url: draft.ha.url, token: draft.ha.token } : null;
+  const deck = toDeck(draft, panel.rev + 1);
+  saving = true; saveErr = null; render();
+  const r = await host.save(deck, setDiff(panel.runs, draft), link);
+  saving = false;
+  if (!r.ok) { saveErr = r.errors?.length ? words(deck, r.errors) : [{ where: 'Panel', what: '', msg: r.why ?? 'did not answer' }]; top(); render(); return; }
+  if (draft.ha.token) { draft.ha.hint = hint(draft.ha.token); draft.ha.token = ''; draft.ha.state = 'checking'; }  // the token is never kept here
+  panel.before.push({ rev: panel.rev, runs: panel.runs });
+  panel.rev++;
+  panel.runs = clone(draft);
+  savedAt = new Date().toTimeString().slice(0, 5);
+  side = 'saved';
+  top(); render();
+  if (link) void refetch();
+}
+/** after a link change: the panel's link state and the pickers' lists again */
+async function refetch() {
+  const st = await host.load();
+  if (st) { draft.ha.state = panel.runs.ha.state = st.ha.state; draft.ha.why = panel.runs.ha.why = st.ha.why; }
+  ents = { state: 'loading' }; top(); render();
+  const e = await host.entities(allDomains());
+  if (e) { options = e.lists; ents = { state: e.state, why: e.why }; }
+  render();
 }
 function savedSide(): HTMLElement[] {
   const n = panel.before.length ? changes(panel.before.at(-1)!.runs, panel.runs).length : 0;
@@ -961,9 +994,12 @@ function savedSide(): HTMLElement[] {
   acts.append(btn('Done', 'Back to the screen', false, () => { side = 'screen'; top(); render(); }, 'primary'));
   return [sideHead('Saved', `${n} change${n === 1 ? '' : 's'} at ${savedAt}`), note, acts];
 }
-function undo() {
-  const b = panel.before.pop();
+async function undo() {
+  const b = panel.before.at(-1);
   if (!b) return;
+  const r = await host.save(toDeck(b.runs, panel.rev + 1), setDiff(panel.runs, b.runs), null);
+  if (!r.ok) { alert(`The panel did not take Undo: ${r.errors?.[0]?.msg ?? r.why ?? 'no answer'}`); return; }
+  panel.before.pop();
   panel.rev++;
   panel.runs = clone(b.runs);
   draft = clone(b.runs);
@@ -971,12 +1007,16 @@ function undo() {
   edit(() => {});
 }
 function factoryBtn() {
-  return btn('Back to factory', 'One empty Home, default settings', false, () => {
+  return btn('Back to factory', 'One empty Home, default settings', false, async () => {
     if (!confirm('Put the panel back to one empty Home with default settings? What you saved is replaced (Undo brings it back).')) return;
+    const r = await host.factory();
+    if (!r.ok) { alert(`The panel did not go back to factory: ${r.why ?? 'no answer'}`); return; }
+    const st = host.panel ? await host.load() : null;
     panel.before.push({ rev: panel.rev, runs: panel.runs });
     panel.rev++;
-    panel.runs = factory();
-    draft = factory();
+    panel.runs = st ? fromPanel(st) : factory();
+    if (st) panel.rev = st.deck.rev;
+    draft = clone(panel.runs);
     sel = draft.start;
     side = 'screen';
     edit(() => {});
@@ -1021,13 +1061,20 @@ function measure() {
   if (g && cs.length >= 2) geo = { x: cs[0].x, y: g.y, cw: cs[0].w, gap: cs[1].x - cs[0].x - cs[0].w, inset: S() - g.x - g.w, top: hd ? hd.y + hd.h : g.y };
   s.free();
 }
+let first = true;
 async function load() {
   freeStages();
   engine?.dispose();
   engine = null;
   top();
   $('v1-main').replaceChildren(h('p', 'dim', 'Loading the renderer'));
-  engine = await Engine.load(DEVICES[device].den, `/facet-wasm/${DEVICES[device].den}/`, noHa);
+  engine = await Engine.load(DEVICES[device].den, host.wasmBase(DEVICES[device].den), host.ha);
+  if (host.panel && first) {  // what the panel runs: the editor starts from it
+    first = false;
+    const st = await host.load();
+    if (st) { panel.runs = fromPanel(st); panel.rev = st.deck.rev; draft = clone(panel.runs); sel = draft.start; }
+    void host.entities(allDomains()).then((e) => { if (e) { options = e.lists; ents = { state: e.state, why: e.why }; } render(); });
+  }
   measure();
   applyDeck();
   top();

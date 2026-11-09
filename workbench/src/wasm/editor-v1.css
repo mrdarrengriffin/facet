@@ -4,10 +4,6 @@
    radius:button, mono caps; the accent only for the pick and Save. Every colour, space and radius is a Facet token
    (CSS variables from src/wasm/editor-page.mjs: --f-<colour>, --sp-<n>, --rad-<n>). The layout: the top bar, the
    live panel in the middle, the sidebar on the right; on a phone the sidebar is a bottom sheet. */
-@font-face { font-family: 'Inter'; font-weight: 400; font-display: swap; src: url('./fonts/inter-400.woff2') format('woff2'); }
-@font-face { font-family: 'Inter'; font-weight: 500; font-display: swap; src: url('./fonts/inter-500.woff2') format('woff2'); }
-@font-face { font-family: 'Inter'; font-weight: 600; font-display: swap; src: url('./fonts/inter-600.woff2') format('woff2'); }
-@font-face { font-family: 'JetBrains Mono'; font-weight: 400 600; font-display: swap; src: url('./fonts/jetbrains-mono-400.woff2') format('woff2'); }
 :root { --sans: 'Inter', system-ui, sans-serif; --mono: 'JetBrains Mono', ui-monospace, monospace; }
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; }
@@ -36,7 +32,7 @@ button, input, select { font: inherit; color: inherit; }
 .v1-tab, .v1-add { flex: none; display: inline-flex; align-items: center; gap: var(--sp-2); height: var(--sp-9); padding: 0 var(--sp-4); border: 1px solid transparent; border-radius: var(--rad-button); background: none; color: var(--f-text-dim); cursor: pointer; white-space: nowrap; }
 .v1-tab:hover, .v1-add:hover { color: var(--f-text); }
 .v1-tab[aria-current='true'], .v1-add[aria-current='true'] { color: var(--f-text); background: var(--f-surface-press); border-color: var(--f-line-hi); }
-.v1-tab.builtin::after { content: ''; width: var(--sp-1); height: var(--sp-1); border-radius: var(--rad-round); background: var(--f-text-mute); }
+
 .v1-tab[draggable='true'] { cursor: grab; }
 .v1-tab.lift { opacity: 0.4; }
 .v1-tab.over { border-color: var(--f-accent); }

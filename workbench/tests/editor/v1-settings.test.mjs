@@ -31,6 +31,12 @@ describe('Editor v1 Settings', () => {
     assert.ok((await corner()) < 40);
   });
 
+  it('the tabs are your own screens only; built-in ones are in Settings', async () => {
+    const owns = await page.evaluate(() => window.__v1.draft().pages.filter((p) => p.kind === 'home').map((p) => p.name || 'Home'));
+    const tabs = (await page.locator('#v1-tabs .v1-tab').allTextContents()).map((t) => t.replace('★', ''));
+    assert.deepEqual(tabs, owns);
+  });
+
   it('Settings opens on Panel: Screens and Home Assistant, then the groups', async () => {
     await page.click('#v1-settings'); await settle(page, 200);
     const rows = await page.locator('.v1-nav .v1-ftxt').allTextContents();
@@ -40,19 +46,24 @@ describe('Editor v1 Settings', () => {
     assert.ok(caps.includes('Look') && caps.includes('Units'));
   });
 
-  it('Screens: a built-in screen goes off and comes back at the end; its options open under it', async () => {
+  it('Screens: a row opens its screen on the live panel; off and on again puts it at the end of the swipe', async () => {
     await page.locator('.v1-nav', { hasText: 'Screens' }).click(); await settle(page, 200);
     const was = await pages();
-    await page.locator('.v1-side .v1-switch').first().click(); await settle(page, 200);
+    const row = page.locator('.v1-side .v1-nav').filter({ hasText: 'On' }).nth(1);
+    const name = (await row.locator('.v1-ftxt').textContent()).trim();
+    await row.click(); await settle(page, 300);
+    assert.equal((await page.locator('.v1-sidetitle b').textContent()).trim(), name);
+    assert.match(await page.textContent('#v1-main .v1-stage .v1-meta'), new RegExp(`Live panel · ${name}`), 'the live panel shows that screen');
+    await page.locator('.v1-side .v1-switch').click(); await settle(page, 200);
     const off = await pages();
     assert.equal(off.length, was.length - 1);
+    assert.match(await page.textContent('#v1-main .v1-stage .v1-meta'), new RegExp(`Live panel · ${name}`), 'still shown while off');
     const gone = was.find((k) => !off.includes(k));
-    await page.locator('.v1-side .v1-switch').first().click(); await settle(page, 200);
+    await page.locator('.v1-side .v1-switch').click(); await settle(page, 200);
     assert.equal((await pages()).at(-1), gone, 'on again = the end of the swipe');
-    const more = page.locator('.v1-ftxt > .link').first();
-    await more.click(); await settle(page, 200);
-    assert.ok((await page.locator('.v1-sub .v1-field').count()) > 0, 'its options show');
-    await page.locator('.v1-sidehead .btn.icon').first().click(); await settle(page, 200);
+    assert.ok((await page.locator('.v1-side .v1-field').count()) >= 2, 'on, and its name (and options) show');
+    await page.locator('.v1-sidehead .btn.icon').first().click(); await settle(page, 200);  // back to Screens
+    await page.locator('.v1-sidehead .btn.icon').first().click(); await settle(page, 200);  // back to Settings
   });
 
   it('Home Assistant: the address and the token; the token shows only its last four', async () => {

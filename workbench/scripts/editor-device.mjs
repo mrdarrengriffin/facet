@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// The Facet editor served BY a panel: builds the standalone editor (src/wasm/editor.ts with editor-host-device.ts in
-// place of editor-host.ts) + the panel's renderer files at its density, gzips them and writes them as a web UI the
+// The Facet editor served BY a panel: builds editor v1 (src/wasm/editor-v1.ts with editor-v1-host-device.ts in
+// place of editor-v1-host.ts; the page: src/wasm/editor-v1-page.mjs) + the panel's renderer files at its density, gzips them and writes them as a web UI the
 // device glue serves from flash (firmware/fw_device.h "Web UI").
 //   node workbench/scripts/editor-device.mjs --wasm <dir: manifest.json fw.mjs fw.wasm> [--renderer <renderer dir>]
 //                                  [--device <board id> (default guition-4848s040)] [--den 1x|1.5x (default: the board's)]
@@ -20,6 +20,7 @@ import { fileURLToPath } from 'node:url';
 import { gzipSync, constants } from 'node:zlib';
 import { build } from 'vite';
 import { editorPage } from '../src/wasm/editor-page.mjs';
+import { v1Boot, v1Body } from '../src/wasm/editor-v1-page.mjs';
 
 const WB = dirname(dirname(fileURLToPath(import.meta.url)));
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
@@ -36,13 +37,13 @@ const t0 = Date.now();
 // 1. the editor bundle (vite / rolldown): one js + one css, the device host swapped in
 const tmp = mkdtempSync(join(tmpdir(), 'fe-dev-'));
 const entry = join(tmp, 'entry.ts');
-writeFileSync(entry, `import '${WB}/src/wasm/editor.css';\nimport { start } from '${WB}/src/wasm/editor';\nstart();\n`);
+writeFileSync(entry, `import '${WB}/src/wasm/editor-v1.css';\nimport { start } from '${WB}/src/wasm/editor-v1';\nstart();\n`);
 await build({
   configFile: false, logLevel: 'warn', root: tmp,
   plugins: [{
     name: 'device-host', enforce: 'pre',
     resolveId(src, importer) {
-      if (src === './editor-host' && importer?.endsWith('/editor.ts')) return join(WB, 'src/wasm/editor-host-device.ts');
+      if (src === './editor-v1-host' && importer?.endsWith('/editor-v1.ts')) return join(WB, 'src/wasm/editor-v1-host-device.ts');
       return null;
     },
   }],
@@ -56,7 +57,7 @@ rmSync(tmp, { recursive: true, force: true });
 
 // 2. the page
 const h8 = (b) => createHash('sha1').update(b).digest('hex').slice(0, 12);
-const { css: vars, boot } = editorPage(R);
+const { css: vars } = editorPage(R);
 // the editor's fonts, embedded (no internet needed): only the weights the editor uses (Inter 400 /
 // 500 / 600, JetBrains Mono 400; OFL, licences beside them), cut once from @fontsource's latin woff2 with fonttools:
 //   pyftsubset <in> --unicodes=U+0020-007E,U+00A0-00FF,U+0131,U+0152-0153,U+02C6,U+02DA,U+02DC,U+2013-2014,U+2018-201A,
@@ -65,30 +66,19 @@ const { css: vars, boot } = editorPage(R);
 const FONTS = [['Inter', 400, 'inter-400'], ['Inter', 500, 'inter-500'], ['Inter', 600, 'inter-600'], ['JetBrains Mono', 400, 'jetbrains-mono-400']]
   .map(([family, weight, file]) => ({ family, weight, path: `/ed/fonts/${file}.woff2`, b: readFileSync(join(WB, `src/wasm/fonts/${file}.woff2`)) }));
 const faces = FONTS.map((f) => `@font-face{font-family:'${f.family}';font-style:normal;font-weight:${f.weight};font-display:swap;src:url(${f.path}?v=${h8(f.b)}) format('woff2')}`).join('');
-// the page = the workbench editor's markup (src/pages/wasm/editor.astro: flow layout, card dialog, pick-up drag all live in
-// editor.ts + editor.css, shared), fonts embedded, plus the agent hint (the panel serves /llms.txt)
+// the page = editor v1's markup and boot data (src/wasm/editor-v1-page.mjs, the same as the workbench's), fonts embedded,
+// plus the agent hint (the panel serves /ai)
+const body = v1Body(v1Boot(dirname(R), { panel: true }), '<span>Served by this panel.</span><span class="agent-hint dim">Agents: paste <a href="/ai">/ai</a> to yours</span>');
 const html = `<!doctype html>
 <html lang="en" data-device="${device}" data-den="${den}">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="icon" href="data:,">
-<title>Facet editor</title>
+<title>Facet</title>
 <style>${faces}${vars}</style>
 <link rel="stylesheet" href="/ed/editor.css?v=${h8(css)}">
-<script>try{const t=new URLSearchParams(location.search).get('theme')||localStorage.getItem('fe.theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch{}</script>
 </head>
 <body>
-<div class="ed ed-flowpage" id="ed">
-<header class="ed-top">
-<div class="ed-brand"><span class="ed-mark" aria-hidden="true"></span>Facet <span class="ed-dim">editor</span></div>
-<div class="ed-panel"><div class="seg" id="ed-device" role="group" aria-label="Panel"></div><span class="ed-status" id="ed-status"><span class="dot"></span><span class="txt">checking</span></span></div>
-<div class="ed-tools"><div class="seg" id="ed-theme" role="group" aria-label="Theme"></div><div class="ed-accents" id="ed-accents" role="group" aria-label="Accent"></div><span class="ed-dirty" id="ed-dirty" hidden></span><button class="btn ghost" id="ed-agents" type="button" title="API access: the switch and its keys">API keys</button><button class="btn ghost" id="ed-refresh" type="button" title="Fetch the live Home Assistant values now">Refresh</button><button class="btn ghost" id="ed-undo" type="button" title="Undo (Ctrl+Z)">Undo</button><button class="btn ghost" id="ed-redo" type="button" title="Redo (Ctrl+Shift+Z)">Redo</button><button class="btn primary" id="ed-save" type="button">Save</button></div>
-</header>
-<nav class="ed-crumbs" id="ed-crumbs" aria-label="Breadcrumbs"></nav>
-<main class="ed-flow" id="ed-flow"><p class="ed-meta">Loading the renderer</p></main>
-<footer class="ed-foot"><span>Served by this panel.</span><p class="agent-hint">Agents: paste <a href="/ai">/ai</a> to yours</p><span class="ed-dim">Save sends the deck to the panel.</span></footer>
-</div>
-<dialog class="ed-dialog" id="ed-dialog"></dialog>
-<script type="application/json" id="ed-boot">${boot}</script>
+${body}
 <script type="module" src="/ed/editor.js?v=${h8(js)}"></script>
 </body>
 </html>

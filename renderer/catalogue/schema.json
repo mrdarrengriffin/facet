@@ -13038,6 +13038,12 @@
    "says": "The Home Assistant values the panel holds, and what its screens ask for."
   },
   {
+   "method": "GET",
+   "path": "/fw/entities",
+   "about": "?domains=light,sensor: the entity pickers' lists from the panel's own Home Assistant link (core/device.h ha_link): {state: off|loading|ok|failed, why?, lists: {domain: [{id, name}]}}; a domain not read yet (or read over five minutes ago) is read now: ask again until state is ok",
+   "says": "The entities the editor's pickers offer, read from Home Assistant through the panel's link."
+  },
+  {
    "method": "POST",
    "path": "/fw/bench",
    "about": "a batch of bench cases the panel runs on its own screen (fw_bench.h); GET /fw/bench = the report",

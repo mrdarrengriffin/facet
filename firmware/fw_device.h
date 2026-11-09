@@ -41,6 +41,10 @@
 //   GET  /fw/ha     the Home Assistant store (core/ha.h): {wants: [[e, a]...], values: {"e|a": value}, bound: n};
 //                   ?want=e1,e2[&attrs=a1] subscribes to those first (the panel-served editor's live preview)
 //                = The Home Assistant values the panel holds, and what its screens ask for.
+//   GET  /fw/entities  ?domains=light,sensor: the entity pickers' lists from the panel's own Home Assistant link
+//                   (core/device.h ha_link): {state: off|loading|ok|failed, why?, lists: {domain: [{id, name}]}}; a
+//                   domain not read yet (or read over five minutes ago) is read now: ask again until state is ok
+//                = The entities the editor's pickers offer, read from Home Assistant through the panel's link.
 //   POST /fw/bench  a batch of bench cases the panel runs on its own screen (fw_bench.h); GET /fw/bench = the report
 //                = Runs speed tests on the panel's own screen; GET reads the report.
 //   POST /fw/show   {screen: <deck page id | screen id | name>} opens that screen on the device (agents)
@@ -2034,6 +2038,36 @@ class Handler : public AsyncWebHandler {
       ArduinoJson::JsonDocument d, dk;
       if (dj.empty() || deserializeJson(dk, dj)) { code = 503; s = R"({"ok":false,"error":"no deck"})"; }
       else { d["deck"] = dk; d["rev"] = dk["rev"]; d["override"] = over; serializeJson(d, s); }
+    } else if (path == "/fw/entities") {  // the pickers' lists (ha_link::list), a read of the missing ones started
+      namespace hl = fw::dev::ha_link;
+      ArduinoJson::JsonDocument d;
+      std::string want = req->hasArg("domains") ? req->arg("domains").c_str() : "";
+      if (want.size() > 256 || want.find_first_not_of("abcdefghijklmnopqrstuvwxyz0123456789_,") != std::string::npos) want.clear();
+      in_loop([&] {
+        ArduinoJson::JsonObject ls = d["lists"].to<ArduinoJson::JsonObject>();
+        std::string missing;
+        size_t i = 0;
+        while (i < want.size()) {
+          size_t j = want.find(',', i);
+          if (j == std::string::npos) j = want.size();
+          const std::string dom = want.substr(i, j - i);
+          i = j + 1;
+          if (dom.empty()) continue;
+          const std::vector<hl::Entity> *l = hl::list(dom);
+          if (!l || hl::stale(dom)) missing += (missing.empty() ? "" : ",") + dom;
+          if (!l) continue;
+          ArduinoJson::JsonArray a = ls[dom].to<ArduinoJson::JsonArray>();
+          for (const hl::Entity &e : *l) { auto o = a.add<ArduinoJson::JsonObject>(); o["id"] = e.id; o["name"] = e.name; }
+        }
+        const hl::St st = hl::status();
+        if (!hl::ready()) d["state"] = "off";
+        else if (st == hl::FAIL && missing.empty()) d["state"] = "failed", d["why"] = hl::why();
+        else if (!missing.empty() || st == hl::LOADING || st == hl::CHECKING) {
+          if (!missing.empty() && st != hl::LOADING && st != hl::CHECKING) hl::fetch(missing);
+          d["state"] = "loading";
+        } else d["state"] = "ok";
+      }, 2000);
+      serializeJson(d, s);
     } else if (path == "/fw/ha") {
       ArduinoJson::JsonDocument d;
       // ?want=e1,e2[&attrs=a1,a2]: subscribe to these too (the panel's editor previews live values)
@@ -2120,7 +2154,7 @@ class Handler : public AsyncWebHandler {
       }
     } else {
       code = 404;
-      s = R"({"ok":false,"error":"docs: /ai /llms.txt /agents.md /schema.json; keys: GET /fw/keys, POST /fw/keys/request, /fw/keys/poll, /fw/keys/revoke; GET /fw/info, GET /fw/meta, GET /fw/perf[?reset=1], POST /fw/show, GET|POST /fw/act, GET|POST /fw/settings, GET|POST /fw/spec, GET /fw/deck, GET /fw/ha, POST|GET /fw/bench"})";
+      s = R"({"ok":false,"error":"docs: /ai /llms.txt /agents.md /schema.json; keys: GET /fw/keys, POST /fw/keys/request, /fw/keys/poll, /fw/keys/revoke; GET /fw/info, GET /fw/meta, GET /fw/perf[?reset=1], POST /fw/show, GET|POST /fw/act, GET|POST /fw/settings, GET|POST /fw/spec, GET /fw/deck, GET /fw/ha, GET /fw/entities, POST|GET /fw/bench"})";
     }
     body_.clear();  // a body is only delivered for some content types: never reuse the previous request's
     too_big_ = false;

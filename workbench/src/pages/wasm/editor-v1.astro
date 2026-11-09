@@ -1,28 +1,16 @@
 ---
-// Facet editor v1 (scope workbench/EDITOR-V1.md), part 1: Screens (your own screens and built-in ones as tabs in swipe
-// order: add, name, order, remove, the start page), the panel's settings, and Save (review, check, Undo). Forms from the schema
-// (renderer/catalogue/schema.json, what a panel serves at /fw/schema), previews from the real WASM renderer, the check
-// = the panel's own deck check (fw_spec check, in WASM). Nothing is sent: "the panel" is this page's memory. Home
-// Assistant is a stub (no states: screens show their sample data); entity pickers list tests/editor/fixtures.
-// Client: src/wasm/editor-v1.ts.
+// Facet editor v1 (scope workbench/EDITOR-V1.md) in the workbench: parts 1-3 (Screens, the grid, Settings) and Save
+// (review, check, Undo). The page and its boot data: src/wasm/editor-v1-page.mjs (shared with the bundle a panel
+// serves, scripts/editor-device.mjs). Here the host is src/wasm/editor-v1-host.ts: nothing is sent, "the panel" is this
+// page's memory, Home Assistant is a stub (screens show sample data), entity pickers list tests/editor/fixtures.
 export const prerender = false;
-import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { editorPage } from '../../wasm/editor-page.mjs';
+import { v1Boot, v1Body } from '../../wasm/editor-v1-page.mjs';
 import { REPO } from '../../lib/repo';
 
-const R = join(REPO, 'renderer');
-const rj = (p: string) => JSON.parse(readFileSync(p, 'utf8'));
-const { css } = editorPage(R);
-const schema = rj(join(R, 'catalogue/schema.json'));
-const role = (id: string) => { try { return rj(join(R, `specs/${id}.json`)).role ?? 'page'; } catch { return 'page'; } };
-const screens = Object.fromEntries(Object.entries(schema.screens).filter(([id, s]: any) => s.kind === 'spec' && role(id) !== 'detail'));  // pages only: a detail screen opens from a card
-const fixture = rj(join(REPO, 'workbench/tests/editor/fixtures/sources.json'));
-const accents = rj(join(R, 'tokens/colour.json')).accent;
-const scope = readFileSync(join(REPO, 'workbench/EDITOR-V1.md'), 'utf8');
-const own_max = Number(readFileSync(join(R, 'core/spec.h'), 'utf8').match(/\bhomes = (\d+)/)![1]);  // the deck check's budget for your own screens
-const boot = JSON.stringify({ screens, settings: schema.settings, deck: rj(join(R, 'specs/deck.json')), options: fixture.options, accents, scope, hash: schema.hash, own_max, cards: schema.spec.cards, grid_sizes: schema.spec.grid_sizes ?? '1x1,2x1,2x2,half', card_max: schema.spec.budget.cards })
-  .replace(/</g, '\\u003c');
+const { css } = editorPage(join(REPO, 'renderer'));
+const body = v1Body(v1Boot(REPO), '<span>Editor v1 · parts 1 to 3, Screens, the grid, Settings</span><span class="dim">Nothing reaches a panel: "the panel" is this page. Home Assistant is a stub, so screens show sample data.</span>');
 ---
 
 <!doctype html>
@@ -35,33 +23,12 @@ const boot = JSON.stringify({ screens, settings: schema.settings, deck: rj(join(
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <style is:inline set:html={css}></style>
   </head>
-  <body>
-    <div class="v1" id="v1">
-      <header class="v1-top">
-        <div class="v1-brand"><span class="v1-mark" aria-hidden="true"></span><b>Facet</b><span class="v1-meta" id="v1-where"></span></div>
-        <b class="v1-title" id="v1-title"></b>
-        <nav class="v1-tabs" id="v1-tabs" aria-label="Screens, in swipe order"></nav>
-        <div class="v1-send">
-          <div class="seg sm" id="v1-device" role="group" aria-label="Panel"></div>
-          <button class="btn ghost" id="v1-undo" type="button">↶ Undo</button>
-          <button class="btn ghost icon" id="v1-look" type="button"></button>
-          <button class="btn" id="v1-settings" type="button" aria-pressed="false">⚙ Settings</button>
-          <button class="btn primary" id="v1-save" type="button">Save</button>
-        </div>
-      </header>
-      <main class="v1-main" id="v1-main"><p class="dim">Loading the renderer</p></main>
-      <footer class="v1-foot">
-        <span>Editor v1 · parts 1 to 3, Screens, the grid, Settings</span>
-        <span class="dim">Nothing reaches a panel: "the panel" is this page. Home Assistant is a stub, so screens show sample data.</span>
-        <button class="link" id="v1-scope" type="button">Scope</button>
-      </footer>
-    </div>
-    <dialog class="v1-dialog" id="v1-dialog"></dialog>
-    <script type="application/json" id="v1-boot" set:html={boot}></script>
-    <script>
-      import '../../wasm/editor-v1.css';
-      import { start } from '../../wasm/editor-v1';
-      start();
-    </script>
+  <body set:html={body}>
   </body>
+  <script>
+    import '../../wasm/editor-v1-fonts.css';
+    import '../../wasm/editor-v1.css';
+    import { start } from '../../wasm/editor-v1';
+    start();
+  </script>
 </html>
