@@ -268,9 +268,24 @@ struct Jpg {
   int ow, oh;
   uint8_t *band;      // one band of MCU rows, RGBA
   int top = -1, bot = -1;  // the band's rows (picture rows)
+  // a stream instead of b / n: more(ctx, buf, len) brings up to len bytes, 0 = the end (or a failure: its own words)
+  size_t (*more)(void *, uint8_t *, size_t) = nullptr;
+  void *ctx = nullptr;
 };
 inline size_t jin(JDEC *jd, uint8_t *buf, size_t len) {
   Jpg *j = (Jpg *) jd->device;
+  if (j->more) {  // straight from the download: nothing held but TJpgDec's own input buffer
+    uint8_t skip[256];
+    size_t got = 0;
+    while (got < len) {
+      size_t want = len - got;
+      if (!buf && want > sizeof skip) want = sizeof skip;
+      const size_t k = j->more(j->ctx, buf ? buf + got : skip, want);
+      if (!k) break;
+      got += k;
+    }
+    return got;
+  }
   const size_t k = len < j->n - j->at ? len : j->n - j->at;
   if (buf) memcpy(buf, j->b + j->at, k);
   j->at += k;
@@ -294,13 +309,15 @@ inline int jout(JDEC *jd, void *bitmap, JRECT *r) {
     }
   return 1;
 }
-inline bool jpeg(const uint8_t *b, size_t n, long max_px, size_t mem_max, const std::vector<Box> &boxes, Result &r) {
+inline bool jpeg(const uint8_t *b, size_t n, long max_px, size_t mem_max, const std::vector<Box> &boxes, Result &r,
+                 size_t (*more)(void *, uint8_t *, size_t) = nullptr, void *ctx = nullptr) {
   constexpr size_t WORK = 4096;  // TJpgDec's pool: tables + one MCU (JD_FASTDECODE 1 needs ~3.5 KB)
   void *work = FW_IMGDEC_ALLOC(WORK);
   if (!work) { r.err = "out of memory"; return false; }
   JDEC jd;
   std::unique_ptr<fw::img::Sink[]> k;
   Jpg j{b, n, 0, &k, boxes.size(), 0, 0, nullptr};
+  j.more = more, j.ctx = ctx;
   JRESULT res = jd_prepare(&jd, jin, work, WORK, &j);
   if (res != JDR_OK) {
     FW_IMGDEC_FREE(work);
@@ -382,6 +399,16 @@ inline bool decode(const uint8_t *b, size_t n, long max_px, size_t mem_max, cons
   if (*t) { r.err = std::string(t == std::string("svg") ? "SVG" : t == std::string("webp") ? "WebP" : t == std::string("gif") ? "GIF" : "BMP") + " isn't supported on the panel"; return false; }
   r.err = "not a picture";
   return false;
+}
+
+// a JPEG decoded while it downloads (the software decoder; the panel never holds the whole file: a 640 px cover at
+// quality 100 is 300 KB, more than the 480 panel has in one block): more(ctx, buf, len) brings the bytes in order
+inline bool decode_jpeg_stream(size_t (*more)(void *, uint8_t *, size_t), void *ctx, long max_px, size_t mem_max,
+                               const std::vector<Box> &boxes, Result &r) {
+  r = Result{};
+  r.room = mem_max;
+  if (boxes.empty()) { r.err = "left the screen"; return false; }
+  return detail::jpeg(nullptr, 0, max_px, mem_max, boxes, r, more, ctx);
 }
 
 }  // namespace fw::imgdec

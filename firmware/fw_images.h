@@ -185,6 +185,43 @@ inline void arena_setup() {
   if (!fw::img::arena::init(want)) ESP_LOGW("facet_img", "no %u KB block for the pictures' own memory: pictures use the shared PSRAM", (unsigned) (want / 1024));
 }
 
+// the download as a stream: the first bytes (read to see what the picture is) from buf, then the connection. 0 = the
+// end, or a failure (its words in *err: a timeout, left the screen, broke off)
+struct In {
+  esp_http_client_handle_t h = nullptr;
+  const uint8_t *buf = nullptr;
+  size_t hn = 0, hat = 0, total = 0;
+  int64_t len = -1, quiet = 0, t0 = 0;
+  int timeout_ms = 0;
+  bool chunked = false, end = false;
+  std::string *err = nullptr;
+  const char *tmo = "";
+};
+inline size_t more(void *c, uint8_t *dst, size_t want) {
+  In &s = *(In *) c;
+  if (s.hat < s.hn) {
+    const size_t k = std::min(want, s.hn - s.hat);
+    if (dst != s.buf + s.hat) memmove(dst, s.buf + s.hat, k);
+    s.hat += k;
+    return k;
+  }
+  for (;;) {
+    if (s.end || !s.err->empty()) return 0;
+    if (S().cancel) { *s.err = "left the screen"; return 0; }
+    const bool late = (esp_timer_get_time() - s.t0) / 1000 >= s.timeout_ms;
+    if (late) { *s.err = s.tmo; return 0; }
+    const int k = esp_http_client_read(s.h, (char *) dst, (int) want);
+    if (k < 0) { *s.err = k == -ESP_ERR_HTTP_EAGAIN ? s.tmo : "the download broke off"; return 0; }
+    if (k > 0) { s.quiet = 0; s.total += (size_t) k; return (size_t) k; }
+    if (esp_http_client_is_complete_data_received(s.h)) { s.end = true; return 0; }  // the length, or the last chunk
+    if (s.len < 0 && !s.chunked) { s.end = true; return 0; }  // no length, not chunked: the server closes at the end
+    const int64_t now = esp_timer_get_time();  // nothing this read: chunked framing, or quiet / closed before the end
+    if (!s.quiet) s.quiet = now;
+    else if (now - s.quiet > QUIET_US) { s.end = true; return 0; }
+    vTaskDelay(1);
+  }
+}
+
 inline void fetch(const std::string &src, const std::vector<fw::img::Box> &boxes, const std::string &ha, Done &d) {
   const auto &B = fw::img::budget();
   if (src[0] == '/' && ha.empty()) { d.err = "no Home Assistant link (Settings > Home Assistant)"; return; }
@@ -236,48 +273,56 @@ inline void fetch(const std::string &src, const std::vector<fw::img::Box> &boxes
     goto out;
   }
   {
-    fw::imgdec::Body body(B.body_max);
-    if (!body.expect(len)) { d.err = body.err; goto out; }
     uint8_t *buf = (uint8_t *) heap_caps_malloc(4096, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
     if (!buf) { d.err = "out of memory"; goto out; }
-    const bool chunked = esp_http_client_is_chunked_response(h);
-    int64_t quiet = 0;  // since when reads have brought nothing (0 = they bring bytes)
+    In in;
+    in.h = h, in.buf = buf, in.len = len, in.chunked = esp_http_client_is_chunked_response(h), in.err = &d.err, in.tmo = tmo;
+    in.t0 = t0, in.timeout_ms = B.timeout_ms;
     fw::busy::on(fw::busy::FETCH);
-    for (;;) {
-      if (S().cancel) { d.err = "left the screen"; break; }
-      if (late()) { d.err = tmo; break; }
-      const int k = esp_http_client_read(h, (char *) buf, 4096);
-      if (k < 0) { d.err = late() || k == -ESP_ERR_HTTP_EAGAIN ? tmo : "the download broke off"; break; }
-      if (k > 0) {
-        if (!body.add(buf, (size_t) k)) { d.err = body.err; break; }
-        quiet = 0;
-        continue;
+    in.hn = more(&in, buf, 4096);  // the first bytes: what the picture is (sniff), then served again from buf
+    bool ok = false;
+    // a JPEG for the software decoder: decoded as it downloads, the file never held (a 300 KB cover on the 480 panel)
+    const bool stream = d.err.empty() && in.hn && !strcmp(fw::imgdec::sniff(buf, in.hn), "jpeg") && !fw::imgdec::hw_jpeg();
+    int64_t t1 = 0;
+    if (stream) {
+      fw::busy::off(fw::busy::FETCH);
+      t1 = esp_timer_get_time();
+      d.got_us = t1 - t0;
+      fw::busy::on(fw::busy::DECODE);
+      ok = fw::imgdec::decode_jpeg_stream(more, &in, B.src_max_px, decode_room(), boxes, d.px);
+      fw::busy::off(fw::busy::DECODE);
+      d.bytes = in.total;
+      if (!d.err.empty()) ok = false;  // the download failed under the decode: its words
+    } else {
+      fw::imgdec::Body body(B.body_max);
+      if (d.err.empty() && !body.expect(len)) d.err = body.err;
+      if (d.err.empty() && in.hn && !body.add(buf, in.hn)) d.err = body.err;
+      in.hat = in.hn;  // the first bytes are in the body
+      while (d.err.empty()) {
+        const size_t k = more(&in, buf, 4096);
+        if (!k) break;
+        if (!body.add(buf, k)) { d.err = body.err; break; }
       }
-      if (esp_http_client_is_complete_data_received(h)) break;  // the length reached, or the chunked body's last chunk
-      if (len < 0 && !chunked) break;  // no length, not chunked: the server closes at the end (the decode checks it is whole)
-      // nothing this read: a chunked body's framing, or the connection went quiet / closed before the end
-      const int64_t now = esp_timer_get_time();
-      if (!quiet) quiet = now;
-      else if (now - quiet > QUIET_US) break;
-      vTaskDelay(1);
+      fw::busy::off(fw::busy::FETCH);
+      if (d.err.empty() && len >= 0 && body.n != (size_t) len) {
+        char t[64];
+        snprintf(t, sizeof t, "the download broke off (%u of %u KB)", (unsigned) (body.n / 1024), (unsigned) ((len + 1023) / 1024));
+        d.err = t;
+      } else if (d.err.empty() && in.chunked && !esp_http_client_is_complete_data_received(h))
+        d.err = "the download broke off (no end to the chunked body)";
+      if (d.err.empty()) {
+        esp_http_client_close(h);
+        esp_http_client_cleanup(h);
+        h = nullptr;
+        t1 = esp_timer_get_time();
+        d.got_us = t1 - t0, d.bytes = body.n;
+        fw::busy::on(fw::busy::DECODE);
+        ok = fw::imgdec::decode(body.b, body.n, B.src_max_px, decode_room(), boxes, d.px);
+        fw::busy::off(fw::busy::DECODE);
+      }
     }
-    fw::busy::off(fw::busy::FETCH);
     heap_caps_free(buf);
-    if (d.err.empty() && len >= 0 && body.n != (size_t) len) {
-      char t[64];
-      snprintf(t, sizeof t, "the download broke off (%u of %u KB)", (unsigned) (body.n / 1024), (unsigned) ((len + 1023) / 1024));
-      d.err = t;
-    } else if (d.err.empty() && chunked && !esp_http_client_is_complete_data_received(h))
-      d.err = "the download broke off (no end to the chunked body)";
     if (!d.err.empty()) goto out;
-    esp_http_client_close(h);
-    esp_http_client_cleanup(h);
-    h = nullptr;
-    const int64_t t1 = esp_timer_get_time();
-    d.got_us = t1 - t0, d.bytes = body.n;
-    fw::busy::on(fw::busy::DECODE);
-    const bool ok = fw::imgdec::decode(body.b, body.n, B.src_max_px, decode_room(), boxes, d.px);
-    fw::busy::off(fw::busy::DECODE);
     d.dec_us = esp_timer_get_time() - t1;
     // a finished picture leaves the pictures' own memory for the shared PSRAM when a block there takes it: the arena
     // is the decode's room, not a store (a kept cover there left the next decode 29 KB, img_arena.h)
