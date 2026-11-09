@@ -58,15 +58,21 @@ export const host: V1Host = {
     } catch { return null; }
   },
   async entities(domains): Promise<Entities> {
-    // the panel reads Home Assistant once per domain (a few seconds); ask again until it has them all
-    for (let i = 0; i < 20; i++) {
-      try {
-        const { body } = await j(`/fw/entities?domains=${encodeURIComponent(domains.join(','))}`);
-        if (body && body.state !== 'loading') return { state: body.state, why: body.why, lists: body.lists ?? {} };
-      } catch { /* the panel is busy: again */ }
-      await new Promise((r) => setTimeout(r, 1000));
+    // the panel reads Home Assistant once for all of them (a few seconds): ask with nothing to send until it has
+    // them, then fetch each domain's list on its own (one big answer would not fit the 480 panel's memory)
+    const all = encodeURIComponent(domains.join(','));
+    let state: any = null;
+    for (let i = 0; i < 30 && (!state || state.state === 'loading'); i++) {
+      if (i) await new Promise((r) => setTimeout(r, 1000));
+      try { state = (await j(`/fw/entities?domains=${all}&send=`)).body; } catch { state = null; }
     }
-    return { state: 'failed', why: 'Home Assistant took too long to answer', lists: {} };
+    if (!state || state.state === 'loading') return { state: 'failed', why: 'Home Assistant took too long to answer', lists: {} };
+    if (state.state !== 'ok') return { state: state.state, why: state.why, lists: {} };
+    const lists: Record<string, { id: string; name: string }[]> = {};
+    for (const d of domains) {
+      try { const { body } = await j(`/fw/entities?domains=${all}&send=${d}`); if (body?.lists?.[d]) lists[d] = body.lists[d]; } catch { /* that one stays empty */ }
+    }
+    return { state: 'ok', lists };
   },
   async save(deck, settings, link): Promise<SaveOut> {
     try {

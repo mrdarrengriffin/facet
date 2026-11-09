@@ -41,9 +41,10 @@
 //   GET  /fw/ha     the Home Assistant store (core/ha.h): {wants: [[e, a]...], values: {"e|a": value}, bound: n};
 //                   ?want=e1,e2[&attrs=a1] subscribes to those first (the panel-served editor's live preview)
 //                = The Home Assistant values the panel holds, and what its screens ask for.
-//   GET  /fw/entities  ?domains=light,sensor: the entity pickers' lists from the panel's own Home Assistant link
-//                   (core/device.h ha_link): {state: off|loading|ok|failed, why?, lists: {domain: [{id, name}]}}; a
-//                   domain not read yet (or read over five minutes ago) is read now: ask again until state is ok
+//   GET  /fw/entities  ?domains=light,sensor[&send=light]: the entity pickers' lists from the panel's own Home Assistant
+//                   link (core/device.h ha_link): {state: off|loading|ok|failed, why?, lists: {domain: [{id, name}]},
+//                   more: {domain: n left out}} (at most 500 per domain; send = the domains to answer with, default
+//                   all); a domain not read yet (or read over five minutes ago) is read now: ask again until ok
 //                = The entities the editor's pickers offer, read from Home Assistant through the panel's link.
 //   POST /fw/bench  a batch of bench cases the panel runs on its own screen (fw_bench.h); GET /fw/bench = the report
 //                = Runs speed tests on the panel's own screen; GET reads the report.
@@ -2039,35 +2040,64 @@ class Handler : public AsyncWebHandler {
       if (dj.empty() || deserializeJson(dk, dj)) { code = 503; s = R"({"ok":false,"error":"no deck"})"; }
       else { d["deck"] = dk; d["rev"] = dk["rev"]; d["override"] = over; serializeJson(d, s); }
     } else if (path == "/fw/entities") {  // the pickers' lists (ha_link::list), a read of the missing ones started
+      // written straight into one reserved string (no JSON document, no growing copies: a house's sensors run to
+      // thousands, too many for the 480 panel's heap twice over); send = the domains to answer with (default all asked)
       namespace hl = fw::dev::ha_link;
-      ArduinoJson::JsonDocument d;
-      std::string want = req->hasArg("domains") ? req->arg("domains").c_str() : "";
-      if (want.size() > 256 || want.find_first_not_of("abcdefghijklmnopqrstuvwxyz0123456789_,") != std::string::npos) want.clear();
-      in_loop([&] {
-        ArduinoJson::JsonObject ls = d["lists"].to<ArduinoJson::JsonObject>();
-        std::string missing;
-        size_t i = 0;
-        while (i < want.size()) {
-          size_t j = want.find(',', i);
-          if (j == std::string::npos) j = want.size();
-          const std::string dom = want.substr(i, j - i);
-          i = j + 1;
-          if (dom.empty()) continue;
-          const std::vector<hl::Entity> *l = hl::list(dom);
-          if (!l || hl::stale(dom)) missing += (missing.empty() ? "" : ",") + dom;
-          if (!l) continue;
-          ArduinoJson::JsonArray a = ls[dom].to<ArduinoJson::JsonArray>();
-          for (const hl::Entity &e : *l) { auto o = a.add<ArduinoJson::JsonObject>(); o["id"] = e.id; o["name"] = e.name; }
+      auto arg = [&](const char *k) {
+        std::string v = req->hasArg(k) ? req->arg(k).c_str() : "";
+        return v.size() > 256 || v.find_first_not_of("abcdefghijklmnopqrstuvwxyz0123456789_,") != std::string::npos ? std::string() : v;
+      };
+      auto split = [](const std::string &v) { std::vector<std::string> o; size_t i = 0; while (i < v.size()) { size_t j = v.find(',', i); if (j == std::string::npos) j = v.size(); if (j > i) o.push_back(v.substr(i, j - i)); i = j + 1; } return o; };
+      const std::vector<std::string> want = split(arg("domains")), send = req->hasArg("send") ? split(arg("send")) : want;
+      constexpr size_t CAP = 500;  // per domain; more = how many were left out
+      auto esc = [](std::string &o, const std::string &v) {
+        o += '"';
+        for (char c : v) {
+          if (c == '"' || c == '\\') o += '\\', o += c;
+          else if ((unsigned char) c < 0x20) o += ' ';
+          else o += c;
         }
+        o += '"';
+      };
+      in_loop([&] {
+        std::string missing;
+        for (const auto &dom : want)
+          if (!hl::list(dom) || hl::stale(dom)) missing += (missing.empty() ? "" : ",") + dom;
         const hl::St st = hl::status();
-        if (!hl::ready()) d["state"] = "off";
-        else if (st == hl::FAIL && missing.empty()) d["state"] = "failed", d["why"] = hl::why();
+        std::string state = "ok", why;
+        if (!hl::ready()) state = "off";
+        else if (st == hl::FAIL && missing.empty()) state = "failed", why = hl::why();
         else if (!missing.empty() || st == hl::LOADING || st == hl::CHECKING) {
           if (!missing.empty() && st != hl::LOADING && st != hl::CHECKING) hl::fetch(missing);
-          d["state"] = "loading";
-        } else d["state"] = "ok";
-      }, 2000);
-      serializeJson(d, s);
+          state = "loading";
+        }
+        size_t need = 64 + why.size();
+        for (const auto &dom : send)
+          if (const auto *l = hl::list(dom)) { size_t k = 0; for (const auto &e : *l) { if (++k > CAP) break; need += e.id.size() + e.name.size() + 24; } }
+        s.reserve(need);
+        s = "{\"state\":\"" + state + "\"";
+        if (!why.empty()) s += ",\"why\":", esc(s, why);
+        s += ",\"lists\":{";
+        std::string more;
+        bool first = true;
+        for (const auto &dom : send) {
+          const auto *l = hl::list(dom);
+          if (!l) continue;
+          if (!first) s += ',';
+          first = false;
+          esc(s, dom);
+          s += ":[";
+          size_t k = 0;
+          for (const auto &e : *l) {
+            if (k == CAP) break;
+            if (k++) s += ',';
+            s += "{\"id\":", esc(s, e.id), s += ",\"name\":", esc(s, e.name), s += '}';
+          }
+          s += ']';
+          if (l->size() > CAP) more += (more.empty() ? "" : ",") + ("\"" + dom + "\":" + std::to_string(l->size() - CAP));
+        }
+        s += "},\"more\":{" + more + "}}";
+      }, 3000);
     } else if (path == "/fw/ha") {
       ArduinoJson::JsonDocument d;
       // ?want=e1,e2[&attrs=a1,a2]: subscribe to these too (the panel's editor previews live values)
