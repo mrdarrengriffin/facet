@@ -271,7 +271,7 @@ export class Engine {
     } catch (err) { why = String((err as Error)?.message || err); }
     if (this.alive) this.withStr(why, (pw) => this.m._fw_net_got(id, ok, pw));
   }
-  private haPut(e: string, a: string, v: string) { this.withStr(e, (pe) => this.withStr(a, (pa) => this.withStr(v, (pv) => this.m._fw_ha_put(pe, pa, pv)))); }
+  haPut(e: string, a: string, v: string) { this.withStr(e, (pe) => this.withStr(a, (pa) => this.withStr(v, (pv) => this.m._fw_ha_put(pe, pa, pv)))); }
   str(p: number) { return this.m.UTF8ToString(p) as string; }
   withStr<T>(s: string, f: (p: number) => T): T { const p = this.m.stringToNewUTF8(s); try { return f(p); } finally { this.m._free(p); } }
   /** a stage of w x h device pixels drawing into its own canvas */

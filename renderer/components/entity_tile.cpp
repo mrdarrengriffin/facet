@@ -9,8 +9,7 @@
 //   label    type body, text, up to two lines in a fixed box of two body lines (tile-text), "..."
 //   status   type label (caps), one line, space 5 above (tile-status): the state ("Off", "64%", "Open"); on-ink
 //            (accent-text) while on, else text-dim
-//   half     shape half (half a Home cell): one row, a gutter apart: the icon, the label (one line, takes the free
-//            width, "..."), the status
+//   half     shape half (half a Home cell): no icon (hidden), the label one line ("..."), the status under it
 // Props: icon (a UI or screen icon name), label, status, on (bool), act toggle | open | none (what a tap does: the
 // sound and the instant look; none = read-only, a Home sensor tile: not clickable, no press look), state default |
 // pressed | unavailable, press (the Card's press styles).
@@ -51,8 +50,8 @@ void fill(lv_obj_t *c, fw::Props p) {
   const char *state = p["state"] | "default";
   const bool off = fw::st::gone(state);
   fw::shape(c, sig(p));
-  const bool half = !strcmp(p["shape"] | "tile", "half");
-  fx::use(c, half ? "row" : "col");
+  const bool half = !strcmp(p["shape"] | "tile", "half");  // half a Home cell: the name over the state, no icon
+  fx::use(c, "col");
   for (const char *t : {"fill", "radius:tile", "card-pad", "bg:surface", "border:line", "fade-release"}) fx::use(c, t);
   const char *press = p["press"] | fw::st::PRESS_STYLE;
   const bool p_fill = strcmp(press, "border") != 0, p_border = strcmp(press, "fill") != 0;
@@ -64,13 +63,15 @@ void fill(lv_obj_t *c, fw::Props p) {
   fx::use(c, "part:card");  // the theme's card (C46), after the tile's own state tokens
 
   lv_obj_t *ic = fx::icon(c, p["icon"] | "bulb", "icon", "fg:text-dim");
+  if (half) lv_obj_add_flag(ic, LV_OBJ_FLAG_HIDDEN);
   fx::icon_use(ic, "ink:on-mark", ST_ON);
   fx::icon_use(ic, "ink:unavailable-ink", ST_OFF);
   for (lv_state_t st : {(lv_state_t) 0, ST_ON}) fx::icon_use(ic, "fade-switch", st);
   if (!half) fx::use(fx::box(c, "free"), "grow");
   k->label = fx::text(c, p["label"] | "", "type:body", off ? "fg:unavailable-ink" : "fg:text", half ? "none" : "fit");
-  fx::use(k->label, half ? "grow" : "tile-text");
-  lv_label_set_long_mode(k->label, LV_LABEL_LONG_MODE_DOTS);  // two lines (half: one, beside the icon), then "..."
+  if (half) fx::lines(k->label, "type:body", 1);  // one line box, "..." at the width
+  else fx::use(k->label, "tile-text");
+  lv_label_set_long_mode(k->label, LV_LABEL_LONG_MODE_DOTS);  // two lines (half: one), then "..."
   k->status = fx::text(c, off ? fw::st::gone_word(state) : (p["status"] | ""), "type:label", off ? "fg:unavailable-note" : "fg:text-dim", "none");
   if (!half) fx::use(k->status, "tile-status");
   if (!off) fx::use(k->status, "fg:on-ink", ST_ON);
@@ -103,7 +104,7 @@ FW_COMPONENT(entity_tile, "Entity tile", "components", R"({
     {"name": "on", "about": "Whether the thing is on. On tiles are lit in the accent colour.", "type": "bool", "default": true},
     {"name": "act", "about": "What a tap does: toggle switches it on or off, open opens its own screen, none does nothing.", "type": "select", "options": ["toggle", "open", "none"], "default": "toggle"},
     {"name": "state", "debug": true, "about": "How the tile looks: default ready to tap, pressed while held, unavailable when the device has no state now, or missing when Home Assistant has no such device.", "type": "select", "options": ["default", "pressed", "unavailable", "missing"], "default": "default"},
-    {"name": "shape", "about": "The tile's shape: tile is a square (icon on top, the name and state under it), half is a half-height row (icon, name, state in one line), for half a Home cell.", "type": "select", "options": ["tile", "half"], "default": "tile"},
+    {"name": "shape", "about": "The tile's shape: tile is a square (icon on top, the name and state under it), half is half a Home cell: the name over the state, no icon.", "type": "select", "options": ["tile", "half"], "default": "tile"},
     {"name": "press", "about": "How the tile shows it is being pressed: fill darkens the whole tile, border lights its edge, border-fill does both.", "type": "select", "options": ["fill", "border", "border-fill"], "default": "fill"}
   ],
   "variants": [

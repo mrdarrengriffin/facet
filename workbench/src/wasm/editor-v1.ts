@@ -610,6 +610,6 @@ export function start() {
   $('v1-undo').onclick = undo;
   $('v1-settings').onclick = () => { side = side === 'settings' ? 'screen' : 'settings'; top(); render(); };
   $('v1-scope').onclick = scope;
-  (window as any).__v1 = { draft: () => draft, load: (d: Draft) => edit(() => { draft = d; sel = d.start; }), panel: () => panel, deck: () => toDeck(draft, panel.rev), check, changes: () => changes(panel.runs, draft) };  // tests
+  (window as any).__v1 = { draft: () => draft, load: (d: Draft) => edit(() => { draft = d; sel = d.start; }), put: (e: string, a: string, v: string) => engine?.haPut(e, a, v), engine: () => engine, panel: () => panel, deck: () => toDeck(draft, panel.rev), check, changes: () => changes(panel.runs, draft) };  // tests
   void load();
 }

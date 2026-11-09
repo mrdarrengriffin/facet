@@ -4,17 +4,18 @@
 //   header   the Header (label = the page name; Back unless it is the start page) + the screen chrome
 //   content  one Grid (components/grid.cpp): square cells, the size class's column count (tokens/layout.json
 //            homeCols, 3 on the square panels), rows half a square; each card spans its size: 1x1, 2x1, 1x2, 2x2 or
-//            half (a half under a half shares one square). Every type at every size: 1x1 = the Entity tile, half =
-//            the Entity tile's half row, bigger = the Card (a sensor: the State readout). Old sizes: s = 1x1, m =
-//            2x1 (a sensor's m = half), l = 2x2. What each type shows:
-//              light   s Entity tile (bulb / power icon, "64%" / "Off", on = accent) | m Card (value = the level)
-//              cover   s Entity tile (opens Blinds) | m Card (position, state)
-//              climate m Card (current temperature, state)
-//              media   m / l Card in text mode (the track, the state)
-//              sensor  s Entity tile, read-only (act none: the value + label, no press) | m State readout (no box,
-//                      no tap); two m sensors in a row share one card slot
-//              page    s Entity tile / m Card / l wide Card: the page's name (opens it)
-//              entity  s Entity tile for ANY entity (after HA's tile card): drawn like its domain's nearest type (light,
+//            half (a half under a half shares one square); 1x2 is placed but not offered (core/spec.h GRID_SIZES).
+//            Every type at every size: 1x1 = the Entity tile,
+//            half = the Entity tile's half (the name over the state), bigger = the Card (the full step shows the
+//            type's preview, the compact step drops it). Old sizes: s = 1x1, m = 2x1 (a sensor's m = half), l = 2x2.
+//            What the Card shows per type:
+//              light   the level (accent while on), the state; no preview (a card holds no toggle)
+//              cover   the state, the window preview at the position
+//              media   text mode: the track, the record preview, the artist
+//              action  (script, scene, automation, button) its verb
+//              sensor  and anything else: its state (read-only: tap none)
+//              page    the screen's own card (its spec's "card"), else its name
+//              entity  ANY entity (after HA's tile card): drawn like its domain's nearest type (light,
 //                      cover, sensor; a script / scene / button with its verb; anything else its state); taps by
 //                      domain (core/spec.h ENTITY_TAPS): toggle, detail (the domain's screen), run, none
 //            label = the card's label, else the entity's friendly name (a bind). Unavailable entities show the
@@ -188,10 +189,8 @@ bool card_node(Var cd, Var pages, int slot, ArduinoJson::JsonArray nodes) {
   const fw::spec::DomainTaps &dt = fw::spec::entity_taps(edom);
   const std::string taps = t == "entity" ? dt.taps : ct->taps, detail = t == "entity" ? dt.detail : ct->detail;
   if (tap.empty()) tap = taps.substr(0, taps.find(','));
-  const std::string edom0 = e.substr(0, e.find('.'));
-  const bool sensor = t == "sensor" || (t == "entity" && (edom0 == "sensor" || edom0 == "binary_sensor"));
-  // every type at every size: a square or a half = the Entity tile, bigger = the Card (a sensor: the State readout)
-  const char *comp = size == "1x1" || size == "half" ? "entity_tile" : sensor ? "readout" : "card";
+  // every type at every size: a square or a half = the Entity tile, bigger = the Card
+  const char *comp = size == "1x1" || size == "half" ? "entity_tile" : "card";
   {  // a card that opens a screen this build lacks (its feature is off, features.json; a custom deck can still name
      // one) is left out, so no card leads nowhere
     std::string to = tap == "detail" ? detail : "";
@@ -280,25 +279,30 @@ bool card_node(Var cd, Var pages, int slot, ArduinoJson::JsonArray nodes) {
     if (t == "page") {
       p["icon"] = has_icon(kind) ? kind : std::string("none");
       page_card(p, target, kind);  // the screen's own card (its spec's "card", on its feeds), when it has one
-    } else if (vt == "light") { p["icon"] = "light"; bind(p, "value", e, "level"); bind(p, "accent", e, "on"); }
-    else if (t == "media" || dom == "media_player") {
+    } else if (vt == "light") {  // the level, the state under it (no preview: a card holds no toggle)
+      p["icon"] = "light";
+      bind(p, "value", e, "level");
+      bind(p, "accent", e, "on");
+      bind(p, "sub", e, "state");
+    } else if (t == "media" || dom == "media_player") {  // the track, the record preview, the artist
       p["icon"] = "media";
+      p["preview"] = "media";
       p["mode"] = "text";
       bind(p, "text", e, "", "media_title");
-      bind(p, "sub", e, "state");
-    } else {  // anything else: its state (a cover, a climate, a script ...)
-      p["icon"] = vt == "cover" ? "covers" : dom == "climate" ? "thermostat" : "none";
+      bind(p, "sub", e, "", "media_artist");
+    } else if (vt == "cover") {  // the state, the window preview at the position
+      p["icon"] = "covers";
+      p["preview"] = "covers";
+      bind(p, "value", e, "state");
+      bind(p, "position", e, "num", "current_position");
+    } else if (vt == "action") {  // the verb (what a tap does)
+      p["icon"] = "none";
+      p["value"] = dom == "script" ? "Run" : dom == "scene" ? "Activate" : dom == "automation" ? "Trigger" : "Press";
+    } else {  // a sensor, a climate, anything else: its state
+      p["icon"] = dom == "climate" ? "thermostat" : "none";
       bind(p, "value", e, "state");
     }
     if (t != "page") bind(p, "state", e, "avail");
-  } else if (comp_s == "readout") {
-    bind(p, "state", e, "state");
-    sensor_icon(p, e);
-    ArduinoJson::JsonObject tone = p["tone"].to<ArduinoJson::JsonObject>();
-    tone["e"] = e;
-    tone["map"]["unavailable"] = "mute";
-    tone["map"]["unknown"] = "mute";
-    tone["else"] = "text";
   }
   set_tap(n, tap, e, detail, pid, label);
   return true;

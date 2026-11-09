@@ -18,7 +18,7 @@ never rebuilt from parts: each is a card on a page or its own swipe page.
 
 **2. Editing a screen.** Each screen is a grid of cells that scrolls up / down, so it need not fit the glass. Tap an
 empty cell: it becomes a 1 × 1 card and the list shows everything that fits a 1 × 1. Once added, resize it to 2 × 2,
-1 × 2, 2 × 1 or half height. A half with space below offers "add another half underneath" (optional, never a forced
+2 × 1 or half height (1 × 2 not for now). A half with space below offers "add another half underneath" (optional, never a forced
 empty slot). Every part declares the sizes it accepts and a slot accepts only what fits, so a screen always looks
 right and cannot be broken. A card's options (its entity, what a tap does…) are a form made from `/fw/schema`: an
 entity is a picker of that domain from the panel's own Home Assistant link, a select a segmented control (three
@@ -64,10 +64,13 @@ One part per round, in the order above: build it, put it on both panels, a previ
 - A fresh panel holds one empty Home that shows the editor's address ("Add cards at http://<panel>"); it ships
   with the switch to v1. Back to factory gives the same.
 - Part 2 grid: Home becomes the Grid layout (square cells, nodes span `[cols, rows]`), 3 columns at both densities,
-  the count in ONE place (a layout token) so it can change later. Card sizes 1 × 1, 2 × 1, 1 × 2, 2 × 2 and half
+  the count in ONE place (a layout token) so it can change later. Card sizes 1 × 1, 2 × 1, 2 × 2 and half
   (a half-height 1 × 1; a second half may sit under it). Every card type offers every size: each size is its own
   layout of the card, shown at 720 and 480 before it lands. Decks with the old sizes keep working: s = 1 × 1,
   m = 2 × 1, l = 2 × 2; the editor saves the new ones.
+- Card sizes, round 2: 1 × 2 is not offered for now (the content does not survive one cell wide and two tall); the
+  grid still places it. A half is the name over the state, no icon. Bigger cards are the Card with the type's preview;
+  cards hold no toggles (a light card shows its level, no switch).
 - A panel holds up to 8 of your own screens (the deck check's `homes` budget; its memory measured on the 480 panel
   before the switch).
 - The panel's check messages are plain words, one wording for people and agents, the technical id on a second line;

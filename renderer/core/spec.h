@@ -136,7 +136,7 @@
 //              page-role spec or "home"; name = header label + card title (else the spec's name); source = an id
 //              of the kind's sources (renderer/sources/sources.json); params = the page opens with them over the
 //              spec's defaults (a host's discovery fills them). cards only on a home: t = a card type (CARD_TYPES),
-//              e = its entity (a domain the type takes), size 1x1 | 2x1 | 1x2 | 2x2 | half (old: s | m | l), tap toggle | detail | page | none (the
+//              e = its entity (a domain the type takes), size 1x1 | 2x1 | 2x2 | half (old: s | m | l), tap toggle | detail | page | none (the
 //              type's first by default), page = a page id (t page), label (else the entity's name). A home may set
 //              header_actions {button: "settings" (default) | a page id (that page's shortcut in the settings
 //              button's place; Settings = a long press on the time), status: "none" | "timer" (the panel's timer,
@@ -358,8 +358,9 @@ constexpr const char *ROLES[] = {"page", "detail", "both"};
 // with no press (act none: value + label), m = a State readout (no box, no tap), two in a row sharing one card slot,
 // stacked (docs readoutSlot). Taps: toggle = the
 // entity's toggle, detail = its detail screen for that entity, page = a deck page, none = reports only.
-// Grid sizes (Home's Grid, screens/home.cpp): every type takes every one; sizes = the old sizes a deck may still say
-constexpr const char *GRID_SIZES = "1x1,2x1,1x2,2x2,half";
+// Grid sizes (Home's Grid, screens/home.cpp): every type takes every one; sizes = the old sizes a deck may still say.
+// 1x2 is not offered for now (a card one cell wide and two tall spoils its content); the Grid and Home still place it
+constexpr const char *GRID_SIZES = "1x1,2x1,2x2,half";
 struct CardType { const char *t, *domains, *sizes, *taps, *detail, *comp_s, *comp_m, *comp_l; };
 constexpr CardType CARD_TYPES[] = {
     {"light", "light,switch", "s,m", "toggle,detail", "light", "entity_tile", "card", ""},
