@@ -47,7 +47,7 @@
 //                   all; drop = free them once sent); a domain not read yet (or read over five minutes ago) is read
 //                   now: ask again until ok. A large house: ask a few domains at a time, with drop.
 //                   ?q=kitch[&dc=temperature]: a search instead (a read keeping only the matches, at most 40):
-//                   {state, found: [{id, name, dc}], more} (the editor's add list)
+//                   {state, found: [{id, name, dc, st, unit}], more} (the editor's add list)
 //                = The entities the editor's pickers offer, read from Home Assistant through the panel's link.
 //   POST /fw/bench  a batch of bench cases the panel runs on its own screen (fw_bench.h); GET /fw/bench = the report
 //                = Runs speed tests on the panel's own screen; GET reads the report.

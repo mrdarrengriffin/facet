@@ -206,6 +206,7 @@ struct Entity { std::string id, name, icon, dc; };  // dc: attributes.device_cla
 // a search (find): only the entities whose device class is one of dc (comma list, "" = any) and whose id or name holds
 // q (ASCII case-insensitive, "" = any) are kept, at most FIND_MAX; the rest that match are counted (more)
 struct Find { std::string dc, q; };
+struct Hit { Entity e; std::string st, unit; };  // a search's match: its state and unit_of_measurement as Home Assistant has them
 constexpr size_t FIND_MAX = 40;
 class Scan {
  public:
@@ -213,6 +214,7 @@ class Scan {
   Scan(const std::string &domains, const Find &f);
   bool search = false;
   int more = 0;  // a search's matches past FIND_MAX
+  std::vector<Hit> hits;  // a search's matches, in Home Assistant's order (a search keeps nothing in out)
   void feed(const char *p, size_t n);
   bool bad() const { return bad_; }
   size_t held() const { return held_; }  // bytes held now (buffers + kept rows); peak() the most at any point
@@ -226,7 +228,7 @@ class Scan {
   void add(char c);
   bool match(const std::string &dom) const;
   Find f_;
-  enum Cap : uint8_t { NONE, KEY, ID, NAME, ICON, DC };
+  enum Cap : uint8_t { NONE, KEY, ID, NAME, ICON, DC, ST, UNIT };
   static constexpr int DEPTH = 32;
   char kind_[DEPTH] = {};
   bool expect_key_[DEPTH] = {};
@@ -234,7 +236,7 @@ class Scan {
   uint32_t cp_ = 0, hi_ = 0;
   bool in_str_ = false, esc_ = false, attrs_ = false, bad_ = false;
   Cap cap_ = NONE;
-  std::string buf_, key2_, key3_, id_, name_, icon_, dc_;
+  std::string buf_, key2_, key3_, id_, name_, icon_, dc_, st_, unit_;
   size_t held_ = 0, peak_ = 0, kept_ = 0;
 };
 enum St { OFF, IDLE, LOADING, OK, FAIL, CHECKING };
@@ -280,9 +282,9 @@ const std::vector<Entity> *list(const std::string &domain);  // nullptr = not fe
 // (Find), never the lists (the cache is left as it is); found(domains, f) = those matches once that read answered,
 // nullptr before (or when the last search was another one). One search is held at a time; a new one replaces it.
 const char *find(const std::string &domains, const Find &f);  // "" = started, else why not
-const std::vector<Entity> *found(const std::string &domains, const Find &f, int *more = nullptr);
+const std::vector<Hit> *found(const std::string &domains, const Find &f, int *more = nullptr);
 // the search's answer, the same on the panel (GET /fw/entities?q=&dc=) and in WASM (fw_ha_find): {"state": ok | loading
-// | off | failed, "why"?, "found": [{id, name, dc}], "more": n}; loading = asked again until ok (a read started here)
+// | off | failed, "why"?, "found": [{id, name, dc, st, unit}], "more": n}; loading = asked again until ok (a read started here)
 std::string find_json(const std::string &domains, const Find &f);
 // a domain's list read longer ago than this: its picker reads it again in the background when it opens (the old list
 // shows meanwhile), so entities added to Home Assistant appear without a manual read

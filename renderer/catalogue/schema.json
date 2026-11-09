@@ -13048,7 +13048,7 @@
   {
    "method": "GET",
    "path": "/fw/entities",
-   "about": "?domains=light,sensor[&send=light]: the entity pickers' lists from the panel's own Home Assistant link (core/device.h ha_link): {state: off|loading|ok|failed, why?, lists: {domain: [{id, name}]}, more: {domain: n left out}} (at most 500 per domain; send = the domains to answer with, default all; drop = free them once sent); a domain not read yet (or read over five minutes ago) is read now: ask again until ok. A large house: ask a few domains at a time, with drop. ?q=kitch[&dc=temperature]: a search instead (a read keeping only the matches, at most 40): {state, found: [{id, name, dc}], more} (the editor's add list)",
+   "about": "?domains=light,sensor[&send=light]: the entity pickers' lists from the panel's own Home Assistant link (core/device.h ha_link): {state: off|loading|ok|failed, why?, lists: {domain: [{id, name}]}, more: {domain: n left out}} (at most 500 per domain; send = the domains to answer with, default all; drop = free them once sent); a domain not read yet (or read over five minutes ago) is read now: ask again until ok. A large house: ask a few domains at a time, with drop. ?q=kitch[&dc=temperature]: a search instead (a read keeping only the matches, at most 40): {state, found: [{id, name, dc, st, unit}], more} (the editor's add list)",
    "says": "The entities the editor's pickers offer, read from Home Assistant through the panel's link."
   },
   {

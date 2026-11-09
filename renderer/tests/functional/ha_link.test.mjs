@@ -94,7 +94,7 @@ export default {
       t.ha.answers = true;
       for (let i = 0; i < 1500; i++) {  // a large house: 1,500 sensors, a tenth of them temperatures
         const room = ['Kitchen', 'Hall', 'Office', 'Bedroom', 'Garage'][Math.floor(i / 10) % 5];
-        t.ha.s[`sensor.s${i}`] = { '': '1', friendly_name: `${room} ${i % 10 === 0 ? 'Temperature' : 'Power'} ${i}`, device_class: i % 10 === 0 ? 'temperature' : 'power' };
+        t.ha.s[`sensor.s${i}`] = { '': i % 10 === 0 ? '21.5' : '1', unit_of_measurement: i % 10 === 0 ? '°C' : 'W', friendly_name: `${room} ${i % 10 === 0 ? 'Temperature' : 'Power'} ${i}`, device_class: i % 10 === 0 ? 'temperature' : 'power' };
       }
       t.ha.s['light.kitchen_ceiling'] = { '': 'on', friendly_name: 'Kitchen Ceiling' };
       await t.device();
@@ -112,6 +112,7 @@ export default {
       t.eq(r.state, 'ok', JSON.stringify(r).slice(0, 200));
       t.eq([r.found.length, r.more], [30, 0], 'the kitchen temperatures: 30, nothing else');
       t.ok(r.found.every((e) => e.dc === 'temperature' && /^Kitchen /.test(e.name)), 'each one a kitchen temperature');
+      t.eq([r.found[0].st, r.found[0].unit], ['21.5', '°C'], 'with its value and unit, as Home Assistant has them');
       r = find('sensor', '', 'KITCHEN');
       t.eq([r.found.length, r.more], [40, 260], 'any kitchen sensor: a page of 40, the other 260 counted (case ignored)');
       r = find('light,sensor', '', 'ceiling');
