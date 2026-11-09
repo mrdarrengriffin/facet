@@ -46,7 +46,8 @@ const char *META = R"({
   "frame": [480, 480],
   "icons": ["screen-settings@icon", "bulb@icon", "power@icon"],
   "props": [
-    {"name": "page", "about": "Which page of the deck to show, by its id, such as kitchen. Leave empty for the start page.", "type": "text", "default": ""}
+    {"name": "page", "about": "Which page of the deck to show, by its id, such as kitchen. Leave empty for the start page.", "type": "text", "default": ""},
+    {"name": "editing", "about": "In the editor: an empty Home shows only its grid (the editor draws the squares to add to), not the Add your cards box.", "type": "bool", "default": false, "debug": true}
   ],
   "variants": [
     {"label": "start Home · Living room", "props": {}},
@@ -350,7 +351,7 @@ void build_home(lv_obj_t *parent, fw::Props props) {
   int slot = 0;
   for (Var cd : page["cards"].as<ArduinoJson::JsonArrayConst>())
     if (card_node(cd, deck["pages"], slot, nodes)) slot++;
-  if (!slot) {  // no cards yet (a fresh panel, Back to factory): where to add them, the panel's own address
+  if (!slot && !props["editing"].as<bool>()) {  // no cards yet (the editor draws its own empty squares: none here) (a fresh panel, Back to factory): where to add them, the panel's own address
     ArduinoJson::JsonObject n = nodes.add<ArduinoJson::JsonObject>();
     n["c"] = "empty_state";
     n["p"]["icon"] = "plus";

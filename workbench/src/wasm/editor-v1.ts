@@ -297,7 +297,7 @@ function preview(p: Page, cssW: number, label: string) {
   s.canvas.style.width = `${cssW}px`;
   s.canvas.style.height = `${cssW}px`;
   s.canvas.className = 'v1-canvas';
-  if (own(p)) s.render('home', { page: p.id }, plight(), accent());
+  if (own(p)) s.render('home', { page: p.id, editing: true }, plight(), accent());  // no Add your cards box under the editor's squares
   else s.render('spec', { screen: p.kind, ...Object.fromEntries(Object.keys(boot.screens[p.kind].params).map((k) => [k, paramVal(p, k)])) }, plight(), accent());
   return s;
 }

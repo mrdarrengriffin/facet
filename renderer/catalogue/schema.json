@@ -9554,6 +9554,13 @@
      "type": "text",
      "about": "Which page of the deck to show, by its id, such as kitchen. Leave empty for the start page.",
      "default": ""
+    },
+    {
+     "name": "editing",
+     "type": "bool",
+     "about": "In the editor: an empty Home shows only its grid (the editor draws the squares to add to), not the Add your cards box.",
+     "default": false,
+     "debug": true
     }
    ],
    "events": {},
