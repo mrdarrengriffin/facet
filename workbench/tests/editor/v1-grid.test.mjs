@@ -74,6 +74,23 @@ for (const device of ['guition', 'waveshare'])
       assert.equal(await E.page.locator('.v1-sidetitle b').textContent(), 'Dishwasher Plug Power', 'the new card is picked');
     });
 
+    it('adding: the types first, nothing listed before typing; a sensor type lists only what it measures', async () => {
+      await E.page.locator('.v1-cell.add:not(.half)').first().click(); await settle(E.page, 200);
+      const rows = () => E.page.locator('.v1-cardlist .v1-opt .v1-ftxt > span').allTextContents();
+      assert.deepEqual(await rows(), ['Screen', 'Light', 'Switch', 'Media', 'Climate', 'Cover', 'Sensor', 'Other'], 'the types, no entity');
+      await E.page.locator('.v1-cardlist .v1-opt', { hasText: 'Sensor' }).click(); await settle(E.page, 200);
+      await E.page.locator('.v1-cardlist .v1-opt', { hasText: 'Temperature' }).click(); await settle(E.page, 200);
+      assert.equal(await E.page.locator('.v1-sidetitle b').textContent(), 'Add a sensor card');
+      assert.match(await E.page.locator('.v1-sidetitle .v1-meta').textContent(), /^Temperature · /);
+      assert.deepEqual(await rows(), [], 'nothing before typing');
+      await E.page.fill('.v1-side .v1-input', 'sensor'); await settle(E.page, 150);
+      assert.deepEqual(await E.page.locator('.v1-cardlist .v1-opt p').allTextContents(), ['sensor.demo_sensor_243', 'sensor.demo_sensor_1'], 'the temperatures only');
+      await E.page.locator('.v1-side .btn', { hasText: '‹ Sensor' }).click(); await settle(E.page, 150);
+      await E.page.locator('.v1-side .btn', { hasText: '‹ Card types' }).click(); await settle(E.page, 150);
+      assert.equal((await rows()).length, 8, 'back at the types');
+      await E.page.locator('.v1-side .btn.icon', { hasText: '✕' }).click(); await settle(E.page, 150);
+    });
+
     it('an empty square adds a 1 x 1 there; the card resizes, then goes', async () => {
       const was = (await boxes(E.page)).r;
       const n = (await cards(E.page)).length;

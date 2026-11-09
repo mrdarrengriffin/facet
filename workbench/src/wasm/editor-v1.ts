@@ -26,7 +26,7 @@ type CardDef = { domains: string; taps: string; detail: string; by_domain?: Reco
 type Boot = {
   screens: Record<string, Screen>; settings: { groups: { id: string; label: string }[]; settings: Setting[] };
   deck: { start: string; pages: Page[] };
-  options: Record<string, { id: string; name: string }[]>;
+  options: Record<string, { id: string; name: string; dc?: string }[]>;
   accents: { default: string; sets: { id: string; label: string; dark: { accent: string } }[] };
   scope: string; hash: string; own_max: number;
   cards: Record<string, CardDef>; grid_sizes: string; card_max: number;
@@ -36,7 +36,9 @@ type Draft = { pages: Page[]; start: string; settings: Record<string, unknown>; 
 
 const boot: Boot = JSON.parse(document.getElementById('v1-boot')!.textContent!);
 /** the entity pickers' lists: the workbench's fixture, or what the panel reads from its Home Assistant link */
-let options: Record<string, { id: string; name: string }[]> = host.panel ? {} : boot.options;
+let options: Record<string, { id: string; name: string; dc?: string }[]> = host.panel ? {} : boot.options;
+/** names of entities met outside the lists (a search's matches, the deck's own entities on a panel) */
+const names = new Map<string, string>();
 let ents: { state: string; why?: string } = { state: host.panel ? 'loading' : 'ok' };
 const $ = (id: string) => document.getElementById(id)!;
 function h<K extends keyof HTMLElementTagNameMap>(tag: K, cls = '', text = ''): HTMLElementTagNameMap[K] {
@@ -67,7 +69,14 @@ const panel = { rev: 3, runs: host.panel ? factory() : today(), before: [] as { 
 function fromPanel(st: PanelState): Draft {
   return { pages: clone(st.deck.pages), start: st.deck.start, settings: { ...defaults(), ...st.settings }, ha: { url: st.ha.url, token: '', hint: st.ha.hint, state: st.ha.state, why: st.ha.why } };
 }
-/** every domain a picker can list: the card types', the Entity card's, the screens' entity params' */
+/** the lists a panel reads up front: only the screens' entity params' domains (cards are searched, never listed whole) */
+function listDomains() {
+  if (!host.panel) return Object.keys(options);
+  const d = new Set<string>();
+  for (const sc of Object.values(boot.screens)) for (const p of Object.values(sc.params)) if (p.domain) d.add(p.domain);
+  return [...d];
+}
+/** every domain a card can show: the card types', the Entity card's, the screens' entity params' */
 function allDomains() {
   if (!host.panel) return Object.keys(options);
   const d = new Set<string>();
@@ -158,7 +167,7 @@ const TAP_NAME: Record<string, string> = { toggle: 'Toggle', detail: 'Its screen
 function entName(id: string | undefined) {
   if (!id) return '';
   for (const l of Object.values(options)) { const o = l.find((x) => x.id === id); if (o) return o.name; }
-  return id;
+  return names.get(id) ?? id;
 }
 const cardName = (c: Card, d: Draft = draft) => c.label || (c.t === 'page' ? name(c.page ?? '', d) : entName(c.e)) || TYPE_NAME[c.t] || c.t;
 /** the taps a card can have: the type's, or for an Entity card its domain's (the default first) */
@@ -510,13 +519,17 @@ function cardSide(p: Page, i: number): HTMLElement[] {
   out.push(h('h2', 'cap', 'What it shows'));
   if (c.t === 'page') out.push(field('Screen', 'The screen it opens.', list(draft.pages.filter((x) => x.id !== p.id).map((x) => [x.id, pname(x)] as [string, string]), c.page ?? '', (v) => set((c) => { c.page = v; }))));
   else {
+    // a search, never the whole list (a house's sensors run to thousands); the card keeps its type
     const doms = c.t === 'entity' ? allDomains() : boot.cards[c.t].domains.split(',');
-    const items: [string, string, string?][] = doms.flatMap((d) => (options[d] ?? []).map((o) => [o.id, o.name, o.id] as [string, string, string]));
-    if (c.e && !items.some(([v]) => v === c.e)) items.unshift([c.e, `${c.e} (not found)`]);
-    out.push(field('Entity', undefined, list(items, c.e ?? '', (v) => set((c) => {
+    const cur = h('div', 'v1-ftxt');
+    cur.append(h('span', '', c.e ? entName(c.e) : 'None yet'));
+    if (c.e) cur.append(h('p', 'mono', c.e));
+    const wrap = h('div', 'v1-entity');
+    wrap.append(cur, ...searchBox(doms, '', 'for another entity', (v) => set((c) => {
       c.e = v;
       if (c.tap && !tapsOf(c).includes(c.tap)) delete c.tap;
-    }), 'Pick one')));
+    }), undefined, false));
+    out.push(field('Entity', 'Type to change it.', wrap));
   }
   const nm = h('input', 'v1-input');
   nm.value = c.label ?? '';
@@ -547,62 +560,131 @@ function cardSide(p: Page, i: number): HTMLElement[] {
   return out;
 }
 
-// 2. an empty place picked: everything that fits there (every card type takes every size), as one list to search
+// 2. an empty place picked: first the type of card (Screen, Light, ... Sensor by what it measures), then a search box;
+// nothing is listed before something is typed (a house runs to thousands of entities: the panel never sends them all)
+type Kind = { id: string; label: string; doms: string[]; classes?: [string, string][] };
+const SENSOR_CLASSES: [string, string][] = [
+  ['temperature', 'Temperature'], ['humidity', 'Humidity'], ['power', 'Power'], ['energy', 'Energy'], ['battery', 'Battery'],
+  ['door,window,opening,garage_door', 'Doors and windows'], ['motion,occupancy,presence', 'Motion and presence'], ['', 'Any sensor'],
+];
+function kinds(): Kind[] {
+  const ks: Kind[] = [
+    { id: 'light', label: 'Light', doms: ['light'] }, { id: 'switch', label: 'Switch', doms: ['switch', 'input_boolean'] },
+    { id: 'media', label: 'Media', doms: ['media_player'] }, { id: 'climate', label: 'Climate', doms: ['climate'] },
+    { id: 'cover', label: 'Cover', doms: ['cover'] }, { id: 'sensor', label: 'Sensor', doms: ['sensor', 'binary_sensor'], classes: SENSOR_CLASSES },
+  ];
+  const typed = new Set(ks.flatMap((k) => k.doms));
+  ks.push({ id: 'other', label: 'Other', doms: allDomains().filter((d) => !typed.has(d)) });
+  return ks;
+}
+/** the card an entity makes: its domain's card type (Light, Media, Sensor), else an Entity card */
+function cardFor(id: string, size: string): Card {
+  const dom = id.split('.')[0];
+  const t = Object.entries(boot.cards).find(([ty, def]) => ty !== 'entity' && ty !== 'page' && def.domains.split(',').includes(dom))?.[0] ?? 'entity';
+  return { t, e: id, size };
+}
+/** search the entities: the panel's own search (host.search), or the workbench's fixture here */
+async function find(doms: string[], dc: string, q: string) {
+  const r = await host.search(doms, dc, q);
+  if (r) { for (const o of r.found) names.set(o.id, o.name); return r; }
+  const qq = q.toLowerCase(), dcs = dc ? dc.split(',') : [];
+  const all = doms.flatMap((d) => options[d] ?? []).filter((o) => (!dcs.length || dcs.includes(o.dc ?? '')) && (o.id.toLowerCase().includes(qq) || o.name.toLowerCase().includes(qq)));
+  return { state: 'ok' as const, why: undefined as string | undefined, found: all.slice(0, 40), more: Math.max(0, all.length - 40) };
+}
+/** a search box and its matches (nothing until something is typed); pick(id) when a match is tapped */
+function searchBox(doms: string[], dc: string, label: string, pick: (id: string) => void, extra?: (box: HTMLElement) => void, focus = true): HTMLElement[] {
+  const q = h('input', 'v1-input');
+  q.type = 'search';
+  q.placeholder = 'Start typing to search';
+  q.setAttribute('aria-label', `Search ${label}`);
+  const box = h('div', 'v1-cardlist');
+  let seq = 0, timer = 0;
+  const idle = () => { box.replaceChildren(); extra?.(box); };
+  const run = async () => {
+    const v = q.value.trim(), my = ++seq;
+    if (!v) { idle(); return; }
+    box.replaceChildren(h('p', 'dim', 'Searching…'));
+    const r = await find(doms, dc, v);
+    if (my !== seq) return;  // typed on since
+    box.replaceChildren();
+    if (r.state === 'off') { box.append(h('p', 'v1-note', 'Home Assistant is not set up: Settings > Home Assistant.')); return; }
+    if (r.state === 'failed') { box.append(h('p', 'v1-note', `Home Assistant did not answer: ${r.why ?? ''}`)); return; }
+    for (const o of r.found) {
+      const b = h('button', 'v1-opt');
+      b.type = 'button';
+      const tx = h('span', 'v1-ftxt');
+      tx.append(h('span', '', o.name), h('p', 'mono', o.id));
+      b.append(tx);
+      b.onclick = () => pick(o.id);
+      box.append(b);
+    }
+    if (!r.found.length) box.append(h('p', 'dim', 'Nothing matches.'));
+    if (r.more) box.append(h('p', 'v1-meta', `${r.more} more: type more of the name to narrow it.`));
+  };
+  q.oninput = () => { clearTimeout(timer); timer = window.setTimeout(() => void run(), host.panel ? 350 : 0); };
+  idle();
+  if (focus) requestAnimationFrame(() => q.focus());
+  return [q, box];
+}
+let addKind = '', addClass: string | null = null;  // the add list's step: a type picked ('' = the types), a sensor's class (null = not yet)
 function addCardSide(p: Page): HTMLElement[] {
   const t = target!, out: HTMLElement[] = [];
-  const hd = sideHead('Add a card', `${SIZE_NAME[t.size]} · row ${Math.floor(t.y / 2) + 1}, column ${t.x + 1}${t.size === 'half' ? ', under the half' : ''}`, false);
-  hd.append(btn('✕', 'Close', false, () => { target = null; top(); render(); }, 'icon'));
+  const ks = kinds(), k = ks.find((x) => x.id === addKind);
+  const cls = addClass === null ? undefined : k?.classes?.find(([v]) => v === addClass);
+  const back = () => { if (cls) addClass = null; else addKind = ''; render(); };
+  const where = `${SIZE_NAME[t.size]} · row ${Math.floor(t.y / 2) + 1}, column ${t.x + 1}${t.size === 'half' ? ', under the half' : ''}`;
+  const title = addKind === 'page' ? 'Add a screen card' : !k ? 'Add a card' : k.id === 'other' ? 'Add an entity card' : `Add a ${k.label.toLowerCase()} card`;
+  const hd = sideHead(title, cls?.[0] ? `${cls[1]} · ${where}` : where, false);
+  hd.append(btn('✕', 'Close', false, () => { target = null; addKind = '', addClass = null; top(); render(); }, 'icon'));
   out.push(hd);
-  if (ents.state !== 'ok') out.push(h('p', 'v1-note', ents.state === 'loading' ? 'Reading your entities from Home Assistant…' : ents.state === 'off' ? 'Home Assistant is not set up: Settings > Home Assistant. Screens can be added now.' : `Home Assistant did not answer: ${ents.why ?? ''}`));
   const full = (p.cards?.length ?? 0) >= budgetCards;
   if (full) { out.push(h('p', 'v1-note', `A screen holds ${budgetCards} cards. Remove one to add another.`)); return out; }
-  const q = h('input', 'v1-input');
-  q.placeholder = 'Search';
-  q.setAttribute('aria-label', 'Search the cards');
-  const box = h('div', 'v1-cardlist');
-  const groups: { label: string; items: Card[] }[] = [
-    { label: 'Screens', items: draft.pages.filter((x) => x.id !== p.id).map((x) => ({ t: 'page', page: x.id, size: t.size })) },
-  ];
-  const typed = new Set<string>();
-  for (const [ty, def] of Object.entries(boot.cards)) {
-    if (ty === 'page' || ty === 'entity') continue;
-    const doms = def.domains.split(',');
-    doms.forEach((d) => typed.add(d));
-    groups.push({ label: `${TYPE_NAME[ty] ?? ty}`, items: doms.flatMap((d) => (options[d] ?? []).map((o) => ({ t: ty, e: o.id, size: t.size }))) });
-  }
-  groups.push({ label: 'Other entities', items: allDomains().filter((d) => !typed.has(d)).flatMap((d) => (options[d] ?? []).map((o) => ({ t: 'entity', e: o.id, size: t.size }))) });
-  const fill = () => {
-    const f = q.value.trim().toLowerCase();
-    box.replaceChildren();
-    for (const g of groups) {
-      const its = g.items.filter((c) => !f || `${cardName(c)} ${c.e ?? ''} ${g.label}`.toLowerCase().includes(f));
-      if (!its.length) continue;
-      box.append(h('h2', 'cap', g.label));
-      for (const c of its) {
-        const b = h('button', 'v1-opt');
-        b.type = 'button';
-        const tx = h('span', 'v1-ftxt');
-        tx.append(h('span', '', cardName(c)));
-        if (c.e) tx.append(h('p', 'mono', c.e));
-        b.append(tx);
-        b.onclick = () => {
-          const i = insertAt(p, c, t.x, t.y);
-          const cards = (p.cards ??= []);
-          const at = i < 0 ? cards.length : i;
-          cards.splice(at, 0, c);
-          target = null;
-          cardSel = at;
-          edit(() => {});
-        };
-        box.append(b);
-      }
-    }
-    if (!box.children.length) box.append(h('p', 'dim', 'Nothing matches.'));
+  const put = (c: Card) => {
+    const i = insertAt(p, c, t.x, t.y);
+    const cards = (p.cards ??= []);
+    const at = i < 0 ? cards.length : i;
+    cards.splice(at, 0, c);
+    target = null;
+    addKind = '', addClass = null;
+    cardSel = at;
+    edit(() => {});
   };
-  q.oninput = fill;
-  fill();
-  out.push(q, box);
-  requestAnimationFrame(() => q.focus());
+  const row = (label: string, sub: string, f: () => void, more = true) => {
+    const b = h('button', 'v1-opt');
+    b.type = 'button';
+    const tx = h('span', 'v1-ftxt');
+    tx.append(h('span', '', label));
+    if (sub) tx.append(h('p', '', sub));
+    b.append(tx);
+    if (more) b.append(h('i', 'chev', '›'));
+    b.onclick = f;
+    return b;
+  };
+  if (addKind) out.push(btn(`‹ ${cls && k ? k.label : 'Card types'}`, 'Back', false, back, 'ghost'));
+  if (addKind === 'page') {  // your own screens: few, listed
+    const box = h('div', 'v1-cardlist');
+    for (const x of draft.pages.filter((x) => x.id !== p.id)) box.append(row(pname(x), own(x) ? 'Your screen' : 'Built-in screen', () => put({ t: 'page', page: x.id, size: t.size }), false));
+    if (!box.children.length) box.append(h('p', 'dim', 'No other screen to open.'));
+    out.push(box);
+    return out;
+  }
+  if (k?.classes && !cls) {  // a sensor: what it measures first
+    const box = h('div', 'v1-cardlist');
+    for (const [v, l] of k.classes) box.append(row(l, '', () => { addClass = v; render(); }));
+    out.push(box);
+    return out;
+  }
+  if (k) {
+    out.push(...searchBox(k.doms, cls?.[0] ?? '', cls ? cls[1] : k.label, (id) => put(cardFor(id, t.size))));
+    return out;
+  }
+  // the types; typing straight away searches every entity a card can show
+  if (ents.state === 'off') out.push(h('p', 'v1-note', 'Home Assistant is not set up: Settings > Home Assistant. Screens can be added now.'));
+  out.push(...searchBox(allDomains(), '', 'every entity', (id) => put(cardFor(id, t.size)), (box) => {
+    box.append(h('h2', 'cap', 'Or pick a type'));
+    box.append(row('Screen', 'A card that opens one of your screens', () => { addKind = 'page'; render(); }));
+    for (const x of ks) box.append(row(x.label, x.classes ? 'Temperature, humidity, power, doors…' : '', () => { addKind = x.id; addClass = null; render(); }));
+  }));
   return out;
 }
 
@@ -982,7 +1064,7 @@ async function refetch() {
   const st = await host.load();
   if (st) { draft.ha.state = panel.runs.ha.state = st.ha.state; draft.ha.why = panel.runs.ha.why = st.ha.why; }
   ents = { state: 'loading' }; top(); render();
-  const e = await host.entities(allDomains());
+  const e = await host.entities(listDomains());
   if (e) { options = e.lists; ents = { state: e.state, why: e.why }; }
   render();
 }
@@ -1069,16 +1151,22 @@ async function load() {
   top();
   $('v1-main').replaceChildren(h('p', 'dim', 'Loading the renderer'));
   engine = await Engine.load(DEVICES[device].den, host.wasmBase(DEVICES[device].den), host.ha);
+  let named = false;
   if (host.panel && first) {  // what the panel runs: the editor starts from it
     first = false;
     const st = await host.load();
     if (st) { panel.runs = fromPanel(st); panel.rev = st.deck.rev; draft = clone(panel.runs); sel = draft.start; }
-    void host.entities(allDomains()).then((e) => { if (e) { options = e.lists; ents = { state: e.state, why: e.why }; } render(); });
+    void host.entities(listDomains()).then((e) => { if (e) { options = e.lists; ents = { state: e.state, why: e.why }; } render(); });
+    named = true;
   }
   measure();
   applyDeck();
   top();
   render();
+  if (named) {  // the cards' entities by name (the panel's live values: friendly_name), as no list holds them
+    const ids = [...new Set(draft.pages.flatMap((p) => (p.cards ?? []).map((c) => c.e ?? '').filter(Boolean)))];
+    if (ids.length) void host.ha.states(ids, []).then((r) => { for (const x of r ?? []) if (x.name && x.name !== x.id) names.set(x.id, x.name); render(); });
+  }
 }
 
 export function start() {

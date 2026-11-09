@@ -209,3 +209,4 @@ button, input, select { font: inherit; color: inherit; }
 .v1-ftxt > .link { align-self: flex-start; font: 400 14px/1.4 var(--sans); }
 .v1-sub { padding: 0 0 var(--sp-4) var(--sp-6); border-bottom: 1px solid var(--f-line); }
 .v1-sub > .btn { margin-top: var(--sp-4); }
+.v1-entity { display: flex; flex-direction: column; gap: var(--sp-2); }

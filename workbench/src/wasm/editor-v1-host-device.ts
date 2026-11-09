@@ -4,7 +4,7 @@
 // Assistant link), GET /fw/ha?want= (live values for the previews), POST /fw/spec {kind: deck | revert}, POST /fw/act
 // {do: ha.connect}.
 import type { HaBridge } from './engine';
-import type { V1Host, PanelState, SaveOut, Entities } from './editor-v1-host';
+import type { V1Host, PanelState, SaveOut, Entities, Found } from './editor-v1-host';
 export type * from './editor-v1-host';
 
 const j = async (path: string, init?: RequestInit) => {
@@ -76,6 +76,17 @@ export const host: V1Host = {
       try { const { body } = await j(`/fw/entities?domains=${q}&send=${q}&drop=1`); Object.assign(lists, body?.lists ?? {}); } catch { /* that group stays empty */ }
     }
     return { state: 'ok', lists };
+  },
+  async search(domains, dc, q): Promise<Found> {
+    // the panel reads Home Assistant once per search and keeps only the matches (never the whole list): ask until it has them
+    const u = `/fw/entities?domains=${encodeURIComponent(domains.join(','))}&dc=${encodeURIComponent(dc)}&q=${encodeURIComponent(q)}`;
+    for (let i = 0; i < 40; i++) {
+      if (i) await new Promise((r) => setTimeout(r, 400));
+      let b: any = null;
+      try { b = (await j(u)).body; } catch { b = null; }
+      if (b && b.state !== 'loading') return { state: b.state, why: b.why, found: b.found ?? [], more: b.more ?? 0 };
+    }
+    return { state: 'failed', why: 'Home Assistant took too long to answer', found: [], more: 0 };
   },
   async save(deck, settings, link): Promise<SaveOut> {
     try {
