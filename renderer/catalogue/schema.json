@@ -9554,6 +9554,13 @@
      "type": "text",
      "about": "Which page of the deck to show, by its id, such as kitchen. Leave empty for the start page.",
      "default": ""
+    },
+    {
+     "name": "sample",
+     "type": "bool",
+     "about": "Workbench only: an empty Home shows a sample address (a panel shows its own).",
+     "default": false,
+     "debug": true
     }
    ],
    "events": {},

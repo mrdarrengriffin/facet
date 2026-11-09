@@ -46,7 +46,8 @@ const char *META = R"({
   "frame": [480, 480],
   "icons": ["screen-settings@icon", "bulb@icon", "power@icon"],
   "props": [
-    {"name": "page", "about": "Which page of the deck to show, by its id, such as kitchen. Leave empty for the start page.", "type": "text", "default": ""}
+    {"name": "page", "about": "Which page of the deck to show, by its id, such as kitchen. Leave empty for the start page.", "type": "text", "default": ""},
+    {"name": "sample", "about": "Workbench only: an empty Home shows a sample address (a panel shows its own).", "type": "bool", "default": false, "debug": true}
   ],
   "variants": [
     {"label": "start Home · Living room", "props": {}},
@@ -351,14 +352,33 @@ void build_home(lv_obj_t *parent, fw::Props props) {
   for (Var cd : page["cards"].as<ArduinoJson::JsonArrayConst>())
     if (card_node(cd, deck["pages"], slot, nodes)) slot++;
   if (!slot) {  // no cards yet (a fresh panel, Back to factory): where to add them, the panel's own address
-    ArduinoJson::JsonObject n = nodes.add<ArduinoJson::JsonObject>();
-    n["c"] = "empty_state";
-    n["p"]["icon"] = "plus";
-    n["p"]["tone"] = "idle";
-    n["p"]["title"] = "Add your cards";
-    std::string at = fw::dev::ha_link::page();  // http://<the panel>/link once on Wi-Fi ("" = not known: the workbench)
+    std::string at = fw::dev::ha_link::page();  // http://<the panel>/link once on Wi-Fi ("" = not known)
     if (at.size() > 5 && at.compare(at.size() - 5, 5, "/link") == 0) at.resize(at.size() - 5);
-    n["p"]["body"] = at.empty() ? std::string("Open the panel's address in a browser") : "Open " + at + " in a browser";
+#ifdef __EMSCRIPTEN__
+    if (at.empty() && props["sample"].as<bool>()) at = "http://192.168.1.42";  // the workbench's picture of it
+#endif
+    if (!at.empty()) {  // a code to scan and the address in words (the set-up screen's layout: a Split, the QR column)
+      const int sp = (int) nodes.size();
+      ArduinoJson::JsonObject s = nodes.add<ArduinoJson::JsonObject>();
+      s["c"] = "split", s["p"]["art_w"] = "qr";
+      auto put = [&](const char *c, int slot_n) { ArduinoJson::JsonObject n = nodes.add<ArduinoJson::JsonObject>(); n["c"] = c, n["in"] = sp, n["slot"] = slot_n; return n["p"].to<ArduinoJson::JsonObject>(); };
+      ArduinoJson::JsonObject q = put("qr_block", 0);
+      q["text"] = at, q["caption"] = "scan to add cards";
+      ArduinoJson::JsonObject a = put("text", 0);
+      a["text"] = at.substr(at.find("://") + 3), a["style"] = "label", a["tone"] = "dim", a["lines"] = 1;
+      ArduinoJson::JsonObject t = put("text", 2);
+      t["text"] = "Add your cards", t["style"] = "headline", t["lines"] = 1;
+      ArduinoJson::JsonObject w = put("text", 2);
+      w["text"] = "Scan the code with your phone, or open " + at + " in a browser. Your screens and cards are made there.";
+      w["style"] = "body", w["tone"] = "dim", w["lines"] = 4;
+    } else {
+      ArduinoJson::JsonObject n = nodes.add<ArduinoJson::JsonObject>();
+      n["c"] = "empty_state";
+      n["p"]["icon"] = "plus";
+      n["p"]["tone"] = "idle";
+      n["p"]["title"] = "Add your cards";
+      n["p"]["body"] = "Open the panel's address in a browser";
+    }
   }
   for (Var b : page["header_actions"]["buttons"].as<ArduinoJson::JsonArrayConst>()) button_node(b, deck["pages"], nodes);
   std::string json, error;
