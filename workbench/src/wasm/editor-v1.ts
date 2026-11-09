@@ -239,7 +239,8 @@ let pageLook: 'auto' | 'light' | 'dark' = (() => { try { const v = localStorage.
 function look() {
   if (pageLook === 'auto') delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = pageLook;
   const b = $('v1-look');
-  b.textContent = pageLook === 'auto' ? '◐ Auto' : pageLook === 'light' ? '☼ Light' : '☾ Dark';
+  b.textContent = pageLook === 'auto' ? '◐' : pageLook === 'light' ? '☼' : '☾';
+  b.setAttribute('aria-label', `Page look: ${pageLook}`);
   b.title = `This page: ${pageLook === 'auto' ? 'follows the browser' : pageLook} (the panel's own Mode is in Settings)`;
 }
 let device: DeviceId = new URLSearchParams(location.search).get('device') === 'guition' ? 'guition' : 'waveshare';
@@ -258,10 +259,14 @@ const stages: Stage[] = [];
 const S = () => DEVICES[device].size;
 /** the panel's Mode; Auto follows this computer's light / dark (the mock has no sun) */
 const light = () => draft.settings.theme === 'light' || (draft.settings.theme === 'auto' && matchMedia('(prefers-color-scheme: light)').matches);
+/** the live panel's light / dark: the page's toggle when it is set, else the panel's Mode (a Mode change in
+ *  Settings puts the toggle back to Auto, so you see the Mode you are about to save) */
+const plight = () => (pageLook === 'auto' ? light() : pageLook === 'light');
 const accent = () => boot.accents.sets.findIndex((a) => a.id === draft.settings.accent);
 function applyDeck() {
   const e = engine;
   if (!e) return;
+  applySettings();
   e.withStr('deck', (pc) => e.withStr(JSON.stringify(toDeck(draft, panel.rev)), (pj) => e.str(e.m._fw_spec(pc, pj))));
 }
 function preview(p: Page, cssW: number, label: string) {
@@ -271,8 +276,8 @@ function preview(p: Page, cssW: number, label: string) {
   s.canvas.style.width = `${cssW}px`;
   s.canvas.style.height = `${cssW}px`;
   s.canvas.className = 'v1-canvas';
-  if (own(p)) s.render('home', { page: p.id }, light(), accent());
-  else s.render('spec', { screen: p.kind, ...Object.fromEntries(Object.keys(boot.screens[p.kind].params).map((k) => [k, paramVal(p, k)])) }, light(), accent());
+  if (own(p)) s.render('home', { page: p.id }, plight(), accent());
+  else s.render('spec', { screen: p.kind, ...Object.fromEntries(Object.keys(boot.screens[p.kind].params).map((k) => [k, paramVal(p, k)])) }, plight(), accent());
   return s;
 }
 function freeStages() { for (const s of stages.splice(0)) s.free(); }
@@ -339,13 +344,30 @@ function tab(p: Page) {
   return b;
 }
 
+/** the live panel's size on this page: at most 720 CSS px, in whole screen pixels per panel pixel when that fits (a
+ *  480 panel on a 2x screen: 3 screen pixels each, 720 px wide, drawn nearest-neighbour: sharp), else shrunk smooth */
+let crisp = false, zoom = 1;
+function panelSize() {
+  const main = $('v1-main'), phone = matchMedia('(max-width: 760px)').matches;
+  const sideW = phone ? 0 : (main.querySelector('.v1-side') as HTMLElement | null)?.offsetWidth ?? 420;
+  const pad = phone ? 32 : 64;
+  const w = Math.min(720, main.clientWidth - sideW - pad), hh = phone ? w : Math.min(720, main.clientHeight - pad - 96);
+  const dpr = window.devicePixelRatio || 1, room = Math.max(120, Math.min(w, hh));
+  const best = (room * dpr) / S(), whole = Math.floor(best);
+  // whole screen pixels when that keeps at least 85% of the room; else fill the room, smooth
+  crisp = whole >= 1 && whole / best >= 0.85;
+  zoom = crisp ? whole : best;
+  return Math.floor((S() * zoom) / dpr);
+}
+let resizeT = 0;
+addEventListener('resize', () => { clearTimeout(resizeT); resizeT = window.setTimeout(() => render(), 150); });
 function render() {
   if (!engine) return;
   freeStages();
   const main = $('v1-main');
   const p = pageOf(draft, sel)!;
   const stage = h('div', 'v1-stage');
-  const big = Math.min(S(), 600);
+  const big = panelSize();
   const frame = h('div', 'v1-frame');
   if (own(p)) frame.append(gridPanel(p, big));
   else frame.append(preview(p, big, 'Live panel').canvas);
@@ -356,7 +378,8 @@ function render() {
     }, 'ghost');
     stage.append(end);
   }
-  stage.prepend(frame, h('p', 'v1-meta', `Live panel · ${pname(p)} · ${S()} × ${S()}${big < S() ? ` at ${Math.round((big / S()) * 100)}%` : ''}${own(p) ? ' · tap a card to change it, an empty square to add one' : ''}`));
+  frame.classList.toggle('crisp', crisp);
+  stage.prepend(frame, h('p', 'v1-meta', `Live panel · ${pname(p)} · ${S()} × ${S()}${!crisp ? ' · scaled to fit' : zoom !== 1 ? ` · ${zoom}× sharp` : ''}${own(p) ? ' · tap a card to change it, an empty square to add one' : ''}`));
   const sb = h('aside', 'v1-side');
   sb.append(h('i', 'v1-grab'));
   const body = side === 'screen' && own(p) && target ? addCardSide(p) : side === 'screen' && own(p) && cardSel >= 0 ? cardSide(p, cardSel) : side === 'add' ? addSide() : side === 'settings' ? settingsSide() : side === 'review' ? reviewSide() : side === 'saved' ? savedSide() : screenSide(p);
@@ -763,11 +786,82 @@ function toggle(on: boolean, label: string, disabled: boolean, f: () => void) {
   return b;
 }
 
-// 3. Settings (part 3 makes this the panel's own Settings list)
+// 3. Settings: one grouped list, as the panel's own Settings screen: Panel (Screens, Home Assistant), then the
+// schema's groups, then Start again. Screens and Home Assistant open their own page in the sidebar (‹ back), as on the
+// panel; every change shows on the live panel as it is made
+let setView: 'main' | 'screens' | 'ha' = 'main';
+const openScreens = new Set<string>();
 function settingsSide(): HTMLElement[] {
+  if (setView === 'screens') return screensView();
+  if (setView === 'ha') return haView();
   const out: HTMLElement[] = [];
-  out.push(sideHead('Settings', `${DEVICES[device].name} · every screen`));
-  out.push(h('h2', 'cap', 'Home Assistant'));
+  out.push(sideHead('Settings', `${DEVICES[device].name} · the whole panel`));
+  out.push(h('h2', 'cap', 'Panel'));
+  const kinds = Object.keys(boot.screens), on = kinds.filter((k) => draft.pages.some((p) => p.kind === k)).length;
+  out.push(navRow('Screens', `${on} of ${kinds.length} on`, () => { setView = 'screens'; render(); }));
+  out.push(navRow('Home Assistant', haStatus(), () => { setView = 'ha'; render(); }));
+  for (const g of boot.settings.groups) {
+    out.push(h('h2', 'cap', g.label));
+    for (const s of boot.settings.settings.filter((x) => x.group === g.id)) out.push(field(s.label, s.help, settingControl(s)));
+  }
+  out.push(h('h2', 'cap', 'Start again'), factoryBtn());
+  return out;
+}
+const haStatus = () => (!draft.ha.url || !draft.ha.token ? 'Not set up' : `Set, ${draft.ha.url.replace(/^https?:\/\//, '').replace(/[:/].*$/, '')}`);
+/** a row that opens a page: the label left, its value + › right (the panel's List row, value-chevron) */
+function navRow(label: string, value: string, f: () => void) {
+  const b = h('button', 'v1-field inline v1-nav');
+  b.type = 'button';
+  const t = h('div', 'v1-ftxt');
+  t.append(h('span', '', label));
+  const v = h('span', 'v1-pick');
+  v.append(h('span', '', value), h('i', 'chev', '›'));
+  b.append(t, v);
+  b.onclick = f;
+  return b;
+}
+/** a page inside Settings: ‹ back to the list, its title */
+function subHead(t: string, sub: string) {
+  const hd = sideHead(t, sub, false);
+  const back = btn('‹', 'Back to Settings', false, () => { setView = 'main'; render(); }, 'icon');
+  hd.prepend(back);
+  return hd;
+}
+// Settings > Screens: every built-in screen in this firmware, on (in the swipe) or off, its options under it
+function screensView(): HTMLElement[] {
+  const out: HTMLElement[] = [subHead('Screens', 'Built-in screens: on adds one to the end of the swipe')];
+  for (const [k, sc] of Object.entries(boot.screens)) {
+    const pg = draft.pages.find((p) => p.kind === k);
+    const ps = Object.entries(sc.params).filter(([, x]) => x.type !== 'hidden');
+    const row = h('div', 'v1-field inline');
+    const t = h('div', 'v1-ftxt');
+    const nm = h('span', '', pg ? pname(pg) : sc.name);
+    t.append(nm);
+    if (pg && ps.length) {
+      const more = h('button', 'link', openScreens.has(k) ? 'Hide its settings' : `Its settings · ${ps.length}`);
+      more.type = 'button';
+      more.onclick = () => { openScreens.has(k) ? openScreens.delete(k) : openScreens.add(k); render(); };
+      t.append(more);
+    } else if (!pg) t.append(h('p', '', 'Off'));
+    const last = !!pg && draft.pages.length === 1;
+    row.append(t, toggle(!!pg, `${sc.name} on the panel`, last, () => edit(() => {
+      if (pg) { draft.pages = draft.pages.filter((x) => x !== pg); if (draft.start === pg.id) draft.start = draft.pages[0].id; openScreens.delete(k); }
+      else draft.pages.push({ id: k, kind: k });
+    })));
+    out.push(row);
+    if (pg && openScreens.has(k)) {
+      const box = h('div', 'v1-sub');
+      for (const [pk, x] of ps) box.append(field(x.label ?? pk, x.about, paramControl(pg, pk, x)));
+      box.append(btn('Back to defaults', `${sc.name} back to defaults`, !pg.params || !Object.keys(pg.params).length, () => edit(() => { delete pg.params; }), 'ghost'));
+      out.push(box);
+    }
+  }
+  return out;
+}
+// Settings > Home Assistant: the panel's own link (ha.connect): the address, a long-lived token sent once, its last
+// four characters shown back, never the token
+function haView(): HTMLElement[] {
+  const out: HTMLElement[] = [subHead('Home Assistant', haStatus())];
   const url = h('input', 'v1-input');
   url.placeholder = 'http://homeassistant.local:8123';
   url.value = draft.ha.url;
@@ -779,14 +873,21 @@ function settingsSide(): HTMLElement[] {
   tok.placeholder = draft.ha.token ? `set (${hint(draft.ha.token)})` : 'paste a long-lived access token';
   tok.onchange = () => { if (tok.value.trim()) edit(() => { draft.ha.token = tok.value.trim(); }); };
   out.push(field('Token', 'In Home Assistant: your profile > Security > Long-lived access tokens > Create token. It stays on the panel and is never shown again.', tok));
-  for (const g of boot.settings.groups) {
-    out.push(h('h2', 'cap', g.label));
-    for (const s of boot.settings.settings.filter((x) => x.group === g.id)) out.push(field(s.label, s.help, settingControl(s)));
-  }
-  out.push(h('h2', 'cap', 'Start again'), factoryBtn());
+  out.push(h('p', 'v1-note', 'The editor reads your entities through this link: the pickers list what this Home Assistant has.'));
   return out;
 }
-function setSetting(id: string, v: unknown) { edit(() => { draft.settings[id] = v; }); }
+function setSetting(id: string, v: unknown) {
+  if (id === 'theme' && pageLook !== 'auto') { pageLook = 'auto'; try { localStorage.removeItem('facet-v1-look'); } catch { /* private window */ } }
+  edit(() => { draft.settings[id] = v; });
+}
+/** the settings the live panel shows as you change them (Mode and Accent go with each render; sound, idle, updates
+ *  and API keys have nothing to see; Rotate screen is left upright here, so the grid's editing layer stays on it) */
+const LIVE = ['look', 'textSize', 'distanceUnit', 'speedUnit', 'transition', 'toastPosition'];
+function applySettings() {
+  const e = engine;
+  if (!e) return;
+  for (const id of LIVE) if (id in draft.settings) e.withStr(id, (pi) => e.withStr(String(draft.settings[id]), (pv) => e.m._fw_setting(pi, pv)));
+}
 function settingControl(s: Setting): HTMLElement {
   const v = draft.settings[s.id];
   if (s.control === 'swatches' && s.options) {
@@ -941,9 +1042,10 @@ export function start() {
     pageLook = pageLook !== 'auto' ? 'auto' : matchMedia('(prefers-color-scheme: light)').matches ? 'dark' : 'light';
     try { if (pageLook === 'auto') localStorage.removeItem('facet-v1-look'); else localStorage.setItem('facet-v1-look', pageLook); } catch { /* private window */ }
     look();
+    render();
   };
   look();
-  $('v1-settings').onclick = () => { side = side === 'settings' ? 'screen' : 'settings'; top(); render(); };
+  $('v1-settings').onclick = () => { side = side === 'settings' ? 'screen' : 'settings'; setView = 'main'; top(); render(); };
   $('v1-scope').onclick = scope;
   (window as any).__v1 = { draft: () => draft, load: (d: Draft) => edit(() => { draft = d; sel = d.start; }), put: (e: string, a: string, v: string) => engine?.haPut(e, a, v), engine: () => engine, panel: () => panel, deck: () => toDeck(draft, panel.rev), check, changes: () => changes(panel.runs, draft) };  // tests
   void load();
