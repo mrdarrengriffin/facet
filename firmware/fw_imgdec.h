@@ -6,8 +6,8 @@
 //          decoder state (the 32 KB inflate window) + one row; size checked from the header before anything big is
 //          allocated. Palette, grey, 16-bit, alpha (tRNS) and interlaced PNGs (interlaced only: one full RGBA copy, the
 //          passes paint over each other)
-//   JPEG = TJpgDec R0.03 (fw_tjpgd.c, a ~4 KB work area, one band of MCU rows): baseline only (progressive = "not
-//          supported"). Shrunk while decoding (1/2, 1/4: the decoder's own descaling) to the smallest step that still
+//   JPEG = TJpgDec R0.03 (fw_tjpgd.c, a ~4 KB work area, one band of MCU rows): baseline. Progressive = fw_jpgprog.h
+//          (its own decoder, from the whole file: the coefficients it needs held, shrunk as below). Shrunk while decoding (1/2, 1/4: the decoder's own descaling) to the smallest step that still
 //          covers every box it is for, never below (a smaller step blown up = blocky art). LVGL's copy of TJpgDec
 //          left out the descale stage: fw_tjpgd.c has ChaN's back for 1/2 and 1/4 (without it every other row came out
 //          shifted, the "interlaced" art). Never 1/8: its output stage is missing too, so a 1/8 decode is garbage
@@ -92,6 +92,20 @@ inline const char *sniff(const uint8_t *b, size_t n) {
     for (size_t j = i; j + 4 <= n && j < 4096; j++)
       if (!memcmp(b + j, "<svg", 4)) return "svg";
   return "";
+}
+
+// a JPEG whose frame header in these first bytes says progressive (SOF2): decoded from the whole file, never as it
+// downloads (its scans each cover the whole picture). Not found in them = baseline as far as is known
+inline bool progressive(const uint8_t *b, size_t n) {
+  if (n < 4 || b[0] != 0xff || b[1] != 0xd8) return false;
+  for (size_t at = 2; at + 4 <= n;) {
+    if (b[at] != 0xff) return false;
+    const uint8_t mk = b[at + 1];
+    if (mk == 0xc2) return true;
+    if (mk == 0xda || (mk >= 0xc0 && mk <= 0xcf && mk != 0xc4 && mk != 0xc8 && mk != 0xcc)) return false;
+    at += 2 + ((size_t) b[at + 2] << 8 | b[at + 3]);
+  }
+  return false;
 }
 
 // the download, capped (images.h budget().body_max): grows in steps, refuses the byte past the cap ("too big (over N KB)")
@@ -264,6 +278,12 @@ inline bool png(const uint8_t *b, size_t n, long max_px, size_t mem_max, const s
   return true;
 }
 
+}  // namespace detail
+}  // namespace fw::imgdec
+#include "fw_jpgprog.h"
+namespace fw::imgdec {
+namespace detail {
+
 struct Jpg {
   const uint8_t *b;
   size_t n, at;
@@ -323,6 +343,10 @@ inline bool jpeg(const uint8_t *b, size_t n, long max_px, size_t mem_max, const 
   Jpg j{b, n, 0, &k, boxes.size(), 0, 0, nullptr};
   j.more = more, j.ctx = ctx;
   JRESULT res = jd_prepare(&jd, jin, work, WORK, &j);
+  if (res == JDR_FMT3 && b) {  // progressive: its own decoder, from the whole file (fw_jpgprog.h)
+    FW_IMGDEC_FREE(work);
+    return jpeg_progressive(b, n, max_px, mem_max, boxes, r);
+  }
   if (res != JDR_OK) {
     FW_IMGDEC_FREE(work);
     r.err = res == JDR_FMT3 ? "JPEG type isn't supported on the panel (progressive)" : res == JDR_MEM1 ? "JPEG type isn't supported on the panel" : "broken picture (JPEG)";

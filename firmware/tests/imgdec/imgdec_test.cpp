@@ -317,8 +317,58 @@ int main(int argc, char **argv) {
     if (ok(r)) { int R, G, B; rgb(r.px[0], 10, 10, R, G, B); CHECK(abs(R - B) <= 8, "grey.jpg is grey: %d %d %d", R, G, B); }
     CHECK(ok(r), "grey.jpg err=%s", r.err.c_str());
     release(r);
-    r = dec(load("progressive.jpg"));
-    CHECK(r.px.empty() && r.err.find("progressive") != std::string::npos, "progressive err=%s", r.err.c_str());
+  }
+  {  // progressive JPEG (fw_jpgprog.h): the same picture as the baseline decode at every step, within JPEG's own error
+    auto diff = [&](const fw::img::Pixels &a, const fw::img::Pixels &b) {  // mean |a - b| over a grid of points
+      double s = 0; int n = 0;
+      for (int y = 2; y < a.h - 2; y += 7)
+        for (int x = 2; x < a.w - 2; x += 7) {
+          int r1, g1, b1, r2, g2, b2;
+          rgb(a, x, y, r1, g1, b1), rgb(b, x, y, r2, g2, b2);
+          s += abs(r1 - r2) + abs(g1 - g2) + abs(b1 - b2), n += 3;
+        }
+      return n ? s / n : 999.0;
+    };
+    const auto base = load("photo.jpg"), pj = load("progressive.jpg");
+    for (const auto &bx : {box(640, 480), box(320, 240), box(160, 120), box(80, 60)}) {
+      auto a = dec(base, {bx}), b = dec(pj, {bx});
+      CHECK(ok(a) && ok(b) && b.px[0].w == bx.w && b.px[0].h == bx.h, "progressive %dx%d err=%s", bx.w, bx.h, b.err.c_str());
+      if (ok(a) && ok(b)) CHECK(diff(a.px[0], b.px[0]) < (b.sc == 3 ? 8 : 6), "progressive %dx%d = baseline (sc %d / %d), mean diff %.2f", bx.w, bx.h, b.sc, a.sc, diff(a.px[0], b.px[0]));
+      release(a), release(b);
+    }
+    for (const char *n : {"prog420.jpg", "prog444.jpg", "prog420-opt.jpg", "prog-rst.jpg"}) {
+      auto a = dec(load("cover420.jpg"), {box(320, 320)}), b = dec(load(n), {box(320, 320)});
+      CHECK(ok(b), "%s err=%s", n, b.err.c_str());
+      if (ok(a) && ok(b)) CHECK(diff(a.px[0], b.px[0]) < 8, "%s = the baseline cover, mean diff %.2f", n, diff(a.px[0], b.px[0]));
+      release(a), release(b);
+    }
+    auto g = dec(load("prog-grey.jpg"));
+    if (ok(g)) { int R, G, B; rgb(g.px[0], 10, 10, R, G, B); CHECK(abs(R - B) <= 8 && abs(R - G) <= 8, "prog-grey is grey: %d %d %d", R, G, B); }
+    CHECK(ok(g), "prog-grey err=%s", g.err.c_str());
+    release(g);
+    auto o = dec(load("prog-odd.jpg"), {box(333, 251)});
+    CHECK(ok(o) && o.px[0].w == 333, "prog-odd err=%s", o.err.c_str());
+    release(o);
+    // the Guition's idle art from a progressive 640 cover: within its room (the 480 view, or the fallback), memory measured
+    const auto c = load("prog420.jpg");
+    const auto t0 = std::chrono::steady_clock::now();
+    auto r = dec(c, {box(480, 480)}, GU_PX, 700 * 1024);
+    CHECK(ok(r), "prog420 idle art in 700 KB err=%s", r.err.c_str());
+    printf("  progressive 640 cover -> 480 view: side %d sc %d need %u KB (whole: %u KB), %.1f ms (host)\n", r.side, r.sc, (unsigned) (r.need / 1024),
+           (unsigned) (r.need_full / 1024), ms_since(t0));
+    release(r);
+    r = dec(c, {box(168, 168, 84)}, GU_PX, 600 * 1024);
+    CHECK(ok(r) && r.sc == 1, "prog420 Home card at 1/2 in 600 KB (sc %d, need %u KB) err=%s", r.sc, (unsigned) (r.need / 1024), r.err.c_str());
+    release(r);
+    r = dec(c, {box(480, 480)}, GU_PX, 120 * 1024);
+    CHECK(r.px.empty() && r.err.find("too big") != std::string::npos, "prog420 in 120 KB: too big err=%s", r.err.c_str());
+    // cut short anywhere: an error, never half a picture, nothing leaked
+    for (size_t cut : {c.size() / 10, c.size() / 2, c.size() - 10}) {
+      std::vector<uint8_t> t(c.begin(), c.begin() + (long) cut);
+      auto x = dec(t, {box(320, 320)});
+      CHECK(x.px.empty() && !x.err.empty(), "prog420 cut at %u: err=%s", (unsigned) cut, x.err.c_str());
+    }
+    CHECK(fw::imgdec::progressive(c.data(), 4096) && !fw::imgdec::progressive(base.data(), 4096), "progressive() reads SOF2 from the first bytes");
   }
   for (const char *n : {"photo.png", "rgba.png", "palette.png"}) {
     auto r = dec(load(n), {box(168, 168, 20)});
@@ -386,7 +436,7 @@ int main(int argc, char **argv) {
   {  // damaged bytes: never a crash or a sanitizer report (each result is just pixels or a reason), nothing leaks
     const long base = live;
     std::mt19937 rng(1);
-    for (const char *n : {"photo.jpg", "gem.png", "palette.png", "grey.jpg", "cover.jpg"}) {
+    for (const char *n : {"photo.jpg", "gem.png", "palette.png", "grey.jpg", "cover.jpg", "progressive.jpg", "prog-grey.jpg"}) {
       const auto src = load(n);
       for (int i = 0; i < 150; i++) {
         auto b = src;

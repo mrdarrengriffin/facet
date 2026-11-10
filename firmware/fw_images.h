@@ -282,7 +282,8 @@ inline void fetch(const std::string &src, const std::vector<fw::img::Box> &boxes
     in.hn = more(&in, buf, 4096);  // the first bytes: what the picture is (sniff), then served again from buf
     bool ok = false;
     // a JPEG for the software decoder: decoded as it downloads, the file never held (a 300 KB cover on the 480 panel)
-    const bool stream = d.err.empty() && in.hn && !strcmp(fw::imgdec::sniff(buf, in.hn), "jpeg") && !fw::imgdec::hw_jpeg();
+    const bool stream = d.err.empty() && in.hn && !strcmp(fw::imgdec::sniff(buf, in.hn), "jpeg") && !fw::imgdec::hw_jpeg() &&
+                        !fw::imgdec::progressive(buf, in.hn);  // progressive: the whole file (fw_jpgprog.h)
     int64_t t1 = 0;
     if (stream) {
       fw::busy::off(fw::busy::FETCH);

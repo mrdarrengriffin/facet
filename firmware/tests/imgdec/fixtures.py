@@ -13,6 +13,13 @@ def photo(w, h):
 p = photo(640, 480)
 p.save(f'{d}/photo.jpg', quality=90)                                  # baseline
 p.save(f'{d}/progressive.jpg', quality=90, progressive=True)
+photo(640, 640).save(f'{d}/prog420.jpg', quality=90, progressive=True)              # a progressive cover (BBC's kind): 4:2:0
+photo(640, 640).save(f'{d}/prog444.jpg', quality=90, progressive=True, subsampling=0)
+photo(640, 640).save(f'{d}/prog420-opt.jpg', quality=75, progressive=True, optimize=True)  # optimised tables
+p.convert('L').save(f'{d}/prog-grey.jpg', quality=90, progressive=True)
+photo(333, 251).save(f'{d}/prog-odd.jpg', quality=85, progressive=True)       # sizes that are no multiple of an MCU
+try: photo(640, 640).save(f'{d}/prog-rst.jpg', quality=90, progressive=True, restart_marker_blocks=7)  # restart intervals
+except TypeError: photo(640, 640).save(f'{d}/prog-rst.jpg', quality=90, progressive=True)
 p.convert('L').save(f'{d}/grey.jpg', quality=90)
 p.save(f'{d}/photo.png')
 p.convert('RGBA').save(f'{d}/rgba.png')
