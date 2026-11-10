@@ -46,10 +46,11 @@
   ],
   "glyphsets": {
     "digits": {
-      "about": "digits and what numbers carry",
+      "about": "digits and what numbers carry, + the On / Off a dial shows for an on / off light",
       "chars": [
         "0123456789",
-        ":%-.,°+−—"
+        ":%-.,°+−—",
+        "Ofn"
       ]
     },
     "numeric": {

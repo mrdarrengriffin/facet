@@ -8,7 +8,7 @@
 //             give the same pixels; whatever differs was clipped (an ancestor's box, a custom draw's own box). Objects
 //             marked fw::qa::clips(obj, why) and scroll containers keep their clip
 //   text      no label's glyphs fall below its box (LVGL cuts label text at the box bottom); a CLIP label wider than
-//             its text box
+//             its text box; a character its font has no glyph for (a word set in a digits-only style)
 //   grid      every drawn box (fill or border) has its position (from the component's top-left) and size on the 4 px
 //             grid; objects placed by value or angle say so with fw::qa::free(obj, why) (reported as notes)
 //   touch     every object that takes touches is at least touch::min (48 / 32) with its ext click area
@@ -183,6 +183,7 @@ function runCase(m, den, c, props, light, vskip = {}) {
   for (const o of os) {
     if (o.cut && !skip.text) errs.push(`text: "${o.text}" is cut ${o.cut} px at the bottom of its box (${o.w}x${o.h} at ${o.x},${o.y})`);
     if (o.cutr && !skip.text) errs.push(`text: "${o.text}" is ${o.cutr} px wider than its box`);
+    if (o.miss && !skip.text) errs.push(`text: "${o.text}" has no glyph for "${o.miss}" in its font (its type's glyph set: tokens/type.json)`);
   }
   // ---- grid: each drawn box on the 4 px grid relative to its parent ("align with the pixel grids"). Allowed
   // as alignment: a box centred in its parent on that axis (odd parity can't be both), a box filling its parent's

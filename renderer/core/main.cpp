@@ -929,6 +929,18 @@ void audit_walk(lv_obj_t *o, int parent, int depth, ArduinoJson::JsonArray arr) 
       if (cut > 0) j["cut"] = cut;
       if (right > 0) j["cutr"] = right;
       j["text"] = lv_label_get_text(c);
+      {  // characters its font (and the font's fallbacks) has no glyph for: set but never drawn (a word in a digits-only style)
+        const lv_font_t *f = lv_obj_get_style_text_font(c, LV_PART_MAIN);
+        const char *t = lv_label_get_text(c);
+        std::string miss;
+        lv_font_glyph_dsc_t g;
+        for (uint32_t k = 0; f && t && t[k];) {
+          const uint32_t s0 = k, ch = lv_text_encoded_next(t, &k);
+          if (ch == '\n' || ch == ' ' || ch == 0xA0 || ch == 0x2009 || ch == 0x202F) continue;
+          if (!lv_font_get_glyph_dsc(f, &g, ch, 0) && miss.find(std::string(t + s0, k - s0)) == std::string::npos) miss.append(t + s0, k - s0);
+        }
+        if (!miss.empty()) j["miss"] = miss;
+      }
       j["ink"] = hexc(lv_obj_get_style_text_color(c, LV_PART_MAIN));
       if (lv_obj_get_style_text_opa(c, LV_PART_MAIN) < LV_OPA_COVER) j["topa"] = lv_obj_get_style_text_opa(c, LV_PART_MAIN);  // functional: faded text
       if (lv_obj_get_style_text_decor(c, LV_PART_MAIN) & LV_TEXT_DECOR_STRIKETHROUGH) j["strike"] = true;
