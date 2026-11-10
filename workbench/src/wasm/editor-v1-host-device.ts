@@ -44,6 +44,7 @@ const ha: HaBridge = {
   },
   action: async () => undefined,
   ask: async () => null,
+  img: (path) => `/fw/img?path=${encodeURIComponent(path)}`,  // a picture on HA: through the panel (firmware/fw_device.h)
 };
 const said = (b: any, fallback: string) => b?.why ?? b?.error ?? b?.status ?? fallback;
 

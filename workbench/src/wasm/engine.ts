@@ -42,6 +42,9 @@ export type HaBridge = {
   /** mirror: the panel's own sources (panel.*: the feeds, the timers) come from this host with all their fields, as it
    *  holds them (the editor a panel serves: the glass's data, nothing fetched twice); the module makes none itself */
   mirror?: boolean;
+  /** where a picture on Home Assistant (a path: a player's entity_picture) is fetched; default the workbench's
+   *  /api/panel/ha-img (the panel-served editor: the panel's /fw/img) */
+  img?(path: string): string;
 };
 export const hubHa: HaBridge = {
   async states(ids, attrs) {
@@ -203,7 +206,7 @@ export class Engine {
         // a picture on Home Assistant (a player's entity_picture: a path, or the module's HA address in front of it, which
         // the workbench's own link stands in for, as for its REST reads): the workbench's HA (or its fake HA's demo art)
         const ha = src.startsWith('/') ? src : /^https?:\/\/[^/]+(\/api\/(?:media_player_proxy|image_proxy)\/.*)$/.exec(src)?.[1];
-        const r = await fetch(ha ? `/api/panel/ha-img?path=${encodeURIComponent(ha)}` : `/api/wasm/img?src=${encodeURIComponent(src)}`);
+        const r = await fetch(ha ? (this.ha.img?.(ha) ?? `/api/panel/ha-img?path=${encodeURIComponent(ha)}`) : `/api/wasm/img?src=${encodeURIComponent(src)}`);
         if (!r.ok) {
           const why = r.headers.get('x-fw-reason') || (await r.text().catch(() => '')).slice(0, 160) || `HTTP ${r.status}`;
           throw Object.assign(new Error(r.status === 504 ? 'timeout' : String(r.status)), { why });

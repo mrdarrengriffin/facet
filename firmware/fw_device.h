@@ -41,6 +41,9 @@
 //   GET  /fw/ha     the Home Assistant store (core/ha.h): {wants: [[e, a]...], values: {"e|a": value}, bound: n};
 //                   ?want=e1,e2[&attrs=a1] subscribes to those first (the panel-served editor's live preview)
 //                = The Home Assistant values the panel holds, and what its screens ask for.
+//   GET  /fw/img    ?path=/api/media_player_proxy/... | /api/image_proxy/...: that picture from the panel's Home Assistant,
+//                   as HA sends it (img_proxy: plain-HTTP link only); 400 / 502 + x-fw-reason
+//                = A picture on Home Assistant (album art), for the editor's previews.
 //   GET  /fw/entities  ?domains=light,sensor[&send=light]: the entity pickers' lists from the panel's own Home Assistant
 //                   link (core/device.h ha_link): {state: off|loading|ok|failed, why?, lists: {domain: [{id, name}]},
 //                   more: {domain: n left out}} (at most 500 per domain; send = the domains to answer with, default
@@ -1580,6 +1583,53 @@ inline void meta_stream(httpd_req_t *req, const std::string &origin) {
   }
   if (httpd_resp_send_chunk(req, first ? "[]" : "]", first ? 2 : 1) == ESP_OK) httpd_resp_send_chunk(req, nullptr, 0);
 }
+// GET /fw/img?path=/api/media_player_proxy/...|/api/image_proxy/...: a picture on the panel's Home Assistant, passed
+// through as HA sends it (the editor's previews: the browser can't read HA itself, no CORS, and its decoded pixels on the
+// glass are the glass's box sizes). Only those two HA paths (they carry HA's own access token), only a plain-HTTP link
+// (a TLS handshake does not fit the web server's stack), the bytes streamed in 2 KB pieces (nothing held), at most
+// budget().timeout_ms. Refused: 400 (other path) / 502 (no link, https, HA unreachable or not 2xx) with x-fw-reason.
+inline void img_proxy(httpd_req_t *req, const std::string &path, const std::string &ha, const std::string &origin) {
+  httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", origin.c_str());
+  httpd_resp_set_hdr(req, "Vary", "Origin");
+  httpd_resp_set_hdr(req, "Cache-Control", "no-store");
+  auto no = [&](const char *st, const char *why) {
+    httpd_resp_set_status(req, st);
+    httpd_resp_set_type(req, "text/plain");
+    httpd_resp_set_hdr(req, "x-fw-reason", why);
+    httpd_resp_send(req, why, HTTPD_RESP_USE_STRLEN);
+  };
+  if (path.rfind("/api/media_player_proxy/", 0) && path.rfind("/api/image_proxy/", 0)) return no("400 Bad Request", "not a Home Assistant picture");
+  if (ha.empty()) return no("502 Bad Gateway", "no Home Assistant link");
+  if (ha.rfind("http://", 0)) return no("502 Bad Gateway", "the editor shows pictures from a plain-HTTP Home Assistant link only");
+  const std::string url = ha + path;
+  esp_http_client_config_t c{};
+  c.url = url.c_str();
+  c.timeout_ms = fw::img::budget().timeout_ms;
+  c.buffer_size = 2048;
+  c.buffer_size_tx = 1024;
+  esp_http_client_handle_t h = esp_http_client_init(&c);
+  if (!h) return no("502 Bad Gateway", "out of memory");
+  int st = 0;
+  if (esp_http_client_open(h, 0) == ESP_OK && esp_http_client_fetch_headers(h) >= 0) st = esp_http_client_get_status_code(h);
+  if (st < 200 || st > 299) {
+    char t[48];
+    snprintf(t, sizeof t, st ? "Home Assistant answered %d" : "couldn't reach Home Assistant", st);
+    no("502 Bad Gateway", t);
+  } else {
+    char *ct = nullptr;
+    esp_http_client_get_header(h, "Content-Type", &ct);
+    std::string type = ct && *ct ? ct : "application/octet-stream";  // (the header lives in the client)
+    httpd_resp_set_type(req, type.c_str());
+    char *b = (char *) heap_caps_malloc(2048, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+    if (!b) no("502 Bad Gateway", "out of memory");
+    bool ok = b != nullptr;
+    for (int n; ok && (n = esp_http_client_read(h, b, 2048)) > 0;) ok = httpd_resp_send_chunk(req, b, n) == ESP_OK;  // client gone: stop
+    if (ok) httpd_resp_send_chunk(req, nullptr, 0);
+    free(b);
+  }
+  esp_http_client_close(h);
+  esp_http_client_cleanup(h);
+}
 inline void info_json(std::string &s) {
   if (!in_loop([&] { info_build(s); }, 3000)) s = R"({"ok":false,"error":"the main loop did not answer in time"})";
 }
@@ -1951,6 +2001,12 @@ class Handler : public AsyncWebHandler {
       meta_stream(*req, origin);
       httpd_stack_note();
       return;
+    } else if (path == "/fw/img" && !post) {  // a picture on HA for the editor's previews (img_proxy above)
+      std::string ha;
+      in_loop([&] { ha = fw::dev::ha_link::url(); }, 2000);
+      img_proxy(*req, req->hasArg("path") ? std::string(req->arg("path").c_str()) : std::string(), ha, origin);
+      body_.clear();
+      return;
     } else if (path == "/fw/info") {
       info_json(s);
     } else if (path == "/fw/perf") {
@@ -2296,7 +2352,7 @@ class Handler : public AsyncWebHandler {
       }
     } else {
       code = 404;
-      s = R"({"ok":false,"error":"docs: /ai /llms.txt /agents.md /schema.json; keys: GET /fw/keys, POST /fw/keys/request, /fw/keys/poll, /fw/keys/revoke; GET /fw/info, GET /fw/meta, GET /fw/perf[?reset=1], POST /fw/show, GET|POST /fw/act, GET|POST /fw/settings, GET|POST /fw/spec, GET /fw/deck, GET /fw/ha, GET /fw/entities, POST|GET /fw/bench"})";
+      s = R"({"ok":false,"error":"docs: /ai /llms.txt /agents.md /schema.json; keys: GET /fw/keys, POST /fw/keys/request, /fw/keys/poll, /fw/keys/revoke; GET /fw/info, GET /fw/meta, GET /fw/perf[?reset=1], POST /fw/show, GET|POST /fw/act, GET|POST /fw/settings, GET|POST /fw/spec, GET /fw/deck, GET /fw/ha, GET /fw/img?path=, GET /fw/entities, POST|GET /fw/bench"})";
     }
     body_.clear();  // a body is only delivered for some content types: never reuse the previous request's
     too_big_ = false;
