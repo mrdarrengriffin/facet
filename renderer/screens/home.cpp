@@ -6,7 +6,7 @@
 //            homeCols, 3 on the square panels), rows half a square; each card spans its size: 1x1, 2x1, 1x2, 2x2 or
 //            half (a half under a half shares one square); 1x2 is placed but not offered (core/spec.h GRID_SIZES).
 //            Every type at every size: 1x1 = the Entity tile,
-//            half = the Entity tile's half (the name over the state), bigger = the Card (the full step shows the
+//            half = the Entity tile's half (icon + name in a small head, the state under it), bigger = the Card (the full step shows the
 //            type's preview, the compact step drops it). Old sizes: s = 1x1, m = 2x1 (a sensor's m = half), l = 2x2.
 //            What the Card shows per type:
 //              light   the level (accent while on), the state; no preview (a card holds no toggle)

@@ -3843,7 +3843,7 @@
          "$ref": "#/$defs/param"
         }
        ],
-       "description": "The tile's shape: tile is a square (icon on top, the name and state under it), half is half a Home cell: the name over the state, no icon."
+       "description": "The tile's shape: tile is a square (icon on top, the name and state under it), half is half a Home cell: the icon and name in a small header, the state under it."
       },
       "press": {
        "anyOf": [

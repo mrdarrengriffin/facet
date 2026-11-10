@@ -9,7 +9,9 @@
 //   label    type body, text, up to two lines in a fixed box of two body lines (tile-text), "..."
 //   status   type label (caps), one line, space 5 above (tile-status): the state ("Off", "64%", "Open"); on-ink
 //            (accent-text) while on, else text-dim
-//   half     shape half (half a Home cell): no icon (hidden), the label one line ("..."), the status under it
+//   half     shape half (half a Home cell): the Card's head (components/card.cpp): a row on the padding line (card-row,
+//            gap 2) of the icon + the label in type label (caps, text-dim, the row's free width, "..."), the status
+//            under it in type body (text; on-ink while on), one line, "..."
 // Props: icon (a UI or screen icon name), label, status, on (bool), act toggle | open | none (what a tap does: the
 // sound and the instant look; none = read-only, a Home sensor tile: not clickable, no press look), state default |
 // pressed | unavailable, press (the Card's press styles).
@@ -62,18 +64,35 @@ void fill(lv_obj_t *c, fw::Props p) {
   fx::use(c, "border:line", ST_OFF);
   fx::use(c, "part:card");  // the theme's card (C46), after the tile's own state tokens
 
-  lv_obj_t *ic = fx::icon(c, p["icon"] | "bulb", "icon", "fg:text-dim");
-  if (half) lv_obj_add_flag(ic, LV_OBJ_FLAG_HIDDEN);
+  // half: the Card's head (icon + caps name in type label, one row on the padding line), the state under it in type
+  // body; tile: the icon on its own row, the name + state at the bottom
+  lv_obj_t *head = c;
+  if (half) {
+    head = fx::box(c, "row");
+    for (const char *t : {"fill-w", "gap:2", "card-row"}) fx::use(head, t);
+  }
+  lv_obj_t *ic = fx::icon(head, p["icon"] | "bulb", "icon", off ? "fg:unavailable-ink" : "fg:text-dim");
   fx::icon_use(ic, "ink:on-mark", ST_ON);
   fx::icon_use(ic, "ink:unavailable-ink", ST_OFF);
   for (lv_state_t st : {(lv_state_t) 0, ST_ON}) fx::icon_use(ic, "fade-switch", st);
-  if (!half) fx::use(fx::box(c, "free"), "grow");
-  k->label = fx::text(c, p["label"] | "", "type:body", off ? "fg:unavailable-ink" : "fg:text", half ? "none" : "fit");
-  if (half) fx::lines(k->label, "type:body", 1);  // one line box, "..." at the width
-  else fx::use(k->label, "tile-text");
+  if (half) {
+    k->label = fx::text(head, p["label"] | "", "type:label", off ? "fg:unavailable-ink" : "fg:text-dim", "dot");
+    fx::use(k->label, "cell");  // the row's free width, then "..."
+  } else {
+    fx::use(fx::box(c, "free"), "grow");
+    k->label = fx::text(c, p["label"] | "", "type:body", off ? "fg:unavailable-ink" : "fg:text", "fit");
+    fx::use(k->label, "tile-text");
+  }
   lv_label_set_long_mode(k->label, LV_LABEL_LONG_MODE_DOTS);  // two lines (half: one), then "..."
-  k->status = fx::text(c, off ? fw::st::gone_word(state) : (p["status"] | ""), "type:label", off ? "fg:unavailable-note" : "fg:text-dim", "none");
-  if (!half) fx::use(k->status, "tile-status");
+  const char *st_txt = off ? fw::st::gone_word(state) : (p["status"] | "");
+  if (half) {
+    k->status = fx::text(c, st_txt, "type:body", off ? "fg:unavailable-note" : "fg:text", "none");
+    fx::lines(k->status, "type:body", 1);  // one line box, "..." at the width
+    lv_label_set_long_mode(k->status, LV_LABEL_LONG_MODE_DOTS);
+  } else {
+    k->status = fx::text(c, st_txt, "type:label", off ? "fg:unavailable-note" : "fg:text-dim", "none");
+    fx::use(k->status, "tile-status");
+  }
   if (!off) fx::use(k->status, "fg:on-ink", ST_ON);
   fades(k->status);
 
@@ -104,7 +123,7 @@ FW_COMPONENT(entity_tile, "Entity tile", "components", R"({
     {"name": "on", "about": "Whether the thing is on. On tiles are lit in the accent colour.", "type": "bool", "default": true},
     {"name": "act", "about": "What a tap does: toggle switches it on or off, open opens its own screen, none does nothing.", "type": "select", "options": ["toggle", "open", "none"], "default": "toggle"},
     {"name": "state", "debug": true, "about": "How the tile looks: default ready to tap, pressed while held, unavailable when the device has no state now, or missing when Home Assistant has no such device.", "type": "select", "options": ["default", "pressed", "unavailable", "missing"], "default": "default"},
-    {"name": "shape", "about": "The tile's shape: tile is a square (icon on top, the name and state under it), half is half a Home cell: the name over the state, no icon.", "type": "select", "options": ["tile", "half"], "default": "tile"},
+    {"name": "shape", "about": "The tile's shape: tile is a square (icon on top, the name and state under it), half is half a Home cell: the icon and name in a small header, the state under it.", "type": "select", "options": ["tile", "half"], "default": "tile"},
     {"name": "press", "about": "How the tile shows it is being pressed: fill darkens the whole tile, border lights its edge, border-fill does both.", "type": "select", "options": ["fill", "border", "border-fill"], "default": "fill"}
   ],
   "variants": [
@@ -149,8 +168,9 @@ FW_UPDATE(entity_tile) {
   const char *state = p["state"] | "default";
   const bool was_off = lv_obj_has_state(root, ST_OFF), off = fw::st::gone(state);
   if (fw::shape(root, sig(p))) {
-    put(k->label, "type:body", p["label"] | "");
-    if (!off) put(k->status, "type:label", p["status"] | "");
+    const bool half = !strcmp(p["shape"] | "tile", "half");  // half: label in type label, status in type body
+    put(k->label, half ? "type:label" : "type:body", p["label"] | "");
+    if (!off) put(k->status, half ? "type:body" : "type:label", p["status"] | "");
     const bool on = !off && on_of(p);
     if (on != lv_obj_has_state(root, ST_ON)) fw::st::set_state(root, ST_ON, on, true);
     lv_obj_set_flag(root, TOGGLES, !strcmp(p["act"] | "toggle", "toggle"));
