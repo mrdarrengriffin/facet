@@ -12,6 +12,7 @@
 //   on errors). Each read logs its bytes, time and the internal RAM left at its lowest (tag facet_net, INFO); a failure
 //   is a WARN with its reason ("couldn't reach the site", "the site answered 429", "too much data", "timeout (10 s)").
 #pragma once
+#include <atomic>
 #include <deque>
 #include <mutex>
 #include <string>
@@ -36,6 +37,10 @@ struct State {
   std::deque<Req> queue;
   std::deque<Res> done;
   TaskHandle_t task = nullptr;
+  // /fw/info "net": the reads since boot (a feed's web source: is anything asking a site now, #177), the last one
+  std::atomic<uint32_t> reads{0}, failed{0};
+  std::atomic<int64_t> last_us{0};
+  std::string last_host;  // under m
 };
 inline State &S() { static State s; return s; }
 
@@ -106,6 +111,15 @@ out:
   fw::busy::off(fw::busy::FETCH);
   if (h) { esp_http_client_close(h); esp_http_client_cleanup(h); }
   r.ok = r.why.empty();
+  {
+    State &s = S();
+    s.reads++;
+    if (!r.ok) s.failed++;
+    s.last_us = esp_timer_get_time();
+    const size_t a = url.find("://"), b = a == std::string::npos ? std::string::npos : url.find('/', a + 3);
+    std::lock_guard<std::mutex> l(s.m);
+    s.last_host = a == std::string::npos ? "" : url.substr(a + 3, b == std::string::npos ? std::string::npos : b - a - 3);
+  }
   if (!r.ok) {
     r.body.clear();
     r.body.shrink_to_fit();

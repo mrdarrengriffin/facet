@@ -1,6 +1,6 @@
 // Facet device glue (README "Device firmware"): the workbench's core + foundations + components on a real panel,
 // driven over HTTP by the workbench's "Show on device" button. ESPHome only (lvgl + web_server); no house specifics.
-//   GET  /fw/info   {v, density, core, files, ids, built, board, w, h, shown, devices: [{stack, builds, objects}], heap, art}   what this firmware was built from
+//   GET  /fw/info   {v, density, core, files, ids, built, board, w, h, shown, devices: [{stack, builds, objects}], heap, art, net: {reads, failed, last_s, last_host}}   what this firmware was built from
 //                   art = the last picture decode's biggest view (null = none yet): {box, kept, source: [w, h], jpeg: 1/N,
 //                   filter: area | bilinear | nearest, drawn: 1:1 | scaled up by LVGL, reserved (in a screen slot), slots,
 //                   slots_free, fallback (why it was kept smaller; null = it wasn't), error, need_kb, room_kb, age_s}
@@ -1549,6 +1549,15 @@ inline void info_build(std::string &s) {
   d["devices"] = devs;
   ArduinoJson::JsonObject lp = d["loop"].to<ArduinoJson::JsonObject>();
   lp["timers"] = timers, lp["store"] = store, lp["store_bytes"] = store_bytes, lp["bounds"] = bounds, lp["wants"] = wants;  // what is on the glass: each mounted device's screen stack (top = shown), builds, objects
+  {  // the feeds' web reads since boot (fw_net.h): a screen nothing uses reads nothing (#177)
+    auto &ns = netread::S();
+    ArduinoJson::JsonObject n = d["net"].to<ArduinoJson::JsonObject>();
+    n["reads"] = ns.reads.load(), n["failed"] = ns.failed.load();
+    const int64_t at = ns.last_us.load();
+    n["last_s"] = at ? (int) ((esp_timer_get_time() - at) / 1000000) : -1;
+    std::lock_guard<std::mutex> l(ns.m);
+    n["last_host"] = ns.last_host.c_str();
+  }
   ArduinoJson::JsonDocument shd;
   if (!deserializeJson(shd, sh)) d["shown"] = shd;
   serializeJson(d, s);
