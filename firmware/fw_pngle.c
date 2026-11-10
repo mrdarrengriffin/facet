@@ -233,6 +233,12 @@ uint32_t pngle_get_height(pngle_t *pngle)
 	return pngle->hdr.height;
 }
 
+int pngle_may_alpha(pngle_t *pngle)
+{
+	if (!pngle) return 1;
+	return (pngle->hdr.color_type & 4) || pngle->n_trans_palettes > 0;
+}
+
 pngle_ihdr_t *pngle_get_ihdr(pngle_t *pngle)
 {
 	if (!pngle) return NULL;

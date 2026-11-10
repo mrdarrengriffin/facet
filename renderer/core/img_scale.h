@@ -172,7 +172,10 @@ class Sink {
     stored(b, sw, sh, 0, uw, uh);
     const double f = std::min(1.0, (double) ow_ / uw);
     r_ = (int) std::lround(b.r * f), shade_ = (int) std::lround(b.shade * f);
-    alpha_ = may_alpha || r_ > 0;
+    // a screen-size cover with square corners goes into a reserved slot (RGB565): drawn opaque, as the screen's
+    // backdrop (a see-through pixel keeps its own colour), so a see-through source (a PNG with alpha) gets the slot too
+    const bool slot = !r_ && b.s == cover && slot_fits(px() * 2) && slots_free() > 0;
+    alpha_ = !slot && (may_alpha || r_ > 0);
     double k = 1, x0 = 0, y0 = 0;
     if (b.s == cover) {
       k = std::max((double) ow_ / sw, (double) oh_ / sh);
@@ -185,7 +188,7 @@ class Sink {
     taps(ys_, oh_, sh, k, y0);
     ring_n_ = 1;
     for (int y = 0; y < oh_; y++) ring_n_ = std::max(ring_n_, last(y) - ys_[y].a + 1);
-    in_slot_ = !alpha_ && slot_fits(px() * 2) && slots_free() > 0;
+    in_slot_ = slot;
     return true;
   }
   bool in_slot() const { return in_slot_; }  // planned into a reserved slot (its pixels not counted in need())

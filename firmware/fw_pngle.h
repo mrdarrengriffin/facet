@@ -15,6 +15,7 @@
 #define pngle_get_background_color fw_pngle_get_background_color
 #define pngle_get_height fw_pngle_get_height
 #define pngle_get_ihdr fw_pngle_get_ihdr
+#define pngle_may_alpha fw_pngle_may_alpha
 #define pngle_get_user_data fw_pngle_get_user_data
 #define pngle_get_width fw_pngle_get_width
 #define pngle_new fw_pngle_new
@@ -110,6 +111,9 @@ typedef struct _pngle_ihdr_t {
 
 // Get IHDR information
 pngle_ihdr_t *pngle_get_ihdr(pngle_t *pngle);
+// Facet: 1 = the picture can have see-through pixels (an alpha channel, or a tRNS chunk seen so far: call it from the
+// init callback, which runs at the first IDAT, after every tRNS)
+int pngle_may_alpha(pngle_t *pngle);
 
 #ifdef __cplusplus
 }

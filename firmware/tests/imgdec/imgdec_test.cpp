@@ -295,6 +295,14 @@ int main(int argc, char **argv) {
     }
     CHECK(at_box == 30, "30 tracks in 150 KB free: %d at 480 x 480 in a slot, no fallback", at_box);
     printf("idle art with slots, 150 KB free: %d of 30 tracks at 480 x 480 (slots %ld KB, reserved once)\n", at_box, slots_bytes / 1024);
+    // a PNG source (opaque, palette or RGBA) gets the free slot too, drawn opaque: the Guition's 184 KB is enough at
+    // 480 x 480 (#186: PNGs were planned with an A8 plane outside the slots, 698 KB, the 213 px fallback 198 KB)
+    for (const char *n : {"photo.png", "palette.png", "rgba.png"}) {
+      auto r = dec(load(n), {box(480, 480)}, GU_PX, 184 * 1024);
+      CHECK(ok(r) && r.side == 0 && r.px[0].w == 480 && r.px[0].slot && !r.px[0].alpha && r.need < 100 * 1024,
+            "%s idle art in 184 KB: at 480 in a slot (side %d, need %u KB) err=%s", n, r.side, (unsigned) (r.need / 1024), r.err.c_str());
+      release(r);
+    }
     // without a free slot (both held) the same squeeze is the fallback, as before
     auto other = dec(b, {box(480, 480)}, GU_PX, MEM);
     auto r = dec(b, {box(480, 480)}, GU_PX, 300 * 1024);
@@ -326,7 +334,10 @@ int main(int argc, char **argv) {
     release(r);
     r = dec(load("huge-flat.png"));  // 25 Mpx: refused from the header, nothing allocated
     CHECK(r.px.empty() && r.err == "too big", "huge png err=%s", r.err.c_str());
-    r = dec(load("rgba.png"), {box(640, 480)}, WS_PX, 200u * 1024);  // 640 x 480 RGB565 + A8 = 900 KB, and its fallbacks over 200 KB
+    r = dec(load("photo.png"), {box(640, 480)}, WS_PX, 700u * 1024);  // opaque: no A8 plane planned, 600 KB of pixels fit at box size
+    CHECK(ok(r) && r.side == 0 && r.need < 700u * 1024, "opaque png at box size in 700 KB (side %d) err=%s", r.side, r.err.c_str());
+    release(r);
+    r = dec(load("rgba.png"), {box(640, 480, 20)}, WS_PX, 200u * 1024);  // 640 x 480 RGB565 + A8 = 900 KB, and its fallbacks over 200 KB
     CHECK(r.px.empty() && r.err.rfind("too big (needs", 0) == 0, "png mem err=%s", r.err.c_str());
     release(r);
   }

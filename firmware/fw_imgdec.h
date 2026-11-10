@@ -196,9 +196,13 @@ inline void png_init(pngle_t *p, uint32_t w, uint32_t h) {
   if (!w || !h || (unsigned long long) w * h > (unsigned long long) u->max_px) { u->r->err = "too big"; u->refused = true; return; }
   const pngle_ihdr_t *ih = pngle_get_ihdr(p);
   u->interlaced = ih && ih->interlace;
+  // an A8 plane only for a picture that can be see-through (an alpha channel or tRNS) or a round corner: an opaque PNG
+  // costs 2 bytes a pixel like a JPEG and its screen-size view goes into a reserved slot (#186: every PNG planned 3
+  // bytes a pixel outside the slots, so idle art from a PNG source needed 698 KB, its 213 px fallback 198 KB)
+  const bool may_alpha = pngle_may_alpha(p);
   size_t need = 0;
   for (int step = 0, side = 0;; step++) {  // every view at its box size; smaller only when that doesn't fit (fit)
-    if (!plan(*u->boxes, (int) w, (int) h, side, true, u->k, need, *u->r)) { u->refused = true; return; }
+    if (!plan(*u->boxes, (int) w, (int) h, side, may_alpha, u->k, need, *u->r)) { u->refused = true; return; }
     // pngle's own state (~45 KB with the inflate window) + its two scanlines + our row (interlaced: the picture)
     need += 48 * 1024 + (size_t) w * 16 + (u->interlaced ? (size_t) w * h * 4 : (size_t) w * 4);
     u->r->need = need, u->r->side = side;
