@@ -12,6 +12,7 @@
 #include "device.h"
 #include "ha.h"
 #include "fx.h"
+#include "images.h"
 
 namespace {
 const char *META = R"({
@@ -36,6 +37,7 @@ void build_idle(lv_obj_t *parent, fw::Props p) {
   }, LV_EVENT_PRESSED, nullptr);
   const char *show = fw::dev::setting("idleShow");
   if (!show || strcmp(show, "art")) return;
+  fw::img::art_note("idle built with the art");  // #197: who rebuilds idle (core/device.cpp says why when it does)
   if (fw::ha::feed_config("panel.media").empty()) {  // no screen set the feed's source yet: the Media screen's
     ArduinoJson::JsonDocument de, fc;
     fc["source"] = fw::spec::deck_entry("media", de) && de["params"]["source"].is<const char *>() ? de["params"]["source"].as<const char *>() : "ha";

@@ -10,6 +10,7 @@
 #include "spec.h"
 #include "toasts.h"
 #include "theme_slot.h"
+#include "images.h"
 #include "settings_gen.h"
 
 namespace fw {
@@ -494,6 +495,7 @@ void restyle_now(Device *d) {
     lv_obj_t *k = lv_obj_get_child(root, (int32_t) i);
     if (lv_obj_has_flag(k, LV_OBJ_FLAG_SCROLLABLE)) { idx = (int32_t) i; y = lv_obj_get_scroll_y(k); break; }
   }
+  if (d->stack.back() == "idle") img::art_note("idle rebuilt: %s", d->reloaded.empty() ? "a setting or look changed" : d->reloaded.c_str());  // #197
   const Theme *was = T;
   T = d->theme;
   std::vector<lv_obj_t *> items;

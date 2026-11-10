@@ -10,6 +10,11 @@
 #include <vector>
 
 extern "C" void lv_image_cache_drop(const void *src);  // LVGL 9 (misc/cache/instance/lv_image_cache.h, not in lvgl.h)
+#ifdef ESP_PLATFORM
+#include <cstdarg>
+#include "esp_heap_caps.h"
+#include "esp_log.h"
+#endif
 
 namespace fw::img {
 namespace {
@@ -54,8 +59,15 @@ size_t total = 0, peak = 0;
 uint32_t clock_ = 0, evicted = 0, dropped = 0, refused = 0, fetches = 0;
 lv_timer_t *watch = nullptr, *sweep_t = nullptr;
 
-void free_px(View *v) {
+bool screen_size(int w, int h, Scale s, int radius);
+// the screen-size art's pixels going, and why (#197: the idle art dropping to the clock mid-track): one log line
+void gone(const View *v, const char *why) {
+  if (v->data && !v->nearest && screen_size(v->w, v->h, v->s, v->r))
+    art_note("art %dx%d freed: %s (owners %d, %s)", v->w, v->h, why, v->owners, v->src.size() > 24 ? v->src.substr(v->src.size() - 24).c_str() : v->src.c_str());
+}
+void free_px(View *v, const char *why = "replaced") {
   if (!v->data) return;
+  gone(v, why);
   lv_image_cache_drop(&v->dsc);
   if (v->slot) slot_give(v->data);  // a reserved slot: back to the pool
   else FW_IMG_FREE(v->data);  // made by img_scale.h (FW_IMG_MALLOC)
@@ -63,8 +75,8 @@ void free_px(View *v) {
   total -= v->bytes;
   v->bytes = 0;
 }
-void erase(View *v) {
-  free_px(v);
+void erase(View *v, const char *why) {
+  free_px(v, why);
   views.erase(std::find(views.begin(), views.end(), v));
   delete v;
 }
@@ -78,7 +90,7 @@ void sweep(lv_timer_t *) {
   sweep_t = nullptr;
   if (shown()) return;
   dropped += (uint32_t) views.size();
-  while (!views.empty()) erase(views.back());
+  while (!views.empty()) erase(views.back(), "the screen showing it was left (sweep)");
   pending.clear();
 }
 void notify(const std::string &k) {
@@ -107,7 +119,7 @@ bool room(size_t need, const View *keep) {
       if (v != keep && !v->owners && v->data && (!lru || v->used < lru->used)) lru = v;
     if (!lru) return false;
     evicted++;
-    erase(lru);
+    erase(lru, "evicted for room (cache cap)");
   }
   return true;
 }
@@ -200,7 +212,7 @@ int acquire(void *owner, const char *src_c, int w, int h, Scale s, int radius, N
     std::vector<View *> left;
     for (View *x : views)
       if (!x->owners && x->data && !(x->key == k && x->w == w && x->h == h)) left.push_back(x);
-    for (View *x : left) { dropped++; erase(x); }
+    for (View *x : left) { dropped++; erase(x, "another screen-size picture wanted its room"); }
   }
   View *v = nullptr;
   for (View *x : views)
@@ -233,19 +245,20 @@ void release(void *owner) {
   View *v = it->second.v;
   v->owners--;
   owned.erase(it);
-  if (!v->owners && !v->data) erase(v);  // nothing cached (loading / failed): nothing to keep
+  if (!v->owners && !v->data) erase(v, "released");  // nothing cached (loading / failed): nothing to keep
   trim_later();
   if (!shown() && !sweep_t) {  // later, so a rebuild that releases then acquires again keeps its pixels
     sweep_t = lv_timer_create(sweep, 0, nullptr);
     lv_timer_set_repeat_count(sweep_t, 1);
   }
 }
+static const char *drop_why = nullptr;  // Swap's reason for the next drop (the log line above)
 void drop(void *owner) {
   auto it = owned.find(owner);
   if (it == owned.end()) return;
   View *v = it->second.v;
   release(owner);
-  if (std::find(views.begin(), views.end(), v) != views.end() && !v->owners) { dropped++; erase(v); }
+  if (std::find(views.begin(), views.end(), v) != views.end() && !v->owners) { dropped++; erase(v, drop_why ? drop_why : "dropped by its owner"); }
   trim_later();
 }
 State state(void *owner) { auto it = owned.find(owner); return it == owned.end() ? failed : it->second.v->st; }
@@ -379,31 +392,50 @@ void Swap::in(void *own) {
     const int old = s->on_;
     s->on_ = i;
     if (s->changed_) s->changed_(s->ctx_);
+    drop_why = "the next track's art is in";
     drop(s->owner(old));
+    drop_why = nullptr;
     s->src_[old].clear();
     return;
   }
   if (st == failed) {
+    if (s->w_ * s->h_ && screen_size(s->w_, s->h_, cover, s->r_)) art_note("art %dx%d failed: %s", s->w_, s->h_, error(own));
+    drop_why = "its next picture failed";
     s->clear();
+    drop_why = nullptr;
     return;
   }
   if (s->changed_) s->changed_(s->ctx_);
 }
 void Swap::set(const std::string &url, int w, int h, int radius, int shade) {
-  if (url.empty() || url == "None" || w < 1 || h < 1) { if (!src_[0].empty() || !src_[1].empty()) clear(); return; }
+  if (url.empty() || url == "None" || w < 1 || h < 1) {
+    if (!src_[0].empty() || !src_[1].empty()) {
+      if (screen_size(w_, h_, cover, r_)) art_note("art %dx%d address emptied (url \"%s\", box %dx%d)", w_, h_, url.c_str(), w, h);
+      drop_why = "its address was emptied";
+      clear();
+      drop_why = nullptr;
+    }
+    return;
+  }
   const bool resized = w != w_ || h != h_ || radius != r_ || shade != shade_;
   if (!resized && same(src_[on_], url)) return;  // the same picture (or only its token moved on)
   const int n = resized ? on_ : 1 - on_;
   if (!resized && same(src_[n], url)) return;    // already coming
+  if (resized && screen_size(w_, h_, cover, r_)) art_note("art %dx%d resized to %dx%d", w_, h_, w, h);
+  drop_why = "its box changed size";
   if (resized) { drop(owner(1 - on_)); src_[1 - on_].clear(); }
+  drop_why = resized ? "its box changed size" : "a newer picture is coming";
   w_ = w, h_ = h, r_ = radius, shade_ = shade;
   drop(owner(n));  // what was coming (or, resized, what was shown at the old size)
+  drop_why = nullptr;
   int sw, sh;  // the pixels a view of this box keeps (img_scale.h stored: its box)
   Box bx;
   bx.w = w, bx.h = h;
   stored(bx, w, h, 0, sw, sh);
   if (n != on_ && !src_[on_].empty() && 2 * ((size_t) sw * sh * (radius > 0 ? 3 : 2) + sizeof(View)) > B.cache_bytes) {  // two would
+    drop_why = "two would not fit: the old one first";
     drop(owner(on_));                                                                 // not fit: the old goes first
+    drop_why = nullptr;
     src_[on_].clear();
     if (changed_) changed_(ctx_);
   }
@@ -417,6 +449,19 @@ void Swap::clear(bool tell) {
   const bool had = !src_[0].empty() || !src_[1].empty();
   for (int i = 0; i < 2; i++) drop(owner(i)), src_[i].clear();
   if (tell && had && changed_) changed_(ctx_);
+}
+void art_note(const char *fmt, ...) {
+#ifdef ESP_PLATFORM
+  char b[200];
+  va_list a;
+  va_start(a, fmt);
+  vsnprintf(b, sizeof b, fmt, a);
+  va_end(a);
+  ESP_LOGI("facet_art", "%s; PSRAM %u KB free, largest %u KB", b, (unsigned) (heap_caps_get_free_size(MALLOC_CAP_SPIRAM) / 1024),
+           (unsigned) (heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) / 1024));
+#else
+  (void) fmt;
+#endif
 }
 const lv_image_dsc_t *Swap::pixels() const { return src_[on_].empty() ? nullptr : fw::img::pixels(owner(on_)); }
 std::string stats() {

@@ -62,6 +62,8 @@ bool waiting(const char *src);
 // one URL at a time, so a URL's budget().timeout_ms starts when its own download does, not when the view asked
 void alive(const char *src);  // a view still wants this URL (false once put / fail / timeout, or the screen was left)
 void refresh(const char *src);  // fetch a URL again (its views keep their pixels until the new ones come; a failure keeps them)
+// one line in the panel's log (and so its problem report) with the PSRAM free: the idle art's life (#197). WASM: nothing
+void art_note(const char *fmt, ...);
 std::string stats();  // JSON {board, cap, bytes, peak, views, shown, evicted, dropped, refused, pending, fetches, slots, slots_free}
 // the screen-size picture slots (img_scale.h Slots: the idle art, shown + coming), every one this display can have
 // (LVGL task; the views make theirs as they come and free them as they go): how many there are
