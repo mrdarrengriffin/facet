@@ -2207,6 +2207,8 @@
       "house",
       "image",
       "plane",
+      "helicopter",
+      "fighter",
       "sport-goal",
       "sport-card",
       "sport-sub",
@@ -3547,7 +3549,7 @@
      "name": "planes",
      "type": "text",
      "bindable": true,
-     "about": "The aircraft to draw, as the flights feed gives them: a list of [km, bearing in degrees, track in degrees, mark, callsign, hex], mark 1 for the lead one, 2 for an emergency; the callsign shows beside the plane on the radar size. Empty is a clear sky."
+     "about": "The aircraft to draw, as the flights feed gives them: a list of [km, bearing in degrees, track in degrees, mark, callsign, hex], mark 1 for the lead one, 2 for an emergency, plus 4 for a helicopter or 8 for a military jet (the shape drawn); the callsign shows beside the plane on the radar size. Empty is a clear sky."
     },
     {
      "name": "size",
@@ -3905,6 +3907,16 @@
       "body"
      ],
      "about": "title is the usual value; body is a smaller value, for a row of facts in a narrow column (the Flight radar's hero, docs .fs-stat)."
+    },
+    {
+     "name": "align",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "start",
+      "centre"
+     ],
+     "about": "Where the label and the value sit in the stat's width: start (the left, for a column of facts) or centre (under a centred hero, such as the Energy screen's price now and next)."
     },
     {
      "name": "state",
@@ -5505,5 +5517,5 @@
    }
   }
  },
- "hash": "9abb2c1e"
+ "hash": "e3d7a21c"
 }
