@@ -187,6 +187,20 @@ function entName(id: string | undefined) {
   return names.get(id) ?? id;
 }
 const cardName = (c: Card, d: Draft = draft) => c.label || (c.t === 'page' ? name(c.page ?? '', d) : entName(c.e)) || TYPE_NAME[c.t] || c.t;
+/** a card that opens a built-in screen: that screen's look, inline (its choices: a select setting other than the
+ *  source, such as Media's Visual or the Calendar's View), so it is changed from the card in one click; then a row to
+ *  all of its settings. A card that opens no built-in screen (or one with no choices) gets nothing here. */
+function opensSide(c: Card): HTMLElement[] {
+  const pid = c.t === 'page' || c.tap === 'page' ? c.page ?? '' : '';
+  const pg = pid ? draft.pages.find((x) => x.id === pid) : undefined;
+  const sc = pg && !own(pg) ? boot.screens[pg.kind] : undefined;
+  if (!pg || !sc) return [];
+  const looks = Object.entries(sc.params).filter(([k, x]) => x.type === 'select' && k !== 'source' && x.options?.length);
+  const out: HTMLElement[] = [h('h2', 'cap', `The ${sc.name} screen`)];
+  for (const [pk, x] of looks) out.push(field(x.label ?? pk, x.about, paramControl(pg, pk, x)));
+  out.push(navRow(looks.length ? 'All its settings' : 'Its settings', '', () => { side = 'settings'; setView = 'screen'; setScreen = pg.kind; cardSel = -1; top(); render(); }));
+  return out;
+}
 /** the taps a card can have: the type's, or for an Entity card its domain's (the default first) */
 function tapsOf(c: Card) {
   const def = boot.cards[c.t];
@@ -456,14 +470,26 @@ function gridPanel(p: Page, cssW: number) {
   const layer = h('div', 'v1-layer');
   layer.style.top = `${-geo.top * k}px`;
   const put = (e: HTMLElement, sp: Spot) => { const b = spotBox(sp); e.style.left = `${b.left * k}px`; e.style.top = `${b.top * k}px`; e.style.width = `${b.width * k}px`; e.style.height = `${b.height * k}px`; return e; };
+  const cells: [HTMLButtonElement, number][] = [];
   at.forEach((sp, i) => {
     if (!sp) return;
-    const b = put(h('button', 'v1-cell card'), sp);
+    const b = put(h('button', 'v1-cell card'), sp) as HTMLButtonElement;
     b.type = 'button';
     b.title = `${cardName(cards[i])} · ${SIZE_NAME[gsize(cards[i])]}`;
     b.setAttribute('aria-label', `Card: ${b.title}`);
     b.setAttribute('aria-pressed', String(i === cardSel && !target));
-    b.onclick = () => { if (dragged) return; target = null; cardSel = cardSel === i ? -1 : i; side = 'screen'; top(); render(); };
+    b.setAttribute('aria-keyshortcuts', 'ArrowLeft ArrowRight ArrowUp ArrowDown');
+    b.onclick = () => { if (dragged) return; target = null; cardSel = cardSel === i ? -1 : i; refocus = cardSel === i; side = 'screen'; top(); render(); };
+    // the keyboard's move: arrows on the picked card move it one place in the order (as ← Earlier / Later →)
+    b.onkeydown = (ev) => {
+      if (i !== cardSel || target || ev.altKey || ev.ctrlKey || ev.metaKey) return;
+      const d = ev.key === 'ArrowLeft' || ev.key === 'ArrowUp' ? -1 : ev.key === 'ArrowRight' || ev.key === 'ArrowDown' ? 1 : 0;
+      if (!d || i + d < 0 || i + d >= cards.length) return;
+      ev.preventDefault();
+      moveCard(cards, i, i + d, true);
+    };
+    if (i === cardSel && refocus) { refocus = false; requestAnimationFrame(() => b.focus({ preventScroll: true })); }
+    cells.push([b, i]);
     layer.append(b);
   });
   const free = (y: number, x: number) => !(occ[y]?.[x]);
@@ -497,6 +523,60 @@ function gridPanel(p: Page, cssW: number) {
     if (dragged) touch(x, y, 1);
   };
   clip.onpointerup = clip.onpointercancel = (ev) => { if (dragged) { const [x, y] = xy(ev); setTimeout(() => touch(x, y, 0), 40); setTimeout(() => { dragged = false; }, 0); } down = null; };
+  // pick up a card and move it (#195): a mouse drag (past 6 px), or a long press on touch (400 ms still); it snaps to
+  // the place in the card order whose slot is nearest the pointer (place(): every card where the order puts it, so
+  // nothing is cut off and the others move out of the way in order). Esc puts it back; letting go keeps the new order
+  for (const [b, i] of cells) {
+    b.onpointerdown = (ev) => {
+      if (ev.button !== 0) return;
+      const mouse = ev.pointerType === 'mouse';
+      if (mouse) { ev.stopPropagation(); ev.preventDefault(); }  // a mouse drag on a card moves it (no text selection); elsewhere it scrolls
+      b.setPointerCapture(ev.pointerId);  // the moves come here even past the card's edge (and still bubble to the scroll)
+      const start = [ev.clientX, ev.clientY];
+      let lifted = false, to = i, ghost: HTMLElement | null = null, hold = 0;
+      const lift = () => {
+        lifted = true; dragged = true; target = null;
+        b.classList.add('lift');
+        ghost = h('div', 'v1-cell ghost');
+        layer.append(ghost);
+        put(ghost, at[i]!);
+        document.addEventListener('keydown', esc, true);
+      };
+      const end = (keep: boolean) => {
+        clearTimeout(hold);
+        b.onpointermove = b.onpointerup = b.onpointercancel = null;
+        document.removeEventListener('keydown', esc, true);
+        if (!lifted) return;
+        setTimeout(() => { dragged = false; }, 0);
+        if (keep && to !== i) moveCard(cards, i, to);
+        else render();
+      };
+      const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); end(false); } };
+      if (!mouse) hold = window.setTimeout(() => { if (!dragged) lift(); }, 400);
+      b.onpointermove = (e) => {
+        const dx = e.clientX - start[0], dy = e.clientY - start[1];
+        if (!lifted) {
+          if (Math.hypot(dx, dy) < (mouse ? 6 : 8)) return;
+          if (!mouse || !e.buttons) { clearTimeout(hold); return; }  // touch: a move before the hold = a scroll
+          lift();
+        }
+        e.stopPropagation();  // lifted: the moves are the card's, not a scroll of the panel
+        b.style.transform = `translate(${dx}px, ${dy}px)`;
+        const [px, py] = xy(e), ly = py - (gy - geo.y);
+        let best = Infinity;
+        for (let j = 0; j < cards.length; j++) {
+          const next = cards.slice();
+          next.splice(j, 0, next.splice(i, 1)[0]);
+          const sp = place(next, draft.pages).at[j];
+          if (!sp) continue;
+          const bx = spotBox(sp), d = Math.hypot(bx.left + bx.width / 2 - px, bx.top + bx.height / 2 - ly);
+          if (d < best) { best = d; to = j; if (ghost) put(ghost, sp); }
+        }
+      };
+      b.onpointerup = (e) => { if (lifted) e.stopPropagation(); end(true); };
+      b.onpointercancel = (e) => { if (lifted) e.stopPropagation(); end(false); };
+    };
+  }
   let wheel = 0, wy = 0;
   clip.onwheel = (ev) => {
     ev.preventDefault();
@@ -509,7 +589,14 @@ function gridPanel(p: Page, cssW: number) {
   };
   return wrap;
 }
-let dragged = false;
+let dragged = false, refocus = false;
+/** card i of a screen to place j in the order: picked there, the panel shows it (one Undo); key = moved by the keyboard
+ *  (the card keeps the focus) */
+function moveCard(cards: Card[], i: number, j: number, key = false) {
+  cards.splice(j, 0, cards.splice(i, 1)[0]);
+  cardSel = j; target = null; side = 'screen'; refocus = key;
+  edit(() => {});
+}
 function addCell(put: (e: HTMLElement, sp: Spot) => HTMLElement, x: number, y: number, size: string) {
   const b = put(h('button', `v1-cell add${size === 'half' ? ' half' : ''}`, '+'), { x, y, w: 1, h: size === 'half' ? 1 : 2 });
   b.type = 'button';
@@ -566,6 +653,7 @@ function cardSide(p: Page, i: number): HTMLElement[] {
     out.push(field('Tap', 'What a tap on the card does.', items.length <= 3 ? seg(items, cur, pick) : list(items, cur, pick)));
     if (cur === 'page' && c.t !== 'page') out.push(field('Opens', undefined, list(screenOpts(p.id), c.page ?? '', (v) => set((c) => { c.page = pageFor(v); }))));
   }
+  out.push(...opensSide(c));
   out.push(h('h2', 'cap', 'Place'));
   const order = h('div', 'v1-row');
   order.append(

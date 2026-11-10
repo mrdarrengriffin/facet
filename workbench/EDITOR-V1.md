@@ -14,11 +14,16 @@ order, plus "+ Screen"), Undo, ⚙ Settings, Save · N.
 **1. Screens.** The panel starts blank: no factory deck, no preloaded Home. You make your own screens (Home, Kitchen,
 Gaming, TV controls…), name them, order them (drag, or up / down for touch and keyboard) and pick the start page.
 Left / right swipes go from screen to screen in that order. Built-in screens (Clock, Weather, Media, Timer…) are
-never rebuilt from parts: each is a card on a page or its own swipe page.
+never rebuilt from parts and never switched on or off: every one is always on the panel, opened from a card on one of
+your screens (+ Screen lists them all), set in Settings > Screens; one reads its data only while it shows or a card for
+it is on a screen.
 
 **2. Editing a screen.** Each screen is a grid of cells that scrolls up / down, so it need not fit the glass. Tap an
 empty cell: it becomes a 1 × 1 card and the list shows everything that fits a 1 × 1. Once added, resize it to 2 × 2,
-2 × 1 or half height (1 × 2 not for now). A half with space below offers "add another half underneath" (optional, never a forced
+2 × 1 or half height (1 × 2 not for now). Move a card by dragging it (a long press on touch; the arrow keys on the
+picked card, or ← Earlier / Later →): it snaps to the place in the card order nearest the pointer, the others move out
+of the way in order (the deck keeps the order, never positions). A card that opens a built-in screen shows that
+screen's look (Media's Visual, the Calendar's View) in its own panel, with a row to all its settings. A half with space below offers "add another half underneath" (optional, never a forced
 empty slot). Every part declares the sizes it accepts and a slot accepts only what fits, so a screen always looks
 right and cannot be broken. A card's options (its entity, what a tap does…) are a form made from `/fw/schema`: an
 entity is a picker of that domain from the panel's own Home Assistant link, a select a segmented control (three

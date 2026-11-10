@@ -118,6 +118,54 @@ for (const device of ['guition', 'waveshare'])
       assert.equal((await cards(E.page)).length, n);
     });
 
+    it('a card dragged to another place snaps into the order there; Esc puts it back; arrows move the picked one (#195)', async () => {
+      const was = await cards(E.page);
+      const cell = (i) => E.page.locator('.v1-cell.card').nth(i).boundingBox();
+      const drag = async (from, to, esc = false) => {
+        const a = await cell(from), b = await cell(to);
+        await E.page.mouse.move(a.x + a.width / 2, a.y + a.height / 2);
+        await E.page.mouse.down();
+        for (let k = 1; k <= 8; k++) await E.page.mouse.move(a.x + a.width / 2 + ((b.x + b.width / 2) - (a.x + a.width / 2)) * k / 8, a.y + a.height / 2 + ((b.y + b.height / 2) - (a.y + a.height / 2)) * k / 8);
+        assert.equal(await E.page.locator('.v1-cell.ghost').count(), 1, 'a slot shows where it lands');
+        if (esc) await E.page.keyboard.press('Escape');
+        await E.page.mouse.up(); await settle(E.page, 400);
+      };
+      const last = was.length - 1;
+      await drag(0, last, true);
+      assert.deepEqual(await cards(E.page), was, 'Esc: nothing moved');
+      await drag(0, last);
+      const now = await cards(E.page);
+      assert.notDeepEqual(now, was, 'the order changed');
+      assert.deepEqual(now.slice().sort((x, y) => JSON.stringify(x).localeCompare(JSON.stringify(y))), was.slice().sort((x, y) => JSON.stringify(x).localeCompare(JSON.stringify(y))), 'the same cards');
+      assert.ok(now.indexOf(now.find((c) => JSON.stringify(c) === JSON.stringify(was[0]))) > 0, 'the first card moved later');
+      const b = await boxes(E.page); assert.deepEqual(b.l, b.r, 'the live panel shows the new order');
+      assert.deepEqual(await E.page.evaluate(() => window.__v1.check()), { ok: true, errors: [] });
+      // the keyboard: the picked card, ArrowLeft = one place earlier, ArrowRight = one later
+      const sel = await E.page.evaluate(() => window.__v1.draft().pages.find((x) => x.kind === 'home').cards.length) - 1;
+      await E.page.locator('.v1-cell.card').nth(sel).click(); await settle(E.page, 300);
+      const k0 = await cards(E.page);
+      await E.page.keyboard.press('ArrowLeft'); await settle(E.page, 300);
+      const k1 = await cards(E.page);
+      assert.deepEqual(k1[sel - 1], k0[sel], 'ArrowLeft: one place earlier');
+      await E.page.keyboard.press('ArrowRight'); await settle(E.page, 300);
+      assert.deepEqual(await cards(E.page), k0, 'ArrowRight: back');
+      await E.page.keyboard.press('Escape'); await settle(E.page, 200);
+    });
+
+    it('a card that opens a built-in screen: that screen\'s look inline (Media: Visual), one click to change it; other cards unchanged (#189)', async () => {
+      await E.page.locator('.v1-cell.card[aria-label^="Card: Media"]').first().click(); await settle(E.page, 300);
+      assert.ok((await E.page.locator('.v1-side h2.cap').allTextContents()).includes('The Media screen'), 'its screen\'s section');
+      const f = E.page.locator('.v1-side .v1-field', { hasText: 'Visual' });
+      await f.locator('.v1-pick').click(); await settle(E.page, 100);
+      await f.locator('.v1-opt', { hasText: /^cassette$/ }).click(); await settle(E.page, 400);
+      const mp = await E.page.evaluate(() => window.__v1.draft().pages.find((x) => x.kind === 'media'));
+      assert.equal(mp?.params?.visual, 'cassette', 'the Media screen takes it');
+      assert.ok(await E.page.locator('.v1-side .v1-nav', { hasText: 'All its settings' }).count(), 'a row to all its settings');
+      await E.page.locator('.v1-cell.card[aria-label*="Light"]').first().click(); await settle(E.page, 300);
+      assert.ok(!(await E.page.locator('.v1-side h2.cap').allTextContents()).some((t) => / screen$/.test(t)), 'a light card: no screen section');
+      await E.page.keyboard.press('Escape'); await settle(E.page, 200);
+    });
+
     it('the deck check takes it and Save says the changes in words', async () => {
       assert.deepEqual(await E.page.evaluate(() => window.__v1.check()), { ok: true, errors: [] });
       const ch = await E.page.evaluate(() => window.__v1.changes());
