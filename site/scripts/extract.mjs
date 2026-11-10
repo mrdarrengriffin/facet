@@ -449,10 +449,19 @@ w('icons.json', iconSet());
 w('previews.json', previews());
 const screens = screenSet();
 w('screens.json', screens);
-// the site's deck (lib/sample-ha.ts, scripts/shots.mjs): the factory deck with every page that offers a sample source
+// the site's deck (lib/sample-ha.ts, scripts/shots.mjs): the deck with every screen (tests/fixtures/deck-full.json), every page that offers a sample source
 // set to it, so the previews show sample data (a panel never does unless its deck says so)
 {
-  const deck = json('specs/deck.json');
+  const deck = json('tests/fixtures/deck-full.json');  // every screen (the factory deck is one empty Home)
+  // the site's Home: every size, filling the grid (the made-up devices of tools/demo_ha.mjs)
+  const home = deck.pages.find((p) => p.kind === 'home');
+  if (home) home.cards = [
+    { t: 'page', page: 'weather', size: '2x1' }, { t: 'page', page: 'clock', size: '1x1' },
+    { t: 'page', page: 'media', size: '2x2' }, { t: 'light', e: 'light.living_room_ceiling', size: '1x1', label: 'Ceiling' },
+    { t: 'sensor', e: 'sensor.outside_temperature', size: 'half', label: 'Outside' }, { t: 'sensor', e: 'sensor.living_room_humidity', size: 'half', label: 'Humidity' },
+    { t: 'page', page: 'calendar', size: '2x1' }, { t: 'page', page: 'energy', size: '1x1' },
+    { t: 'page', page: 'overhead', size: '2x1' }, { t: 'page', page: 'timer', size: '1x1' }, { t: 'page', page: 'moon', size: '1x1' },
+  ];
   const sampled = new Set(readdirSync(join(R, 'specs')).filter((f) => f.endsWith('.json')).map((f) => json(`specs/${f}`))
     .filter((sp) => sp.params?.source?.options?.includes('sample')).map((sp) => sp.id));
   w('site-deck.json', { ...deck, pages: deck.pages.map((p) => (sampled.has(p.kind) ? { ...p, params: { ...(p.params ?? {}), source: 'sample' } } : p)) });
