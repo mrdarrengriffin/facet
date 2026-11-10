@@ -2118,8 +2118,9 @@ class Handler : public AsyncWebHandler {
         if (!hl::ready()) state = "off";
         else if (st == hl::FAIL && missing.empty()) state = "failed", why = hl::why();
         else if (!missing.empty() || st == hl::LOADING || st == hl::CHECKING) {
-          if (!missing.empty() && st != hl::LOADING && st != hl::CHECKING) hl::fetch(missing);
-          state = "loading";
+          const char *no = !missing.empty() && st != hl::LOADING && st != hl::CHECKING ? hl::fetch(missing) : "";
+          if (*no) state = "failed", why = no;  // refused (short of memory): say so, never "loading" for ever
+          else state = "loading";
         }
         size_t need = 64 + why.size();
         for (const auto &dom : send)
@@ -2153,8 +2154,10 @@ class Handler : public AsyncWebHandler {
       }
     } else if (path == "/fw/ha") {
       // ?want=e1,e2[&attrs=a1,a2]: subscribe to these too (the panel's editor previews live values); a local source
-      // (panel.*: a feed, the timers) is the panel's own: all its fields come back, and one not on a screen now is run
-      // (at most every 20 s), so the editor shows what the glass would. Written straight into one string (no document).
+      // (panel.*: a feed, the timers) is the panel's own: all its fields come back as the panel holds them (a source
+      // the panel is not running has none: never started for the editor, it would hold its data on top of the panel's).
+      // Built in one string on the loop and sent from it in 4 KB pieces (no response copy); short of memory (the
+      // largest free block under twice the answer + 48 KB): 503 busy, the editor keeps its last values.
       std::vector<std::pair<std::string, std::string>> add;
       std::vector<std::string> es;
       if (req->hasArg("want")) {
@@ -2174,36 +2177,51 @@ class Handler : public AsyncWebHandler {
         }
         o += '"';
       };
+      std::string txt;
+      bool busy = false;
       in_loop([&] {
         namespace h = fw::ha;
-        static std::map<std::string, uint32_t> ran;  // a local source run for the editor: when
         for (const auto &p : add) h::want(p.first, p.second);
-        for (const auto &e : es)
-          if (auto fresh = h::local(e))
-            if (!h::watched(e) && (!ran.count(e) || lv_tick_elaps(ran[e]) > 20000)) { ran[e] = lv_tick_get(); fresh(); }
         auto wanted = [&](const std::string &e) { return std::find(es.begin(), es.end(), e) != es.end(); };
         size_t need = 64;
         for (const auto &kv : h::S().store) if (es.empty() || wanted(kv.first.first)) need += kv.first.first.size() + kv.first.second.size() + kv.second.size() + 8;
-        s.reserve(need + need / 8);
-        s = "{";
+        need += need / 8;
+        if (heap_caps_get_largest_free_block(MALLOC_CAP_8BIT) < 2 * need + 48 * 1024) { busy = true; return; }
+        txt.reserve(need);
+        txt = "{";
         if (es.empty()) {  // no ?want=: the wants too
-          s += "\"wants\":[";
+          txt += "\"wants\":[";
           bool f = true;
-          for (const auto &p : h::wants()) { if (!f) s += ','; f = false; s += '['; esc(s, p.first); s += ','; esc(s, p.second); s += ']'; }
-          s += "],";
+          for (const auto &p : h::wants()) { if (!f) txt += ','; f = false; txt += '['; esc(txt, p.first); txt += ','; esc(txt, p.second); txt += ']'; }
+          txt += "],";
         }
-        s += "\"values\":{";
+        txt += "\"values\":{";
         bool f = true;
         for (const auto &kv : h::S().store) {
           if (!es.empty() && !wanted(kv.first.first)) continue;  // ?want=: only those
-          if (!f) s += ',';
+          if (!f) txt += ',';
           f = false;
-          esc(s, kv.first.first + (kv.first.second.empty() ? "" : "|" + kv.first.second));
-          s += ':';
-          esc(s, kv.second);
+          esc(txt, kv.first.first + (kv.first.second.empty() ? "" : "|" + kv.first.second));
+          txt += ':';
+          esc(txt, kv.second);
         }
-        s += "},\"bound\":" + std::to_string((int) h::S().bounds.size()) + "}";
+        txt += "},\"bound\":" + std::to_string((int) h::S().bounds.size()) + "}";
       }, 2000);
+      if (busy) { code = 503; s = R"({"ok":false,"error":"busy: the panel is short of memory, ask again later"})"; }
+      else {
+        httpd_req_t *hr = *req;
+        httpd_resp_set_type(hr, "application/json");
+        httpd_resp_set_hdr(hr, "Cache-Control", "no-store");
+        httpd_resp_set_hdr(hr, "Access-Control-Allow-Origin", origin.c_str());
+        httpd_resp_set_hdr(hr, "Vary", "Origin");
+        bool sent = true;
+        for (size_t at = 0; sent && at < txt.size(); at += 4096) sent = httpd_resp_send_chunk(hr, txt.data() + at, std::min<size_t>(4096, txt.size() - at)) == ESP_OK;
+        if (sent) httpd_resp_send_chunk(hr, nullptr, 0);
+        body_.clear();
+        too_big_ = false;
+        httpd_stack_note();
+        return;
+      }
     } else if (path == "/fw/act" && post) {  // one action of the closed list (CONTRACT.md C50; act_run)
       ArduinoJson::JsonDocument body;
       bool ok = false;

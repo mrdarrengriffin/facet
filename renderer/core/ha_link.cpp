@@ -294,9 +294,13 @@ std::string token_hint() {
 }
 bool ready() { return !S().url.empty() && (S().proxy || !S().token.empty()); }
 namespace {
+// a read of /api/states needs room for the HTTP client, the parse and what it keeps: refused, with a reason, when the
+// largest free block is under LOW (the 480 panel with every feed on Home runs close to it)
+constexpr size_t LOW = 96 * 1024;
 const char *cannot() {
   State &s = S();
   if (!ready()) return "Home Assistant is not set up: its address and a token first";
+  if (s.largest && s.largest() < LOW) return "the panel is short of memory: close a screen or two and try again";
   if (s.st == LOADING) return "already reading Home Assistant";
   if (!s.get) return "this build cannot reach Home Assistant";
   return nullptr;
@@ -347,7 +351,10 @@ std::string find_json(const std::string &domains, const Find &f) {
       esc(o, s.why);
       return o + R"(,"found":[],"more":0})";
     }
-    if (s.st != LOADING && s.st != CHECKING) find(domains, f);
+    if (s.st != LOADING && s.st != CHECKING) {
+      const char *no = find(domains, f);
+      if (*no) { o = R"({"state":"failed","why":)"; esc(o, no); return o + R"(,"found":[],"more":0})"; }
+    }
     return R"({"state":"loading","found":[],"more":0})";
   }
   size_t need = 48;
@@ -372,6 +379,7 @@ void index_text(const std::string &domains, std::string &out) {
     return;
   }
   if (!ready()) { out = "#off\n"; return; }
+  if (s.st != LOADING && s.largest && s.largest() < LOW) { out = std::string("#failed\t") + cannot() + "\n"; return; }
   if (s.st == FAIL && s.index_key == domains && !s.index_ready) { out = "#failed\t" + s.why + "\n"; s.index_key.clear(); return; }
   if (s.st != LOADING && s.st != CHECKING && s.index_key != domains) {
     if (!cannot()) {
