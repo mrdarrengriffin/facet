@@ -94,6 +94,10 @@ else
   fi
   # the workbench's Playwright tests (the panel's editor, the link page): the whole gate only, on a machine with the
   # workbench running (WORKBENCH_URL, default localhost:4322: it serves this tree and the build in $FW_OUT); CI has none
+  # the panel's picture decode + fetch on simulated ESP-IDF (ASan, TSan): density-free, the whole gate only
+  if [ -z "$ids" ] && has 1.5x; then
+    start hard fw-images bash -c '../firmware/tests/imgdec/run.sh && ../firmware/tests/imgfetch/run.sh'
+  fi
   if [ -z "$ids" ]; then
     if [ -n "${CI:-}" ]; then echo "SKIP workbench (CI: no workbench server)"
     else start hard workbench bash -c 'cd ../workbench && node --test --test-concurrency=1 tests/editor/*.test.mjs tests/link/*.test.mjs'; fi
