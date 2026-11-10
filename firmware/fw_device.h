@@ -2186,7 +2186,7 @@ class Handler : public AsyncWebHandler {
         size_t need = 64;
         for (const auto &kv : h::S().store) if (es.empty() || wanted(kv.first.first)) need += kv.first.first.size() + kv.first.second.size() + kv.second.size() + 8;
         need += need / 8;
-        if (heap_caps_get_largest_free_block(MALLOC_CAP_8BIT) < 2 * need + 48 * 1024) { busy = true; return; }
+        if (heap_caps_get_free_size(MALLOC_CAP_8BIT) < 2 * need + 96 * 1024) { busy = true; return; }  // the free total: cheap (the largest block walks the heap: band flicker)
         txt.reserve(need);
         txt = "{";
         if (es.empty()) {  // no ?want=: the wants too
@@ -2626,6 +2626,7 @@ inline void setup() {
   });
   fw::dev::ha_link::on_get(get);
   fw::dev::ha_link::on_largest([]() -> size_t { return heap_caps_get_largest_free_block(MALLOC_CAP_8BIT); });
+  fw::dev::ha_link::on_free([]() -> size_t { return heap_caps_get_free_size(MALLOC_CAP_8BIT); });
   fw::dev::ha_link::on_ws(ws);
   pairing_setup();
   lv_timer_create(drain, 20, nullptr);

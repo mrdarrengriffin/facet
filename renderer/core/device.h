@@ -296,7 +296,8 @@ void index_text(const std::string &domains, std::string &out);
 // the platform's largest free block (firmware: heap_caps_get_largest_free_block; none = WASM, no limit): an index's
 // string is allocated once, before its read, at most half of it (and INDEX_MAX), and never grown; lines past it are
 // left out (counted), never a failed allocation
-void on_largest(size_t (*f)());
+void on_largest(size_t (*f)());  // called once per index read only (it walks the heap)
+void on_free(size_t (*f)());     // the free total (cheap): the low-memory refusal
 // a domain's list read longer ago than this: its picker reads it again in the background when it opens (the old list
 // shows meanwhile), so entities added to Home Assistant appear without a manual read
 constexpr uint32_t STALE_MS = 5 * 60 * 1000;

@@ -36,6 +36,7 @@ struct State {
   std::map<std::string, uint32_t> read_at;  // per cached domain: when it was read (lv_tick)
   std::map<std::string, int> left;         // per cached domain: entities the read did not keep (PER, BUDGET)
   size_t (*largest)() = nullptr;           // on_largest
+  size_t (*free_now)() = nullptr;          // on_free
   std::string index_key, index;            // the editor's index (index_text): its domains, its lines until taken
   int index_left = 0;
   bool index_ready = false;
@@ -295,12 +296,14 @@ std::string token_hint() {
 bool ready() { return !S().url.empty() && (S().proxy || !S().token.empty()); }
 namespace {
 // a read of /api/states needs room for the HTTP client, the parse and what it keeps: refused, with a reason, when the
-// largest free block is under LOW (the 480 panel with every feed on Home runs close to it)
+// free memory is under LOW (the 480 panel with every feed on Home runs close to it). The free total, never the largest
+// block: finding that walks every block with the heap locked, and the feeds ask here every few seconds (the 480 panel's
+// screen starved of PSRAM: band flicker)
 constexpr size_t LOW = 96 * 1024;
 const char *cannot() {
   State &s = S();
   if (!ready()) return "Home Assistant is not set up: its address and a token first";
-  if (s.largest && s.largest() < LOW) return "the panel is short of memory: close a screen or two and try again";
+  if (s.free_now && s.free_now() < LOW) return "the panel is short of memory: close a screen or two and try again";
   if (s.st == LOADING) return "already reading Home Assistant";
   if (!s.get) return "this build cannot reach Home Assistant";
   return nullptr;
@@ -379,7 +382,7 @@ void index_text(const std::string &domains, std::string &out) {
     return;
   }
   if (!ready()) { out = "#off\n"; return; }
-  if (s.st != LOADING && s.largest && s.largest() < LOW) { out = std::string("#failed\t") + cannot() + "\n"; return; }
+  if (s.st != LOADING && s.free_now && s.free_now() < LOW) { out = std::string("#failed\t") + cannot() + "\n"; return; }
   if (s.st == FAIL && s.index_key == domains && !s.index_ready) { out = "#failed\t" + s.why + "\n"; s.index_key.clear(); return; }
   if (s.st != LOADING && s.st != CHECKING && s.index_key != domains) {
     if (!cannot()) {
@@ -453,6 +456,7 @@ bool stale(const std::string &domain) {
 }
 void on_get(GetSink f) { S().get = f; }
 void on_largest(size_t (*f)()) { S().largest = f; }
+void on_free(size_t (*f)()) { S().free_now = f; }
 void on_ws(WsSink f) { S().ws = f; }
 uint32_t ws(const std::string &cmd, std::function<void(const char *, size_t)> feed, std::function<void(bool, const std::string &)> end) {
   State &s = S();
