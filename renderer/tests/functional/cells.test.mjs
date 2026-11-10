@@ -175,5 +175,21 @@ export default {
       t.eq(t.comps().filter((c) => c.ids.includes('readout')).length, 2, 'two readouts (one shared cell)');
       t.tap({ at: [cs[0].x + cs[0].w / 2, cs[0].y + cs[0].h / 2] }); t.eq(t.where(), 'light', 'a card opens its screen');
     } },
+    { name: 'Home: a media player\'s card shows its album art on the record (entity_picture, HA address in front)', async run(t) {
+      const P = 'media_player.test_spotify', HA = 'http://ha.test:8123', ART = `/api/media_player_proxy/${P}?token=x&cache=red`;
+      t.ha.s[P] = { '': 'playing', friendly_name: 'Spotify', media_title: 'How It Goes', media_artist: 'Mocky', entity_picture: ART };
+      t.img.serve(HA + ART, 64, 64, [230, 30, 30, 255]);
+      t.ha.answers = true;
+      await t.device({ v: 2, rev: 9, start: 'p', pages: [{ id: 'p', kind: 'home', name: 'Test', cards: [{ t: 'entity', e: P, size: '2x1' }] }] });
+      t.b.spec('act', { do: 'ha.connect', url: HA, token: 'abcdefgh1234' }); t.b.tick(8); t.b.settle(600);
+      t.ok(t.img.asked.includes(ART), `the card's art fetched (a path: the host fetches it): ${t.img.asked}`);
+      const ART2 = ART.replace('red', 'next');  // the next track, with the panel's HA link: HA's address in front
+      t.img.serve(HA + ART2, 64, 64, [230, 30, 30, 255]);
+      t.ha.set(P, undefined, { media_title: 'Next One', entity_picture: ART2 }); t.wait(1500);
+      t.ok(t.img.asked.includes(HA + ART2), `the next track's art fetched from HA: ${t.img.asked}`);
+      const mv = t.comps().find((c) => c.ids.includes('media_visual'));
+      t.ok(mv, 'the card shows the media visual');
+      t.ok(t.texts().includes('Next One'), 'the track');
+    } },
   ],
 };

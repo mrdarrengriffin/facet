@@ -14,7 +14,9 @@
 //            (false for switch.* and a light whose supported_color_modes is only onoff; missing = true); "light" the light row's sub text
 //            ("Off", "On", "On · 64%"); "name" the friendly_name (else the entity id); "num" a number attribute
 //            (a thermostat's temperature / current_temperature; missing = the component's default); "frac" a 0-1
-//            attribute as 0-100 (a media player's volume_level; missing = the component's default).
+//            attribute as 0-100 (a media player's volume_level; missing = the component's default); "art" a picture
+//            attribute (a media player's entity_picture) as an image address: None / missing = "", a path on Home
+//            Assistant gets the panel's HA address in front (in the workbench it stays a path its host fetches).
 //   hold     instant feedback (simple model): a control the person just moved shows the new value at once (its own
 //            animation); hold(obj, ms, e, a, expect) keeps store updates off it until HA reports `expect` for (e, a)
 //            (confirmed: settle on the store) or ms pass (timed out / refused: back to what HA says). Pending text is
@@ -41,6 +43,7 @@
 #include <utility>
 #include <vector>
 #include "fw.h"
+namespace fw::dev::ha_link { const std::string &url(); }  // the panel's HA address (core/device.h; "" in the workbench)
 
 namespace fw {
 namespace ha {
@@ -305,6 +308,15 @@ inline void bind_raw(ArduinoJson::JsonVariantConst b, ArduinoJson::JsonObject ou
     use(a);
     const double x = num(get(e, a));
     if (std::isfinite(x)) out[key] = (int) std::lround(LV_CLAMP(0.0, x, 1.0) * 100);
+    return;
+  }
+  if (fmt == "art") {  // a picture attribute as an image address (the Media feed's art, core/media_source.cpp)
+    use(a);
+    const std::string *v = get(e, a);
+    std::string u = v && *v != "None" ? *v : std::string();
+    const std::string &ha = fw::dev::ha_link::url();
+    if (u.size() > 1 && u[0] == '/' && u[1] != '/' && !ha.empty()) u = ha + u;
+    out[key] = u;
     return;
   }
   if (fmt == "time" || fmt == "day") { use(a); const std::string *v = get(e, a); out[key] = v ? when(*v, fmt == "day") : std::string(); return; }

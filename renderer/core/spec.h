@@ -45,7 +45,7 @@
 //   spacing    in the list layout and in a layout's column slots, a section_header that isn't first gets lay::group
 //              above it (Layout rule "more space between groups"); in the list layout so does any node after a non-row
 //              node (hero_block, gauge, readout ...); rows touch (they have hairlines).
-//   bind       {"e": "light.x" | "$param", "a"?: "<attribute>", "fmt"?: on|pct|avail|light|name|num|frac,
+//   bind       {"e": "light.x" | "$param", "a"?: "<attribute>", "fmt"?: on|pct|avail|light|name|num|frac|art,
 //               "s"?: sample, "map"?: {value: text}, "else"?: text, "tpl"?: "battery {}%"} (core/ha.h): s = the value
 //              while the entity is empty (the factory demo), map = the value as words / a tone ("else" for the rest,
 //              default the value itself), tpl = the text around it ({} = the value; empty value = empty text).
@@ -268,7 +268,7 @@ inline const ActionDoc *action_doc(const std::string &d) {
     if (d == a.id) return &a;
   return nullptr;
 }
-constexpr const char *FMTS[] = {"", "on", "pct", "avail", "light", "name", "num", "frac", "count", "time", "day", "level", "state", "dim"};
+constexpr const char *FMTS[] = {"", "on", "pct", "avail", "light", "name", "num", "frac", "count", "time", "day", "level", "state", "dim", "art"};
 constexpr uint32_t CLIMATE_THROTTLE_MS = 250;  // like light-throttle-ms: a set point while dragging at most this often
 constexpr const char *LAYOUTS[] = {"list", "center", "cards"};
 constexpr int EACH_MAX = 12;                         // copies one "each" node makes at most
@@ -582,7 +582,7 @@ inline void check_value(const PropInfo &pi, ArduinoJson::JsonVariantConst v, con
     }
     if (!entity_ok(v["e"] | "") && !(!strcmp(v["e"] | "x", "") && v["s"].is<const char *>()))
       err(e, path + ".e", "bad_bind", "a bind needs an entity (domain.object or $param), or e \"\" with s (a screen parameter)");
-    if (!one_of(FMTS, v["fmt"] | "")) err(e, path + ".fmt", "bad_bind", "fmt is one of on, pct, avail, dim, light, name, num, frac, count, time, day");
+    if (!one_of(FMTS, v["fmt"] | "")) err(e, path + ".fmt", "bad_bind", "fmt is one of on, pct, avail, dim, light, name, num, frac, count, time, day, art");
     binds++;
     return;
   }

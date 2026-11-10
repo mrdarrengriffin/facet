@@ -11,7 +11,7 @@
 //            What the Card shows per type:
 //              light   the level (accent while on), the state; no preview (a card holds no toggle)
 //              cover   the state, the window preview at the position
-//              media   text mode: the track, the record preview, the artist
+//              media   text mode: the track, the record preview (the album art on it), the artist
 //              action  (script, scene, automation, button) its verb
 //              sensor  and anything else: its state (read-only: tap none)
 //              page    the screen's own card (its spec's "card"), else its name
@@ -292,6 +292,7 @@ bool card_node(Var cd, Var pages, int slot, ArduinoJson::JsonArray nodes) {
       p["mode"] = "text";
       bind(p, "text", e, "", "media_title");
       bind(p, "sub", e, "", "media_artist");
+      bind(p, "art", e, "art", "entity_picture");  // the album art on the record (the Media feed's art)
     } else if (vt == "cover") {  // the state, the window preview at the position
       p["icon"] = "covers";
       p["preview"] = "covers";
