@@ -74,7 +74,7 @@ for (const device of ['guition', 'waveshare'])
       assert.equal(await E.page.locator('.v1-sidetitle b').textContent(), 'Dishwasher Plug Power', 'the new card is picked');
     });
 
-    it('adding: the types first, nothing listed before typing; a sensor type lists only what it measures', async () => {
+    it('adding: the types first; a type lists every entity it takes before typing (#190); a sensor type only what it measures', async () => {
       await E.page.locator('.v1-cell.add:not(.half)').first().click(); await settle(E.page, 200);
       const rows = () => E.page.locator('.v1-cardlist .v1-opt .v1-ftxt > span').allTextContents();
       assert.deepEqual(await rows(), ['Screen', 'Light', 'Switch', 'Media', 'Climate', 'Cover', 'Sensor', 'Other'], 'the types, no entity');
@@ -82,13 +82,23 @@ for (const device of ['guition', 'waveshare'])
       await E.page.locator('.v1-cardlist .v1-opt', { hasText: 'Temperature' }).click(); await settle(E.page, 200);
       assert.equal(await E.page.locator('.v1-sidetitle b').textContent(), 'Add a sensor card');
       assert.match(await E.page.locator('.v1-sidetitle .v1-meta').textContent(), /^Temperature · /);
-      assert.deepEqual(await rows(), [], 'nothing before typing');
-      await E.page.fill('.v1-side .v1-search input', 'sensor'); await settle(E.page, 150);
-      assert.deepEqual(await E.page.locator('.v1-cardlist .v1-opt p').allTextContents(), ['sensor.demo_sensor_243', 'sensor.demo_sensor_1'], 'the temperatures only');
+      assert.deepEqual(await E.page.locator('.v1-cardlist .v1-opt p').allTextContents(), ['sensor.demo_sensor_243', 'sensor.demo_sensor_1'], 'every temperature before typing, and only those');
       assert.deepEqual(await E.page.locator('.v1-cardlist .v1-val').allTextContents(), ['19.46 °C', '21.5 °C'], 'each with its value, as Home Assistant shows it');
+      await E.page.fill('.v1-side .v1-search input', '243'); await settle(E.page, 150);
+      assert.deepEqual(await E.page.locator('.v1-cardlist .v1-opt p').allTextContents(), ['sensor.demo_sensor_243'], 'typing narrows the same list');
       await E.page.locator('.v1-side .btn', { hasText: '‹ Sensor' }).click(); await settle(E.page, 150);
       await E.page.locator('.v1-side .btn', { hasText: '‹ Card types' }).click(); await settle(E.page, 150);
       assert.equal((await rows()).length, 8, 'back at the types');
+      await E.page.locator('.v1-cardlist .v1-opt', { hasText: 'Light' }).click(); await settle(E.page, 200);
+      const ids = await E.page.locator('.v1-cardlist .v1-opt p').allTextContents();
+      assert.ok(ids.length > 1 && ids.every((x) => x.startsWith('light.')), `every light, no query (${ids.length})`);
+      await E.page.locator('.v1-side .btn', { hasText: '‹ Card types' }).click(); await settle(E.page, 150);
+      await E.page.locator('.v1-cardlist .v1-opt', { hasText: 'Sensor' }).click(); await settle(E.page, 200);
+      await E.page.locator('.v1-cardlist .v1-opt', { hasText: 'Any sensor' }).click(); await settle(E.page, 300);
+      const any = await E.page.locator('.v1-cardlist .v1-opt p').count();
+      await E.page.fill('.v1-side .v1-search input', '.'); await settle(E.page, 150);
+      assert.equal(await E.page.locator('.v1-cardlist .v1-opt p').count(), any, `every sensor before typing (${any}): what a match-all search finds`);
+      assert.equal(await E.page.locator('.v1-cardlist .v1-meta').count(), 0, 'no "more" line: no pages');
       await E.page.locator('.v1-side .btn.icon', { hasText: '✕' }).click(); await settle(E.page, 150);
     });
 

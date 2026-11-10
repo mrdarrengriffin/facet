@@ -230,4 +230,7 @@ button, input, select { font: inherit; color: inherit; }
 .v1-cardlist.found .v1-opt.hit { gap: var(--sp-3); align-items: flex-start; }
 .v1-cardlist.found .v1-opt.hit .v1-ftxt { flex: 1; min-width: 0; }
 .v1-cardlist.found .v1-opt.hit .v1-ftxt > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* a type's whole list (#190): taller, and rows off screen are skipped (a house runs to thousands of sensors) */
+.v1-cardlist.found.all { max-height: min(60vh, 560px); }
+.v1-cardlist.all .v1-opt.hit { content-visibility: auto; contain-intrinsic-size: auto 52px; }
 .v1-val { flex: none; max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-top: 3px; font: 400 12px/1.3 var(--sans); font-variant-numeric: tabular-nums; color: var(--f-text-dim); text-align: right; }

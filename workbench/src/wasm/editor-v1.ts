@@ -560,8 +560,9 @@ function cardSide(p: Page, i: number): HTMLElement[] {
   return out;
 }
 
-// 2. an empty place picked: first the type of card (Screen, Light, ... Sensor by what it measures), then a search box;
-// nothing is listed before something is typed (a house runs to thousands of entities: the panel never sends them all)
+// 2. an empty place picked: first the type of card (Screen, Light, ... Sensor by what it measures), then every entity of
+// that type in one list (no pages), the search box above it narrowing it as you type. Before a type is picked, typing
+// searches every entity a card can show (the first 40 matches: that list is the whole house)
 type Kind = { id: string; label: string; doms: string[]; classes?: [string, string][] };
 const SENSOR_CLASSES: [string, string][] = [
   ['temperature', 'Temperature'], ['humidity', 'Humidity'], ['power', 'Power'], ['energy', 'Energy'], ['battery', 'Battery'],
@@ -598,7 +599,7 @@ function loadIndex(): Promise<void> {
   }).finally(() => { idxRun = null; });
   return idxRun;
 }
-async function find(doms: string[], dc: string, q: string) {
+async function find(doms: string[], dc: string, q: string, cap = 40) {
   let rows: Row[];
   if (host.panel) {
     if (!idx || idx.state !== 'ok') await loadIndex(); else void loadIndex();  // old: read again behind the scenes
@@ -608,7 +609,7 @@ async function find(doms: string[], dc: string, q: string) {
   } else rows = doms.flatMap((d) => options[d] ?? []);
   const qq = q.toLowerCase(), dcs = dc ? dc.split(',') : [];
   const all = rows.filter((o) => (!dcs.length || dcs.includes(o.dc ?? '')) && (o.id.toLowerCase().includes(qq) || o.name.toLowerCase().includes(qq)));
-  return { state: 'ok' as const, why: undefined as string | undefined, found: all.slice(0, 40), more: Math.max(0, all.length - 40), left: host.panel ? idx?.left ?? 0 : 0 };
+  return { state: 'ok' as const, why: undefined as string | undefined, found: all.slice(0, cap), more: Math.max(0, all.length - cap), left: host.panel ? idx?.left ?? 0 : 0 };
 }
 /** an entity's state in words, as Home Assistant shows it: a number with its unit, a door Open / Closed, motion
  *  Detected / Clear, on / off as On / Off, anything else with a capital */
@@ -630,8 +631,10 @@ function stateText(o: { id: string; dc?: string; st?: string; unit?: string }) {
   const w = st.replace(/_/g, ' ');
   return `${w[0].toUpperCase()}${w.slice(1)}${o.unit ? ` ${o.unit}` : ''}`;
 }
-/** a search box and its matches (nothing until something is typed); pick(id) when a match is tapped */
-function searchBox(doms: string[], dc: string, label: string, pick: (id: string) => void, extra?: (box: HTMLElement) => void, focus = true): HTMLElement[] {
+/** a search box and its matches; pick(id) when a match is tapped. all = the whole list of `doms` straight away, the
+ *  text filtering it (one list, no "more"; rows off screen are skipped by the browser: .v1-cardlist.all); otherwise
+ *  nothing until something is typed, then the first 40 matches */
+function searchBox(doms: string[], dc: string, label: string, pick: (id: string) => void, extra?: (box: HTMLElement) => void, focus = true, all = false): HTMLElement[] {
   // one field: a magnifier, the text, its own clear (×) once something is typed
   const field = h('label', 'v1-search');
   field.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>';
@@ -639,7 +642,7 @@ function searchBox(doms: string[], dc: string, label: string, pick: (id: string)
   q.type = 'text';
   q.autocomplete = 'off';
   q.spellcheck = false;
-  q.placeholder = 'Start typing to search';
+  q.placeholder = all ? `Filter ${label.toLowerCase()}` : 'Start typing to search';
   q.setAttribute('aria-label', `Search ${label}`);
   const clr = h('button', 'v1-search-clear', '×');
   clr.type = 'button';
@@ -647,15 +650,15 @@ function searchBox(doms: string[], dc: string, label: string, pick: (id: string)
   clr.hidden = true;
   clr.onclick = () => { q.value = ''; q.dispatchEvent(new Event('input')); q.focus(); };
   field.append(q, clr);
-  const box = h('div', 'v1-cardlist');
+  const box = h('div', all ? 'v1-cardlist all' : 'v1-cardlist');
   let seq = 0, timer = 0;
   const idle = () => { box.replaceChildren(); extra?.(box); };
   const run = async () => {
     const v = q.value.trim(), my = ++seq;
-    box.classList.toggle('found', !!v);
-    if (!v) { idle(); return; }
+    box.classList.toggle('found', !!v || all);
+    if (!v && !all) { idle(); return; }
     box.replaceChildren(h('p', 'dim', host.panel && (!idx || idx.state !== 'ok') ? 'Reading your entities from Home Assistant…' : 'Searching…'));
-    const r = await find(doms, dc, v);
+    const r = await find(doms, dc, v, all ? Infinity : 40);
     if (my !== seq) return;  // typed on since
     box.replaceChildren();
     if (r.state === 'off') { box.append(h('p', 'v1-note', 'Home Assistant is not set up: Settings > Home Assistant.')); return; }
@@ -671,12 +674,12 @@ function searchBox(doms: string[], dc: string, label: string, pick: (id: string)
       b.onclick = () => pick(o.id);
       box.append(b);
     }
-    if (!r.found.length) box.append(h('p', 'dim', 'Nothing matches.'));
+    if (!r.found.length) box.append(h('p', 'dim', v ? 'Nothing matches.' : `No ${label.toLowerCase()} entities in this Home Assistant.`));
     if (r.more) box.append(h('p', 'v1-meta', `${r.more} more: type more of the name to narrow it.`));
     if (r.left) box.append(h('p', 'v1-meta', `${r.left} entities did not fit in this panel's memory and are not searched.`));
   };
   q.oninput = () => { clr.hidden = !q.value; clearTimeout(timer); timer = window.setTimeout(() => void run(), 60); };
-  idle();
+  if (all) void run(); else idle();
   if (focus) requestAnimationFrame(() => q.focus());
   return [field, box];
 }
@@ -730,7 +733,7 @@ function addCardSide(p: Page): HTMLElement[] {
     return out;
   }
   if (k) {
-    out.push(...searchBox(k.doms, cls?.[0] ?? '', cls ? cls[1] : k.label, (id) => put(cardFor(id, t.size))));
+    out.push(...searchBox(k.doms, cls?.[0] ?? '', cls ? cls[1] : k.label, (id) => put(cardFor(id, t.size)), undefined, true, true));
     return out;
   }
   // the types; typing straight away searches every entity a card can show
