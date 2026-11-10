@@ -6,10 +6,10 @@
 import { url } from '../lib/nav';
 
 const sizes = [
-  ['1 × 1', 'One square', 'A tile: the icon, the name and its state, such as a light and its level.', 'entity-tile'],
-  ['Half', 'Half a square', 'The name over the state. Two halves share one square, one above the other.', 'entity-tile'],
-  ['2 × 1', 'Two squares across', 'The card with its picture, such as the animated icon for Weather, and a line under it.', 'card'],
-  ['2 × 2', 'Four squares', 'The card with room to spare, such as the record and the track for Media.', 'card'],
+  ['1 × 1', 'One square', 'A tile: the icon, the name and its state, such as a light and its level.'],
+  ['Half', 'Half a square', 'The name over the state. Two halves share one square, one above the other.'],
+  ['2 × 1', 'Two squares across', 'The card with its picture, such as the animated icon for Weather, and a line under it.'],
+  ['2 × 2', 'Four squares', 'The card with room to spare, such as the record and the track for Media.'],
 ];
 const types = [
   ['Light (or a switch)', 'A tap toggles it, opens the Light screen for it, or does nothing.'],
@@ -29,11 +29,12 @@ const types = [
   </p>
 
   <h3 id="sizes">Card sizes</h3>
-  <p>Home is a grid three squares across, the same on the 480 and the 720 panel. Every card can be any of these sizes.</p>
+  <p>Home is a grid three squares across, the same on the 480 and the 720 panel. Every card can be any of these sizes; the <a href={url('/editor/#sizes')}>editor</a> sets them.</p>
+  <figure class="page-shot"><img src={url('/editor/sizes.png')} width="1144" height="1144" alt="A Home with a 2 by 1 Weather card, two half sensor cards, a 2 by 2 Media card and two 1 by 1 light cards." loading="lazy" style="max-width: 420px" /><figcaption>2 × 1, two halves, 2 × 2 and 1 × 1</figcaption></figure>
   <table>
     <thead><tr><th>Shape</th><th>Size</th><th>What it is for</th></tr></thead>
     <tbody>
-      {sizes.map(([name, size, about, id]) => <tr><td><a href={url(`/components/${id}/`)}>{name}</a></td><td>{size}</td><td>{about}</td></tr>)}
+      {sizes.map(([name, size, about]) => <tr><td><strong>{name}</strong></td><td>{size}</td><td>{about}</td></tr>)}
     </tbody>
   </table>
 
