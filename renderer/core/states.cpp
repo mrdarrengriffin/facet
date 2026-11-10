@@ -133,19 +133,33 @@ void walk(lv_obj_t *o, const std::string &path, std::vector<std::pair<std::strin
 }
 }  // namespace
 void refill_fade(lv_obj_t *root, const std::function<void()> &rebuild, bool animate, bool shared) {
-  const uint32_t ms = animate && root ? mo::duration(root, mo::fade, mo::OPA) : 0;
-  struct Was { std::string path; const lv_obj_class_t *cls; lv_part_t part; lv_style_prop_t prop; lv_style_value_t v; };
+  uint32_t ms = animate && root ? mo::duration(root, mo::fade, mo::OPA) : 0;
+  // what each object looked like before (8 bytes a value: the object's place in the walk, the part and property's
+  // index, the value), sized once: with shared every property of every part is kept (45 an object), and as 40-byte
+  // entries with a path each a big card's refresh asked for over 100 KB at a time, every value change (the 480
+  // panel ran out of memory on it). A card of more than FADE_MAX objects just changes, without the fade.
+  constexpr size_t FADE_MAX = 96;
+  struct Was { uint16_t at; uint8_t part, prop; lv_style_value_t v; };
+  constexpr size_t NPARTS = sizeof PARTS / sizeof PARTS[0], NPROPS = sizeof PROPS / sizeof PROPS[0];
+  std::vector<std::pair<std::string, lv_obj_t *>> objs;
+  std::vector<const lv_obj_class_t *> cls;
   std::vector<Was> was;
   if (ms) {
-    std::vector<std::pair<std::string, lv_obj_t *>> objs;
     walk(root, "", objs);
-    for (auto &[path, x] : objs)
-      for (lv_part_t part : PARTS)
-        for (lv_style_prop_t prop : PROPS) {
+    if (objs.size() > FADE_MAX) ms = 0, objs.clear(), objs.shrink_to_fit();
+  }
+  if (ms) {
+    was.reserve(objs.size() * NPARTS * NPROPS);
+    for (size_t i = 0; i < objs.size(); i++)
+      for (size_t pa = 0; pa < NPARTS; pa++)
+        for (size_t pr = 0; pr < NPROPS; pr++) {
           lv_style_value_t v;
-          if (lv_obj_get_local_style_prop(x, prop, &v, part) == LV_STYLE_RES_FOUND) was.push_back({path, lv_obj_get_class(x), part, prop, v});
-          else if (shared) was.push_back({path, lv_obj_get_class(x), part, prop, lv_obj_get_style_prop(x, part, prop)});  // resolved
+          lv_obj_t *x = objs[i].second;
+          if (lv_obj_get_local_style_prop(x, PROPS[pr], &v, PARTS[pa]) == LV_STYLE_RES_FOUND) was.push_back({(uint16_t) i, (uint8_t) pa, (uint8_t) pr, v});
+          else if (shared) was.push_back({(uint16_t) i, (uint8_t) pa, (uint8_t) pr, lv_obj_get_style_prop(x, PARTS[pa], PROPS[pr])});  // resolved
         }
+    cls.reserve(objs.size());
+    for (auto &o : objs) cls.push_back(lv_obj_get_class(o.second));  // its class (the object itself goes in the rebuild)
   }
   rebuild();
   if (!ms) return;
@@ -153,9 +167,12 @@ void refill_fade(lv_obj_t *root, const std::function<void()> &rebuild, bool anim
   walk(root, "", now);
   lv_display_t *disp = lv_obj_get_display(root);
   const int32_t big = disp ? lv_display_get_horizontal_resolution(disp) * lv_display_get_vertical_resolution(disp) / 16 : 0;
+  std::vector<lv_obj_t *> match(objs.size(), nullptr);  // each old object's new one (same place, same class), once
+  for (size_t i = 0; i < objs.size(); i++)
+    for (auto &[np, x] : now)
+      if (np == objs[i].first && lv_obj_get_class(x) == cls[i]) { match[i] = x; break; }
   for (const Was &w : was)
-    for (auto &[path, x] : now)
-      if (path == w.path && lv_obj_get_class(x) == w.cls) { fade_value(root, x, w.part, w.prop, w.v, ms, big, shared); break; }
+    if (lv_obj_t *x = match[w.at]) fade_value(root, x, PARTS[w.part], PROPS[w.prop], w.v, ms, big, shared);
 }
 
 void restyle(lv_obj_t *o, const std::function<void()> &change, bool animate) {
