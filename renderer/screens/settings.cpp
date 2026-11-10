@@ -450,18 +450,18 @@ void build_settings(lv_obj_t *parent, fw::Props p) {
   lv_obj_t *c = fp.body;
 
   // per group: a Section header (size label) over its rows; groups a group apart
-  {  // "panel": Screens (Settings > Screens: which screens this panel has, their sources and options) + Home Assistant
+  {  // "panel": Screens (Settings > Screens: every screen of this panel, their sources and options) + Home Assistant
     // (Settings > Home Assistant: the panel's own link to HA, screens/ha_link.cpp)
     group(c, "panel", true);
     Doc deck;
     deserializeJson(deck, fw::spec::deck_json());
-    int on = 0, all = 0;
+    int all = 0;
     for (ArduinoJson::JsonVariantConst x : deck["pages"].as<ArduinoJson::JsonArrayConst>())
-      if (strcmp(x["kind"] | "", "home")) on++;  // the deck's pages (not the Homes) + the page kinds it has none of
-    all = on + (int) fw::spec::off_kinds().size();
+      if (strcmp(x["kind"] | "", "home")) all++;  // the deck's pages (not the Homes) + the built-in screens it has none of
+    all += (int) fw::spec::off_kinds().size();
     Doc rd;
     rd["title"] = "Screens", rd["icon"] = "none", rd["trailing"] = "value-chevron";
-    rd["value"] = (std::to_string(on) + " of " + std::to_string(all) + " on").c_str();
+    rd["value"] = (std::to_string(all) + (all == 1 ? " screen" : " screens")).c_str();
     if (lv_obj_t *r = build("list_row", c, rd))
       lv_obj_add_event_cb(r, [](lv_event_t *e) {  // after the List row's own tap (event tap + sound open)
         auto *o = (lv_obj_t *) lv_event_get_current_target(e);

@@ -2,12 +2,12 @@
   "id": "screen_set",
   "tests": [
     {
-      "name": "Show on Home toggles",
+      "name": "Card on Home toggles",
       "kind": "interaction",
       "steps": [
         {
           "tap": {
-            "text": "Show on Home"
+            "text": "Card on Home"
           }
         }
       ],

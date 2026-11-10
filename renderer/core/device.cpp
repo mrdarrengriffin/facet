@@ -137,7 +137,7 @@ lv_obj_t *make(Device *d, const std::string &id, bool at_root, std::vector<lv_ob
   return scr;
 }
 
-// Kept pages (facet-243): Home and the deck's pages are built once, in the idle gaps (prebuild), and parked when
+// Kept pages (facet-243): Home and the screens its cards open (spec::used_kinds) are built once, in the idle gaps (prebuild), and parked when
 // another screen shows (moved to a never-loaded screen of the same display: the panel's refresh never walks them; hidden
 // on the shown screen they cost ~80 ms before every render on the Waveshare), so a tap shows a page instead of building
 // it. A parked page does no drawing; its binds keep the data and repaint when it shows again (core/ha.h asleep / wake). It keeps its scroll and state. A settings or look
@@ -152,7 +152,9 @@ size_t mem_free() { return mem_hook() ? mem_hook()() : SIZE_MAX; }  // no hook (
 bool roomy(size_t need = 0) { return !floor_bytes() || mem_free() >= floor_bytes() + need; }
 int &keep_max() { static int n = 0; return n; }
 uint32_t &kept_all_at() { static uint32_t t = 0; return t; }  // lv_tick when the kept pages first reached the cap (0 = not yet)
-bool keepable(const std::string &id) { return id == "home" || (id.find('?') == std::string::npos && spec::deck_kinds().count(id)); }
+// kept: Home and the screens one tap from it (spec::used_kinds, #177: a screen nothing on Home opens is built when it
+// shows and dropped when it leaves, so its feeds stop)
+bool keepable(const std::string &id) { return id == "home" || (id.find('?') == std::string::npos && spec::used_kinds().count(id)); }
 std::string entry_of(const std::string &id) {
   ArduinoJson::JsonDocument e;
   if (!spec::deck_entry(id, e)) return "";
@@ -247,10 +249,11 @@ void prebuild(lv_timer_t *t) {
   if (d->pre_done && lv_tick_elaps(d->pre_done) < 250) return;
   std::vector<std::string> want{"home"};
   ArduinoJson::JsonDocument deck;
+  const std::set<std::string> used = spec::used_kinds();
   if (!deserializeJson(deck, spec::deck_json()))
     for (ArduinoJson::JsonVariantConst pg : deck["pages"].as<ArduinoJson::JsonArrayConst>()) {
       const std::string kind = pg["kind"] | "";
-      if (kind != "home" && keepable(kind) && std::find(want.begin(), want.end(), kind) == want.end()) want.push_back(kind);
+      if (kind != "home" && used.count(kind) && std::find(want.begin(), want.end(), kind) == want.end()) want.push_back(kind);
     }
   for (const std::string &id : want) {
     auto it = d->kept.find(id);
@@ -626,16 +629,17 @@ void toast(Props t, std::function<void()> on_action) {
   }
 }
 // a deck change kept without rebuilding what shows (spec.h deck_set: Settings > Screens > a screen, a screen's own
-// pick): a kept page whose entry changed is built again when it shows (or in the idle gaps), one gone from the deck is
-// dropped; the shown page made the change itself, so it only takes the new entry. The changed page's feeds take its
+// pick): a kept page whose entry changed is built again when it shows (or in the idle gaps), one no Home opens any more
+// is dropped; the shown page made the change itself, so it only takes the new entry. The changed page's feeds take its
 // new settings at once (spec::page_feeds), so its Home card follows before the page is built again; not while that
 // page shows (its own pick: the feed already has it).
 void kept_changed(const char *id) {
   bool shown = false;
+  const std::set<std::string> used = spec::used_kinds();
   for (Device *d : devices) {
     for (auto it = d->kept.begin(); it != d->kept.end();) {
       const std::string e = entry_of(it->first);
-      const bool gone = it->first != "home" && !spec::deck_kinds().count(it->first);
+      const bool gone = it->first != "home" && !used.count(it->first);  // no longer one tap from Home
       if (it->second.scr == d->screen) {
         it->second.entry = e;
         if (it->first == id) shown = true;
@@ -653,10 +657,11 @@ void kept_changed(const char *id) {
   if (!shown) spec::page_feeds(id);
 }
 void reload(const char *id) {
+  const std::set<std::string> used = spec::used_kinds();
   for (Device *d : devices)  // kept pages it touched go stale (a deck change: the pages whose entry changed, the gone ones)
     for (auto it = d->kept.begin(); it != d->kept.end();) {
       const bool deck = !strcmp(id, "deck");
-      const bool gone = deck && it->first != "home" && !spec::deck_kinds().count(it->first);
+      const bool gone = deck && it->first != "home" && !used.count(it->first);
       if (gone && it->second.scr != d->screen) { lv_obj_delete(it->second.scr); it = d->kept.erase(it); continue; }
       if (gone || (deck ? entry_of(it->first) != it->second.entry : it->first == id)) it->second.stale = true;
       ++it;

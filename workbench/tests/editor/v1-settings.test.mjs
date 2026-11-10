@@ -46,22 +46,19 @@ describe('Editor v1 Settings', () => {
     assert.ok(caps.includes('Look') && caps.includes('Units'));
   });
 
-  it('Screens: a row opens its screen on the live panel; off and on again puts it at the end of the swipe', async () => {
+  it('Screens: every built-in screen, no on / off; a row opens it on the live panel', async () => {
     await page.locator('.v1-nav', { hasText: 'Screens' }).click(); await settle(page, 200);
     const was = await pages();
-    const row = page.locator('.v1-side .v1-nav').filter({ hasText: 'On' }).nth(1);
+    const kinds = await page.evaluate(() => Object.keys(window.__v1.boot().screens));
+    assert.equal(await page.locator('.v1-side .v1-nav').count(), kinds.length, 'a row per built-in screen');
+    const row = page.locator('.v1-side .v1-nav').nth(1);
     const name = (await row.locator('.v1-ftxt').textContent()).trim();
     await row.click(); await settle(page, 300);
     assert.equal((await page.locator('.v1-sidetitle b').textContent()).trim(), name);
     assert.match(await page.textContent('#v1-main .v1-stage .v1-meta'), new RegExp(`Live panel · ${name}`), 'the live panel shows that screen');
-    await page.locator('.v1-side .v1-switch').click(); await settle(page, 200);
-    const off = await pages();
-    assert.equal(off.length, was.length - 1);
-    assert.match(await page.textContent('#v1-main .v1-stage .v1-meta'), new RegExp(`Live panel · ${name}`), 'still shown while off');
-    const gone = was.find((k) => !off.includes(k));
-    await page.locator('.v1-side .v1-switch').click(); await settle(page, 200);
-    assert.equal((await pages()).at(-1), gone, 'on again = the end of the swipe');
-    assert.ok((await page.locator('.v1-side .v1-field').count()) >= 2, 'on, and its name (and options) show');
+    assert.equal(await page.locator('.v1-side .v1-switch').count(), 0, 'no on / off');
+    assert.ok((await page.locator('.v1-side .v1-field').count()) >= 1, 'its name (and options) show');
+    assert.deepEqual(await pages(), was, 'opening it changes nothing');
     await page.locator('.v1-sidehead .btn.icon').first().click(); await settle(page, 200);  // back to Screens
     await page.locator('.v1-sidehead .btn.icon').first().click(); await settle(page, 200);  // back to Settings
   });

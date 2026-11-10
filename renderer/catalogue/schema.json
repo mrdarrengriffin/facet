@@ -9610,7 +9610,7 @@
   },
   "screens": {
    "name": "screens",
-   "about": "Settings > Screens: every screen of this panel with where its data comes from and an on / off toggle; a screen off leaves Home. Tap a screen for its source and options.",
+   "about": "Settings > Screens: every screen of this panel with where its data comes from. Tap a screen for its source and options.",
    "contract": 1,
    "min": null,
    "slots": null,

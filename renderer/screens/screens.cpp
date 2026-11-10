@@ -1,16 +1,13 @@
 // Screens (Settings > Screens; the panel lab's Screens screen in WASM): which screens this panel has and
 // where each gets its data. On the contract: Screen > Page (fx::page) > Header + list Body, real components only (C1-C3):
 //   header   the Header (back + "Screens" + the screen chrome) in the Page's head
-//   body     a Section header "on this panel" (size label, as every settings group), then one List row per deck page
-//            (deck v2; not the Homes), then one
-//            per page kind the deck has none of (off; core/spec.h off_kinds): its name,
-//            the source as the sub line (core/sources.h: the deck entry's source, else the screen's first; "Built in"
-//            when it has none), and a real Toggle in its end slot (on = the screen is on: a Home card)
-//   taps     the Toggle = on / off: kept in this panel's deck (fw::spec::deck_set "on", stored like a sent deck, Home
-//            follows the next time it shows), event "deck" <id> on=true|false; the rest of the row opens the screen's
-//            page (navigate "screen_set?{"id": <id>}")
-// Off = not in the deck (a page you don't want is deleted, deck v2): switching one on adds it at the end, with its spec's
-// defaults; the start page can't be switched off.
+//   body     a Section header "on this panel" (size label, as every settings group), then one List row per screen:
+//            the deck's pages (deck v2; not the Homes, deck order), then every built-in screen the deck has no page
+//            of yet (core/spec.h off_kinds: its spec's defaults): its name and the source as the sub line
+//            (core/sources.h: the deck entry's source, else the screen's first; "Built in" when it has none). No on /
+//            off (#177): every built-in screen is always there; a screen reads its data only while it shows or a
+//            Home card opens it
+//   taps     a row opens the screen's page (navigate "screen_set?{"id": <id>}")
 // Sent: screens sent to this panel (the API, an agent; core/spec.h sent_kinds) that the deck has
 // no page of are not built-in kinds, so not on / off: after the list a Section header "sent" a group apart (above:group,
 // the spec renderer's rule), one List row each (its name, sub "Sent to this panel") with two real Buttons: "Add to deck"
@@ -56,15 +53,14 @@ std::string name_of(const std::string &id) {
   if (const fw::Component *c = fw::find(id.c_str())) return c->name;
   return id;
 }
-struct Row { std::string id; lv_obj_t *toggle; };
 struct Sent { std::string id; lv_obj_t *add, *remove; bool armed = false; };
-struct Page { lv_obj_t *root = nullptr; std::vector<Row> rows; std::vector<Sent> sent; };
+struct Page { lv_obj_t *root = nullptr; std::vector<Sent> sent; };
 // is o (an emitter) part of b
 bool within(lv_obj_t *o, lv_obj_t *b) { for (; o; o = lv_obj_get_parent(o)) if (o == b) return true; return false; }
 
 const char *META = R"({
   "role": "detail",
-  "about": "Settings > Screens: every screen of this panel with where its data comes from and an on / off toggle; a screen off leaves Home. Tap a screen for its source and options.",
+  "about": "Settings > Screens: every screen of this panel with where its data comes from. Tap a screen for its source and options.",
   "frame": [480, 480],
   "icons": ["back@glyph"],
   "props": []
@@ -100,13 +96,9 @@ void build_screens(lv_obj_t *parent, fw::Props) {
     ArduinoJson::JsonVariantConst sparam = sp["params"]["source"];
     const char *sv = x["params"]["source"] | (const char *) nullptr;
     rd["sub"] = fw::src::line(cat, id, x, sparam, sv ? std::string(sv) : fw::spec::param_default(sparam)).c_str();
-    rd["trailing"] = "none";
+    rd["trailing"] = "chevron";
     lv_obj_t *r = build("list_row", c, rd);
     if (!r) continue;
-    Doc tp;
-    tp["on"] = fw::spec::deck_on(x);
-    lv_obj_t *tg = build("toggle", end_of(r), tp);  // the real Toggle in the row's end slot
-    pg->rows.push_back({id, tg});
     char *nav = strdup(("screen_set?{\"id\":\"" + id + "\"}").c_str());  // freed with the row
     lv_obj_add_event_cb(r, [](lv_event_t *e) { free(lv_event_get_user_data(e)); }, LV_EVENT_DELETE, nav);
     lv_obj_add_event_cb(r, [](lv_event_t *e) {  // after the List row's own tap (event tap + sound)
@@ -158,15 +150,6 @@ void build_screens(lv_obj_t *parent, fw::Props) {
         Doc out;
         fw::spec::revert(id, out.to<ArduinoJson::JsonObject>());
         fw::emit(em, "spec", ("revert " + id).c_str());
-        return;
-      }
-    if (!strcmp(name, fw::st::SWITCH_EVENT))
-      for (const Row &r : pg->rows) {
-        if (r.toggle != from) continue;
-        const bool on = !strcmp(detail, "on");
-        Doc v;
-        v.set(on);
-        fw::spec::deck_change(from, r.id, "on", v.as<ArduinoJson::JsonVariantConst>());
         return;
       }
     if (lv_obj_t *up = lv_obj_get_parent(pg->root)) fw::notify(up, name, detail);  // the rest goes on up (navigate, back)

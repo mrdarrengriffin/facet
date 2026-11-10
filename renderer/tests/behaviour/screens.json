@@ -21,32 +21,20 @@
       }
     },
     {
-      "name": "toggle puts a screen on Home (a fresh panel: built-in screens start off it)",
+      "name": "no on / off: every screen is a row that opens its settings, no toggle",
       "kind": "interaction",
       "steps": [
         {
-          "tap": {
-            "comp": "toggle"
-          }
+          "wait": 100
         }
       ],
       "expect": {
-        "no_events": [
-          "navigate"
-        ],
-        "events": [
-          [
-            "toggle",
-            "on"
-          ],
-          [
-            "deck",
-            "on=true"
-          ]
-        ],
-        "sounds": [
-          "toggle-on"
-        ]
+        "absent": {
+          "comp": "toggle"
+        },
+        "exists": {
+          "text": "Moon"
+        }
       }
     },
     {

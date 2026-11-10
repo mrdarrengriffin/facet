@@ -1047,8 +1047,44 @@ inline bool deck_picked(const std::string &id, const std::string &key) {
   ArduinoJson::JsonDocument d;
   return deck_page(deck_json(), id, d) && d["params"][key.c_str()].is<const char *>();
 }
-// is this deck page there (deck_entry found one)? A page you don't want is not in the deck.
+// is this deck page there (deck_entry found one)? A deck page holds a screen's settings on this panel; every built-in
+// screen is there to open whether it has one or not (no on / off, #177)
 inline bool deck_on(ArduinoJson::JsonVariantConst entry) { return entry.is<ArduinoJson::JsonObjectConst>(); }
+// the page ids a Home opens in one tap in deck d: its cards' (a page card, or a tap on a page) and its header buttons'
+inline std::set<std::string> home_targets(ArduinoJson::JsonVariantConst d) {
+  std::set<std::string> ids;
+  for (ArduinoJson::JsonVariantConst x : d["pages"].as<ArduinoJson::JsonArrayConst>()) {
+    if (strcmp(x["kind"] | "", "home")) continue;
+    for (ArduinoJson::JsonVariantConst c : x["cards"].as<ArduinoJson::JsonArrayConst>())
+      if (c["page"].is<const char *>()) ids.insert(c["page"].as<const char *>());
+    ArduinoJson::JsonVariantConst ha_ = x["header_actions"];
+    if (ha_["button"].is<const char *>()) ids.insert(ha_["button"].as<const char *>());
+    for (ArduinoJson::JsonVariantConst b : ha_["buttons"].as<ArduinoJson::JsonArrayConst>())
+      if (b["page"].is<const char *>()) ids.insert(b["page"].as<const char *>());
+  }
+  return ids;
+}
+// the screens in use (#177): the kinds a Home opens in one tap (home_targets) and the start page's. Only these are built
+// ahead (core/device.cpp kept pages), so a screen nothing opens from Home reads no data until it is shown (the Overhead
+// radar asks adsb.lol nothing without an Overhead card)
+inline std::set<std::string> used_kinds() {
+  ArduinoJson::JsonDocument d;
+  deserializeJson(d, deck_json());
+  std::set<std::string> ids = home_targets(d.as<ArduinoJson::JsonVariantConst>()), used;
+  if (d["start"].is<const char *>()) ids.insert(d["start"].as<const char *>());
+  for (ArduinoJson::JsonVariantConst x : d["pages"].as<ArduinoJson::JsonArrayConst>())
+    if (ids.count(x["id"] | "") && strcmp(x["kind"] | "", "home")) used.insert(x["kind"] | "");
+  return used;
+}
+// does a Home open deck page (or kind) id: a card or a header button for it (Settings > Screens > a screen: Card on Home)
+inline bool on_home(const std::string &id) {
+  ArduinoJson::JsonDocument d;
+  deserializeJson(d, deck_json());
+  const std::set<std::string> ids = home_targets(d.as<ArduinoJson::JsonVariantConst>());
+  for (ArduinoJson::JsonVariantConst x : d["pages"].as<ArduinoJson::JsonArrayConst>())
+    if ((id == (x["id"] | "") || id == (x["kind"] | "")) && ids.count(x["id"] | "")) return true;
+  return false;
+}
 // the page kinds the deck has a page of
 inline std::set<std::string> deck_kinds() {
   ArduinoJson::JsonDocument d;
@@ -2282,9 +2318,11 @@ inline bool apply(const char *kind, const std::string &json, lv_obj_t *dry, Ardu
   return true;
 }
 // this panel's pick for page id (Settings > Screens; a page id, else the first page of that kind): key "source" /
-// "params.<name>" = value; "on" = false takes the page out of the deck (never the start page), true adds a page of
-// kind id at the end. Kept as the deck (a new rev, validated and stored like a sent one) without rebuilding what
-// shows; false = refused
+// "params.<name>" = value (a built-in screen with no deck page yet gets one: its settings live there); "on" = the
+// screen's card on Home (#177: no screen on / off): true adds a page of kind id when there is none and a card for it at
+// the end of the first Home when no Home opens it; false takes the cards and header buttons that open it off every
+// Home (its deck page and settings stay). Kept as the deck (a new rev, validated and stored like a sent one) without
+// rebuilding what shows; false = refused
 // why: the panel's reason when the deck refuses the change (the first error's words)
 inline bool deck_set(const std::string &id, const std::string &key, ArduinoJson::JsonVariantConst value, std::string *why) {
   ArduinoJson::JsonDocument d;
@@ -2293,27 +2331,26 @@ inline bool deck_set(const std::string &id, const std::string &key, ArduinoJson:
   int at = -1, i = 0;
   for (ArduinoJson::JsonVariant x : ps) { if (id == (x["id"] | "")) { at = i; break; } i++; }
   if (at < 0) { i = 0; for (ArduinoJson::JsonVariant x : ps) { if (id == (x["kind"] | "")) { at = i; break; } i++; } }
+  if (at < 0 && !(key == "on" && !value.as<bool>())) {  // a built-in screen's first setting: its deck page
+    if (!page_role(id) || !screen_known(id)) return false;
+    ArduinoJson::JsonObject n = ps.add<ArduinoJson::JsonObject>();
+    n["id"] = id, n["kind"] = id;
+    at = (int) ps.size() - 1;
+  }
   if (key == "on") {
+    const std::string pid = at >= 0 ? (ps[at]["id"] | id.c_str()) : id;
     if (value.as<bool>()) {
-      if (at >= 0 || !page_role(id)) return at >= 0;
-      ArduinoJson::JsonObject n = ps.add<ArduinoJson::JsonObject>();
-      n["id"] = id, n["kind"] = id;
-      for (ArduinoJson::JsonVariant x : ps)  // on = on Home too: its card at the end of the first Home (C52)
-        if (!strcmp(x["kind"] | "", "home")) {
-          ArduinoJson::JsonArray cs = x["cards"].is<ArduinoJson::JsonArray>() ? x["cards"].as<ArduinoJson::JsonArray>() : x["cards"].to<ArduinoJson::JsonArray>();
-          ArduinoJson::JsonObject card = cs.add<ArduinoJson::JsonObject>();
-          card["t"] = "page", card["page"] = id, card["size"] = "m";
-          break;
-        }
+      if (!home_targets(d.as<ArduinoJson::JsonVariantConst>()).count(pid))
+        for (ArduinoJson::JsonVariant x : ps)  // its card at the end of the first Home (C52)
+          if (!strcmp(x["kind"] | "", "home")) {
+            ArduinoJson::JsonArray cs = x["cards"].is<ArduinoJson::JsonArray>() ? x["cards"].as<ArduinoJson::JsonArray>() : x["cards"].to<ArduinoJson::JsonArray>();
+            ArduinoJson::JsonObject card = cs.add<ArduinoJson::JsonObject>();
+            card["t"] = "page", card["page"] = pid, card["size"] = "m";
+            break;
+          }
     } else {
       if (at < 0) return true;
-      if (id == (d["start"] | "") || (ps[at]["id"] | "") == std::string(d["start"] | "")) {
-        if (why) *why = "This is the start page, so it stays on. Pick another start page first.";
-        return false;
-      }
-      const std::string pid = ps[at]["id"] | id.c_str();
-      ps.remove(at);
-      for (ArduinoJson::JsonVariant x : ps) {  // off = gone from Home too: the cards and header shortcuts that open it
+      for (ArduinoJson::JsonVariant x : ps) {  // off Home: the cards and header shortcuts that open it (the page stays)
         if (ArduinoJson::JsonArray cs = x["cards"].as<ArduinoJson::JsonArray>())
           for (size_t k = cs.size(); k-- > 0;) if (pid == (cs[k]["page"] | "")) cs.remove(k);
         ArduinoJson::JsonVariant ha_ = x["header_actions"];

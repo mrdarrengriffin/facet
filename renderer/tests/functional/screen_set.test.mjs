@@ -50,32 +50,48 @@ export default {
       t.eq(rows.filter((c) => (c.props?.icon ?? 'none') !== 'none').length, 0, 'no icon at the start of any row');
       t.eq(comps(t, 'radio').filter((r) => t.visible(r) && radioOn(t, r)).length, 1, 'one radio on (the chosen source)');
     } },
-    { name: 'Show on Home off: the screen leaves the deck and its Home card goes with it; on again brings both back', async run(t) {
+    { name: 'Card on Home: on puts a Moon card on Home, off takes it away; the screen and its settings stay', async run(t) {
       await t.device();
       act(t, { do: 'nav.open', screen: 'screen_set', params: { id: 'moon' } });
-      const off = t.tap('Show on Home');
-      t.ok(off.some((e) => e.name === 'deck' && e.detail === 'moon on=false'), `kept: ${off.map((e) => `${e.name}(${e.detail})`).join(' ')}`);
-      t.ok(!t.texts().includes('Not changed'), 'no refusal');
+      const on = t.tap('Card on Home');
+      t.ok(on.some((e) => e.name === 'deck' && e.detail === 'moon on=true'), `kept: ${on.map((e) => `${e.name}(${e.detail})`).join(' ')}`);
       let d = deck(t);
-      t.ok(!d.pages.some((p) => p.id === 'moon'), 'Moon left the deck');
-      t.ok(!d.pages.some((p) => (p.cards ?? []).some((c) => c.page === 'moon')), 'its Home card went with it');
-      const on = t.tap('Show on Home');
-      t.ok(on.some((e) => e.name === 'deck' && e.detail === 'moon on=true'), 'on again');
+      t.eq(d.pages.find((p) => p.kind === 'home').cards.filter((c) => c.page === 'moon').length, 1, 'one Moon card on Home');
+      const off = t.tap('Card on Home');
+      t.ok(off.some((e) => e.name === 'deck' && e.detail === 'moon on=false'), 'off');
+      t.ok(!t.texts().includes('Not changed'), 'no refusal');
       d = deck(t);
-      t.ok(d.pages.some((p) => p.id === 'moon') && d.pages.find((p) => p.kind === 'home').cards.some((c) => c.page === 'moon'), 'Moon and its Home card are back');
+      t.ok(d.pages.some((p) => p.id === 'moon'), 'Moon keeps its deck page (no on / off: #177)');
+      t.ok(!d.pages.some((p) => (p.cards ?? []).some((c) => c.page === 'moon')), 'its Home card went');
+    } },
+    { name: 'a built-in screen with no deck page: its settings open, a pick makes its page (no card), Card on Home adds one', async run(t) {
+      const d0 = JSON.parse(JSON.stringify(FACTORY));
+      d0.pages = d0.pages.filter((p) => p.kind !== 'moon');
+      for (const p of d0.pages) if (p.cards) p.cards = p.cards.filter((c) => c.page !== 'moon');
+      await t.device(d0);
+      act(t, { do: 'nav.open', screen: 'moon' });
+      t.eq(t.where(), 'moon', 'Moon opens with no deck page');
+      act(t, { do: 'nav.open', screen: 'screen_set', params: { id: 'moon' } });
+      t.ok(t.part('list_row', 'Card on Home'), 'its settings show');
+      const on = t.tap('Card on Home');
+      t.ok(on.some((e) => e.name === 'deck' && e.detail === 'moon on=true'), `kept: ${on.map((e) => `${e.name}(${e.detail})`).join(' ')}`);
+      const d = deck(t);
+      t.ok(d.pages.some((p) => p.kind === 'moon'), 'its deck page now holds its settings');
+      t.eq(d.pages.find((p) => p.kind === 'home').cards.filter((c) => c.page === 'moon').length, 1, 'a Moon card on Home');
     } },
     { name: 'a refused change: a warn toast in the panel\'s words, no deck event, the screen shows what is kept', async run(t) {
-      await t.device();
-      const r = JSON.parse(t.b.spec('deck', { ...FACTORY, rev: FACTORY.rev + 1, start: 'clock' }) || '{}');
-      t.ok(r.ok, `a deck that starts on Clock: ${JSON.stringify(r.errors ?? '')}`);
-      act(t, { do: 'nav.open', screen: 'screen_set', params: { id: 'clock' } });
-      const evs = t.tap('Show on Home');
+      const d0 = JSON.parse(JSON.stringify(FACTORY));
+      const home = d0.pages.find((p) => p.kind === 'home');
+      home.cards = Array.from({ length: 24 }, () => ({ t: 'page', page: 'clock', size: '1x1' }));  // a full Home (budget cards)
+      for (const p of d0.pages) if (p !== home && p.cards) p.cards = p.cards.filter((c) => c.page !== 'moon');
+      await t.device(d0);
+      act(t, { do: 'nav.open', screen: 'screen_set', params: { id: 'moon' } });
+      const evs = t.tap('Card on Home');
       t.b.settle(1200);
       t.ok(!evs.some((e) => e.name === 'deck'), `no deck event (${evs.map((e) => e.name).join(' ')})`);
       t.ok(t.texts().includes('Not changed'), 'a toast says Not changed');
-      t.ok(t.texts().some((x) => /start page/i.test(x)), 'in the panel\'s words: the start page stays on');
-      const row = t.part('list_row', 'Show on Home');
-      t.ok(row, 'the screen is back');
+      t.ok(t.texts().some((x) => /cards on a home/i.test(x)), 'in the panel\'s words: the Home is full');
+      t.ok(t.part('list_row', 'Card on Home'), 'the screen is back');
     } },
   ],
 };
