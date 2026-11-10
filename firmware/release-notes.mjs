@@ -5,6 +5,8 @@
 //   ## New  ## Improved  ## Fixed  ## After updating  ## Known issues
 // Every bullet of New, Improved, Fixed and Known issues starts with a bold lead ("- **Calendar shows every
 // calendar.** More detail ... #8"): the lead is what Home Assistant's update card lists.
+// Docs never lag a release: every bullet of New and Improved (with its sub-points) links the docs page that explains
+// it (DOCS + a path whose page is in site/src/pages), or says "(no docs: <why>)"; check fails otherwise.
 //   node firmware/release-notes.mjs check <version>          fails when the file is missing or malformed
 //   node firmware/release-notes.mjs body <version> [<prev>]  the GitHub release body (the file + full-changelog link)
 //   node firmware/release-notes.mjs summary <version>        the OTA manifest's ota.summary (manifests.mjs uses it)
@@ -29,6 +31,23 @@ export const SUMMARY_MAX = 1200;
 export const ENTRY_MAX = 1000;
 const SECTIONS = ['New', 'Improved', 'Fixed', 'After updating', 'Known issues'];
 const LEAD = /^\*\*(.+?)\*\*/;
+export const DOCS = 'https://mrdarrengriffin.github.io/facet-docs/';
+// a docs URL's page exists in the site's source (site/src/pages: <path>.astro, <path>/index.astro, or a [param] page)
+export function docsPage(u) {
+  const path = u.slice(DOCS.length).split(/[?#]/)[0].replace(/\/+$/, '');
+  const pages = join(ROOT, 'site', 'src', 'pages');
+  if (!path) return existsSync(join(pages, 'index.astro'));
+  const segs = path.split('/');
+  const walk = (dir, i) => {
+    if (i === segs.length) return existsSync(join(dir, 'index.astro'));
+    const last = i === segs.length - 1;
+    if (last && existsSync(join(dir, `${segs[i]}.astro`))) return true;
+    if (existsSync(join(dir, segs[i])) && walk(join(dir, segs[i]), i + 1)) return true;
+    const dyn = existsSync(dir) && dir !== pages ? readdirSync(dir).filter((f) => /^\[.+\]/.test(f)) : [];  // not the root's catch-all
+    return dyn.some((f) => (last && f.endsWith('.astro')) || (!f.endsWith('.astro') && walk(join(dir, f), i + 1)));
+  };
+  return walk(pages, 0);
+}
 
 export const file = (v) => join(ROOT, 'release-notes', `${v}.md`);
 
@@ -95,6 +114,23 @@ const key = (v) => {
 export const cmp = (a, b) => { const x = key(a), y = key(b); for (let i = 0; i < 5; i++) if (x[i] !== y[i]) return x[i] - y[i]; return 0; };
 const stable = (v) => !v.includes('-');
 
+// the docs rule (check only, for the version being released): each bullet of New and Improved, with its sub-points,
+// links a docs page that exists, or says "(no docs: why)"
+export function docs(v) {
+  const { sections } = parse(v), errs = [];
+  for (const name of ['New', 'Improved']) {
+    const body = sections[name]?.body;
+    if (!body) continue;
+    for (const blk of body.split(/^(?=- )/m).filter((x) => x.startsWith('- '))) {
+      const lead = blk.match(/^- \*\*(.+?)\*\*/)?.[1] ?? blk.slice(2, 50);
+      const links = [...blk.matchAll(/\((https:\/\/mrdarrengriffin\.github\.io\/facet-docs\/[^)\s]*)\)/g)].map((m) => m[1]);
+      if (!links.length && !/\(no docs: [^)]+\)/.test(blk)) errs.push(`"## ${name}": "${lead}" links no docs page (add a link to ${DOCS}..., or "(no docs: why)")`);
+      for (const u of links) if (!docsPage(u)) errs.push(`"## ${name}": "${lead}": ${u} is no page in site/src/pages`);
+    }
+  }
+  if (errs.length) throw new Error(`release-notes/${v}.md: docs:\n  ${errs.join('\n  ')}`);
+}
+
 // the manifest's notes for <version>: [{ version, summary }], newest first
 export function entries(v) {
   const all = readdirSync(join(ROOT, 'release-notes')).filter((f) => f.endsWith('.md')).map((f) => f.slice(0, -3))
@@ -114,6 +150,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   try {
     if (cmd === 'check') {
       const s = summary(v), e = entries(v);
+      docs(v);
       console.log(`release-notes/${v}.md: ok, summary ${s.length} chars, notes ${e.map((x) => `${x.version} ${x.summary.length}`).join(', ')}`);
     } else if (cmd === 'entries') process.stdout.write(JSON.stringify(entries(v), null, 2) + '\n');
     else process.stdout.write(cmd === 'body' ? body(v, prev) : summary(v) + '\n');
