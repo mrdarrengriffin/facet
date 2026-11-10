@@ -106,9 +106,12 @@ void build_tick();
 // Kept pages (facet-243, core/device.cpp): Home and the deck's pages built once in the idle gaps and kept hidden, so a
 // tap shows a page instead of building it. keep_pages(n): at most n kept (0 = off, every screen built on tap). on_mem:
 // the host's free-PSRAM reading (each kept page's cost). kept_json: [{page, bytes, objects, build_ms, stale, shown, waiting}] (waiting: binds whose data changed while
-// hidden, repainted when it shows).
+// hidden, repainted when it shows). keep_floor(bytes): kept only while on_mem stays above it (0 = no floor); under it the
+// biggest hidden kept page goes first (#185).
 void keep_pages(int n);
 int keep_pages();
+void keep_floor(size_t bytes);
+size_t keep_floor();
 uint32_t kept_all();  // lv_tick ms when every page to keep was first kept (boot to all kept; 0 = not yet)
 void on_mem(size_t (*f)());
 void kept_json(ArduinoJson::JsonArray out);

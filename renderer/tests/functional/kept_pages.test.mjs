@@ -16,7 +16,7 @@ export default {
   tests: [
     { name: 'a tap made while a page builds (press and lift both inside the build) is given after it (#94)', async run(t) {
       t.ha.s[W] = { '': 'cloudy', temperature: '10.2' };
-      await t.device();
+      await t.device(FACTORY);
       const card = t.part('card', /clock/i) || t.find(/^clock$/i);
       t.ok(card, 'Home has a Clock card');
       if (!card) return;
@@ -40,7 +40,7 @@ export default {
       t.b.test('chip', JSON.stringify({ steps: [] }));
     } },
     { name: 'one big component builds with the chip read inside it (Moon: polls well past its nodes) (#94)', async run(t) {
-      await t.device();
+      await t.device(FACTORY);
       t.b.test('chip', JSON.stringify({ steps: [] }));
       const p0 = t.b.test('chip').polls;
       act(t, { do: 'nav.open', screen: 'moon' });
@@ -49,7 +49,7 @@ export default {
     } },
     { name: 'every deck page is built once in the idle gaps; a tap shows it without a build, Back too', async run(t) {
       t.ha.s[W] = { '': 'cloudy', temperature: '10.2' };
-      await t.device();
+      await t.device(FACTORY);
       keep(t, 8);
       idle(t, 3000);
       const ids = keep(t).map((k) => k.page).sort();
@@ -65,7 +65,7 @@ export default {
     } },
     { name: 'a hidden page: its data changes, its widgets wait until it shows', async run(t) {
       t.ha.s[W] = { '': 'cloudy', temperature: '10.2' };
-      await t.device();
+      await t.device(FACTORY);
       keep(t, 8);
       idle(t, 3000);
       act(t, { do: 'nav.open', screen: 'weather' });
@@ -77,8 +77,37 @@ export default {
       t.has(t.texts(), /^15°$/, 'shown: 15° at once');
       t.eq(page(t, 'weather').waiting, 0, 'nothing waiting once shown');
     } },
+    { name: 'kept by memory: under the free floor the biggest hidden page goes first, one per idle tick, none built ahead; over it they come back (#185)', async run(t) {
+      t.ha.s[W] = { '': 'cloudy', temperature: '10.2' };
+      await t.device(FACTORY);
+      const mem = (free) => t.b.test('keepmem', JSON.stringify({ floor: 300000, free })) ?? [];
+      mem(400000);
+      keep(t, 8);
+      idle(t, 3000);
+      const all = keep(t);
+      t.eq(all.length, 8, `over the floor: Home + the 7 deck pages kept (${all.map((k) => k.page)})`);
+      const big = all.filter((k) => !k.shown).sort((a, b) => b.objects - a.objects)[0];
+      mem(200000);
+      idle(t, 300);
+      const one = keep(t);
+      t.eq(one.length, 7, `under the floor: one page went in one idle tick (${one.map((k) => k.page)})`);
+      t.ok(!one.some((k) => k.page === big.page), `the biggest went first: ${big.page} (${big.objects} objects)`);
+      idle(t, 3000);
+      const left = keep(t);
+      t.eq(left.map((k) => k.page), ['home'], `then the rest; the shown page stays (${left.map((k) => k.page)})`);
+      const n = builds(t);
+      idle(t, 2000);
+      t.eq(builds(t), n, 'none built ahead while under the floor');
+      act(t, { do: 'nav.open', screen: 'clock' });
+      t.ok(!page(t, 'clock'), 'a page opened under the floor is not kept');
+      act(t, { do: 'nav.back' });
+      mem(400000);
+      idle(t, 3000);
+      t.eq(keep(t).length, 8, 'over the floor again: all kept again');
+      t.b.test('keepmem', JSON.stringify({ floor: 0, free: -1 }));
+    } },
     { name: 'scroll is kept: Home scrolled, a page, Back: Home where it was', async run(t) {
-      await t.device();
+      await t.device(FACTORY);
       keep(t, 8);
       idle(t, 3000);
       t.drag({ at: [t.b.S / 2, t.b.S * 0.8] }, { by: [0, -t.b.S * 0.4] });
@@ -89,7 +118,7 @@ export default {
       t.ok(t.b.scrolls().some((s) => s.sy === y0), `Home at ${y0} again`);
     } },
     { name: 'a deck change rebuilds only the pages it touched', async run(t) {
-      await t.device();
+      await t.device(FACTORY);
       keep(t, 8);
       idle(t, 3000);
       const deck = JSON.parse(JSON.stringify(FACTORY));
@@ -108,7 +137,7 @@ export default {
       t.ok(!page(t, 'weather').stale, 'and kept fresh');
     } },
     { name: 'a device mounted again while pages are kept: the old one goes cleanly, the new one keeps its own', async run(t) {
-      await t.device();
+      await t.device(FACTORY);
       keep(t, 8);
       idle(t, 3000);
       t.b.rebuild('device', {});  // the bench and the workbench mount a device again
@@ -118,7 +147,7 @@ export default {
       t.ok(page(t, 'clock').shown, 'and shows them');
     } },
     { name: 'a settings change, then a tap before the idle rebuild: built on the tap, never the stale page', async run(t) {
-      await t.device();
+      await t.device(FACTORY);
       keep(t, 8);
       idle(t, 3000);
       t.b.test('setting', 'textSize=large');  // a look change: every kept page stale (the shown one rebuilt by its restyle)

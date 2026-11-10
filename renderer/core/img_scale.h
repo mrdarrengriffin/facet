@@ -11,8 +11,8 @@
 // free PSRAM block can't hold at its box size keeps max_side px on its long side and LVGL scales it up smoothly when
 // drawn (fx::Pen::image, bilinear).
 // Memory: every buffer through FW_IMG_MALLOC (the panel: PSRAM), freed with FW_IMG_FREE (free_pixels()), except the
-// screen-size pictures (the idle art): those go into one of SLOTS buffers reserved once (slots_reserve) and handed
-// back after (slot_give), so a fragmented heap can't push the idle art into the memory fallback.
+// screen-size pictures (the idle art): those go into reserved buffers (Slots below: made while such a picture is on
+// screen, handed back after with slot_give), so a heap fragmented since can't push the idle art into the fallback.
 #pragma once
 #include <algorithm>
 #include <atomic>
@@ -46,50 +46,76 @@ struct Box {
   bool nearest = false;
   bool operator==(const Box &o) const { return w == o.w && h == o.h && r == o.r && shade == o.shade && s == o.s && nearest == o.nearest; }
 };
-// Reserved pictures: SLOTS buffers of one screen-size RGB565 picture each (the idle art shown + the next track's while
-// it comes in), made once (slots_reserve, the LVGL task: the first screen-size view, or the panel's boot with Idle shows
-// = Album art) and never freed. An opaque picture of at least half that size and at most all of it is made in a free
-// slot (Sink::begin, any task: a slot is taken and given back atomically) instead of a fresh allocation, and the decode
-// doesn't count its pixels against the free memory (Sink::need). No free slot (or not reserved): a normal allocation.
+// Reserved pictures: up to N buffers of one screen-size RGB565 picture each, one per screen-size view that is on
+// screen (the idle art shown, + the next track's while it comes in), made when that view is asked for (images.cpp
+// acquire: slots_want, the LVGL task) and freed when it goes (slots_trim): no screen-size picture on screen = none
+// held (#185: two held for good were 912 KB of the 480 panel's PSRAM). An opaque picture of at least half that size and
+// at most all of it is made in a free slot (Sink::begin, any task: a slot is taken and given back atomically) instead
+// of a fresh allocation, and the decode doesn't count its pixels against the free memory (Sink::need). No free slot (or
+// none made): a normal allocation. A slot is freed only while free: claimed first (busy), so a decode that looked at
+// it a moment before can't take it (slot_take checks the buffer again once it holds it).
 struct Slots {
   static constexpr int N = 2;
-  uint8_t *buf[N] = {};
+  std::atomic<uint8_t *> buf[N] = {};
   std::atomic<bool> busy[N] = {};
   std::atomic<int> n{0};
   size_t bytes = 0;
 };
 inline Slots &slots() { static Slots s; return s; }
-// the slots for w x h RGB565 (once; later calls keep the first): how many there are (0 = no memory)
-inline int slots_reserve(int w, int h) {
+// at least k slots for w x h RGB565 (at most N; the LVGL task): how many there are now (fewer = no memory). A slot of
+// another size (the screen turned) is freed first when free
+inline int slots_want(int w, int h, int k) {
   Slots &s = slots();
-  if (s.n.load() || w < 1 || h < 1) return s.n.load();
-  s.bytes = (size_t) w * h * 2;
-  int n = 0;
-  for (int i = 0; i < Slots::N; i++)
-    if ((s.buf[n] = (uint8_t *) FW_IMG_MALLOC(s.bytes))) n++;
-  s.n.store(n);
-  return n;
+  if (w < 1 || h < 1) return s.n.load();
+  const size_t bytes = (size_t) w * h * 2;
+  if (s.n.load() && s.bytes != bytes) {
+    for (int i = 0; i < Slots::N; i++) {
+      bool no = false;
+      uint8_t *p = s.buf[i].load();
+      if (p && s.busy[i].compare_exchange_strong(no, true)) { s.buf[i].store(nullptr); s.n--; FW_IMG_FREE(p); s.busy[i].store(false); }
+    }
+    if (s.n.load()) return 0;  // a slot of the old size still in use: none of this size yet
+  }
+  if (!s.n.load()) s.bytes = bytes;
+  for (int i = 0; i < Slots::N && s.n.load() < std::min(k, Slots::N); i++)
+    if (!s.buf[i].load())
+      if (uint8_t *p = (uint8_t *) FW_IMG_MALLOC(bytes)) { s.busy[i].store(false); s.buf[i].store(p); s.n++; }
+  return s.n.load();
+}
+// every slot (the host tests: as many as there can be)
+inline int slots_reserve(int w, int h) { return slots_want(w, h, Slots::N); }
+// free slots until at most k are left (the LVGL task); a busy one stays (asked again later): how many are left
+inline int slots_trim(int k) {
+  Slots &s = slots();
+  for (int i = Slots::N - 1; i >= 0 && s.n.load() > k; i--) {
+    bool no = false;
+    uint8_t *p = s.buf[i].load();
+    if (p && s.busy[i].compare_exchange_strong(no, true)) { s.buf[i].store(nullptr); s.n--; FW_IMG_FREE(p); s.busy[i].store(false); }
+  }
+  return s.n.load();
 }
 inline bool slot_fits(size_t bytes) { const Slots &s = slots(); return s.n.load() && bytes <= s.bytes && bytes * 2 >= s.bytes; }
 inline int slots_free() {
   Slots &s = slots();
   int f = 0;
-  for (int i = 0; i < s.n.load(); i++) f += !s.busy[i].load();
+  for (int i = 0; i < Slots::N; i++) f += s.buf[i].load() && !s.busy[i].load();
   return f;
 }
 inline uint8_t *slot_take(size_t bytes) {
   Slots &s = slots();
   if (!slot_fits(bytes)) return nullptr;
-  for (int i = 0; i < s.n.load(); i++) {
+  for (int i = 0; i < Slots::N; i++) {
     bool no = false;
-    if (s.busy[i].compare_exchange_strong(no, true)) return s.buf[i];
+    if (!s.buf[i].load() || !s.busy[i].compare_exchange_strong(no, true)) continue;
+    if (uint8_t *p = s.buf[i].load()) return p;  // still there once held (not freed in between)
+    s.busy[i].store(false);
   }
   return nullptr;
 }
 inline void slot_give(const uint8_t *p) {
   Slots &s = slots();
-  for (int i = 0; i < s.n.load(); i++)
-    if (s.buf[i] == p) { s.busy[i].store(false); return; }
+  for (int i = 0; i < Slots::N; i++)
+    if (p && s.buf[i].load() == p) { s.busy[i].store(false); return; }
 }
 
 // a view's finished pixels: w x h RGB565, then (alpha) w x h A8. size = the bytes held (FW_IMG_MALLOC, or a slot)

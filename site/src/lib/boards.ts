@@ -2,7 +2,7 @@
 // largest screen first. One source for Install, Panels and the home page.
 export type Board = {
   id: string; name: string; chip: string; radio: string | null; bluetooth: boolean; resolution: { w: number; h: number };
-  inches: number; scale: string; touch: string; flash: string; speaker: boolean; status: string; memory?: { keep_pages: number };
+  inches: number; scale: string; touch: string; flash: string; speaker: boolean; status: string; memory?: { keep_pages: number; keep_floor_kb?: number };
   performance?: { tap_to_frame_ms?: [number, number]; render_ms?: [number, number]; boot_to_kept_s?: number; psram_free_mb_kept?: number; about?: string };
   links?: { label: string; url: string; maker: boolean }[];
 };

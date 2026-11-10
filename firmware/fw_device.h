@@ -310,6 +310,8 @@ inline void perf_json(ArduinoJson::JsonObject o) {
   o["active_s"] = lroundf(P.active_us / 1e5f) / 10.f;
   if (fw::dev::keep_pages() > 0) {  // kept pages (facet-243): what each costs in PSRAM
     o["keep"] = fw::dev::keep_pages();
+    o["keep_floor_kb"] = fw::dev::keep_floor() / 1024;
+    o["psram_free_kb"] = heap_caps_get_free_size(MALLOC_CAP_SPIRAM) / 1024;
     if (fw::dev::kept_all()) o["kept_all_s"] = lroundf(fw::dev::kept_all() / 100.f) / 10.f;  // boot to all pages kept (lv_tick runs from boot)
     fw::dev::kept_json(o["kept"].to<ArduinoJson::JsonArray>());
   }
@@ -2671,6 +2673,10 @@ inline void setup() {
 #define FW_KEEP_PAGES 0
 #endif
   fw::dev::keep_pages(FW_KEEP_PAGES);  // kept pages (facet-243): the board's cap (0 = every screen built on tap)
+#ifndef FW_KEEP_FLOOR_KB
+#define FW_KEEP_FLOOR_KB 0
+#endif
+  fw::dev::keep_floor((size_t) FW_KEEP_FLOOR_KB * 1024);  // ... and only while this much PSRAM stays free (#185)
   halink::setup();    // the panel's own Home Assistant link: its address + token (NVS), its reads (esp_http_client)
   fw::spec::load();
   for (const auto &x : fw::spec::S().log) ESP_LOGW("facet_wb", "spec boot: %s", x.c_str());
@@ -2711,12 +2717,8 @@ inline void setup() {
   fw::spec::want_all();  // every entity the deck's specs bind (the overrides were loaded before the first show)
   images::setup();       // Image URLs: the panel's own download + decode (fw_images.h)
   netread::setup();      // web reads for the feeds' direct sources (fw_net.h)
-  {  // Idle shows = Album art: its screen-size picture slots now, while the PSRAM is whole (img_scale.h Slots)
-    const char *show = fw::dev::setting("idleShow");
-    const int n = show && !strcmp(show, "art") ? fw::img::reserve_screen() : 2;
-    if (n < 2) ESP_LOGW("facet_img", "idle art: only %d of 2 screen-size picture slots (no memory)", n);
-  }
-  images::arena_setup();  // the pictures' own memory, after the slots, while the PSRAM is still whole (fw_images.h)
+  // the idle art's screen-size picture slots are made while it shows, not here (img_scale.h Slots, #185)
+  images::arena_setup();  // the pictures' own memory, while the PSRAM is still whole (fw_images.h)
   fw::dev::on_look([] {  // theme / accent / the sun: draw the page again in the new look (+ the probation chip)
     reshow_later(true);
     PR.shown = -2;

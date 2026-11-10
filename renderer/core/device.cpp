@@ -31,6 +31,7 @@ struct Device {
   lv_obj_t *toasts = nullptr;  // the Toast layer over every screen (the display's top layer; core/toasts.h)
   struct Kept { lv_obj_t *scr; std::string entry; bool stale; uint32_t bytes, objs, ms; };  // a kept page (show())
   std::map<std::string, Kept> kept;
+  std::map<std::string, uint32_t> cost;  // a page's PSRAM when last built (the free floor: is there room to keep it)
   lv_timer_t *pre = nullptr;  // the kept pages' prebuild (idle gaps)
   uint32_t shown_at = 0;      // the last screen change (the prebuild waits 300 ms after one)
   uint32_t pre_done = 0;      // the last prebuild's end (the next waits 250 ms from it)
@@ -143,7 +144,12 @@ lv_obj_t *make(Device *d, const std::string &id, bool at_root, std::vector<lv_ob
 // change makes every kept page stale; a deck change the pages whose entry changed (and Home: its cards); a spec change
 // that page. A stale page is built again when it shows, or in the idle gaps. keep_pages(n): at most n kept (0 = off:
 // every screen built on tap); a page over the cap is built on tap. The host's mem hook (free PSRAM) measures each.
+// By memory (#185): a page is kept only while the free PSRAM stays above keep_floor(); under it the biggest hidden kept
+// page goes first, one per idle tick, and a page whose last build would take the panel under it is not built ahead.
 size_t (*&mem_hook())() { static size_t (*f)() = nullptr; return f; }
+size_t &floor_bytes() { static size_t n = 0; return n; }
+size_t mem_free() { return mem_hook() ? mem_hook()() : SIZE_MAX; }  // no hook (the workbench): never under the floor
+bool roomy(size_t need = 0) { return !floor_bytes() || mem_free() >= floor_bytes() + need; }
 int &keep_max() { static int n = 0; return n; }
 uint32_t &kept_all_at() { static uint32_t t = 0; return t; }  // lv_tick when the kept pages first reached the cap (0 = not yet)
 bool keepable(const std::string &id) { return id == "home" || (id.find('?') == std::string::npos && spec::deck_kinds().count(id)); }
@@ -198,10 +204,14 @@ bool show(Device *d, const std::string &id, std::vector<lv_obj_t *> &items) {
   leave(old);
   d->screen = nullptr;
   if (nav().on && nav().stage == 1) nav().cur.del = lv_tick_get();
+  const size_t m0 = mem_free();
   lv_obj_t *scr = make(d, id, d->stack.size() <= 1, &items);
   if (!scr) return false;
   d->screen = scr;
-  if (keep_max() > 0 && keepable(id) && (int) d->kept.size() < keep_max()) d->kept[id] = {scr, entry_of(id), false, 0, 0, 0};
+  const size_t m1 = mem_free();
+  const uint32_t cost = m0 != SIZE_MAX && m0 > m1 ? (uint32_t) (m0 - m1) : 0u;
+  if (keepable(id)) d->cost[id] = cost;
+  if (keep_max() > 0 && keepable(id) && (int) d->kept.size() < keep_max() && roomy()) d->kept[id] = {scr, entry_of(id), false, cost, 0, 0};
   return true;
 }
 bool pointer_down() {
@@ -210,13 +220,27 @@ bool pointer_down() {
   return false;
 }
 int objects(lv_obj_t *x) { int n = 1; for (uint32_t i = 0; i < lv_obj_get_child_count(x); i++) n += objects(lv_obj_get_child(x, (int32_t) i)); return n; }
+// under the floor: the biggest hidden kept page goes (its measured PSRAM, else its objects); true = one went
+bool trim_kept(Device *d) {
+  if (roomy()) return false;
+  auto big = d->kept.end();
+  auto size_of = [&](const auto &k) { const uint32_t c = d->cost.count(k.first) ? d->cost[k.first] : 0; return std::make_pair(std::max(k.second.bytes, c), k.second.objs); };
+  for (auto it = d->kept.begin(); it != d->kept.end(); ++it)
+    if (it->second.scr != d->screen && (big == d->kept.end() || size_of(*it) > size_of(*big))) big = it;
+  if (big == d->kept.end()) return false;
+  lv_obj_delete(big->second.scr);
+  d->kept.erase(big);
+  return true;
+}
 // the idle gaps: one kept page built (or built again) per tick, never while a finger is down or a screen change waits
 void prebuild(lv_timer_t *t) {
   auto *d = (Device *) lv_timer_get_user_data(t);
   // idle: no finger for 500 ms, no screen change in the last 300 ms, none waiting (Home always has something turning,
   // so a running animation does not count)
   lv_display_t *disp = lv_obj_get_display(d->root);
-  if (keep_max() <= 0 || d->stack.empty() || d->timer || d->restyle || pointer_down()) return;
+  if (keep_max() <= 0 || d->stack.empty() || d->timer || d->restyle) return;
+  if (trim_kept(d)) return;  // one per tick
+  if (pointer_down() || !roomy()) return;
   if ((disp && lv_display_get_inactive_time(disp) < 500) || lv_tick_elaps(d->shown_at) < 300) return;
   // 250 ms from the END of the last build: building makes timers, LVGL's handler then starts its list again and would
   // run this one again in the same call, page after page, and never give the loop back (the Guition's task watchdog)
@@ -231,12 +255,13 @@ void prebuild(lv_timer_t *t) {
   for (const std::string &id : want) {
     auto it = d->kept.find(id);
     if (it == d->kept.end() && d->screen && d->stack.back() == id && (int) d->kept.size() < keep_max()) {  // the shown one: kept as it is
-      d->kept[id] = {d->screen, entry_of(id), false, 0, (uint32_t) objects(d->screen), 0};
+      d->kept[id] = {d->screen, entry_of(id), false, d->cost.count(id) ? d->cost[id] : 0u, (uint32_t) objects(d->screen), 0};
       return;
     }
     if (it != d->kept.end() && !it->second.stale) continue;
     if (it != d->kept.end() && it->second.scr == d->screen) continue;  // the shown page: built again by its restyle
     if (it == d->kept.end() && (int) d->kept.size() >= keep_max()) return;
+    if (it == d->kept.end() && d->cost.count(id) && !roomy(d->cost[id])) continue;  // its last build: no room to keep it
     if (it != d->kept.end()) { lv_obj_delete(it->second.scr); d->kept.erase(it); }
     const size_t m0 = mem_hook() ? mem_hook()() : 0;
     const uint32_t t0 = lv_tick_get();
@@ -247,8 +272,10 @@ void prebuild(lv_timer_t *t) {
     if (!scr) continue;
     lv_obj_set_parent(scr, park_of(d));
     const size_t m1 = mem_hook() ? mem_hook()() : 0;
-    d->kept[id] = {scr, entry_of(id), false, m0 > m1 ? (uint32_t) (m0 - m1) : 0u, (uint32_t) objects(scr), lv_tick_elaps(t0)};
+    d->cost[id] = m0 > m1 ? (uint32_t) (m0 - m1) : 0u;
     d->pre_done = lv_tick_get();
+    if (!roomy()) { lv_obj_delete(scr); return; }  // it took the panel under the floor: built on tap (its cost noted)
+    d->kept[id] = {scr, entry_of(id), false, m0 > m1 ? (uint32_t) (m0 - m1) : 0u, (uint32_t) objects(scr), lv_tick_elaps(t0)};
     if (!kept_all_at() && (int) d->kept.size() >= std::min<int>(keep_max(), (int) want.size())) kept_all_at() = d->pre_done;
     return;  // one per tick
   }
@@ -696,6 +723,8 @@ void keep_pages(int n) {
   }
 }
 int keep_pages() { return keep_max(); }
+void keep_floor(size_t bytes) { floor_bytes() = bytes; }
+size_t keep_floor() { return floor_bytes(); }
 uint32_t kept_all() { return kept_all_at(); }
 void on_mem(size_t (*f)()) { mem_hook() = f; }
 void kept_json(ArduinoJson::JsonArray out) {

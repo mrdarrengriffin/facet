@@ -301,6 +301,15 @@ extern "C" EMSCRIPTEN_KEEPALIVE const char *fw_test(const char *cmd, const char 
     if (!a.empty()) fw::dev::keep_pages(atoi(a.c_str()));
     fw::dev::kept_json(d.to<ArduinoJson::JsonArray>());
   }
+  else if (c == "keepmem") {  // kept pages by memory (#185): {"floor": bytes, "free": bytes the fake PSRAM reading gives, < 0 = no reading}
+    static long fake = -1;
+    ArduinoJson::JsonDocument in;
+    deserializeJson(in, a);
+    fake = in["free"] | -1L;
+    fw::dev::keep_floor((size_t) (in["floor"] | 0L));
+    fw::dev::on_mem(fake < 0 ? nullptr : +[]() -> size_t { return (size_t) fake; });
+    fw::dev::kept_json(d.to<ArduinoJson::JsonArray>());
+  }
   else if (c == "chip") {  // a fake touch chip read during builds (device.h late_start, #94): {"steps": ["p x y" | "l" | "-"]}
     struct Chip { std::vector<std::string> steps; size_t at = 0; int polls = 0; };  // one step per read, then nothing
     static Chip chip;

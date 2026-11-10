@@ -460,7 +460,7 @@ int main(int argc, char **argv) {
   }
   {  // 8. the same on a fragmented PSRAM (no block over 400 KB: a 480 decode with its pixels needs 494 KB + the 96 KB margin, and the old
      //    fetch guard asked for a 512 KB block here), with the
-     //    idle art's two screen-size slots reserved first (img_scale.h Slots, as the panel does at boot): every track
+     //    idle art's two screen-size slots reserved first (img_scale.h Slots, as the idle art makes them): every track
      //    still comes in at its 480 box (put() checks the size: the memory fallback would fail it), nothing leaks
     fw::img::leave();
     run_sim_ms(1000);

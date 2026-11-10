@@ -170,7 +170,10 @@ export default {
       t.ok(got >= 30 && got - blocky >= 4, `still at its box size, smooth: PSNR ${got.toFixed(1)} dB (a ${n} px copy blown up: ${blocky.toFixed(1)} dB)`);
       t.eq(st.views, 1, `only the shown picture kept (the CD's art let go): ${JSON.stringify(st)}`);
       t.ok(st.bytes >= o.w * o.h * 2 && st.bytes <= o.w * o.h * 2 + 256, `kept at ${o.w}x${o.h} RGB565 (${st.bytes} B)`);
-      t.ok(st.slots === 2 && st.slots_free === 1, `in a reserved slot: ${st.slots} slots, ${st.slots_free} free`);
+      t.ok(st.slots === 1 && st.slots_free === 0, `in a reserved slot, the one held (the coming one's given back): ${st.slots} slots, ${st.slots_free} free`);
+      t.update({ art: '' }); t.wait(1200);
+      const gone = t.img.stats();
+      t.ok(gone.slots === 0 && gone.bytes === 0, `no art: no slot held (#185): ${JSON.stringify(gone)}`);
     } },
     { name: 'bounds at odd sizes, and fuzz (sizes, art or none)', async run(t) {
       const bad = [];

@@ -22,6 +22,8 @@ CONFIG_SCHEMA = cv.Schema(
         cv.Optional("density", default="1.5x"): cv.one_of("1x", "1.5x"),
         # deck pages kept built (core/device.cpp kept pages; boards/<id>.json memory.keep_pages; 0 = every page built on tap)
         cv.Optional("keep_pages", default=0): cv.int_range(min=0, max=16),
+        # ... kept only while this much PSRAM stays free (KB; boards/<id>.json memory.keep_floor_kb; 0 = no floor)
+        cv.Optional("keep_floor_kb", default=0): cv.int_range(min=0, max=65536),
         # = safe_mode boot_is_good_after: how long the "Update settling" chip counts down after an OTA
         cv.Optional("probation", default="180s"): cv.positive_time_period_seconds,
     }
@@ -43,3 +45,4 @@ async def to_code(config):
         cg.add_build_flag("-DFW_1X")
     cg.add_define("FW_PROBATION_S", config["probation"].total_seconds)
     cg.add_define("FW_KEEP_PAGES", config["keep_pages"])
+    cg.add_define("FW_KEEP_FLOOR_KB", config["keep_floor_kb"])

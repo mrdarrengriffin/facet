@@ -159,26 +159,42 @@ const Budget &budget() { return B; }
 
 namespace {
 // a screen-size opaque cover (the idle art: square corners, at least half the screen, at most all of it): its pixels go
-// into the reserved slots (img_scale.h Slots), reserved on the first
+// into the reserved slots (img_scale.h Slots), made for it
 bool screen_size(int w, int h, Scale s, int radius) {
   lv_display_t *d = lv_display_get_default();
   if (!d || s != cover || radius) return false;
   const size_t px = (size_t) w * h, scr = (size_t) lv_display_get_horizontal_resolution(d) * lv_display_get_vertical_resolution(d);
   return px <= scr && px * 2 >= scr;
 }
+// the screen-size views that want a slot: on screen (owned), or holding one
+int slot_views() {
+  int n = 0;
+  for (View *v : views) n += (v->owners > 0 || v->slot) && screen_size(v->w, v->h, v->s, v->r) && !v->nearest;
+  return n;
+}
+// the slots follow those views (img_scale.h Slots): a slot one of them no longer needs goes, retried while a decode
+// still holds it; none at all once no screen-size picture is on screen (the idle art left)
+lv_timer_t *trim_t = nullptr;
+void trim(lv_timer_t *) {
+  if (slots_trim(slot_views()) <= slot_views() && trim_t) { lv_timer_delete(trim_t); trim_t = nullptr; }
+}
+void trim_later() {
+  if (!trim_t && slots().n.load() > slot_views()) trim_t = lv_timer_create(trim, 500, nullptr);
+}
+int want_screen(int k) {
+  lv_display_t *d = lv_display_get_default();
+  return d ? slots_want(lv_display_get_horizontal_resolution(d), lv_display_get_vertical_resolution(d), k) : 0;
+}
 }  // namespace
 
-int reserve_screen() {
-  lv_display_t *d = lv_display_get_default();
-  return d ? slots_reserve(lv_display_get_horizontal_resolution(d), lv_display_get_vertical_resolution(d)) : 0;
-}
+int reserve_screen() { return want_screen(Slots::N); }
 
 int acquire(void *owner, const char *src_c, int w, int h, Scale s, int radius, Notify cb, bool nearest, int shade) {
   release(owner);
   const std::string src = sized(src_c ? src_c : "", w, h), k = key(src);
   w = std::max(1, w), h = std::max(1, h), shade = std::max(0, shade);
   if (screen_size(w, h, s, radius) && !nearest) {
-    reserve_screen();
+    want_screen(slot_views() + 1);  // a slot for this one (shown, or the next track's beside the shown one)
     // the screen's picture: what other screens left in the cache (the Media screen's CD art, kept for a return) goes
     // now, so its memory is free for this one
     std::vector<View *> left;
@@ -218,6 +234,7 @@ void release(void *owner) {
   v->owners--;
   owned.erase(it);
   if (!v->owners && !v->data) erase(v);  // nothing cached (loading / failed): nothing to keep
+  trim_later();
   if (!shown() && !sweep_t) {  // later, so a rebuild that releases then acquires again keeps its pixels
     sweep_t = lv_timer_create(sweep, 0, nullptr);
     lv_timer_set_repeat_count(sweep_t, 1);
@@ -229,6 +246,7 @@ void drop(void *owner) {
   View *v = it->second.v;
   release(owner);
   if (std::find(views.begin(), views.end(), v) != views.end() && !v->owners) { dropped++; erase(v); }
+  trim_later();
 }
 State state(void *owner) { auto it = owned.find(owner); return it == owned.end() ? failed : it->second.v->st; }
 const lv_image_dsc_t *pixels(void *owner) {

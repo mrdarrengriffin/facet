@@ -126,7 +126,7 @@ inline bool low_memory(size_t psram, size_t own = SIZE_MAX) {  // own: SIZE_MAX 
 // PSRAM_KEEP stands in for the decode's pixels (a 480 x 480 picture is 450 KB). A picture whose views all go into the
 // idle art's reserved slots (img_scale.h Slots) or are small needs only the body, the decoder's rows and those small
 // views: then the block asked for is that (with the 96 KB decode margin), not PSRAM_KEEP. On the Guition the slots
-// take 900 KB for good, so the old 320 KB block was often not there (#127)
+// take up to 900 KB while the idle art shows, so the old 320 KB block was often not there (#127)
 inline size_t psram_need(const std::vector<fw::img::Box> &boxes) {
   const size_t old = PSRAM_KEEP + fw::img::budget().body_max / 4;
   size_t small = 0;
