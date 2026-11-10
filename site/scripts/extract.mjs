@@ -455,12 +455,13 @@ w('screens.json', screens);
   const deck = json('tests/fixtures/deck-full.json');  // every screen (the factory deck is one empty Home)
   // the site's Home: every size, filling the grid (the made-up devices of tools/demo_ha.mjs)
   const home = deck.pages.find((p) => p.kind === 'home');
-  if (home) home.cards = [
+  if (home) home.cards = [  // three across, no gaps: 2x1+1, 2x2 beside 1x1 over two halves, 1+2x1, 2x1+1, 2x2 beside 1x1 over 1x1
     { t: 'page', page: 'weather', size: '2x1' }, { t: 'page', page: 'clock', size: '1x1' },
     { t: 'page', page: 'media', size: '2x2' }, { t: 'light', e: 'light.living_room_ceiling', size: '1x1', label: 'Ceiling' },
     { t: 'sensor', e: 'sensor.outside_temperature', size: 'half', label: 'Outside' }, { t: 'sensor', e: 'sensor.living_room_humidity', size: 'half', label: 'Humidity' },
-    { t: 'page', page: 'calendar', size: '2x1' }, { t: 'page', page: 'energy', size: '1x1' },
-    { t: 'page', page: 'overhead', size: '2x1' }, { t: 'page', page: 'timer', size: '1x1' }, { t: 'page', page: 'moon', size: '1x1' },
+    { t: 'light', e: 'light.sofa_lamp', size: '1x1', label: 'Sofa lamp' }, { t: 'page', page: 'calendar', size: '2x1' },
+    { t: 'page', page: 'energy', size: '2x1' }, { t: 'sensor', e: 'binary_sensor.fridge_door', size: '1x1', label: 'Fridge' },
+    { t: 'page', page: 'overhead', size: '2x2' }, { t: 'page', page: 'timer', size: '1x1' }, { t: 'page', page: 'moon', size: '1x1' },
   ];
   const sampled = new Set(readdirSync(join(R, 'specs')).filter((f) => f.endsWith('.json')).map((f) => json(`specs/${f}`))
     .filter((sp) => sp.params?.source?.options?.includes('sample')).map((sp) => sp.id));
