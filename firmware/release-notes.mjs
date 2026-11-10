@@ -31,7 +31,7 @@ export const SUMMARY_MAX = 1200;
 export const ENTRY_MAX = 1000;
 const SECTIONS = ['New', 'Improved', 'Fixed', 'After updating', 'Known issues'];
 const LEAD = /^\*\*(.+?)\*\*/;
-export const DOCS = 'https://mrdarrengriffin.github.io/facet-docs/';
+export const DOCS = 'https://mrdarrengriffin.github.io/facet/';  // the published docs (deploy.yml FACET_DOCS_BASE)
 // a docs URL's page exists in the site's source (site/src/pages: <path>.astro, <path>/index.astro, or a [param] page)
 export function docsPage(u) {
   const path = u.slice(DOCS.length).split(/[?#]/)[0].replace(/\/+$/, '');
@@ -123,7 +123,7 @@ export function docs(v) {
     if (!body) continue;
     for (const blk of body.split(/^(?=- )/m).filter((x) => x.startsWith('- '))) {
       const lead = blk.match(/^- \*\*(.+?)\*\*/)?.[1] ?? blk.slice(2, 50);
-      const links = [...blk.matchAll(/\((https:\/\/mrdarrengriffin\.github\.io\/facet-docs\/[^)\s]*)\)/g)].map((m) => m[1]);
+      const links = [...blk.matchAll(/\((https:\/\/mrdarrengriffin\.github\.io\/facet\/[^)\s]*)\)/g)].map((m) => m[1]);
       if (!links.length && !/\(no docs: [^)]+\)/.test(blk)) errs.push(`"## ${name}": "${lead}" links no docs page (add a link to ${DOCS}..., or "(no docs: why)")`);
       for (const u of links) if (!docsPage(u)) errs.push(`"## ${name}": "${lead}": ${u} is no page in site/src/pages`);
     }

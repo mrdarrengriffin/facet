@@ -69,7 +69,7 @@ A tag without it fails before anything builds. Draft the next version's file as 
 - `## New`, `## Improved`, `## Fixed`: each bullet starts with a bold lead in plain language, then a sentence or two,
   then its issue (`#N`). One of the three has bullets.
 - Docs never lag a release: every bullet of `## New` and `## Improved` links the docs page that explains it
-  (`https://mrdarrengriffin.github.io/facet-docs/<page>/`, a page that exists in `site/src/pages`), or says
+  (`https://mrdarrengriffin.github.io/facet/<page>/`, a page that exists in `site/src/pages`), or says
   `(no docs: <why>)`. `check` (and so the tag's release workflow) fails otherwise: write the docs with the feature.
 - `## After updating`: only when someone has to do something (a setting moved or went, a step on the panel).
 - `## Known issues`: what is still wrong, with its issue.
