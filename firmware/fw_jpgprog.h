@@ -392,11 +392,15 @@ inline bool jpeg_progressive(const uint8_t *b, size_t n, long max_px, size_t mem
       if (!covers) break;
       sc++;
     }
-    dim(sc, ow, oh);
-    if (!plan(boxes, ow, oh, side, false, k, need, r)) return false;
-    need += sizeof(Dec) + blocks * (KEEP[sc] * 2 + 8) + band_of(sc) * d.nc + (size_t) ow * 4;
+    // over the room: fewer coefficients first (a coarser step, LVGL scales it up smoothly), then smaller views
+    for (;; sc++) {
+      dim(sc, ow, oh);
+      if (!plan(boxes, ow, oh, side, false, k, need, r)) return false;
+      need += sizeof(Dec) + blocks * (KEEP[sc] * 2 + 8) + band_of(sc) * d.nc + (size_t) ow * 4;
+      if (!step && r.need_full == 0) r.need_full = need;
+      if (need <= mem_max || sc >= SC_MAX || sc >= 2) break;  // never below 1/4 for the room: 1/8 is a blur
+    }
     r.side = side;
-    if (!step) r.need_full = need;
     if (need <= mem_max || step == FIT_STEPS) break;
     side = biggest(boxes, ow, oh, side) * 2 / 3;
   }
