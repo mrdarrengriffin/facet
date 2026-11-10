@@ -15,15 +15,15 @@
         "events": [
           [
             "toggle",
-            "off"
+            "on"
           ],
           [
             "deck",
-            "on=false"
+            "on=true"
           ]
         ],
         "sounds": [
-          "toggle-off"
+          "toggle-on"
         ]
       }
     },

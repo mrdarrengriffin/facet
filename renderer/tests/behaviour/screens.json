@@ -21,7 +21,7 @@
       }
     },
     {
-      "name": "toggle takes a screen off Home",
+      "name": "toggle puts a screen on Home (a fresh panel: built-in screens start off it)",
       "kind": "interaction",
       "steps": [
         {
@@ -37,15 +37,15 @@
         "events": [
           [
             "toggle",
-            "off"
+            "on"
           ],
           [
             "deck",
-            "on=false"
+            "on=true"
           ]
         ],
         "sounds": [
-          "toggle-off"
+          "toggle-on"
         ]
       }
     },
