@@ -33,6 +33,7 @@ const std::vector<Feed *> &all() { return list(); }
 void on_put(const std::string &e, const std::string &a, const std::string &v) {  // an entity a feed reads changed
   for (Feed *f : list()) {
     if (f->in_round_ || std::none_of(f->reads_.begin(), f->reads_.end(), [&](const auto &r) { return r.first == e && r.second == a; })) continue;
+    if (!ha::watched(f->entity_)) { ha::stale_local(f->entity_); continue; }  // nothing shows it (#177): no round (no web read); the next bind runs one
     bool came = false;
     if (a.empty()) {
       const bool was = f->down_.count(e), down = bad(v);

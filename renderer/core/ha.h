@@ -627,10 +627,18 @@ inline const std::string &feed_config(const std::string &e) {
   auto it = S().feeds.find(e);
   return it == S().feeds.end() ? none : it->second;
 }
+// a local entity (a feed) nothing reads now whose data may be old: the next bind's first read runs its round again
+inline void stale_local(const std::string &e) {
+  auto &f = S().freshed;
+  f.erase(std::remove(f.begin(), f.end(), e), f.end());
+}
 inline void set_feed_config(const std::string &e, const std::string &cfg) {
   if (feed_config(e) == cfg) return;
   S().feeds[e] = cfg;
-  if (auto f = S().mirror ? nullptr : local(e)) f();  // the adapter reads the new settings at once
+  // the adapter reads the new settings at once while something shows it; else the next bind's first read (or its
+  // tick) does (#177: a screen nothing uses reads nothing, not even once)
+  if (!watched(e)) { stale_local(e); return; }
+  if (auto f = S().mirror ? nullptr : local(e)) f();
 }
 }  // namespace ha
 }  // namespace fw
