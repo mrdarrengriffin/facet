@@ -13,7 +13,7 @@
 //   compass N / E / S / W on the outer ring (hero only): type:label fg:text-dim centred in a label-box square of fg:bg
 //           that cuts the ring (docs .fs-oh-cmp 24 x 24)
 //   home    a layout:sky-dot fg:text dot in the middle
-//   planes  the Icons foundation's plane (a turn icon, Pen::turned) layout:sky-plane, turned to the track: fg:text-dim,
+//   planes  the Icons foundation's plane, helicopter or fighter (mark 4 / 8; turn icons, Pen::turned) layout:sky-plane, turned to the track: fg:text-dim,
 //           the lead fg:accent with a stroke:edge ring space:2 out (docs .fs-oh-halo inset -8), an emergency fg:error;
 //           the lead is kept a ring's width inside the edge and painted last. Card: layout:sky-dot dots, same inks.
 //   trails  where each aircraft was (the feed's last few points): a stroke:hair fg:line-hi line through them to the
@@ -22,7 +22,7 @@
 //           space:2 right of the plane on a fg:bg box (a ring number under it is cut, never mixed), fg:text-dim, the
 //           lead's fg:text (docs .fs-oh-cs)
 // Data: prop planes = the flights feed's [[km, bearing, track, mark, callsign?, hex?, [trail km, bearing, ...]?], ...]
-// (mark bit 1 = the lead, bit 2 = an emergency; the trail oldest first, without the point now); empty = a clear sky (rings and home only). Touch (size radar only): a tap within touch:min of a
+// (mark bit 1 = the lead, bit 2 = an emergency, bit 4 = a helicopter, bit 8 = a military jet; the trail oldest first, without the point now); empty = a clear sky (rings and home only). Touch (size radar only): a tap within touch:min of a
 // plane (the nearest) emits "pick" with its hex (else its callsign) + sound open (states: fw::st::on_tap, no press look:
 // the planes move); hero and card are static. Update path: new planes repaint only where planes, rings, callsigns and
 // trails were and are now (C26: boxes merged, more than 6 = the whole box); a new unit or range = the whole box;
@@ -65,6 +65,8 @@ void load(Sky &s, fw::Props p) {
     s.planes.push_back(std::move(pl));
   }
 }
+// the shape: mark bit 4 = a helicopter, 8 = a military jet, else the plane (the Icons foundation's turn icons)
+const char *icon_of(int mark) { return mark & 4 ? "helicopter" : mark & 8 ? "fighter" : "plane"; }
 const char *glyph_of(const Sky &s) { return s.size == RADAR ? "layout:sky-plane-lg" : "layout:sky-plane"; }
 float rmax_of(const Sky &s, int R) { return (float) (R - (s.size == CARD ? fx::size("space:1") : fx::size(glyph_of(s)) / 2)); }
 // the radius of a distance in km (the unit's square-root scale, capped at the edge)
@@ -133,7 +135,7 @@ void draw(const fx::Pen &p) {
       int x, y;
       pos(*s, a, R, &x, &y);
       if (card) { p.dot(x, y, "layout:sky-dot", ink_of(a.mark)); continue; }
-      p.turned(x, y, "plane", glyph_of(*s), roundf(a.track / 5) * 5, ink_of(a.mark));  // 5 degree steps: the turned masks are cached
+      p.turned(x, y, icon_of(a.mark), glyph_of(*s), roundf(a.track / 5) * 5, ink_of(a.mark));  // 5 degree steps: the turned masks are cached
       if (lead) {
         const int d = glyph + 2 * s2;
         p.rect(x - d / 2, y - d / 2, d, d, ink_of(a.mark), d / 2, edge);
@@ -207,7 +209,7 @@ FW_COMPONENT(sky_radar, "Sky radar", "components", R"({
   "parts": ["arc"],
   "frame": [240, 240],
   "props": [
-    {"name": "planes", "about": "The aircraft to draw, as the flights feed gives them: a list of [km, bearing in degrees, track in degrees, mark, callsign, hex], mark 1 for the lead one, 2 for an emergency; the callsign shows beside the plane on the radar size. Empty is a clear sky.", "type": "text", "default": "[[26,118,302,0,\"RYR6BA\",\"4ca1f3\"],[12,200,210,0,\"HLE19\",\"406a3c\"],[33,42,318,0,\"EXS13DK\",\"40792b\"],[38,140,255,0,\"DLH3VK\",\"3c6589\"],[41,250,75,0,\"TARTN24\",\"43c6f1\"],[6.5,300,330,1,\"EZY45UK\",\"4ca8d2\"]]"},
+    {"name": "planes", "about": "The aircraft to draw, as the flights feed gives them: a list of [km, bearing in degrees, track in degrees, mark, callsign, hex], mark 1 for the lead one, 2 for an emergency, plus 4 for a helicopter or 8 for a military jet (the shape drawn); the callsign shows beside the plane on the radar size. Empty is a clear sky.", "type": "text", "default": "[[26,118,302,0,\"RYR6BA\",\"4ca1f3\"],[12,200,210,0,\"HLE19\",\"406a3c\"],[33,42,318,0,\"EXS13DK\",\"40792b\"],[38,140,255,0,\"DLH3VK\",\"3c6589\"],[41,250,75,0,\"TARTN24\",\"43c6f1\"],[6.5,300,330,1,\"EZY45UK\",\"4ca8d2\"]]"},
     {"name": "size", "about": "hero is the radar beside the aircraft on the Flight radar; radar is the big one on its Radar view, with ring numbers, callsigns and planes to tap; card is the small picture at the top right of a Home card, with dots.", "type": "select", "options": ["hero", "radar", "card"], "default": "hero"},
     {"name": "unit", "about": "The distance unit of the rings, km or mi, as Settings > Units says.", "type": "select", "options": ["km", "mi"], "default": "km"},
     {"name": "range", "about": "How far out the radar reaches, in the unit: 10 (rings 1, 3, 6, 10), 25 (3, 8, 15, 25), 50 (5, 15, 30, 50) or 100 (10, 30, 60, 100).", "type": "select", "options": ["10", "25", "50", "100"], "default": "50"}
@@ -220,6 +222,8 @@ FW_COMPONENT(sky_radar, "Sky radar", "components", R"({
     {"label": "miles", "props": {"size": "radar", "unit": "mi", "range": "25"}},
     {"label": "trails", "props": {"size": "radar", "planes": "[[26,118,302,0,\"RYR6BA\",\"4ca1f3\",[29,116,28,117]],[12,200,210,0,\"HLE19\",\"406a3c\",[11,195,11.5,198]],[6.5,300,330,1,\"EZY45UK\",\"4ca8d2\",[9,282,8,288,7,295]]]"}},
     {"label": "near range", "props": {"size": "radar", "range": "10", "planes": "[[2.5,40,90,1,\"GBNHP\",\"400f01\"],[7,220,30,0,\"HLE19\",\"406a3c\"]]"}},
+    {"label": "helicopters and a military jet", "props": {"planes": "[[26,118,302,4,\"HLE19\",\"406a3c\"],[12,200,210,8,\"TARTN24\",\"43c6f1\"],[33,42,318,0,\"EXS13DK\",\"40792b\"],[6.5,300,330,5,\"GBNHP\",\"400f01\"]]"}},
+    {"label": "helicopters and a military jet, radar size", "props": {"size": "radar", "planes": "[[26,118,302,4,\"HLE19\",\"406a3c\"],[12,200,210,8,\"TARTN24\",\"43c6f1\"],[33,42,318,0,\"EXS13DK\",\"40792b\"],[6.5,300,330,5,\"GBNHP\",\"400f01\"],[41,250,75,8,\"RRR123\",\"43c6f2\"]]"}},
     {"label": "card size", "props": {"size": "card"}}
   ]
 })") {

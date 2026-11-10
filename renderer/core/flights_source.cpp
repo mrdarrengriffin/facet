@@ -15,7 +15,8 @@
 //   route      "Catania → Leeds", else the callsign / registration / hex; who "Jet2.com · LS13DK · Boeing 737-800"
 //   alt_label  altitude | climbing | descending (past ±300 ft/min); alt "32,000 ft"; speed "540 mph"; away "26 km SE"
 //   planes     the Sky radar's aircraft: [[km, bearing, track, mark, callsign, hex, [trail km, bearing, ...]], ...]
-//              (mark 1 = the lead, 2 = an emergency; the callsign on the 5 closest + the lead), the lead last
+//              (mark bits: 1 = the lead, 2 = an emergency, 4 = a helicopter, 8 = a military jet: the shape, #160; the
+//              callsign on the 5 closest + the lead), the lead last
 //   also       the next two closest as List row items; all = every aircraft, closest first; more "all aircraft · 6";
 //              many "1" with two or more; list_head "closest first · within 50 km"
 //   empty      "1" with no aircraft: empty_title / empty_body: the quiet words ("Clear skies", "Nothing flying within
@@ -187,6 +188,28 @@ std::string py_to_json(const std::string &s) {
   }
   return o;
 }
+// the shape the radar draws (#160), from the source's data: heli = ADS-B emitter category A7 (rotorcraft) or a helicopter
+// type; fighter = the source's military flag with category A6 (high performance) or a fighter / trainer jet type; else
+// jet (the airliner). ICAO type designators
+bool in(const char *const *list, const std::string &t) { for (; *list; list++) if (t == *list) return true; return false; }
+bool heli_type(const std::string &t) {
+  static const char *const H[] = {"A109", "A119", "A129", "A139", "A149", "A169", "A189", "AS32", "AS3B", "AS50", "AS55", "AS65", "B06", "B06T",
+                                  "B212", "B222", "B230", "B407", "B412", "B427", "B429", "B430", "B47G", "B505", "BK17", "EC20", "EC25", "EC30",
+                                  "EC35", "EC45", "EC55", "EC75", "EH10", "EXPL", "G2CA", "H160", "H269", "H47", "H500", "H53", "H53S", "H60",
+                                  "H64", "H72", "KMAX", "LYNX", "MI8", "MI17", "MI24", "NH90", "PUMA", "R22", "R44", "R66", "S61", "S76", "S92",
+                                  "TIGR", "UH1", "UH1Y", "WILD", nullptr};
+  return in(H, t);
+}
+bool fighter_type(const std::string &t) {
+  static const char *const F[] = {"A10", "AJET", "AV8B", "EUFI", "F4", "F5", "F14", "F15", "F16", "F18", "F18S", "F22", "F35", "GRIF", "HAWK", "JS39",
+                                  "L39", "L159", "M339", "M346", "MG29", "MIR2", "RFAL", "SU27", "SU30", "SU35", "T38", "T45", "T50", "TOR", nullptr};
+  return in(F, t);
+}
+std::string kind_of(const std::string &category, const std::string &type, bool mil) {
+  if (category == "A7" || heli_type(type)) return "heli";
+  if (mil && (category == "A6" || fighter_type(type))) return "fighter";
+  return "jet";
+}
 double num(ArduinoJson::JsonVariantConst v) {
   if (v.is<double>()) { const double d = v.as<double>(); return std::isfinite(d) ? d : NAN; }
   if (v.is<const char *>()) { char *e; const char *s = v.as<const char *>(); const double d = strtod(s, &e); return e != s && std::isfinite(d) ? d : NAN; }
@@ -222,8 +245,8 @@ bool read_readsb(const std::string &body, double hlat, double hlon, std::vector<
     f.squawk = str(a["squawk"]);
     const std::string em = str(a["emergency"]);
     f.em = em == "none" ? "" : em;
-    f.kind = str(a["category"]) == "A7" ? "heli" : "jet";
     f.mil = ((int) (a["dbFlags"] | 0) & 1) != 0;
+    f.kind = kind_of(str(a["category"]), f.type, f.mil);
     f.lat = num(a["lat"]), f.lon = num(a["lon"]);
     if (!std::isnan(f.lat) && !std::isnan(f.lon) && std::isfinite(hlat)) from_home(hlat, hlon, f);
     else if (!std::isnan(num(a["dst"])) && !std::isnan(num(a["dir"]))) f.km = num(a["dst"]) * KM_PER_NM, f.brg = num(a["dir"]);
@@ -257,7 +280,7 @@ bool read_fr24(const std::string &raw, double hlat, double hlon, std::vector<Fli
     f.squawk = str(a["squawk"]);
     if (f.squawk == "7700" || f.squawk == "7600" || f.squawk == "7500") f.em = f.squawk == "7600" ? "nordo" : f.squawk == "7500" ? "unlawful" : "general";
     f.ground = (int) num(a["on_ground"]) == 1;
-    f.kind = "jet";
+    f.kind = kind_of("", f.type, false);  // FlightRadar24 gives no category or military flag: the type alone
     f.lat = num(a["latitude"]), f.lon = num(a["longitude"]);
     if (!std::isnan(f.lat) && !std::isnan(f.lon) && std::isfinite(hlat)) from_home(hlat, hlon, f);
     if (std::isnan(f.km)) continue;
@@ -455,7 +478,7 @@ class Flights : public feed::Feed {
     char b[64];
     auto plane = [&](const Flight &f, size_t i) {
       const bool lead = &f == &t;
-      snprintf(b, sizeof b, "%s[%.1f,%.0f,%.0f,%d,", pl.size() > 1 ? "," : "", f.km, f.brg, f.track, (lead ? 1 : 0) | (f.em.empty() ? 0 : 2));
+      snprintf(b, sizeof b, "%s[%.1f,%.0f,%.0f,%d,", pl.size() > 1 ? "," : "", f.km, f.brg, f.track, (lead ? 1 : 0) | (f.em.empty() ? 0 : 2) | (f.kind == "heli" ? 4 : f.kind == "fighter" ? 8 : 0));
       pl += b + json_str(i < 5 || lead ? name(f) : "") + "," + json_str(f.hex) + ",[";
       const auto it = trails.find(f.hex);
       if (it != trails.end())

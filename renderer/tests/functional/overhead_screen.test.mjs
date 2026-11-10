@@ -46,6 +46,9 @@ const deck = (params) => ({ v: 2, rev: 9, start: 'h', pages: [
   { id: 'h', kind: 'home', name: 'Test', cards: [{ t: 'page', page: 'o', size: 'm' }] },
   { id: 'o', kind: 'overhead', params }] });
 // readsb's JSON (adsb.lol / a receiver's aircraft.json)
+// adsbdb.com's answer for a callsign (#157)
+const ROUTE = (fc, fi, flat, flon, tc, ti, tlat, tlon, airline) => ({ response: { flightroute: { callsign: 'X', airline: { name: airline },
+  origin: { municipality: fc, iata_code: fi, icao_code: 'X' + fi, latitude: flat, longitude: flon }, destination: { municipality: tc, iata_code: ti, icao_code: 'X' + ti, latitude: tlat, longitude: tlon } } } });
 const rs = (o) => { const [lat, lon] = at(o.km, o.brg); return { hex: o.hex, flight: (o.cs + '        ').slice(0, 8), r: o.reg ?? '', t: o.type ?? 'A20N', alt_baro: o.ground ? 'ground' : o.alt ?? 30000, gs: o.gs ?? 450, track: o.track ?? 90, baro_rate: o.vs ?? 0, squawk: o.squawk ?? '2000', emergency: o.em ?? 'none', category: o.cat ?? 'A3', dbFlags: o.mil ? 1 : 0, lat, lon, dst: o.km / 1.852, dir: o.brg }; };
 
 export default {
@@ -118,19 +121,31 @@ export default {
       t.web.serve(/^https:\/\/api\.adsb\.lol\/v2\/point\//, { ac: [rs(A), rs({ ...C, em: 'general' }), rs(LOW)] });
       await open(t, { source: 'adsb_lol', range: '25' });
       t.wait(300);
-      t.ok(t.web.asked.length >= 1, 'it asked');
-      t.eq(t.web.asked[0], 'https://api.adsb.lol/v2/point/52.000/0.000/14', 'home and a radius of 25 km in nautical miles, rounded up');
+      const pts = () => t.web.asked.filter((u) => /adsb\.lol/.test(u));  // the aircraft reads (route lookups aside)
+      t.ok(pts().length >= 1, 'it asked');
+      t.eq(pts()[0], 'https://api.adsb.lol/v2/point/52.000/0.000/14', 'home and a radius of 25 km in nautical miles, rounded up');
       t.eq(routeOf(t), 'EEE5', 'the closest leads (no route from this source: the callsign)');
       t.ok(!planes(t).some((p) => p[5] === 'ccc333'), '30 km is outside 25 km');
-      const n = t.web.asked.length; t.wait(10500);
-      t.ok(t.web.asked.length === n + 1, `one more read after 10 s (${t.web.asked.length - n})`);
+      const n = pts().length; t.wait(10500);
+      t.ok(pts().length === n + 1, `one more read after 10 s (${pts().length - n})`);
       t.web.status(/adsb\.lol/, 'timeout'); t.wait(10500);
       t.has(t.texts(), /offline · last known/i, 'the stale tag'); t.eq(routeOf(t), 'EEE5', 'the last aircraft stay');
-      const k = t.web.asked.length; t.wait(10500);
-      t.eq(t.web.asked.length, k, 'after a failure: no read 10 s on');
-      t.wait(10500); t.eq(t.web.asked.length, k + 1, 'the next read 20 s on (backoff)');
+      const k = pts().length; t.wait(10500);
+      t.eq(pts().length, k, 'after a failure: no read 10 s on');
+      t.wait(10500); t.eq(pts().length, k + 1, 'the next read 20 s on (backoff)');
       t.web.serve(/adsb\.lol/, { ac: [rs(A)] }); t.wait(41000);
       t.ok(!t.texts().some((x) => /offline · last known/i.test(x)), 'a good read clears the tag');
+    } },
+    // ---- the shapes (#160): helicopter and military jet from the source's data
+    { name: 'shapes: category A7 or a helicopter type = helicopter, military + A6 or a fighter type = military jet, no type info = the plane', async run(t) {
+      home(t);
+      t.web.serve(/adsb\.lol\/v2\/point\//, { ac: [rs({ ...A, cat: 'A7', type: '' }), rs({ ...B, cat: '', type: 'EC35' }), rs({ ...C, cat: 'A6', mil: true, type: 'EUFI' }),
+        rs({ ...LOW, cat: 'A3', mil: true, type: 'C30J' }), rs({ ...D, km: 40, cat: '', type: '' }), rs({ hex: 'fff666', cs: 'TEX01', km: 20, brg: 10, cat: '', mil: true, type: 'HAWK' })] });
+      await open(t, { source: 'adsb_lol' }); t.wait(300);
+      const mk = (hex) => (planes(t).find((p) => p[5] === hex) ?? [])[3];
+      t.eq(mk('aaa111') & 12, 4, 'A7: helicopter'); t.eq(mk('bbb222') & 12, 4, 'EC35: helicopter');
+      t.eq(mk('ccc333') & 12, 8, 'military A6: military jet'); t.eq(mk('fff666') & 12, 8, 'military HAWK: military jet');
+      t.eq(mk('eee555') & 12, 0, 'a military transport (C30J): the plane'); t.eq(mk('ddd444') & 12, 0, 'no type info: the plane');
     } },
     { name: 'an ADS-B receiver in Home Assistant (a REST sensor on aircraft.json)', async run(t) {
       home(t); t.ha.s[R] = { '': 'ok', aircraft: JSON.stringify([rs(A), rs({ ...B, cat: 'A7' })]) };
