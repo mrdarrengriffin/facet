@@ -4,9 +4,6 @@
 //   body     groups as Settings: a Section header (size label) over its rows, groups a group apart (above:group):
 //            "shows"    what the screen shows and what it needs, in words (sources.json "shows" + "needs"; the Text
 //                       component, body, up to 4 lines), so a screen with no options yet still says what it is
-//            "home"     List row "Card on Home" with its Toggle (the whole row): a Home opens it (a card or a header
-//                       button, fw::spec::on_home); off takes those off Home, on adds a card to the first Home. The screen
-//                       itself is always there (#177); its settings stay either way
 //            "source"   List row "Source" + the source's name (core/sources.h); more than one source = a chevron and
 //                       a tap opens the Bottom sheet with the screen's sources (name; status = the kind, "needs <setup>"
 //                       for a direct source that needs setting up). Built-in screens read "Built in". When the
@@ -39,7 +36,7 @@
 //                       (a checkbox marks them, the sheet stays open, the row says "N chosen"), kept as a comma list.
 //                       No options = one List row "No options yet".
 //   sheet    the Bottom sheet in overlay mode, the screen's last child (one, moved in place per row)
-// Every change is kept in this panel's deck (fw::spec::deck_set: "on", "source", "params.<name>"; stored like a sent
+// Every change is kept in this panel's deck (fw::spec::deck_set: "source", "params.<name>"; stored like a sent
 // deck) and emitted as "deck" "<screen> <key>=<value>" for the host. The screen opens with them next time.
 // Props: id = the screen (a deck screen id). Update path: none needed (built each time it opens).
 #include "fw.h"
@@ -261,14 +258,8 @@ void build_page(lv_obj_t *parent, fw::Props p) {
       build("text", c, td);
     }
   }
-  // home
-  group(c, "home", !cat["screens"][pg->id]["shows"].is<const char *>() && !cat["screens"][pg->id]["needs"].is<const char *>());
-  Doc hr;
-  hr["title"] = "Card on Home", hr["icon"] = "none", hr["trailing"] = "toggle", hr["on"] = fw::spec::on_home(pg->id);
-  if (lv_obj_t *r = build("list_row", c, hr)) pg->ctrls.push_back({r, "on"});
-
-  // source
-  group(c, "source", false);
+  // source (a screen's card on Home is added and removed like any card: the editor's Add card / delete)
+  group(c, "source", !cat["screens"][pg->id]["shows"].is<const char *>() && !cat["screens"][pg->id]["needs"].is<const char *>());
   ArduinoJson::JsonArrayConst srcs = fw::src::of(cat, pg->id);
   ArduinoJson::JsonObjectConst params = spec["params"].as<ArduinoJson::JsonObjectConst>();
   ArduinoJson::JsonVariantConst sparam = params["source"];
@@ -597,8 +588,7 @@ void build_page(lv_obj_t *parent, fw::Props p) {
         for (lv_obj_t *a = from; a; a = lv_obj_get_parent(a)) if (a == o) { in = true; break; }
         if (!in) continue;
         Doc v;
-        if (flip && cx.second == "on") v.set(!strcmp(detail, "on"));
-        else if (flip) v.set(!strcmp(detail, "on") ? "true" : "false");
+        if (flip) v.set(!strcmp(detail, "on") ? "true" : "false");
         else v.set(detail);  // Segmented: the option id (labels lower-cased = the ids)
         keep(pg, from, cx.second, v.as<ArduinoJson::JsonVariantConst>());
         return;

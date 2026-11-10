@@ -67,7 +67,6 @@ function pageFor(id: string): string {
   return id;
 }
 /** does one of your screens have a card (or header button) that opens deck page id */
-const onHome = (id: string) => draft.pages.some((x) => own(x) && (x.cards ?? []).some((c) => c.page === id));
 const name = (id: string, d: Draft = draft) => pname(pageOf(d, id));
 const defaults = () => Object.fromEntries(boot.settings.settings.map((s) => [s.id, s.default]));
 
@@ -929,13 +928,11 @@ function addSide(): HTMLElement[] {
     const box = h('div', 'v1-cardlist');
     const fullH = (home.cards?.length ?? 0) >= budgetCards;
     for (const [k, sc] of Object.entries(boot.screens)) {
-      const id = draft.pages.find((x) => x.kind === k)?.id ?? k;
       const b = h('button', 'v1-opt');
       b.type = 'button';
       b.disabled = fullH;
       const tx = h('span', 'v1-ftxt');
       tx.append(h('span', '', sc.name));
-      if (onHome(id)) tx.append(h('p', '', 'On Home'));
       b.append(tx);
       b.onclick = () => edit(() => {
         const pid = pageFor(k);
@@ -1107,15 +1104,15 @@ function subHead(t: string, sub: string, up: 'main' | 'screens' = 'main') {
   hd.prepend(back);
   return hd;
 }
-// Settings > Screens: the start page, then every built-in screen in this firmware, a row each (always on the panel;
-// "On Home" when a card opens it); a row opens that screen's page, where the live panel shows it
+// Settings > Screens: the start page, then every built-in screen in this firmware, a row each (always on the panel; its
+// card on Home is added and removed like any card); a row opens that screen's page, where the live panel shows it
 function screensView(): HTMLElement[] {
   const out: HTMLElement[] = [subHead('Screens', 'The built-in screens and the one the panel opens on')];
   out.push(field('Start page', 'The screen the panel opens on.', list(draft.pages.map((x) => [x.id, pname(x)] as [string, string]), draft.start, (v) => edit(() => { draft.start = v; }))));
   out.push(h('h2', 'cap', 'Built-in screens'));
   for (const [k, sc] of Object.entries(boot.screens)) {
     const pg = draft.pages.find((p) => p.kind === k);
-    out.push(navRow(pg ? pname(pg) : sc.name, pg && onHome(pg.id) ? 'On Home' : '', () => { setView = 'screen'; setScreen = k; render(); }));
+    out.push(navRow(pg ? pname(pg) : sc.name, '', () => { setView = 'screen'; setScreen = k; render(); }));
   }
   return out;
 }
@@ -1123,7 +1120,7 @@ function screensView(): HTMLElement[] {
 // change); the live panel shows it (its sample data where Home Assistant has nothing yet) and follows every change
 function screenView(k: string): HTMLElement[] {
   const sc = boot.screens[k], pg = draft.pages.find((p) => p.kind === k) ?? { id: k, kind: k };
-  const out: HTMLElement[] = [subHead(pname(pg), onHome(pg.id) ? 'Built-in screen · a card on Home opens it' : 'Built-in screen · add a Screen card to open it from Home', 'screens')];
+  const out: HTMLElement[] = [subHead(pname(pg), 'Built-in screen · a Screen card on Home opens it', 'screens')];
   const nm = h('input', 'v1-input');
   nm.value = pname(pg);
   nm.maxLength = 32;

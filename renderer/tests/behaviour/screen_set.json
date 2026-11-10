@@ -2,32 +2,6 @@
   "id": "screen_set",
   "tests": [
     {
-      "name": "Card on Home toggles",
-      "kind": "interaction",
-      "steps": [
-        {
-          "tap": {
-            "text": "Card on Home"
-          }
-        }
-      ],
-      "expect": {
-        "events": [
-          [
-            "toggle",
-            "on"
-          ],
-          [
-            "deck",
-            "on=true"
-          ]
-        ],
-        "sounds": [
-          "toggle-on"
-        ]
-      }
-    },
-    {
       "name": "Back goes back",
       "kind": "interaction",
       "steps": [
