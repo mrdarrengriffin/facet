@@ -4,6 +4,7 @@
 //   box      flex column, gap space 2: label box + 8 + title box = 24 + 8 + 40 = 72 at 720, 16 + 4 + title 1x box
 //            at 480; contract (C5): fills its parent's width, so the value ellipsises in its column (a caller that
 //            wants Home columns gives each Stat a card-w cell; the old internal prop "fill" is ignored)
+//   align    start (default) | centre: both lines' text centred in the stat's width (a row of stats under a centred hero)
 //   label    screen type label (caps), text-dim (docs text-mute: disabled only here, the contrast rule)
 //   value    screen type title (heavier than the docs body: the value is what you read; prop size body = the docs body, a
 //            narrow row of facts such as the Flight radar hero), one line, ellipsis; tone dim (default, docs) = text-dim, text = text (docs moon facts
@@ -17,17 +18,19 @@ namespace {
 const char *tone(const char *t) {
   return !strcmp(t, "text") ? "fg:text" : !strcmp(t, "warn") ? "fg:warn" : !strcmp(t, "ok") ? "fg:ok" : "fg:text-dim";
 }
-void line(lv_obj_t *s, const char *type, const char *txt, const char *fg) {
+void line(lv_obj_t *s, const char *type, const char *txt, const char *fg, bool mid) {
   lv_obj_t *l = fx::text(s, txt, type, fg, "dot");
   fx::use(l, "fill-w");
+  if (mid) fx::use(l, "text-mid");
   lv_label_set_long_mode(l, LV_LABEL_LONG_MODE_DOTS);
 }
 void fill(lv_obj_t *s, fw::Props p) {
   const bool off = !strcmp(p["state"] | "default", "unavailable");
   for (const char *t : {"box", "col", "fill-w", "gap:2"}) fx::use(s, t);
   fx::name(s, "stat");
-  line(s, "type:label", p["label"] | "", "fg:text-dim");  // unavailable keeps the label readable (4.5:1, C15); the value says so
-  line(s, !strcmp(p["size"] | "title", "body") ? "type:body" : "type:title", off ? fw::st::UNAVAILABLE_TEXT : (p["value"] | ""), off ? "fg:unavailable-note" : tone(p["tone"] | "dim"));
+  const bool mid = !strcmp(p["align"] | "start", "centre");
+  line(s, "type:label", p["label"] | "", "fg:text-dim", mid);  // unavailable keeps the label readable (4.5:1, C15); the value says so
+  line(s, !strcmp(p["size"] | "title", "body") ? "type:body" : "type:title", off ? fw::st::UNAVAILABLE_TEXT : (p["value"] | ""), off ? "fg:unavailable-note" : tone(p["tone"] | "dim"), mid);
 }
 }  // namespace
 
@@ -42,6 +45,7 @@ FW_COMPONENT(stat, "Stat", "components", R"({
     {"name": "value", "about": "The fact itself, such as 48 km/h.", "type": "text", "default": "48 km/h"},
     {"name": "tone", "about": "The colour of the value: dim for quiet, text for normal, warn for something to watch, ok for good news.", "type": "select", "options": ["dim", "text", "warn", "ok"], "default": "dim"},
     {"name": "size", "about": "title is the usual value; body is a smaller value, for a row of facts in a narrow column (the Flight radar's hero, docs .fs-stat).", "type": "select", "options": ["title", "body"], "default": "title"},
+    {"name": "align", "about": "Where the label and the value sit in the stat's width: start (the left, for a column of facts) or centre (under a centred hero, such as the Energy screen's price now and next).", "type": "select", "options": ["start", "centre"], "default": "start"},
     {"name": "state", "debug": true, "about": "default shows the value; unavailable shows a dash when it cannot be read.", "type": "select", "options": ["default", "unavailable"], "default": "default"}
   ],
   "variants": [
@@ -51,6 +55,7 @@ FW_COMPONENT(stat, "Stat", "components", R"({
     {"label": "ok", "props": {"label": "backup", "value": "done 04:12", "tone": "ok"}},
     {"label": "long value", "props": {"label": "next", "value": "Bin day tomorrow: recycling and garden waste", "tone": "text"}},
     {"label": "body size", "props": {"label": "distance", "value": "26 km SE", "size": "body"}},
+    {"label": "centred", "props": {"label": "cheap now", "value": "13.5p", "tone": "ok", "align": "centre"}},
     {"label": "unavailable", "props": {"label": "outside", "value": "12°", "state": "unavailable"}}
   ]
 })") {

@@ -3,7 +3,7 @@
  "id": "energy",
  "locked": true,
  "name": "Energy",
- "rev": 8,
+ "rev": 9,
  "role": "page",
  "params": {
   "source": {
@@ -119,31 +119,84 @@
    "slot": 0
   },
   {
-   "c": "status_line",
+   "c": "group",
    "p": {
-    "text": {
-     "e": "panel.energy",
-     "a": "rate"
-    },
-    "tone": {
-     "e": "panel.energy",
-     "a": "tone"
-    }
+    "flow": "stack",
+    "space": "near"
    },
    "in": 1,
    "slot": 0
   },
   {
-   "c": "status_line",
+   "c": "grid",
    "p": {
-    "text": {
+    "cols": 2,
+    "gap": "group",
+    "aspect": "row"
+   },
+   "in": 3
+  },
+  {
+   "c": "stat",
+   "p": {
+    "label": {
      "e": "panel.energy",
-     "a": "event"
+     "a": "rate_band",
+     "tpl": "{} now"
+    },
+    "value": {
+     "e": "panel.energy",
+     "a": "rate_now"
     },
     "tone": {
      "e": "panel.energy",
-     "a": "event_tone"
-    }
+     "a": "rate_band",
+     "map": {
+      "Cheap": "ok",
+      "Peak": "warn"
+     },
+     "else": "text"
+    },
+    "size": "title",
+    "align": "centre"
+   },
+   "in": 4,
+   "slot": 0
+  },
+  {
+   "c": "stat",
+   "p": {
+    "label": {
+     "e": "panel.energy",
+     "a": "rate_until",
+     "tpl": "from {}"
+    },
+    "value": {
+     "e": "panel.energy",
+     "a": "rate_next"
+    },
+    "tone": "text",
+    "size": "title",
+    "align": "centre"
+   },
+   "show": {
+    "e": "panel.energy",
+    "a": "rate_next",
+    "map": {
+     "": ""
+    },
+    "else": "1"
+   },
+   "in": 4,
+   "slot": 1
+  },
+  {
+   "c": "group",
+   "p": {
+    "flow": "wrap",
+    "space": "near",
+    "align": "centre",
+    "gap": "gutter"
    },
    "in": 1,
    "slot": 0,
@@ -155,6 +208,21 @@
     },
     "else": "1"
    }
+  },
+  {
+   "c": "status_chip",
+   "p": {
+    "tone": {
+     "e": "panel.energy",
+     "a": "event_tone"
+    },
+    "text": {
+     "e": "panel.energy",
+     "a": "event"
+    }
+   },
+   "in": 7,
+   "slot": 0
   },
   {
    "c": "group",
@@ -187,7 +255,17 @@
     "scrub": true,
     "ticks": 0
    },
-   "in": 5,
+   "in": 9,
+   "slot": 0
+  },
+  {
+   "c": "group",
+   "p": {
+    "flow": "stack",
+    "space": "near",
+    "align": "start"
+   },
+   "in": 9,
    "slot": 0
   },
   {
@@ -204,7 +282,7 @@
     "width": 0,
     "ticks": 6
    },
-   "in": 5,
+   "in": 11,
    "slot": 0
   },
   {
@@ -217,7 +295,7 @@
     "tone": "info",
     "ink": "dim"
    },
-   "in": 5,
+   "in": 9,
    "slot": 0,
    "show": {
     "e": "panel.energy",
@@ -291,7 +369,7 @@
     "role": "hero",
     "layout": "stack"
    },
-   "in": 11,
+   "in": 16,
    "slot": 0
   },
   {
@@ -317,7 +395,7 @@
     "scrub": true,
     "ticks": 0
    },
-   "in": 11,
+   "in": 16,
    "slot": 0
   }
  ]

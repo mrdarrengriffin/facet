@@ -69,7 +69,7 @@ std::string hm(double t) {
   return b;
 }
 // what the extra adds to the feed (empty = no extra: the plain words)
-struct ExtOut { bool on = false; std::string live, card, tone = "dim", cheapest, event, event_tone = "idle"; };
+struct ExtOut { bool on = false; std::string live, card, tone = "dim", cheapest, event, event_tone = "idle", event_name, event_when; };
 void publish(const fw::energy::Data &d, double rate_now, double rate_next, bool banded = true, const ExtOut *x = nullptr, bool est = false) {
   namespace en = fw::energy;
   auto &put = put_e;
@@ -91,6 +91,13 @@ void publish(const fw::energy::Data &d, double rate_now, double rate_next, bool 
   else if (d.until <= 0 || std::isnan(rate_next)) snprintf(b, sizeof b, "%s %s", name.c_str(), en::pence(rate_now).c_str());
   else snprintf(b, sizeof b, "%s %s until %s, then %s", name.c_str(), en::pence(rate_now).c_str(), hm(d.until).c_str(), en::pence(rate_next).c_str());
   put("rate", b);
+  // the rate as values (#162): rate_now ("13.5p"), rate_band ("Cheap"; empty unbanded), rate_until ("00:00"), rate_next
+  // ("26.2p"; empty when it does not change today)
+  put("rate_now", std::isnan(rate_now) ? "" : en::pence(rate_now));
+  put("rate_band", std::isnan(rate_now) || !banded ? "" : name);
+  const bool changes = banded && !std::isnan(rate_now) && d.until > 0 && !std::isnan(rate_next);
+  put("rate_until", changes ? hm(d.until) : "");
+  put("rate_next", changes ? en::pence(rate_next) : "");
   put("tone", d.band == en::PEAK ? "working" : d.band == en::CHEAP ? "info" : "idle");
   std::string v, bands;
   for (int i = 0; i < 48; i++) {
@@ -146,6 +153,8 @@ void publish(const fw::energy::Data &d, double rate_now, double rate_next, bool 
   put("cheapest", on ? x->cheapest : "");
   put("event", on ? x->event : "");
   put("event_tone", on ? x->event_tone : "idle");
+  put("event_name", on ? x->event_name : "");  // "Saving session"
+  put("event_when", on ? x->event_when : "");  // "Tomorrow 17:30–18:30", "Now until 18:30"
 }
 
 // ---- adapter: ha (HA's Energy dashboard over the panel's own link)
@@ -214,7 +223,7 @@ void put_state(fw::feed::State st, const char *line) {  // loading / error: the 
   put_e("cost", fw::energy::money(NAN)), put_e("line", line);                         // values (the charts)
   put_e("rate", ""), put_e("tone", "idle"), put_e("watts", "-- W now");
   put_e("live", "-- W now"), put_e("card", "-- W now"), put_e("card_tone", "dim");
-  put_e("cheapest", ""), put_e("event", ""), put_e("event_tone", "idle");
+  put_e("cheapest", ""), put_e("event", ""), put_e("event_tone", "idle"), put_e("event_name", ""), put_e("event_when", "");
   put_st(st);
 }
 void put_found() {
@@ -751,6 +760,9 @@ ExtOut overlay(fw::energy::Data &d, double &rate_now, double &rate_next, bool &b
   if (next_ev) {
     static const char *NAME[] = {"Saving session", "Power-down", "Greener night"};
     const Ev &e = *next_ev;
+    o.event_name = NAME[e.kind];
+    if (e.s <= now) o.event_when = "Now until " + hm(e.e);
+    else o.event_when = std::string(e.s < d0 + DAY ? "Today " : "Tomorrow ") + hm(e.s) + "\xE2\x80\x93" + hm(e.e);
     if (e.s <= now) snprintf(b, sizeof b, "%s now until %s", NAME[e.kind], hm(e.e).c_str());
     else snprintf(b, sizeof b, "%s %s %s\xE2\x80\x93%s", NAME[e.kind], e.s < d0 + DAY ? "today" : "tomorrow", hm(e.s).c_str(), hm(e.e).c_str());
     o.event = b, o.event_tone = e.kind == 2 ? "ok" : "warn";
@@ -786,7 +798,8 @@ std::vector<fw::feed::Field> energy_fields() {
   for (const char *n : {"cost", "line", "card", "card_tone"}) v.push_back({n, true, nullptr});
   for (const char *n : {"rate", "tone", "values", "bands", "now", "week_cost", "week_line", "week", "week_before", "days", "watts", "found"})
     v.push_back({n, false, nullptr});
-  for (const char *n : {"live", "cheapest", "event"}) v.push_back({n, false, nullptr});
+  for (const char *n : {"live", "cheapest", "event", "event_name", "event_when"}) v.push_back({n, false, nullptr});
+  for (const char *n : {"rate_now", "rate_band", "rate_until", "rate_next"}) v.push_back({n, false, nullptr});
   v.push_back({"event_tone", false, nullptr});
   return v;
 }
