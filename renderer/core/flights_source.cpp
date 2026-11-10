@@ -217,6 +217,78 @@ double num(ArduinoJson::JsonVariantConst v) {
 }
 std::string str(ArduinoJson::JsonVariantConst v) { return v.is<const char *>() ? trim(v.as<const char *>()) : std::string(); }
 
+// ---- the route lookup (#157): a shared step after every adapter. A flight with a callsign and no from / to (ADS-B data
+// carries none: adsb.lol, a receiver through Home Assistant) is looked up once by callsign in the public adsbdb.com
+// route database (no key: GET https://api.adsbdb.com/v0/callsign/<callsign>, ~1 KB: the origin and destination airports'
+// city, IATA code and position, the airline). adsb.lol's own route lookup (routeset) answers nothing at the moment.
+// The answer is kept per callsign while the flight is seen (and 15 minutes after), at most ROUTES_MAX; at most one
+// lookup at a time, ROUTE_GAP_MS apart (the lead first, then the closest); an unknown callsign or a failed read is
+// not asked again for ROUTE_RETRY_MS. A route is used only when it is plausible: the aircraft within 150 km (or a
+// fifth of the route's length) of the great circle between the two airports, between them along it (100 km past either
+// end), so a callsign reused for another route today shows the callsign, never a wrong from / to. A source that gives
+// its own route (FlightRadar24) keeps it.
+constexpr uint32_t ROUTE_GAP_MS = 3000, ROUTE_RETRY_MS = 10 * 60000, ROUTE_KEEP_MS = 15 * 60000;
+constexpr size_t ROUTES_MAX = 64;
+struct Route {
+  int st = 0;  // 0 asking, 1 known, 2 unknown / failed (asked again after ROUTE_RETRY_MS)
+  std::string from, to, from_iata, to_iata, op;
+  double olat = NAN, olon = NAN, dlat = NAN, dlon = NAN;
+  uint32_t seen = 0, at = 0;
+};
+// the great-circle distances (km) of a point from the route's line (cross-track) and along it from the origin
+void track_km(double lat1, double lon1, double lat2, double lon2, double lat, double lon, double *xt, double *at, double *len) {
+  const double r = PI / 180;
+  auto dist = [&](double a1, double o1, double a2, double o2) {
+    const double dp = (a2 - a1) * r, dl = (o2 - o1) * r;
+    const double h = std::sin(dp / 2) * std::sin(dp / 2) + std::cos(a1 * r) * std::cos(a2 * r) * std::sin(dl / 2) * std::sin(dl / 2);
+    return 2 * std::atan2(std::sqrt(h), std::sqrt(1 - h));  // radians
+  };
+  auto brg = [&](double a1, double o1, double a2, double o2) {
+    const double dl = (o2 - o1) * r;
+    return std::atan2(std::sin(dl) * std::cos(a2 * r), std::cos(a1 * r) * std::sin(a2 * r) - std::sin(a1 * r) * std::cos(a2 * r) * std::cos(dl));
+  };
+  const double d13 = dist(lat1, lon1, lat, lon), t13 = brg(lat1, lon1, lat, lon), t12 = brg(lat1, lon1, lat2, lon2);
+  const double x = std::asin(std::sin(d13) * std::sin(t13 - t12));
+  const double a = std::acos(std::max(-1.0, std::min(1.0, std::cos(d13) / std::max(1e-12, std::cos(x)))));
+  *xt = std::fabs(x) * EARTH_KM;
+  *at = (std::cos(t13 - t12) < 0 ? -a : a) * EARTH_KM;
+  *len = dist(lat1, lon1, lat2, lon2) * EARTH_KM;
+}
+bool plausible(const Route &r, const Flight &f) {
+  if (std::isnan(f.lat) || std::isnan(f.lon) || std::isnan(r.olat) || std::isnan(r.dlat)) return true;  // nothing to check against
+  double xt, at, len;
+  track_km(r.olat, r.olon, r.dlat, r.dlon, f.lat, f.lon, &xt, &at, &len);
+  return xt <= std::max(150.0, len / 5) && at >= -100 && at <= len + 100;
+}
+// a callsign worth a lookup: an airline's ICAO code + a flight number (3 letters, then a digit); a registration or a
+// made-up one (GBNHP, @@@@) is never in a route database
+bool airline_cs(const std::string &cs) {
+  if (cs.size() < 4 || cs.size() > 8) return false;
+  for (int i = 0; i < 3; i++) if (!isalpha((unsigned char) cs[i])) return false;
+  if (!isdigit((unsigned char) cs[3])) return false;
+  for (char c : cs) if (!isalnum((unsigned char) c)) return false;
+  return true;
+}
+// adsbdb's answer -> r (false = no route: "unknown callsign", or not readable)
+bool read_route(const std::string &body, Route &r) {
+  ArduinoJson::JsonDocument filter;
+  for (const char *e : {"origin", "destination"})
+    for (const char *k : {"municipality", "iata_code", "icao_code", "latitude", "longitude"}) filter["response"]["flightroute"][e][k] = true;
+  filter["response"]["flightroute"]["airline"]["name"] = true;
+  ArduinoJson::JsonDocument d;
+  if (deserializeJson(d, body, ArduinoJson::DeserializationOption::Filter(filter))) return false;
+  ArduinoJson::JsonObjectConst fr = d["response"]["flightroute"];
+  if (fr.isNull()) return false;
+  ArduinoJson::JsonObjectConst o = fr["origin"], e = fr["destination"];
+  auto place = [](ArduinoJson::JsonObjectConst a) {  // the city, else the airport's code
+    std::string c = str(a["municipality"]);
+    return !c.empty() ? c : !str(a["iata_code"]).empty() ? str(a["iata_code"]) : str(a["icao_code"]);
+  };
+  r.from = place(o), r.to = place(e), r.from_iata = str(o["iata_code"]), r.to_iata = str(e["iata_code"]), r.op = str(fr["airline"]["name"]);
+  r.olat = num(o["latitude"]), r.olon = num(o["longitude"]), r.dlat = num(e["latitude"]), r.dlon = num(e["longitude"]);
+  return !r.from.empty() && !r.to.empty() && r.from != r.to;
+}
+
 // readsb / dump1090 / tar1090 / adsb.lol: {"ac": [...]} or {"aircraft": [...]} or the list itself
 bool read_readsb(const std::string &body, double hlat, double hlon, std::vector<Flight> &out) {
   ArduinoJson::JsonDocument filter;  // only the keys used (a list, or an object holding one: two filter shapes)
@@ -396,8 +468,11 @@ class Flights : public feed::Feed {
   double range_ = 50, min_alt_ = 0, hlat_ = NAN, hlon_ = NAN;
   uint32_t fetched_ = 0;
   std::string err_;
+  std::map<std::string, Route> routes_;  // callsign -> its route (#157)
+  std::string asking_;
+  uint32_t asked_at_ = 0, lookups_ = 0;
   std::vector<Flight> got_;
-  lv_timer_t *sample_tick_ = nullptr;
+  lv_timer_t *sample_tick_ = nullptr, *route_tick_ = nullptr;
 
   // the sensor a Home Assistant source reads: the one set (the Source sheet, when HA has more than one), else the one
   // found (sources.json "finds": the integration's own sensor in HA's registry, else its usual id); again when the
@@ -421,6 +496,53 @@ class Flights : public feed::Feed {
   }
   double edge_km() const { return du() == units::Distance::mi ? range_ * units::KM_PER_MI : range_; }
   std::string edge_text() const { char b[24]; snprintf(b, sizeof b, "%g %s", range_, unit_word()); return b; }
+  // the route lookup's step (see "the route lookup" above): fill what is known, ask for the next one missing
+  void routes(std::vector<Flight> &fl) {
+    const uint32_t now = lv_tick_get() | 1;
+    std::vector<std::string> want;
+    for (int pass = 0; pass < 2; pass++)  // the lead (selected) first, then the closest
+      for (Flight &f : fl) {
+        if ((pass == 0) != (!sel.empty() && f.hex == sel)) continue;
+        if ((!f.from.empty() && !f.to.empty()) || !airline_cs(f.cs)) continue;
+        auto it = routes_.find(f.cs);
+        if (it == routes_.end()) { want.push_back(f.cs); continue; }
+        Route &r = it->second;
+        r.seen = now;
+        if (r.st == 2 && lv_tick_diff(now, r.at) >= ROUTE_RETRY_MS && f.cs != asking_) { want.push_back(f.cs); continue; }
+        if (r.st != 1 || !plausible(r, f)) continue;
+        f.from = r.from, f.to = r.to;
+        if (f.op.empty()) f.op = r.op;
+      }
+    for (auto it = routes_.begin(); it != routes_.end();)  // gone for 15 minutes: forgotten
+      if (it->first != asking_ && lv_tick_diff(now, it->second.seen) >= ROUTE_KEEP_MS) it = routes_.erase(it); else ++it;
+    if (want.empty() || !asking_.empty() || (asked_at_ && lv_tick_diff(now, asked_at_) < ROUTE_GAP_MS)) {
+      if (!want.empty() && asking_.empty() && !route_tick_) {  // asked too recently: once the gap is over
+        route_tick_ = lv_timer_create([](lv_timer_t *t) { auto *f = (Flights *) lv_timer_get_user_data(t); f->route_tick_ = nullptr; if (ha::watched("panel.flights")) f->run(); }, ROUTE_GAP_MS, this);
+        lv_timer_set_repeat_count(route_tick_, 1);
+      }
+      return;
+    }
+    while (routes_.size() >= ROUTES_MAX) {  // full: the longest unseen goes
+      auto old = routes_.begin();
+      for (auto it = routes_.begin(); it != routes_.end(); ++it) if (lv_tick_diff(now, it->second.seen) > lv_tick_diff(now, old->second.seen)) old = it;
+      routes_.erase(old);
+    }
+    const std::string cs = want.front();
+    Route &r = routes_[cs];
+    r.st = 0, r.seen = now, r.at = now;
+    asking_ = cs, asked_at_ = now, lookups_++;
+    fw::net::get("https://api.adsbdb.com/v0/callsign/" + cs, [this, cs](bool ok, const std::string &body, const std::string &) {
+      if (asking_ == cs) asking_.clear();
+      auto it = routes_.find(cs);
+      if (it == routes_.end()) return;
+      Route got;
+      got.seen = it->second.seen;
+      got.at = lv_tick_get() | 1;
+      got.st = ok && read_route(body, got) ? 1 : 2;
+      it->second = got;
+      if (ha::watched("panel.flights")) run();
+    }, 8 * 1024);
+  }
   // the filters and the trails, then every field
   void take(std::vector<Flight> fl, bool stale) {
     const double edge = edge_km();
@@ -437,6 +559,7 @@ class Flights : public feed::Feed {
       if ((int) t.size() > TRAIL) t.erase(t.begin());
     }
     trails.swap(next);
+    if (!sampling_) routes(fl);
     last = fl;
     put_all(last, stale);
   }

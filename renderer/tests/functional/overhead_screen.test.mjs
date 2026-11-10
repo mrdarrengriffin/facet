@@ -136,6 +136,44 @@ export default {
       t.web.serve(/adsb\.lol/, { ac: [rs(A)] }); t.wait(41000);
       t.ok(!t.texts().some((x) => /offline · last known/i.test(x)), 'a good read clears the tag');
     } },
+    // ---- the route lookup (#157): adsbdb.com by callsign, after any adapter, cached, one at a time, plausible only
+    { name: 'route lookup: an ADS-B flight with a known route shows from → to on the hero, its row, the details and the Home card', async run(t) {
+      home(t);
+      t.web.serve(/adsb\.lol\/v2\/point\//, { ac: [rs({ ...A, cs: 'EZY45U', from: null }), rs({ ...B, cs: 'RYR12', from: null })] });
+      t.web.serve(/adsbdb\.com\/v0\/callsign\/EZY45U$/, ROUTE('London', 'LHR', 51.47, -0.46, 'Amsterdam', 'AMS', 52.31, 4.76, 'easyJet'));
+      t.web.serve(/adsbdb\.com\/v0\/callsign\/RYR12$/, ROUTE('Stansted', 'STN', 51.88, 0.24, 'Kraków', 'KRK', 50.08, 19.78, 'Ryanair'));
+      await open(t, { source: 'adsb_lol' }); t.wait(300);
+      t.eq(routeOf(t), 'London → Amsterdam', 'the hero: the looked-up route');
+      t.wait(3500);
+      t.has(t.texts(), 'Stansted → Kraków', 'the next one 3 s on: its row');
+      t.eq(t.web.asked.filter((u) => /adsbdb/.test(u)).length, 2, 'one lookup per callsign');
+      t.wait(21000); t.eq(t.web.asked.filter((u) => /adsbdb/.test(u)).length, 2, 'cached: not asked again on the next reads');
+      t.tap('London → Amsterdam'); t.wait(300); t.tap('London → Amsterdam'); t.wait(300);
+      t.has(t.texts(), /^operator$/i, 'details'); t.has(t.texts(), 'easyJet', 'the airline from the lookup where the source has none');
+      await t.device(deck({ source: 'adsb_lol' })); t.wait(300);
+      const c = t.part('card'); t.ok(c && c.texts.some((x) => x === 'London → Amsterdam'), `the Home card: ${c && c.texts}`);
+    } },
+    { name: 'route lookup: an unknown, failed or implausible route shows the callsign; a registration is never looked up', async run(t) {
+      home(t);
+      t.web.serve(/adsb\.lol\/v2\/point\//, { ac: [rs({ ...A, cs: 'ZZZ99' }), rs({ ...B, cs: 'ABC12' }), rs({ ...C, cs: 'GBNHP' })] });
+      t.web.status(/callsign\/ZZZ99$/, 'not found');
+      t.web.serve(/callsign\/ABC12$/, ROUTE('Abuja', 'ABV', 9.0, 7.26, 'Lagos', 'LOS', 6.58, 3.32, 'Test Air'));  // nowhere near: a reused callsign
+      await open(t, { source: 'adsb_lol' }); t.wait(4000);
+      t.has(t.texts(), 'ZZZ99', 'unknown: the callsign');
+      t.has(t.texts(), 'ABC12', 'implausible (Abuja → Lagos over home): the callsign');
+      t.ok(!t.texts().some((x) => /Abuja/.test(x)), 'never the wrong route');
+      t.wait(5000);
+      t.ok(!t.web.asked.some((u) => /callsign\/GBNHP/.test(u)), 'a registration as callsign: not looked up');
+      const n = t.web.asked.filter((u) => /adsbdb/.test(u)).length; t.wait(60000);
+      t.eq(t.web.asked.filter((u) => /adsbdb/.test(u)).length, n, 'an unknown callsign is not asked again within 10 minutes');
+    } },
+    { name: 'route lookup: a source with its own route keeps it (FlightRadar24); one without gets the lookup', async run(t) {
+      t.web.serve(/callsign\/CCC3$/, ROUTE('Brize Norton', 'BZZ', 51.75, -1.58, 'Amsterdam', 'AMS', 52.31, 4.76, 'Royal Air Force'));
+      sky(t, [A, C]); await open(t); t.wait(300);
+      t.eq(routeOf(t), 'Amsterdam → Edinburgh', 'its own route');
+      t.ok(!t.web.asked.some((u) => /callsign\/AAA1/.test(u)), 'no lookup for a flight with a route');
+      t.has(t.texts(), 'Brize Norton → Amsterdam', 'the one without: looked up');
+    } },
     // ---- the shapes (#160): helicopter and military jet from the source's data
     { name: 'shapes: category A7 or a helicopter type = helicopter, military + A6 or a fighter type = military jet, no type info = the plane', async run(t) {
       home(t);
