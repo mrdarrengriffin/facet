@@ -299,7 +299,7 @@ namespace {
 // free memory is under LOW (the 480 panel with every feed on Home runs close to it). The free total, never the largest
 // block: finding that walks every block with the heap locked, and the feeds ask here every few seconds (the 480 panel's
 // screen starved of PSRAM: band flicker)
-constexpr size_t LOW = 96 * 1024;
+constexpr size_t LOW = 192 * 1024;  // the download, the parse and up to BUDGET (96 KB) kept
 const char *cannot() {
   State &s = S();
   if (!ready()) return "Home Assistant is not set up: its address and a token first";
