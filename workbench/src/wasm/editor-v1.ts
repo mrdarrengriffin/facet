@@ -10,7 +10,7 @@
 //             page's memory); Undo goes back to what ran before the last save; Back to factory = one empty Home.
 // The previews are the real renderer (engine.ts) with Home Assistant stubbed (no states: sample data). Nothing leaves
 // the page.
-import { Engine, Stage, DEVICES, type DeviceId } from './engine';
+import { Engine, Stage, DEVICES, type DeviceId, type HaBridge } from './engine';
 import { host, type PanelState } from './editor-v1-host';
 
 type Param = { about?: string; type: string; options?: string[]; label?: string; default?: string; domain?: string };
@@ -715,6 +715,29 @@ async function find(doms: string[], dc: string, q: string, cap = 40) {
   const all = rows.filter((o) => (!dcs.length || dcs.includes(o.dc ?? '')) && (o.id.toLowerCase().includes(qq) || o.name.toLowerCase().includes(qq)));
   return { state: 'ok' as const, why: undefined as string | undefined, found: all.slice(0, cap), more: Math.max(0, all.length - cap), left: host.panel ? idx?.left ?? 0 : 0 };
 }
+/** the previews' Home Assistant: the host's (a panel: its live values); a host with none (the workbench) answers from the
+ *  entity lists instead (their state and unit, else a sample state for the domain), so a card shows a readout as the
+ *  glass does, never an empty value row (a half card's state line) */
+const SAMPLE_ST: Record<string, string> = { light: 'on', switch: 'on', fan: 'on', input_boolean: 'on', automation: 'on', binary_sensor: 'off', cover: 'open', lock: 'locked' };
+function previewHa(ha: HaBridge): HaBridge {
+  return {
+    ...ha,
+    async states(ids, attrs) {
+      const got = await ha.states(ids, attrs);
+      if (got || host.panel) return got;
+      const rows = new Map(Object.values(options).flat().map((o) => [o.id, o] as const));
+      const mine = JSON.stringify(draft?.pages ?? []);  // only the deck's own entities: the sample screens keep their sample data
+      return ids.filter((id) => !id.startsWith('panel.') && mine.includes(`"${id}"`)).flatMap((id) => {
+        const o = rows.get(id), dom = id.slice(0, id.indexOf('.')), st = o?.st ?? SAMPLE_ST[dom];
+        if (st == null) return [];
+        const at: Record<string, string> = {};
+        if (o?.unit) at.unit_of_measurement = o.unit;
+        if (o?.dc) at.device_class = o.dc;
+        return [{ id, name: o?.name ?? names.get(id) ?? id, state: st, attrs: at }];
+      });
+    },
+  };
+}
 /** an entity's state in words, as Home Assistant shows it: a number with its unit, a door Open / Closed, motion
  *  Detected / Clear, on / off as On / Off, anything else with a capital */
 const BIN: Record<string, [string, string]> = {
@@ -1337,7 +1360,7 @@ async function load() {
   const said = (got: number, total: number) => {
     msg.textContent = total ? `Loading the renderer · ${Math.min(99, Math.floor((got / total) * 100))} %` : `Loading the renderer · ${(got / 1e6).toFixed(1)} MB`;
   };
-  engine = await Engine.load(DEVICES[device].den, host.wasmBase(DEVICES[device].den), host.ha, said);
+  engine = await Engine.load(DEVICES[device].den, host.wasmBase(DEVICES[device].den), previewHa(host.ha), said);
   let named = false;
   if (host.panel && first) {  // what the panel runs: the editor starts from it
     first = false;
