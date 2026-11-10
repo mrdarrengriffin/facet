@@ -63,11 +63,17 @@ void home(lv_obj_t *in);
 // Firmware entity, packages/workbench.yaml). state: "" = not checked yet, "none" = up to date, "available",
 // "installing". update_install() asks the host to install the latest ("" = asked, else why not: no update, no host);
 // it installs only when someone asks (the Settings sheet's Update button, Home Assistant's Install).
-struct Update { std::string state, installed, latest; };
+// update_check() asks the host for a check now (a tap on Settings > Update: the same check as Home Assistant's): ""
+// = started, else why not (one is running, no host); checking stays true until the host calls update_checked(why)
+// ("" = it landed: update_set has the result; else why it could not, in words: "no Wi-Fi").
+struct Update { std::string state, installed, latest; bool checking = false; std::string why; };
 void update_set(const char *state, const char *installed, const char *latest);
 const Update &update_now();
 void on_update_install(void (*cb)());
 const char *update_install();
+void on_update_check(void (*cb)());
+const char *update_check();
+void update_checked(const char *why);
 // the panel's update password (a manual flash over the network, the public build's board/update_password.h): told once
 // at boot; "" = none (the workbench, a build without one): Settings shows no Update password row. Never logged.
 void update_password_set(const char *pw);

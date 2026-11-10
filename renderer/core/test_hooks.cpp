@@ -339,6 +339,11 @@ extern "C" EMSCRIPTEN_KEEPALIVE const char *fw_test(const char *cmd, const char 
   else if (c == "keys") keys_cmd(a, d);
   else if (c == "update") {  // "state,installed,latest": the host's firmware update (core/device.h update); "install" = ask
     if (a == "install") { out = fw::dev::update_install(); return out.c_str(); }
+    // a fake host's check (Settings > Update's tap): "host" = it can check, "check" = ask, "checked:<why>" = it ended
+    if (a == "host") { fw::dev::on_update_check([] {}); return ""; }
+    if (a == "nohost") { fw::dev::on_update_check(nullptr); fw::dev::update_checked(""); return ""; }
+    if (a == "check") { out = fw::dev::update_check(); return out.c_str(); }
+    if (a.rfind("checked:", 0) == 0) { fw::dev::update_checked(a.c_str() + 8); return ""; }
     const size_t p1 = a.find(','), p2 = a.find(',', p1 == std::string::npos ? p1 : p1 + 1);
     if (p2 == std::string::npos) return "state,installed,latest";
     fw::dev::update_set(a.substr(0, p1).c_str(), a.substr(p1 + 1, p2 - p1 - 1).c_str(), a.substr(p2 + 1).c_str());

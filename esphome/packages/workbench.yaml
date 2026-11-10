@@ -81,6 +81,8 @@ esphome:
               fw::dev::update_set(st, u->update_info.current_version.c_str(), u->update_info.latest_version.c_str());
             });
             fw::dev::on_update_install([] { id(fw_update).perform(false); });
+            // a tap on Settings > Update checks now (the entity's own check; board/fw_update.h check_now)
+            fw::dev::on_update_check([] { panel::fwu::check_now(id(fw_update)); });
             // the idle clock dims the backlight to Idle brightness (core/device.h idle); leaving it = full again
             fw::dev::on_idle([](bool on, int pct) {
               auto c = id(backlight).turn_on(); c.set_brightness(pct / 100.0f); c.set_transition_length(on ? 600 : 150); c.perform();

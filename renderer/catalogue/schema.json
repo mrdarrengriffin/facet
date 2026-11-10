@@ -9868,6 +9868,8 @@
      "options": [
       "live",
       "up_to_date",
+      "checking",
+      "failed",
       "available",
       "installing"
      ],

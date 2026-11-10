@@ -117,6 +117,7 @@ struct Screen {
   std::string values[fw::set::N_SETTINGS];  // per setting: its value (option id, "true" / "false", the number)
   lv_obj_t *update_row = nullptr;           // Update (the host's firmware update, core/device.h update)
   bool fake = false;                        // previews: the prop "update" instead of the host's
+  bool asked = false;                       // a tap on Update started the check that runs now
   fw::dev::Update upd;                      // ... its made-up update
 };
 int index_of(const fw::set::Setting &s) { return (int) (&s - fw::set::SETTINGS); }
@@ -252,16 +253,24 @@ void sheet_props(Screen *scr, const fw::set::Setting &s, bool open, Doc &d) {
   d["selected"] = sel;
 }
 
-// Update (after Home Assistant): the host's firmware update. The row's value says where it is; greyed out unless an
-// update is available. Its tap opens the sheet with one row: the new version (sub: the one installed) and an Update
-// Button, which asks the host to install (fw::dev::update_install, event "update" "install") and closes the sheet.
+// Update (after Home Assistant): the host's firmware update. The row's value says where it is (Checking..., Up to
+// date, <version> available, Couldn't check, Installing), its sub the version installed or why a check failed. A tap
+// checks at once (fw::dev::update_check: the host's own check, as Home Assistant's; event "update" "check"), repeated
+// taps while it runs do nothing; when that check finds an update, or one is already there, the tap opens the sheet
+// with one row: the new version (sub: the one installed) and an Update Button, which asks the host to install
+// (fw::dev::update_install, event "update" "install") and closes the sheet. Greyed out while installing, or on a host
+// that can neither check nor install.
 fw::dev::Update update_of(const Screen *scr) { return scr->fake ? scr->upd : fw::dev::update_now(); }
 void update_props(const fw::dev::Update &u, Doc &d) {
   const bool avail = u.state == "available";
-  const std::string v = avail ? u.latest + " available" : u.state == "installing" ? std::string("Installing")
+  const std::string v = u.checking ? std::string("Checking\xE2\x80\xA6") : u.state == "installing" ? std::string("Installing")
+                      : !u.why.empty() ? std::string("Couldn't check") : avail ? u.latest + " available"
                       : u.state == "none" ? std::string("Up to date") : std::string("Not checked");
+  const std::string sub = !u.why.empty() && !u.checking ? "Couldn't check: " + u.why
+                        : u.installed.empty() ? std::string() : "Installed " + u.installed;
   d["title"] = "Update", d["icon"] = "none", d["trailing"] = "value-chevron", d["value"] = v.c_str();
-  d["state"] = avail ? "default" : "disabled";
+  if (!sub.empty()) d["sub"] = sub.c_str();
+  d["state"] = u.state == "installing" ? "disabled" : "default";
 }
 void fill_update(Screen *scr, lv_obj_t *list) {
   const fw::dev::Update u = update_of(scr);
@@ -288,7 +297,11 @@ void fill_update(Screen *scr, lv_obj_t *list) {
 void update_prop(Screen *scr, fw::Props p) {
   const char *up = p["update"] | "live";
   scr->fake = strcmp(up, "live") != 0;
-  if (scr->fake) scr->upd = {!strcmp(up, "up_to_date") ? "none" : up, "0.5.0", !strcmp(up, "up_to_date") ? "0.5.0" : "0.6.0"};
+  if (!scr->fake) return;
+  const bool none = !strcmp(up, "up_to_date") || !strcmp(up, "checking") || !strcmp(up, "failed");
+  scr->upd = {none ? "none" : up, "0.5.0", none ? "0.5.0" : "0.6.0"};
+  scr->upd.checking = !strcmp(up, "checking");
+  if (!strcmp(up, "failed")) scr->upd.why = "no Wi-Fi";
 }
 void open_update(Screen *scr, bool open) {
   if (!scr->sheet) return;
@@ -403,7 +416,7 @@ void row_for(Screen *scr, lv_obj_t *col, const fw::set::Setting &s) {
 std::string meta_json() {
   std::string props = fw::set::PROPS_JSON;  // one per setting (generated), then the screen's own
   props.pop_back();
-  props += R"(,{"name":"sheet","about":"For previews only: shows the picker sheet closed, open, or opening and closing over and over to check its motion.","type":"select","options":["closed","open","loop","update"],"default":"closed"},{"name":"update","about":"For previews only: a made-up firmware update instead of the panel's own (live).","type":"select","options":["live","up_to_date","available","installing"],"default":"live"}])";
+  props += R"(,{"name":"sheet","about":"For previews only: shows the picker sheet closed, open, or opening and closing over and over to check its motion.","type":"select","options":["closed","open","loop","update"],"default":"closed"},{"name":"update","about":"For previews only: a made-up firmware update instead of the panel's own (live).","type":"select","options":["live","up_to_date","checking","failed","available","installing"],"default":"live"}])";
   return std::string(R"({
   "about": "Every personalisation setting of the panel, grouped, from the one settings schema: inline controls, toggles, sliders and pickers in a bottom sheet.",
   "frame": [480, 480],
@@ -472,16 +485,40 @@ void build_settings(lv_obj_t *parent, fw::Props p) {
     update_props(update_of(scr), ur);
     if (lv_obj_t *r = scr->update_row = build("list_row", c, ur)) {
       lv_obj_add_event_cb(r, [](lv_event_t *e) {  // after the List row's own tap (event + sound open)
-        if (!lv_obj_has_state((lv_obj_t *) lv_event_get_current_target(e), fw::st::OFF)) open_update((Screen *) lv_event_get_user_data(e), true);
+        auto *o = (lv_obj_t *) lv_event_get_current_target(e);
+        auto *scr = (Screen *) lv_event_get_user_data(e);
+        if (lv_obj_has_state(o, fw::st::OFF)) return;
+        const fw::dev::Update u = update_of(scr);
+        if (u.checking) return;  // one is running: its result comes
+        if (u.state == "available") { open_update(scr, true); return; }
+        const char *why = scr->fake ? "" : fw::dev::update_check();
+        fw::emit(o, "update", *why ? why : "check");
+        if (*why) return;
+        scr->asked = true;
+        Doc d;
+        fw::dev::Update now = update_of(scr);
+        now.checking = true;
+        update_props(now, d);
+        fw::update_child(fw::find("list_row"), o, d.as<fw::Props>());
       }, LV_EVENT_CLICKED, scr);
-      // the host's update moves while Settings shows (a check, an install)
-      fx::every(r, 1000, [scr, r, was = ur["value"].as<std::string>()]() mutable {
+      // the host's update moves while Settings shows (a check, an install); a check this row asked for that finds an
+      // update opens the Update sheet
+      std::string ur0;
+      serializeJson(ur, ur0);
+      fx::every(r, 250, [scr, r, was = ur0]() mutable {
           if (scr->fake) return;
+          const fw::dev::Update &u = fw::dev::update_now();
           Doc d;
-          update_props(fw::dev::update_now(), d);
-          if (was == d["value"].as<std::string>()) return;
-          was = d["value"].as<std::string>();
+          update_props(u, d);
+          std::string now;
+          serializeJson(d, now);
+          if (was == now) return;
+          was = now;
           fw::update_child(fw::find("list_row"), r, d.as<fw::Props>());
+          if (scr->asked && !u.checking) {
+            scr->asked = false;
+            if (u.state == "available") open_update(scr, true);
+          }
         });
     }
   }

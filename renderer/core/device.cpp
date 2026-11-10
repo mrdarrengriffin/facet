@@ -690,12 +690,27 @@ void home(lv_obj_t *in) { queue(in, HOME, nullptr); }
 void on_idle(void (*cb)(bool idle, int pct)) { idle_hook() = cb; }
 static Update &update_state() { static Update u; return u; }
 static void (*&install_hook())() { static void (*f)() = nullptr; return f; }
+static void (*&check_hook())() { static void (*f)() = nullptr; return f; }
 void update_set(const char *state, const char *installed, const char *latest) {
   Update &u = update_state();
   u.state = state ? state : "", u.installed = installed ? installed : "", u.latest = latest ? latest : "";
 }
 const Update &update_now() { return update_state(); }
 void on_update_install(void (*cb)()) { install_hook() = cb; }
+void on_update_check(void (*cb)()) { check_hook() = cb; }
+const char *update_check() {
+  Update &u = update_state();
+  if (u.checking) return "checking";  // repeated taps while one runs: ignored
+  if (u.state == "installing") return "installing";
+  if (!check_hook()) return "this panel cannot check";
+  u.checking = true, u.why.clear();
+  check_hook()();
+  return "";
+}
+void update_checked(const char *why) {
+  Update &u = update_state();
+  u.checking = false, u.why = why ? why : "";
+}
 static std::string &password_state() { static std::string s; return s; }
 void update_password_set(const char *pw) { password_state() = pw ? pw : ""; }
 const std::string &update_password() { return password_state(); }

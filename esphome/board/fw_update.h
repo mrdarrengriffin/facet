@@ -34,11 +34,17 @@
 #include "esphome/components/http_request/update/http_request_update.h"
 #include "esphome/components/json/json_util.h"
 #include "esphome/core/preferences.h"
+#ifdef USE_WIFI
+#include "esphome/components/wifi/wifi_component.h"
+#endif
 #include "fw_notes.h"
 #include "fw_settle.h"
 
 namespace fw::bundle {
 extern const char *const VERSION;  // facet_wb fw_bundle_info.cpp
+}
+namespace fw::dev {
+void update_checked(const char *why);  // renderer core/device.h: Settings > Update's check ended
 }
 
 namespace panel::fwu {
@@ -225,7 +231,46 @@ inline void up_to_date(UpdateEntity *u) {
   u->publish_state();
 }
 
+// Settings > Update's tap (core/device.h update_check, workbench.yaml on_update_check): the entity's own check at once,
+// the one Home Assistant's "check for updates" runs (a fresh manifest URL, so Home Assistant's entity shows the
+// result too). tick() tells the screen when it ends: fine, or why not (no Wi-Fi, the server did not answer, no answer
+// in a minute). A check already running (the hourly one, Home Assistant's) is waited for instead of a second.
+struct Ask {
+  bool on = false;
+  int64_t at = 0;
+};
+inline Ask &ask() {
+  static Ask a;
+  return a;
+}
+inline void check_now(HttpRequestUpdate *u) {
+  Ask &a = ask();
+#ifdef USE_WIFI
+  if (!esphome::wifi::global_wifi_component || !esphome::wifi::global_wifi_component->is_connected()) {
+    fw::dev::update_checked("no Wi-Fi");
+    return;
+  }
+#endif
+  a.on = true, a.at = esp_timer_get_time();
+  if (checking(u)) return;
+  if (!notes().url.empty()) u->set_source_url(fresh(notes().url));
+  u->update();
+}
+inline void ask_step(HttpRequestUpdate *u) {
+  Ask &a = ask();
+  if (!a.on) return;
+  if (checking(u)) {
+    if (esp_timer_get_time() - a.at < 60000000LL) return;
+    a.on = false;
+    fw::dev::update_checked("no answer in a minute");
+    return;
+  }
+  a.on = false;
+  fw::dev::update_checked(u->status_has_error() ? "the update server did not answer" : "");
+}
+
 inline void tick(HttpRequestUpdate *u, int left, int total) {
+  ask_step(u);
   notes_take(u);
   channel().step(checking(u), [] { esphome::global_preferences->sync(); }, [u](const std::string &url) {
     u->set_source_url(fresh(url));
