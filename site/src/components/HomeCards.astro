@@ -1,21 +1,22 @@
 ---
 // Home cards (on the Home screen's page, screens/[id].astro): choosing what is on Home + the card sizes. Facts:
-// core/spec.h CARD_TYPES (types, sizes s/m/l, taps), screens/home.cpp (the grid, unavailable look), screens/screens.cpp
+// core/spec.h CARD_TYPES (types, taps) + grid_sizes (1x1 2x1 2x2 half), screens/home.cpp (the Grid, unavailable look), screens/screens.cpp
 // + screen_set.cpp (Settings > Screens, Show on Home), renderer/README.md "Feature flags" (cards to screens the build
 // lacks are left out). Only released card types.
 import { url } from '../lib/nav';
 
 const sizes = [
-  ['Tile', 'Small', 'Three across. An icon, a short value and the label, such as a light and its level.', 'entity-tile'],
-  ['Card', 'Medium', 'Two across. Room for a value or a line of text and a sub line, plus artwork such as the weather.', 'card'],
-  ['Wide card', 'Large', 'The full width, for a page or a media player that needs the room.', 'card'],
-  ['Readout', 'Medium, for a sensor', 'A value and its label with no box and no tap. Two readouts in a row share one card space, one above the other.', 'readout'],
+  ['1 × 1', 'One square', 'A tile: the icon, the name and its state, such as a light and its level.', 'entity-tile'],
+  ['Half', 'Half a square', 'The name over the state. Two halves share one square, one above the other.', 'entity-tile'],
+  ['2 × 1', 'Two squares across', 'The card with its picture, such as the animated icon for Weather, and a line under it.', 'card'],
+  ['2 × 2', 'Four squares', 'The card with room to spare, such as the record and the track for Media.', 'card'],
 ];
 const types = [
-  ['Light (or a switch)', 'Tile, card', 'Tap to switch it, or open the Light screen for that light.'],
-  ['Media player', 'Card, wide card', 'Shows the track and the state; opens the Media screen.'],
-  ['Sensor', 'Tile, readout', 'Read only: the value and its label.'],
-  ['Page', 'Tile, card, wide card', 'Opens another screen or another Home.'],
+  ['Light (or a switch)', 'A tap toggles it, opens the Light screen for it, or does nothing.'],
+  ['Media player', 'Shows the track and the state; a tap opens the Media screen.'],
+  ['Sensor', 'Read only: the value and its label.'],
+  ['Screen', 'Opens another of your screens or a built-in one.'],
+  ['Any other entity', 'Climate, a cover, a fan, a script, a scene, a button and the rest: what a tap does depends on what it is.'],
 ];
 ---
 
@@ -28,7 +29,7 @@ const types = [
   </p>
 
   <h3 id="sizes">Card sizes</h3>
-  <p>Every card comes in one of four shapes. The same layout is used on the 480 and the 720 panel.</p>
+  <p>Home is a grid three squares across, the same on the 480 and the 720 panel. Every card can be any of these sizes.</p>
   <table>
     <thead><tr><th>Shape</th><th>Size</th><th>What it is for</th></tr></thead>
     <tbody>
@@ -37,11 +38,10 @@ const types = [
   </table>
 
   <h3 id="types">What a card can show</h3>
-  <p>Each kind of card takes certain sizes and does one thing when you tap it.</p>
   <table>
-    <thead><tr><th>Card</th><th>Sizes</th><th>Tap</th></tr></thead>
+    <thead><tr><th>Card</th><th>Tap</th></tr></thead>
     <tbody>
-      {types.map(([name, sizes, tap]) => <tr><td>{name}</td><td>{sizes}</td><td>{tap}</td></tr>)}
+      {types.map(([name, tap]) => <tr><td>{name}</td><td>{tap}</td></tr>)}
     </tbody>
   </table>
   <p>
@@ -52,8 +52,13 @@ const types = [
   <h3 id="choose">Choosing what is on Home</h3>
   <ul>
     <li>
-      <strong>On the panel</strong> (<strong>Settings &gt; Screens</strong>). Each screen has a switch; on puts its
-      card on Home, off takes it away. Tap a screen's name to see where its data comes from and set its options, such as
+      <strong>In the <a href={url('/editor/')}>editor</a></strong> (the panel's own web page, <code>http://&lt;the
+      panel's address&gt;/</code>): add, resize, move and remove cards on a live copy of the panel, then save. A fresh
+      panel starts with one empty Home.
+    </li>
+    <li>
+      <strong>On the panel</strong> (<strong>Settings &gt; Screens</strong>). Each built-in screen has a switch; on puts
+      its card on Home, off takes it away. Tap a screen's name to see where its data comes from and set its options, such as
       which speaker the Media screen follows.
     </li>
     <li>

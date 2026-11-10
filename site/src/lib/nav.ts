@@ -34,6 +34,7 @@ export const AI_EXAMPLES = true;
 export const headerLinks = [
   { label: 'Screens', href: url('/screens/'), match: [url('/screens/')] },
   { label: 'Panels', href: url('/panels/'), match: [url('/panels/')] },
+  { label: 'Editor', href: url('/editor/'), match: [url('/editor/')] },
   { label: 'Install', href: url('/install/'), match: [url('/install/')] },
   { label: 'Help', href: url('/help/'), match: [url('/help/'), url('/contributing/')] },
   ...(UPDATES_PAGE ? [{ label: 'Updates', href: url('/updates/'), match: [url('/updates/')] }] : []),
@@ -64,6 +65,7 @@ export function getSidebar(): NavGroup[] {
       links: [
         { label: 'Install', href: url('/install/') },
         { label: 'Panels', href: url('/panels/') },
+        { label: 'Editor', href: url('/editor/') },
         ...(UPDATES_PAGE ? [{ label: 'Updates', href: url('/updates/') }] : []),
       ],
     },

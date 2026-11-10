@@ -1,0 +1,114 @@
+---
+// Editor: the editor every panel serves at / (workbench/src/wasm/editor-v1.ts with the panel host editor-v1-host-device.ts,
+// built into the firmware by workbench/scripts/editor-device.mjs). Scope: workbench/EDITOR-V1.md. Pictures: the
+// workbench editor with a made-up house (never a real one), in public/editor/.
+import Docs, { type Heading } from '../layouts/Docs.astro';
+import { url } from '../lib/nav';
+
+const headings: Heading[] = [
+  { depth: 2, slug: 'open', text: 'Opening it' },
+  { depth: 2, slug: 'screens', text: 'Your screens' },
+  { depth: 2, slug: 'cards', text: 'Cards' },
+  { depth: 3, slug: 'add', text: 'Adding a card' },
+  { depth: 3, slug: 'search', text: 'Searching your entities' },
+  { depth: 3, slug: 'sizes', text: 'Sizes and changing a card' },
+  { depth: 2, slug: 'built-in', text: 'Built-in screens and Settings' },
+  { depth: 2, slug: 'save', text: 'Saving' },
+  { depth: 2, slug: 'next', text: 'What is coming' },
+];
+---
+
+<Docs edit="site/src/pages/editor.astro" title="Editor" description="The web page every Facet panel serves: build your own pages card by card on a live copy of the panel, set the built-in screens and the panel up, save to the panel." group="Use Facet" current={url('/editor/')} headings={headings}>
+  <p class="lede">
+    Every Facet panel serves its own editor. Open the panel's address in a browser to build your own pages, card by
+    card, on a live copy of the panel, then save them to it. Nothing to install: the page comes from the panel itself.
+    This is the editor's first version: more is coming, and some of it will change.
+  </p>
+
+  <figure class="page-shot"><img src={url('/editor/editor.png')} width="2560" height="1570" alt="The editor: a live copy of the panel showing its Home, and the screen's name, order and start page beside it." loading="lazy" /><figcaption>The editor: the live panel in the middle, what you picked beside it</figcaption></figure>
+
+  <h2 id="open">Opening it</h2>
+  <p>
+    On a computer or phone on the same Wi-Fi, open <code>http://</code> and the panel's address, for example
+    <code>http://192.168.1.50/</code>. The address is on the panel: a fresh panel's empty Home shows it, and so does
+    <strong>Settings &gt; About</strong>. The first time after an update the editor downloads the panel's renderer
+    (about 1.5 MB, a few seconds) and shows how far it has got; after that it opens at once.
+  </p>
+  <p>
+    The panel in the middle of the page is drawn by the panel's own renderer, with the panel's own data: your lights
+    and sensors, the flights overhead, the weather, your calendar. What you see there is what the glass will show.
+  </p>
+
+  <h2 id="screens">Your screens</h2>
+  <p>
+    The tabs along the top are your own screens, in the order you swipe through them on the panel. A fresh panel has
+    one, an empty Home. <strong>+ Screen</strong> adds another (up to eight); pick a tab to name it, move it earlier or
+    later, choose it as the screen the panel opens on, or remove it.
+  </p>
+
+  <h2 id="cards">Cards</h2>
+  <h3 id="add">Adding a card</h3>
+  <p>
+    Tap an empty square on the live panel (or <strong>+ Add a card at the end</strong>). Pick what it is first: a
+    <strong>Screen</strong> (a card that opens another screen), <strong>Light</strong>, <strong>Switch</strong>,
+    <strong>Media</strong>, <strong>Climate</strong>, <strong>Cover</strong>, <strong>Sensor</strong> or
+    <strong>Other</strong>. A Sensor asks what it measures: temperature, humidity, power, energy, battery, doors and
+    windows, or motion and presence. Then type part of its name or entity id; nothing is listed until you do, so a house
+    with thousands of entities stays easy to search. Typing straight away, before picking a type, searches everything.
+  </p>
+  <div class="page-shots">
+    <figure><img src={url('/editor/types.png')} width="840" height="1120" alt="Add a card: the card types, and a search box above them." loading="lazy" /><figcaption>The card types</figcaption></figure>
+    <figure><img src={url('/editor/search.png')} width="840" height="940" alt="Searching temperature sensors: each match with its name, entity id and temperature." loading="lazy" /><figcaption>A search, each match with its value</figcaption></figure>
+  </div>
+
+  <h3 id="search">Searching your entities</h3>
+  <p>
+    Each match shows its value the way Home Assistant does: <em>21.5 °C</em>, <em>Open</em>, <em>Detected</em>. When
+    you start adding a card, the panel reads your entities from Home Assistant once (a few seconds in a large house) and
+    hands the editor a compact index of them: each one's id, name, what it measures and its value. The search runs on
+    that index as you type, so it is instant. The index is read again in the background when it is over a minute old.
+    The panel keeps none of it once it has sent it, and only uses memory it can spare; if a very large house does not
+    fit, the editor says how many entities it could not include.
+  </p>
+  <p>
+    The search reads through the panel's own Home Assistant link (Settings &gt; Home Assistant). Without one, you can
+    still add Screen cards.
+  </p>
+
+  <h3 id="sizes">Sizes and changing a card</h3>
+  <p>Every card can be any size. The grid is three squares across on both panels.</p>
+  <figure class="page-shot"><img src={url('/editor/sizes.png')} width="1144" height="1144" alt="A Home with a 2 by 1 Weather card, two half sensor cards, a 2 by 2 Media card and two 1 by 1 light cards." loading="lazy" /><figcaption>2 × 1, two halves, 2 × 2 and 1 × 1</figcaption></figure>
+  <ul>
+    <li><strong>1 × 1</strong>: a tile, the icon, the name and its state.</li>
+    <li><strong>Half</strong>: half a square, the name over the state. Two halves share one square: tap a half, then <strong>+ Add another half</strong> under it.</li>
+    <li><strong>2 × 1</strong> and <strong>2 × 2</strong>: the card with its picture, such as the record for Media or the animated icon for Weather.</li>
+  </ul>
+  <p>
+    Tap a card on the live panel to change it: its size, its entity (type to search for another), its name (leave it
+    empty to use the entity's own) and what a tap does (toggle it, open its screen, or nothing). Move it earlier or later
+    in the grid, or remove it. Cards fill the grid in reading order; the cards after a resized one move to fit.
+  </p>
+
+  <h2 id="built-in">Built-in screens and Settings</h2>
+  <p>
+    <strong>Settings</strong> opens the panel's settings as one list, as on the panel itself:
+    <strong>Screens</strong> holds the built-in screens (Clock, Weather, Media, Calendar, Energy, Overhead and the rest),
+    each with whether it is on the panel, its name and its options, and the live panel shows the one you pick.
+    <strong>Home Assistant</strong> sets the panel's own link (its address and a token). Then the panel's look, text
+    size, units and the rest, each shown on the live panel as you change it.
+  </p>
+
+  <h2 id="save">Saving</h2>
+  <p>
+    Nothing reaches the panel until you press <strong>Save</strong>. It lists your changes in words, the panel checks
+    them, and they go to the panel; if the panel refuses something, the editor says what and where.
+    <strong>Undo</strong> puts the last save back. <strong>Back to factory</strong> starts again from one empty Home.
+  </p>
+
+  <h2 id="next">What is coming</h2>
+  <p>
+    This is the first version of the editor. Next: taps on the live panel that change a screen's own view (picking a
+    plane on Overhead, opening a sheet) work there too, more card layouts per size, and a better 1 × 1 card for a media
+    player. Follow it on <a href="https://github.com/mrdarrengriffin/facet/issues/82">GitHub</a>.
+  </p>
+</Docs>

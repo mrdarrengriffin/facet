@@ -20,6 +20,7 @@ const headings: Heading[] = [
   { depth: 2, slug: 'wifi', text: 'Wi-Fi' },
   { depth: 2, slug: 'home-assistant', text: 'Home Assistant' },
   { depth: 2, slug: 'link', text: 'The panel\'s own link' },
+  { depth: 2, slug: 'build', text: 'Build your Home' },
   { depth: 2, slug: 'updates', text: 'Updates' },
 ];
 const manifest = (id: string) => url(`/firmware/${id}/manifest.json`);
@@ -143,6 +144,15 @@ const manifest = (id: string) => url(`/firmware/${id}/manifest.json`);
     <figure><img src={url('/install/link-qr.png')} width="720" height="720" alt="The panel's Settings, Home Assistant screen while it is not linked: the link page's address and its QR code." loading="lazy" /><figcaption>On the panel, while it is not linked</figcaption></figure>
     <figure><img src={url('/install/link-page.png')} width="390" height="780" alt="The link page on a phone: Linked, homeassistant.local, the address and token fields and the Link button." loading="lazy" /><figcaption>The link page on a phone</figcaption></figure>
   </div>
+
+  <h2 id="build">Build your Home</h2>
+  <p>
+    A fresh panel starts with one empty Home that shows its address. Open that address,
+    <code>http://&lt;the panel's address&gt;/</code>, in a browser on the same Wi-Fi: the panel's own
+    <a href={url('/editor/')}>editor</a> shows a live copy of it. Tap an empty square to add a card, pick what it is
+    and search for it, then press <strong>Save</strong>. The built-in screens (Clock, Weather, Media and the rest) are
+    under <strong>Settings &gt; Screens</strong> there and on the panel.
+  </p>
 
   <h2 id="updates">Updates</h2>
   <p>
