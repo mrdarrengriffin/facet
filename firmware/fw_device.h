@@ -383,8 +383,18 @@ inline void fit_scroll() {
   lv_obj_scroll_to_y(S.scr, 0, LV_ANIM_OFF);
 }
 // {id, props, theme, accent} -> render; out = {ok, error?, ms, heap}
+inline bool screen_go(const std::string &what, ArduinoJson::JsonObject out);
+inline lv_obj_t *device_in();
 inline bool show(ArduinoJson::JsonObjectConst req, ArduinoJson::JsonObject out) {
   const char *id = req["id"] | "";
+  // Home belongs to the device runtime (its stack's root): {"id": "home"} opens Home there, never a page on its own
+  // (that one had no stack: a Back and a Settings button that went nowhere, and it came back at every boot)
+  if (!strcmp(id, "home") && fw::find("device")) {
+    const std::string page = req["props"]["page"] | "";  // a second Home page: opened above Home, as its link does
+    if (!screen_go("home", out)) return false;
+    if (!page.empty()) fw::dev::go(device_in(), page.c_str());
+    return true;
+  }
   std::string props = "{}";
   if (req["props"].is<ArduinoJson::JsonObjectConst>()) {
     props.clear();

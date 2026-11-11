@@ -369,7 +369,11 @@ void build_home(lv_obj_t *parent, fw::Props props) {
   serializeJson(sp, json);
   Doc none;
   none.to<ArduinoJson::JsonObject>();
+  // the start page is a root wherever it is built (the device's stack root, or Home shown on its own): never a Back
+  const bool was = fw::spec::at_root;
+  if (!(sp["header"]["back"] | false)) fw::spec::at_root = true;
   fw::spec::build(parent, "home", none.as<fw::Props>(), &error, json.c_str());
+  fw::spec::at_root = was;
 }
 const int reg = fw::add({"home", "Home", "screens", META, build_home});
 }  // namespace
