@@ -5,8 +5,10 @@ const inBox = (o, b) => o.x >= b.x && o.y >= b.y && o.x + o.w <= b.x + b.w && o.
 // Entity tile (components/entity_tile.cpp) on its own, and the Home light cards built from it (screens/home.cpp:
 // status = "level" of the light, on = its state) driven through the fake Home Assistant: the state line must follow
 // the live HA state after a tap, an outside change, unavailable and a reconnect.
-const tile = (t, label) => t.part('entity_tile', label);
-const status = (t, label) => { const p = tile(t, label); return p ? p.texts.filter((s) => s.toUpperCase() !== label.toUpperCase()) : null; };
+// the head draws the name in caps (type label), one line: a long name at 1x ends in "..."
+const name = (label) => new RegExp(`^${label}$|^${label.slice(0, 4)}[^]*(\\.\\.\\.|…)$`, 'i');
+const tile = (t, label) => t.part('entity_tile', name(label));
+const status = (t, label) => { const p = tile(t, label); return p ? p.texts.filter((s) => !name(label).test(s)) : null; };
 const tileBg = (t, label) => { const p = tile(t, label); return p && t.objs().find((o) => o.box && o.x === p.x && o.y === p.y && o.w === p.w && o.h === p.h)?.bg; };
 const HOME_LIGHTS = { Ceiling: 'light.living_room_ceiling', 'Sofa table': 'light.sofa_lamp', Chair: 'light.reading_lamp' };
 export default {
@@ -14,29 +16,29 @@ export default {
   tests: [
     // ---- the component
     { name: 'shows its name and status', mount: ['entity_tile', { label: 'Sofa table', status: '64%', on: true }], run(t) {
-      t.has(t.texts(), 'Sofa table', 'name'); t.has(status(t, 'Sofa table'), /^64%$/i, 'status');
+      t.has(t.texts(), name('Sofa table'), 'name'); t.has(status(t, 'Sofa table'), /^64%$/i, 'status');
     } },
     { name: 'tap on an on toggle tile: tap event + toggle-off', mount: ['entity_tile', { label: 'Sofa table', on: true }], run(t) {
-      const ev = t.tap('Sofa table'); t.emitted(ev, 'tap', /Sofa table/); t.sounds(ev, ['toggle-off']);
+      const ev = t.tap(name('Sofa table')); t.emitted(ev, 'tap', /Sofa table/); t.sounds(ev, ['toggle-off']);
     } },
     { name: 'tap on an off toggle tile: toggle-on', mount: ['entity_tile', { label: 'Chair', on: false, status: 'Off' }], run(t) {
-      t.sounds(t.tap('Chair'), ['toggle-on']);
+      t.sounds(t.tap(name('Chair')), ['toggle-on']);
     } },
     { name: 'act open: open sound, one tap', mount: ['entity_tile', { label: 'Blind', act: 'open', on: false }], run(t) {
-      const ev = t.tap('Blind'); t.sounds(ev, ['open']); t.eq(ev.filter((e) => e.name === 'tap').length, 1, 'tap count');
+      const ev = t.tap(name('Blind')); t.sounds(ev, ['open']); t.eq(ev.filter((e) => e.name === 'tap').length, 1, 'tap count');
     } },
     { name: 'act none (sensor): a tap does nothing', mount: ['entity_tile', { label: 'Garage', act: 'none', on: false, status: '18.5 °C' }], run(t) {
-      const ev = t.tap('Garage'); t.notEmitted(ev, 'tap'); t.silent(ev);
+      const ev = t.tap(name('Garage')); t.notEmitted(ev, 'tap'); t.silent(ev);
     } },
     { name: 'hold fires at most one tap', mount: ['entity_tile', { label: 'Sofa table' }], run(t) {
-      t.ok(t.hold('Sofa table').filter((e) => e.name === 'tap').length <= 1, 'one tap at most');
+      t.ok(t.hold(name('Sofa table')).filter((e) => e.name === 'tap').length <= 1, 'one tap at most');
     } },
     { name: 'unavailable: no tap, error only', mount: ['entity_tile', { label: 'Sofa table', state: 'unavailable' }], run(t) {
-      const ev = t.tap('Sofa table'); t.notEmitted(ev, 'tap'); t.sounds(ev, ['error']);
+      const ev = t.tap(name('Sofa table')); t.notEmitted(ev, 'tap'); t.sounds(ev, ['error']);
     } },
     { name: 'missing: "Not found", no tap; to unavailable: "Unavailable"', mount: ['entity_tile', { label: 'Sofa table', state: 'missing' }], run(t) {
       t.has(t.texts(), /^not found$/i, 'word (caps: type label)'); t.hasNot(t.texts(), /^unavailable$/i, 'not the other word');
-      const ev = t.tap('Sofa table'); t.notEmitted(ev, 'tap'); t.sounds(ev, ['error']);
+      const ev = t.tap(name('Sofa table')); t.notEmitted(ev, 'tap'); t.sounds(ev, ['error']);
       t.update({ state: 'unavailable' }); t.has(t.texts(), /^unavailable$/i, 'unavailable word'); t.hasNot(t.texts(), /^not found$/i, 'missing word gone');
     } },
     { name: 'update status + on: new line shows, silently', mount: ['entity_tile', { label: 'Sofa table', status: '64%', on: true }], run(t) {
@@ -55,9 +57,9 @@ export default {
       t.ok(is(tileBg(t, 'Sofa table'), 'surface'), `on again: fill ${tileBg(t, 'Sofa table')}`);
     } },
     { name: 'taps both ways keep the surface', mount: ['entity_tile', { label: 'Chair', on: false, status: 'Off' }], run(t) {
-      t.ok(is(tileBg(t, 'Chair'), 'surface'), 'off: surface'); t.tap('Chair'); t.wait(600);
+      t.ok(is(tileBg(t, 'Chair'), 'surface'), 'off: surface'); t.tap(name('Chair')); t.wait(600);
       t.ok(is(tileBg(t, 'Chair'), 'surface'), `on after a tap: ${tileBg(t, 'Chair')}`);
-      t.tap('Chair'); t.wait(600);
+      t.tap(name('Chair')); t.wait(600);
       t.ok(is(tileBg(t, 'Chair'), 'surface'), `off after a tap: ${tileBg(t, 'Chair')}`);
     } },
     { name: 'sensor (act none) stays unfilled', mount: ['entity_tile', { label: 'Garage', act: 'none', on: false, status: '18.5 °C' }], run(t) {
@@ -74,14 +76,14 @@ export default {
     { name: 'Home: toggling Sofa table calls HA and the state line follows', async run(t) {
       await t.device('house');
       t.ha.set('light.sofa_lamp', 'on', { brightness: 115 });
-      t.tap('Sofa table'); t.call({ service: 'light.toggle', entity: 'light.sofa_lamp' }, 'toggle call');
+      t.tap(name('Sofa table')); t.call({ service: 'light.toggle', entity: 'light.sofa_lamp' }, 'toggle call');
       t.has(status(t, 'Sofa table') || [], /^off$/i, 'after turning off');
-      t.tap('Sofa table'); t.has(status(t, 'Sofa table') || [], /^45%$/, 'after turning back on');
+      t.tap(name('Sofa table')); t.has(status(t, 'Sofa table') || [], /^45%$/, 'after turning back on');
     } },
     { name: 'Home: Chair off -> on shows its brightness, not Off', async run(t) {
       await t.device('house');
       t.ha.set('light.reading_lamp', 'off', { brightness: null });
-      t.tap('Chair'); t.hasNot(status(t, 'Chair') || [], /^off$/i, 'state line after turning on');
+      t.tap(name('Chair')); t.hasNot(status(t, 'Chair') || [], /^off$/i, 'state line after turning on');
       t.has(status(t, 'Chair') || [], /^(\d+%|on)$/i, 'shows a level');
     } },
     { name: 'Home: a light that turns off shows Off, not its last brightness (ceiling at 50%)', async run(t) {
@@ -100,9 +102,9 @@ export default {
     { name: 'Home: unavailable light: no HA call on tap, comes back with its level', async run(t) {
       await t.device('house');
       t.ha.unavailable('light.sofa_lamp'); const n = t.ha.calls.length;
-      const ev = t.tap('Sofa table'); t.eq(t.ha.calls.length, n, 'HA calls while unavailable'); t.sounds(ev, ['error']);
+      const ev = t.tap(name('Sofa table')); t.eq(t.ha.calls.length, n, 'HA calls while unavailable'); t.sounds(ev, ['error']);
       t.ha.set('light.sofa_lamp', 'on', { brightness: 115 }); t.has(status(t, 'Sofa table') || [], /^45%$/, 'back');
-      t.emitted(t.tap('Sofa table'), 'ha', /light\.sofa_lamp/, 'taps again once back');
+      t.emitted(t.tap(name('Sofa table')), 'ha', /light\.sofa_lamp/, 'taps again once back');
     } },
     { name: 'Home: the panel theme set unlike the stage: taps keep the panel\'s card surface (Guition black off card)', async run(t) {
       await t.device('house');
@@ -113,7 +115,7 @@ export default {
       t.eq(bg(), surf, `${want} panel: card surface`);
       for (const s of ['on', 'off', 'on']) {
         t.ha.set('light.sofa_lamp', s === 'on' ? 'off' : 'on', s === 'on' ? { brightness: null } : { brightness: 115 }); t.wait(600);
-        t.tap('Sofa table'); t.wait(600); t.eq(bg(), surf, `after a tap to ${s}`);
+        t.tap(name('Sofa table')); t.wait(600); t.eq(bg(), surf, `after a tap to ${s}`);
       }
     } },
     { name: 'Home: on -> off -> another accent -> on: the current accent; a tile lit before the change follows it', async run(t) {
@@ -122,11 +124,11 @@ export default {
       const set = CJ.accent.sets.find((a) => a.id !== (t.setting('accent') || CJ.accent.default));
       const ink = (label, re) => t.objs().find((o) => o.text && re.test(o.text) && inBox(o, tile(t, label)))?.ink;
       t.ha.set('light.living_room_ceiling', 'on', { brightness: 128 }); t.ha.set('light.sofa_lamp', 'on', { brightness: 115 }); t.wait(600);
-      t.tap('Sofa table'); t.wait(600); t.has(status(t, 'Sofa table') || [], /^off$/i, 'sofa off');
+      t.tap(name('Sofa table')); t.wait(600); t.has(status(t, 'Sofa table') || [], /^off$/i, 'sofa off');
       t.b.str('accent', (a) => t.b.str(set.id, (v) => t.b.m.UTF8ToString(t.b.m._fw_setting(a, v)))); t.wait(1500);
       const want = set[light ? 'light' : 'dark']['accent-text'].toUpperCase();
       t.eq(String(ink('Ceiling', /^50%$/) || '').toUpperCase(), want, `lit before the change: ${set.id} accent text`);
-      t.tap('Sofa table'); t.wait(600);
+      t.tap(name('Sofa table')); t.wait(600);
       t.eq(String(ink('Sofa table', /^\d+%$/) || '').toUpperCase(), want, `on after the change: ${set.id} accent text`);
       t.eq(String(tileBg(t, 'Sofa table') || '').toUpperCase(), C.surface[light ? 'light' : 'dark'].toUpperCase(), 'still the surface');
     } },

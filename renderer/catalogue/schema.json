@@ -6017,7 +6017,7 @@
     {
      "name": "shape",
      "type": "select",
-     "about": "The tile's shape: tile is a square (icon on top, the name and state under it), half is half a Home cell: the icon and name in a small header, the state under it.",
+     "about": "The tile's shape: tile is a square (the icon and name in a small header, the state at the bottom), half is half a Home cell: the same header, the state under it.",
      "options": [
       "tile",
       "half"
