@@ -503,7 +503,7 @@ function gridPanel(p: Page, cssW: number) {
   win.append(layer);
   clip.append(win);
   wrap.append(s.canvas, clip);
-  // the scroll: the layer follows the grid's place on the panel (engine comps); a drag or the wheel over the layer
+  // the scroll: the layer follows the grid's place on the panel (engine comps); a drag over the layer
   // goes to the panel as a touch drag, so it scrolls with the panel's own feel
   let gy = geo.y;
   const follow = () => {
@@ -578,16 +578,8 @@ function gridPanel(p: Page, cssW: number) {
       b.onpointercancel = (e) => { if (lifted) e.stopPropagation(); end(false); };
     };
   }
-  let wheel = 0, wy = 0;
-  clip.onwheel = (ev) => {
-    ev.preventDefault();
-    const [x] = xy(ev);
-    if (!wheel) { wy = S() / 2; touch(x, wy, 1); }
-    wy = Math.max(geo.top, Math.min(S() - 1, wy - ev.deltaY / k / 2));
-    touch(x, wy, 1);
-    clearTimeout(wheel);
-    wheel = window.setTimeout(() => { touch(x, wy, 0); wheel = 0; }, 90);
-  };
+  // the wheel / trackpad: the panel scrolls what is under it (Stage.wheel), the page scrolls when it can't
+  clip.addEventListener('wheel', (ev) => s.wheel(ev), { passive: false });
   return wrap;
 }
 let dragged = false, refocus = false;

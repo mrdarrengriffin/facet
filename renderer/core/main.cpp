@@ -9,6 +9,9 @@
 //   fw_update(id, comp, props, light, accent) the update path: new props in place, animated, silent -> "" / "rebuild" / error
 //   fw_demo_state(id) -> -1 / 0 / 1   demos on that stage: none reported / all at their preset (skip the demo reset) / one moved away
 //   fw_touch(id, x, y, down)          pointer on that stage (device pixels)
+//   fw_scroll(id, x, y, dx, dy) -> px a mouse wheel at (x, y): scrolls the scrollable object there (or its nearest
+//                                     ancestor that can still move that way) by dx/dy device px, within its limits;
+//                                     returns the px it moved (0 = nothing scrolled: the page may scroll instead)
 //   fw_tick(ms)                       LVGL timers/refresh for all stages
 //   fw_dirty(id) / fw_frame(id)       redrawn since last read? / RGBA pixels (w*h*4)
 //   fw_areas(id) -> int32 [n, x1, y1, x2, y2...]  areas flushed since the last call (copy only these)
@@ -794,6 +797,37 @@ EMSCRIPTEN_KEEPALIVE void fw_stage_resize(int id, int w, int h) {
 
 EMSCRIPTEN_KEEPALIVE void fw_touch(int id, int x, int y, int down) {
   if (Stage *s = get(id)) { s->pos = {x, y}; s->down = down; }
+}
+// a browser wheel / trackpad (the host's Stage): dx/dy > 0 = see further right/down, device px. Each axis goes to the
+// innermost object under (x, y) that is scrollable that way and not at its end yet, then up its parents; no animation
+// (the host sends one call per frame) and bounded, so it never overscrolls. Touch keeps LVGL's own drag scrolling.
+namespace {
+int scroll_axis(lv_obj_t *o, int d, bool vert) {
+  for (; o && d; o = lv_obj_get_parent(o)) {
+    if (!lv_obj_has_flag(o, LV_OBJ_FLAG_SCROLLABLE)) continue;
+    if (!(lv_obj_get_scroll_dir(o) & (vert ? LV_DIR_VER : LV_DIR_HOR))) continue;
+    lv_obj_update_layout(o);
+    int room = vert ? (d > 0 ? lv_obj_get_scroll_bottom(o) : lv_obj_get_scroll_top(o))
+                    : (d > 0 ? lv_obj_get_scroll_right(o) : lv_obj_get_scroll_left(o));
+    if (room <= 0) continue;
+    int32_t before = vert ? lv_obj_get_scroll_y(o) : lv_obj_get_scroll_x(o);
+    if (vert) lv_obj_scroll_by_bounded(o, 0, -d, LV_ANIM_OFF);
+    else lv_obj_scroll_by_bounded(o, -d, 0, LV_ANIM_OFF);
+    int32_t moved = (vert ? lv_obj_get_scroll_y(o) : lv_obj_get_scroll_x(o)) - before;
+    if (moved) return moved < 0 ? -moved : moved;
+  }
+  return 0;
+}
+}  // namespace
+EMSCRIPTEN_KEEPALIVE int fw_scroll(int id, int x, int y, int dx, int dy) {
+  Stage *s = get(id);
+  if (!s || (!dx && !dy)) return 0;
+  lv_point_t p{x, y};
+  lv_obj_t *top = lv_display_get_layer_top(s->d);
+  lv_obj_t *o = lv_indev_search_obj(top, &p);
+  if (!o || o == top) o = lv_indev_search_obj(lv_display_get_screen_active(s->d), &p);
+  if (!o) return 0;
+  return scroll_axis(o, dy, true) + scroll_axis(o, dx, false);
 }
 EMSCRIPTEN_KEEPALIVE void fw_tick(uint32_t ms) {
   now_ms = ms;

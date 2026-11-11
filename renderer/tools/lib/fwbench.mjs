@@ -71,6 +71,8 @@ export class Bench {  // one module instance, one stage at a time
   stack() { const s = this.test('stack'); return s && s[0] ? s[0].stack : null; }
   haPut(e, a, v) { this.str(e, (pe) => this.str(a, (pa) => this.str(v, (pv) => this.m._fw_ha_put(pe, pa, pv)))); }
   touch(x, y, down) { this.m._fw_touch(this.stage, Math.round(x), Math.round(y), down ? 1 : 0); }
+  // a browser wheel at (x, y), device px (fw_scroll): the px it scrolled, after the UI settles
+  wheel(x, y, dx, dy) { const n = this.m._fw_scroll(this.stage, Math.round(x), Math.round(y), Math.round(dx), Math.round(dy)); this.tick(2); this.settle(); return n; }
   // gestures; each returns the events (incl. sounds) it caused, after the UI settles
   tap(x, y, hold = 64) { this.touch(x, y, 1); this.tick(Math.ceil(hold / T)); this.touch(x, y, 0); this.tick(2); this.settle(); return this.events(); }
   long(x, y) { return this.tap(x, y, this.long_ms); }

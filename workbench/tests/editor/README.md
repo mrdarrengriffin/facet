@@ -26,6 +26,7 @@ Run (the workbench up on http://localhost:4322, `workbench/run.sh`; Chromium at 
 | `homes-screens.test.mjs` | add / rename / start page / remove Homes (page cards to it go too), last Home kept; add screen, switch off |
 | `save.test.mjs` | Save sends exactly the shown deck (rev + 1); load round-trip draws the same; a refused deck is said so |
 | `device-host.test.mjs` | panel-served editor, both panels: only the deck's entities asked from `/fw/ha`; add card + Save posts the deck; a refused Save keeps the edits |
+| `wheel.test.mjs` | the renderer in the browser: a mouse wheel over a scrolling list scrolls it, not the page; at its end, over a list with nothing to scroll, or beside it, the page scrolls |
 
 Hooks: `data-testid` on the preview overlay (`preview-hits`), `add-card`, `card-modal`, `home-tile`, `screen-tile`,
 `add-home`, `add-screen`, `home-settings`, `home-start`, `home-remove`; segmented buttons carry `data-v`.

@@ -332,6 +332,33 @@ export class Stage {
     const up = (ev: PointerEvent) => { const [x, y] = xy(ev); const wait = 70 - (performance.now() - downAt); if (wait > 0) setTimeout(() => touch(x, y, 0), wait); else touch(x, y, 0); };
     c.addEventListener('pointerup', up);
     c.addEventListener('pointercancel', up);
+    c.addEventListener('wheel', (ev) => this.wheel(ev), { passive: false });
+  }
+  private wheelRest = [0, 0];  // the fractions of a device px a trackpad sent that the last call couldn't move yet
+  private wheelHeld = false;   // the last wheel moved the screen: keep the page still for the sub-pixel ones after it
+  /** a mouse wheel / trackpad over the stage scrolls what is under the pointer (fw_scroll: bounded, no animation, so
+   *  a fast trackpad never piles up animations); the page keeps the wheel (no preventDefault) when nothing there
+   *  can scroll further that way. Any element over the stage can forward its wheel events here. */
+  wheel(ev: WheelEvent): boolean {
+    const m = this.e.m;
+    if (!m._fw_scroll) return false;
+    const r = this.canvas.getBoundingClientRect();
+    if (!r.width || !r.height) return false;
+    // lines / pages to CSS px, then CSS px to device px (the stage's own scale, so the content follows the fingers)
+    const unit = ev.deltaMode === 1 ? 16 : ev.deltaMode === 2 ? r.height : 1;
+    const sx = this.w / r.width, sy = this.h / r.height;
+    const fx = ev.deltaX * unit * sx + this.wheelRest[0], fy = ev.deltaY * unit * sy + this.wheelRest[1];
+    const dx = Math.trunc(fx), dy = Math.trunc(fy);
+    this.wheelRest = [fx - dx, fy - dy];
+    let moved: boolean;
+    if (dx || dy) {
+      const x = Math.round((ev.clientX - r.left) * sx), y = Math.round((ev.clientY - r.top) * sy);
+      moved = (m._fw_scroll(this.id, x, y, dx, dy) as number) > 0;
+      this.wheelHeld = moved;
+      if (!moved) this.wheelRest = [0, 0];
+    } else moved = this.wheelHeld;
+    if (moved) ev.preventDefault();
+    return moved;
   }
   /** build component `comp` with props; accent = accent set index (-1 = default); "" = ok, else the error.
    *  autoH: the stage height follows the content (meta frame h = 0): build, measure, resize, build again;

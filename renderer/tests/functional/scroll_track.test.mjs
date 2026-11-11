@@ -23,6 +23,17 @@ export default {
       const b = t.part('scroll_track'), a = y(t, 'Room 1'); t.drag(null, { from: [b.x + b.w / 2, b.y + b.h - 10], by: [0, -b.h + 20] });
       for (let i = 0; i < 3; i++) t.drag(null, { from: [b.x + b.w / 2, b.y + 10], by: [0, b.h - 20] }); t.eq(y(t, 'Room 1'), a, 'Room 1 back');
     } },
+    { name: 'mouse wheel scrolls the rows, bounded; up at the top = 0 (the page keeps the wheel)', mount: ['scroll_track', P], run(t) {
+      const b = t.part('scroll_track'), cx = b.x + b.w / 2, cy = b.y + b.h / 2, a = y(t, 'Room 1');
+      t.eq(t.b.wheel(cx, cy, 0, -40), 0, 'up at the top');
+      const n = t.b.wheel(cx, cy, 0, 40); t.eq(n, 40, 'moved 40'); t.eq(y(t, 'Room 1'), a - 40, 'Room 1 up 40');
+      let s = 0; for (let i = 0; i < 40; i++) s += t.b.wheel(cx, cy, 0, 200); t.eq(t.b.wheel(cx, cy, 0, 200), 0, 'at the end');
+      t.eq(t.b.events().filter((e) => e.kind === 'event').length, 0, 'no events');
+      t.eq(t.b.wheel(cx, cy, 0, -100000), n + s, 'back to the top in one go');
+    } },
+    { name: 'few rows: the wheel scrolls nothing (0)', mount: ['scroll_track', { ...P, items: 'Kitchen,Study' }], run(t) {
+      const b = t.part('scroll_track'), a = y(t, 'Kitchen'); t.eq(t.b.wheel(b.x + b.w / 2, b.y + b.h / 2, 0, 60), 0, 'nothing'); t.eq(y(t, 'Kitchen'), a, 'no move');
+    } },
     { name: 'few rows: nothing scrolls', mount: ['scroll_track', { ...P, items: 'Kitchen,Study' }], run(t) {
       const b = t.part('scroll_track'), a = y(t, 'Kitchen'); t.drag(null, { from: [b.x + b.w / 2, b.y + b.h - 20], by: [0, -b.h / 2] }); t.eq(y(t, 'Kitchen'), a, 'no move');
     } },
