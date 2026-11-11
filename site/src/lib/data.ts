@@ -20,6 +20,11 @@ export type Entry = {
 export const COMPONENTS = (components as unknown as Entry[]).slice().sort((a, b) => a.name.localeCompare(b.name));
 export const FOUNDATIONS = foundations as unknown as Entry[];
 export const SITE = site;
+/** the release the site documents (the latest tag, beta included) and its GitHub release page */
+export const RELEASE = {
+  label: SITE.version === 'dev' ? 'dev' : `v${SITE.version}`,
+  url: SITE.version === 'dev' ? 'https://github.com/mrdarrengriffin/facet/releases' : `https://github.com/mrdarrengriffin/facet/releases/tag/v${SITE.version}`,
+};
 export const TOKENS = tokens;
 /** sound packs (variants of tokens/sound.json) for the header picker; the full sound list is fetched on first use */
 export const SOUND = sound as { default: string; variants: { id: string; name: string; about: string }[] };

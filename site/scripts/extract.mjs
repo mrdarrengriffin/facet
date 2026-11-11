@@ -429,11 +429,10 @@ const site = {
   demoResetMs: motion.durations?.['demo-reset']?.ms ?? 1800,
   built: new Date().toISOString(),
   commit: git('rev-parse', '--short', 'HEAD').trim(),
-  // the latest release tag reachable from HEAD (v0.5.0-beta.2 -> 0.5.0-beta.2); commits after it show as +N
-  version: (() => {
-    const [tag, ahead = '0'] = git('describe', '--tags', '--match', 'v*', '--long').trim().split(/-(\d+)-g[0-9a-f]+$/);
-    return tag ? tag.replace(/^v/, '') + (ahead !== '0' ? `+${ahead}` : '') : 'dev';
-  })(),
+  // the latest release reachable from HEAD, beta included (v0.5.0-beta.10 -> 0.5.0-beta.10): the footer and header show
+  // it with the commit and link it to its release. deploy.yml checks out every tag (fetch-depth 0), and release.yml
+  // runs the deploy again once a tag's release is out, so the site says the new version at every release.
+  version: git('describe', '--tags', '--abbrev=0', '--match', 'v[0-9]*').trim().replace(/^v/, '') || 'dev',
   repo: REPO,
   wasm: manifests,
 };

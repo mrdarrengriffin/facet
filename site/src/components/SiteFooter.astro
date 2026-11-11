@@ -1,8 +1,7 @@
 ---
 // The site footer on every page: Inside Facet (how it is built, off the top line) and the project links.
 import { insideLinks, url } from '../lib/nav';
-import { SITE } from '../lib/data';
-const tag = 'v' + SITE.version.split('+')[0];
+import { RELEASE, SITE } from '../lib/data';
 ---
 <footer class="site-footer">
   <nav class="site-footer__inner" aria-label="Footer">
@@ -20,7 +19,7 @@ const tag = 'v' + SITE.version.split('+')[0];
       </ul>
     </section>
     <p class="site-footer__version facet-label">
-      <a href={`https://github.com/mrdarrengriffin/facet/releases/tag/${tag}`}>v{SITE.version}</a>
+      <a href={RELEASE.url}>{RELEASE.label}</a>
       · <a href={`https://github.com/mrdarrengriffin/facet/commit/${SITE.commit}`}>{SITE.commit}</a>
     </p>
   </nav>
