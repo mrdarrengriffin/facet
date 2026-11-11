@@ -113,6 +113,17 @@ V = the version, for example `1.0.0`. A failed check stops the day.
    panel marks each panel feature's channel; the panels table
    says exactly what is missing, if anything. `node renderer/tools/features.mjs since --write V` (Screen channels,
    below), then `(cd renderer && node tools/readme_assets.mjs)` so the README pictures carry the new chips.
+3a. **Everything up to date for V** (every tag, beta included). Go through the milestone's closed issues and
+   `git log <last tag>..main`, and update whatever they changed:
+   - root `README.md` (screens/panels tables, feature list, pictures), `CONTRIBUTING.md`, `AGENTS.md`, `PRODUCT.md`,
+     `renderer/CONTRACT.md`, `RELEASING.md` itself;
+   - the docs site (`site/src`): every page a change touches (screens, components, editor, settings, install,
+     /ai and the agent docs, roadmap/progress), with new screenshots at 480 and 720 where the UI changed;
+   - the docs' `llms.txt` / `llms-full.txt` (`site/scripts/llms.mjs`, checked by `check-dist`);
+   - the panel's own agent docs (`/llms.txt` + `/agents.md`, `renderer/tools/gen_agents.mjs` → `firmware/bundle.mjs`):
+     regenerate them so the shipped firmware describes this release's components, props and API;
+   - the catalogue + schema (step 2) and any route the release added or changed (`/fw/*`).
+   Nothing user-visible ships undocumented. List what was updated in the release PR/commit.
 4. `node firmware/release-notes.mjs check V`: the notes are written and read well (Release notes, above).
 5. `node firmware/release-prep.mjs V`: sets `facet_version` in both `esphome/facet-*.yaml`, publishes the Updates
    entry dated today. `git diff --stat` shows those files only.
