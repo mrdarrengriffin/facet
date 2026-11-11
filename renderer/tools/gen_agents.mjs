@@ -157,8 +157,11 @@ it below (a closed whitelist). Actions: ${C.actions.join(', ')}.
 
 ## Pages (the deck)
 GET /fw/deck shows the page list. To add your screen as a page, send the whole deck back with a new entry
-\`{"id": "<page id>", "kind": "<your screen id>"}\` (kind = a page-role screen or "home").${cards.length ? `
-Home cards (\`{"t": type, "e": entity, "size", "tap", "label"?}\`): ${cards.map(([t, c]) => `${t} (${c.domains ?? 'page'}; ${c.sizes}; tap ${c.taps})`).join(', ')}.` : ''}
+\`{"id": "<page id>", "kind": "<your screen id>"}\` (kind = a page-role screen or "home"). Every built-in screen is
+always on the panel: a deck page for one holds only its settings, and a Home card (\`"t": "page"\`) is how it is opened.
+To show Home itself: POST /fw/show \`{"id": "home"}\`.${cards.length ? `
+Home cards (\`{"t": type, "e": entity, "size", "tap", "label"?}\`; size = 1x1 | 2x1 | 2x2 | half on Home's grid three
+squares across, any size unless it says otherwise; the older s = 1x1, m = 2x1, l = 2x2): ${cards.map(([t, c]) => `${t} (${c.domains || 'a screen: "page"'}; ${c.grid ? `${c.grid} only; ` : ''}tap ${c.taps})`).join(', ')}.` : ''}
 
 ## Themes
 A theme changes the look only: colours per mode, part faces and edges, shapes (knobs, ticks, icons, snapping) and type
