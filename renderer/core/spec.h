@@ -2423,10 +2423,19 @@ inline void revert(const std::string &id, ArduinoJson::JsonObject out) {
 }
 
 // ---- catalogue (components, props, binds, actions; one source for the workbench, the schema and validation)
+// the registered components by id: the catalogue's order (and so its hash) must not follow registration order, which is
+// the link order and differs between builds
+inline std::vector<const Component *> reg_by_id() {
+  std::vector<const Component *> v;
+  for (const Component &c : reg()) v.push_back(&c);
+  std::sort(v.begin(), v.end(), [](const Component *a, const Component *b) { return strcmp(a->id, b->id) < 0; });
+  return v;
+}
 inline void catalogue(ArduinoJson::JsonObject out) {
   out["protocol"] = PROTOCOL;
   ArduinoJson::JsonObject comps = out["components"].to<ArduinoJson::JsonObject>();
-  for (const Component &c : reg()) {
+  for (const Component *cp : reg_by_id()) {
+    const Component &c = *cp;
     if (strcmp(c.section, "components")) continue;
     ArduinoJson::JsonObject o = comps[c.id].to<ArduinoJson::JsonObject>();
     o["name"] = c.name;
@@ -2488,7 +2497,7 @@ inline void hello(ArduinoJson::JsonObject out) {
   snprintf(h, sizeof h, "%08x", (unsigned) catalogue_hash());
   out["catalogue"] = h;
   auto comps = out["components"].to<ArduinoJson::JsonArray>();
-  for (const Component &c : reg()) if (!strcmp(c.section, "components")) comps.add(c.id);
+  for (const Component *c : reg_by_id()) if (!strcmp(c->section, "components")) comps.add(c->id);
   auto scr = out["screens"].to<ArduinoJson::JsonObject>();
   for (const auto &f : FACTORY) { auto o = scr[f.id].to<ArduinoJson::JsonObject>(); o["rev"] = rev_of(screen_json(f.id)); o["override"] = S().over.count(f.id) > 0; }
   for (const auto &kv : S().over) if (!factory(kv.first)) { auto o = scr[kv.first].to<ArduinoJson::JsonObject>(); o["rev"] = rev_of(kv.second.c_str()); o["override"] = true; o["sent"] = true; ArduinoJson::JsonDocument sd; if (!deserializeJson(sd, kv.second)) { o["name"] = sd["name"] | kv.first.c_str(); o["role"] = sd["role"] | "page"; } }

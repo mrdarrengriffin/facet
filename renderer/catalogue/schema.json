@@ -3850,531 +3850,6 @@
   }
  ],
  "components": {
-  "chart": {
-   "name": "chart",
-   "about": "Series colours, line weights, areas, grid, dots, labels and the no-data states every chart shares. Chart motion is on the Motion page.",
-   "contract": 1,
-   "min": null,
-   "slots": null,
-   "props": [
-    {
-     "name": "section",
-     "type": "select",
-     "about": "Which part of the charts page to show, such as the series colours, the lines or the no-data states.",
-     "options": [
-      "colours",
-      "lines",
-      "bars",
-      "labels",
-      "states"
-     ],
-     "default": "colours"
-    },
-    {
-     "name": "loop",
-     "type": "select",
-     "about": "For previews only: plays one chart movement over and over, such as a line drawing in or bars growing. off keeps them still.",
-     "options": [
-      "off",
-      "draw",
-      "shift",
-      "morph",
-      "bars",
-      "gauge",
-      "ping"
-     ],
-     "default": "off"
-    },
-    {
-     "name": "lite",
-     "type": "select",
-     "about": "A lighter way of drawing charts for smaller panels. auto picks it on the smaller panel, on and off force it.",
-     "options": [
-      "auto",
-      "on",
-      "off"
-     ],
-     "default": "auto"
-    }
-   ],
-   "events": {},
-   "spec": false
-  },
-  "colour": {
-   "name": "colour",
-   "about": "Every colour token in dark and light, the accent sets, and the contrast checks they all pass.",
-   "contract": 1,
-   "min": null,
-   "slots": null,
-   "props": [
-    {
-     "name": "group",
-     "type": "select",
-     "about": "Which group of colours to show, such as the surfaces, the text colours or the accent sets.",
-     "options": [
-      "surfaces",
-      "text",
-      "lines",
-      "accent",
-      "secondary",
-      "status",
-      "special",
-      "media",
-      "bins",
-      "accents",
-      "contrast",
-      "contrast-fail",
-      "contrast-text",
-      "contrast-accent",
-      "contrast-status",
-      "contrast-special",
-      "contrast-lines",
-      "contrast-button",
-      "contrast-toggle",
-      "contrast-icon_button",
-      "contrast-corner_ticks",
-      "contrast-focus_ring",
-      "contrast-mascot",
-      "contrast-motion",
-      "contrast-icons",
-      "contrast-slider",
-      "contrast-card",
-      "contrast-list_row",
-      "contrast-dial",
-      "contrast-label",
-      "contrast-status_chip",
-      "contrast-count_badge",
-      "contrast-section_header",
-      "contrast-header",
-      "contrast-title",
-      "contrast-settings",
-      "contrast-entity_tile",
-      "contrast-tile",
-      "contrast-hero_block",
-      "contrast-more_row",
-      "contrast-stat",
-      "contrast-radio",
-      "contrast-picker_row",
-      "contrast-speaker_button",
-      "contrast-bottom_sheet",
-      "contrast-toast",
-      "contrast-segmented",
-      "contrast-accent_swatches",
-      "contrast-chart",
-      "contrast-tick_ring",
-      "contrast-arc",
-      "contrast-checkbox",
-      "contrast-media_visual",
-      "contrast-cover_visual",
-      "contrast-donut",
-      "contrast-rate_strip",
-      "contrast-clock",
-      "contrast-empty_state",
-      "contrast-fw_update_view",
-      "contrast-qr_block",
-      "contrast-readout",
-      "contrast-scroll_track",
-      "contrast-overhead",
-      "contrast-bins",
-      "contrast-layout",
-      "contrast-icon",
-      "contrast-grid",
-      "contrast-radar",
-      "contrast-card_preview",
-      "contrast-timer",
-      "contrast-progress_ring",
-      "contrast-vacuum_robot",
-      "contrast-timer_chip",
-      "contrast-weather",
-      "contrast-calendar_row",
-      "contrast-calendar_month",
-      "contrast-energy"
-     ],
-     "default": "surfaces"
-    }
-   ],
-   "events": {},
-   "spec": false
-  },
-  "icons": {
-   "name": "icons",
-   "about": "The icon set, drawn at every size it ships in.",
-   "contract": 1,
-   "min": null,
-   "slots": null,
-   "props": [
-    {
-     "name": "section",
-     "type": "select",
-     "about": "Which part of the icons page to show, such as the icons side by side at each size.",
-     "options": [
-      "compare",
-      "navigation",
-      "media",
-      "home",
-      "status",
-      "github",
-      "screens",
-      "weather",
-      "sport",
-      "animated",
-      "moon",
-      "all",
-      "memory"
-     ],
-     "default": "compare"
-    },
-    {
-     "name": "search",
-     "type": "text",
-     "about": "Shows only the icons whose name contains these words.",
-     "default": ""
-    },
-    {
-     "name": "size",
-     "type": "select",
-     "about": "Which icon size to show, or all of them.",
-     "options": [
-      "all",
-      "small",
-      "icon",
-      "glyph",
-      "detail",
-      "feature",
-      "card",
-      "hero"
-     ],
-     "default": "all"
-    },
-    {
-     "name": "accent",
-     "type": "bool",
-     "about": "Draws the icons in the accent colour instead of the text colour.",
-     "default": false
-    },
-    {
-     "name": "boxes",
-     "type": "bool",
-     "about": "For previews only: outlines the box each icon sits in, to check they line up.",
-     "default": false
-    },
-    {
-     "name": "animated",
-     "type": "bool",
-     "about": "Lets the weather icons move gently.",
-     "default": true
-    },
-    {
-     "name": "phase",
-     "type": "range",
-     "about": "The moon phase the moon icons show: 0 is new, 0.5 full.",
-     "min": 0,
-     "max": 1,
-     "step": 0.01,
-     "default": 0.25
-    }
-   ],
-   "events": {},
-   "spec": false
-  },
-  "layout": {
-   "name": "layout",
-   "about": "Screen geometry, devices and size classes: how a screen is laid out on 720 and 480 panels.",
-   "contract": 1,
-   "min": null,
-   "slots": null,
-   "props": [
-    {
-     "name": "section",
-     "type": "select",
-     "about": "Which part of the layout page to show, such as the screen areas, the devices or the size classes.",
-     "options": [
-      "screen",
-      "grid",
-      "sizes",
-      "spacing",
-      "rhythm",
-      "frame",
-      "chrome",
-      "touch",
-      "corners",
-      "breaks",
-      "overlay",
-      "devices",
-      "classes"
-     ],
-     "default": "screen"
-    }
-   ],
-   "events": {},
-   "spec": false
-  },
-  "mascots": {
-   "name": "mascots",
-   "about": "Small animated characters that show the mood of a card or screen, with their colours, motion and usage rules.",
-   "contract": 1,
-   "min": null,
-   "slots": null,
-   "props": [
-    {
-     "name": "section",
-     "type": "select",
-     "about": "Which part of the mascot page to show, such as the moods or the usage rules.",
-     "options": [
-      "moods",
-      "motion",
-      "desync",
-      "tokens",
-      "usage"
-     ],
-     "default": "moods"
-    },
-    {
-     "name": "colour",
-     "type": "select",
-     "about": "The mascots' colour: each mood's own colour, or one fixed colour.",
-     "options": [
-      "mood",
-      "steel",
-      "accent",
-      "warn",
-      "error",
-      "text-mute"
-     ],
-     "default": "mood"
-    },
-    {
-     "name": "reduced_motion",
-     "type": "bool",
-     "about": "Shows the mascots as they look when reduced motion is turned on: still.",
-     "default": false
-    },
-    {
-     "name": "bench",
-     "type": "select",
-     "about": "For previews only: a speed test with many mascots moving at once. off shows the normal page.",
-     "options": [
-      "off",
-      "agents",
-      "big"
-     ],
-     "default": "off"
-    }
-   ],
-   "events": {},
-   "spec": false
-  },
-  "motion": {
-   "name": "motion",
-   "about": "Durations, easings and the motion patterns components use, including the reduced-motion rule.",
-   "contract": 1,
-   "min": null,
-   "slots": null,
-   "props": [
-    {
-     "name": "section",
-     "type": "select",
-     "about": "Which part of the motion page to show, such as the easing curves or the durations.",
-     "options": [
-      "easing",
-      "durations",
-      "patterns",
-      "reduced",
-      "charts"
-     ],
-     "default": "easing"
-    },
-    {
-     "name": "reduced_motion",
-     "type": "bool",
-     "about": "Shows the motion as it looks when reduced motion is turned on.",
-     "default": false
-    },
-    {
-     "name": "loop",
-     "type": "select",
-     "about": "For previews only: plays one movement over and over so it can be watched. off keeps it still.",
-     "options": [
-      "off",
-      "press",
-      "release",
-      "toggle",
-      "fade",
-      "sheet-open",
-      "sheet-close",
-      "toast-in",
-      "toast-out",
-      "screen",
-      "value",
-      "clock-hand",
-      "ripple",
-      "pulse",
-      "weather"
-     ],
-     "default": "off"
-    },
-    {
-     "name": "chart_lite",
-     "type": "select",
-     "about": "A lighter way of drawing chart motion for smaller panels. auto picks it on the smaller panel, on and off force it.",
-     "options": [
-      "auto",
-      "on",
-      "off"
-     ],
-     "default": "auto"
-    }
-   ],
-   "events": {},
-   "spec": false
-  },
-  "space": {
-   "name": "space",
-   "about": "Spacing steps on the 4 px grid, radii, strokes and touch target sizes.",
-   "contract": 1,
-   "min": null,
-   "slots": null,
-   "props": [
-    {
-     "name": "section",
-     "type": "select",
-     "about": "Which part of the page to show: the spacing steps, the corner radii, the line weights or the touch target sizes.",
-     "options": [
-      "space",
-      "layout",
-      "radius",
-      "stroke",
-      "touch"
-     ],
-     "default": "space"
-    }
-   ],
-   "events": {},
-   "spec": false
-  },
-  "states": {
-   "name": "states",
-   "about": "How every control looks and behaves when pressed, on, disabled or unavailable, with the event and sound each state makes.",
-   "contract": 1,
-   "min": null,
-   "slots": null,
-   "props": [
-    {
-     "name": "section",
-     "type": "select",
-     "about": "Which part of the states page to show, such as the rules or each state in turn.",
-     "options": [
-      "rules",
-      "pressed",
-      "disabled",
-      "unavailable",
-      "on",
-      "focus",
-      "tap",
-      "audit",
-      "decisions"
-     ],
-     "default": "rules"
-    }
-   ],
-   "events": {},
-   "spec": false
-  },
-  "strokes": {
-   "name": "strokes",
-   "about": "Experiment: the same curves drawn four ways, to pick how Facet draws smooth lines.",
-   "contract": 1,
-   "min": null,
-   "slots": null,
-   "props": [
-    {
-     "name": "curve",
-     "type": "select",
-     "about": "Which curve to draw, or all of them.",
-     "options": [
-      "all",
-      "ease-out",
-      "ease-in-out",
-      "arc",
-      "wave",
-      "floorplan"
-     ],
-     "default": "all"
-    },
-    {
-     "name": "stroke",
-     "type": "select",
-     "about": "Which line weight to draw the curves in: edge, arc, indicator or hair.",
-     "options": [
-      "edge",
-      "arc",
-      "indicator",
-      "hair"
-     ],
-     "default": "edge"
-    }
-   ],
-   "events": {},
-   "spec": false
-  },
-  "type": {
-   "name": "type",
-   "about": "The type scale: every text style at true size, the two font families and the glyphs each panel size ships.",
-   "contract": 1,
-   "min": null,
-   "slots": null,
-   "props": [
-    {
-     "name": "section",
-     "type": "select",
-     "about": "Which part of the type page to show, such as the screen styles or the glyphs each panel carries.",
-     "options": [
-      "screen",
-      "component",
-      "pair",
-      "numbers",
-      "glyphs",
-      "fonts"
-     ],
-     "default": "screen"
-    },
-    {
-     "name": "sample",
-     "type": "text",
-     "about": "Your own words to show in every style. Leave empty for the usual sample text.",
-     "default": ""
-    },
-    {
-     "name": "accent",
-     "type": "bool",
-     "about": "Draws the samples in the accent colour.",
-     "default": false
-    }
-   ],
-   "events": {},
-   "spec": false
-  },
-  "units": {
-   "name": "units",
-   "about": "Distances and speeds follow one setting each: kilometres or miles, mph, km/h or knots.",
-   "contract": 1,
-   "min": null,
-   "slots": null,
-   "props": [
-    {
-     "name": "section",
-     "type": "select",
-     "about": "Which part of the page to show: the unit settings, or the rules for showing distances and speeds.",
-     "options": [
-      "settings",
-      "rules"
-     ],
-     "default": "settings"
-    }
-   ],
-   "events": {},
-   "spec": false
-  },
   "accent_swatches": {
    "name": "Accent swatches",
    "about": "Pick the accent colour: one dot per accent set in the theme in use, the chosen one ringed.",
@@ -5434,6 +4909,56 @@
    },
    "spec": true
   },
+  "chart": {
+   "name": "chart",
+   "about": "Series colours, line weights, areas, grid, dots, labels and the no-data states every chart shares. Chart motion is on the Motion page.",
+   "contract": 1,
+   "min": null,
+   "slots": null,
+   "props": [
+    {
+     "name": "section",
+     "type": "select",
+     "about": "Which part of the charts page to show, such as the series colours, the lines or the no-data states.",
+     "options": [
+      "colours",
+      "lines",
+      "bars",
+      "labels",
+      "states"
+     ],
+     "default": "colours"
+    },
+    {
+     "name": "loop",
+     "type": "select",
+     "about": "For previews only: plays one chart movement over and over, such as a line drawing in or bars growing. off keeps them still.",
+     "options": [
+      "off",
+      "draw",
+      "shift",
+      "morph",
+      "bars",
+      "gauge",
+      "ping"
+     ],
+     "default": "off"
+    },
+    {
+     "name": "lite",
+     "type": "select",
+     "about": "A lighter way of drawing charts for smaller panels. auto picks it on the smaller panel, on and off force it.",
+     "options": [
+      "auto",
+      "on",
+      "off"
+     ],
+     "default": "auto"
+    }
+   ],
+   "events": {},
+   "spec": false
+  },
   "checkbox": {
    "name": "Checkbox",
    "about": "A small rounded box: open, in progress (an accent dot) or done (filled with a check). Tapping cycles open and done unless it is read-only.",
@@ -5534,6 +5059,102 @@
     ]
    },
    "spec": true
+  },
+  "colour": {
+   "name": "colour",
+   "about": "Every colour token in dark and light, the accent sets, and the contrast checks they all pass.",
+   "contract": 1,
+   "min": null,
+   "slots": null,
+   "props": [
+    {
+     "name": "group",
+     "type": "select",
+     "about": "Which group of colours to show, such as the surfaces, the text colours or the accent sets.",
+     "options": [
+      "surfaces",
+      "text",
+      "lines",
+      "accent",
+      "secondary",
+      "status",
+      "special",
+      "media",
+      "bins",
+      "accents",
+      "contrast",
+      "contrast-fail",
+      "contrast-text",
+      "contrast-accent",
+      "contrast-status",
+      "contrast-special",
+      "contrast-lines",
+      "contrast-button",
+      "contrast-toggle",
+      "contrast-icon_button",
+      "contrast-corner_ticks",
+      "contrast-focus_ring",
+      "contrast-mascot",
+      "contrast-motion",
+      "contrast-icons",
+      "contrast-slider",
+      "contrast-card",
+      "contrast-list_row",
+      "contrast-dial",
+      "contrast-label",
+      "contrast-status_chip",
+      "contrast-count_badge",
+      "contrast-section_header",
+      "contrast-header",
+      "contrast-title",
+      "contrast-settings",
+      "contrast-entity_tile",
+      "contrast-tile",
+      "contrast-hero_block",
+      "contrast-more_row",
+      "contrast-stat",
+      "contrast-radio",
+      "contrast-picker_row",
+      "contrast-speaker_button",
+      "contrast-bottom_sheet",
+      "contrast-toast",
+      "contrast-segmented",
+      "contrast-accent_swatches",
+      "contrast-chart",
+      "contrast-tick_ring",
+      "contrast-arc",
+      "contrast-checkbox",
+      "contrast-media_visual",
+      "contrast-cover_visual",
+      "contrast-donut",
+      "contrast-rate_strip",
+      "contrast-clock",
+      "contrast-empty_state",
+      "contrast-fw_update_view",
+      "contrast-qr_block",
+      "contrast-readout",
+      "contrast-scroll_track",
+      "contrast-overhead",
+      "contrast-bins",
+      "contrast-layout",
+      "contrast-icon",
+      "contrast-grid",
+      "contrast-radar",
+      "contrast-card_preview",
+      "contrast-timer",
+      "contrast-progress_ring",
+      "contrast-vacuum_robot",
+      "contrast-timer_chip",
+      "contrast-weather",
+      "contrast-calendar_row",
+      "contrast-calendar_month",
+      "contrast-energy"
+     ],
+     "default": "surfaces"
+    }
+   ],
+   "events": {},
+   "spec": false
   },
   "column": {
    "name": "Column",
@@ -6907,6 +6528,87 @@
    },
    "spec": true
   },
+  "icons": {
+   "name": "icons",
+   "about": "The icon set, drawn at every size it ships in.",
+   "contract": 1,
+   "min": null,
+   "slots": null,
+   "props": [
+    {
+     "name": "section",
+     "type": "select",
+     "about": "Which part of the icons page to show, such as the icons side by side at each size.",
+     "options": [
+      "compare",
+      "navigation",
+      "media",
+      "home",
+      "status",
+      "github",
+      "screens",
+      "weather",
+      "sport",
+      "animated",
+      "moon",
+      "all",
+      "memory"
+     ],
+     "default": "compare"
+    },
+    {
+     "name": "search",
+     "type": "text",
+     "about": "Shows only the icons whose name contains these words.",
+     "default": ""
+    },
+    {
+     "name": "size",
+     "type": "select",
+     "about": "Which icon size to show, or all of them.",
+     "options": [
+      "all",
+      "small",
+      "icon",
+      "glyph",
+      "detail",
+      "feature",
+      "card",
+      "hero"
+     ],
+     "default": "all"
+    },
+    {
+     "name": "accent",
+     "type": "bool",
+     "about": "Draws the icons in the accent colour instead of the text colour.",
+     "default": false
+    },
+    {
+     "name": "boxes",
+     "type": "bool",
+     "about": "For previews only: outlines the box each icon sits in, to check they line up.",
+     "default": false
+    },
+    {
+     "name": "animated",
+     "type": "bool",
+     "about": "Lets the weather icons move gently.",
+     "default": true
+    },
+    {
+     "name": "phase",
+     "type": "range",
+     "about": "The moon phase the moon icons show: 0 is new, 0.5 full.",
+     "min": 0,
+     "max": 1,
+     "step": 0.01,
+     "default": 0.25
+    }
+   ],
+   "events": {},
+   "spec": false
+  },
   "label": {
    "name": "Label",
    "about": "One line of text in a component type style and colour.",
@@ -6964,6 +6666,38 @@
     ]
    },
    "spec": true
+  },
+  "layout": {
+   "name": "layout",
+   "about": "Screen geometry, devices and size classes: how a screen is laid out on 720 and 480 panels.",
+   "contract": 1,
+   "min": null,
+   "slots": null,
+   "props": [
+    {
+     "name": "section",
+     "type": "select",
+     "about": "Which part of the layout page to show, such as the screen areas, the devices or the size classes.",
+     "options": [
+      "screen",
+      "grid",
+      "sizes",
+      "spacing",
+      "rhythm",
+      "frame",
+      "chrome",
+      "touch",
+      "corners",
+      "breaks",
+      "overlay",
+      "devices",
+      "classes"
+     ],
+     "default": "screen"
+    }
+   ],
+   "events": {},
+   "spec": false
   },
   "legend": {
    "name": "Legend and axis",
@@ -7258,6 +6992,61 @@
     ]
    },
    "spec": true
+  },
+  "mascots": {
+   "name": "mascots",
+   "about": "Small animated characters that show the mood of a card or screen, with their colours, motion and usage rules.",
+   "contract": 1,
+   "min": null,
+   "slots": null,
+   "props": [
+    {
+     "name": "section",
+     "type": "select",
+     "about": "Which part of the mascot page to show, such as the moods or the usage rules.",
+     "options": [
+      "moods",
+      "motion",
+      "desync",
+      "tokens",
+      "usage"
+     ],
+     "default": "moods"
+    },
+    {
+     "name": "colour",
+     "type": "select",
+     "about": "The mascots' colour: each mood's own colour, or one fixed colour.",
+     "options": [
+      "mood",
+      "steel",
+      "accent",
+      "warn",
+      "error",
+      "text-mute"
+     ],
+     "default": "mood"
+    },
+    {
+     "name": "reduced_motion",
+     "type": "bool",
+     "about": "Shows the mascots as they look when reduced motion is turned on: still.",
+     "default": false
+    },
+    {
+     "name": "bench",
+     "type": "select",
+     "about": "For previews only: a speed test with many mascots moving at once. off shows the normal page.",
+     "options": [
+      "off",
+      "agents",
+      "big"
+     ],
+     "default": "off"
+    }
+   ],
+   "events": {},
+   "spec": false
   },
   "media_art": {
    "name": "Media art",
@@ -7563,6 +7352,70 @@
     ]
    },
    "spec": true
+  },
+  "motion": {
+   "name": "motion",
+   "about": "Durations, easings and the motion patterns components use, including the reduced-motion rule.",
+   "contract": 1,
+   "min": null,
+   "slots": null,
+   "props": [
+    {
+     "name": "section",
+     "type": "select",
+     "about": "Which part of the motion page to show, such as the easing curves or the durations.",
+     "options": [
+      "easing",
+      "durations",
+      "patterns",
+      "reduced",
+      "charts"
+     ],
+     "default": "easing"
+    },
+    {
+     "name": "reduced_motion",
+     "type": "bool",
+     "about": "Shows the motion as it looks when reduced motion is turned on.",
+     "default": false
+    },
+    {
+     "name": "loop",
+     "type": "select",
+     "about": "For previews only: plays one movement over and over so it can be watched. off keeps it still.",
+     "options": [
+      "off",
+      "press",
+      "release",
+      "toggle",
+      "fade",
+      "sheet-open",
+      "sheet-close",
+      "toast-in",
+      "toast-out",
+      "screen",
+      "value",
+      "clock-hand",
+      "ripple",
+      "pulse",
+      "weather"
+     ],
+     "default": "off"
+    },
+    {
+     "name": "chart_lite",
+     "type": "select",
+     "about": "A lighter way of drawing chart motion for smaller panels. auto picks it on the smaller panel, on and off force it.",
+     "options": [
+      "auto",
+      "on",
+      "off"
+     ],
+     "default": "auto"
+    }
+   ],
+   "events": {},
+   "spec": false
   },
   "picker_row": {
    "name": "Picker row",
@@ -8366,6 +8219,30 @@
    },
    "spec": true
   },
+  "space": {
+   "name": "space",
+   "about": "Spacing steps on the 4 px grid, radii, strokes and touch target sizes.",
+   "contract": 1,
+   "min": null,
+   "slots": null,
+   "props": [
+    {
+     "name": "section",
+     "type": "select",
+     "about": "Which part of the page to show: the spacing steps, the corner radii, the line weights or the touch target sizes.",
+     "options": [
+      "space",
+      "layout",
+      "radius",
+      "stroke",
+      "touch"
+     ],
+     "default": "space"
+    }
+   ],
+   "events": {},
+   "spec": false
+  },
   "sparkline": {
    "name": "Sparkline",
    "about": "A thin line over the recent values with a dot on the latest one.",
@@ -8591,6 +8468,34 @@
    },
    "spec": true
   },
+  "states": {
+   "name": "states",
+   "about": "How every control looks and behaves when pressed, on, disabled or unavailable, with the event and sound each state makes.",
+   "contract": 1,
+   "min": null,
+   "slots": null,
+   "props": [
+    {
+     "name": "section",
+     "type": "select",
+     "about": "Which part of the states page to show, such as the rules or each state in turn.",
+     "options": [
+      "rules",
+      "pressed",
+      "disabled",
+      "unavailable",
+      "on",
+      "focus",
+      "tap",
+      "audit",
+      "decisions"
+     ],
+     "default": "rules"
+    }
+   ],
+   "events": {},
+   "spec": false
+  },
   "status_chip": {
    "name": "Status chip",
    "about": "A small tinted pill with a status dot and a short caps label, or the dot alone.",
@@ -8689,6 +8594,114 @@
     ]
    },
    "spec": true
+  },
+  "stress": {
+   "name": "stress",
+   "about": "Bench load (not a Facet component): a ramp of moving things, one moving object of a given size, or a raw redraw of the whole screen, for the stress and capability suite.",
+   "contract": 1,
+   "min": null,
+   "slots": null,
+   "props": [
+    {
+     "name": "kind",
+     "type": "select",
+     "about": "For testing only: what is drawn to load the panel, such as icons, arcs, moving shapes or a full redraw of the screen.",
+     "options": [
+      "icons",
+      "arcs",
+      "rects",
+      "labels",
+      "move",
+      "fade",
+      "colour",
+      "rotate",
+      "refresh",
+      "fill",
+      "blend",
+      "blit",
+      "blit_alpha",
+      "text",
+      "objects",
+      "touch"
+     ],
+     "default": "icons"
+    },
+    {
+     "name": "n",
+     "type": "range",
+     "about": "For testing only: how many things are drawn at once.",
+     "min": 1,
+     "max": 4096,
+     "step": 1,
+     "default": 16
+    },
+    {
+     "name": "size",
+     "type": "range",
+     "about": "For testing only: how big each moving thing is, as a share of the screen.",
+     "min": 0.02,
+     "max": 1,
+     "step": 0.01,
+     "default": 0.35
+    },
+    {
+     "name": "ms",
+     "type": "range",
+     "about": "For testing only: how long one movement takes, in milliseconds.",
+     "min": 60,
+     "max": 4000,
+     "step": 10,
+     "default": 1000
+    },
+    {
+     "name": "dp",
+     "type": "range",
+     "about": "For testing only: the size of each thing, in pixels.",
+     "min": 8,
+     "max": 96,
+     "step": 1,
+     "default": 16
+    }
+   ],
+   "events": {},
+   "spec": false
+  },
+  "strokes": {
+   "name": "strokes",
+   "about": "Experiment: the same curves drawn four ways, to pick how Facet draws smooth lines.",
+   "contract": 1,
+   "min": null,
+   "slots": null,
+   "props": [
+    {
+     "name": "curve",
+     "type": "select",
+     "about": "Which curve to draw, or all of them.",
+     "options": [
+      "all",
+      "ease-out",
+      "ease-in-out",
+      "arc",
+      "wave",
+      "floorplan"
+     ],
+     "default": "all"
+    },
+    {
+     "name": "stroke",
+     "type": "select",
+     "about": "Which line weight to draw the curves in: edge, arc, indicator or hair.",
+     "options": [
+      "edge",
+      "arc",
+      "indicator",
+      "hair"
+     ],
+     "default": "edge"
+    }
+   ],
+   "events": {},
+   "spec": false
   },
   "text": {
    "name": "Text",
@@ -9254,6 +9267,64 @@
    },
    "spec": true
   },
+  "type": {
+   "name": "type",
+   "about": "The type scale: every text style at true size, the two font families and the glyphs each panel size ships.",
+   "contract": 1,
+   "min": null,
+   "slots": null,
+   "props": [
+    {
+     "name": "section",
+     "type": "select",
+     "about": "Which part of the type page to show, such as the screen styles or the glyphs each panel carries.",
+     "options": [
+      "screen",
+      "component",
+      "pair",
+      "numbers",
+      "glyphs",
+      "fonts"
+     ],
+     "default": "screen"
+    },
+    {
+     "name": "sample",
+     "type": "text",
+     "about": "Your own words to show in every style. Leave empty for the usual sample text.",
+     "default": ""
+    },
+    {
+     "name": "accent",
+     "type": "bool",
+     "about": "Draws the samples in the accent colour.",
+     "default": false
+    }
+   ],
+   "events": {},
+   "spec": false
+  },
+  "units": {
+   "name": "units",
+   "about": "Distances and speeds follow one setting each: kilometres or miles, mph, km/h or knots.",
+   "contract": 1,
+   "min": null,
+   "slots": null,
+   "props": [
+    {
+     "name": "section",
+     "type": "select",
+     "about": "Which part of the page to show: the unit settings, or the rules for showing distances and speeds.",
+     "options": [
+      "settings",
+      "rules"
+     ],
+     "default": "settings"
+    }
+   ],
+   "events": {},
+   "spec": false
+  },
   "vacuum_robot": {
    "name": "Vacuum robot",
    "about": "The robot vacuum seen from above inside a ring: the run's progress while it cleans, else its battery.",
@@ -9405,77 +9476,6 @@
     ]
    },
    "spec": true
-  },
-  "stress": {
-   "name": "stress",
-   "about": "Bench load (not a Facet component): a ramp of moving things, one moving object of a given size, or a raw redraw of the whole screen, for the stress and capability suite.",
-   "contract": 1,
-   "min": null,
-   "slots": null,
-   "props": [
-    {
-     "name": "kind",
-     "type": "select",
-     "about": "For testing only: what is drawn to load the panel, such as icons, arcs, moving shapes or a full redraw of the screen.",
-     "options": [
-      "icons",
-      "arcs",
-      "rects",
-      "labels",
-      "move",
-      "fade",
-      "colour",
-      "rotate",
-      "refresh",
-      "fill",
-      "blend",
-      "blit",
-      "blit_alpha",
-      "text",
-      "objects",
-      "touch"
-     ],
-     "default": "icons"
-    },
-    {
-     "name": "n",
-     "type": "range",
-     "about": "For testing only: how many things are drawn at once.",
-     "min": 1,
-     "max": 4096,
-     "step": 1,
-     "default": 16
-    },
-    {
-     "name": "size",
-     "type": "range",
-     "about": "For testing only: how big each moving thing is, as a share of the screen.",
-     "min": 0.02,
-     "max": 1,
-     "step": 0.01,
-     "default": 0.35
-    },
-    {
-     "name": "ms",
-     "type": "range",
-     "about": "For testing only: how long one movement takes, in milliseconds.",
-     "min": 60,
-     "max": 4000,
-     "step": 10,
-     "default": 1000
-    },
-    {
-     "name": "dp",
-     "type": "range",
-     "about": "For testing only: the size of each thing, in pixels.",
-     "min": 8,
-     "max": 96,
-     "step": 1,
-     "default": 16
-    }
-   ],
-   "events": {},
-   "spec": false
   }
  },
  "screens": {

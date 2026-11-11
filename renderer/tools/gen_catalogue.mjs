@@ -6,7 +6,8 @@
 // screens (built-in + factory specs with their params), feeds (fields required / optional + placeholder, states and
 // their words), settings, themes (the theme file's keys, parts and ranges) and the panel's HTTP routes (firmware/
 // fw_device.h's route list). The panel serves it at GET /fw/schema, the docs site at /schema.json, llms.txt points at
-// it. Runs on the WASM build (1.5x). Writes only on change.
+// it. Runs on the WASM build (1.5x). Writes only on change. Every list is in a fixed order (by id / file name), never the
+// registration (link) order, so the same tree always gives the same files and hash.
 // Usage: node tools/gen_catalogue.mjs [--build <dir with 1.5x/>]
 import { readFileSync, readdirSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -22,7 +23,7 @@ m._fw_init();
 m._fw_stage(720, 720);
 const cat = JSON.parse(m.UTF8ToString(m._fw_catalogue()));
 // each prop's one-line description (meta "about" of the registered component; the docs + the agent guide + the editor)
-const META = Object.fromEntries(JSON.parse(m.UTF8ToString(m._fw_meta())).map((c) => [c.id, typeof c.meta === 'string' ? JSON.parse(c.meta) : c.meta]));
+const META = Object.fromEntries(JSON.parse(m.UTF8ToString(m._fw_meta())).sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)).map((c) => [c.id, typeof c.meta === 'string' ? JSON.parse(c.meta) : c.meta]));
 for (const [id, c] of Object.entries(cat.components)) for (const p of c.props) {
   const about = META[id]?.props?.find((x) => x.name === p.name)?.about;
   if (about) p.about = about;
@@ -85,14 +86,14 @@ for (const [id, mt] of Object.entries(META)) {
   const sec = JSON.parse(m.UTF8ToString(m._fw_meta())).find((x) => x.id === id)?.section;
   if (sec === 'screens') screens[id] = { ...entry, kind: 'built-in' }; else comps[id] = entry;
 }
-for (const f of readdirSync(join(HERE, 'specs')).filter((f) => f.endsWith('.json') && f !== 'deck.json')) {
+for (const f of readdirSync(join(HERE, 'specs')).filter((f) => f.endsWith('.json') && f !== 'deck.json').sort()) {
   const sp = JSON.parse(readFileSync(join(HERE, 'specs', f), 'utf8'));
   if (!sp.id) continue;
   screens[sp.id] = { name: sp.name ?? sp.id, kind: 'spec', layout: sp.layout, params: sp.params ?? {}, feeds: Object.keys(sp.feeds ?? {}) };
 }
 const st = m._fw_stage(720, 720);
 const lab = (c) => { const pc = m.stringToNewUTF8(c), pa = m.stringToNewUTF8(''); try { return JSON.parse(m.UTF8ToString(m._fw_lab(st, pc, pa))); } finally { m._free(pc); m._free(pa); } };
-const feeds = Object.fromEntries(lab('feeds').map((f) => [f.entity, { source: f.source, every_ms: f.every_ms, fields: f.fields }]));
+const feeds = Object.fromEntries(lab('feeds').sort((a, b) => (a.entity < b.entity ? -1 : a.entity > b.entity ? 1 : 0)).map((f) => [f.entity, { source: f.source, every_ms: f.every_ms, fields: f.fields }]));
 const SETTINGS = T('settings.json'), THEME = T('theme.json');
 // firmware/fw_device.h: "//   GET  /fw/x   about" (+ indented continuation lines), then "//   = says": the one line
 // people read (the docs site's table), every route has one
