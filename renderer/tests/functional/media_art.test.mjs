@@ -123,6 +123,23 @@ export default {
       t.ok(mid()[2] > 180, `the new art once it is in: ${mid()}`);
       t.eq(t.img.stats().views, 1, 'the old one gone after the swap');
     } },
+    { name: 'the address back to the shown picture while another was coming: that one is let go, its late arrival or failure never takes or clears the shown art (#197)', async run(t) {
+      await at(t, {});
+      const mid = () => rgb(t, t.b.S >> 1, t.b.S >> 2), red = () => mid()[0] > 180 && mid()[2] < 90;
+      const m = t.b.m, px = new Uint8Array(64 * 64 * 4);
+      for (let i = 0; i < px.length; i += 4) px.set([30, 30, 230, 255], i);
+      for (const end of ['fails', 'arrives']) {
+        const B = URL.replace('media_player.x', `media_player.y`).replace('cache=1', `cache=${end}`);
+        t.img.hang(B);
+        t.update({ art: B }); t.wait(300);   // another player's picture coming (Auto follow moved on)
+        t.update({ art: URL }); t.wait(300); // and back to the shown one before it was in
+        if (end === 'fails') t.b.str(B, (pu) => t.b.str('timeout', (pw) => m._fw_img_fail(pu, pw)));
+        else { const p = m._malloc(px.length); m.HEAPU8.set(px, p); t.b.str(B, (pu) => m._fw_img_put(pu, 64, 64, p)); m._free(p); }
+        t.wait(300);
+        t.ok(red(), `the shown art stays when the one no longer wanted ${end}: ${mid()}`);
+        t.eq(t.img.stats().views, 1, `one picture kept (${end})`);
+      }
+    } },
     { name: 'track after track: 25 changes each show the new art, never a gap, one picture kept, the heap flat', async run(t) {
       await at(t, {});
       const mid = () => rgb(t, t.b.S >> 1, t.b.S >> 2);

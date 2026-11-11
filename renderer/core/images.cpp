@@ -418,7 +418,18 @@ void Swap::set(const std::string &url, int w, int h, int radius, int shade) {
     return;
   }
   const bool resized = w != w_ || h != h_ || radius != r_ || shade != shade_;
-  if (!resized && same(src_[on_], url)) return;  // the same picture (or only its token moved on)
+  if (!resized && same(src_[on_], url)) {  // the same picture (or only its token moved on)
+    // back to the shown one while another was coming (#197: Auto follow moved to another player and back): that one
+    // goes, or its late arrival would take the screen and its failure clear the shown art (Swap::in)
+    if (!src_[1 - on_].empty()) {
+      if (screen_size(w_, h_, cover, r_)) art_note("art coming (%s) no longer wanted: the address is the shown one again", src_[1 - on_].size() > 24 ? src_[1 - on_].substr(src_[1 - on_].size() - 24).c_str() : src_[1 - on_].c_str());
+      drop_why = "the address went back to the shown picture";
+      drop(owner(1 - on_));
+      drop_why = nullptr;
+      src_[1 - on_].clear();
+    }
+    return;
+  }
   const int n = resized ? on_ : 1 - on_;
   if (!resized && same(src_[n], url)) return;    // already coming
   if (resized && screen_size(w_, h_, cover, r_)) art_note("art %dx%d resized to %dx%d", w_, h_, w, h);
