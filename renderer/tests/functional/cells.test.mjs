@@ -6,7 +6,7 @@
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { fuzz, leak, look, golden, stage, boundsAll } from './_release.mjs';
+import { fuzz, leak, look, golden, stage, boundsAll, frame565, diff565 } from './_release.mjs';
 
 const TOK = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'tokens');
 const SPACE = JSON.parse(readFileSync(join(TOK, 'space.json'), 'utf8')).tokens;
@@ -190,6 +190,20 @@ export default {
       const mv = t.comps().find((c) => c.ids.includes('media_visual'));
       t.ok(mv, 'the card shows the media visual');
       t.ok(t.texts().includes('Next One'), 'the track');
+    } },
+    { name: 'Home: a media player\'s card turns its record while it plays and stops on pause (the state binds playing)', async run(t) {
+      const P = 'media_player.test_spotify', HA = 'http://ha.test:8123', ART = `/api/media_player_proxy/${P}?token=x&cache=two`;
+      t.ha.s[P] = { '': 'playing', friendly_name: 'Spotify', media_title: 'How It Goes', media_artist: 'Mocky', entity_picture: ART };
+      t.img.serve(ART, 64, 64, (x, y) => (y < 32 ? [230, 30, 30, 255] : [30, 30, 230, 255]));  // two halves: a turn shows
+      t.ha.answers = true;
+      await t.device({ v: 2, rev: 9, start: 'p', pages: [{ id: 'p', kind: 'home', name: 'Test', cards: [{ t: 'entity', e: P, size: '2x1' }] }] });
+      t.b.spec('act', { do: 'ha.connect', url: HA, token: 'abcdefgh1234' }); t.b.tick(8); t.b.settle(600);
+      t.wait(1500);
+      let a = frame565(t); t.wait(1000);
+      t.ok(diff565(a, frame565(t)) > 0, 'playing: the record turns (the frame changes)');
+      t.ha.set(P, 'paused', {}); t.wait(3000);
+      a = frame565(t); t.wait(1000);
+      t.eq(diff565(a, frame565(t)), 0, 'paused: the record stands still');
     } },
   ],
 };

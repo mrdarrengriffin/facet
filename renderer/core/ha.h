@@ -8,6 +8,7 @@
 //   binds    a component prop may be {"e": "light.x", "a"?: "brightness", "fmt"?: ...} instead of a value; bound()
 //            builds the component with the values from the store and, when one of its pairs changes, moves it through
 //            its update path (FW_UPDATE, silent), never a rebuild. fmt: (none) the raw string; "on" state == on (bool);
+//            "playing" state == playing (bool: a media player's play / pause);
 //            "pct" a 0-255 attribute as 0-100 (missing / None = 0); "avail" "unavailable" when the state is
 //            unavailable / unknown, "missing" when the host reported an empty state (HA has no such entity: the
 //            host puts "" for it), else "default" (no value yet = "default"); "dim" whether a light can be dimmed
@@ -190,6 +191,7 @@ inline void bind_value(ArduinoJson::JsonVariantConst b, ArduinoJson::JsonObject 
     if (fmt == "num" || fmt == "frac" || fmt == "pct") { char *end = nullptr; const double x = strtod(sv, &end); if (end != sv) out[key] = x; }
     else if (fmt == "time" || fmt == "day") { const std::string w = strchr(sv, 'T') ? when(sv, fmt == "day") : std::string(sv); out[key] = w; }
     else if (fmt == "on") out[key] = !strcmp(sv, "on");
+    else if (fmt == "playing") out[key] = !strcmp(sv, "playing");
     else out[key] = sv;
   } else bind_raw(b, out, key, pairs);
   std::string one;  // fmt count: the number of items; the one item's name (before its colon) when there is one
@@ -275,6 +277,7 @@ inline void bind_raw(ArduinoJson::JsonVariantConst b, ArduinoJson::JsonObject ou
   const std::string *st = get(e, "");
   const bool on = st && *st == "on";
   if (fmt == "on") { use(""); out[key] = on; return; }
+  if (fmt == "playing") { use(""); out[key] = st && *st == "playing"; return; }
   if (fmt == "pct") { use(a.empty() ? "brightness" : a); out[key] = pct(e, a.empty() ? "brightness" : a.c_str()); return; }
   if (fmt == "avail") {
     use("");
