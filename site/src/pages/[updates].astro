@@ -43,6 +43,7 @@ const link = (p: string) => (/^https?:/.test(p) ? p : url(`/${p}`));
     {noted.map((r) => <li><strong>{r.name}</strong>: {r.note}.</li>)}
     {plain.length > 0 && <li><strong>New screens</strong>: {plain.map((r) => r.name).join(', ')}. Each comes to the panels when it is finished; until then it is not in the firmware.</li>}
   </ul>
+  <p>Each version's plan is a milestone on GitHub; <a href={url('/help/versions/')}>Versions</a> explains the numbers and the update channels.</p>
   {entries.length === 0 && <p>Release notes appear here from Facet 1.0 on.</p>}
   {kinds.length > 1 && <div class="updates__filter" role="group" aria-label="Show">
     <button type="button" class="updates__chip" aria-pressed="true" data-kind="">All</button>

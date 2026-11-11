@@ -680,7 +680,7 @@
     "name": "Flight radar (overhead flights)",
     "group": "Weather and sky",
     "status": "done",
-    "note": "On the beta firmware: where each flight flies from and to, helicopters and military jets in their own shape"
+    "note": "On the Beta channel: where each flight flies from and to, helicopters and military jets in their own shape"
    },
    {
     "name": "Calendar",

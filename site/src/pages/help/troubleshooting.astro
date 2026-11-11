@@ -43,19 +43,21 @@ const headings: Heading[] = [
     select on its device page in Home Assistant:
   </p>
   <ul>
-    <li><strong>Stable</strong> (the default): the releases we recommend.</li>
-    <li><strong>Beta</strong>: newer versions, more often, that may have rough edges.</li>
+    <li><strong>Release</strong> (the default): every finished version (0.5.0, 0.6.0, 0.6.1).</li>
+    <li><strong>Beta</strong>: test builds of the next version's screens and features before it ships, such as
+      <code>0.6.0-beta.1</code>. It gets every release too, so it is never behind Release.</li>
     <li>
-      <strong>Dev</strong>: a build of the latest code, made each night when something changed. It has passed the
-      automatic checks but nobody has tried it on a panel, so it can break things. Pick it to try a fix early.
+      <strong>Dev (nightly)</strong>: a build of the latest code, made each night when something changed. It has passed
+      the automatic checks but nobody has tried it on a panel, so it can break things. Pick it to try a fix early.
       Its version is the release it builds on plus the time of its change, such as
-      <code>0.5.0-beta5-dev202611041319+abc1234</code>, so each newer dev build shows as an update.
+      <code>0.5.1-dev202611041319+abc1234</code>, so each newer dev build shows as an update.
     </li>
   </ul>
   <p>
-    Switching channel offers that channel's latest version, even when it is older than the one on the panel, so you can
-    always go back from Dev to Beta or Stable. The <a href={url('/install/')}>Install</a> page offers Stable and Beta
-    only.
+    A panel is offered only versions newer than the one it runs, so after moving from Dev back to Beta or Release it
+    updates with that channel's next version. A panel set to Stable (the old name) is on Release. The
+    <a href={url('/install/')}>Install</a> page offers Release and Beta only. <a href={url('/help/versions/')}>Versions</a>
+    explains the version numbers.
   </p>
 
   <h2 id="settling">After an update</h2>

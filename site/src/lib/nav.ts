@@ -80,7 +80,7 @@ export function getSidebar(): NavGroup[] {
     },
     {
       label: 'Help',
-      links: [{ label: 'FAQ', href: url('/help/') }, { label: 'Troubleshooting', href: url('/help/troubleshooting/') }, { label: 'Contributing', href: url('/contributing/') }],
+      links: [{ label: 'FAQ', href: url('/help/') }, { label: 'Troubleshooting', href: url('/help/troubleshooting/') }, { label: 'Versions', href: url('/help/versions/') }, { label: 'Contributing', href: url('/contributing/') }],
     },
     { label: 'Inside Facet', links: insideLinks },
   ];

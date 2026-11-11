@@ -64,16 +64,16 @@ const manifest = (id: string) => url(`/firmware/${id}/manifest.json`);
   </fieldset>
 
   <fieldset class="boards channels" data-channels hidden>
-    <legend class="facet-label">Release</legend>
+    <legend class="facet-label">Channel</legend>
     <label class="board">
-      <input type="radio" name="channel" value="stable" checked />
-      <span class="board__name">Stable</span>
-      <span class="board__about">The release we recommend. Updates when a new version is ready.</span>
+      <input type="radio" name="channel" value="release" checked />
+      <span class="board__name">Release</span>
+      <span class="board__about">Every finished version. Updates when a new version is ready.</span>
     </label>
     <label class="board">
       <input type="radio" name="channel" value="beta" />
       <span class="board__name">Beta</span>
-      <span class="board__about">Newer builds, more often, that may have rough edges. Switch back in the panel's Settings, Update channel.</span>
+      <span class="board__about">Try the next version's screens and features before it ships; it gets every release too. Change it later in the panel's Settings, Update channel.</span>
       <span class="board__ways" data-beta-version></span>
     </label>
   </fieldset>
@@ -158,14 +158,15 @@ const manifest = (id: string) => url(`/firmware/${id}/manifest.json`);
   <p>
     Home Assistant shows a <strong>Firmware</strong> update on the panel's device page when a new Facet release is out.
     It installs only when you press Install. Installing from this page again works too, without erasing.
+    <a href={url('/help/versions/')}>Versions</a> explains the version numbers and the update channels;
     <a href={url('/help/troubleshooting/')}>Updating and troubleshooting</a> has more, and fixes for common set up problems.
   </p>
 </Docs>
 
 <script is:inline type="module" src="https://unpkg.com/esp-web-tools@10.4.0/dist/web/install-button.js?module"></script>
 <script>
-  // the board pick and the release channel set the installer's manifest: manifest.json (stable) or manifest-beta.json
-  // beside it (the beta channel, .github/workflows/release.yml); the channel choice shows only while a beta exists
+  // the board pick and the channel set the installer's manifest: manifest.json (Release) or manifest-beta.json beside
+  // it (Beta, .github/workflows/release.yml); the channel choice shows only while the Beta manifest exists
   const button = document.querySelector<HTMLElement>('[data-install]');
   const channels = document.querySelector<HTMLElement>('[data-channels]');
   const pick = () => {
@@ -200,7 +201,7 @@ const manifest = (id: string) => url(`/firmware/${id}/manifest.json`);
   const target = (dialog: any) => {
     // the manifest URL the dialog installs from: /firmware/<board>/manifest(-beta).json
     const m = /\/firmware\/([^/]+)\/manifest(-beta)?\.json/.exec(String(dialog.manifestPath || ''));
-    return { board: m?.[1] || 'unknown', channel: m?.[2] ? 'beta' : 'stable' };
+    return { board: m?.[1] || 'unknown', channel: m?.[2] ? 'beta' : 'release' };
   };
   const onState = (dialog: any, s: Flash) => {
     let a = attempts.get(dialog);

@@ -52,8 +52,8 @@ export type Channel = 'stable' | 'beta' | 'soon';
 export const STABLE_VERSION = flags.stable as string;
 const minor = STABLE_VERSION.split('.').slice(0, 2).join('.');
 export const CHANNEL: Record<Channel, { label: string; hint: string }> = {
-  stable: { label: flags.channels.stable, hint: `In the stable release (${minor})` },
-  beta: { label: flags.channels.beta, hint: `On the beta firmware, not yet in a stable release (${minor})` },
+  stable: { label: flags.channels.stable, hint: `In the latest release (${minor})` },
+  beta: { label: flags.channels.beta, hint: `In a beta of the next version, not yet in a release (${minor})` },
   soon: { label: flags.channels.soon, hint: 'In the docs, not on a released firmware yet' },
 };
 export const linkShown = ([, path]: [string, string]) => !HIDDEN_PATHS.has(path.replace(/^\//, '').replace(/#.*$/, '').replace(/\/?$/, '/'));

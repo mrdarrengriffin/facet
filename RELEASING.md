@@ -1,43 +1,72 @@
 # Releasing Facet
 
+## Versions
+
+Every release follows this scheme (the docs explain it to users on the
+[Versions](https://mrdarrengriffin.github.io/facet/help/versions/) page):
+
+- Facet as a whole is a beta product while it is 0.x.
+- **0.6, 0.7, 0.8…**: feature releases, one per milestone, each with a goal.
+- **0.6.1, 0.6.2…**: fixes only, between feature releases, only when something can't wait.
+- **0.6.0-beta.1, 0.6.0-beta.2…**: pre-releases of the next version, for the Beta channel only. These are the only
+  `-beta.N` tags.
+- **1.0**: when the editor (#82) and config backup (#170) are done, every test passes, and there have been a few weeks
+  without a nasty bug; when you'd give it to a stranger with no caveats. After 1.0, the same pattern (1.1, 1.0.1);
+  2.0 only if decks or settings ever break.
+- The next release is 0.5.0, closing the 0.5 beta line; panels on 0.5.0-beta.10 see it as an update (semver: 0.5.0 >
+  0.5.0-beta.10).
+
+Planning: each version is a GitHub milestone named after it (`0.6.0`), its description saying the goal; the issues
+picked for it go on it. Every new issue gets a milestone when it is picked, and the same version as its **Release**
+value on the [project board](https://github.com/users/mrdarrengriffin/projects/3) (1.0, After 1.0 or Someday until it is
+picked). A fix release gets its own milestone (`0.6.1`) only when one is needed.
+
 ## Channels
 
 A panel's Update channel (Settings, and the Update channel select in Home Assistant) picks which manifest its Firmware
-update entity checks. The default is Stable; a fresh panel starts on the channel of the build it was flashed with.
+update entity checks. The default is Release; a fresh panel starts on the channel of the build it was flashed with. A
+saved `stable` (the channel's old name) reads as Release.
 
-- **Stable**: a tag `vX.Y.Z`. Its `esphome/facet-*.yaml` files must already say that version. `ota.json`, and the
-  Install page's default (`manifest.json`).
-- **Beta**: a tag `vX.Y.Z-beta.N`. `ota-beta.json`, and the Install page's Beta switch (`manifest-beta.json`).
-- **Dev**: a nightly build of `main` by `.github/workflows/dev.yml`, untested beyond CI. `ota-dev.json` only: the
-  Install page never offers it. It builds once a night when `main` moved since the last dev build (the `firmware-dev`
-  tag) and CI and Firmware are green on it; `gh workflow run dev.yml` builds one now. Its version is the last tag's
-  plus the commit's time (UTC, to the minute) and the commit: after `v0.5.0-beta.5`,
-  `0.5.0-beta5-dev202611041319+abc1234`, which sorts above beta.5 and below beta.6 (after a stable `v0.5.0`:
-  `0.5.1-dev202611041319+abc1234`). Two dev builds on one day are two versions, so Home Assistant offers the newer
+- **Release**: every finished version, a tag `vX.Y.Z` (0.5.0, 0.6.0, 0.6.1). Its `esphome/facet-*.yaml` files must
+  already say that version. `ota.json`, and the Install page's default (`manifest.json`). A release goes to Beta as
+  well (`ota-beta.json`, `manifest-beta.json`), so Beta never lags behind Release.
+- **Beta**: where people test the next version's screens and features before it ships, without being on nightly
+  builds. Its builds are pre-releases of the next version, a tag `vX.Y.Z-beta.N` (0.6.0-beta.1), published only to
+  `ota-beta.json` and the Install page's Beta switch (`manifest-beta.json`), as GitHub pre-releases with short notes.
+  When testing is done, the finished 0.6.0 goes to Release, and Beta gets it too.
+- **Dev (nightly)**: a build of `main` every night by `.github/workflows/dev.yml`, untested beyond CI. `ota-dev.json`
+  only: the Install page never offers it. It builds once a night when `main` moved since the last dev build (the
+  `firmware-dev` tag) and CI and Firmware are green on it; `gh workflow run dev.yml` builds one now. Its version is the
+  last tag's plus the commit's time (UTC, to the minute) and the commit: after `v0.6.0-beta.1`,
+  `0.6.0-beta1-dev202611041319+abc1234`, which sorts above beta.1 and below beta.2 (after a release `v0.6.0`:
+  `0.6.1-dev202611041319+abc1234`). Two dev builds on one day are two versions, so Home Assistant offers the newer
   one; a rebuild of the same commit is the same version. Home Assistant ignores everything after `+` and orders
-  versions with AwesomeVersion, which reads `beta5-dev<time>` as one pre-release but cannot order
-  `beta.5.dev.<time>` against a beta tag at all: keep the compound form. Its notes are the commit titles since the
+  versions with AwesomeVersion, which reads `beta1-dev<time>` as one pre-release but cannot order
+  `beta.1.dev.<time>` against a beta tag at all: keep the compound form. Its notes are the commit titles since the
   last dev build, linked to that commit range; no release-notes file. Only the newest dev build is served.
 
-A panel on a channel is offered that channel's build whenever it differs from the one it runs, so switching from Dev
-to Beta offers the beta even when it is older. Workbench builds (`panel wb build`, a `+wip` or build-stamped version)
-are never published.
+A panel is offered a channel's build only when it is newer than the one it runs (`esphome/board/fw_notes.h` newer()):
+moving from Dev back to Beta or Release waits for that channel's next version. Workbench builds (`panel wb build`, a
+`+wip` or build-stamped version) are never published.
 
-Pushing a tag starts `.github/workflows/release.yml`. It waits for CI and Firmware to be green on the tagged commit,
-builds both boards, checks each image says the version (never `+wip`), and publishes:
+Pushing a tag starts `.github/workflows/release.yml`. It refuses anything but `vX.Y.Z` and `vX.Y.Z-beta.N`, waits
+for CI and Firmware to be green on the tagged commit, builds both boards, checks each image says the version (never
+`+wip`), and publishes:
 
-- the tag's release with its images (a pre-release for a beta);
-- the channel's asset (`firmware` or `firmware-beta`), and moves that channel tag to the build;
-- a docs deploy, which serves `manifest.json` + `ota.json` (stable) and `manifest-beta.json` + `ota-beta.json` (beta)
-  per board, beside the dev channel's `ota-dev.json`. The Install page offers Stable / Beta while a beta exists.
+- the tag's GitHub release with its images: the latest release for `vX.Y.Z`, a pre-release for a beta;
+- the channel's asset, moving that channel tag to the build: a release writes `manifest.json` + `ota.json` and the same
+  as `manifest-beta.json` + `ota-beta.json`, and is both the `firmware` and the `firmware-beta` asset; a beta writes
+  the beta pair only, as `firmware-beta`;
+- a docs deploy, which serves `manifest.json` + `ota.json` (Release) and `manifest-beta.json` + `ota-beta.json` (Beta)
+  per board, beside the Dev channel's `ota-dev.json`. The Install page offers Release / Beta.
 
 ## Screen channels
 
 The docs site and the README show every screen, each with its channel, from one source: `renderer/features.json`.
 
-- **Stable**: in the latest stable release (`release.stable`). No badge.
-- **Beta**: in a released beta, not yet in a stable release. A "Beta" badge on the docs, a "BETA" chip on the README
-  picture.
+- **Released** (`stable` in the data): in the latest release (`release.stable`). No badge.
+- **Beta**: in a released beta of the next version, not yet in a release. A "Beta" badge on the docs, a "BETA" chip
+  on the README picture.
 - **Coming soon**: in no release yet: on `main` and in the docs (`firmware: false`, or `since: "next"`), or still
   being designed on the `wip` branch (`wip`: the docs' Coming soon page, `/screens/coming-soon/`, and the README's
   Coming soon strip, `tools/readme_assets.mjs --coming-soon`). A quieter "Coming soon" badge and chip. When a wip
@@ -54,14 +83,16 @@ shipped later than the rest of its feature has its own entry in `screen_since`. 
 disagrees with the tags: a `next` screen that is on a tagged firmware, a beta screen whose `since` is not the first tag
 it is in. `features.mjs channels` lists every screen's channel; `features.mjs since` prints what the tags say.
 
-Before tagging V: `node renderer/tools/features.mjs since --write V` turns every `next` into V (and, for a stable V,
-sets `release.stable`, which moves every beta screen to Stable), then render the README pictures again
+Before tagging V: `node renderer/tools/features.mjs since --write V` turns every `next` into V (and, for a release V,
+sets `release.stable`, which moves every beta screen to Released), then render the README pictures again
 (`renderer/tools/readme_assets.mjs`: the chip is drawn from the channel; `tools/channels.test.mjs` fails while a picture
 says another channel).
 
 ## Release notes
 
 Every version has `release-notes/<version>.md`, written for the people who install the panel, not as a commit list.
+A beta's notes are short: the headline and what to try, with what changed since the last beta; the release's notes
+then say everything the version brings, beta or not.
 A tag without it fails before anything builds. Draft the next version's file as work lands; check it with
 `node firmware/release-notes.mjs check <version>`.
 
@@ -77,13 +108,13 @@ A tag without it fails before anything builds. Draft the next version's file as 
 The release workflow uses the file as the GitHub release body (plus the full-changelog link). The OTA manifest's
 `summary` is its short version: the headline, After updating in full, then the bold leads (at most 1200 characters).
 Home Assistant shows that summary as the release notes in the panel's update dialog, with `release_url` (the GitHub
-release) as the link to the rest. The manifest also lists every version's own short summary since the last stable
+release) as the link to the rest. The manifest also lists every version's own short summary since the last
 release (`notes`, `node firmware/release-notes.mjs entries V`); the panel shows those newer than the version it runs,
 newest first, so a panel that skipped versions sees what changed in each. A section with nothing under it is left out. To change a published release's notes: edit the file, commit, then
 `node firmware/release-notes.mjs body V vPREV > notes.md && gh release edit vV --notes-file notes.md`; the update card
 picks up the new summary only with the next build of that channel.
 
-## Quality checklist (a person, on glass, before a stable tag)
+## Quality checklist (a person, on glass, before a release tag)
 
 Run on a fresh Waveshare and a fresh Guition. Every line is a yes or the release waits. The workbench shows the same
 list (`workbench/src/lib/checklist.ts`).
@@ -105,7 +136,9 @@ list (`workbench/src/lib/checklist.ts`).
 
 ## Release day
 
-V = the version, for example `1.0.0`. A failed check stops the day.
+V = the version: a release (`0.6.0`, a fix release `0.6.1`) or a beta of the next version (`0.6.0-beta.1`). Every
+tag follows the Versions scheme above; the milestone named V (for a beta, its version's: `0.6.0`) is what it ships.
+A failed check stops the day.
 
 1. `git switch main && git pull && git status --short`: empty, and the last nightly gate green.
 2. `(cd renderer && node tools/gen_catalogue.mjs) && git status --short`: empty (else commit "Catalogue: V").
@@ -126,11 +159,13 @@ V = the version, for example `1.0.0`. A failed check stops the day.
    Nothing user-visible ships undocumented. List what was updated in the release PR/commit.
 4. `node firmware/release-notes.mjs check V`: the notes are written and read well (Release notes, above).
 5. `node firmware/release-prep.mjs V`: sets `facet_version` in both `esphome/facet-*.yaml`, publishes the Updates
-   entry dated today. `git diff --stat` shows those files only.
+   entry titled "Facet V" (a trailing `.0` dropped: "Facet 0.6"; draft it first) dated today. `git diff --stat` shows
+   those files only. A beta changes nothing here (its YAMLs are stamped at build, it gets no Updates entry).
 6. `(cd site && FACET_DOCS_BASE=/facet/ FACET_DOCS_OUT=dist.release npm run build)`: `check-dist: N pages, 0 faults`.
 7. Commit "Release: V", `git tag -a vV -m "Facet V"`, `git push origin main vV`.
 8. Watch the release workflow (`gh run list --workflow release.yml`); then
-   `https://mrdarrengriffin.github.io/facet/firmware/<board>/manifest.json` says V.
+   `https://mrdarrengriffin.github.io/facet/firmware/<board>/ota-beta.json` says V, and for a release `manifest.json`
+   and `ota.json` too. After a release, close its milestone.
 9. Install from the docs site on a fresh panel (the checklist above); the 24 h run on this build starts.
 
 To build the images locally instead (no publishing): `esphome/release.sh V [out dir]` builds from a worktree of the tag.

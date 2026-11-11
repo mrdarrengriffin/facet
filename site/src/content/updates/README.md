@@ -5,7 +5,7 @@ The Updates page is what's new in Facet, newest first, ending with how it began:
 
 ## What earns an entry
 
-**One entry per release** (Facet 1.0 onwards), written from the git log since the last release and from
+**One entry per release** (0.5.0 onwards, titled "Facet <version>" without a trailing .0: "Facet 0.6", "Facet 0.6.1"; betas get none), written from the git log since the last release and from
 `PRODUCT.md`: what ships, on which panels, how to install or update. A release entry is drafted ahead
 (`draft: true`: never built) and finished at the tag: its version, date and time, then `draft: false`. The
 development diary that used to live here was removed before 1.0.

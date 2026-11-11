@@ -18,7 +18,7 @@
       {"id": "idle", "label": "Idle clock", "screen": "idle", "about": "The Clock without its header, shown when no one has touched the panel for a while, or the album art while music plays."},
       {"id": "ha_link", "label": "Home Assistant link", "screen": "ha_link", "about": "Settings > Home Assistant: the panel's own link to Home Assistant, its address and token kept on the panel."},
       {"id": "agent_keys", "label": "API keys", "screen": "agent_keys", "about": "Settings > API keys: the keys scripts, automations and agents use to change the panel; you allow each on the glass, and revoke them here."},
-      {"id": "update_channel", "label": "Update channels", "setting": "updateChannel", "since": "0.5.0-beta.1", "about": "Settings > Update channel: Stable releases, or Beta and Dev builds that come more often."},
+      {"id": "update_channel", "label": "Update channels", "setting": "updateChannel", "since": "0.5.0-beta.1", "about": "Settings > Update channel: Release, every finished version; Beta, test builds of the next version; or Dev (nightly)."},
       {"id": "report", "label": "Report a problem", "screen": "report", "about": "Settings > Report a problem: the address of the panel's report page, with its logs kept across restarts and an issue filled in."}
     ]
   },
@@ -37,7 +37,7 @@
     ]
   },
   "channels": {
-    "stable": "Stable",
+    "stable": "Released",
     "beta": "Beta",
     "soon": "Coming soon"
   },

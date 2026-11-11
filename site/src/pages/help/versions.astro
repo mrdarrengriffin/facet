@@ -1,0 +1,85 @@
+---
+// Versions: what Facet's version numbers mean and the update channels. Facts: RELEASING.md "Versions" and "Channels"
+// (the one source; keep the two in step), PRODUCT.md "When it is 1.0", the panel's Settings > Update row (Installed
+// <version>), the GitHub milestones (one per version, its goal in the description).
+import Docs, { type Heading } from '../../layouts/Docs.astro';
+import { UPDATES_PAGE, url } from '../../lib/nav';
+
+const REPO_URL = 'https://github.com/mrdarrengriffin/facet';
+const headings: Heading[] = [
+  { depth: 2, slug: 'beta', text: 'Facet is in beta' },
+  { depth: 2, slug: 'numbers', text: 'Version numbers' },
+  { depth: 2, slug: 'one', text: 'What 1.0 needs' },
+  { depth: 2, slug: 'channels', text: 'Update channels' },
+  { depth: 2, slug: 'yours', text: 'Your version, and updating' },
+  { depth: 2, slug: 'plans', text: "What's coming" },
+];
+---
+
+<Docs edit="site/src/pages/help/versions.astro" title="Versions" description="What Facet's version numbers mean, what 1.0 needs, and the Release, Beta and Dev update channels." group="Help" current={url('/help/versions/')} headings={headings}>
+  <h2 id="beta">Facet is in beta</h2>
+  <p>
+    While its version starts with 0 (0.5, 0.6 and on), Facet as a whole is a beta product: it works and people run it
+    every day, but screens and settings still change between versions, and some rough edges are known.
+  </p>
+
+  <h2 id="numbers">Version numbers</h2>
+  <ul>
+    <li><strong>0.6, 0.7, 0.8…</strong>: feature releases, one at a time, each with a goal.</li>
+    <li><strong>0.6.1, 0.6.2…</strong>: fixes only, between feature releases, and only when something can't wait.</li>
+    <li>
+      <strong>0.6.0-beta.1, 0.6.0-beta.2…</strong>: test builds of the next version on the Beta channel, before it
+      ships. When testing is done, the finished 0.6.0 comes out as a release.
+    </li>
+  </ul>
+  <p>
+    The first plain release is 0.5.0. It closes the 0.5 betas, and a panel on 0.5.0-beta.10 sees it as an update.
+  </p>
+
+  <h2 id="one">What 1.0 needs</h2>
+  <p>
+    Facet becomes 1.0 when the <a href={url('/editor/')}>editor</a> and config backup are done, every test passes, and
+    there have been a few weeks without a nasty bug: when it can be given to a stranger with no caveats. After 1.0 the
+    pattern stays the same (1.1 for features, 1.0.1 for fixes); 2.0 would only come if your Homes or settings had to
+    be set up again.
+  </p>
+
+  <h2 id="channels">Update channels</h2>
+  <p>
+    The panel's <strong>Update channel</strong>, in its Settings or as a select on its device page in Home Assistant,
+    picks which updates it is offered:
+  </p>
+  <ul>
+    <li><strong>Release</strong> (the default): every finished version (0.5.0, 0.6.0, 0.6.1).</li>
+    <li>
+      <strong>Beta</strong>: where you can try the next version's screens and features before it ships, without being
+      on nightly builds. Its builds are test versions of the next release (0.6.0-beta.1, 0.6.0-beta.2) with short
+      notes. Beta gets every release too, so it is never behind Release.
+    </li>
+    <li>
+      <strong>Dev (nightly)</strong>: a build of the latest code every night when something changed. It has passed the
+      automatic checks but nobody has tried it on a panel, so it can break things.
+    </li>
+  </ul>
+  <p>
+    A panel set to <strong>Stable</strong> (the old name) is on Release. A panel is only offered versions newer than
+    the one it runs, so after moving from Dev back to Beta or Release it updates with that channel's next version.
+    The <a href={url('/install/')}>Install</a> page offers Release and Beta.
+  </p>
+
+  <h2 id="yours">Your version, and updating</h2>
+  <p>
+    The panel's <strong>Settings &gt; Update</strong> row says the version installed, and so does the panel's device
+    page in Home Assistant. When a newer one is out on the panel's channel, Home Assistant shows a
+    <strong>Firmware</strong> update with its release notes; press <strong>Install</strong> when it suits you.
+    <a href={url('/help/troubleshooting/#updates')}>Updating and troubleshooting</a> has the details.
+  </p>
+
+  <h2 id="plans">What's coming</h2>
+  <p>
+    Each version is a <a href={`${REPO_URL}/milestones`}>milestone on GitHub</a>, named after it, with its goal and
+    the issues it will close. The <a href="https://github.com/users/mrdarrengriffin/projects/3">project board</a> shows
+    everything planned{UPDATES_PAGE && <>, and <a href={url('/updates/')}>Updates</a> what is being built now and what
+    each release brought</>}.
+  </p>
+</Docs>

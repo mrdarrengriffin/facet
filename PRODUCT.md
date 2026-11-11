@@ -1,7 +1,14 @@
 # Facet 1.0
 
-What the first release is. Every scope decision is checked against this page; if a card or a plan disagrees with
-it, this page wins or it is changed with Darren.
+What 1.0 is. Every scope decision is checked against this page; if a card or a plan disagrees with it, this page
+wins or it is changed with Darren. Until 1.0, Facet as a whole is a beta product: 0.x feature releases (0.6, 0.7…),
+one per milestone, with fix releases (0.6.1) between them only when something can't wait (RELEASING.md "Versions").
+
+## When it is 1.0
+
+When the editor (#82) and config backup (#170) are done, every test passes, and there have been a few weeks without
+a nasty bug: when you'd give it to a stranger with no caveats. After 1.0, the same pattern (1.1, 1.0.1); 2.0 only if
+decks or settings ever break.
 
 ## Who installs it, and how
 
@@ -28,7 +35,8 @@ Both panels get the same layout; the 480 panel is the reference size and the 720
 ## What "works" means
 
 The release quality checklist (RELEASING.md), run by Darren on a fresh Waveshare and a fresh Guition. Every line
-is a yes or the release waits.
+is a yes or the release waits. Config backup (#170) is part of 1.0: export and import of the panel's setup from the
+editor.
 
 ## What 1.0 is not
 

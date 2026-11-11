@@ -82,7 +82,7 @@ the panel's `/ai` (one prompt to paste) or `/llms.txt`.
 ## <picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/icon-home-dark.svg"><source media="(prefers-color-scheme: light)" srcset=".github/assets/icon-home-light.svg"><img alt="" src=".github/assets/icon-home-light.svg" width="20" height="20"></picture>&nbsp; Screens
 
 Each screen has a page in the docs with a live preview you can tap and drag, what it shows and the
-data it reads. A **BETA** chip on a picture: the screen is on the beta firmware, not yet in a stable release.
+data it reads. A **BETA** chip on a picture: the screen is in a beta of the next version, not yet in a release.
 **COMING SOON**: it is in the docs, not on a released firmware yet. The same marks show on the panel features below.
 
 <table>
@@ -167,7 +167,7 @@ Not screens you add: what every panel has, most of it in Settings.
 | [Idle clock](https://mrdarrengriffin.github.io/facet/screens/idle/) `BETA` | The Clock without its header, shown when no one has touched the panel for a while, or the album art while music plays. |
 | [Home Assistant link](https://mrdarrengriffin.github.io/facet/screens/settings/) `BETA` | Settings > Home Assistant: the panel's own link to Home Assistant, its address and token kept on the panel. |
 | [API keys](https://mrdarrengriffin.github.io/facet/screens/settings/) `BETA` | Settings > API keys: the keys scripts, automations and agents use to change the panel; you allow each on the glass, and revoke them here. |
-| [Update channels](https://mrdarrengriffin.github.io/facet/screens/settings/) `BETA` | Settings > Update channel: Stable releases, or Beta and Dev builds that come more often. |
+| [Update channels](https://mrdarrengriffin.github.io/facet/screens/settings/) `BETA` | Settings > Update channel: Release, every finished version; Beta, test builds of the next version; or Dev (nightly). |
 | [Report a problem](https://mrdarrengriffin.github.io/facet/screens/settings/) `BETA` | Settings > Report a problem: the address of the panel's report page, with its logs kept across restarts and an issue filled in. |
 
 More screens are on the way (thermostat, lock, vacuum, cameras, plants and others): see the
