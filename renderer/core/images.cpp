@@ -13,7 +13,7 @@ extern "C" void lv_image_cache_drop(const void *src);  // LVGL 9 (misc/cache/ins
 #ifdef ESP_PLATFORM
 #include <cstdarg>
 #include "esp_heap_caps.h"
-#include "esp_log.h"
+#include "esphome/core/log.h"  // ESPHome's logger: IDF's own ESP_LOGx below ERROR are compiled out of the panel build
 #endif
 
 namespace fw::img {
@@ -457,7 +457,7 @@ void art_note(const char *fmt, ...) {
   va_start(a, fmt);
   vsnprintf(b, sizeof b, fmt, a);
   va_end(a);
-  ESP_LOGI("facet_art", "%s; PSRAM %u KB free, largest %u KB", b, (unsigned) (heap_caps_get_free_size(MALLOC_CAP_SPIRAM) / 1024),
+  ESP_LOGW("facet_art", "%s; PSRAM %u KB free, largest %u KB", b, (unsigned) (heap_caps_get_free_size(MALLOC_CAP_SPIRAM) / 1024),
            (unsigned) (heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) / 1024));
 #else
   (void) fmt;
