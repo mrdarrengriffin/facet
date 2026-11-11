@@ -2358,7 +2358,8 @@ inline bool apply(const char *kind, const std::string &json, lv_obj_t *dry, Ardu
 }
 // this panel's pick for page id (Settings > Screens; a page id, else the first page of that kind): key "source" /
 // "params.<name>" = value (a built-in screen with no deck page yet gets one: its settings live there; its card on Home is
-// added and removed like any card, not here). Kept as the deck (a new rev, validated and stored like a sent one) without
+// added and removed like any card, not here); key "page" = only that deck page (Screens' Sent group: Add to deck puts a
+// sent screen in the deck). Kept as the deck (a new rev, validated and stored like a sent one) without
 // rebuilding what shows; false = refused
 // why: the panel's reason when the deck refuses the change (the first error's words)
 inline bool deck_set(const std::string &id, const std::string &key, ArduinoJson::JsonVariantConst value, std::string *why) {
@@ -2374,7 +2375,8 @@ inline bool deck_set(const std::string &id, const std::string &key, ArduinoJson:
     n["id"] = id, n["kind"] = id;
     at = (int) ps.size() - 1;
   }
-  if (key.rfind("params.", 0) == 0) ps[at]["params"][key.substr(7)] = value;
+  if (key == "page") {}  // the page alone
+  else if (key.rfind("params.", 0) == 0) ps[at]["params"][key.substr(7)] = value;
   else ps[at][key] = value;
   d["rev"] = (d["rev"] | 0) + 1;
   std::string js;

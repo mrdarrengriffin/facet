@@ -11,7 +11,7 @@
 // Sent: screens sent to this panel (the API, an agent; core/spec.h sent_kinds) that the deck has
 // no page of are not built-in kinds, so not on / off: after the list a Section header "sent" a group apart (above:group,
 // the spec renderer's rule), one List row each (its name, sub "Sent to this panel") with two real Buttons: "Add to deck"
-// (secondary, icon plus: deck_set "on", event "deck" <id> on=true; it then shows in the list above) and "Remove"
+// (secondary, icon plus: deck_set "page" (its deck page), event "deck" <id> page=true; it then shows in the list above) and "Remove"
 // (ghost; first tap turns it into "Confirm" primary, the second reverts that sent screen: fw::spec::revert, event
 // "spec" "revert <id>"). The device rebuilds the page after either (spec reload "deck").
 // Update path: none needed (the device builds it each time it opens; props: none). Pairs: the components'.
@@ -134,7 +134,7 @@ void build_screens(lv_obj_t *parent, fw::Props) {
         if (s.add && within(from, s.add)) {
           Doc v;
           v.set(true);
-          fw::spec::deck_change(s.add, s.id, "on", v.as<ArduinoJson::JsonVariantConst>());
+          fw::spec::deck_change(s.add, s.id, "page", v.as<ArduinoJson::JsonVariantConst>());  // its deck page
           return;
         }
         if (!s.remove || !within(from, s.remove)) continue;

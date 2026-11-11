@@ -274,7 +274,7 @@
           ],
           [
             "deck",
-            "sent_a on=true"
+            "sent_a page=true"
           ]
         ],
         "sounds": [

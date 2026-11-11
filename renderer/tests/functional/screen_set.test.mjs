@@ -13,11 +13,13 @@ export default {
   tests: [
     { name: 'Media > Visual: cassette reaches the deck and the Media screen', async run(t) {
       await t.device();
+      act(t, { do: 'nav.open', screen: 'media' });  // Media, then its settings (a screen no Home card opens is built only while it shows)
       act(t, { do: 'nav.open', screen: 'screen_set', params: { id: 'media' } });
       t.drag({ at: [360, 600] }, { by: [0, -400] }); t.drag({ at: [360, 600] }, { by: [0, -400] });
       const evs = t.tap(/^cassette$/i);  // four options: the Segmented in the Visual row
       t.ok(evs.some((e) => e.name === 'deck' && e.detail === 'media params.visual=cassette'), 'the deck takes visual=cassette');
       act(t, { do: 'nav.back' });
+      t.eq(t.where(), 'media', 'back on Media');
       t.ok(t.comps().some((c) => c.ids.at(-1) === 'media_visual'), 'Media shows its visual');
     } },
     { name: 'Media: a saved Visual = disc (folded into the CD) opens as the CD; Spin during playback reaches the deck and the screen', async run(t) {
