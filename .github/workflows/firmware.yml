@@ -43,7 +43,17 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
         with:
           python-version: '3.13'
-      - run: sudo apt-get install -y --no-install-recommends ccache
+      - name: ccache (optional; retried, the build runs without it if Ubuntu's mirrors are down)
+        run: |
+          for i in 1 2 3; do
+            sudo apt-get install -y --no-install-recommends ccache && break
+            sudo apt-get update -o Acquire::Retries=3 || true; sleep $((i * 15))
+          done
+          if ! command -v ccache >/dev/null; then
+            echo "::warning::ccache not installed (apt mirrors unreachable); building without it"
+            echo "EM_COMPILER_WRAPPER=" >> "$GITHUB_ENV"
+            echo "IDF_CCACHE_ENABLE=0" >> "$GITHUB_ENV"
+          fi
       - run: pip install esphome==2026.9.1
       - run: npm ci
         working-directory: renderer/tools
@@ -90,7 +100,7 @@ jobs:
           sed 's/\x1b\[[0-9;]*[mK]//g' compile.log | grep -E "RAM:|Flash:|error:|FAILED" | head -20 || true
           n=$(sed 's/\r/\n/g' compile.log | grep -cE "Building (C|CXX|ASM) object" || true)
           echo "compile: $((SECONDS - t0)) s, $n objects compiled (rc $rc)" | tee -a "$GITHUB_STEP_SUMMARY"
-          ccache -s | tee -a "$GITHUB_STEP_SUMMARY"
+          (ccache -s || true) | tee -a "$GITHUB_STEP_SUMMARY"
           exit $rc
       - name: Compile log
         if: failure()
