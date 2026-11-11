@@ -14,7 +14,7 @@
     "list": [
       {"id": "setup", "label": "Set up", "screen": "setup", "about": "What a new panel shows until it is on Wi-Fi and added to Home Assistant, one step at a time."},
       {"id": "settings", "label": "Settings", "screen": "settings", "about": "Every setting on the panel itself: theme, accent, sounds, screens, idle and updates."},
-      {"id": "screens", "label": "Screens and Home", "screen": "screens", "also": ["screen_set"], "about": "Settings > Screens: every screen of the panel with where its data comes from, on or off; tap one for its source and options."},
+      {"id": "screens", "label": "Screens and Home", "screen": "screens", "also": ["screen_set"], "about": "Settings > Screens: every screen of the panel, always on, with where its data comes from; tap one for its source and options."},
       {"id": "idle", "label": "Idle clock", "screen": "idle", "about": "The Clock without its header, shown when no one has touched the panel for a while, or the album art while music plays."},
       {"id": "ha_link", "label": "Home Assistant link", "screen": "ha_link", "about": "Settings > Home Assistant: the panel's own link to Home Assistant, its address and token kept on the panel."},
       {"id": "agent_keys", "label": "API keys", "screen": "agent_keys", "about": "Settings > API keys: the keys scripts, automations and agents use to change the panel; you allow each on the glass, and revoke them here."},

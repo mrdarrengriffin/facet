@@ -59,6 +59,10 @@ of components, so every screen looks and behaves the same at either size.
 (`renderer/specs/`). A spec names what to show, not how to draw it, so a new screen is a new
 arrangement of components you already have.
 
+**Editor.** Every panel serves its own editor at its address: build your Homes card by card on a live copy of the
+panel (add any entity, drag cards to move them, half and 1 x 1 sizes, a state readout), set each built-in screen,
+then save. [Editor docs](https://mrdarrengriffin.github.io/facet/editor/).
+
 **Send API.** A panel running Facet has a small HTTP API, so you can show something on it from
 anywhere:
 
@@ -67,7 +71,8 @@ anywhere:
 | `POST /fw/show` | show a component or screen with props: `{"id": "spec", "props": {"screen": "weather"}}` |
 | `POST /fw/spec` | install a screen spec (`kind: screen`), the panel's set of screens (`kind: deck`), or check one (`kind: check`) |
 | `GET /fw/deck` | the panel's set of screens |
-| `GET /fw/info`, `/fw/meta` | what the panel runs and what it can show |
+| `GET /fw/info`, `/fw/meta` | what the panel runs (with its web reads) and what it can show |
+| `GET /fw/img?path=` | a picture on the panel's Home Assistant (album art), passed through for the editor |
 | `GET /fw/schema` | everything this firmware accepts, in one file (every request is listed there) |
 
 Changes from anywhere but the panel's own editor are gated behind an **Allow API access** switch on the
@@ -133,7 +138,7 @@ Tonight's moon phase, worked out on the panel with no API.</p>
 <td width="50%" valign="top">
 <a href="https://mrdarrengriffin.github.io/facet/screens/overhead/"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/screen-overhead-dark.png"><img alt="Overhead screen" src=".github/assets/screen-overhead-light.png" width="200"></picture></a>
 <p><a href="https://mrdarrengriffin.github.io/facet/screens/overhead/"><b>Overhead</b></a><br>
-The aircraft flying over your home on a radar: the closest one, where to look for it, its height and speed.</p>
+The aircraft flying over your home on a radar: the closest one, where to look for it, where it flies from and to, its height and speed.</p>
 </td>
 <td width="50%" valign="top">
 <a href="https://mrdarrengriffin.github.io/facet/screens/calendar/"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/screen-calendar-dark.png"><img alt="Calendar screen" src=".github/assets/screen-calendar-light.png" width="200"></picture></a>
@@ -158,7 +163,7 @@ Not screens you add: what every panel has, most of it in Settings.
 |---|---|
 | [Set up](https://mrdarrengriffin.github.io/facet/screens/setup/) | What a new panel shows until it is on Wi-Fi and added to Home Assistant, one step at a time. |
 | [Settings](https://mrdarrengriffin.github.io/facet/screens/settings/) | Every setting on the panel itself: theme, accent, sounds, screens, idle and updates. |
-| [Screens and Home](https://mrdarrengriffin.github.io/facet/screens/settings/) | Settings > Screens: every screen of the panel with where its data comes from, on or off; tap one for its source and options. |
+| [Screens and Home](https://mrdarrengriffin.github.io/facet/screens/settings/) | Settings > Screens: every screen of the panel, always on, with where its data comes from; tap one for its source and options. |
 | [Idle clock](https://mrdarrengriffin.github.io/facet/screens/idle/) `BETA` | The Clock without its header, shown when no one has touched the panel for a while, or the album art while music plays. |
 | [Home Assistant link](https://mrdarrengriffin.github.io/facet/screens/settings/) `BETA` | Settings > Home Assistant: the panel's own link to Home Assistant, its address and token kept on the panel. |
 | [API keys](https://mrdarrengriffin.github.io/facet/screens/settings/) `BETA` | Settings > API keys: the keys scripts, automations and agents use to change the panel; you allow each on the glass, and revoke them here. |

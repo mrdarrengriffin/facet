@@ -45,10 +45,12 @@ const F = (await import(pathToFileURL(join(BUILD, 'fw.mjs')).href)).default;
 const wasm = await WebAssembly.compile(readFileSync(join(BUILD, 'fw.wasm')));
 const m = await F({ instantiateWasm: (imports, ok) => { WebAssembly.instantiate(wasm, imports).then((i) => ok(i, wasm)); return {}; }, print: () => {}, printErr: () => {} });
 m._fw_init();
-// Home's cards as on a panel with nothing linked yet would read Home Assistant ("loading"): for the README the factory
-// deck with every page that has a sample source on it (Weather's sample forecast, as its own README shot)
+// Home's cards as on a panel with nothing linked yet would read Home Assistant ("loading"): for the README the docs
+// site's deck (site/src/data/site-deck.json, from site/scripts/extract.mjs: a Home with every card size, filling the
+// grid), else the deck with every screen, with every page that has a sample source on it (Weather's sample forecast)
 {
-  const deck = JSON.parse(readFileSync(new URL('../tests/fixtures/deck-full.json', import.meta.url), 'utf8'));
+  const site = new URL('../../site/src/data/site-deck.json', import.meta.url);
+  const deck = JSON.parse(readFileSync(existsSync(site) ? site : new URL('../tests/fixtures/deck-full.json', import.meta.url), 'utf8'));
   for (const p of deck.pages) {
     let sp = null;
     try { sp = JSON.parse(readFileSync(new URL(`../specs/${p.kind}.json`, import.meta.url), 'utf8')); } catch {}
