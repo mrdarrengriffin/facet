@@ -9622,7 +9622,7 @@
   },
   "screen_set": {
    "name": "screen_set",
-   "about": "One screen's settings on this panel: what it shows, on Home or not, where its data comes from and its own options (Media: the visual, the player). Opened by tapping a screen in Settings > Screens, or nav.open screen_set with params {id}.",
+   "about": "One screen's settings on this panel: what it shows, where its data comes from and its own options (Media: the visual, the player). Opened by tapping a screen in Settings > Screens, or nav.open screen_set with params {id}.",
    "contract": 1,
    "min": null,
    "slots": null,
@@ -10237,7 +10237,7 @@
      "default": "now"
     },
     "source": {
-     "about": "Where the aircraft come from: adsb.lol (open ADS-B data, no account or key: the panel reads it over the internet every 10 s while this screen or its Home card shows), FlightRadar24 in Home Assistant, an ADS-B receiver in Home Assistant (dump1090, readsb, tar1090), or a made-up sky for previews.",
+     "about": "Where the aircraft come from: adsb.lol (open ADS-B data, no account or key: the panel reads it over the internet every 10 s while this screen or its Home card shows), FlightRadar24 in Home Assistant, an ADS-B receiver in Home Assistant (dump1090, readsb, tar1090), or a made-up sky for previews. A flight with no route of its own gets its from and to by callsign from adsbdb.com (public, no key); FlightRadar24 brings its own.",
      "type": "select",
      "options": [
       "adsb_lol",
@@ -13031,8 +13031,8 @@
   {
    "method": "GET",
    "path": "/fw/info",
-   "about": "{v, density, core, files, ids, built, board, w, h, shown, devices: [{stack, builds, objects}], heap, art, net: {reads, failed, last_s, last_host}}   what this firmware was built from art = the last picture decode's biggest view (null = none yet): {box, kept, source: [w, h], jpeg: 1/N, filter: area | bilinear | nearest, drawn: 1:1 | scaled up by LVGL, reserved (in a screen slot), slots, slots_free, fallback (why it was kept smaller; null = it wasn't), error, need_kb, room_kb, age_s} (heap: + httpd_stack_min / loop_stack_min, the web server's and main loop's least free stack bytes) stacks: {httpd, loop, img, net, ha_ws, ha_get: {size, least_free, psram}} each task's stack bytes, its least free bytes so far (-1 = not run yet) and whether it lives in PSRAM (fw_stacks.h)",
-   "says": "What this firmware is: its build, board, screen size, free memory and the last album art decode."
+   "about": "{v, density, core, files, ids, built, board, w, h, shown, devices: [{stack, builds, objects}], heap, art, net: {reads, failed, last_s, last_host}}   what this firmware was built from art = the last picture decode's biggest view (null = none yet): {box, kept, source: [w, h], jpeg: 1/N, filter: area | bilinear | nearest, drawn: 1:1 | scaled up by LVGL, reserved (in a screen slot), slots, slots_free, fallback (why it was kept smaller; null = it wasn't), error, need_kb, room_kb, age_s} (heap: + httpd_stack_min / loop_stack_min, the web server's and main loop's least free stack bytes) stacks: {httpd, loop, img, net, ha_ws, ha_get: {size, least_free, psram}} each task's stack bytes, its least free bytes so far (-1 = not run yet) and whether it lives in PSRAM (fw_stacks.h) net = the feeds' own web reads since boot (a screen's direct source, such as adsb.lol): reads, failed, last_s (seconds since the last one; -1 = none yet), last_host",
+   "says": "What this firmware is: its build, board, screen size, free memory, the last album art decode and its web reads."
   },
   {
    "method": "GET",
@@ -13043,8 +13043,8 @@
   {
    "method": "POST",
    "path": "/fw/show",
-   "about": "{id, props?, theme?: dark|light, accent?: <set id>}  -> {ok, error?, ms, heap}",
-   "says": "Shows one component or screen with the props you give (the workbench's Show on device)."
+   "about": "{id, props?, theme?: dark|light, accent?: <set id>}  -> {ok, error?, ms, heap}; id \"home\" opens the panel's own Home (props.page: another Home page, opened above it), not a page on its own",
+   "says": "Shows one component or screen with the props you give (the workbench's Show on device); \"home\" opens the panel's Home."
   },
   {
    "method": "GET",

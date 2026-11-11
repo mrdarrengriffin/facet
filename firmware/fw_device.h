@@ -7,11 +7,14 @@
 //                   (heap: + httpd_stack_min / loop_stack_min, the web server's and main loop's least free stack bytes)
 //                   stacks: {httpd, loop, img, net, ha_ws, ha_get: {size, least_free, psram}} each task's stack bytes, its
 //                   least free bytes so far (-1 = not run yet) and whether it lives in PSRAM (fw_stacks.h)
-//                = What this firmware is: its build, board, screen size, free memory and the last album art decode.
+//                   net = the feeds' own web reads since boot (a screen's direct source, such as adsb.lol): reads,
+//                   failed, last_s (seconds since the last one; -1 = none yet), last_host
+//                = What this firmware is: its build, board, screen size, free memory, the last album art decode and its web reads.
 //   GET  /fw/meta   [{id, name, section, meta}]                                     the registry (same as fw_meta())
 //                = Every component and screen this firmware has, with its props.
-//   POST /fw/show   {id, props?, theme?: dark|light, accent?: <set id>}  -> {ok, error?, ms, heap}
-//                = Shows one component or screen with the props you give (the workbench's Show on device).
+//   POST /fw/show   {id, props?, theme?: dark|light, accent?: <set id>}  -> {ok, error?, ms, heap}; id "home" opens the
+//                   panel's own Home (props.page: another Home page, opened above it), not a page on its own
+//                = Shows one component or screen with the props you give (the workbench's Show on device); "home" opens the panel's Home.
 //   GET  /fw/perf   frame stats while animations run (since boot or the last ?reset=1): fps, frame / render ms;
 //                   ?nav=1|0 = navigation timing on / off (each screen change: tap, build, feeds, first frame);
 //                   ?keep=N = keep N pages built (until the next boot; "kept": each page's PSRAM, objects, build ms)

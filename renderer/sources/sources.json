@@ -260,7 +260,7 @@
             "Home Assistant's home location (zone.home), or Latitude and Longitude in the deck",
             "internet access (no account, no key)"
           ],
-          "about": "GET https://api.adsb.lol/v2/point/<lat>/<lon>/<radius in nautical miles> over the internet every 10 s while the screen or its card shows (after a failure 20, 40, 80, 160 s, then every 5 min); only the circle round home is asked for (~520 B an aircraft, at most 128 KB: 100 km round a big airport can be more, then use 50). Data: ODbL 1.0 (adsb.lol). No route (from / to) in this source."
+          "about": "GET https://api.adsb.lol/v2/point/<lat>/<lon>/<radius in nautical miles> over the internet every 10 s while the screen or its card shows (after a failure 20, 40, 80, 160 s, then every 5 min); only the circle round home is asked for (~520 B an aircraft, at most 128 KB: 100 km round a big airport can be more, then use 50). Data: ODbL 1.0 (adsb.lol). No route in this source: an airline callsign's from and to are looked up on adsbdb.com (no key, one callsign at a time, kept 15 min)."
         },
         {
           "id": "fr24",

@@ -12,7 +12,7 @@
       "default": "now"
     },
     "source": {
-      "about": "Where the aircraft come from: adsb.lol (open ADS-B data, no account or key: the panel reads it over the internet every 10 s while this screen or its Home card shows), FlightRadar24 in Home Assistant, an ADS-B receiver in Home Assistant (dump1090, readsb, tar1090), or a made-up sky for previews.",
+      "about": "Where the aircraft come from: adsb.lol (open ADS-B data, no account or key: the panel reads it over the internet every 10 s while this screen or its Home card shows), FlightRadar24 in Home Assistant, an ADS-B receiver in Home Assistant (dump1090, readsb, tar1090), or a made-up sky for previews. A flight with no route of its own gets its from and to by callsign from adsbdb.com (public, no key); FlightRadar24 brings its own.",
       "type": "select",
       "options": [
         "adsb_lol",
