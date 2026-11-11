@@ -10754,6 +10754,11 @@
       "none": ""
      },
      {
+      "name": "centre",
+      "required": false,
+      "none": ""
+     },
+     {
       "name": "alt",
       "required": false,
       "none": "--"
