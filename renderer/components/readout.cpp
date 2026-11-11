@@ -15,7 +15,7 @@
 //           (the unavailable ink; the label row too)
 // Live (a Home readout card, half only, meta sizes): prop label set = one readout from its own props (icon, label,
 // state, detail, tone) in the half card's arrangement (Entity tile shape half) without the box: the head row on the
-// padding line's sides (icon + caps label, the row's free width then "..."; no dot: the accent state says it), the state (type c-tile,
+// padding line's sides (caps label, the row's free width then "...", + the icon at its end, the top-right corner; no dot: the accent state says it), the state (type c-tile,
 // a step under body; detail after it in text-dim), the two spread evenly down the half (half-even). Else the workbench pair: two docs readoutFrom() samples (a mock house) split like the Cells
 // pair (fx::pair_split), the rule between in part:rule.
 // States: the tones above; mute = fw::st::OFF on that readout (offline is unavailable). n/a: pressed, on, disabled (no tap), loading, unknown, empty, error (the binding maps those
@@ -67,7 +67,7 @@ void one(lv_obj_t *o, const Ro &r) {
   if (mute) fx::state(o, fw::st::OFF, true);  // offline = unavailable: the unavailable ink is the disabled look (3:1)
 }
 // one live readout in a Home half (o fills the half cell): the half card's arrangement on the canvas (Entity tile shape
-// half, no box): the head row (icon + caps label, the row's free width then "..."; no dot, the half has no room for
+// half, no box): the head row (caps label, the row's free width then "...", + the icon at its end; no dot, the half has no room for
 // it: an accent state says it matters) and the state
 // line (type c-tile) spread evenly down the half (half-even), card-pad at the sides
 void half(lv_obj_t *o, const Ro &r) {
@@ -76,10 +76,10 @@ void half(lv_obj_t *o, const Ro &r) {
   for (const char *t : {"fill", "readout-pad", "half-even"}) fx::use(o, t);
   lv_obj_t *top = fx::box(o, "row");
   for (const char *t : {"fill-w", "gap:2", "card-row"}) fx::use(top, t);
-  fx::icon(top, r.icon, "icon", dim);
   lv_obj_t *lb = fx::text(top, r.label, "type:label", dim, "dot");
   fx::use(lb, "cell");  // the row's free width, then "..."
   lv_label_set_long_mode(lb, LV_LABEL_LONG_MODE_DOTS);
+  fx::icon(top, r.icon, "icon", dim);  // the name first, the icon at the row's end (the half's top-right corner)
   lv_obj_t *line = fx::box(o, "row-mid");
   for (const char *t : {"fill-w", "gap:3"}) fx::use(line, t);
   lv_obj_t *st = fx::text(line, r.state, "type:c-tile", mute ? "fg:unavailable-ink" : accent ? "fg:accent-text" : !strcmp(r.tone, "warn") ? "fg:warn" : "fg:text", "none");

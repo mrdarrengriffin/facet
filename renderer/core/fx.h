@@ -33,6 +33,7 @@ const char *text_over(lv_obj_t *label);  // a text's declared overflow ("dot" | 
 void lines(lv_obj_t *label, const char *type, int n);
 int lines_of(lv_obj_t *label);
 void set_text(lv_obj_t *label, const char *s, const char *type);  // new words, the type's case (an update path)
+int text_width(lv_obj_t *label, const char *s);  // how wide that text draws s on one line (its font + letter spacing)
 // Apply a shared token style by name (optionally per state / part). Unknown name = abort (a typo crashes the
 // workbench, never a silent default).
 void use(lv_obj_t *o, const char *token, lv_style_selector_t sel = 0);

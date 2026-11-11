@@ -1577,8 +1577,8 @@
     ]
    },
    "cost": {
-    "objects": 7,
-    "bytes_est": 1120
+    "objects": 8,
+    "bytes_est": 1280
    }
   },
   "flight_hero": {

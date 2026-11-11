@@ -1344,6 +1344,11 @@ void lines(lv_obj_t *l, const char *type, int n) {  // n line boxes of its type 
   lv_label_set_long_mode(l, LV_LABEL_LONG_MODE_DOTS);
 }
 int lines_of(lv_obj_t *l) { auto it = line_counts().find(l); return it == line_counts().end() ? 0 : it->second; }
+int text_width(lv_obj_t *l, const char *s) {
+  lv_point_t sz;
+  lv_text_get_size(&sz, s, lv_obj_get_style_text_font(l, LV_PART_MAIN), lv_obj_get_style_text_letter_space(l, LV_PART_MAIN), 0, LV_COORD_MAX, LV_TEXT_FLAG_NONE);
+  return (int) sz.x;
+}
 void set_text(lv_obj_t *l, const char *s, const char *type) {
   const std::string c = fw::cased(type_id(type), s);
   if (c != lv_label_get_text(l)) lv_label_set_text(l, c.c_str());

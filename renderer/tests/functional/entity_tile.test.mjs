@@ -5,8 +5,12 @@ const inBox = (o, b) => o.x >= b.x && o.y >= b.y && o.x + o.w <= b.x + b.w && o.
 // Entity tile (components/entity_tile.cpp) on its own, and the Home light cards built from it (screens/home.cpp:
 // status = "level" of the light, on = its state) driven through the fake Home Assistant: the state line must follow
 // the live HA state after a tap, an outside change, unavailable and a reconnect.
-// the head draws the name in caps (type label), one line: a long name at 1x ends in "..."
-const name = (label) => new RegExp(`^${label}$|^${label.slice(0, 4)}[^]*(\\.\\.\\.|…)$`, 'i');
+// the head draws the name in caps (type label): the first words beside the icon, the rest on the line under it; a
+// name two lines do not hold ends in "..."
+const name = (label) => {
+  const w = label.split(' '), parts = w.flatMap((_, i) => [w.slice(0, i + 1).join(' '), w.slice(i).join(' ')]);
+  return new RegExp(`^(${parts.join('|')})$|^${label.slice(0, 4)}[^]*(\\.\\.\\.|…)$`, 'i');
+};
 const tile = (t, label) => t.part('entity_tile', name(label));
 const status = (t, label) => { const p = tile(t, label); return p ? p.texts.filter((s) => !name(label).test(s)) : null; };
 const tileBg = (t, label) => { const p = tile(t, label); return p && t.objs().find((o) => o.box && o.x === p.x && o.y === p.y && o.w === p.w && o.h === p.h)?.bg; };
@@ -15,6 +19,18 @@ export default {
   id: 'entity_tile', family: 'cards', about: 'Small card for one entity: name + state line, tap toggles or opens. Home light cards (device) included.',
   tests: [
     // ---- the component
+    { name: 'Home 1x1: an ordinary long name in two lines (the rest under the icon; at 1x a step down to c-label), no "..."; a short one in one', async run(t) {
+      const N = { 'light.sofa_table_light': 'Sofa Table Light', 'light.office_ceiling_light': 'Office Ceiling Light', 'light.driveway_floodlight': 'Driveway Floodlight', 'light.chair': 'Chair' };
+      for (const [e, f] of Object.entries(N)) t.ha.s[e] = { '': 'off', friendly_name: f, supported_color_modes: '["brightness"]' };
+      await t.device({ v: 2, rev: 9, start: 'p', pages: [{ id: 'p', kind: 'home', name: 'Home', cards: Object.keys(N).map((e) => ({ t: 'light', e, size: '1x1', tap: 'toggle' })) }] });
+      t.wait(600);
+      for (const f of Object.values(N)) {
+        const p = t.part('entity_tile', new RegExp(`^${f.split(' ')[0]}`, 'i')), lines = p ? p.texts.filter((s) => name(f).test(s)) : [];
+        t.eq(lines.join(' ').toUpperCase(), f.toUpperCase(), `${f}: the whole name in its lines`);
+        t.eq(lines.length, f.includes(' ') ? 2 : 1, `${f}: lines`);
+        t.ok(!lines.some((s) => /(\.\.\.|…)$/.test(s)), `${f}: no "..."`);
+      }
+    } },
     { name: 'shows its name and status', mount: ['entity_tile', { label: 'Sofa table', status: '64%', on: true }], run(t) {
       t.has(t.texts(), name('Sofa table'), 'name'); t.has(status(t, 'Sofa table'), /^64%$/i, 'status');
     } },
