@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-02",
+ "updated": "2026-11-11",
  "tables": {
   "foundations": [
    {
@@ -581,7 +581,7 @@
     "name": "A new editor",
     "group": "Core",
     "status": "doing",
-    "note": "In 1.0: one list of screens with a switch each, the panel's settings and its Home Assistant link on one page, and every change reviewed and checked by the panel before it is sent"
+    "note": "In 1.0: your own screens built card by card on a live copy of the panel (any entity, drag to move), every built-in screen always there and set in Settings, and every change checked by the panel before it is kept"
    },
    {
     "name": "Settings",
@@ -679,7 +679,8 @@
    {
     "name": "Flight radar (overhead flights)",
     "group": "Weather and sky",
-    "status": "doing"
+    "status": "done",
+    "note": "On the beta firmware: where each flight flies from and to, helicopters and military jets in their own shape"
    },
    {
     "name": "Calendar",

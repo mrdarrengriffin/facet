@@ -1,20 +1,22 @@
 ---
 // Home cards (on the Home screen's page, screens/[id].astro): choosing what is on Home + the card sizes. Facts:
 // core/spec.h CARD_TYPES (types, taps) + grid_sizes (1x1 2x1 2x2 half), screens/home.cpp (the Grid, unavailable look), screens/screens.cpp
-// + screen_set.cpp (Settings > Screens, Show on Home), renderer/README.md "Feature flags" (cards to screens the build
+// + screen_set.cpp (Settings > Screens: every built-in screen, always on the panel), renderer/README.md "Feature flags" (cards to screens the build
 // lacks are left out). Only released card types.
 import { url } from '../lib/nav';
+import Shot from './Shot.astro';
 
 const sizes = [
-  ['1 × 1', 'One square', 'A tile: the icon, the name and its state, such as a light and its level.'],
-  ['Half', 'Half a square', 'The name over the state. Two halves share one square, one above the other.'],
+  ['1 × 1', 'One square', 'A tile: the icon and the name side by side at the top, the state at the bottom, such as a light and its level.'],
+  ['Half', 'Half a square', 'The icon and the name over the state. Two halves share one square, one above the other.'],
   ['2 × 1', 'Two squares across', 'The card with its picture, such as the animated icon for Weather, and a line under it.'],
   ['2 × 2', 'Four squares', 'The card with room to spare, such as the record and the track for Media.'],
 ];
 const types = [
   ['Light (or a switch)', 'A tap toggles it, opens the Light screen for it, or does nothing.'],
-  ['Media player', 'Shows the track and the state; a tap opens the Media screen.'],
+  ['Media player', 'Shows the track and the album art on a record that turns while it plays; a tap opens the Media screen.'],
   ['Sensor', 'Read only: the value and its label.'],
+  ['State readout (half only)', 'A sensor\'s state with its icon and no box, in the accent colour while it is on; no tap.'],
   ['Screen', 'Opens another of your screens or a built-in one.'],
   ['Any other entity', 'Climate, a cover, a fan, a script, a scene, a button and the rest: what a tap does depends on what it is.'],
 ];
@@ -30,7 +32,7 @@ const types = [
 
   <h3 id="sizes">Card sizes</h3>
   <p>Home is a grid three squares across, the same on the 480 and the 720 panel. Every card can be any of these sizes; the <a href={url('/editor/#sizes')}>editor</a> sets them.</p>
-  <figure class="page-shot"><img src={url('/editor/sizes.png')} width="1144" height="1144" alt="A Home with a 2 by 1 Weather card, two half sensor cards, a 2 by 2 Media card and two 1 by 1 light cards." loading="lazy" style="max-width: 420px" /><figcaption>2 × 1, two halves, 2 × 2 and 1 × 1</figcaption></figure>
+  <figure class="page-shot" style="max-width: 420px"><Shot id="home" alt="A Home with a 2 by 1 Weather card, a 1 by 1 Clock card, a 2 by 2 Media card, a 1 by 1 light card and two half sensor cards." /><figcaption>2 × 1 and 1 × 1, 2 × 2 and 1 × 1, then two halves</figcaption></figure>
   <table>
     <thead><tr><th>Shape</th><th>Size</th><th>What it is for</th></tr></thead>
     <tbody>
@@ -58,9 +60,10 @@ const types = [
       panel starts with one empty Home.
     </li>
     <li>
-      <strong>On the panel</strong> (<strong>Settings &gt; Screens</strong>). Each built-in screen has a switch; on puts
-      its card on Home, off takes it away. Tap a screen's name to see where its data comes from and set its options, such as
-      which speaker the Media screen follows.
+      <strong>On the panel</strong> (<strong>Settings &gt; Screens</strong>): every built-in screen, with where its data
+      comes from. Every one is always on the panel, with no switch: its card on Home is added and removed in the editor
+      like any other card, and a screen reads its data only while it shows or a card for it is on Home. Tap a screen's name to set its
+      source and options, such as which speaker the Media screen follows.
     </li>
     <li>
       <strong>Your own cards</strong>: the full list of Homes, cards and screens is the panel's <em>deck</em>. An AI

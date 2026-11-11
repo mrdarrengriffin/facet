@@ -4,6 +4,7 @@
 // workbench editor with a made-up house (never a real one), in public/editor/.
 import Docs, { type Heading } from '../layouts/Docs.astro';
 import { url } from '../lib/nav';
+import Shot from '../components/Shot.astro';
 
 const headings: Heading[] = [
   { depth: 2, slug: 'open', text: 'Opening it' },
@@ -12,6 +13,7 @@ const headings: Heading[] = [
   { depth: 3, slug: 'add', text: 'Adding a card' },
   { depth: 3, slug: 'search', text: 'Searching your entities' },
   { depth: 3, slug: 'sizes', text: 'Sizes and changing a card' },
+  { depth: 3, slug: 'move', text: 'Moving a card' },
   { depth: 2, slug: 'built-in', text: 'Built-in screens and Settings' },
   { depth: 2, slug: 'save', text: 'Saving' },
   { depth: 2, slug: 'next', text: 'What is coming' },
@@ -36,37 +38,41 @@ const headings: Heading[] = [
   </p>
   <p>
     The panel in the middle of the page is drawn by the panel's own renderer, with the panel's own data: your lights
-    and sensors, the flights overhead, the weather, your calendar. What you see there is what the glass will show.
+    and sensors, the flights overhead, the weather, your calendar, the album art of what is playing (the panel
+    passes the picture on from Home Assistant). What you see there is what the glass will show.
   </p>
 
   <h2 id="screens">Your screens</h2>
   <p>
     The tabs along the top are your own screens, in the order you swipe through them on the panel. A fresh panel has
-    one, an empty Home. <strong>+ Screen</strong> adds another (up to eight); pick a tab to name it, move it earlier or
-    later, choose it as the screen the panel opens on, or remove it.
+    one, an empty Home. <strong>+ Screen</strong> adds another (up to eight), or puts a card for one of the built-in
+    screens on the screen you are on; pick a tab to name it, move it earlier or later, choose it as the screen the panel
+    opens on, or remove it.
   </p>
 
   <h2 id="cards">Cards</h2>
   <h3 id="add">Adding a card</h3>
   <p>
-    Tap an empty square on the live panel (or <strong>+ Add a card at the end</strong>). Pick what it is first: a
-    <strong>Screen</strong> (a card that opens another screen), <strong>Light</strong>, <strong>Switch</strong>,
-    <strong>Media</strong>, <strong>Climate</strong>, <strong>Cover</strong>, <strong>Sensor</strong> or
-    <strong>Other</strong>. A Sensor asks what it measures: temperature, humidity, power, energy, battery, doors and
-    windows, or motion and presence. Then type part of its name or entity id; nothing is listed until you do, so a house
-    with thousands of entities stays easy to search. Typing straight away, before picking a type, searches everything.
+    Tap an empty square on the live panel (or <strong>+ Add a card at the end</strong>). <strong>Size</strong> says
+    whether the new card fills the square (<strong>1 × 1</strong>) or its top half (<strong>Half</strong>). Pick what
+    it is first: a <strong>Screen</strong> (a card that opens one of your screens or a built-in one),
+    <strong>Light</strong>, <strong>Switch</strong>, <strong>Media</strong>, <strong>Climate</strong>,
+    <strong>Cover</strong>, <strong>Sensor</strong> or <strong>Other</strong>; on a half there is also
+    <strong>State readout</strong>. A Sensor asks what it measures: temperature, humidity, power, energy, battery, doors
+    and windows, or motion and presence. Then every entity of that type is listed, each with its value; type part of
+    its name or entity id to narrow the list. Typing straight away, before picking a type, searches everything.
   </p>
   <div class="page-shots">
-    <figure><img src={url('/editor/types.png')} width="840" height="1120" alt="Add a card: the card types, and a search box above them." loading="lazy" /><figcaption>The card types</figcaption></figure>
-    <figure><img src={url('/editor/search.png')} width="840" height="940" alt="Searching temperature sensors: each match with its name, entity id and temperature." loading="lazy" /><figcaption>A search, each match with its value</figcaption></figure>
+    <figure><img src={url('/editor/types.png')} width="840" height="1200" alt="Add a card: the size, a search box, and the card types under it." loading="lazy" /><figcaption>The card types</figcaption></figure>
+    <figure><img src={url('/editor/search.png')} width="840" height="940" alt="Every temperature sensor, each with its name, entity id and temperature, and a box to filter them." loading="lazy" /><figcaption>Every entity of the type, each with its value</figcaption></figure>
   </div>
 
   <h3 id="search">Searching your entities</h3>
   <p>
-    Each match shows its value the way Home Assistant does: <em>21.5 °C</em>, <em>Open</em>, <em>Detected</em>. When
+    Each entity shows its value the way Home Assistant does: <em>21.5 °C</em>, <em>Open</em>, <em>Detected</em>. When
     you start adding a card, the panel reads your entities from Home Assistant once (a few seconds in a large house) and
-    hands the editor a compact index of them: each one's id, name, what it measures and its value. The search runs on
-    that index as you type, so it is instant. The index is read again in the background when it is over a minute old.
+    hands the editor a compact index of them: each one's id, name, what it measures and its value. The lists and the
+    search run on that index, so they are instant, even with thousands of sensors. The index is read again in the background when it is over a minute old.
     The panel keeps none of it once it has sent it, and only uses memory it can spare; if a very large house does not
     fit, the editor says how many entities it could not include.
   </p>
@@ -77,23 +83,34 @@ const headings: Heading[] = [
 
   <h3 id="sizes">Sizes and changing a card</h3>
   <p>Every card can be any size. The grid is three squares across on both panels.</p>
-  <figure class="page-shot"><img src={url('/editor/sizes.png')} width="1144" height="1144" alt="A Home with a 2 by 1 Weather card, two half sensor cards, a 2 by 2 Media card and two 1 by 1 light cards." loading="lazy" /><figcaption>2 × 1, two halves, 2 × 2 and 1 × 1</figcaption></figure>
+  <figure class="page-shot" style="max-width: 420px"><Shot id="home" alt="A Home with a 2 by 1 Weather card, a 1 by 1 Clock card, a 2 by 2 Media card, a 1 by 1 light card and two half sensor cards." /><figcaption>2 × 1 and 1 × 1, 2 × 2 and 1 × 1, then two halves</figcaption></figure>
   <ul>
-    <li><strong>1 × 1</strong>: a tile, the icon, the name and its state.</li>
-    <li><strong>Half</strong>: half a square, the name over the state. Two halves share one square: tap a half, then <strong>+ Add another half</strong> under it.</li>
+    <li><strong>1 × 1</strong>: a tile, the icon and the name side by side at the top, the state at the bottom.</li>
+    <li><strong>Half</strong>: half a square, the icon and the name over the state. Two halves share one square: tap a half, then <strong>+ Add another half</strong> under it. The <strong>State readout</strong> is a half only: a sensor's state with no box and no tap, in the accent colour while it is on.</li>
     <li><strong>2 × 1</strong> and <strong>2 × 2</strong>: the card with its picture, such as the record for Media or the animated icon for Weather.</li>
   </ul>
   <p>
     Tap a card on the live panel to change it: its size, its entity (type to search for another), its name (leave it
-    empty to use the entity's own) and what a tap does (toggle it, open its screen, or nothing). Move it earlier or later
-    in the grid, or remove it. Cards fill the grid in reading order; the cards after a resized one move to fit.
+    empty to use the entity's own) and what a tap does (toggle it, open its screen, or nothing), or remove it. Cards fill
+    the grid in reading order; the cards after a resized one move to fit. A card that opens a built-in screen also shows
+    that screen's look, such as Media's visual or the Calendar's view, with a row to all its settings.
+  </p>
+
+  <h3 id="move">Moving a card</h3>
+  <p>
+    Drag a card on the live panel (on a touch screen, press and hold it first). A dashed outline shows where it will
+    land, and the other cards move out of its way in order; let go to keep it there, or press Esc to put it back. With a
+    keyboard, the arrow keys move the picked card one place; <strong>Earlier</strong> and <strong>Later</strong> do the
+    same. One <strong>Undo</strong> puts a move back.
   </p>
 
   <h2 id="built-in">Built-in screens and Settings</h2>
   <p>
     <strong>Settings</strong> opens the panel's settings as one list, as on the panel itself:
     <strong>Screens</strong> holds the built-in screens (Clock, Weather, Media, Calendar, Energy, Overhead and the rest),
-    each with whether it is on the panel, its name and its options, and the live panel shows the one you pick.
+    each with its name, where its data comes from and its options, and the live panel shows the one you pick. Every
+    built-in screen is always on the panel; a card opens it, and it reads its data only while it shows or a card for it
+    is on Home.
     <strong>Home Assistant</strong> sets the panel's own link (its address and a token). Then the panel's look, text
     size, units and the rest, each shown on the live panel as you change it.
   </p>
@@ -108,7 +125,6 @@ const headings: Heading[] = [
   <h2 id="next">What is coming</h2>
   <p>
     This is the first version of the editor. Next: taps on the live panel that change a screen's own view (picking a
-    plane on Overhead, opening a sheet) work there too, more card layouts per size, and a better 1 × 1 card for a media
-    player. Follow it on <a href="https://github.com/mrdarrengriffin/facet/issues/82">GitHub</a>.
+    plane on Overhead, opening a sheet) work there too, and more card layouts per size. Follow it on <a href="https://github.com/mrdarrengriffin/facet/issues/82">GitHub</a>.
   </p>
 </Docs>
