@@ -24,7 +24,9 @@
 //              stale "1" = the last read failed but the aircraft before it still show (the header's "offline · last known")
 //   title_now / title_radar / title_list / title_detail  the header per view (the spec binds title_$view)
 //   f_aircraft f_reg f_operator f_squawk f_squawk_tone f_heading f_vs f_src: the detail view's facts about the lead
-//   found      Settings > Screens > Overhead, the From row: "Centred on Home · FlightRadar24 Current in area" (where the
+//   centre     Settings > Screens > Overhead, after the source's name in the Source row: "centred on Home" | "centred on
+//              the place set here" | "no home location" (sources.json "value")
+//   found      what it reads, in words (agents): "Centred on Home · FlightRadar24 Current in area" (where the
 //              radar is centred, from Home Assistant's home, and the sensor it found)
 //   card_text, card_sub, card_accent  the Home card: the route / "Clear skies" / the feed's word; "32,000 ft · 26 km SE"
 //              ("look up" while high, the squawk on an emergency); "true" while high
@@ -366,7 +368,7 @@ std::vector<feed::Field> flight_fields() {
   std::vector<feed::Field> v;
   for (const char *n : {"unit", "range", "planes", "empty", "card_text", "title_now", "title_radar", "title_list"}) v.push_back({n, true, ""});
   for (const char *n : {"look", "status", "route", "who", "also", "all", "many", "list_head", "empty_title", "empty_body", "stale", "title_detail",
-                        "f_src", "card_sub", "more", "found"})
+                        "f_src", "card_sub", "more", "found", "centre"})
     v.push_back({n, false, ""});
   for (const char *n : {"alt", "speed", "away", "f_aircraft", "f_reg", "f_operator", "f_squawk", "f_heading", "f_vs"}) v.push_back({n, false, "--"});
   v.push_back({"look_tone", false, "text-dim"}), v.push_back({"status_tone", false, "idle"}), v.push_back({"alt_label", false, "altitude"});
@@ -402,13 +404,14 @@ class Flights : public feed::Feed {
     else if (const std::string *a = ha::get("zone.home", "latitude"), *b = ha::get("zone.home", "longitude"); a && b && !a->empty() && !b->empty())
       hlat_ = strtod(a->c_str(), nullptr), hlon_ = strtod(b->c_str(), nullptr);
     const bool home = std::isfinite(hlat_) && std::isfinite(hlon_) && std::fabs(hlat_) <= 90 && std::fabs(hlon_) <= 180;
-    {  // Settings > Screens > Overhead, the From row: where the radar is centred and what it reads
+    {  // Settings > Screens > Overhead, where the radar is centred ("centre", the Source row) and what it reads ("found")
       std::string f = !home ? std::string("No home location in Home Assistant") : own ? std::string("Centred on the place set here") : std::string("Centred on Home");
       if ((src == "fr24" || src == "adsb_ha") && !ent.empty()) {
         const std::string *fn = ha::get(ent, "friendly_name");
         f += " \xC2\xB7 " + (fn && !fn->empty() ? *fn : ent);
       }
       put("found", f);
+      put("centre", !home ? "no home location" : own ? "centred on the place set here" : "centred on Home");  // the Source row's value (#155)
     }
     if (src == "fr24" || src == "adsb_ha") {
       src_name = src == "fr24" ? "FlightRadar24" : "ADS-B receiver";

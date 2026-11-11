@@ -255,7 +255,7 @@
           "name": "adsb.lol",
           "line": "open data · no key · over the internet",
           "adapter": "adsb_lol",
-          "from": "Home Assistant",
+          "value": "centre",
           "setup": [
             "Home Assistant's home location (zone.home), or Latitude and Longitude in the deck",
             "internet access (no account, no key)"
@@ -279,7 +279,7 @@
             "match": "in_area",
             "default": "sensor.flightradar24_current_in_area"
           },
-          "from": "Home Assistant",
+          "value": "centre",
           "setup": [
             "the FlightRadar24 integration (HACS) with its area on your home",
             "its Current in area sensor"
@@ -301,7 +301,7 @@
             "match": "aircraft|adsb|dump1090|readsb|tar1090",
             "default": "sensor.adsb_aircraft"
           },
-          "from": "Home Assistant",
+          "value": "centre",
           "setup": [
             "a REST sensor on the receiver's data/aircraft.json with json_attributes: aircraft (named ADS-B aircraft: sensor.adsb_aircraft)"
           ],
@@ -326,8 +326,8 @@
   "feeds": {
     "panel.calendar": {"required": ["hero_n","hero_label","card"], "optional": ["card_n","hero_line","hero_accent","month_title","month_here","shown","day_title","sheet","agenda","month_days","calendars","day_events"]},
     "panel.clock": {"required": ["time","date"], "optional": ["day"]},
-    "panel.energy": {"required": ["cost","line","card","card_tone"], "optional": ["rate","tone","values","bands","now","week_cost","week_line","week","week_before","days","watts","found","live","cheapest","event","event_tone"]},
-    "panel.flights": {"required": ["unit","range","planes","empty","card_text","title_now","title_radar","title_list"], "optional": ["look","status","route","who","also","all","many","list_head","empty_title","empty_body","stale","title_detail","f_src","card_sub","more","found","alt","speed","away","f_aircraft","f_reg","f_operator","f_squawk","f_heading","f_vs","look_tone","status_tone","alt_label","f_squawk_tone","card_accent"]},
+    "panel.energy": {"required": ["cost","line","card","card_tone"], "optional": ["rate","tone","values","bands","now","week_cost","week_line","week","week_before","days","watts","found","live","cheapest","event","event_name","event_when","rate_now","rate_band","rate_until","rate_next","event_tone"]},
+    "panel.flights": {"required": ["unit","range","planes","empty","card_text","title_now","title_radar","title_list"], "optional": ["look","status","route","who","also","all","many","list_head","empty_title","empty_body","stale","title_detail","f_src","card_sub","more","found","centre","alt","speed","away","f_aircraft","f_reg","f_operator","f_squawk","f_heading","f_vs","look_tone","status_tone","alt_label","f_squawk_tone","card_accent"]},
     "panel.media": {"required": ["state_label","state_tone","playing","play_state","ctl_state","title","card_text","card_sub","card_accent","player","sheet"], "optional": ["artist","album","art","source","speakers","position","duration","progress","volume","volume_text","speaker"]},
     "panel.moon": {"required": ["phase","name","lit","card_value","card_sub","phase_key"], "optional": ["south","rest","age","full","new","next","values","bands","marks","names","labels","now","title_days","title_now","title_details","days_more","day_name","day_rest","rise","set","rise_tone","set_tone"]},
     "panel.weather": {"required": ["icon","temp","condition","card"], "optional": ["brief","line","rain","rain_tone","hours","has_hours","days","days_empty"]}

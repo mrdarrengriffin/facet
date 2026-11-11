@@ -12,7 +12,8 @@
 //                       option and no sample source gets "Sample (previews)", and the parameter is not repeated below.
 //                       A source's sheet line is its sources.json "line" when it has one; a source that "finds" its own
 //                       entity in HA's registry gets one sheet row per candidate only when there is more than one, the
-//                       row setting that parameter too.
+//                       row setting that parameter too. A source with "value" (sources.json: a feed attribute) adds
+//                       that word of its feed after its name in the row's value ("adsb.lol · centred on Home").
 //                       A source with "from" (sources.json: a standard place in HA it reads, Energy: HA's Energy
 //                       dashboard) adds the row "From <it>" with what the feed found there (its "found" attribute:
 //                       "Grid, Solar · 3 devices", "Not set up in Home Assistant"), following the pick live.
@@ -39,6 +40,7 @@
 // Every change is kept in this panel's deck (fw::spec::deck_set: "source", "params.<name>"; stored like a sent
 // deck) and emitted as "deck" "<screen> <key>=<value>" for the host. The screen opens with them next time.
 // Props: id = the screen (a deck screen id). Update path: none needed (built each time it opens).
+#include <map>
 #include "fw.h"
 #include "fx.h"
 #include "spec.h"
@@ -117,6 +119,12 @@ struct Page {
   std::string from_feed, from_shown = "\x01";  // \x01: not shown yet
   int src_pick = -1;                    // the Source pick in picks (-1 = one source, src_from[0])
   std::vector<std::string> src_from;    // per source: its "from" words ("" = none)
+  // "value": a source whose Source row value adds a word of the feed's (sources.json "value": the feed attribute, the
+  // Overhead's "centre": "adsb.lol · centred on Home"), following the pick live
+  lv_obj_t *src_row = nullptr;
+  std::map<std::string, std::string> src_value;  // source id -> its "value" attribute (none = the name alone)
+  std::string src_shown = "\x01";
+  uint32_t src_ticks = 0;
   std::vector<std::pair<lv_obj_t *, std::string>> ctrls;  // Segmented / Toggle -> its key
 };
 bool keep(Page *pg, lv_obj_t *from, const std::string &key, ArduinoJson::JsonVariantConst v) { return fw::spec::deck_change(from, pg->id, key, v); }
@@ -336,7 +344,10 @@ void build_page(lv_obj_t *parent, fw::Props p) {
   sr["title"] = "Source", sr["icon"] = "none";
   sr["value"] = pk.ids.empty() ? "Built in" : pk.names[pk.sel].c_str();
   sr["trailing"] = pk.ids.size() > 1 ? "value-chevron" : "value";
-  if (lv_obj_t *r = build("list_row", c, sr); r && pk.ids.size() > 1) {
+  lv_obj_t *srow = build("list_row", c, sr);
+  pg->src_row = srow;
+  for (ArduinoJson::JsonVariantConst x : srcs) if (x["value"].is<const char *>()) pg->src_value[x["id"] | ""] = x["value"] | "";
+  if (lv_obj_t *r = srow; r && pk.ids.size() > 1) {
     pk.row = r;
     pg->src_pick = (int) pg->picks.size();
     pg->picks.push_back(pk);
@@ -345,6 +356,8 @@ void build_page(lv_obj_t *parent, fw::Props p) {
   // there, live from the feed's "found" attribute (the adapter reads it when asked, core/ha.h local)
   for (ArduinoJson::JsonVariantConst x : srcs) pg->src_from.push_back(x["from"] | "");
   for (ArduinoJson::JsonPairConst f : spec["feeds"].as<ArduinoJson::JsonObjectConst>()) { pg->from_feed = f.key().c_str(); break; }
+  if (!pg->from_feed.empty() && !pg->src_value.empty())
+    if (auto fresh = fw::ha::local(pg->from_feed)) fresh();  // the feed's words for the Source value
   if (!pg->from_feed.empty() && std::any_of(pg->src_from.begin(), pg->src_from.end(), [](const std::string &f) { return !f.empty(); })) {
     if (auto fresh = fw::ha::local(pg->from_feed)) fresh();
     Doc fr;
@@ -551,6 +564,20 @@ void build_page(lv_obj_t *parent, fw::Props p) {
     }, LV_EVENT_VALUE_CHANGED, pg);
   // an open HA pick follows the link (a read ends) and a tap that changes its rows (rebuilt here, after the tap)
   fx::every(pg->root, 50, [pg] {
+    if (pg->src_row && !pg->from_feed.empty() && pg->src_pick >= 0) {  // the Source value's feed word follows the pick and the feed
+      const Pick &sp = pg->picks[pg->src_pick];
+      const int sel = sp.sel;
+      std::string attr;  // the picked source's "value" (by its id: the picks may leave sources out)
+      if (sel >= 0 && sel < (int) sp.ids.size()) { auto it = pg->src_value.find(sp.ids[sel]); if (it != pg->src_value.end()) attr = it->second; }
+      if (!attr.empty()) {
+        // the feed runs only for what shows it (a bind): asked again every half second while this page shows it, so the
+        // word follows Home Assistant (its home arriving after the page was built)
+        if (++pg->src_ticks % 10 == 0) if (auto fresh = fw::ha::local(pg->from_feed)) fresh();
+        const std::string *w = fw::ha::get(pg->from_feed, attr.c_str());
+        const std::string shown = sp.names[sel] + (w && !w->empty() ? " \xC2\xB7 " + *w : "");
+        if (shown != pg->src_shown) { pg->src_shown = shown; row_value(pg->picks[pg->src_pick], shown); }
+      }
+    }
     if (pg->from_row) {  // the source's "from" row follows the pick and what the feed found
       const int sel = pg->src_pick >= 0 ? pg->picks[pg->src_pick].sel : 0;
       const std::string from = sel >= 0 && sel < (int) pg->src_from.size() ? pg->src_from[sel] : "";

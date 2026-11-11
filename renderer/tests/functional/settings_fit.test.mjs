@@ -57,19 +57,20 @@ export default {
       t.ok(cut(t).length > 0, `a cut row is reported: ${JSON.stringify(cut(t))}`);
     } },
     { name: 'Overhead: one Source row, a short value, the sources one line each in its sheet', async run(t) {
-      await page(t, 'overhead');
-      t.ok(t.find('Source'), 'a Source row'); t.has(t.texts(), /^adsb\.lol$/, 'its value: the short name');
+      await page(t, 'overhead'); t.wait(1200);  // the feed's word follows Home Assistant's home (asked every 0.5 s)
+      t.ok(t.find('Source'), 'a Source row'); t.has(t.texts(), /^adsb\.lol( · centred on Home)?$/, 'its value: the short name (+ where it is centred)');
       for (const gone of ['Aircraft sensor', 'Latitude', 'Longitude']) t.ok(!t.texts().includes(gone), `no ${gone} row`);
       t.tap('Source'); t.wait(500);
       for (const w of [/^FlightRadar24$/, /^ADS-B receiver$/, /^Sample sky$/, /OVER THE INTERNET/i]) t.has(t.texts(), w, `the sheet: ${w}`);
       t.eq(cut(t), [], 'no line cut');
     } },
-    { name: 'Overhead: centred on Home Assistant\'s home, said on the page', async run(t) {
-      await page(t, 'overhead');
-      t.has(t.texts(), /^From Home Assistant$/, 'the From row'); t.has(t.texts(), /^Centred on Home/, 'where it is centred');
+    { name: 'Overhead: centred on Home Assistant\'s home, said in the Source row (no From row)', async run(t) {
+      await page(t, 'overhead'); t.wait(1200);
+      t.has(t.texts(), /^adsb\.lol · centred on Home$/, 'the Source value says where it is centred');
+      t.ok(!t.texts().some((x) => /^From /.test(x)), 'no From row');
       t.ha.s['zone.home'] = { '': 'zoning', latitude: '', longitude: '' };
-      await t.mount('screen_set', { id: 'overhead' }); t.wait(400);
-      t.has(t.texts(), /^No home location in Home Assistant$/, 'none: it says so');
+      await t.mount('screen_set', { id: 'overhead' }); t.wait(1200);
+      t.has(t.texts(), /^adsb\.lol · no home location$/, 'none: it says so');
     } },
     { name: 'Overhead: Range and Lowest altitude are value rows in the unit\'s words', async run(t) {
       await page(t, 'overhead');
