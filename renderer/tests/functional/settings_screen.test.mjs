@@ -4,6 +4,16 @@ const act = (t, a) => { t.b.spec('act', a); t.b.tick(10); t.b.settle(800); };
 export default {
   id: 'settings_screen', family: 'device', about: 'Settings on the glass: a control changes its setting at once.',
   tests: [
+    { name: 'Update channel: Release, Beta, Dev (nightly); a saved "stable" (the old name of Release) still sets Release', async run(t) {
+      await t.device();
+      t.eq(t.setting('updateChannel'), 'release', 'the default is Release');
+      t.eq(t.setting('updateChannel', 'beta'), '', 'Beta sets'); t.eq(t.setting('updateChannel'), 'beta', 'on Beta');
+      t.eq(t.setting('updateChannel', 'stable'), '', 'a saved "stable" sets'); t.eq(t.setting('updateChannel'), 'release', '"stable" = Release');
+      t.setting('updateChannel', 'dev'); t.setting('updateChannel', 'Stable'); t.eq(t.setting('updateChannel'), 'release', 'the old label too');
+      t.setting('updateChannel', 'Dev (nightly)'); t.eq(t.setting('updateChannel'), 'dev', 'Dev (nightly) by its label');
+      t.ok(t.setting('updateChannel', 'nope') !== '', 'anything else is refused'); t.eq(t.setting('updateChannel'), 'dev', 'and changes nothing');
+      t.setting('updateChannel', 'release');
+    } },
     { name: 'Volume: dragging the slider on the glass changes the volume setting', async run(t) {
       await t.device();
       act(t, { do: 'nav.open', screen: 'settings' });

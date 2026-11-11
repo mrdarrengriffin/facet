@@ -1,14 +1,17 @@
 name: Release
 
-# Release channels (RELEASING.md): a tag builds the public firmware for every board on GitHub and publishes it.
-#   v1.0.0          stable: the `firmware` release's firmware.tar.gz (manifest.json + ota.json per board), the
-#                   Install page's default and every panel on the Stable update channel
-#   v0.5.0-beta.1   beta: the `firmware-beta` release's firmware-beta.tar.gz (manifest-beta.json + ota-beta.json),
-#                   the Install page's Beta switch and panels on the Beta update channel
-# The dev channel (ota-dev.json, a nightly build of main) is dev.yml's. Each tag also gets its own
-# GitHub release (a pre-release for a beta) with both boards' images. Checks, each stops the run: CI and Firmware
+# Versions and channels (RELEASING.md): a tag builds the public firmware for every board on GitHub and publishes it.
+#   v0.6.0, v0.6.1  a release: the `firmware` release's firmware.tar.gz (manifest.json + ota.json per board, and the
+#                   same as manifest-beta.json + ota-beta.json), the Install page's default and every panel on the
+#                   Release update channel; the same tarball is also the `firmware-beta` asset, so Beta gets every
+#                   release and never lags behind Release. Its GitHub release is the latest release.
+#   v0.6.0-beta.1   a beta of the next version: the `firmware-beta` release's firmware-beta.tar.gz (manifest-beta.json
+#                   + ota-beta.json only), the Install page's Beta switch and panels on the Beta update channel. Its
+#                   GitHub release is a pre-release.
+# The Dev (nightly) channel (ota-dev.json, a nightly build of main) is dev.yml's. Each tag gets its own GitHub
+# release with both boards' images. Checks, each stops the run: CI and Firmware
 # succeeded on the tagged commit (waits for them while they run); the tag carries release-notes/<version>.md (the
-# release body and, short, the update card's notes: firmware/release-notes.mjs); a stable tag's esphome/facet-*.yaml say
+# release body and, short, the update card's notes: firmware/release-notes.mjs); a release tag's esphome/facet-*.yaml say
 # facet_version: <version> (a beta's are stamped at build); every image says the version (build and project) and
 # never "+wip" (both boards' images: firmware-build.yml, shared with dev.yml). Then the docs deploy runs, which serves
 # every channel (deploy.yml).
@@ -18,7 +21,7 @@ on:
     tags: ['v*']
   workflow_dispatch:
     inputs:
-      tag: {description: 'An existing tag to build again (v0.5.0-beta.1)', required: true}
+      tag: {description: 'An existing tag to build again (v0.6.0, v0.6.0-beta.1)', required: true}
 
 permissions:
   contents: write
@@ -44,12 +47,12 @@ jobs:
         name: Version and channel
         run: |
           V=${TAG#v}
-          [[ "$V" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-z]+\.[0-9]+)?$ ]] || { echo "::error::$TAG is not vX.Y.Z or vX.Y.Z-beta.N"; exit 1; }
-          C=$([[ "$V" == *-* ]] && echo beta || echo stable)
+          [[ "$V" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-beta\.[0-9]+)?$ ]] || { echo "::error::$TAG is not vX.Y.Z or vX.Y.Z-beta.N"; exit 1; }
+          C=$([[ "$V" == *-* ]] && echo beta || echo release)
           echo "version=$V" >> "$GITHUB_OUTPUT"; echo "channel=$C" >> "$GITHUB_OUTPUT"
           echo "$TAG: version $V, channel $C" | tee -a "$GITHUB_STEP_SUMMARY"
-      - name: A stable tag's YAMLs say its version
-        if: steps.v.outputs.channel == 'stable'
+      - name: A release tag's YAMLs say its version
+        if: steps.v.outputs.channel == 'release'
         run: |
           for y in esphome/facet-*.yaml; do
             v=$(sed -n 's/^ *facet_version: *\([^ #]*\).*/\1/p' "$y")
@@ -101,20 +104,22 @@ jobs:
         with: {pattern: 'fw-*', path: out, merge-multiple: true}
       - name: Manifests (the channel's names)
         run: node firmware/manifests.mjs out "$V"
-      - name: This tag's release (the version's notes as its body; images attached; a pre-release for a beta)
+      - name: This tag's release (the version's notes as its body; images attached; a pre-release for a beta, else the latest)
         run: |
           prev=$(git describe --tags --abbrev=0 --match 'v[0-9]*' "$TAG^" 2>/dev/null || true)
           node firmware/release-notes.mjs body "$V" "$prev" > notes.md
           if gh release view "$TAG" >/dev/null 2>&1; then gh release edit "$TAG" --notes-file notes.md
-          else gh release create "$TAG" --verify-tag --title "Facet $V" --notes-file notes.md $([ "$CH" = beta ] && echo --prerelease); fi
+          else gh release create "$TAG" --verify-tag --title "Facet $V" --notes-file notes.md $([ "$CH" = beta ] && echo --prerelease || echo --latest); fi
           gh release upload "$TAG" out/*/*.bin --clobber
-      - name: The channel's firmware asset (what the docs site serves)
+      - name: The channels' firmware assets (what the docs site serves; a release is Release's and Beta's)
         run: |
-          R=$([ "$CH" = beta ] && echo firmware-beta || echo firmware)
-          tar -czf "$R.tar.gz" -C out .
-          gh release view "$R" >/dev/null 2>&1 || gh release create "$R" --title "Firmware ($CH channel, install page)" --notes "The $CH channel's images and manifests, served by the docs site. Replaced by every $CH tag." --prerelease --target main
-          gh release upload "$R" "$R.tar.gz" --clobber
-          git tag -f "$R" && git push -f origin "refs/tags/$R"   # the channel tag follows the build it serves
-          echo "$R.tar.gz: $V" | tee -a "$GITHUB_STEP_SUMMARY"
-      - name: Deploy the docs site (serves both channels)
+          for R in $([ "$CH" = beta ] && echo firmware-beta || echo firmware firmware-beta); do
+            C=$([ "$R" = firmware-beta ] && echo beta || echo release)
+            tar -czf "$R.tar.gz" -C out .
+            gh release view "$R" >/dev/null 2>&1 || gh release create "$R" --title "Firmware ($C channel, install page)" --notes "The $C channel's images and manifests, served by the docs site. Replaced by every $C tag$([ "$C" = beta ] && echo ' and every release')." --prerelease --target main
+            gh release upload "$R" "$R.tar.gz" --clobber
+            git tag -f "$R" && git push -f origin "refs/tags/$R"   # the channel tag follows the build it serves
+            echo "$R.tar.gz: $V" | tee -a "$GITHUB_STEP_SUMMARY"
+          done
+      - name: Deploy the docs site (serves every channel)
         run: gh workflow run deploy.yml --ref main

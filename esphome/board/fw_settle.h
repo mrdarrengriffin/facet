@@ -56,7 +56,7 @@ struct Clock {
 };
 
 // The Update channel (workbench.yaml channel_hook): the manifest beside the YAML's ota.json for a channel (beta / dev:
-// ota-beta.json / ota-dev.json; anything else = the URL as given, stable).
+// ota-beta.json / ota-dev.json; anything else, release or the old name stable, = the URL as given: Release).
 inline std::string channel_url(std::string base, const char *ch) {
   const size_t k = base.rfind("ota.json");
   if (ch && k != std::string::npos && (!strcmp(ch, "beta") || !strcmp(ch, "dev")))

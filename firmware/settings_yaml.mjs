@@ -27,7 +27,7 @@ const common = (s) => [`    id: ${ent(s).id}`, `    name: ${q(ent(s).name)}`, ..
 L.push('select:');
 // a fresh panel's Update channel = the channel of the build it runs (release channels): a dev build (FACET_VERSION
 // 0.5.0-beta5-dev202611041319+abc1234, dev.yml) starts on Dev, a version with a pre-release part (0.5.0-beta.2,
-// release.yml) on Beta, else the schema's Stable; a channel chosen later wins
+// release.yml) on Beta, else the schema's Release; a channel chosen later wins
 const FV = process.env.FACET_VERSION || '';
 const BUILD_CHANNEL = /^\d+\.\d+\.\d+(-[a-z]+\.?\d*)?(-dev\.?|\.dev\.)\d/.test(FV) ? 'dev' : /^\d+\.\d+\.\d+-/.test(FV) ? 'beta' : null;
 for (const s of sel) {

@@ -84,7 +84,7 @@ inline int cmp(const Ver &a, const Ver &b) {
 }
 
 // the update entity offers `latest` only when it is strictly newer than the running build (fw_update.h fix): a dev
-// build on Beta or Stable, or a channel switched back, is never offered an older build; unreadable = no offer
+// build on Beta or Release, or a channel switched back, is never offered an older build; unreadable = no offer
 inline bool newer(const char *latest, const char *running) {
   const Ver l = parse(latest), r = parse(running);
   return l.ok && r.ok && cmp(l, r) > 0;

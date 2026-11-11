@@ -2,9 +2,10 @@ name: Deploy docs
 
 # The docs site (site/) on GitHub Pages, around the docs flavour of the WASM renderer built in this job from the
 # commit it documents (FW_FEATURES=docs renderer/build.sh; renderer/README.md "What a machine needs"). The public firmware
-# for the /install page (factory + OTA images, manifest.json + ota.json per board) is the asset of the `firmware`
-# release, the beta channel's (manifest-beta.json + ota-beta.json) the `firmware-beta` release's (both written by
-# release.yml on a tag), and the dev channel's (ota-dev.json only: a nightly build of main, never on the Install page)
+# for the /install page (factory + OTA images, manifest.json + ota.json per board: the Release channel) is the asset of
+# the `firmware` release, the Beta channel's (manifest-beta.json + ota-beta.json) the `firmware-beta` release's (both
+# written by release.yml on a tag: a beta tag moves Beta only, a release both, so Beta never lags behind Release), and
+# the Dev (nightly) channel's (ota-dev.json only: a nightly build of main, never on the Install page)
 # the `firmware-dev` release's (dev.yml), unpacked into site/public/firmware/ and served at /facet/firmware/<board>/.
 
 on:
@@ -62,7 +63,7 @@ jobs:
         run: |
           gh release download firmware -p firmware.tar.gz -R "$GITHUB_REPOSITORY"
           mkdir -p site/public/firmware && tar -xzf firmware.tar.gz -C site/public/firmware
-          # the beta channel (release.yml, a vX.Y.Z-beta.N tag): manifest-beta.json + ota-beta.json beside stable's
+          # the Beta channel (release.yml: the last vX.Y.Z-beta.N or vX.Y.Z tag): manifest-beta.json + ota-beta.json
           if gh release download firmware-beta -p firmware-beta.tar.gz -R "$GITHUB_REPOSITORY" 2>/dev/null; then
             tar -xzf firmware-beta.tar.gz -C site/public/firmware
           else echo "no beta channel yet"; fi

@@ -73,7 +73,8 @@ int main() {
   }
   {  // the Update channel: each channel's manifest beside ota.json
     const std::string b = "https://example.org/firmware/guition-4848s040/ota.json";
-    EXPECT(channel_url(b, "stable") == b);
+    EXPECT(channel_url(b, "release") == b);
+    EXPECT(channel_url(b, "stable") == b);  // the old name of Release
     EXPECT(channel_url(b, "beta") == "https://example.org/firmware/guition-4848s040/ota-beta.json");
     EXPECT(channel_url(b, "dev") == "https://example.org/firmware/guition-4848s040/ota-dev.json");
     // every check asks a new URL (the CDN's cache), one ?t= only, other queries kept

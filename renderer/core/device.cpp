@@ -452,6 +452,13 @@ std::string normal(const set::Setting &s, const char *value) {
   if (s.kind == set::SELECT) {
     for (int i = 0; i < s.n_options; i++)
       if (same_word(s.options[i].id, value) || same_word(s.options[i].label, value)) return s.options[i].id;
+    // a retired option id ("stable=release"): a saved or restored old value means the option that replaced it
+    for (const char *r = s.retired; r && *r;) {
+      const char *eq = strchr(r, '='), *end = strchr(r, ',');
+      if (!end) end = r + strlen(r);
+      if (eq && eq < end && same_word(std::string(r, eq - r).c_str(), value)) return normal(s, std::string(eq + 1, end).c_str());
+      r = *end ? end + 1 : end;
+    }
     return "";
   }
   if (s.kind == set::SWITCH) {

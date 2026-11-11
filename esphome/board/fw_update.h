@@ -182,7 +182,7 @@ inline void fix(UpdateEntity *u) {
   // a manifest check landed (only a check fills the title): the settle clock stops checking
   if (!i.title.empty() && (st0 == esphome::update::UPDATE_STATE_NO_UPDATE || st0 == esphome::update::UPDATE_STATE_AVAILABLE)) clock().landed();
   // offered only when strictly newer than this build (fw_notes.h newer()): the entity's own check offers any other
-  // version, so a dev build on Beta / Stable (or a channel switched back) was offered an older one. No "switch back"
+  // version, so a dev build on Beta / Release (or a channel switched back) was offered an older one. No "switch back"
   // install: the channel moves on with its next release.
   if (version()[0]) {
     i.current_version = version();

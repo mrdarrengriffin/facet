@@ -381,18 +381,19 @@
       }
     },
     {
-      "id": "updateChannel", "help": "Which firmware updates the panel offers: Stable releases, Beta builds that come more often and may have rough edges, or Dev: a nightly build of the latest code, untested, for trying fixes early. Dev can break things; switch back to Beta or Stable if it does.",
+      "id": "updateChannel", "help": "Which firmware updates the panel offers: Release, every finished version; Beta, test builds of the next version's screens and features before it ships (it also gets every release); or Dev (nightly): a build of the latest code every night, untested, for trying fixes early. Dev can break things; switch back to Beta or Release if it does.",
       "group": "behaviour",
       "label": "Update channel",
       "kind": "select",
       "control": "segmented",
-      "default": "stable",
-      "about": "Picks the update manifest the panel's Firmware entity checks (ota.json, or ota-beta.json or ota-dev.json beside it). Switching to another channel offers that channel's build, even when it is older. The workbench and docs ignore it.",
+      "default": "release",
+      "about": "Picks the update manifest the panel's Firmware entity checks (Release: ota.json, or ota-beta.json or ota-dev.json beside it; a saved \"stable\", the old name, is Release). Switching to another channel offers that channel's build, even when it is older. The workbench and docs ignore it.",
       "options": [
-        {"id": "stable", "label": "Stable"},
+        {"id": "release", "label": "Release"},
         {"id": "beta", "label": "Beta"},
-        {"id": "dev", "label": "Dev"}
+        {"id": "dev", "label": "Dev (nightly)"}
       ],
+      "retired": {"stable": "release"},
       "esphome": {
         "id": "update_channel_select",
         "name": "Update channel",

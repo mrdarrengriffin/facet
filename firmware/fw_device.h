@@ -2399,15 +2399,13 @@ inline void apply_rotation() {
 }
 
 // ---------------------------------------------------------------- Update channel
-// The setting "updateChannel" (stable | beta | dev) -> which manifest the Firmware update entity checks: the host's
-// channel_hook (workbench.yaml: the YAML's update_manifest, ota.json, or ota-beta.json beside it) points the entity at
-// it and checks it on the next tick, after the settings are saved (board/fw_update.h set_channel). Applied at boot and
-// on every change.
-inline void (*channel_hook)(bool beta) = nullptr;
+// The setting "updateChannel" (release | beta | dev; a saved "stable", the old name, reads as release) -> which
+// manifest the Firmware update entity checks: the host's channel_hook (workbench.yaml: the YAML's update_manifest,
+// ota.json, or ota-beta.json / ota-dev.json beside it) points the entity at it and checks it on the next tick, after the settings are saved (board/fw_update.h
+// set_channel). Applied at boot and on every change.
+inline void (*channel_hook)() = nullptr;
 inline void apply_channel() {
-  if (!channel_hook) return;
-  const char *v = fw::dev::setting("updateChannel");
-  channel_hook(v && !strcmp(v, "beta"));
+  if (channel_hook) channel_hook();
 }
 
 // The panel's own Home Assistant link (core/device.h ha_link, Settings > Home Assistant) on the firmware: its address
