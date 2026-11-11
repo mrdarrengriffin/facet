@@ -142,7 +142,10 @@
     "label": {
      "e": "panel.energy",
      "a": "rate_band",
-     "tpl": "{} now"
+     "map": {
+      "": "now"
+     },
+     "else": "{} now"
     },
     "value": {
      "e": "panel.energy",

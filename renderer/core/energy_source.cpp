@@ -224,6 +224,7 @@ void put_state(fw::feed::State st, const char *line) {  // loading / error: the 
   put_e("rate", ""), put_e("tone", "idle"), put_e("watts", "-- W now");
   put_e("live", "-- W now"), put_e("card", "-- W now"), put_e("card_tone", "dim");
   put_e("cheapest", ""), put_e("event", ""), put_e("event_tone", "idle"), put_e("event_name", ""), put_e("event_when", "");
+  put_e("rate_now", ""), put_e("rate_band", ""), put_e("rate_until", ""), put_e("rate_next", "");
   put_st(st);
 }
 void put_found() {
@@ -295,7 +296,8 @@ void from_ha() {
     put_e("watts", w);
     if (!x.on) put_e("live", w), put_e("card", w);
   }
-  if (const char *w = gone(prefs.price_e)) put_e("rate", w);
+  if (const char *w = gone(prefs.price_e))  // the price entity Not found / Unavailable: its word where the price shows
+    put_e("rate", w), put_e("rate_now", w), put_e("rate_band", ""), put_e("rate_until", ""), put_e("rate_next", "");
 }
 void next();
 void F_live();  // the feed's live reads again (the prefs name the price and power sensors)
