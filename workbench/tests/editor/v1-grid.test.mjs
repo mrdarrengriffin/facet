@@ -30,7 +30,7 @@ const cards = (page) => page.evaluate(() => window.__v1.draft().pages.find((x) =
 const boxes = (page) => page.evaluate(() => {
   const st = [...window.__v1.engine().views].find((s) => s.label === 'Live panel');
   const cr = st.canvas.getBoundingClientRect(), k = cr.width / st.w;
-  const r = st.comps().filter((c) => c.d === 3 && (c.ids.includes('entity_tile') || c.ids.includes('card'))).map((c) => [c.x, c.y, c.w, c.h].join(',')).sort();
+  const r = st.comps().filter((c) => c.d === 3 && (c.ids.includes('entity_tile') || c.ids.includes('card') || c.ids.includes('readout'))).map((c) => [c.x, c.y, c.w, c.h].join(',')).sort();
   const l = [...document.querySelectorAll('.v1-cell.card')].map((e) => { const b = e.getBoundingClientRect(); return [(b.left - cr.left) / k, (b.top - cr.top) / k, b.width / k, b.height / k].map(Math.round).join(','); }).sort();
   return { r, l };
 });
@@ -72,6 +72,29 @@ for (const device of ['guition', 'waveshare'])
       assert.equal(now.r.length, was.length + 1);
       for (const x of was) assert.ok(now.r.includes(x), `card at ${x} stayed`);
       assert.equal(await E.page.locator('.v1-sidetitle b').textContent(), 'Dishwasher Plug Power', 'the new card is picked');
+    });
+
+    it('State readout (#199): offered on a half place only, half size only; it draws in the half and takes a half under it', async () => {
+      const types = () => E.page.locator('.v1-cardlist .v1-opt .v1-ftxt > span').allTextContents();
+      await E.page.locator('.v1-cell.add:not(.half)').first().click(); await settle(E.page, 200);
+      assert.ok(!(await types()).includes('State readout'), 'not on a 1 x 1 place');
+      await E.page.locator('.v1-side .seg button', { hasText: 'Half' }).click(); await settle(E.page, 200);
+      assert.match(await E.page.locator('.v1-sidetitle .v1-meta').textContent(), /^Half · .*top half/);
+      assert.deepEqual(await types(), ['Screen', 'Light', 'Switch', 'Media', 'Climate', 'Cover', 'Sensor', 'State readout', 'Other'], 'on a half: State readout');
+      await E.page.locator('.v1-cardlist .v1-opt', { hasText: 'State readout' }).click(); await settle(E.page, 200);
+      await E.page.locator('.v1-cardlist .v1-opt', { hasText: 'Temperature' }).click(); await settle(E.page, 200);
+      await E.page.locator('.v1-cardlist .v1-opt').first().click(); await settle(E.page, 400);
+      const cs = await cards(E.page), ro = cs.find((c) => c.t === 'readout');
+      assert.ok(ro && ro.size === 'half' && ro.e.startsWith('sensor.'), `a readout card, half: ${JSON.stringify(ro)}`);
+      assert.deepEqual(await E.page.locator('.v1-side .seg button').allTextContents(), ['Half'], 'its Size: Half only');
+      const b = await boxes(E.page); assert.deepEqual(b.l, b.r);
+      const live = await E.page.evaluate(() => [...window.__v1.engine().views].find((s) => s.label === 'Live panel').comps().filter((c) => c.ids.includes('readout')).length);
+      assert.equal(live, 1, 'the panel draws a State readout');
+      await E.page.locator('.v1-side .btn', { hasText: '+ Add another half' }).click(); await settle(E.page, 200);
+      assert.ok((await types()).includes('State readout'), 'the half under it takes a readout too');
+      await pick(E.page, 'sensor.');
+      assert.equal((await cards(E.page)).length, cs.length + 1, 'a half under the readout');
+      assert.deepEqual(await E.page.evaluate(() => window.__v1.check()), { ok: true, errors: [] });
     });
 
     it('adding: the types first; a type lists every entity it takes before typing (#190); a sensor type only what it measures', async () => {

@@ -3,7 +3,8 @@
 // state and opens nothing (someone in a room, a door open, one temperature, who is home). The rule: a box is a button,
 // no box is a readout: on the canvas, no fill, no press, no sound, no chevron, a tap does nothing. It fills its parent
 // (meta min layout:card-min-w x pair-h); two share one Home card cell (the Cells layout's pair: equal halves, a
-// hairline between them inset by the card padding).
+// hairline between them inset by the card padding). Home sizes (meta "sizes", C8c): half only, so a Home card of type
+// readout is half a square, under or over another half; the deck, spec and editor refuse any other size.
 //   one     padding readout-pad (card-pad from the top and sides, none below: the half is taller than its content),
 //           a column card-pad apart:
 //           the top row (at least the label box tall: the icon at icon size text-dim, the caps label (type label,
@@ -12,8 +13,10 @@
 //           one line, space 3 apart (= the docs' shared baseline: the body box sits half the difference up)
 //   tones   text (default) · accent = it matters (accent-text + the dot) · warn = out of range · mute = offline
 //           (the unavailable ink; the label row too)
-// Live (a Home sensor card, screen model piece 2): prop label set = one readout from its own props (icon, label,
-// state, detail, tone). Else the workbench pair: two docs readoutFrom() samples (a mock house) split like the Cells
+// Live (a Home readout card, half only, meta sizes): prop label set = one readout from its own props (icon, label,
+// state, detail, tone) in the half card's arrangement (Entity tile shape half) without the box: the head row on the
+// padding line's sides (icon + caps label, the row's free width then "..."; no dot: the accent state says it), the state (type c-tile,
+// a step under body; detail after it in text-dim), the two spread evenly down the half (half-even). Else the workbench pair: two docs readoutFrom() samples (a mock house) split like the Cells
 // pair (fx::pair_split), the rule between in part:rule.
 // States: the tones above; mute = fw::st::OFF on that readout (offline is unavailable). n/a: pressed, on, disabled (no tap), loading, unknown, empty, error (the binding maps those
 // to mute). Update path: texts in place by a fade (fw::st::refill_fade with shared styles, like a tap would), silent.
@@ -63,10 +66,35 @@ void one(lv_obj_t *o, const Ro &r) {
   if (*r.detail) fx::use(fx::text(line, r.detail, "type:body", "fg:text-dim", "none"), "grow-w");
   if (mute) fx::state(o, fw::st::OFF, true);  // offline = unavailable: the unavailable ink is the disabled look (3:1)
 }
+// one live readout in a Home half (o fills the half cell): the half card's arrangement on the canvas (Entity tile shape
+// half, no box): the head row (icon + caps label, the row's free width then "..."; no dot, the half has no room for
+// it: an accent state says it matters) and the state
+// line (type c-tile) spread evenly down the half (half-even), card-pad at the sides
+void half(lv_obj_t *o, const Ro &r) {
+  const bool mute = !strcmp(r.tone, "mute"), accent = !strcmp(r.tone, "accent");
+  const char *dim = mute ? "fg:unavailable-ink" : "fg:text-dim";
+  for (const char *t : {"fill", "readout-pad", "half-even"}) fx::use(o, t);
+  lv_obj_t *top = fx::box(o, "row");
+  for (const char *t : {"fill-w", "gap:2", "card-row"}) fx::use(top, t);
+  fx::icon(top, r.icon, "icon", dim);
+  lv_obj_t *lb = fx::text(top, r.label, "type:label", dim, "dot");
+  fx::use(lb, "cell");  // the row's free width, then "..."
+  lv_label_set_long_mode(lb, LV_LABEL_LONG_MODE_DOTS);
+  lv_obj_t *line = fx::box(o, "row-mid");
+  for (const char *t : {"fill-w", "gap:3"}) fx::use(line, t);
+  lv_obj_t *st = fx::text(line, r.state, "type:c-tile", mute ? "fg:unavailable-ink" : accent ? "fg:accent-text" : !strcmp(r.tone, "warn") ? "fg:warn" : "fg:text", "none");
+  fx::lines(st, "type:c-tile", 1);
+  if (*r.detail) {
+    lv_obj_t *d = fx::text(line, r.detail, "type:c-tile", "fg:text-dim", "none");
+    fx::use(d, "cell");
+    lv_label_set_long_mode(d, LV_LABEL_LONG_MODE_DOTS);
+  }
+  if (mute) fx::state(o, fw::st::OFF, true);
+}
 void fill(lv_obj_t *s, fw::Props p) {
   if (*(p["label"] | "")) {  // one live readout (a Home sensor card): its own texts
     const Ro r{"live", p["icon"] | "thermometer", p["label"] | "", p["state"] | "", p["detail"] | "", p["tone"] | "text"};
-    one(s, r);
+    half(s, r);  // a Home half (live): the half card's arrangement, no box
     return;
   }
   const Ro *a = find_ro(p["top"] | "occupancy · on"), *b = find_ro(p["bottom"] | "door · open");
@@ -93,6 +121,7 @@ FW_COMPONENT(readout, "State readout", "components", R"({
   "contract": 2,
   "parts": ["rule"],
   "min": ["layout:card-min-w", "layout:pair-h"],
+  "sizes": ["half"],
   "frame": [352, 304],
   "icons": ["person@icon", "door@icon", "window@icon", "thermometer@icon", "house@icon", "alert@icon", "bolt@icon"],
   "props": [

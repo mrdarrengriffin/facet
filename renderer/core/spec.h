@@ -349,6 +349,34 @@ inline std::string slot_list(const SlotDecl &s) {  // "icon_button, status_chip 
   for (size_t i = 0; i < s.accepts.size(); i++) o += (i ? (i + 1 == s.accepts.size() ? " or " : ", ") : "") + s.accepts[i];
   return o;
 }
+// Home sizes (CONTRACT.md C8c): a component that fills a Home grid cell may declare the sizes it works at, meta
+// "sizes": ["half"] (of 1x1 2x1 1x2 2x2 half); none = every size. The deck check (check_card), the spec check (a node in
+// a grid with aspect half: its span) and the editor (card types' "grid") all read it.
+inline const std::string &comp_sizes(const std::string &comp) {  // "half,1x1" ("" = every size); parsed once
+  static std::map<std::string, std::string> cache;
+  auto it = cache.find(comp);
+  if (it != cache.end()) return it->second;
+  std::string &v = cache[comp];
+  const Component *c = find(comp.c_str());
+  ArduinoJson::JsonDocument d;
+  if (!c || !c->meta || deserializeJson(d, c->meta)) return v;
+  for (ArduinoJson::JsonVariantConst z : d["sizes"].as<ArduinoJson::JsonArrayConst>()) v += (v.empty() ? "" : ",") + std::string(z | "");
+  return v;
+}
+inline bool sizes_take(const std::string &sizes, const std::string &size) {  // "" = any
+  if (sizes.empty()) return true;
+  for (size_t a = 0; a <= sizes.size();) {
+    size_t b = sizes.find(',', a);
+    if (b == std::string::npos) b = sizes.size();
+    if (sizes.compare(a, b - a, size) == 0) return true;
+    a = b + 1;
+  }
+  return false;
+}
+// a span in Home's Grid (aspect half: rows half a square) as a Home size; "" = none of them
+inline std::string span_size(int c, int r) {
+  return c == 1 && r == 1 ? "half" : c == 1 && r == 2 ? "1x1" : c == 2 && r == 2 ? "2x1" : c == 1 && r == 4 ? "1x2" : c == 2 && r == 4 ? "2x2" : "";
+}
 constexpr const char *PARAM_TYPES[] = {"text", "select", "entity", "entities", "toggle", "hidden"};
 constexpr const char *ROLES[] = {"page", "detail", "both"};
 // Home card type catalogue (deck v2, screen model piece 2): per type the entity domains it takes, its sizes, its taps
@@ -366,6 +394,7 @@ constexpr CardType CARD_TYPES[] = {
     {"light", "light,switch", "s,m", "toggle,detail", "light", "entity_tile", "card", ""},
     {"media", "media_player", "m,l", "detail,page", "media", "", "card", "card"},
     {"sensor", "sensor,binary_sensor", "s,m", "none", "", "entity_tile", "readout", ""},
+    {"readout", "sensor,binary_sensor", "", "none", "", "readout", "readout", ""},  // the State readout: half only (its meta sizes)
     {"page", "", "s,m,l", "page", "", "entity_tile", "card", "card"},
     {"entity", "*", "s", "toggle,detail,run,none", "", "entity_tile", "", ""}};  // any entity, like HA's tile card (taps by domain: ENTITY_TAPS)
 // the Entity tile (after Home Assistant's tile card): any entity; what a tap can do depends on its
@@ -612,6 +641,10 @@ inline void check_grid(ArduinoJson::JsonVariantConst n, ArduinoJson::JsonArrayCo
     if (!g) err(e, p + ".span", "bad_span", "span goes on a node in a static grid (in: a grid with no items)");
     else if (sa.size() != 2 || !sa[0].is<int>() || !sa[1].is<int>() || sa[0].as<int>() < 1 || sa[0].as<int>() > cols || sa[1].as<int>() < 1 || sa[1].as<int>() > 8)
       err(e, p + ".span", "bad_span", "span is [columns 1.." + std::to_string(cols) + ", rows 1..8]");
+    else if (const std::string &zs = comp_sizes(c); !zs.empty() && !strcmp(nodes[k]["p"]["aspect"] | "", "half")) {
+      const std::string z = span_size(sa[0].as<int>(), sa[1].as<int>());  // Home's Grid: the span is a Home size
+      if (!sizes_take(zs, z)) err(e, p + ".span", "bad_slot", c + " fills a Home cell only at " + zs + ", not a span of " + std::to_string(sa[0].as<int>()) + "x" + std::to_string(sa[1].as<int>()) + " half rows");
+    }
   }
   // a row / hug grid sizes its cells to their content; a component with no size of its own (it fills its cell) draws
   // nothing there, so the spec is refused, never rendered empty
@@ -818,13 +851,26 @@ inline const CardType *card_type(const std::string &t) {
   for (const CardType &c : CARD_TYPES) if (t == c.t) return &c;
   return nullptr;
 }
+// a card's size on Home's Grid (the old sizes: s = 1x1, m = 2x1 (a sensor's m = half), l = 2x2) and the component
+// that draws it there: a type with its own component (the State readout) always that one, else a square or a half =
+// the Entity tile, bigger = the Card
+inline std::string card_grid_size(const std::string &t, const std::string &size) {
+  if (size == "s") return "1x1";
+  if (size == "m" || size.empty()) return t == "sensor" || t == "readout" ? "half" : "2x1";
+  if (size == "l") return "2x2";
+  return size;
+}
+inline const char *card_comp(const std::string &t, const std::string &gsize) {
+  if (t == "readout") return "readout";
+  return gsize == "1x1" || gsize == "half" ? "entity_tile" : "card";
+}
 inline void check_card(ArduinoJson::JsonVariantConst c, const std::string &p, const std::set<std::string> &ids, Errs &e) {
   static const char *const CK[] = {"t", "e", "size", "tap", "page", "label"};
   if (!c.is<ArduinoJson::JsonObjectConst>()) { err(e, p, "bad_card", "a card is {t, e, size, tap?, page?, label?}"); return; }
   check_keys(c.as<ArduinoJson::JsonObjectConst>(), CK, 6, p, e);
   const std::string t = c["t"] | "", ent = c["e"] | "", size = c["size"] | "", tap = c["tap"] | "", pg = c["page"] | "";
   const CardType *ct = card_type(t);
-  if (!ct) { err(e, p + ".t", "bad_card", "t is a card type (light, media, sensor, page, entity)"); return; }
+  if (!ct) { err(e, p + ".t", "bad_card", "t is a card type (light, media, sensor, readout, page, entity)"); return; }
   if (t == "entity") {  // any entity; its tap from its domain's list
     const size_t dot = ent.find('.');
     if (dot == std::string::npos || !entity_ok(ent) || ent[0] == '$') err(e, p + ".e", "bad_entity", "an entity id (domain.name)");
@@ -839,6 +885,8 @@ inline void check_card(ArduinoJson::JsonVariantConst c, const std::string &p, co
   } else if (!ent.empty()) err(e, p + ".e", "bad_card", "a page card has no entity");
   if (!csv_has(GRID_SIZES, size) && !csv_has(ct->sizes, size))
     err(e, p + ".size", "bad_size", std::string("a card's size is ") + GRID_SIZES + " (old decks: " + ct->sizes + ")");
+  else if (const char *cc = card_comp(t, card_grid_size(t, size)); !sizes_take(comp_sizes(cc), card_grid_size(t, size)))
+    err(e, p + ".size", "bad_size", std::string("a ") + t + " card's size is " + comp_sizes(cc) + " (" + cc + " declares only that)");
   if (t != "entity" && !tap.empty() && !csv_has(ct->taps, tap)) err(e, p + ".tap", "bad_tap", std::string("a ") + t + " card's tap is " + ct->taps);
   if (!pg.empty() && !ids.count(pg)) err(e, p + ".page", "bad_page", "no page " + pg + " in this deck");
   if (t == "page" && pg.empty()) err(e, p + ".page", "bad_page", "a page card names a page");
@@ -2416,6 +2464,7 @@ inline void catalogue(ArduinoJson::JsonObject out) {
   out["grid_sizes"] = GRID_SIZES;  // the sizes the editor offers (Home's Grid)
   ArduinoJson::JsonObject ct = out["cards"].to<ArduinoJson::JsonObject>();
   for (const CardType &c : CARD_TYPES) { auto o = ct[c.t].to<ArduinoJson::JsonObject>(); o["domains"] = c.domains; o["sizes"] = c.sizes; o["taps"] = c.taps; o["detail"] = c.detail;
+    if (!strcmp(c.t, "readout")) o["grid"] = comp_sizes("readout");  // the Home sizes the editor offers it at (its component's meta)
     auto cm = o["component"].to<ArduinoJson::JsonObject>(); if (*c.comp_s) cm["s"] = c.comp_s; if (*c.comp_m) cm["m"] = c.comp_m; if (*c.comp_l) cm["l"] = c.comp_l; }
   {  // the Entity tile's taps per domain (the editor's choices; a detail only where this build has the screen)
     auto bd = ct["entity"]["by_domain"].to<ArduinoJson::JsonObject>();

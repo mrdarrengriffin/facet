@@ -1,8 +1,8 @@
 // Readout (components/readout.cpp): the live sensor readout (label set) and the Home sensor card (half slot, bound
 // to the entity's state, tone mute when unavailable). Values must follow HA, survive unavailable / empty / reconnect.
 const DECK = { v: 2, rev: 9, start: 't', pages: [{ id: 't', kind: 'home', name: 'Test', cards: [
-  { t: 'sensor', e: 'binary_sensor.back_door', size: 'm', label: 'Back door' },
-  { t: 'sensor', e: 'sensor.garage_temperature', size: 'm', label: 'Garage' },
+  { t: 'readout', e: 'binary_sensor.back_door', size: 'half', label: 'Back door' },
+  { t: 'readout', e: 'sensor.garage_temperature', size: 'half', label: 'Garage' },
   { t: 'light', e: 'light.sofa_lamp', size: 's', tap: 'toggle', label: 'Sofa table' }] }] };
 const val = (t, label) => { const p = t.part('readout', new RegExp(`^${label}$`, 'i')); return p ? p.texts.filter((s) => s.toUpperCase() !== label.toUpperCase()) : []; };
 const inside = (o, b) => o.x >= b.x && o.y >= b.y && o.x + o.w <= b.x + b.w && o.y + o.h <= b.y + b.h;
@@ -12,6 +12,25 @@ const CARD_H = { '1.5x': 280, '1x': 184 };  // lay::card_h (tokens/layout.json)
 export default {
   id: 'readout', family: 'cards', about: 'Sensor readout: label + live value; the Home sensor card is two of these in one slot.',
   tests: [
+    // C8c: the State readout declares its Home sizes (meta sizes: half only); the deck, the spec check and the editor's
+    // schema all follow it
+    { name: 'Home sizes: half only (meta sizes): a readout card at another size is refused, half is taken', async run(t) {
+      await t.device(DECK);
+      const deck = (size) => ({ ...DECK, rev: DECK.rev + 1, pages: [{ ...DECK.pages[0], cards: [{ t: 'readout', e: 'sensor.garage_temperature', size }] }] });
+      for (const z of ['1x1', '2x1', '2x2', 's', 'l']) {  // a new type: no old sizes
+        const r = JSON.parse(t.b.spec('deck', deck(z)) || '{}');
+        t.ok(!r.ok && JSON.stringify(r.errors ?? '').includes('bad_size'), `size ${z} refused (bad_size): ${JSON.stringify(r.errors ?? r).slice(0, 160)}`);
+      }
+      const ok = JSON.parse(t.b.spec('deck', { ...deck('half'), rev: DECK.rev + 2 }) || '{}');
+      t.ok(ok.ok, `half taken: ${JSON.stringify(ok.errors ?? '')}`);
+    } },
+    { name: 'Home sizes: a readout node in a half-row grid takes a half span only', mount: ['readout', {}], run(t) {
+      const check = (span) => JSON.stringify(JSON.parse(t.b.spec('check', { v: 1, id: 'rsz', rev: 1, name: 'Sizes', layout: 'list',
+        nodes: [{ c: 'grid', p: { cols: 3, aspect: 'half' } }, { c: 'readout', p: { label: 'Hall', state: '21°' }, in: 0, slot: 0, span }] }) || '{}'));
+      for (const sp of [[1, 2], [2, 2], [2, 4]]) { const r = check(sp); t.ok(r.includes('bad_slot') && r.includes('.span'), `span ${sp} refused: ${r.slice(0, 160)}`); }
+      const r = check([1, 1]);
+      t.ok(!r.includes('bad_slot'), `span 1x1 half row taken: ${r.slice(0, 160)}`);
+    } },
     // #62 (not reproduced yet): a value bound to the Home sensor card's readout vanished on a panel and never came back.
     // Ruled out here: rapid updates, unavailable / empty / reconnect, a hidden kept Home (data only, widgets wake on
     // show), look changes mid-burst, screen changes mid-update, and stale pixels (a full redraw = the partial one).

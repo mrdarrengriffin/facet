@@ -22,7 +22,7 @@ type Header = { button?: string; status?: string; buttons?: unknown[] };
 /** a deck page: kind "home" = your own screen (cards), else a built-in screen (its id = its kind, once per deck) */
 type Card = { t: string; e?: string; size: string; tap?: string; page?: string; label?: string };
 type Page = { id: string; kind: string; name?: string; source?: string; params?: Record<string, string>; cards?: Card[]; header_actions?: Header };
-type CardDef = { domains: string; taps: string; detail: string; by_domain?: Record<string, { taps: string; detail?: string }> };
+type CardDef = { domains: string; taps: string; detail: string; grid?: string; by_domain?: Record<string, { taps: string; detail?: string }> };
 type Boot = {
   screens: Record<string, Screen>; settings: { groups: { id: string; label: string }[]; settings: Setting[] };
   deck: { start: string; pages: Page[] };
@@ -131,7 +131,9 @@ const span = (size: string): [number, number] => {
   const s = size === 's' ? '1x1' : size === 'm' ? '2x1' : size === 'l' ? '2x2' : size;
   return [s[0] === '2' ? 2 : 1, s === 'half' ? 1 : s === '1x2' || s === '2x2' ? 4 : 2];
 };
-const gsize = (c: Card) => (c.size === 's' ? '1x1' : c.size === 'm' ? (c.t === 'sensor' ? 'half' : '2x1') : c.size === 'l' ? '2x2' : c.size);
+const gsize = (c: Card) => (c.size === 's' ? '1x1' : c.size === 'm' ? (c.t === 'sensor' || c.t === 'readout' ? 'half' : '2x1') : c.size === 'l' ? '2x2' : c.size);
+/** the Home sizes a card type takes: its component's (meta sizes: the State readout is half only), else every one */
+const sizesOf = (t: string) => (boot.cards[t]?.grid || boot.grid_sizes).split(',');
 /** where each card goes (null = left out: a page card whose page is not in the deck), and the taken half rows */
 function place(cards: Card[], pages: Page[]): { at: (Spot | null)[]; occ: boolean[][] } {
   const occ: boolean[][] = [], at: (Spot | null)[] = [];
@@ -177,7 +179,7 @@ function insertAt(p: Page, card: Card, x: number, y: number): number {
   }
   return best;
 }
-const TYPE_NAME: Record<string, string> = { light: 'Light', media: 'Media', sensor: 'Sensor', page: 'Screen', entity: 'Entity' };
+const TYPE_NAME: Record<string, string> = { light: 'Light', media: 'Media', sensor: 'Sensor', readout: 'State readout', page: 'Screen', entity: 'Entity' };
 const SIZE_NAME: Record<string, string> = { '1x1': '1 × 1', '2x1': '2 × 1', '2x2': '2 × 2', '1x2': '1 × 2', half: 'Half' };
 const TAP_NAME: Record<string, string> = { toggle: 'Toggle', detail: 'Its screen', page: 'A screen', run: 'Run', none: 'Nothing' };
 function entName(id: string | undefined) {
@@ -307,7 +309,7 @@ let sel = draft.start;                                     // the screen on the 
 let side: 'screen' | 'add' | 'settings' | 'review' | 'saved' = 'screen';  // what the sidebar holds (a bottom sheet on a phone)
 /** on your own screen: the card picked on the grid (its index), or an empty place picked to add a card to */
 let cardSel = -1;
-let target: { x: number; y: number; size: string } | null = null;
+let target: { x: number; y: number; size: string; square?: boolean } | null = null;  // square: an empty square (it can take a half at its top)
 /** the Grid on the live panel, in device px (measured once per panel from the renderer: engine.comps) */
 let geo = { x: 0, y: 0, cw: 1, gap: 0, inset: 0, top: 0 };
 const rowY = (y: number) => geo.y + Math.floor(y / 2) * (geo.cw + geo.gap) + (y % 2) * (((geo.cw - geo.gap) / 2) + geo.gap);
@@ -602,7 +604,7 @@ function addCell(put: (e: HTMLElement, sp: Spot) => HTMLElement, x: number, y: n
   b.title = size === 'half' ? 'Add another half underneath' : 'Add a card here';
   b.setAttribute('aria-label', b.title);
   b.setAttribute('aria-pressed', String(!!target && target.x === x && target.y === y));
-  b.onclick = () => { cardSel = -1; target = target && target.x === x && target.y === y ? null : { x, y, size }; side = 'screen'; top(); render(); };
+  b.onclick = () => { cardSel = -1; target = target && target.x === x && target.y === y ? null : { x, y, size, square: size === '1x1' }; side = 'screen'; top(); render(); };
   return b;
 }
 
@@ -614,7 +616,8 @@ function cardSide(p: Page, i: number): HTMLElement[] {
   hd.append(btn('✕', 'Close', false, close, 'icon'));
   out.push(hd);
   const set = (f: (c: Card) => void) => edit(() => f(c));
-  out.push(field('Size', 'The card reflows the grid: the cards after it move up or down to fit.', seg(boot.grid_sizes.split(',').map((z) => [z, SIZE_NAME[z] ?? z]), gsize(c), (z) => set((c) => { c.size = z; }))));
+  const zs = sizesOf(c.t);
+  out.push(field('Size', zs.length > 1 ? 'The card reflows the grid: the cards after it move up or down to fit.' : `A ${(TYPE_NAME[c.t] ?? c.t).toLowerCase()} is ${SIZE_NAME[zs[0]] ?? zs[0]} size only.`, seg(zs.map((z) => [z, SIZE_NAME[z] ?? z]), gsize(c), (z) => set((c) => { c.size = z; }))));
   const { at, occ } = place(cards, draft.pages), sp = at[i];
   if (sp && sp.h === 1 && sp.y % 2 === 0 && !occ[sp.y + 1]?.[sp.x]) {
     out.push(field('Under it', 'Two halves share one square. Optional: the space can stay empty.', btn('+ Add another half', 'Add another half underneath', false, () => { cardSel = -1; target = { x: sp.x, y: sp.y + 1, size: 'half' }; top(); render(); })));
@@ -672,7 +675,7 @@ const SENSOR_CLASSES: [string, string][] = [
   ['temperature', 'Temperature'], ['humidity', 'Humidity'], ['power', 'Power'], ['energy', 'Energy'], ['battery', 'Battery'],
   ['door,window,opening,garage_door', 'Doors and windows'], ['motion,occupancy,presence', 'Motion and presence'], ['', 'Any sensor'],
 ];
-function kinds(): Kind[] {
+function kinds(size: string): Kind[] {
   const ks: Kind[] = [
     { id: 'light', label: 'Light', doms: ['light'] }, { id: 'switch', label: 'Switch', doms: ['switch', 'input_boolean'] },
     { id: 'media', label: 'Media', doms: ['media_player'] }, { id: 'climate', label: 'Climate', doms: ['climate'] },
@@ -680,12 +683,15 @@ function kinds(): Kind[] {
   ];
   const typed = new Set(ks.flatMap((k) => k.doms));
   ks.push({ id: 'other', label: 'Other', doms: allDomains().filter((d) => !typed.has(d)) });
+  // the State readout: no box, no tap, half only (its component's sizes), so only on a half place
+  const ro = boot.cards.readout;
+  if (ro && sizesOf('readout').includes(size)) ks.splice(ks.length - 1, 0, { id: 'readout', label: 'State readout', doms: ro.domains.split(','), classes: SENSOR_CLASSES });
   return ks;
 }
 /** the card an entity makes: its domain's card type (Light, Media, Sensor), else an Entity card */
 function cardFor(id: string, size: string): Card {
   const dom = id.split('.')[0];
-  const t = Object.entries(boot.cards).find(([ty, def]) => ty !== 'entity' && ty !== 'page' && def.domains.split(',').includes(dom))?.[0] ?? 'entity';
+  const t = Object.entries(boot.cards).find(([ty, def]) => ty !== 'entity' && ty !== 'page' && ty !== 'readout' && sizesOf(ty).includes(size) && def.domains.split(',').includes(dom))?.[0] ?? 'entity';
   return { t, e: id, size };
 }
 /** the search index (a panel: read once from its Home Assistant, a few seconds in a large house, then searched here as
@@ -814,10 +820,10 @@ let addKind = '', addClass: string | null = null;  // the add list's step: a typ
 function addCardSide(p: Page): HTMLElement[] {
   const t = target!, out: HTMLElement[] = [];
   if (host.panel) void loadIndex();  // read while a type is picked: ready by the time something is typed
-  const ks = kinds(), k = ks.find((x) => x.id === addKind);
+  const ks = kinds(t.size), k = ks.find((x) => x.id === addKind);
   const cls = addClass === null ? undefined : k?.classes?.find(([v]) => v === addClass);
   const back = () => { if (cls) addClass = null; else addKind = ''; render(); };
-  const where = `${SIZE_NAME[t.size]} · row ${Math.floor(t.y / 2) + 1}, column ${t.x + 1}${t.size === 'half' ? ', under the half' : ''}`;
+  const where = `${SIZE_NAME[t.size]} · row ${Math.floor(t.y / 2) + 1}, column ${t.x + 1}${t.size === 'half' ? (t.square ? ', top half' : ', under the half') : ''}`;
   const title = addKind === 'page' ? 'Add a screen card' : !k ? 'Add a card' : k.id === 'other' ? 'Add an entity card' : `Add a ${k.label.toLowerCase()} card`;
   const hd = sideHead(title, cls?.[0] ? `${cls[1]} · ${where}` : where, false);
   hd.append(btn('✕', 'Close', false, () => { target = null; addKind = '', addClass = null; top(); render(); }, 'icon'));
@@ -846,6 +852,9 @@ function addCardSide(p: Page): HTMLElement[] {
     return b;
   };
   if (addKind) out.push(btn(`‹ ${cls && k ? k.label : 'Card types'}`, 'Back', false, back, 'ghost'));
+  else if (t.square) {  // an empty square: a whole card or a half at its top (a half takes the State readout too)
+    out.push(field('Size', 'A half leaves room for another half under it.', seg([['1x1', SIZE_NAME['1x1']], ['half', SIZE_NAME.half]], t.size, (z) => { t.size = z; render(); })));
+  }
   if (addKind === 'page') {  // your own screens: few, listed
     const box = h('div', 'v1-cardlist');
     for (const [id, nm] of screenOpts(p.id)) {
@@ -863,7 +872,7 @@ function addCardSide(p: Page): HTMLElement[] {
     return out;
   }
   if (k) {
-    out.push(...searchBox(k.doms, cls?.[0] ?? '', cls ? cls[1] : k.label, (id) => put(cardFor(id, t.size)), undefined, true, true));
+    out.push(...searchBox(k.doms, cls?.[0] ?? '', cls ? cls[1] : k.label, (id) => put(k.id === 'readout' ? { t: 'readout', e: id, size: t.size } : cardFor(id, t.size)), undefined, true, true));
     return out;
   }
   // the types; typing straight away searches every entity a card can show
@@ -871,7 +880,7 @@ function addCardSide(p: Page): HTMLElement[] {
   out.push(...searchBox(allDomains(), '', 'every entity', (id) => put(cardFor(id, t.size)), (box) => {
     box.append(h('h2', 'cap', 'Or pick a type'));
     box.append(row('Screen', 'A card that opens a screen: one of yours or a built-in one', () => { addKind = 'page'; render(); }));
-    for (const x of ks) box.append(row(x.label, x.classes ? 'Temperature, humidity, power, doors…' : '', () => { addKind = x.id; addClass = null; render(); }));
+    for (const x of ks) box.append(row(x.label, x.id === 'readout' ? 'A state with no box: a door open, a temperature, someone in' : x.classes ? 'Temperature, humidity, power, doors…' : '', () => { addKind = x.id; addClass = null; render(); }));
   }));
   return out;
 }

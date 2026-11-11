@@ -5439,6 +5439,17 @@
     "m": "readout"
    }
   },
+  "readout": {
+   "domains": "sensor,binary_sensor",
+   "sizes": "",
+   "taps": "none",
+   "detail": "",
+   "grid": "half",
+   "component": {
+    "s": "readout",
+    "m": "readout"
+   }
+  },
   "page": {
    "domains": "",
    "sizes": "s,m,l",
@@ -5517,5 +5528,5 @@
    }
   }
  },
- "hash": "e3d7a21c"
+ "hash": "78f3ae74"
 }

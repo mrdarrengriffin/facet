@@ -138,6 +138,14 @@ bounds failure (C11). A bare count (`"slots": 4`) is the legacy form: that many 
 the docs can never disagree. *Check:* the spec checker (`core/spec.h` `slot_decls`); each slotted component's
 functional test has a refusal case per rule and checks every accepted id is a real component.
 
+**C8c. A component that fills a Home cell declares the Home sizes it works at.** Meta `"sizes"`: a list of Home grid
+sizes (`1x1`, `2x1`, `1x2`, `2x2`, `half`); no `sizes` = every size. A deck card that would draw it at another size is
+refused (`bad_size` at `.cards[i].size`), a spec node in a grid with aspect `half` whose span is another size is refused
+(`bad_slot` at `.nodes[i].span`), and the editor offers it only at those sizes (the card type's `grid` in the schema).
+The State readout is `["half"]`.
+*Why:* a component made for one size spoils every other; one declaration keeps the check, the editor and the docs
+together. *Check:* the spec checker (`core/spec.h` `comp_sizes`); `readout.test.mjs` has a refusal case per rule.
+
 **C8b. A component never rebuilds another component.** Anything inside a component that already exists as a component
 (a button, an icon button, a toggle, a badge, a chip, a time) MUST be that component, built through `fw::find`, with
 its props. It never gets a hand-made copy of the look (a box with a press tint and a tap handler is a hand-made

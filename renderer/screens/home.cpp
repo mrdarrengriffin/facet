@@ -7,7 +7,8 @@
 //            half (a half under a half shares one square); 1x2 is placed but not offered (core/spec.h GRID_SIZES).
 //            Every type at every size: 1x1 = the Entity tile,
 //            half = the Entity tile's half (icon + name in a small head, the state under it), bigger = the Card (the full step shows the
-//            type's preview, the compact step drops it). Old sizes: s = 1x1, m = 2x1 (a sensor's m = half), l = 2x2.
+//            type's preview, the compact step drops it); the State readout (type readout) = itself, half only (its
+//            meta sizes). Old sizes: s = 1x1, m = 2x1 (a sensor's or a readout's m = half), l = 2x2.
 //            What the Card shows per type:
 //              light   the level (accent while on), the state; no preview (a card holds no toggle)
 //              cover   the state, the window preview at the position
@@ -173,17 +174,9 @@ bool button_node(Var b, Var pages, ArduinoJson::JsonArray nodes) {
   set_tap(n, tap, e, dt.detail, pid, "");
   return true;
 }
-// a card's size on the grid: 1x1 2x1 1x2 2x2 half; the old sizes keep working (s = 1x1, m = 2x1, l = 2x2; a sensor's
-// m, a readout half of a card, = half)
-std::string grid_size(const std::string &t, const std::string &size) {
-  if (size == "s") return "1x1";
-  if (size == "m" || size.empty()) return t == "sensor" ? "half" : "2x1";
-  if (size == "l") return "2x2";
-  return size;
-}
 // one deck card -> one spec node in slot `slot` of node 0 (the Grid); returns false when it is left out
 bool card_node(Var cd, Var pages, int slot, ArduinoJson::JsonArray nodes) {
-  const std::string t = cd["t"] | "", e = cd["e"] | "", label = cd["label"] | "", size = grid_size(t, cd["size"] | "m");
+  const std::string t = cd["t"] | "", e = cd["e"] | "", label = cd["label"] | "", size = fw::spec::card_grid_size(t, cd["size"] | "m");
   const fw::spec::CardType *ct = fw::spec::card_type(t);
   if (!ct) return false;
   std::string tap = cd["tap"] | "";
@@ -191,8 +184,8 @@ bool card_node(Var cd, Var pages, int slot, ArduinoJson::JsonArray nodes) {
   const fw::spec::DomainTaps &dt = fw::spec::entity_taps(edom);
   const std::string taps = t == "entity" ? dt.taps : ct->taps, detail = t == "entity" ? dt.detail : ct->detail;
   if (tap.empty()) tap = taps.substr(0, taps.find(','));
-  // every type at every size: a square or a half = the Entity tile, bigger = the Card
-  const char *comp = size == "1x1" || size == "half" ? "entity_tile" : "card";
+  // every type at every size: a square or a half = the Entity tile, bigger = the Card; a State readout = itself (half)
+  const char *comp = fw::spec::card_comp(t, size);
   {  // a card that opens a screen this build lacks (its feature is off, features.json; a custom deck can still name
      // one) is left out, so no card leads nowhere
     std::string to = tap == "detail" ? detail : "";
@@ -232,7 +225,15 @@ bool card_node(Var cd, Var pages, int slot, ArduinoJson::JsonArray nodes) {
       : (edom == "light" || edom == "switch" || edom == "fan" || edom == "input_boolean" || edom == "automation") ? "light"
       : edom == "cover" ? "cover" : (edom == "sensor" || edom == "binary_sensor") ? "sensor"
       : (edom == "script" || edom == "scene" || edom == "button") ? "action" : "other";
-  if (comp_s == "entity_tile") {
+  if (comp_s == "readout") {  // a State readout (half only): no box, no tap; the state, the accent while on, offline = mute
+    sensor_icon(p, e);
+    bind(p, "state", e, "state");
+    ArduinoJson::JsonObject tone = p["tone"].to<ArduinoJson::JsonObject>();
+    tone["e"] = e;
+    tone["map"]["on"] = "accent";
+    tone["map"]["unavailable"] = "mute";
+    tone["else"] = "text";
+  } else if (comp_s == "entity_tile") {
     if (size == "half") p["shape"] = "half";
     if (vt == "sensor") {  // read-only: the value as the status, the device class icon, no press
       sensor_icon(p, e);
