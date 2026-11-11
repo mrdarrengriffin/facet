@@ -11,7 +11,8 @@
 //            (accent-text) while on, else text-dim
 //   half     shape half (half a Home cell): the Card's head (components/card.cpp): a row on the padding line (card-row,
 //            gap 2) of the icon + the label in type label (caps, text-dim, the row's free width, "..."), the status
-//            under it in type body (text; on-ink while on), one line, "..."
+//            under it in type c-tile (a step under body; text; on-ink while on), one line, "..."; no padding above
+//            or below and the two spread evenly down the half (half-even: the same room above, between and below)
 // Props: icon (a UI or screen icon name), label, status, on (bool), act toggle | open | none (what a tap does: the
 // sound and the instant look; none = read-only, a Home sensor tile: not clickable, no press look), state default |
 // pressed | unavailable, press (the Card's press styles).
@@ -67,6 +68,7 @@ void fill(lv_obj_t *c, fw::Props p) {
   // half: the Card's head (icon + caps name in type label, one row on the padding line), the state under it in type
   // body; tile: the icon on its own row, the name + state at the bottom
   lv_obj_t *head = c;
+  if (half) fx::use(c, "half-even");  // after card-pad: the head and the state spread evenly down the half
   if (half) {
     head = fx::box(c, "row");
     for (const char *t : {"fill-w", "gap:2", "card-row"}) fx::use(head, t);
@@ -86,8 +88,8 @@ void fill(lv_obj_t *c, fw::Props p) {
   lv_label_set_long_mode(k->label, LV_LABEL_LONG_MODE_DOTS);  // two lines (half: one), then "..."
   const char *st_txt = off ? fw::st::gone_word(state) : (p["status"] | "");
   if (half) {
-    k->status = fx::text(c, st_txt, "type:body", off ? "fg:unavailable-note" : "fg:text", "none");
-    fx::lines(k->status, "type:body", 1);  // one line box, "..." at the width
+    k->status = fx::text(c, st_txt, "type:c-tile", off ? "fg:unavailable-note" : "fg:text", "none");  // a step under body: room above and below
+    fx::lines(k->status, "type:c-tile", 1);  // one line box, "..." at the width
     lv_label_set_long_mode(k->status, LV_LABEL_LONG_MODE_DOTS);
   } else {
     k->status = fx::text(c, st_txt, "type:label", off ? "fg:unavailable-note" : "fg:text-dim", "none");
@@ -170,7 +172,7 @@ FW_UPDATE(entity_tile) {
   if (fw::shape(root, sig(p))) {
     const bool half = !strcmp(p["shape"] | "tile", "half");  // half: label in type label, status in type body
     put(k->label, half ? "type:label" : "type:body", p["label"] | "");
-    if (!off) put(k->status, half ? "type:body" : "type:label", p["status"] | "");
+    if (!off) put(k->status, half ? "type:c-tile" : "type:label", p["status"] | "");
     const bool on = !off && on_of(p);
     if (on != lv_obj_has_state(root, ST_ON)) fw::st::set_state(root, ST_ON, on, true);
     lv_obj_set_flag(root, TOGGLES, !strcmp(p["act"] | "toggle", "toggle"));

@@ -100,7 +100,10 @@ const char *const DERIVED_N[] = {"dial-wing-up", "dial-wing-down", "dial-slot", 
                                  "hero-row", "hero-row-display",
                                  // 33: the Toast's box: the overlay's toast-h tall, toast-pad in (less the edge hair) and
                                  // between its items, a row centred on its height
-                                 "toast"};
+                                 "toast",
+                                 // 34: a half card (the Entity tile's half): no padding above or below, its head and
+                                 // its state spread evenly down its height (the same room above, between and below)
+                                 "half-even"};
 // A display's look: its shared styles painted from theme t (mode + accent set) through the live Skin (theme_live: its
 // palette for that mode x set = th, the colours every contract style reads; Facet's Skin = Facet's colours, so th == *t)
 // and its generation (gen: a theme apply bumps it, the look repaints; never by Skin pointer, a freed one's address can
@@ -666,6 +669,10 @@ void paint(Look *L, const fw::Theme *t, int only = -1) {  // colours from the th
         lv_style_set_height(s, box_of(d.i == 32 ? ty::display : ty::hero));
         flex(s, LV_FLEX_FLOW_ROW, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
         lv_style_set_pad_column(s, tok("layout:gutter", lay::gutter)); continue;
+      }
+      if (d.i == 34) {  // half-even: a column, its items spaced evenly top to bottom, no top / bottom padding
+        lv_style_set_pad_top(s, 0); lv_style_set_pad_bottom(s, 0);
+        flex(s, LV_FLEX_FLOW_COLUMN, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START); continue;
       }
       if (d.i == 33) {  // toast: layout toast-h tall, the full width it is given; padding toast-pad less the edge hair
         const int P = tok("layout:toast-pad", lay::toast_pad);
