@@ -35,7 +35,7 @@ export function v1Body(boot, foot) {
       <div class="seg sm" id="v1-device" role="group" aria-label="Panel"></div>
       <button class="btn ghost" id="v1-undo" type="button">↶ Undo</button>
       <button class="btn ghost icon" id="v1-look" type="button"></button>
-      <button class="btn" id="v1-settings" type="button" aria-pressed="false">⚙ Settings</button>
+      <button class="btn" id="v1-settings" type="button" aria-pressed="false">Settings</button>
       <button class="btn primary" id="v1-save" type="button">Save</button>
     </div>
   </header>
