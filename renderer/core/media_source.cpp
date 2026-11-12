@@ -22,7 +22,8 @@
 // Adapters (the feed's settings, the spec's "feeds"; core/ha.h feed_config): source; no player or speaker settings:
 // the speakers are the source's, found in Home Assistant (core/device.h ha_link::reg: the entity, device and area
 // registries; before they answer, every media_player for "ha"), at most 24, in the sheet's order: playing first, then by
-// area (HA's order, none last), then name. Auto (the default) follows the first one playing; a pick holds one.
+// area (HA's order, none last), then name. Auto (the default) follows the first one playing, one with a picture (a
+// track) before one without (a line-in, a TV input); a pick holds one.
 //   ha               every media_player in Home Assistant
 //   music_assistant, cast, sonos  the players of that integration (the registry's platform)
 //   spotify          a Spotify account's player; its speakers = the Spotify Connect devices (source_list), a pick =
@@ -207,13 +208,16 @@ std::vector<std::string> str_list(const std::string *v) {
   }
   return out;
 }
-// the speakers in the sheet's order: playing first, then by Home Assistant area (HA's order; none last), then name
+// the speakers in the sheet's order: playing first (one with a picture, a track, before one without: a line-in or a
+// TV input), then by Home Assistant area (HA's order; none last), then name
 void order() {
   St &s = S();
   auto rank = [&](const std::string &e) { auto it = s.area_rank.find(e); return it == s.area_rank.end() ? 1 << 20 : it->second; };
   auto on = [](const std::string &e) { const std::string *st = ha::get(e); return st && *st == "playing"; };
+  auto pic = [](const std::string &e) { const std::string *v = attr(e, "entity_picture"); return v && !v->empty() && *v != "None"; };
   std::stable_sort(s.speakers.begin(), s.speakers.end(), [&](const std::string &x, const std::string &y) {
     if (on(x) != on(y)) return on(x);
+    if (on(x) && pic(x) != pic(y)) return pic(x);
     if (rank(x) != rank(y)) return rank(x) < rank(y);
     return name_of(x) < name_of(y);
   });
@@ -351,8 +355,8 @@ class Media : public feed::Feed {
       setup(cfg());
       s.had_reg = hl::reg("media_player") != nullptr;
       std::vector<std::pair<std::string, std::string>> r;
-      for (const std::string &p : s.speakers)  // each speaker: its state, track and name (the sheet); the shown one: all
-        for (const char *a : {"", "media_title", "friendly_name"}) r.push_back({p, a});
+      for (const std::string &p : s.speakers)  // each speaker: its state, track, picture (Auto's pick) and name (the sheet); the shown one: all
+        for (const char *a : {"", "media_title", "entity_picture", "friendly_name"}) r.push_back({p, a});
       if (!s.player.empty()) for (const char *a : ATTRS) r.push_back({s.player, a});
       if (is_spotify() && !s.player.empty()) r.push_back({s.player, "source_list"});
       reads(r);

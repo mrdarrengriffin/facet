@@ -203,6 +203,16 @@ export default {
       t.tap(btn(t, 2));
       t.ok(t.ha.calls.some((c) => c.service === 'media_player.media_next_track' && c.entity === P1), 'next on the player');
     } },
+    { name: 'ha: Auto follows a player playing a track (with a picture) over one playing a line-in (none), whatever their order', async run(t) {
+      t.ha.s[P2] = { '': 'playing', friendly_name: 'Attic', media_title: 'AUX' };  // first by name, no picture: an input
+      t.ha.s[P1] = { '': 'playing', friendly_name: 'Kitchen', media_title: 'Red Song', media_artist: 'Band', media_duration: '200', media_position: '20', entity_picture: ART('red') };
+      t.img.serve(HA_URL + ART('red'), 64, 64, [230, 30, 30, 255]);
+      await linked(t, { source: 'ha', visual: 'cd' });
+      t.has(t.texts(), /^red song$/i, `the track, not the input: ${t.texts()}`);
+      t.ok(red(cdBand(t)), `its art: ${cdBand(t)}`);
+      t.ha.set(P1, 'paused'); for (let i = 0; i < 2; i++) { t.wait(1500); t.ha.push(); }
+      t.has(t.texts(), /^aux$/i, `the track paused: the input that still plays (${t.texts()})`);
+    } },
     { name: 'ha: the sheet lists every speaker, playing first, then by area', async run(t) {
       t.ha.s['media_player.test_a'] = { '': 'idle', friendly_name: 'Attic', _area: 'Upstairs' };
       t.ha.s['media_player.test_b'] = { '': 'idle', friendly_name: 'Bedroom', _area: 'Downstairs' };
