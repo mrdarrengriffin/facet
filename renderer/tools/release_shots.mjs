@@ -13,7 +13,7 @@
 // with Idle shows = Album art.
 //   node tools/release_shots.mjs 0.5.0 overhead=720:overhead?view=radar+480:overhead art=720:@media+480:@idle
 //   node tools/release_shots.mjs <version> <name>=wide:<png>   a browser picture (the editor: a fresh screenshot of a real
-// panel's editor, never site/public/editor/editor.png) as it is, no frame, 1600 wide; <name>=phone:<png> = a phone
+// panel's editor, never the old two-panel editor.png) as it is, no frame, 1600 wide; <name>=phone:<png> = a phone
 // screenshot, no frame, 900 high
 // Writes release-notes/img/<version>/<name>.png (palette PNG); the notes link them by their raw URL (RELEASING.md).
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';

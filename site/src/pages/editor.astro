@@ -1,7 +1,8 @@
 ---
 // Editor: the editor every panel serves at / (workbench/src/wasm/editor-v1.ts with the panel host editor-v1-host-device.ts,
 // built into the firmware by workbench/scripts/editor-device.mjs). Scope: workbench/EDITOR-V1.md. Pictures: the
-// workbench editor with a made-up house (never a real one), in public/editor/.
+// editor served by a panel with the docs' made-up house (never a real one), in public/editor/: editor-laptop.png and
+// editor-phone.png are the release's pictures (release-notes/img/<version>/, renderer/tools/release_shots.mjs).
 import Docs, { type Heading } from '../layouts/Docs.astro';
 import { url } from '../lib/nav';
 import Shot from '../components/Shot.astro';
@@ -27,7 +28,7 @@ const headings: Heading[] = [
     This is the editor's first version: more is coming, and some of it will change.
   </p>
 
-  <figure class="page-shot"><img src={url('/editor/editor.png')} width="2560" height="1570" alt="The editor: a live copy of the panel showing its Home, and the screen's name, order and start page beside it." loading="lazy" /><figcaption>The editor: the live panel in the middle, what you picked beside it</figcaption></figure>
+  <figure class="page-shot"><img src={url('/editor/editor-laptop.png')} width="1600" height="1000" alt="The editor on a computer: the screens along the top, a live copy of the panel's Home in the middle with its 2 × 2 Media card picked, and the card's size, screen, name and Media visual beside it." loading="lazy" /><figcaption>On a computer: the live panel in the middle, the card you picked beside it</figcaption></figure>
 
   <h2 id="open">Opening it</h2>
   <p>
@@ -40,6 +41,13 @@ const headings: Heading[] = [
     On a phone held upright the whole panel stays in view and what you picked opens in a sheet from the bottom: drag
     it up for more room, and <strong>Done</strong>, its X or a tap on the panel closes it. Held sideways, it sits
     beside the panel as on a computer.
+  </p>
+  <figure class="page-shot" style="max-width: 260px"><img src={url('/editor/editor-phone.png')} width="416" height="900" alt="The editor on a phone held upright: the whole panel in view, and the picked Media card's size and settings in a sheet from the bottom." loading="lazy" /><figcaption>On a phone: what you picked in a sheet from the bottom</figcaption></figure>
+  <p>
+    The bar along the top holds your screens' tabs and <strong>+ Screen</strong>, then the panel it is editing,
+    <strong>Undo</strong>, the page's own light or dark (it follows the browser until you pick one; the panel's own
+    Mode is in Settings), <strong>Settings</strong> and <strong>Save</strong> (<strong>Saved</strong> while there is
+    nothing new). The star marks the screen the panel opens on.
   </p>
   <p>
     The panel in the middle of the page is drawn by the panel's own renderer, with the panel's own data: your lights

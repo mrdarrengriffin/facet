@@ -8,6 +8,9 @@
 // dark and light, halves it (2 x 2 box filter) to 360 with rounded corners, and writes
 //   .github/assets/screen-<id>-<theme>.png   one per screen (shown at 200 in the README)
 //   .github/assets/screens-<theme>.png       the hero: the --hero screens in a 4-wide grid, transparent around them
+// except screen-media-<theme>.png (left alone unless --screens names it): Media with album art, which the sample
+// source has none of, so it is the Media panel of release_shots.mjs' `art` picture (720:@media), cropped out of its
+// frame (26 px) and rounded the same way (radius 32)
 //   node tools/readme_assets.mjs --ai-examples   instead: each "Make screens with AI" example (specs/ai-examples, installed as a
 //   panel installs a spec, demo HA values) -> site/public/ai/shots/<id>-<theme>.png (the tiles on the docs /ai/ page)
 //   node tools/readme_assets.mjs --coming-soon   instead: the root README's Coming soon strip (no build needed: the screens
@@ -177,6 +180,7 @@ const hero = arg('--hero') ? arg('--hero').split(',') : HERO.map(asShot);
 const shots = {};
 for (const theme of ['dark', 'light']) {
   for (const id of ids) {
+    if (file(id) === 'media' && !arg('--screens')) continue;  // album art: see the header
     shots[`${id}-${theme}`] = render(id, theme === 'light');
     writeFileSync(join(OUT, `screen-${file(id)}-${theme}.png`), png(shots[`${id}-${theme}`], H, H));
   }

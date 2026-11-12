@@ -123,7 +123,7 @@ may start with an emoji, the same set every time (`check` ignores it):
     (`<name>-dark.png`, `<name>-light.png`), switched with the reader's mode as the README does:
     `<picture><source media="(prefers-color-scheme: dark)" srcset=".../<name>-dark.png"><img src=".../<name>-light.png" width="640" alt="..."></picture>`.
   - **Editor pictures** are fresh screenshots of a real panel's editor showing made-up data (laptop ~1440 × 900 at
-    2x, phone), put in plain: no frame, no radius. Never the old two-panel `site/public/editor/editor.png`.
+    2x, phone), put in plain: no frame, no radius. Never the old two-panel editor.png (gone from the repo).
   - Commit them before the tag and link them by raw URL,
     `https://raw.githubusercontent.com/mrdarrengriffin/facet/vV/release-notes/img/V/<file>` (notes edited after the
     tag: the commit that added the pictures in place of `vV`). Every `<img>` has alt text saying what it shows; keep
@@ -132,6 +132,13 @@ may start with an emoji, the same set every time (`check` ignores it):
   says, and the release-day step 3a list (README and its pictures, CONTRIBUTING, AGENTS.md and any agent docs, the
   docs' /ai pages and llms.txt / llms-full.txt, the panel's /llms.txt + /agents.md) matches the notes. Fix what is
   stale before the tag.
+- **Update everywhere**: a picture or description changed for a release is swapped in every place that shows the same
+  thing, not only the notes: `grep -rn` for its file name, the screen or feature's name and the old picture, then the
+  docs site (the feature's page, install, home cards, the screen pages, the landing page, /ai), README and
+  `.github/assets` (`renderer/tools/readme_assets.mjs`), CONTRIBUTING, AGENTS.md, the renderer and workbench docs. The
+  editor's pictures on the docs Editor page are the release's (`site/public/editor/editor-laptop.png`,
+  `editor-phone.png`); the docs' own rendered pictures (`site/scripts/shots.mjs`) keep their style and are current once
+  the docs build is. The release commit lists every place it updated.
 - **All changes, at the end of every version's notes (beta included; `check` fails without it):** everything that went
   in, under the written sections, collapsed (closed by default) so the notes stay short: the issues closed as
   completed in the version's milestone(s) (a release: `X.Y.Z` and every `X.Y.Z-*`, so all its betas; a beta or a fix
