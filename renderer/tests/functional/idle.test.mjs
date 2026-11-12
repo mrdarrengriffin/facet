@@ -93,6 +93,16 @@ export default {
       await on(t); t.setting('idleBrightness', 40);
       t.eq(idle(t.wait(Math.max(0, 62000 - t.since()))), ['40'], 'dimmed to 40');
     } },
+    { name: 'Idle brightness changed while the idle clock shows (the Home Assistant slider): dimmed to it at once', async run(t) {
+      await idled(t);
+      t.eq(t.stack(), ['home', 'idle'], 'idle');
+      t.b.events(); t.setting('idleBrightness', 40);
+      t.eq(idle(t.wait(500)), ['40'], 'dimmed to 40 now, not at the next idle');
+      t.eq(t.stack(), ['home', 'idle'], 'still idle');
+      t.eq(idle(t.tap({ at: [t.b.S / 2, t.b.S / 2] })), [''], 'a tap: undimmed');
+      t.b.events(); t.setting('idleBrightness', 55);
+      t.eq(idle(t.wait(500)), [], 'not idle: nothing dims');
+    } },
     { name: 'Idle after 0 = never (10 min with no touch)', async run(t) {
       await on(t); t.setting('idleAfter', 0);
       t.eq(idle(t.wait(600000)), [], 'no idle');

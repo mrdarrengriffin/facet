@@ -868,6 +868,8 @@ const char *set(const char *id, const char *value, From from, lv_obj_t *obj) {
   }
   st.v[k] = v;
   apply(k, from);
+  if (!strcmp(id, "idleBrightness"))  // the idle clock shows: dimmed to the new value now, not at the next idle (#209)
+    for (Device *d : devices) if (d->idled) idle_dim(d, true);
   const std::string detail = std::string(id) + "=" + v;
   if (obj) emit(obj, "setting", detail.c_str());
   else
