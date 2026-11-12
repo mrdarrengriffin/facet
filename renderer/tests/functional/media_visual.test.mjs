@@ -103,14 +103,16 @@ export default {
         t.eq(d, 0, `${size}: the same pixels as the CD`);
       }
     } },
-    { name: 'art: the album art alone, a square (mv-h, card mv-card); a plain square with none, while it loads or after a 404; it never turns', async run(t) {
+    { name: 'art: the album art alone, a square (mv-h, card mv-card); nothing drawn with none or after a 404 (no empty box); it never turns', async run(t) {
       const URL = 'http://ha.test:8123/api/media_player_proxy/media_player.x?token=a&cache=sq';
       const mid = (o) => { const q = frame565(t)[Math.round(o.y + o.h / 2) * (t.b.W || t.b.S) + Math.round(o.x + o.w / 2)]; return [(q >> 11) << 3, ((q >> 5) & 63) << 2, (q & 31) << 3]; };
       const red = (c) => c[0] > 180 && c[1] < 90;
       let o = await at(t, { visual: 'art' });
       t.ok(o.w === tok(t, 'mv-h') && o.h === tok(t, 'mv-h'), `screen: ${o.w} x ${o.h} = mv-h square`);
-      const plain = mid(o);
-      t.ok(!red(plain), `no art: the plain square (${plain})`);
+      const px = (x, y) => { const q = frame565(t)[Math.round(y) * (t.b.W || t.b.S) + Math.round(x)]; return [(q >> 11) << 3, ((q >> 5) & 63) << 2, (q & 31) << 3]; };
+      const bg = px(o.x - 2, o.y + o.h / 2), plain = mid(o);
+      t.eq(plain, bg, 'no art: nothing drawn in the middle (the background, not a white box)');
+      t.eq(px(o.x + 1, o.y + o.h / 2), bg, 'no art: no edge line either');
       t.img.serve(URL, 80, 80, [230, 30, 30, 255]);
       o = await at(t, { visual: 'art', art: URL, playing: true }); t.wait(600);
       t.ok(red(mid(o)), `the art: ${mid(o)}`);
@@ -119,7 +121,7 @@ export default {
       t.ok(o.w === tok(t, 'mv-card') && red(mid(o)), `card: ${o.w} x ${o.h}, ${mid(o)}`);
       t.img.status(URL.replace('sq', 'gone'), 404);
       o = await at(t, { visual: 'art', art: URL.replace('sq', 'gone') }); t.wait(600);
-      t.eq(mid(o), plain, 'a 404: the plain square');
+      t.eq(mid(o), plain, 'a 404: nothing drawn');
       t.eq(t.texts(), [], 'no error words');
     } },
     { name: 'the box sizes are the tokens, and the tokens are the real sizes scaled to mv-h', async run(t) {

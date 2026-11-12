@@ -21,7 +21,7 @@
 // vinyl's label with its art, the arm's box. Reduced motion = nothing turns; packs and the arm jump to the track's place.
 // Pause eases the turn down and stops it where it is: nothing rebuilt, the art kept (no new picture request).
 // art (the fourth visual): the album art alone, a square the size of the CD's box, the theme's tile corner (radius:tile;
-// radius:icon at card size); it never turns; none or loading = a plain square, surface ink with a line edge.
+// radius:icon at card size); it never turns; none, loading or failed = nothing drawn (the box stays empty).
 // Album art (art: the feed's picture URL, core/images.h): printed on the CD's label side (out to the end of the info
 // band, the clear hub stays) and the vinyl's label, a circle scaled to that place at this size (screen or card; one
 // view each, its own box size). The vinyl's label turns with the record while it plays (only the label's circle is
@@ -333,14 +333,11 @@ bool art(const Ctx &c) {  // the art drawn at its place (turned as last drawn): 
   return true;
 }
 
-// ---- 5 the square art: the picture alone, the box's size, the theme's corner; none or loading = a plain square in
-// the surface ink with a line edge (the theme's)
+// ---- 5 the square art: the picture alone, the box's size, the theme's corner; none, loading or failed = nothing
+// drawn (an empty square read as a broken picture)
 void draw_art(const Ctx &c) {
   const MV *d = c.d;
-  if (const lv_image_dsc_t *px = d->art.pixels()) { c.p.image(-d->W / 2, -d->H / 2, px, d->W, d->H); return; }
-  const int r = art_radius(d);
-  c.p.rect(-d->W / 2, -d->H / 2, d->W, d->H, "fg:surface", r);
-  c.p.rect(-d->W / 2, -d->H / 2, d->W, d->H, "fg:line", r, std::max(1, S("stroke:hair")));
+  if (const lv_image_dsc_t *px = d->art.pixels()) c.p.image(-d->W / 2, -d->H / 2, px, d->W, d->H);
 }
 
 // ---- 2 CD (label side up; the art printed from the hub's edge out to the info band's)
