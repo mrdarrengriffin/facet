@@ -10153,7 +10153,7 @@
    "layout": "list",
    "params": {
     "source": {
-     "about": "Where what's playing comes from: every player in Home Assistant, the players of one integration (Music Assistant, Google Cast, Sonos), a Spotify account and its Connect devices, or made-up tracks for previews. The screen lists the source's speakers and follows the one playing.",
+     "about": "Where what's playing comes from: every player in Home Assistant, the players of one integration (Music Assistant, Google Cast, Sonos), a Spotify account and its Connect devices, or made-up tracks for previews. The screen lists the source's speakers and follows the one playing; when several play, one with album art comes first, so music wins over a line-in.",
      "type": "select",
      "options": [
       "ha",

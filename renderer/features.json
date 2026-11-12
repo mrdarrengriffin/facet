@@ -6,7 +6,7 @@
     "preview": "Preview"
   },
   "release": {
-    "stable": "0.4.0",
+    "stable": "0.5.0",
     "about": "Screen channels (RELEASING.md 'Screen channels'). stable = the latest stable release's version. Every feature with firmware or docs true says since: the release its screens first shipped in, or next while no release has them yet; screen_since overrides it for one screen that shipped later. A screen's channel: stable when since <= release.stable, beta when since is a released beta, soon (Coming soon) when since is next or the feature is not on the firmware. tools/features.mjs check fails when one is missing, and compares them with the release tags when the tags are there (`features.mjs since` prints what the tags say). Before a tag: `node renderer/tools/features.mjs since --write V`."
   },
   "panel_features": {

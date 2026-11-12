@@ -9,7 +9,7 @@ substitutions:
   engineering_sample: "true"
   build_root: !env_var ESPHOME_BUILD_ROOT build
   build_suffix: "-public-waveshare"
-  facet_version: 0.4.0-dev             # the release tag sets it
+  facet_version: 0.5.0             # the release tag sets it
   update_manifest: https://mrdarrengriffin.github.io/facet/firmware/${board.id}/ota.json
   lvgl_buffer: 25%
 

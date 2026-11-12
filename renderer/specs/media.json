@@ -6,7 +6,7 @@
  "rev": 9,
  "role": "page",
  "params": {
-  "source": {"about": "Where what's playing comes from: every player in Home Assistant, the players of one integration (Music Assistant, Google Cast, Sonos), a Spotify account and its Connect devices, or made-up tracks for previews. The screen lists the source's speakers and follows the one playing.", "type": "select", "options": ["ha", "music_assistant", "spotify", "cast", "sonos", "sample"], "label": "Source", "default": "ha"},
+  "source": {"about": "Where what's playing comes from: every player in Home Assistant, the players of one integration (Music Assistant, Google Cast, Sonos), a Spotify account and its Connect devices, or made-up tracks for previews. The screen lists the source's speakers and follows the one playing; when several play, one with album art comes first, so music wins over a line-in.", "type": "select", "options": ["ha", "music_assistant", "spotify", "cast", "sonos", "sample"], "label": "Source", "default": "ha"},
   "visual": {"about": "What is drawn for the music: cd, cassette and vinyl are drawn to their real look and turn while playing (the record's label turns with its album art); art is the album art alone, a square. A saved disc (the old plain disc) shows the CD.", "type": "select", "options": ["cd", "cassette", "vinyl", "art"], "label": "Visual", "default": "cd"},
   "spin": {"about": "With the CD: its album art turns with it while the music plays. Off: the art stands still and a small mark shows the turn.", "type": "toggle", "label": "Spin during playback", "default": "true"}
  },
