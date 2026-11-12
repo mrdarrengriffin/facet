@@ -5,6 +5,9 @@ import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { openEditor, close, fe, texts, settle, homeOf, expectedTitle, lower, modalOpen } from './lib.mjs';
 
+// a drawn name is the title, or (a half: one line of name) its start ending in "..."
+const shows = (list, title) => { const t = title.toLowerCase(); return list.some((x) => x === t || (/(\.\.\.|…)$/.test(x) && t.startsWith(x.replace(/(\.\.\.|…)$/, '')))); };
+
 for (const device of ['guition', 'waveshare']) {
   describe(`add a card (${device})`, () => {
     let E, page, types;
@@ -16,13 +19,12 @@ for (const device of ['guition', 'waveshare']) {
     after(async () => { await E?.done(); });
 
     it('offers every card type the engine knows', () => {
-      assert.deepEqual([...types].sort(), ['entity', 'light', 'media', 'page', 'sensor']);
+      assert.deepEqual([...types].sort(), ['entity', 'light', 'media', 'page', 'readout', 'sensor']);
     });
 
     for (const t of ['entity', 'light', 'media', 'sensor', 'page']) {
       it(`${t}: the modal, the Home preview and the deck show the card just added`, async () => {
         const before = homeOf(await fe(page, 'deck'), 'kitchen').cards;
-        const others = new Set(lower((await texts(page, 'Preview')) ?? []));
         await page.locator(`[data-testid="add-card"] button[data-v="${t}"]`).click();
         await settle(page, 900);
         const cards = homeOf(await fe(page, 'deck'), 'kitchen').cards, card = cards.at(-1);
@@ -35,7 +37,7 @@ for (const device of ['guition', 'waveshare']) {
         const want = expectedTitle(card, E.src);
         if (want) assert.equal(title, want);
         const drawn = lower(await texts(page, 'Card preview'));
-        assert.ok(drawn.includes(title.toLowerCase()), `card preview draws "${title}" (drew ${drawn.join(' | ')})`);
+        assert.ok(shows(drawn, title), `card preview draws "${title}" (drew ${drawn.join(' | ')})`);
         // only this card: nothing from the Home's other cards, nor the start Home (the old bug drew the Living room)
         for (const x of ['pantry', 'ceiling', 'sofa table', 'fridge']) assert.ok(!drawn.includes(x), `card preview has no "${x}"`);
         assert.match(await page.locator('[data-testid="card-modal"] .cap').innerText(), new RegExp(`card ${cards.length} of ${cards.length}`, 'i'));
@@ -43,7 +45,7 @@ for (const device of ['guition', 'waveshare']) {
         await settle(page);
         assert.equal(await modalOpen(page), false);
         const main = lower(await texts(page, 'Preview'));
-        assert.ok(main.filter((x) => x === title.toLowerCase()).length > [...others].filter((x) => x === title.toLowerCase()).length || main.includes(title.toLowerCase()), `Home preview draws "${title}"`);
+        assert.ok(shows(main, title), `Home preview draws "${title}"`);
       });
     }
 
@@ -66,7 +68,7 @@ for (const device of ['guition', 'waveshare']) {
       await settle(page);
       const th = lower(await texts(page, 'Thumb home kitchen'));
       const last = homeOf(await fe(page, 'deck'), 'kitchen').cards.filter((c) => expectedTitle(c, E.src)).at(-1);  // a page card has no fixed title
-      assert.ok(th.includes(expectedTitle(last, E.src).toLowerCase()), `thumbnail draws the last added card (drew ${th.join(' | ')})`);
+      assert.ok(shows(th, expectedTitle(last, E.src)), `thumbnail draws the last added card (drew ${th.join(' | ')})`);
       assert.match(await page.locator('[data-testid="home-tile"][data-id="kitchen"] .sub').innerText(), new RegExp(`^${homeOf(await fe(page, 'deck'), 'kitchen').cards.length} cards`));
     });
   });

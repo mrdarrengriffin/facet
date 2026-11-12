@@ -1,6 +1,6 @@
 # Editor end-to-end tests
 
-**State:** 73 of 73 pass. They moved here from the private host with the editor. Held features (the cover and climate
+**State:** 109 of 109 pass (with the link page). They moved here from the private host with the editor. Held features (the cover and climate
 Home cards, the vacuum screen, the agents screen) are on the `wip` branch, so the tests use what main ships (a sensor
 card, the clock screen, the fixture's own unlocked Living room). They are in no check tier yet: the editor v1 tests
 join the gate as v1 is built (`workbench/EDITOR-V1.md`).
@@ -25,7 +25,7 @@ Run (the workbench up on http://localhost:4322, `workbench/run.sh`; Chromium at 
 | `drag.test.mjs` | pick-up drag of Home cards, screen tiles, Homes: new order in deck + preview, one Undo, Esc = back |
 | `homes-screens.test.mjs` | add / rename / start page / remove Homes (page cards to it go too), last Home kept; add screen, switch off |
 | `save.test.mjs` | Save sends exactly the shown deck (rev + 1); load round-trip draws the same; a refused deck is said so |
-| `device-host.test.mjs` | panel-served editor, both panels: only the deck's entities asked from `/fw/ha`; add card + Save posts the deck; a refused Save keeps the edits |
+| `device-host.test.mjs` | editor v1 served by a panel (its bundle against stubbed `/fw/*` routes), both panels: only the deck's entities asked from `/fw/ha`; add a card + Save posts the deck; a refused Save is said against its screen and keeps the edits |
 | `wheel.test.mjs` | the renderer in the browser: a mouse wheel over a scrolling list scrolls it, not the page; at its end, over a list with nothing to scroll, or beside it, the page scrolls |
 
 Hooks: `data-testid` on the preview overlay (`preview-hits`), `add-card`, `card-modal`, `home-tile`, `screen-tile`,

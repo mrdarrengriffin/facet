@@ -46,8 +46,18 @@ export async function openEditor({ device = 'guition', query = '', src = fixture
 /** let the engine paint (its rise animations) and the editor's 450 ms post-rise work run */
 export const settle = (page, ms = 600) => page.waitForTimeout(ms);
 export const fe = (page, f, ...a) => page.evaluate(([f, a]) => window.__fe[f](...a), [f, a]);
-/** the label texts a stage drew, top to bottom (fw_audit) */
-export const texts = async (page, label) => ((await fe(page, 'texts', label)) ?? []).map((o) => o.t);
+/** the label texts a stage drew, top to bottom (fw_audit); a card head's caps name the renderer wrapped onto a second line
+ *  right under the first (SOFA / TABLE LIGHT) is one text again */
+const CAPS = /^[^a-z]*[A-Z][^a-z]*$/;
+export const texts = async (page, label) => {
+  const out = [];
+  let prev = null;
+  for (const o of (await fe(page, 'texts', label)) ?? []) {
+    if (prev && CAPS.test(prev.t) && CAPS.test(o.t) && o.x === prev.x && o.y > prev.y && o.y - prev.y <= 26) { out[out.length - 1] += ` ${o.t}`; prev = { ...o, t: out.at(-1) }; continue; }
+    out.push(o.t); prev = o;
+  }
+  return out;
+};
 export const homeOf = (deck, id) => deck.pages.find((p) => p.id === id);
 
 /** the click point (page px) of a Home box on the Preview stage: card i, or -1 = the header actions */

@@ -33,6 +33,8 @@ describe('save and load', () => {
     const src = fixture(); src.deck = deck;
     const B = await openEditor({ query: 'home=kitchen', src });
     assert.deepEqual(await fe(B.page, 'deck'), deck);
+    // the feeds read again on the fresh page (the Calendar card says Loading until its events come)
+    for (let i = 0; i < 20 && (await texts(B.page, 'Preview')).includes('Loading'); i++) await settle(B.page, 500);
     assert.deepEqual((await texts(B.page, 'Preview')).filter((t) => !/^\d\d:\d\d$/.test(t)), drawnA.filter((t) => !/^\d\d:\d\d$/.test(t)));
     assert.equal(await B.page.locator('#ed-save').isDisabled(), true, 'a fresh load is not unsaved');
     await B.done();
