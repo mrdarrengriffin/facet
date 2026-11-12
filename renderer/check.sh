@@ -13,7 +13,7 @@
 # Budgets (a tier on an already built tree; the build's time is recorded next to it, not counted): fast under 10 s,
 # gate under 300 s, nightly whatever it takes.
 # One line per step (PASS / FAIL / WARN, seconds); each step's full output in $CHECK_LOG (default
-# $FW_CACHE/checks/<time>-<tier>). Functional tests are reported, never fail a tier (WARN) while the suite grows.
+# $FW_CACHE/checks/<time>-<tier>). A failed functional test fails the tier like any other step.
 # Exit 1 if any step failed. Build = $FW_OUT (env or local.env), else ./out.
 set -uo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd)
@@ -78,7 +78,7 @@ sel=(); [ -n "$ids" ] && sel=(--ids "$ids")
 if [ "$tier" = fast ]; then
   check rules node tools/functional.mjs --rules --tier fast --den 1.5x --theme all "${sel[@]}"
   [ -n "$ids" ] || { [ $fail = 0 ] && echo "CHECK fast: all green, no --ids (logs $LOG)" || echo "CHECK fast: FAILED (logs $LOG)"; exit $fail; }
-  soft functional node tools/functional.mjs --den 1.5x --ids "$ids"
+  check functional node tools/functional.mjs --den 1.5x --ids "$ids"
 else
   # at once: the rules (pixel contrast, visual and behaviour, the longest, each on its own), the functional tests
   if has 1.5x; then
@@ -89,10 +89,10 @@ else
   has 1x && start hard rules-1x node tools/functional.mjs --rules --tier gate --skip behaviour --den 1x --theme all "${sel[@]}"
   if [ -n "$den" ]; then
     start hard rules-behaviour-$den node tools/functional.mjs --rules --tier gate --rule behaviour --den "$den" "${sel[@]}"
-    start soft functional-$den node tools/functional.mjs --den "$den" "${sel[@]}"
+    start hard functional-$den node tools/functional.mjs --den "$den" "${sel[@]}"
   else
     start hard rules-behaviour node tools/functional.mjs --rules --tier gate --rule behaviour "${sel[@]}"
-    start soft functional node tools/functional.mjs "${sel[@]}"
+    start hard functional node tools/functional.mjs "${sel[@]}"
   fi
   # the workbench's Playwright tests (the panel's editor, the link page): the whole gate only, on a machine with the
   # workbench running (WORKBENCH_URL, default localhost:4322: it serves this tree and the build in $FW_OUT); CI has none

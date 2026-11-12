@@ -14,7 +14,7 @@ Options: `--den 1.5x|1x|all`, `--grep <test name part>`, `--png fail|all|none` (
 `--json <file>`, `--soft` (exit 0 on failures). Build = `FW_OUT` (env or `local.env`), else `renderer/out`.
 Output: `out/results.json` (per test x size: ok, fails, log, ms, png) + `out/png/<id>/<size>-<test>.png`.
 Workbench page: Tests (Re-run runs it against the live build). Gate: `check.sh gate` step `functional`
-(non-blocking WARN for now; `fast --ids` runs the ids' tests at 1.5x).
+(a failed test fails the gate; `fast --ids` runs the ids' tests at 1.5x).
 
 ## Adding tests (one file per component: `<id>.test.mjs`)
 

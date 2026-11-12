@@ -17,7 +17,7 @@ One C++/LVGL renderer draws every screen, built to WebAssembly (the workbench, t
 Run all of these on the current source. Each must exit 0 and print no WARN line:
 
 1. `renderer/build.sh`
-2. `renderer/check.sh gate`. Functional tests only WARN in a tier, so the gate can exit 0 with tests failing: every WARN line is a failure for a pull request. Read each one (the log path is on the line).
+2. `renderer/check.sh gate`. A failed functional test fails the gate. Read each FAIL and WARN line (the log path is on the line).
    The gate's workbench step tests the workbench at `WORKBENCH_URL` (default `http://localhost:4322`), which serves the checkout that started it. Start it from this tree first (`workbench/run.sh`), or the step fails. CI skips it (`CI` set).
 3. If anything the site shows changed (`site/`, a component's meta or header comment, `renderer/specs/`, tokens):
    `FW_FEATURES=docs renderer/build.sh && (cd site && npm run build)`
