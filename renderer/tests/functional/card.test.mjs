@@ -9,6 +9,7 @@ import { fixtures, fuzz, monkey, leak, look, frame565, diff565, golden, frames, 
 
 const TOK = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'tokens');
 const SPACE = JSON.parse(readFileSync(join(TOK, 'space.json'), 'utf8')).tokens, TYPE = JSON.parse(readFileSync(join(TOK, 'type.json'), 'utf8')).styles;
+const LAYOUT = JSON.parse(readFileSync(join(TOK, 'layout.json'), 'utf8'));
 const den = (t) => (t.b.S > 600 ? '1.5x' : '1x');
 const tk = (t, g, n) => (den(t) === '1x' ? SPACE[g][n]['1x'] : SPACE[g][n].v);
 const box = (t, n) => (den(t) === '1x' ? TYPE[n]['1x'].box : TYPE[n].box);
@@ -204,14 +205,17 @@ export default {
       t.eq(s.full, 0, 'no full redraw'); t.ok(s.pxMax <= c.w * c.h + 4 * (c.w + c.h), `dirty max ${s.pxMax} <= the card`);
     } },
     // ---------------------------------------------------------------- 10 product: Home
-    { name: 'Home: a light card fills its Home cell (two-up: the Cells layout), taps open its screen', async run(t) {
+    { name: 'Home: a light card (m = 2x1) fills two Grid cells, the next one the row under, taps open its screen', async run(t) {
       const E = 'light.test_lamp';
       t.ha.s[E] = { '': 'on', brightness: '179', friendly_name: 'Desk lamp', supported_color_modes: '["brightness"]' };
       await t.device({ v: 2, rev: 9, start: 'p', pages: [{ id: 'p', kind: 'home', name: 'Test', cards: [{ t: 'light', e: E, size: 'm', tap: 'detail', label: 'Desk lamp' }, { t: 'light', e: E, size: 'm', tap: 'detail', label: 'Lamp two' }] }] });
-      const cs = t.comps().filter((c) => c.ids.includes('card')); t.eq(cs.length, 2, 'two cards');
-      const half = (t.b.S - 2 * INSET[den(t)] - 16) / 2;  // two-up: (content - gutter) / 2
-      t.eq(cs.map((c) => c.w), [half, half], 'each = half the row'); t.eq(cs[0].y, cs[1].y, 'side by side');
-      t.ok(cs[1].x >= cs[0].x + cs[0].w, 'no overlap');
+      const cs = t.comps().filter((c) => c.ids.includes('card')).sort((a, b) => a.y - b.y); t.eq(cs.length, 2, 'two cards');
+      const g = t.part('grid');
+      const gut = +JSON.stringify(LAYOUT).match(/"gutter":\{"v":(\d+),"1x":(\d+)/)[den(t) === '1x' ? 2 : 1], cell = (cs[0].w - gut) / 2;  // 2x1: two square cells and the gutter between
+      t.eq(cs.map((c) => [c.w, c.h]), [[2 * cell + gut, cell], [2 * cell + gut, cell]], 'each two cells wide, one tall');
+      t.eq(cs[0].x, g.x, 'from the row\'s start'); t.eq(cs[1].x, cs[0].x, 'the second under the first');
+      t.eq(cs[1].y, cs[0].y + cell + gut, 'a gutter apart');
+      t.ok(cs[0].x + cs[0].w <= g.x + g.w, 'inside the Grid');
       t.tap({ at: [cs[0].x + cs[0].w / 2, cs[0].y + cs[0].h / 2] }); t.eq(t.where(), 'light', 'opens the light screen');
     } },
   ],

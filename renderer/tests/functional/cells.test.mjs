@@ -160,19 +160,27 @@ export default {
       t.eq(leak(t, 100, () => t.b.rebuild('cells', { ...CARDS, cells: 'c,p,c' }), () => t.b.rebuild('title', { text: 'map' }), 64 * 1024), [], 'leak');
     } },
     // ---------------------------------------------------------------- 10 product: Home
-    { name: 'Home: tiles three to a row, cards two-up, two readouts share a cell, a lone last card and a wide card full width', async run(t) {
+    { name: 'Home (the Grid: square cells, homeCols across): 1x1 tiles three to a row, a 2x1 card two cells wide, two halves share one cell', async run(t) {
       const L = 'light.test_lamp', S = 'sensor.test_temp';
       t.ha.s[L] = { '': 'on', brightness: '179', friendly_name: 'Desk lamp', supported_color_modes: '["brightness"]' };
       t.ha.s[S] = { '': '21.5', friendly_name: 'Hall', unit_of_measurement: '°C', device_class: 'temperature' };
+      // old sizes: s = 1x1, m = 2x1 (a sensor's m = half)
       const cardsDeck = [{ t: 'light', e: L, size: 's', tap: 'toggle' }, { t: 'light', e: L, size: 's', tap: 'toggle' }, { t: 'light', e: L, size: 's', tap: 'toggle' },
         { t: 'light', e: L, size: 'm', tap: 'detail', label: 'Desk lamp' }, { t: 'sensor', e: S, size: 'm' }, { t: 'sensor', e: S, size: 'm' },
         { t: 'light', e: L, size: 'm', tap: 'detail', label: 'Lamp two' }];
       await t.device({ v: 2, rev: 9, start: 'p', pages: [{ id: 'p', kind: 'home', name: 'Test', cards: cardsDeck }] });
-      const ts = t.comps().filter((c) => c.ids.includes('entity_tile')), cs = t.comps().filter((c) => c.ids.includes('card')).sort((a, b) => a.y - b.y || a.x - b.x);
-      t.eq(ts.length, 3, 'three tiles'); t.eq(new Set(ts.map((c) => c.y)).size, 1, 'one row of tiles');
-      t.eq(cs.length, 2, 'two cards'); t.eq(cs.map((c) => c.w), [(CW(t) - GUT(t)) / 2, CW(t)], 'cards two-up (half the row); the lone last card fills the row');
-      t.eq(cs[0].y, ts[0].y + ts[0].h + GUT(t), 'the card run starts a gutter under the tiles');
-      t.eq(t.comps().filter((c) => c.ids.includes('readout')).length, 2, 'two readouts (one shared cell)');
+      const all = t.comps().filter((c) => c.ids.includes('entity_tile')).sort((a, b) => a.y - b.y || a.x - b.x);
+      const ts = all.filter((c) => c.w === c.h), hs = all.filter((c) => c.w !== c.h);
+      const cs = t.comps().filter((c) => c.ids.includes('card')).sort((a, b) => a.y - b.y || a.x - b.x);
+      t.eq(ts.length, 3, 'three square 1x1 tiles'); t.eq(new Set(ts.map((c) => c.y)).size, 1, 'one row of tiles');
+      const cell = ts[0].w, gut = ts[1].x - ts[0].x - cell;
+      t.eq(gut, GUT(t), 'the gutter between cells');
+      t.ok(ts[2].x + cell <= t.b.S - INSET[den(t)] && ts[0].x >= INSET[den(t)], 'the row inside the content box');
+      t.eq(cs.length, 2, 'two cards'); t.eq(cs.map((c) => [c.w, c.h]), [[2 * cell + gut, cell], [2 * cell + gut, cell]], 'each card 2x1: two cells wide, one tall');
+      t.eq(cs[0].y, ts[0].y + cell + gut, 'the next row a gutter under the tiles');
+      t.eq(hs.length, 2, 'two halves'); t.eq(hs.map((c) => c.x), [cs[0].x + cs[0].w + gut, cs[0].x + cs[0].w + gut], 'the halves in the cell beside the card');
+      t.eq(hs[0].y, cs[0].y, 'the first half at the cell\'s top'); t.eq(hs[1].y + hs[1].h, cs[0].y + cell, 'the second ends on its bottom');
+      t.eq(cs[1].y, cs[0].y + cell + gut, 'the last card on the row under');
       t.tap({ at: [cs[0].x + cs[0].w / 2, cs[0].y + cs[0].h / 2] }); t.eq(t.where(), 'light', 'a card opens its screen');
     } },
     { name: 'Home: a media player\'s card shows its album art on the record (entity_picture, HA address in front)', async run(t) {
