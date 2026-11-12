@@ -395,6 +395,11 @@ class Calendar : public feed::Feed {
       if ((l && l->empty()) || hl::status() == hl::FAIL) hl::fetch("calendar");
     }
     const std::string list = every_calendar();  // every calendar Home Assistant has; the ones turned off: hidden
+    // no list yet while the link is set up (checking, reading): look again in a second, not on the next minute's round
+    // (Loading for up to a minute after a boot)
+    static lv_timer_t *soon = nullptr;
+    if (!hl::list("calendar") && hl::ready() && hl::status() != hl::FAIL && !soon)
+      soon = lv_timer_create([](lv_timer_t *t) { lv_timer_delete(t); soon = nullptr; if (ha::watched("panel.calendar")) run_again(); }, 1000, nullptr);
     if (changed() || src_now != "ha" || list != list_now) {
       list_now = list;
       cals.clear(), asked.clear(), answered_ok.clear(), hidden.clear(), fetched_day = -1;

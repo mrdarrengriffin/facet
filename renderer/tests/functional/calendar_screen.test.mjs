@@ -65,6 +65,16 @@ export default {
       answer(t, q.find((a) => a.data.entity_id === C2).id, { [C2]: { events: [{ start: iso(s), end: iso(s + 3600e3), summary: 'Standup' }] } });
       t.has(t.texts(), /^standup$/i, 'an asked event');
     } },
+    { name: 'ha: the calendars show as soon as the link has read them, not on the next minute\'s round', async run(t) {
+      t.ha.s[C1] = { '': 'off', friendly_name: 'Family', message: 'Dentist', start_time: '2099-01-01 09:00:00', end_time: '2099-01-01 10:00:00', all_day: 'false' };
+      t.ha.answers = true;
+      await t.device({ v: 2, rev: 9, start: 'h', pages: [
+        { id: 'h', kind: 'home', name: 'Test', cards: [{ t: 'page', page: 'calendar', size: 'm' }] },
+        { id: 'calendar', kind: 'calendar', params: { source: 'ha' } }] });
+      t.b.spec('act', { do: 'ha.connect', url: 'http://ha.test:8123', token: 'abcdefgh1234' }); t.b.tick(8);  // a boot: the link set, its list not read yet
+      t.show('calendar'); t.wait(3000); t.ha.push(); t.b.settle(400);
+      t.has(t.texts(), /^dentist$/i, `within seconds: ${t.texts().slice(0, 8)}`);
+    } },
     { name: 'ha: unavailable calendars say Unavailable, no rows (Not found: missing_entities)', async run(t) {
       t.ha.s[C1] = { '': 'unavailable' };
       await linked(t, { source: 'ha' });
