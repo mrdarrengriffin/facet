@@ -155,18 +155,18 @@ export default {
     // ---------------------------------------------------------------- 10 product level: flows
     { name: 'flow: a Home tile opens the light screen for its entity, nothing sent; Back = Home; reopen shows HA now', async run(t) {
       t.ha.s[E] = { ...LAMP }; await t.device(deck());
-      const n0 = t.stack().length; let ev = t.tap('Desk lamp');
+      const n0 = t.stack().length; let ev = t.tap(/^desk lamp$/i);
       t.eq(t.where(), 'light', 'opened'); t.eq(t.stack().length, n0 + 1, 'one level up'); t.notEmitted(ev.concat(t.wait(1500)), 'ha', 'nothing sent on open');
       t.has(t.texts(), /^desk lamp$/i, 'header'); t.eq(val(t), 70, 'value');
       t.tap(t.part('back_button')); t.eq(t.stack().length, n0, 'Back = Home');
-      t.ha.set(E, 'on', { brightness: 64 }); t.tap('Desk lamp'); t.eq(val(t), 25, 'reopen shows HA now');
+      t.ha.set(E, 'on', { brightness: 64 }); t.tap(/^desk lamp$/i); t.eq(val(t), 25, 'reopen shows HA now');
     } },
     { name: 'flow: deep link (HA show action) opens it; hold Back = Home; 20 rapid open / back: no crash, stack sane', async run(t) {
       t.ha.s[E] = { ...LAMP }; await t.device(deck());
       const n0 = t.stack().length; t.show('light'); t.eq(t.where(), 'light', 'shown');
       t.hold(t.part('back_button')); t.eq(t.stack().length, n0, 'hold Back = Home');
-      for (let i = 0; i < 20; i++) { t.b.tap(...[t.find('Desk lamp')].map((o) => [o.x + o.w / 2, o.y + o.h / 2])[0], 16); t.b.tick(3); const b = t.part('back_button'); if (b) t.b.tap(b.x + b.w / 2, b.y + b.h / 2, 16); t.b.tick(3); }
-      t.b.settle(3000); t.eq(t.stack().length, n0, 'back at Home'); t.ok(t.texts().includes('Desk lamp'), 'Home shows');
+      for (let i = 0; i < 20; i++) { t.b.tap(...[t.find(/^desk lamp$/i)].map((o) => [o.x + o.w / 2, o.y + o.h / 2])[0], 16); t.b.tick(3); const b = t.part('back_button'); if (b) t.b.tap(b.x + b.w / 2, b.y + b.h / 2, 16); t.b.tick(3); }
+      t.b.settle(3000); t.eq(t.stack().length, n0, 'back at Home'); t.ok(t.texts().includes('DESK LAMP'), 'Home shows');
     } },
     { name: 'leak: 150 open / close cycles of the light screen: objects back, heap flat', async run(t) {
       t.ha.s[E] = { ...LAMP }; await t.device(deck());

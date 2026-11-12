@@ -14,6 +14,10 @@ async function open(t) {
 }
 // the Timer bar's chips left to right (no names on them: the countdown only); chip(t, i) taps the i-th, chipFor(t, id) the
 // one whose timer has that id (the bar is in the list's order, soonest first)
+// a Home with the Timer's card (a fresh panel's Home is empty)
+const deck = () => ({ v: 2, rev: 9, start: 'h', pages: [
+  { id: 'h', kind: 'home', name: 'Test', cards: [{ t: 'page', page: 'tm', size: 'm' }] },
+  { id: 'tm', kind: 'timer' }] });
 const chips = (t) => t.comps().filter((c) => c.ids.includes('timer_chip')).sort((a, z) => a.x - z.x);
 const chip = (t, i) => { const c = chips(t)[i]; return t.tap({ at: [c.x + c.w / 2, c.y + c.h / 2] }); };
 const chipFor = (t, id) => chip(t, list(t).findIndex((x) => String(x.id) === String(id)));
@@ -22,17 +26,17 @@ export default {
   id: 'timer_screen', family: 'screens', about: 'The Timer screen: presets, + New, switching with a chip, cancel one, stop a done one.',
   tests: [
     { name: 'Home card: no ring with no timer running (never a made-up share)', async run(t) {
-      await t.device(); tm(t, { op: 'reset' }); t.wait(500);
+      await t.device(deck()); tm(t, { op: 'reset' }); t.wait(500);
       t.drag({ at: [t.b.S / 2, t.b.S * 0.8] }, { by: [0, -t.b.S] }); t.wait(800);
       t.has(t.texts(), 'Set a timer', 'the idle Timer card');
     } },
     { name: 'Home card ring: the share left of the running timer (4:32 of 10 min)', async run(t) {
-      await t.device(); tm(t, { op: 'reset' }); tm(t, { op: 'start', seconds: 600 }); t.wait(328000);
+      await t.device(deck()); tm(t, { op: 'reset' }); tm(t, { op: 'start', seconds: 600 }); t.wait(328000);
       t.drag({ at: [t.b.S / 2, t.b.S * 0.8] }, { by: [0, -t.b.S] }); t.wait(800);
       t.ok(t.texts().some((x) => /^4:\d\d$/.test(x)), `the time left: ${t.texts().filter((x) => /:/.test(x)).join(' ')}`);
     } },
     { name: 'Home card (C52): "Set a timer" with none running, the time left and its length while one runs', async run(t) {
-      await t.device(); tm(t, { op: 'reset' }); t.wait(500);
+      await t.device(deck()); tm(t, { op: 'reset' }); t.wait(500);
       const card = () => {  // Home scrolled to the end: the texts of the card headed TIMER
         t.drag({ at: [t.b.S / 2, t.b.S * 0.8] }, { by: [0, -t.b.S] }); t.wait(800);
         const head = t.objs().find((o) => o.text === 'TIMER' && t.visible(o));
