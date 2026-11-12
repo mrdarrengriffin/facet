@@ -33,9 +33,9 @@ export function v1Body(boot, foot) {
     <nav class="v1-tabs" id="v1-tabs" aria-label="Screens, in swipe order"></nav>
     <div class="v1-send">
       <div class="seg sm" id="v1-device" role="group" aria-label="Panel"></div>
-      <button class="btn ghost" id="v1-undo" type="button">↶ Undo</button>
-      <button class="btn ghost icon" id="v1-look" type="button"></button>
-      <button class="btn" id="v1-settings" type="button" aria-pressed="false">Settings</button>
+      <button class="btn ghost ico ico-undo" id="v1-undo" type="button">Undo</button>
+      <button class="btn ghost icon ico ico-auto" id="v1-look" type="button"></button>
+      <button class="btn ico ico-gear" id="v1-settings" type="button" aria-pressed="false">Settings</button>
       <button class="btn primary" id="v1-save" type="button">Save</button>
     </div>
   </header>

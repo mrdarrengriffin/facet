@@ -299,7 +299,8 @@ let pageLook: 'auto' | 'light' | 'dark' = (() => { try { const v = localStorage.
 function look() {
   if (pageLook === 'auto') delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = pageLook;
   const b = $('v1-look');
-  b.textContent = pageLook === 'auto' ? '◐' : pageLook === 'light' ? '☼' : '☾';
+  b.classList.remove('ico-auto', 'ico-light', 'ico-dark');
+  b.classList.add(`ico-${pageLook}`);  // the SVG icon (.ico in editor-v1.css): auto = half filled, light = sun, dark = moon
   b.setAttribute('aria-label', `Page look: ${pageLook}`);
   b.title = `This page: ${pageLook === 'auto' ? 'follows the browser' : pageLook} (the panel's own Mode is in Settings)`;
 }
@@ -361,7 +362,7 @@ function top() {
   const strip = h('div', 'v1-strip');  // the tabs scroll; + Screen stays in view
   strip.append(...draft.pages.filter(own).map((p) => tab(p)));  // your own screens; built-in ones are in Settings > Screens
   tabs.replaceChildren(strip);
-  const add = h('button', 'v1-add', '+ Screen');
+  const add = h('button', 'v1-add ico ico-plus', 'Screen');
   add.type = 'button';
   add.setAttribute('aria-current', String(side === 'add'));
   add.onclick = () => { side = 'add'; top(); render(); };
@@ -391,7 +392,7 @@ function tab(p: Page) {
   const b = h('button', 'v1-tab', pname(p));
   b.type = 'button';
   b.setAttribute('aria-current', String(p.id === sel && side !== 'add'));
-  if (p.id === draft.start) { const st = h('span', 'v1-star', '★'); st.title = 'Start page'; b.prepend(st); }
+  if (p.id === draft.start) { const st = h('span', 'v1-star'); st.title = 'Start page'; b.prepend(st); }
   b.onclick = () => go(p.id);
   b.draggable = true;
   b.ondragstart = (e) => { dragging = p.id; b.classList.add('lift'); e.dataTransfer?.setData('text/plain', p.id); };
