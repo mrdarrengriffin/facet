@@ -104,6 +104,30 @@ A tag without it fails before anything builds. Draft the next version's file as 
   `(no docs: <why>)`. `check` (and so the tag's release workflow) fails otherwise: write the docs with the feature.
 - `## After updating`: only when someone has to do something (a setting moved or went, a step on the panel).
 - `## Known issues`: what is still wrong, with its issue.
+- `## Since <last beta>` (a release only, optional, after `## Fixed`): what is new to the Beta channel's testers since
+  the last beta (`## Since 0.6.0-beta.3`). Bullets with bold leads; in the body only, never in the summary.
+- **All changes, at the end of every version's notes (beta included; `check` fails without it):** everything that went
+  in, under the written sections, collapsed (closed by default) so the notes stay short:
+  every closed issue of the version's milestone(s) (a release: `X.Y.Z` and every `X.Y.Z-*`; a beta: its own) and every
+  issue its commits close, as `#N Title`; every merged PR, `#N Title`; then each commit neither covers, `sha subject`
+  (bookkeeping left out: Todo, Catalogue, Notes, Log, Release notes), by area. Generated, never hand-made, as the last
+  thing before the tag (it needs `gh`):
+  `node firmware/release-notes.mjs changes V vPREV >> release-notes/V.md` (a release: PREV = the last release, so it
+  covers all its betas). The block is:
+
+  ```
+  <details><summary>All changes (N)</summary>
+
+  **Issues (n)**
+
+  - #12 Title
+  ...
+  </details>
+  ```
+
+  N = its `- ` lines (`check` counts them). The blank line after `<summary>` lets GitHub render the list inside. It is
+  never in the HA summary or the manifest's notes; the docs site does not show release notes (Updates entries are
+  written separately), so nothing else renders it.
 
 The release workflow uses the file as the GitHub release body (plus the full-changelog link). The OTA manifest's
 `summary` is its short version: the headline, After updating in full, then the bold leads (at most 1200 characters).
@@ -157,7 +181,8 @@ A failed check stops the day.
      regenerate them so the shipped firmware describes this release's components, props and API;
    - the catalogue + schema (step 2) and any route the release added or changed (`/fw/*`).
    Nothing user-visible ships undocumented. List what was updated in the release PR/commit.
-4. `node firmware/release-notes.mjs check V`: the notes are written and read well (Release notes, above).
+4. `node firmware/release-notes.mjs changes V vPREV >> release-notes/V.md`, then `node firmware/release-notes.mjs check V`:
+   the notes are written, read well and end with All changes (Release notes, above).
 5. `node firmware/release-prep.mjs V`: sets `facet_version` in both `esphome/facet-*.yaml`, publishes the Updates
    entry titled "Facet V" (a trailing `.0` dropped: "Facet 0.6"; draft it first) dated today. `git diff --stat` shows
    those files only. A beta changes nothing here (its YAMLs are stamped at build, it gets no Updates entry).
