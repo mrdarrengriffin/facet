@@ -29,7 +29,10 @@
 #ifndef SIM_SPEED
 #define SIM_SPEED 50
 #endif
-static constexpr int SPEED = SIM_SPEED;  // simulated ms per real ms (TSan: slower, run.sh; the decode runs ~10x slower under it)
+// simulated ms per real ms (run.sh: ASan 20, TSan 10). The decode runs at host speed, so one host ms of decoding is SPEED
+// simulated ms: at 50 an ASan PNG decode was 6 s simulated on a quiet host and 20 s on the night gate's starved one, past
+// the pump's 18 s "worker stuck" window, and the last queued picture timed out though the worker fetched it
+static constexpr int SPEED = SIM_SPEED;
 static std::atomic<double> P_ALLOC{0}, P_LOW{0}, P_TASK{0}, P_NEW{0};
 static std::atomic<size_t> MAX_BLOCK{SIZE_MAX};  // a fragmented PSRAM: no allocation bigger than this
 static std::mutex rng_m;
@@ -290,10 +293,16 @@ static void leave() {
 
 // ---------------------------------------------------------------- driver
 static std::atomic<int64_t> beat{0};
+static int slowest_dec_ms = 0;  // the slowest decode seen, in simulated ms (how fast the host kept up)
 static void tick() {  // one LVGL timer round: 100 simulated ms
   beat = sim_us();
   fw::img::timeouts();
   if (pump_cb) pump_cb(nullptr);
+  {
+    auto &s = fw::device::images::S();
+    std::lock_guard<std::mutex> l(s.m);
+    slowest_dec_ms = std::max(slowest_dec_ms, s.art.dec_ms);
+  }
   sim_sleep_ms(100);
 }
 static void run_sim_ms(int64_t ms) { for (const int64_t end = sim_us() + ms * 1000; sim_us() < end;) tick(); }
@@ -497,6 +506,11 @@ int main(int argc, char **argv) {
   beat = 0;  // done: the watchdog stands down
   CHECK(open_now == 0, "no download left open (%d)", open_now.load());
   printf("%d checks, %d failed; downloads %d, max at once %d\n", checks, fails, opens.load(), open_max.load());
+  // a decode near the pump's "worker stuck" window (2 timeouts + 2 s) makes queued pictures time out on the host's speed,
+  // not the code's: say so, so a failure on a busy machine reads as that
+  printf("slowest decode %d simulated ms (%d host ms at SIM_SPEED %d)\n", slowest_dec_ms, slowest_dec_ms / SPEED, SPEED);
+  if (fails && slowest_dec_ms > fw::img::budget().timeout_ms)
+    printf("note: decodes took over the %d ms timeout in simulated time: the host was too busy for these timings\n", fw::img::budget().timeout_ms);
   fflush(stdout);
   _exit(fails ? 1 : 0);  // (the worker thread may still be parked; don't run static destructors under it)
 }
