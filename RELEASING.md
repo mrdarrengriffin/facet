@@ -13,8 +13,8 @@ Every release follows this scheme (the docs explain it to users on the
 - **1.0**: when the editor (#82) and config backup (#170) are done, every test passes, and there have been a few weeks
   without a nasty bug; when you'd give it to a stranger with no caveats. After 1.0, the same pattern (1.1, 1.0.1);
   2.0 only if decks or settings ever break.
-- The next release is 0.5.0, closing the 0.5 beta line; panels on 0.5.0-beta.10 see it as an update (semver: 0.5.0 >
-  0.5.0-beta.10).
+- 0.5.0 (the first plain release) closed the 0.5 beta line; panels on 0.5.0-beta.10 saw it as an update (semver:
+  0.5.0 > 0.5.0-beta.10).
 
 Planning: each version is a GitHub milestone named after it (`0.6.0`), its description saying the goal; the issues
 picked for it go on it. Every new issue gets a milestone when it is picked, and the same version as its **Release**
@@ -96,18 +96,42 @@ then say everything the version brings, beta or not.
 A tag without it fails before anything builds. Draft the next version's file as work lands; check it with
 `node firmware/release-notes.mjs check <version>`.
 
-- A headline paragraph: what this version means for someone with a panel on the wall.
-- `## New`, `## Improved`, `## Fixed`: each bullet starts with a bold lead in plain language, then a sentence or two,
-  then its issue (`#N`). One of the three has bullets.
-- Docs never lag a release: every bullet of `## New` and `## Improved` links the docs page that explains it
-  (`https://mrdarrengriffin.github.io/facet/<page>/`, a page that exists in `site/src/pages`), or says
-  `(no docs: <why>)`. `check` (and so the tag's release workflow) fails otherwise: write the docs with the feature.
-- `## After updating`: only when someone has to do something (a setting moved or went, a step on the panel).
-- `## Known issues`: what is still wrong, with its issue.
-- `## Since <last beta>` (a release only, optional, after `## Fixed`): what is new to the Beta channel's testers since
-  the last beta (`## Since 0.6.0-beta.3`). Bullets with bold leads; in the body only, never in the summary.
-- **No images.** Release notes are text: no `<img>` and no `![]()`; `check` fails on one. Pictures belong on the docs
-  pages the bullets link.
+The notes read like a popular product's release notes: short, scannable, a bit of fun, never a wall of text. A heading
+may start with an emoji, the same set every time (`check` ignores it):
+
+- **Intro**: 2-3 sentences, the big themes, before the first section.
+- `## ⭐ Highlights` (a feature release): the 3-4 headline features, each a `### [Feature name](docs page)` heading,
+  one line of what it does for you with its issues small at the end (`<sub>#12 #14</sub>`), 2-3 short bullets for the
+  key points, then a picture.
+- `## ✨ New`, `## 🛠️ Improved`, `## 🐛 Fixed`: one bullet per change, `- **[Feature name](docs page)**: one line.
+  <sub>#N</sub>`, then `  - ` sub-points only where they help. No paragraphs. The feature name is the link (never a
+  bare URL at the end). One of Highlights, New, Improved or Fixed has something in it.
+- Docs never lag a release: every Highlight and every bullet of New and Improved links the docs page that explains it
+  (`https://mrdarrengriffin.github.io/facet/<page>/`, a page that exists in `site/src/pages`), or carries
+  `<!-- no docs: <why> -->` (hidden on GitHub). `check` (and so the tag's release workflow) fails otherwise.
+- `## 🧪 Since <last beta>` (a release only, optional, after Fixed): what is new to the Beta channel's testers since the
+  last beta (`## 🧪 Since 0.6.0-beta.3`). Short bullets with bold leads; body only, never in the summary.
+- `## ⬆️ After updating`: only when someone has to do something (a setting moved or went, a step on the panel).
+- `## ⚠️ Known issues`: what is still wrong, one line each, with its issue.
+- **Pictures**: one per Highlight, plus before / after pairs where a screen changed, all made by
+  `cd renderer && node tools/release_shots.mjs V <name>=<spec> ...` (its header lists the forms) into
+  `release-notes/img/V/`:
+  - **Panel pictures** are rendered by the renderer with the docs site's made-up house (never a real home's data),
+    both panels side by side where it helps, every screen at the same size (360), an older README picture from git as
+    the "before". Each is framed as the Waveshare's front: a 2 px white line, then 24 px of off-black faceplate (`#16181b`)
+    round the screen, all square (no radius, no shadow). Each comes in the dark and the light theme
+    (`<name>-dark.png`, `<name>-light.png`), switched with the reader's mode as the README does:
+    `<picture><source media="(prefers-color-scheme: dark)" srcset=".../<name>-dark.png"><img src=".../<name>-light.png" width="640" alt="..."></picture>`.
+  - **Editor pictures** are fresh screenshots of a real panel's editor showing made-up data (laptop ~1440 × 900 at
+    2x, phone), put in plain: no frame, no radius. Never the old two-panel `site/public/editor/editor.png`.
+  - Commit them before the tag and link them by raw URL,
+    `https://raw.githubusercontent.com/mrdarrengriffin/facet/vV/release-notes/img/V/<file>` (notes edited after the
+    tag: the commit that added the pictures in place of `vV`). Every `<img>` has alt text saying what it shows; keep
+    the set small (a few hundred KB). `check` fails on any other picture.
+- **Cross-check, once the notes are written**: every linked docs page and `#anchor` exists and says what the bullet
+  says, and the release-day step 3a list (README and its pictures, CONTRIBUTING, AGENTS.md and any agent docs, the
+  docs' /ai pages and llms.txt / llms-full.txt, the panel's /llms.txt + /agents.md) matches the notes. Fix what is
+  stale before the tag.
 - **All changes, at the end of every version's notes (beta included; `check` fails without it):** everything that went
   in, under the written sections, collapsed (closed by default) so the notes stay short: the issues closed as
   completed in the version's milestone(s) (a release: `X.Y.Z` and every `X.Y.Z-*`, so all its betas; a beta or a fix
@@ -136,7 +160,8 @@ A tag without it fails before anything builds. Draft the next version's file as 
   written separately), so nothing else renders it.
 
 The release workflow uses the file as the GitHub release body (the All changes block carries the compare link). The OTA manifest's
-`summary` is its short version: the headline, After updating in full, then the bold leads (at most 1200 characters).
+`summary` is its short version, plain text (no links, pictures, issue numbers or emoji): the intro, After updating in
+full, then the Highlights' and each section's feature names (at most 1200 characters).
 Home Assistant shows that summary as the release notes in the panel's update dialog, with `release_url` (the GitHub
 release) as the link to the rest. The manifest also lists every version's own short summary since the last
 release (`notes`, `node firmware/release-notes.mjs entries V`); the panel shows those newer than the version it runs,
@@ -152,7 +177,7 @@ list (`workbench/src/lib/checklist.ts`).
 - Install from the docs site in Chrome on a panel that has never run Facet. First boot reaches set up without help.
 - Set up: join Wi-Fi, link Home Assistant, land on Home with the factory deck.
 - Open the panel's address in a browser: the editor loads, reorder the deck, change one screen's entity, see it on
-  the glass within a few seconds. Revert works.
+  the glass within a few seconds. Undo puts the last save back; Back to factory starts over.
 - Every shipped screen with real data, and with its entity missing or unavailable: empty and loading states, no crash,
   no stale paint.
 - Dark, light, auto; two accents; both panels; text never clipped at either size.
@@ -188,7 +213,8 @@ A failed check stops the day.
    - the catalogue + schema (step 2) and any route the release added or changed (`/fw/*`).
    Nothing user-visible ships undocumented. List what was updated in the release PR/commit.
 4. `node firmware/release-notes.mjs changes V vPREV >> release-notes/V.md`, then `node firmware/release-notes.mjs check V`:
-   the notes are written, read well and end with All changes (Release notes, above).
+   the notes are written, read well, have their pictures and end with All changes; then the cross-check (Release
+   notes, above) against 3a's list, fixing what is stale.
 5. `node firmware/release-prep.mjs V`: sets `facet_version` in both `esphome/facet-*.yaml`, publishes the Updates
    entry titled "Facet V" (a trailing `.0` dropped: "Facet 0.6"; draft it first) dated today. `git diff --stat` shows
    those files only. A beta changes nothing here (its YAMLs are stamped at build, it gets no Updates entry).

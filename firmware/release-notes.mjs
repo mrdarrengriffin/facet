@@ -1,12 +1,14 @@
 #!/usr/bin/env node
 // A version's release notes, written for the people who install the panel: release-notes/<version>.md (RELEASING.md).
-// The file is a headline paragraph, then these sections in this order, each optional except that one of New,
-// Improved or Fixed has bullets:
-//   ## New  ## Improved  ## Fixed  ## After updating  ## Known issues
-// Every bullet of New, Improved, Fixed and Known issues starts with a bold lead ("- **Calendar shows every
-// calendar.** More detail ... #8"): the lead is what Home Assistant's update card lists.
-// Docs never lag a release: every bullet of New and Improved (with its sub-points) links the docs page that explains
-// it (DOCS + a path whose page is in site/src/pages), or says "(no docs: <why>)"; check fails otherwise.
+// The file is a short headline paragraph, then these sections in this order, each optional except that one of
+// Highlights, New, Improved or Fixed has bullets (a heading may start with an emoji: "## ✨ New"; it is ignored here):
+//   ## Highlights  ## New  ## Improved  ## Fixed  ## After updating  ## Known issues
+// Every bullet of every section but After updating starts with a bold lead, the feature's name, linked to its docs
+// page ("- **[Calendar shows every calendar](https://…/screens/calendar/)**: one line. <sub>#8</sub>"), then
+// optional "  - " sub-points: the lead (as plain text) is what Home Assistant's update card lists.
+// Docs never lag a release: every bullet of Highlights, New and Improved (with its sub-points) links the docs page
+// that explains it (DOCS + a path whose page is in site/src/pages), or says "<!-- no docs: <why> -->" (hidden on
+// GitHub; "(no docs: <why>)" also counts); check fails otherwise.
 //   node firmware/release-notes.mjs check <version>          fails when the file is missing or malformed
 //   node firmware/release-notes.mjs body <version> [<prev>]  the GitHub release body (the file; a full-changelog link only
 //                                                         when it has no All changes block, which ends with its own)
@@ -19,7 +21,8 @@
 // N = its "- " lines: the issues closed as completed in the version's milestone(s), grouped Breaking changes / Features
 // / Fixes / Other by type label, then "**Full commit history:** <compare from...tag>". Generated, never hand-made:
 //   node firmware/release-notes.mjs changes <version> <from tag>   prints the block (gh)
-// Release notes have no images (check fails on <img> or ![]()).
+// Pictures: <img> with alt text from release-notes/img/<version>/ (renderer/tools/release_shots.mjs renders them); check
+// fails on any other picture.
 // The block is body only: never in the summary or the manifest's notes; check fails without it (that version only).
 // The summary is Markdown: Home Assistant's ESPHome update entity has no release_summary; it serves ota.summary as
 // the release notes in the update dialog (RELEASE_NOTES feature), under the title and versions, with ota.release_url
@@ -39,7 +42,7 @@ const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 export const REPO = 'https://github.com/mrdarrengriffin/facet';
 export const SUMMARY_MAX = 1200;
 export const ENTRY_MAX = 1000;
-const SECTIONS = ['New', 'Improved', 'Fixed', 'Since', 'After updating', 'Known issues'];
+const SECTIONS = ['Highlights', 'New', 'Improved', 'Fixed', 'Since', 'After updating', 'Known issues'];
 const ALL = /\n*<details><summary>All changes \((\d+)\)<\/summary>\n\n([\s\S]*?)\n<\/details>\s*$/;
 const LEAD = /^\*\*(.+?)\*\*/;
 export const DOCS = 'https://mrdarrengriffin.github.io/facet/';  // the published docs (deploy.yml FACET_DOCS_BASE)
@@ -77,18 +80,21 @@ export function parse(v) {
   let last = -1;
   for (const p of parts) {
     const name = p.slice(0, p.indexOf('\n') < 0 ? p.length : p.indexOf('\n')).trim();
-    const at = SECTIONS.indexOf(/^Since \d+\.\d+\.\d+-[a-z]+\.\d+$/.test(name) ? 'Since' : name);
+    const bare = name.replace(/^[^\p{L}\d]+/u, '');  // "✨ New" -> "New"
+    const at = SECTIONS.indexOf(/^Since \d+\.\d+\.\d+-[a-z]+\.\d+$/.test(bare) ? 'Since' : bare);
     if (at < 0) { errs.push(`unknown section "## ${name}" (${SECTIONS.join(', ')})`); continue; }
     if (at <= last) errs.push(`"## ${name}" is out of order (${SECTIONS.join(', ')})`);
     last = at;
     const body = p.slice(name.length).trim();
     if (!body) continue;  // an empty section is left out, never an empty heading
-    const bullets = body.split('\n').filter((l) => /^- /.test(l)).map((l) => l.slice(2).trim());
+    // Highlights: one "### [Name](docs)" heading per feature (a line, its points, a picture); the rest: bullets
+    const bullets = SECTIONS[at] === 'Highlights' ? body.split('\n').filter((l) => /^### /.test(l)).map((l) => `**${l.slice(4).trim()}**`)
+      : body.split('\n').filter((l) => /^- /.test(l)).map((l) => l.slice(2).trim());
     if (!bullets.length && name !== 'After updating') errs.push(`"## ${name}" has no bullets`);
     if (name !== 'After updating') for (const b of bullets) if (!LEAD.test(b)) errs.push(`"## ${name}": no bold lead: ${b.slice(0, 60)}`);
     sections[SECTIONS[at]] = { body, bullets, name };
   }
-  if (!['New', 'Improved', 'Fixed'].some((s) => sections[s]?.bullets.length)) errs.push('nothing under New, Improved or Fixed');
+  if (!['Highlights', 'New', 'Improved', 'Fixed'].some((s) => sections[s]?.bullets.length)) errs.push('nothing under Highlights, New, Improved or Fixed');
   if (errs.length) throw new Error(`release-notes/${v}.md:\n  ${errs.join('\n  ')}`);
   const out = [headline, ...SECTIONS.filter((s) => sections[s]).map((s) => `## ${sections[s].name}\n\n${sections[s].body}`),
     ...(all ? [all.block] : [])].join('\n\n');
@@ -102,16 +108,17 @@ export function body(v, prev) {
   return `${n.text}\n\n**Full changelog**: ${link}\n`;
 }
 
-// issue refs and links mean nothing in the update dialog: plain text
-const plain = (s) => s.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/\s*\((?:#\d+[,\s]*)+\)/g, '').replace(/\s+#\d+\b/g, '').trim();
+// issue refs, links and HTML (<sub>, comments) mean nothing in the update dialog: plain text
+const plain = (s) => s.replace(/<!--[\s\S]*?-->/g, '').replace(/<sub>[^<]*<\/sub>/g, '').replace(/<[^>]+>/g, '')
+  .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/\s*\((?:#\d+[,\s]*)+\)/g, '').replace(/\s+#\d+\b/g, '').trim();
 
 export function summary(v, { max = SUMMARY_MAX, known = true } = {}) {
   const n = parse(v);
   let out = plain(n.headline);
-  const add = (s) => (out.length + s.length <= max ? ((out += s), true) : false);
+  const add = (s) => (out.length + s.length + 16 <= max ? ((out += s), true) : false);  // 16: room for "and N more"
   if (n.sections['After updating']) add(`\n\n**After updating**\n\n${plain(n.sections['After updating'].body)}`);
-  for (const s of ['New', 'Improved', 'Fixed', ...(known ? ['Known issues'] : [])]) {
-    const leads = (n.sections[s]?.bullets ?? []).map((b) => `\n- ${plain(b.match(LEAD)[1])}`);
+  for (const s of ['Highlights', 'New', 'Improved', 'Fixed', ...(known ? ['Known issues'] : [])]) {
+    const leads = (n.sections[s]?.bullets ?? []).map((b) => `\n- ${plain(b.match(LEAD)[1]).replace(/[.:]$/, '')}`);
     if (!leads.length || !add(`\n\n**${s}**\n${leads[0]}`)) continue;  // a section with no room is left out whole
     let i = 1;
     for (; i < leads.length; i++) if (!add(leads[i])) break;
@@ -130,27 +137,42 @@ const key = (v) => {
 export const cmp = (a, b) => { const x = key(a), y = key(b); for (let i = 0; i < 5; i++) if (x[i] !== y[i]) return x[i] - y[i]; return 0; };
 const stable = (v) => !v.includes('-');
 
-// the docs rule (check only, for the version being released): each bullet of New and Improved, with its sub-points,
-// links a docs page that exists, or says "(no docs: why)"
+// the docs rule (check only, for the version being released): each bullet of Highlights, New and Improved, with its
+// sub-points, links a docs page that exists, or says "<!-- no docs: why -->" (or "(no docs: why)")
 export function docs(v) {
   const { sections } = parse(v), errs = [];
-  for (const name of ['New', 'Improved']) {
+  for (const name of ['Highlights', 'New', 'Improved']) {
     const body = sections[name]?.body;
     if (!body) continue;
-    for (const blk of body.split(/^(?=- )/m).filter((x) => x.startsWith('- '))) {
-      const lead = blk.match(/^- \*\*(.+?)\*\*/)?.[1] ?? blk.slice(2, 50);
+    const hl = name === 'Highlights';
+    for (const blk of body.split(hl ? /^(?=### )/m : /^(?=- )/m).filter((x) => x.startsWith(hl ? '### ' : '- '))) {
+      const lead = (hl ? blk.match(/^### \[?(.+?)(?:\]\(|$)/m) : blk.match(/^- \*\*\[?(.+?)(?:\]\([^)]*\))?\*\*/))?.[1] ?? blk.slice(2, 50);
       const links = [...blk.matchAll(/\((https:\/\/mrdarrengriffin\.github\.io\/facet\/[^)\s]*)\)/g)].map((m) => m[1]);
-      if (!links.length && !/\(no docs: [^)]+\)/.test(blk)) errs.push(`"## ${name}": "${lead}" links no docs page (add a link to ${DOCS}..., or "(no docs: why)")`);
+      if (!links.length && !/\(no docs: [^)]+\)|<!-- no docs: .+? -->/.test(blk)) errs.push(`"## ${name}": "${lead}" links no docs page (link the lead to ${DOCS}..., or add "<!-- no docs: why -->")`);
       for (const u of links) if (!docsPage(u)) errs.push(`"## ${name}": "${lead}": ${u} is no page in site/src/pages`);
     }
   }
   if (errs.length) throw new Error(`release-notes/${v}.md: docs:\n  ${errs.join('\n  ')}`);
 }
 
-// no pictures in release notes (check only, for the version being released): no <img> and no ![...](...)
-export function noImages(v) {
-  const bad = readFileSync(file(v), 'utf8').split('\n').map((l, i) => [i + 1, l]).filter(([, l]) => /<img\b|!\[[^\]]*\]\(/i.test(l));
-  if (bad.length) throw new Error(`release-notes/${v}.md: release notes have no images: line ${bad.map(([n]) => n).join(', ')}`);
+// the pictures rule (check only, for the version being released): every picture is an <img> with alt text (a panel
+// picture: inside a <picture> whose dark <source srcset> is its -dark twin), from
+// release-notes/img/<version>/ in this repo (its raw URL at the tag, or at the commit that added it), and the file is
+// there; no Markdown ![]() (it has no width)
+export const RAW = 'https://raw.githubusercontent.com/mrdarrengriffin/facet/';
+export function images(v) {
+  const errs = [], text = readFileSync(file(v), 'utf8');
+  text.split('\n').forEach((l, i) => { if (/!\[[^\]]*\]\(/.test(l)) errs.push(`line ${i + 1}: a Markdown picture: use <img src alt width>`); });
+  // a <picture>'s dark <source srcset> follows the same rule as its <img> (which carries the alt text)
+  for (const [tag] of text.matchAll(/<img\b[^>]*>|<source\b[^>]*>/gi)) {
+    const img = /^<img/i.test(tag), src = tag.match(img ? /\bsrc="([^"]+)"/ : /\bsrcset="([^"]+)"/)?.[1] ?? '';
+    const alt = img ? tag.match(/\balt="([^"]*)"/)?.[1] ?? '' : 'a source: its <img> has the alt';
+    const m = src.startsWith(RAW) && src.slice(RAW.length).match(/^[^/]+\/(release-notes\/img\/([^/]+)\/[^/]+\.(?:png|jpg|webp|gif))$/);
+    if (!m || m[2] !== v) errs.push(`${src || tag}: pictures come from ${RAW}<tag or commit>/release-notes/img/${v}/`);
+    else if (!existsSync(join(ROOT, m[1]))) errs.push(`${src}: ${m[1]} is not in the repo (node renderer/tools/release_shots.mjs ${v} ...)`);
+    if (alt.trim().length < 10) errs.push(`${src}: no alt text (say what the picture shows)`);
+  }
+  if (errs.length) throw new Error(`release-notes/${v}.md: pictures:\n  ${errs.join('\n  ')}`);
 }
 
 // the All changes rule (check only, for the version being released): the collapsed list is there and its count is right
@@ -210,7 +232,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     if (cmd === 'check') {
       const s = summary(v), e = entries(v);
       docs(v);
-      noImages(v);
+      images(v);
       allChanges(v);
       console.log(`release-notes/${v}.md: ok, summary ${s.length} chars, notes ${e.map((x) => `${x.version} ${x.summary.length}`).join(', ')}`);
     } else if (cmd === 'changes') process.stdout.write(changes(v, prev));
