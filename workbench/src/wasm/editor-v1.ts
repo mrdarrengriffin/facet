@@ -411,17 +411,69 @@ function tab(p: Page) {
 /** the live panel's size on this page: at most 720 CSS px, in whole screen pixels per panel pixel when that fits (a
  *  480 panel on a 2x screen: 3 screen pixels each, 720 px wide, drawn nearest-neighbour: sharp), else shrunk smooth */
 let crisp = false, zoom = 1;
+/** a phone held upright: the live panel on top, the sidebar a bottom sheet (peek, half, full); held sideways (short):
+ *  the sidebar stays beside the panel, the top bar on one row */
+const phoneMq = matchMedia('(max-width: 760px) and (min-height: 501px), (max-width: 760px) and (orientation: portrait)'), shortMq = matchMedia('(max-height: 500px) and (orientation: landscape)');  // as editor-v1.css
+let sheet: 'peek' | 'half' | 'full' = 'peek', sheetKey = '';
+const PEEK = 76;  // the sheet's grab + its head (title, the line under it)
+function sheetPx(mainH: number, s = sheet) { return s === 'peek' ? PEEK : s === 'half' ? Math.round(mainH * 0.5) : mainH; }
 function panelSize() {
-  const main = $('v1-main'), phone = matchMedia('(max-width: 760px)').matches;
+  const main = $('v1-main'), phone = phoneMq.matches, short = shortMq.matches;
   const sideW = phone ? 0 : (main.querySelector('.v1-side') as HTMLElement | null)?.offsetWidth ?? 420;
-  const pad = phone ? 32 : 64;
-  const w = Math.min(720, main.clientWidth - sideW - pad), hh = phone ? w : Math.min(720, main.clientHeight - pad - 96);
+  const pad = phone ? 32 : short ? 24 : 64;
+  // a phone: the panel fits the room above the sheet (full open covers it; it keeps its half-open size behind)
+  const w = Math.min(720, main.clientWidth - sideW - pad);
+  const hh = phone ? main.clientHeight - sheetPx(main.clientHeight, sheet === 'full' ? 'half' : sheet) - pad : Math.min(720, main.clientHeight - pad - (short ? 0 : 96));
   const dpr = window.devicePixelRatio || 1, room = Math.max(120, Math.min(w, hh));
   const best = (room * dpr) / S(), whole = Math.floor(best);
   // whole screen pixels when that keeps at least 85% of the room; else fill the room, smooth
   crisp = whole >= 1 && whole / best >= 0.85;
   zoom = crisp ? whole : best;
   return Math.floor((S() * zoom) / dpr);
+}
+/** the phone's sheet: it opens (half) for a picked card, square or view and closes (peek) back on the plain screen;
+ *  a tap on its head opens it, a drag on its head moves it to the nearest of peek, half, full; Done or a tap on the
+ *  live panel closes it */
+function sheetFollows() {
+  const key = `${side}|${sel}|${cardSel}|${target ? `${target.x},${target.y},${target.size}` : ''}`;
+  const picked = side !== 'screen' || cardSel >= 0 || !!target;
+  if (sheetKey && key !== sheetKey) sheet = picked ? (sheet === 'full' ? 'full' : 'half') : 'peek';
+  sheetKey = key;
+}
+function phoneSheet(sb: HTMLElement, stage: HTMLElement) {
+  const main = $('v1-main'), mh = main.clientHeight;
+  const set = (s: typeof sheet) => { if (s !== sheet) { sheet = s; render(); } else sb.style.height = `${sheetPx(mh)}px`; };
+  sb.dataset.sheet = sheet;
+  sb.style.height = `${sheetPx(mh)}px`;
+  stage.style.paddingBottom = `${sheetPx(mh, sheet === 'full' ? 'half' : sheet) + 16}px`;  // the panel centres in the room above the sheet
+  const head = sb.querySelector('.v1-sidehead');
+  if (head && sheet !== 'peek' && !head.querySelector('.btn.icon')) head.append(  // ✕ (back to the screen) closes it too
+    btn('Done', 'Close the sheet', false, () => set('peek'), 'ghost'));
+  sb.onpointerdown = (ev) => {
+    const t = ev.target as HTMLElement;
+    if (!t.closest('.v1-grab, .v1-sidehead') || t.closest('button, input, select, a') || ev.button !== 0) return;
+    const y0 = ev.clientY, h0 = sb.offsetHeight, t0 = ev.timeStamp;
+    let moved = false;
+    sb.setPointerCapture(ev.pointerId);
+    sb.classList.add('drag');
+    sb.onpointermove = (e) => {
+      const dy = e.clientY - y0;
+      if (!moved && Math.abs(dy) < 6) return;
+      moved = true;
+      sb.style.height = `${Math.max(PEEK, Math.min(mh, h0 - dy))}px`;
+    };
+    sb.onpointerup = sb.onpointercancel = (e) => {
+      sb.onpointermove = sb.onpointerup = sb.onpointercancel = null;
+      sb.classList.remove('drag');
+      if (!moved) { if (sheet === 'peek') set('half'); return; }
+      // the nearest stop to where it would come to rest (a quick flick goes on to the next one)
+      const v = (y0 - e.clientY) / Math.max(1, e.timeStamp - t0), aim = sb.offsetHeight + v * 200;
+      const stops = (['peek', 'half', 'full'] as const).map((s) => [s, Math.abs(sheetPx(mh, s) - aim)] as const);
+      set(stops.reduce((a, b) => (b[1] < a[1] ? b : a))[0]);
+    };
+  };
+  // a tap on the live panel (not on a card or a square) closes it
+  stage.onclick = (ev) => { if (sheet !== 'peek' && !dragged && !(ev.target as HTMLElement).closest('button')) set('peek'); };
 }
 let resizeT = 0;
 addEventListener('resize', () => { clearTimeout(resizeT); resizeT = window.setTimeout(() => render(), 150); });
@@ -433,6 +485,7 @@ function render() {
   // Settings > Screens > a built-in screen: the live panel shows that screen, on the panel or not
   const shown = side === 'settings' && setView === 'screen' ? draft.pages.find((x) => x.kind === setScreen) ?? { id: setScreen, kind: setScreen } : null;
   const p = shown ?? pageOf(draft, sel)!;
+  if (phoneMq.matches) sheetFollows();
   const stage = h('div', 'v1-stage');
   const big = panelSize();
   const frame = h('div', 'v1-frame');
@@ -452,6 +505,7 @@ function render() {
   const body = side === 'screen' && own(p) && target ? addCardSide(p) : side === 'screen' && own(p) && cardSel >= 0 ? cardSide(p, cardSel) : side === 'add' ? addSide() : side === 'settings' ? settingsSide() : side === 'review' ? reviewSide() : side === 'saved' ? savedSide() : screenSide(p);
   sb.setAttribute('aria-label', body[0].querySelector('b')?.textContent ?? '');
   sb.append(...body);
+  if (phoneMq.matches) phoneSheet(sb, stage);
   main.replaceChildren(stage, sb);
 }
 

@@ -165,23 +165,43 @@ button, input, select { font: inherit; color: inherit; }
 .v1-doc ul, .v1-doc ol { padding-left: var(--sp-6); display: flex; flex-direction: column; gap: var(--sp-2); }
 .v1-doc code { font-family: var(--mono); font-size: 0.9em; color: var(--f-text-dim); }
 
-/* a phone at the panel: the screen's name + Save on top, the tabs under it, the live panel, the sidebar as a sheet */
-@media (max-width: 760px) {
-  .v1 { height: auto; min-height: 100vh; grid-template-rows: auto 1fr auto; }
-  .v1-top { position: sticky; top: 0; z-index: 3; flex-wrap: wrap; gap: var(--sp-2) var(--sp-3); padding: var(--sp-3) var(--sp-4) 0; }
-  .v1-brand { display: none; }
-  .v1-title { display: block; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* a phone: one top row (the screen's name, look, Settings, Save; the same height, one centre line), the tabs under
+   it; the live panel always whole, sized to the room above the sheet; the sidebar a bottom sheet (editor-v1.ts
+   phoneSheet: peek = its head only, half, full; the height is set there) */
+@media (max-width: 760px) and (min-height: 501px), (max-width: 760px) and (orientation: portrait), (max-height: 500px) and (orientation: landscape) {
+  .v1 { height: 100vh; height: 100dvh; grid-template-rows: auto minmax(0, 1fr) auto; }
+  .v1-brand, .v1-stage > .v1-meta, .v1-stage > .btn, .v1-foot { display: none; }
+  .v1-top { gap: var(--sp-2) var(--sp-3); padding: var(--sp-3) var(--sp-4); }
+  .v1-title { display: block; flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .v1-send { gap: var(--sp-2); }
   .v1-send .seg, #v1-undo { display: none; }
+  .v1-send > .btn { height: var(--sp-9); }
+  #v1-look { border-color: var(--f-line); }
   #v1-settings { width: var(--sp-9); padding: 0; font-size: 0; }
-  #v1-settings::before { content: '⚙'; font: 400 16px/1 var(--sans); }
+  #v1-settings::before { content: ''; width: 18px; height: 18px; flex: none; background: currentColor; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M19.1 9.3L22.1 9.7L22.1 14.3L19.1 14.7L18.9 15.1L20.8 17.6L17.6 20.8L15.1 18.9L14.7 19.1L14.3 22.1L9.7 22.1L9.3 19.1L8.9 18.9L6.4 20.8L3.2 17.6L5.1 15.1L4.9 14.7L1.9 14.3L1.9 9.7L4.9 9.3L5.1 8.9L3.2 6.4L6.4 3.2L8.9 5.1L9.3 4.9L9.7 1.9L14.3 1.9L14.7 4.9L15.1 5.1L17.6 3.2L20.8 6.4L18.9 8.9ZM15.2 12a3.2 3.2 0 1 0-6.4 0a3.2 3.2 0 1 0 6.4 0Z'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M19.1 9.3L22.1 9.7L22.1 14.3L19.1 14.7L18.9 15.1L20.8 17.6L17.6 20.8L15.1 18.9L14.7 19.1L14.3 22.1L9.7 22.1L9.3 19.1L8.9 18.9L6.4 20.8L3.2 17.6L5.1 15.1L4.9 14.7L1.9 14.3L1.9 9.7L4.9 9.3L5.1 8.9L3.2 6.4L6.4 3.2L8.9 5.1L9.3 4.9L9.7 1.9L14.3 1.9L14.7 4.9L15.1 5.1L17.6 3.2L20.8 6.4L18.9 8.9ZM15.2 12a3.2 3.2 0 1 0-6.4 0a3.2 3.2 0 1 0 6.4 0Z'/%3E%3C/svg%3E") center / contain no-repeat; }
+  .v1-stage { padding: var(--sp-4); overflow: hidden; }
+}
+@media (max-width: 760px) and (min-height: 501px), (max-width: 760px) and (orientation: portrait) {
+  .v1-top { flex-wrap: wrap; padding-bottom: 0; }
   .v1-tabs { order: 3; flex-basis: 100%; padding-bottom: var(--sp-2); }
-  .v1-main { display: flex; flex-direction: column; }
-  .v1-stage { padding: var(--sp-4); overflow: visible; }
-  .v1-side { position: sticky; bottom: 0; max-height: 60vh; padding: 0 var(--sp-4) var(--sp-5); border-left: 0; border-top: 1px solid var(--f-line-hi); border-radius: var(--rad-ring) var(--rad-ring) 0 0; box-shadow: 0 calc(var(--sp-2) * -1) var(--sp-7) color-mix(in srgb, var(--f-scrim) 30%, transparent); }
-  .v1-grab { display: block; position: sticky; top: 0; z-index: 2; width: var(--sp-10); height: var(--sp-1); margin: var(--sp-2) auto 0; border-radius: var(--rad-round); background: var(--f-line-hi); }
-  .v1-sidehead { margin: 0 calc(var(--sp-4) * -1); padding: var(--sp-3) var(--sp-4); }
-  .v1-foot { display: none; }
+  .v1-main { position: relative; display: flex; flex-direction: column; overflow: hidden; }
+  .v1-stage { flex: 1 1 auto; min-height: 0; }
+  .v1-side { position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; overflow: hidden; padding: 0 var(--sp-4) var(--sp-5); border-left: 0; border-top: 1px solid var(--f-line-hi); border-radius: var(--rad-ring) var(--rad-ring) 0 0; box-shadow: 0 calc(var(--sp-2) * -1) var(--sp-7) color-mix(in srgb, var(--f-scrim) 30%, transparent); transition: height var(--mo-fast, 120ms) ease-out; }
+  .v1-side.drag { transition: none; }
+  .v1-side[data-sheet='half'], .v1-side[data-sheet='full'] { overflow-y: auto; overscroll-behavior: contain; }
+  .v1-side[data-sheet='full'] { border-radius: 0; border-top-color: var(--f-line); }
+  .v1-side[data-sheet='peek'] .v1-sidehead { cursor: pointer; }
+  .v1-grab { display: block; position: sticky; top: 0; z-index: 2; width: 100%; height: var(--sp-4); margin: 0; background: none; touch-action: none; cursor: grab; }
+  .v1-grab::before { content: ''; display: block; width: var(--sp-10); height: var(--sp-1); margin: var(--sp-2) auto 0; border-radius: var(--rad-round); background: var(--f-line-hi); }
+  .v1-sidehead { top: var(--sp-4); margin: 0 calc(var(--sp-4) * -1); padding: var(--sp-2) var(--sp-4) var(--sp-3); touch-action: none; }
+}
+/* a phone held sideways: the sidebar stays beside the panel, narrower */
+@media (max-height: 500px) and (orientation: landscape) {
+  .v1-top { flex-wrap: nowrap; }
+  .v1-title { flex: 0 1 auto; max-width: 25%; }
+  .v1-main { grid-template-columns: minmax(0, 1fr) min(calc(var(--sp-10) * 10.5), 48vw); }
+  .v1-side { padding: 0 var(--sp-5) var(--sp-5); }
+  .v1-sidehead { margin: 0 calc(var(--sp-5) * -1); padding: var(--sp-4) var(--sp-5) var(--sp-3); }
 }
 
 /* 2. the grid on the live panel: the real screen; the editing layer over its grid follows the panel's scroll and
