@@ -78,7 +78,9 @@ export default {
     { name: 'Home card: the day of an event this week in full (Wednesday, not Wed); Tomorrow in full', async run(t) {
       const sun = Date.UTC(2026, 10, 1, 12), wed = sun + 3 * 86400e3;  // Sunday 1 Nov 2026 noon, the event Wednesday 4 Nov
       t.ha.s[C1] = { '': 'off', friendly_name: 'Family', message: 'Tennis - Coaching', start_time: '2026-11-04 18:00:00', end_time: '2026-11-04 19:00:00', all_day: 'false' };
-      t.ha.answers = true;
+      t.ha.answers = true;  // the link's entity list; get_events answers the same event (the demo's replies follow the wall clock)
+      t.ha.reply = (service, data) => service === 'calendar.get_events' && data.entity_id === C1
+        ? { [C1]: { events: [{ start: iso(wed + 6 * 3600e3), end: iso(wed + 7 * 3600e3), summary: 'Tennis - Coaching' }] } } : null;
       await t.device({ v: 2, rev: 9, start: 'h', pages: [
         { id: 'h', kind: 'home', name: 'Test', cards: [{ t: 'page', page: 'c', size: 'm' }, { t: 'page', page: 'k', size: 'm' }] },
         { id: 'c', kind: 'calendar', params: { source: 'ha', now: String(sun) } },
@@ -88,7 +90,6 @@ export default {
       const c = t.part('card');
       t.ok(c && c.texts.includes('Wednesday'), `the card: ${JSON.stringify(c?.texts)}`);
       t.ok(!c.texts.includes('Wed'), 'never the short form on the card');
-      void wed;
     } },
     { name: 'none picked: every calendar Home Assistant has (a fresh panel)', async run(t) {
       t.ha.s[C1] = { '': 'off', friendly_name: 'Family' };

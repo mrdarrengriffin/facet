@@ -389,8 +389,10 @@ class Calendar : public feed::Feed {
     static uint32_t looked = 0;
     namespace hl = fw::dev::ha_link;
     if (cals.empty() && list_now.empty() && hl::ready() && hl::status() != hl::LOADING && lv_tick_elaps(looked) > 30000) {
-      looked = lv_tick_get();  // none found, or the read failed (Home Assistant was away): look again
-      if (hl::list("calendar") || hl::status() == hl::FAIL) hl::fetch("calendar");
+      looked = lv_tick_get();  // none found, or the read failed (Home Assistant was away): look again; a list that has
+      // calendars has just come and is taken below (reading it again would drop it before it is used, every 30 s)
+      const std::vector<hl::Entity> *l = hl::list("calendar");
+      if ((l && l->empty()) || hl::status() == hl::FAIL) hl::fetch("calendar");
     }
     const std::string list = every_calendar();  // every calendar Home Assistant has; the ones turned off: hidden
     if (changed() || src_now != "ha" || list != list_now) {
