@@ -20,7 +20,8 @@ const lab = (t, c, a = '') => JSON.parse(t.b.str(c, (pc) => t.b.str(a, (pa) => t
 const setting = (t, id, v) => t.b.str(id, (a) => t.b.str(v, (p) => t.b.m.UTF8ToString(t.b.m._fw_setting(a, p))));
 const live = (t) => lab(t, 'theme_live');
 // a fresh device on Home with an empty store (first boot)
-async function boot(t) { await t.device('house'); lab(t, 'theme_slot_mem'); setting(t, 'look', 'facet'); t.wait(800); }
+// (the house's speaker paused: a playing media card turns its record, so the frame would move on its own)
+async function boot(t) { t.ha.s['media_player.sitting_room_speaker'] = { '': 'paused' }; await t.device('house'); lab(t, 'theme_slot_mem'); setting(t, 'look', 'facet'); t.wait(800); }
 // a theme file with one change (path a.b.c = value)
 const edit = (id, fn) => { const j = JSON.parse(file(id)); fn(j); return JSON.stringify(j, null, 2); };
 // the refusal contract: nothing moved

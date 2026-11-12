@@ -91,7 +91,7 @@ export default {
     } },
     { name: 'overfull end slot: the bounds proof FAILS (reported, never a silent clip); no limit in code', async run(t) {
       await at(t, { settings: true, sample: 'end-buttons' }, den(t) === '1x' ? 160 : 240); t.ok(boundsAll(t).length > 0, 'an overfull header is reported');
-      t.ok(comp(t, 'icon_button').length >= 5, 'every item was built (no cap)');
+      t.ok(t.comps().filter((c) => c.ids.includes('icon_button')).length >= 5, 'every item was built (no cap), past the stage too');  // built, not shown: the stage clips the overflow
     } },
     // ---------------------------------------------------------------- slots: one table, spec checks
     { name: 'slots: one table (meta "slots" = title + end, no start); spec slot "start" is refused with a clear error', async run(t) {
