@@ -17,7 +17,7 @@ const types = [
   ['Media player', 'Shows the track and the album art on a record that turns while it plays; a tap opens the Media screen.'],
   ['Sensor', 'Read only: the value and its label.'],
   ['State readout (half only)', 'A sensor\'s state with its icon and no box, in the accent colour while it is on; no tap.'],
-  ['Screen', 'Opens another of your screens or a built-in one.'],
+  ['Screen', 'Opens another of your screens or a built-in one. A built-in screen\'s card shows its own state: the Clock card the time (or an analogue face) and the date, the Timer card the running timer.'],
   ['Any other entity', 'Climate, a cover, a fan, a script, a scene, a button and the rest: what a tap does depends on what it is.'],
 ];
 ---
@@ -63,7 +63,7 @@ const types = [
       <strong>On the panel</strong> (<strong>Settings &gt; Screens</strong>): every built-in screen, with where its data
       comes from. Every one is always on the panel, with no switch: its card on Home is added and removed in the editor
       like any other card, and a screen reads its data only while it shows or a card for it is on Home. Tap a screen's name to set its
-      source and options, such as which speaker the Media screen follows.
+      source and options, such as the Media screen's source.
     </li>
     <li>
       <strong>Your own cards</strong>: the full list of Homes, cards and screens is the panel's <em>deck</em>. An AI
@@ -72,9 +72,14 @@ const types = [
     </li>
   </ul>
 
-  <h3 id="unavailable">When an entity is unavailable</h3>
+  <h3 id="unavailable">Not found and Unavailable</h3>
   <p>
     If Home Assistant reports an entity as unavailable, its card stays in place but greys out: the icon and label dim,
     the value shows a dash and the sub line reads <strong>Unavailable</strong>. A tap only plays a short error sound.
     When the entity is back, the card returns by itself.
+  </p>
+  <p>
+    Every screen that reads an entity tells the two cases apart: <strong>Not found</strong> means Home Assistant has
+    no such entity (check the setup: it was renamed or removed), <strong>Unavailable</strong> means it is there but has
+    no state (check the device). Media, Calendar and Weather try again on their own after Home Assistant restarts.
   </p>

@@ -60,7 +60,7 @@ of components, so every screen looks and behaves the same at either size.
 arrangement of components you already have.
 
 **Editor.** Every panel serves its own editor at its address: build your Homes card by card on a live copy of the
-panel (add any entity, drag cards to move them, half and 1 x 1 sizes, a state readout), set each built-in screen,
+panel (add any entity, drag cards to move them, 1 × 1, half, 2 × 1 and 2 × 2 sizes, a state readout), set each built-in screen,
 then save. [Editor docs](https://mrdarrengriffin.github.io/facet/editor/).
 
 **Send API.** A panel running Facet has a small HTTP API, so you can show something on it from
@@ -168,7 +168,7 @@ Not screens you add: what every panel has, most of it in Settings.
 | [Home Assistant link](https://mrdarrengriffin.github.io/facet/screens/settings/) | Settings > Home Assistant: the panel's own link to Home Assistant, its address and token kept on the panel. |
 | [API keys](https://mrdarrengriffin.github.io/facet/screens/settings/) | Settings > API keys: the keys scripts, automations and agents use to change the panel; you allow each on the glass, and revoke them here. |
 | [Update channels](https://mrdarrengriffin.github.io/facet/screens/settings/) | Settings > Update channel: Release, every finished version; Beta, test builds of the next version; or Dev (nightly). |
-| [Report a problem](https://mrdarrengriffin.github.io/facet/screens/settings/) | Settings > Report a problem: the address of the panel's report page, with its logs kept across restarts and an issue filled in. |
+| [Report a problem](https://mrdarrengriffin.github.io/facet/screens/settings/) | Settings > About > Report a problem: the address of the panel's report page, with its logs kept across restarts and an issue filled in. |
 
 More screens are on the way (thermostat, lock, vacuum, cameras, plants and others): see the
 [roadmap](https://mrdarrengriffin.github.io/facet/roadmap/).

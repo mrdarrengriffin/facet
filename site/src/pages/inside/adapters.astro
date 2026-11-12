@@ -132,8 +132,8 @@ const models: { screen: string; feed: string; model: string; fields: [string, st
     A screen's <strong>Source</strong> setting lists its adapters in this order (C51b): a public source that needs no
     account or key first, read by the panel itself, then one entry per Home Assistant integration that provides the
     data. Home Assistant is optional: where a public source exists, a panel without Home Assistant still shows the
-    screen. Sample data is an adapter too, for the docs, the workbench and the tests; panels stop offering it as a
-    source in 0.5.0-beta.8 (<a href={`${REPO}/issues/156`}>#156</a>).
+    screen. Sample data is an adapter too, for the docs, the workbench and the tests; panels stopped offering it
+    as a source in 0.5 (<a href={`${REPO}/issues/156`}>#156</a>).
   </p>
 
   <h2 id="when">When to write one</h2>
@@ -223,9 +223,9 @@ node renderer/tools/functional.mjs --ids media_screen,feeds --den 1.5x`} />
   <div class="callout">
     <span class="dot" aria-hidden="true"></span>
     <p>
-      Today the Source sheet leaves out an integration source whose integration Home Assistant does not have. Coming
-      in 0.5.0-beta.8 (<a href={`${REPO}/issues/156`}>#156</a>): it stays in the list, greyed, saying
-      <strong>Not set up in Home Assistant</strong>. Both read the same <code>detect</code>, so declare it fully.
+      Since 0.5 (<a href={`${REPO}/issues/156`}>#156</a>) an integration source whose integration Home Assistant
+      does not have stays in the list, greyed, saying
+      <strong>Not set up in Home Assistant</strong>. That check reads <code>detect</code>, so declare it fully.
     </p>
   </div>
 

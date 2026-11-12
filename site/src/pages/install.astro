@@ -128,7 +128,9 @@ const manifest = (id: string) => url(`/firmware/${id}/manifest.json`);
   <p>
     When you choose a light or a sensor for a screen, the panel reads the list from Home Assistant itself, with an
     address and a token of its own. After it is added, Set up shows a code to its link page; it is also on the panel
-    under <strong>Settings &gt; Home Assistant</strong> while the panel is not linked.
+    under <strong>Settings &gt; Home Assistant</strong> while the panel is not linked. The panel also uses its link
+    for album art, the editor's entity search, Energy and calendars, and to pick km or miles from your Home
+    Assistant's country.
   </p>
   <ol>
     <li>In Home Assistant, <strong>Settings &gt; People &gt; Users</strong>: add a user for this panel, not an administrator.</li>

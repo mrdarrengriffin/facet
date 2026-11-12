@@ -35,7 +35,7 @@ Real panels find things the browser never will, so test reports are gold.
 Guition ESP32-S3-4848S040 (4", 480 x 480). Other panels are planned; if you have one, an issue saying so helps us
 decide what comes next.
 
-**Install the preview build** from your browser on the [Install](https://mrdarrengriffin.github.io/facet/install/)
+**Install the latest release** (or a Beta) from your browser on the [Install](https://mrdarrengriffin.github.io/facet/install/)
 page (Chrome or Edge, USB-C data cable). It replaces what is on the panel now. Updates then arrive in Home Assistant.
 
 **What to try:** go round every screen, tap, swipe and long press, switch dark and light, and leave it running for a
