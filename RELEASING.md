@@ -106,22 +106,28 @@ A tag without it fails before anything builds. Draft the next version's file as 
 - `## Known issues`: what is still wrong, with its issue.
 - `## Since <last beta>` (a release only, optional, after `## Fixed`): what is new to the Beta channel's testers since
   the last beta (`## Since 0.6.0-beta.3`). Bullets with bold leads; in the body only, never in the summary.
+- **No images.** Release notes are text: no `<img>` and no `![]()`; `check` fails on one. Pictures belong on the docs
+  pages the bullets link.
 - **All changes, at the end of every version's notes (beta included; `check` fails without it):** everything that went
-  in, under the written sections, collapsed (closed by default) so the notes stay short:
-  every closed issue of the version's milestone(s) (a release: `X.Y.Z` and every `X.Y.Z-*`; a beta: its own) and every
-  issue its commits close, as `#N Title`; every merged PR, `#N Title`; then each commit neither covers, `sha subject`
-  (bookkeeping left out: Todo, Catalogue, Notes, Log, Release notes), by area. Generated, never hand-made, as the last
-  thing before the tag (it needs `gh`):
-  `node firmware/release-notes.mjs changes V vPREV >> release-notes/V.md` (a release: PREV = the last release, so it
-  covers all its betas). The block is:
+  in, under the written sections, collapsed (closed by default) so the notes stay short: the issues closed as
+  completed in the version's milestone(s) (a release: `X.Y.Z` and every `X.Y.Z-*`, so all its betas; a beta or a fix
+  release: its own), grouped by type label into Breaking changes (`breaking`), Features (`feature`), Fixes (`bug`)
+  and Other (anything else: tasks, tests), each `- <issue title> #N` by number, then the compare link. No commits,
+  PRs or area tags, so every issue in the milestone needs its type label before the list is made.
+  Generated, never hand-made, as the last thing before the tag (it needs `gh`):
+  `node firmware/release-notes.mjs changes V vPREV >> release-notes/V.md` (vPREV = the previous tag: the compare
+  link runs from it). The block is:
 
   ```
   <details><summary>All changes (N)</summary>
 
-  **Issues (n)**
+  ### Features (n)
 
-  - #12 Title
+  - Title #12
   ...
+
+  **Full commit history:** https://github.com/mrdarrengriffin/facet/compare/vPREV...vV
+
   </details>
   ```
 
@@ -129,7 +135,7 @@ A tag without it fails before anything builds. Draft the next version's file as 
   never in the HA summary or the manifest's notes; the docs site does not show release notes (Updates entries are
   written separately), so nothing else renders it.
 
-The release workflow uses the file as the GitHub release body (plus the full-changelog link). The OTA manifest's
+The release workflow uses the file as the GitHub release body (the All changes block carries the compare link). The OTA manifest's
 `summary` is its short version: the headline, After updating in full, then the bold leads (at most 1200 characters).
 Home Assistant shows that summary as the release notes in the panel's update dialog, with `release_url` (the GitHub
 release) as the link to the rest. The manifest also lists every version's own short summary since the last

@@ -8,16 +8,18 @@
 // Docs never lag a release: every bullet of New and Improved (with its sub-points) links the docs page that explains
 // it (DOCS + a path whose page is in site/src/pages), or says "(no docs: <why>)"; check fails otherwise.
 //   node firmware/release-notes.mjs check <version>          fails when the file is missing or malformed
-//   node firmware/release-notes.mjs body <version> [<prev>]  the GitHub release body (the file + full-changelog link)
+//   node firmware/release-notes.mjs body <version> [<prev>]  the GitHub release body (the file; a full-changelog link only
+//                                                         when it has no All changes block, which ends with its own)
 //   node firmware/release-notes.mjs summary <version>        the OTA manifest's ota.summary (manifests.mjs uses it)
 //   node firmware/release-notes.mjs entries <version>        the OTA manifest's notes: one short summary per version
 // A section with nothing under it is left out (of the body and the summary), never shown as an empty heading.
 // A release's notes may also have "## Since <version>" after Fixed (what is new to that pre-release's testers): body
 // only, never in the summary. Every version's notes end with the All changes list, a collapsed block, closed by default:
 //   <details><summary>All changes (N)</summary>  + a blank line + the list + </details>
-// N = its "- " lines: every closed issue of the version's milestone(s), every merged PR, then the commits neither
-// covers. Generated, never hand-made:
-//   node firmware/release-notes.mjs changes <version> <from tag> [<to ref>]   prints the block (gh + git)
+// N = its "- " lines: the issues closed as completed in the version's milestone(s), grouped Breaking changes / Features
+// / Fixes / Other by type label, then "**Full commit history:** <compare from...tag>". Generated, never hand-made:
+//   node firmware/release-notes.mjs changes <version> <from tag>   prints the block (gh)
+// Release notes have no images (check fails on <img> or ![]()).
 // The block is body only: never in the summary or the manifest's notes; check fails without it (that version only).
 // The summary is Markdown: Home Assistant's ESPHome update entity has no release_summary; it serves ota.summary as
 // the release notes in the update dialog (RELEASE_NOTES feature), under the title and versions, with ota.release_url
@@ -95,6 +97,7 @@ export function parse(v) {
 
 export function body(v, prev) {
   const n = parse(v);
+  if (n.all) return `${n.text}\n`;  // the All changes block ends with the compare link
   const link = prev ? `${REPO}/compare/${prev}...v${v}` : `${REPO}/commits/v${v}`;
   return `${n.text}\n\n**Full changelog**: ${link}\n`;
 }
@@ -144,6 +147,12 @@ export function docs(v) {
   if (errs.length) throw new Error(`release-notes/${v}.md: docs:\n  ${errs.join('\n  ')}`);
 }
 
+// no pictures in release notes (check only, for the version being released): no <img> and no ![...](...)
+export function noImages(v) {
+  const bad = readFileSync(file(v), 'utf8').split('\n').map((l, i) => [i + 1, l]).filter(([, l]) => /<img\b|!\[[^\]]*\]\(/i.test(l));
+  if (bad.length) throw new Error(`release-notes/${v}.md: release notes have no images: line ${bad.map(([n]) => n).join(', ')}`);
+}
+
 // the All changes rule (check only, for the version being released): the collapsed list is there and its count is right
 export function allChanges(v) {
   const { all } = parse(v);
@@ -151,41 +160,33 @@ export function allChanges(v) {
   if (all.n !== all.items) throw new Error(`release-notes/${v}.md: All changes says (${all.n}) but lists ${all.items}`);
 }
 
-// the All changes block for <version>, from <from> to <to>: the closed issues of its milestone(s) (a release: X.Y.Z
-// and every X.Y.Z-*; a beta: its own) and the issues its commits close, the merged PRs, then every other commit
-// (no issue or PR of the list in its message), bookkeeping left out (Todo, Catalogue, Notes, Log, Release notes)
-const BOOKKEEPING = /^(Todo|Catalogue|Notes|Log|Release notes)\b/;
-export function changes(v, from, to = 'HEAD') {
-  const run = (cmd, args) => execFileSync(cmd, args, { cwd: ROOT, encoding: 'utf8', maxBuffer: 64 << 20 });
-  const gh = (args) => JSON.parse(run('gh', args));
-  const range = `${from}..${to}`;
-  const commits = run('git', ['log', '--no-merges', '--reverse', '--format=%h%x00%s%x00%B%x01', range]).split('\x01')
-    .map((c) => c.trim()).filter(Boolean).map((c) => { const [sha, subject, msg] = c.split('\0'); return { sha, subject, msg }; });
-  const inRange = new Set(run('git', ['rev-list', range]).split('\n').filter(Boolean));
+// the All changes block for <version>: the issues closed as completed in its milestone(s) (a release: X.Y.Z and every
+// X.Y.Z-*, so all its betas; a beta or a fix release: its own), grouped by type label (TYPES: the first group whose
+// label the issue has; none of them = Other), each "- <title> #N", by number; then the compare link from <from> to the
+// tag. No commits, PRs or area tags: the issues are the list, the compare link is the history.
+const TYPES = [['Breaking changes', 'breaking'], ['Features', 'feature'], ['Fixes', 'bug']];
+export function changes(v, from) {
+  // --paginate prints one array per page: join them
+  const gh = (args) => JSON.parse(execFileSync('gh', args, { cwd: ROOT, encoding: 'utf8', maxBuffer: 64 << 20 }).replace(/\]\s*\[/g, ','));
   const stableV = !v.includes('-');
-  const milestones = gh(['api', '--paginate', 'repos/{owner}/{repo}/milestones?state=all&per_page=100']).map((m) => m.title)
-    .filter((t) => t === v || (stableV && t.startsWith(`${v}-`)));
+  const milestones = gh(['api', '--paginate', 'repos/{owner}/{repo}/milestones?state=all&per_page=100'])
+    .filter((m) => m.title === v || (stableV && m.title.startsWith(`${v}-`)));
+  if (!milestones.length) throw new Error(`no milestone named ${v}${stableV ? ` or ${v}-*` : ''}`);
   const issues = new Map();
-  for (const m of milestones) for (const i of gh(['issue', 'list', '-m', m, '-s', 'closed', '-L', '500', '--json', 'number,title'])) issues.set(i.number, i.title);
-  const prs = new Map(gh(['pr', 'list', '-s', 'merged', '-L', '500', '--json', 'number,title,mergeCommit'])
-    .filter((p) => p.mergeCommit && inRange.has(p.mergeCommit.oid)).map((p) => [p.number, p.title]));
-  for (const c of commits) for (const m of c.msg.matchAll(/\b(?:fix(?:es|ed)?|close[sd]?|resolve[sd]?) #(\d+)/gi)) {
-    const n = +m[1];
-    if (issues.has(n) || prs.has(n)) continue;
-    const i = gh(['api', `repos/{owner}/{repo}/issues/${n}`]);
-    if (i.state === 'closed' && !i.pull_request) issues.set(n, i.title);
+  for (const m of milestones) {
+    for (const i of gh(['api', '--paginate', `repos/{owner}/{repo}/issues?milestone=${m.number}&state=closed&per_page=100`])) {
+      if (i.pull_request || i.state_reason !== 'completed') continue;
+      issues.set(i.number, { title: i.title.trim(), labels: i.labels.map((l) => l.name) });
+    }
   }
-  const listed = new Set([...issues.keys(), ...prs.keys()]);
-  const covered = (c) => [...c.msg.matchAll(/#(\d+)\b/g)].some((m) => listed.has(+m[1]));
-  const other = commits.filter((c) => !covered(c) && !BOOKKEEPING.test(c.subject))
-    .sort((a, b) => a.subject.split(':')[0].localeCompare(b.subject.split(':')[0]));  // by area, in order within one
-  const byNum = (m) => [...m].sort((a, b) => a[0] - b[0]).map(([n, t]) => `- #${n} ${t}`);
-  const parts = [];
-  if (issues.size) parts.push(`**Issues (${issues.size})**\n\n${byNum(issues).join('\n')}`);
-  if (prs.size) parts.push(`**Pull requests (${prs.size})**\n\n${byNum(prs).join('\n')}`);
-  if (other.length) parts.push(`**Other commits (${other.length})**\n\n${other.map((c) => `- ${c.sha} ${c.subject}`).join('\n')}`);
-  const n = issues.size + prs.size + other.length;
-  return `<details><summary>All changes (${n})</summary>\n\n${parts.join('\n\n')}\n</details>\n`;
+  const groups = [...TYPES.map(([name]) => [name, []]), ['Other', []]];
+  for (const [n, i] of [...issues].sort((a, b) => a[0] - b[0])) {
+    const at = TYPES.findIndex(([, label]) => i.labels.includes(label));
+    groups[at < 0 ? TYPES.length : at][1].push(`- ${i.title} #${n}`);
+  }
+  const parts = groups.filter(([, l]) => l.length).map(([name, l]) => `### ${name} (${l.length})\n\n${l.join('\n')}`);
+  return `<details><summary>All changes (${issues.size})</summary>\n\n${parts.join('\n\n')}\n\n` +
+    `**Full commit history:** ${REPO}/compare/${from}...v${v}\n\n</details>\n`;
 }
 
 // the manifest's notes for <version>: [{ version, summary }], newest first
@@ -202,16 +203,17 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const [cmd, v, prev] = process.argv.slice(2);
   if (!['check', 'body', 'summary', 'entries', 'changes'].includes(cmd) || !v || (cmd === 'changes' && !prev)) {
     console.error('usage: node firmware/release-notes.mjs check|body|summary|entries <version> [<previous tag>]\n' +
-      '       node firmware/release-notes.mjs changes <version> <from tag> [<to ref>]');
+      '       node firmware/release-notes.mjs changes <version> <from tag>');
     process.exit(2);
   }
   try {
     if (cmd === 'check') {
       const s = summary(v), e = entries(v);
       docs(v);
+      noImages(v);
       allChanges(v);
       console.log(`release-notes/${v}.md: ok, summary ${s.length} chars, notes ${e.map((x) => `${x.version} ${x.summary.length}`).join(', ')}`);
-    } else if (cmd === 'changes') process.stdout.write(changes(v, prev, process.argv[5]));
+    } else if (cmd === 'changes') process.stdout.write(changes(v, prev));
     else if (cmd === 'entries') process.stdout.write(JSON.stringify(entries(v), null, 2) + '\n');
     else process.stdout.write(cmd === 'body' ? body(v, prev) : summary(v) + '\n');
   } catch (e) { console.error(`::error::${e.message}`); process.exit(1); }
