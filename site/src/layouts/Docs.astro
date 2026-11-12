@@ -55,7 +55,7 @@ const repo = SITE.repo.replace('/blob/', '/tree/');
                   <li>
                     {link.href ? (
                       <a href={link.href} aria-current={link.href === current ? 'page' : undefined}>
-                        {link.icon && <span class="sidebar__icon"><Icon name={link.icon} size={18} /></span>}
+                        {link.icon !== undefined && <span class="sidebar__icon">{link.icon && <Icon name={link.icon} size={18} />}</span>}
                         {link.label}
                         {link.badge && <span class="badge">{link.badge}</span>}
                         {link.channel && <ChannelBadge channel={link.channel} />}

@@ -1,7 +1,7 @@
 // Site navigation: the header's top line (what a buyer needs), the docs sidebar groups (Use Facet, Screens, Help,
 // Inside Facet), the footer's Inside Facet links and the reading order for previous / next. Screens come from the
 // generated data; a page still to come shows as "Soon".
-import { BASE, PANEL_FEATURES, PANEL_LABEL, screenGroups, screenHref } from './data';
+import { BASE, hasIcon, PANEL_FEATURES, PANEL_LABEL, screenGroups, screenHref } from './data';
 
 export interface NavLink {
   label: string;
@@ -10,7 +10,7 @@ export interface NavLink {
   badge?: string;
   /** a screen's channel (beta | soon: a ChannelBadge after the label; stable: none) */
   channel?: import('./data').Channel;
-  /** WASM icon name, shown before the label */
+  /** WASM icon name, shown before the label; '' = an empty slot of the same width (labels line up in an icon group) */
   icon?: string;
 }
 
@@ -71,7 +71,12 @@ export function getSidebar(): NavGroup[] {
     },
     {
       label: 'Screens',
-      links: [{ label: 'Overview', href: url('/screens/') }, ...screenGroups().flatMap((g) => g.items).map((s) => ({ label: s.name, href: screenHref(s), channel: s.channel })).sort(byLabel), { label: 'Coming soon', href: url('/screens/coming-soon/') }],
+      // each screen with its panel icon (the Home card's screen-<id>), as the panel shows it
+      links: [
+        { label: 'Overview', href: url('/screens/'), icon: '' },
+        ...screenGroups().flatMap((g) => g.items).map((s) => ({ label: s.name, href: screenHref(s), channel: s.channel, icon: hasIcon(`screen-${s.id}`) ? `screen-${s.id}` : '' })).sort(byLabel),
+        { label: 'Coming soon', href: url('/screens/coming-soon/'), icon: '' },
+      ],
     },
     {
       // the panel features with a page of their own (the rest are inside Settings)

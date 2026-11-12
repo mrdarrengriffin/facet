@@ -4,9 +4,12 @@
 .sidebar__icon {
   display: inline-flex;
   flex: none;
+  width: 18px;
+  height: 18px;
   color: var(--facet-color-text-dim);
 }
-.sidebar a[aria-current='page'] .sidebar__icon {
+.sidebar a[aria-current='page'] .sidebar__icon,
+.mmenu a[aria-current='page'] .sidebar__icon {
   color: currentColor;
 }
 .title--icon {

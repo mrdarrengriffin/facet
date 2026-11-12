@@ -2,6 +2,7 @@
 // The original Facet site's header (main a5df2ac site/src/components/Header.astro); new: the links, the settings
 // popover (accent + sound pack).
 import Logo from './Logo.astro';
+import Icon from './Icon.astro';
 import SiteSettings from './SiteSettings.astro';
 import { getSidebar, headerLinks, url } from '../lib/nav';
 import { RELEASE } from '../lib/data';
@@ -159,6 +160,7 @@ const here = (href: string) => href.replace(/\/?$/, '/') === path.replace(/\/?$/
                   <li>
                     {link.href ? (
                       <a href={link.href} aria-current={here(link.href) ? 'page' : undefined}>
+                        {link.icon !== undefined && <span class="sidebar__icon">{link.icon && <Icon name={link.icon} size={18} />}</span>}
                         {link.label}
                         {link.badge && <span class="badge">{link.badge}</span>}
                       </a>

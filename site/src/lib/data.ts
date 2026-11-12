@@ -97,6 +97,7 @@ export function opticalStroke(size: number): number {
   return Math.round(((px * 24) / size) * 1000) / 1000;
 }
 type Icon = { kind: string; viewBox: string; inner: string };
+export const hasIcon = (name: string) => name in (icons as { icons: Record<string, Icon> }).icons;
 /** an icon of the WASM set as inline SVG (ui / screen: currentColor strokes; weather: its own layers) */
 export function iconSvg(name: string, size = 24, cls = ''): string {
   const i = (icons as { icons: Record<string, Icon> }).icons[name];
