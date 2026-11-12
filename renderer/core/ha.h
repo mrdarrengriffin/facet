@@ -452,6 +452,15 @@ inline void put(const std::string &e, const std::string &a, const std::string &v
     if (b->hold_until && b->expect_pair == Pair{e, a} && matches(b, v)) b->hold_until = 0;  // confirmed
     b->dirty = true;
   }
+  // a media player that stopped (off, idle, standby, gone): its track is over. Home Assistant drops the track's
+  // attributes then, but the panel's HA API never sends an attribute's removal (an attribute subscription only hears
+  // values), so the last track (and its picture, whose token HA stops taking: 403) would stay. Taken as gone here;
+  // a player that keeps them while idle sends them again with its next change.
+  if (a.empty() && !e.compare(0, 13, "media_player.") &&
+      (v == "off" || v == "idle" || v == "standby" || v == "unavailable" || v == "unknown" || v.empty()))
+    for (const char *k : {"media_title", "media_artist", "media_album_name", "entity_picture", "media_position",
+                          "media_duration", "media_position_updated_at"})
+      if (s.store.count({e, k})) put(e, k, "");
 }
 
 // build component `comp` with `spec` (props, binds allowed) into parent; returns its root (nullptr = not built)

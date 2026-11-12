@@ -66,6 +66,22 @@ export default {
       t.ha.set(P1, undefined, { media_title: 'Blue Song', entity_picture: ART('blue') }); t.wait(1500);
       t.ok(blue(cdBand(t)), `the new track's art: ${cdBand(t)}`);
     } },
+    { name: 'a player that stops: its last track and art go, though the panel\'s HA API never sends the attributes\' removal', async run(t) {
+      t.ha.s[P1] = { '': 'playing', friendly_name: 'Kitchen', media_title: 'Red Song', media_artist: 'Band', media_duration: '200', media_position: '20', entity_picture: ART('red') };
+      t.img.serve(HA_URL + ART('red'), 64, 64, [230, 30, 30, 255]);
+      await linked(t, { source: 'ha', visual: 'cd' });
+      t.ok(red(cdBand(t)), `red first: ${cdBand(t)}`);
+      // HA drops the track's attributes when the player goes idle; ESPHome's attribute subscriptions send nothing for a
+      // removed attribute (the fake's null would send ""), so the panel hears only the state
+      for (const k of ['media_title', 'media_artist', 'media_duration', 'media_position', 'entity_picture']) delete t.ha.s[P1][k];
+      t.ha.set(P1, 'idle'); t.wait(1500);
+      t.ok(!red(cdBand(t)), `idle: the plain CD, not the last track's art (${cdBand(t)})`);
+      t.hasNot(t.texts(), /Red Song/, 'idle: the last track is gone');
+      t.has(t.texts(), /Nothing playing/, 'idle: Nothing playing');
+      t.img.serve(HA_URL + ART('red', 'a2'), 64, 64, [230, 30, 30, 255]);
+      t.ha.set(P1, 'playing', { media_title: 'Red Song', entity_picture: ART('red', 'a2') }); t.wait(1500);
+      t.ok(red(cdBand(t)), `playing again: the art is back (${cdBand(t)})`);
+    } },
     { name: 'album art: play -> pause -> play with the same art fetches nothing, rebuilds nothing, and the art is drawn in every frame', async run(t) {
       t.ha.s[P1] = { '': 'playing', friendly_name: 'Kitchen', media_title: 'Red Song', media_artist: 'Band', media_duration: '200', media_position: '20', entity_picture: ART('red') };
       t.img.serve(HA_URL + ART('red'), 64, 64, [230, 30, 30, 255]);
