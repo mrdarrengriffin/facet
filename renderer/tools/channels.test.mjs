@@ -63,15 +63,17 @@ function decode(file) {
   }
   return { W, H, px: out };
 }
-// a chip is there when the pill's fill shows at both ends (beside the label, inside the outline), in the picture's
-// own scale (rendered at 720, halved)
+// a chip is there when the pill's fill shows at both ends (beside the label, inside the outline) and its ring (the
+// page colour) just outside them, in the picture's own scale (rendered at 720, halved): the fill alone matches a
+// screen whose own surface there has the same colour
 function hasChip(img, channel, theme, corner = 'bottom') {
-  const S = 720, k = img.W / S, box = chipBox(channel, S, corner), fill = chipColours(channel, theme).fill;
-  const inset = (CHIP.pad / 2) * (S / 480);
-  return [box.x + inset, box.x + box.w - inset].every((x) => {
+  const S = 720, k = img.W / S, box = chipBox(channel, S, corner), { fill, ring } = chipColours(channel, theme);
+  const inset = (CHIP.pad / 2) * (S / 480), out = (CHIP.ring / 2) * (S / 480);
+  const at = (x, c) => {
     const i = (Math.round((box.y + box.h / 2) * k) * img.W + Math.round(x * k)) * 4;
-    return [0, 1, 2].every((j) => Math.abs(img.px[i + j] - fill[j]) <= 6);
-  });
+    return [0, 1, 2].every((j) => Math.abs(img.px[i + j] - c[j]) <= 6);
+  };
+  return at(box.x + inset, fill) && at(box.x + box.w - inset, fill) && at(box.x - out, ring) && at(box.x + box.w + out, ring);
 }
 
 test('the chip draws the same at 1x and 1.5x (dp-sized)', () => {

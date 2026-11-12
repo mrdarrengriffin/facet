@@ -250,12 +250,18 @@ export function tagReleases(man = load().man) {
   try { tags = git('tag', '--list', 'v*', 'firmware').split('\n').filter(Boolean); } catch { return null; }
   const vs = tags.filter((t) => VER.test(t.slice(1))).map((t) => ({ version: t.slice(1), ref: t }));
   const stable = man.release.stable;
-  if (!vs.some((v) => v.version === stable)) { if (!tags.includes('firmware')) return null; vs.push({ version: stable, ref: 'firmware' }); }
+  // the release being made: the "Release: V" commit sets release.stable before vV is tagged; V has its notes and is
+  // newer than every tag, so it is this checkout (the tag comes next)
+  const making = !vs.some((v) => v.version === stable) && existsSync(join(R, '..', 'release-notes', `${stable}.md`)) &&
+                 vs.every((v) => cmpVer(stable, v.version) > 0);
+  if (making) vs.push({ version: stable, ref: null });
+  else if (!vs.some((v) => v.version === stable)) { if (!tags.includes('firmware')) return null; vs.push({ version: stable, ref: 'firmware' }); }
   vs.sort((a, b) => cmpVer(a.version, b.version));
   for (const v of vs) {
-    const m = JSON.parse(git('show', `${v.ref}:renderer/features.json`));
+    const m = v.ref ? JSON.parse(git('show', `${v.ref}:renderer/features.json`)) : man;
     v.screens = new Set(m.features.filter((f) => f.firmware).flatMap((f) => f.screens ?? []));
-    try { v.settings = settingsIds(git('show', `${v.ref}:renderer/tokens/settings.json`)); } catch { v.settings = new Set(); }
+    try { v.settings = settingsIds(v.ref ? git('show', `${v.ref}:renderer/tokens/settings.json`) : readFileSync(join(R, 'tokens', 'settings.json'), 'utf8')); } catch { v.settings = new Set(); }
+    v.ref ??= 'this checkout';
   }
   return vs;
 }
