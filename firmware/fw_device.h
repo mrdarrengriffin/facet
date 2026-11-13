@@ -1,6 +1,6 @@
 // Facet device glue (README "Device firmware"): the workbench's core + foundations + components on a real panel,
 // driven over HTTP by the workbench's "Show on device" button. ESPHome only (lvgl + web_server); no house specifics.
-//   GET  /fw/info   {v, density, core, files, ids, built, board, w, h, shown, devices: [{stack, builds, objects}], heap, art, net: {reads, failed, last_s, last_host}}   what this firmware was built from
+//   GET  /fw/info   {v, density, core, files, ids, built, board, w, h, shown, devices: [{stack, builds, objects}], heap, art, net: {reads, failed, last_s, last_host}}   what this firmware was built from; heap.largest only with ?heap=full (the PSRAM walk costs a frame)
 //                   art = the last picture decode's biggest view (null = none yet): {box, kept, source: [w, h], jpeg: 1/N,
 //                   filter: area | bilinear | nearest, drawn: 1:1 | scaled up by LVGL, reserved (in a screen slot), slots,
 //                   slots_free, fallback (why it was kept smaller; null = it wasn't), error, need_kb, room_kb, age_s}
@@ -345,12 +345,15 @@ inline int accent_index(const char *id) {
     if (!strcmp(tokens::ACCENTS[i].id, id)) return i;
   return -1;  // default set
 }
-inline void heap(ArduinoJson::JsonObject o) {
+// full = also "largest": walking the PSRAM heap for it keeps PSRAM busy long enough to underrun the RGB panel's bounce
+// buffers (a missed frame, a visible flicker on the Guition, #211), so only on request (/fw/info?heap=full) and in the
+// problem report; the free counts and the internal walk cost no frame
+inline void heap(ArduinoJson::JsonObject o, bool full = false) {
   o["internal_free"] = heap_caps_get_free_size(MALLOC_CAP_INTERNAL);
   o["internal_min"] = heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL);
   o["psram_free"] = heap_caps_get_free_size(MALLOC_CAP_SPIRAM);
   o["internal_largest"] = heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL);
-  o["largest"] = heap_caps_get_largest_free_block(MALLOC_CAP_8BIT);  // the most one allocation can get (the search index: half)
+  if (full) o["largest"] = heap_caps_get_largest_free_block(MALLOC_CAP_8BIT);  // the most one allocation can get (the search index: half)
 }
 }  // namespace fw::device
 // the display's frame counters, when the board's display driver has them (Facet's mipi_rgb, Guition RGB panel; a weak
@@ -1512,7 +1515,7 @@ class Handler : public AsyncWebHandler {
 
 // ---------------------------------------------------------------- GET /fw/info (also in the problem report)
 // built in the main loop (12 KB stack), not on the web server's
-inline void info_build(std::string &s) {
+inline void info_build(std::string &s, bool full_heap = false) {
   ArduinoJson::JsonDocument d;
   deserializeJson(d, fw::bundle::INFO);
   d["board"] = FW_DEVICE_BOARD;
@@ -1520,7 +1523,7 @@ inline void info_build(std::string &s) {
   d["h"] = FW_DEVICE_H;
   d["uptime_s"] = (int) (esp_timer_get_time() / 1000000);
   d["probation_s"] = probation_left();
-  heap(d["heap"].to<ArduinoJson::JsonObject>());
+  heap(d["heap"].to<ArduinoJson::JsonObject>(), full_heap);
   art_info(d);
   FacetLcdStats ls{};
   if (facet_lcd_stats && facet_lcd_stats(&ls)) {
@@ -1643,8 +1646,8 @@ inline void img_proxy(httpd_req_t *req, const std::string &path, const std::stri
   esp_http_client_close(h);
   esp_http_client_cleanup(h);
 }
-inline void info_json(std::string &s) {
-  if (!in_loop([&] { info_build(s); }, 3000)) s = R"({"ok":false,"error":"the main loop did not answer in time"})";
+inline void info_json(std::string &s, bool full_heap = false) {
+  if (!in_loop([&] { info_build(s, full_heap); }, 3000)) s = R"({"ok":false,"error":"the main loop did not answer in time"})";
 }
 
 // ---------------------------------------------------------------- problem report (GET /fw/report.txt, fw_report.h)
@@ -1918,7 +1921,7 @@ inline void send(AsyncWebServerRequest *request) {
   if (!nc) o += "no drops kept\n";
   out(o + "\n");
   std::string info;
-  info_json(info);
+  info_json(info, true);  // a report is rare: the full heap, one missed frame
   {  // the last screen sent: its id only (its props can carry names), a user's own screen as [screen]
     ArduinoJson::JsonDocument d;
     if (!deserializeJson(d, info) && d["shown"].is<ArduinoJson::JsonObjectConst>()) {
@@ -2021,7 +2024,7 @@ class Handler : public AsyncWebHandler {
       body_.clear();
       return;
     } else if (path == "/fw/info") {
-      info_json(s);
+      info_json(s, req->hasArg("heap") && req->arg("heap") == "full");  // ?heap=full: + "largest" (costs a frame, #211)
     } else if (path == "/fw/perf") {
       ArduinoJson::JsonDocument d;
       const bool reset = req->hasArg("reset");  // url_to() has no query string
