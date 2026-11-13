@@ -758,44 +758,6 @@
         "letterSpacing": 1
       }
     },
-    "clock-numeral": {
-      "scale": "component",
-      "font": "sans",
-      "weight": 300,
-      "size": 30,
-      "box": 32,
-      "lineHeight": 1,
-      "letterSpacing": 0,
-      "case": "none",
-      "glyphs": "digits",
-      "use": "Clock / Analogue numerals 12 3 6 9 (Inter; docs 30)",
-      "sample": "12",
-      "1x": {
-        "size": 20,
-        "box": 24,
-        "weight": 400,
-        "letterSpacing": 0
-      }
-    },
-    "clock-numeral-mono": {
-      "scale": "component",
-      "font": "mono",
-      "weight": 300,
-      "size": 26,
-      "box": 32,
-      "lineHeight": 1,
-      "letterSpacing": 0,
-      "case": "none",
-      "glyphs": "digits",
-      "use": "Clock / Analogue numerals (Mono; docs 26)",
-      "sample": "12",
-      "1x": {
-        "size": 18,
-        "box": 20,
-        "weight": 400,
-        "letterSpacing": 0
-      }
-    },
     "date-long": {
       "scale": "component",
       "font": "sans",

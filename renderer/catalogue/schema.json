@@ -3468,38 +3468,6 @@
    "use": "12h AM / PM beside the compact clock (docs 11, the 12 px floor)"
   },
   {
-   "name": "type:clock-numeral",
-   "group": "component",
-   "type": "type",
-   "px": {
-    "1.5x": {
-     "size": 30,
-     "box": 32
-    },
-    "1x": {
-     "size": 20,
-     "box": 24
-    }
-   },
-   "use": "Clock / Analogue numerals 12 3 6 9 (Inter; docs 30)"
-  },
-  {
-   "name": "type:clock-numeral-mono",
-   "group": "component",
-   "type": "type",
-   "px": {
-    "1.5x": {
-     "size": 26,
-     "box": 32
-    },
-    "1x": {
-     "size": 18,
-     "box": 20
-    }
-   },
-   "use": "Clock / Analogue numerals (Mono; docs 26)"
-  },
-  {
    "name": "type:date-long",
    "group": "component",
    "type": "type",
