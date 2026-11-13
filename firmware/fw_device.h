@@ -1460,6 +1460,7 @@ inline std::string auth(AsyncWebServerRequest *req) {
 
 // ---------------------------------------------------------------- agent docs (fw_docs_gen.h, optional)
 #if __has_include("fw_docs_gen.h")
+extern "C" size_t fw_tinfl_decompress_mem_to_mem(void *out, size_t out_len, const void *src, size_t src_len, int flags);  // fw_miniz.c
 namespace docs {
 class Handler : public AsyncWebHandler {
  public:
@@ -1496,12 +1497,20 @@ class Handler : public AsyncWebHandler {
     auto inm = request->get_header("If-None-Match");
     if (inm.has_value() && *inm == f->etag) { httpd_resp_set_status(req, "304 Not Modified"); httpd_resp_send(req, nullptr, 0); return; }
     auto ae = request->get_header("Accept-Encoding");
-    const bool gz = !f->raw || (ae.has_value() && ae->find("gzip") != std::string::npos);  // a gzip-only file: always gzip
+    const bool takes_gz = ae.has_value() && ae->find("gzip") != std::string::npos;
+    // stored gzip only (raw_len 0: always gzip; raw_len > 0: inflated into PSRAM for this request, #185)
+    uint8_t *plain = nullptr;
+    if (!f->raw && f->raw_len && !takes_gz && (plain = (uint8_t *) heap_caps_malloc(f->raw_len, MALLOC_CAP_SPIRAM))) {
+      // gzip = a 10-byte header (bundle.mjs gzipSync: no name or extra fields), raw deflate, an 8-byte trailer
+      if (fw_tinfl_decompress_mem_to_mem(plain, f->raw_len, f->gz + 10, f->gz_len - 18, 0) != f->raw_len) { heap_caps_free(plain); plain = nullptr; }
+    }
+    const bool gz = !plain && (!f->raw || takes_gz);
     httpd_resp_set_status(req, HTTPD_200);
     httpd_resp_set_type(req, f->type);
     if (gz) httpd_resp_set_hdr(req, "Content-Encoding", "gzip");
-    const uint8_t *p = gz ? f->gz : f->raw;
+    const uint8_t *p = gz ? f->gz : plain ? plain : f->raw;
     const uint32_t len = gz ? f->gz_len : f->raw_len;
+    struct Free { uint8_t *p; ~Free() { if (p) heap_caps_free(p); } } free_plain{plain};
     for (uint32_t done = 0; done < len;) {
       const uint32_t n = std::min<uint32_t>(4096, len - done);
       if (httpd_resp_send_chunk(req, (const char *) p + done, n) != ESP_OK) return;
