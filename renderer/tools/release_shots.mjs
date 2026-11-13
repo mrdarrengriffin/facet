@@ -68,7 +68,7 @@ async function house(board, what, light) {
   setBuild(resolve(OUTDIR, '..'));
   const b = new Bench(null, board === '480' ? '1x' : '1.5x', {}), t = new Ctx(b);
   const SP = 'media_player.sitting_room_speaker';
-  t.ha.s[SP] = { '': 'playing', friendly_name: 'Sitting room', media_title: 'Harvest Moon', media_artist: 'Neil Young', volume_level: '0.45',
+  t.ha.s[SP] = { '': 'playing', friendly_name: 'Sitting room', media_title: 'Slow Tide', media_artist: 'Harbour Lights', volume_level: '0.45',
     media_position: '118', media_duration: '303', entity_picture: demoArtUrl('sitting_room_speaker') };
   t.ha.answers = true;
   await t.device({ v: 2, rev: 9, start: 'h', pages: [

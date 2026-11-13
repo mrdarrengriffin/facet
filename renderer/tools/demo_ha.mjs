@@ -16,8 +16,8 @@ export const DEMO = {
   'light.reading_lamp': { '': 'off' },
   'light.pantry': { '': 'on', brightness: '230' },
   'light.pantry_strip': { '': 'off' },
-  'media_player.sitting_room_speaker': { '': 'playing', media_title: 'Harvest Moon', media_artist: 'Neil Young', volume_level: '0.45', media_position: '118', media_duration: '303', entity_picture: demoArtUrl('sitting_room_speaker') },
-  'media_player.kitchen_hub': { '': 'paused', media_title: 'Morning Edition', media_artist: 'Radio 4', volume_level: '0.3', media_position: '640', media_duration: '1800', entity_picture: demoArtUrl('kitchen_hub') },
+  'media_player.sitting_room_speaker': { '': 'playing', media_title: 'Slow Tide', media_artist: 'Harbour Lights', volume_level: '0.45', media_position: '118', media_duration: '303', entity_picture: demoArtUrl('sitting_room_speaker') },
+  'media_player.kitchen_hub': { '': 'paused', media_title: 'The Early Hour', media_artist: 'Riverside Radio', volume_level: '0.3', media_position: '640', media_duration: '1800', entity_picture: demoArtUrl('kitchen_hub') },
   'binary_sensor.fridge_door': { '': 'off', device_class: 'door' },
   'sensor.dishwasher_power': { '': '412', unit_of_measurement: 'W', device_class: 'power' },
 };
