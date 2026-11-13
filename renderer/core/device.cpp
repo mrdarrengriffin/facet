@@ -738,6 +738,21 @@ bool idle() {
   for (Device *d : devices) if (d->idled) return true;
   return false;
 }
+const char *idle_now() {
+  if (!known("idle")) return "no idle screen";
+  if (pointer_down()) return "a finger is down";
+  for (const TimerItem &x : timers::all()) if (x.state == 2) return "a timer is ringing";
+  const char *why = "no device shows Home";
+  for (Device *d : devices) {
+    if (d->stack.empty() || d->stack[0] != "home") continue;
+    const std::string top = base_of(d->stack.back());
+    if (top == "idle") { why = ""; continue; }
+    if (top == "setup" || top == "ha_link" || top == "report") { why = "Set up, the Home Assistant link or the report shows"; continue; }
+    queue(d->root, IDLE, nullptr);
+    why = "";
+  }
+  return why;
+}
 bool in_device(lv_obj_t *obj) { return of(obj) != nullptr; }
 void keep_pages(int n) {
   keep_max() = n < 0 ? 0 : n;

@@ -80,6 +80,10 @@ void update_password_set(const char *pw);
 const std::string &update_password();
 void on_idle(void (*cb)(bool idle, int pct));  // the idle clock shows (pct = Idle brightness) or leaves (100)
 bool idle();  // a device shows the idle clock
+// Idle now (a host button, e.g. Home Assistant's "Idle now"): the idle clock at once, as after Idle after (dimmed, the
+// first touch wakes), even when Idle after is Never. Same guards as the timed idle (a device whose root is Home; not
+// over Set up, the Home Assistant link, the report, a ringing timer or a finger down). "" = idled, else why not.
+const char *idle_now();
 void reload(const char *id);
 void kept_changed(const char *id);  // a quiet deck change (spec.h kept_hook): the kept pages it touched go stale
 // Navigation timing (a debug flag, off by default; facet-243): each screen change, in lv_tick ms: the tap handled

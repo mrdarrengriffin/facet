@@ -297,6 +297,18 @@ select:
     on_value:
       - lambda: 'fw::device::debug_overlay((int) i);'
 
+# Idle now: the idle clock at once, dimmed to Idle brightness, as after Idle after (core/device.h idle_now), e.g. from
+# an automation when the room's lights go off. A touch wakes it as usual. A control, not config.
+button:
+  - platform: template
+    id: facet_idle_now
+    name: Idle now
+    icon: mdi:sleep
+    on_press:
+      - lambda: |-
+          const char *e = fw::dev::idle_now();
+          if (*e) ESP_LOGW("facet", "Idle now: %s", e);
+
 # Firmware updates from a manifest (${update_manifest}): HA shows the
 # installed + latest version and installs ONLY when someone presses Install. While a new image is on probation the
 # entity reads "installing" with the settling countdown (board/fw_update.h).
