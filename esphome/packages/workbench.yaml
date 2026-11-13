@@ -290,12 +290,22 @@ select:
     name: Debug overlay
     icon: mdi:select-drag
     entity_category: diagnostic
+    disabled_by_default: true
     optimistic: true
     options: ["Off", "Tap areas", "Components", "Both"]
     initial_option: "Off"
     restore_value: true
     on_value:
       - lambda: 'fw::device::debug_overlay((int) i);'
+
+# Idle: on while the idle clock shows (timed, or Idle now), off once a touch wakes it; for automations
+binary_sensor:
+  - platform: template
+    id: facet_idle
+    name: Idle
+    icon: mdi:sleep
+    publish_initial_state: true
+    lambda: 'return fw::dev::idle();'
 
 # Idle now: the idle clock at once, dimmed to Idle brightness, as after Idle after (core/device.h idle_now), e.g. from
 # an automation when the room's lights go off. A touch wakes it as usual. A control, not config.
@@ -388,6 +398,8 @@ text_sensor:
     id: timers_list
     name: Timers list
     icon: mdi:timer-cog-outline
+    entity_category: diagnostic
+    disabled_by_default: true
     update_interval: never
   - platform: template
     id: timer_last_finished

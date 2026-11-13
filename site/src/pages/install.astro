@@ -19,6 +19,7 @@ const headings: Heading[] = [
   { depth: 2, slug: 'install', text: 'Install' },
   { depth: 2, slug: 'wifi', text: 'Wi-Fi' },
   { depth: 2, slug: 'home-assistant', text: 'Home Assistant' },
+  { depth: 3, slug: 'entities', text: 'What the panel adds' },
   { depth: 2, slug: 'link', text: 'The panel\'s own link' },
   { depth: 2, slug: 'build', text: 'Build your Home' },
   { depth: 2, slug: 'updates', text: 'Updates' },
@@ -123,6 +124,29 @@ const manifest = (id: string) => url(`/firmware/${id}/manifest.json`);
       actions</strong>, so the panel can switch lights and control media players.
     </li>
   </ol>
+
+  <h3 id="entities">What the panel adds</h3>
+  <p>
+    The panel's device page in Home Assistant has its controls, its settings and a few readings. Entities marked
+    <em>hidden</em> are there but disabled until you enable them (they are set once and rarely changed).
+  </p>
+  <table>
+    <thead><tr><th>Entity</th><th>Kind</th><th>What it does</th></tr></thead>
+    <tbody>
+      <tr><td>Screen</td><td>Control</td><td>The screen showing now; choose one to open it.</td></tr>
+      <tr><td>Idle now</td><td>Control</td><td>Sends the panel to its idle screen at once, dimmed, as after <strong>Idle after</strong>. A touch wakes it. For example, idle the panel when the room's lights go off.</td></tr>
+      <tr><td>Idle</td><td>Sensor</td><td>On while the idle screen shows.</td></tr>
+      <tr><td>Backlight</td><td>Control</td><td>The screen's light.</td></tr>
+      <tr><td>Timers, Next timer ends, Timer finished, Last timer finished</td><td>Sensors, event</td><td>The panel's timers: how many run, when the next ends, and which finished (the event fires, the sensor has its name).</td></tr>
+      <tr><td>Theme, Look, Accent, Text size, Rotate screen, Idle shows, Idle after, Idle brightness, Screen off after, UI sounds, Volume, Update channel, Allow API access</td><td>Settings</td><td>The same settings as on the panel; a change either side shows on both.</td></tr>
+      <tr><td>Sound pack, Transition, Toast position, Distance unit, Speed unit</td><td>Settings, hidden</td><td>As above, disabled until enabled.</td></tr>
+      <tr><td>Firmware</td><td>Update</td><td>Installs a new Facet version from your update channel.</td></tr>
+      <tr><td>Restart</td><td>Settings</td><td>Restarts the panel.</td></tr>
+      <tr><td>Wi-Fi signal</td><td>Diagnostic</td><td>The panel's Wi-Fi strength.</td></tr>
+      <tr><td>Timers list, Debug overlay, Free memory, Boot check, Restart reason, Started, IP address, ESPHome version</td><td>Diagnostic, hidden</td><td>For finding problems; disabled until enabled.</td></tr>
+    </tbody>
+  </table>
+  <p>The Waveshare panel also has its button (Button, Button held, Button action), its two relays and its Wi-Fi chip's firmware.</p>
 
   <h2 id="link">The panel's own link</h2>
   <p>
