@@ -11412,6 +11412,7 @@
      }
     ],
     "esphome": {
+     "hidden": true,
      "id": "sound_pack_select",
      "name": "Sound pack",
      "icon": "mdi:music-box-multiple-outline",
@@ -11560,6 +11561,7 @@
      }
     ],
     "esphome": {
+     "hidden": true,
      "id": "transition_select",
      "name": "Transition",
      "icon": "mdi:transition"
@@ -11616,6 +11618,7 @@
      }
     ],
     "esphome": {
+     "hidden": true,
      "id": "toast_position",
      "name": "Toast position",
      "icon": "mdi:dock-top",
@@ -11642,6 +11645,7 @@
      }
     ],
     "esphome": {
+     "hidden": true,
      "id": "distance_unit",
      "name": "Distance unit",
      "icon": "mdi:map-marker-distance"
@@ -11671,6 +11675,7 @@
      }
     ],
     "esphome": {
+     "hidden": true,
      "id": "speed_unit",
      "name": "Speed unit",
      "icon": "mdi:speedometer"
