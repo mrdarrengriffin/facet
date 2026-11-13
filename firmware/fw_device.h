@@ -1460,7 +1460,7 @@ inline std::string auth(AsyncWebServerRequest *req) {
 
 // ---------------------------------------------------------------- agent docs (fw_docs_gen.h, optional)
 #if __has_include("fw_docs_gen.h")
-extern "C" size_t fw_tinfl_decompress_mem_to_mem(void *out, size_t out_len, const void *src, size_t src_len, int flags);  // fw_miniz.c
+extern "C" size_t fw_inflate_heap(void *out, size_t out_len, const void *src, size_t src_len);  // fw_miniz.c: the decompressor on the heap (the web server's stack is 8 KB)
 namespace docs {
 class Handler : public AsyncWebHandler {
  public:
@@ -1502,7 +1502,7 @@ class Handler : public AsyncWebHandler {
     uint8_t *plain = nullptr;
     if (!f->raw && f->raw_len && !takes_gz && (plain = (uint8_t *) heap_caps_malloc(f->raw_len, MALLOC_CAP_SPIRAM))) {
       // gzip = a 10-byte header (bundle.mjs gzipSync: no name or extra fields), raw deflate, an 8-byte trailer
-      if (fw_tinfl_decompress_mem_to_mem(plain, f->raw_len, f->gz + 10, f->gz_len - 18, 0) != f->raw_len) { heap_caps_free(plain); plain = nullptr; }
+      if (fw_inflate_heap(plain, f->raw_len, f->gz + 10, f->gz_len - 18) != f->raw_len) { heap_caps_free(plain); plain = nullptr; }
     }
     const bool gz = !plain && (!f->raw || takes_gz);
     httpd_resp_set_status(req, HTTPD_200);

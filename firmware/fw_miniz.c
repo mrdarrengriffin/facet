@@ -1777,6 +1777,18 @@ size_t tinfl_decompress_mem_to_mem(void *pOut_buf, size_t out_buf_len, const voi
   return (status != TINFL_STATUS_DONE) ? TINFL_DECOMPRESS_MEM_TO_MEM_FAILED : out_buf_len;
 }
 
+// Facet: tinfl_decompress_mem_to_mem with the decompressor (~10.5 KB) on the heap, not the stack: callers on the web
+// server's 8 KB task (the agent docs inflated per request, fw_device.h docs) would overflow it.
+size_t fw_inflate_heap(void *pOut_buf, size_t out_buf_len, const void *pSrc_buf, size_t src_buf_len)
+{
+  tinfl_decompressor *decomp = (tinfl_decompressor *) MZ_MALLOC(sizeof(tinfl_decompressor)); tinfl_status status;
+  if (!decomp) return TINFL_DECOMPRESS_MEM_TO_MEM_FAILED;
+  tinfl_init(decomp);
+  status = tinfl_decompress(decomp, (const mz_uint8*)pSrc_buf, &src_buf_len, (mz_uint8*)pOut_buf, (mz_uint8*)pOut_buf, &out_buf_len, TINFL_FLAG_USING_NON_WRAPPING_OUTPUT_BUF);
+  MZ_FREE(decomp);
+  return (status != TINFL_STATUS_DONE) ? TINFL_DECOMPRESS_MEM_TO_MEM_FAILED : out_buf_len;
+}
+
 int tinfl_decompress_mem_to_callback(const void *pIn_buf, size_t *pIn_buf_size, tinfl_put_buf_func_ptr pPut_buf_func, void *pPut_buf_user, int flags)
 {
   int result = 0;
