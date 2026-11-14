@@ -107,8 +107,9 @@ const models: { screen: string; feed: string; model: string; fields: [string, st
     ],
   },
   {
-    screen: 'Bins', feed: 'panel.bins', model: 'coming with the screen (#99)', adapters: 'coming', coming: true,
-    fields: [['next', "the next collection's date and its bins, each with a name and a colour"], ['after', 'the collections after it']],
+    screen: 'Bins', feed: 'panel.bins', model: 'Model, Bin and Coll (core/bins_source.cpp)', adapters: 'calendar (Waste Collection Schedule), sample',
+    fields: [['Bin', '{name ("Green bin"), colour (a bins colour token, from the name)}'], ['Coll', '{day (days since 1970-01-01), bins (indexes into the Bins)}'],
+      ['Model', '{bins, colls, today, hour, more (the weeks after the next one are known)}']],
   },
 ];
 ---
