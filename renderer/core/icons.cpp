@@ -6,6 +6,7 @@
 #include <cstring>
 #include "fw.h"
 #include "fx.h"
+#include "audit.h"
 #ifdef FW_1X
 #include "facet_icons_1x.h"
 #else
@@ -616,6 +617,25 @@ lv_obj_t *moon_layer(lv_obj_t *box, const lv_draw_buf_t *d, const char *ink) {  
   fx::use(im, ink);
   return im;
 }
+// From this size up (the Moon screen's hero, Weather's moon tab) the disc and the outline are LVGL circles, not masks:
+// two S x S A8 masks per size were made once and never freed (#185: 128 KB for good at the 256 px hero). Smaller
+// moons (icons, rows) keep the masks: a few KB, and their look is unchanged.
+constexpr int MOON_DRAWN = 96;
+// a circle centred at c (px) of radius rad: filled (bw 0, a bg style) or a ring of width bw inside rad (a border style);
+// shared fx styles, so a theme switch repaints it (C16, C44)
+lv_obj_t *moon_circle(lv_obj_t *box, float c, float rad, float bw, const char *style) {
+  lv_obj_t *o = lv_obj_create(box);
+  lv_obj_remove_style_all(o);
+  lv_obj_remove_flag(o, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
+  const int d = (int) lroundf(rad * 2), x = (int) lroundf(c - rad);
+  lv_obj_set_size(o, d, d);
+  lv_obj_set_pos(o, x, x);
+  fx::use(o, style);
+  lv_obj_set_style_radius(o, LV_RADIUS_CIRCLE, 0);
+  if (bw > 0) lv_obj_set_style_border_width(o, (int) lroundf(bw), 0);
+  fw::qa::free(o, "the moon's disc and outline: sized by the moon's geometry, not the grid");
+  return o;
+}
 }  // namespace
 
 lv_obj_t *fw::moon_icon(lv_obj_t *parent, float frac, ic::Size size, bool south) { return moon_icon_px(parent, frac, ic::PX[size], south); }
@@ -626,6 +646,16 @@ lv_obj_t *fw::moon_icon_px(lv_obj_t *parent, float frac, int S, bool south) {
   lv_obj_add_flag(box, LV_OBJ_FLAG_STATE_TRICKLE);
   lv_obj_set_size(box, S, S);
   Moon *m = new Moon{S, frac, south, moon_buf(S), nullptr, nullptr, false, nullptr};
+  if (S >= MOON_DRAWN) {  // a big moon: the disc and the outline drawn by LVGL (circles), only the lit part a mask (#185)
+    lv_obj_add_event_cb(box, moon_free, LV_EVENT_DELETE, m);
+    if (!m->lit) return box;  // no memory: an empty box of the right size
+    moon_lit(S, frac, south, m->lit);
+    const MoonGeo g = moon_geo(S);
+    moon_circle(box, g.c, g.r, 0, "bg:moon-dark");
+    m->im = moon_layer(box, m->lit, "ink:moon-lit");
+    moon_circle(box, g.c, g.r + g.w / 2, g.w, "border:moon-edge");  // the ring covers the limb (r - w/2 .. r + w/2)
+    return box;
+  }
   if (MoonStatic *st = moon_static(S)) m->disc = st->disc, m->edge = st->edge;
   else if ((m->disc = moon_buf(S)) && (m->edge = moon_buf(S))) { m->own = true; moon_masks(S, m->disc, m->edge); }
   else { m->own = true; if (m->disc) lv_draw_buf_destroy(m->disc); m->disc = nullptr; }
