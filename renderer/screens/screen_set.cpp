@@ -247,7 +247,7 @@ const char *META = R"({
   "frame": [480, 480],
   "icons": ["back@glyph", "chevron@icon", "check@icon", "close@glyph"],
   "props": [
-    {"name": "id", "about": "Which screen's settings to show (a screen id of the deck or the factory).", "type": "select", "options": ["calendar", "clock", "energy", "living_room", "media", "moon", "overhead", "timer", "weather"], "default": "media"}
+    {"name": "id", "about": "Which screen's settings to show (a screen id of the deck or the factory).", "type": "select", "options": ["bins", "calendar", "clock", "energy", "living_room", "media", "moon", "overhead", "timer", "weather"], "default": "media"}
   ]
 })";
 

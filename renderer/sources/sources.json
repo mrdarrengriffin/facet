@@ -93,6 +93,44 @@
         }
       ]
     },
+    "bins": {
+      "shows": "Which bins go out next and when, with the collections after it.",
+      "needs": "a bin collection schedule in Home Assistant",
+      "feed": "panel.bins",
+      "sources": [
+        {
+          "id": "waste_collection",
+          "kind": "ha",
+          "name": "Waste Collection Schedule",
+          "adapter": "calendar",
+          "about": "The Waste Collection Schedule integration (HACS): its calendar of your council's collections, each event naming the bins.",
+          "setup": [
+            "the Waste Collection Schedule integration (HACS) for your council"
+          ],
+          "detect": {
+            "integration": "waste_collection_schedule",
+            "domain": "calendar"
+          },
+          "finds": {
+            "param": "calendar",
+            "domain": "calendar",
+            "platform": "waste_collection_schedule"
+          },
+          "fills": {
+            "calendar": {
+              "domain": "calendar",
+              "integration": "waste_collection_schedule"
+            }
+          }
+        },
+        {
+          "id": "sample",
+          "kind": "builtin",
+          "name": "Sample weeks (previews)",
+          "adapter": "sample"
+        }
+      ]
+    },
     "weather": {
       "shows": "The weather now and the forecast for the hours and days ahead.",
       "needs": null,

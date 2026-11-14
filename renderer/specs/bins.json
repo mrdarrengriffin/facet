@@ -1,0 +1,209 @@
+{
+ "v": 1,
+ "id": "bins",
+ "locked": true,
+ "name": "Bins",
+ "rev": 6,
+ "role": "page",
+ "params": {
+  "source": {
+   "about": "Where the collections come from: the Waste Collection Schedule integration in Home Assistant (its calendar), or made-up sample weeks for previews.",
+   "type": "select",
+   "options": [
+    "calendar",
+    "sample"
+   ],
+   "label": "Source",
+   "default": "calendar"
+  },
+  "calendar": {
+   "about": "The Waste Collection Schedule calendar your collections are on (found by itself when there is one). Each event names the bins that go out.",
+   "type": "entity",
+   "domain": "calendar",
+   "label": "Bin calendar",
+   "default": ""
+  },
+  "sample": {
+   "about": "For previews only: which made-up collection week to show, such as bins out tonight or collection today.",
+   "type": "hidden",
+   "default": "tonight"
+  }
+ },
+ "feeds": {
+  "panel.bins": {
+   "source": "$source",
+   "calendar": "$calendar",
+   "sample": "$sample"
+  }
+ },
+ "card": {
+  "icon": "bins",
+  "preview": "bins",
+  "colours": {
+   "e": "panel.bins",
+   "a": "colours"
+  },
+  "mode": "text",
+  "text": {
+   "e": "panel.bins",
+   "a": "when"
+  },
+  "sub": {
+   "e": "panel.bins",
+   "a": "bins"
+  },
+  "accent": {
+   "e": "panel.bins",
+   "a": "accent"
+  }
+ },
+ "header": {
+  "label": "Bins",
+  "back": true
+ },
+ "layout": "list",
+ "nodes": [
+  {
+   "c": "bins_next",
+   "p": {
+    "colours": {
+     "e": "panel.bins",
+     "a": "colours"
+    },
+    "caption": {
+     "e": "panel.bins",
+     "a": "caption"
+    },
+    "accent": {
+     "e": "panel.bins",
+     "a": "accent"
+    },
+    "when": {
+     "e": "panel.bins",
+     "a": "when"
+    },
+    "bins": {
+     "e": "panel.bins",
+     "a": "bins"
+    },
+    "line": {
+     "e": "panel.bins",
+     "a": "line"
+    }
+   },
+   "show": {
+    "e": "panel.bins",
+    "map": {
+     "empty": "",
+     "missing": "",
+     "loading": "",
+     "error": "",
+     "unavailable": ""
+    },
+    "else": "1"
+   }
+  },
+  {
+   "c": "section_header",
+   "p": {
+    "title": "coming up",
+    "badge": false,
+    "right": "none"
+   },
+   "show": {
+    "e": "panel.bins",
+    "a": "more"
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "list": "stack",
+    "items": {
+     "e": "panel.bins",
+     "a": "coming"
+    },
+    "empty": "Nothing else in the next six weeks",
+    "icon": "none"
+   },
+   "show": {
+    "e": "panel.bins",
+    "a": "more"
+   }
+  },
+  {
+   "c": "section_header",
+   "p": {
+    "title": "your bins",
+    "badge": false,
+    "right": "none"
+   },
+   "show": {
+    "e": "panel.bins",
+    "map": {
+     "empty": "",
+     "missing": "",
+     "loading": "",
+     "error": "",
+     "unavailable": ""
+    },
+    "else": "1"
+   }
+  },
+  {
+   "c": "list_row",
+   "p": {
+    "list": "stack",
+    "items": {
+     "e": "panel.bins",
+     "a": "yours"
+    },
+    "icon": "none"
+   },
+   "show": {
+    "e": "panel.bins",
+    "map": {
+     "empty": "",
+     "missing": "",
+     "loading": "",
+     "error": "",
+     "unavailable": ""
+    },
+    "else": "1"
+   }
+  },
+  {
+   "c": "empty_state",
+   "p": {
+    "icon": "alert",
+    "title": "No bin collections found",
+    "body": "Set up Waste Collection Schedule in Home Assistant, or pick its calendar in Settings > Screens",
+    "tone": "idle"
+   },
+   "show": {
+    "e": "panel.bins",
+    "map": {
+     "empty": "1",
+     "missing": "1"
+    },
+    "else": ""
+   }
+  },
+  {
+   "c": "empty_state",
+   "p": {
+    "icon": "alert",
+    "title": "Couldn't read the bin calendar",
+    "body": "Check that Home Assistant lets this panel perform actions",
+    "tone": "warn"
+   },
+   "show": {
+    "e": "panel.bins",
+    "map": {
+     "error": "1"
+    },
+    "else": ""
+   }
+  }
+ ]
+}

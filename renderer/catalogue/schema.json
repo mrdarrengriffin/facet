@@ -9600,6 +9600,7 @@
      "type": "select",
      "about": "Which screen's settings to show (a screen id of the deck or the factory).",
      "options": [
+      "bins",
       "calendar",
       "clock",
       "energy",
@@ -9960,6 +9961,7 @@
      "type": "select",
      "about": "Which built-in screen to draw from its spec, such as the Light or Weather screen.",
      "options": [
+      "bins",
       "calendar",
       "clock",
       "energy",
@@ -10002,6 +10004,38 @@
    "events": {},
    "spec": false,
    "kind": "built-in"
+  },
+  "bins": {
+   "name": "Bins",
+   "kind": "spec",
+   "layout": "list",
+   "params": {
+    "source": {
+     "about": "Where the collections come from: the Waste Collection Schedule integration in Home Assistant (its calendar), or made-up sample weeks for previews.",
+     "type": "select",
+     "options": [
+      "calendar",
+      "sample"
+     ],
+     "label": "Source",
+     "default": "calendar"
+    },
+    "calendar": {
+     "about": "The Waste Collection Schedule calendar your collections are on (found by itself when there is one). Each event names the bins that go out.",
+     "type": "entity",
+     "domain": "calendar",
+     "label": "Bin calendar",
+     "default": ""
+    },
+    "sample": {
+     "about": "For previews only: which made-up collection week to show, such as bins out tonight or collection today.",
+     "type": "hidden",
+     "default": "tonight"
+    }
+   },
+   "feeds": [
+    "panel.bins"
+   ]
   },
   "calendar": {
    "name": "Calendar",
@@ -10359,6 +10393,67 @@
    "empty": "Nothing yet"
   },
   "list": {
+   "panel.bins": {
+    "source": "calendar",
+    "every_ms": 60000,
+    "fields": [
+     {
+      "name": "moment",
+      "required": false,
+      "none": "none"
+     },
+     {
+      "name": "caption",
+      "required": false,
+      "none": ""
+     },
+     {
+      "name": "accent",
+      "required": false,
+      "none": "off"
+     },
+     {
+      "name": "tone",
+      "required": false,
+      "none": "idle"
+     },
+     {
+      "name": "when",
+      "required": true,
+      "none": ""
+     },
+     {
+      "name": "bins",
+      "required": true,
+      "none": ""
+     },
+     {
+      "name": "colours",
+      "required": false,
+      "none": ""
+     },
+     {
+      "name": "line",
+      "required": false,
+      "none": ""
+     },
+     {
+      "name": "coming",
+      "required": false,
+      "none": "[]"
+     },
+     {
+      "name": "more",
+      "required": false,
+      "none": ""
+     },
+     {
+      "name": "yours",
+      "required": false,
+      "none": "[]"
+     }
+    ]
+   },
    "panel.calendar": {
     "source": "ha",
     "every_ms": 60000,

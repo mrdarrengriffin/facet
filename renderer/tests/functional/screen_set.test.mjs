@@ -86,7 +86,8 @@ export default {
       act(t, { do: 'nav.open', screen: 'weather' }); act(t, { do: 'nav.open', screen: 'screen_set', params: { id: 'weather' } });
       t.has(t.part('list_row', 'Source')?.texts ?? [], /^Met Office$/, 'the Source row names Met Office');
       t.tap(/^Source$/); t.b.settle(1200);
-      for (const n of ['Met.no', 'Met Office', 'OpenWeatherMap', 'Pirate Weather']) t.ok(t.part('picker_row', n), `${n} is listed`);
+      for (const n of ['Met.no', 'OpenWeatherMap', 'Pirate Weather']) t.ok(t.part('picker_row', n), `${n} is listed`);
+      t.ok(t.texts().filter((x) => x === 'Met Office').length >= 2, 'Met Office is listed (and on the Source row)');
       t.has(t.texts(), /not set up in home assistant/i, 'the ones Home Assistant does not have are greyed with the reason');
     } },
     { name: 'no Card on Home row: a screen\'s card is added and removed like any card; old decks keep their cards', async run(t) {

@@ -49,7 +49,7 @@
   },
   "later": {
     "about": "Features held on the wip branch until they are finished (spec of contract parts, feed on the skeleton, gate green); the docs roadmap shows their rows as in progress.",
-    "roadmap": ["Placeholder", "Thermostat", "Thermostat dial", "Door lock", "Lock ring", "Hold button", "Plant monitor", "Plant gauge / row", "Robot vacuum", "Room tile", "Status block", "Level bar", "Floor plans", "Security cameras", "Camera tile", "Bins", "Lightning", "Lightning radar", "Blinds and curtains", "GitHub", "Pull request row", "Check row", "Agents", "3D print", "3D print model", "Sports (live scores)", "Sports surfaces"]
+    "roadmap": ["Placeholder", "Thermostat", "Thermostat dial", "Door lock", "Lock ring", "Hold button", "Plant monitor", "Plant gauge / row", "Robot vacuum", "Room tile", "Status block", "Level bar", "Floor plans", "Security cameras", "Camera tile", "Lightning", "Lightning radar", "Blinds and curtains", "GitHub", "Pull request row", "Check row", "Agents", "3D print", "3D print model", "Sports (live scores)", "Sports surfaces"]
   },
   "features": [
     {
@@ -140,6 +140,14 @@
       "screens": ["overhead"],
       "components": ["flight_hero"],
       "roadmap": ["Overhead (flights)", "Flight radar (overhead flights)"]
+    },
+    {
+      "id": "bins",
+      "label": "Bins",
+      "docs": true, "status": "done", "firmware": true, "since": "next",
+      "screens": ["bins"],
+      "core": ["bins_source.cpp"],
+      "roadmap": ["Bins"]
     },
     {
       "id": "workbench",
