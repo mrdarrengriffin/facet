@@ -131,7 +131,7 @@ const span = (size: string): [number, number] => {
   const s = size === 's' ? '1x1' : size === 'm' ? '2x1' : size === 'l' ? '2x2' : size;
   return [s[0] === '2' ? 2 : 1, s === 'half' ? 1 : s === '1x2' || s === '2x2' ? 4 : 2];
 };
-const gsize = (c: Card) => (c.t === 'header' && (!c.size || c.size === 'm') ? '3xhalf' : c.size === 's' ? '1x1' : c.size === 'm' ? (c.t === 'sensor' || c.t === 'readout' || c.t === 'stat' ? 'half' : '2x1') : c.size === 'l' ? '2x2' : c.size);
+const gsize = (c: Card) => (c.t === 'header' && (!c.size || c.size === 'm') ? '3xhalf' : c.t === 'slider' && (!c.size || c.size === 'm') ? '2xhalf' : c.size === 's' ? '1x1' : c.size === 'm' ? (c.t === 'sensor' || c.t === 'readout' || c.t === 'stat' ? 'half' : '2x1') : c.size === 'l' ? '2x2' : c.size);
 /** the Home sizes a card type takes: its component's (meta sizes: the State readout is half only), else every one */
 const sizesOf = (t: string) => (boot.cards[t]?.grid || boot.grid_sizes).split(',');
 /** where each card goes (null = left out: a page card whose page is not in the deck), and the taken half rows */
@@ -179,7 +179,7 @@ function insertAt(p: Page, card: Card, x: number, y: number): number {
   }
   return best;
 }
-const TYPE_NAME: Record<string, string> = { light: 'Light', media: 'Media', sensor: 'Sensor', readout: 'State readout', stat: 'Stat', header: 'Header', page: 'Screen', entity: 'Entity' };
+const TYPE_NAME: Record<string, string> = { light: 'Light', media: 'Media', sensor: 'Sensor', readout: 'State readout', stat: 'Stat', header: 'Header', slider: 'Slider strip', page: 'Screen', entity: 'Entity' };
 const SIZE_NAME: Record<string, string> = { '1x1': '1 × 1', '2x1': '2 × 1', '2x2': '2 × 2', '1x2': '1 × 2', half: 'Half' };
 const TAP_NAME: Record<string, string> = { toggle: 'Toggle', detail: 'Its screen', page: 'A screen', run: 'Run', none: 'Nothing' };
 function entName(id: string | undefined) {
@@ -736,12 +736,15 @@ function kinds(size: string): Kind[] {
   // the Stat (#200): a big number and its name, no box; at the sizes its component lists (resize it in its settings)
   const st = boot.cards.stat;
   if (st && sizesOf('stat').includes(size)) ks.splice(ks.length - 1, 0, { id: 'stat', label: 'Stat', doms: st.domains.split(','), classes: SENSOR_CLASSES });
+  // the Slider strip (#200): a light's brightness, two cells wide and half tall (its own size, whatever the place)
+  const sl = boot.cards.slider;
+  if (sl) ks.splice(ks.length - 1, 0, { id: 'slider', label: 'Slider strip', doms: sl.domains.split(',') });
   return ks;
 }
 /** the card an entity makes: its domain's card type (Light, Media, Sensor), else an Entity card */
 function cardFor(id: string, size: string): Card {
   const dom = id.split('.')[0];
-  const t = Object.entries(boot.cards).find(([ty, def]) => ty !== 'entity' && ty !== 'page' && ty !== 'readout' && ty !== 'stat' && ty !== 'header' && sizesOf(ty).includes(size) && def.domains.split(',').includes(dom))?.[0] ?? 'entity';
+  const t = Object.entries(boot.cards).find(([ty, def]) => ty !== 'entity' && ty !== 'page' && ty !== 'readout' && ty !== 'stat' && ty !== 'header' && ty !== 'slider' && sizesOf(ty).includes(size) && def.domains.split(',').includes(dom))?.[0] ?? 'entity';
   return { t, e: id, size };
 }
 /** the search index (a panel: read once from its Home Assistant, a few seconds in a large house, then searched here as
@@ -922,7 +925,7 @@ function addCardSide(p: Page): HTMLElement[] {
     return out;
   }
   if (k) {
-    out.push(...searchBox(k.doms, cls?.[0] ?? '', cls ? cls[1] : k.label, (id) => put(k.id === 'readout' || k.id === 'stat' ? { t: k.id, e: id, size: t.size } : cardFor(id, t.size)), undefined, true, true));
+    out.push(...searchBox(k.doms, cls?.[0] ?? '', cls ? cls[1] : k.label, (id) => put(k.id === 'slider' ? { t: 'slider', e: id, size: sizesOf('slider')[0] } : k.id === 'readout' || k.id === 'stat' ? { t: k.id, e: id, size: t.size } : cardFor(id, t.size)), undefined, true, true));
     return out;
   }
   // the types; typing straight away searches every entity a card can show
@@ -932,7 +935,7 @@ function addCardSide(p: Page): HTMLElement[] {
     box.append(row('Screen', 'A card that opens a screen: one of yours or a built-in one', () => { addKind = 'page'; render(); }));
     if (boot.cards.header)  // a title row across Home (#200): no entity; its title is its label (the card's settings)
       box.append(row('Header', 'A title row across Home that groups the cards under it', () => put({ t: 'header', label: 'Section', size: '3xhalf' }), false));
-    for (const x of ks) box.append(row(x.label, x.id === 'readout' ? 'A state with no box: a door open, a temperature, someone in' : x.id === 'stat' ? 'A big number and its name: energy today, the temperature' : x.classes ? 'Temperature, humidity, power, doors…' : '', () => { addKind = x.id; addClass = null; render(); }));
+    for (const x of ks) box.append(row(x.label, x.id === 'readout' ? 'A state with no box: a door open, a temperature, someone in' : x.id === 'stat' ? 'A big number and its name: energy today, the temperature' : x.id === 'slider' ? 'Brightness as a slim bar, two cells wide' : x.classes ? 'Temperature, humidity, power, doors…' : '', () => { addKind = x.id; addClass = null; render(); }));
   }));
   return out;
 }

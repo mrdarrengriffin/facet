@@ -100,6 +100,7 @@
       "m-col-top": { "v": 64, "1x": 40, "use": "Media: the track's words start this far down the picture's side (docs m-col-top)" },
       "m-title-h": { "v": 96, "1x": 64, "use": "Media: the track title's box, two lines of type headline (docs max-height 96), so the artist under it never moves" },
       "m-vol-label": { "v": 72, "1x": 48, "use": "Media: the vol label and the value either side of the volume slider (docs m-vol-label-w 72)" },
+      "strip-name": { "v": 216, "1x": 144, "use": "Home Slider strip: the widest a light's name before its slider grows (then ...), #200" },
       "cal-time": { "v": 112, "1x": 76, "use": "Calendar: the time column of an agenda row (docs 112)" },
       "cal-row-h": { "v": 64, "1x": 44, "use": "Calendar: an agenda row (docs .fs-cal-row 64; 1x = button-h)" },
       "cal-day-gap": { "v": 32, "1x": 20, "use": "Calendar: between one day's rows and the next day's label (docs 32: a list to scan, denser than group)" },

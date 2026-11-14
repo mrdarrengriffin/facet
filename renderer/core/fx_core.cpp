@@ -55,7 +55,7 @@ const char *const SHAPES[] = {"box", "col", "row", "stack", "centre", "cell", "g
                               "badge", "badge-num", "button", "button-fill", "border-clear", "fade-press-all",
                               "fade-release-all", "btn-underline", "seg", "seg-part", "seg-label", "seg-grow", "seg-sep", "seg-plate",
                               "seg-half-l", "seg-half-r", "ring-full-2", "ring-tb-2", "ring-l", "ring-r", "ring-lr",
-                              "slider", "slider-word", "text-mid", "grow-w", "button-sm", "timer-chip",
+                              "slider", "slider-bar", "slider-word", "text-mid", "grow-w", "button-sm", "timer-chip",
                               // the Checkbox: its box, the in-progress dot, a done label, the Motion toggle fade
                               "checkbox", "checkbox-dot", "strike", "fade-switch",
                               // a Group of buttons that lines up from the end (right), centred across
@@ -469,6 +469,8 @@ void shape(lv_style_t *s, const char *n) {  // the structure styles: density onl
                                 : (lv_border_side_t) (LV_BORDER_SIDE_LEFT | LV_BORDER_SIDE_RIGHT));
   } else if (k == "slider") {  // the Slider: its parent's width, exactly touch:min tall (the Pen draws in it)
     lv_style_set_width(s, lv_pct(100)); lv_style_set_height(s, TMIN());
+  } else if (k == "slider-bar") {  // the Slider's bar look: its parent's whole box (a Home Slider strip's cell)
+    lv_style_set_width(s, lv_pct(100)); lv_style_set_height(s, lv_pct(100));
   } else if (k == "above:group") lv_style_set_margin_top(s, tok("layout:group", lay::group));
   else if (k == "cal-month") {  // the Calendar month's strip: its parent's width, the weekday row + six weeks tall
     lv_style_set_width(s, lv_pct(100));
@@ -2311,7 +2313,7 @@ void grid_lay(lv_obj_t *r, GridL &g) {
     else
       for (int y = w == g.cols && w > 1 ? std::max(floor, used(occ)) : floor, y0 = y, done = 0; !done; y++) {
         while ((int) occ.size() < y + h) occ.emplace_back(g.cols, false);
-        if (g.half && h == 1 && px >= 0 && y == y0 && py + 1 >= floor) {  // under the half before it
+        if (g.half && h == 1 && w == 1 && px >= 0 && y == y0 && py + 1 >= floor) {  // a one-cell half under the half before it
           while ((int) occ.size() < py + 2) occ.emplace_back(g.cols, false);
           if ((py - floor) % 2 == 0 && !occ[py + 1][px]) {
             occ[py + 1][px] = true;
@@ -2332,7 +2334,7 @@ void grid_lay(lv_obj_t *r, GridL &g) {
           lv_obj_set_pos(c, g.left + x * (g.cw + g.gap), y * (g.ch + g.gap));
           lv_obj_set_size(c, cw, chh);
           done = 1;
-          px = h == 1 && w < g.cols ? x : -1, py = y;
+          px = h == 1 && w == 1 ? x : -1, py = y;  // only a one-cell half takes the next half under it
           if (w == g.cols && w > 1) floor = y + h;
         }
       }

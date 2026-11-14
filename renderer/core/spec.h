@@ -203,7 +203,7 @@ constexpr Rule RULES[] = {
     {"icon_button", "tap", "nav.open,nav.back,light.toggle,calendar.control,media.control,cover.control,script.run,scene.activate,automation.trigger,button.press,entity.toggle"},  {"icon_button", "toggle", "media.control"},  // a header's settings / shortcut icon (the end slot takes icon buttons only); the Calendar's calendars button
     {"dial", "input", "light.brightness"},           {"dial", "toggle", "light.switch"},
     {"slider", "change", "light.brightness,cover.control"}, {"slider", "input", "light.brightness"},
-    {"slider_row", "change", "media.control,cover.control"}, {"slider_row", "input", "media.control,cover.control"},
+    {"slider_row", "change", "media.control,cover.control,light.brightness"}, {"slider_row", "input", "media.control,cover.control,light.brightness"},
     {"toggle", "toggle", "light.switch"},
     {"more_row", "tap", "nav.open,nav.back,screen.param"},  // screen.param + to: a view of the same screen (Energy > last 7 days)
     {"cover_visual", "change", "cover.control"},  // the Covers window: a drag released (its position)
@@ -400,7 +400,8 @@ constexpr CardType CARD_TYPES[] = {
     {"readout", "sensor,binary_sensor", "", "none", "", "readout", "readout", ""},  // the State readout: half only (its meta sizes)
     {"page", "", "s,m,l", "page", "", "entity_tile", "card", "card"},
     {"stat", "sensor,binary_sensor,number,input_number", "", "none", "", "stat", "stat", ""},  // a big number + its name (#200): its meta sizes
-    {"header", "", "", "none", "", "section_header", "section_header", ""},  // a title row that groups a long Home (#200): no entity
+    {"header", "", "", "none", "", "section_header", "section_header", ""},
+    {"slider", "light", "", "none", "", "slider_row", "slider_row", ""},  // a slim brightness strip, no tile chrome (#200): its meta sizes  // a title row that groups a long Home (#200): no entity
     {"entity", "*", "s", "toggle,detail,run,none", "", "entity_tile", "", ""}};  // any entity, like HA's tile card (taps by domain: ENTITY_TAPS)
 // the Entity tile (after Home Assistant's tile card): any entity; what a tap can do depends on its
 // domain (the default first, like HA's): toggle, detail = the domain's own screen (only when this build has it), run =
@@ -861,6 +862,7 @@ inline const CardType *card_type(const std::string &t) {
 // the Entity tile, bigger = the Card
 inline std::string card_grid_size(const std::string &t, const std::string &size) {
   if (t == "header" && (size.empty() || size == "m")) return "3xhalf";
+  if (t == "slider" && (size.empty() || size == "m")) return "2xhalf";
   if (size == "s") return "1x1";
   if (size == "m" || size.empty()) return t == "sensor" || t == "readout" || t == "stat" ? "half" : "2x1";
   if (size == "l") return "2x2";
@@ -870,6 +872,7 @@ inline const char *card_comp(const std::string &t, const std::string &gsize) {
   if (t == "readout") return "readout";
   if (t == "stat") return "stat";
   if (t == "header") return "section_header";
+  if (t == "slider") return "slider_row";
   return gsize == "1x1" || gsize == "half" ? "entity_tile" : "card";
 }
 inline void check_card(ArduinoJson::JsonVariantConst c, const std::string &p, const std::set<std::string> &ids, Errs &e) {
@@ -878,7 +881,7 @@ inline void check_card(ArduinoJson::JsonVariantConst c, const std::string &p, co
   check_keys(c.as<ArduinoJson::JsonObjectConst>(), CK, 6, p, e);
   const std::string t = c["t"] | "", ent = c["e"] | "", size = c["size"] | "", tap = c["tap"] | "", pg = c["page"] | "";
   const CardType *ct = card_type(t);
-  if (!ct) { err(e, p + ".t", "bad_card", "t is a card type (light, media, sensor, readout, stat, header, page, entity)"); return; }
+  if (!ct) { err(e, p + ".t", "bad_card", "t is a card type (light, media, sensor, readout, stat, header, slider, page, entity)"); return; }
   if (t == "entity") {  // any entity; its tap from its domain's list
     const size_t dot = ent.find('.');
     if (dot == std::string::npos || !entity_ok(ent) || ent[0] == '$') err(e, p + ".e", "bad_entity", "an entity id (domain.name)");
@@ -2488,7 +2491,7 @@ inline void catalogue(ArduinoJson::JsonObject out) {
   out["grid_extra"] = GRID_EXTRA;
   ArduinoJson::JsonObject ct = out["cards"].to<ArduinoJson::JsonObject>();
   for (const CardType &c : CARD_TYPES) { auto o = ct[c.t].to<ArduinoJson::JsonObject>(); o["domains"] = c.domains; o["sizes"] = c.sizes; o["taps"] = c.taps; o["detail"] = c.detail;
-    if (!strcmp(c.t, "readout") || !strcmp(c.t, "stat") || !strcmp(c.t, "header"))  // the Home sizes the editor offers it at
+    if (!strcmp(c.t, "readout") || !strcmp(c.t, "stat") || !strcmp(c.t, "header") || !strcmp(c.t, "slider"))  // the Home sizes the editor offers it at
       o["grid"] = comp_sizes(card_comp(c.t, ""));                                       // (its component's meta)
     auto cm = o["component"].to<ArduinoJson::JsonObject>(); if (*c.comp_s) cm["s"] = c.comp_s; if (*c.comp_m) cm["m"] = c.comp_m; if (*c.comp_l) cm["l"] = c.comp_l; }
   {  // the Entity tile's taps per domain (the editor's choices; a detail only where this build has the screen)

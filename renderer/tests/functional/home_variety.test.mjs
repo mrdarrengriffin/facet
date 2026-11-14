@@ -19,6 +19,16 @@ export default {
       const tx = t.texts();
       t.has(tx, /^energy$/i, 'the header title'); t.has(tx, /12\.4/, 'the stat value'); t.has(tx, /^today$/i, 'a stat label');
     } },
+    { name: 'a Slider strip: the light\'s name and brightness; a drag sets it (light.brightness)', async run(t) {
+      t.ha.s['light.test_lamp'] = { '': 'on', friendly_name: 'Desk lamp', brightness: '128' };
+      await t.device(deck([{ t: 'slider', e: 'light.test_lamp', size: '2xhalf' }]));
+      t.b.settle(800); t.ha.push(); t.b.settle(600);
+      t.has(t.texts(), /^desk lamp$/i, 'its name'); t.has(t.texts(), /^50$/, 'its brightness');
+      const r = t.part('slider_row');
+      t.ok(r, 'a slider row');
+      if (r) { t.ha.calls = []; t.drag(null, { from: [r.x + r.w * 0.55, r.y + r.h / 2], by: [r.w * 0.3, 0] }); t.b.settle(800); }
+      t.ok(t.ha.calls.some((c) => /^light\./.test(c.service) && c.entity === 'light.test_lamp'), `a drag sets the light: ${JSON.stringify(t.ha.calls).slice(0, 200)}`);
+    } },
     { name: 'the slim and wide sizes only where the component lists them; a Header has a label and no entity', async run(t) {
       await t.device(DECK);
       let rev = 20;
@@ -26,7 +36,8 @@ export default {
         [{ t: 'light', e: 'light.test_lamp', size: '3x1' }, 'a light at 3x1'],
         [{ t: 'entity', e: 'light.test_lamp', size: '2xhalf' }, 'an entity tile at 2xhalf'],
         [{ t: 'stat', e: T, size: '3xhalf' }, 'a stat as a full-width row'],
-        [{ t: 'header', label: 'Lights', size: '1x1' }, 'a header at 1x1']]) t.ok(refused(send(t, deck([c], rev++)), 'bad_size'), `${why}: refused`);
+        [{ t: 'header', label: 'Lights', size: '1x1' }, 'a header at 1x1'],
+        [{ t: 'slider', e: 'light.test_lamp', size: '1x1' }, 'a slider at 1x1']]) t.ok(refused(send(t, deck([c], rev++)), 'bad_size'), `${why}: refused`);
       t.ok(refused(send(t, deck([{ t: 'header', e: T, label: 'Lights' }], rev++)), 'bad_card'), 'a header with an entity: refused');
       t.ok(refused(send(t, deck([{ t: 'header', size: '3xhalf' }], rev++)), 'bad_card'), 'a header without a label: refused');
       const ok = send(t, deck([{ t: 'header', label: 'Lights' }, { t: 'stat', e: T, size: '2xhalf' }, { t: 'stat', e: T, size: 'half' }], rev++));
@@ -37,6 +48,7 @@ export default {
       const s = JSON.parse(t.b.m.UTF8ToString(t.b.m._fw_catalogue()));
       t.eq(s.cards?.header?.grid, '3xhalf', 'Header: the full-width row');
       t.eq(s.cards?.stat?.grid, 'half,1x1,2xhalf', 'Stat: half, 1x1, 2xhalf');
+      t.eq(s.cards?.slider?.grid, '2xhalf,3xhalf', 'Slider strip: two wide or the full row');
       t.eq(s.grid_sizes, '1x1,2x1,2x2,half', 'every type keeps the usual four');
     } },
   ],

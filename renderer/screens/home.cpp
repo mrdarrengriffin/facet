@@ -229,6 +229,14 @@ bool card_node(Var cd, Var pages, int slot, ArduinoJson::JsonArray nodes) {
   if (comp_s == "section_header") {  // a Header card (#200): the title that groups the cards under it, no tap
     p["title"] = label.empty() ? std::string("Section") : label;
     p["badge"] = false, p["right"] = "none", p["size"] = "label";
+  } else if (comp_s == "slider_row") {  // a Slider strip (#200): the light's brightness, dragged to set it
+    p["look"] = "bar";  // L2: the whole strip is the slider, filling as the light gets brighter
+    ArduinoJson::JsonObject v = p["value"].to<ArduinoJson::JsonObject>();
+    v["e"] = e, v["a"] = "brightness", v["fmt"] = "pct";
+    ArduinoJson::JsonObject tx = p["text"].to<ArduinoJson::JsonObject>();
+    tx["e"] = e, tx["a"] = "brightness", tx["fmt"] = "pct";  // the number (slider_row shows it)
+    ArduinoJson::JsonObject on = n["on"].to<ArduinoJson::JsonObject>();
+    for (const char *ev : {"change", "input"}) { on[ev]["do"] = "light.brightness"; on[ev]["e"] = e; }
   } else if (comp_s == "stat") {  // a Stat card (#200): the entity's state as the big value, its name as the label
     bind(p, "value", e, "state");
     p["align"] = "start";

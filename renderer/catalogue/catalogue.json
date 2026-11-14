@@ -3603,6 +3603,16 @@
    "update": true,
    "props": [
     {
+     "name": "look",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "line",
+      "bar"
+     ],
+     "about": "line is the thin track with a round knob; bar makes the whole box the track, filled up to the value with no knob, for a slim strip such as a light on Home."
+    },
+    {
      "name": "value",
      "type": "range",
      "bindable": true,
@@ -3683,6 +3693,22 @@
      "about": "Where the slider is, from 0 to 100."
     },
     {
+     "name": "look",
+     "type": "select",
+     "bindable": true,
+     "options": [
+      "line",
+      "bar"
+     ],
+     "about": "line is the name, a thin slider and the value in a row; bar makes the whole row the slider, a bar that fills up to the value with the name and the value on it (a light on Home)."
+    },
+    {
+     "name": "fit",
+     "type": "bool",
+     "bindable": true,
+     "about": "Makes the name before the slider as wide as its words (at most layout strip-name, then ...) instead of the short fixed width, for a longer name such as a light's on Home."
+    },
+    {
      "name": "text",
      "type": "text",
      "bindable": true,
@@ -3704,11 +3730,13 @@
    "events": {
     "change": [
      "media.control",
-     "cover.control"
+     "cover.control",
+     "light.brightness"
     ],
     "input": [
      "media.control",
-     "cover.control"
+     "cover.control",
+     "light.brightness"
     ],
     "open": [
      "nav.open"
@@ -5486,6 +5514,17 @@
     "m": "section_header"
    }
   },
+  "slider": {
+   "domains": "light",
+   "sizes": "",
+   "taps": "none",
+   "detail": "",
+   "grid": "2xhalf,3xhalf",
+   "component": {
+    "s": "slider_row",
+    "m": "slider_row"
+   }
+  },
   "entity": {
    "domains": "*",
    "sizes": "s",
@@ -5553,5 +5592,5 @@
    }
   }
  },
- "hash": "a46f796b"
+ "hash": "67ce1747"
 }
