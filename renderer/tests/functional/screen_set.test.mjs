@@ -74,6 +74,21 @@ export default {
       const on = await run('flightradar24');
       t.eq(on, 'fr24', 'set up: a tap picks it');
     } },
+    { name: 'Weather > Source: one entry per weather integration; the row names the one the forecast comes from (#129)', async run(t) {
+      t.ha.s['weather.test_met_office'] = { '': 'sunny', friendly_name: 'Met Office Home', _platform: 'metoffice' };
+      t.ha.answers = true;
+      await t.device({ v: 2, rev: 9, start: 'h', pages: [
+        { id: 'h', kind: 'home', name: 'Home', cards: [{ t: 'page', page: 'weather', size: 'l' }] },
+        { id: 'weather', kind: 'weather', params: { source: 'ha', weather: 'weather.test_met_office' } }] });
+      t.b.spec('act', { do: 'ha.connect', url: 'http://ha.test:8123', token: 'abcdefgh1234' }); t.b.tick(8); t.b.settle(600);
+      act(t, { do: 'nav.open', screen: 'screen_set', params: { id: 'weather' } });
+      for (let i = 0; i < 3; i++) { t.wait(800); t.b.tick(8); t.ha.push(); t.b.settle(400); }
+      act(t, { do: 'nav.open', screen: 'weather' }); act(t, { do: 'nav.open', screen: 'screen_set', params: { id: 'weather' } });
+      t.has(t.part('list_row', 'Source')?.texts ?? [], /^Met Office$/, 'the Source row names Met Office');
+      t.tap(/^Source$/); t.b.settle(1200);
+      for (const n of ['Met.no', 'Met Office', 'OpenWeatherMap', 'Pirate Weather']) t.ok(t.part('picker_row', n), `${n} is listed`);
+      t.has(t.texts(), /not set up in home assistant/i, 'the ones Home Assistant does not have are greyed with the reason');
+    } },
     { name: 'no Card on Home row: a screen\'s card is added and removed like any card; old decks keep their cards', async run(t) {
       await t.device();
       const before = deck(t).pages.find((p) => p.kind === 'home').cards.filter((c) => c.page === 'moon').length;

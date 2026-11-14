@@ -127,6 +127,7 @@ struct Page {
   // "value": a source whose Source row value adds a word of the feed's (sources.json "value": the feed attribute, the
   // Overhead's "centre": "adsb.lol · centred on Home"), following the pick live
   lv_obj_t *src_row = nullptr;
+  std::string wait_reg;  // a registry domain not read yet when the Source was worked out: built again once it is (#129)
   std::map<std::string, std::string> src_value;  // source id -> its "value" attribute (none = the name alone)
   std::string src_shown = "\x01";
   uint32_t src_ticks = 0;
@@ -321,6 +322,7 @@ void build_page(lv_obj_t *parent, fw::Props p) {
       k++;
     }
     grey_unset(pk);
+    for (auto &dt : pk.detect) if (!fw::dev::ha_link::reg(dt.second.second)) pg->wait_reg = dt.second.second;
   }
   if (linked)  // only the sources this firmware has an adapter for: a planned one (Spotify, an iCal link) picked here
     for (size_t i = pk.ids.size(); i-- > 0;)  // left the screen with nothing to read (Offline, its settings gone)
@@ -579,6 +581,9 @@ void build_page(lv_obj_t *parent, fw::Props p) {
     }, LV_EVENT_VALUE_CHANGED, pg);
   // an open HA pick follows the link (a read ends) and a tap that changes its rows (rebuilt here, after the tap)
   fx::every(pg->root, 50, [pg] {
+    // the Source was worked out before Home Assistant's registry came: once it has, the page again (the row names the
+    // integration the forecast really comes from, the greyed ones are right)
+    if (!pg->wait_reg.empty() && fw::dev::ha_link::reg(pg->wait_reg)) { pg->wait_reg.clear(); fw::dev::reload("screen_set"); return; }
     if (pg->src_row && !pg->from_feed.empty() && pg->src_pick >= 0) {  // the Source value's feed word follows the pick and the feed
       const Pick &sp = pg->picks[pg->src_pick];
       const int sel = sp.sel;

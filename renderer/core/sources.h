@@ -8,7 +8,8 @@
 //                                Home Assistant source, else its id; "" when the spec's source parameter has no such option
 //   shown(doc, screen, entry, param, v)  the source a page really uses, given the spec's source parameter (param = its
 //                                definition, v = its value): the picked source when it sets v or sets nothing, else the
-//                                first source that sets v; v "sample" and no such source = SAMPLE (named "Sample (previews)")
+//                                first source that sets v (of several, the one whose integration has the page's entity: fits());
+//                                v "sample" and no such source = SAMPLE (named "Sample (previews)")
 //   candidates(finds)            a Home Assistant source's own entity, found, not picked (sources.json "finds": {param,
 //                                domain, platform?, match? ("a|b": a substring of the id), default?}): the registry's
 //                                rows of that domain that fit, in its order (core/device.h ha_link::reg; read on first
@@ -49,23 +50,41 @@ inline std::string adapter(ArduinoJson::JsonVariantConst x, ArduinoJson::JsonVar
     if (a == (o | "")) return a;
   return "";
 }
+inline std::vector<std::string> candidates(ArduinoJson::JsonVariantConst f);
+// several sources set the same adapter (Weather: one per integration, all "ha"): the one whose integration (sources.json
+// finds.platform) has the page's entity, else (no entity set) one Home Assistant has an entity of; a source without
+// a platform always fits; no registry read yet = fits (the old answer: the first)
+inline bool fits(ArduinoJson::JsonVariantConst x, ArduinoJson::JsonVariantConst entry) {
+  ArduinoJson::JsonVariantConst f = x["finds"];
+  const std::string plat = f["platform"] | "", dom = f["domain"] | "";
+  if (plat.empty() || dom.empty()) return true;
+  const auto *r = dev::ha_link::reg(dom);
+  if (!r) return true;
+  const std::string ent = entry["params"][f["param"] | ""] | "";
+  if (ent.empty()) return !candidates(f).empty();
+  for (const auto &row : *r) if (row.id == ent) return row.platform == plat;
+  return false;
+}
 inline std::string shown(const ArduinoJson::JsonDocument &d, const std::string &screen, ArduinoJson::JsonVariantConst entry,
                          ArduinoJson::JsonVariantConst param, const std::string &v) {
   const std::string p = picked(d, screen, entry);
   bool linked = false, p_sets = false;
-  std::string first;
+  const bool saved = entry["source"].is<const char *>();  // the person picked it (not the first by default)
+  std::string first, any;
   for (ArduinoJson::JsonVariantConst x : of(d, screen)) {
     const std::string a = adapter(x, param);
     if (a.empty()) continue;
     linked = true;
     if (p == (x["id"] | "")) p_sets = true;
     if (a != v) continue;
-    if (p == (x["id"] | "")) return p;
-    if (first.empty()) first = x["id"] | "";
+    if (p == (x["id"] | "") && (saved || !x["finds"]["platform"].is<const char *>() || fits(x, entry))) return p;  // the pick, unless it was only the first by default and another integration has the entity
+    if (any.empty()) any = x["id"] | "";
+    if (first.empty() && fits(x, entry)) first = x["id"] | "";
   }
   if (!p_sets) return p;
   if (!linked || v.empty()) return p;
   if (!first.empty()) return first;
+  if (!any.empty()) return any;
   return v == "sample" ? SAMPLE : p;
 }
 inline std::string line(const ArduinoJson::JsonDocument &d, const std::string &screen, ArduinoJson::JsonVariantConst entry,

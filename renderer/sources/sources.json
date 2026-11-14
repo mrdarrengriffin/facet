@@ -99,9 +99,141 @@
       "feed": "panel.weather",
       "sources": [
         {
+          "id": "wx_met",
+          "kind": "ha",
+          "name": "Met.no",
+          "adapter": "ha",
+          "about": "A weather entity from the Met.no forecast Home Assistant sets up for your home: its conditions now and its forecast.",
+          "detect": {
+            "integration": "met",
+            "domain": "weather"
+          },
+          "finds": {
+            "param": "weather",
+            "domain": "weather",
+            "platform": "met"
+          },
+          "fills": {
+            "weather": {
+              "domain": "weather",
+              "integration": "met"
+            }
+          }
+        },
+        {
+          "id": "wx_metoffice",
+          "kind": "ha",
+          "name": "Met Office",
+          "adapter": "ha",
+          "about": "A weather entity from the Met Office integration (UK): its conditions now and its forecast.",
+          "detect": {
+            "integration": "metoffice",
+            "domain": "weather"
+          },
+          "finds": {
+            "param": "weather",
+            "domain": "weather",
+            "platform": "metoffice"
+          },
+          "fills": {
+            "weather": {
+              "domain": "weather",
+              "integration": "metoffice"
+            }
+          }
+        },
+        {
+          "id": "wx_openweathermap",
+          "kind": "ha",
+          "name": "OpenWeatherMap",
+          "adapter": "ha",
+          "about": "A weather entity from the OpenWeatherMap integration (a free API key): its conditions now and its forecast.",
+          "detect": {
+            "integration": "openweathermap",
+            "domain": "weather"
+          },
+          "finds": {
+            "param": "weather",
+            "domain": "weather",
+            "platform": "openweathermap"
+          },
+          "fills": {
+            "weather": {
+              "domain": "weather",
+              "integration": "openweathermap"
+            }
+          }
+        },
+        {
+          "id": "wx_pirateweather",
+          "kind": "ha",
+          "name": "Pirate Weather",
+          "adapter": "ha",
+          "about": "A weather entity from the Pirate Weather integration (HACS, a free API key): its conditions now and its forecast.",
+          "detect": {
+            "integration": "pirateweather",
+            "domain": "weather"
+          },
+          "finds": {
+            "param": "weather",
+            "domain": "weather",
+            "platform": "pirateweather"
+          },
+          "fills": {
+            "weather": {
+              "domain": "weather",
+              "integration": "pirateweather"
+            }
+          }
+        },
+        {
+          "id": "wx_accuweather",
+          "kind": "ha",
+          "name": "AccuWeather",
+          "adapter": "ha",
+          "about": "A weather entity from the AccuWeather integration (a free API key): its conditions now and its forecast.",
+          "detect": {
+            "integration": "accuweather",
+            "domain": "weather"
+          },
+          "finds": {
+            "param": "weather",
+            "domain": "weather",
+            "platform": "accuweather"
+          },
+          "fills": {
+            "weather": {
+              "domain": "weather",
+              "integration": "accuweather"
+            }
+          }
+        },
+        {
+          "id": "wx_nws",
+          "kind": "ha",
+          "name": "National Weather Service",
+          "adapter": "ha",
+          "about": "A weather entity from the National Weather Service integration (US): its conditions now and its forecast.",
+          "detect": {
+            "integration": "nws",
+            "domain": "weather"
+          },
+          "finds": {
+            "param": "weather",
+            "domain": "weather",
+            "platform": "nws"
+          },
+          "fills": {
+            "weather": {
+              "domain": "weather",
+              "integration": "nws"
+            }
+          }
+        },
+        {
           "id": "ha_weather",
           "kind": "ha",
-          "name": "Forecast from Home Assistant",
+          "name": "Another weather integration",
           "adapter": "ha",
           "detect": {
             "domain": "weather"
