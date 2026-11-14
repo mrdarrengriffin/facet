@@ -152,6 +152,11 @@ What's next, then today and the days ahead as an agenda or a month.</p>
 <p><a href="https://mrdarrengriffin.github.io/facet/screens/energy/"><b>Energy</b></a><br>
 Today's cost so far, the price you're on and today's half-hours.</p>
 </td>
+<td width="50%" valign="top">
+<a href="https://mrdarrengriffin.github.io/facet/screens/bins/"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/screen-bins-dark.png"><img alt="Bins screen" src=".github/assets/screen-bins-light.png" width="200"></picture></a>
+<p><a href="https://mrdarrengriffin.github.io/facet/screens/bins/"><b>Bins</b></a><br>
+Which bins go out next and when, from Waste Collection Schedule, with the collections after it.</p>
+</td>
 </tr>
 </table>
 
