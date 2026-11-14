@@ -67,6 +67,7 @@ void fill(lv_obj_t *h, fw::Props p) {
 
 FW_COMPONENT(section_header, "Section header", "components", R"({
   "about": "A caption that starts a group of content, with an optional count and a meta text or action on the right.",
+  "sizes": ["3xhalf"],
   "contract": 2,
   "parts": [],
   "min": ["layout:card-min-w", "layout:section-h"],

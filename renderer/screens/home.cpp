@@ -204,8 +204,8 @@ bool card_node(Var cd, Var pages, int slot, ArduinoJson::JsonArray nodes) {
   n["slot"] = slot;
   {  // the span in the grid's half rows: a square is two
     ArduinoJson::JsonArray sp = n["span"].to<ArduinoJson::JsonArray>();
-    sp.add(size[0] == '2' ? 2 : 1);
-    sp.add(size == "half" ? 1 : size == "1x2" || size == "2x2" ? 4 : 2);
+    sp.add(size[0] == '3' ? 3 : size[0] == '2' ? 2 : 1);  // 3x... = the full width (homeCols 3)
+    sp.add(size == "half" || size == "2xhalf" || size == "3xhalf" ? 1 : size == "1x2" || size == "2x2" ? 4 : 2);
   }
   ArduinoJson::JsonObject p = n["p"].to<ArduinoJson::JsonObject>();
   const std::string dom = e.substr(0, e.find('.'));
@@ -215,6 +215,7 @@ bool card_node(Var cd, Var pages, int slot, ArduinoJson::JsonArray nodes) {
   for (Var pg : pages.as<ArduinoJson::JsonArrayConst>())
     if (pid == (pg["id"] | "")) target = pg;
   if (t == "page") { p["label"] = label.empty() ? page_name(target) : label; kind = target["kind"] | ""; }
+  else if (t == "header") {}  // its label is its title (below)
   else if (label.empty()) bind(p, "label", e, "name");
   else p["label"] = label;
   const std::string comp_s = comp;
@@ -225,7 +226,14 @@ bool card_node(Var cd, Var pages, int slot, ArduinoJson::JsonArray nodes) {
       : (edom == "light" || edom == "switch" || edom == "fan" || edom == "input_boolean" || edom == "automation") ? "light"
       : edom == "cover" ? "cover" : (edom == "sensor" || edom == "binary_sensor") ? "sensor"
       : (edom == "script" || edom == "scene" || edom == "button") ? "action" : "other";
-  if (comp_s == "readout") {  // a State readout (half only): no box, no tap; the state, the accent while on, offline = mute
+  if (comp_s == "section_header") {  // a Header card (#200): the title that groups the cards under it, no tap
+    p["title"] = label.empty() ? std::string("Section") : label;
+    p["badge"] = false, p["right"] = "none", p["size"] = "label";
+  } else if (comp_s == "stat") {  // a Stat card (#200): the entity's state as the big value, its name as the label
+    bind(p, "value", e, "state");
+    p["align"] = "start";
+    p["size"] = size == "2xhalf" ? "value" : "headline";  // the big number: as big as the width takes (one column: headline)
+  } else if (comp_s == "readout") {  // a State readout (half only): no box, no tap; the state, the accent while on, offline = mute
     sensor_icon(p, e);
     bind(p, "state", e, "state");
     ArduinoJson::JsonObject tone = p["tone"].to<ArduinoJson::JsonObject>();

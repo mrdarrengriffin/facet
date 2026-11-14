@@ -19,7 +19,7 @@ for (const device of ['guition', 'waveshare']) {
     after(async () => { await E?.done(); });
 
     it('offers every card type the engine knows', () => {
-      assert.deepEqual([...types].sort(), ['entity', 'light', 'media', 'page', 'readout', 'sensor']);
+      assert.deepEqual([...types].sort(), ['entity', 'header', 'light', 'media', 'page', 'readout', 'sensor', 'stat']);
     });
 
     for (const t of ['entity', 'light', 'media', 'sensor', 'page']) {

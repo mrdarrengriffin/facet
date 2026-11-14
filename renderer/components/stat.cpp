@@ -30,12 +30,14 @@ void fill(lv_obj_t *s, fw::Props p) {
   fx::name(s, "stat");
   const bool mid = !strcmp(p["align"] | "start", "centre");
   line(s, "type:label", p["label"] | "", "fg:text-dim", mid);  // unavailable keeps the label readable (4.5:1, C15); the value says so
-  line(s, !strcmp(p["size"] | "title", "body") ? "type:body" : "type:title", off ? fw::st::UNAVAILABLE_TEXT : (p["value"] | ""), off ? "fg:unavailable-note" : tone(p["tone"] | "dim"), mid);
+  const char *sz = p["size"] | "title";
+  line(s, !strcmp(sz, "body") ? "type:body" : !strcmp(sz, "value") ? "type:value" : !strcmp(sz, "headline") ? "type:headline" : "type:title", off ? fw::st::UNAVAILABLE_TEXT : (p["value"] | ""), off ? "fg:unavailable-note" : tone(p["tone"] | "dim"), mid);
 }
 }  // namespace
 
 FW_COMPONENT(stat, "Stat", "components", R"({
   "about": "A caps label over one line of text: one fact in a column of facts.",
+  "sizes": ["half", "1x1", "2xhalf"],
   "contract": 2,
   "parts": [],
   "min": ["layout:card-min-w"],
@@ -44,7 +46,7 @@ FW_COMPONENT(stat, "Stat", "components", R"({
     {"name": "label", "about": "The small capitals line that says what the fact is, such as trend.", "type": "text", "default": "trend"},
     {"name": "value", "about": "The fact itself, such as 48 km/h.", "type": "text", "default": "48 km/h"},
     {"name": "tone", "about": "The colour of the value: dim for quiet, text for normal, warn for something to watch, ok for good news.", "type": "select", "options": ["dim", "text", "warn", "ok"], "default": "dim"},
-    {"name": "size", "about": "title is the usual value; body is a smaller value, for a row of facts in a narrow column (the Flight radar's hero, docs .fs-stat).", "type": "select", "options": ["title", "body"], "default": "title"},
+    {"name": "size", "about": "title is the usual value; body is a smaller value, for a row of facts in a narrow column (the Flight radar's hero, docs .fs-stat); headline and value are the big number of a Stat card on Home (half: headline, bigger: value).", "type": "select", "options": ["title", "body", "headline", "value"], "default": "title"},
     {"name": "align", "about": "Where the label and the value sit in the stat's width: start (the left, for a column of facts) or centre (under a centred hero, such as the Energy screen's price now and next).", "type": "select", "options": ["start", "centre"], "default": "start"},
     {"name": "state", "debug": true, "about": "default shows the value; unavailable shows a dash when it cannot be read.", "type": "select", "options": ["default", "unavailable"], "default": "default"}
   ],

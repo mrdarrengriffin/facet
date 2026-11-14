@@ -2289,9 +2289,18 @@ bool grid_measure(lv_obj_t *r, GridL &g) {
 // every cell into the first free place that fits, in reading order. Half rows: a cell an even number of rows tall
 // starts on an even row (squares stay on the square grid), and a one-row cell right after a one-row cell goes under
 // it when that place is free (two halves share one square)
+// the rows in use: the last row with a cell in it, plus one
+int used(const std::vector<std::vector<bool>> &occ) {
+  for (int y = (int) occ.size() - 1; y >= 0; y--)
+    for (bool b : occ[y]) if (b) return y + 1;
+  return 0;
+}
 void grid_lay(lv_obj_t *r, GridL &g) {
   std::vector<std::vector<bool>> occ;
   int px = -1, py = -1;  // the last one-row cell's place (half rows)
+  // a full-width cell (Home's Header row, #200) divides the grid: it goes under everything before it, and nothing
+  // after it fills a gap above it (the cards under a header stay under it)
+  int floor = 0;
   for (uint32_t i = 0; i < lv_obj_get_child_count(r); i++) {
     lv_obj_t *c = lv_obj_get_child(r, (int32_t) i);
     auto it = gcells.find(c);
@@ -2300,11 +2309,11 @@ void grid_lay(lv_obj_t *r, GridL &g) {
     const int cw = w * g.cw + (w - 1) * g.gap, chh = h * g.ch + (h - 1) * g.gap;
     if (g.row) lv_obj_set_size(c, g.hug ? LV_SIZE_CONTENT : cw, LV_SIZE_CONTENT);
     else
-      for (int y = 0, done = 0; !done; y++) {
+      for (int y = w == g.cols && w > 1 ? std::max(floor, used(occ)) : floor, y0 = y, done = 0; !done; y++) {
         while ((int) occ.size() < y + h) occ.emplace_back(g.cols, false);
-        if (g.half && h == 1 && px >= 0 && y == 0) {  // under the half before it
+        if (g.half && h == 1 && px >= 0 && y == y0 && py + 1 >= floor) {  // under the half before it
           while ((int) occ.size() < py + 2) occ.emplace_back(g.cols, false);
-          if (py % 2 == 0 && !occ[py + 1][px]) {
+          if ((py - floor) % 2 == 0 && !occ[py + 1][px]) {
             occ[py + 1][px] = true;
             lv_obj_set_pos(c, g.left + px * (g.cw + g.gap), (py + 1) * (g.ch + g.gap));
             lv_obj_set_size(c, cw, chh);
@@ -2312,7 +2321,7 @@ void grid_lay(lv_obj_t *r, GridL &g) {
             break;
           }
         }
-        if (g.half && h % 2 == 0 && y % 2) continue;
+        if (g.half && h % 2 == 0 && (y - floor) % 2) continue;  // squares pair the half rows from the last divider down
         for (int x = 0; x + w <= g.cols && !done; x++) {
           bool free = true;
           for (int yy = y; yy < y + h && free; yy++)
@@ -2323,7 +2332,8 @@ void grid_lay(lv_obj_t *r, GridL &g) {
           lv_obj_set_pos(c, g.left + x * (g.cw + g.gap), y * (g.ch + g.gap));
           lv_obj_set_size(c, cw, chh);
           done = 1;
-          px = h == 1 ? x : -1, py = y;
+          px = h == 1 && w < g.cols ? x : -1, py = y;
+          if (w == g.cols && w > 1) floor = y + h;
         }
       }
     const bool tap = it->second.tap && g.cw >= fw::touch::min && (g.row || g.ch >= fw::touch::min);

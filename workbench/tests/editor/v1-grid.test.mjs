@@ -80,7 +80,7 @@ for (const device of ['guition', 'waveshare'])
       assert.ok(!(await types()).includes('State readout'), 'not on a 1 x 1 place');
       await E.page.locator('.v1-side .seg button', { hasText: 'Half' }).click(); await settle(E.page, 200);
       assert.match(await E.page.locator('.v1-sidetitle .v1-meta').textContent(), /^Half · .*top half/);
-      assert.deepEqual(await types(), ['Screen', 'Light', 'Switch', 'Media', 'Climate', 'Cover', 'Sensor', 'State readout', 'Other'], 'on a half: State readout');
+      assert.deepEqual(await types(), ['Screen', 'Header', 'Light', 'Switch', 'Media', 'Climate', 'Cover', 'Sensor', 'State readout', 'Stat', 'Other'], 'on a half: State readout, Stat');
       await E.page.locator('.v1-cardlist .v1-opt', { hasText: 'State readout' }).click(); await settle(E.page, 200);
       await E.page.locator('.v1-cardlist .v1-opt', { hasText: 'Temperature' }).click(); await settle(E.page, 200);
       await E.page.locator('.v1-cardlist .v1-opt').first().click(); await settle(E.page, 400);
@@ -100,7 +100,7 @@ for (const device of ['guition', 'waveshare'])
     it('adding: the types first; a type lists every entity it takes before typing (#190); a sensor type only what it measures', async () => {
       await E.page.locator('.v1-cell.add:not(.half)').first().click(); await settle(E.page, 200);
       const rows = () => E.page.locator('.v1-cardlist .v1-opt .v1-ftxt > span').allTextContents();
-      assert.deepEqual(await rows(), ['Screen', 'Light', 'Switch', 'Media', 'Climate', 'Cover', 'Sensor', 'Other'], 'the types, no entity');
+      assert.deepEqual(await rows(), ['Screen', 'Header', 'Light', 'Switch', 'Media', 'Climate', 'Cover', 'Sensor', 'Stat', 'Other'], 'the types, no entity');
       await E.page.locator('.v1-cardlist .v1-opt', { hasText: 'Sensor' }).click(); await settle(E.page, 200);
       await E.page.locator('.v1-cardlist .v1-opt', { hasText: 'Temperature' }).click(); await settle(E.page, 200);
       assert.equal(await E.page.locator('.v1-sidetitle b').textContent(), 'Add a sensor card');
@@ -111,7 +111,7 @@ for (const device of ['guition', 'waveshare'])
       assert.deepEqual(await E.page.locator('.v1-cardlist .v1-opt p').allTextContents(), ['sensor.demo_sensor_243'], 'typing narrows the same list');
       await E.page.locator('.v1-side .btn', { hasText: '‹ Sensor' }).click(); await settle(E.page, 150);
       await E.page.locator('.v1-side .btn', { hasText: '‹ Card types' }).click(); await settle(E.page, 150);
-      assert.equal((await rows()).length, 8, 'back at the types');
+      assert.equal((await rows()).length, 10, 'back at the types');
       await E.page.locator('.v1-cardlist .v1-opt', { hasText: 'Light' }).click(); await settle(E.page, 200);
       const ids = await E.page.locator('.v1-cardlist .v1-opt p').allTextContents();
       assert.ok(ids.length > 1 && ids.every((x) => x.startsWith('light.')), `every light, no query (${ids.length})`);

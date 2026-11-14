@@ -139,7 +139,7 @@ the docs can never disagree. *Check:* the spec checker (`core/spec.h` `slot_decl
 functional test has a refusal case per rule and checks every accepted id is a real component.
 
 **C8c. A component that fills a Home cell declares the Home sizes it works at.** Meta `"sizes"`: a list of Home grid
-sizes (`1x1`, `2x1`, `1x2`, `2x2`, `half`); no `sizes` = every size. A deck card that would draw it at another size is
+sizes (`1x1`, `2x1`, `1x2`, `2x2`, `half`, and the slim and wide `2xhalf`, `3xhalf` (a full-width row), `3x1` (#200), which only a component that lists them gets); no `sizes` = every one of the first five. A deck card that would draw it at another size is
 refused (`bad_size` at `.cards[i].size`), a spec node in a grid with aspect `half` whose span is another size is refused
 (`bad_slot` at `.nodes[i].span`), and the editor offers it only at those sizes (the card type's `grid` in the schema).
 The State readout is `["half"]`.
