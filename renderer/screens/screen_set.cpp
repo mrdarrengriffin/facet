@@ -216,8 +216,9 @@ void grey_unset(Pick &p) {
     hl::reg_fetch(d->second.second);
     const std::vector<hl::RegRow> *r = hl::reg(d->second.second);
     const bool set_up = !r || std::any_of(r->begin(), r->end(), [&](const hl::RegRow &e) { return e.platform == d->second.first; });
-    if (set_up) p.off.erase(p.ids[i]), p.status[i] = p.status0[p.ids[i]];
-    else p.off.insert(p.ids[i]), p.status[i] = "Not set up in Home Assistant";
+    // only a change of state touches the line: a source with several candidates keeps each row's own words (its sensor)
+    if (set_up) { if (p.off.erase(p.ids[i])) p.status[i] = p.status0[p.ids[i]]; }
+    else if (p.off.insert(p.ids[i]).second || p.status[i] != "Not set up in Home Assistant") p.status[i] = "Not set up in Home Assistant";
   }
 }
 void sheet_props(Page *pg, int k, bool open, Doc &d) {

@@ -494,6 +494,7 @@
     }
   },
   "feeds": {
+    "panel.bins": {"required": ["when","bins"], "optional": ["moment","caption","accent","tone","colours","line","coming","more","yours"]},
     "panel.calendar": {"required": ["hero_n","hero_label","card"], "optional": ["card_n","hero_line","hero_accent","month_title","month_here","shown","day_title","sheet","agenda","month_days","calendars","day_events"]},
     "panel.clock": {"required": ["time","date"], "optional": ["day"]},
     "panel.energy": {"required": ["cost","line","card","card_tone"], "optional": ["rate","tone","values","bands","now","week_cost","week_line","week","week_before","days","watts","found","live","cheapest","event","event_name","event_when","rate_now","rate_band","rate_until","rate_next","event_tone"]},
