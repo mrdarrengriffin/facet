@@ -344,6 +344,7 @@ function previews() {
 const SCREEN_SKIP = new Set(['spec', 'device']);
 function screenSet() {
   const srcs = json('sources/sources.json');
+  const DEV_ONLY = new Set(['sample', 'fixtures']);  // = renderer/tools/gen_specs.mjs: not offered on a panel
   const chrome = [...new Set([...readFileSync(join(R, 'core/spec.h'), 'utf8').matchAll(/\bfind\("([a-z0-9_]+)"\)/g)].map((x) => x[1]))];
   const compById = Object.fromEntries(entries.map((e) => [e.id, e]));
   const sourcesOf = (id) => {
@@ -352,7 +353,8 @@ function screenSet() {
     if (!e) return null;
     return {
       from: own ? null : parent, needs: e.needs,
-      list: e.sources.map((x) => ({ id: x.id, kind: x.kind, kindLabel: srcs.kinds[x.kind] ?? x.kind, name: x.name, setup: x.setup ?? [],
+      // made-up data is for the docs' own demos and pictures, not a source a panel offers (#156)
+      list: e.sources.filter((x) => !DEV_ONLY.has(x.id)).map((x) => ({ id: x.id, kind: x.kind, kindLabel: srcs.kinds[x.kind] ?? x.kind, name: x.name, setup: x.setup ?? [],
         fills: Object.entries(x.fills ?? {}).map(([param, f]) => ({ param, domain: f.domain, integration: f.integration ?? null, list: !!f.list })) })),
     };
   };
@@ -381,7 +383,7 @@ function screenSet() {
     walkOpen(spec.id, spec.nodes);
     const params = Object.entries(spec.params ?? {}).map(([name, v]) => {
       const t = typeof v === 'object' && v ? v : { type: 'text', default: v };
-      return { name, about: t.about ?? '', label: t.label ?? name, type: t.type ?? 'text', domain: t.domain ?? null, options: t.options ?? null,
+      return { name, about: t.about ?? '', label: t.label ?? name, type: t.type ?? 'text', domain: t.domain ?? null, options: t.options ? (name === 'source' ? t.options.filter((o) => !DEV_ONLY.has(o)) : t.options) : null,
         default: t.type === 'entity' || t.type === 'entities' ? null : (t.default ?? ''), sample: sampleOf(name, t) };
     }).filter((p) => p.type !== 'hidden');
     const nodes = spec.nodes.map((n) => n.c);
